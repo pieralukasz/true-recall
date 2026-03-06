@@ -211,6 +211,7 @@ export function usePanelActions({
 						fields: block.fields,
 						sourceUid: sourceUid ?? undefined,
 						sourceText: block.sourceText,
+						alwaysTypeIn: block.alwaysTypeIn,
 						createdVia: "collect",
 					})),
 				);

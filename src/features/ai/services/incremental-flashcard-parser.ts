@@ -20,6 +20,7 @@ export type NoteTypeLookup = (slug: string) => NoteType | null;
 const TYPE_TAG_RE = /^#type\/([a-z0-9-]+)$/;
 const SOURCE_COMMENT_RE = /^<!--\s*source:\s*([\s\S]*?)\s*-->$/;
 const BLOCK_SEPARATOR_RE = /^---\s*$/;
+const ALWAYS_TYPE_IN_TOKEN = "@typein";
 
 export class IncrementalFlashcardParser {
 	private buffer = "";
@@ -110,7 +111,10 @@ export class IncrementalFlashcardParser {
 		const noteTypeId = this.currentNoteType.id;
 		const slug = this.currentSlug;
 		const fieldNames = this.currentNoteType.fields;
-		const { fields, sourceText } = this.parseFieldValues(this.blockLines, fieldNames);
+		const { fields, sourceText, alwaysTypeIn } = this.parseFieldValues(
+			this.blockLines,
+			fieldNames,
+		);
 		const hasContent = Object.values(fields).some((v) => v.trim().length > 0);
 
 		this.currentSlug = null;
@@ -119,15 +123,26 @@ export class IncrementalFlashcardParser {
 
 		if (!hasContent) return null;
 
-		return { noteTypeId, noteTypeSlug: slug, fields, sourceText };
+		return {
+			noteTypeId,
+			noteTypeSlug: slug,
+			fields,
+			sourceText,
+			alwaysTypeIn,
+		};
 	}
 
 	private parseFieldValues(
 		lines: string[],
 		fieldNames: string[],
-	): { fields: Record<string, string>; sourceText?: string } {
+	): {
+		fields: Record<string, string>;
+		sourceText?: string;
+		alwaysTypeIn?: boolean;
+	} {
 		const fields: Record<string, string> = {};
 		let sourceText: string | undefined;
+		let alwaysTypeIn = false;
 
 		for (const name of fieldNames) {
 			fields[name] = "";
@@ -152,6 +167,10 @@ export class IncrementalFlashcardParser {
 				sourceText = sourceMatch[1]!.trim();
 				continue;
 			}
+			if (trimmed === ALWAYS_TYPE_IN_TOKEN) {
+				alwaysTypeIn = true;
+				continue;
+			}
 
 			const colonIdx = trimmed.indexOf(":");
 			if (colonIdx > 0) {
@@ -171,7 +190,7 @@ export class IncrementalFlashcardParser {
 
 		flushField();
 
-		return { fields, sourceText };
+		return { fields, sourceText, alwaysTypeIn: alwaysTypeIn || undefined };
 	}
 
 	/**

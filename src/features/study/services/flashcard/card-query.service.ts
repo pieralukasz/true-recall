@@ -16,6 +16,7 @@ interface RawFlashcardItem {
 	ioRegionsJson?: string;
 	ioGroupKey?: string;
 	ioParentId?: string;
+	alwaysTypeIn?: boolean;
 }
 
 export class CardQueryService {
@@ -67,6 +68,7 @@ export class CardQueryService {
 				ioRegionsJson: card.ioRegionsJson,
 				ioGroupKey: card.ioGroupKey,
 				ioParentId: card.ioParentId,
+				alwaysTypeIn: card.alwaysTypeIn,
 			}));
 	}
 
@@ -103,6 +105,7 @@ export class CardQueryService {
 				ioRegionsJson: card.ioRegionsJson,
 				ioGroupKey: card.ioGroupKey,
 				ioParentId: card.ioParentId,
+				alwaysTypeIn: card.alwaysTypeIn,
 			}));
 	}
 }

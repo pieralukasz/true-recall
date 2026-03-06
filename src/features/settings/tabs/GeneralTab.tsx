@@ -1,5 +1,5 @@
 import { useSettings } from "@features/settings/hooks/useSettings";
-import type { ReviewViewMode } from "@shared/types";
+import type { ReviewViewMode, TypeInMode } from "@shared/types";
 import {
 	FormCard,
 	FormField,
@@ -65,6 +65,21 @@ export function GeneralTab() {
 					<ToggleInput
 						value={settings.continuousCustomReviews}
 						onChange={(v) => save({ continuousCustomReviews: v })}
+					/>
+				</FormField>
+
+				<FormField
+					name="Default type-in mode"
+					description="Type-in mode used when a new review session starts (T still cycles modes in-session)"
+				>
+					<SelectInput
+						value={settings.defaultTypeInMode}
+						onChange={(v) => save({ defaultTypeInMode: v as TypeInMode })}
+						options={[
+							{ value: "off", label: "Off" },
+							{ value: "diff", label: "Diff" },
+							{ value: "ai", label: "AI" },
+						]}
 					/>
 				</FormField>
 			</FormCard>

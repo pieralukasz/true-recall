@@ -26,6 +26,7 @@ import {
 export interface ParsedCard {
 	noteTypeId: string;
 	fields: Record<string, string>;
+	alwaysTypeIn?: boolean;
 }
 
 export interface BulkParseResult {
@@ -62,6 +63,7 @@ export function parseBulkText(
 				cards: blocks.map((b) => ({
 					noteTypeId: b.noteTypeId,
 					fields: b.fields,
+					alwaysTypeIn: b.alwaysTypeIn,
 				})),
 				detectedFormat: "block",
 			};

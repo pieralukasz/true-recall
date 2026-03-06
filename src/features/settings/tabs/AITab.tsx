@@ -313,6 +313,23 @@ export function AITab() {
 						options={modelOptions}
 					/>
 				</FormField>
+
+				<FormField
+					name="Type-in grading prompt"
+					description="Optional custom system prompt for AI answer grading during review type-in mode. Leave empty to use built-in prompt."
+				>
+					<TextAreaInput
+						value={settings.aiTypeInGradingPrompt ?? ""}
+						onChange={(v) =>
+							save({
+								aiTypeInGradingPrompt:
+									v.trim().length > 0 ? v : undefined,
+							})
+						}
+						rows={6}
+						class="ep:w-full ep:font-mono ep:text-ui-smaller"
+					/>
+				</FormField>
 			</FormCard>
 
 			<FormCard title="Flashcard Generation">
