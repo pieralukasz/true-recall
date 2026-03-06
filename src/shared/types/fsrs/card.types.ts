@@ -115,6 +115,11 @@ export interface FSRSCardData {
 	templateOrd?: number;
 	/** Note type ID (for deriving card type and template) */
 	noteTypeId?: string;
+
+	// === Import fields (transient, not stored directly) ===
+
+	/** Custom field values for note creation (used by import to pass arbitrary fields to resolveNoteMapping) */
+	fields?: Record<string, string>;
 }
 
 /**

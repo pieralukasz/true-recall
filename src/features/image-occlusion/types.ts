@@ -1,3 +1,6 @@
+import type { FSRSCardData } from "@shared/types";
+import type { Note } from "@shared/types/note.types";
+
 export type IOShape = "rect" | "ellipse";
 export type IOMaskMode = "solo" | "all";
 
@@ -23,9 +26,24 @@ export interface IODefinition {
 	version: 1;
 }
 
+export interface IOEditorAddMode {
+	mode: "add";
+	sourceUid?: string;
+}
+
+export interface IOEditorEditMode {
+	mode: "edit";
+	noteId: string;
+	note: Note;
+}
+
+export type IOEditorMode = IOEditorAddMode | IOEditorEditMode;
+
 export interface IOEditorResult {
 	cancelled: boolean;
 	imagePath?: string;
 	definition?: IODefinition;
-	prompt?: string;
+	createdNote?: Note;
+	createdCards?: FSRSCardData[];
+	updatedCardIds?: string[];
 }

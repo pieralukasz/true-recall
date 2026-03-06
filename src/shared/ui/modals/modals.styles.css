@@ -285,8 +285,8 @@
 
 	/* Image occlusion editor — wider */
 	.modal:has(.true-recall-io-editor-modal) {
-		max-width: min(900px, 96vw) !important;
-		max-height: 90vh !important;
+		max-width: min(1180px, 98vw) !important;
+		max-height: 92vh !important;
 	}
 
 	/* ================================================================
