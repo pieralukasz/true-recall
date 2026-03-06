@@ -7,6 +7,10 @@
  */
 
 import { extractClozeIndices } from "@features/study/services/flashcard/cloze-parser.service";
+import {
+	getIOGroupOrds,
+	parseIODefinition,
+} from "@features/image-occlusion/io-definition";
 import type { Note, NoteType } from "@shared/types/note.types";
 import { BUILTIN_IMAGE_OCCLUSION_ID } from "@shared/types/note.types";
 import { renderTemplate, fieldIsEmpty } from "./template-engine";
@@ -73,13 +77,13 @@ function getClozeOrds(note: Note, noteType: NoteType): number[] {
 
 function getImageOcclusionOrds(note: Note): number[] {
 	const regionsStr = note.fields["Regions"] ?? "[]";
-	try {
-		const regions = JSON.parse(regionsStr) as unknown[];
-		if (regions.length === 0) return [0];
-		return regions.map((_, i) => i);
-	} catch {
+	const definition = parseIODefinition(regionsStr);
+	if (!definition || definition.regions.length === 0) {
 		return [0];
 	}
+
+	const ords = getIOGroupOrds(definition);
+	return ords.length > 0 ? ords : [0];
 }
 
 /**

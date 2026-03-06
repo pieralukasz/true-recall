@@ -68,6 +68,12 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 	});
 
 	plugin.addCommand({
+		id: "create-image-occlusion-card",
+		name: "Create image occlusion card",
+		callback: () => void plugin.openImageOcclusionEditorForActiveNote(),
+	});
+
+	plugin.addCommand({
 		id: "create-backup",
 		name: "Create database backup",
 		callback: () => void plugin.createManualBackup(),

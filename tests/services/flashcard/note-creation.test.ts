@@ -9,12 +9,16 @@ import {
 	generateCardsForNote,
 } from "../../../src/features/core/services/card-generation.service";
 import { renderTemplate } from "../../../src/features/core/services/template-engine";
+import { FlashcardManager } from "../../../src/features/study/services/flashcard/flashcard.service";
+import type { SqliteStoreService } from "../../../src/features/core/persistence/sqlite/SqliteStoreService";
 import type { Note, NoteType } from "../../../src/shared/types/note.types";
 import {
 	BUILTIN_BASIC_ID,
 	BUILTIN_BASIC_REVERSED_ID,
 	BUILTIN_CLOZE_ID,
+	BUILTIN_IMAGE_OCCLUSION_ID,
 } from "../../../src/shared/types/note.types";
+import type { App } from "obsidian";
 import {
 	type TestContext,
 	createTestContext,
@@ -72,6 +76,18 @@ function clozeNoteType(): NoteType {
 		css: "",
 		isBuiltin: true,
 	};
+}
+
+function createMockStore(ctx: TestContext): SqliteStoreService {
+	return {
+		cards: ctx.cards,
+		notes: ctx.notes,
+		noteTypes: ctx.noteTypes,
+		get: (id: string) => ctx.cards.get(id),
+		set: (id: string, data: unknown) => ctx.cards.set(id, data as never),
+		has: (id: string) => ctx.cards.has(id),
+		isReady: () => true,
+	} as unknown as SqliteStoreService;
 }
 
 // ── Tests ──────────────────────────────────────────────────────
@@ -302,6 +318,129 @@ describe("note-based card creation", () => {
 			});
 			expect(q2).toBe("House");
 			expect(a2).toBe("Haus<br>Das Haus ist groß");
+		});
+	});
+
+	describe("image occlusion create/update reconciliation", () => {
+		it("createImageOcclusionNote creates one card per group key", () => {
+			const manager = new FlashcardManager({} as App, {} as never, {} as never);
+			manager.setStore(createMockStore(ctx));
+
+			const result = manager.createImageOcclusionNote({
+				imagePath: "images/map.png",
+				definition: {
+					version: 1,
+					maskMode: "solo",
+					regions: [
+						{
+							id: "r1",
+							x: 0.1,
+							y: 0.1,
+							w: 0.2,
+							h: 0.2,
+							groupKey: "0",
+							shape: "rect",
+						},
+						{
+							id: "r2",
+							x: 0.5,
+							y: 0.1,
+							w: 0.2,
+							h: 0.2,
+							groupKey: "1",
+							shape: "ellipse",
+						},
+					],
+				},
+			});
+
+			expect(result.note.noteTypeId).toBe(BUILTIN_IMAGE_OCCLUSION_ID);
+			expect(result.cards).toHaveLength(2);
+
+			const stored = ctx.cards.getCardsByNoteId(result.note.id);
+			expect(stored).toHaveLength(2);
+			expect(stored.map((card) => card.templateOrd).sort()).toEqual([0, 1]);
+			expect(stored.every((card) => card.cardType === "image-occlusion")).toBe(
+				true,
+			);
+		});
+
+		it("updateImageOcclusionNote keeps unchanged ord, creates new, soft-deletes removed", () => {
+			const manager = new FlashcardManager({} as App, {} as never, {} as never);
+			manager.setStore(createMockStore(ctx));
+
+			const created = manager.createImageOcclusionNote({
+				imagePath: "images/atlas.png",
+				definition: {
+					version: 1,
+					maskMode: "solo",
+					regions: [
+						{
+							id: "r0",
+							x: 0.1,
+							y: 0.1,
+							w: 0.2,
+							h: 0.2,
+							groupKey: "0",
+							shape: "rect",
+						},
+						{
+							id: "r1",
+							x: 0.5,
+							y: 0.1,
+							w: 0.2,
+							h: 0.2,
+							groupKey: "1",
+							shape: "rect",
+						},
+					],
+				},
+			});
+
+			const beforeCards = ctx.cards.getCardsByNoteId(created.note.id);
+			const cardOrd0 = beforeCards.find((card) => card.templateOrd === 0)!;
+			const cardOrd1 = beforeCards.find((card) => card.templateOrd === 1)!;
+
+			const updated = manager.updateImageOcclusionNote(created.note.id, {
+				imagePath: "images/atlas.png",
+				definition: {
+					version: 1,
+					maskMode: "all",
+					regions: [
+						{
+							id: "r0",
+							x: 0.12,
+							y: 0.12,
+							w: 0.22,
+							h: 0.22,
+							groupKey: "0",
+							shape: "rect",
+						},
+						{
+							id: "r2",
+							x: 0.3,
+							y: 0.55,
+							w: 0.2,
+							h: 0.2,
+							groupKey: "2",
+							shape: "ellipse",
+						},
+					],
+				},
+			});
+
+			const activeCards = ctx.cards.getCardsByNoteId(created.note.id);
+			expect(activeCards.map((card) => card.templateOrd).sort()).toEqual([0, 2]);
+			const keptOrd0 = activeCards.find((card) => card.templateOrd === 0)!;
+			expect(keptOrd0.id).toBe(cardOrd0.id);
+			expect(updated.updatedCardIds).toContain(cardOrd0.id);
+			expect(updated.updatedCardIds).not.toContain(cardOrd1.id);
+
+			const deletedRow = ctx.db.get<{ deleted_at: number | null }>(
+				`SELECT deleted_at FROM cards WHERE id = ?`,
+				[cardOrd1.id],
+			);
+			expect(deletedRow?.deleted_at).not.toBeNull();
 		});
 	});
 });
