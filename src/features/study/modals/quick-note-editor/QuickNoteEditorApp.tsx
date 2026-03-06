@@ -111,6 +111,37 @@ export function QuickNoteEditorApp({
 		setNoteTypeId(id);
 	}, []);
 
+	const handleChangeType = useCallback(async () => {
+		if (!noteType || !editMode?.noteId) return;
+
+		const { ChangeNoteTypeModal } = await import(
+			"@features/library/modals/ChangeNoteTypeModal"
+		);
+		const allNoteTypes = plugin.cardStore.noteTypes.getAll();
+
+		const modal = new ChangeNoteTypeModal(app, {
+			currentNoteType: noteType,
+			availableNoteTypes: allNoteTypes,
+			noteCount: 1,
+		});
+
+		const result = await modal.openAndWait();
+		if (
+			result.cancelled ||
+			!result.targetNoteTypeId ||
+			!result.fieldMapping
+		)
+			return;
+
+		plugin.flashcardManager.changeNoteType(
+			editMode.noteId,
+			result.targetNoteTypeId,
+			result.fieldMapping,
+		);
+
+		onDone({ cancelled: false });
+	}, [noteType, app, plugin, editMode, onDone]);
+
 	const togglePin = useCallback((fieldName: string) => {
 		setPinnedFields((prev) => {
 			const next = new Set(prev);
@@ -263,6 +294,7 @@ export function QuickNoteEditorApp({
 				noteTypeId={noteTypeId}
 				onNoteTypeChange={handleNoteTypeChange}
 				isEdit={isEdit}
+				onChangeType={isEdit ? handleChangeType : undefined}
 				showSourcePicker={showSourcePicker}
 				selectedSourceNote={selectedSourceNote}
 				onSourceSelect={setSelectedSourceNote}
