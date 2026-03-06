@@ -73,6 +73,12 @@ export function usePanelActions({
 			} else {
 				notify().cardsCreated(result.created, currentFile.basename);
 			}
+
+			if (result.failedChunks > 0) {
+				notify().warning(
+					`${result.failedChunks} of ${result.totalChunks} sections failed: ${result.errors.join("; ")}`,
+				);
+			}
 		} catch (error) {
 			if (error instanceof DOMException && error.name === "AbortError") return;
 			const msg = error instanceof Error ? error.message : String(error);
