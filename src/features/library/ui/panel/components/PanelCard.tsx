@@ -53,6 +53,7 @@ export interface PanelCardProps {
 	onDelete: () => void;
 	onCopy: () => void;
 	onMove: () => void;
+	onChangeType: () => void;
 	onSelect: () => void;
 	onLongPress: () => void;
 	onJumpToSource?: () => void;
@@ -138,6 +139,7 @@ export function PanelCard(props: PanelCardProps) {
 		onDelete,
 		onCopy,
 		onMove,
+		onChangeType,
 		onSelect,
 		onLongPress: onLongPressProp,
 		onJumpToSource,
@@ -183,6 +185,7 @@ export function PanelCard(props: PanelCardProps) {
 		{ title: "Edit", icon: "pencil", onClick: onEdit },
 		{ title: "Copy", icon: "copy", onClick: onCopy },
 		{ title: "Move", icon: "folder-input", onClick: onMove },
+		{ title: "Change type", icon: "replace", onClick: onChangeType },
 		"separator",
 		{ title: "Delete", icon: "trash-2", onClick: onDelete },
 		...(!isSelectionMode
@@ -269,6 +272,11 @@ export function PanelCard(props: PanelCardProps) {
 							{fsrsCard.fsrs.lapses > 0 && (
 								<span class="ep:text-ui-smaller ep:text-obs-faint">
 									{fsrsCard.fsrs.lapses} lapses
+								</span>
+							)}
+							{fsrsCard.noteTypeName && (
+								<span class="ep:text-ui-smaller ep:text-obs-faint">
+									{fsrsCard.noteTypeName}
 								</span>
 							)}
 						</div>
