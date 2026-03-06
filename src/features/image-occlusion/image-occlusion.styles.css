@@ -358,14 +358,13 @@
 		background: var(--background-secondary);
 		overflow: hidden;
 		box-shadow: 0 8px 24px color-mix(in srgb, var(--background-primary) 50%, transparent);
+		max-height: min(58vh, 620px);
 	}
 
 	.true-recall-io-render-image {
 		display: block;
 		width: 100%;
-		height: auto;
-		max-height: min(58vh, 620px);
-		object-fit: contain;
+		height: 100%;
 		background: var(--background-primary);
 	}
 

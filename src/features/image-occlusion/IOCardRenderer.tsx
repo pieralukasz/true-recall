@@ -6,7 +6,7 @@ import type { IORegion } from "@features/image-occlusion/types";
 import { isImageExtension } from "@shared/types";
 import { useApp } from "@shared/ui/preact/ObsidianContext";
 import { TFile } from "obsidian";
-import { useMemo } from "preact/hooks";
+import { useCallback, useMemo, useState } from "preact/hooks";
 
 export interface IOCardRendererProps {
 	imagePath?: string;
@@ -14,6 +14,7 @@ export interface IOCardRendererProps {
 	templateOrd?: number;
 	revealed: boolean;
 	class?: string;
+	maskModeOverride?: "solo" | "all";
 }
 
 interface RegionRenderInfo {
@@ -62,6 +63,7 @@ export function IOCardRenderer({
 	templateOrd = 0,
 	revealed,
 	class: className,
+	maskModeOverride,
 }: IOCardRendererProps) {
 	const app = useApp();
 
@@ -83,6 +85,15 @@ export function IOCardRenderer({
 		}));
 	}, [definition]);
 
+	const [aspectRatio, setAspectRatio] = useState<number | null>(null);
+
+	const handleImageLoad = useCallback((e: Event) => {
+		const img = e.currentTarget as HTMLImageElement;
+		if (img.naturalWidth > 0 && img.naturalHeight > 0) {
+			setAspectRatio(img.naturalWidth / img.naturalHeight);
+		}
+	}, []);
+
 	if (!imageFile || !definition) {
 		return (
 			<div class={`true-recall-io-fallback ${className ?? ""}`}>
@@ -95,13 +106,17 @@ export function IOCardRenderer({
 
 	return (
 		<div class={`true-recall-io-render ${revealed ? "is-revealed" : ""} ${className ?? ""}`}>
-			<div class="true-recall-io-render-frame">
+			<div
+				class="true-recall-io-render-frame"
+				style={aspectRatio ? { aspectRatio: `${aspectRatio}` } : undefined}
+			>
 				<img
 					src={imageUrl}
 					alt={`Image occlusion ${templateOrd + 1}`}
 					class="true-recall-io-render-image"
+					onLoad={handleImageLoad}
 				/>
-				<svg
+				{aspectRatio !== null && <svg
 					class="true-recall-io-render-svg"
 					viewBox="0 0 1 1"
 					preserveAspectRatio="none"
@@ -111,7 +126,7 @@ export function IOCardRenderer({
 							info,
 							templateOrd,
 							revealed,
-							definition.maskMode,
+							maskModeOverride ?? definition.maskMode,
 						)}`;
 
 						if (info.region.shape === "ellipse") {
@@ -140,7 +155,7 @@ export function IOCardRenderer({
 							/>
 						);
 					})}
-				</svg>
+				</svg>}
 			</div>
 		</div>
 	);
