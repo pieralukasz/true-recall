@@ -7,7 +7,7 @@ export function IntegrityCheckSection() {
 	const { plugin } = useSettings();
 	const [running, setRunning] = useState(false);
 
-	const handleCheck = useCallback(() => {
+	const handleCheck = useCallback(async () => {
 		if (!plugin.cardStore) {
 			notify().error("Database not initialized");
 			return;
@@ -31,6 +31,13 @@ export function IntegrityCheckSection() {
 			);
 
 			if (!confirmed) return;
+
+			// Safety backup before repair
+			try {
+				await plugin.backupService?.createBackup();
+			} catch {
+				console.warn("[True Recall] Pre-repair backup failed, proceeding anyway");
+			}
 
 			const fixed = plugin.cardStore.integrity.repair(report);
 			notify().success(`Fixed ${fixed} orphaned records`);
