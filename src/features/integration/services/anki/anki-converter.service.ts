@@ -38,13 +38,21 @@ export class AnkiConverterService {
 			const deck = data.decks.get(card.did);
 			const deckName = deck ? deck.name.replace(/::/g, "/") : "Default";
 			const tags = note.tags.trim().split(/\s+/).filter(Boolean);
-			const fields = note.flds.split(FIELD_SEPARATOR);
+			const rawFields = note.flds.split(FIELD_SEPARATOR);
+
+			// Build named field values from model's field definitions
+			const fieldValues: Record<string, string> = {};
+			for (const fieldDef of model.flds) {
+				const rawValue = rawFields[fieldDef.ord] ?? "";
+				fieldValues[fieldDef.name] = this.htmlToMarkdown(rawValue);
+			}
 
 			const converted = this.convertCard(
 				card,
 				note,
 				model,
-				fields,
+				rawFields,
+				fieldValues,
 				deckName,
 				tags,
 			);
@@ -60,19 +68,22 @@ export class AnkiConverterService {
 		card: AnkiCard,
 		note: AnkiNote,
 		model: AnkiModel,
-		fields: string[],
+		rawFields: string[],
+		fieldValues: Record<string, string>,
 		deckName: string,
 		tags: string[],
 	): ConvertedCard | null {
-		const rawFront = fields[0] ?? "";
-		const rawBack = fields[1] ?? "";
+		const rawFront = rawFields[0] ?? "";
+		const rawBack = rawFields[1] ?? "";
 
 		if (model.type === 1) {
 			return this.convertClozeCard(
 				card,
 				note,
+				model,
 				rawFront,
 				rawBack,
+				fieldValues,
 				deckName,
 				tags,
 			);
@@ -85,21 +96,34 @@ export class AnkiConverterService {
 			return this.convertReversedCard(
 				card,
 				note,
+				model,
 				rawFront,
 				rawBack,
+				fieldValues,
 				deckName,
 				tags,
 			);
 		}
 
-		return this.convertBasicCard(card, note, rawFront, rawBack, deckName, tags);
+		return this.convertBasicCard(
+			card,
+			note,
+			model,
+			rawFront,
+			rawBack,
+			fieldValues,
+			deckName,
+			tags,
+		);
 	}
 
 	private convertBasicCard(
 		card: AnkiCard,
 		note: AnkiNote,
+		model: AnkiModel,
 		rawFront: string,
 		rawBack: string,
+		fieldValues: Record<string, string>,
 		deckName: string,
 		tags: string[],
 	): ConvertedCard {
@@ -110,20 +134,25 @@ export class AnkiConverterService {
 		return {
 			ankiCardId: card.id,
 			ankiNoteId: note.id,
+			ankiModelId: model.id,
 			question,
 			answer,
 			cardType: "basic",
 			tags,
 			deckName,
 			mediaFiles: this.extractMediaFiles(allContent),
+			fieldValues,
+			templateOrd: card.ord,
 		};
 	}
 
 	private convertClozeCard(
 		card: AnkiCard,
 		note: AnkiNote,
+		model: AnkiModel,
 		rawTemplate: string,
 		rawExtra: string,
+		fieldValues: Record<string, string>,
 		deckName: string,
 		tags: string[],
 	): ConvertedCard {
@@ -137,6 +166,7 @@ export class AnkiConverterService {
 		return {
 			ankiCardId: card.id,
 			ankiNoteId: note.id,
+			ankiModelId: model.id,
 			question: template,
 			answer,
 			cardType: "cloze",
@@ -145,14 +175,18 @@ export class AnkiConverterService {
 			tags,
 			deckName,
 			mediaFiles: this.extractMediaFiles(rawTemplate + rawExtra),
+			fieldValues,
+			templateOrd: card.ord,
 		};
 	}
 
 	private convertReversedCard(
 		card: AnkiCard,
 		note: AnkiNote,
+		model: AnkiModel,
 		rawFront: string,
 		rawBack: string,
+		fieldValues: Record<string, string>,
 		deckName: string,
 		tags: string[],
 	): ConvertedCard {
@@ -163,12 +197,15 @@ export class AnkiConverterService {
 		return {
 			ankiCardId: card.id,
 			ankiNoteId: note.id,
+			ankiModelId: model.id,
 			question,
 			answer,
 			cardType: "reversed",
 			tags,
 			deckName,
 			mediaFiles: this.extractMediaFiles(allContent),
+			fieldValues,
+			templateOrd: card.ord,
 		};
 	}
 

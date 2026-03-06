@@ -3,6 +3,7 @@ import { generateUUID } from "@features/core/persistence/sqlite/sqlite.types";
 import type { FSRSService } from "@features/core/services/fsrs.service";
 import { AnkiConverterService } from "@features/integration/services/anki/anki-converter.service";
 import { AnkiMediaService } from "@features/integration/services/anki/anki-media.service";
+import { AnkiNoteTypeMapper } from "@features/integration/services/anki/anki-note-type-mapper";
 import { AnkiSchedulingService } from "@features/integration/services/anki/anki-scheduling.service";
 import { ApkgParserService } from "@features/integration/services/anki/apkg-parser.service";
 import { notifyCardChange } from "@shared/services/signals";
@@ -34,6 +35,7 @@ export class AnkiImportService {
 			skipped: 0,
 			duplicates: 0,
 			errors: [],
+			noteTypesCreated: 0,
 		};
 
 		// 1. Parse the .apkg file
@@ -78,12 +80,18 @@ export class AnkiImportService {
 		const schedulingService = new AnkiSchedulingService(this.fsrsService);
 		const mediaService = new AnkiMediaService(this.app);
 
+		// 6.5 Map Anki models → True Recall NoteTypes
+		const noteTypeMapper = new AnkiNoteTypeMapper(this.store.noteTypes);
+
 		// 7. Process each converted card
 		const importedCardIds: string[] = [];
 		const deckToCardIds = new Map<string, string[]>();
 
 		this.store.transaction(() => {
+			noteTypeMapper.mapModels(apkgData.models);
+
 			const ankiToTrCardId = new Map<number, string>();
+			const ankiNoteToTrNote = new Map<number, string>();
 
 			for (const converted of convertedCards) {
 				try {
@@ -96,6 +104,8 @@ export class AnkiImportService {
 						mediaPathMapping,
 						options,
 						ankiToTrCardId,
+						noteTypeMapper,
+						ankiNoteToTrNote,
 					);
 
 					if (importResult.status === "imported") {
@@ -143,6 +153,7 @@ export class AnkiImportService {
 			});
 		}
 
+		result.noteTypesCreated = noteTypeMapper.noteTypesCreated;
 		return result;
 	}
 
@@ -155,12 +166,15 @@ export class AnkiImportService {
 		mediaPathMapping: Map<string, string>,
 		options: AnkiImportOptions,
 		ankiToTrCardId: Map<number, string>,
+		noteTypeMapper: AnkiNoteTypeMapper,
+		ankiNoteToTrNote: Map<number, string>,
 	):
 		| { status: "imported"; cardId: string }
 		| { status: "duplicate" | "skipped" } {
 		let question = converted.question;
 		let answer = converted.answer;
 
+		// Apply media path updates to question/answer
 		if (mediaPathMapping.size > 0) {
 			question = mediaService.updateImportedContent(question, mediaPathMapping);
 			answer = mediaService.updateImportedContent(answer, mediaPathMapping);
@@ -200,6 +214,43 @@ export class AnkiImportService {
 		cardData.question = question;
 		cardData.answer = answer;
 		cardData.cardType = converted.cardType;
+
+		// Apply media path updates to field values
+		const fieldValues: Record<string, string> = {};
+		for (const [key, value] of Object.entries(converted.fieldValues)) {
+			fieldValues[key] =
+				mediaPathMapping.size > 0
+					? mediaService.updateImportedContent(value, mediaPathMapping)
+					: value;
+		}
+
+		// Resolve note type from Anki model
+		const noteTypeId = noteTypeMapper.getNoteTypeId(converted.ankiModelId);
+
+		// Share notes across multi-template cards from the same Anki note
+		let noteId = ankiNoteToTrNote.get(converted.ankiNoteId);
+		if (!noteId) {
+			noteId = generateUUID();
+			ankiNoteToTrNote.set(converted.ankiNoteId, noteId);
+
+			// Create the note explicitly (CardActions.set() skips note creation when noteId is set)
+			if (noteTypeId) {
+				this.store.notes.create({
+					id: noteId,
+					noteTypeId,
+					fields: fieldValues,
+					tags: converted.tags,
+					createdVia: "anki_import",
+				});
+			}
+		}
+
+		if (noteTypeId) {
+			cardData.noteTypeId = noteTypeId;
+			cardData.noteId = noteId;
+			cardData.templateOrd = converted.templateOrd;
+			cardData.fields = fieldValues;
+		}
 
 		if (converted.cardType === "cloze") {
 			let clozeTemplate = converted.clozeTemplate ?? question;

@@ -37,6 +37,7 @@ export interface AnkiModel {
 	flds: { name: string; ord: number }[];
 	type: number; // 0 = standard, 1 = cloze
 	tmpls: { name: string; qfmt: string; afmt: string; ord: number }[];
+	css?: string;
 }
 
 export interface AnkiDeck {
@@ -65,6 +66,7 @@ export interface AnkiImportResult {
 	skipped: number;
 	duplicates: number;
 	errors: string[];
+	noteTypesCreated: number;
 }
 
 export interface AnkiExportOptions {
@@ -77,6 +79,7 @@ export interface AnkiExportOptions {
 export interface ConvertedCard {
 	ankiCardId: number;
 	ankiNoteId: number;
+	ankiModelId: number;
 	question: string;
 	answer: string;
 	cardType: "basic" | "cloze" | "reversed";
@@ -86,4 +89,6 @@ export interface ConvertedCard {
 	tags: string[];
 	deckName: string;
 	mediaFiles: string[];
+	fieldValues: Record<string, string>;
+	templateOrd: number;
 }

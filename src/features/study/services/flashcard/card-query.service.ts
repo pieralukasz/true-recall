@@ -12,6 +12,10 @@ interface RawFlashcardItem {
 	clozeTemplate?: string;
 	clozeIndex?: number;
 	reverseOf?: string;
+	ioImagePath?: string;
+	ioRegionsJson?: string;
+	ioGroupKey?: string;
+	ioParentId?: string;
 }
 
 export class CardQueryService {
@@ -59,6 +63,10 @@ export class CardQueryService {
 				sourceText: card.sourceText,
 				noteId: card.noteId,
 				templateOrd: card.templateOrd,
+				ioImagePath: card.ioImagePath,
+				ioRegionsJson: card.ioRegionsJson,
+				ioGroupKey: card.ioGroupKey,
+				ioParentId: card.ioParentId,
 			}));
 	}
 
@@ -91,6 +99,10 @@ export class CardQueryService {
 				reverseOf: card.reverseOf,
 				noteId: card.noteId,
 				templateOrd: card.templateOrd,
+				ioImagePath: card.ioImagePath,
+				ioRegionsJson: card.ioRegionsJson,
+				ioGroupKey: card.ioGroupKey,
+				ioParentId: card.ioParentId,
 			}));
 	}
 }

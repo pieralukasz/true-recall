@@ -780,6 +780,12 @@ export class ReviewView extends ItemView {
 		);
 		menu.addItem((item) =>
 			item
+				.setTitle("Add image occlusion")
+				.setIcon("image")
+				.onClick(() => void this.cardActionsHandler.handleAddImageOcclusion()),
+		);
+		menu.addItem((item) =>
+			item
 				.setTitle("Open source note")
 				.setIcon("external-link")
 				.onClick(() => this.handleOpenSourceNote()),

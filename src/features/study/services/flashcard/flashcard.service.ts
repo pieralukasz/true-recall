@@ -11,6 +11,10 @@ import {
 	type GeneratedCard,
 } from "@features/core/services/card-generation.service";
 import {
+	normalizeIOImagePath,
+	serializeIODefinition,
+} from "@features/image-occlusion/io-definition";
+import {
 	renderTemplate,
 	deriveCardType,
 } from "@features/core/services/template-engine";
@@ -30,7 +34,12 @@ import type {
 	TrueRecallSettings,
 } from "@shared/types";
 import { createDefaultFSRSData } from "@shared/types";
-import type { Note, NoteType } from "@shared/types/note.types";
+import type { IODefinition } from "@features/image-occlusion/types";
+import {
+	BUILTIN_IMAGE_OCCLUSION_ID,
+	type Note,
+	type NoteType,
+} from "@shared/types/note.types";
 import { type App, TFile, type WorkspaceLeaf } from "obsidian";
 
 export interface ScanResult {
@@ -63,6 +72,19 @@ export interface CreateNoteResult {
 
 export interface UpdateNoteFieldsResult {
 	updatedCardIds: string[];
+}
+
+export interface CreateImageOcclusionNoteParams {
+	imagePath: string;
+	definition: IODefinition;
+	sourceUid?: string;
+	sourceText?: string;
+	createdVia?: string;
+}
+
+export interface UpdateImageOcclusionNoteParams {
+	imagePath: string;
+	definition: IODefinition;
 }
 
 export class FlashcardManager {
@@ -425,6 +447,41 @@ export class FlashcardManager {
 		return { note, cards };
 	}
 
+	createImageOcclusionNote(
+		params: CreateImageOcclusionNoteParams,
+	): CreateNoteResult {
+		const imagePath = normalizeIOImagePath(params.imagePath);
+		if (!imagePath) {
+			throw new Error("Image path is required");
+		}
+
+		return this.createNote({
+			noteTypeId: BUILTIN_IMAGE_OCCLUSION_ID,
+			fields: {
+				Image: imagePath,
+				Regions: serializeIODefinition(params.definition),
+			},
+			sourceUid: params.sourceUid,
+			sourceText: params.sourceText,
+			createdVia: params.createdVia ?? "manual",
+		});
+	}
+
+	updateImageOcclusionNote(
+		noteId: string,
+		params: UpdateImageOcclusionNoteParams,
+	): UpdateNoteFieldsResult {
+		const imagePath = normalizeIOImagePath(params.imagePath);
+		if (!imagePath) {
+			throw new Error("Image path is required");
+		}
+
+		return this.updateNoteFields(noteId, {
+			Image: imagePath,
+			Regions: serializeIODefinition(params.definition),
+		});
+	}
+
 	/**
 	 * Create multiple Notes from parsed cards in bulk.
 	 * Returns all created cards for notification.
@@ -497,6 +554,10 @@ export class FlashcardManager {
 		// Update the note
 		this.store.notes.update(noteId, { fields });
 
+		if (noteType.id === BUILTIN_IMAGE_OCCLUSION_ID) {
+			return this.reconcileImageOcclusionCards(note, noteType, fields);
+		}
+
 		// Recompute Q/A for all cards belonging to this note
 		// Cards are stored with note_id and template_ord; Q/A is computed at read
 		// time via JOIN. But we need to handle incremental card generation if new
@@ -519,6 +580,59 @@ export class FlashcardManager {
 			const fsrsData = this.createCardFromGenerated(gen, updatedNote, noteType);
 			updatedCardIds.push(fsrsData.id);
 		}
+
+		if (updatedCardIds.length > 0) {
+			notifyCardChange({
+				type: "bulk",
+				cardIds: updatedCardIds,
+			});
+		}
+
+		return { updatedCardIds };
+	}
+
+	private reconcileImageOcclusionCards(
+		note: Note,
+		noteType: NoteType,
+		fields: Record<string, string>,
+	): UpdateNoteFieldsResult {
+		const updatedNote: Note = { ...note, fields };
+		const existingCards = this.store!.cards.getCardsByNoteId(note.id);
+		const existingOrds = new Set(
+			existingCards.map((card) => card.templateOrd ?? 0),
+		);
+
+		const desiredGenerated = generateCardsForNote(updatedNote, noteType);
+		const desiredOrds = new Set(desiredGenerated.map((card) => card.templateOrd));
+
+		// Keep existing cards whose ord still exists in new definition.
+		const keptCards = existingCards.filter((card) =>
+			desiredOrds.has(card.templateOrd ?? 0),
+		);
+
+		const removedCardIds = existingCards
+			.filter((card) => !desiredOrds.has(card.templateOrd ?? 0))
+			.map((card) => card.id);
+
+		const createdCards: FSRSCardData[] = [];
+		for (const gen of desiredGenerated) {
+			if (existingOrds.has(gen.templateOrd)) continue;
+			createdCards.push(this.createCardFromGenerated(gen, updatedNote, noteType));
+		}
+
+		if (removedCardIds.length > 0) {
+			this.store!.cards.bulkSoftDelete(removedCardIds);
+			notifyCardChange({
+				type: "bulk",
+				cardIds: removedCardIds,
+				action: "removed",
+			});
+		}
+
+		const updatedCardIds = [
+			...keptCards.map((card) => card.id),
+			...createdCards.map((card) => card.id),
+		];
 
 		if (updatedCardIds.length > 0) {
 			notifyCardChange({

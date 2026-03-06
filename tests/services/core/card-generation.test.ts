@@ -257,6 +257,42 @@ describe("card generation from notes", () => {
 			expect(cards[0]!.templateOrd).toBe(0);
 			expect(cards[1]!.templateOrd).toBe(1);
 		});
+
+		it("v1 definition with groupKey ords → ords follow group keys", () => {
+			const regions = JSON.stringify({
+				version: 1,
+				maskMode: "solo",
+				regions: [
+					{
+						id: "r1",
+						x: 0.1,
+						y: 0.1,
+						w: 0.2,
+						h: 0.2,
+						shape: "rect",
+						groupKey: "2",
+					},
+					{
+						id: "r2",
+						x: 0.4,
+						y: 0.1,
+						w: 0.2,
+						h: 0.2,
+						shape: "ellipse",
+						groupKey: "5",
+					},
+				],
+			});
+			const note = makeNote({
+				noteTypeId: BUILTIN_IMAGE_OCCLUSION_ID,
+				fields: { Image: "img.png", Regions: regions },
+			});
+			const cards = generateCardsForNote(note, ioNoteType());
+
+			expect(cards).toHaveLength(2);
+			expect(cards[0]!.templateOrd).toBe(2);
+			expect(cards[1]!.templateOrd).toBe(5);
+		});
 	});
 
 	// ── Skip existing ──────────────────────────────────────────

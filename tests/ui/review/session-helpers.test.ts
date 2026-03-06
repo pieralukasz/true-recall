@@ -1,13 +1,17 @@
 /**
  * Tests for session helpers
  */
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import {
+	applyMutation,
 	buildGlobalPresetQueueContext,
 	filterActiveCards,
 	getEmptyQueueMessage,
 	isGlobalReviewSession,
 } from "../../../src/features/study/ui/review/helpers/session-helpers";
+import type { SqliteStoreService } from "../../../src/features/core/persistence/sqlite";
+import type { FlashcardManager } from "../../../src/features/study/services/flashcard/flashcard.service";
+import type { ReviewApi } from "../../../src/shared/store";
 import { State } from "ts-fsrs";
 import type { FSRSFlashcardItem } from "../../../src/shared/types";
 import type { FSRSPreset } from "../../../src/shared/types/settings.types";
@@ -164,6 +168,7 @@ describe("isGlobalReviewSession", () => {
 
 	it("returns false for scoped sessions", () => {
 		expect(isGlobalReviewSession({ projectPath: "Projects/A.md" })).toBe(false);
+		expect(isGlobalReviewSession({ sourceUidFilter: "uid-a" })).toBe(false);
 		expect(isGlobalReviewSession({ sourceNoteFilter: "Note A" })).toBe(false);
 		expect(isGlobalReviewSession({ sourceNoteFilters: ["Note A"] })).toBe(false);
 		expect(isGlobalReviewSession({ filePathFilter: "Notes/A.md" })).toBe(false);
@@ -264,5 +269,54 @@ describe("buildGlobalPresetQueueContext", () => {
 			newStudied: 2,
 			reviewsCompleted: 5,
 		});
+	});
+});
+
+describe("applyMutation", () => {
+	it("does not enqueue added card when sourceUidFilter does not match", () => {
+		const addCardToQueue = vi.fn();
+		const review = {
+			queue: [],
+			addCardToQueue,
+		} as unknown as ReviewApi;
+
+		const card = createMockCard({ id: "c-1", sourceUid: "uid-other" });
+		const flashcardManager = {
+			getCardsByIds: () => [card],
+		} as unknown as FlashcardManager;
+
+		applyMutation(
+			{ type: "added", cardId: "c-1" },
+			review,
+			flashcardManager,
+			{} as SqliteStoreService,
+			{ sourceUidFilter: "uid-target" },
+		);
+
+		expect(addCardToQueue).not.toHaveBeenCalled();
+	});
+
+	it("enqueues added card when sourceUidFilter matches", () => {
+		const addCardToQueue = vi.fn();
+		const review = {
+			queue: [],
+			addCardToQueue,
+		} as unknown as ReviewApi;
+
+		const card = createMockCard({ id: "c-2", sourceUid: "uid-target" });
+		const flashcardManager = {
+			getCardsByIds: () => [card],
+		} as unknown as FlashcardManager;
+
+		applyMutation(
+			{ type: "added", cardId: "c-2" },
+			review,
+			flashcardManager,
+			{} as SqliteStoreService,
+			{ sourceUidFilter: "uid-target" },
+		);
+
+		expect(addCardToQueue).toHaveBeenCalledOnce();
+		expect(addCardToQueue).toHaveBeenCalledWith(card);
 	});
 });

@@ -57,6 +57,7 @@ function createMockApp(): any {
 }
 
 function createMockStore(): any {
+	const noteTypes: any[] = [];
 	return {
 		cards: {
 			getCardIdByQuestion: vi.fn(() => null),
@@ -68,6 +69,14 @@ function createMockStore(): any {
 		transaction: vi.fn((fn: () => void) => fn()),
 		stats: {
 			upsertReviewLogFromRemote: vi.fn(),
+		},
+		noteTypes: {
+			getAll: vi.fn(() => noteTypes),
+			getBySlug: vi.fn(() => null),
+			create: vi.fn((nt: any) => noteTypes.push(nt)),
+		},
+		notes: {
+			create: vi.fn(),
 		},
 	};
 }

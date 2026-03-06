@@ -11,6 +11,7 @@ import type { ReviewService } from "@features/study/services/review.service";
 import { notify } from "@shared/services/notification.service";
 import type { ReviewApi } from "@shared/store";
 import type { TrueRecallSettings } from "@shared/types";
+import { BUILTIN_IMAGE_OCCLUSION_ID } from "@shared/types/note.types";
 import { MoveCardModal } from "@shared/ui/modals";
 import type { App } from "obsidian";
 import { Rating } from "ts-fsrs";
@@ -356,7 +357,10 @@ export class CardActionsHandler {
 		const modal = new QuickNoteEditorModal(this.deps.app, this.deps.plugin, {
 			mode: "add",
 			sourceUid: card.sourceUid,
-			defaultNoteTypeId: card.fsrs.noteTypeId ?? "builtin-basic",
+			defaultNoteTypeId:
+				card.fsrs.noteTypeId === BUILTIN_IMAGE_OCCLUSION_ID
+					? "builtin-basic"
+					: (card.fsrs.noteTypeId ?? "builtin-basic"),
 		});
 
 		const result = await modal.openAndWait();
@@ -368,6 +372,39 @@ export class CardActionsHandler {
 				id: crypto.randomUUID(),
 				actionType: "create-flashcard",
 				description: `Add ${cardCount} card${cardCount !== 1 ? "s" : ""}`,
+				timestamp: Date.now(),
+				payload: {
+					type: "batch-create",
+					cardIds: result.createdCards!.map((c) => c.id),
+				},
+			});
+			const noteName = card.sourceNotePath
+				?.split("/")
+				.pop()
+				?.replace(/\.md$/, "");
+			notify().cardsCreated(cardCount, noteName);
+		}
+	}
+
+	/**
+	 * Add a new image occlusion card linked to the same source as the current card.
+	 */
+	async handleAddImageOcclusion(): Promise<void> {
+		const card = this.deps.getReview().getCurrentCard();
+		if (!card) return;
+
+		const result = await this.deps.plugin.openImageOcclusionEditor({
+			mode: "add",
+			sourceUid: card.sourceUid,
+		});
+		if (result.cancelled) return;
+
+		const cardCount = result.createdCards?.length ?? 0;
+		if (cardCount > 0) {
+			this.deps.plugin.undoService?.push({
+				id: crypto.randomUUID(),
+				actionType: "create-flashcard",
+				description: `Add ${cardCount} image occlusion card${cardCount !== 1 ? "s" : ""}`,
 				timestamp: Date.now(),
 				payload: {
 					type: "batch-create",
@@ -408,6 +445,28 @@ export class CardActionsHandler {
 		}
 
 		const previousFields = { ...note.fields };
+
+		if (noteType.id === BUILTIN_IMAGE_OCCLUSION_ID) {
+			const result = await this.deps.plugin.openImageOcclusionEditor({
+				mode: "edit",
+				noteId: note.id,
+				note,
+			});
+			if (result.cancelled) return;
+
+			this.deps.plugin.undoService?.push({
+				id: crypto.randomUUID(),
+				actionType: "update-note-fields",
+				description: "Edit image occlusion",
+				timestamp: Date.now(),
+				payload: {
+					type: "update-note-fields",
+					noteId: note.id,
+					previousFields,
+				},
+			});
+			return;
+		}
 
 		const modal = new QuickNoteEditorModal(this.deps.app, this.deps.plugin, {
 			mode: "edit",

@@ -388,6 +388,103 @@ describe("AnkiConverterService", () => {
 		});
 	});
 
+	describe("note type metadata", () => {
+		it("sets ankiModelId from model", () => {
+			const model = createAnkiModel({ id: 5555 });
+			const note = createAnkiNote({ mid: model.id });
+			const card = createAnkiCard({ nid: note.id, did: 1 });
+			const deck = createAnkiDeck({ id: 1 });
+
+			const data = createApkgData({
+				notes: [note],
+				cards: [card],
+				models: [model],
+				decks: [deck],
+			});
+
+			const result = converter.convert(data);
+
+			expect(result[0]?.ankiModelId).toBe(5555);
+		});
+
+		it("sets templateOrd from card.ord", () => {
+			const model = createReversedModel();
+			const note = createAnkiNote({ mid: model.id, flds: "F\x1fB" });
+			const card0 = createAnkiCard({ id: 100, nid: note.id, did: 1, ord: 0 });
+			const card1 = createAnkiCard({ id: 101, nid: note.id, did: 1, ord: 1 });
+			const deck = createAnkiDeck({ id: 1 });
+
+			const data = createApkgData({
+				notes: [note],
+				cards: [card0, card1],
+				models: [model],
+				decks: [deck],
+			});
+
+			const result = converter.convert(data);
+
+			expect(result.find((c) => c.cardType === "basic")?.templateOrd).toBe(0);
+			expect(result.find((c) => c.cardType === "reversed")?.templateOrd).toBe(1);
+		});
+
+		it("builds fieldValues from model field names", () => {
+			const model = createAnkiModel({
+				id: 9000,
+				name: "Vocab",
+				flds: [
+					{ name: "Word", ord: 0 },
+					{ name: "Meaning", ord: 1 },
+					{ name: "Example", ord: 2 },
+				],
+			});
+			const note = createAnkiNote({
+				mid: model.id,
+				flds: "apple\x1fa fruit\x1fI ate an apple",
+			});
+			const card = createAnkiCard({ nid: note.id, did: 1 });
+			const deck = createAnkiDeck({ id: 1 });
+
+			const data = createApkgData({
+				notes: [note],
+				cards: [card],
+				models: [model],
+				decks: [deck],
+			});
+
+			const result = converter.convert(data);
+
+			expect(result[0]?.fieldValues).toEqual({
+				Word: "apple",
+				Meaning: "a fruit",
+				Example: "I ate an apple",
+			});
+		});
+
+		it("converts HTML in fieldValues", () => {
+			const model = createAnkiModel();
+			const note = createAnkiNote({
+				mid: model.id,
+				flds: "<b>bold Q</b>\x1f<i>italic A</i>",
+			});
+			const card = createAnkiCard({ nid: note.id, did: 1 });
+			const deck = createAnkiDeck({ id: 1 });
+
+			const data = createApkgData({
+				notes: [note],
+				cards: [card],
+				models: [model],
+				decks: [deck],
+			});
+
+			const result = converter.convert(data);
+
+			expect(result[0]?.fieldValues).toEqual({
+				Front: "**bold Q**",
+				Back: "*italic A*",
+			});
+		});
+	});
+
 	describe("extractMediaFiles", () => {
 		function getMediaFiles(flds: string): string[] {
 			const model = createAnkiModel();

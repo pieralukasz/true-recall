@@ -8,11 +8,15 @@ import {
 } from "../../../src/features/study/ui/review/helpers/type-in-flow";
 import type { FSRSFlashcardItem } from "../../../src/shared/types";
 
-function createCard(answer: string): FSRSFlashcardItem {
+function createCard(
+	answer: string,
+	cardType: FSRSFlashcardItem["cardType"] = "basic",
+): FSRSFlashcardItem {
 	return {
 		id: "card-1",
 		question: "Q",
 		answer,
+		cardType,
 		fsrs: {
 			id: "card-1",
 			due: new Date().toISOString(),
@@ -46,6 +50,12 @@ describe("type-in flow helpers", () => {
 		expect(isTypeInRequiredForCard(createCard("A"), true)).toBe(true);
 		expect(isTypeInRequiredForCard(createCard(""), true)).toBe(false);
 		expect(isTypeInRequiredForCard(createCard("A"), false)).toBe(false);
+		expect(
+			isTypeInRequiredForCard(
+				createCard("Reveal image occlusion", "image-occlusion"),
+				true,
+			),
+		).toBe(false);
 	});
 
 	it("runs AI grading only when AI is enabled and typed answer is non-empty", () => {
