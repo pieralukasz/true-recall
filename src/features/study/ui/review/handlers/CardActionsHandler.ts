@@ -507,6 +507,74 @@ export class CardActionsHandler {
 	}
 
 	/**
+	 * Change the note type for the current card's note.
+	 * Opens ChangeNoteTypeModal, then reconciles cards and updates the review queue.
+	 */
+	async handleChangeNoteType(): Promise<void> {
+		const card = this.deps.getReview().getCurrentCard();
+		if (!card?.noteId) return;
+
+		const note = this.deps.cardStore.notes.getById(card.noteId);
+		if (!note) {
+			notify().error("Note not found");
+			return;
+		}
+
+		const currentNoteType = this.deps.cardStore.noteTypes.getById(
+			note.noteTypeId,
+		);
+		if (!currentNoteType) {
+			notify().error("Note type not found");
+			return;
+		}
+
+		const { ChangeNoteTypeModal } = await import(
+			"@features/library/modals/ChangeNoteTypeModal"
+		);
+
+		const allNoteTypes = this.deps.cardStore.noteTypes.getAll();
+		const modal = new ChangeNoteTypeModal(this.deps.app, {
+			currentNoteType,
+			availableNoteTypes: allNoteTypes,
+			noteCount: 1,
+		});
+
+		const result = await modal.openAndWait();
+		if (
+			result.cancelled ||
+			!result.targetNoteTypeId ||
+			!result.fieldMapping
+		)
+			return;
+
+		const r = this.deps.flashcardManager.changeNoteType(
+			card.noteId,
+			result.targetNoteTypeId,
+			result.fieldMapping,
+		);
+
+		// Remove deleted cards from review queue
+		for (const id of r.deletedCardIds) {
+			this.deps.getReview().removeCardById(id);
+		}
+		// If current card was not kept, remove it too
+		if (!r.keptCardIds.includes(card.id)) {
+			this.deps.getReview().removeCardById(card.id);
+		}
+
+		if (!this.deps.getReview().isComplete()) {
+			this.callbacks.onUpdateSchedulingPreview();
+		}
+
+		const parts: string[] = ["Note type changed"];
+		if (r.createdCardIds.length > 0)
+			parts.push(`${r.createdCardIds.length} cards created`);
+		if (r.deletedCardIds.length > 0)
+			parts.push(`${r.deletedCardIds.length} cards removed`);
+		notify().success(parts.join(", "));
+	}
+
+	/**
 	 * Undo the last action (delegated to global UndoService)
 	 * All undo logic is now unified in UndoService for proper LIFO ordering
 	 */

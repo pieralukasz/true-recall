@@ -763,6 +763,14 @@ export class ReviewView extends ItemView {
 		);
 		menu.addItem((item) =>
 			item
+				.setTitle("Change note type")
+				.setIcon("replace")
+				.onClick(
+					() => void this.cardActionsHandler.handleChangeNoteType(),
+				),
+		);
+		menu.addItem((item) =>
+			item
 				.setTitle("Add flashcard (a)")
 				.setIcon("plus")
 				.onClick(() => void this.cardActionsHandler.handleAddNewFlashcard()),

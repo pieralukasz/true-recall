@@ -8,6 +8,7 @@ interface ActionBarProps {
 	noteTypeId: string;
 	onNoteTypeChange: (id: string) => void;
 	isEdit: boolean;
+	onChangeType?: () => void;
 	showSourcePicker: boolean;
 	selectedSourceNote: TFile | null;
 	onSourceSelect: (file: TFile | null) => void;
@@ -18,6 +19,7 @@ export function ActionBar({
 	noteTypeId,
 	onNoteTypeChange,
 	isEdit,
+	onChangeType,
 	showSourcePicker,
 	selectedSourceNote,
 	onSourceSelect,
@@ -29,6 +31,14 @@ export function ActionBar({
 				onChange={onNoteTypeChange}
 				disabled={isEdit}
 			/>
+			{isEdit && onChangeType && (
+				<Clickable
+					class="ep:text-ui-smaller ep:text-obs-accent hover:ep:underline"
+					onClick={onChangeType}
+				>
+					Change
+				</Clickable>
+			)}
 
 			{showSourcePicker && (
 				<div class="ep:flex-1 ep:min-w-[60%] ep:flex ep:items-center ep:gap-1">
