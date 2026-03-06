@@ -1,7 +1,8 @@
+import { ChangeNoteTypeModal } from "@features/library/modals/ChangeNoteTypeModal";
 import { Clickable } from "@shared/ui/components";
 import { notify } from "@shared/services/notification.service";
 import { notifyCardChange } from "@shared/services/signals";
-import { usePlugin } from "@shared/ui/preact";
+import { useApp, usePlugin } from "@shared/ui/preact";
 import { useCallback } from "preact/hooks";
 
 interface BulkActionsBarProps {
@@ -19,6 +20,7 @@ export function BulkActionsBar({
 	onSelectAll,
 	totalCount,
 }: BulkActionsBarProps) {
+	const app = useApp();
 	const plugin = usePlugin();
 	const ids = Array.from(selectedIds);
 
@@ -42,6 +44,57 @@ export function BulkActionsBar({
 		notify().success(`Reset ${count} cards`);
 		onClearSelection();
 	}, [ids, plugin]);
+
+	const handleChangeType = useCallback(async () => {
+		const noteInfos = plugin.cardStore.cards.getNoteInfoForCardIds(ids);
+		if (noteInfos.length === 0) return;
+
+		const uniqueTypeIds = new Set(noteInfos.map((n) => n.noteTypeId));
+		if (uniqueTypeIds.size > 1) {
+			notify().error(
+				"Selected cards have different note types. Select cards of one type.",
+			);
+			return;
+		}
+
+		const currentTypeId = noteInfos[0]!.noteTypeId;
+		const currentNoteType =
+			plugin.cardStore.noteTypes.getById(currentTypeId);
+		if (!currentNoteType) return;
+
+		const allNoteTypes = plugin.cardStore.noteTypes.getAll();
+
+		const modal = new ChangeNoteTypeModal(app, {
+			currentNoteType,
+			availableNoteTypes: allNoteTypes,
+			noteCount: noteInfos.length,
+		});
+
+		const result = await modal.openAndWait();
+		if (result.cancelled || !result.targetNoteTypeId || !result.fieldMapping)
+			return;
+
+		let totalKept = 0;
+		let totalCreated = 0;
+		let totalDeleted = 0;
+
+		for (const info of noteInfos) {
+			const r = plugin.flashcardManager.changeNoteType(
+				info.noteId,
+				result.targetNoteTypeId,
+				result.fieldMapping,
+			);
+			totalKept += r.keptCardIds.length;
+			totalCreated += r.createdCardIds.length;
+			totalDeleted += r.deletedCardIds.length;
+		}
+
+		const parts: string[] = [`${noteInfos.length} note(s) changed`];
+		if (totalCreated > 0) parts.push(`${totalCreated} cards created`);
+		if (totalDeleted > 0) parts.push(`${totalDeleted} cards removed`);
+		notify().success(parts.join(", "));
+		onClearSelection();
+	}, [ids, plugin, app]);
 
 	const handleDelete = useCallback(() => {
 		if (!confirm(`Delete ${ids.length} cards? This cannot be undone.`))
@@ -71,6 +124,10 @@ export function BulkActionsBar({
 				<ActionButton label="Suspend" onClick={handleSuspend} />
 				<ActionButton label="Unsuspend" onClick={handleUnsuspend} />
 				<ActionButton label="Reset" onClick={handleReset} />
+				<ActionButton
+					label="Change type"
+					onClick={handleChangeType}
+				/>
 				<ActionButton
 					label="Delete"
 					onClick={handleDelete}

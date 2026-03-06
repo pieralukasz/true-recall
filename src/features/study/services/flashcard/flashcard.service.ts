@@ -76,6 +76,12 @@ export interface UpdateNoteFieldsResult {
 	updatedCardIds: string[];
 }
 
+export interface ChangeNoteTypeResult {
+	keptCardIds: string[];
+	createdCardIds: string[];
+	deletedCardIds: string[];
+}
+
 export interface CreateImageOcclusionNoteParams {
 	imagePath: string;
 	definition: IODefinition;
@@ -594,6 +600,74 @@ export class FlashcardManager {
 		}
 
 		return { updatedCardIds };
+	}
+
+	changeNoteType(
+		noteId: string,
+		newNoteTypeId: string,
+		fieldMapping: Record<string, string>,
+	): ChangeNoteTypeResult {
+		if (!this.store) throw new Error("Store not initialized");
+
+		const note = this.store.notes.getById(noteId);
+		if (!note) throw new Error(`Note "${noteId}" not found`);
+
+		const newNoteType = this.store.noteTypes.getById(newNoteTypeId);
+		if (!newNoteType) throw new Error(`Note type "${newNoteTypeId}" not found`);
+
+		if (note.noteTypeId === newNoteTypeId) {
+			return { keptCardIds: [], createdCardIds: [], deletedCardIds: [] };
+		}
+
+		// Remap fields: fieldMapping is newFieldName → oldFieldName
+		const newFields: Record<string, string> = {};
+		for (const field of newNoteType.fields) {
+			const oldFieldName = fieldMapping[field];
+			newFields[field] = oldFieldName ? (note.fields[oldFieldName] ?? "") : "";
+		}
+
+		// Update note
+		this.store.notes.update(noteId, {
+			noteTypeId: newNoteTypeId,
+			fields: newFields,
+		});
+
+		// Reconcile cards
+		const updatedNote: Note = { ...note, noteTypeId: newNoteTypeId, fields: newFields };
+		const existingCards = this.store.cards.getCardsByNoteId(noteId);
+		const existingOrds = new Set(existingCards.map((c) => c.templateOrd ?? 0));
+
+		const desiredGenerated = generateCardsForNote(updatedNote, newNoteType);
+		const desiredOrds = new Set(desiredGenerated.map((g) => g.templateOrd));
+
+		// Keep cards whose templateOrd still exists
+		const keptCardIds = existingCards
+			.filter((c) => desiredOrds.has(c.templateOrd ?? 0))
+			.map((c) => c.id);
+
+		// Delete orphaned cards
+		const deletedCardIds = existingCards
+			.filter((c) => !desiredOrds.has(c.templateOrd ?? 0))
+			.map((c) => c.id);
+
+		if (deletedCardIds.length > 0) {
+			this.store.cards.bulkSoftDelete(deletedCardIds);
+		}
+
+		// Create new cards for new ords
+		const createdCardIds: string[] = [];
+		for (const gen of desiredGenerated) {
+			if (existingOrds.has(gen.templateOrd)) continue;
+			const card = this.createCardFromGenerated(gen, updatedNote, newNoteType);
+			createdCardIds.push(card.id);
+		}
+
+		const allAffectedIds = [...keptCardIds, ...createdCardIds, ...deletedCardIds];
+		if (allAffectedIds.length > 0) {
+			notifyCardChange({ type: "bulk", cardIds: allAffectedIds });
+		}
+
+		return { keptCardIds, createdCardIds, deletedCardIds };
 	}
 
 	private reconcileImageOcclusionCards(

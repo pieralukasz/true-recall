@@ -101,6 +101,10 @@ export class NoteActions {
 		const sets: string[] = [];
 		const params: (string | number | null)[] = [];
 
+		if (updates.noteTypeId !== undefined) {
+			sets.push("note_type_id = ?");
+			params.push(updates.noteTypeId);
+		}
 		if (updates.fields !== undefined) {
 			sets.push("fields_json = ?");
 			params.push(JSON.stringify(updates.fields));

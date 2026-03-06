@@ -15,6 +15,8 @@ import {
 } from "../../../../src/shared/types/note.types";
 import { generateCardsForNote } from "../../../../src/features/core/services/card-generation.service";
 import { renderTemplate } from "../../../../src/features/core/services/template-engine";
+import { NoteActions } from "../../../../src/features/core/persistence/sqlite/modules/NoteActions";
+import { CardActions } from "../../../../src/features/core/persistence/sqlite/modules/CardActions";
 import {
 	TestSqliteDatabase,
 	createTestNoteType,
@@ -118,11 +120,15 @@ function seedBuiltinTypes(db: TestSqliteDatabase): void {
 
 describe("Note CRUD Integration", () => {
 	let db: TestSqliteDatabase;
+	let noteActions: NoteActions;
+	let cardActions: CardActions;
 
 	beforeEach(async () => {
 		db = new TestSqliteDatabase();
 		await db.init();
 		seedBuiltinTypes(db);
+		noteActions = new NoteActions(db as never);
+		cardActions = new CardActions(db as never);
 	});
 
 	afterEach(() => {
@@ -562,6 +568,96 @@ describe("Note CRUD Integration", () => {
 				`SELECT COUNT(*) as cnt FROM cards`,
 			);
 			expect(dbCount!.cnt).toBe(75);
+		});
+	});
+
+	// ── Change note type ──────────────────────────────────────
+
+	describe("change note type", () => {
+		it("Basic → custom 3-field type remaps fields correctly", () => {
+			const vocabType = createTestNoteType({
+				id: "vocab-change",
+				name: "Vocab",
+				type: 0,
+				fields: ["Word", "Meaning", "Example"],
+				templates: [
+					{
+						name: "Card 1",
+						ordinal: 0,
+						qfmt: "{{Word}}",
+						afmt: "{{Meaning}}",
+					},
+				],
+			});
+			insertNoteTypeDirect(db, vocabType);
+
+			const note = createTestNote({
+				id: "change-basic-note",
+				noteTypeId: BUILTIN_BASIC_ID,
+				fields: { Front: "Hello", Back: "Hola" },
+			});
+			insertNoteDirect(db, note);
+			insertV26Card(db, { id: "card-change-1", noteId: note.id, templateOrd: 0 });
+
+			// Change type: Front → Word, Back → Meaning
+			noteActions.update(note.id, {
+				noteTypeId: vocabType.id,
+				fields: { Word: "Hello", Meaning: "Hola", Example: "" },
+			});
+
+			const updated = noteActions.getById(note.id);
+			expect(updated?.noteTypeId).toBe("vocab-change");
+			expect(updated?.fields).toEqual({ Word: "Hello", Meaning: "Hola", Example: "" });
+		});
+
+		it("Basic-Reversed → Basic: card with ord=1 becomes orphan", () => {
+			const note = createTestNote({
+				id: "rev-to-basic-note",
+				noteTypeId: BUILTIN_BASIC_REVERSED_ID,
+				fields: { Front: "Cat", Back: "Gato" },
+			});
+			insertNoteDirect(db, note);
+			insertV26Card(db, { id: "rev-card-0", noteId: note.id, templateOrd: 0 });
+			insertV26Card(db, { id: "rev-card-1", noteId: note.id, templateOrd: 1 });
+
+			// Change to Basic (1 template, only ord 0)
+			noteActions.update(note.id, { noteTypeId: BUILTIN_BASIC_ID });
+
+			const basicType = createTestNoteType({
+				id: BUILTIN_BASIC_ID,
+				type: 0,
+				fields: ["Front", "Back"],
+				templates: [{ name: "Card 1", ordinal: 0, qfmt: "{{Front}}", afmt: "{{Back}}" }],
+			});
+			const updatedNote = noteActions.getById(note.id)!;
+
+			// Basic has only ord 0
+			const desiredCards = generateCardsForNote(updatedNote, basicType);
+			const desiredOrds = new Set(desiredCards.map((c) => c.templateOrd));
+			expect(desiredOrds).toEqual(new Set([0]));
+
+			const existingCards = cardActions.getCardsByNoteId(note.id);
+			expect(existingCards).toHaveLength(2); // ord 0 and ord 1 still in DB
+
+			const orphans = existingCards.filter((c) => !desiredOrds.has(c.templateOrd ?? 0));
+			expect(orphans).toHaveLength(1);
+			expect(orphans[0]!.templateOrd).toBe(1);
+		});
+
+		it("getNoteInfoForCardIds returns unique note+type pairs", () => {
+			const note = createTestNote({
+				id: "info-note",
+				noteTypeId: BUILTIN_BASIC_REVERSED_ID,
+				fields: { Front: "A", Back: "B" },
+			});
+			insertNoteDirect(db, note);
+			insertV26Card(db, { id: "info-card-0", noteId: note.id, templateOrd: 0 });
+			insertV26Card(db, { id: "info-card-1", noteId: note.id, templateOrd: 1 });
+
+			const infos = cardActions.getNoteInfoForCardIds(["info-card-0", "info-card-1"]);
+			expect(infos).toHaveLength(1);
+			expect(infos[0]!.noteId).toBe("info-note");
+			expect(infos[0]!.noteTypeId).toBe(BUILTIN_BASIC_REVERSED_ID);
 		});
 	});
 });
