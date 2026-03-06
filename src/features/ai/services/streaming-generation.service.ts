@@ -6,10 +6,7 @@ import {
 	buildLanguageSuffix,
 	type GenerationMode,
 } from "@features/ai/prompts/default-prompts";
-import type {
-	CreateNoteParams,
-	FlashcardManager,
-} from "@features/study/services/flashcard/flashcard.service";
+import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
 import type { NoteType } from "@shared/types/note.types";
 import type { TrueRecallSettings } from "@shared/types/settings.types";
 import { Notice, type TFile } from "obsidian";
@@ -20,15 +17,15 @@ import {
 import { IncrementalFlashcardParser } from "./incremental-flashcard-parser";
 import { AIRequestError } from "./openrouter-client";
 import { StreamingOpenRouterClient } from "./streaming-openrouter-client";
+import { processCardEvents } from "./process-card-events";
 import {
-	addStreamedCard,
 	finishStreaming,
 	startStreaming,
 	streamingGeneration,
 	updatePartial,
 } from "./streaming-state";
 
-const SOURCE_TRACKING_SUFFIX = `
+export const SOURCE_TRACKING_SUFFIX = `
 
 SOURCE TRACKING (MANDATORY):
 After each card's fields, on a new line, add: <!-- source: [exact verbatim quote from the input text] -->
@@ -202,46 +199,13 @@ export class StreamingGenerationService {
 		onPartial: (q: string | null, a: string | null) => void,
 		onCount: (created: number, dups: number) => void,
 	): Promise<void> {
-		for (const event of events) {
-			if (event.type === "card_complete" && event.block) {
-				try {
-					const sourceUid = await this.flashcardManager
-						.getFrontmatterService()
-						.getSourceNoteUid(sourceFile);
-
-					const params: CreateNoteParams = {
-						noteTypeId: event.block.noteTypeId,
-						fields: event.block.fields,
-						alwaysTypeIn: event.block.alwaysTypeIn,
-						sourceUid: sourceUid ?? undefined,
-						sourceText: event.block.sourceText,
-						createdVia: "ai",
-					};
-
-					const result = this.flashcardManager.createNote(params);
-
-					if (result.cards.length > 0) {
-						onCount(result.cards.length, 0);
-						// For UI display, show first card's question/answer
-						const firstField = Object.values(event.block.fields)[0] ?? "";
-						const secondField = Object.values(event.block.fields)[1] ?? "";
-						addStreamedCard({
-							id: result.cards[0]?.id,
-							question: firstField,
-							answer: secondField,
-							sourceText: event.block.sourceText,
-						});
-						await new Promise<void>((r) => requestAnimationFrame(() => r()));
-					} else {
-						onCount(0, 1);
-					}
-				} catch {
-					onCount(0, 1);
-				}
-			} else if (event.type === "partial_update") {
-				onPartial(event.partialQuestion ?? null, event.partialAnswer ?? null);
-			}
-		}
+		return processCardEvents(
+			events,
+			sourceFile,
+			this.flashcardManager,
+			onPartial,
+			onCount,
+		);
 	}
 
 	private getPrompt(

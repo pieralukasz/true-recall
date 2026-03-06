@@ -41,11 +41,11 @@ export function usePanelActions({
 			return;
 		}
 
-		const { StreamingGenerationService } = await import(
-			"@features/ai/services/streaming-generation.service"
+		const { ChunkedGenerationService } = await import(
+			"@features/ai/services/chunked-generation.service"
 		);
 
-		const streamingService = new StreamingGenerationService(
+		const chunkedService = new ChunkedGenerationService(
 			() => plugin.settings,
 			plugin.flashcardManager,
 		);
@@ -53,11 +53,13 @@ export function usePanelActions({
 		try {
 			const basicNoteType =
 				plugin.cardStore?.noteTypes?.getById(BUILTIN_BASIC_ID) ?? null;
-			const result = await streamingService.generateStreaming(
+			const result = await chunkedService.generateFromNote(
 				content,
 				"basic",
 				currentFile,
 				basicNoteType,
+				undefined,
+				app,
 			);
 
 			if (result.created === 0 && result.duplicates === 0) {

@@ -96,6 +96,16 @@ export class BackupService {
 			data.buffer as ArrayBuffer,
 		);
 
+		// Verify backup was written correctly
+		const written = await this.app.vault.adapter.readBinary(backupPath);
+		const header = new TextDecoder().decode(
+			new Uint8Array(written).slice(0, 16),
+		);
+		if (!header.startsWith("SQLite format 3")) {
+			await this.app.vault.adapter.remove(backupPath);
+			throw new Error("Backup verification failed — corrupt write detected");
+		}
+
 		return backupPath;
 	}
 

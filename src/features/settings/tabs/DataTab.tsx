@@ -13,12 +13,12 @@ export function DataTab() {
 	return (
 		<div class="ep:flex ep:flex-col ep:gap-3">
 			<DeviceDatabaseSection />
-			<IntegrityCheckSection />
+			<ManualBackupSection />
 			<BackupSettingsSection />
 			<BackgroundBackupSection />
 			<SmartRetentionSection />
 			<BackupStatusSection />
-			<ManualBackupSection />
+			<IntegrityCheckSection />
 			<ImportExportSection />
 		</div>
 	);

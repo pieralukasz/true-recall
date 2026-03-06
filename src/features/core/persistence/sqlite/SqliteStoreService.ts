@@ -87,9 +87,9 @@ export class SqliteStoreService {
 			this.isDirty = true;
 		}
 
-		// Detect and soft-delete orphaned records (runs once, skips on subsequent loads)
-		const integrity = new IntegrityCheckService(this.db);
-		integrity.checkAndRepairOnce();
+		// Reset per-session flag so integrity check runs on each plugin load
+		this.db.run("DELETE FROM meta WHERE key = 'integrity_checked'");
+		this.integrity.checkAndRepairOnce();
 
 		// Keep builtin note type templates in sync with code (idempotent, fixes stale DBs)
 		this.noteTypes.refreshBuiltins();
