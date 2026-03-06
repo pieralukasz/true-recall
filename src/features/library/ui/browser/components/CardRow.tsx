@@ -58,6 +58,8 @@ export function CardRow({
 				right: 0,
 				height: "36px",
 			}}
+			role="button"
+			tabIndex={0}
 			onClick={(e) => {
 				if (e.ctrlKey || e.metaKey || e.shiftKey) {
 					onSelect(card.id, {
@@ -66,6 +68,12 @@ export function CardRow({
 						metaKey: e.metaKey,
 					});
 				} else {
+					onPreview(card);
+				}
+			}}
+			onKeyDown={(e) => {
+				if (e.key === "Enter" || e.key === " ") {
+					e.preventDefault();
 					onPreview(card);
 				}
 			}}

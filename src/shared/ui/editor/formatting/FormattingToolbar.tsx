@@ -130,6 +130,13 @@ export function FormattingToolbar({
 
 	const prevent = (e: MouseEvent) => e.preventDefault();
 
+	const handleKeyDown = (action: () => void) => (e: KeyboardEvent) => {
+		if (e.key === "Enter" || e.key === " ") {
+			e.preventDefault();
+			action();
+		}
+	};
+
 	const btnCls =
 		"ep:px-1.5 ep:py-1 ep:text-ui-smaller ep:text-obs-muted ep:hover:text-obs-normal ep:hover:bg-obs-tertiary ep:rounded ep:cursor-pointer ep:select-none ep:leading-tight";
 
@@ -137,6 +144,7 @@ export function FormattingToolbar({
 		<div class="ep:flex ep:items-center ep:gap-0.5 ep:px-2 ep:py-1 ep:bg-obs-secondary ep:rounded-md ep:border ep:border-obs-border ep:w-full">
 			<div
 				role="button"
+				tabIndex={0}
 				title="Bold (Ctrl+B)"
 				class={`${btnCls} ep:font-bold`}
 				onMouseDown={(e: MouseEvent) => {
@@ -144,11 +152,16 @@ export function FormattingToolbar({
 					const v = getEditorView();
 					if (v) toggleMarker(v, "**");
 				}}
+				onKeyDown={handleKeyDown(() => {
+					const v = getEditorView();
+					if (v) toggleMarker(v, "**");
+				})}
 			>
 				B
 			</div>
 			<div
 				role="button"
+				tabIndex={0}
 				title="Italic (Ctrl+I)"
 				class={`${btnCls} ep:italic`}
 				onMouseDown={(e: MouseEvent) => {
@@ -156,11 +169,16 @@ export function FormattingToolbar({
 					const v = getEditorView();
 					if (v) toggleMarker(v, "*");
 				}}
+				onKeyDown={handleKeyDown(() => {
+					const v = getEditorView();
+					if (v) toggleMarker(v, "*");
+				})}
 			>
 				I
 			</div>
 			<div
 				role="button"
+				tabIndex={0}
 				title="Underline (Ctrl+U)"
 				class={`${btnCls} ep:underline`}
 				onMouseDown={(e: MouseEvent) => {
@@ -168,6 +186,10 @@ export function FormattingToolbar({
 					const v = getEditorView();
 					if (v) toggleAsymmetricMarker(v, "<u>", "</u>");
 				}}
+				onKeyDown={handleKeyDown(() => {
+					const v = getEditorView();
+					if (v) toggleAsymmetricMarker(v, "<u>", "</u>");
+				})}
 			>
 				U
 			</div>
@@ -176,6 +198,7 @@ export function FormattingToolbar({
 
 			<div
 				role="button"
+				tabIndex={0}
 				title="Inline code"
 				class={`${btnCls} ep:font-mono`}
 				onMouseDown={(e: MouseEvent) => {
@@ -183,11 +206,16 @@ export function FormattingToolbar({
 					const v = getEditorView();
 					if (v) toggleMarker(v, "`");
 				}}
+				onKeyDown={handleKeyDown(() => {
+					const v = getEditorView();
+					if (v) toggleMarker(v, "`");
+				})}
 			>
 				{"`"}
 			</div>
 			<div
 				role="button"
+				tabIndex={0}
 				title="Math (LaTeX)"
 				class={btnCls}
 				onMouseDown={(e: MouseEvent) => {
@@ -195,11 +223,16 @@ export function FormattingToolbar({
 					const v = getEditorView();
 					if (v) toggleMarker(v, "$");
 				}}
+				onKeyDown={handleKeyDown(() => {
+					const v = getEditorView();
+					if (v) toggleMarker(v, "$");
+				})}
 			>
 				$
 			</div>
 			<div
 				role="button"
+				tabIndex={0}
 				title="Wiki link"
 				class={`${btnCls} ep:text-[11px]`}
 				onMouseDown={(e: MouseEvent) => {
@@ -207,6 +240,10 @@ export function FormattingToolbar({
 					const v = getEditorView();
 					if (v) toggleAsymmetricMarker(v, "[[", "]]");
 				}}
+				onKeyDown={handleKeyDown(() => {
+					const v = getEditorView();
+					if (v) toggleAsymmetricMarker(v, "[[", "]]");
+				})}
 			>
 				[[]]
 			</div>
@@ -237,6 +274,7 @@ export function FormattingToolbar({
 							<div
 								key={swatch.name}
 								role="button"
+								tabIndex={0}
 								title={swatch.name}
 								class="ep:w-5 ep:h-5 ep:rounded ep:cursor-pointer ep:hover:scale-110 ep:transition-transform ep:border ep:border-obs-border"
 								style={{ backgroundColor: swatch.css }}
@@ -244,6 +282,7 @@ export function FormattingToolbar({
 									prevent(e);
 									handleColor(swatch.css);
 								}}
+								onKeyDown={handleKeyDown(() => handleColor(swatch.css))}
 							/>
 						))}
 					</div>
@@ -265,12 +304,14 @@ export function FormattingToolbar({
 					<Separator />
 					<div
 						role="button"
+						tabIndex={0}
 						title="Always type-in for created card"
 						class={`${btnCls} ${typeInEnabled ? "ep:text-obs-accent ep:bg-obs-accent/10" : ""}`}
 						onMouseDown={(e: MouseEvent) => {
 							prevent(e);
 							onTypeInToggle(!typeInEnabled);
 						}}
+						onKeyDown={handleKeyDown(() => onTypeInToggle(!typeInEnabled))}
 					>
 						Type in
 					</div>
@@ -294,13 +335,22 @@ function IconButton({
 	onMouseDown: (e: MouseEvent) => void;
 }) {
 	const ref = useIcon(iconId);
+	const handleKeyDown = (e: KeyboardEvent) => {
+		if (e.key === "Enter" || e.key === " ") {
+			e.preventDefault();
+			const mockEvent = { preventDefault: () => {} } as MouseEvent;
+			onMouseDown(mockEvent);
+		}
+	};
 	return (
 		<div
 			ref={ref}
 			role="button"
+			tabIndex={0}
 			title={title}
 			class="ep:px-1.5 ep:py-1 ep:text-obs-muted ep:hover:text-obs-normal ep:hover:bg-obs-tertiary ep:rounded ep:cursor-pointer ep:select-none [&>svg]:ep:w-3.5 [&>svg]:ep:h-3.5"
 			onMouseDown={onMouseDown}
+			onKeyDown={handleKeyDown}
 		/>
 	);
 }

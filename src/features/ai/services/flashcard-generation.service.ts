@@ -1,4 +1,5 @@
 import {
+	buildLanguageSuffix,
 	DEFAULT_PROMPTS,
 	type GenerationMode,
 } from "@features/ai/prompts/default-prompts";
@@ -81,7 +82,7 @@ export class FlashcardGenerationService {
 					return { blocks, mode };
 				}
 				new Notice(
-					"Token budget exceeded. Top up at truerecall.app or add your own OpenRouter API key.",
+					"Budget exceeded. Top up at truerecall.app/dashboard, or add your own OpenRouter API key in settings.",
 				);
 			}
 			throw error;
@@ -93,7 +94,10 @@ export class FlashcardGenerationService {
 		parser.feed(text);
 		const blocks = parser
 			.finish()
-			.filter((e): e is { type: "card_complete"; block: ParsedBlock } => e.type === "card_complete" && e.block !== null)
+			.filter(
+				(e): e is { type: "card_complete"; block: ParsedBlock } =>
+					e.type === "card_complete" && e.block !== null,
+			)
 			.map((e) => e.block);
 		if (text.trim() && blocks.length === 0) {
 			console.warn(
@@ -108,6 +112,9 @@ export class FlashcardGenerationService {
 		const settings = this.getSettings();
 		const customPrompt = settings.aiFlashcardPrompts?.[mode];
 		const basePrompt = customPrompt?.trim() || DEFAULT_PROMPTS[mode];
-		return basePrompt + SOURCE_TRACKING_SUFFIX;
+		const langSuffix = buildLanguageSuffix(
+			settings.generationLanguage ?? "auto",
+		);
+		return basePrompt + SOURCE_TRACKING_SUFFIX + langSuffix;
 	}
 }

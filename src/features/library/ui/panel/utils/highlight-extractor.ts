@@ -1,12 +1,7 @@
 const HIGHLIGHT_PATTERN = /==([^=]+)==/g;
 
 export function extractHighlights(content: string): string[] {
-	const matches: string[] = [];
-	let match;
-	while ((match = HIGHLIGHT_PATTERN.exec(content)) !== null) {
-		if (match[1]?.trim()) {
-			matches.push(match[1].trim());
-		}
-	}
-	return matches;
+	return Array.from(content.matchAll(HIGHLIGHT_PATTERN))
+		.map((match) => match[1]?.trim())
+		.filter((s): s is string => s !== undefined && s.length > 0);
 }

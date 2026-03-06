@@ -1,6 +1,8 @@
 import { LITELLM_PROXY_URL } from "@shared/constants";
 import type { TrueRecallSettings } from "@shared/types/settings.types";
 
+const MANAGED_DEFAULT_MODEL = "google/gemini-3-flash-preview";
+
 export interface AIClientConfig {
 	apiKey: string;
 	model: string;
@@ -24,7 +26,7 @@ export function resolveAIClientConfig(
 	if (settings.subscriptionKey) {
 		return {
 			apiKey: settings.subscriptionKey,
-			model: settings.aiModel,
+			model: MANAGED_DEFAULT_MODEL,
 			proxyUrl: LITELLM_PROXY_URL,
 			userId: settings.userId,
 		};
@@ -38,7 +40,7 @@ export function resolveAIClientConfig(
 
 	return {
 		apiKey: settings.openRouterApiKey,
-		model: settings.aiModel,
+		model: MANAGED_DEFAULT_MODEL,
 		proxyUrl: undefined,
 	};
 }
@@ -55,7 +57,7 @@ export function getBYOKFallbackConfig(
 
 	return {
 		apiKey: settings.openRouterApiKey,
-		model: settings.aiModel,
+		model: MANAGED_DEFAULT_MODEL,
 		proxyUrl: undefined,
 	};
 }

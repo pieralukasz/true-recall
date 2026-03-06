@@ -43,9 +43,9 @@ function CreateProjectBody({
 
 	return (
 		<>
-			<label class="ep:block ep:text-ui-small ep:text-obs-muted ep:mb-1">
+			<div class="ep:block ep:text-ui-small ep:text-obs-muted ep:mb-1">
 				Project name
-			</label>
+			</div>
 			<input
 				ref={nameRef}
 				type="text"
@@ -58,9 +58,9 @@ function CreateProjectBody({
 				}}
 			/>
 
-			<label class="ep:block ep:text-ui-small ep:text-obs-muted ep:mb-1">
+			<div class="ep:block ep:text-ui-small ep:text-obs-muted ep:mb-1">
 				Folder
-			</label>
+			</div>
 			<SearchInput
 				placeholder="Filter folders..."
 				ariaLabel="Filter folders"

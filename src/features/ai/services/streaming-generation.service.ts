@@ -2,7 +2,10 @@ import {
 	buildAutoPrompt,
 	buildBlockPrompt,
 } from "@features/ai/prompts/block-prompt-builder";
-import type { GenerationMode } from "@features/ai/prompts/default-prompts";
+import {
+	buildLanguageSuffix,
+	type GenerationMode,
+} from "@features/ai/prompts/default-prompts";
 import type {
 	CreateNoteParams,
 	FlashcardManager,
@@ -97,7 +100,7 @@ export class StreamingGenerationService {
 					);
 				}
 				new Notice(
-					"Token budget exceeded. Top up at truerecall.app or add your own OpenRouter API key.",
+					"Budget exceeded. Top up at truerecall.app/dashboard, or add your own OpenRouter API key in settings.",
 				);
 			}
 
@@ -247,6 +250,9 @@ export class StreamingGenerationService {
 		allNoteTypes?: NoteType[],
 	): string {
 		const settings = this.getSettings();
+		const langSuffix = buildLanguageSuffix(
+			settings.generationLanguage ?? "auto",
+		);
 
 		// Check for custom prompt override by slug
 		if (noteType?.slug) {
@@ -254,7 +260,7 @@ export class StreamingGenerationService {
 			const custom = (
 				settings.aiFlashcardPrompts as Record<string, string | undefined>
 			)?.[customKey];
-			if (custom?.trim()) return custom + SOURCE_TRACKING_SUFFIX;
+			if (custom?.trim()) return custom + SOURCE_TRACKING_SUFFIX + langSuffix;
 		}
 
 		// Check for legacy mode-based custom prompt
@@ -263,17 +269,19 @@ export class StreamingGenerationService {
 				mode as keyof typeof settings.aiFlashcardPrompts
 			];
 		if (typeof legacyCustom === "string" && legacyCustom.trim()) {
-			return legacyCustom + SOURCE_TRACKING_SUFFIX;
+			return legacyCustom + SOURCE_TRACKING_SUFFIX + langSuffix;
 		}
 
 		// Auto mode — list all NoteTypes
 		if (mode === "auto" && allNoteTypes && allNoteTypes.length > 0) {
-			return buildAutoPrompt(allNoteTypes) + SOURCE_TRACKING_SUFFIX;
+			return (
+				buildAutoPrompt(allNoteTypes) + SOURCE_TRACKING_SUFFIX + langSuffix
+			);
 		}
 
 		// Specific NoteType
 		if (noteType) {
-			return buildBlockPrompt(noteType) + SOURCE_TRACKING_SUFFIX;
+			return buildBlockPrompt(noteType) + SOURCE_TRACKING_SUFFIX + langSuffix;
 		}
 
 		// Fallback: use block format with builtin Basic type
@@ -287,7 +295,9 @@ export class StreamingGenerationService {
 				css: "",
 				isBuiltin: true,
 				slug: "basic",
-			} as NoteType) + SOURCE_TRACKING_SUFFIX
+			} as NoteType) +
+			SOURCE_TRACKING_SUFFIX +
+			langSuffix
 		);
 	}
 }

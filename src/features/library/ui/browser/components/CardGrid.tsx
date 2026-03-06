@@ -61,7 +61,15 @@ export function CardGrid({
 								? "ep:bg-obs-interactive/10 ep:border-obs-interactive/30"
 								: "hover:ep:bg-obs-modifier-hover"
 						}`}
+						role="button"
+						tabIndex={0}
 						onClick={() => onPreview(card)}
+						onKeyDown={(e) => {
+							if (e.key === "Enter" || e.key === " ") {
+								e.preventDefault();
+								onPreview(card);
+							}
+						}}
 						onContextMenu={(e) => {
 							e.preventDefault();
 							onSelect(card.id, { ctrlKey: true });

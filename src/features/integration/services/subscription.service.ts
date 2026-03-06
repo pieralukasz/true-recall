@@ -3,15 +3,19 @@ import { requestUrl } from "obsidian";
 
 export interface SubscriptionStatus {
 	tier: string;
+	plan_type: string;
 	budget_max: number;
 	budget_spent: number;
 	budget_remaining: number;
 	expires: string | null;
+	allowed_models: string[] | null;
+	trial_used: boolean;
 }
 
 export interface SubscriptionCacheUpdate {
 	isSubscriber: boolean;
 	subscriberTier?: string;
+	allowedModels?: string[];
 	userId?: string;
 }
 
@@ -38,6 +42,7 @@ export class SubscriptionService {
 			onCacheUpdate?.({
 				isSubscriber: true,
 				subscriberTier: status.tier,
+				allowedModels: status.allowed_models ?? undefined,
 			});
 
 			return status;

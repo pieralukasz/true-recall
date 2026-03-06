@@ -105,7 +105,7 @@ export function IOCardRenderer({
 					class="true-recall-io-render-image"
 					onLoad={handleImageLoad}
 				/>
-			{aspectRatio !== null && (
+				{aspectRatio !== null && (
 					<svg
 						class="true-recall-io-render-svg"
 						viewBox="0 0 1 1"
@@ -120,13 +120,6 @@ export function IOCardRenderer({
 								maskModeOverride ?? definition.maskMode,
 							)}${onRegionClick ? " true-recall-io-shape-clickable" : ""}`;
 
-							const handleShapeClick = onRegionClick
-								? (e: Event) => {
-										e.stopPropagation();
-										onRegionClick(info.ord);
-									}
-								: undefined;
-
 							if (info.region.shape === "ellipse") {
 								return (
 									<ellipse
@@ -136,9 +129,16 @@ export function IOCardRenderer({
 										cy={info.region.y + info.region.h / 2}
 										rx={info.region.w / 2}
 										ry={info.region.h / 2}
-										onClick={handleShapeClick}
-										role={onRegionClick ? "button" : undefined}
-										tabIndex={onRegionClick ? 0 : undefined}
+										{...(onRegionClick
+											? {
+													onClick: (e: Event) => {
+														e.stopPropagation();
+														onRegionClick(info.ord);
+													},
+													role: "button",
+													tabIndex: 0,
+												}
+											: {})}
 									/>
 								);
 							}
@@ -153,9 +153,16 @@ export function IOCardRenderer({
 									height={info.region.h}
 									rx={0.01}
 									ry={0.01}
-									onClick={handleShapeClick}
-									role={onRegionClick ? "button" : undefined}
-									tabIndex={onRegionClick ? 0 : undefined}
+									{...(onRegionClick
+										? {
+												onClick: (e: Event) => {
+													e.stopPropagation();
+													onRegionClick(info.ord);
+												},
+												role: "button",
+												tabIndex: 0,
+											}
+										: {})}
 								/>
 							);
 						})}

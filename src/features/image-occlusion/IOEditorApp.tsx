@@ -747,6 +747,7 @@ export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
 									width="14"
 									height="14"
 									class="ep:text-obs-muted"
+									aria-hidden="true"
 								>
 									<circle
 										cx="12"

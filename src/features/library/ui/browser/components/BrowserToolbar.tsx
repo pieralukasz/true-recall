@@ -86,6 +86,7 @@ export function BrowserToolbar({
 						fill="none"
 						stroke="currentColor"
 						stroke-width="2"
+						aria-hidden="true"
 					>
 						{sidebarVisible ? (
 							<>
@@ -124,6 +125,7 @@ export function BrowserToolbar({
 							fill="none"
 							stroke="currentColor"
 							stroke-width="2"
+							aria-hidden="true"
 						>
 							<rect x="3" y="3" width="7" height="7" rx="1" />
 							<rect x="14" y="3" width="7" height="7" rx="1" />

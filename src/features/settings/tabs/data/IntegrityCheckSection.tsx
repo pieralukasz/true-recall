@@ -1,6 +1,6 @@
 import { useSettings } from "@features/settings/hooks/useSettings";
 import { notify } from "@shared/services/notification.service";
-import { Clickable, FormCard, FormField } from "@shared/ui/components";
+import { ActionButton, FormCard, FormField } from "@shared/ui/components";
 import { useCallback, useState } from "preact/hooks";
 
 export function IntegrityCheckSection() {
@@ -48,14 +48,12 @@ export function IntegrityCheckSection() {
 				name="Check integrity"
 				description="Detect and repair orphaned cards, notes, and review logs"
 			>
-				<Clickable
-					class="mod-cta"
-					stopPropagation={false}
+				<ActionButton
+					label={running ? "Checking..." : "Check now"}
+					variant="primary"
 					onClick={handleCheck}
 					disabled={running}
-				>
-					{running ? "Checking..." : "Check now"}
-				</Clickable>
+				/>
 			</FormField>
 		</FormCard>
 	);
