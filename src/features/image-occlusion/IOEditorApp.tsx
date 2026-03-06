@@ -1,6 +1,10 @@
 import { ImageService } from "@features/integration/services/ImageService";
 import { createEmptyIODefinition, parseIODefinition } from "@features/image-occlusion/io-definition";
 import { IOCanvas } from "@features/image-occlusion/IOCanvas";
+import {
+	shouldImagePanelStartExpanded,
+	truncateMiddlePath,
+} from "@features/image-occlusion/ui-helpers";
 import type {
 	IODefinition,
 	IOEditorMode,
@@ -10,6 +14,7 @@ import type {
 import { Clickable } from "@shared/ui/components/Clickable";
 import { NotePickerCombobox } from "@shared/ui/components/NotePickerCombobox";
 import { PasteDropZone } from "@shared/ui/components/PasteDropZone";
+import { useIcon } from "@shared/ui/preact/hooks";
 import { useApp, usePlugin } from "@shared/ui/preact/ObsidianContext";
 import { isDesktop } from "@shared/utils/platform";
 import { isImageExtension } from "@shared/types";
@@ -38,6 +43,78 @@ function buildInitialImagePath(mode: IOEditorMode): string {
 	return "";
 }
 
+interface IconToolButtonProps {
+	icon: string;
+	label: string;
+	shortcut?: string;
+	active?: boolean;
+	danger?: boolean;
+	disabled?: boolean;
+	onClick: () => void;
+}
+
+function IconToolButton({
+	icon,
+	label,
+	shortcut,
+	active = false,
+	danger = false,
+	disabled = false,
+	onClick,
+}: IconToolButtonProps) {
+	const iconRef = useIcon(icon);
+	const tooltip = shortcut ? `${label} (${shortcut})` : label;
+
+	return (
+		<button
+			type="button"
+			class={`true-recall-io-icon-btn ${active ? "is-active" : ""} ${danger ? "is-danger" : ""}`}
+			aria-label={label}
+			title={tooltip}
+			onClick={onClick}
+			disabled={disabled}
+		>
+			<span ref={iconRef} />
+		</button>
+	);
+}
+
+interface RegionListItemProps {
+	region: IORegion;
+	selected: boolean;
+	onSelect: () => void;
+	onDelete: () => void;
+}
+
+function RegionListItem({
+	region,
+	selected,
+	onSelect,
+	onDelete,
+}: RegionListItemProps) {
+	return (
+		<div class={`true-recall-io-region-item ${selected ? "is-selected" : ""}`}>
+			<Clickable
+				class="true-recall-io-region-main"
+				onClick={() => onSelect()}
+				title={`Select region #${region.groupKey}`}
+			>
+				<span>#{region.groupKey}</span>
+				<span>{region.shape}</span>
+			</Clickable>
+			{selected && (
+				<IconToolButton
+					icon="trash-2"
+					label={`Delete region #${region.groupKey}`}
+					shortcut="Delete"
+					danger
+					onClick={onDelete}
+				/>
+			)}
+		</div>
+	);
+}
+
 export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
 	const app = useApp();
 	const plugin = usePlugin();
@@ -56,6 +133,9 @@ export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
 	const [selectedVaultPath, setSelectedVaultPath] = useState("");
 	const [selectedSourceNote, setSelectedSourceNote] = useState<TFile | null>(
 		null,
+	);
+	const [isImagePanelExpanded, setIsImagePanelExpanded] = useState(() =>
+		shouldImagePanelStartExpanded(buildInitialImagePath(mode)),
 	);
 
 	const imageService = useMemo(() => new ImageService(app), [app]);
@@ -121,6 +201,12 @@ export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
 		window.addEventListener("paste", handlePaste);
 		return () => window.removeEventListener("paste", handlePaste);
 	}, [handlePaste]);
+
+	useEffect(() => {
+		if (!imagePath) {
+			setIsImagePanelExpanded(true);
+		}
+	}, [imagePath]);
 
 	const selectedRegion = useMemo(
 		() => definition.regions.find((region) => region.id === selectedRegionId) ?? null,
@@ -191,6 +277,31 @@ export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
 		return "Source: linked note";
 	}, [linkedSourceNote, mode, plugin.flashcardManager, selectedSourceNote, showSourcePicker]);
 
+	const truncatedSourceTargetLabel = useMemo(
+		() => truncateMiddlePath(sourceTargetLabel),
+		[sourceTargetLabel],
+	);
+
+	const truncatedImagePath = useMemo(
+		() => truncateMiddlePath(imagePath || "No image selected"),
+		[imagePath],
+	);
+
+	const sourcePathForCopy = useMemo(() => {
+		if (mode.mode === "edit") {
+			const sourceUid = mode.note.sourceUid;
+			if (!sourceUid) return "";
+			const source = plugin.flashcardManager
+				.getSourceNoteService()
+				.resolveSourceNote(sourceUid);
+			return source.notePath ?? "";
+		}
+		if (showSourcePicker) {
+			return selectedSourceNote?.path ?? "";
+		}
+		return linkedSourceNote?.notePath ?? "";
+	}, [linkedSourceNote, mode, plugin.flashcardManager, selectedSourceNote, showSourcePicker]);
+
 	const resolveSourceUid = useCallback(async (): Promise<string | undefined> => {
 		if (mode.mode === "edit") return mode.note.sourceUid;
 		if (mode.sourceUid) return mode.sourceUid;
@@ -204,6 +315,16 @@ export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
 		}
 		return uid;
 	}, [mode, plugin.flashcardManager, selectedSourceNote]);
+
+	const copyPathToClipboard = useCallback(async (value: string) => {
+		if (!value) return;
+		try {
+			await navigator.clipboard.writeText(value);
+			new Notice("Path copied to clipboard");
+		} catch {
+			new Notice("Failed to copy path");
+		}
+	}, []);
 
 	const handleSave = useCallback(async () => {
 		if (saving) return;
@@ -337,78 +458,121 @@ export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
 								)}
 							</div>
 						)}
-						<div class="ep:text-ui-smaller ep:text-obs-muted">
-							{sourceTargetLabel}
+						<div class="ep:flex ep:items-center ep:gap-2">
+							<div
+								class="ep:text-ui-smaller ep:text-obs-muted ep:flex-1"
+								title={sourceTargetLabel}
+							>
+								{truncatedSourceTargetLabel}
+							</div>
+							{sourcePathForCopy && (
+								<IconToolButton
+									icon="copy"
+									label="Copy source path"
+									onClick={() => void copyPathToClipboard(sourcePathForCopy)}
+								/>
+							)}
 						</div>
 					</div>
 
 					<div class="true-recall-io-side-section">
-						<div class="ep:text-ui-small ep:font-medium ep:mb-1">Image</div>
-						<select
-							class="ep:w-full ep:px-2 ep:py-1.5 ep:text-ui-small ep:bg-obs-primary ep:border ep:border-obs-border ep:rounded"
-							value={selectedVaultPath}
-							onChange={(event) =>
-								setSelectedVaultPath(
-									(event.target as HTMLSelectElement).value,
-								)
-							}
-						>
-							<option value="">Select image from vault…</option>
-							{vaultImages.map((file) => (
-								<option key={file.path} value={file.path}>
-									{file.path}
-								</option>
-							))}
-						</select>
-						<button
-							type="button"
-							class="ep-btn ep-btn-outline"
-							onClick={applySelectedVaultImage}
-						>
-							Use selected image
-						</button>
-						<PasteDropZone
-							onFileDrop={(file) => void persistBlob(file)}
-							label="Paste or drag image"
-							hint="Ctrl/Cmd+V or drag & drop"
-						/>
-						<div class="ep:text-ui-smaller ep:text-obs-muted ep:truncate">
-							{imagePath || "No image selected"}
+						<div class="ep:flex ep:items-center ep:justify-between ep:gap-2">
+							<div class="ep:text-ui-small ep:font-medium">Image</div>
+							{imagePath && (
+								<button
+									type="button"
+									class="true-recall-io-inline-link"
+									onClick={() => setIsImagePanelExpanded((v) => !v)}
+								>
+									{isImagePanelExpanded ? "Collapse" : "Replace image"}
+								</button>
+							)}
 						</div>
+						<div
+							class="ep:flex ep:items-center ep:gap-2"
+							title={imagePath || "No image selected"}
+						>
+							<div class="ep:text-ui-smaller ep:text-obs-muted ep:flex-1">
+								{truncatedImagePath}
+							</div>
+							{imagePath && (
+								<IconToolButton
+									icon="copy"
+									label="Copy image path"
+									onClick={() => void copyPathToClipboard(imagePath)}
+								/>
+							)}
+						</div>
+						{(!imagePath || isImagePanelExpanded) && (
+							<>
+								<select
+									class="ep:w-full ep:px-2 ep:py-1.5 ep:text-ui-small ep:bg-obs-primary ep:border ep:border-obs-border ep:rounded"
+									value={selectedVaultPath}
+									onChange={(event) =>
+										setSelectedVaultPath(
+											(event.target as HTMLSelectElement).value,
+										)
+									}
+								>
+									<option value="">Select image from vault…</option>
+									{vaultImages.map((file) => (
+										<option key={file.path} value={file.path}>
+											{file.path}
+										</option>
+									))}
+								</select>
+								<button
+									type="button"
+									class="ep-btn ep-btn-outline"
+									onClick={applySelectedVaultImage}
+								>
+									Use selected image
+								</button>
+								<PasteDropZone
+									onFileDrop={(file) => void persistBlob(file)}
+									label="Paste or drag image"
+									hint="Ctrl/Cmd+V or drag & drop"
+								/>
+							</>
+						)}
 					</div>
 
 					<div class="true-recall-io-side-section">
 						<div class="ep:text-ui-small ep:font-medium ep:mb-1">Tools</div>
 						<div class="true-recall-io-tool-row">
-							<button
-								type="button"
-								class={`ep-btn ep-btn-ghost ${tool === "select" ? "is-active" : ""}`}
+							<IconToolButton
+								icon="mouse-pointer-2"
+								label="Select"
+								shortcut="V"
+								active={tool === "select"}
 								onClick={() => setTool("select")}
-							>
-								Select
-							</button>
-							<button
-								type="button"
-								class={`ep-btn ep-btn-ghost ${tool === "rect" ? "is-active" : ""}`}
+							/>
+							<IconToolButton
+								icon="square"
+								label="Rectangle"
+								shortcut="R"
+								active={tool === "rect"}
 								onClick={() => setTool("rect")}
-							>
-								Rect
-							</button>
-							<button
-								type="button"
-								class={`ep-btn ep-btn-ghost ${tool === "ellipse" ? "is-active" : ""}`}
+							/>
+							<IconToolButton
+								icon="circle"
+								label="Ellipse"
+								shortcut="E"
+								active={tool === "ellipse"}
 								onClick={() => setTool("ellipse")}
-							>
-								Ellipse
-							</button>
-							<button
-								type="button"
-								class="ep-btn ep-btn-ghost"
-								onClick={deleteSelected}
-								disabled={!selectedRegionId}
-							>
-								Delete
-							</button>
+							/>
+							{selectedRegionId && (
+								<IconToolButton
+									icon="trash-2"
+									label="Delete selected region"
+									shortcut="Delete"
+									danger
+									onClick={deleteSelected}
+								/>
+							)}
+						</div>
+						<div class="true-recall-io-hint-text">
+							Shortcuts: Delete to remove, Space + drag to pan, Ctrl/Cmd+V to paste.
 						</div>
 					</div>
 
@@ -447,15 +611,13 @@ export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
 								</div>
 							)}
 							{definition.regions.map((region) => (
-								<button
-									type="button"
+								<RegionListItem
 									key={region.id}
-									class={`true-recall-io-region-item ${selectedRegionId === region.id ? "is-selected" : ""}`}
-									onClick={() => setSelectedRegionId(region.id)}
-								>
-									<span>#{region.groupKey}</span>
-									<span>{region.shape}</span>
-								</button>
+									region={region}
+									selected={selectedRegionId === region.id}
+									onSelect={() => setSelectedRegionId(region.id)}
+									onDelete={deleteSelected}
+								/>
 							))}
 						</div>
 					</div>
@@ -528,13 +690,13 @@ export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
 				</div>
 			</div>
 
-			<div class="ep-modal-footer ep:flex ep:justify-end ep:gap-2">
-				<button
-					type="button"
-					class="ep-btn ep-btn-ghost"
-					onClick={() => onDone({ cancelled: true })}
-				>
-					Cancel
+				<div class="ep-modal-footer true-recall-io-footer ep:flex ep:justify-end ep:gap-2">
+					<button
+						type="button"
+						class="ep-btn ep-btn-outline"
+						onClick={() => onDone({ cancelled: true })}
+					>
+						Cancel
 				</button>
 				<button
 					type="button"

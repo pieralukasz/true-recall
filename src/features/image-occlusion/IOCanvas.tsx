@@ -1,5 +1,6 @@
 import { clamp, normalizePointFromRect } from "@features/image-occlusion/canvas-geometry";
 import type { IODefinition, IORegion, IOShape } from "@features/image-occlusion/types";
+import { useIcon } from "@shared/ui/preact/hooks";
 import { getNextIOGroupKey } from "./io-definition";
 import { useEffect, useMemo, useState } from "preact/hooks";
 
@@ -19,6 +20,28 @@ interface IOCanvasProps {
 	onSelectRegion: (regionId: string | null) => void;
 	onZoomChange: (zoom: number) => void;
 	onPanChange: (x: number, y: number) => void;
+}
+
+interface CanvasIconButtonProps {
+	icon: string;
+	label: string;
+	onClick: () => void;
+}
+
+function CanvasIconButton({ icon, label, onClick }: CanvasIconButtonProps) {
+	const iconRef = useIcon(icon);
+
+	return (
+		<button
+			type="button"
+			class="true-recall-io-canvas-zoombar-btn"
+			aria-label={label}
+			title={label}
+			onClick={onClick}
+		>
+			<span ref={iconRef} />
+		</button>
+	);
 }
 
 type DragState =
@@ -329,39 +352,40 @@ export function IOCanvas({
 
 	return (
 		<div class="true-recall-io-canvas-wrap">
-			<div class="true-recall-io-canvas-toolbar">
-				<span>{Math.round(zoom * 100)}%</span>
-				<button
-					type="button"
-					class="ep-btn ep-btn-ghost"
-					onClick={() => onZoomChange(clamp(zoom * 0.88, 0.5, 4))}
-				>
-					-
-				</button>
-				<button
-					type="button"
-					class="ep-btn ep-btn-ghost"
-					onClick={() => onZoomChange(clamp(zoom * 1.12, 0.5, 4))}
-				>
-					+
-				</button>
-				<button
-					type="button"
-					class="ep-btn ep-btn-ghost"
-					onClick={() => {
-						onZoomChange(1);
-						onPanChange(0, 0);
-					}}
-				>
-					Fit
-				</button>
-			</div>
-
 			<div
-				class="true-recall-io-canvas-stage"
+				class={`true-recall-io-canvas-stage tool-${tool} ${spacePressed ? "is-panning" : ""}`}
 				onPointerDown={handlePointerDown}
 				onWheel={handleWheel}
 			>
+				<div
+					class="true-recall-io-canvas-zoombar"
+					onPointerDown={(event) => event.stopPropagation()}
+				>
+					<CanvasIconButton
+						icon="minus"
+						label="Zoom out"
+						onClick={() => onZoomChange(clamp(zoom * 0.88, 0.5, 4))}
+					/>
+					<span class="true-recall-io-canvas-zoombar-percent">
+						{Math.round(zoom * 100)}%
+					</span>
+					<CanvasIconButton
+						icon="plus"
+						label="Zoom in"
+						onClick={() => onZoomChange(clamp(zoom * 1.12, 0.5, 4))}
+					/>
+					<CanvasIconButton
+						icon="maximize"
+						label="Fit view"
+						onClick={() => {
+							onZoomChange(1);
+							onPanChange(0, 0);
+						}}
+					/>
+				</div>
+				<div class="true-recall-io-canvas-shortcuts" title="Editor shortcuts">
+					<kbd>Space + drag</kbd> pan
+				</div>
 				<div
 					class="true-recall-io-canvas-transform"
 					style={{
