@@ -31,9 +31,20 @@ import {
 } from "./streaming-state";
 
 const CONCURRENCY_LIMIT = 3;
+const CHUNK_STAGGER_MS = 500;
 const COST_CONFIRM_WORD_THRESHOLD = 5000;
 // Rough Gemini Flash ballpark: $0.15/1M input tokens + estimated output
 const COST_PER_TOKEN = 0.15 / 1_000_000;
+
+export interface ChunkedGenerationResult extends StreamingGenerationResult {
+	failedChunks: number;
+	totalChunks: number;
+	errors: string[];
+}
+
+function delay(ms: number): Promise<void> {
+	return new Promise((r) => setTimeout(r, ms));
+}
 
 export class ChunkedGenerationService {
 	constructor(
@@ -48,7 +59,7 @@ export class ChunkedGenerationService {
 		noteType?: NoteType | null,
 		allNoteTypes?: NoteType[],
 		app?: App,
-	): Promise<StreamingGenerationResult> {
+	): Promise<ChunkedGenerationResult> {
 		const chunkingResult = chunkMarkdown(content);
 
 		if (chunkingResult.strategy === "single") {
@@ -56,13 +67,19 @@ export class ChunkedGenerationService {
 				this.getSettings,
 				this.flashcardManager,
 			);
-			return streamingService.generateStreaming(
+			const result = await streamingService.generateStreaming(
 				chunkingResult.chunks[0]!.content,
 				mode,
 				sourceFile,
 				noteType,
 				allNoteTypes,
 			);
+			return {
+				...result,
+				failedChunks: 0,
+				totalChunks: 1,
+				errors: [],
+			};
 		}
 
 		return this.runChunkedGeneration(
@@ -82,7 +99,7 @@ export class ChunkedGenerationService {
 		noteType?: NoteType | null,
 		allNoteTypes?: NoteType[],
 		app?: App,
-	): Promise<StreamingGenerationResult> {
+	): Promise<ChunkedGenerationResult> {
 		const { chunks, totalWords, estimatedTokens } = chunkingResult;
 
 		if (
@@ -116,9 +133,13 @@ export class ChunkedGenerationService {
 
 		let totalCreated = 0;
 		let totalDuplicates = 0;
+		let failedChunks = 0;
 		let completedCount = 0;
+		const errors: string[] = [];
 
-		const tasks = chunks.map((chunk) => async () => {
+		const tasks = chunks.map((chunk, i) => async () => {
+			// Stagger chunk starts to avoid rate limiting
+			if (i > 0) await delay(i * CHUNK_STAGGER_MS);
 			if (abortController.signal.aborted) return;
 
 			updateChunkProgress(completedCount, chunk.headingBreadcrumb || null);
@@ -167,7 +188,12 @@ export class ChunkedGenerationService {
 						return;
 					}
 				}
-				// Log but continue other chunks
+				failedChunks++;
+				const msg =
+					error instanceof Error ? error.message : String(error);
+				errors.push(
+					`Section ${chunk.index + 1}${chunk.headingBreadcrumb ? ` (${chunk.headingBreadcrumb})` : ""}: ${msg}`,
+				);
 				console.error(
 					`[ChunkedGeneration] Chunk ${chunk.index} failed:`,
 					error,
@@ -183,7 +209,13 @@ export class ChunkedGenerationService {
 			finishStreaming();
 		}
 
-		return { created: totalCreated, duplicates: totalDuplicates };
+		return {
+			created: totalCreated,
+			duplicates: totalDuplicates,
+			failedChunks,
+			totalChunks: chunks.length,
+			errors,
+		};
 	}
 
 	private async generateSingleChunk(
