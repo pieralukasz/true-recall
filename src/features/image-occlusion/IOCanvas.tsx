@@ -1,5 +1,6 @@
 import { clamp, normalizePointFromRect } from "@features/image-occlusion/canvas-geometry";
 import type { IODefinition, IORegion, IOShape } from "@features/image-occlusion/types";
+import { Clickable } from "@shared/ui/components/Clickable";
 import { useIcon } from "@shared/ui/preact/hooks";
 import { getNextIOGroupKey } from "./io-definition";
 import { useEffect, useMemo, useState } from "preact/hooks";
@@ -32,15 +33,14 @@ function CanvasIconButton({ icon, label, onClick }: CanvasIconButtonProps) {
 	const iconRef = useIcon(icon);
 
 	return (
-		<button
-			type="button"
+		<Clickable
 			class="true-recall-io-canvas-zoombar-btn"
 			aria-label={label}
 			title={label}
-			onClick={onClick}
+			onClick={() => onClick()}
 		>
 			<span ref={iconRef} />
-		</button>
+		</Clickable>
 	);
 }
 

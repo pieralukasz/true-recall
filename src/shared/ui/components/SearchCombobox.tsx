@@ -1,17 +1,13 @@
-import { useCombobox } from "downshift";
-import { useCallback, useEffect, useMemo, useRef } from "preact/hooks";
-import { useSignal } from "@preact/signals";
+import { useApp } from "@shared/ui/preact/ObsidianContext";
 import { cn } from "@shared/ui/utils/cn";
+import { replaceTokenAtCursor } from "@shared/ui/helpers/search-suggestions";
+import type { SuggestionProvider } from "@shared/ui/helpers/search-suggestions.types";
 import {
-	getTokenAtCursor,
-	getTokenContext,
-	replaceTokenAtCursor,
-} from "@shared/ui/helpers/search-suggestions";
-import type {
-	SearchSuggestion,
-	SuggestionCategory,
-	SuggestionProvider,
-} from "@shared/ui/helpers/search-suggestions.types";
+	type SectionedSuggestion,
+	withSectionLabels,
+} from "@shared/ui/components/search-combobox.utils";
+import { AbstractInputSuggest, SearchComponent, type App } from "obsidian";
+import { useEffect, useRef } from "preact/hooks";
 
 export interface SearchComboboxProps {
 	value: string;
@@ -20,46 +16,69 @@ export interface SearchComboboxProps {
 	getSuggestions: SuggestionProvider;
 	autoFocus?: boolean;
 	class?: string;
+	// Deprecated (kept for compatibility with existing callsites).
 	showSearchIcon?: boolean;
+	ariaLabel?: string;
+	// Deprecated (kept for compatibility with existing callsites).
+	size?: "sm" | "md";
 }
 
-const CATEGORY_LABELS: Record<SuggestionCategory, string> = {
-	keyword: "Filters",
-	state: "States",
-	property: "Properties",
-	note: "Notes",
-	project: "Projects",
-	preset: "Presets",
-	type: "Card Types",
-	via: "Created Via",
-	date: "Date Filters",
-};
+class SearchComboboxSuggest extends AbstractInputSuggest<SectionedSuggestion> {
+	private readonly getList: (query: string) => SectionedSuggestion[];
+	private readonly onPick: (
+		value: SectionedSuggestion,
+		evt: MouseEvent | KeyboardEvent,
+	) => void;
 
-interface SuggestionGroup {
-	category: SuggestionCategory;
-	label: string;
-	items: (SearchSuggestion & { globalIndex: number })[];
-}
-
-function groupSuggestions(items: SearchSuggestion[]): SuggestionGroup[] {
-	const groups = new Map<SuggestionCategory, SuggestionGroup>();
-	let globalIndex = 0;
-
-	for (const item of items) {
-		let group = groups.get(item.category);
-		if (!group) {
-			group = {
-				category: item.category,
-				label: CATEGORY_LABELS[item.category],
-				items: [],
-			};
-			groups.set(item.category, group);
-		}
-		group.items.push({ ...item, globalIndex });
-		globalIndex++;
+	constructor(
+		app: App,
+		inputEl: HTMLInputElement,
+		getList: (query: string) => SectionedSuggestion[],
+		onPick: (
+			value: SectionedSuggestion,
+			evt: MouseEvent | KeyboardEvent,
+		) => void,
+	) {
+		super(app, inputEl);
+		this.getList = getList;
+		this.onPick = onPick;
+		this.limit = 200;
 	}
 
-	return Array.from(groups.values());
+	protected getSuggestions(query: string): SectionedSuggestion[] {
+		return this.getList(query);
+	}
+
+	renderSuggestion(value: SectionedSuggestion, el: HTMLElement): void {
+		el.textContent = "";
+
+		if (value.showSectionLabel) {
+			const sectionEl = el.ownerDocument.createElement("div");
+			sectionEl.className = "true-recall-search-suggest-section";
+			sectionEl.textContent = value.sectionLabel;
+			el.appendChild(sectionEl);
+		}
+
+		const titleEl = el.ownerDocument.createElement("div");
+		titleEl.className = "suggestion-title";
+		titleEl.textContent = value.label;
+		el.appendChild(titleEl);
+
+		if (value.description) {
+			const noteEl = el.ownerDocument.createElement("div");
+			noteEl.className = "suggestion-note";
+			noteEl.textContent = value.description;
+			el.appendChild(noteEl);
+		}
+	}
+
+	selectSuggestion(
+		value: SectionedSuggestion,
+		evt: MouseEvent | KeyboardEvent,
+	): void {
+		this.onPick(value, evt);
+		this.close();
+	}
 }
 
 export function SearchCombobox({
@@ -69,166 +88,123 @@ export function SearchCombobox({
 	getSuggestions,
 	autoFocus = false,
 	class: cls,
-	showSearchIcon = false,
+	ariaLabel,
 }: SearchComboboxProps) {
-	const inputRef = useRef<HTMLInputElement>(null);
-	const cursorPos = useSignal(0);
+	const app = useApp();
+	const hostRef = useRef<HTMLDivElement>(null);
+	const searchRef = useRef<SearchComponent | null>(null);
+	const suggestRef = useRef<SearchComboboxSuggest | null>(null);
+	const onChangeRef = useRef(onChange);
+	const getSuggestionsRef = useRef(getSuggestions);
+	const syncingRef = useRef(false);
 
-	const suggestions = useMemo(
-		() => getSuggestions(value, cursorPos.value),
-		[value, cursorPos.value, getSuggestions],
-	);
+	useEffect(() => {
+		onChangeRef.current = onChange;
+	}, [onChange]);
 
-	const grouped = useMemo(() => groupSuggestions(suggestions), [suggestions]);
+	useEffect(() => {
+		getSuggestionsRef.current = getSuggestions;
+	}, [getSuggestions]);
 
-	const trackCursor = useCallback(() => {
-		const pos = inputRef.current?.selectionStart ?? 0;
-		cursorPos.value = pos;
-	}, []);
+	useEffect(() => {
+		const hostEl = hostRef.current;
+		if (!hostEl) return;
 
-	const {
-		isOpen,
-		highlightedIndex,
-		getMenuProps,
-		getInputProps,
-		getItemProps,
-	} = useCombobox({
-		items: suggestions,
-		inputValue: value,
-		itemToString: (item: SearchSuggestion | null) => item?.label ?? "",
-		onInputValueChange: ({ inputValue }: { inputValue: string }) => {
-			onChange(inputValue ?? "");
-		},
-		stateReducer: (
-			state: { inputValue: string },
-			actionAndChanges: { type: string; changes: Record<string, unknown> },
-		) => {
-			const { type, changes } = actionAndChanges;
-			switch (type) {
-				case useCombobox.stateChangeTypes.InputKeyDownEnter:
-				case useCombobox.stateChangeTypes.ItemClick: {
-					const selectedItem = changes.selectedItem as
-						| SearchSuggestion
-						| undefined;
-					if (!selectedItem) return changes;
+		hostEl.innerHTML = "";
+		const searchComponent = new SearchComponent(hostEl);
+		searchRef.current = searchComponent;
 
-					const { text, cursor } = replaceTokenAtCursor(
-						state.inputValue,
-						cursorPos.value,
-						selectedItem.insertText,
-					);
+		searchComponent.onChange((next) => {
+			if (syncingRef.current) return;
+			onChangeRef.current(next);
+		});
 
-					// Schedule cursor restore after Preact re-renders
-					requestAnimationFrame(() => {
-						const el = inputRef.current;
-						if (el) {
-							el.setSelectionRange(cursor, cursor);
-							cursorPos.value = cursor;
-						}
-					});
+		const suggest = new SearchComboboxSuggest(
+			app,
+			searchComponent.inputEl,
+			(query) => {
+				const cursorPos =
+					searchComponent.inputEl.selectionStart ?? query.length;
+				const suggestions = getSuggestionsRef.current(query, cursorPos);
+				return withSectionLabels(suggestions);
+			},
+			(suggestion) => {
+				const inputEl = searchComponent.inputEl;
+				const cursorPos = inputEl.selectionStart ?? inputEl.value.length;
+				const { text, cursor } = replaceTokenAtCursor(
+					inputEl.value,
+					cursorPos,
+					suggestion.insertText,
+				);
 
-					onChange(text);
+				syncingRef.current = true;
+				searchComponent.setValue(text);
+				syncingRef.current = false;
+				onChangeRef.current(text);
+				requestAnimationFrame(() => {
+					const nextInput = searchRef.current?.inputEl;
+					if (!nextInput) return;
+					nextInput.focus();
+					nextInput.setSelectionRange(cursor, cursor);
+				});
+			},
+		);
+		suggestRef.current = suggest;
 
-					return {
-						...changes,
-						inputValue: text,
-						selectedItem: null,
-						isOpen: false,
-					};
-				}
-				case useCombobox.stateChangeTypes.InputBlur:
-					return { ...changes, isOpen: false };
-				default:
-					return changes;
+		const handleKeyDown = (event: KeyboardEvent) => {
+			if (event.key !== "Escape") return;
+			const currentValue = searchComponent.getValue();
+			if (currentValue.length > 0) {
+				event.preventDefault();
+				syncingRef.current = true;
+				searchComponent.setValue("");
+				syncingRef.current = false;
+				onChangeRef.current("");
+				return;
 			}
-		},
-	});
+			suggest.close();
+		};
+
+		searchComponent.inputEl.addEventListener("keydown", handleKeyDown);
+
+		return () => {
+			searchComponent.inputEl.removeEventListener("keydown", handleKeyDown);
+			suggest.close();
+			hostEl.innerHTML = "";
+			suggestRef.current = null;
+			searchRef.current = null;
+		};
+	}, [app]);
+
+	useEffect(() => {
+		const searchComponent = searchRef.current;
+		if (!searchComponent) return;
+		if (searchComponent.getValue() === value) return;
+
+		syncingRef.current = true;
+		searchComponent.setValue(value);
+		syncingRef.current = false;
+	}, [value]);
+
+	useEffect(() => {
+		const searchComponent = searchRef.current;
+		if (!searchComponent) return;
+
+		searchComponent.setPlaceholder(placeholder);
+		searchComponent.inputEl.enterKeyHint = "search";
+		searchComponent.inputEl.autocapitalize = "off";
+		searchComponent.inputEl.spellcheck = false;
+		searchComponent.inputEl.setAttribute(
+			"aria-label",
+			ariaLabel ?? placeholder,
+		);
+	}, [placeholder, ariaLabel]);
 
 	useEffect(() => {
 		if (!autoFocus) return;
-		const id = setTimeout(() => inputRef.current?.focus(), 50);
+		const id = setTimeout(() => searchRef.current?.inputEl.focus(), 50);
 		return () => clearTimeout(id);
 	}, [autoFocus]);
 
-	const inputProps = getInputProps({
-		ref: inputRef,
-		onKeyUp: trackCursor,
-		onClick: trackCursor,
-	});
-
-	return (
-		<div class={cn("ep:relative", cls)}>
-			<div class="ep:relative">
-				{showSearchIcon && (
-					<svg
-						class="ep:absolute ep:left-2.5 ep:top-1/2 ep:-translate-y-1/2 ep:text-obs-muted ep:pointer-events-none"
-						width="14"
-						height="14"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-					>
-						<circle cx="11" cy="11" r="8" />
-						<line x1="21" y1="21" x2="16.65" y2="16.65" />
-					</svg>
-				)}
-				<input
-					{...inputProps}
-					type="text"
-					class={cn(
-						"ep:w-full ep:py-1.5 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-ui-small ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted",
-						showSearchIcon && "ep:pl-8",
-					)}
-					placeholder={placeholder}
-				/>
-			</div>
-
-			<ul
-				{...getMenuProps()}
-				class={cn(
-					"ep:absolute ep:left-0 ep:top-full ep:mt-1 ep:z-50",
-					"ep:bg-obs-primary ep:border ep:border-obs-border ep:rounded-md ep:shadow-lg",
-					"ep:max-h-[300px] ep:overflow-y-auto ep:py-1 ep:min-w-full",
-					!(isOpen && suggestions.length > 0) && "ep:hidden",
-				)}
-			>
-				{isOpen &&
-					grouped.map((group) => (
-						<li key={group.category}>
-							<span class="ep:block ep:px-3 ep:py-1 ep:text-[10px] ep:uppercase ep:tracking-wider ep:text-obs-faint ep:select-none">
-								{group.label}
-							</span>
-							<ul>
-								{group.items.map((item) => (
-									<li
-										key={item.id}
-										{...getItemProps({
-											item,
-											index: item.globalIndex,
-										})}
-										class={cn(
-											"ep:px-3 ep:py-1.5 ep:cursor-pointer ep:text-ui-small ep:flex ep:items-center ep:gap-2",
-											highlightedIndex ===
-												item.globalIndex
-												? "ep:bg-obs-modifier-hover ep:text-obs-normal"
-												: "ep:text-obs-muted",
-										)}
-									>
-										<span class="ep:font-medium">
-											{item.label}
-										</span>
-										{item.description && (
-											<span class="ep:text-obs-faint ep:text-[11px]">
-												{item.description}
-											</span>
-										)}
-									</li>
-								))}
-							</ul>
-						</li>
-					))}
-			</ul>
-		</div>
-	);
+	return <div ref={hostRef} class={cn("ep:w-full", cls)} />;
 }
