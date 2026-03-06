@@ -1,15 +1,14 @@
 import {
 	DEFAULT_PROMPTS,
+	GENERATION_LANGUAGES,
 	GENERATION_MODE_LABELS,
 	type GenerationMode,
 } from "@features/ai/prompts/default-prompts";
 import type { SubscriptionStatus } from "@features/integration/services/subscription.service";
 import { SubscriptionService } from "@features/integration/services/subscription.service";
 import { useSettings } from "@features/settings/hooks/useSettings";
-import type { AIModelInfo, AIModelKey } from "@shared/constants";
-import { AI_MODELS_EXTENDED, TRUERECALL_WEB_URL } from "@shared/constants";
+import { TRUERECALL_WEB_URL } from "@shared/constants";
 import type { TrueRecallSettings } from "@shared/types/settings.types";
-import type { SelectOptionGroup } from "@shared/ui/components";
 import {
 	Clickable,
 	FormCard,
@@ -24,53 +23,11 @@ import { isFeatureAllowed } from "@shared/utils/subscription.utils";
 import {
 	useCallback,
 	useEffect,
-	useMemo,
 	useRef,
 	useState,
 } from "preact/hooks";
 
 const subscriptionService = new SubscriptionService();
-
-function groupModelsByProvider(): SelectOptionGroup[] {
-	const groups: Record<string, [string, AIModelInfo][]> = {
-		Google: [],
-		OpenAI: [],
-		Anthropic: [],
-		Meta: [],
-		DeepSeek: [],
-		xAI: [],
-	};
-
-	for (const [key, info] of Object.entries(AI_MODELS_EXTENDED)) {
-		const providerGroup = groups[info.provider];
-		if (providerGroup) {
-			providerGroup.push([key, info]);
-		}
-	}
-
-	for (const provider of Object.keys(groups)) {
-		const providerGroup = groups[provider];
-		if (providerGroup) {
-			providerGroup.sort((a, b) => {
-				if (a[1].recommended && !b[1].recommended) return -1;
-				if (!a[1].recommended && b[1].recommended) return 1;
-				return 0;
-			});
-		}
-	}
-
-	return Object.entries(groups)
-		.filter(([, models]) => models.length > 0)
-		.map(([provider, models]) => ({
-			label: provider,
-			options: models.map(([key, info]) => ({
-				value: key,
-				label: info.recommended
-					? `${info.name} ⭐ (${info.description})`
-					: `${info.name} (${info.description})`,
-			})),
-		}));
-}
 
 const PROMPT_MODES: GenerationMode[] = ["basic", "cloze", "reversed", "auto"];
 
@@ -91,7 +48,11 @@ function SubscriptionSection() {
 			setStatus(null);
 			setError("");
 			if (settings.isSubscriber) {
-				save({ isSubscriber: false, subscriberTier: undefined });
+				save({
+					isSubscriber: false,
+					subscriberTier: undefined,
+					cachedAllowedModels: undefined,
+				});
 			}
 			return;
 		}
@@ -103,10 +64,12 @@ function SubscriptionSection() {
 			const onCacheUpdate = (update: {
 				isSubscriber: boolean;
 				subscriberTier?: string;
+				allowedModels?: string[];
 			}) => {
 				const patch: Partial<TrueRecallSettings> = {
 					isSubscriber: update.isSubscriber,
 					subscriberTier: update.subscriberTier,
+					cachedAllowedModels: update.allowedModels,
 				};
 				// Generate userId on first successful validation
 				if (update.isSubscriber && !settings.userId) {
@@ -134,19 +97,16 @@ function SubscriptionSection() {
 		status && status.budget_max > 0
 			? Math.min(100, (status.budget_spent / status.budget_max) * 100)
 			: 0;
-	const remaining = status
-		? (status.budget_max - status.budget_spent).toFixed(2)
-		: "0.00";
 	const approxGenerations = status
 		? Math.floor((status.budget_max - status.budget_spent) / 0.007)
 		: 0;
 
 	return (
-		<FormCard title="True Recall Subscription">
+		<FormCard title="True Recall AI">
 			<InfoBlock>
 				<p>
-					Subscribe for managed AI access — no API key setup needed. Your
-					subscription includes all AI models with usage tracking.
+					Subscribe for instant AI access — no setup needed. Generate
+					flashcards, image occlusion, and more.
 				</p>
 				<p>
 					<a
@@ -192,9 +152,14 @@ function SubscriptionSection() {
 							{status.tier}
 						</span>
 						<span class="ep:text-obs-muted ep:text-ui-smaller">
-							~{approxGenerations} generations remaining (${remaining})
+							~{approxGenerations} generations remaining
 						</span>
 					</div>
+					{status.tier === "trial" && (
+						<div class="ep:text-obs-muted ep:text-ui-smaller ep:mb-2">
+							One-time trial. Subscribe for monthly AI access.
+						</div>
+					)}
 					<div class="ep:w-full ep:h-2 ep:bg-obs-modifier-border ep:rounded-[var(--radius-s)] ep:overflow-hidden">
 						<div
 							class={`ep:h-full ep:rounded-[var(--radius-s)] ep:transition-all ${usagePct > 80 ? "ep:bg-obs-error" : "ep:bg-obs-accent"}`}
@@ -210,19 +175,37 @@ function SubscriptionSection() {
 						>
 							Manage subscription
 						</a>
+						{status.budget_remaining < 0.5 && (
+							<a
+								href={`${TRUERECALL_WEB_URL}/dashboard`}
+								target="_blank"
+								rel="noopener"
+								class="ep:text-obs-accent ep:text-ui-smaller"
+							>
+								Top up budget
+							</a>
+						)}
 					</div>
 				</div>
 			)}
 
 			{!hasSubKey && (
-				<div class="ep:py-3">
+				<div class="ep:py-3 ep:flex ep:flex-col ep:gap-1">
 					<Clickable
 						class="ep:text-obs-accent ep:text-ui-smaller ep:underline"
 						onClick={() =>
 							window.open(`${TRUERECALL_WEB_URL}/pricing`, "_blank")
 						}
 					>
-						Get a subscription at truerecall.app
+						Start free trial (~50 generations, no card required)
+					</Clickable>
+					<Clickable
+						class="ep:text-obs-muted ep:text-ui-smaller ep:underline"
+						onClick={() =>
+							window.open(`${TRUERECALL_WEB_URL}/pricing`, "_blank")
+						}
+					>
+						View plans at truerecall.app
 					</Clickable>
 				</div>
 			)}
@@ -232,7 +215,6 @@ function SubscriptionSection() {
 
 export function AITab() {
 	const { settings, save } = useSettings();
-	const modelOptions = useMemo(() => groupModelsByProvider(), []);
 	const [expandedPrompt, setExpandedPrompt] = useState<GenerationMode | null>(
 		null,
 	);
@@ -275,33 +257,20 @@ export function AITab() {
 		<div class="ep:flex ep:flex-col ep:gap-3">
 			<SubscriptionSection />
 
-			<FormCard
-				title={hasSubKey ? "OpenRouter (BYOK — optional)" : "AI (OpenRouter)"}
-			>
+			<FormCard title="OpenRouter API Key (Advanced)">
 				<InfoBlock>
 					<p>
 						{hasSubKey
-							? "You have an active subscription. You can optionally configure your own OpenRouter key as a fallback."
-							: "OpenRouter provides access to multiple AI models through a single API."}
+							? "You have an active subscription. Optionally add your own API key as a fallback."
+							: "Already have an OpenRouter key? Use it to access AI features directly."}
 					</p>
-					{!hasSubKey && (
-						<p>
-							<a
-								href="https://openrouter.ai/keys"
-								target="_blank"
-								rel="noopener"
-							>
-								Get your API key at openrouter.ai/keys
-							</a>
-						</p>
-					)}
 				</InfoBlock>
 
 				<FormField
 					name="API key"
 					description={
 						hasSubKey
-							? "Optional fallback key. Subscription key is used when set."
+							? "Optional fallback. Subscription is used when set."
 							: "Your OpenRouter API key."
 					}
 				>
@@ -314,14 +283,23 @@ export function AITab() {
 					/>
 				</FormField>
 
-				<FormField name="AI model" description="Select the AI model">
-					<SelectInput
-						value={settings.aiModel}
-						onChange={(v) => save({ aiModel: v as AIModelKey })}
-						options={modelOptions}
-					/>
-				</FormField>
+				{!hasSubKey && !hasApiKey && (
+					<InfoBlock>
+						<p>
+							<a
+								href="https://openrouter.ai/keys"
+								target="_blank"
+								rel="noopener"
+							>
+								Get your API key at openrouter.ai/keys
+							</a>
+						</p>
+					</InfoBlock>
+				)}
 
+			</FormCard>
+
+			<FormCard title="AI Prompts">
 				<FormField
 					name="Type-in grading prompt"
 					description="Optional custom system prompt for AI answer grading during review type-in mode. Leave empty to use built-in prompt."
@@ -355,6 +333,17 @@ export function AITab() {
 			</FormCard>
 
 			<FormCard title="Flashcard Generation">
+				<FormField
+					name="Generation language"
+					description="Language for AI-generated flashcards. Auto-detect matches the source text language."
+				>
+					<SelectInput
+						value={settings.generationLanguage ?? "auto"}
+						onChange={(v) => save({ generationLanguage: v })}
+						options={[...GENERATION_LANGUAGES]}
+					/>
+				</FormField>
+
 				<FormField
 					name="Selection toolbar"
 					description="Show a floating toolbar above selected text for AI-powered flashcard creation."
@@ -433,7 +422,7 @@ export function AITab() {
 				{hasAnyKey && !isFeatureAllowed("customPrompts", settings) && (
 					<InfoBlock>
 						<p>
-							Custom prompts are available on Starter and Pro plans.{" "}
+							Custom prompts are available on the Starter plan.{" "}
 							<a
 								href={`${TRUERECALL_WEB_URL}/pricing`}
 								target="_blank"
