@@ -1,4 +1,5 @@
 import { LivePreviewField } from "@features/study/ui/review/components/LivePreviewField";
+import { IOCardRenderer } from "@features/image-occlusion/IOCardRenderer";
 import { FSRS_COLORS, MUTED_STATES } from "@shared/ui/helpers/fsrs-colors";
 import { Clickable } from "@shared/ui/components";
 import { useApp } from "@shared/ui/preact/ObsidianContext";
@@ -27,6 +28,10 @@ export function CardPreview({
 	onContentChange,
 }: CardPreviewProps) {
 	const app = useApp();
+	const isImageOcclusion =
+		card.cardType === "image-occlusion" &&
+		!!card.ioImagePath &&
+		!!card.ioRegionsJson;
 
 	const stateLabel = card.suspended
 		? "Suspended"
@@ -84,7 +89,14 @@ export function CardPreview({
 				<div class="ep:text-[10px] ep:uppercase ep:tracking-wider ep:text-obs-muted ep:mb-1.5">
 					Question
 				</div>
-				{card.question ? (
+				{isImageOcclusion ? (
+					<IOCardRenderer
+						imagePath={card.ioImagePath}
+						regionsJson={card.ioRegionsJson}
+						templateOrd={card.templateOrd}
+						revealed={false}
+					/>
+				) : card.question ? (
 					<LivePreviewField
 						content={card.question}
 						field="question"
@@ -104,7 +116,14 @@ export function CardPreview({
 				<div class="ep:text-[10px] ep:uppercase ep:tracking-wider ep:text-obs-muted ep:mb-1.5">
 					Answer
 				</div>
-				{card.answer ? (
+				{isImageOcclusion ? (
+					<IOCardRenderer
+						imagePath={card.ioImagePath}
+						regionsJson={card.ioRegionsJson}
+						templateOrd={card.templateOrd}
+						revealed
+					/>
+				) : card.answer ? (
 					<LivePreviewField
 						content={card.answer}
 						field="answer"

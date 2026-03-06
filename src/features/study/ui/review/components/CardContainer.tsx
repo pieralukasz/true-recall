@@ -1,6 +1,7 @@
 import { LivePreviewField } from "@features/study/ui/review/components/LivePreviewField";
 import { PresetPopover, type PresetPickerOption } from "@features/study/ui/review/components/PresetPopover";
 import { TypeInCMEditor } from "@features/study/ui/review/components/TypeInCMEditor";
+import { IOCardRenderer } from "@features/image-occlusion/IOCardRenderer";
 import type {
 	FSRSFlashcardItem,
 	LocalAnswerAssessment,
@@ -101,12 +102,55 @@ export function CardContainer({
 			? card.clozeTemplate
 			: card.question;
 	const hasTextAnswer = !!card.answer?.trim();
+	const isImageOcclusion =
+		card.cardType === "image-occlusion" &&
+		!!card.ioImagePath &&
+		!!card.ioRegionsJson;
 	const showTypeIn = useTypeInMode && hasTextAnswer;
 
 	const expectedTokens =
 		localAssessment?.diff.filter((token) => token.type !== "extra") ?? [];
 	const userTokens =
 		localAssessment?.diff.filter((token) => token.type !== "missing") ?? [];
+
+	if (isImageOcclusion) {
+		return (
+			<div class="true-recall-review-card-container ep:flex-1 ep:min-h-0 ep:flex ep:items-start ep:justify-center ep:pt-8 ep:px-6 ep:pb-2 ep:overflow-y-auto ep:w-full ep:max-w-3xl ep:mx-auto">
+				<div class="ep:w-full">
+					<IOCardRenderer
+						imagePath={card.ioImagePath}
+						regionsJson={card.ioRegionsJson}
+						templateOrd={card.templateOrd}
+						revealed={isAnswerRevealed}
+					/>
+
+					{isAnswerRevealed && (card.sourceNoteName || presetName) && (
+						<div class="ep:flex ep:flex-col ep:items-center ep:gap-4 ep:pt-8">
+							{card.sourceNoteName && onOpenSourceNote && (
+								<Clickable
+									class="ep:text-obs-faint ep:text-ui-smaller ep:no-underline ep:hover:text-obs-accent ep:hover:underline ep:transition-colors ep:p-0"
+									onClick={onOpenSourceNote}
+								>
+									Source: {card.sourceNoteName}
+								</Clickable>
+							)}
+							{presetName && presetOptions && onPresetChange ? (
+								<PresetPopover
+									value={presetName}
+									options={presetOptions}
+									onChange={onPresetChange}
+								/>
+							) : presetName ? (
+								<span class="ep:text-obs-faint ep:text-ui-smaller">
+									FSRS: {presetName}
+								</span>
+							) : null}
+						</div>
+					)}
+				</div>
+			</div>
+		);
+	}
 
 	return (
 		<div class="true-recall-review-card-container ep:flex-1 ep:min-h-0 ep:flex ep:items-start ep:justify-center ep:pt-8 ep:px-6 ep:pb-2 ep:overflow-y-auto ep:w-full ep:max-w-3xl ep:mx-auto">

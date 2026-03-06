@@ -24,6 +24,9 @@ export interface BrowserCard {
 	createdVia: string | null;
 	presetName: string | null;
 	projects: string[];
+	ioImagePath?: string;
+	ioRegionsJson?: string;
+	templateOrd?: number;
 }
 
 export type SortDirection = "asc" | "desc";

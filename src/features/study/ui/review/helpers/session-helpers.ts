@@ -93,6 +93,9 @@ export function buildQueueOptions(
 		reviewOrder: filters.customReviewOrder ?? preset?.reviewOrder ?? settings.reviewOrder,
 		newReviewMix: preset?.newReviewMix ?? settings.newReviewMix,
 		dayStartHour: settings.dayStartHour,
+		sourceUidFilter: filters.sourceUidFilter
+			? new Set([filters.sourceUidFilter])
+			: undefined,
 		sourceNoteFilter: filters.sourceNoteFilter,
 		sourceNoteFilters: filters.sourceNoteFilters,
 		filePathFilter: filters.filePathFilter,
@@ -115,6 +118,7 @@ export function buildQueueOptions(
 export function isGlobalReviewSession(filters: SessionFilters): boolean {
 	return !(
 		filters.projectPath ||
+		filters.sourceUidFilter ||
 		filters.sourceNoteFilter ||
 		(filters.sourceNoteFilters && filters.sourceNoteFilters.length > 0) ||
 		filters.filePathFilter ||
@@ -241,6 +245,13 @@ export function applyMutation(
 			const cards = flashcardManager.getCardsByIds([m.cardId]);
 			const newCard = cards[0];
 			if (!newCard) return;
+
+			if (
+				filters.sourceUidFilter &&
+				newCard.sourceUid !== filters.sourceUidFilter
+			) {
+				return;
+			}
 
 			if (
 				filters.sourceNoteFilter &&

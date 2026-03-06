@@ -9,6 +9,7 @@
 @import "../../features/library/ui/panel/panel.styles.css";
 @import "../../features/metrics/ui/simulator/styles.css";
 @import "../../features/ai/ui/editor/selection-toolbar.css";
+@import "../../features/image-occlusion/image-occlusion.styles.css";
 
 /*
  * Obsidian Theme Variables - Runtime Inheritance

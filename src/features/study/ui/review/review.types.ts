@@ -5,6 +5,8 @@ import type { Grade, State } from "ts-fsrs";
 export interface ReviewViewState extends Record<string, unknown> {
 	/** Project note path — scopes review to project members */
 	projectPath?: string;
+	/** Single source UID scope (note-level review) */
+	sourceUidFilter?: string;
 	// Custom session filters
 	sourceNoteFilter?: string;
 	sourceNoteFilters?: string[];
@@ -29,6 +31,7 @@ export interface ReviewViewState extends Record<string, unknown> {
 
 export interface SessionFilters {
 	projectPath?: string;
+	sourceUidFilter?: string;
 	sourceNoteFilter?: string;
 	sourceNoteFilters?: string[];
 	filePathFilter?: string;
@@ -55,6 +58,7 @@ export function filtersFromViewState(
 	if (!state) return {};
 	return {
 		projectPath: state.projectPath,
+		sourceUidFilter: state.sourceUidFilter,
 		sourceNoteFilter: state.sourceNoteFilter,
 		sourceNoteFilters: state.sourceNoteFilters,
 		filePathFilter: state.filePathFilter,
@@ -79,6 +83,7 @@ export function filtersFromViewState(
 export function filtersToViewState(filters: SessionFilters): ReviewViewState {
 	return {
 		projectPath: filters.projectPath,
+		sourceUidFilter: filters.sourceUidFilter,
 		sourceNoteFilter: filters.sourceNoteFilter,
 		sourceNoteFilters: filters.sourceNoteFilters,
 		filePathFilter: filters.filePathFilter,
@@ -103,6 +108,7 @@ export function filtersToViewState(filters: SessionFilters): ReviewViewState {
 export function isCustomSession(filters: SessionFilters): boolean {
 	return !!(
 		filters.projectPath ||
+		filters.sourceUidFilter ||
 		filters.sourceNoteFilter ||
 		(filters.sourceNoteFilters && filters.sourceNoteFilters.length > 0) ||
 		filters.filePathFilter ||
