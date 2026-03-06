@@ -40,8 +40,8 @@ export function FooterBar({
 					{saving
 						? "Saving..."
 						: `Save ${cardCount > 0 ? `${cardCount} ` : ""}Card${
-							cardCount !== 1 ? "s" : ""
-						}`}
+								cardCount !== 1 ? "s" : ""
+							}`}
 				</Clickable>
 			</div>
 		</div>

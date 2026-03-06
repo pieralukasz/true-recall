@@ -38,7 +38,8 @@ function CreateEditor({
 	onCancel,
 }: Extract<NoteTypeEditorProps, { mode: "create" }>) {
 	const updateDraft = useCallback(
-		(partial: Partial<NoteTypeDraft>) => onDraftChange({ ...draft, ...partial }),
+		(partial: Partial<NoteTypeDraft>) =>
+			onDraftChange({ ...draft, ...partial }),
 		[draft, onDraftChange],
 	);
 
@@ -77,7 +78,10 @@ function CreateEditor({
 		[draft.templates, updateDraft],
 	);
 
-	const canSave = draft.name.trim().length > 0 && draft.fields.length > 0 && draft.templates.length > 0;
+	const canSave =
+		draft.name.trim().length > 0 &&
+		draft.fields.length > 0 &&
+		draft.templates.length > 0;
 
 	return (
 		<div class="ep:space-y-4">
@@ -286,9 +290,7 @@ function ViewEditEditor({
 							fields={noteType.fields}
 							readOnly={readOnly}
 							noteTypeType={noteType.type}
-							onTemplateChange={(updated) =>
-								handleTemplateChange(i, updated)
-							}
+							onTemplateChange={(updated) => handleTemplateChange(i, updated)}
 							onDelete={() => handleRemoveTemplate(i)}
 							isOnlyTemplate={noteType.templates.length <= 1}
 						/>

@@ -1,6 +1,9 @@
 import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
 import { effect } from "@preact/signals";
-import { type NoteStatusInfo, cards } from "@shared/services/reactive-card-store";
+import {
+	cards,
+	type NoteStatusInfo,
+} from "@shared/services/reactive-card-store";
 import { type CardMutation, lastMutation } from "@shared/services/signals";
 import { State } from "ts-fsrs";
 

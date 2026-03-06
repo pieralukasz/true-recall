@@ -2,7 +2,12 @@ import { useCustomStudyConfig } from "@features/study/modals/custom-study/hooks/
 import { NumberField } from "@features/study/modals/custom-study/NumberField";
 import type { CustomStudyModalResult } from "@features/study/modals/custom-study/types";
 import type { ReviewOrder } from "@shared/types/settings.types";
-import { Clickable, FormCard, FormField, SelectInput } from "@shared/ui/components";
+import {
+	Clickable,
+	FormCard,
+	FormField,
+	SelectInput,
+} from "@shared/ui/components";
 import { ModalFooter } from "@shared/ui/components/ModalFooter";
 import { useRef } from "preact/hooks";
 

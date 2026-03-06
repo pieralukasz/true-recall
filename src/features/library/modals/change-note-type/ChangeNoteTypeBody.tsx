@@ -1,8 +1,8 @@
 import type { NoteType } from "@shared/types/note.types";
 import { BUILTIN_IMAGE_OCCLUSION_ID } from "@shared/types/note.types";
 import { Clickable } from "@shared/ui/components";
-import type { ChangeNoteTypeResult } from "../ChangeNoteTypeModal";
 import { useCallback, useMemo, useState } from "preact/hooks";
+import type { ChangeNoteTypeResult } from "../ChangeNoteTypeModal";
 
 interface ChangeNoteTypeBodyProps {
 	currentNoteType: NoteType;
@@ -19,8 +19,7 @@ export function ChangeNoteTypeBody({
 		() =>
 			availableNoteTypes.filter(
 				(nt) =>
-					nt.id !== currentNoteType.id &&
-					nt.id !== BUILTIN_IMAGE_OCCLUSION_ID,
+					nt.id !== currentNoteType.id && nt.id !== BUILTIN_IMAGE_OCCLUSION_ID,
 			),
 		[availableNoteTypes, currentNoteType.id],
 	);
@@ -29,9 +28,7 @@ export function ChangeNoteTypeBody({
 	const selectedType = targetTypes.find((nt) => nt.id === selectedTypeId);
 
 	// Field mapping: newFieldName → oldFieldName (or "" for empty)
-	const [fieldMapping, setFieldMapping] = useState<Record<string, string>>(
-		{},
-	);
+	const [fieldMapping, setFieldMapping] = useState<Record<string, string>>({});
 
 	// Auto-map fields by name when target type changes
 	const handleTypeChange = useCallback(
@@ -55,12 +52,9 @@ export function ChangeNoteTypeBody({
 		[targetTypes, currentNoteType.fields],
 	);
 
-	const updateMapping = useCallback(
-		(newField: string, oldField: string) => {
-			setFieldMapping((prev) => ({ ...prev, [newField]: oldField }));
-		},
-		[],
-	);
+	const updateMapping = useCallback((newField: string, oldField: string) => {
+		setFieldMapping((prev) => ({ ...prev, [newField]: oldField }));
+	}, []);
 
 	const handleConfirm = useCallback(() => {
 		if (!selectedTypeId) return;
@@ -84,9 +78,9 @@ export function ChangeNoteTypeBody({
 	return (
 		<div class="ep:space-y-4">
 			<div>
-				<label class="ep:block ep:text-ui-smaller ep:text-obs-muted ep:mb-1">
+				<div class="ep:block ep:text-ui-smaller ep:text-obs-muted ep:mb-1">
 					Current type
-				</label>
+				</div>
 				<div class="ep:text-ui-small ep:font-medium ep:text-obs-normal">
 					{currentNoteType.name}
 					<span class="ep:text-obs-faint ep:ml-2">
@@ -96,16 +90,14 @@ export function ChangeNoteTypeBody({
 			</div>
 
 			<div>
-				<label class="ep:block ep:text-ui-smaller ep:text-obs-muted ep:mb-1">
+				<div class="ep:block ep:text-ui-smaller ep:text-obs-muted ep:mb-1">
 					New type
-				</label>
+				</div>
 				<select
 					class="ep:w-full ep:px-2 ep:py-1.5 ep:text-ui-small ep:bg-obs-primary ep:border ep:border-obs-border ep:rounded"
 					value={selectedTypeId}
 					onChange={(e) =>
-						handleTypeChange(
-							(e.target as HTMLSelectElement).value,
-						)
+						handleTypeChange((e.target as HTMLSelectElement).value)
 					}
 				>
 					<option value="">Select note type...</option>
@@ -119,29 +111,23 @@ export function ChangeNoteTypeBody({
 
 			{selectedType && (
 				<div>
-					<label class="ep:block ep:text-ui-smaller ep:text-obs-muted ep:mb-2">
+					<div class="ep:block ep:text-ui-smaller ep:text-obs-muted ep:mb-2">
 						Field mapping
-					</label>
+					</div>
 					<div class="ep:space-y-2">
 						{selectedType.fields.map((newField) => (
-							<div
-								key={newField}
-								class="ep:flex ep:items-center ep:gap-2"
-							>
+							<div key={newField} class="ep:flex ep:items-center ep:gap-2">
 								<span class="ep:text-ui-small ep:text-obs-normal ep:w-28 ep:truncate ep:shrink-0">
 									{newField}
 								</span>
-								<span class="ep:text-obs-faint ep:text-ui-smaller">
-									←
-								</span>
+								<span class="ep:text-obs-faint ep:text-ui-smaller">←</span>
 								<select
 									class="ep:flex-1 ep:px-2 ep:py-1 ep:text-ui-small ep:bg-obs-primary ep:border ep:border-obs-border ep:rounded"
 									value={fieldMapping[newField] ?? ""}
 									onChange={(e) =>
 										updateMapping(
 											newField,
-											(e.target as HTMLSelectElement)
-												.value,
+											(e.target as HTMLSelectElement).value,
 										)
 									}
 								>

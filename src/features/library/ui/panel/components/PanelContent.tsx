@@ -3,19 +3,16 @@ import {
 	streamingGeneration,
 } from "@features/ai/services/streaming-state";
 import { PanelCard } from "@features/library/ui/panel/components/PanelCard";
+import { PanelEmptyState } from "@features/library/ui/panel/components/PanelEmptyState";
 import { PanelIOGroup } from "@features/library/ui/panel/components/PanelIOGroup";
 import { PartialCard } from "@features/library/ui/panel/components/PartialCard";
-import { PanelEmptyState } from "@features/library/ui/panel/components/PanelEmptyState";
+import { groupCards } from "@features/library/ui/panel/group-cards";
 import { matchesCardSearch } from "@features/library/ui/panel/utils/search-query.utils";
-import {
-	groupCards,
-	type PanelItem,
-} from "@features/library/ui/panel/group-cards";
+import { useSignalEffect } from "@preact/signals";
 import type { SelectionMode } from "@shared/store";
 import type { FlashcardInfo, FlashcardItem } from "@shared/types";
 import type { FSRSFlashcardItem } from "@shared/types/fsrs/card.types";
 import { EmptyState, EmptyStateMessages } from "@shared/ui/components";
-import { useSignalEffect } from "@preact/signals";
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 
 export interface ContentHandlers {
@@ -75,7 +72,9 @@ function isNearBottom(scroller: HTMLElement): boolean {
 
 function StreamingSection({
 	currentFilePath,
-}: { currentFilePath: string | null }) {
+}: {
+	currentFilePath: string | null;
+}) {
 	const [, forceUpdate] = useState(0);
 	useSignalEffect(() => {
 		const _ = streamingGeneration.value;
@@ -228,7 +227,11 @@ export function PanelContent({
 					matchesCardSearch(c.question, c.answer, searchQuery),
 				);
 			}
-			return matchesCardSearch(item.card.question, item.card.answer, searchQuery);
+			return matchesCardSearch(
+				item.card.question,
+				item.card.answer,
+				searchQuery,
+			);
 		});
 	}, [items, searchQuery]);
 
@@ -272,7 +275,9 @@ export function PanelContent({
 				if (item.type === "io-group") {
 					const firstCard = item.cards[0]!;
 					const groupKey = firstCard.id;
-					const allSelected = item.cards.every((c) => selectedCardIds.has(c.id));
+					const allSelected = item.cards.every((c) =>
+						selectedCardIds.has(c.id),
+					);
 					return (
 						<PanelIOGroup
 							key={`io-${groupKey}`}
@@ -328,16 +333,18 @@ export function PanelContent({
 						onCopy={() => handlers.onCopyCard(card)}
 						onMove={() => handlers.onMoveCard(card)}
 						onChangeType={() => handlers.onChangeType(card)}
-						onJumpToSource={card.sourceText ? () => handlers.onJumpToSource(card) : undefined}
-						onHoverSource={card.sourceText ? () => handlers.onHoverSource(card) : undefined}
+						onJumpToSource={
+							card.sourceText ? () => handlers.onJumpToSource(card) : undefined
+						}
+						onHoverSource={
+							card.sourceText ? () => handlers.onHoverSource(card) : undefined
+						}
 						onLeaveSource={card.sourceText ? handlers.onLeaveSource : undefined}
 					/>
 				);
 			})}
 			{isStreamingForFile && (
-				<StreamingSection
-					currentFilePath={currentFile?.path ?? null}
-				/>
+				<StreamingSection currentFilePath={currentFile?.path ?? null} />
 			)}
 		</div>
 	);

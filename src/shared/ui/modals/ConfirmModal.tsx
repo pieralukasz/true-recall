@@ -1,7 +1,7 @@
-import { BasePromiseModal } from "./BasePromiseModal";
+import { Clickable } from "@shared/ui/components/Clickable";
 import type { App } from "obsidian";
 import { render } from "preact";
-import { Clickable } from "@shared/ui/components/Clickable";
+import { BasePromiseModal } from "./BasePromiseModal";
 
 export interface ConfirmResult {
 	confirmed: boolean;

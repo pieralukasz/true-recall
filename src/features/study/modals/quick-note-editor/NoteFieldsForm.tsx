@@ -1,8 +1,8 @@
 import type { EditorView } from "@codemirror/view";
+import type { NoteType } from "@shared/types/note.types";
 import type { EmbeddableEditorInstance } from "@shared/ui/editor/embedded-editor";
 import { useIcon } from "@shared/ui/preact/hooks";
 import { useApp, usePlugin } from "@shared/ui/preact/ObsidianContext";
-import type { NoteType } from "@shared/types/note.types";
 import {
 	useCallback,
 	useEffect,
@@ -52,10 +52,8 @@ export function NoteFieldsForm({
 
 			{noteType.type === 1 && (
 				<div class="ep:text-ui-smaller ep:text-obs-faint ep:bg-obs-secondary ep:px-3 ep:py-2 ep:border ep:border-obs-border ep:rounded-md">
-					Use{" "}
-					<code class="ep:text-obs-accent">{"{{c1::text}}"}</code>{" "}
-					syntax for cloze deletions. Multiple indices create
-					multiple cards.
+					Use <code class="ep:text-obs-accent">{"{{c1::text}}"}</code> syntax
+					for cloze deletions. Multiple indices create multiple cards.
 				</div>
 			)}
 		</div>
@@ -171,7 +169,11 @@ function CMField({
 				<div
 					ref={pinIconRef}
 					role="button"
-					title={isPinned ? "Unpin field (content kept on Save & Add)" : "Pin field (keep content on Save & Add)"}
+					title={
+						isPinned
+							? "Unpin field (content kept on Save & Add)"
+							: "Pin field (keep content on Save & Add)"
+					}
 					class={`ep:w-4 ep:h-4 ep:cursor-pointer ep:transition-colors [&>svg]:ep:w-3.5 [&>svg]:ep:h-3.5 ${
 						isPinned
 							? "ep:text-obs-accent"

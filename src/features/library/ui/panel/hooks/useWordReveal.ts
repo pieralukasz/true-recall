@@ -30,7 +30,7 @@ export function useWordReveal(
 		const toAnimate: Element[] = [];
 
 		for (let i = 0; i < words.length; i++) {
-			if (words[i]!.isNew && !animatedSet.current.has(i)) {
+			if (words[i]?.isNew && !animatedSet.current.has(i)) {
 				animatedSet.current.add(i);
 				const el = container.querySelector(`[data-wi="${i}"]`);
 				if (el) toAnimate.push(el);

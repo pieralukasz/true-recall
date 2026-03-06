@@ -1,14 +1,14 @@
 import type { CardTemplate } from "@shared/types/note.types";
-import { Notice } from "obsidian";
 import { usePlugin } from "@shared/ui/preact/ObsidianContext";
+import { Notice } from "obsidian";
 import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
 import { FieldManager } from "../note-type-manager/FieldManager";
-import { CardTypeDropdown } from "./CardTypeDropdown";
-import { EditorTabs, type EditorTab } from "./EditorTabs";
-import { OptionsMenu } from "./OptionsMenu";
 import { BottomBar } from "./BottomBar";
-import { TemplateCodeEditor } from "./TemplateCodeEditor";
+import { CardTypeDropdown } from "./CardTypeDropdown";
+import { type EditorTab, EditorTabs } from "./EditorTabs";
 import { FieldChips } from "./FieldChips";
+import { OptionsMenu } from "./OptionsMenu";
+import { TemplateCodeEditor } from "./TemplateCodeEditor";
 
 interface CardTypesEditorAppProps {
 	noteTypeId: string;
@@ -79,7 +79,14 @@ export function CardTypesEditorApp({
 				new Notice((e as Error).message);
 			}
 		},
-		[noteType, readOnly, activeTab, selectedTemplateIndex, noteTypeService, refresh],
+		[
+			noteType,
+			readOnly,
+			activeTab,
+			selectedTemplateIndex,
+			noteTypeService,
+			refresh,
+		],
 	);
 
 	const handleAddTemplate = useCallback(() => {
@@ -185,7 +192,9 @@ export function CardTypesEditorApp({
 		<div class="ep:flex ep:flex-col ep:h-[65vh]">
 			{/* Top bar: Card Type dropdown + Options */}
 			<div class="ep:flex ep:items-center ep:gap-3 ep:pb-3 ep:border-b ep:border-obs-border">
-				<span class="ep:text-ui-small ep:text-obs-muted ep:shrink-0">Card Type:</span>
+				<span class="ep:text-ui-small ep:text-obs-muted ep:shrink-0">
+					Card Type:
+				</span>
 				<CardTypeDropdown
 					templates={noteType.templates}
 					selectedIndex={selectedTemplateIndex}
@@ -224,10 +233,7 @@ export function CardTypesEditorApp({
 
 				{/* Field chips (only for front/back tabs) */}
 				{activeTab !== "styling" && (
-					<FieldChips
-						fields={noteType.fields}
-						noteTypeType={noteType.type}
-					/>
+					<FieldChips fields={noteType.fields} noteTypeType={noteType.type} />
 				)}
 			</div>
 

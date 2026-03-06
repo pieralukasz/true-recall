@@ -16,9 +16,9 @@ export type {
 	FlashcardItem,
 } from "@shared/types/flashcard.types";
 export type {
-	CardMaturityBreakdown,
 	AnswerDiffToken,
 	AnswerDiffTokenType,
+	CardMaturityBreakdown,
 	CardReviewLogEntry,
 	CardStore,
 	CardsCreatedEntry,
@@ -48,8 +48,8 @@ export type {
 	ReviewSessionState,
 	ReviewSessionStats,
 	ReviewViewMode,
-	SemanticGradingResult,
 	SchedulingPreview,
+	SemanticGradingResult,
 	StatsTimeRange,
 	StreakInfo,
 	TodaySummary,
@@ -86,26 +86,6 @@ export type {
 	TimeToMasteryStats,
 } from "@shared/types/nl-query.types";
 export type {
-	BackupInterval,
-	EasyDaysConfig,
-	FSRSPreset,
-	FSRSSettings,
-	LeechAction,
-	NewCardOrder,
-	NewReviewMix,
-	OptimizationMetrics,
-	ReviewOrder,
-	ScheduledBreak,
-	TypeInMode,
-	TrueRecallSettings,
-} from "@shared/types/settings.types";
-export { extractFSRSSettings } from "@shared/types/settings.types";
-export type {
-	FirstSyncStatus,
-	SyncOptions,
-	SyncResult,
-} from "@shared/types/sync.types";
-export type {
 	CardTemplate,
 	Note,
 	NoteType,
@@ -116,3 +96,23 @@ export {
 	BUILTIN_CLOZE_ID,
 	BUILTIN_IMAGE_OCCLUSION_ID,
 } from "@shared/types/note.types";
+export type {
+	BackupInterval,
+	EasyDaysConfig,
+	FSRSPreset,
+	FSRSSettings,
+	LeechAction,
+	NewCardOrder,
+	NewReviewMix,
+	OptimizationMetrics,
+	ReviewOrder,
+	ScheduledBreak,
+	TrueRecallSettings,
+	TypeInMode,
+} from "@shared/types/settings.types";
+export { extractFSRSSettings } from "@shared/types/settings.types";
+export type {
+	FirstSyncStatus,
+	SyncOptions,
+	SyncResult,
+} from "@shared/types/sync.types";

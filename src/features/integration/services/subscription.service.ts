@@ -1,5 +1,5 @@
-import { requestUrl } from "obsidian";
 import { SUBSCRIPTION_STATUS_URL } from "@shared/constants";
+import { requestUrl } from "obsidian";
 
 export interface SubscriptionStatus {
 	tier: string;

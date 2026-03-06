@@ -1,5 +1,8 @@
 import { useComputed } from "@preact/signals";
-import { archivedSourceUids, cards } from "@shared/services/reactive-card-store";
+import {
+	archivedSourceUids,
+	cards,
+} from "@shared/services/reactive-card-store";
 import { Clickable } from "@shared/ui/components";
 import { FSRS_COLORS } from "@shared/ui/helpers/fsrs-colors";
 import { usePlugin } from "@shared/ui/preact";
@@ -52,9 +55,8 @@ export function ProjectWidget({
 	if (!isProject) {
 		return (
 			<div class="ep:text-obs-muted ep:text-xs ep:p-3">
-				No child notes found. Add{" "}
-				<code>parents: ["[[this note]]"]</code> to other notes to use
-				this as a project.
+				No child notes found. Add <code>parents: ["[[this note]]"]</code> to
+				other notes to use this as a project.
 			</div>
 		);
 	}

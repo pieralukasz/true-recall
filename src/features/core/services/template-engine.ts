@@ -92,8 +92,11 @@ export function renderTemplate(
 		(_match, fieldName: string) => {
 			if (fieldName in context.fields) {
 				const idx = fieldPlaceholders.length;
-				fieldPlaceholders.push(context.fields[fieldName]!);
-				return `\x00FIELD_${idx}\x00`;
+				const fieldValue = context.fields[fieldName];
+				if (fieldValue !== undefined) {
+					fieldPlaceholders.push(fieldValue);
+					return `\x00FIELD_${idx}\x00`;
+				}
 			}
 			return _match; // Unknown field — leave unreplaced
 		},
@@ -101,15 +104,18 @@ export function renderTemplate(
 
 	// Restore field values (already protected from re-processing by placeholders)
 	for (let i = 0; i < fieldPlaceholders.length; i++) {
-		working = working.replace(`\x00FIELD_${i}\x00`, fieldPlaceholders[i]!);
+		const placeholder = fieldPlaceholders[i];
+		if (placeholder !== undefined) {
+			working = working.replace(`\x00FIELD_${i}\x00`, placeholder);
+		}
 	}
 
 	// Restore HTML comments
 	for (let i = 0; i < commentPlaceholders.length; i++) {
-		working = working.replace(
-			`\x00COMMENT_${i}\x00`,
-			commentPlaceholders[i]!,
-		);
+		const comment = commentPlaceholders[i];
+		if (comment !== undefined) {
+			working = working.replace(`\x00COMMENT_${i}\x00`, comment);
+		}
 	}
 
 	return working;
@@ -136,7 +142,13 @@ function processConditionals(
 		// Match innermost conditionals (no nested {{# or {{^ inside)
 		result = result.replace(
 			/\{\{([#^])\s*(\w+)\s*\}\}((?:(?!\{\{[#^])[\s\S])*?)\{\{\/\s*(\w+)\s*\}\}/g,
-			(_match, type: string, openField: string, content: string, closeField: string) => {
+			(
+				_match,
+				type: string,
+				openField: string,
+				content: string,
+				closeField: string,
+			) => {
 				changed = true;
 
 				// Mismatched tags — return content as graceful fallback
@@ -203,11 +215,7 @@ function renderClozeNested(
 					}
 				} else {
 					// Reveal this cloze, recursively process inner clozes
-					result += renderClozeNested(
-						parsed.content,
-						targetIndex,
-						isAnswer,
-					);
+					result += renderClozeNested(parsed.content, targetIndex, isAnswer);
 				}
 				i = parsed.endPos;
 				continue;
@@ -238,7 +246,11 @@ function parseClozeAt(text: string, start: number): ParsedCloze | null {
 	let j = start + 3;
 	// Parse digits
 	const digitStart = j;
-	while (j < text.length && text[j]! >= "0" && text[j]! <= "9") j++;
+	while (j < text.length) {
+		const char = text[j];
+		if (char === undefined || char < "0" || char > "9") break;
+		j++;
+	}
 	if (j === digitStart) return null;
 	const index = parseInt(text.slice(digitStart, j), 10);
 
@@ -259,11 +271,7 @@ function parseClozeAt(text: string, start: number): ParsedCloze | null {
 			depth--;
 			if (depth === 0) break;
 			j += 2;
-		} else if (
-			text.startsWith("::", j) &&
-			depth === 1 &&
-			firstHintSep === -1
-		) {
+		} else if (text.startsWith("::", j) && depth === 1 && firstHintSep === -1) {
 			firstHintSep = j;
 			j += 2;
 		} else {

@@ -5,8 +5,8 @@
  * are complete (#type/<slug> ... ---) or when partial content updates.
  */
 
-import type { NoteType } from "@shared/types/note.types";
 import type { ParsedBlock } from "@features/study/services/flashcard/block-parser.service";
+import type { NoteType } from "@shared/types/note.types";
 
 export interface IncrementalParseEvent {
 	type: "card_complete" | "partial_update";
@@ -49,7 +49,7 @@ export class IncrementalFlashcardParser {
 			this.buffer = parts.pop() ?? "";
 		}
 
-		for (const line of (isEnd ? parts : parts)) {
+		for (const line of isEnd ? parts : parts) {
 			const trimmed = line.trim();
 
 			// Check for block separator
@@ -70,7 +70,8 @@ export class IncrementalFlashcardParser {
 					events.push({ type: "card_complete", block: prevBlock });
 				}
 
-				const slug = typeMatch[1]!;
+				const slug = typeMatch[1];
+				if (!slug) continue;
 				const noteType = this.getNoteType(slug);
 				if (noteType) {
 					this.currentSlug = slug;
@@ -164,7 +165,7 @@ export class IncrementalFlashcardParser {
 
 			const sourceMatch = trimmed.match(SOURCE_COMMENT_RE);
 			if (sourceMatch) {
-				sourceText = sourceMatch[1]!.trim();
+				sourceText = sourceMatch[1]?.trim();
 				continue;
 			}
 			if (trimmed === ALWAYS_TYPE_IN_TOKEN) {

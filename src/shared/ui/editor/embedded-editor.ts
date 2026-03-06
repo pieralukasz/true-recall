@@ -11,7 +11,7 @@
 import { type Extension, Prec } from "@codemirror/state";
 import { EditorView, keymap, type ViewUpdate } from "@codemirror/view";
 import { around } from "monkey-around";
-import { type App, Scope, type TFile, type WorkspaceLeaf } from "obsidian";
+import { type App, Scope, type TFile } from "obsidian";
 
 // ─── Types for Obsidian internals (not in public typings) ────────────────────
 

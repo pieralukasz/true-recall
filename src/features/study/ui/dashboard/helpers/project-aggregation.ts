@@ -1,21 +1,21 @@
+import type { SessionPersistenceService } from "@features/core/persistence/session-persistence.service";
 import type { FSRSService } from "@features/core/services/fsrs.service";
-import type { PresetService } from "@features/core/services/preset.service";
 import type {
 	HierarchyService,
 	HierarchyTreeNode,
 } from "@features/core/services/hierarchy.service";
-import type { SessionPersistenceService } from "@features/core/persistence/session-persistence.service";
+import type { PresetService } from "@features/core/services/preset.service";
 import {
-	computeActionableSessionSnapshot,
 	type ActionableSessionSnapshot,
+	computeActionableSessionSnapshot,
 } from "@features/study/services/actionable-session-snapshot.service";
-import type { CardStore } from "@shared/types/fsrs/store.types";
 import type { FSRSFlashcardItem, TrueRecallSettings } from "@shared/types";
+import type { CardStore } from "@shared/types/fsrs/store.types";
+import type { MetadataCache } from "obsidian";
 import {
 	computeProjectStats,
 	type ProjectStats,
 } from "../../editor/widgets/project-stats";
-import type { MetadataCache } from "obsidian";
 import type {
 	DashboardNoteEntry,
 	DashboardProject,
@@ -60,13 +60,7 @@ export function aggregateProjectData(
 	const snapshotCache = new Map<string, ActionableSessionSnapshot>();
 
 	const allProjects = hierarchy.map((node) =>
-		buildProjectFromNode(
-			node,
-			noteByPath,
-			noteByName,
-			plugin,
-			snapshotCache,
-		),
+		buildProjectFromNode(node, noteByPath, noteByName, plugin, snapshotCache),
 	);
 
 	let projects: DashboardProject[];
@@ -115,7 +109,7 @@ export function aggregateProjectData(
 	// Recently studied: top N notes sorted by lastReview desc
 	const recentlyStudied = [...notes]
 		.filter((n) => n.lastReview)
-		.sort((a, b) => b.lastReview!.localeCompare(a.lastReview!))
+		.sort((a, b) => b.lastReview?.localeCompare(a.lastReview!))
 		.slice(0, MAX_RECENTLY_STUDIED);
 
 	return { projects, noteProjectMap, recentlyStudied };
@@ -145,13 +139,7 @@ function buildProjectFromNode(
 	}
 
 	const children = node.children.map((child) =>
-		buildProjectFromNode(
-			child,
-			noteByPath,
-			noteByName,
-			plugin,
-			snapshotCache,
-		),
+		buildProjectFromNode(child, noteByPath, noteByName, plugin, snapshotCache),
 	);
 
 	const snapshot = computeActionableSessionSnapshot(
@@ -169,7 +157,8 @@ function buildProjectFromNode(
 		{ cache: snapshotCache, activeCards: plugin.activeCards },
 	);
 
-	const preset = plugin.presetService.resolvePresetChain(node.path).effective.preset;
+	const preset = plugin.presetService.resolvePresetChain(node.path).effective
+		.preset;
 	const presetName = preset.name;
 
 	return {

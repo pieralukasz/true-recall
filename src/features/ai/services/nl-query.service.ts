@@ -7,9 +7,9 @@ import type {
 } from "@shared/types/nl-query.types";
 import {
 	AIRequestError,
-	OpenRouterClient,
-	getTextContent,
 	type ChatMessage,
+	getTextContent,
+	OpenRouterClient,
 	type ToolDefinition,
 } from "./openrouter-client";
 
@@ -166,14 +166,10 @@ export class NLQueryService {
 			const assistantMsg = choice.message;
 			messages.push(assistantMsg);
 
-			if (
-				!assistantMsg.tool_calls ||
-				assistantMsg.tool_calls.length === 0
-			) {
+			if (!assistantMsg.tool_calls || assistantMsg.tool_calls.length === 0) {
 				return {
 					question,
-					answer:
-						getTextContent(assistantMsg) || "No response generated",
+					answer: getTextContent(assistantMsg) || "No response generated",
 					intermediateSteps: steps,
 				};
 			}

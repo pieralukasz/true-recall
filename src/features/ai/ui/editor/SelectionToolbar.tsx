@@ -71,7 +71,10 @@ export function SelectionToolbar({
 			{detectedImagePath && onImageOcclusion && (
 				<Clickable
 					class="true-recall-st-btn"
-					onClick={() => { onDismiss(); onImageOcclusion(detectedImagePath); }}
+					onClick={() => {
+						onDismiss();
+						onImageOcclusion(detectedImagePath);
+					}}
 					title="Create image occlusion card"
 				>
 					<span>IO</span>

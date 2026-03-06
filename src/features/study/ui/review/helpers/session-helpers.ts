@@ -9,7 +9,10 @@ import type { SessionFilters } from "@features/study/ui/review/review.types";
 import type { CardMutation } from "@shared/services/signals";
 import type { ReviewApi } from "@shared/store";
 import type { FSRSFlashcardItem } from "@shared/types";
-import type { FSRSPreset, TrueRecallSettings } from "@shared/types/settings.types";
+import type {
+	FSRSPreset,
+	TrueRecallSettings,
+} from "@shared/types/settings.types";
 
 export interface CardFilterOptions {
 	stateFilter?: "due" | "learning" | "new" | "buried";
@@ -90,7 +93,8 @@ export function buildQueueOptions(
 		newCardsStudiedToday: sessionPersistence.getNewCardsStudiedToday(),
 		reviewsCompletedToday: sessionPersistence.getReviewCardsCompletedToday(),
 		newCardOrder: preset?.newCardOrder ?? settings.newCardOrder,
-		reviewOrder: filters.customReviewOrder ?? preset?.reviewOrder ?? settings.reviewOrder,
+		reviewOrder:
+			filters.customReviewOrder ?? preset?.reviewOrder ?? settings.reviewOrder,
 		newReviewMix: preset?.newReviewMix ?? settings.newReviewMix,
 		dayStartHour: settings.dayStartHour,
 		sourceUidFilter: filters.sourceUidFilter
@@ -173,7 +177,9 @@ export function buildGlobalPresetQueueContext(
 		cardPresetById.set(card.id, preset?.name ?? defaultPreset.name);
 	}
 
-	const presetProgressToday = new Map(sessionPersistence.getTodayProgressByPreset());
+	const presetProgressToday = new Map(
+		sessionPersistence.getTodayProgressByPreset(),
+	);
 	if (
 		defaultPreset.name !== "Default" &&
 		presetProgressToday.has("Default") &&

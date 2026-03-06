@@ -7,7 +7,6 @@ import {
 	WidgetType,
 } from "@codemirror/view";
 import type { NoteStatusCacheService } from "@features/core/cache/note-status-cache.service";
-import type { NoteStatusInfo } from "@shared/services/reactive-card-store";
 import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
 import type { FrontmatterIndexService } from "@features/core/services/frontmatter-index.service";
 import {
@@ -17,6 +16,7 @@ import {
 	infoEqual,
 	type LinkStatusOptions,
 } from "@features/study/ui/editor/LinkStatusWidget";
+import type { NoteStatusInfo } from "@shared/services/reactive-card-store";
 import type { App, TFile } from "obsidian";
 
 type VariantType = "link" | "h1" | "h2" | "h3" | "h4" | "h5" | "h6";

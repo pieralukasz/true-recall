@@ -39,7 +39,11 @@ export function FieldManager({
 			const target = index + direction;
 			if (target < 0 || target >= fields.length) return;
 			const next = [...fields];
-			[next[index], next[target]] = [next[target]!, next[index]!];
+			const temp = next[index];
+			const swapTarget = next[target];
+			if (temp === undefined || swapTarget === undefined) return;
+			next[index] = swapTarget;
+			next[target] = temp;
 			onFieldsChange(next);
 		},
 		[fields, onFieldsChange],
@@ -48,8 +52,10 @@ export function FieldManager({
 	const startEdit = useCallback(
 		(index: number) => {
 			if (readOnly) return;
+			const field = fields[index];
+			if (field === undefined) return;
 			setEditingIndex(index);
-			setEditValue(fields[index]!);
+			setEditValue(field);
 		},
 		[readOnly, fields],
 	);
@@ -57,7 +63,8 @@ export function FieldManager({
 	const commitEdit = useCallback(() => {
 		if (editingIndex === null) return;
 		const trimmed = editValue.trim();
-		const oldName = fields[editingIndex]!;
+		const oldName = fields[editingIndex];
+		if (oldName === undefined) return;
 
 		if (trimmed && trimmed !== oldName && !fields.includes(trimmed)) {
 			if (onFieldRename) {
@@ -88,25 +95,19 @@ export function FieldManager({
 								class="ep:flex-1 ep:px-2 ep:py-0.5 ep:text-ui-small ep:bg-obs-primary ep:border ep:border-obs-accent ep:rounded"
 								value={editValue}
 								onInput={(e) =>
-									setEditValue(
-										(e.target as HTMLInputElement).value,
-									)
+									setEditValue((e.target as HTMLInputElement).value)
 								}
 								onBlur={commitEdit}
 								onKeyDown={(e) => {
 									if (e.key === "Enter") commitEdit();
-									if (e.key === "Escape")
-										setEditingIndex(null);
+									if (e.key === "Escape") setEditingIndex(null);
 								}}
-								// eslint-disable-next-line jsx-a11y/no-autofocus
-								autoFocus
 							/>
 						) : (
 							<Clickable
 								class={cn(
 									"ep:flex-1 ep:px-2 ep:py-0.5 ep:text-ui-small ep:rounded",
-									!readOnly &&
-										"ep:hover:bg-obs-hover ep:cursor-text",
+									!readOnly && "ep:hover:bg-obs-hover ep:cursor-text",
 								)}
 								onClick={() => startEdit(i)}
 								disabled={readOnly}
@@ -150,9 +151,7 @@ export function FieldManager({
 						placeholder="New field name"
 						value={newFieldName}
 						onInput={(e) =>
-							setNewFieldName(
-								(e.target as HTMLInputElement).value,
-							)
+							setNewFieldName((e.target as HTMLInputElement).value)
 						}
 						onKeyDown={(e) => {
 							if (e.key === "Enter") handleAdd();
@@ -162,8 +161,7 @@ export function FieldManager({
 						class="ep:text-ui-small ep:text-obs-accent ep:hover:text-obs-accent/80 ep:px-2 ep:py-1"
 						onClick={handleAdd}
 						disabled={
-							!newFieldName.trim() ||
-							fields.includes(newFieldName.trim())
+							!newFieldName.trim() || fields.includes(newFieldName.trim())
 						}
 					>
 						Add

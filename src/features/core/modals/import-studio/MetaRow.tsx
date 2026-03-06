@@ -13,7 +13,8 @@ export function MetaRow({ noteType, detectedFormat, cardCount }: MetaRowProps) {
 			<CopyPromptButton noteType={noteType ?? undefined} />
 			{cardCount > 0 && (
 				<span class="ep:text-ui-smaller ep:text-obs-muted">
-					Format: {detectedFormat} · {cardCount} card{cardCount !== 1 ? "s" : ""}
+					Format: {detectedFormat} · {cardCount} card
+					{cardCount !== 1 ? "s" : ""}
 				</span>
 			)}
 		</div>

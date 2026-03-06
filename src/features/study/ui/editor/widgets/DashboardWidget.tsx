@@ -1,7 +1,11 @@
 import { WorkloadForecastCalculator } from "@features/metrics/services/fsrs-tools/statistics/workload-forecast.calculator";
 import { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
 import { useComputed } from "@preact/signals";
-import { cards, cardsBySourceUid, globalCounts } from "@shared/services/reactive-card-store";
+import {
+	cards,
+	cardsBySourceUid,
+	globalCounts,
+} from "@shared/services/reactive-card-store";
 import { FSRS_COLORS } from "@shared/ui/helpers/fsrs-colors";
 import { usePlugin } from "@shared/ui/preact";
 
@@ -150,7 +154,7 @@ export function DashboardWidget() {
 }
 
 export function NoteStatsWidget({ sourceUid }: { sourceUid: string | null }) {
-	const plugin = usePlugin();
+	const _plugin = usePlugin();
 
 	const data = useComputed(() => {
 		cards.value;

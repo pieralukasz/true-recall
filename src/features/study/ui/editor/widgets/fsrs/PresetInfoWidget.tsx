@@ -51,10 +51,12 @@ export function PresetInfoWidget({ source }: { source: string }) {
 		);
 	}
 
-	const presetReviews = plugin.cardStore?.stats?.getReviewCountForPreset(preset.name) ?? 0;
-	const reviewsSinceOpt = preset.lastOptimizationReviewCount != null
-		? presetReviews - preset.lastOptimizationReviewCount
-		: presetReviews;
+	const presetReviews =
+		plugin.cardStore?.stats?.getReviewCountForPreset(preset.name) ?? 0;
+	const reviewsSinceOpt =
+		preset.lastOptimizationReviewCount != null
+			? presetReviews - preset.lastOptimizationReviewCount
+			: presetReviews;
 	const needsOptimization =
 		!preset.lastOptimization ||
 		reviewsSinceOpt > 500 ||
@@ -78,21 +80,35 @@ export function PresetInfoWidget({ source }: { source: string }) {
 
 			{/* Parameters grid */}
 			<div class="ep:grid ep:grid-cols-2 ep:gap-x-4 ep:gap-y-1 ep:text-xs">
-				<ParamRow label="Retention" value={`${Math.round(preset.requestRetention * 100)}%`} />
+				<ParamRow
+					label="Retention"
+					value={`${Math.round(preset.requestRetention * 100)}%`}
+				/>
 				<ParamRow label="Max interval" value={`${preset.maximumInterval}d`} />
 				{showLimits && (
 					<>
 						<ParamRow label="New/day" value={String(preset.newCardsPerDay)} />
-						<ParamRow label="Reviews/day" value={String(preset.reviewsPerDay)} />
+						<ParamRow
+							label="Reviews/day"
+							value={String(preset.reviewsPerDay)}
+						/>
 					</>
 				)}
 				<ParamRow
 					label="Learn steps"
-					value={preset.learningSteps.length > 0 ? formatSteps(preset.learningSteps) : "none"}
+					value={
+						preset.learningSteps.length > 0
+							? formatSteps(preset.learningSteps)
+							: "none"
+					}
 				/>
 				<ParamRow
 					label="Relearn steps"
-					value={preset.relearningSteps.length > 0 ? formatSteps(preset.relearningSteps) : "none"}
+					value={
+						preset.relearningSteps.length > 0
+							? formatSteps(preset.relearningSteps)
+							: "none"
+					}
 				/>
 			</div>
 
@@ -113,7 +129,9 @@ export function PresetInfoWidget({ source }: { source: string }) {
 			{/* Weights (optional) */}
 			{showWeights && preset.weights && (
 				<div class="ep:text-xs ep:text-obs-muted ep:pt-1 ep:border-t ep:border-obs-modifier-border">
-					<div class="ep:font-medium ep:mb-1">Weights ({preset.weights.length})</div>
+					<div class="ep:font-medium ep:mb-1">
+						Weights ({preset.weights.length})
+					</div>
 					<div class="ep:font-mono ep:text-[10px] ep:leading-relaxed ep:break-all">
 						{preset.weights.map((w) => w.toFixed(4)).join(", ")}
 					</div>
@@ -161,7 +179,9 @@ function OptimizationStatus({
 	}
 
 	const { text, stale } = formatDaysAgo(lastOptimization);
-	const color = needsOptimization ? "var(--color-orange)" : "var(--color-green)";
+	const color = needsOptimization
+		? "var(--color-orange)"
+		: "var(--color-green)";
 
 	return (
 		<>
@@ -170,13 +190,10 @@ function OptimizationStatus({
 				style={{ background: color }}
 			/>
 			<span>
-				Optimized{" "}
-				<span style={{ color }}>{text}</span>
+				Optimized <span style={{ color }}>{text}</span>
 			</span>
 			{metrics && (
-				<span class="ep:text-obs-muted">
-					RMSE: {metrics.rmse.toFixed(4)}
-				</span>
+				<span class="ep:text-obs-muted">RMSE: {metrics.rmse.toFixed(4)}</span>
 			)}
 			{needsOptimization && (
 				<span

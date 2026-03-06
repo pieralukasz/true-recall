@@ -3,6 +3,7 @@
  * Helper functions for the review view
  */
 
+export { assessTypedAnswer } from "@features/study/ui/review/helpers/answer-assessment";
 export {
 	applyMutation,
 	buildGlobalPresetQueueContext,
@@ -12,7 +13,7 @@ export {
 	getEmptyQueueMessage,
 	isGlobalReviewSession,
 } from "@features/study/ui/review/helpers/session-helpers";
-export { assessTypedAnswer } from "@features/study/ui/review/helpers/answer-assessment";
+export type { TypeInMode } from "@features/study/ui/review/helpers/type-in-flow";
 export {
 	deriveTypeInMode,
 	isRatingLockedForTypeIn,
@@ -20,7 +21,6 @@ export {
 	nextTypeInMode,
 	shouldRunAIGradingOnReveal,
 } from "@features/study/ui/review/helpers/type-in-flow";
-export type { TypeInMode } from "@features/study/ui/review/helpers/type-in-flow";
 export {
 	getTypeInModeStorage,
 	persistTypeInMode,

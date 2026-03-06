@@ -117,11 +117,7 @@ export function FormattingToolbar({
 		(css: string) => {
 			const view = getEditorView();
 			if (!view) return;
-			toggleAsymmetricMarker(
-				view,
-				`<span style="color:${css}">`,
-				"</span>",
-			);
+			toggleAsymmetricMarker(view, `<span style="color:${css}">`, "</span>");
 			setShowColors(false);
 		},
 		[getEditorView],
@@ -285,9 +281,7 @@ export function FormattingToolbar({
 }
 
 function Separator() {
-	return (
-		<div class="ep:w-px ep:h-4 ep:bg-obs-border ep:mx-0.5 ep:shrink-0" />
-	);
+	return <div class="ep:w-px ep:h-4 ep:bg-obs-border ep:mx-0.5 ep:shrink-0" />;
 }
 
 function IconButton({

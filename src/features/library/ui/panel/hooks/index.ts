@@ -4,7 +4,7 @@ export { usePanelStore } from "./usePanelStore";
 export { useScrollPreservation } from "./useScrollPreservation";
 export { useSelectionActions } from "./useSelectionActions";
 export {
-	useStreamingText,
 	type StreamingWord,
+	useStreamingText,
 } from "./useStreamingText";
 export { useWordReveal } from "./useWordReveal";

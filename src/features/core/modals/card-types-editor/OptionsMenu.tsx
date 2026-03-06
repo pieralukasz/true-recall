@@ -66,9 +66,7 @@ export function OptionsMenu({
 								class="ep:w-full ep:px-2 ep:py-1 ep:text-ui-small ep:bg-obs-primary ep:border ep:border-obs-accent ep:rounded"
 								value={renameValue}
 								onInput={(e) =>
-									setRenameValue(
-										(e.target as HTMLInputElement).value,
-									)
+									setRenameValue((e.target as HTMLInputElement).value)
 								}
 								onKeyDown={(e) => {
 									if (e.key === "Enter") handleRenameCommit();
@@ -78,16 +76,23 @@ export function OptionsMenu({
 									}
 								}}
 								onBlur={handleRenameCommit}
-								// eslint-disable-next-line jsx-a11y/no-autofocus
-								autoFocus
 							/>
 						</div>
 					) : (
 						<>
-							<MenuItem label="Add Card Type" onClick={() => { onAdd(); setOpen(false); }} />
+							<MenuItem
+								label="Add Card Type"
+								onClick={() => {
+									onAdd();
+									setOpen(false);
+								}}
+							/>
 							<MenuItem
 								label="Remove Card Type"
-								onClick={() => { onRemove(); setOpen(false); }}
+								onClick={() => {
+									onRemove();
+									setOpen(false);
+								}}
 								disabled={!canRemove}
 								danger
 							/>

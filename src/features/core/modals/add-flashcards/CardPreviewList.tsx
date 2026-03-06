@@ -25,7 +25,8 @@ export function CardPreviewList({ cards }: CardPreviewListProps) {
 				Detected: {cards.length} card{cards.length !== 1 ? "s" : ""}
 				{clozeCount > 0 && basicCount > 0 && (
 					<span>
-						{" "}({basicCount} Basic, {clozeCount} Cloze)
+						{" "}
+						({basicCount} Basic, {clozeCount} Cloze)
 					</span>
 				)}
 			</div>
@@ -43,13 +44,7 @@ export function CardPreviewList({ cards }: CardPreviewListProps) {
 	);
 }
 
-function CardPreviewItem({
-	card,
-	index,
-}: {
-	card: ParsedCard;
-	index: number;
-}) {
+function CardPreviewItem({ card, index }: { card: ParsedCard; index: number }) {
 	const isCloze = card.noteTypeId === BUILTIN_CLOZE_ID;
 	const fieldEntries = Object.entries(card.fields);
 	const isMultiField = fieldEntries.length > 2;

@@ -1,5 +1,5 @@
-import { prioritySortComparator } from "./note-priority";
 import type { DashboardNoteEntry, DashboardProject } from "../types";
+import { prioritySortComparator } from "./note-priority";
 
 export type FlatProjectItem =
 	| {
@@ -39,9 +39,19 @@ export function flattenProjectTree(
 	const result: FlatProjectItem[] = [];
 	const query = searchQuery.toLowerCase();
 
-	function walk(project: DashboardProject, depth: number, parentPath: string | null) {
+	function walk(
+		project: DashboardProject,
+		depth: number,
+		parentPath: string | null,
+	) {
 		const isExpanded = expandedPaths.has(project.path);
-		result.push({ type: "project-header", project, depth, isExpanded, parentPath });
+		result.push({
+			type: "project-header",
+			project,
+			depth,
+			isExpanded,
+			parentPath,
+		});
 
 		if (!isExpanded) return;
 
@@ -51,9 +61,7 @@ export function flattenProjectTree(
 		}
 
 		const notes = query
-			? project.memberNotes.filter((n) =>
-					n.name.toLowerCase().includes(query),
-				)
+			? project.memberNotes.filter((n) => n.name.toLowerCase().includes(query))
 			: project.memberNotes;
 		const sorted = [...notes].sort(prioritySortComparator);
 

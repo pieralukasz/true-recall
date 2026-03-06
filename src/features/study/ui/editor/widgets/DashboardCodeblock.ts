@@ -180,11 +180,7 @@ export function registerDashboardCodeblocks(plugin: TrueRecallPlugin): void {
 		"true-recall-countdown",
 		(source, el, _ctx) => {
 			el.addClass("true-recall-codeblock-countdown");
-			const unmount = mountPreact(
-				el,
-				plugin,
-				h(CountdownWidget, { source }),
-			);
+			const unmount = mountPreact(el, plugin, h(CountdownWidget, { source }));
 			registerCleanup(el, unmount);
 		},
 	);
@@ -193,11 +189,7 @@ export function registerDashboardCodeblocks(plugin: TrueRecallPlugin): void {
 		"true-recall-maturity",
 		(source, el, _ctx) => {
 			el.addClass("true-recall-codeblock-maturity");
-			const unmount = mountPreact(
-				el,
-				plugin,
-				h(MaturityWidget, { source }),
-			);
+			const unmount = mountPreact(el, plugin, h(MaturityWidget, { source }));
 			registerCleanup(el, unmount);
 		},
 	);
@@ -230,11 +222,7 @@ export function registerDashboardCodeblocks(plugin: TrueRecallPlugin): void {
 		"true-recall-preset-info",
 		(source, el, _ctx) => {
 			el.addClass("true-recall-codeblock-preset-info");
-			const unmount = mountPreact(
-				el,
-				plugin,
-				h(PresetInfoWidget, { source }),
-			);
+			const unmount = mountPreact(el, plugin, h(PresetInfoWidget, { source }));
 			registerCleanup(el, unmount);
 		},
 	);
@@ -256,11 +244,7 @@ export function registerDashboardCodeblocks(plugin: TrueRecallPlugin): void {
 		"true-recall-forecast",
 		(source, el, _ctx) => {
 			el.addClass("true-recall-codeblock-forecast");
-			const unmount = mountPreact(
-				el,
-				plugin,
-				h(ForecastWidget, { source }),
-			);
+			const unmount = mountPreact(el, plugin, h(ForecastWidget, { source }));
 			registerCleanup(el, unmount);
 		},
 	);

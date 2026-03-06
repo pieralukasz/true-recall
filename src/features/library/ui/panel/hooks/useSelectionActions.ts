@@ -91,22 +91,15 @@ export function useSelectionActions({
 			),
 		);
 
-		const successCount = results.filter(
-			(r) => r.status === "fulfilled",
-		).length;
+		const successCount = results.filter((r) => r.status === "fulfilled").length;
 		results.forEach((r, i) => {
 			if (r.status === "rejected") {
-				console.error(
-					`Failed to move card ${selectedCards[i]?.id}:`,
-					r.reason,
-				);
+				console.error(`Failed to move card ${selectedCards[i]?.id}:`, r.reason);
 			}
 		});
 
 		panel.exitSelectionMode();
-		notify().success(
-			`Moved ${successCount} of ${selectedCards.length} cards`,
-		);
+		notify().success(`Moved ${successCount} of ${selectedCards.length} cards`);
 	}, [flashcardInfo, selectedCardIds, currentFile, app, plugin, panel]);
 
 	const handleDeleteSelected = useCallback(async () => {
@@ -124,8 +117,7 @@ export function useSelectionActions({
 		if (!confirmed) return;
 
 		const cardIds = selectedCards.map((card) => card.id);
-		const successCount =
-			plugin.flashcardManager.removeFlashcardsByIds(cardIds);
+		const successCount = plugin.flashcardManager.removeFlashcardsByIds(cardIds);
 
 		panel.exitSelectionMode();
 		notify().cardsDeleted(successCount);
@@ -140,8 +132,7 @@ export function useSelectionActions({
 		const { notifyCardChange } = await import("@shared/services/signals");
 
 		const cardIds = Array.from(selectedCardIds);
-		const noteInfos =
-			plugin.cardStore.cards.getNoteInfoForCardIds(cardIds);
+		const noteInfos = plugin.cardStore.cards.getNoteInfoForCardIds(cardIds);
 		if (noteInfos.length === 0) return;
 
 		const uniqueTypeIds = new Set(noteInfos.map((n) => n.noteTypeId));
@@ -152,9 +143,8 @@ export function useSelectionActions({
 			return;
 		}
 
-		const currentTypeId = noteInfos[0]!.noteTypeId;
-		const currentNoteType =
-			plugin.cardStore.noteTypes.getById(currentTypeId);
+		const currentTypeId = noteInfos[0]?.noteTypeId;
+		const currentNoteType = plugin.cardStore.noteTypes.getById(currentTypeId);
 		if (!currentNoteType) return;
 
 		const allNoteTypes = plugin.cardStore.noteTypes.getAll();
@@ -205,8 +195,7 @@ export function useSelectionActions({
 		if (!confirmed) return;
 
 		const cardIds = flashcardInfo.flashcards.map((card) => card.id);
-		const successCount =
-			plugin.flashcardManager.removeFlashcardsByIds(cardIds);
+		const successCount = plugin.flashcardManager.removeFlashcardsByIds(cardIds);
 		notify().cardsDeleted(successCount);
 	}, [flashcardInfo, plugin]);
 

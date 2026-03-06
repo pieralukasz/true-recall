@@ -1,16 +1,12 @@
 import type { GenerationMode } from "@features/ai/prompts/default-prompts";
-import { StreamingGenerationService } from "@features/ai/services/streaming-generation.service";
-import { SqlQueryAdapter } from "@features/ai/services/sql-query.adapter";
 import { NLQueryService } from "@features/ai/services/nl-query.service";
+import { SqlQueryAdapter } from "@features/ai/services/sql-query.adapter";
+import { StreamingGenerationService } from "@features/ai/services/streaming-generation.service";
 import { createSelectionToolbarExtension } from "@features/ai/ui/editor/SelectionToolbarPlugin";
 import { NoteStatusCacheService } from "@features/core/cache/note-status-cache.service";
-import {
-	initCardStore,
-	initMetadataStore,
-	refreshCards,
-	refreshMetadata,
-	refreshSettings,
-} from "@shared/services/reactive-card-store";
+import { CardTypesEditorModal } from "@features/core/modals/card-types-editor/CardTypesEditorModal";
+import { NoteTypeSuggestModal } from "@features/core/modals/card-types-editor/NoteTypeSuggestModal";
+import { ImportStudioModal } from "@features/core/modals/import-studio/ImportStudioModal";
 import { BackgroundBackupManager } from "@features/core/persistence/background-backup.service";
 import { BackupService } from "@features/core/persistence/backup.service";
 import { SessionPersistenceService } from "@features/core/persistence/session-persistence.service";
@@ -22,15 +18,14 @@ import {
 import { DayBoundaryService } from "@features/core/services/day-boundary.service";
 import { FrontmatterIndexService } from "@features/core/services/frontmatter-index.service";
 import { FSRSService } from "@features/core/services/fsrs.service";
+import { HierarchyService } from "@features/core/services/hierarchy.service";
 import { NoteTypeService } from "@features/core/services/note-type.service";
 import { PresetService } from "@features/core/services/preset.service";
-import { HierarchyService } from "@features/core/services/hierarchy.service";
-import { ImportStudioModal } from "@features/core/modals/import-studio/ImportStudioModal";
-import { CardTypesEditorModal } from "@features/core/modals/card-types-editor/CardTypesEditorModal";
-import { NoteTypeSuggestModal } from "@features/core/modals/card-types-editor/NoteTypeSuggestModal";
-import { QuickNoteEditorModal } from "@features/study/modals/quick-note-editor/QuickNoteEditorModal";
 import { IOEditorModal } from "@features/image-occlusion/IOEditorModal";
-import type { IOEditorMode, IOEditorResult } from "@features/image-occlusion/types";
+import type {
+	IOEditorMode,
+	IOEditorResult,
+} from "@features/image-occlusion/types";
 import { AnkiExportModal } from "@features/integration/modals/AnkiExportModal";
 import { AnkiImportModal } from "@features/integration/modals/AnkiImportModal";
 import { CsvExportModal } from "@features/integration/modals/CsvExportModal";
@@ -55,6 +50,7 @@ import {
 	CustomStudyModal,
 	type CustomStudyModalScope,
 } from "@features/study/modals/CustomStudyModal";
+import { QuickNoteEditorModal } from "@features/study/modals/quick-note-editor/QuickNoteEditorModal";
 import { DeletionHandlerService } from "@features/study/services/flashcard/deletion-handler.service";
 import { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
 import { UidGuardianService } from "@features/study/services/flashcard/uid-guardian.service";
@@ -65,8 +61,8 @@ import {
 import type { StatusBarWidget } from "@features/study/ui/editor/widgets/StatusBarWidget";
 import { ReviewView } from "@features/study/ui/review/ReviewView";
 import {
-	VIEW_TYPE_DASHBOARD,
 	VIEW_TYPE_CARD_BROWSER,
+	VIEW_TYPE_DASHBOARD,
 	VIEW_TYPE_FLASHCARD_PANEL,
 	VIEW_TYPE_REVIEW,
 	VIEW_TYPE_SIMULATOR,
@@ -76,10 +72,16 @@ import {
 	NOTIFICATION_DURATION,
 	notify,
 } from "@shared/services/notification.service";
+import {
+	initCardStore,
+	initMetadataStore,
+	refreshCards,
+	refreshMetadata,
+	refreshSettings,
+} from "@shared/services/reactive-card-store";
 import { UndoService } from "@shared/services/undo.service";
 import { type AppStore, createAppStore } from "@shared/store";
 import { extractFSRSSettings } from "@shared/types";
-import { isDesktop } from "@shared/utils/platform";
 import {
 	BUILTIN_BASIC_ID,
 	BUILTIN_BASIC_REVERSED_ID,
@@ -87,6 +89,7 @@ import {
 	type NoteType,
 } from "@shared/types/note.types";
 import { PresetInspectorModal } from "@shared/ui/modals";
+import { isDesktop } from "@shared/utils/platform";
 import { normalizePath, Plugin, type TFile } from "obsidian";
 import { registerCommands } from "./plugin/PluginCommands";
 import {
@@ -187,12 +190,8 @@ export default class TrueRecallPlugin extends Plugin {
 			this.hierarchyService.invalidateGraph();
 			refreshMetadata();
 		});
-		this.frontmatterIndex.onFieldChange("archive", () =>
-			refreshMetadata(),
-		);
-		this.frontmatterIndex.onFieldChange("fsrs_preset", () =>
-			refreshMetadata(),
-		);
+		this.frontmatterIndex.onFieldChange("archive", () => refreshMetadata());
+		this.frontmatterIndex.onFieldChange("fsrs_preset", () => refreshMetadata());
 		this.frontmatterIndex.registerEvents(this);
 
 		this.hierarchyService = new HierarchyService(
@@ -261,11 +260,10 @@ export default class TrueRecallPlugin extends Plugin {
 		);
 
 		this.registerView(VIEW_TYPE_DASHBOARD, (leaf) => {
-			const {
-				DashboardView,
-			} = require("@features/study/ui/dashboard/DashboardView") as {
-				DashboardView: typeof import("@features/study/ui/dashboard/DashboardView").DashboardView;
-			};
+			const { DashboardView } =
+				require("@features/study/ui/dashboard/DashboardView") as {
+					DashboardView: typeof import("@features/study/ui/dashboard/DashboardView").DashboardView;
+				};
 			return new DashboardView(leaf, this);
 		});
 
@@ -276,11 +274,10 @@ export default class TrueRecallPlugin extends Plugin {
 		});
 
 		this.registerView(VIEW_TYPE_CARD_BROWSER, (leaf) => {
-			const {
-				CardBrowserView,
-			} = require("@features/library/ui/browser/CardBrowserView") as {
-				CardBrowserView: typeof import("@features/library/ui/browser/CardBrowserView").CardBrowserView;
-			};
+			const { CardBrowserView } =
+				require("@features/library/ui/browser/CardBrowserView") as {
+					CardBrowserView: typeof import("@features/library/ui/browser/CardBrowserView").CardBrowserView;
+				};
 			return new CardBrowserView(leaf, this);
 		});
 
@@ -607,8 +604,9 @@ export default class TrueRecallPlugin extends Plugin {
 	}
 
 	async reviewNoteFlashcards(file: TFile): Promise<void> {
-		const sourceUid =
-			await this.flashcardManager.getFrontmatterService().getSourceNoteUid(file);
+		const sourceUid = await this.flashcardManager
+			.getFrontmatterService()
+			.getSourceNoteUid(file);
 		if (!sourceUid) {
 			notify().info(`No flashcards found for "${file.basename}"`);
 			return;
@@ -832,7 +830,9 @@ export default class TrueRecallPlugin extends Plugin {
 			try {
 				await this.cardStore.load();
 			} catch (loadError) {
-				console.warn("[True Recall] Database load failed, attempting auto-recovery from backup...");
+				console.warn(
+					"[True Recall] Database load failed, attempting auto-recovery from backup...",
+				);
 				const recovered = await this.tryAutoRecoverFromBackup(deviceId);
 				if (recovered) {
 					this.cardStore = new SqliteStoreService(this.app, deviceId);
@@ -901,7 +901,9 @@ export default class TrueRecallPlugin extends Plugin {
 
 	private async tryAutoRecoverFromBackup(deviceId: string): Promise<boolean> {
 		const backupFolder = normalizePath(`${DB_FOLDER}/backups/${deviceId}`);
-		const dbPath = normalizePath(`${DB_FOLDER}/${getDeviceDbFilename(deviceId)}`);
+		const dbPath = normalizePath(
+			`${DB_FOLDER}/${getDeviceDbFilename(deviceId)}`,
+		);
 
 		try {
 			const folderExists = await this.app.vault.adapter.exists(backupFolder);
@@ -922,12 +924,15 @@ export default class TrueRecallPlugin extends Plugin {
 					if (!stat || stat.size < 100) continue;
 
 					const data = await this.app.vault.adapter.readBinary(backupPath);
-					const header = new TextDecoder().decode(new Uint8Array(data).slice(0, 16));
+					const header = new TextDecoder().decode(
+						new Uint8Array(data).slice(0, 16),
+					);
 					if (!header.startsWith("SQLite format 3")) continue;
 
 					// Valid backup found — rename corrupted file and restore
 					const corruptedPath = `${dbPath}.corrupted`;
-					const corruptedExists = await this.app.vault.adapter.exists(corruptedPath);
+					const corruptedExists =
+						await this.app.vault.adapter.exists(corruptedPath);
 					if (corruptedExists) {
 						await this.app.vault.adapter.remove(corruptedPath);
 					}
@@ -935,15 +940,15 @@ export default class TrueRecallPlugin extends Plugin {
 					await this.app.vault.adapter.writeBinary(dbPath, data);
 
 					const backupName = backupPath.split("/").pop() || "";
-					console.log(`[True Recall] Auto-recovered from backup: ${backupName}`);
+					console.log(
+						`[True Recall] Auto-recovered from backup: ${backupName}`,
+					);
 					notify().success(
 						`Database was corrupted. Auto-restored from backup: ${backupName}`,
 						NOTIFICATION_DURATION.PERSIST,
 					);
 					return true;
-				} catch {
-					continue;
-				}
+				} catch {}
 			}
 		} catch (error) {
 			console.error("[True Recall] Auto-recovery failed:", error);
@@ -1071,9 +1076,10 @@ export default class TrueRecallPlugin extends Plugin {
 					await this.activateView();
 
 					const noteType = this.resolveNoteTypeForMode(mode);
-					const allNoteTypes = mode === "auto"
-						? this.cardStore?.noteTypes?.getAll() ?? []
-						: undefined;
+					const allNoteTypes =
+						mode === "auto"
+							? (this.cardStore?.noteTypes?.getAll() ?? [])
+							: undefined;
 					const result = await streamingService.generateStreaming(
 						text,
 						mode,
@@ -1091,7 +1097,8 @@ export default class TrueRecallPlugin extends Plugin {
 						notify().info(`Created ${result.created} flashcard(s)`);
 					}
 				} catch (error) {
-					if (error instanceof DOMException && error.name === "AbortError") return;
+					if (error instanceof DOMException && error.name === "AbortError")
+						return;
 					const msg = error instanceof Error ? error.message : String(error);
 					notify().error(`Flashcard generation failed: ${msg}`);
 				}
@@ -1131,9 +1138,11 @@ export default class TrueRecallPlugin extends Plugin {
 				const resolvedPath = resolved?.path ?? imagePath;
 
 				if (activeFile && activeFile.extension === "md") {
-					const frontmatterService = this.flashcardManager.getFrontmatterService();
+					const frontmatterService =
+						this.flashcardManager.getFrontmatterService();
 					void (async () => {
-						let sourceUid = await frontmatterService.getSourceNoteUid(activeFile);
+						let sourceUid =
+							await frontmatterService.getSourceNoteUid(activeFile);
 						if (!sourceUid) {
 							sourceUid = frontmatterService.generateUid();
 							await frontmatterService.setSourceNoteUid(activeFile, sourceUid);
@@ -1151,7 +1160,8 @@ export default class TrueRecallPlugin extends Plugin {
 					});
 				}
 			},
-			hasApiKey: () => !!(this.settings.openRouterApiKey || this.settings.subscriptionKey),
+			hasApiKey: () =>
+				!!(this.settings.openRouterApiKey || this.settings.subscriptionKey),
 			isEnabled: () => this.settings.selectionToolbarEnabled,
 		});
 
@@ -1185,12 +1195,15 @@ export default class TrueRecallPlugin extends Plugin {
 	}
 
 	private async initializeNLQueryService(): Promise<void> {
-		const hasAnyKey = this.settings.openRouterApiKey || this.settings.subscriptionKey;
+		const hasAnyKey =
+			this.settings.openRouterApiKey || this.settings.subscriptionKey;
 		if (!this.cardStore || !hasAnyKey) {
 			return;
 		}
 
-		const { isFeatureAllowed } = await import("@shared/utils/subscription.utils");
+		const { isFeatureAllowed } = await import(
+			"@shared/utils/subscription.utils"
+		);
 		if (!isFeatureAllowed("nlQuery", this.settings)) {
 			return;
 		}
@@ -1201,7 +1214,9 @@ export default class TrueRecallPlugin extends Plugin {
 				return;
 			}
 
-			const { resolveAIClientConfig, getBYOKFallbackConfig } = await import("@features/ai/services/ai-client-config");
+			const { resolveAIClientConfig, getBYOKFallbackConfig } = await import(
+				"@features/ai/services/ai-client-config"
+			);
 			const aiConfig = resolveAIClientConfig(this.settings);
 
 			const sqlAdapter = new SqlQueryAdapter(db);

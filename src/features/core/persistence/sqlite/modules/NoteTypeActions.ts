@@ -129,10 +129,10 @@ export class NoteTypeActions {
 	}
 
 	delete(id: string): void {
-		this.db.run(
-			`UPDATE note_types SET deleted_at = ? WHERE id = ?`,
-			[Date.now(), id],
-		);
+		this.db.run(`UPDATE note_types SET deleted_at = ? WHERE id = ?`, [
+			Date.now(),
+			id,
+		]);
 	}
 
 	seedBuiltinTypes(): void {

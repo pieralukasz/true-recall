@@ -213,7 +213,7 @@
 
 /* Reset padding for dashboard — must be unlayered to override Obsidian defaults */
 [data-type="true-recall-dashboard-view"] .view-content {
-	padding: 0 !important;
+	padding: 0;
 }
 
 /* ── Streaming flashcard generation animations ── */
@@ -249,8 +249,7 @@
 
 @keyframes ep-completion-glow {
 	0% {
-		box-shadow: 0 0 0 0
-			color-mix(in srgb, var(--color-green) 40%, transparent);
+		box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-green) 40%, transparent);
 	}
 	50% {
 		box-shadow: 0 0 12px 2px

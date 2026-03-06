@@ -49,7 +49,10 @@ export function aggregateCardsWithPresetLimits(
 		if (!card.sourceNotePath) continue; // Keep StatusBar aligned with dashboard notes list
 		if (archived.has(card.sourceUid ?? "")) continue;
 		const fsrs = card.fsrs;
-		if (fsrs.suspended || (fsrs.buriedUntil && new Date(fsrs.buriedUntil) > now)) {
+		if (
+			fsrs.suspended ||
+			(fsrs.buriedUntil && new Date(fsrs.buriedUntil) > now)
+		) {
 			continue;
 		}
 
@@ -104,7 +107,7 @@ export class StatusBarWidget {
 
 	constructor(
 		private el: HTMLElement,
-		private flashcardManager: FlashcardManager,
+		_flashcardManager: FlashcardManager,
 		private onClickDue: () => void,
 		private getEnabled: () => boolean = () => true,
 		private services?: StatusBarServices,
@@ -184,7 +187,11 @@ export class StatusBarWidget {
 	}
 
 	/** Fallback when services not available */
-	private aggregateRaw(): { dueToday: number; newCount: number; learning: number } {
+	private aggregateRaw(): {
+		dueToday: number;
+		newCount: number;
+		learning: number;
+	} {
 		const allCards = allCardsArray.value;
 		const archived = archivedSourceUids.value;
 		const now = new Date();
@@ -196,11 +203,22 @@ export class StatusBarWidget {
 			if (!card.sourceNotePath) continue;
 			if (archived.has(card.sourceUid ?? "")) continue;
 			const fsrs = card.fsrs;
-			if (fsrs.suspended || (fsrs.buriedUntil && new Date(fsrs.buriedUntil) > now)) continue;
+			if (
+				fsrs.suspended ||
+				(fsrs.buriedUntil && new Date(fsrs.buriedUntil) > now)
+			)
+				continue;
 			switch (fsrs.state) {
-				case 0: newCount++; break;
-				case 1: case 3: learning++; break;
-				case 2: if (new Date(fsrs.due) <= now) dueToday++; break;
+				case 0:
+					newCount++;
+					break;
+				case 1:
+				case 3:
+					learning++;
+					break;
+				case 2:
+					if (new Date(fsrs.due) <= now) dueToday++;
+					break;
 			}
 		}
 		return { dueToday, newCount, learning };

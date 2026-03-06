@@ -16,7 +16,11 @@
 		border: 1px solid var(--background-modifier-border);
 		border-radius: var(--radius-m);
 		padding: 12px 12px 10px;
-		background: color-mix(in srgb, var(--background-secondary) 65%, transparent);
+		background: color-mix(
+			in srgb,
+			var(--background-secondary) 65%,
+			transparent
+		);
 		display: flex;
 		flex-direction: column;
 		gap: 0;
@@ -29,7 +33,8 @@
 		flex-direction: column;
 		gap: 8px;
 		padding: 10px 0;
-		border-bottom: 1px solid color-mix(in srgb, var(--background-modifier-border) 85%, transparent);
+		border-bottom: 1px solid
+			color-mix(in srgb, var(--background-modifier-border) 85%, transparent);
 	}
 
 	.true-recall-io-side-section:first-child {
@@ -70,7 +75,11 @@
 	}
 
 	.true-recall-io-region-item.is-selected {
-		border-color: color-mix(in srgb, var(--interactive-accent) 55%, transparent);
+		border-color: color-mix(
+			in srgb,
+			var(--interactive-accent) 55%,
+			transparent
+		);
 		background: color-mix(in srgb, var(--interactive-accent) 13%, transparent);
 	}
 
@@ -104,14 +113,22 @@
 
 	.true-recall-io-icon-btn:hover:not([aria-disabled="true"]) {
 		color: var(--text-normal);
-		border-color: color-mix(in srgb, var(--background-modifier-border) 50%, transparent);
+		border-color: color-mix(
+			in srgb,
+			var(--background-modifier-border) 50%,
+			transparent
+		);
 		background: var(--background-modifier-hover);
 	}
 
 	.true-recall-io-icon-btn.is-active {
 		color: var(--text-accent);
 		background: color-mix(in srgb, var(--interactive-accent) 16%, transparent);
-		border-color: color-mix(in srgb, var(--interactive-accent) 45%, transparent);
+		border-color: color-mix(
+			in srgb,
+			var(--interactive-accent) 45%,
+			transparent
+		);
 	}
 
 	.true-recall-io-icon-btn.is-danger:hover:not([aria-disabled="true"]) {
@@ -214,7 +231,8 @@
 		align-items: center;
 		gap: 4px;
 		padding: 4px;
-		border: 1px solid color-mix(in srgb, var(--background-modifier-border) 75%, transparent);
+		border: 1px solid
+			color-mix(in srgb, var(--background-modifier-border) 75%, transparent);
 		border-radius: 999px;
 		background: color-mix(in srgb, var(--background-primary) 84%, transparent);
 		backdrop-filter: blur(5px);
@@ -265,10 +283,15 @@
 	.true-recall-io-canvas-shortcuts kbd {
 		font-family: var(--font-interface);
 		font-size: calc(var(--font-ui-smaller) - 1px);
-		border: 1px solid color-mix(in srgb, var(--background-modifier-border) 60%, transparent);
+		border: 1px solid
+			color-mix(in srgb, var(--background-modifier-border) 60%, transparent);
 		border-radius: 5px;
 		padding: 1px 4px;
-		background: color-mix(in srgb, var(--background-secondary) 65%, transparent);
+		background: color-mix(
+			in srgb,
+			var(--background-secondary) 65%,
+			transparent
+		);
 	}
 
 	.true-recall-io-canvas-transform {
@@ -304,26 +327,48 @@
 	}
 
 	.true-recall-io-canvas-region {
-		fill: color-mix(in srgb, var(--background-primary) 62%, var(--interactive-accent) 38%);
+		fill: color-mix(
+			in srgb,
+			var(--background-primary) 62%,
+			var(--interactive-accent) 38%
+		);
 		fill-opacity: 1;
-		stroke: color-mix(in srgb, var(--interactive-accent) 88%, var(--background-primary) 12%);
+		stroke: color-mix(
+			in srgb,
+			var(--interactive-accent) 88%,
+			var(--background-primary) 12%
+		);
 		stroke-width: 0.0045;
 		cursor: move;
 	}
 
 	.true-recall-io-canvas-region.is-draft {
-		fill: color-mix(in srgb, var(--background-primary) 72%, var(--interactive-accent) 28%);
+		fill: color-mix(
+			in srgb,
+			var(--background-primary) 72%,
+			var(--interactive-accent) 28%
+		);
 		fill-opacity: 1;
-		stroke: color-mix(in srgb, var(--interactive-accent) 72%, var(--background-primary) 28%);
+		stroke: color-mix(
+			in srgb,
+			var(--interactive-accent) 72%,
+			var(--background-primary) 28%
+		);
 		stroke-dasharray: 0.018 0.01;
 	}
 
 	.true-recall-io-canvas-region.is-selected {
-		fill: color-mix(in srgb, var(--background-primary) 48%, var(--interactive-accent) 52%);
+		fill: color-mix(
+			in srgb,
+			var(--background-primary) 48%,
+			var(--interactive-accent) 52%
+		);
 		fill-opacity: 1;
 		stroke: var(--interactive-accent);
 		stroke-width: 0.007;
-		filter: drop-shadow(0 0 5px color-mix(in srgb, var(--interactive-accent) 48%, transparent));
+		filter: drop-shadow(
+			0 0 5px color-mix(in srgb, var(--interactive-accent) 48%, transparent)
+		);
 	}
 
 	.true-recall-io-canvas-handle {
@@ -353,11 +398,13 @@
 
 	.true-recall-io-render-frame {
 		position: relative;
-		border: 1px solid color-mix(in srgb, var(--background-modifier-border) 80%, transparent);
+		border: 1px solid
+			color-mix(in srgb, var(--background-modifier-border) 80%, transparent);
 		border-radius: var(--radius-l);
 		background: var(--background-secondary);
 		overflow: hidden;
-		box-shadow: 0 8px 24px color-mix(in srgb, var(--background-primary) 50%, transparent);
+		box-shadow: 0 8px 24px
+			color-mix(in srgb, var(--background-primary) 50%, transparent);
 		max-height: min(58vh, 620px);
 	}
 
@@ -384,12 +431,20 @@
 	}
 
 	.true-recall-io-shape.is-mask-active {
-		fill: color-mix(in srgb, var(--background-primary) 32%, var(--interactive-accent) 68%);
+		fill: color-mix(
+			in srgb,
+			var(--background-primary) 32%,
+			var(--interactive-accent) 68%
+		);
 		fill-opacity: 1;
 	}
 
 	.true-recall-io-shape.is-mask-passive {
-		fill: color-mix(in srgb, var(--background-primary) 46%, var(--interactive-accent) 54%);
+		fill: color-mix(
+			in srgb,
+			var(--background-primary) 46%,
+			var(--interactive-accent) 54%
+		);
 		fill-opacity: 1;
 	}
 
@@ -431,17 +486,22 @@
 	.true-recall-io-footer {
 		margin-top: 2px;
 		padding-top: 10px;
-		border-top: 1px solid color-mix(in srgb, var(--background-modifier-border) 85%, transparent);
+		border-top: 1px solid
+			color-mix(in srgb, var(--background-modifier-border) 85%, transparent);
 	}
 
 	@keyframes true-recall-io-pulse {
 		0% {
 			fill: color-mix(in srgb, var(--color-green) 25%, transparent);
-			filter: drop-shadow(0 0 0 color-mix(in srgb, var(--color-green) 70%, transparent));
+			filter: drop-shadow(
+				0 0 0 color-mix(in srgb, var(--color-green) 70%, transparent)
+			);
 		}
 		55% {
 			fill: color-mix(in srgb, var(--color-green) 40%, transparent);
-			filter: drop-shadow(0 0 8px color-mix(in srgb, var(--color-green) 70%, transparent));
+			filter: drop-shadow(
+				0 0 8px color-mix(in srgb, var(--color-green) 70%, transparent)
+			);
 		}
 		100% {
 			fill: color-mix(in srgb, var(--color-green) 25%, transparent);

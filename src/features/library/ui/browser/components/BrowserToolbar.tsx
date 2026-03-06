@@ -1,11 +1,11 @@
+import { useSignal } from "@preact/signals";
 import { Clickable } from "@shared/ui/components";
 import { SearchCombobox } from "@shared/ui/components/SearchCombobox";
+import type { SuggestionProvider } from "@shared/ui/helpers/search-suggestions.types";
+import { useRef } from "preact/hooks";
 import { ALL_COLUMNS } from "../helpers/column-defs";
 import { formatBrowserTotalCount } from "../helpers/infinite-scroll";
 import type { SortConfig, StateFilterValue } from "../types";
-import type { SuggestionProvider } from "@shared/ui/helpers/search-suggestions.types";
-import { useSignal } from "@preact/signals";
-import { useRef } from "preact/hooks";
 
 const STATE_CHIPS: { value: StateFilterValue; label: string; cls: string }[] = [
 	{ value: "new", label: "New", cls: "ep:bg-obs-green/15 ep:text-obs-green" },
@@ -89,24 +89,12 @@ export function BrowserToolbar({
 					>
 						{sidebarVisible ? (
 							<>
-								<rect
-									x="3"
-									y="3"
-									width="18"
-									height="18"
-									rx="2"
-								/>
+								<rect x="3" y="3" width="18" height="18" rx="2" />
 								<line x1="9" y1="3" x2="9" y2="21" />
 							</>
 						) : (
 							<>
-								<rect
-									x="3"
-									y="3"
-									width="18"
-									height="18"
-									rx="2"
-								/>
+								<rect x="3" y="3" width="18" height="18" rx="2" />
 								<line x1="9" y1="3" x2="9" y2="21" />
 							</>
 						)}
@@ -137,34 +125,10 @@ export function BrowserToolbar({
 							stroke="currentColor"
 							stroke-width="2"
 						>
-							<rect
-								x="3"
-								y="3"
-								width="7"
-								height="7"
-								rx="1"
-							/>
-							<rect
-								x="14"
-								y="3"
-								width="7"
-								height="7"
-								rx="1"
-							/>
-							<rect
-								x="3"
-								y="14"
-								width="7"
-								height="7"
-								rx="1"
-							/>
-							<rect
-								x="14"
-								y="14"
-								width="7"
-								height="7"
-								rx="1"
-							/>
+							<rect x="3" y="3" width="7" height="7" rx="1" />
+							<rect x="14" y="3" width="7" height="7" rx="1" />
+							<rect x="3" y="14" width="7" height="7" rx="1" />
+							<rect x="14" y="14" width="7" height="7" rx="1" />
 						</svg>
 					</Clickable>
 
@@ -183,12 +147,9 @@ export function BrowserToolbar({
 												: "ep:border-obs-border"
 										}`}
 									>
-										{visibleColumns.includes(col.key) &&
-											"\u2713"}
+										{visibleColumns.includes(col.key) && "\u2713"}
 									</span>
-									<span class="ep:text-obs-normal">
-										{col.label}
-									</span>
+									<span class="ep:text-obs-normal">{col.label}</span>
 								</Clickable>
 							))}
 						</div>

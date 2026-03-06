@@ -1,5 +1,11 @@
 import type { FSRSPreset } from "@shared/types";
-import { ActionButton, FormCard, FormField, SelectInput, TextInput } from "@shared/ui/components";
+import {
+	ActionButton,
+	FormCard,
+	FormField,
+	SelectInput,
+	TextInput,
+} from "@shared/ui/components";
 
 interface PresetSelectorProps {
 	presets: FSRSPreset[];
@@ -36,11 +42,7 @@ export function PresetSelector({
 				/>
 				<ActionButton label="New" variant="secondary" onClick={onCreate} />
 				{!isDefault && (
-					<ActionButton
-						label="Delete"
-						variant="danger"
-						onClick={onDelete}
-					/>
+					<ActionButton label="Delete" variant="danger" onClick={onDelete} />
 				)}
 			</FormField>
 

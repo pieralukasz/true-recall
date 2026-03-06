@@ -43,23 +43,60 @@ export function ProjectHeaderRow({
 	onUnarchive,
 	onRename,
 }: ProjectHeaderRowProps) {
-	const activeDue = project.due + project.newCount + project.learning;
-	const priority = computePriority({ overdueCount: 0, due: project.due, learning: project.learning, newCount: project.newCount });
+	const _activeDue = project.due + project.newCount + project.learning;
+	const priority = computePriority({
+		overdueCount: 0,
+		due: project.due,
+		learning: project.learning,
+		newCount: project.newCount,
+	});
 
 	const menuItems = isVirtual
 		? [
 				{ title: "Study", icon: "play" as const, onClick: onStudyProject },
-				{ title: "Custom session", icon: "sliders-horizontal" as const, onClick: onCustomStudy },
+				{
+					title: "Custom session",
+					icon: "sliders-horizontal" as const,
+					onClick: onCustomStudy,
+				},
 			]
 		: [
-				{ title: "Study project", icon: "play" as const, onClick: onStudyProject },
-				{ title: "Custom session", icon: "sliders-horizontal" as const, onClick: onCustomStudy },
-				{ title: "Go to project note", icon: "file-text" as const, onClick: onNavigate! },
-				{ title: "Rename", icon: "pencil" as const, onClick: () => onRename?.() },
-				{ title: "Pick preset", icon: "settings-2" as const, onClick: () => onPresetClick?.(project.path) },
+				{
+					title: "Study project",
+					icon: "play" as const,
+					onClick: onStudyProject,
+				},
+				{
+					title: "Custom session",
+					icon: "sliders-horizontal" as const,
+					onClick: onCustomStudy,
+				},
+				{
+					title: "Go to project note",
+					icon: "file-text" as const,
+					onClick: onNavigate!,
+				},
+				{
+					title: "Rename",
+					icon: "pencil" as const,
+					onClick: () => onRename?.(),
+				},
+				{
+					title: "Pick preset",
+					icon: "settings-2" as const,
+					onClick: () => onPresetClick?.(project.path),
+				},
 				project.archived
-					? { title: "Unarchive project", icon: "archive-restore" as const, onClick: () => onUnarchive?.() }
-					: { title: "Archive project", icon: "archive" as const, onClick: () => onArchive?.() },
+					? {
+							title: "Unarchive project",
+							icon: "archive-restore" as const,
+							onClick: () => onUnarchive?.(),
+						}
+					: {
+							title: "Archive project",
+							icon: "archive" as const,
+							onClick: () => onArchive?.(),
+						},
 			];
 
 	const handleContextMenu = useContextMenu(menuItems);
@@ -82,7 +119,13 @@ export function ProjectHeaderRow({
 						PRIORITY_DOT[priority],
 					)}
 				/>
-				<span class={cn("ep:text-sm ep:truncate ep:min-w-0 ep:font-medium", isVirtual ? "ep:text-obs-muted ep:italic" : "ep:text-obs-normal", project.archived && "ep:line-through")}>
+				<span
+					class={cn(
+						"ep:text-sm ep:truncate ep:min-w-0 ep:font-medium",
+						isVirtual ? "ep:text-obs-muted ep:italic" : "ep:text-obs-normal",
+						project.archived && "ep:line-through",
+					)}
+				>
 					{project.name}
 				</span>
 

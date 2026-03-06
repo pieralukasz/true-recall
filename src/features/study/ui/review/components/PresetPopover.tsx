@@ -14,7 +14,11 @@ export interface PresetPopoverProps {
 	onChange: (presetName: string) => void;
 }
 
-export function PresetPopover({ value, options, onChange }: PresetPopoverProps) {
+export function PresetPopover({
+	value,
+	options,
+	onChange,
+}: PresetPopoverProps) {
 	const [isOpen, setIsOpen] = useState(false);
 	const containerRef = useRef<HTMLDivElement>(null);
 
@@ -22,7 +26,10 @@ export function PresetPopover({ value, options, onChange }: PresetPopoverProps) 
 		if (!isOpen) return;
 
 		const handlePointerDown = (e: PointerEvent) => {
-			if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+			if (
+				containerRef.current &&
+				!containerRef.current.contains(e.target as Node)
+			) {
 				setIsOpen(false);
 			}
 		};
@@ -66,14 +73,13 @@ export function PresetPopover({ value, options, onChange }: PresetPopoverProps) 
 
 			{isOpen && (
 				<ul
-					role="listbox"
 					aria-label="FSRS preset"
 					class="ep:absolute ep:bottom-full ep:left-1/2 ep:-translate-x-1/2 ep:mb-2 ep:z-50 ep:bg-obs-primary ep:border ep:border-obs-border ep:rounded-md ep:shadow-lg ep:py-1 ep:min-w-[160px]"
 				>
 					{options.map((option) => {
 						const isActive = option.value === value;
 						return (
-							<li key={option.value} role="option" aria-selected={isActive}>
+							<li key={option.value} aria-selected={isActive}>
 								<Clickable
 									class={cn(
 										"ep:flex ep:items-center ep:justify-between ep:gap-3 ep:px-3 ep:py-1.5 ep:w-full ep:text-ui-small ep:hover:bg-obs-modifier-hover ep:transition-colors ep:rounded-none",

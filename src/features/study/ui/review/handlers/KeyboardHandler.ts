@@ -232,7 +232,7 @@ export class KeyboardHandler {
 			{ key: "M", description: "Move card to another note" },
 			{ key: "A", description: "Add new flashcard" },
 			{ key: "E", description: "Edit card" },
-				{ key: "T", description: "Cycle type-in mode" },
-			];
+			{ key: "T", description: "Cycle type-in mode" },
+		];
 	}
 }

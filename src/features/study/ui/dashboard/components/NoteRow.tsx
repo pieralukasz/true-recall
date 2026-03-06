@@ -1,8 +1,8 @@
 import { CardCountDisplay } from "@shared/ui/components/CardCountDisplay";
 import { Clickable } from "@shared/ui/components/Clickable";
 import { IconButton } from "@shared/ui/components/IconButton";
-import { useContextMenu } from "@shared/ui/preact/useContextMenu";
 import type { MenuItem } from "@shared/ui/preact/useContextMenu";
+import { useContextMenu } from "@shared/ui/preact/useContextMenu";
 import { cn } from "@shared/ui/utils";
 import type { DashboardNoteEntry, NotePriority } from "../types";
 
@@ -47,27 +47,43 @@ export function NoteRow({
 	onToggleSelect,
 	onEnterSelection,
 }: NoteRowProps) {
-	const hasActive = note.due + note.newCount + note.learning > 0;
+	const _hasActive = note.due + note.newCount + note.learning > 0;
 
 	const menuItems: MenuItem[] = [
 		{ title: "Study", icon: "play", onClick: onStudy },
-		{ title: "Custom session", icon: "sliders-horizontal", onClick: onCustomStudy },
+		{
+			title: "Custom session",
+			icon: "sliders-horizontal",
+			onClick: onCustomStudy,
+		},
 		{ title: "Go to note", icon: "file-text", onClick: onNavigate },
 		{ title: "Rename", icon: "pencil", onClick: () => onRename?.() },
 		note.archived
-			? { title: "Unarchive", icon: "archive-restore", onClick: () => onUnarchive?.() }
+			? {
+					title: "Unarchive",
+					icon: "archive-restore",
+					onClick: () => onUnarchive?.(),
+				}
 			: { title: "Archive", icon: "archive", onClick: () => onArchive?.() },
 		...(onDetach
-			? ["separator" as const, { title: "Detach from project", icon: "unlink", onClick: onDetach }]
+			? [
+					"separator" as const,
+					{ title: "Detach from project", icon: "unlink", onClick: onDetach },
+				]
 			: []),
 		...(onEnterSelection
-			? ["separator" as const, { title: "Select", icon: "check-square", onClick: onEnterSelection }]
+			? [
+					"separator" as const,
+					{ title: "Select", icon: "check-square", onClick: onEnterSelection },
+				]
 			: []),
 	];
 
 	const handleContextMenu = useContextMenu(menuItems);
 
-	const handleClick = isSelectionMode ? (onToggleSelect ?? onNavigate) : onNavigate;
+	const handleClick = isSelectionMode
+		? (onToggleSelect ?? onNavigate)
+		: onNavigate;
 
 	return (
 		<Clickable

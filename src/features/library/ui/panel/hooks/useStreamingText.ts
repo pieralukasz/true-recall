@@ -70,10 +70,7 @@ export function useStreamingText(fullText: string): {
 
 				// Micro-pause at punctuation for organic typing feel
 				const prevWord = wordsRef.current[current - 1];
-				if (
-					prevWord &&
-					PAUSE_CHARS.test(prevWord.trimEnd().slice(-1))
-				) {
+				if (prevWord && PAUSE_CHARS.test(prevWord.trimEnd().slice(-1))) {
 					advance = Math.min(advance, 1);
 				}
 
@@ -133,8 +130,7 @@ export function useStreamingText(fullText: string): {
 				text,
 				isNew:
 					newTimestampsRef.current.has(i) &&
-					now - (newTimestampsRef.current.get(i) ?? 0) <
-						NEW_WORD_DURATION_MS,
+					now - (newTimestampsRef.current.get(i) ?? 0) < NEW_WORD_DURATION_MS,
 			}));
 		lastVisibleRef.current = currentVisible;
 		lastNewCountRef.current = currentNewCount;

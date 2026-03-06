@@ -1,8 +1,5 @@
 import type { EmbeddableEditorInstance } from "@shared/ui/editor/embedded-editor";
-import {
-	useApp,
-	usePlugin,
-} from "@shared/ui/preact/ObsidianContext";
+import { useApp, usePlugin } from "@shared/ui/preact/ObsidianContext";
 import { stripBrTags } from "@shared/utils";
 import { useCallback, useEffect, useLayoutEffect, useRef } from "preact/hooks";
 
@@ -13,10 +10,7 @@ export interface LivePreviewFieldProps {
 	field: "question" | "answer";
 	sourcePath: string;
 	cls: string;
-	onContentChange?: (
-		value: string,
-		field: "question" | "answer",
-	) => void;
+	onContentChange?: (value: string, field: "question" | "answer") => void;
 }
 
 export function LivePreviewField({
@@ -86,12 +80,9 @@ export function LivePreviewField({
 		[flushPendingSave],
 	);
 
-	const handleEscape = useCallback(
-		(editor: EmbeddableEditorInstance) => {
-			editor.cm.contentDOM.blur();
-		},
-		[],
-	);
+	const handleEscape = useCallback((editor: EmbeddableEditorInstance) => {
+		editor.cm.contentDOM.blur();
+	}, []);
 
 	const handleChange = useCallback(() => {
 		scheduleSave();
@@ -123,7 +114,10 @@ export function LivePreviewField({
 		// A document-level mousedown listener fires BEFORE the click handler
 		// and before any card transition, ensuring edits are saved on all platforms.
 		const handleOutsideMouseDown = (e: MouseEvent) => {
-			if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+			if (
+				containerRef.current &&
+				!containerRef.current.contains(e.target as Node)
+			) {
 				flushPendingSave();
 			}
 		};

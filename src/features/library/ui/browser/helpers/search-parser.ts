@@ -44,7 +44,17 @@ const VALID_OPERATORS = [">=", "<=", ">", "<"] as const;
  * - "exact phrase" or plain text
  */
 export function parseSearchQuery(input: string): FilterState {
-	const filter: FilterState = { ...EMPTY_FILTER, states: [], negatedStates: [], propFilters: [], sourceUids: [], cardTypes: [], createdVia: [], presetNames: [], projects: [] };
+	const filter: FilterState = {
+		...EMPTY_FILTER,
+		states: [],
+		negatedStates: [],
+		propFilters: [],
+		sourceUids: [],
+		cardTypes: [],
+		createdVia: [],
+		presetNames: [],
+		projects: [],
+	};
 	if (!input.trim()) return filter;
 
 	const tokens = tokenize(input);
@@ -59,7 +69,11 @@ export function parseSearchQuery(input: string): FilterState {
 			if (value === "due" || value === "overdue") {
 				// Special pseudo-states handled as prop filters
 				if (value === "overdue") {
-					filter.propFilters.push({ property: "ivl", operator: ">", value: -1 });
+					filter.propFilters.push({
+						property: "ivl",
+						operator: ">",
+						value: -1,
+					});
 				}
 				if (!negated) {
 					filter.states.push("review");
@@ -97,10 +111,10 @@ export function parseSearchQuery(input: string): FilterState {
 			}
 		} else if (raw.startsWith("added:")) {
 			const days = parseInt(raw.slice(6), 10);
-			if (!isNaN(days) && days > 0) filter.addedDaysAgo = days;
+			if (!Number.isNaN(days) && days > 0) filter.addedDaysAgo = days;
 		} else if (raw.startsWith("reviewed:")) {
 			const days = parseInt(raw.slice(9), 10);
-			if (!isNaN(days) && days > 0) filter.reviewedDaysAgo = days;
+			if (!Number.isNaN(days) && days > 0) filter.reviewedDaysAgo = days;
 		} else {
 			textParts.push(unquote(token));
 		}
@@ -120,7 +134,7 @@ function parsePropFilter(raw: string): PropFilter | null {
 		const property = PROP_ALIASES[propName];
 		const value = parseFloat(valueStr);
 
-		if (property && !isNaN(value)) {
+		if (property && !Number.isNaN(value)) {
 			return { property, operator: op, value };
 		}
 		break;
@@ -173,7 +187,10 @@ function tokenize(input: string): string[] {
 }
 
 function unquote(s: string): string {
-	if ((s.startsWith('"') && s.endsWith('"')) || (s.startsWith("'") && s.endsWith("'"))) {
+	if (
+		(s.startsWith('"') && s.endsWith('"')) ||
+		(s.startsWith("'") && s.endsWith("'"))
+	) {
 		return s.slice(1, -1);
 	}
 	return s;

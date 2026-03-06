@@ -13,12 +13,12 @@ export class IOEditorModal extends BasePromiseModal<IOEditorResult> {
 		private mode: IOEditorMode,
 	) {
 		super(app, {
-				title:
-					mode.mode === "edit"
-						? "Edit image occlusion"
-						: "Create image occlusion",
-				width: "1120px",
-			});
+			title:
+				mode.mode === "edit"
+					? "Edit image occlusion"
+					: "Create image occlusion",
+			width: "1120px",
+		});
 	}
 
 	protected getDefaultResult(): IOEditorResult {
@@ -28,7 +28,10 @@ export class IOEditorModal extends BasePromiseModal<IOEditorResult> {
 	protected renderBody(container: HTMLElement): void {
 		render(
 			<ObsidianProvider value={{ app: this.app, plugin: this.plugin }}>
-				<IOEditorApp mode={this.mode} onDone={(result) => this.resolve(result)} />
+				<IOEditorApp
+					mode={this.mode}
+					onDone={(result) => this.resolve(result)}
+				/>
 			</ObsidianProvider>,
 			container,
 		);

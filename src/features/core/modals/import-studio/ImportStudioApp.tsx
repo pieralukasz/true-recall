@@ -1,26 +1,29 @@
-import {
-	parseBulkText,
-	type ParsedCard,
-} from "@features/study/services/flashcard/bulk-card-parser";
+import type { EditorView } from "@codemirror/view";
+import { CardPreviewList } from "@features/core/modals/add-flashcards/CardPreviewList";
 import { ActionBar } from "@features/core/modals/import-studio/ActionBar";
 import { EditorSection } from "@features/core/modals/import-studio/EditorSection";
 import { FooterBar } from "@features/core/modals/import-studio/FooterBar";
 import { MetaRow } from "@features/core/modals/import-studio/MetaRow";
+import {
+	type ParsedCard,
+	parseBulkText,
+} from "@features/study/services/flashcard/bulk-card-parser";
 import type { NoteType } from "@shared/types/note.types";
-import { CardPreviewList } from "@features/core/modals/add-flashcards/CardPreviewList";
-import {
-	FormattingToolbar,
-	type FormattingTargetRef,
-} from "@shared/ui/editor/formatting";
 import type { EmbeddableEditorInstance } from "@shared/ui/editor/embedded-editor";
-import { useApp, usePlugin } from "@shared/ui/preact/ObsidianContext";
-import type { EditorView } from "@codemirror/view";
-import { Notice, TFile } from "obsidian";
-import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
 import {
-	loadImportStudioPrefs,
-	saveImportStudioPrefs,
-} from "./types";
+	type FormattingTargetRef,
+	FormattingToolbar,
+} from "@shared/ui/editor/formatting";
+import { useApp, usePlugin } from "@shared/ui/preact/ObsidianContext";
+import { Notice, TFile } from "obsidian";
+import {
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "preact/hooks";
+import { loadImportStudioPrefs, saveImportStudioPrefs } from "./types";
 
 interface ImportStudioAppProps {
 	onClose: () => void;
@@ -75,7 +78,10 @@ export function ImportStudioApp({
 	useEffect(() => {
 		const timer = setTimeout(() => {
 			setParseResult(
-				parseBulkText(text, noteType ? { noteType, getNoteType } : { getNoteType }),
+				parseBulkText(
+					text,
+					noteType ? { noteType, getNoteType } : { getNoteType },
+				),
 			);
 		}, 150);
 		return () => clearTimeout(timer);
@@ -139,17 +145,19 @@ export function ImportStudioApp({
 			}
 			setParseResult({ cards: [], detectedFormat: "none" });
 		} catch (error) {
-			const msg =
-				error instanceof Error ? error.message : String(error);
+			const msg = error instanceof Error ? error.message : String(error);
 			new Notice(`Error: ${msg}`);
 		} finally {
 			setSaving(false);
 		}
 	}, [parseResult.cards, plugin.flashcardManager, resolveSourceUid, saving]);
 
-	const handleEditorReady = useCallback((editor: EmbeddableEditorInstance | null) => {
-		editorRef.current = editor;
-	}, []);
+	const handleEditorReady = useCallback(
+		(editor: EmbeddableEditorInstance | null) => {
+			editorRef.current = editor;
+		},
+		[],
+	);
 
 	const handleEditorFocus = useCallback((editorView: EditorView) => {
 		focusedEditorRef.current = { editorView };

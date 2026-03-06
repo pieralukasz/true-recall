@@ -1,7 +1,7 @@
 import type { NLQueryService } from "@features/ai/services/nl-query.service";
 import { StatsCard } from "@features/metrics/ui/stats/components/StatsCard";
-import type { ExampleQuery, NLQueryResult } from "@shared/types";
 import { TRUERECALL_WEB_URL } from "@shared/constants";
+import type { ExampleQuery, NLQueryResult } from "@shared/types";
 import { Clickable } from "@shared/ui/components";
 import { useApp, usePlugin } from "@shared/ui/preact";
 import { isFeatureAllowed } from "@shared/utils/subscription.utils";
@@ -39,7 +39,10 @@ export function NLQueryPanel({
 	const resultsRef = useRef<HTMLDivElement>(null);
 
 	const isReady = nlQueryService?.isReady() ?? false;
-	const isTierGated = !isReady && !!plugin.settings.subscriptionKey && !isFeatureAllowed("nlQuery", plugin.settings);
+	const isTierGated =
+		!isReady &&
+		!!plugin.settings.subscriptionKey &&
+		!isFeatureAllowed("nlQuery", plugin.settings);
 
 	const submitQuery = useCallback(
 		async (q: string) => {
@@ -115,7 +118,9 @@ export function NLQueryPanel({
 				{isTierGated ? (
 					<Clickable
 						class="mod-cta ep:py-2 ep:px-4 ep:text-ui-small ep:rounded-md ep:transition-opacity ep:self-stretch"
-						onClick={() => window.open(`${TRUERECALL_WEB_URL}/pricing`, "_blank")}
+						onClick={() =>
+							window.open(`${TRUERECALL_WEB_URL}/pricing`, "_blank")
+						}
 					>
 						Upgrade
 					</Clickable>
@@ -125,7 +130,11 @@ export function NLQueryPanel({
 						disabled={!isReady || isLoading}
 						onClick={() => void submitQuery(query)}
 					>
-						{!isReady ? "Not configured" : isLoading ? "Analyzing..." : "Explore"}
+						{!isReady
+							? "Not configured"
+							: isLoading
+								? "Analyzing..."
+								: "Explore"}
 					</Clickable>
 				)}
 			</div>

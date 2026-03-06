@@ -72,10 +72,7 @@ export function PanelEmptyState({
 				: "Generating flashcards...";
 		return (
 			<div class="ep:flex ep:items-center ep:justify-center ep:h-full">
-				<LoadingSpinner
-					message={message}
-					subMessage="This may take a moment"
-				/>
+				<LoadingSpinner message={message} subMessage="This may take a moment" />
 			</div>
 		);
 	}
@@ -96,7 +93,8 @@ export function PanelEmptyState({
 						class="mod-cta ep:px-4 ep:py-1.5 ep:rounded-md ep:text-ui-small ep:font-medium"
 						onClick={handleCollect}
 					>
-						Collect {uncollectedCount} flashcard{uncollectedCount !== 1 ? "s" : ""}
+						Collect {uncollectedCount} flashcard
+						{uncollectedCount !== 1 ? "s" : ""}
 					</Clickable>
 				)}
 
@@ -126,8 +124,8 @@ export function PanelEmptyState({
 			)}
 
 			<div class="ep:text-ui-smaller ep:text-obs-faint ep:max-w-[220px]">
-				Tip: You can also select text in the editor to generate flashcards
-				from a specific section
+				Tip: You can also select text in the editor to generate flashcards from
+				a specific section
 			</div>
 		</div>
 	);

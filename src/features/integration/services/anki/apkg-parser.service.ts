@@ -29,7 +29,10 @@ interface RawAnkiModel {
 // Wire format: tag = (field_number << 3) | wire_type
 //   wire_type 0 = varint, 2 = length-delimited (string/bytes)
 
-function readProtobufVarint(blob: Uint8Array, offset: number): { value: number; next: number } | null {
+function readProtobufVarint(
+	blob: Uint8Array,
+	offset: number,
+): { value: number; next: number } | null {
 	let value = 0;
 	let shift = 0;
 	let pos = offset;

@@ -35,7 +35,9 @@ export class HierarchyService {
 
 		const roots = [...graph.roots].sort();
 		return roots
-			.map((rootPath) => this.buildTreeNode(rootPath, rootPath, graph, new Set()))
+			.map((rootPath) =>
+				this.buildTreeNode(rootPath, rootPath, graph, new Set()),
+			)
 			.filter((n): n is HierarchyTreeNode => n !== null);
 	}
 
@@ -61,7 +63,10 @@ export class HierarchyService {
 
 			for (const childPath of children) {
 				// Always collect the child's own UIDs
-				const childUids = this.frontmatterIndex.getValues("flashcard_uid", childPath);
+				const childUids = this.frontmatterIndex.getValues(
+					"flashcard_uid",
+					childPath,
+				);
 				for (const uid of childUids) uids.add(uid);
 
 				if (includeChildren) {
@@ -106,7 +111,10 @@ export class HierarchyService {
 	}
 
 	getArchivedSourceUids(): Set<string> {
-		const archivedFiles = this.frontmatterIndex.getFilesByValue("archive", "true");
+		const archivedFiles = this.frontmatterIndex.getFilesByValue(
+			"archive",
+			"true",
+		);
 		const uids = new Set<string>();
 
 		for (const file of archivedFiles) {
@@ -118,7 +126,10 @@ export class HierarchyService {
 				for (const uid of projectUids) uids.add(uid);
 			} else {
 				// Archived regular note → just its own UID
-				const [uid] = this.frontmatterIndex.getValues("flashcard_uid", file.path);
+				const [uid] = this.frontmatterIndex.getValues(
+					"flashcard_uid",
+					file.path,
+				);
 				if (uid) uids.add(uid);
 			}
 		}
@@ -155,7 +166,10 @@ export class HierarchyService {
 			const parentPath = this.resolveNameToPath(parentName);
 			if (!parentPath) continue;
 
-			const childFiles = this.frontmatterIndex.getFilesByValue("parents", parentName);
+			const childFiles = this.frontmatterIndex.getFilesByValue(
+				"parents",
+				parentName,
+			);
 			for (const childFile of childFiles) {
 				// Add edge: child → parent
 				let parents = parentMap.get(childFile.path);
@@ -184,7 +198,7 @@ export class HierarchyService {
 		// Identify roots: nodes that have children but no parents themselves
 		const roots = new Set<string>();
 		for (const path of childMap.keys()) {
-			if (!parentMap.has(path) || parentMap.get(path)!.size === 0) {
+			if (!parentMap.has(path) || parentMap.get(path)?.size === 0) {
 				roots.add(path);
 			}
 		}
@@ -269,12 +283,12 @@ export class HierarchyService {
 				if (!parentMap.has(file.path)) {
 					parentMap.set(file.path, new Set());
 				}
-				parentMap.get(file.path)!.add(folderNote.path);
+				parentMap.get(file.path)?.add(folderNote.path);
 
 				if (!childMap.has(folderNote.path)) {
 					childMap.set(folderNote.path, new Set());
 				}
-				childMap.get(folderNote.path)!.add(file.path);
+				childMap.get(folderNote.path)?.add(file.path);
 			}
 		}
 	}
@@ -289,7 +303,8 @@ export class HierarchyService {
 		if (ancestors.has(path)) return null;
 
 		const file = this.app.vault.getAbstractFileByPath(path);
-		const name = file?.name?.replace(/\.md$/, "") ?? path.split("/").pop() ?? path;
+		const name =
+			file?.name?.replace(/\.md$/, "") ?? path.split("/").pop() ?? path;
 
 		const childPaths = graph.childMap.get(path);
 		const nextAncestors = new Set(ancestors);

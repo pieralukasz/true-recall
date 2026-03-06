@@ -13,10 +13,7 @@ export class QuickNoteEditorModal extends BasePromiseModal<QuickNoteEditorResult
 		private editorMode: QuickNoteEditorMode,
 	) {
 		super(app, {
-			title:
-				editorMode.mode === "add"
-					? "Add Flashcard"
-					: "Edit Flashcard",
+			title: editorMode.mode === "add" ? "Add Flashcard" : "Edit Flashcard",
 			width: "660px",
 		});
 	}
@@ -27,9 +24,7 @@ export class QuickNoteEditorModal extends BasePromiseModal<QuickNoteEditorResult
 
 	protected renderBody(container: HTMLElement): void {
 		render(
-			<ObsidianProvider
-				value={{ app: this.app, plugin: this.plugin }}
-			>
+			<ObsidianProvider value={{ app: this.app, plugin: this.plugin }}>
 				<QuickNoteEditorApp
 					mode={this.editorMode}
 					onDone={(result) => this.resolve(result)}

@@ -77,11 +77,15 @@ function resolveSessionPresetForFilters(
 	metadataCache?: MetadataCache,
 ): FSRSPreset {
 	if (filters.projectPath) {
-		return presetService.resolvePresetChain(filters.projectPath).effective.preset;
+		return presetService.resolvePresetChain(filters.projectPath).effective
+			.preset;
 	}
 
 	if (filters.sourceNoteFilter && metadataCache) {
-		const file = metadataCache.getFirstLinkpathDest(filters.sourceNoteFilter, "");
+		const file = metadataCache.getFirstLinkpathDest(
+			filters.sourceNoteFilter,
+			"",
+		);
 		if (file) {
 			return presetService.resolvePresetChain(file.path).effective.preset;
 		}
@@ -180,7 +184,11 @@ export function computeActionableSessionSnapshot(
 	const fsrsService =
 		deps.fsrsService ?? new FSRSService(extractFSRSSettings(deps.settings));
 	fsrsService.updateSettings(extractFSRSSettings(deps.settings));
-	const queue = reviewService.buildQueue(activeCards, fsrsService, queueOptions);
+	const queue = reviewService.buildQueue(
+		activeCards,
+		fsrsService,
+		queueOptions,
+	);
 
 	const snapshot: ActionableSessionSnapshot = {
 		queue,

@@ -29,10 +29,7 @@ function buildLcsTable(expected: string[], user: string[]): number[][] {
 			if (expectedToken === userToken) {
 				table[i]![j] = (table[i + 1]?.[j + 1] ?? 0) + 1;
 			} else {
-				table[i]![j] = Math.max(
-					table[i + 1]?.[j] ?? 0,
-					table[i]?.[j + 1] ?? 0,
-				);
+				table[i]![j] = Math.max(table[i + 1]?.[j] ?? 0, table[i]?.[j + 1] ?? 0);
 			}
 		}
 	}
@@ -40,7 +37,10 @@ function buildLcsTable(expected: string[], user: string[]): number[][] {
 	return table;
 }
 
-function buildDiffTokens(expected: string[], user: string[]): AnswerDiffToken[] {
+function buildDiffTokens(
+	expected: string[],
+	user: string[],
+): AnswerDiffToken[] {
 	const table = buildLcsTable(expected, user);
 	const diff: AnswerDiffToken[] = [];
 	let i = 0;
