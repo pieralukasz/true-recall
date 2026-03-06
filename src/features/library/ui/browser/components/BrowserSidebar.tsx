@@ -1,5 +1,5 @@
 import { useMemo } from "preact/hooks";
-import { Clickable } from "@shared/ui/components";
+import { Clickable, SearchInput } from "@shared/ui/components";
 import { FSRS_COLORS, MUTED_STATES } from "@shared/ui/helpers/fsrs-colors";
 import { useSignal } from "@preact/signals";
 import { EMPTY_FILTER, type FilterState } from "../types";
@@ -244,16 +244,12 @@ function SourceNotesSection({
 				<div class="ep:pb-1.5">
 					{/* Search input */}
 					<div class="ep:px-2 ep:pb-1.5 ep:pt-1">
-						<input
-							type="text"
+						<SearchInput
+							size="sm"
 							placeholder="Search notes..."
+							ariaLabel="Search source notes"
 							value={searchQuery.value}
-							onInput={(e) =>
-								handleSearchChange(
-									(e.currentTarget as HTMLInputElement).value,
-								)
-							}
-							class="ep:w-full ep:px-2 ep:py-1 ep:text-[11px] ep:bg-obs-input ep:border ep:border-obs-border ep:rounded ep:text-obs-normal placeholder:ep:text-obs-faint focus:ep:outline-none focus:ep:border-obs-interactive"
+							onChange={handleSearchChange}
 						/>
 					</div>
 

@@ -48,13 +48,6 @@
 		align-items: center;
 	}
 
-	.true-recall-io-tool-row .ep-btn.is-active,
-	.true-recall-io-editor-right .ep-btn.is-active {
-		background: color-mix(in srgb, var(--interactive-accent) 20%, transparent) !important;
-		border-color: color-mix(in srgb, var(--interactive-accent) 40%, transparent) !important;
-		color: var(--text-accent) !important;
-	}
-
 	.true-recall-io-region-list {
 		display: flex;
 		flex-direction: column;
@@ -109,7 +102,7 @@
 			border-color 120ms ease;
 	}
 
-	.true-recall-io-icon-btn:hover:not(:disabled) {
+	.true-recall-io-icon-btn:hover:not([aria-disabled="true"]) {
 		color: var(--text-normal);
 		border-color: color-mix(in srgb, var(--background-modifier-border) 50%, transparent);
 		background: var(--background-modifier-hover);
@@ -121,13 +114,13 @@
 		border-color: color-mix(in srgb, var(--interactive-accent) 45%, transparent);
 	}
 
-	.true-recall-io-icon-btn.is-danger:hover:not(:disabled) {
+	.true-recall-io-icon-btn.is-danger:hover:not([aria-disabled="true"]) {
 		color: var(--text-error);
 		background: color-mix(in srgb, var(--color-red) 14%, transparent);
 		border-color: color-mix(in srgb, var(--color-red) 48%, transparent);
 	}
 
-	.true-recall-io-icon-btn:disabled {
+	.true-recall-io-icon-btn[aria-disabled="true"] {
 		opacity: 0.45;
 		cursor: not-allowed;
 	}
@@ -138,6 +131,8 @@
 		background: transparent;
 		border: 0;
 		padding: 0;
+		display: inline-flex;
+		align-items: center;
 		cursor: pointer;
 	}
 
@@ -309,27 +304,33 @@
 	}
 
 	.true-recall-io-canvas-region {
-		fill: color-mix(in srgb, var(--color-red) 45%, transparent);
-		stroke: color-mix(in srgb, var(--color-red) 88%, transparent);
+		fill: color-mix(in srgb, var(--background-primary) 62%, var(--interactive-accent) 38%);
+		fill-opacity: 1;
+		stroke: color-mix(in srgb, var(--interactive-accent) 88%, var(--background-primary) 12%);
 		stroke-width: 0.0045;
 		cursor: move;
 	}
 
 	.true-recall-io-canvas-region.is-draft {
-		fill: color-mix(in srgb, var(--color-blue) 30%, transparent);
-		stroke: color-mix(in srgb, var(--color-blue) 70%, transparent);
+		fill: color-mix(in srgb, var(--background-primary) 72%, var(--interactive-accent) 28%);
+		fill-opacity: 1;
+		stroke: color-mix(in srgb, var(--interactive-accent) 72%, var(--background-primary) 28%);
+		stroke-dasharray: 0.018 0.01;
 	}
 
 	.true-recall-io-canvas-region.is-selected {
-		fill: color-mix(in srgb, var(--interactive-accent) 30%, transparent);
-		stroke: color-mix(in srgb, var(--interactive-accent) 85%, transparent);
-		stroke-width: 0.006;
+		fill: color-mix(in srgb, var(--background-primary) 48%, var(--interactive-accent) 52%);
+		fill-opacity: 1;
+		stroke: var(--interactive-accent);
+		stroke-width: 0.007;
+		filter: drop-shadow(0 0 5px color-mix(in srgb, var(--interactive-accent) 48%, transparent));
 	}
 
 	.true-recall-io-canvas-handle {
-		fill: var(--interactive-accent);
-		stroke: var(--text-on-accent);
-		stroke-width: 0.003;
+		fill: color-mix(in srgb, var(--interactive-accent) 85%, var(--background-primary) 15%);
+		stroke: color-mix(in srgb, var(--background-primary) 70%, var(--text-on-accent) 30%);
+		stroke-width: 0.004;
+		filter: drop-shadow(0 0 2px color-mix(in srgb, var(--background-primary) 70%, transparent));
 		cursor: nwse-resize;
 	}
 
@@ -385,15 +386,15 @@
 	}
 
 	.true-recall-io-shape.is-mask-active {
-		fill: color-mix(in srgb, var(--color-red) 62%, transparent);
-		stroke: color-mix(in srgb, var(--color-red) 88%, transparent);
-		opacity: 1;
+		fill: color-mix(in srgb, var(--background-primary) 32%, var(--interactive-accent) 68%);
+		fill-opacity: 1;
+		stroke: color-mix(in srgb, var(--interactive-accent) 92%, var(--background-primary) 8%);
 	}
 
 	.true-recall-io-shape.is-mask-passive {
-		fill: color-mix(in srgb, var(--color-red) 38%, transparent);
-		stroke: color-mix(in srgb, var(--color-red) 70%, transparent);
-		opacity: 0.88;
+		fill: color-mix(in srgb, var(--background-primary) 46%, var(--interactive-accent) 54%);
+		fill-opacity: 1;
+		stroke: color-mix(in srgb, var(--interactive-accent) 76%, var(--background-primary) 24%);
 	}
 
 	.true-recall-io-shape.is-outline-passive {

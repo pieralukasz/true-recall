@@ -4,6 +4,7 @@ import {
 	filterNotesByQuery,
 	MAX_DISPLAY_NOTES,
 } from "@shared/ui/modals/note-filter.utils";
+import { SearchInput } from "@shared/ui/components/SearchInput";
 import { cn } from "@shared/ui/utils/cn";
 
 export interface NotePickerComboboxProps {
@@ -17,8 +18,8 @@ export function NotePickerCombobox({
 	selectedNote,
 	onSelect,
 }: NotePickerComboboxProps) {
-	const inputRef = useRef<HTMLInputElement>(null);
 	const listRef = useRef<HTMLUListElement>(null);
+	const [inputValue, setInputValue] = useState(selectedNote?.basename ?? "");
 	const [query, setQuery] = useState("");
 	const [isOpen, setIsOpen] = useState(false);
 	const [highlightIndex, setHighlightIndex] = useState(-1);
@@ -30,19 +31,15 @@ export function NotePickerCombobox({
 		[allNotes, query],
 	);
 
-	// Sync input text when selectedNote changes externally
+	// Sync input text when selectedNote changes externally.
 	useEffect(() => {
-		if (inputRef.current) {
-			inputRef.current.value = selectedNote?.basename ?? "";
-		}
+		setInputValue(selectedNote?.basename ?? "");
 	}, [selectedNote]);
 
 	const selectNote = useCallback(
 		(file: TFile) => {
 			onSelect(file);
-			if (inputRef.current) {
-				inputRef.current.value = file.basename;
-			}
+			setInputValue(file.basename);
 			setQuery("");
 			setIsOpen(false);
 			setHighlightIndex(-1);
@@ -50,9 +47,9 @@ export function NotePickerCombobox({
 		[onSelect],
 	);
 
-	const handleInput = useCallback((e: Event) => {
-		const val = (e.target as HTMLInputElement).value;
-		setQuery(val);
+	const handleInput = useCallback((value: string) => {
+		setInputValue(value);
+		setQuery(value);
 		setIsOpen(true);
 		setHighlightIndex(-1);
 	}, []);
@@ -68,9 +65,7 @@ export function NotePickerCombobox({
 			if (related && listRef.current?.contains(related)) return;
 
 			// Restore previous selection on blur without new selection
-			if (inputRef.current && selectedNote) {
-				inputRef.current.value = selectedNote.basename;
-			}
+			setInputValue(selectedNote?.basename ?? "");
 			setIsOpen(false);
 			setQuery("");
 			setHighlightIndex(-1);
@@ -112,9 +107,7 @@ export function NotePickerCombobox({
 					e.preventDefault();
 					setIsOpen(false);
 					setHighlightIndex(-1);
-					if (inputRef.current && selectedNote) {
-						inputRef.current.value = selectedNote.basename;
-					}
+					setInputValue(selectedNote?.basename ?? "");
 					setQuery("");
 					break;
 			}
@@ -131,16 +124,15 @@ export function NotePickerCombobox({
 
 	return (
 		<div class="ep:relative">
-			<input
-				ref={inputRef}
-				type="text"
-				defaultValue={selectedNote?.basename ?? ""}
+			<SearchInput
+				value={inputValue}
 				placeholder="Search notes..."
-				onInput={handleInput}
+				ariaLabel="Search notes"
+				onChange={handleInput}
 				onFocus={handleFocus}
 				onBlur={handleBlur}
 				onKeyDown={handleKeyDown}
-				class="ep:w-full ep:py-1 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-ui-small ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted"
+				autoComplete="off"
 			/>
 
 			{isOpen && filtered.length > 0 && (
