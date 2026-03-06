@@ -116,6 +116,7 @@ export function BrowserToolbar({
 				<SearchCombobox
 					value={searchText}
 					placeholder='Search cards... (try "is:new", "prop:lapses>3")'
+					ariaLabel="Search cards"
 					onChange={onSearchChange}
 					getSuggestions={getSuggestions}
 					class="ep:flex-1"

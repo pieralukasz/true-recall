@@ -1,7 +1,7 @@
 import { QuickNoteEditorModal } from "@features/study/modals/quick-note-editor/QuickNoteEditorModal";
+import { openPanelCardEditor } from "@features/library/ui/panel/helpers/panel-edit-routing";
 import {
 	getSourceNoteNameFromFile,
-	notifyDuplicateError,
 } from "@features/library/ui/panel/utils/panel-helpers";
 import type { PanelApi } from "@shared/store";
 import type { FlashcardInfo, FlashcardItem } from "@shared/types";
@@ -51,23 +51,30 @@ export function useCardActions({
 				return;
 			}
 			const noteType = plugin.cardStore.noteTypes.getById(note.noteTypeId);
-			if (!noteType) {
-				notify().error("Note type not found");
-				return;
-			}
+				if (!noteType) {
+					notify().error("Note type not found");
+					return;
+				}
 
-			const modal = new QuickNoteEditorModal(app, plugin, {
-				mode: "edit",
-				cardId: card.id,
-				noteId: note.id,
-				note,
-				noteType,
-			});
-
-			await modal.openAndWait();
-			restoreScroll();
-		},
-		[app, plugin, cardsWithFsrs],
+				await openPanelCardEditor({
+					note,
+					noteType,
+					openImageOcclusionEditor: (mode) =>
+						plugin.openImageOcclusionEditor(mode),
+					openQuickEditor: async () => {
+						const modal = new QuickNoteEditorModal(app, plugin, {
+							mode: "edit",
+							cardId: card.id,
+							noteId: note.id,
+							note,
+							noteType,
+						});
+						await modal.openAndWait();
+					},
+				});
+				restoreScroll();
+			},
+			[app, plugin, cardsWithFsrs],
 	);
 
 	const handleAddFlashcard = useCallback(async () => {

@@ -1,43 +1,58 @@
 @layer components {
 	.true-recall-io-editor-layout {
 		display: grid;
-		grid-template-columns: minmax(0, 1fr) 260px;
+		grid-template-columns: minmax(0, 1fr) minmax(250px, 300px);
 		gap: 12px;
-		min-height: 420px;
+		min-height: 520px;
 	}
 
 	.true-recall-io-editor-left {
 		display: flex;
 		flex-direction: column;
-		gap: 10px;
 		min-width: 0;
 	}
 
 	.true-recall-io-editor-right {
 		border: 1px solid var(--background-modifier-border);
 		border-radius: var(--radius-m);
-		padding: 10px;
+		padding: 12px 12px 10px;
 		background: color-mix(in srgb, var(--background-secondary) 65%, transparent);
+		display: flex;
+		flex-direction: column;
+		gap: 0;
+		overflow-y: auto;
+		max-height: min(78vh, 820px);
+	}
+
+	.true-recall-io-side-section {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
+		padding: 10px 0;
+		border-bottom: 1px solid color-mix(in srgb, var(--background-modifier-border) 85%, transparent);
+	}
+
+	.true-recall-io-side-section:first-child {
+		padding-top: 0;
+	}
+
+	.true-recall-io-side-section:last-child {
+		padding-bottom: 0;
+		border-bottom: 0;
 	}
 
 	.true-recall-io-tool-row {
 		display: flex;
 		gap: 6px;
-		flex-wrap: wrap;
-	}
-
-	.true-recall-io-tool-row .ep-btn.is-active,
-	.true-recall-io-editor-right .ep-btn.is-active {
-		background: color-mix(in srgb, var(--interactive-accent) 20%, transparent) !important;
-		border-color: color-mix(in srgb, var(--interactive-accent) 40%, transparent) !important;
-		color: var(--text-accent) !important;
+		flex-wrap: nowrap;
+		align-items: center;
 	}
 
 	.true-recall-io-region-list {
 		display: flex;
 		flex-direction: column;
 		gap: 6px;
-		max-height: 180px;
+		max-height: 240px;
 		overflow-y: auto;
 		padding-right: 2px;
 	}
@@ -48,14 +63,88 @@
 		justify-content: space-between;
 		border: 1px solid var(--background-modifier-border);
 		border-radius: var(--radius-s);
-		padding: 4px 8px;
+		padding: 4px;
 		font-size: var(--font-ui-smaller);
 		background: var(--background-primary);
+		gap: 4px;
 	}
 
 	.true-recall-io-region-item.is-selected {
 		border-color: color-mix(in srgb, var(--interactive-accent) 55%, transparent);
 		background: color-mix(in srgb, var(--interactive-accent) 13%, transparent);
+	}
+
+	.true-recall-io-region-main {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 8px;
+		flex: 1;
+		padding: 2px 6px;
+		border-radius: var(--radius-s);
+	}
+
+	.true-recall-io-icon-btn {
+		width: 30px;
+		height: 30px;
+		border: 1px solid var(--background-modifier-border);
+		background: color-mix(in srgb, var(--background-primary) 88%, transparent);
+		color: var(--text-muted);
+		border-radius: var(--radius-s);
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+		flex-shrink: 0;
+		transition:
+			background 120ms ease,
+			color 120ms ease,
+			border-color 120ms ease;
+	}
+
+	.true-recall-io-icon-btn:hover:not([aria-disabled="true"]) {
+		color: var(--text-normal);
+		border-color: color-mix(in srgb, var(--background-modifier-border) 50%, transparent);
+		background: var(--background-modifier-hover);
+	}
+
+	.true-recall-io-icon-btn.is-active {
+		color: var(--text-accent);
+		background: color-mix(in srgb, var(--interactive-accent) 16%, transparent);
+		border-color: color-mix(in srgb, var(--interactive-accent) 45%, transparent);
+	}
+
+	.true-recall-io-icon-btn.is-danger:hover:not([aria-disabled="true"]) {
+		color: var(--text-error);
+		background: color-mix(in srgb, var(--color-red) 14%, transparent);
+		border-color: color-mix(in srgb, var(--color-red) 48%, transparent);
+	}
+
+	.true-recall-io-icon-btn[aria-disabled="true"] {
+		opacity: 0.45;
+		cursor: not-allowed;
+	}
+
+	.true-recall-io-inline-link {
+		font-size: var(--font-ui-smaller);
+		color: var(--text-muted);
+		background: transparent;
+		border: 0;
+		padding: 0;
+		display: inline-flex;
+		align-items: center;
+		cursor: pointer;
+	}
+
+	.true-recall-io-inline-link:hover {
+		color: var(--text-normal);
+		text-decoration: underline;
+	}
+
+	.true-recall-io-hint-text {
+		font-size: var(--font-ui-smaller);
+		color: var(--text-muted);
+		line-height: 1.35;
 	}
 
 	.true-recall-io-field {
@@ -82,21 +171,14 @@
 		border-radius: var(--radius-m);
 		background: var(--background-primary);
 		padding: 10px;
-	}
-
-	.true-recall-io-canvas-toolbar {
-		display: flex;
-		align-items: center;
-		gap: 6px;
-		margin-bottom: 8px;
-		color: var(--text-muted);
-		font-size: var(--font-ui-smaller);
+		position: relative;
 	}
 
 	.true-recall-io-canvas-stage {
 		position: relative;
 		overflow: hidden;
-		height: 430px;
+		height: min(76vh, 820px);
+		min-height: 560px;
 		border-radius: var(--radius-m);
 		background:
 			radial-gradient(
@@ -111,12 +193,98 @@
 		cursor: crosshair;
 	}
 
+	.true-recall-io-canvas-stage.tool-select {
+		cursor: default;
+	}
+
+	.true-recall-io-canvas-stage.is-panning {
+		cursor: grab;
+	}
+
+	.true-recall-io-canvas-stage.is-panning:active {
+		cursor: grabbing;
+	}
+
+	.true-recall-io-canvas-zoombar {
+		position: absolute;
+		top: 10px;
+		right: 10px;
+		z-index: 8;
+		display: inline-flex;
+		align-items: center;
+		gap: 4px;
+		padding: 4px;
+		border: 1px solid color-mix(in srgb, var(--background-modifier-border) 75%, transparent);
+		border-radius: 999px;
+		background: color-mix(in srgb, var(--background-primary) 84%, transparent);
+		backdrop-filter: blur(5px);
+	}
+
+	.true-recall-io-canvas-zoombar-btn {
+		width: 28px;
+		height: 28px;
+		border: 0;
+		border-radius: 999px;
+		background: transparent;
+		color: var(--text-muted);
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+	}
+
+	.true-recall-io-canvas-zoombar-btn:hover {
+		background: var(--background-modifier-hover);
+		color: var(--text-normal);
+	}
+
+	.true-recall-io-canvas-zoombar-percent {
+		min-width: 44px;
+		text-align: center;
+		font-size: var(--font-ui-smaller);
+		color: var(--text-muted);
+		font-variant-numeric: tabular-nums;
+	}
+
+	.true-recall-io-canvas-shortcuts {
+		position: absolute;
+		right: 10px;
+		bottom: 10px;
+		z-index: 8;
+		display: inline-flex;
+		align-items: center;
+		gap: 5px;
+		padding: 3px 8px;
+		font-size: var(--font-ui-smaller);
+		color: var(--text-muted);
+		background: color-mix(in srgb, var(--background-primary) 78%, transparent);
+		border-radius: 999px;
+		pointer-events: none;
+	}
+
+	.true-recall-io-canvas-shortcuts kbd {
+		font-family: var(--font-interface);
+		font-size: calc(var(--font-ui-smaller) - 1px);
+		border: 1px solid color-mix(in srgb, var(--background-modifier-border) 60%, transparent);
+		border-radius: 5px;
+		padding: 1px 4px;
+		background: color-mix(in srgb, var(--background-secondary) 65%, transparent);
+	}
+
 	.true-recall-io-canvas-transform {
 		position: absolute;
 		inset: 0;
 		transform-origin: center center;
 		display: grid;
 		place-items: center;
+	}
+
+	.true-recall-io-canvas-media {
+		position: relative;
+		display: inline-block;
+		max-width: 100%;
+		max-height: 100%;
+		line-height: 0;
 	}
 
 	.true-recall-io-canvas-image {
@@ -136,32 +304,38 @@
 	}
 
 	.true-recall-io-canvas-region {
-		fill: color-mix(in srgb, var(--color-red) 45%, transparent);
-		stroke: color-mix(in srgb, var(--color-red) 88%, transparent);
+		fill: color-mix(in srgb, var(--background-primary) 62%, var(--interactive-accent) 38%);
+		fill-opacity: 1;
+		stroke: color-mix(in srgb, var(--interactive-accent) 88%, var(--background-primary) 12%);
 		stroke-width: 0.0045;
 		cursor: move;
 	}
 
 	.true-recall-io-canvas-region.is-draft {
-		fill: color-mix(in srgb, var(--color-blue) 30%, transparent);
-		stroke: color-mix(in srgb, var(--color-blue) 70%, transparent);
+		fill: color-mix(in srgb, var(--background-primary) 72%, var(--interactive-accent) 28%);
+		fill-opacity: 1;
+		stroke: color-mix(in srgb, var(--interactive-accent) 72%, var(--background-primary) 28%);
+		stroke-dasharray: 0.018 0.01;
 	}
 
 	.true-recall-io-canvas-region.is-selected {
-		fill: color-mix(in srgb, var(--interactive-accent) 30%, transparent);
-		stroke: color-mix(in srgb, var(--interactive-accent) 85%, transparent);
-		stroke-width: 0.006;
+		fill: color-mix(in srgb, var(--background-primary) 48%, var(--interactive-accent) 52%);
+		fill-opacity: 1;
+		stroke: var(--interactive-accent);
+		stroke-width: 0.007;
+		filter: drop-shadow(0 0 5px color-mix(in srgb, var(--interactive-accent) 48%, transparent));
 	}
 
 	.true-recall-io-canvas-handle {
-		fill: var(--interactive-accent);
-		stroke: var(--text-on-accent);
+		fill: var(--background-primary);
+		stroke: var(--interactive-accent);
 		stroke-width: 0.003;
 		cursor: nwse-resize;
 	}
 
 	.true-recall-io-canvas-empty {
-		height: 430px;
+		height: min(76vh, 820px);
+		min-height: 560px;
 		display: grid;
 		place-items: center;
 		text-align: center;
@@ -211,15 +385,15 @@
 	}
 
 	.true-recall-io-shape.is-mask-active {
-		fill: color-mix(in srgb, var(--color-red) 62%, transparent);
-		stroke: color-mix(in srgb, var(--color-red) 88%, transparent);
-		opacity: 1;
+		fill: color-mix(in srgb, var(--background-primary) 32%, var(--interactive-accent) 68%);
+		fill-opacity: 1;
+		stroke: color-mix(in srgb, var(--interactive-accent) 92%, var(--background-primary) 8%);
 	}
 
 	.true-recall-io-shape.is-mask-passive {
-		fill: color-mix(in srgb, var(--color-red) 38%, transparent);
-		stroke: color-mix(in srgb, var(--color-red) 70%, transparent);
-		opacity: 0.88;
+		fill: color-mix(in srgb, var(--background-primary) 46%, var(--interactive-accent) 54%);
+		fill-opacity: 1;
+		stroke: color-mix(in srgb, var(--interactive-accent) 76%, var(--background-primary) 24%);
 	}
 
 	.true-recall-io-shape.is-outline-passive {
@@ -248,6 +422,12 @@
 		border-radius: var(--radius-m);
 	}
 
+	.true-recall-io-footer {
+		margin-top: 2px;
+		padding-top: 10px;
+		border-top: 1px solid color-mix(in srgb, var(--background-modifier-border) 85%, transparent);
+	}
+
 	@keyframes true-recall-io-pulse {
 		0% {
 			filter: drop-shadow(0 0 0 color-mix(in srgb, var(--color-green) 70%, transparent));
@@ -267,4 +447,3 @@
 		grid-template-columns: 1fr;
 	}
 }
-

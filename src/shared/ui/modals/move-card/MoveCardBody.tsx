@@ -127,6 +127,7 @@ export function MoveCardBody({
 				value={searchQuery}
 				onChange={setSearchQuery}
 				placeholder="Search notes or #tags..."
+				ariaLabel="Search notes or tags"
 				autoFocus
 				class="ep:mb-3"
 			/>

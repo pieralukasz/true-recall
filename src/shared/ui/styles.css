@@ -261,6 +261,21 @@
 	}
 }
 
+@layer components {
+	.true-recall-search-suggest-section {
+		font-size: var(--font-ui-smaller);
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+		color: var(--text-faint);
+		margin: 6px 0 2px;
+		pointer-events: none;
+	}
+
+	.suggestion-item:first-child .true-recall-search-suggest-section {
+		margin-top: 0;
+	}
+}
+
 /* Card entry: keyframe animation is more reliable than @starting-style
    with VDOM frameworks (Preact) that may recycle DOM nodes.
    Uses --card-index CSS variable for staggered delays (80ms per card) */

@@ -1,4 +1,4 @@
-import { Clickable } from "@shared/ui/components";
+import { Clickable, SearchInput } from "@shared/ui/components";
 import { BasePromiseModal } from "@shared/ui/modals/BasePromiseModal";
 import { type App, normalizePath, TFolder } from "obsidian";
 import { render } from "preact";
@@ -61,14 +61,12 @@ function CreateProjectBody({
 			<label class="ep:block ep:text-ui-small ep:text-obs-muted ep:mb-1">
 				Folder
 			</label>
-			<input
-				type="text"
+			<SearchInput
 				placeholder="Filter folders..."
-				class="ep:w-full ep:py-2 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-ui-small ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted ep:mb-2"
+				ariaLabel="Filter folders"
+				class="ep:mb-2"
 				value={folderSearch}
-				onInput={(e) =>
-					setFolderSearch((e.target as HTMLInputElement).value)
-				}
+				onChange={setFolderSearch}
 			/>
 
 			<div
