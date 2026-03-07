@@ -58,7 +58,7 @@ export function BrowserToolbar({
 	onSearchChange,
 	stateFilters,
 	onToggleStateFilter,
-	sort,
+	sort: _sort,
 	totalCount,
 	showArchived,
 	onToggleShowArchived,

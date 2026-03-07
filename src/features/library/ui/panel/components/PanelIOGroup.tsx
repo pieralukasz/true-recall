@@ -26,9 +26,9 @@ export interface PanelIOGroupProps {
 }
 
 export function PanelIOGroup({
-	cards,
+	cards: _cards,
 	fsrsCards,
-	filePath,
+	filePath: _filePath,
 	isExpanded,
 	isSelected,
 	isSelectionMode,
@@ -121,6 +121,7 @@ export function PanelIOGroup({
 						templateOrd={revealedOrd ?? -1}
 						revealed={revealedOrd !== null}
 						maskModeOverride="all"
+						revealSingleOnly
 						onRegionClick={handleRegionClick}
 					/>
 				</div>

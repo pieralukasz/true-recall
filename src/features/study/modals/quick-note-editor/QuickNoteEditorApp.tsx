@@ -41,11 +41,12 @@ export function QuickNoteEditorApp({ mode, onDone }: QuickNoteEditorAppProps) {
 
 	// ── State ──
 
-	const [noteTypeId, setNoteTypeId] = useState(
-		isEdit
-			? editMode?.noteType.id
-			: (addMode?.defaultNoteTypeId ?? "builtin-basic"),
-	);
+	const [noteTypeId, setNoteTypeId] = useState<string>(() => {
+		if (isEdit && editMode?.noteType.id) {
+			return editMode.noteType.id;
+		}
+		return addMode?.defaultNoteTypeId ?? "builtin-basic";
+	});
 
 	const [fields, setFields] = useState<Record<string, string>>(() => {
 		if (isEdit) return { ...editMode?.note.fields };
@@ -385,9 +386,8 @@ function FooterBar({
 				</div>
 			)}
 
-			<div
+			<Clickable
 				ref={aiIconRef}
-				role="button"
 				title="Generate with AI (coming soon)"
 				class={`${ghostBtnCls} ep:ml-auto [&>svg]:ep:w-4 [&>svg]:ep:h-4`}
 				onClick={openAI}
