@@ -112,55 +112,30 @@ export function IOCardRenderer({
 					class="true-recall-io-render-image"
 					onLoad={handleImageLoad}
 				/>
-				{aspectRatio !== null && (
-					<svg
-						class="true-recall-io-render-svg"
-						viewBox="0 0 1 1"
-						preserveAspectRatio="none"
-						aria-hidden="true"
-					>
-						{renderRegions.map((info) => {
-							const shapeClass = `true-recall-io-shape ${getRegionClass(
-								info,
-								templateOrd,
-								revealed,
-								maskModeOverride ?? definition.maskMode,
-								revealSingleOnly,
-							)}${onRegionClick ? " true-recall-io-shape-clickable" : ""}`;
+				<svg
+					class="true-recall-io-render-svg"
+					viewBox="0 0 1 1"
+					preserveAspectRatio="none"
+					aria-hidden="true"
+				>
+					{renderRegions.map((info) => {
+						const shapeClass = `true-recall-io-shape ${getRegionClass(
+							info,
+							templateOrd,
+							revealed,
+							maskModeOverride ?? definition.maskMode,
+							revealSingleOnly,
+						)}${onRegionClick ? " true-recall-io-shape-clickable" : ""}`;
 
-							if (info.region.shape === "ellipse") {
-								return (
-									<ellipse
-										key={info.region.id}
-										class={shapeClass}
-										cx={info.region.x + info.region.w / 2}
-										cy={info.region.y + info.region.h / 2}
-										rx={info.region.w / 2}
-										ry={info.region.h / 2}
-										{...(onRegionClick
-											? {
-													onClick: (e: Event) => {
-														e.stopPropagation();
-														onRegionClick(info.ord);
-													},
-													role: "button",
-													tabIndex: 0,
-												}
-											: {})}
-									/>
-								);
-							}
-
+						if (info.region.shape === "ellipse") {
 							return (
-								<rect
+								<ellipse
 									key={info.region.id}
 									class={shapeClass}
-									x={info.region.x}
-									y={info.region.y}
-									width={info.region.w}
-									height={info.region.h}
-									rx={0.01}
-									ry={0.01}
+									cx={info.region.x + info.region.w / 2}
+									cy={info.region.y + info.region.h / 2}
+									rx={info.region.w / 2}
+									ry={info.region.h / 2}
 									{...(onRegionClick
 										? {
 												onClick: (e: Event) => {
@@ -173,9 +148,32 @@ export function IOCardRenderer({
 										: {})}
 								/>
 							);
-						})}
-					</svg>
-				)}
+						}
+
+						return (
+							<rect
+								key={info.region.id}
+								class={shapeClass}
+								x={info.region.x}
+								y={info.region.y}
+								width={info.region.w}
+								height={info.region.h}
+								rx={0.01}
+								ry={0.01}
+								{...(onRegionClick
+									? {
+											onClick: (e: Event) => {
+												e.stopPropagation();
+												onRegionClick(info.ord);
+											},
+											role: "button",
+											tabIndex: 0,
+										}
+									: {})}
+							/>
+						);
+					})}
+				</svg>
 			</div>
 		</div>
 	);

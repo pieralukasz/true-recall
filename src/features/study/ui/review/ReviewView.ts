@@ -168,6 +168,7 @@ export class ReviewView extends ItemView {
 				await this.cardActionsHandler.handleUndo();
 			},
 			onSuspend: () => this.cardActionsHandler.handleSuspend(),
+			onForget: () => this.cardActionsHandler.handleForget(),
 			onBuryCard: () => this.cardActionsHandler.handleBuryCard(),
 			onBuryNote: () => this.cardActionsHandler.handleBuryNote(),
 			onMoveCard: () => this.cardActionsHandler.handleMoveCard(),
@@ -755,6 +756,12 @@ export class ReviewView extends ItemView {
 				.setTitle("Bury note (=)")
 				.setIcon("eye-off")
 				.onClick(() => this.cardActionsHandler.handleBuryNote()),
+		);
+		menu.addItem((item) =>
+			item
+				.setTitle("Forget card (f)")
+				.setIcon("rotate-ccw")
+				.onClick(() => this.cardActionsHandler.handleForget()),
 		);
 		menu.addItem((item) =>
 			item

@@ -18,6 +18,7 @@ export type UndoActionType =
 	| "answer"
 	| "bury"
 	| "suspend"
+	| "forget"
 	| "fsrs-helper-operation";
 
 /**
@@ -146,6 +147,13 @@ export interface FSRSHelperUndoPayload {
 /**
  * Union type for all undo payloads
  */
+export interface ForgetUndoPayload {
+	type: "forget";
+	card: FSRSFlashcardItem;
+	originalFsrs: FSRSCardData;
+	previousIndex: number;
+}
+
 export type UndoPayload =
 	| CreateUndoPayload
 	| UpdateUndoPayload
@@ -155,6 +163,7 @@ export type UndoPayload =
 	| AnswerUndoPayload
 	| BuryUndoPayload
 	| SuspendUndoPayload
+	| ForgetUndoPayload
 	| FSRSHelperUndoPayload;
 
 /**

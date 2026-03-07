@@ -276,16 +276,35 @@ export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
 
 	useEffect(() => {
 		const onKeyDown = (event: KeyboardEvent) => {
-			if (event.key !== "Delete" && event.key !== "Backspace") return;
-			if (!selectedRegionId) return;
 			const tag = (event.target as HTMLElement)?.tagName;
 			if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
-			event.preventDefault();
-			deleteSelected();
+
+			if (
+				(event.key === "Delete" || event.key === "Backspace") &&
+				selectedRegionId
+			) {
+				event.preventDefault();
+				deleteSelected();
+				return;
+			}
+
+			switch (event.key.toLowerCase()) {
+				case "v":
+					if (hasRegions) setTool("select");
+					break;
+				case "r":
+					setLastNonSelectTool("rect");
+					setTool("rect");
+					break;
+				case "e":
+					setLastNonSelectTool("ellipse");
+					setTool("ellipse");
+					break;
+			}
 		};
 		window.addEventListener("keydown", onKeyDown);
 		return () => window.removeEventListener("keydown", onKeyDown);
-	}, [selectedRegionId, deleteSelected]);
+	}, [selectedRegionId, deleteSelected, hasRegions]);
 
 	const hasAIKey = Boolean(
 		plugin.settings.subscriptionKey || plugin.settings.openRouterApiKey,

@@ -3,6 +3,7 @@ import { notifyCardChange } from "@shared/services/signals";
 import type {
 	AnswerUndoPayload,
 	BuryUndoPayload,
+	ForgetUndoPayload,
 	FSRSHelperUndoPayload,
 	SuspendUndoPayload,
 	UndoEntry,
@@ -130,6 +131,9 @@ export class UndoService {
 			case "suspend":
 				return this.undoSuspend(payload, writeCancelled);
 
+			case "forget":
+				return this.undoForget(payload as ForgetUndoPayload, writeCancelled);
+
 			case "update-note-fields":
 				return this.undoUpdateNoteFields(
 					payload as UpdateNoteFieldsUndoPayload,
@@ -237,6 +241,32 @@ export class UndoService {
 		return true;
 	}
 
+	private undoForget(
+		payload: ForgetUndoPayload,
+		writeCancelled: boolean,
+	): boolean {
+		// Restore FSRS state (review_log soft-delete is not reversed)
+		if (!writeCancelled) {
+			this.plugin.flashcardManager.updateCardFSRS(
+				payload.card.id,
+				payload.originalFsrs,
+			);
+		}
+
+		if (this.reviewStateManager) {
+			this.reviewStateManager.insertCardAtPosition(
+				{ ...payload.card, fsrs: payload.originalFsrs },
+				payload.previousIndex,
+			);
+		}
+
+		if (this.reviewCallbacks) {
+			this.reviewCallbacks.onUpdateSchedulingPreview();
+		}
+
+		return true;
+	}
+
 	private undoUpdateNoteFields(payload: UpdateNoteFieldsUndoPayload): boolean {
 		try {
 			this.plugin.flashcardManager.updateNoteFields(
@@ -279,7 +309,7 @@ export class UndoService {
 	}
 
 	clearSessionEntries(): void {
-		const sessionTypes = new Set(["answer", "bury", "suspend"]);
+		const sessionTypes = new Set(["answer", "bury", "suspend", "forget"]);
 		this.stack = this.stack.filter(
 			(entry) => !sessionTypes.has(entry.payload.type),
 		);

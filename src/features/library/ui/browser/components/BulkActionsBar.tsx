@@ -38,10 +38,10 @@ export function BulkActionsBar({
 		onClearSelection();
 	}, [ids, plugin]);
 
-	const handleReset = useCallback(() => {
-		const count = plugin.cardStore.cards.bulkReset(ids);
+	const handleForget = useCallback(() => {
+		const count = plugin.cardStore.cards.bulkForget(ids);
 		notifyCardChange({ type: "bulk", cardIds: ids, action: "reset" });
-		notify().success(`Reset ${count} cards`);
+		notify().cardsForgotten(count);
 		onClearSelection();
 	}, [ids, plugin]);
 
@@ -123,7 +123,7 @@ export function BulkActionsBar({
 			<div class="ep:ml-auto ep:flex ep:items-center ep:gap-1.5">
 				<ActionButton label="Suspend" onClick={handleSuspend} />
 				<ActionButton label="Unsuspend" onClick={handleUnsuspend} />
-				<ActionButton label="Reset" onClick={handleReset} />
+				<ActionButton label="Forget" onClick={handleForget} />
 				<ActionButton label="Change type" onClick={handleChangeType} />
 				<ActionButton label="Delete" onClick={handleDelete} danger />
 			</div>

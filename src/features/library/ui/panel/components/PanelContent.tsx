@@ -22,6 +22,7 @@ export interface ContentHandlers {
 	onMoveCard: (card: FlashcardItem) => void;
 	onChangeType: (card: FlashcardItem) => void;
 	onToggleReversed: (card: FlashcardItem) => void;
+	onForgetCard: (card: FlashcardItem) => void;
 	onToggleExpand: (cardId: string) => void;
 	onToggleSelect: (cardId: string) => void;
 	onEnterSelectionMode: (cardId: string) => void;
@@ -335,6 +336,7 @@ export function PanelContent({
 						onMove={() => handlers.onMoveCard(card)}
 						onChangeType={() => handlers.onChangeType(card)}
 						onToggleReversed={() => handlers.onToggleReversed(card)}
+						onForget={() => handlers.onForgetCard(card)}
 						onJumpToSource={
 							card.sourceText ? () => handlers.onJumpToSource(card) : undefined
 						}

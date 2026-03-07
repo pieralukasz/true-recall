@@ -186,6 +186,35 @@ export function useSelectionActions({
 		panel.exitSelectionMode();
 	}, [flashcardInfo, selectedCardIds, app, plugin, panel]);
 
+	const handleForgetSelected = useCallback(async () => {
+		if (!flashcardInfo || selectedCardIds.size === 0) return;
+		const { notify } = await import("@shared/services/notification.service");
+		const { notifyCardChange } = await import("@shared/services/signals");
+
+		const cardIds = Array.from(selectedCardIds);
+		const count = plugin.cardStore.cards.bulkForget(cardIds);
+		notifyCardChange({ type: "bulk", cardIds, action: "reset" });
+		panel.exitSelectionMode();
+		notify().cardsForgotten(count);
+	}, [flashcardInfo, selectedCardIds, plugin, panel]);
+
+	const handleForgetAll = useCallback(async () => {
+		if (!flashcardInfo || flashcardInfo.flashcards.length === 0) return;
+		const { notify } = await import("@shared/services/notification.service");
+		const { notifyCardChange } = await import("@shared/services/signals");
+
+		const count = flashcardInfo.flashcards.length;
+		const confirmed = window.confirm(
+			`Forget all ${count} flashcard(s) for this note? This resets scheduling and clears review history.`,
+		);
+		if (!confirmed) return;
+
+		const cardIds = flashcardInfo.flashcards.map((card) => card.id);
+		const forgotten = plugin.cardStore.cards.bulkForget(cardIds);
+		notifyCardChange({ type: "bulk", cardIds, action: "reset" });
+		notify().cardsForgotten(forgotten);
+	}, [flashcardInfo, plugin]);
+
 	const handleDeleteAll = useCallback(async () => {
 		const { notify } = await import("@shared/services/notification.service");
 		if (!flashcardInfo || flashcardInfo.flashcards.length === 0) return;
@@ -208,7 +237,9 @@ export function useSelectionActions({
 		handleSelectAll,
 		handleMoveSelected,
 		handleChangeNoteType,
+		handleForgetSelected,
 		handleDeleteSelected,
+		handleForgetAll,
 		handleDeleteAll,
 	};
 }
