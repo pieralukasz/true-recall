@@ -56,7 +56,6 @@ function TokenRow({
 							: token.type === "extra";
 					return (
 						<span
-							// biome-ignore lint/suspicious/noArrayIndexKey: Stable for static assessment output
 							key={`${token.type}-${token.text}-${index}`}
 							class={cn(
 								"ep:px-1.5 ep:py-0.5 ep:rounded-sm ep:text-ui-smaller",

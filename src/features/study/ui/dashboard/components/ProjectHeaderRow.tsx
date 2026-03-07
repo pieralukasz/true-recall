@@ -32,7 +32,7 @@ interface ProjectHeaderRowProps {
 export function ProjectHeaderRow({
 	project,
 	depth,
-	isExpanded,
+	isExpanded: _isExpanded,
 	isVirtual,
 	onToggle,
 	onStudyProject,

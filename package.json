@@ -9,7 +9,7 @@
 		"build": "tsc -noEmit -skipLibCheck && bun esbuild.config.mjs production",
 		"version": "bun version-bump.mjs && git add manifest.json versions.json",
 		"format": "biome format --write src/",
-		"biome": "biome check src/",
+		"biome": "biome check --write src/",
 		"test": "bun vitest run",
 		"test:watch": "bun vitest",
 		"test:coverage": "bun vitest run --coverage",

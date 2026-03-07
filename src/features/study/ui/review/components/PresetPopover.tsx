@@ -56,6 +56,7 @@ export function PresetPopover({
 			>
 				<span>FSRS: {value}</span>
 				<svg
+					aria-hidden="true"
 					class={cn(
 						"ep:w-3 ep:h-3 ep:transition-transform ep:duration-150",
 						isOpen && "ep:rotate-180",
@@ -79,7 +80,7 @@ export function PresetPopover({
 					{options.map((option) => {
 						const isActive = option.value === value;
 						return (
-							<li key={option.value} aria-selected={isActive}>
+							<li key={option.value}>
 								<Clickable
 									class={cn(
 										"ep:flex ep:items-center ep:justify-between ep:gap-3 ep:px-3 ep:py-1.5 ep:w-full ep:text-ui-small ep:hover:bg-obs-modifier-hover ep:transition-colors ep:rounded-none",
@@ -94,6 +95,7 @@ export function PresetPopover({
 										<span class="ep:w-3 ep:flex-shrink-0">
 											{isActive && (
 												<svg
+													aria-hidden="true"
 													viewBox="0 0 24 24"
 													fill="none"
 													stroke="currentColor"

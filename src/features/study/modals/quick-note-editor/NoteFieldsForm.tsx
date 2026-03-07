@@ -1,5 +1,6 @@
 import type { EditorView } from "@codemirror/view";
 import type { NoteType } from "@shared/types/note.types";
+import { Clickable } from "@shared/ui/components/Clickable";
 import type { EmbeddableEditorInstance } from "@shared/ui/editor/embedded-editor";
 import { useIcon } from "@shared/ui/preact/hooks";
 import { useApp, usePlugin } from "@shared/ui/preact/ObsidianContext";
@@ -150,7 +151,7 @@ function CMField({
 	}, [content]);
 
 	const header = (
-		<div
+		<Clickable
 			class="ep:flex ep:items-center ep:gap-2 ep:px-3 ep:py-2 ep:bg-obs-secondary ep:cursor-pointer ep:select-none ep:group"
 			onClick={() => {
 				setIsCollapsed((v) => {
@@ -166,9 +167,8 @@ function CMField({
 				{fieldName}
 			</span>
 			{onTogglePin && (
-				<div
+				<Clickable
 					ref={pinIconRef}
-					role="button"
 					title={
 						isPinned
 							? "Unpin field (content kept on Save & Add)"
@@ -185,7 +185,7 @@ function CMField({
 					}}
 				/>
 			)}
-		</div>
+		</Clickable>
 	);
 
 	// Fallback: render plain textarea until EmbeddableEditor is available

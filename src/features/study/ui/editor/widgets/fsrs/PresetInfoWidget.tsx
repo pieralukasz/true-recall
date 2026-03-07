@@ -178,7 +178,7 @@ function OptimizationStatus({
 		);
 	}
 
-	const { text, stale } = formatDaysAgo(lastOptimization);
+	const { text } = formatDaysAgo(lastOptimization);
 	const color = needsOptimization
 		? "var(--color-orange)"
 		: "var(--color-green)";
