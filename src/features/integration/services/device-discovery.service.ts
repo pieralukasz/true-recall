@@ -8,8 +8,8 @@ import {
 	extractDeviceIdFromFilename,
 	LEGACY_DB_FILE,
 } from "@features/core/persistence/sqlite/sqlite.types";
+import { loadDatabase } from "@features/core/persistence/sqlite/loader";
 import { type App, normalizePath } from "obsidian";
-import initSqlJs, { type Database } from "sql.js";
 
 /**
  * Information about a discovered device database.
@@ -159,14 +159,8 @@ export class DeviceDiscoveryService {
 	private async readDatabaseInfo(
 		data: Uint8Array,
 	): Promise<{ cardCount: number | null; lastReviewDate: Date | null }> {
-		const SQL = await initSqlJs({
-			locateFile: (file) => `https://sql.js.org/dist/${file}`,
-		});
-
-		let db: Database | null = null;
+		const { db } = await loadDatabase(this.app, data);
 		try {
-			db = new SQL.Database(data);
-
 			let cardCount: number | null = null;
 			let lastReviewDate: Date | null = null;
 
@@ -191,9 +185,7 @@ export class DeviceDiscoveryService {
 
 			return { cardCount, lastReviewDate };
 		} finally {
-			if (db) {
-				db.close();
-			}
+			db.close();
 		}
 	}
 

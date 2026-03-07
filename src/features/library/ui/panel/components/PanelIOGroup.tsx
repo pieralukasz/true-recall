@@ -124,9 +124,6 @@ export function PanelIOGroup({
 						onRegionClick={handleRegionClick}
 					/>
 				</div>
-				<span class="ep:text-ui-smaller ep:text-obs-faint ep:shrink-0">
-					{cards.length} cards
-				</span>
 
 				<IconButton
 					icon="more-vertical"
