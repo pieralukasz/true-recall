@@ -133,18 +133,18 @@ describe("BlockPromptBuilder", () => {
 	});
 
 	describe("buildAutoPrompt", () => {
-		it("should list all provided NoteTypes", () => {
+		it("should list non-reversed NoteTypes", () => {
 			const prompt = buildAutoPrompt([basicType, clozeType, reversedType]);
 			expect(prompt).toContain("#type/basic");
 			expect(prompt).toContain("#type/cloze");
-			expect(prompt).toContain("#type/basic-reversed");
+			expect(prompt).not.toContain("#type/basic-reversed");
 		});
 
-		it("should include type hints", () => {
+		it("should filter out reversed (multi-template) types", () => {
 			const prompt = buildAutoPrompt([basicType, clozeType, reversedType]);
 			expect(prompt).toContain("Standard Q&A");
 			expect(prompt).toContain("Fill-in-the-blank");
-			expect(prompt).toContain("Bidirectional Q&A");
+			expect(prompt).not.toContain("Bidirectional Q&A");
 		});
 
 		it("should include custom types", () => {
@@ -159,9 +159,9 @@ describe("BlockPromptBuilder", () => {
 			expect(prompt).toContain("<!-- source:");
 		});
 
-		it("should include cloze syntax rules", () => {
+		it("should include cloze rules", () => {
 			const prompt = buildAutoPrompt([basicType, clozeType]);
-			expect(prompt).toContain("CLOZE SYNTAX RULES");
+			expect(prompt).toContain("CLOZE RULES");
 		});
 	});
 });
