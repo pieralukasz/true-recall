@@ -21,12 +21,7 @@ import {
 	TextInput,
 	ToggleInput,
 } from "@shared/ui/components";
-import {
-	useCallback,
-	useEffect,
-	useRef,
-	useState,
-} from "preact/hooks";
+import { useCallback, useEffect, useRef, useState } from "preact/hooks";
 
 const subscriptionService = new SubscriptionService();
 
@@ -297,7 +292,6 @@ export function AITab() {
 						</p>
 					</InfoBlock>
 				)}
-
 			</FormCard>
 
 			<FormCard title="AI Prompts">

@@ -11,6 +11,12 @@ export interface PanelEmptyStateProps {
 	hasHighlights: boolean;
 }
 
+const CALLOUT_CLS =
+	"ep:w-full ep:rounded-lg ep:bg-obs-bg-secondary ep:border ep:border-obs-modifier-border ep:px-3.5 ep:py-3 ep:text-left ep:flex ep:flex-col ep:gap-2";
+
+const BTN_BASE_CLS =
+	"ep:px-4 ep:py-1.5 ep:rounded-md ep:text-ui-small ep:font-medium ep:w-full ep:inline-flex ep:items-center ep:justify-center ep:gap-1.5";
+
 export function PanelEmptyState({
 	onGenerate,
 	onGenerateFromHighlights,
@@ -24,7 +30,9 @@ export function PanelEmptyState({
 		"note" | "highlights" | null
 	>(null);
 	const [collecting, setCollecting] = useState(false);
-	const iconRef = useIcon("sparkles");
+	const sparklesRef = useIcon("sparkles");
+	const highlighterRef = useIcon("highlighter");
+	const fileTextRef = useIcon("file-text");
 
 	const handleGenerate = async () => {
 		setGenerating(true);
@@ -77,56 +85,78 @@ export function PanelEmptyState({
 		);
 	}
 
+	const hasCollect = uncollectedCount > 0;
+	const generateBtnCls = `${BTN_BASE_CLS} ep:border ep:border-obs-modifier-border ep:text-obs-muted`;
+
 	return (
-		<div class="ep:flex ep:flex-col ep:items-center ep:justify-center ep:h-full ep:py-6 ep:px-4 ep:text-center ep:gap-4">
-			<div class="ep:text-obs-muted ep:text-3xl">
-				<span ref={iconRef} />
-			</div>
-
-			<div class="ep:text-ui-small ep:text-obs-muted">
-				No flashcards yet for this note
-			</div>
-
-			<div class="ep:flex ep:flex-col ep:gap-2">
-				{uncollectedCount > 0 && (
-					<Clickable
-						class="mod-cta ep:px-4 ep:py-1.5 ep:rounded-md ep:text-ui-small ep:font-medium"
-						onClick={handleCollect}
-					>
-						Collect {uncollectedCount} flashcard
-						{uncollectedCount !== 1 ? "s" : ""}
-					</Clickable>
-				)}
-
+		<div class="ep:flex ep:flex-col ep:items-center ep:justify-center ep:h-full ep:py-6 ep:px-5 ep:text-center ep:gap-4">
+			{/* Collect button */}
+			{hasCollect && (
 				<Clickable
-					class={`${uncollectedCount > 0 ? "ep:border ep:border-obs-modifier-border" : "mod-cta"} ep:px-4 ep:py-1.5 ep:rounded-md ep:text-ui-small ep:font-medium`}
-					onClick={handleGenerate}
-					disabled={!hasApiKey}
+					class={`mod-cta ${BTN_BASE_CLS}`}
+					onClick={handleCollect}
 				>
-					Generate flashcards from note
+					Collect {uncollectedCount} flashcard
+					{uncollectedCount !== 1 ? "s" : ""}
 				</Clickable>
+			)}
 
-				{hasHighlights && (
-					<Clickable
-						class="ep:px-4 ep:py-1.5 ep:rounded-md ep:text-ui-small ep:font-medium ep:border ep:border-obs-modifier-border"
-						onClick={handleGenerateFromHighlights}
-						disabled={!hasApiKey}
-					>
-						Generate from ==highlights==
-					</Clickable>
-				)}
+			{/* Callout with header + tip */}
+			<div class={CALLOUT_CLS}>
+				<div class="ep:flex ep:flex-col ep:items-center ep:gap-1">
+					<div class="ep:text-obs-muted ep:text-3xl">
+						<span ref={sparklesRef} />
+					</div>
+					<div class="ep:text-ui-small ep:text-obs-muted ep:font-medium">
+						No flashcards yet
+					</div>
+				</div>
+				<div class="ep:text-ui-smaller ep:text-obs-faint ep:text-center">
+					For best results, select text in the editor, then right-click or
+					use the command palette to generate focused cards.
+				</div>
 			</div>
 
+			{/* Divider */}
+			<div class="ep:flex ep:items-center ep:gap-2 ep:w-full">
+				<div class="ep:flex-1 ep:h-px ep:bg-obs-modifier-border" />
+				<span class="ep:text-ui-smaller ep:text-obs-faint">or</span>
+				<div class="ep:flex-1 ep:h-px ep:bg-obs-modifier-border" />
+			</div>
+
+			{/* Generate from highlights */}
+			<Clickable
+				class={generateBtnCls}
+				onClick={handleGenerateFromHighlights}
+				disabled={!hasApiKey || !hasHighlights}
+			>
+				<span ref={highlighterRef} class="ep:shrink-0" />
+				Generate from ==highlights==
+			</Clickable>
+
+			{/* Divider */}
+			<div class="ep:flex ep:items-center ep:gap-2 ep:w-full">
+				<div class="ep:flex-1 ep:h-px ep:bg-obs-modifier-border" />
+				<span class="ep:text-ui-smaller ep:text-obs-faint">or</span>
+				<div class="ep:flex-1 ep:h-px ep:bg-obs-modifier-border" />
+			</div>
+
+			{/* Generate from note */}
+			<Clickable
+				class={generateBtnCls}
+				onClick={handleGenerate}
+				disabled={!hasApiKey}
+			>
+				<span ref={fileTextRef} class="ep:shrink-0" />
+				Generate from entire note
+			</Clickable>
+
+			{/* API key error */}
 			{!hasApiKey && (
 				<div class="ep:text-ui-smaller ep:text-obs-error">
 					Add a subscription or OpenRouter API key in settings
 				</div>
 			)}
-
-			<div class="ep:text-ui-smaller ep:text-obs-faint ep:max-w-[220px]">
-				Tip: You can also select text in the editor to generate flashcards from
-				a specific section
-			</div>
 		</div>
 	);
 }

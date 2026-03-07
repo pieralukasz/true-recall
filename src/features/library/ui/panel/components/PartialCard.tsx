@@ -156,8 +156,7 @@ export function PartialCard({
 		streaming.totalChunks != null ? (
 			<div class="ep:text-ui-smaller ep:text-obs-muted ep:mb-1 ep:px-3">
 				Section {streaming.completedChunks + 1}/{streaming.totalChunks}
-				{streaming.currentChunkLabel &&
-					` — ${streaming.currentChunkLabel}`}
+				{streaming.currentChunkLabel && ` — ${streaming.currentChunkLabel}`}
 			</div>
 		) : null;
 
@@ -172,45 +171,45 @@ export function PartialCard({
 
 	return (
 		<>
-		{chunkProgress}
-		<div class="ep:flex ep:flex-col ep:mb-2 ep:rounded-lg ep:bg-obs-secondary ep:border ep:border-obs-border/20 ep:shadow-sm ep:p-3">
-			<div
-				ref={qRef}
-				class="ep:text-ui-small ep:text-obs-normal ep:leading-relaxed"
-			>
-				{hasCloze ? (
-					<ClozeRenderer text={streaming.partialQuestion ?? ""} />
-				) : (
-					qWords.map((w, i) => (
-						<span
-							key={i}
-							data-wi={i}
-							style={w.isNew ? NEW_WORD_STYLE : undefined}
-						>
-							{w.text}
-						</span>
-					))
-				)}
-				{qTyping && <span class="ep-streaming-cursor" />}
-			</div>
-			{(aWords.length > 0 || streaming.partialAnswer != null) && (
+			{chunkProgress}
+			<div class="ep:flex ep:flex-col ep:mb-2 ep:rounded-lg ep:bg-obs-secondary ep:border ep:border-obs-border/20 ep:shadow-sm ep:p-3">
 				<div
-					ref={aRef}
-					class="ep:text-ui-small ep:text-obs-muted ep:mt-1.5 ep:leading-relaxed"
+					ref={qRef}
+					class="ep:text-ui-small ep:text-obs-normal ep:leading-relaxed"
 				>
-					{aWords.map((w, i) => (
-						<span
-							key={i}
-							data-wi={i}
-							style={w.isNew ? NEW_WORD_STYLE : undefined}
-						>
-							{w.text}
-						</span>
-					))}
-					{aTyping && <span class="ep-streaming-cursor" />}
+					{hasCloze ? (
+						<ClozeRenderer text={streaming.partialQuestion ?? ""} />
+					) : (
+						qWords.map((w, i) => (
+							<span
+								key={i}
+								data-wi={i}
+								style={w.isNew ? NEW_WORD_STYLE : undefined}
+							>
+								{w.text}
+							</span>
+						))
+					)}
+					{qTyping && <span class="ep-streaming-cursor" />}
 				</div>
-			)}
-		</div>
+				{(aWords.length > 0 || streaming.partialAnswer != null) && (
+					<div
+						ref={aRef}
+						class="ep:text-ui-small ep:text-obs-muted ep:mt-1.5 ep:leading-relaxed"
+					>
+						{aWords.map((w, i) => (
+							<span
+								key={i}
+								data-wi={i}
+								style={w.isNew ? NEW_WORD_STYLE : undefined}
+							>
+								{w.text}
+							</span>
+						))}
+						{aTyping && <span class="ep-streaming-cursor" />}
+					</div>
+				)}
+			</div>
 		</>
 	);
 }

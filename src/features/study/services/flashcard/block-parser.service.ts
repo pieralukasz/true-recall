@@ -107,7 +107,7 @@ export function parseBlocks(
 			}
 			// Skip the --- separator if present
 			if (i < lines.length) i++;
-		} else if (BLOCK_SEPARATOR_RE.test(trimmed)) {
+		} else if (BLOCK_SEPARATOR_RE.test(lines[i]?.trim())) {
 			// Standalone --- not preceded by a block — preserve it
 			nonBlockLines.push(lines[i]!);
 			i++;

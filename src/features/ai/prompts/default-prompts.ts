@@ -62,8 +62,7 @@ export const GENERATION_DENSITY_OPTIONS: {
 	{
 		value: "comprehensive",
 		label: "Comprehensive",
-		description:
-			"Every piece of information (~40-60 cards per 1000 words)",
+		description: "Every piece of information (~40-60 cards per 1000 words)",
 	},
 ];
 

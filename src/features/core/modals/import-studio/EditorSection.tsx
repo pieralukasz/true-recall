@@ -94,7 +94,7 @@ export function EditorSection({
 	if (!plugin.EmbeddableEditor) {
 		return (
 			<textarea
-				class="ep:w-full ep:min-h-[220px] ep:px-3 ep:py-2 ep:text-ui-small ep:font-mono ep:bg-obs-primary ep:border ep:border-obs-border ep:rounded-md ep:resize-y ep:placeholder-obs-faint"
+				class="ep:w-full ep:min-h-[400px] ep:px-3 ep:py-2 ep:text-ui-small ep:font-mono ep:bg-obs-primary ep:border ep:border-obs-border ep:rounded-md ep:resize-y ep:placeholder-obs-faint"
 				placeholder={buildPlaceholder(noteType)}
 				value={text}
 				onInput={(e) => onTextChange((e.target as HTMLTextAreaElement).value)}
@@ -111,7 +111,7 @@ export function EditorSection({
 	return (
 		<div
 			ref={editorContainerRef}
-			class="ep:w-full ep:min-h-[220px] ep:bg-obs-primary ep:border ep:border-obs-border ep:rounded-md ep:overflow-hidden"
+			class="true-recall-import-editor ep:w-full ep:min-h-[400px] ep:bg-obs-primary ep:border ep:border-obs-border ep:rounded-md ep:overflow-hidden"
 		/>
 	);
 }

@@ -16,12 +16,12 @@ import {
 	resolveAIClientConfig,
 } from "./ai-client-config";
 import { IncrementalFlashcardParser } from "./incremental-flashcard-parser";
-import { chunkMarkdown, type ChunkingResult } from "./markdown-chunker";
+import { type ChunkingResult, chunkMarkdown } from "./markdown-chunker";
 import { processCardEvents } from "./process-card-events";
 import {
 	SOURCE_TRACKING_SUFFIX,
-	StreamingGenerationService,
 	type StreamingGenerationResult,
+	StreamingGenerationService,
 } from "./streaming-generation.service";
 import { StreamingOpenRouterClient } from "./streaming-openrouter-client";
 import {
@@ -63,7 +63,7 @@ export class ChunkedGenerationService {
 				this.flashcardManager,
 			);
 			const result = await streamingService.generateStreaming(
-				chunkingResult.chunks[0]!.content,
+				chunkingResult.chunks[0]?.content,
 				mode,
 				sourceFile,
 				noteType,
@@ -97,10 +97,7 @@ export class ChunkedGenerationService {
 	): Promise<ChunkedGenerationResult> {
 		const { chunks, totalWords, estimatedTokens } = chunkingResult;
 
-		if (
-			app &&
-			totalWords > COST_CONFIRM_WORD_THRESHOLD
-		) {
+		if (app && totalWords > COST_CONFIRM_WORD_THRESHOLD) {
 			const estimatedCost = estimatedTokens * 1.3 * COST_PER_TOKEN;
 			const { confirm } = await import("@shared/ui/modals/ConfirmModal");
 			const proceed = await confirm(app, {
@@ -155,10 +152,7 @@ export class ChunkedGenerationService {
 					totalCreated += result.created;
 					totalDuplicates += result.duplicates;
 				} catch (error) {
-					if (
-						error instanceof DOMException &&
-						error.name === "AbortError"
-					) {
+					if (error instanceof DOMException && error.name === "AbortError") {
 						break;
 					}
 					// Try BYOK fallback on budget exceeded
@@ -186,8 +180,7 @@ export class ChunkedGenerationService {
 						// Fallback also failed — fall through to error tracking
 					}
 					failedChunks++;
-					const msg =
-						error instanceof Error ? error.message : String(error);
+					const msg = error instanceof Error ? error.message : String(error);
 					errors.push(
 						`Section ${chunk.index + 1}${chunk.headingBreadcrumb ? ` (${chunk.headingBreadcrumb})` : ""}: ${msg}`,
 					);
@@ -331,7 +324,10 @@ export class ChunkedGenerationService {
 
 		if (noteType) {
 			return (
-				buildBlockPrompt(noteType) + densitySuffix + SOURCE_TRACKING_SUFFIX + langSuffix
+				buildBlockPrompt(noteType) +
+				densitySuffix +
+				SOURCE_TRACKING_SUFFIX +
+				langSuffix
 			);
 		}
 

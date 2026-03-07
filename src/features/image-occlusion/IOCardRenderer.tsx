@@ -11,6 +11,7 @@ export interface IOCardRendererProps {
 	revealed: boolean;
 	class?: string;
 	maskModeOverride?: "solo" | "all";
+	revealSingleOnly?: boolean;
 	onRegionClick?: (ord: number) => void;
 }
 
@@ -32,10 +33,15 @@ function getRegionClass(
 	activeOrd: number,
 	revealed: boolean,
 	maskMode: "solo" | "all",
+	revealSingleOnly = false,
 ): string {
 	const isActive = info.ord === activeOrd;
 	if (revealed) {
-		return isActive ? "is-revealed-active" : "is-revealed-passive";
+		if (isActive) return "is-revealed-active";
+		if (revealSingleOnly) {
+			return maskMode === "all" ? "is-mask-passive" : "is-outline-passive";
+		}
+		return "is-revealed-passive";
 	}
 	if (maskMode === "all") {
 		return isActive ? "is-mask-active" : "is-mask-passive";
@@ -50,6 +56,7 @@ export function IOCardRenderer({
 	revealed,
 	class: className,
 	maskModeOverride,
+	revealSingleOnly,
 	onRegionClick,
 }: IOCardRendererProps) {
 	const app = useApp();
@@ -118,6 +125,7 @@ export function IOCardRenderer({
 								templateOrd,
 								revealed,
 								maskModeOverride ?? definition.maskMode,
+								revealSingleOnly,
 							)}${onRegionClick ? " true-recall-io-shape-clickable" : ""}`;
 
 							if (info.region.shape === "ellipse") {

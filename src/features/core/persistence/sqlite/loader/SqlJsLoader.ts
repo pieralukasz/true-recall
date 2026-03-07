@@ -3,8 +3,9 @@
  * Uses @sqlite.org/sqlite-wasm which includes FTS5, JSON1, RTREE, and all
  * other SQLite extensions — no custom WASM compilation needed.
  */
-import sqlite3InitModule from "@sqlite.org/sqlite-wasm";
+
 import type { Database, Sqlite3Static } from "@sqlite.org/sqlite-wasm";
+import sqlite3InitModule from "@sqlite.org/sqlite-wasm";
 import type { App } from "obsidian";
 
 const PLUGIN_ID = "true-recall";
@@ -113,12 +114,12 @@ async function loadSqlite3(app: App): Promise<Sqlite3Static> {
 	};
 
 	if (wasmBinary) {
-		initOpts["wasmBinary"] = wasmBinary;
+		initOpts.wasmBinary = wasmBinary;
 	} else {
 		console.warn(
 			"[True Recall] sqlite3.wasm not found in plugin directory — falling back to CDN",
 		);
-		initOpts["locateFile"] = (file: string) =>
+		initOpts.locateFile = (file: string) =>
 			`https://sqlite.org/wasm/dist/${file}`;
 	}
 
@@ -152,7 +153,7 @@ export async function loadDatabase(
 	if (existingData && existingData.byteLength > 0) {
 		const p = sqlite3.wasm.allocFromTypedArray(existingData);
 		const rc = sqlite3.capi.sqlite3_deserialize(
-			db.pointer,
+			db.pointer!, // Safe: DB was just created, pointer only undefined after close()
 			"main",
 			p,
 			existingData.byteLength,
