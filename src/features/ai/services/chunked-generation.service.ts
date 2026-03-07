@@ -3,6 +3,7 @@ import {
 	buildBlockPrompt,
 } from "@features/ai/prompts/block-prompt-builder";
 import {
+	buildDensitySuffix,
 	buildLanguageSuffix,
 	type GenerationMode,
 } from "@features/ai/prompts/default-prompts";
@@ -30,8 +31,6 @@ import {
 	updatePartial,
 } from "./streaming-state";
 
-const CONCURRENCY_LIMIT = 3;
-const CHUNK_STAGGER_MS = 500;
 const COST_CONFIRM_WORD_THRESHOLD = 5000;
 // Rough Gemini Flash ballpark: $0.15/1M input tokens + estimated output
 const COST_PER_TOKEN = 0.15 / 1_000_000;
@@ -40,10 +39,6 @@ export interface ChunkedGenerationResult extends StreamingGenerationResult {
 	failedChunks: number;
 	totalChunks: number;
 	errors: string[];
-}
-
-function delay(ms: number): Promise<void> {
-	return new Promise((r) => setTimeout(r, ms));
 }
 
 export class ChunkedGenerationService {
@@ -134,77 +129,74 @@ export class ChunkedGenerationService {
 		let totalCreated = 0;
 		let totalDuplicates = 0;
 		let failedChunks = 0;
-		let completedCount = 0;
 		const errors: string[] = [];
 
-		const tasks = chunks.map((chunk, i) => async () => {
-			// Stagger chunk starts to avoid rate limiting
-			if (i > 0) await delay(i * CHUNK_STAGGER_MS);
-			if (abortController.signal.aborted) return;
-
-			updateChunkProgress(completedCount, chunk.headingBreadcrumb || null);
-
-			const userMessage = chunk.headingBreadcrumb
-				? `[Context: This section is from "${chunk.headingBreadcrumb}" in the note "${sourceFile.basename}"]\n\n${chunk.content}`
-				: chunk.content;
-
-			try {
-				const result = await this.generateSingleChunk(
-					aiConfig.apiKey,
-					aiConfig.model,
-					aiConfig.proxyUrl,
-					aiConfig.userId,
-					systemPrompt,
-					userMessage,
-					sourceFile,
-					abortController.signal,
-				);
-				totalCreated += result.created;
-				totalDuplicates += result.duplicates;
-			} catch (error) {
-				if (
-					error instanceof DOMException &&
-					error.name === "AbortError"
-				) {
-					return;
-				}
-				// Try BYOK fallback on budget exceeded
-				const { AIRequestError } = await import("./openrouter-client");
-				if (error instanceof AIRequestError && error.isBudgetExceeded) {
-					const fallback = getBYOKFallbackConfig(settings);
-					if (fallback) {
-						const result = await this.generateSingleChunk(
-							fallback.apiKey,
-							fallback.model,
-							fallback.proxyUrl,
-							undefined,
-							systemPrompt,
-							userMessage,
-							sourceFile,
-							abortController.signal,
-						);
-						totalCreated += result.created;
-						totalDuplicates += result.duplicates;
-						return;
-					}
-				}
-				failedChunks++;
-				const msg =
-					error instanceof Error ? error.message : String(error);
-				errors.push(
-					`Section ${chunk.index + 1}${chunk.headingBreadcrumb ? ` (${chunk.headingBreadcrumb})` : ""}: ${msg}`,
-				);
-				console.error(
-					`[ChunkedGeneration] Chunk ${chunk.index} failed:`,
-					error,
-				);
-			} finally {
-				completedCount++;
-			}
-		});
-
 		try {
-			await withConcurrency(tasks, CONCURRENCY_LIMIT);
+			for (const chunk of chunks) {
+				if (abortController.signal.aborted) break;
+
+				updateChunkProgress(chunk.index, chunk.headingBreadcrumb || null);
+
+				const userMessage = chunk.headingBreadcrumb
+					? `[Context: This section is from "${chunk.headingBreadcrumb}" in the note "${sourceFile.basename}"]\n\n${chunk.content}`
+					: chunk.content;
+
+				try {
+					const result = await this.generateSingleChunk(
+						aiConfig.apiKey,
+						aiConfig.model,
+						aiConfig.proxyUrl,
+						aiConfig.userId,
+						systemPrompt,
+						userMessage,
+						sourceFile,
+						abortController.signal,
+					);
+					totalCreated += result.created;
+					totalDuplicates += result.duplicates;
+				} catch (error) {
+					if (
+						error instanceof DOMException &&
+						error.name === "AbortError"
+					) {
+						break;
+					}
+					// Try BYOK fallback on budget exceeded
+					try {
+						const { AIRequestError } = await import("./openrouter-client");
+						if (error instanceof AIRequestError && error.isBudgetExceeded) {
+							const fallback = getBYOKFallbackConfig(settings);
+							if (fallback) {
+								const result = await this.generateSingleChunk(
+									fallback.apiKey,
+									fallback.model,
+									fallback.proxyUrl,
+									undefined,
+									systemPrompt,
+									userMessage,
+									sourceFile,
+									abortController.signal,
+								);
+								totalCreated += result.created;
+								totalDuplicates += result.duplicates;
+								continue;
+							}
+						}
+					} catch {
+						// Fallback also failed — fall through to error tracking
+					}
+					failedChunks++;
+					const msg =
+						error instanceof Error ? error.message : String(error);
+					errors.push(
+						`Section ${chunk.index + 1}${chunk.headingBreadcrumb ? ` (${chunk.headingBreadcrumb})` : ""}: ${msg}`,
+					);
+					console.error(
+						`[ChunkedGeneration] Chunk ${chunk.index} failed:`,
+						error,
+					);
+				}
+			}
 		} finally {
 			finishStreaming();
 		}
@@ -307,6 +299,9 @@ export class ChunkedGenerationService {
 		const langSuffix = buildLanguageSuffix(
 			settings.generationLanguage ?? "auto",
 		);
+		const densitySuffix = buildDensitySuffix(
+			settings.generationDensity ?? "balanced",
+		);
 
 		if (noteType?.slug) {
 			const customKey = `notetype:${noteType.slug}`;
@@ -314,7 +309,7 @@ export class ChunkedGenerationService {
 				settings.aiFlashcardPrompts as Record<string, string | undefined>
 			)?.[customKey];
 			if (custom?.trim())
-				return custom + SOURCE_TRACKING_SUFFIX + langSuffix;
+				return custom + densitySuffix + SOURCE_TRACKING_SUFFIX + langSuffix;
 		}
 
 		const legacyCustom =
@@ -322,12 +317,13 @@ export class ChunkedGenerationService {
 				mode as keyof typeof settings.aiFlashcardPrompts
 			];
 		if (typeof legacyCustom === "string" && legacyCustom.trim()) {
-			return legacyCustom + SOURCE_TRACKING_SUFFIX + langSuffix;
+			return legacyCustom + densitySuffix + SOURCE_TRACKING_SUFFIX + langSuffix;
 		}
 
 		if (mode === "auto" && allNoteTypes && allNoteTypes.length > 0) {
 			return (
 				buildAutoPrompt(allNoteTypes) +
+				densitySuffix +
 				SOURCE_TRACKING_SUFFIX +
 				langSuffix
 			);
@@ -335,7 +331,7 @@ export class ChunkedGenerationService {
 
 		if (noteType) {
 			return (
-				buildBlockPrompt(noteType) + SOURCE_TRACKING_SUFFIX + langSuffix
+				buildBlockPrompt(noteType) + densitySuffix + SOURCE_TRACKING_SUFFIX + langSuffix
 			);
 		}
 
@@ -350,28 +346,9 @@ export class ChunkedGenerationService {
 				isBuiltin: true,
 				slug: "basic",
 			} as NoteType) +
+			densitySuffix +
 			SOURCE_TRACKING_SUFFIX +
 			langSuffix
 		);
 	}
-}
-
-async function withConcurrency<T>(
-	tasks: (() => Promise<T>)[],
-	limit: number,
-): Promise<T[]> {
-	const results: T[] = new Array(tasks.length);
-	let index = 0;
-
-	async function worker(): Promise<void> {
-		while (index < tasks.length) {
-			const i = index++;
-			results[i] = await tasks[i]!();
-		}
-	}
-
-	await Promise.all(
-		Array.from({ length: Math.min(limit, tasks.length) }, () => worker()),
-	);
-	return results;
 }
