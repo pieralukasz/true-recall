@@ -40,6 +40,44 @@ export const GENERATION_LANGUAGES = [
 	{ value: "he", label: "Hebrew" },
 ] as const;
 
+export type GenerationDensity = "essential" | "balanced" | "comprehensive";
+
+export const GENERATION_DENSITY_OPTIONS: {
+	value: GenerationDensity;
+	label: string;
+	description: string;
+}[] = [
+	{
+		value: "essential",
+		label: "Essential",
+		description:
+			"Only core concepts and definitions (~5-10 cards per 1000 words)",
+	},
+	{
+		value: "balanced",
+		label: "Balanced",
+		description:
+			"Main ideas and important details (~15-25 cards per 1000 words)",
+	},
+	{
+		value: "comprehensive",
+		label: "Comprehensive",
+		description:
+			"Every piece of information (~40-60 cards per 1000 words)",
+	},
+];
+
+export function buildDensitySuffix(density: GenerationDensity): string {
+	switch (density) {
+		case "essential":
+			return "\n\nDENSITY OVERRIDE: Ignore the rule about creating a flashcard for every piece of information. Instead, focus ONLY on the most important concepts: key definitions, core principles, critical formulas, and fundamental relationships. Skip examples, minor details, and supporting evidence. Aim for approximately 5-10 flashcards per 1000 words of source text.";
+		case "balanced":
+			return "\n\nDENSITY OVERRIDE: Ignore the rule about creating a flashcard for every piece of information. Instead, cover main concepts and important supporting details, but skip trivial facts, redundant examples, and minor points. Aim for approximately 15-25 flashcards per 1000 words of source text.";
+		case "comprehensive":
+			return "";
+	}
+}
+
 export function buildLanguageSuffix(languageCode: string): string {
 	if (languageCode === "auto") return "";
 	const label =

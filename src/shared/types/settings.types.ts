@@ -268,6 +268,8 @@ export interface TrueRecallSettings {
 
 	/** Language for AI-generated flashcards ("auto" = match source text) */
 	generationLanguage?: string;
+	/** Controls card density for whole-note generation */
+	generationDensity?: "essential" | "balanced" | "comprehensive";
 	/** Custom system prompt for AI semantic grading in review type-in mode */
 	aiTypeInGradingPrompt?: string;
 	/** Custom user prompt for AI image occlusion region detection */
