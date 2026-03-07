@@ -136,7 +136,7 @@ Back: Papulopustular changes
 
 	cloze: `I would like you to help me create cloze deletion flashcards based on text using the "Cloze" card type.
 
-Transform text into cloze deletion flashcards where key terms are hidden.
+Transform text into cloze deletion flashcards that test recall of key terms.
 
 OUTPUT FORMAT:
 #type/cloze
@@ -145,19 +145,36 @@ Extra: [optional additional context]
 <!-- source: [exact verbatim quote from source text] -->
 ---
 
-CLOZE SYNTAX RULES:
-- Use {{c1::text}} to hide a key term. Each cN number creates a separate card.
-- Use {{c1::text::hint}} to provide a hint shown as [hint] on the question side.
-- Use incrementing numbers (c1, c2, c3...) for multiple deletions in one sentence.
-- Each cloze number becomes a separate flashcard. When card c1 is shown, c2 and c3 are visible.
-- Hide only KEY TERMS worth memorizing (definitions, names, numbers, relationships).
-- Do NOT hide common words, articles, or prepositions.
+CLOZE QUALITY RULES (in priority order):
+1. SENTENCE LENGTH: Keep each cloze sentence to ~15-20 words max. If the source is longer, split or rephrase into a shorter self-contained statement.
+2. HIDE ONLY KEY TERMS: Definitions, names, numbers, formulas, cause-effect terms. NEVER hide articles, prepositions, conjunctions, or filler words.
+3. ONE ATOMIC FACT per cloze card. Each sentence tests ONE recall target (or two tightly linked terms with c1/c2).
+4. PREFER c1 ONLY. Use c2 only when two terms in the same sentence are equally important AND meaningfully linked (e.g., input/output of a process). Never use c3+.
+5. USE HINTS when context alone is ambiguous: {{c1::term::hint}}. Good hints name the category (e.g., ::enzyme, ::year, ::unit).
+6. Create a cloze for EVERY key fact in the text.
+7. If the text contains NO new information for flashcards, return ONLY: NO_NEW_CARDS
+8. Use the same language as the source text.
 
-MANDATORY RULES:
-1. One cloze flashcard = ONE sentence or closely related pair of sentences.
-2. Create a cloze flashcard for EVERY key fact in the text.
-3. If the text contains NO new information for flashcards, return ONLY: NO_NEW_CARDS
-4. Use the same language as the source text.
+CLOZE SYNTAX:
+- {{c1::text}} hides a term. Each cN number creates a SEPARATE card.
+- {{c1::text::hint}} shows [hint] in place of the hidden term.
+- When c1 is shown, c2 stays visible (and vice versa).
+
+BAD vs GOOD EXAMPLES:
+BAD: The {{c1::mitochondria}} are organelles found in eukaryotic cells that are responsible for producing the majority of the cell's supply of ATP
+  → Too long (25+ words), hard to process with a gap in the middle.
+GOOD: {{c1::Mitochondria}} are the main ATP-producing organelles in eukaryotic cells
+  → Short, one key term hidden.
+
+BAD: {{c1::The}} quick brown fox jumps over {{c2::the}} lazy dog
+  → Hiding articles is useless — tests nothing.
+GOOD: The quick brown fox is an example of a {{c1::pangram::type of sentence}}
+  → Hides a meaningful term with a helpful hint.
+
+BAD: {{c1::DNA}} is transcribed into {{c2::mRNA}} which is then translated into {{c3::protein}} by ribosomes in the cytoplasm
+  → Too many deletions (c3), sentence too long.
+GOOD: {{c1::DNA}} is transcribed into {{c2::mRNA}} in the nucleus
+  → Two linked terms (input→output), short sentence.
 
 SOURCE TRACKING:
 - After each card's fields, add: <!-- source: [exact verbatim quote] -->
@@ -166,20 +183,26 @@ SOURCE TRACKING:
 
 FORMATTING:
 - Backlinks: Wrap key scientific terms in [[backlinks]] (lowercase only).
+- Use [[term|alias]] when the term starts a sentence (e.g., [[mitochondria|Mitochondria]]).
 - Separate cards with --- on its own line.
 
 EXAMPLE:
-Text: "Mitochondria are the powerhouse of the cell. They produce ATP through oxidative phosphorylation."
+Text: "The blood-brain barrier is formed primarily by endothelial cells. It selectively allows glucose and amino acids to pass while blocking most pathogens. Disruption of this barrier occurs in multiple sclerosis."
 
 #type/cloze
-Text: [[mitochondria|Mitochondria]] are the {{c1::powerhouse}} of the cell
+Text: The [[blood-brain barrier]] is formed primarily by {{c1::endothelial cells}}
 Extra:
-<!-- source: Mitochondria are the powerhouse of the cell. -->
+<!-- source: The blood-brain barrier is formed primarily by endothelial cells. -->
 ---
 #type/cloze
-Text: [[mitochondria|Mitochondria]] produce {{c1::ATP}} through {{c2::oxidative phosphorylation}}
+Text: The [[blood-brain barrier]] selectively allows {{c1::glucose}} and {{c2::amino acids}} to pass
+Extra: While blocking most pathogens
+<!-- source: It selectively allows glucose and amino acids to pass while blocking most pathogens. -->
+---
+#type/cloze
+Text: Disruption of the [[blood-brain barrier]] occurs in {{c1::multiple sclerosis::disease}}
 Extra:
-<!-- source: They produce ATP through oxidative phosphorylation. -->`,
+<!-- source: Disruption of this barrier occurs in multiple sclerosis. -->`,
 
 	reversed: `I would like you to help me create reversed flashcards based on text using the "Basic (reversed)" card type. Reversed flashcards create TWO cards from one: the original Q→A and a reversed A→Q card.
 
@@ -224,7 +247,7 @@ Back: Au
 
 	auto: `I would like you to help me create flashcards based on text. Analyze the content and choose the BEST card type for each piece of information.
 
-You have three card types available:
+You have two card types available:
 
 1. Basic (#type/basic) — Standard Q&A. Best for: explanations, processes, "why" questions, definitions.
 \`\`\`
@@ -235,20 +258,11 @@ Back: [answer text]
 ---
 \`\`\`
 
-2. Cloze (#type/cloze) — Fill-in-the-blank. Best for: key terms in context, formulas, sequences.
+2. Cloze (#type/cloze) — Fill-in-the-blank. Best for: key terms in context, formulas, sequences. Keep sentences short (~15-20 words). Hide only key terms, never articles/prepositions.
 \`\`\`
 #type/cloze
-Text: [sentence with {{c1::hidden term}}]
+Text: [short sentence with {{c1::key term}} or {{c1::term1}} and {{c2::term2}}]
 Extra: [optional context]
-<!-- source: [exact quote] -->
----
-\`\`\`
-
-3. Basic Reversed (#type/basic-reversed) — Bidirectional Q&A. Best for: term↔definition, symbol↔name, translation pairs.
-\`\`\`
-#type/basic-reversed
-Front: [question text]
-Back: [answer text]
 <!-- source: [exact quote] -->
 ---
 \`\`\`
@@ -257,17 +271,18 @@ MANDATORY RULES:
 1. One flashcard = ONE piece of information.
 2. Choose the card type that best supports memorization for each fact.
 3. Questions and answers must be concise and UNAMBIGUOUS.
-4. BOLD the keyword in every question using **bold** (for basic and reversed).
+4. BOLD the keyword in every question using **bold** (for basic cards).
 5. Create a flashcard for EVERY piece of information from the text.
 6. If the text contains NO new information, return ONLY: NO_NEW_CARDS
 7. Use the same language as the source text.
 8. Separate cards with --- on its own line.
 
-CLOZE SYNTAX RULES:
-- Use {{c1::text}} to hide a key term. Each cN number creates a separate card.
-- Use {{c1::text::hint}} to provide a hint.
-- Use incrementing numbers (c1, c2, c3...) for multiple deletions in one sentence.
-- Hide only KEY TERMS worth memorizing.
+CLOZE RULES:
+- Use {{c1::text}} to hide a key term. Each cN creates a separate card.
+- Use {{c1::text::hint}} when context is ambiguous (hint names the category).
+- Prefer c1 only. Use c2 for two equally important linked terms. Never c3+.
+- Keep cloze sentences to ~15-20 words. Split long sources into shorter statements.
+- Hide ONLY key terms (definitions, names, numbers). NEVER articles or prepositions.
 
 SOURCE TRACKING:
 - After each card's fields, add: <!-- source: [exact verbatim quote from the input text] -->
@@ -286,17 +301,12 @@ ANTI-RULES:
 Choose the card type that best supports memorization for each fact.
 
 EXAMPLE:
-Text: "Mitochondria are the powerhouse of the cell. The chemical symbol for gold is Au. Rosacea manifests by intense reddening of the skin."
+Text: "Mitochondria are the powerhouse of the cell. Rosacea manifests by intense reddening of the skin."
 
 #type/cloze
-Text: [[mitochondria|Mitochondria]] are the {{c1::powerhouse}} of the cell
+Text: [[mitochondria|Mitochondria]] are the main {{c1::ATP}}-producing organelles in cells
 Extra:
 <!-- source: Mitochondria are the powerhouse of the cell. -->
----
-#type/basic-reversed
-Front: What is the chemical symbol for **[[gold]]**?
-Back: Au
-<!-- source: The chemical symbol for gold is Au. -->
 ---
 #type/basic
 Front: What is **[[rosacea]]**?
