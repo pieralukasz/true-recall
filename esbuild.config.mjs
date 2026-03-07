@@ -66,6 +66,9 @@ function copyToVault() {
 	if (!vaultPluginDir) return;
 	if (vaultIsProjectRoot) {
 		if (!prod) writeFileSync(join(vaultPluginDir, ".hotreload"), "");
+		// Keep sqlite3.wasm up-to-date in the project root (vault = project root setup)
+		const wasmSrc = "node_modules/@sqlite.org/sqlite-wasm/dist/sqlite3.wasm";
+		if (existsSync(wasmSrc)) safeCopy(wasmSrc, "sqlite3.wasm");
 		return;
 	}
 
@@ -77,9 +80,9 @@ function copyToVault() {
 		if (existsSync("styles.css"))
 			safeCopy("styles.css", join(vaultPluginDir, "styles.css"));
 
-		const wasm = "node_modules/sql.js/dist/sql-wasm.wasm";
+		const wasm = "node_modules/@sqlite.org/sqlite-wasm/dist/sqlite3.wasm";
 		if (existsSync(wasm))
-			safeCopy(wasm, join(vaultPluginDir, "sql-wasm.wasm"));
+			safeCopy(wasm, join(vaultPluginDir, "sqlite3.wasm"));
 
 		if (!prod) writeFileSync(join(vaultPluginDir, ".hotreload"), "");
 		console.log(`\u2713 Copied to vault: ${vaultPluginDir}`);
