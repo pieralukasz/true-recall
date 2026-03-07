@@ -34,13 +34,19 @@ ANTI-RULES:
 - Anti-List: Never use bullet points in answers. Use unique "anchors" in questions to split lists.
 - No Order Questions: NEVER use "What is the first/second/next..."`;
 
-const CLOZE_RULES = `CLOZE SYNTAX RULES:
-- Use {{c1::text}} to hide a key term. Each cN number creates a separate card.
-- Use {{c1::text::hint}} to provide a hint shown as [hint] on the question side.
-- Use incrementing numbers (c1, c2, c3...) for multiple deletions in one sentence.
-- Each cloze number becomes a separate flashcard. When card c1 is shown, c2 and c3 are visible.
-- Hide only KEY TERMS worth memorizing (definitions, names, numbers, relationships).
-- Do NOT hide common words, articles, or prepositions.`;
+const CLOZE_RULES = `CLOZE RULES:
+- Keep each cloze sentence to ~15-20 words max. Split long source sentences into shorter statements.
+- Hide ONLY key terms: definitions, names, numbers, formulas, relationships. NEVER hide articles, prepositions, or filler.
+- Use {{c1::text}} to hide a term. Each cN creates a separate card.
+- Use {{c1::text::hint}} when context alone is ambiguous. Good hints name the category (e.g., ::enzyme, ::year).
+- Prefer c1 only. Use c2 when two terms are equally important AND linked (e.g., input→output). Never use c3+.
+- When card c1 is shown, c2 stays visible (and vice versa).
+
+BAD: The {{c1::mitochondria}} are organelles found in eukaryotic cells that produce the majority of ATP
+GOOD: {{c1::Mitochondria}} are the main ATP-producing organelles in eukaryotic cells
+
+BAD: {{c1::DNA}} is transcribed into {{c2::mRNA}} which is translated into {{c3::protein}} by ribosomes
+GOOD: {{c1::DNA}} is transcribed into {{c2::mRNA}} in the nucleus`;
 
 /**
  * Build a prompt for a specific NoteType.
@@ -71,11 +77,15 @@ ${example}`;
  * Build a prompt for "auto" mode that lists all available NoteTypes.
  */
 export function buildAutoPrompt(noteTypes: NoteType[]): string {
+	const filtered = noteTypes.filter(
+		(nt) => !(nt.type === 0 && nt.templates.length > 1),
+	);
+
 	const intro = `I would like you to help me create flashcards based on text. Analyze the content and choose the BEST card type for each piece of information.
 
 You have these card types available:`;
 
-	const typeDescriptions = noteTypes.map((nt) => {
+	const typeDescriptions = filtered.map((nt) => {
 		const slug = resolveSlug(nt);
 		const fields = nt.fields.map((f) => `${f}: [value]`).join("\n");
 		const hint = getTypeHint(nt);
@@ -116,17 +126,17 @@ function buildExample(noteType: NoteType, slug: string): string {
 
 	if (isCloze) {
 		return `EXAMPLE:
-Text: "Mitochondria are the powerhouse of the cell. They produce ATP through oxidative phosphorylation."
+Text: "The blood-brain barrier is formed primarily by endothelial cells. It selectively allows glucose and amino acids to pass while blocking most pathogens."
 
 #type/${slug}
-${noteType.fields[0]}: [[mitochondria|Mitochondria]] are the {{c1::powerhouse}} of the cell
+${noteType.fields[0]}: The [[blood-brain barrier]] is formed primarily by {{c1::endothelial cells}}
 ${noteType.fields[1] ? `${noteType.fields[1]}: ` : ""}
-<!-- source: Mitochondria are the powerhouse of the cell. -->
+<!-- source: The blood-brain barrier is formed primarily by endothelial cells. -->
 ---
 #type/${slug}
-${noteType.fields[0]}: [[mitochondria|Mitochondria]] produce {{c1::ATP}} through {{c2::oxidative phosphorylation}}
-${noteType.fields[1] ? `${noteType.fields[1]}: ` : ""}
-<!-- source: They produce ATP through oxidative phosphorylation. -->`;
+${noteType.fields[0]}: The [[blood-brain barrier]] allows {{c1::glucose}} and {{c2::amino acids}} to pass selectively
+${noteType.fields[1] ? `${noteType.fields[1]}: While blocking most pathogens` : ""}
+<!-- source: It selectively allows glucose and amino acids to pass while blocking most pathogens. -->`;
 	}
 
 	// Basic or reversed
