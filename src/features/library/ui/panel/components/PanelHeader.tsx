@@ -34,6 +34,7 @@ export interface PanelHeaderProps {
 	onOpenSourceNote: () => void;
 	hasHighlights: boolean;
 	onGenerateFromHighlights: () => void;
+	onBrowseDeck: () => void;
 }
 
 export function PanelHeader({
@@ -64,6 +65,7 @@ export function PanelHeader({
 	onOpenSourceNote,
 	hasHighlights,
 	onGenerateFromHighlights,
+	onBrowseDeck,
 }: PanelHeaderProps) {
 	const handleMoreMenu = useCallback(
 		(e: MouseEvent) => {
@@ -92,6 +94,12 @@ export function PanelHeader({
 			if (hasFlashcards) {
 				menu.addItem((item) =>
 					item.setTitle("Start review").setIcon("brain").onClick(onReview),
+				);
+				menu.addItem((item) =>
+					item
+						.setTitle("Browse in card browser")
+						.setIcon("table-2")
+						.onClick(onBrowseDeck),
 				);
 				menu.addSeparator();
 				menu.addItem((item) =>
@@ -124,6 +132,7 @@ export function PanelHeader({
 			hasHighlights,
 			onGenerateFromHighlights,
 			onReview,
+			onBrowseDeck,
 			onCopyToClipboard,
 			onExportCsv,
 			onDeleteAll,

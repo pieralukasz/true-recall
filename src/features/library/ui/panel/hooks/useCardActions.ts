@@ -3,7 +3,12 @@ import { getSourceNoteNameFromFile } from "@features/library/ui/panel/utils/pane
 import { QuickNoteEditorModal } from "@features/study/modals/quick-note-editor/QuickNoteEditorModal";
 import { notify } from "@shared/services/notification.service";
 import type { PanelApi } from "@shared/store";
-import type { FlashcardInfo, FlashcardItem } from "@shared/types";
+import {
+	BUILTIN_BASIC_ID,
+	BUILTIN_BASIC_REVERSED_ID,
+	type FlashcardInfo,
+	type FlashcardItem,
+} from "@shared/types";
 import type { FSRSFlashcardItem } from "@shared/types/fsrs/card.types";
 import { useApp, usePlugin } from "@shared/ui/preact";
 import type { TFile } from "obsidian";
@@ -212,6 +217,54 @@ export function useCardActions({
 		[app, plugin, cardsWithFsrs],
 	);
 
+	const handleToggleReversed = useCallback(
+		async (card: FlashcardItem) => {
+			const fsrsCard = findFsrsCard(card.id);
+			if (!fsrsCard?.noteId) {
+				notify().error("Cannot toggle reversed: missing note link.");
+				return;
+			}
+
+			const note = plugin.cardStore.notes.getById(fsrsCard.noteId);
+			if (!note) {
+				notify().error("Note not found");
+				return;
+			}
+
+			const { noteTypeId } = note;
+			let targetNoteTypeId: string;
+			if (noteTypeId === BUILTIN_BASIC_ID) {
+				targetNoteTypeId = BUILTIN_BASIC_REVERSED_ID;
+			} else if (noteTypeId === BUILTIN_BASIC_REVERSED_ID) {
+				targetNoteTypeId = BUILTIN_BASIC_ID;
+			} else {
+				notify().warning("Reversed is only available for basic cards");
+				return;
+			}
+
+			const { notifyCardChange } = await import("@shared/services/signals");
+			const fieldMapping = { Front: "Front", Back: "Back" };
+			const r = plugin.flashcardManager.changeNoteType(
+				fsrsCard.noteId,
+				targetNoteTypeId,
+				fieldMapping,
+			);
+
+			notifyCardChange({
+				type: "bulk",
+				cardIds: [card.id, ...r.createdCardIds, ...r.deletedCardIds],
+				action: "update",
+			});
+
+			if (targetNoteTypeId === BUILTIN_BASIC_REVERSED_ID) {
+				notify().success("Reversed card created");
+			} else {
+				notify().success("Reversed card removed");
+			}
+		},
+		[plugin, cardsWithFsrs],
+	);
+
 	const handleToggleExpand = useCallback(
 		(cardId: string) => {
 			preserveScroll(() => {
@@ -228,6 +281,7 @@ export function useCardActions({
 		handleCopyCard,
 		handleMoveCard,
 		handleChangeType,
+		handleToggleReversed,
 		handleToggleExpand,
 	};
 }
