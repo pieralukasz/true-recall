@@ -3,35 +3,106 @@
  *
  * Uses :has() selectors to style Obsidian's modal chrome from the inside out.
  * .true-recall-modal is added to contentEl by BaseModal.onOpen().
+ *
+ * IMPORTANT: Sizing/layout rules are UNLAYERED so they override Obsidian's
+ * unlayered .modal defaults. @layer components has lower cascade priority
+ * than unlayered CSS, so layered rules would lose to Obsidian's defaults.
  */
+
+/* ================================================================
+   MODAL PANEL — shadow, sizing, border, shape, flex layout
+   (unlayered — must override Obsidian's unlayered .modal defaults)
+   ================================================================ */
+.modal:has(.true-recall-modal) {
+	max-width: min(700px, 92vw);
+	max-height: min(80vh, 720px);
+	height: auto;
+	box-shadow:
+		0 16px 48px rgba(0, 0, 0, 0.24),
+		0 2px 8px rgba(0, 0, 0, 0.12);
+	border: 1px solid var(--background-modifier-border);
+	background: var(--background-primary);
+	border-radius: var(--radius-l);
+	overflow: hidden;
+	padding: 0;
+	text-align: left;
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+}
+
+/* Per-modal width still honored via --ep-modal-width, capped by max-width */
+.modal.ep-modal-width:has(.true-recall-modal) {
+	width: var(--ep-modal-width, fit-content);
+}
+
+/* ================================================================
+   CONTENT — padding, flex layout (unlayered for same reason)
+   ================================================================ */
+.modal:has(.true-recall-modal) .modal-content {
+	padding: 16px 20px 20px;
+	background: transparent;
+	border: none;
+	box-shadow: none;
+	border-radius: 0;
+	overflow-y: auto;
+	overflow-x: hidden;
+	box-sizing: border-box;
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	scrollbar-gutter: stable;
+}
+
+.modal:has(.true-recall-modal) .true-recall-modal {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+}
+
+/* ================================================================
+   SPECIAL MODAL OVERRIDES — wider modals (unlayered)
+   ================================================================ */
+.modal:has(.true-recall-io-editor-modal) {
+	max-width: min(1180px, 98vw);
+	max-height: 92vh;
+}
+
+/* ================================================================
+   MOBILE — full-screen modals (unlayered)
+   ================================================================ */
+.is-mobile .modal:has(.true-recall-modal) {
+	position: fixed;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	width: 100%;
+	max-width: 100%;
+	min-height: 100%;
+	height: 100%;
+	max-height: 100%;
+	margin: 0;
+	border-radius: 0;
+	box-shadow: none;
+}
+
+.is-mobile .modal:has(.true-recall-modal) .modal-content {
+	height: 100%;
+	max-height: 100%;
+	overflow-y: auto;
+	padding-bottom: env(safe-area-inset-bottom, 20px);
+}
+
+/* Mobile viewport bottom padding for True Recall views */
+.is-mobile [data-type^="true-recall-"] .view-content {
+	padding-bottom: 60px;
+}
+
+/* ================================================================
+   Decorative styles — safe inside @layer components
+   ================================================================ */
 @layer components {
-	/* ================================================================
-	   MODAL PANEL — shadow, sizing, border, shape, flex layout
-	   ================================================================ */
-	.modal:has(.true-recall-modal) {
-		max-width: min(700px, 92vw);
-		max-height: min(80vh, 720px);
-		height: auto;
-		box-shadow:
-			0 16px 48px rgba(0, 0, 0, 0.24),
-			0 2px 8px rgba(0, 0, 0, 0.12);
-		border: 1px solid var(--background-modifier-border);
-		background: var(--background-primary);
-		border-radius: var(--radius-l);
-		overflow: hidden;
-		padding: 0;
-		text-align: left;
-		/* Flex column layout — prevents Obsidian from centering children */
-		display: flex;
-		flex-direction: column;
-		align-items: stretch;
-	}
-
-	/* Per-modal width still honored via --ep-modal-width, capped by max-width */
-	.modal.ep-modal-width:has(.true-recall-modal) {
-		width: var(--ep-modal-width, fit-content);
-	}
-
 	/* ================================================================
 	   BACKDROP — no blur, subtle semi-transparent overlay
 	   ================================================================ */
@@ -105,30 +176,6 @@
 	.theme-dark .modal:has(.true-recall-modal) > .modal-close-button:hover {
 		background: rgba(255, 255, 255, 0.06);
 		border-color: rgba(255, 255, 255, 0.1);
-	}
-
-	/* ================================================================
-	   CONTENT — padding, flex layout
-	   ================================================================ */
-	.modal:has(.true-recall-modal) .modal-content {
-		padding: 16px 20px 20px;
-		background: transparent;
-		border: none;
-		box-shadow: none;
-		border-radius: 0;
-		overflow-y: auto;
-		overflow-x: hidden;
-		box-sizing: border-box;
-		flex: 1;
-		display: flex;
-		flex-direction: column;
-		scrollbar-gutter: stable;
-	}
-
-	.modal:has(.true-recall-modal) .true-recall-modal {
-		flex: 1;
-		display: flex;
-		flex-direction: column;
 	}
 
 	/* ================================================================
@@ -276,47 +323,6 @@
 	.theme-dark .ep-btn-icon-outline:hover {
 		background: var(--color-base-30);
 		border-color: var(--color-base-35);
-	}
-
-	/* ================================================================
-	   SPECIAL MODAL OVERRIDES — wider modals
-	   ================================================================ */
-
-	/* Image occlusion editor — wider */
-	.modal:has(.true-recall-io-editor-modal) {
-		max-width: min(1180px, 98vw);
-		max-height: 92vh;
-	}
-
-	/* ================================================================
-	   MOBILE — full-screen modals
-	   ================================================================ */
-	.is-mobile .modal:has(.true-recall-modal) {
-		position: fixed;
-		top: 0;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		width: 100%;
-		max-width: 100%;
-		min-height: 100%;
-		height: 100%;
-		max-height: 100%;
-		margin: 0;
-		border-radius: 0;
-		box-shadow: none;
-	}
-
-	.is-mobile .modal:has(.true-recall-modal) .modal-content {
-		height: 100%;
-		max-height: 100%;
-		overflow-y: auto;
-		padding-bottom: env(safe-area-inset-bottom, 20px);
-	}
-
-	/* Mobile viewport bottom padding for True Recall views */
-	.is-mobile [data-type^="true-recall-"] .view-content {
-		padding-bottom: 60px;
 	}
 
 	/* ================================================================
