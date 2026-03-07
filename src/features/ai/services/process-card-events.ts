@@ -30,14 +30,17 @@ export async function processCardEvents(
 
 				if (result.cards.length > 0) {
 					onCount(result.cards.length, 0);
-					const firstField = Object.values(event.block.fields)[0] ?? "";
-					const secondField = Object.values(event.block.fields)[1] ?? "";
-					addStreamedCard({
-						id: result.cards[0]?.id,
-						question: firstField,
-						answer: secondField,
-						sourceText: event.block.sourceText,
-					});
+					for (const card of result.cards) {
+						addStreamedCard({
+							id: card.id,
+							question: card.question,
+							answer: card.answer,
+							cardType: card.cardType,
+							clozeTemplate: card.clozeTemplate,
+							clozeIndex: card.clozeIndex,
+							sourceText: card.sourceText,
+						});
+					}
 					await new Promise<void>((r) => requestAnimationFrame(() => r()));
 				} else {
 					onCount(0, 1);
