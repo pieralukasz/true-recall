@@ -1,15 +1,14 @@
 /**
  * SQLite WASM Loader
- * Loads sql.js from local WASM files for local-only storage.
+ * Uses @sqlite.org/sqlite-wasm which includes FTS5, JSON1, RTREE, and all
+ * other SQLite extensions — no custom WASM compilation needed.
  */
+import sqlite3InitModule from "@sqlite.org/sqlite-wasm";
+import type { Database, Sqlite3Static } from "@sqlite.org/sqlite-wasm";
 import type { App } from "obsidian";
-import initSqlJs, {
-	type Database as SqlJsDatabase,
-	type SqlJsStatic,
-} from "sql.js";
 
-// Plugin ID for path resolution
 const PLUGIN_ID = "true-recall";
+const WASM_FILENAME = "sqlite3.wasm";
 
 /**
  * Common query result interface matching sql.js format
@@ -43,105 +42,97 @@ export interface DatabaseLoadResult {
 }
 
 /**
- * Wrapper that makes sql.js Database compatible with DatabaseLike interface
- * (mostly passthrough since sql.js already matches the interface)
+ * Wraps @sqlite.org/sqlite-wasm OO1 Database to match the DatabaseLike interface
  */
-class SqlJsWrapper implements DatabaseLike {
-	private sqlDb: SqlJsDatabase;
-
-	constructor(sqlDb: SqlJsDatabase) {
-		this.sqlDb = sqlDb;
-	}
+class SqliteOrgWrapper implements DatabaseLike {
+	constructor(
+		private db: Database,
+		private sqlite3: Sqlite3Static,
+	) {}
 
 	exec(sql: string, params?: BindParams): QueryExecResult[] {
-		return this.sqlDb.exec(sql, params) as QueryExecResult[];
+		const columnNames: string[] = [];
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		const rows = (this.db.exec as any)({
+			sql,
+			bind: params,
+			returnValue: "resultRows",
+			rowMode: "array",
+			columnNames,
+		}) as (string | number | null | Uint8Array)[][];
+
+		// No columns = DDL/DML or empty result — match sql.js returning []
+		if (columnNames.length === 0) return [];
+		return [{ columns: columnNames, values: rows }];
 	}
 
 	run(sql: string, params?: BindParams): void {
-		this.sqlDb.run(sql, params);
+		// eslint-disable-next-line @typescript-eslint/no-explicit-any
+		(this.db.exec as any)({ sql, bind: params });
 	}
 
 	export(): Uint8Array {
-		return this.sqlDb.export();
+		return this.sqlite3.capi.sqlite3_js_db_export(this.db);
 	}
 
 	close(): void {
-		this.sqlDb.close();
+		this.db.close();
 	}
 
 	getRowsModified(): number {
-		return this.sqlDb.getRowsModified();
+		return this.db.changes();
 	}
 }
 
-/**
- * Get the path to a WASM file in the plugin directory
- * Returns relative path - vault.adapter.readBinary() adds basePath automatically
- */
-function getPluginWasmPath(filename: string): string {
-	return `.obsidian/plugins/${PLUGIN_ID}/${filename}`;
-}
-
-/**
- * Load WASM file from plugin directory and create a Blob URL
- * This is necessary because WASM loaders expect a URL, not a buffer
- */
-async function loadWasmAsUrl(
-	app: App,
-	filename: string,
-): Promise<string | null> {
+async function loadWasmBinary(app: App): Promise<Uint8Array | null> {
+	const wasmPath = `.obsidian/plugins/${PLUGIN_ID}/${WASM_FILENAME}`;
 	try {
-		const wasmPath = getPluginWasmPath(filename);
-		// Read the WASM file as binary using Obsidian's adapter
 		const buffer = await app.vault.adapter.readBinary(wasmPath);
-		// Create a Blob URL that the WASM loader can fetch
-		const blob = new Blob([buffer], { type: "application/wasm" });
-		return URL.createObjectURL(blob);
-	} catch (e) {
-		console.error(
-			`[True Recall] Failed to load local WASM file ${filename}:`,
-			e,
-		);
+		return new Uint8Array(buffer);
+	} catch {
 		return null;
 	}
 }
 
-// CDN fallback URL for sql.js WASM
-const SQLJS_CDN = "https://sql.js.org/dist";
+// Cached instance — initialising sqlite3 is expensive, reuse across DB loads
+let cachedSqlite3: Sqlite3Static | null = null;
 
-/**
- * Load sql.js - tries local WASM first, falls back to CDN
- */
-async function loadSqlJs(app: App): Promise<SqlJsStatic> {
-	// Try local WASM first
-	const localWasmUrl = await loadWasmAsUrl(app, "sql-wasm.wasm");
+async function loadSqlite3(app: App): Promise<Sqlite3Static> {
+	const wasmBinary = await loadWasmBinary(app);
 
-	if (localWasmUrl) {
-		try {
-			const SQL = await initSqlJs({
-				locateFile: () => localWasmUrl,
-			});
-			return SQL;
-		} catch (e) {
-			console.error(
-				"[True Recall] Failed to load sql.js from local WASM, falling back to CDN:",
-				e,
-			);
-		}
+	const initOpts: Record<string, unknown> = {
+		// Silence the verbose Emscripten startup messages
+		print: () => {},
+		printErr: (msg: string) => {
+			if (msg.startsWith("warning:")) return;
+			console.error("[SQLite WASM]", msg);
+		},
+		// Prevent Emscripten from calling new URL("sqlite3.wasm", import.meta.url)
+		// which fails because esbuild's CJS shim sets import.meta to {}
+		locateFile: (file: string) => file,
+	};
+
+	if (wasmBinary) {
+		initOpts["wasmBinary"] = wasmBinary;
+	} else {
+		console.warn(
+			"[True Recall] sqlite3.wasm not found in plugin directory — falling back to CDN",
+		);
+		initOpts["locateFile"] = (file: string) =>
+			`https://sqlite.org/wasm/dist/${file}`;
 	}
 
-	// Fallback to CDN
-	const SQL = await initSqlJs({
-		locateFile: (file: string) => `${SQLJS_CDN}/${file}`,
-	});
-	return SQL;
+	// The TS types declare init() with no args, but the Emscripten runtime
+	// reads opts.wasmBinary / opts.locateFile — cast past the type gap.
+	return (
+		sqlite3InitModule as unknown as (
+			opts: Record<string, unknown>,
+		) => Promise<Sqlite3Static>
+	)(initOpts);
 }
 
-// Cached instance
-let cachedSqlJs: SqlJsStatic | null = null;
-
 /**
- * Load the database with sql.js
+ * Load the database with @sqlite.org/sqlite-wasm
  *
  * @param app - Obsidian App instance for file access
  * @param existingData - Existing database data to load (from file)
@@ -151,23 +142,38 @@ export async function loadDatabase(
 	app: App,
 	existingData?: Uint8Array | null,
 ): Promise<DatabaseLoadResult> {
-	// Load sql.js
-	if (!cachedSqlJs) {
-		cachedSqlJs = await loadSqlJs(app);
+	if (!cachedSqlite3) {
+		cachedSqlite3 = await loadSqlite3(app);
 	}
 
-	const sqlDb = existingData
-		? new cachedSqlJs.Database(existingData)
-		: new cachedSqlJs.Database();
+	const sqlite3 = cachedSqlite3;
+	const db = new sqlite3.oo1.DB(":memory:");
 
-	return {
-		db: new SqlJsWrapper(sqlDb),
-	};
+	if (existingData && existingData.byteLength > 0) {
+		const p = sqlite3.wasm.allocFromTypedArray(existingData);
+		const rc = sqlite3.capi.sqlite3_deserialize(
+			db.pointer,
+			"main",
+			p,
+			existingData.byteLength,
+			existingData.byteLength,
+			sqlite3.capi.SQLITE_DESERIALIZE_FREEONCLOSE |
+				sqlite3.capi.SQLITE_DESERIALIZE_RESIZEABLE,
+		);
+		if (rc !== 0) {
+			db.close();
+			throw new Error(
+				`[True Recall] Failed to load database — sqlite3_deserialize returned ${rc}`,
+			);
+		}
+	}
+
+	return { db: new SqliteOrgWrapper(db, sqlite3) };
 }
 
 /**
  * Reset loader state (for testing)
  */
 export function resetLoaderState(): void {
-	cachedSqlJs = null;
+	cachedSqlite3 = null;
 }
