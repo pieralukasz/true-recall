@@ -333,6 +333,15 @@ export class CardRepository {
 		if (existing?.alwaysTypeIn && entry.alwaysTypeIn === undefined) {
 			entry.alwaysTypeIn = existing.alwaysTypeIn;
 		}
+		if (existing?.noteId && !entry.noteId) {
+			entry.noteId = existing.noteId;
+		}
+		if (existing?.templateOrd !== undefined && entry.templateOrd === undefined) {
+			entry.templateOrd = existing.templateOrd;
+		}
+		if (existing?.noteTypeId && !entry.noteTypeId) {
+			entry.noteTypeId = existing.noteTypeId;
+		}
 
 		this.store.set(cardId, entry);
 
