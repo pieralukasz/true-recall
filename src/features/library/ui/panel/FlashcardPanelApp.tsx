@@ -55,6 +55,7 @@ export function FlashcardPanelApp({
 			onCopyCard: cardActions.handleCopyCard,
 			onMoveCard: cardActions.handleMoveCard,
 			onChangeType: cardActions.handleChangeType,
+			onToggleReversed: cardActions.handleToggleReversed,
 			onToggleExpand: cardActions.handleToggleExpand,
 			onToggleSelect: selectionActions.handleToggleSelect,
 			onEnterSelectionMode: selectionActions.handleEnterSelectionMode,
@@ -105,6 +106,7 @@ export function FlashcardPanelApp({
 							onGenerateFromHighlights={
 								panelActions.handleGenerateFromHighlights
 							}
+							onBrowseDeck={panelActions.handleBrowseDeck}
 						/>
 					</div>
 				) : null}

@@ -354,6 +354,11 @@ export function usePanelActions({
 		[panel],
 	);
 
+	const handleBrowseDeck = useCallback(async () => {
+		if (!flashcardInfo?.sourceUid) return;
+		await plugin.openCardBrowser(flashcardInfo.sourceUid);
+	}, [flashcardInfo, plugin]);
+
 	return {
 		handleGenerateFromNote,
 		handleGenerateFromHighlights,
@@ -362,6 +367,7 @@ export function usePanelActions({
 		handleCopyAllToClipboard,
 		handleReview,
 		handleOpenSourceNote,
+		handleBrowseDeck,
 		handleJumpToSource,
 		handleHoverSource,
 		handleLeaveSource,
