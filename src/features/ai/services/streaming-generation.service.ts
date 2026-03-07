@@ -16,8 +16,8 @@ import {
 } from "./ai-client-config";
 import { IncrementalFlashcardParser } from "./incremental-flashcard-parser";
 import { AIRequestError } from "./openrouter-client";
-import { StreamingOpenRouterClient } from "./streaming-openrouter-client";
 import { processCardEvents } from "./process-card-events";
+import { StreamingOpenRouterClient } from "./streaming-openrouter-client";
 import {
 	finishStreaming,
 	startStreaming,

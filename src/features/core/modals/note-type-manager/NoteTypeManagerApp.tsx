@@ -28,7 +28,7 @@ export function NoteTypeManagerApp({
 	// Auto-select first type on mount
 	useEffect(() => {
 		if (noteTypes.length > 0 && selectedId === null && draft === null) {
-			setSelectedId(noteTypes[0]?.id);
+			setSelectedId(noteTypes[0]?.id ?? null);
 		}
 	}, [noteTypes, selectedId, draft]);
 
@@ -73,7 +73,7 @@ export function NoteTypeManagerApp({
 	const handleCreateCancel = useCallback(() => {
 		setDraft(null);
 		if (noteTypes.length > 0) {
-			setSelectedId(noteTypes[0]?.id);
+			setSelectedId(noteTypes[0]?.id ?? null);
 		}
 	}, [noteTypes]);
 

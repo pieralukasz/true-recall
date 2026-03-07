@@ -109,7 +109,7 @@ export function aggregateProjectData(
 	// Recently studied: top N notes sorted by lastReview desc
 	const recentlyStudied = [...notes]
 		.filter((n) => n.lastReview)
-		.sort((a, b) => b.lastReview?.localeCompare(a.lastReview!))
+		.sort((a, b) => (b.lastReview ?? "").localeCompare(a.lastReview ?? ""))
 		.slice(0, MAX_RECENTLY_STUDIED);
 
 	return { projects, noteProjectMap, recentlyStudied };

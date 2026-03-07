@@ -260,6 +260,7 @@ export function PanelHeader({
 				placeholder="Search flashcards..."
 				ariaLabel="Search flashcards"
 				onChange={onSearchChange}
+				disabled={totalCount === 0}
 			/>
 		</div>
 	);

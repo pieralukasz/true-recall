@@ -21,7 +21,7 @@ export type FlatProjectItem =
 			projectPath: string;
 	  };
 
-function projectMatchesSearch(
+export function projectMatchesSearch(
 	project: DashboardProject,
 	query: string,
 ): boolean {

@@ -57,7 +57,9 @@ export function BulkActionsBar({
 			return;
 		}
 
-		const currentTypeId = noteInfos[0]?.noteTypeId;
+		const firstNoteInfo = noteInfos[0];
+		if (!firstNoteInfo) return;
+		const currentTypeId = firstNoteInfo.noteTypeId;
 		const currentNoteType = plugin.cardStore.noteTypes.getById(currentTypeId);
 		if (!currentNoteType) return;
 

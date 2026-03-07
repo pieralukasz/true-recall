@@ -149,11 +149,11 @@ export function chunkMarkdown(rawContent: string): ChunkingResult {
 			}
 
 			// Update heading stack
-			const level = match[1]!.length;
-			const text = match[2]!.trim();
+			const level = match[1]?.length;
+			const text = match[2]?.trim();
 			while (
 				headingStack.length > 0 &&
-				headingStack[headingStack.length - 1]!.level >= level
+				headingStack[headingStack.length - 1]?.level >= level
 			) {
 				headingStack.pop();
 			}
@@ -198,10 +198,7 @@ export function chunkMarkdown(rawContent: string): ChunkingResult {
 		}
 
 		// Single oversized section: split by paragraphs
-		if (
-			accWords === 0 &&
-			section.wordCount > TARGET_CHUNK_WORDS * 1.5
-		) {
+		if (accWords === 0 && section.wordCount > TARGET_CHUNK_WORDS * 1.5) {
 			const breadcrumb = buildBreadcrumb(section.headingStack);
 			const subChunks = splitByParagraphs(
 				section.lines.join("\n"),

@@ -13,7 +13,7 @@ export interface SearchComboboxProps {
 	value: string;
 	placeholder: string;
 	onChange: (query: string) => void;
-	getSuggestions: SuggestionProvider;
+	getSuggestions?: SuggestionProvider;
 	autoFocus?: boolean;
 	class?: string;
 	// Deprecated (kept for compatibility with existing callsites).
@@ -119,37 +119,39 @@ export function SearchCombobox({
 			onChangeRef.current(next);
 		});
 
-		const suggest = new SearchComboboxSuggest(
-			app,
-			searchComponent.inputEl,
-			(query) => {
-				const cursorPos =
-					searchComponent.inputEl.selectionStart ?? query.length;
-				const suggestions = getSuggestionsRef.current(query, cursorPos);
-				return withSectionLabels(suggestions);
-			},
-			(suggestion) => {
-				const inputEl = searchComponent.inputEl;
-				const cursorPos = inputEl.selectionStart ?? inputEl.value.length;
-				const { text, cursor } = replaceTokenAtCursor(
-					inputEl.value,
-					cursorPos,
-					suggestion.insertText,
-				);
+		if (getSuggestionsRef.current) {
+			const suggest = new SearchComboboxSuggest(
+				app,
+				searchComponent.inputEl,
+				(query) => {
+					const cursorPos =
+						searchComponent.inputEl.selectionStart ?? query.length;
+					const suggestions = getSuggestionsRef.current!(query, cursorPos);
+					return withSectionLabels(suggestions);
+				},
+				(suggestion) => {
+					const inputEl = searchComponent.inputEl;
+					const cursorPos = inputEl.selectionStart ?? inputEl.value.length;
+					const { text, cursor } = replaceTokenAtCursor(
+						inputEl.value,
+						cursorPos,
+						suggestion.insertText,
+					);
 
-				syncingRef.current = true;
-				searchComponent.setValue(text);
-				syncingRef.current = false;
-				onChangeRef.current(text);
-				requestAnimationFrame(() => {
-					const nextInput = searchRef.current?.inputEl;
-					if (!nextInput) return;
-					nextInput.focus();
-					nextInput.setSelectionRange(cursor, cursor);
-				});
-			},
-		);
-		suggestRef.current = suggest;
+					syncingRef.current = true;
+					searchComponent.setValue(text);
+					syncingRef.current = false;
+					onChangeRef.current(text);
+					requestAnimationFrame(() => {
+						const nextInput = searchRef.current?.inputEl;
+						if (!nextInput) return;
+						nextInput.focus();
+						nextInput.setSelectionRange(cursor, cursor);
+					});
+				},
+			);
+			suggestRef.current = suggest;
+		}
 
 		const handleKeyDown = (event: KeyboardEvent) => {
 			if (event.key !== "Escape") return;
@@ -162,14 +164,14 @@ export function SearchCombobox({
 				onChangeRef.current("");
 				return;
 			}
-			suggest.close();
+			suggestRef.current?.close();
 		};
 
 		searchComponent.inputEl.addEventListener("keydown", handleKeyDown);
 
 		return () => {
 			searchComponent.inputEl.removeEventListener("keydown", handleKeyDown);
-			suggest.close();
+			suggestRef.current?.close();
 			hostEl.innerHTML = "";
 			suggestRef.current = null;
 			searchRef.current = null;
