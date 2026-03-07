@@ -3,7 +3,6 @@ import { CardPreviewList } from "@features/core/modals/add-flashcards/CardPrevie
 import { ActionBar } from "@features/core/modals/import-studio/ActionBar";
 import { EditorSection } from "@features/core/modals/import-studio/EditorSection";
 import { FooterBar } from "@features/core/modals/import-studio/FooterBar";
-import { MetaRow } from "@features/core/modals/import-studio/MetaRow";
 import {
 	type ParsedCard,
 	parseBulkText,
@@ -31,7 +30,7 @@ interface ImportStudioAppProps {
 }
 
 export function ImportStudioApp({
-	onClose,
+	onClose: _onClose,
 	defaultNoteTypeId,
 }: ImportStudioAppProps) {
 	const app = useApp();
@@ -190,19 +189,14 @@ export function ImportStudioApp({
 				onModEnter={() => void handleSave()}
 			/>
 
-			<MetaRow
-				noteType={noteType}
-				detectedFormat={parseResult.detectedFormat}
-				cardCount={parseResult.cards.length}
-			/>
-
 			<CardPreviewList cards={parseResult.cards} />
 
 			<FooterBar
 				sessionCount={sessionCount}
 				cardCount={parseResult.cards.length}
+				detectedFormat={parseResult.detectedFormat}
 				saving={saving}
-				onClose={onClose}
+				noteType={noteType}
 				onSave={() => void handleSave()}
 			/>
 		</div>

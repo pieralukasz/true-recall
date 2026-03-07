@@ -26,7 +26,6 @@ import { NoteRow } from "./NoteRow";
 interface NoteListProps {
 	notes: DashboardNoteEntry[];
 	searchQuery: string;
-	allProjectNames: string[];
 	scrollContainerRef: RefObject<HTMLDivElement>;
 	scrollTop: Signal<number>;
 	onPresetClick?: (path: string | null) => void;
@@ -59,7 +58,6 @@ function matchesFilter(
 export function NoteList({
 	notes,
 	searchQuery,
-	allProjectNames,
 	scrollContainerRef,
 	scrollTop,
 	onPresetClick,
