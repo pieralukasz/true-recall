@@ -55,6 +55,7 @@ export interface PanelCardProps {
 	onMove: () => void;
 	onChangeType: () => void;
 	onToggleReversed: () => void;
+	onForget: () => void;
 	onSelect: () => void;
 	onLongPress: () => void;
 	onJumpToSource?: () => void;
@@ -132,6 +133,7 @@ export function PanelCard(props: PanelCardProps) {
 		onMove,
 		onChangeType,
 		onToggleReversed,
+		onForget,
 		onSelect,
 		onLongPress: onLongPressProp,
 		onJumpToSource,
@@ -190,6 +192,7 @@ export function PanelCard(props: PanelCardProps) {
 					},
 				] as MenuItem[])
 			: []),
+		{ title: "Forget", icon: "rotate-ccw", onClick: onForget },
 		"separator",
 		{ title: "Delete", icon: "trash-2", onClick: onDelete },
 		...(!isSelectionMode

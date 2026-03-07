@@ -9,7 +9,7 @@ import type {
 } from "@features/image-occlusion/types";
 import { Clickable } from "@shared/ui/components/Clickable";
 import { useIcon } from "@shared/ui/preact/hooks";
-import { useEffect, useMemo, useState } from "preact/hooks";
+import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 import { getNextIOGroupKey } from "./io-definition";
 
 type Tool = "select" | IOShape;
@@ -137,6 +137,19 @@ export function IOCanvas({
 	const [dragState, setDragState] = useState<DragState | null>(null);
 	const [draftRegion, setDraftRegion] = useState<IORegion | null>(null);
 
+	const definitionRef = useRef(definition);
+	definitionRef.current = definition;
+	const draftRegionRef = useRef(draftRegion);
+	draftRegionRef.current = draftRegion;
+	const onDefinitionChangeRef = useRef(onDefinitionChange);
+	onDefinitionChangeRef.current = onDefinitionChange;
+	const onPanChangeRef = useRef(onPanChange);
+	onPanChangeRef.current = onPanChange;
+	const onSelectRegionRef = useRef(onSelectRegion);
+	onSelectRegionRef.current = onSelectRegion;
+	const onToolChangeRef = useRef(onToolChange);
+	onToolChangeRef.current = onToolChange;
+
 	const selectedRegion = useMemo(
 		() =>
 			definition.regions.find((region) => region.id === selectedRegionId) ??
@@ -170,7 +183,7 @@ export function IOCanvas({
 			if (dragState.type === "pan") {
 				const dx = event.clientX - dragState.startClientX;
 				const dy = event.clientY - dragState.startClientY;
-				onPanChange(dragState.originX + dx, dragState.originY + dy);
+				onPanChangeRef.current(dragState.originX + dx, dragState.originY + dy);
 				return;
 			}
 
@@ -194,9 +207,10 @@ export function IOCanvas({
 				return;
 			}
 
+			const def = definitionRef.current;
 			if (dragState.type === "move") {
-				onDefinitionChange(
-					updateRegion(definition, dragState.regionId, (region) => {
+				onDefinitionChangeRef.current(
+					updateRegion(def, dragState.regionId, (region) => {
 						const nextX = clamp(point.x - dragState.offsetX, 0, 1 - region.w);
 						const nextY = clamp(point.y - dragState.offsetY, 0, 1 - region.h);
 						return { ...region, x: nextX, y: nextY };
@@ -205,8 +219,8 @@ export function IOCanvas({
 				return;
 			}
 
-			onDefinitionChange(
-				updateRegion(definition, dragState.regionId, (region) => {
+			onDefinitionChangeRef.current(
+				updateRegion(def, dragState.regionId, (region) => {
 					const minSize = 0.01;
 					let left = region.x;
 					let top = region.y;
@@ -244,23 +258,25 @@ export function IOCanvas({
 		};
 
 		const onPointerUp = () => {
+			const draft = draftRegionRef.current;
 			if (
 				dragState.type === "draw" &&
-				draftRegion &&
-				draftRegion.w > 0.01 &&
-				draftRegion.h > 0.01
+				draft &&
+				draft.w > 0.01 &&
+				draft.h > 0.01
 			) {
+				const def = definitionRef.current;
 				const region: IORegion = {
-					...draftRegion,
+					...draft,
 					id: crypto.randomUUID(),
-					groupKey: getNextIOGroupKey(definition),
+					groupKey: getNextIOGroupKey(def),
 				};
-				onDefinitionChange({
-					...definition,
-					regions: [...definition.regions, region],
+				onDefinitionChangeRef.current({
+					...def,
+					regions: [...def.regions, region],
 				});
-				onSelectRegion(region.id);
-				onToolChange?.("select");
+				onSelectRegionRef.current(region.id);
+				onToolChangeRef.current?.("select");
 			}
 
 			setDragState(null);
@@ -274,16 +290,7 @@ export function IOCanvas({
 			window.removeEventListener("pointermove", onPointerMove);
 			window.removeEventListener("pointerup", onPointerUp);
 		};
-	}, [
-		dragState,
-		draftRegion,
-		definition,
-		onDefinitionChange,
-		onPanChange,
-		onSelectRegion,
-		onToolChange,
-		mediaEl,
-	]);
+	}, [dragState, mediaEl]);
 
 	const handleWheel = (event: WheelEvent) => {
 		event.preventDefault();
@@ -307,6 +314,15 @@ export function IOCanvas({
 			return;
 		}
 
+		// Select/deselect immediately — this must happen before the getPoint
+		// guard so that selection works even when the image hasn't loaded yet
+		// (media container has zero dimensions → getPoint returns null).
+		if (regionId) {
+			onSelectRegion(regionId);
+		} else if (!handle) {
+			onSelectRegion(null);
+		}
+
 		const point = getPoint(event, mediaEl);
 		if (!point) return;
 
@@ -320,7 +336,6 @@ export function IOCanvas({
 		}
 
 		if (regionId) {
-			onSelectRegion(regionId);
 			if (tool === "select") {
 				const region = definition.regions.find((item) => item.id === regionId);
 				if (!region) return;
@@ -333,8 +348,6 @@ export function IOCanvas({
 			}
 			return;
 		}
-
-		onSelectRegion(null);
 
 		if (tool === "rect" || tool === "ellipse") {
 			setDragState({

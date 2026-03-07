@@ -9,6 +9,7 @@ import { QuickNoteEditorModal } from "@features/study/modals/quick-note-editor/Q
 import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
 import type { ReviewService } from "@features/study/services/review.service";
 import { notify } from "@shared/services/notification.service";
+import { notifyCardChange } from "@shared/services/signals";
 import type { ReviewApi } from "@shared/store";
 import type { TrueRecallSettings } from "@shared/types";
 import { BUILTIN_IMAGE_OCCLUSION_ID } from "@shared/types/note.types";
@@ -206,6 +207,75 @@ export class CardActionsHandler {
 				}
 			} catch (error) {
 				console.error("[CardActionsHandler] Error burying card(s):", error);
+			}
+		}, 0);
+	}
+
+	/**
+	 * Forget the current card — reset to New and clear review history.
+	 * For cloze/reverse cards, forgets all siblings as a group.
+	 */
+	async handleForget(): Promise<void> {
+		const card = this.deps.getReview().getCurrentCard();
+		if (!card) return;
+
+		const currentIndex = this.deps.getReview().currentIndex;
+		const undoService = this.deps.plugin.undoService;
+
+		const siblingIds = this.getGroupSiblingIds(card);
+
+		let writeExecuted = false;
+		let pendingTimeoutId: ReturnType<typeof setTimeout> | null = null;
+
+		undoService?.push({
+			id: crypto.randomUUID(),
+			actionType: "forget",
+			description:
+				siblingIds.length > 1
+					? `Forget ${siblingIds.length} cards`
+					: "Forget card",
+			timestamp: Date.now(),
+			payload: {
+				type: "forget",
+				card: { ...card },
+				originalFsrs: { ...card.fsrs },
+				previousIndex: currentIndex,
+			},
+			cancelPendingWrite: () => {
+				if (!writeExecuted && pendingTimeoutId !== null) {
+					clearTimeout(pendingTimeoutId);
+					pendingTimeoutId = null;
+					return true;
+				}
+				return false;
+			},
+		});
+
+		for (const id of siblingIds) {
+			this.deps.getReview().removeCardById(id);
+		}
+
+		if (!this.deps.getReview().isComplete()) {
+			this.callbacks.onUpdateSchedulingPreview();
+		}
+
+		notify().cardForgotten();
+
+		pendingTimeoutId = setTimeout(() => {
+			writeExecuted = true;
+			pendingTimeoutId = null;
+			try {
+				this.deps.cardStore.cards.bulkForget(siblingIds);
+				notifyCardChange({
+					type: "bulk",
+					cardIds: siblingIds,
+					action: "reset",
+				});
+			} catch (error) {
+				console.error(
+					"[CardActionsHandler] Error forgetting card(s):",
+					error,
+				);
 			}
 		}, 0);
 	}

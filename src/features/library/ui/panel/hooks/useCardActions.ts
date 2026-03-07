@@ -2,6 +2,7 @@ import { openPanelCardEditor } from "@features/library/ui/panel/helpers/panel-ed
 import { getSourceNoteNameFromFile } from "@features/library/ui/panel/utils/panel-helpers";
 import { QuickNoteEditorModal } from "@features/study/modals/quick-note-editor/QuickNoteEditorModal";
 import { notify } from "@shared/services/notification.service";
+import { notifyCardChange } from "@shared/services/signals";
 import type { PanelApi } from "@shared/store";
 import {
 	BUILTIN_BASIC_ID,
@@ -265,6 +266,15 @@ export function useCardActions({
 		[plugin, cardsWithFsrs],
 	);
 
+	const handleForgetCard = useCallback(
+		(card: FlashcardItem) => {
+			plugin.cardStore.cards.bulkForget([card.id]);
+			notifyCardChange({ type: "bulk", cardIds: [card.id], action: "reset" });
+			notify().cardForgotten();
+		},
+		[plugin],
+	);
+
 	const handleToggleExpand = useCallback(
 		(cardId: string) => {
 			preserveScroll(() => {
@@ -282,6 +292,7 @@ export function useCardActions({
 		handleMoveCard,
 		handleChangeType,
 		handleToggleReversed,
+		handleForgetCard,
 		handleToggleExpand,
 	};
 }

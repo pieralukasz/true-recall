@@ -88,6 +88,14 @@ export class NotificationService {
 		this.success("Card graded as Good and moved");
 	}
 
+	cardForgotten(): void {
+		this.success("Card forgotten");
+	}
+
+	cardsForgotten(count: number): void {
+		this.success(`Forgot ${count} card${count !== 1 ? "s" : ""}`);
+	}
+
 	cardSuspended(): void {
 		this.success("Card suspended");
 	}

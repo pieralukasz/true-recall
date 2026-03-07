@@ -1,3 +1,4 @@
+import { streamingGeneration } from "@features/ai/services/streaming-state";
 import {
 	type ContentHandlers,
 	PanelContent,
@@ -10,10 +11,11 @@ import {
 	useScrollPreservation,
 	useSelectionActions,
 } from "@features/library/ui/panel/hooks";
+import { useSignalEffect } from "@preact/signals";
 import { Panel } from "@shared/ui/components";
 import { usePlugin } from "@shared/ui/preact";
 import { Platform } from "obsidian";
-import { useMemo } from "preact/hooks";
+import { useMemo, useState } from "preact/hooks";
 
 export function FlashcardPanelApp({
 	onActions,
@@ -56,6 +58,7 @@ export function FlashcardPanelApp({
 			onMoveCard: cardActions.handleMoveCard,
 			onChangeType: cardActions.handleChangeType,
 			onToggleReversed: cardActions.handleToggleReversed,
+			onForgetCard: cardActions.handleForgetCard,
 			onToggleExpand: cardActions.handleToggleExpand,
 			onToggleSelect: selectionActions.handleToggleSelect,
 			onEnterSelectionMode: selectionActions.handleEnterSelectionMode,
@@ -66,6 +69,25 @@ export function FlashcardPanelApp({
 		}),
 		[cardActions, selectionActions, panelActions],
 	);
+
+	// Track streaming cards not yet in DB for smooth counter updates
+	const [streamingCompletedCount, setStreamingCompletedCount] = useState(0);
+	const [streamingNotePath, setStreamingNotePath] = useState<string | null>(
+		null,
+	);
+	useSignalEffect(() => {
+		const s = streamingGeneration.value;
+		setStreamingCompletedCount(s.completedCards.length);
+		setStreamingNotePath(s.isGenerating ? s.notePath : null);
+	});
+
+	const streamingNewCount = useMemo(() => {
+		if (!streamingNotePath || streamingNotePath !== store.currentFile?.path)
+			return 0;
+		const dbIds = new Set(store.cardsWithFsrs.map((c) => c.id));
+		const streaming = streamingGeneration.peek();
+		return streaming.completedCards.filter((c) => !dbIds.has(c.id)).length;
+	}, [streamingCompletedCount, streamingNotePath, store.currentFile?.path, store.cardsWithFsrs]);
 
 	const reviewedToday = plugin.sessionPersistence?.getReviewedToday();
 	const dayStartHour = plugin.settings.dayStartHour;
@@ -83,7 +105,10 @@ export function FlashcardPanelApp({
 							uncollectedCount={store.uncollectedCount}
 							selectionMode={store.selectionMode}
 							selectedCount={store.selectedCardIds.size}
-							totalCount={store.flashcardInfo?.flashcards.length ?? 0}
+							totalCount={
+							(store.flashcardInfo?.flashcards.length ?? 0) + streamingNewCount
+						}
+						streamingNewCount={streamingNewCount}
 							searchQuery={store.searchQuery}
 							isFollowingReview={store.isFollowingReview}
 							reviewedToday={reviewedToday}
@@ -96,10 +121,12 @@ export function FlashcardPanelApp({
 							onSelectAll={selectionActions.handleSelectAll}
 							onMoveSelected={selectionActions.handleMoveSelected}
 							onChangeNoteType={selectionActions.handleChangeNoteType}
+							onForgetSelected={selectionActions.handleForgetSelected}
 							onDeleteSelected={selectionActions.handleDeleteSelected}
 							onSearchChange={panelActions.handleSearchChange}
 							onExportCsv={panelActions.handleExportCsv}
 							onCopyToClipboard={panelActions.handleCopyAllToClipboard}
+							onForgetAll={selectionActions.handleForgetAll}
 							onDeleteAll={selectionActions.handleDeleteAll}
 							onOpenSourceNote={panelActions.handleOpenSourceNote}
 							hasHighlights={store.hasHighlights}

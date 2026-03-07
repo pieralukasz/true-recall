@@ -1,9 +1,12 @@
 import { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
 import {
-	CalendarHeatmap,
+	buildSourceUidToPresetMap,
+	getSourceUidsForPreset,
+} from "@features/metrics/services/stats/stats-filter.helpers";
+import type { StatsFilterContext } from "@features/metrics/services/stats/stats-filter.types";
+import {
 	CardCountsChart,
 	CollectionHealthCard,
-	CreationSourceChart,
 	FutureDueChart,
 	NLQueryPanel,
 	NotePerformanceTable,
@@ -13,6 +16,7 @@ import {
 	TimeRangeSelector,
 	TodaySection,
 } from "@features/metrics/ui/stats/components";
+import { PresetSelector } from "@features/metrics/ui/stats/components/PresetSelector";
 import { formatDateForDisplay } from "@features/metrics/ui/stats/utils/chart-helpers";
 import { useSignal, useSignalEffect } from "@preact/signals";
 import { cards, pluginSettings } from "@shared/services/reactive-card-store";
@@ -24,7 +28,7 @@ import type {
 import { AppNavBar } from "@shared/ui/components";
 import { CardPreviewModal } from "@shared/ui/modals";
 import { usePlugin } from "@shared/ui/preact";
-import { useCallback, useMemo, useState } from "preact/hooks";
+import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
 
 export function StatsApp() {
 	const plugin = usePlugin();
@@ -40,6 +44,7 @@ export function StatsApp() {
 	}, [plugin]);
 
 	const currentRange = useSignal<StatsTimeRange>("1m");
+	const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
 
 	const [dataKey, setDataKey] = useState(0);
 	useSignalEffect(() => {
@@ -47,6 +52,40 @@ export function StatsApp() {
 		pluginSettings.value;
 		setDataKey((n) => n + 1);
 	});
+
+	const presets = useMemo(
+		() => plugin.presetService.getPresets(),
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+		[plugin, dataKey],
+	);
+
+	const filterContext = useMemo((): StatsFilterContext => {
+		const archivedSourceUids =
+			plugin.hierarchyService.getArchivedSourceUids();
+
+		let presetSourceUids: Set<string> | null = null;
+		if (selectedPreset) {
+			const allCards = plugin.flashcardManager.getAllFSRSCards();
+			const uidMap = buildSourceUidToPresetMap(
+				plugin.presetService,
+				allCards,
+			);
+			presetSourceUids = getSourceUidsForPreset(selectedPreset, uidMap);
+		}
+
+		return {
+			archivedSourceUids,
+			presetName: selectedPreset,
+			presetSourceUids,
+		};
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [plugin, selectedPreset, dataKey]);
+
+	useEffect(() => {
+		statsCalculator.setFilter(filterContext);
+	}, [statsCalculator, filterContext]);
+
+	const filterKey = `${dataKey}-${selectedPreset ?? "all"}`;
 
 	const handleCardPreviewForDate = useCallback(
 		(date: string, cards: FSRSFlashcardItem[]) => {
@@ -80,10 +119,16 @@ export function StatsApp() {
 			<AppNavBar activeItem="stats" />
 			<div class="ep:flex-1 ep:min-h-0 ep:overflow-y-auto">
 				<div class="ep:p-3 ep:mx-auto ep:max-w-5xl ep:flex ep:flex-col ep:gap-3">
+					<PresetSelector
+						presets={presets}
+						selected={selectedPreset}
+						onChange={setSelectedPreset}
+					/>
+
 					<NLQueryPanel nlQueryService={plugin.nlQueryService} />
 
 					<TodaySection
-						key={`today-${dataKey}`}
+						key={`today-${filterKey}`}
 						statsCalculator={statsCalculator}
 						currentRange={currentRange.value}
 					/>
@@ -96,56 +141,45 @@ export function StatsApp() {
 					/>
 
 					<FutureDueChart
-						key={`future-${dataKey}`}
+						key={`future-${filterKey}`}
 						statsCalculator={statsCalculator}
 						currentRange={currentRange.value}
 						onCardPreview={handleCardPreviewForDate}
 					/>
 
 					<ReviewsChart
-						key={`reviews-${dataKey}`}
+						key={`reviews-${filterKey}`}
 						statsCalculator={statsCalculator}
 						currentRange={currentRange.value}
 						onCardPreview={handleCardPreviewForDate}
 					/>
 
 					<RetentionChart
-						key={`retention-${dataKey}`}
+						key={`retention-${filterKey}`}
 						statsCalculator={statsCalculator}
 						currentRange={currentRange.value}
 					/>
 
 					<RatingDistributionChart
-						key={`rating-dist-${dataKey}`}
+						key={`rating-dist-${filterKey}`}
 						statsCalculator={statsCalculator}
 						currentRange={currentRange.value}
 					/>
 
 					<CollectionHealthCard
-						key={`health-${dataKey}`}
+						key={`health-${filterKey}`}
 						statsCalculator={statsCalculator}
 					/>
 
 					<CardCountsChart
-						key={`counts-${dataKey}`}
+						key={`counts-${filterKey}`}
 						statsCalculator={statsCalculator}
 						onCategoryClick={handleCardPreviewForCategory}
 					/>
 
 					<NotePerformanceTable
-						key={`note-perf-${dataKey}`}
+						key={`note-perf-${filterKey}`}
 						statsCalculator={statsCalculator}
-					/>
-
-					<CreationSourceChart
-						key={`creation-source-${dataKey}`}
-						statsCalculator={statsCalculator}
-					/>
-
-					<CalendarHeatmap
-						key={`heatmap-${dataKey}`}
-						statsCalculator={statsCalculator}
-						onCardPreview={handleCardPreviewForDate}
 					/>
 				</div>
 			</div>
