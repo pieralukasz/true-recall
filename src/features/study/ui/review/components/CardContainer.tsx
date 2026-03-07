@@ -93,12 +93,8 @@ export function CardContainer({
 }: CardContainerProps) {
 	const sourcePath = card.sourceNotePath || "";
 
-	// For cloze cards, the live-preview editor shows the cloze template
-	// so users can edit {{c1::...}} syntax directly
-	const questionContent =
-		card.cardType === "cloze" && card.clozeTemplate
-			? card.clozeTemplate
-			: card.question;
+	const questionContent = card.question;
+	const isCloze = card.cardType === "cloze";
 	const hasTextAnswer = !!card.answer?.trim();
 	const isImageOcclusion =
 		card.cardType === "image-occlusion" &&
@@ -117,10 +113,12 @@ export function CardContainer({
 			<div class="true-recall-review-card-container ep:flex-1 ep:min-h-0 ep:flex ep:items-start ep:justify-center ep:pt-8 ep:px-6 ep:pb-2 ep:overflow-y-auto ep:w-full ep:max-w-3xl ep:mx-auto">
 				<div class="ep:w-full">
 					<IOCardRenderer
+						key={card.id}
 						imagePath={card.ioImagePath}
 						regionsJson={card.ioRegionsJson}
 						templateOrd={card.templateOrd}
 						revealed={isAnswerRevealed}
+						revealSingleOnly
 					/>
 
 					{isAnswerRevealed && (card.sourceNoteName || presetName) && (
@@ -175,7 +173,7 @@ export function CardContainer({
 					field="question"
 					sourcePath={sourcePath}
 					cls="true-recall-review-question ep:leading-relaxed ep:text-obs-normal ep:mb-6"
-					onContentChange={onContentChange}
+					onContentChange={isCloze ? undefined : onContentChange}
 				/>
 
 				{showTypeIn && !isAnswerRevealed && (
