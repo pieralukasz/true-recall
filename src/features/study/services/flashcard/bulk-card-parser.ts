@@ -137,8 +137,8 @@ function parseClozeLines(lines: string[], noteType: NoteType): ParsedCard[] {
 				cards.push({
 					noteTypeId: noteType.id,
 					fields: {
-						[textField]: match[1]?.trim(),
-						[extraField]: match[2]?.trim(),
+						[textField]: match[1]?.trim() ?? "",
+						[extraField]: match[2]?.trim() ?? "",
 					},
 				});
 			} else {

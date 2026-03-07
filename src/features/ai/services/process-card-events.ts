@@ -30,19 +30,15 @@ export async function processCardEvents(
 
 				if (result.cards.length > 0) {
 					onCount(result.cards.length, 0);
-					const firstField =
-						Object.values(event.block.fields)[0] ?? "";
-					const secondField =
-						Object.values(event.block.fields)[1] ?? "";
+					const firstField = Object.values(event.block.fields)[0] ?? "";
+					const secondField = Object.values(event.block.fields)[1] ?? "";
 					addStreamedCard({
-						id: result.cards[0]!.id,
+						id: result.cards[0]?.id,
 						question: firstField,
 						answer: secondField,
 						sourceText: event.block.sourceText,
 					});
-					await new Promise<void>((r) =>
-						requestAnimationFrame(() => r()),
-					);
+					await new Promise<void>((r) => requestAnimationFrame(() => r()));
 				} else {
 					onCount(0, 1);
 				}
@@ -50,10 +46,7 @@ export async function processCardEvents(
 				onCount(0, 1);
 			}
 		} else if (event.type === "partial_update") {
-			onPartial(
-				event.partialQuestion ?? null,
-				event.partialAnswer ?? null,
-			);
+			onPartial(event.partialQuestion ?? null, event.partialAnswer ?? null);
 		}
 	}
 }

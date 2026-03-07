@@ -36,7 +36,9 @@ export function IntegrityCheckSection() {
 			try {
 				await plugin.backupService?.createBackup();
 			} catch {
-				console.warn("[True Recall] Pre-repair backup failed, proceeding anyway");
+				console.warn(
+					"[True Recall] Pre-repair backup failed, proceeding anyway",
+				);
 			}
 
 			const fixed = plugin.cardStore.integrity.repair(report);

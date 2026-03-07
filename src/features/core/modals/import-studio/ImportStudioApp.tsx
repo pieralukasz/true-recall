@@ -171,8 +171,6 @@ export function ImportStudioApp({
 		<div class="ep:flex ep:flex-col ep:gap-3">
 			<ActionBar
 				app={app}
-				noteTypeId={noteTypeId}
-				onNoteTypeChange={handleNoteTypeChange}
 				selectedSourceNote={selectedSourceNote}
 				onSourceSelect={handleSourceNoteChange}
 			/>
@@ -197,6 +195,8 @@ export function ImportStudioApp({
 				detectedFormat={parseResult.detectedFormat}
 				saving={saving}
 				noteType={noteType}
+				noteTypeId={noteTypeId}
+				onNoteTypeChange={handleNoteTypeChange}
 				onSave={() => void handleSave()}
 			/>
 		</div>

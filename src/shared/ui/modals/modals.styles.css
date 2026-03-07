@@ -357,4 +357,24 @@
 		padding: 6px 9px;
 		min-height: 1.6em;
 	}
+
+	/* ================================================================
+	   IMPORT STUDIO EDITOR — fill container, comfortable padding
+	   ================================================================ */
+	.true-recall-import-editor .cm-editor {
+		height: 100%;
+	}
+
+	.true-recall-import-editor .cm-scroller {
+		overflow: auto;
+	}
+
+	.true-recall-import-editor .cm-content {
+		padding: 10px 14px;
+		min-height: 100%;
+	}
+
+	.true-recall-import-editor .cm-placeholder {
+		padding: 10px 14px;
+	}
 }

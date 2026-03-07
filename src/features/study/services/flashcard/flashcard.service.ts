@@ -683,7 +683,7 @@ export class FlashcardManager {
 		fields: Record<string, string>,
 	): UpdateNoteFieldsResult {
 		const updatedNote: Note = { ...note, fields };
-		const existingCards = this.store?.cards.getCardsByNoteId(note.id);
+		const existingCards = this.store?.cards.getCardsByNoteId(note.id) ?? [];
 		const existingOrds = new Set(
 			existingCards.map((card) => card.templateOrd ?? 0),
 		);

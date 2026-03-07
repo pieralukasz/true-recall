@@ -9,10 +9,6 @@ import {
 } from "@shared/services/reactive-card-store";
 import { AppNavBar } from "@shared/ui/components";
 import { SearchCombobox } from "@shared/ui/components/SearchCombobox";
-import type {
-	SearchSuggestion,
-	SuggestionProvider,
-} from "@shared/ui/helpers/search-suggestions.types";
 import { PresetOptionsModal } from "@shared/ui/modals/PresetOptionsModal";
 import { usePlugin } from "@shared/ui/preact";
 import { useCallback, useMemo, useRef } from "preact/hooks";
@@ -26,6 +22,7 @@ import { TodayActionBar } from "./components/TodayActionBar";
 import { aggregateDashboardData } from "./helpers/note-aggregation";
 import { computePriority } from "./helpers/note-priority";
 import { aggregateProjectData } from "./helpers/project-aggregation";
+import { projectMatchesSearch } from "./helpers/project-tree-flatten";
 import { estimateStudyMinutes } from "./helpers/time-estimate";
 import { useDragAutoScroll } from "./helpers/use-drag-auto-scroll";
 import { useInitialMount } from "./helpers/use-initial-mount";
@@ -200,47 +197,21 @@ export function DashboardApp() {
 		});
 	}, [visibleNotes, projectData.noteProjectMap, plugin, showArchived.value]);
 
-	const allProjectNames = useMemo(() => {
-		const names = new Set<string>();
-		for (const projects of projectData.noteProjectMap.values()) {
-			for (const p of projects) names.add(p);
+	const filteredCounts = useMemo(() => {
+		const q = searchQuery.value.toLowerCase().trim();
+		if (!q) {
+			return {
+				projects: projectData.projects.length,
+				notes: enrichedNotes.length,
+			};
 		}
-		return Array.from(names).sort();
-	}, [projectData.noteProjectMap]);
-
-	const getDashboardSuggestions: SuggestionProvider = useMemo(() => {
-		const noteNames = enrichedNotes.map((n) => n.name);
-		return (inputValue: string): SearchSuggestion[] => {
-			const q = inputValue.toLowerCase().trim();
-			if (!q) return [];
-			const results: SearchSuggestion[] = [];
-			for (const name of noteNames) {
-				if (name.toLowerCase().includes(q)) {
-					results.push({
-						id: `note-${name}`,
-						label: name,
-						insertText: name,
-						category: "note",
-						description: "Note",
-					});
-				}
-				if (results.length >= 8) break;
-			}
-			for (const p of allProjectNames) {
-				if (p.toLowerCase().includes(q)) {
-					results.push({
-						id: `project-${p}`,
-						label: p,
-						insertText: p,
-						category: "project",
-						description: "Project",
-					});
-				}
-				if (results.length >= 12) break;
-			}
-			return results;
+		return {
+			projects: projectData.projects.filter((p) => projectMatchesSearch(p, q))
+				.length,
+			notes: enrichedNotes.filter((n) => n.name.toLowerCase().includes(q))
+				.length,
 		};
-	}, [enrichedNotes, allProjectNames]);
+	}, [searchQuery.value, projectData.projects, enrichedNotes]);
 
 	const handleStudyNote = (noteName: string, projectPath?: string) => {
 		void plugin.openReviewViewWithFilters({
@@ -274,7 +245,6 @@ export function DashboardApp() {
 
 	const handleTabChange = (tab: DashboardTab) => {
 		activeTab.value = tab;
-		searchQuery.value = "";
 		scrollTop.value = 0;
 		if (scrollContainerRef.current) {
 			scrollContainerRef.current.scrollTop = 0;
@@ -324,7 +294,6 @@ export function DashboardApp() {
 							onChange={(q) => {
 								searchQuery.value = q;
 							}}
-							getSuggestions={getDashboardSuggestions}
 						/>
 					</div>
 
@@ -332,8 +301,8 @@ export function DashboardApp() {
 						<DashboardTabs
 							activeTab={activeTab.value}
 							onTabChange={handleTabChange}
-							projectCount={projectData.projects.length}
-							notesCount={enrichedNotes.length}
+							projectCount={filteredCounts.projects}
+							notesCount={filteredCounts.notes}
 							showArchived={showArchived.value}
 							onToggleArchived={() => {
 								showArchived.value = !showArchived.value;
@@ -363,7 +332,6 @@ export function DashboardApp() {
 								<NoteList
 									notes={enrichedNotes}
 									searchQuery={searchQuery.value}
-									allProjectNames={allProjectNames}
 									scrollContainerRef={scrollContainerRef}
 									scrollTop={scrollTop}
 									onPresetClick={handlePresetClick}
