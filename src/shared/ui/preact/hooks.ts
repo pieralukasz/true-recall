@@ -15,7 +15,7 @@ export function useMarkdown(
 
 	useLayoutEffect(() => {
 		const el = ref.current;
-		if (!el) return;
+		if (!(el instanceof HTMLElement)) return;
 
 		el.empty();
 		const obsComponent = new ObsidianComponent();
@@ -31,7 +31,7 @@ export function useIcon(iconId: string): preact.RefObject<HTMLDivElement> {
 	const ref = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
-		if (ref.current) {
+		if (ref.current instanceof HTMLElement) {
 			setIcon(ref.current, iconId);
 		}
 	}, [iconId]);

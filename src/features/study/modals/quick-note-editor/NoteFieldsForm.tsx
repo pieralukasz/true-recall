@@ -103,6 +103,8 @@ function CMField({
 
 	const handleModEnter = useCallback(() => onModEnter?.(), [onModEnter]);
 
+	const [editorFailed, setEditorFailed] = useState(false);
+
 	// Create editor on mount, destroy on unmount.
 	// Stable deps — editor is only recreated if app or EmbeddableEditor class changes.
 	useEffect(() => {
@@ -119,9 +121,9 @@ function CMField({
 			});
 		} catch (err) {
 			console.error("[CMField] Failed to create editor:", err);
+			setEditorFailed(true);
 			return;
 		}
-
 		editorRef.current = editor;
 
 		// Report focus to parent for shared toolbar
@@ -188,8 +190,8 @@ function CMField({
 		</Clickable>
 	);
 
-	// Fallback: render plain textarea until EmbeddableEditor is available
-	if (!plugin.EmbeddableEditor) {
+	// Fallback: render plain textarea until EmbeddableEditor is available or if creation failed
+	if (!plugin.EmbeddableEditor || editorFailed) {
 		return (
 			<div class="ep:border ep:border-obs-border ep:rounded-md ep:overflow-hidden">
 				{header}

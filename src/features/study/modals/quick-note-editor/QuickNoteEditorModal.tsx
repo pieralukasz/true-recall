@@ -1,3 +1,4 @@
+import { ErrorBoundary } from "@shared/ui/components/ErrorBoundary";
 import { BasePromiseModal } from "@shared/ui/modals/BasePromiseModal";
 import { ObsidianProvider } from "@shared/ui/preact/ObsidianContext";
 import type { App } from "obsidian";
@@ -25,10 +26,12 @@ export class QuickNoteEditorModal extends BasePromiseModal<QuickNoteEditorResult
 	protected renderBody(container: HTMLElement): void {
 		render(
 			<ObsidianProvider value={{ app: this.app, plugin: this.plugin }}>
-				<QuickNoteEditorApp
-					mode={this.editorMode}
-					onDone={(result) => this.resolve(result)}
-				/>
+				<ErrorBoundary>
+					<QuickNoteEditorApp
+						mode={this.editorMode}
+						onDone={(result) => this.resolve(result)}
+					/>
+				</ErrorBoundary>
 			</ObsidianProvider>,
 			container,
 		);
