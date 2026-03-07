@@ -154,24 +154,6 @@ export class SqliteSchemaManager {
 		}
 
 		this.createFts5();
-		this.cleanupStaleTriggers();
-	}
-
-	private cleanupStaleTriggers(): void {
-		try {
-			this.db.run(`DROP TABLE IF EXISTS cards_old`);
-			const results = this.db.exec(
-				`SELECT name FROM sqlite_master WHERE type='trigger' AND sql LIKE '%cards_old%'`,
-			);
-			if (results.length > 0) {
-				for (const row of results[0].values) {
-					const name = row[0] as string;
-					this.db.run(`DROP TRIGGER IF EXISTS "${name}"`);
-				}
-			}
-		} catch {
-			// Non-critical cleanup — ignore failures
-		}
 	}
 
 	/**
