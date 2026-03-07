@@ -1155,4 +1155,124 @@ export class StatsActions {
 			[],
 		);
 	}
+
+	getDailyStatsFromReviewLog(
+		startDate: string,
+		endDate: string,
+		opts?: { presetName?: string; excludeSourceUids?: string[] },
+	): ExtendedDailyStats[] {
+		const excludeUids = opts?.excludeSourceUids ?? [];
+		const presetName = opts?.presetName ?? null;
+		const isDefault = presetName === "Default";
+
+		let excludeClause = "";
+		const params: (string | number | null)[] = [];
+
+		if (excludeUids.length > 0) {
+			excludeClause = `AND c.source_uid NOT IN (${excludeUids.map(() => "?").join(",")})`;
+			params.push(...excludeUids);
+		}
+
+		let presetClause = "";
+		if (presetName !== null) {
+			presetClause = `AND (COALESCE(r.preset_name, 'Default') = ?${isDefault ? " OR r.preset_name IS NULL" : ""})`;
+			params.push(presetName);
+		}
+
+		params.push(startDate, endDate);
+
+		const rows = this.db.query<{
+			date: string;
+			reviewsCompleted: number;
+			newCardsStudied: number;
+			totalTimeMs: number;
+			again: number;
+			hard: number;
+			good: number;
+			easy: number;
+			reviewCards: number;
+		}>(
+			`
+			SELECT
+				date(r.reviewed_at) as date,
+				COUNT(*) as reviewsCompleted,
+				SUM(CASE WHEN r.state = 0 THEN 1 ELSE 0 END) as newCardsStudied,
+				COALESCE(SUM(r.time_spent_ms), 0) as totalTimeMs,
+				SUM(CASE WHEN r.rating = 1 THEN 1 ELSE 0 END) as again,
+				SUM(CASE WHEN r.rating = 2 THEN 1 ELSE 0 END) as hard,
+				SUM(CASE WHEN r.rating = 3 THEN 1 ELSE 0 END) as good,
+				SUM(CASE WHEN r.rating = 4 THEN 1 ELSE 0 END) as easy,
+				SUM(CASE WHEN r.state = 2 THEN 1 ELSE 0 END) as reviewCards
+			FROM review_log r
+			JOIN cards c ON r.card_id = c.id
+			WHERE r.deleted_at IS NULL AND c.deleted_at IS NULL
+				${excludeClause}
+				${presetClause}
+				AND date(r.reviewed_at) BETWEEN ? AND ?
+			GROUP BY date(r.reviewed_at)
+			ORDER BY date
+		`,
+			params,
+		);
+
+		return rows.map((row) => ({
+			date: row.date,
+			reviewsCompleted: row.reviewsCompleted,
+			newCardsStudied: row.newCardsStudied,
+			totalTimeMs: row.totalTimeMs,
+			again: row.again,
+			hard: row.hard,
+			good: row.good,
+			easy: row.easy,
+			newCards: 0,
+			learningCards: 0,
+			reviewCards: row.reviewCards,
+			reviewedCardIds: [],
+		}));
+	}
+
+	getNotePerformanceFiltered(
+		excludeSourceUids: string[],
+		includeSourceUids?: string[],
+	): NotePerformanceRow[] {
+		let excludeClause = "";
+		let includeClause = "";
+		const params: (string | number | null)[] = [];
+
+		if (excludeSourceUids.length > 0) {
+			excludeClause = `AND c.source_uid NOT IN (${excludeSourceUids.map(() => "?").join(",")})`;
+			params.push(...excludeSourceUids);
+		}
+
+		if (includeSourceUids) {
+			if (includeSourceUids.length === 0) return [];
+			includeClause = `AND c.source_uid IN (${includeSourceUids.map(() => "?").join(",")})`;
+			params.push(...includeSourceUids);
+		}
+
+		return this.db.query<NotePerformanceRow>(
+			`
+			SELECT
+				c.source_uid as sourceUid,
+				COUNT(DISTINCT c.id) as cardCount,
+				AVG(c.lapses) as avgLapses,
+				AVG(c.difficulty) as avgDifficulty,
+				COUNT(r.id) as reviewCount,
+				ROUND(100.0 * SUM(CASE WHEN r.rating >= 3 THEN 1 ELSE 0 END) /
+					  NULLIF(COUNT(r.id), 0), 1) as retentionRate,
+				MAX(r.reviewed_at) as lastReviewed
+			FROM cards c
+			LEFT JOIN review_log r
+				ON c.id = r.card_id AND r.deleted_at IS NULL AND r.state = 2
+			WHERE c.deleted_at IS NULL
+			  AND c.suspended = 0
+			  AND c.source_uid IS NOT NULL
+			  ${excludeClause}
+			  ${includeClause}
+			GROUP BY c.source_uid
+			ORDER BY retentionRate ASC
+		`,
+			params,
+		);
+	}
 }

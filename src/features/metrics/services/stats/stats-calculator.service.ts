@@ -7,13 +7,15 @@ import {
 	StreakCalculator,
 	type StreakInfo,
 } from "@features/metrics/services/stats/calculators";
+import {
+	EMPTY_FILTER,
+	type StatsFilterContext,
+} from "@features/metrics/services/stats/stats-filter.types";
 import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
 import type {
 	CardMaturityBreakdown,
 	CardsCreatedEntry,
-	CardsCreatedVsReviewedEntry,
 	CollectionHealthSnapshot,
-	CreationSourceStats,
 	ExtendedDailyStats,
 	FSRSFlashcardItem,
 	FutureDueEntry,
@@ -30,6 +32,7 @@ export class StatsCalculatorService {
 	private sessionPersistence: SessionPersistenceService;
 	private fsrsService: FSRSService;
 	private sqliteStore: SqliteStoreService | null = null;
+	private filter: StatsFilterContext = EMPTY_FILTER;
 
 	// Specialized calculators
 	private streakCalculator = new StreakCalculator();
@@ -45,50 +48,106 @@ export class StatsCalculatorService {
 		this.fsrsService = fsrsService;
 	}
 
-	/**
-	 * Set SQLite store for optimized queries
-	 * When set, uses SQL aggregations instead of iterating all cards
-	 */
 	setSqliteStore(store: SqliteStoreService): void {
 		this.sqliteStore = store;
 		this.maturityCalculator.setSqliteStore(store);
 		this.chartDataCalculator.setSqliteStore(store);
 	}
 
-	/**
-	 * Get all daily stats for calendar heatmap (lightweight - no card IDs)
-	 * Exposes sessionPersistence.getAllDailyStatsSummary() without revealing internal dependency
-	 */
-	getAllDailyStats(): Record<string, ExtendedDailyStats> {
-		if (!this.sessionPersistence) {
-			return {};
+	setFilter(ctx: StatsFilterContext): void {
+		this.filter = ctx;
+	}
+
+	private get isFilterActive(): boolean {
+		return (
+			this.filter.archivedSourceUids.size > 0 ||
+			this.filter.presetName !== null
+		);
+	}
+
+	private getFilteredCards(): FSRSFlashcardItem[] {
+		let cards = this.flashcardManager.getAllFSRSCards();
+
+		if (this.filter.archivedSourceUids.size > 0) {
+			cards = cards.filter(
+				(c) =>
+					!c.sourceUid ||
+					!this.filter.archivedSourceUids.has(c.sourceUid),
+			);
 		}
-		return this.sessionPersistence.getAllDailyStatsSummary();
+
+		if (this.filter.presetSourceUids) {
+			cards = cards.filter(
+				(c) =>
+					c.sourceUid !== undefined &&
+					this.filter.presetSourceUids!.has(c.sourceUid),
+			);
+		}
+
+		return cards;
 	}
 
 	/**
-	 * Get card maturity breakdown for pie chart
-	 * Young: Review cards with interval < 21 days
-	 * Mature: Review cards with interval >= 21 days
+	 * Get filtered daily stats from review_log when filters are active,
+	 * otherwise use the fast daily_stats table path.
 	 */
+	private getFilteredDailyStats(): Record<string, ExtendedDailyStats> {
+		if (!this.isFilterActive) {
+			return this.sessionPersistence.getAllDailyStatsSummary();
+		}
+
+		if (!this.sqliteStore) return {};
+
+		const rows = this.sqliteStore.stats.getDailyStatsFromReviewLog(
+			"1970-01-01",
+			new Date().toISOString().split("T")[0] ?? "",
+			{
+				presetName: this.filter.presetName ?? undefined,
+				excludeSourceUids: [...this.filter.archivedSourceUids],
+			},
+		);
+
+		const stats: Record<string, ExtendedDailyStats> = {};
+		for (const row of rows) {
+			stats[row.date] = row;
+		}
+		return stats;
+	}
+
+	private getFilteredDailyStatsInRange(
+		startKey: string,
+		endKey: string,
+	): ExtendedDailyStats[] {
+		if (!this.isFilterActive) {
+			return this.sessionPersistence.getStatsInRange(startKey, endKey);
+		}
+
+		if (!this.sqliteStore) return [];
+
+		return this.sqliteStore.stats.getDailyStatsFromReviewLog(
+			startKey,
+			endKey,
+			{
+				presetName: this.filter.presetName ?? undefined,
+				excludeSourceUids: [...this.filter.archivedSourceUids],
+			},
+		);
+	}
+
+	getAllDailyStats(): Record<string, ExtendedDailyStats> {
+		return this.getFilteredDailyStats();
+	}
+
 	getCardMaturityBreakdown(): CardMaturityBreakdown {
-		const allCards = this.flashcardManager.getAllFSRSCards();
-		return this.maturityCalculator.calculate(allCards);
+		const cards = this.getFilteredCards();
+		return this.maturityCalculator.calculate(cards);
 	}
 
-	/**
-	 * Get future due predictions for bar chart
-	 * @param range Time range: 'backlog' | '1m' | '3m' | '1y' | 'all'
-	 */
 	getFutureDueStats(range: StatsTimeRange): FutureDueEntry[] {
-		const allCards = this.flashcardManager.getAllFSRSCards();
-		return this.chartDataCalculator.getFutureDueStats(allCards, range);
+		const cards = this.getFilteredCards();
+		return this.chartDataCalculator.getFutureDueStats(cards, range);
 	}
 
-	/**
-	 * Get historical review data for reviews chart
-	 * @param range Time range: '1m' | '3m' | '1y' | 'all'
-	 */
 	async getReviewHistory(range: StatsTimeRange): Promise<ExtendedDailyStats[]> {
 		const endDate = new Date();
 		const startDate = this.calculateStartDate(endDate, range);
@@ -96,13 +155,51 @@ export class StatsCalculatorService {
 		const startKey = startDate.toISOString().split("T")[0] ?? "";
 		const endKey = endDate.toISOString().split("T")[0] ?? "";
 
-		return this.sessionPersistence.getStatsInRange(startKey, endKey);
+		return this.getFilteredDailyStatsInRange(startKey, endKey);
 	}
 
-	/**
-	 * Get today's summary statistics
-	 */
 	getTodaySummary(): TodaySummary {
+		if (this.isFilterActive && this.sqliteStore) {
+			const today = new Date().toISOString().split("T")[0] ?? "";
+			const rows = this.sqliteStore.stats.getDailyStatsFromReviewLog(
+				today,
+				today,
+				{
+					presetName: this.filter.presetName ?? undefined,
+					excludeSourceUids: [...this.filter.archivedSourceUids],
+				},
+			);
+			const todayStats = rows[0];
+			if (!todayStats) {
+				return {
+					studied: 0,
+					minutes: 0,
+					newCards: 0,
+					reviewCards: 0,
+					again: 0,
+					correctRate: 0,
+				};
+			}
+
+			const totalRatings =
+				(todayStats.again ?? 0) +
+				(todayStats.hard ?? 0) +
+				(todayStats.good ?? 0) +
+				(todayStats.easy ?? 0);
+			const correctReviews =
+				(todayStats.good ?? 0) + (todayStats.easy ?? 0);
+
+			return {
+				studied: todayStats.reviewsCompleted,
+				minutes: Math.round(todayStats.totalTimeMs / 60000),
+				newCards: todayStats.newCardsStudied,
+				reviewCards: todayStats.reviewCards ?? 0,
+				again: todayStats.again ?? 0,
+				correctRate:
+					totalRatings > 0 ? correctReviews / totalRatings : 0,
+			};
+		}
+
 		const todayStats = this.sessionPersistence.getTodayStats();
 
 		const totalRatings =
@@ -122,20 +219,11 @@ export class StatsCalculatorService {
 		};
 	}
 
-	/**
-	 * Get streak information
-	 */
 	getStreakInfo(): StreakInfo {
-		if (!this.sessionPersistence) {
-			return { current: 0, longest: 0 };
-		}
-		const allStats = this.sessionPersistence.getAllDailyStatsSummary();
+		const allStats = this.getFilteredDailyStats();
 		return this.streakCalculator.calculate(allStats);
 	}
 
-	/**
-	 * Get summary statistics for a time range
-	 */
 	async getRangeSummary(range: StatsTimeRange): Promise<{
 		daysStudied: number;
 		totalDays: number;
@@ -146,7 +234,7 @@ export class StatsCalculatorService {
 		dailyLoad: number;
 	}> {
 		const history = await this.getReviewHistory(range);
-		const allCards = this.flashcardManager.getAllFSRSCards();
+		const cards = this.getFilteredCards();
 
 		const endDate = new Date();
 		const startDate = this.calculateStartDate(endDate, range);
@@ -160,20 +248,18 @@ export class StatsCalculatorService {
 			0,
 		);
 
-		// Calculate due tomorrow
 		const tomorrow = new Date();
 		tomorrow.setDate(tomorrow.getDate() + 1);
 		tomorrow.setHours(0, 0, 0, 0);
 		const tomorrowEnd = new Date(tomorrow);
 		tomorrowEnd.setHours(23, 59, 59, 999);
 
-		const dueTomorrow = allCards.filter((c) => {
+		const dueTomorrow = cards.filter((c) => {
 			if (c.fsrs.state === State.New) return false;
 			const dueDate = new Date(c.fsrs.due);
 			return dueDate >= tomorrow && dueDate <= tomorrowEnd;
 		}).length;
 
-		// Calculate daily load (average cards due per day in next 30 days)
 		const futureStats = this.getFutureDueStats("1m");
 		const dailyLoad =
 			futureStats.length > 0
@@ -198,10 +284,7 @@ export class StatsCalculatorService {
 	getRatingDistributionHistory(
 		range: StatsTimeRange,
 	): RatingDistributionEntry[] {
-		if (!this.sessionPersistence) {
-			return [];
-		}
-		const allStats = this.sessionPersistence.getAllDailyStatsSummary();
+		const allStats = this.getFilteredDailyStats();
 		return this.chartDataCalculator.getRatingDistributionHistory(
 			allStats,
 			range,
@@ -209,10 +292,9 @@ export class StatsCalculatorService {
 	}
 
 	getCollectionHealthSnapshot(): CollectionHealthSnapshot {
-		// Only active (non-new, non-suspended, non-deleted) cards have meaningful retrievability
-		const allCards = this.flashcardManager
-			.getAllFSRSCards()
-			.filter((c) => c.fsrs.state !== State.New && !c.fsrs.suspended);
+		const allCards = this.getFilteredCards().filter(
+			(c) => c.fsrs.state !== State.New && !c.fsrs.suspended,
+		);
 
 		if (allCards.length === 0) {
 			return {
@@ -239,27 +321,21 @@ export class StatsCalculatorService {
 
 	getNotePerformance(): NotePerformanceRow[] {
 		if (this.sqliteStore) {
+			if (this.isFilterActive) {
+				return this.sqliteStore.stats.getNotePerformanceFiltered(
+					[...this.filter.archivedSourceUids],
+					this.filter.presetSourceUids
+						? [...this.filter.presetSourceUids]
+						: undefined,
+				);
+			}
 			return this.sqliteStore.stats.getNotePerformance();
 		}
 		return [];
 	}
 
-	getCreationSourcePerformance(): CreationSourceStats[] {
-		if (this.sqliteStore) {
-			return this.sqliteStore.stats.getCreationSourcePerformance();
-		}
-		return [];
-	}
-
-	/**
-	 * Get retention rate history for line chart
-	 * Retention = (Good + Easy) / Total reviews
-	 */
 	getRetentionHistory(range: StatsTimeRange): RetentionEntry[] {
-		if (!this.sessionPersistence) {
-			return [];
-		}
-		const allStats = this.sessionPersistence.getAllDailyStatsSummary();
+		const allStats = this.getFilteredDailyStats();
 		return this.chartDataCalculator.getRetentionHistory(allStats, range);
 	}
 
@@ -268,7 +344,6 @@ export class StatsCalculatorService {
 
 		switch (range) {
 			case "backlog":
-				// For backlog, show last year
 				startDate.setFullYear(startDate.getFullYear() - 1);
 				break;
 			case "1m":
@@ -288,69 +363,38 @@ export class StatsCalculatorService {
 		return startDate;
 	}
 
-	/**
-	 * Get future due stats with filled-in missing days
-	 * Returns one entry per day for the entire range (30, 90, 365 days)
-	 */
 	getFutureDueStatsFilled(range: StatsTimeRange): FutureDueEntry[] {
-		const allCards = this.flashcardManager.getAllFSRSCards();
-		return this.chartDataCalculator.getFutureDueStatsFilled(allCards, range);
+		const cards = this.getFilteredCards();
+		return this.chartDataCalculator.getFutureDueStatsFilled(cards, range);
 	}
 
-	/**
-	 * Get cards due on a specific date
-	 * @param date ISO date string (YYYY-MM-DD)
-	 */
 	getCardsDueOnDate(date: string): FSRSFlashcardItem[] {
-		const allCards = this.flashcardManager.getAllFSRSCards();
-		return this.chartDataCalculator.getCardsDueOnDate(allCards, date);
+		const cards = this.getFilteredCards();
+		return this.chartDataCalculator.getCardsDueOnDate(cards, date);
 	}
 
-	/**
-	 * Get cards by maturity category
-	 * @param category Category key from CardMaturityBreakdown
-	 */
 	getCardsByCategory(
 		category: keyof CardMaturityBreakdown,
 	): FSRSFlashcardItem[] {
-		const allCards = this.flashcardManager.getAllFSRSCards();
-		return this.maturityCalculator.getCardsByCategory(allCards, category);
+		const cards = this.getFilteredCards();
+		return this.maturityCalculator.getCardsByCategory(cards, category);
 	}
 
-	/**
-	 * Get cards created history with filled-in missing days
-	 * Returns one entry per day for the entire range
-	 * Note: "backlog" range is skipped as it's for future predictions, not creation history
-	 */
 	async getCardsCreatedHistoryFilled(
 		range: StatsTimeRange,
 	): Promise<CardsCreatedEntry[]> {
-		const allCards = this.flashcardManager.getAllFSRSCards();
+		const cards = this.getFilteredCards();
 		return this.chartDataCalculator.getCardsCreatedHistoryFilled(
-			allCards,
+			cards,
 			range,
 		);
 	}
 
-	/**
-	 * Get cards created on a specific date
-	 * @param date ISO date string (YYYY-MM-DD)
-	 */
 	getCardsCreatedOnDate(date: string): FSRSFlashcardItem[] {
-		const allCards = this.flashcardManager.getAllFSRSCards();
-		return this.chartDataCalculator.getCardsCreatedOnDate(allCards, date);
+		const cards = this.getFilteredCards();
+		return this.chartDataCalculator.getCardsCreatedOnDate(cards, date);
 	}
 
-	/**
-	 * Get cards created vs reviewed history for comparison chart
-	 * Shows for each day: created count, reviewed count, and same-day reviewed count
-	 * @param range Time range for the chart
-	 */
-	getCardsCreatedVsReviewedHistory(
-		range: StatsTimeRange,
-	): CardsCreatedVsReviewedEntry[] {
-		return this.chartDataCalculator.getCardsCreatedVsReviewedHistory(range);
-	}
 }
 
 const HEALTH_BUCKETS: { label: string; threshold: number; colorVar: string }[] =

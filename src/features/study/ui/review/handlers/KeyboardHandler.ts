@@ -31,6 +31,7 @@ export interface KeyboardActionCallbacks {
 	onAnswer: (rating: Rating) => Promise<void>;
 	onUndo: () => Promise<void>;
 	onSuspend: () => Promise<void>;
+	onForget: () => Promise<void>;
 	onBuryCard: () => Promise<void>;
 	onBuryNote: () => Promise<void>;
 	onMoveCard: () => Promise<void>;
@@ -118,6 +119,13 @@ export class KeyboardHandler {
 		if (e.shiftKey && e.key === "!") {
 			e.preventDefault();
 			void this.callbacks.onSuspend();
+			return true;
+		}
+
+		// F = Forget card (reset to New + clear history)
+		if (e.key === "f" || e.key === "F") {
+			e.preventDefault();
+			void this.callbacks.onForget();
 			return true;
 		}
 

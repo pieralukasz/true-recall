@@ -26,15 +26,18 @@ export interface PanelHeaderProps {
 	onSelectAll: () => void;
 	onMoveSelected: () => void;
 	onChangeNoteType: () => void;
+	onForgetSelected: () => void;
 	onDeleteSelected: () => void;
 	onSearchChange: (query: string) => void;
 	onExportCsv: () => void;
 	onCopyToClipboard: () => void;
+	onForgetAll: () => void;
 	onDeleteAll: () => void;
 	onOpenSourceNote: () => void;
 	hasHighlights: boolean;
 	onGenerateFromHighlights: () => void;
 	onBrowseDeck: () => void;
+	streamingNewCount?: number;
 }
 
 export function PanelHeader({
@@ -57,15 +60,18 @@ export function PanelHeader({
 	onSelectAll,
 	onMoveSelected,
 	onChangeNoteType,
+	onForgetSelected,
 	onDeleteSelected,
 	onSearchChange,
 	onExportCsv,
 	onCopyToClipboard,
+	onForgetAll,
 	onDeleteAll,
 	onOpenSourceNote,
 	hasHighlights,
 	onGenerateFromHighlights,
 	onBrowseDeck,
+	streamingNewCount = 0,
 }: PanelHeaderProps) {
 	const handleMoreMenu = useCallback(
 		(e: MouseEvent) => {
@@ -117,6 +123,12 @@ export function PanelHeader({
 				menu.addSeparator();
 				menu.addItem((item) =>
 					item
+						.setTitle("Forget all flashcards")
+						.setIcon("rotate-ccw")
+						.onClick(onForgetAll),
+				);
+				menu.addItem((item) =>
+					item
 						.setTitle("Delete all flashcards")
 						.setIcon("trash-2")
 						.onClick(onDeleteAll),
@@ -135,6 +147,7 @@ export function PanelHeader({
 			onBrowseDeck,
 			onCopyToClipboard,
 			onExportCsv,
+			onForgetAll,
 			onDeleteAll,
 		],
 	);
@@ -181,6 +194,13 @@ export function PanelHeader({
 							disabled={!hasSelection}
 						/>
 						<IconButton
+							icon="rotate-ccw"
+							ariaLabel="Forget selected"
+							onClick={onForgetSelected}
+							size="small"
+							disabled={!hasSelection}
+						/>
+						<IconButton
 							icon="trash-2"
 							ariaLabel="Delete selected"
 							onClick={onDeleteSelected}
@@ -194,9 +214,17 @@ export function PanelHeader({
 		);
 	}
 
-	const counts =
+	const baseCounts =
 		cardsWithFsrs.length > 0
 			? countByState(cardsWithFsrs, reviewedToday, dayStartHour)
+			: null;
+	const counts =
+		baseCounts || streamingNewCount > 0
+			? {
+					new: (baseCounts?.new ?? 0) + streamingNewCount,
+					learning: baseCounts?.learning ?? 0,
+					review: baseCounts?.review ?? 0,
+				}
 			: null;
 
 	const badgeCls =
