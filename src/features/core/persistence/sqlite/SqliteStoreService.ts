@@ -80,6 +80,9 @@ export class SqliteStoreService {
 		// Initialize database with sql.js
 		await this.db.init(existingData);
 
+		// Fix corrupted FKs before schema setup so createTables() indexes apply correctly
+		this.cleanupStaleReferences();
+
 		// Schema setup (CREATE TABLE IF NOT EXISTS — safe for existing DBs)
 		const schemaManager = new SqliteSchemaManager(this.db.raw);
 		schemaManager.createTables();
@@ -95,6 +98,62 @@ export class SqliteStoreService {
 		this.noteTypes.refreshBuiltins();
 
 		this.isLoaded = true;
+	}
+
+	private cleanupStaleReferences(): void {
+		try {
+			this.db.run(`DROP TABLE IF EXISTS cards_old`);
+
+			const triggers = this.db.query<{ name: string }>(
+				`SELECT name FROM sqlite_master WHERE type='trigger' AND sql LIKE '%cards_old%'`,
+			);
+			for (const t of triggers) {
+				this.db.run(`DROP TRIGGER IF EXISTS "${t.name}"`);
+			}
+
+			// Fix corrupted FKs — a prior migration renamed cards→cards_old,
+			// and SQLite 3.25+ silently rewrote FKs in review_log to point at cards_old
+			const corrupted = this.db.query<{ name: string; sql: string }>(
+				`SELECT name, sql FROM sqlite_master WHERE type='table' AND sql LIKE '%cards_old%'`,
+			);
+			if (corrupted.length === 0) return;
+
+			// PRAGMA foreign_keys must be set outside transactions (SQLite ignores it inside)
+			this.db.run(`PRAGMA foreign_keys = OFF`);
+			try {
+				for (const table of corrupted) {
+					this.recreateTableWithFixedFk(table.name, table.sql);
+				}
+			} finally {
+				this.db.run(`PRAGMA foreign_keys = ON`);
+			}
+		} catch (e) {
+			console.error("[True Recall] cleanupStaleReferences failed:", e);
+		}
+	}
+
+	private recreateTableWithFixedFk(
+		tableName: string,
+		originalSql: string,
+	): void {
+		const fixedSql = originalSql.replace(/cards_old/g, "cards");
+		const tempName = `${tableName}_fk_fix_temp`;
+
+		this.db.transaction(() => {
+			this.db.run(`ALTER TABLE "${tableName}" RENAME TO "${tempName}"`);
+			this.db.run(fixedSql);
+
+			const cols = this.db.query<{ name: string }>(
+				`PRAGMA table_info("${tempName}")`,
+			);
+			const colNames = cols.map((c) => c.name).join(", ");
+			this.db.run(
+				`INSERT INTO "${tableName}" (${colNames}) SELECT ${colNames} FROM "${tempName}"`,
+			);
+			this.db.run(`DROP TABLE "${tempName}"`);
+		});
+
+		console.log(`[True Recall] Fixed corrupted FK in table: ${tableName}`);
 	}
 
 	isReady(): boolean {
