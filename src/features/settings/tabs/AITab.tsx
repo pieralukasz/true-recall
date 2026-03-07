@@ -1,7 +1,9 @@
 import {
 	DEFAULT_PROMPTS,
+	GENERATION_DENSITY_OPTIONS,
 	GENERATION_LANGUAGES,
 	GENERATION_MODE_LABELS,
+	type GenerationDensity,
 	type GenerationMode,
 } from "@features/ai/prompts/default-prompts";
 import type { SubscriptionStatus } from "@features/integration/services/subscription.service";
@@ -340,6 +342,19 @@ export function AITab() {
 						value={settings.generationLanguage ?? "auto"}
 						onChange={(v) => save({ generationLanguage: v })}
 						options={[...GENERATION_LANGUAGES]}
+					/>
+				</FormField>
+
+				<FormField
+					name="Note generation density"
+					description="Controls how many flashcards are created when generating from an entire note."
+				>
+					<SelectInput
+						value={settings.generationDensity ?? "balanced"}
+						onChange={(v) =>
+							save({ generationDensity: v as GenerationDensity })
+						}
+						options={[...GENERATION_DENSITY_OPTIONS]}
 					/>
 				</FormField>
 
