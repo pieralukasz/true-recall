@@ -163,25 +163,32 @@ export class SqliteSchemaManager {
 	 */
 	private createFts5(): void {
 		try {
+			// sql.js run() is a single-statement API — split each DDL statement into its own call
 			this.db.run(`
 				CREATE VIRTUAL TABLE IF NOT EXISTS notes_fts USING fts5(
 					fields_json,
 					content='notes',
 					content_rowid='rowid'
-				);
+				)
+			`);
 
+			this.db.run(`
 				CREATE TRIGGER IF NOT EXISTS notes_fts_insert AFTER INSERT ON notes BEGIN
 					INSERT INTO notes_fts(rowid, fields_json) VALUES (new.rowid, new.fields_json);
-				END;
+				END
+			`);
 
+			this.db.run(`
 				CREATE TRIGGER IF NOT EXISTS notes_fts_delete AFTER DELETE ON notes BEGIN
 					INSERT INTO notes_fts(notes_fts, rowid, fields_json) VALUES ('delete', old.rowid, old.fields_json);
-				END;
+				END
+			`);
 
+			this.db.run(`
 				CREATE TRIGGER IF NOT EXISTS notes_fts_update AFTER UPDATE OF fields_json ON notes BEGIN
 					INSERT INTO notes_fts(notes_fts, rowid, fields_json) VALUES ('delete', old.rowid, old.fields_json);
 					INSERT INTO notes_fts(rowid, fields_json) VALUES (new.rowid, new.fields_json);
-				END;
+				END
 			`);
 
 			// Rebuild index from existing data (idempotent — safe to run on every load)
@@ -189,9 +196,10 @@ export class SqliteSchemaManager {
 			this.db.run(
 				`INSERT OR REPLACE INTO meta (key, value) VALUES ('fts5_available', '1')`,
 			);
-		} catch {
+		} catch (e) {
 			console.warn(
-				"[True Recall] FTS5 not available in this sql.js build — falling back to LIKE queries",
+				"[True Recall] FTS5 setup failed — falling back to LIKE queries.",
+				e,
 			);
 			this.db.run(
 				`INSERT OR REPLACE INTO meta (key, value) VALUES ('fts5_available', '0')`,
