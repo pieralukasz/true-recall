@@ -1,6 +1,7 @@
+import { signal } from "@preact/signals";
 import { VIEW_TYPE_CARD_BROWSER } from "@shared/constants";
 import { mountPreact } from "@shared/ui/preact";
-import { ItemView, type WorkspaceLeaf } from "obsidian";
+import { ItemView, type ViewStateResult, type WorkspaceLeaf } from "obsidian";
 import { h } from "preact";
 import type TrueRecallPlugin from "../../../../main";
 import { CardBrowserApp } from "./CardBrowserApp";
@@ -8,6 +9,7 @@ import { CardBrowserApp } from "./CardBrowserApp";
 export class CardBrowserView extends ItemView {
 	private plugin: TrueRecallPlugin;
 	private unmountPreact?: () => void;
+	private filterSourceUid = signal<string | null>(null);
 
 	constructor(leaf: WorkspaceLeaf, plugin: TrueRecallPlugin) {
 		super(leaf);
@@ -35,8 +37,16 @@ export class CardBrowserView extends ItemView {
 		this.unmountPreact = mountPreact(
 			container,
 			this.plugin,
-			h(CardBrowserApp, null),
+			h(CardBrowserApp, { filterSourceUid: this.filterSourceUid }),
 		);
+	}
+
+	async setState(state: unknown, result: ViewStateResult): Promise<void> {
+		const s = state as { sourceUid?: string } | undefined;
+		if (s?.sourceUid) {
+			this.filterSourceUid.value = s.sourceUid;
+		}
+		await super.setState(state, result);
 	}
 
 	async onClose(): Promise<void> {

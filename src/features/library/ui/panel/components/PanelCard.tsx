@@ -54,6 +54,7 @@ export interface PanelCardProps {
 	onCopy: () => void;
 	onMove: () => void;
 	onChangeType: () => void;
+	onToggleReversed: () => void;
 	onSelect: () => void;
 	onLongPress: () => void;
 	onJumpToSource?: () => void;
@@ -130,6 +131,7 @@ export function PanelCard(props: PanelCardProps) {
 		onCopy,
 		onMove,
 		onChangeType,
+		onToggleReversed,
 		onSelect,
 		onLongPress: onLongPressProp,
 		onJumpToSource,
@@ -176,6 +178,18 @@ export function PanelCard(props: PanelCardProps) {
 		{ title: "Copy", icon: "copy", onClick: onCopy },
 		{ title: "Move", icon: "folder-input", onClick: onMove },
 		{ title: "Change type", icon: "replace", onClick: onChangeType },
+		...(card.cardType !== "cloze" && card.cardType !== "image-occlusion"
+			? ([
+					{
+						title:
+							card.cardType === "reversed"
+								? "Remove reversed"
+								: "Make reversed",
+						icon: "arrow-left-right",
+						onClick: onToggleReversed,
+					},
+				] as MenuItem[])
+			: []),
 		"separator",
 		{ title: "Delete", icon: "trash-2", onClick: onDelete },
 		...(!isSelectionMode

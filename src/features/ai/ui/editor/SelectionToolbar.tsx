@@ -16,7 +16,6 @@ export interface SelectionToolbarProps {
 const AI_BUTTONS: { mode: GenerationMode; label: string }[] = [
 	{ mode: "basic", label: "Basic" },
 	{ mode: "cloze", label: "Cloze" },
-	{ mode: "reversed", label: "Reversed" },
 	{ mode: "auto", label: "Auto" },
 ];
 

@@ -111,6 +111,18 @@ export class FlashcardPanelView extends ItemView {
 
 			menu.addItem((item) => {
 				item
+					.setTitle("Browse in card browser")
+					.setIcon("table-2")
+					.onClick(() => {
+						const sourceUid = state.flashcardInfo?.sourceUid;
+						if (sourceUid) {
+							void this.plugin.openCardBrowser(sourceUid);
+						}
+					});
+			});
+
+			menu.addItem((item) => {
+				item
 					.setTitle("Copy to clipboard")
 					.setIcon("clipboard-copy")
 					.onClick(() => void this.handleCopyAllToClipboard());

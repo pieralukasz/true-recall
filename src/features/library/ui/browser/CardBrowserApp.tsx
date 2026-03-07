@@ -1,7 +1,7 @@
 import { CardBrowserQueryService } from "@features/library/services/card-browser-query.service";
 import { notifyDuplicateError } from "@features/library/ui/panel/utils/panel-helpers";
 import { DuplicateQuestionError } from "@features/study/services/flashcard/card-repository.service";
-import { useComputed, useSignal } from "@preact/signals";
+import { type Signal, useComputed, useSignal } from "@preact/signals";
 import { notify } from "@shared/services/notification.service";
 import { cards, pluginSettings } from "@shared/services/reactive-card-store";
 import { notifyCardChange } from "@shared/services/signals";
@@ -31,7 +31,11 @@ import {
 
 const PAGE_SIZE = BROWSER_PAGE_SIZE;
 
-export function CardBrowserApp() {
+interface CardBrowserAppProps {
+	filterSourceUid?: Signal<string | null>;
+}
+
+export function CardBrowserApp({ filterSourceUid }: CardBrowserAppProps) {
 	const plugin = usePlugin();
 
 	const searchText = useSignal("");
@@ -46,6 +50,15 @@ export function CardBrowserApp() {
 	const loadedLimit = useSignal(PAGE_SIZE);
 
 	const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+	useEffect(() => {
+		if (!filterSourceUid) return;
+		const uid = filterSourceUid.value;
+		if (!uid) return;
+
+		sidebarFilter.value = { ...EMPTY_FILTER, sourceUids: [uid] };
+		filterSourceUid.value = null;
+	}, [filterSourceUid?.value]);
 
 	const queryService = useMemo(
 		() =>
