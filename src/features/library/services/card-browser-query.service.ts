@@ -24,21 +24,24 @@ export class CardBrowserQueryService {
 		offset: number,
 	): BrowserResult {
 		// Resolve note: filters from note names to source UIDs
-		let resolvedFilter = this.resolveNoteFilters(filter);
+		const resolvedFilter = this.resolveNoteFilters(filter);
 
-		if (resolvedFilter.orphanedOnly) {
-			const orphanedUids = this.getOrphanedSourceUids();
-			if (orphanedUids.length === 0) return { cards: [], totalCount: 0 };
-			resolvedFilter = {
-				...resolvedFilter,
-				sourceUids: [...resolvedFilter.sourceUids, ...orphanedUids],
-			};
-		}
-
+		// Don't pass orphaned UIDs via sourceUids — we build the clause manually
 		const fts5Available = this.cardStore.notes.isFts5Available();
 		const sqlQuery = buildBrowserQuery(resolvedFilter, sort, limit, offset, {
 			fts5Available,
 		});
+
+		if (resolvedFilter.orphanedOnly) {
+			const orphanedUids = this.getOrphanedSourceUids();
+			const conditions: string[] = ["c.source_uid IS NULL"];
+			if (orphanedUids.length > 0) {
+				const placeholders = orphanedUids.map(() => "?").join(",");
+				conditions.push(`c.source_uid IN (${placeholders})`);
+				sqlQuery.params.push(...orphanedUids);
+			}
+			sqlQuery.where += ` AND (${conditions.join(" OR ")})`;
+		}
 
 		const archivedUids = this.getArchivedSourceUids(
 			!!resolvedFilter.showArchived,
@@ -124,13 +127,16 @@ export class CardBrowserQueryService {
 		return { states, cardTypes, createdVia, sourceNotes };
 	}
 
-	/** Card IDs whose sourceUid no longer resolves to a vault note */
+	/** Card IDs with no linked source note (null sourceUid or unresolved) */
 	getOrphanedCardIds(): string[] {
 		const allCards = this.cardStore.cards.getAll();
 		const orphanedIds: string[] = [];
 
 		for (const card of allCards) {
-			if (!card.sourceUid) continue;
+			if (!card.sourceUid) {
+				orphanedIds.push(card.id);
+				continue;
+			}
 			const file = this.frontmatterIndex.getFileByValue(
 				"flashcard_uid",
 				card.sourceUid,

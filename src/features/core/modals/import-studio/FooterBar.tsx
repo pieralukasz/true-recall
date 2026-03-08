@@ -30,7 +30,7 @@ export function FooterBar({
 						ref={helpIconRef}
 						role="button"
 						tabIndex={0}
-						class="ep:flex ep:items-center ep:text-obs-faint ep:hover:text-obs-muted ep:cursor-pointer [&>svg]:ep:w-3.5 [&>svg]:ep:h-3.5"
+						class="ep:flex ep:items-center ep:w-3.5 ep:h-3.5 ep:text-obs-faint ep:hover:text-obs-muted ep:cursor-pointer [&>svg]:ep:w-3.5 [&>svg]:ep:h-3.5"
 						onClick={() => setShowHelp((v) => !v)}
 						onKeyDown={(e) => {
 							if (e.key === "Enter" || e.key === " ") {
