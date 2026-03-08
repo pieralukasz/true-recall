@@ -1,15 +1,8 @@
 import { Clickable } from "@shared/ui/components/Clickable";
 import { usePlugin } from "@shared/ui/preact";
 import { useCallback } from "preact/hooks";
-import type { DashboardNoteEntry, NotePriority } from "../types";
-
-const PRIORITY_BG: Record<NotePriority, string> = {
-	overdue: "ep:bg-obs-red/10",
-	hot: "ep:bg-obs-orange/10",
-	due: "ep:bg-obs-blue/10",
-	light: "ep:bg-obs-green/10",
-	done: "ep:bg-obs-modifier-hover",
-};
+import type { DashboardNoteEntry } from "../types";
+import { MiniDonut } from "./MiniDonut";
 
 interface RecentlyStudiedBarProps {
 	notes: DashboardNoteEntry[];
@@ -36,17 +29,24 @@ export function RecentlyStudiedBar({ notes }: RecentlyStudiedBarProps) {
 
 	return (
 		<div class="ep:flex ep:items-center ep:gap-2 ep:px-1 ep:overflow-hidden">
-			<span class="ep:text-ui-smaller ep:font-semibold ep:text-obs-muted ep:uppercase ep:tracking-wider ep:shrink-0">
+			<span class="ep:text-sm ep:text-obs-muted ep:shrink-0 ep:py-1">
 				Recently Studied
 			</span>
 			<div class="ep:flex ep:items-center ep:gap-1.5 ep:overflow-x-auto ep:min-w-0">
 				{notes.map((note) => (
 					<Clickable
 						key={note.name}
-						class={`ep:shrink-0 ep:px-2.5 ep:py-1 ep:text-ui-smaller ep:text-obs-muted ep:rounded-full ${PRIORITY_BG[note.priority]} ep:hover:bg-obs-modifier-hover ep:hover:text-obs-normal ep:transition-colors ep:truncate ep:max-w-[180px]`}
+						class="ep:shrink-0 ep:inline-flex ep:items-center ep:gap-1.5 ep:pl-1.5 ep:pr-2.5 ep:py-0.5 ep:text-xs ep:text-obs-muted ep:rounded-full ep:bg-obs-modifier-hover/50 ep:hover:bg-obs-modifier-hover ep:hover:text-obs-normal ep:transition-colors ep:max-w-[200px]"
 						onClick={() => handleClick(note)}
+						title={`${note.due} due, ${note.newCount} new, ${note.learning} learning / ${note.total} total`}
 					>
-						{note.name}
+						<MiniDonut
+							due={note.due}
+							newCount={note.newCount}
+							learning={note.learning}
+							total={note.total}
+						/>
+						<span class="ep:truncate">{note.name}</span>
 					</Clickable>
 				))}
 			</div>

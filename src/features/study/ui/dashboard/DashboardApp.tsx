@@ -16,6 +16,7 @@ import { HeatmapWidget } from "../editor/widgets/analytics/HeatmapWidget";
 import { BottomActionBar } from "./components/BottomActionBar";
 import { DashboardTabs } from "./components/DashboardTabs";
 import { NoteList } from "./components/NoteList";
+import { OrphanedCardsBar } from "./components/OrphanedCardsBar";
 import { ProjectsTab } from "./components/ProjectsTab";
 import { RecentlyStudiedBar } from "./components/RecentlyStudiedBar";
 import { TodayActionBar } from "./components/TodayActionBar";
@@ -283,6 +284,12 @@ export function DashboardApp() {
 					{projectData.recentlyStudied.length > 0 && (
 						<div {...sectionProps()}>
 							<RecentlyStudiedBar notes={projectData.recentlyStudied} />
+						</div>
+					)}
+
+					{data.orphanedCards.total > 0 && (
+						<div {...sectionProps()}>
+							<OrphanedCardsBar stats={data.orphanedCards} />
 						</div>
 					)}
 

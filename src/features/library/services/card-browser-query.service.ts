@@ -24,7 +24,16 @@ export class CardBrowserQueryService {
 		offset: number,
 	): BrowserResult {
 		// Resolve note: filters from note names to source UIDs
-		const resolvedFilter = this.resolveNoteFilters(filter);
+		let resolvedFilter = this.resolveNoteFilters(filter);
+
+		if (resolvedFilter.orphanedOnly) {
+			const orphanedUids = this.getOrphanedSourceUids();
+			if (orphanedUids.length === 0) return { cards: [], totalCount: 0 };
+			resolvedFilter = {
+				...resolvedFilter,
+				sourceUids: [...resolvedFilter.sourceUids, ...orphanedUids],
+			};
+		}
 
 		const fts5Available = this.cardStore.notes.isFts5Available();
 		const sqlQuery = buildBrowserQuery(resolvedFilter, sort, limit, offset, {
@@ -130,6 +139,24 @@ export class CardBrowserQueryService {
 		}
 
 		return orphanedIds;
+	}
+
+	/** Unique source UIDs that no longer resolve to a vault note */
+	private getOrphanedSourceUids(): string[] {
+		const allCards = this.cardStore.cards.getAll();
+		const orphanedUids = new Set<string>();
+
+		for (const card of allCards) {
+			if (!card.sourceUid) continue;
+			if (orphanedUids.has(card.sourceUid)) continue;
+			const file = this.frontmatterIndex.getFileByValue(
+				"flashcard_uid",
+				card.sourceUid,
+			);
+			if (!file) orphanedUids.add(card.sourceUid);
+		}
+
+		return [...orphanedUids];
 	}
 
 	private getArchivedSourceUids(showArchived: boolean): Set<string> {

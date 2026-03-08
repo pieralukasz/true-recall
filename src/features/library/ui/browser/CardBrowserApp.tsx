@@ -33,9 +33,13 @@ const PAGE_SIZE = BROWSER_PAGE_SIZE;
 
 interface CardBrowserAppProps {
 	filterSourceUid?: Signal<string | null>;
+	filterOrphaned?: Signal<boolean>;
 }
 
-export function CardBrowserApp({ filterSourceUid }: CardBrowserAppProps) {
+export function CardBrowserApp({
+	filterSourceUid,
+	filterOrphaned,
+}: CardBrowserAppProps) {
 	const plugin = usePlugin();
 
 	const searchText = useSignal("");
@@ -59,6 +63,14 @@ export function CardBrowserApp({ filterSourceUid }: CardBrowserAppProps) {
 		sidebarFilter.value = { ...EMPTY_FILTER, sourceUids: [uid] };
 		filterSourceUid.value = null;
 	}, [filterSourceUid?.value]);
+
+	useEffect(() => {
+		if (!filterOrphaned) return;
+		if (!filterOrphaned.value) return;
+
+		sidebarFilter.value = { ...EMPTY_FILTER, orphanedOnly: true };
+		filterOrphaned.value = false;
+	}, [filterOrphaned?.value]);
 
 	const queryService = useMemo(
 		() =>
@@ -87,6 +99,8 @@ export function CardBrowserApp({ filterSourceUid }: CardBrowserAppProps) {
 				...sidebarFilter.value.negatedStates,
 			],
 			showArchived: showArchived.value,
+			orphanedOnly:
+				parsed.orphanedOnly || sidebarFilter.value.orphanedOnly,
 		};
 	});
 

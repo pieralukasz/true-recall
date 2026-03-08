@@ -116,7 +116,7 @@ export class FlashcardPanelView extends ItemView {
 					.onClick(() => {
 						const sourceUid = state.flashcardInfo?.sourceUid;
 						if (sourceUid) {
-							void this.plugin.openCardBrowser(sourceUid);
+							void this.plugin.openCardBrowser({ sourceUid });
 						}
 					});
 			});
