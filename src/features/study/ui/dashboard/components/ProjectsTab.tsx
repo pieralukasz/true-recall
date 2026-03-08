@@ -434,19 +434,25 @@ export function ProjectsTab({
 									onRename={() =>
 										item.note.path ? handleRename(item.note.path) : undefined
 									}
-									onDetach={() => {
-										if (!item.note.path) return;
-										const file = plugin.app.vault.getAbstractFileByPath(
-											item.note.path,
-										);
-										if (!(file instanceof TFile)) return;
-										const parentName =
-											item.projectPath.split("/").pop()?.replace(/\.md$/, "") ??
-											"";
-										void plugin.flashcardManager
-											.getFrontmatterService()
-											.removeParent(file, parentName);
-									}}
+									onDetach={
+										item.projectPath !== UNASSIGNED_PATH
+											? () => {
+													if (!item.note.path) return;
+													const file = plugin.app.vault.getAbstractFileByPath(
+														item.note.path,
+													);
+													if (!(file instanceof TFile)) return;
+													const parentName =
+														item.projectPath
+															.split("/")
+															.pop()
+															?.replace(/\.md$/, "") ?? "";
+													void plugin.flashcardManager
+														.getFrontmatterService()
+														.removeParent(file, parentName);
+											  }
+											: undefined
+									}
 								/>
 							</div>
 						);
