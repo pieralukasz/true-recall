@@ -23,14 +23,14 @@ export function FooterBar({
 
 	return (
 		<div class="ep-modal-footer ep:flex ep:items-center ep:gap-2">
-			<div class="ep:flex ep:items-center ep:gap-1.5">
+			<div class="ep:flex ep:items-center ep:gap-2">
 				<CopyPromptButton />
-				<div class="ep:relative">
+				<div class="ep:relative ep:flex ep:items-center">
 					<div
 						ref={helpIconRef}
 						role="button"
 						tabIndex={0}
-						class="ep:text-obs-faint ep:hover:text-obs-muted ep:cursor-pointer [&>svg]:ep:w-3.5 [&>svg]:ep:h-3.5"
+						class="ep:flex ep:items-center ep:text-obs-faint ep:hover:text-obs-muted ep:cursor-pointer [&>svg]:ep:w-3.5 [&>svg]:ep:h-3.5"
 						onClick={() => setShowHelp((v) => !v)}
 						onKeyDown={(e) => {
 							if (e.key === "Enter" || e.key === " ") {
@@ -39,9 +39,7 @@ export function FooterBar({
 							}
 						}}
 					/>
-					{showHelp && (
-						<HelpPopover onClose={() => setShowHelp(false)} />
-					)}
+					{showHelp && <HelpPopover onClose={() => setShowHelp(false)} />}
 				</div>
 			</div>
 
@@ -89,17 +87,13 @@ function HelpPopover({ onClose }: { onClose: () => void }) {
 			ref={ref}
 			class="ep:absolute ep:left-0 ep:bottom-8 ep:z-50 ep:w-[300px] ep:p-3 ep:bg-obs-primary ep:border ep:border-obs-border ep:rounded-lg ep:shadow-lg ep:text-ui-smaller"
 		>
-			<div class="ep:font-semibold ep:mb-2">
-				How to generate flashcards
-			</div>
+			<div class="ep:font-semibold ep:mb-2">How to generate flashcards</div>
 			<ol class="ep:space-y-1.5 ep:text-obs-muted ep:list-decimal ep:pl-4">
 				<li>
-					Click <span class="ep:text-obs-normal">Copy Prompt</span> to
-					copy the AI prompt
+					Click <span class="ep:text-obs-normal">Copy Prompt</span> to copy the
+					AI prompt
 				</li>
-				<li>
-					Paste the prompt into ChatGPT, Claude, or any AI chat
-				</li>
+				<li>Paste the prompt into ChatGPT, Claude, or any AI chat</li>
 				<li>Add your note text after the prompt and send</li>
 				<li>Copy the AI response and paste it into the editor above</li>
 			</ol>

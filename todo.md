@@ -34,3 +34,45 @@ Feature: Hands-Free Voice AI mode
   LLM ocenia poprawność odpowiedzi (semantycznie, nie literalnie) → podaje prawidłową odpowiedź →
   automatycznie wybiera odpowiedni interwał FSRS (Again/Hard/Good/Easy) bez dotykania ekranu.
   Przydatne do: nauki języków, medycyny, prawa — wszystkiego wymagającego aktywnego przypominania.
+
+---
+Analiza: True Recall vs RemNote
+
+Typy kart (Flashcard Types)
+
+  | Feature                | RemNote                       | True Recall  |
+  |------------------------|-------------------------------|--------------|
+  | Basic (Q&A)            | ✅ (>> lub ==)                | ✅ (::)      |
+  | Concept card           | ✅ (::)                       | ❌           |
+  | Descriptor card        | ✅ (;;)                       | ❌           |
+  | Reversed/bidirectional | ✅                            | ✅ (:::)     |
+  | Cloze                  | ✅ ({{)                       | ✅ ({{c1::}})|
+  | Multiple-choice        | ✅                            | ❌           |
+  | List cards             | ✅                            | ❌           |
+  | Card Clusters          | ✅ (kontekst sąsiednich kart) | ❌           |
+  | Image Occlusion        | ✅ (Pro)                      | ✅           |
+  | Multi-line cards       | ✅ (>>>)                      | ✅           |
+
+  Kluczowa różnica: RemNote ma więcej typów kart, szczególnie Card Clusters — gdy
+  pokazuje kartę, wyświetla kontekst sąsiednich kart w szarym kolorze. To bardzo ciekawy
+  pomysł na uczenie się w kontekście.
+
+Podsumowanie — gdzie jesteś silny, gdzie masz lukę
+
+  True Recall wygrywa:
+  - FSRS v6 (vs ich własny, słabszy algorytm)
+  - Zaawansowane narzędzia schedulingowe (optimizer, simulator, easy days, breaks)
+  - Open source + offline-first
+  - NL Query
+  - Import Studio
+
+  RemNote wygrywa:
+  - AI Tutor podczas nauki (to duży gap)
+  - Exam scheduling (killer feature dla studentów)
+  - PDF + nagrania jako źródło kart
+  - Card Clusters (kontekst sąsiednich kart)
+  - Multiple-choice cards
+  - Mobile + Web (dostępność)
+  - Wyjaśnienia/mnemoniki automatycznie per karta
+
+  Największe luki do zasypania: AI Tutor, Exam Scheduling, generowanie z PDF.

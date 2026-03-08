@@ -13,7 +13,7 @@ export function CopyPromptButton() {
 
 	return (
 		<Clickable
-			class="ep:text-ui-smaller ep:text-obs-muted ep:hover:text-obs-accent ep:transition-colors"
+			class="ep:text-ui-smaller ep:text-obs-muted ep:hover:text-obs-accent ep:transition-colors "
 			onClick={handleCopy}
 		>
 			{copied ? "Copied!" : "Copy Prompt"}
