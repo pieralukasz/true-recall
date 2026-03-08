@@ -193,6 +193,7 @@ export function useSelectionActions({
 
 		const cardIds = Array.from(selectedCardIds);
 		const count = plugin.cardStore.cards.bulkForget(cardIds);
+		plugin.sessionPersistence?.removeReviewedCards(cardIds);
 		notifyCardChange({ type: "bulk", cardIds, action: "reset" });
 		panel.exitSelectionMode();
 		notify().cardsForgotten(count);
@@ -211,6 +212,7 @@ export function useSelectionActions({
 
 		const cardIds = flashcardInfo.flashcards.map((card) => card.id);
 		const forgotten = plugin.cardStore.cards.bulkForget(cardIds);
+		plugin.sessionPersistence?.removeReviewedCards(cardIds);
 		notifyCardChange({ type: "bulk", cardIds, action: "reset" });
 		notify().cardsForgotten(forgotten);
 	}, [flashcardInfo, plugin]);
