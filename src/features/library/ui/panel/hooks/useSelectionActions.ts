@@ -255,6 +255,10 @@ export function useSelectionActions({
 
 		const cardIds = Array.from(selectedCardIds);
 		const count = plugin.cardStore.cards.bulkForget(cardIds);
+		if (count === 0) {
+			notify().warning("Forget is only available for non-New cards");
+			return;
+		}
 		plugin.sessionPersistence?.removeReviewedCards(cardIds);
 		notifyCardChange({ type: "bulk", cardIds, action: "reset" });
 		panel.exitSelectionMode();
@@ -274,6 +278,10 @@ export function useSelectionActions({
 
 		const cardIds = flashcardInfo.flashcards.map((card) => card.id);
 		const forgotten = plugin.cardStore.cards.bulkForget(cardIds);
+		if (forgotten === 0) {
+			notify().warning("Forget is only available for non-New cards");
+			return;
+		}
 		plugin.sessionPersistence?.removeReviewedCards(cardIds);
 		notifyCardChange({ type: "bulk", cardIds, action: "reset" });
 		notify().cardsForgotten(forgotten);
