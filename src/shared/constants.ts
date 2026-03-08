@@ -164,7 +164,7 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 	autoBackupOnLoad: false,
 	maxBackups: 10,
 
-	periodicBackupEnabled: false,
+	periodicBackupEnabled: true,
 	backupIntervalMinutes: 60,
 	activityTriggeredBackup: false,
 	reviewsBeforeBackup: 50,

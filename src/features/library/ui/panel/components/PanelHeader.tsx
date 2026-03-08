@@ -27,6 +27,8 @@ export interface PanelHeaderProps {
 	onMoveSelected: () => void;
 	onChangeNoteType: () => void;
 	onRewriteSelected: () => void;
+	onSuspendSelected: () => void;
+	onUnsuspendSelected: () => void;
 	onForgetSelected: () => void;
 	onDeleteSelected: () => void;
 	onSearchChange: (query: string) => void;
@@ -62,6 +64,8 @@ export function PanelHeader({
 	onMoveSelected,
 	onChangeNoteType,
 	onRewriteSelected,
+	onSuspendSelected,
+	onUnsuspendSelected,
 	onForgetSelected,
 	onDeleteSelected,
 	onSearchChange,
@@ -199,6 +203,20 @@ export function PanelHeader({
 							icon="sparkles"
 							ariaLabel="AI Rewrite selected"
 							onClick={onRewriteSelected}
+							size="small"
+							disabled={!hasSelection}
+						/>
+						<IconButton
+							icon="pause"
+							ariaLabel="Suspend selected"
+							onClick={onSuspendSelected}
+							size="small"
+							disabled={!hasSelection}
+						/>
+						<IconButton
+							icon="play"
+							ariaLabel="Unsuspend selected"
+							onClick={onUnsuspendSelected}
 							size="small"
 							disabled={!hasSelection}
 						/>

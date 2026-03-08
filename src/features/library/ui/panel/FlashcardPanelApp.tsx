@@ -59,6 +59,8 @@ export function FlashcardPanelApp({
 			onChangeType: cardActions.handleChangeType,
 			onToggleReversed: cardActions.handleToggleReversed,
 			onForgetCard: cardActions.handleForgetCard,
+			onSuspendCard: cardActions.handleSuspendCard,
+			onUnsuspendCard: cardActions.handleUnsuspendCard,
 			onRewriteCard: cardActions.handleRewriteCard,
 			onToggleExpand: cardActions.handleToggleExpand,
 			onToggleSelect: selectionActions.handleToggleSelect,
@@ -123,6 +125,8 @@ export function FlashcardPanelApp({
 							onMoveSelected={selectionActions.handleMoveSelected}
 							onChangeNoteType={selectionActions.handleChangeNoteType}
 							onRewriteSelected={selectionActions.handleRewriteSelected}
+							onSuspendSelected={selectionActions.handleSuspendSelected}
+							onUnsuspendSelected={selectionActions.handleUnsuspendSelected}
 							onForgetSelected={selectionActions.handleForgetSelected}
 							onDeleteSelected={selectionActions.handleDeleteSelected}
 							onSearchChange={panelActions.handleSearchChange}

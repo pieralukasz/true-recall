@@ -280,6 +280,28 @@ export function useCardActions({
 		[plugin],
 	);
 
+	const handleSuspendCard = useCallback(
+		(card: FlashcardItem) => {
+			plugin.cardStore.cards.bulkSuspend([card.id]);
+			notifyCardChange({ type: "bulk", cardIds: [card.id], action: "suspend" });
+			notify().success("Card suspended");
+		},
+		[plugin],
+	);
+
+	const handleUnsuspendCard = useCallback(
+		(card: FlashcardItem) => {
+			plugin.cardStore.cards.bulkUnsuspend([card.id]);
+			notifyCardChange({
+				type: "bulk",
+				cardIds: [card.id],
+				action: "unsuspend",
+			});
+			notify().success("Card unsuspended");
+		},
+		[plugin],
+	);
+
 	const handleRewriteCard = useCallback(
 		async (card: FlashcardItem) => {
 			const fsrsCard = findFsrsCard(card.id);
@@ -348,6 +370,8 @@ export function useCardActions({
 		handleChangeType,
 		handleToggleReversed,
 		handleForgetCard,
+		handleSuspendCard,
+		handleUnsuspendCard,
 		handleRewriteCard,
 		handleToggleExpand,
 	};
