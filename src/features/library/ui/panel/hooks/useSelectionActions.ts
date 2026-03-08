@@ -199,21 +199,37 @@ export function useSelectionActions({
 		);
 		if (selectedCards.length === 0) return;
 
+		// Resolve noteTypeId for each card via note lookup
+		const cardIds = Array.from(selectedCardIds);
+		const noteInfos = plugin.cardStore.cards.getNoteInfoForCardIds(cardIds);
+		if (noteInfos.length === 0) return;
+
+		const uniqueTypeIds = new Set(noteInfos.map((n) => n.noteTypeId));
+		if (uniqueTypeIds.size > 1) {
+			notify().error(
+				"Selected cards have different note types. Select cards of one type.",
+			);
+			return;
+		}
+
+		const noteTypeId = noteInfos[0]!.noteTypeId;
+
 		const service = new RewriteService(
 			() => plugin.settings,
 			(slug) => plugin.flashcardManager.getNoteTypeBySlug(slug),
-			() => plugin.cardStore.noteTypes.getAll(),
+			(id) => plugin.cardStore.noteTypes.getById(id),
 		);
 
-		const cardsWithFsrs = plugin.cardStore.cards.getAll();
+		const allCards = plugin.cardStore.cards.getAll();
 		const rewriteCards = selectedCards.map((card) => {
-			const fsrs = cardsWithFsrs.find((c) => c.id === card.id);
+			const fsrsData = allCards.find((c) => c.id === card.id);
 			return {
 				id: card.id,
 				question: card.question,
 				answer: card.answer ?? "",
-				sourceUid: fsrs?.fsrs.sourceUid,
-				createdAt: fsrs?.fsrs.createdAt,
+				sourceUid: fsrsData?.sourceUid,
+				createdAt: fsrsData?.createdAt,
+				noteTypeId,
 			};
 		});
 
@@ -224,7 +240,6 @@ export function useSelectionActions({
 				plugin.flashcardManager,
 				(ids) => plugin.cardStore.cards.bulkSuspend(ids),
 			);
-			const cardIds = Array.from(selectedCardIds);
 			notifyCardChange({ type: "bulk", cardIds, action: "update" });
 			panel.exitSelectionMode();
 			notify().success(`Split into ${result.created} card(s)`);

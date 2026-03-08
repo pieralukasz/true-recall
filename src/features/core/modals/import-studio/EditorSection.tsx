@@ -6,7 +6,7 @@ import type { App } from "obsidian";
 import { useCallback, useEffect, useRef } from "preact/hooks";
 import { buildPlaceholder } from "./placeholder";
 
-const BLANK_CARD_TEMPLATE = "#type/basic\nFront: \nBack: \n---\n";
+const BLANK_CARD_TEMPLATE = "#type/basic\nFront: \nBack: \n\n---\n";
 const CURSOR_OFFSET_AFTER_FRONT = "#type/basic\nFront: ".length;
 
 function insertBlankCard(view: EditorView): boolean {
@@ -76,18 +76,19 @@ export function EditorSection({
 			onEditorFocusRef.current(editor.cm);
 		};
 		const onKeyDown = (e: KeyboardEvent) => {
-			if ((e.metaKey || e.ctrlKey) && e.key === "3") {
+			const mod = e.metaKey || e.ctrlKey;
+			if (mod && (e.key === "3" || e.code === "Digit3")) {
 				e.preventDefault();
 				e.stopPropagation();
 				insertBlankCard(editor.cm);
 			}
 		};
 		editor.cm.contentDOM.addEventListener("focusin", onFocusIn);
-		editor.cm.contentDOM.addEventListener("keydown", onKeyDown, true);
+		el.addEventListener("keydown", onKeyDown, true);
 		editor.cm.focus();
 
 		return () => {
-			editor.cm.contentDOM.removeEventListener("keydown", onKeyDown, true);
+			el.removeEventListener("keydown", onKeyDown, true);
 			editor.cm.contentDOM.removeEventListener("focusin", onFocusIn);
 			editorRef.current = null;
 			onEditorReadyRef.current(null);

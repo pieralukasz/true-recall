@@ -125,6 +125,10 @@ export interface FSRSPreset {
 	newCardOrder?: NewCardOrder;
 	reviewOrder?: ReviewOrder;
 	newReviewMix?: NewReviewMix;
+
+	// Sibling burying (Anki-style) — after answering an IO or cloze card,
+	// bury remaining cards from the same note until next day
+	burySiblings?: boolean;
 }
 
 /**

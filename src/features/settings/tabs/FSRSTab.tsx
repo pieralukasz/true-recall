@@ -53,6 +53,7 @@ export function FSRSTab({ selectedPresetId, onPresetChange }: FSRSTabProps) {
 			newCardOrder: preset.newCardOrder,
 			reviewOrder: preset.reviewOrder,
 			newReviewMix: preset.newReviewMix,
+			burySiblings: preset.burySiblings,
 		});
 		onPresetChange(newPreset.id);
 		refresh();

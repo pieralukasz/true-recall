@@ -159,6 +159,11 @@ export class AnswerHandler {
 			requeueData,
 		);
 
+		// Auto-bury siblings (IO + cloze) if enabled
+		const buriedSiblings = preset.burySiblings !== false
+			? this.burySiblingCards(card)
+			: [];
+
 		if (hasMore) {
 			this.updateSchedulingPreview();
 		}
@@ -186,6 +191,8 @@ export class AnswerHandler {
 				rating,
 				previousState,
 				requeuedAtIndex: requeueData?.position,
+				buriedSiblingIds: buriedSiblings.length > 0 ? buriedSiblings.map(s => s.id) : undefined,
+				buriedSiblings: buriedSiblings.length > 0 ? buriedSiblings : undefined,
 			},
 			cancelPendingWrite: () => {
 				if (!writeExecuted && pendingTimeoutId !== null) {
@@ -229,6 +236,37 @@ export class AnswerHandler {
 	}
 
 	/**
+	 * Remove sibling IO/cloze cards from the queue after answering one.
+	 * Returns the removed cards so they can be restored on undo.
+	 */
+	private burySiblingCards(card: FSRSFlashcardItem): FSRSFlashcardItem[] {
+		if (card.cardType !== "image-occlusion" && card.cardType !== "cloze") {
+			return [];
+		}
+		if (!card.noteId) return [];
+
+		const review = this.deps.getReview();
+		const queue = review.queue;
+		const currentIdx = review.currentIndex;
+
+		// Find siblings: same noteId, different id, still ahead in queue
+		const siblings: FSRSFlashcardItem[] = [];
+		for (let i = currentIdx; i < queue.length; i++) {
+			const c = queue[i];
+			if (c && c.id !== card.id && c.noteId === card.noteId) {
+				siblings.push({ ...c });
+			}
+		}
+
+		// Remove siblings from queue
+		for (const sibling of siblings) {
+			review.removeCardById(sibling.id);
+		}
+
+		return siblings;
+	}
+
+	/**
 	 * Anki-style leech detection: triggers at threshold, then every half-threshold after.
 	 * E.g. with threshold=8: triggers at lapses 8, 12, 16, 20, ...
 	 */
@@ -264,6 +302,14 @@ export class AnswerHandler {
 					payload.rating,
 					payload.previousState,
 				);
+			}
+
+			// Restore buried siblings back into the queue before undoing the answer
+			if (payload.buriedSiblings && payload.buriedSiblings.length > 0) {
+				const review = this.deps.getReview();
+				for (const sibling of payload.buriedSiblings) {
+					review.insertCardAtPosition(sibling, review.queue.length);
+				}
 			}
 
 			this.deps

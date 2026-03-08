@@ -199,67 +199,84 @@ function getFieldDescription(noteType: NoteType, field: string): string {
 
 /**
  * Build a prompt for rewriting/splitting existing flashcards into atomic ones.
+ * Accepts a single NoteType — output cards must match the original's type.
  */
-export function buildRewritePrompt(noteTypes: NoteType[]): string {
-	const filtered = noteTypes.filter(
-		(nt) => !(nt.type === 0 && nt.templates.length > 1),
-	);
-
-	const typeFormats = filtered.map((nt) => {
-		const slug = resolveSlug(nt);
-		const fields = nt.fields.map((f) => `${f}: [value]`).join("\n");
-		const hint = getTypeHint(nt);
-		return `${nt.name} (#type/${slug})${hint}
-\`\`\`
-#type/${slug}
-${fields}
-<!-- source: [original card's question as reference] -->
----
-\`\`\``;
-	});
+export function buildRewritePrompt(noteType: NoteType): string {
+	const slug = resolveSlug(noteType);
+	const isCloze = noteType.type === 1;
+	const formatSection = buildFormatSection(noteType, slug);
+	const typeSpecificRules = isCloze ? `\n${CLOZE_RULES}\n` : "";
+	const inputFields = noteType.fields
+		.map((f) => `${f}: [value]`)
+		.join("\n");
+	const example = buildRewriteExample(noteType, slug);
 
 	return `You are an expert in Spaced Repetition Systems. Your task is to REWRITE/SPLIT existing flashcard(s) into multiple atomic flashcards.
 
 The user will provide existing flashcard(s) as:
 #existing
-Front: [question]
-Back: [answer]
+${inputFields}
 ---
 
-Transform each into atomic, high-retention flashcards using one of these output formats:
+Transform each into atomic, high-retention flashcards using this output format:
 
-${typeFormats.join("\n\n")}
+OUTPUT FORMAT:
+${formatSection}
 
 ${SHARED_RULES}
-
-${CLOZE_RULES}
-
+${typeSpecificRules}
 REWRITE-SPECIFIC RULES:
 - If the card is already atomic and well-formed, return it as-is in the output format.
-- Use the original card's question text as the source reference in <!-- source: ... -->.
-- Choose the card type that best supports memorization for each fact.
+- Use the original card's first field text as the source reference in <!-- source: ... -->.
+- Output ONLY cards using the #type/${slug} format. Do NOT change the card type.
 
-EXAMPLE:
+${example}`;
+}
+
+function buildRewriteExample(noteType: NoteType, slug: string): string {
+	const isCloze = noteType.type === 1;
+
+	if (isCloze) {
+		return `EXAMPLE:
 Input:
 #existing
-Front: What are the symptoms of [[flu]]?
-Back: High fever, cough, and muscle pain
+${noteType.fields[0]}: The [[blood-brain barrier]] is formed by {{c1::endothelial cells}} and selectively allows {{c2::glucose}} and amino acids to pass
+${noteType.fields[1] ? `${noteType.fields[1]}: While blocking most pathogens` : ""}
 ---
 
 Output:
-#type/basic
-Front: What **[[body temperature]]** symptom occurs in [[flu]]?
-Back: High fever
+#type/${slug}
+${noteType.fields[0]}: The [[blood-brain barrier]] is formed primarily by {{c1::endothelial cells}}
+${noteType.fields[1] ? `${noteType.fields[1]}: ` : ""}
+<!-- source: The blood-brain barrier is formed by endothelial cells and selectively allows glucose and amino acids to pass -->
+---
+#type/${slug}
+${noteType.fields[0]}: The [[blood-brain barrier]] allows {{c1::glucose}} and {{c2::amino acids}} to pass selectively
+${noteType.fields[1] ? `${noteType.fields[1]}: While blocking most pathogens` : ""}
+<!-- source: The blood-brain barrier is formed by endothelial cells and selectively allows glucose and amino acids to pass -->`;
+	}
+
+	return `EXAMPLE:
+Input:
+#existing
+${noteType.fields[0]}: What are the symptoms of [[flu]]?
+${noteType.fields[1]}: High fever, cough, and muscle pain
+---
+
+Output:
+#type/${slug}
+${noteType.fields[0]}: What **[[body temperature]]** symptom occurs in [[flu]]?
+${noteType.fields[1]}: High fever
 <!-- source: What are the symptoms of flu? -->
 ---
-#type/basic
-Front: Which **[[respiratory]]** symptom is characteristic of [[flu]]?
-Back: Cough
+#type/${slug}
+${noteType.fields[0]}: Which **[[respiratory]]** symptom is characteristic of [[flu]]?
+${noteType.fields[1]}: Cough
 <!-- source: What are the symptoms of flu? -->
 ---
-#type/basic
-Front: What type of **[[pain]]** accompanies [[flu]]?
-Back: Muscle pain
+#type/${slug}
+${noteType.fields[0]}: What type of **[[pain]]** accompanies [[flu]]?
+${noteType.fields[1]}: Muscle pain
 <!-- source: What are the symptoms of flu? -->`;
 }
 

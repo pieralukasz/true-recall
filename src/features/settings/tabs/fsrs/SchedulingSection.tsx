@@ -10,6 +10,7 @@ import {
 	FormField,
 	SelectInput,
 	TextInput,
+	ToggleInput,
 } from "@shared/ui/components";
 
 interface SchedulingSectionProps {
@@ -120,6 +121,18 @@ export function SchedulingSection({
 							{ value: "show-after-reviews", label: "Show after reviews" },
 							{ value: "show-before-reviews", label: "Show before reviews" },
 						]}
+					/>
+				</FormField>
+			</FormCard>
+
+			<FormCard title="Siblings">
+				<FormField
+					name="Bury sibling cards"
+					description="After reviewing an image occlusion or cloze card, bury remaining cards from the same note until next day. When off, siblings are spaced apart in the queue instead."
+				>
+					<ToggleInput
+						value={preset.burySiblings !== false}
+						onChange={(v) => void updatePreset({ burySiblings: v })}
 					/>
 				</FormField>
 			</FormCard>
