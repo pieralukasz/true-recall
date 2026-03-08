@@ -2,18 +2,21 @@ import {
 	clamp,
 	normalizePointFromRect,
 } from "@features/image-occlusion/canvas-geometry";
-import type {
-	IODefinition,
-	IORegion,
-	IOShape,
-} from "@features/image-occlusion/types";
+import {
+	type ResizeCorner,
+	buildDraftRegion,
+	buildMoveUpdate,
+	buildResizeUpdate,
+	commitDraftRegion,
+	getRegionCorner,
+	updateRegion,
+} from "@features/image-occlusion/canvas-interactions";
+import type { IODefinition, IORegion, IOShape } from "@features/image-occlusion/types";
 import { Clickable } from "@shared/ui/components/Clickable";
 import { useIcon } from "@shared/ui/preact/hooks";
-import { useEffect, useMemo, useRef, useState } from "preact/hooks";
-import { getNextIOGroupKey } from "./io-definition";
+import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
 
 type Tool = "select" | IOShape;
-type ResizeCorner = "nw" | "ne" | "sw" | "se";
 
 interface IOCanvasProps {
 	imageUrl: string | null;
@@ -52,23 +55,9 @@ function CanvasIconButton({ icon, label, onClick }: CanvasIconButtonProps) {
 }
 
 type DragState =
-	| {
-			type: "draw";
-			startX: number;
-			startY: number;
-			shape: IOShape;
-	  }
-	| {
-			type: "move";
-			regionId: string;
-			offsetX: number;
-			offsetY: number;
-	  }
-	| {
-			type: "resize";
-			regionId: string;
-			corner: ResizeCorner;
-	  }
+	| { type: "draw"; startX: number; startY: number; shape: IOShape }
+	| { type: "move"; regionId: string; offsetX: number; offsetY: number }
+	| { type: "resize"; regionId: string; corner: ResizeCorner }
 	| {
 			type: "pan";
 			startClientX: number;
@@ -89,35 +78,6 @@ function getPoint(
 	);
 }
 
-function getRegionCorner(
-	region: IORegion,
-	corner: ResizeCorner,
-): { x: number; y: number } {
-	switch (corner) {
-		case "nw":
-			return { x: region.x, y: region.y };
-		case "ne":
-			return { x: region.x + region.w, y: region.y };
-		case "sw":
-			return { x: region.x, y: region.y + region.h };
-		case "se":
-			return { x: region.x + region.w, y: region.y + region.h };
-	}
-}
-
-function updateRegion(
-	definition: IODefinition,
-	regionId: string,
-	update: (region: IORegion) => IORegion,
-): IODefinition {
-	return {
-		...definition,
-		regions: definition.regions.map((region) =>
-			region.id === regionId ? update(region) : region,
-		),
-	};
-}
-
 export function IOCanvas({
 	imageUrl,
 	definition,
@@ -132,15 +92,29 @@ export function IOCanvas({
 	onZoomChange,
 	onPanChange,
 }: IOCanvasProps) {
-	const [mediaEl, setMediaEl] = useState<HTMLDivElement | null>(null);
+	const mediaRef = useRef<HTMLDivElement | null>(null);
+	const mediaRefCallback = useCallback((el: HTMLDivElement | null) => {
+		mediaRef.current = el;
+	}, []);
+
 	const [spacePressed, setSpacePressed] = useState(false);
-	const [dragState, setDragState] = useState<DragState | null>(null);
 	const [draftRegion, setDraftRegion] = useState<IORegion | null>(null);
 
+	// Drag state lives in a ref — changes don't need re-renders,
+	// and handlers always read the latest value synchronously.
+	const dragRef = useRef<DragState | null>(null);
+
+	// Keep latest props/state accessible to pointer handlers without re-creating them
 	const definitionRef = useRef(definition);
 	definitionRef.current = definition;
-	const draftRegionRef = useRef(draftRegion);
-	draftRegionRef.current = draftRegion;
+	const toolRef = useRef(tool);
+	toolRef.current = tool;
+	const spacePressedRef = useRef(spacePressed);
+	spacePressedRef.current = spacePressed;
+	const panXRef = useRef(panX);
+	panXRef.current = panX;
+	const panYRef = useRef(panY);
+	panYRef.current = panY;
 	const onDefinitionChangeRef = useRef(onDefinitionChange);
 	onDefinitionChangeRef.current = onDefinitionChange;
 	const onPanChangeRef = useRef(onPanChange);
@@ -149,6 +123,8 @@ export function IOCanvas({
 	onSelectRegionRef.current = onSelectRegion;
 	const onToolChangeRef = useRef(onToolChange);
 	onToolChangeRef.current = onToolChange;
+	const draftRegionRef = useRef(draftRegion);
+	draftRegionRef.current = draftRegion;
 
 	const selectedRegion = useMemo(
 		() =>
@@ -159,14 +135,10 @@ export function IOCanvas({
 
 	useEffect(() => {
 		const onKeyDown = (event: KeyboardEvent) => {
-			if (event.code === "Space") {
-				setSpacePressed(true);
-			}
+			if (event.code === "Space") setSpacePressed(true);
 		};
 		const onKeyUp = (event: KeyboardEvent) => {
-			if (event.code === "Space") {
-				setSpacePressed(false);
-			}
+			if (event.code === "Space") setSpacePressed(false);
 		};
 		window.addEventListener("keydown", onKeyDown);
 		window.addEventListener("keyup", onKeyUp);
@@ -176,187 +148,158 @@ export function IOCanvas({
 		};
 	}, []);
 
-	useEffect(() => {
-		if (!dragState) return;
+	const handlePointerDown = useCallback((event: PointerEvent) => {
+		if (event.button !== 0 && event.button !== 1) return;
 
-		const onPointerMove = (event: PointerEvent) => {
-			if (dragState.type === "pan") {
-				const dx = event.clientX - dragState.startClientX;
-				const dy = event.clientY - dragState.startClientY;
-				onPanChangeRef.current(dragState.originX + dx, dragState.originY + dy);
-				return;
-			}
+		const target = event.target as Element;
+		const regionId = target.getAttribute("data-io-region");
+		const handle = target.getAttribute(
+			"data-io-handle",
+		) as ResizeCorner | null;
 
-			const point = getPoint(event, mediaEl);
-			if (!point) return;
-
-			if (dragState.type === "draw") {
-				const x = Math.min(dragState.startX, point.x);
-				const y = Math.min(dragState.startY, point.y);
-				const w = Math.abs(point.x - dragState.startX);
-				const h = Math.abs(point.y - dragState.startY);
-				setDraftRegion({
-					id: "draft",
-					x,
-					y,
-					w,
-					h,
-					groupKey: "draft",
-					shape: dragState.shape,
-				});
-				return;
-			}
-
-			const def = definitionRef.current;
-			if (dragState.type === "move") {
-				onDefinitionChangeRef.current(
-					updateRegion(def, dragState.regionId, (region) => {
-						const nextX = clamp(point.x - dragState.offsetX, 0, 1 - region.w);
-						const nextY = clamp(point.y - dragState.offsetY, 0, 1 - region.h);
-						return { ...region, x: nextX, y: nextY };
-					}),
-				);
-				return;
-			}
-
-			onDefinitionChangeRef.current(
-				updateRegion(def, dragState.regionId, (region) => {
-					const minSize = 0.01;
-					let left = region.x;
-					let top = region.y;
-					let right = region.x + region.w;
-					let bottom = region.y + region.h;
-
-					if (dragState.corner === "nw") {
-						left = point.x;
-						top = point.y;
-					} else if (dragState.corner === "ne") {
-						right = point.x;
-						top = point.y;
-					} else if (dragState.corner === "sw") {
-						left = point.x;
-						bottom = point.y;
-					} else {
-						right = point.x;
-						bottom = point.y;
-					}
-
-					left = clamp(left, 0, right - minSize);
-					top = clamp(top, 0, bottom - minSize);
-					right = clamp(right, left + minSize, 1);
-					bottom = clamp(bottom, top + minSize, 1);
-
-					return {
-						...region,
-						x: left,
-						y: top,
-						w: clamp(right - left, minSize, 1),
-						h: clamp(bottom - top, minSize, 1),
-					};
-				}),
+		if (spacePressedRef.current || event.button === 1) {
+			dragRef.current = {
+				type: "pan",
+				startClientX: event.clientX,
+				startClientY: event.clientY,
+				originX: panXRef.current,
+				originY: panYRef.current,
+			};
+			(event.currentTarget as HTMLElement).setPointerCapture(
+				event.pointerId,
 			);
-		};
+			return;
+		}
 
-		const onPointerUp = () => {
-			const draft = draftRegionRef.current;
-			if (
-				dragState.type === "draw" &&
-				draft &&
-				draft.w > 0.01 &&
-				draft.h > 0.01
-			) {
-				const def = definitionRef.current;
-				const region: IORegion = {
-					...draft,
-					id: crypto.randomUUID(),
-					groupKey: getNextIOGroupKey(def),
+		// Selection happens before getPoint guard so it works
+		// even when image hasn't loaded (zero-size container).
+		if (regionId) {
+			onSelectRegionRef.current(regionId);
+		} else if (!handle) {
+			onSelectRegionRef.current(null);
+		}
+
+		const point = getPoint(event, mediaRef.current);
+		if (!point) return;
+
+		if (handle && regionId) {
+			dragRef.current = { type: "resize", regionId, corner: handle };
+			(event.currentTarget as HTMLElement).setPointerCapture(
+				event.pointerId,
+			);
+			return;
+		}
+
+		if (regionId) {
+			const currentTool = toolRef.current;
+			if (currentTool === "select") {
+				const region = definitionRef.current.regions.find(
+					(r) => r.id === regionId,
+				);
+				if (!region) return;
+				dragRef.current = {
+					type: "move",
+					regionId,
+					offsetX: point.x - region.x,
+					offsetY: point.y - region.y,
 				};
-				onDefinitionChangeRef.current({
-					...def,
-					regions: [...def.regions, region],
-				});
-				onSelectRegionRef.current(region.id);
-				onToolChangeRef.current?.("select");
+				(event.currentTarget as HTMLElement).setPointerCapture(
+					event.pointerId,
+				);
 			}
+			return;
+		}
 
-			setDragState(null);
+		const currentTool = toolRef.current;
+		if (currentTool === "rect" || currentTool === "ellipse") {
+			dragRef.current = {
+				type: "draw",
+				startX: point.x,
+				startY: point.y,
+				shape: currentTool,
+			};
+			(event.currentTarget as HTMLElement).setPointerCapture(
+				event.pointerId,
+			);
+		}
+	}, []);
+
+	const handlePointerMove = useCallback((event: PointerEvent) => {
+		const drag = dragRef.current;
+		if (!drag) return;
+
+		if (drag.type === "pan") {
+			const dx = event.clientX - drag.startClientX;
+			const dy = event.clientY - drag.startClientY;
+			onPanChangeRef.current(drag.originX + dx, drag.originY + dy);
+			return;
+		}
+
+		const point = getPoint(event, mediaRef.current);
+		if (!point) return;
+
+		if (drag.type === "draw") {
+			setDraftRegion(
+				buildDraftRegion(drag.startX, drag.startY, point.x, point.y, drag.shape),
+			);
+			return;
+		}
+
+		const def = definitionRef.current;
+		if (drag.type === "move") {
+			onDefinitionChangeRef.current(
+				updateRegion(def, drag.regionId, (region) => ({
+					...region,
+					...buildMoveUpdate(region, point, {
+						x: drag.offsetX,
+						y: drag.offsetY,
+					}),
+				})),
+			);
+			return;
+		}
+
+		// resize
+		onDefinitionChangeRef.current(
+			updateRegion(def, drag.regionId, (region) => ({
+				...region,
+				...buildResizeUpdate(region, drag.corner, point),
+			})),
+		);
+	}, []);
+
+	const handlePointerUp = useCallback(() => {
+		const drag = dragRef.current;
+		if (!drag) return;
+
+		if (drag.type === "draw") {
+			const draft = draftRegionRef.current;
+			if (draft) {
+				const result = commitDraftRegion(definitionRef.current, draft);
+				if (result) {
+					onDefinitionChangeRef.current(result.definition);
+					onSelectRegionRef.current(result.regionId);
+					onToolChangeRef.current?.("select");
+				}
+			}
+		}
+
+		dragRef.current = null;
+		setDraftRegion(null);
+	}, []);
+
+	const handleLostPointerCapture = useCallback(() => {
+		// Safety net: if capture is released unexpectedly, clean up drag state
+		if (dragRef.current) {
+			dragRef.current = null;
 			setDraftRegion(null);
-		};
-
-		window.addEventListener("pointermove", onPointerMove);
-		window.addEventListener("pointerup", onPointerUp);
-
-		return () => {
-			window.removeEventListener("pointermove", onPointerMove);
-			window.removeEventListener("pointerup", onPointerUp);
-		};
-	}, [dragState, mediaEl]);
+		}
+	}, []);
 
 	const handleWheel = (event: WheelEvent) => {
 		event.preventDefault();
 		const multiplier = event.deltaY < 0 ? 1.12 : 0.88;
 		onZoomChange(clamp(zoom * multiplier, 0.5, 4));
-	};
-
-	const handlePointerDown = (event: PointerEvent) => {
-		const target = event.target as HTMLElement;
-		const regionId = target.getAttribute("data-io-region");
-		const handle = target.getAttribute("data-io-handle") as ResizeCorner | null;
-
-		if (spacePressed || event.button === 1) {
-			setDragState({
-				type: "pan",
-				startClientX: event.clientX,
-				startClientY: event.clientY,
-				originX: panX,
-				originY: panY,
-			});
-			return;
-		}
-
-		// Select/deselect immediately — this must happen before the getPoint
-		// guard so that selection works even when the image hasn't loaded yet
-		// (media container has zero dimensions → getPoint returns null).
-		if (regionId) {
-			onSelectRegion(regionId);
-		} else if (!handle) {
-			onSelectRegion(null);
-		}
-
-		const point = getPoint(event, mediaEl);
-		if (!point) return;
-
-		if (handle && regionId) {
-			setDragState({
-				type: "resize",
-				regionId,
-				corner: handle,
-			});
-			return;
-		}
-
-		if (regionId) {
-			if (tool === "select") {
-				const region = definition.regions.find((item) => item.id === regionId);
-				if (!region) return;
-				setDragState({
-					type: "move",
-					regionId,
-					offsetX: point.x - region.x,
-					offsetY: point.y - region.y,
-				});
-			}
-			return;
-		}
-
-		if (tool === "rect" || tool === "ellipse") {
-			setDragState({
-				type: "draw",
-				startX: point.x,
-				startY: point.y,
-				shape: tool,
-			});
-		}
 	};
 
 	if (!imageUrl) {
@@ -376,6 +319,9 @@ export function IOCanvas({
 			<div
 				class={`true-recall-io-canvas-stage tool-${tool} ${spacePressed ? "is-panning" : ""}`}
 				onPointerDown={handlePointerDown}
+				onPointerMove={handlePointerMove}
+				onPointerUp={handlePointerUp}
+				onLostPointerCapture={handleLostPointerCapture}
 				onWheel={handleWheel}
 			>
 				<div
@@ -413,7 +359,7 @@ export function IOCanvas({
 						transform: `translate(${panX}px, ${panY}px) scale(${zoom})`,
 					}}
 				>
-					<div ref={(el) => setMediaEl(el)} class="true-recall-io-canvas-media">
+					<div ref={mediaRefCallback} class="true-recall-io-canvas-media">
 						<img
 							src={imageUrl}
 							alt="Occlusion source"

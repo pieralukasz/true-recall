@@ -356,7 +356,7 @@ export function usePanelActions({
 
 	const handleBrowseDeck = useCallback(async () => {
 		if (!flashcardInfo?.sourceUid) return;
-		await plugin.openCardBrowser(flashcardInfo.sourceUid);
+		await plugin.openCardBrowser({ sourceUid: flashcardInfo.sourceUid });
 	}, [flashcardInfo, plugin]);
 
 	return {

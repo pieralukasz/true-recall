@@ -194,9 +194,6 @@ export function ImportStudioApp({
 				cardCount={parseResult.cards.length}
 				detectedFormat={parseResult.detectedFormat}
 				saving={saving}
-				noteType={noteType}
-				noteTypeId={noteTypeId}
-				onNoteTypeChange={handleNoteTypeChange}
 				onSave={() => void handleSave()}
 			/>
 		</div>

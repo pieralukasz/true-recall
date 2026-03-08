@@ -31,6 +31,7 @@ export function aggregateDashboardData(
 	let totalLearning = 0;
 	let totalOverdue = 0;
 	let totalCards = 0;
+	const orphaned = { total: 0, new: 0, learning: 0, due: 0 };
 
 	const noteMap = new Map<
 		string,
@@ -63,7 +64,22 @@ export function aggregateDashboardData(
 				break;
 		}
 
-		if (!noteName) continue;
+		if (!noteName) {
+			orphaned.total++;
+			switch (fsrs.state) {
+				case 0:
+					orphaned.new++;
+					break;
+				case 1:
+				case 3:
+					orphaned.learning++;
+					break;
+				case 2:
+					if (new Date(fsrs.due) <= now) orphaned.due++;
+					break;
+			}
+			continue;
+		}
 
 		let entry = noteMap.get(noteName);
 		if (!entry) {
@@ -152,5 +168,6 @@ export function aggregateDashboardData(
 			reviewCards: todaySummary.reviewCards,
 			reviewsCap: reviewsCap,
 		},
+		orphanedCards: orphaned,
 	};
 }

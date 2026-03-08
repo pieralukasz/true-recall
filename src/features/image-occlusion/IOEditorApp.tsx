@@ -1,4 +1,5 @@
 import { IOCanvas } from "@features/image-occlusion/IOCanvas";
+import { deleteRegion } from "@features/image-occlusion/canvas-interactions";
 import { detectRegions } from "@features/image-occlusion/io-ai.service";
 import {
 	createEmptyIODefinition,
@@ -266,13 +267,13 @@ export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
 	);
 
 	const deleteSelected = useCallback(() => {
-		if (!selectedRegionId) return;
-		setDefinition((prev) => ({
-			...prev,
-			regions: prev.regions.filter((region) => region.id !== selectedRegionId),
-		}));
-		setSelectedRegionId(null);
-	}, [selectedRegionId]);
+		// Functional updater always reads the latest state — no stale closure risk
+		setSelectedRegionId((currentId) => {
+			if (!currentId) return null;
+			setDefinition((prev) => deleteRegion(prev, currentId));
+			return null;
+		});
+	}, []);
 
 	useEffect(() => {
 		const onKeyDown = (event: KeyboardEvent) => {

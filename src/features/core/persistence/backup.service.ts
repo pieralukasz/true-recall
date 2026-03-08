@@ -11,6 +11,7 @@ import {
 import { notify } from "@shared/services/notification.service";
 import type { RetentionPolicy } from "@shared/types/settings.types";
 import { type App, normalizePath } from "obsidian";
+import pako from "pako";
 
 const BACKUP_PREFIX = "true-recall-backup-";
 
@@ -81,26 +82,26 @@ export class BackupService {
 		}
 
 		const data = db.export();
+		const compressed = pako.gzip(data);
 
 		// Ensure backup folder exists
 		await this.ensureBackupFolder();
 
 		// Generate backup filename with timestamp
 		const timestamp = this.formatTimestamp(new Date());
-		const filename = `${BACKUP_PREFIX}${timestamp}.db`;
+		const filename = `${BACKUP_PREFIX}${timestamp}.db.gz`;
 		const backupPath = normalizePath(`${this.getBackupFolder()}/${filename}`);
 
-		// Write backup file
+		// Write compressed backup file
 		await this.app.vault.adapter.writeBinary(
 			backupPath,
-			data.buffer as ArrayBuffer,
+			compressed.buffer as ArrayBuffer,
 		);
 
-		// Verify backup was written correctly
+		// Verify: decompress and check SQLite header
 		const written = await this.app.vault.adapter.readBinary(backupPath);
-		const header = new TextDecoder().decode(
-			new Uint8Array(written).slice(0, 16),
-		);
+		const decompressed = pako.ungzip(new Uint8Array(written));
+		const header = new TextDecoder().decode(decompressed.slice(0, 16));
 		if (!header.startsWith("SQLite format 3")) {
 			await this.app.vault.adapter.remove(backupPath);
 			throw new Error("Backup verification failed — corrupt write detected");
@@ -129,8 +130,11 @@ export class BackupService {
 			for (const filePath of files.files) {
 				const filename = filePath.split("/").pop() || "";
 
-				// Only include backup files
-				if (!filename.startsWith(BACKUP_PREFIX) || !filename.endsWith(".db")) {
+				// Only include backup files (.db or .db.gz)
+				if (
+					!filename.startsWith(BACKUP_PREFIX) ||
+					(!filename.endsWith(".db") && !filename.endsWith(".db.gz"))
+				) {
 					continue;
 				}
 
@@ -172,15 +176,18 @@ export class BackupService {
 			// Create safety backup first
 			await this.createBackup();
 
-			// Read backup file
-			const backupData = await this.app.vault.adapter.readBinary(backupPath);
+			// Read backup file, decompress if gzipped
+			const rawData = await this.app.vault.adapter.readBinary(backupPath);
+			const dbData = backupPath.endsWith(".gz")
+				? pako.ungzip(new Uint8Array(rawData)).buffer
+				: rawData;
 
 			// Write to main database file
 			const deviceId = this.sqliteStore.getDeviceId();
 			const dbPath = normalizePath(
 				`${DB_FOLDER}/${getDeviceDbFilename(deviceId)}`,
 			);
-			await this.app.vault.adapter.writeBinary(dbPath, backupData);
+			await this.app.vault.adapter.writeBinary(dbPath, dbData as ArrayBuffer);
 
 			notify().success(
 				"Backup restored. Please reload Obsidian to apply changes.",
@@ -341,7 +348,9 @@ export class BackupService {
 	}
 
 	/**
-	 * Select best daily backups (newest per day within the retention window)
+	 * Select best daily backups (oldest/first per day within the retention window).
+	 * Hourly tier already covers recent granularity; daily tier preserves
+	 * start-of-day state for historical recovery.
 	 */
 	private selectDailyBackups(
 		backups: BackupInfo[],
@@ -359,8 +368,8 @@ export class BackupService {
 			const dayKey = this.getDayKey(backup.timestamp);
 			const existing = dailyMap.get(dayKey);
 
-			// Keep newest backup for each day
-			if (!existing || backup.timestamp > existing.timestamp) {
+			// Keep oldest (first) backup for each day
+			if (!existing || backup.timestamp < existing.timestamp) {
 				dailyMap.set(dayKey, backup);
 			}
 		}
@@ -369,7 +378,8 @@ export class BackupService {
 	}
 
 	/**
-	 * Select best weekly backups (newest per week within the retention window)
+	 * Select best weekly backups (oldest/first per week within the retention window).
+	 * Same rationale as daily — preserves start-of-week checkpoint.
 	 */
 	private selectWeeklyBackups(
 		backups: BackupInfo[],
@@ -387,8 +397,8 @@ export class BackupService {
 			const weekKey = this.getWeekKey(backup.timestamp);
 			const existing = weeklyMap.get(weekKey);
 
-			// Keep newest backup for each week
-			if (!existing || backup.timestamp > existing.timestamp) {
+			// Keep oldest (first) backup for each week
+			if (!existing || backup.timestamp < existing.timestamp) {
 				weeklyMap.set(weekKey, backup);
 			}
 		}
@@ -464,7 +474,7 @@ export class BackupService {
 	 */
 	private parseFilenameTimestamp(filename: string): Date | null {
 		const match = filename.match(
-			/true-recall-backup-(\d{4})-(\d{2})-(\d{2})-(\d{2})(\d{2})(\d{2})\.db$/,
+			/true-recall-backup-(\d{4})-(\d{2})-(\d{2})-(\d{2})(\d{2})(\d{2})\.db(?:\.gz)?$/,
 		);
 		if (!match) return null;
 
