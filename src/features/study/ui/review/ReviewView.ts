@@ -757,12 +757,14 @@ export class ReviewView extends ItemView {
 				.setIcon("eye-off")
 				.onClick(() => this.cardActionsHandler.handleBuryNote()),
 		);
-		menu.addItem((item) =>
-			item
-				.setTitle("Forget card (f)")
-				.setIcon("rotate-ccw")
-				.onClick(() => this.cardActionsHandler.handleForget()),
-		);
+		if (this.cardActionsHandler.canForgetCurrentCard()) {
+			menu.addItem((item) =>
+				item
+					.setTitle("Forget card (f)")
+					.setIcon("rotate-ccw")
+					.onClick(() => this.cardActionsHandler.handleForget()),
+			);
+		}
 		menu.addItem((item) =>
 			item
 				.setTitle("Edit card (e)")
