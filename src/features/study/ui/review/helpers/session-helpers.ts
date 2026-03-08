@@ -6,13 +6,19 @@ import type { SqliteStoreService } from "@features/core/persistence/sqlite";
 import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
 import type { QueueBuildOptions } from "@features/study/services/review.service";
 import type { SessionFilters } from "@features/study/ui/review/review.types";
-import type { CardMutation } from "@shared/services/signals";
+import { WEAK_CARD_STABILITY_THRESHOLD } from "@shared/constants";
+import {
+	CARD_MUTATION_ACTION_SEMANTICS,
+	getNormalizedCardMutationAction,
+	type CardMutation,
+} from "@shared/services/signals";
 import type { ReviewApi } from "@shared/store";
 import type { FSRSFlashcardItem } from "@shared/types";
 import type {
 	FSRSPreset,
 	TrueRecallSettings,
 } from "@shared/types/settings.types";
+import { Rating, State } from "ts-fsrs";
 
 export interface CardFilterOptions {
 	stateFilter?: "due" | "learning" | "new" | "buried";
@@ -207,25 +213,17 @@ export function applyMutation(
 	cardStore: SqliteStoreService,
 	filters: SessionFilters,
 ): void {
+	const normalizedAction = getNormalizedCardMutationAction(m);
+	const actionSemantics = normalizedAction
+		? CARD_MUTATION_ACTION_SEMANTICS[normalizedAction]
+		: undefined;
+
 	switch (m.type) {
 		case "removed": {
-			if (m.cardId) {
-				const queue = review.queue;
-				if (queue.find((c) => c.id === m.cardId)) {
-					review.removeCardById(m.cardId);
-				}
-			}
-			if (m.cardIds && m.cardIds.length > 1) {
-				const queueIds = new Set(review.queue.map((c) => c.id));
-				const idsToRemove = m.cardIds.filter((id) => queueIds.has(id));
-				if (idsToRemove.length > 0) {
-					review.removeCardsByIds(idsToRemove);
-				}
-			}
+			removeCardsFromQueue(review, [m.cardId, ...(m.cardIds ?? [])]);
 			break;
 		}
 		case "updated": {
-			if (!m.changes?.question && !m.changes?.answer) return;
 			const currentCard = review.getCurrentCard();
 			if (currentCard && m.cardId && currentCard.id === m.cardId) {
 				const updatedData = cardStore.get(m.cardId);
@@ -236,45 +234,228 @@ export function applyMutation(
 					);
 				}
 			}
+			if (m.cardId) {
+				syncQueueWithMutatedCards(
+					[m.cardId],
+					review,
+					flashcardManager,
+					filters,
+				);
+			}
 			break;
 		}
 		case "bulk": {
 			if (!m.cardIds) return;
-			if (m.action !== "removed" && m.action !== "delete") return;
-			const queueIds = new Set(review.queue.map((c) => c.id));
-			const idsToRemove = m.cardIds.filter((id) => queueIds.has(id));
-			if (idsToRemove.length > 0) {
-				review.removeCardsByIds(idsToRemove);
+			if (actionSemantics === "queue-remove") {
+				removeCardsFromQueue(review, m.cardIds);
+				return;
+			}
+			if (actionSemantics === "queue-sync") {
+				syncQueueWithMutatedCards(
+					m.cardIds,
+					review,
+					flashcardManager,
+					filters,
+				);
 			}
 			break;
 		}
 		case "added": {
 			if (!m.cardId) return;
-			const cards = flashcardManager.getCardsByIds([m.cardId]);
-			const newCard = cards[0];
-			if (!newCard) return;
-
-			if (
-				filters.sourceUidFilter &&
-				newCard.sourceUid !== filters.sourceUidFilter
-			) {
-				return;
-			}
-
-			if (
-				filters.sourceNoteFilter &&
-				newCard.sourceNoteName !== filters.sourceNoteFilter
-			) {
-				return;
-			}
-			if (filters.sourceNoteFilters && filters.sourceNoteFilters.length > 0) {
-				if (!filters.sourceNoteFilters.includes(newCard.sourceNoteName ?? "")) {
-					return;
-				}
-			}
-
-			review.addCardToQueue(newCard);
+			syncQueueWithMutatedCards([m.cardId], review, flashcardManager, filters);
 			break;
 		}
 	}
+}
+
+function removeCardsFromQueue(
+	review: ReviewApi,
+	cardIds: Array<string | undefined>,
+): void {
+	const uniqueIds = [...new Set(cardIds.filter((id): id is string => Boolean(id)))];
+	if (uniqueIds.length === 0) return;
+
+	const queueIds = new Set(review.queue.map((c) => c.id));
+	const idsToRemove = uniqueIds.filter((id) => queueIds.has(id));
+	if (idsToRemove.length > 0) {
+		review.removeCardsByIds(idsToRemove);
+	}
+}
+
+function syncQueueWithMutatedCards(
+	cardIds: string[],
+	review: ReviewApi,
+	flashcardManager: FlashcardManager,
+	filters: SessionFilters,
+): void {
+	const uniqueIds = [...new Set(cardIds)];
+	if (uniqueIds.length === 0) return;
+
+	const queueIds = new Set(review.queue.map((card) => card.id));
+	const cards = flashcardManager.getCardsByIds(uniqueIds);
+	const cardsById = new Map(cards.map((card) => [card.id, card]));
+	const canAutoAdd = canAutoAddMutatedCards(filters);
+	const idsToRemove: string[] = [];
+
+	for (const id of uniqueIds) {
+		const card = cardsById.get(id);
+		if (!card || !matchesSessionFilters(card, filters)) {
+			if (queueIds.has(id)) {
+				idsToRemove.push(id);
+			}
+			continue;
+		}
+
+		if (canAutoAdd && !queueIds.has(id)) {
+			review.addCardToQueue(card);
+		}
+	}
+
+	if (idsToRemove.length > 0) {
+		review.removeCardsByIds(idsToRemove);
+	}
+}
+
+function canAutoAddMutatedCards(filters: SessionFilters): boolean {
+	const hasDirectScope =
+		Boolean(filters.sourceUidFilter) ||
+		Boolean(filters.sourceNoteFilter) ||
+		Boolean(filters.filePathFilter) ||
+		Boolean(filters.sourceNoteFilters?.length);
+	return !filters.projectPath || hasDirectScope;
+}
+
+function matchesSessionFilters(
+	card: FSRSFlashcardItem,
+	filters: SessionFilters,
+): boolean {
+	const now = Date.now();
+	const dayStartHour = 4;
+	const todayBoundary = getTodayBoundary(dayStartHour);
+	const weekAgoBoundary = todayBoundary - 7 * 86_400_000;
+
+	if (card.fsrs.suspended) return false;
+
+	const buriedUntil = card.fsrs.buriedUntil
+		? new Date(card.fsrs.buriedUntil).getTime()
+		: null;
+	if (filters.stateFilter === "buried") {
+		if (!buriedUntil || buriedUntil <= now) return false;
+	} else if (buriedUntil && buriedUntil > now) {
+		return false;
+	}
+
+	if (filters.sourceUidFilter && card.sourceUid !== filters.sourceUidFilter) {
+		return false;
+	}
+
+	if (
+		filters.sourceNoteFilters &&
+		filters.sourceNoteFilters.length > 0 &&
+		!filters.sourceNoteFilters.includes(card.sourceNoteName ?? "")
+	) {
+		return false;
+	}
+
+	if (
+		filters.sourceNoteFilter &&
+		card.sourceNoteName !== filters.sourceNoteFilter
+	) {
+		return false;
+	}
+
+	if (filters.filePathFilter && card.sourceNotePath !== filters.filePathFilter) {
+		return false;
+	}
+
+	const createdAt = card.fsrs.createdAt ?? 0;
+	if (filters.createdTodayOnly && createdAt < todayBoundary) {
+		return false;
+	}
+	if (filters.createdThisWeek && createdAt < weekAgoBoundary) {
+		return false;
+	}
+
+	if (
+		filters.weakCardsOnly &&
+		card.fsrs.stability >= WEAK_CARD_STABILITY_THRESHOLD
+	) {
+		return false;
+	}
+
+	if (filters.stateFilter) {
+		switch (filters.stateFilter) {
+			case "new":
+				if (card.fsrs.state !== State.New) return false;
+				break;
+			case "learning":
+				if (
+					card.fsrs.state !== State.Learning &&
+					card.fsrs.state !== State.Relearning
+				) {
+					return false;
+				}
+				break;
+			case "due":
+				if (card.fsrs.state !== State.Review) return false;
+				break;
+		}
+	}
+
+	if (filters.difficultyRange) {
+		if (
+			card.fsrs.difficulty < filters.difficultyRange.min ||
+			card.fsrs.difficulty > filters.difficultyRange.max
+		) {
+			return false;
+		}
+	}
+
+	if (filters.lapsesRange) {
+		if (
+			card.fsrs.lapses < filters.lapsesRange.min ||
+			card.fsrs.lapses > filters.lapsesRange.max
+		) {
+			return false;
+		}
+	}
+
+	if (filters.stabilityRange) {
+		if (
+			card.fsrs.stability < filters.stabilityRange.min ||
+			card.fsrs.stability > filters.stabilityRange.max
+		) {
+			return false;
+		}
+	}
+
+	if (filters.overdueOnly) {
+		if (card.fsrs.state === State.New) return false;
+		if (new Date(card.fsrs.due).getTime() > now) return false;
+	}
+
+	if (filters.recentlyFailed) {
+		const history = card.fsrs.history;
+		if (!history || history.length === 0) return false;
+		if (history[history.length - 1]?.r !== Rating.Again) return false;
+	}
+
+	if (filters.studyAheadDays !== undefined && filters.studyAheadDays > 0) {
+		if (card.fsrs.state === State.Review) {
+			const cutoff = now + filters.studyAheadDays * 86_400_000;
+			if (new Date(card.fsrs.due).getTime() > cutoff) return false;
+		}
+	}
+
+	return true;
+}
+
+function getTodayBoundary(dayStartHour: number): number {
+	const now = new Date();
+	const boundary = new Date(now);
+	boundary.setHours(dayStartHour, 0, 0, 0);
+	if (now.getHours() < dayStartHour) {
+		boundary.setDate(boundary.getDate() - 1);
+	}
+	return boundary.getTime();
 }

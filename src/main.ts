@@ -11,8 +11,15 @@ import { SessionPersistenceService } from "@features/core/persistence/session-pe
 import { SqliteStoreService } from "@features/core/persistence/sqlite";
 import {
 	DB_FOLDER,
+	SAFETY_FLUSH_INTERVAL_MS,
 	getDeviceDbFilename,
 } from "@features/core/persistence/sqlite/sqlite.types";
+import {
+	decodeBackupToSqliteBytes,
+	isSupportedBackupPath,
+	sortBackupPathsNewest,
+	toExactBackupBuffer,
+} from "@features/core/persistence/sqlite/recovery.utils";
 import { DayBoundaryService } from "@features/core/services/day-boundary.service";
 import { FrontmatterIndexService } from "@features/core/services/frontmatter-index.service";
 import { FSRSService } from "@features/core/services/fsrs.service";
@@ -122,6 +129,9 @@ export default class TrueRecallPlugin extends Plugin {
 	store: AppStore | null = null;
 	noteStatusCache: NoteStatusCacheService | null = null;
 	statusBarWidget: StatusBarWidget | null = null;
+	private lastAutoRecoveryBackupPath: string | null = null;
+	private lastAutoRecoveryAt: number | null = null;
+	private lastStartupSnapshotPath: string | null = null;
 	EmbeddableEditor:
 		| import("@shared/ui/editor/embedded-editor").EmbeddableEditorClass
 		| null = null;
@@ -316,7 +326,7 @@ export default class TrueRecallPlugin extends Plugin {
 		this.noteStatusCache?.dispose();
 
 		if (this.cardStore) {
-			void this.cardStore.saveNow();
+			void this.cardStore.saveNow({ bestEffort: true });
 		}
 	}
 
@@ -828,6 +838,16 @@ export default class TrueRecallPlugin extends Plugin {
 
 			this.flashcardManager.setStore(this.cardStore);
 
+			// Safety persistence: ensure dirty data is flushed regularly,
+			// even if user exits before debounce timer fires.
+			this.registerInterval(
+				window.setInterval(() => {
+					if (this.cardStore) {
+						void this.cardStore.saveNow();
+					}
+				}, SAFETY_FLUSH_INTERVAL_MS),
+			);
+
 			// Reactive card store: cards signal mirrors SQLite, computeds derive all views
 			initCardStore({
 				getAll: () => this.flashcardManager.getAllFSRSCards(),
@@ -894,24 +914,18 @@ export default class TrueRecallPlugin extends Plugin {
 			if (!folderExists) return false;
 
 			const listing = await this.app.vault.adapter.list(backupFolder);
-			const backupFiles = listing.files
-				.filter((f) => {
-					const name = f.split("/").pop() || "";
-					return name.startsWith("true-recall-backup-") && name.endsWith(".db");
-				})
-				.sort()
-				.reverse(); // newest first (filenames are timestamped)
+			const backupFiles = sortBackupPathsNewest(
+				listing.files.filter((f) => isSupportedBackupPath(f)),
+			);
 
 			for (const backupPath of backupFiles) {
 				try {
 					const stat = await this.app.vault.adapter.stat(backupPath);
-					if (!stat || stat.size < 100) continue;
+					if (!stat || stat.size < 16) continue;
 
-					const data = await this.app.vault.adapter.readBinary(backupPath);
-					const header = new TextDecoder().decode(
-						new Uint8Array(data).slice(0, 16),
-					);
-					if (!header.startsWith("SQLite format 3")) continue;
+					const rawData = await this.app.vault.adapter.readBinary(backupPath);
+					const sqliteBytes = decodeBackupToSqliteBytes(backupPath, rawData);
+					if (!sqliteBytes) continue;
 
 					// Valid backup found — rename corrupted file and restore
 					const corruptedPath = `${dbPath}.corrupted`;
@@ -920,15 +934,23 @@ export default class TrueRecallPlugin extends Plugin {
 					if (corruptedExists) {
 						await this.app.vault.adapter.remove(corruptedPath);
 					}
-					await this.app.vault.adapter.rename(dbPath, corruptedPath);
-					await this.app.vault.adapter.writeBinary(dbPath, data);
+					const brokenExists = await this.app.vault.adapter.exists(dbPath);
+					if (brokenExists) {
+						await this.app.vault.adapter.rename(dbPath, corruptedPath);
+					}
+					await this.app.vault.adapter.writeBinary(
+						dbPath,
+						toExactBackupBuffer(sqliteBytes),
+					);
 
 					const backupName = backupPath.split("/").pop() || "";
+					this.lastAutoRecoveryBackupPath = backupPath;
+					this.lastAutoRecoveryAt = Date.now();
 					console.log(
 						`[True Recall] Auto-recovered from backup: ${backupName}`,
 					);
 					notify().success(
-						`Database was corrupted. Auto-restored from backup: ${backupName}`,
+						`Database restored from backup after corruption detection: ${backupName}`,
 						NOTIFICATION_DURATION.PERSIST,
 					);
 					return true;
@@ -1265,10 +1287,49 @@ export default class TrueRecallPlugin extends Plugin {
 		if (!this.backgroundBackupManager) return;
 
 		try {
-			await this.backgroundBackupManager.triggerBackup(true);
+			const created = await this.backgroundBackupManager.triggerBackup(true);
+			const status = this.backgroundBackupManager.getStatus();
+			this.lastStartupSnapshotPath = status.sessionStartBackupPath;
+			if (created) {
+				notify().info(
+					"Startup snapshot created. This does not restore or overwrite your current database.",
+				);
+			}
 		} catch {
 			// Auto-backup failure is non-critical
 		}
+	}
+
+	getStorageDiagnostics(): {
+		activeDatabasePath: string | null;
+		saveTimerActive: boolean;
+		flushInProgress: boolean;
+		isDirty: boolean;
+		lastFlushStartedAt: number | null;
+		lastFlushSucceededAt: number | null;
+		lastFlushFailedAt: number | null;
+		lastFlushError: string | null;
+		startupSnapshotPath: string | null;
+		lastAutoRecoveryPath: string | null;
+		lastAutoRecoveryAt: number | null;
+	} {
+		const storeDebug = this.cardStore?.getPersistenceDebugInfo();
+		return {
+			activeDatabasePath: storeDebug?.dbPath ?? null,
+			saveTimerActive: storeDebug?.saveTimerActive ?? false,
+			flushInProgress: storeDebug?.flushInProgress ?? false,
+			isDirty: storeDebug?.isDirty ?? false,
+			lastFlushStartedAt: storeDebug?.lastFlushStartedAt ?? null,
+			lastFlushSucceededAt: storeDebug?.lastFlushSucceededAt ?? null,
+			lastFlushFailedAt: storeDebug?.lastFlushFailedAt ?? null,
+			lastFlushError: storeDebug?.lastFlushError ?? null,
+			startupSnapshotPath:
+				this.lastStartupSnapshotPath ??
+				this.backgroundBackupManager?.getStatus().sessionStartBackupPath ??
+				null,
+			lastAutoRecoveryPath: this.lastAutoRecoveryBackupPath,
+			lastAutoRecoveryAt: this.lastAutoRecoveryAt,
+		};
 	}
 
 	async createManualBackup(): Promise<void> {
@@ -1305,6 +1366,7 @@ export default class TrueRecallPlugin extends Plugin {
 		const modal = new RestoreBackupModal(this.app, {
 			backups,
 			backupService: this.backupService,
+			sessionStartBackupPath: this.backgroundBackupManager?.getStatus().sessionStartBackupPath ?? null,
 		});
 
 		await modal.openAndWait();

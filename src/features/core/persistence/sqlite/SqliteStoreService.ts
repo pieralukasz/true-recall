@@ -15,6 +15,7 @@ import {
 	DB_FOLDER,
 	getDeviceDbFilename,
 	SAVE_DEBOUNCE_MS,
+	toExactArrayBuffer,
 } from "@features/core/persistence/sqlite/sqlite.types";
 import { IntegrityCheckService } from "@features/core/services/integrity-check.service";
 import {
@@ -25,13 +26,20 @@ import type { FSRSCardData } from "@shared/types";
 import { type App, normalizePath } from "obsidian";
 
 export class SqliteStoreService {
+	private static readonly FOLLOW_UP_FLUSH_MS = 250;
+
 	private app: App;
 	private deviceId: string;
 	private db: SqliteDatabase;
 	private isLoaded = false;
 	private isDirty = false;
-	private saveInProgress = false;
 	private saveTimer: ReturnType<typeof setTimeout> | null = null;
+	private flushPromise: Promise<boolean> | null = null;
+	private suppressRetryScheduling = false;
+	private lastFlushStartedAt: number | null = null;
+	private lastFlushSucceededAt: number | null = null;
+	private lastFlushFailedAt: number | null = null;
+	private lastFlushError: string | null = null;
 
 	// Domain modules - public for direct access
 	public readonly cards: CardActions;
@@ -218,11 +226,7 @@ export class SqliteStoreService {
 	}
 
 	async flush(): Promise<void> {
-		if (this.saveTimer) {
-			clearTimeout(this.saveTimer);
-			this.saveTimer = null;
-		}
-		await this.doFlush();
+		await this.saveNow();
 	}
 
 	private getDbPath(): string {
@@ -282,23 +286,27 @@ export class SqliteStoreService {
 		}, SAVE_DEBOUNCE_MS);
 	}
 
-	private async doFlush(): Promise<boolean> {
+	private scheduleFollowUpFlush(): void {
+		if (this.saveTimer) {
+			clearTimeout(this.saveTimer);
+		}
+		this.saveTimer = setTimeout(() => {
+			void this.doFlush();
+		}, SqliteStoreService.FOLLOW_UP_FLUSH_MS);
+	}
+
+	private async runFlushPass(scheduleRetryOnFailure: boolean): Promise<boolean> {
 		if (!this.db.isReady() || !this.isDirty) return true; // Nothing to save = success
 
-		// Prevent concurrent saves
-		if (this.saveInProgress) {
-			// Another save is running, schedule a retry after it completes
-			this.scheduleSave();
-			return true; // Will be saved by scheduled retry
-		}
-
-		this.saveInProgress = true;
 		const MAX_RETRIES = 3;
 		const BASE_DELAY_MS = 100;
+		this.lastFlushStartedAt = Date.now();
 
 		try {
 			for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
 				try {
+					// Mark current changes as "being flushed". New writes during IO will flip isDirty=true.
+					this.isDirty = false;
 					const data = this.db.export();
 					const dbPath = this.getDbPath();
 
@@ -310,11 +318,22 @@ export class SqliteStoreService {
 
 					await this.app.vault.adapter.writeBinary(
 						dbPath,
-						data.buffer as ArrayBuffer,
+						toExactArrayBuffer(data),
 					);
-					this.isDirty = false;
+
+					this.lastFlushSucceededAt = Date.now();
+					this.lastFlushError = null;
+					// If writes happened during save, flush again quickly.
+					if (this.isDirty) {
+						this.scheduleFollowUpFlush();
+					}
 					return true; // Success
 				} catch (error) {
+					// Preserve unsaved state on any write/export failure.
+					this.isDirty = true;
+					this.lastFlushFailedAt = Date.now();
+					this.lastFlushError =
+						error instanceof Error ? error.message : String(error);
 					console.error(
 						`[True Recall] Failed to save database (attempt ${attempt}/${MAX_RETRIES}):`,
 						error,
@@ -330,22 +349,68 @@ export class SqliteStoreService {
 							"Failed to save database after multiple attempts. Your recent changes may not be saved.",
 							NOTIFICATION_DURATION.LONG,
 						);
+						if (scheduleRetryOnFailure && !this.suppressRetryScheduling) {
+							this.scheduleSave();
+						}
 						return false; // Caller can react to failure
 					}
 				}
 			}
-		} finally {
-			this.saveInProgress = false;
+		} catch (error) {
+			this.lastFlushFailedAt = Date.now();
+			this.lastFlushError =
+				error instanceof Error ? error.message : String(error);
 		}
 		return false; // Should not reach here
 	}
 
-	async saveNow(): Promise<boolean> {
+	private async doFlush(scheduleRetryOnFailure = true): Promise<boolean> {
+		if (this.flushPromise) {
+			return this.flushPromise;
+		}
+
+		this.flushPromise = this.runFlushPass(scheduleRetryOnFailure);
+		try {
+			return await this.flushPromise;
+		} finally {
+			this.flushPromise = null;
+		}
+	}
+
+	async saveNow(options?: { bestEffort?: boolean }): Promise<boolean> {
 		if (this.saveTimer) {
 			clearTimeout(this.saveTimer);
 			this.saveTimer = null;
 		}
-		return this.doFlush();
+
+		const bestEffort = options?.bestEffort ?? false;
+		const previousSuppressRetry = this.suppressRetryScheduling;
+		if (bestEffort) {
+			this.suppressRetryScheduling = true;
+		}
+
+		try {
+			// If a save is already running, wait for it to complete before deciding next step.
+			if (this.flushPromise) {
+				await this.flushPromise;
+			}
+
+			let success = true;
+			while (this.isDirty) {
+				const flushed = await this.doFlush(!bestEffort);
+				success = success && flushed;
+				if (!flushed && bestEffort) {
+					break;
+				}
+				if (!flushed) {
+					return false;
+				}
+			}
+
+			return success;
+		} finally {
+			this.suppressRetryScheduling = previousSuppressRetry;
+		}
 	}
 
 	async close(): Promise<void> {
@@ -410,5 +475,27 @@ export class SqliteStoreService {
 
 	getReviewsForRetention(startDate: string, endDate: string) {
 		return this.stats.getReviewsForRetention(startDate, endDate);
+	}
+
+	getPersistenceDebugInfo(): {
+		dbPath: string;
+		isDirty: boolean;
+		saveTimerActive: boolean;
+		flushInProgress: boolean;
+		lastFlushStartedAt: number | null;
+		lastFlushSucceededAt: number | null;
+		lastFlushFailedAt: number | null;
+		lastFlushError: string | null;
+	} {
+		return {
+			dbPath: this.getDbPath(),
+			isDirty: this.isDirty,
+			saveTimerActive: this.saveTimer !== null,
+			flushInProgress: this.flushPromise !== null,
+			lastFlushStartedAt: this.lastFlushStartedAt,
+			lastFlushSucceededAt: this.lastFlushSucceededAt,
+			lastFlushFailedAt: this.lastFlushFailedAt,
+			lastFlushError: this.lastFlushError,
+		};
 	}
 }

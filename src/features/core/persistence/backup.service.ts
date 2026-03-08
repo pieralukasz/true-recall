@@ -7,6 +7,7 @@ import type { SqliteStoreService } from "@features/core/persistence/sqlite";
 import {
 	DB_FOLDER,
 	getDeviceDbFilename,
+	toExactArrayBuffer,
 } from "@features/core/persistence/sqlite";
 import { notify } from "@shared/services/notification.service";
 import type { RetentionPolicy } from "@shared/types/settings.types";
@@ -95,7 +96,7 @@ export class BackupService {
 		// Write compressed backup file
 		await this.app.vault.adapter.writeBinary(
 			backupPath,
-			compressed.buffer as ArrayBuffer,
+			toExactArrayBuffer(compressed),
 		);
 
 		// Verify: decompress and check SQLite header
@@ -179,7 +180,7 @@ export class BackupService {
 			// Read backup file, decompress if gzipped
 			const rawData = await this.app.vault.adapter.readBinary(backupPath);
 			const dbData = backupPath.endsWith(".gz")
-				? pako.ungzip(new Uint8Array(rawData)).buffer
+				? toExactArrayBuffer(pako.ungzip(new Uint8Array(rawData)))
 				: rawData;
 
 			// Write to main database file
@@ -188,9 +189,10 @@ export class BackupService {
 				`${DB_FOLDER}/${getDeviceDbFilename(deviceId)}`,
 			);
 			await this.app.vault.adapter.writeBinary(dbPath, dbData as ArrayBuffer);
+			const backupName = backupPath.split("/").pop() || backupPath;
 
 			notify().success(
-				"Backup restored. Please reload Obsidian to apply changes.",
+				`Database restored from backup: ${backupName}. Please reload Obsidian to apply changes.`,
 			);
 			return true;
 		} catch (error) {

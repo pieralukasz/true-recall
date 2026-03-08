@@ -84,6 +84,12 @@ export interface ChangeNoteTypeResult {
 	deletedCardIds: string[];
 }
 
+export interface DeleteFlashcardsResult {
+	ok: boolean;
+	affectedIds: string[];
+	affectedCount: number;
+}
+
 export interface CreateImageOcclusionNoteParams {
 	imagePath: string;
 	definition: IODefinition;
@@ -290,24 +296,48 @@ export class FlashcardManager {
 	}
 
 	async removeFlashcardById(cardId: string): Promise<boolean> {
+		const result = await this.removeFlashcardByIdWithDetails(cardId);
+		return result.ok;
+	}
+
+	async removeFlashcardByIdWithDetails(
+		cardId: string,
+	): Promise<DeleteFlashcardsResult> {
 		if (!this.cardRepository) {
-			return false;
+			return { ok: false, affectedIds: [], affectedCount: 0 };
 		}
 		const removedIds = this.cardRepository.deleteWithCascade(cardId);
 		if (removedIds.length > 0) {
 			this.sessionPersistence?.removeReviewedCards(removedIds);
-			return true;
+			return {
+				ok: true,
+				affectedIds: removedIds,
+				affectedCount: removedIds.length,
+			};
 		}
-		return false;
+		return { ok: false, affectedIds: [], affectedCount: 0 };
 	}
 
 	removeFlashcardsByIds(cardIds: string[]): number {
-		if (!this.cardRepository) return 0;
+		const result = this.removeFlashcardsByIdsWithDetails(cardIds);
+		return result.affectedCount;
+	}
+
+	removeFlashcardsByIdsWithDetails(
+		cardIds: string[],
+	): DeleteFlashcardsResult {
+		if (!this.cardRepository) {
+			return { ok: false, affectedIds: [], affectedCount: 0 };
+		}
 		const removedIds = this.cardRepository.deleteBatchWithCascade(cardIds);
 		if (removedIds.length > 0) {
 			this.sessionPersistence?.removeReviewedCards(removedIds);
 		}
-		return removedIds.length;
+		return {
+			ok: removedIds.length > 0,
+			affectedIds: removedIds,
+			affectedCount: removedIds.length,
+		};
 	}
 
 	removeFlashcardFromSql(cardId: string): void {

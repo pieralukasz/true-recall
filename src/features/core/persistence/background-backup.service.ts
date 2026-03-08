@@ -23,6 +23,7 @@ export interface BackupStatus {
 	nextScheduledBackup: number | null;
 	reviewsSinceLastBackup: number;
 	isBackupInProgress: boolean;
+	sessionStartBackupPath: string | null;
 }
 
 export class BackgroundBackupManager {
@@ -37,6 +38,7 @@ export class BackgroundBackupManager {
 	private isDirty = false;
 	private signalDisposers: (() => void)[] = [];
 	private consecutiveFailures = 0;
+	private sessionStartBackupPath: string | null = null;
 
 	constructor(
 		_app: App,
@@ -91,6 +93,7 @@ export class BackgroundBackupManager {
 			nextScheduledBackup: this.calculateNextBackupTime(),
 			reviewsSinceLastBackup: this.reviewsSinceLastBackup,
 			isBackupInProgress: this.isBackupInProgress,
+			sessionStartBackupPath: this.sessionStartBackupPath,
 		};
 	}
 
@@ -176,7 +179,11 @@ export class BackgroundBackupManager {
 
 		try {
 			// Create backup
-			await this.backupService.createBackup();
+			const backupPath = await this.backupService.createBackup();
+			// Capture the first backup of the session as the session start checkpoint.
+			if (this.sessionStartBackupPath === null) {
+				this.sessionStartBackupPath = backupPath;
+			}
 			this.lastBackupTime = Date.now();
 			this.reviewsSinceLastBackup = 0;
 			this.isDirty = false;

@@ -144,6 +144,50 @@ describe("ReviewService", () => {
 		});
 	});
 
+	describe("gradeCard", () => {
+		it("returns persisted=false when FSRS write is rejected", async () => {
+			const card = createMockFlashcard({
+				id: "missing-card",
+				fsrs: { state: State.New },
+			});
+			const flashcardManager = {
+				updateCardFSRS: vi.fn(() => false),
+			} as never;
+
+			const result = await reviewService.gradeCard(
+				card,
+				Rating.Good,
+				fsrsService,
+				flashcardManager,
+			);
+
+			expect(result.persisted).toBe(false);
+			expect(flashcardManager.updateCardFSRS).toHaveBeenCalledWith(
+				"missing-card",
+				result.updatedCard.fsrs,
+			);
+		});
+
+		it("returns persisted=true when FSRS write succeeds", async () => {
+			const card = createMockFlashcard({
+				id: "existing-card",
+				fsrs: { state: State.New },
+			});
+			const flashcardManager = {
+				updateCardFSRS: vi.fn(() => true),
+			} as never;
+
+			const result = await reviewService.gradeCard(
+				card,
+				Rating.Good,
+				fsrsService,
+				flashcardManager,
+			);
+
+			expect(result.persisted).toBe(true);
+		});
+	});
+
 	describe("calculateSessionStats", () => {
 		it("should count ratings correctly", () => {
 			const results = [

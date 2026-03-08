@@ -15,11 +15,12 @@ export async function handleDeleteCard(
 	);
 	if (!confirmed) return allCards;
 
-	const success = await flashcardManager.removeFlashcardById(card.id);
+	const result = await flashcardManager.removeFlashcardByIdWithDetails(card.id);
 
-	if (success) {
-		notify().cardsDeleted(1);
-		const updated = allCards.filter((c) => c.id !== card.id);
+	if (result.ok) {
+		notify().cardsDeleted(result.affectedCount);
+		const removedIds = new Set(result.affectedIds);
+		const updated = allCards.filter((c) => !removedIds.has(c.id));
 		setCards(updated);
 		return updated;
 	}
@@ -86,17 +87,12 @@ export async function handleDeleteAll(
 	);
 	if (!confirmed) return;
 
-	let deletedCount = 0;
-
-	for (const card of cards) {
-		const success = await flashcardManager.removeFlashcardById(card.id);
-		if (success) {
-			deletedCount++;
-		}
-	}
-
-	setCards([]);
-	notify().cardsDeleted(deletedCount);
+	const result = flashcardManager.removeFlashcardsByIdsWithDetails(
+		cards.map((card) => card.id),
+	);
+	const removedIds = new Set(result.affectedIds);
+	setCards(cards.filter((card) => !removedIds.has(card.id)));
+	notify().cardsDeleted(result.affectedCount);
 }
 
 export async function openSourceNote(
