@@ -373,10 +373,7 @@
 
 	.true-recall-import-editor .cm-scroller {
 		overflow: auto;
-		padding: 16px 18px;
-	}
-
-	.true-recall-import-editor .cm-content {
+		padding: 12px 14px;
 		min-height: 100%;
 	}
 }
