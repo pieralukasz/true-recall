@@ -288,8 +288,11 @@ export class CardRepository {
 		cardId: string,
 		newFSRSData: FSRSCardData,
 		reviewLogEntry?: CardReviewLogEntry,
-	): void {
+	): boolean {
 		const existing = this.store.get(cardId);
+		if (!existing) {
+			return false;
+		}
 		const entry: FSRSCardData = { ...newFSRSData };
 
 		// Append review to history if provided
@@ -354,6 +357,7 @@ export class CardRepository {
 		}
 
 		notifyCardChange({ type: "updated", cardId, changes });
+		return true;
 	}
 
 	updateSourceUid(cardId: string, newSourceUid: string): boolean {
@@ -426,12 +430,58 @@ export class CardRepository {
 	}
 
 	delete(cardId: string): boolean {
+		return this.deleteWithCascade(cardId).length > 0;
+	}
+
+	deleteWithCascade(cardId: string): string[] {
 		const card = this.store.get(cardId);
 		if (!card) {
-			return false;
+			return [];
 		}
 
-		const removedIds: string[] = [];
+		const removedIds = this.collectCascadeDeleteIds(cardId);
+		if (removedIds.length === 0) {
+			return [];
+		}
+		this.store.cards.bulkSoftDelete(removedIds);
+
+		notifyCardChange({ type: "removed", cardId, cardIds: removedIds });
+
+		return removedIds;
+	}
+
+	deleteBatch(cardIds: string[]): number {
+		return this.deleteBatchWithCascade(cardIds).length;
+	}
+
+	deleteBatchWithCascade(cardIds: string[]): string[] {
+		if (cardIds.length === 0) return [];
+
+		const allRemovedIds = new Set<string>();
+		for (const cardId of cardIds) {
+			const ids = this.collectCascadeDeleteIds(cardId);
+			for (const id of ids) {
+				allRemovedIds.add(id);
+			}
+		}
+
+		if (allRemovedIds.size === 0) {
+			return [];
+		}
+
+		const removedIds = [...allRemovedIds];
+		this.store.cards.bulkSoftDelete(removedIds);
+
+		notifyCardChange({ type: "bulk", cardIds: removedIds, action: "removed" });
+
+		return removedIds;
+	}
+
+	private collectCascadeDeleteIds(cardId: string): string[] {
+		const card = this.store.get(cardId);
+		if (!card) return [];
+
+		const removedIds = new Set<string>([cardId]);
 
 		// Cascade-delete cloze siblings (all cards sharing the same template)
 		if (card.cardType === "cloze" && card.clozeTemplate && card.sourceUid) {
@@ -440,10 +490,7 @@ export class CardRepository {
 				card.clozeTemplate,
 			);
 			for (const sibling of siblings) {
-				if (sibling.id !== cardId) {
-					this.store.cards.softDeleteWithCascade(sibling.id);
-					removedIds.push(sibling.id);
-				}
+				removedIds.add(sibling.id);
 			}
 		}
 
@@ -451,28 +498,11 @@ export class CardRepository {
 		if (!card.reverseOf) {
 			const reverseCard = this.store.cards.getCardByReverseOf(cardId);
 			if (reverseCard) {
-				this.store.cards.softDeleteWithCascade(reverseCard.id);
-				removedIds.push(reverseCard.id);
+				removedIds.add(reverseCard.id);
 			}
 		}
 
-		this.store.cards.softDeleteWithCascade(cardId);
-		removedIds.push(cardId);
-
-		notifyCardChange({ type: "removed", cardId, cardIds: removedIds });
-
-		return true;
-	}
-
-	deleteBatch(cardIds: string[]): number {
-		if (cardIds.length === 0) return 0;
-
-		// Single SQL transaction instead of N individual deletes
-		const count = this.store.cards.bulkSoftDelete(cardIds);
-
-		notifyCardChange({ type: "bulk", cardIds, action: "removed" });
-
-		return count;
+		return [...removedIds];
 	}
 
 	/** Returns true if card was saved, false if skipped (already exists) */

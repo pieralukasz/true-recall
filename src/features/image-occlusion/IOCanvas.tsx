@@ -156,6 +156,7 @@ export function IOCanvas({
 		const handle = target.getAttribute(
 			"data-io-handle",
 		) as ResizeCorner | null;
+		const currentTool = toolRef.current;
 
 		if (spacePressedRef.current || event.button === 1) {
 			dragRef.current = {
@@ -175,7 +176,14 @@ export function IOCanvas({
 		// even when image hasn't loaded (zero-size container).
 		if (regionId) {
 			onSelectRegionRef.current(regionId);
-		} else if (!handle) {
+
+			// In draw mode, clicking a region/handle enters select mode,
+			// but does not start move/resize in the same pointer interaction.
+			if (currentTool !== "select") {
+				onToolChangeRef.current?.("select");
+				return;
+			}
+		} else if (!handle && currentTool === "select") {
 			onSelectRegionRef.current(null);
 		}
 
@@ -191,7 +199,6 @@ export function IOCanvas({
 		}
 
 		if (regionId) {
-			const currentTool = toolRef.current;
 			if (currentTool === "select") {
 				const region = definitionRef.current.regions.find(
 					(r) => r.id === regionId,
@@ -210,7 +217,6 @@ export function IOCanvas({
 			return;
 		}
 
-		const currentTool = toolRef.current;
 		if (currentTool === "rect" || currentTool === "ellipse") {
 			dragRef.current = {
 				type: "draw",
@@ -279,7 +285,6 @@ export function IOCanvas({
 				if (result) {
 					onDefinitionChangeRef.current(result.definition);
 					onSelectRegionRef.current(result.regionId);
-					onToolChangeRef.current?.("select");
 				}
 			}
 		}

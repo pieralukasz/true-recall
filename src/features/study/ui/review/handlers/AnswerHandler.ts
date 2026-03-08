@@ -209,7 +209,19 @@ export class AnswerHandler {
 			writeExecuted = true;
 			pendingTimeoutId = null;
 
-			this.deps.flashcardManager.updateCardFSRS(card.id, updatedCard.fsrs);
+			const persisted = this.deps.flashcardManager.updateCardFSRS(
+				card.id,
+				updatedCard.fsrs,
+			);
+			if (!persisted) {
+				const runtimeReview = this.deps.getReview();
+				runtimeReview.removeCardById(card.id);
+				this.deps.sessionPersistence.removeReviewedCards([card.id]);
+				if (!runtimeReview.isComplete()) {
+					this.updateSchedulingPreview();
+				}
+				return;
+			}
 
 			try {
 				this.deps.sessionPersistence.recordReview(

@@ -5,6 +5,7 @@
  */
 
 import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
+import type { SessionPersistenceService } from "@features/core/persistence/session-persistence.service";
 import {
 	type GeneratedCard,
 	generateCardsForNote,
@@ -99,6 +100,7 @@ export interface UpdateImageOcclusionNoteParams {
 export class FlashcardManager {
 	private app: App;
 	private store: SqliteStoreService | null = null;
+	private sessionPersistence: SessionPersistenceService | null = null;
 	private frontmatterService: FrontmatterService;
 	private sourceNoteService: SourceNoteService;
 
@@ -120,6 +122,10 @@ export class FlashcardManager {
 		this.store = store;
 		this.cardRepository = new CardRepository(store);
 		this.cardQueryService = new CardQueryService(store, this.sourceNoteService);
+	}
+
+	setSessionPersistence(sessionPersistence: SessionPersistenceService): void {
+		this.sessionPersistence = sessionPersistence;
 	}
 
 	hasStore(): boolean {
@@ -287,12 +293,21 @@ export class FlashcardManager {
 		if (!this.cardRepository) {
 			return false;
 		}
-		return this.cardRepository.delete(cardId);
+		const removedIds = this.cardRepository.deleteWithCascade(cardId);
+		if (removedIds.length > 0) {
+			this.sessionPersistence?.removeReviewedCards(removedIds);
+			return true;
+		}
+		return false;
 	}
 
 	removeFlashcardsByIds(cardIds: string[]): number {
 		if (!this.cardRepository) return 0;
-		return this.cardRepository.deleteBatch(cardIds);
+		const removedIds = this.cardRepository.deleteBatchWithCascade(cardIds);
+		if (removedIds.length > 0) {
+			this.sessionPersistence?.removeReviewedCards(removedIds);
+		}
+		return removedIds.length;
 	}
 
 	removeFlashcardFromSql(cardId: string): void {
@@ -317,11 +332,11 @@ export class FlashcardManager {
 		cardId: string,
 		newFSRSData: FSRSCardData,
 		reviewLogEntry?: CardReviewLogEntry,
-	): void {
+	): boolean {
 		if (!this.cardRepository) {
 			throw new Error("Store not initialized");
 		}
-		this.cardRepository.updateFSRS(cardId, newFSRSData, reviewLogEntry);
+		return this.cardRepository.updateFSRS(cardId, newFSRSData, reviewLogEntry);
 	}
 
 	updateCardContent(
@@ -656,6 +671,7 @@ export class FlashcardManager {
 
 		if (deletedCardIds.length > 0) {
 			this.store.cards.bulkSoftDelete(deletedCardIds);
+			this.sessionPersistence?.removeReviewedCards(deletedCardIds);
 		}
 
 		// Create new cards for new ords
@@ -713,6 +729,7 @@ export class FlashcardManager {
 
 		if (removedCardIds.length > 0) {
 			this.store?.cards.bulkSoftDelete(removedCardIds);
+			this.sessionPersistence?.removeReviewedCards(removedCardIds);
 			notifyCardChange({
 				type: "bulk",
 				cardIds: removedCardIds,

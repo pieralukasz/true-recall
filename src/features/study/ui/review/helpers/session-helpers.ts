@@ -239,7 +239,8 @@ export function applyMutation(
 			break;
 		}
 		case "bulk": {
-			if (m.action !== "removed" || !m.cardIds) return;
+			if (!m.cardIds) return;
+			if (m.action !== "removed" && m.action !== "delete") return;
 			const queueIds = new Set(review.queue.map((c) => c.id));
 			const idsToRemove = m.cardIds.filter((id) => queueIds.has(id));
 			if (idsToRemove.length > 0) {

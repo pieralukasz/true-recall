@@ -288,11 +288,13 @@ export default class TrueRecallPlugin extends Plugin {
 	// }
 
 	private initializeDeletionHandler(): void {
-		if (!this.cardStore || !this.frontmatterIndex) return;
+		if (!this.cardStore || !this.frontmatterIndex || !this.sessionPersistence)
+			return;
 
 		this.deletionHandler = new DeletionHandlerService({
 			frontmatterIndex: this.frontmatterIndex,
 			store: this.cardStore,
+			sessionPersistence: this.sessionPersistence,
 		});
 
 		registerDeletionHandler(this, this.deletionHandler);
@@ -301,6 +303,7 @@ export default class TrueRecallPlugin extends Plugin {
 			app: this.app,
 			frontmatterIndex: this.frontmatterIndex,
 			store: this.cardStore,
+			sessionPersistence: this.sessionPersistence,
 			frontmatterService: this.flashcardManager.getFrontmatterService(),
 		});
 		uidGuardian.register();
@@ -836,6 +839,7 @@ export default class TrueRecallPlugin extends Plugin {
 				this.cardStore,
 				this.dayBoundaryService,
 			);
+			this.flashcardManager.setSessionPersistence(this.sessionPersistence);
 
 			await this.sessionPersistence.migrateStatsJsonToSql();
 			this.backupService = new BackupService(this.app, this.cardStore);
