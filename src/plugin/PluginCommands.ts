@@ -41,12 +41,6 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 	});
 
 	plugin.addCommand({
-		id: "open-statistics",
-		name: "Open statistics panel",
-		callback: () => void plugin.openStatsView(),
-	});
-
-	plugin.addCommand({
 		id: "open-fsrs-simulator",
 		name: "Open FSRS simulator",
 		callback: () => void plugin.openSimulator(),

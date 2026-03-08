@@ -4,7 +4,7 @@ import { useApp, useIcon, usePlugin } from "@shared/ui/preact";
 import { cn } from "@shared/ui/utils";
 import { useCallback } from "preact/hooks";
 
-type NavItemId = "dashboard" | "add" | "browse" | "stats";
+type NavItemId = "dashboard" | "add" | "browse";
 
 interface NavItem {
 	id: NavItemId;
@@ -16,7 +16,6 @@ const NAV_ITEMS: NavItem[] = [
 	{ id: "dashboard", label: "Dashboard", icon: "layout-dashboard" },
 	{ id: "add", label: "Add", icon: "plus" },
 	{ id: "browse", label: "Browse", icon: "list" },
-	{ id: "stats", label: "Stats", icon: "bar-chart-2" },
 ];
 
 export interface AppNavBarProps {
@@ -41,9 +40,6 @@ export function AppNavBar({ activeItem }: AppNavBarProps) {
 				}
 				case "browse":
 					await plugin.openCardBrowser();
-					break;
-				case "stats":
-					await plugin.openStatsView();
 					break;
 			}
 		},
