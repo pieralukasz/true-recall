@@ -106,6 +106,13 @@ export class SessionPersistenceService {
 		}
 	}
 
+	removeReviewedCards(cardIds: string[]): void {
+		const today = this.getTodayKey();
+		for (const cardId of cardIds) {
+			this.store.stats.removeReviewedCard(today, cardId);
+		}
+	}
+
 	/**
 	 * Get set of cards reviewed today (for queue exclusion)
 	 */

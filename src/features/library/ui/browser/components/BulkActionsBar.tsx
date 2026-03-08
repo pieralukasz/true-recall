@@ -40,6 +40,7 @@ export function BulkActionsBar({
 
 	const handleForget = useCallback(() => {
 		const count = plugin.cardStore.cards.bulkForget(ids);
+		plugin.sessionPersistence?.removeReviewedCards(ids);
 		notifyCardChange({ type: "bulk", cardIds: ids, action: "reset" });
 		notify().cardsForgotten(count);
 		onClearSelection();
