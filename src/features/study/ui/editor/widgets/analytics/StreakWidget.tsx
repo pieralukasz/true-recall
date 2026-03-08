@@ -1,7 +1,6 @@
 import { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
 import { useComputed } from "@preact/signals";
 import { cards } from "@shared/services/reactive-card-store";
-import { Clickable } from "@shared/ui/components";
 import { usePlugin } from "@shared/ui/preact";
 import { useMemo } from "preact/hooks";
 import { configValue, parseCodeblockConfig } from "../config-parser";
@@ -74,21 +73,13 @@ export function StreakWidget({ source }: { source: string }) {
 		plugin.openCustomStudyModal().catch(() => {});
 	};
 
-	const handleStreakClick = () => {
-		plugin.openStatsView().catch(() => {});
-	};
-
 	return (
 		<div class="ep:flex ep:flex-col ep:gap-2 ep:p-3 ep:text-sm">
 			{/* Top row: streak + today + action */}
 			<div class="ep:flex ep:items-center ep:gap-3 ep:flex-wrap ep:text-xs">
-				<Clickable
-					class="ep:font-semibold hover:ep:underline"
-					onClick={handleStreakClick}
-					title="Open statistics"
-				>
+				<span class="ep:font-semibold">
 					{data.current}d streak
-				</Clickable>
+				</span>
 
 				{showLongest && data.longest > 0 && (
 					<span class="ep:text-obs-muted">(longest: {data.longest}d)</span>

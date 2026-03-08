@@ -1,7 +1,6 @@
 import { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
 import { useComputed } from "@preact/signals";
 import { cards } from "@shared/services/reactive-card-store";
-import { Clickable } from "@shared/ui/components";
 import { usePlugin } from "@shared/ui/preact";
 import { useMemo, useRef, useState } from "preact/hooks";
 import { configValue, parseCodeblockConfig } from "../config-parser";
@@ -183,10 +182,6 @@ export function HeatmapWidget({ source }: { source: string }) {
 		setTooltip(null);
 	};
 
-	const handleStatsClick = () => {
-		plugin.openStatsView().catch(() => {});
-	};
-
 	return (
 		<div
 			class="ep:flex ep:flex-col ep:gap-2 ep:p-3 ep:text-sm"
@@ -198,12 +193,9 @@ export function HeatmapWidget({ source }: { source: string }) {
 				<span class="ep:font-semibold">
 					Activity (last {configValue(config, "months", 12)} months)
 				</span>
-				<Clickable
-					class="ep:text-obs-muted hover:ep:underline"
-					onClick={handleStatsClick}
-				>
+				<span class="ep:text-obs-muted">
 					{data.daysActive} days active
-				</Clickable>
+				</span>
 			</div>
 
 			{/* SVG heatmap */}
@@ -271,9 +263,9 @@ export function HeatmapWidget({ source }: { source: string }) {
 					</div>
 				)}
 				{showTotal && (
-					<Clickable class="hover:ep:underline" onClick={handleStatsClick}>
+					<span>
 						Total: {data.totalReviews.toLocaleString()}
-					</Clickable>
+					</span>
 				)}
 			</div>
 

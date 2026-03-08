@@ -1,5 +1,4 @@
 import { createSimulatorSlice } from "@features/metrics/store/simulator.slice";
-import { createStatsSlice } from "@features/metrics/store/stats.slice";
 import { createPanelSlice } from "@features/study/store/panel.slice";
 import { createReviewSlice } from "@features/study/store/review.slice";
 import type { AppState, AppStoreDeps } from "@shared/store/types";
@@ -14,7 +13,6 @@ export function createAppStore(deps: AppStoreDeps) {
 			review: createReviewSlice(set, get, deps),
 			panel: createPanelSlice(set, get, deps),
 			simulator: createSimulatorSlice(set, get, deps),
-			stats: createStatsSlice(set, get, deps),
 		})),
 	);
 }

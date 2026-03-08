@@ -1,11 +1,9 @@
 import { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
 import { useComputed } from "@preact/signals";
 import { cards } from "@shared/services/reactive-card-store";
-import { Clickable } from "@shared/ui/components";
 import { usePlugin } from "@shared/ui/preact";
 import { useMemo } from "preact/hooks";
 import { configValue, parseCodeblockConfig } from "../config-parser";
-import { WidgetCta } from "../WidgetCta";
 
 interface RatingsData {
 	again: number;
@@ -237,20 +235,11 @@ export function RatingsWidget({ source }: { source: string }) {
 	const style = String(configValue(config, "style", "bar"));
 	const periodLabel = PERIOD_LABELS[period] ?? "This Week";
 
-	const handleClick = () => {
-		plugin.openStatsView().catch(() => {});
-	};
-
 	if (data.total === 0) {
 		return (
 			<div class="ep:flex ep:flex-col ep:gap-2 ep:p-3 ep:text-sm">
 				<div class="ep:flex ep:items-center ep:justify-between ep:text-xs">
 					<span class="ep:text-obs-muted">{periodLabel}</span>
-					<WidgetCta
-						label="Stats →"
-						onClick={handleClick}
-						variant="secondary"
-					/>
 				</div>
 				<div class="ep:text-obs-muted ep:text-xs">
 					No reviews in this period
@@ -262,23 +251,16 @@ export function RatingsWidget({ source }: { source: string }) {
 	return (
 		<div class="ep:flex ep:flex-col ep:gap-2 ep:p-3 ep:text-sm">
 			<div class="ep:flex ep:items-center ep:justify-between ep:text-xs">
-				<Clickable
-					class="ep:text-obs-muted hover:ep:underline"
-					onClick={handleClick}
-					title="Open statistics"
-				>
+				<span class="ep:text-obs-muted">
 					{periodLabel}
-				</Clickable>
-				<WidgetCta label="Stats →" onClick={handleClick} variant="secondary" />
+				</span>
 			</div>
 
-			<Clickable onClick={handleClick} title="Open statistics">
-				{style === "donut" ? (
-					<DonutChart data={data} />
-				) : (
-					<BarChart data={data} />
-				)}
-			</Clickable>
+			{style === "donut" ? (
+				<DonutChart data={data} />
+			) : (
+				<BarChart data={data} />
+			)}
 		</div>
 	);
 }

@@ -1,6 +1,5 @@
 import { useComputed } from "@preact/signals";
 import { allCardsArray, cards } from "@shared/services/reactive-card-store";
-import { Clickable } from "@shared/ui/components";
 import { usePlugin } from "@shared/ui/preact";
 import { useMemo } from "preact/hooks";
 import { State } from "ts-fsrs";
@@ -121,11 +120,7 @@ export function CountdownWidget({ source }: { source: string }) {
 			{/* Header: label + days */}
 			<div class="ep:flex ep:items-baseline ep:justify-between">
 				<span class="ep:font-semibold ep:text-xs">{data.label}</span>
-				<Clickable
-					class="ep:flex ep:items-baseline ep:gap-1 hover:ep:opacity-80"
-					onClick={() => plugin.openStatsView().catch(() => {})}
-					title="Open statistics"
-				>
+				<div class="ep:flex ep:items-baseline ep:gap-1">
 					<span
 						class="ep:text-xl ep:font-bold ep:leading-none"
 						style={{ color: URGENCY_COLORS[data.urgency] }}
@@ -135,7 +130,7 @@ export function CountdownWidget({ source }: { source: string }) {
 					<span class="ep:text-xs ep:text-obs-muted">
 						{formatDaysSuffix(data.daysRemaining)}
 					</span>
-				</Clickable>
+				</div>
 			</div>
 
 			{/* Readiness bar */}

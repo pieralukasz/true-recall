@@ -26,9 +26,5 @@ export type {
 	SimulatorSliceState,
 	// Helper types
 	SliceCreator,
-	StatsApi,
-	StatsSliceActions,
-	// Stats slice
-	StatsSliceState,
 	ViewMode,
 } from "@shared/store/types";
