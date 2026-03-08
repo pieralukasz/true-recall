@@ -16,7 +16,11 @@ export function BackgroundBackupSection() {
 		<FormCard title="Background backup">
 			<InfoBlock>
 				<p>
-					Automatic periodic backups run in the background to protect your data.
+					Your active SQL database remains the source of truth during study and
+					editing.
+				</p>
+				<p>
+					Periodic backups run in the background as protection only.
 				</p>
 				<p>
 					Smart retention keeps recent backups densely and older ones sparsely.
