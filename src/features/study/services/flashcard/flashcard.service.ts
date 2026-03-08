@@ -65,6 +65,7 @@ export interface CreateNoteParams {
 	sourceUid?: string;
 	sourceText?: string;
 	createdVia?: string;
+	createdAt?: number;
 }
 
 export interface CreateNoteResult {
@@ -442,7 +443,7 @@ export class FlashcardManager {
 		const cards: FSRSCardData[] = [];
 
 		for (const gen of generated) {
-			const fsrsData = this.createCardFromGenerated(gen, note, noteType);
+			const fsrsData = this.createCardFromGenerated(gen, note, noteType, params.createdAt);
 			cards.push(fsrsData);
 		}
 
@@ -738,6 +739,7 @@ export class FlashcardManager {
 		gen: GeneratedCard,
 		note: Note,
 		noteType: NoteType,
+		createdAt?: number,
 	): FSRSCardData {
 		const template =
 			noteType.templates.find((t) => t.ordinal === gen.templateOrd) ??
@@ -753,8 +755,9 @@ export class FlashcardManager {
 			clozeIndex: gen.templateOrd,
 		});
 
+		const defaultData = createDefaultFSRSData(gen.id);
 		const fsrsData: FSRSCardData = {
-			...createDefaultFSRSData(gen.id),
+			...defaultData,
 			question,
 			answer,
 			sourceUid: gen.sourceUid,
@@ -765,6 +768,7 @@ export class FlashcardManager {
 			createdVia: note.createdVia,
 			sourceText: note.sourceText,
 			alwaysTypeIn: note.tags.includes(FLASHCARD_CONFIG.alwaysTypeInTag),
+			...(createdAt != null && { createdAt }),
 		};
 
 		this.store?.set(gen.id, fsrsData);

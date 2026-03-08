@@ -12,15 +12,17 @@ import type { NoteType } from "@shared/types/note.types";
 
 const SHARED_RULES = `MANDATORY RULES:
 1. One flashcard = ONE piece of information. If answer has multiple facts, create SEPARATE flashcards.
-2. Questions and answers must be concise and UNAMBIGUOUS.
-3. Create a flashcard for EVERY piece of information from the text.
+2. Questions and answers must be concise and UNAMBIGUOUS — exactly one correct answer per question.
+3. Each question must be understandable WITHOUT the source text.
 4. BOLD the keyword in every question using **bold**.
-5. If the text contains NO new information for flashcards, return ONLY: NO_NEW_CARDS
-6. Use the same language as the source text.
+5. Create a flashcard for EVERY piece of information from the text.
+6. Every technical term, concept, or acronym that appears in the text for the first time MUST get its own definition card — even if the term is only mentioned briefly or in a list.
+7. If the text contains NO new information for flashcards, return ONLY: NO_NEW_CARDS
+8. Use the same language as the source text.
 
 SOURCE TRACKING:
 - After each card's fields, add: <!-- source: [exact verbatim quote] -->
-- The quote must be EXACTLY copied from the input text (same words, same punctuation). Do NOT paraphrase.
+- The quote must be a PERFECT, IDENTICAL copy from the input text — same words, same punctuation, same capitalization, same spacing. Do NOT paraphrase, rephrase, shorten, reorder, or modify in ANY way.
 - Keep the quote to the specific sentence(s) that contain the information for that flashcard.
 
 FORMATTING:
@@ -31,15 +33,15 @@ FORMATTING:
 
 ANTI-RULES:
 - Anti-Tautology: Question MUST NOT contain the answer. Use synonyms.
-- Anti-List: Never use bullet points in answers. Use unique "anchors" in questions to split lists.
+- Anti-List: Never use bullet points in answers. Split into separate cards with unique anchors in questions.
 - No Order Questions: NEVER use "What is the first/second/next..."
-- Anti-Boolean: NEVER ask Yes/No questions. Rephrase to ask for the specific fact.
-- Anti-Example-Trap: Don't ask "What is an example of X?" — instead state the example and ask what category/type it belongs to.
+- Anti-Boolean: NEVER ask Yes/No questions. Ask for the specific fact.
+- Anti-Example-Trap: Don't ask "What is an example of X?" — state the example, ask for the category.
 
 QUESTION QUALITY:
 - Context-Free: Each question must be understandable WITHOUT the source text. Include enough context in the question itself.
-- One Correct Answer: The question must permit exactly ONE correct response. Eliminate ambiguity that could allow alternative correct answers.
-- Concrete over Abstract: When the answer is an abstract concept, include a brief concrete example or visual cue.
+- One Correct Answer: The question must permit exactly ONE correct response. Eliminate ambiguity.
+- Concrete over Abstract: When the answer is an abstract or technical term, add a brief clarifying example or visual cue in parentheses.
 - Disambiguation: When two concepts are easily confused, add a distinguishing cue (e.g., "Unlike X, what does Y...").
 
 KNOWLEDGE STRUCTURE:
@@ -158,7 +160,7 @@ Text: "Rosacea is manifested by intense reddening of the skin. In an advanced de
 
 #type/${slug}
 ${noteType.fields[0]}: What is **[[rosacea]]**?
-${noteType.fields[1]}: Chronic skin condition causing intense facial reddening
+${noteType.fields[1]}: Chronic facial skin reddening
 <!-- source: Rosacea is manifested by intense reddening of the skin. -->
 ---
 #type/${slug}
@@ -168,11 +170,16 @@ ${noteType.fields[1]}: Papulopustular changes (pus-filled bumps resembling acne)
 ---
 #type/${slug}
 ${noteType.fields[0]}: Unlike [[rosacea]], what distinguishes **[[acne vulgaris]]**?
-${noteType.fields[1]}: Presence of comedones (blackheads and whiteheads)
+${noteType.fields[1]}: Presence of comedones (blackheads)
 <!-- source: Acne vulgaris also causes skin redness, but is distinguished by comedones. -->
 ---
 #type/${slug}
-${noteType.fields[0]}: (Cell biology) What does the **[[mitochondrial matrix]]** contain?
+${noteType.fields[0]}: What are **[[comedones]]**?
+${noteType.fields[1]}: Clogged hair follicles — blackheads (open) and whiteheads (closed)
+<!-- source: Acne vulgaris also causes skin redness, but is distinguished by comedones. -->
+---
+#type/${slug}
+${noteType.fields[0]}: (Cell bio) What does the **[[mitochondrial matrix]]** contain?
 ${noteType.fields[1]}: Enzymes for the citric acid cycle (Krebs cycle)
 <!-- source: The mitochondrial matrix contains enzymes for the citric acid cycle. -->`;
 }
@@ -188,6 +195,72 @@ function getFieldDescription(noteType: NoteType, field: string): string {
 	if (fieldLower === "back") return "answer text";
 
 	return `${field.toLowerCase()} content`;
+}
+
+/**
+ * Build a prompt for rewriting/splitting existing flashcards into atomic ones.
+ */
+export function buildRewritePrompt(noteTypes: NoteType[]): string {
+	const filtered = noteTypes.filter(
+		(nt) => !(nt.type === 0 && nt.templates.length > 1),
+	);
+
+	const typeFormats = filtered.map((nt) => {
+		const slug = resolveSlug(nt);
+		const fields = nt.fields.map((f) => `${f}: [value]`).join("\n");
+		const hint = getTypeHint(nt);
+		return `${nt.name} (#type/${slug})${hint}
+\`\`\`
+#type/${slug}
+${fields}
+<!-- source: [original card's question as reference] -->
+---
+\`\`\``;
+	});
+
+	return `You are an expert in Spaced Repetition Systems. Your task is to REWRITE/SPLIT existing flashcard(s) into multiple atomic flashcards.
+
+The user will provide existing flashcard(s) as:
+#existing
+Front: [question]
+Back: [answer]
+---
+
+Transform each into atomic, high-retention flashcards using one of these output formats:
+
+${typeFormats.join("\n\n")}
+
+${SHARED_RULES}
+
+${CLOZE_RULES}
+
+REWRITE-SPECIFIC RULES:
+- If the card is already atomic and well-formed, return it as-is in the output format.
+- Use the original card's question text as the source reference in <!-- source: ... -->.
+- Choose the card type that best supports memorization for each fact.
+
+EXAMPLE:
+Input:
+#existing
+Front: What are the symptoms of [[flu]]?
+Back: High fever, cough, and muscle pain
+---
+
+Output:
+#type/basic
+Front: What **[[body temperature]]** symptom occurs in [[flu]]?
+Back: High fever
+<!-- source: What are the symptoms of flu? -->
+---
+#type/basic
+Front: Which **[[respiratory]]** symptom is characteristic of [[flu]]?
+Back: Cough
+<!-- source: What are the symptoms of flu? -->
+---
+#type/basic
+Front: What type of **[[pain]]** accompanies [[flu]]?
+Back: Muscle pain
+<!-- source: What are the symptoms of flu? -->`;
 }
 
 function getTypeHint(noteType: NoteType): string {

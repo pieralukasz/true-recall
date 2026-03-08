@@ -99,15 +99,17 @@ Back: [answer text]
 
 MANDATORY RULES:
 1. One flashcard = ONE piece of information. If answer has multiple facts, create SEPARATE flashcards.
-2. Questions and answers must be concise and UNAMBIGUOUS.
-3. Create a flashcard for EVERY piece of information from the text.
+2. Questions and answers must be concise and UNAMBIGUOUS — exactly one correct answer per question.
+3. Each question must be understandable WITHOUT the source text.
 4. BOLD the keyword in every question using **bold**.
-5. If the text contains NO new information for flashcards, return ONLY: NO_NEW_CARDS
-6. Use the same language as the source text.
+5. Create a flashcard for EVERY piece of information from the text.
+Every technical term, concept, or acronym that appears in the text for the first time MUST get its own definition card — even if the term is only mentioned briefly or in a list.
+6. If the text contains NO new information for flashcards, return ONLY: NO_NEW_CARDS
+7. Use the same language as the source text.
 
 SOURCE TRACKING:
 - After each card's fields, add: <!-- source: [exact verbatim quote] -->
-- The quote must be EXACTLY copied from the input text (same words, same punctuation). Do NOT paraphrase.
+- The quote must be a PERFECT, IDENTICAL copy from the input text — same words, same punctuation, same capitalization, same spacing. Do NOT paraphrase, rephrase, shorten, reorder, or modify in ANY way.
 - Keep the quote to the specific sentence(s) that contain the information for that flashcard.
 
 FORMATTING:
@@ -118,15 +120,15 @@ FORMATTING:
 
 ANTI-RULES:
 - Anti-Tautology: Question MUST NOT contain the answer. Use synonyms.
-- Anti-List: Never use bullet points in answers. Use unique "anchors" in questions to split lists.
+- Anti-List: Never use bullet points in answers. Split into separate cards with unique anchors in questions.
 - No Order Questions: NEVER use "What is the first/second/next..."
-- Anti-Boolean: NEVER ask Yes/No questions. Rephrase to ask for the specific fact.
-- Anti-Example-Trap: Don't ask "What is an example of X?" — instead state the example and ask what category/type it belongs to.
+- Anti-Boolean: NEVER ask Yes/No questions. Ask for the specific fact.
+- Anti-Example-Trap: Don't ask "What is an example of X?" — state the example, ask for the category.
 
 QUESTION QUALITY:
 - Context-Free: Each question must be understandable WITHOUT the source text. Include enough context in the question itself.
-- One Correct Answer: The question must permit exactly ONE correct response. Eliminate ambiguity that could allow alternative correct answers.
-- Concrete over Abstract: When the answer is an abstract concept, include a brief concrete example or visual cue.
+- One Correct Answer: The question must permit exactly ONE correct response. Eliminate ambiguity.
+- Concrete over Abstract: When the answer is an abstract or technical term, add a brief clarifying example or visual cue in parentheses.
 - Disambiguation: When two concepts are easily confused, add a distinguishing cue (e.g., "Unlike X, what does Y...").
 
 KNOWLEDGE STRUCTURE:
@@ -135,11 +137,11 @@ KNOWLEDGE STRUCTURE:
 - Context Cues: When the source covers multiple distinct topics, prefix questions with a brief topic label in parentheses.
 
 EXAMPLE:
-Text: "Rosacea is manifested by intense reddening of the skin. In an advanced degree, papulopustular changes may appear. Acne vulgaris also causes skin redness, but is distinguished by comedones. The mitochondrial matrix contains enzymes for the citric acid cycle. ATP synthase is located in the inner mitochondrial membrane."
+Text: "Rosacea is manifested by intense reddening of the skin. In an advanced degree, papulopustular changes may appear. Acne vulgaris also causes skin redness, but is distinguished by comedones. The mitochondrial matrix contains enzymes for the citric acid cycle."
 
 #type/basic
 Front: What is **[[rosacea]]**?
-Back: Chronic skin condition causing intense facial reddening
+Back: Chronic facial skin reddening
 <!-- source: Rosacea is manifested by intense reddening of the skin. -->
 ---
 #type/basic
@@ -149,18 +151,18 @@ Back: Papulopustular changes (pus-filled bumps resembling acne)
 ---
 #type/basic
 Front: Unlike [[rosacea]], what distinguishes **[[acne vulgaris]]**?
-Back: Presence of comedones (blackheads and whiteheads)
+Back: Presence of comedones (blackheads)
 <!-- source: Acne vulgaris also causes skin redness, but is distinguished by comedones. -->
 ---
 #type/basic
-Front: (Cell biology) What does the **[[mitochondrial matrix]]** contain?
-Back: Enzymes for the citric acid cycle (Krebs cycle)
-<!-- source: The mitochondrial matrix contains enzymes for the citric acid cycle. -->
+Front: What are **[[comedones]]**?
+Back: Clogged hair follicles — blackheads (open) and whiteheads (closed)
+<!-- source: Acne vulgaris also causes skin redness, but is distinguished by comedones. -->
 ---
 #type/basic
-Front: (Cell biology) Where is **[[ATP synthase]]** located?
-Back: Inner mitochondrial membrane (the deeply folded cristae)
-<!-- source: ATP synthase is located in the inner mitochondrial membrane. -->`,
+Front: (Cell bio) What does the **[[mitochondrial matrix]]** contain?
+Back: Enzymes for the citric acid cycle (Krebs cycle)
+<!-- source: The mitochondrial matrix contains enzymes for the citric acid cycle. -->`,
 
 	cloze: `I would like you to help me create cloze deletion flashcards based on text using the "Cloze" card type.
 
@@ -206,7 +208,7 @@ GOOD: {{c1::DNA}} is transcribed into {{c2::mRNA}} in the nucleus
 
 SOURCE TRACKING:
 - After each card's fields, add: <!-- source: [exact verbatim quote] -->
-- The quote must be EXACTLY copied from the input text. Do NOT paraphrase.
+- The quote must be a PERFECT, IDENTICAL copy from the input text — same words, same punctuation, same capitalization, same spacing. Do NOT paraphrase, rephrase, shorten, reorder, or modify in ANY way.
 - Keep the quote to the specific sentence(s) for that flashcard.
 
 FORMATTING:
@@ -254,7 +256,7 @@ MANDATORY RULES:
 
 SOURCE TRACKING:
 - After each card's fields, add: <!-- source: [exact verbatim quote] -->
-- The quote must be EXACTLY copied from the input text. Do NOT paraphrase.
+- The quote must be a PERFECT, IDENTICAL copy from the input text — same words, same punctuation, same capitalization, same spacing. Do NOT paraphrase, rephrase, shorten, reorder, or modify in ANY way.
 
 FORMATTING:
 - Backlinks: Wrap key scientific terms in [[backlinks]] (lowercase only).
@@ -296,14 +298,16 @@ Extra: [optional context]
 \`\`\`
 
 MANDATORY RULES:
-1. One flashcard = ONE piece of information.
+1. One flashcard = ONE piece of information. Split multi-fact answers into separate cards.
 2. Choose the card type that best supports memorization for each fact.
-3. Questions and answers must be concise and UNAMBIGUOUS.
-4. BOLD the keyword in every question using **bold** (for basic cards).
-5. Create a flashcard for EVERY piece of information from the text.
-6. If the text contains NO new information, return ONLY: NO_NEW_CARDS
-7. Use the same language as the source text.
-8. Separate cards with --- on its own line.
+3. Questions and answers must be concise and UNAMBIGUOUS — exactly one correct answer per question.
+4. Each question must be understandable WITHOUT the source text.
+5. BOLD the keyword in every question using **bold** (for basic cards).
+6. Create a flashcard for EVERY piece of information from the text.
+Every technical term, concept, or acronym that appears in the text for the first time MUST get its own definition card — even if the term is only mentioned briefly or in a list.
+7. If the text contains NO new information, return ONLY: NO_NEW_CARDS
+8. Use the same language as the source text.
+9. Separate cards with --- on its own line.
 
 CLOZE RULES:
 - Use {{c1::text}} to hide a key term. Each cN creates a separate card.
@@ -314,7 +318,7 @@ CLOZE RULES:
 
 SOURCE TRACKING:
 - After each card's fields, add: <!-- source: [exact verbatim quote from the input text] -->
-- The quote must be EXACTLY copied from the input (same words, same punctuation). Do NOT paraphrase.
+- The quote must be a PERFECT, IDENTICAL copy from the input text — same words, same punctuation, same capitalization, same spacing. Do NOT paraphrase, rephrase, shorten, reorder, or modify in ANY way.
 - Keep the quote to the specific sentence(s) for that flashcard.
 
 FORMATTING:
@@ -323,15 +327,15 @@ FORMATTING:
 
 ANTI-RULES:
 - Anti-Tautology: Question MUST NOT contain the answer. Use synonyms.
-- Anti-List: Never use bullet points in answers. Use unique "anchors" in questions to split lists.
+- Anti-List: Never use bullet points in answers. Split into separate cards with unique anchors in questions.
 - No Order Questions: NEVER use "What is the first/second/next..."
-- Anti-Boolean: NEVER ask Yes/No questions. Rephrase to ask for the specific fact.
-- Anti-Example-Trap: Don't ask "What is an example of X?" — instead state the example and ask what category/type it belongs to.
+- Anti-Boolean: NEVER ask Yes/No questions. Ask for the specific fact.
+- Anti-Example-Trap: Don't ask "What is an example of X?" — state the example, ask for the category.
 
 QUESTION QUALITY:
 - Context-Free: Each question must be understandable WITHOUT the source text. Include enough context in the question itself.
-- One Correct Answer: The question must permit exactly ONE correct response. Eliminate ambiguity that could allow alternative correct answers.
-- Concrete over Abstract: When the answer is an abstract concept, include a brief concrete example or visual cue.
+- One Correct Answer: The question must permit exactly ONE correct response. Eliminate ambiguity.
+- Concrete over Abstract: When the answer is an abstract or technical term, add a brief clarifying example or visual cue in parentheses.
 - Disambiguation: When two concepts are easily confused, add a distinguishing cue (e.g., "Unlike X, what does Y...").
 
 KNOWLEDGE STRUCTURE:
@@ -342,7 +346,7 @@ KNOWLEDGE STRUCTURE:
 Choose the card type that best supports memorization for each fact.
 
 EXAMPLE:
-Text: "Mitochondria are the powerhouse of the cell. ATP synthase is located in the inner mitochondrial membrane. Rosacea manifests by intense reddening of the skin. Unlike rosacea, acne vulgaris is characterized by comedones."
+Text: "Mitochondria are the powerhouse of the cell. ATP synthase is located in the inner mitochondrial membrane. Rosacea manifests by intense reddening of the skin. Acne vulgaris is characterized by comedones."
 
 #type/cloze
 Text: [[mitochondria|Mitochondria]] are the main {{c1::ATP}}-producing organelles in cells
@@ -350,17 +354,17 @@ Extra:
 <!-- source: Mitochondria are the powerhouse of the cell. -->
 ---
 #type/cloze
-Text: (Cell biology) {{c1::ATP synthase}} is located in the inner [[mitochondrial membrane]]
+Text: (Cell bio) {{c1::ATP synthase}} is located in the inner [[mitochondrial membrane]]
 Extra: The deeply folded cristae
 <!-- source: ATP synthase is located in the inner mitochondrial membrane. -->
 ---
 #type/basic
-Front: What skin condition causes chronic facial **reddening** without comedones?
-Back: [[rosacea|Rosacea]]
+Front: What is **[[rosacea]]**?
+Back: Chronic facial skin reddening
 <!-- source: Rosacea manifests by intense reddening of the skin. -->
 ---
 #type/basic
 Front: Unlike [[rosacea]], what distinguishes **[[acne vulgaris]]**?
-Back: Presence of comedones (blackheads and whiteheads)
-<!-- source: Unlike rosacea, acne vulgaris is characterized by comedones. -->`,
+Back: Presence of comedones (blackheads)
+<!-- source: Acne vulgaris is characterized by comedones. -->`,
 };
