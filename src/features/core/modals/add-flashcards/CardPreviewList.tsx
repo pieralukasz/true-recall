@@ -1,13 +1,17 @@
 import type { ParsedCard } from "@features/study/services/flashcard/bulk-card-parser";
 import { BUILTIN_CLOZE_ID } from "@shared/types/note.types";
+import { Clickable } from "@shared/ui/components/Clickable";
+import { useState } from "preact/hooks";
 
-const MAX_PREVIEW_ITEMS = 100;
+const COLLAPSED_COUNT = 5;
 
 interface CardPreviewListProps {
 	cards: ParsedCard[];
 }
 
 export function CardPreviewList({ cards }: CardPreviewListProps) {
+	const [expanded, setExpanded] = useState(false);
+
 	if (cards.length === 0) return null;
 
 	const basicCount = cards.filter(
@@ -16,8 +20,9 @@ export function CardPreviewList({ cards }: CardPreviewListProps) {
 	const clozeCount = cards.filter(
 		(c) => c.noteTypeId === BUILTIN_CLOZE_ID,
 	).length;
-	const shown = cards.slice(0, MAX_PREVIEW_ITEMS);
-	const hidden = cards.length - shown.length;
+
+	const shown = expanded ? cards : cards.slice(0, COLLAPSED_COUNT);
+	const hiddenCount = cards.length - COLLAPSED_COUNT;
 
 	return (
 		<div class="ep:space-y-2">
@@ -34,10 +39,13 @@ export function CardPreviewList({ cards }: CardPreviewListProps) {
 				{shown.map((card, i) => (
 					<CardPreviewItem key={i} card={card} index={i} />
 				))}
-				{hidden > 0 && (
-					<div class="ep:text-ui-smaller ep:text-obs-faint ep:px-2 ep:py-1">
-						+{hidden} more card{hidden !== 1 ? "s" : ""}
-					</div>
+				{hiddenCount > 0 && !expanded && (
+					<Clickable
+						class="ep:text-ui-smaller ep:text-obs-faint ep:hover:text-obs-muted ep:px-2 ep:py-1"
+						onClick={() => setExpanded(true)}
+					>
+						+{hiddenCount} more card{hiddenCount !== 1 ? "s" : ""}
+					</Clickable>
 				)}
 			</div>
 		</div>
