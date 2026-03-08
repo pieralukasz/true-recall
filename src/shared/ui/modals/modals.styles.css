@@ -376,4 +376,8 @@
 		padding: 12px 14px;
 		min-height: 100%;
 	}
+
+	.true-recall-import-editor .cm-content {
+		flex-grow: 0;
+	}
 }

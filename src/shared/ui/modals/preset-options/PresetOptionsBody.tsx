@@ -33,14 +33,6 @@ export function PresetOptionsBody({
 		initialPresetId ?? settings.defaultPresetId,
 	);
 	const [version, setVersion] = useState(0);
-
-	// Re-read on version bump
-	void version;
-	const presets = settings.fsrsPresets;
-	const preset = presets.find((p) => p.id === selectedPresetId) ?? presets[0];
-	if (!preset) return null;
-
-	const isDefault = preset.id === settings.defaultPresetId;
 	const [applyToChildren, setApplyToChildren] = useState(false);
 
 	const hasChildren = useMemo(() => {
@@ -65,6 +57,14 @@ export function PresetOptionsBody({
 		},
 		[plugin],
 	);
+
+	// Re-read on version bump
+	void version;
+	const presets = settings.fsrsPresets;
+	const preset = presets.find((p) => p.id === selectedPresetId) ?? presets[0];
+	if (!preset) return null;
+
+	const isDefault = preset.id === settings.defaultPresetId;
 
 	const updatePreset = useCallback(
 		async (changes: Partial<FSRSPreset>) => {
@@ -106,27 +106,33 @@ export function PresetOptionsBody({
 	}, [plugin, preset.id, settings.defaultPresetId, refresh]);
 
 	const handleDone = useCallback(async () => {
-		const frontmatterService =
-			plugin.flashcardManager?.getFrontmatterService();
-		if (context?.contextPath && frontmatterService) {
-			const file = plugin.app.vault.getFileByPath(context.contextPath);
-			if (file) {
-				await frontmatterService.setFsrsPreset(file, preset.name);
-			}
+		try {
+			const frontmatterService =
+				plugin.flashcardManager?.getFrontmatterService();
+			if (context?.contextPath && frontmatterService) {
+				const file = plugin.app.vault.getFileByPath(context.contextPath);
+				if (file) {
+					await frontmatterService.setFsrsPreset(file, preset.name);
+				}
 
-			if (applyToChildren) {
-				const descendantPaths = getAllDescendantPaths(
-					context.contextPath,
-				);
-				for (const path of descendantPaths) {
-					const f = plugin.app.vault.getFileByPath(path);
-					if (f) {
-						await frontmatterService.setFsrsPreset(f, preset.name);
+				if (applyToChildren) {
+					const descendantPaths = getAllDescendantPaths(
+						context.contextPath,
+					);
+					for (const path of descendantPaths) {
+						const f = plugin.app.vault.getFileByPath(path);
+						if (f) {
+							await frontmatterService.setFsrsPreset(
+								f,
+								preset.name,
+							);
+						}
 					}
 				}
 			}
+		} finally {
+			onClose();
 		}
-		onClose();
 	}, [plugin, context, preset.name, onClose, applyToChildren, getAllDescendantPaths]);
 
 	return (
