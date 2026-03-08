@@ -34,13 +34,14 @@ export function PresetOptionsBody({
 	);
 	const [version, setVersion] = useState(0);
 	const [applyToChildren, setApplyToChildren] = useState(false);
+	const [isApplying, setIsApplying] = useState(false);
 
 	const hasChildren = useMemo(() => {
 		if (!context?.contextPath) return false;
 		return plugin.hierarchyService.getChildPaths(context.contextPath).length > 0;
 	}, [plugin, context?.contextPath]);
 
-	const getAllDescendantPaths = useCallback(
+	const getDescendantProjectPaths = useCallback(
 		(rootPath: string): string[] => {
 			const result: string[] = [];
 			const visited = new Set<string>();
@@ -48,8 +49,12 @@ export function PresetOptionsBody({
 				for (const child of plugin.hierarchyService.getChildPaths(path)) {
 					if (visited.has(child)) continue;
 					visited.add(child);
-					result.push(child);
-					collect(child);
+					const isProject =
+						plugin.hierarchyService.getChildPaths(child).length > 0;
+					if (isProject) {
+						result.push(child);
+						collect(child);
+					}
 				}
 			};
 			collect(rootPath);
@@ -106,34 +111,39 @@ export function PresetOptionsBody({
 	}, [plugin, preset.id, settings.defaultPresetId, refresh]);
 
 	const handleDone = useCallback(async () => {
-		try {
-			const frontmatterService =
-				plugin.flashcardManager?.getFrontmatterService();
-			if (context?.contextPath && frontmatterService) {
-				const file = plugin.app.vault.getFileByPath(context.contextPath);
-				if (file) {
-					await frontmatterService.setFsrsPreset(file, preset.name);
-				}
-
-				if (applyToChildren) {
-					const descendantPaths = getAllDescendantPaths(
-						context.contextPath,
-					);
-					for (const path of descendantPaths) {
-						const f = plugin.app.vault.getFileByPath(path);
-						if (f) {
-							await frontmatterService.setFsrsPreset(
-								f,
-								preset.name,
-							);
-						}
-					}
-				}
+		const frontmatterService =
+			plugin.flashcardManager?.getFrontmatterService();
+		if (context?.contextPath && frontmatterService) {
+			const file = plugin.app.vault.getFileByPath(context.contextPath);
+			if (file) {
+				await frontmatterService.setFsrsPreset(file, preset.name);
 			}
-		} finally {
-			onClose();
+
+			if (applyToChildren) {
+				const descendantPaths = getDescendantProjectPaths(
+					context.contextPath,
+				);
+				setIsApplying(true);
+				try {
+					await Promise.all(
+						descendantPaths.map((path) => {
+							const f = plugin.app.vault.getFileByPath(path);
+							return f
+								? frontmatterService.setFsrsPreset(
+										f,
+										preset.name,
+									)
+								: Promise.resolve();
+						}),
+					);
+				} finally {
+					onClose();
+				}
+				return;
+			}
 		}
-	}, [plugin, context, preset.name, onClose, applyToChildren, getAllDescendantPaths]);
+		onClose();
+	}, [plugin, context, preset.name, onClose, applyToChildren, getDescendantProjectPaths]);
 
 	return (
 		<div class="ep:flex ep:flex-col ep:flex-1 ep:min-h-0">
@@ -167,6 +177,7 @@ export function PresetOptionsBody({
 						<input
 							type="checkbox"
 							checked={applyToChildren}
+							disabled={isApplying}
 							onChange={(e) =>
 								setApplyToChildren(
 									(e.target as HTMLInputElement).checked,
@@ -182,8 +193,9 @@ export function PresetOptionsBody({
 					class="ep-btn mod-cta ep:text-ui-small"
 					onClick={() => void handleDone()}
 					stopPropagation={false}
+					disabled={isApplying}
 				>
-					Done
+					{isApplying ? "Applying..." : "Done"}
 				</Clickable>
 			</div>
 		</div>

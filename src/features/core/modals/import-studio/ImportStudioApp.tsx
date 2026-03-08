@@ -47,8 +47,10 @@ export function ImportStudioApp({
 	const [sessionCount, setSessionCount] = useState(0);
 	const [saving, setSaving] = useState(false);
 
-	// Source note picker
+	// Source note picker — auto-fill from active file, fall back to last used
 	const initialSourceNote = useMemo(() => {
+		const activeFile = app.workspace.getActiveFile();
+		if (activeFile) return activeFile;
 		if (!prefs.lastSourceNotePath) return null;
 		const file = app.vault.getAbstractFileByPath(prefs.lastSourceNotePath);
 		return file instanceof TFile ? file : null;
@@ -113,6 +115,10 @@ export function ImportStudioApp({
 
 	const handleSave = useCallback(async () => {
 		if (parseResult.cards.length === 0 || saving) return;
+		if (!selectedSourceNote) {
+			new Notice("Select a source note first");
+			return;
+		}
 		if (!plugin.flashcardManager?.hasStore()) {
 			new Notice("Database not initialized");
 			return;
@@ -179,7 +185,6 @@ export function ImportStudioApp({
 
 			<EditorSection
 				app={app}
-				noteType={noteType}
 				text={text}
 				onTextChange={setText}
 				onEditorReady={handleEditorReady}
@@ -194,6 +199,7 @@ export function ImportStudioApp({
 				cardCount={parseResult.cards.length}
 				detectedFormat={parseResult.detectedFormat}
 				saving={saving}
+				hasSourceNote={selectedSourceNote !== null}
 				onSave={() => void handleSave()}
 			/>
 		</div>
