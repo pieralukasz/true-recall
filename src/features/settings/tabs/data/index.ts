@@ -6,3 +6,4 @@ export { ImportExportSection } from "@features/settings/tabs/data/ImportExportSe
 export { IntegrityCheckSection } from "@features/settings/tabs/data/IntegrityCheckSection";
 export { ManualBackupSection } from "@features/settings/tabs/data/ManualBackupSection";
 export { SmartRetentionSection } from "@features/settings/tabs/data/SmartRetentionSection";
+export { StorageDiagnosticsSection } from "@features/settings/tabs/data/StorageDiagnosticsSection";

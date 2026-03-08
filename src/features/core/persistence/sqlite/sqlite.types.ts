@@ -16,7 +16,8 @@ export const DB_FILE = "true-recall.db"; // legacy single-device database
 export const DB_FILE_PREFIX = "true-recall-";
 export const DB_FILE_SUFFIX = ".db";
 export const LEGACY_DB_FILE = "true-recall.db";
-export const SAVE_DEBOUNCE_MS = 60000; // 60 seconds - reduces UI jank on large databases
+export const SAVE_DEBOUNCE_MS = 5000; // 5 seconds - better durability on app shutdown
+export const SAFETY_FLUSH_INTERVAL_MS = 15000; // hard safety flush every 15 seconds
 
 /**
  * Get the database filename for a specific device.
@@ -35,6 +36,22 @@ export function getDeviceDbFilename(deviceId: string): string {
 export function extractDeviceIdFromFilename(filename: string): string | null {
 	const match = filename.match(/^true-recall-([a-z0-9]{8})\.db$/);
 	return match?.[1] ?? null;
+}
+
+/**
+ * Convert Uint8Array to exact-size ArrayBuffer (respecting byteOffset/byteLength).
+ */
+export function toExactArrayBuffer(bytes: Uint8Array): ArrayBuffer {
+	if (
+		bytes.byteOffset === 0 &&
+		bytes.byteLength === bytes.buffer.byteLength
+	) {
+		return bytes.buffer as ArrayBuffer;
+	}
+	return bytes.buffer.slice(
+		bytes.byteOffset,
+		bytes.byteOffset + bytes.byteLength,
+	) as ArrayBuffer;
 }
 
 // Type for SQL row values from sql.js

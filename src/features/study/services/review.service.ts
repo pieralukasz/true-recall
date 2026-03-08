@@ -766,7 +766,11 @@ export class ReviewService {
 		fsrsService: FSRSService,
 		flashcardManager: FlashcardManager,
 		responseTime: number = 0,
-	): Promise<{ updatedCard: FSRSFlashcardItem; result: ReviewResult }> {
+	): Promise<{
+		updatedCard: FSRSFlashcardItem;
+		result: ReviewResult;
+		persisted: boolean;
+	}> {
 		// 1. Calculate new FSRS data
 		const { updatedCard, result } = this.processAnswer(
 			card,
@@ -776,18 +780,21 @@ export class ReviewService {
 		);
 
 		// 2. Save to store
+		let persisted = false;
 		if (card.id) {
-			flashcardManager.updateCardFSRS(card.id, updatedCard.fsrs);
+			persisted = flashcardManager.updateCardFSRS(card.id, updatedCard.fsrs);
 
-			notifyCardChange({
-				type: "reviewed",
-				cardId: card.id,
-				rating: rating as number,
-				newState: updatedCard.fsrs.state,
-			});
+			if (persisted) {
+				notifyCardChange({
+					type: "reviewed",
+					cardId: card.id,
+					rating: rating as number,
+					newState: updatedCard.fsrs.state,
+				});
+			}
 		}
 
-		return { updatedCard, result };
+		return { updatedCard, result, persisted };
 	}
 
 	calculateSessionStats(

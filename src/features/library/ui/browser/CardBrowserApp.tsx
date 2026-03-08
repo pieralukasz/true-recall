@@ -283,10 +283,11 @@ export function CardBrowserApp({
 		);
 		if (!confirmed) return;
 
-		const deletedCount = plugin.flashcardManager.removeFlashcardsByIds(orphanedIds);
-		notify().cardsDeleted(deletedCount);
+		const deleteResult =
+			plugin.flashcardManager.removeFlashcardsByIdsWithDetails(orphanedIds);
+		notify().cardsDeleted(deleteResult.affectedCount);
 
-		const deletedSet = new Set(orphanedIds);
+		const deletedSet = new Set(deleteResult.affectedIds);
 		selectedIds.value = new Set(
 			[...selectedIds.value].filter((id) => !deletedSet.has(id)),
 		);

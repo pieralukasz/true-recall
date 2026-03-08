@@ -7,21 +7,6 @@ import type { FSRSCardData, FSRSFlashcardItem } from "@shared/types";
 import type { Grade, State } from "ts-fsrs";
 
 /**
- * Types of operations that can be undone
- */
-export type UndoActionType =
-	| "create-flashcard"
-	| "update-card"
-	| "update-note-fields"
-	| "delete-flashcard"
-	| "save-flashcards"
-	| "answer"
-	| "bury"
-	| "suspend"
-	| "forget"
-	| "fsrs-helper-operation";
-
-/**
  * Payload for undoing card creation (delete the created card)
  */
 export interface CreateUndoPayload {
@@ -171,19 +156,25 @@ export type UndoPayload =
 	| FSRSHelperUndoPayload;
 
 /**
+ * Types of operations that can be undone
+ * Must stay aligned 1:1 with payload.type
+ */
+export type UndoActionType = UndoPayload["type"];
+
+/**
  * Single undo stack entry
  */
-export interface UndoEntry {
+export interface UndoEntry<TPayload extends UndoPayload = UndoPayload> {
 	/** Unique ID for this undo entry */
 	id: string;
 	/** Type of action that was performed */
-	actionType: UndoActionType;
+	actionType: TPayload["type"];
 	/** Human-readable description for notification */
 	description: string;
 	/** Timestamp when action was performed */
 	timestamp: number;
 	/** Data needed to reverse the action */
-	payload: UndoPayload;
+	payload: TPayload;
 	/** Cancel a deferred DB write. Returns true if cancelled (write never happened). */
 	cancelPendingWrite?: () => boolean;
 }
