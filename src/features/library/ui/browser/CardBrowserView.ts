@@ -10,6 +10,7 @@ export class CardBrowserView extends ItemView {
 	private plugin: TrueRecallPlugin;
 	private unmountPreact?: () => void;
 	private filterSourceUid = signal<string | null>(null);
+	private filterOrphaned = signal(false);
 
 	constructor(leaf: WorkspaceLeaf, plugin: TrueRecallPlugin) {
 		super(leaf);
@@ -37,14 +38,22 @@ export class CardBrowserView extends ItemView {
 		this.unmountPreact = mountPreact(
 			container,
 			this.plugin,
-			h(CardBrowserApp, { filterSourceUid: this.filterSourceUid }),
+			h(CardBrowserApp, {
+				filterSourceUid: this.filterSourceUid,
+				filterOrphaned: this.filterOrphaned,
+			}),
 		);
 	}
 
 	async setState(state: unknown, result: ViewStateResult): Promise<void> {
-		const s = state as { sourceUid?: string } | undefined;
+		const s = state as
+			| { sourceUid?: string; orphaned?: boolean }
+			| undefined;
 		if (s?.sourceUid) {
 			this.filterSourceUid.value = s.sourceUid;
+		}
+		if (s?.orphaned) {
+			this.filterOrphaned.value = true;
 		}
 		await super.setState(state, result);
 	}

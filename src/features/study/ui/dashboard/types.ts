@@ -58,6 +58,13 @@ export interface TodayProgress {
 	reviewsCap: number;
 }
 
+export interface OrphanedCardStats {
+	total: number;
+	new: number;
+	learning: number;
+	due: number;
+}
+
 export interface DashboardAggregation {
 	notes: DashboardNoteEntry[];
 	totalDue: number;
@@ -69,4 +76,5 @@ export interface DashboardAggregation {
 	estimatedTotalMinutes: number;
 	noteCount: number;
 	todayProgress: TodayProgress;
+	orphanedCards: OrphanedCardStats;
 }

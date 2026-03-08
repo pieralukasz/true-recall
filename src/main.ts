@@ -440,14 +440,23 @@ export default class TrueRecallPlugin extends Plugin {
 		);
 	}
 
-	async openCardBrowser(sourceUid?: string): Promise<void> {
+	async openCardBrowser(opts?: {
+		sourceUid?: string;
+		orphaned?: boolean;
+	}): Promise<void> {
+		const state = opts?.sourceUid
+			? { sourceUid: opts.sourceUid }
+			: opts?.orphaned
+				? { orphaned: true }
+				: undefined;
+
 		const existingLeaf = getView(this.app, VIEW_TYPE_CARD_BROWSER);
 		if (existingLeaf) {
-			if (sourceUid) {
+			if (state) {
 				await existingLeaf.setViewState({
 					type: VIEW_TYPE_CARD_BROWSER,
 					active: true,
-					state: { sourceUid },
+					state,
 				});
 			}
 			void this.app.workspace.revealLeaf(existingLeaf);
@@ -455,7 +464,7 @@ export default class TrueRecallPlugin extends Plugin {
 		}
 		await activateView(this.app, VIEW_TYPE_CARD_BROWSER, {
 			useMainArea: true,
-			state: sourceUid ? { sourceUid } : undefined,
+			state,
 		});
 	}
 

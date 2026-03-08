@@ -61,6 +61,8 @@ export interface FilterState {
 	negatedStates: StateFilterValue[];
 	/** When true, show cards from archived notes/projects. Default false. */
 	showArchived?: boolean;
+	/** When true, show only orphaned cards (sourceUid exists but note is missing). */
+	orphanedOnly?: boolean;
 }
 
 export interface PropFilter {
