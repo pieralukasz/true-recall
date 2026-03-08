@@ -5,7 +5,7 @@ import type { NoteType } from "@shared/types/note.types";
 import type { EmbeddableEditorInstance } from "@shared/ui/editor/embedded-editor";
 import { usePlugin } from "@shared/ui/preact/ObsidianContext";
 import type { App } from "obsidian";
-import { useEffect, useRef } from "preact/hooks";
+import { useCallback, useEffect, useRef } from "preact/hooks";
 import { buildPlaceholder } from "./placeholder";
 
 interface EditorSectionProps {
@@ -108,9 +108,23 @@ export function EditorSection({
 		);
 	}
 
+	const handleContainerClick = useCallback(
+		(e: MouseEvent) => {
+			const editor = editorRef.current;
+			if (!editor) return;
+			// Focus CM when clicking in the empty scroller area below content
+			const target = e.target as HTMLElement;
+			if (!target.closest(".cm-content")) {
+				editor.cm.focus();
+			}
+		},
+		[],
+	);
+
 	return (
 		<div
 			ref={editorContainerRef}
+			onClick={handleContainerClick}
 			class="true-recall-import-editor ep:w-full ep:min-h-[400px] ep:bg-obs-primary ep:border ep:border-obs-border ep:rounded-md ep:overflow-hidden"
 		/>
 	);
