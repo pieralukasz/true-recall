@@ -4,7 +4,6 @@ import { DuplicateQuestionError } from "@features/study/services/flashcard/card-
 import { type Signal, useComputed, useSignal } from "@preact/signals";
 import { notify } from "@shared/services/notification.service";
 import { cards, pluginSettings } from "@shared/services/reactive-card-store";
-import { notifyCardChange } from "@shared/services/signals";
 import { usePlugin } from "@shared/ui/preact";
 import { useCallback, useEffect, useMemo, useRef } from "preact/hooks";
 import { BrowserSidebar } from "./components/BrowserSidebar";
@@ -284,12 +283,7 @@ export function CardBrowserApp({
 		);
 		if (!confirmed) return;
 
-		const deletedCount = plugin.cardStore.cards.bulkSoftDelete(orphanedIds);
-		notifyCardChange({
-			type: "bulk",
-			cardIds: orphanedIds,
-			action: "delete",
-		});
+		const deletedCount = plugin.flashcardManager.removeFlashcardsByIds(orphanedIds);
 		notify().cardsDeleted(deletedCount);
 
 		const deletedSet = new Set(orphanedIds);

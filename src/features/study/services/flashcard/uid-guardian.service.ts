@@ -1,4 +1,5 @@
 import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
+import type { SessionPersistenceService } from "@features/core/persistence/session-persistence.service";
 import type {
 	FieldChangeEvent,
 	FrontmatterIndexService,
@@ -14,6 +15,7 @@ export interface UidGuardianDeps {
 	app: App;
 	frontmatterIndex: FrontmatterIndexService;
 	store: SqliteStoreService;
+	sessionPersistence: SessionPersistenceService;
 	frontmatterService: FrontmatterService;
 }
 
@@ -82,7 +84,8 @@ export class UidGuardianService {
 			case "delete": {
 				const cardIds = cards.map((c) => c.id);
 				this.deps.store.cards.bulkSoftDelete(cardIds);
-				notifyCardChange({ type: "bulk", cardIds, action: "delete" });
+				this.deps.sessionPersistence.removeReviewedCards(cardIds);
+				notifyCardChange({ type: "bulk", cardIds, action: "removed" });
 				notify().cardsDeleted(cardIds.length);
 				break;
 			}

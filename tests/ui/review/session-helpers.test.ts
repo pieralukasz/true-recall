@@ -319,4 +319,42 @@ describe("applyMutation", () => {
 		expect(addCardToQueue).toHaveBeenCalledOnce();
 		expect(addCardToQueue).toHaveBeenCalledWith(card);
 	});
+
+	it("removes queued cards for bulk removed action", () => {
+		const removeCardsByIds = vi.fn();
+		const review = {
+			queue: [createMockCard({ id: "c-1" }), createMockCard({ id: "c-2" })],
+			removeCardsByIds,
+		} as unknown as ReviewApi;
+
+		applyMutation(
+			{ type: "bulk", action: "removed", cardIds: ["c-2", "c-3"] },
+			review,
+			{} as FlashcardManager,
+			{} as SqliteStoreService,
+			{},
+		);
+
+		expect(removeCardsByIds).toHaveBeenCalledOnce();
+		expect(removeCardsByIds).toHaveBeenCalledWith(["c-2"]);
+	});
+
+	it("removes queued cards for legacy bulk delete action", () => {
+		const removeCardsByIds = vi.fn();
+		const review = {
+			queue: [createMockCard({ id: "c-1" }), createMockCard({ id: "c-2" })],
+			removeCardsByIds,
+		} as unknown as ReviewApi;
+
+		applyMutation(
+			{ type: "bulk", action: "delete", cardIds: ["c-1", "c-9"] },
+			review,
+			{} as FlashcardManager,
+			{} as SqliteStoreService,
+			{},
+		);
+
+		expect(removeCardsByIds).toHaveBeenCalledOnce();
+		expect(removeCardsByIds).toHaveBeenCalledWith(["c-1"]);
+	});
 });
