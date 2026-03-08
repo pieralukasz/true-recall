@@ -69,7 +69,8 @@ export function ImportStudioApp({
 	const [parseResult, setParseResult] = useState<{
 		cards: ParsedCard[];
 		detectedFormat: string;
-	}>({ cards: [], detectedFormat: "none" });
+		duplicateCount: number;
+	}>({ cards: [], detectedFormat: "none", duplicateCount: 0 });
 
 	const getNoteType = useCallback(
 		(slug: string) => plugin.noteTypeService.getBySlug(slug),
@@ -78,12 +79,24 @@ export function ImportStudioApp({
 
 	useEffect(() => {
 		const timer = setTimeout(() => {
-			setParseResult(
-				parseBulkText(
-					text,
-					noteType ? { noteType, getNoteType } : { getNoteType },
-				),
+			const raw = parseBulkText(
+				text,
+				noteType ? { noteType, getNoteType } : { getNoteType },
 			);
+			const seen = new Set<string>();
+			const unique: ParsedCard[] = [];
+			for (const card of raw.cards) {
+				const key = card.noteTypeId + "\0" + JSON.stringify(card.fields);
+				if (!seen.has(key)) {
+					seen.add(key);
+					unique.push(card);
+				}
+			}
+			setParseResult({
+				cards: unique,
+				detectedFormat: raw.detectedFormat,
+				duplicateCount: raw.cards.length - unique.length,
+			});
 		}, 150);
 		return () => clearTimeout(timer);
 	}, [text, noteType, getNoteType]);

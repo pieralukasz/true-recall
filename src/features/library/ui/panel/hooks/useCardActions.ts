@@ -279,8 +279,14 @@ export function useCardActions({
 	const handleRewriteCard = useCallback(
 		async (card: FlashcardItem) => {
 			const fsrsCard = findFsrsCard(card.id);
-			if (!fsrsCard) {
+			if (!fsrsCard?.noteId) {
 				notify().error("Card data not found");
+				return;
+			}
+
+			const note = plugin.cardStore.notes.getById(fsrsCard.noteId);
+			if (!note) {
+				notify().error("Note not found");
 				return;
 			}
 
@@ -292,7 +298,7 @@ export function useCardActions({
 			const service = new RewriteService(
 				() => plugin.settings,
 				(slug) => plugin.flashcardManager.getNoteTypeBySlug(slug),
-				() => plugin.cardStore.noteTypes.getAll(),
+				(id) => plugin.cardStore.noteTypes.getById(id),
 			);
 
 			try {
@@ -305,6 +311,7 @@ export function useCardActions({
 							answer: card.answer ?? "",
 							sourceUid: fsrsCard.fsrs.sourceUid,
 							createdAt: fsrsCard.fsrs.createdAt,
+							noteTypeId: note.noteTypeId,
 						},
 					],
 					plugin.flashcardManager,

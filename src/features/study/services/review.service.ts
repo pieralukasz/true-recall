@@ -80,6 +80,8 @@ export interface QueueBuildOptions {
 	>;
 	/** Fallback preset name for cards without explicit assignment */
 	defaultPresetName?: string;
+	/** When false, apply queue spacing instead of runtime sibling burying */
+	burySiblings?: boolean;
 }
 
 export class ReviewService {
@@ -360,6 +362,72 @@ export class ReviewService {
 		}
 	}
 
+	/**
+	 * When burySiblings is off, spread IO/cloze siblings apart in the queue
+	 * so cards from the same note don't appear back-to-back.
+	 */
+	spaceSiblings(queue: FSRSFlashcardItem[]): FSRSFlashcardItem[] {
+		if (queue.length <= 2) return queue;
+
+		// Build noteId → indices map (only IO and cloze cards have meaningful siblings)
+		const noteGroups = new Map<string, number>();
+		const hasMultiple = new Set<string>();
+
+		for (const card of queue) {
+			const key = this.getSiblingKey(card);
+			if (!key) continue;
+			if (noteGroups.has(key)) {
+				hasMultiple.add(key);
+			}
+			noteGroups.set(key, (noteGroups.get(key) ?? 0) + 1);
+		}
+
+		if (hasMultiple.size === 0) return queue;
+
+		// Greedy spacing: track last position of each sibling group
+		const result: FSRSFlashcardItem[] = [];
+		const deferred: FSRSFlashcardItem[] = [];
+		const lastSeen = new Map<string, number>();
+		const minSpacing = Math.max(
+			3,
+			Math.ceil(queue.length / Math.max(...[...hasMultiple].map((k) => noteGroups.get(k) ?? 1))),
+		);
+
+		for (const card of queue) {
+			const key = this.getSiblingKey(card);
+			if (key && hasMultiple.has(key)) {
+				const last = lastSeen.get(key);
+				if (last !== undefined && result.length - last < minSpacing) {
+					deferred.push(card);
+					continue;
+				}
+				lastSeen.set(key, result.length);
+			}
+			result.push(card);
+		}
+
+		// Re-insert deferred cards at spaced positions
+		for (const card of deferred) {
+			const key = this.getSiblingKey(card)!;
+			const last = lastSeen.get(key) ?? -minSpacing;
+			const targetPos = Math.min(last + minSpacing, result.length);
+			result.splice(targetPos, 0, card);
+			lastSeen.set(key, targetPos);
+		}
+
+		return result;
+	}
+
+	private getSiblingKey(card: FSRSFlashcardItem): string | null {
+		if (card.cardType === "image-occlusion" && card.noteId) {
+			return `io:${card.noteId}`;
+		}
+		if (card.cardType === "cloze" && card.noteId) {
+			return `cloze:${card.noteId}`;
+		}
+		return null;
+	}
+
 	private mixQueues(
 		reviews: FSRSFlashcardItem[],
 		newCards: FSRSFlashcardItem[],
@@ -501,7 +569,11 @@ export class ReviewService {
 			options.newReviewMix ?? "mix-with-reviews",
 		);
 
-		return [...fsrsService.sortByDue(dueLearningCards), ...mainQueue];
+		const spacedQueue = options.burySiblings === false
+			? this.spaceSiblings(mainQueue)
+			: mainQueue;
+
+		return [...fsrsService.sortByDue(dueLearningCards), ...spacedQueue];
 	}
 
 	private buildStandardQueue(
@@ -568,9 +640,13 @@ export class ReviewService {
 			options.newReviewMix ?? "mix-with-reviews",
 		);
 
+		const spacedQueue = options.burySiblings === false
+			? this.spaceSiblings(mainQueue)
+			: mainQueue;
+
 		return [
 			...fsrsService.sortByDue(dueLearningCards),
-			...mainQueue,
+			...spacedQueue,
 			...fsrsService.sortByDue(pendingLearningCards),
 		];
 	}

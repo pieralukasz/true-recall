@@ -116,6 +116,7 @@ export function buildQueueOptions(
 		recentlyFailed: filters.recentlyFailed,
 		cardLimit: filters.cardLimit,
 		studyAheadDays: filters.studyAheadDays,
+		burySiblings: preset?.burySiblings,
 	};
 }
 
