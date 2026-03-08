@@ -86,9 +86,21 @@ export function aggregateProjectData(
 	// Build reverse map: note name → project names
 	const noteProjectMap = buildNoteProjectMap(projects);
 
+	// Collect all project file paths so project notes with flashcards don't appear in Unassigned
+	const projectPaths = new Set<string>();
+	function collectProjectPaths(projs: DashboardProject[]) {
+		for (const p of projs) {
+			if (p.path) projectPaths.add(p.path);
+			collectProjectPaths(p.children);
+		}
+	}
+	collectProjectPaths(allProjects);
+
 	// Virtual "Unassigned" project for orphan notes
 	const assignedNoteNames = new Set(noteProjectMap.keys());
-	const unassignedNotes = notes.filter((n) => !assignedNoteNames.has(n.name));
+	const unassignedNotes = notes.filter(
+		(n) => !assignedNoteNames.has(n.name) && !(n.path && projectPaths.has(n.path)),
+	);
 	if (unassignedNotes.length > 0) {
 		projects.push({
 			name: "Unassigned",
