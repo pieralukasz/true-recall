@@ -20,7 +20,6 @@ import { ImageService } from "@features/integration/services/ImageService";
 import { isImageExtension } from "@shared/types";
 import { Clickable } from "@shared/ui/components/Clickable";
 import { NotePickerCombobox } from "@shared/ui/components/NotePickerCombobox";
-import { PasteDropZone } from "@shared/ui/components/PasteDropZone";
 import { useIcon } from "@shared/ui/preact/hooks";
 import { useApp, usePlugin } from "@shared/ui/preact/ObsidianContext";
 import { cn } from "@shared/ui/utils/cn";
@@ -663,11 +662,6 @@ export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
 								>
 									Use selected image
 								</Clickable>
-								<PasteDropZone
-									onFileDrop={(file) => void persistBlob(file)}
-									label="Paste or drag image"
-									hint="Ctrl/Cmd+V or drag & drop"
-								/>
 							</>
 						)}
 					</div>

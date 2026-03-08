@@ -1,7 +1,7 @@
 import type { FSRSPreset } from "@shared/types";
 import { Clickable } from "@shared/ui/components/Clickable";
 import { usePlugin } from "@shared/ui/preact";
-import { useCallback, useState } from "preact/hooks";
+import { useCallback, useMemo, useState } from "preact/hooks";
 import { DailyLimitsSection } from "./DailyLimitsSection";
 import { LapsesSection } from "./LapsesSection";
 import { NewCardsSection } from "./NewCardsSection";
@@ -41,6 +41,30 @@ export function PresetOptionsBody({
 	if (!preset) return null;
 
 	const isDefault = preset.id === settings.defaultPresetId;
+	const [applyToChildren, setApplyToChildren] = useState(false);
+
+	const hasChildren = useMemo(() => {
+		if (!context?.contextPath) return false;
+		return plugin.hierarchyService.getChildPaths(context.contextPath).length > 0;
+	}, [plugin, context?.contextPath]);
+
+	const getAllDescendantPaths = useCallback(
+		(rootPath: string): string[] => {
+			const result: string[] = [];
+			const visited = new Set<string>();
+			const collect = (path: string) => {
+				for (const child of plugin.hierarchyService.getChildPaths(path)) {
+					if (visited.has(child)) continue;
+					visited.add(child);
+					result.push(child);
+					collect(child);
+				}
+			};
+			collect(rootPath);
+			return result;
+		},
+		[plugin],
+	);
 
 	const updatePreset = useCallback(
 		async (changes: Partial<FSRSPreset>) => {
@@ -82,16 +106,28 @@ export function PresetOptionsBody({
 	}, [plugin, preset.id, settings.defaultPresetId, refresh]);
 
 	const handleDone = useCallback(async () => {
-		if (context?.contextPath) {
+		const frontmatterService =
+			plugin.flashcardManager?.getFrontmatterService();
+		if (context?.contextPath && frontmatterService) {
 			const file = plugin.app.vault.getFileByPath(context.contextPath);
-			const frontmatterService =
-				plugin.flashcardManager?.getFrontmatterService();
-			if (file && frontmatterService) {
+			if (file) {
 				await frontmatterService.setFsrsPreset(file, preset.name);
+			}
+
+			if (applyToChildren) {
+				const descendantPaths = getAllDescendantPaths(
+					context.contextPath,
+				);
+				for (const path of descendantPaths) {
+					const f = plugin.app.vault.getFileByPath(path);
+					if (f) {
+						await frontmatterService.setFsrsPreset(f, preset.name);
+					}
+				}
 			}
 		}
 		onClose();
-	}, [plugin, context, preset.name, onClose]);
+	}, [plugin, context, preset.name, onClose, applyToChildren, getAllDescendantPaths]);
 
 	return (
 		<div class="ep:flex ep:flex-col ep:flex-1 ep:min-h-0">
@@ -119,7 +155,23 @@ export function PresetOptionsBody({
 				<UsageSection preset={preset} />
 			</div>
 
-			<div class="ep-modal-footer ep:flex ep:items-center ep:justify-end ep:gap-2 ep:pt-3 ep:mt-2 ep:border-t ep:border-obs-border">
+			<div class="ep-modal-footer ep:flex ep:items-center ep:justify-between ep:gap-2 ep:pt-3 ep:mt-2 ep:border-t ep:border-obs-border">
+				{hasChildren && context?.contextPath ? (
+					<label class="ep:flex ep:items-center ep:gap-2 ep:cursor-pointer ep:text-ui-small ep:text-obs-muted">
+						<input
+							type="checkbox"
+							checked={applyToChildren}
+							onChange={(e) =>
+								setApplyToChildren(
+									(e.target as HTMLInputElement).checked,
+								)
+							}
+						/>
+						Apply to child projects
+					</label>
+				) : (
+					<div />
+				)}
 				<Clickable
 					class="ep-btn mod-cta ep:text-ui-small"
 					onClick={() => void handleDone()}
