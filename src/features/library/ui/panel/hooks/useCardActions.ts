@@ -276,6 +276,49 @@ export function useCardActions({
 		[plugin],
 	);
 
+	const handleRewriteCard = useCallback(
+		async (card: FlashcardItem) => {
+			const fsrsCard = findFsrsCard(card.id);
+			if (!fsrsCard) {
+				notify().error("Card data not found");
+				return;
+			}
+
+			const { RewriteService } = await import(
+				"@features/ai/services/rewrite.service"
+			);
+			const { notifyCardChange } = await import("@shared/services/signals");
+
+			const service = new RewriteService(
+				() => plugin.settings,
+				(slug) => plugin.flashcardManager.getNoteTypeBySlug(slug),
+				() => plugin.cardStore.noteTypes.getAll(),
+			);
+
+			try {
+				notify().success("Rewriting card...");
+				const result = await service.rewrite(
+					[
+						{
+							id: card.id,
+							question: card.question,
+							answer: card.answer ?? "",
+							sourceUid: fsrsCard.fsrs.sourceUid,
+							createdAt: fsrsCard.fsrs.createdAt,
+						},
+					],
+					plugin.flashcardManager,
+					(ids) => plugin.cardStore.cards.bulkSuspend(ids),
+				);
+				notifyCardChange({ type: "bulk", cardIds: [card.id], action: "update" });
+				notify().success(`Split into ${result.created} card(s)`);
+			} catch (error) {
+				notify().operationFailed("rewrite card", error);
+			}
+		},
+		[plugin, cardsWithFsrs],
+	);
+
 	const handleToggleExpand = useCallback(
 		(cardId: string) => {
 			preserveScroll(() => {
@@ -294,6 +337,7 @@ export function useCardActions({
 		handleChangeType,
 		handleToggleReversed,
 		handleForgetCard,
+		handleRewriteCard,
 		handleToggleExpand,
 	};
 }

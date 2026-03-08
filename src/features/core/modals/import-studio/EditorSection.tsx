@@ -6,6 +6,23 @@ import type { App } from "obsidian";
 import { useCallback, useEffect, useRef } from "preact/hooks";
 import { buildPlaceholder } from "./placeholder";
 
+const BLANK_CARD_TEMPLATE = "#type/basic\nFront: \nBack: \n---\n";
+const CURSOR_OFFSET_AFTER_FRONT = "#type/basic\nFront: ".length;
+
+function insertBlankCard(view: EditorView): boolean {
+	const { from } = view.state.selection.main;
+	// If not at line start, prepend a newline
+	const line = view.state.doc.lineAt(from);
+	const prefix = from === line.from ? "" : "\n";
+	const insert = prefix + BLANK_CARD_TEMPLATE;
+	const cursorPos = from + prefix.length + CURSOR_OFFSET_AFTER_FRONT;
+	view.dispatch({
+		changes: { from, insert },
+		selection: { anchor: cursorPos },
+	});
+	return true;
+}
+
 interface EditorSectionProps {
 	app: App;
 	text: string;
@@ -58,10 +75,19 @@ export function EditorSection({
 		const onFocusIn = () => {
 			onEditorFocusRef.current(editor.cm);
 		};
+		const onKeyDown = (e: KeyboardEvent) => {
+			if ((e.metaKey || e.ctrlKey) && e.key === "3") {
+				e.preventDefault();
+				e.stopPropagation();
+				insertBlankCard(editor.cm);
+			}
+		};
 		editor.cm.contentDOM.addEventListener("focusin", onFocusIn);
+		editor.cm.contentDOM.addEventListener("keydown", onKeyDown, true);
 		editor.cm.focus();
 
 		return () => {
+			editor.cm.contentDOM.removeEventListener("keydown", onKeyDown, true);
 			editor.cm.contentDOM.removeEventListener("focusin", onFocusIn);
 			editorRef.current = null;
 			onEditorReadyRef.current(null);
@@ -80,6 +106,20 @@ export function EditorSection({
 					if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
 						e.preventDefault();
 						onModEnter();
+					}
+					if ((e.metaKey || e.ctrlKey) && e.key === "3") {
+						e.preventDefault();
+						const ta = e.target as HTMLTextAreaElement;
+						const pos = ta.selectionStart;
+						const before = ta.value.slice(0, pos);
+						const after = ta.value.slice(ta.selectionEnd);
+						const prefix = pos > 0 && !before.endsWith("\n") ? "\n" : "";
+						const insert = prefix + BLANK_CARD_TEMPLATE;
+						onTextChange(before + insert + after);
+						requestAnimationFrame(() => {
+							const cursor = pos + prefix.length + CURSOR_OFFSET_AFTER_FRONT;
+							ta.setSelectionRange(cursor, cursor);
+						});
 					}
 				}}
 			/>
