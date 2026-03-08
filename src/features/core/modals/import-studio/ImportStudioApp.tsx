@@ -161,7 +161,7 @@ export function ImportStudioApp({
 			} else {
 				setText("");
 			}
-			setParseResult({ cards: [], detectedFormat: "none" });
+			setParseResult({ cards: [], detectedFormat: "none", duplicateCount: 0 });
 		} catch (error) {
 			const msg = error instanceof Error ? error.message : String(error);
 			new Notice(`Error: ${msg}`);
@@ -205,7 +205,7 @@ export function ImportStudioApp({
 				onModEnter={() => void handleSave()}
 			/>
 
-			<CardPreviewList cards={parseResult.cards} />
+			<CardPreviewList cards={parseResult.cards} duplicateCount={parseResult.duplicateCount} />
 
 			<FooterBar
 				sessionCount={sessionCount}
