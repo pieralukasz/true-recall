@@ -102,11 +102,11 @@ export function useCardActions({
 		async (card: FlashcardItem) => {
 			if (!currentFile) return;
 			const restoreScroll = captureScroll();
-			const removed = await plugin.flashcardManager.removeFlashcardById(
+			const result = await plugin.flashcardManager.removeFlashcardByIdWithDetails(
 				card.id,
 			);
-			if (removed) {
-				notify().cardsDeleted(1);
+			if (result.ok) {
+				notify().cardsDeleted(result.affectedCount);
 				restoreScroll();
 			} else {
 				notify().error("Failed to remove flashcard from file");

@@ -357,4 +357,104 @@ describe("applyMutation", () => {
 		expect(removeCardsByIds).toHaveBeenCalledOnce();
 		expect(removeCardsByIds).toHaveBeenCalledWith(["c-1"]);
 	});
+
+	it("syncs queue membership for bulk update action", () => {
+		const removeCardsByIds = vi.fn();
+		const addCardToQueue = vi.fn();
+		const review = {
+			queue: [createMockCard({ id: "c-1", sourceUid: "uid-target" })],
+			removeCardsByIds,
+			addCardToQueue,
+		} as unknown as ReviewApi;
+
+		const updatedExisting = createMockCard({ id: "c-1", sourceUid: "uid-other" });
+		const newMatching = createMockCard({ id: "c-3", sourceUid: "uid-target" });
+		const flashcardManager = {
+			getCardsByIds: () => [updatedExisting, newMatching],
+		} as unknown as FlashcardManager;
+
+		applyMutation(
+			{ type: "bulk", action: "update", cardIds: ["c-1", "c-3"] },
+			review,
+			flashcardManager,
+			{} as SqliteStoreService,
+			{ sourceUidFilter: "uid-target" },
+		);
+
+		expect(removeCardsByIds).toHaveBeenCalledWith(["c-1"]);
+		expect(addCardToQueue).toHaveBeenCalledWith(newMatching);
+	});
+
+	it("syncs queue for bulk added action", () => {
+		const addCardToQueue = vi.fn();
+		const review = {
+			queue: [],
+			addCardToQueue,
+		} as unknown as ReviewApi;
+
+		const added = createMockCard({ id: "c-added", sourceUid: "uid-target" });
+		const flashcardManager = {
+			getCardsByIds: () => [added],
+		} as unknown as FlashcardManager;
+
+		applyMutation(
+			{ type: "bulk", action: "added", cardIds: ["c-added"] },
+			review,
+			flashcardManager,
+			{} as SqliteStoreService,
+			{ sourceUidFilter: "uid-target" },
+		);
+
+		expect(addCardToQueue).toHaveBeenCalledWith(added);
+	});
+
+	it("treats bulk mutation without action as update sync", () => {
+		const addCardToQueue = vi.fn();
+		const review = {
+			queue: [],
+			addCardToQueue,
+		} as unknown as ReviewApi;
+
+		const updated = createMockCard({ id: "c-sync", sourceUid: "uid-target" });
+		const flashcardManager = {
+			getCardsByIds: () => [updated],
+		} as unknown as FlashcardManager;
+
+		applyMutation(
+			{ type: "bulk", cardIds: ["c-sync"] },
+			review,
+			flashcardManager,
+			{} as SqliteStoreService,
+			{ sourceUidFilter: "uid-target" },
+		);
+
+		expect(addCardToQueue).toHaveBeenCalledWith(updated);
+	});
+
+	it("removes updated card from queue when it no longer matches filters", () => {
+		const removeCardsByIds = vi.fn();
+		const review = {
+			queue: [createMockCard({ id: "c-1", sourceUid: "uid-target" })],
+			removeCardsByIds,
+			getCurrentCard: () => null,
+		} as unknown as ReviewApi;
+
+		const flashcardManager = {
+			getCardsByIds: () => [createMockCard({ id: "c-1", sourceUid: "uid-other" })],
+		} as unknown as FlashcardManager;
+
+		applyMutation(
+			{
+				type: "updated",
+				cardId: "c-1",
+				changes: { sourceUid: true },
+			},
+			review,
+			flashcardManager,
+			{} as SqliteStoreService,
+			{ sourceUidFilter: "uid-target" },
+		);
+
+		expect(removeCardsByIds).toHaveBeenCalledWith(["c-1"]);
+	});
 });

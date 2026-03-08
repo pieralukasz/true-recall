@@ -4,6 +4,53 @@ import type { HighlightColor } from "@shared/ui/helpers/fsrs-colors";
 
 // ── Card mutation events ────────────────────────────────────
 
+export type CardMutationAction =
+	| "added"
+	| "removed"
+	| "reset"
+	| "update"
+	| "reschedule"
+	| "suspend"
+	| "unsuspend";
+
+export type LegacyCardMutationAction = "delete";
+
+export type CardMutationActionInput =
+	| CardMutationAction
+	| LegacyCardMutationAction;
+
+export type CardMutationActionSemantics = "queue-remove" | "queue-sync";
+
+const CARD_MUTATION_ACTION_ALIASES: Record<
+	LegacyCardMutationAction,
+	CardMutationAction
+> = {
+	delete: "removed",
+};
+
+const CARD_MUTATION_ACTION_SET: Set<CardMutationAction> = new Set([
+	"added",
+	"removed",
+	"reset",
+	"update",
+	"reschedule",
+	"suspend",
+	"unsuspend",
+]);
+
+export const CARD_MUTATION_ACTION_SEMANTICS: Record<
+	CardMutationAction,
+	CardMutationActionSemantics
+> = {
+	added: "queue-sync",
+	removed: "queue-remove",
+	reset: "queue-sync",
+	update: "queue-sync",
+	reschedule: "queue-sync",
+	suspend: "queue-sync",
+	unsuspend: "queue-sync",
+};
+
 export interface CardMutation {
 	type: "added" | "updated" | "removed" | "reviewed" | "bulk";
 	cardId?: string;
@@ -16,7 +63,7 @@ export interface CardMutation {
 		buried?: boolean;
 		sourceUid?: boolean;
 	};
-	action?: string;
+	action?: CardMutationActionInput;
 	sourceNoteName?: string;
 	rating?: number;
 	newState?: number;
@@ -25,9 +72,44 @@ export interface CardMutation {
 const _lastMutation = signal<CardMutation | null>(null);
 export const lastMutation: ReadonlySignal<CardMutation | null> = _lastMutation;
 
+export function normalizeCardMutationAction(
+	action?: string,
+): CardMutationAction | undefined {
+	if (!action) return undefined;
+	if (CARD_MUTATION_ACTION_SET.has(action as CardMutationAction)) {
+		return action as CardMutationAction;
+	}
+	return CARD_MUTATION_ACTION_ALIASES[action as LegacyCardMutationAction];
+}
+
+export function getNormalizedCardMutationAction(
+	mutation: CardMutation,
+): CardMutationAction | undefined {
+	const normalizedAction = normalizeCardMutationAction(mutation.action);
+	if (normalizedAction) return normalizedAction;
+	switch (mutation.type) {
+		case "added":
+			return "added";
+		case "updated":
+			return "update";
+		case "removed":
+			return "removed";
+		case "bulk":
+			return "update";
+		default:
+			return undefined;
+	}
+}
+
 export function notifyCardChange(mutation: CardMutation): void {
+	const normalizedAction = normalizeCardMutationAction(mutation.action);
+	const normalizedMutation: CardMutation =
+		normalizedAction && normalizedAction !== mutation.action
+			? { ...mutation, action: normalizedAction }
+			: mutation;
+
 	batch(() => {
-		_lastMutation.value = mutation;
+		_lastMutation.value = normalizedMutation;
 		refreshCards();
 	});
 }

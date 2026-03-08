@@ -1,6 +1,4 @@
-import type { FSRSFlashcardItem } from "@shared/types";
 import type { ReviewOrder } from "@shared/types/settings.types";
-import type { Grade, State } from "ts-fsrs";
 
 export interface ReviewViewState extends Record<string, unknown> {
 	/** Project note path — scopes review to project members */
@@ -123,18 +121,4 @@ export function isCustomSession(filters: SessionFilters): boolean {
 		filters.recentlyFailed ||
 		filters.studyAheadDays
 	);
-}
-
-export interface UndoEntry {
-	actionType: "answer" | "bury" | "suspend";
-	card: FSRSFlashcardItem;
-	originalFsrs: FSRSFlashcardItem["fsrs"];
-	previousIndex: number;
-	wasNewCard?: boolean;
-	rating?: Grade;
-	previousState?: State;
-	additionalCards?: Array<{
-		card: FSRSFlashcardItem;
-		originalFsrs: FSRSFlashcardItem["fsrs"];
-	}>;
 }

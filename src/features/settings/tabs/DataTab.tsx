@@ -7,6 +7,7 @@ import {
 	IntegrityCheckSection,
 	ManualBackupSection,
 	SmartRetentionSection,
+	StorageDiagnosticsSection,
 } from "@features/settings/tabs/data";
 
 export function DataTab() {
@@ -18,6 +19,7 @@ export function DataTab() {
 			<BackgroundBackupSection />
 			<SmartRetentionSection />
 			<BackupStatusSection />
+			<StorageDiagnosticsSection />
 			<IntegrityCheckSection />
 			<ImportExportSection />
 		</div>

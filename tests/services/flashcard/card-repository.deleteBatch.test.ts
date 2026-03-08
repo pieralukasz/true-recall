@@ -255,4 +255,38 @@ describe("FlashcardManager.removeFlashcardsByIds", () => {
 			expect.arrayContaining(["cascade-original", "cascade-reverse"]),
 		);
 	});
+
+	it("returns detailed affected ids for single delete with cascade", async () => {
+		const manager = new FlashcardManager(
+			{} as App,
+			{} as never,
+			{} as never,
+		);
+		manager.setStore(createMockStore(ctx));
+
+		const original = {
+			...createTestCard({ id: "detail-original" }),
+			noteId: "note-detail",
+			templateOrd: 0,
+		};
+		const reverse = {
+			...createTestCard({ id: "detail-reverse" }),
+			noteId: "note-detail",
+			templateOrd: 1,
+			cardType: "reversed" as const,
+			reverseOf: "detail-original",
+		};
+		ctx.cards.set(original.id, original);
+		ctx.cards.set(reverse.id, reverse);
+
+		const result = await manager.removeFlashcardByIdWithDetails(
+			"detail-original",
+		);
+
+		expect(result.ok).toBe(true);
+		expect(result.affectedCount).toBe(2);
+		expect(result.affectedIds).toEqual(
+			expect.arrayContaining(["detail-original", "detail-reverse"]),
+		);
+	});
 });

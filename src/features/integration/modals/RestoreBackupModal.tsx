@@ -18,16 +18,19 @@ export interface RestoreBackupResult extends CancellableResult {
 export interface RestoreBackupModalOptions {
 	backups: BackupInfo[];
 	backupService: BackupService;
+	sessionStartBackupPath: string | null;
 }
 
 function BackupItem({
 	backup,
 	isSelected,
+	isSessionStart,
 	onSelect,
 	onDelete,
 }: {
 	backup: BackupInfo;
 	isSelected: boolean;
+	isSessionStart: boolean;
 	onSelect: () => void;
 	onDelete: () => void;
 }) {
@@ -38,7 +41,14 @@ function BackupItem({
 			onClick={onSelect}
 		>
 			<div class="ep:flex-1 ep:overflow-hidden">
-				<div class="ep:font-medium">{backup.formattedDate}</div>
+				<div class="ep:font-medium ep:flex ep:items-center ep:gap-2">
+					{backup.formattedDate}
+					{isSessionStart && (
+						<span class="ep:text-[10px] ep:px-1.5 ep:py-0.5 ep:rounded ep:bg-obs-interactive/15 ep:text-obs-interactive ep:font-medium">
+							startup snapshot
+						</span>
+					)}
+				</div>
 				<div class="ep:text-ui-smaller ep:text-obs-muted">
 					{backup.filename}
 				</div>
@@ -55,12 +65,14 @@ function BackupItem({
 
 function RestoreBackupBody({
 	initialBackups,
+	sessionStartBackupPath,
 	onResolve,
 	onClose,
 	onDeleteBackup,
 	onRestore,
 }: {
 	initialBackups: BackupInfo[];
+	sessionStartBackupPath: string | null;
 	onResolve: (result: RestoreBackupResult) => void;
 	onClose: () => void;
 	onDeleteBackup: (backup: BackupInfo) => Promise<boolean>;
@@ -106,6 +118,7 @@ function RestoreBackupBody({
 							key={backup.path}
 							backup={backup}
 							isSelected={selectedBackup === backup}
+							isSessionStart={backup.path === sessionStartBackupPath}
 							onSelect={() => setSelectedBackup(backup)}
 							onDelete={() => void handleDelete(backup)}
 						/>
@@ -137,6 +150,7 @@ function RestoreBackupBody({
 export class RestoreBackupModal extends BasePromiseModal<RestoreBackupResult> {
 	private backups: BackupInfo[];
 	private backupService: BackupService;
+	private sessionStartBackupPath: string | null;
 
 	constructor(app: App, options: RestoreBackupModalOptions) {
 		super(app, {
@@ -145,6 +159,7 @@ export class RestoreBackupModal extends BasePromiseModal<RestoreBackupResult> {
 		});
 		this.backups = options.backups;
 		this.backupService = options.backupService;
+		this.sessionStartBackupPath = options.sessionStartBackupPath;
 	}
 
 	protected getDefaultResult(): RestoreBackupResult {
@@ -155,6 +170,7 @@ export class RestoreBackupModal extends BasePromiseModal<RestoreBackupResult> {
 		render(
 			<RestoreBackupBody
 				initialBackups={this.backups}
+				sessionStartBackupPath={this.sessionStartBackupPath}
 				onResolve={(result) => this.resolve(result)}
 				onClose={() => this.close()}
 				onDeleteBackup={(backup) => this.handleDeleteBackup(backup)}

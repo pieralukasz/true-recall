@@ -415,12 +415,20 @@ export class CardActionsHandler {
 
 		try {
 			// Grade card as "Good" before moving (updates FSRS scheduling)
-			await this.deps.reviewService.gradeCard(
+			const { persisted } = await this.deps.reviewService.gradeCard(
 				card,
 				Rating.Good,
 				this.deps.fsrsService,
 				this.deps.flashcardManager,
 			);
+			if (!persisted) {
+				this.deps.getReview().removeCardById(card.id);
+				if (!this.deps.getReview().isComplete()) {
+					this.callbacks.onUpdateSchedulingPreview();
+				}
+				notify().warning("Card was deleted before move could be saved.");
+				return;
+			}
 
 			// Move the card
 			const success = await this.deps.flashcardManager.moveCard(
@@ -468,7 +476,7 @@ export class CardActionsHandler {
 		if (cardCount > 0) {
 			this.deps.plugin.undoService?.push({
 				id: crypto.randomUUID(),
-				actionType: "create-flashcard",
+				actionType: "batch-create",
 				description: `Add ${cardCount} card${cardCount !== 1 ? "s" : ""}`,
 				timestamp: Date.now(),
 				payload: {
@@ -501,7 +509,7 @@ export class CardActionsHandler {
 		if (cardCount > 0) {
 			this.deps.plugin.undoService?.push({
 				id: crypto.randomUUID(),
-				actionType: "create-flashcard",
+				actionType: "batch-create",
 				description: `Add ${cardCount} image occlusion card${cardCount !== 1 ? "s" : ""}`,
 				timestamp: Date.now(),
 				payload: {

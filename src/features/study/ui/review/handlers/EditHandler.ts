@@ -130,7 +130,7 @@ export class EditHandler {
 	): void {
 		this.deps.undoService?.push({
 			id: crypto.randomUUID(),
-			actionType: "update-card",
+			actionType: "update",
 			description: `Edit card ${field}`,
 			timestamp: Date.now(),
 			payload: {
