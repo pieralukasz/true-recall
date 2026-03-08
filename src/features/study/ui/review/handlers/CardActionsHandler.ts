@@ -15,8 +15,11 @@ import type { TrueRecallSettings } from "@shared/types";
 import { BUILTIN_IMAGE_OCCLUSION_ID } from "@shared/types/note.types";
 import { MoveCardModal } from "@shared/ui/modals";
 import type { App } from "obsidian";
-import { Rating } from "ts-fsrs";
+import { Rating, State } from "ts-fsrs";
 import type TrueRecallPlugin from "../../../../../main";
+
+const FORGET_NON_NEW_WARNING =
+	"Forget is only available for cards that are not New.";
 
 /**
  * Dependencies required by CardActionsHandler
@@ -64,6 +67,11 @@ export class CardActionsHandler {
 	 */
 	canUndo(): boolean {
 		return this.deps.plugin.undoService?.canUndo() ?? false;
+	}
+
+	canForgetCurrentCard(): boolean {
+		const card = this.deps.getReview().getCurrentCard();
+		return !!card && card.fsrs.state !== State.New;
 	}
 
 	/**
@@ -218,11 +226,26 @@ export class CardActionsHandler {
 	async handleForget(): Promise<void> {
 		const card = this.deps.getReview().getCurrentCard();
 		if (!card) return;
+		if (card.fsrs.state === State.New) {
+			notify().warning(FORGET_NON_NEW_WARNING);
+			return;
+		}
 
 		const currentIndex = this.deps.getReview().currentIndex;
 		const undoService = this.deps.plugin.undoService;
 
 		const siblingIds = this.getGroupSiblingIds(card);
+		const forgettableIds = siblingIds.filter((id) => {
+			if (id === card.id) {
+				return card.fsrs.state !== State.New;
+			}
+			const sibling = this.deps.cardStore.get(id);
+			return !!sibling && sibling.state !== State.New;
+		});
+		if (forgettableIds.length === 0) {
+			notify().warning(FORGET_NON_NEW_WARNING);
+			return;
+		}
 
 		let writeExecuted = false;
 		let pendingTimeoutId: ReturnType<typeof setTimeout> | null = null;
@@ -231,8 +254,8 @@ export class CardActionsHandler {
 			id: crypto.randomUUID(),
 			actionType: "forget",
 			description:
-				siblingIds.length > 1
-					? `Forget ${siblingIds.length} cards`
+				forgettableIds.length > 1
+					? `Forget ${forgettableIds.length} cards`
 					: "Forget card",
 			timestamp: Date.now(),
 			payload: {
@@ -251,7 +274,7 @@ export class CardActionsHandler {
 			},
 		});
 
-		for (const id of siblingIds) {
+		for (const id of forgettableIds) {
 			this.deps.getReview().removeCardById(id);
 		}
 
@@ -259,17 +282,21 @@ export class CardActionsHandler {
 			this.callbacks.onUpdateSchedulingPreview();
 		}
 
-		notify().cardForgotten();
+		if (forgettableIds.length === 1) {
+			notify().cardForgotten();
+		} else {
+			notify().cardsForgotten(forgettableIds.length);
+		}
 
 		pendingTimeoutId = setTimeout(() => {
 			writeExecuted = true;
 			pendingTimeoutId = null;
 			try {
-				this.deps.cardStore.cards.bulkForget(siblingIds);
-				this.deps.plugin.sessionPersistence?.removeReviewedCards(siblingIds);
+				this.deps.cardStore.cards.bulkForget(forgettableIds);
+				this.deps.plugin.sessionPersistence?.removeReviewedCards(forgettableIds);
 				notifyCardChange({
 					type: "bulk",
-					cardIds: siblingIds,
+					cardIds: forgettableIds,
 					action: "reset",
 				});
 			} catch (error) {

@@ -148,6 +148,28 @@ function insertV26Card(
 	);
 }
 
+function insertReviewLog(
+	db: TestSqliteDatabase,
+	entry: {
+		id: string;
+		cardId: string;
+		rating?: number;
+		reviewedAt?: string;
+	},
+): void {
+	db.run(
+		`INSERT INTO review_log (id, card_id, reviewed_at, rating, updated_at)
+		 VALUES (?, ?, ?, ?, ?)`,
+		[
+			entry.id,
+			entry.cardId,
+			entry.reviewedAt ?? new Date().toISOString(),
+			entry.rating ?? 3,
+			Date.now(),
+		],
+	);
+}
+
 // ── Tests ──────────────────────────────────────────────────────
 
 describe("CardActions v26 (with note types)", () => {
@@ -550,6 +572,92 @@ describe("CardActions v26 (with note types)", () => {
 			insertV26Card(db, { id: "size-c2", noteId: "size-n2" });
 
 			expect(cards.size()).toBe(2);
+		});
+	});
+
+	describe("bulkForget", () => {
+		it("skips New cards entirely (count=0) and keeps review_log untouched", () => {
+			insertNoteDirect(
+				db,
+				createTestNote({ id: "forget-new-note", noteTypeId: BUILTIN_BASIC_ID }),
+			);
+			insertV26Card(db, {
+				id: "forget-new-card",
+				noteId: "forget-new-note",
+				state: State.New,
+			});
+			insertReviewLog(db, { id: "log-new-1", cardId: "forget-new-card" });
+
+			const forgotten = cards.bulkForget(["forget-new-card"]);
+			expect(forgotten).toBe(0);
+
+			const cardRow = db.get<{ state: number; reps: number; lapses: number }>(
+				`SELECT state, reps, lapses FROM cards WHERE id = ?`,
+				["forget-new-card"],
+			);
+			expect(cardRow?.state).toBe(State.New);
+			expect(cardRow?.reps).toBe(0);
+			expect(cardRow?.lapses).toBe(0);
+
+			const logRow = db.get<{ deleted_at: number | null }>(
+				`SELECT deleted_at FROM review_log WHERE id = ?`,
+				["log-new-1"],
+			);
+			expect(logRow?.deleted_at).toBeNull();
+		});
+
+		it("forgets only non-New cards from a mixed selection", () => {
+			insertNoteDirect(
+				db,
+				createTestNote({ id: "forget-mix-note", noteTypeId: BUILTIN_BASIC_ID }),
+			);
+			insertV26Card(db, {
+				id: "forget-new",
+				noteId: "forget-mix-note",
+				state: State.New,
+			});
+			insertV26Card(db, {
+				id: "forget-review",
+				noteId: "forget-mix-note",
+				state: State.Review,
+				reps: 8,
+				lapses: 2,
+				stability: 12,
+				difficulty: 6,
+				suspended: true,
+			});
+			insertReviewLog(db, { id: "log-new", cardId: "forget-new" });
+			insertReviewLog(db, { id: "log-review", cardId: "forget-review" });
+
+			const forgotten = cards.bulkForget(["forget-new", "forget-review"]);
+			expect(forgotten).toBe(1);
+
+			const rows = db.query<{
+				id: string;
+				state: number;
+				reps: number;
+				lapses: number;
+				suspended: number;
+			}>(
+				`SELECT id, state, reps, lapses, suspended FROM cards WHERE id IN (?, ?) ORDER BY id`,
+				["forget-new", "forget-review"],
+			);
+			const newRow = rows.find((row) => row.id === "forget-new");
+			const reviewRow = rows.find((row) => row.id === "forget-review");
+			expect(newRow?.state).toBe(State.New);
+			expect(reviewRow?.state).toBe(State.New);
+			expect(reviewRow?.reps).toBe(0);
+			expect(reviewRow?.lapses).toBe(0);
+			expect(reviewRow?.suspended).toBe(0);
+
+			const logRows = db.query<{ id: string; deleted_at: number | null }>(
+				`SELECT id, deleted_at FROM review_log WHERE id IN (?, ?) ORDER BY id`,
+				["log-new", "log-review"],
+			);
+			const newLog = logRows.find((row) => row.id === "log-new");
+			const reviewLog = logRows.find((row) => row.id === "log-review");
+			expect(newLog?.deleted_at).toBeNull();
+			expect(reviewLog?.deleted_at).not.toBeNull();
 		});
 	});
 

@@ -941,25 +941,32 @@ export class CardActions {
 	bulkForget(cardIds: string[]): number {
 		if (cardIds.length === 0) return 0;
 		const placeholders = cardIds.map(() => "?").join(",");
+		const forgettableRows = this.db.query<{ id: string }>(
+			`SELECT id FROM cards WHERE id IN (${placeholders}) AND state != 0`,
+			cardIds,
+		);
+		const forgettableIds = forgettableRows.map((row) => row.id);
+		if (forgettableIds.length === 0) return 0;
+		const forgettablePlaceholders = forgettableIds.map(() => "?").join(",");
 		const now = new Date().toISOString();
 		const nowMs = Date.now();
 		let modified = 0;
 		this.db.transaction(() => {
 			this.db.run(
 				`UPDATE cards SET
-					state = 0, reps = 0, lapses = 0,
-					stability = 0, difficulty = 0, scheduled_days = 0,
-					learning_step = 0, due = ?, last_review = NULL,
-					suspended = 0, buried_until = NULL, updated_at = ?
-				WHERE id IN (${placeholders})`,
-				[now, nowMs, ...cardIds],
-			);
-			modified = this.db.getRowsModified();
-			this.db.run(
-				`UPDATE review_log SET deleted_at = ?, updated_at = ? WHERE card_id IN (${placeholders})`,
-				[nowMs, nowMs, ...cardIds],
-			);
-		});
+						state = 0, reps = 0, lapses = 0,
+						stability = 0, difficulty = 0, scheduled_days = 0,
+						learning_step = 0, due = ?, last_review = NULL,
+						suspended = 0, buried_until = NULL, updated_at = ?
+					WHERE id IN (${forgettablePlaceholders})`,
+					[now, nowMs, ...forgettableIds],
+				);
+				modified = this.db.getRowsModified();
+				this.db.run(
+					`UPDATE review_log SET deleted_at = ?, updated_at = ? WHERE card_id IN (${forgettablePlaceholders})`,
+					[nowMs, nowMs, ...forgettableIds],
+				);
+			});
 		return modified;
 	}
 
