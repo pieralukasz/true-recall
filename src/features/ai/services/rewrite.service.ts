@@ -14,6 +14,7 @@ import {
 	getTextContent,
 	OpenRouterClient,
 } from "./openrouter-client";
+import { addStreamedCard, clearRecentCards } from "./streaming-state";
 
 export interface RewriteCard {
 	id: string;
@@ -85,7 +86,6 @@ export class RewriteService {
 		let created = 0;
 		for (const block of blocks) {
 			const result = flashcardManager.createNote({
-				// Force the original note type regardless of what AI returned
 				noteTypeId: noteType.id,
 				fields: block.fields,
 				alwaysTypeIn: block.alwaysTypeIn,
@@ -94,8 +94,21 @@ export class RewriteService {
 				createdVia: "ai-rewrite",
 				createdAt: earliestCreatedAt,
 			});
+			for (const card of result.cards) {
+				addStreamedCard({
+					id: card.id,
+					question: card.question ?? "",
+					answer: card.answer ?? "",
+					cardType: card.cardType,
+					clozeTemplate: card.clozeTemplate,
+					clozeIndex: card.clozeIndex,
+					sourceText: card.sourceText,
+				});
+			}
 			created += result.cards.length;
 		}
+
+		setTimeout(() => clearRecentCards(), 1000);
 
 		return { created, suspended };
 	}

@@ -248,6 +248,30 @@ export function useSelectionActions({
 		}
 	}, [flashcardInfo, selectedCardIds, plugin, panel]);
 
+	const handleSuspendSelected = useCallback(async () => {
+		if (!flashcardInfo || selectedCardIds.size === 0) return;
+		const { notify } = await import("@shared/services/notification.service");
+		const { notifyCardChange } = await import("@shared/services/signals");
+
+		const cardIds = Array.from(selectedCardIds);
+		const count = plugin.cardStore.cards.bulkSuspend(cardIds);
+		notifyCardChange({ type: "bulk", cardIds, action: "suspend" });
+		panel.exitSelectionMode();
+		notify().success(`Suspended ${count} card(s)`);
+	}, [flashcardInfo, selectedCardIds, plugin, panel]);
+
+	const handleUnsuspendSelected = useCallback(async () => {
+		if (!flashcardInfo || selectedCardIds.size === 0) return;
+		const { notify } = await import("@shared/services/notification.service");
+		const { notifyCardChange } = await import("@shared/services/signals");
+
+		const cardIds = Array.from(selectedCardIds);
+		const count = plugin.cardStore.cards.bulkUnsuspend(cardIds);
+		notifyCardChange({ type: "bulk", cardIds, action: "unsuspend" });
+		panel.exitSelectionMode();
+		notify().success(`Unsuspended ${count} card(s)`);
+	}, [flashcardInfo, selectedCardIds, plugin, panel]);
+
 	const handleForgetSelected = useCallback(async () => {
 		if (!flashcardInfo || selectedCardIds.size === 0) return;
 		const { notify } = await import("@shared/services/notification.service");
@@ -310,6 +334,8 @@ export function useSelectionActions({
 		handleMoveSelected,
 		handleChangeNoteType,
 		handleRewriteSelected,
+		handleSuspendSelected,
+		handleUnsuspendSelected,
 		handleForgetSelected,
 		handleDeleteSelected,
 		handleForgetAll,

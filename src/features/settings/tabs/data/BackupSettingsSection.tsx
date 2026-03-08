@@ -12,9 +12,16 @@ export function BackupSettingsSection() {
 	return (
 		<FormCard title="Database backup">
 			<InfoBlock>
-				<p>Create backups of your flashcard database to prevent data loss.</p>
 				<p>
-					Backups are stored in <code>.true-recall/backups/</code>
+					True Recall works directly on your active SQLite database during normal
+					use.
+				</p>
+				<p>
+					Backups are safety copies to recover from corruption or accidental
+					changes.
+				</p>
+				<p>
+					Stored in <code>.true-recall/backups/</code>
 				</p>
 			</InfoBlock>
 
