@@ -104,8 +104,7 @@ export function BulkActionsBar({
 
 	const handleDelete = useCallback(() => {
 		if (!confirm(`Delete ${ids.length} cards? This cannot be undone.`)) return;
-		const count = plugin.cardStore.cards.bulkSoftDelete(ids);
-		notifyCardChange({ type: "bulk", cardIds: ids, action: "delete" });
+		const count = plugin.flashcardManager.removeFlashcardsByIds(ids);
 		notify().success(`Deleted ${count} cards`);
 		onClearSelection();
 	}, [ids, plugin]);

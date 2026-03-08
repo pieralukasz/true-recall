@@ -105,8 +105,71 @@ describe("CardRepository.deleteBatch", () => {
 				type: "bulk",
 				action: "removed",
 				cardIds: ["card-1", "card-2"],
-			})
+				})
+			);
+	});
+
+	it("cascades reverse pair deletion in bulk mode", () => {
+		const original = {
+			...createTestCard({ id: "card-original" }),
+			noteId: "note-shared",
+			templateOrd: 0,
+		};
+		const reverse = {
+			...createTestCard({ id: "card-reverse" }),
+			noteId: "note-shared",
+			templateOrd: 1,
+			cardType: "reversed" as const,
+			reverseOf: "card-original",
+		};
+		ctx.cards.set(original.id, original);
+		ctx.cards.set(reverse.id, reverse);
+
+		const count = repository.deleteBatch(["card-original"]);
+
+		expect(count).toBe(2);
+		expect(ctx.cards.size()).toBe(0);
+		expect(mockNotifyCardChange).toHaveBeenCalledWith(
+			expect.objectContaining({
+				type: "bulk",
+				action: "removed",
+				cardIds: expect.arrayContaining(["card-original", "card-reverse"]),
+			}),
 		);
+	});
+
+	it("cascades cloze siblings and deduplicates deleted ids", () => {
+		const c1 = {
+			...createTestCard({ id: "cloze-1" }),
+			cardType: "cloze" as const,
+			sourceUid: "src-cloze",
+			clozeTemplate: "{{c1::A}} {{c2::B}} {{c3::C}}",
+			clozeIndex: 1,
+		};
+		const c2 = {
+			...createTestCard({ id: "cloze-2" }),
+			cardType: "cloze" as const,
+			sourceUid: "src-cloze",
+			clozeTemplate: "{{c1::A}} {{c2::B}} {{c3::C}}",
+			clozeIndex: 2,
+		};
+		const c3 = {
+			...createTestCard({ id: "cloze-3" }),
+			cardType: "cloze" as const,
+			sourceUid: "src-cloze",
+			clozeTemplate: "{{c1::A}} {{c2::B}} {{c3::C}}",
+			clozeIndex: 3,
+		};
+		[c1, c2, c3].forEach((c) => ctx.cards.set(c.id, c));
+
+		const count = repository.deleteBatch(["cloze-1", "cloze-2"]);
+
+		expect(count).toBe(3);
+		expect(ctx.cards.size()).toBe(0);
+		const lastCall =
+			mockNotifyCardChange.mock.calls[mockNotifyCardChange.mock.calls.length - 1];
+		const mutation = (lastCall?.[0] as { cardIds?: string[] } | undefined) ?? {};
+		expect(new Set(mutation?.cardIds ?? []).size).toBe(3);
 	});
 });
 
@@ -155,5 +218,41 @@ describe("FlashcardManager.removeFlashcardsByIds", () => {
 
 		expect(count).toBe(2);
 		expect(ctx.cards.size()).toBe(0);
+	});
+
+	it("cleans reviewed cards with full cascade ids", () => {
+		const manager = new FlashcardManager(
+			{} as App,
+			{} as never,
+			{} as never,
+		);
+		manager.setStore(createMockStore(ctx));
+		const removeReviewedCards = vi.fn();
+		manager.setSessionPersistence({
+			removeReviewedCards,
+		} as never);
+
+		const original = {
+			...createTestCard({ id: "cascade-original" }),
+			noteId: "note-cascade",
+			templateOrd: 0,
+		};
+		const reverse = {
+			...createTestCard({ id: "cascade-reverse" }),
+			noteId: "note-cascade",
+			templateOrd: 1,
+			cardType: "reversed" as const,
+			reverseOf: "cascade-original",
+		};
+		ctx.cards.set(original.id, original);
+		ctx.cards.set(reverse.id, reverse);
+
+		const count = manager.removeFlashcardsByIds(["cascade-original"]);
+
+		expect(count).toBe(2);
+		expect(removeReviewedCards).toHaveBeenCalledTimes(1);
+		expect(removeReviewedCards).toHaveBeenCalledWith(
+			expect.arrayContaining(["cascade-original", "cascade-reverse"]),
+		);
 	});
 });

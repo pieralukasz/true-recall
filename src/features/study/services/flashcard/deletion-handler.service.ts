@@ -1,4 +1,5 @@
 import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
+import type { SessionPersistenceService } from "@features/core/persistence/session-persistence.service";
 import type { FrontmatterIndexService } from "@features/core/services/frontmatter-index.service";
 import { notify } from "@shared/services/notification.service";
 import { notifyCardChange } from "@shared/services/signals";
@@ -7,6 +8,7 @@ import type { TFile } from "obsidian";
 export interface DeletionHandlerDeps {
 	frontmatterIndex: FrontmatterIndexService;
 	store: SqliteStoreService;
+	sessionPersistence: SessionPersistenceService;
 }
 
 /**
@@ -32,7 +34,8 @@ export class DeletionHandlerService {
 
 		const cardIds = cards.map((c) => c.id);
 		this.deps.store.cards.bulkSoftDelete(cardIds);
-		notifyCardChange({ type: "bulk", cardIds, action: "delete" });
+		this.deps.sessionPersistence.removeReviewedCards(cardIds);
+		notifyCardChange({ type: "bulk", cardIds, action: "removed" });
 		notify().cardsDeleted(cardIds.length);
 	}
 }
