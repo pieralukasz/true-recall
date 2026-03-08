@@ -75,6 +75,10 @@ export interface AnswerUndoPayload {
 	previousState?: State;
 	/** Position where card was requeued (for learning cards) - needs cleanup on undo */
 	requeuedAtIndex?: number;
+	/** Sibling card IDs that were auto-buried after this answer (for undo) */
+	buriedSiblingIds?: string[];
+	/** Full card data of buried siblings (needed to re-insert on undo) */
+	buriedSiblings?: FSRSFlashcardItem[];
 }
 
 /**

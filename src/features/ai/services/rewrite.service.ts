@@ -7,6 +7,7 @@ import {
 	getBYOKFallbackConfig,
 	resolveAIClientConfig,
 } from "./ai-client-config";
+import type { ParsedBlock } from "@features/study/services/flashcard/block-parser.service";
 import { IncrementalFlashcardParser } from "./incremental-flashcard-parser";
 import {
 	AIRequestError,
@@ -20,6 +21,7 @@ export interface RewriteCard {
 	answer: string;
 	sourceUid?: string;
 	createdAt?: number;
+	noteTypeId: string;
 }
 
 export interface RewriteResult {
@@ -30,8 +32,8 @@ export interface RewriteResult {
 export class RewriteService {
 	constructor(
 		private getSettings: () => TrueRecallSettings,
-		private getNoteType: (slug: string) => NoteType | null,
-		private getAllNoteTypes: () => NoteType[],
+		private getNoteTypeBySlug: (slug: string) => NoteType | null,
+		private getNoteTypeById: (id: string) => NoteType | null | undefined,
 	) {}
 
 	async rewrite(
@@ -39,15 +41,28 @@ export class RewriteService {
 		flashcardManager: FlashcardManager,
 		bulkSuspend: (ids: string[]) => number,
 	): Promise<RewriteResult> {
+		const firstCard = cards[0];
+		if (!firstCard) return { created: 0, suspended: 0 };
+
+		const noteType = this.getNoteTypeById(firstCard.noteTypeId);
+		if (!noteType) {
+			new Notice("Note type not found. Cannot rewrite.");
+			return { created: 0, suspended: 0 };
+		}
+
+		// Build input using the note type's actual field names
 		const inputText = cards
-			.map(
-				(c) =>
-					`#existing\nFront: ${c.question}\nBack: ${c.answer ?? ""}\n---`,
-			)
+			.map((c) => {
+				const fieldLines = noteType.fields.map((fieldName, i) => {
+					const value =
+						i === 0 ? c.question : i === 1 ? (c.answer ?? "") : "";
+					return `${fieldName}: ${value}`;
+				});
+				return `#existing\n${fieldLines.join("\n")}\n---`;
+			})
 			.join("\n\n");
 
-		const noteTypes = this.getAllNoteTypes();
-		const systemPrompt = buildRewritePrompt(noteTypes);
+		const systemPrompt = buildRewritePrompt(noteType);
 
 		const responseText = await this.callAI(systemPrompt, inputText);
 		const blocks = this.parseResponse(responseText);
@@ -62,17 +77,19 @@ export class RewriteService {
 
 		// Inherit the earliest created_at from originals for position preservation
 		const earliestCreatedAt = cards.reduce(
-			(min, c) => (c.createdAt != null && c.createdAt < min ? c.createdAt : min),
-			cards[0]?.createdAt ?? Date.now(),
+			(min, c) =>
+				c.createdAt != null && c.createdAt < min ? c.createdAt : min,
+			firstCard.createdAt ?? Date.now(),
 		);
 
 		let created = 0;
 		for (const block of blocks) {
 			const result = flashcardManager.createNote({
-				noteTypeId: block.noteTypeId,
+				// Force the original note type regardless of what AI returned
+				noteTypeId: noteType.id,
 				fields: block.fields,
 				alwaysTypeIn: block.alwaysTypeIn,
-				sourceUid: cards[0]?.sourceUid,
+				sourceUid: firstCard.sourceUid,
 				sourceText: block.sourceText,
 				createdVia: "ai-rewrite",
 				createdAt: earliestCreatedAt,
@@ -132,22 +149,15 @@ export class RewriteService {
 		}
 	}
 
-	private parseResponse(text: string): ParsedBlockResult[] {
-		const parser = new IncrementalFlashcardParser(this.getNoteType);
+	private parseResponse(text: string): ParsedBlock[] {
+		const parser = new IncrementalFlashcardParser(this.getNoteTypeBySlug);
 		parser.feed(text);
-		return parser
-			.finish()
-			.filter(
-				(e): e is { type: "card_complete"; block: ParsedBlockResult } =>
-					e.type === "card_complete" && e.block !== null,
-			)
-			.map((e) => e.block);
+		const blocks: ParsedBlock[] = [];
+		for (const event of parser.finish()) {
+			if (event.type === "card_complete" && event.block) {
+				blocks.push(event.block);
+			}
+		}
+		return blocks;
 	}
 }
-
-type ParsedBlockResult = NonNullable<
-	Extract<
-		ReturnType<IncrementalFlashcardParser["finish"]>[number],
-		{ type: "card_complete" }
-	>["block"]
->;
