@@ -7,9 +7,10 @@ const COLLAPSED_COUNT = 5;
 
 interface CardPreviewListProps {
 	cards: ParsedCard[];
+	duplicateCount?: number;
 }
 
-export function CardPreviewList({ cards }: CardPreviewListProps) {
+export function CardPreviewList({ cards, duplicateCount = 0 }: CardPreviewListProps) {
 	const [expanded, setExpanded] = useState(false);
 
 	if (cards.length === 0) return null;
@@ -32,6 +33,12 @@ export function CardPreviewList({ cards }: CardPreviewListProps) {
 					<span>
 						{" "}
 						({basicCount} Basic, {clozeCount} Cloze)
+					</span>
+				)}
+				{duplicateCount > 0 && (
+					<span class="ep:text-obs-faint">
+						{" "}
+						· {duplicateCount} duplicate{duplicateCount !== 1 ? "s" : ""} removed
 					</span>
 				)}
 			</div>
