@@ -26,6 +26,7 @@ export interface PanelHeaderProps {
 	onSelectAll: () => void;
 	onMoveSelected: () => void;
 	onChangeNoteType: () => void;
+	onRewriteSelected: () => void;
 	onForgetSelected: () => void;
 	onDeleteSelected: () => void;
 	onSearchChange: (query: string) => void;
@@ -60,6 +61,7 @@ export function PanelHeader({
 	onSelectAll,
 	onMoveSelected,
 	onChangeNoteType,
+	onRewriteSelected,
 	onForgetSelected,
 	onDeleteSelected,
 	onSearchChange,
@@ -190,6 +192,13 @@ export function PanelHeader({
 							icon="replace"
 							ariaLabel="Change note type"
 							onClick={onChangeNoteType}
+							size="small"
+							disabled={!hasSelection}
+						/>
+						<IconButton
+							icon="sparkles"
+							ariaLabel="AI Rewrite selected"
+							onClick={onRewriteSelected}
 							size="small"
 							disabled={!hasSelection}
 						/>

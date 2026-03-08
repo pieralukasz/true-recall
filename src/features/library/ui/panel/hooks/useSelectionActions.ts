@@ -186,6 +186,53 @@ export function useSelectionActions({
 		panel.exitSelectionMode();
 	}, [flashcardInfo, selectedCardIds, app, plugin, panel]);
 
+	const handleRewriteSelected = useCallback(async () => {
+		if (!flashcardInfo || selectedCardIds.size === 0) return;
+		const { RewriteService } = await import(
+			"@features/ai/services/rewrite.service"
+		);
+		const { notify } = await import("@shared/services/notification.service");
+		const { notifyCardChange } = await import("@shared/services/signals");
+
+		const selectedCards = flashcardInfo.flashcards.filter((card) =>
+			selectedCardIds.has(card.id),
+		);
+		if (selectedCards.length === 0) return;
+
+		const service = new RewriteService(
+			() => plugin.settings,
+			(slug) => plugin.flashcardManager.getNoteTypeBySlug(slug),
+			() => plugin.cardStore.noteTypes.getAll(),
+		);
+
+		const cardsWithFsrs = plugin.cardStore.cards.getAll();
+		const rewriteCards = selectedCards.map((card) => {
+			const fsrs = cardsWithFsrs.find((c) => c.id === card.id);
+			return {
+				id: card.id,
+				question: card.question,
+				answer: card.answer ?? "",
+				sourceUid: fsrs?.fsrs.sourceUid,
+				createdAt: fsrs?.fsrs.createdAt,
+			};
+		});
+
+		try {
+			notify().success(`Rewriting ${rewriteCards.length} card(s)...`);
+			const result = await service.rewrite(
+				rewriteCards,
+				plugin.flashcardManager,
+				(ids) => plugin.cardStore.cards.bulkSuspend(ids),
+			);
+			const cardIds = Array.from(selectedCardIds);
+			notifyCardChange({ type: "bulk", cardIds, action: "update" });
+			panel.exitSelectionMode();
+			notify().success(`Split into ${result.created} card(s)`);
+		} catch (error) {
+			notify().operationFailed("rewrite cards", error);
+		}
+	}, [flashcardInfo, selectedCardIds, plugin, panel]);
+
 	const handleForgetSelected = useCallback(async () => {
 		if (!flashcardInfo || selectedCardIds.size === 0) return;
 		const { notify } = await import("@shared/services/notification.service");
@@ -239,6 +286,7 @@ export function useSelectionActions({
 		handleSelectAll,
 		handleMoveSelected,
 		handleChangeNoteType,
+		handleRewriteSelected,
 		handleForgetSelected,
 		handleDeleteSelected,
 		handleForgetAll,
