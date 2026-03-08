@@ -369,6 +369,7 @@
 	   ================================================================ */
 	.true-recall-import-editor .cm-editor {
 		height: 100%;
+		font-size: 13px;
 	}
 
 	.true-recall-import-editor .cm-scroller {
@@ -380,4 +381,5 @@
 	.true-recall-import-editor .cm-content {
 		flex-grow: 0;
 	}
+
 }

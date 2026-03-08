@@ -8,6 +8,7 @@ interface FooterBarProps {
 	cardCount: number;
 	detectedFormat: string;
 	saving: boolean;
+	hasSourceNote: boolean;
 	onSave: () => void;
 }
 
@@ -16,6 +17,7 @@ export function FooterBar({
 	cardCount,
 	detectedFormat,
 	saving,
+	hasSourceNote,
 	onSave,
 }: FooterBarProps) {
 	const [showHelp, setShowHelp] = useState(false);
@@ -54,7 +56,7 @@ export function FooterBar({
 			<Clickable
 				class="mod-cta ep-btn"
 				onClick={onSave}
-				disabled={cardCount === 0 || saving}
+				disabled={cardCount === 0 || saving || !hasSourceNote}
 				stopPropagation={false}
 			>
 				{saving
