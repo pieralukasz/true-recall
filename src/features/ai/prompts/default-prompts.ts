@@ -120,19 +120,47 @@ ANTI-RULES:
 - Anti-Tautology: Question MUST NOT contain the answer. Use synonyms.
 - Anti-List: Never use bullet points in answers. Use unique "anchors" in questions to split lists.
 - No Order Questions: NEVER use "What is the first/second/next..."
+- Anti-Boolean: NEVER ask Yes/No questions. Rephrase to ask for the specific fact.
+- Anti-Example-Trap: Don't ask "What is an example of X?" — instead state the example and ask what category/type it belongs to.
+
+QUESTION QUALITY:
+- Context-Free: Each question must be understandable WITHOUT the source text. Include enough context in the question itself.
+- One Correct Answer: The question must permit exactly ONE correct response. Eliminate ambiguity that could allow alternative correct answers.
+- Concrete over Abstract: When the answer is an abstract concept, include a brief concrete example or visual cue.
+- Disambiguation: When two concepts are easily confused, add a distinguishing cue (e.g., "Unlike X, what does Y...").
+
+KNOWLEDGE STRUCTURE:
+- Basics First: Prioritize fundamental definitions and core concepts. Create those cards before details, exceptions, or examples.
+- Vivid Language: Use concrete, vivid wording over dry abstractions. Mention visual associations when natural (e.g., "shaped like a double helix").
+- Context Cues: When the source covers multiple distinct topics, prefix questions with a brief topic label in parentheses.
 
 EXAMPLE:
-Text: "Rosacea is manifested by intense reddening of the skin. In an advanced degree, papulopustular changes may appear."
+Text: "Rosacea is manifested by intense reddening of the skin. In an advanced degree, papulopustular changes may appear. Acne vulgaris also causes skin redness, but is distinguished by comedones. The mitochondrial matrix contains enzymes for the citric acid cycle. ATP synthase is located in the inner mitochondrial membrane."
 
 #type/basic
 Front: What is **[[rosacea]]**?
-Back: Reddening of the skin
+Back: Chronic skin condition causing intense facial reddening
 <!-- source: Rosacea is manifested by intense reddening of the skin. -->
 ---
 #type/basic
 Front: How does advanced **[[rosacea]]** manifest?
-Back: Papulopustular changes
-<!-- source: In an advanced degree, papulopustular changes may appear. -->`,
+Back: Papulopustular changes (pus-filled bumps resembling acne)
+<!-- source: In an advanced degree, papulopustular changes may appear. -->
+---
+#type/basic
+Front: Unlike [[rosacea]], what distinguishes **[[acne vulgaris]]**?
+Back: Presence of comedones (blackheads and whiteheads)
+<!-- source: Acne vulgaris also causes skin redness, but is distinguished by comedones. -->
+---
+#type/basic
+Front: (Cell biology) What does the **[[mitochondrial matrix]]** contain?
+Back: Enzymes for the citric acid cycle (Krebs cycle)
+<!-- source: The mitochondrial matrix contains enzymes for the citric acid cycle. -->
+---
+#type/basic
+Front: (Cell biology) Where is **[[ATP synthase]]** located?
+Back: Inner mitochondrial membrane (the deeply folded cristae)
+<!-- source: ATP synthase is located in the inner mitochondrial membrane. -->`,
 
 	cloze: `I would like you to help me create cloze deletion flashcards based on text using the "Cloze" card type.
 
@@ -297,19 +325,42 @@ ANTI-RULES:
 - Anti-Tautology: Question MUST NOT contain the answer. Use synonyms.
 - Anti-List: Never use bullet points in answers. Use unique "anchors" in questions to split lists.
 - No Order Questions: NEVER use "What is the first/second/next..."
+- Anti-Boolean: NEVER ask Yes/No questions. Rephrase to ask for the specific fact.
+- Anti-Example-Trap: Don't ask "What is an example of X?" — instead state the example and ask what category/type it belongs to.
+
+QUESTION QUALITY:
+- Context-Free: Each question must be understandable WITHOUT the source text. Include enough context in the question itself.
+- One Correct Answer: The question must permit exactly ONE correct response. Eliminate ambiguity that could allow alternative correct answers.
+- Concrete over Abstract: When the answer is an abstract concept, include a brief concrete example or visual cue.
+- Disambiguation: When two concepts are easily confused, add a distinguishing cue (e.g., "Unlike X, what does Y...").
+
+KNOWLEDGE STRUCTURE:
+- Basics First: Prioritize fundamental definitions and core concepts. Create those cards before details, exceptions, or examples.
+- Vivid Language: Use concrete, vivid wording over dry abstractions. Mention visual associations when natural (e.g., "shaped like a double helix").
+- Context Cues: When the source covers multiple distinct topics, prefix questions with a brief topic label in parentheses.
 
 Choose the card type that best supports memorization for each fact.
 
 EXAMPLE:
-Text: "Mitochondria are the powerhouse of the cell. Rosacea manifests by intense reddening of the skin."
+Text: "Mitochondria are the powerhouse of the cell. ATP synthase is located in the inner mitochondrial membrane. Rosacea manifests by intense reddening of the skin. Unlike rosacea, acne vulgaris is characterized by comedones."
 
 #type/cloze
 Text: [[mitochondria|Mitochondria]] are the main {{c1::ATP}}-producing organelles in cells
 Extra:
 <!-- source: Mitochondria are the powerhouse of the cell. -->
 ---
+#type/cloze
+Text: (Cell biology) {{c1::ATP synthase}} is located in the inner [[mitochondrial membrane]]
+Extra: The deeply folded cristae
+<!-- source: ATP synthase is located in the inner mitochondrial membrane. -->
+---
 #type/basic
-Front: What is **[[rosacea]]**?
-Back: Intense reddening of the skin
-<!-- source: Rosacea manifests by intense reddening of the skin. -->`,
+Front: What skin condition causes chronic facial **reddening** without comedones?
+Back: [[rosacea|Rosacea]]
+<!-- source: Rosacea manifests by intense reddening of the skin. -->
+---
+#type/basic
+Front: Unlike [[rosacea]], what distinguishes **[[acne vulgaris]]**?
+Back: Presence of comedones (blackheads and whiteheads)
+<!-- source: Unlike rosacea, acne vulgaris is characterized by comedones. -->`,
 };
