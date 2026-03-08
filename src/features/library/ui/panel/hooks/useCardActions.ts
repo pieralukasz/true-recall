@@ -269,6 +269,7 @@ export function useCardActions({
 	const handleForgetCard = useCallback(
 		(card: FlashcardItem) => {
 			plugin.cardStore.cards.bulkForget([card.id]);
+			plugin.sessionPersistence?.removeReviewedCards([card.id]);
 			notifyCardChange({ type: "bulk", cardIds: [card.id], action: "reset" });
 			notify().cardForgotten();
 		},

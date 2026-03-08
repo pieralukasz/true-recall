@@ -266,6 +266,7 @@ export class CardActionsHandler {
 			pendingTimeoutId = null;
 			try {
 				this.deps.cardStore.cards.bulkForget(siblingIds);
+				this.deps.plugin.sessionPersistence?.removeReviewedCards(siblingIds);
 				notifyCardChange({
 					type: "bulk",
 					cardIds: siblingIds,
