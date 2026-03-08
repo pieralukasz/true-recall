@@ -1,6 +1,5 @@
 import { useComputed } from "@preact/signals";
 import { cards } from "@shared/services/reactive-card-store";
-import { Clickable } from "@shared/ui/components";
 import { usePlugin } from "@shared/ui/preact";
 import { useMemo } from "preact/hooks";
 import { configValue, parseCodeblockConfig } from "../config-parser";
@@ -58,16 +57,8 @@ export function TrueRetentionWidget({ source }: { source: string }) {
 
 	const trend = TREND_ARROWS[summary.trend] ?? TREND_ARROWS[0]!;
 
-	const handleClick = () => {
-		plugin.openStatsView().catch(() => {});
-	};
-
 	return (
-		<Clickable
-			class="ep:flex ep:flex-col ep:gap-2 ep:p-3 ep:text-sm"
-			onClick={handleClick}
-			title="Open statistics"
-		>
+		<div class="ep:flex ep:flex-col ep:gap-2 ep:p-3 ep:text-sm">
 			{/* Header */}
 			<div class="ep:flex ep:items-center ep:justify-between ep:text-xs">
 				<span class="ep:font-semibold">True Retention</span>
@@ -108,7 +99,7 @@ export function TrueRetentionWidget({ source }: { source: string }) {
 			<div class="ep:text-xs ep:text-obs-muted">
 				{summary.totalReviews} mature reviews in last {days} days
 			</div>
-		</Clickable>
+		</div>
 	);
 }
 

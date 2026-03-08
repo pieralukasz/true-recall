@@ -2,7 +2,6 @@ import { StatsCalculatorService } from "@features/metrics/services/stats/stats-c
 import { useComputed } from "@preact/signals";
 import { cards } from "@shared/services/reactive-card-store";
 import type { CardMaturityBreakdown } from "@shared/types/fsrs/stats.types";
-import { Clickable } from "@shared/ui/components";
 import { usePlugin } from "@shared/ui/preact";
 import { useMemo } from "preact/hooks";
 import { configValue, parseCodeblockConfig } from "../config-parser";
@@ -91,10 +90,6 @@ export function MaturityWidget({ source }: { source: string }) {
 		return <div class="ep:text-obs-muted ep:text-xs ep:p-3">No cards yet</div>;
 	}
 
-	const handleLegendClick = () => {
-		plugin.openStatsView().catch(() => {});
-	};
-
 	return (
 		<div class="ep:flex ep:flex-col ep:gap-2 ep:p-3 ep:text-sm">
 			<div class="ep:flex ep:items-center ep:justify-between ep:text-xs">
@@ -119,11 +114,9 @@ export function MaturityWidget({ source }: { source: string }) {
 
 			<div class="ep:flex ep:flex-wrap ep:gap-x-3 ep:gap-y-1 ep:text-xs">
 				{data.segments.map((seg) => (
-					<Clickable
+					<div
 						key={seg.label}
-						class="ep:inline-flex ep:items-center ep:gap-1 hover:ep:underline"
-						onClick={handleLegendClick}
-						title="Open statistics"
+						class="ep:inline-flex ep:items-center ep:gap-1"
 					>
 						<span
 							class="ep:w-2 ep:h-2 ep:rounded-full ep:inline-block ep:shrink-0"
@@ -135,7 +128,7 @@ export function MaturityWidget({ source }: { source: string }) {
 						<span class="ep:text-obs-muted">
 							{seg.label} {seg.count}
 						</span>
-					</Clickable>
+					</div>
 				))}
 			</div>
 		</div>

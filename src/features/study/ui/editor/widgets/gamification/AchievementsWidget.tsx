@@ -1,7 +1,6 @@
 import { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
 import { useComputed } from "@preact/signals";
 import { allCardsArray, cards } from "@shared/services/reactive-card-store";
-import { Clickable } from "@shared/ui/components";
 import { usePlugin } from "@shared/ui/preact";
 import { useMemo } from "preact/hooks";
 import { configValue, parseCodeblockConfig } from "../config-parser";
@@ -233,19 +232,14 @@ export function AchievementsWidget({ source }: { source: string }) {
 		);
 	}
 
-	const handleClick = () => {
-		plugin.openStatsView().catch(() => {});
-	};
-
 	return (
 		<div class="ep:grid ep:grid-cols-2 ep:gap-2 ep:p-3">
 			{achievements.map((a) => (
-				<Clickable
+				<div
 					key={a.id}
 					class={`ep:flex ep:gap-2 ep:p-2 ep:rounded ep:text-xs ${
 						a.unlocked ? "ep:bg-obs-green/5" : "ep:opacity-60"
 					}`}
-					onClick={handleClick}
 					title={
 						a.unlocked ? `${a.name} - Earned!` : `${a.current}/${a.threshold}`
 					}
@@ -279,7 +273,7 @@ export function AchievementsWidget({ source }: { source: string }) {
 							</>
 						)}
 					</div>
-				</Clickable>
+				</div>
 			))}
 		</div>
 	);

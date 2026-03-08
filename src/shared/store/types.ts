@@ -210,23 +210,12 @@ export interface SimulatorSliceActions {
 // API type for components to depend on
 export type SimulatorApi = SimulatorSliceState & SimulatorSliceActions;
 
-export interface StatsSliceState {
-	lastRefreshed: number;
-}
-
-export interface StatsSliceActions {
-	setLastRefreshed: (time: number) => void;
-}
-
-export type StatsApi = StatsSliceState & StatsSliceActions;
-
 export type ReviewApi = ReviewSliceState & ReviewSliceActions;
 
 export interface AppState {
 	review: ReviewSliceState & ReviewSliceActions;
 	panel: PanelSliceState & PanelSliceActions;
 	simulator: SimulatorSliceState & SimulatorSliceActions;
-	stats: StatsSliceState & StatsSliceActions;
 }
 
 export type SliceCreator<T> = (

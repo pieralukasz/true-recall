@@ -1,6 +1,5 @@
 import { useComputed } from "@preact/signals";
 import { cards, pluginSettings } from "@shared/services/reactive-card-store";
-import { Clickable } from "@shared/ui/components";
 import { usePlugin } from "@shared/ui/preact";
 import { useMemo } from "preact/hooks";
 import { configValue, parseCodeblockConfig } from "../config-parser";
@@ -62,21 +61,13 @@ export function PresetInfoWidget({ source }: { source: string }) {
 		reviewsSinceOpt > 500 ||
 		formatDaysAgo(preset.lastOptimization).stale;
 
-	const handleClick = () => {
-		plugin.openStatsView().catch(() => {});
-	};
-
 	return (
 		<div class="ep:flex ep:flex-col ep:gap-2 ep:p-3 ep:text-sm">
 			{/* Header */}
-			<Clickable
-				class="ep:flex ep:items-center ep:justify-between"
-				onClick={handleClick}
-				title="Open statistics"
-			>
+			<div class="ep:flex ep:items-center ep:justify-between">
 				<span class="ep:font-semibold ep:text-xs">{preset.name}</span>
 				<span class="ep:text-xs ep:text-obs-muted">FSRS Preset</span>
-			</Clickable>
+			</div>
 
 			{/* Parameters grid */}
 			<div class="ep:grid ep:grid-cols-2 ep:gap-x-4 ep:gap-y-1 ep:text-xs">
@@ -113,18 +104,14 @@ export function PresetInfoWidget({ source }: { source: string }) {
 			</div>
 
 			{/* Optimization status */}
-			<Clickable
-				class="ep:flex ep:items-center ep:gap-2 ep:text-xs ep:pt-1 ep:border-t ep:border-obs-modifier-border"
-				onClick={handleClick}
-				title="Open statistics to optimize"
-			>
+			<div class="ep:flex ep:items-center ep:gap-2 ep:text-xs ep:pt-1 ep:border-t ep:border-obs-modifier-border">
 				<OptimizationStatus
 					lastOptimization={preset.lastOptimization}
 					needsOptimization={needsOptimization}
 					reviewsSinceOpt={reviewsSinceOpt}
 					metrics={preset.lastOptimizationMetrics}
 				/>
-			</Clickable>
+			</div>
 
 			{/* Weights (optional) */}
 			{showWeights && preset.weights && (

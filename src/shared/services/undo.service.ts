@@ -264,6 +264,13 @@ export class UndoService {
 			this.reviewCallbacks.onUpdateSchedulingPreview();
 		}
 
+		// Re-add to daily_reviewed_cards (forget removed it)
+		const sessionPersistence = this.plugin.sessionPersistence;
+		if (sessionPersistence) {
+			const today = sessionPersistence.getTodayKey();
+			this.plugin.cardStore.stats.recordReviewedCard(today, payload.card.id);
+		}
+
 		return true;
 	}
 

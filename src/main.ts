@@ -1,6 +1,4 @@
 import type { GenerationMode } from "@features/ai/prompts/default-prompts";
-import { NLQueryService } from "@features/ai/services/nl-query.service";
-import { SqlQueryAdapter } from "@features/ai/services/sql-query.adapter";
 import { StreamingGenerationService } from "@features/ai/services/streaming-generation.service";
 import { createSelectionToolbarExtension } from "@features/ai/ui/editor/SelectionToolbarPlugin";
 import { NoteStatusCacheService } from "@features/core/cache/note-status-cache.service";
@@ -38,9 +36,7 @@ import { DeviceDiscoveryService } from "@features/integration/services/device-di
 import { DeviceIdService } from "@features/integration/services/device-id.service";
 import { FlashcardPanelView } from "@features/library/ui/panel/FlashcardPanelView";
 import { FSRSHelperService } from "@features/metrics/services/fsrs-tools";
-import { StatsService } from "@features/metrics/services/stats/stats.service";
 import { SimulatorView } from "@features/metrics/ui/simulator";
-import { StatsView } from "@features/metrics/ui/stats/StatsView";
 import {
 	DEFAULT_SETTINGS,
 	type TrueRecallSettings,
@@ -66,7 +62,7 @@ import {
 	VIEW_TYPE_FLASHCARD_PANEL,
 	VIEW_TYPE_REVIEW,
 	VIEW_TYPE_SIMULATOR,
-	VIEW_TYPE_STATS,
+
 } from "@shared/constants";
 import {
 	NOTIFICATION_DURATION,
@@ -106,12 +102,10 @@ export default class TrueRecallPlugin extends Plugin {
 	settings!: TrueRecallSettings;
 	flashcardManager!: FlashcardManager;
 	fsrsService!: FSRSService;
-	statsService!: StatsService;
 	sessionPersistence!: SessionPersistenceService;
 	cardStore!: SqliteStoreService;
 	dayBoundaryService!: DayBoundaryService;
 	frontmatterIndex!: FrontmatterIndexService;
-	nlQueryService: NLQueryService | null = null;
 	backupService: BackupService | null = null;
 	backgroundBackupManager: BackgroundBackupManager | null = null;
 	deviceIdService: DeviceIdService | null = null;
@@ -226,11 +220,6 @@ export default class TrueRecallPlugin extends Plugin {
 
 		const fsrsSettings = extractFSRSSettings(this.settings);
 		this.fsrsService = new FSRSService(fsrsSettings);
-		this.statsService = new StatsService(
-			this.flashcardManager,
-			this.fsrsService,
-		);
-
 		this.dayBoundaryService = new DayBoundaryService(
 			this.settings.dayStartHour,
 		);
@@ -251,8 +240,6 @@ export default class TrueRecallPlugin extends Plugin {
 		);
 
 		this.registerView(VIEW_TYPE_REVIEW, (leaf) => new ReviewView(leaf, this));
-
-		this.registerView(VIEW_TYPE_STATS, (leaf) => new StatsView(leaf, this));
 
 		this.registerView(
 			VIEW_TYPE_SIMULATOR,
@@ -279,12 +266,6 @@ export default class TrueRecallPlugin extends Plugin {
 					CardBrowserView: typeof import("@features/library/ui/browser/CardBrowserView").CardBrowserView;
 				};
 			return new CardBrowserView(leaf, this);
-		});
-
-		this.addRibbonIcon("bar-chart-2", "True Recall - statistics", () => {
-			this.openStatsView().catch((error) => {
-				notify().error("Failed to open statistics view", error);
-			});
 		});
 
 		registerCommands(this);
@@ -405,10 +386,6 @@ export default class TrueRecallPlugin extends Plugin {
 		if (this.backgroundBackupManager) {
 			this.backgroundBackupManager.updateConfig(this.settings);
 		}
-		this.initializeNLQueryService().catch(() => {
-			// NL Query Service reinitialization is non-critical
-		});
-
 		this.noteStatusCache?.bumpVersion();
 		this.hierarchyService.invalidateGraph();
 
@@ -489,21 +466,6 @@ export default class TrueRecallPlugin extends Plugin {
 			return;
 		}
 		await activateView(this.app, VIEW_TYPE_DASHBOARD, { useMainArea: true });
-	}
-
-	async openStatsView(): Promise<void> {
-		const existingLeaf = getView(this.app, VIEW_TYPE_STATS);
-		if (existingLeaf) {
-			void this.app.workspace.revealLeaf(existingLeaf);
-
-			const view = existingLeaf.view;
-			if (view instanceof StatsView) {
-				void view.refresh();
-			}
-			return;
-		}
-
-		await activateView(this.app, VIEW_TYPE_STATS, { useMainArea: true });
 	}
 
 	openCardTypesEditor(noteTypeId?: string): void {
@@ -894,7 +856,6 @@ export default class TrueRecallPlugin extends Plugin {
 			});
 			this.noteTypeService.initialize();
 
-			await this.initializeNLQueryService();
 			// Cloud sync - coming soon
 			// this.initializeSyncService();
 			this.fsrsHelper = new FSRSHelperService(this.cardStore, this.settings);
@@ -1201,56 +1162,6 @@ export default class TrueRecallPlugin extends Plugin {
 				return store.noteTypes.getById(BUILTIN_BASIC_REVERSED_ID) ?? null;
 			case "auto":
 				return null;
-		}
-	}
-
-	private async initializeNLQueryService(): Promise<void> {
-		const hasAnyKey =
-			this.settings.openRouterApiKey || this.settings.subscriptionKey;
-		if (!this.cardStore || !hasAnyKey) {
-			return;
-		}
-
-		const { isFeatureAllowed } = await import(
-			"@shared/utils/subscription.utils"
-		);
-		if (!isFeatureAllowed("nlQuery", this.settings)) {
-			return;
-		}
-
-		try {
-			const db = this.cardStore.getDatabase();
-			if (!db) {
-				return;
-			}
-
-			const { resolveAIClientConfig, getBYOKFallbackConfig } = await import(
-				"@features/ai/services/ai-client-config"
-			);
-			const aiConfig = resolveAIClientConfig(this.settings);
-
-			const sqlAdapter = new SqlQueryAdapter(db);
-			this.nlQueryService = new NLQueryService(
-				{
-					apiKey: aiConfig.apiKey,
-					model: aiConfig.model,
-					proxyUrl: aiConfig.proxyUrl,
-				},
-				sqlAdapter,
-			);
-
-			const fallback = getBYOKFallbackConfig(this.settings);
-			if (fallback) {
-				this.nlQueryService.setFallbackConfig({
-					apiKey: fallback.apiKey,
-					model: fallback.model,
-					proxyUrl: fallback.proxyUrl,
-				});
-			}
-
-			await this.nlQueryService.initialize();
-		} catch {
-			// NL Query Service initialization is non-critical
 		}
 	}
 

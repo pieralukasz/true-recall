@@ -1,6 +1,5 @@
 import { useComputed } from "@preact/signals";
 import { cards } from "@shared/services/reactive-card-store";
-import { Clickable } from "@shared/ui/components";
 import { usePlugin } from "@shared/ui/preact";
 import { useMemo } from "preact/hooks";
 import { configValue, parseCodeblockConfig } from "../config-parser";
@@ -44,16 +43,8 @@ export function ForecastWidget({ source }: { source: string }) {
 
 	const { summary, entries } = data;
 
-	const handleClick = () => {
-		plugin.openStatsView().catch(() => {});
-	};
-
 	return (
-		<Clickable
-			class="ep:flex ep:flex-col ep:gap-2 ep:p-3 ep:text-sm"
-			onClick={handleClick}
-			title="Open statistics"
-		>
+		<div class="ep:flex ep:flex-col ep:gap-2 ep:p-3 ep:text-sm">
 			{/* Header */}
 			<div class="ep:flex ep:items-center ep:justify-between ep:text-xs">
 				<span class="ep:font-semibold">Forecast ({days}d)</span>
@@ -89,7 +80,7 @@ export function ForecastWidget({ source }: { source: string }) {
 			{showChart && entries.length > 0 && (
 				<MiniBarChart entries={entries} avgDaily={summary.avgDaily} />
 			)}
-		</Clickable>
+		</div>
 	);
 }
 
