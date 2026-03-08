@@ -19,7 +19,7 @@ export type NotePriority = "overdue" | "hot" | "due" | "light" | "done";
 
 export type NoteFilterMode = "all" | "due" | "new" | "learning" | "overdue";
 
-export type DashboardTab = "projects" | "notes";
+export type DashboardTab = "projects" | "notes" | "orphaned";
 
 export interface DashboardProject {
 	name: string;

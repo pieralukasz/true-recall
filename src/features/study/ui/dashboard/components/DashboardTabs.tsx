@@ -7,11 +7,12 @@ interface DashboardTabsProps {
 	onTabChange: (tab: DashboardTab) => void;
 	projectCount: number;
 	notesCount: number;
+	orphanedCount: number;
 	showArchived: boolean;
 	onToggleArchived: () => void;
 }
 
-const TABS: { id: DashboardTab; label: string }[] = [
+const BASE_TABS: { id: DashboardTab; label: string }[] = [
 	{ id: "projects", label: "Projects" },
 	{ id: "notes", label: "Notes" },
 ];
@@ -27,18 +28,25 @@ export function DashboardTabs({
 	onTabChange,
 	projectCount,
 	notesCount,
+	orphanedCount,
 	showArchived,
 	onToggleArchived,
 }: DashboardTabsProps) {
+	const tabs =
+		orphanedCount > 0
+			? [...BASE_TABS, { id: "orphaned" as DashboardTab, label: "Orphaned" }]
+			: BASE_TABS;
+
 	const counts: Record<DashboardTab, number> = {
 		projects: projectCount,
 		notes: notesCount,
+		orphaned: orphanedCount,
 	};
 
 	return (
 		<div class="ep:border-b ep:border-obs-border">
 			<div class="ep:flex ep:items-center ep:gap-6" role="tablist">
-				{TABS.map(({ id, label }) => {
+				{tabs.map(({ id, label }) => {
 					const isActive = activeTab === id;
 					const count = counts[id];
 					return (

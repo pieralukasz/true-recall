@@ -16,7 +16,7 @@ import { HeatmapWidget } from "../editor/widgets/analytics/HeatmapWidget";
 import { BottomActionBar } from "./components/BottomActionBar";
 import { DashboardTabs } from "./components/DashboardTabs";
 import { NoteList } from "./components/NoteList";
-import { OrphanedCardsBar } from "./components/OrphanedCardsBar";
+import { OrphanedTab } from "./components/OrphanedTab";
 import { ProjectsTab } from "./components/ProjectsTab";
 import { RecentlyStudiedBar } from "./components/RecentlyStudiedBar";
 import { TodayActionBar } from "./components/TodayActionBar";
@@ -199,11 +199,13 @@ export function DashboardApp() {
 	}, [visibleNotes, projectData.noteProjectMap, plugin, showArchived.value]);
 
 	const filteredCounts = useMemo(() => {
+		const orphaned = data.orphanedCards.total;
 		const q = searchQuery.value.toLowerCase().trim();
 		if (!q) {
 			return {
 				projects: projectData.projects.length,
 				notes: enrichedNotes.length,
+				orphaned,
 			};
 		}
 		return {
@@ -211,8 +213,9 @@ export function DashboardApp() {
 				.length,
 			notes: enrichedNotes.filter((n) => n.name.toLowerCase().includes(q))
 				.length,
+			orphaned,
 		};
-	}, [searchQuery.value, projectData.projects, enrichedNotes]);
+	}, [searchQuery.value, projectData.projects, enrichedNotes, data.orphanedCards.total]);
 
 	const handleStudyNote = (noteName: string, projectPath?: string) => {
 		void plugin.openReviewViewWithFilters({
@@ -252,6 +255,10 @@ export function DashboardApp() {
 		}
 	};
 
+	if (activeTab.value === "orphaned" && data.orphanedCards.total === 0) {
+		activeTab.value = "projects";
+	}
+
 	const initialMount = useInitialMount();
 	let si = 0;
 	const sectionProps = () =>
@@ -287,12 +294,6 @@ export function DashboardApp() {
 						</div>
 					)}
 
-					{data.orphanedCards.total > 0 && (
-						<div {...sectionProps()}>
-							<OrphanedCardsBar stats={data.orphanedCards} />
-						</div>
-					)}
-
 					<div {...sectionProps()}>
 						<SearchCombobox
 							value={searchQuery.value}
@@ -310,6 +311,7 @@ export function DashboardApp() {
 							onTabChange={handleTabChange}
 							projectCount={filteredCounts.projects}
 							notesCount={filteredCounts.notes}
+							orphanedCount={filteredCounts.orphaned}
 							showArchived={showArchived.value}
 							onToggleArchived={() => {
 								showArchived.value = !showArchived.value;
@@ -343,6 +345,10 @@ export function DashboardApp() {
 									scrollTop={scrollTop}
 									onPresetClick={handlePresetClick}
 								/>
+							)}
+
+							{activeTab.value === "orphaned" && (
+								<OrphanedTab stats={data.orphanedCards} />
 							)}
 						</div>
 
