@@ -32,7 +32,20 @@ FORMATTING:
 ANTI-RULES:
 - Anti-Tautology: Question MUST NOT contain the answer. Use synonyms.
 - Anti-List: Never use bullet points in answers. Use unique "anchors" in questions to split lists.
-- No Order Questions: NEVER use "What is the first/second/next..."`;
+- No Order Questions: NEVER use "What is the first/second/next..."
+- Anti-Boolean: NEVER ask Yes/No questions. Rephrase to ask for the specific fact.
+- Anti-Example-Trap: Don't ask "What is an example of X?" — instead state the example and ask what category/type it belongs to.
+
+QUESTION QUALITY:
+- Context-Free: Each question must be understandable WITHOUT the source text. Include enough context in the question itself.
+- One Correct Answer: The question must permit exactly ONE correct response. Eliminate ambiguity that could allow alternative correct answers.
+- Concrete over Abstract: When the answer is an abstract concept, include a brief concrete example or visual cue.
+- Disambiguation: When two concepts are easily confused, add a distinguishing cue (e.g., "Unlike X, what does Y...").
+
+KNOWLEDGE STRUCTURE:
+- Basics First: Prioritize fundamental definitions and core concepts. Create those cards before details, exceptions, or examples.
+- Vivid Language: Use concrete, vivid wording over dry abstractions. Mention visual associations when natural (e.g., "shaped like a double helix").
+- Context Cues: When the source covers multiple distinct topics, prefix questions with a brief topic label in parentheses.`;
 
 const CLOZE_RULES = `CLOZE RULES:
 - Keep each cloze sentence to ~15-20 words max. Split long source sentences into shorter statements.
@@ -141,17 +154,27 @@ ${noteType.fields[1] ? `${noteType.fields[1]}: While blocking most pathogens` : 
 
 	// Basic or reversed
 	return `EXAMPLE:
-Text: "Rosacea is manifested by intense reddening of the skin. In an advanced degree, papulopustular changes may appear."
+Text: "Rosacea is manifested by intense reddening of the skin. In an advanced degree, papulopustular changes may appear. Acne vulgaris also causes skin redness, but is distinguished by comedones. The mitochondrial matrix contains enzymes for the citric acid cycle."
 
 #type/${slug}
 ${noteType.fields[0]}: What is **[[rosacea]]**?
-${noteType.fields[1]}: Reddening of the skin
+${noteType.fields[1]}: Chronic skin condition causing intense facial reddening
 <!-- source: Rosacea is manifested by intense reddening of the skin. -->
 ---
 #type/${slug}
 ${noteType.fields[0]}: How does advanced **[[rosacea]]** manifest?
-${noteType.fields[1]}: Papulopustular changes
-<!-- source: In an advanced degree, papulopustular changes may appear. -->`;
+${noteType.fields[1]}: Papulopustular changes (pus-filled bumps resembling acne)
+<!-- source: In an advanced degree, papulopustular changes may appear. -->
+---
+#type/${slug}
+${noteType.fields[0]}: Unlike [[rosacea]], what distinguishes **[[acne vulgaris]]**?
+${noteType.fields[1]}: Presence of comedones (blackheads and whiteheads)
+<!-- source: Acne vulgaris also causes skin redness, but is distinguished by comedones. -->
+---
+#type/${slug}
+${noteType.fields[0]}: (Cell biology) What does the **[[mitochondrial matrix]]** contain?
+${noteType.fields[1]}: Enzymes for the citric acid cycle (Krebs cycle)
+<!-- source: The mitochondrial matrix contains enzymes for the citric acid cycle. -->`;
 }
 
 function getFieldDescription(noteType: NoteType, field: string): string {
