@@ -167,7 +167,7 @@ export function GeneralTab() {
 							const { WhatsNewModal } = await import(
 								"@shared/ui/modals/WhatsNewModal"
 							);
-							new WhatsNewModal(plugin.app, release).open();
+							new WhatsNewModal(plugin, release).open();
 						}}
 					>
 						View release notes

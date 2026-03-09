@@ -77,7 +77,7 @@ function buildActiveCardsBySourceUid(
 ): Map<string, FSRSFlashcardItem[]> {
 	const map = new Map<string, FSRSFlashcardItem[]>();
 	for (const card of cards) {
-		const uid = card.sourceUid ?? "";
+		const uid = card.sourceUid ?? card.fsrs.sourceUid ?? "";
 		if (!uid) continue;
 		const bucket = map.get(uid);
 		if (bucket) {
