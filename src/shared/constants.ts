@@ -334,3 +334,6 @@ export const LITELLM_PROXY_URL =
 export const SUBSCRIPTION_STATUS_URL =
 	"https://www.truerecall.app/api/subscription/status";
 export const TRUERECALL_WEB_URL = "https://www.truerecall.app";
+export const TRUERECALL_BMC_URL = "https://buymeacoffee.com/pieralukasz";
+export const TRUERECALL_GITHUB_URL =
+	"https://github.com/pieralukasz/true-recall";
