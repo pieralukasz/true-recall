@@ -47,7 +47,7 @@ function SubscriptionSection() {
 				save({
 					isSubscriber: false,
 					subscriberTier: undefined,
-					cachedAllowedModels: undefined,
+					cachedSubscriptionModel: undefined,
 				});
 			}
 			return;
@@ -65,7 +65,7 @@ function SubscriptionSection() {
 				const patch: Partial<TrueRecallSettings> = {
 					isSubscriber: update.isSubscriber,
 					subscriberTier: update.subscriberTier,
-					cachedAllowedModels: update.allowedModels,
+					cachedSubscriptionModel: update.allowedModels?.[0],
 				};
 				// Generate userId on first successful validation
 				if (update.isSubscriber && !settings.userId) {
@@ -91,11 +91,8 @@ function SubscriptionSection() {
 
 	const usagePct =
 		status && status.budget_max > 0
-			? Math.min(100, (status.budget_spent / status.budget_max) * 100)
+			? Math.min(100, Math.round((status.budget_spent / status.budget_max) * 100))
 			: 0;
-	const approxGenerations = status
-		? Math.floor((status.budget_max - status.budget_spent) / 0.007)
-		: 0;
 
 	return (
 		<FormCard title="True Recall AI">
@@ -148,7 +145,7 @@ function SubscriptionSection() {
 							{status.tier}
 						</span>
 						<span class="ep:text-obs-muted ep:text-ui-smaller">
-							~{approxGenerations} generations remaining
+							{usagePct}% used
 						</span>
 					</div>
 					{status.tier === "trial" && (

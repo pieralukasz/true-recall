@@ -369,6 +369,12 @@ export class AnkiImportService {
 			const name = segments[segments.length - 1] ?? "Default";
 			const safeName = name.replace(/[\\/:*?"<>|]/g, " - ").trim() || "Default";
 
+			const parentSegment =
+				segments.length > 1 ? segments[segments.length - 2] : undefined;
+			const safeParentName = parentSegment
+				?.replace(/[\\/:*?"<>|]/g, " - ")
+				.trim();
+
 			// Build hierarchical tag: Math/Calculus/Integrals
 			const tagPath = segments
 				.map((s) => s.replace(/[\\/:*?"<>|]/g, " - ").trim())
@@ -401,6 +407,7 @@ export class AnkiImportService {
 				name,
 				tagPath,
 				isLeaf ? undefined : children,
+				safeParentName,
 			);
 
 			// Link cards to this note (only if this deck level has cards)
@@ -417,6 +424,7 @@ export class AnkiImportService {
 		title: string,
 		tagPath: string,
 		children?: Set<string>,
+		parentName?: string,
 	): Promise<string> {
 		const existingFile = this.app.vault.getAbstractFileByPath(
 			notePath,
@@ -429,16 +437,34 @@ export class AnkiImportService {
 				| undefined;
 
 			if (existingUid) {
-				// Update child links if this is a parent note
 				if (children && children.size > 0) {
 					await this.updateChildLinks(existingFile, children);
+				}
+				if (parentName) {
+					await this.app.fileManager.processFrontMatter(
+						existingFile,
+						(fm: Record<string, unknown>) => {
+							const existing: string[] = Array.isArray(fm.parents)
+								? (fm.parents as string[])
+								: [];
+							const names = new Set(
+								existing.map((p: string) =>
+									p.replace(/^\[\[|\]\]$/g, ""),
+								),
+							);
+							if (!names.has(parentName)) {
+								existing.push(`[[${parentName}]]`);
+								fm.parents = existing;
+							}
+						},
+					);
 				}
 				return existingUid;
 			}
 
 			// No UID: prepend frontmatter
 			const uid = this.generateUid();
-			const frontmatter = this.buildFrontmatter(uid, tagPath);
+			const frontmatter = this.buildFrontmatter(uid, tagPath, parentName);
 			await this.app.vault.process(
 				existingFile,
 				(content) => `${frontmatter}\n\n${content}`,
@@ -448,7 +474,7 @@ export class AnkiImportService {
 
 		// Create new note
 		const uid = this.generateUid();
-		const frontmatter = this.buildFrontmatter(uid, tagPath);
+		const frontmatter = this.buildFrontmatter(uid, tagPath, parentName);
 
 		const bodyParts = [`# ${title}`, ""];
 
@@ -468,14 +494,22 @@ export class AnkiImportService {
 		return uid;
 	}
 
-	private buildFrontmatter(uid: string, tagPath: string): string {
-		return [
+	private buildFrontmatter(
+		uid: string,
+		tagPath: string,
+		parentName?: string,
+	): string {
+		const lines = [
 			"---",
 			`flashcard_uid: ${uid}`,
 			"tags:",
 			`  - ${tagPath}`,
-			"---",
-		].join("\n");
+		];
+		if (parentName) {
+			lines.push("parents:", `  - "[[${parentName}]]"`);
+		}
+		lines.push("---");
+		return lines.join("\n");
 	}
 
 	private async updateChildLinks(

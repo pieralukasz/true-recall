@@ -18,15 +18,3 @@ export function isFeatureAllowed(
 	const tier = getEffectiveTier(settings);
 	return tier === "starter";
 }
-
-export function isModelAllowed(
-	model: string,
-	settings: TrueRecallSettings,
-	cachedAllowedModels: string[] | null | undefined,
-): boolean {
-	// BYOK users without subscription can use any model
-	if (settings.openRouterApiKey && !settings.subscriptionKey) return true;
-	// No cached data yet — allow (server enforces anyway)
-	if (!cachedAllowedModels) return true;
-	return cachedAllowedModels.includes(model);
-}
