@@ -33,30 +33,55 @@ export const AI_MODELS_EXTENDED: Record<string, AIModelInfo> = {
 		provider: "Google",
 		description: "High quality reasoning",
 	},
+	"google/gemini-3.1-flash-lite-preview": {
+		name: "Gemini 3.1 Flash Lite",
+		provider: "Google",
+		description: "Cheapest commercial, ultra fast",
+	},
 	"google/gemini-2.5-flash": {
 		name: "Gemini 2.5 Flash",
 		provider: "Google",
-		description: "Cheap mid-tier",
+		description: "Sweet spot for production",
+	},
+	"google/gemma-3n-e4b-it": {
+		name: "Gemma 3n E4B",
+		provider: "Google",
+		description: "Record-low cost, $0.03/1M tokens",
+	},
+	"google/gemma-3-27b-it": {
+		name: "Gemma 3 27B",
+		provider: "Google",
+		description: "Free on OpenRouter",
 	},
 	"openai/gpt-5.1": {
 		name: "GPT-5.1",
 		provider: "OpenAI",
 		description: "Latest OpenAI model",
 	},
-	"openai/gpt-4o": {
-		name: "GPT-4o",
+	"openai/gpt-4.1-mini": {
+		name: "GPT-4.1 mini",
 		provider: "OpenAI",
-		description: "Balanced performance",
+		description: "Solid, good for code",
 	},
-	"openai/gpt-4o-mini": {
-		name: "GPT-4o mini",
+	"openai/gpt-5-mini": {
+		name: "GPT-5 Mini",
 		provider: "OpenAI",
-		description: "Cheap & fast",
+		description: "New mini, better than 4.1 mini",
+	},
+	"openai/gpt-oss-20b": {
+		name: "GPT-oss-20b",
+		provider: "OpenAI",
+		description: "Open source MoE, ultra cheap",
+	},
+	"anthropic/claude-sonnet-4.6": {
+		name: "Claude Sonnet 4.6",
+		provider: "Anthropic",
+		description: "Best price/performance, agentic",
 	},
 	"anthropic/claude-sonnet-4.5": {
 		name: "Claude Sonnet 4.5",
 		provider: "Anthropic",
-		description: "Latest Sonnet",
+		description: "Previous Sonnet generation",
 	},
 	"anthropic/claude-opus-4.5": {
 		name: "Claude Opus 4.5",
@@ -76,12 +101,32 @@ export const AI_MODELS_EXTENDED: Record<string, AIModelInfo> = {
 	"meta-llama/llama-4-maverick": {
 		name: "Llama 4 Maverick",
 		provider: "Meta",
-		description: "Open source",
+		description: "Open source, better than Scout",
+	},
+	"meta-llama/llama-4-scout-17b-16e-instruct": {
+		name: "Llama 4 Scout",
+		provider: "Meta",
+		description: "Cheapest open source, 10M context",
+	},
+	"meta-llama/llama-3.3-70b-instruct": {
+		name: "Llama 3.3 70B",
+		provider: "Meta",
+		description: "Free on OpenRouter",
 	},
 	"deepseek/deepseek-chat": {
 		name: "DeepSeek V3",
 		provider: "DeepSeek",
 		description: "Ultra cheap, high quality",
+	},
+	"deepseek/deepseek-v3.2": {
+		name: "DeepSeek V3.2",
+		provider: "DeepSeek",
+		description: "90% cache discount, best value",
+	},
+	"deepseek/deepseek-r1": {
+		name: "DeepSeek R1",
+		provider: "DeepSeek",
+		description: "Reasoning model, free tier available",
 	},
 	"x-ai/grok-4.1-fast": {
 		name: "Grok 4.1 Fast",
@@ -95,16 +140,25 @@ export const AI_MODELS = {
 	"google/gemini-3-flash-preview": "Gemini 3 Flash (Google)",
 	"google/gemini-3.1-pro-preview": "Gemini 3.1 Pro (Google)",
 	"google/gemini-2.5-pro-preview": "Gemini 2.5 Pro (Google)",
+	"google/gemini-3.1-flash-lite-preview": "Gemini 3.1 Flash Lite (Google)",
 	"google/gemini-2.5-flash": "Gemini 2.5 Flash (Google)",
+	"google/gemma-3n-e4b-it": "Gemma 3n E4B (Google)",
+	"google/gemma-3-27b-it": "Gemma 3 27B (Google)",
 	"openai/gpt-5.1": "GPT-5.1 (OpenAI)",
-	"openai/gpt-4o": "GPT-4o (OpenAI)",
-	"openai/gpt-4o-mini": "GPT-4o mini (OpenAI)",
+	"openai/gpt-4.1-mini": "GPT-4.1 mini (OpenAI)",
+	"openai/gpt-5-mini": "GPT-5 Mini (OpenAI)",
+	"openai/gpt-oss-20b": "GPT-oss-20b (OpenAI)",
+	"anthropic/claude-sonnet-4.6": "Claude Sonnet 4.6 (Anthropic)",
 	"anthropic/claude-sonnet-4.5": "Claude Sonnet 4.5 (Anthropic)",
 	"anthropic/claude-opus-4.5": "Claude Opus 4.5 (Anthropic)",
 	"anthropic/claude-sonnet-4": "Claude Sonnet 4 (Anthropic)",
 	"anthropic/claude-haiku-4.5": "Claude Haiku 4.5 (Anthropic)",
 	"meta-llama/llama-4-maverick": "Llama 4 Maverick (Meta)",
+	"meta-llama/llama-4-scout-17b-16e-instruct": "Llama 4 Scout (Meta)",
+	"meta-llama/llama-3.3-70b-instruct": "Llama 3.3 70B (Meta)",
 	"deepseek/deepseek-chat": "DeepSeek V3 (DeepSeek)",
+	"deepseek/deepseek-v3.2": "DeepSeek V3.2 (DeepSeek)",
+	"deepseek/deepseek-r1": "DeepSeek R1 (DeepSeek)",
 	"x-ai/grok-4.1-fast": "Grok 4.1 Fast (xAI)",
 } as const;
 
