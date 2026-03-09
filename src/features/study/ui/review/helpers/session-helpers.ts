@@ -179,9 +179,24 @@ export function buildGlobalPresetQueueContext(
 	}
 
 	const cardPresetById = new Map<string, string>();
+	const presetBySourceUid = new Map<string, string>();
 	for (const card of cards) {
-		const preset = presetService.resolvePresetForCard(card);
-		cardPresetById.set(card.id, preset?.name ?? defaultPreset.name);
+		const sourceUid = card.sourceUid ?? "";
+		let presetName: string | undefined;
+
+		if (sourceUid) {
+			presetName = presetBySourceUid.get(sourceUid);
+			if (!presetName) {
+				const preset = presetService.resolvePresetForCard(card);
+				presetName = preset?.name ?? defaultPreset.name;
+				presetBySourceUid.set(sourceUid, presetName);
+			}
+		} else {
+			const preset = presetService.resolvePresetForCard(card);
+			presetName = preset?.name ?? defaultPreset.name;
+		}
+
+		cardPresetById.set(card.id, presetName);
 	}
 
 	const presetProgressToday = new Map(

@@ -1,5 +1,6 @@
 /* Selection Toolbar - floating above text selection in editor */
-.true-recall-selection-toolbar-container {
+.true-recall-selection-toolbar-container,
+.true-recall-image-toolbar-container {
 	position: fixed;
 	z-index: var(--layer-popover);
 	pointer-events: auto;

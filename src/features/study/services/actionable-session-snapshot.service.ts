@@ -181,9 +181,8 @@ export function computeActionableSessionSnapshot(
 	}
 
 	const reviewService = deps.reviewService ?? new ReviewService();
-	const fsrsService =
-		deps.fsrsService ?? new FSRSService(extractFSRSSettings(deps.settings));
-	fsrsService.updateSettings(extractFSRSSettings(deps.settings));
+	const fsrsSettings = extractFSRSSettings(deps.settings);
+	const fsrsService = deps.fsrsService ?? new FSRSService(fsrsSettings);
 	const queue = reviewService.buildQueue(
 		activeCards,
 		fsrsService,

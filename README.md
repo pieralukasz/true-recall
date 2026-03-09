@@ -18,7 +18,6 @@ True Recall is an Obsidian plugin for FSRS v6 spaced repetition. All data is sto
 | **FSRS Simulator**           | Visualize scheduling behavior with different parameters         |
 | **Cloud Sync** (coming soon) | Optional sync across devices                                    |
 | **Anki Import/Export**       | Import .apkg decks and export to Anki or CSV/TSV               |
-| **Natural Language Queries** | Ask questions about your stats                                  |
 
 ---
 
@@ -113,7 +112,6 @@ Access via Command Palette (`Cmd/Ctrl+P`):
 | **Review flashcards from current note**  | Reviews ONLY cards from the currently open note                          |
 | **Review today's new cards**             | Reviews flashcards created today regardless of scheduling                |
 | **Open statistics panel**                | Displays analytics: retention, forecasts, charts, and heatmap            |
-| **Add current note to project**          | Add/remove current note from projects                                    |
 | **Open FSRS simulator**                  | Interactive simulator to visualize FSRS scheduling with different params |
 | **Open orphaned cards panel**            | Shows cards whose source notes have been deleted                         |
 | **Open note hub**                        | Overview of all notes with flashcard status                              |
@@ -262,20 +260,23 @@ Projects organize flashcards into collections spanning multiple notes.
 
 ### Using Projects
 
-Add `projects` to note frontmatter:
+Add `parents` to note frontmatter:
 
 ```yaml
 ---
-projects:
-    - [[Machine Learning]]
-    - [[Python Course]]
+parents:
+  - "[[Machine Learning]]"
+  - "[[Python Course]]"
 ---
 ```
 
-Or use:
+Or use Dashboard workflows:
 
-- Command: "Add current note to project"
-- Right-click: "Create project from this note"
+- Assign/move note to project: drag note -> project
+- Create sub-project structure: drag note -> note (create-project flow) or use "Create project" from selected notes
+- Detach note from project: project-tree note context menu -> Detach from project
+
+There are no separate menu entries named exactly "Assign to project", "Move to project", or "Create sub-project"; these capabilities are available via drag-and-drop/selection flows.
 
 ---
 
