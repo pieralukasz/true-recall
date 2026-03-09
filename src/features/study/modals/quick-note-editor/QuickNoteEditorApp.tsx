@@ -50,6 +50,7 @@ export function QuickNoteEditorApp({ mode, onDone }: QuickNoteEditorAppProps) {
 
 	const [fields, setFields] = useState<Record<string, string>>(() => {
 		if (isEdit) return { ...editMode?.note.fields };
+		if (addMode?.initialFields) return { ...addMode.initialFields };
 		return {};
 	});
 

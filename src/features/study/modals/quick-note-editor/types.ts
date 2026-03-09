@@ -7,6 +7,7 @@ export interface AddMode {
 	mode: "add";
 	sourceUid?: string;
 	defaultNoteTypeId?: string;
+	initialFields?: Record<string, string>;
 }
 
 export interface EditMode {
