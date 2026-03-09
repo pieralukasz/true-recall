@@ -1244,6 +1244,19 @@ export default class TrueRecallPlugin extends Plugin {
 							notify().error(`Quick add failed: ${msg}`);
 						}
 					},
+					onEdit: (imagePath) => {
+						const modal = new QuickNoteEditorModal(
+							this.app,
+							this,
+							{
+								mode: "add",
+								initialFields: {
+									Front: `![[${imagePath}]]`,
+								},
+							},
+						);
+						void modal.openAndWait();
+					},
 					onImageOcclusion: (imagePath) =>
 						this.handleImageOcclusion(imagePath),
 					isEnabled: () => this.settings.selectionToolbarEnabled,

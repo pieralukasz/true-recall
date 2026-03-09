@@ -6,6 +6,7 @@ import { h, render } from "preact";
 
 export interface ImageToolbarCallbacks {
 	onQuickAddImage: (imagePath: string) => Promise<void>;
+	onEdit: (imagePath: string) => void;
 	onImageOcclusion: (imagePath: string) => void;
 	isEnabled: () => boolean;
 }
@@ -119,6 +120,7 @@ export function createImageToolbarExtension(
 						onQuickAdd: async () => {
 							await callbacks.onQuickAddImage(imagePath);
 						},
+						onEdit: () => callbacks.onEdit(imagePath),
 						onImageOcclusion: () =>
 							callbacks.onImageOcclusion(imagePath),
 						onDismiss: () => this.removeToolbar(),

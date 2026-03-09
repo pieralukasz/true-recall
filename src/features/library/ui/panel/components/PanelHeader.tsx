@@ -105,9 +105,6 @@ export function PanelHeader({
 
 			if (hasFlashcards) {
 				menu.addItem((item) =>
-					item.setTitle("Start review").setIcon("brain").onClick(onReview),
-				);
-				menu.addItem((item) =>
 					item
 						.setTitle("Browse in card browser")
 						.setIcon("table-2")
@@ -149,7 +146,6 @@ export function PanelHeader({
 			onOpenSourceNote,
 			hasHighlights,
 			onGenerateFromHighlights,
-			onReview,
 			onBrowseDeck,
 			onCopyToClipboard,
 			onExportCsv,
@@ -300,6 +296,16 @@ export function PanelHeader({
 							size="small"
 							label={String(uncollectedCount)}
 							class="true-recall-pulse-collect"
+						/>
+					)}
+
+					{!isFollowingReview && (
+						<IconButton
+							icon="brain"
+							ariaLabel="Start review"
+							onClick={() => onReview()}
+							size="small"
+							disabled={(flashcardInfo?.cardCount ?? 0) === 0}
 						/>
 					)}
 
