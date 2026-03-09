@@ -19,9 +19,13 @@ import {
 
 export class FSRSService {
 	private fsrs: FSRS;
+	private readonly fsrsCache = new Map<string, FSRS>();
+	private defaultSettingsKey: string;
+	private static readonly MAX_CACHE_SIZE = 64;
 
 	constructor(settings: FSRSSettings) {
-		this.fsrs = this.createFSRS(settings);
+		this.defaultSettingsKey = this.getSettingsKey(settings);
+		this.fsrs = this.getOrCreateFSRS(settings);
 	}
 
 	private createFSRS(settings: FSRSSettings): FSRS {
@@ -42,8 +46,44 @@ export class FSRSService {
 		});
 	}
 
+	private getSettingsKey(settings: FSRSSettings): string {
+		const weights = settings.weights ? settings.weights.join(",") : "default";
+		const learning = settings.learningSteps.join(",");
+		const relearning = settings.relearningSteps.join(",");
+		return [
+			settings.requestRetention,
+			settings.maximumInterval,
+			weights,
+			learning,
+			relearning,
+			settings.enableShortTerm ? 1 : 0,
+		].join("|");
+	}
+
+	private getOrCreateFSRS(settings: FSRSSettings): FSRS {
+		const key = this.getSettingsKey(settings);
+		const cached = this.fsrsCache.get(key);
+		if (cached) return cached;
+
+		const created = this.createFSRS(settings);
+		this.fsrsCache.set(key, created);
+		if (this.fsrsCache.size > FSRSService.MAX_CACHE_SIZE) {
+			const oldestKey = this.fsrsCache.keys().next().value as string | undefined;
+			if (oldestKey) this.fsrsCache.delete(oldestKey);
+		}
+		return created;
+	}
+
+	private resolveFSRS(presetSettings?: FSRSSettings): FSRS {
+		if (!presetSettings) return this.fsrs;
+		return this.getOrCreateFSRS(presetSettings);
+	}
+
 	updateSettings(settings: FSRSSettings): void {
-		this.fsrs = this.createFSRS(settings);
+		const key = this.getSettingsKey(settings);
+		if (key === this.defaultSettingsKey) return;
+		this.defaultSettingsKey = key;
+		this.fsrs = this.getOrCreateFSRS(settings);
 	}
 
 	createNewCard(id: string): FSRSCardData {
@@ -100,7 +140,7 @@ export class FSRSService {
 	): FSRSCardData {
 		const card = this.toCard(cardData);
 		const now = reviewTime ?? new Date();
-		const fsrs = presetSettings ? this.createFSRS(presetSettings) : this.fsrs;
+		const fsrs = this.resolveFSRS(presetSettings);
 
 		const result = fsrs.next(card, now, rating);
 		return this.fromCard(result.card, cardData.id);
@@ -112,7 +152,7 @@ export class FSRSService {
 	): SchedulingPreview {
 		const card = this.toCard(cardData);
 		const now = new Date();
-		const fsrs = presetSettings ? this.createFSRS(presetSettings) : this.fsrs;
+		const fsrs = this.resolveFSRS(presetSettings);
 
 		const result = fsrs.repeat(card, now);
 

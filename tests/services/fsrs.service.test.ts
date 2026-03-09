@@ -161,6 +161,23 @@ describe("FSRSService", () => {
 			expect(typeof preview.again.interval).toBe("string");
 			expect(preview.again.interval.length).toBeGreaterThan(0);
 		});
+
+		it("reuses cached FSRS engine for identical preset settings", () => {
+			const card = createNewCard("cache-card");
+			const customPreset = {
+				...createDefaultFSRSSettings(),
+				requestRetention: 0.93,
+			};
+
+			service.getSchedulingPreview(card, customPreset);
+			service.getSchedulingPreview(card, customPreset);
+
+			const cache = (
+				service as unknown as { fsrsCache: Map<string, unknown> }
+			).fsrsCache;
+			// default settings engine + one cached preset engine
+			expect(cache.size).toBe(2);
+		});
 	});
 
 	describe("isDue", () => {

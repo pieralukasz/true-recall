@@ -270,6 +270,43 @@ describe("buildGlobalPresetQueueContext", () => {
 			reviewsCompleted: 5,
 		});
 	});
+
+	it("resolves preset once per sourceUid and reuses result for sibling cards", () => {
+		const defaultPreset = createPreset("Default");
+		const proPreset = createPreset("Pro");
+		const cards: FSRSFlashcardItem[] = [
+			createMockCard({ id: "a-1", sourceUid: "uid-a" }),
+			createMockCard({ id: "a-2", sourceUid: "uid-a" }),
+			createMockCard({ id: "b-1", sourceUid: "uid-b" }),
+			createMockCard({ id: "none-1", sourceUid: undefined }),
+		];
+
+		const resolvePresetForCard = vi.fn((card: FSRSFlashcardItem) =>
+			card.sourceUid === "uid-b" ? proPreset : defaultPreset,
+		);
+
+		const presetService = {
+			getPresets: () => [defaultPreset, proPreset],
+			getDefaultPreset: () => defaultPreset,
+			resolvePresetForCard,
+		};
+
+		const sessionPersistence = {
+			getTodayProgressByPreset: () => new Map<string, { newStudied: number; reviewsCompleted: number }>(),
+		} as unknown as SessionPersistenceService;
+
+		const result = buildGlobalPresetQueueContext(
+			cards,
+			presetService,
+			sessionPersistence,
+		);
+
+		expect(resolvePresetForCard).toHaveBeenCalledTimes(3);
+		expect(result.cardPresetById.get("a-1")).toBe("Default");
+		expect(result.cardPresetById.get("a-2")).toBe("Default");
+		expect(result.cardPresetById.get("b-1")).toBe("Pro");
+		expect(result.cardPresetById.get("none-1")).toBe("Default");
+	});
 });
 
 describe("applyMutation", () => {

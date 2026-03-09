@@ -65,6 +65,17 @@ export function DashboardApp() {
 		const activeCards = filterActiveCards(allCards, {
 			archivedSourceUids: new Set(archived),
 		});
+		const cardsByNoteName = new Map<string, typeof activeCards>();
+		for (const card of activeCards) {
+			const noteName = card.sourceNoteName;
+			if (!noteName) continue;
+			const bucket = cardsByNoteName.get(noteName);
+			if (bucket) {
+				bucket.push(card);
+			} else {
+				cardsByNoteName.set(noteName, [card]);
+			}
+		}
 		const snapshotCache = new Map<
 			string,
 			ReturnType<typeof computeActionableSessionSnapshot>
@@ -86,10 +97,11 @@ export function DashboardApp() {
 		);
 
 		const actionableNotes = raw.notes.map((note) => {
+			const scopedActiveCards = cardsByNoteName.get(note.name) ?? [];
 			const noteSnapshot = computeActionableSessionSnapshot(
 				snapshotDeps,
 				{ sourceNoteFilter: note.name },
-				{ cache: snapshotCache, activeCards },
+				{ cache: snapshotCache, activeCards: scopedActiveCards },
 			);
 			const due = noteSnapshot.counts.due;
 			const newCount = noteSnapshot.counts.new;

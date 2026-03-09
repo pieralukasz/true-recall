@@ -10,6 +10,7 @@ import {
 	computeActionableSessionSnapshot,
 } from "@features/study/services/actionable-session-snapshot.service";
 import type { FSRSFlashcardItem, TrueRecallSettings } from "@shared/types";
+import { State } from "ts-fsrs";
 import type { CardStore } from "@shared/types/fsrs/store.types";
 import type { MetadataCache } from "obsidian";
 import {
@@ -43,6 +44,82 @@ export const UNASSIGNED_PATH = "__unassigned__";
 
 const MAX_RECENTLY_STUDIED = 5;
 
+interface ProjectAggregationIndexes {
+	allCardsBySourceUid: Map<string, import("@shared/types/fsrs/card.types").FSRSCardData[]>;
+	activeCardsBySourceUid: Map<string, FSRSFlashcardItem[]>;
+	retrievabilityByCardId: Map<string, number>;
+	now: Date;
+}
+
+function buildCardsBySourceUid(
+	cards: FSRSFlashcardItem[],
+): Map<string, import("@shared/types/fsrs/card.types").FSRSCardData[]> {
+	const map = new Map<
+		string,
+		import("@shared/types/fsrs/card.types").FSRSCardData[]
+	>();
+	for (const card of cards) {
+		const uid = card.sourceUid ?? card.fsrs.sourceUid;
+		if (!uid) continue;
+		const bucket = map.get(uid);
+		const fsrs = card.fsrs.sourceUid ? card.fsrs : { ...card.fsrs, sourceUid: uid };
+		if (bucket) {
+			bucket.push(fsrs);
+		} else {
+			map.set(uid, [fsrs]);
+		}
+	}
+	return map;
+}
+
+function buildActiveCardsBySourceUid(
+	cards: FSRSFlashcardItem[],
+): Map<string, FSRSFlashcardItem[]> {
+	const map = new Map<string, FSRSFlashcardItem[]>();
+	for (const card of cards) {
+		const uid = card.sourceUid ?? "";
+		if (!uid) continue;
+		const bucket = map.get(uid);
+		if (bucket) {
+			bucket.push(card);
+		} else {
+			map.set(uid, [card]);
+		}
+	}
+	return map;
+}
+
+function collectActiveCardsForSources(
+	sourceUids: ReadonlySet<string>,
+	activeCardsBySourceUid: ReadonlyMap<string, FSRSFlashcardItem[]>,
+): FSRSFlashcardItem[] {
+	const collected: FSRSFlashcardItem[] = [];
+	for (const uid of sourceUids) {
+		const cards = activeCardsBySourceUid.get(uid);
+		if (!cards || cards.length === 0) continue;
+		collected.push(...cards);
+	}
+	return collected;
+}
+
+function buildRetrievabilityCache(
+	cardsBySourceUid: ReadonlyMap<
+		string,
+		import("@shared/types/fsrs/card.types").FSRSCardData[]
+	>,
+	fsrsService: FSRSService,
+	now: Date,
+): Map<string, number> {
+	const cache = new Map<string, number>();
+	for (const cards of cardsBySourceUid.values()) {
+		for (const card of cards) {
+			if (card.state === State.New) continue;
+			cache.set(card.id, fsrsService.getRetrievability(card, now));
+		}
+	}
+	return cache;
+}
+
 export function aggregateProjectData(
 	deps: ProjectAggregationDeps,
 ): DashboardProjectAggregation {
@@ -50,17 +127,29 @@ export function aggregateProjectData(
 
 	// O(1) lookups for notes by path and by name
 	const noteByPath = new Map<string, DashboardNoteEntry>();
-	const noteByName = new Map<string, DashboardNoteEntry>();
 	for (const note of notes) {
 		if (note.path) noteByPath.set(note.path, note);
-		noteByName.set(note.name, note);
 	}
 
 	const hierarchy = plugin.hierarchyService.buildHierarchy();
 	const snapshotCache = new Map<string, ActionableSessionSnapshot>();
+	const now = new Date();
+	const allCardsBySourceUid = buildCardsBySourceUid(plugin.allCards);
+	const activeCardsBySourceUid = buildActiveCardsBySourceUid(plugin.activeCards);
+	const retrievabilityByCardId = buildRetrievabilityCache(
+		allCardsBySourceUid,
+		plugin.fsrsService,
+		now,
+	);
+	const indexes: ProjectAggregationIndexes = {
+		allCardsBySourceUid,
+		activeCardsBySourceUid,
+		retrievabilityByCardId,
+		now,
+	};
 
 	const allProjects = hierarchy.map((node) =>
-		buildProjectFromNode(node, noteByPath, noteByName, plugin, snapshotCache),
+		buildProjectFromNode(node, noteByPath, plugin, snapshotCache, indexes),
 	);
 
 	let projects: DashboardProject[];
@@ -130,10 +219,11 @@ export function aggregateProjectData(
 function buildProjectFromNode(
 	node: HierarchyTreeNode,
 	noteByPath: Map<string, DashboardNoteEntry>,
-	noteByName: Map<string, DashboardNoteEntry>,
 	plugin: ProjectAggregationDeps["plugin"],
 	snapshotCache: Map<string, ActionableSessionSnapshot>,
+	indexes: ProjectAggregationIndexes,
 ): DashboardProject {
+	const sourceUids = plugin.hierarchyService.getSourceUidsForProject(node.path);
 	const stats: ProjectStats = computeProjectStats(
 		node.path,
 		node.name,
@@ -141,6 +231,12 @@ function buildProjectFromNode(
 		plugin.hierarchyService,
 		plugin.cardStore,
 		plugin.fsrsService,
+		{
+			sourceUids,
+			cardsBySourceUid: indexes.allCardsBySourceUid,
+			retrievabilityByCardId: indexes.retrievabilityByCardId,
+			now: indexes.now,
+		},
 	);
 
 	// Resolve member notes from paths
@@ -151,7 +247,12 @@ function buildProjectFromNode(
 	}
 
 	const children = node.children.map((child) =>
-		buildProjectFromNode(child, noteByPath, noteByName, plugin, snapshotCache),
+		buildProjectFromNode(child, noteByPath, plugin, snapshotCache, indexes),
+	);
+
+	const scopedActiveCards = collectActiveCardsForSources(
+		sourceUids,
+		indexes.activeCardsBySourceUid,
 	);
 
 	const snapshot = computeActionableSessionSnapshot(
@@ -166,7 +267,7 @@ function buildProjectFromNode(
 			fsrsService: plugin.fsrsService,
 		},
 		{ projectPath: node.path },
-		{ cache: snapshotCache, activeCards: plugin.activeCards },
+		{ cache: snapshotCache, activeCards: scopedActiveCards },
 	);
 
 	const preset = plugin.presetService.resolvePresetChain(node.path).effective

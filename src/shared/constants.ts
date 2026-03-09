@@ -265,6 +265,9 @@ export const RANDOM_QUEUE_INSERT_MAX_POS = 5;
 
 export const CARD_HISTORY_LIMIT = 20;
 
+export const GITHUB_RELEASES_API =
+	"https://api.github.com/repos/pieralukasz/true-recall/releases/latest";
+
 // Cloud sync - coming soon
 export const TRUE_RECALL_CLOUD = {
 	supabaseUrl: process.env.SUPABASE_URL ?? "",

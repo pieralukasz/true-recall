@@ -278,6 +278,9 @@ export interface TrueRecallSettings {
 	aiTypeInGradingPrompt?: string;
 	/** Custom user prompt for AI image occlusion region detection */
 	aiIODetectionPrompt?: string;
+
+	/** Last version the user has seen release notes for */
+	lastSeenVersion?: string;
 }
 
 export interface SessionPreset {

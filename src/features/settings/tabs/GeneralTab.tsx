@@ -1,6 +1,8 @@
 import { useSettings } from "@features/settings/hooks/useSettings";
+import { notify } from "@shared/services/notification.service";
 import type { ReviewViewMode, TypeInMode } from "@shared/types";
 import {
+	Clickable,
 	FormCard,
 	FormField,
 	SelectInput,
@@ -9,7 +11,7 @@ import {
 } from "@shared/ui/components";
 
 export function GeneralTab() {
-	const { settings, save } = useSettings();
+	const { settings, save, plugin } = useSettings();
 
 	return (
 		<div class="ep:flex ep:flex-col ep:gap-3">
@@ -141,6 +143,35 @@ export function GeneralTab() {
 						value={settings.removeFlashcardContentAfterCollect}
 						onChange={(v) => save({ removeFlashcardContentAfterCollect: v })}
 					/>
+				</FormField>
+			</FormCard>
+
+			<FormCard title="About">
+				<FormField
+					name="What's New"
+					description={`See release notes for version ${plugin.manifest.version}`}
+				>
+					<Clickable
+						class="ep-btn ep-btn-outline"
+						onClick={async () => {
+							const { fetchLatestRelease } = await import(
+								"@shared/services/release-notes.service"
+							);
+							const release = await fetchLatestRelease();
+							if (!release) {
+								notify().error(
+									"Could not fetch release notes. Check your internet connection.",
+								);
+								return;
+							}
+							const { WhatsNewModal } = await import(
+								"@shared/ui/modals/WhatsNewModal"
+							);
+							new WhatsNewModal(plugin.app, release).open();
+						}}
+					>
+						View release notes
+					</Clickable>
 				</FormField>
 			</FormCard>
 		</div>
