@@ -1,14 +1,21 @@
 import { useSettings } from "@features/settings/hooks/useSettings";
+import {
+	TRUERECALL_BMC_URL,
+	TRUERECALL_GITHUB_URL,
+	TRUERECALL_WEB_URL,
+} from "@shared/constants";
 import { notify } from "@shared/services/notification.service";
 import type { ReviewViewMode, TypeInMode } from "@shared/types";
 import {
 	Clickable,
 	FormCard,
 	FormField,
+	InfoBlock,
 	SelectInput,
 	SliderInput,
 	ToggleInput,
 } from "@shared/ui/components";
+import { useIcon } from "@shared/ui/preact";
 
 export function GeneralTab() {
 	const { settings, save, plugin } = useSettings();
@@ -173,7 +180,57 @@ export function GeneralTab() {
 						View release notes
 					</Clickable>
 				</FormField>
+
+				<FormField
+					name="Website"
+					description="Visit the True Recall website"
+				>
+					<Clickable
+						class="ep-btn ep-btn-outline"
+						onClick={() =>
+							window.open(TRUERECALL_WEB_URL, "_blank")
+						}
+					>
+						truerecall.app
+					</Clickable>
+				</FormField>
 			</FormCard>
+
+			<SupportCard />
 		</div>
+	);
+}
+
+function SupportCard() {
+	const heartRef = useIcon("heart");
+	const githubRef = useIcon("github");
+
+	return (
+		<FormCard title="Support">
+			<InfoBlock>
+				If True Recall helps your learning, consider supporting its
+				development.
+			</InfoBlock>
+			<div class="ep:flex ep:gap-2 ep:mt-1">
+				<Clickable
+					class="ep-btn ep-btn-outline ep:inline-flex ep:items-center ep:gap-1.5"
+					onClick={() =>
+						window.open(TRUERECALL_BMC_URL, "_blank")
+					}
+				>
+					<div ref={heartRef} class="ep:w-4 ep:h-4" />
+					Buy Me a Coffee
+				</Clickable>
+				<Clickable
+					class="ep-btn ep-btn-outline ep:inline-flex ep:items-center ep:gap-1.5"
+					onClick={() =>
+						window.open(TRUERECALL_GITHUB_URL, "_blank")
+					}
+				>
+					<div ref={githubRef} class="ep:w-4 ep:h-4" />
+					GitHub
+				</Clickable>
+			</div>
+		</FormCard>
 	);
 }
