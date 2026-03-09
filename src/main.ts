@@ -212,6 +212,7 @@ export default class TrueRecallPlugin extends Plugin {
 			this.hierarchyService.invalidateGraph();
 			refreshMetadata();
 			refreshCards();
+			this.checkForWhatsNew();
 		});
 
 		this.flashcardManager = new FlashcardManager(
@@ -762,6 +763,30 @@ export default class TrueRecallPlugin extends Plugin {
 		return deviceId;
 	}
 
+	private async checkForWhatsNew(): Promise<void> {
+		const currentVersion = this.manifest.version;
+		if (this.settings.lastSeenVersion === currentVersion) return;
+
+		const { fetchLatestRelease } = await import(
+			"@shared/services/release-notes.service"
+		);
+		const release = await fetchLatestRelease();
+		if (!release) return;
+
+		if (release.version !== currentVersion) {
+			this.settings.lastSeenVersion = currentVersion;
+			await this.saveSettings();
+			return;
+		}
+
+		const { WhatsNewModal } = await import(
+			"@shared/ui/modals/WhatsNewModal"
+		);
+		new WhatsNewModal(this.app, release).open();
+		this.settings.lastSeenVersion = currentVersion;
+		await this.saveSettings();
+	}
+
 	private async migrateLegacyDatabase(deviceId: string): Promise<void> {
 		const legacyPath = normalizePath(`${DB_FOLDER}/true-recall.db`);
 		const newPath = normalizePath(
@@ -1063,6 +1088,41 @@ export default class TrueRecallPlugin extends Plugin {
 			.catch(() => {});
 	}
 
+	private handleImageOcclusion(imagePath: string): void {
+		const activeFile = this.app.workspace.getActiveFile();
+		const resolved = this.app.metadataCache.getFirstLinkpathDest(
+			imagePath,
+			activeFile?.path ?? "",
+		);
+		const resolvedPath = resolved?.path ?? imagePath;
+
+		if (activeFile && activeFile.extension === "md") {
+			const frontmatterService =
+				this.flashcardManager.getFrontmatterService();
+			void (async () => {
+				let sourceUid =
+					await frontmatterService.getSourceNoteUid(activeFile);
+				if (!sourceUid) {
+					sourceUid = frontmatterService.generateUid();
+					await frontmatterService.setSourceNoteUid(
+						activeFile,
+						sourceUid,
+					);
+				}
+				await this.openImageOcclusionEditor({
+					mode: "add",
+					sourceUid,
+					imagePath: resolvedPath,
+				});
+			})();
+		} else {
+			void this.openImageOcclusionEditor({
+				mode: "add",
+				imagePath: resolvedPath,
+			});
+		}
+	}
+
 	private initializeSelectionToolbar(): void {
 		const streamingService = new StreamingGenerationService(
 			() => this.settings,
@@ -1135,43 +1195,55 @@ export default class TrueRecallPlugin extends Plugin {
 					notify().error(`Quick add failed: ${msg}`);
 				}
 			},
-			onImageOcclusion: (imagePath) => {
-				const activeFile = this.app.workspace.getActiveFile();
-				const resolved = this.app.metadataCache.getFirstLinkpathDest(
-					imagePath,
-					activeFile?.path ?? "",
-				);
-				const resolvedPath = resolved?.path ?? imagePath;
-
-				if (activeFile && activeFile.extension === "md") {
-					const frontmatterService =
-						this.flashcardManager.getFrontmatterService();
-					void (async () => {
-						let sourceUid =
-							await frontmatterService.getSourceNoteUid(activeFile);
-						if (!sourceUid) {
-							sourceUid = frontmatterService.generateUid();
-							await frontmatterService.setSourceNoteUid(activeFile, sourceUid);
-						}
-						await this.openImageOcclusionEditor({
-							mode: "add",
-							sourceUid,
-							imagePath: resolvedPath,
-						});
-					})();
-				} else {
-					void this.openImageOcclusionEditor({
-						mode: "add",
-						imagePath: resolvedPath,
-					});
-				}
-			},
+			onImageOcclusion: (imagePath) =>
+				this.handleImageOcclusion(imagePath),
 			hasApiKey: () =>
 				!!(this.settings.openRouterApiKey || this.settings.subscriptionKey),
 			isEnabled: () => this.settings.selectionToolbarEnabled,
 		});
 
 		this.registerEditorExtension([extension]);
+
+		// Image click toolbar (Quick+ and IO on image click)
+		void import("@features/ai/ui/editor/ImageToolbarPlugin").then(
+			({ createImageToolbarExtension }) => {
+				const imageExtension = createImageToolbarExtension({
+					onQuickAddImage: async (imagePath) => {
+						try {
+							const file = this.app.workspace.getActiveFile();
+							if (!file) {
+								notify().error("No active file");
+								return;
+							}
+							const imageEmbed = `![[${imagePath}]]`;
+							await this.flashcardManager.saveFlashcardsToSql(
+								file,
+								[
+									{
+										id: crypto.randomUUID(),
+										question: imageEmbed,
+										answer: "",
+									},
+								],
+								undefined,
+								imageEmbed,
+							);
+							notify().info("Quick-added image flashcard");
+						} catch (error) {
+							const msg =
+								error instanceof Error
+									? error.message
+									: String(error);
+							notify().error(`Quick add failed: ${msg}`);
+						}
+					},
+					onImageOcclusion: (imagePath) =>
+						this.handleImageOcclusion(imagePath),
+					isEnabled: () => this.settings.selectionToolbarEnabled,
+				});
+				this.registerEditorExtension([imageExtension]);
+			},
+		);
 
 		// Source text highlight extension (Card → Text jump)
 		void import("@features/study/ui/editor/SourceHighlightPlugin").then(

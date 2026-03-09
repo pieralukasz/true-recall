@@ -4,7 +4,7 @@
  *
  * Supports:
  * - String fields (unique: one file per value, like flashcard_uid)
- * - Array fields (non-unique: many files per value, like projects)
+ * - Array fields (non-unique: many files per value, like parents)
  * - Nested paths (e.g., "metadata.category")
  */
 
@@ -12,7 +12,7 @@ import { stripWikiLinkSyntax } from "@shared/utils";
 import { type App, type CachedMetadata, type Plugin, TFile } from "obsidian";
 
 export interface FieldConfig {
-	/** Field path in frontmatter (e.g., "flashcard_uid", "projects", "metadata.category") */
+	/** Field path in frontmatter (e.g., "flashcard_uid", "parents", "metadata.category") */
 	field: string;
 	/** Field type: "string" for single values, "array" for lists */
 	type: "string" | "array";
@@ -122,7 +122,7 @@ export class FrontmatterIndexService {
 			return [raw];
 		}
 
-		// Boolean fields (e.g., project: true) → stored as "true"/"false"
+		// Boolean fields (e.g., archive: true) → stored as "true"/"false"
 		if (typeof raw === "boolean") {
 			return [String(raw)];
 		}

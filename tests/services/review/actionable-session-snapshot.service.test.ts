@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { State } from "ts-fsrs";
 import { DEFAULT_SETTINGS } from "../../../src/shared/constants";
 import {
@@ -206,5 +206,37 @@ describe("computeActionableSessionSnapshot", () => {
 		);
 
 		expect(snapshot.queueLength).toBe(0);
+	});
+
+	it("reuses provided fsrsService without forcing updateSettings", () => {
+		const cards = [
+			createMockFlashcard({
+				id: "due-1",
+				sourceUid: "uid-1",
+				fsrs: { state: State.Review, due: "2024-01-01T00:00:00.000Z" },
+			}),
+		];
+
+		const updateSettings = vi.fn();
+		const reusableFsrsService = {
+			updateSettings,
+		} as unknown as import("../../../src/features/core/services/fsrs.service").FSRSService;
+
+		const reviewService = {
+			buildQueue: vi.fn(() => cards),
+		} as unknown as import("../../../src/features/study/services/review.service").ReviewService;
+
+		const snapshot = computeActionableSessionSnapshot(
+			createDeps({
+				allCards: cards,
+				fsrsService: reusableFsrsService,
+				reviewService,
+			}),
+			{},
+		);
+
+		expect(reviewService.buildQueue).toHaveBeenCalled();
+		expect(updateSettings).not.toHaveBeenCalled();
+		expect(snapshot.queueLength).toBe(1);
 	});
 });

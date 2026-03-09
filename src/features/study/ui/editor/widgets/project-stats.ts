@@ -1,5 +1,6 @@
 import type { FSRSService } from "@features/core/services/fsrs.service";
 import type { HierarchyService } from "@features/core/services/hierarchy.service";
+import type { FSRSCardData } from "@shared/types/fsrs/card.types";
 import type { CardStore } from "@shared/types/fsrs/store.types";
 import { FSRS_COLORS } from "@shared/ui/helpers/fsrs-colors";
 import { State } from "ts-fsrs";
@@ -16,6 +17,13 @@ export interface ProjectStats {
 	lastReviewed: string | null;
 }
 
+export interface ProjectStatsContext {
+	sourceUids?: ReadonlySet<string>;
+	cardsBySourceUid?: ReadonlyMap<string, FSRSCardData[]>;
+	retrievabilityByCardId?: ReadonlyMap<string, number>;
+	now?: Date;
+}
+
 export function computeProjectStats(
 	projectPath: string,
 	projectName: string,
@@ -23,10 +31,13 @@ export function computeProjectStats(
 	hierarchyService: HierarchyService,
 	cardStore: CardStore,
 	fsrsService: FSRSService,
+	context?: ProjectStatsContext,
 ): ProjectStats {
-	const sourceUids = hierarchyService.getSourceUidsForProject(projectPath);
+	const sourceUids =
+		context?.sourceUids ??
+		hierarchyService.getSourceUidsForProject(projectPath);
 
-	const now = new Date();
+	const now = context?.now ?? new Date();
 	let totalCards = 0;
 	let due = 0;
 	let newCount = 0;
@@ -36,7 +47,10 @@ export function computeProjectStats(
 	let lastReviewed: string | null = null;
 
 	for (const uid of sourceUids) {
-		const cards = cardStore.getCardsBySourceUid?.(uid) ?? [];
+		const cards =
+			context?.cardsBySourceUid?.get(uid) ??
+			cardStore.getCardsBySourceUid?.(uid) ??
+			[];
 		for (const card of cards) {
 			totalCards++;
 
@@ -58,7 +72,12 @@ export function computeProjectStats(
 
 			// Health: avg retrievability of non-new cards
 			if (card.state !== State.New) {
-				retrievabilitySum += fsrsService.getRetrievability(card, now);
+				const cachedRetrievability = context?.retrievabilityByCardId?.get(
+					card.id,
+				);
+				retrievabilitySum +=
+					cachedRetrievability ??
+					fsrsService.getRetrievability(card, now);
 				reviewCardCount++;
 			}
 
