@@ -212,7 +212,7 @@ export default class TrueRecallPlugin extends Plugin {
 			this.hierarchyService.invalidateGraph();
 			refreshMetadata();
 			refreshCards();
-			this.checkForWhatsNew();
+			this.checkForWhatsNew().catch(() => {});
 		});
 
 		this.flashcardManager = new FlashcardManager(
@@ -767,6 +767,13 @@ export default class TrueRecallPlugin extends Plugin {
 		const currentVersion = this.manifest.version;
 		if (this.settings.lastSeenVersion === currentVersion) return;
 
+		// On fresh install there are no release notes to show — just mark version as seen.
+		if (this.settings.lastSeenVersion === undefined) {
+			this.settings.lastSeenVersion = currentVersion;
+			await this.saveSettings();
+			return;
+		}
+
 		const { fetchLatestRelease } = await import(
 			"@shared/services/release-notes.service"
 		);
@@ -782,7 +789,7 @@ export default class TrueRecallPlugin extends Plugin {
 		const { WhatsNewModal } = await import(
 			"@shared/ui/modals/WhatsNewModal"
 		);
-		new WhatsNewModal(this.app, release).open();
+		new WhatsNewModal(this, release).open();
 		this.settings.lastSeenVersion = currentVersion;
 		await this.saveSettings();
 	}
