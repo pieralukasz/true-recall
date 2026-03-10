@@ -1,21 +1,74 @@
-MIT License
+True Recall Source-Available License 1.0
 
-Copyright (c) 2025 Lucas Piera / True Recall
+Copyright (c) 2026 Łukasz Piera. All rights reserved.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+DEFINITIONS
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+"Licensed Work" means the True Recall software and all associated source code,
+documentation, and assets made available under this License.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+"Licensor" means Łukasz Piera, the copyright holder of the Licensed Work.
+
+"You" means any individual or legal entity exercising rights under this License.
+
+"Competing Product" means any software product or service that provides
+spaced-repetition flashcard functionality within the Obsidian application or
+as a standalone product that competes directly with the Licensed Work.
+
+"Commercial Use" means any use of the Licensed Work intended for or directed
+toward commercial advantage or monetary compensation.
+
+GRANT OF RIGHTS
+
+Subject to the terms and conditions of this License, the Licensor grants You
+a limited, non-exclusive, non-transferable, non-sublicensable license to:
+
+1. Use the Licensed Work for personal, non-commercial purposes.
+2. Read and study the source code for educational purposes.
+3. Modify the Licensed Work solely for Your own personal use, provided that
+   modified versions are not distributed to third parties.
+4. Submit contributions (pull requests, patches, suggestions) to the official
+   True Recall repository. By submitting a contribution, You agree that Your
+   contribution is made under the same terms as this License and that the
+   Licensor may incorporate and distribute it under any license, including
+   proprietary ones.
+
+RESTRICTIONS
+
+You may NOT, without explicit prior written permission from the Licensor:
+
+1. Distribute, publish, or make available the Licensed Work or any derivative
+   work to any third party, whether modified or unmodified.
+2. Use the Licensed Work, in whole or in part, to create or operate a
+   Competing Product.
+3. Use the Licensed Work for Commercial Use, including offering it as a
+   hosted or managed service, selling access to it, or incorporating it into
+   a commercial product.
+4. Sublicense, sell, rent, lease, or transfer the Licensed Work or any rights
+   under this License to any third party.
+5. Remove or alter any copyright notices, license notices, or other
+   proprietary markings contained in the Licensed Work.
+
+COMMERCIAL LICENSING
+
+If You wish to use the Licensed Work for Commercial Use, create a Competing
+Product, or distribute the Licensed Work beyond what is permitted above,
+You must obtain a separate commercial license from the Licensor.
+
+For commercial licensing inquiries, contact: lukasz@true-recall.app
+
+DISCLAIMER OF WARRANTY
+
+THE LICENSED WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE, AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+LICENSOR BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY, WHETHER IN AN
+ACTION OF CONTRACT, TORT, OR OTHERWISE, ARISING FROM, OUT OF, OR IN
+CONNECTION WITH THE LICENSED WORK OR THE USE OR OTHER DEALINGS IN THE
+LICENSED WORK.
+
+TERMINATION
+
+Your rights under this License terminate automatically if You fail to comply
+with any of its terms. Upon termination, You must cease all use and
+distribution of the Licensed Work and destroy all copies in Your possession.

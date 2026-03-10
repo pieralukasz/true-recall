@@ -1,3 +1,7 @@
+import {
+	buildSourceUidToPresetMap,
+	getSourceUidsForPreset,
+} from "@features/metrics/services/stats/stats-filter.helpers";
 import { HeatmapWidget } from "@features/study/ui/editor/widgets/analytics/HeatmapWidget";
 import { useSignal } from "@preact/signals";
 import type { StatsTimeRange } from "@shared/types";
@@ -10,6 +14,7 @@ import {
 	CollectionHealthBar,
 	CreatedVsReviewedChart,
 	DistributionSection,
+	FSRSStatusCard,
 	FutureDueChart,
 	RangeSummary,
 	RatingDistributionChart,
@@ -17,12 +22,20 @@ import {
 	ReviewHistoryChart,
 	StatsHeader,
 	TodayHero,
+	TrueRetentionCard,
+	WorkloadForecastSection,
 } from "./components";
+import {
+	buildDayOfWeekStats,
+	buildFilteredForecast,
+	buildForecastSummary,
+} from "./helpers/forecast-filter";
 import { useStatsData } from "./hooks/use-stats-data";
 
 export function StatsApp() {
 	const plugin = usePlugin();
 	const timeRange = useSignal<StatsTimeRange>("1m");
+	const selectedPreset = useSignal<string>("All");
 	const { data, loading } = useStatsData(timeRange);
 
 	const distributions = useMemo(() => {
@@ -33,6 +46,53 @@ export function StatsApp() {
 	const targetRetention = Math.round(
 		(plugin.settings.fsrsRequestRetention ?? 0.9) * 100,
 	);
+
+	const presetNames = useMemo(
+		() => plugin.presetService?.getPresets().map((p) => p.name) ?? [],
+		[plugin.presetService],
+	);
+
+	// FSRS true retention data
+	const trueRetention = useMemo(() => {
+		if (!plugin.fsrsHelper) return null;
+		const summary = plugin.fsrsHelper.getTrueRetentionSummary(30);
+		const history = plugin.fsrsHelper.getTrueRetentionHistory(30);
+		return { summary, history };
+	}, [plugin.fsrsHelper]);
+
+	// FSRS workload forecast data — filtered by selected preset
+	const workloadData = useMemo(() => {
+		if (!plugin.fsrsHelper) return null;
+
+		const preset = selectedPreset.value;
+
+		if (preset === "All") {
+			return {
+				forecast: plugin.fsrsHelper.getWorkloadForecast(30),
+				summary: plugin.fsrsHelper.getWorkloadForecastSummary(30),
+				dayOfWeek: plugin.fsrsHelper.getWorkloadByDayOfWeek(30),
+			};
+		}
+
+		// Filter cards by preset
+		const allCards = plugin.cardStore.getCards();
+		const presetMap = buildSourceUidToPresetMap(
+			plugin.presetService,
+			allCards,
+		);
+		const sourceUids = getSourceUidsForPreset(preset, presetMap);
+		const filteredCards = allCards.filter(
+			(c) => c.sourceUid && sourceUids.has(c.sourceUid),
+		);
+
+		const forecast = buildFilteredForecast(filteredCards, 30);
+		const target = plugin.settings.loadBalanceTarget ?? 50;
+		return {
+			forecast,
+			summary: buildForecastSummary(forecast, target),
+			dayOfWeek: buildDayOfWeekStats(forecast),
+		};
+	}, [plugin.fsrsHelper, plugin.cardStore, plugin.presetService, selectedPreset.value]);
 
 	return (
 		<div class="ep:flex ep:flex-col ep:h-full">
@@ -61,7 +121,26 @@ export function StatsApp() {
 								<HeatmapWidget source="months: 12" />
 							</ChartCard>
 
-							<FutureDueChart data={data.futureDue} />
+							{/* FSRS True Retention — mature card retention vs target */}
+							{trueRetention && (
+								<TrueRetentionCard
+									summary={trueRetention.summary}
+									history={trueRetention.history}
+								/>
+							)}
+
+							{/* FSRS Workload Forecast — stacked review/learning breakdown */}
+							{workloadData ? (
+								<WorkloadForecastSection
+									forecast={workloadData.forecast}
+									summary={workloadData.summary}
+									dayOfWeek={workloadData.dayOfWeek}
+									presets={presetNames}
+									selectedPreset={selectedPreset}
+								/>
+							) : (
+								<FutureDueChart data={data.futureDue} />
+							)}
 
 							<ReviewHistoryChart data={data.reviewHistory} />
 
@@ -77,6 +156,9 @@ export function StatsApp() {
 							<CollectionHealthBar data={data.health} />
 
 							<DistributionSection data={distributions} />
+
+							{/* FSRS Optimization Status */}
+							<FSRSStatusCard />
 
 							<CreatedVsReviewedChart
 								created={data.cardsCreated}
