@@ -546,8 +546,11 @@ export class FlashcardPanelView extends ItemView {
 		}
 
 		const text = state.flashcardInfo.flashcards
-			.map((card, i) => `${i + 1}. Q: ${card.question}\n   A: ${card.answer}`)
-			.join("\n\n");
+			.map((card, i) => {
+				const prefix = card.noteTypeName ? `   Type: ${card.noteTypeName}\n` : "";
+				return `${i + 1}. Q: ${card.question}\n   A: ${card.answer}\n${prefix}`;
+			})
+			.join("\n");
 
 		await navigator.clipboard.writeText(text);
 		notify().success(

@@ -3,6 +3,7 @@ export interface TypeInGradingPromptInput {
 	correctAnswer: string;
 	userAnswer: string;
 	passThreshold: number;
+	sourceContext?: string;
 }
 
 export const DEFAULT_TYPE_IN_GRADING_SYSTEM_PROMPT =
@@ -31,6 +32,15 @@ export function buildTypeInGradingMessages(
 		{
 			role: "user",
 			content: [
+				...(input.sourceContext
+					? [
+							"Source note context (use to judge domain-specific terminology and synonyms):",
+							"<context>",
+							input.sourceContext,
+							"</context>",
+							"",
+						]
+					: []),
 				`Question: ${input.question}`,
 				`Correct answer: ${input.correctAnswer}`,
 				`User answer: ${input.userAnswer}`,

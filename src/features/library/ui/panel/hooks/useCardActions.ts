@@ -116,7 +116,8 @@ export function useCardActions({
 	);
 
 	const handleCopyCard = useCallback(async (card: FlashcardItem) => {
-		const text = `Q: ${card.question}\nA: ${card.answer}`;
+		const prefix = card.noteTypeName ? `Type: ${card.noteTypeName}\n` : "";
+		const text = `${prefix}Q: ${card.question}\nA: ${card.answer}`;
 		await navigator.clipboard.writeText(text);
 		notify().success("Copied to clipboard");
 	}, []);

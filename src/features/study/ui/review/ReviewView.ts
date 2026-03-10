@@ -224,6 +224,14 @@ export class ReviewView extends ItemView {
 		this.sessionTypeInModeEnabled = nextMode !== "off";
 		this.aiEnabledForTypeIn = nextMode === "ai";
 
+		// When answer is already revealed, preserve grading results —
+		// the UI shows/hides assessment based on mode flags
+		if (this.review.isAnswerRevealed) {
+			this.review.notifyChange();
+			notify().info(this.getTypeInModeMessage(nextMode));
+			return;
+		}
+
 		if (nextMode === "off" || nextMode === "ai") {
 			this.resetTypeInState(currentId);
 			this.review.notifyChange();
@@ -336,12 +344,13 @@ export class ReviewView extends ItemView {
 		let semanticResult: SemanticGradingResult | null = null;
 		let semanticMessage: string | null = null;
 		try {
+			const sourceContext = await this.resolveSourceContext(card);
 			semanticResult = await this.answerHandler.gradeTypedAnswerSemantically(
 				card,
 				typedAnswer,
 				0,
 				SEMANTIC_PASS_THRESHOLD,
-				{ allowLocalFallback: false },
+				{ allowLocalFallback: false, sourceContext },
 			);
 		} catch (error) {
 			semanticMessage =
@@ -797,6 +806,26 @@ export class ReviewView extends ItemView {
 		);
 
 		menu.showAtMouseEvent(event);
+	}
+
+	private async resolveSourceContext(
+		card: FSRSFlashcardItem,
+	): Promise<string | undefined> {
+		const MAX_CONTEXT_CHARS = 4000;
+
+		if (card.sourceText) {
+			return card.sourceText.slice(0, MAX_CONTEXT_CHARS);
+		}
+
+		const file = this.resolveSourceFile(card);
+		if (!file) return undefined;
+
+		try {
+			const content = await this.app.vault.cachedRead(file);
+			return content.slice(0, MAX_CONTEXT_CHARS);
+		} catch {
+			return undefined;
+		}
 	}
 
 	// ─── Navigation ──────────────────────────────────────────────────────
