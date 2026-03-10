@@ -17,7 +17,7 @@
 		"perf:benchmark": "bun scripts/perf-benchmark.ts"
 	},
 	"keywords": [],
-	"license": "MIT",
+	"license": "SEE LICENSE IN LICENSE",
 	"devDependencies": {
 		"@biomejs/biome": "2.4.2",
 		"@tailwindcss/cli": "^4.2.0",

@@ -10,3 +10,6 @@ export { CollectionHealthBar } from "./CollectionHealthBar";
 export { DistributionSection } from "./DistributionSection";
 export { CreatedVsReviewedChart } from "./CreatedVsReviewedChart";
 export { RangeSummary } from "./RangeSummary";
+export { TrueRetentionCard } from "./TrueRetentionCard";
+export { WorkloadForecastSection } from "./WorkloadForecastSection";
+export { FSRSStatusCard } from "./FSRSStatusCard";
