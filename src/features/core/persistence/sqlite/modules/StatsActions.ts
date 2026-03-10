@@ -1008,10 +1008,22 @@ export class StatsActions {
 	getReviewsForRetention(
 		startDate: string,
 		endDate: string,
+		presetNames?: string[],
 	): {
 		date: string;
 		rating: number;
 	}[] {
+		let presetClause = "";
+		const params: (string | number | null)[] = [];
+
+		if (presetNames && presetNames.length > 0) {
+			const placeholders = presetNames.map(() => "?").join(",");
+			presetClause = `AND COALESCE(r.preset_name, 'Default') IN (${placeholders})`;
+			params.push(...presetNames);
+		}
+
+		params.push(startDate, endDate);
+
 		return this.db.query<{ date: string; rating: number }>(
 			`
             SELECT
@@ -1022,9 +1034,10 @@ export class StatsActions {
             WHERE r.deleted_at IS NULL
               AND c.deleted_at IS NULL
               AND r.state = 2
+              ${presetClause}
               AND date(r.reviewed_at) BETWEEN ? AND ?
         `,
-			[startDate, endDate],
+			params,
 		);
 	}
 
@@ -1159,11 +1172,10 @@ export class StatsActions {
 	getDailyStatsFromReviewLog(
 		startDate: string,
 		endDate: string,
-		opts?: { presetName?: string; excludeSourceUids?: string[] },
+		opts?: { presetNames?: string[]; excludeSourceUids?: string[] },
 	): ExtendedDailyStats[] {
 		const excludeUids = opts?.excludeSourceUids ?? [];
-		const presetName = opts?.presetName ?? null;
-		const isDefault = presetName === "Default";
+		const presetNames = opts?.presetNames ?? null;
 
 		let excludeClause = "";
 		const params: (string | number | null)[] = [];
@@ -1174,9 +1186,10 @@ export class StatsActions {
 		}
 
 		let presetClause = "";
-		if (presetName !== null) {
-			presetClause = `AND (COALESCE(r.preset_name, 'Default') = ?${isDefault ? " OR r.preset_name IS NULL" : ""})`;
-			params.push(presetName);
+		if (presetNames !== null && presetNames.length > 0) {
+			const placeholders = presetNames.map(() => "?").join(",");
+			presetClause = `AND COALESCE(r.preset_name, 'Default') IN (${placeholders})`;
+			params.push(...presetNames);
 		}
 
 		params.push(startDate, endDate);

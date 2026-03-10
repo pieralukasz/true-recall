@@ -1,4 +1,5 @@
 import { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
+import type { StatsFilterContext } from "@features/metrics/services/stats/stats-filter.types";
 import { useComputed, useSignal } from "@preact/signals";
 import {
 	allCardsArray,
@@ -53,7 +54,10 @@ const EMPTY_RANGE_SUMMARY = {
 	dailyLoad: 0,
 };
 
-export function useStatsData(timeRange: Signal<StatsTimeRange>): {
+export function useStatsData(
+	timeRange: Signal<StatsTimeRange>,
+	filter?: Signal<StatsFilterContext | null>,
+): {
 	data: StatsData | null;
 	loading: boolean;
 } {
@@ -80,6 +84,10 @@ export function useStatsData(timeRange: Signal<StatsTimeRange>): {
 		const cards = allCardsArray.value;
 		pluginSettings.value;
 		const range = timeRange.value;
+
+		// Apply preset filter when active
+		const f = filter?.value;
+		statsCalc.setFilter(f ?? { archivedSourceUids: new Set(), presetNames: null, presetSourceUids: null });
 
 		return {
 			today: statsCalc.getTodaySummary(),
@@ -115,7 +123,7 @@ export function useStatsData(timeRange: Signal<StatsTimeRange>): {
 		return () => {
 			cancelled = true;
 		};
-	}, [timeRange.value, statsCalc, loading, asyncData]);
+	}, [timeRange.value, filter?.value, statsCalc, loading, asyncData]);
 
 	const data = useComputed((): StatsData | null => {
 		const sync = syncData.value;

@@ -1,11 +1,11 @@
 export interface StatsFilterContext {
 	archivedSourceUids: ReadonlySet<string>;
-	presetName: string | null;
+	presetNames: ReadonlySet<string> | null;
 	presetSourceUids: ReadonlySet<string> | null;
 }
 
 export const EMPTY_FILTER: StatsFilterContext = {
 	archivedSourceUids: new Set(),
-	presetName: null,
+	presetNames: null,
 	presetSourceUids: null,
 };

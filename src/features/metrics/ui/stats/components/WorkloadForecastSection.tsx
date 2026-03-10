@@ -2,8 +2,6 @@ import type {
 	WorkloadForecastEntry,
 	WorkloadForecastSummary,
 } from "@features/metrics/services/fsrs-tools/statistics/workload-forecast.calculator";
-import type { Signal } from "@preact/signals";
-import { SelectInput } from "@shared/ui/components/SelectInput";
 import type { ChartConfiguration } from "chart.js";
 import { useRef } from "preact/hooks";
 import { CHART_COLORS, withAlpha } from "../helpers/chart-theme";
@@ -14,21 +12,16 @@ interface WorkloadForecastSectionProps {
 	forecast: WorkloadForecastEntry[];
 	summary: WorkloadForecastSummary;
 	dayOfWeek: { day: number; dayName: string; avgCount: number }[];
-	presets: string[];
-	selectedPreset: Signal<string>;
 }
 
 export function WorkloadForecastSection({
 	forecast,
 	summary,
 	dayOfWeek,
-	presets,
-	selectedPreset,
 }: WorkloadForecastSectionProps) {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const dowCanvasRef = useRef<HTMLCanvasElement>(null);
 
-	// Stacked bar chart: review + learning breakdown
 	useChart(
 		canvasRef,
 		(): ChartConfiguration<"bar"> | null => {
@@ -103,12 +96,10 @@ export function WorkloadForecastSection({
 		[forecast],
 	);
 
-	// Day-of-week mini bar chart
 	useChart(
 		dowCanvasRef,
 		(): ChartConfiguration<"bar"> | null => {
 			if (dayOfWeek.length === 0) return null;
-			// Reorder: Mon-Sun instead of Sun-Sat
 			const reordered = [...dayOfWeek.slice(1), dayOfWeek[0]!];
 			return {
 				type: "bar",
@@ -144,7 +135,7 @@ export function WorkloadForecastSection({
 		[dayOfWeek],
 	);
 
-	if (forecast.length === 0 && presets.length < 2) {
+	if (forecast.length === 0) {
 		return (
 			<ChartCard
 				title="Workload Forecast"
@@ -162,70 +153,40 @@ export function WorkloadForecastSection({
 			title="Workload Forecast"
 			subtitle="Predicted daily reviews (next 30 days)"
 		>
-			{/* Preset filter dropdown — only when 2+ presets exist */}
-			{presets.length >= 2 && (
-				<div class="ep:mb-3 ep:w-fit">
-					<SelectInput
-						value={selectedPreset.value}
-						onChange={(v) => {
-							selectedPreset.value = v;
-						}}
-						options={[
-							{ value: "All", label: "All presets" },
-							...presets.map((p) => ({ value: p, label: p })),
-						]}
-						class="ep:py-1 ep:px-2 ep:text-xs"
-					/>
+			<div class="ep:h-48">
+				<canvas ref={canvasRef} />
+			</div>
+
+			<div class="ep:flex ep:flex-wrap ep:gap-x-4 ep:gap-y-1 ep:mt-3 ep:text-xs ep:text-obs-muted">
+				<span>Avg: {summary.avgDaily}/day</span>
+				<span>
+					Peak: {summary.peakDay.count} (
+					{formatShortDate(summary.peakDay.date)})
+				</span>
+				<span>
+					Min: {summary.minDay.count} (
+					{formatShortDate(summary.minDay.date)})
+				</span>
+				{summary.daysAboveTarget > 0 && (
+					<span>{summary.daysAboveTarget} days above target</span>
+				)}
+			</div>
+
+			{summary.needsBalancing && (
+				<div class="ep:mt-2 ep:text-xs ep:text-obs-orange ep:bg-obs-orange/10 ep:px-2.5 ep:py-1.5 ep:rounded">
+					Workload is uneven — consider using Load Balance to smooth reviews
 				</div>
 			)}
 
-			{forecast.length === 0 ? (
-				<p class="ep:text-xs ep:text-obs-muted ep:py-8 ep:text-center">
-					No cards scheduled
-					{selectedPreset.value !== "All" &&
-						` for ${selectedPreset.value}`}
-				</p>
-			) : (
-				<>
-					<div class="ep:h-48">
-						<canvas ref={canvasRef} />
+			{dayOfWeek.length > 0 && (
+				<div class="ep:mt-4">
+					<p class="ep:text-xs ep:font-medium ep:text-obs-muted ep:mb-2">
+						Average by day of week
+					</p>
+					<div class="ep:h-24">
+						<canvas ref={dowCanvasRef} />
 					</div>
-
-					{/* Summary stats */}
-					<div class="ep:flex ep:flex-wrap ep:gap-x-4 ep:gap-y-1 ep:mt-3 ep:text-xs ep:text-obs-muted">
-						<span>Avg: {summary.avgDaily}/day</span>
-						<span>
-							Peak: {summary.peakDay.count} (
-							{formatShortDate(summary.peakDay.date)})
-						</span>
-						<span>
-							Min: {summary.minDay.count} (
-							{formatShortDate(summary.minDay.date)})
-						</span>
-						{summary.daysAboveTarget > 0 && (
-							<span>{summary.daysAboveTarget} days above target</span>
-						)}
-					</div>
-
-					{summary.needsBalancing && (
-						<div class="ep:mt-2 ep:text-xs ep:text-obs-orange ep:bg-obs-orange/10 ep:px-2.5 ep:py-1.5 ep:rounded">
-							Workload is uneven — consider using Load Balance to smooth
-							reviews
-						</div>
-					)}
-
-					{/* Day-of-week mini chart */}
-					{dayOfWeek.length > 0 && (
-						<div class="ep:mt-4">
-							<p class="ep:text-xs ep:font-medium ep:text-obs-muted ep:mb-2">
-								Average by day of week
-							</p>
-							<div class="ep:h-24">
-								<canvas ref={dowCanvasRef} />
-							</div>
-						</div>
-					)}
-				</>
+				</div>
 			)}
 		</ChartCard>
 	);

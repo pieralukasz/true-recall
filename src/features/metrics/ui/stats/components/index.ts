@@ -13,3 +13,4 @@ export { RangeSummary } from "./RangeSummary";
 export { TrueRetentionCard } from "./TrueRetentionCard";
 export { WorkloadForecastSection } from "./WorkloadForecastSection";
 export { FSRSStatusCard } from "./FSRSStatusCard";
+export { PresetFilter } from "./PresetFilter";

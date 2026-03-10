@@ -1,97 +1,159 @@
-import type { OptimizationMetrics } from "@shared/types";
+import type { Signal } from "@preact/signals";
+import { useSignal } from "@preact/signals";
+import type { FSRSPreset, OptimizationMetrics } from "@shared/types";
 import { usePlugin } from "@shared/ui/preact";
 import { useMemo } from "preact/hooks";
-import { useSignal } from "@preact/signals";
 import { ChartCard } from "./ChartCard";
 
-export function FSRSStatusCard() {
+interface FSRSStatusCardProps {
+	selectedPresets: Signal<Set<string>>;
+}
+
+interface PresetStatus {
+	name: string;
+	retention: number;
+	weights: number[];
+	lastOpt: string | null;
+	metrics: OptimizationMetrics | null;
+	reviewsSinceOpt: number | null;
+	needsOptimization: boolean;
+}
+
+export function FSRSStatusCard({ selectedPresets }: FSRSStatusCardProps) {
 	const plugin = usePlugin();
-	const expanded = useSignal(false);
 
-	const data = useMemo(() => {
-		const settings = plugin.settings;
-		const presets = plugin.presetService?.getPresets?.() ?? [];
-		const presetName =
-			presets.length > 0 ? (presets[0]?.name ?? "Default") : "Default";
-		const retention = Math.round(
-			(settings.fsrsRequestRetention ?? 0.9) * 100,
-		);
-		const weights = settings.fsrsWeights ?? [];
-		const lastOpt = settings.lastOptimization;
-		const lastOptCount = settings.lastOptimizationReviewCount;
-		const metrics = settings.lastOptimizationMetrics as OptimizationMetrics | null;
+	const presetStatuses = useMemo((): PresetStatus[] => {
+		const selected = selectedPresets.value;
+		const statuses: PresetStatus[] = [];
 
-		// Total reviews for "reviews since optimization"
-		let totalReviews = 0;
-		try {
-			const cards = plugin.cardStore?.getCards?.();
-			if (cards) totalReviews = cards.length;
-		} catch {
-			// cardStore may not expose total review count directly
+		for (const name of selected) {
+			const preset = plugin.presetService?.getPresetByName(name);
+			if (!preset) continue;
+			statuses.push(buildPresetStatus(preset, plugin));
 		}
 
-		const reviewsSinceOpt =
-			lastOptCount != null ? Math.max(0, totalReviews - lastOptCount) : null;
+		return statuses.sort((a, b) => a.name.localeCompare(b.name));
+	}, [plugin, selectedPresets.value]);
 
-		const needsOptimization =
-			(!lastOpt && totalReviews >= 400) ||
-			(reviewsSinceOpt != null && reviewsSinceOpt >= 1000);
-
-		return {
-			presetName,
-			retention,
-			weights,
-			lastOpt,
-			metrics,
-			reviewsSinceOpt,
-			needsOptimization,
-		};
-	}, [plugin]);
+	if (presetStatuses.length === 0) {
+		return (
+			<ChartCard title="FSRS Status" subtitle="Optimization & parameters">
+				<p class="ep:text-xs ep:text-obs-muted ep:py-4 ep:text-center">
+					No presets selected
+				</p>
+			</ChartCard>
+		);
+	}
 
 	return (
 		<ChartCard title="FSRS Status" subtitle="Optimization & parameters">
+			<div class="ep:space-y-4">
+				{presetStatuses.map((status) => (
+					<PresetStatusEntry
+						key={status.name}
+						status={status}
+						showName={presetStatuses.length > 1}
+					/>
+				))}
+			</div>
+		</ChartCard>
+	);
+}
+
+function buildPresetStatus(
+	preset: FSRSPreset,
+	plugin: ReturnType<typeof usePlugin>,
+): PresetStatus {
+	const retention = Math.round(preset.requestRetention * 100);
+	const weights = preset.weights ?? [];
+	const lastOpt = preset.lastOptimization;
+	const lastOptCount = preset.lastOptimizationReviewCount;
+	const metrics = preset.lastOptimizationMetrics;
+
+	let reviewCount = 0;
+	try {
+		reviewCount =
+			plugin.cardStore?.stats?.getReviewCountForPreset(preset.name) ?? 0;
+	} catch {
+		// cardStore may not be available
+	}
+
+	const reviewsSinceOpt =
+		lastOptCount != null ? Math.max(0, reviewCount - lastOptCount) : null;
+
+	const needsOptimization =
+		(!lastOpt && reviewCount >= 400) ||
+		(reviewsSinceOpt != null && reviewsSinceOpt >= 1000);
+
+	return {
+		name: preset.name,
+		retention,
+		weights,
+		lastOpt,
+		metrics,
+		reviewsSinceOpt,
+		needsOptimization,
+	};
+}
+
+function PresetStatusEntry({
+	status,
+	showName,
+}: {
+	status: PresetStatus;
+	showName: boolean;
+}) {
+	const expanded = useSignal(false);
+
+	return (
+		<div class={showName ? "ep:border-b ep:border-obs-modifier-border-hover ep:pb-3 last:ep:border-0 last:ep:pb-0" : ""}>
 			<div class="ep:space-y-2.5">
-				{/* Preset + Retention */}
 				<div class="ep:flex ep:items-center ep:gap-2 ep:text-sm">
-					<span class="ep:font-medium ep:text-obs-normal">
-						{data.presetName}
-					</span>
+					{showName && (
+						<span class="ep:font-medium ep:text-obs-normal">
+							{status.name}
+						</span>
+					)}
 					<span class="ep:text-xs ep:text-obs-muted">
-						Target: {data.retention}%
+						Target: {status.retention}%
 					</span>
 				</div>
 
-				{/* Last Optimized */}
 				<div class="ep:flex ep:flex-wrap ep:gap-x-4 ep:gap-y-1 ep:text-xs ep:text-obs-muted">
 					<span>
 						Last optimized:{" "}
-						{data.lastOpt ? formatRelativeDate(data.lastOpt) : "Never"}
+						{status.lastOpt
+							? formatRelativeDate(status.lastOpt)
+							: "Never"}
 					</span>
-					{data.reviewsSinceOpt != null && (
+					{status.reviewsSinceOpt != null && (
 						<span>
-							{data.reviewsSinceOpt.toLocaleString()} reviews since
+							{status.reviewsSinceOpt.toLocaleString()} reviews
+							since
 						</span>
 					)}
 				</div>
 
-				{/* Optimization Metrics */}
-				{data.metrics && (
+				{status.metrics && (
 					<div class="ep:flex ep:flex-wrap ep:gap-x-4 ep:gap-y-1 ep:text-xs ep:text-obs-muted">
-						<span>RMSE: {data.metrics.rmse.toFixed(4)}</span>
-						<span>LogLoss: {data.metrics.logLoss.toFixed(4)}</span>
-						<ConvergenceBadge status={data.metrics.convergenceStatus} />
+						<span>RMSE: {status.metrics.rmse.toFixed(4)}</span>
+						<span>
+							LogLoss: {status.metrics.logLoss.toFixed(4)}
+						</span>
+						<ConvergenceBadge
+							status={status.metrics.convergenceStatus}
+						/>
 					</div>
 				)}
 
-				{/* Recommendation */}
-				{data.needsOptimization && (
+				{status.needsOptimization && (
 					<div class="ep:text-xs ep:text-obs-orange ep:bg-obs-orange/10 ep:px-2.5 ep:py-1.5 ep:rounded">
-						Optimization recommended — enough new reviews for better parameters
+						Optimization recommended — enough new reviews for
+						better parameters
 					</div>
 				)}
 
-				{/* Weights */}
-				{data.weights.length > 0 && (
+				{status.weights.length > 0 && (
 					<div class="ep:text-xs ep:text-obs-faint">
 						<span
 							class="ep:cursor-pointer ep:underline ep:decoration-dotted"
@@ -99,17 +161,21 @@ export function FSRSStatusCard() {
 								expanded.value = !expanded.value;
 							}}
 						>
-							Weights ({data.weights.length}){" "}
+							Weights ({status.weights.length}){" "}
 							{expanded.value ? "[-]" : "[+]"}
 						</span>
 						{expanded.value ? (
 							<p class="ep:mt-1 ep:font-mono ep:break-all ep:leading-relaxed">
-								[{data.weights.map((w) => w.toFixed(4)).join(", ")}]
+								[
+								{status.weights
+									.map((w) => w.toFixed(4))
+									.join(", ")}
+								]
 							</p>
 						) : (
 							<span class="ep:ml-1.5 ep:font-mono">
 								[
-								{data.weights
+								{status.weights
 									.slice(0, 4)
 									.map((w) => w.toFixed(4))
 									.join(", ")}
@@ -119,7 +185,7 @@ export function FSRSStatusCard() {
 					</div>
 				)}
 			</div>
-		</ChartCard>
+		</div>
 	);
 }
 
@@ -159,6 +225,7 @@ function formatRelativeDate(isoDate: string): string {
 	if (diffDays === 1) return "Yesterday";
 	if (diffDays < 7) return `${String(diffDays)} days ago`;
 	if (diffDays < 30) return `${String(Math.floor(diffDays / 7))} weeks ago`;
-	if (diffDays < 365) return `${String(Math.floor(diffDays / 30))} months ago`;
+	if (diffDays < 365)
+		return `${String(Math.floor(diffDays / 30))} months ago`;
 	return `${String(Math.floor(diffDays / 365))} years ago`;
 }
