@@ -69,7 +69,7 @@ import {
 	VIEW_TYPE_FLASHCARD_PANEL,
 	VIEW_TYPE_REVIEW,
 	VIEW_TYPE_SIMULATOR,
-
+	VIEW_TYPE_STATS,
 } from "@shared/constants";
 import {
 	NOTIFICATION_DURATION,
@@ -277,6 +277,14 @@ export default class TrueRecallPlugin extends Plugin {
 					CardBrowserView: typeof import("@features/library/ui/browser/CardBrowserView").CardBrowserView;
 				};
 			return new CardBrowserView(leaf, this);
+		});
+
+		this.registerView(VIEW_TYPE_STATS, (leaf) => {
+			const { StatsView } =
+				require("@features/metrics/ui/stats") as {
+					StatsView: typeof import("@features/metrics/ui/stats").StatsView;
+				};
+			return new StatsView(leaf, this);
 		});
 
 		registerCommands(this);
@@ -489,6 +497,15 @@ export default class TrueRecallPlugin extends Plugin {
 			return;
 		}
 		await activateView(this.app, VIEW_TYPE_DASHBOARD, { useMainArea: true });
+	}
+
+	async openStats(): Promise<void> {
+		const existingLeaf = getView(this.app, VIEW_TYPE_STATS);
+		if (existingLeaf) {
+			void this.app.workspace.revealLeaf(existingLeaf);
+			return;
+		}
+		await activateView(this.app, VIEW_TYPE_STATS, { useMainArea: true });
 	}
 
 	openCardTypesEditor(noteTypeId?: string): void {

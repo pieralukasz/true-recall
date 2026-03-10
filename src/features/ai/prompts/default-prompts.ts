@@ -86,83 +86,65 @@ export function buildLanguageSuffix(languageCode: string): string {
 }
 
 export const DEFAULT_PROMPTS: Record<GenerationMode, string> = {
-	basic: `I would like you to help me create flashcards based on text using the "Basic" card type.
-
-Transform text into atomic, high-retention flashcards.
+	basic: `ROLE: You are an expert in creating flashcards optimized for long-term memory and spaced repetition.
+GOAL: Transform the provided text into ULTRA-ATOMIC, high-retention flashcards based on the "Basic" card type.
 
 OUTPUT FORMAT:
 #type/basic
-Front: [question text]
-Back: [answer text]
-<!-- source: [exact verbatim quote from source text] -->
+Front: question text with bolding and [[backlinks]]
+Back: ultra-concise answer text
+<!-- source: exact sentence quote -->
 ---
 
-MANDATORY RULES:
-1. One flashcard = ONE piece of information. If answer has multiple facts, create SEPARATE flashcards.
-2. Questions and answers must be concise and UNAMBIGUOUS — exactly one correct answer per question.
-3. Each question must be understandable WITHOUT the source text.
-4. BOLD the keyword in every question using **bold**.
-5. Create a flashcard for EVERY piece of information from the text.
-Every technical term, concept, or acronym that appears in the text for the first time MUST get its own definition card — even if the term is only mentioned briefly or in a list.
-6. If the text contains NO new information for flashcards, return ONLY: NO_NEW_CARDS
-7. Use the same language as the source text.
+MANDATORY MINDSET & RULES:
+- EXHAUSTIVE, NOT SUMMARIZED: The number of flashcards doesn't matter. Never shorten because of text size. Don't hesitate to create even 15 flashcards from a single fragment. Every technical term, concept, and detail gets its own card.
+- HYPER-ATOMICITY: One flashcard = EXACTLY ONE piece of information in the answer. Break complex definitions down entirely.
+- NUMBERED LISTS & BULLETS IN SOURCE: Each list item in the source text becomes its own atomic card.
+- THE MERGE RULE: If several flashcards would have identical questions, MERGE them. In the "Back" field, list all elements using Markdown bullet points (- item).
+- PERFECT QUOTES: The <!-- source: ... --> must be a PERFECT, IDENTICAL copy from the input text (just the specific sentence proving the fact). Do not use labels like "Quote:" and do not use quotation marks.
+- CONTEXT-FREE & CONCRETE: Each question must be perfectly understandable WITHOUT the source text. Add a distinguishing cue if concepts are similar (e.g., "Unlike X, what does Y...").
+- If the text contains absolutely no new information, return ONLY: NO_NEW_CARDS.
+- Use the same language as the source text.
 
-SOURCE TRACKING:
-- After each card's fields, add: <!-- source: [exact verbatim quote] -->
-- The quote must be a PERFECT, IDENTICAL copy from the input text — same words, same punctuation, same capitalization, same spacing. Do NOT paraphrase, rephrase, shorten, reorder, or modify in ANY way.
-- Keep the quote to the specific sentence(s) that contain the information for that flashcard.
-
-FORMATTING:
-- Backlinks: Wrap key scientific terms and main subjects in [[backlinks]] (lowercase only). If bolding is required, use **[[backlinks]]**.
-- Use [[term|alias]] for context/readability when needed.
-- NEVER use the format [term](app://obsidian.md/term). Only use double brackets.
+MARKDOWN & BACKLINK FORMATTING (CRITICAL):
+- BOLDING: Bold the core target keyword/concept in every question using **bold**. If a distinguishing word is needed, bold it too.
+- BACKLINKS: Wrap ALL key nouns in [[backlinks]] (lowercase). This includes proper names, domain-specific terms, scientific terms, and any concept that would have its own Obsidian note.
+- COMBINED: If bolding is required inside brackets, use **[[term]]**.
+- ALIASES: Use [[term|alias]] for context/readability when needed. NEVER use [term](app://obsidian.md/term). Only use double brackets.
 - Separate cards with --- on its own line.
 
-ANTI-RULES:
-- Anti-Tautology: Question MUST NOT contain the answer. Use synonyms.
-- Anti-List: Never use bullet points in answers. Split into separate cards with unique anchors in questions.
-- No Order Questions: NEVER use "What is the first/second/next..."
-- Anti-Boolean: NEVER ask Yes/No questions. Ask for the specific fact.
+ANTI-RULES (NEVER DO THIS):
+- Anti-Tautology: Question MUST NOT contain the answer.
+- Anti-Order: NEVER use "What is the first/second/next..." Ask about the concept directly.
+- Anti-List: Never use bullet points in the Back UNLESS triggered by the Merge Rule.
+- Anti-Boolean: NEVER ask Yes/No questions.
 - Anti-Example-Trap: Don't ask "What is an example of X?" — state the example, ask for the category.
 
-QUESTION QUALITY:
-- Context-Free: Each question must be understandable WITHOUT the source text. Include enough context in the question itself.
-- One Correct Answer: The question must permit exactly ONE correct response. Eliminate ambiguity.
-- Concrete over Abstract: When the answer is an abstract or technical term, add a brief clarifying example or visual cue in parentheses.
-- Disambiguation: When two concepts are easily confused, add a distinguishing cue (e.g., "Unlike X, what does Y...").
-
-KNOWLEDGE STRUCTURE:
-- Basics First: Prioritize fundamental definitions and core concepts. Create those cards before details, exceptions, or examples.
-- Vivid Language: Use concrete, vivid wording over dry abstractions. Mention visual associations when natural (e.g., "shaped like a double helix").
-- Context Cues: When the source covers multiple distinct topics, prefix questions with a brief topic label in parentheses.
-
-EXAMPLE:
-Text: "Rosacea is manifested by intense reddening of the skin. In an advanced degree, papulopustular changes may appear. Acne vulgaris also causes skin redness, but is distinguished by comedones. The mitochondrial matrix contains enzymes for the citric acid cycle."
+FEW-SHOT EXAMPLES (FOLLOW THIS LOGIC EXACTLY):
+Input Text: "Rosacea is manifested by intense reddening of the skin. In an advanced degree, papulopustular changes may appear."
 
 #type/basic
 Front: What is **[[rosacea]]**?
-Back: Chronic facial skin reddening
+Back: Reddening of the skin
 <!-- source: Rosacea is manifested by intense reddening of the skin. -->
 ---
 #type/basic
-Front: How does advanced **[[rosacea]]** manifest?
-Back: Papulopustular changes (pus-filled bumps resembling acne)
+Front: How does advanced **[[rosacea]]** manifest itself?
+Back: Papulopustular changes
 <!-- source: In an advanced degree, papulopustular changes may appear. -->
 ---
+
+Input Text: "Let's say your aunt Irene wants to lose weight. She knows she must stop downing gin shots before going to work."
+
 #type/basic
-Front: Unlike [[rosacea]], what distinguishes **[[acne vulgaris]]**?
-Back: Presence of comedones (blackheads)
-<!-- source: Acne vulgaris also causes skin redness, but is distinguished by comedones. -->
+Front: What does aunt **[[irene]]** want to do?
+Back: Lose weight
+<!-- source: Let's say your aunt Irene wants to lose weight. -->
 ---
 #type/basic
-Front: What are **[[comedones]]**?
-Back: Clogged hair follicles — blackheads (open) and whiteheads (closed)
-<!-- source: Acne vulgaris also causes skin redness, but is distinguished by comedones. -->
----
-#type/basic
-Front: (Cell bio) What does the **[[mitochondrial matrix]]** contain?
-Back: Enzymes for the citric acid cycle (Krebs cycle)
-<!-- source: The mitochondrial matrix contains enzymes for the citric acid cycle. -->`,
+Front: What must aunt **[[irene]]** stop doing before going to work?
+Back: Downing gin shots
+<!-- source: She knows she must stop downing gin shots before going to work. -->`,
 
 	cloze: `I would like you to help me create cloze deletion flashcards based on text using the "Cloze" card type.
 
