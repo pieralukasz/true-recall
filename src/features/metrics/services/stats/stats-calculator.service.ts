@@ -61,7 +61,7 @@ export class StatsCalculatorService {
 	private get isFilterActive(): boolean {
 		return (
 			this.filter.archivedSourceUids.size > 0 ||
-			this.filter.presetName !== null
+			this.filter.presetNames !== null
 		);
 	}
 
@@ -102,7 +102,7 @@ export class StatsCalculatorService {
 			"1970-01-01",
 			new Date().toISOString().split("T")[0] ?? "",
 			{
-				presetName: this.filter.presetName ?? undefined,
+				presetNames: this.filter.presetNames ? [...this.filter.presetNames] : undefined,
 				excludeSourceUids: [...this.filter.archivedSourceUids],
 			},
 		);
@@ -128,7 +128,7 @@ export class StatsCalculatorService {
 			startKey,
 			endKey,
 			{
-				presetName: this.filter.presetName ?? undefined,
+				presetNames: this.filter.presetNames ? [...this.filter.presetNames] : undefined,
 				excludeSourceUids: [...this.filter.archivedSourceUids],
 			},
 		);
@@ -165,7 +165,7 @@ export class StatsCalculatorService {
 				today,
 				today,
 				{
-					presetName: this.filter.presetName ?? undefined,
+					presetNames: this.filter.presetNames ? [...this.filter.presetNames] : undefined,
 					excludeSourceUids: [...this.filter.archivedSourceUids],
 				},
 			);

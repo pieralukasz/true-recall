@@ -2,7 +2,7 @@ import type {
 	WorkloadForecastEntry,
 	WorkloadForecastSummary,
 } from "@features/metrics/services/fsrs-tools/statistics/workload-forecast.calculator";
-import type { FSRSFlashcardItem } from "@shared/types";
+import type { FSRSCardData } from "@shared/types";
 import { State } from "ts-fsrs";
 
 /**
@@ -11,7 +11,7 @@ import { State } from "ts-fsrs";
  * but works on any card subset (e.g. filtered by preset).
  */
 export function buildFilteredForecast(
-	cards: FSRSFlashcardItem[],
+	cards: FSRSCardData[],
 	days: number = 30,
 ): WorkloadForecastEntry[] {
 	const today = new Date();
