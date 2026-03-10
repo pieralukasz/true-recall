@@ -199,17 +199,19 @@ export class FSRSHelperService {
 		return this.reschedule.reschedule(options);
 	}
 
-	getTrueRetentionSummary(days: number = 30): TrueRetentionSummary {
+	getTrueRetentionSummary(days: number = 30, presetNames?: string[]): TrueRetentionSummary {
 		return this.trueRetention.getSummary(
 			this.settings.fsrsRequestRetention,
 			days,
+			presetNames,
 		);
 	}
 
 	getTrueRetentionHistory(
 		days: number = 30,
+		presetNames?: string[],
 	): { date: string; retention: number; reviewCount: number }[] {
-		return this.trueRetention.getRollingAverage(days);
+		return this.trueRetention.getRollingAverage(days, 7, presetNames);
 	}
 
 	getWorkloadForecast(days: number = 30): WorkloadForecastEntry[] {

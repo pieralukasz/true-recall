@@ -473,8 +473,8 @@ export class SqliteStoreService {
 		return this.stats.getReviewDataForOptimization(presetName);
 	}
 
-	getReviewsForRetention(startDate: string, endDate: string) {
-		return this.stats.getReviewsForRetention(startDate, endDate);
+	getReviewsForRetention(startDate: string, endDate: string, presetNames?: string[]) {
+		return this.stats.getReviewsForRetention(startDate, endDate, presetNames);
 	}
 
 	getPersistenceDebugInfo(): {
