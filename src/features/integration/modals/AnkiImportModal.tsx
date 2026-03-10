@@ -28,6 +28,7 @@ function AnkiImportBody({
 	onImport: (opts: {
 		importScheduling: boolean;
 		importMedia: boolean;
+		createProject: boolean;
 	}) => Promise<ImportPhase>;
 	onClose: () => void;
 	onUpdateTitle: (title: string) => void;
@@ -35,6 +36,7 @@ function AnkiImportBody({
 	const [phase, setPhase] = useState<ImportPhase>({ type: "file-select" });
 	const [importScheduling, setImportScheduling] = useState(true);
 	const [importMedia, setImportMedia] = useState(true);
+	const [createProject, setCreateProject] = useState(true);
 
 	const handleFile = useCallback(
 		async (file: File) => {
@@ -50,12 +52,12 @@ function AnkiImportBody({
 
 	const handleImport = useCallback(async () => {
 		setPhase({ type: "importing" });
-		const result = await onImport({ importScheduling, importMedia });
+		const result = await onImport({ importScheduling, importMedia, createProject });
 		setPhase(result);
 		if (result.type === "result") {
 			onUpdateTitle("Import complete");
 		}
-	}, [onImport, importScheduling, importMedia, onUpdateTitle]);
+	}, [onImport, importScheduling, importMedia, createProject, onUpdateTitle]);
 
 	switch (phase.type) {
 		case "parsing":
@@ -81,8 +83,10 @@ function AnkiImportBody({
 					preview={phase.preview}
 					importScheduling={importScheduling}
 					importMedia={importMedia}
+					createProject={createProject}
 					onSchedulingChange={setImportScheduling}
 					onMediaChange={setImportMedia}
+					onCreateProjectChange={setCreateProject}
 					onImport={() => void handleImport()}
 					onCancel={onClose}
 				/>
@@ -146,6 +150,7 @@ export class AnkiImportModal extends BaseModal {
 	private async startImport(opts: {
 		importScheduling: boolean;
 		importMedia: boolean;
+		createProject: boolean;
 	}): Promise<ImportPhase> {
 		if (!this.fileData) {
 			return { type: "error", message: "No file data", canRetry: true };
@@ -162,6 +167,7 @@ export class AnkiImportModal extends BaseModal {
 				importScheduling: opts.importScheduling,
 				importMedia: opts.importMedia,
 				mediaFolder: "Attachments/anki-import",
+				createProject: opts.createProject,
 			});
 
 			return { type: "result", result };

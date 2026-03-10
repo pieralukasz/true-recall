@@ -15,7 +15,6 @@ export interface SubscriptionStatus {
 export interface SubscriptionCacheUpdate {
 	isSubscriber: boolean;
 	subscriberTier?: string;
-	allowedModels?: string[];
 	userId?: string;
 }
 
@@ -42,7 +41,6 @@ export class SubscriptionService {
 			onCacheUpdate?.({
 				isSubscriber: true,
 				subscriberTier: status.tier,
-				allowedModels: status.allowed_models ?? undefined,
 			});
 
 			return status;

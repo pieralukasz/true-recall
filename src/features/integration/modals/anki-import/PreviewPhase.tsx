@@ -7,8 +7,10 @@ export interface PreviewPhaseProps {
 	preview: ImportPreview;
 	importScheduling: boolean;
 	importMedia: boolean;
+	createProject: boolean;
 	onSchedulingChange: (val: boolean) => void;
 	onMediaChange: (val: boolean) => void;
+	onCreateProjectChange: (val: boolean) => void;
 	onImport: () => void;
 	onCancel: () => void;
 }
@@ -17,8 +19,10 @@ export function PreviewPhase({
 	preview,
 	importScheduling,
 	importMedia,
+	createProject,
 	onSchedulingChange,
 	onMediaChange,
+	onCreateProjectChange,
 	onImport,
 	onCancel,
 }: PreviewPhaseProps) {
@@ -60,6 +64,12 @@ export function PreviewPhase({
 					description={`${preview.mediaCount} files will be saved to Attachments/anki-import`}
 					initialChecked={importMedia}
 					onChange={onMediaChange}
+				/>
+				<OptionCheckbox
+					label="Create project"
+					description="Organize imported decks as a project hierarchy"
+					initialChecked={createProject}
+					onChange={onCreateProjectChange}
 				/>
 			</div>
 

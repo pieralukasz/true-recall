@@ -59,6 +59,7 @@ export interface AnkiImportOptions {
 	importScheduling: boolean;
 	importMedia: boolean;
 	mediaFolder: string;
+	createProject: boolean;
 }
 
 export interface AnkiImportResult {
