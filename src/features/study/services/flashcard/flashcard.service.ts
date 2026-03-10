@@ -199,6 +199,7 @@ export class FlashcardManager {
 				reverseOfBatchId: c.reverseOf,
 				sourceText: c.sourceText,
 				alwaysTypeIn: c.alwaysTypeIn,
+				noteTypeName: c.noteTypeName,
 			})),
 			lastModified: this.getLatestCardTimestamp(cards),
 			sourceUid,

@@ -185,4 +185,81 @@ describe("SemanticAnswerGradingService", () => {
 
 		expect(capturedSystem).toBe("CUSTOM_GRADING_PROMPT");
 	});
+
+	it("includes source context in user message when provided", async () => {
+		const settings = createSettings({ openRouterApiKey: "byok-key" });
+		let capturedUserMessage = "";
+
+		const service = new SemanticAnswerGradingService(
+			() => settings,
+			() => ({
+				chat: async (request) => {
+					capturedUserMessage = request.messages[1]?.content ?? "";
+					return {
+						id: "resp-ctx",
+						choices: [
+							{
+								message: {
+									role: "assistant",
+									content: '{"score": 95, "feedback": "Correct."}',
+								},
+								finish_reason: "stop",
+							},
+						],
+					};
+				},
+			}),
+		);
+
+		await service.gradeAnswer({
+			question: "What is ATP?",
+			correctAnswer: "Adenosine triphosphate",
+			userAnswer: "ATP is the energy currency",
+			passThreshold: 85,
+			localFallbackScore: 10,
+			sourceContext: "ATP (adenosine triphosphate) is the primary energy carrier in cells.",
+		});
+
+		expect(capturedUserMessage).toContain("<context>");
+		expect(capturedUserMessage).toContain("adenosine triphosphate");
+		expect(capturedUserMessage).toContain("</context>");
+		expect(capturedUserMessage).toContain("Question: What is ATP?");
+	});
+
+	it("omits context block when sourceContext is not provided", async () => {
+		const settings = createSettings({ openRouterApiKey: "byok-key" });
+		let capturedUserMessage = "";
+
+		const service = new SemanticAnswerGradingService(
+			() => settings,
+			() => ({
+				chat: async (request) => {
+					capturedUserMessage = request.messages[1]?.content ?? "";
+					return {
+						id: "resp-no-ctx",
+						choices: [
+							{
+								message: {
+									role: "assistant",
+									content: '{"score": 80, "feedback": "Close."}',
+								},
+								finish_reason: "stop",
+							},
+						],
+					};
+				},
+			}),
+		);
+
+		await service.gradeAnswer({
+			question: "Q",
+			correctAnswer: "A",
+			userAnswer: "B",
+			passThreshold: 85,
+			localFallbackScore: 10,
+		});
+
+		expect(capturedUserMessage).not.toContain("<context>");
+		expect(capturedUserMessage.startsWith("Question: Q")).toBe(true);
+	});
 });

@@ -386,11 +386,6 @@ export class AnkiImportService {
 				?.replace(/[\\/:*?"<>|]/g, " - ")
 				.trim();
 
-			// Build hierarchical tag: Math/Calculus/Integrals
-			const tagPath = segments
-				.map((s) => s.replace(/[\\/:*?"<>|]/g, " - ").trim())
-				.join("/");
-
 			// Build filesystem path
 			const folderSegments = segments
 				.slice(0, -1)
@@ -416,7 +411,6 @@ export class AnkiImportService {
 			const uid = await this.createOrUpdateNote(
 				notePath,
 				name,
-				tagPath,
 				isLeaf ? undefined : children,
 				safeParentName,
 			);
@@ -433,7 +427,6 @@ export class AnkiImportService {
 	private async createOrUpdateNote(
 		notePath: string,
 		title: string,
-		tagPath: string,
 		children?: Set<string>,
 		parentName?: string,
 	): Promise<string> {

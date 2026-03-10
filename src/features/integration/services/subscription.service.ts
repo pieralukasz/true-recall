@@ -54,6 +54,13 @@ export class SubscriptionService {
 		return !!subscriptionKey && subscriptionKey.length > 0;
 	}
 
+	getCachedStatus(): SubscriptionStatus | null {
+		if (this.cache && Date.now() - this.cacheTimestamp < CACHE_TTL_MS) {
+			return this.cache;
+		}
+		return null;
+	}
+
 	invalidateCache(): void {
 		this.cache = null;
 		this.cacheTimestamp = 0;

@@ -259,6 +259,16 @@ export interface TrueRecallSettings {
 	subscriberTier?: string;
 	/** Auto-generated UUID per installation, sent with proxy requests for rate limiting */
 	userId?: string;
+	/** Persisted subscription status for instant UI display on mount (no async call needed) */
+	cachedSubscriptionStatus?: {
+		tier: string;
+		plan_type: string;
+		budget_max: number;
+		budget_spent: number;
+		budget_remaining: number;
+		expires: string | null;
+		trial_used: boolean;
+	};
 
 	/** Custom prompts for AI flashcard generation (per mode) */
 	aiFlashcardPrompts?: {
