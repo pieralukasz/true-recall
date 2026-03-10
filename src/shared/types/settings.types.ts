@@ -257,8 +257,6 @@ export interface TrueRecallSettings {
 	isSubscriber?: boolean;
 	/** Cached tier from last successful validation */
 	subscriberTier?: string;
-	/** First model from subscription's allowed_models — used in API requests */
-	cachedSubscriptionModel?: string;
 	/** Auto-generated UUID per installation, sent with proxy requests for rate limiting */
 	userId?: string;
 

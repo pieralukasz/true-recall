@@ -139,6 +139,17 @@ export class AnkiImportService {
 
 		await this.store.flush();
 
+		// When "Create project" is enabled, inject ALL deck names (even empty ones)
+		// so the full hierarchy is created as projects with parents frontmatter
+		if (options.createProject) {
+			for (const [, deck] of apkgData.decks) {
+				const name = deck.name.replace(/::/g, "/");
+				if (name !== "Default" && !deckToCardIds.has(name)) {
+					deckToCardIds.set(name, []);
+				}
+			}
+		}
+
 		// Create source notes per deck so imported cards appear in panel/projects
 		if (deckToCardIds.size > 0) {
 			await this.createSourceNotesForDecks(deckToCardIds);
@@ -333,21 +344,21 @@ export class AnkiImportService {
 		}
 
 		// Collect all hierarchy levels needed
-		// Key: full deck path (e.g. "Math::Calculus"), Value: direct children names
+		// Key: full deck path (e.g. "Math/Calculus"), Value: direct children names
 		const parentToChildren = new Map<string, Set<string>>();
 		const allSegmentPaths = new Set<string>();
 
 		for (const deckName of deckToCardIds.keys()) {
-			const segments = deckName.split("::");
+			const segments = deckName.split("/");
 
 			// Register every prefix level
 			for (let i = 0; i < segments.length; i++) {
-				const path = segments.slice(0, i + 1).join("::");
+				const path = segments.slice(0, i + 1).join("/");
 				allSegmentPaths.add(path);
 
 				// Track parent→child relationships
 				if (i > 0) {
-					const parentPath = segments.slice(0, i).join("::");
+					const parentPath = segments.slice(0, i).join("/");
 					if (!parentToChildren.has(parentPath)) {
 						parentToChildren.set(parentPath, new Set());
 					}
@@ -361,11 +372,11 @@ export class AnkiImportService {
 
 		// Create notes for each hierarchy level (sorted so parents are created before children)
 		const sortedPaths = [...allSegmentPaths].sort(
-			(a, b) => a.split("::").length - b.split("::").length,
+			(a, b) => a.split("/").length - b.split("/").length,
 		);
 
 		for (const deckPath of sortedPaths) {
-			const segments = deckPath.split("::");
+			const segments = deckPath.split("/");
 			const name = segments[segments.length - 1] ?? "Default";
 			const safeName = name.replace(/[\\/:*?"<>|]/g, " - ").trim() || "Default";
 
@@ -464,7 +475,7 @@ export class AnkiImportService {
 
 			// No UID: prepend frontmatter
 			const uid = this.generateUid();
-			const frontmatter = this.buildFrontmatter(uid, tagPath, parentName);
+			const frontmatter = this.buildFrontmatter(uid, parentName);
 			await this.app.vault.process(
 				existingFile,
 				(content) => `${frontmatter}\n\n${content}`,
@@ -474,7 +485,7 @@ export class AnkiImportService {
 
 		// Create new note
 		const uid = this.generateUid();
-		const frontmatter = this.buildFrontmatter(uid, tagPath, parentName);
+		const frontmatter = this.buildFrontmatter(uid, parentName);
 
 		const bodyParts = [`# ${title}`, ""];
 
@@ -494,17 +505,8 @@ export class AnkiImportService {
 		return uid;
 	}
 
-	private buildFrontmatter(
-		uid: string,
-		tagPath: string,
-		parentName?: string,
-	): string {
-		const lines = [
-			"---",
-			`flashcard_uid: ${uid}`,
-			"tags:",
-			`  - ${tagPath}`,
-		];
+	private buildFrontmatter(uid: string, parentName?: string): string {
+		const lines = ["---", `flashcard_uid: ${uid}`];
 		if (parentName) {
 			lines.push("parents:", `  - "[[${parentName}]]"`);
 		}
