@@ -87,6 +87,14 @@ describe("BlockPromptBuilder", () => {
 			expect(prompt).toContain("**bold**");
 		});
 
+		it("should include merge rule and strict source fidelity in basic v2", () => {
+			const prompt = buildBlockPrompt(basicType);
+			expect(prompt).toContain("NUMBERED LISTS & BULLETS IN SOURCE");
+			expect(prompt).toContain("THE MERGE RULE");
+			expect(prompt).toContain("PERFECT, IDENTICAL copy");
+			expect(prompt).toContain("NO_NEW_CARDS");
+		});
+
 		it("should include --- separator instruction", () => {
 			const prompt = buildBlockPrompt(basicType);
 			expect(prompt).toContain("Separate cards with ---");
@@ -118,10 +126,11 @@ describe("BlockPromptBuilder", () => {
 			expect(prompt).toContain("NO_NEW_CARDS");
 		});
 
-		it("should include example section", () => {
+		it("should include few-shot examples for basic v2", () => {
 			const prompt = buildBlockPrompt(basicType);
-			expect(prompt).toContain("EXAMPLE:");
+			expect(prompt).toContain("FEW-SHOT EXAMPLES");
 			expect(prompt).toContain("rosacea");
+			expect(prompt).toContain("aunt Irene");
 		});
 
 		it("should include cloze example for cloze types", () => {
@@ -129,6 +138,15 @@ describe("BlockPromptBuilder", () => {
 			expect(prompt).toContain("EXAMPLE:");
 			expect(prompt).toContain("mitochondria");
 			expect(prompt).toContain("{{c1::");
+		});
+
+		it("should not leak basic-only rules into non-basic prompts", () => {
+			const prompt = buildBlockPrompt(customType);
+			expect(prompt).not.toContain("NUMBERED LISTS & BULLETS IN SOURCE");
+			expect(prompt).not.toContain("THE MERGE RULE");
+			expect(prompt).not.toContain(
+				"ROLE: You are an expert in creating flashcards optimized",
+			);
 		});
 	});
 

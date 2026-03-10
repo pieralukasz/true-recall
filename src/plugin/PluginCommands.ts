@@ -47,6 +47,12 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 	});
 
 	plugin.addCommand({
+		id: "open-stats",
+		name: "Open statistics",
+		callback: () => void plugin.openStats(),
+	});
+
+	plugin.addCommand({
 		id: "manage-note-types",
 		name: "Manage note types",
 		callback: () => plugin.openCardTypesEditor(),

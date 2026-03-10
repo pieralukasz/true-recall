@@ -49,6 +49,30 @@ KNOWLEDGE STRUCTURE:
 - Vivid Language: Use concrete, vivid wording over dry abstractions. Mention visual associations when natural (e.g., "shaped like a double helix").
 - Context Cues: When the source covers multiple distinct topics, prefix questions with a brief topic label in parentheses.`;
 
+const BASIC_V2_RULES = `MANDATORY MINDSET & RULES:
+- EXHAUSTIVE, NOT SUMMARIZED: The number of flashcards doesn't matter. Never shorten because of text size. Don't hesitate to create even 15 flashcards from a single fragment. Every technical term, concept, and detail gets its own card.
+- HYPER-ATOMICITY: One flashcard = EXACTLY ONE piece of information in the answer. Break complex definitions down entirely.
+- NUMBERED LISTS & BULLETS IN SOURCE: Each list item in the source text becomes its own atomic card.
+- THE MERGE RULE: If several flashcards would have identical questions, MERGE them. In the "Back" field, list all elements using Markdown bullet points (- item).
+- PERFECT QUOTES: The <!-- source: ... --> must be a PERFECT, IDENTICAL copy from the input text (just the specific sentence proving the fact). Do not use labels like "Quote:" and do not use quotation marks.
+- CONTEXT-FREE & CONCRETE: Each question must be perfectly understandable WITHOUT the source text. Add a distinguishing cue if concepts are similar (e.g., "Unlike X, what does Y...").
+- If the text contains absolutely no new information, return ONLY: NO_NEW_CARDS.
+- Use the same language as the source text.
+
+MARKDOWN & BACKLINK FORMATTING (CRITICAL):
+- BOLDING: Bold the core target keyword/concept in every question using **bold**. If a distinguishing word is needed, bold it too.
+- BACKLINKS: Wrap ALL key nouns in [[backlinks]] (lowercase). This includes proper names, domain-specific terms, scientific terms, and any concept that would have its own Obsidian note.
+- COMBINED: If bolding is required inside brackets, use **[[term]]**.
+- ALIASES: Use [[term|alias]] for context/readability when needed. NEVER use [term](app://obsidian.md/term). Only use double brackets.
+- Separate cards with --- on its own line.
+
+ANTI-RULES (NEVER DO THIS):
+- Anti-Tautology: Question MUST NOT contain the answer.
+- Anti-Order: NEVER use "What is the first/second/next..." Ask about the concept directly.
+- Anti-List: Never use bullet points in the Back UNLESS triggered by the Merge Rule.
+- Anti-Boolean: NEVER ask Yes/No questions.
+- Anti-Example-Trap: Don't ask "What is an example of X?" — state the example, ask for the category.`;
+
 const CLOZE_RULES = `CLOZE RULES:
 - Keep each cloze sentence to ~15-20 words max. Split long source sentences into shorter statements.
 - Hide ONLY key terms: definitions, names, numbers, formulas, relationships. NEVER hide articles, prepositions, or filler.
@@ -69,21 +93,28 @@ GOOD: {{c1::DNA}} is transcribed into {{c2::mRNA}} in the nucleus`;
 export function buildBlockPrompt(noteType: NoteType): string {
 	const slug = resolveSlug(noteType);
 	const isCloze = noteType.type === 1;
+	const isBasic = slug === "basic";
 
-	const intro = `I would like you to help me create flashcards based on text using the "${noteType.name}" card type.
+	const intro = isBasic
+		? `ROLE: You are an expert in creating flashcards optimized for long-term memory and spaced repetition.
+GOAL: Transform the provided text into ULTRA-ATOMIC, high-retention flashcards based on the "Basic" card type.`
+		: `I would like you to help me create flashcards based on text using the "${noteType.name}" card type.
 
 Transform text into atomic, high-retention flashcards.`;
 
 	const formatSection = buildFormatSection(noteType, slug);
+	const rules = isBasic ? BASIC_V2_RULES : SHARED_RULES;
 	const typeSpecificRules = isCloze ? `\n${CLOZE_RULES}\n` : "";
-	const example = buildExample(noteType, slug);
+	const example = isBasic
+		? buildBasicV2Example(noteType, slug)
+		: buildExample(noteType, slug);
 
 	return `${intro}
 
 OUTPUT FORMAT:
 ${formatSection}
 
-${SHARED_RULES}
+${rules}
 ${typeSpecificRules}
 ${example}`;
 }
@@ -129,7 +160,7 @@ Choose the card type that best supports memorization for each fact.`;
 function buildFormatSection(noteType: NoteType, slug: string): string {
 	const lines = [`#type/${slug}`];
 	for (const field of noteType.fields) {
-		lines.push(`${field}: [${getFieldDescription(noteType, field)}]`);
+		lines.push(`${field}: [${getFieldDescription(noteType, field, slug)}]`);
 	}
 	lines.push("<!-- source: [exact verbatim quote from source text] -->");
 	lines.push("---");
@@ -184,10 +215,49 @@ ${noteType.fields[1]}: Enzymes for the citric acid cycle (Krebs cycle)
 <!-- source: The mitochondrial matrix contains enzymes for the citric acid cycle. -->`;
 }
 
-function getFieldDescription(noteType: NoteType, field: string): string {
+function buildBasicV2Example(noteType: NoteType, slug: string): string {
+	const front = noteType.fields[0] ?? "Front";
+	const back = noteType.fields[1] ?? "Back";
+
+	return `FEW-SHOT EXAMPLES (FOLLOW THIS LOGIC EXACTLY):
+Input Text: "Rosacea is manifested by intense reddening of the skin. In an advanced degree, papulopustular changes may appear."
+
+#type/${slug}
+${front}: What is **[[rosacea]]**?
+${back}: Reddening of the skin
+<!-- source: Rosacea is manifested by intense reddening of the skin. -->
+---
+#type/${slug}
+${front}: How does advanced **[[rosacea]]** manifest itself?
+${back}: Papulopustular changes
+<!-- source: In an advanced degree, papulopustular changes may appear. -->
+---
+
+Input Text: "Let's say your aunt Irene wants to lose weight. She knows she must stop downing gin shots before going to work."
+
+#type/${slug}
+${front}: What does aunt **[[irene]]** want to do?
+${back}: Lose weight
+<!-- source: Let's say your aunt Irene wants to lose weight. -->
+---
+#type/${slug}
+${front}: What must aunt **[[irene]]** stop doing before going to work?
+${back}: Downing gin shots
+<!-- source: She knows she must stop downing gin shots before going to work. -->`;
+}
+
+function getFieldDescription(
+	noteType: NoteType,
+	field: string,
+	slug: string,
+): string {
 	const isCloze = noteType.type === 1;
 	const fieldLower = field.toLowerCase();
 
+	if (slug === "basic" && fieldLower === "front")
+		return "question text with bolding and [[backlinks]]";
+	if (slug === "basic" && fieldLower === "back")
+		return "ultra-concise answer text";
 	if (isCloze && fieldLower === "text")
 		return "sentence with {{c1::hidden term}}";
 	if (isCloze && fieldLower === "extra") return "optional additional context";
