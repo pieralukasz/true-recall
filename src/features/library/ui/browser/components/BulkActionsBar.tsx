@@ -1,6 +1,7 @@
 import { ChangeNoteTypeModal } from "@features/library/modals/ChangeNoteTypeModal";
 import { notify } from "@shared/services/notification.service";
 import { notifyCardChange } from "@shared/services/signals";
+import { pushDeleteUndo } from "@shared/services/undo.service";
 import { Clickable } from "@shared/ui/components";
 import { useApp, usePlugin } from "@shared/ui/preact";
 import { useCallback } from "preact/hooks";
@@ -103,9 +104,12 @@ export function BulkActionsBar({
 	}, [ids, plugin, app]);
 
 	const handleDelete = useCallback(() => {
-		if (!confirm(`Delete ${ids.length} cards? This cannot be undone.`)) return;
-		const count = plugin.flashcardManager.removeFlashcardsByIds(ids);
-		notify().success(`Deleted ${count} cards`);
+		if (!confirm(`Delete ${ids.length} cards?`)) return;
+		const result = plugin.flashcardManager.removeFlashcardsByIdsWithDetails(ids);
+		if (result.ok) {
+			pushDeleteUndo(plugin, result);
+		}
+		notify().success(`Deleted ${result.affectedCount} cards`);
 		onClearSelection();
 	}, [ids, plugin]);
 

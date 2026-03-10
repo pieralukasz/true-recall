@@ -10,10 +10,10 @@ export function deriveTypeInMode(
 	return aiEnabled ? "ai" : "diff";
 }
 
-export function nextTypeInMode(mode: TypeInMode): TypeInMode {
+export function nextTypeInMode(mode: TypeInMode, skipOff = false): TypeInMode {
 	if (mode === "off") return "ai";
 	if (mode === "ai") return "diff";
-	return "off";
+	return skipOff ? "ai" : "off";
 }
 
 export function isTypeInRequiredForCard(

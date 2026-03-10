@@ -10,7 +10,7 @@ export interface FlashcardItem {
 	reverseOfBatchId?: string;
 	sourceText?: string;
 	alwaysTypeIn?: boolean;
-	noteTypeName?: string;
+	noteId?: string;
 }
 
 export interface FlashcardInfo {

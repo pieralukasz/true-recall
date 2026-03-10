@@ -116,6 +116,9 @@ export class UndoService {
 			case "delete":
 				return this.restoreDeletedCard(payload.cardData);
 
+			case "batch-delete":
+				return this.restoreBatchDeletedCards(payload.cardsData);
+
 			case "batch-create":
 				for (const cardId of payload.cardIds) {
 					await flashcardManager.removeFlashcardById(cardId);
@@ -160,6 +163,24 @@ export class UndoService {
 			return true;
 		} catch (error) {
 			console.error("[UndoService] Error restoring card:", error);
+			return false;
+		}
+	}
+
+	private restoreBatchDeletedCards(cardsData: FSRSCardData[]): boolean {
+		try {
+			const { cardStore } = this.plugin;
+			for (const cardData of cardsData) {
+				cardStore.set(cardData.id, cardData);
+			}
+			notifyCardChange({
+				type: "bulk",
+				cardIds: cardsData.map((c) => c.id),
+				action: "added",
+			});
+			return true;
+		} catch (error) {
+			console.error("[UndoService] Error restoring batch-deleted cards:", error);
 			return false;
 		}
 	}
@@ -320,5 +341,39 @@ export class UndoService {
 		this.stack = this.stack.filter(
 			(entry) => !sessionTypes.has(entry.payload.type),
 		);
+	}
+}
+
+/**
+ * Push an undo entry for a delete operation.
+ * Uses "delete" for single card, "batch-delete" for multiple.
+ */
+export function pushDeleteUndo(
+	plugin: { undoService: UndoService | null },
+	result: { deletedCardsData: FSRSCardData[]; affectedCount: number },
+): void {
+	if (result.deletedCardsData.length === 0) return;
+
+	const description =
+		result.affectedCount === 1
+			? "Delete card"
+			: `Delete ${result.affectedCount} cards`;
+
+	if (result.deletedCardsData.length === 1) {
+		plugin.undoService?.push({
+			id: crypto.randomUUID(),
+			actionType: "delete",
+			description,
+			timestamp: Date.now(),
+			payload: { type: "delete", cardData: result.deletedCardsData[0]! },
+		});
+	} else {
+		plugin.undoService?.push({
+			id: crypto.randomUUID(),
+			actionType: "batch-delete",
+			description,
+			timestamp: Date.now(),
+			payload: { type: "batch-delete", cardsData: result.deletedCardsData },
+		});
 	}
 }
