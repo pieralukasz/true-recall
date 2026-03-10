@@ -31,55 +31,108 @@ function SubscriptionSection() {
 	const { settings, save } = useSettings();
 	const [status, setStatus] = useState<SubscriptionStatus | null>(null);
 	const [error, setError] = useState("");
+	const [backgroundError, setBackgroundError] = useState("");
 	const [validating, setValidating] = useState(false);
 	const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	// Track which key triggered the fetch so stale responses are ignored
+	const activeKeyRef = useRef<string | undefined>(settings.subscriptionKey);
 
 	const hasSubKey = !!settings.subscriptionKey;
 
-	// Debounced validation: validates 1s after key changes
+	const handleLogout = useCallback(() => {
+		subscriptionService.invalidateCache();
+		setStatus(null);
+		setError("");
+		setBackgroundError("");
+		save({
+			subscriptionKey: undefined,
+			isSubscriber: false,
+			subscriberTier: undefined,
+			cachedSubscriptionStatus: undefined,
+		});
+	}, [save]);
+
 	useEffect(() => {
 		if (debounceRef.current) clearTimeout(debounceRef.current);
+		activeKeyRef.current = settings.subscriptionKey;
 
 		if (!hasSubKey) {
 			setStatus(null);
 			setError("");
+			setBackgroundError("");
 			if (settings.isSubscriber) {
 				save({
 					isSubscriber: false,
 					subscriberTier: undefined,
+					cachedSubscriptionStatus: undefined,
 				});
 			}
 			return;
 		}
 
-		setValidating(true);
+		// Show cached status instantly if available
+		const cached =
+			subscriptionService.getCachedStatus() ??
+			(settings.cachedSubscriptionStatus as SubscriptionStatus | undefined) ??
+			null;
+		const hasCached = cached !== null;
+
+		if (hasCached) {
+			setStatus(cached);
+			setValidating(false);
+		} else {
+			setValidating(true);
+		}
 		setError("");
+		setBackgroundError("");
+
+		// Background validation: immediate if cached, debounced if first-time
+		const delay = hasCached ? 0 : 1000;
+		const keyAtFetch = settings.subscriptionKey!;
 
 		debounceRef.current = setTimeout(() => {
 			const onCacheUpdate = (update: {
 				isSubscriber: boolean;
 				subscriberTier?: string;
 			}) => {
+				if (activeKeyRef.current !== keyAtFetch) return;
 				const patch: Partial<TrueRecallSettings> = {
 					isSubscriber: update.isSubscriber,
 					subscriberTier: update.subscriberTier,
 				};
-				// Generate userId on first successful validation
 				if (update.isSubscriber && !settings.userId) {
-					patch.userId = subscriptionService.ensureUserId(settings.userId);
+					patch.userId = subscriptionService.ensureUserId(
+						settings.userId,
+					);
 				}
 				save(patch);
 			};
 
 			subscriptionService
-				.getStatus(settings.subscriptionKey!, onCacheUpdate)
+				.getStatus(keyAtFetch, onCacheUpdate)
 				.then((s) => {
+					if (activeKeyRef.current !== keyAtFetch) return;
 					setStatus(s);
 					setError("");
+					setBackgroundError("");
+					save({ cachedSubscriptionStatus: s });
 				})
-				.catch(() => setError("Invalid or expired subscription key."))
-				.finally(() => setValidating(false));
-		}, 1000);
+				.catch(() => {
+					if (activeKeyRef.current !== keyAtFetch) return;
+					if (hasCached) {
+						setBackgroundError(
+							"Could not verify subscription. Using cached status.",
+						);
+					} else {
+						setError("Invalid or expired subscription key.");
+					}
+				})
+				.finally(() => {
+					if (activeKeyRef.current === keyAtFetch) {
+						setValidating(false);
+					}
+				});
+		}, delay);
 
 		return () => {
 			if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -156,6 +209,11 @@ function SubscriptionSection() {
 							style={{ width: `${usagePct}%` }}
 						/>
 					</div>
+					{backgroundError && (
+						<div class="ep:mt-1 ep:text-obs-muted ep:text-ui-smaller ep:italic">
+							{backgroundError}
+						</div>
+					)}
 					<div class="ep:mt-2 ep:flex ep:gap-3">
 						<a
 							href={`${TRUERECALL_WEB_URL}/dashboard`}
@@ -175,6 +233,12 @@ function SubscriptionSection() {
 								Top up budget
 							</a>
 						)}
+						<Clickable
+							class="ep:text-obs-error ep:text-ui-smaller"
+							onClick={handleLogout}
+						>
+							Log out
+						</Clickable>
 					</div>
 				</div>
 			)}

@@ -86,6 +86,7 @@ export class AnswerHandler {
 		passThreshold: number,
 		options?: {
 			allowLocalFallback?: boolean;
+			sourceContext?: string;
 		},
 	): Promise<SemanticGradingResult | null> {
 		const result = await this.deps.semanticGradingService.gradeAnswer({
@@ -94,6 +95,7 @@ export class AnswerHandler {
 			userAnswer: typedAnswer,
 			passThreshold,
 			localFallbackScore,
+			sourceContext: options?.sourceContext,
 		});
 
 		if (

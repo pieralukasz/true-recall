@@ -27,6 +27,7 @@ interface GradeAnswerInput {
 	passThreshold: number;
 	localFallbackScore: number;
 	timeoutMs?: number;
+	sourceContext?: string;
 }
 
 type ClientFactory = (config: AIClientConfig) => {
@@ -129,6 +130,7 @@ export class SemanticAnswerGradingService {
 						correctAnswer: input.correctAnswer,
 						userAnswer: input.userAnswer,
 						passThreshold: input.passThreshold,
+						sourceContext: input.sourceContext,
 					},
 					this.getSettings().aiTypeInGradingPrompt,
 				),
