@@ -47,7 +47,6 @@ function SubscriptionSection() {
 				save({
 					isSubscriber: false,
 					subscriberTier: undefined,
-					cachedSubscriptionModel: undefined,
 				});
 			}
 			return;
@@ -60,12 +59,10 @@ function SubscriptionSection() {
 			const onCacheUpdate = (update: {
 				isSubscriber: boolean;
 				subscriberTier?: string;
-				allowedModels?: string[];
 			}) => {
 				const patch: Partial<TrueRecallSettings> = {
 					isSubscriber: update.isSubscriber,
 					subscriberTier: update.subscriberTier,
-					cachedSubscriptionModel: update.allowedModels?.[0],
 				};
 				// Generate userId on first successful validation
 				if (update.isSubscriber && !settings.userId) {
@@ -168,7 +165,7 @@ function SubscriptionSection() {
 						>
 							Manage subscription
 						</a>
-						{status.budget_remaining < 0.5 && (
+						{usagePct >= 90 && (
 							<a
 								href={`${TRUERECALL_WEB_URL}/dashboard`}
 								target="_blank"

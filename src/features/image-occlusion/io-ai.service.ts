@@ -17,6 +17,7 @@ import type { IORegion } from "./types";
 const IO_DETECTION_FALLBACK_MODEL = "google/gemini-2.5-flash";
 
 function resolveVisionModel(userModel: string): string {
+	if (userModel === "auto") return "auto";
 	if (userModel.startsWith("google/")) return userModel;
 	return IO_DETECTION_FALLBACK_MODEL;
 }

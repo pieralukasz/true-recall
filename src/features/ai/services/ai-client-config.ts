@@ -26,7 +26,7 @@ export function resolveAIClientConfig(
 	if (settings.subscriptionKey) {
 		return {
 			apiKey: settings.subscriptionKey,
-			model: settings.cachedSubscriptionModel ?? MANAGED_DEFAULT_MODEL,
+			model: "auto",
 			proxyUrl: LITELLM_PROXY_URL,
 			userId: settings.userId,
 		};
