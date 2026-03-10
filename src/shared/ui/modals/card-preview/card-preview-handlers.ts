@@ -19,8 +19,14 @@ export async function handleDeleteCard(
 	const result = await flashcardManager.removeFlashcardByIdWithDetails(card.id);
 
 	if (result.ok) {
-		if (plugin) pushDeleteUndo(plugin, result);
-		notify().cardsDeleted(result.affectedCount);
+		if (plugin) {
+			pushDeleteUndo(plugin, result);
+			notify().cardsDeletedWithUndo(result.affectedCount, () => {
+				void plugin.undoService?.undo();
+			});
+		} else {
+			notify().cardsDeleted(result.affectedCount);
+		}
 		const removedIds = new Set(result.affectedIds);
 		const updated = allCards.filter((c) => !removedIds.has(c.id));
 		setCards(updated);
@@ -98,7 +104,13 @@ export async function handleDeleteAll(
 	}
 	const removedIds = new Set(result.affectedIds);
 	setCards(cards.filter((card) => !removedIds.has(card.id)));
-	notify().cardsDeleted(result.affectedCount);
+	if (result.ok && plugin) {
+		notify().cardsDeletedWithUndo(result.affectedCount, () => {
+			void plugin.undoService?.undo();
+		});
+	} else {
+		notify().cardsDeleted(result.affectedCount);
+	}
 }
 
 export async function openSourceNote(

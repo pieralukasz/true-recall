@@ -111,7 +111,9 @@ export function useCardActions({
 			);
 			if (result.ok) {
 				pushDeleteUndo(plugin, result);
-				notify().cardsDeleted(result.affectedCount);
+				notify().cardsDeletedWithUndo(result.affectedCount, () => {
+					void plugin.undoService?.undo();
+				});
 				restoreScroll();
 			} else {
 				notify().error("Failed to remove flashcard from file");

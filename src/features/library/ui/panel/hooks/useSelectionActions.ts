@@ -125,7 +125,9 @@ export function useSelectionActions({
 		}
 
 		panel.exitSelectionMode();
-		notify().cardsDeleted(result.affectedCount);
+		notify().cardsDeletedWithUndo(result.affectedCount, () => {
+			void plugin.undoService?.undo();
+		});
 	}, [flashcardInfo, currentFile, selectedCardIds, plugin, panel]);
 
 	const handleChangeNoteType = useCallback(async () => {
@@ -331,7 +333,9 @@ export function useSelectionActions({
 		if (result.ok) {
 			pushDeleteUndo(plugin, result);
 		}
-		notify().cardsDeleted(result.affectedCount);
+		notify().cardsDeletedWithUndo(result.affectedCount, () => {
+			void plugin.undoService?.undo();
+		});
 	}, [flashcardInfo, plugin]);
 
 	return {
