@@ -1,8 +1,12 @@
 import { openPanelCardEditor } from "@features/library/ui/panel/helpers/panel-edit-routing";
-import { getSourceNoteNameFromFile } from "@features/library/ui/panel/utils/panel-helpers";
+import {
+	cardToBlockText,
+	getSourceNoteNameFromFile,
+} from "@features/library/ui/panel/utils/panel-helpers";
 import { QuickNoteEditorModal } from "@features/study/modals/quick-note-editor/QuickNoteEditorModal";
 import { notify } from "@shared/services/notification.service";
 import { notifyCardChange } from "@shared/services/signals";
+import { pushDeleteUndo } from "@shared/services/undo.service";
 import type { PanelApi } from "@shared/store";
 import {
 	BUILTIN_BASIC_ID,
@@ -106,6 +110,7 @@ export function useCardActions({
 				card.id,
 			);
 			if (result.ok) {
+				pushDeleteUndo(plugin, result);
 				notify().cardsDeleted(result.affectedCount);
 				restoreScroll();
 			} else {
@@ -116,11 +121,10 @@ export function useCardActions({
 	);
 
 	const handleCopyCard = useCallback(async (card: FlashcardItem) => {
-		const prefix = card.noteTypeName ? `Type: ${card.noteTypeName}\n` : "";
-		const text = `${prefix}Q: ${card.question}\nA: ${card.answer}`;
+		const text = cardToBlockText(card, plugin);
 		await navigator.clipboard.writeText(text);
 		notify().success("Copied to clipboard");
-	}, []);
+	}, [plugin]);
 
 	const handleMoveCard = useCallback(
 		async (card: FlashcardItem) => {

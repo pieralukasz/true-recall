@@ -209,7 +209,7 @@ export function CardContainer({
 					</>
 				)}
 
-				{isAnswerRevealed && localAssessment && !aiEnabled && (
+				{isAnswerRevealed && localAssessment && !aiEnabled && useTypeInMode && (
 					<div class="true-recall-answer-assessment ep:mt-8 ep:p-4 ep:rounded-lg ep:border ep:border-obs-border ep:bg-obs-secondary/20 ep:flex ep:flex-col ep:gap-3">
 						<div class="ep:flex ep:items-center ep:justify-between ep:gap-2">
 							<span class="ep:text-ui-small ep:font-medium">

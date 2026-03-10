@@ -88,6 +88,7 @@ export interface DeleteFlashcardsResult {
 	ok: boolean;
 	affectedIds: string[];
 	affectedCount: number;
+	deletedCardsData: FSRSCardData[];
 }
 
 export interface CreateImageOcclusionNoteParams {
@@ -199,7 +200,7 @@ export class FlashcardManager {
 				reverseOfBatchId: c.reverseOf,
 				sourceText: c.sourceText,
 				alwaysTypeIn: c.alwaysTypeIn,
-				noteTypeName: c.noteTypeName,
+				noteId: c.noteId,
 			})),
 			lastModified: this.getLatestCardTimestamp(cards),
 			sourceUid,
@@ -305,18 +306,19 @@ export class FlashcardManager {
 		cardId: string,
 	): Promise<DeleteFlashcardsResult> {
 		if (!this.cardRepository) {
-			return { ok: false, affectedIds: [], affectedCount: 0 };
+			return { ok: false, affectedIds: [], affectedCount: 0, deletedCardsData: [] };
 		}
-		const removedIds = this.cardRepository.deleteWithCascade(cardId);
+		const { removedIds, cardsData } = this.cardRepository.deleteWithCascade(cardId);
 		if (removedIds.length > 0) {
 			this.sessionPersistence?.removeReviewedCards(removedIds);
 			return {
 				ok: true,
 				affectedIds: removedIds,
 				affectedCount: removedIds.length,
+				deletedCardsData: cardsData,
 			};
 		}
-		return { ok: false, affectedIds: [], affectedCount: 0 };
+		return { ok: false, affectedIds: [], affectedCount: 0, deletedCardsData: [] };
 	}
 
 	removeFlashcardsByIds(cardIds: string[]): number {
@@ -328,9 +330,9 @@ export class FlashcardManager {
 		cardIds: string[],
 	): DeleteFlashcardsResult {
 		if (!this.cardRepository) {
-			return { ok: false, affectedIds: [], affectedCount: 0 };
+			return { ok: false, affectedIds: [], affectedCount: 0, deletedCardsData: [] };
 		}
-		const removedIds = this.cardRepository.deleteBatchWithCascade(cardIds);
+		const { removedIds, cardsData } = this.cardRepository.deleteBatchWithCascade(cardIds);
 		if (removedIds.length > 0) {
 			this.sessionPersistence?.removeReviewedCards(removedIds);
 		}
@@ -338,6 +340,7 @@ export class FlashcardManager {
 			ok: removedIds.length > 0,
 			affectedIds: removedIds,
 			affectedCount: removedIds.length,
+			deletedCardsData: cardsData,
 		};
 	}
 

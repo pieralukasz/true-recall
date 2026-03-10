@@ -3,12 +3,14 @@ import {
 	type PanelAppActions,
 } from "@features/library/ui/panel/FlashcardPanelApp";
 import { extractHighlights } from "@features/library/ui/panel/utils/highlight-extractor";
+import { cardsToBlockText } from "@features/library/ui/panel/utils/panel-helpers";
 import { CollectService } from "@features/study/services/flashcard/collect.service";
 import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
 import { effect } from "@preact/signals";
 import { VIEW_TYPE_FLASHCARD_PANEL } from "@shared/constants";
 import { notify } from "@shared/services/notification.service";
 import { cards, pluginSettings } from "@shared/services/reactive-card-store";
+import { pushDeleteUndo } from "@shared/services/undo.service";
 import type { PanelApi } from "@shared/store";
 import type { FSRSFlashcardItem } from "@shared/types/fsrs/card.types";
 import { countCardsByState } from "@shared/ui/helpers";
@@ -531,8 +533,11 @@ export class FlashcardPanelView extends ItemView {
 		if (!confirmed) return;
 
 		const cardIds = state.flashcardInfo.flashcards.map((card) => card.id);
-		const successCount = this.flashcardManager.removeFlashcardsByIds(cardIds);
-		notify().cardsDeleted(successCount);
+		const result = this.flashcardManager.removeFlashcardsByIdsWithDetails(cardIds);
+		if (result.ok) {
+			pushDeleteUndo(this.plugin, result);
+		}
+		notify().cardsDeleted(result.affectedCount);
 	}
 
 	private async handleCopyAllToClipboard(): Promise<void> {
@@ -545,12 +550,7 @@ export class FlashcardPanelView extends ItemView {
 			return;
 		}
 
-		const text = state.flashcardInfo.flashcards
-			.map((card, i) => {
-				const prefix = card.noteTypeName ? `   Type: ${card.noteTypeName}\n` : "";
-				return `${i + 1}. Q: ${card.question}\n   A: ${card.answer}\n${prefix}`;
-			})
-			.join("\n");
+		const text = cardsToBlockText(state.flashcardInfo.flashcards, this.plugin);
 
 		await navigator.clipboard.writeText(text);
 		notify().success(

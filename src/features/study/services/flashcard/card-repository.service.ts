@@ -430,32 +430,38 @@ export class CardRepository {
 	}
 
 	delete(cardId: string): boolean {
-		return this.deleteWithCascade(cardId).length > 0;
+		return this.deleteWithCascade(cardId).removedIds.length > 0;
 	}
 
-	deleteWithCascade(cardId: string): string[] {
+	deleteWithCascade(cardId: string): { removedIds: string[]; cardsData: FSRSCardData[] } {
 		const card = this.store.get(cardId);
 		if (!card) {
-			return [];
+			return { removedIds: [], cardsData: [] };
 		}
 
 		const removedIds = this.collectCascadeDeleteIds(cardId);
 		if (removedIds.length === 0) {
-			return [];
+			return { removedIds: [], cardsData: [] };
 		}
+
+		// Capture full card data before deletion for undo support
+		const cardsData = removedIds
+			.map((id) => this.store.get(id))
+			.filter((c): c is FSRSCardData => c != null);
+
 		this.store.cards.bulkSoftDelete(removedIds);
 
 		notifyCardChange({ type: "removed", cardId, cardIds: removedIds });
 
-		return removedIds;
+		return { removedIds, cardsData };
 	}
 
 	deleteBatch(cardIds: string[]): number {
-		return this.deleteBatchWithCascade(cardIds).length;
+		return this.deleteBatchWithCascade(cardIds).removedIds.length;
 	}
 
-	deleteBatchWithCascade(cardIds: string[]): string[] {
-		if (cardIds.length === 0) return [];
+	deleteBatchWithCascade(cardIds: string[]): { removedIds: string[]; cardsData: FSRSCardData[] } {
+		if (cardIds.length === 0) return { removedIds: [], cardsData: [] };
 
 		const allRemovedIds = new Set<string>();
 		for (const cardId of cardIds) {
@@ -466,15 +472,21 @@ export class CardRepository {
 		}
 
 		if (allRemovedIds.size === 0) {
-			return [];
+			return { removedIds: [], cardsData: [] };
 		}
 
 		const removedIds = [...allRemovedIds];
+
+		// Capture full card data before deletion for undo support
+		const cardsData = removedIds
+			.map((id) => this.store.get(id))
+			.filter((c): c is FSRSCardData => c != null);
+
 		this.store.cards.bulkSoftDelete(removedIds);
 
 		notifyCardChange({ type: "bulk", cardIds: removedIds, action: "removed" });
 
-		return removedIds;
+		return { removedIds, cardsData };
 	}
 
 	private collectCascadeDeleteIds(cardId: string): string[] {
