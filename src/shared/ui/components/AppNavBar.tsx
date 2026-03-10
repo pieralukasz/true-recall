@@ -40,6 +40,7 @@ export function AppNavBar({ activeItem }: AppNavBarProps) {
 					break;
 				}
 				case "stats":
+					await plugin.openStats();
 					break;
 				case "browse":
 					await plugin.openCardBrowser();
