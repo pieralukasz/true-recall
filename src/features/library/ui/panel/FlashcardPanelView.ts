@@ -537,7 +537,9 @@ export class FlashcardPanelView extends ItemView {
 		if (result.ok) {
 			pushDeleteUndo(this.plugin, result);
 		}
-		notify().cardsDeleted(result.affectedCount);
+		notify().cardsDeletedWithUndo(result.affectedCount, () => {
+			void this.plugin.undoService?.undo();
+		});
 	}
 
 	private async handleCopyAllToClipboard(): Promise<void> {

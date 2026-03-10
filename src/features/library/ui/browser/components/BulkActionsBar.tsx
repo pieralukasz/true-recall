@@ -109,7 +109,9 @@ export function BulkActionsBar({
 		if (result.ok) {
 			pushDeleteUndo(plugin, result);
 		}
-		notify().success(`Deleted ${result.affectedCount} cards`);
+		notify().cardsDeletedWithUndo(result.affectedCount, () => {
+			void plugin.undoService?.undo();
+		});
 		onClearSelection();
 	}, [ids, plugin]);
 

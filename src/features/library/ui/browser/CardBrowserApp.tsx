@@ -289,7 +289,9 @@ export function CardBrowserApp({
 		if (deleteResult.ok) {
 			pushDeleteUndo(plugin, deleteResult);
 		}
-		notify().cardsDeleted(deleteResult.affectedCount);
+		notify().cardsDeletedWithUndo(deleteResult.affectedCount, () => {
+			void plugin.undoService?.undo();
+		});
 
 		const deletedSet = new Set(deleteResult.affectedIds);
 		selectedIds.value = new Set(

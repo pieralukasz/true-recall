@@ -122,6 +122,23 @@ export class NotificationService {
 		this.success(msg);
 	}
 
+	cardsDeletedWithUndo(count: number, onUndo: () => void): void {
+		const msg =
+			count === 1 ? "Flashcard deleted." : `${count} flashcards deleted.`;
+		const fragment = new DocumentFragment();
+		fragment.appendText(msg + " ");
+		const link = fragment.createEl("a", { text: "Undo" });
+		link.style.cursor = "pointer";
+		link.style.textDecoration = "underline";
+		link.style.fontWeight = "600";
+		const notice = new Notice(fragment, NOTIFICATION_DURATION.LONG);
+		link.addEventListener("click", (e) => {
+			e.preventDefault();
+			notice.hide();
+			onUndo();
+		});
+	}
+
 	cardsMoved(count: number, targetNote: string): void {
 		const msg =
 			count === 1
