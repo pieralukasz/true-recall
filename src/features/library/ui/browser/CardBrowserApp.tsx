@@ -4,6 +4,7 @@ import { DuplicateQuestionError } from "@features/study/services/flashcard/card-
 import { type Signal, useComputed, useSignal } from "@preact/signals";
 import { notify } from "@shared/services/notification.service";
 import { cards, pluginSettings } from "@shared/services/reactive-card-store";
+import { pushDeleteUndo } from "@shared/services/undo.service";
 import { usePlugin } from "@shared/ui/preact";
 import { useCallback, useEffect, useMemo, useRef } from "preact/hooks";
 import { BrowserSidebar } from "./components/BrowserSidebar";
@@ -279,12 +280,15 @@ export function CardBrowserApp({
 
 		const cardWord = orphanedIds.length === 1 ? "card" : "cards";
 		const confirmed = confirm(
-			`Remove ${orphanedIds.length} orphaned ${cardWord}? This cannot be undone.`,
+			`Remove ${orphanedIds.length} orphaned ${cardWord}?`,
 		);
 		if (!confirmed) return;
 
 		const deleteResult =
 			plugin.flashcardManager.removeFlashcardsByIdsWithDetails(orphanedIds);
+		if (deleteResult.ok) {
+			pushDeleteUndo(plugin, deleteResult);
+		}
 		notify().cardsDeleted(deleteResult.affectedCount);
 
 		const deletedSet = new Set(deleteResult.affectedIds);

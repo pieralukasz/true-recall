@@ -1,4 +1,5 @@
 import { getSourceNoteNameFromFile } from "@features/library/ui/panel/utils/panel-helpers";
+import { pushDeleteUndo } from "@shared/services/undo.service";
 import type { PanelApi } from "@shared/store";
 import type { FlashcardInfo } from "@shared/types";
 import { useApp, usePlugin } from "@shared/ui/preact";
@@ -117,10 +118,14 @@ export function useSelectionActions({
 		if (!confirmed) return;
 
 		const cardIds = selectedCards.map((card) => card.id);
-		const successCount = plugin.flashcardManager.removeFlashcardsByIds(cardIds);
+		const result = plugin.flashcardManager.removeFlashcardsByIdsWithDetails(cardIds);
+
+		if (result.ok) {
+			pushDeleteUndo(plugin, result);
+		}
 
 		panel.exitSelectionMode();
-		notify().cardsDeleted(successCount);
+		notify().cardsDeleted(result.affectedCount);
 	}, [flashcardInfo, currentFile, selectedCardIds, plugin, panel]);
 
 	const handleChangeNoteType = useCallback(async () => {
@@ -322,8 +327,11 @@ export function useSelectionActions({
 		if (!confirmed) return;
 
 		const cardIds = flashcardInfo.flashcards.map((card) => card.id);
-		const successCount = plugin.flashcardManager.removeFlashcardsByIds(cardIds);
-		notify().cardsDeleted(successCount);
+		const result = plugin.flashcardManager.removeFlashcardsByIdsWithDetails(cardIds);
+		if (result.ok) {
+			pushDeleteUndo(plugin, result);
+		}
+		notify().cardsDeleted(result.affectedCount);
 	}, [flashcardInfo, plugin]);
 
 	return {

@@ -1,23 +1,25 @@
 import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
 import { notify } from "@shared/services/notification.service";
+import { pushDeleteUndo } from "@shared/services/undo.service";
 import type { FSRSFlashcardItem } from "@shared/types";
 import type { CardsSetter } from "@shared/ui/modals/card-preview/CardPreviewBody";
 import type { App } from "obsidian";
+import type TrueRecallPlugin from "../../../../main";
 
 export async function handleDeleteCard(
 	card: FSRSFlashcardItem,
 	setCards: CardsSetter,
 	allCards: FSRSFlashcardItem[],
 	flashcardManager: FlashcardManager,
+	plugin?: TrueRecallPlugin,
 ): Promise<FSRSFlashcardItem[]> {
-	const confirmed = window.confirm(
-		"Delete this flashcard? This action cannot be undone.",
-	);
+	const confirmed = window.confirm("Delete this flashcard?");
 	if (!confirmed) return allCards;
 
 	const result = await flashcardManager.removeFlashcardByIdWithDetails(card.id);
 
 	if (result.ok) {
+		if (plugin) pushDeleteUndo(plugin, result);
 		notify().cardsDeleted(result.affectedCount);
 		const removedIds = new Set(result.affectedIds);
 		const updated = allCards.filter((c) => !removedIds.has(c.id));
@@ -81,15 +83,19 @@ export async function handleDeleteAll(
 	cards: FSRSFlashcardItem[],
 	setCards: CardsSetter,
 	flashcardManager: FlashcardManager,
+	plugin?: TrueRecallPlugin,
 ): Promise<void> {
 	const confirmed = window.confirm(
-		`Delete all ${cards.length} suspended cards? This action cannot be undone.`,
+		`Delete all ${cards.length} suspended cards?`,
 	);
 	if (!confirmed) return;
 
 	const result = flashcardManager.removeFlashcardsByIdsWithDetails(
 		cards.map((card) => card.id),
 	);
+	if (result.ok && plugin) {
+		pushDeleteUndo(plugin, result);
+	}
 	const removedIds = new Set(result.affectedIds);
 	setCards(cards.filter((card) => !removedIds.has(card.id)));
 	notify().cardsDeleted(result.affectedCount);

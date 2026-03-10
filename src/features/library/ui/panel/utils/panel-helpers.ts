@@ -1,5 +1,10 @@
+import {
+	blockToText,
+	type ParsedBlock,
+} from "@features/study/services/flashcard/block-parser.service";
+import { resolveSlug } from "@features/study/services/flashcard/note-type-slug";
 import { notify } from "@shared/services/notification.service";
-import type { FlashcardInfo } from "@shared/types";
+import type { FlashcardInfo, FlashcardItem } from "@shared/types";
 import type TrueRecallPlugin from "../../../../../main";
 
 export async function getSourceNoteNameFromFile(
@@ -43,4 +48,40 @@ export function notifyDuplicateError(
 		? sourceNoteService.resolveSourceNote(error.existingSourceUid)
 		: {};
 	notify().duplicateFound(question, (sourceInfo as any).noteName);
+}
+
+export function cardToBlockText(
+	card: FlashcardItem,
+	plugin: TrueRecallPlugin,
+): string {
+	if (!card.noteId) {
+		return `Q: ${card.question}\nA: ${card.answer}`;
+	}
+
+	const note = plugin.cardStore.notes.getById(card.noteId);
+	if (!note) {
+		return `Q: ${card.question}\nA: ${card.answer}`;
+	}
+
+	const noteType = plugin.cardStore.noteTypes.getById(note.noteTypeId);
+	if (!noteType) {
+		return `Q: ${card.question}\nA: ${card.answer}`;
+	}
+
+	const block: ParsedBlock = {
+		noteTypeId: note.noteTypeId,
+		noteTypeSlug: resolveSlug(noteType),
+		fields: note.fields,
+		sourceText: note.sourceText,
+		alwaysTypeIn: card.alwaysTypeIn,
+	};
+
+	return blockToText(block, noteType.fields);
+}
+
+export function cardsToBlockText(
+	cards: FlashcardItem[],
+	plugin: TrueRecallPlugin,
+): string {
+	return cards.map((card) => cardToBlockText(card, plugin)).join("\n\n---\n");
 }

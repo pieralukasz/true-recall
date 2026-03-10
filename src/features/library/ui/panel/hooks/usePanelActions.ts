@@ -1,5 +1,6 @@
 import { getHighlightColor } from "@features/library/ui/panel/utils/card-status.utils";
 import { extractHighlights } from "@features/library/ui/panel/utils/highlight-extractor";
+import { cardsToBlockText } from "@features/library/ui/panel/utils/panel-helpers";
 import type { PanelApi } from "@shared/store";
 import type { FlashcardInfo, FlashcardItem } from "@shared/types";
 import type { FSRSFlashcardItem } from "@shared/types/fsrs/card.types";
@@ -274,18 +275,13 @@ export function usePanelActions({
 			return;
 		}
 
-		const text = flashcardInfo.flashcards
-			.map((card, i) => {
-				const prefix = card.noteTypeName ? `   Type: ${card.noteTypeName}\n` : "";
-				return `${i + 1}. Q: ${card.question}\n   A: ${card.answer}\n${prefix}`;
-			})
-			.join("\n");
+		const text = cardsToBlockText(flashcardInfo.flashcards, plugin);
 
 		await navigator.clipboard.writeText(text);
 		notify().success(
 			`Copied ${flashcardInfo.flashcards.length} flashcard(s) to clipboard`,
 		);
-	}, [flashcardInfo]);
+	}, [flashcardInfo, plugin]);
 
 	// ── Navigation ──
 

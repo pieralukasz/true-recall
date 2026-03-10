@@ -33,6 +33,11 @@ export interface DeleteUndoPayload {
 	cardData: FSRSCardData;
 }
 
+export interface BatchDeleteUndoPayload {
+	type: "batch-delete";
+	cardsData: FSRSCardData[];
+}
+
 /**
  * Payload for undoing batch creation (delete all created cards)
  */
@@ -148,6 +153,7 @@ export type UndoPayload =
 	| UpdateUndoPayload
 	| UpdateNoteFieldsUndoPayload
 	| DeleteUndoPayload
+	| BatchDeleteUndoPayload
 	| BatchCreateUndoPayload
 	| AnswerUndoPayload
 	| BuryUndoPayload

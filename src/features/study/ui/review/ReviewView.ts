@@ -13,6 +13,7 @@ import {
 } from "@features/study/ui/review/handlers";
 import {
 	applyMutation,
+	assessTypedAnswer,
 	deriveTypeInMode,
 	filterActiveCards,
 	getEmptyQueueMessage,
@@ -218,8 +219,10 @@ export class ReviewView extends ItemView {
 
 	private cycleTypeInMode(): void {
 		const currentMode = this.getTypeInMode();
-		const nextMode = nextTypeInMode(currentMode);
-		const currentId = this.review.getCurrentCard()?.id ?? null;
+		const card = this.review.getCurrentCard();
+		const alwaysTypeIn = !!(card?.alwaysTypeIn || card?.fsrs.alwaysTypeIn);
+		const nextMode = nextTypeInMode(currentMode, alwaysTypeIn);
+		const currentId = card?.id ?? null;
 
 		this.sessionTypeInModeEnabled = nextMode !== "off";
 		this.aiEnabledForTypeIn = nextMode === "ai";
@@ -334,9 +337,10 @@ export class ReviewView extends ItemView {
 		}
 
 		this.answerHandler.handleShowAnswer();
+		const localAssessment = assessTypedAnswer(card.answer ?? "", typedAnswer);
 		this.setTypeInState(card.id, {
 			isChecking: true,
-			localAssessment: null,
+			localAssessment,
 			semanticResult: null,
 			semanticMessage: null,
 		});
