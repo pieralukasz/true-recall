@@ -75,7 +75,7 @@ export class AnswerHandler {
 	handleShowAnswer(): void {
 		this.deps.getReview().revealAnswer();
 		if (!this.deps.getReview().getSchedulingPreview()) {
-			this.updateSchedulingPreview();
+			this.deferSchedulingPreview();
 		}
 	}
 

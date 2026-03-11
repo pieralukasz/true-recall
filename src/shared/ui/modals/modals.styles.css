@@ -98,6 +98,9 @@
 .is-mobile [data-type^="true-recall-"] .view-content {
 	padding-bottom: 60px;
 }
+.is-mobile [data-type="true-recall-flashcard-panel"] .view-content {
+	padding-bottom: 0;
+}
 
 /* ================================================================
    Decorative styles — safe inside @layer components
