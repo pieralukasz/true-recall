@@ -293,7 +293,6 @@ export class ReviewView extends ItemView {
 	}
 
 	private async handleReveal(): Promise<void> {
-		if (this.isProcessingAnswer) return;
 		const card = this.review.getCurrentCard();
 		if (!card) return;
 		const requiresTypeIn = this.isTypeInRequiredForCurrentCard();
