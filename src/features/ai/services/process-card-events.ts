@@ -12,18 +12,21 @@ export async function processCardEvents(
 	onPartial: (q: string | null, a: string | null) => void,
 	onCount: (created: number, dups: number) => void,
 ): Promise<void> {
+	const frontmatterService = flashcardManager.getFrontmatterService();
+	let sourceUid = await frontmatterService.getSourceNoteUid(sourceFile);
+	if (!sourceUid) {
+		sourceUid = frontmatterService.generateUid();
+		await frontmatterService.setSourceNoteUid(sourceFile, sourceUid);
+	}
+
 	for (const event of events) {
 		if (event.type === "card_complete" && event.block) {
 			try {
-				const sourceUid = await flashcardManager
-					.getFrontmatterService()
-					.getSourceNoteUid(sourceFile);
-
 				const result = flashcardManager.createNote({
 					noteTypeId: event.block.noteTypeId,
 					fields: event.block.fields,
 					alwaysTypeIn: event.block.alwaysTypeIn,
-					sourceUid: sourceUid ?? undefined,
+					sourceUid,
 					sourceText: event.block.sourceText,
 					createdVia: "ai",
 				});

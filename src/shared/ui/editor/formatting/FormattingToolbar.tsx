@@ -1,7 +1,12 @@
 import { useIcon } from "@shared/ui/preact/hooks";
 import type { App, TFile } from "obsidian";
 import { SuggestModal } from "obsidian";
-import { useCallback, useEffect, useRef, useState } from "preact/hooks";
+import {
+	useCallback,
+	useEffect,
+	useRef,
+	useState,
+} from "preact/hooks";
 import {
 	clearFormatting,
 	insertAtCursor,
@@ -128,6 +133,20 @@ export function FormattingToolbar({
 		if (view) clearFormatting(view);
 	}, [getEditorView]);
 
+	const [copied, setCopied] = useState(false);
+	const handleCopy = useCallback(() => {
+		const view = getEditorView();
+		if (!view) return;
+		const { from, to } = view.state.selection.main;
+		const text =
+			from === to ? view.state.doc.toString() : view.state.sliceDoc(from, to);
+		if (!text) return;
+		void navigator.clipboard.writeText(text).then(() => {
+			setCopied(true);
+			setTimeout(() => setCopied(false), 1500);
+		});
+	}, [getEditorView]);
+
 	const prevent = (e: MouseEvent) => e.preventDefault();
 
 	const handleKeyDown = (action: () => void) => (e: KeyboardEvent) => {
@@ -193,6 +212,15 @@ export function FormattingToolbar({
 			>
 				U
 			</div>
+			<IconButton
+				iconId="highlighter"
+				title="Highlight (Ctrl+Shift+H)"
+				onMouseDown={(e: MouseEvent) => {
+					prevent(e);
+					const v = getEditorView();
+					if (v) toggleMarker(v, "==");
+				}}
+			/>
 
 			<Separator />
 
@@ -295,6 +323,17 @@ export function FormattingToolbar({
 				onMouseDown={(e: MouseEvent) => {
 					prevent(e);
 					handleClear();
+				}}
+			/>
+
+			<Separator />
+
+			<IconButton
+				iconId={copied ? "check" : "copy"}
+				title={copied ? "Copied!" : "Copy"}
+				onMouseDown={(e: MouseEvent) => {
+					prevent(e);
+					handleCopy();
 				}}
 			/>
 
