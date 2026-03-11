@@ -91,6 +91,7 @@ export class ReviewView extends ItemView {
 
 	private filters: SessionFilters = {};
 	private crammedCardIds = new Set<string>();
+	private isProcessingAnswer = false;
 	private presetCache = new Map<string, FSRSPreset>();
 
 	private answerHandler!: AnswerHandler;
@@ -291,6 +292,7 @@ export class ReviewView extends ItemView {
 	}
 
 	private async handleReveal(): Promise<void> {
+		if (this.isProcessingAnswer) return;
 		const card = this.review.getCurrentCard();
 		if (!card) return;
 		const requiresTypeIn = this.isTypeInRequiredForCurrentCard();
@@ -374,10 +376,16 @@ export class ReviewView extends ItemView {
 	}
 
 	private async handleAnswer(rating: Grade): Promise<void> {
+		if (this.isProcessingAnswer) return;
 		if (this.isRatingLocked()) return;
-		await this.answerHandler.handleAnswer(rating);
-		const nextCardId = this.review.getCurrentCard()?.id ?? null;
-		this.resetTypeInState(nextCardId);
+		this.isProcessingAnswer = true;
+		try {
+			await this.answerHandler.handleAnswer(rating);
+			const nextCardId = this.review.getCurrentCard()?.id ?? null;
+			this.resetTypeInState(nextCardId);
+		} finally {
+			this.isProcessingAnswer = false;
+		}
 	}
 
 	// ─── Obsidian lifecycle ──────────────────────────────────────────────
@@ -387,6 +395,7 @@ export class ReviewView extends ItemView {
 			(state as import("./review.types").ReviewViewState) ?? null,
 		);
 		this.crammedCardIds.clear();
+		this.isProcessingAnswer = false;
 		this.applyDefaultTypeInMode();
 		this.resetTypeInState();
 

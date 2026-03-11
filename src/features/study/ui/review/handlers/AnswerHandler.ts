@@ -33,6 +33,8 @@ export interface AnswerHandlerDeps {
 }
 
 export class AnswerHandler {
+	private pendingPreviewRafId: number | null = null;
+
 	constructor(private deps: AnswerHandlerDeps) {}
 
 	resolvePreset(card: FSRSFlashcardItem): FSRSPreset {
@@ -43,6 +45,17 @@ export class AnswerHandler {
 				projectPath: this.deps.getFilters().projectPath,
 			})
 		);
+	}
+
+	// Let the browser paint the next card before computing the preview
+	private deferSchedulingPreview(): void {
+		if (this.pendingPreviewRafId !== null) {
+			cancelAnimationFrame(this.pendingPreviewRafId);
+		}
+		this.pendingPreviewRafId = requestAnimationFrame(() => {
+			this.pendingPreviewRafId = null;
+			this.updateSchedulingPreview();
+		});
 	}
 
 	updateSchedulingPreview(): void {
@@ -136,7 +149,7 @@ export class AnswerHandler {
 			this.deps.getCrammedCardIds().add(card.id);
 			const hasMore = review.recordAnswerAndNext(rating, updatedCard);
 			if (hasMore) {
-				this.updateSchedulingPreview();
+				this.deferSchedulingPreview();
 			}
 			return;
 		}
@@ -167,7 +180,7 @@ export class AnswerHandler {
 			: [];
 
 		if (hasMore) {
-			this.updateSchedulingPreview();
+			this.deferSchedulingPreview();
 		}
 
 		// Leech detection: check if card has exceeded the lapse threshold

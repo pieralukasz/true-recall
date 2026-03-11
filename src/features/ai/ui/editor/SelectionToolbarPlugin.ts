@@ -122,6 +122,17 @@ export function createSelectionToolbarExtension(
 							await callbacks.onQuickAdd(text);
 						},
 						onDismiss: () => this.removeToolbar(),
+						onHighlight: () => {
+							const { state } = this.view;
+							const sel = state.selection.main;
+							if (sel.empty) return;
+							this.view.dispatch({
+								changes: [
+									{ from: sel.from, insert: "==" },
+									{ from: sel.to, insert: "==" },
+								],
+							});
+						},
 						onImageOcclusion: (path) => callbacks.onImageOcclusion(path),
 						detectedImagePath,
 						hasApiKey: callbacks.hasApiKey(),

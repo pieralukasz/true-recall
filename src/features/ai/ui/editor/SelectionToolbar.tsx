@@ -1,6 +1,6 @@
 import type { GenerationMode } from "@features/ai/prompts/default-prompts";
 import { Clickable } from "@shared/ui/components";
-import { useCallback } from "preact/hooks";
+import { useCallback, useState } from "preact/hooks";
 
 export interface SelectionToolbarProps {
 	selectedText: string;
@@ -8,6 +8,7 @@ export interface SelectionToolbarProps {
 	onEdit: () => void;
 	onQuickAdd: () => Promise<void>;
 	onDismiss: () => void;
+	onHighlight: () => void;
 	hasApiKey: boolean;
 	detectedImagePath?: string | null;
 	onImageOcclusion?: (path: string) => void;
@@ -15,21 +16,23 @@ export interface SelectionToolbarProps {
 }
 
 const AI_BUTTONS: { mode: GenerationMode; label: string }[] = [
-	{ mode: "basic", label: "Basic" },
-	{ mode: "cloze", label: "Cloze" },
-	{ mode: "auto", label: "Auto" },
+	{ mode: "basic", label: "Flashcards" },
 ];
 
 export function SelectionToolbar({
+	selectedText,
 	onGenerate,
 	onEdit,
 	onQuickAdd,
 	onDismiss,
+	onHighlight,
 	hasApiKey,
 	detectedImagePath,
 	onImageOcclusion,
 	showAiButtons = true,
 }: SelectionToolbarProps) {
+	const [copied, setCopied] = useState(false);
+
 	const handleGenerate = useCallback(
 		async (mode: GenerationMode) => {
 			if (!hasApiKey) return;
@@ -48,6 +51,18 @@ export function SelectionToolbar({
 		onDismiss();
 		onEdit();
 	}, [onEdit, onDismiss]);
+
+	const handleCopy = useCallback(() => {
+		void navigator.clipboard.writeText(selectedText).then(() => {
+			setCopied(true);
+			setTimeout(() => setCopied(false), 1500);
+		});
+	}, [selectedText]);
+
+	const handleHighlight = useCallback(() => {
+		onHighlight();
+		onDismiss();
+	}, [onHighlight, onDismiss]);
 
 	return (
 		<div class="true-recall-selection-toolbar ep:flex ep:items-center ep:gap-0.5 ep:p-1">
@@ -96,6 +111,24 @@ export function SelectionToolbar({
 				title="Quick add as basic flashcard"
 			>
 				<span>Quick+</span>
+			</Clickable>
+
+			<span class="true-recall-st-divider" />
+
+			<Clickable
+				class="true-recall-st-btn"
+				onClick={handleHighlight}
+				title="Wrap selection with ==highlight=="
+			>
+				<span>Highlight</span>
+			</Clickable>
+
+			<Clickable
+				class="true-recall-st-btn"
+				onClick={handleCopy}
+				title={copied ? "Copied!" : "Copy selection"}
+			>
+				<span>{copied ? "Copied!" : "Copy"}</span>
 			</Clickable>
 		</div>
 	);
