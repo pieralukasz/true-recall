@@ -32,6 +32,34 @@ export interface PresetDailyProgressRow {
 	reviewsCompleted: number;
 }
 
+function parseDateKey(dateKey: string): Date {
+	const [year, month, day] = dateKey.split("-").map(Number);
+	if (
+		year === undefined ||
+		month === undefined ||
+		day === undefined ||
+		Number.isNaN(year) ||
+		Number.isNaN(month) ||
+		Number.isNaN(day)
+	) {
+		throw new Error(`Invalid date key: ${dateKey}`);
+	}
+	return new Date(Date.UTC(year, month - 1, day));
+}
+
+function toUtcIsoDayRange(
+	startDate: string,
+	endDate: string,
+): { startIso: string; endExclusiveIso: string } {
+	const start = parseDateKey(startDate);
+	const end = parseDateKey(endDate);
+	end.setUTCDate(end.getUTCDate() + 1);
+	return {
+		startIso: start.toISOString(),
+		endExclusiveIso: end.toISOString(),
+	};
+}
+
 export class StatsActions {
 	constructor(private db: SqliteDatabase) {}
 
@@ -1015,6 +1043,7 @@ export class StatsActions {
 	}[] {
 		let presetClause = "";
 		const params: (string | number | null)[] = [];
+		const { startIso, endExclusiveIso } = toUtcIsoDayRange(startDate, endDate);
 
 		if (presetNames && presetNames.length > 0) {
 			const placeholders = presetNames.map(() => "?").join(",");
@@ -1022,12 +1051,12 @@ export class StatsActions {
 			params.push(...presetNames);
 		}
 
-		params.push(startDate, endDate);
+		params.push(startIso, endExclusiveIso);
 
 		return this.db.query<{ date: string; rating: number }>(
 			`
             SELECT
-                date(r.reviewed_at) as date,
+                substr(r.reviewed_at, 1, 10) as date,
                 r.rating
             FROM review_log r
             JOIN cards c ON r.card_id = c.id
@@ -1035,7 +1064,8 @@ export class StatsActions {
               AND c.deleted_at IS NULL
               AND r.state = 2
               ${presetClause}
-              AND date(r.reviewed_at) BETWEEN ? AND ?
+              AND r.reviewed_at >= ?
+              AND r.reviewed_at < ?
         `,
 			params,
 		);
@@ -1045,6 +1075,7 @@ export class StatsActions {
 	 * Get true retention (Good + Easy) / Total for mature cards only
 	 */
 	getTrueRetention(startDate: string, endDate: string): number {
+		const { startIso, endExclusiveIso } = toUtcIsoDayRange(startDate, endDate);
 		const row = this.db.get<{ retention: number | null }>(
 			`
             SELECT
@@ -1055,9 +1086,10 @@ export class StatsActions {
             WHERE r.deleted_at IS NULL
               AND c.deleted_at IS NULL
               AND r.state = 2
-              AND date(r.reviewed_at) BETWEEN ? AND ?
+              AND r.reviewed_at >= ?
+              AND r.reviewed_at < ?
         `,
-			[startDate, endDate],
+			[startIso, endExclusiveIso],
 		);
 
 		return row?.retention ?? 0;
@@ -1176,6 +1208,7 @@ export class StatsActions {
 	): ExtendedDailyStats[] {
 		const excludeUids = opts?.excludeSourceUids ?? [];
 		const presetNames = opts?.presetNames ?? null;
+		const { startIso, endExclusiveIso } = toUtcIsoDayRange(startDate, endDate);
 
 		let excludeClause = "";
 		const params: (string | number | null)[] = [];
@@ -1192,7 +1225,7 @@ export class StatsActions {
 			params.push(...presetNames);
 		}
 
-		params.push(startDate, endDate);
+		params.push(startIso, endExclusiveIso);
 
 		const rows = this.db.query<{
 			date: string;
@@ -1207,7 +1240,7 @@ export class StatsActions {
 		}>(
 			`
 			SELECT
-				date(r.reviewed_at) as date,
+				substr(r.reviewed_at, 1, 10) as date,
 				COUNT(*) as reviewsCompleted,
 				SUM(CASE WHEN r.state = 0 THEN 1 ELSE 0 END) as newCardsStudied,
 				COALESCE(SUM(r.time_spent_ms), 0) as totalTimeMs,
@@ -1221,8 +1254,9 @@ export class StatsActions {
 			WHERE r.deleted_at IS NULL AND c.deleted_at IS NULL
 				${excludeClause}
 				${presetClause}
-				AND date(r.reviewed_at) BETWEEN ? AND ?
-			GROUP BY date(r.reviewed_at)
+				AND r.reviewed_at >= ?
+				AND r.reviewed_at < ?
+			GROUP BY substr(r.reviewed_at, 1, 10)
 			ORDER BY date
 		`,
 			params,

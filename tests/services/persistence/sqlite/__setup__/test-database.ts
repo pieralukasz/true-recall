@@ -173,6 +173,7 @@ export class TestSqliteDatabase {
 			CREATE INDEX IF NOT EXISTS idx_cards_state ON cards(state);
 			CREATE INDEX IF NOT EXISTS idx_cards_source_uid ON cards(source_uid);
 			CREATE INDEX IF NOT EXISTS idx_cards_deleted ON cards(deleted_at);
+			CREATE INDEX IF NOT EXISTS idx_revlog_preset_date ON review_log(deleted_at, preset_name, reviewed_at);
 
 			INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '1');
 		`);

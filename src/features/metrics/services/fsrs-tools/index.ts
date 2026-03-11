@@ -50,6 +50,7 @@ export {
 export {
 	TrueRetentionCalculator,
 	type TrueRetentionEntry,
+	type TrueRetentionSnapshot,
 	type TrueRetentionSummary,
 } from "@features/metrics/services/fsrs-tools/statistics/true-retention.calculator";
 export {

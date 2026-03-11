@@ -1,14 +1,14 @@
 import {
 	buildSourceUidToPresetMap,
-	getSourceUidsForPreset,
 } from "@features/metrics/services/stats/stats-filter.helpers";
 import type { StatsFilterContext } from "@features/metrics/services/stats/stats-filter.types";
 import { HeatmapWidget } from "@features/study/ui/editor/widgets/analytics/HeatmapWidget";
 import { useComputed, useSignal } from "@preact/signals";
+import { allCardsArray, pluginSettings } from "@shared/services/reactive-card-store";
 import type { StatsTimeRange } from "@shared/types";
 import { AppNavBar } from "@shared/ui/components";
 import { usePlugin } from "@shared/ui/preact";
-import { useMemo } from "preact/hooks";
+import { useEffect, useMemo, useState } from "preact/hooks";
 import {
 	CardMaturitySection,
 	ChartCard,
@@ -16,7 +16,6 @@ import {
 	CreatedVsReviewedChart,
 	DistributionSection,
 	FSRSStatusCard,
-	FutureDueChart,
 	PresetFilter,
 	RangeSummary,
 	RatingDistributionChart,
@@ -38,12 +37,58 @@ import { useStatsData } from "./hooks/use-stats-data";
 export function StatsApp() {
 	const plugin = usePlugin();
 	const timeRange = useSignal<StatsTimeRange>("1m");
-	const selectedPresets = useSignal<Set<string>>(new Set(["Default"]));
+	const settings = pluginSettings.value;
+	const allCards = allCardsArray.value;
+	const [renderStage, setRenderStage] = useState(0);
 
-	const presetNames = useMemo(
-		() => plugin.presetService?.getPresets().map((p) => p.name) ?? [],
-		[plugin.presetService],
-	);
+	const presetNames = settings.fsrsPresets.map((preset) => preset.name);
+	const selectedPresets = useSignal<Set<string>>(new Set(presetNames));
+
+	useEffect(() => {
+		const current = selectedPresets.value;
+		if (presetNames.length === 0) {
+			if (current.size > 0) selectedPresets.value = new Set();
+			return;
+		}
+
+		if (current.size === 0) {
+			selectedPresets.value = new Set(presetNames);
+			return;
+		}
+
+		const valid = new Set(
+			[...current].filter((name) => presetNames.includes(name)),
+		);
+		if (valid.size === 0) {
+			selectedPresets.value = new Set(presetNames);
+			return;
+		}
+
+		if (valid.size !== current.size) {
+			selectedPresets.value = valid;
+		}
+	}, [presetNames.join("|")]);
+
+	const presetSourceUidIndex = useMemo(() => {
+		const index = new Map<string, Set<string>>();
+		if (!plugin.presetService || allCards.length === 0) return index;
+
+		const sourceUidToPreset = buildSourceUidToPresetMap(
+			plugin.presetService,
+			allCards,
+		);
+
+		for (const [sourceUid, presetName] of sourceUidToPreset.entries()) {
+			let uids = index.get(presetName);
+			if (!uids) {
+				uids = new Set<string>();
+				index.set(presetName, uids);
+			}
+			uids.add(sourceUid);
+		}
+
+		return index;
+	}, [plugin.presetService, allCards, settings]);
 
 	// Build preset→sourceUid map and compute filter context
 	const filterContext = useComputed((): StatsFilterContext | null => {
@@ -55,18 +100,14 @@ export function StatsApp() {
 			return null;
 		}
 
-		if (!plugin.presetService || !plugin.flashcardManager) return null;
-
-		const allCards = plugin.flashcardManager.getAllFSRSCards();
-		const presetMap = buildSourceUidToPresetMap(
-			plugin.presetService,
-			allCards,
-		);
+		if (!plugin.presetService) return null;
 
 		// Union of sourceUids for all selected presets
 		const sourceUids = new Set<string>();
 		for (const name of selected) {
-			for (const uid of getSourceUidsForPreset(name, presetMap)) {
+			const presetUids = presetSourceUidIndex.get(name);
+			if (!presetUids) continue;
+			for (const uid of presetUids) {
 				sourceUids.add(uid);
 			}
 		}
@@ -78,86 +119,86 @@ export function StatsApp() {
 		};
 	});
 
-	const { data, loading } = useStatsData(timeRange, filterContext);
+	const filteredCards = useMemo(() => {
+		const filter = filterContext.value;
+		if (!filter?.presetSourceUids) return allCards;
 
-	const targetRetention = Math.round(
-		(plugin.settings.fsrsRequestRetention ?? 0.9) * 100,
+		return allCards.filter(
+			(card) =>
+				card.sourceUid !== undefined &&
+				filter.presetSourceUids!.has(card.sourceUid),
+		);
+	}, [allCards, filterContext.value]);
+
+	const filteredCardFsrs = useMemo(
+		() => filteredCards.map((card) => card.fsrs),
+		[filteredCards],
 	);
 
-	// FSRS true retention — filtered by preset via SQL
-	const trueRetention = useMemo(() => {
-		if (!plugin.fsrsHelper) return null;
-		const filter = filterContext.value;
-		const presetNamesArr = filter?.presetNames
-			? [...filter.presetNames]
-			: undefined;
-		const summary = plugin.fsrsHelper.getTrueRetentionSummary(
-			30,
-			presetNamesArr,
-		);
-		const history = plugin.fsrsHelper.getTrueRetentionHistory(
-			30,
-			presetNamesArr,
-		);
-		return { summary, history };
-	}, [plugin.fsrsHelper, filterContext.value]);
+	const { data, loading } = useStatsData(timeRange, filterContext);
+
+	useEffect(() => {
+		if (!data) {
+			setRenderStage(0);
+			return;
+		}
+
+		let cancelled = false;
+		let rafId: number | null = null;
+		let idleId: number | null = null;
+		let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+		setRenderStage(1);
+		rafId = requestAnimationFrame(() => {
+			if (cancelled) return;
+			setRenderStage(2);
+
+			const flushFinalStage = () => {
+				if (!cancelled) setRenderStage(3);
+			};
+
+			if ("requestIdleCallback" in window) {
+				idleId = window.requestIdleCallback(flushFinalStage, {
+					timeout: 250,
+				}) as unknown as number;
+			} else {
+				timeoutId = setTimeout(flushFinalStage, 0);
+			}
+		});
+
+		return () => {
+			cancelled = true;
+			if (rafId !== null) cancelAnimationFrame(rafId);
+			if (idleId !== null && "cancelIdleCallback" in window) {
+				window.cancelIdleCallback(idleId);
+			}
+			if (timeoutId !== null) clearTimeout(timeoutId);
+		};
+	}, [data, timeRange.value, filterContext.value]);
+
+	const targetRetention = Math.round(
+		(settings.fsrsRequestRetention ?? 0.9) * 100,
+	);
+
+	const trueRetention = data?.trueRetention ?? null;
 
 	// FSRS workload forecast — filtered by preset via card filtering
 	const workloadData = useMemo(() => {
-		if (!plugin.fsrsHelper) return null;
-		const filter = filterContext.value;
-
-		if (!filter) {
-			// No filter active — use fast path
-			return {
-				forecast: plugin.fsrsHelper.getWorkloadForecast(30),
-				summary: plugin.fsrsHelper.getWorkloadForecastSummary(30),
-				dayOfWeek: plugin.fsrsHelper.getWorkloadByDayOfWeek(30),
-			};
-		}
-
-		// Filter cards by preset sourceUids
-		const allCards = plugin.cardStore.getCards();
-		const filteredCards = filter.presetSourceUids
-			? allCards.filter(
-					(c) =>
-						c.sourceUid !== undefined &&
-						filter.presetSourceUids!.has(c.sourceUid),
-				)
-			: allCards;
-
-		const forecast = buildFilteredForecast(filteredCards, 30);
-		const target = plugin.settings.loadBalanceTarget ?? 50;
+		if (renderStage < 2) return null;
+		const forecast = buildFilteredForecast(filteredCardFsrs, 30);
+		const target = settings.loadBalanceTarget ?? 50;
 		return {
 			forecast,
 			summary: buildForecastSummary(forecast, target),
 			dayOfWeek: buildDayOfWeekStats(forecast),
 		};
-	}, [plugin.fsrsHelper, plugin.cardStore, filterContext.value]);
+	}, [renderStage, filteredCardFsrs, settings.loadBalanceTarget]);
 
 	// FSRS distributions — filtered by preset via card filtering
 	const distributions = useMemo(() => {
-		const filter = filterContext.value;
-
-		if (!filter) {
-			// No filter — use original calculator
-			if (!plugin.fsrsHelper) return null;
-			return plugin.fsrsHelper.getDistributions();
-		}
-
-		// Filter cards and compute distributions
-		if (!plugin.flashcardManager) return null;
-		const allCards = plugin.flashcardManager.getAllFSRSCards();
-		const filteredCards = filter.presetSourceUids
-			? allCards.filter(
-					(c) =>
-						c.sourceUid !== undefined &&
-						filter.presetSourceUids!.has(c.sourceUid),
-				)
-			: allCards;
-
+		if (renderStage < 3) return null;
 		return getFilteredDistributions(filteredCards);
-	}, [plugin.fsrsHelper, plugin.flashcardManager, filterContext.value]);
+	}, [renderStage, filteredCards]);
 
 	return (
 		<div class="ep:flex ep:flex-col ep:h-full">
@@ -187,50 +228,70 @@ export function StatsApp() {
 								totalCards={data.totalCards}
 							/>
 
-							<ChartCard title="Activity" subtitle="Review heatmap">
-								<HeatmapWidget source="months: 12" />
-							</ChartCard>
-
-							{trueRetention && (
-								<TrueRetentionCard
-									summary={trueRetention.summary}
-									history={trueRetention.history}
-								/>
-							)}
-
-							{workloadData ? (
-								<WorkloadForecastSection
-									forecast={workloadData.forecast}
-									summary={workloadData.summary}
-									dayOfWeek={workloadData.dayOfWeek}
-								/>
-							) : (
-								<FutureDueChart data={data.futureDue} />
-							)}
-
-							<ReviewHistoryChart data={data.reviewHistory} />
-
-							<CardMaturitySection data={data.maturity} />
-
-							<RetentionChart
-								data={data.retention}
-								targetRetention={targetRetention}
-							/>
-
-							<RatingDistributionChart data={data.ratingDistribution} />
-
-							<CollectionHealthBar data={data.health} />
-
-							<DistributionSection data={distributions} />
-
 							<FSRSStatusCard selectedPresets={selectedPresets} />
 
-							<CreatedVsReviewedChart
-								created={data.cardsCreated}
-								reviewHistory={data.reviewHistory}
-							/>
+							{renderStage < 2 && (
+								<div class="ep:text-xs ep:text-obs-muted ep:py-2">
+									Rendering core charts...
+								</div>
+							)}
 
-							<RangeSummary data={data.rangeSummary} />
+							{renderStage >= 2 && (
+								<>
+									<ChartCard title="Activity" subtitle="Review heatmap">
+										<HeatmapWidget source="months: 12" />
+									</ChartCard>
+
+									{trueRetention && (
+										<TrueRetentionCard
+											summary={trueRetention.summary}
+											history={trueRetention.history}
+										/>
+									)}
+
+									{workloadData && (
+										<WorkloadForecastSection
+											forecast={workloadData.forecast}
+											summary={workloadData.summary}
+											dayOfWeek={workloadData.dayOfWeek}
+										/>
+									)}
+								</>
+							)}
+
+							{renderStage < 3 && (
+								<div class="ep:text-xs ep:text-obs-muted ep:py-2">
+									Rendering remaining charts...
+								</div>
+							)}
+
+							{renderStage >= 3 && (
+								<>
+									<ReviewHistoryChart data={data.reviewHistory} />
+
+									<CardMaturitySection data={data.maturity} />
+
+									<RetentionChart
+										data={data.retention}
+										targetRetention={targetRetention}
+									/>
+
+									<RatingDistributionChart
+										data={data.ratingDistribution}
+									/>
+
+									<CollectionHealthBar data={data.health} />
+
+									<DistributionSection data={distributions} />
+
+									<CreatedVsReviewedChart
+										created={data.cardsCreated}
+										reviewHistory={data.reviewHistory}
+									/>
+
+									<RangeSummary data={data.rangeSummary} />
+								</>
+							)}
 						</>
 					)}
 				</div>

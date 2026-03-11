@@ -33,6 +33,23 @@ export class StatsCalculatorService {
 	private fsrsService: FSRSService;
 	private sqliteStore: SqliteStoreService | null = null;
 	private filter: StatsFilterContext = EMPTY_FILTER;
+	private filterCacheKey = this.buildFilterCacheKey(EMPTY_FILTER);
+	private cardSnapshot: FSRSFlashcardItem[] | null = null;
+	private filteredCardsCache:
+		| {
+				filterKey: string;
+				source: FSRSFlashcardItem[];
+				result: FSRSFlashcardItem[];
+		  }
+		| null = null;
+	private dailyStatsCache = new Map<string, Record<string, ExtendedDailyStats>>();
+	private dailyStatsRangeCache = new Map<string, ExtendedDailyStats[]>();
+	private healthCache: {
+		filterKey: string;
+		source: FSRSFlashcardItem[];
+		minuteBucket: number;
+		result: CollectionHealthSnapshot;
+	} | null = null;
 
 	// Specialized calculators
 	private streakCalculator = new StreakCalculator();
@@ -56,6 +73,18 @@ export class StatsCalculatorService {
 
 	setFilter(ctx: StatsFilterContext): void {
 		this.filter = ctx;
+		const nextKey = this.buildFilterCacheKey(ctx);
+		if (nextKey === this.filterCacheKey) return;
+		this.filterCacheKey = nextKey;
+		this.filteredCardsCache = null;
+		this.clearDailyStatsCaches();
+	}
+
+	setCardSnapshot(cards: FSRSFlashcardItem[]): void {
+		if (this.cardSnapshot === cards) return;
+		this.cardSnapshot = cards;
+		this.filteredCardsCache = null;
+		this.clearDailyStatsCaches();
 	}
 
 	private get isFilterActive(): boolean {
@@ -66,7 +95,26 @@ export class StatsCalculatorService {
 	}
 
 	private getFilteredCards(): FSRSFlashcardItem[] {
-		let cards = this.flashcardManager.getAllFSRSCards();
+		const sourceCards = this.cardSnapshot ?? this.flashcardManager.getAllFSRSCards();
+		const cached = this.filteredCardsCache;
+		if (
+			cached &&
+			cached.filterKey === this.filterCacheKey &&
+			cached.source === sourceCards
+		) {
+			return cached.result;
+		}
+
+		if (!this.isFilterActive) {
+			this.filteredCardsCache = {
+				filterKey: this.filterCacheKey,
+				source: sourceCards,
+				result: sourceCards,
+			};
+			return sourceCards;
+		}
+
+		let cards = sourceCards;
 
 		if (this.filter.archivedSourceUids.size > 0) {
 			cards = cards.filter(
@@ -84,6 +132,12 @@ export class StatsCalculatorService {
 			);
 		}
 
+		this.filteredCardsCache = {
+			filterKey: this.filterCacheKey,
+			source: sourceCards,
+			result: cards,
+		};
+
 		return cards;
 	}
 
@@ -92,46 +146,61 @@ export class StatsCalculatorService {
 	 * otherwise use the fast daily_stats table path.
 	 */
 	private getFilteredDailyStats(): Record<string, ExtendedDailyStats> {
+		const todayKey = new Date().toISOString().split("T")[0] ?? "";
+		const cacheKey = `all:${todayKey}:${this.filterCacheKey}`;
+		const cached = this.dailyStatsCache.get(cacheKey);
+		if (cached) return cached;
+
+		let result: Record<string, ExtendedDailyStats>;
 		if (!this.isFilterActive) {
-			return this.sessionPersistence.getAllDailyStatsSummary();
+			result = this.sessionPersistence.getAllDailyStatsSummary();
+		} else if (!this.sqliteStore) {
+			result = {};
+		} else {
+			const rows = this.sqliteStore.stats.getDailyStatsFromReviewLog(
+				"1970-01-01",
+				todayKey,
+				{
+					presetNames: this.filter.presetNames
+						? [...this.filter.presetNames]
+						: undefined,
+					excludeSourceUids: [...this.filter.archivedSourceUids],
+				},
+			);
+
+			result = {};
+			for (const row of rows) {
+				result[row.date] = row;
+			}
 		}
 
-		if (!this.sqliteStore) return {};
-
-		const rows = this.sqliteStore.stats.getDailyStatsFromReviewLog(
-			"1970-01-01",
-			new Date().toISOString().split("T")[0] ?? "",
-			{
-				presetNames: this.filter.presetNames ? [...this.filter.presetNames] : undefined,
-				excludeSourceUids: [...this.filter.archivedSourceUids],
-			},
-		);
-
-		const stats: Record<string, ExtendedDailyStats> = {};
-		for (const row of rows) {
-			stats[row.date] = row;
-		}
-		return stats;
+		this.dailyStatsCache.set(cacheKey, result);
+		return result;
 	}
 
 	private getFilteredDailyStatsInRange(
 		startKey: string,
 		endKey: string,
 	): ExtendedDailyStats[] {
+		const cacheKey = `${startKey}:${endKey}:${this.filterCacheKey}`;
+		const cached = this.dailyStatsRangeCache.get(cacheKey);
+		if (cached) return cached;
+
+		let result: ExtendedDailyStats[];
 		if (!this.isFilterActive) {
-			return this.sessionPersistence.getStatsInRange(startKey, endKey);
+			result = this.sessionPersistence.getStatsInRange(startKey, endKey);
+		} else {
+			// Derive from full-history cache instead of a separate DB query
+			const fullHistory = this.getFilteredDailyStats();
+			result = [];
+			for (const [date, stats] of Object.entries(fullHistory)) {
+				if (date >= startKey && date <= endKey) result.push(stats);
+			}
+			result.sort((a, b) => a.date.localeCompare(b.date));
 		}
 
-		if (!this.sqliteStore) return [];
-
-		return this.sqliteStore.stats.getDailyStatsFromReviewLog(
-			startKey,
-			endKey,
-			{
-				presetNames: this.filter.presetNames ? [...this.filter.presetNames] : undefined,
-				excludeSourceUids: [...this.filter.archivedSourceUids],
-			},
-		);
+		this.dailyStatsRangeCache.set(cacheKey, result);
+		return result;
 	}
 
 	getAllDailyStats(): Record<string, ExtendedDailyStats> {
@@ -149,6 +218,10 @@ export class StatsCalculatorService {
 	}
 
 	async getReviewHistory(range: StatsTimeRange): Promise<ExtendedDailyStats[]> {
+		return this.getReviewHistorySync(range);
+	}
+
+	getReviewHistorySync(range: StatsTimeRange): ExtendedDailyStats[] {
 		const endDate = new Date();
 		const startDate = this.calculateStartDate(endDate, range);
 
@@ -159,27 +232,10 @@ export class StatsCalculatorService {
 	}
 
 	getTodaySummary(): TodaySummary {
-		if (this.isFilterActive && this.sqliteStore) {
+		if (this.isFilterActive) {
 			const today = new Date().toISOString().split("T")[0] ?? "";
-			const rows = this.sqliteStore.stats.getDailyStatsFromReviewLog(
-				today,
-				today,
-				{
-					presetNames: this.filter.presetNames ? [...this.filter.presetNames] : undefined,
-					excludeSourceUids: [...this.filter.archivedSourceUids],
-				},
-			);
-			const todayStats = rows[0];
-			if (!todayStats) {
-				return {
-					studied: 0,
-					minutes: 0,
-					newCards: 0,
-					reviewCards: 0,
-					again: 0,
-					correctRate: 0,
-				};
-			}
+			const todayStats = this.getFilteredDailyStats()[today];
+			if (!todayStats) return emptyTodaySummary();
 
 			const totalRatings =
 				(todayStats.again ?? 0) +
@@ -233,7 +289,19 @@ export class StatsCalculatorService {
 		dueTomorrow: number;
 		dailyLoad: number;
 	}> {
-		const history = await this.getReviewHistory(range);
+		return this.getRangeSummarySync(range);
+	}
+
+	getRangeSummarySync(range: StatsTimeRange): {
+		daysStudied: number;
+		totalDays: number;
+		totalReviews: number;
+		avgPerDay: number;
+		avgForStudiedDays: number;
+		dueTomorrow: number;
+		dailyLoad: number;
+	} {
+		const history = this.getReviewHistorySync(range);
 		const cards = this.getFilteredCards();
 
 		const endDate = new Date();
@@ -292,16 +360,30 @@ export class StatsCalculatorService {
 	}
 
 	getCollectionHealthSnapshot(): CollectionHealthSnapshot {
-		const allCards = this.getFilteredCards().filter(
+		const filteredCards = this.getFilteredCards();
+		const minuteBucket = Math.floor(Date.now() / 60000);
+
+		if (
+			this.healthCache &&
+			this.healthCache.filterKey === this.filterCacheKey &&
+			this.healthCache.source === filteredCards &&
+			this.healthCache.minuteBucket === minuteBucket
+		) {
+			return this.healthCache.result;
+		}
+
+		const allCards = filteredCards.filter(
 			(c) => c.fsrs.state !== State.New && !c.fsrs.suspended,
 		);
 
 		if (allCards.length === 0) {
-			return {
+			const result: CollectionHealthSnapshot = {
 				averageRetention: 0,
 				distribution: buildHealthBuckets([]),
 				cardCount: 0,
 			};
+			this.healthCache = { filterKey: this.filterCacheKey, source: filteredCards, minuteBucket, result };
+			return result;
 		}
 
 		const now = new Date();
@@ -312,11 +394,13 @@ export class StatsCalculatorService {
 		const avg =
 			retrievabilities.reduce((s, r) => s + r, 0) / retrievabilities.length;
 
-		return {
+		const result: CollectionHealthSnapshot = {
 			averageRetention: Math.round(avg * 100),
 			distribution: buildHealthBuckets(retrievabilities),
 			cardCount: allCards.length,
 		};
+		this.healthCache = { filterKey: this.filterCacheKey, source: filteredCards, minuteBucket, result };
+		return result;
 	}
 
 	getNotePerformance(): NotePerformanceRow[] {
@@ -383,8 +467,12 @@ export class StatsCalculatorService {
 	async getCardsCreatedHistoryFilled(
 		range: StatsTimeRange,
 	): Promise<CardsCreatedEntry[]> {
+		return this.getCardsCreatedHistoryFilledSync(range);
+	}
+
+	getCardsCreatedHistoryFilledSync(range: StatsTimeRange): CardsCreatedEntry[] {
 		const cards = this.getFilteredCards();
-		return this.chartDataCalculator.getCardsCreatedHistoryFilled(
+		return this.chartDataCalculator.getCardsCreatedHistoryFilledSync(
 			cards,
 			range,
 		);
@@ -393,6 +481,24 @@ export class StatsCalculatorService {
 	getCardsCreatedOnDate(date: string): FSRSFlashcardItem[] {
 		const cards = this.getFilteredCards();
 		return this.chartDataCalculator.getCardsCreatedOnDate(cards, date);
+	}
+
+	private clearDailyStatsCaches(): void {
+		this.dailyStatsCache.clear();
+		this.dailyStatsRangeCache.clear();
+		this.healthCache = null;
+	}
+
+	private buildFilterCacheKey(ctx: StatsFilterContext): string {
+		const archived = [...ctx.archivedSourceUids].sort().join("|");
+		const presetNames = ctx.presetNames
+			? [...ctx.presetNames].sort().join("|")
+			: "";
+		const presetSourceUids = ctx.presetSourceUids
+			? [...ctx.presetSourceUids].sort().join("|")
+			: "";
+
+		return `a:${archived};pn:${presetNames};ps:${presetSourceUids}`;
 	}
 
 }
@@ -418,4 +524,15 @@ function buildHealthBuckets(retrievabilities: number[]): HealthBucket[] {
 		count: counts.get(i) ?? 0,
 		colorVar: b.colorVar,
 	}));
+}
+
+function emptyTodaySummary(): TodaySummary {
+	return {
+		studied: 0,
+		minutes: 0,
+		newCards: 0,
+		reviewCards: 0,
+		again: 0,
+		correctRate: 0,
+	};
 }

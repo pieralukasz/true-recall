@@ -121,6 +121,13 @@ export class ChartDataCalculator {
 		allCards: FSRSFlashcardItem[],
 		range: StatsTimeRange,
 	): Promise<CardsCreatedEntry[]> {
+		return this.getCardsCreatedHistoryFilledSync(allCards, range);
+	}
+
+	getCardsCreatedHistoryFilledSync(
+		allCards: FSRSFlashcardItem[],
+		range: StatsTimeRange,
+	): CardsCreatedEntry[] {
 		if (range === "backlog") {
 			return [];
 		}
