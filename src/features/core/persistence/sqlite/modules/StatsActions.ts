@@ -652,8 +652,14 @@ export class StatsActions {
 			[limit],
 		);
 
-		return rows.map((r) => {
-			const fields = JSON.parse(r.fieldsJson) as Record<string, string>;
+		let malformedCount = 0;
+		const result = rows.map((r) => {
+			let fields: Record<string, string> = {};
+			try {
+				fields = JSON.parse(r.fieldsJson) as Record<string, string>;
+			} catch {
+				malformedCount++;
+			}
 			return {
 				id: r.id,
 				question: Object.values(fields)[0] ?? "",
@@ -663,6 +669,10 @@ export class StatsActions {
 				problemType: r.problem_type,
 			};
 		});
+		if (malformedCount > 0) {
+			console.error(`[StatsActions] ${malformedCount} cards with malformed fields_json`);
+		}
+		return result;
 	}
 
 	/**

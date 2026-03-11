@@ -24,6 +24,7 @@ import type {
 	CardsCreatedEntry,
 } from "@shared/types";
 import { usePlugin } from "@shared/ui/preact";
+import { getErrorMessage } from "@shared/utils/error.utils";
 import { useEffect, useMemo } from "preact/hooks";
 import type { Signal } from "@preact/signals";
 
@@ -51,26 +52,18 @@ export interface StatsData {
 	trueRetention: TrueRetentionSnapshot | null;
 }
 
-const EMPTY_RANGE_SUMMARY = {
-	daysStudied: 0,
-	totalDays: 0,
-	totalReviews: 0,
-	avgPerDay: 0,
-	avgForStudiedDays: 0,
-	dueTomorrow: 0,
-	dailyLoad: 0,
-};
-
 export function useStatsData(
 	timeRange: Signal<StatsTimeRange>,
 	filter?: Signal<StatsFilterContext | null>,
 ): {
 	data: StatsData | null;
 	loading: boolean;
+	error: string | null;
 } {
 	const plugin = usePlugin();
 	const loading = useSignal(true);
 	const data = useSignal<StatsData | null>(null);
+	const error = useSignal<string | null>(null);
 
 	const statsCalc = useMemo(() => {
 		const calc = new StatsCalculatorService(
@@ -100,50 +93,57 @@ export function useStatsData(
 		const timeoutId = setTimeout(() => {
 			if (cancelled) return;
 
-			const today = statsCalc.getTodaySummary();
-			const streak = statsCalc.getStreakInfo();
-			const maturity = statsCalc.getCardMaturityBreakdown();
-			const health = statsCalc.getCollectionHealthSnapshot();
-			const futureDue = statsCalc.getFutureDueStatsFilled(range);
-			const retention = statsCalc.getRetentionHistory(range);
-			const ratingDistribution = statsCalc.getRatingDistributionHistory(range);
-			const allDailyStats = statsCalc.getAllDailyStats();
+			try {
+				const today = statsCalc.getTodaySummary();
+				const streak = statsCalc.getStreakInfo();
+				const maturity = statsCalc.getCardMaturityBreakdown();
+				const health = statsCalc.getCollectionHealthSnapshot();
+				const futureDue = statsCalc.getFutureDueStatsFilled(range);
+				const retention = statsCalc.getRetentionHistory(range);
+				const ratingDistribution = statsCalc.getRatingDistributionHistory(range);
+				const allDailyStats = statsCalc.getAllDailyStats();
 
-			// Previously in the separate async effect
-			const reviewHistory = statsCalc.getReviewHistorySync(range);
-			const cardsCreated = statsCalc.getCardsCreatedHistoryFilledSync(range);
-			const rangeSummary = statsCalc.getRangeSummarySync(range);
+				const reviewHistory = statsCalc.getReviewHistorySync(range);
+				const cardsCreated = statsCalc.getCardsCreatedHistoryFilledSync(range);
+				const rangeSummary = statsCalc.getRangeSummarySync(range);
 
-			// Previously a separate useMemo in StatsApp
-			let trueRetention: TrueRetentionSnapshot | null = null;
-			if (plugin.fsrsHelper) {
-				const presetNamesArr = f?.presetNames
-					? [...f.presetNames]
-					: undefined;
-				trueRetention = plugin.fsrsHelper.getTrueRetentionSnapshot(
-					30,
-					presetNamesArr,
-				);
+				let trueRetention: TrueRetentionSnapshot | null = null;
+				if (plugin.fsrsHelper) {
+					const presetNamesArr = f?.presetNames
+						? [...f.presetNames]
+						: undefined;
+					trueRetention = plugin.fsrsHelper.getTrueRetentionSnapshot(
+						30,
+						presetNamesArr,
+					);
+				}
+
+				if (cancelled) return;
+
+				error.value = null;
+				data.value = {
+					today,
+					streak,
+					maturity,
+					health,
+					futureDue,
+					reviewHistory,
+					retention,
+					ratingDistribution,
+					cardsCreated,
+					rangeSummary,
+					allDailyStats,
+					totalCards: cards.length,
+					trueRetention,
+				};
+			} catch (e) {
+				if (cancelled) return;
+				console.error("[StatsView] Error computing statistics:", e);
+				error.value = getErrorMessage(e);
+				data.value = null;
+			} finally {
+				if (!cancelled) loading.value = false;
 			}
-
-			if (cancelled) return;
-
-			data.value = {
-				today,
-				streak,
-				maturity,
-				health,
-				futureDue,
-				reviewHistory,
-				retention,
-				ratingDistribution,
-				cardsCreated,
-				rangeSummary,
-				allDailyStats,
-				totalCards: cards.length,
-				trueRetention,
-			};
-			loading.value = false;
 		}, 0);
 
 		return () => {
@@ -155,5 +155,6 @@ export function useStatsData(
 	return {
 		data: data.value,
 		loading: loading.value,
+		error: error.value,
 	};
 }

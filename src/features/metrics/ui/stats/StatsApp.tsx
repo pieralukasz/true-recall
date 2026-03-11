@@ -135,7 +135,7 @@ export function StatsApp() {
 		[filteredCards],
 	);
 
-	const { data, loading } = useStatsData(timeRange, filterContext);
+	const { data, loading, error } = useStatsData(timeRange, filterContext);
 
 	useEffect(() => {
 		if (!data) {
@@ -212,9 +212,15 @@ export function StatsApp() {
 						selected={selectedPresets}
 					/>
 
-					{!data && loading && (
+					{!data && !error && loading && (
 						<div class="ep:text-xs ep:text-obs-muted ep:text-center ep:py-12">
 							Loading statistics...
+						</div>
+					)}
+
+					{!data && error && (
+						<div class="ep:text-xs ep:text-obs-error ep:text-center ep:py-12">
+							Failed to load statistics: {error}
 						</div>
 					)}
 

@@ -17,7 +17,8 @@ export async function getSourceNoteNameFromFile(
 		const content = await app.vault.read(currentFile);
 		const match = content.match(/source_link:\s*"\[\[(.+?)\]\]"/);
 		return match?.[1];
-	} catch {
+	} catch (error) {
+		console.error("[panel-helpers] Failed to read source note:", error);
 		return undefined;
 	}
 }
