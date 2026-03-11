@@ -30,4 +30,4 @@ jobs:
           gh release create "$tag" \
             --title="$tag" \
             --generate-notes \
-            main.js manifest.json styles.css
+            main.js manifest.json styles.css sqlite3.wasm
