@@ -6,10 +6,8 @@
 
 import type { Database, Sqlite3Static } from "@sqlite.org/sqlite-wasm";
 import sqlite3InitModule from "@sqlite.org/sqlite-wasm";
+import embeddedWasm from "@sqlite.org/sqlite-wasm/sqlite3.wasm";
 import type { App } from "obsidian";
-
-const PLUGIN_ID = "true-recall";
-const WASM_FILENAME = "sqlite3.wasm";
 
 /**
  * Common query result interface matching sql.js format
@@ -85,24 +83,11 @@ class SqliteOrgWrapper implements DatabaseLike {
 	}
 }
 
-async function loadWasmBinary(app: App): Promise<Uint8Array | null> {
-	const wasmPath = `.obsidian/plugins/${PLUGIN_ID}/${WASM_FILENAME}`;
-	try {
-		const buffer = await app.vault.adapter.readBinary(wasmPath);
-		return new Uint8Array(buffer);
-	} catch {
-		return null;
-	}
-}
-
 // Cached instance — initialising sqlite3 is expensive, reuse across DB loads
 let cachedSqlite3: Sqlite3Static | null = null;
 
-async function loadSqlite3(app: App): Promise<Sqlite3Static> {
-	const wasmBinary = await loadWasmBinary(app);
-
+async function loadSqlite3(): Promise<Sqlite3Static> {
 	const initOpts: Record<string, unknown> = {
-		// Silence the verbose Emscripten startup messages
 		print: () => {},
 		printErr: (msg: string) => {
 			if (msg.startsWith("warning:")) return;
@@ -111,17 +96,9 @@ async function loadSqlite3(app: App): Promise<Sqlite3Static> {
 		// Prevent Emscripten from calling new URL("sqlite3.wasm", import.meta.url)
 		// which fails because esbuild's CJS shim sets import.meta to {}
 		locateFile: (file: string) => file,
+		// WASM binary is embedded in the bundle by esbuild's binary loader
+		wasmBinary: new Uint8Array(embeddedWasm as ArrayBuffer),
 	};
-
-	if (wasmBinary) {
-		initOpts.wasmBinary = wasmBinary;
-	} else {
-		console.warn(
-			"[True Recall] sqlite3.wasm not found in plugin directory — falling back to CDN",
-		);
-		initOpts.locateFile = (file: string) =>
-			`https://sqlite.org/wasm/dist/${file}`;
-	}
 
 	// The TS types declare init() with no args, but the Emscripten runtime
 	// reads opts.wasmBinary / opts.locateFile — cast past the type gap.
@@ -144,7 +121,7 @@ export async function loadDatabase(
 	existingData?: Uint8Array | null,
 ): Promise<DatabaseLoadResult> {
 	if (!cachedSqlite3) {
-		cachedSqlite3 = await loadSqlite3(app);
+		cachedSqlite3 = await loadSqlite3();
 	}
 
 	const sqlite3 = cachedSqlite3;
