@@ -35,6 +35,11 @@ export interface TrueRetentionSummary {
 	totalReviews: number;
 }
 
+export interface TrueRetentionSnapshot {
+	summary: TrueRetentionSummary;
+	history: TrueRetentionEntry[];
+}
+
 /**
  * True Retention Calculator
  *
@@ -93,6 +98,44 @@ export class TrueRetentionCalculator {
 			this.formatDate(endDate),
 			presetNames,
 		);
+
+		return this.buildSummary(entries, targetRetention);
+	}
+
+	getSummaryAndRolling(
+		targetRetention: number,
+		days: number = 30,
+		window: number = 7,
+		presetNames?: string[],
+	): TrueRetentionSnapshot {
+		const endDate = new Date();
+		const summaryStartDate = new Date(endDate);
+		summaryStartDate.setDate(summaryStartDate.getDate() - days);
+
+		const rollingStartDate = new Date(endDate);
+		rollingStartDate.setDate(rollingStartDate.getDate() - days - window);
+
+		const combinedEntries = this.calculate(
+			this.formatDate(rollingStartDate),
+			this.formatDate(endDate),
+			presetNames,
+		);
+
+		const summaryStartKey = this.formatDate(summaryStartDate);
+		const summaryEntries = combinedEntries.filter(
+			(entry) => entry.date >= summaryStartKey,
+		);
+
+		return {
+			summary: this.buildSummary(summaryEntries, targetRetention),
+			history: this.buildRollingAverage(combinedEntries, window),
+		};
+	}
+
+	private buildSummary(
+		entries: TrueRetentionEntry[],
+		targetRetention: number,
+	): TrueRetentionSummary {
 
 		if (entries.length === 0) {
 			return {
@@ -175,6 +218,14 @@ export class TrueRetentionCalculator {
 			this.formatDate(endDate),
 			presetNames,
 		);
+
+		return this.buildRollingAverage(entries, window);
+	}
+
+	private buildRollingAverage(
+		entries: TrueRetentionEntry[],
+		window: number,
+	): TrueRetentionEntry[] {
 
 		if (entries.length < window) return entries;
 

@@ -94,6 +94,7 @@ export class SqliteSchemaManager {
             CREATE INDEX IF NOT EXISTS idx_revlog_deleted ON review_log(deleted_at);
             CREATE INDEX IF NOT EXISTS idx_revlog_card_active ON review_log(card_id, deleted_at);
             CREATE INDEX IF NOT EXISTS idx_revlog_preset ON review_log(preset_name);
+            CREATE INDEX IF NOT EXISTS idx_revlog_preset_date ON review_log(deleted_at, preset_name, reviewed_at);
 
             CREATE TABLE IF NOT EXISTS daily_stats (
                 date TEXT PRIMARY KEY NOT NULL,

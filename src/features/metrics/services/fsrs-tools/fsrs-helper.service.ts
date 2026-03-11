@@ -32,6 +32,7 @@ import {
 } from "@features/metrics/services/fsrs-tools/statistics/distribution.calculator";
 import {
 	TrueRetentionCalculator,
+	type TrueRetentionSnapshot,
 	type TrueRetentionSummary,
 } from "@features/metrics/services/fsrs-tools/statistics/true-retention.calculator";
 import {
@@ -203,6 +204,18 @@ export class FSRSHelperService {
 		return this.trueRetention.getSummary(
 			this.settings.fsrsRequestRetention,
 			days,
+			presetNames,
+		);
+	}
+
+	getTrueRetentionSnapshot(
+		days: number = 30,
+		presetNames?: string[],
+	): TrueRetentionSnapshot {
+		return this.trueRetention.getSummaryAndRolling(
+			this.settings.fsrsRequestRetention,
+			days,
+			7,
 			presetNames,
 		);
 	}
