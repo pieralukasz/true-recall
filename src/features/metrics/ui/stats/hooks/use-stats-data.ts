@@ -1,6 +1,12 @@
 import { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
-import type { StatsFilterContext } from "@features/metrics/services/stats/stats-filter.types";
-import { useComputed, useSignal } from "@preact/signals";
+import {
+	EMPTY_FILTER,
+	type StatsFilterContext,
+} from "@features/metrics/services/stats/stats-filter.types";
+import type {
+	TrueRetentionSnapshot,
+} from "@features/metrics/services/fsrs-tools/statistics/true-retention.calculator";
+import { useSignal } from "@preact/signals";
 import {
 	allCardsArray,
 	pluginSettings,
@@ -42,6 +48,7 @@ export interface StatsData {
 	};
 	allDailyStats: Record<string, ExtendedDailyStats>;
 	totalCards: number;
+	trueRetention: TrueRetentionSnapshot | null;
 }
 
 const EMPTY_RANGE_SUMMARY = {
@@ -63,11 +70,7 @@ export function useStatsData(
 } {
 	const plugin = usePlugin();
 	const loading = useSignal(true);
-	const asyncData = useSignal<{
-		reviewHistory: ExtendedDailyStats[];
-		cardsCreated: CardsCreatedEntry[];
-		rangeSummary: typeof EMPTY_RANGE_SUMMARY;
-	} | null>(null);
+	const data = useSignal<StatsData | null>(null);
 
 	const statsCalc = useMemo(() => {
 		const calc = new StatsCalculatorService(
@@ -79,64 +82,75 @@ export function useStatsData(
 		return calc;
 	}, [plugin]);
 
-	// Synchronous data — recomputes when cards or settings change
-	const syncData = useComputed(() => {
-		const cards = allCardsArray.value;
-		pluginSettings.value;
-		const range = timeRange.value;
-
-		// Apply preset filter when active
-		const f = filter?.value;
-		statsCalc.setFilter(f ?? { archivedSourceUids: new Set(), presetNames: null, presetSourceUids: null });
-
-		return {
-			today: statsCalc.getTodaySummary(),
-			streak: statsCalc.getStreakInfo(),
-			maturity: statsCalc.getCardMaturityBreakdown(),
-			health: statsCalc.getCollectionHealthSnapshot(),
-			futureDue: statsCalc.getFutureDueStatsFilled(range),
-			retention: statsCalc.getRetentionHistory(range),
-			ratingDistribution: statsCalc.getRatingDistributionHistory(range),
-			allDailyStats: statsCalc.getAllDailyStats(),
-			totalCards: cards.length,
-		};
-	});
-
-	// Async data — review history and cards created
+	// Single unified async pipeline — stale-while-revalidate
 	useEffect(() => {
 		let cancelled = false;
 		loading.value = true;
 
+		const cards = allCardsArray.value;
+		pluginSettings.value;
 		const range = timeRange.value;
+		const f = filter?.value;
 
-		Promise.all([
-			statsCalc.getReviewHistory(range),
-			statsCalc.getCardsCreatedHistoryFilled(range),
-			statsCalc.getRangeSummary(range),
-		]).then(([reviewHistory, cardsCreated, rangeSummary]) => {
-			if (!cancelled) {
-				asyncData.value = { reviewHistory, cardsCreated, rangeSummary };
-				loading.value = false;
+		// Fast O(1) setup — does not block render
+		statsCalc.setCardSnapshot(cards);
+		statsCalc.setFilter(f ?? EMPTY_FILTER);
+
+		// Yield to renderer, then compute everything in one batch
+		const timeoutId = setTimeout(() => {
+			if (cancelled) return;
+
+			const today = statsCalc.getTodaySummary();
+			const streak = statsCalc.getStreakInfo();
+			const maturity = statsCalc.getCardMaturityBreakdown();
+			const health = statsCalc.getCollectionHealthSnapshot();
+			const futureDue = statsCalc.getFutureDueStatsFilled(range);
+			const retention = statsCalc.getRetentionHistory(range);
+			const ratingDistribution = statsCalc.getRatingDistributionHistory(range);
+			const allDailyStats = statsCalc.getAllDailyStats();
+
+			// Previously in the separate async effect
+			const reviewHistory = statsCalc.getReviewHistorySync(range);
+			const cardsCreated = statsCalc.getCardsCreatedHistoryFilledSync(range);
+			const rangeSummary = statsCalc.getRangeSummarySync(range);
+
+			// Previously a separate useMemo in StatsApp
+			let trueRetention: TrueRetentionSnapshot | null = null;
+			if (plugin.fsrsHelper) {
+				const presetNamesArr = f?.presetNames
+					? [...f.presetNames]
+					: undefined;
+				trueRetention = plugin.fsrsHelper.getTrueRetentionSnapshot(
+					30,
+					presetNamesArr,
+				);
 			}
-		});
+
+			if (cancelled) return;
+
+			data.value = {
+				today,
+				streak,
+				maturity,
+				health,
+				futureDue,
+				reviewHistory,
+				retention,
+				ratingDistribution,
+				cardsCreated,
+				rangeSummary,
+				allDailyStats,
+				totalCards: cards.length,
+				trueRetention,
+			};
+			loading.value = false;
+		}, 0);
 
 		return () => {
 			cancelled = true;
+			clearTimeout(timeoutId);
 		};
-	}, [timeRange.value, filter?.value, statsCalc, loading, asyncData]);
-
-	const data = useComputed((): StatsData | null => {
-		const sync = syncData.value;
-		const async_ = asyncData.value;
-		if (!async_) return null;
-
-		return {
-			...sync,
-			reviewHistory: async_.reviewHistory,
-			cardsCreated: async_.cardsCreated,
-			rangeSummary: async_.rangeSummary,
-		};
-	});
+	}, [allCardsArray.value, pluginSettings.value, timeRange.value, filter?.value, statsCalc, plugin.fsrsHelper, loading, data]);
 
 	return {
 		data: data.value,
