@@ -35,6 +35,29 @@ export function NoteFieldsForm({
 	pinnedFields,
 	onTogglePin,
 }: NoteFieldsFormProps) {
+	const editorsRef = useRef(new Map<string, EmbeddableEditorInstance>());
+
+	const registerEditor = useCallback(
+		(name: string, editor: EmbeddableEditorInstance | null) => {
+			if (editor) editorsRef.current.set(name, editor);
+			else editorsRef.current.delete(name);
+		},
+		[],
+	);
+
+	const focusField = useCallback(
+		(fieldName: string, direction: 1 | -1) => {
+			const fieldNames = noteType.fields;
+			const idx = fieldNames.indexOf(fieldName);
+			const nextIdx = idx + direction;
+			if (nextIdx >= 0 && nextIdx < fieldNames.length) {
+				const nextEditor = editorsRef.current.get(fieldNames[nextIdx]);
+				nextEditor?.cm.focus();
+			}
+		},
+		[noteType.fields],
+	);
+
 	return (
 		<div class="ep:flex ep:flex-col ep:gap-3">
 			{noteType.fields.map((fieldName, idx) => (
@@ -48,6 +71,9 @@ export function NoteFieldsForm({
 					onModEnter={onModEnter}
 					isPinned={pinnedFields?.has(fieldName) ?? false}
 					onTogglePin={onTogglePin}
+					registerEditor={registerEditor}
+					onTab={() => focusField(fieldName, 1)}
+					onShiftTab={() => focusField(fieldName, -1)}
 				/>
 			))}
 
@@ -72,6 +98,9 @@ interface CMFieldProps {
 	onModEnter?: () => void;
 	isPinned: boolean;
 	onTogglePin?: (fieldName: string) => void;
+	registerEditor?: (name: string, editor: EmbeddableEditorInstance | null) => void;
+	onTab?: () => void;
+	onShiftTab?: () => void;
 }
 
 function CMField({
@@ -83,6 +112,9 @@ function CMField({
 	onModEnter,
 	isPinned,
 	onTogglePin,
+	registerEditor,
+	onTab,
+	onShiftTab,
 }: CMFieldProps) {
 	const app = useApp();
 	const plugin = usePlugin();
@@ -118,6 +150,8 @@ function CMField({
 				onBlur: handleBlur,
 				onEscape: (e) => e.cm.contentDOM.blur(),
 				onModEnter: handleModEnter,
+				onTab: onTab ? () => onTab() : undefined,
+				onShiftTab: onShiftTab ? () => onShiftTab() : undefined,
 			});
 		} catch (err) {
 			console.error("[CMField] Failed to create editor:", err);
@@ -125,6 +159,7 @@ function CMField({
 			return;
 		}
 		editorRef.current = editor;
+		registerEditor?.(fieldName, editor);
 
 		// Report focus to parent for shared toolbar
 		editor.cm.contentDOM.addEventListener("focusin", () => {
@@ -139,6 +174,7 @@ function CMField({
 		}
 
 		return () => {
+			registerEditor?.(fieldName, null);
 			editorRef.current = null;
 			editor.destroy();
 		};

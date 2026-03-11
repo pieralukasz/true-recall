@@ -97,28 +97,36 @@ Back: ultra-concise answer text
 ---
 
 MANDATORY MINDSET & RULES:
-- EXHAUSTIVE, NOT SUMMARIZED: The number of flashcards doesn't matter. Never shorten because of text size. Don't hesitate to create even 15 flashcards from a single fragment. Every technical term, concept, and detail gets its own card.
-- HYPER-ATOMICITY: One flashcard = EXACTLY ONE piece of information in the answer. Break complex definitions down entirely.
+- EXHAUSTIVE, NOT SUMMARIZED: Never reduce card count due to text length. Create as many cards as needed — even 15+ from a single fragment. Every technical term, concept, and detail gets its own card.
+- HYPER-ATOMICITY: One flashcard = EXACTLY ONE piece of information in the Back. Break complex definitions apart entirely.
 - NUMBERED LISTS & BULLETS IN SOURCE: Each list item in the source text becomes its own atomic card.
-- THE MERGE RULE: If several flashcards would have identical questions, MERGE them. In the "Back" field, list all elements using Markdown bullet points (- item).
-- PERFECT QUOTES: The <!-- source: ... --> must be a PERFECT, IDENTICAL copy from the input text (just the specific sentence proving the fact). Do not use labels like "Quote:" and do not use quotation marks.
-- CONTEXT-FREE & CONCRETE: Each question must be perfectly understandable WITHOUT the source text. Add a distinguishing cue if concepts are similar (e.g., "Unlike X, what does Y...").
+- TABLES & CODE BLOCKS: Treat each table row and each code line as an atomic fact. Use the full table or code block as the source quote.
+- THE MERGE RULE: If multiple cards would have identical questions, MERGE them into one card. List all answers as Markdown bullet points (\`- item\`) in the Back — this is the ONLY time bullet points appear in the Back.
+- PERFECT QUOTES: The <!-- source: --> must be a verbatim copy of the single sentence proving the fact. If a fact spans two sentences, join both sentences as one quote. No labels, no quotation marks.
+- CONTEXT-FREE & CONCRETE: Every question must be fully understandable without the source text. Add a distinguishing cue when concepts are similar (e.g., "Unlike X, what does Y...").
+- LANGUAGE MATCH: Always use the exact same language as the source text — if the source is Polish, all cards must be in Polish; if English, in English. Never switch languages regardless of card count or complexity.
 - If the text contains absolutely no new information, return ONLY: NO_NEW_CARDS.
-- Use the same language as the source text.
 
 MARKDOWN & BACKLINK FORMATTING (CRITICAL):
-- BOLDING: Bold the core target keyword/concept in every question using **bold**. If a distinguishing word is needed, bold it too.
-- BACKLINKS: Wrap ALL key nouns in [[backlinks]] (lowercase). This includes proper names, domain-specific terms, scientific terms, and any concept that would have its own Obsidian note.
-- COMBINED: If bolding is required inside brackets, use **[[term]]**.
-- ALIASES: Use [[term|alias]] for context/readability when needed. NEVER use [term](app://obsidian.md/term). Only use double brackets.
+- BOLDING: Bold the core target keyword or concept in every question using **bold**.
+- BACKLINKS: Wrap ALL key nouns in [[backlinks]] (lowercase) — this includes proper names, domain-specific terms, scientific terms, and any concept that would have its own Obsidian note. Proper nouns (e.g., people's names, cities) are always wrapped in backlinks, identical to domain terms.
+- COMBINED: When a term needs both bold and a backlink, use **[[term]]**.
+- ALIASES: Use [[term|alias]] when needed for readability. NEVER use [term](app://obsidian.md/term). Double brackets only.
 - Separate cards with --- on its own line.
 
+ANSWER QUALITY RULES:
+- SELF-CONTAINED ANSWER: The Back must state the fact directly — never reference the source text with phrases like "according to the text," "as stated," or "in the text." The answer stands alone as a memory fact.
+- NO META-REFERENCES: Questions must never contain scene-relative or text-relative qualifiers such as "in the described scene," "in the text," "as described," "in question," or any phrase that implies the answer only exists within a document or fictional frame. Ask about the concept or subject directly, as if stating a fact about the world.
+- CONCRETE, NOT ATTRIBUTED: Write as if stating a fact about the world, not summarizing a reading.
+- ONE ANSWER ONLY: The Back must never contain two pieces of information unless triggered by the Merge Rule. If a question could yield two facts, split it into two separate cards.
+
 ANTI-RULES (NEVER DO THIS):
-- Anti-Tautology: Question MUST NOT contain the answer.
-- Anti-Order: NEVER use "What is the first/second/next..." Ask about the concept directly.
-- Anti-List: Never use bullet points in the Back UNLESS triggered by the Merge Rule.
-- Anti-Boolean: NEVER ask Yes/No questions.
-- Anti-Example-Trap: Don't ask "What is an example of X?" — state the example, ask for the category.
+- Anti-Tautology: The question must never contain the answer.
+- Anti-Order: Never ask "What is the first/second/next…" — ask about the concept directly.
+- Anti-List: No bullet points in the Back unless triggered by the Merge Rule.
+- Anti-Boolean: Never ask Yes/No questions.
+- Anti-Example-Trap: Never ask "What is an example of X?" — state the example, ask for the category.
+- Anti-Source-Reference: Never phrase a question as "According to the text, what is...?", "in the described scene", "as described", or any variant that makes the question context-dependent.
 
 FEW-SHOT EXAMPLES (FOLLOW THIS LOGIC EXACTLY):
 Input Text: "Rosacea is manifested by intense reddening of the skin. In an advanced degree, papulopustular changes may appear."
@@ -144,7 +152,98 @@ Back: Lose weight
 #type/basic
 Front: What must aunt **[[irene]]** stop doing before going to work?
 Back: Downing gin shots
-<!-- source: She knows she must stop downing gin shots before going to work. -->`,
+<!-- source: She knows she must stop downing gin shots before going to work. -->
+---
+
+Input Text: "Coś w tym półśnie, w tej ciszy przed dniem, sprawia że kubek wydaje się cieplejszy niż powinien."
+
+#type/basic
+Front: Jak **[[kubek]]** wydaje się w półśnie?
+Back: Cieplejszy niż powinien
+<!-- source: Coś w tym półśnie, w tej ciszy przed dniem, sprawia że kubek wydaje się cieplejszy niż powinien. -->
+---
+#type/basic
+Front: Co sprawia, że **[[kubek]]** wydaje się cieplejszy niż powinien?
+Back:
+- Półsen
+- Cisza przed dniem
+<!-- source: Coś w tym półśnie, w tej ciszy przed dniem, sprawia że kubek wydaje się cieplejszy niż powinien. -->
+---
+
+Input Text: "Sunsets never repeat. Tonight the sky went from copper to bruised violet in maybe four minutes. I looked up too late and caught only the last thirty seconds."
+
+#type/basic
+Front: How often do **[[sunsets]]** repeat?
+Back: Never
+<!-- source: Sunsets never repeat. -->
+---
+#type/basic
+Front: What color did the **[[sky]]** transition from **[[tonight]]**?
+Back: Copper
+<!-- source: Tonight the sky went from copper to bruised violet in maybe four minutes. -->
+---
+#type/basic
+Front: What color did the **[[sky]]** transition to **[[tonight]]**?
+Back: Bruised violet
+<!-- source: Tonight the sky went from copper to bruised violet in maybe four minutes. -->
+---
+#type/basic
+Front: How long did the **[[sky]]**'s color transition last **[[tonight]]**?
+Back: Maybe four [[minutes]]
+<!-- source: Tonight the sky went from copper to bruised violet in maybe four minutes. -->
+---
+#type/basic
+Front: How much of the **[[sky]]**'s transition did the **[[observer]]** catch **[[tonight]]**?
+Back: Only the last thirty [[seconds]]
+<!-- source: I looked up too late and caught only the last thirty seconds. -->
+---
+#type/basic
+Front: When did the **[[observer]]** look up relative to the event **[[tonight]]**?
+Back: Too late
+<!-- source: I looked up too late and caught only the last thirty seconds. -->
+---
+
+Input Text: "W gorach cisza ma wage. Czujesz ja w uszach, w klatce piersiowej. Schodzisz na dol i przez dwa dni miasto wydaje sie za glosne."
+
+#type/basic
+Front: Co ma wagę w **[[górach]]**?
+Back: [[Cisza]]
+<!-- source: W gorach cisza ma wage. -->
+---
+#type/basic
+Front: Gdzie czujesz **[[ciszę]]** w [[górach]]?
+Back:
+- W uszach
+- W klatce piersiowej
+<!-- source: Czujesz ja w uszach, w klatce piersiowej. -->
+---
+#type/basic
+Front: Jak długo **[[miasto]]** wydaje się za głośne po zejściu z [[gór]]?
+Back: Przez dwa dni
+<!-- source: Schodzisz na dol i przez dwa dni miasto wydaje sie za glosne. -->
+---
+
+Input Text: "Bread baking fills the whole apartment in a way no candle imitates. The crust cracks when you tear it too early. You always tear it too early."
+
+#type/basic
+Front: What does **[[bread baking]]** fill?
+Back: The whole apartment
+<!-- source: Bread baking fills the whole apartment in a way no candle imitates. -->
+---
+#type/basic
+Front: **[[Bread baking]]** fills the whole **[[apartment]]** in a way no **[[candle]]** what?
+Back: Imitates
+<!-- source: Bread baking fills the whole apartment in a way no candle imitates. -->
+---
+#type/basic
+Front: What does the **[[crust]]** do when you tear it too early?
+Back: Cracks
+<!-- source: The crust cracks when you tear it too early. -->
+---
+#type/basic
+Front: What do you always do to the **[[crust]]**?
+Back: Tear it too early
+<!-- source: You always tear it too early. -->`,
 
 	cloze: `I would like you to help me create cloze deletion flashcards based on text using the "Cloze" card type.
 
@@ -313,6 +412,7 @@ ANTI-RULES:
 - No Order Questions: NEVER use "What is the first/second/next..."
 - Anti-Boolean: NEVER ask Yes/No questions. Ask for the specific fact.
 - Anti-Example-Trap: Don't ask "What is an example of X?" — state the example, ask for the category.
+- Anti-Source-Reference: Never phrase a question as "According to the text, what is...?" or any variant that makes the question context-dependent.
 
 QUESTION QUALITY:
 - Context-Free: Each question must be understandable WITHOUT the source text. Include enough context in the question itself.

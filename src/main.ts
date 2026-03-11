@@ -1193,8 +1193,11 @@ export default class TrueRecallPlugin extends Plugin {
 					notify().error(`Flashcard generation failed: ${msg}`);
 				}
 			},
-			onEdit: () => {
-				const modal = new QuickNoteEditorModal(this.app, this, { mode: "add" });
+			onEdit: (text: string) => {
+				const modal = new QuickNoteEditorModal(this.app, this, {
+					mode: "add",
+					initialFields: { Front: text },
+				});
 				void modal.openAndWait();
 			},
 			onQuickAdd: async (text) => {
