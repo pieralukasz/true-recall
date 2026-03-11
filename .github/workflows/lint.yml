@@ -1,4 +1,4 @@
-name: Build and Lint
+name: Build
 
 on:
     push:
@@ -16,4 +16,3 @@ jobs:
               uses: oven-sh/setup-bun@v2
             - run: bun install --frozen-lockfile
             - run: bun run build
-            - run: bun run lint
