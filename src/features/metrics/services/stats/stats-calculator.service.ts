@@ -151,6 +151,11 @@ export class StatsCalculatorService {
 		const cached = this.dailyStatsCache.get(cacheKey);
 		if (cached) return cached;
 
+		if (this.dailyStatsCache.size >= 20) {
+			const oldest = this.dailyStatsCache.keys().next().value;
+			if (oldest !== undefined) this.dailyStatsCache.delete(oldest);
+		}
+
 		let result: Record<string, ExtendedDailyStats>;
 		if (!this.isFilterActive) {
 			result = this.sessionPersistence.getAllDailyStatsSummary();
@@ -185,6 +190,11 @@ export class StatsCalculatorService {
 		const cacheKey = `${startKey}:${endKey}:${this.filterCacheKey}`;
 		const cached = this.dailyStatsRangeCache.get(cacheKey);
 		if (cached) return cached;
+
+		if (this.dailyStatsRangeCache.size >= 20) {
+			const oldest = this.dailyStatsRangeCache.keys().next().value;
+			if (oldest !== undefined) this.dailyStatsRangeCache.delete(oldest);
+		}
 
 		let result: ExtendedDailyStats[];
 		if (!this.isFilterActive) {

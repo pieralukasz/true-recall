@@ -38,9 +38,10 @@ export class SubscriptionService {
 			this.cache = status;
 			this.cacheTimestamp = now;
 
+			const isValid = !!status.tier;
 			onCacheUpdate?.({
-				isSubscriber: true,
-				subscriberTier: status.tier,
+				isSubscriber: isValid,
+				subscriberTier: isValid ? status.tier : undefined,
 			});
 
 			return status;
