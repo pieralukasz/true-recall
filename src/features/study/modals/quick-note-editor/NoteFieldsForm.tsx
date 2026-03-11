@@ -51,7 +51,7 @@ export function NoteFieldsForm({
 			const idx = fieldNames.indexOf(fieldName);
 			const nextIdx = idx + direction;
 			if (nextIdx >= 0 && nextIdx < fieldNames.length) {
-				const nextEditor = editorsRef.current.get(fieldNames[nextIdx]);
+				const nextEditor = editorsRef.current.get(fieldNames[nextIdx]!);
 				nextEditor?.cm.focus();
 			}
 		},

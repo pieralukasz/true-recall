@@ -36,8 +36,8 @@ export async function processCardEvents(
 					for (const card of result.cards) {
 						addStreamedCard({
 							id: card.id,
-							question: card.question,
-							answer: card.answer,
+							question: card.question ?? "",
+							answer: card.answer ?? "",
 							cardType: card.cardType,
 							clozeTemplate: card.clozeTemplate,
 							clozeIndex: card.clozeIndex,

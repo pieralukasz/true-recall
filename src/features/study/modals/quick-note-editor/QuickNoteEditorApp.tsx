@@ -214,7 +214,7 @@ export function QuickNoteEditorApp({ mode, onDone }: QuickNoteEditorAppProps) {
 				}
 
 				const result = plugin.flashcardManager.updateNoteFields(
-					editMode?.noteId,
+					editMode!.noteId,
 					fields,
 				);
 

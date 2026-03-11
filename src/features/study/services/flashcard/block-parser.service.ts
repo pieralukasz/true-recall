@@ -47,7 +47,7 @@ export function parseBlocks(
 	if (lines[0]?.trim() === "---") {
 		let fmEnd = -1;
 		for (let i = 1; i < lines.length; i++) {
-			if (BLOCK_SEPARATOR_RE.test(lines[i]?.trim())) {
+			if (BLOCK_SEPARATOR_RE.test(lines[i]!.trim())) {
 				fmEnd = i;
 				break;
 			}
@@ -63,7 +63,7 @@ export function parseBlocks(
 	// Scan line-by-line: #type/<slug> starts a block, --- ends it
 	let i = startIdx;
 	while (i < lines.length) {
-		const trimmed = lines[i]?.trim();
+		const trimmed = lines[i]!.trim();
 		const typeMatch = trimmed.match(TYPE_TAG_RE);
 
 		if (typeMatch) {
@@ -71,7 +71,7 @@ export function parseBlocks(
 			const blockLines: string[] = [];
 			const blockStart = i;
 			i++; // skip the #type line
-			while (i < lines.length && !BLOCK_SEPARATOR_RE.test(lines[i]?.trim())) {
+			while (i < lines.length && !BLOCK_SEPARATOR_RE.test(lines[i]!.trim())) {
 				blockLines.push(lines[i]!);
 				i++;
 			}
@@ -107,7 +107,7 @@ export function parseBlocks(
 			}
 			// Skip the --- separator if present
 			if (i < lines.length) i++;
-		} else if (BLOCK_SEPARATOR_RE.test(lines[i]?.trim())) {
+		} else if (BLOCK_SEPARATOR_RE.test(lines[i]!.trim())) {
 			// Standalone --- not preceded by a block — preserve it
 			nonBlockLines.push(lines[i]!);
 			i++;

@@ -63,7 +63,7 @@ export class ChunkedGenerationService {
 				this.flashcardManager,
 			);
 			const result = await streamingService.generateStreaming(
-				chunkingResult.chunks[0]?.content,
+				chunkingResult.chunks[0]!.content,
 				mode,
 				sourceFile,
 				noteType,
