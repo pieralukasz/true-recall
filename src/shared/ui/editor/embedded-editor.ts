@@ -90,6 +90,8 @@ const defaultOptions: Required<EmbeddableEditorOptions> = {
 	onPaste: () => {},
 	onChange: () => {},
 	onModEnter: () => {},
+	onTab: () => {},
+	onShiftTab: () => {},
 	extraExtensions: [],
 };
 
