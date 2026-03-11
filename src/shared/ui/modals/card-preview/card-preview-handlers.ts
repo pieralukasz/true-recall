@@ -70,6 +70,7 @@ export async function handleUnburyAll(
 	flashcardManager: FlashcardManager,
 ): Promise<void> {
 	let unburiedCount = 0;
+	const failedCards: FSRSFlashcardItem[] = [];
 
 	for (const card of cards) {
 		const updatedFsrs = { ...card.fsrs, buriedUntil: undefined };
@@ -78,11 +79,19 @@ export async function handleUnburyAll(
 			unburiedCount++;
 		} catch (error) {
 			console.error(`Error unburying card ${card.id}:`, error);
+			failedCards.push(card);
 		}
 	}
 
-	setCards([]);
-	notify().cardsStatusChanged(unburiedCount, "unburied");
+	setCards(failedCards);
+
+	if (failedCards.length > 0 && unburiedCount > 0) {
+		notify().warning(`Unburied ${unburiedCount} of ${cards.length} cards, ${failedCards.length} failed`);
+	} else if (failedCards.length > 0) {
+		notify().operationFailed("unbury cards");
+	} else {
+		notify().cardsStatusChanged(unburiedCount, "unburied");
+	}
 }
 
 export async function handleDeleteAll(
