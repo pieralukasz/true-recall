@@ -3,9 +3,23 @@ import type { TypeInMode } from "@features/study/ui/review/helpers/type-in-flow"
 import type { SchedulingPreview } from "@shared/types";
 import { Clickable } from "@shared/ui/components";
 import { useIcon } from "@shared/ui/preact/hooks";
-import { cn } from "@shared/ui/utils/cn";
+import { cva } from "class-variance-authority";
 import type { Grade } from "ts-fsrs";
 import { Rating } from "ts-fsrs";
+
+const typeInButtonVariants = cva(
+	"ep:flex ep:items-center ep:justify-center ep:h-10 ep:px-3 ep:rounded-md ep:border ep:bg-obs-primary ep:text-ui-smaller ep:font-medium ep:text-obs-muted ep:transition-colors ep:transition-transform ep:duration-150 ep:focus-visible:outline-none ep:focus-visible:ring-2 ep:focus-visible:ring-obs-interactive/45 ep:active:scale-95",
+	{
+		variants: {
+			mode: {
+				ai: "ep:border-obs-interactive/45 ep:bg-obs-interactive/10 ep:text-obs-interactive ep:hover:border-obs-interactive/60 ep:hover:bg-obs-interactive/16",
+				diff: "ep:border-obs-blue/35 ep:bg-obs-blue/10 ep:text-obs-blue ep:hover:border-obs-blue/45 ep:hover:bg-obs-blue/16",
+				off: "ep:border-obs-border ep:hover:border-obs-modifier-border-hover ep:hover:bg-obs-modifier-hover ep:hover:text-obs-normal",
+			},
+		},
+		defaultVariants: { mode: "off" },
+	},
+);
 
 export interface ButtonBarProps {
 	isAnswerRevealed: boolean;
@@ -93,15 +107,7 @@ export function ButtonBar({
 
 				<div class="ep:flex ep:items-center ep:gap-2 ep:absolute ep:right-0">
 					<Clickable
-						class={cn(
-							"ep:flex ep:items-center ep:justify-center ep:h-10 ep:px-3 ep:rounded-md ep:border ep:bg-obs-primary ep:text-ui-smaller ep:font-medium ep:text-obs-muted ep:transition-colors ep:transition-transform ep:duration-150 ep:focus-visible:outline-none ep:focus-visible:ring-2 ep:focus-visible:ring-obs-interactive/45 ep:active:scale-95",
-							typeInMode === "ai" &&
-								"ep:border-obs-interactive/45 ep:bg-obs-interactive/10 ep:text-obs-interactive ep:hover:border-obs-interactive/60 ep:hover:bg-obs-interactive/16",
-							typeInMode === "diff" &&
-								"ep:border-obs-blue/35 ep:bg-obs-blue/10 ep:text-obs-blue ep:hover:border-obs-blue/45 ep:hover:bg-obs-blue/16",
-							typeInMode === "off" &&
-								"ep:border-obs-border ep:hover:border-obs-modifier-border-hover ep:hover:bg-obs-modifier-hover ep:hover:text-obs-normal",
-						)}
+						class={typeInButtonVariants({ mode: typeInMode })}
 						aria-label={`Cycle type in mode (current: ${typeInCurrent})`}
 						aria-pressed={typeInEnabled}
 						title={`Cycle type in mode (T) · current: ${typeInCurrent}`}

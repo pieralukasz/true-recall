@@ -45,6 +45,48 @@ function useAnswerWarmup(
 	return "hidden";
 }
 
+function CardFooter({
+	card,
+	isAnswerRevealed,
+	presetName,
+	presetOptions,
+	onPresetChange,
+	onOpenSourceNote,
+}: {
+	card: FSRSFlashcardItem;
+	isAnswerRevealed: boolean;
+	presetName?: string;
+	presetOptions?: PresetPickerOption[];
+	onPresetChange?: (presetName: string) => void;
+	onOpenSourceNote?: () => void;
+}) {
+	if (!isAnswerRevealed || (!card.sourceNoteName && !presetName)) return null;
+
+	return (
+		<div class="ep:flex ep:flex-col ep:items-center ep:gap-4 ep:pt-8">
+			{card.sourceNoteName && onOpenSourceNote && (
+				<Clickable
+					class="ep:text-obs-faint ep:text-ui-smaller ep:no-underline ep:hover:text-obs-accent ep:hover:underline ep:transition-colors ep:p-0"
+					onClick={onOpenSourceNote}
+				>
+					Source: {card.sourceNoteName}
+				</Clickable>
+			)}
+			{presetName && presetOptions && onPresetChange ? (
+				<PresetPopover
+					value={presetName}
+					options={presetOptions}
+					onChange={onPresetChange}
+				/>
+			) : presetName ? (
+				<span class="ep:text-obs-faint ep:text-ui-smaller">
+					FSRS: {presetName}
+				</span>
+			) : null}
+		</div>
+	);
+}
+
 export interface CardContainerProps {
 	card: FSRSFlashcardItem;
 	isAnswerRevealed: boolean;
@@ -154,29 +196,14 @@ export function CardContainer({
 						revealSingleOnly
 					/>
 
-					{isAnswerRevealed && (card.sourceNoteName || presetName) && (
-						<div class="ep:flex ep:flex-col ep:items-center ep:gap-4 ep:pt-8">
-							{card.sourceNoteName && onOpenSourceNote && (
-								<Clickable
-									class="ep:text-obs-faint ep:text-ui-smaller ep:no-underline ep:hover:text-obs-accent ep:hover:underline ep:transition-colors ep:p-0"
-									onClick={onOpenSourceNote}
-								>
-									Source: {card.sourceNoteName}
-								</Clickable>
-							)}
-							{presetName && presetOptions && onPresetChange ? (
-								<PresetPopover
-									value={presetName}
-									options={presetOptions}
-									onChange={onPresetChange}
-								/>
-							) : presetName ? (
-								<span class="ep:text-obs-faint ep:text-ui-smaller">
-									FSRS: {presetName}
-								</span>
-							) : null}
-						</div>
-					)}
+					<CardFooter
+						card={card}
+						isAnswerRevealed={isAnswerRevealed}
+						presetName={presetName}
+						presetOptions={presetOptions}
+						onPresetChange={onPresetChange}
+						onOpenSourceNote={onOpenSourceNote}
+					/>
 				</div>
 			</div>
 		);
@@ -320,29 +347,14 @@ export function CardContainer({
 						</div>
 					)}
 
-				{isAnswerRevealed && (card.sourceNoteName || presetName) && (
-					<div class="ep:flex ep:flex-col ep:items-center ep:gap-4 ep:pt-8">
-						{card.sourceNoteName && onOpenSourceNote && (
-							<Clickable
-								class="ep:text-obs-faint ep:text-ui-smaller ep:no-underline ep:hover:text-obs-accent ep:hover:underline ep:transition-colors ep:p-0"
-								onClick={onOpenSourceNote}
-							>
-								Source: {card.sourceNoteName}
-							</Clickable>
-						)}
-						{presetName && presetOptions && onPresetChange ? (
-							<PresetPopover
-								value={presetName}
-								options={presetOptions}
-								onChange={onPresetChange}
-							/>
-						) : presetName ? (
-							<span class="ep:text-obs-faint ep:text-ui-smaller">
-								FSRS: {presetName}
-							</span>
-						) : null}
-					</div>
-				)}
+				<CardFooter
+					card={card}
+					isAnswerRevealed={isAnswerRevealed}
+					presetName={presetName}
+					presetOptions={presetOptions}
+					onPresetChange={onPresetChange}
+					onOpenSourceNote={onOpenSourceNote}
+				/>
 			</div>
 		</div>
 	);

@@ -7,6 +7,7 @@ import type { FlashcardManager } from "@features/study/services/flashcard/flashc
 import type { QueueBuildOptions } from "@features/study/services/review.service";
 import type { SessionFilters } from "@features/study/ui/review/review.types";
 import { WEAK_CARD_STABILITY_THRESHOLD } from "@shared/constants";
+import { getTodayBoundary } from "@shared/utils/date.utils";
 import {
 	CARD_MUTATION_ACTION_SEMANTICS,
 	getNormalizedCardMutationAction,
@@ -346,7 +347,7 @@ function matchesSessionFilters(
 ): boolean {
 	const now = Date.now();
 	const dayStartHour = 4;
-	const todayBoundary = getTodayBoundary(dayStartHour);
+	const todayBoundary = getTodayBoundary(dayStartHour).getTime();
 	const weekAgoBoundary = todayBoundary - 7 * 86_400_000;
 
 	if (card.fsrs.suspended) return false;
@@ -465,12 +466,3 @@ function matchesSessionFilters(
 	return true;
 }
 
-function getTodayBoundary(dayStartHour: number): number {
-	const now = new Date();
-	const boundary = new Date(now);
-	boundary.setHours(dayStartHour, 0, 0, 0);
-	if (now.getHours() < dayStartHour) {
-		boundary.setDate(boundary.getDate() - 1);
-	}
-	return boundary.getTime();
-}

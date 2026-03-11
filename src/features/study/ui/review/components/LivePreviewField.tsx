@@ -35,17 +35,9 @@ export function LivePreviewField({
 	onContentChangeRef.current = onContentChange;
 	fieldRef.current = field;
 
-	// Save if dirty — clears timer, compares editor value with last-known content, fires onContentChange.
-	// Updates contentRef.current after save to prevent duplicate saves (blur, next onChange, etc.).
-	const flushPendingSave = useCallback(() => {
-		if (saveTimerRef.current !== null) {
-			clearTimeout(saveTimerRef.current);
-			saveTimerRef.current = null;
-		}
-
+	const performSave = useCallback(() => {
 		const editor = editorRef.current;
 		if (!editor) return;
-
 		const currentValue = editor.value;
 		const normalizedOriginal = stripBrTags(contentRef.current);
 		if (currentValue !== normalizedOriginal && onContentChangeRef.current) {
@@ -54,24 +46,23 @@ export function LivePreviewField({
 		}
 	}, []);
 
+	const flushPendingSave = useCallback(() => {
+		if (saveTimerRef.current !== null) {
+			clearTimeout(saveTimerRef.current);
+			saveTimerRef.current = null;
+		}
+		performSave();
+	}, [performSave]);
+
 	const scheduleSave = useCallback(() => {
 		if (saveTimerRef.current !== null) {
 			clearTimeout(saveTimerRef.current);
 		}
 		saveTimerRef.current = setTimeout(() => {
 			saveTimerRef.current = null;
-
-			const editor = editorRef.current;
-			if (!editor) return;
-
-			const currentValue = editor.value;
-			const normalizedOriginal = stripBrTags(contentRef.current);
-			if (currentValue !== normalizedOriginal && onContentChangeRef.current) {
-				onContentChangeRef.current(currentValue, fieldRef.current);
-				contentRef.current = currentValue;
-			}
+			performSave();
 		}, AUTOSAVE_DELAY_MS);
-	}, []);
+	}, [performSave]);
 
 	const handleBlur = useCallback(
 		(_editor: EmbeddableEditorInstance) => {
