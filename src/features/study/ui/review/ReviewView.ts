@@ -36,6 +36,7 @@ import {
 import { effect } from "@preact/signals";
 import { VIEW_TYPE_REVIEW } from "@shared/constants";
 import { notify } from "@shared/services/notification.service";
+import { refreshCards } from "@shared/services/reactive-card-store";
 import { lastMutation } from "@shared/services/signals";
 import type { ReviewApi } from "@shared/store";
 import {
@@ -531,6 +532,10 @@ export class ReviewView extends ItemView {
 		this.unsubscribe?.();
 		this.unsubscribeFromSessionEvents();
 		this.unmountPreact?.();
+
+		// Sync card data signal with FSRS changes accumulated during review
+		// (skipped per-answer to avoid blocking rapid answers)
+		refreshCards();
 
 		if (this.openNoteAction) {
 			this.openNoteAction.remove();

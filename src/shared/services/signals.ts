@@ -110,7 +110,13 @@ export function notifyCardChange(mutation: CardMutation): void {
 
 	batch(() => {
 		_lastMutation.value = normalizedMutation;
-		refreshCards();
+		// "reviewed" only changes FSRS scheduling on one card. The review UI
+		// reads from Zustand (not _cards signal), and NoteStatusCacheService
+		// handles incremental updates via lastMutation. Full reload deferred
+		// to session close to avoid blocking rapid answers.
+		if (normalizedMutation.type !== "reviewed") {
+			refreshCards();
+		}
 	});
 }
 

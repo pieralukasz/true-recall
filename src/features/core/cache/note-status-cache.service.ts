@@ -1,9 +1,6 @@
 import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
 import { effect } from "@preact/signals";
-import {
-	cards,
-	type NoteStatusInfo,
-} from "@shared/services/reactive-card-store";
+import { type NoteStatusInfo } from "@shared/services/reactive-card-store";
 import { type CardMutation, lastMutation } from "@shared/services/signals";
 import { State } from "ts-fsrs";
 
@@ -54,15 +51,12 @@ export class NoteStatusCacheService {
 	}
 
 	registerEvents(): void {
+		this.buildFromStore();
 		this.disposers.push(
 			effect(() => {
 				const m = lastMutation.value;
 				if (!m) return;
 				this.handleMutation(m);
-			}),
-			effect(() => {
-				cards.value;
-				this.buildFromStore();
 			}),
 		);
 	}
