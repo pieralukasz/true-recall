@@ -215,6 +215,9 @@
 [data-type="true-recall-dashboard-view"] .view-content {
 	padding: 0;
 }
+[data-type="true-recall-flashcard-panel"] .view-content {
+	padding-bottom: 12px;
+}
 
 /* ── Streaming flashcard generation animations ── */
 

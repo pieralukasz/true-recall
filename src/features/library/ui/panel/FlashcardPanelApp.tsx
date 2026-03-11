@@ -90,7 +90,12 @@ export function FlashcardPanelApp({
 		const dbIds = new Set(store.cardsWithFsrs.map((c) => c.id));
 		const streaming = streamingGeneration.peek();
 		return streaming.completedCards.filter((c) => !dbIds.has(c.id)).length;
-	}, [streamingCompletedCount, streamingNotePath, store.currentFile?.path, store.cardsWithFsrs]);
+	}, [
+		streamingCompletedCount,
+		streamingNotePath,
+		store.currentFile?.path,
+		store.cardsWithFsrs,
+	]);
 
 	const reviewedToday = plugin.sessionPersistence?.getReviewedToday();
 	const dayStartHour = plugin.settings.dayStartHour;
@@ -109,9 +114,10 @@ export function FlashcardPanelApp({
 							selectionMode={store.selectionMode}
 							selectedCount={store.selectedCardIds.size}
 							totalCount={
-							(store.flashcardInfo?.flashcards.length ?? 0) + streamingNewCount
-						}
-						streamingNewCount={streamingNewCount}
+								(store.flashcardInfo?.flashcards.length ?? 0) +
+								streamingNewCount
+							}
+							streamingNewCount={streamingNewCount}
 							searchQuery={store.searchQuery}
 							isFollowingReview={store.isFollowingReview}
 							reviewedToday={reviewedToday}
@@ -168,6 +174,14 @@ export function FlashcardPanelApp({
 						hasHighlights={store.hasHighlights}
 					/>
 				</div>
+				{store.currentFile && (
+					<div
+						class="ep:shrink-0 ep:text-ui-smaller ep:text-obs-faint ep:truncate ep:text-center ep:px-2"
+						title={store.currentFile.basename}
+					>
+						{store.currentFile.basename}
+					</div>
+				)}
 			</div>
 		</Panel>
 	);
