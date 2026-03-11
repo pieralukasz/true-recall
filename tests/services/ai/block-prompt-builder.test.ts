@@ -99,6 +99,7 @@ describe("BlockPromptBuilder", () => {
 			const prompt = buildBlockPrompt(basicType);
 			expect(prompt).toContain("TABLES & CODE BLOCKS");
 			expect(prompt).toContain("ANSWER QUALITY RULES");
+			expect(prompt).toContain("BREVITY");
 			expect(prompt).toContain("Anti-Source-Reference");
 			expect(prompt).toContain("LANGUAGE MATCH");
 		});

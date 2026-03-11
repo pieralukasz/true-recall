@@ -9,6 +9,7 @@
 
 import { resolveSlug } from "@features/study/services/flashcard/note-type-slug";
 import type { NoteType } from "@shared/types/note.types";
+import { BASIC_V2_RULES } from "./shared-prompt-rules";
 
 const SHARED_RULES = `MANDATORY RULES:
 1. One flashcard = ONE piece of information. If answer has multiple facts, create SEPARATE flashcards.
@@ -49,38 +50,6 @@ KNOWLEDGE STRUCTURE:
 - Basics First: Prioritize fundamental definitions and core concepts. Create those cards before details, exceptions, or examples.
 - Vivid Language: Use concrete, vivid wording over dry abstractions. Mention visual associations when natural (e.g., "shaped like a double helix").
 - Context Cues: When the source covers multiple distinct topics, prefix questions with a brief topic label in parentheses.`;
-
-const BASIC_V2_RULES = `MANDATORY MINDSET & RULES:
-- EXHAUSTIVE, NOT SUMMARIZED: Never reduce card count due to text length. Create as many cards as needed — even 15+ from a single fragment. Every technical term, concept, and detail gets its own card.
-- HYPER-ATOMICITY: One flashcard = EXACTLY ONE piece of information in the Back. Break complex definitions apart entirely.
-- NUMBERED LISTS & BULLETS IN SOURCE: Each list item in the source text becomes its own atomic card.
-- TABLES & CODE BLOCKS: Treat each table row and each code line as an atomic fact. Use the full table or code block as the source quote.
-- THE MERGE RULE: If multiple cards would have identical questions, MERGE them into one card. List all answers as Markdown bullet points (\`- item\`) in the Back — this is the ONLY time bullet points appear in the Back.
-- PERFECT QUOTES: The <!-- source: --> must be a verbatim copy of the single sentence proving the fact. If a fact spans two sentences, join both sentences as one quote. No labels, no quotation marks.
-- CONTEXT-FREE & CONCRETE: Every question must be fully understandable without the source text. Add a distinguishing cue when concepts are similar (e.g., "Unlike X, what does Y...").
-- LANGUAGE MATCH: Always use the exact same language as the source text — if the source is Polish, all cards must be in Polish; if English, in English. Never switch languages regardless of card count or complexity.
-- If the text contains absolutely no new information, return ONLY: NO_NEW_CARDS.
-
-MARKDOWN & BACKLINK FORMATTING (CRITICAL):
-- BOLDING: Bold the core target keyword or concept in every question using **bold**.
-- BACKLINKS: Wrap ALL key nouns in [[backlinks]] (lowercase) — this includes proper names, domain-specific terms, scientific terms, and any concept that would have its own Obsidian note. Proper nouns (e.g., people's names, cities) are always wrapped in backlinks, identical to domain terms.
-- COMBINED: When a term needs both bold and a backlink, use **[[term]]**.
-- ALIASES: Use [[term|alias]] when needed for readability. NEVER use [term](app://obsidian.md/term). Double brackets only.
-- Separate cards with --- on its own line.
-
-ANSWER QUALITY RULES:
-- SELF-CONTAINED ANSWER: The Back must state the fact directly — never reference the source text with phrases like "according to the text," "as stated," or "in the text." The answer stands alone as a memory fact.
-- NO META-REFERENCES: Questions must never contain scene-relative or text-relative qualifiers such as "in the described scene," "in the text," "as described," "in question," or any phrase that implies the answer only exists within a document or fictional frame. Ask about the concept or subject directly, as if stating a fact about the world.
-- CONCRETE, NOT ATTRIBUTED: Write as if stating a fact about the world, not summarizing a reading.
-- ONE ANSWER ONLY: The Back must never contain two pieces of information unless triggered by the Merge Rule. If a question could yield two facts, split it into two separate cards.
-
-ANTI-RULES (NEVER DO THIS):
-- Anti-Tautology: The question must never contain the answer.
-- Anti-Order: Never ask "What is the first/second/next…" — ask about the concept directly.
-- Anti-List: No bullet points in the Back unless triggered by the Merge Rule.
-- Anti-Boolean: Never ask Yes/No questions.
-- Anti-Example-Trap: Never ask "What is an example of X?" — state the example, ask for the category.
-- Anti-Source-Reference: Never phrase a question as "According to the text, what is...?", "in the described scene", "as described", or any variant that makes the question context-dependent.`;
 
 const CLOZE_RULES = `CLOZE RULES:
 - Keep each cloze sentence to ~15-20 words max. Split long source sentences into shorter statements.
