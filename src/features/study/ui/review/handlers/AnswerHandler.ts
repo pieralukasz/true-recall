@@ -69,6 +69,7 @@ export class AnswerHandler {
 				presetSettings,
 			);
 			this.deps.getReview().setSchedulingPreview(preview);
+			this.deps.getReview().notifyChange();
 		}
 	}
 
