@@ -91,8 +91,16 @@ describe("BlockPromptBuilder", () => {
 			const prompt = buildBlockPrompt(basicType);
 			expect(prompt).toContain("NUMBERED LISTS & BULLETS IN SOURCE");
 			expect(prompt).toContain("THE MERGE RULE");
-			expect(prompt).toContain("PERFECT, IDENTICAL copy");
+			expect(prompt).toContain("verbatim copy");
 			expect(prompt).toContain("NO_NEW_CARDS");
+		});
+
+		it("should include new ultrathink rules in basic v2", () => {
+			const prompt = buildBlockPrompt(basicType);
+			expect(prompt).toContain("TABLES & CODE BLOCKS");
+			expect(prompt).toContain("ANSWER QUALITY RULES");
+			expect(prompt).toContain("Anti-Source-Reference");
+			expect(prompt).toContain("LANGUAGE MATCH");
 		});
 
 		it("should include --- separator instruction", () => {
@@ -131,6 +139,7 @@ describe("BlockPromptBuilder", () => {
 			expect(prompt).toContain("FEW-SHOT EXAMPLES");
 			expect(prompt).toContain("rosacea");
 			expect(prompt).toContain("aunt Irene");
+			expect(prompt).toContain("kubek");
 		});
 
 		it("should include cloze example for cloze types", () => {
@@ -144,6 +153,7 @@ describe("BlockPromptBuilder", () => {
 			const prompt = buildBlockPrompt(customType);
 			expect(prompt).not.toContain("NUMBERED LISTS & BULLETS IN SOURCE");
 			expect(prompt).not.toContain("THE MERGE RULE");
+			expect(prompt).not.toContain("ANSWER QUALITY RULES");
 			expect(prompt).not.toContain(
 				"ROLE: You are an expert in creating flashcards optimized",
 			);

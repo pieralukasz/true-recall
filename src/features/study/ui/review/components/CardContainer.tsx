@@ -12,6 +12,38 @@ import type {
 } from "@shared/types";
 import { Clickable } from "@shared/ui/components";
 import { cn } from "@shared/ui/utils/cn";
+import { useEffect, useRef, useState } from "preact/hooks";
+
+function useAnswerWarmup(
+	isRevealed: boolean,
+	cardId: string,
+): "hidden" | "warming" | "visible" {
+	const warmRef = useRef(false);
+	const prevCardRef = useRef(cardId);
+	const [, tick] = useState(0);
+
+	// Reset synchronously on card change (before render output)
+	if (prevCardRef.current !== cardId) {
+		prevCardRef.current = cardId;
+		warmRef.current = false;
+	}
+
+	useEffect(() => {
+		if (isRevealed || warmRef.current) return;
+
+		// Wait one frame for the question to paint, then start warm-up
+		const rafId = requestAnimationFrame(() => {
+			warmRef.current = true;
+			tick((t) => t + 1);
+		});
+
+		return () => cancelAnimationFrame(rafId);
+	}, [cardId, isRevealed]);
+
+	if (isRevealed) return "visible";
+	if (warmRef.current) return "warming";
+	return "hidden";
+}
 
 export interface CardContainerProps {
 	card: FSRSFlashcardItem;
@@ -91,6 +123,7 @@ export function CardContainer({
 	semanticResult,
 	semanticMessage,
 }: CardContainerProps) {
+	const answerPhase = useAnswerWarmup(isAnswerRevealed, card.id);
 	const sourcePath = card.sourceNotePath || "";
 
 	const questionContent = card.question;
@@ -151,7 +184,7 @@ export function CardContainer({
 
 	return (
 		<div class="true-recall-review-card-container ep:flex-1 ep:min-h-0 ep:flex ep:items-start ep:justify-center ep:pt-8 ep:px-6 ep:pb-2 ep:overflow-y-auto ep:w-full ep:max-w-3xl ep:mx-auto">
-			<div class="ep:w-full">
+			<div class="ep:w-full ep:relative">
 				{card.cardType === "cloze" && card.clozeIndex !== undefined && (
 					<div class="ep:text-xs ep:text-obs-faint ep:mb-2 ep:uppercase ep:tracking-wider">
 						{`Cloze ${card.clozeIndex}`}
@@ -197,7 +230,14 @@ export function CardContainer({
 						>
 							<div class="ep:flex-1 ep:border-t ep:border-obs-border" />
 						</div>
-						<div class={isAnswerRevealed ? "ep:mt-6" : "ep:hidden"}>
+						<div
+							class={cn(
+								answerPhase === "visible" && "ep:mt-6",
+								answerPhase === "warming" && "ep:invisible ep:absolute ep:left-0 ep:right-0 ep:pointer-events-none ep:-z-10",
+								answerPhase === "hidden" && "ep:hidden",
+							)}
+							aria-hidden={answerPhase !== "visible"}
+						>
 							<LivePreviewField
 								content={card.answer}
 								field="answer"

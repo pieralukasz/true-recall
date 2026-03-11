@@ -32,6 +32,8 @@ export interface EmbeddableEditorOptions {
 	onPaste?: (e: ClipboardEvent, editor: EmbeddableEditorInstance) => void;
 	onChange?: (update: ViewUpdate) => void;
 	onModEnter?: (editor: EmbeddableEditorInstance) => void;
+	onTab?: (editor: EmbeddableEditorInstance) => void;
+	onShiftTab?: (editor: EmbeddableEditorInstance) => void;
 	extraExtensions?: Extension[];
 }
 
@@ -229,6 +231,30 @@ export function createEmbeddableEditorClass(app: App) {
 							},
 							preventDefault: true,
 						},
+						...(this.options.onTab
+							? [
+									{
+										key: "Tab",
+										run: () => {
+											this.options.onTab!(this);
+											return true;
+										},
+										preventDefault: true,
+									},
+								]
+							: []),
+						...(this.options.onShiftTab
+							? [
+									{
+										key: "Shift-Tab",
+										run: () => {
+											this.options.onShiftTab!(this);
+											return true;
+										},
+										preventDefault: true,
+									},
+								]
+							: []),
 					]),
 				),
 			);

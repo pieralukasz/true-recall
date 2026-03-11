@@ -37,6 +37,7 @@ ANTI-RULES:
 - No Order Questions: NEVER use "What is the first/second/next..."
 - Anti-Boolean: NEVER ask Yes/No questions. Ask for the specific fact.
 - Anti-Example-Trap: Don't ask "What is an example of X?" — state the example, ask for the category.
+- Anti-Source-Reference: Never phrase a question as "According to the text, what is...?" or any variant that makes the question context-dependent.
 
 QUESTION QUALITY:
 - Context-Free: Each question must be understandable WITHOUT the source text. Include enough context in the question itself.
@@ -50,28 +51,36 @@ KNOWLEDGE STRUCTURE:
 - Context Cues: When the source covers multiple distinct topics, prefix questions with a brief topic label in parentheses.`;
 
 const BASIC_V2_RULES = `MANDATORY MINDSET & RULES:
-- EXHAUSTIVE, NOT SUMMARIZED: The number of flashcards doesn't matter. Never shorten because of text size. Don't hesitate to create even 15 flashcards from a single fragment. Every technical term, concept, and detail gets its own card.
-- HYPER-ATOMICITY: One flashcard = EXACTLY ONE piece of information in the answer. Break complex definitions down entirely.
+- EXHAUSTIVE, NOT SUMMARIZED: Never reduce card count due to text length. Create as many cards as needed — even 15+ from a single fragment. Every technical term, concept, and detail gets its own card.
+- HYPER-ATOMICITY: One flashcard = EXACTLY ONE piece of information in the Back. Break complex definitions apart entirely.
 - NUMBERED LISTS & BULLETS IN SOURCE: Each list item in the source text becomes its own atomic card.
-- THE MERGE RULE: If several flashcards would have identical questions, MERGE them. In the "Back" field, list all elements using Markdown bullet points (- item).
-- PERFECT QUOTES: The <!-- source: ... --> must be a PERFECT, IDENTICAL copy from the input text (just the specific sentence proving the fact). Do not use labels like "Quote:" and do not use quotation marks.
-- CONTEXT-FREE & CONCRETE: Each question must be perfectly understandable WITHOUT the source text. Add a distinguishing cue if concepts are similar (e.g., "Unlike X, what does Y...").
+- TABLES & CODE BLOCKS: Treat each table row and each code line as an atomic fact. Use the full table or code block as the source quote.
+- THE MERGE RULE: If multiple cards would have identical questions, MERGE them into one card. List all answers as Markdown bullet points (\`- item\`) in the Back — this is the ONLY time bullet points appear in the Back.
+- PERFECT QUOTES: The <!-- source: --> must be a verbatim copy of the single sentence proving the fact. If a fact spans two sentences, join both sentences as one quote. No labels, no quotation marks.
+- CONTEXT-FREE & CONCRETE: Every question must be fully understandable without the source text. Add a distinguishing cue when concepts are similar (e.g., "Unlike X, what does Y...").
+- LANGUAGE MATCH: Always use the exact same language as the source text — if the source is Polish, all cards must be in Polish; if English, in English. Never switch languages regardless of card count or complexity.
 - If the text contains absolutely no new information, return ONLY: NO_NEW_CARDS.
-- Use the same language as the source text.
 
 MARKDOWN & BACKLINK FORMATTING (CRITICAL):
-- BOLDING: Bold the core target keyword/concept in every question using **bold**. If a distinguishing word is needed, bold it too.
-- BACKLINKS: Wrap ALL key nouns in [[backlinks]] (lowercase). This includes proper names, domain-specific terms, scientific terms, and any concept that would have its own Obsidian note.
-- COMBINED: If bolding is required inside brackets, use **[[term]]**.
-- ALIASES: Use [[term|alias]] for context/readability when needed. NEVER use [term](app://obsidian.md/term). Only use double brackets.
+- BOLDING: Bold the core target keyword or concept in every question using **bold**.
+- BACKLINKS: Wrap ALL key nouns in [[backlinks]] (lowercase) — this includes proper names, domain-specific terms, scientific terms, and any concept that would have its own Obsidian note. Proper nouns (e.g., people's names, cities) are always wrapped in backlinks, identical to domain terms.
+- COMBINED: When a term needs both bold and a backlink, use **[[term]]**.
+- ALIASES: Use [[term|alias]] when needed for readability. NEVER use [term](app://obsidian.md/term). Double brackets only.
 - Separate cards with --- on its own line.
 
+ANSWER QUALITY RULES:
+- SELF-CONTAINED ANSWER: The Back must state the fact directly — never reference the source text with phrases like "according to the text," "as stated," or "in the text." The answer stands alone as a memory fact.
+- NO META-REFERENCES: Questions must never contain scene-relative or text-relative qualifiers such as "in the described scene," "in the text," "as described," "in question," or any phrase that implies the answer only exists within a document or fictional frame. Ask about the concept or subject directly, as if stating a fact about the world.
+- CONCRETE, NOT ATTRIBUTED: Write as if stating a fact about the world, not summarizing a reading.
+- ONE ANSWER ONLY: The Back must never contain two pieces of information unless triggered by the Merge Rule. If a question could yield two facts, split it into two separate cards.
+
 ANTI-RULES (NEVER DO THIS):
-- Anti-Tautology: Question MUST NOT contain the answer.
-- Anti-Order: NEVER use "What is the first/second/next..." Ask about the concept directly.
-- Anti-List: Never use bullet points in the Back UNLESS triggered by the Merge Rule.
-- Anti-Boolean: NEVER ask Yes/No questions.
-- Anti-Example-Trap: Don't ask "What is an example of X?" — state the example, ask for the category.`;
+- Anti-Tautology: The question must never contain the answer.
+- Anti-Order: Never ask "What is the first/second/next…" — ask about the concept directly.
+- Anti-List: No bullet points in the Back unless triggered by the Merge Rule.
+- Anti-Boolean: Never ask Yes/No questions.
+- Anti-Example-Trap: Never ask "What is an example of X?" — state the example, ask for the category.
+- Anti-Source-Reference: Never phrase a question as "According to the text, what is...?", "in the described scene", "as described", or any variant that makes the question context-dependent.`;
 
 const CLOZE_RULES = `CLOZE RULES:
 - Keep each cloze sentence to ~15-20 words max. Split long source sentences into shorter statements.
@@ -243,7 +252,98 @@ ${back}: Lose weight
 #type/${slug}
 ${front}: What must aunt **[[irene]]** stop doing before going to work?
 ${back}: Downing gin shots
-<!-- source: She knows she must stop downing gin shots before going to work. -->`;
+<!-- source: She knows she must stop downing gin shots before going to work. -->
+---
+
+Input Text: "Coś w tym półśnie, w tej ciszy przed dniem, sprawia że kubek wydaje się cieplejszy niż powinien."
+
+#type/${slug}
+${front}: Jak **[[kubek]]** wydaje się w półśnie?
+${back}: Cieplejszy niż powinien
+<!-- source: Coś w tym półśnie, w tej ciszy przed dniem, sprawia że kubek wydaje się cieplejszy niż powinien. -->
+---
+#type/${slug}
+${front}: Co sprawia, że **[[kubek]]** wydaje się cieplejszy niż powinien?
+${back}:
+- Półsen
+- Cisza przed dniem
+<!-- source: Coś w tym półśnie, w tej ciszy przed dniem, sprawia że kubek wydaje się cieplejszy niż powinien. -->
+---
+
+Input Text: "Sunsets never repeat. Tonight the sky went from copper to bruised violet in maybe four minutes. I looked up too late and caught only the last thirty seconds."
+
+#type/${slug}
+${front}: How often do **[[sunsets]]** repeat?
+${back}: Never
+<!-- source: Sunsets never repeat. -->
+---
+#type/${slug}
+${front}: What color did the **[[sky]]** transition from **[[tonight]]**?
+${back}: Copper
+<!-- source: Tonight the sky went from copper to bruised violet in maybe four minutes. -->
+---
+#type/${slug}
+${front}: What color did the **[[sky]]** transition to **[[tonight]]**?
+${back}: Bruised violet
+<!-- source: Tonight the sky went from copper to bruised violet in maybe four minutes. -->
+---
+#type/${slug}
+${front}: How long did the **[[sky]]**'s color transition last **[[tonight]]**?
+${back}: Maybe four [[minutes]]
+<!-- source: Tonight the sky went from copper to bruised violet in maybe four minutes. -->
+---
+#type/${slug}
+${front}: How much of the **[[sky]]**'s transition did the **[[observer]]** catch **[[tonight]]**?
+${back}: Only the last thirty [[seconds]]
+<!-- source: I looked up too late and caught only the last thirty seconds. -->
+---
+#type/${slug}
+${front}: When did the **[[observer]]** look up relative to the event **[[tonight]]**?
+${back}: Too late
+<!-- source: I looked up too late and caught only the last thirty seconds. -->
+---
+
+Input Text: "W gorach cisza ma wage. Czujesz ja w uszach, w klatce piersiowej. Schodzisz na dol i przez dwa dni miasto wydaje sie za glosne."
+
+#type/${slug}
+${front}: Co ma wagę w **[[górach]]**?
+${back}: [[Cisza]]
+<!-- source: W gorach cisza ma wage. -->
+---
+#type/${slug}
+${front}: Gdzie czujesz **[[ciszę]]** w [[górach]]?
+${back}:
+- W uszach
+- W klatce piersiowej
+<!-- source: Czujesz ja w uszach, w klatce piersiowej. -->
+---
+#type/${slug}
+${front}: Jak długo **[[miasto]]** wydaje się za głośne po zejściu z [[gór]]?
+${back}: Przez dwa dni
+<!-- source: Schodzisz na dol i przez dwa dni miasto wydaje sie za glosne. -->
+---
+
+Input Text: "Bread baking fills the whole apartment in a way no candle imitates. The crust cracks when you tear it too early. You always tear it too early."
+
+#type/${slug}
+${front}: What does **[[bread baking]]** fill?
+${back}: The whole apartment
+<!-- source: Bread baking fills the whole apartment in a way no candle imitates. -->
+---
+#type/${slug}
+${front}: **[[Bread baking]]** fills the whole **[[apartment]]** in a way no **[[candle]]** what?
+${back}: Imitates
+<!-- source: Bread baking fills the whole apartment in a way no candle imitates. -->
+---
+#type/${slug}
+${front}: What does the **[[crust]]** do when you tear it too early?
+${back}: Cracks
+<!-- source: The crust cracks when you tear it too early. -->
+---
+#type/${slug}
+${front}: What do you always do to the **[[crust]]**?
+${back}: Tear it too early
+<!-- source: You always tear it too early. -->`;
 }
 
 function getFieldDescription(
