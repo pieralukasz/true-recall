@@ -267,7 +267,19 @@ export function applyMutation(
 				return;
 			}
 			if (actionSemantics === "queue-sync") {
-				syncQueueWithMutatedCards(m.cardIds, review, flashcardManager, filters);
+				// For reset (forget): remove old versions from queue first,
+				// so they can be re-added with fresh FSRS data at the end
+				const forceRequeue = normalizedAction === "reset";
+				if (forceRequeue) {
+					removeCardsFromQueue(review, m.cardIds);
+				}
+				syncQueueWithMutatedCards(
+					m.cardIds,
+					review,
+					flashcardManager,
+					filters,
+					forceRequeue,
+				);
 			}
 			break;
 		}
@@ -300,14 +312,20 @@ function syncQueueWithMutatedCards(
 	review: ReviewApi,
 	flashcardManager: FlashcardManager,
 	filters: SessionFilters,
+	forceAdd = false,
 ): void {
 	const uniqueIds = [...new Set(cardIds)];
 	if (uniqueIds.length === 0) return;
 
-	const queueIds = new Set(review.queue.map((card) => card.id));
+	// When forceAdd: cards were already removed from the queue, but
+	// review.queue is a stale snapshot. Use empty set so addCardToQueue()
+	// is reached — it uses get() internally for fresh dedup.
+	const queueIds = forceAdd
+		? new Set<string>()
+		: new Set(review.queue.map((card) => card.id));
 	const cards = flashcardManager.getCardsByIds(uniqueIds);
 	const cardsById = new Map(cards.map((card) => [card.id, card]));
-	const canAutoAdd = canAutoAddMutatedCards(filters);
+	const canAutoAdd = forceAdd || canAutoAddMutatedCards(filters);
 	const idsToRemove: string[] = [];
 
 	for (const id of uniqueIds) {
