@@ -39,6 +39,8 @@ export interface KeyboardActionCallbacks {
 	onEditCard: () => Promise<void>;
 	onCycleTypeInMode: () => void;
 	canRateShortcuts?: () => boolean;
+	isTypeInActive?: () => boolean;
+	onFocusTypeIn?: () => void;
 }
 
 /**
@@ -188,10 +190,14 @@ export class KeyboardHandler {
 				return;
 			}
 
-			// Show answer on Space
+			// When type-in is active, Space focuses the editor instead of revealing
 			if (e.code === "Space") {
 				e.preventDefault();
-				this.callbacks.onShowAnswer();
+				if (this.callbacks.isTypeInActive?.()) {
+					this.callbacks.onFocusTypeIn?.();
+				} else {
+					this.callbacks.onShowAnswer();
+				}
 			}
 		} else {
 			const canRate = this.callbacks.canRateShortcuts?.() ?? true;

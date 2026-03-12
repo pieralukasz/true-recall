@@ -1,3 +1,5 @@
+import type { TypeInMode } from "./type-in-flow";
+
 const TYPE_IN_MODE_STORAGE_KEY = "true-recall.review.type-in-mode";
 
 interface StorageReader {
@@ -17,24 +19,28 @@ export function getTypeInModeStorage(): Storage | null {
 	}
 }
 
+const VALID_MODES: ReadonlySet<string> = new Set(["off", "ai", "diff"]);
+
 export function readPersistedTypeInMode(
 	storage: StorageReader | null | undefined,
-): boolean {
-	if (!storage) return false;
+): TypeInMode | null {
+	if (!storage) return null;
 	try {
-		return storage.getItem(TYPE_IN_MODE_STORAGE_KEY) === "true";
+		const value = storage.getItem(TYPE_IN_MODE_STORAGE_KEY);
+		if (value && VALID_MODES.has(value)) return value as TypeInMode;
+		return null;
 	} catch {
-		return false;
+		return null;
 	}
 }
 
 export function persistTypeInMode(
 	storage: StorageWriter | null | undefined,
-	enabled: boolean,
+	mode: TypeInMode,
 ): void {
 	if (!storage) return;
 	try {
-		storage.setItem(TYPE_IN_MODE_STORAGE_KEY, String(enabled));
+		storage.setItem(TYPE_IN_MODE_STORAGE_KEY, mode);
 	} catch {
 		// Ignore storage write failures (private mode / platform restrictions).
 	}

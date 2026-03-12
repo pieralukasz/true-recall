@@ -228,7 +228,7 @@ export function NoteList({
 	const handleStudyNote = (noteName: string) => {
 		void plugin.openReviewViewWithFilters({
 			sourceNoteFilter: noteName,
-			ignoreDailyLimits: true,
+			ignoreDailyLimits: plugin.settings.ignoreDailyLimitsForNoteStudy,
 		});
 	};
 

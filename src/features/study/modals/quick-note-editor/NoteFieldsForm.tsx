@@ -1,4 +1,5 @@
-import type { EditorView } from "@codemirror/view";
+import { StateEffect } from "@codemirror/state";
+import { EditorView } from "@codemirror/view";
 import type { NoteType } from "@shared/types/note.types";
 import { Clickable } from "@shared/ui/components/Clickable";
 import type { EmbeddableEditorInstance } from "@shared/ui/editor/embedded-editor";
@@ -141,10 +142,10 @@ function CMField({
 
 	const handleModEnter = useCallback(() => onModEnter?.(), [onModEnter]);
 
-	// Debounced input — updates fields state as user types (~150ms)
+	// Debounced doc-change listener — updates fields state as user types (~150ms)
 	// so hasContent / Save button react without waiting for blur.
-	// Uses DOM "input" event because EmbeddableEditor.onChange has a timing
-	// bug (buildLocalExtensions runs during super(), before options are set).
+	// Added via StateEffect.appendConfig (after construction) because
+	// EmbeddableEditor.onChange has a timing bug in buildLocalExtensions.
 	const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 	const onFieldChangeRef = useRef(onFieldChange);
 	onFieldChangeRef.current = onFieldChange;
@@ -175,14 +176,22 @@ function CMField({
 		editorRef.current = editor;
 		registerEditor?.(fieldName, editor);
 
-		// Debounced input listener — updates parent state while typing
-		const onInput = () => {
-			clearTimeout(debounceRef.current);
-			debounceRef.current = setTimeout(() => {
-				onFieldChangeRef.current(fieldName, editor.value);
-			}, 150);
-		};
-		editor.cm.contentDOM.addEventListener("input", onInput);
+		// CM6 updateListener — catches all doc changes (type, delete, paste, undo)
+		editor.cm.dispatch({
+			effects: StateEffect.appendConfig.of(
+				EditorView.updateListener.of((update) => {
+					if (update.docChanged) {
+						clearTimeout(debounceRef.current);
+						debounceRef.current = setTimeout(() => {
+							onFieldChangeRef.current(
+								fieldName,
+								update.state.doc.toString(),
+							);
+						}, 150);
+					}
+				}),
+			),
+		});
 
 		// Report focus to parent for shared toolbar
 		editor.cm.contentDOM.addEventListener("focusin", () => {
@@ -198,7 +207,6 @@ function CMField({
 
 		return () => {
 			clearTimeout(debounceRef.current);
-			editor.cm.contentDOM.removeEventListener("input", onInput);
 			registerEditor?.(fieldName, null);
 			editorRef.current = null;
 			editor.destroy();
