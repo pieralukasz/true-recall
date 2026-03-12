@@ -406,6 +406,12 @@
 		box-shadow: 0 8px 24px
 			color-mix(in srgb, var(--background-primary) 50%, transparent);
 		max-height: min(58vh, 620px);
+		margin-inline: auto;
+		opacity: 0;
+	}
+
+	.true-recall-io-render-frame.is-loaded {
+		opacity: 1;
 	}
 
 	.true-recall-io-render-image {

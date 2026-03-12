@@ -80,12 +80,18 @@ export function IOCardRenderer({
 	}, [definition]);
 
 	const [aspectRatio, setAspectRatio] = useState<number | null>(null);
+	const [loaded, setLoaded] = useState(false);
 
 	const handleImageLoad = useCallback((e: Event) => {
 		const img = e.currentTarget as HTMLImageElement;
 		if (img.naturalWidth > 0 && img.naturalHeight > 0) {
 			setAspectRatio(img.naturalWidth / img.naturalHeight);
 		}
+		setLoaded(true);
+	}, []);
+
+	const handleImageError = useCallback(() => {
+		setLoaded(true);
 	}, []);
 
 	if (!imageFile || !definition) {
@@ -103,7 +109,7 @@ export function IOCardRenderer({
 			class={`true-recall-io-render ${revealed ? "is-revealed" : ""} ${className ?? ""}`}
 		>
 			<div
-				class="true-recall-io-render-frame"
+				class={`true-recall-io-render-frame${loaded ? " is-loaded" : ""}`}
 				style={aspectRatio ? { aspectRatio: `${aspectRatio}` } : undefined}
 			>
 				<img
@@ -111,6 +117,7 @@ export function IOCardRenderer({
 					alt={`Occlusion ${templateOrd + 1}`}
 					class="true-recall-io-render-image"
 					onLoad={handleImageLoad}
+					onError={handleImageError}
 				/>
 				<svg
 					class="true-recall-io-render-svg"
