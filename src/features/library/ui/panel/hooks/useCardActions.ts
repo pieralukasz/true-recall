@@ -7,37 +7,30 @@ import { QuickNoteEditorModal } from "@features/study/modals/quick-note-editor/Q
 import { notify } from "@shared/services/notification.service";
 import { notifyCardChange } from "@shared/services/signals";
 import { pushDeleteUndo } from "@shared/services/undo.service";
-import type { PanelApi } from "@shared/store";
 import {
 	BUILTIN_BASIC_ID,
 	BUILTIN_BASIC_REVERSED_ID,
-	type FlashcardInfo,
 	type FlashcardItem,
 } from "@shared/types";
 import type { FSRSFlashcardItem } from "@shared/types/fsrs/card.types";
 import { useApp, usePlugin } from "@shared/ui/preact";
-import type { TFile } from "obsidian";
 import { useCallback } from "preact/hooks";
 
+import { usePanelStore } from "./usePanelStore";
+
 export interface UseCardActionsParams {
-	currentFile: TFile | null;
-	flashcardInfo: FlashcardInfo | null;
-	cardsWithFsrs: FSRSFlashcardItem[];
-	panel: PanelApi;
 	preserveScroll: (action: () => void) => void;
 	captureScroll: () => () => void;
 }
 
 export function useCardActions({
-	currentFile,
-	flashcardInfo,
-	cardsWithFsrs,
-	panel,
 	preserveScroll,
 	captureScroll,
 }: UseCardActionsParams) {
 	const plugin = usePlugin();
 	const app = useApp();
+	const { currentFile, flashcardInfo, cardsWithFsrs, panel } =
+		usePanelStore();
 
 	const findFsrsCard = (cardId: string): FSRSFlashcardItem | undefined => {
 		return cardsWithFsrs.find((c) => c.id === cardId);

@@ -141,21 +141,13 @@ function CMField({
 
 	const handleModEnter = useCallback(() => onModEnter?.(), [onModEnter]);
 
-	// Debounced onChange — updates fields state as user types (~150ms)
+	// Debounced input — updates fields state as user types (~150ms)
 	// so hasContent / Save button react without waiting for blur.
+	// Uses DOM "input" event because EmbeddableEditor.onChange has a timing
+	// bug (buildLocalExtensions runs during super(), before options are set).
 	const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 	const onFieldChangeRef = useRef(onFieldChange);
 	onFieldChangeRef.current = onFieldChange;
-
-	const handleChange = useCallback(
-		(update: import("@codemirror/view").ViewUpdate) => {
-			clearTimeout(debounceRef.current);
-			debounceRef.current = setTimeout(() => {
-				onFieldChangeRef.current(fieldName, update.state.doc.toString());
-			}, 150);
-		},
-		[fieldName],
-	);
 
 	const [editorFailed, setEditorFailed] = useState(false);
 
@@ -170,7 +162,6 @@ function CMField({
 			editor = new plugin.EmbeddableEditor(app, el, {
 				value: contentRef.current,
 				onBlur: handleBlur,
-				onChange: handleChange,
 				onEscape: (e) => e.cm.contentDOM.blur(),
 				onModEnter: handleModEnter,
 				onTab: onTab ? () => onTab() : undefined,
@@ -183,6 +174,15 @@ function CMField({
 		}
 		editorRef.current = editor;
 		registerEditor?.(fieldName, editor);
+
+		// Debounced input listener — updates parent state while typing
+		const onInput = () => {
+			clearTimeout(debounceRef.current);
+			debounceRef.current = setTimeout(() => {
+				onFieldChangeRef.current(fieldName, editor.value);
+			}, 150);
+		};
+		editor.cm.contentDOM.addEventListener("input", onInput);
 
 		// Report focus to parent for shared toolbar
 		editor.cm.contentDOM.addEventListener("focusin", () => {
@@ -198,6 +198,7 @@ function CMField({
 
 		return () => {
 			clearTimeout(debounceRef.current);
+			editor.cm.contentDOM.removeEventListener("input", onInput);
 			registerEditor?.(fieldName, null);
 			editorRef.current = null;
 			editor.destroy();

@@ -9,9 +9,11 @@ import { useCallback, useEffect, useMemo, useRef } from "preact/hooks";
 import {
 	DRAG_MIME,
 	type DragItem,
+	type DragState,
 	type DropResult,
 	dragItemFromFlatItem,
 	executeDrop,
+	getDragClass,
 	validateDrop,
 } from "../helpers/drag-drop";
 import { UNASSIGNED_PATH } from "../helpers/project-aggregation";
@@ -35,11 +37,6 @@ interface ProjectsTabProps {
 	onPresetClick?: (path: string | null) => void;
 }
 
-interface DragState {
-	item: DragItem;
-	dropTargetPath: string | null;
-	isValid: boolean;
-}
 
 export function ProjectsTab({
 	projects,
@@ -244,16 +241,6 @@ export function ProjectsTab({
 		[dragState, plugin],
 	);
 
-	// ── CSS class helpers ────────────────────────────────
-
-	function getDragClass(itemPath: string | null): string {
-		const ds = dragState.value;
-		if (!ds || !itemPath) return "";
-		if (ds.item.path === itemPath) return "ep-drag-source";
-		if (ds.dropTargetPath === itemPath && ds.isValid) return "ep-drop-target";
-		return "";
-	}
-
 	// ── Render ───────────────────────────────────────────
 
 	if (flatItems.length === 0) {
@@ -268,25 +255,8 @@ export function ProjectsTab({
 
 	return (
 		<div>
-			{/* Root drop zone (top) — visible only during drag, allows un-nesting */}
 			{dragState.value?.item.parentPath && (
-				<div
-					role="listitem"
-					class="ep:h-10 ep:mx-2 ep:mb-1 ep:border-2 ep:border-dashed ep:border-obs-border ep:rounded-lg ep:flex ep:items-center ep:justify-center ep:text-xs ep:text-obs-muted ep:transition-colors"
-					onDragOver={(e) => {
-						e.preventDefault();
-						if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
-						(e.currentTarget as HTMLElement).classList.add("ep-drop-root-zone");
-					}}
-					onDragLeave={(e) => {
-						(e.currentTarget as HTMLElement).classList.remove(
-							"ep-drop-root-zone",
-						);
-					}}
-					onDrop={handleRootDrop}
-				>
-					Move to root level
-				</div>
+				<RootDropZone position="top" onDrop={handleRootDrop} />
 			)}
 
 			<div
@@ -300,7 +270,7 @@ export function ProjectsTab({
 
 					if (item.type === "project-header") {
 						const isVirtual = item.project.path === UNASSIGNED_PATH;
-						const dragCls = getDragClass(item.project.path);
+						const dragCls = getDragClass(dragState.value, item.project.path);
 						return (
 							<div
 								role="listitem"
@@ -387,7 +357,7 @@ export function ProjectsTab({
 					}
 
 					if (item.type === "note") {
-						const dragCls = getDragClass(item.note.path);
+						const dragCls = getDragClass(dragState.value, item.note.path);
 						return (
 							<div
 								role="listitem"
@@ -480,26 +450,36 @@ export function ProjectsTab({
 				})}
 			</div>
 
-			{/* Root drop zone — visible only during drag, allows un-nesting */}
 			{dragState.value?.item.parentPath && (
-				<div
-					role="listitem"
-					class="ep:h-10 ep:mx-2 ep:mt-1 ep:border-2 ep:border-dashed ep:border-obs-border ep:rounded-lg ep:flex ep:items-center ep:justify-center ep:text-xs ep:text-obs-muted ep:transition-colors"
-					onDragOver={(e) => {
-						e.preventDefault();
-						if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
-						(e.currentTarget as HTMLElement).classList.add("ep-drop-root-zone");
-					}}
-					onDragLeave={(e) => {
-						(e.currentTarget as HTMLElement).classList.remove(
-							"ep-drop-root-zone",
-						);
-					}}
-					onDrop={handleRootDrop}
-				>
-					Move to root level
-				</div>
+				<RootDropZone position="bottom" onDrop={handleRootDrop} />
 			)}
+		</div>
+	);
+}
+
+function RootDropZone({
+	position,
+	onDrop,
+}: {
+	position: "top" | "bottom";
+	onDrop: (e: DragEvent) => void;
+}) {
+	const spacing = position === "top" ? "ep:mb-1" : "ep:mt-1";
+	return (
+		<div
+			role="listitem"
+			class={`ep:h-10 ep:mx-2 ${spacing} ep:border-2 ep:border-dashed ep:border-obs-border ep:rounded-lg ep:flex ep:items-center ep:justify-center ep:text-xs ep:text-obs-muted ep:transition-colors`}
+			onDragOver={(e) => {
+				e.preventDefault();
+				if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
+				(e.currentTarget as HTMLElement).classList.add("ep-drop-root-zone");
+			}}
+			onDragLeave={(e) => {
+				(e.currentTarget as HTMLElement).classList.remove("ep-drop-root-zone");
+			}}
+			onDrop={onDrop}
+		>
+			Move to root level
 		</div>
 	);
 }

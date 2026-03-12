@@ -9,8 +9,10 @@ import { useCallback, useEffect, useMemo, useRef } from "preact/hooks";
 import {
 	DRAG_MIME,
 	type DragItem,
+	type DragState,
 	type DropResult,
 	executeDrop,
+	getDragClass,
 } from "../helpers/drag-drop";
 import { prioritySortComparator } from "../helpers/note-priority";
 import { useInitialMount } from "../helpers/use-initial-mount";
@@ -31,11 +33,6 @@ interface NoteListProps {
 	onPresetClick?: (path: string | null) => void;
 }
 
-interface NoteDragState {
-	item: DragItem;
-	dropTargetPath: string | null;
-	isValid: boolean;
-}
 
 function matchesFilter(
 	note: DashboardNoteEntry,
@@ -67,7 +64,7 @@ export function NoteList({
 	const activeFilter = useSignal<NoteFilterMode>("all");
 	const projectFilter = useSignal<ProjectFilter>({ type: "none" });
 	const contentRef = useRef<HTMLDivElement>(null);
-	const dragState = useSignal<NoteDragState | null>(null);
+	const dragState = useSignal<DragState | null>(null);
 	const selectionMode = useSignal(false);
 	const selectedPaths = useSignal<ReadonlySet<string>>(new Set());
 
@@ -231,6 +228,7 @@ export function NoteList({
 	const handleStudyNote = (noteName: string) => {
 		void plugin.openReviewViewWithFilters({
 			sourceNoteFilter: noteName,
+			ignoreDailyLimits: true,
 		});
 	};
 
@@ -350,14 +348,6 @@ export function NoteList({
 		[dragState, plugin],
 	);
 
-	function getDragClass(notePath: string | null): string {
-		const ds = dragState.value;
-		if (!ds || !notePath) return "";
-		if (ds.item.path === notePath) return "ep-drag-source";
-		if (ds.dropTargetPath === notePath && ds.isValid) return "ep-drop-target";
-		return "";
-	}
-
 	// ── Render ──────────────────────────────────────────
 
 	const isSelecting = selectionMode.value;
@@ -375,45 +365,42 @@ export function NoteList({
 				/>
 			</div>
 
-			{isSelecting && (
-				<div class="ep:flex ep:items-center ep:gap-2 ep:px-3 ep:py-2 ep:bg-obs-secondary ep:rounded-lg ep:mb-2 ep:text-ui-small">
-					<span class="ep:text-obs-muted">{selectedCount} selected</span>
-					<div class="ep:flex-1" />
-					<Clickable
-						class="ep:px-2 ep:py-1 ep:rounded ep:text-obs-muted ep:hover:text-obs-normal ep:hover:bg-obs-modifier-hover ep:transition-colors"
-						onClick={selectAll}
-					>
-						All
-					</Clickable>
-					<Clickable
-						class="ep:px-2 ep:py-1 ep:rounded ep:text-obs-muted ep:hover:text-obs-normal ep:hover:bg-obs-modifier-hover ep:transition-colors"
-						onClick={() => void handleCreateProjectFromSelected()}
-						disabled={selectedCount === 0}
-					>
-						Create project
-					</Clickable>
-					<Clickable
-						class="ep:px-2 ep:py-1 ep:rounded ep:text-obs-muted ep:hover:text-obs-normal ep:hover:bg-obs-modifier-hover ep:transition-colors"
-						onClick={() => void handleArchiveSelected()}
-						disabled={selectedCount === 0}
-					>
-						Archive
-					</Clickable>
-					<Clickable
-						class="ep:px-2 ep:py-1 ep:rounded ep:text-obs-muted ep:hover:text-obs-normal ep:hover:bg-obs-modifier-hover ep:transition-colors"
-						onClick={handleStudySelected}
-						disabled={selectedCount === 0}
-					>
-						Study
-					</Clickable>
-					<Clickable
-						class="ep:px-2 ep:py-1 ep:rounded ep:text-obs-muted ep:hover:text-obs-normal ep:hover:bg-obs-modifier-hover ep:transition-colors"
-						onClick={exitSelection}
-					>
-						Cancel
-					</Clickable>
-				</div>
-			)}
+			{isSelecting && (() => {
+				const btnCls = "ep:px-2 ep:py-1 ep:rounded ep:text-obs-muted ep:hover:text-obs-normal ep:hover:bg-obs-modifier-hover ep:transition-colors";
+				return (
+					<div class="ep:flex ep:items-center ep:gap-2 ep:px-3 ep:py-2 ep:bg-obs-secondary ep:rounded-lg ep:mb-2 ep:text-ui-small">
+						<span class="ep:text-obs-muted">{selectedCount} selected</span>
+						<div class="ep:flex-1" />
+						<Clickable class={btnCls} onClick={selectAll}>
+							All
+						</Clickable>
+						<Clickable
+							class={btnCls}
+							onClick={() => void handleCreateProjectFromSelected()}
+							disabled={selectedCount === 0}
+						>
+							Create project
+						</Clickable>
+						<Clickable
+							class={btnCls}
+							onClick={() => void handleArchiveSelected()}
+							disabled={selectedCount === 0}
+						>
+							Archive
+						</Clickable>
+						<Clickable
+							class={btnCls}
+							onClick={handleStudySelected}
+							disabled={selectedCount === 0}
+						>
+							Study
+						</Clickable>
+						<Clickable class={btnCls} onClick={exitSelection}>
+							Cancel
+						</Clickable>
+					</div>
+				);
+			})()}
 
 			{filteredNotes.length === 0 ? (
 				<div class="ep:text-sm ep:text-obs-muted ep:p-4 ep:text-center">
@@ -430,7 +417,7 @@ export function NoteList({
 					}}
 				>
 					{virtualItems.map(({ item, offsetTop, index }) => {
-						const dragCls = getDragClass(item.path);
+						const dragCls = getDragClass(dragState.value, item.path);
 						return (
 							<div
 								role="listitem"

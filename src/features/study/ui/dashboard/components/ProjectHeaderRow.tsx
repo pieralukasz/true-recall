@@ -3,16 +3,8 @@ import { Clickable } from "@shared/ui/components/Clickable";
 import { IconButton } from "@shared/ui/components/IconButton";
 import { useContextMenu } from "@shared/ui/preact/useContextMenu";
 import { cn } from "@shared/ui/utils";
-import { computePriority } from "../helpers/note-priority";
-import type { DashboardProject, NotePriority } from "../types";
-
-const PRIORITY_DOT: Record<NotePriority, string> = {
-	overdue: "ep:bg-obs-red",
-	hot: "ep:bg-obs-orange",
-	due: "ep:bg-obs-blue",
-	light: "ep:bg-obs-green",
-	done: "ep:bg-obs-faint",
-};
+import { PRIORITY_DOT, computePriority } from "../helpers/note-priority";
+import type { DashboardProject } from "../types";
 
 interface ProjectHeaderRowProps {
 	project: DashboardProject;

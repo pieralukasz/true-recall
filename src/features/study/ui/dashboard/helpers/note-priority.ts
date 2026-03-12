@@ -1,5 +1,13 @@
 import type { DashboardNoteEntry, NotePriority } from "../types";
 
+export const PRIORITY_DOT: Record<NotePriority, string> = {
+	overdue: "ep:bg-obs-red",
+	hot: "ep:bg-obs-orange",
+	due: "ep:bg-obs-blue",
+	light: "ep:bg-obs-green",
+	done: "ep:bg-obs-faint",
+};
+
 const PRIORITY_ORDER: Record<NotePriority, number> = {
 	overdue: 0,
 	hot: 1,
