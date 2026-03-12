@@ -77,9 +77,7 @@ export function StreakWidget({ source }: { source: string }) {
 		<div class="ep:flex ep:flex-col ep:gap-2 ep:p-3 ep:text-sm">
 			{/* Top row: streak + today + action */}
 			<div class="ep:flex ep:items-center ep:gap-3 ep:flex-wrap ep:text-xs">
-				<span class="ep:font-semibold">
-					{data.current}d streak
-				</span>
+				<span class="ep:font-semibold">{data.current}d streak</span>
 
 				{showLongest && data.longest > 0 && (
 					<span class="ep:text-obs-muted">(longest: {data.longest}d)</span>

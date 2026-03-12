@@ -452,9 +452,7 @@ export class AnkiImportService {
 								? (fm.parents as string[])
 								: [];
 							const names = new Set(
-								existing.map((p: string) =>
-									p.replace(/^\[\[|\]\]$/g, ""),
-								),
+								existing.map((p: string) => p.replace(/^\[\[|\]\]$/g, "")),
 							);
 							if (!names.has(parentName)) {
 								existing.push(`[[${parentName}]]`);

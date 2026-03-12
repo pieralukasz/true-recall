@@ -1,5 +1,5 @@
-import { IOCanvas } from "@features/image-occlusion/IOCanvas";
 import { deleteRegion } from "@features/image-occlusion/canvas-interactions";
+import { IOCanvas } from "@features/image-occlusion/IOCanvas";
 import { detectRegions } from "@features/image-occlusion/io-ai.service";
 import {
 	createEmptyIODefinition,

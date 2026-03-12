@@ -200,7 +200,10 @@ export class FSRSHelperService {
 		return this.reschedule.reschedule(options);
 	}
 
-	getTrueRetentionSummary(days: number = 30, presetNames?: string[]): TrueRetentionSummary {
+	getTrueRetentionSummary(
+		days: number = 30,
+		presetNames?: string[],
+	): TrueRetentionSummary {
 		return this.trueRetention.getSummary(
 			this.settings.fsrsRequestRetention,
 			days,

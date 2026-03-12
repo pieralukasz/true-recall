@@ -4,8 +4,8 @@
  * SourceNoteService
  */
 
-import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
 import type { SessionPersistenceService } from "@features/core/persistence/session-persistence.service";
+import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
 import {
 	type GeneratedCard,
 	generateCardsForNote,
@@ -306,9 +306,15 @@ export class FlashcardManager {
 		cardId: string,
 	): Promise<DeleteFlashcardsResult> {
 		if (!this.cardRepository) {
-			return { ok: false, affectedIds: [], affectedCount: 0, deletedCardsData: [] };
+			return {
+				ok: false,
+				affectedIds: [],
+				affectedCount: 0,
+				deletedCardsData: [],
+			};
 		}
-		const { removedIds, cardsData } = this.cardRepository.deleteWithCascade(cardId);
+		const { removedIds, cardsData } =
+			this.cardRepository.deleteWithCascade(cardId);
 		if (removedIds.length > 0) {
 			this.sessionPersistence?.removeReviewedCards(removedIds);
 			return {
@@ -318,7 +324,12 @@ export class FlashcardManager {
 				deletedCardsData: cardsData,
 			};
 		}
-		return { ok: false, affectedIds: [], affectedCount: 0, deletedCardsData: [] };
+		return {
+			ok: false,
+			affectedIds: [],
+			affectedCount: 0,
+			deletedCardsData: [],
+		};
 	}
 
 	removeFlashcardsByIds(cardIds: string[]): number {
@@ -326,13 +337,17 @@ export class FlashcardManager {
 		return result.affectedCount;
 	}
 
-	removeFlashcardsByIdsWithDetails(
-		cardIds: string[],
-	): DeleteFlashcardsResult {
+	removeFlashcardsByIdsWithDetails(cardIds: string[]): DeleteFlashcardsResult {
 		if (!this.cardRepository) {
-			return { ok: false, affectedIds: [], affectedCount: 0, deletedCardsData: [] };
+			return {
+				ok: false,
+				affectedIds: [],
+				affectedCount: 0,
+				deletedCardsData: [],
+			};
 		}
-		const { removedIds, cardsData } = this.cardRepository.deleteBatchWithCascade(cardIds);
+		const { removedIds, cardsData } =
+			this.cardRepository.deleteBatchWithCascade(cardIds);
 		if (removedIds.length > 0) {
 			this.sessionPersistence?.removeReviewedCards(removedIds);
 		}
@@ -492,7 +507,12 @@ export class FlashcardManager {
 		const cards: FSRSCardData[] = [];
 
 		for (const gen of generated) {
-			const fsrsData = this.createCardFromGenerated(gen, note, noteType, params.createdAt);
+			const fsrsData = this.createCardFromGenerated(
+				gen,
+				note,
+				noteType,
+				params.createdAt,
+			);
 			cards.push(fsrsData);
 		}
 

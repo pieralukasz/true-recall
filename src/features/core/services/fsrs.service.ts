@@ -68,7 +68,9 @@ export class FSRSService {
 		const created = this.createFSRS(settings);
 		this.fsrsCache.set(key, created);
 		if (this.fsrsCache.size > FSRSService.MAX_CACHE_SIZE) {
-			const oldestKey = this.fsrsCache.keys().next().value as string | undefined;
+			const oldestKey = this.fsrsCache.keys().next().value as
+				| string
+				| undefined;
 			if (oldestKey) this.fsrsCache.delete(oldestKey);
 		}
 		return created;

@@ -36,11 +36,7 @@ export class StatsView extends ItemView {
 			"ep:bg-obs-primary",
 		]);
 
-		this.unmountPreact = mountPreact(
-			container,
-			this.plugin,
-			h(StatsApp, null),
-		);
+		this.unmountPreact = mountPreact(container, this.plugin, h(StatsApp, null));
 	}
 
 	async onClose(): Promise<void> {

@@ -1,5 +1,5 @@
-import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
 import type { SessionPersistenceService } from "@features/core/persistence/session-persistence.service";
+import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
 import type { FrontmatterIndexService } from "@features/core/services/frontmatter-index.service";
 import { notify } from "@shared/services/notification.service";
 import { notifyCardChange } from "@shared/services/signals";

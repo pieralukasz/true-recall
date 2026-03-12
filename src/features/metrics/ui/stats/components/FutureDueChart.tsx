@@ -12,56 +12,59 @@ interface FutureDueChartProps {
 export function FutureDueChart({ data }: FutureDueChartProps) {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 
-	useChart(
-		canvasRef,
-		(): ChartConfiguration<"bar"> | null => {
-			if (data.length === 0) return null;
-			const labels = data.map((d) => formatLabel(d.date));
-			return {
-				type: "bar",
-				data: {
-					labels,
-					datasets: [
-						{
-							label: "Due",
-							data: data.map((d) => d.count),
-							backgroundColor: withAlpha(CHART_COLORS.blue(), 0.7),
-							borderRadius: 2,
-						},
-					],
-				},
-				options: {
-					responsive: true,
-					maintainAspectRatio: false,
-					plugins: {
-						legend: { display: false },
-						tooltip: {
-							callbacks: {
-								title: (items) => data[items[0]?.dataIndex ?? 0]?.date ?? "",
-							},
-						},
+	useChart(canvasRef, (): ChartConfiguration<"bar"> | null => {
+		if (data.length === 0) return null;
+		const labels = data.map((d) => formatLabel(d.date));
+		return {
+			type: "bar",
+			data: {
+				labels,
+				datasets: [
+					{
+						label: "Due",
+						data: data.map((d) => d.count),
+						backgroundColor: withAlpha(CHART_COLORS.blue(), 0.7),
+						borderRadius: 2,
 					},
-					scales: {
-						x: {
-							grid: { display: false },
-							ticks: { color: CHART_COLORS.muted(), maxRotation: 0, autoSkip: true, maxTicksLimit: 10 },
-						},
-						y: {
-							beginAtZero: true,
-							grid: { color: withAlpha(CHART_COLORS.border(), 0.5) },
-							ticks: { color: CHART_COLORS.muted() },
+				],
+			},
+			options: {
+				responsive: true,
+				maintainAspectRatio: false,
+				plugins: {
+					legend: { display: false },
+					tooltip: {
+						callbacks: {
+							title: (items) => data[items[0]?.dataIndex ?? 0]?.date ?? "",
 						},
 					},
 				},
-			};
-		},
-		[data],
-	);
+				scales: {
+					x: {
+						grid: { display: false },
+						ticks: {
+							color: CHART_COLORS.muted(),
+							maxRotation: 0,
+							autoSkip: true,
+							maxTicksLimit: 10,
+						},
+					},
+					y: {
+						beginAtZero: true,
+						grid: { color: withAlpha(CHART_COLORS.border(), 0.5) },
+						ticks: { color: CHART_COLORS.muted() },
+					},
+				},
+			},
+		};
+	}, [data]);
 
 	if (data.length === 0) {
 		return (
 			<ChartCard title="Future Due" subtitle="Upcoming review workload">
-				<p class="ep:text-xs ep:text-obs-muted ep:py-8 ep:text-center">No cards scheduled</p>
+				<p class="ep:text-xs ep:text-obs-muted ep:py-8 ep:text-center">
+					No cards scheduled
+				</p>
 			</ChartCard>
 		);
 	}

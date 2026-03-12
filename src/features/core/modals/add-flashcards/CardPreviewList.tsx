@@ -10,7 +10,10 @@ interface CardPreviewListProps {
 	duplicateCount?: number;
 }
 
-export function CardPreviewList({ cards, duplicateCount = 0 }: CardPreviewListProps) {
+export function CardPreviewList({
+	cards,
+	duplicateCount = 0,
+}: CardPreviewListProps) {
 	const [expanded, setExpanded] = useState(false);
 
 	if (cards.length === 0) return null;
@@ -38,7 +41,8 @@ export function CardPreviewList({ cards, duplicateCount = 0 }: CardPreviewListPr
 				{duplicateCount > 0 && (
 					<span class="ep:text-obs-faint">
 						{" "}
-						· {duplicateCount} duplicate{duplicateCount !== 1 ? "s" : ""} removed
+						· {duplicateCount} duplicate{duplicateCount !== 1 ? "s" : ""}{" "}
+						removed
 					</span>
 				)}
 			</div>

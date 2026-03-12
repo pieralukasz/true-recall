@@ -7,11 +7,10 @@ import type { FlashcardManager } from "@features/study/services/flashcard/flashc
 import type { QueueBuildOptions } from "@features/study/services/review.service";
 import type { SessionFilters } from "@features/study/ui/review/review.types";
 import { WEAK_CARD_STABILITY_THRESHOLD } from "@shared/constants";
-import { getTodayBoundary } from "@shared/utils/date.utils";
 import {
 	CARD_MUTATION_ACTION_SEMANTICS,
-	getNormalizedCardMutationAction,
 	type CardMutation,
+	getNormalizedCardMutationAction,
 } from "@shared/services/signals";
 import type { ReviewApi } from "@shared/store";
 import type { FSRSFlashcardItem } from "@shared/types";
@@ -19,6 +18,7 @@ import type {
 	FSRSPreset,
 	TrueRecallSettings,
 } from "@shared/types/settings.types";
+import { getTodayBoundary } from "@shared/utils/date.utils";
 import { Rating, State } from "ts-fsrs";
 
 export interface CardFilterOptions {
@@ -267,12 +267,7 @@ export function applyMutation(
 				return;
 			}
 			if (actionSemantics === "queue-sync") {
-				syncQueueWithMutatedCards(
-					m.cardIds,
-					review,
-					flashcardManager,
-					filters,
-				);
+				syncQueueWithMutatedCards(m.cardIds, review, flashcardManager, filters);
 			}
 			break;
 		}
@@ -288,7 +283,9 @@ function removeCardsFromQueue(
 	review: ReviewApi,
 	cardIds: Array<string | undefined>,
 ): void {
-	const uniqueIds = [...new Set(cardIds.filter((id): id is string => Boolean(id)))];
+	const uniqueIds = [
+		...new Set(cardIds.filter((id): id is string => Boolean(id))),
+	];
 	if (uniqueIds.length === 0) return;
 
 	const queueIds = new Set(review.queue.map((c) => c.id));
@@ -380,7 +377,10 @@ function matchesSessionFilters(
 		return false;
 	}
 
-	if (filters.filePathFilter && card.sourceNotePath !== filters.filePathFilter) {
+	if (
+		filters.filePathFilter &&
+		card.sourceNotePath !== filters.filePathFilter
+	) {
 		return false;
 	}
 
@@ -465,4 +465,3 @@ function matchesSessionFilters(
 
 	return true;
 }
-

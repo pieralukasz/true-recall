@@ -1,9 +1,12 @@
-import type { HistogramBucket, DistributionStats } from "@features/metrics/services/fsrs-tools/statistics/distribution.calculator";
-import type { ChartConfiguration } from "chart.js";
-import { useRef } from "preact/hooks";
+import type {
+	DistributionStats,
+	HistogramBucket,
+} from "@features/metrics/services/fsrs-tools/statistics/distribution.calculator";
 import { useSignal } from "@preact/signals";
 import { Clickable } from "@shared/ui/components/Clickable";
 import { cn } from "@shared/ui/utils";
+import type { ChartConfiguration } from "chart.js";
+import { useRef } from "preact/hooks";
 import { CHART_COLORS, withAlpha } from "../helpers/chart-theme";
 import { useChart } from "../hooks/use-chart";
 import { ChartCard } from "./ChartCard";
@@ -30,7 +33,9 @@ export function DistributionSection({ data }: DistributionSectionProps) {
 	if (!data) {
 		return (
 			<ChartCard title="FSRS Distributions">
-				<p class="ep:text-xs ep:text-obs-muted ep:py-8 ep:text-center">No data available</p>
+				<p class="ep:text-xs ep:text-obs-muted ep:py-8 ep:text-center">
+					No data available
+				</p>
 			</ChartCard>
 		);
 	}
@@ -59,7 +64,11 @@ export function DistributionSection({ data }: DistributionSectionProps) {
 					</Clickable>
 				))}
 			</div>
-			<DistHistogram histogram={current.histogram} stats={current.stats} tab={activeTab.value} />
+			<DistHistogram
+				histogram={current.histogram}
+				stats={current.stats}
+				tab={activeTab.value}
+			/>
 		</ChartCard>
 	);
 }
@@ -75,56 +84,54 @@ function DistHistogram({
 }) {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 
-	useChart(
-		canvasRef,
-		(): ChartConfiguration<"bar"> | null => {
-			if (histogram.length === 0) return null;
-			return {
-				type: "bar",
-				data: {
-					labels: histogram.map((b) => b.label),
-					datasets: [
-						{
-							label: "Cards",
-							data: histogram.map((b) => b.count),
-							backgroundColor: withAlpha(CHART_COLORS.purple(), 0.7),
-							borderRadius: 2,
-						},
-					],
-				},
-				options: {
-					responsive: true,
-					maintainAspectRatio: false,
-					plugins: {
-						legend: { display: false },
-						tooltip: {
-							callbacks: {
-								label: (ctx) => {
-									const bucket = histogram[ctx.dataIndex];
-									return `${ctx.parsed.y} cards (${bucket?.percentage.toFixed(1)}%)`;
-								},
+	useChart(canvasRef, (): ChartConfiguration<"bar"> | null => {
+		if (histogram.length === 0) return null;
+		return {
+			type: "bar",
+			data: {
+				labels: histogram.map((b) => b.label),
+				datasets: [
+					{
+						label: "Cards",
+						data: histogram.map((b) => b.count),
+						backgroundColor: withAlpha(CHART_COLORS.purple(), 0.7),
+						borderRadius: 2,
+					},
+				],
+			},
+			options: {
+				responsive: true,
+				maintainAspectRatio: false,
+				plugins: {
+					legend: { display: false },
+					tooltip: {
+						callbacks: {
+							label: (ctx) => {
+								const bucket = histogram[ctx.dataIndex];
+								return `${ctx.parsed.y} cards (${bucket?.percentage.toFixed(1)}%)`;
 							},
 						},
 					},
-					scales: {
-						x: {
-							grid: { display: false },
-							ticks: { color: CHART_COLORS.muted(), font: { size: 10 } },
-						},
-						y: {
-							beginAtZero: true,
-							grid: { color: withAlpha(CHART_COLORS.border(), 0.5) },
-							ticks: { color: CHART_COLORS.muted() },
-						},
+				},
+				scales: {
+					x: {
+						grid: { display: false },
+						ticks: { color: CHART_COLORS.muted(), font: { size: 10 } },
+					},
+					y: {
+						beginAtZero: true,
+						grid: { color: withAlpha(CHART_COLORS.border(), 0.5) },
+						ticks: { color: CHART_COLORS.muted() },
 					},
 				},
-			};
-		},
-		[histogram, tab],
-	);
+			},
+		};
+	}, [histogram, tab]);
 
 	if (histogram.length === 0) {
-		return <p class="ep:text-xs ep:text-obs-muted ep:py-8 ep:text-center">No data</p>;
+		return (
+			<p class="ep:text-xs ep:text-obs-muted ep:py-8 ep:text-center">No data</p>
+		);
 	}
 
 	return (

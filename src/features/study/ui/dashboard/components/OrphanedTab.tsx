@@ -20,8 +20,7 @@ export function OrphanedTab({ stats }: OrphanedTabProps) {
 				{stats.total}
 			</div>
 			<div class="ep:text-sm ep:text-obs-muted">
-				orphaned card{stats.total !== 1 ? "s" : ""} with no matching
-				source note
+				orphaned card{stats.total !== 1 ? "s" : ""} with no matching source note
 			</div>
 
 			<CardCountDisplay

@@ -76,8 +76,7 @@ export function computeProjectStats(
 					card.id,
 				);
 				retrievabilitySum +=
-					cachedRetrievability ??
-					fsrsService.getRetrievability(card, now);
+					cachedRetrievability ?? fsrsService.getRetrievability(card, now);
 				reviewCardCount++;
 			}
 

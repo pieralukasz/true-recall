@@ -1,9 +1,9 @@
 import type { ReleaseInfo } from "@shared/services/release-notes.service";
 import { Clickable, MarkdownContent } from "@shared/ui/components";
-import { ObsidianProvider } from "@shared/ui/preact/ObsidianContext";
 import { BaseModal } from "@shared/ui/modals/BaseModal";
-import type TrueRecallPlugin from "../../../main";
+import { ObsidianProvider } from "@shared/ui/preact/ObsidianContext";
 import { render } from "preact";
+import type TrueRecallPlugin from "../../../main";
 
 function WhatsNewBody({
 	release,
@@ -60,10 +60,7 @@ export class WhatsNewModal extends BaseModal {
 	protected renderBody(container: HTMLElement): void {
 		render(
 			<ObsidianProvider value={{ app: this.plugin.app, plugin: this.plugin }}>
-				<WhatsNewBody
-					release={this.release}
-					onClose={() => this.close()}
-				/>
+				<WhatsNewBody release={this.release} onClose={() => this.close()} />
 			</ObsidianProvider>,
 			container,
 		);

@@ -3,7 +3,9 @@
  * Chart.js needs hex/rgb strings, not CSS var() references.
  */
 export function getThemeColor(cssVar: string): string {
-	const raw = cssVar.startsWith("--") ? cssVar : cssVar.replace("var(", "").replace(")", "");
+	const raw = cssVar.startsWith("--")
+		? cssVar
+		: cssVar.replace("var(", "").replace(")", "");
 	const value = getComputedStyle(document.body).getPropertyValue(raw).trim();
 	return value || "#888888";
 }

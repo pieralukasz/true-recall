@@ -7,7 +7,8 @@ interface PresetFilterProps {
 	selected: Signal<Set<string>>;
 }
 
-const PILL_BASE = "ep:px-2.5 ep:py-1 ep:text-xs ep:rounded-md ep:transition-colors";
+const PILL_BASE =
+	"ep:px-2.5 ep:py-1 ep:text-xs ep:rounded-md ep:transition-colors";
 const PILL_ACTIVE =
 	"ep:bg-obs-interactive/15 ep:text-obs-interactive ep:font-medium";
 const PILL_INACTIVE =
@@ -53,9 +54,7 @@ export function PresetFilter({ presets, selected }: PresetFilterProps) {
 					>
 						{preset}
 						{isActive && (
-							<span class="ep:ml-1 ep:text-[10px] ep:opacity-70">
-								&#10003;
-							</span>
+							<span class="ep:ml-1 ep:text-[10px] ep:opacity-70">&#10003;</span>
 						)}
 					</Clickable>
 				);

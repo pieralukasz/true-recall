@@ -114,10 +114,7 @@ export function MaturityWidget({ source }: { source: string }) {
 
 			<div class="ep:flex ep:flex-wrap ep:gap-x-3 ep:gap-y-1 ep:text-xs">
 				{data.segments.map((seg) => (
-					<div
-						key={seg.label}
-						class="ep:inline-flex ep:items-center ep:gap-1"
-					>
+					<div key={seg.label} class="ep:inline-flex ep:items-center ep:gap-1">
 						<span
 							class="ep:w-2 ep:h-2 ep:rounded-full ep:inline-block ep:shrink-0"
 							style={{

@@ -34,7 +34,9 @@ export function StorageDiagnosticsSection() {
 			<p>Last flush failure: {fmt(diag.lastFlushFailedAt)}</p>
 			<p>Last flush error: {diag.lastFlushError ?? "N/A"}</p>
 			<p>Startup snapshot path: {fmtPath(diag.startupSnapshotPath)}</p>
-			<p>Last auto-recovery backup path: {fmtPath(diag.lastAutoRecoveryPath)}</p>
+			<p>
+				Last auto-recovery backup path: {fmtPath(diag.lastAutoRecoveryPath)}
+			</p>
 			<p>Last auto-recovery at: {fmt(diag.lastAutoRecoveryAt)}</p>
 		</FormCard>
 	);

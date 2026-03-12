@@ -76,8 +76,7 @@ function FormatHelpPopover({ onClose }: { onClose: () => void }) {
 					<code class="ep:text-obs-normal">#type/basic</code>
 				</div>
 				<div>
-					Separate cards with{" "}
-					<code class="ep:text-obs-normal">---</code>
+					Separate cards with <code class="ep:text-obs-normal">---</code>
 				</div>
 			</div>
 		</div>

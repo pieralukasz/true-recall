@@ -106,9 +106,8 @@ export function useCardActions({
 		async (card: FlashcardItem) => {
 			if (!currentFile) return;
 			const restoreScroll = captureScroll();
-			const result = await plugin.flashcardManager.removeFlashcardByIdWithDetails(
-				card.id,
-			);
+			const result =
+				await plugin.flashcardManager.removeFlashcardByIdWithDetails(card.id);
 			if (result.ok) {
 				pushDeleteUndo(plugin, result);
 				notify().cardsDeletedWithUndo(result.affectedCount, () => {
@@ -122,11 +121,14 @@ export function useCardActions({
 		[currentFile, plugin, captureScroll],
 	);
 
-	const handleCopyCard = useCallback(async (card: FlashcardItem) => {
-		const text = cardToBlockText(card, plugin);
-		await navigator.clipboard.writeText(text);
-		notify().success("Copied to clipboard");
-	}, [plugin]);
+	const handleCopyCard = useCallback(
+		async (card: FlashcardItem) => {
+			const text = cardToBlockText(card, plugin);
+			await navigator.clipboard.writeText(text);
+			notify().success("Copied to clipboard");
+		},
+		[plugin],
+	);
 
 	const handleMoveCard = useCallback(
 		async (card: FlashcardItem) => {
@@ -350,7 +352,11 @@ export function useCardActions({
 					plugin.flashcardManager,
 					(ids) => plugin.cardStore.cards.bulkSuspend(ids),
 				);
-				notifyCardChange({ type: "bulk", cardIds: [card.id], action: "update" });
+				notifyCardChange({
+					type: "bulk",
+					cardIds: [card.id],
+					action: "update",
+				});
 				notify().success(`Split into ${result.created} card(s)`);
 			} catch (error) {
 				notify().operationFailed("rewrite card", error);

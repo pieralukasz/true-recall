@@ -101,9 +101,7 @@ function SubscriptionSection() {
 					subscriberTier: update.subscriberTier,
 				};
 				if (update.isSubscriber && !settings.userId) {
-					patch.userId = subscriptionService.ensureUserId(
-						settings.userId,
-					);
+					patch.userId = subscriptionService.ensureUserId(settings.userId);
 				}
 				save(patch);
 			};
@@ -141,7 +139,10 @@ function SubscriptionSection() {
 
 	const usagePct =
 		status && status.budget_max > 0
-			? Math.min(100, Math.round((status.budget_spent / status.budget_max) * 100))
+			? Math.min(
+					100,
+					Math.round((status.budget_spent / status.budget_max) * 100),
+				)
 			: 0;
 
 	return (

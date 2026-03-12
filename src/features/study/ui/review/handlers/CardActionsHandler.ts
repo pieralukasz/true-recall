@@ -293,17 +293,16 @@ export class CardActionsHandler {
 			pendingTimeoutId = null;
 			try {
 				this.deps.cardStore.cards.bulkForget(forgettableIds);
-				this.deps.plugin.sessionPersistence?.removeReviewedCards(forgettableIds);
+				this.deps.plugin.sessionPersistence?.removeReviewedCards(
+					forgettableIds,
+				);
 				notifyCardChange({
 					type: "bulk",
 					cardIds: forgettableIds,
 					action: "reset",
 				});
 			} catch (error) {
-				console.error(
-					"[CardActionsHandler] Error forgetting card(s):",
-					error,
-				);
+				console.error("[CardActionsHandler] Error forgetting card(s):", error);
 			}
 		}, 0);
 	}

@@ -180,7 +180,10 @@ export class UndoService {
 			});
 			return true;
 		} catch (error) {
-			console.error("[UndoService] Error restoring batch-deleted cards:", error);
+			console.error(
+				"[UndoService] Error restoring batch-deleted cards:",
+				error,
+			);
 			return false;
 		}
 	}

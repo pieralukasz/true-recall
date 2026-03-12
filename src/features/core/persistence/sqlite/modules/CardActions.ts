@@ -959,14 +959,14 @@ export class CardActions {
 						learning_step = 0, due = ?, last_review = NULL,
 						suspended = 0, buried_until = NULL, updated_at = ?
 					WHERE id IN (${forgettablePlaceholders})`,
-					[now, nowMs, ...forgettableIds],
-				);
-				modified = this.db.getRowsModified();
-				this.db.run(
-					`UPDATE review_log SET deleted_at = ?, updated_at = ? WHERE card_id IN (${forgettablePlaceholders})`,
-					[nowMs, nowMs, ...forgettableIds],
-				);
-			});
+				[now, nowMs, ...forgettableIds],
+			);
+			modified = this.db.getRowsModified();
+			this.db.run(
+				`UPDATE review_log SET deleted_at = ?, updated_at = ? WHERE card_id IN (${forgettablePlaceholders})`,
+				[nowMs, nowMs, ...forgettableIds],
+			);
+		});
 		return modified;
 	}
 

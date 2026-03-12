@@ -10,7 +10,9 @@ export function CollectionHealthBar({ data }: CollectionHealthBarProps) {
 	if (data.cardCount === 0) {
 		return (
 			<ChartCard title="Collection Health">
-				<p class="ep:text-xs ep:text-obs-muted ep:py-4 ep:text-center">No active cards</p>
+				<p class="ep:text-xs ep:text-obs-muted ep:py-4 ep:text-center">
+					No active cards
+				</p>
 			</ChartCard>
 		);
 	}
@@ -22,7 +24,8 @@ export function CollectionHealthBar({ data }: CollectionHealthBarProps) {
 		>
 			<div class="ep:flex ep:h-6 ep:rounded-md ep:overflow-hidden ep:border ep:border-obs-modifier-border">
 				{data.distribution.map((bucket) => {
-					const width = data.cardCount > 0 ? (bucket.count / data.cardCount) * 100 : 0;
+					const width =
+						data.cardCount > 0 ? (bucket.count / data.cardCount) * 100 : 0;
 					if (width === 0) return null;
 					return (
 						<div
@@ -44,7 +47,9 @@ export function CollectionHealthBar({ data }: CollectionHealthBarProps) {
 							class="ep:w-2.5 ep:h-2.5 ep:rounded-sm"
 							style={{ backgroundColor: getThemeColor(bucket.colorVar) }}
 						/>
-						<span>{bucket.label}: {bucket.count}</span>
+						<span>
+							{bucket.label}: {bucket.count}
+						</span>
 					</div>
 				))}
 			</div>

@@ -22,118 +22,109 @@ export function WorkloadForecastSection({
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const dowCanvasRef = useRef<HTMLCanvasElement>(null);
 
-	useChart(
-		canvasRef,
-		(): ChartConfiguration<"bar"> | null => {
-			if (forecast.length === 0) return null;
-			const labels = forecast.map((d) => formatLabel(d.date));
-			return {
-				type: "bar",
-				data: {
-					labels,
-					datasets: [
-						{
-							label: "Review",
-							data: forecast.map((d) => d.breakdown.review),
-							backgroundColor: withAlpha(CHART_COLORS.blue(), 0.7),
-							borderRadius: 2,
+	useChart(canvasRef, (): ChartConfiguration<"bar"> | null => {
+		if (forecast.length === 0) return null;
+		const labels = forecast.map((d) => formatLabel(d.date));
+		return {
+			type: "bar",
+			data: {
+				labels,
+				datasets: [
+					{
+						label: "Review",
+						data: forecast.map((d) => d.breakdown.review),
+						backgroundColor: withAlpha(CHART_COLORS.blue(), 0.7),
+						borderRadius: 2,
+					},
+					{
+						label: "Learning",
+						data: forecast.map((d) => d.breakdown.learning),
+						backgroundColor: withAlpha(CHART_COLORS.orange(), 0.7),
+						borderRadius: 2,
+					},
+				],
+			},
+			options: {
+				responsive: true,
+				maintainAspectRatio: false,
+				plugins: {
+					legend: {
+						display: true,
+						position: "top",
+						labels: {
+							color: CHART_COLORS.muted(),
+							boxWidth: 10,
+							padding: 12,
+							font: { size: 11 },
 						},
-						{
-							label: "Learning",
-							data: forecast.map((d) => d.breakdown.learning),
-							backgroundColor: withAlpha(CHART_COLORS.orange(), 0.7),
-							borderRadius: 2,
-						},
-					],
-				},
-				options: {
-					responsive: true,
-					maintainAspectRatio: false,
-					plugins: {
-						legend: {
-							display: true,
-							position: "top",
-							labels: {
-								color: CHART_COLORS.muted(),
-								boxWidth: 10,
-								padding: 12,
-								font: { size: 11 },
-							},
-						},
-						tooltip: {
-							callbacks: {
-								title: (items) =>
-									forecast[items[0]?.dataIndex ?? 0]?.date ?? "",
-								footer: (items) => {
-									const idx = items[0]?.dataIndex ?? 0;
-									const entry = forecast[idx];
-									return entry ? `Total: ${String(entry.dueCount)}` : "";
-								},
+					},
+					tooltip: {
+						callbacks: {
+							title: (items) => forecast[items[0]?.dataIndex ?? 0]?.date ?? "",
+							footer: (items) => {
+								const idx = items[0]?.dataIndex ?? 0;
+								const entry = forecast[idx];
+								return entry ? `Total: ${String(entry.dueCount)}` : "";
 							},
 						},
 					},
-					scales: {
-						x: {
-							stacked: true,
-							grid: { display: false },
-							ticks: {
-								color: CHART_COLORS.muted(),
-								maxRotation: 0,
-								autoSkip: true,
-								maxTicksLimit: 10,
-							},
-						},
-						y: {
-							stacked: true,
-							beginAtZero: true,
-							grid: { color: withAlpha(CHART_COLORS.border(), 0.5) },
-							ticks: { color: CHART_COLORS.muted() },
+				},
+				scales: {
+					x: {
+						stacked: true,
+						grid: { display: false },
+						ticks: {
+							color: CHART_COLORS.muted(),
+							maxRotation: 0,
+							autoSkip: true,
+							maxTicksLimit: 10,
 						},
 					},
+					y: {
+						stacked: true,
+						beginAtZero: true,
+						grid: { color: withAlpha(CHART_COLORS.border(), 0.5) },
+						ticks: { color: CHART_COLORS.muted() },
+					},
 				},
-			};
-		},
-		[forecast],
-	);
+			},
+		};
+	}, [forecast]);
 
-	useChart(
-		dowCanvasRef,
-		(): ChartConfiguration<"bar"> | null => {
-			if (dayOfWeek.length === 0) return null;
-			const reordered = [...dayOfWeek.slice(1), dayOfWeek[0]!];
-			return {
-				type: "bar",
-				data: {
-					labels: reordered.map((d) => d.dayName.slice(0, 3)),
-					datasets: [
-						{
-							label: "Avg",
-							data: reordered.map((d) => d.avgCount),
-							backgroundColor: withAlpha(CHART_COLORS.purple(), 0.6),
-							borderRadius: 3,
-						},
-					],
-				},
-				options: {
-					responsive: true,
-					maintainAspectRatio: false,
-					plugins: { legend: { display: false } },
-					scales: {
-						x: {
-							grid: { display: false },
-							ticks: { color: CHART_COLORS.muted(), font: { size: 10 } },
-						},
-						y: {
-							beginAtZero: true,
-							grid: { color: withAlpha(CHART_COLORS.border(), 0.3) },
-							ticks: { color: CHART_COLORS.muted(), font: { size: 10 } },
-						},
+	useChart(dowCanvasRef, (): ChartConfiguration<"bar"> | null => {
+		if (dayOfWeek.length === 0) return null;
+		const reordered = [...dayOfWeek.slice(1), dayOfWeek[0]!];
+		return {
+			type: "bar",
+			data: {
+				labels: reordered.map((d) => d.dayName.slice(0, 3)),
+				datasets: [
+					{
+						label: "Avg",
+						data: reordered.map((d) => d.avgCount),
+						backgroundColor: withAlpha(CHART_COLORS.purple(), 0.6),
+						borderRadius: 3,
+					},
+				],
+			},
+			options: {
+				responsive: true,
+				maintainAspectRatio: false,
+				plugins: { legend: { display: false } },
+				scales: {
+					x: {
+						grid: { display: false },
+						ticks: { color: CHART_COLORS.muted(), font: { size: 10 } },
+					},
+					y: {
+						beginAtZero: true,
+						grid: { color: withAlpha(CHART_COLORS.border(), 0.3) },
+						ticks: { color: CHART_COLORS.muted(), font: { size: 10 } },
 					},
 				},
-			};
-		},
-		[dayOfWeek],
-	);
+			},
+		};
+	}, [dayOfWeek]);
 
 	if (forecast.length === 0) {
 		return (
@@ -160,12 +151,11 @@ export function WorkloadForecastSection({
 			<div class="ep:flex ep:flex-wrap ep:gap-x-4 ep:gap-y-1 ep:mt-3 ep:text-xs ep:text-obs-muted">
 				<span>Avg: {summary.avgDaily}/day</span>
 				<span>
-					Peak: {summary.peakDay.count} (
-					{formatShortDate(summary.peakDay.date)})
+					Peak: {summary.peakDay.count} ({formatShortDate(summary.peakDay.date)}
+					)
 				</span>
 				<span>
-					Min: {summary.minDay.count} (
-					{formatShortDate(summary.minDay.date)})
+					Min: {summary.minDay.count} ({formatShortDate(summary.minDay.date)})
 				</span>
 				{summary.daysAboveTarget > 0 && (
 					<span>{summary.daysAboveTarget} days above target</span>

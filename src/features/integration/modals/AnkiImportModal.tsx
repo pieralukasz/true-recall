@@ -52,7 +52,11 @@ function AnkiImportBody({
 
 	const handleImport = useCallback(async () => {
 		setPhase({ type: "importing" });
-		const result = await onImport({ importScheduling, importMedia, createProject });
+		const result = await onImport({
+			importScheduling,
+			importMedia,
+			createProject,
+		});
 		setPhase(result);
 		if (result.type === "result") {
 			onUpdateTitle("Import complete");

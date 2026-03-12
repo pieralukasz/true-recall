@@ -193,9 +193,7 @@ export function HeatmapWidget({ source }: { source: string }) {
 				<span class="ep:font-semibold">
 					Activity (last {configValue(config, "months", 12)} months)
 				</span>
-				<span class="ep:text-obs-muted">
-					{data.daysActive} days active
-				</span>
+				<span class="ep:text-obs-muted">{data.daysActive} days active</span>
 			</div>
 
 			{/* SVG heatmap */}
@@ -262,11 +260,7 @@ export function HeatmapWidget({ source }: { source: string }) {
 						<span>More</span>
 					</div>
 				)}
-				{showTotal && (
-					<span>
-						Total: {data.totalReviews.toLocaleString()}
-					</span>
-				)}
+				{showTotal && <span>Total: {data.totalReviews.toLocaleString()}</span>}
 			</div>
 
 			{/* Tooltip */}

@@ -92,10 +92,7 @@ export function PanelEmptyState({
 		<div class="ep:flex ep:flex-col ep:items-center ep:justify-center ep:h-full ep:py-6 ep:px-5 ep:text-center ep:gap-4">
 			{/* Collect button */}
 			{hasCollect && (
-				<Clickable
-					class={`mod-cta ${BTN_BASE_CLS}`}
-					onClick={handleCollect}
-				>
+				<Clickable class={`mod-cta ${BTN_BASE_CLS}`} onClick={handleCollect}>
 					Collect {uncollectedCount} flashcard
 					{uncollectedCount !== 1 ? "s" : ""}
 				</Clickable>
@@ -112,8 +109,8 @@ export function PanelEmptyState({
 					</div>
 				</div>
 				<div class="ep:text-ui-smaller ep:text-obs-faint ep:text-center">
-					For best results, select text in the editor, then right-click or
-					use the command palette to generate focused cards.
+					For best results, select text in the editor, then right-click or use
+					the command palette to generate focused cards.
 				</div>
 			</div>
 

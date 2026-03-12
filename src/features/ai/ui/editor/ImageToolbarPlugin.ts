@@ -88,10 +88,7 @@ export function createImageToolbarExtension(
 					return;
 				}
 
-				const imagePath = extractImagePathFromClick(
-					imgEl,
-					this.view,
-				);
+				const imagePath = extractImagePathFromClick(imgEl, this.view);
 				if (!imagePath) {
 					this.removeToolbar();
 					return;
@@ -108,8 +105,7 @@ export function createImageToolbarExtension(
 			private showToolbar(imagePath: string, imgEl: HTMLElement): void {
 				if (!this.container) {
 					this.container = document.createElement("div");
-					this.container.className =
-						"true-recall-image-toolbar-container";
+					this.container.className = "true-recall-image-toolbar-container";
 					document.body.appendChild(this.container);
 					this.registerOutsideClick();
 				}
@@ -121,8 +117,7 @@ export function createImageToolbarExtension(
 							await callbacks.onQuickAddImage(imagePath);
 						},
 						onEdit: () => callbacks.onEdit(imagePath),
-						onImageOcclusion: () =>
-							callbacks.onImageOcclusion(imagePath),
+						onImageOcclusion: () => callbacks.onImageOcclusion(imagePath),
 						onDismiss: () => this.removeToolbar(),
 					}),
 					this.container,
@@ -156,8 +151,7 @@ export function createImageToolbarExtension(
 					// Don't dismiss if clicking the same image
 					if (
 						this.currentImgEl &&
-						(this.currentImgEl === target ||
-							this.currentImgEl.contains(target))
+						(this.currentImgEl === target || this.currentImgEl.contains(target))
 					)
 						return;
 
@@ -167,20 +161,14 @@ export function createImageToolbarExtension(
 				// Use setTimeout so the current click doesn't immediately dismiss
 				setTimeout(() => {
 					if (this.outsideClickHandler) {
-						document.addEventListener(
-							"mousedown",
-							this.outsideClickHandler,
-						);
+						document.addEventListener("mousedown", this.outsideClickHandler);
 					}
 				}, 0);
 			}
 
 			private removeToolbar(): void {
 				if (this.outsideClickHandler) {
-					document.removeEventListener(
-						"mousedown",
-						this.outsideClickHandler,
-					);
+					document.removeEventListener("mousedown", this.outsideClickHandler);
 					this.outsideClickHandler = null;
 				}
 

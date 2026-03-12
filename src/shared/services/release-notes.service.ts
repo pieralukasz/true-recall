@@ -1,6 +1,5 @@
-import { requestUrl } from "obsidian";
-
 import { GITHUB_RELEASES_API } from "@shared/constants";
+import { requestUrl } from "obsidian";
 
 export interface ReleaseInfo {
 	version: string;
