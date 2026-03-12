@@ -450,7 +450,7 @@ export function ProjectsTab({
 													void plugin.flashcardManager
 														.getFrontmatterService()
 														.removeParent(file, parentName);
-											  }
+												}
 											: undefined
 									}
 								/>

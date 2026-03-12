@@ -22,77 +22,72 @@ export function TrueRetentionCard({
 	const currentPct = Math.round(summary.current * 100);
 	const avgPct = Math.round(summary.average * 100);
 
-	useChart(
-		canvasRef,
-		(): ChartConfiguration<"line"> | null => {
-			if (history.length === 0) return null;
-			const labels = history.map((e) => formatLabel(e.date));
-			return {
-				type: "line",
-				data: {
-					labels,
-					datasets: [
-						{
-							label: "True Retention",
-							data: history.map((e) => Math.round(e.retention * 100)),
-							borderColor: CHART_COLORS.green(),
-							backgroundColor: withAlpha(CHART_COLORS.green(), 0.1),
-							fill: true,
-							tension: 0.3,
-							pointRadius: 0,
-							pointHitRadius: 8,
-							borderWidth: 2,
-						},
-						{
-							label: "Target",
-							data: history.map(() => targetPct),
-							borderColor: withAlpha(CHART_COLORS.muted(), 0.6),
-							borderDash: [6, 4],
-							borderWidth: 1.5,
-							pointRadius: 0,
-							pointHitRadius: 0,
-							fill: false,
-						},
-					],
-				},
-				options: {
-					responsive: true,
-					maintainAspectRatio: false,
-					plugins: {
-						legend: { display: false },
-						tooltip: {
-							callbacks: {
-								title: (items) =>
-									history[items[0]?.dataIndex ?? 0]?.date ?? "",
-								label: (item) => `${item.dataset.label}: ${String(item.raw)}%`,
-							},
-						},
+	useChart(canvasRef, (): ChartConfiguration<"line"> | null => {
+		if (history.length === 0) return null;
+		const labels = history.map((e) => formatLabel(e.date));
+		return {
+			type: "line",
+			data: {
+				labels,
+				datasets: [
+					{
+						label: "True Retention",
+						data: history.map((e) => Math.round(e.retention * 100)),
+						borderColor: CHART_COLORS.green(),
+						backgroundColor: withAlpha(CHART_COLORS.green(), 0.1),
+						fill: true,
+						tension: 0.3,
+						pointRadius: 0,
+						pointHitRadius: 8,
+						borderWidth: 2,
 					},
-					scales: {
-						x: {
-							grid: { display: false },
-							ticks: {
-								color: CHART_COLORS.muted(),
-								maxRotation: 0,
-								autoSkip: true,
-								maxTicksLimit: 8,
-							},
-						},
-						y: {
-							min: Math.max(0, targetPct - 20),
-							max: 100,
-							grid: { color: withAlpha(CHART_COLORS.border(), 0.5) },
-							ticks: {
-								color: CHART_COLORS.muted(),
-								callback: (v) => `${String(v)}%`,
-							},
+					{
+						label: "Target",
+						data: history.map(() => targetPct),
+						borderColor: withAlpha(CHART_COLORS.muted(), 0.6),
+						borderDash: [6, 4],
+						borderWidth: 1.5,
+						pointRadius: 0,
+						pointHitRadius: 0,
+						fill: false,
+					},
+				],
+			},
+			options: {
+				responsive: true,
+				maintainAspectRatio: false,
+				plugins: {
+					legend: { display: false },
+					tooltip: {
+						callbacks: {
+							title: (items) => history[items[0]?.dataIndex ?? 0]?.date ?? "",
+							label: (item) => `${item.dataset.label}: ${String(item.raw)}%`,
 						},
 					},
 				},
-			};
-		},
-		[history, targetPct],
-	);
+				scales: {
+					x: {
+						grid: { display: false },
+						ticks: {
+							color: CHART_COLORS.muted(),
+							maxRotation: 0,
+							autoSkip: true,
+							maxTicksLimit: 8,
+						},
+					},
+					y: {
+						min: Math.max(0, targetPct - 20),
+						max: 100,
+						grid: { color: withAlpha(CHART_COLORS.border(), 0.5) },
+						ticks: {
+							color: CHART_COLORS.muted(),
+							callback: (v) => `${String(v)}%`,
+						},
+					},
+				},
+			},
+		};
+	}, [history, targetPct]);
 
 	if (summary.totalReviews === 0) {
 		return (
@@ -116,9 +111,7 @@ export function TrueRetentionCard({
 				<span class="ep:text-3xl ep:font-bold ep:text-obs-normal">
 					{currentPct}%
 				</span>
-				<span class="ep:text-xs ep:text-obs-muted">
-					Target: {targetPct}%
-				</span>
+				<span class="ep:text-xs ep:text-obs-muted">Target: {targetPct}%</span>
 				<TrendBadge trend={summary.trend} />
 			</div>
 

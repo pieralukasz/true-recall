@@ -295,7 +295,9 @@ export class SqliteStoreService {
 		}, SqliteStoreService.FOLLOW_UP_FLUSH_MS);
 	}
 
-	private async runFlushPass(scheduleRetryOnFailure: boolean): Promise<boolean> {
+	private async runFlushPass(
+		scheduleRetryOnFailure: boolean,
+	): Promise<boolean> {
 		if (!this.db.isReady() || !this.isDirty) return true; // Nothing to save = success
 
 		const MAX_RETRIES = 3;
@@ -473,7 +475,11 @@ export class SqliteStoreService {
 		return this.stats.getReviewDataForOptimization(presetName);
 	}
 
-	getReviewsForRetention(startDate: string, endDate: string, presetNames?: string[]) {
+	getReviewsForRetention(
+		startDate: string,
+		endDate: string,
+		presetNames?: string[],
+	) {
 		return this.stats.getReviewsForRetention(startDate, endDate, presetNames);
 	}
 

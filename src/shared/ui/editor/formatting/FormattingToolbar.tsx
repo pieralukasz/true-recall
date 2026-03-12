@@ -1,12 +1,7 @@
 import { useIcon } from "@shared/ui/preact/hooks";
 import type { App, TFile } from "obsidian";
 import { SuggestModal } from "obsidian";
-import {
-	useCallback,
-	useEffect,
-	useRef,
-	useState,
-} from "preact/hooks";
+import { useCallback, useEffect, useRef, useState } from "preact/hooks";
 import {
 	clearFormatting,
 	insertAtCursor,

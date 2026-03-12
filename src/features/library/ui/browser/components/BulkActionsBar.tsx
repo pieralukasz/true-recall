@@ -105,7 +105,8 @@ export function BulkActionsBar({
 
 	const handleDelete = useCallback(() => {
 		if (!confirm(`Delete ${ids.length} cards?`)) return;
-		const result = plugin.flashcardManager.removeFlashcardsByIdsWithDetails(ids);
+		const result =
+			plugin.flashcardManager.removeFlashcardsByIdsWithDetails(ids);
 		if (result.ok) {
 			pushDeleteUndo(plugin, result);
 		}

@@ -99,8 +99,7 @@ export function CardBrowserApp({
 				...sidebarFilter.value.negatedStates,
 			],
 			showArchived: showArchived.value,
-			orphanedOnly:
-				parsed.orphanedOnly || sidebarFilter.value.orphanedOnly,
+			orphanedOnly: parsed.orphanedOnly || sidebarFilter.value.orphanedOnly,
 		};
 	});
 

@@ -12,70 +12,78 @@ interface ReviewHistoryChartProps {
 export function ReviewHistoryChart({ data }: ReviewHistoryChartProps) {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 
-	useChart(
-		canvasRef,
-		(): ChartConfiguration<"bar"> | null => {
-			if (data.length === 0) return null;
-			const labels = data.map((d) => formatLabel(d.date));
-			return {
-				type: "bar",
-				data: {
-					labels,
-					datasets: [
-						{
-							label: "New",
-							data: data.map((d) => d.newCards ?? 0),
-							backgroundColor: withAlpha(CHART_COLORS.green(), 0.8),
-						},
-						{
-							label: "Learning",
-							data: data.map((d) => d.learningCards ?? 0),
-							backgroundColor: withAlpha(CHART_COLORS.orange(), 0.8),
-						},
-						{
-							label: "Review",
-							data: data.map((d) => d.reviewCards ?? 0),
-							backgroundColor: withAlpha(CHART_COLORS.blue(), 0.8),
-						},
-					],
-				},
-				options: {
-					responsive: true,
-					maintainAspectRatio: false,
-					plugins: {
-						legend: {
-							position: "top",
-							labels: { color: CHART_COLORS.normal(), boxWidth: 12, padding: 8, font: { size: 11 } },
-						},
-						tooltip: {
-							callbacks: {
-								title: (items) => data[items[0]?.dataIndex ?? 0]?.date ?? "",
-							},
+	useChart(canvasRef, (): ChartConfiguration<"bar"> | null => {
+		if (data.length === 0) return null;
+		const labels = data.map((d) => formatLabel(d.date));
+		return {
+			type: "bar",
+			data: {
+				labels,
+				datasets: [
+					{
+						label: "New",
+						data: data.map((d) => d.newCards ?? 0),
+						backgroundColor: withAlpha(CHART_COLORS.green(), 0.8),
+					},
+					{
+						label: "Learning",
+						data: data.map((d) => d.learningCards ?? 0),
+						backgroundColor: withAlpha(CHART_COLORS.orange(), 0.8),
+					},
+					{
+						label: "Review",
+						data: data.map((d) => d.reviewCards ?? 0),
+						backgroundColor: withAlpha(CHART_COLORS.blue(), 0.8),
+					},
+				],
+			},
+			options: {
+				responsive: true,
+				maintainAspectRatio: false,
+				plugins: {
+					legend: {
+						position: "top",
+						labels: {
+							color: CHART_COLORS.normal(),
+							boxWidth: 12,
+							padding: 8,
+							font: { size: 11 },
 						},
 					},
-					scales: {
-						x: {
-							stacked: true,
-							grid: { display: false },
-							ticks: { color: CHART_COLORS.muted(), maxRotation: 0, autoSkip: true, maxTicksLimit: 10 },
-						},
-						y: {
-							stacked: true,
-							beginAtZero: true,
-							grid: { color: withAlpha(CHART_COLORS.border(), 0.5) },
-							ticks: { color: CHART_COLORS.muted() },
+					tooltip: {
+						callbacks: {
+							title: (items) => data[items[0]?.dataIndex ?? 0]?.date ?? "",
 						},
 					},
 				},
-			};
-		},
-		[data],
-	);
+				scales: {
+					x: {
+						stacked: true,
+						grid: { display: false },
+						ticks: {
+							color: CHART_COLORS.muted(),
+							maxRotation: 0,
+							autoSkip: true,
+							maxTicksLimit: 10,
+						},
+					},
+					y: {
+						stacked: true,
+						beginAtZero: true,
+						grid: { color: withAlpha(CHART_COLORS.border(), 0.5) },
+						ticks: { color: CHART_COLORS.muted() },
+					},
+				},
+			},
+		};
+	}, [data]);
 
 	if (data.length === 0) {
 		return (
 			<ChartCard title="Review History" subtitle="Daily review breakdown">
-				<p class="ep:text-xs ep:text-obs-muted ep:py-8 ep:text-center">No review data yet</p>
+				<p class="ep:text-xs ep:text-obs-muted ep:py-8 ep:text-center">
+					No review data yet
+				</p>
 			</ChartCard>
 		);
 	}

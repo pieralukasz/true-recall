@@ -127,17 +127,14 @@ export function EditorSection({
 		);
 	}
 
-	const handleContainerClick = useCallback(
-		(e: MouseEvent) => {
-			const editor = editorRef.current;
-			if (!editor) return;
-			const target = e.target as HTMLElement;
-			if (!target.closest(".cm-content")) {
-				editor.cm.focus();
-			}
-		},
-		[],
-	);
+	const handleContainerClick = useCallback((e: MouseEvent) => {
+		const editor = editorRef.current;
+		if (!editor) return;
+		const target = e.target as HTMLElement;
+		if (!target.closest(".cm-content")) {
+			editor.cm.focus();
+		}
+	}, []);
 
 	return (
 		<div

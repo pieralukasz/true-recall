@@ -13,8 +13,8 @@ export function BackupSettingsSection() {
 		<FormCard title="Database backup">
 			<InfoBlock>
 				<p>
-					True Recall works directly on your active SQLite database during normal
-					use.
+					True Recall works directly on your active SQLite database during
+					normal use.
 				</p>
 				<p>
 					Backups are safety copies to recover from corruption or accidental

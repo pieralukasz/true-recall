@@ -345,9 +345,7 @@ export function buildRewritePrompt(noteType: NoteType): string {
 	const isCloze = noteType.type === 1;
 	const formatSection = buildFormatSection(noteType, slug);
 	const typeSpecificRules = isCloze ? `\n${CLOZE_RULES}\n` : "";
-	const inputFields = noteType.fields
-		.map((f) => `${f}: [value]`)
-		.join("\n");
+	const inputFields = noteType.fields.map((f) => `${f}: [value]`).join("\n");
 	const example = buildRewriteExample(noteType, slug);
 
 	return `You are an expert in Spaced Repetition Systems. Your task is to REWRITE/SPLIT existing flashcard(s) into multiple atomic flashcards.

@@ -1,7 +1,7 @@
+import type { Signal } from "@preact/signals";
 import type { StatsTimeRange } from "@shared/types";
 import { Clickable } from "@shared/ui/components/Clickable";
 import { cn } from "@shared/ui/utils";
-import type { Signal } from "@preact/signals";
 
 const TIME_RANGES: { value: StatsTimeRange; label: string }[] = [
 	{ value: "1m", label: "1M" },
@@ -17,7 +17,9 @@ interface StatsHeaderProps {
 export function StatsHeader({ timeRange }: StatsHeaderProps) {
 	return (
 		<div class="ep:flex ep:items-center ep:justify-between">
-			<h2 class="ep:text-base ep:font-semibold ep:text-obs-normal">Statistics</h2>
+			<h2 class="ep:text-base ep:font-semibold ep:text-obs-normal">
+				Statistics
+			</h2>
 			<div class="ep:flex ep:gap-1 ep:bg-obs-secondary ep:rounded-lg ep:p-0.5">
 				{TIME_RANGES.map((range) => (
 					<Clickable

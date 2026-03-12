@@ -390,7 +390,10 @@ export class ReviewService {
 		const lastSeen = new Map<string, number>();
 		const minSpacing = Math.max(
 			3,
-			Math.ceil(queue.length / Math.max(...[...hasMultiple].map((k) => noteGroups.get(k) ?? 1))),
+			Math.ceil(
+				queue.length /
+					Math.max(...[...hasMultiple].map((k) => noteGroups.get(k) ?? 1)),
+			),
 		);
 
 		for (const card of queue) {
@@ -569,9 +572,10 @@ export class ReviewService {
 			options.newReviewMix ?? "mix-with-reviews",
 		);
 
-		const spacedQueue = options.burySiblings === false
-			? this.spaceSiblings(mainQueue)
-			: mainQueue;
+		const spacedQueue =
+			options.burySiblings === false
+				? this.spaceSiblings(mainQueue)
+				: mainQueue;
 
 		return [...fsrsService.sortByDue(dueLearningCards), ...spacedQueue];
 	}
@@ -640,9 +644,10 @@ export class ReviewService {
 			options.newReviewMix ?? "mix-with-reviews",
 		);
 
-		const spacedQueue = options.burySiblings === false
-			? this.spaceSiblings(mainQueue)
-			: mainQueue;
+		const spacedQueue =
+			options.burySiblings === false
+				? this.spaceSiblings(mainQueue)
+				: mainQueue;
 
 		return [
 			...fsrsService.sortByDue(dueLearningCards),

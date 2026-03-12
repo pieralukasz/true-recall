@@ -670,7 +670,9 @@ export class StatsActions {
 			};
 		});
 		if (malformedCount > 0) {
-			console.error(`[StatsActions] ${malformedCount} cards with malformed fields_json`);
+			console.error(
+				`[StatsActions] ${malformedCount} cards with malformed fields_json`,
+			);
 		}
 		return result;
 	}

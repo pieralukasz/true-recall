@@ -10,9 +10,9 @@ import {
 	computeActionableSessionSnapshot,
 } from "@features/study/services/actionable-session-snapshot.service";
 import type { FSRSFlashcardItem, TrueRecallSettings } from "@shared/types";
-import { State } from "ts-fsrs";
 import type { CardStore } from "@shared/types/fsrs/store.types";
 import type { MetadataCache } from "obsidian";
+import { State } from "ts-fsrs";
 import {
 	computeProjectStats,
 	type ProjectStats,
@@ -45,7 +45,10 @@ export const UNASSIGNED_PATH = "__unassigned__";
 const MAX_RECENTLY_STUDIED = 5;
 
 interface ProjectAggregationIndexes {
-	allCardsBySourceUid: Map<string, import("@shared/types/fsrs/card.types").FSRSCardData[]>;
+	allCardsBySourceUid: Map<
+		string,
+		import("@shared/types/fsrs/card.types").FSRSCardData[]
+	>;
 	activeCardsBySourceUid: Map<string, FSRSFlashcardItem[]>;
 	retrievabilityByCardId: Map<string, number>;
 	now: Date;
@@ -62,7 +65,9 @@ function buildCardsBySourceUid(
 		const uid = card.sourceUid ?? card.fsrs.sourceUid;
 		if (!uid) continue;
 		const bucket = map.get(uid);
-		const fsrs = card.fsrs.sourceUid ? card.fsrs : { ...card.fsrs, sourceUid: uid };
+		const fsrs = card.fsrs.sourceUid
+			? card.fsrs
+			: { ...card.fsrs, sourceUid: uid };
 		if (bucket) {
 			bucket.push(fsrs);
 		} else {
@@ -135,7 +140,9 @@ export function aggregateProjectData(
 	const snapshotCache = new Map<string, ActionableSessionSnapshot>();
 	const now = new Date();
 	const allCardsBySourceUid = buildCardsBySourceUid(plugin.allCards);
-	const activeCardsBySourceUid = buildActiveCardsBySourceUid(plugin.activeCards);
+	const activeCardsBySourceUid = buildActiveCardsBySourceUid(
+		plugin.activeCards,
+	);
 	const retrievabilityByCardId = buildRetrievabilityCache(
 		allCardsBySourceUid,
 		plugin.fsrsService,
@@ -188,7 +195,8 @@ export function aggregateProjectData(
 	// Virtual "Unassigned" project for orphan notes
 	const assignedNoteNames = new Set(noteProjectMap.keys());
 	const unassignedNotes = notes.filter(
-		(n) => !assignedNoteNames.has(n.name) && !(n.path && projectPaths.has(n.path)),
+		(n) =>
+			!assignedNoteNames.has(n.name) && !(n.path && projectPaths.has(n.path)),
 	);
 	if (unassignedNotes.length > 0) {
 		projects.push({

@@ -1,4 +1,5 @@
 import { buildRewritePrompt } from "@features/ai/prompts/block-prompt-builder";
+import type { ParsedBlock } from "@features/study/services/flashcard/block-parser.service";
 import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
 import type { NoteType } from "@shared/types/note.types";
 import type { TrueRecallSettings } from "@shared/types/settings.types";
@@ -7,7 +8,6 @@ import {
 	getBYOKFallbackConfig,
 	resolveAIClientConfig,
 } from "./ai-client-config";
-import type { ParsedBlock } from "@features/study/services/flashcard/block-parser.service";
 import { IncrementalFlashcardParser } from "./incremental-flashcard-parser";
 import {
 	AIRequestError,
@@ -55,8 +55,7 @@ export class RewriteService {
 		const inputText = cards
 			.map((c) => {
 				const fieldLines = noteType.fields.map((fieldName, i) => {
-					const value =
-						i === 0 ? c.question : i === 1 ? (c.answer ?? "") : "";
+					const value = i === 0 ? c.question : i === 1 ? (c.answer ?? "") : "";
 					return `${fieldName}: ${value}`;
 				});
 				return `#existing\n${fieldLines.join("\n")}\n---`;

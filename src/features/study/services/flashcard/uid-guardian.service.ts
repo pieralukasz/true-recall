@@ -1,5 +1,5 @@
-import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
 import type { SessionPersistenceService } from "@features/core/persistence/session-persistence.service";
+import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
 import type {
 	FieldChangeEvent,
 	FrontmatterIndexService,

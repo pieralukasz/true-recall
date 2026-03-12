@@ -9,7 +9,12 @@ interface TodayHeroProps {
 	totalCards: number;
 }
 
-export function TodayHero({ today, streak, dueTomorrow, totalCards }: TodayHeroProps) {
+export function TodayHero({
+	today,
+	streak,
+	dueTomorrow,
+	totalCards,
+}: TodayHeroProps) {
 	return (
 		<div class="ep:grid ep:grid-cols-2 sm:ep:grid-cols-3 lg:ep:grid-cols-6 ep:gap-2">
 			<StatCard label="Studied today" value={today.studied} icon="book-open" />
@@ -18,9 +23,20 @@ export function TodayHero({ today, streak, dueTomorrow, totalCards }: TodayHeroP
 				label="Correct"
 				value={`${Math.round(today.correctRate * 100)}%`}
 				icon="check-circle"
-				color={today.correctRate >= 0.8 ? "green" : today.correctRate >= 0.6 ? "orange" : "red"}
+				color={
+					today.correctRate >= 0.8
+						? "green"
+						: today.correctRate >= 0.6
+							? "orange"
+							: "red"
+				}
 			/>
-			<StatCard label="Current streak" value={`${streak.current}d`} icon="flame" color="orange" />
+			<StatCard
+				label="Current streak"
+				value={`${streak.current}d`}
+				icon="flame"
+				color="orange"
+			/>
 			<StatCard label="Due tomorrow" value={dueTomorrow} icon="calendar" />
 			<StatCard label="Total cards" value={totalCards} icon="layers" />
 		</div>

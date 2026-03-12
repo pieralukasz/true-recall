@@ -3,18 +3,28 @@ import {
 	normalizePointFromRect,
 } from "@features/image-occlusion/canvas-geometry";
 import {
-	type ResizeCorner,
 	buildDraftRegion,
 	buildMoveUpdate,
 	buildResizeUpdate,
 	commitDraftRegion,
 	getRegionCorner,
+	type ResizeCorner,
 	updateRegion,
 } from "@features/image-occlusion/canvas-interactions";
-import type { IODefinition, IORegion, IOShape } from "@features/image-occlusion/types";
+import type {
+	IODefinition,
+	IORegion,
+	IOShape,
+} from "@features/image-occlusion/types";
 import { Clickable } from "@shared/ui/components/Clickable";
 import { useIcon } from "@shared/ui/preact/hooks";
-import { useCallback, useEffect, useMemo, useRef, useState } from "preact/hooks";
+import {
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "preact/hooks";
 
 type Tool = "select" | IOShape;
 
@@ -153,9 +163,7 @@ export function IOCanvas({
 
 		const target = event.target as Element;
 		const regionId = target.getAttribute("data-io-region");
-		const handle = target.getAttribute(
-			"data-io-handle",
-		) as ResizeCorner | null;
+		const handle = target.getAttribute("data-io-handle") as ResizeCorner | null;
 		const currentTool = toolRef.current;
 
 		if (spacePressedRef.current || event.button === 1) {
@@ -166,9 +174,7 @@ export function IOCanvas({
 				originX: panXRef.current,
 				originY: panYRef.current,
 			};
-			(event.currentTarget as HTMLElement).setPointerCapture(
-				event.pointerId,
-			);
+			(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
 			return;
 		}
 
@@ -192,9 +198,7 @@ export function IOCanvas({
 
 		if (handle && regionId) {
 			dragRef.current = { type: "resize", regionId, corner: handle };
-			(event.currentTarget as HTMLElement).setPointerCapture(
-				event.pointerId,
-			);
+			(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
 			return;
 		}
 
@@ -210,9 +214,7 @@ export function IOCanvas({
 					offsetX: point.x - region.x,
 					offsetY: point.y - region.y,
 				};
-				(event.currentTarget as HTMLElement).setPointerCapture(
-					event.pointerId,
-				);
+				(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
 			}
 			return;
 		}
@@ -224,9 +226,7 @@ export function IOCanvas({
 				startY: point.y,
 				shape: currentTool,
 			};
-			(event.currentTarget as HTMLElement).setPointerCapture(
-				event.pointerId,
-			);
+			(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
 		}
 	}, []);
 
@@ -246,7 +246,13 @@ export function IOCanvas({
 
 		if (drag.type === "draw") {
 			setDraftRegion(
-				buildDraftRegion(drag.startX, drag.startY, point.x, point.y, drag.shape),
+				buildDraftRegion(
+					drag.startX,
+					drag.startY,
+					point.x,
+					point.y,
+					drag.shape,
+				),
 			);
 			return;
 		}

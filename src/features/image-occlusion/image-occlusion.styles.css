@@ -455,8 +455,7 @@
 	}
 
 	/* Review-only override for unrevealed IO cards in ALL mode: active stays accent, others are gray. */
-	.true-recall-review-card-container
-		.true-recall-io-render:not(.is-revealed)
+	.true-recall-review-card-container .true-recall-io-render:not(.is-revealed)
 		.true-recall-io-shape.is-mask-active {
 		fill: color-mix(
 			in srgb,
@@ -469,7 +468,11 @@
 	.true-recall-review-card-container
 		.true-recall-io-render:not(.is-revealed)
 		.true-recall-io-shape.is-mask-passive {
-		fill: color-mix(in srgb, var(--background-primary) 70%, var(--text-muted) 30%);
+		fill: color-mix(
+			in srgb,
+			var(--background-primary) 70%,
+			var(--text-muted) 30%
+		);
 		fill-opacity: 1;
 	}
 

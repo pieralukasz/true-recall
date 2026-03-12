@@ -533,7 +533,8 @@ export class FlashcardPanelView extends ItemView {
 		if (!confirmed) return;
 
 		const cardIds = state.flashcardInfo.flashcards.map((card) => card.id);
-		const result = this.flashcardManager.removeFlashcardsByIdsWithDetails(cardIds);
+		const result =
+			this.flashcardManager.removeFlashcardsByIdsWithDetails(cardIds);
 		if (result.ok) {
 			pushDeleteUndo(this.plugin, result);
 		}

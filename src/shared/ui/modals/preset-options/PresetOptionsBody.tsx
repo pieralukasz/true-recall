@@ -38,7 +38,9 @@ export function PresetOptionsBody({
 
 	const hasChildren = useMemo(() => {
 		if (!context?.contextPath) return false;
-		return plugin.hierarchyService.getChildPaths(context.contextPath).length > 0;
+		return (
+			plugin.hierarchyService.getChildPaths(context.contextPath).length > 0
+		);
 	}, [plugin, context?.contextPath]);
 
 	const getDescendantProjectPaths = useCallback(
@@ -111,8 +113,7 @@ export function PresetOptionsBody({
 	}, [plugin, preset.id, settings.defaultPresetId, refresh]);
 
 	const handleDone = useCallback(async () => {
-		const frontmatterService =
-			plugin.flashcardManager?.getFrontmatterService();
+		const frontmatterService = plugin.flashcardManager?.getFrontmatterService();
 		if (context?.contextPath && frontmatterService) {
 			const file = plugin.app.vault.getFileByPath(context.contextPath);
 			if (file) {
@@ -120,19 +121,14 @@ export function PresetOptionsBody({
 			}
 
 			if (applyToChildren) {
-				const descendantPaths = getDescendantProjectPaths(
-					context.contextPath,
-				);
+				const descendantPaths = getDescendantProjectPaths(context.contextPath);
 				setIsApplying(true);
 				try {
 					await Promise.all(
 						descendantPaths.map((path) => {
 							const f = plugin.app.vault.getFileByPath(path);
 							return f
-								? frontmatterService.setFsrsPreset(
-										f,
-										preset.name,
-									)
+								? frontmatterService.setFsrsPreset(f, preset.name)
 								: Promise.resolve();
 						}),
 					);
@@ -143,7 +139,14 @@ export function PresetOptionsBody({
 			}
 		}
 		onClose();
-	}, [plugin, context, preset.name, onClose, applyToChildren, getDescendantProjectPaths]);
+	}, [
+		plugin,
+		context,
+		preset.name,
+		onClose,
+		applyToChildren,
+		getDescendantProjectPaths,
+	]);
 
 	return (
 		<div class="ep:flex ep:flex-col ep:flex-1 ep:min-h-0">
@@ -179,9 +182,7 @@ export function PresetOptionsBody({
 							checked={applyToChildren}
 							disabled={isApplying}
 							onChange={(e) =>
-								setApplyToChildren(
-									(e.target as HTMLInputElement).checked,
-								)
+								setApplyToChildren((e.target as HTMLInputElement).checked)
 							}
 						/>
 						Apply to child projects

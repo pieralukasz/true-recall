@@ -10,16 +10,16 @@ import { BackupService } from "@features/core/persistence/backup.service";
 import { SessionPersistenceService } from "@features/core/persistence/session-persistence.service";
 import { SqliteStoreService } from "@features/core/persistence/sqlite";
 import {
-	DB_FOLDER,
-	SAFETY_FLUSH_INTERVAL_MS,
-	getDeviceDbFilename,
-} from "@features/core/persistence/sqlite/sqlite.types";
-import {
 	decodeBackupToSqliteBytes,
 	isSupportedBackupPath,
 	sortBackupPathsNewest,
 	toExactBackupBuffer,
 } from "@features/core/persistence/sqlite/recovery.utils";
+import {
+	DB_FOLDER,
+	getDeviceDbFilename,
+	SAFETY_FLUSH_INTERVAL_MS,
+} from "@features/core/persistence/sqlite/sqlite.types";
 import { DayBoundaryService } from "@features/core/services/day-boundary.service";
 import { FrontmatterIndexService } from "@features/core/services/frontmatter-index.service";
 import { FSRSService } from "@features/core/services/fsrs.service";
@@ -280,10 +280,9 @@ export default class TrueRecallPlugin extends Plugin {
 		});
 
 		this.registerView(VIEW_TYPE_STATS, (leaf) => {
-			const { StatsView } =
-				require("@features/metrics/ui/stats") as {
-					StatsView: typeof import("@features/metrics/ui/stats").StatsView;
-				};
+			const { StatsView } = require("@features/metrics/ui/stats") as {
+				StatsView: typeof import("@features/metrics/ui/stats").StatsView;
+			};
 			return new StatsView(leaf, this);
 		});
 
@@ -803,9 +802,7 @@ export default class TrueRecallPlugin extends Plugin {
 			return;
 		}
 
-		const { WhatsNewModal } = await import(
-			"@shared/ui/modals/WhatsNewModal"
-		);
+		const { WhatsNewModal } = await import("@shared/ui/modals/WhatsNewModal");
 		new WhatsNewModal(this, release).open();
 		this.settings.lastSeenVersion = currentVersion;
 		await this.saveSettings();
@@ -1121,17 +1118,12 @@ export default class TrueRecallPlugin extends Plugin {
 		const resolvedPath = resolved?.path ?? imagePath;
 
 		if (activeFile && activeFile.extension === "md") {
-			const frontmatterService =
-				this.flashcardManager.getFrontmatterService();
+			const frontmatterService = this.flashcardManager.getFrontmatterService();
 			void (async () => {
-				let sourceUid =
-					await frontmatterService.getSourceNoteUid(activeFile);
+				let sourceUid = await frontmatterService.getSourceNoteUid(activeFile);
 				if (!sourceUid) {
 					sourceUid = frontmatterService.generateUid();
-					await frontmatterService.setSourceNoteUid(
-						activeFile,
-						sourceUid,
-					);
+					await frontmatterService.setSourceNoteUid(activeFile, sourceUid);
 				}
 				await this.openImageOcclusionEditor({
 					mode: "add",
@@ -1222,8 +1214,7 @@ export default class TrueRecallPlugin extends Plugin {
 					notify().error(`Quick add failed: ${msg}`);
 				}
 			},
-			onImageOcclusion: (imagePath) =>
-				this.handleImageOcclusion(imagePath),
+			onImageOcclusion: (imagePath) => this.handleImageOcclusion(imagePath),
 			hasApiKey: () =>
 				!!(this.settings.openRouterApiKey || this.settings.subscriptionKey),
 			isEnabled: () => this.settings.selectionToolbarEnabled,
@@ -1258,27 +1249,20 @@ export default class TrueRecallPlugin extends Plugin {
 							notify().info("Quick-added image flashcard");
 						} catch (error) {
 							const msg =
-								error instanceof Error
-									? error.message
-									: String(error);
+								error instanceof Error ? error.message : String(error);
 							notify().error(`Quick add failed: ${msg}`);
 						}
 					},
 					onEdit: (imagePath) => {
-						const modal = new QuickNoteEditorModal(
-							this.app,
-							this,
-							{
-								mode: "add",
-								initialFields: {
-									Front: `![[${imagePath}]]`,
-								},
+						const modal = new QuickNoteEditorModal(this.app, this, {
+							mode: "add",
+							initialFields: {
+								Front: `![[${imagePath}]]`,
 							},
-						);
+						});
 						void modal.openAndWait();
 					},
-					onImageOcclusion: (imagePath) =>
-						this.handleImageOcclusion(imagePath),
+					onImageOcclusion: (imagePath) => this.handleImageOcclusion(imagePath),
 					isEnabled: () => this.settings.selectionToolbarEnabled,
 				});
 				this.registerEditorExtension([imageExtension]);
@@ -1478,7 +1462,9 @@ export default class TrueRecallPlugin extends Plugin {
 		const modal = new RestoreBackupModal(this.app, {
 			backups,
 			backupService: this.backupService,
-			sessionStartBackupPath: this.backgroundBackupManager?.getStatus().sessionStartBackupPath ?? null,
+			sessionStartBackupPath:
+				this.backgroundBackupManager?.getStatus().sessionStartBackupPath ??
+				null,
 		});
 
 		await modal.openAndWait();

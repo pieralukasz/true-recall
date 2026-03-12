@@ -21,20 +21,37 @@ export function MiniDonut({ due, newCount, learning, total }: MiniDonutProps) {
 		const learningPercent = (learning / total) * CIRCUMFERENCE;
 
 		if (duePercent > 0) {
-			segments.push({ length: duePercent, offset, stroke: `var(${FSRS_COLORS.review.cssVar})` });
+			segments.push({
+				length: duePercent,
+				offset,
+				stroke: `var(${FSRS_COLORS.review.cssVar})`,
+			});
 			offset += duePercent;
 		}
 		if (newPercent > 0) {
-			segments.push({ length: newPercent, offset, stroke: `var(${FSRS_COLORS.new.cssVar})` });
+			segments.push({
+				length: newPercent,
+				offset,
+				stroke: `var(${FSRS_COLORS.new.cssVar})`,
+			});
 			offset += newPercent;
 		}
 		if (learningPercent > 0) {
-			segments.push({ length: learningPercent, offset, stroke: `var(${FSRS_COLORS.learning.cssVar})` });
+			segments.push({
+				length: learningPercent,
+				offset,
+				stroke: `var(${FSRS_COLORS.learning.cssVar})`,
+			});
 		}
 	}
 
 	return (
-		<svg viewBox="0 0 36 36" width="14" height="14" class="ep:shrink-0 ep:block">
+		<svg
+			viewBox="0 0 36 36"
+			width="14"
+			height="14"
+			class="ep:shrink-0 ep:block"
+		>
 			<circle
 				cx={18}
 				cy={18}

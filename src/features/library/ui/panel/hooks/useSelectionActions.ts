@@ -118,7 +118,8 @@ export function useSelectionActions({
 		if (!confirmed) return;
 
 		const cardIds = selectedCards.map((card) => card.id);
-		const result = plugin.flashcardManager.removeFlashcardsByIdsWithDetails(cardIds);
+		const result =
+			plugin.flashcardManager.removeFlashcardsByIdsWithDetails(cardIds);
 
 		if (result.ok) {
 			pushDeleteUndo(plugin, result);
@@ -329,7 +330,8 @@ export function useSelectionActions({
 		if (!confirmed) return;
 
 		const cardIds = flashcardInfo.flashcards.map((card) => card.id);
-		const result = plugin.flashcardManager.removeFlashcardsByIdsWithDetails(cardIds);
+		const result =
+			plugin.flashcardManager.removeFlashcardsByIdsWithDetails(cardIds);
 		if (result.ok) {
 			pushDeleteUndo(plugin, result);
 		}

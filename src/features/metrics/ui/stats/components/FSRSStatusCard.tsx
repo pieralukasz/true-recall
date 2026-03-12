@@ -106,13 +106,17 @@ function PresetStatusEntry({
 	const expanded = useSignal(false);
 
 	return (
-		<div class={showName ? "ep:border-b ep:border-obs-modifier-border-hover ep:pb-3 last:ep:border-0 last:ep:pb-0" : ""}>
+		<div
+			class={
+				showName
+					? "ep:border-b ep:border-obs-modifier-border-hover ep:pb-3 last:ep:border-0 last:ep:pb-0"
+					: ""
+			}
+		>
 			<div class="ep:space-y-2.5">
 				<div class="ep:flex ep:items-center ep:gap-2 ep:text-sm">
 					{showName && (
-						<span class="ep:font-medium ep:text-obs-normal">
-							{status.name}
-						</span>
+						<span class="ep:font-medium ep:text-obs-normal">{status.name}</span>
 					)}
 					<span class="ep:text-xs ep:text-obs-muted">
 						Target: {status.retention}%
@@ -122,34 +126,24 @@ function PresetStatusEntry({
 				<div class="ep:flex ep:flex-wrap ep:gap-x-4 ep:gap-y-1 ep:text-xs ep:text-obs-muted">
 					<span>
 						Last optimized:{" "}
-						{status.lastOpt
-							? formatRelativeDate(status.lastOpt)
-							: "Never"}
+						{status.lastOpt ? formatRelativeDate(status.lastOpt) : "Never"}
 					</span>
 					{status.reviewsSinceOpt != null && (
-						<span>
-							{status.reviewsSinceOpt.toLocaleString()} reviews
-							since
-						</span>
+						<span>{status.reviewsSinceOpt.toLocaleString()} reviews since</span>
 					)}
 				</div>
 
 				{status.metrics && (
 					<div class="ep:flex ep:flex-wrap ep:gap-x-4 ep:gap-y-1 ep:text-xs ep:text-obs-muted">
 						<span>RMSE: {status.metrics.rmse.toFixed(4)}</span>
-						<span>
-							LogLoss: {status.metrics.logLoss.toFixed(4)}
-						</span>
-						<ConvergenceBadge
-							status={status.metrics.convergenceStatus}
-						/>
+						<span>LogLoss: {status.metrics.logLoss.toFixed(4)}</span>
+						<ConvergenceBadge status={status.metrics.convergenceStatus} />
 					</div>
 				)}
 
 				{status.needsOptimization && (
 					<div class="ep:text-xs ep:text-obs-orange ep:bg-obs-orange/10 ep:px-2.5 ep:py-1.5 ep:rounded">
-						Optimization recommended — enough new reviews for
-						better parameters
+						Optimization recommended — enough new reviews for better parameters
 					</div>
 				)}
 
@@ -161,16 +155,11 @@ function PresetStatusEntry({
 								expanded.value = !expanded.value;
 							}}
 						>
-							Weights ({status.weights.length}){" "}
-							{expanded.value ? "[-]" : "[+]"}
+							Weights ({status.weights.length}) {expanded.value ? "[-]" : "[+]"}
 						</span>
 						{expanded.value ? (
 							<p class="ep:mt-1 ep:font-mono ep:break-all ep:leading-relaxed">
-								[
-								{status.weights
-									.map((w) => w.toFixed(4))
-									.join(", ")}
-								]
+								[{status.weights.map((w) => w.toFixed(4)).join(", ")}]
 							</p>
 						) : (
 							<span class="ep:ml-1.5 ep:font-mono">
@@ -225,7 +214,6 @@ function formatRelativeDate(isoDate: string): string {
 	if (diffDays === 1) return "Yesterday";
 	if (diffDays < 7) return `${String(diffDays)} days ago`;
 	if (diffDays < 30) return `${String(Math.floor(diffDays / 7))} weeks ago`;
-	if (diffDays < 365)
-		return `${String(Math.floor(diffDays / 30))} months ago`;
+	if (diffDays < 365) return `${String(Math.floor(diffDays / 30))} months ago`;
 	return `${String(Math.floor(diffDays / 365))} years ago`;
 }

@@ -1,10 +1,11 @@
-import {
-	buildSourceUidToPresetMap,
-} from "@features/metrics/services/stats/stats-filter.helpers";
+import { buildSourceUidToPresetMap } from "@features/metrics/services/stats/stats-filter.helpers";
 import type { StatsFilterContext } from "@features/metrics/services/stats/stats-filter.types";
 import { HeatmapWidget } from "@features/study/ui/editor/widgets/analytics/HeatmapWidget";
 import { useComputed, useSignal } from "@preact/signals";
-import { allCardsArray, pluginSettings } from "@shared/services/reactive-card-store";
+import {
+	allCardsArray,
+	pluginSettings,
+} from "@shared/services/reactive-card-store";
 import type { StatsTimeRange } from "@shared/types";
 import { AppNavBar } from "@shared/ui/components";
 import { usePlugin } from "@shared/ui/preact";
@@ -207,10 +208,7 @@ export function StatsApp() {
 				<div class="ep:p-3 ep:mx-auto ep:max-w-5xl ep:flex ep:flex-col ep:gap-3">
 					<StatsHeader timeRange={timeRange} />
 
-					<PresetFilter
-						presets={presetNames}
-						selected={selectedPresets}
-					/>
+					<PresetFilter presets={presetNames} selected={selectedPresets} />
 
 					{!data && !error && loading && (
 						<div class="ep:text-xs ep:text-obs-muted ep:text-center ep:py-12">
@@ -282,9 +280,7 @@ export function StatsApp() {
 										targetRetention={targetRetention}
 									/>
 
-									<RatingDistributionChart
-										data={data.ratingDistribution}
-									/>
+									<RatingDistributionChart data={data.ratingDistribution} />
 
 									<CollectionHealthBar data={data.health} />
 

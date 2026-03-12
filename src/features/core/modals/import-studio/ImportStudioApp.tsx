@@ -205,7 +205,10 @@ export function ImportStudioApp({
 				onModEnter={() => void handleSave()}
 			/>
 
-			<CardPreviewList cards={parseResult.cards} duplicateCount={parseResult.duplicateCount} />
+			<CardPreviewList
+				cards={parseResult.cards}
+				duplicateCount={parseResult.duplicateCount}
+			/>
 
 			<FooterBar
 				sessionCount={sessionCount}

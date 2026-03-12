@@ -1,11 +1,10 @@
+import type { TrueRetentionSnapshot } from "@features/metrics/services/fsrs-tools/statistics/true-retention.calculator";
 import { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
 import {
 	EMPTY_FILTER,
 	type StatsFilterContext,
 } from "@features/metrics/services/stats/stats-filter.types";
-import type {
-	TrueRetentionSnapshot,
-} from "@features/metrics/services/fsrs-tools/statistics/true-retention.calculator";
+import type { Signal } from "@preact/signals";
 import { useSignal } from "@preact/signals";
 import {
 	allCardsArray,
@@ -13,6 +12,7 @@ import {
 } from "@shared/services/reactive-card-store";
 import type {
 	CardMaturityBreakdown,
+	CardsCreatedEntry,
 	CollectionHealthSnapshot,
 	ExtendedDailyStats,
 	FutureDueEntry,
@@ -21,12 +21,10 @@ import type {
 	StatsTimeRange,
 	StreakInfo,
 	TodaySummary,
-	CardsCreatedEntry,
 } from "@shared/types";
 import { usePlugin } from "@shared/ui/preact";
 import { getErrorMessage } from "@shared/utils/error.utils";
 import { useEffect, useMemo } from "preact/hooks";
-import type { Signal } from "@preact/signals";
 
 export interface StatsData {
 	today: TodaySummary;
@@ -100,7 +98,8 @@ export function useStatsData(
 				const health = statsCalc.getCollectionHealthSnapshot();
 				const futureDue = statsCalc.getFutureDueStatsFilled(range);
 				const retention = statsCalc.getRetentionHistory(range);
-				const ratingDistribution = statsCalc.getRatingDistributionHistory(range);
+				const ratingDistribution =
+					statsCalc.getRatingDistributionHistory(range);
 				const allDailyStats = statsCalc.getAllDailyStats();
 
 				const reviewHistory = statsCalc.getReviewHistorySync(range);
@@ -150,7 +149,16 @@ export function useStatsData(
 			cancelled = true;
 			clearTimeout(timeoutId);
 		};
-	}, [allCardsArray.value, pluginSettings.value, timeRange.value, filter?.value, statsCalc, plugin.fsrsHelper, loading, data]);
+	}, [
+		allCardsArray.value,
+		pluginSettings.value,
+		timeRange.value,
+		filter?.value,
+		statsCalc,
+		plugin.fsrsHelper,
+		loading,
+		data,
+	]);
 
 	return {
 		data: data.value,

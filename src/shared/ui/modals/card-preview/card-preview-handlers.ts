@@ -86,7 +86,9 @@ export async function handleUnburyAll(
 	setCards(failedCards);
 
 	if (failedCards.length > 0 && unburiedCount > 0) {
-		notify().warning(`Unburied ${unburiedCount} of ${cards.length} cards, ${failedCards.length} failed`);
+		notify().warning(
+			`Unburied ${unburiedCount} of ${cards.length} cards, ${failedCards.length} failed`,
+		);
 	} else if (failedCards.length > 0) {
 		notify().operationFailed("unbury cards");
 	} else {

@@ -251,9 +251,7 @@ export function RatingsWidget({ source }: { source: string }) {
 	return (
 		<div class="ep:flex ep:flex-col ep:gap-2 ep:p-3 ep:text-sm">
 			<div class="ep:flex ep:items-center ep:justify-between ep:text-xs">
-				<span class="ep:text-obs-muted">
-					{periodLabel}
-				</span>
+				<span class="ep:text-obs-muted">{periodLabel}</span>
 			</div>
 
 			{style === "donut" ? (

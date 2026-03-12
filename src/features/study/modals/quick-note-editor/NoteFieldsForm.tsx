@@ -98,7 +98,10 @@ interface CMFieldProps {
 	onModEnter?: () => void;
 	isPinned: boolean;
 	onTogglePin?: (fieldName: string) => void;
-	registerEditor?: (name: string, editor: EmbeddableEditorInstance | null) => void;
+	registerEditor?: (
+		name: string,
+		editor: EmbeddableEditorInstance | null,
+	) => void;
 	onTab?: () => void;
 	onShiftTab?: () => void;
 }

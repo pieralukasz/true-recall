@@ -339,7 +339,10 @@ export class CardRepository {
 		if (existing?.noteId && !entry.noteId) {
 			entry.noteId = existing.noteId;
 		}
-		if (existing?.templateOrd !== undefined && entry.templateOrd === undefined) {
+		if (
+			existing?.templateOrd !== undefined &&
+			entry.templateOrd === undefined
+		) {
 			entry.templateOrd = existing.templateOrd;
 		}
 		if (existing?.noteTypeId && !entry.noteTypeId) {
@@ -433,7 +436,10 @@ export class CardRepository {
 		return this.deleteWithCascade(cardId).removedIds.length > 0;
 	}
 
-	deleteWithCascade(cardId: string): { removedIds: string[]; cardsData: FSRSCardData[] } {
+	deleteWithCascade(cardId: string): {
+		removedIds: string[];
+		cardsData: FSRSCardData[];
+	} {
 		const card = this.store.get(cardId);
 		if (!card) {
 			return { removedIds: [], cardsData: [] };
@@ -460,7 +466,10 @@ export class CardRepository {
 		return this.deleteBatchWithCascade(cardIds).removedIds.length;
 	}
 
-	deleteBatchWithCascade(cardIds: string[]): { removedIds: string[]; cardsData: FSRSCardData[] } {
+	deleteBatchWithCascade(cardIds: string[]): {
+		removedIds: string[];
+		cardsData: FSRSCardData[];
+	} {
 		if (cardIds.length === 0) return { removedIds: [], cardsData: [] };
 
 		const allRemovedIds = new Set<string>();

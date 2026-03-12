@@ -176,9 +176,8 @@ export class AnswerHandler {
 		);
 
 		// Auto-bury siblings (IO + cloze) if enabled
-		const buriedSiblings = preset.burySiblings !== false
-			? this.burySiblingCards(card)
-			: [];
+		const buriedSiblings =
+			preset.burySiblings !== false ? this.burySiblingCards(card) : [];
 
 		if (hasMore) {
 			this.deferSchedulingPreview();
@@ -207,7 +206,10 @@ export class AnswerHandler {
 				rating,
 				previousState,
 				requeuedAtIndex: requeueData?.position,
-				buriedSiblingIds: buriedSiblings.length > 0 ? buriedSiblings.map(s => s.id) : undefined,
+				buriedSiblingIds:
+					buriedSiblings.length > 0
+						? buriedSiblings.map((s) => s.id)
+						: undefined,
 				buriedSiblings: buriedSiblings.length > 0 ? buriedSiblings : undefined,
 			},
 			cancelPendingWrite: () => {

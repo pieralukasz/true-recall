@@ -1,6 +1,10 @@
 import { clamp } from "@features/image-occlusion/canvas-geometry";
 import { getNextIOGroupKey } from "@features/image-occlusion/io-definition";
-import type { IODefinition, IORegion, IOShape } from "@features/image-occlusion/types";
+import type {
+	IODefinition,
+	IORegion,
+	IOShape,
+} from "@features/image-occlusion/types";
 
 export type ResizeCorner = "nw" | "ne" | "sw" | "se";
 

@@ -46,9 +46,7 @@ export class CardBrowserView extends ItemView {
 	}
 
 	async setState(state: unknown, result: ViewStateResult): Promise<void> {
-		const s = state as
-			| { sourceUid?: string; orphaned?: boolean }
-			| undefined;
+		const s = state as { sourceUid?: string; orphaned?: boolean } | undefined;
 		if (s?.sourceUid) {
 			this.filterSourceUid.value = s.sourceUid;
 		}

@@ -53,8 +53,16 @@ export class TrueRetentionCalculator {
 	/**
 	 * Calculate true retention for a date range
 	 */
-	calculate(startDate: string, endDate: string, presetNames?: string[]): TrueRetentionEntry[] {
-		const reviews = this.cardStore.getReviewsForRetention(startDate, endDate, presetNames);
+	calculate(
+		startDate: string,
+		endDate: string,
+		presetNames?: string[],
+	): TrueRetentionEntry[] {
+		const reviews = this.cardStore.getReviewsForRetention(
+			startDate,
+			endDate,
+			presetNames,
+		);
 
 		// Group by date
 		const byDate = new Map<string, { success: number; total: number }>();
@@ -88,7 +96,11 @@ export class TrueRetentionCalculator {
 	/**
 	 * Get summary statistics
 	 */
-	getSummary(targetRetention: number, days: number = 30, presetNames?: string[]): TrueRetentionSummary {
+	getSummary(
+		targetRetention: number,
+		days: number = 30,
+		presetNames?: string[],
+	): TrueRetentionSummary {
 		const endDate = new Date();
 		const startDate = new Date();
 		startDate.setDate(startDate.getDate() - days);
@@ -136,7 +148,6 @@ export class TrueRetentionCalculator {
 		entries: TrueRetentionEntry[],
 		targetRetention: number,
 	): TrueRetentionSummary {
-
 		if (entries.length === 0) {
 			return {
 				current: 0,
@@ -226,7 +237,6 @@ export class TrueRetentionCalculator {
 		entries: TrueRetentionEntry[],
 		window: number,
 	): TrueRetentionEntry[] {
-
 		if (entries.length < window) return entries;
 
 		// Calculate rolling average

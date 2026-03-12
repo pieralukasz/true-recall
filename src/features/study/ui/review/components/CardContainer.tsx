@@ -260,7 +260,8 @@ export function CardContainer({
 						<div
 							class={cn(
 								answerPhase === "visible" && "ep:mt-6",
-								answerPhase === "warming" && "ep:invisible ep:absolute ep:left-0 ep:right-0 ep:pointer-events-none ep:-z-10",
+								answerPhase === "warming" &&
+									"ep:invisible ep:absolute ep:left-0 ep:right-0 ep:pointer-events-none ep:-z-10",
 								answerPhase === "hidden" && "ep:hidden",
 							)}
 							aria-hidden={answerPhase !== "visible"}

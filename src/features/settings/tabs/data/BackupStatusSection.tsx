@@ -36,9 +36,7 @@ export function BackupStatusSection() {
 			<p>Last backup: {lastBackup}</p>
 			<p>Next scheduled: {nextBackup}</p>
 			<p>Reviews since last backup: {status.reviewsSinceLastBackup}</p>
-			{sessionStartFilename && (
-				<p>Startup snapshot: {sessionStartFilename}</p>
-			)}
+			{sessionStartFilename && <p>Startup snapshot: {sessionStartFilename}</p>}
 		</FormCard>
 	);
 }

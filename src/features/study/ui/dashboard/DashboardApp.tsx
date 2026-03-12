@@ -227,7 +227,12 @@ export function DashboardApp() {
 				.length,
 			orphaned,
 		};
-	}, [searchQuery.value, projectData.projects, enrichedNotes, data.orphanedCards.total]);
+	}, [
+		searchQuery.value,
+		projectData.projects,
+		enrichedNotes,
+		data.orphanedCards.total,
+	]);
 
 	const handleStudyNote = (noteName: string, projectPath?: string) => {
 		void plugin.openReviewViewWithFilters({

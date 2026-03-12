@@ -42,10 +42,7 @@ export function extractDeviceIdFromFilename(filename: string): string | null {
  * Convert Uint8Array to exact-size ArrayBuffer (respecting byteOffset/byteLength).
  */
 export function toExactArrayBuffer(bytes: Uint8Array): ArrayBuffer {
-	if (
-		bytes.byteOffset === 0 &&
-		bytes.byteLength === bytes.buffer.byteLength
-	) {
+	if (bytes.byteOffset === 0 && bytes.byteLength === bytes.buffer.byteLength) {
 		return bytes.buffer as ArrayBuffer;
 	}
 	return bytes.buffer.slice(

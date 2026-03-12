@@ -35,14 +35,15 @@ export class StatsCalculatorService {
 	private filter: StatsFilterContext = EMPTY_FILTER;
 	private filterCacheKey = this.buildFilterCacheKey(EMPTY_FILTER);
 	private cardSnapshot: FSRSFlashcardItem[] | null = null;
-	private filteredCardsCache:
-		| {
-				filterKey: string;
-				source: FSRSFlashcardItem[];
-				result: FSRSFlashcardItem[];
-		  }
-		| null = null;
-	private dailyStatsCache = new Map<string, Record<string, ExtendedDailyStats>>();
+	private filteredCardsCache: {
+		filterKey: string;
+		source: FSRSFlashcardItem[];
+		result: FSRSFlashcardItem[];
+	} | null = null;
+	private dailyStatsCache = new Map<
+		string,
+		Record<string, ExtendedDailyStats>
+	>();
 	private dailyStatsRangeCache = new Map<string, ExtendedDailyStats[]>();
 	private healthCache: {
 		filterKey: string;
@@ -95,7 +96,8 @@ export class StatsCalculatorService {
 	}
 
 	private getFilteredCards(): FSRSFlashcardItem[] {
-		const sourceCards = this.cardSnapshot ?? this.flashcardManager.getAllFSRSCards();
+		const sourceCards =
+			this.cardSnapshot ?? this.flashcardManager.getAllFSRSCards();
 		const cached = this.filteredCardsCache;
 		if (
 			cached &&
@@ -118,9 +120,7 @@ export class StatsCalculatorService {
 
 		if (this.filter.archivedSourceUids.size > 0) {
 			cards = cards.filter(
-				(c) =>
-					!c.sourceUid ||
-					!this.filter.archivedSourceUids.has(c.sourceUid),
+				(c) => !c.sourceUid || !this.filter.archivedSourceUids.has(c.sourceUid),
 			);
 		}
 
@@ -252,8 +252,7 @@ export class StatsCalculatorService {
 				(todayStats.hard ?? 0) +
 				(todayStats.good ?? 0) +
 				(todayStats.easy ?? 0);
-			const correctReviews =
-				(todayStats.good ?? 0) + (todayStats.easy ?? 0);
+			const correctReviews = (todayStats.good ?? 0) + (todayStats.easy ?? 0);
 
 			return {
 				studied: todayStats.reviewsCompleted,
@@ -261,8 +260,7 @@ export class StatsCalculatorService {
 				newCards: todayStats.newCardsStudied,
 				reviewCards: todayStats.reviewCards ?? 0,
 				again: todayStats.again ?? 0,
-				correctRate:
-					totalRatings > 0 ? correctReviews / totalRatings : 0,
+				correctRate: totalRatings > 0 ? correctReviews / totalRatings : 0,
 			};
 		}
 
@@ -392,7 +390,12 @@ export class StatsCalculatorService {
 				distribution: buildHealthBuckets([]),
 				cardCount: 0,
 			};
-			this.healthCache = { filterKey: this.filterCacheKey, source: filteredCards, minuteBucket, result };
+			this.healthCache = {
+				filterKey: this.filterCacheKey,
+				source: filteredCards,
+				minuteBucket,
+				result,
+			};
 			return result;
 		}
 
@@ -409,7 +412,12 @@ export class StatsCalculatorService {
 			distribution: buildHealthBuckets(retrievabilities),
 			cardCount: allCards.length,
 		};
-		this.healthCache = { filterKey: this.filterCacheKey, source: filteredCards, minuteBucket, result };
+		this.healthCache = {
+			filterKey: this.filterCacheKey,
+			source: filteredCards,
+			minuteBucket,
+			result,
+		};
 		return result;
 	}
 
@@ -510,7 +518,6 @@ export class StatsCalculatorService {
 
 		return `a:${archived};pn:${presetNames};ps:${presetSourceUids}`;
 	}
-
 }
 
 const HEALTH_BUCKETS: { label: string; threshold: number; colorVar: string }[] =
