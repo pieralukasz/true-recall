@@ -17,9 +17,12 @@ import {
 	deriveTypeInMode,
 	filterActiveCards,
 	getEmptyQueueMessage,
+	getTypeInModeStorage,
 	isRatingLockedForTypeIn,
 	isTypeInRequiredForCard,
 	nextTypeInMode,
+	persistTypeInMode,
+	readPersistedTypeInMode,
 	shouldRunAIGradingOnReveal,
 	type TypeInMode,
 } from "@features/study/ui/review/helpers";
@@ -179,6 +182,8 @@ export class ReviewView extends ItemView {
 			onEditCard: () => this.cardActionsHandler.handleEditCardModal(),
 			onCycleTypeInMode: () => this.cycleTypeInMode(),
 			canRateShortcuts: () => !this.isRatingLocked(),
+			isTypeInActive: () => this.isTypeInRequiredForCurrentCard(),
+			onFocusTypeIn: () => this.focusTypeInEditor(),
 		});
 	}
 
@@ -207,7 +212,8 @@ export class ReviewView extends ItemView {
 	}
 
 	private applyDefaultTypeInMode(): void {
-		const mode = this.plugin.settings.defaultTypeInMode;
+		const persisted = readPersistedTypeInMode(getTypeInModeStorage());
+		const mode = persisted ?? this.plugin.settings.defaultTypeInMode;
 		this.sessionTypeInModeEnabled = mode !== "off";
 		this.aiEnabledForTypeIn = mode === "ai";
 	}
@@ -228,6 +234,7 @@ export class ReviewView extends ItemView {
 
 		this.sessionTypeInModeEnabled = nextMode !== "off";
 		this.aiEnabledForTypeIn = nextMode === "ai";
+		persistTypeInMode(getTypeInModeStorage(), nextMode);
 
 		// When answer is already revealed, preserve grading results —
 		// the UI shows/hides assessment based on mode flags
@@ -266,6 +273,21 @@ export class ReviewView extends ItemView {
 			this.review.getCurrentCard(),
 			this.sessionTypeInModeEnabled,
 		);
+	}
+
+	private focusTypeInEditor(): void {
+		const container = this.containerEl.children[1];
+		if (!(container instanceof HTMLElement)) return;
+		const cmContent = container.querySelector<HTMLElement>(
+			".true-recall-add-field .cm-content",
+		);
+		if (cmContent) {
+			cmContent.focus();
+			return;
+		}
+		// Fallback: textarea (when CodeMirror is unavailable)
+		const textarea = container.querySelector<HTMLTextAreaElement>("textarea");
+		textarea?.focus();
 	}
 
 	private isRatingLocked(): boolean {
@@ -312,6 +334,12 @@ export class ReviewView extends ItemView {
 
 		// Type-in with AI disabled: local diff-only comparison.
 		if (!this.aiEnabledForTypeIn) {
+			// Skip diff assessment on empty input — just reveal the answer
+			if (!typedAnswer) {
+				this.answerHandler.handleShowAnswer();
+				return;
+			}
+
 			const prepared = this.answerHandler.prepareTypedAnswerAssessment(
 				state.typedAnswer,
 			);
@@ -354,7 +382,7 @@ export class ReviewView extends ItemView {
 			semanticResult = await this.answerHandler.gradeTypedAnswerSemantically(
 				card,
 				typedAnswer,
-				0,
+				localAssessment.score,
 				SEMANTIC_PASS_THRESHOLD,
 				{ allowLocalFallback: false, sourceContext },
 			);

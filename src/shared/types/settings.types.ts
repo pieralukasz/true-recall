@@ -170,6 +170,8 @@ export interface TrueRecallSettings {
 	showReviewHeaderStats: boolean;
 	/** Show 'Next Session' button after custom session ends */
 	continuousCustomReviews: boolean;
+	/** Bypass daily limits when studying a specific note from the dashboard */
+	ignoreDailyLimitsForNoteStudy: boolean;
 
 	/** Remove flashcard content from markdown after collecting (default: false = keep content, only remove tag) */
 	removeFlashcardContentAfterCollect: boolean;

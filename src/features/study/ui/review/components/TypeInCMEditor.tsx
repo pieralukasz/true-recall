@@ -49,7 +49,11 @@ export function TypeInCMEditor({
 
 		editorRef.current = editor;
 
+		// Auto-focus after the browser paints so the user can type immediately
+		const rafId = requestAnimationFrame(() => editor.cm.focus());
+
 		return () => {
+			cancelAnimationFrame(rafId);
 			editorRef.current = null;
 			editor.destroy();
 		};
@@ -71,9 +75,15 @@ export function TypeInCMEditor({
 		});
 	}, [placeholderText, placeholderCompartment]);
 
+	const textareaRef = useRef<HTMLTextAreaElement>(null);
+	useEffect(() => {
+		textareaRef.current?.focus();
+	}, []);
+
 	if (!plugin.EmbeddableEditor) {
 		return (
 			<textarea
+				ref={textareaRef}
 				class="ep:w-full ep:min-h-[1.6em] ep:px-3 ep:py-2 ep:text-ui-small ep:bg-obs-primary ep:border ep:border-obs-border ep:rounded-md ep:resize-y"
 				value={value}
 				placeholder={placeholderText}

@@ -107,7 +107,10 @@ export function DashboardApp() {
 			const scopedActiveCards = cardsByNoteName.get(note.name) ?? [];
 			const noteSnapshot = computeActionableSessionSnapshot(
 				snapshotDeps,
-				{ sourceNoteFilter: note.name },
+				{
+					sourceNoteFilter: note.name,
+					ignoreDailyLimits: plugin.settings.ignoreDailyLimitsForNoteStudy,
+				},
 				{ cache: snapshotCache, activeCards: scopedActiveCards },
 			);
 			const due = noteSnapshot.counts.due;
@@ -225,7 +228,7 @@ export function DashboardApp() {
 		void plugin.openReviewViewWithFilters({
 			sourceNoteFilter: noteName,
 			projectPath,
-			ignoreDailyLimits: true,
+			ignoreDailyLimits: plugin.settings.ignoreDailyLimitsForNoteStudy,
 		});
 	};
 

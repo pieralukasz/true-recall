@@ -78,6 +78,16 @@ export function GeneralTab() {
 				</FormField>
 
 				<FormField
+					name="Ignore daily limits for note study"
+					description="When studying a specific note from the dashboard, show all its cards regardless of daily limits"
+				>
+					<ToggleInput
+						value={settings.ignoreDailyLimitsForNoteStudy}
+						onChange={(v) => save({ ignoreDailyLimitsForNoteStudy: v })}
+					/>
+				</FormField>
+
+				<FormField
 					name="Default type-in mode"
 					description="Type-in mode used when a new review session starts (T still cycles modes in-session)"
 				>

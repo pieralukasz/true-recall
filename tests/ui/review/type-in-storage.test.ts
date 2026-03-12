@@ -15,22 +15,28 @@ function createMemoryStorage() {
 }
 
 describe("type-in mode storage", () => {
-	it("persists and reloads last toggle state", () => {
+	it("persists and reloads last mode", () => {
 		const storage = createMemoryStorage();
 
-		persistTypeInMode(storage, true);
-		expect(readPersistedTypeInMode(storage)).toBe(true);
+		persistTypeInMode(storage, "ai");
+		expect(readPersistedTypeInMode(storage)).toBe("ai");
 
-		// Simulate restart: read from same backing storage
-		expect(readPersistedTypeInMode(storage)).toBe(true);
+		persistTypeInMode(storage, "diff");
+		expect(readPersistedTypeInMode(storage)).toBe("diff");
 
-		persistTypeInMode(storage, false);
-		expect(readPersistedTypeInMode(storage)).toBe(false);
+		persistTypeInMode(storage, "off");
+		expect(readPersistedTypeInMode(storage)).toBe("off");
 	});
 
-	it("falls back to false when storage is unavailable", () => {
-		expect(readPersistedTypeInMode(null)).toBe(false);
-		expect(readPersistedTypeInMode(undefined)).toBe(false);
+	it("returns null when storage is unavailable", () => {
+		expect(readPersistedTypeInMode(null)).toBeNull();
+		expect(readPersistedTypeInMode(undefined)).toBeNull();
+	});
+
+	it("returns null for invalid stored values", () => {
+		const storage = createMemoryStorage();
+		storage.setItem("true-recall.review.type-in-mode", "invalid");
+		expect(readPersistedTypeInMode(storage)).toBeNull();
 	});
 
 	it("ignores storage errors", () => {
@@ -43,8 +49,7 @@ describe("type-in mode storage", () => {
 			},
 		};
 
-		expect(() => persistTypeInMode(failingStorage, true)).not.toThrow();
-		expect(readPersistedTypeInMode(failingStorage)).toBe(false);
+		expect(() => persistTypeInMode(failingStorage, "ai")).not.toThrow();
+		expect(readPersistedTypeInMode(failingStorage)).toBeNull();
 	});
 });
-

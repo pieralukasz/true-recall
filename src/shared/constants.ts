@@ -207,6 +207,7 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 	showReviewHeader: true,
 	showReviewHeaderStats: true,
 	continuousCustomReviews: true,
+	ignoreDailyLimitsForNoteStudy: true,
 
 	removeFlashcardContentAfterCollect: false, // keep flashcard lines in note after collecting
 
