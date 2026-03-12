@@ -322,13 +322,14 @@ export function usePanelActions({
 	const handleHoverSource = useCallback(
 		(card: FlashcardItem) => {
 			if (!card.sourceText || !currentFile) return;
+			const sourceText = card.sourceText;
 			const fsrsCard = cardsWithFsrs.find((c) => c.id === card.id);
 			const colorHint = getHighlightColor(fsrsCard);
 			void import("@shared/services/signals").then(
 				({ requestSourceHighlight }) => {
 					requestSourceHighlight(
 						currentFile?.path,
-						card.sourceText!,
+						sourceText,
 						"hover",
 						colorHint,
 					);

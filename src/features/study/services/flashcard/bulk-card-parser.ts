@@ -191,7 +191,8 @@ function parseTabSeparatedNField(
 				i === fieldCount - 1
 					? parts.slice(i).join("\t").trim()
 					: (parts[i]?.trim() ?? "");
-			fields[noteType.fields[i]!] = value;
+			const fieldName = noteType.fields[i];
+			if (fieldName) fields[fieldName] = value;
 		}
 
 		if (Object.values(fields).some((v) => !v)) continue;

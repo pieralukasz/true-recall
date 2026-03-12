@@ -55,7 +55,8 @@ export function TrueRetentionWidget({ source }: { source: string }) {
 				? "var(--color-orange)"
 				: "var(--color-red)";
 
-	const trend = TREND_ARROWS[summary.trend] ?? TREND_ARROWS[0]!;
+	const trend = TREND_ARROWS[summary.trend] ??
+		TREND_ARROWS[0] ?? { symbol: "", color: "var(--text-muted)" };
 
 	return (
 		<div class="ep:flex ep:flex-col ep:gap-2 ep:p-3 ep:text-sm">

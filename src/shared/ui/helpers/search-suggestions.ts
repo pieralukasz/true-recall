@@ -123,7 +123,7 @@ export function getTokenAtCursor(input: string, cursorPos: number): TokenInfo {
 
 	// First scan forward from the start to determine quote state at cursor
 	for (let i = 0; i < pos; i++) {
-		const ch = input[i]!;
+		const ch = input[i];
 		if (inQuote) {
 			if (ch === quoteChar) inQuote = false;
 		} else if (ch === '"' || ch === "'") {

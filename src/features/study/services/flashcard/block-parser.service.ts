@@ -47,14 +47,15 @@ export function parseBlocks(
 	if (lines[0]?.trim() === "---") {
 		let fmEnd = -1;
 		for (let i = 1; i < lines.length; i++) {
-			if (BLOCK_SEPARATOR_RE.test(lines[i]!.trim())) {
+			const line = lines[i] ?? "";
+			if (BLOCK_SEPARATOR_RE.test(line.trim())) {
 				fmEnd = i;
 				break;
 			}
 		}
 		if (fmEnd > 0) {
 			for (let i = 0; i <= fmEnd; i++) {
-				nonBlockLines.push(lines[i]!);
+				nonBlockLines.push(lines[i] ?? "");
 			}
 			startIdx = fmEnd + 1;
 		}
@@ -63,7 +64,8 @@ export function parseBlocks(
 	// Scan line-by-line: #type/<slug> starts a block, --- ends it
 	let i = startIdx;
 	while (i < lines.length) {
-		const trimmed = lines[i]!.trim();
+		const currentLine = lines[i] ?? "";
+		const trimmed = currentLine.trim();
 		const typeMatch = trimmed.match(TYPE_TAG_RE);
 
 		if (typeMatch) {
@@ -71,13 +73,18 @@ export function parseBlocks(
 			const blockLines: string[] = [];
 			const blockStart = i;
 			i++; // skip the #type line
-			while (i < lines.length && !BLOCK_SEPARATOR_RE.test(lines[i]!.trim())) {
-				blockLines.push(lines[i]!);
+			while (
+				i < lines.length &&
+				!BLOCK_SEPARATOR_RE.test((lines[i] ?? "").trim())
+			) {
+				blockLines.push(lines[i] ?? "");
 				i++;
 			}
 			// i now points at --- or past EOF
 
-			const slug = typeMatch[1]!;
+			const matchedType = typeMatch[1];
+			if (!matchedType) continue;
+			const slug = matchedType;
 			const noteType = getNoteType(slug);
 			if (noteType) {
 				const { fields, sourceText, alwaysTypeIn } = parseFieldValues(
@@ -103,16 +110,16 @@ export function parseBlocks(
 
 			// Not a valid block — put lines back as non-block content
 			for (let j = blockStart; j < i; j++) {
-				nonBlockLines.push(lines[j]!);
+				nonBlockLines.push(lines[j] ?? "");
 			}
 			// Skip the --- separator if present
 			if (i < lines.length) i++;
-		} else if (BLOCK_SEPARATOR_RE.test(lines[i]!.trim())) {
+		} else if (BLOCK_SEPARATOR_RE.test(currentLine.trim())) {
 			// Standalone --- not preceded by a block — preserve it
-			nonBlockLines.push(lines[i]!);
+			nonBlockLines.push(currentLine);
 			i++;
 		} else {
-			nonBlockLines.push(lines[i]!);
+			nonBlockLines.push(currentLine);
 			i++;
 		}
 	}

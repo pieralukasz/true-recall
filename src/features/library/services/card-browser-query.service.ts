@@ -133,10 +133,7 @@ export class CardBrowserQueryService {
 		const orphanedIds: string[] = [];
 
 		for (const card of allCards) {
-			if (!card.sourceUid) {
-				orphanedIds.push(card.id);
-				continue;
-			}
+			if (!card.sourceUid) continue;
 			const file = this.frontmatterIndex.getFileByValue(
 				"flashcard_uid",
 				card.sourceUid,

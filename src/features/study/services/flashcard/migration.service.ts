@@ -42,7 +42,7 @@ export function migrateContent(content: string): string | null {
 	}
 
 	for (; lineIndex < lines.length; lineIndex++) {
-		const line = lines[lineIndex]!;
+		const line = lines[lineIndex] ?? "";
 		const trimmed = line.trim();
 
 		if (inFrontmatter && !frontmatterDone) {

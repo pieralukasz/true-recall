@@ -362,13 +362,14 @@ export function pushDeleteUndo(
 			? "Delete card"
 			: `Delete ${result.affectedCount} cards`;
 
-	if (result.deletedCardsData.length === 1) {
+	const firstCardData = result.deletedCardsData[0];
+	if (result.deletedCardsData.length === 1 && firstCardData) {
 		plugin.undoService?.push({
 			id: crypto.randomUUID(),
 			actionType: "delete",
 			description,
 			timestamp: Date.now(),
-			payload: { type: "delete", cardData: result.deletedCardsData[0]! },
+			payload: { type: "delete", cardData: firstCardData },
 		});
 	} else {
 		plugin.undoService?.push({

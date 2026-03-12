@@ -165,7 +165,7 @@ export function CardPreview({
 								class="ep:text-obs-accent ep:truncate ep:max-w-[180px] hover:ep:underline"
 								onClick={() =>
 									void app.workspace.openLinkText(
-										card.sourceNotePath ?? card.sourceNoteName!,
+										card.sourceNotePath ?? card.sourceNoteName ?? "",
 										"",
 										false,
 									)

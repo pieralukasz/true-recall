@@ -127,7 +127,7 @@ export function StatsApp() {
 		return allCards.filter(
 			(card) =>
 				card.sourceUid !== undefined &&
-				filter.presetSourceUids!.has(card.sourceUid),
+				filter.presetSourceUids?.has(card.sourceUid),
 		);
 	}, [allCards, filterContext.value]);
 

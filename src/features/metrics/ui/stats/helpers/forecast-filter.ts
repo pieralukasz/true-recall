@@ -76,8 +76,17 @@ export function buildForecastSummary(
 	}
 
 	let total = 0;
-	let peakDay = forecast[0]!;
-	let minDay = forecast[0]!;
+	const first = forecast[0];
+	if (!first)
+		return {
+			avgDaily: 0,
+			peakDay: { date: "", count: 0 },
+			minDay: { date: "", count: 0 },
+			daysAboveTarget: 0,
+			needsBalancing: false,
+		};
+	let peakDay = first;
+	let minDay = first;
 	let daysAboveTarget = 0;
 
 	for (const entry of forecast) {

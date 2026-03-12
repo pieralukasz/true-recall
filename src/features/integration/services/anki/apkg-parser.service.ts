@@ -37,7 +37,8 @@ function readProtobufVarint(
 	let shift = 0;
 	let pos = offset;
 	while (pos < blob.length) {
-		const byte = blob[pos]!;
+		const byte = blob[pos];
+		if (byte === undefined) break;
 		value |= (byte & 0x7f) << shift;
 		pos++;
 		if ((byte & 0x80) === 0) return { value, next: pos };

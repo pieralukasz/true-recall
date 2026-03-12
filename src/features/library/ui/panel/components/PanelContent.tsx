@@ -278,7 +278,8 @@ export function PanelContent({
 		<div class="ep:flex ep:flex-col">
 			{filteredItems.map((item) => {
 				if (item.type === "io-group") {
-					const firstCard = item.cards[0]!;
+					const firstCard = item.cards[0];
+					if (!firstCard) return null;
 					const groupKey = firstCard.id;
 					const allSelected = item.cards.every((c) =>
 						selectedCardIds.has(c.id),

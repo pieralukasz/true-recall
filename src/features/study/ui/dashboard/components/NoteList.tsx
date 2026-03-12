@@ -288,7 +288,7 @@ export function NoteList({
 				parentPath: null,
 			};
 			e.dataTransfer?.setData(DRAG_MIME, JSON.stringify(item));
-			e.dataTransfer!.effectAllowed = "move";
+			if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
 			requestAnimationFrame(() => {
 				dragState.value = { item, dropTargetPath: null, isValid: false };
 			});
@@ -315,7 +315,7 @@ export function NoteList({
 			}
 
 			e.preventDefault();
-			e.dataTransfer!.dropEffect = "move";
+			if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
 		},
 		[dragState],
 	);
@@ -433,6 +433,7 @@ export function NoteList({
 						const dragCls = getDragClass(item.path);
 						return (
 							<div
+								role="listitem"
 								key={item.name}
 								class={
 									`${initialMount.current ? "ep-card-enter" : ""} ${dragCls}`.trim() ||
@@ -468,10 +469,20 @@ export function NoteList({
 										item.path ? selectedPaths.value.has(item.path) : false
 									}
 									onToggleSelect={
-										item.path ? () => toggleSelect(item.path!) : undefined
+										item.path
+											? () => {
+													const p = item.path;
+													if (p) toggleSelect(p);
+												}
+											: undefined
 									}
 									onEnterSelection={
-										item.path ? () => enterSelection(item.path!) : undefined
+										item.path
+											? () => {
+													const p = item.path;
+													if (p) enterSelection(p);
+												}
+											: undefined
 									}
 								/>
 							</div>

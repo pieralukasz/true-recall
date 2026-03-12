@@ -17,8 +17,6 @@ export function EditToolbar({
 					? `${btn.title} (${btn.shortcut})`
 					: btn.title;
 				return (
-					// biome-ignore lint/a11y/useSemanticElements: toolbar buttons need tabIndex=-1 to prevent focus steal
-					// biome-ignore lint/a11y/useKeyWithClickEvents: toolbar buttons use tabIndex=-1 and mouse-only interaction
 					<div
 						role="button"
 						key={btn.id}
@@ -30,6 +28,9 @@ export function EditToolbar({
 						onClick={(e: MouseEvent) => {
 							e.preventDefault();
 							onAction(btn.action);
+						}}
+						onKeyDown={(e: KeyboardEvent) => {
+							if (e.key === "Enter" || e.key === " ") onAction(btn.action);
 						}}
 					>
 						{btn.label}

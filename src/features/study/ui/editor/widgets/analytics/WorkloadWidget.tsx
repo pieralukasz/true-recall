@@ -77,9 +77,17 @@ export function WorkloadWidget({ source }: { source: string }) {
 			};
 		});
 
+		const firstEntry = entries[0];
+		if (!firstEntry)
+			return {
+				days,
+				avgDaily: 0,
+				peakDay: { label: "", count: 0 },
+				needsBalancing: false,
+			};
 		const peakEntry = entries.reduce(
 			(max, e) => (e.dueCount > max.dueCount ? e : max),
-			entries[0]!,
+			firstEntry,
 		);
 		const peakDate = new Date(peakEntry.date);
 		const peakLabel =

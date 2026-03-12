@@ -127,7 +127,7 @@ export function EditorSection({
 		);
 	}
 
-	const handleContainerClick = useCallback((e: MouseEvent) => {
+	const focusEditor = useCallback((e: Event) => {
 		const editor = editorRef.current;
 		if (!editor) return;
 		const target = e.target as HTMLElement;
@@ -138,8 +138,11 @@ export function EditorSection({
 
 	return (
 		<div
+			role="textbox"
+			tabIndex={0}
 			ref={editorContainerRef}
-			onClick={handleContainerClick}
+			onClick={focusEditor}
+			onKeyDown={focusEditor}
 			class="true-recall-import-editor ep:w-full ep:min-h-[400px] ep:bg-obs-primary ep:border ep:border-obs-border ep:rounded-md ep:overflow-hidden"
 		/>
 	);

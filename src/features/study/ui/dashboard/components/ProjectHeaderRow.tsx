@@ -71,11 +71,15 @@ export function ProjectHeaderRow({
 					icon: "sliders-horizontal" as const,
 					onClick: onCustomStudy,
 				},
-				{
-					title: "Go to project note",
-					icon: "file-text" as const,
-					onClick: onNavigate!,
-				},
+				...(onNavigate
+					? [
+							{
+								title: "Go to project note",
+								icon: "file-text" as const,
+								onClick: onNavigate,
+							},
+						]
+					: []),
 				{
 					title: "Rename",
 					icon: "pencil" as const,

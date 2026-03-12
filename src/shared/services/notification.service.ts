@@ -126,7 +126,7 @@ export class NotificationService {
 		const msg =
 			count === 1 ? "Flashcard deleted." : `${count} flashcards deleted.`;
 		const fragment = new DocumentFragment();
-		fragment.appendText(msg + " ");
+		fragment.appendText(`${msg} `);
 		const link = fragment.createEl("a", { text: "Undo" });
 		link.style.cursor = "pointer";
 		link.style.textDecoration = "underline";

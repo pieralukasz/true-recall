@@ -93,7 +93,9 @@ export function WorkloadForecastSection({
 
 	useChart(dowCanvasRef, (): ChartConfiguration<"bar"> | null => {
 		if (dayOfWeek.length === 0) return null;
-		const reordered = [...dayOfWeek.slice(1), dayOfWeek[0]!];
+		const sunday = dayOfWeek[0];
+		if (!sunday) return null;
+		const reordered = [...dayOfWeek.slice(1), sunday];
 		return {
 			type: "bar",
 			data: {

@@ -238,7 +238,7 @@ export function createEmbeddableEditorClass(app: App) {
 									{
 										key: "Tab",
 										run: () => {
-											this.options.onTab!(this);
+											this.options.onTab?.(this);
 											return true;
 										},
 										preventDefault: true,
@@ -250,7 +250,7 @@ export function createEmbeddableEditorClass(app: App) {
 									{
 										key: "Shift-Tab",
 										run: () => {
-											this.options.onShiftTab!(this);
+											this.options.onShiftTab?.(this);
 											return true;
 										},
 										preventDefault: true,

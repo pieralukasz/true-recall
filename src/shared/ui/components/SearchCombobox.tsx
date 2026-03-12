@@ -126,7 +126,8 @@ export function SearchCombobox({
 				(query) => {
 					const cursorPos =
 						searchComponent.inputEl.selectionStart ?? query.length;
-					const suggestions = getSuggestionsRef.current!(query, cursorPos);
+					const suggestions =
+						getSuggestionsRef.current?.(query, cursorPos) ?? [];
 					return withSectionLabels(suggestions);
 				},
 				(suggestion) => {

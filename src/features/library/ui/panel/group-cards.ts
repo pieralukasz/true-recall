@@ -45,8 +45,10 @@ export function groupCards(
 
 	for (const card of cards) {
 		if (consumedIds.has(card.id)) {
-			const fsrs = fsrsMap.get(card.id)!;
-			const key = fsrs.ioImagePath!;
+			const fsrs = fsrsMap.get(card.id);
+			if (!fsrs) continue;
+			if (!fsrs.ioImagePath) continue;
+			const key = fsrs.ioImagePath;
 			const group = ioGroups.get(key);
 			if (group) {
 				group.fsrsCards.sort(
