@@ -4,15 +4,8 @@ import { IconButton } from "@shared/ui/components/IconButton";
 import type { MenuItem } from "@shared/ui/preact/useContextMenu";
 import { useContextMenu } from "@shared/ui/preact/useContextMenu";
 import { cn } from "@shared/ui/utils";
-import type { DashboardNoteEntry, NotePriority } from "../types";
-
-const PRIORITY_DOT: Record<NotePriority, string> = {
-	overdue: "ep:bg-obs-red",
-	hot: "ep:bg-obs-orange",
-	due: "ep:bg-obs-blue",
-	light: "ep:bg-obs-green",
-	done: "ep:bg-obs-faint",
-};
+import { PRIORITY_DOT } from "../helpers/note-priority";
+import type { DashboardNoteEntry } from "../types";
 
 interface NoteRowProps {
 	note: DashboardNoteEntry;

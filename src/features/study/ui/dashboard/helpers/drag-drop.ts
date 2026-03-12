@@ -39,6 +39,22 @@ export type DropResult =
 
 export const DRAG_MIME = "application/x-true-recall-dnd";
 
+export interface DragState {
+	item: DragItem;
+	dropTargetPath: string | null;
+	isValid: boolean;
+}
+
+export function getDragClass(
+	dragState: DragState | null,
+	itemPath: string | null,
+): string {
+	if (!dragState || !itemPath) return "";
+	if (dragState.item.path === itemPath) return "ep-drag-source";
+	if (dragState.dropTargetPath === itemPath && dragState.isValid) return "ep-drop-target";
+	return "";
+}
+
 // ── Drag item extraction ────────────────────────────────
 
 export function dragItemFromFlatItem(item: FlatProjectItem): DragItem | null {

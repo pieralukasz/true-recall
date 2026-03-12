@@ -1,28 +1,21 @@
 import { getSourceNoteNameFromFile } from "@features/library/ui/panel/utils/panel-helpers";
 import { pushDeleteUndo } from "@shared/services/undo.service";
-import type { PanelApi } from "@shared/store";
-import type { FlashcardInfo } from "@shared/types";
 import { useApp, usePlugin } from "@shared/ui/preact";
-import type { TFile } from "obsidian";
 import { useCallback } from "preact/hooks";
 
+import { usePanelStore } from "./usePanelStore";
+
 export interface UseSelectionActionsParams {
-	flashcardInfo: FlashcardInfo | null;
-	currentFile: TFile | null;
-	selectedCardIds: Set<string>;
-	panel: PanelApi;
 	preserveScroll: (action: () => void) => void;
 }
 
 export function useSelectionActions({
-	flashcardInfo,
-	currentFile,
-	selectedCardIds,
-	panel,
 	preserveScroll,
 }: UseSelectionActionsParams) {
 	const plugin = usePlugin();
 	const app = useApp();
+	const { flashcardInfo, currentFile, selectedCardIds, panel } =
+		usePanelStore();
 
 	const handleToggleSelect = useCallback(
 		(cardId: string) => {
@@ -207,7 +200,6 @@ export function useSelectionActions({
 		);
 		if (selectedCards.length === 0) return;
 
-		// Resolve noteTypeId for each card via note lookup
 		const cardIds = Array.from(selectedCardIds);
 		const noteInfos = plugin.cardStore.cards.getNoteInfoForCardIds(cardIds);
 		if (noteInfos.length === 0) return;
@@ -299,49 +291,6 @@ export function useSelectionActions({
 		notify().cardsForgotten(count);
 	}, [flashcardInfo, selectedCardIds, plugin, panel]);
 
-	const handleForgetAll = useCallback(async () => {
-		if (!flashcardInfo || flashcardInfo.flashcards.length === 0) return;
-		const { notify } = await import("@shared/services/notification.service");
-		const { notifyCardChange } = await import("@shared/services/signals");
-
-		const count = flashcardInfo.flashcards.length;
-		const confirmed = window.confirm(
-			`Forget all ${count} flashcard(s) for this note? This resets scheduling and clears review history.`,
-		);
-		if (!confirmed) return;
-
-		const cardIds = flashcardInfo.flashcards.map((card) => card.id);
-		const forgotten = plugin.cardStore.cards.bulkForget(cardIds);
-		if (forgotten === 0) {
-			notify().warning("Forget is only available for non-New cards");
-			return;
-		}
-		plugin.sessionPersistence?.removeReviewedCards(cardIds);
-		notifyCardChange({ type: "bulk", cardIds, action: "reset" });
-		notify().cardsForgotten(forgotten);
-	}, [flashcardInfo, plugin]);
-
-	const handleDeleteAll = useCallback(async () => {
-		const { notify } = await import("@shared/services/notification.service");
-		if (!flashcardInfo || flashcardInfo.flashcards.length === 0) return;
-
-		const count = flashcardInfo.flashcards.length;
-		const confirmed = window.confirm(
-			`Delete all ${count} flashcard(s) for this note?`,
-		);
-		if (!confirmed) return;
-
-		const cardIds = flashcardInfo.flashcards.map((card) => card.id);
-		const result =
-			plugin.flashcardManager.removeFlashcardsByIdsWithDetails(cardIds);
-		if (result.ok) {
-			pushDeleteUndo(plugin, result);
-		}
-		notify().cardsDeletedWithUndo(result.affectedCount, () => {
-			void plugin.undoService?.undo();
-		});
-	}, [flashcardInfo, plugin]);
-
 	return {
 		handleToggleSelect,
 		handleEnterSelectionMode,
@@ -354,7 +303,5 @@ export function useSelectionActions({
 		handleUnsuspendSelected,
 		handleForgetSelected,
 		handleDeleteSelected,
-		handleForgetAll,
-		handleDeleteAll,
 	};
 }

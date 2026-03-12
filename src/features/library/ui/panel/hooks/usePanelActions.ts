@@ -1,29 +1,20 @@
 import { getHighlightColor } from "@features/library/ui/panel/utils/card-status.utils";
 import { extractHighlights } from "@features/library/ui/panel/utils/highlight-extractor";
 import { cardsToBlockText } from "@features/library/ui/panel/utils/panel-helpers";
-import type { PanelApi } from "@shared/store";
-import type { FlashcardInfo, FlashcardItem } from "@shared/types";
+import { pushDeleteUndo } from "@shared/services/undo.service";
+import type { FlashcardItem } from "@shared/types";
 import type { FSRSFlashcardItem } from "@shared/types/fsrs/card.types";
 import { BUILTIN_BASIC_ID } from "@shared/types/note.types";
 import { useApp, usePlugin } from "@shared/ui/preact";
-import type { TFile } from "obsidian";
 import { useCallback } from "preact/hooks";
 
-export interface UsePanelActionsParams {
-	currentFile: TFile | null;
-	flashcardInfo: FlashcardInfo | null;
-	cardsWithFsrs: FSRSFlashcardItem[];
-	panel: PanelApi;
-}
+import { usePanelStore } from "./usePanelStore";
 
-export function usePanelActions({
-	currentFile,
-	flashcardInfo,
-	cardsWithFsrs,
-	panel,
-}: UsePanelActionsParams) {
+export function usePanelActions() {
 	const plugin = usePlugin();
 	const app = useApp();
+	const { currentFile, flashcardInfo, cardsWithFsrs, panel } =
+		usePanelStore();
 
 	// ── AI generation ──
 
@@ -305,7 +296,9 @@ export function usePanelActions({
 			);
 
 			const filePath = currentFile.path;
-			const fsrsCard = cardsWithFsrs.find((c) => c.id === card.id);
+			const fsrsCard = cardsWithFsrs.find(
+				(c: FSRSFlashcardItem) => c.id === card.id,
+			);
 			const colorHint = getHighlightColor(fsrsCard);
 
 			const activeFile = app.workspace.getActiveFile();
@@ -323,7 +316,9 @@ export function usePanelActions({
 		(card: FlashcardItem) => {
 			if (!card.sourceText || !currentFile) return;
 			const sourceText = card.sourceText;
-			const fsrsCard = cardsWithFsrs.find((c) => c.id === card.id);
+			const fsrsCard = cardsWithFsrs.find(
+				(c: FSRSFlashcardItem) => c.id === card.id,
+			);
 			const colorHint = getHighlightColor(fsrsCard);
 			void import("@shared/services/signals").then(
 				({ requestSourceHighlight }) => {
@@ -359,6 +354,51 @@ export function usePanelActions({
 		await plugin.openCardBrowser({ sourceUid: flashcardInfo.sourceUid });
 	}, [flashcardInfo, plugin]);
 
+	// ── Bulk operations (all cards) ──
+
+	const handleForgetAll = useCallback(async () => {
+		if (!flashcardInfo || flashcardInfo.flashcards.length === 0) return;
+		const { notify } = await import("@shared/services/notification.service");
+		const { notifyCardChange } = await import("@shared/services/signals");
+
+		const count = flashcardInfo.flashcards.length;
+		const confirmed = window.confirm(
+			`Forget all ${count} flashcard(s) for this note? This resets scheduling and clears review history.`,
+		);
+		if (!confirmed) return;
+
+		const cardIds = flashcardInfo.flashcards.map((card) => card.id);
+		const forgotten = plugin.cardStore.cards.bulkForget(cardIds);
+		if (forgotten === 0) {
+			notify().warning("Forget is only available for non-New cards");
+			return;
+		}
+		plugin.sessionPersistence?.removeReviewedCards(cardIds);
+		notifyCardChange({ type: "bulk", cardIds, action: "reset" });
+		notify().cardsForgotten(forgotten);
+	}, [flashcardInfo, plugin]);
+
+	const handleDeleteAll = useCallback(async () => {
+		const { notify } = await import("@shared/services/notification.service");
+		if (!flashcardInfo || flashcardInfo.flashcards.length === 0) return;
+
+		const count = flashcardInfo.flashcards.length;
+		const confirmed = window.confirm(
+			`Delete all ${count} flashcard(s) for this note?`,
+		);
+		if (!confirmed) return;
+
+		const cardIds = flashcardInfo.flashcards.map((card) => card.id);
+		const result =
+			plugin.flashcardManager.removeFlashcardsByIdsWithDetails(cardIds);
+		if (result.ok) {
+			pushDeleteUndo(plugin, result);
+		}
+		notify().cardsDeletedWithUndo(result.affectedCount, () => {
+			void plugin.undoService?.undo();
+		});
+	}, [flashcardInfo, plugin]);
+
 	return {
 		handleGenerateFromNote,
 		handleGenerateFromHighlights,
@@ -372,5 +412,7 @@ export function usePanelActions({
 		handleHoverSource,
 		handleLeaveSource,
 		handleSearchChange,
+		handleForgetAll,
+		handleDeleteAll,
 	};
 }

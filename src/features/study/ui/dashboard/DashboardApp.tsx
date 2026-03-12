@@ -1,3 +1,4 @@
+import type { HierarchyService } from "@features/core/services/hierarchy.service";
 import { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
 import { computeActionableSessionSnapshot } from "@features/study/services/actionable-session-snapshot.service";
 import { filterActiveCards } from "@features/study/ui/review/helpers/session-helpers";
@@ -46,6 +47,14 @@ export function DashboardApp() {
 
 	const showArchived = useSignal(false);
 
+	const cachedActiveCards = useComputed(() => {
+		const allCards = allCardsArray.value;
+		const archived = archivedSourceUidsSignal.value;
+		return filterActiveCards(allCards, {
+			archivedSourceUids: new Set(archived),
+		});
+	});
+
 	const data = useComputed((): DashboardAggregation => {
 		const allCards = allCardsArray.value;
 		pluginSettings.value;
@@ -62,9 +71,7 @@ export function DashboardApp() {
 			hierarchyService: plugin.hierarchyService,
 			fsrsService: plugin.fsrsService,
 		};
-		const activeCards = filterActiveCards(allCards, {
-			archivedSourceUids: new Set(archived),
-		});
+		const activeCards = cachedActiveCards.value;
 		const cardsByNoteName = new Map<string, typeof activeCards>();
 		for (const card of activeCards) {
 			const noteName = card.sourceNoteName;
@@ -140,36 +147,16 @@ export function DashboardApp() {
 
 		return data.notes.filter((note) => {
 			if (!note.path) return true;
-			if (plugin.hierarchyService.isNoteArchived(note.path)) return false;
-
-			// Hide notes that live under archived projects, including nested parents.
-			const stack = [...plugin.hierarchyService.getParentsForNote(note.path)];
-			const visited = new Set<string>();
-
-			while (stack.length > 0) {
-				const parentPath = stack.pop();
-				if (!parentPath || visited.has(parentPath)) continue;
-				visited.add(parentPath);
-
-				if (plugin.hierarchyService.isProjectArchived(parentPath)) {
-					return false;
-				}
-
-				const grandParents =
-					plugin.hierarchyService.getParentsForNote(parentPath);
-				for (const gp of grandParents) stack.push(gp);
-			}
-
-			return true;
+			return !isNoteUnderArchivedHierarchy(
+				note.path,
+				plugin.hierarchyService,
+			);
 		});
 	}, [data.notes, plugin, showArchived.value]);
 
 	const projectData = useMemo(() => {
 		const allCards = allCardsArray.value;
 		const archived = archivedSourceUidsSignal.value;
-		const activeCards = filterActiveCards(allCards, {
-			archivedSourceUids: new Set(archived),
-		});
 		return aggregateProjectData({
 			notes: visibleNotes,
 			showArchived: showArchived.value,
@@ -182,7 +169,7 @@ export function DashboardApp() {
 				settings: plugin.settings,
 				allCards,
 				archivedSourceUids: archived,
-				activeCards,
+				activeCards: cachedActiveCards.value,
 				metadataCache: plugin.app.metadataCache,
 			},
 		});
@@ -238,6 +225,7 @@ export function DashboardApp() {
 		void plugin.openReviewViewWithFilters({
 			sourceNoteFilter: noteName,
 			projectPath,
+			ignoreDailyLimits: true,
 		});
 	};
 
@@ -383,4 +371,28 @@ export function DashboardApp() {
 			<BottomActionBar />
 		</div>
 	);
+}
+
+function isNoteUnderArchivedHierarchy(
+	notePath: string,
+	hierarchyService: HierarchyService,
+): boolean {
+	if (hierarchyService.isNoteArchived(notePath)) return true;
+
+	// Walk up through parent projects, including nested parents.
+	const stack = [...hierarchyService.getParentsForNote(notePath)];
+	const visited = new Set<string>();
+
+	while (stack.length > 0) {
+		const parentPath = stack.pop();
+		if (!parentPath || visited.has(parentPath)) continue;
+		visited.add(parentPath);
+
+		if (hierarchyService.isProjectArchived(parentPath)) return true;
+
+		const grandParents = hierarchyService.getParentsForNote(parentPath);
+		for (const gp of grandParents) stack.push(gp);
+	}
+
+	return false;
 }
