@@ -94,8 +94,9 @@ export function LeaderboardWidget({ source }: { source: string }) {
 	};
 
 	const handleReviewWeakest = () => {
-		if (data.length > 0) {
-			handleNoteClick(data[0]!.resolvedName);
+		const first = data.length > 0 ? data[0] : undefined;
+		if (first) {
+			handleNoteClick(first.resolvedName);
 		}
 	};
 

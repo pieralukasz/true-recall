@@ -814,7 +814,9 @@ export class FlashcardManager {
 	): FSRSCardData {
 		const template =
 			noteType.templates.find((t) => t.ordinal === gen.templateOrd) ??
-			noteType.templates[0]!;
+			noteType.templates[0];
+		if (!template)
+			throw new Error(`Note type "${noteType.name}" has no templates`);
 
 		const question = renderTemplate(template.qfmt, {
 			fields: note.fields,

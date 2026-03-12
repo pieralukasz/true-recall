@@ -117,7 +117,7 @@ async function loadSqlite3(): Promise<Sqlite3Static> {
  * @returns Database wrapper
  */
 export async function loadDatabase(
-	app: App,
+	_app: App,
 	existingData?: Uint8Array | null,
 ): Promise<DatabaseLoadResult> {
 	if (!cachedSqlite3) {
@@ -128,9 +128,11 @@ export async function loadDatabase(
 	const db = new sqlite3.oo1.DB(":memory:");
 
 	if (existingData && existingData.byteLength > 0) {
+		if (!db.pointer)
+			throw new Error("Database pointer unavailable after creation");
 		const p = sqlite3.wasm.allocFromTypedArray(existingData);
 		const rc = sqlite3.capi.sqlite3_deserialize(
-			db.pointer!, // Safe: DB was just created, pointer only undefined after close()
+			db.pointer,
 			"main",
 			p,
 			existingData.byteLength,

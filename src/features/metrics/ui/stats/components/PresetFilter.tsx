@@ -32,9 +32,11 @@ export function PresetFilter({ presets, selected }: PresetFilterProps) {
 	};
 
 	const handleAllClick = () => {
+		const firstPreset = presets[0];
+		if (!firstPreset) return;
 		if (allSelected) {
 			// Deselect all except the first preset
-			selected.value = new Set([presets[0]!]);
+			selected.value = new Set([firstPreset]);
 		} else {
 			selected.value = new Set(presets);
 		}

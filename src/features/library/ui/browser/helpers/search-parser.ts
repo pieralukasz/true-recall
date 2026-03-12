@@ -153,7 +153,7 @@ function tokenize(input: string): string[] {
 	let quoteChar = "";
 
 	for (let i = 0; i < input.length; i++) {
-		const ch = input[i]!;
+		const ch = input[i];
 
 		if (inQuotes) {
 			if (ch === quoteChar) {

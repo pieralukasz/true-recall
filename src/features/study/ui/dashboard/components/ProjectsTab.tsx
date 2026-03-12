@@ -139,7 +139,7 @@ export function ProjectsTab({
 				return;
 			}
 			e.dataTransfer?.setData(DRAG_MIME, JSON.stringify(dragItem));
-			e.dataTransfer!.effectAllowed = "move";
+			if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
 			// Defer so root drop zones don't cause layout shift during dragstart
 			requestAnimationFrame(() => {
 				dragState.value = {
@@ -183,7 +183,7 @@ export function ProjectsTab({
 
 			if (result) {
 				e.preventDefault();
-				e.dataTransfer!.dropEffect = "move";
+				if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
 			}
 		},
 		[dragState, plugin],
@@ -271,10 +271,11 @@ export function ProjectsTab({
 			{/* Root drop zone (top) — visible only during drag, allows un-nesting */}
 			{dragState.value?.item.parentPath && (
 				<div
+					role="listitem"
 					class="ep:h-10 ep:mx-2 ep:mb-1 ep:border-2 ep:border-dashed ep:border-obs-border ep:rounded-lg ep:flex ep:items-center ep:justify-center ep:text-xs ep:text-obs-muted ep:transition-colors"
 					onDragOver={(e) => {
 						e.preventDefault();
-						e.dataTransfer!.dropEffect = "move";
+						if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
 						(e.currentTarget as HTMLElement).classList.add("ep-drop-root-zone");
 					}}
 					onDragLeave={(e) => {
@@ -302,6 +303,7 @@ export function ProjectsTab({
 						const dragCls = getDragClass(item.project.path);
 						return (
 							<div
+								role="listitem"
 								key={`p-${item.project.path}`}
 								class={
 									`${initialMount.current ? "ep-card-enter" : ""} ${dragCls}`.trim() ||
@@ -388,6 +390,7 @@ export function ProjectsTab({
 						const dragCls = getDragClass(item.note.path);
 						return (
 							<div
+								role="listitem"
 								key={`n-${item.note.name}`}
 								class={
 									`${initialMount.current ? "ep-card-enter" : ""} ${dragCls}`.trim() ||
@@ -480,10 +483,11 @@ export function ProjectsTab({
 			{/* Root drop zone — visible only during drag, allows un-nesting */}
 			{dragState.value?.item.parentPath && (
 				<div
+					role="listitem"
 					class="ep:h-10 ep:mx-2 ep:mt-1 ep:border-2 ep:border-dashed ep:border-obs-border ep:rounded-lg ep:flex ep:items-center ep:justify-center ep:text-xs ep:text-obs-muted ep:transition-colors"
 					onDragOver={(e) => {
 						e.preventDefault();
-						e.dataTransfer!.dropEffect = "move";
+						if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
 						(e.currentTarget as HTMLElement).classList.add("ep-drop-root-zone");
 					}}
 					onDragLeave={(e) => {

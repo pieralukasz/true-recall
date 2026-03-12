@@ -22,14 +22,16 @@ function buildLcsTable(expected: string[], user: string[]): number[][] {
 	);
 
 	for (let i = expected.length - 1; i >= 0; i--) {
+		const row = table[i];
+		if (!row) continue;
 		for (let j = user.length - 1; j >= 0; j--) {
 			const expectedToken = expected[i];
 			const userToken = user[j];
 			if (!expectedToken || !userToken) continue;
 			if (expectedToken === userToken) {
-				table[i]![j] = (table[i + 1]?.[j + 1] ?? 0) + 1;
+				row[j] = (table[i + 1]?.[j + 1] ?? 0) + 1;
 			} else {
-				table[i]![j] = Math.max(table[i + 1]?.[j] ?? 0, table[i]?.[j + 1] ?? 0);
+				row[j] = Math.max(table[i + 1]?.[j] ?? 0, row[j + 1] ?? 0);
 			}
 		}
 	}

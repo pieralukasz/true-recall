@@ -12,7 +12,6 @@ export interface SelectionToolbarProps {
 	hasApiKey: boolean;
 	detectedImagePath?: string | null;
 	onImageOcclusion?: (path: string) => void;
-	showAiButtons?: boolean;
 }
 
 const AI_BUTTONS: { mode: GenerationMode; label: string }[] = [
@@ -29,7 +28,6 @@ export function SelectionToolbar({
 	hasApiKey,
 	detectedImagePath,
 	onImageOcclusion,
-	showAiButtons = true,
 }: SelectionToolbarProps) {
 	const [copied, setCopied] = useState(false);
 

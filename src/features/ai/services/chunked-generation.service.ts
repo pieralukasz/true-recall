@@ -58,12 +58,14 @@ export class ChunkedGenerationService {
 		const chunkingResult = chunkMarkdown(content);
 
 		if (chunkingResult.strategy === "single") {
+			const firstChunk = chunkingResult.chunks[0];
+			if (!firstChunk) throw new Error("Expected at least one chunk");
 			const streamingService = new StreamingGenerationService(
 				this.getSettings,
 				this.flashcardManager,
 			);
 			const result = await streamingService.generateStreaming(
-				chunkingResult.chunks[0]!.content,
+				firstChunk.content,
 				mode,
 				sourceFile,
 				noteType,

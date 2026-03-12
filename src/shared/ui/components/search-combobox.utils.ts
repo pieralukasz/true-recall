@@ -36,7 +36,8 @@ export function withSectionLabels(
 
 	const sectioned: SectionedSuggestion[] = [];
 	for (const category of orderedCategories) {
-		const items = groups.get(category)!;
+		const items = groups.get(category);
+		if (!items) continue;
 		items.forEach((item, index) => {
 			sectioned.push({
 				...item,

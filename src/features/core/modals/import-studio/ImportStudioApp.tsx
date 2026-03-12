@@ -41,7 +41,7 @@ export function ImportStudioApp({
 	const focusedEditorRef = useRef<FormattingTargetRef | null>(null);
 
 	const [text, setText] = useState("");
-	const [noteTypeId, setNoteTypeId] = useState(
+	const [noteTypeId, _setNoteTypeId] = useState(
 		defaultNoteTypeId ?? prefs.lastNoteTypeId,
 	);
 	const [sessionCount, setSessionCount] = useState(0);
@@ -86,7 +86,7 @@ export function ImportStudioApp({
 			const seen = new Set<string>();
 			const unique: ParsedCard[] = [];
 			for (const card of raw.cards) {
-				const key = card.noteTypeId + "\0" + JSON.stringify(card.fields);
+				const key = `${card.noteTypeId}\0${JSON.stringify(card.fields)}`;
 				if (!seen.has(key)) {
 					seen.add(key);
 					unique.push(card);
@@ -102,11 +102,6 @@ export function ImportStudioApp({
 	}, [text, noteType, getNoteType]);
 
 	// Handlers
-
-	const handleNoteTypeChange = useCallback((id: string) => {
-		setNoteTypeId(id);
-		saveImportStudioPrefs({ lastNoteTypeId: id });
-	}, []);
 
 	const handleSourceNoteChange = useCallback((note: TFile | null) => {
 		setSelectedSourceNote(note);

@@ -88,7 +88,8 @@ function SubscriptionSection() {
 
 		// Background validation: immediate if cached, debounced if first-time
 		const delay = hasCached ? 0 : 1000;
-		const keyAtFetch = settings.subscriptionKey!;
+		if (!settings.subscriptionKey) return;
+		const keyAtFetch = settings.subscriptionKey;
 
 		debounceRef.current = setTimeout(() => {
 			const onCacheUpdate = (update: {

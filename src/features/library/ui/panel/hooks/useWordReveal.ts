@@ -42,7 +42,7 @@ export function useWordReveal(
 		// Blur-fade-rise with spring physics + 30ms micro-stagger between batch words
 		for (let i = 0; i < toAnimate.length; i++) {
 			animate(
-				toAnimate[i]!,
+				toAnimate[i],
 				{ opacity: 1, filter: "blur(0px)", transform: "translateY(0px)" },
 				{ type: spring, stiffness: 380, damping: 22, delay: i * 0.03 },
 			);

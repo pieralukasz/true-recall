@@ -154,6 +154,12 @@ function PresetStatusEntry({
 							onClick={() => {
 								expanded.value = !expanded.value;
 							}}
+							onKeyDown={(e: KeyboardEvent) => {
+								if (e.key === "Enter" || e.key === " ")
+									expanded.value = !expanded.value;
+							}}
+							role="button"
+							tabIndex={0}
 						>
 							Weights ({status.weights.length}) {expanded.value ? "[-]" : "[+]"}
 						</span>

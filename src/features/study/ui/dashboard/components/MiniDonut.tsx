@@ -51,6 +51,8 @@ export function MiniDonut({ due, newCount, learning, total }: MiniDonutProps) {
 			width="14"
 			height="14"
 			class="ep:shrink-0 ep:block"
+			role="img"
+			aria-label="Progress"
 		>
 			<circle
 				cx={18}

@@ -21,7 +21,6 @@ export function PasteDropZone({
 	const [dragActive, setDragActive] = useState(false);
 
 	return (
-		// biome-ignore lint/a11y/useSemanticElements: intentionally a div — needs drag/drop handlers not supported by Clickable
 		<div
 			role="button"
 			tabIndex={0}

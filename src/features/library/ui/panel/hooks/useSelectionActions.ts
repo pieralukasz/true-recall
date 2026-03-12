@@ -220,7 +220,9 @@ export function useSelectionActions({
 			return;
 		}
 
-		const noteTypeId = noteInfos[0]!.noteTypeId;
+		const firstNoteInfo = noteInfos[0];
+		if (!firstNoteInfo) return;
+		const noteTypeId = firstNoteInfo.noteTypeId;
 
 		const service = new RewriteService(
 			() => plugin.settings,

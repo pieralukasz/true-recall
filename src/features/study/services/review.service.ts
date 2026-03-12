@@ -411,7 +411,8 @@ export class ReviewService {
 
 		// Re-insert deferred cards at spaced positions
 		for (const card of deferred) {
-			const key = this.getSiblingKey(card)!;
+			const key = this.getSiblingKey(card);
+			if (!key) continue;
 			const last = lastSeen.get(key) ?? -minSpacing;
 			const targetPos = Math.min(last + minSpacing, result.length);
 			result.splice(targetPos, 0, card);

@@ -77,7 +77,8 @@ export function HeatmapWidget({ source }: { source: string }) {
 		if (months <= 0) {
 			const dateKeys = Object.keys(allStats).sort();
 			if (dateKeys.length > 0) {
-				startDate.setTime(new Date(dateKeys[0]!).getTime());
+				const firstKey = dateKeys[0];
+				if (firstKey) startDate.setTime(new Date(firstKey).getTime());
 			}
 		} else {
 			startDate.setMonth(startDate.getMonth() - months);

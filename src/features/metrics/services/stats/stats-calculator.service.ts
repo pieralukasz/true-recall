@@ -128,7 +128,7 @@ export class StatsCalculatorService {
 			cards = cards.filter(
 				(c) =>
 					c.sourceUid !== undefined &&
-					this.filter.presetSourceUids!.has(c.sourceUid),
+					this.filter.presetSourceUids?.has(c.sourceUid),
 			);
 		}
 

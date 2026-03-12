@@ -149,11 +149,13 @@ export function chunkMarkdown(rawContent: string): ChunkingResult {
 			}
 
 			// Update heading stack
-			const level = match[1]!.length;
-			const text = match[2]!.trim();
+			const [, hashes, headingText] = match;
+			if (!hashes || !headingText) continue;
+			const level = hashes.length;
+			const text = headingText.trim();
 			while (
 				headingStack.length > 0 &&
-				headingStack[headingStack.length - 1]!.level >= level
+				(headingStack.at(-1)?.level ?? 0) >= level
 			) {
 				headingStack.pop();
 			}

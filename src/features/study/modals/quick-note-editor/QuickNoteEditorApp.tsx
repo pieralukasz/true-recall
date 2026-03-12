@@ -213,8 +213,9 @@ export function QuickNoteEditorApp({ mode, onDone }: QuickNoteEditorAppProps) {
 					return;
 				}
 
+				if (!editMode) return;
 				const result = plugin.flashcardManager.updateNoteFields(
-					editMode!.noteId,
+					editMode.noteId,
 					fields,
 				);
 
@@ -264,9 +265,22 @@ export function QuickNoteEditorApp({ mode, onDone }: QuickNoteEditorAppProps) {
 		pinnedFields,
 	]);
 
-	// Note: Cmd/Ctrl+Enter is handled by EmbeddableEditor's Scope (via onModEnter
-	// passed to NoteFieldsForm). No document listener needed — the Scope intercepts
-	// before the event reaches the document when a CM6 field has focus.
+	// Cmd/Ctrl+Enter saves from anywhere in the modal (not just CM fields).
+	// CM fields also handle it via EmbeddableEditor's Scope — the `saving` guard prevents double-fire.
+	const handleSaveRef = useRef(handleSave);
+	handleSaveRef.current = handleSave;
+
+	useEffect(() => {
+		const onKeyDown = (e: KeyboardEvent) => {
+			if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+				e.preventDefault();
+				e.stopPropagation();
+				handleSaveRef.current();
+			}
+		};
+		document.addEventListener("keydown", onKeyDown, true);
+		return () => document.removeEventListener("keydown", onKeyDown, true);
+	}, []);
 
 	if (!noteType) {
 		return (
