@@ -6,12 +6,15 @@ on:
     pull_request:
         branches: ["**"]
 
+env:
+    FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
     build:
         runs-on: ubuntu-latest
 
         steps:
-            - uses: actions/checkout@v4
+            - uses: actions/checkout@v6
             - name: Setup Bun
               uses: oven-sh/setup-bun@v2
             - run: bun install --frozen-lockfile
