@@ -22,6 +22,8 @@ function createMockStore(ctx: TestContext): SqliteStoreService {
 		set: (id: string, data: unknown) => ctx.cards.set(id, data as never),
 		has: (id: string) => ctx.cards.has(id),
 		isReady: () => true,
+		getClozeSiblings: (sourceUid: string, clozeTemplate: string) =>
+			ctx.cards.getClozeSiblings(sourceUid, clozeTemplate),
 	} as unknown as SqliteStoreService;
 }
 
@@ -110,19 +112,13 @@ describe("CardRepository.deleteBatch", () => {
 	});
 
 	it("cascades reverse pair deletion in bulk mode", () => {
-		const original = {
-			...createTestCard({ id: "card-original" }),
-			noteId: "note-shared",
-			templateOrd: 0,
-		};
+		const original = createTestCard({ id: "card-original" });
+		ctx.cards.set(original.id, original);
 		const reverse = {
 			...createTestCard({ id: "card-reverse" }),
-			noteId: "note-shared",
-			templateOrd: 1,
 			cardType: "reversed" as const,
 			reverseOf: "card-original",
 		};
-		ctx.cards.set(original.id, original);
 		ctx.cards.set(reverse.id, reverse);
 
 		const count = repository.deleteBatch(["card-original"]);
@@ -232,19 +228,13 @@ describe("FlashcardManager.removeFlashcardsByIds", () => {
 			removeReviewedCards,
 		} as never);
 
-		const original = {
-			...createTestCard({ id: "cascade-original" }),
-			noteId: "note-cascade",
-			templateOrd: 0,
-		};
+		const original = createTestCard({ id: "cascade-original" });
+		ctx.cards.set(original.id, original);
 		const reverse = {
 			...createTestCard({ id: "cascade-reverse" }),
-			noteId: "note-cascade",
-			templateOrd: 1,
 			cardType: "reversed" as const,
 			reverseOf: "cascade-original",
 		};
-		ctx.cards.set(original.id, original);
 		ctx.cards.set(reverse.id, reverse);
 
 		const count = manager.removeFlashcardsByIds(["cascade-original"]);
@@ -264,19 +254,13 @@ describe("FlashcardManager.removeFlashcardsByIds", () => {
 		);
 		manager.setStore(createMockStore(ctx));
 
-		const original = {
-			...createTestCard({ id: "detail-original" }),
-			noteId: "note-detail",
-			templateOrd: 0,
-		};
+		const original = createTestCard({ id: "detail-original" });
+		ctx.cards.set(original.id, original);
 		const reverse = {
 			...createTestCard({ id: "detail-reverse" }),
-			noteId: "note-detail",
-			templateOrd: 1,
 			cardType: "reversed" as const,
 			reverseOf: "detail-original",
 		};
-		ctx.cards.set(original.id, original);
 		ctx.cards.set(reverse.id, reverse);
 
 		const result = await manager.removeFlashcardByIdWithDetails(

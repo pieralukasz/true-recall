@@ -27,6 +27,8 @@ export default defineConfig({
             "@": "/src",
             "types": new URL("./src/types/index.ts", import.meta.url).pathname,
             "obsidian": new URL("./tests/__mocks__/obsidian.ts", import.meta.url).pathname,
+            "@sqlite.org/sqlite-wasm/sqlite3.wasm": new URL("./tests/__mocks__/sqlite3.wasm.ts", import.meta.url).pathname,
+            "@sqlite.org/sqlite-wasm": new URL("./tests/__mocks__/sqlite-wasm.ts", import.meta.url).pathname,
         },
     },
 });

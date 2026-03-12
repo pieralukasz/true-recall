@@ -959,4 +959,75 @@ export class ReviewService {
 		}
 		return low;
 	}
+
+	calculateRetentionRate(results: ReviewResult[]): number {
+		if (results.length === 0) return 0;
+		const successes = results.filter(
+			(r) => r.rating === Rating.Good || r.rating === Rating.Easy,
+		).length;
+		return successes / results.length;
+	}
+
+	getStreakInfo(results: ReviewResult[]): {
+		currentStreak: number;
+		longestStreak: number;
+	} {
+		if (results.length === 0) return { currentStreak: 0, longestStreak: 0 };
+
+		const uniqueDays = new Set(
+			results.map((r) => {
+				const d = new Date(r.timestamp);
+				return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+			}),
+		);
+		const sortedDays = [...uniqueDays]
+			.map((key) => {
+				const [y, m, d] = key.split("-").map(Number);
+				const date = new Date(y!, m!, d!);
+				date.setHours(0, 0, 0, 0);
+				return date.getTime();
+			})
+			.sort((a, b) => b - a);
+
+		const DAY_MS = 86400000;
+		let longestStreak = 1;
+		let currentStreak = 1;
+
+		// Walk sorted days (newest first), count consecutive
+		for (let i = 1; i < sortedDays.length; i++) {
+			const prev = sortedDays[i - 1];
+			const curr = sortedDays[i];
+			if (prev !== undefined && curr !== undefined && prev - curr === DAY_MS) {
+				currentStreak++;
+			} else {
+				if (currentStreak > longestStreak) longestStreak = currentStreak;
+				currentStreak = 1;
+			}
+		}
+		if (currentStreak > longestStreak) longestStreak = currentStreak;
+
+		// Current streak: count consecutive days ending at today or yesterday
+		const now = new Date();
+		now.setHours(0, 0, 0, 0);
+		const todayMs = now.getTime();
+		const yesterdayMs = todayMs - DAY_MS;
+
+		const newest = sortedDays[0];
+		if (newest !== todayMs && newest !== yesterdayMs) {
+			return { currentStreak: 0, longestStreak };
+		}
+
+		let streak = 1;
+		for (let i = 1; i < sortedDays.length; i++) {
+			const prev = sortedDays[i - 1];
+			const curr = sortedDays[i];
+			if (prev !== undefined && curr !== undefined && prev - curr === DAY_MS) {
+				streak++;
+			} else {
+				break;
+			}
+		}
+
+		return { currentStreak: streak, longestStreak };
+	}
 }
