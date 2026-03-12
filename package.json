@@ -1,6 +1,6 @@
 {
 	"name": "obsidian-true-recall",
-	"version": "1.0.3",
+	"version": "1.0.4",
 	"description": "Spaced repetition with FSRS algorithm for Obsidian",
 	"main": "main.js",
 	"type": "module",
