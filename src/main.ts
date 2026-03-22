@@ -31,6 +31,7 @@ import type {
 	IOEditorMode,
 	IOEditorResult,
 } from "@features/image-occlusion/types";
+import { PluginAuthService } from "@features/integration/services/plugin-auth.service";
 import { AnkiExportModal } from "@features/integration/modals/AnkiExportModal";
 import { AnkiImportModal } from "@features/integration/modals/AnkiImportModal";
 import { CsvExportModal } from "@features/integration/modals/CsvExportModal";
@@ -117,9 +118,7 @@ export default class TrueRecallPlugin extends Plugin {
 	backgroundBackupManager: BackgroundBackupManager | null = null;
 	deviceIdService: DeviceIdService | null = null;
 	deviceDiscovery: DeviceDiscoveryService | null = null;
-	// Cloud sync - coming soon
-	authService: null = null;
-	syncService: null = null;
+	pluginAuth: PluginAuthService | null = null;
 	deletionHandler: DeletionHandlerService | null = null;
 	undoService: UndoService | null = null;
 	fsrsHelper: FSRSHelperService | null = null;
@@ -291,19 +290,15 @@ export default class TrueRecallPlugin extends Plugin {
 		registerEventHandlers(this);
 
 		this.undoService = new UndoService(this);
-		// Cloud sync - coming soon
-		// this.authService = new AuthService();
-	}
 
-	// Cloud sync - coming soon
-	// private initializeSyncService(): void {
-	// 	if (this.authService && this.cardStore) {
-	// 		this.syncService = new SyncService(
-	// 			this.authService,
-	// 			this.cardStore
-	// 		);
-	// 	}
-	// }
+		this.pluginAuth = new PluginAuthService();
+		this.registerObsidianProtocolHandler(
+			"true-recall-auth",
+			(params) => {
+				void this.handleAuthCallback(params);
+			},
+		);
+	}
 
 	private initializeDeletionHandler(): void {
 		if (!this.cardStore || !this.frontmatterIndex || !this.sessionPersistence)
@@ -411,6 +406,50 @@ export default class TrueRecallPlugin extends Plugin {
 		this.hierarchyService.invalidateGraph();
 
 		refreshSettings(this.settings);
+	}
+
+	private async handleAuthCallback(
+		params: Record<string, string>,
+	): Promise<void> {
+		const { code, state, error } = params;
+
+		if (error) {
+			notify().error("Authentication failed. Please try again.");
+			return;
+		}
+
+		if (!code || !state) {
+			notify().error("Invalid auth callback — missing code or state.");
+			return;
+		}
+
+		if (!this.pluginAuth?.validateState(state)) {
+			notify().error("Authentication expired or invalid. Please try again.");
+			return;
+		}
+
+		try {
+			const result = await this.pluginAuth.exchangeCode(code);
+
+			this.settings.subscriptionKey = result.subscriptionKey;
+			this.settings.isSubscriber = true;
+			this.settings.subscriberTier = result.tier;
+			this.settings.userId ??= crypto.randomUUID();
+			this.settings.cachedSubscriptionStatus = {
+				tier: result.tier,
+				plan_type: result.plan_type,
+				budget_max: result.budget_max,
+				budget_spent: result.budget_spent,
+				budget_remaining: result.budget_remaining,
+				expires: result.expires,
+				trial_used: result.trial_used,
+			};
+			await this.saveSettings();
+
+			notify().success("Signed in successfully!");
+		} catch {
+			notify().error("Failed to complete sign-in. Please try again.");
+		}
 	}
 
 	async activateView(): Promise<void> {

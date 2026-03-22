@@ -334,8 +334,10 @@ export const TRUE_RECALL_CLOUD = {
 export const LITELLM_PROXY_URL =
 	"https://ai.truerecall.app/v1/chat/completions";
 export const SUBSCRIPTION_STATUS_URL =
-	"https://www.truerecall.app/api/subscription/status";
-export const TRUERECALL_WEB_URL = "https://www.truerecall.app";
+	"https://truerecall.app/api/subscription/status";
+export const TRUERECALL_WEB_URL = "https://truerecall.app";
+export const AUTH_PLUGIN_URL = `${TRUERECALL_WEB_URL}/auth/plugin`;
+export const AUTH_EXCHANGE_URL = `${TRUERECALL_WEB_URL}/api/auth/exchange`;
 export const TRUERECALL_BMC_URL = "https://buymeacoffee.com/pieralukasz";
 export const TRUERECALL_GITHUB_URL =
 	"https://github.com/pieralukasz/true-recall";

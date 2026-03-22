@@ -21,6 +21,7 @@ import {
 	TextInput,
 	ToggleInput,
 } from "@shared/ui/components";
+import { usePlugin } from "@shared/ui/preact";
 import { useCallback, useEffect, useRef, useState } from "preact/hooks";
 
 const subscriptionService = new SubscriptionService();
@@ -29,21 +30,36 @@ const PROMPT_MODES: GenerationMode[] = ["basic", "cloze", "reversed", "auto"];
 
 function SubscriptionSection() {
 	const { settings, save } = useSettings();
+	const plugin = usePlugin();
 	const [status, setStatus] = useState<SubscriptionStatus | null>(null);
 	const [error, setError] = useState("");
 	const [backgroundError, setBackgroundError] = useState("");
 	const [validating, setValidating] = useState(false);
+	const [awaitingBrowser, setAwaitingBrowser] = useState(false);
+	const [showManualInput, setShowManualInput] = useState(false);
 	const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-	// Track which key triggered the fetch so stale responses are ignored
 	const activeKeyRef = useRef<string | undefined>(settings.subscriptionKey);
 
 	const hasSubKey = !!settings.subscriptionKey;
+
+	const handleSignIn = useCallback(() => {
+		if (!plugin.pluginAuth) return;
+		const url = plugin.pluginAuth.startAuth();
+		window.open(url, "_blank");
+		setAwaitingBrowser(true);
+	}, [plugin]);
+
+	const handleCancelSignIn = useCallback(() => {
+		plugin.pluginAuth?.clearPending();
+		setAwaitingBrowser(false);
+	}, [plugin]);
 
 	const handleLogout = useCallback(() => {
 		subscriptionService.invalidateCache();
 		setStatus(null);
 		setError("");
 		setBackgroundError("");
+		setAwaitingBrowser(false);
 		save({
 			subscriptionKey: undefined,
 			isSubscriber: false,
@@ -51,6 +67,13 @@ function SubscriptionSection() {
 			cachedSubscriptionStatus: undefined,
 		});
 	}, [save]);
+
+	// Clear "awaiting browser" when subscription key arrives via protocol handler
+	useEffect(() => {
+		if (hasSubKey && awaitingBrowser) {
+			setAwaitingBrowser(false);
+		}
+	}, [hasSubKey, awaitingBrowser]);
 
 	useEffect(() => {
 		if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -70,7 +93,6 @@ function SubscriptionSection() {
 			return;
 		}
 
-		// Show cached status instantly if available
 		const cached =
 			subscriptionService.getCachedStatus() ??
 			(settings.cachedSubscriptionStatus as SubscriptionStatus | undefined) ??
@@ -86,7 +108,6 @@ function SubscriptionSection() {
 		setError("");
 		setBackgroundError("");
 
-		// Background validation: immediate if cached, debounced if first-time
 		const delay = hasCached ? 0 : 1000;
 		if (!settings.subscriptionKey) return;
 		const keyAtFetch = settings.subscriptionKey;
@@ -150,39 +171,14 @@ function SubscriptionSection() {
 		<FormCard title="True Recall AI">
 			<InfoBlock>
 				<p>
-					Subscribe for instant AI access — no setup needed. Generate
-					flashcards, image occlusion, and more.
-				</p>
-				<p>
-					<a
-						href={`${TRUERECALL_WEB_URL}/pricing`}
-						target="_blank"
-						rel="noopener"
-					>
-						View plans at truerecall.app/pricing
-					</a>
+					Sign in for instant AI access — no setup needed. Generate flashcards,
+					image occlusion, and more.
 				</p>
 			</InfoBlock>
 
-			<FormField
-				name="Subscription key"
-				description="Paste the key from your truerecall.app dashboard."
-			>
-				<TextInput
-					value={settings.subscriptionKey ?? ""}
-					onChange={(v) => {
-						subscriptionService.invalidateCache();
-						save({ subscriptionKey: v || undefined });
-					}}
-					type="password"
-					placeholder="tr-xxxxxxxxxxxx"
-					class="ep:w-[300px]"
-				/>
-			</FormField>
-
 			{validating && (
 				<div class="ep:py-2 ep:text-obs-muted ep:text-ui-smaller">
-					Validating key...
+					Validating subscription...
 				</div>
 			)}
 
@@ -235,23 +231,54 @@ function SubscriptionSection() {
 				</div>
 			)}
 
-			{!hasSubKey && (
-				<div class="ep:py-3 ep:flex ep:flex-col ep:gap-1">
+			{!hasSubKey && !awaitingBrowser && (
+				<div class="ep:py-3 ep:flex ep:flex-col ep:gap-3">
 					<Clickable
-						class="ep:text-obs-accent ep:text-ui-smaller ep:underline"
-						onClick={() =>
-							window.open(`${TRUERECALL_WEB_URL}/pricing`, "_blank")
-						}
+						class="mod-cta ep:px-4 ep:py-2 ep:rounded-[var(--radius-s)] ep:text-ui-small ep:font-medium ep:inline-flex ep:items-center ep:justify-center ep:w-fit"
+						onClick={handleSignIn}
 					>
-						Start free trial (~50 generations, no card required)
+						Sign in with True Recall
 					</Clickable>
+					<div class="ep:flex ep:flex-col ep:gap-1">
+						<Clickable
+							class="ep:text-obs-muted ep:text-ui-smaller"
+							onClick={() => setShowManualInput((v) => !v)}
+						>
+							{showManualInput ? "Hide manual input" : "Enter key manually"}
+						</Clickable>
+						{showManualInput && (
+							<FormField
+								name="Subscription key"
+								description="Paste the key from your truerecall.app dashboard."
+							>
+								<TextInput
+									value={settings.subscriptionKey ?? ""}
+									onChange={(v) => {
+										subscriptionService.invalidateCache();
+										save({ subscriptionKey: v || undefined });
+									}}
+									type="password"
+									placeholder="tr-xxxxxxxxxxxx"
+									class="ep:w-[300px]"
+								/>
+							</FormField>
+						)}
+					</div>
+				</div>
+			)}
+
+			{!hasSubKey && awaitingBrowser && (
+				<div class="ep:py-3 ep:flex ep:flex-col ep:gap-2">
+					<div class="ep:text-obs-muted ep:text-ui-small ep:flex ep:items-center ep:gap-2">
+						<span class="ep:animate-pulse">
+							Waiting for browser sign-in...
+						</span>
+					</div>
 					<Clickable
-						class="ep:text-obs-muted ep:text-ui-smaller ep:underline"
-						onClick={() =>
-							window.open(`${TRUERECALL_WEB_URL}/pricing`, "_blank")
-						}
+						class="ep:text-obs-muted ep:text-ui-smaller"
+						onClick={handleCancelSignIn}
 					>
-						View plans at truerecall.app
+						Cancel
 					</Clickable>
 				</div>
 			)}
