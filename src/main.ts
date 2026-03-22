@@ -1178,6 +1178,10 @@ export default class TrueRecallPlugin extends Plugin {
 					} else {
 						notify().info(`Created ${result.created} flashcard(s)`);
 					}
+					if (result.created > 0) {
+						const { maybeShowSubscriptionPromo } = await import("@shared/ui/modals/subscription-promo");
+						void maybeShowSubscriptionPromo(this);
+					}
 				} catch (error) {
 					if (error instanceof DOMException && error.name === "AbortError")
 						return;

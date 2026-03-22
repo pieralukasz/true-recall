@@ -291,6 +291,9 @@ export interface TrueRecallSettings {
 
 	/** Last version the user has seen release notes for */
 	lastSeenVersion?: string;
+
+	subscriptionPromoSnoozedUntil?: number;
+	subscriptionPromoSnoozeCount?: number;
 }
 
 export interface SessionPreset {
