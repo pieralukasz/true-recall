@@ -76,7 +76,6 @@ export class BackupService {
 		// Ensure pending changes are saved
 		await this.sqliteStore.saveNow();
 
-		// Get database data
 		const db = this.sqliteStore.getDatabase();
 		if (!db) {
 			throw new Error("Database not available");
@@ -143,7 +142,6 @@ export class BackupService {
 				const timestamp = this.parseFilenameTimestamp(filename);
 				if (!timestamp) continue;
 
-				// Get file stats
 				const stat = await this.app.vault.adapter.stat(filePath);
 				if (!stat) continue;
 
@@ -174,7 +172,6 @@ export class BackupService {
 	 */
 	async restoreFromBackup(backupPath: string): Promise<boolean> {
 		try {
-			// Create safety backup first
 			await this.createBackup();
 
 			// Read backup file, decompress if gzipped
@@ -302,7 +299,6 @@ export class BackupService {
 			}
 		}
 
-		// Delete backups not in keep set
 		const toDelete = backups.filter((b) => !toKeep.has(b.path));
 		let deleted = 0;
 

@@ -78,7 +78,6 @@ export class ImageService {
 			match = wikiLinkRegex.exec(content)
 		) {
 			const ref = match[1]?.trim();
-			// Check if it's an image file
 			const ext = ref?.split(".").pop()?.toLowerCase() ?? "";
 			if (ref && isImageExtension(ext)) {
 				refs.push(ref);

@@ -190,7 +190,6 @@ export function NoteStatsWidget({ sourceUid }: { sourceUid: string | null }) {
 			}
 		}
 
-		// Get last review date
 		let lastReviewed: string | null = null;
 		for (const card of noteCards) {
 			const fsrs = card.fsrs;

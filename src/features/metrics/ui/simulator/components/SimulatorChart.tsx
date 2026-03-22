@@ -27,7 +27,6 @@ export function SimulatorChart({
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const chartRef = useRef<Chart | null>(null);
 
-	// Create chart once
 	useEffect(() => {
 		if (!canvasRef.current) return;
 
@@ -90,7 +89,6 @@ export function SimulatorChart({
 		};
 	}, []);
 
-	// Update chart data when props change
 	useEffect(() => {
 		if (!chartRef.current) return;
 

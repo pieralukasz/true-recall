@@ -52,7 +52,6 @@ export class IncrementalFlashcardParser {
 		for (const line of isEnd ? parts : parts) {
 			const trimmed = line.trim();
 
-			// Check for block separator
 			if (BLOCK_SEPARATOR_RE.test(trimmed)) {
 				const block = this.finalizeBlock();
 				if (block) {
@@ -61,7 +60,6 @@ export class IncrementalFlashcardParser {
 				continue;
 			}
 
-			// Check for new type tag
 			const typeMatch = trimmed.match(TYPE_TAG_RE);
 			if (typeMatch) {
 				// Finalize any existing block first

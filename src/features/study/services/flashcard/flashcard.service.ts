@@ -431,18 +431,15 @@ export class FlashcardManager {
 			throw new Error("Store not initialized");
 		}
 
-		// Check card exists
 		if (!this.cardRepository.has(cardId)) {
 			return false;
 		}
 
-		// Get target note
 		const targetNote = this.app.vault.getAbstractFileByPath(targetNotePath);
 		if (!(targetNote instanceof TFile)) {
 			return false;
 		}
 
-		// Get or create source UID for target note
 		let targetSourceUid =
 			await this.frontmatterService.getSourceNoteUid(targetNote);
 		if (!targetSourceUid) {
@@ -631,7 +628,6 @@ export class FlashcardManager {
 			throw new Error(`Note type "${note.noteTypeId}" not found`);
 		}
 
-		// Update the note
 		this.store.notes.update(noteId, { fields });
 
 		if (noteType.id === BUILTIN_IMAGE_OCCLUSION_ID) {
@@ -655,7 +651,6 @@ export class FlashcardManager {
 
 		const updatedCardIds = existingCards.map((c) => c.id);
 
-		// Create any newly needed cards
 		for (const gen of newGenerated) {
 			const fsrsData = this.createCardFromGenerated(gen, updatedNote, noteType);
 			updatedCardIds.push(fsrsData.id);
@@ -695,7 +690,6 @@ export class FlashcardManager {
 			newFields[field] = oldFieldName ? (note.fields[oldFieldName] ?? "") : "";
 		}
 
-		// Update note
 		this.store.notes.update(noteId, {
 			noteTypeId: newNoteTypeId,
 			fields: newFields,
@@ -718,7 +712,6 @@ export class FlashcardManager {
 			.filter((c) => desiredOrds.has(c.templateOrd ?? 0))
 			.map((c) => c.id);
 
-		// Delete orphaned cards
 		const deletedCardIds = existingCards
 			.filter((c) => !desiredOrds.has(c.templateOrd ?? 0))
 			.map((c) => c.id);
@@ -728,7 +721,6 @@ export class FlashcardManager {
 			this.sessionPersistence?.removeReviewedCards(deletedCardIds);
 		}
 
-		// Create new cards for new ords
 		const createdCardIds: string[] = [];
 		for (const gen of desiredGenerated) {
 			if (existingOrds.has(gen.templateOrd)) continue;

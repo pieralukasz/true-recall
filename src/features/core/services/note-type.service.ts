@@ -61,7 +61,6 @@ export class NoteTypeService {
 			throw new Error("Note type must have at least one template");
 		}
 
-		// Check duplicate name
 		const existing = this.deps.noteTypeActions.getAll();
 		if (existing.some((nt) => nt.name === name)) {
 			throw new Error(`Note type with name "${name}" already exists`);

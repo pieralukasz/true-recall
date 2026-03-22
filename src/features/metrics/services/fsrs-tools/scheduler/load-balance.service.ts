@@ -27,7 +27,6 @@ export class LoadBalanceService {
 			dryRun = true,
 		} = options;
 
-		// Get current distribution
 		const today = new Date();
 		const endDate = new Date(today);
 		endDate.setDate(endDate.getDate() + days);
@@ -35,7 +34,6 @@ export class LoadBalanceService {
 		const startDateStr = this.formatDate(today);
 		const endDateStr = this.formatDate(endDate);
 
-		// Get cards due in range
 		const dueCards = this.cardStore.getDueCardsByDateRange(
 			startDateStr,
 			endDateStr,
@@ -102,7 +100,6 @@ export class LoadBalanceService {
 						};
 						changes.push(change);
 
-						// Update distribution tracking
 						const fromCards = distribution.get(date) ?? [];
 						const idx = fromCards.findIndex((c) => c.id === card.id);
 						if (idx >= 0) fromCards.splice(idx, 1);

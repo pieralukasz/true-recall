@@ -26,7 +26,6 @@ export class PostponeAdvanceService {
 	async shift(options: ShiftOptions): Promise<SchedulingResult> {
 		const { action, days, scope, cardIds, dryRun = true } = options;
 
-		// Get cards to shift based on scope
 		const cards = await this.getCardsForScope(scope, cardIds);
 
 		// Calculate shift direction

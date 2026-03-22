@@ -49,7 +49,6 @@ export class ParameterOptimizerService {
 	): Promise<OptimizationOutput> {
 		const minReviews = input.minReviews ?? MIN_REVIEWS_FOR_OPTIMIZATION;
 
-		// Check minimum reviews requirement
 		if (input.reviews.length < minReviews) {
 			return {
 				weights: input.currentWeights ?? [...DEFAULT_FSRS_WEIGHTS],
@@ -77,7 +76,6 @@ export class ParameterOptimizerService {
 			"max_iterations";
 
 		for (iteration = 0; iteration < MAX_ITERATIONS; iteration++) {
-			// Check for cancellation
 			if (options?.abortSignal?.aborted) {
 				break;
 			}
@@ -95,13 +93,11 @@ export class ParameterOptimizerService {
 				currentLoss: loss,
 			});
 
-			// Check for convergence
 			if (Math.abs(previousLoss - loss) < CONVERGENCE_THRESHOLD) {
 				convergenceStatus = "converged";
 				break;
 			}
 
-			// Update weights using gradient descent
 			weights = weights.map((w, i) => {
 				const grad = gradients[i] ?? 0;
 				// Apply learning rate and clip to valid range
@@ -192,7 +188,6 @@ export class ParameterOptimizerService {
 		weights: number[],
 		data: TrainingDataPoint[],
 	): { loss: number; gradients: number[] } {
-		// Create FSRS instance with current weights
 		new FSRS({ w: weights });
 
 		let totalLoss = 0;

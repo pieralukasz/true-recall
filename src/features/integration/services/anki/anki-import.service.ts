@@ -474,7 +474,6 @@ export class AnkiImportService {
 			return uid;
 		}
 
-		// Create new note
 		const uid = this.generateUid();
 		const frontmatter = this.buildFrontmatter(uid, parentName);
 

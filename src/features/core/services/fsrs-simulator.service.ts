@@ -38,7 +38,6 @@ export class FSRSSimulatorService {
 		weights: number[],
 		desiredRetention: number,
 	): SequenceReview[] {
-		// Create FSRS instance with custom weights
 		const fsrs = new FSRS({
 			w: weights,
 			request_retention: desiredRetention,

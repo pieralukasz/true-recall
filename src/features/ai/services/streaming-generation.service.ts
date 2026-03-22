@@ -218,7 +218,6 @@ export class StreamingGenerationService {
 			settings.generationLanguage ?? "auto",
 		);
 
-		// Check for custom prompt override by slug
 		if (noteType?.slug) {
 			const customKey = `notetype:${noteType.slug}`;
 			const custom = (
@@ -227,7 +226,6 @@ export class StreamingGenerationService {
 			if (custom?.trim()) return custom + SOURCE_TRACKING_SUFFIX + langSuffix;
 		}
 
-		// Check for legacy mode-based custom prompt
 		const legacyCustom =
 			settings.aiFlashcardPrompts?.[
 				mode as keyof typeof settings.aiFlashcardPrompts

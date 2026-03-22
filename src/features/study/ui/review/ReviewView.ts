@@ -620,7 +620,6 @@ export class ReviewView extends ItemView {
 			.getFrontmatterService()
 			.setFsrsPreset(sourceFile, newPresetName);
 
-		// Update in-memory cache for all cards from this source note
 		const uid = card.sourceUid ?? "";
 		this.presetCache.set(uid, newPreset);
 

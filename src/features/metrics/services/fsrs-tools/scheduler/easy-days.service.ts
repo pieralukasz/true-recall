@@ -29,12 +29,10 @@ export function isEasyDay(date: Date, easyDays: EasyDaysConfig): boolean {
 	const dayOfWeek = date.getDay();
 	const dateStr = date.toISOString().split("T")[0] ?? "";
 
-	// Check recurring weekdays
 	if (easyDays.recurringDays.includes(dayOfWeek)) {
 		return true;
 	}
 
-	// Check specific dates
 	if (easyDays.specificDates.includes(dateStr)) {
 		return true;
 	}
@@ -54,7 +52,6 @@ export class EasyDaysService {
 			dryRun = true,
 		} = options;
 
-		// Check if there are any easy days configured
 		const hasEasyDays =
 			easyDays.recurringDays.length > 0 || easyDays.specificDates.length > 0;
 		if (!hasEasyDays) {
@@ -132,14 +129,12 @@ export class EasyDaysService {
 							};
 							changes.push(change);
 
-							// Update distribution tracking
 							const targetCards = distribution.get(targetDateStr) ?? [];
 							targetCards.push({ id: card.id, due: newDue.toISOString() });
 							distribution.set(targetDateStr, targetCards);
 						}
 					}
 
-					// Update after distribution
 					afterDistribution.set(dateStr, maxCards);
 				} else {
 					afterDistribution.set(dateStr, cardsOnDay.length);
@@ -215,7 +210,6 @@ export class EasyDaysService {
 		const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 		const maxCards = Math.floor(targetPerDay * multiplier);
 
-		// Check recurring weekdays
 		for (const dayOfWeek of easyDays.recurringDays) {
 			const dayName = dayNames[dayOfWeek] ?? "Unknown";
 			let movedForDay = 0;
@@ -235,7 +229,6 @@ export class EasyDaysService {
 			byDay.push({ day: dayName, moved: movedForDay });
 		}
 
-		// Check specific dates
 		for (const dateStr of easyDays.specificDates) {
 			const count = distribution.get(dateStr) ?? 0;
 			const excess = Math.max(0, count - maxCards);

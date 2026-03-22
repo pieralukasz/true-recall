@@ -246,7 +246,6 @@ export class ApkgBuilderService {
 					],
 				);
 			} else {
-				// Export as new cards with no scheduling
 				db.run(
 					`INSERT INTO cards (id, nid, did, ord, mod, usn, type, queue, due, ivl, factor, reps, lapses, left, odue, odid, flags, data)
                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,

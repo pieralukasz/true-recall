@@ -698,7 +698,6 @@ export class StatsActions {
             ORDER BY day_of_week, hour_of_day
         `);
 
-		// Initialize empty pattern
 		const pattern: StudyPattern = {
 			bestDays: [],
 			bestHours: [],
@@ -723,7 +722,6 @@ export class StatsActions {
 			const success = row.successful_reviews;
 			const rate = total > 0 ? Math.round((success / total) * 100) : 0;
 
-			// Update heatmap
 			const dayRow = pattern.heatmap[day];
 			if (dayRow) {
 				dayRow[hour] = { day, hour, count: total, rate };
@@ -856,7 +854,6 @@ export class StatsActions {
 			sameDayRows.map((r) => [r.created_date, r.count]),
 		);
 
-		// Get all unique dates
 		const allDates = new Set([
 			...createdMap.keys(),
 			...reviewedMap.keys(),

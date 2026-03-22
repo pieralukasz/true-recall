@@ -167,7 +167,6 @@ export class TrueRetentionCalculator {
 		}
 		const average = totalReviews > 0 ? totalRetention / totalReviews : 0;
 
-		// Get current (last 7 days)
 		const recentEntries = entries.slice(-7);
 		let recentTotal = 0;
 		let recentSuccess = 0;

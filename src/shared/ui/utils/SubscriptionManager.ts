@@ -113,7 +113,6 @@ export class SubscriptionManager {
 		if (this.disposed) return;
 		this.disposed = true;
 
-		// Call all unsubscribers
 		for (const unsub of this.unsubscribers) {
 			try {
 				unsub();

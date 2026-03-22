@@ -59,7 +59,6 @@ export function QuickReview({ cardsWithFsrs }: QuickReviewProps) {
 	const [answerShown, setAnswerShown] = useState(false);
 	const [preview, setPreview] = useState<SchedulingPreview | null>(null);
 
-	// Check if formal review session is active
 	const isReviewActive = plugin.store?.getState().review?.isActive ?? false;
 
 	const queue = useMemo(() => buildDueQueue(cardsWithFsrs), [cardsWithFsrs]);

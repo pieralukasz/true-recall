@@ -55,7 +55,6 @@ export class DeviceDiscoveryService {
 		const databases: DeviceDatabaseInfo[] = [];
 		const folderPath = normalizePath(DB_FOLDER);
 
-		// Check if folder exists
 		const folderExists = await this.app.vault.adapter.exists(folderPath);
 		if (!folderExists) {
 			return databases;
@@ -98,7 +97,6 @@ export class DeviceDiscoveryService {
 		}
 
 		try {
-			// Get file stats
 			const stat = await this.app.vault.adapter.stat(path);
 			if (!stat) {
 				return null;

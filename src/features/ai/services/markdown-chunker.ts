@@ -148,7 +148,6 @@ export function chunkMarkdown(rawContent: string): ChunkingResult {
 				});
 			}
 
-			// Update heading stack
 			const [, hashes, headingText] = match;
 			if (!hashes || !headingText) continue;
 			const level = hashes.length;

@@ -79,7 +79,6 @@ export function LivePreviewField({
 		scheduleSave();
 	}, [scheduleSave]);
 
-	// Create editor on mount, destroy on unmount
 	useEffect(() => {
 		const el = containerRef.current;
 		if (!el || !plugin.EmbeddableEditor) return;

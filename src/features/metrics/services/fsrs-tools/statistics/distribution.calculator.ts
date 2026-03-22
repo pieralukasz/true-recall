@@ -72,7 +72,6 @@ export class DistributionCalculator {
 			};
 		}
 
-		// Define buckets for intervals (in days)
 		const buckets: [number, number, string][] = [
 			[0, 7, "0-7d"],
 			[7, 14, "1-2w"],
@@ -110,7 +109,6 @@ export class DistributionCalculator {
 			};
 		}
 
-		// Define buckets for stability (in days)
 		const buckets: [number, number, string][] = [
 			[0, 1, "<1d"],
 			[1, 3, "1-3d"],
@@ -148,7 +146,6 @@ export class DistributionCalculator {
 			};
 		}
 
-		// Define buckets for difficulty (1-10 scale)
 		const buckets: [number, number, string][] = [
 			[1, 2, "1 (Easy)"],
 			[2, 3, "2"],
@@ -193,7 +190,6 @@ export class DistributionCalculator {
 		const total = values.length;
 		const counts = new Map<string, number>();
 
-		// Initialize counts
 		for (const [, , label] of buckets) {
 			counts.set(label, 0);
 		}

@@ -23,7 +23,6 @@ function parseClozeText(text: string): ClozePart[] {
 	const parts: ClozePart[] = [];
 	let lastIndex = 0;
 
-	// Use matchAll to get all matches without assignment in expression
 	const matches = Array.from(text.matchAll(CLOZE_PATTERN));
 
 	for (const match of matches) {

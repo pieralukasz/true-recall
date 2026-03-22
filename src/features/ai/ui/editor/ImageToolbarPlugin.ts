@@ -77,7 +77,6 @@ export function createImageToolbarExtension(
 					return;
 				}
 
-				// Check if clicked on an image
 				const imgEl =
 					target instanceof HTMLImageElement
 						? target

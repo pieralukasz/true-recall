@@ -359,7 +359,6 @@ export function createReviewSlice(
 				newQueue.push(card);
 			}
 
-			// Update badge counts if inserted in remaining queue
 			const newCounts = { ...state.cachedBadgeCounts };
 			if (insertPosition >= state.currentIndex) {
 				const badgeType = getBadgeTypeForState(card.fsrs.state);
@@ -408,7 +407,6 @@ export function createReviewSlice(
 			const cardIndex = state.queue.findIndex((c) => c.id === cardId);
 			if (cardIndex === -1) return;
 
-			// Update badge counts if in remaining queue
 			const newCounts = { ...state.cachedBadgeCounts };
 			if (cardIndex >= state.currentIndex) {
 				const card = state.queue[cardIndex];
@@ -461,7 +459,6 @@ export function createReviewSlice(
 				}
 			}
 
-			// Update badge counts for cards in remaining queue
 			const newCounts = { ...state.cachedBadgeCounts };
 			for (let i = state.currentIndex; i < state.queue.length; i++) {
 				const card = state.queue[i];

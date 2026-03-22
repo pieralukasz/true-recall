@@ -26,7 +26,6 @@ export class MaturityCalculator {
 	 * Mature: Review cards with interval >= 21 days
 	 */
 	calculate(allCards: FSRSFlashcardItem[]): CardMaturityBreakdown {
-		// Use optimized SQLite query when available
 		if (this.sqliteStore) {
 			return this.sqliteStore.stats.getCardMaturityBreakdown();
 		}
@@ -58,7 +57,6 @@ export class MaturityCalculator {
 				continue;
 			}
 
-			// Check if buried
 			if (c.fsrs.buriedUntil && new Date(c.fsrs.buriedUntil) > now) {
 				counts.buried++;
 				continue;

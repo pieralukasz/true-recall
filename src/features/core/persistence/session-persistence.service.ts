@@ -282,7 +282,6 @@ export class SessionPersistenceService {
 			// Flush to ensure data is persisted
 			await this.store.saveNow();
 
-			// Delete the old JSON file
 			await this.app.vault.adapter.remove(statsPath);
 		} catch (error) {
 			console.error("[True Recall] Failed to migrate stats.json:", error);
