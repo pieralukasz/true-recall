@@ -17,7 +17,6 @@ export function SelectionToolbar({ preserveScroll }: SelectionToolbarProps) {
 		handleSelectAll,
 		handleMoveSelected,
 		handleChangeNoteType,
-		handleRewriteSelected,
 		handleSuspendSelected,
 		handleUnsuspendSelected,
 		handleForgetSelected,
@@ -63,13 +62,6 @@ export function SelectionToolbar({ preserveScroll }: SelectionToolbarProps) {
 						icon="replace"
 						ariaLabel="Change note type"
 						onClick={handleChangeNoteType}
-						size="small"
-						disabled={!hasSelection}
-					/>
-					<IconButton
-						icon="sparkles"
-						ariaLabel="AI Rewrite selected"
-						onClick={handleRewriteSelected}
 						size="small"
 						disabled={!hasSelection}
 					/>

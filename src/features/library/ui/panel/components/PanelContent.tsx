@@ -25,7 +25,6 @@ export interface ContentHandlers {
 	onForgetCard: (card: FlashcardItem) => void;
 	onSuspendCard: (card: FlashcardItem) => void;
 	onUnsuspendCard: (card: FlashcardItem) => void;
-	onRewriteCard: (card: FlashcardItem) => void;
 	onToggleExpand: (cardId: string) => void;
 	onToggleSelect: (cardId: string) => void;
 	onEnterSelectionMode: (cardId: string) => void;
@@ -343,7 +342,6 @@ export function PanelContent({
 						onForget={() => handlers.onForgetCard(card)}
 						onSuspend={() => handlers.onSuspendCard(card)}
 						onUnsuspend={() => handlers.onUnsuspendCard(card)}
-						onRewrite={() => handlers.onRewriteCard(card)}
 						onJumpToSource={
 							card.sourceText ? () => handlers.onJumpToSource(card) : undefined
 						}
