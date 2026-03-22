@@ -39,7 +39,6 @@ export class ScheduleBreakService {
 		const breakStart = new Date(startDate);
 		const breakEnd = new Date(endDate);
 
-		// Get cards due during the break
 		const cardsInBreak = this.cardStore.getDueCardsByDateRange(
 			startDate,
 			endDate,

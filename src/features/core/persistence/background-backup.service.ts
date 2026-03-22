@@ -178,7 +178,6 @@ export class BackgroundBackupManager {
 		this.isBackupInProgress = true;
 
 		try {
-			// Create backup
 			const backupPath = await this.backupService.createBackup();
 			// Capture the first backup of the session as the session start checkpoint.
 			if (this.sessionStartBackupPath === null) {

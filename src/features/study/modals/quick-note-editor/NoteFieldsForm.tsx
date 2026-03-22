@@ -152,7 +152,6 @@ function CMField({
 
 	const [editorFailed, setEditorFailed] = useState(false);
 
-	// Create editor on mount, destroy on unmount.
 	// Stable deps — editor is only recreated if app or EmbeddableEditor class changes.
 	useEffect(() => {
 		const el = containerRef.current;

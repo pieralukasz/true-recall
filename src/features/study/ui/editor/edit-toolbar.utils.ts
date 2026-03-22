@@ -128,7 +128,6 @@ export function toggleTextareaWrap(
 	const end = textarea.selectionEnd;
 	const selectedText = textarea.value.substring(start, end);
 
-	// Check if selection is already wrapped
 	if (selectedText.startsWith(before) && selectedText.endsWith(after)) {
 		// Remove wrapping
 		const unwrapped = selectedText.slice(before.length, -after.length);
@@ -173,6 +172,5 @@ export function setupAutoResize(textarea: HTMLTextAreaElement): () => void {
 	textarea.addEventListener("input", handler);
 	// Initial resize
 	autoResizeTextarea(textarea);
-	// Return cleanup function
 	return () => textarea.removeEventListener("input", handler);
 }

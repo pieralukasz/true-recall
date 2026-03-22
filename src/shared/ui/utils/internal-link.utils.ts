@@ -54,6 +54,5 @@ export function setupInternalLinkHandler(
 	// Use capture phase to intercept before Obsidian's handlers
 	element.addEventListener("click", handler, true);
 
-	// Return cleanup function
 	return () => element.removeEventListener("click", handler, true);
 }

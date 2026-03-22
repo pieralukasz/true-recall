@@ -53,7 +53,6 @@ export class SqliteStoreService {
 		this.deviceId = deviceId;
 		this.db = new SqliteDatabase(app, () => this.markDirty());
 
-		// Initialize domain modules
 		this.cards = new CardActions(this.db);
 		this.stats = new StatsActions(this.db);
 		this.notes = new NoteActions(this.db);
@@ -85,7 +84,6 @@ export class SqliteStoreService {
 			throw error; // Don't continue with empty database!
 		}
 
-		// Initialize database with sql.js
 		await this.db.init(existingData);
 
 		// Fix corrupted FKs before schema setup so createTables() indexes apply correctly

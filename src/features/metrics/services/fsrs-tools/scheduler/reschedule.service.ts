@@ -37,7 +37,6 @@ export class RescheduleService {
 	async reschedule(options: RescheduleOptions): Promise<SchedulingResult> {
 		const { scope, cardIds, dryRun = true } = options;
 
-		// Get cards to reschedule based on scope
 		const cards = await this.getCardsForScope(scope, cardIds);
 
 		const changes: CardScheduleChange[] = [];

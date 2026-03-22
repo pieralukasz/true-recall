@@ -51,11 +51,9 @@ export class SyncService {
 			};
 		}
 
-		// Check local data
 		const localCards = this.cardStore.cards.getAll();
 		const hasLocalData = localCards.length > 0;
 
-		// Check remote data
 		const client = this.authService.getClient();
 		if (!client) {
 			return {
@@ -152,7 +150,6 @@ export class SyncService {
 				.limit(100000),
 		]);
 
-		// Check for errors
 		if (cardsRes.error)
 			throw new Error(`Pull cards failed: ${cardsRes.error.message}`);
 		if (reviewLogRes.error)
@@ -238,7 +235,6 @@ export class SyncService {
 			throw new Error(`Push failed: ${error.message}`);
 		}
 
-		// Check response from RPC function (catches SQL-level errors)
 		const response = data as SyncRpcResponse | null;
 		if (response?.status === "error") {
 			throw new Error(`Push RPC error: ${response.message ?? "Unknown error"}`);
@@ -309,7 +305,6 @@ export class SyncService {
 				throw new Error(`Force replace failed: ${error.message}`);
 			}
 
-			// Check response from RPC function (catches SQL-level errors)
 			const response = data as SyncRpcResponse | null;
 			if (response?.status === "error") {
 				throw new Error(
@@ -317,7 +312,6 @@ export class SyncService {
 				);
 			}
 
-			// Update sync timestamp
 			const now = Date.now();
 			this.setLastSyncTimestamp(now);
 

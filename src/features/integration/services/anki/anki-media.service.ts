@@ -151,7 +151,6 @@ export class AnkiMediaService {
 	private async ensureFolder(folderPath: string): Promise<void> {
 		if (await this.app.vault.adapter.exists(folderPath)) return;
 
-		// Create parent folders recursively
 		const parts = folderPath.split("/");
 		let current = "";
 		for (const part of parts) {

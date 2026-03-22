@@ -149,7 +149,6 @@ export class ChartDataCalculator {
 			currentDate.setDate(currentDate.getDate() + 1);
 		}
 
-		// Get actual data from SQLite
 		if (this.sqliteStore) {
 			const rawData = this.sqliteStore.stats.getCardsCreatedByDate(
 				startDateStr,
@@ -270,7 +269,6 @@ export class ChartDataCalculator {
 		const startDateStr = formatLocalDate(startDate);
 		const endDateStr = formatLocalDate(today);
 
-		// Use SQLite when available
 		if (this.sqliteStore) {
 			return this.sqliteStore.stats.getCardsCreatedVsReviewed(
 				startDateStr,
@@ -309,7 +307,6 @@ export class ChartDataCalculator {
 		allCards: FSRSFlashcardItem[],
 		date: string,
 	): FSRSFlashcardItem[] {
-		// Use SQLite when available
 		if (this.sqliteStore) {
 			const cardIds = this.sqliteStore.stats.getCardsCreatedOnDate(date);
 			const cardMap = new Map(allCards.map((c) => [c.id, c]));

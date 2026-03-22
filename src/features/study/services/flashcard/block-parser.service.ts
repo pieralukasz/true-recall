@@ -150,7 +150,6 @@ function parseFieldValues(
 	let sourceText: string | undefined;
 	let alwaysTypeIn = false;
 
-	// Initialize all fields to empty
 	for (const name of fieldNames) {
 		fields[name] = "";
 	}
@@ -170,7 +169,6 @@ function parseFieldValues(
 	for (const line of lines) {
 		const trimmed = line.trim();
 
-		// Check for source comment
 		const sourceMatch = trimmed.match(SOURCE_COMMENT_RE);
 		if (sourceMatch) {
 			sourceText = sourceMatch[1]?.trim();
@@ -181,7 +179,6 @@ function parseFieldValues(
 			continue;
 		}
 
-		// Check if this line starts a new field
 		const fieldMatch = matchFieldStart(trimmed, fieldSet);
 		if (fieldMatch) {
 			flushField();

@@ -385,7 +385,6 @@ export class CardActionsHandler {
 			});
 		}
 
-		// Update scheduling preview for next card
 		if (!this.deps.getReview().isComplete()) {
 			this.callbacks.onUpdateSchedulingPreview();
 		}

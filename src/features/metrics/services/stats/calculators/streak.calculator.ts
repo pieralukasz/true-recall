@@ -17,7 +17,6 @@ export class StreakCalculator {
 	 * Calculate streak information from daily stats
 	 */
 	calculate(allStats: Record<string, ExtendedDailyStats>): StreakInfo {
-		// Get dates with reviews, sorted descending
 		const reviewDates = Object.keys(allStats)
 			.filter((date) => (allStats[date]?.reviewsCompleted ?? 0) > 0)
 			.sort((a, b) => b.localeCompare(a)); // Descending
@@ -50,7 +49,6 @@ export class StreakCalculator {
 		allStats: Record<string, ExtendedDailyStats>,
 		today: Date,
 	): number {
-		// Check if studied today or yesterday
 		const lastStudyDate = reviewDates[0];
 		if (!lastStudyDate) return 0;
 

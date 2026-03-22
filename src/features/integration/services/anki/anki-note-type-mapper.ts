@@ -38,7 +38,6 @@ export class AnkiNoteTypeMapper {
 		const builtinId = this.matchBuiltin(model);
 		if (builtinId) return builtinId;
 
-		// Check if we already created this note type by name AND matching fields
 		const modelFields = [...model.flds]
 			.sort((a, b) => a.ord - b.ord)
 			.map((f) => f.name);

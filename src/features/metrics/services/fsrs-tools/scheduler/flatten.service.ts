@@ -27,7 +27,6 @@ export class FlattenService {
 	async flatten(options: FlattenOptions): Promise<SchedulingResult> {
 		const { date, maxCards, dryRun = true } = options;
 
-		// Get cards due on target date
 		const nextDate = new Date(date);
 		nextDate.setDate(nextDate.getDate() + 1);
 		const nextDateStr = this.formatDate(nextDate);
@@ -69,7 +68,6 @@ export class FlattenService {
 			targetDate.setDate(targetDate.getDate() + offset);
 			const targetDateStr = this.formatDate(targetDate);
 
-			// Check if target day is full
 			const targetCount = afterDistribution.get(targetDateStr) ?? 0;
 			if (targetCount >= maxCards) {
 				offset++;
@@ -88,7 +86,6 @@ export class FlattenService {
 			};
 			changes.push(change);
 
-			// Update tracking
 			afterDistribution.set(
 				this.formatDate(newDue),
 				(afterDistribution.get(this.formatDate(newDue)) ?? 0) + 1,

@@ -110,7 +110,6 @@ export class CardRepository {
 		const batchIdToDbId = new Map<string, string>();
 
 		for (const flashcard of flashcards) {
-			// Check for duplicate within batch
 			if (seenQuestions.has(flashcard.question)) {
 				duplicates.push({
 					flashcard,
@@ -142,7 +141,6 @@ export class CardRepository {
 				}
 			}
 
-			// Check for existing card with same question
 			const existingInfo = this.store.cards.getCardInfoByQuestion(
 				flashcard.question,
 			);

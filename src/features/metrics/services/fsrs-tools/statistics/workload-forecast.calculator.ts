@@ -57,7 +57,6 @@ export class WorkloadForecastCalculator {
 		const endDate = new Date(today);
 		endDate.setDate(endDate.getDate() + days);
 
-		// Get all cards with due dates in range
 		const cards = this.cardStore
 			.getCards()
 			.filter(
@@ -71,7 +70,6 @@ export class WorkloadForecastCalculator {
 		// Build forecast by date
 		const forecast = new Map<string, { review: number; learning: number }>();
 
-		// Initialize all dates
 		const currentDate = new Date(today);
 		while (currentDate <= endDate) {
 			forecast.set(this.formatDate(currentDate), { review: 0, learning: 0 });

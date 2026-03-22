@@ -39,7 +39,6 @@ export class SiblingDisperseService {
 	async disperse(options: DisperseOptions): Promise<SchedulingResult> {
 		const { minInterval, sourceUid, dryRun = true } = options;
 
-		// Get sibling groups
 		const groups = sourceUid
 			? [await this.getSiblingGroup(sourceUid)]
 			: await this.getAllSiblingGroups();
@@ -179,7 +178,6 @@ export class SiblingDisperseService {
 			}
 		}
 
-		// Return only groups with multiple cards
 		return Array.from(groups.values()).filter((g) => g.cards.length > 1);
 	}
 
