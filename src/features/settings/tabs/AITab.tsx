@@ -225,16 +225,6 @@ function SubscriptionSection() {
 						>
 							Manage subscription
 						</a>
-						{usagePct >= 90 && (
-							<a
-								href={`${TRUERECALL_WEB_URL}/dashboard`}
-								target="_blank"
-								rel="noopener"
-								class="ep:text-obs-accent ep:text-ui-smaller"
-							>
-								Top up budget
-							</a>
-						)}
 						<Clickable
 							class="ep:text-obs-error ep:text-ui-smaller"
 							onClick={handleLogout}
