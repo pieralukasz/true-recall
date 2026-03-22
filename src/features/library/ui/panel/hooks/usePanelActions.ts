@@ -71,6 +71,10 @@ export function usePanelActions() {
 					`${result.failedChunks} of ${result.totalChunks} sections failed: ${result.errors.join("; ")}`,
 				);
 			}
+			if (result.created > 0) {
+				const { maybeShowSubscriptionPromo } = await import("@shared/ui/modals/subscription-promo");
+				void maybeShowSubscriptionPromo(plugin);
+			}
 		} catch (error) {
 			if (error instanceof DOMException && error.name === "AbortError") return;
 			const msg = error instanceof Error ? error.message : String(error);
@@ -150,6 +154,10 @@ export function usePanelActions() {
 				);
 			} else {
 				notify().cardsCreated(result.created, currentFile.basename);
+			}
+			if (result.created > 0) {
+				const { maybeShowSubscriptionPromo } = await import("@shared/ui/modals/subscription-promo");
+				void maybeShowSubscriptionPromo(plugin);
 			}
 		} catch (error) {
 			if (error instanceof DOMException && error.name === "AbortError") return;

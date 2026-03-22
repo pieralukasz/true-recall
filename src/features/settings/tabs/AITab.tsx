@@ -322,6 +322,24 @@ export function AITab() {
 					</p>
 				</InfoBlock>
 
+				{!hasSubKey && hasApiKey && (
+					<div class="ep:border-l-2 ep:border-obs-accent ep:bg-obs-accent/5 ep:pl-3 ep:py-2 ep:rounded-r-[var(--radius-s)] ep:my-2">
+						<p class="ep:text-ui-small ep:text-obs-normal ep:mb-1">
+							<strong>Tip:</strong> True Recall subscription
+							generates higher quality flashcards with
+							expert-crafted prompts.
+						</p>
+						<a
+							href={`${TRUERECALL_WEB_URL}/pricing`}
+							target="_blank"
+							rel="noopener"
+							class="ep:text-ui-smaller ep:text-obs-accent"
+						>
+							Try 50 free generations &rarr;
+						</a>
+					</div>
+				)}
+
 				<FormField
 					name="API key"
 					description={
