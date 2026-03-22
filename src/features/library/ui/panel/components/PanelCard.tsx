@@ -58,7 +58,6 @@ export interface PanelCardProps {
 	onForget: () => void;
 	onSuspend: () => void;
 	onUnsuspend: () => void;
-	onRewrite: () => void;
 	onSelect: () => void;
 	onLongPress: () => void;
 	onJumpToSource?: () => void;
@@ -139,7 +138,6 @@ export function PanelCard(props: PanelCardProps) {
 		onForget,
 		onSuspend,
 		onUnsuspend,
-		onRewrite,
 		onSelect,
 		onLongPress: onLongPressProp,
 		onJumpToSource,
@@ -198,7 +196,6 @@ export function PanelCard(props: PanelCardProps) {
 					},
 				] as MenuItem[])
 			: []),
-		{ title: "AI Rewrite", icon: "sparkles", onClick: onRewrite },
 		{ title: "Forget", icon: "rotate-ccw", onClick: onForget },
 		isSuspended(fsrsCard)
 			? { title: "Unsuspend", icon: "play", onClick: onUnsuspend }

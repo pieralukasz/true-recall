@@ -41,7 +41,6 @@ export function FlashcardPanelApp({
 			onForgetCard: cardActions.handleForgetCard,
 			onSuspendCard: cardActions.handleSuspendCard,
 			onUnsuspendCard: cardActions.handleUnsuspendCard,
-			onRewriteCard: cardActions.handleRewriteCard,
 			onToggleExpand: cardActions.handleToggleExpand,
 			onToggleSelect: selectionActions.handleToggleSelect,
 			onEnterSelectionMode: selectionActions.handleEnterSelectionMode,

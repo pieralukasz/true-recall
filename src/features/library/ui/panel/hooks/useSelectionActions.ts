@@ -187,69 +187,6 @@ export function useSelectionActions({
 		panel.exitSelectionMode();
 	}, [flashcardInfo, selectedCardIds, app, plugin, panel]);
 
-	const handleRewriteSelected = useCallback(async () => {
-		if (!flashcardInfo || selectedCardIds.size === 0) return;
-		const { RewriteService } = await import(
-			"@features/ai/services/rewrite.service"
-		);
-		const { notify } = await import("@shared/services/notification.service");
-		const { notifyCardChange } = await import("@shared/services/signals");
-
-		const selectedCards = flashcardInfo.flashcards.filter((card) =>
-			selectedCardIds.has(card.id),
-		);
-		if (selectedCards.length === 0) return;
-
-		const cardIds = Array.from(selectedCardIds);
-		const noteInfos = plugin.cardStore.cards.getNoteInfoForCardIds(cardIds);
-		if (noteInfos.length === 0) return;
-
-		const uniqueTypeIds = new Set(noteInfos.map((n) => n.noteTypeId));
-		if (uniqueTypeIds.size > 1) {
-			notify().error(
-				"Selected cards have different note types. Select cards of one type.",
-			);
-			return;
-		}
-
-		const firstNoteInfo = noteInfos[0];
-		if (!firstNoteInfo) return;
-		const noteTypeId = firstNoteInfo.noteTypeId;
-
-		const service = new RewriteService(
-			() => plugin.settings,
-			(slug) => plugin.flashcardManager.getNoteTypeBySlug(slug),
-			(id) => plugin.cardStore.noteTypes.getById(id),
-		);
-
-		const allCards = plugin.cardStore.cards.getAll();
-		const rewriteCards = selectedCards.map((card) => {
-			const fsrsData = allCards.find((c) => c.id === card.id);
-			return {
-				id: card.id,
-				question: card.question,
-				answer: card.answer ?? "",
-				sourceUid: fsrsData?.sourceUid,
-				createdAt: fsrsData?.createdAt,
-				noteTypeId,
-			};
-		});
-
-		try {
-			notify().success(`Rewriting ${rewriteCards.length} card(s)...`);
-			const result = await service.rewrite(
-				rewriteCards,
-				plugin.flashcardManager,
-				(ids) => plugin.cardStore.cards.bulkSuspend(ids),
-			);
-			notifyCardChange({ type: "bulk", cardIds, action: "update" });
-			panel.exitSelectionMode();
-			notify().success(`Split into ${result.created} card(s)`);
-		} catch (error) {
-			notify().operationFailed("rewrite cards", error);
-		}
-	}, [flashcardInfo, selectedCardIds, plugin, panel]);
-
 	const handleSuspendSelected = useCallback(async () => {
 		if (!flashcardInfo || selectedCardIds.size === 0) return;
 		const { notify } = await import("@shared/services/notification.service");
@@ -298,7 +235,6 @@ export function useSelectionActions({
 		handleSelectAll,
 		handleMoveSelected,
 		handleChangeNoteType,
-		handleRewriteSelected,
 		handleSuspendSelected,
 		handleUnsuspendSelected,
 		handleForgetSelected,
