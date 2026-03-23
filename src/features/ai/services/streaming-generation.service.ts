@@ -3,6 +3,7 @@ import {
 	buildBlockPrompt,
 } from "@features/ai/prompts/block-prompt-builder";
 import {
+	buildDensitySuffix,
 	buildLanguageSuffix,
 	type GenerationMode,
 } from "@features/ai/prompts/default-prompts";
@@ -15,10 +16,10 @@ import { IncrementalFlashcardParser } from "./incremental-flashcard-parser";
 import { processCardEvents } from "./process-card-events";
 import { StreamingOpenRouterClient } from "./streaming-openrouter-client";
 import {
+	createThrottledPartialUpdater,
 	finishStreaming,
 	startStreaming,
 	streamingGeneration,
-	updatePartial,
 } from "./streaming-state";
 
 export const SOURCE_TRACKING_SUFFIX = `
@@ -26,6 +27,73 @@ export const SOURCE_TRACKING_SUFFIX = `
 SOURCE TRACKING (MANDATORY):
 After each card's fields, on a new line, add: <!-- source: [exact verbatim quote from the input text] -->
 The quote must be EXACTLY copied from the input — same words, same punctuation. Keep it to the specific sentence(s) for that flashcard.`;
+
+const FALLBACK_BASIC_NOTE_TYPE = {
+	id: "builtin-basic",
+	name: "Basic",
+	type: 0,
+	fields: ["Front", "Back"],
+	templates: [],
+	css: "",
+	isBuiltin: true,
+	slug: "basic",
+} as NoteType;
+
+export function buildGenerationPrompt(
+	settings: TrueRecallSettings,
+	mode: GenerationMode,
+	noteType?: NoteType | null,
+	allNoteTypes?: NoteType[],
+): string {
+	const langSuffix = buildLanguageSuffix(
+		settings.generationLanguage ?? "auto",
+	);
+	const densitySuffix = buildDensitySuffix(
+		settings.generationDensity ?? "balanced",
+	);
+
+	if (noteType?.slug) {
+		const customKey = `notetype:${noteType.slug}`;
+		const custom = (
+			settings.aiFlashcardPrompts as Record<string, string | undefined>
+		)?.[customKey];
+		if (custom?.trim())
+			return custom + densitySuffix + SOURCE_TRACKING_SUFFIX + langSuffix;
+	}
+
+	const legacyCustom =
+		settings.aiFlashcardPrompts?.[
+			mode as keyof typeof settings.aiFlashcardPrompts
+		];
+	if (typeof legacyCustom === "string" && legacyCustom.trim()) {
+		return legacyCustom + densitySuffix + SOURCE_TRACKING_SUFFIX + langSuffix;
+	}
+
+	if (mode === "auto" && allNoteTypes && allNoteTypes.length > 0) {
+		return (
+			buildAutoPrompt(allNoteTypes) +
+			densitySuffix +
+			SOURCE_TRACKING_SUFFIX +
+			langSuffix
+		);
+	}
+
+	if (noteType) {
+		return (
+			buildBlockPrompt(noteType) +
+			densitySuffix +
+			SOURCE_TRACKING_SUFFIX +
+			langSuffix
+		);
+	}
+
+	return (
+		buildBlockPrompt(FALLBACK_BASIC_NOTE_TYPE) +
+		densitySuffix +
+		SOURCE_TRACKING_SUFFIX +
+		langSuffix
+	);
+}
 
 export interface StreamingGenerationResult {
 	created: number;
@@ -103,27 +171,19 @@ export class StreamingGenerationService {
 		const getNoteType = (slug: string) =>
 			this.flashcardManager.getNoteTypeBySlug?.(slug) ?? null;
 		const parser = new IncrementalFlashcardParser(getNoteType);
-		const systemPrompt = this.getPrompt(mode, noteType, allNoteTypes);
+		const systemPrompt = buildGenerationPrompt(
+			this.getSettings(),
+			mode,
+			noteType,
+			allNoteTypes,
+		);
 
 		let createdCount = 0;
 		let duplicateCount = 0;
-		let pendingQuestion: string | null = null;
-		let pendingAnswer: string | null = null;
-		let rafScheduled = false;
-
-		const throttledUpdatePartial = (
-			question: string | null,
-			answer: string | null,
-		) => {
-			pendingQuestion = question;
-			pendingAnswer = answer;
-			if (!rafScheduled) {
-				rafScheduled = true;
-				requestAnimationFrame(() => {
-					updatePartial(pendingQuestion, pendingAnswer);
-					rafScheduled = false;
-				});
-			}
+		const throttledUpdatePartial = createThrottledPartialUpdater();
+		const onCount = (created: number, dups: number) => {
+			createdCount += created;
+			duplicateCount += dups;
 		};
 
 		const stream = client.chatStream(
@@ -139,99 +199,25 @@ export class StreamingGenerationService {
 
 		for await (const chunk of stream) {
 			const events = parser.feed(chunk.content);
-			await this.processEvents(
+			await processCardEvents(
 				events,
 				sourceFile,
+				this.flashcardManager,
 				throttledUpdatePartial,
-				(created, dups) => {
-					createdCount += created;
-					duplicateCount += dups;
-				},
+				onCount,
 			);
 		}
 
 		const finalEvents = parser.finish();
-		await this.processEvents(
+		await processCardEvents(
 			finalEvents,
 			sourceFile,
+			this.flashcardManager,
 			throttledUpdatePartial,
-			(created, dups) => {
-				createdCount += created;
-				duplicateCount += dups;
-			},
+			onCount,
 		);
 
 		finishStreaming();
 		return { created: createdCount, duplicates: duplicateCount };
-	}
-
-	private async processEvents(
-		events: ReturnType<IncrementalFlashcardParser["feed"]>,
-		sourceFile: TFile,
-		onPartial: (q: string | null, a: string | null) => void,
-		onCount: (created: number, dups: number) => void,
-	): Promise<void> {
-		return processCardEvents(
-			events,
-			sourceFile,
-			this.flashcardManager,
-			onPartial,
-			onCount,
-		);
-	}
-
-	private getPrompt(
-		mode: GenerationMode,
-		noteType?: NoteType | null,
-		allNoteTypes?: NoteType[],
-	): string {
-		const settings = this.getSettings();
-		const langSuffix = buildLanguageSuffix(
-			settings.generationLanguage ?? "auto",
-		);
-
-		if (noteType?.slug) {
-			const customKey = `notetype:${noteType.slug}`;
-			const custom = (
-				settings.aiFlashcardPrompts as Record<string, string | undefined>
-			)?.[customKey];
-			if (custom?.trim()) return custom + SOURCE_TRACKING_SUFFIX + langSuffix;
-		}
-
-		const legacyCustom =
-			settings.aiFlashcardPrompts?.[
-				mode as keyof typeof settings.aiFlashcardPrompts
-			];
-		if (typeof legacyCustom === "string" && legacyCustom.trim()) {
-			return legacyCustom + SOURCE_TRACKING_SUFFIX + langSuffix;
-		}
-
-		// Auto mode — list all NoteTypes
-		if (mode === "auto" && allNoteTypes && allNoteTypes.length > 0) {
-			return (
-				buildAutoPrompt(allNoteTypes) + SOURCE_TRACKING_SUFFIX + langSuffix
-			);
-		}
-
-		// Specific NoteType
-		if (noteType) {
-			return buildBlockPrompt(noteType) + SOURCE_TRACKING_SUFFIX + langSuffix;
-		}
-
-		// Fallback: use block format with builtin Basic type
-		return (
-			buildBlockPrompt({
-				id: "builtin-basic",
-				name: "Basic",
-				type: 0,
-				fields: ["Front", "Back"],
-				templates: [],
-				css: "",
-				isBuiltin: true,
-				slug: "basic",
-			} as NoteType) +
-			SOURCE_TRACKING_SUFFIX +
-			langSuffix
-		);
 	}
 }

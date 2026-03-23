@@ -826,10 +826,17 @@ describe("ReviewService", () => {
 				reviewsPerDay: 200,
 			});
 
-			// The date is set using local time, so we calculate expected date the same way
-			const expectedDate = new Date();
-			expectedDate.setHours(0, 0, 0, 0);
-			const expectedDateStr = expectedDate.toISOString().split("T")[0];
+			// Date uses day boundary (default dayStartHour=4), not midnight
+			const now = new Date();
+			const boundary = new Date(now);
+			if (now.getHours() < 4) {
+				boundary.setDate(boundary.getDate() - 1);
+			}
+			boundary.setHours(4, 0, 0, 0);
+			const y = boundary.getFullYear();
+			const m = String(boundary.getMonth() + 1).padStart(2, "0");
+			const d = String(boundary.getDate()).padStart(2, "0");
+			const expectedDateStr = `${y}-${m}-${d}`;
 
 			expect(stats.date).toBe(expectedDateStr);
 		});

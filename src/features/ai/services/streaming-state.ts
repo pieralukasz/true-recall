@@ -113,3 +113,24 @@ export function cancelStreaming(): void {
 	current.abortController?.abort();
 	streamingGeneration.value = { ...INITIAL_STATE };
 }
+
+export function createThrottledPartialUpdater(): (
+	question: string | null,
+	answer: string | null,
+) => void {
+	let pendingQuestion: string | null = null;
+	let pendingAnswer: string | null = null;
+	let rafScheduled = false;
+
+	return (question, answer) => {
+		pendingQuestion = question;
+		pendingAnswer = answer;
+		if (!rafScheduled) {
+			rafScheduled = true;
+			requestAnimationFrame(() => {
+				updatePartial(pendingQuestion, pendingAnswer);
+				rafScheduled = false;
+			});
+		}
+	};
+}

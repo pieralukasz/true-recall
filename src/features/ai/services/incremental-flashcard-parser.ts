@@ -22,6 +22,21 @@ const SOURCE_COMMENT_RE = /^<!--\s*source:\s*([\s\S]*?)\s*-->$/;
 const BLOCK_SEPARATOR_RE = /^---\s*$/;
 const ALWAYS_TYPE_IN_TOKEN = "@typein";
 
+export function parseBlockResponse(
+	text: string,
+	getNoteType: NoteTypeLookup,
+): ParsedBlock[] {
+	const parser = new IncrementalFlashcardParser(getNoteType);
+	parser.feed(text);
+	const blocks: ParsedBlock[] = [];
+	for (const event of parser.finish()) {
+		if (event.type === "card_complete" && event.block) {
+			blocks.push(event.block);
+		}
+	}
+	return blocks;
+}
+
 export class IncrementalFlashcardParser {
 	private buffer = "";
 	private currentSlug: string | null = null;

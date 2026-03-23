@@ -12,7 +12,7 @@ import type {
 	OptimizerOptions,
 } from "@features/metrics/services/fsrs-tools/optimizer/optimizer.types";
 import { DEFAULT_FSRS_WEIGHTS } from "@shared/constants";
-import { FSRS, type Rating, type State } from "ts-fsrs";
+import { forgetting_curve, type Rating, type State } from "ts-fsrs";
 
 /**
  * Minimum reviews required for optimization
@@ -188,35 +188,12 @@ export class ParameterOptimizerService {
 		weights: number[],
 		data: TrainingDataPoint[],
 	): { loss: number; gradients: number[] } {
-		new FSRS({ w: weights });
+		const avgLoss = this.calculateLoss(weights, data);
 
-		let totalLoss = 0;
+		// Numerical gradient estimation via central differences
 		const gradients = new Array(weights.length).fill(0);
-		const epsilon = 1e-4; // For numerical gradient estimation
+		const epsilon = 1e-4;
 
-		// Calculate loss for each data point
-		for (const point of data) {
-			// Calculate retrievability (probability of recall)
-			const retrievability = Math.exp(
-				(-Math.LN10 * point.elapsedDays) / Math.max(point.stability, 0.1),
-			);
-
-			// Clip retrievability to avoid log(0)
-			const clippedR = Math.max(0.001, Math.min(0.999, retrievability));
-
-			// Binary cross-entropy loss
-			if (point.wasRecalled) {
-				totalLoss -= Math.log(clippedR);
-			} else {
-				totalLoss -= Math.log(1 - clippedR);
-			}
-		}
-
-		// Average loss
-		const avgLoss = totalLoss / Math.max(data.length, 1);
-
-		// Numerical gradient estimation (simplified)
-		// In a full implementation, we would use backpropagation through FSRS
 		for (let i = 0; i < weights.length; i++) {
 			const weightsPlus = [...weights];
 			const weightsMinus = [...weights];
@@ -235,12 +212,14 @@ export class ParameterOptimizerService {
 	/**
 	 * Calculate loss only (no gradients)
 	 */
-	private calculateLoss(_weights: number[], data: TrainingDataPoint[]): number {
+	private calculateLoss(weights: number[], data: TrainingDataPoint[]): number {
 		let totalLoss = 0;
 
 		for (const point of data) {
-			const retrievability = Math.exp(
-				(-Math.LN10 * point.elapsedDays) / Math.max(point.stability, 0.1),
+			const retrievability = forgetting_curve(
+				weights,
+				point.elapsedDays,
+				Math.max(point.stability, 0.1),
 			);
 			const clippedR = Math.max(0.001, Math.min(0.999, retrievability));
 
@@ -258,15 +237,17 @@ export class ParameterOptimizerService {
 	 * Calculate final metrics
 	 */
 	private calculateMetrics(
-		_weights: number[],
+		weights: number[],
 		data: TrainingDataPoint[],
 	): { rmse: number; logLoss: number } {
 		let totalLoss = 0;
 		let totalSquaredError = 0;
 
 		for (const point of data) {
-			const retrievability = Math.exp(
-				(-Math.LN10 * point.elapsedDays) / Math.max(point.stability, 0.1),
+			const retrievability = forgetting_curve(
+				weights,
+				point.elapsedDays,
+				Math.max(point.stability, 0.1),
 			);
 			const clippedR = Math.max(0.001, Math.min(0.999, retrievability));
 
