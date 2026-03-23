@@ -230,6 +230,8 @@ export class AnswerHandler {
 			const persisted = this.deps.flashcardManager.updateCardFSRS(
 				card.id,
 				updatedCard.fsrs,
+				undefined,
+				{ skipNotification: true },
 			);
 			if (!persisted) {
 				const runtimeReview = this.deps.getReview();

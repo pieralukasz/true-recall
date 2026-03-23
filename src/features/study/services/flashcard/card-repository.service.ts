@@ -286,6 +286,7 @@ export class CardRepository {
 		cardId: string,
 		newFSRSData: FSRSCardData,
 		reviewLogEntry?: CardReviewLogEntry,
+		options?: { skipNotification?: boolean },
 	): boolean {
 		const existing = this.store.get(cardId);
 		if (!existing) {
@@ -357,7 +358,9 @@ export class CardRepository {
 			changes.buried = true;
 		}
 
-		notifyCardChange({ type: "updated", cardId, changes });
+		if (!options?.skipNotification) {
+			notifyCardChange({ type: "updated", cardId, changes });
+		}
 		return true;
 	}
 
