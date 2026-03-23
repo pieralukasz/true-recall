@@ -253,12 +253,10 @@ export interface TrueRecallSettings {
 	/** Show floating toolbar above selected text for AI flashcard generation */
 	selectionToolbarEnabled: boolean;
 
-	/** Custom prompts for AI flashcard generation (per mode) */
+	/** Custom prompt for AI flashcard generation */
 	aiFlashcardPrompts?: {
 		basic?: string;
-		cloze?: string;
-		reversed?: string;
-		auto?: string;
+		[key: `notetype:${string}`]: string | undefined;
 	};
 
 	/** Language for AI-generated flashcards ("auto" = match source text) */

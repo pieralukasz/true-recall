@@ -1,10 +1,8 @@
 import {
-	DEFAULT_PROMPTS,
+	DEFAULT_BASIC_PROMPT,
 	GENERATION_DENSITY_OPTIONS,
 	GENERATION_LANGUAGES,
-	GENERATION_MODE_LABELS,
 	type GenerationDensity,
-	type GenerationMode,
 } from "@features/ai/prompts/default-prompts";
 import { useSettings } from "@features/settings/hooks/useSettings";
 import {
@@ -19,45 +17,33 @@ import {
 } from "@shared/ui/components";
 import { useCallback, useState } from "preact/hooks";
 
-const PROMPT_MODES: GenerationMode[] = ["basic", "cloze", "reversed", "auto"];
-
 export function AITab() {
 	const { settings, save } = useSettings();
-	const [expandedPrompt, setExpandedPrompt] = useState<GenerationMode | null>(
-		null,
-	);
+	const [promptExpanded, setPromptExpanded] = useState(false);
 
 	const hasApiKey = !!settings.openRouterApiKey;
 
-	const getPromptValue = useCallback(
-		(mode: GenerationMode): string => {
-			return settings.aiFlashcardPrompts?.[mode] ?? "";
-		},
-		[settings.aiFlashcardPrompts],
-	);
+	const customPrompt = settings.aiFlashcardPrompts?.basic ?? "";
+	const isCustomPrompt = customPrompt.trim().length > 0;
 
 	const savePrompt = useCallback(
-		(mode: GenerationMode, value: string) => {
-			const current = settings.aiFlashcardPrompts ?? {};
+		(value: string) => {
 			save({
 				aiFlashcardPrompts: {
-					...current,
-					[mode]: value,
+					...settings.aiFlashcardPrompts,
+					basic: value,
 				},
 			});
 		},
 		[settings.aiFlashcardPrompts, save],
 	);
 
-	const resetPrompt = useCallback(
-		(mode: GenerationMode) => {
-			const current = settings.aiFlashcardPrompts ?? {};
-			const updated = { ...current };
-			delete updated[mode];
-			save({ aiFlashcardPrompts: updated });
-		},
-		[settings.aiFlashcardPrompts, save],
-	);
+	const resetPrompt = useCallback(() => {
+		const current = settings.aiFlashcardPrompts ?? {};
+		const updated = { ...current };
+		delete updated.basic;
+		save({ aiFlashcardPrompts: updated });
+	}, [settings.aiFlashcardPrompts, save]);
 
 	return (
 		<div class="ep:flex ep:flex-col ep:gap-3">
@@ -148,64 +134,51 @@ export function AITab() {
 					<>
 						<InfoBlock>
 							<p>
-								Customize the prompts used for AI flashcard generation. Leave
-								empty to use the built-in defaults. Click a mode to expand its
-								prompt editor.
+								Customize the prompt used for AI flashcard generation. Leave
+								empty to use the built-in default.
 							</p>
 						</InfoBlock>
 
-						{PROMPT_MODES.map((mode) => {
-							const isExpanded = expandedPrompt === mode;
-							const customValue = getPromptValue(mode);
-							const isCustom = customValue.trim().length > 0;
-
-							return (
-								<div key={mode} class="ep:mb-1">
-									<FormField
-										name={`${GENERATION_MODE_LABELS[mode]} prompt${isCustom ? " (custom)" : ""}`}
-										description={
-											isExpanded
-												? "Edit the system prompt sent to the AI model."
-												: isCustom
-													? "Using custom prompt. Click to edit."
-													: "Using default prompt. Click to customize."
-										}
+						<FormField
+							name={`Generation prompt${isCustomPrompt ? " (custom)" : ""}`}
+							description={
+								promptExpanded
+									? "Edit the system prompt sent to the AI model."
+									: isCustomPrompt
+										? "Using custom prompt. Click to edit."
+										: "Using default prompt. Click to customize."
+							}
+						>
+							<div class="ep:flex ep:gap-1">
+								{isCustomPrompt && (
+									<Clickable
+										class="ep:text-ui-smaller ep:text-obs-muted ep:px-2 ep:py-1 ep:rounded-[var(--radius-s)] hover:ep:bg-obs-modifier-hover"
+										stopPropagation={false}
+										onClick={resetPrompt}
 									>
-										<div class="ep:flex ep:gap-1">
-											{isCustom && (
-												<Clickable
-													class="ep:text-ui-smaller ep:text-obs-muted ep:px-2 ep:py-1 ep:rounded-[var(--radius-s)] hover:ep:bg-obs-modifier-hover"
-													stopPropagation={false}
-													onClick={() => resetPrompt(mode)}
-												>
-													Reset
-												</Clickable>
-											)}
-											<Clickable
-												class="ep:text-ui-smaller ep:text-obs-accent ep:px-2 ep:py-1 ep:rounded-[var(--radius-s)] hover:ep:bg-obs-modifier-hover"
-												stopPropagation={false}
-												onClick={() =>
-													setExpandedPrompt(isExpanded ? null : mode)
-												}
-											>
-												{isExpanded ? "Collapse" : "Edit"}
-											</Clickable>
-										</div>
-									</FormField>
+										Reset
+									</Clickable>
+								)}
+								<Clickable
+									class="ep:text-ui-smaller ep:text-obs-accent ep:px-2 ep:py-1 ep:rounded-[var(--radius-s)] hover:ep:bg-obs-modifier-hover"
+									stopPropagation={false}
+									onClick={() => setPromptExpanded(!promptExpanded)}
+								>
+									{promptExpanded ? "Collapse" : "Edit"}
+								</Clickable>
+							</div>
+						</FormField>
 
-									{isExpanded && (
-										<div class="ep:pb-3">
-											<TextAreaInput
-												value={customValue || DEFAULT_PROMPTS[mode]}
-												onChange={(v) => savePrompt(mode, v)}
-												rows={12}
-												class="ep:w-full ep:font-mono ep:text-ui-smaller"
-											/>
-										</div>
-									)}
-								</div>
-							);
-						})}
+						{promptExpanded && (
+							<div class="ep:pb-3">
+								<TextAreaInput
+									value={customPrompt || DEFAULT_BASIC_PROMPT}
+									onChange={savePrompt}
+									rows={12}
+									class="ep:w-full ep:font-mono ep:text-ui-smaller"
+								/>
+							</div>
+						)}
 					</>
 				)}
 			</FormCard>

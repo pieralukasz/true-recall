@@ -1,12 +1,11 @@
 import type { Extension } from "@codemirror/state";
 import { type EditorView, ViewPlugin, type ViewUpdate } from "@codemirror/view";
-import type { GenerationMode } from "@features/ai/prompts/default-prompts";
 import { SelectionToolbar } from "@features/ai/ui/editor/SelectionToolbar";
 import { computePosition, flip, offset, shift } from "@floating-ui/dom";
 import { h, render } from "preact";
 
 export interface SelectionToolbarCallbacks {
-	onGenerate: (text: string, mode: GenerationMode) => Promise<void>;
+	onGenerate: (text: string) => Promise<void>;
 	onEdit: (text: string) => void;
 	onQuickAdd: (text: string) => Promise<void>;
 	onImageOcclusion: (imagePath: string) => void;
@@ -114,8 +113,8 @@ export function createSelectionToolbarExtension(
 				render(
 					h(SelectionToolbar, {
 						selectedText: text,
-						onGenerate: async (mode: GenerationMode) => {
-							await callbacks.onGenerate(text, mode);
+						onGenerate: async () => {
+							await callbacks.onGenerate(text);
 						},
 						onEdit: () => callbacks.onEdit(text),
 						onQuickAdd: async () => {

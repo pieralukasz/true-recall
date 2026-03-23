@@ -1,11 +1,7 @@
-import {
-	buildAutoPrompt,
-	buildBlockPrompt,
-} from "@features/ai/prompts/block-prompt-builder";
+import { buildBlockPrompt } from "@features/ai/prompts/block-prompt-builder";
 import {
 	buildDensitySuffix,
 	buildLanguageSuffix,
-	type GenerationMode,
 } from "@features/ai/prompts/default-prompts";
 import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
 import type { NoteType } from "@shared/types/note.types";
@@ -41,9 +37,7 @@ const FALLBACK_BASIC_NOTE_TYPE = {
 
 export function buildGenerationPrompt(
 	settings: TrueRecallSettings,
-	mode: GenerationMode,
 	noteType?: NoteType | null,
-	allNoteTypes?: NoteType[],
 ): string {
 	const langSuffix = buildLanguageSuffix(
 		settings.generationLanguage ?? "auto",
@@ -61,34 +55,13 @@ export function buildGenerationPrompt(
 			return custom + densitySuffix + SOURCE_TRACKING_SUFFIX + langSuffix;
 	}
 
-	const legacyCustom =
-		settings.aiFlashcardPrompts?.[
-			mode as keyof typeof settings.aiFlashcardPrompts
-		];
+	const legacyCustom = settings.aiFlashcardPrompts?.basic;
 	if (typeof legacyCustom === "string" && legacyCustom.trim()) {
 		return legacyCustom + densitySuffix + SOURCE_TRACKING_SUFFIX + langSuffix;
 	}
 
-	if (mode === "auto" && allNoteTypes && allNoteTypes.length > 0) {
-		return (
-			buildAutoPrompt(allNoteTypes) +
-			densitySuffix +
-			SOURCE_TRACKING_SUFFIX +
-			langSuffix
-		);
-	}
-
-	if (noteType) {
-		return (
-			buildBlockPrompt(noteType) +
-			densitySuffix +
-			SOURCE_TRACKING_SUFFIX +
-			langSuffix
-		);
-	}
-
 	return (
-		buildBlockPrompt(FALLBACK_BASIC_NOTE_TYPE) +
+		buildBlockPrompt(noteType ?? FALLBACK_BASIC_NOTE_TYPE) +
 		densitySuffix +
 		SOURCE_TRACKING_SUFFIX +
 		langSuffix
@@ -106,16 +79,10 @@ export class StreamingGenerationService {
 		private flashcardManager: FlashcardManager,
 	) {}
 
-	/**
-	 * Generate flashcards with a specific NoteType.
-	 * For "auto" mode, pass noteType=null and provide allNoteTypes.
-	 */
 	async generateStreaming(
 		text: string,
-		mode: GenerationMode,
 		sourceFile: TFile,
 		noteType?: NoteType | null,
-		allNoteTypes?: NoteType[],
 	): Promise<StreamingGenerationResult> {
 		if (streamingGeneration.value.isGenerating) {
 			throw new Error("Generation already in progress");
@@ -134,11 +101,9 @@ export class StreamingGenerationService {
 				aiConfig.proxyUrl,
 				undefined,
 				text,
-				mode,
 				sourceFile,
 				abortController,
 				noteType,
-				allNoteTypes,
 			);
 		} catch (error) {
 			if (abortController.signal.aborted) {
@@ -156,11 +121,9 @@ export class StreamingGenerationService {
 		proxyUrl: string | undefined,
 		userId: string | undefined,
 		text: string,
-		mode: GenerationMode,
 		sourceFile: TFile,
 		abortController: AbortController,
 		noteType?: NoteType | null,
-		allNoteTypes?: NoteType[],
 	): Promise<StreamingGenerationResult> {
 		const client = new StreamingOpenRouterClient(
 			apiKey,
@@ -171,12 +134,7 @@ export class StreamingGenerationService {
 		const getNoteType = (slug: string) =>
 			this.flashcardManager.getNoteTypeBySlug?.(slug) ?? null;
 		const parser = new IncrementalFlashcardParser(getNoteType);
-		const systemPrompt = buildGenerationPrompt(
-			this.getSettings(),
-			mode,
-			noteType,
-			allNoteTypes,
-		);
+		const systemPrompt = buildGenerationPrompt(this.getSettings(), noteType);
 
 		let createdCount = 0;
 		let duplicateCount = 0;

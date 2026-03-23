@@ -1,10 +1,9 @@
-import type { GenerationMode } from "@features/ai/prompts/default-prompts";
 import { Clickable } from "@shared/ui/components";
 import { useCallback, useState } from "preact/hooks";
 
 export interface SelectionToolbarProps {
 	selectedText: string;
-	onGenerate: (mode: GenerationMode) => Promise<void>;
+	onGenerate: () => Promise<void>;
 	onEdit: () => void;
 	onQuickAdd: () => Promise<void>;
 	onDismiss: () => void;
@@ -13,10 +12,6 @@ export interface SelectionToolbarProps {
 	detectedImagePath?: string | null;
 	onImageOcclusion?: (path: string) => void;
 }
-
-const AI_BUTTONS: { mode: GenerationMode; label: string }[] = [
-	{ mode: "basic", label: "Flashcards" },
-];
 
 export function SelectionToolbar({
 	selectedText,
@@ -31,14 +26,11 @@ export function SelectionToolbar({
 }: SelectionToolbarProps) {
 	const [copied, setCopied] = useState(false);
 
-	const handleGenerate = useCallback(
-		async (mode: GenerationMode) => {
-			if (!hasApiKey) return;
-			onDismiss();
-			await onGenerate(mode);
-		},
-		[hasApiKey, onGenerate, onDismiss],
-	);
+	const handleGenerate = useCallback(async () => {
+		if (!hasApiKey) return;
+		onDismiss();
+		await onGenerate();
+	}, [hasApiKey, onGenerate, onDismiss]);
 
 	const handleQuickAdd = useCallback(async () => {
 		onDismiss();
@@ -64,21 +56,18 @@ export function SelectionToolbar({
 
 	return (
 		<div class="true-recall-selection-toolbar ep:flex ep:items-center ep:gap-0.5 ep:p-1">
-			{AI_BUTTONS.map(({ mode, label }) => (
-				<Clickable
-					key={mode}
-					class={`true-recall-st-btn ${!hasApiKey ? "true-recall-st-btn-disabled" : ""}`}
-					disabled={!hasApiKey}
-					onClick={() => void handleGenerate(mode)}
-					title={
-						hasApiKey
-							? `Generate ${label} flashcard(s) with AI`
-							: "Add an OpenRouter API key in settings"
-					}
-				>
-					<span>{label}</span>
-				</Clickable>
-			))}
+			<Clickable
+				class={`true-recall-st-btn ${!hasApiKey ? "true-recall-st-btn-disabled" : ""}`}
+				disabled={!hasApiKey}
+				onClick={() => void handleGenerate()}
+				title={
+					hasApiKey
+						? "Generate flashcard(s) with AI"
+						: "Add an OpenRouter API key in settings"
+				}
+			>
+				<span>Flashcards</span>
+			</Clickable>
 
 			<span class="true-recall-st-divider" />
 
