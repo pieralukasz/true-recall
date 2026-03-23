@@ -7,7 +7,6 @@ import {
 	type GenerationMode,
 } from "@features/ai/prompts/default-prompts";
 import { useSettings } from "@features/settings/hooks/useSettings";
-import { TRUERECALL_WEB_URL } from "@shared/constants";
 import {
 	Clickable,
 	FormCard,
@@ -63,23 +62,6 @@ export function AITab() {
 	return (
 		<div class="ep:flex ep:flex-col ep:gap-3">
 			<FormCard title="OpenRouter API Key">
-				<InfoBlock>
-					<p>
-						Your OpenRouter API key gives you solid AI-generated flashcards.
-						Want the best quality? A True Recall subscription unlocks
-						fine-tuned prompts, smarter models, and cards built for
-						long-term retention.
-					</p>
-					<a
-						href={`${TRUERECALL_WEB_URL}/pricing`}
-						target="_blank"
-						rel="noopener"
-						class="ep:text-obs-accent"
-					>
-						See True Recall plans &rarr;
-					</a>
-				</InfoBlock>
-
 				<FormField
 					name="API key"
 					description="Your OpenRouter API key."
