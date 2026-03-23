@@ -140,7 +140,7 @@ function ActiveReview({
 		if (!hasAnswer && !review.isAnswerRevealed) {
 			onShowAnswer();
 		}
-	}, [card.id, hasAnswer]);
+	}, [card.id, hasAnswer, review.isAnswerRevealed, onShowAnswer]);
 
 	return (
 		<div class="true-recall-review ep:relative ep:flex ep:flex-col ep:h-full ep:p-0">
