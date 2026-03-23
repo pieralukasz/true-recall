@@ -64,7 +64,7 @@ export function MiniDonut({ due, newCount, learning, total }: MiniDonutProps) {
 			/>
 			{segments.map((seg, i) => (
 				<circle
-					key={i}
+					key={seg.stroke}
 					cx={18}
 					cy={18}
 					r={RADIUS}

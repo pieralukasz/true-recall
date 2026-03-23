@@ -1,5 +1,8 @@
 import { deleteRegion } from "@features/image-occlusion/canvas-interactions";
 import { IOCanvas } from "@features/image-occlusion/IOCanvas";
+import { IconToolButton } from "@features/image-occlusion/IOIconToolButton";
+import { IORegionList } from "@features/image-occlusion/IORegionList";
+import { IOToolsPanel } from "@features/image-occlusion/IOToolsPanel";
 import { detectRegions } from "@features/image-occlusion/io-ai.service";
 import {
 	createEmptyIODefinition,
@@ -20,7 +23,6 @@ import { ImageService } from "@features/integration/services/ImageService";
 import { isImageExtension } from "@shared/types";
 import { Clickable } from "@shared/ui/components/Clickable";
 import { NotePickerCombobox } from "@shared/ui/components/NotePickerCombobox";
-import { useIcon } from "@shared/ui/preact/hooks";
 import { useApp, usePlugin } from "@shared/ui/preact/ObsidianContext";
 import { cn } from "@shared/ui/utils/cn";
 import { isDesktop } from "@shared/utils/platform";
@@ -53,81 +55,6 @@ function buildInitialImagePath(mode: IOEditorMode): string {
 function buildInitialTool(mode: IOEditorMode): Tool {
 	const definition = buildInitialDefinition(mode);
 	return definition.regions.length > 0 ? "select" : "rect";
-}
-
-interface IconToolButtonProps {
-	icon: string;
-	label: string;
-	shortcut?: string;
-	active?: boolean;
-	danger?: boolean;
-	disabled?: boolean;
-	onClick: () => void;
-}
-
-function IconToolButton({
-	icon,
-	label,
-	shortcut,
-	active = false,
-	danger = false,
-	disabled = false,
-	onClick,
-}: IconToolButtonProps) {
-	const iconRef = useIcon(icon);
-	const tooltip = shortcut ? `${label} (${shortcut})` : label;
-
-	return (
-		<Clickable
-			class={cn(
-				"true-recall-io-icon-btn",
-				active && "is-active",
-				danger && "is-danger",
-			)}
-			aria-label={label}
-			title={tooltip}
-			onClick={() => onClick()}
-			disabled={disabled}
-		>
-			<span ref={iconRef} />
-		</Clickable>
-	);
-}
-
-interface RegionListItemProps {
-	region: IORegion;
-	selected: boolean;
-	onSelect: () => void;
-	onDelete: () => void;
-}
-
-function RegionListItem({
-	region,
-	selected,
-	onSelect,
-	onDelete,
-}: RegionListItemProps) {
-	return (
-		<div class={`true-recall-io-region-item ${selected ? "is-selected" : ""}`}>
-			<Clickable
-				class="true-recall-io-region-main"
-				onClick={() => onSelect()}
-				title={`Select region #${region.groupKey}`}
-			>
-				<span>#{region.groupKey}</span>
-				<span>{region.shape}</span>
-			</Clickable>
-			{selected && (
-				<IconToolButton
-					icon="trash-2"
-					label={`Delete region #${region.groupKey}`}
-					shortcut="Delete"
-					danger
-					onClick={onDelete}
-				/>
-			)}
-		</div>
-	);
 }
 
 export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
@@ -666,127 +593,22 @@ export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
 						)}
 					</div>
 
-					<div class="true-recall-io-side-section">
-						<div class="ep:text-ui-small ep:font-medium ep:mb-1">Tools</div>
-						<div class="true-recall-io-tool-row">
-							{hasRegions && (
-								<IconToolButton
-									icon="mouse-pointer-2"
-									label="Select"
-									shortcut="V"
-									active={tool === "select"}
-									onClick={() => setTool("select")}
-								/>
-							)}
-							<IconToolButton
-								icon="square"
-								label="Rectangle"
-								shortcut="R"
-								active={tool === "rect"}
-								onClick={() => {
-									setLastNonSelectTool("rect");
-									setTool("rect");
-								}}
-							/>
-							<IconToolButton
-								icon="circle"
-								label="Ellipse"
-								shortcut="E"
-								active={tool === "ellipse"}
-								onClick={() => {
-									setLastNonSelectTool("ellipse");
-									setTool("ellipse");
-								}}
-							/>
-							<IconToolButton
-								icon="sparkles"
-								label="AI detect regions"
-								active={aiPromptVisible}
-								disabled={!imagePath || aiLoading || !hasAIKey}
-								onClick={() => setAiPromptVisible((v) => !v)}
-							/>
-							{selectedRegionId && (
-								<IconToolButton
-									icon="trash-2"
-									label="Delete selected region"
-									shortcut="Delete"
-									danger
-									onClick={deleteSelected}
-								/>
-							)}
-						</div>
-						<div class="true-recall-io-hint-text">
-							Shortcuts: Delete to remove, Space + drag to pan, Ctrl/Cmd+V to
-							paste. Click a region to switch to Select.
-						</div>
-						{aiPromptVisible && !aiLoading && (
-							<div class="ep:flex ep:flex-col ep:gap-1.5 ep:mt-1">
-								<input
-									type="text"
-									class="ep:w-full ep:px-2 ep:py-1.5 ep:text-ui-small ep:bg-obs-primary ep:border ep:border-obs-border ep:rounded"
-									placeholder="Optional hint, e.g. 'label the bones'"
-									maxLength={50}
-									value={aiCustomHint}
-									onInput={(e) =>
-										setAiCustomHint((e.target as HTMLInputElement).value)
-									}
-									onKeyDown={(e) => {
-										if (e.key === "Enter") {
-											void handleAIDetect(aiCustomHint);
-										} else if (e.key === "Escape") {
-											setAiPromptVisible(false);
-										}
-									}}
-								/>
-								<div class="ep:flex ep:gap-2">
-									<Clickable
-										class="ep:px-3 ep:py-1 ep:text-ui-smaller ep:rounded ep:bg-obs-accent/10 ep:text-obs-accent ep:border ep:border-obs-accent ep:transition-colors"
-										onClick={() => void handleAIDetect(aiCustomHint)}
-									>
-										Detect
-									</Clickable>
-									<Clickable
-										class="ep:px-3 ep:py-1 ep:text-ui-smaller ep:text-obs-muted ep:hover:text-obs-normal ep:transition-colors"
-										onClick={() => setAiPromptVisible(false)}
-									>
-										Cancel
-									</Clickable>
-								</div>
-							</div>
-						)}
-						{aiLoading && (
-							<div class="true-recall-io-hint-text ep:flex ep:items-center ep:gap-2">
-								<svg
-									viewBox="0 0 24 24"
-									width="14"
-									height="14"
-									class="ep:text-obs-muted"
-									aria-hidden="true"
-								>
-									<circle
-										cx="12"
-										cy="12"
-										r="10"
-										stroke="currentColor"
-										stroke-width="3"
-										fill="none"
-										stroke-dasharray="31.4 31.4"
-										stroke-linecap="round"
-									>
-										<animateTransform
-											attributeName="transform"
-											type="rotate"
-											dur="1s"
-											from="0 12 12"
-											to="360 12 12"
-											repeatCount="indefinite"
-										/>
-									</circle>
-								</svg>
-								Detecting regions…
-							</div>
-						)}
-					</div>
+					<IOToolsPanel
+						tool={tool}
+						hasRegions={hasRegions}
+						selectedRegionId={selectedRegionId}
+						aiPromptVisible={aiPromptVisible}
+						aiLoading={aiLoading}
+						aiCustomHint={aiCustomHint}
+						hasAIKey={hasAIKey}
+						hasImage={!!imagePath}
+						onToolChange={setTool}
+						onSetLastNonSelectTool={setLastNonSelectTool}
+						onDeleteSelected={deleteSelected}
+						onToggleAiPrompt={() => setAiPromptVisible((v) => !v)}
+						onAiCustomHintChange={setAiCustomHint}
+						onAiDetect={(hint) => void handleAIDetect(hint)}
+					/>
 
 					<div class="true-recall-io-side-section">
 						<div class="ep:text-ui-small ep:font-medium ep:mb-1">Mask mode</div>
@@ -820,27 +642,12 @@ export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
 						</div>
 					</div>
 
-					<div class="true-recall-io-side-section">
-						<div class="ep:text-ui-small ep:font-medium ep:mb-1">
-							Regions ({definition.regions.length})
-						</div>
-						<div class="true-recall-io-region-list">
-							{definition.regions.length === 0 && (
-								<div class="ep:text-ui-smaller ep:text-obs-muted">
-									No regions yet
-								</div>
-							)}
-							{definition.regions.map((region) => (
-								<RegionListItem
-									key={region.id}
-									region={region}
-									selected={selectedRegionId === region.id}
-									onSelect={() => setSelectedRegionId(region.id)}
-									onDelete={deleteSelected}
-								/>
-							))}
-						</div>
-					</div>
+					<IORegionList
+						regions={definition.regions}
+						selectedRegionId={selectedRegionId}
+						onSelectRegion={setSelectedRegionId}
+						onDeleteSelected={deleteSelected}
+					/>
 
 					{selectedRegion && (
 						<div class="true-recall-io-side-section ep:flex ep:flex-col ep:gap-2">

@@ -1,7 +1,6 @@
 import { NamePromptModal } from "@features/study/modals/NamePromptModal";
 import type { Signal } from "@preact/signals";
 import { useSignal } from "@preact/signals";
-import { Clickable } from "@shared/ui/components/Clickable";
 import { usePlugin } from "@shared/ui/preact";
 import { Notice, normalizePath, TFile } from "obsidian";
 import type { RefObject } from "preact";
@@ -15,6 +14,7 @@ import {
 	getDragClass,
 } from "../helpers/drag-drop";
 import { prioritySortComparator } from "../helpers/note-priority";
+import { SelectionBar } from "./SelectionBar";
 import { useInitialMount } from "../helpers/use-initial-mount";
 import { useExternalVirtualList } from "../helpers/use-virtual-list";
 import type {
@@ -365,42 +365,16 @@ export function NoteList({
 				/>
 			</div>
 
-			{isSelecting && (() => {
-				const btnCls = "ep:px-2 ep:py-1 ep:rounded ep:text-obs-muted ep:hover:text-obs-normal ep:hover:bg-obs-modifier-hover ep:transition-colors";
-				return (
-					<div class="ep:flex ep:items-center ep:gap-2 ep:px-3 ep:py-2 ep:bg-obs-secondary ep:rounded-lg ep:mb-2 ep:text-ui-small">
-						<span class="ep:text-obs-muted">{selectedCount} selected</span>
-						<div class="ep:flex-1" />
-						<Clickable class={btnCls} onClick={selectAll}>
-							All
-						</Clickable>
-						<Clickable
-							class={btnCls}
-							onClick={() => void handleCreateProjectFromSelected()}
-							disabled={selectedCount === 0}
-						>
-							Create project
-						</Clickable>
-						<Clickable
-							class={btnCls}
-							onClick={() => void handleArchiveSelected()}
-							disabled={selectedCount === 0}
-						>
-							Archive
-						</Clickable>
-						<Clickable
-							class={btnCls}
-							onClick={handleStudySelected}
-							disabled={selectedCount === 0}
-						>
-							Study
-						</Clickable>
-						<Clickable class={btnCls} onClick={exitSelection}>
-							Cancel
-						</Clickable>
-					</div>
-				);
-			})()}
+			{isSelecting && (
+				<SelectionBar
+					selectedCount={selectedCount}
+					onSelectAll={selectAll}
+					onCreateProject={() => void handleCreateProjectFromSelected()}
+					onArchive={() => void handleArchiveSelected()}
+					onStudy={handleStudySelected}
+					onCancel={exitSelection}
+				/>
+			)}
 
 			{filteredNotes.length === 0 ? (
 				<div class="ep:text-sm ep:text-obs-muted ep:p-4 ep:text-center">

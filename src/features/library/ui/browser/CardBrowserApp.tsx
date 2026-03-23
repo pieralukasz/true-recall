@@ -1,7 +1,7 @@
 import { CardBrowserQueryService } from "@features/library/services/card-browser-query.service";
 import { notifyDuplicateError } from "@features/library/ui/panel/utils/panel-helpers";
 import { DuplicateQuestionError } from "@features/study/services/flashcard/card-repository.service";
-import { type Signal, useComputed, useSignal } from "@preact/signals";
+import { type Signal, useSignal } from "@preact/signals";
 import { notify } from "@shared/services/notification.service";
 import { cards, pluginSettings } from "@shared/services/reactive-card-store";
 import { pushDeleteUndo } from "@shared/services/undo.service";
@@ -82,51 +82,55 @@ export function CardBrowserApp({
 		[plugin],
 	);
 
-	const combinedFilter = useComputed((): FilterState => {
-		const parsed = parseSearchQuery(searchText.value);
+	// Signal reads — subscribe component to reactive data changes
+	const allCards = cards.value;
+	const _settings = pluginSettings.value;
+	const searchTextVal = searchText.value;
+	const stateFiltersVal = stateFilters.value;
+	const sidebarFilterVal = sidebarFilter.value;
+	const showArchivedVal = showArchived.value;
+	const sortVal = sort.value;
+	const loadedLimitVal = loadedLimit.value;
+
+	const combinedFilter = useMemo((): FilterState => {
+		const parsed = parseSearchQuery(searchTextVal);
 		return {
 			...parsed,
 			states: [
 				...parsed.states,
-				...stateFilters.value,
-				...sidebarFilter.value.states,
+				...stateFiltersVal,
+				...sidebarFilterVal.states,
 			],
-			sourceUids: [...parsed.sourceUids, ...sidebarFilter.value.sourceUids],
-			cardTypes: [...parsed.cardTypes, ...sidebarFilter.value.cardTypes],
-			createdVia: [...parsed.createdVia, ...sidebarFilter.value.createdVia],
+			sourceUids: [...parsed.sourceUids, ...sidebarFilterVal.sourceUids],
+			cardTypes: [...parsed.cardTypes, ...sidebarFilterVal.cardTypes],
+			createdVia: [...parsed.createdVia, ...sidebarFilterVal.createdVia],
 			negatedStates: [
 				...parsed.negatedStates,
-				...sidebarFilter.value.negatedStates,
+				...sidebarFilterVal.negatedStates,
 			],
-			showArchived: showArchived.value,
-			orphanedOnly: parsed.orphanedOnly || sidebarFilter.value.orphanedOnly,
+			showArchived: showArchivedVal,
+			orphanedOnly: parsed.orphanedOnly || sidebarFilterVal.orphanedOnly,
 		};
-	});
+	}, [searchTextVal, stateFiltersVal, sidebarFilterVal, showArchivedVal]);
 
-	const result = useComputed((): BrowserResult => {
-		cards.value;
-		pluginSettings.value;
-		return queryService.query(
-			combinedFilter.value,
-			sort.value,
-			loadedLimit.value,
-			0,
-		);
-	}).value;
+	const result = useMemo((): BrowserResult => {
+		return queryService.query(combinedFilter, sortVal, loadedLimitVal, 0);
+	}, [allCards, _settings, queryService, combinedFilter, sortVal, loadedLimitVal]);
 
-	const queryResetKey = useComputed(() =>
-		getBrowserQueryResetKey(combinedFilter.value, sort.value),
-	).value;
+	const queryResetKey = useMemo(
+		() => getBrowserQueryResetKey(combinedFilter, sortVal),
+		[combinedFilter, sortVal],
+	);
 
-	const facetCounts = useComputed(() => {
-		cards.value;
-		return queryService.getFacetCounts(showArchived.value);
-	}).value;
+	const facetCounts = useMemo(
+		() => queryService.getFacetCounts(showArchivedVal),
+		[allCards, queryService, showArchivedVal],
+	);
 
-	const orphanedCardIds = useComputed(() => {
-		cards.value;
-		return queryService.getOrphanedCardIds();
-	}).value;
+	const orphanedCardIds = useMemo(
+		() => queryService.getOrphanedCardIds(),
+		[allCards, queryService],
+	);
 
 	const getSuggestions = useMemo(() => {
 		const presetNames = plugin.presetService.getPresets().map((p) => p.name);

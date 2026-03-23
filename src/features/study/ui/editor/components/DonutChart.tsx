@@ -90,7 +90,7 @@ export function DonutChart({ info, onPlay, variant }: DonutChartProps) {
 				/>
 				{segments.map((seg, i) => (
 					<circle
-						key={i}
+						key={seg.stroke}
 						cx={18}
 						cy={18}
 						r={RADIUS}

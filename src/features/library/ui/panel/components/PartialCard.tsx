@@ -96,14 +96,14 @@ function ClozeRenderer({ text }: { text: string }) {
 		<>
 			{parts.map((part, i) => {
 				if (!part.isCloze) {
-					return <span key={i}>{part.text}</span>;
+					return <span key={`${i}-t-${part.text.slice(0, 20)}`}>{part.text}</span>;
 				}
 
 				// Active (incomplete) cloze - highlight it
 				if (part.isIncomplete) {
 					return (
 						<span
-							key={i}
+							key={`${i}-c${part.clozeIndex}-incomplete`}
 							class="ep:bg-obs-interactive ep:text-on-accent ep:px-0.5 ep:rounded ep:animate-pulse"
 						>
 							{part.text}
@@ -114,7 +114,7 @@ function ClozeRenderer({ text }: { text: string }) {
 				// Complete cloze - subtle highlight
 				return (
 					<span
-						key={i}
+						key={`${i}-c${part.clozeIndex}`}
 						class="ep:bg-obs-accent-muted ep:px-0.5 ep:rounded"
 						title={`Cloze ${part.clozeIndex}`}
 					>
@@ -181,7 +181,7 @@ export function PartialCard({
 					) : (
 						qWords.map((w, i) => (
 							<span
-								key={i}
+								key={`q-${i}`}
 								data-wi={i}
 								style={w.isNew ? NEW_WORD_STYLE : undefined}
 							>
@@ -198,7 +198,7 @@ export function PartialCard({
 					>
 						{aWords.map((w, i) => (
 							<span
-								key={i}
+								key={`a-${i}`}
 								data-wi={i}
 								style={w.isNew ? NEW_WORD_STYLE : undefined}
 							>

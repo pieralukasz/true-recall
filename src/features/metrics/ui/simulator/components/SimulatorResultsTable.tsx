@@ -23,7 +23,7 @@ export function SimulatorResultsTable({
 					<tr>
 						<th class={headerCellCls}>Grade</th>
 						{Array.from({ length: maxReviews }, (_, i) => (
-							<th key={i} class={headerCellCls}>
+							<th key={`ivl-${i}`} class={headerCellCls}>
 								Ivl-{i}
 							</th>
 						))}
@@ -54,7 +54,7 @@ export function SimulatorResultsTable({
 								const interval = review ? Math.round(review.interval) : "-";
 								return (
 									<td
-										key={i}
+										key={`${sim.sequence}-ivl-${i}`}
 										class={`${bodyCellCls} ep:text-center ep:font-mono`}
 									>
 										{interval}

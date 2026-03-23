@@ -1,6 +1,5 @@
 import { WorkloadForecastCalculator } from "@features/metrics/services/fsrs-tools/statistics/workload-forecast.calculator";
 import { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
-import { useComputed } from "@preact/signals";
 import {
 	cards,
 	cardsBySourceUid,
@@ -8,6 +7,7 @@ import {
 } from "@shared/services/reactive-card-store";
 import { FSRS_COLORS } from "@shared/ui/helpers/fsrs-colors";
 import { usePlugin } from "@shared/ui/preact";
+import { useMemo } from "preact/hooks";
 
 interface TodayData {
 	studied: number;
@@ -35,19 +35,27 @@ function formatDayLabel(date: Date): string {
 export function DashboardWidget() {
 	const plugin = usePlugin();
 
-	const data = useComputed(() => {
-		cards.value;
+	// Subscribe to reactive data changes
+	const _cards = cards.value;
+	const counts = globalCounts.value;
+
+	// Cache service instances — avoid re-creating on every render
+	const { statsCalc, forecast } = useMemo(
+		() => ({
+			statsCalc: new StatsCalculatorService(
+				plugin.fsrsService,
+				plugin.flashcardManager,
+				plugin.sessionPersistence,
+			),
+			forecast: new WorkloadForecastCalculator(plugin.cardStore),
+		}),
+		[plugin],
+	);
+
+	const data = useMemo(() => {
 		if (!plugin.sessionPersistence || !plugin.cardStore) return null;
 
-		const statsCalc = new StatsCalculatorService(
-			plugin.fsrsService,
-			plugin.flashcardManager,
-			plugin.sessionPersistence,
-		);
-
-		const forecast = new WorkloadForecastCalculator(plugin.cardStore);
 		const entries = forecast.getForecast(7);
-
 		const todaySummary = statsCalc.getTodaySummary();
 		const streakInfo = statsCalc.getStreakInfo();
 
@@ -56,8 +64,6 @@ export function DashboardWidget() {
 			count: e.dueCount,
 			isToday: e.date === new Date().toISOString().split("T")[0],
 		}));
-
-		const counts = globalCounts.value;
 
 		const today: TodayData = {
 			studied: todaySummary.studied,
@@ -74,7 +80,7 @@ export function DashboardWidget() {
 		};
 
 		return { today, forecastDays, global };
-	}).value;
+	}, [_cards, counts, plugin, statsCalc, forecast]);
 
 	if (!data) {
 		return <div class="ep:text-obs-muted ep:text-xs ep:p-3">Loading...</div>;
@@ -154,13 +160,14 @@ export function DashboardWidget() {
 }
 
 export function NoteStatsWidget({ sourceUid }: { sourceUid: string | null }) {
-	const _plugin = usePlugin();
+	// Subscribe to reactive data changes
+	const _cards = cards.value;
+	const bySourceUid = cardsBySourceUid.value;
 
-	const data = useComputed(() => {
-		cards.value;
+	const data = useMemo(() => {
 		if (!sourceUid) return null;
 
-		const noteCards = cardsBySourceUid.value.get(sourceUid) ?? [];
+		const noteCards = bySourceUid.get(sourceUid) ?? [];
 		if (noteCards.length === 0) return null;
 
 		const now = new Date();
@@ -200,7 +207,6 @@ export function NoteStatsWidget({ sourceUid }: { sourceUid: string | null }) {
 			}
 		}
 
-		// 7-day forecast for this note
 		const forecastDays: ForecastDay[] = [];
 		for (let i = 0; i < 7; i++) {
 			const date = new Date();
@@ -230,7 +236,7 @@ export function NoteStatsWidget({ sourceUid }: { sourceUid: string | null }) {
 				: null,
 			forecastDays,
 		};
-	}).value;
+	}, [_cards, bySourceUid, sourceUid]);
 
 	if (!data) {
 		return (

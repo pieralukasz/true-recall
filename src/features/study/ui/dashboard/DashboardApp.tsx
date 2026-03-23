@@ -2,7 +2,7 @@ import type { HierarchyService } from "@features/core/services/hierarchy.service
 import { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
 import { computeActionableSessionSnapshot } from "@features/study/services/actionable-session-snapshot.service";
 import { filterActiveCards } from "@features/study/ui/review/helpers/session-helpers";
-import { useComputed, useSignal } from "@preact/signals";
+import { useSignal } from "@preact/signals";
 import {
 	allCardsArray,
 	archivedSourceUids as archivedSourceUidsSignal,
@@ -47,18 +47,20 @@ export function DashboardApp() {
 
 	const showArchived = useSignal(false);
 
-	const cachedActiveCards = useComputed(() => {
-		const allCards = allCardsArray.value;
-		const archived = archivedSourceUidsSignal.value;
-		return filterActiveCards(allCards, {
-			archivedSourceUids: new Set(archived),
-		});
-	});
+	// Signal reads — subscribe component to reactive data changes
+	const allCards = allCardsArray.value;
+	const _settings = pluginSettings.value;
+	const archived = archivedSourceUidsSignal.value;
 
-	const data = useComputed((): DashboardAggregation => {
-		const allCards = allCardsArray.value;
-		pluginSettings.value;
-		const archived = archivedSourceUidsSignal.value;
+	const cachedActiveCards = useMemo(
+		() =>
+			filterActiveCards(allCards, {
+				archivedSourceUids: new Set(archived),
+			}),
+		[allCards, archived],
+	);
+
+	const data = useMemo((): DashboardAggregation => {
 		const streakInfo = statsCalculator.getStreakInfo();
 		const todaySummary = statsCalculator.getTodaySummary();
 		const snapshotDeps = {
@@ -71,9 +73,8 @@ export function DashboardApp() {
 			hierarchyService: plugin.hierarchyService,
 			fsrsService: plugin.fsrsService,
 		};
-		const activeCards = cachedActiveCards.value;
-		const cardsByNoteName = new Map<string, typeof activeCards>();
-		for (const card of activeCards) {
+		const cardsByNoteName = new Map<string, typeof cachedActiveCards>();
+		for (const card of cachedActiveCards) {
 			const noteName = card.sourceNoteName;
 			if (!noteName) continue;
 			const bucket = cardsByNoteName.get(noteName);
@@ -100,7 +101,7 @@ export function DashboardApp() {
 		const globalSnapshot = computeActionableSessionSnapshot(
 			snapshotDeps,
 			{},
-			{ cache: snapshotCache, activeCards },
+			{ cache: snapshotCache, activeCards: cachedActiveCards },
 		);
 
 		const actionableNotes = raw.notes.map((note) => {
@@ -143,7 +144,7 @@ export function DashboardApp() {
 				globalSnapshot.counts.learning,
 			),
 		};
-	}).value;
+	}, [allCards, _settings, archived, cachedActiveCards, statsCalculator, plugin, showArchived.value]);
 
 	const visibleNotes = useMemo(() => {
 		if (showArchived.value) return data.notes;
@@ -172,7 +173,7 @@ export function DashboardApp() {
 				settings: plugin.settings,
 				allCards,
 				archivedSourceUids: archived,
-				activeCards: cachedActiveCards.value,
+				activeCards: cachedActiveCards,
 				metadataCache: plugin.app.metadataCache,
 			},
 		});
