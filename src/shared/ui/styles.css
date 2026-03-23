@@ -211,8 +211,10 @@
 	}
 }
 
-/* Reset padding for dashboard — must be unlayered to override Obsidian defaults */
-[data-type="true-recall-dashboard-view"] .view-content {
+/* Reset padding for app-shell views — must be unlayered to override Obsidian defaults */
+[data-type="true-recall-dashboard-view"] .view-content,
+[data-type="true-recall-stats"] .view-content,
+[data-type="true-recall-card-browser"] .view-content {
 	padding: 0;
 }
 [data-type="true-recall-flashcard-panel"] .view-content {
