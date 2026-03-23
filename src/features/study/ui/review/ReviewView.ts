@@ -742,6 +742,9 @@ export class ReviewView extends ItemView {
 		this.sessionSignalDisposer = effect(() => {
 			const m = lastMutation.value;
 			if (!m) return;
+			// Skip "reviewed" — the queue is already updated synchronously
+			// by recordAnswerAndNext() before persistence runs
+			if (m.type === "reviewed") return;
 			applyMutation(
 				m,
 				this.review,

@@ -381,11 +381,17 @@ export class FlashcardManager {
 		cardId: string,
 		newFSRSData: FSRSCardData,
 		reviewLogEntry?: CardReviewLogEntry,
+		options?: { skipNotification?: boolean },
 	): boolean {
 		if (!this.cardRepository) {
 			throw new Error("Store not initialized");
 		}
-		return this.cardRepository.updateFSRS(cardId, newFSRSData, reviewLogEntry);
+		return this.cardRepository.updateFSRS(
+			cardId,
+			newFSRSData,
+			reviewLogEntry,
+			options,
+		);
 	}
 
 	updateCardContent(
