@@ -1,3 +1,5 @@
+import { ProBackendService } from "@features/ai/services/pro-backend.service";
+import { refreshProStatus } from "@features/ai/services/pro-status";
 import { StreamingGenerationService } from "@features/ai/services/streaming-generation.service";
 import { createSelectionToolbarExtension } from "@features/ai/ui/editor/SelectionToolbarPlugin";
 import { NoteStatusCacheService } from "@features/core/cache/note-status-cache.service";
@@ -39,8 +41,8 @@ import {
 } from "@features/integration/modals/DeviceSelectionModal";
 import { RestoreBackupModal } from "@features/integration/modals/RestoreBackupModal";
 import { DeviceDiscoveryService } from "@features/integration/services/device-discovery.service";
-import { AuthService } from "@features/integration/services/sync/auth.service";
 import { DeviceIdService } from "@features/integration/services/device-id.service";
+import { AuthService } from "@features/integration/services/sync/auth.service";
 import { FlashcardPanelView } from "@features/library/ui/panel/FlashcardPanelView";
 import { FSRSHelperService } from "@features/metrics/services/fsrs-tools";
 import { SimulatorView } from "@features/metrics/ui/simulator";
@@ -64,6 +66,7 @@ import {
 import type { StatusBarWidget } from "@features/study/ui/editor/widgets/StatusBarWidget";
 import { ReviewView } from "@features/study/ui/review/ReviewView";
 import {
+	TRUERECALL_API_URL,
 	VIEW_TYPE_CARD_BROWSER,
 	VIEW_TYPE_DASHBOARD,
 	VIEW_TYPE_FLASHCARD_PANEL,
@@ -119,6 +122,7 @@ export default class TrueRecallPlugin extends Plugin {
 	noteTypeService!: NoteTypeService;
 	hierarchyService!: HierarchyService;
 	authService: AuthService | null = null;
+	proBackendService: ProBackendService | null = null;
 	store: AppStore | null = null;
 	noteStatusCache: NoteStatusCacheService | null = null;
 	statusBarWidget: StatusBarWidget | null = null;
@@ -154,6 +158,19 @@ export default class TrueRecallPlugin extends Plugin {
 		await this.loadSettings();
 
 		this.authService = new AuthService();
+		this.proBackendService = new ProBackendService(TRUERECALL_API_URL);
+
+		if (this.settings.aiTier === "pro") {
+			refreshProStatus(
+				this.authService,
+				this.proBackendService,
+				async (patch) => {
+					Object.assign(this.settings, patch);
+					await this.saveSettings();
+				},
+			);
+		}
+
 		this.registerObsidianProtocolHandler("true-recall-auth", (params) => {
 			this.handleAuthCallback(params).catch((err) => {
 				notify().error(
@@ -1190,7 +1207,7 @@ export default class TrueRecallPlugin extends Plugin {
 					} else {
 						notify().info(`Created ${result.created} flashcard(s)`);
 					}
-					} catch (error) {
+				} catch (error) {
 					if (error instanceof DOMException && error.name === "AbortError")
 						return;
 					const msg = error instanceof Error ? error.message : String(error);

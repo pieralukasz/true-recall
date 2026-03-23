@@ -3,7 +3,7 @@ import { Clickable } from "@shared/ui/components/Clickable";
 import { IconButton } from "@shared/ui/components/IconButton";
 import { useContextMenu } from "@shared/ui/preact/useContextMenu";
 import { cn } from "@shared/ui/utils";
-import { PRIORITY_DOT, computePriority } from "../helpers/note-priority";
+import { computePriority, PRIORITY_DOT } from "../helpers/note-priority";
 import type { DashboardProject } from "../types";
 
 interface ProjectHeaderRowProps {

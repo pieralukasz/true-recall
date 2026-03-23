@@ -1,5 +1,4 @@
 import { useSettings } from "@features/settings/hooks/useSettings";
-import { AccountSection } from "./AccountSection";
 import {
 	TRUERECALL_BMC_URL,
 	TRUERECALL_GITHUB_URL,
@@ -17,6 +16,7 @@ import {
 	ToggleInput,
 } from "@shared/ui/components";
 import { useIcon } from "@shared/ui/preact";
+import { AccountSection } from "./AccountSection";
 
 export function GeneralTab() {
 	const { settings, save, plugin } = useSettings();

@@ -1,8 +1,8 @@
-import {
-	useSelectionActions,
-	type UseSelectionActionsParams,
-} from "@features/library/ui/panel/hooks/useSelectionActions";
 import { usePanelStore } from "@features/library/ui/panel/hooks/usePanelStore";
+import {
+	type UseSelectionActionsParams,
+	useSelectionActions,
+} from "@features/library/ui/panel/hooks/useSelectionActions";
 import { IconButton } from "@shared/ui/components";
 
 export type SelectionToolbarProps = Pick<

@@ -380,4 +380,3 @@ ${noteType.fields[0]}: What type of **[[pain]]** accompanies [[flu]]?
 ${noteType.fields[1]}: Muscle pain
 <!-- source: What are the symptoms of flu? -->`;
 }
-

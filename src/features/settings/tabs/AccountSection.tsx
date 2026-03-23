@@ -1,5 +1,11 @@
 import type { AuthState } from "@features/integration/services/sync/auth.service";
-import { Clickable, FormCard, FormField, InfoBlock, TextInput } from "@shared/ui/components";
+import {
+	Clickable,
+	FormCard,
+	FormField,
+	InfoBlock,
+	TextInput,
+} from "@shared/ui/components";
 import { usePlugin } from "@shared/ui/preact";
 import { useCallback, useEffect, useState } from "preact/hooks";
 
@@ -81,10 +87,7 @@ export function AccountSection() {
 	if (authState?.isAuthenticated) {
 		return (
 			<FormCard title="Account">
-				<FormField
-					name="Signed in"
-					description={authState.user?.email ?? ""}
-				>
+				<FormField name="Signed in" description={authState.user?.email ?? ""}>
 					<Clickable
 						class="ep-btn ep-btn-outline"
 						onClick={handleSignOut}
@@ -113,7 +116,10 @@ export function AccountSection() {
 				<div class="ep:flex-1 ep:h-px ep:bg-obs-border" />
 			</div>
 
-			<FormField name="Email" description="Sign in with a magic link — no password needed">
+			<FormField
+				name="Email"
+				description="Sign in with a magic link — no password needed"
+			>
 				<TextInput
 					value={email}
 					onChange={(v) => {

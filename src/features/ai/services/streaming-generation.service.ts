@@ -39,9 +39,7 @@ export function buildGenerationPrompt(
 	settings: TrueRecallSettings,
 	noteType?: NoteType | null,
 ): string {
-	const langSuffix = buildLanguageSuffix(
-		settings.generationLanguage ?? "auto",
-	);
+	const langSuffix = buildLanguageSuffix(settings.generationLanguage ?? "auto");
 	const densitySuffix = buildDensitySuffix(
 		settings.generationDensity ?? "balanced",
 	);

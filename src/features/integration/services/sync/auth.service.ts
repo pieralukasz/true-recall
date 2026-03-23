@@ -10,10 +10,10 @@
  * by design - security relies on RLS (Row Level Security) policies.
  */
 
-import { TRUERECALL_WEB_URL, TRUE_RECALL_CLOUD } from "@shared/constants";
+import { TRUE_RECALL_CLOUD, TRUERECALL_WEB_URL } from "@shared/constants";
 import {
-	createClient,
 	type AuthChangeEvent,
+	createClient,
 	type Session,
 	type SupabaseClient,
 	type User,
@@ -108,15 +108,17 @@ export class AuthService {
 		});
 
 		if (error || !data.url) {
-			return { success: false, error: error?.message ?? "No auth URL returned" };
+			return {
+				success: false,
+				error: error?.message ?? "No auth URL returned",
+			};
 		}
 
 		return { url: data.url };
 	}
 
 	async exchangeCodeForSession(code: string): Promise<AuthResult> {
-		const { data, error } =
-			await this.client.auth.exchangeCodeForSession(code);
+		const { data, error } = await this.client.auth.exchangeCodeForSession(code);
 
 		if (error) {
 			return { success: false, error: error.message };

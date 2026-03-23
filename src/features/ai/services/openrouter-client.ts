@@ -49,8 +49,7 @@ export interface ChatCompletionResponse {
 	}>;
 }
 
-export const OPENROUTER_URL =
-	"https://openrouter.ai/api/v1/chat/completions";
+export const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 export function buildOpenRouterHeaders(
 	apiKey: string,
@@ -90,6 +89,10 @@ export class AIRequestError extends Error {
 
 	get isBudgetExceeded(): boolean {
 		return this.statusCode === 429;
+	}
+
+	get isUnauthorized(): boolean {
+		return this.statusCode === 401;
 	}
 }
 

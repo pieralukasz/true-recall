@@ -96,7 +96,9 @@ function ClozeRenderer({ text }: { text: string }) {
 		<>
 			{parts.map((part, i) => {
 				if (!part.isCloze) {
-					return <span key={`${i}-t-${part.text.slice(0, 20)}`}>{part.text}</span>;
+					return (
+						<span key={`${i}-t-${part.text.slice(0, 20)}`}>{part.text}</span>
+					);
 				}
 
 				// Active (incomplete) cloze - highlight it

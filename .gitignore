@@ -40,5 +40,8 @@ CLAUDE.md
 # Documentation and plans
 docs/
 
+# AI prompts
+basic-prompt.md
+
 # Git worktrees
 .worktrees/

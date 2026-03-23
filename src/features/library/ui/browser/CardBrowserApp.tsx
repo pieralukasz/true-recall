@@ -115,7 +115,14 @@ export function CardBrowserApp({
 
 	const result = useMemo((): BrowserResult => {
 		return queryService.query(combinedFilter, sortVal, loadedLimitVal, 0);
-	}, [allCards, _settings, queryService, combinedFilter, sortVal, loadedLimitVal]);
+	}, [
+		allCards,
+		_settings,
+		queryService,
+		combinedFilter,
+		sortVal,
+		loadedLimitVal,
+	]);
 
 	const queryResetKey = useMemo(
 		() => getBrowserQueryResetKey(combinedFilter, sortVal),

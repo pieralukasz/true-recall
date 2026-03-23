@@ -229,5 +229,4 @@ export class WorkloadForecastCalculator {
 			}))
 			.sort((a, b) => a.day - b.day);
 	}
-
 }

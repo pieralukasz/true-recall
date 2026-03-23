@@ -182,10 +182,7 @@ function CMField({
 					if (update.docChanged) {
 						clearTimeout(debounceRef.current);
 						debounceRef.current = setTimeout(() => {
-							onFieldChangeRef.current(
-								fieldName,
-								update.state.doc.toString(),
-							);
+							onFieldChangeRef.current(fieldName, update.state.doc.toString());
 						}, 150);
 					}
 				}),

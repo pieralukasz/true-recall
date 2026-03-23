@@ -58,9 +58,7 @@ export function IORegionList({
 			</div>
 			<div class="true-recall-io-region-list">
 				{regions.length === 0 && (
-					<div class="ep:text-ui-smaller ep:text-obs-muted">
-						No regions yet
-					</div>
+					<div class="ep:text-ui-smaller ep:text-obs-muted">No regions yet</div>
 				)}
 				{regions.map((region) => (
 					<RegionListItem

@@ -48,7 +48,11 @@ export function CardPreviewList({
 			</div>
 			<div class="ep:max-h-[200px] ep:overflow-y-auto ep:space-y-1">
 				{shown.map((card, i) => (
-					<CardPreviewItem key={`card-${i}-${Object.values(card.fields)[0]?.slice(0, 30) ?? i}`} card={card} index={i} />
+					<CardPreviewItem
+						key={`card-${i}-${Object.values(card.fields)[0]?.slice(0, 30) ?? i}`}
+						card={card}
+						index={i}
+					/>
 				))}
 				{hiddenCount > 0 && !expanded && (
 					<Clickable
