@@ -330,9 +330,9 @@ export const TRUE_RECALL_CLOUD = {
 	supabaseAnonKey: process.env.SUPABASE_ANON_KEY ?? "",
 } as const;
 
-// Managed AI proxy (LiteLLM) for subscription users
-export const LITELLM_PROXY_URL =
-	"https://ai.truerecall.app/v1/chat/completions";
+// Managed AI proxy for subscription users
+export const AI_PROXY_URL =
+	"https://truerecall.app/api/ai/chat";
 export const SUBSCRIPTION_STATUS_URL =
 	"https://truerecall.app/api/subscription/status";
 export const TRUERECALL_WEB_URL = "https://truerecall.app";
