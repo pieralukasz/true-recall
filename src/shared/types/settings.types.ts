@@ -253,25 +253,6 @@ export interface TrueRecallSettings {
 	/** Show floating toolbar above selected text for AI flashcard generation */
 	selectionToolbarEnabled: boolean;
 
-	/** Subscription key for managed AI proxy (replaces BYOK when set) */
-	subscriptionKey?: string;
-	/** Cached validation result — enables instant routing on startup without async API call */
-	isSubscriber?: boolean;
-	/** Cached tier from last successful validation */
-	subscriberTier?: string;
-	/** Auto-generated UUID per installation, sent with proxy requests for rate limiting */
-	userId?: string;
-	/** Persisted subscription status for instant UI display on mount (no async call needed) */
-	cachedSubscriptionStatus?: {
-		tier: string;
-		plan_type: string;
-		budget_max: number;
-		budget_spent: number;
-		budget_remaining: number;
-		expires: string | null;
-		trial_used: boolean;
-	};
-
 	/** Custom prompts for AI flashcard generation (per mode) */
 	aiFlashcardPrompts?: {
 		basic?: string;
@@ -291,9 +272,6 @@ export interface TrueRecallSettings {
 
 	/** Last version the user has seen release notes for */
 	lastSeenVersion?: string;
-
-	subscriptionPromoSnoozedUntil?: number;
-	subscriptionPromoSnoozeCount?: number;
 }
 
 export interface SessionPreset {

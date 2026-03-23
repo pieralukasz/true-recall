@@ -1,7 +1,6 @@
 import { buildTypeInGradingMessages } from "@features/ai/prompts/type-in-grading-prompt";
 import {
 	type AIClientConfig,
-	getBYOKFallbackConfig,
 	resolveAIClientConfig,
 } from "@features/ai/services/ai-client-config";
 import {
@@ -73,12 +72,7 @@ export class SemanticAnswerGradingService {
 	constructor(
 		private getSettings: () => TrueRecallSettings,
 		private createClient: ClientFactory = (config) =>
-			new OpenRouterClient(
-				config.apiKey,
-				config.model,
-				config.proxyUrl,
-				config.userId,
-			),
+			new OpenRouterClient(config.apiKey, config.model, config.proxyUrl),
 	) {}
 
 	async gradeAnswer(input: GradeAnswerInput): Promise<SemanticGradingResult> {
@@ -97,20 +91,6 @@ export class SemanticAnswerGradingService {
 		try {
 			return await this.requestSemanticGrade(primaryConfig, input);
 		} catch (error) {
-			if (error instanceof AIRequestError && error.isBudgetExceeded) {
-				const fallbackConfig = getBYOKFallbackConfig(settings);
-				if (fallbackConfig) {
-					try {
-						return await this.requestSemanticGrade(fallbackConfig, input);
-					} catch (fallbackError) {
-						return this.buildLocalFallback(
-							input,
-							this.describeFailure(fallbackError),
-						);
-					}
-				}
-			}
-
 			return this.buildLocalFallback(input, this.describeFailure(error));
 		}
 	}

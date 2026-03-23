@@ -6,17 +6,9 @@ import {
 import type { ParsedBlock } from "@features/study/services/flashcard/block-parser.service";
 import type { NoteType } from "@shared/types/note.types";
 import type { TrueRecallSettings } from "@shared/types/settings.types";
-import { Notice } from "obsidian";
-import {
-	getBYOKFallbackConfig,
-	resolveAIClientConfig,
-} from "./ai-client-config";
+import { resolveAIClientConfig } from "./ai-client-config";
 import { IncrementalFlashcardParser } from "./incremental-flashcard-parser";
-import {
-	AIRequestError,
-	getTextContent,
-	OpenRouterClient,
-} from "./openrouter-client";
+import { getTextContent, OpenRouterClient } from "./openrouter-client";
 
 const SOURCE_TRACKING_SUFFIX = `
 
@@ -46,7 +38,6 @@ export class FlashcardGenerationService {
 			config.apiKey,
 			config.model,
 			config.proxyUrl,
-			config.userId,
 		);
 		const systemPrompt = this.getPromptForMode(mode);
 
@@ -58,35 +49,10 @@ export class FlashcardGenerationService {
 			temperature: 0.7,
 		};
 
-		try {
-			const response = await client.chat(request);
-			const responseText = getTextContent(response.choices[0]?.message);
-			const blocks = this.parseResponse(responseText);
-			return { blocks, mode };
-		} catch (error) {
-			if (error instanceof AIRequestError && error.isBudgetExceeded) {
-				const fallback = getBYOKFallbackConfig(settings);
-				if (fallback) {
-					new Notice(
-						"Subscription budget exceeded. Falling back to your OpenRouter key.",
-					);
-					const fallbackClient = new OpenRouterClient(
-						fallback.apiKey,
-						fallback.model,
-						fallback.proxyUrl,
-						undefined,
-					);
-					const response = await fallbackClient.chat(request);
-					const responseText = getTextContent(response.choices[0]?.message);
-					const blocks = this.parseResponse(responseText);
-					return { blocks, mode };
-				}
-				new Notice(
-					"Budget exceeded. Top up at truerecall.app/dashboard, or add your own OpenRouter API key in settings.",
-				);
-			}
-			throw error;
-		}
+		const response = await client.chat(request);
+		const responseText = getTextContent(response.choices[0]?.message);
+		const blocks = this.parseResponse(responseText);
+		return { blocks, mode };
 	}
 
 	private parseResponse(text: string): ParsedBlock[] {

@@ -23,8 +23,3 @@ export {
 	stripMarkdownSyntax,
 	stripWikiLinkSyntax,
 } from "@shared/utils/string.utils";
-export {
-	getEffectiveTier,
-	isFeatureAllowed,
-	type SubscriptionTier,
-} from "@shared/utils/subscription.utils";
