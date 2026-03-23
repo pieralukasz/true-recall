@@ -11,10 +11,7 @@ import type { FlashcardManager } from "@features/study/services/flashcard/flashc
 import type { NoteType } from "@shared/types/note.types";
 import type { TrueRecallSettings } from "@shared/types/settings.types";
 import type { App, TFile } from "obsidian";
-import {
-	getBYOKFallbackConfig,
-	resolveAIClientConfig,
-} from "./ai-client-config";
+import { resolveAIClientConfig } from "./ai-client-config";
 import { IncrementalFlashcardParser } from "./incremental-flashcard-parser";
 import { type ChunkingResult, chunkMarkdown } from "./markdown-chunker";
 import { processCardEvents } from "./process-card-events";
@@ -145,7 +142,7 @@ export class ChunkedGenerationService {
 						aiConfig.apiKey,
 						aiConfig.model,
 						aiConfig.proxyUrl,
-						aiConfig.userId,
+						undefined,
 						systemPrompt,
 						userMessage,
 						sourceFile,
@@ -156,30 +153,6 @@ export class ChunkedGenerationService {
 				} catch (error) {
 					if (error instanceof DOMException && error.name === "AbortError") {
 						break;
-					}
-					// Try BYOK fallback on budget exceeded
-					try {
-						const { AIRequestError } = await import("./openrouter-client");
-						if (error instanceof AIRequestError && error.isBudgetExceeded) {
-							const fallback = getBYOKFallbackConfig(settings);
-							if (fallback) {
-								const result = await this.generateSingleChunk(
-									fallback.apiKey,
-									fallback.model,
-									fallback.proxyUrl,
-									undefined,
-									systemPrompt,
-									userMessage,
-									sourceFile,
-									abortController.signal,
-								);
-								totalCreated += result.created;
-								totalDuplicates += result.duplicates;
-								continue;
-							}
-						}
-					} catch {
-						// Fallback also failed — fall through to error tracking
 					}
 					failedChunks++;
 					const msg = error instanceof Error ? error.message : String(error);

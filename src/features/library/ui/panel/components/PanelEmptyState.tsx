@@ -151,7 +151,7 @@ export function PanelEmptyState({
 			{/* API key error */}
 			{!hasApiKey && (
 				<div class="ep:text-ui-smaller ep:text-obs-error">
-					Add a subscription or OpenRouter API key in settings
+					Add an OpenRouter API key in settings
 				</div>
 			)}
 		</div>

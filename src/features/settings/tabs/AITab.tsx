@@ -7,10 +7,6 @@ import {
 	type GenerationMode,
 } from "@features/ai/prompts/default-prompts";
 import { useSettings } from "@features/settings/hooks/useSettings";
-import {
-	SubscriptionSection,
-	subscriptionService,
-} from "@features/settings/tabs/SubscriptionSection";
 import { TRUERECALL_WEB_URL } from "@shared/constants";
 import {
 	Clickable,
@@ -33,8 +29,6 @@ export function AITab() {
 	);
 
 	const hasApiKey = !!settings.openRouterApiKey;
-	const hasSubKey = !!settings.subscriptionKey;
-	const hasAnyKey = hasApiKey || hasSubKey;
 
 	const getPromptValue = useCallback(
 		(mode: GenerationMode): string => {
@@ -68,42 +62,24 @@ export function AITab() {
 
 	return (
 		<div class="ep:flex ep:flex-col ep:gap-3">
-			<SubscriptionSection />
-
-			<FormCard title="OpenRouter API Key (Advanced)">
+			<FormCard title="OpenRouter API Key">
 				<InfoBlock>
 					<p>
-						{hasSubKey
-							? "You have an active subscription. Optionally add your own API key as a fallback."
-							: "Already have an OpenRouter key? Use it to access AI features directly."}
-					</p>
-				</InfoBlock>
-
-				{!hasSubKey && hasApiKey && (
-					<div class="ep:border-l-2 ep:border-obs-accent ep:bg-obs-accent/5 ep:pl-3 ep:py-2 ep:rounded-r-[var(--radius-s)] ep:my-2">
-						<p class="ep:text-ui-small ep:text-obs-normal ep:mb-1">
-							<strong>Tip:</strong> True Recall subscription
-							generates higher quality flashcards with
-							expert-crafted prompts.
-						</p>
+						Add your OpenRouter API key to enable AI flashcard generation.{" "}
 						<a
 							href={`${TRUERECALL_WEB_URL}/pricing`}
 							target="_blank"
 							rel="noopener"
-							class="ep:text-ui-smaller ep:text-obs-accent"
+							class="ep:text-obs-accent"
 						>
-							Try 50 free generations &rarr;
+							Or try 50 free generations &rarr;
 						</a>
-					</div>
-				)}
+					</p>
+				</InfoBlock>
 
 				<FormField
 					name="API key"
-					description={
-						hasSubKey
-							? "Optional fallback. Subscription is used when set."
-							: "Your OpenRouter API key."
-					}
+					description="Your OpenRouter API key."
 				>
 					<TextInput
 						value={settings.openRouterApiKey}
@@ -114,7 +90,7 @@ export function AITab() {
 					/>
 				</FormField>
 
-				{!hasSubKey && !hasApiKey && (
+				{!hasApiKey && (
 					<InfoBlock>
 						<p>
 							<a
@@ -197,7 +173,7 @@ export function AITab() {
 					/>
 				</FormField>
 
-				{hasAnyKey && (
+				{hasApiKey && (
 					<>
 						<InfoBlock>
 							<p>

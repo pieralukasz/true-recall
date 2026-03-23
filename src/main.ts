@@ -31,7 +31,6 @@ import type {
 	IOEditorMode,
 	IOEditorResult,
 } from "@features/image-occlusion/types";
-import { PluginAuthService } from "@features/integration/services/plugin-auth.service";
 import { AnkiExportModal } from "@features/integration/modals/AnkiExportModal";
 import { AnkiImportModal } from "@features/integration/modals/AnkiImportModal";
 import { CsvExportModal } from "@features/integration/modals/CsvExportModal";
@@ -118,7 +117,6 @@ export default class TrueRecallPlugin extends Plugin {
 	backgroundBackupManager: BackgroundBackupManager | null = null;
 	deviceIdService: DeviceIdService | null = null;
 	deviceDiscovery: DeviceDiscoveryService | null = null;
-	pluginAuth: PluginAuthService | null = null;
 	deletionHandler: DeletionHandlerService | null = null;
 	undoService: UndoService | null = null;
 	fsrsHelper: FSRSHelperService | null = null;
@@ -290,14 +288,6 @@ export default class TrueRecallPlugin extends Plugin {
 		registerEventHandlers(this);
 
 		this.undoService = new UndoService(this);
-
-		this.pluginAuth = new PluginAuthService();
-		this.registerObsidianProtocolHandler(
-			"true-recall-auth",
-			(params) => {
-				void this.handleAuthCallback(params);
-			},
-		);
 	}
 
 	private initializeDeletionHandler(): void {
@@ -406,50 +396,6 @@ export default class TrueRecallPlugin extends Plugin {
 		this.hierarchyService.invalidateGraph();
 
 		refreshSettings(this.settings);
-	}
-
-	private async handleAuthCallback(
-		params: Record<string, string>,
-	): Promise<void> {
-		const { code, state, error } = params;
-
-		if (error) {
-			notify().error("Authentication failed. Please try again.");
-			return;
-		}
-
-		if (!code || !state) {
-			notify().error("Invalid auth callback — missing code or state.");
-			return;
-		}
-
-		if (!this.pluginAuth?.validateState(state)) {
-			notify().error("Authentication expired or invalid. Please try again.");
-			return;
-		}
-
-		try {
-			const result = await this.pluginAuth.exchangeCode(code);
-
-			this.settings.subscriptionKey = result.subscriptionKey;
-			this.settings.isSubscriber = true;
-			this.settings.subscriberTier = result.tier;
-			this.settings.userId ??= crypto.randomUUID();
-			this.settings.cachedSubscriptionStatus = {
-				tier: result.tier,
-				plan_type: result.plan_type,
-				budget_max: result.budget_max,
-				budget_spent: result.budget_spent,
-				budget_remaining: result.budget_remaining,
-				expires: result.expires,
-				trial_used: result.trial_used,
-			};
-			await this.saveSettings();
-
-			notify().success("Signed in successfully!");
-		} catch {
-			notify().error("Failed to complete sign-in. Please try again.");
-		}
 	}
 
 	async activateView(): Promise<void> {
@@ -1217,11 +1163,7 @@ export default class TrueRecallPlugin extends Plugin {
 					} else {
 						notify().info(`Created ${result.created} flashcard(s)`);
 					}
-					if (result.created > 0) {
-						const { maybeShowSubscriptionPromo } = await import("@shared/ui/modals/subscription-promo");
-						void maybeShowSubscriptionPromo(this);
-					}
-				} catch (error) {
+					} catch (error) {
 					if (error instanceof DOMException && error.name === "AbortError")
 						return;
 					const msg = error instanceof Error ? error.message : String(error);
@@ -1258,8 +1200,7 @@ export default class TrueRecallPlugin extends Plugin {
 				}
 			},
 			onImageOcclusion: (imagePath) => this.handleImageOcclusion(imagePath),
-			hasApiKey: () =>
-				!!(this.settings.openRouterApiKey || this.settings.subscriptionKey),
+			hasApiKey: () => !!this.settings.openRouterApiKey,
 			isEnabled: () => this.settings.selectionToolbarEnabled,
 		});
 

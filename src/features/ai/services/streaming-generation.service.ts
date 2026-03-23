@@ -9,13 +9,9 @@ import {
 import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
 import type { NoteType } from "@shared/types/note.types";
 import type { TrueRecallSettings } from "@shared/types/settings.types";
-import { Notice, type TFile } from "obsidian";
-import {
-	getBYOKFallbackConfig,
-	resolveAIClientConfig,
-} from "./ai-client-config";
+import type { TFile } from "obsidian";
+import { resolveAIClientConfig } from "./ai-client-config";
 import { IncrementalFlashcardParser } from "./incremental-flashcard-parser";
-import { AIRequestError } from "./openrouter-client";
 import { processCardEvents } from "./process-card-events";
 import { StreamingOpenRouterClient } from "./streaming-openrouter-client";
 import {
@@ -68,7 +64,7 @@ export class StreamingGenerationService {
 				aiConfig.apiKey,
 				aiConfig.model,
 				aiConfig.proxyUrl,
-				aiConfig.userId,
+				undefined,
 				text,
 				mode,
 				sourceFile,
@@ -77,30 +73,6 @@ export class StreamingGenerationService {
 				allNoteTypes,
 			);
 		} catch (error) {
-			if (error instanceof AIRequestError && error.isBudgetExceeded) {
-				const fallback = getBYOKFallbackConfig(settings);
-				if (fallback) {
-					new Notice(
-						"Subscription budget exceeded. Falling back to your OpenRouter key.",
-					);
-					return await this.runStreamingGeneration(
-						fallback.apiKey,
-						fallback.model,
-						fallback.proxyUrl,
-						undefined,
-						text,
-						mode,
-						sourceFile,
-						abortController,
-						noteType,
-						allNoteTypes,
-					);
-				}
-				new Notice(
-					"Budget exceeded. Top up at truerecall.app/dashboard, or add your own OpenRouter API key in settings.",
-				);
-			}
-
 			if (abortController.signal.aborted) {
 				finishStreaming();
 			} else {

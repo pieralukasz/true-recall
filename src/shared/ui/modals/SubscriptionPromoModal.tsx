@@ -4,7 +4,6 @@ import { BaseModal } from "@shared/ui/modals/BaseModal";
 import { ObsidianProvider } from "@shared/ui/preact/ObsidianContext";
 import { render } from "preact";
 import type TrueRecallPlugin from "../../../main";
-import { SNOOZE_INTERVALS_MS } from "./subscription-promo";
 
 const PRICING_URL = `${TRUERECALL_WEB_URL}/pricing`;
 
@@ -12,19 +11,11 @@ function PromoBody({ onClose }: { onClose: () => void }) {
 	return (
 		<>
 			<p class="ep:text-obs-normal ep:mb-4 ep:leading-relaxed">
-				You're creating flashcards with your own API key — that works! But
-				True Recall subscription uses carefully crafted prompts that
-				produce <strong>significantly better flashcards</strong>.
+				Get <strong>50 free AI generations</strong> — no API key or setup
+				needed. Try it and see the quality for yourself.
 			</p>
 
 			<ul class="ep:list-none ep:p-0 ep:m-0 ep:mb-4 ep:space-y-2">
-				<li class="ep:flex ep:items-start ep:gap-2">
-					<span class="ep:text-obs-accent ep:mt-0.5">&#10003;</span>
-					<span>
-						<strong>50 free generations</strong> — try it and compare
-						quality yourself
-					</span>
-				</li>
 				<li class="ep:flex ep:items-start ep:gap-2">
 					<span class="ep:text-obs-accent ep:mt-0.5">&#10003;</span>
 					<span>
@@ -33,14 +24,11 @@ function PromoBody({ onClose }: { onClose: () => void }) {
 				</li>
 				<li class="ep:flex ep:items-start ep:gap-2">
 					<span class="ep:text-obs-accent ep:mt-0.5">&#10003;</span>
-					<span>
-						Your data stays <strong>private</strong> — no third-party
-						API keys needed
-					</span>
+					<span>No credit card required</span>
 				</li>
 				<li class="ep:flex ep:items-start ep:gap-2">
 					<span class="ep:text-obs-accent ep:mt-0.5">&#10003;</span>
-					<span>Works instantly — no setup or configuration required</span>
+					<span>Works instantly — no configuration needed</span>
 				</li>
 			</ul>
 
@@ -70,7 +58,7 @@ function PromoBody({ onClose }: { onClose: () => void }) {
 export class SubscriptionPromoModal extends BaseModal {
 	constructor(private readonly plugin: TrueRecallPlugin) {
 		super(plugin.app, {
-			title: "Get Better Flashcards",
+			title: "Try True Recall AI",
 			width: "480px",
 		});
 	}
@@ -84,17 +72,5 @@ export class SubscriptionPromoModal extends BaseModal {
 			</ObsidianProvider>,
 			container,
 		);
-	}
-
-	onClose(): void {
-		super.onClose();
-		const count = this.plugin.settings.subscriptionPromoSnoozeCount ?? 0;
-		const newCount = count + 1;
-		this.plugin.settings.subscriptionPromoSnoozeCount = newCount;
-		if (count < SNOOZE_INTERVALS_MS.length) {
-			this.plugin.settings.subscriptionPromoSnoozedUntil =
-				Date.now() + SNOOZE_INTERVALS_MS[count]!;
-		}
-		void this.plugin.saveSettings();
 	}
 }

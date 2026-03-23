@@ -1,9 +1,5 @@
+import { resolveAIClientConfig } from "@features/ai/services/ai-client-config";
 import {
-	getBYOKFallbackConfig,
-	resolveAIClientConfig,
-} from "@features/ai/services/ai-client-config";
-import {
-	AIRequestError,
 	type ChatMessage,
 	type ContentPart,
 	getTextContent,
@@ -208,31 +204,10 @@ export async function detectRegions(
 		config.apiKey,
 		visionModel,
 		config.proxyUrl,
-		config.userId,
 	);
 
-	let responseText: string;
-	try {
-		const response = await client.chat(request);
-		responseText = getTextContent(response.choices[0]?.message);
-	} catch (error) {
-		if (error instanceof AIRequestError && error.isBudgetExceeded) {
-			const fallback = getBYOKFallbackConfig(settings);
-			if (fallback) {
-				const fallbackClient = new OpenRouterClient(
-					fallback.apiKey,
-					resolveVisionModel(fallback.model),
-					fallback.proxyUrl,
-				);
-				const response = await fallbackClient.chat(request);
-				responseText = getTextContent(response.choices[0]?.message);
-			} else {
-				throw error;
-			}
-		} else {
-			throw error;
-		}
-	}
+	const response = await client.chat(request);
+	const responseText = getTextContent(response.choices[0]?.message);
 
 	return parseAIRegions(responseText);
 }

@@ -4,16 +4,9 @@ import type { FlashcardManager } from "@features/study/services/flashcard/flashc
 import type { NoteType } from "@shared/types/note.types";
 import type { TrueRecallSettings } from "@shared/types/settings.types";
 import { Notice } from "obsidian";
-import {
-	getBYOKFallbackConfig,
-	resolveAIClientConfig,
-} from "./ai-client-config";
+import { resolveAIClientConfig } from "./ai-client-config";
 import { IncrementalFlashcardParser } from "./incremental-flashcard-parser";
-import {
-	AIRequestError,
-	getTextContent,
-	OpenRouterClient,
-} from "./openrouter-client";
+import { getTextContent, OpenRouterClient } from "./openrouter-client";
 import { addStreamedCard, clearRecentCards } from "./streaming-state";
 
 export interface RewriteCard {
@@ -123,42 +116,16 @@ export class RewriteService {
 			config.apiKey,
 			config.model,
 			config.proxyUrl,
-			config.userId,
 		);
 
-		const request = {
+		const response = await client.chat({
 			messages: [
 				{ role: "system" as const, content: systemPrompt },
 				{ role: "user" as const, content: userContent },
 			],
 			temperature: 0.7,
-		};
-
-		try {
-			const response = await client.chat(request);
-			return getTextContent(response.choices[0]?.message);
-		} catch (error) {
-			if (error instanceof AIRequestError && error.isBudgetExceeded) {
-				const fallback = getBYOKFallbackConfig(settings);
-				if (fallback) {
-					new Notice(
-						"Subscription budget exceeded. Falling back to your OpenRouter key.",
-					);
-					const fallbackClient = new OpenRouterClient(
-						fallback.apiKey,
-						fallback.model,
-						fallback.proxyUrl,
-						undefined,
-					);
-					const response = await fallbackClient.chat(request);
-					return getTextContent(response.choices[0]?.message);
-				}
-				new Notice(
-					"Budget exceeded. Top up at truerecall.app/dashboard, or add your own OpenRouter API key in settings.",
-				);
-			}
-			throw error;
-		}
+		});
+		return getTextContent(response.choices[0]?.message);
 	}
 
 	private parseResponse(text: string): ParsedBlock[] {
