@@ -1,4 +1,5 @@
 import { escapeFts5Query } from "@features/core/persistence/sqlite/modules/NoteActions";
+import { sqlPlaceholders } from "@features/core/persistence/sqlite/sql-utils";
 import { BUILTIN_IMAGE_OCCLUSION_ID } from "@shared/types/note.types";
 import { State } from "ts-fsrs";
 import type {
@@ -86,9 +87,8 @@ export function buildBrowserQuery(
 	const col = "c.";
 
 	if (stateNumbers.length > 0) {
-		const placeholders = stateNumbers.map(() => "?").join(",");
 		stateConditions.push(
-			`(${col}state IN (${placeholders}) AND ${col}suspended = 0)`,
+			`(${col}state IN (${sqlPlaceholders(stateNumbers.length)}) AND ${col}suspended = 0)`,
 		);
 		params.push(...stateNumbers);
 	}
@@ -137,8 +137,7 @@ export function buildBrowserQuery(
 
 	// ── Source UIDs ──────────────────────────────────────────
 	if (filter.sourceUids.length > 0) {
-		const placeholders = filter.sourceUids.map(() => "?").join(",");
-		conditions.push(`${col}source_uid IN (${placeholders})`);
+		conditions.push(`${col}source_uid IN (${sqlPlaceholders(filter.sourceUids.length)})`);
 		params.push(...filter.sourceUids);
 	}
 
@@ -175,8 +174,7 @@ export function buildBrowserQuery(
 
 	// ── Created via ──────────────────────────────────────────
 	if (filter.createdVia.length > 0) {
-		const placeholders = filter.createdVia.map(() => "?").join(",");
-		conditions.push(`n.created_via IN (${placeholders})`);
+		conditions.push(`n.created_via IN (${sqlPlaceholders(filter.createdVia.length)})`);
 		params.push(...filter.createdVia);
 	}
 

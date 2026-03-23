@@ -1,18 +1,12 @@
+import type { SchedulingResult } from "@features/metrics/services/fsrs-tools/scheduler/scheduler.types";
 import { notify } from "@shared/services/notification.service";
+import type { FSRSHelperOperationType } from "@shared/services/undo.types";
+import type { FsrsPluginHost } from "@shared/types/plugin-host.types";
 import { useCallback, useState } from "preact/hooks";
 
-interface FsrsHelperOpResult {
-	affectedCount: number;
-	changes: Array<{
-		cardId: string;
-		originalDue: string;
-		newDue: string;
-	}>;
-}
-
 interface FsrsHelperOpConfig {
-	plugin: any;
-	operationName: string;
+	plugin: FsrsPluginHost;
+	operationName: FSRSHelperOperationType;
 	undoDescription: (affectedCount: number) => string;
 	successMessage: (affectedCount: number) => string;
 	emptyMessage: string;
@@ -28,7 +22,9 @@ export function useFsrsHelperOp(config: FsrsHelperOpConfig) {
 	const [running, setRunning] = useState(false);
 
 	const execute = useCallback(
-		async (helperCall: () => Promise<FsrsHelperOpResult | undefined>) => {
+		async (
+			helperCall: () => Promise<SchedulingResult | undefined> | undefined,
+		) => {
 			setRunning(true);
 			try {
 				const result = await helperCall();
@@ -41,7 +37,7 @@ export function useFsrsHelperOp(config: FsrsHelperOpConfig) {
 						payload: {
 							type: "fsrs-helper-operation",
 							operation: config.operationName,
-							changes: result.changes.map((c: any) => ({
+							changes: result.changes.map((c) => ({
 								cardId: c.cardId,
 								originalDue: c.originalDue,
 								newDue: c.newDue,

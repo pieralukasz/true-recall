@@ -1,5 +1,6 @@
 import { useFsrsHelperOp } from "@features/settings/tabs/fsrs/useFsrsHelperOp";
 import type { TrueRecallSettings } from "@shared/types";
+import type { FsrsPluginHost } from "@shared/types/plugin-host.types";
 import {
 	ActionButton,
 	FormCard,
@@ -13,7 +14,7 @@ import { useMemo } from "preact/hooks";
 interface SiblingDisperseSectionProps {
 	settings: TrueRecallSettings;
 	save: (patch: Partial<TrueRecallSettings>) => Promise<void>;
-	plugin: any;
+	plugin: FsrsPluginHost;
 }
 
 export function SiblingDisperseSection({
@@ -24,7 +25,7 @@ export function SiblingDisperseSection({
 	const opConfig = useMemo(
 		() => ({
 			plugin,
-			operationName: "disperse-siblings",
+			operationName: "disperse-siblings" as const,
 			undoDescription: (n: number) => `Disperse siblings (${n} cards)`,
 			successMessage: (n: number) => `Dispersed ${n} cards (Ctrl+Z to undo)`,
 			emptyMessage: "No siblings needed dispersing",

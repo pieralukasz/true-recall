@@ -5,11 +5,21 @@ import {
 import { resolveSlug } from "@features/study/services/flashcard/note-type-slug";
 import { notify } from "@shared/services/notification.service";
 import type { FlashcardInfo, FlashcardItem } from "@shared/types";
+import type { App, TFile } from "obsidian";
 import type TrueRecallPlugin from "../../../../../main";
 
+interface DuplicateEntry {
+	flashcard: { question: string };
+	existingSourceUid?: string;
+}
+
+interface DuplicateErrorLike {
+	existingSourceUid?: string;
+}
+
 export async function getSourceNoteNameFromFile(
-	app: { vault: { read: (file: any) => Promise<string> } },
-	currentFile: any,
+	app: App,
+	currentFile: TFile | null,
 	flashcardInfo: FlashcardInfo | null,
 ): Promise<string | undefined> {
 	if (!currentFile || !flashcardInfo) return undefined;
@@ -25,30 +35,27 @@ export async function getSourceNoteNameFromFile(
 
 export function showDuplicateNotifications(
 	plugin: TrueRecallPlugin,
-	duplicates: any[],
+	duplicates: DuplicateEntry[],
 ): void {
 	const sourceNoteService = plugin.flashcardManager.getSourceNoteService();
 	for (const dup of duplicates) {
 		const sourceInfo = dup.existingSourceUid
 			? sourceNoteService.resolveSourceNote(dup.existingSourceUid)
 			: {};
-		notify().duplicateFound(
-			dup.flashcard.question,
-			(sourceInfo as any).noteName,
-		);
+		notify().duplicateFound(dup.flashcard.question, sourceInfo.noteName);
 	}
 }
 
 export function notifyDuplicateError(
 	plugin: TrueRecallPlugin,
-	error: any,
+	error: DuplicateErrorLike,
 	question: string,
 ): void {
 	const sourceNoteService = plugin.flashcardManager.getSourceNoteService();
 	const sourceInfo = error.existingSourceUid
 		? sourceNoteService.resolveSourceNote(error.existingSourceUid)
 		: {};
-	notify().duplicateFound(question, (sourceInfo as any).noteName);
+	notify().duplicateFound(question, sourceInfo.noteName);
 }
 
 export function cardToBlockText(
