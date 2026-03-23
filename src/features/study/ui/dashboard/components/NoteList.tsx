@@ -14,7 +14,6 @@ import {
 	getDragClass,
 } from "../helpers/drag-drop";
 import { prioritySortComparator } from "../helpers/note-priority";
-import { useInitialMount } from "../helpers/use-initial-mount";
 import { useExternalVirtualList } from "../helpers/use-virtual-list";
 import type {
 	DashboardNoteEntry,
@@ -59,7 +58,6 @@ export function NoteList({
 	onPresetClick,
 }: NoteListProps) {
 	const plugin = usePlugin();
-	const initialMount = useInitialMount();
 	const activeFilter = useSignal<NoteFilterMode>("all");
 	const projectFilter = useSignal<ProjectFilter>({ type: "none" });
 	const contentRef = useRef<HTMLDivElement>(null);
@@ -389,16 +387,13 @@ export function NoteList({
 						position: "relative",
 					}}
 				>
-					{virtualItems.map(({ item, offsetTop, index }) => {
+					{virtualItems.map(({ item, offsetTop }) => {
 						const dragCls = getDragClass(dragState.value, item.path);
 						return (
 							<div
 								role="listitem"
 								key={item.name}
-								class={
-									`${initialMount.current ? "ep-card-enter" : ""} ${dragCls}`.trim() ||
-									undefined
-								}
+								class={dragCls || undefined}
 								draggable={!isSelecting && !!item.path}
 								onDragStart={(e) => handleDragStart(e, item)}
 								onDragEnd={handleDragEnd}
@@ -410,9 +405,6 @@ export function NoteList({
 									left: 0,
 									right: 0,
 									height: "36px",
-									...(initialMount.current
-										? { "--card-index": Math.min(index, 10) }
-										: {}),
 								}}
 							>
 								<NoteRow

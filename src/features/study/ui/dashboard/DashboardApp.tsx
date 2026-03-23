@@ -27,7 +27,6 @@ import { aggregateProjectData } from "./helpers/project-aggregation";
 import { projectMatchesSearch } from "./helpers/project-tree-flatten";
 import { estimateStudyMinutes } from "./helpers/time-estimate";
 import { useDragAutoScroll } from "./helpers/use-drag-auto-scroll";
-import { useInitialMount } from "./helpers/use-initial-mount";
 import type { DashboardAggregation, DashboardTab } from "./types";
 
 export function DashboardApp() {
@@ -274,16 +273,6 @@ export function DashboardApp() {
 		activeTab.value = "projects";
 	}
 
-	const initialMount = useInitialMount();
-	let si = 0;
-	const sectionProps = () =>
-		initialMount.current
-			? ({
-					class: "ep-section-enter",
-					style: { "--section-index": si++ },
-				} as Record<string, unknown>)
-			: {};
-
 	return (
 		<div class="ep-dashboard-container ep:flex ep:flex-col ep:h-full">
 			<AppNavBar activeItem="dashboard" />
@@ -293,54 +282,41 @@ export function DashboardApp() {
 				onScroll={onScroll}
 			>
 				<div class="ep:p-3 ep:mx-auto ep:max-w-5xl ep:flex ep:flex-col ep:gap-3 ep:min-h-full">
-					<div {...sectionProps()}>
-						<TodayActionBar
-							totalDue={data.totalDue}
-							totalNew={data.totalNew}
-							totalLearning={data.totalLearning}
-							estimatedMinutes={data.estimatedTotalMinutes}
-							progress={data.todayProgress}
-						/>
-					</div>
+					<TodayActionBar
+						totalDue={data.totalDue}
+						totalNew={data.totalNew}
+						totalLearning={data.totalLearning}
+						estimatedMinutes={data.estimatedTotalMinutes}
+						progress={data.todayProgress}
+					/>
 
 					{projectData.recentlyStudied.length > 0 && (
-						<div {...sectionProps()}>
-							<RecentlyStudiedBar notes={projectData.recentlyStudied} />
-						</div>
+						<RecentlyStudiedBar notes={projectData.recentlyStudied} />
 					)}
 
-					<div {...sectionProps()}>
-						<SearchCombobox
-							value={searchQuery.value}
-							placeholder="Search notes or projects..."
-							ariaLabel="Search notes or projects"
-							onChange={(q) => {
-								searchQuery.value = q;
-							}}
-						/>
-					</div>
+					<SearchCombobox
+						value={searchQuery.value}
+						placeholder="Search notes or projects..."
+						ariaLabel="Search notes or projects"
+						onChange={(q) => {
+							searchQuery.value = q;
+						}}
+					/>
 
-					<div {...sectionProps()}>
-						<DashboardTabs
-							activeTab={activeTab.value}
-							onTabChange={handleTabChange}
-							projectCount={filteredCounts.projects}
-							notesCount={filteredCounts.notes}
-							orphanedCount={filteredCounts.orphaned}
-							showArchived={showArchived.value}
-							onToggleArchived={() => {
-								showArchived.value = !showArchived.value;
-							}}
-						/>
-					</div>
+					<DashboardTabs
+						activeTab={activeTab.value}
+						onTabChange={handleTabChange}
+						projectCount={filteredCounts.projects}
+						notesCount={filteredCounts.notes}
+						orphanedCount={filteredCounts.orphaned}
+						showArchived={showArchived.value}
+						onToggleArchived={() => {
+							showArchived.value = !showArchived.value;
+						}}
+					/>
 
 					<div class="ep:flex ep:flex-col ep:flex-1">
-						<div
-							class={`ep:flex-1${initialMount.current ? " ep-section-enter" : ""}`}
-							style={
-								initialMount.current ? { "--section-index": si++ } : undefined
-							}
-						>
+						<div class="ep:flex-1">
 							{activeTab.value === "projects" && (
 								<ProjectsTab
 									projects={projectData.projects}
@@ -367,12 +343,7 @@ export function DashboardApp() {
 							)}
 						</div>
 
-						<div
-							class={`ep:mt-3${initialMount.current ? " ep-section-enter" : ""}`}
-							style={
-								initialMount.current ? { "--section-index": si++ } : undefined
-							}
-						>
+						<div class="ep:mt-3">
 							<HeatmapWidget source="months: 0" />
 						</div>
 					</div>
