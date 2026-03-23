@@ -1,4 +1,3 @@
-import { type GenerationMode } from "@features/ai/prompts/default-prompts";
 import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
 import type { NoteType } from "@shared/types/note.types";
 import type { TrueRecallSettings } from "@shared/types/settings.types";
@@ -38,10 +37,8 @@ export class ChunkedGenerationService {
 
 	async generateFromNote(
 		content: string,
-		mode: GenerationMode,
 		sourceFile: TFile,
 		noteType?: NoteType | null,
-		allNoteTypes?: NoteType[],
 		app?: App,
 	): Promise<ChunkedGenerationResult> {
 		const chunkingResult = chunkMarkdown(content);
@@ -55,10 +52,8 @@ export class ChunkedGenerationService {
 			);
 			const result = await streamingService.generateStreaming(
 				firstChunk.content,
-				mode,
 				sourceFile,
 				noteType,
-				allNoteTypes,
 			);
 			return {
 				...result,
@@ -70,20 +65,16 @@ export class ChunkedGenerationService {
 
 		return this.runChunkedGeneration(
 			chunkingResult,
-			mode,
 			sourceFile,
 			noteType,
-			allNoteTypes,
 			app,
 		);
 	}
 
 	private async runChunkedGeneration(
 		chunkingResult: ChunkingResult,
-		mode: GenerationMode,
 		sourceFile: TFile,
 		noteType?: NoteType | null,
-		allNoteTypes?: NoteType[],
 		app?: App,
 	): Promise<ChunkedGenerationResult> {
 		const { chunks, totalWords, estimatedTokens } = chunkingResult;
@@ -110,12 +101,7 @@ export class ChunkedGenerationService {
 			chunks.length,
 		);
 
-		const systemPrompt = buildGenerationPrompt(
-			this.getSettings(),
-			mode,
-			noteType,
-			allNoteTypes,
-		);
+		const systemPrompt = buildGenerationPrompt(this.getSettings(), noteType);
 		const aiConfig = resolveAIClientConfig(this.getSettings());
 
 		let totalCreated = 0;

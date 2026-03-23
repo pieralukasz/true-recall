@@ -97,42 +97,6 @@ ${typeSpecificRules}
 ${example}`;
 }
 
-/**
- * Build a prompt for "auto" mode that lists all available NoteTypes.
- */
-export function buildAutoPrompt(noteTypes: NoteType[]): string {
-	const filtered = noteTypes.filter(
-		(nt) => !(nt.type === 0 && nt.templates.length > 1),
-	);
-
-	const intro = `I would like you to help me create flashcards based on text. Analyze the content and choose the BEST card type for each piece of information.
-
-You have these card types available:`;
-
-	const typeDescriptions = filtered.map((nt) => {
-		const slug = resolveSlug(nt);
-		const fields = nt.fields.map((f) => `${f}: [value]`).join("\n");
-		const hint = getTypeHint(nt);
-		return `${nt.name} (#type/${slug})${hint}
-\`\`\`
-#type/${slug}
-${fields}
-<!-- source: [exact quote] -->
----
-\`\`\``;
-	});
-
-	return `${intro}
-
-${typeDescriptions.join("\n\n")}
-
-${SHARED_RULES}
-
-${CLOZE_RULES}
-
-Choose the card type that best supports memorization for each fact.`;
-}
-
 // ── Helpers ─────────────────────────────────────────────
 
 function buildFormatSection(noteType: NoteType, slug: string): string {
@@ -417,13 +381,3 @@ ${noteType.fields[1]}: Muscle pain
 <!-- source: What are the symptoms of flu? -->`;
 }
 
-function getTypeHint(noteType: NoteType): string {
-	if (noteType.type === 1)
-		return " — Fill-in-the-blank. Best for: key terms in context, formulas, sequences.";
-
-	const hasMultipleTemplates = noteType.templates.length > 1;
-	if (hasMultipleTemplates)
-		return " — Bidirectional Q&A. Best for: term↔definition, symbol↔name pairs.";
-
-	return " — Standard Q&A. Best for: explanations, processes, definitions.";
-}

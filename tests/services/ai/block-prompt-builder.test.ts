@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-	buildBlockPrompt,
-	buildAutoPrompt,
-} from "../../../src/features/ai/prompts/block-prompt-builder";
+import { buildBlockPrompt } from "../../../src/features/ai/prompts/block-prompt-builder";
 import type { NoteType } from "../../../src/shared/types/note.types";
 import {
 	BUILTIN_BASIC_ID,
@@ -161,36 +158,4 @@ describe("BlockPromptBuilder", () => {
 		});
 	});
 
-	describe("buildAutoPrompt", () => {
-		it("should list non-reversed NoteTypes", () => {
-			const prompt = buildAutoPrompt([basicType, clozeType, reversedType]);
-			expect(prompt).toContain("#type/basic");
-			expect(prompt).toContain("#type/cloze");
-			expect(prompt).not.toContain("#type/basic-reversed");
-		});
-
-		it("should filter out reversed (multi-template) types", () => {
-			const prompt = buildAutoPrompt([basicType, clozeType, reversedType]);
-			expect(prompt).toContain("Standard Q&A");
-			expect(prompt).toContain("Fill-in-the-blank");
-			expect(prompt).not.toContain("Bidirectional Q&A");
-		});
-
-		it("should include custom types", () => {
-			const prompt = buildAutoPrompt([basicType, customType]);
-			expect(prompt).toContain("#type/vocabulary");
-			expect(prompt).toContain("Word:");
-		});
-
-		it("should include shared rules", () => {
-			const prompt = buildAutoPrompt([basicType]);
-			expect(prompt).toContain("Anti-Tautology");
-			expect(prompt).toContain("<!-- source:");
-		});
-
-		it("should include cloze rules", () => {
-			const prompt = buildAutoPrompt([basicType, clozeType]);
-			expect(prompt).toContain("CLOZE RULES");
-		});
-	});
 });

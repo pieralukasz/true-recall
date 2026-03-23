@@ -47,10 +47,8 @@ export function usePanelActions() {
 				plugin.cardStore?.noteTypes?.getById(BUILTIN_BASIC_ID) ?? null;
 			const result = await chunkedService.generateFromNote(
 				content,
-				"basic",
 				currentFile,
 				basicNoteType,
-				undefined,
 				app,
 			);
 
@@ -135,7 +133,6 @@ export function usePanelActions() {
 				plugin.cardStore?.noteTypes?.getById(BUILTIN_BASIC_ID) ?? null;
 			const result = await streamingService.generateStreaming(
 				joinedHighlights,
-				"basic",
 				currentFile,
 				basicNoteType,
 			);

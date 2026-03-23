@@ -1,5 +1,5 @@
 import type { AuthState } from "@features/integration/services/sync/auth.service";
-import { Clickable, FormCard, FormField, TextInput } from "@shared/ui/components";
+import { Clickable, FormCard, FormField, InfoBlock, TextInput } from "@shared/ui/components";
 import { usePlugin } from "@shared/ui/preact";
 import { useCallback, useEffect, useState } from "preact/hooks";
 
@@ -8,9 +8,9 @@ export function AccountSection() {
 	const authService = plugin.authService;
 
 	const [email, setEmail] = useState("");
-	const [password, setPassword] = useState("");
 	const [error, setError] = useState("");
 	const [loading, setLoading] = useState(false);
+	const [magicLinkSent, setMagicLinkSent] = useState(false);
 	const [authState, setAuthState] = useState<AuthState | null>(null);
 	const [checking, setChecking] = useState(true);
 
@@ -23,39 +23,42 @@ export function AccountSection() {
 			setAuthState(state);
 			setChecking(false);
 		});
+
+		const { unsubscribe } = authService.onAuthStateChange((_event, session) => {
+			setAuthState({
+				user: session?.user ?? null,
+				session,
+				isAuthenticated: session !== null,
+			});
+		});
+		return unsubscribe;
 	}, [authService]);
 
-	const handleSignIn = useCallback(async () => {
-		if (!authService || !email || !password) return;
+	const handleMagicLink = useCallback(async () => {
+		if (!authService || !email) return;
 		setLoading(true);
 		setError("");
-		const result = await authService.signIn(email, password);
+		const result = await authService.signInWithMagicLink(email);
 		if (!result.success) {
-			setError(result.error ?? "Sign in failed");
-			setLoading(false);
-			return;
+			setError(result.error ?? "Failed to send magic link");
+		} else {
+			setMagicLinkSent(true);
 		}
-		const state = await authService.getAuthState();
-		setAuthState(state);
-		setPassword("");
 		setLoading(false);
-	}, [authService, email, password]);
+	}, [authService, email]);
 
-	const handleSignUp = useCallback(async () => {
-		if (!authService || !email || !password) return;
+	const handleGoogle = useCallback(async () => {
+		if (!authService) return;
 		setLoading(true);
 		setError("");
-		const result = await authService.signUp(email, password);
-		if (!result.success) {
-			setError(result.error ?? "Sign up failed");
-			setLoading(false);
-			return;
+		const result = await authService.signInWithGoogle();
+		if ("url" in result) {
+			window.open(result.url);
+		} else {
+			setError(result.error ?? "Failed to start Google sign-in");
 		}
-		const state = await authService.getAuthState();
-		setAuthState(state);
-		setPassword("");
 		setLoading(false);
-	}, [authService, email, password]);
+	}, [authService]);
 
 	const handleSignOut = useCallback(async () => {
 		if (!authService) return;
@@ -67,9 +70,9 @@ export function AccountSection() {
 
 	const handleKeyDown = useCallback(
 		(e: KeyboardEvent) => {
-			if (e.key === "Enter") handleSignIn();
+			if (e.key === "Enter") handleMagicLink();
 		},
-		[handleSignIn],
+		[handleMagicLink],
 	);
 
 	if (checking) return null;
@@ -96,10 +99,27 @@ export function AccountSection() {
 
 	return (
 		<FormCard title="Account">
-			<FormField name="Email" description="Your True Recall account email">
+			<Clickable
+				class="mod-cta ep-btn ep:w-full ep:justify-center"
+				onClick={handleGoogle}
+				disabled={loading}
+			>
+				Sign in with Google
+			</Clickable>
+
+			<div class="ep:flex ep:items-center ep:gap-3 ep:my-2">
+				<div class="ep:flex-1 ep:h-px ep:bg-obs-border" />
+				<span class="ep:text-obs-muted ep:text-ui-smaller">or</span>
+				<div class="ep:flex-1 ep:h-px ep:bg-obs-border" />
+			</div>
+
+			<FormField name="Email" description="Sign in with a magic link — no password needed">
 				<TextInput
 					value={email}
-					onChange={setEmail}
+					onChange={(v) => {
+						setEmail(v);
+						setMagicLinkSent(false);
+					}}
 					type="email"
 					placeholder="email@example.com"
 					class="ep:w-[260px]"
@@ -108,38 +128,21 @@ export function AccountSection() {
 				/>
 			</FormField>
 
-			<FormField name="Password" description="Your account password">
-				<TextInput
-					value={password}
-					onChange={setPassword}
-					type="password"
-					placeholder="Password"
-					class="ep:w-[260px]"
-					autoComplete="current-password"
-					onKeyDown={handleKeyDown}
-				/>
-			</FormField>
+			{magicLinkSent && (
+				<InfoBlock>Check your email for a sign-in link.</InfoBlock>
+			)}
 
 			{error && (
 				<p class="ep:text-obs-error ep:text-ui-smaller ep:m-0">{error}</p>
 			)}
 
-			<div class="ep:flex ep:gap-2 ep:mt-1">
-				<Clickable
-					class="mod-cta ep-btn"
-					onClick={handleSignIn}
-					disabled={loading || !email || !password}
-				>
-					Sign in
-				</Clickable>
-				<Clickable
-					class="ep-btn ep-btn-outline"
-					onClick={handleSignUp}
-					disabled={loading || !email || !password}
-				>
-					Sign up
-				</Clickable>
-			</div>
+			<Clickable
+				class="ep-btn ep-btn-outline"
+				onClick={handleMagicLink}
+				disabled={loading || !email}
+			>
+				{magicLinkSent ? "Resend magic link" : "Send magic link"}
+			</Clickable>
 		</FormCard>
 	);
 }

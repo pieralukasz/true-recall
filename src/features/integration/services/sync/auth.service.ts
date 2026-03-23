@@ -1,18 +1,27 @@
 /**
  * Authentication service using Supabase (True Recall Cloud)
- * Handles user login, signup, and session management
+ *
+ * Supports magic link (passwordless email) and Google OAuth.
+ * Both use PKCE flow with a web intermediary:
+ *   Plugin → Supabase → truerecall.app/auth/obsidian-callback?code=...
+ *   → obsidian://true-recall-auth?code=... → plugin exchanges code for session
  *
  * Note: Credentials are hardcoded (SaaS model). The anon key is public
  * by design - security relies on RLS (Row Level Security) policies.
  */
 
-import { TRUE_RECALL_CLOUD } from "@shared/constants";
+import { TRUERECALL_WEB_URL, TRUE_RECALL_CLOUD } from "@shared/constants";
 import {
 	createClient,
+	type AuthChangeEvent,
 	type Session,
 	type SupabaseClient,
 	type User,
 } from "@supabase/supabase-js";
+
+// Supabase can't redirect to obsidian:// directly, so we use a web intermediary
+// that passes the code through to the obsidian:// protocol handler
+const AUTH_REDIRECT_URL = `${TRUERECALL_WEB_URL}/auth/obsidian-callback`;
 
 export interface AuthState {
 	user: User | null;
@@ -38,24 +47,22 @@ export class AuthService {
 	}
 
 	private createClient(): SupabaseClient {
-		// Supabase's createClient has complex generic types
 		return createClient(this.supabaseUrl, this.supabaseAnonKey, {
 			auth: {
 				autoRefreshToken: true,
 				persistSession: true,
 				detectSessionInUrl: false,
+				flowType: "pkce",
 			},
 		});
 	}
 
-	// Kept for potential future use (e.g., self-hosted option)
 	updateCredentials(supabaseUrl: string, supabaseAnonKey: string): void {
 		this.supabaseUrl = supabaseUrl;
 		this.supabaseAnonKey = supabaseAnonKey;
 		this.client = this.createClient();
 	}
 
-	// Always true in SaaS model since credentials are hardcoded
 	isConfigured(): boolean {
 		return true;
 	}
@@ -78,11 +85,38 @@ export class AuthService {
 		return user;
 	}
 
-	async signUp(email: string, password: string): Promise<AuthResult> {
-		const { data, error } = await this.client.auth.signUp({
+	async signInWithMagicLink(email: string): Promise<AuthResult> {
+		const { error } = await this.client.auth.signInWithOtp({
 			email,
-			password,
+			options: { emailRedirectTo: AUTH_REDIRECT_URL },
 		});
+
+		if (error) {
+			return { success: false, error: error.message };
+		}
+
+		return { success: true };
+	}
+
+	async signInWithGoogle(): Promise<{ url: string } | AuthResult> {
+		const { data, error } = await this.client.auth.signInWithOAuth({
+			provider: "google",
+			options: {
+				redirectTo: AUTH_REDIRECT_URL,
+				skipBrowserRedirect: true,
+			},
+		});
+
+		if (error || !data.url) {
+			return { success: false, error: error?.message ?? "No auth URL returned" };
+		}
+
+		return { url: data.url };
+	}
+
+	async exchangeCodeForSession(code: string): Promise<AuthResult> {
+		const { data, error } =
+			await this.client.auth.exchangeCodeForSession(code);
 
 		if (error) {
 			return { success: false, error: error.message };
@@ -91,17 +125,11 @@ export class AuthService {
 		return { success: true, user: data.user ?? undefined };
 	}
 
-	async signIn(email: string, password: string): Promise<AuthResult> {
-		const { data, error } = await this.client.auth.signInWithPassword({
-			email,
-			password,
-		});
-
-		if (error) {
-			return { success: false, error: error.message };
-		}
-
-		return { success: true, user: data.user ?? undefined };
+	onAuthStateChange(
+		callback: (event: AuthChangeEvent, session: Session | null) => void,
+	): { unsubscribe: () => void } {
+		const { data } = this.client.auth.onAuthStateChange(callback);
+		return { unsubscribe: () => data.subscription.unsubscribe() };
 	}
 
 	async signOut(): Promise<AuthResult> {

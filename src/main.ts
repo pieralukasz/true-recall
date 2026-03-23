@@ -1,4 +1,3 @@
-import type { GenerationMode } from "@features/ai/prompts/default-prompts";
 import { StreamingGenerationService } from "@features/ai/services/streaming-generation.service";
 import { createSelectionToolbarExtension } from "@features/ai/ui/editor/SelectionToolbarPlugin";
 import { NoteStatusCacheService } from "@features/core/cache/note-status-cache.service";
@@ -86,12 +85,7 @@ import {
 import { UndoService } from "@shared/services/undo.service";
 import { type AppStore, createAppStore } from "@shared/store";
 import { extractFSRSSettings } from "@shared/types";
-import {
-	BUILTIN_BASIC_ID,
-	BUILTIN_BASIC_REVERSED_ID,
-	BUILTIN_CLOZE_ID,
-	type NoteType,
-} from "@shared/types/note.types";
+import { BUILTIN_BASIC_ID, type NoteType } from "@shared/types/note.types";
 import { PresetInspectorModal } from "@shared/ui/modals";
 import { isDesktop } from "@shared/utils/platform";
 import { normalizePath, Plugin, type TFile } from "obsidian";
@@ -160,6 +154,13 @@ export default class TrueRecallPlugin extends Plugin {
 		await this.loadSettings();
 
 		this.authService = new AuthService();
+		this.registerObsidianProtocolHandler("true-recall-auth", (params) => {
+			this.handleAuthCallback(params).catch((err) => {
+				notify().error(
+					err instanceof Error ? err.message : "Auth callback failed",
+				);
+			});
+		});
 
 		this.frontmatterIndex = new FrontmatterIndexService(this.app);
 		this.frontmatterIndex.register({
@@ -400,6 +401,34 @@ export default class TrueRecallPlugin extends Plugin {
 		this.hierarchyService.invalidateGraph();
 
 		refreshSettings(this.settings);
+	}
+
+	private async handleAuthCallback(
+		params: Record<string, string>,
+	): Promise<void> {
+		const { code, error } = params;
+
+		if (error) {
+			notify().error("Authentication failed. Please try again.");
+			return;
+		}
+
+		if (!code) {
+			notify().error("Invalid auth callback — missing code.");
+			return;
+		}
+
+		if (!this.authService) {
+			notify().error("Auth service not available.");
+			return;
+		}
+
+		const result = await this.authService.exchangeCodeForSession(code);
+		if (result.success) {
+			notify().success("Signed in successfully!");
+		} else {
+			notify().error(result.error ?? "Failed to complete sign-in.");
+		}
 	}
 
 	async activateView(): Promise<void> {
@@ -1135,7 +1164,7 @@ export default class TrueRecallPlugin extends Plugin {
 		);
 
 		const extension = createSelectionToolbarExtension({
-			onGenerate: async (text, mode) => {
+			onGenerate: async (text) => {
 				const file = this.app.workspace.getActiveFile();
 				if (!file) {
 					notify().error("No active file");
@@ -1146,17 +1175,11 @@ export default class TrueRecallPlugin extends Plugin {
 					// Open panel so user can see cards streaming in
 					await this.activateView();
 
-					const noteType = this.resolveNoteTypeForMode(mode);
-					const allNoteTypes =
-						mode === "auto"
-							? (this.cardStore?.noteTypes?.getAll() ?? [])
-							: undefined;
+					const noteType = this.getBasicNoteType();
 					const result = await streamingService.generateStreaming(
 						text,
-						mode,
 						file,
 						noteType,
-						allNoteTypes,
 					);
 					if (result.created === 0 && result.duplicates === 0) {
 						notify().warning("No flashcards found in AI response");
@@ -1269,19 +1292,8 @@ export default class TrueRecallPlugin extends Plugin {
 		);
 	}
 
-	private resolveNoteTypeForMode(mode: GenerationMode): NoteType | null {
-		const store = this.cardStore;
-		if (!store) return null;
-		switch (mode) {
-			case "basic":
-				return store.noteTypes.getById(BUILTIN_BASIC_ID) ?? null;
-			case "cloze":
-				return store.noteTypes.getById(BUILTIN_CLOZE_ID) ?? null;
-			case "reversed":
-				return store.noteTypes.getById(BUILTIN_BASIC_REVERSED_ID) ?? null;
-			case "auto":
-				return null;
-		}
+	private getBasicNoteType(): NoteType | null {
+		return this.cardStore?.noteTypes.getById(BUILTIN_BASIC_ID) ?? null;
 	}
 
 	async createMasterDashboard(): Promise<void> {
