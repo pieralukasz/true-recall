@@ -40,17 +40,18 @@ export function DashboardWidget() {
 	const counts = globalCounts.value;
 
 	// Cache service instances — avoid re-creating on every render
-	const { statsCalc, forecast } = useMemo(
-		() => ({
-			statsCalc: new StatsCalculatorService(
-				plugin.fsrsService,
-				plugin.flashcardManager,
-				plugin.sessionPersistence,
-			),
+	const { statsCalc, forecast } = useMemo(() => {
+		const calc = new StatsCalculatorService(
+			plugin.fsrsService,
+			plugin.flashcardManager,
+			plugin.sessionPersistence,
+		);
+		calc.setDayStartHour(plugin.settings.dayStartHour);
+		return {
+			statsCalc: calc,
 			forecast: new WorkloadForecastCalculator(plugin.cardStore),
-		}),
-		[plugin],
-	);
+		};
+	}, [plugin]);
 
 	const data = useMemo(() => {
 		if (!plugin.sessionPersistence || !plugin.cardStore) return null;

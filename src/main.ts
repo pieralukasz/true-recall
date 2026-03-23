@@ -40,6 +40,7 @@ import {
 } from "@features/integration/modals/DeviceSelectionModal";
 import { RestoreBackupModal } from "@features/integration/modals/RestoreBackupModal";
 import { DeviceDiscoveryService } from "@features/integration/services/device-discovery.service";
+import { AuthService } from "@features/integration/services/sync/auth.service";
 import { DeviceIdService } from "@features/integration/services/device-id.service";
 import { FlashcardPanelView } from "@features/library/ui/panel/FlashcardPanelView";
 import { FSRSHelperService } from "@features/metrics/services/fsrs-tools";
@@ -123,6 +124,7 @@ export default class TrueRecallPlugin extends Plugin {
 	presetService!: PresetService;
 	noteTypeService!: NoteTypeService;
 	hierarchyService!: HierarchyService;
+	authService: AuthService | null = null;
 	store: AppStore | null = null;
 	noteStatusCache: NoteStatusCacheService | null = null;
 	statusBarWidget: StatusBarWidget | null = null;
@@ -156,6 +158,8 @@ export default class TrueRecallPlugin extends Plugin {
 
 	async onload(): Promise<void> {
 		await this.loadSettings();
+
+		this.authService = new AuthService();
 
 		this.frontmatterIndex = new FrontmatterIndexService(this.app);
 		this.frontmatterIndex.register({

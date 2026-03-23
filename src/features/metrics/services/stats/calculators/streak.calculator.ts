@@ -3,6 +3,7 @@
  * Calculates current and longest study streaks
  */
 import type { ExtendedDailyStats } from "@shared/types";
+import { getTodayBoundary } from "@shared/utils";
 
 export interface StreakInfo {
 	current: number;
@@ -16,7 +17,10 @@ export class StreakCalculator {
 	/**
 	 * Calculate streak information from daily stats
 	 */
-	calculate(allStats: Record<string, ExtendedDailyStats>): StreakInfo {
+	calculate(
+		allStats: Record<string, ExtendedDailyStats>,
+		dayStartHour: number = 4,
+	): StreakInfo {
 		const reviewDates = Object.keys(allStats)
 			.filter((date) => (allStats[date]?.reviewsCompleted ?? 0) > 0)
 			.sort((a, b) => b.localeCompare(a)); // Descending
@@ -25,8 +29,7 @@ export class StreakCalculator {
 			return { current: 0, longest: 0 };
 		}
 
-		const today = new Date();
-		today.setHours(0, 0, 0, 0);
+		const today = getTodayBoundary(dayStartHour);
 
 		// Calculate current streak
 		const currentStreak = this.calculateCurrentStreak(

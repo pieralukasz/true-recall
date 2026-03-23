@@ -1,4 +1,5 @@
 import { useSettings } from "@features/settings/hooks/useSettings";
+import { AccountSection } from "./AccountSection";
 import {
 	TRUERECALL_BMC_URL,
 	TRUERECALL_GITHUB_URL,
@@ -22,6 +23,8 @@ export function GeneralTab() {
 
 	return (
 		<div class="ep:flex ep:flex-col ep:gap-3">
+			<AccountSection />
+
 			<FormCard title="Review interface">
 				<FormField
 					name="Review mode"

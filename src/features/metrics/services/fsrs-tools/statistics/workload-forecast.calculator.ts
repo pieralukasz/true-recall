@@ -5,6 +5,7 @@
  */
 
 import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
+import { formatLocalDate } from "@shared/utils";
 import { State } from "ts-fsrs";
 
 /**
@@ -72,13 +73,13 @@ export class WorkloadForecastCalculator {
 
 		const currentDate = new Date(today);
 		while (currentDate <= endDate) {
-			forecast.set(this.formatDate(currentDate), { review: 0, learning: 0 });
+			forecast.set(formatLocalDate(currentDate), { review: 0, learning: 0 });
 			currentDate.setDate(currentDate.getDate() + 1);
 		}
 
 		// Count cards by date and state
 		for (const card of cards) {
-			const dateStr = this.formatDate(new Date(card.due));
+			const dateStr = formatLocalDate(new Date(card.due));
 			const existing = forecast.get(dateStr);
 
 			if (existing) {
@@ -229,10 +230,4 @@ export class WorkloadForecastCalculator {
 			.sort((a, b) => a.day - b.day);
 	}
 
-	/**
-	 * Format date as YYYY-MM-DD
-	 */
-	private formatDate(date: Date): string {
-		return date.toISOString().split("T")[0] ?? "";
-	}
 }

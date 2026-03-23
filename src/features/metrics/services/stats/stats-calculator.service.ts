@@ -26,12 +26,14 @@ import type {
 	StatsTimeRange,
 	TodaySummary,
 } from "@shared/types";
+import { formatLocalDate, getTodayBoundary, getTomorrowBoundary } from "@shared/utils";
 import { State } from "ts-fsrs";
 
 export class StatsCalculatorService {
 	private sessionPersistence: SessionPersistenceService;
 	private fsrsService: FSRSService;
 	private sqliteStore: SqliteStoreService | null = null;
+	private dayStartHour = 4;
 	private filter: StatsFilterContext = EMPTY_FILTER;
 	private filterCacheKey = this.buildFilterCacheKey(EMPTY_FILTER);
 	private cardSnapshot: FSRSFlashcardItem[] | null = null;
@@ -61,15 +63,21 @@ export class StatsCalculatorService {
 		fsrsService: FSRSService,
 		private flashcardManager: FlashcardManager,
 		sessionPersistence: SessionPersistenceService,
+		dayStartHour?: number,
 	) {
 		this.sessionPersistence = sessionPersistence;
 		this.fsrsService = fsrsService;
+		if (dayStartHour !== undefined) this.dayStartHour = dayStartHour;
 	}
 
 	setSqliteStore(store: SqliteStoreService): void {
 		this.sqliteStore = store;
 		this.maturityCalculator.setSqliteStore(store);
 		this.chartDataCalculator.setSqliteStore(store);
+	}
+
+	setDayStartHour(hour: number): void {
+		this.dayStartHour = hour;
 	}
 
 	setFilter(ctx: StatsFilterContext): void {
@@ -146,7 +154,7 @@ export class StatsCalculatorService {
 	 * otherwise use the fast daily_stats table path.
 	 */
 	private getFilteredDailyStats(): Record<string, ExtendedDailyStats> {
-		const todayKey = new Date().toISOString().split("T")[0] ?? "";
+		const todayKey = formatLocalDate(getTodayBoundary(this.dayStartHour));
 		const cacheKey = `all:${todayKey}:${this.filterCacheKey}`;
 		const cached = this.dailyStatsCache.get(cacheKey);
 		if (cached) return cached;
@@ -243,7 +251,7 @@ export class StatsCalculatorService {
 
 	getTodaySummary(): TodaySummary {
 		if (this.isFilterActive) {
-			const today = new Date().toISOString().split("T")[0] ?? "";
+			const today = formatLocalDate(getTodayBoundary(this.dayStartHour));
 			const todayStats = this.getFilteredDailyStats()[today];
 			if (!todayStats) return emptyTodaySummary();
 
@@ -285,7 +293,7 @@ export class StatsCalculatorService {
 
 	getStreakInfo(): StreakInfo {
 		const allStats = this.getFilteredDailyStats();
-		return this.streakCalculator.calculate(allStats);
+		return this.streakCalculator.calculate(allStats, this.dayStartHour);
 	}
 
 	async getRangeSummary(range: StatsTimeRange): Promise<{
@@ -324,16 +332,14 @@ export class StatsCalculatorService {
 			0,
 		);
 
-		const tomorrow = new Date();
-		tomorrow.setDate(tomorrow.getDate() + 1);
-		tomorrow.setHours(0, 0, 0, 0);
-		const tomorrowEnd = new Date(tomorrow);
-		tomorrowEnd.setHours(23, 59, 59, 999);
+		const tomorrowStart = getTomorrowBoundary(this.dayStartHour);
+		const dayAfterTomorrow = new Date(tomorrowStart);
+		dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 1);
 
 		const dueTomorrow = cards.filter((c) => {
 			if (c.fsrs.state === State.New) return false;
 			const dueDate = new Date(c.fsrs.due);
-			return dueDate >= tomorrow && dueDate <= tomorrowEnd;
+			return dueDate >= tomorrowStart && dueDate < dayAfterTomorrow;
 		}).length;
 
 		const futureStats = this.getFutureDueStats("1m");

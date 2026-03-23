@@ -6,6 +6,7 @@
  */
 
 import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
+import { formatLocalDate } from "@shared/utils";
 
 /**
  * True retention data point
@@ -106,8 +107,8 @@ export class TrueRetentionCalculator {
 		startDate.setDate(startDate.getDate() - days);
 
 		const entries = this.calculate(
-			this.formatDate(startDate),
-			this.formatDate(endDate),
+			formatLocalDate(startDate),
+			formatLocalDate(endDate),
 			presetNames,
 		);
 
@@ -128,12 +129,12 @@ export class TrueRetentionCalculator {
 		rollingStartDate.setDate(rollingStartDate.getDate() - days - window);
 
 		const combinedEntries = this.calculate(
-			this.formatDate(rollingStartDate),
-			this.formatDate(endDate),
+			formatLocalDate(rollingStartDate),
+			formatLocalDate(endDate),
 			presetNames,
 		);
 
-		const summaryStartKey = this.formatDate(summaryStartDate);
+		const summaryStartKey = formatLocalDate(summaryStartDate);
 		const summaryEntries = combinedEntries.filter(
 			(entry) => entry.date >= summaryStartKey,
 		);
@@ -224,8 +225,8 @@ export class TrueRetentionCalculator {
 		startDate.setDate(startDate.getDate() - days - window);
 
 		const entries = this.calculate(
-			this.formatDate(startDate),
-			this.formatDate(endDate),
+			formatLocalDate(startDate),
+			formatLocalDate(endDate),
 			presetNames,
 		);
 
@@ -260,10 +261,4 @@ export class TrueRetentionCalculator {
 		return result;
 	}
 
-	/**
-	 * Format date as YYYY-MM-DD
-	 */
-	private formatDate(date: Date): string {
-		return date.toISOString().split("T")[0] ?? "";
-	}
 }

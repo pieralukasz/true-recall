@@ -1,5 +1,6 @@
 import type { SqliteDatabase } from "@features/core/persistence/sqlite/SqliteDatabase";
 import { generateUUID } from "@features/core/persistence/sqlite/sqlite.types";
+import { formatLocalDate } from "@shared/utils";
 import type {
 	CardMaturityBreakdown,
 	CardReviewLogEntry,
@@ -221,11 +222,11 @@ export class StatsActions {
 		}
 
 		// Today's best: longest consecutive correct run within today's reviews
-		const todayStr = new Date().toISOString().split("T")[0] ?? "";
+		const todayStr = formatLocalDate(new Date());
 		let todayBest = 0;
 		let todayRun = 0;
 		for (const row of rows) {
-			const rowDate = row.reviewed_at.split("T")[0] ?? "";
+			const rowDate = formatLocalDate(new Date(row.reviewed_at));
 			if (rowDate !== todayStr) continue;
 			if (row.rating >= 3) {
 				todayRun++;
@@ -419,7 +420,8 @@ export class StatsActions {
 			this.db.run(`
                 INSERT INTO daily_stats (
                     date, reviews_completed, new_cards_studied, total_time_ms,
-                    again_count, hard_count, good_count, easy_count
+                    again_count, hard_count, good_count, easy_count,
+                    new_cards, learning_cards, review_cards
                 )
                 SELECT
                     date(reviewed_at) as date,
@@ -429,7 +431,10 @@ export class StatsActions {
                     SUM(CASE WHEN rating = 1 THEN 1 ELSE 0 END) as again_count,
                     SUM(CASE WHEN rating = 2 THEN 1 ELSE 0 END) as hard_count,
                     SUM(CASE WHEN rating = 3 THEN 1 ELSE 0 END) as good_count,
-                    SUM(CASE WHEN rating = 4 THEN 1 ELSE 0 END) as easy_count
+                    SUM(CASE WHEN rating = 4 THEN 1 ELSE 0 END) as easy_count,
+                    SUM(CASE WHEN state = 0 THEN 1 ELSE 0 END) as new_cards,
+                    SUM(CASE WHEN state IN (1, 3) THEN 1 ELSE 0 END) as learning_cards,
+                    SUM(CASE WHEN state = 2 THEN 1 ELSE 0 END) as review_cards
                 FROM review_log
                 WHERE deleted_at IS NULL
                   AND reviewed_at IS NOT NULL

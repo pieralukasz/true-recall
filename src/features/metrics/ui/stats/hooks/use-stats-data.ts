@@ -68,6 +68,7 @@ export function useStatsData(
 			plugin.fsrsService,
 			plugin.flashcardManager,
 			plugin.sessionPersistence,
+			plugin.settings.dayStartHour,
 		);
 		calc.setSqliteStore(plugin.cardStore);
 		return calc;
