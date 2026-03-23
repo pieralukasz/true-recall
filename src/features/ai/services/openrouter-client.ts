@@ -49,7 +49,22 @@ export interface ChatCompletionResponse {
 	}>;
 }
 
-const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
+export const OPENROUTER_URL =
+	"https://openrouter.ai/api/v1/chat/completions";
+
+export function buildOpenRouterHeaders(
+	apiKey: string,
+	userId?: string,
+): Record<string, string> {
+	const headers: Record<string, string> = {
+		"Content-Type": "application/json",
+		Authorization: `Bearer ${apiKey}`,
+		"HTTP-Referer": "obsidian://true-recall",
+		"X-Title": "True Recall",
+	};
+	if (userId) headers["X-User-Id"] = userId;
+	return headers;
+}
 
 /** Extract text content from a ChatMessage response (handles both string and ContentPart[] content). */
 export function getTextContent(message: ChatMessage | undefined): string {
@@ -97,13 +112,7 @@ export class OpenRouterClient {
 	}
 
 	async chat(request: ChatCompletionRequest): Promise<ChatCompletionResponse> {
-		const headers: Record<string, string> = {
-			"Content-Type": "application/json",
-			Authorization: `Bearer ${this.apiKey}`,
-			"HTTP-Referer": "obsidian://true-recall",
-			"X-Title": "True Recall",
-		};
-		if (this.userId) headers["X-User-Id"] = this.userId;
+		const headers = buildOpenRouterHeaders(this.apiKey, this.userId);
 
 		const response = await requestUrl({
 			url: this.baseUrl,

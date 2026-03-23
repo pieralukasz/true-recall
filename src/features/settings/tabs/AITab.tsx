@@ -65,16 +65,19 @@ export function AITab() {
 			<FormCard title="OpenRouter API Key">
 				<InfoBlock>
 					<p>
-						Add your OpenRouter API key to enable AI flashcard generation.{" "}
-						<a
-							href={`${TRUERECALL_WEB_URL}/pricing`}
-							target="_blank"
-							rel="noopener"
-							class="ep:text-obs-accent"
-						>
-							Or try 50 free generations &rarr;
-						</a>
+						Your OpenRouter API key gives you solid AI-generated flashcards.
+						Want the best quality? A True Recall subscription unlocks
+						fine-tuned prompts, smarter models, and cards built for
+						long-term retention.
 					</p>
+					<a
+						href={`${TRUERECALL_WEB_URL}/pricing`}
+						target="_blank"
+						rel="noopener"
+						class="ep:text-obs-accent"
+					>
+						See True Recall plans &rarr;
+					</a>
 				</InfoBlock>
 
 				<FormField
@@ -89,20 +92,6 @@ export function AITab() {
 						class="ep:w-[300px]"
 					/>
 				</FormField>
-
-				{!hasApiKey && (
-					<InfoBlock>
-						<p>
-							<a
-								href="https://openrouter.ai/keys"
-								target="_blank"
-								rel="noopener"
-							>
-								Get your API key at openrouter.ai/keys
-							</a>
-						</p>
-					</InfoBlock>
-				)}
 			</FormCard>
 
 			<FormCard title="AI Prompts">

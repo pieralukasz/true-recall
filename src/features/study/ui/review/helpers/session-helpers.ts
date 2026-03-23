@@ -361,7 +361,7 @@ function matchesSessionFilters(
 	filters: SessionFilters,
 ): boolean {
 	const now = Date.now();
-	const dayStartHour = 4;
+	const dayStartHour = filters.dayStartHour ?? 4;
 	const todayBoundary = getTodayBoundary(dayStartHour).getTime();
 	const weekAgoBoundary = todayBoundary - 7 * 86_400_000;
 

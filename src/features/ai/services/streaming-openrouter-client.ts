@@ -1,4 +1,9 @@
-import { AIRequestError, type ChatMessage } from "./openrouter-client";
+import {
+	AIRequestError,
+	buildOpenRouterHeaders,
+	type ChatMessage,
+	OPENROUTER_URL,
+} from "./openrouter-client";
 
 export interface StreamingChatRequest {
 	messages: ChatMessage[];
@@ -9,8 +14,6 @@ export interface StreamChunk {
 	content: string;
 	finishReason: string | null;
 }
-
-const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
 export class StreamingOpenRouterClient {
 	private baseUrl: string;
@@ -28,13 +31,7 @@ export class StreamingOpenRouterClient {
 		request: StreamingChatRequest,
 		signal?: AbortSignal,
 	): AsyncGenerator<StreamChunk> {
-		const headers: Record<string, string> = {
-			"Content-Type": "application/json",
-			Authorization: `Bearer ${this.apiKey}`,
-			"HTTP-Referer": "obsidian://true-recall",
-			"X-Title": "True Recall",
-		};
-		if (this.userId) headers["X-User-Id"] = this.userId;
+		const headers = buildOpenRouterHeaders(this.apiKey, this.userId);
 
 		const response = await fetch(this.baseUrl, {
 			method: "POST",

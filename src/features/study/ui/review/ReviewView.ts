@@ -422,6 +422,7 @@ export class ReviewView extends ItemView {
 		this.filters = filtersFromViewState(
 			(state as import("./review.types").ReviewViewState) ?? null,
 		);
+		this.filters.dayStartHour = this.plugin.settings.dayStartHour;
 		this.crammedCardIds.clear();
 		this.isProcessingAnswer = false;
 		this.applyDefaultTypeInMode();

@@ -39,11 +39,7 @@ type ClientFactory = (config: AIClientConfig) => {
 	}) => Promise<ChatCompletionResponse>;
 };
 
-function clampScore(score: number): number {
-	return Math.max(0, Math.min(100, Math.round(score)));
-}
-
-function clampThreshold(value: number): number {
+function clamp100(value: number): number {
 	return Math.max(0, Math.min(100, Math.round(value)));
 }
 
@@ -121,12 +117,12 @@ export class SemanticAnswerGradingService {
 
 		const content = getTextContent(response.choices[0]?.message);
 		const parsed = this.parsePayload(content);
-		const score = clampScore(parsed.score);
+		const score = clamp100(parsed.score);
 
 		return {
 			score,
 			feedback: truncateFeedback(parsed.feedback),
-			passed: score >= clampThreshold(input.passThreshold),
+			passed: score >= clamp100(input.passThreshold),
 			source: "ai",
 		};
 	}
@@ -178,10 +174,10 @@ export class SemanticAnswerGradingService {
 		input: GradeAnswerInput,
 		reason: string,
 	): SemanticGradingResult {
-		const score = clampScore(input.localFallbackScore);
+		const score = clamp100(input.localFallbackScore);
 		return {
 			score,
-			passed: score >= clampThreshold(input.passThreshold),
+			passed: score >= clamp100(input.passThreshold),
 			source: "local-fallback",
 			feedback: truncateFeedback(reason),
 		};

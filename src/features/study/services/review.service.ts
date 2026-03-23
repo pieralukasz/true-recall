@@ -17,7 +17,11 @@ import type {
 	NewReviewMix,
 	ReviewOrder,
 } from "@shared/types/settings.types";
-import { getTodayBoundary } from "@shared/utils";
+import {
+	formatLocalDate,
+	getTodayBoundary,
+	getTomorrowBoundary,
+} from "@shared/utils";
 import { type Grade, Rating, State } from "ts-fsrs";
 
 export interface QueueBuildOptions {
@@ -864,26 +868,33 @@ export class ReviewService {
 	calculateDailyStats(
 		allCards: FSRSFlashcardItem[],
 		todayResults: ReviewResult[],
-		settings: { newCardsPerDay: number; reviewsPerDay: number },
+		settings: {
+			newCardsPerDay: number;
+			reviewsPerDay: number;
+			dayStartHour?: number;
+		},
 		dayBoundaryService?: import("@features/core/services/day-boundary.service").DayBoundaryService,
 	): DailyStats {
 		const now = new Date();
-		const todayStart = new Date(now);
-		todayStart.setHours(0, 0, 0, 0);
-		const todayEnd = new Date(now);
-		todayEnd.setHours(23, 59, 59, 999);
+		const dayStartHour = settings.dayStartHour ?? 4;
+		const todayBoundary = dayBoundaryService
+			? dayBoundaryService.getTodayBoundary(now)
+			: getTodayBoundary(dayStartHour, now);
+		const tomorrowBoundary = dayBoundaryService
+			? dayBoundaryService.getTomorrowBoundary(now)
+			: getTomorrowBoundary(dayStartHour, now);
 
 		// Count new cards reviewed today
 		const newReviewedToday = todayResults.filter(
 			(r) => r.previousState === State.New,
 		).length;
 
-		// Count due cards for today using day-based scheduling if service provided
+		// Count due cards for today using day-based scheduling
 		const dueToday = dayBoundaryService
 			? dayBoundaryService.countDueCards(allCards, now)
 			: allCards.filter((card) => {
 					const dueDate = new Date(card.fsrs.due);
-					return dueDate <= todayEnd && card.fsrs.state !== State.New;
+					return dueDate < tomorrowBoundary && card.fsrs.state !== State.New;
 				}).length;
 
 		// Calculate remaining new cards
@@ -897,7 +908,7 @@ export class ReviewService {
 			reviewsCompleted: todayResults.length,
 			dueToday,
 			newRemaining,
-			date: todayStart.toISOString().split("T")[0] ?? "",
+			date: formatLocalDate(todayBoundary),
 		};
 	}
 
@@ -968,15 +979,21 @@ export class ReviewService {
 		return successes / results.length;
 	}
 
-	getStreakInfo(results: ReviewResult[]): {
+	getStreakInfo(
+		results: ReviewResult[],
+		dayStartHour: number = 4,
+	): {
 		currentStreak: number;
 		longestStreak: number;
 	} {
 		if (results.length === 0) return { currentStreak: 0, longestStreak: 0 };
 
+		// Group reviews by FSRS day (adjusted by dayStartHour)
 		const uniqueDays = new Set(
 			results.map((r) => {
 				const d = new Date(r.timestamp);
+				// Shift by dayStartHour so e.g. 3 AM maps to "yesterday"
+				d.setHours(d.getHours() - dayStartHour);
 				return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
 			}),
 		);
@@ -1008,6 +1025,7 @@ export class ReviewService {
 
 		// Current streak: count consecutive days ending at today or yesterday
 		const now = new Date();
+		now.setHours(now.getHours() - dayStartHour);
 		now.setHours(0, 0, 0, 0);
 		const todayMs = now.getTime();
 		const yesterdayMs = todayMs - DAY_MS;

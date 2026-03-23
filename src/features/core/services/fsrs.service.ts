@@ -242,13 +242,14 @@ export class FSRSService {
 	sortByRetrievability(
 		cards: FSRSFlashcardItem[],
 		now?: Date,
+		presetSettings?: FSRSSettings,
 	): FSRSFlashcardItem[] {
 		const currentTime = now ?? new Date();
 
 		// Single pass: compute R for all cards
 		const retrievabilityMap = new Map<string, number>();
 		for (const card of cards) {
-			const r = this.getRetrievability(card.fsrs, currentTime);
+			const r = this.getRetrievability(card.fsrs, currentTime, presetSettings);
 			retrievabilityMap.set(card.id, r);
 		}
 
@@ -260,15 +261,19 @@ export class FSRSService {
 	}
 
 	/** Returns probability of recall (0-1) */
-	getRetrievability(cardData: FSRSCardData, now?: Date): number {
+	getRetrievability(
+		cardData: FSRSCardData,
+		now?: Date,
+		presetSettings?: FSRSSettings,
+	): number {
 		if (cardData.state === State.New) {
 			return 0;
 		}
 
 		const card = this.toCard(cardData);
 		const currentTime = now ?? new Date();
-		// get_retrievability with format=false returns number
-		return this.fsrs.get_retrievability(card, currentTime, false) ?? 0;
+		const fsrs = this.resolveFSRS(presetSettings);
+		return fsrs.get_retrievability(card, currentTime, false) ?? 0;
 	}
 
 	getStats(

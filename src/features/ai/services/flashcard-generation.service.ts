@@ -7,14 +7,9 @@ import type { ParsedBlock } from "@features/study/services/flashcard/block-parse
 import type { NoteType } from "@shared/types/note.types";
 import type { TrueRecallSettings } from "@shared/types/settings.types";
 import { resolveAIClientConfig } from "./ai-client-config";
-import { IncrementalFlashcardParser } from "./incremental-flashcard-parser";
+import { parseBlockResponse } from "./incremental-flashcard-parser";
 import { getTextContent, OpenRouterClient } from "./openrouter-client";
-
-const SOURCE_TRACKING_SUFFIX = `
-
-SOURCE TRACKING (MANDATORY):
-After each answer, on a new line, add: <!-- source: [exact verbatim quote from the input text] -->
-The quote must be EXACTLY copied from the input — same words, same punctuation. Keep it to the specific sentence(s) for that flashcard.`;
+import { SOURCE_TRACKING_SUFFIX } from "./streaming-generation.service";
 
 export interface GenerationResult {
 	blocks: ParsedBlock[];
@@ -56,15 +51,7 @@ export class FlashcardGenerationService {
 	}
 
 	private parseResponse(text: string): ParsedBlock[] {
-		const parser = new IncrementalFlashcardParser(this.getNoteType);
-		parser.feed(text);
-		const blocks = parser
-			.finish()
-			.filter(
-				(e): e is { type: "card_complete"; block: ParsedBlock } =>
-					e.type === "card_complete" && e.block !== null,
-			)
-			.map((e) => e.block);
+		const blocks = parseBlockResponse(text, this.getNoteType);
 		if (text.trim() && blocks.length === 0) {
 			console.warn(
 				"[TrueRecall] AI response produced no parseable flashcards",

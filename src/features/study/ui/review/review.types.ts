@@ -48,6 +48,7 @@ export interface SessionFilters {
 	studyAheadDays?: number;
 	customReviewOrder?: ReviewOrder;
 	crammingMode?: boolean;
+	dayStartHour?: number;
 }
 
 export function filtersFromViewState(

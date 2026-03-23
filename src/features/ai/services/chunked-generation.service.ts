@@ -1,12 +1,4 @@
-import {
-	buildAutoPrompt,
-	buildBlockPrompt,
-} from "@features/ai/prompts/block-prompt-builder";
-import {
-	buildDensitySuffix,
-	buildLanguageSuffix,
-	type GenerationMode,
-} from "@features/ai/prompts/default-prompts";
+import { type GenerationMode } from "@features/ai/prompts/default-prompts";
 import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
 import type { NoteType } from "@shared/types/note.types";
 import type { TrueRecallSettings } from "@shared/types/settings.types";
@@ -16,16 +8,16 @@ import { IncrementalFlashcardParser } from "./incremental-flashcard-parser";
 import { type ChunkingResult, chunkMarkdown } from "./markdown-chunker";
 import { processCardEvents } from "./process-card-events";
 import {
-	SOURCE_TRACKING_SUFFIX,
+	buildGenerationPrompt,
 	type StreamingGenerationResult,
 	StreamingGenerationService,
 } from "./streaming-generation.service";
 import { StreamingOpenRouterClient } from "./streaming-openrouter-client";
 import {
+	createThrottledPartialUpdater,
 	finishStreaming,
 	startStreaming,
 	updateChunkProgress,
-	updatePartial,
 } from "./streaming-state";
 
 const COST_CONFIRM_WORD_THRESHOLD = 5000;
@@ -118,9 +110,13 @@ export class ChunkedGenerationService {
 			chunks.length,
 		);
 
-		const systemPrompt = this.buildPrompt(mode, noteType, allNoteTypes);
-		const settings = this.getSettings();
-		const aiConfig = resolveAIClientConfig(settings);
+		const systemPrompt = buildGenerationPrompt(
+			this.getSettings(),
+			mode,
+			noteType,
+			allNoteTypes,
+		);
+		const aiConfig = resolveAIClientConfig(this.getSettings());
 
 		let totalCreated = 0;
 		let totalDuplicates = 0;
@@ -200,25 +196,7 @@ export class ChunkedGenerationService {
 
 		let createdCount = 0;
 		let duplicateCount = 0;
-		let pendingQuestion: string | null = null;
-		let pendingAnswer: string | null = null;
-		let rafScheduled = false;
-
-		const throttledUpdatePartial = (
-			question: string | null,
-			answer: string | null,
-		) => {
-			pendingQuestion = question;
-			pendingAnswer = answer;
-			if (!rafScheduled) {
-				rafScheduled = true;
-				requestAnimationFrame(() => {
-					updatePartial(pendingQuestion, pendingAnswer);
-					rafScheduled = false;
-				});
-			}
-		};
-
+		const throttledUpdatePartial = createThrottledPartialUpdater();
 		const onCount = (created: number, dups: number) => {
 			createdCount += created;
 			duplicateCount += dups;
@@ -256,70 +234,5 @@ export class ChunkedGenerationService {
 		);
 
 		return { created: createdCount, duplicates: duplicateCount };
-	}
-
-	private buildPrompt(
-		mode: GenerationMode,
-		noteType?: NoteType | null,
-		allNoteTypes?: NoteType[],
-	): string {
-		const settings = this.getSettings();
-		const langSuffix = buildLanguageSuffix(
-			settings.generationLanguage ?? "auto",
-		);
-		const densitySuffix = buildDensitySuffix(
-			settings.generationDensity ?? "balanced",
-		);
-
-		if (noteType?.slug) {
-			const customKey = `notetype:${noteType.slug}`;
-			const custom = (
-				settings.aiFlashcardPrompts as Record<string, string | undefined>
-			)?.[customKey];
-			if (custom?.trim())
-				return custom + densitySuffix + SOURCE_TRACKING_SUFFIX + langSuffix;
-		}
-
-		const legacyCustom =
-			settings.aiFlashcardPrompts?.[
-				mode as keyof typeof settings.aiFlashcardPrompts
-			];
-		if (typeof legacyCustom === "string" && legacyCustom.trim()) {
-			return legacyCustom + densitySuffix + SOURCE_TRACKING_SUFFIX + langSuffix;
-		}
-
-		if (mode === "auto" && allNoteTypes && allNoteTypes.length > 0) {
-			return (
-				buildAutoPrompt(allNoteTypes) +
-				densitySuffix +
-				SOURCE_TRACKING_SUFFIX +
-				langSuffix
-			);
-		}
-
-		if (noteType) {
-			return (
-				buildBlockPrompt(noteType) +
-				densitySuffix +
-				SOURCE_TRACKING_SUFFIX +
-				langSuffix
-			);
-		}
-
-		return (
-			buildBlockPrompt({
-				id: "builtin-basic",
-				name: "Basic",
-				type: 0,
-				fields: ["Front", "Back"],
-				templates: [],
-				css: "",
-				isBuiltin: true,
-				slug: "basic",
-			} as NoteType) +
-			densitySuffix +
-			SOURCE_TRACKING_SUFFIX +
-			langSuffix
-		);
 	}
 }

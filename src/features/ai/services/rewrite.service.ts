@@ -1,11 +1,10 @@
 import { buildRewritePrompt } from "@features/ai/prompts/block-prompt-builder";
-import type { ParsedBlock } from "@features/study/services/flashcard/block-parser.service";
 import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
 import type { NoteType } from "@shared/types/note.types";
 import type { TrueRecallSettings } from "@shared/types/settings.types";
 import { Notice } from "obsidian";
 import { resolveAIClientConfig } from "./ai-client-config";
-import { IncrementalFlashcardParser } from "./incremental-flashcard-parser";
+import { parseBlockResponse } from "./incremental-flashcard-parser";
 import { getTextContent, OpenRouterClient } from "./openrouter-client";
 import { addStreamedCard, clearRecentCards } from "./streaming-state";
 
@@ -128,15 +127,7 @@ export class RewriteService {
 		return getTextContent(response.choices[0]?.message);
 	}
 
-	private parseResponse(text: string): ParsedBlock[] {
-		const parser = new IncrementalFlashcardParser(this.getNoteTypeBySlug);
-		parser.feed(text);
-		const blocks: ParsedBlock[] = [];
-		for (const event of parser.finish()) {
-			if (event.type === "card_complete" && event.block) {
-				blocks.push(event.block);
-			}
-		}
-		return blocks;
+	private parseResponse(text: string) {
+		return parseBlockResponse(text, this.getNoteTypeBySlug);
 	}
 }
