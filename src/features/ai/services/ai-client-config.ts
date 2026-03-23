@@ -1,4 +1,4 @@
-import { LITELLM_PROXY_URL } from "@shared/constants";
+import { AI_PROXY_URL } from "@shared/constants";
 import type { TrueRecallSettings } from "@shared/types/settings.types";
 
 const MANAGED_DEFAULT_MODEL = "google/gemini-3-flash-preview";
@@ -12,13 +12,8 @@ export interface AIClientConfig {
 
 /**
  * Resolves which AI backend to use:
- * - Subscription key present → route through LiteLLM proxy
+ * - Subscription key present → route through managed proxy
  * - Otherwise → direct to OpenRouter with BYOK key
- *
- * The cached `isSubscriber` flag is used by UI/init code to know
- * subscription state instantly on startup (no async call needed).
- * This function uses the key directly since it's always available
- * from settings when a subscription is active.
  */
 export function resolveAIClientConfig(
 	settings: TrueRecallSettings,
@@ -27,7 +22,7 @@ export function resolveAIClientConfig(
 		return {
 			apiKey: settings.subscriptionKey,
 			model: "auto",
-			proxyUrl: LITELLM_PROXY_URL,
+			proxyUrl: AI_PROXY_URL,
 			userId: settings.userId,
 		};
 	}
