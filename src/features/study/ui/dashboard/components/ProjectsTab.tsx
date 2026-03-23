@@ -22,7 +22,6 @@ import {
 	collectMatchingPaths,
 	flattenProjectTree,
 } from "../helpers/project-tree-flatten";
-import { useInitialMount } from "../helpers/use-initial-mount";
 import { useExternalVirtualList } from "../helpers/use-virtual-list";
 import type { DashboardProject } from "../types";
 import { NoteRow } from "./NoteRow";
@@ -46,7 +45,6 @@ export function ProjectsTab({
 	onPresetClick,
 }: ProjectsTabProps) {
 	const plugin = usePlugin();
-	const initialMount = useInitialMount();
 	const expandedPaths = useSignal<ReadonlySet<string>>(new Set());
 	const contentRef = useRef<HTMLDivElement>(null);
 	const dragState = useSignal<DragState | null>(null);
@@ -262,11 +260,7 @@ export function ProjectsTab({
 				ref={contentRef}
 				style={{ height: `${totalHeight}px`, position: "relative" }}
 			>
-				{virtualItems.map(({ item, offsetTop, index }) => {
-					const animStyle = initialMount.current
-						? { "--card-index": Math.min(index, 10) }
-						: {};
-
+				{virtualItems.map(({ item, offsetTop }) => {
 					if (item.type === "project-header") {
 						const isVirtual = item.project.path === UNASSIGNED_PATH;
 						const dragCls = getDragClass(dragState.value, item.project.path);
@@ -274,10 +268,7 @@ export function ProjectsTab({
 							<div
 								role="listitem"
 								key={`p-${item.project.path}`}
-								class={
-									`${initialMount.current ? "ep-card-enter" : ""} ${dragCls}`.trim() ||
-									undefined
-								}
+								class={dragCls || undefined}
 								draggable={!isVirtual}
 								onDragStart={
 									isVirtual ? undefined : (e) => handleDragStart(e, item)
@@ -293,7 +284,6 @@ export function ProjectsTab({
 									left: 0,
 									right: 0,
 									height: "36px",
-									...animStyle,
 								}}
 							>
 								<ProjectHeaderRow
@@ -361,10 +351,7 @@ export function ProjectsTab({
 							<div
 								role="listitem"
 								key={`n-${item.note.name}`}
-								class={
-									`${initialMount.current ? "ep-card-enter" : ""} ${dragCls}`.trim() ||
-									undefined
-								}
+								class={dragCls || undefined}
 								draggable={!!item.note.path}
 								onDragStart={(e) => handleDragStart(e, item)}
 								onDragEnd={handleDragEnd}
@@ -377,7 +364,6 @@ export function ProjectsTab({
 									right: 0,
 									height: "36px",
 									paddingLeft: `${item.depth * 20}px`,
-									...animStyle,
 								}}
 							>
 								<NoteRow
@@ -433,14 +419,12 @@ export function ProjectsTab({
 					return (
 						<div
 							key={`e-${item.projectPath}`}
-							class={initialMount.current ? "ep-card-enter" : undefined}
 							style={{
 								position: "absolute",
 								top: `${offsetTop}px`,
 								left: 0,
 								right: 0,
 								height: "36px",
-								...animStyle,
 							}}
 						>
 							<EmptyProjectRow depth={item.depth} />
