@@ -144,7 +144,7 @@ describe("CardBrowserQueryService.getOrphanedCardIds", () => {
 		expect(orphanedIds).toEqual([]);
 	});
 
-	it("excludes cards with missing sourceUid", () => {
+	it("includes cards with null/empty sourceUid as orphaned", () => {
 		const cards = [
 			makeCard("no-source-1"),
 			makeCard("no-source-2", ""),
@@ -156,7 +156,7 @@ describe("CardBrowserQueryService.getOrphanedCardIds", () => {
 
 		const orphanedIds = service.getOrphanedCardIds();
 
-		expect(orphanedIds).toEqual(["orphan-1"]);
+		expect(orphanedIds).toEqual(["no-source-1", "no-source-2", "orphan-1"]);
 		expect(frontmatterIndex.getFileByValue).toHaveBeenCalledTimes(1);
 		expect(frontmatterIndex.getFileByValue).toHaveBeenCalledWith(
 			"flashcard_uid",
