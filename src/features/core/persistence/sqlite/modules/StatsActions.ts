@@ -1,4 +1,5 @@
 import type { SqliteDatabase } from "@features/core/persistence/sqlite/SqliteDatabase";
+import { sqlPlaceholders } from "@features/core/persistence/sqlite/sql-utils";
 import { generateUUID } from "@features/core/persistence/sqlite/sqlite.types";
 import type {
 	CardMaturityBreakdown,
@@ -1060,8 +1061,7 @@ export class StatsActions {
 		const { startIso, endExclusiveIso } = toUtcIsoDayRange(startDate, endDate);
 
 		if (presetNames && presetNames.length > 0) {
-			const placeholders = presetNames.map(() => "?").join(",");
-			presetClause = `AND COALESCE(r.preset_name, 'Default') IN (${placeholders})`;
+			presetClause = `AND COALESCE(r.preset_name, 'Default') IN (${sqlPlaceholders(presetNames.length)})`;
 			params.push(...presetNames);
 		}
 
@@ -1228,14 +1228,13 @@ export class StatsActions {
 		const params: (string | number | null)[] = [];
 
 		if (excludeUids.length > 0) {
-			excludeClause = `AND c.source_uid NOT IN (${excludeUids.map(() => "?").join(",")})`;
+			excludeClause = `AND c.source_uid NOT IN (${sqlPlaceholders(excludeUids.length)})`;
 			params.push(...excludeUids);
 		}
 
 		let presetClause = "";
 		if (presetNames !== null && presetNames.length > 0) {
-			const placeholders = presetNames.map(() => "?").join(",");
-			presetClause = `AND COALESCE(r.preset_name, 'Default') IN (${placeholders})`;
+			presetClause = `AND COALESCE(r.preset_name, 'Default') IN (${sqlPlaceholders(presetNames.length)})`;
 			params.push(...presetNames);
 		}
 
@@ -1301,13 +1300,13 @@ export class StatsActions {
 		const params: (string | number | null)[] = [];
 
 		if (excludeSourceUids.length > 0) {
-			excludeClause = `AND c.source_uid NOT IN (${excludeSourceUids.map(() => "?").join(",")})`;
+			excludeClause = `AND c.source_uid NOT IN (${sqlPlaceholders(excludeSourceUids.length)})`;
 			params.push(...excludeSourceUids);
 		}
 
 		if (includeSourceUids) {
 			if (includeSourceUids.length === 0) return [];
-			includeClause = `AND c.source_uid IN (${includeSourceUids.map(() => "?").join(",")})`;
+			includeClause = `AND c.source_uid IN (${sqlPlaceholders(includeSourceUids.length)})`;
 			params.push(...includeSourceUids);
 		}
 

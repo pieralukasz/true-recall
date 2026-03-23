@@ -1,6 +1,7 @@
 import { FSRS_CONFIG } from "@shared/constants";
 import { notify } from "@shared/services/notification.service";
 import type { FSRSPreset } from "@shared/types";
+import type { FsrsPluginHost } from "@shared/types/plugin-host.types";
 import {
 	ActionButton,
 	FormCard,
@@ -13,7 +14,7 @@ import { useCallback, useState } from "preact/hooks";
 interface ParametersSectionProps {
 	preset: FSRSPreset;
 	updatePreset: (c: Partial<FSRSPreset>) => Promise<void>;
-	plugin: any;
+	plugin: FsrsPluginHost;
 	onRefresh: () => void;
 }
 

@@ -1,4 +1,5 @@
 import type { SqliteStoreService } from "@features/core/persistence/sqlite";
+import { sqlPlaceholders } from "@features/core/persistence/sqlite/sql-utils";
 import type { FrontmatterIndexService } from "@features/core/services/frontmatter-index.service";
 import type { HierarchyService } from "@features/core/services/hierarchy.service";
 import type { FSRSCardData } from "@shared/types";
@@ -36,8 +37,7 @@ export class CardBrowserQueryService {
 			const orphanedUids = this.getOrphanedSourceUids();
 			const conditions: string[] = ["c.source_uid IS NULL"];
 			if (orphanedUids.length > 0) {
-				const placeholders = orphanedUids.map(() => "?").join(",");
-				conditions.push(`c.source_uid IN (${placeholders})`);
+				conditions.push(`c.source_uid IN (${sqlPlaceholders(orphanedUids.length)})`);
 				sqlQuery.params.push(...orphanedUids);
 			}
 			sqlQuery.where += ` AND (${conditions.join(" OR ")})`;
@@ -180,9 +180,8 @@ export class CardBrowserQueryService {
 		}
 
 		const ids = [...archivedUids];
-		const placeholders = ids.map(() => "?").join(",");
 		return {
-			where: `(${where}) AND (c.source_uid IS NULL OR c.source_uid NOT IN (${placeholders}))`,
+			where: `(${where}) AND (c.source_uid IS NULL OR c.source_uid NOT IN (${sqlPlaceholders(ids.length)}))`,
 			params: [...params, ...ids],
 		};
 	}

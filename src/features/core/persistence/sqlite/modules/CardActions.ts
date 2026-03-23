@@ -1,4 +1,5 @@
 import { escapeFts5Query } from "@features/core/persistence/sqlite/modules/NoteActions";
+import { sqlPlaceholders } from "@features/core/persistence/sqlite/sql-utils";
 import type { SqliteDatabase } from "@features/core/persistence/sqlite/SqliteDatabase";
 import {
 	deriveCardType,
@@ -323,7 +324,7 @@ export class CardActions {
 
 	getByIds(cardIds: string[]): FSRSCardData[] {
 		if (cardIds.length === 0) return [];
-		const placeholders = cardIds.map(() => "?").join(",");
+		const placeholders = sqlPlaceholders(cardIds.length);
 		const rows = this.db.query<CardRow>(
 			`SELECT ${CARD_SELECT} ${CARD_FROM} WHERE c.id IN (${placeholders}) AND c.deleted_at IS NULL`,
 			cardIds,
@@ -431,7 +432,7 @@ export class CardActions {
 		cardIds: string[],
 	): Array<{ noteId: string; noteTypeId: string }> {
 		if (cardIds.length === 0) return [];
-		const placeholders = cardIds.map(() => "?").join(",");
+		const placeholders = sqlPlaceholders(cardIds.length);
 		return this.db.query<{ noteId: string; noteTypeId: string }>(
 			`SELECT DISTINCT c.note_id AS noteId, n.note_type_id AS noteTypeId
 			 FROM cards c JOIN notes n ON c.note_id = n.id
@@ -839,7 +840,7 @@ export class CardActions {
 
 	bulkSuspend(cardIds: string[]): number {
 		if (cardIds.length === 0) return 0;
-		const placeholders = cardIds.map(() => "?").join(",");
+		const placeholders = sqlPlaceholders(cardIds.length);
 		const params = [Date.now(), ...cardIds] as [number, ...string[]];
 		this.db.run(
 			`UPDATE cards SET suspended = 1, updated_at = ? WHERE id IN (${placeholders})`,
@@ -850,7 +851,7 @@ export class CardActions {
 
 	bulkUnsuspend(cardIds: string[]): number {
 		if (cardIds.length === 0) return 0;
-		const placeholders = cardIds.map(() => "?").join(",");
+		const placeholders = sqlPlaceholders(cardIds.length);
 		const params = [Date.now(), ...cardIds] as [number, ...string[]];
 		this.db.run(
 			`UPDATE cards SET suspended = 0, updated_at = ? WHERE id IN (${placeholders})`,
@@ -861,7 +862,7 @@ export class CardActions {
 
 	bulkBury(cardIds: string[], untilDate: string): number {
 		if (cardIds.length === 0) return 0;
-		const placeholders = cardIds.map(() => "?").join(",");
+		const placeholders = sqlPlaceholders(cardIds.length);
 		const params = [untilDate, Date.now(), ...cardIds] as [
 			string,
 			number,
@@ -876,7 +877,7 @@ export class CardActions {
 
 	bulkUnbury(cardIds: string[]): number {
 		if (cardIds.length === 0) return 0;
-		const placeholders = cardIds.map(() => "?").join(",");
+		const placeholders = sqlPlaceholders(cardIds.length);
 		const params = [Date.now(), ...cardIds] as [number, ...string[]];
 		this.db.run(
 			`UPDATE cards SET buried_until = NULL, updated_at = ? WHERE id IN (${placeholders})`,
@@ -888,7 +889,7 @@ export class CardActions {
 	bulkSoftDelete(cardIds: string[]): number {
 		if (cardIds.length === 0) return 0;
 		const now = Date.now();
-		const placeholders = cardIds.map(() => "?").join(",");
+		const placeholders = sqlPlaceholders(cardIds.length);
 		this.db.transaction(() => {
 			this.db.run(
 				`UPDATE review_log SET deleted_at = ?, updated_at = ? WHERE card_id IN (${placeholders})`,
@@ -905,7 +906,7 @@ export class CardActions {
 	/** @deprecated Use bulkSoftDelete() instead for sync compatibility */
 	bulkDelete(cardIds: string[]): number {
 		if (cardIds.length === 0) return 0;
-		const placeholders = cardIds.map(() => "?").join(",");
+		const placeholders = sqlPlaceholders(cardIds.length);
 		this.db.transaction(() => {
 			this.db.run(
 				`DELETE FROM review_log WHERE card_id IN (${placeholders})`,
@@ -919,7 +920,7 @@ export class CardActions {
 	/** @deprecated Use bulkForget() instead — it also clears review history */
 	bulkReset(cardIds: string[]): number {
 		if (cardIds.length === 0) return 0;
-		const placeholders = cardIds.map(() => "?").join(",");
+		const placeholders = sqlPlaceholders(cardIds.length);
 		const now = new Date().toISOString();
 		const params = [now, Date.now(), ...cardIds] as [
 			string,
@@ -940,14 +941,14 @@ export class CardActions {
 
 	bulkForget(cardIds: string[]): number {
 		if (cardIds.length === 0) return 0;
-		const placeholders = cardIds.map(() => "?").join(",");
+		const placeholders = sqlPlaceholders(cardIds.length);
 		const forgettableRows = this.db.query<{ id: string }>(
 			`SELECT id FROM cards WHERE id IN (${placeholders}) AND state != 0`,
 			cardIds,
 		);
 		const forgettableIds = forgettableRows.map((row) => row.id);
 		if (forgettableIds.length === 0) return 0;
-		const forgettablePlaceholders = forgettableIds.map(() => "?").join(",");
+		const forgettablePlaceholders = sqlPlaceholders(forgettableIds.length);
 		const now = new Date().toISOString();
 		const nowMs = Date.now();
 		let modified = 0;
@@ -972,7 +973,7 @@ export class CardActions {
 
 	bulkReschedule(cardIds: string[], dueDate: string): number {
 		if (cardIds.length === 0) return 0;
-		const placeholders = cardIds.map(() => "?").join(",");
+		const placeholders = sqlPlaceholders(cardIds.length);
 		const params = [dueDate, Date.now(), ...cardIds] as [
 			string,
 			number,

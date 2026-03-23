@@ -1,5 +1,6 @@
 import { useFsrsHelperOp } from "@features/settings/tabs/fsrs/useFsrsHelperOp";
 import type { TrueRecallSettings } from "@shared/types";
+import type { FsrsPluginHost } from "@shared/types/plugin-host.types";
 import {
 	ActionButton,
 	FormCard,
@@ -13,7 +14,7 @@ import { useMemo } from "preact/hooks";
 interface LoadBalanceSectionProps {
 	settings: TrueRecallSettings;
 	save: (patch: Partial<TrueRecallSettings>) => Promise<void>;
-	plugin: any;
+	plugin: FsrsPluginHost;
 }
 
 export function LoadBalanceSection({
@@ -24,7 +25,7 @@ export function LoadBalanceSection({
 	const opConfig = useMemo(
 		() => ({
 			plugin,
-			operationName: "balance-workload",
+			operationName: "balance-workload" as const,
 			undoDescription: (n: number) => `Balance workload (${n} cards)`,
 			successMessage: (n: number) => `Balanced ${n} cards (Ctrl+Z to undo)`,
 			emptyMessage: "No cards needed balancing",

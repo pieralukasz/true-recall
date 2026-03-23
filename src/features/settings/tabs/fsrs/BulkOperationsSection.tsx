@@ -1,5 +1,6 @@
 import { useFsrsHelperOp } from "@features/settings/tabs/fsrs/useFsrsHelperOp";
 import { notify } from "@shared/services/notification.service";
+import type { FsrsPluginHost } from "@shared/types/plugin-host.types";
 import {
 	ActionButton,
 	FormCard,
@@ -10,7 +11,7 @@ import { confirm } from "@shared/ui/modals";
 import { useCallback, useMemo, useState } from "preact/hooks";
 
 interface BulkOperationsSectionProps {
-	plugin: any;
+	plugin: FsrsPluginHost;
 }
 
 export function BulkOperationsSection({ plugin }: BulkOperationsSectionProps) {
@@ -20,7 +21,7 @@ export function BulkOperationsSection({ plugin }: BulkOperationsSectionProps) {
 	const postponeConfig = useMemo(
 		() => ({
 			plugin,
-			operationName: "shift-due-dates",
+			operationName: "shift-due-dates" as const,
 			undoDescription: (n: number) =>
 				`Postpone ${n} cards by ${parseInt(postponeDays, 10) || 7} days`,
 			successMessage: (n: number) =>
@@ -61,7 +62,7 @@ export function BulkOperationsSection({ plugin }: BulkOperationsSectionProps) {
 							payload: {
 								type: "fsrs-helper-operation",
 								operation: "reschedule-cards",
-								changes: result.changes.map((c: any) => ({
+								changes: result.changes.map((c) => ({
 									cardId: c.cardId,
 									originalDue: c.originalDue,
 									newDue: c.newDue,

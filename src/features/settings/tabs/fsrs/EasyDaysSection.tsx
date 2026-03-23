@@ -1,6 +1,7 @@
 import { EasyDaysModal } from "@features/metrics/modals/EasyDaysModal";
 import { notify } from "@shared/services/notification.service";
 import type { TrueRecallSettings } from "@shared/types";
+import type { FsrsPluginHost } from "@shared/types/plugin-host.types";
 import {
 	ActionButton,
 	FormCard,
@@ -11,7 +12,7 @@ import type { App } from "obsidian";
 import { useCallback } from "preact/hooks";
 
 interface EasyDaysSectionProps {
-	plugin: any;
+	plugin: FsrsPluginHost;
 	settings: TrueRecallSettings;
 	save: (patch: Partial<TrueRecallSettings>) => Promise<void>;
 	app: App;
@@ -34,7 +35,10 @@ export function EasyDaysSection({
 	const specificDatesCount = easyDays.specificDates.length;
 
 	const pushUndo = useCallback(
-		(affectedCount: number, changes: any[]) => {
+		(
+			affectedCount: number,
+			changes: Array<{ cardId: string; originalDue: string; newDue: string }>,
+		) => {
 			plugin.undoService?.push({
 				id: crypto.randomUUID(),
 				actionType: "fsrs-helper-operation",
@@ -43,7 +47,7 @@ export function EasyDaysSection({
 				payload: {
 					type: "fsrs-helper-operation",
 					operation: "apply-easy-days",
-					changes: changes.map((c: any) => ({
+					changes: changes.map((c) => ({
 						cardId: c.cardId,
 						originalDue: c.originalDue,
 						newDue: c.newDue,

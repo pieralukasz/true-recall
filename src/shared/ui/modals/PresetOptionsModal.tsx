@@ -1,3 +1,4 @@
+import type TrueRecallPlugin from "../../../main";
 import { BaseModal } from "@shared/ui/modals/BaseModal";
 import {
 	PresetOptionsBody,
@@ -16,7 +17,7 @@ export interface PresetOptionsModalOptions {
 export class PresetOptionsModal extends BaseModal {
 	constructor(
 		app: App,
-		private plugin: any,
+		private plugin: TrueRecallPlugin,
 		private options: PresetOptionsModalOptions = {},
 	) {
 		super(app, {

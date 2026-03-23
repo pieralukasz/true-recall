@@ -11,12 +11,6 @@ import { BackupService } from "@features/core/persistence/backup.service";
 import { SessionPersistenceService } from "@features/core/persistence/session-persistence.service";
 import { SqliteStoreService } from "@features/core/persistence/sqlite";
 import {
-	decodeBackupToSqliteBytes,
-	isSupportedBackupPath,
-	sortBackupPathsNewest,
-	toExactBackupBuffer,
-} from "@features/core/persistence/sqlite/recovery.utils";
-import {
 	DB_FOLDER,
 	getDeviceDbFilename,
 	SAFETY_FLUSH_INTERVAL_MS,
@@ -39,7 +33,6 @@ import {
 	DeviceSelectionModal,
 	type DeviceSelectionResult,
 } from "@features/integration/modals/DeviceSelectionModal";
-import { RestoreBackupModal } from "@features/integration/modals/RestoreBackupModal";
 import { DeviceDiscoveryService } from "@features/integration/services/device-discovery.service";
 import { DeviceIdService } from "@features/integration/services/device-id.service";
 import { AuthService } from "@features/integration/services/sync/auth.service";
@@ -74,10 +67,7 @@ import {
 	VIEW_TYPE_SIMULATOR,
 	VIEW_TYPE_STATS,
 } from "@shared/constants";
-import {
-	NOTIFICATION_DURATION,
-	notify,
-} from "@shared/services/notification.service";
+import { notify } from "@shared/services/notification.service";
 import {
 	initCardStore,
 	initMetadataStore,
@@ -92,6 +82,7 @@ import { BUILTIN_BASIC_ID, type NoteType } from "@shared/types/note.types";
 import { PresetInspectorModal } from "@shared/ui/modals";
 import { isDesktop } from "@shared/utils/platform";
 import { normalizePath, Plugin, type TFile } from "obsidian";
+import { BackupRecoveryManager } from "./plugin/BackupRecoveryManager";
 import { registerCommands } from "./plugin/PluginCommands";
 import {
 	registerDeletionHandler,
@@ -126,9 +117,7 @@ export default class TrueRecallPlugin extends Plugin {
 	store: AppStore | null = null;
 	noteStatusCache: NoteStatusCacheService | null = null;
 	statusBarWidget: StatusBarWidget | null = null;
-	private lastAutoRecoveryBackupPath: string | null = null;
-	private lastAutoRecoveryAt: number | null = null;
-	private lastStartupSnapshotPath: string | null = null;
+	backupRecovery: BackupRecoveryManager | null = null;
 	EmbeddableEditor:
 		| import("@shared/ui/editor/embedded-editor").EmbeddableEditorClass
 		| null = null;
@@ -900,6 +889,13 @@ export default class TrueRecallPlugin extends Plugin {
 
 	private async initializeCardStore(deviceId: string): Promise<void> {
 		try {
+			this.backupRecovery = new BackupRecoveryManager(
+				this.app,
+				() => this.backupService,
+				() => this.backgroundBackupManager,
+				() => this.cardStore,
+			);
+
 			this.cardStore = new SqliteStoreService(this.app, deviceId);
 
 			try {
@@ -908,7 +904,8 @@ export default class TrueRecallPlugin extends Plugin {
 				console.warn(
 					"[True Recall] Database load failed, attempting auto-recovery from backup...",
 				);
-				const recovered = await this.tryAutoRecoverFromBackup(deviceId);
+				const recovered =
+					await this.backupRecovery.tryAutoRecoverFromBackup(deviceId);
 				if (recovered) {
 					this.cardStore = new SqliteStoreService(this.app, deviceId);
 					await this.cardStore.load();
@@ -958,7 +955,7 @@ export default class TrueRecallPlugin extends Plugin {
 			}
 
 			if (this.settings.autoBackupOnLoad) {
-				await this.runAutoBackup();
+				await this.backupRecovery.runAutoBackup();
 			}
 
 			this.noteTypeService = new NoteTypeService({
@@ -970,8 +967,6 @@ export default class TrueRecallPlugin extends Plugin {
 			});
 			this.noteTypeService.initialize();
 
-			// Cloud sync - coming soon
-			// this.initializeSyncService();
 			this.fsrsHelper = new FSRSHelperService(this.cardStore, this.settings);
 			this.initializeDeletionHandler();
 			this.initializeStore();
@@ -984,65 +979,6 @@ export default class TrueRecallPlugin extends Plugin {
 		}
 	}
 
-	private async tryAutoRecoverFromBackup(deviceId: string): Promise<boolean> {
-		const backupFolder = normalizePath(`${DB_FOLDER}/backups/${deviceId}`);
-		const dbPath = normalizePath(
-			`${DB_FOLDER}/${getDeviceDbFilename(deviceId)}`,
-		);
-
-		try {
-			const folderExists = await this.app.vault.adapter.exists(backupFolder);
-			if (!folderExists) return false;
-
-			const listing = await this.app.vault.adapter.list(backupFolder);
-			const backupFiles = sortBackupPathsNewest(
-				listing.files.filter((f) => isSupportedBackupPath(f)),
-			);
-
-			for (const backupPath of backupFiles) {
-				try {
-					const stat = await this.app.vault.adapter.stat(backupPath);
-					if (!stat || stat.size < 16) continue;
-
-					const rawData = await this.app.vault.adapter.readBinary(backupPath);
-					const sqliteBytes = decodeBackupToSqliteBytes(backupPath, rawData);
-					if (!sqliteBytes) continue;
-
-					// Valid backup found — rename corrupted file and restore
-					const corruptedPath = `${dbPath}.corrupted`;
-					const corruptedExists =
-						await this.app.vault.adapter.exists(corruptedPath);
-					if (corruptedExists) {
-						await this.app.vault.adapter.remove(corruptedPath);
-					}
-					const brokenExists = await this.app.vault.adapter.exists(dbPath);
-					if (brokenExists) {
-						await this.app.vault.adapter.rename(dbPath, corruptedPath);
-					}
-					await this.app.vault.adapter.writeBinary(
-						dbPath,
-						toExactBackupBuffer(sqliteBytes),
-					);
-
-					const backupName = backupPath.split("/").pop() || "";
-					this.lastAutoRecoveryBackupPath = backupPath;
-					this.lastAutoRecoveryAt = Date.now();
-					console.log(
-						`[True Recall] Auto-recovered from backup: ${backupName}`,
-					);
-					notify().success(
-						`Database restored from backup after corruption detection: ${backupName}`,
-						NOTIFICATION_DURATION.PERSIST,
-					);
-					return true;
-				} catch {}
-			}
-		} catch (error) {
-			console.error("[True Recall] Auto-recovery failed:", error);
-		}
-
-		return false;
-	}
 
 	private initializeStore(): void {
 		this.store = createAppStore({
@@ -1396,117 +1332,29 @@ export default class TrueRecallPlugin extends Plugin {
 		}
 	}
 
-	private async runAutoBackup(): Promise<void> {
-		if (!this.backgroundBackupManager) return;
-
-		try {
-			const created = await this.backgroundBackupManager.triggerBackup(true);
-			const status = this.backgroundBackupManager.getStatus();
-			this.lastStartupSnapshotPath = status.sessionStartBackupPath;
-			if (created) {
-				notify().info(
-					"Startup snapshot created. This does not restore or overwrite your current database.",
-				);
-			}
-		} catch {
-			// Auto-backup failure is non-critical
-		}
-	}
-
-	getStorageDiagnostics(): {
-		activeDatabasePath: string | null;
-		saveTimerActive: boolean;
-		flushInProgress: boolean;
-		isDirty: boolean;
-		lastFlushStartedAt: number | null;
-		lastFlushSucceededAt: number | null;
-		lastFlushFailedAt: number | null;
-		lastFlushError: string | null;
-		startupSnapshotPath: string | null;
-		lastAutoRecoveryPath: string | null;
-		lastAutoRecoveryAt: number | null;
-	} {
-		const storeDebug = this.cardStore?.getPersistenceDebugInfo();
-		return {
-			activeDatabasePath: storeDebug?.dbPath ?? null,
-			saveTimerActive: storeDebug?.saveTimerActive ?? false,
-			flushInProgress: storeDebug?.flushInProgress ?? false,
-			isDirty: storeDebug?.isDirty ?? false,
-			lastFlushStartedAt: storeDebug?.lastFlushStartedAt ?? null,
-			lastFlushSucceededAt: storeDebug?.lastFlushSucceededAt ?? null,
-			lastFlushFailedAt: storeDebug?.lastFlushFailedAt ?? null,
-			lastFlushError: storeDebug?.lastFlushError ?? null,
-			startupSnapshotPath:
-				this.lastStartupSnapshotPath ??
-				this.backgroundBackupManager?.getStatus().sessionStartBackupPath ??
-				null,
-			lastAutoRecoveryPath: this.lastAutoRecoveryBackupPath,
-			lastAutoRecoveryAt: this.lastAutoRecoveryAt,
+	getStorageDiagnostics() {
+		return this.backupRecovery?.getStorageDiagnostics() ?? {
+			activeDatabasePath: null,
+			saveTimerActive: false,
+			flushInProgress: false,
+			isDirty: false,
+			lastFlushStartedAt: null,
+			lastFlushSucceededAt: null,
+			lastFlushFailedAt: null,
+			lastFlushError: null,
+			startupSnapshotPath: null,
+			lastAutoRecoveryPath: null,
+			lastAutoRecoveryAt: null,
 		};
 	}
 
 	async createManualBackup(): Promise<void> {
-		if (!this.backgroundBackupManager) {
-			notify().error("Backup service not available");
-			return;
-		}
-
-		try {
-			const created = await this.backgroundBackupManager.triggerBackup(true);
-			if (created) {
-				notify().success("Backup created");
-			} else {
-				notify().info("No changes to backup");
-			}
-		} catch (error) {
-			console.error("[True Recall] Manual backup failed:", error);
-			notify().error("Failed to create backup. Check console for details.");
-		}
+		await this.backupRecovery?.createManualBackup();
 	}
 
 	async openRestoreBackupModal(): Promise<void> {
-		if (!this.backupService) {
-			notify().error("Backup service not available");
-			return;
-		}
-
-		const backups = await this.backupService.listBackups();
-		if (backups.length === 0) {
-			notify().info("No backups available");
-			return;
-		}
-
-		const modal = new RestoreBackupModal(this.app, {
-			backups,
-			backupService: this.backupService,
-			sessionStartBackupPath:
-				this.backgroundBackupManager?.getStatus().sessionStartBackupPath ??
-				null,
-		});
-
-		await modal.openAndWait();
+		await this.backupRecovery?.openRestoreBackupModal();
 	}
-
-	// Cloud sync - coming soon
-	// async syncCloud(): Promise<void> {
-	// 	if (!this.syncService?.isAvailable()) {
-	// 		notify().error(
-	// 			"Cloud sync not available. Check Supabase configuration."
-	// 		);
-	// 		return;
-	// 	}
-	//
-	// 	notify().info("Syncing...");
-	// 	const result = await this.syncService.sync();
-	//
-	// 	if (result.success) {
-	// 		notify().success(
-	// 			`Sync complete: ${result.pulled} pulled, ${result.pushed} pushed`
-	// 		);
-	// 	} else {
-	// 		notify().error(`Sync failed: ${result.error}`);
-	// 	}
-	// }
 
 	async importAnki(): Promise<void> {
 		if (!this.isStoreReady()) {
@@ -1580,32 +1428,4 @@ export default class TrueRecallPlugin extends Plugin {
 		notify().success(`Added flashcard UID: ${newUid}`);
 	}
 
-	// Cloud sync - coming soon
-	// async forceReplaceCloud(): Promise<void> {
-	// 	if (!this.syncService?.isAvailable()) {
-	// 		notify().error(
-	// 			"Cloud sync not available. Check Supabase configuration."
-	// 		);
-	// 		return;
-	// 	}
-	//
-	// 	const confirmed = confirm(
-	// 		"WARNING: This will DELETE all your data on the server and replace it with your local database.\n\n" +
-	// 			"Other devices will lose their changes.\n\n" +
-	// 			"Are you sure you want to continue?"
-	// 	);
-	//
-	// 	if (!confirmed) return;
-	//
-	// 	notify().info("Replacing all server data...");
-	// 	const result = await this.syncService.forceReplace();
-	//
-	// 	if (result.success) {
-	// 		notify().success(
-	// 			`Force replace complete: ${result.pushed} records uploaded`
-	// 		);
-	// 	} else {
-	// 		notify().error(`Replace failed: ${result.error}`);
-	// 	}
-	// }
 }
