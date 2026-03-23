@@ -63,12 +63,7 @@ export class ChunkedGenerationService {
 			};
 		}
 
-		return this.runChunkedGeneration(
-			chunkingResult,
-			sourceFile,
-			noteType,
-			app,
-		);
+		return this.runChunkedGeneration(chunkingResult, sourceFile, noteType, app);
 	}
 
 	private async runChunkedGeneration(

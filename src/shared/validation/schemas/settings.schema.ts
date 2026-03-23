@@ -14,9 +14,12 @@ const AiFlashcardPromptsSchema = z
 	})
 	.optional();
 
+export const AITierSchema = z.enum(["byok", "pro"]).default("pro");
+
 export const SettingsSchema = z.object({
 	openRouterApiKey: z.string(),
 	aiModel: AIModelSchema,
+	aiTier: AITierSchema,
 	autoSyncToAnki: z.boolean().default(false),
 	selectionToolbarEnabled: z.boolean().default(true),
 	aiFlashcardPrompts: AiFlashcardPromptsSchema,

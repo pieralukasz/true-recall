@@ -145,17 +145,22 @@ export function DashboardApp() {
 				globalSnapshot.counts.learning,
 			),
 		};
-	}, [allCards, _settings, archived, cachedActiveCards, statsCalculator, plugin, showArchived.value]);
+	}, [
+		allCards,
+		_settings,
+		archived,
+		cachedActiveCards,
+		statsCalculator,
+		plugin,
+		showArchived.value,
+	]);
 
 	const visibleNotes = useMemo(() => {
 		if (showArchived.value) return data.notes;
 
 		return data.notes.filter((note) => {
 			if (!note.path) return true;
-			return !isNoteUnderArchivedHierarchy(
-				note.path,
-				plugin.hierarchyService,
-			);
+			return !isNoteUnderArchivedHierarchy(note.path, plugin.hierarchyService);
 		});
 	}, [data.notes, plugin, showArchived.value]);
 

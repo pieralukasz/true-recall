@@ -5,6 +5,8 @@
 import type { AIModelKey } from "@shared/constants";
 import type { ReviewViewMode } from "@shared/types/fsrs";
 
+export type AITier = "byok" | "pro";
+
 /**
  * Optimization result metrics from FSRS parameter optimization
  */
@@ -135,10 +137,23 @@ export interface FSRSPreset {
  * True Recall plugin settings
  */
 export interface TrueRecallSettings {
-	/** OpenRouter API key */
+	/** OpenRouter API key (BYOK tier) */
 	openRouterApiKey: string;
 	/** AI model for NL query */
 	aiModel: AIModelKey;
+
+	/** AI provider tier: "byok" = user's OpenRouter key, "pro" = managed Portkey */
+	aiTier: AITier;
+	/** Cached Portkey virtual key from backend (Pro tier) */
+	portkeyVirtualKey?: string;
+	/** Current Pro subscription status */
+	proSubscriptionStatus?: "active" | "expired" | "none";
+	/** Remaining AI budget in cents (e.g. 500 = $5.00) */
+	proBudgetRemainingCents?: number;
+	/** Total AI budget in cents per period */
+	proBudgetTotalCents?: number;
+	/** ISO date of next budget reset */
+	proBudgetResetDate?: string;
 
 	/** Target retention (0.7-0.99, default 0.9 = 90%) */
 	fsrsRequestRetention: number;

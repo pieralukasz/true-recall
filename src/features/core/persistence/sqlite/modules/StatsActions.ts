@@ -1,6 +1,5 @@
 import type { SqliteDatabase } from "@features/core/persistence/sqlite/SqliteDatabase";
 import { generateUUID } from "@features/core/persistence/sqlite/sqlite.types";
-import { formatLocalDate } from "@shared/utils";
 import type {
 	CardMaturityBreakdown,
 	CardReviewLogEntry,
@@ -12,6 +11,7 @@ import type {
 	StudyPattern,
 	TimeToMasteryStats,
 } from "@shared/types";
+import { formatLocalDate } from "@shared/utils";
 
 export interface ReviewLogForSync {
 	id: string;

@@ -51,7 +51,8 @@ export function getDragClass(
 ): string {
 	if (!dragState || !itemPath) return "";
 	if (dragState.item.path === itemPath) return "ep-drag-source";
-	if (dragState.dropTargetPath === itemPath && dragState.isValid) return "ep-drop-target";
+	if (dragState.dropTargetPath === itemPath && dragState.isValid)
+		return "ep-drop-target";
 	return "";
 }
 

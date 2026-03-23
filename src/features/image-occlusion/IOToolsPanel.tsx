@@ -87,8 +87,8 @@ export function IOToolsPanel({
 				)}
 			</div>
 			<div class="true-recall-io-hint-text">
-				Shortcuts: Delete to remove, Space + drag to pan, Ctrl/Cmd+V to
-				paste. Click a region to switch to Select.
+				Shortcuts: Delete to remove, Space + drag to pan, Ctrl/Cmd+V to paste.
+				Click a region to switch to Select.
 			</div>
 			{aiPromptVisible && !aiLoading && (
 				<div class="ep:flex ep:flex-col ep:gap-1.5 ep:mt-1">

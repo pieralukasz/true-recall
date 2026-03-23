@@ -37,7 +37,6 @@ interface ProjectsTabProps {
 	onPresetClick?: (path: string | null) => void;
 }
 
-
 export function ProjectsTab({
 	projects,
 	searchQuery,

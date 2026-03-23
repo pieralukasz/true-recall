@@ -14,7 +14,6 @@ import {
 	getDragClass,
 } from "../helpers/drag-drop";
 import { prioritySortComparator } from "../helpers/note-priority";
-import { SelectionBar } from "./SelectionBar";
 import { useInitialMount } from "../helpers/use-initial-mount";
 import { useExternalVirtualList } from "../helpers/use-virtual-list";
 import type {
@@ -24,6 +23,7 @@ import type {
 } from "../types";
 import { NoteFilters } from "./NoteFilters";
 import { NoteRow } from "./NoteRow";
+import { SelectionBar } from "./SelectionBar";
 
 interface NoteListProps {
 	notes: DashboardNoteEntry[];
@@ -32,7 +32,6 @@ interface NoteListProps {
 	scrollTop: Signal<number>;
 	onPresetClick?: (path: string | null) => void;
 }
-
 
 function matchesFilter(
 	note: DashboardNoteEntry,

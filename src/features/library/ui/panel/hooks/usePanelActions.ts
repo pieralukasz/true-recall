@@ -13,8 +13,7 @@ import { usePanelStore } from "./usePanelStore";
 export function usePanelActions() {
 	const plugin = usePlugin();
 	const app = useApp();
-	const { currentFile, flashcardInfo, cardsWithFsrs, panel } =
-		usePanelStore();
+	const { currentFile, flashcardInfo, cardsWithFsrs, panel } = usePanelStore();
 
 	// ── AI generation ──
 

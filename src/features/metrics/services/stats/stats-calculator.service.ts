@@ -26,7 +26,11 @@ import type {
 	StatsTimeRange,
 	TodaySummary,
 } from "@shared/types";
-import { formatLocalDate, getTodayBoundary, getTomorrowBoundary } from "@shared/utils";
+import {
+	formatLocalDate,
+	getTodayBoundary,
+	getTomorrowBoundary,
+} from "@shared/utils";
 import { State } from "ts-fsrs";
 
 export class StatsCalculatorService {

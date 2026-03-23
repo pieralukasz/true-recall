@@ -260,5 +260,4 @@ export class TrueRetentionCalculator {
 
 		return result;
 	}
-
 }

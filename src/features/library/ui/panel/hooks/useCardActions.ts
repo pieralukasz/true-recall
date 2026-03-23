@@ -29,8 +29,7 @@ export function useCardActions({
 }: UseCardActionsParams) {
 	const plugin = usePlugin();
 	const app = useApp();
-	const { currentFile, flashcardInfo, cardsWithFsrs, panel } =
-		usePanelStore();
+	const { currentFile, flashcardInfo, cardsWithFsrs, panel } = usePanelStore();
 
 	const findFsrsCard = (cardId: string): FSRSFlashcardItem | undefined => {
 		return cardsWithFsrs.find((c) => c.id === cardId);

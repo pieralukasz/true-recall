@@ -5,6 +5,8 @@ import {
 	type GenerationDensity,
 } from "@features/ai/prompts/default-prompts";
 import { useSettings } from "@features/settings/hooks/useSettings";
+import { ProStatusSection } from "@features/settings/tabs/ProStatusSection";
+import type { AITier } from "@shared/types/settings.types";
 import {
 	Clickable,
 	FormCard,
@@ -17,11 +19,18 @@ import {
 } from "@shared/ui/components";
 import { useCallback, useState } from "preact/hooks";
 
+const TIER_OPTIONS: { value: AITier; label: string }[] = [
+	{ value: "byok", label: "Bring Your Own Key" },
+	{ value: "pro", label: "True Recall Pro" },
+];
+
 export function AITab() {
 	const { settings, save } = useSettings();
 	const [promptExpanded, setPromptExpanded] = useState(false);
 
+	const tier = settings.aiTier ?? "byok";
 	const hasApiKey = !!settings.openRouterApiKey;
+	const hasAIAccess = tier === "pro" || hasApiKey;
 
 	const customPrompt = settings.aiFlashcardPrompts?.basic ?? "";
 	const isCustomPrompt = customPrompt.trim().length > 0;
@@ -47,19 +56,44 @@ export function AITab() {
 
 	return (
 		<div class="ep:flex ep:flex-col ep:gap-3">
-			<FormCard title="OpenRouter API Key">
+			<FormCard title="AI Provider">
 				<FormField
-					name="API key"
-					description="Your OpenRouter API key."
+					name="Provider"
+					description="Choose how AI features are powered."
 				>
-					<TextInput
-						value={settings.openRouterApiKey}
-						onChange={(v) => save({ openRouterApiKey: v })}
-						type="password"
-						placeholder="Enter API key"
-						class="ep:w-[300px]"
-					/>
+					<div class="ep:flex ep:gap-1">
+						{TIER_OPTIONS.map((opt) => (
+							<Clickable
+								key={opt.value}
+								class={`ep:px-3 ep:py-1.5 ep:rounded-[var(--radius-s)] ep:text-ui-smaller ep:transition-colors ${
+									tier === opt.value
+										? "ep:bg-obs-interactive-accent ep:text-obs-on-accent"
+										: "ep:bg-obs-modifier-hover ep:text-obs-muted hover:ep:text-obs-normal"
+								}`}
+								onClick={() => save({ aiTier: opt.value })}
+							>
+								{opt.label}
+							</Clickable>
+						))}
+					</div>
 				</FormField>
+
+				{tier === "byok" && (
+					<FormField
+						name="OpenRouter API key"
+						description="Your OpenRouter API key for AI-powered features."
+					>
+						<TextInput
+							value={settings.openRouterApiKey}
+							onChange={(v) => save({ openRouterApiKey: v })}
+							type="password"
+							placeholder="Enter API key"
+							class="ep:w-[300px]"
+						/>
+					</FormField>
+				)}
+
+				{tier === "pro" && <ProStatusSection />}
 			</FormCard>
 
 			<FormCard title="AI Prompts">
@@ -130,7 +164,7 @@ export function AITab() {
 					/>
 				</FormField>
 
-				{hasApiKey && (
+				{hasAIAccess && (
 					<>
 						<InfoBlock>
 							<p>

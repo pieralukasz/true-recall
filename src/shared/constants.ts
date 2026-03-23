@@ -189,6 +189,7 @@ export const DEFAULT_FSRS_PRESET: FSRSPreset = {
 export const DEFAULT_SETTINGS: TrueRecallSettings = {
 	openRouterApiKey: "",
 	aiModel: "google/gemini-3-flash-preview" as AIModelKey,
+	aiTier: "pro",
 	generationLanguage: "auto",
 	fsrsRequestRetention: 0.9,
 	fsrsMaximumInterval: 36500, // 100 years
@@ -330,6 +331,7 @@ export const TRUE_RECALL_CLOUD = {
 	supabaseAnonKey: process.env.SUPABASE_ANON_KEY ?? "",
 } as const;
 
+export const TRUERECALL_API_URL = "https://api.truerecall.app";
 export const TRUERECALL_WEB_URL = "https://truerecall.app";
 export const TRUERECALL_BMC_URL = "https://buymeacoffee.com/pieralukasz";
 export const TRUERECALL_GITHUB_URL =
