@@ -5,6 +5,7 @@ import { type Signal, useSignal } from "@preact/signals";
 import { notify } from "@shared/services/notification.service";
 import { cards, pluginSettings } from "@shared/services/reactive-card-store";
 import { pushDeleteUndo } from "@shared/services/undo.service";
+import { AppNavBar } from "@shared/ui/components";
 import { usePlugin } from "@shared/ui/preact";
 import { useCallback, useEffect, useMemo, useRef } from "preact/hooks";
 import { BrowserSidebar } from "./components/BrowserSidebar";
@@ -332,6 +333,7 @@ export function CardBrowserApp({
 
 	return (
 		<div class="ep-card-browser ep:flex ep:flex-col ep:h-full">
+			<AppNavBar activeItem="browse" />
 			<BrowserToolbar
 				searchText={searchText.value}
 				onSearchChange={(v) => {
