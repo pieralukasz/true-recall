@@ -17,7 +17,6 @@ import {
 	useState,
 } from "preact/hooks";
 import { ActionBar } from "./ActionBar";
-import { CardCountPreview } from "./CardCountPreview";
 import { NoteFieldsForm } from "./NoteFieldsForm";
 import type {
 	AddMode,
@@ -29,9 +28,10 @@ import type {
 interface QuickNoteEditorAppProps {
 	mode: QuickNoteEditorMode;
 	onDone: (result: QuickNoteEditorResult) => void;
+	onContentChange?: (hasContent: boolean) => void;
 }
 
-export function QuickNoteEditorApp({ mode, onDone }: QuickNoteEditorAppProps) {
+export function QuickNoteEditorApp({ mode, onDone, onContentChange }: QuickNoteEditorAppProps) {
 	const app = useApp();
 	const plugin = usePlugin();
 
@@ -85,6 +85,17 @@ export function QuickNoteEditorApp({ mode, onDone }: QuickNoteEditorAppProps) {
 		() => Object.values(fields).some((v) => v.trim().length > 0),
 		[fields],
 	);
+
+	const sourceNoteFile = useMemo<TFile | null>(() => {
+		if (showSourcePicker) return selectedSourceNote;
+		const uid = addMode?.sourceUid ?? editMode?.note.sourceUid;
+		if (!uid) return null;
+		return plugin.frontmatterIndex?.getFileByValue("flashcard_uid", uid) ?? null;
+	}, [showSourcePicker, selectedSourceNote, addMode, editMode, plugin.frontmatterIndex]);
+
+	useEffect(() => {
+		onContentChange?.(hasContent);
+	}, [hasContent, onContentChange]);
 
 	// Initialize empty fields when note type changes in add mode
 	useEffect(() => {
@@ -325,12 +336,12 @@ export function QuickNoteEditorApp({ mode, onDone }: QuickNoteEditorAppProps) {
 
 			{/* Footer */}
 			<FooterBar
+				app={app}
 				isEdit={isEdit}
 				hasContent={hasContent}
 				saving={saving}
-				noteType={noteType}
-				noteTypeId={noteTypeId}
-				fields={fields}
+				requiresSourceNote={showSourcePicker && !selectedSourceNote}
+				sourceNoteFile={sourceNoteFile}
 				onSave={handleSave}
 				onOpenFields={openFields}
 				onOpenCards={openCards}
@@ -342,12 +353,12 @@ export function QuickNoteEditorApp({ mode, onDone }: QuickNoteEditorAppProps) {
 // ── Footer ───────────────────────────────────────────────────────────────
 
 interface FooterBarProps {
+	app: import("obsidian").App;
 	isEdit: boolean;
 	hasContent: boolean;
 	saving: boolean;
-	noteType: import("@shared/types/note.types").NoteType;
-	noteTypeId: string;
-	fields: Record<string, string>;
+	requiresSourceNote: boolean;
+	sourceNoteFile: TFile | null;
 	onSave: () => void;
 	onOpenFields: () => void;
 	onOpenCards: () => void;
@@ -357,12 +368,12 @@ const ghostBtnCls =
 	"ep-btn ep-btn-ghost ep:text-ui-smaller ep:px-2 ep:py-1 ep:min-h-[28px] ep:max-h-[28px]";
 
 function FooterBar({
+	app,
 	isEdit,
 	hasContent,
 	saving,
-	noteType,
-	noteTypeId,
-	fields,
+	requiresSourceNote,
+	sourceNoteFile,
 	onSave,
 	onOpenFields,
 	onOpenCards,
@@ -372,6 +383,12 @@ function FooterBar({
 	const openAI = useCallback(() => {
 		new Notice("AI generation coming soon");
 	}, []);
+
+	const openNote = useCallback(() => {
+		if (sourceNoteFile) {
+			void app.workspace.getLeaf().openFile(sourceNoteFile);
+		}
+	}, [app, sourceNoteFile]);
 
 	return (
 		<div class="ep-modal-footer ep:flex ep:items-center ep:gap-2">
@@ -389,17 +406,15 @@ function FooterBar({
 			>
 				Cards
 			</Clickable>
+			<Clickable
+				class={ghostBtnCls}
+				onClick={openNote}
+				disabled={!sourceNoteFile}
+				stopPropagation={false}
+			>
+				Open note
+			</Clickable>
 
-			{!isEdit && (
-				<div class="ep:flex-1">
-					<CardCountPreview
-						noteType={noteType}
-						noteTypeId={noteTypeId}
-						fields={fields}
-						hasContent={hasContent}
-					/>
-				</div>
-			)}
 
 			<Clickable
 				ref={aiIconRef}
@@ -410,7 +425,7 @@ function FooterBar({
 			<Clickable
 				class="mod-cta ep-btn"
 				onClick={onSave}
-				disabled={!hasContent || saving}
+				disabled={!hasContent || saving || requiresSourceNote}
 				stopPropagation={false}
 			>
 				{isEdit ? "Save Changes" : "Save"}

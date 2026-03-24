@@ -3,7 +3,7 @@ export interface ProSubscriptionInfo {
 	portkeyVirtualKey: string | null;
 	budgetRemainingCents: number;
 	budgetTotalCents: number;
-	budgetResetDate: string | null;
+	budgetResetDate: string;
 }
 
 export interface ProBackendAPI {

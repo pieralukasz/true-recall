@@ -41,22 +41,12 @@ export function ActionBar({
 			)}
 
 			{showSourcePicker && (
-				<div class="ep:flex-1 ep:min-w-[60%] ep:flex ep:items-center ep:gap-1">
-					<div class="ep:flex-1">
-						<NotePickerCombobox
-							app={app}
-							selectedNote={selectedSourceNote}
-							onSelect={onSourceSelect}
-						/>
-					</div>
-					{selectedSourceNote && (
-						<Clickable
-							class="ep:text-ui-smaller ep:text-obs-muted ep:hover:text-obs-normal"
-							onClick={() => onSourceSelect(null)}
-						>
-							Clear
-						</Clickable>
-					)}
+				<div class="ep:flex-1 ep:min-w-[60%]">
+					<NotePickerCombobox
+						app={app}
+						selectedNote={selectedSourceNote}
+						onSelect={onSourceSelect}
+					/>
 				</div>
 			)}
 		</div>

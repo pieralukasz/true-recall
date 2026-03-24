@@ -1,6 +1,7 @@
 import { useSettings } from "@features/settings/hooks/useSettings";
 import {
 	TRUERECALL_BMC_URL,
+	TRUERECALL_DISCORD_URL,
 	TRUERECALL_GITHUB_URL,
 	TRUERECALL_WEB_URL,
 } from "@shared/constants";
@@ -154,18 +155,6 @@ export function GeneralTab() {
 				</FormField>
 			</FormCard>
 
-			<FormCard title="Flashcard collection">
-				<FormField
-					name="Remove content after collecting"
-					description="Removes flashcard lines (Front :: Back) from markdown after collecting. When disabled, lines are kept in the note"
-				>
-					<ToggleInput
-						value={settings.removeFlashcardContentAfterCollect}
-						onChange={(v) => save({ removeFlashcardContentAfterCollect: v })}
-					/>
-				</FormField>
-			</FormCard>
-
 			<FormCard title="About">
 				<FormField
 					name="What's New"
@@ -200,6 +189,15 @@ export function GeneralTab() {
 						onClick={() => window.open(TRUERECALL_WEB_URL, "_blank")}
 					>
 						truerecall.app
+					</Clickable>
+				</FormField>
+
+				<FormField name="Discord" description="Join the True Recall community">
+					<Clickable
+						class="ep-btn ep-btn-outline"
+						onClick={() => window.open(TRUERECALL_DISCORD_URL, "_blank")}
+					>
+						Join Discord
 					</Clickable>
 				</FormField>
 			</FormCard>
