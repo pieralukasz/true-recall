@@ -21,6 +21,7 @@ interface NoteFieldsFormProps {
 	onFieldChange: (fieldName: string, value: string) => void;
 	onFieldFocus?: (fieldName: string, editorView: EditorView) => void;
 	onModEnter?: () => void;
+	onEscape?: () => void;
 	autoFocusFirst?: boolean;
 	pinnedFields?: Set<string>;
 	onTogglePin?: (fieldName: string) => void;
@@ -32,6 +33,7 @@ export function NoteFieldsForm({
 	onFieldChange,
 	onFieldFocus,
 	onModEnter,
+	onEscape,
 	autoFocusFirst = true,
 	pinnedFields,
 	onTogglePin,
@@ -73,6 +75,7 @@ export function NoteFieldsForm({
 					onFieldChange={onFieldChange}
 					onFieldFocus={onFieldFocus}
 					onModEnter={onModEnter}
+					onEscape={onEscape}
 					isPinned={pinnedFields?.has(fieldName) ?? false}
 					onTogglePin={onTogglePin}
 					registerEditor={registerEditor}
@@ -100,6 +103,7 @@ interface CMFieldProps {
 	onFieldChange: (fieldName: string, value: string) => void;
 	onFieldFocus?: (fieldName: string, editorView: EditorView) => void;
 	onModEnter?: () => void;
+	onEscape?: () => void;
 	isPinned: boolean;
 	onTogglePin?: (fieldName: string) => void;
 	registerEditor?: (
@@ -117,6 +121,7 @@ function CMField({
 	onFieldChange,
 	onFieldFocus,
 	onModEnter,
+	onEscape,
 	isPinned,
 	onTogglePin,
 	registerEditor,
@@ -162,7 +167,7 @@ function CMField({
 			editor = new plugin.EmbeddableEditor(app, el, {
 				value: contentRef.current,
 				onBlur: handleBlur,
-				onEscape: (e) => e.cm.contentDOM.blur(),
+				onEscape: () => onEscape?.(),
 				onModEnter: handleModEnter,
 				onTab: onTab ? () => onTab() : undefined,
 				onShiftTab: onShiftTab ? () => onShiftTab() : undefined,
