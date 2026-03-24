@@ -14,7 +14,7 @@ const AiFlashcardPromptsSchema = z
 	})
 	.optional();
 
-export const AITierSchema = z.enum(["byok", "pro"]).default("pro");
+export const AITierSchema = z.enum(["byok"]).default("byok");
 
 export const SettingsSchema = z.object({
 	openRouterApiKey: z.string(),

@@ -28,10 +28,11 @@ import type {
 interface QuickNoteEditorAppProps {
 	mode: QuickNoteEditorMode;
 	onDone: (result: QuickNoteEditorResult) => void;
+	onRequestClose?: () => void;
 	onContentChange?: (hasContent: boolean) => void;
 }
 
-export function QuickNoteEditorApp({ mode, onDone, onContentChange }: QuickNoteEditorAppProps) {
+export function QuickNoteEditorApp({ mode, onDone, onRequestClose, onContentChange }: QuickNoteEditorAppProps) {
 	const app = useApp();
 	const plugin = usePlugin();
 
@@ -85,6 +86,12 @@ export function QuickNoteEditorApp({ mode, onDone, onContentChange }: QuickNoteE
 		() => Object.values(fields).some((v) => v.trim().length > 0),
 		[fields],
 	);
+
+	const canSave = useMemo(() => {
+		const firstField = noteType?.fields[0];
+		if (!firstField) return false;
+		return (fields[firstField] ?? "").trim().length > 0;
+	}, [fields, noteType]);
 
 	const sourceNoteFile = useMemo<TFile | null>(() => {
 		if (showSourcePicker) return selectedSourceNote;
@@ -206,7 +213,7 @@ export function QuickNoteEditorApp({ mode, onDone, onContentChange }: QuickNoteE
 	}, [isEdit, editMode, addMode, selectedSourceNote, plugin.flashcardManager]);
 
 	const handleSave = useCallback(async () => {
-		if (!noteType || !hasContent || saving) return;
+		if (!noteType || !canSave || saving) return;
 		if (!plugin.flashcardManager?.hasStore()) {
 			new Notice("Database not initialized");
 			return;
@@ -263,7 +270,7 @@ export function QuickNoteEditorApp({ mode, onDone, onContentChange }: QuickNoteE
 		}
 	}, [
 		noteType,
-		hasContent,
+		canSave,
 		saving,
 		isEdit,
 		editMode,
@@ -330,6 +337,7 @@ export function QuickNoteEditorApp({ mode, onDone, onContentChange }: QuickNoteE
 				onFieldChange={handleFieldChange}
 				onFieldFocus={handleFieldFocus}
 				onModEnter={handleSave}
+				onEscape={onRequestClose}
 				pinnedFields={pinnedFields}
 				onTogglePin={togglePin}
 			/>
@@ -338,7 +346,7 @@ export function QuickNoteEditorApp({ mode, onDone, onContentChange }: QuickNoteE
 			<FooterBar
 				app={app}
 				isEdit={isEdit}
-				hasContent={hasContent}
+				canSave={canSave}
 				saving={saving}
 				requiresSourceNote={showSourcePicker && !selectedSourceNote}
 				sourceNoteFile={sourceNoteFile}
@@ -355,7 +363,7 @@ export function QuickNoteEditorApp({ mode, onDone, onContentChange }: QuickNoteE
 interface FooterBarProps {
 	app: import("obsidian").App;
 	isEdit: boolean;
-	hasContent: boolean;
+	canSave: boolean;
 	saving: boolean;
 	requiresSourceNote: boolean;
 	sourceNoteFile: TFile | null;
@@ -370,7 +378,7 @@ const ghostBtnCls =
 function FooterBar({
 	app,
 	isEdit,
-	hasContent,
+	canSave,
 	saving,
 	requiresSourceNote,
 	sourceNoteFile,
@@ -407,6 +415,12 @@ function FooterBar({
 				Cards
 			</Clickable>
 			<Clickable
+				ref={aiIconRef}
+				title="Generate with AI (coming soon)"
+				class={`${ghostBtnCls} ep:ml-auto [&>svg]:ep:w-4 [&>svg]:ep:h-4`}
+				onClick={openAI}
+			/>
+			<Clickable
 				class={ghostBtnCls}
 				onClick={openNote}
 				disabled={!sourceNoteFile}
@@ -414,18 +428,10 @@ function FooterBar({
 			>
 				Open note
 			</Clickable>
-
-
-			<Clickable
-				ref={aiIconRef}
-				title="Generate with AI (coming soon)"
-				class={`${ghostBtnCls} ep:ml-auto [&>svg]:ep:w-4 [&>svg]:ep:h-4`}
-				onClick={openAI}
-			/>
 			<Clickable
 				class="mod-cta ep-btn"
 				onClick={onSave}
-				disabled={!hasContent || saving || requiresSourceNote}
+				disabled={!canSave || saving || requiresSourceNote}
 				stopPropagation={false}
 			>
 				{isEdit ? "Save Changes" : "Save"}

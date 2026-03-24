@@ -51,6 +51,7 @@ export class QuickNoteEditorModal extends BasePromiseModal<QuickNoteEditorResult
 					<QuickNoteEditorApp
 						mode={this.editorMode}
 						onDone={(result) => this.resolve(result)}
+						onRequestClose={() => this.close()}
 						onContentChange={(has) => {
 							this._hasContent = has;
 						}}

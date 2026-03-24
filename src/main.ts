@@ -1,5 +1,3 @@
-import { ProBackendService } from "@features/ai/services/pro-backend.service";
-import { refreshProStatus } from "@features/ai/services/pro-status";
 import { StreamingGenerationService } from "@features/ai/services/streaming-generation.service";
 import { createSelectionToolbarExtension } from "@features/ai/ui/editor/SelectionToolbarPlugin";
 import { NoteStatusCacheService } from "@features/core/cache/note-status-cache.service";
@@ -59,7 +57,6 @@ import {
 import type { StatusBarWidget } from "@features/study/ui/editor/widgets/StatusBarWidget";
 import { ReviewView } from "@features/study/ui/review/ReviewView";
 import {
-	TRUERECALL_API_URL,
 	VIEW_TYPE_CARD_BROWSER,
 	VIEW_TYPE_DASHBOARD,
 	VIEW_TYPE_FLASHCARD_PANEL,
@@ -113,7 +110,6 @@ export default class TrueRecallPlugin extends Plugin {
 	noteTypeService!: NoteTypeService;
 	hierarchyService!: HierarchyService;
 	authService: AuthService | null = null;
-	proBackendService: ProBackendService | null = null;
 	store: AppStore | null = null;
 	noteStatusCache: NoteStatusCacheService | null = null;
 	statusBarWidget: StatusBarWidget | null = null;
@@ -147,18 +143,6 @@ export default class TrueRecallPlugin extends Plugin {
 		await this.loadSettings();
 
 		this.authService = new AuthService();
-		this.proBackendService = new ProBackendService(TRUERECALL_API_URL);
-
-		if (this.settings.aiTier === "pro") {
-			refreshProStatus(
-				this.authService,
-				this.proBackendService,
-				async (patch) => {
-					Object.assign(this.settings, patch);
-					await this.saveSettings();
-				},
-			);
-		}
 
 		this.registerObsidianProtocolHandler("true-recall-auth", (params) => {
 			this.handleAuthCallback(params).catch((err) => {
