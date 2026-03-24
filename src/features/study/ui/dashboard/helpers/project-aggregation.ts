@@ -10,6 +10,7 @@ import {
 	computeActionableSessionSnapshot,
 } from "@features/study/services/actionable-session-snapshot.service";
 import type { FSRSFlashcardItem, TrueRecallSettings } from "@shared/types";
+import { UNASSIGNED_PATH } from "@shared/constants";
 import type { CardStore } from "@shared/types/fsrs/store.types";
 import type { MetadataCache } from "obsidian";
 import { State } from "ts-fsrs";
@@ -22,6 +23,8 @@ import type {
 	DashboardProject,
 	DashboardProjectAggregation,
 } from "../types";
+
+export { UNASSIGNED_PATH };
 
 interface ProjectAggregationDeps {
 	notes: DashboardNoteEntry[];
@@ -39,8 +42,6 @@ interface ProjectAggregationDeps {
 		metadataCache: MetadataCache;
 	};
 }
-
-export const UNASSIGNED_PATH = "__unassigned__";
 
 const MAX_RECENTLY_STUDIED = 5;
 

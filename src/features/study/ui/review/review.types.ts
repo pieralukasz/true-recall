@@ -1,3 +1,4 @@
+import { UNASSIGNED_PATH } from "@shared/constants";
 import type { ReviewOrder } from "@shared/types/settings.types";
 
 export interface ReviewViewState extends Record<string, unknown> {
@@ -102,6 +103,28 @@ export function filtersToViewState(filters: SessionFilters): ReviewViewState {
 		reviewOrder: filters.customReviewOrder,
 		crammingMode: filters.crammingMode,
 	};
+}
+
+export function normalizeSessionFilters(filters: SessionFilters): SessionFilters {
+	const normalized = { ...filters };
+
+	// Strip virtual "__unassigned__" projectPath (not a real hierarchy node)
+	if (normalized.projectPath === UNASSIGNED_PATH) {
+		delete normalized.projectPath;
+	}
+
+	// Strip empty arrays
+	if (normalized.sourceNoteFilters?.length === 0) {
+		delete normalized.sourceNoteFilters;
+	}
+
+	// Strip empty strings
+	if (normalized.sourceNoteFilter === "") delete normalized.sourceNoteFilter;
+	if (normalized.sourceUidFilter === "") delete normalized.sourceUidFilter;
+	if (normalized.filePathFilter === "") delete normalized.filePathFilter;
+	if (normalized.projectPath === "") delete normalized.projectPath;
+
+	return normalized;
 }
 
 export function isCustomSession(filters: SessionFilters): boolean {

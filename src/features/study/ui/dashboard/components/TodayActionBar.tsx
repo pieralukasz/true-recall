@@ -24,7 +24,7 @@ export function TodayActionBar({
 	const totalActionable = totalDue + totalNew + totalLearning;
 
 	const handleStartReview = () => {
-		void plugin.openReviewViewWithFilters({ deckFilter: null });
+		void plugin.openReviewViewWithFilters({});
 	};
 
 	const { studied, minutes, newCards, newCardsCap, reviewCards, reviewsCap } =
