@@ -68,7 +68,7 @@ export class SemanticAnswerGradingService {
 	constructor(
 		private getSettings: () => TrueRecallSettings,
 		private createClient: ClientFactory = (config) =>
-			new OpenRouterClient(config.apiKey, config.model, config.proxyUrl),
+			new OpenRouterClient(config.apiKey, config.model),
 	) {}
 
 	async gradeAnswer(input: GradeAnswerInput): Promise<SemanticGradingResult> {

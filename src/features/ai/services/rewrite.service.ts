@@ -111,11 +111,7 @@ export class RewriteService {
 		const settings = this.getSettings();
 		const config = resolveAIClientConfig(settings);
 
-		const client = new OpenRouterClient(
-			config.apiKey,
-			config.model,
-			config.proxyUrl,
-		);
+		const client = new OpenRouterClient(config.apiKey, config.model);
 
 		const response = await client.chat({
 			messages: [

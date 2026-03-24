@@ -147,13 +147,6 @@ export function PanelEmptyState({
 				<span ref={fileTextRef} class="ep:shrink-0" />
 				Generate from entire note
 			</Clickable>
-
-			{/* API key error */}
-			{!hasApiKey && (
-				<div class="ep:text-ui-smaller ep:text-obs-error">
-					Add an OpenRouter API key in settings
-				</div>
-			)}
 		</div>
 	);
 }

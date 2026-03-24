@@ -5,7 +5,6 @@ const DEFAULT_MODEL = "google/gemini-3-flash-preview";
 export interface AIClientConfig {
 	apiKey: string;
 	model: string;
-	proxyUrl: string | undefined;
 }
 
 export function resolveAIClientConfig(
@@ -20,6 +19,5 @@ export function resolveAIClientConfig(
 	return {
 		apiKey: settings.openRouterApiKey,
 		model: DEFAULT_MODEL,
-		proxyUrl: undefined,
 	};
 }

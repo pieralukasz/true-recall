@@ -2,7 +2,7 @@ import { AIRequestError } from "./openrouter-client";
 
 export function formatAIError(error: unknown): string {
 	if (error instanceof AIRequestError) {
-		if (error.isBudgetExceeded) {
+		if (error.isRateLimited) {
 			return "OpenRouter rate limit exceeded. Try again shortly or check your API key balance.";
 		}
 		if (error.isUnauthorized) {
