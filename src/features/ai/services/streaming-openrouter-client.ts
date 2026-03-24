@@ -16,16 +16,11 @@ export interface StreamChunk {
 }
 
 export class StreamingOpenRouterClient {
-	private baseUrl: string;
-
 	constructor(
 		private apiKey: string,
 		private model: string,
-		proxyUrl?: string,
 		private userId?: string,
-	) {
-		this.baseUrl = proxyUrl ?? OPENROUTER_URL;
-	}
+	) {}
 
 	async *chatStream(
 		request: StreamingChatRequest,
@@ -33,7 +28,7 @@ export class StreamingOpenRouterClient {
 	): AsyncGenerator<StreamChunk> {
 		const headers = buildOpenRouterHeaders(this.apiKey, this.userId);
 
-		const response = await fetch(this.baseUrl, {
+		const response = await fetch(OPENROUTER_URL, {
 			method: "POST",
 			headers,
 			body: JSON.stringify({

@@ -87,7 +87,7 @@ export class AIRequestError extends Error {
 		this.name = "AIRequestError";
 	}
 
-	get isBudgetExceeded(): boolean {
+	get isRateLimited(): boolean {
 		return this.statusCode === 429;
 	}
 
@@ -99,26 +99,20 @@ export class AIRequestError extends Error {
 export interface AIClientOptions {
 	apiKey: string;
 	model: string;
-	proxyUrl?: string;
 }
 
 export class OpenRouterClient {
-	private baseUrl: string;
-
 	constructor(
 		private apiKey: string,
 		private model: string,
-		proxyUrl?: string,
 		private userId?: string,
-	) {
-		this.baseUrl = proxyUrl ?? OPENROUTER_URL;
-	}
+	) {}
 
 	async chat(request: ChatCompletionRequest): Promise<ChatCompletionResponse> {
 		const headers = buildOpenRouterHeaders(this.apiKey, this.userId);
 
 		const response = await requestUrl({
-			url: this.baseUrl,
+			url: OPENROUTER_URL,
 			method: "POST",
 			headers,
 			body: JSON.stringify({

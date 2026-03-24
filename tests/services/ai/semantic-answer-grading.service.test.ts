@@ -105,31 +105,16 @@ describe("SemanticAnswerGradingService", () => {
 		expect(result.passed).toBe(true);
 	});
 
-	it("retries with BYOK when subscription budget is exceeded (429)", async () => {
+	it("falls back to local score on 429 rate limit", async () => {
 		const settings = createSettings({
-			subscriptionKey: "sub-key",
 			openRouterApiKey: "byok-key",
 		});
 
 		const service = new SemanticAnswerGradingService(
 			() => settings,
-			(config) => ({
+			() => ({
 				chat: async () => {
-					if (config.apiKey === "sub-key") {
-						throw new AIRequestError(429, "budget exceeded");
-					}
-					return {
-						id: "resp-3",
-						choices: [
-							{
-								message: {
-									role: "assistant",
-									content: '{"score": 87, "feedback": "Core meaning is preserved."}',
-								},
-								finish_reason: "stop",
-							},
-						],
-					};
+					throw new AIRequestError(429, "rate limited");
 				},
 			}),
 		);
@@ -142,9 +127,9 @@ describe("SemanticAnswerGradingService", () => {
 			localFallbackScore: 40,
 		});
 
-		expect(result.score).toBe(87);
-		expect(result.source).toBe("ai");
-		expect(result.passed).toBe(true);
+		expect(result.score).toBe(40);
+		expect(result.source).toBe("local-fallback");
+		expect(result.passed).toBe(false);
 	});
 
 	it("uses custom type-in grading prompt from settings when provided", async () => {
