@@ -330,7 +330,7 @@ export const TRUE_RECALL_CLOUD = {
 	supabaseAnonKey: process.env.SUPABASE_ANON_KEY ?? "",
 } as const;
 
-export const TRUERECALL_API_URL = "https://api.truerecall.app";
+export const TRUERECALL_API_URL = "https://truerecall.app/api";
 export const TRUERECALL_WEB_URL = "https://truerecall.app";
 export const TRUERECALL_BMC_URL = "https://buymeacoffee.com/pieralukasz";
 export const TRUERECALL_GITHUB_URL =

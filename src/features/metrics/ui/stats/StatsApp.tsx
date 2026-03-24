@@ -4,6 +4,7 @@ import { HeatmapWidget } from "@features/study/ui/editor/widgets/analytics/Heatm
 import { useComputed, useSignal } from "@preact/signals";
 import {
 	allCardsArray,
+	archivedSourceUids as archivedSourceUidsSignal,
 	pluginSettings,
 } from "@shared/services/reactive-card-store";
 import type { StatsTimeRange } from "@shared/types";
@@ -92,16 +93,27 @@ export function StatsApp() {
 	}, [plugin.presetService, allCards, settings]);
 
 	// Build preset→sourceUid map and compute filter context
-	const filterContext = useComputed((): StatsFilterContext | null => {
+	const filterContext = useComputed((): StatsFilterContext => {
 		const selected = selectedPresets.value;
 		const allPresets = presetNames;
+		const archived = archivedSourceUidsSignal.value;
 
-		// All selected = no filter (fast path)
+		// All selected = no preset filter, but still apply archived filter
 		if (selected.size >= allPresets.length && allPresets.length > 0) {
-			return null;
+			return {
+				archivedSourceUids: archived,
+				presetNames: null,
+				presetSourceUids: null,
+			};
 		}
 
-		if (!plugin.presetService) return null;
+		if (!plugin.presetService) {
+			return {
+				archivedSourceUids: archived,
+				presetNames: null,
+				presetSourceUids: null,
+			};
+		}
 
 		// Union of sourceUids for all selected presets
 		const sourceUids = new Set<string>();
@@ -114,7 +126,7 @@ export function StatsApp() {
 		}
 
 		return {
-			archivedSourceUids: new Set(),
+			archivedSourceUids: archived,
 			presetNames: selected,
 			presetSourceUids: sourceUids,
 		};

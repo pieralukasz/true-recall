@@ -333,7 +333,7 @@ export function CardBrowserApp({
 
 	return (
 		<div class="ep-card-browser ep:flex ep:flex-col ep:h-full">
-			<AppNavBar activeItem="browse" />
+			<AppNavBar activeItem="browse" collapsible />
 			<BrowserToolbar
 				searchText={searchText.value}
 				onSearchChange={(v) => {

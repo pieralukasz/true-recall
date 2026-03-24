@@ -18,7 +18,7 @@ export function ProjectHubWidget() {
 
 	const projects = useComputed((): FlatProject[] => {
 		cards.value;
-		archivedSourceUids.value;
+		const archived = archivedSourceUids.value;
 		if (!plugin.cardStore) return [];
 
 		const hierarchy = plugin.hierarchyService.buildHierarchy();
@@ -26,6 +26,14 @@ export function ProjectHubWidget() {
 
 		const flatten = (nodes: HierarchyTreeNode[], depth: number) => {
 			for (const node of nodes) {
+				if (plugin.hierarchyService.isProjectArchived(node.path)) continue;
+
+				const allSourceUids =
+					plugin.hierarchyService.getSourceUidsForProject(node.path);
+				const filteredUids = new Set(
+					[...allSourceUids].filter((uid) => !archived.has(uid)),
+				);
+
 				const stats = computeProjectStats(
 					node.path,
 					node.name,
@@ -33,6 +41,7 @@ export function ProjectHubWidget() {
 					plugin.hierarchyService,
 					plugin.cardStore,
 					plugin.fsrsService,
+					{ sourceUids: filteredUids },
 				);
 				flat.push({ stats, depth });
 				flatten(node.children, depth + 1);

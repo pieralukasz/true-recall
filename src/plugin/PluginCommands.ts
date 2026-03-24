@@ -161,6 +161,7 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 		checkCallback: (checking) => {
 			const file = plugin.app.workspace.getActiveFile();
 			if (file && file.extension === "md") {
+				if (plugin.hierarchyService.isNoteArchived(file.path)) return false;
 				if (!checking) {
 					void plugin.flashcardManager
 						.getFrontmatterService()
@@ -178,6 +179,7 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 		checkCallback: (checking) => {
 			const file = plugin.app.workspace.getActiveFile();
 			if (file && file.extension === "md") {
+				if (!plugin.hierarchyService.isNoteArchived(file.path)) return false;
 				if (!checking) {
 					void plugin.flashcardManager
 						.getFrontmatterService()
