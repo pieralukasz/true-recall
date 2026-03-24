@@ -57,6 +57,11 @@ import {
 import type { StatusBarWidget } from "@features/study/ui/editor/widgets/StatusBarWidget";
 import { ReviewView } from "@features/study/ui/review/ReviewView";
 import {
+	type SessionFilters,
+	filtersToViewState,
+	normalizeSessionFilters,
+} from "@features/study/ui/review/review.types";
+import {
 	VIEW_TYPE_CARD_BROWSER,
 	VIEW_TYPE_DASHBOARD,
 	VIEW_TYPE_FLASHCARD_PANEL,
@@ -435,12 +440,11 @@ export default class TrueRecallPlugin extends Plugin {
 		if (result.cancelled) return;
 
 		if (result.useDefaultDeck) {
-			await this.openReviewView("Knowledge");
+			await this.openReviewViewWithFilters({});
 			return;
 		}
 
 		await this.openReviewViewWithFilters({
-			deckFilter: null,
 			sourceNoteFilter: result.sourceNoteFilter,
 			sourceNoteFilters: result.sourceNoteFilters,
 			filePathFilter: result.filePathFilter,
@@ -455,18 +459,9 @@ export default class TrueRecallPlugin extends Plugin {
 			recentlyFailed: result.recentlyFailed,
 			cardLimit: result.cardLimit,
 			studyAheadDays: result.studyAheadDays,
-			reviewOrder: result.reviewOrder,
+			customReviewOrder: result.reviewOrder,
 			crammingMode: result.crammingMode,
 		});
-	}
-
-	private async openReviewView(deckFilter: string | null): Promise<void> {
-		await activateReviewView(
-			this.app,
-			VIEW_TYPE_REVIEW,
-			this.settings.reviewMode,
-			{ deckFilter },
-		);
 	}
 
 	async openCardBrowser(opts?: {
@@ -651,7 +646,6 @@ export default class TrueRecallPlugin extends Plugin {
 		}
 
 		await this.openReviewViewWithFilters({
-			deckFilter: null,
 			sourceUidFilter: sourceUid,
 			ignoreDailyLimits: true,
 		});
@@ -681,58 +675,16 @@ export default class TrueRecallPlugin extends Plugin {
 		}
 
 		await this.openReviewViewWithFilters({
-			deckFilter: null,
 			createdTodayOnly: true,
 			ignoreDailyLimits: true,
 		});
 	}
 
-	async openReviewViewWithFilters(filters: {
-		deckFilter?: string | null;
-		projectPath?: string;
-		sourceUidFilter?: string;
-		sourceNoteFilter?: string;
-		sourceNoteFilters?: string[];
-		filePathFilter?: string;
-		createdTodayOnly?: boolean;
-		createdThisWeek?: boolean;
-		weakCardsOnly?: boolean;
-		stateFilter?: "due" | "learning" | "new" | "buried";
-		ignoreDailyLimits?: boolean;
-		bypassScheduling?: boolean;
-		difficultyRange?: { min: number; max: number };
-		lapsesRange?: { min: number; max: number };
-		stabilityRange?: { min: number; max: number };
-		overdueOnly?: boolean;
-		recentlyFailed?: boolean;
-		cardLimit?: number;
-		studyAheadDays?: number;
-		reviewOrder?: import("@shared/types/settings.types").ReviewOrder;
-		crammingMode?: boolean;
-	}): Promise<void> {
-		const state = {
-			deckFilter: filters.deckFilter ?? null,
-			projectPath: filters.projectPath,
-			sourceUidFilter: filters.sourceUidFilter,
-			sourceNoteFilter: filters.sourceNoteFilter,
-			sourceNoteFilters: filters.sourceNoteFilters,
-			filePathFilter: filters.filePathFilter,
-			createdTodayOnly: filters.createdTodayOnly,
-			createdThisWeek: filters.createdThisWeek,
-			weakCardsOnly: filters.weakCardsOnly,
-			stateFilter: filters.stateFilter,
-			ignoreDailyLimits: filters.ignoreDailyLimits,
-			bypassScheduling: filters.bypassScheduling,
-			difficultyRange: filters.difficultyRange,
-			lapsesRange: filters.lapsesRange,
-			stabilityRange: filters.stabilityRange,
-			overdueOnly: filters.overdueOnly,
-			recentlyFailed: filters.recentlyFailed,
-			cardLimit: filters.cardLimit,
-			studyAheadDays: filters.studyAheadDays,
-			reviewOrder: filters.reviewOrder,
-			crammingMode: filters.crammingMode,
-		};
+	async openReviewViewWithFilters(
+		rawFilters: SessionFilters,
+	): Promise<void> {
+		const filters = normalizeSessionFilters(rawFilters);
+		const state = filtersToViewState(filters);
 
 		await activateReviewView(
 			this.app,
@@ -1004,7 +956,6 @@ export default class TrueRecallPlugin extends Plugin {
 
 		const onReviewNotes = (noteNames: string[], dueOnly: boolean) => {
 			this.openReviewViewWithFilters({
-				deckFilter: null,
 				sourceNoteFilters: noteNames,
 				ignoreDailyLimits: true,
 				stateFilter: dueOnly ? "due" : undefined,
