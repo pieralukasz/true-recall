@@ -31,7 +31,7 @@ export function ProjectWidget({
 
 	const stats = useComputed((): ProjectStats | null => {
 		cards.value;
-		archivedSourceUids.value;
+		const archived = archivedSourceUids.value;
 		if (!isProject || !plugin.cardStore) return null;
 
 		const file = plugin.app.vault.getAbstractFileByPath(sourcePath);
@@ -42,6 +42,12 @@ export function ProjectWidget({
 			(cp) => plugin.hierarchyService.getChildPaths(cp).length > 0,
 		).length;
 
+		const allSourceUids =
+			plugin.hierarchyService.getSourceUidsForProject(sourcePath);
+		const filteredUids = new Set(
+			[...allSourceUids].filter((uid) => !archived.has(uid)),
+		);
+
 		return computeProjectStats(
 			sourcePath,
 			name,
@@ -49,6 +55,7 @@ export function ProjectWidget({
 			plugin.hierarchyService,
 			plugin.cardStore,
 			plugin.fsrsService,
+			{ sourceUids: filteredUids },
 		);
 	}).value;
 

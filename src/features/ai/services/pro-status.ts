@@ -21,7 +21,7 @@ export async function refreshProStatus(
 			portkeyVirtualKey: info.portkeyVirtualKey ?? undefined,
 			proBudgetRemainingCents: info.budgetRemainingCents,
 			proBudgetTotalCents: info.budgetTotalCents,
-			proBudgetResetDate: info.budgetResetDate,
+			proBudgetResetDate: info.budgetResetDate ?? undefined,
 		});
 	} catch (error) {
 		console.warn("[TrueRecall] Failed to refresh Pro status:", error);

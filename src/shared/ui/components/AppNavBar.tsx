@@ -2,7 +2,7 @@ import { QuickNoteEditorModal } from "@features/study/modals/quick-note-editor/Q
 import { Clickable } from "@shared/ui/components/Clickable";
 import { useApp, useIcon, usePlugin } from "@shared/ui/preact";
 import { cn } from "@shared/ui/utils";
-import { useCallback } from "preact/hooks";
+import { useCallback, useState } from "preact/hooks";
 
 type NavItemId = "dashboard" | "add" | "stats" | "browse";
 
@@ -21,11 +21,14 @@ const NAV_ITEMS: NavItem[] = [
 
 export interface AppNavBarProps {
 	activeItem: NavItemId;
+	collapsible?: boolean;
 }
 
-export function AppNavBar({ activeItem }: AppNavBarProps) {
+export function AppNavBar({ activeItem, collapsible = false }: AppNavBarProps) {
 	const plugin = usePlugin();
 	const app = useApp();
+	const [collapsed, setCollapsed] = useState(false);
+	const chevronRef = useIcon(collapsed ? "chevron-down" : "chevron-up");
 
 	const handleClick = useCallback(
 		async (id: NavItemId) => {
@@ -51,17 +54,46 @@ export function AppNavBar({ activeItem }: AppNavBarProps) {
 	);
 
 	return (
-		<nav class="ep:shrink-0 ep:bg-obs-primary">
-			<div class="ep:flex ep:justify-center ep:gap-1 ep:px-2 ep:py-1.5">
-				{NAV_ITEMS.map((item) => (
-					<NavBarItem
-						key={item.id}
-						item={item}
-						isActive={item.id === activeItem}
-						onClick={() => void handleClick(item.id)}
-					/>
-				))}
+		<nav class="ep:shrink-0 ep:mt-2 ep:bg-obs-primary">
+			<div
+				class={cn(
+					"ep:grid ep:transition-[grid-template-rows] ep:duration-300 ep:ease-in-out",
+					collapsed ? "ep:grid-rows-[0fr]" : "ep:grid-rows-[1fr]",
+				)}
+			>
+				<div class="ep:overflow-hidden ep:min-h-0">
+					<div class="ep:flex ep:justify-center ep:gap-1 ep:px-2 ep:py-1.5">
+						{NAV_ITEMS.map((item) => (
+							<NavBarItem
+								key={item.id}
+								item={item}
+								isActive={item.id === activeItem}
+								onClick={() => void handleClick(item.id)}
+							/>
+						))}
+					</div>
+				</div>
 			</div>
+
+			{collapsible && (
+				<Clickable
+					class={cn(
+						"ep:flex ep:items-center ep:justify-center ep:w-full ep:py-0.5",
+						"ep:text-obs-faint ep:hover:text-obs-muted ep:transition-colors ep:duration-150",
+						"ep:cursor-pointer",
+					)}
+					onClick={() => setCollapsed((v) => !v)}
+					aria-label={collapsed ? "Show navigation" : "Hide navigation"}
+				>
+					<span
+						ref={chevronRef}
+						class={cn(
+							"[&_svg]:ep:w-3.5 [&_svg]:ep:h-3.5",
+							"ep:transition-transform ep:duration-300",
+						)}
+					/>
+				</Clickable>
+			)}
 		</nav>
 	);
 }

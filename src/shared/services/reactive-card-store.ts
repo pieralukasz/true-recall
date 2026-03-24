@@ -80,6 +80,7 @@ export interface GlobalCounts {
 
 export const globalCounts = computed((): GlobalCounts => {
 	const now = new Date();
+	const archived = _archivedSourceUids.value;
 	let newCount = 0;
 	let learning = 0;
 	let due = 0;
@@ -87,6 +88,7 @@ export const globalCounts = computed((): GlobalCounts => {
 	let suspended = 0;
 
 	for (const card of cards.value.values()) {
+		if (archived.has(card.sourceUid ?? "")) continue;
 		total++;
 		const fsrs = card.fsrs;
 
