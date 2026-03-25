@@ -96,8 +96,10 @@ export class ChunkedGenerationService {
 			chunks.length,
 		);
 
-		const systemPrompt = buildGenerationPrompt(this.getSettings(), noteType);
 		const aiConfig = resolveAIClientConfig(this.getSettings());
+		const systemPrompt = aiConfig.isPro
+			? ""
+			: buildGenerationPrompt(this.getSettings(), noteType);
 
 		let totalCreated = 0;
 		let totalDuplicates = 0;
@@ -172,14 +174,19 @@ export class ChunkedGenerationService {
 			duplicateCount += dups;
 		};
 
+		const messages = systemPrompt
+			? [
+					{ role: "system" as const, content: systemPrompt },
+					{ role: "user" as const, content: userMessage },
+				]
+			: [{ role: "user" as const, content: userMessage }];
+
+		const metadata = aiConfig.isPro
+			? { call_context: "generation", note_type: "basic" }
+			: undefined;
+
 		const stream = client.chatStream(
-			{
-				messages: [
-					{ role: "system", content: systemPrompt },
-					{ role: "user", content: userMessage },
-				],
-				temperature: 0.7,
-			},
+			{ messages, temperature: 0.7, metadata },
 			signal,
 		);
 

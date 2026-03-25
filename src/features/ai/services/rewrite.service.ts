@@ -113,12 +113,17 @@ export class RewriteService {
 
 		const client = new OpenRouterClient(config.apiKey, config.model, config.baseUrl);
 
+		const metadata = config.isPro
+			? { call_context: "rewrite" }
+			: undefined;
+
 		const response = await client.chat({
 			messages: [
 				{ role: "system" as const, content: systemPrompt },
 				{ role: "user" as const, content: userContent },
 			],
 			temperature: 0.7,
+			metadata,
 		});
 		return getTextContent(response.choices[0]?.message);
 	}

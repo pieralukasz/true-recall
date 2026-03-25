@@ -36,6 +36,7 @@ type ClientFactory = (config: AIClientConfig) => {
 			content: string;
 		}>;
 		temperature: number;
+		metadata?: Record<string, unknown>;
 	}) => Promise<ChatCompletionResponse>;
 };
 
@@ -98,6 +99,10 @@ export class SemanticAnswerGradingService {
 		const client = this.createClient(config);
 		const timeoutMs = input.timeoutMs ?? DEFAULT_TIMEOUT_MS;
 
+		const metadata = config.isPro
+			? { call_context: "grading" }
+			: undefined;
+
 		const response = await this.withTimeout(
 			client.chat({
 				messages: buildTypeInGradingMessages(
@@ -111,6 +116,7 @@ export class SemanticAnswerGradingService {
 					this.getSettings().aiTypeInGradingPrompt,
 				),
 				temperature: 0,
+				metadata,
 			}),
 			timeoutMs,
 		);

@@ -3,11 +3,13 @@ import type { TrueRecallSettings } from "@shared/types/settings.types";
 import { OPENROUTER_URL } from "./openrouter-client";
 
 const DEFAULT_MODEL = "google/gemini-3-flash-preview";
+const PRO_MODEL = "auto"; // Proxy routes to the best model server-side
 
 export interface AIClientConfig {
 	apiKey: string;
 	model: string;
 	baseUrl: string;
+	isPro: boolean;
 }
 
 export function resolveAIClientConfig(
@@ -16,8 +18,9 @@ export function resolveAIClientConfig(
 	if (settings.proKey) {
 		return {
 			apiKey: settings.proKey,
-			model: settings.aiModel || DEFAULT_MODEL,
+			model: PRO_MODEL,
 			baseUrl: LITELLM_URL,
+			isPro: true,
 		};
 	}
 
@@ -26,6 +29,7 @@ export function resolveAIClientConfig(
 			apiKey: settings.openRouterApiKey,
 			model: settings.aiModel || DEFAULT_MODEL,
 			baseUrl: OPENROUTER_URL,
+			isPro: false,
 		};
 	}
 
