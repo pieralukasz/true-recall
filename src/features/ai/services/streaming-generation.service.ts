@@ -121,7 +121,15 @@ export class StreamingGenerationService {
 		const getNoteType = (slug: string) =>
 			this.flashcardManager.getNoteTypeBySlug?.(slug) ?? null;
 		const parser = new IncrementalFlashcardParser(getNoteType);
-		const systemPrompt = buildGenerationPrompt(this.getSettings(), noteType);
+
+		// Pro: proxy injects premium prompt server-side. BYOK: plugin sends prompt.
+		const systemPrompt = aiConfig.isPro
+			? ""
+			: buildGenerationPrompt(this.getSettings(), noteType);
+
+		const metadata = aiConfig.isPro
+			? { call_context: "generation", note_type: noteType?.slug ?? "basic" }
+			: undefined;
 
 		let createdCount = 0;
 		let duplicateCount = 0;
@@ -131,14 +139,15 @@ export class StreamingGenerationService {
 			duplicateCount += dups;
 		};
 
+		const messages = systemPrompt
+			? [
+					{ role: "system" as const, content: systemPrompt },
+					{ role: "user" as const, content: text },
+				]
+			: [{ role: "user" as const, content: text }];
+
 		const stream = client.chatStream(
-			{
-				messages: [
-					{ role: "system", content: systemPrompt },
-					{ role: "user", content: text },
-				],
-				temperature: 0.7,
-			},
+			{ messages, temperature: 0.7, metadata },
 			abortController.signal,
 		);
 

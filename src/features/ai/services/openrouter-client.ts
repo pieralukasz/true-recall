@@ -39,6 +39,7 @@ interface ChatCompletionRequest {
 	temperature?: number;
 	tools?: ToolDefinition[];
 	tool_choice?: "auto" | "none";
+	metadata?: Record<string, unknown>;
 }
 
 export interface ChatCompletionResponse {

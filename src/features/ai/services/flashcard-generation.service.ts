@@ -27,15 +27,23 @@ export class FlashcardGenerationService {
 		const config = resolveAIClientConfig(settings);
 
 		const client = new OpenRouterClient(config.apiKey, config.model, config.baseUrl);
-		const systemPrompt = buildGenerationPrompt(settings, noteType);
 
-		const request = {
-			messages: [
-				{ role: "system" as const, content: systemPrompt },
-				{ role: "user" as const, content: selectedText },
-			],
-			temperature: 0.7,
-		};
+		const systemPrompt = config.isPro
+			? ""
+			: buildGenerationPrompt(settings, noteType);
+
+		const messages = systemPrompt
+			? [
+					{ role: "system" as const, content: systemPrompt },
+					{ role: "user" as const, content: selectedText },
+				]
+			: [{ role: "user" as const, content: selectedText }];
+
+		const metadata = config.isPro
+			? { call_context: "generation", note_type: noteType?.slug ?? "basic" }
+			: undefined;
+
+		const request = { messages, temperature: 0.7, metadata };
 
 		const response = await client.chat(request);
 		const responseText = getTextContent(response.choices[0]?.message);

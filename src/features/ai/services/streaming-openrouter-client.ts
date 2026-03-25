@@ -8,6 +8,7 @@ import {
 export interface StreamingChatRequest {
 	messages: ChatMessage[];
 	temperature?: number;
+	metadata?: Record<string, unknown>;
 }
 
 export interface StreamChunk {
