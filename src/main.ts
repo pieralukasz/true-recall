@@ -33,7 +33,6 @@ import {
 } from "@features/integration/modals/DeviceSelectionModal";
 import { DeviceDiscoveryService } from "@features/integration/services/device-discovery.service";
 import { DeviceIdService } from "@features/integration/services/device-id.service";
-import { AuthService } from "@features/integration/services/sync/auth.service";
 import { FlashcardPanelView } from "@features/library/ui/panel/FlashcardPanelView";
 import { FSRSHelperService } from "@features/metrics/services/fsrs-tools";
 import { SimulatorView } from "@features/metrics/ui/simulator";
@@ -114,7 +113,6 @@ export default class TrueRecallPlugin extends Plugin {
 	presetService!: PresetService;
 	noteTypeService!: NoteTypeService;
 	hierarchyService!: HierarchyService;
-	authService: AuthService | null = null;
 	store: AppStore | null = null;
 	noteStatusCache: NoteStatusCacheService | null = null;
 	statusBarWidget: StatusBarWidget | null = null;
@@ -146,16 +144,6 @@ export default class TrueRecallPlugin extends Plugin {
 
 	async onload(): Promise<void> {
 		await this.loadSettings();
-
-		this.authService = new AuthService();
-
-		this.registerObsidianProtocolHandler("true-recall-auth", (params) => {
-			this.handleAuthCallback(params).catch((err) => {
-				notify().error(
-					err instanceof Error ? err.message : "Auth callback failed",
-				);
-			});
-		});
 
 		this.frontmatterIndex = new FrontmatterIndexService(this.app);
 		this.frontmatterIndex.register({
@@ -396,34 +384,6 @@ export default class TrueRecallPlugin extends Plugin {
 		this.hierarchyService.invalidateGraph();
 
 		refreshSettings(this.settings);
-	}
-
-	private async handleAuthCallback(
-		params: Record<string, string>,
-	): Promise<void> {
-		const { code, error } = params;
-
-		if (error) {
-			notify().error("Authentication failed. Please try again.");
-			return;
-		}
-
-		if (!code) {
-			notify().error("Invalid auth callback — missing code.");
-			return;
-		}
-
-		if (!this.authService) {
-			notify().error("Auth service not available.");
-			return;
-		}
-
-		const result = await this.authService.exchangeCodeForSession(code);
-		if (result.success) {
-			notify().success("Signed in successfully!");
-		} else {
-			notify().error(result.error ?? "Failed to complete sign-in.");
-		}
 	}
 
 	async activateView(): Promise<void> {
@@ -1115,7 +1075,7 @@ export default class TrueRecallPlugin extends Plugin {
 				}
 			},
 			onImageOcclusion: (imagePath) => this.handleImageOcclusion(imagePath),
-			hasApiKey: () => !!this.settings.openRouterApiKey,
+			hasApiKey: () => !!(this.settings.proKey || this.settings.openRouterApiKey),
 			isEnabled: () => this.settings.selectionToolbarEnabled,
 		});
 

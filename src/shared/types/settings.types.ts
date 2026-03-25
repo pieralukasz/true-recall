@@ -5,7 +5,7 @@
 import type { AIModelKey } from "@shared/constants";
 import type { ReviewViewMode } from "@shared/types/fsrs";
 
-export type AITier = "byok";
+export type AITier = "pro" | "byok";
 
 /**
  * Optimization result metrics from FSRS parameter optimization
@@ -137,6 +137,8 @@ export interface FSRSPreset {
  * True Recall plugin settings
  */
 export interface TrueRecallSettings {
+	/** True Recall Pro key (LiteLLM) — takes priority over OpenRouter */
+	proKey?: string;
 	/** OpenRouter API key (BYOK tier) */
 	openRouterApiKey: string;
 	/** AI model for NL query */

@@ -94,8 +94,7 @@ export class StreamingGenerationService {
 
 		try {
 			return await this.runStreamingGeneration(
-				aiConfig.apiKey,
-				aiConfig.model,
+				aiConfig,
 				text,
 				sourceFile,
 				abortController,
@@ -112,14 +111,13 @@ export class StreamingGenerationService {
 	}
 
 	private async runStreamingGeneration(
-		apiKey: string,
-		model: string,
+		aiConfig: import("./ai-client-config").AIClientConfig,
 		text: string,
 		sourceFile: TFile,
 		abortController: AbortController,
 		noteType?: NoteType | null,
 	): Promise<StreamingGenerationResult> {
-		const client = new StreamingOpenRouterClient(apiKey, model);
+		const client = new StreamingOpenRouterClient(aiConfig.apiKey, aiConfig.model, aiConfig.baseUrl);
 		const getNoteType = (slug: string) =>
 			this.flashcardManager.getNoteTypeBySlug?.(slug) ?? null;
 		const parser = new IncrementalFlashcardParser(getNoteType);

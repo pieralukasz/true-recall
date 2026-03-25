@@ -26,7 +26,7 @@ export class FlashcardGenerationService {
 		const settings = this.getSettings();
 		const config = resolveAIClientConfig(settings);
 
-		const client = new OpenRouterClient(config.apiKey, config.model);
+		const client = new OpenRouterClient(config.apiKey, config.model, config.baseUrl);
 		const systemPrompt = buildGenerationPrompt(settings, noteType);
 
 		const request = {

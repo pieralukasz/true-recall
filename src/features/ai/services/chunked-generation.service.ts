@@ -116,8 +116,7 @@ export class ChunkedGenerationService {
 
 				try {
 					const result = await this.generateSingleChunk(
-						aiConfig.apiKey,
-						aiConfig.model,
+						aiConfig,
 						systemPrompt,
 						userMessage,
 						sourceFile,
@@ -154,14 +153,13 @@ export class ChunkedGenerationService {
 	}
 
 	private async generateSingleChunk(
-		apiKey: string,
-		model: string,
+		aiConfig: import("./ai-client-config").AIClientConfig,
 		systemPrompt: string,
 		userMessage: string,
 		sourceFile: TFile,
 		signal: AbortSignal,
 	): Promise<StreamingGenerationResult> {
-		const client = new StreamingOpenRouterClient(apiKey, model);
+		const client = new StreamingOpenRouterClient(aiConfig.apiKey, aiConfig.model, aiConfig.baseUrl);
 		const getNoteType = (slug: string) =>
 			this.flashcardManager.getNoteTypeBySlug?.(slug) ?? null;
 		const parser = new IncrementalFlashcardParser(getNoteType);
