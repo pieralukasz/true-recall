@@ -1,8 +1,5 @@
-import { buildBlockPrompt } from "@features/ai/prompts/block-prompt-builder";
-import {
-	buildDensitySuffix,
-	buildLanguageSuffix,
-} from "@features/ai/prompts/default-prompts";
+import { buildByokPrompt } from "@features/ai/prompts/block-prompt-builder";
+import { buildLanguageSuffix } from "@features/ai/prompts/default-prompts";
 import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
 import type { NoteType } from "@shared/types/note.types";
 import type { TrueRecallSettings } from "@shared/types/settings.types";
@@ -17,12 +14,6 @@ import {
 	startStreaming,
 	streamingGeneration,
 } from "./streaming-state";
-
-export const SOURCE_TRACKING_SUFFIX = `
-
-SOURCE TRACKING (MANDATORY):
-After each card's fields, on a new line, add: <!-- source: [exact verbatim quote from the input text] -->
-The quote must be EXACTLY copied from the input — same words, same punctuation. Keep it to the specific sentence(s) for that flashcard.`;
 
 const FALLBACK_BASIC_NOTE_TYPE = {
 	id: "builtin-basic",
@@ -40,30 +31,7 @@ export function buildGenerationPrompt(
 	noteType?: NoteType | null,
 ): string {
 	const langSuffix = buildLanguageSuffix(settings.generationLanguage ?? "auto");
-	const densitySuffix = buildDensitySuffix(
-		settings.generationDensity ?? "balanced",
-	);
-
-	if (noteType?.slug) {
-		const customKey = `notetype:${noteType.slug}`;
-		const custom = (
-			settings.aiFlashcardPrompts as Record<string, string | undefined>
-		)?.[customKey];
-		if (custom?.trim())
-			return custom + densitySuffix + SOURCE_TRACKING_SUFFIX + langSuffix;
-	}
-
-	const legacyCustom = settings.aiFlashcardPrompts?.basic;
-	if (typeof legacyCustom === "string" && legacyCustom.trim()) {
-		return legacyCustom + densitySuffix + SOURCE_TRACKING_SUFFIX + langSuffix;
-	}
-
-	return (
-		buildBlockPrompt(noteType ?? FALLBACK_BASIC_NOTE_TYPE) +
-		densitySuffix +
-		SOURCE_TRACKING_SUFFIX +
-		langSuffix
-	);
+	return buildByokPrompt(noteType ?? FALLBACK_BASIC_NOTE_TYPE) + langSuffix;
 }
 
 export interface StreamingGenerationResult {
