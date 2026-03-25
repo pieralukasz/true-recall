@@ -111,8 +111,3 @@ export type {
 	TypeInMode,
 } from "@shared/types/settings.types";
 export { extractFSRSSettings } from "@shared/types/settings.types";
-export type {
-	FirstSyncStatus,
-	SyncOptions,
-	SyncResult,
-} from "@shared/types/sync.types";

@@ -200,7 +200,7 @@ export async function detectRegions(
 
 	const config = resolveAIClientConfig(settings);
 	const visionModel = resolveVisionModel(config.model);
-	const client = new OpenRouterClient(config.apiKey, visionModel);
+	const client = new OpenRouterClient(config.apiKey, visionModel, config.baseUrl);
 
 	const response = await client.chat(request);
 	const responseText = getTextContent(response.choices[0]?.message);

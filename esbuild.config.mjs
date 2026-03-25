@@ -103,17 +103,7 @@ const context = await esbuild.context({
 		react: "preact/compat",
 		"react-dom": "preact/compat",
 	},
-	define: {
-		"process.env.SUPABASE_URL": JSON.stringify(
-			process.env.SUPABASE_URL || "",
-		),
-		"process.env.SUPABASE_ANON_KEY": JSON.stringify(
-			process.env.SUPABASE_ANON_KEY || "",
-		),
-		"process.env.POWERSYNC_URL": JSON.stringify(
-			process.env.POWERSYNC_URL || "",
-		),
-	},
+	define: {},
 	loader: { ".wasm": "binary" },
 	external: [
 		"obsidian",

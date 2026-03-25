@@ -21,7 +21,7 @@ export function usePanelActions() {
 		if (!currentFile) return;
 		const { notify } = await import("@shared/services/notification.service");
 
-		if (!plugin.settings.openRouterApiKey) {
+		if (!plugin.settings.proKey && !plugin.settings.openRouterApiKey) {
 			notify().aiNotConfigured();
 			return;
 		}
@@ -79,7 +79,7 @@ export function usePanelActions() {
 		if (!currentFile) return;
 		const { notify } = await import("@shared/services/notification.service");
 
-		if (!plugin.settings.openRouterApiKey) {
+		if (!plugin.settings.proKey && !plugin.settings.openRouterApiKey) {
 			notify().aiNotConfigured();
 			return;
 		}

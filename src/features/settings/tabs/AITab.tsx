@@ -4,6 +4,7 @@ import {
 	GENERATION_LANGUAGES,
 	type GenerationDensity,
 } from "@features/ai/prompts/default-prompts";
+import { hasAIKey } from "@features/ai/services/ai-client-config";
 import { useSettings } from "@features/settings/hooks/useSettings";
 import {
 	Clickable,
@@ -21,8 +22,7 @@ export function AITab() {
 	const { settings, save } = useSettings();
 	const [promptExpanded, setPromptExpanded] = useState(false);
 
-	const hasApiKey = !!settings.openRouterApiKey;
-
+	const hasKey = hasAIKey(settings);
 	const customPrompt = settings.aiFlashcardPrompts?.basic ?? "";
 	const isCustomPrompt = customPrompt.trim().length > 0;
 
@@ -47,10 +47,10 @@ export function AITab() {
 
 	return (
 		<div class="ep:flex ep:flex-col ep:gap-3">
-			<FormCard title="AI Provider">
+			<FormCard title="Own API Key (Free)">
 				<FormField
 					name="OpenRouter API key"
-					description="Your OpenRouter API key for AI-powered features."
+					description="Bring your own OpenRouter key. Used when no Pro key is set."
 				>
 					<TextInput
 						value={settings.openRouterApiKey}
@@ -60,7 +60,7 @@ export function AITab() {
 						class="ep:w-[300px]"
 					/>
 				</FormField>
-			</FormCard>
+				</FormCard>
 
 			<FormCard title="AI Prompts">
 				<FormField
@@ -130,7 +130,7 @@ export function AITab() {
 					/>
 				</FormField>
 
-				{hasApiKey && (
+				{hasKey && (
 					<>
 						<InfoBlock>
 							<p>

@@ -14,9 +14,10 @@ const AiFlashcardPromptsSchema = z
 	})
 	.optional();
 
-export const AITierSchema = z.enum(["byok"]).default("byok");
+export const AITierSchema = z.enum(["pro", "byok"]).default("byok");
 
 export const SettingsSchema = z.object({
+	proKey: z.string().optional(),
 	openRouterApiKey: z.string(),
 	aiModel: AIModelSchema,
 	aiTier: AITierSchema,
@@ -28,7 +29,9 @@ export const SettingsSchema = z.object({
 export const PartialSettingsSchema = SettingsSchema.partial();
 
 export const SettingsWithApiKeySchema = SettingsSchema.refine(
-	(data) => data.openRouterApiKey.trim().length > 0,
+	(data) =>
+		(data.proKey?.trim().length ?? 0) > 0 ||
+		data.openRouterApiKey.trim().length > 0,
 	{
 		message: "API key is required",
 		path: ["openRouterApiKey"],

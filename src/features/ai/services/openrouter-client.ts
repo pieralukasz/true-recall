@@ -105,6 +105,7 @@ export class OpenRouterClient {
 	constructor(
 		private apiKey: string,
 		private model: string,
+		private baseUrl: string = OPENROUTER_URL,
 		private userId?: string,
 	) {}
 
@@ -112,7 +113,7 @@ export class OpenRouterClient {
 		const headers = buildOpenRouterHeaders(this.apiKey, this.userId);
 
 		const response = await requestUrl({
-			url: OPENROUTER_URL,
+			url: this.baseUrl,
 			method: "POST",
 			headers,
 			body: JSON.stringify({

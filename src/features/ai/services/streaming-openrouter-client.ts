@@ -19,6 +19,7 @@ export class StreamingOpenRouterClient {
 	constructor(
 		private apiKey: string,
 		private model: string,
+		private baseUrl: string = OPENROUTER_URL,
 		private userId?: string,
 	) {}
 
@@ -28,7 +29,7 @@ export class StreamingOpenRouterClient {
 	): AsyncGenerator<StreamChunk> {
 		const headers = buildOpenRouterHeaders(this.apiKey, this.userId);
 
-		const response = await fetch(OPENROUTER_URL, {
+		const response = await fetch(this.baseUrl, {
 			method: "POST",
 			headers,
 			body: JSON.stringify({
