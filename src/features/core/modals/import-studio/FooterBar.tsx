@@ -1,4 +1,3 @@
-import { CopyPromptButton } from "@features/core/modals/add-flashcards/CopyPromptButton";
 import { Clickable } from "@shared/ui/components/Clickable";
 import { useIcon } from "@shared/ui/preact/hooks";
 import { useCallback, useEffect, useRef, useState } from "preact/hooks";
@@ -26,7 +25,6 @@ export function FooterBar({
 	return (
 		<div class="ep-modal-footer ep:flex ep:items-center ep:gap-2">
 			<div class="ep:flex ep:items-center ep:gap-2">
-				<CopyPromptButton />
 				<div class="ep:relative ep:flex ep:items-center">
 					<div
 						ref={helpIconRef}
@@ -91,12 +89,8 @@ function HelpPopover({ onClose }: { onClose: () => void }) {
 		>
 			<div class="ep:font-semibold ep:mb-2">How to generate flashcards</div>
 			<ol class="ep:space-y-1.5 ep:text-obs-muted ep:list-decimal ep:pl-4">
-				<li>
-					Click <span class="ep:text-obs-normal">Copy Prompt</span> to copy the
-					AI prompt
-				</li>
-				<li>Paste the prompt into ChatGPT, Claude, or any AI chat</li>
-				<li>Add your note text after the prompt and send</li>
+				<li>Paste your note text into any AI chat (ChatGPT, Claude, etc.)</li>
+				<li>Ask it to generate flashcards in the format shown below</li>
 				<li>Copy the AI response and paste it into the editor above</li>
 			</ol>
 			<div class="ep:mt-2.5 ep:text-obs-faint">

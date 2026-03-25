@@ -4,10 +4,7 @@ import type { TrueRecallSettings } from "@shared/types/settings.types";
 import { resolveAIClientConfig } from "./ai-client-config";
 import { parseBlockResponse } from "./incremental-flashcard-parser";
 import { getTextContent, OpenRouterClient } from "./openrouter-client";
-import {
-	buildGenerationPrompt,
-	SOURCE_TRACKING_SUFFIX,
-} from "./streaming-generation.service";
+import { buildGenerationPrompt } from "./streaming-generation.service";
 
 export interface GenerationResult {
 	blocks: ParsedBlock[];
