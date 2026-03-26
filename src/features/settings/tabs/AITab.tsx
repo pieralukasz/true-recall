@@ -1,27 +1,80 @@
-import {
-	GENERATION_DENSITY_OPTIONS,
-	GENERATION_LANGUAGES,
-	type GenerationDensity,
-} from "@features/ai/prompts/default-prompts";
+import { GENERATION_LANGUAGES } from "@features/ai/prompts/default-prompts";
 import { useSettings } from "@features/settings/hooks/useSettings";
+import { BYOK_MODELS, TRUERECALL_WEB_URL } from "@shared/constants";
 import {
+	Clickable,
 	FormCard,
 	FormField,
+	InfoBlock,
 	SelectInput,
+	SliderInput,
 	TextAreaInput,
 	TextInput,
 	ToggleInput,
 } from "@shared/ui/components";
 
+const MODEL_OPTIONS = BYOK_MODELS.map((m) => ({
+	value: m.id,
+	label: `${m.name} (${m.provider})${m.recommended ? " — Recommended" : ""}`,
+}));
+
+function getModelDefault(modelId: string): number {
+	return BYOK_MODELS.find((m) => m.id === modelId)?.defaultTemperature ?? 0.7;
+}
+
 export function AITab() {
 	const { settings, save } = useSettings();
 
+	const hasProKey = !!settings.proKey;
+	const currentModel = settings.aiModel || BYOK_MODELS[0]!.id;
+	const modelDefault = getModelDefault(currentModel);
+	const effectiveTemp = settings.aiTemperature ?? modelDefault;
+
 	return (
 		<div class="ep:flex ep:flex-col ep:gap-3">
-			<FormCard title="Own API Key (Free)">
+			<FormCard title="True Recall Pro">
+				<FormField
+					name="Pro Key"
+					description={
+						<span>
+							Get your key at{" "}
+							<a
+								href={`${TRUERECALL_WEB_URL}/dashboard`}
+								class="ep:text-obs-accent"
+							>
+								truerecall.app/dashboard
+							</a>
+						</span>
+					}
+				>
+					<TextInput
+						value={settings.proKey ?? ""}
+						onChange={(v) =>
+							save({ proKey: v.trim().length > 0 ? v.trim() : undefined })
+						}
+						type="password"
+						placeholder="Paste key from dashboard"
+						class="ep:w-[300px]"
+					/>
+				</FormField>
+				{hasProKey && (
+					<InfoBlock>
+						Active — AI routed via True Recall servers.
+					</InfoBlock>
+				)}
+				<div class="ep:text-ui-smaller ep:text-obs-muted ep:leading-relaxed ep:pt-2 ep:mt-2 ep:border-t ep:border-obs-modifier-border">
+					<p class="ep:font-medium ep:text-obs-normal">Zero setup, optimized results</p>
+					<p class="ep:mt-1">
+						Optimized prompts and model selection managed server-side.
+						AI budget included with your subscription.
+					</p>
+				</div>
+			</FormCard>
+
+			<FormCard title="OpenRouter API Key">
 				<FormField
 					name="OpenRouter API key"
-					description="Bring your own OpenRouter key. Used when no Pro key is set."
+					description="Your own API key — you pay OpenRouter directly per token. Also used as fallback when Pro budget is exhausted."
 				>
 					<TextInput
 						value={settings.openRouterApiKey}
@@ -31,9 +84,70 @@ export function AITab() {
 						class="ep:w-[300px]"
 					/>
 				</FormField>
-				</FormCard>
+
+				<FormField
+					name="Model"
+					description="Reasoning model used for flashcard generation."
+				>
+					<SelectInput
+						value={currentModel}
+						onChange={(v) => save({ aiModel: v, aiTemperature: undefined })}
+						options={MODEL_OPTIONS}
+					/>
+				</FormField>
+
+				<FormField
+					name="Temperature"
+					description={
+						<span>
+							Controls randomness.{" "}
+							{settings.aiTemperature != null ? (
+								<Clickable
+									class="ep:text-obs-accent ep:text-ui-smaller"
+									onClick={() => save({ aiTemperature: undefined })}
+								>
+									Reset to model default ({modelDefault})
+								</Clickable>
+							) : (
+								<span class="ep:text-obs-muted">
+									Using model default ({modelDefault})
+								</span>
+							)}
+						</span>
+					}
+				>
+					<SliderInput
+						value={effectiveTemp}
+						onChange={(v) => save({ aiTemperature: v })}
+						min={0}
+						max={2}
+						step={0.1}
+						formatTooltip={(v) => v.toFixed(1)}
+					/>
+				</FormField>
+			</FormCard>
 
 			<FormCard title="AI Prompts">
+				<FormField
+					name="Generation prompt"
+					description={
+						hasProKey
+							? "Extra instructions for flashcard generation. Pro already uses an optimized prompt — leave empty unless you want to override specific behavior."
+							: "Extra instructions for flashcard generation. Added to the system prompt alongside JSON format rules."
+					}
+				>
+					<TextAreaInput
+						value={settings.aiGenerationPrompt ?? ""}
+						onChange={(v) =>
+							save({
+								aiGenerationPrompt: v.trim().length > 0 ? v : undefined,
+							})
+						}
+						placeholder={hasProKey ? "Leave empty for best results" : "e.g. Focus on key definitions and formulas"}
+						rows={4}
+						class="ep:w-full ep:font-mono ep:text-ui-smaller"
+					/>
+				</FormField>
 				<FormField
 					name="Type-in grading prompt"
 					description="Optional custom system prompt for AI answer grading during review type-in mode. Leave empty to use built-in prompt."
@@ -78,20 +192,7 @@ export function AITab() {
 					/>
 				</FormField>
 
-				<FormField
-					name="Note generation density"
-					description="Controls how many flashcards are created when generating from an entire note."
-				>
-					<SelectInput
-						value={settings.generationDensity ?? "balanced"}
-						onChange={(v) =>
-							save({ generationDensity: v as GenerationDensity })
-						}
-						options={[...GENERATION_DENSITY_OPTIONS]}
-					/>
-				</FormField>
-
-				<FormField
+<FormField
 					name="Selection toolbar"
 					description="Show a floating toolbar above selected text for AI-powered flashcard creation."
 				>

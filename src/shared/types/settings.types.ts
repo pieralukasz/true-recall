@@ -2,7 +2,6 @@
  * Plugin settings types
  */
 
-import type { AIModelKey } from "@shared/constants";
 import type { ReviewViewMode } from "@shared/types/fsrs";
 
 export type AITier = "pro" | "byok";
@@ -141,8 +140,10 @@ export interface TrueRecallSettings {
 	proKey?: string;
 	/** OpenRouter API key (BYOK tier) */
 	openRouterApiKey: string;
-	/** AI model for NL query */
-	aiModel: AIModelKey;
+	/** Selected BYOK model ID (OpenRouter) */
+	aiModel: string;
+	/** Custom temperature override — when undefined, uses model's default */
+	aiTemperature?: number;
 
 	/** AI provider tier */
 	aiTier: AITier;
@@ -260,16 +261,11 @@ export interface TrueRecallSettings {
 	/** Show floating toolbar above selected text for AI flashcard generation */
 	selectionToolbarEnabled: boolean;
 
-	/** Custom prompt for AI flashcard generation */
-	aiFlashcardPrompts?: {
-		basic?: string;
-		[key: `notetype:${string}`]: string | undefined;
-	};
+	/** Custom generation prompt — appended to both Pro and BYOK system prompts */
+	aiGenerationPrompt?: string;
 
 	/** Language for AI-generated flashcards ("auto" = match source text) */
 	generationLanguage?: string;
-	/** Controls card density for whole-note generation */
-	generationDensity?: "essential" | "balanced" | "comprehensive";
 	/** Custom system prompt for AI semantic grading in review type-in mode */
 	aiTypeInGradingPrompt?: string;
 	/** Custom user prompt for AI image occlusion region detection */

@@ -1,5 +1,3 @@
-export type GenerationMode = "basic";
-
 export const GENERATION_LANGUAGES = [
 	{ value: "auto", label: "Auto-detect (match source text)" },
 	{ value: "en", label: "English" },
@@ -33,31 +31,6 @@ export const GENERATION_LANGUAGES = [
 	{ value: "he", label: "Hebrew" },
 ] as const;
 
-export type GenerationDensity = "essential" | "balanced" | "comprehensive";
-
-export const GENERATION_DENSITY_OPTIONS: {
-	value: GenerationDensity;
-	label: string;
-	description: string;
-}[] = [
-	{
-		value: "essential",
-		label: "Essential",
-		description:
-			"Only core concepts and definitions (~5-10 cards per 1000 words)",
-	},
-	{
-		value: "balanced",
-		label: "Balanced",
-		description:
-			"Main ideas and important details (~15-25 cards per 1000 words)",
-	},
-	{
-		value: "comprehensive",
-		label: "Comprehensive",
-		description: "Every piece of information (~40-60 cards per 1000 words)",
-	},
-];
 
 export function buildLanguageSuffix(languageCode: string): string {
 	if (languageCode === "auto") return "";

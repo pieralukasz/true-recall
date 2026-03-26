@@ -4,10 +4,7 @@ import type { TrueRecallSettings } from "@shared/types/settings.types";
 import { resolveAIClientConfig } from "./ai-client-config";
 import { parseBlockResponse } from "./incremental-flashcard-parser";
 import { getTextContent, OpenRouterClient } from "./openrouter-client";
-import {
-	buildGenerationPrompt,
-	buildUserMessage,
-} from "./streaming-generation.service";
+import { buildGenerationPrompt } from "./streaming-generation.service";
 
 export interface GenerationResult {
 	blocks: ParsedBlock[];
@@ -28,18 +25,17 @@ export class FlashcardGenerationService {
 
 		const client = new OpenRouterClient(config.apiKey, config.model, config.baseUrl);
 
+		const customPrompt = settings.aiGenerationPrompt?.trim() || "";
 		const systemPrompt = config.isPro
-			? ""
-			: buildGenerationPrompt(settings);
-
-		const userContent = buildUserMessage(selectedText, noteType);
+			? customPrompt
+			: buildGenerationPrompt(settings, noteType);
 
 		const messages = systemPrompt
 			? [
 					{ role: "system" as const, content: systemPrompt },
-					{ role: "user" as const, content: userContent },
+					{ role: "user" as const, content: selectedText },
 				]
-			: [{ role: "user" as const, content: userContent }];
+			: [{ role: "user" as const, content: selectedText }];
 
 		const metadata = config.isPro
 			? { call_context: "generation", note_type: noteType?.slug ?? "basic" }
@@ -47,7 +43,7 @@ export class FlashcardGenerationService {
 
 		const request = {
 			messages,
-			...(config.isPro ? {} : { temperature: 0.7 }),
+			...(config.isPro ? {} : { temperature: config.temperature }),
 			metadata,
 		};
 

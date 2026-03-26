@@ -14,7 +14,6 @@ import {
 	InfoBlock,
 	SelectInput,
 	SliderInput,
-	TextInput,
 	ToggleInput,
 } from "@shared/ui/components";
 import { useIcon } from "@shared/ui/preact";
@@ -22,53 +21,17 @@ import { useIcon } from "@shared/ui/preact";
 export function GeneralTab() {
 	const { settings, save, plugin } = useSettings();
 
-	const hasProKey = !!settings.proKey;
-
 	return (
 		<div class="ep:flex ep:flex-col ep:gap-3">
-			<FormCard
-				title="True Recall Pro"
-				class="ep:border ep:border-obs-interactive-accent/30 ep:bg-obs-interactive-accent/8"
-			>
-				<FormField
-					name="Pro Key"
-					description={
-						<span>
-							Get your key at{" "}
-							<a
-								href={`${TRUERECALL_WEB_URL}/dashboard`}
-								class="ep:text-obs-accent"
-							>
-								truerecall.app/dashboard
-							</a>
-						</span>
-					}
-				>
-					<TextInput
-						value={settings.proKey ?? ""}
-						onChange={(v) =>
-							save({ proKey: v.trim().length > 0 ? v.trim() : undefined })
-						}
-						type="password"
-						placeholder="sk-..."
-						class="ep:w-[300px]"
-					/>
-				</FormField>
-				{hasProKey && (
+			{!settings.proKey && (
+				<FormCard title="True Recall Pro">
 					<InfoBlock>
-						Using True Recall Pro. All AI models are available via True Recall
-						servers.
+						True Recall Pro — zero-setup AI with optimized prompts, included
+						in your subscription. Set up your key in the{" "}
+						<strong>AI</strong> settings tab.
 					</InfoBlock>
-				)}
-				<div class="ep:text-ui-smaller ep:text-obs-muted ep:leading-relaxed ep:pt-2 ep:mt-2 ep:border-t ep:border-obs-interactive-accent/15">
-					<p class="ep:font-medium ep:text-obs-normal">Unlimited flashcard generation</p>
-					<p class="ep:mt-1">
-						Pro-generated flashcards are significantly higher quality compared to
-						BYOK (Bring Your Own Key) — smarter prompts, better formatting, and
-						more accurate content extraction.
-					</p>
-				</div>
-			</FormCard>
+				</FormCard>
+			)}
 
 			<FormCard title="Review interface">
 				<FormField

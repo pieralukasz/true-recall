@@ -82,16 +82,16 @@ describe("Zod Schemas", () => {
             expect(result.success).toBe(true);
         });
 
-        it("should reject invalid AI model", () => {
+        it("should accept any string as AI model", () => {
             const data = {
                 openRouterApiKey: "key",
-                aiModel: "invalid-model",
+                aiModel: "custom/some-model",
                 autoSyncToAnki: false,
             };
 
             const result = SettingsSchema.safeParse(data);
 
-            expect(result.success).toBe(false);
+            expect(result.success).toBe(true);
         });
 
         it("should use default values", () => {

@@ -1,12 +1,22 @@
+import { buildLanguageSuffix } from "@features/ai/prompts/default-prompts";
 import { resolveSlug } from "@features/study/services/flashcard/note-type-slug";
 import type { NoteType } from "@shared/types/note.types";
 
-export function buildCardFormatSpec(noteType: NoteType): string {
+export function buildByokPrompt(
+	noteType: NoteType,
+	languageCode: string,
+	customPrompt?: string,
+): string {
 	const slug = resolveSlug(noteType);
 	const entries = noteType.fields.map((f) => `"${f}": "..."`).join(", ");
-	return `Format: {"type": "${slug}", ${entries}}`;
-}
+	const langSuffix = buildLanguageSuffix(languageCode);
+	const custom = customPrompt?.trim();
 
-export function buildByokSystemPrompt(): string {
-	return "Generate flashcards from the provided text.\nReturn a JSON array of card objects matching the specified format.\nReturn ONLY the JSON array.";
+	return (
+		"Generate flashcards from the provided text.\n\n" +
+		(custom ? custom + "\n\n" : "") +
+		`Output a JSON array. Each element:\n{"type": "${slug}", ${entries}}\n\n` +
+		"Return ONLY the raw JSON array. No markdown fences, no explanation." +
+		langSuffix
+	);
 }
