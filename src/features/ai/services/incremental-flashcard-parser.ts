@@ -1,10 +1,3 @@
-/**
- * Incremental Block Format Parser for streaming AI responses.
- *
- * Processes text chunks as they arrive and emits events when blocks
- * are complete (#type/<slug> ... ---) or when partial content updates.
- */
-
 import type { ParsedBlock } from "@features/study/services/flashcard/block-parser.service";
 import type { NoteType } from "@shared/types/note.types";
 
@@ -17,219 +10,179 @@ export interface IncrementalParseEvent {
 
 export type NoteTypeLookup = (slug: string) => NoteType | null;
 
-const TYPE_TAG_RE = /^#type\/([a-z0-9-]+)$/;
-const SOURCE_COMMENT_RE = /^<!--\s*source:\s*([\s\S]*?)\s*-->$/;
-const BLOCK_SEPARATOR_RE = /^---\s*$/;
-const ALWAYS_TYPE_IN_TOKEN = "@typein";
-
+/**
+ * Non-streaming JSON parser: parse full AI response text into ParsedBlocks.
+ * Handles markdown code fences and extracts the JSON array.
+ */
 export function parseBlockResponse(
 	text: string,
 	getNoteType: NoteTypeLookup,
 ): ParsedBlock[] {
-	const parser = new IncrementalFlashcardParser(getNoteType);
-	parser.feed(text);
-	const blocks: ParsedBlock[] = [];
-	for (const event of parser.finish()) {
-		if (event.type === "card_complete" && event.block) {
-			blocks.push(event.block);
-		}
+	let json = text.trim();
+	json = json.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "");
+
+	const start = json.indexOf("[");
+	const end = json.lastIndexOf("]");
+	if (start === -1 || end <= start) return [];
+
+	let parsed: unknown[];
+	try {
+		parsed = JSON.parse(json.slice(start, end + 1));
+	} catch {
+		return [];
 	}
-	return blocks;
+
+	if (!Array.isArray(parsed)) return [];
+
+	return parsed
+		.map((item) => parseCardObject(item, getNoteType))
+		.filter((b): b is ParsedBlock => b !== null);
 }
 
+function parseCardObject(
+	item: unknown,
+	getNoteType: NoteTypeLookup,
+): ParsedBlock | null {
+	if (typeof item !== "object" || item === null) return null;
+	const obj = item as Record<string, unknown>;
+
+	const slug = typeof obj.type === "string" ? obj.type : null;
+	if (!slug) return null;
+
+	const noteType = getNoteType(slug);
+	if (!noteType) return null;
+
+	const fields: Record<string, string> = {};
+	let hasContent = false;
+	for (const fieldName of noteType.fields) {
+		const value = typeof obj[fieldName] === "string" ? (obj[fieldName] as string) : "";
+		fields[fieldName] = value;
+		if (value.trim()) hasContent = true;
+	}
+
+	if (!hasContent) return null;
+
+	return {
+		noteTypeId: noteType.id,
+		noteTypeSlug: slug,
+		fields,
+	};
+}
+
+/**
+ * Streaming JSON array parser.
+ *
+ * Extracts complete JSON objects from a streamed JSON array by tracking
+ * brace depth and string state. Emits card_complete events as each
+ * object is fully received, and partial_update events for in-progress objects.
+ */
 export class IncrementalFlashcardParser {
-	private buffer = "";
-	private currentSlug: string | null = null;
-	private currentNoteType: NoteType | null = null;
-	private blockLines: string[] = [];
+	private objectBuffer = "";
+	private state: "idle" | "in_object" = "idle";
+	private depth = 0;
+	private inString = false;
+	private escaped = false;
 
 	constructor(private getNoteType: NoteTypeLookup) {}
 
 	feed(chunk: string): IncrementalParseEvent[] {
-		this.buffer += chunk;
-		return this.processBuffer(false);
-	}
-
-	finish(): IncrementalParseEvent[] {
-		return this.processBuffer(true);
-	}
-
-	private processBuffer(isEnd: boolean): IncrementalParseEvent[] {
 		const events: IncrementalParseEvent[] = [];
-		const parts = this.buffer.split("\n");
 
-		if (isEnd) {
-			this.buffer = "";
-		} else {
-			this.buffer = parts.pop() ?? "";
-		}
-
-		for (const line of isEnd ? parts : parts) {
-			const trimmed = line.trim();
-
-			if (BLOCK_SEPARATOR_RE.test(trimmed)) {
-				const block = this.finalizeBlock();
-				if (block) {
-					events.push({ type: "card_complete", block });
+		for (const char of chunk) {
+			if (this.state === "idle") {
+				if (char === "{") {
+					this.state = "in_object";
+					this.depth = 1;
+					this.inString = false;
+					this.escaped = false;
+					this.objectBuffer = "{";
 				}
 				continue;
 			}
 
-			const typeMatch = trimmed.match(TYPE_TAG_RE);
-			if (typeMatch) {
-				// Finalize any existing block first
-				const prevBlock = this.finalizeBlock();
-				if (prevBlock) {
-					events.push({ type: "card_complete", block: prevBlock });
-				}
+			this.objectBuffer += char;
 
-				const slug = typeMatch[1];
-				if (!slug) continue;
-				const noteType = this.getNoteType(slug);
-				if (noteType) {
-					this.currentSlug = slug;
-					this.currentNoteType = noteType;
-					this.blockLines = [];
-				}
+			if (this.escaped) {
+				this.escaped = false;
 				continue;
 			}
 
-			// Accumulate lines for current block
-			if (this.currentNoteType) {
-				this.blockLines.push(line);
+			if (this.inString) {
+				if (char === "\\") this.escaped = true;
+				else if (char === '"') this.inString = false;
+				continue;
+			}
+
+			if (char === '"') this.inString = true;
+			else if (char === "{") this.depth++;
+			else if (char === "}") {
+				this.depth--;
+				if (this.depth === 0) {
+					const block = this.tryParseObject(this.objectBuffer);
+					if (block) {
+						events.push({ type: "card_complete", block });
+					}
+					this.state = "idle";
+					this.objectBuffer = "";
+				}
 			}
 		}
 
-		// Finalize on end
-		if (isEnd) {
-			const block = this.finalizeBlock();
-			if (block) {
-				events.push({ type: "card_complete", block });
-			}
-		}
-
-		// Emit partial update if we have content being built
-		if (!isEnd && this.currentNoteType && this.blockLines.length > 0) {
-			const partial = this.getPartialUpdate();
-			if (partial) {
-				events.push(partial);
-			}
+		if (this.state === "in_object" && this.objectBuffer.length > 0) {
+			const partial = this.extractPartial();
+			if (partial) events.push(partial);
 		}
 
 		return events;
 	}
 
-	private finalizeBlock(): ParsedBlock | null {
-		if (!this.currentNoteType || !this.currentSlug) return null;
+	finish(): IncrementalParseEvent[] {
+		if (this.state !== "in_object" || !this.objectBuffer.length) return [];
 
-		const noteTypeId = this.currentNoteType.id;
-		const slug = this.currentSlug;
-		const fieldNames = this.currentNoteType.fields;
-		const { fields, sourceText, alwaysTypeIn } = this.parseFieldValues(
-			this.blockLines,
-			fieldNames,
-		);
-		const hasContent = Object.values(fields).some((v) => v.trim().length > 0);
+		const buf = this.objectBuffer;
+		this.state = "idle";
+		this.objectBuffer = "";
 
-		this.currentSlug = null;
-		this.currentNoteType = null;
-		this.blockLines = [];
-
-		if (!hasContent) return null;
-
-		return {
-			noteTypeId,
-			noteTypeSlug: slug,
-			fields,
-			sourceText,
-			alwaysTypeIn,
-		};
+		// Try closing strategies: just "}", then "\"}", then "\"}]"
+		for (const suffix of ["}", '"}',"\"}"]) {
+			const block = this.tryParseObject(buf + suffix);
+			if (block) return [{ type: "card_complete", block }];
+		}
+		return [];
 	}
 
-	private parseFieldValues(
-		lines: string[],
-		fieldNames: string[],
-	): {
-		fields: Record<string, string>;
-		sourceText?: string;
-		alwaysTypeIn?: boolean;
-	} {
-		const fields: Record<string, string> = {};
-		let sourceText: string | undefined;
-		let alwaysTypeIn = false;
-
-		for (const name of fieldNames) {
-			fields[name] = "";
+	private tryParseObject(text: string): ParsedBlock | null {
+		try {
+			const obj = JSON.parse(text);
+			return parseCardObject(obj, this.getNoteType);
+		} catch {
+			return null;
 		}
-
-		const fieldSet = new Set(fieldNames);
-		let currentField: string | null = null;
-		const valueLines: string[] = [];
-
-		const flushField = () => {
-			if (currentField && fieldSet.has(currentField)) {
-				fields[currentField] = valueLines.join("\n").trim();
-			}
-			valueLines.length = 0;
-		};
-
-		for (const line of lines) {
-			const trimmed = line.trim();
-
-			const sourceMatch = trimmed.match(SOURCE_COMMENT_RE);
-			if (sourceMatch) {
-				sourceText = sourceMatch[1]?.trim();
-				continue;
-			}
-			if (trimmed === ALWAYS_TYPE_IN_TOKEN) {
-				alwaysTypeIn = true;
-				continue;
-			}
-
-			const colonIdx = trimmed.indexOf(":");
-			if (colonIdx > 0) {
-				const candidate = trimmed.slice(0, colonIdx);
-				if (fieldSet.has(candidate)) {
-					flushField();
-					currentField = candidate;
-					valueLines.push(trimmed.slice(colonIdx + 1).trimStart());
-					continue;
-				}
-			}
-
-			if (currentField) {
-				valueLines.push(line);
-			}
-		}
-
-		flushField();
-
-		return { fields, sourceText, alwaysTypeIn: alwaysTypeIn || undefined };
 	}
 
-	/**
-	 * Build partial update from current block being built.
-	 * Maps first field → partialQuestion, second field → partialAnswer
-	 * for backward-compatible UI display.
-	 */
-	private getPartialUpdate(): IncrementalParseEvent | null {
-		if (!this.currentNoteType) return null;
+	private extractPartial(): IncrementalParseEvent | null {
+		const buf = this.objectBuffer;
 
-		const { fields } = this.parseFieldValues(
-			this.blockLines,
-			this.currentNoteType.fields,
-		);
+		const typeMatch = buf.match(/"type"\s*:\s*"([^"]+)"/);
+		if (!typeMatch?.[1]) return null;
+		const noteType = this.getNoteType(typeMatch[1]);
+		if (!noteType) return null;
 
-		const fieldNames = this.currentNoteType.fields;
-		const firstField = fieldNames[0] ? fields[fieldNames[0]] : undefined;
-		const secondField = fieldNames[1] ? fields[fieldNames[1]] : undefined;
+		const firstField = noteType.fields[0];
+		const secondField = noteType.fields[1];
 
-		if (!firstField && !secondField) return null;
-
-		return {
-			type: "partial_update",
-			partialQuestion: firstField?.trim() || undefined,
-			partialAnswer: secondField?.trim() || undefined,
+		const extract = (field: string | undefined): string | undefined => {
+			if (!field) return undefined;
+			const escaped = field.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+			const re = new RegExp(`"${escaped}"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)"?`);
+			const m = buf.match(re);
+			return m?.[1]?.trim() || undefined;
 		};
+
+		const partialQuestion = extract(firstField);
+		const partialAnswer = extract(secondField);
+
+		if (!partialQuestion && !partialAnswer) return null;
+		return { type: "partial_update", partialQuestion, partialAnswer };
 	}
 }

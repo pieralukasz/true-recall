@@ -204,7 +204,11 @@ export async function detectRegions(
 		? { call_context: "generation" }
 		: undefined;
 
-	const response = await client.chat({ messages, temperature: 0.5, metadata });
+	const response = await client.chat({
+		messages,
+		...(config.isPro ? {} : { temperature: 0.5 }),
+		metadata,
+	});
 	const responseText = getTextContent(response.choices[0]?.message);
 
 	return parseAIRegions(responseText);

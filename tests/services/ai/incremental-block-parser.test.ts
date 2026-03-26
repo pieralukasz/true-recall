@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { IncrementalFlashcardParser } from "../../../src/features/ai/services/incremental-flashcard-parser";
+import {
+	IncrementalFlashcardParser,
+	parseBlockResponse,
+} from "../../../src/features/ai/services/incremental-flashcard-parser";
 import type { NoteType } from "../../../src/shared/types/note.types";
 import {
 	BUILTIN_BASIC_ID,
@@ -38,12 +41,11 @@ const lookup = (slug: string) => {
 	return map[slug] ?? null;
 };
 
-describe("IncrementalFlashcardParser (block format)", () => {
-	it("should parse a complete block fed at once", () => {
+describe("IncrementalFlashcardParser (JSON format)", () => {
+	it("should parse a complete JSON array fed at once", () => {
 		const parser = new IncrementalFlashcardParser(lookup);
-		const events = parser.feed(
-			"#type/basic\nFront: What is X?\nBack: Y\n---\n",
-		);
+		const json = '[{"type": "basic", "Front": "What is X?", "Back": "Y"}]';
+		const events = [...parser.feed(json), ...parser.finish()];
 
 		const completes = events.filter((e) => e.type === "card_complete");
 		expect(completes).toHaveLength(1);
@@ -51,9 +53,9 @@ describe("IncrementalFlashcardParser (block format)", () => {
 		expect(completes[0]!.block!.fields.Back).toBe("Y");
 	});
 
-	it("should parse a block completed on finish()", () => {
+	it("should parse an object completed on finish()", () => {
 		const parser = new IncrementalFlashcardParser(lookup);
-		parser.feed("#type/basic\nFront: Q\nBack: A");
+		parser.feed('{"type": "basic", "Front": "Q", "Back": "A"');
 		const events = parser.finish();
 
 		const completes = events.filter((e) => e.type === "card_complete");
@@ -61,20 +63,14 @@ describe("IncrementalFlashcardParser (block format)", () => {
 		expect(completes[0]!.block!.noteTypeId).toBe(BUILTIN_BASIC_ID);
 	});
 
-	it("should parse multiple blocks in a stream", () => {
+	it("should parse multiple objects in a JSON array", () => {
 		const parser = new IncrementalFlashcardParser(lookup);
-		const text = [
-			"#type/basic",
-			"Front: Q1",
-			"Back: A1",
-			"---",
-			"#type/cloze",
-			"Text: {{c1::Tokyo}} is in Japan",
-			"Extra: Geography",
-			"---",
-		].join("\n");
+		const json = JSON.stringify([
+			{ type: "basic", Front: "Q1", Back: "A1" },
+			{ type: "cloze", Text: "{{c1::Tokyo}} is in Japan", Extra: "Geography" },
+		]);
 
-		const events = [...parser.feed(text), ...parser.finish()];
+		const events = [...parser.feed(json), ...parser.finish()];
 		const completes = events.filter((e) => e.type === "card_complete");
 		expect(completes).toHaveLength(2);
 		expect(completes[0]!.block!.noteTypeSlug).toBe("basic");
@@ -85,10 +81,10 @@ describe("IncrementalFlashcardParser (block format)", () => {
 		const parser = new IncrementalFlashcardParser(lookup);
 		const allEvents = [];
 
-		allEvents.push(...parser.feed("#type/ba"));
-		allEvents.push(...parser.feed("sic\nFront: What"));
-		allEvents.push(...parser.feed(" is X?\nBack: Y"));
-		allEvents.push(...parser.feed("\n---\n"));
+		allEvents.push(...parser.feed('[{"type": "bas'));
+		allEvents.push(...parser.feed('ic", "Front": "What'));
+		allEvents.push(...parser.feed(' is X?", "Back": "Y'));
+		allEvents.push(...parser.feed('"}]'));
 		allEvents.push(...parser.finish());
 
 		const completes = allEvents.filter((e) => e.type === "card_complete");
@@ -99,8 +95,8 @@ describe("IncrementalFlashcardParser (block format)", () => {
 	it("should emit partial updates during streaming", () => {
 		const parser = new IncrementalFlashcardParser(lookup);
 
-		parser.feed("#type/basic\n");
-		const events = parser.feed("Front: Partial question\nBack: Partial ans");
+		parser.feed('[');
+		const events = parser.feed('{"type": "basic", "Front": "Partial question", "Back": "Partial ans');
 
 		const partials = events.filter((e) => e.type === "partial_update");
 		expect(partials.length).toBeGreaterThanOrEqual(1);
@@ -108,82 +104,90 @@ describe("IncrementalFlashcardParser (block format)", () => {
 		expect(last.partialQuestion).toBe("Partial question");
 	});
 
-	it("should extract source comments", () => {
-		const parser = new IncrementalFlashcardParser(lookup);
-		const text = [
-			"#type/basic",
-			"Front: Q",
-			"Back: A",
-			"<!-- source: The source text -->",
-			"---",
-		].join("\n");
-
-		const events = [...parser.feed(text), ...parser.finish()];
-		const complete = events.find((e) => e.type === "card_complete");
-		expect(complete).toBeDefined();
-		expect(complete!.block!.sourceText).toBe("The source text");
-	});
-
-	it("should parse @typein metadata token", () => {
-		const parser = new IncrementalFlashcardParser(lookup);
-		const text = [
-			"#type/basic",
-			"Front: Q",
-			"Back: A",
-			"@typein",
-			"---",
-		].join("\n");
-
-		const events = [...parser.feed(text), ...parser.finish()];
-		const complete = events.find((e) => e.type === "card_complete");
-		expect(complete).toBeDefined();
-		expect(complete!.block!.alwaysTypeIn).toBe(true);
-	});
-
 	it("should handle reversed type", () => {
 		const parser = new IncrementalFlashcardParser(lookup);
-		parser.feed("#type/basic-reversed\nFront: Capital of France\nBack: Paris\n---\n");
-		const events = parser.finish();
+		const json = '[{"type": "basic-reversed", "Front": "Capital of France", "Back": "Paris"}]';
+		const events = [...parser.feed(json), ...parser.finish()];
 
-		// All events from feed + finish
-		const allEvents = [
-			...parser.feed(""),  // empty to get remaining
-			...events,
-		];
-		// The card_complete from feed should have been emitted
-		const text = "#type/basic-reversed\nFront: Capital of France\nBack: Paris\n---\n";
-		const p2 = new IncrementalFlashcardParser(lookup);
-		const e2 = [...p2.feed(text), ...p2.finish()];
-		const completes = e2.filter((e) => e.type === "card_complete");
+		const completes = events.filter((e) => e.type === "card_complete");
 		expect(completes).toHaveLength(1);
 		expect(completes[0]!.block!.noteTypeId).toBe(BUILTIN_BASIC_REVERSED_ID);
 	});
 
-	it("should skip unknown type tags", () => {
+	it("should skip unknown types", () => {
 		const parser = new IncrementalFlashcardParser(lookup);
-		const events = [
-			...parser.feed("#type/unknown\nFront: Q\nBack: A\n---\n"),
-			...parser.finish(),
-		];
+		const json = '[{"type": "unknown", "Front": "Q", "Back": "A"}]';
+		const events = [...parser.feed(json), ...parser.finish()];
 		const completes = events.filter((e) => e.type === "card_complete");
 		expect(completes).toHaveLength(0);
 	});
 
-	it("should handle a new #type tag finalizing previous block", () => {
+	it("should handle strings with escaped quotes", () => {
 		const parser = new IncrementalFlashcardParser(lookup);
-		const text = [
-			"#type/basic",
-			"Front: Q1",
-			"Back: A1",
-			"#type/basic",
-			"Front: Q2",
-			"Back: A2",
-		].join("\n");
+		const json = '[{"type": "basic", "Front": "What is \\"DNA\\"?", "Back": "Deoxyribonucleic acid"}]';
+		const events = [...parser.feed(json), ...parser.finish()];
 
-		const events = [...parser.feed(text), ...parser.finish()];
 		const completes = events.filter((e) => e.type === "card_complete");
-		expect(completes).toHaveLength(2);
-		expect(completes[0]!.block!.fields.Front).toBe("Q1");
-		expect(completes[1]!.block!.fields.Front).toBe("Q2");
+		expect(completes).toHaveLength(1);
+		expect(completes[0]!.block!.fields.Front).toBe('What is "DNA"?');
+	});
+
+	it("should handle cloze braces inside JSON strings", () => {
+		const parser = new IncrementalFlashcardParser(lookup);
+		const json = JSON.stringify([
+			{ type: "cloze", Text: "The {{c1::mitochondria}} is the powerhouse", Extra: "" },
+		]);
+		const events = [...parser.feed(json), ...parser.finish()];
+
+		const completes = events.filter((e) => e.type === "card_complete");
+		expect(completes).toHaveLength(1);
+		expect(completes[0]!.block!.fields.Text).toBe("The {{c1::mitochondria}} is the powerhouse");
+	});
+
+	it("should skip empty-content objects", () => {
+		const parser = new IncrementalFlashcardParser(lookup);
+		const json = '[{"type": "basic", "Front": "", "Back": ""}]';
+		const events = [...parser.feed(json), ...parser.finish()];
+		const completes = events.filter((e) => e.type === "card_complete");
+		expect(completes).toHaveLength(0);
+	});
+});
+
+describe("parseBlockResponse (non-streaming JSON)", () => {
+	it("should parse a JSON array", () => {
+		const text = JSON.stringify([
+			{ type: "basic", Front: "Q1", Back: "A1" },
+			{ type: "basic", Front: "Q2", Back: "A2" },
+		]);
+		const blocks = parseBlockResponse(text, lookup);
+		expect(blocks).toHaveLength(2);
+		expect(blocks[0]!.fields.Front).toBe("Q1");
+		expect(blocks[1]!.fields.Front).toBe("Q2");
+	});
+
+	it("should handle markdown code fences around JSON", () => {
+		const text = '```json\n[{"type": "basic", "Front": "Q", "Back": "A"}]\n```';
+		const blocks = parseBlockResponse(text, lookup);
+		expect(blocks).toHaveLength(1);
+	});
+
+	it("should handle extra text around JSON array", () => {
+		const text = 'Here are the flashcards:\n[{"type": "basic", "Front": "Q", "Back": "A"}]\nDone!';
+		const blocks = parseBlockResponse(text, lookup);
+		expect(blocks).toHaveLength(1);
+	});
+
+	it("should return empty for non-JSON text", () => {
+		const blocks = parseBlockResponse("No flashcards here.", lookup);
+		expect(blocks).toHaveLength(0);
+	});
+
+	it("should skip objects with unknown types", () => {
+		const text = JSON.stringify([
+			{ type: "basic", Front: "Q", Back: "A" },
+			{ type: "unknown", Foo: "Bar" },
+		]);
+		const blocks = parseBlockResponse(text, lookup);
+		expect(blocks).toHaveLength(1);
 	});
 });

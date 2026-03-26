@@ -1,16 +1,12 @@
 import { resolveSlug } from "@features/study/services/flashcard/note-type-slug";
 import type { NoteType } from "@shared/types/note.types";
 
-export function buildByokPrompt(noteType: NoteType): string {
+export function buildCardFormatSpec(noteType: NoteType): string {
 	const slug = resolveSlug(noteType);
-	const fieldLines = noteType.fields
-		.map((f) => `${f}: [value]`)
-		.join("\n");
+	const entries = noteType.fields.map((f) => `"${f}": "..."`).join(", ");
+	return `Format: {"type": "${slug}", ${entries}}`;
+}
 
-	return `Generate flashcards from the provided text.
-
-Output format — repeat for each card:
-#type/${slug}
-${fieldLines}
----`;
+export function buildByokSystemPrompt(): string {
+	return "Generate flashcards from the provided text.\nReturn a JSON array of card objects matching the specified format.\nReturn ONLY the JSON array.";
 }
