@@ -24,15 +24,23 @@ export async function handleQuerySql(
 		return;
 	}
 
-	const normalized = body.sql.trim().toUpperCase();
+	const trimmedSql = body.sql.trim();
+	const normalized = trimmedSql.toUpperCase();
 	if (!normalized.startsWith("SELECT")) {
 		sendError(res, 403, "Only SELECT queries are allowed");
 		return;
 	}
 
+	// Reject multi-statement queries to prevent SQL injection via "SELECT 1; DROP TABLE ..."
+	const withoutTrailingSemicolon = trimmedSql.replace(/;\s*$/, "");
+	if (withoutTrailingSemicolon.includes(";")) {
+		sendError(res, 403, "Multiple statements are not allowed");
+		return;
+	}
+
 	try {
 		const db = ctx.plugin.cardStore.getDatabase();
-		const result = db.exec(body.sql);
+		const result = db.exec(trimmedSql);
 		if (result.length === 0) {
 			sendOk(res, { columns: [], rows: [] });
 			return;
@@ -101,7 +109,8 @@ export async function handleGetSchema(
 	};
 
 	const tables = tableNames.map((name) => {
-		const columnsResult = db.exec(`PRAGMA table_info("${name}")`);
+		const safeName = name.replace(/"/g, '""');
+		const columnsResult = db.exec(`PRAGMA table_info("${safeName}")`);
 		const columns =
 			columnsResult[0]?.values.map((row) => {
 				const colName = row[1] as string;
@@ -118,7 +127,7 @@ export async function handleGetSchema(
 				};
 			}) ?? [];
 
-		const countResult = db.exec(`SELECT COUNT(*) FROM "${name}"`);
+		const countResult = db.exec(`SELECT COUNT(*) FROM "${safeName}"`);
 		const rowCount = (countResult[0]?.values[0]?.[0] as number) ?? 0;
 
 		return { name, rowCount, columns };

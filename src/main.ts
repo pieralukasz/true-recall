@@ -83,7 +83,7 @@ import { BUILTIN_BASIC_ID, type NoteType } from "@shared/types/note.types";
 import { PresetInspectorModal } from "@shared/ui/modals";
 import { isDesktop } from "@shared/utils/platform";
 import { normalizePath, Plugin, type TFile } from "obsidian";
-import { LocalApiServer } from "./plugin/api/LocalApiServer";
+import type { LocalApiServer } from "./plugin/api/LocalApiServer";
 import { BackupRecoveryManager } from "./plugin/BackupRecoveryManager";
 import { registerCommands } from "./plugin/PluginCommands";
 import {
@@ -280,7 +280,8 @@ export default class TrueRecallPlugin extends Plugin {
 		this.undoService = new UndoService(this);
 
 		if (this.settings.enableLocalApi) {
-			this.localApi = new LocalApiServer(this, this.settings.apiPort);
+			const { LocalApiServer: ApiServer } = await import("./plugin/api/LocalApiServer");
+			this.localApi = new ApiServer(this, this.settings.apiPort);
 			this.localApi.start();
 		}
 	}
