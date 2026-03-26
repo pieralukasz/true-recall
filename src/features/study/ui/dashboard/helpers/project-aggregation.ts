@@ -248,11 +248,30 @@ function buildProjectFromNode(
 		},
 	);
 
-	// Resolve member notes from paths
+	// Resolve member notes from paths (include 0-card notes that belong to this project)
 	const memberNotes: DashboardNoteEntry[] = [];
 	for (const memberPath of node.memberPaths) {
 		const note = noteByPath.get(memberPath);
-		if (note) memberNotes.push(note);
+		if (note) {
+			memberNotes.push(note);
+		} else {
+			const name =
+				memberPath.split("/").pop()?.replace(/\.md$/, "") ?? memberPath;
+			memberNotes.push({
+				name,
+				path: memberPath,
+				due: 0,
+				newCount: 0,
+				learning: 0,
+				total: 0,
+				lastReview: null,
+				overdueDays: 0,
+				overdueCount: 0,
+				estimatedMinutes: 0,
+				priority: "done",
+				projects: [],
+			});
+		}
 	}
 
 	const children = node.children.map((child) =>
