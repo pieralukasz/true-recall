@@ -1,8 +1,4 @@
-import {
-	buildByokSystemPrompt,
-	buildCardFormatSpec,
-} from "@features/ai/prompts/block-prompt-builder";
-import { buildLanguageSuffix } from "@features/ai/prompts/default-prompts";
+import { buildByokPrompt } from "@features/ai/prompts/block-prompt-builder";
 import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
 import type { NoteType } from "@shared/types/note.types";
 import type { TrueRecallSettings } from "@shared/types/settings.types";
@@ -32,17 +28,13 @@ const FALLBACK_BASIC_NOTE_TYPE = {
 
 export function buildGenerationPrompt(
 	settings: TrueRecallSettings,
-): string {
-	const langSuffix = buildLanguageSuffix(settings.generationLanguage ?? "auto");
-	return buildByokSystemPrompt() + langSuffix;
-}
-
-export function buildUserMessage(
-	text: string,
 	noteType?: NoteType | null,
 ): string {
-	const formatSpec = buildCardFormatSpec(noteType ?? FALLBACK_BASIC_NOTE_TYPE);
-	return `${formatSpec}\n\n${text}`;
+	return buildByokPrompt(
+		noteType ?? FALLBACK_BASIC_NOTE_TYPE,
+		settings.generationLanguage ?? "auto",
+		settings.aiGenerationPrompt,
+	);
 }
 
 export interface StreamingGenerationResult {
@@ -101,11 +93,11 @@ export class StreamingGenerationService {
 			this.flashcardManager.getNoteTypeBySlug?.(slug) ?? null;
 		const parser = new IncrementalFlashcardParser(getNoteType);
 
+		const settings = this.getSettings();
+		const customPrompt = settings.aiGenerationPrompt?.trim() || "";
 		const systemPrompt = aiConfig.isPro
-			? ""
-			: buildGenerationPrompt(this.getSettings());
-
-		const userContent = buildUserMessage(text, noteType);
+			? customPrompt
+			: buildGenerationPrompt(settings, noteType);
 
 		const metadata = aiConfig.isPro
 			? { call_context: "generation", note_type: noteType?.slug ?? "basic" }
@@ -122,14 +114,14 @@ export class StreamingGenerationService {
 		const messages = systemPrompt
 			? [
 					{ role: "system" as const, content: systemPrompt },
-					{ role: "user" as const, content: userContent },
+					{ role: "user" as const, content: text },
 				]
-			: [{ role: "user" as const, content: userContent }];
+			: [{ role: "user" as const, content: text }];
 
 		const stream = client.chatStream(
 			{
 				messages,
-				...(aiConfig.isPro ? {} : { temperature: 0.7 }),
+				...(aiConfig.isPro ? {} : { temperature: aiConfig.temperature }),
 				metadata,
 			},
 			abortController.signal,

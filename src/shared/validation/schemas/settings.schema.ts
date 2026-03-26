@@ -1,18 +1,9 @@
-import { AI_MODELS } from "@shared/constants";
+import { BYOK_MODELS } from "@shared/constants";
 import { z } from "zod";
 
-const modelKeys = Object.keys(AI_MODELS) as [string, ...string[]];
+const modelIds = BYOK_MODELS.map((m) => m.id) as [string, ...string[]];
 
-export const AIModelSchema = z.enum(modelKeys);
-
-const AiFlashcardPromptsSchema = z
-	.object({
-		basic: z.string().optional(),
-		cloze: z.string().optional(),
-		reversed: z.string().optional(),
-		auto: z.string().optional(),
-	})
-	.optional();
+export const AIModelSchema = z.enum(modelIds).or(z.string());
 
 export const AITierSchema = z.enum(["pro", "byok"]).default("byok");
 
@@ -23,7 +14,7 @@ export const SettingsSchema = z.object({
 	aiTier: AITierSchema,
 	autoSyncToAnki: z.boolean().default(false),
 	selectionToolbarEnabled: z.boolean().default(true),
-	aiFlashcardPrompts: AiFlashcardPromptsSchema,
+	aiGenerationPrompt: z.string().optional(),
 });
 
 export const PartialSettingsSchema = SettingsSchema.partial();
