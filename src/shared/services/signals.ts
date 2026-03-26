@@ -101,6 +101,9 @@ export function getNormalizedCardMutationAction(
 	}
 }
 
+let reviewRefreshTimer: ReturnType<typeof setTimeout> | null = null;
+const REVIEW_REFRESH_DELAY_MS = 300;
+
 export function notifyCardChange(mutation: CardMutation): void {
 	const normalizedAction = normalizeCardMutationAction(mutation.action);
 	const normalizedMutation: CardMutation =
@@ -110,14 +113,24 @@ export function notifyCardChange(mutation: CardMutation): void {
 
 	batch(() => {
 		_lastMutation.value = normalizedMutation;
-		// "reviewed" only changes FSRS scheduling on one card. The review UI
-		// reads from Zustand (not _cards signal), and NoteStatusCacheService
-		// handles incremental updates via lastMutation. Full reload deferred
-		// to session close to avoid blocking rapid answers.
 		if (normalizedMutation.type !== "reviewed") {
+			if (reviewRefreshTimer) {
+				clearTimeout(reviewRefreshTimer);
+				reviewRefreshTimer = null;
+			}
 			refreshCards();
 		}
 	});
+
+	// Debounced refresh for "reviewed" so dashboard / panel header
+	// update after rapid answering pauses, without blocking each answer.
+	if (normalizedMutation.type === "reviewed") {
+		if (reviewRefreshTimer) clearTimeout(reviewRefreshTimer);
+		reviewRefreshTimer = setTimeout(() => {
+			reviewRefreshTimer = null;
+			refreshCards();
+		}, REVIEW_REFRESH_DELAY_MS);
+	}
 }
 
 // ── Source text highlight (Card → Text jump) ────────────────
