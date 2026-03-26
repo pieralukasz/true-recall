@@ -1,0 +1,70 @@
+import type { IncomingMessage, ServerResponse } from "http";
+import type { ApiContext } from "../api.types";
+import { sendError, sendOk } from "../api.types";
+
+export async function handleGetStatus(
+	_req: IncomingMessage,
+	res: ServerResponse,
+	ctx: ApiContext,
+): Promise<void> {
+	sendOk(res, {
+		running: true,
+		dbReady: ctx.plugin.isStoreReady(),
+		vault: ctx.plugin.app.vault.getName(),
+	});
+}
+
+export async function handleGetActiveNote(
+	_req: IncomingMessage,
+	res: ServerResponse,
+	ctx: ApiContext,
+): Promise<void> {
+	const file = ctx.plugin.app.workspace.getActiveFile();
+	if (!file || file.extension !== "md") {
+		sendError(res, 404, "No active markdown note");
+		return;
+	}
+
+	const content = await ctx.plugin.app.vault.read(file);
+
+	let sourceUid: string | undefined;
+	let cards: Array<{
+		id: string;
+		question: string;
+		answer: string;
+		state: number;
+		due: string;
+		reps: number;
+		lapses: number;
+	}> = [];
+
+	if (ctx.plugin.isStoreReady()) {
+		const frontmatterService =
+			ctx.plugin.flashcardManager.getFrontmatterService();
+		sourceUid =
+			(await frontmatterService.getSourceNoteUid(file)) ?? undefined;
+
+		if (sourceUid) {
+			const rawCards =
+				ctx.plugin.cardStore.cards.getCardsBySourceUid(sourceUid);
+			cards = rawCards.map((c) => ({
+				id: c.id,
+				question: c.question ?? "",
+				answer: c.answer ?? "",
+				state: c.state,
+				due: c.due,
+				reps: c.reps,
+				lapses: c.lapses,
+			}));
+		}
+	}
+
+	sendOk(res, {
+		path: file.path,
+		basename: file.basename,
+		content,
+		sourceUid,
+		cardCount: cards.length,
+		cards,
+	});
+}

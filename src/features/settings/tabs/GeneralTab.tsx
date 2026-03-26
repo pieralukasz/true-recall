@@ -14,6 +14,7 @@ import {
 	InfoBlock,
 	SelectInput,
 	SliderInput,
+	TextInput,
 	ToggleInput,
 } from "@shared/ui/components";
 import { useIcon } from "@shared/ui/preact";
@@ -160,6 +161,61 @@ export function GeneralTab() {
 						formatTooltip={(v) => `${v}:00`}
 					/>
 				</FormField>
+			</FormCard>
+
+			<FormCard title="Local API (MCP)">
+				<InfoBlock>
+					Expose a local HTTP API for Claude Code and other MCP-compatible
+					tools. Binds to 127.0.0.1 only — never exposed to the network.
+				</InfoBlock>
+
+				<FormField
+					name="Enable local API"
+					description="Start an HTTP server for MCP/CLI integration when the plugin loads"
+				>
+					<ToggleInput
+						value={settings.enableLocalApi}
+						onChange={(v) => {
+							save({ enableLocalApi: v });
+							if (v) {
+								if (!plugin.localApi) {
+									const { LocalApiServer } =
+										require("../../../plugin/api/LocalApiServer") as typeof import("../../../plugin/api/LocalApiServer");
+									plugin.localApi = new LocalApiServer(
+										plugin,
+										settings.apiPort,
+									);
+								}
+								plugin.localApi!.start();
+							} else {
+								plugin.localApi?.stop();
+							}
+						}}
+					/>
+				</FormField>
+
+				<FormField
+					name="Port"
+					description="Local API port (default: 27182). Restart Obsidian after changing."
+				>
+					<TextInput
+						value={String(settings.apiPort)}
+						placeholder="27182"
+						onChange={(v) => {
+							const port = Number.parseInt(v, 10);
+							if (!Number.isNaN(port) && port >= 1024 && port <= 65535) {
+								save({ apiPort: port });
+							}
+						}}
+					/>
+				</FormField>
+
+				{plugin.localApi?.isRunning() && (
+					<InfoBlock>
+						API running on{" "}
+						<code>http://127.0.0.1:{plugin.localApi.getPort()}</code>
+					</InfoBlock>
+				)}
 			</FormCard>
 
 			<FormCard title="About">

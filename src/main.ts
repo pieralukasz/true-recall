@@ -83,6 +83,7 @@ import { BUILTIN_BASIC_ID, type NoteType } from "@shared/types/note.types";
 import { PresetInspectorModal } from "@shared/ui/modals";
 import { isDesktop } from "@shared/utils/platform";
 import { normalizePath, Plugin, type TFile } from "obsidian";
+import { LocalApiServer } from "./plugin/api/LocalApiServer";
 import { BackupRecoveryManager } from "./plugin/BackupRecoveryManager";
 import { registerCommands } from "./plugin/PluginCommands";
 import {
@@ -117,6 +118,7 @@ export default class TrueRecallPlugin extends Plugin {
 	noteStatusCache: NoteStatusCacheService | null = null;
 	statusBarWidget: StatusBarWidget | null = null;
 	backupRecovery: BackupRecoveryManager | null = null;
+	localApi: LocalApiServer | null = null;
 	EmbeddableEditor:
 		| import("@shared/ui/editor/embedded-editor").EmbeddableEditorClass
 		| null = null;
@@ -276,6 +278,11 @@ export default class TrueRecallPlugin extends Plugin {
 		registerEventHandlers(this);
 
 		this.undoService = new UndoService(this);
+
+		if (this.settings.enableLocalApi) {
+			this.localApi = new LocalApiServer(this, this.settings.apiPort);
+			this.localApi.start();
+		}
 	}
 
 	private initializeDeletionHandler(): void {
@@ -301,6 +308,7 @@ export default class TrueRecallPlugin extends Plugin {
 	}
 
 	onunload(): void {
+		this.localApi?.stop();
 		this.undoService?.clear();
 		this.backgroundBackupManager?.stop();
 		this.statusBarWidget?.dispose();

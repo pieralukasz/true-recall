@@ -273,6 +273,11 @@ export interface TrueRecallSettings {
 
 	/** Last version the user has seen release notes for */
 	lastSeenVersion?: string;
+
+	/** Enable local HTTP API for MCP/CLI integration */
+	enableLocalApi: boolean;
+	/** Port for local HTTP API (default 27182) */
+	apiPort: number;
 }
 
 export interface SessionPreset {
