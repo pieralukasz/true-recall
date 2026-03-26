@@ -12,6 +12,8 @@ import {
 	TextInput,
 	ToggleInput,
 } from "@shared/ui/components";
+import { requestUrl } from "obsidian";
+import { useEffect, useState } from "preact/hooks";
 
 const MODEL_OPTIONS = BYOK_MODELS.map((m) => ({
 	value: m.id,
@@ -22,13 +24,56 @@ function getModelDefault(modelId: string): number {
 	return BYOK_MODELS.find((m) => m.id === modelId)?.defaultTemperature ?? 0.7;
 }
 
+type KeyStatus = "idle" | "checking" | "valid" | "invalid";
+
+// Cache so we only hit the network when the key actually changes
+let cachedKey: string | undefined;
+let cachedStatus: KeyStatus = "idle";
+
+async function verifyProKey(key: string): Promise<boolean> {
+	try {
+		const res = await requestUrl({
+			url: "https://ai.truerecall.app/key/info",
+			headers: { Authorization: `Bearer ${key}` },
+		});
+		return res.status === 200;
+	} catch {
+		return false;
+	}
+}
+
 export function AITab() {
 	const { settings, save } = useSettings();
+
+	const initialStatus =
+		settings.proKey && settings.proKey === cachedKey ? cachedStatus : "idle";
+	const [keyStatus, setKeyStatus] = useState<KeyStatus>(initialStatus);
 
 	const hasProKey = !!settings.proKey;
 	const currentModel = settings.aiModel || BYOK_MODELS[0]!.id;
 	const modelDefault = getModelDefault(currentModel);
 	const effectiveTemp = settings.aiTemperature ?? modelDefault;
+
+	useEffect(() => {
+		if (!settings.proKey) {
+			cachedKey = undefined;
+			cachedStatus = "idle";
+			setKeyStatus("idle");
+			return;
+		}
+		if (settings.proKey === cachedKey && cachedStatus !== "idle") {
+			setKeyStatus(cachedStatus);
+			return;
+		}
+		setKeyStatus("checking");
+		const key = settings.proKey;
+		verifyProKey(key).then((ok) => {
+			const status = ok ? "valid" : "invalid";
+			cachedKey = key;
+			cachedStatus = status;
+			setKeyStatus(status);
+		});
+	}, [settings.proKey]);
 
 	return (
 		<div class="ep:flex ep:flex-col ep:gap-3">
@@ -57,9 +102,20 @@ export function AITab() {
 						class="ep:w-[300px]"
 					/>
 				</FormField>
-				{hasProKey && (
+				{keyStatus === "checking" && (
+					<InfoBlock>Verifying key…</InfoBlock>
+				)}
+				{keyStatus === "valid" && (
 					<InfoBlock>
 						Active — AI routed via True Recall servers.
+					</InfoBlock>
+				)}
+				{keyStatus === "invalid" && (
+					<InfoBlock class="ep:text-obs-error">
+						Invalid key — check your key on the{" "}
+						<a href={`${TRUERECALL_WEB_URL}/dashboard`} class="ep:text-obs-accent">
+							dashboard
+						</a>.
 					</InfoBlock>
 				)}
 				<div class="ep:text-ui-smaller ep:text-obs-muted ep:leading-relaxed ep:pt-2 ep:mt-2 ep:border-t ep:border-obs-modifier-border">
