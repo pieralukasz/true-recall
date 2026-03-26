@@ -151,6 +151,25 @@ describe("IncrementalFlashcardParser (JSON format)", () => {
 		const completes = events.filter((e) => e.type === "card_complete");
 		expect(completes).toHaveLength(0);
 	});
+
+	it("should extract source field as sourceText", () => {
+		const parser = new IncrementalFlashcardParser(lookup);
+		const json = JSON.stringify([
+			{ type: "basic", Front: "What is X?", Back: "Y", source: "X is defined as Y." },
+		]);
+		const events = [...parser.feed(json), ...parser.finish()];
+		const completes = events.filter((e) => e.type === "card_complete");
+		expect(completes).toHaveLength(1);
+		expect(completes[0]!.block!.sourceText).toBe("X is defined as Y.");
+	});
+
+	it("should omit sourceText when source is missing", () => {
+		const parser = new IncrementalFlashcardParser(lookup);
+		const json = '[{"type": "basic", "Front": "Q", "Back": "A"}]';
+		const events = [...parser.feed(json), ...parser.finish()];
+		const completes = events.filter((e) => e.type === "card_complete");
+		expect(completes[0]!.block!.sourceText).toBeUndefined();
+	});
 });
 
 describe("parseBlockResponse (non-streaming JSON)", () => {
@@ -189,5 +208,14 @@ describe("parseBlockResponse (non-streaming JSON)", () => {
 		]);
 		const blocks = parseBlockResponse(text, lookup);
 		expect(blocks).toHaveLength(1);
+	});
+
+	it("should extract source field as sourceText", () => {
+		const text = JSON.stringify([
+			{ type: "basic", Front: "Q", Back: "A", source: "Original sentence." },
+		]);
+		const blocks = parseBlockResponse(text, lookup);
+		expect(blocks).toHaveLength(1);
+		expect(blocks[0]!.sourceText).toBe("Original sentence.");
 	});
 });

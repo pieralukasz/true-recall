@@ -1,4 +1,4 @@
-import { buildByokPrompt } from "@features/ai/prompts/block-prompt-builder";
+import { buildByokPrompt, buildCardFormatSpec } from "@features/ai/prompts/block-prompt-builder";
 import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
 import type { NoteType } from "@shared/types/note.types";
 import type { TrueRecallSettings } from "@shared/types/settings.types";
@@ -15,7 +15,7 @@ import {
 	streamingGeneration,
 } from "./streaming-state";
 
-const FALLBACK_BASIC_NOTE_TYPE = {
+export const FALLBACK_BASIC_NOTE_TYPE = {
 	id: "builtin-basic",
 	name: "Basic",
 	type: 0,
@@ -103,6 +103,10 @@ export class StreamingGenerationService {
 			? { call_context: "generation", note_type: noteType?.slug ?? "basic" }
 			: undefined;
 
+		const userContent = aiConfig.isPro
+			? `${buildCardFormatSpec(noteType ?? FALLBACK_BASIC_NOTE_TYPE)}\n\n${text}`
+			: text;
+
 		let createdCount = 0;
 		let duplicateCount = 0;
 		const throttledUpdatePartial = createThrottledPartialUpdater();
@@ -114,9 +118,9 @@ export class StreamingGenerationService {
 		const messages = systemPrompt
 			? [
 					{ role: "system" as const, content: systemPrompt },
-					{ role: "user" as const, content: text },
+					{ role: "user" as const, content: userContent },
 				]
-			: [{ role: "user" as const, content: text }];
+			: [{ role: "user" as const, content: userContent }];
 
 		const stream = client.chatStream(
 			{

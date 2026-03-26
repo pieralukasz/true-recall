@@ -62,10 +62,13 @@ function parseCardObject(
 
 	if (!hasContent) return null;
 
+	const sourceText = typeof obj.source === "string" ? obj.source.trim() : undefined;
+
 	return {
 		noteTypeId: noteType.id,
 		noteTypeSlug: slug,
 		fields,
+		sourceText: sourceText || undefined,
 	};
 }
 

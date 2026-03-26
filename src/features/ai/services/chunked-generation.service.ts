@@ -7,8 +7,10 @@ import { resolveAIClientConfig } from "./ai-client-config";
 import { IncrementalFlashcardParser } from "./incremental-flashcard-parser";
 import { type ChunkingResult, chunkMarkdown } from "./markdown-chunker";
 import { processCardEvents } from "./process-card-events";
+import { buildCardFormatSpec } from "@features/ai/prompts/block-prompt-builder";
 import {
 	buildGenerationPrompt,
+	FALLBACK_BASIC_NOTE_TYPE,
 	type StreamingGenerationResult,
 	StreamingGenerationService,
 } from "./streaming-generation.service";
@@ -114,9 +116,12 @@ export class ChunkedGenerationService {
 
 				updateChunkProgress(chunk.index, chunk.headingBreadcrumb || null);
 
+				const formatPrefix = aiConfig.isPro
+					? `${buildCardFormatSpec(noteType ?? FALLBACK_BASIC_NOTE_TYPE)}\n\n`
+					: "";
 				const userMessage = chunk.headingBreadcrumb
-					? `[Context: This section is from "${chunk.headingBreadcrumb}" in the note "${sourceFile.basename}"]\n\n${chunk.content}`
-					: chunk.content;
+					? `${formatPrefix}[Context: This section is from "${chunk.headingBreadcrumb}" in the note "${sourceFile.basename}"]\n\n${chunk.content}`
+					: `${formatPrefix}${chunk.content}`;
 
 				try {
 					const result = await this.generateSingleChunk(
