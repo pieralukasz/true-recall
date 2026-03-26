@@ -18,9 +18,18 @@ export async function handleGetSummary(
 	const maturity = ctx.plugin.cardStore.stats.getCardMaturityBreakdown();
 	const streaks = ctx.plugin.cardStore.stats.getAnswerStreakInfo();
 	const totalReviews = ctx.plugin.cardStore.stats.getTotalReviewCount();
-	const totalCards = ctx.plugin.cardStore.cards.getAll().length;
 
-	const allCards = ctx.plugin.flashcardManager.getAllFSRSCards();
+	const archivedUids =
+		ctx.plugin.hierarchyService.getArchivedSourceUids();
+
+	let allCards = ctx.plugin.flashcardManager.getAllFSRSCards();
+	if (archivedUids.size > 0) {
+		allCards = allCards.filter(
+			(c) => !c.sourceUid || !archivedUids.has(c.sourceUid),
+		);
+	}
+
+	const totalCards = allCards.length;
 	const dueCards = ctx.plugin.dayBoundaryService.getDueCards(allCards);
 
 	sendOk(res, {

@@ -23,10 +23,26 @@ export async function handleListCards(
 	const stateParam = url.searchParams.get("state");
 	const sourceUid = url.searchParams.get("source_uid") ?? undefined;
 	const limit = Math.min(Number(url.searchParams.get("limit")) || 50, 200);
+	const showSuspended = url.searchParams.get("suspended") === "true";
+	const showArchived = url.searchParams.get("archived") === "true";
 
 	let allCards = sourceUid
 		? ctx.plugin.cardStore.cards.getCardsBySourceUid(sourceUid)
 		: ctx.plugin.cardStore.cards.getAll();
+
+	if (!showSuspended) {
+		allCards = allCards.filter((c) => !c.suspended);
+	}
+
+	if (!showArchived) {
+		const archivedUids =
+			ctx.plugin.hierarchyService.getArchivedSourceUids();
+		if (archivedUids.size > 0) {
+			allCards = allCards.filter(
+				(c) => !c.sourceUid || !archivedUids.has(c.sourceUid),
+			);
+		}
+	}
 
 	if (stateParam !== null) {
 		const stateMap: Record<string, number> = {
@@ -117,7 +133,7 @@ export async function handleGetCard(
 }
 
 export async function handleGetDueCards(
-	_req: IncomingMessage,
+	req: IncomingMessage,
 	res: ServerResponse,
 	ctx: ApiContext,
 ): Promise<void> {
@@ -126,10 +142,38 @@ export async function handleGetDueCards(
 		return;
 	}
 
-	const allCards = ctx.plugin.flashcardManager.getAllFSRSCards();
+	const url = new URL(req.url ?? "/", "http://localhost");
+	const showArchived = url.searchParams.get("archived") === "true";
+	const limitParam = url.searchParams.get("limit");
+	const limit = limitParam ? Number(limitParam) : undefined;
+
+	const archivedUids = showArchived
+		? new Set<string>()
+		: ctx.plugin.hierarchyService.getArchivedSourceUids();
+
+	let allCards = ctx.plugin.flashcardManager.getAllFSRSCards();
+
+	if (archivedUids.size > 0) {
+		allCards = allCards.filter(
+			(c) => !c.sourceUid || !archivedUids.has(c.sourceUid),
+		);
+	}
+
 	const dueCards = ctx.plugin.dayBoundaryService.getDueCards(allCards);
 
-	const cards = dueCards.map((c) => ({
+	// Group by source note for summary
+	const byNote = new Map<string, number>();
+	for (const c of dueCards) {
+		const name = c.sourceNoteName ?? "(orphaned)";
+		byNote.set(name, (byNote.get(name) ?? 0) + 1);
+	}
+	const noteBreakdown = [...byNote.entries()]
+		.sort((a, b) => b[1] - a[1])
+		.slice(0, 20)
+		.map(([name, count]) => ({ note: name, due: count }));
+
+	const sliced = limit ? dueCards.slice(0, limit) : dueCards;
+	const cards = sliced.map((c) => ({
 		id: c.id,
 		question: c.question,
 		answer: c.answer,
@@ -141,9 +185,15 @@ export async function handleGetDueCards(
 		lapses: c.fsrs.lapses,
 		cardType: c.cardType ?? "basic",
 		sourceUid: c.sourceUid,
+		sourceNoteName: c.sourceNoteName,
 	}));
 
-	sendOk(res, { dueCount: cards.length, cards });
+	sendOk(res, {
+		dueCount: dueCards.length,
+		showing: sliced.length,
+		noteBreakdown,
+		cards,
+	});
 }
 
 export async function handleGetProblemCards(

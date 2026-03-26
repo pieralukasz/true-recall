@@ -118,6 +118,14 @@ export async function handleUpdateCard(
 	}
 
 	ctx.plugin.flashcardManager.updateNoteFields(noteId, updatedFields);
+	notifyCardChange({
+		type: "updated",
+		cardId,
+		changes: {
+			question: !!body.question,
+			answer: !!body.answer,
+		},
+	});
 
 	sendOk(res, {
 		cardId,
@@ -151,4 +159,151 @@ export async function handleDeleteCard(
 	}
 
 	sendOk(res, { deleted: true, cardId });
+}
+
+export async function handleBulkDelete(
+	req: IncomingMessage,
+	res: ServerResponse,
+	ctx: ApiContext,
+): Promise<void> {
+	if (!ctx.plugin.isStoreReady()) {
+		sendError(res, 503, "Database not ready");
+		return;
+	}
+
+	const raw = await readBody(req);
+	const body = parseJsonBody<{ card_ids: string[] }>(raw);
+	if (!body?.card_ids?.length) {
+		sendError(res, 400, "Body must contain { card_ids: string[] }");
+		return;
+	}
+
+	const count = ctx.plugin.flashcardManager.removeFlashcardsByIds(
+		body.card_ids,
+	);
+
+	notifyCardChange({ type: "bulk", cardIds: body.card_ids });
+	sendOk(res, { deleted: count, cardIds: body.card_ids });
+}
+
+export async function handleRemoveCardsFromNote(
+	req: IncomingMessage,
+	res: ServerResponse,
+	ctx: ApiContext,
+): Promise<void> {
+	if (!ctx.plugin.isStoreReady()) {
+		sendError(res, 503, "Database not ready");
+		return;
+	}
+
+	const raw = await readBody(req);
+	const body = parseJsonBody<{ source_uid?: string; path?: string }>(raw);
+
+	let sourceUid = body?.source_uid;
+
+	// Resolve from path or active note
+	if (!sourceUid && body?.path) {
+		const file = ctx.plugin.app.vault.getAbstractFileByPath(body.path);
+		if (file && "extension" in file) {
+			sourceUid =
+				(await ctx.plugin.flashcardManager
+					.getFrontmatterService()
+					.getSourceNoteUid(file as import("obsidian").TFile)) ?? undefined;
+		}
+	}
+	if (!sourceUid) {
+		const file = ctx.plugin.app.workspace.getActiveFile();
+		if (file) {
+			sourceUid =
+				(await ctx.plugin.flashcardManager
+					.getFrontmatterService()
+					.getSourceNoteUid(file)) ?? undefined;
+		}
+	}
+
+	if (!sourceUid) {
+		sendError(res, 400, "No source_uid provided and no active note with flashcard_uid");
+		return;
+	}
+
+	const cards = ctx.plugin.cardStore.cards.getCardsBySourceUid(sourceUid);
+	if (cards.length === 0) {
+		sendOk(res, { deleted: 0, sourceUid });
+		return;
+	}
+
+	const ids = cards.map((c) => c.id);
+	const count = ctx.plugin.flashcardManager.removeFlashcardsByIds(ids);
+
+	notifyCardChange({ type: "bulk", cardIds: ids });
+	sendOk(res, { deleted: count, sourceUid, cardIds: ids });
+}
+
+export async function handleBulkSuspend(
+	req: IncomingMessage,
+	res: ServerResponse,
+	ctx: ApiContext,
+): Promise<void> {
+	if (!ctx.plugin.isStoreReady()) {
+		sendError(res, 503, "Database not ready");
+		return;
+	}
+
+	const raw = await readBody(req);
+	const body = parseJsonBody<{
+		card_ids: string[];
+		suspended: boolean;
+	}>(raw);
+	if (!body?.card_ids?.length || typeof body.suspended !== "boolean") {
+		sendError(res, 400, "Body must contain { card_ids: string[], suspended: boolean }");
+		return;
+	}
+
+	const count = body.suspended
+		? ctx.plugin.cardStore.cards.bulkSuspend(body.card_ids)
+		: ctx.plugin.cardStore.cards.bulkUnsuspend(body.card_ids);
+
+	notifyCardChange({ type: "bulk", cardIds: body.card_ids });
+	sendOk(res, { affected: count, suspended: body.suspended });
+}
+
+export async function handleBulkBury(
+	req: IncomingMessage,
+	res: ServerResponse,
+	ctx: ApiContext,
+): Promise<void> {
+	if (!ctx.plugin.isStoreReady()) {
+		sendError(res, 503, "Database not ready");
+		return;
+	}
+
+	const raw = await readBody(req);
+	const body = parseJsonBody<{
+		card_ids: string[];
+		until?: string;
+		days?: number;
+	}>(raw);
+	if (!body?.card_ids?.length) {
+		sendError(res, 400, "Body must contain { card_ids: string[], until?: string, days?: number }");
+		return;
+	}
+
+	let untilDate: string;
+	if (body.until) {
+		untilDate = new Date(body.until).toISOString();
+	} else {
+		const days = body.days ?? 1;
+		const d = new Date();
+		d.setDate(d.getDate() + days);
+		d.setHours(4, 0, 0, 0);
+		untilDate = d.toISOString();
+	}
+
+	const count = ctx.plugin.cardStore.cards.bulkBury(
+		body.card_ids,
+		untilDate,
+	);
+
+	notifyCardChange({ type: "bulk", cardIds: body.card_ids });
+	sendOk(res, { buried: count, untilDate, cardIds: body.card_ids });
 }

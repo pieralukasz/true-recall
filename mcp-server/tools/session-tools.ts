@@ -126,4 +126,96 @@ export function registerSessionTools(
 			};
 		},
 	);
+
+	server.tool(
+		"bulk_delete_cards",
+		"Delete multiple flashcards at once by their IDs.",
+		{
+			card_ids: z.array(z.string()).describe("Array of card UUIDs to delete"),
+		},
+		async (params) => {
+			const data = await client.post("/cards/bulk-delete", {
+				card_ids: params.card_ids,
+			});
+			return {
+				content: [
+					{ type: "text" as const, text: JSON.stringify(data, null, 2) },
+				],
+			};
+		},
+	);
+
+	server.tool(
+		"remove_cards_from_note",
+		"Delete ALL flashcards linked to a specific note. Can target by source_uid, vault path, or defaults to the active note.",
+		{
+			source_uid: z
+				.string()
+				.optional()
+				.describe("Source note UID. If omitted, uses path or active note."),
+			path: z
+				.string()
+				.optional()
+				.describe("Vault path to the note (e.g. 'Folder/Note.md'). If omitted, uses active note."),
+		},
+		async (params) => {
+			const data = await client.post("/cards/remove-from-note", {
+				source_uid: params.source_uid,
+				path: params.path,
+			});
+			return {
+				content: [
+					{ type: "text" as const, text: JSON.stringify(data, null, 2) },
+				],
+			};
+		},
+	);
+
+	server.tool(
+		"bulk_suspend_cards",
+		"Suspend or unsuspend multiple cards at once. Suspended cards are excluded from review sessions.",
+		{
+			card_ids: z.array(z.string()).describe("Array of card UUIDs"),
+			suspended: z.boolean().describe("true to suspend, false to unsuspend"),
+		},
+		async (params) => {
+			const data = await client.post("/cards/bulk-suspend", {
+				card_ids: params.card_ids,
+				suspended: params.suspended,
+			});
+			return {
+				content: [
+					{ type: "text" as const, text: JSON.stringify(data, null, 2) },
+				],
+			};
+		},
+	);
+
+	server.tool(
+		"bury_cards",
+		"Temporarily hide cards until a specific date or for N days. Buried cards auto-unbury after the date passes. Default: 1 day (next day boundary at 4 AM).",
+		{
+			card_ids: z.array(z.string()).describe("Array of card UUIDs to bury"),
+			days: z
+				.number()
+				.optional()
+				.describe("Number of days to bury (default 1). Ignored if 'until' is set."),
+			until: z
+				.string()
+				.optional()
+				.describe("Bury until this ISO date (e.g. '2026-04-01'). Takes priority over days."),
+		},
+		async (params) => {
+			const data = await client.post("/cards/bulk-bury", {
+				card_ids: params.card_ids,
+				days: params.days,
+				until: params.until,
+			});
+			return {
+				content: [
+					{ type: "text" as const, text: JSON.stringify(data, null, 2) },
+				],
+			};
+		},
+	);
 }

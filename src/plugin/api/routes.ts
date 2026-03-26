@@ -1,8 +1,12 @@
 import type { IncomingMessage, ServerResponse } from "http";
 import type { ApiContext, RouteHandler } from "./api.types";
-import { sendError } from "./api.types";
+import { CORS_HEADERS, sendError } from "./api.types";
 import {
+	handleBulkBury,
+	handleBulkDelete,
+	handleBulkSuspend,
 	handleDeleteCard,
+	handleRemoveCardsFromNote,
 	handleSuspendCard,
 	handleUpdateCard,
 } from "./handlers/card-actions";
@@ -34,15 +38,17 @@ import {
 	handleGetSummary,
 } from "./handlers/stats";
 
+type HttpMethod = "GET" | "POST" | "DELETE";
+
 interface Route {
-	method: string;
+	method: HttpMethod;
 	pattern: RegExp;
 	paramNames: string[];
 	handler: RouteHandler;
 }
 
 function route(
-	method: string,
+	method: HttpMethod,
 	path: string,
 	handler: RouteHandler,
 ): Route {
@@ -75,6 +81,10 @@ const routes: Route[] = [
 	route("POST", "/cards/:id/suspend", handleSuspendCard),
 	route("POST", "/cards/:id/update", handleUpdateCard),
 	route("DELETE", "/cards/:id", handleDeleteCard),
+	route("POST", "/cards/bulk-delete", handleBulkDelete),
+	route("POST", "/cards/bulk-suspend", handleBulkSuspend),
+	route("POST", "/cards/bulk-bury", handleBulkBury),
+	route("POST", "/cards/remove-from-note", handleRemoveCardsFromNote),
 	route("POST", "/cards", handleCreateCards),
 
 	// AI generation
@@ -127,12 +137,9 @@ export async function dispatch(
 	const urlObj = new URL(req.url ?? "/", "http://localhost");
 	const pathname = urlObj.pathname;
 
-	// CORS preflight
 	if (method === "OPTIONS") {
 		res.writeHead(204, {
-			"Access-Control-Allow-Origin": "*",
-			"Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
-			"Access-Control-Allow-Headers": "Content-Type, Authorization",
+			...CORS_HEADERS,
 			"Access-Control-Max-Age": "86400",
 		});
 		res.end();

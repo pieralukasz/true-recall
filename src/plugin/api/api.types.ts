@@ -12,11 +12,15 @@ export type RouteHandler = (
 	params: Record<string, string>,
 ) => Promise<void>;
 
-export interface ApiResponse<T = unknown> {
-	ok: boolean;
-	data?: T;
-	error?: string;
-}
+export type ApiResponse<T = unknown> =
+	| { ok: true; data: T }
+	| { ok: false; error: string };
+
+const CORS_HEADERS = {
+	"Access-Control-Allow-Origin": "*",
+	"Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
+	"Access-Control-Allow-Headers": "Content-Type",
+} as const;
 
 export function sendJson(
 	res: ServerResponse,
@@ -25,9 +29,7 @@ export function sendJson(
 ): void {
 	res.writeHead(status, {
 		"Content-Type": "application/json",
-		"Access-Control-Allow-Origin": "http://localhost",
-		"Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-		"Access-Control-Allow-Headers": "Content-Type",
+		...CORS_HEADERS,
 	});
 	res.end(JSON.stringify(body));
 }
@@ -44,10 +46,21 @@ export function sendError(
 	sendJson(res, status, { ok: false, error: message });
 }
 
+export { CORS_HEADERS };
+
+const MAX_BODY_SIZE = 2 * 1024 * 1024; // 2 MB
+
 export async function readBody(req: IncomingMessage): Promise<string> {
 	return new Promise((resolve, reject) => {
 		let body = "";
+		let size = 0;
 		req.on("data", (chunk: Buffer) => {
+			size += chunk.length;
+			if (size > MAX_BODY_SIZE) {
+				req.destroy();
+				reject(new Error("Request body too large"));
+				return;
+			}
 			body += chunk.toString();
 		});
 		req.on("end", () => resolve(body));
@@ -58,7 +71,11 @@ export async function readBody(req: IncomingMessage): Promise<string> {
 export function parseJsonBody<T>(raw: string): T | null {
 	try {
 		return JSON.parse(raw) as T;
-	} catch {
+	} catch (e) {
+		console.warn(
+			"[True Recall API] JSON parse failed:",
+			e instanceof Error ? e.message : e,
+		);
 		return null;
 	}
 }

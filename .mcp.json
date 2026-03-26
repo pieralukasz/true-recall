@@ -6,7 +6,7 @@
     },
     "true-recall": {
       "type": "stdio",
-      "command": "/Users/lukaszpiera/.bun/bin/bun",
+      "command": "bun",
       "args": ["run", "./mcp-server/index.ts"],
       "env": {
         "TRUE_RECALL_PORT": "27182"

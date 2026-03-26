@@ -82,18 +82,20 @@ export function registerStatsTools(
 				.describe("What aspect to focus recommendations on"),
 		},
 		async (params) => {
-			// Gather all relevant data for analysis
-			const [summary, patterns, problems] = await Promise.all([
+			const results = await Promise.allSettled([
 				client.get<Record<string, unknown>>("/stats/summary"),
 				client.get<Record<string, unknown>>("/stats/patterns"),
 				client.get<Record<string, unknown>>("/cards/problems?limit=10"),
 			]);
 
+			const unwrap = (r: PromiseSettledResult<Record<string, unknown>>) =>
+				r.status === "fulfilled" ? r.value : { error: r.reason?.message ?? "Failed to fetch" };
+
 			const analysisContext = {
 				focus: params.focus,
-				summary,
-				patterns,
-				problems,
+				summary: unwrap(results[0]!),
+				patterns: unwrap(results[1]!),
+				problems: unwrap(results[2]!),
 				instructions:
 					"Based on the study data above, provide actionable recommendations. " +
 					"Consider: overdue cards, problem card patterns, optimal study times, " +

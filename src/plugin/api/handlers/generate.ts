@@ -50,7 +50,14 @@ export async function handleGenerate(
 		(slug) => ctx.plugin.flashcardManager.getNoteTypeBySlug(slug),
 	);
 
-	const result = await service.generate(body.text, noteType);
+	let result;
+	try {
+		result = await service.generate(body.text, noteType);
+	} catch (e) {
+		const message = e instanceof Error ? e.message : String(e);
+		sendError(res, 502, `AI generation failed: ${message}`);
+		return;
+	}
 
 	if (result.blocks.length === 0) {
 		sendOk(res, { created: 0, cards: [], message: "AI returned no parseable flashcards" });
