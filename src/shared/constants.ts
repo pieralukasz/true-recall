@@ -159,6 +159,9 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 	defaultTypeInMode: "off",
 
 	selectionToolbarEnabled: true,
+
+	enableLocalApi: false,
+	apiPort: 27182,
 };
 
 // FSRS v6 default weights (21 parameters)

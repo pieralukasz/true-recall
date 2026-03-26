@@ -1,0 +1,121 @@
+import type { IncomingMessage, ServerResponse } from "http";
+import { hasAIKey } from "@features/ai/services/ai-client-config";
+import { FlashcardGenerationService } from "@features/ai/services/flashcard-generation.service";
+import type { ApiContext } from "../api.types";
+import {
+	parseJsonBody,
+	readBody,
+	sendError,
+	sendOk,
+} from "../api.types";
+
+interface GenerateInput {
+	text: string;
+	note_type_slug?: string;
+	source_uid?: string;
+}
+
+export async function handleGenerate(
+	req: IncomingMessage,
+	res: ServerResponse,
+	ctx: ApiContext,
+): Promise<void> {
+	if (!ctx.plugin.isStoreReady()) {
+		sendError(res, 503, "Database not ready");
+		return;
+	}
+
+	if (!hasAIKey(ctx.plugin.settings)) {
+		sendError(
+			res,
+			400,
+			"No AI key configured. Add your Pro key or OpenRouter API key in plugin settings.",
+		);
+		return;
+	}
+
+	const raw = await readBody(req);
+	const body = parseJsonBody<GenerateInput>(raw);
+	if (!body?.text) {
+		sendError(res, 400, "Body must contain { text: string }");
+		return;
+	}
+
+	const noteType = body.note_type_slug
+		? ctx.plugin.flashcardManager.getNoteTypeBySlug(body.note_type_slug)
+		: null;
+
+	const service = new FlashcardGenerationService(
+		() => ctx.plugin.settings,
+		(slug) => ctx.plugin.flashcardManager.getNoteTypeBySlug(slug),
+	);
+
+	const result = await service.generate(body.text, noteType);
+
+	if (result.blocks.length === 0) {
+		sendOk(res, { created: 0, cards: [], message: "AI returned no parseable flashcards" });
+		return;
+	}
+
+	// Resolve source UID: use provided, or derive from active note
+	let sourceUid = body.source_uid;
+	if (!sourceUid) {
+		const file = ctx.plugin.app.workspace.getActiveFile();
+		if (file && file.extension === "md") {
+			const frontmatterService =
+				ctx.plugin.flashcardManager.getFrontmatterService();
+			sourceUid =
+				(await frontmatterService.getSourceNoteUid(file)) ?? undefined;
+			if (!sourceUid) {
+				sourceUid = frontmatterService.generateUid();
+				await frontmatterService.setSourceNoteUid(file, sourceUid);
+			}
+		}
+	}
+
+	const noteParams = result.blocks.map((block) => ({
+		noteTypeId: block.noteTypeId,
+		fields: block.fields,
+		alwaysTypeIn: block.alwaysTypeIn,
+		sourceUid,
+		sourceText: block.sourceText,
+		createdVia: "ai" as const,
+	}));
+
+	const batchResult = ctx.plugin.flashcardManager.createNoteBatch(noteParams);
+
+	sendOk(res, {
+		created: batchResult.cards.length,
+		cards: batchResult.cards.map((c) => ({
+			id: c.id,
+			question: c.question ?? "",
+			answer: c.answer ?? "",
+			cardType: c.cardType ?? "basic",
+			sourceText: c.sourceText,
+		})),
+	});
+}
+
+export async function handleGetNoteTypes(
+	_req: IncomingMessage,
+	res: ServerResponse,
+	ctx: ApiContext,
+): Promise<void> {
+	if (!ctx.plugin.isStoreReady()) {
+		sendError(res, 503, "Database not ready");
+		return;
+	}
+
+	const noteTypes = ctx.plugin.cardStore.noteTypes.getAll();
+	sendOk(
+		res,
+		noteTypes.map((nt) => ({
+			id: nt.id,
+			name: nt.name,
+			slug: nt.slug,
+			type: nt.type === 0 ? "standard" : "cloze",
+			fields: nt.fields,
+			isBuiltin: nt.isBuiltin,
+		})),
+	);
+}

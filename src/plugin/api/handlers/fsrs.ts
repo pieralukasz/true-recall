@@ -1,0 +1,129 @@
+import type { IncomingMessage, ServerResponse } from "http";
+import type { ApiContext } from "../api.types";
+import {
+	parseJsonBody,
+	readBody,
+	sendError,
+	sendOk,
+} from "../api.types";
+
+export async function handleGetPresets(
+	_req: IncomingMessage,
+	res: ServerResponse,
+	ctx: ApiContext,
+): Promise<void> {
+	const presets = ctx.plugin.presetService.getPresets();
+	const defaultId = ctx.plugin.settings.defaultPresetId;
+
+	sendOk(
+		res,
+		presets.map((p) => ({
+			id: p.id,
+			name: p.name,
+			isDefault: p.id === defaultId,
+			requestRetention: p.requestRetention,
+			maximumInterval: p.maximumInterval,
+			learningSteps: p.learningSteps,
+			relearningSteps: p.relearningSteps,
+			newCardsPerDay: p.newCardsPerDay,
+			reviewsPerDay: p.reviewsPerDay,
+			weights: p.weights ? `[${p.weights.length} params]` : "default",
+			lastOptimization: p.lastOptimization,
+			leechThreshold: p.leechThreshold,
+			leechAction: p.leechAction,
+		})),
+	);
+}
+
+interface CreatePresetInput {
+	name: string;
+	request_retention?: number;
+	new_cards_per_day?: number;
+	reviews_per_day?: number;
+	learning_steps?: number[];
+	relearning_steps?: number[];
+}
+
+export async function handleCreatePreset(
+	req: IncomingMessage,
+	res: ServerResponse,
+	ctx: ApiContext,
+): Promise<void> {
+	const raw = await readBody(req);
+	const body = parseJsonBody<CreatePresetInput>(raw);
+	if (!body?.name) {
+		sendError(res, 400, "Body must contain { name: string }");
+		return;
+	}
+
+	const existing = ctx.plugin.presetService.getPresetByName(body.name);
+	if (existing) {
+		sendError(res, 409, `Preset "${body.name}" already exists`);
+		return;
+	}
+
+	const defaults = ctx.plugin.presetService.getDefaultPreset();
+	const preset = await ctx.plugin.presetService.createPreset({
+		name: body.name,
+		requestRetention: body.request_retention ?? defaults.requestRetention,
+		maximumInterval: defaults.maximumInterval,
+		weights: null,
+		learningSteps: body.learning_steps ?? defaults.learningSteps,
+		relearningSteps: body.relearning_steps ?? defaults.relearningSteps,
+		newCardsPerDay: body.new_cards_per_day ?? defaults.newCardsPerDay,
+		reviewsPerDay: body.reviews_per_day ?? defaults.reviewsPerDay,
+		lastOptimization: null,
+		lastOptimizationReviewCount: null,
+		lastOptimizationMetrics: null,
+	});
+
+	sendOk(res, { id: preset.id, name: preset.name });
+}
+
+export async function handleGetFsrsStats(
+	req: IncomingMessage,
+	res: ServerResponse,
+	ctx: ApiContext,
+): Promise<void> {
+	if (!ctx.plugin.isStoreReady()) {
+		sendError(res, 503, "Database not ready");
+		return;
+	}
+
+	if (!ctx.plugin.fsrsHelper) {
+		sendError(res, 503, "FSRS helper not initialized");
+		return;
+	}
+
+	const url = new URL(req.url ?? "/", "http://localhost");
+	const days = Number(url.searchParams.get("days")) || 30;
+
+	const snapshot = ctx.plugin.fsrsHelper.getTrueRetentionSnapshot(days);
+	const workloadForecast =
+		ctx.plugin.fsrsHelper.getWorkloadForecastSummary(days);
+	const workloadByDay = ctx.plugin.fsrsHelper.getWorkloadByDayOfWeek(days);
+	const distributions = ctx.plugin.fsrsHelper.getDistributions();
+
+	sendOk(res, {
+		trueRetention: {
+			current: snapshot.summary.current,
+			target: snapshot.summary.target,
+			average: snapshot.summary.average,
+			trend: snapshot.summary.trend,
+			totalReviews: snapshot.summary.totalReviews,
+			recentHistory: snapshot.history.slice(-7),
+		},
+		workloadForecast: {
+			avgDaily: workloadForecast.avgDaily,
+			peakDay: workloadForecast.peakDay,
+			needsBalancing: workloadForecast.needsBalancing,
+			daysAboveTarget: workloadForecast.daysAboveTarget,
+		},
+		workloadByDay,
+		distributions: {
+			interval: distributions.interval.stats,
+			stability: distributions.stability.stats,
+			difficulty: distributions.difficulty.stats,
+		},
+	});
+}

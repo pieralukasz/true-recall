@@ -3,6 +3,14 @@
     "supabase": {
       "type": "http",
       "url": "https://mcp.supabase.com/mcp?project_ref=webogcxwvgbwdcjibbno"
+    },
+    "true-recall": {
+      "type": "stdio",
+      "command": "/Users/lukaszpiera/.bun/bin/bun",
+      "args": ["run", "./mcp-server/index.ts"],
+      "env": {
+        "TRUE_RECALL_PORT": "27182"
+      }
     }
   }
 }
