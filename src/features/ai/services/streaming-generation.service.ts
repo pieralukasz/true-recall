@@ -1,9 +1,13 @@
-import { buildByokPrompt } from "@features/ai/prompts/block-prompt-builder";
+import {
+	buildByokSystemPrompt,
+	buildCardFormatSpec,
+} from "@features/ai/prompts/block-prompt-builder";
 import { buildLanguageSuffix } from "@features/ai/prompts/default-prompts";
 import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
 import type { NoteType } from "@shared/types/note.types";
 import type { TrueRecallSettings } from "@shared/types/settings.types";
 import type { TFile } from "obsidian";
+import type { AIClientConfig } from "./ai-client-config";
 import { resolveAIClientConfig } from "./ai-client-config";
 import { IncrementalFlashcardParser } from "./incremental-flashcard-parser";
 import { processCardEvents } from "./process-card-events";
@@ -28,10 +32,17 @@ const FALLBACK_BASIC_NOTE_TYPE = {
 
 export function buildGenerationPrompt(
 	settings: TrueRecallSettings,
-	noteType?: NoteType | null,
 ): string {
 	const langSuffix = buildLanguageSuffix(settings.generationLanguage ?? "auto");
-	return buildByokPrompt(noteType ?? FALLBACK_BASIC_NOTE_TYPE) + langSuffix;
+	return buildByokSystemPrompt() + langSuffix;
+}
+
+export function buildUserMessage(
+	text: string,
+	noteType?: NoteType | null,
+): string {
+	const formatSpec = buildCardFormatSpec(noteType ?? FALLBACK_BASIC_NOTE_TYPE);
+	return `${formatSpec}\n\n${text}`;
 }
 
 export interface StreamingGenerationResult {
@@ -79,7 +90,7 @@ export class StreamingGenerationService {
 	}
 
 	private async runStreamingGeneration(
-		aiConfig: import("./ai-client-config").AIClientConfig,
+		aiConfig: AIClientConfig,
 		text: string,
 		sourceFile: TFile,
 		abortController: AbortController,
@@ -90,10 +101,11 @@ export class StreamingGenerationService {
 			this.flashcardManager.getNoteTypeBySlug?.(slug) ?? null;
 		const parser = new IncrementalFlashcardParser(getNoteType);
 
-		// Pro: proxy injects premium prompt server-side. BYOK: plugin sends prompt.
 		const systemPrompt = aiConfig.isPro
 			? ""
-			: buildGenerationPrompt(this.getSettings(), noteType);
+			: buildGenerationPrompt(this.getSettings());
+
+		const userContent = buildUserMessage(text, noteType);
 
 		const metadata = aiConfig.isPro
 			? { call_context: "generation", note_type: noteType?.slug ?? "basic" }
@@ -110,12 +122,16 @@ export class StreamingGenerationService {
 		const messages = systemPrompt
 			? [
 					{ role: "system" as const, content: systemPrompt },
-					{ role: "user" as const, content: text },
+					{ role: "user" as const, content: userContent },
 				]
-			: [{ role: "user" as const, content: text }];
+			: [{ role: "user" as const, content: userContent }];
 
 		const stream = client.chatStream(
-			{ messages, temperature: 0.7, metadata },
+			{
+				messages,
+				...(aiConfig.isPro ? {} : { temperature: 0.7 }),
+				metadata,
+			},
 			abortController.signal,
 		);
 

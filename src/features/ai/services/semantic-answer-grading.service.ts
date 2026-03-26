@@ -35,7 +35,7 @@ type ClientFactory = (config: AIClientConfig) => {
 			role: "system" | "user";
 			content: string;
 		}>;
-		temperature: number;
+		temperature?: number;
 		metadata?: Record<string, unknown>;
 	}) => Promise<ChatCompletionResponse>;
 };
@@ -115,7 +115,7 @@ export class SemanticAnswerGradingService {
 					},
 					this.getSettings().aiTypeInGradingPrompt,
 				),
-				temperature: 0,
+				...(config.isPro ? {} : { temperature: 0 }),
 				metadata,
 			}),
 			timeoutMs,

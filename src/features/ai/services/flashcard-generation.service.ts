@@ -4,7 +4,10 @@ import type { TrueRecallSettings } from "@shared/types/settings.types";
 import { resolveAIClientConfig } from "./ai-client-config";
 import { parseBlockResponse } from "./incremental-flashcard-parser";
 import { getTextContent, OpenRouterClient } from "./openrouter-client";
-import { buildGenerationPrompt } from "./streaming-generation.service";
+import {
+	buildGenerationPrompt,
+	buildUserMessage,
+} from "./streaming-generation.service";
 
 export interface GenerationResult {
 	blocks: ParsedBlock[];
@@ -27,20 +30,26 @@ export class FlashcardGenerationService {
 
 		const systemPrompt = config.isPro
 			? ""
-			: buildGenerationPrompt(settings, noteType);
+			: buildGenerationPrompt(settings);
+
+		const userContent = buildUserMessage(selectedText, noteType);
 
 		const messages = systemPrompt
 			? [
 					{ role: "system" as const, content: systemPrompt },
-					{ role: "user" as const, content: selectedText },
+					{ role: "user" as const, content: userContent },
 				]
-			: [{ role: "user" as const, content: selectedText }];
+			: [{ role: "user" as const, content: userContent }];
 
 		const metadata = config.isPro
 			? { call_context: "generation", note_type: noteType?.slug ?? "basic" }
 			: undefined;
 
-		const request = { messages, temperature: 0.7, metadata };
+		const request = {
+			messages,
+			...(config.isPro ? {} : { temperature: 0.7 }),
+			metadata,
+		};
 
 		const response = await client.chat(request);
 		const responseText = getTextContent(response.choices[0]?.message);

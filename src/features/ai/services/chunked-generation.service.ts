@@ -1,7 +1,9 @@
+import { buildCardFormatSpec } from "@features/ai/prompts/block-prompt-builder";
 import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
 import type { NoteType } from "@shared/types/note.types";
 import type { TrueRecallSettings } from "@shared/types/settings.types";
 import type { App, TFile } from "obsidian";
+import type { AIClientConfig } from "./ai-client-config";
 import { resolveAIClientConfig } from "./ai-client-config";
 import { IncrementalFlashcardParser } from "./incremental-flashcard-parser";
 import { type ChunkingResult, chunkMarkdown } from "./markdown-chunker";
@@ -20,8 +22,18 @@ import {
 } from "./streaming-state";
 
 const COST_CONFIRM_WORD_THRESHOLD = 5000;
-// Rough Gemini Flash ballpark: $0.15/1M input tokens + estimated output
 const COST_PER_TOKEN = 0.15 / 1_000_000;
+
+const FALLBACK_BASIC_NOTE_TYPE = {
+	id: "builtin-basic",
+	name: "Basic",
+	type: 0,
+	fields: ["Front", "Back"],
+	templates: [],
+	css: "",
+	isBuiltin: true,
+	slug: "basic",
+} as NoteType;
 
 export interface ChunkedGenerationResult extends StreamingGenerationResult {
 	failedChunks: number;
@@ -99,7 +111,10 @@ export class ChunkedGenerationService {
 		const aiConfig = resolveAIClientConfig(this.getSettings());
 		const systemPrompt = aiConfig.isPro
 			? ""
-			: buildGenerationPrompt(this.getSettings(), noteType);
+			: buildGenerationPrompt(this.getSettings());
+
+		const resolvedNoteType = noteType ?? FALLBACK_BASIC_NOTE_TYPE;
+		const formatSpec = buildCardFormatSpec(resolvedNoteType);
 
 		let totalCreated = 0;
 		let totalDuplicates = 0;
@@ -112,9 +127,11 @@ export class ChunkedGenerationService {
 
 				updateChunkProgress(chunk.index, chunk.headingBreadcrumb || null);
 
-				const userMessage = chunk.headingBreadcrumb
+				const chunkText = chunk.headingBreadcrumb
 					? `[Context: This section is from "${chunk.headingBreadcrumb}" in the note "${sourceFile.basename}"]\n\n${chunk.content}`
 					: chunk.content;
+
+				const userMessage = `${formatSpec}\n\n${chunkText}`;
 
 				try {
 					const result = await this.generateSingleChunk(
@@ -123,6 +140,7 @@ export class ChunkedGenerationService {
 						userMessage,
 						sourceFile,
 						abortController.signal,
+						resolvedNoteType,
 					);
 					totalCreated += result.created;
 					totalDuplicates += result.duplicates;
@@ -155,11 +173,12 @@ export class ChunkedGenerationService {
 	}
 
 	private async generateSingleChunk(
-		aiConfig: import("./ai-client-config").AIClientConfig,
+		aiConfig: AIClientConfig,
 		systemPrompt: string,
 		userMessage: string,
 		sourceFile: TFile,
 		signal: AbortSignal,
+		noteType: NoteType,
 	): Promise<StreamingGenerationResult> {
 		const client = new StreamingOpenRouterClient(aiConfig.apiKey, aiConfig.model, aiConfig.baseUrl);
 		const getNoteType = (slug: string) =>
@@ -182,11 +201,15 @@ export class ChunkedGenerationService {
 			: [{ role: "user" as const, content: userMessage }];
 
 		const metadata = aiConfig.isPro
-			? { call_context: "generation", note_type: "basic" }
+			? { call_context: "generation", note_type: noteType.slug ?? "basic" }
 			: undefined;
 
 		const stream = client.chatStream(
-			{ messages, temperature: 0.7, metadata },
+			{
+				messages,
+				...(aiConfig.isPro ? {} : { temperature: 0.7 }),
+				metadata,
+			},
 			signal,
 		);
 
