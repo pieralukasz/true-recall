@@ -1,6 +1,7 @@
 import type { IncomingMessage, ServerResponse } from "http";
 import { hasAIKey } from "@features/ai/services/ai-client-config";
 import { FlashcardGenerationService } from "@features/ai/services/flashcard-generation.service";
+import { fixBlockSourceTexts } from "@features/ai/services/source-text-fixer";
 import type { ApiContext } from "../api.types";
 import {
 	parseJsonBody,
@@ -79,6 +80,8 @@ export async function handleGenerate(
 			}
 		}
 	}
+
+	fixBlockSourceTexts(result.blocks, body.text);
 
 	const noteParams = result.blocks.map((block) => ({
 		noteTypeId: block.noteTypeId,

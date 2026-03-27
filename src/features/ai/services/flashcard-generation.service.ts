@@ -5,6 +5,7 @@ import { buildCardFormatSpec } from "@features/ai/prompts/block-prompt-builder";
 import { resolveAIClientConfig } from "./ai-client-config";
 import { parseBlockResponse } from "./incremental-flashcard-parser";
 import { getTextContent, OpenRouterClient } from "./openrouter-client";
+import { fixBlockSourceTexts } from "./source-text-fixer";
 import { buildGenerationPrompt, FALLBACK_BASIC_NOTE_TYPE } from "./streaming-generation.service";
 
 export interface GenerationResult {
@@ -55,6 +56,7 @@ export class FlashcardGenerationService {
 		const response = await client.chat(request);
 		const responseText = getTextContent(response.choices[0]?.message);
 		const blocks = this.parseResponse(responseText);
+		fixBlockSourceTexts(blocks, selectedText);
 		return { blocks };
 	}
 

@@ -139,6 +139,7 @@ export class StreamingGenerationService {
 				this.flashcardManager,
 				throttledUpdatePartial,
 				onCount,
+				text,
 			);
 		}
 
@@ -149,6 +150,7 @@ export class StreamingGenerationService {
 			this.flashcardManager,
 			throttledUpdatePartial,
 			onCount,
+			text,
 		);
 
 		finishStreaming();
