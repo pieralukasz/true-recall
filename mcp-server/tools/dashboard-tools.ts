@@ -5,10 +5,12 @@ export function registerDashboardTools(
 	server: McpServer,
 	client: TrueRecallClient,
 ): void {
-	server.tool(
+	server.registerTool(
 		"get_dashboard",
-		"Get a full dashboard overview: total cards, due/new/learning/overdue counts, today's progress (studied, time, new vs review caps), streak, estimated study time, per-note breakdown with priority, and orphaned card stats.",
-		{},
+		{
+			description:
+				"Get a full dashboard overview: total cards, due/new/learning/overdue counts, today's progress (studied, time, new vs review caps), streak, estimated study time, per-note breakdown with priority, and orphaned card stats.",
+		},
 		async () => {
 			const data = await client.get("/dashboard");
 			return {
@@ -19,10 +21,12 @@ export function registerDashboardTools(
 		},
 	);
 
-	server.tool(
+	server.registerTool(
 		"get_projects",
-		"Get the project/deck hierarchy tree. Projects are Obsidian notes organized via 'parents' frontmatter into a tree structure. Each project groups related source notes and their flashcards.",
-		{},
+		{
+			description:
+				"Get the project/deck hierarchy tree. Projects are Obsidian notes organized via 'parents' frontmatter into a tree structure. Each project groups related source notes and their flashcards.",
+		},
 		async () => {
 			const data = await client.get("/projects");
 			return {
