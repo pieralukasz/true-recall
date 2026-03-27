@@ -2,12 +2,7 @@ import type { IncomingMessage, ServerResponse } from "http";
 import { ReviewService } from "@features/study/services/review.service";
 import { type Grade, Rating } from "ts-fsrs";
 import type { ApiContext } from "../api.types";
-import {
-	parseJsonBody,
-	readBody,
-	sendError,
-	sendOk,
-} from "../api.types";
+import { parseJsonBody, readBody, sendError, sendOk } from "../api.types";
 
 interface GradeInput {
 	rating: number;
@@ -39,7 +34,11 @@ export async function handleGradeCard(
 
 	const ratingValue = body.rating;
 	if (ratingValue < 1 || ratingValue > 4) {
-		sendError(res, 400, "Rating must be 1 (Again), 2 (Hard), 3 (Good), or 4 (Easy)");
+		sendError(
+			res,
+			400,
+			"Rating must be 1 (Again), 2 (Hard), 3 (Good), or 4 (Easy)",
+		);
 		return;
 	}
 

@@ -2,6 +2,11 @@ import type { IncomingMessage, ServerResponse } from "http";
 import type { ApiContext, RouteHandler } from "./api.types";
 import { CORS_HEADERS, sendError } from "./api.types";
 import {
+	handleCreateBackup,
+	handleGetIntegrity,
+	handleListBackups,
+} from "./handlers/backup";
+import {
 	handleBulkBury,
 	handleBulkDelete,
 	handleBulkSuspend,
@@ -17,26 +22,29 @@ import {
 	handleGetProblemCards,
 	handleListCards,
 } from "./handlers/cards";
-import { handleCreateBackup, handleGetIntegrity, handleListBackups } from "./handlers/backup";
 import { handleGetDashboard, handleGetProjects } from "./handlers/dashboard";
-import { handleCreatePreset, handleGetFsrsStats, handleGetPresets } from "./handlers/fsrs";
+import {
+	handleCreatePreset,
+	handleGetFsrsStats,
+	handleGetPresets,
+} from "./handlers/fsrs";
 import { handleGenerate, handleGetNoteTypes } from "./handlers/generate";
+import { handleOpenNote, handleOpenView } from "./handlers/navigation";
 import {
 	handleAddFlashcardUid,
 	handleSetArchive,
 	handleSetParent,
 	handleSetPresetForNote,
 } from "./handlers/notes";
-import { handleOpenNote, handleOpenView } from "./handlers/navigation";
 import { handleGetSchema, handleQuerySql } from "./handlers/query";
 import { handleGradeCard } from "./handlers/review";
 import { handleStartSession } from "./handlers/sessions";
-import { handleGetActiveNote, handleGetStatus } from "./handlers/status";
 import {
 	handleGetDailyStats,
 	handleGetPatterns,
 	handleGetSummary,
 } from "./handlers/stats";
+import { handleGetActiveNote, handleGetStatus } from "./handlers/status";
 
 type HttpMethod = "GET" | "POST" | "DELETE";
 
@@ -47,11 +55,7 @@ interface Route {
 	handler: RouteHandler;
 }
 
-function route(
-	method: HttpMethod,
-	path: string,
-	handler: RouteHandler,
-): Route {
+function route(method: HttpMethod, path: string, handler: RouteHandler): Route {
 	const paramNames: string[] = [];
 	const regexStr = path.replace(/:(\w+)/g, (_match, name: string) => {
 		paramNames.push(name);

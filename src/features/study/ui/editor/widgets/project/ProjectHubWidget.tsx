@@ -28,8 +28,9 @@ export function ProjectHubWidget() {
 			for (const node of nodes) {
 				if (plugin.hierarchyService.isProjectArchived(node.path)) continue;
 
-				const allSourceUids =
-					plugin.hierarchyService.getSourceUidsForProject(node.path);
+				const allSourceUids = plugin.hierarchyService.getSourceUidsForProject(
+					node.path,
+				);
 				const filteredUids = new Set(
 					[...allSourceUids].filter((uid) => !archived.has(uid)),
 				);

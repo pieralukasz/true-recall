@@ -24,9 +24,10 @@ export async function processCardEvents(
 	for (const event of events) {
 		if (event.type === "card_complete" && event.block) {
 			try {
-				const sourceText = inputText && event.block.sourceText
-					? fixSourceText(event.block.sourceText, inputText)
-					: event.block.sourceText;
+				const sourceText =
+					inputText && event.block.sourceText
+						? fixSourceText(event.block.sourceText, inputText)
+						: event.block.sourceText;
 				const result = flashcardManager.createNote({
 					noteTypeId: event.block.noteTypeId,
 					fields: event.block.fields,

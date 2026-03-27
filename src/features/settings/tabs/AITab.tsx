@@ -50,7 +50,7 @@ export function AITab() {
 	const [keyStatus, setKeyStatus] = useState<KeyStatus>(initialStatus);
 
 	const hasProKey = !!settings.proKey;
-	const currentModel = settings.aiModel || BYOK_MODELS[0]!.id;
+	const currentModel = settings.aiModel || BYOK_MODELS[0]?.id || "";
 	const modelDefault = getModelDefault(currentModel);
 	const effectiveTemp = settings.aiTemperature ?? modelDefault;
 
@@ -102,27 +102,29 @@ export function AITab() {
 						class="ep:w-[300px]"
 					/>
 				</FormField>
-				{keyStatus === "checking" && (
-					<InfoBlock>Verifying key…</InfoBlock>
-				)}
+				{keyStatus === "checking" && <InfoBlock>Verifying key…</InfoBlock>}
 				{keyStatus === "valid" && (
-					<InfoBlock>
-						Active — AI routed via True Recall servers.
-					</InfoBlock>
+					<InfoBlock>Active — AI routed via True Recall servers.</InfoBlock>
 				)}
 				{keyStatus === "invalid" && (
 					<InfoBlock class="ep:text-obs-error">
 						Invalid key — check your key on the{" "}
-						<a href={`${TRUERECALL_WEB_URL}/dashboard`} class="ep:text-obs-accent">
+						<a
+							href={`${TRUERECALL_WEB_URL}/dashboard`}
+							class="ep:text-obs-accent"
+						>
 							dashboard
-						</a>.
+						</a>
+						.
 					</InfoBlock>
 				)}
 				<div class="ep:text-ui-smaller ep:text-obs-muted ep:leading-relaxed ep:pt-2 ep:mt-2 ep:border-t ep:border-obs-modifier-border">
-					<p class="ep:font-medium ep:text-obs-normal">Zero setup, optimized results</p>
+					<p class="ep:font-medium ep:text-obs-normal">
+						Zero setup, optimized results
+					</p>
 					<p class="ep:mt-1">
-						Optimized prompts and model selection managed server-side.
-						AI budget included with your subscription.
+						Optimized prompts and model selection managed server-side. AI budget
+						included with your subscription.
 					</p>
 				</div>
 			</FormCard>
@@ -199,7 +201,11 @@ export function AITab() {
 								aiGenerationPrompt: v.trim().length > 0 ? v : undefined,
 							})
 						}
-						placeholder={hasProKey ? "Leave empty for best results" : "e.g. Focus on key definitions and formulas"}
+						placeholder={
+							hasProKey
+								? "Leave empty for best results"
+								: "e.g. Focus on key definitions and formulas"
+						}
 						rows={4}
 						class="ep:w-full ep:font-mono ep:text-ui-smaller"
 					/>
@@ -248,7 +254,7 @@ export function AITab() {
 					/>
 				</FormField>
 
-<FormField
+				<FormField
 					name="Selection toolbar"
 					description="Show a floating toolbar above selected text for AI-powered flashcard creation."
 				>
@@ -257,7 +263,6 @@ export function AITab() {
 						onChange={(v) => save({ selectionToolbarEnabled: v })}
 					/>
 				</FormField>
-
 			</FormCard>
 		</div>
 	);

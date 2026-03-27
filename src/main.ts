@@ -56,9 +56,9 @@ import {
 import type { StatusBarWidget } from "@features/study/ui/editor/widgets/StatusBarWidget";
 import { ReviewView } from "@features/study/ui/review/ReviewView";
 import {
-	type SessionFilters,
 	filtersToViewState,
 	normalizeSessionFilters,
+	type SessionFilters,
 } from "@features/study/ui/review/review.types";
 import {
 	VIEW_TYPE_CARD_BROWSER,
@@ -280,7 +280,9 @@ export default class TrueRecallPlugin extends Plugin {
 		this.undoService = new UndoService(this);
 
 		if (this.settings.enableLocalApi) {
-			const { LocalApiServer: ApiServer } = await import("./plugin/api/LocalApiServer");
+			const { LocalApiServer: ApiServer } = await import(
+				"./plugin/api/LocalApiServer"
+			);
 			this.localApi = new ApiServer(this, this.settings.apiPort);
 			this.localApi.start();
 		}
@@ -649,9 +651,7 @@ export default class TrueRecallPlugin extends Plugin {
 		});
 	}
 
-	async openReviewViewWithFilters(
-		rawFilters: SessionFilters,
-	): Promise<void> {
+	async openReviewViewWithFilters(rawFilters: SessionFilters): Promise<void> {
 		const filters = normalizeSessionFilters(rawFilters);
 		const state = filtersToViewState(filters);
 
@@ -884,7 +884,6 @@ export default class TrueRecallPlugin extends Plugin {
 		}
 	}
 
-
 	private initializeStore(): void {
 		this.store = createAppStore({
 			app: this.app,
@@ -1086,7 +1085,8 @@ export default class TrueRecallPlugin extends Plugin {
 				}
 			},
 			onImageOcclusion: (imagePath) => this.handleImageOcclusion(imagePath),
-			hasApiKey: () => !!(this.settings.proKey || this.settings.openRouterApiKey),
+			hasApiKey: () =>
+				!!(this.settings.proKey || this.settings.openRouterApiKey),
 			isEnabled: () => this.settings.selectionToolbarEnabled,
 		});
 
@@ -1239,19 +1239,21 @@ export default class TrueRecallPlugin extends Plugin {
 	}
 
 	getStorageDiagnostics() {
-		return this.backupRecovery?.getStorageDiagnostics() ?? {
-			activeDatabasePath: null,
-			saveTimerActive: false,
-			flushInProgress: false,
-			isDirty: false,
-			lastFlushStartedAt: null,
-			lastFlushSucceededAt: null,
-			lastFlushFailedAt: null,
-			lastFlushError: null,
-			startupSnapshotPath: null,
-			lastAutoRecoveryPath: null,
-			lastAutoRecoveryAt: null,
-		};
+		return (
+			this.backupRecovery?.getStorageDiagnostics() ?? {
+				activeDatabasePath: null,
+				saveTimerActive: false,
+				flushInProgress: false,
+				isDirty: false,
+				lastFlushStartedAt: null,
+				lastFlushSucceededAt: null,
+				lastFlushFailedAt: null,
+				lastFlushError: null,
+				startupSnapshotPath: null,
+				lastAutoRecoveryPath: null,
+				lastAutoRecoveryAt: null,
+			}
+		);
 	}
 
 	async createManualBackup(): Promise<void> {
@@ -1333,5 +1335,4 @@ export default class TrueRecallPlugin extends Plugin {
 
 		notify().success(`Added flashcard UID: ${newUid}`);
 	}
-
 }

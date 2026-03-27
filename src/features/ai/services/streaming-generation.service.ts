@@ -1,4 +1,7 @@
-import { buildByokPrompt, buildCardFormatSpec } from "@features/ai/prompts/block-prompt-builder";
+import {
+	buildByokPrompt,
+	buildCardFormatSpec,
+} from "@features/ai/prompts/block-prompt-builder";
 import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
 import type { NoteType } from "@shared/types/note.types";
 import type { TrueRecallSettings } from "@shared/types/settings.types";
@@ -88,7 +91,11 @@ export class StreamingGenerationService {
 		abortController: AbortController,
 		noteType?: NoteType | null,
 	): Promise<StreamingGenerationResult> {
-		const client = new StreamingOpenRouterClient(aiConfig.apiKey, aiConfig.model, aiConfig.baseUrl);
+		const client = new StreamingOpenRouterClient(
+			aiConfig.apiKey,
+			aiConfig.model,
+			aiConfig.baseUrl,
+		);
 		const getNoteType = (slug: string) =>
 			this.flashcardManager.getNoteTypeBySlug?.(slug) ?? null;
 		const parser = new IncrementalFlashcardParser(getNoteType);

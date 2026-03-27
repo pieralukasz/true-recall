@@ -1,12 +1,7 @@
 import type { IncomingMessage, ServerResponse } from "http";
 import { BUILTIN_BASIC_ID, BUILTIN_CLOZE_ID } from "@shared/types/note.types";
 import type { ApiContext } from "../api.types";
-import {
-	parseJsonBody,
-	readBody,
-	sendError,
-	sendOk,
-} from "../api.types";
+import { parseJsonBody, readBody, sendError, sendOk } from "../api.types";
 
 export async function handleListCards(
 	req: IncomingMessage,
@@ -35,8 +30,7 @@ export async function handleListCards(
 	}
 
 	if (!showArchived) {
-		const archivedUids =
-			ctx.plugin.hierarchyService.getArchivedSourceUids();
+		const archivedUids = ctx.plugin.hierarchyService.getArchivedSourceUids();
 		if (archivedUids.size > 0) {
 			allCards = allCards.filter(
 				(c) => !c.sourceUid || !archivedUids.has(c.sourceUid),
@@ -253,7 +247,7 @@ export async function handleCreateCards(
 	const batchSourceUid = isBatch
 		? (body as CreateBatchInput).source_uid
 		: undefined;
-	const batchTags = isBatch ? (body as CreateBatchInput).tags : undefined;
+	const _batchTags = isBatch ? (body as CreateBatchInput).tags : undefined;
 
 	const noteParams = inputs.map((input) => {
 		const isCloze = input.card_type === "cloze";

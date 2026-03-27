@@ -81,6 +81,6 @@ export class LocalApiServer {
 	}
 
 	isRunning(): boolean {
-		return this.server !== null && this.server.listening;
+		return this.server?.listening ?? false;
 	}
 }

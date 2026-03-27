@@ -31,7 +31,6 @@ export const GENERATION_LANGUAGES = [
 	{ value: "he", label: "Hebrew" },
 ] as const;
 
-
 export function buildLanguageSuffix(languageCode: string): string {
 	if (languageCode === "auto") return "";
 	const label =

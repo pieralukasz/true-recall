@@ -9,8 +9,8 @@ import {
 	type ActionableSessionSnapshot,
 	computeActionableSessionSnapshot,
 } from "@features/study/services/actionable-session-snapshot.service";
-import type { FSRSFlashcardItem, TrueRecallSettings } from "@shared/types";
 import { UNASSIGNED_PATH } from "@shared/constants";
+import type { FSRSFlashcardItem, TrueRecallSettings } from "@shared/types";
 import type { CardStore } from "@shared/types/fsrs/store.types";
 import type { MetadataCache } from "obsidian";
 import { State } from "ts-fsrs";

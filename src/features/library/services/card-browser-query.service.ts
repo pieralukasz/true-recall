@@ -37,7 +37,9 @@ export class CardBrowserQueryService {
 			const orphanedUids = this.getOrphanedSourceUids();
 			const conditions: string[] = ["c.source_uid IS NULL"];
 			if (orphanedUids.length > 0) {
-				conditions.push(`c.source_uid IN (${sqlPlaceholders(orphanedUids.length)})`);
+				conditions.push(
+					`c.source_uid IN (${sqlPlaceholders(orphanedUids.length)})`,
+				);
 				sqlQuery.params.push(...orphanedUids);
 			}
 			sqlQuery.where += ` AND (${conditions.join(" OR ")})`;

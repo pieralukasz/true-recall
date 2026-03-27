@@ -226,8 +226,7 @@ export const CARD_HISTORY_LIMIT = 20;
 export const GITHUB_RELEASES_API =
 	"https://api.github.com/repos/pieralukasz/true-recall/releases/latest";
 
-export const LITELLM_URL =
-	"https://ai.truerecall.app/v1/chat/completions";
+export const LITELLM_URL = "https://ai.truerecall.app/v1/chat/completions";
 
 export const TRUERECALL_WEB_URL = "https://truerecall.app";
 export const TRUERECALL_BMC_URL = "https://buymeacoffee.com/pieralukasz";

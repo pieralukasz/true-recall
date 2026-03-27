@@ -1,6 +1,6 @@
 import { ErrorBoundary } from "@shared/ui/components/ErrorBoundary";
-import { confirm } from "@shared/ui/modals/ConfirmModal";
 import { BasePromiseModal } from "@shared/ui/modals/BasePromiseModal";
+import { confirm } from "@shared/ui/modals/ConfirmModal";
 import { ObsidianProvider } from "@shared/ui/preact/ObsidianContext";
 import type { App } from "obsidian";
 import { render } from "preact";

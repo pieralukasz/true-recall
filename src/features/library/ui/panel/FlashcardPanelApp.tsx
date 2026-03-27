@@ -92,7 +92,9 @@ export function FlashcardPanelApp({
 						onGenerateFromHighlights={panelActions.handleGenerateFromHighlights}
 						onCollect={panelActions.handleCollect}
 						uncollectedCount={store.uncollectedCount}
-						hasApiKey={!!(plugin.settings.proKey || plugin.settings.openRouterApiKey)}
+						hasApiKey={
+							!!(plugin.settings.proKey || plugin.settings.openRouterApiKey)
+						}
 						hasHighlights={store.hasHighlights}
 					/>
 				</div>

@@ -137,7 +137,9 @@ export function buildBrowserQuery(
 
 	// ── Source UIDs ──────────────────────────────────────────
 	if (filter.sourceUids.length > 0) {
-		conditions.push(`${col}source_uid IN (${sqlPlaceholders(filter.sourceUids.length)})`);
+		conditions.push(
+			`${col}source_uid IN (${sqlPlaceholders(filter.sourceUids.length)})`,
+		);
 		params.push(...filter.sourceUids);
 	}
 
@@ -174,7 +176,9 @@ export function buildBrowserQuery(
 
 	// ── Created via ──────────────────────────────────────────
 	if (filter.createdVia.length > 0) {
-		conditions.push(`n.created_via IN (${sqlPlaceholders(filter.createdVia.length)})`);
+		conditions.push(
+			`n.created_via IN (${sqlPlaceholders(filter.createdVia.length)})`,
+		);
 		params.push(...filter.createdVia);
 	}
 

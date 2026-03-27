@@ -1,6 +1,6 @@
 import { escapeFts5Query } from "@features/core/persistence/sqlite/modules/NoteActions";
-import { sqlPlaceholders } from "@features/core/persistence/sqlite/sql-utils";
 import type { SqliteDatabase } from "@features/core/persistence/sqlite/SqliteDatabase";
+import { sqlPlaceholders } from "@features/core/persistence/sqlite/sql-utils";
 import {
 	deriveCardType,
 	renderTemplate,
