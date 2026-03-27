@@ -27,9 +27,9 @@ export function GeneralTab() {
 			{!settings.proKey && (
 				<FormCard title="True Recall Pro">
 					<InfoBlock>
-						True Recall Pro — zero-setup AI with optimized prompts, included
-						in your subscription. Set up your key in the{" "}
-						<strong>AI</strong> settings tab.
+						True Recall Pro — zero-setup AI with optimized prompts, included in
+						your subscription. Set up your key in the <strong>AI</strong>{" "}
+						settings tab.
 					</InfoBlock>
 				</FormCard>
 			)}
@@ -206,7 +206,7 @@ export function GeneralTab() {
 										settings.apiPort,
 									);
 								}
-								plugin.localApi!.start();
+								plugin.localApi?.start();
 							} else {
 								plugin.localApi?.stop();
 							}

@@ -99,9 +99,7 @@ export class SemanticAnswerGradingService {
 		const client = this.createClient(config);
 		const timeoutMs = input.timeoutMs ?? DEFAULT_TIMEOUT_MS;
 
-		const metadata = config.isPro
-			? { call_context: "grading" }
-			: undefined;
+		const metadata = config.isPro ? { call_context: "grading" } : undefined;
 
 		const response = await this.withTimeout(
 			client.chat({

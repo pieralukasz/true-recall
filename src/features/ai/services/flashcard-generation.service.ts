@@ -1,12 +1,15 @@
+import { buildCardFormatSpec } from "@features/ai/prompts/block-prompt-builder";
 import type { ParsedBlock } from "@features/study/services/flashcard/block-parser.service";
 import type { NoteType } from "@shared/types/note.types";
 import type { TrueRecallSettings } from "@shared/types/settings.types";
-import { buildCardFormatSpec } from "@features/ai/prompts/block-prompt-builder";
 import { resolveAIClientConfig } from "./ai-client-config";
 import { parseBlockResponse } from "./incremental-flashcard-parser";
 import { getTextContent, OpenRouterClient } from "./openrouter-client";
 import { fixBlockSourceTexts } from "./source-text-fixer";
-import { buildGenerationPrompt, FALLBACK_BASIC_NOTE_TYPE } from "./streaming-generation.service";
+import {
+	buildGenerationPrompt,
+	FALLBACK_BASIC_NOTE_TYPE,
+} from "./streaming-generation.service";
 
 export interface GenerationResult {
 	blocks: ParsedBlock[];
@@ -25,7 +28,11 @@ export class FlashcardGenerationService {
 		const settings = this.getSettings();
 		const config = resolveAIClientConfig(settings);
 
-		const client = new OpenRouterClient(config.apiKey, config.model, config.baseUrl);
+		const client = new OpenRouterClient(
+			config.apiKey,
+			config.model,
+			config.baseUrl,
+		);
 
 		const customPrompt = settings.aiGenerationPrompt?.trim() || "";
 		const systemPrompt = config.isPro

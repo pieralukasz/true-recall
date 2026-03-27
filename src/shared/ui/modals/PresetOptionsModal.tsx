@@ -1,4 +1,3 @@
-import type TrueRecallPlugin from "../../../main";
 import { BaseModal } from "@shared/ui/modals/BaseModal";
 import {
 	PresetOptionsBody,
@@ -7,6 +6,7 @@ import {
 import { ObsidianProvider } from "@shared/ui/preact/ObsidianContext";
 import type { App } from "obsidian";
 import { render } from "preact";
+import type TrueRecallPlugin from "../../../main";
 
 export interface PresetOptionsModalOptions {
 	initialPresetId?: string;

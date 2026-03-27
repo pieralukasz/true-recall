@@ -197,12 +197,16 @@ export async function detectRegions(
 	];
 
 	const config = resolveAIClientConfig(settings);
-	const visionModel = config.isPro ? config.model : resolveVisionModel(config.model);
-	const client = new OpenRouterClient(config.apiKey, visionModel, config.baseUrl);
+	const visionModel = config.isPro
+		? config.model
+		: resolveVisionModel(config.model);
+	const client = new OpenRouterClient(
+		config.apiKey,
+		visionModel,
+		config.baseUrl,
+	);
 
-	const metadata = config.isPro
-		? { call_context: "generation" }
-		: undefined;
+	const metadata = config.isPro ? { call_context: "generation" } : undefined;
 
 	const response = await client.chat({
 		messages,

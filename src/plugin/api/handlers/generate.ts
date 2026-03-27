@@ -3,12 +3,7 @@ import { hasAIKey } from "@features/ai/services/ai-client-config";
 import { FlashcardGenerationService } from "@features/ai/services/flashcard-generation.service";
 import { fixBlockSourceTexts } from "@features/ai/services/source-text-fixer";
 import type { ApiContext } from "../api.types";
-import {
-	parseJsonBody,
-	readBody,
-	sendError,
-	sendOk,
-} from "../api.types";
+import { parseJsonBody, readBody, sendError, sendOk } from "../api.types";
 
 interface GenerateInput {
 	text: string;
@@ -51,7 +46,7 @@ export async function handleGenerate(
 		(slug) => ctx.plugin.flashcardManager.getNoteTypeBySlug(slug),
 	);
 
-	let result;
+	let result: Awaited<ReturnType<FlashcardGenerationService["generate"]>>;
 	try {
 		result = await service.generate(body.text, noteType);
 	} catch (e) {
@@ -61,7 +56,11 @@ export async function handleGenerate(
 	}
 
 	if (result.blocks.length === 0) {
-		sendOk(res, { created: 0, cards: [], message: "AI returned no parseable flashcards" });
+		sendOk(res, {
+			created: 0,
+			cards: [],
+			message: "AI returned no parseable flashcards",
+		});
 		return;
 	}
 

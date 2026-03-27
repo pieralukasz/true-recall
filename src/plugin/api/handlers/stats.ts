@@ -19,8 +19,7 @@ export async function handleGetSummary(
 	const streaks = ctx.plugin.cardStore.stats.getAnswerStreakInfo();
 	const totalReviews = ctx.plugin.cardStore.stats.getTotalReviewCount();
 
-	const archivedUids =
-		ctx.plugin.hierarchyService.getArchivedSourceUids();
+	const archivedUids = ctx.plugin.hierarchyService.getArchivedSourceUids();
 
 	let allCards = ctx.plugin.flashcardManager.getAllFSRSCards();
 	if (archivedUids.size > 0) {

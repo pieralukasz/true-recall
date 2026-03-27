@@ -1,3 +1,4 @@
+import { buildCardFormatSpec } from "@features/ai/prompts/block-prompt-builder";
 import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
 import type { NoteType } from "@shared/types/note.types";
 import type { TrueRecallSettings } from "@shared/types/settings.types";
@@ -7,7 +8,6 @@ import { resolveAIClientConfig } from "./ai-client-config";
 import { IncrementalFlashcardParser } from "./incremental-flashcard-parser";
 import { type ChunkingResult, chunkMarkdown } from "./markdown-chunker";
 import { processCardEvents } from "./process-card-events";
-import { buildCardFormatSpec } from "@features/ai/prompts/block-prompt-builder";
 import {
 	buildGenerationPrompt,
 	FALLBACK_BASIC_NOTE_TYPE,
@@ -172,7 +172,11 @@ export class ChunkedGenerationService {
 		noteType?: NoteType | null,
 		chunkContent?: string,
 	): Promise<StreamingGenerationResult> {
-		const client = new StreamingOpenRouterClient(aiConfig.apiKey, aiConfig.model, aiConfig.baseUrl);
+		const client = new StreamingOpenRouterClient(
+			aiConfig.apiKey,
+			aiConfig.model,
+			aiConfig.baseUrl,
+		);
 		const getNoteType = (slug: string) =>
 			this.flashcardManager.getNoteTypeBySlug?.(slug) ?? null;
 		const parser = new IncrementalFlashcardParser(getNoteType);

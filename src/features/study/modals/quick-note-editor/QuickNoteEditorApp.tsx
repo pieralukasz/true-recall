@@ -32,7 +32,12 @@ interface QuickNoteEditorAppProps {
 	onContentChange?: (hasContent: boolean) => void;
 }
 
-export function QuickNoteEditorApp({ mode, onDone, onRequestClose, onContentChange }: QuickNoteEditorAppProps) {
+export function QuickNoteEditorApp({
+	mode,
+	onDone,
+	onRequestClose,
+	onContentChange,
+}: QuickNoteEditorAppProps) {
 	const app = useApp();
 	const plugin = usePlugin();
 
@@ -97,8 +102,16 @@ export function QuickNoteEditorApp({ mode, onDone, onRequestClose, onContentChan
 		if (showSourcePicker) return selectedSourceNote;
 		const uid = addMode?.sourceUid ?? editMode?.note.sourceUid;
 		if (!uid) return null;
-		return plugin.frontmatterIndex?.getFileByValue("flashcard_uid", uid) ?? null;
-	}, [showSourcePicker, selectedSourceNote, addMode, editMode, plugin.frontmatterIndex]);
+		return (
+			plugin.frontmatterIndex?.getFileByValue("flashcard_uid", uid) ?? null
+		);
+	}, [
+		showSourcePicker,
+		selectedSourceNote,
+		addMode,
+		editMode,
+		plugin.frontmatterIndex,
+	]);
 
 	useEffect(() => {
 		onContentChange?.(hasContent);

@@ -1,12 +1,7 @@
 import type { IncomingMessage, ServerResponse } from "http";
 import { notifyCardChange } from "@shared/services/signals";
 import type { ApiContext } from "../api.types";
-import {
-	parseJsonBody,
-	readBody,
-	sendError,
-	sendOk,
-} from "../api.types";
+import { parseJsonBody, readBody, sendError, sendOk } from "../api.types";
 
 export async function handleSuspendCard(
 	req: IncomingMessage,
@@ -77,7 +72,11 @@ export async function handleUpdateCard(
 	const raw = await readBody(req);
 	const body = parseJsonBody<UpdateCardInput>(raw);
 	if (!body || (!body.question && !body.answer)) {
-		sendError(res, 400, "Body must contain { question?: string, answer?: string }");
+		sendError(
+			res,
+			400,
+			"Body must contain { question?: string, answer?: string }",
+		);
 		return;
 	}
 
@@ -222,7 +221,11 @@ export async function handleRemoveCardsFromNote(
 	}
 
 	if (!sourceUid) {
-		sendError(res, 400, "No source_uid provided and no active note with flashcard_uid");
+		sendError(
+			res,
+			400,
+			"No source_uid provided and no active note with flashcard_uid",
+		);
 		return;
 	}
 
@@ -255,7 +258,11 @@ export async function handleBulkSuspend(
 		suspended: boolean;
 	}>(raw);
 	if (!body?.card_ids?.length || typeof body.suspended !== "boolean") {
-		sendError(res, 400, "Body must contain { card_ids: string[], suspended: boolean }");
+		sendError(
+			res,
+			400,
+			"Body must contain { card_ids: string[], suspended: boolean }",
+		);
 		return;
 	}
 
@@ -284,7 +291,11 @@ export async function handleBulkBury(
 		days?: number;
 	}>(raw);
 	if (!body?.card_ids?.length) {
-		sendError(res, 400, "Body must contain { card_ids: string[], until?: string, days?: number }");
+		sendError(
+			res,
+			400,
+			"Body must contain { card_ids: string[], until?: string, days?: number }",
+		);
 		return;
 	}
 
@@ -299,10 +310,7 @@ export async function handleBulkBury(
 		untilDate = d.toISOString();
 	}
 
-	const count = ctx.plugin.cardStore.cards.bulkBury(
-		body.card_ids,
-		untilDate,
-	);
+	const count = ctx.plugin.cardStore.cards.bulkBury(body.card_ids, untilDate);
 
 	notifyCardChange({ type: "bulk", cardIds: body.card_ids });
 	sendOk(res, { buried: count, untilDate, cardIds: body.card_ids });

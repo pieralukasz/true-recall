@@ -1,4 +1,8 @@
-import { BYOK_MODELS, DEFAULT_BYOK_MODEL, LITELLM_URL } from "@shared/constants";
+import {
+	BYOK_MODELS,
+	DEFAULT_BYOK_MODEL,
+	LITELLM_URL,
+} from "@shared/constants";
 import type { TrueRecallSettings } from "@shared/types/settings.types";
 import { OPENROUTER_URL } from "./openrouter-client";
 

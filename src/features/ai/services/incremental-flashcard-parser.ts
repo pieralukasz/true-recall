@@ -55,14 +55,16 @@ function parseCardObject(
 	const fields: Record<string, string> = {};
 	let hasContent = false;
 	for (const fieldName of noteType.fields) {
-		const value = typeof obj[fieldName] === "string" ? (obj[fieldName] as string) : "";
+		const value =
+			typeof obj[fieldName] === "string" ? (obj[fieldName] as string) : "";
 		fields[fieldName] = value;
 		if (value.trim()) hasContent = true;
 	}
 
 	if (!hasContent) return null;
 
-	const sourceText = typeof obj.source === "string" ? obj.source.trim() : undefined;
+	const sourceText =
+		typeof obj.source === "string" ? obj.source.trim() : undefined;
 
 	return {
 		noteTypeId: noteType.id,
@@ -147,7 +149,7 @@ export class IncrementalFlashcardParser {
 		this.objectBuffer = "";
 
 		// Try closing strategies: just "}", then "\"}", then "\"}]"
-		for (const suffix of ["}", '"}',"\"}"]) {
+		for (const suffix of ["}", '"}', '"}']) {
 			const block = this.tryParseObject(buf + suffix);
 			if (block) return [{ type: "card_complete", block }];
 		}

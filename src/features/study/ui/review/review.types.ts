@@ -105,7 +105,9 @@ export function filtersToViewState(filters: SessionFilters): ReviewViewState {
 	};
 }
 
-export function normalizeSessionFilters(filters: SessionFilters): SessionFilters {
+export function normalizeSessionFilters(
+	filters: SessionFilters,
+): SessionFilters {
 	const normalized = { ...filters };
 
 	// Strip virtual "__unassigned__" projectPath (not a real hierarchy node)

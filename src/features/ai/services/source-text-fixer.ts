@@ -37,9 +37,7 @@ function buildPositionMap(text: string): PositionMap {
 		// Line-start prefixes: headings, list markers, blockquotes
 		if (i === 0 || charAt(text, i - 1) === "\n") {
 			const rest = text.slice(i);
-			const prefixMatch = rest.match(
-				/^(?:#{1,6}\s+|[-*+]\s+|\d+[.)]\s+|>\s+)/,
-			);
+			const prefixMatch = rest.match(/^(?:#{1,6}\s+|[-*+]\s+|\d+[.)]\s+|>\s+)/);
 			if (prefixMatch) {
 				i += prefixMatch[0].length;
 				continue;

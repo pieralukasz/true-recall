@@ -41,8 +41,7 @@ export async function handleGetActiveNote(
 	if (ctx.plugin.isStoreReady()) {
 		const frontmatterService =
 			ctx.plugin.flashcardManager.getFrontmatterService();
-		sourceUid =
-			(await frontmatterService.getSourceNoteUid(file)) ?? undefined;
+		sourceUid = (await frontmatterService.getSourceNoteUid(file)) ?? undefined;
 
 		if (sourceUid) {
 			const rawCards =

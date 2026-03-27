@@ -16,7 +16,7 @@ import {
 	NOTIFICATION_DURATION,
 	notify,
 } from "@shared/services/notification.service";
-import { normalizePath, type App } from "obsidian";
+import { type App, normalizePath } from "obsidian";
 
 export class BackupRecoveryManager {
 	lastAutoRecoveryBackupPath: string | null = null;
@@ -37,8 +37,7 @@ export class BackupRecoveryManager {
 		);
 
 		try {
-			const folderExists =
-				await this.app.vault.adapter.exists(backupFolder);
+			const folderExists = await this.app.vault.adapter.exists(backupFolder);
 			if (!folderExists) return false;
 
 			const listing = await this.app.vault.adapter.list(backupFolder);
@@ -51,12 +50,8 @@ export class BackupRecoveryManager {
 					const stat = await this.app.vault.adapter.stat(backupPath);
 					if (!stat || stat.size < 16) continue;
 
-					const rawData =
-						await this.app.vault.adapter.readBinary(backupPath);
-					const sqliteBytes = decodeBackupToSqliteBytes(
-						backupPath,
-						rawData,
-					);
+					const rawData = await this.app.vault.adapter.readBinary(backupPath);
+					const sqliteBytes = decodeBackupToSqliteBytes(backupPath, rawData);
 					if (!sqliteBytes) continue;
 
 					const corruptedPath = `${dbPath}.corrupted`;
@@ -65,13 +60,9 @@ export class BackupRecoveryManager {
 					if (corruptedExists) {
 						await this.app.vault.adapter.remove(corruptedPath);
 					}
-					const brokenExists =
-						await this.app.vault.adapter.exists(dbPath);
+					const brokenExists = await this.app.vault.adapter.exists(dbPath);
 					if (brokenExists) {
-						await this.app.vault.adapter.rename(
-							dbPath,
-							corruptedPath,
-						);
+						await this.app.vault.adapter.rename(dbPath, corruptedPath);
 					}
 					await this.app.vault.adapter.writeBinary(
 						dbPath,
@@ -157,8 +148,8 @@ export class BackupRecoveryManager {
 			backups,
 			backupService,
 			sessionStartBackupPath:
-				this.getBackgroundBackupManager()?.getStatus()
-					.sessionStartBackupPath ?? null,
+				this.getBackgroundBackupManager()?.getStatus().sessionStartBackupPath ??
+				null,
 		});
 
 		await modal.openAndWait();
@@ -189,8 +180,7 @@ export class BackupRecoveryManager {
 			lastFlushError: storeDebug?.lastFlushError ?? null,
 			startupSnapshotPath:
 				this.lastStartupSnapshotPath ??
-				this.getBackgroundBackupManager()?.getStatus()
-					.sessionStartBackupPath ??
+				this.getBackgroundBackupManager()?.getStatus().sessionStartBackupPath ??
 				null,
 			lastAutoRecoveryPath: this.lastAutoRecoveryBackupPath,
 			lastAutoRecoveryAt: this.lastAutoRecoveryAt,

@@ -88,7 +88,7 @@ export function DonutChart({ info, onPlay, variant }: DonutChartProps) {
 					stroke-width={STROKE_WIDTH}
 					class="true-recall-donut-bg"
 				/>
-				{segments.map((seg, i) => (
+				{segments.map((seg, _i) => (
 					<circle
 						key={seg.stroke}
 						cx={18}

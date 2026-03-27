@@ -1,11 +1,6 @@
 import type { IncomingMessage, ServerResponse } from "http";
 import type { ApiContext } from "../api.types";
-import {
-	parseJsonBody,
-	readBody,
-	sendError,
-	sendOk,
-} from "../api.types";
+import { parseJsonBody, readBody, sendError, sendOk } from "../api.types";
 
 interface OpenViewInput {
 	view: string;

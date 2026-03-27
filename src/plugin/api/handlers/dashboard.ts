@@ -29,8 +29,7 @@ export async function handleGetDashboard(
 	const todaySummary = statsCalc.getTodaySummary();
 	const streakInfo = statsCalc.getStreakInfo();
 	const allCards = ctx.plugin.flashcardManager.getAllFSRSCards();
-	const archivedUids =
-		ctx.plugin.hierarchyService.getArchivedSourceUids();
+	const archivedUids = ctx.plugin.hierarchyService.getArchivedSourceUids();
 
 	const aggregation = aggregateDashboardData({
 		allCards,
@@ -251,8 +250,7 @@ export async function handleGetProjects(
 		},
 		newCardsCap: ctx.plugin.settings.newCardsPerDay,
 		reviewsCap: ctx.plugin.settings.reviewsPerDay,
-		archivedSourceUids:
-			ctx.plugin.hierarchyService.getArchivedSourceUids(),
+		archivedSourceUids: ctx.plugin.hierarchyService.getArchivedSourceUids(),
 	});
 
 	const projects = hierarchy.map((node) =>

@@ -1,11 +1,6 @@
 import type { IncomingMessage, ServerResponse } from "http";
 import type { ApiContext } from "../api.types";
-import {
-	parseJsonBody,
-	readBody,
-	sendError,
-	sendOk,
-} from "../api.types";
+import { parseJsonBody, readBody, sendError, sendOk } from "../api.types";
 
 export async function handleAddFlashcardUid(
 	_req: IncomingMessage,
@@ -68,9 +63,7 @@ export async function handleSetPresetForNote(
 	}
 
 	if (body.preset_name !== null) {
-		const preset = ctx.plugin.presetService.getPresetByName(
-			body.preset_name,
-		);
+		const preset = ctx.plugin.presetService.getPresetByName(body.preset_name);
 		if (!preset) {
 			sendError(res, 404, `Preset "${body.preset_name}" not found`);
 			return;

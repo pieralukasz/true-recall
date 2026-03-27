@@ -8,7 +8,6 @@ import type { RefObject } from "preact";
 import { useCallback, useEffect, useMemo, useRef } from "preact/hooks";
 import {
 	DRAG_MIME,
-	type DragItem,
 	type DragState,
 	type DropResult,
 	dragItemFromFlatItem,
