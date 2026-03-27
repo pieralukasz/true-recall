@@ -15,6 +15,8 @@ import {
 	handleSuspendCard,
 	handleUpdateCard,
 } from "./handlers/card-actions";
+import { handleGetCardContext } from "./handlers/card-context";
+import { handleGetCardRelations } from "./handlers/card-relations";
 import {
 	handleCreateCards,
 	handleGetCard,
@@ -36,8 +38,15 @@ import {
 	handleSetParent,
 	handleSetPresetForNote,
 } from "./handlers/notes";
+import { handleGetFullContext } from "./handlers/full-context";
 import { handleGetSchema, handleQuerySql } from "./handlers/query";
 import { handleGradeCard } from "./handlers/review";
+import {
+	handleGradeSessionCard,
+	handleRevealAnswer,
+} from "./handlers/review-actions";
+import { handleGetReviewContext } from "./handlers/review-context";
+import { handleGetSessionAnalysis } from "./handlers/session-analysis";
 import { handleStartSession } from "./handlers/sessions";
 import {
 	handleGetDailyStats,
@@ -73,10 +82,14 @@ const routes: Route[] = [
 	// Context
 	route("GET", "/status", handleGetStatus),
 	route("GET", "/active-note", handleGetActiveNote),
+	route("GET", "/review/current", handleGetReviewContext),
+	route("GET", "/context", handleGetFullContext),
 
 	// Cards — reads
 	route("GET", "/cards/due", handleGetDueCards),
 	route("GET", "/cards/problems", handleGetProblemCards),
+	route("GET", "/cards/:id/context", handleGetCardContext),
+	route("GET", "/cards/:id/relations", handleGetCardRelations),
 	route("GET", "/cards/:id", handleGetCard),
 	route("GET", "/cards", handleListCards),
 
@@ -95,6 +108,10 @@ const routes: Route[] = [
 	route("POST", "/generate", handleGenerate),
 	route("GET", "/note-types", handleGetNoteTypes),
 
+	// Review actions (in-session)
+	route("POST", "/review/reveal", handleRevealAnswer),
+	route("POST", "/review/grade", handleGradeSessionCard),
+
 	// Sessions
 	route("POST", "/sessions/start", handleStartSession),
 
@@ -102,6 +119,7 @@ const routes: Route[] = [
 	route("GET", "/stats/summary", handleGetSummary),
 	route("GET", "/stats/daily", handleGetDailyStats),
 	route("GET", "/stats/patterns", handleGetPatterns),
+	route("GET", "/stats/session-analysis", handleGetSessionAnalysis),
 
 	// Dashboard & Projects
 	route("GET", "/dashboard", handleGetDashboard),

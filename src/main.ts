@@ -82,7 +82,7 @@ import { extractFSRSSettings } from "@shared/types";
 import { BUILTIN_BASIC_ID, type NoteType } from "@shared/types/note.types";
 import { PresetInspectorModal } from "@shared/ui/modals";
 import { isDesktop } from "@shared/utils/platform";
-import { normalizePath, Plugin, type TFile } from "obsidian";
+import { normalizePath, Plugin, TFile } from "obsidian";
 import type { LocalApiServer } from "./plugin/api/LocalApiServer";
 import { BackupRecoveryManager } from "./plugin/BackupRecoveryManager";
 import { registerCommands } from "./plugin/PluginCommands";
@@ -299,6 +299,15 @@ export default class TrueRecallPlugin extends Plugin {
 		});
 
 		registerDeletionHandler(this, this.deletionHandler);
+
+		this.registerEvent(
+			this.app.vault.on("delete", (file) => {
+				if (file instanceof TFile && file.extension === "md") {
+					this.hierarchyService.invalidateGraph();
+					refreshMetadata();
+				}
+			}),
+		);
 
 		const uidGuardian = new UidGuardianService({
 			app: this.app,

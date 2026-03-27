@@ -64,6 +64,48 @@ export function registerCardTools(
 	);
 
 	server.registerTool(
+		"get_card_context",
+		{
+			description:
+				"Get deep context for a flashcard: the card with full FSRS data, its complete review history, the full markdown content of the source note, and all sibling cards from the same note. Use this to understand a card's topic in depth — for explaining, tutoring, or diagnosing why a card is difficult.",
+			inputSchema: {
+				card_id: z.string().describe("The card's UUID"),
+			},
+		},
+		async (params) => {
+			const data = await client.get(
+				`/cards/${params.card_id}/context`,
+			);
+			return {
+				content: [
+					{ type: "text" as const, text: JSON.stringify(data, null, 2) },
+				],
+			};
+		},
+	);
+
+	server.registerTool(
+		"get_card_relations",
+		{
+			description:
+				"Get all related cards for a flashcard: sibling cards from the same note, reverse card pairs, and cloze siblings (same template, different deletions). Use this to understand how a card fits within its note and find related content.",
+			inputSchema: {
+				card_id: z.string().describe("The card's UUID"),
+			},
+		},
+		async (params) => {
+			const data = await client.get(
+				`/cards/${params.card_id}/relations`,
+			);
+			return {
+				content: [
+					{ type: "text" as const, text: JSON.stringify(data, null, 2) },
+				],
+			};
+		},
+	);
+
+	server.registerTool(
 		"create_flashcard",
 		{
 			description:

@@ -41,10 +41,29 @@ export function registerContextTools(
 	);
 
 	server.registerTool(
+		"get_full_context",
+		{
+			description:
+				"START HERE — always call this first before any other True Recall tool. Returns everything you need to understand the user's current state: which Obsidian view is active (review, editor, browser, etc.), the current review card (if in a session), active note info, today's study stats, and due count. This single call replaces the need to call get_active_note, get_review_context, or get_status separately. Only use those specific tools if you need deeper detail after calling this one.",
+		},
+		async () => {
+			const data = await client.get("/context");
+			return {
+				content: [
+					{
+						type: "text" as const,
+						text: JSON.stringify(data, null, 2),
+					},
+				],
+			};
+		},
+	);
+
+	server.registerTool(
 		"get_active_note",
 		{
 			description:
-				"Get the currently open note in Obsidian with its content and associated flashcards",
+				"Get the full markdown content of the currently open note in Obsidian, plus its associated flashcards. Use ONLY when you need the actual note text (e.g. to generate flashcards from it or analyze its content). For just knowing which note is open, use get_full_context instead — it's faster and includes note metadata without the full content.",
 		},
 		async () => {
 			const data = await client.get<{

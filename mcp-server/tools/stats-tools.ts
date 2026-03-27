@@ -82,6 +82,22 @@ export function registerStatsTools(
 	);
 
 	server.registerTool(
+		"get_session_analysis",
+		{
+			description:
+				"Analyze today's study session in detail: every card reviewed with its ratings, which notes were studied, cards the user struggled with (rated Again), retention rate, time spent, and per-note breakdown. Use this to discuss the user's study performance today.",
+		},
+		async () => {
+			const data = await client.get("/stats/session-analysis");
+			return {
+				content: [
+					{ type: "text" as const, text: JSON.stringify(data, null, 2) },
+				],
+			};
+		},
+	);
+
+	server.registerTool(
 		"get_study_recommendations",
 		{
 			description:
