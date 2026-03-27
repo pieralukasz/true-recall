@@ -13,7 +13,7 @@ export class TrueRecallClient {
 	private baseUrl: string;
 
 	constructor(port?: number) {
-		const p = port ?? Number(process.env.TRUE_RECALL_PORT) || DEFAULT_PORT;
+		const p = port ?? (Number(process.env.TRUE_RECALL_PORT) || DEFAULT_PORT);
 		this.baseUrl = `http://127.0.0.1:${p}`;
 	}
 

@@ -249,6 +249,11 @@ export interface TrueRecallSettings {
 	/** Show inline flashcard status indicators next to [[links]] in editor */
 	showLinkStatusIndicators: boolean;
 
+	/** Show donut indicators in flashcard panel card content */
+	showDonutsInPanel: boolean;
+	/** Show donut indicators in review card content */
+	showDonutsInReview: boolean;
+
 	/** Show status bar widget with global due/new/learning counts */
 	showStatusBarWidget: boolean;
 

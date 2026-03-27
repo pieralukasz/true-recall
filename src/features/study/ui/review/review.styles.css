@@ -78,6 +78,7 @@
 	/* Center images */
 	.true-recall-review-question img,
 	.true-recall-review-answer img {
+		display: block;
 		margin-left: auto;
 		margin-right: auto;
 	}

@@ -153,6 +153,8 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 	defaultPresetId: "default",
 
 	showLinkStatusIndicators: true,
+	showDonutsInPanel: true,
+	showDonutsInReview: true,
 
 	showStatusBarWidget: true,
 	showQuickReviewInPanel: true,
