@@ -159,6 +159,7 @@ export function createLinkStatusViewPlugin(
 	noteStatusCache: NoteStatusCacheService,
 	frontmatterIndex: FrontmatterIndexService,
 	getEnabled: () => boolean,
+	getEnabledInReview: () => boolean,
 	onReviewNote: (file: TFile) => void,
 	onReviewNotes: (noteNames: string[], dueOnly: boolean) => void,
 	cardStore?: SqliteStoreService,
@@ -185,6 +186,14 @@ export function createLinkStatusViewPlugin(
 
 			private buildDecorations(view: EditorView): DecorationSet {
 				if (!getEnabled() || !noteStatusCache.hasData()) {
+					this.lastCacheVersion = noteStatusCache.getVersion();
+					return Decoration.none;
+				}
+
+				if (
+					!getEnabledInReview() &&
+					view.dom.closest('[data-type="true-recall-review"]')
+				) {
 					this.lastCacheVersion = noteStatusCache.getVersion();
 					return Decoration.none;
 				}

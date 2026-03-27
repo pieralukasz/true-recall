@@ -938,6 +938,7 @@ export default class TrueRecallPlugin extends Plugin {
 			this.noteStatusCache,
 			this.frontmatterIndex,
 			() => this.settings.showLinkStatusIndicators,
+			() => this.settings.showDonutsInReview,
 			onReviewNote,
 			onReviewNotes,
 			this.cardStore,
@@ -949,6 +950,7 @@ export default class TrueRecallPlugin extends Plugin {
 			this.noteStatusCache,
 			this.frontmatterIndex,
 			() => this.settings.showLinkStatusIndicators,
+			() => this.settings.showDonutsInPanel,
 			onReviewNote,
 			onReviewNotes,
 		);

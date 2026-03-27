@@ -127,6 +127,26 @@ export function GeneralTab() {
 				</FormField>
 
 				<FormField
+					name="Show donuts in flashcard panel"
+					description="Display donut indicators next to links inside flashcard panel cards"
+				>
+					<ToggleInput
+						value={settings.showDonutsInPanel}
+						onChange={(v) => save({ showDonutsInPanel: v })}
+					/>
+				</FormField>
+
+				<FormField
+					name="Show donuts in review"
+					description="Display donut indicators next to links during review sessions"
+				>
+					<ToggleInput
+						value={settings.showDonutsInReview}
+						onChange={(v) => save({ showDonutsInReview: v })}
+					/>
+				</FormField>
+
+				<FormField
 					name="Show status bar widget"
 					description="Display global due/new/learning card counts in the bottom status bar"
 				>

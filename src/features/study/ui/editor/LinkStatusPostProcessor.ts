@@ -13,11 +13,18 @@ export function createLinkStatusPostProcessor(
 	noteStatusCache: NoteStatusCacheService,
 	frontmatterIndex: FrontmatterIndexService,
 	getEnabled: () => boolean,
+	getEnabledInPanel: () => boolean,
 	onReviewNote: (file: TFile) => void,
 	onReviewNotes: (noteNames: string[], dueOnly: boolean) => void,
 ) {
 	return (el: HTMLElement, ctx: MarkdownPostProcessorContext): void => {
 		if (!getEnabled() || !noteStatusCache.hasData()) return;
+
+		if (
+			!getEnabledInPanel() &&
+			el.closest('[data-type="true-recall-flashcard-panel"]')
+		)
+			return;
 
 		const sourcePath = ctx.sourcePath;
 
