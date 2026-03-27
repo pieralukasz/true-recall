@@ -5,10 +5,12 @@ export function registerBackupTools(
 	server: McpServer,
 	client: TrueRecallClient,
 ): void {
-	server.tool(
+	server.registerTool(
 		"create_backup",
-		"Create a compressed backup of the True Recall database. Backups are stored in .true-recall/backups/.",
-		{},
+		{
+			description:
+				"Create a compressed backup of the True Recall database. Backups are stored in .true-recall/backups/.",
+		},
 		async () => {
 			const data = await client.post("/backups/create", {});
 			return {
@@ -19,10 +21,12 @@ export function registerBackupTools(
 		},
 	);
 
-	server.tool(
+	server.registerTool(
 		"list_backups",
-		"List all available database backups with dates and sizes.",
-		{},
+		{
+			description:
+				"List all available database backups with dates and sizes.",
+		},
 		async () => {
 			const data = await client.get("/backups");
 			return {
@@ -33,10 +37,12 @@ export function registerBackupTools(
 		},
 	);
 
-	server.tool(
+	server.registerTool(
 		"check_integrity",
-		"Run a database integrity check. Reports orphaned cards (no parent note), orphaned notes (no note type), and orphaned review logs (no parent card).",
-		{},
+		{
+			description:
+				"Run a database integrity check. Reports orphaned cards (no parent note), orphaned notes (no note type), and orphaned review logs (no parent card).",
+		},
 		async () => {
 			const data = await client.get("/integrity");
 			return {

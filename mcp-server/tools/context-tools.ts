@@ -5,10 +5,12 @@ export function registerContextTools(
 	server: McpServer,
 	client: TrueRecallClient,
 ): void {
-	server.tool(
+	server.registerTool(
 		"get_status",
-		"Check if the True Recall plugin is running and the database is ready",
-		{},
+		{
+			description:
+				"Check if the True Recall plugin is running and the database is ready",
+		},
 		async () => {
 			try {
 				const data = await client.get<{
@@ -38,10 +40,12 @@ export function registerContextTools(
 		},
 	);
 
-	server.tool(
+	server.registerTool(
 		"get_active_note",
-		"Get the currently open note in Obsidian with its content and associated flashcards",
-		{},
+		{
+			description:
+				"Get the currently open note in Obsidian with its content and associated flashcards",
+		},
 		async () => {
 			const data = await client.get<{
 				path: string;

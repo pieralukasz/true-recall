@@ -6,27 +6,30 @@ export function registerCardTools(
 	server: McpServer,
 	client: TrueRecallClient,
 ): void {
-	server.tool(
+	server.registerTool(
 		"list_cards",
-		"Search and list flashcards with optional filtering by query text, state, source note, and sorting",
 		{
-			query: z
-				.string()
-				.optional()
-				.describe("Text search in question/answer"),
-			state: z
-				.enum(["new", "learning", "review", "relearning"])
-				.optional()
-				.describe("Filter by card state"),
-			source_uid: z
-				.string()
-				.optional()
-				.describe("Filter by source note UID"),
-			limit: z
-				.number()
-				.optional()
-				.default(50)
-				.describe("Max cards to return (max 200)"),
+			description:
+				"Search and list flashcards with optional filtering by query text, state, source note, and sorting",
+			inputSchema: {
+				query: z
+					.string()
+					.optional()
+					.describe("Text search in question/answer"),
+				state: z
+					.enum(["new", "learning", "review", "relearning"])
+					.optional()
+					.describe("Filter by card state"),
+				source_uid: z
+					.string()
+					.optional()
+					.describe("Filter by source note UID"),
+				limit: z
+					.number()
+					.optional()
+					.default(50)
+					.describe("Max cards to return (max 200)"),
+			},
 		},
 		async (params) => {
 			const searchParams = new URLSearchParams();
@@ -43,11 +46,14 @@ export function registerCardTools(
 		},
 	);
 
-	server.tool(
+	server.registerTool(
 		"get_card",
-		"Get a single flashcard with full details and review history",
 		{
-			card_id: z.string().describe("The card's UUID"),
+			description:
+				"Get a single flashcard with full details and review history",
+			inputSchema: {
+				card_id: z.string().describe("The card's UUID"),
+			},
 		},
 		async (params) => {
 			const data = await client.get(`/cards/${params.card_id}`);
@@ -57,25 +63,28 @@ export function registerCardTools(
 		},
 	);
 
-	server.tool(
+	server.registerTool(
 		"create_flashcard",
-		"Create a new flashcard. Goes through the plugin's proper creation flow with FSRS initialization and signal notifications. The card appears instantly in Obsidian.",
 		{
-			question: z.string().describe("The question (front of card)"),
-			answer: z.string().describe("The answer (back of card)"),
-			source_uid: z
-				.string()
-				.optional()
-				.describe("Source note UID to link this card to an Obsidian note"),
-			source_text: z
-				.string()
-				.optional()
-				.describe("Original text that generated this card"),
-			card_type: z
-				.enum(["basic", "cloze"])
-				.optional()
-				.default("basic")
-				.describe("Card type: basic (Q/A) or cloze (fill-in-the-blank)"),
+			description:
+				"Create a new flashcard. Goes through the plugin's proper creation flow with FSRS initialization and signal notifications. The card appears instantly in Obsidian.",
+			inputSchema: {
+				question: z.string().describe("The question (front of card)"),
+				answer: z.string().describe("The answer (back of card)"),
+				source_uid: z
+					.string()
+					.optional()
+					.describe("Source note UID to link this card to an Obsidian note"),
+				source_text: z
+					.string()
+					.optional()
+					.describe("Original text that generated this card"),
+				card_type: z
+					.enum(["basic", "cloze"])
+					.optional()
+					.default("basic")
+					.describe("Card type: basic (Q/A) or cloze (fill-in-the-blank)"),
+			},
 		},
 		async (params) => {
 			const data = await client.post("/cards", {
@@ -91,30 +100,33 @@ export function registerCardTools(
 		},
 	);
 
-	server.tool(
+	server.registerTool(
 		"create_flashcards_batch",
-		"Create multiple flashcards at once. Useful for bulk generation from code, documentation, or notes. All cards are tracked as created_via='claude_code'.",
 		{
-			cards: z
-				.array(
-					z.object({
-						question: z.string().describe("The question"),
-						answer: z.string().describe("The answer"),
-						source_text: z
-							.string()
-							.optional()
-							.describe("Original text that generated this card"),
-						card_type: z
-							.enum(["basic", "cloze"])
-							.optional()
-							.default("basic"),
-					}),
-				)
-				.describe("Array of flashcards to create"),
-			source_uid: z
-				.string()
-				.optional()
-				.describe("Source note UID to link all cards to"),
+			description:
+				"Create multiple flashcards at once. Useful for bulk generation from code, documentation, or notes. All cards are tracked as created_via='claude_code'.",
+			inputSchema: {
+				cards: z
+					.array(
+						z.object({
+							question: z.string().describe("The question"),
+							answer: z.string().describe("The answer"),
+							source_text: z
+								.string()
+								.optional()
+								.describe("Original text that generated this card"),
+							card_type: z
+								.enum(["basic", "cloze"])
+								.optional()
+								.default("basic"),
+						}),
+					)
+					.describe("Array of flashcards to create"),
+				source_uid: z
+					.string()
+					.optional()
+					.describe("Source note UID to link all cards to"),
+			},
 		},
 		async (params) => {
 			const data = await client.post("/cards", {

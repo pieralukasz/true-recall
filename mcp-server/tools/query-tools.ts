@@ -6,13 +6,16 @@ export function registerQueryTools(
 	server: McpServer,
 	client: TrueRecallClient,
 ): void {
-	server.tool(
+	server.registerTool(
 		"query_sql",
-		"Execute a read-only SQL SELECT query against the True Recall database. Only SELECT queries are allowed. Use get_schema first to understand the database structure.",
 		{
-			sql: z
-				.string()
-				.describe("SQL SELECT query to execute"),
+			description:
+				"Execute a read-only SQL SELECT query against the True Recall database. Only SELECT queries are allowed. Use get_schema first to understand the database structure.",
+			inputSchema: {
+				sql: z
+					.string()
+					.describe("SQL SELECT query to execute"),
+			},
 		},
 		async (params) => {
 			const data = await client.post("/query", { sql: params.sql });
@@ -22,10 +25,12 @@ export function registerQueryTools(
 		},
 	);
 
-	server.tool(
+	server.registerTool(
 		"get_schema",
-		"Get the database schema with table names, columns, types, row counts, and FSRS-specific annotations (what card states mean, how to identify problem cards, etc.)",
-		{},
+		{
+			description:
+				"Get the database schema with table names, columns, types, row counts, and FSRS-specific annotations (what card states mean, how to identify problem cards, etc.)",
+		},
 		async () => {
 			const data = await client.get("/schema");
 			return {
