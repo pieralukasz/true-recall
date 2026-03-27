@@ -131,6 +131,7 @@ export class ChunkedGenerationService {
 						sourceFile,
 						abortController.signal,
 						noteType,
+						chunk.content,
 					);
 					totalCreated += result.created;
 					totalDuplicates += result.duplicates;
@@ -169,6 +170,7 @@ export class ChunkedGenerationService {
 		sourceFile: TFile,
 		signal: AbortSignal,
 		noteType?: NoteType | null,
+		chunkContent?: string,
 	): Promise<StreamingGenerationResult> {
 		const client = new StreamingOpenRouterClient(aiConfig.apiKey, aiConfig.model, aiConfig.baseUrl);
 		const getNoteType = (slug: string) =>
@@ -211,6 +213,7 @@ export class ChunkedGenerationService {
 				this.flashcardManager,
 				throttledUpdatePartial,
 				onCount,
+				chunkContent,
 			);
 		}
 
@@ -221,6 +224,7 @@ export class ChunkedGenerationService {
 			this.flashcardManager,
 			throttledUpdatePartial,
 			onCount,
+			chunkContent,
 		);
 
 		return { created: createdCount, duplicates: duplicateCount };

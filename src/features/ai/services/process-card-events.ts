@@ -1,6 +1,7 @@
 import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
 import type { TFile } from "obsidian";
 import type { IncrementalFlashcardParser } from "./incremental-flashcard-parser";
+import { fixSourceText } from "./source-text-fixer";
 import { addStreamedCard } from "./streaming-state";
 
 type ParserEvents = ReturnType<IncrementalFlashcardParser["feed"]>;
@@ -11,6 +12,7 @@ export async function processCardEvents(
 	flashcardManager: FlashcardManager,
 	onPartial: (q: string | null, a: string | null) => void,
 	onCount: (created: number, dups: number) => void,
+	inputText?: string,
 ): Promise<void> {
 	const frontmatterService = flashcardManager.getFrontmatterService();
 	let sourceUid = await frontmatterService.getSourceNoteUid(sourceFile);
@@ -22,12 +24,15 @@ export async function processCardEvents(
 	for (const event of events) {
 		if (event.type === "card_complete" && event.block) {
 			try {
+				const sourceText = inputText && event.block.sourceText
+					? fixSourceText(event.block.sourceText, inputText)
+					: event.block.sourceText;
 				const result = flashcardManager.createNote({
 					noteTypeId: event.block.noteTypeId,
 					fields: event.block.fields,
 					alwaysTypeIn: event.block.alwaysTypeIn,
 					sourceUid,
-					sourceText: event.block.sourceText,
+					sourceText,
 					createdVia: "ai",
 				});
 
