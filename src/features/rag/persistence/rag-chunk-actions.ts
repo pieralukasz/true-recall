@@ -147,7 +147,7 @@ export class RagChunkActions {
 	// FTS5 keyword search — returns chunk IDs ordered by BM25 relevance (rank is negative; lower = more relevant)
 	searchFts(query: string, limit: number): { id: number; rank: number }[] {
 		const escaped = query
-			.replace(/['"?*!+\-()^~:{}[\]\\@#$%&|<>=]/g, " ")
+			.replace(/['"?*!+\-()^~:{}[\]\\@#$%&|<>=,;./]/g, " ")
 			.trim();
 		if (!escaped) return [];
 

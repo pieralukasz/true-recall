@@ -1,4 +1,6 @@
 import { filterContent } from "@features/ai/services/markdown-chunker";
+import type { DailyNoteInfo } from "./daily-note-detector";
+import { preprocessDailyNote } from "./daily-note-preprocessor";
 
 export interface RagChunk {
 	content: string;
@@ -91,14 +93,13 @@ function splitParagraphsWithOverlap(
 	return chunks;
 }
 
-export function chunkNote(rawContent: string): RagChunk[] {
-	const filtered = filterContent(rawContent);
-	const totalTokens = estimateTokens(filtered);
+function chunkFiltered(text: string): RagChunk[] {
+	const totalTokens = estimateTokens(text);
 
 	if (totalTokens <= TARGET_TOKENS) {
 		return [
 			{
-				content: filtered,
+				content: text,
 				headingBreadcrumb: "",
 				index: 0,
 				tokenCount: totalTokens,
@@ -106,7 +107,7 @@ export function chunkNote(rawContent: string): RagChunk[] {
 		];
 	}
 
-	const lines = filtered.split("\n");
+	const lines = text.split("\n");
 	const sections: Section[] = [];
 	const headingStack: HeadingEntry[] = [];
 	let currentLines: string[] = [];
@@ -153,7 +154,7 @@ export function chunkNote(rawContent: string): RagChunk[] {
 	}
 
 	if (!hasHeadings) {
-		return splitParagraphsWithOverlap(filtered, TARGET_TOKENS, "", 0);
+		return splitParagraphsWithOverlap(text, TARGET_TOKENS, "", 0);
 	}
 
 	const chunks: RagChunk[] = [];
@@ -200,6 +201,24 @@ export function chunkNote(rawContent: string): RagChunk[] {
 	}
 
 	return chunks;
+}
+
+export function chunkNote(rawContent: string): RagChunk[] {
+	return chunkFiltered(filterContent(rawContent));
+}
+
+export function chunkDailyNote(
+	rawContent: string,
+	dailyInfo: DailyNoteInfo,
+	excludeHeadings: string[],
+): RagChunk[] {
+	const filtered = filterContent(rawContent);
+	const preprocessed = preprocessDailyNote(
+		filtered,
+		dailyInfo,
+		excludeHeadings,
+	);
+	return chunkFiltered(preprocessed);
 }
 
 export function chunkFlashcard(

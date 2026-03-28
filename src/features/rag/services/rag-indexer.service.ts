@@ -7,7 +7,12 @@ import { RAG_CONFIG } from "@shared/constants";
 import { lastMutation } from "@shared/services/signals";
 import type { TrueRecallSettings } from "@shared/types/settings.types";
 import { type App, debounce, type Plugin, TFile } from "obsidian";
-import { chunkFlashcard, chunkNote } from "./rag-chunker.service";
+import { detectDailyNote } from "./daily-note-detector";
+import {
+	chunkDailyNote,
+	chunkFlashcard,
+	chunkNote,
+} from "./rag-chunker.service";
 import type { RagEmbeddingService } from "./rag-embedding.service";
 import type { RagSearchService } from "./rag-search.service";
 
@@ -95,7 +100,16 @@ export class RagIndexerService {
 		const meta = this.actions.getIndexMeta("note", file.path);
 		if (meta && meta.content_hash === hash) return false;
 
-		const chunks = chunkNote(content);
+		const s = this.settings();
+		const dailyInfo = detectDailyNote(
+			this.app,
+			file,
+			s.ragDailyNotesFolder || undefined,
+		);
+		const chunks =
+			dailyInfo.isDailyNote && dailyInfo.date
+				? chunkDailyNote(content, dailyInfo, s.ragDailyNoteExcludeHeadings)
+				: chunkNote(content);
 		this.actions.upsertChunks(
 			"note",
 			file.path,
@@ -348,14 +362,15 @@ export class RagIndexerService {
 
 			const updates: { chunkId: number; embedding: Float32Array }[] = [];
 			for (let i = 0; i < pending.length; i++) {
+				const chunk = pending[i];
 				const emb = embeddings[i];
-				if (!emb || emb.length === 0) {
+				if (!chunk || !emb || emb.length === 0) {
 					console.warn(
-						`[True Recall RAG] Empty embedding for chunk ${pending[i]?.id}, skipping`,
+						`[True Recall RAG] Empty embedding for chunk ${chunk?.id}, skipping`,
 					);
 					continue;
 				}
-				updates.push({ chunkId: pending[i]!.id, embedding: emb });
+				updates.push({ chunkId: chunk.id, embedding: emb });
 			}
 
 			this.actions.updateEmbeddingsBatch(updates);

@@ -298,6 +298,10 @@ export interface TrueRecallSettings {
 	ragAutoIndex: boolean;
 	/** Target tokens per chunk (reserved — chunker uses hardcoded 400) */
 	ragChunkMaxTokens: number;
+	/** Explicit daily notes folder override (empty = auto-detect from Obsidian plugin) */
+	ragDailyNotesFolder: string;
+	/** Heading names to exclude from daily note indexing (case-insensitive substring match) */
+	ragDailyNoteExcludeHeadings: string[];
 }
 
 export interface SessionPreset {

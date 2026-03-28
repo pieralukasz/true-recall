@@ -8,6 +8,13 @@ Create flashcards inside your notes, review them with FSRS v6 scheduling, and tr
 
 ---
 
+![Dashboard](assets/dashboard.png)
+![Statistics](assets/statistics.png)
+![Flashcards](assets/flashcards.png)
+![Review](assets/review.png)
+
+---
+
 ## Features
 
 - **FSRS v6 Algorithm** — State-of-the-art spaced repetition with 21 trainable parameters. Optimizes to your personal memory patterns after 400+ reviews.

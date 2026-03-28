@@ -172,6 +172,8 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 	ragIndexFlashcards: true,
 	ragAutoIndex: true,
 	ragChunkMaxTokens: 400,
+	ragDailyNotesFolder: "",
+	ragDailyNoteExcludeHeadings: ["Thoughts", "Journal", "Reflections", "Random"],
 };
 
 // FSRS v6 default weights (21 parameters)

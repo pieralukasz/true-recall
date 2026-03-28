@@ -7,6 +7,7 @@ import {
 	FormCard,
 	FormField,
 	InfoBlock,
+	TextAreaInput,
 	ToggleInput,
 } from "@shared/ui/components";
 import { usePlugin } from "@shared/ui/preact";
@@ -129,6 +130,40 @@ export function KnowledgeBaseTab() {
 							value={settings.ragExcludeFolders}
 							onChange={(v) => save({ ragExcludeFolders: v })}
 							placeholder="Search folders to exclude..."
+						/>
+					</FormField>
+
+					<FormField
+						name="Daily notes folder"
+						description="Override daily notes folder for smarter indexing (empty = auto-detect)"
+					>
+						<FolderPicker
+							value={
+								settings.ragDailyNotesFolder
+									? [settings.ragDailyNotesFolder]
+									: []
+							}
+							onChange={(v) => save({ ragDailyNotesFolder: v[0] ?? "" })}
+							placeholder="Select daily notes folder..."
+						/>
+					</FormField>
+
+					<FormField
+						name="Daily note excluded headings"
+						description="Sections under these headings won't be indexed in daily notes (one per line)"
+					>
+						<TextAreaInput
+							value={settings.ragDailyNoteExcludeHeadings.join("\n")}
+							onChange={(v) =>
+								save({
+									ragDailyNoteExcludeHeadings: v
+										.split("\n")
+										.map((s) => s.trim())
+										.filter(Boolean),
+								})
+							}
+							rows={3}
+							placeholder={"Thoughts\nJournal\nReflections"}
 						/>
 					</FormField>
 

@@ -11,8 +11,8 @@ import type { SourceNavigationHandlers } from "./types";
 
 const SUGGESTED_QUESTIONS = [
 	"Summarize my recent notes",
-	"What topics do I study the most?",
-	"Which flashcards need more review?",
+	"How's my study progress?",
+	"Which cards am I struggling with?",
 ];
 
 interface Props {

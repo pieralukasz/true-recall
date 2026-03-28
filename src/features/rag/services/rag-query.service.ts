@@ -5,10 +5,26 @@ import { LITELLM_URL } from "@shared/constants";
 import type { TrueRecallSettings } from "@shared/types/settings.types";
 import { fileBasename } from "@shared/utils";
 import type { RagSearchService, SearchResult } from "./rag-search.service";
+import type { StudyDataGatherer } from "./study-data-gatherer";
+import { classifyIntent } from "./study-intent-classifier";
 
-const SYSTEM_PROMPT = `You are a knowledgeable assistant that answers based on the user's notes and flashcards.
+const KNOWLEDGE_PROMPT = `You are a knowledgeable assistant that answers based on the user's notes and flashcards.
 Cite sources inline using numbered references like [1], [2] etc. matching the source numbers in the provided context.
 If context doesn't contain enough info, say so clearly — do not make things up.
+Be concise, use markdown formatting, answer in the same language as the user's question.`;
+
+const STUDY_PROMPT = `You are a knowledgeable study assistant with access to the user's notes, flashcards, and study progress data.
+
+When answering knowledge questions:
+- Cite sources inline using numbered references like [1], [2] etc.
+- If context doesn't contain enough info, say so clearly — do not make things up.
+
+When answering study progress questions:
+- Use the provided Study Progress Data to give accurate, specific answers.
+- Include actual numbers and dates from the data.
+- Provide brief, actionable insights when appropriate.
+- Do not invent statistics not present in the data.
+
 Be concise, use markdown formatting, answer in the same language as the user's question.`;
 
 const CONTEXT_TOKEN_BUDGET = 4000;
@@ -27,18 +43,37 @@ export class RagQueryService {
 		private search: RagSearchService,
 		private settings: () => TrueRecallSettings,
 		private frontmatterIndex?: FrontmatterIndexService,
+		private studyGatherer?: StudyDataGatherer,
 	) {}
 
 	async *queryStream(
 		question: string,
 		history: ChatTurn[],
 	): AsyncGenerator<string> {
-		const searchResults = await this.search.search(question);
-		const { context, sourceMap } = this.packContext(searchResults.results);
-		// Store one representative result per unique source (for citation click handlers)
-		this.lastSearchResults = sourceMap;
+		const intent = this.studyGatherer ? classifyIntent(question) : "knowledge";
 
-		const messages = this.buildMessages(question, history, context);
+		let context = "";
+		let studyContext: string | null = null;
+
+		if (intent !== "stats") {
+			const searchResults = await this.search.search(question);
+			const packed = this.packContext(searchResults.results);
+			context = packed.context;
+			this.lastSearchResults = packed.sourceMap;
+		} else {
+			this.lastSearchResults = [];
+		}
+
+		if (intent !== "knowledge" && this.studyGatherer) {
+			studyContext = this.studyGatherer.gather(question);
+		}
+
+		const messages = this.buildMessages(
+			question,
+			history,
+			context,
+			studyContext,
+		);
 		const s = this.settings();
 		const baseUrl = LITELLM_URL.replace("/chat/completions", "");
 
@@ -128,19 +163,28 @@ export class RagQueryService {
 		question: string,
 		history: ChatTurn[],
 		context: string,
+		studyContext: string | null,
 	): ChatMessage[] {
-		const messages: ChatMessage[] = [
-			{ role: "system", content: SYSTEM_PROMPT },
-		];
+		const systemPrompt = studyContext ? STUDY_PROMPT : KNOWLEDGE_PROMPT;
+		const messages: ChatMessage[] = [{ role: "system", content: systemPrompt }];
 
 		// Keep last 6 turns to stay within model context limits while preserving conversational continuity
 		for (const turn of history.slice(-6)) {
 			messages.push({ role: turn.role, content: turn.content });
 		}
 
-		const userMessage = context
-			? `Context from my notes and flashcards:\n\n${context}\n\n---\n\nQuestion: ${question}`
-			: question;
+		const parts: string[] = [];
+		if (context) {
+			parts.push(`Context from my notes and flashcards:\n\n${context}`);
+		}
+		if (studyContext) {
+			parts.push(studyContext);
+		}
+
+		const userMessage =
+			parts.length > 0
+				? `${parts.join("\n\n---\n\n")}\n\n---\n\nQuestion: ${question}`
+				: question;
 
 		messages.push({ role: "user", content: userMessage });
 		return messages;
