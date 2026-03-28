@@ -4,7 +4,7 @@
 
 Create flashcards inside your notes, review them with FSRS v6 scheduling, and track progress with comprehensive analytics — all without leaving Obsidian.
 
-[Documentation](https://www.truerecall.app/) · [Buy Me a Coffee](https://buymeacoffee.com/pieralukasz)
+[Documentation](https://www.truerecall.app/) · [Buy Me a Coffee](https://www.buymeacoffee.com/1Hzbip1K9Q)
 
 ---
 
@@ -14,7 +14,6 @@ Create flashcards inside your notes, review them with FSRS v6 scheduling, and tr
 - **AI Card Generation** — Select text, get instant flashcards. Supports Basic, Cloze, Reversed, and Image Occlusion card types. Multiple models via OpenRouter (Gemini, GPT, Claude, Llama).
 - **Local-First Storage** — All data in a portable SQLite database inside your vault (`.true-recall/true-recall.db`). Your data stays with you.
 - **Projects System** — Organize cards across notes with many-to-many relationships. Review by topic, inherit FSRS presets from parent projects.
-- **Cloud Sync** — Cross-device synchronization via True Recall Cloud with automatic conflict resolution.
 - **Anki Compatible** — Import `.apkg` decks and export to Anki or CSV/TSV.
 - **Analytics & Widgets** — Dashboard, statistics, calendar heatmap, forecast charts, and 25+ inline codeblock widgets you can embed in any note.
 - **Card Browser** — Powerful query syntax for finding cards by state, properties, source note, and more.

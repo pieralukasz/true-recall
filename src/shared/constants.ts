@@ -229,7 +229,7 @@ export const GITHUB_RELEASES_API =
 export const LITELLM_URL = "https://ai.truerecall.app/v1/chat/completions";
 
 export const TRUERECALL_WEB_URL = "https://truerecall.app";
-export const TRUERECALL_BMC_URL = "https://buymeacoffee.com/pieralukasz";
+export const TRUERECALL_BMC_URL = "https://www.buymeacoffee.com/1Hzbip1K9Q";
 export const TRUERECALL_GITHUB_URL =
 	"https://github.com/pieralukasz/true-recall";
 export const TRUERECALL_DISCORD_URL = "https://discord.gg/Zp5wGupP4b";
