@@ -1,8 +1,10 @@
 import type { SqliteDatabase } from "@features/core/persistence/sqlite/SqliteDatabase";
 
+export type RagSourceType = "note" | "flashcard";
+
 export interface RagChunkRow {
 	id: number;
-	source_type: string;
+	source_type: RagSourceType;
 	source_id: string;
 	chunk_index: number;
 	content: string;
@@ -14,7 +16,7 @@ export interface RagChunkRow {
 }
 
 export interface RagIndexMetaRow {
-	source_type: string;
+	source_type: RagSourceType;
 	source_id: string;
 	content_hash: string;
 	mtime: number;
@@ -30,10 +32,21 @@ export interface EmbeddingRow {
 export class RagChunkActions {
 	constructor(private db: SqliteDatabase) {}
 
-	getChunksBySource(sourceType: string, sourceId: string): RagChunkRow[] {
+	getChunksBySource(
+		sourceType: RagSourceType,
+		sourceId: string,
+	): RagChunkRow[] {
 		return this.db.query<RagChunkRow>(
 			`SELECT * FROM rag_chunks WHERE source_type = ? AND source_id = ? ORDER BY chunk_index`,
 			[sourceType, sourceId],
+		);
+	}
+
+	countChunksWithoutEmbedding(): number {
+		return (
+			this.db.get<{ count: number }>(
+				`SELECT COUNT(*) as count FROM rag_chunks WHERE embedding IS NULL`,
+			)?.count ?? 0
 		);
 	}
 
@@ -60,7 +73,7 @@ export class RagChunkActions {
 	}
 
 	upsertChunks(
-		sourceType: string,
+		sourceType: RagSourceType,
 		sourceId: string,
 		chunks: {
 			content: string;
@@ -117,7 +130,7 @@ export class RagChunkActions {
 		});
 	}
 
-	deleteBySource(sourceType: string, sourceId: string): void {
+	deleteBySource(sourceType: RagSourceType, sourceId: string): void {
 		this.db.run(
 			`DELETE FROM rag_chunks WHERE source_type = ? AND source_id = ?`,
 			[sourceType, sourceId],
@@ -131,7 +144,7 @@ export class RagChunkActions {
 		});
 	}
 
-	// FTS5 keyword search — returns chunk IDs ranked by BM25
+	// FTS5 keyword search — returns chunk IDs ordered by BM25 relevance (rank is negative; lower = more relevant)
 	searchFts(query: string, limit: number): { id: number; rank: number }[] {
 		const escaped = query
 			.replace(/['"?*!+\-()^~:{}[\]\\@#$%&|<>=]/g, " ")
@@ -149,8 +162,10 @@ export class RagChunkActions {
 		);
 	}
 
-	// Index metadata operations
-	getIndexMeta(sourceType: string, sourceId: string): RagIndexMetaRow | null {
+	getIndexMeta(
+		sourceType: RagSourceType,
+		sourceId: string,
+	): RagIndexMetaRow | null {
 		return (
 			this.db.get<RagIndexMetaRow>(
 				`SELECT * FROM rag_index_meta WHERE source_type = ? AND source_id = ?`,
@@ -160,7 +175,7 @@ export class RagChunkActions {
 	}
 
 	upsertIndexMeta(
-		sourceType: string,
+		sourceType: RagSourceType,
 		sourceId: string,
 		contentHash: string,
 		mtime: number,
@@ -173,7 +188,7 @@ export class RagChunkActions {
 		);
 	}
 
-	deleteIndexMeta(sourceType: string, sourceId: string): void {
+	deleteIndexMeta(sourceType: RagSourceType, sourceId: string): void {
 		this.db.run(
 			`DELETE FROM rag_index_meta WHERE source_type = ? AND source_id = ?`,
 			[sourceType, sourceId],
@@ -182,6 +197,7 @@ export class RagChunkActions {
 
 	getFsrsDataForChunks(chunkIds: number[]): {
 		card_id: string;
+		source_uid: string | null;
 		state: number;
 		stability: number;
 		difficulty: number;
@@ -193,7 +209,7 @@ export class RagChunkActions {
 		if (chunkIds.length === 0) return [];
 		const placeholders = chunkIds.map(() => "?").join(",");
 		return this.db.query(
-			`SELECT c.id as card_id, c.state, c.stability, c.difficulty,
+			`SELECT c.id as card_id, c.source_uid, c.state, c.stability, c.difficulty,
 				c.lapses, c.reps, c.last_review, c.due
 			 FROM rag_chunks rc
 			 JOIN cards c ON rc.source_id = c.id

@@ -2,6 +2,7 @@ export type {
 	EmbeddingRow,
 	RagChunkRow,
 	RagIndexMetaRow,
+	RagSourceType,
 } from "./persistence/rag-chunk-actions";
 export { RagChunkActions } from "./persistence/rag-chunk-actions";
 export { RagSchemaManager } from "./persistence/rag-schema";

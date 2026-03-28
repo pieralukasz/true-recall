@@ -6,28 +6,35 @@ export class RagChatService {
 	constructor(private queryService: RagQueryService) {}
 
 	async *sendMessage(message: string): AsyncGenerator<string> {
-		this.history.push({
+		const userTurn: ChatTurn = {
 			role: "user",
 			content: message,
 			timestamp: Date.now(),
-		});
+		};
+		this.history.push(userTurn);
 
 		let fullResponse = "";
-		for await (const chunk of this.queryService.queryStream(
-			message,
-			this.history,
-		)) {
-			fullResponse += chunk;
-			yield chunk;
-		}
+		try {
+			for await (const chunk of this.queryService.queryStream(
+				message,
+				this.history,
+			)) {
+				fullResponse += chunk;
+				yield chunk;
+			}
 
-		const sources = this.queryService.getLastSearchResults();
-		this.history.push({
-			role: "assistant",
-			content: fullResponse,
-			sources,
-			timestamp: Date.now(),
-		});
+			const sources = this.queryService.getLastSearchResults();
+			this.history.push({
+				role: "assistant",
+				content: fullResponse,
+				sources,
+				timestamp: Date.now(),
+			});
+		} catch (e) {
+			// Roll back the orphaned user turn so history stays consistent
+			this.history.pop();
+			throw e;
+		}
 	}
 
 	clearHistory(): void {

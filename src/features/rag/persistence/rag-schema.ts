@@ -1,6 +1,8 @@
 import type { DatabaseLike } from "@features/core/persistence/sqlite/sqlite.types";
 
 export class RagSchemaManager {
+	fts5Available = false;
+
 	constructor(private db: DatabaseLike) {}
 
 	createTables(): void {
@@ -77,8 +79,12 @@ export class RagSchemaManager {
 			this.db.run(
 				`INSERT INTO rag_chunks_fts(rag_chunks_fts) VALUES('rebuild')`,
 			);
+			this.fts5Available = true;
 		} catch (e) {
-			console.warn("[True Recall] RAG FTS5 setup failed:", e);
+			console.error(
+				"[True Recall] RAG FTS5 setup failed — keyword search will be unavailable:",
+				e,
+			);
 		}
 	}
 }

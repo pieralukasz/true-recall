@@ -32,12 +32,18 @@ export class KnowledgeChatView extends ItemView {
 	}
 
 	async onOpen(): Promise<void> {
-		if (this.plugin.settings.proKey && this.plugin.isStoreReady()) {
+		const s = this.plugin.settings;
+		if (s.proKey && s.ragEnabled && this.plugin.isStoreReady()) {
 			const rag = this.plugin.cardStore.rag;
-			const embedder = new RagEmbeddingService(this.plugin.settings.proKey);
+			const embedder = new RagEmbeddingService(s.proKey);
 			const search = new RagSearchService(rag, embedder);
-			const query = new RagQueryService(search, () => this.plugin.settings);
+			const query = new RagQueryService(
+				search,
+				() => this.plugin.settings,
+				this.plugin.frontmatterIndex,
+			);
 			this.chatService = new RagChatService(query);
+			this.plugin.ragIndexer?.setSearchService(search);
 		}
 
 		const container = this.containerEl.children[1];

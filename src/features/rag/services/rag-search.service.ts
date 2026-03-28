@@ -1,6 +1,7 @@
 import type {
 	EmbeddingRow,
 	RagChunkActions,
+	RagSourceType,
 } from "@features/rag/persistence/rag-chunk-actions";
 import { RAG_CONFIG } from "@shared/constants";
 import type { RagEmbeddingService } from "./rag-embedding.service";
@@ -9,8 +10,10 @@ export interface SearchResult {
 	chunkId: number;
 	content: string;
 	headingBreadcrumb: string;
-	sourceType: "note" | "flashcard";
+	sourceType: RagSourceType;
 	sourceId: string;
+	/** For flashcards: the source_uid linking to the originating note */
+	sourceNoteUid?: string;
 	score: number;
 	tokenCount: number;
 	fsrs?: {
@@ -47,7 +50,7 @@ export class RagSearchService {
 	async search(
 		query: string,
 		topK: number = RAG_CONFIG.defaultTopK,
-		sourceType?: "note" | "flashcard" | "all",
+		sourceType?: RagSourceType | "all",
 	): Promise<{ results: SearchResult[]; stats: SearchStats }> {
 		const ftsResults = this.actions.searchFts(query, topK * 2);
 
@@ -68,22 +71,27 @@ export class RagSearchService {
 			const chunk = chunkMap.get(m.id);
 			if (!chunk) continue;
 
-			const st = chunk.source_type as "note" | "flashcard";
-			if (sourceType && sourceType !== "all" && st !== sourceType) continue;
+			if (
+				sourceType &&
+				sourceType !== "all" &&
+				chunk.source_type !== sourceType
+			)
+				continue;
 
 			const result: SearchResult = {
 				chunkId: chunk.id,
 				content: chunk.content,
 				headingBreadcrumb: chunk.heading_breadcrumb,
-				sourceType: st,
+				sourceType: chunk.source_type,
 				sourceId: chunk.source_id,
 				score: m.score,
 				tokenCount: chunk.token_count,
 			};
 
-			if (st === "flashcard") {
+			if (chunk.source_type === "flashcard") {
 				const fsrs = fsrsMap.get(chunk.source_id);
 				if (fsrs) {
+					result.sourceNoteUid = fsrs.source_uid ?? undefined;
 					result.fsrs = {
 						state: fsrs.state,
 						stability: fsrs.stability,

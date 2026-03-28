@@ -1,4 +1,5 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
+import { AIRequestError } from "@features/ai/services/openrouter-client";
 import { RagEmbeddingService } from "@features/rag/services/rag-embedding.service";
 import { RagSearchService } from "@features/rag/services/rag-search.service";
 import type { ApiContext } from "../api.types";

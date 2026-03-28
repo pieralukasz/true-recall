@@ -1,5 +1,6 @@
 import type { ChatMessage } from "@features/ai/services/openrouter-client";
 import { StreamingOpenRouterClient } from "@features/ai/services/streaming-openrouter-client";
+import type { FrontmatterIndexService } from "@features/core/services/frontmatter-index.service";
 import { LITELLM_URL } from "@shared/constants";
 import type { TrueRecallSettings } from "@shared/types/settings.types";
 import type { RagSearchService, SearchResult } from "./rag-search.service";
@@ -24,6 +25,7 @@ export class RagQueryService {
 	constructor(
 		private search: RagSearchService,
 		private settings: () => TrueRecallSettings,
+		private frontmatterIndex?: FrontmatterIndexService,
 	) {}
 
 	async *queryStream(
@@ -31,8 +33,9 @@ export class RagQueryService {
 		history: ChatTurn[],
 	): AsyncGenerator<string> {
 		const searchResults = await this.search.search(question);
-		this.lastSearchResults = searchResults.results;
-		const context = this.packContext(searchResults.results);
+		const { context, sourceMap } = this.packContext(searchResults.results);
+		// Store one representative result per unique source (for citation click handlers)
+		this.lastSearchResults = sourceMap;
 
 		const messages = this.buildMessages(question, history, context);
 		const s = this.settings();
@@ -53,29 +56,71 @@ export class RagQueryService {
 		return this.lastSearchResults;
 	}
 
-	private packContext(results: SearchResult[]): string {
-		const parts: string[] = [];
-		let tokens = 0;
-		let idx = 1;
+	private packContext(results: SearchResult[]): {
+		context: string;
+		sourceMap: SearchResult[];
+	} {
+		// Group chunks by unique source
+		const groups = new Map<
+			string,
+			{ label: string; chunks: SearchResult[]; totalTokens: number }
+		>();
 
 		for (const r of results) {
-			if (tokens + r.tokenCount > CONTEXT_TOKEN_BUDGET) break;
+			// Resolve grouping key: notes by path, flashcards by their source note path
+			let key: string;
+			let label: string;
 
-			let label = "";
 			if (r.sourceType === "note") {
-				const name = shortName(r.sourceId);
-				const heading = r.headingBreadcrumb ? ` > ${r.headingBreadcrumb}` : "";
-				label = `${name}${heading}`;
+				key = r.sourceId;
+				label = shortName(r.sourceId);
+			} else if (r.sourceNoteUid && this.frontmatterIndex) {
+				const noteFile = this.frontmatterIndex.getFileByValue(
+					"flashcard_uid",
+					r.sourceNoteUid,
+				);
+				key = noteFile?.path ?? `fc:${r.sourceId}`;
+				label = noteFile ? shortName(noteFile.path) : "Flashcards";
 			} else {
+				key = `fc:${r.sourceId}`;
 				label = "Flashcard";
 			}
 
-			parts.push(`[${idx}] (${label})\n${r.content}`);
-			tokens += r.tokenCount;
+			const existing = groups.get(key);
+			if (existing) {
+				existing.chunks.push(r);
+				existing.totalTokens += r.tokenCount;
+			} else {
+				groups.set(key, { label, chunks: [r], totalTokens: r.tokenCount });
+			}
+		}
+
+		const parts: string[] = [];
+		const sourceMap: SearchResult[] = [];
+		let tokens = 0;
+		let idx = 1;
+
+		for (const [, group] of groups) {
+			if (tokens + group.totalTokens > CONTEXT_TOKEN_BUDGET) break;
+
+			const chunkTexts = group.chunks
+				.map((c) => {
+					const heading = c.headingBreadcrumb
+						? `(${c.headingBreadcrumb})\n`
+						: "";
+					return `${heading}${c.content}`;
+				})
+				.join("\n\n");
+
+			parts.push(`[${idx}] ${group.label}\n${chunkTexts}`);
+			tokens += group.totalTokens;
+			// Store the first chunk as representative for navigation
+			const representative = group.chunks[0];
+			if (representative) sourceMap.push(representative);
 			idx++;
 		}
 
-		return parts.join("\n\n---\n\n");
+		return { context: parts.join("\n\n---\n\n"), sourceMap };
 	}
 
 	private buildMessages(

@@ -6,7 +6,37 @@ import { groupSources } from "../helpers/group-sources";
 import type { SourceNavigationHandlers } from "../types";
 import { SourcePanel } from "./SourcePanel";
 
-const CITE_RE = /\[(\d+)\]/g;
+// Matches [1], [1, 2], [1, 9], [1, 2, 3] etc.
+const CITE_GROUP_RE = /\[([\d]+(?:\s*,\s*[\d]+)*)\]/g;
+
+function makeCiteClickable(
+	num: number,
+	sources: SearchResult[],
+	navigation: SourceNavigationHandlers,
+	key: string,
+): ComponentChildren {
+	const source = num > 0 && num <= sources.length ? sources[num - 1] : null;
+	if (!source) return String(num);
+
+	return (
+		<Clickable
+			key={key}
+			class="ep:inline ep:text-obs-accent ep:font-semibold ep:cursor-pointer ep:hover:underline"
+			onClick={() => {
+				if (source.sourceType === "note") {
+					navigation.onNavigateToNote(
+						source.sourceId,
+						source.headingBreadcrumb,
+					);
+				} else {
+					navigation.onNavigateToCard(source.sourceId);
+				}
+			}}
+		>
+			{num}
+		</Clickable>
+	);
+}
 
 function renderWithCitations(
 	text: string,
@@ -18,37 +48,25 @@ function renderWithCitations(
 	const parts: ComponentChildren[] = [];
 	let lastIndex = 0;
 
-	for (const match of text.matchAll(CITE_RE)) {
+	for (const match of text.matchAll(CITE_GROUP_RE)) {
 		const idx = match.index;
 		if (idx > lastIndex) {
 			parts.push(text.slice(lastIndex, idx));
 		}
 
-		const num = Number.parseInt(match[1] ?? "0", 10);
-		const source = num > 0 && num <= sources.length ? sources[num - 1] : null;
+		const nums = (match[1] ?? "")
+			.split(",")
+			.map((s) => Number.parseInt(s.trim(), 10))
+			.filter((n) => !Number.isNaN(n));
 
-		if (source) {
+		parts.push("[");
+		for (let i = 0; i < nums.length; i++) {
+			if (i > 0) parts.push(", ");
 			parts.push(
-				<Clickable
-					key={`cite-${idx}`}
-					class="ep:inline ep:text-obs-accent ep:font-semibold ep:cursor-pointer ep:hover:underline"
-					onClick={() => {
-						if (source.sourceType === "note") {
-							navigation.onNavigateToNote(
-								source.sourceId,
-								source.headingBreadcrumb,
-							);
-						} else {
-							navigation.onNavigateToCard(source.sourceId);
-						}
-					}}
-				>
-					[{num}]
-				</Clickable>,
+				makeCiteClickable(nums[i]!, sources, navigation, `cite-${idx}-${i}`),
 			);
-		} else {
-			parts.push(match[0]);
 		}
+		parts.push("]");
 
 		lastIndex = idx + match[0].length;
 	}

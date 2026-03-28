@@ -1,4 +1,7 @@
-import type { RagChunkActions } from "@features/rag/persistence/rag-chunk-actions";
+import type {
+	RagChunkActions,
+	RagSourceType,
+} from "@features/rag/persistence/rag-chunk-actions";
 import { effect } from "@preact/signals-core";
 import { RAG_CONFIG } from "@shared/constants";
 import { lastMutation } from "@shared/services/signals";
@@ -6,6 +9,7 @@ import type { TrueRecallSettings } from "@shared/types/settings.types";
 import { type App, debounce, type Plugin, TFile } from "obsidian";
 import { chunkFlashcard, chunkNote } from "./rag-chunker.service";
 import type { RagEmbeddingService } from "./rag-embedding.service";
+import type { RagSearchService } from "./rag-search.service";
 
 export interface IndexResult {
 	indexed: number;
@@ -23,12 +27,18 @@ export interface IndexProgress {
 }
 
 export class RagIndexerService {
+	private searchService: RagSearchService | null = null;
+
 	constructor(
 		private app: App,
 		private actions: RagChunkActions,
 		private embedder: RagEmbeddingService,
 		private settings: () => TrueRecallSettings,
 	) {}
+
+	setSearchService(search: RagSearchService): void {
+		this.searchService = search;
+	}
 
 	async fullReindex(
 		onProgress?: (progress: IndexProgress) => void,
@@ -73,7 +83,6 @@ export class RagIndexerService {
 			result.errors += fcResult.errors;
 		}
 
-		// Embed all chunks without embeddings
 		result.embedded = await this.embedPending(onProgress);
 
 		return result;
@@ -109,7 +118,7 @@ export class RagIndexerService {
 		return true;
 	}
 
-	async removeSource(sourceType: string, sourceId: string): Promise<void> {
+	removeSource(sourceType: RagSourceType, sourceId: string): void {
 		this.actions.deleteBySource(sourceType, sourceId);
 		this.actions.deleteIndexMeta(sourceType, sourceId);
 	}
@@ -317,11 +326,11 @@ export class RagIndexerService {
 		onProgress?: (progress: IndexProgress) => void,
 	): Promise<number> {
 		let totalEmbedded = 0;
+		const totalPending = this.actions.countChunksWithoutEmbedding();
+		const MAX_BATCHES = 1000;
+		let batchCount = 0;
 
-		// Count total pending for progress reporting
-		const totalPending = this.actions.getChunksWithoutEmbedding(999999).length;
-
-		while (true) {
+		while (batchCount < MAX_BATCHES) {
 			const pending = this.actions.getChunksWithoutEmbedding(
 				RAG_CONFIG.embeddingBatchSize,
 			);
@@ -330,19 +339,38 @@ export class RagIndexerService {
 			const texts = pending.map((c) => c.content);
 			const embeddings = await this.embedder.embed(texts);
 
-			const updates = pending.map((c, i) => ({
-				chunkId: c.id,
-				embedding: embeddings[i] ?? new Float32Array(0),
-			}));
+			if (embeddings.length !== pending.length) {
+				console.error(
+					`[True Recall RAG] Embedding count mismatch: expected ${pending.length}, got ${embeddings.length}. Skipping batch.`,
+				);
+				break;
+			}
+
+			const updates: { chunkId: number; embedding: Float32Array }[] = [];
+			for (let i = 0; i < pending.length; i++) {
+				const emb = embeddings[i];
+				if (!emb || emb.length === 0) {
+					console.warn(
+						`[True Recall RAG] Empty embedding for chunk ${pending[i]?.id}, skipping`,
+					);
+					continue;
+				}
+				updates.push({ chunkId: pending[i]!.id, embedding: emb });
+			}
 
 			this.actions.updateEmbeddingsBatch(updates);
-			totalEmbedded += pending.length;
+			totalEmbedded += updates.length;
+			batchCount++;
 
 			onProgress?.({
 				phase: "embedding",
 				current: totalEmbedded,
 				total: totalPending,
 			});
+		}
+
+		if (totalEmbedded > 0) {
+			this.searchService?.invalidateCache();
 		}
 
 		return totalEmbedded;
