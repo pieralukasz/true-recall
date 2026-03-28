@@ -133,8 +133,10 @@ export class RagChunkActions {
 
 	// FTS5 keyword search — returns chunk IDs ranked by BM25
 	searchFts(query: string, limit: number): { id: number; rank: number }[] {
-		const escaped = query.replace(/['"]/g, "");
-		if (!escaped.trim()) return [];
+		const escaped = query
+			.replace(/['"?*!+\-()^~:{}[\]\\@#$%&|<>=]/g, " ")
+			.trim();
+		if (!escaped) return [];
 
 		return this.db.query<{ id: number; rank: number }>(
 			`SELECT rc.id, raf.rank
@@ -200,6 +202,28 @@ export class RagChunkActions {
 		);
 	}
 
+	getFlashcardDataById(cardId: string): {
+		id: string;
+		fields_json: string;
+		source_text: string | null;
+		tags: string | null;
+	} | null {
+		return (
+			this.db.get<{
+				id: string;
+				fields_json: string;
+				source_text: string | null;
+				tags: string | null;
+			}>(
+				`SELECT c.id, n.fields_json, n.source_text, n.tags
+			 FROM cards c
+			 JOIN notes n ON c.note_id = n.id
+			 WHERE c.id = ? AND c.deleted_at IS NULL`,
+				[cardId],
+			) ?? null
+		);
+	}
+
 	getFlashcardData(): {
 		id: string;
 		fields_json: string;
@@ -211,6 +235,12 @@ export class RagChunkActions {
 			 FROM cards c
 			 JOIN notes n ON c.note_id = n.id
 			 WHERE c.deleted_at IS NULL`,
+		);
+	}
+
+	getIndexedSources(): RagIndexMetaRow[] {
+		return this.db.query<RagIndexMetaRow>(
+			`SELECT * FROM rag_index_meta ORDER BY indexed_at DESC`,
 		);
 	}
 

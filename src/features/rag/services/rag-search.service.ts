@@ -113,7 +113,9 @@ export class RagSearchService {
 		const scored: { id: number; score: number }[] = [];
 		for (const [id, embedding] of this.embeddingCache) {
 			const score = cosineSimilarity(queryEmbedding, embedding);
-			scored.push({ id, score });
+			if (score >= RAG_CONFIG.cosineThreshold) {
+				scored.push({ id, score });
+			}
 		}
 
 		scored.sort((a, b) => b.score - a.score);

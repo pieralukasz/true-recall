@@ -1,20 +1,50 @@
 import type { ChatTurn } from "@features/rag/services/rag-query.service";
 import { Clickable } from "@shared/ui/components";
-import { useCallback, useRef, useState } from "preact/hooks";
+import { useApp, usePlugin } from "@shared/ui/preact";
+import { useCallback, useMemo, useRef, useState } from "preact/hooks";
 import { ChatInput } from "./components/ChatInput";
 import { ChatMessage } from "./components/ChatMessage";
 import { IndexStatus } from "./components/IndexStatus";
 import type { KnowledgeChatView } from "./KnowledgeChatView";
+import type { SourceNavigationHandlers } from "./types";
 
 interface Props {
 	view: KnowledgeChatView;
 }
 
 export function KnowledgeChatApp({ view }: Props) {
+	const app = useApp();
+	const plugin = usePlugin();
 	const [messages, setMessages] = useState<ChatTurn[]>([]);
 	const [streaming, setStreaming] = useState(false);
 	const [streamingText, setStreamingText] = useState("");
 	const scrollRef = useRef<HTMLDivElement>(null);
+
+	const navigation = useMemo<SourceNavigationHandlers>(
+		() => ({
+			onNavigateToNote: (sourceId: string, headingBreadcrumb: string) => {
+				const lastHeading = headingBreadcrumb.split(" > ").pop()?.trim() ?? "";
+				const link = lastHeading ? `${sourceId}#${lastHeading}` : sourceId;
+				void app.workspace.openLinkText(link, "", false);
+			},
+			onNavigateToCard: (cardId: string) => {
+				const cards = plugin.cardStore.getByIds([cardId]);
+				const sourceUid = cards[0]?.sourceUid;
+				if (sourceUid) {
+					const file = plugin.frontmatterIndex.getFileByValue(
+						"flashcard_uid",
+						sourceUid,
+					);
+					if (file) {
+						void app.workspace.openLinkText(file.path, "", false).then(() => {
+							void plugin.activateView();
+						});
+					}
+				}
+			},
+		}),
+		[app, plugin],
+	);
 
 	const scrollToBottom = useCallback(() => {
 		requestAnimationFrame(() => {
@@ -101,7 +131,7 @@ export function KnowledgeChatApp({ view }: Props) {
 				)}
 
 				{messages.map((msg, i) => (
-					<ChatMessage key={i} turn={msg} />
+					<ChatMessage key={i} turn={msg} navigation={navigation} />
 				))}
 
 				{streaming && streamingText && (

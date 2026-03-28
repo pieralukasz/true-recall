@@ -1,5 +1,7 @@
 import type { RagChunkActions } from "@features/rag/persistence/rag-chunk-actions";
+import { effect } from "@preact/signals-core";
 import { RAG_CONFIG } from "@shared/constants";
+import { lastMutation } from "@shared/services/signals";
 import type { TrueRecallSettings } from "@shared/types/settings.types";
 import { type App, debounce, type Plugin, TFile } from "obsidian";
 import { chunkFlashcard, chunkNote } from "./rag-chunker.service";
@@ -10,6 +12,8 @@ export interface IndexResult {
 	skipped: number;
 	errors: number;
 	embedded: number;
+	flashcardsIndexed: number;
+	flashcardsSkipped: number;
 }
 
 export interface IndexProgress {
@@ -34,6 +38,8 @@ export class RagIndexerService {
 			skipped: 0,
 			errors: 0,
 			embedded: 0,
+			flashcardsIndexed: 0,
+			flashcardsSkipped: 0,
 		};
 		const s = this.settings();
 
@@ -62,7 +68,8 @@ export class RagIndexerService {
 
 		if (s.ragIndexFlashcards) {
 			const fcResult = await this.indexFlashcards(onProgress);
-			result.indexed += fcResult.indexed;
+			result.flashcardsIndexed = fcResult.indexed;
+			result.flashcardsSkipped = fcResult.skipped;
 			result.errors += fcResult.errors;
 		}
 
@@ -105,6 +112,85 @@ export class RagIndexerService {
 	async removeSource(sourceType: string, sourceId: string): Promise<void> {
 		this.actions.deleteBySource(sourceType, sourceId);
 		this.actions.deleteIndexMeta(sourceType, sourceId);
+	}
+
+	registerCardSignals(plugin: Plugin): void {
+		const debouncedCardIndex = debounce(
+			async (cardIds: string[]) => {
+				const s = this.settings();
+				if (!s.ragEnabled || !s.ragAutoIndex || !s.ragIndexFlashcards) return;
+				try {
+					for (const id of cardIds) {
+						await this.indexSingleCard(id);
+					}
+					await this.embedPending();
+				} catch (e) {
+					console.error("[True Recall RAG] Auto-index card error:", e);
+				}
+			},
+			RAG_CONFIG.indexDebounceMs,
+			true,
+		);
+
+		const dispose = effect(() => {
+			const m = lastMutation.value;
+			if (!m) return;
+
+			if (m.type === "removed") {
+				if (m.cardId) this.removeSource("flashcard", m.cardId);
+				if (m.cardIds) {
+					for (const id of m.cardIds) this.removeSource("flashcard", id);
+				}
+				return;
+			}
+
+			if (m.type === "added" || m.type === "updated") {
+				const ids = m.cardId ? [m.cardId] : (m.cardIds ?? []);
+				if (ids.length > 0) debouncedCardIndex(ids);
+			}
+
+			if (m.type === "bulk" && m.cardIds) {
+				debouncedCardIndex(m.cardIds);
+			}
+		});
+
+		plugin.register(() => dispose());
+	}
+
+	private async indexSingleCard(cardId: string): Promise<boolean> {
+		const card = this.actions.getFlashcardDataById(cardId);
+		if (!card) return false;
+
+		const content = [card.fields_json, card.source_text ?? ""].join(" ");
+		const hash = await this.contentHash(content);
+		const meta = this.actions.getIndexMeta("flashcard", card.id);
+		if (meta && meta.content_hash === hash) return false;
+
+		const chunks = chunkFlashcard(
+			card.fields_json,
+			card.source_text ?? undefined,
+			card.tags ?? undefined,
+		);
+
+		this.actions.upsertChunks(
+			"flashcard",
+			card.id,
+			chunks.map((c) => ({
+				content: c.content,
+				headingBreadcrumb: c.headingBreadcrumb,
+				tokenCount: c.tokenCount,
+				contentHash: hash,
+			})),
+		);
+
+		this.actions.upsertIndexMeta(
+			"flashcard",
+			card.id,
+			hash,
+			Date.now(),
+			chunks.length,
+		);
+		return true;
 	}
 
 	registerVaultEvents(plugin: Plugin): void {
@@ -167,9 +253,11 @@ export class RagIndexerService {
 		onProgress?: (progress: IndexProgress) => void,
 	): Promise<{
 		indexed: number;
+		skipped: number;
 		errors: number;
 	}> {
 		let indexed = 0;
+		let skipped = 0;
 		let errors = 0;
 
 		const cards = this.actions.getFlashcardData();
@@ -180,7 +268,10 @@ export class RagIndexerService {
 				const content = [card.fields_json, card.source_text ?? ""].join(" ");
 				const hash = await this.contentHash(content);
 				const meta = this.actions.getIndexMeta("flashcard", card.id);
-				if (meta && meta.content_hash === hash) continue;
+				if (meta && meta.content_hash === hash) {
+					skipped++;
+					continue;
+				}
 
 				const chunks = chunkFlashcard(
 					card.fields_json,
@@ -219,7 +310,7 @@ export class RagIndexerService {
 			});
 		}
 
-		return { indexed, errors };
+		return { indexed, skipped, errors };
 	}
 
 	private async embedPending(
@@ -228,8 +319,7 @@ export class RagIndexerService {
 		let totalEmbedded = 0;
 
 		// Count total pending for progress reporting
-		const totalPending =
-			this.actions.getChunksWithoutEmbedding(999999).length;
+		const totalPending = this.actions.getChunksWithoutEmbedding(999999).length;
 
 		while (true) {
 			const pending = this.actions.getChunksWithoutEmbedding(

@@ -21,7 +21,7 @@ export class RagChatService {
 			yield chunk;
 		}
 
-		const sources = await this.queryService.getLastSearchResults(message);
+		const sources = this.queryService.getLastSearchResults();
 		this.history.push({
 			role: "assistant",
 			content: fullResponse,

@@ -306,6 +306,7 @@ export default class TrueRecallPlugin extends Plugin {
 				() => this.settings,
 			);
 			this.ragIndexer.registerVaultEvents(this);
+			this.ragIndexer.registerCardSignals(this);
 		}
 
 		if (this.settings.enableLocalApi) {

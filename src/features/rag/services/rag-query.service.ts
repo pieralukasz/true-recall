@@ -4,11 +4,10 @@ import { LITELLM_URL } from "@shared/constants";
 import type { TrueRecallSettings } from "@shared/types/settings.types";
 import type { RagSearchService, SearchResult } from "./rag-search.service";
 
-const SYSTEM_PROMPT = `You are an assistant that answers questions based on the user's personal notes and flashcards.
-Cite sources using [Source: filename > heading] for notes or [Card: question preview] for flashcards.
-For flashcard results, mention mastery level when relevant (stable, learning, struggling).
-If the provided context doesn't contain enough information, say so clearly — do not make things up.
-Be concise and direct.`;
+const SYSTEM_PROMPT = `You are a knowledgeable assistant that answers based on the user's notes and flashcards.
+Cite sources inline using numbered references like [1], [2] etc. matching the source numbers in the provided context.
+If context doesn't contain enough info, say so clearly — do not make things up.
+Be concise, use markdown formatting, answer in the same language as the user's question.`;
 
 const CONTEXT_TOKEN_BUDGET = 4000;
 
@@ -20,6 +19,8 @@ export interface ChatTurn {
 }
 
 export class RagQueryService {
+	private lastSearchResults: SearchResult[] = [];
+
 	constructor(
 		private search: RagSearchService,
 		private settings: () => TrueRecallSettings,
@@ -30,6 +31,7 @@ export class RagQueryService {
 		history: ChatTurn[],
 	): AsyncGenerator<string> {
 		const searchResults = await this.search.search(question);
+		this.lastSearchResults = searchResults.results;
 		const context = this.packContext(searchResults.results);
 
 		const messages = this.buildMessages(question, history, context);
@@ -47,50 +49,30 @@ export class RagQueryService {
 		}
 	}
 
-	async query(
-		question: string,
-		history: ChatTurn[],
-	): Promise<{ answer: string; sources: SearchResult[] }> {
-		const searchResults = await this.search.search(question);
-		let answer = "";
-
-		for await (const chunk of this.queryStream(question, history)) {
-			answer += chunk;
-		}
-
-		return { answer, sources: searchResults.results };
-	}
-
-	getLastSearchResults(question: string): Promise<SearchResult[]> {
-		return this.search.search(question).then((r) => r.results);
+	getLastSearchResults(): SearchResult[] {
+		return this.lastSearchResults;
 	}
 
 	private packContext(results: SearchResult[]): string {
 		const parts: string[] = [];
 		let tokens = 0;
+		let idx = 1;
 
 		for (const r of results) {
 			if (tokens + r.tokenCount > CONTEXT_TOKEN_BUDGET) break;
 
-			let header = "";
+			let label = "";
 			if (r.sourceType === "note") {
-				header = `[Note: ${r.sourceId}${r.headingBreadcrumb ? ` > ${r.headingBreadcrumb}` : ""}]`;
+				const name = shortName(r.sourceId);
+				const heading = r.headingBreadcrumb ? ` > ${r.headingBreadcrumb}` : "";
+				label = `${name}${heading}`;
 			} else {
-				const stateLabel =
-					r.fsrs?.state === 0
-						? "new"
-						: r.fsrs?.state === 1
-							? "learning"
-							: r.fsrs?.state === 2
-								? "review"
-								: r.fsrs?.state === 3
-									? "relearning"
-									: "unknown";
-				header = `[Flashcard (${stateLabel}, stability: ${r.fsrs?.stability?.toFixed(1) ?? "?"}d)]`;
+				label = "Flashcard";
 			}
 
-			parts.push(`${header}\n${r.content}`);
+			parts.push(`[${idx}] (${label})\n${r.content}`);
 			tokens += r.tokenCount;
+			idx++;
 		}
 
 		return parts.join("\n\n---\n\n");
@@ -116,4 +98,10 @@ export class RagQueryService {
 		messages.push({ role: "user", content: userMessage });
 		return messages;
 	}
+}
+
+function shortName(sourceId: string): string {
+	const withoutExt = sourceId.replace(/\.md$/, "");
+	const lastSlash = withoutExt.lastIndexOf("/");
+	return lastSlash >= 0 ? withoutExt.slice(lastSlash + 1) : withoutExt;
 }

@@ -134,9 +134,7 @@ export function KnowledgeBaseTab() {
 
 					<FormField
 						name="Manual reindex"
-						description={
-							progress || "Re-chunk and re-embed all vault content"
-						}
+						description={progress || "Re-chunk and re-embed all vault content"}
 					>
 						<ActionButton
 							label={reindexing ? "Reindexing..." : "Reindex now"}
