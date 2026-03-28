@@ -36,6 +36,8 @@ CLAUDE.md
 .claude/agents/supabase-sync-updater.md
 .claude/agents/sql-migration.md
 .claude/skills/
+.claude/rules/
+.mcp.json
 
 # Documentation and plans
 docs/
