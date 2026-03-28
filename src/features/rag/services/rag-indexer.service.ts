@@ -1,0 +1,270 @@
+import type { RagChunkActions } from "@features/rag/persistence/rag-chunk-actions";
+import { RAG_CONFIG } from "@shared/constants";
+import type { TrueRecallSettings } from "@shared/types/settings.types";
+import { type App, debounce, type Plugin, TFile } from "obsidian";
+import { chunkFlashcard, chunkNote } from "./rag-chunker.service";
+import type { RagEmbeddingService } from "./rag-embedding.service";
+
+export interface IndexResult {
+	indexed: number;
+	skipped: number;
+	errors: number;
+	embedded: number;
+}
+
+export interface IndexProgress {
+	phase: "notes" | "flashcards" | "embedding";
+	current: number;
+	total: number;
+}
+
+export class RagIndexerService {
+	constructor(
+		private app: App,
+		private actions: RagChunkActions,
+		private embedder: RagEmbeddingService,
+		private settings: () => TrueRecallSettings,
+	) {}
+
+	async fullReindex(
+		onProgress?: (progress: IndexProgress) => void,
+	): Promise<IndexResult> {
+		const result: IndexResult = {
+			indexed: 0,
+			skipped: 0,
+			errors: 0,
+			embedded: 0,
+		};
+		const s = this.settings();
+
+		const files = this.app.vault
+			.getMarkdownFiles()
+			.filter((f) => this.shouldIndex(f));
+
+		const totalFiles = files.length;
+		for (let i = 0; i < files.length; i++) {
+			try {
+				const file = files[i];
+				if (!file) continue;
+				const wasIndexed = await this.indexFile(file);
+				if (wasIndexed) result.indexed++;
+				else result.skipped++;
+			} catch (e) {
+				console.error("[True Recall RAG] Index error:", e);
+				result.errors++;
+			}
+
+			onProgress?.({ phase: "notes", current: i + 1, total: totalFiles });
+
+			// Yield every 20 files to not block the event loop
+			if (i % 20 === 0) await new Promise((r) => setTimeout(r, 0));
+		}
+
+		if (s.ragIndexFlashcards) {
+			const fcResult = await this.indexFlashcards(onProgress);
+			result.indexed += fcResult.indexed;
+			result.errors += fcResult.errors;
+		}
+
+		// Embed all chunks without embeddings
+		result.embedded = await this.embedPending(onProgress);
+
+		return result;
+	}
+
+	async indexFile(file: TFile): Promise<boolean> {
+		const content = await this.app.vault.cachedRead(file);
+		const hash = await this.contentHash(content);
+
+		const meta = this.actions.getIndexMeta("note", file.path);
+		if (meta && meta.content_hash === hash) return false;
+
+		const chunks = chunkNote(content);
+		this.actions.upsertChunks(
+			"note",
+			file.path,
+			chunks.map((c) => ({
+				content: c.content,
+				headingBreadcrumb: c.headingBreadcrumb,
+				tokenCount: c.tokenCount,
+				contentHash: hash,
+			})),
+		);
+
+		this.actions.upsertIndexMeta(
+			"note",
+			file.path,
+			hash,
+			file.stat.mtime,
+			chunks.length,
+		);
+
+		return true;
+	}
+
+	async removeSource(sourceType: string, sourceId: string): Promise<void> {
+		this.actions.deleteBySource(sourceType, sourceId);
+		this.actions.deleteIndexMeta(sourceType, sourceId);
+	}
+
+	registerVaultEvents(plugin: Plugin): void {
+		const debouncedIndex = debounce(
+			async (file: TFile) => {
+				if (!this.settings().ragEnabled || !this.settings().ragAutoIndex)
+					return;
+				if (!this.shouldIndex(file)) return;
+				try {
+					const wasIndexed = await this.indexFile(file);
+					if (wasIndexed) await this.embedPending();
+				} catch (e) {
+					console.error("[True Recall RAG] Auto-index error:", e);
+				}
+			},
+			RAG_CONFIG.indexDebounceMs,
+			true,
+		);
+
+		plugin.registerEvent(
+			this.app.vault.on("modify", (file) => {
+				if (file instanceof TFile && file.extension === "md") {
+					debouncedIndex(file);
+				}
+			}),
+		);
+
+		plugin.registerEvent(
+			this.app.vault.on("delete", (file) => {
+				if (file instanceof TFile) {
+					this.removeSource("note", file.path);
+				}
+			}),
+		);
+
+		plugin.registerEvent(
+			this.app.vault.on("rename", (file, oldPath) => {
+				if (file instanceof TFile && file.extension === "md") {
+					this.removeSource("note", oldPath);
+					debouncedIndex(file);
+				}
+			}),
+		);
+	}
+
+	private shouldIndex(file: TFile): boolean {
+		const s = this.settings();
+		const path = file.path;
+
+		if (s.ragExcludeFolders.some((f) => path.startsWith(f))) return false;
+
+		if (s.ragIncludeFolders.length > 0) {
+			return s.ragIncludeFolders.some((f) => path.startsWith(f));
+		}
+
+		return true;
+	}
+
+	private async indexFlashcards(
+		onProgress?: (progress: IndexProgress) => void,
+	): Promise<{
+		indexed: number;
+		errors: number;
+	}> {
+		let indexed = 0;
+		let errors = 0;
+
+		const cards = this.actions.getFlashcardData();
+		const totalCards = cards.length;
+
+		for (const [i, card] of cards.entries()) {
+			try {
+				const content = [card.fields_json, card.source_text ?? ""].join(" ");
+				const hash = await this.contentHash(content);
+				const meta = this.actions.getIndexMeta("flashcard", card.id);
+				if (meta && meta.content_hash === hash) continue;
+
+				const chunks = chunkFlashcard(
+					card.fields_json,
+					card.source_text ?? undefined,
+					card.tags ?? undefined,
+				);
+
+				this.actions.upsertChunks(
+					"flashcard",
+					card.id,
+					chunks.map((c) => ({
+						content: c.content,
+						headingBreadcrumb: c.headingBreadcrumb,
+						tokenCount: c.tokenCount,
+						contentHash: hash,
+					})),
+				);
+
+				this.actions.upsertIndexMeta(
+					"flashcard",
+					card.id,
+					hash,
+					Date.now(),
+					chunks.length,
+				);
+				indexed++;
+			} catch (e) {
+				console.error("[True Recall RAG] Flashcard index error:", e);
+				errors++;
+			}
+
+			onProgress?.({
+				phase: "flashcards",
+				current: i + 1,
+				total: totalCards,
+			});
+		}
+
+		return { indexed, errors };
+	}
+
+	private async embedPending(
+		onProgress?: (progress: IndexProgress) => void,
+	): Promise<number> {
+		let totalEmbedded = 0;
+
+		// Count total pending for progress reporting
+		const totalPending =
+			this.actions.getChunksWithoutEmbedding(999999).length;
+
+		while (true) {
+			const pending = this.actions.getChunksWithoutEmbedding(
+				RAG_CONFIG.embeddingBatchSize,
+			);
+			if (pending.length === 0) break;
+
+			const texts = pending.map((c) => c.content);
+			const embeddings = await this.embedder.embed(texts);
+
+			const updates = pending.map((c, i) => ({
+				chunkId: c.id,
+				embedding: embeddings[i] ?? new Float32Array(0),
+			}));
+
+			this.actions.updateEmbeddingsBatch(updates);
+			totalEmbedded += pending.length;
+
+			onProgress?.({
+				phase: "embedding",
+				current: totalEmbedded,
+				total: totalPending,
+			});
+		}
+
+		return totalEmbedded;
+	}
+
+	private async contentHash(content: string): Promise<string> {
+		const encoder = new TextEncoder();
+		const data = encoder.encode(content);
+		const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+		const hashArray = new Uint8Array(hashBuffer);
+		return Array.from(hashArray)
+			.map((b) => b.toString(16).padStart(2, "0"))
+			.join("");
+	}
+}

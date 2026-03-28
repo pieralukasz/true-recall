@@ -164,6 +164,14 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 
 	enableLocalApi: false,
 	apiPort: 27182,
+
+	ragEnabled: false,
+	ragEmbeddingModel: "baai/bge-m3",
+	ragIncludeFolders: [],
+	ragExcludeFolders: [".true-recall", "templates"],
+	ragIndexFlashcards: true,
+	ragAutoIndex: true,
+	ragChunkMaxTokens: 400,
 };
 
 // FSRS v6 default weights (21 parameters)
@@ -227,6 +235,17 @@ export const GITHUB_RELEASES_API =
 	"https://api.github.com/repos/pieralukasz/true-recall/releases/latest";
 
 export const LITELLM_URL = "https://ai.truerecall.app/v1/chat/completions";
+export const LITELLM_EMBEDDINGS_URL = "https://ai.truerecall.app/v1/embeddings";
+
+export const VIEW_TYPE_KNOWLEDGE_CHAT = "true-recall-knowledge-chat";
+
+export const RAG_CONFIG = {
+	embeddingBatchSize: 64,
+	indexDebounceMs: 5000,
+	rrf_k: 60,
+	defaultTopK: 20,
+	embeddingDims: 1024,
+} as const;
 
 export const TRUERECALL_WEB_URL = "https://truerecall.app";
 export const TRUERECALL_BMC_URL = "https://buymeacoffee.com/pieralukasz";

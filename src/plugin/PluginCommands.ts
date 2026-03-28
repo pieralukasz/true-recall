@@ -190,4 +190,10 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 			return false;
 		},
 	});
+
+	plugin.addCommand({
+		id: "open-knowledge-chat",
+		name: "Chat with knowledge base",
+		callback: () => void plugin.openKnowledgeChat(),
+	});
 }

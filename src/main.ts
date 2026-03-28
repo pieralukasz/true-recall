@@ -64,6 +64,7 @@ import {
 	VIEW_TYPE_CARD_BROWSER,
 	VIEW_TYPE_DASHBOARD,
 	VIEW_TYPE_FLASHCARD_PANEL,
+	VIEW_TYPE_KNOWLEDGE_CHAT,
 	VIEW_TYPE_REVIEW,
 	VIEW_TYPE_SIMULATOR,
 	VIEW_TYPE_STATS,
@@ -119,6 +120,9 @@ export default class TrueRecallPlugin extends Plugin {
 	statusBarWidget: StatusBarWidget | null = null;
 	backupRecovery: BackupRecoveryManager | null = null;
 	localApi: LocalApiServer | null = null;
+	ragIndexer:
+		| import("@features/rag/services/rag-indexer.service").RagIndexerService
+		| null = null;
 	EmbeddableEditor:
 		| import("@shared/ui/editor/embedded-editor").EmbeddableEditorClass
 		| null = null;
@@ -273,11 +277,36 @@ export default class TrueRecallPlugin extends Plugin {
 			return new StatsView(leaf, this);
 		});
 
+		this.registerView(VIEW_TYPE_KNOWLEDGE_CHAT, (leaf) => {
+			const { KnowledgeChatView } =
+				require("@features/rag/ui/KnowledgeChatView") as {
+					KnowledgeChatView: typeof import("@features/rag/ui/KnowledgeChatView").KnowledgeChatView;
+				};
+			return new KnowledgeChatView(leaf, this);
+		});
+
 		registerCommands(this);
 		this.addSettingTab(new TrueRecallSettingTab(this.app, this));
 		registerEventHandlers(this);
 
 		this.undoService = new UndoService(this);
+
+		if (this.settings.ragEnabled && this.settings.proKey && this.cardStore) {
+			const { RagEmbeddingService } = await import(
+				"@features/rag/services/rag-embedding.service"
+			);
+			const { RagIndexerService } = await import(
+				"@features/rag/services/rag-indexer.service"
+			);
+			const embedder = new RagEmbeddingService(this.settings.proKey);
+			this.ragIndexer = new RagIndexerService(
+				this.app,
+				this.cardStore.rag,
+				embedder,
+				() => this.settings,
+			);
+			this.ragIndexer.registerVaultEvents(this);
+		}
 
 		if (this.settings.enableLocalApi) {
 			const { LocalApiServer: ApiServer } = await import(
@@ -488,6 +517,17 @@ export default class TrueRecallPlugin extends Plugin {
 			return;
 		}
 		await activateView(this.app, VIEW_TYPE_STATS, { useMainArea: true });
+	}
+
+	async openKnowledgeChat(): Promise<void> {
+		const existingLeaf = getView(this.app, VIEW_TYPE_KNOWLEDGE_CHAT);
+		if (existingLeaf) {
+			void this.app.workspace.revealLeaf(existingLeaf);
+			return;
+		}
+		await activateView(this.app, VIEW_TYPE_KNOWLEDGE_CHAT, {
+			useMainArea: false,
+		});
 	}
 
 	openCardTypesEditor(noteTypeId?: string): void {

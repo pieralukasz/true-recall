@@ -18,6 +18,7 @@ import {
 	toExactArrayBuffer,
 } from "@features/core/persistence/sqlite/sqlite.types";
 import { IntegrityCheckService } from "@features/core/services/integrity-check.service";
+import { RagChunkActions } from "@features/rag/persistence/rag-chunk-actions";
 import {
 	NOTIFICATION_DURATION,
 	notify,
@@ -47,6 +48,7 @@ export class SqliteStoreService {
 	public readonly notes: NoteActions;
 	public readonly noteTypes: NoteTypeActions;
 	public readonly integrity: IntegrityCheckService;
+	public readonly rag: RagChunkActions;
 
 	constructor(app: App, deviceId: string) {
 		this.app = app;
@@ -58,6 +60,7 @@ export class SqliteStoreService {
 		this.notes = new NoteActions(this.db);
 		this.noteTypes = new NoteTypeActions(this.db);
 		this.integrity = new IntegrityCheckService(this.db);
+		this.rag = new RagChunkActions(this.db);
 	}
 
 	getDeviceId(): string {

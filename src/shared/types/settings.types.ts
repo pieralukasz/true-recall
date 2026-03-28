@@ -283,6 +283,21 @@ export interface TrueRecallSettings {
 	enableLocalApi: boolean;
 	/** Port for local HTTP API (default 27182) */
 	apiPort: number;
+
+	/** Enable RAG knowledge base indexing (Pro only) */
+	ragEnabled: boolean;
+	/** Embedding model for RAG */
+	ragEmbeddingModel: string;
+	/** Only index notes in these folders (empty = all) */
+	ragIncludeFolders: string[];
+	/** Skip notes in these folders */
+	ragExcludeFolders: string[];
+	/** Also index flashcard content */
+	ragIndexFlashcards: boolean;
+	/** Re-index automatically when files change */
+	ragAutoIndex: boolean;
+	/** Target tokens per chunk */
+	ragChunkMaxTokens: number;
 }
 
 export interface SessionPreset {

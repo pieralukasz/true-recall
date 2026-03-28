@@ -29,6 +29,10 @@ export {
 	type ErrorBoundaryProps,
 } from "@shared/ui/components/ErrorBoundary";
 export {
+	FolderPicker,
+	type FolderPickerProps,
+} from "@shared/ui/components/FolderPicker";
+export {
 	FormCard,
 	type FormCardProps,
 } from "@shared/ui/components/FormCard";
