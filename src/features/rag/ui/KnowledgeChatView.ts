@@ -24,11 +24,11 @@ export class KnowledgeChatView extends ItemView {
 	}
 
 	getDisplayText(): string {
-		return "Knowledge Chat";
+		return "Chat";
 	}
 
 	getIcon(): string {
-		return "message-circle";
+		return "bot";
 	}
 
 	async onOpen(): Promise<void> {

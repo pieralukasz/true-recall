@@ -1,81 +1,132 @@
 import type { ChatTurn } from "@features/rag/services/rag-query.service";
 import type { SearchResult } from "@features/rag/services/rag-search.service";
 import { Clickable } from "@shared/ui/components";
-import type { ComponentChildren } from "preact";
+import { useApp } from "@shared/ui/preact";
+import { stripBrTags } from "@shared/utils";
+import { MarkdownRenderer, Component as ObsidianComponent } from "obsidian";
+import { useEffect, useRef } from "preact/hooks";
 import { groupSources } from "../helpers/group-sources";
 import type { SourceNavigationHandlers } from "../types";
 import { SourcePanel } from "./SourcePanel";
 
-// Matches [1], [1, 2], [1, 9], [1, 2, 3] etc.
-const CITE_GROUP_RE = /\[([\d]+(?:\s*,\s*[\d]+)*)\]/g;
+const CITE_RE = /\[(\d+(?:\s*,\s*\d+)*)\]/g;
 
-function makeCiteClickable(
-	num: number,
+function injectCitationHandlers(
+	el: HTMLElement,
 	sources: SearchResult[],
 	navigation: SourceNavigationHandlers,
-	key: string,
-): ComponentChildren {
-	const source = num > 0 && num <= sources.length ? sources[num - 1] : null;
-	if (!source) return String(num);
+) {
+	const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+	const textNodes: Text[] = [];
+	for (;;) {
+		const node = walker.nextNode() as Text | null;
+		if (!node) break;
+		if (CITE_RE.test(node.textContent ?? "")) {
+			textNodes.push(node);
+		}
+		CITE_RE.lastIndex = 0;
+	}
 
-	return (
-		<Clickable
-			key={key}
-			class="ep:inline ep:text-obs-accent ep:font-semibold ep:cursor-pointer ep:hover:underline"
-			onClick={() => {
-				if (source.sourceType === "note") {
-					navigation.onNavigateToNote(
-						source.sourceId,
-						source.headingBreadcrumb,
-					);
+	for (const textNode of textNodes) {
+		const text = textNode.textContent ?? "";
+		const frag = document.createDocumentFragment();
+		let lastIdx = 0;
+
+		for (const match of text.matchAll(CITE_RE)) {
+			const idx = match.index;
+			if (idx > lastIdx) {
+				frag.appendChild(document.createTextNode(text.slice(lastIdx, idx)));
+			}
+
+			const nums = (match[1] ?? "")
+				.split(",")
+				.map((s) => Number.parseInt(s.trim(), 10))
+				.filter((n) => !Number.isNaN(n));
+
+			frag.appendChild(document.createTextNode("["));
+			for (let i = 0; i < nums.length; i++) {
+				if (i > 0) frag.appendChild(document.createTextNode(", "));
+				const num = nums[i] ?? 0;
+				const source =
+					num > 0 && num <= sources.length ? sources[num - 1] : null;
+				if (source) {
+					const span = document.createElement("span");
+					span.textContent = String(num);
+					span.className =
+						"ep:text-obs-accent ep:font-semibold ep:cursor-pointer ep:hover:underline";
+					span.addEventListener("click", (e) => {
+						e.preventDefault();
+						e.stopPropagation();
+						if (source.sourceType === "note") {
+							navigation.onNavigateToNote(
+								source.sourceId,
+								source.headingBreadcrumb,
+							);
+						} else {
+							navigation.onNavigateToCard(source.sourceId);
+						}
+					});
+					frag.appendChild(span);
 				} else {
-					navigation.onNavigateToCard(source.sourceId);
+					frag.appendChild(document.createTextNode(String(num)));
 				}
-			}}
-		>
-			{num}
-		</Clickable>
-	);
+			}
+			frag.appendChild(document.createTextNode("]"));
+
+			lastIdx = idx + match[0].length;
+		}
+
+		if (lastIdx < text.length) {
+			frag.appendChild(document.createTextNode(text.slice(lastIdx)));
+		}
+
+		textNode.parentNode?.replaceChild(frag, textNode);
+	}
 }
 
-function renderWithCitations(
-	text: string,
-	sources: SearchResult[] | undefined,
-	navigation: SourceNavigationHandlers | undefined,
-): ComponentChildren {
-	if (!sources || !navigation) return text;
+interface AssistantMessageProps {
+	content: string;
+	sources?: SearchResult[];
+	navigation?: SourceNavigationHandlers;
+	isStreaming?: boolean;
+}
 
-	const parts: ComponentChildren[] = [];
-	let lastIndex = 0;
+function AssistantMessage({
+	content,
+	sources,
+	navigation,
+	isStreaming,
+}: AssistantMessageProps) {
+	const app = useApp();
+	const ref = useRef<HTMLDivElement>(null);
 
-	for (const match of text.matchAll(CITE_GROUP_RE)) {
-		const idx = match.index;
-		if (idx > lastIndex) {
-			parts.push(text.slice(lastIndex, idx));
+	useEffect(() => {
+		const el = ref.current;
+		if (!el) return;
+		el.empty();
+
+		const comp = new ObsidianComponent();
+		void MarkdownRenderer.render(app, stripBrTags(content), el, "", comp);
+
+		if (sources && navigation) {
+			injectCitationHandlers(el, sources, navigation);
 		}
 
-		const nums = (match[1] ?? "")
-			.split(",")
-			.map((s) => Number.parseInt(s.trim(), 10))
-			.filter((n) => !Number.isNaN(n));
-
-		parts.push("[");
-		for (let i = 0; i < nums.length; i++) {
-			if (i > 0) parts.push(", ");
-			parts.push(
-				makeCiteClickable(nums[i]!, sources, navigation, `cite-${idx}-${i}`),
-			);
+		if (isStreaming) {
+			const cursor = document.createElement("span");
+			cursor.className = "ep-streaming-cursor";
+			el.appendChild(cursor);
 		}
-		parts.push("]");
 
-		lastIndex = idx + match[0].length;
-	}
+		return () => comp.unload();
+	}, [app, content, sources, navigation, isStreaming]);
 
-	if (lastIndex < text.length) {
-		parts.push(text.slice(lastIndex));
-	}
-
-	return parts;
+	return (
+		<div
+			ref={ref}
+			class="ep:text-sm ep:select-text [&_p]:ep:my-1 [&_ul]:ep:my-1 [&_ol]:ep:my-1 [&_li]:ep:my-0.5 [&_code]:ep:text-xs [&_pre]:ep:my-2 [&_pre]:ep:text-xs [&_p:first-child]:ep:mt-0 [&_p:last-child]:ep:mb-0"
+		/>
+	);
 }
 
 interface Props {
@@ -91,22 +142,25 @@ export function ChatMessage({ turn, isStreaming, navigation }: Props) {
 
 	return (
 		<div
-			class={`ep:flex ep:flex-col ep:gap-1 ${isUser ? "ep:items-end" : "ep:items-start"}`}
+			class={`ep:flex ep:flex-col ep:gap-1.5 ${isUser ? "ep:items-end" : "ep:items-start"}`}
 		>
-			<div
-				class={`ep:max-w-[85%] ep:rounded-lg ep:px-3 ep:py-2 ep:text-sm ep:whitespace-pre-wrap ep:select-text ${
-					isUser
-						? "ep:bg-obs-interactive/15 ep:text-obs-normal"
-						: "ep:bg-obs-modifier-hover ep:text-obs-normal"
-				} ${isStreaming ? "ep:animate-pulse" : ""}`}
-			>
-				{isUser
-					? turn.content
-					: renderWithCitations(turn.content, turn.sources, navigation)}
-			</div>
+			{isUser ? (
+				<div class="ep:max-w-[85%] ep:rounded-2xl ep:rounded-br-sm ep:px-4 ep:py-3 ep:text-sm ep:whitespace-pre-wrap ep:select-text ep:bg-obs-interactive/20 ep:text-obs-normal">
+					{turn.content}
+				</div>
+			) : (
+				<div class="ep:w-full ep:px-1">
+					<AssistantMessage
+						content={turn.content}
+						sources={turn.sources}
+						navigation={navigation}
+						isStreaming={isStreaming}
+					/>
+				</div>
+			)}
 
 			{grouped && (
-				<div class="ep:flex ep:flex-wrap ep:gap-1 ep:max-w-[85%]">
+				<div class="ep:flex ep:flex-wrap ep:gap-1.5 ep:max-w-[90%]">
 					{grouped.slice(0, 5).map((g) => {
 						const label =
 							g.sourceType === "note"
@@ -116,7 +170,7 @@ export function ChatMessage({ turn, isStreaming, navigation }: Props) {
 						return (
 							<Clickable
 								key={g.sourceId}
-								class="ep:text-[10px] ep:px-1.5 ep:py-0.5 ep:rounded ep:bg-obs-modifier-hover ep:text-obs-muted ep:hover:text-obs-accent ep:hover:underline ep:transition-colors ep:max-w-[200px] ep:truncate"
+								class="ep:text-[11px] ep:px-2 ep:py-1 ep:rounded-lg ep:bg-obs-modifier-hover ep:text-obs-muted ep:hover:text-obs-accent ep:hover:underline ep:transition-colors ep:max-w-[200px] ep:truncate"
 								onClick={() => {
 									if (!navigation) return;
 									if (g.sourceType === "note") {

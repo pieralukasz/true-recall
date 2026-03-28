@@ -1,6 +1,6 @@
 import type { ChatTurn } from "@features/rag/services/rag-query.service";
-import { Clickable } from "@shared/ui/components";
-import { useApp, usePlugin } from "@shared/ui/preact";
+import { Clickable, IconButton } from "@shared/ui/components";
+import { useApp, useIcon, usePlugin } from "@shared/ui/preact";
 import { Notice } from "obsidian";
 import { useCallback, useMemo, useRef, useState } from "preact/hooks";
 import { ChatInput } from "./components/ChatInput";
@@ -8,6 +8,12 @@ import { ChatMessage } from "./components/ChatMessage";
 import { IndexStatus } from "./components/IndexStatus";
 import type { KnowledgeChatView } from "./KnowledgeChatView";
 import type { SourceNavigationHandlers } from "./types";
+
+const SUGGESTED_QUESTIONS = [
+	"Summarize my recent notes",
+	"What topics do I study the most?",
+	"Which flashcards need more review?",
+];
 
 interface Props {
 	view: KnowledgeChatView;
@@ -20,6 +26,8 @@ export function KnowledgeChatApp({ view }: Props) {
 	const [streaming, setStreaming] = useState(false);
 	const [streamingText, setStreamingText] = useState("");
 	const scrollRef = useRef<HTMLDivElement>(null);
+	const headerIconRef = useIcon("bot");
+	const sparklesRef = useIcon("sparkles");
 
 	const navigation = useMemo<SourceNavigationHandlers>(
 		() => ({
@@ -113,25 +121,58 @@ export function KnowledgeChatApp({ view }: Props) {
 
 	return (
 		<div class="ep:flex ep:flex-col ep:h-full">
-			<div class="ep:flex ep:items-center ep:justify-between ep:px-3 ep:py-2 ep:border-b ep:border-obs-border">
-				<span class="ep:text-ui-small ep:font-medium">Knowledge Chat</span>
-				{messages.length > 0 && (
-					<Clickable
-						class="ep:text-xs ep:text-obs-muted ep:hover:text-obs-normal"
-						onClick={handleClear}
-					>
-						Clear
-					</Clickable>
-				)}
+			<div class="ep:flex ep:items-center ep:justify-between ep:px-2 ep:py-3 ep:border-b ep:border-obs-border">
+				<div class="ep:flex ep:items-center ep:gap-2">
+					<div
+						ref={headerIconRef}
+						class="ep:w-4 ep:h-4 ep:text-obs-muted [&_svg]:ep:w-4 [&_svg]:ep:h-4"
+					/>
+					<span class="ep:text-ui-small ep:font-semibold ep:text-obs-normal">
+						Chat
+					</span>
+				</div>
+				<div class="ep:flex ep:items-center ep:gap-1">
+					<IndexStatus view={view} />
+					{messages.length > 0 && (
+						<IconButton
+							icon="trash-2"
+							ariaLabel="Clear conversation"
+							onClick={handleClear}
+							size="small"
+						/>
+					)}
+				</div>
 			</div>
 
 			<div
 				ref={scrollRef}
-				class="ep:flex-1 ep:overflow-y-auto ep:p-3 ep:flex ep:flex-col ep:gap-3"
+				class="ep:flex-1 ep:overflow-y-auto ep:px-4 ep:pt-4 ep:pb-2 ep:flex ep:flex-col ep:gap-5"
 			>
 				{messages.length === 0 && !streaming && (
-					<div class="ep:flex ep:items-center ep:justify-center ep:h-full ep:text-obs-muted ep:text-sm">
-						Ask anything about your notes
+					<div class="ep:flex ep:flex-col ep:items-center ep:justify-center ep:h-full ep:gap-5 ep:px-4">
+						<div
+							ref={sparklesRef}
+							class="ep:w-10 ep:h-10 ep:text-obs-accent ep:opacity-70 [&_svg]:ep:w-10 [&_svg]:ep:h-10"
+						/>
+						<div class="ep:text-center">
+							<div class="ep:text-ui-medium ep:font-semibold ep:text-obs-normal ep:mb-1">
+								Chat
+							</div>
+							<div class="ep:text-sm ep:text-obs-muted">
+								Ask anything about your notes and flashcards
+							</div>
+						</div>
+						<div class="ep:flex ep:flex-col ep:gap-2 ep:w-full ep:max-w-[280px]">
+							{SUGGESTED_QUESTIONS.map((q) => (
+								<Clickable
+									key={q}
+									class="ep:text-sm ep:text-obs-muted ep:text-left ep:px-4 ep:py-2.5 ep:rounded-xl ep:border ep:border-obs-border ep:hover:border-obs-interactive ep:hover:text-obs-normal ep:transition-colors ep:leading-snug"
+									onClick={() => handleSend(q)}
+								>
+									{q}
+								</Clickable>
+							))}
+						</div>
 					</div>
 				)}
 
@@ -151,7 +192,6 @@ export function KnowledgeChatApp({ view }: Props) {
 				)}
 			</div>
 
-			<IndexStatus view={view} />
 			<ChatInput onSend={handleSend} disabled={streaming} />
 		</div>
 	);

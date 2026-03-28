@@ -29,7 +29,7 @@ export function SourcePanel({ sources, navigation }: Props) {
 	const hasMore = grouped.length > INITIAL_VISIBLE;
 
 	return (
-		<div class="ep:max-w-[85%]">
+		<div class="ep:max-w-[90%]">
 			<Clickable
 				class="ep:flex ep:items-center ep:gap-1 ep:text-[11px] ep:text-obs-muted ep:hover:text-obs-normal ep:transition-colors ep:py-0.5"
 				onClick={() => setExpanded((v) => !v)}
@@ -73,7 +73,7 @@ function SourceRow({ group, navigation }: SourceRowProps) {
 
 	return (
 		<Clickable
-			class="ep:flex ep:items-start ep:gap-1.5 ep:px-1.5 ep:py-1 ep:rounded ep:hover:bg-obs-modifier-hover ep:transition-colors ep:cursor-pointer"
+			class="ep:flex ep:items-start ep:gap-1.5 ep:px-2 ep:py-1.5 ep:rounded ep:hover:bg-obs-modifier-hover ep:transition-colors ep:cursor-pointer"
 			onClick={() => {
 				if (group.sourceType === "note") {
 					navigation.onNavigateToNote(group.sourceId, group.headings[0] ?? "");

@@ -1,6 +1,6 @@
 import type { IndexProgress } from "@features/rag/services/rag-indexer.service";
 import { notify } from "@shared/services/notification.service";
-import { Clickable } from "@shared/ui/components";
+import { IconButton } from "@shared/ui/components";
 import { usePlugin } from "@shared/ui/preact";
 import { Notice } from "obsidian";
 import { useCallback, useMemo, useState } from "preact/hooks";
@@ -60,19 +60,21 @@ export function IndexStatus({ view }: Props) {
 
 	const label =
 		stats.totalChunks > 0
-			? `${stats.embeddedChunks.toLocaleString()} chunks indexed`
-			: "Not indexed yet";
+			? `${stats.embeddedChunks.toLocaleString()} chunks`
+			: "Not indexed";
 
 	return (
-		<div class="ep:flex ep:items-center ep:justify-center ep:gap-2 ep:px-3 ep:py-1.5 ep:text-[10px] ep:text-obs-muted ep:border-t ep:border-obs-border">
-			<span>{reindexing ? progress : label}</span>
-			<Clickable
-				class="ep:text-[10px] ep:text-obs-muted ep:underline ep:hover:text-obs-normal"
+		<div class="ep:flex ep:items-center ep:gap-1">
+			<span class="ep:text-[10px] ep:text-obs-faint">
+				{reindexing ? progress : label}
+			</span>
+			<IconButton
+				icon="refresh-cw"
+				ariaLabel="Reindex knowledge base"
 				onClick={handleReindex}
-				aria-disabled={reindexing}
-			>
-				{reindexing ? "..." : "Reindex"}
-			</Clickable>
+				disabled={reindexing}
+				size="small"
+			/>
 		</div>
 	);
 }
