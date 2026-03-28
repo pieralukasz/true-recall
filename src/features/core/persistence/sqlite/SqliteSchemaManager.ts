@@ -1,6 +1,5 @@
 import { getBuiltinNoteTypes } from "@features/core/persistence/sqlite/modules/NoteTypeActions";
 import type { DatabaseLike } from "@features/core/persistence/sqlite/sqlite.types";
-import { RagSchemaManager } from "@features/rag/persistence/rag-schema";
 import { BUILTIN_SLUGS } from "@shared/types/note.types";
 
 export class SqliteSchemaManager {
@@ -156,8 +155,6 @@ export class SqliteSchemaManager {
 		}
 
 		this.createFts5();
-
-		new RagSchemaManager(this.db).createTables();
 	}
 
 	/**

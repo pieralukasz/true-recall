@@ -40,12 +40,24 @@ export async function handleRagSearch(
 		return;
 	}
 
-	const actions = ctx.plugin.cardStore.rag;
-	const embedder = new RagEmbeddingService(ctx.plugin.settings.proKey ?? "");
-	const search = new RagSearchService(actions, embedder);
-
-	const result = await search.search(data.query, data.topK, data.sourceType);
-	sendOk(res, result);
+	try {
+		const actions = ctx.plugin.ragActions;
+		if (!actions) {
+			sendError(res, 400, "RAG not initialized");
+			return;
+		}
+		const embedder = new RagEmbeddingService(ctx.plugin.settings.proKey ?? "");
+		const search = new RagSearchService(actions, embedder);
+		const result = await search.search(data.query, data.topK, data.sourceType);
+		sendOk(res, result);
+	} catch (e) {
+		const msg =
+			e instanceof AIRequestError
+				? `Embedding API error: ${e.message}`
+				: `Search failed: ${e instanceof Error ? e.message : "Unknown error"}`;
+		console.error("[True Recall RAG] Search handler error:", e);
+		sendError(res, 500, msg);
+	}
 }
 
 export async function handleRagIndex(
@@ -59,8 +71,17 @@ export async function handleRagIndex(
 		return;
 	}
 
-	const result = await ctx.plugin.ragIndexer.fullReindex();
-	sendOk(res, result);
+	try {
+		const result = await ctx.plugin.ragIndexer.fullReindex();
+		sendOk(res, result);
+	} catch (e) {
+		console.error("[True Recall RAG] Index handler error:", e);
+		sendError(
+			res,
+			500,
+			`Indexing failed: ${e instanceof Error ? e.message : "Unknown error"}`,
+		);
+	}
 }
 
 export async function handleRagStatus(
@@ -74,9 +95,23 @@ export async function handleRagStatus(
 		return;
 	}
 
-	const stats = ctx.plugin.cardStore.rag.getStats();
-	sendOk(res, {
-		enabled: ctx.plugin.settings.ragEnabled,
-		...stats,
-	});
+	try {
+		const actions = ctx.plugin.ragActions;
+		if (!actions) {
+			sendError(res, 400, "RAG not initialized");
+			return;
+		}
+		const stats = actions.getStats();
+		sendOk(res, {
+			enabled: ctx.plugin.settings.ragEnabled,
+			...stats,
+		});
+	} catch (e) {
+		console.error("[True Recall RAG] Status handler error:", e);
+		sendError(
+			res,
+			500,
+			`Status check failed: ${e instanceof Error ? e.message : "Unknown error"}`,
+		);
+	}
 }

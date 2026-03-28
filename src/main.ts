@@ -120,6 +120,9 @@ export default class TrueRecallPlugin extends Plugin {
 	statusBarWidget: StatusBarWidget | null = null;
 	backupRecovery: BackupRecoveryManager | null = null;
 	localApi: LocalApiServer | null = null;
+	ragActions:
+		| import("@features/rag/persistence/rag-chunk-actions").RagChunkActions
+		| null = null;
 	ragIndexer:
 		| import("@features/rag/services/rag-indexer.service").RagIndexerService
 		| null = null;
@@ -291,22 +294,34 @@ export default class TrueRecallPlugin extends Plugin {
 
 		this.undoService = new UndoService(this);
 
-		if (this.settings.ragEnabled && this.settings.proKey && this.cardStore) {
-			const { RagEmbeddingService } = await import(
-				"@features/rag/services/rag-embedding.service"
+		if (this.cardStore) {
+			const { RagChunkActions } = await import(
+				"@features/rag/persistence/rag-chunk-actions"
 			);
-			const { RagIndexerService } = await import(
-				"@features/rag/services/rag-indexer.service"
+			const { RagSchemaManager } = await import(
+				"@features/rag/persistence/rag-schema"
 			);
-			const embedder = new RagEmbeddingService(this.settings.proKey);
-			this.ragIndexer = new RagIndexerService(
-				this.app,
-				this.cardStore.rag,
-				embedder,
-				() => this.settings,
-			);
-			this.ragIndexer.registerVaultEvents(this);
-			this.ragIndexer.registerCardSignals(this);
+			const ragSchema = new RagSchemaManager(this.cardStore.getDatabase());
+			ragSchema.createTables();
+			this.ragActions = new RagChunkActions(this.cardStore.getSqliteDb());
+
+			if (this.settings.ragEnabled && this.settings.proKey) {
+				const { RagEmbeddingService } = await import(
+					"@features/rag/services/rag-embedding.service"
+				);
+				const { RagIndexerService } = await import(
+					"@features/rag/services/rag-indexer.service"
+				);
+				const embedder = new RagEmbeddingService(this.settings.proKey);
+				this.ragIndexer = new RagIndexerService(
+					this.app,
+					this.ragActions,
+					embedder,
+					() => this.settings,
+				);
+				this.ragIndexer.registerVaultEvents(this);
+				this.ragIndexer.registerCardSignals(this);
+			}
 		}
 
 		if (this.settings.enableLocalApi) {

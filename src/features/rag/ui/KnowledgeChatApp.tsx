@@ -1,6 +1,7 @@
 import type { ChatTurn } from "@features/rag/services/rag-query.service";
 import { Clickable } from "@shared/ui/components";
 import { useApp, usePlugin } from "@shared/ui/preact";
+import { Notice } from "obsidian";
 import { useCallback, useMemo, useRef, useState } from "preact/hooks";
 import { ChatInput } from "./components/ChatInput";
 import { ChatMessage } from "./components/ChatMessage";
@@ -30,17 +31,21 @@ export function KnowledgeChatApp({ view }: Props) {
 			onNavigateToCard: (cardId: string) => {
 				const cards = plugin.cardStore.getByIds([cardId]);
 				const sourceUid = cards[0]?.sourceUid;
-				if (sourceUid) {
-					const file = plugin.frontmatterIndex.getFileByValue(
-						"flashcard_uid",
-						sourceUid,
-					);
-					if (file) {
-						void app.workspace.openLinkText(file.path, "", false).then(() => {
-							void plugin.activateView();
-						});
-					}
+				if (!sourceUid) {
+					new Notice("Cannot navigate: card no longer exists");
+					return;
 				}
+				const file = plugin.frontmatterIndex.getFileByValue(
+					"flashcard_uid",
+					sourceUid,
+				);
+				if (!file) {
+					new Notice("Source note not found for this flashcard");
+					return;
+				}
+				void app.workspace.openLinkText(file.path, "", false).then(() => {
+					void plugin.activateView();
+				});
 			},
 		}),
 		[app, plugin],

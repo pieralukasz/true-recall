@@ -286,7 +286,7 @@ export interface TrueRecallSettings {
 
 	/** Enable RAG knowledge base indexing (Pro only) */
 	ragEnabled: boolean;
-	/** Embedding model for RAG */
+	/** Embedding model for RAG (reserved — not yet wired to embedding service) */
 	ragEmbeddingModel: string;
 	/** Only index notes in these folders (empty = all) */
 	ragIncludeFolders: string[];
@@ -296,7 +296,7 @@ export interface TrueRecallSettings {
 	ragIndexFlashcards: boolean;
 	/** Re-index automatically when files change */
 	ragAutoIndex: boolean;
-	/** Target tokens per chunk */
+	/** Target tokens per chunk (reserved — chunker uses hardcoded 400) */
 	ragChunkMaxTokens: number;
 }
 

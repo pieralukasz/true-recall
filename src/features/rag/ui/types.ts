@@ -1,8 +1,9 @@
+import type { RagSourceType } from "@features/rag/persistence/rag-chunk-actions";
 import type { SearchResult } from "@features/rag/services/rag-search.service";
 
 export interface GroupedSource {
 	sourceId: string;
-	sourceType: "note" | "flashcard";
+	sourceType: RagSourceType;
 	displayName: string;
 	headings: string[];
 	chunks: SearchResult[];

@@ -33,8 +33,8 @@ export class KnowledgeChatView extends ItemView {
 
 	async onOpen(): Promise<void> {
 		const s = this.plugin.settings;
-		if (s.proKey && s.ragEnabled && this.plugin.isStoreReady()) {
-			const rag = this.plugin.cardStore.rag;
+		if (s.proKey && s.ragEnabled && this.plugin.ragActions) {
+			const rag = this.plugin.ragActions;
 			const embedder = new RagEmbeddingService(s.proKey);
 			const search = new RagSearchService(rag, embedder);
 			const query = new RagQueryService(

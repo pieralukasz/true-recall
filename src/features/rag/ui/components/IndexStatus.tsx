@@ -27,8 +27,8 @@ export function IndexStatus({ view }: Props) {
 	const [progress, setProgress] = useState("");
 
 	const stats = useMemo(() => {
-		if (!plugin.isStoreReady()) return null;
-		return plugin.cardStore.rag.getStats();
+		if (!plugin.ragActions) return null;
+		return plugin.ragActions.getStats();
 	}, [plugin]);
 
 	const handleReindex = useCallback(async () => {
