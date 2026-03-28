@@ -57,7 +57,13 @@ export class RagSearchService {
 		const queryEmbedding = await this.embedder.embedSingle(query);
 		const vectorResults = this.cosineSearch(queryEmbedding, topK * 2);
 
-		const merged = this.rrfMerge(ftsResults, vectorResults, topK);
+		// Track which chunks passed vector threshold — FTS-only results without
+		// sufficient cosine similarity are noise
+		const vectorPassedIds = new Set(vectorResults.map((r) => r.id));
+
+		const merged = this.rrfMerge(ftsResults, vectorResults, topK).filter((m) =>
+			vectorPassedIds.has(m.id),
+		);
 
 		const chunkIds = merged.map((m) => m.id);
 		const chunks = this.actions.getChunksByIds(chunkIds);
@@ -150,6 +156,7 @@ export class RagSearchService {
 		this.embeddingCache = null;
 	}
 
+	// Reciprocal Rank Fusion: merges FTS5 keyword and vector rankings. k=60 is the standard smoothing constant (Cormack et al. 2009).
 	private rrfMerge(
 		ftsResults: { id: number; rank: number }[],
 		vectorResults: { id: number; score: number }[],

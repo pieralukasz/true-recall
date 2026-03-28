@@ -1,4 +1,5 @@
 import type { SearchResult } from "@features/rag/services/rag-search.service";
+import { fileBasename } from "@shared/utils";
 import type { GroupedSource } from "../types";
 
 export function groupSources(sources: SearchResult[]): GroupedSource[] {
@@ -34,9 +35,7 @@ export function groupSources(sources: SearchResult[]): GroupedSource[] {
 
 function makeDisplayName(s: SearchResult): string {
 	if (s.sourceType === "note") {
-		const withoutExt = s.sourceId.replace(/\.md$/, "");
-		const lastSlash = withoutExt.lastIndexOf("/");
-		return lastSlash >= 0 ? withoutExt.slice(lastSlash + 1) : withoutExt;
+		return fileBasename(s.sourceId);
 	}
 	const qMatch = s.content.match(/^Q:\s*([^\n]+)/);
 	const raw = qMatch?.[1]?.trim() || s.content.slice(0, 50);
@@ -46,20 +45,14 @@ function makeDisplayName(s: SearchResult): string {
 export function stripMarkdown(text: string): string {
 	return (
 		text
-			// headings
 			.replace(/^#{1,6}\s+/gm, "")
-			// bold/italic
 			.replace(/\*{1,3}([^*]+)\*{1,3}/g, "$1")
 			.replace(/_{1,3}([^_]+)_{1,3}/g, "$1")
-			// inline code
 			.replace(/`([^`]+)`/g, "$1")
-			// links [text](url)
-			.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-			// images
+			// Images before links — otherwise the link regex matches [alt](url) leaving "!"
 			.replace(/!\[([^\]]*)\]\([^)]+\)/g, "$1")
-			// strikethrough
+			.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
 			.replace(/~~([^~]+)~~/g, "$1")
-			// highlight
 			.replace(/==([^=]+)==/g, "$1")
 			.trim()
 	);

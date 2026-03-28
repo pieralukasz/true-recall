@@ -3,6 +3,7 @@ import { StreamingOpenRouterClient } from "@features/ai/services/streaming-openr
 import type { FrontmatterIndexService } from "@features/core/services/frontmatter-index.service";
 import { LITELLM_URL } from "@shared/constants";
 import type { TrueRecallSettings } from "@shared/types/settings.types";
+import { fileBasename } from "@shared/utils";
 import type { RagSearchService, SearchResult } from "./rag-search.service";
 
 const SYSTEM_PROMPT = `You are a knowledgeable assistant that answers based on the user's notes and flashcards.
@@ -73,14 +74,14 @@ export class RagQueryService {
 
 			if (r.sourceType === "note") {
 				key = r.sourceId;
-				label = shortName(r.sourceId);
+				label = fileBasename(r.sourceId);
 			} else if (r.sourceNoteUid && this.frontmatterIndex) {
 				const noteFile = this.frontmatterIndex.getFileByValue(
 					"flashcard_uid",
 					r.sourceNoteUid,
 				);
 				key = noteFile?.path ?? `fc:${r.sourceId}`;
-				label = noteFile ? shortName(noteFile.path) : "Flashcards";
+				label = noteFile ? fileBasename(noteFile.path) : "Flashcards";
 			} else {
 				key = `fc:${r.sourceId}`;
 				label = "Flashcard";
@@ -132,6 +133,7 @@ export class RagQueryService {
 			{ role: "system", content: SYSTEM_PROMPT },
 		];
 
+		// Keep last 6 turns to stay within model context limits while preserving conversational continuity
 		for (const turn of history.slice(-6)) {
 			messages.push({ role: turn.role, content: turn.content });
 		}
@@ -143,10 +145,4 @@ export class RagQueryService {
 		messages.push({ role: "user", content: userMessage });
 		return messages;
 	}
-}
-
-function shortName(sourceId: string): string {
-	const withoutExt = sourceId.replace(/\.md$/, "");
-	const lastSlash = withoutExt.lastIndexOf("/");
-	return lastSlash >= 0 ? withoutExt.slice(lastSlash + 1) : withoutExt;
 }

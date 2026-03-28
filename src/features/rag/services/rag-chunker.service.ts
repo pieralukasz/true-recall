@@ -11,6 +11,7 @@ const TARGET_TOKENS = 400;
 const OVERLAP_TOKENS = 50;
 const HEADING_RE = /^(#{1,6})\s+(.+)$/;
 
+// English text averages ~1.3 tokens per whitespace-delimited word for GPT-style tokenizers
 function estimateTokens(text: string): number {
 	const trimmed = text.trim();
 	if (!trimmed) return 0;
@@ -216,7 +217,11 @@ export function chunkFlashcard(
 		if (sourceText) parts.push(`Source: ${sourceText}`);
 		if (tags) parts.push(`Tags: ${tags}`);
 		content = parts.join("\n");
-	} catch {
+	} catch (e) {
+		console.warn(
+			"[True Recall RAG] Failed to parse flashcard fields, using raw JSON:",
+			e,
+		);
 		content = fieldsJson;
 	}
 

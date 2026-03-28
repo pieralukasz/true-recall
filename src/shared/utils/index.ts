@@ -19,6 +19,7 @@ export {
 } from "@shared/utils/event.utils";
 export {
 	BR_REGEX,
+	fileBasename,
 	stripBrTags,
 	stripMarkdownSyntax,
 	stripWikiLinkSyntax,
