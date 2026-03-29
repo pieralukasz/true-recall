@@ -11,6 +11,11 @@ import { SourcePanel } from "./SourcePanel";
 
 const CITE_RE = /\[(\d+(?:\s*,\s*\d+)*)\]/g;
 
+/** Ensure lines starting with bold text become separate paragraphs */
+function ensureBoldParagraphs(text: string): string {
+	return text.replace(/([^\n])\n(\*\*)/g, "$1\n\n$2");
+}
+
 function injectCitationHandlers(
 	el: HTMLElement,
 	sources: SearchResult[],
@@ -106,7 +111,8 @@ function AssistantMessage({
 		el.empty();
 
 		const comp = new ObsidianComponent();
-		void MarkdownRenderer.render(app, stripBrTags(content), el, "", comp);
+		const processed = ensureBoldParagraphs(stripBrTags(content));
+		void MarkdownRenderer.render(app, processed, el, "", comp);
 
 		if (sources && navigation) {
 			injectCitationHandlers(el, sources, navigation);
@@ -124,7 +130,7 @@ function AssistantMessage({
 	return (
 		<div
 			ref={ref}
-			class="ep:text-sm ep:select-text [&_p]:ep:my-2 [&_ul]:ep:my-1 [&_ul]:ep:pl-5 [&_ul]:ep:list-disc [&_ol]:ep:my-1 [&_ol]:ep:pl-5 [&_ol]:ep:list-decimal [&_li]:ep:my-0.5 [&_code]:ep:text-xs [&_pre]:ep:my-2 [&_pre]:ep:text-xs [&_p:first-child]:ep:mt-0 [&_p:last-child]:ep:mb-0 [&_h1]:ep:mt-3 [&_h1]:ep:mb-1 [&_h1]:ep:font-semibold [&_h2]:ep:mt-3 [&_h2]:ep:mb-1 [&_h2]:ep:font-semibold [&_h3]:ep:mt-3 [&_h3]:ep:mb-1 [&_h3]:ep:font-semibold [&_blockquote]:ep:pl-3 [&_blockquote]:ep:border-l-2 [&_blockquote]:ep:border-obs-border [&_blockquote]:ep:my-2 [&_blockquote]:ep:text-obs-muted"
+			class="ep:text-sm ep:select-text [&_p]:ep:my-2 [&_ul]:ep:my-1 [&_ul]:ep:pl-6 [&_ul]:ep:list-disc [&_ol]:ep:my-1 [&_ol]:ep:pl-6 [&_ol]:ep:list-decimal [&_li]:ep:my-1 [&_li>ul]:ep:mt-1 [&_li>ol]:ep:mt-1 [&_code]:ep:text-xs [&_pre]:ep:my-2 [&_pre]:ep:text-xs [&_p:first-child]:ep:mt-0 [&_p:last-child]:ep:mb-0 [&_h1]:ep:mt-3 [&_h1]:ep:mb-1 [&_h1]:ep:font-semibold [&_h2]:ep:mt-3 [&_h2]:ep:mb-1 [&_h2]:ep:font-semibold [&_h3]:ep:mt-3 [&_h3]:ep:mb-1 [&_h3]:ep:font-semibold [&_blockquote]:ep:pl-3 [&_blockquote]:ep:border-l-2 [&_blockquote]:ep:border-obs-border [&_blockquote]:ep:my-2 [&_blockquote]:ep:text-obs-muted"
 		/>
 	);
 }

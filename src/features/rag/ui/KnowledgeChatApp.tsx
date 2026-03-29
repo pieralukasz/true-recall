@@ -8,6 +8,9 @@ import { ChatConfigPanel } from "./components/ChatConfigPanel";
 import { ChatInput } from "./components/ChatInput";
 import { ChatMessage } from "./components/ChatMessage";
 import { IndexStatus } from "./components/IndexStatus";
+import type { ContextItem, NoteContextItem } from "./context/context.types";
+import { contextKey } from "./context/context.types";
+import { useAutoContext } from "./context/useAutoContext";
 import type { KnowledgeChatView } from "./KnowledgeChatView";
 import type { SourceNavigationHandlers } from "./types";
 
@@ -27,10 +30,39 @@ export function KnowledgeChatApp({ view }: Props) {
 	const [messages, setMessages] = useState<ChatTurn[]>([]);
 	const [streaming, setStreaming] = useState(false);
 	const [streamingText, setStreamingText] = useState("");
+	const [manualItems, setManualItems] = useState<ContextItem[]>([]);
 	const [configOpen, setConfigOpen] = useState(false);
 	const scrollRef = useRef<HTMLDivElement>(null);
 	const headerIconRef = useIcon("bot");
 	const sparklesRef = useIcon("sparkles");
+
+	const { autoItems, dismiss: dismissAuto } = useAutoContext();
+
+	const allContext = useMemo(
+		() => [...autoItems, ...manualItems],
+		[autoItems, manualItems],
+	);
+
+	const handleDismissContext = useCallback(
+		(key: string) => {
+			const isManual = manualItems.some((i) => contextKey(i) === key);
+			if (isManual) {
+				setManualItems((prev) => prev.filter((i) => contextKey(i) !== key));
+			} else {
+				dismissAuto(key);
+			}
+		},
+		[manualItems, dismissAuto],
+	);
+
+	const handleAddManualNote = useCallback(
+		(item: NoteContextItem) => {
+			const key = contextKey(item);
+			if (allContext.some((i) => contextKey(i) === key)) return;
+			setManualItems((prev) => [...prev, item]);
+		},
+		[allContext],
+	);
 
 	const navigation = useMemo<SourceNavigationHandlers>(
 		() => ({
@@ -84,7 +116,10 @@ export function KnowledgeChatApp({ view }: Props) {
 
 			try {
 				let fullResponse = "";
-				for await (const chunk of view.chatService.sendMessage(text)) {
+				for await (const chunk of view.chatService.sendMessage(
+					text,
+					allContext,
+				)) {
 					fullResponse += chunk;
 					setStreamingText(fullResponse);
 					scrollToBottom();
@@ -105,13 +140,14 @@ export function KnowledgeChatApp({ view }: Props) {
 				scrollToBottom();
 			}
 		},
-		[view.chatService, streaming, scrollToBottom],
+		[view.chatService, streaming, scrollToBottom, allContext],
 	);
 
 	const handleClear = useCallback(() => {
 		view.chatService?.clearHistory();
 		setMessages([]);
 		setStreamingText("");
+		setManualItems([]);
 	}, [view.chatService]);
 
 	const handleConfigChange = useCallback(
@@ -221,7 +257,13 @@ export function KnowledgeChatApp({ view }: Props) {
 				)}
 			</div>
 
-			<ChatInput onSend={handleSend} disabled={streaming} />
+			<ChatInput
+				onSend={handleSend}
+				disabled={streaming}
+				contextItems={allContext}
+				onDismissContext={handleDismissContext}
+				onAddManualNote={handleAddManualNote}
+			/>
 		</div>
 	);
 }

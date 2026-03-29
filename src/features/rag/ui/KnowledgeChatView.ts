@@ -5,10 +5,17 @@ import { RagSearchService } from "@features/rag/services/rag-search.service";
 import { StudyDataGatherer } from "@features/rag/services/study-data-gatherer";
 import { VIEW_TYPE_KNOWLEDGE_CHAT } from "@shared/constants";
 import { mountPreact } from "@shared/ui/preact";
-import { ItemView, type WorkspaceLeaf } from "obsidian";
+import { ItemView, TFile, type WorkspaceLeaf } from "obsidian";
 import { h } from "preact";
 import type TrueRecallPlugin from "../../../main";
+import type {
+	CardContextItem,
+	ContextItem,
+	NoteContextItem,
+} from "./context/context.types";
 import { KnowledgeChatApp } from "./KnowledgeChatApp";
+
+const ATTACHED_CONTEXT_CHAR_LIMIT = 6000;
 
 export class KnowledgeChatView extends ItemView {
 	private plugin: TrueRecallPlugin;
@@ -53,11 +60,14 @@ export class KnowledgeChatView extends ItemView {
 						)
 					: undefined;
 
+			const contextResolver = this.createContextResolver();
+
 			const query = new RagQueryService(
 				search,
 				() => this.plugin.settings,
 				this.plugin.frontmatterIndex,
 				studyGatherer,
+				contextResolver,
 			);
 			this.chatService = new RagChatService(query);
 			this.plugin.ragIndexer?.setSearchService(search);
@@ -77,5 +87,39 @@ export class KnowledgeChatView extends ItemView {
 
 	async onClose(): Promise<void> {
 		this.unmountPreact?.();
+	}
+
+	private createContextResolver() {
+		return async (items: ContextItem[]): Promise<string> => {
+			const sections: string[] = [];
+
+			for (const item of items) {
+				if (item.kind.includes("note")) {
+					const noteItem = item as NoteContextItem;
+					const abstract = this.plugin.app.vault.getAbstractFileByPath(
+						noteItem.path,
+					);
+					if (abstract instanceof TFile) {
+						const content = await this.plugin.app.vault.cachedRead(abstract);
+						const truncated =
+							content.length > ATTACHED_CONTEXT_CHAR_LIMIT
+								? `${content.slice(0, ATTACHED_CONTEXT_CHAR_LIMIT)}…`
+								: content;
+						sections.push(`[Note: ${noteItem.basename}]\n${truncated}`);
+					}
+				} else {
+					const cardItem = item as CardContextItem;
+					const cards = this.plugin.cardStore?.getByIds([cardItem.cardId]);
+					const card = cards?.[0];
+					if (card) {
+						sections.push(
+							`[Flashcard]\nQ: ${card.question}\nA: ${card.answer}`,
+						);
+					}
+				}
+			}
+
+			return sections.join("\n\n---\n\n");
+		};
 	}
 }

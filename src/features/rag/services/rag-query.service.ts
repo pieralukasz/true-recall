@@ -7,6 +7,7 @@ import type {
 	TrueRecallSettings,
 } from "@shared/types/settings.types";
 import { fileBasename } from "@shared/utils";
+import type { ContextItem } from "../ui/context/context.types";
 import type { RagSearchService, SearchResult } from "./rag-search.service";
 import type { StudyDataGatherer } from "./study-data-gatherer";
 import { classifyIntent } from "./study-intent-classifier";
@@ -64,6 +65,8 @@ export interface ChatTurn {
 	timestamp: number;
 }
 
+export type ContextResolver = (items: ContextItem[]) => Promise<string>;
+
 export class RagQueryService {
 	private lastSearchResults: SearchResult[] = [];
 
@@ -72,21 +75,28 @@ export class RagQueryService {
 		private settings: () => TrueRecallSettings,
 		private frontmatterIndex?: FrontmatterIndexService,
 		private studyGatherer?: StudyDataGatherer,
+		private contextResolver?: ContextResolver,
 	) {}
 
 	async *queryStream(
 		question: string,
 		history: ChatTurn[],
+		attachedItems?: ContextItem[],
 	): AsyncGenerator<string> {
 		const intent = this.studyGatherer ? classifyIntent(question) : "knowledge";
 
-		let context = "";
+		let attachedContext = "";
+		if (attachedItems?.length && this.contextResolver) {
+			attachedContext = await this.contextResolver(attachedItems);
+		}
+
+		let ragContext = "";
 		let studyContext: string | null = null;
 
 		if (intent !== "stats") {
 			const searchResults = await this.search.search(question);
 			const packed = this.packContext(searchResults.results);
-			context = packed.context;
+			ragContext = packed.context;
 			this.lastSearchResults = packed.sourceMap;
 		} else {
 			this.lastSearchResults = [];
@@ -99,8 +109,9 @@ export class RagQueryService {
 		const messages = this.buildMessages(
 			question,
 			history,
-			context,
+			ragContext,
 			studyContext,
+			attachedContext,
 		);
 		const s = this.settings();
 		const baseUrl = LITELLM_URL.replace("/chat/completions", "");
@@ -190,8 +201,9 @@ export class RagQueryService {
 	private buildMessages(
 		question: string,
 		history: ChatTurn[],
-		context: string,
+		ragContext: string,
 		studyContext: string | null,
+		attachedContext?: string,
 	): ChatMessage[] {
 		const basePrompt = studyContext ? STUDY_PROMPT : KNOWLEDGE_PROMPT;
 		const chatConfig = this.settings().ragChatConfig;
@@ -211,14 +223,16 @@ export class RagQueryService {
 		const systemPrompt = promptParts.join("\n");
 		const messages: ChatMessage[] = [{ role: "system", content: systemPrompt }];
 
-		// Keep last 6 turns to stay within model context limits while preserving conversational continuity
 		for (const turn of history.slice(-6)) {
 			messages.push({ role: turn.role, content: turn.content });
 		}
 
 		const parts: string[] = [];
-		if (context) {
-			parts.push(`Context from my notes and flashcards:\n\n${context}`);
+		if (attachedContext) {
+			parts.push(`Currently viewing:\n\n${attachedContext}`);
+		}
+		if (ragContext) {
+			parts.push(`Context from my notes and flashcards:\n\n${ragContext}`);
 		}
 		if (studyContext) {
 			parts.push(studyContext);

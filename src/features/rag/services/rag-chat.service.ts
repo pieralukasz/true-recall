@@ -1,3 +1,4 @@
+import type { ContextItem } from "../ui/context/context.types";
 import type { ChatTurn, RagQueryService } from "./rag-query.service";
 
 export class RagChatService {
@@ -5,7 +6,10 @@ export class RagChatService {
 
 	constructor(private queryService: RagQueryService) {}
 
-	async *sendMessage(message: string): AsyncGenerator<string> {
+	async *sendMessage(
+		message: string,
+		context?: ContextItem[],
+	): AsyncGenerator<string> {
 		const userTurn: ChatTurn = {
 			role: "user",
 			content: message,
@@ -18,6 +22,7 @@ export class RagChatService {
 			for await (const chunk of this.queryService.queryStream(
 				message,
 				this.history,
+				context,
 			)) {
 				fullResponse += chunk;
 				yield chunk;
