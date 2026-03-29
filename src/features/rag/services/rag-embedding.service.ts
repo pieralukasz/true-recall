@@ -54,9 +54,18 @@ export class RagEmbeddingService {
 					data: { embedding: number[]; index: number }[];
 				};
 
-				return data.data
+				const embeddings = data.data
 					.sort((a, b) => a.index - b.index)
 					.map((d) => new Float32Array(d.embedding));
+
+				const first = embeddings[0];
+				if (first && first.length !== RAG_CONFIG.embeddingDims) {
+					throw new Error(
+						`Embedding dimension mismatch: expected ${RAG_CONFIG.embeddingDims}, got ${first.length}. Check the embedding model on the proxy.`,
+					);
+				}
+
+				return embeddings;
 			} catch (e) {
 				if (
 					e instanceof AIRequestError &&

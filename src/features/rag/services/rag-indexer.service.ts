@@ -21,6 +21,8 @@ export interface IndexResult {
 	skipped: number;
 	errors: number;
 	embedded: number;
+	embeddingTruncated: boolean;
+	embeddingRemaining: number;
 	flashcardsIndexed: number;
 	flashcardsSkipped: number;
 }
@@ -53,6 +55,8 @@ export class RagIndexerService {
 			skipped: 0,
 			errors: 0,
 			embedded: 0,
+			embeddingTruncated: false,
+			embeddingRemaining: 0,
 			flashcardsIndexed: 0,
 			flashcardsSkipped: 0,
 		};
@@ -88,7 +92,10 @@ export class RagIndexerService {
 			result.errors += fcResult.errors;
 		}
 
-		result.embedded = await this.embedPending(onProgress);
+		const embedResult = await this.embedPending(onProgress);
+		result.embedded = embedResult.embedded;
+		result.embeddingTruncated = embedResult.truncated;
+		result.embeddingRemaining = embedResult.remaining;
 
 		return result;
 	}
@@ -338,7 +345,7 @@ export class RagIndexerService {
 
 	private async embedPending(
 		onProgress?: (progress: IndexProgress) => void,
-	): Promise<number> {
+	): Promise<{ embedded: number; truncated: boolean; remaining: number }> {
 		let totalEmbedded = 0;
 		const totalPending = this.actions.countChunksWithoutEmbedding();
 		const MAX_BATCHES = 1000;
@@ -388,7 +395,8 @@ export class RagIndexerService {
 			this.searchService?.invalidateCache();
 		}
 
-		return totalEmbedded;
+		const remaining = this.actions.countChunksWithoutEmbedding();
+		return { embedded: totalEmbedded, truncated: remaining > 0, remaining };
 	}
 
 	private async contentHash(content: string): Promise<string> {

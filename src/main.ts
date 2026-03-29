@@ -126,6 +126,9 @@ export default class TrueRecallPlugin extends Plugin {
 	ragIndexer:
 		| import("@features/rag/services/rag-indexer.service").RagIndexerService
 		| null = null;
+	ragSearch:
+		| import("@features/rag/services/rag-search.service").RagSearchService
+		| null = null;
 	EmbeddableEditor:
 		| import("@shared/ui/editor/embedded-editor").EmbeddableEditorClass
 		| null = null;
@@ -312,13 +315,18 @@ export default class TrueRecallPlugin extends Plugin {
 				const { RagIndexerService } = await import(
 					"@features/rag/services/rag-indexer.service"
 				);
+				const { RagSearchService } = await import(
+					"@features/rag/services/rag-search.service"
+				);
 				const embedder = new RagEmbeddingService(this.settings.proKey);
+				this.ragSearch = new RagSearchService(this.ragActions, embedder);
 				this.ragIndexer = new RagIndexerService(
 					this.app,
 					this.ragActions,
 					embedder,
 					() => this.settings,
 				);
+				this.ragIndexer.setSearchService(this.ragSearch);
 				this.ragIndexer.registerVaultEvents(this);
 				this.ragIndexer.registerCardSignals(this);
 			}

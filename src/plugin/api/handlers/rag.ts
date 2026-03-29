@@ -1,7 +1,5 @@
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { AIRequestError } from "@features/ai/services/openrouter-client";
-import { RagEmbeddingService } from "@features/rag/services/rag-embedding.service";
-import { RagSearchService } from "@features/rag/services/rag-search.service";
 import type { ApiContext } from "../api.types";
 import { parseJsonBody, readBody, sendError, sendOk } from "../api.types";
 
@@ -33,6 +31,7 @@ export async function handleRagSearch(
 		query: string;
 		topK?: number;
 		sourceType?: "note" | "flashcard" | "all";
+		sourceIds?: string[];
 	}>(body);
 
 	if (!data?.query) {
@@ -41,14 +40,17 @@ export async function handleRagSearch(
 	}
 
 	try {
-		const actions = ctx.plugin.ragActions;
-		if (!actions) {
+		const search = ctx.plugin.ragSearch;
+		if (!search) {
 			sendError(res, 400, "RAG not initialized");
 			return;
 		}
-		const embedder = new RagEmbeddingService(ctx.plugin.settings.proKey ?? "");
-		const search = new RagSearchService(actions, embedder);
-		const result = await search.search(data.query, data.topK, data.sourceType);
+		const result = await search.search(
+			data.query,
+			data.topK,
+			data.sourceType,
+			data.sourceIds,
+		);
 		sendOk(res, result);
 	} catch (e) {
 		const msg =

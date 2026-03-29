@@ -1,7 +1,5 @@
 import { RagChatService } from "@features/rag/services/rag-chat.service";
-import { RagEmbeddingService } from "@features/rag/services/rag-embedding.service";
 import { RagQueryService } from "@features/rag/services/rag-query.service";
-import { RagSearchService } from "@features/rag/services/rag-search.service";
 import { StudyDataGatherer } from "@features/rag/services/study-data-gatherer";
 import { VIEW_TYPE_KNOWLEDGE_CHAT } from "@shared/constants";
 import { mountPreact } from "@shared/ui/preact";
@@ -42,9 +40,8 @@ export class KnowledgeChatView extends ItemView {
 	async onOpen(): Promise<void> {
 		const s = this.plugin.settings;
 		if (s.proKey && s.ragEnabled && this.plugin.ragActions) {
-			const rag = this.plugin.ragActions;
-			const embedder = new RagEmbeddingService(s.proKey);
-			const search = new RagSearchService(rag, embedder);
+			const search = this.plugin.ragSearch;
+			if (!search) return;
 
 			const studyGatherer =
 				this.plugin.cardStore &&

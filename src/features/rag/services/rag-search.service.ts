@@ -53,18 +53,26 @@ export class RagSearchService {
 		query: string,
 		topK: number = RAG_CONFIG.defaultTopK,
 		sourceType?: RagSourceType | "all",
+		sourceIds?: string[],
 	): Promise<{ results: SearchResult[]; stats: SearchStats }> {
-		const ftsResults = this.actions.searchFts(query, topK * 2);
+		// Over-fetch when filtering so we still get topK results after filtering
+		const isFiltered =
+			(sourceType && sourceType !== "all") ||
+			(sourceIds && sourceIds.length > 0);
+		const fetchMultiplier = isFiltered ? 4 : 2;
+		const fetchSize = topK * fetchMultiplier;
+
+		const ftsResults = this.actions.searchFts(query, fetchSize);
 
 		const queryEmbedding = await this.embedder.embedSingle(query);
-		const vectorResults = this.cosineSearch(queryEmbedding, topK * 2);
+		const vectorResults = this.cosineSearch(queryEmbedding, fetchSize);
 
 		// Track which chunks passed vector threshold — FTS-only results without
 		// sufficient cosine similarity are noise
 		const vectorPassedIds = new Set(vectorResults.map((r) => r.id));
 
-		const merged = this.rrfMerge(ftsResults, vectorResults, topK).filter((m) =>
-			vectorPassedIds.has(m.id),
+		const merged = this.rrfMerge(ftsResults, vectorResults, fetchSize).filter(
+			(m) => vectorPassedIds.has(m.id),
 		);
 
 		const chunkIds = merged.map((m) => m.id);
@@ -84,6 +92,13 @@ export class RagSearchService {
 				sourceType &&
 				sourceType !== "all" &&
 				chunk.source_type !== sourceType
+			)
+				continue;
+
+			if (
+				sourceIds &&
+				sourceIds.length > 0 &&
+				!sourceIds.includes(chunk.source_id)
 			)
 				continue;
 

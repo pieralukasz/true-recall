@@ -29,6 +29,12 @@ export function registerRagTools(
 					.describe(
 						"Filter by source type: 'note', 'flashcard', or 'all' (default)",
 					),
+				sourceIds: z
+					.array(z.string())
+					.optional()
+					.describe(
+						"Optional list of source IDs (file paths for notes, card IDs for flashcards) to restrict search scope. Use to search within specific notes.",
+					),
 			},
 		},
 		async (params) => {
@@ -36,6 +42,7 @@ export function registerRagTools(
 				query: params.query,
 				topK: params.topK,
 				sourceType: params.sourceType,
+				sourceIds: params.sourceIds,
 			});
 			return {
 				content: [
