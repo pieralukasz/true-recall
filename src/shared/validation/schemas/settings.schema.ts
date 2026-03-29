@@ -11,6 +11,7 @@ export const SettingsSchema = z.object({
 	proKey: z.string().optional(),
 	openRouterApiKey: z.string(),
 	aiModel: AIModelSchema,
+	customAiModel: z.string().optional(),
 	aiTier: AITierSchema,
 	autoSyncToAnki: z.boolean().default(false),
 	selectionToolbarEnabled: z.boolean().default(true),

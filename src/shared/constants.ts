@@ -59,6 +59,8 @@ export const BYOK_MODELS: ByokModelConfig[] = [
 	},
 ];
 
+export const CUSTOM_MODEL_ID = "__custom__";
+
 export const DEFAULT_BYOK_MODEL = "google/gemini-2.5-flash";
 
 export const DEFAULT_FSRS_PRESET: FSRSPreset = {

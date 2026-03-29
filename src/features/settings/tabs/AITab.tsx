@@ -1,6 +1,6 @@
 import { GENERATION_LANGUAGES } from "@features/ai/prompts/default-prompts";
 import { useSettings } from "@features/settings/hooks/useSettings";
-import { BYOK_MODELS, TRUERECALL_WEB_URL } from "@shared/constants";
+import { BYOK_MODELS, CUSTOM_MODEL_ID, TRUERECALL_WEB_URL } from "@shared/constants";
 import {
 	Clickable,
 	FormCard,
@@ -15,10 +15,13 @@ import {
 import { requestUrl } from "obsidian";
 import { useEffect, useState } from "preact/hooks";
 
-const MODEL_OPTIONS = BYOK_MODELS.map((m) => ({
-	value: m.id,
-	label: `${m.name} (${m.provider})${m.recommended ? " — Recommended" : ""}`,
-}));
+const MODEL_OPTIONS = [
+	...BYOK_MODELS.map((m) => ({
+		value: m.id,
+		label: `${m.name} (${m.provider})${m.recommended ? " — Recommended" : ""}`,
+	})),
+	{ value: CUSTOM_MODEL_ID, label: "Custom..." },
+];
 
 function getModelDefault(modelId: string): number {
 	return BYOK_MODELS.find((m) => m.id === modelId)?.defaultTemperature ?? 0.7;
@@ -153,6 +156,19 @@ export function AITab() {
 						options={MODEL_OPTIONS}
 					/>
 				</FormField>
+				{currentModel === CUSTOM_MODEL_ID && (
+					<FormField
+						name="Custom Model ID"
+						description="Enter any OpenRouter-compatible model ID."
+					>
+						<TextInput
+							value={settings.customAiModel ?? ""}
+							onChange={(v) => save({ customAiModel: v })}
+							placeholder="e.g. openai/gpt-4o-mini"
+							class="ep:w-[300px]"
+						/>
+					</FormField>
+				)}
 
 				<FormField
 					name="Temperature"

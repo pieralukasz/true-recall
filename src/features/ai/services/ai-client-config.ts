@@ -1,5 +1,6 @@
 import {
 	BYOK_MODELS,
+	CUSTOM_MODEL_ID,
 	DEFAULT_BYOK_MODEL,
 	LITELLM_URL,
 } from "@shared/constants";
@@ -36,9 +37,13 @@ export function resolveAIClientConfig(
 	}
 
 	if (settings.openRouterApiKey) {
+		const model =
+			settings.aiModel === CUSTOM_MODEL_ID
+				? settings.customAiModel || DEFAULT_BYOK_MODEL
+				: settings.aiModel || DEFAULT_BYOK_MODEL;
 		return {
 			apiKey: settings.openRouterApiKey,
-			model: settings.aiModel || DEFAULT_BYOK_MODEL,
+			model,
 			baseUrl: OPENROUTER_URL,
 			isPro: false,
 			temperature: resolveByokTemperature(settings),
