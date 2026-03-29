@@ -2,7 +2,10 @@ import type { ChatMessage } from "@features/ai/services/openrouter-client";
 import { StreamingOpenRouterClient } from "@features/ai/services/streaming-openrouter-client";
 import type { FrontmatterIndexService } from "@features/core/services/frontmatter-index.service";
 import { LITELLM_URL } from "@shared/constants";
-import type { TrueRecallSettings } from "@shared/types/settings.types";
+import type {
+	ChatResponseLength,
+	TrueRecallSettings,
+} from "@shared/types/settings.types";
 import { fileBasename } from "@shared/utils";
 import type { RagSearchService, SearchResult } from "./rag-search.service";
 import type { StudyDataGatherer } from "./study-data-gatherer";
@@ -11,7 +14,16 @@ import { classifyIntent } from "./study-intent-classifier";
 const KNOWLEDGE_PROMPT = `You are a knowledgeable assistant that answers based on the user's notes and flashcards.
 Cite sources inline using numbered references like [1], [2] etc. matching the source numbers in the provided context.
 If context doesn't contain enough info, say so clearly — do not make things up.
-Be concise, use markdown formatting, answer in the same language as the user's question.`;
+Answer in the same language as the user's question.
+
+Formatting rules (STRICT — always follow):
+- When listing 2+ items, ALWAYS use markdown list syntax (- or 1.). NEVER write multiple items as plain paragraphs with just bold text.
+  WRONG: "**Item:** description.\\n**Item2:** description."
+  RIGHT: "- **Item:** description.\\n- **Item2:** description."
+- Separate sections with blank lines.
+- Use **bold** for key terms at the start of list items.
+- Use headings (##, ###) to organize longer answers.
+- Keep paragraphs short (2-4 sentences max).`;
 
 const STUDY_PROMPT = `You are a knowledgeable study assistant with access to the user's notes, flashcards, and study progress data.
 
@@ -25,7 +37,23 @@ When answering study progress questions:
 - Provide brief, actionable insights when appropriate.
 - Do not invent statistics not present in the data.
 
-Be concise, use markdown formatting, answer in the same language as the user's question.`;
+Answer in the same language as the user's question.
+
+Formatting rules (STRICT — always follow):
+- When listing 2+ items, ALWAYS use markdown list syntax (- or 1.). NEVER write multiple items as plain paragraphs with just bold text.
+  WRONG: "**Item:** description.\\n**Item2:** description."
+  RIGHT: "- **Item:** description.\\n- **Item2:** description."
+- Separate sections with blank lines.
+- Use **bold** for key terms at the start of list items.
+- Use headings (##, ###) to organize longer answers.
+- Keep paragraphs short (2-4 sentences max).`;
+
+const LENGTH_DIRECTIVES: Record<ChatResponseLength, string> = {
+	short: "Keep responses brief — 2-4 sentences, bullet points preferred.",
+	medium: "",
+	detailed:
+		"Provide thorough, detailed explanations with examples when helpful.",
+};
 
 const CONTEXT_TOKEN_BUDGET = 4000;
 
@@ -165,7 +193,22 @@ export class RagQueryService {
 		context: string,
 		studyContext: string | null,
 	): ChatMessage[] {
-		const systemPrompt = studyContext ? STUDY_PROMPT : KNOWLEDGE_PROMPT;
+		const basePrompt = studyContext ? STUDY_PROMPT : KNOWLEDGE_PROMPT;
+		const chatConfig = this.settings().ragChatConfig;
+
+		const promptParts = [basePrompt];
+		if (chatConfig?.customInstruction) {
+			promptParts.push(
+				`\nAdditional instructions:\n${chatConfig.customInstruction}`,
+			);
+		}
+		const lengthDirective =
+			LENGTH_DIRECTIVES[chatConfig?.responseLength ?? "medium"];
+		if (lengthDirective) {
+			promptParts.push(`\n${lengthDirective}`);
+		}
+
+		const systemPrompt = promptParts.join("\n");
 		const messages: ChatMessage[] = [{ role: "system", content: systemPrompt }];
 
 		// Keep last 6 turns to stay within model context limits while preserving conversational continuity

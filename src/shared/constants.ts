@@ -174,6 +174,12 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 	ragChunkMaxTokens: 400,
 	ragDailyNotesFolder: "",
 	ragDailyNoteExcludeHeadings: ["Thoughts", "Journal", "Reflections", "Random"],
+
+	ragChatConfig: {
+		presetId: "default",
+		customInstruction: "",
+		responseLength: "medium",
+	},
 };
 
 // FSRS v6 default weights (21 parameters)

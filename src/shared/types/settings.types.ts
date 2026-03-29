@@ -93,6 +93,14 @@ export type NewReviewMix =
 
 export type TypeInMode = "off" | "ai" | "diff";
 
+export type ChatResponseLength = "short" | "medium" | "detailed";
+
+export interface ChatConfig {
+	presetId: string;
+	customInstruction: string;
+	responseLength: ChatResponseLength;
+}
+
 /**
  * Named group of FSRS scheduling parameters (like Anki's "Deck Options").
  * Each preset defines retention target, weights, learning steps, and daily limits.
@@ -302,6 +310,9 @@ export interface TrueRecallSettings {
 	ragDailyNotesFolder: string;
 	/** Heading names to exclude from daily note indexing (case-insensitive substring match) */
 	ragDailyNoteExcludeHeadings: string[];
+
+	/** Chat persona and response style configuration */
+	ragChatConfig: ChatConfig;
 }
 
 export interface SessionPreset {

@@ -1,8 +1,10 @@
 import type { ChatTurn } from "@features/rag/services/rag-query.service";
+import type { ChatConfig } from "@shared/types";
 import { Clickable, IconButton } from "@shared/ui/components";
 import { useApp, useIcon, usePlugin } from "@shared/ui/preact";
 import { Notice } from "obsidian";
 import { useCallback, useMemo, useRef, useState } from "preact/hooks";
+import { ChatConfigPanel } from "./components/ChatConfigPanel";
 import { ChatInput } from "./components/ChatInput";
 import { ChatMessage } from "./components/ChatMessage";
 import { IndexStatus } from "./components/IndexStatus";
@@ -25,6 +27,7 @@ export function KnowledgeChatApp({ view }: Props) {
 	const [messages, setMessages] = useState<ChatTurn[]>([]);
 	const [streaming, setStreaming] = useState(false);
 	const [streamingText, setStreamingText] = useState("");
+	const [configOpen, setConfigOpen] = useState(false);
 	const scrollRef = useRef<HTMLDivElement>(null);
 	const headerIconRef = useIcon("bot");
 	const sparklesRef = useIcon("sparkles");
@@ -111,6 +114,17 @@ export function KnowledgeChatApp({ view }: Props) {
 		setStreamingText("");
 	}, [view.chatService]);
 
+	const handleConfigChange = useCallback(
+		(config: ChatConfig) => {
+			if (messages.length > 0) {
+				view.chatService?.clearHistory();
+				setMessages([]);
+				setStreamingText("");
+			}
+		},
+		[view.chatService, messages.length],
+	);
+
 	if (!view.chatService) {
 		return (
 			<div class="ep:flex ep:items-center ep:justify-center ep:h-full ep:p-4 ep:text-obs-muted">
@@ -133,6 +147,12 @@ export function KnowledgeChatApp({ view }: Props) {
 				</div>
 				<div class="ep:flex ep:items-center ep:gap-1">
 					<IndexStatus view={view} />
+					<IconButton
+						icon="settings-2"
+						ariaLabel="Configure chat"
+						onClick={() => setConfigOpen((o) => !o)}
+						size="small"
+					/>
 					{messages.length > 0 && (
 						<IconButton
 							icon="trash-2"
@@ -144,22 +164,31 @@ export function KnowledgeChatApp({ view }: Props) {
 				</div>
 			</div>
 
+			{configOpen && (
+				<ChatConfigPanel
+					config={plugin.settings.ragChatConfig}
+					onConfigChange={handleConfigChange}
+				/>
+			)}
+
 			<div
 				ref={scrollRef}
-				class="ep:flex-1 ep:overflow-y-auto ep:px-4 ep:pt-4 ep:pb-2 ep:flex ep:flex-col ep:gap-5"
+				class="ep:flex-1 ep:overflow-y-auto ep:px-2 ep:pt-4 ep:pb-2 ep:flex ep:flex-col ep:gap-5"
 			>
 				{messages.length === 0 && !streaming && (
-					<div class="ep:flex ep:flex-col ep:items-center ep:justify-center ep:h-full ep:gap-5 ep:px-4">
-						<div
-							ref={sparklesRef}
-							class="ep:w-10 ep:h-10 ep:text-obs-accent ep:opacity-70 [&_svg]:ep:w-10 [&_svg]:ep:h-10"
-						/>
-						<div class="ep:text-center">
-							<div class="ep:text-ui-medium ep:font-semibold ep:text-obs-normal ep:mb-1">
-								Chat
-							</div>
-							<div class="ep:text-sm ep:text-obs-muted">
-								Ask anything about your notes and flashcards
+					<div class="ep:flex ep:flex-col ep:items-center ep:justify-center ep:h-full ep:gap-5 ep:px-2">
+						<div class="ep:flex ep:flex-col ep:items-center ep:gap-1">
+							<div
+								ref={sparklesRef}
+								class="ep:flex ep:items-center ep:justify-center ep:w-10 ep:h-10 ep:text-obs-accent ep:opacity-70 ep:leading-none [&_svg]:ep:w-10 [&_svg]:ep:h-10"
+							/>
+							<div class="ep:text-center">
+								<div class="ep:text-ui-medium ep:font-semibold ep:text-obs-normal ep:mb-1">
+									Chat
+								</div>
+								<div class="ep:text-sm ep:text-obs-muted">
+									Ask anything about your notes and flashcards
+								</div>
 							</div>
 						</div>
 						<div class="ep:flex ep:flex-col ep:gap-2 ep:w-full ep:max-w-[280px]">

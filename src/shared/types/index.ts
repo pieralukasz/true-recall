@@ -98,6 +98,8 @@ export {
 } from "@shared/types/note.types";
 export type {
 	BackupInterval,
+	ChatConfig,
+	ChatResponseLength,
 	EasyDaysConfig,
 	FSRSPreset,
 	FSRSSettings,
