@@ -16,6 +16,7 @@ const KNOWLEDGE_PROMPT = `You are a knowledgeable assistant that answers based o
 Cite sources inline using numbered references like [1], [2] etc. matching the source numbers in the provided context.
 If context doesn't contain enough info, say so clearly — do not make things up.
 Answer in the same language as the user's question.
+Each source includes a modification date. When the user asks about recent or latest content, prioritize sources with newer dates.
 
 Formatting rules (STRICT — always follow):
 - When listing 2+ items, ALWAYS use markdown list syntax (- or 1.). NEVER write multiple items as plain paragraphs with just bold text.
@@ -31,6 +32,7 @@ const STUDY_PROMPT = `You are a knowledgeable study assistant with access to the
 When answering knowledge questions:
 - Cite sources inline using numbered references like [1], [2] etc.
 - If context doesn't contain enough info, say so clearly — do not make things up.
+- Each source includes a modification date. When the user asks about recent or latest content, prioritize sources with newer dates.
 
 When answering study progress questions:
 - Use the provided Study Progress Data to give accurate, specific answers.
@@ -138,7 +140,12 @@ export class RagQueryService {
 		// Group chunks by unique source
 		const groups = new Map<
 			string,
-			{ label: string; chunks: SearchResult[]; totalTokens: number }
+			{
+				label: string;
+				chunks: SearchResult[];
+				totalTokens: number;
+				modifiedAt?: number;
+			}
 		>();
 
 		for (const r of results) {
@@ -165,8 +172,19 @@ export class RagQueryService {
 			if (existing) {
 				existing.chunks.push(r);
 				existing.totalTokens += r.tokenCount;
+				if (r.modifiedAt) {
+					existing.modifiedAt = Math.max(
+						existing.modifiedAt ?? 0,
+						r.modifiedAt,
+					);
+				}
 			} else {
-				groups.set(key, { label, chunks: [r], totalTokens: r.tokenCount });
+				groups.set(key, {
+					label,
+					chunks: [r],
+					totalTokens: r.tokenCount,
+					modifiedAt: r.modifiedAt,
+				});
 			}
 		}
 
@@ -187,7 +205,10 @@ export class RagQueryService {
 				})
 				.join("\n\n");
 
-			parts.push(`[${idx}] ${group.label}\n${chunkTexts}`);
+			const dateSuffix = group.modifiedAt
+				? ` (modified: ${new Date(group.modifiedAt).toISOString().slice(0, 10)})`
+				: "";
+			parts.push(`[${idx}] ${group.label}${dateSuffix}\n${chunkTexts}`);
 			tokens += group.totalTokens;
 			// Store the first chunk as representative for navigation
 			const representative = group.chunks[0];

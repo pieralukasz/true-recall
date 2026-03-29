@@ -254,6 +254,19 @@ export class RagChunkActions {
 		);
 	}
 
+	getMtimeForChunks(chunkIds: number[]): Map<number, number> {
+		if (chunkIds.length === 0) return new Map();
+		const placeholders = chunkIds.map(() => "?").join(",");
+		const rows = this.db.query<{ id: number; mtime: number }>(
+			`SELECT rc.id, rim.mtime
+			 FROM rag_chunks rc
+			 JOIN rag_index_meta rim ON rc.source_type = rim.source_type AND rc.source_id = rim.source_id
+			 WHERE rc.id IN (${placeholders})`,
+			chunkIds,
+		);
+		return new Map(rows.map((r) => [r.id, r.mtime]));
+	}
+
 	getIndexedSources(): RagIndexMetaRow[] {
 		return this.db.query<RagIndexMetaRow>(
 			`SELECT * FROM rag_index_meta ORDER BY indexed_at DESC`,

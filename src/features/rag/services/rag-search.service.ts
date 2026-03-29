@@ -16,6 +16,8 @@ export interface SearchResult {
 	sourceNoteUid?: string;
 	score: number;
 	tokenCount: number;
+	/** Source file modification time (ms since epoch) from rag_index_meta */
+	modifiedAt?: number;
 	fsrs?: {
 		state: number;
 		stability: number;
@@ -71,6 +73,7 @@ export class RagSearchService {
 
 		const fsrsData = this.actions.getFsrsDataForChunks(chunkIds);
 		const fsrsMap = new Map(fsrsData.map((f) => [f.card_id, f]));
+		const mtimeMap = this.actions.getMtimeForChunks(chunkIds);
 
 		const results: SearchResult[] = [];
 		for (const m of merged) {
@@ -92,6 +95,7 @@ export class RagSearchService {
 				sourceId: chunk.source_id,
 				score: m.score,
 				tokenCount: chunk.token_count,
+				modifiedAt: mtimeMap.get(chunk.id),
 			};
 
 			if (chunk.source_type === "flashcard") {
