@@ -370,6 +370,26 @@ export class AnkiImportService {
 			}
 		}
 
+		// Hybrid decks: parent has both direct cards AND sub-decks.
+		// Move direct cards to a synthetic leaf note so they appear as a member note
+		// instead of being invisible on the project-level MOC.
+		for (const [deckPath, children] of parentToChildren) {
+			const cardIds = deckToCardIds.get(deckPath);
+			if (!cardIds || cardIds.length === 0) continue;
+
+			const parentName = deckPath.split("/").pop() ?? deckPath;
+			const leafName = children.has(parentName)
+				? `${parentName} (Cards)`
+				: parentName;
+
+			const leafPath = `${deckPath}/${leafName}`;
+			allSegmentPaths.add(leafPath);
+			children.add(leafName);
+
+			deckToCardIds.set(leafPath, cardIds);
+			deckToCardIds.set(deckPath, []);
+		}
+
 		// Create notes for each hierarchy level (sorted so parents are created before children)
 		const sortedPaths = [...allSegmentPaths].sort(
 			(a, b) => a.split("/").length - b.split("/").length,

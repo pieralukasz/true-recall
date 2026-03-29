@@ -312,7 +312,9 @@ function buildProjectFromNode(
 		totalCards: stats.totalCards,
 		childCount: stats.childCount,
 		lastReviewed: stats.lastReviewed,
-		totalMembers: memberNotes.length,
+		totalMembers:
+			memberNotes.length +
+			children.reduce((sum, c) => sum + c.totalMembers, 0),
 		memberNotes,
 		children,
 		presetName,

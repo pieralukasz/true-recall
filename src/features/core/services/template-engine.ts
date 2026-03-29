@@ -55,14 +55,14 @@ export function renderTemplate(
 	});
 
 	// 1.5. Strip Anki field modifiers: {{edit:Field}} → {{Field}}
-	working = working.replace(/\{\{\s*edit:(\w+)\s*\}\}/g, "{{$1}}");
+	working = working.replace(/\{\{\s*edit:([\w][\w ]*?)\s*\}\}/g, "{{$1}}");
 
 	// 2. Strip {{FrontSide}} — True Recall's review UI shows Q/A separately
 	working = working.replace(/\{\{\s*FrontSide\s*\}\}/g, "");
 
 	// 3. Replace {{cloze:FieldName}}
 	working = working.replace(
-		/\{\{\s*cloze:(\w+)\s*\}\}/g,
+		/\{\{\s*cloze:([\w][\w ]*?)\s*\}\}/g,
 		(_match, fieldName: string) => {
 			const fieldValue = context.fields[fieldName];
 			if (fieldValue === undefined) return _match;
@@ -88,7 +88,7 @@ export function renderTemplate(
 	// 5. Replace {{FieldName}} — use a marker approach to prevent re-processing
 	const fieldPlaceholders: string[] = [];
 	working = working.replace(
-		/\{\{\s*(\w+)\s*\}\}/g,
+		/\{\{\s*([\w][\w ]*?)\s*\}\}/g,
 		(_match, fieldName: string) => {
 			if (fieldName in context.fields) {
 				const idx = fieldPlaceholders.length;
@@ -141,7 +141,7 @@ function processConditionals(
 
 		// Match innermost conditionals (no nested {{# or {{^ inside)
 		result = result.replace(
-			/\{\{([#^])\s*(\w+)\s*\}\}((?:(?!\{\{[#^])[\s\S])*?)\{\{\/\s*(\w+)\s*\}\}/g,
+			/\{\{([#^])\s*([\w][\w ]*?)\s*\}\}((?:(?!\{\{[#^])[\s\S])*?)\{\{\/\s*([\w][\w ]*?)\s*\}\}/g,
 			(
 				_match,
 				type: string,

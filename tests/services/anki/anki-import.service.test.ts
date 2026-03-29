@@ -393,4 +393,69 @@ describe("AnkiImportService", () => {
 		});
 
 	});
+
+	describe("hybrid deck handling", () => {
+		it("moves parent cards to synthetic leaf when parent has both cards and sub-decks", async () => {
+			const model = createAnkiModel();
+			const parentDeck = createAnkiDeck({ id: 1, name: "Math" });
+			const childDeck = createAnkiDeck({ id: 2, name: "Math::Calculus" });
+
+			// Card on parent deck (hybrid)
+			const parentNote = createAnkiNote({ id: 1, mid: model.id, flds: "What is math?\x1fA field of study" });
+			const parentCard = createAnkiCard({ id: 100, nid: 1, did: 1 });
+
+			// Card on child deck
+			const childNote = createAnkiNote({ id: 2, mid: model.id, flds: "What is calculus?\x1fStudy of change" });
+			const childCard = createAnkiCard({ id: 101, nid: 2, did: 2 });
+
+			mockParseApkg.mockResolvedValue(
+				createApkgData({
+					notes: [parentNote, childNote],
+					cards: [parentCard, childCard],
+					models: [model],
+					decks: [parentDeck, childDeck],
+				}),
+			);
+
+			const result = await service.importApkg(new ArrayBuffer(0), defaultOptions());
+
+			expect(result.imported).toBe(2);
+
+			// Should create notes for: Math (MOC), Math/Math (synthetic leaf), Math/Calculus (leaf)
+			const createCalls = app.vault.create.mock.calls.map((c: any[]) => c[0]);
+			const syntheticLeaf = createCalls.find((p: string) => p.includes("Math/Math.md"));
+			expect(syntheticLeaf).toBeDefined();
+		});
+
+		it("appends (Cards) suffix when synthetic leaf name collides with existing child", async () => {
+			const model = createAnkiModel();
+			// Parent "Math" has cards AND a child also named "Math" (Math::Math)
+			const parentDeck = createAnkiDeck({ id: 1, name: "Math" });
+			const childDeck = createAnkiDeck({ id: 2, name: "Math::Math" });
+
+			const parentNote = createAnkiNote({ id: 1, mid: model.id, flds: "Parent Q\x1fParent A" });
+			const parentCard = createAnkiCard({ id: 100, nid: 1, did: 1 });
+
+			const childNote = createAnkiNote({ id: 2, mid: model.id, flds: "Child Q\x1fChild A" });
+			const childCard = createAnkiCard({ id: 101, nid: 2, did: 2 });
+
+			mockParseApkg.mockResolvedValue(
+				createApkgData({
+					notes: [parentNote, childNote],
+					cards: [parentCard, childCard],
+					models: [model],
+					decks: [parentDeck, childDeck],
+				}),
+			);
+
+			const result = await service.importApkg(new ArrayBuffer(0), defaultOptions());
+
+			expect(result.imported).toBe(2);
+
+			// Should use "Math (Cards)" since "Math" child already exists
+			const createCalls = app.vault.create.mock.calls.map((c: any[]) => c[0]);
+			const cardsLeaf = createCalls.find((p: string) => p.includes("Math (Cards).md"));
+			expect(cardsLeaf).toBeDefined();
+		});
+	});
 });
