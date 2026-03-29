@@ -29,7 +29,7 @@ export function SourcePanel({ sources, navigation }: Props) {
 	const hasMore = grouped.length > INITIAL_VISIBLE;
 
 	return (
-		<div class="ep:max-w-[90%]">
+		<div class="ep:w-full">
 			<Clickable
 				class="ep:flex ep:items-center ep:gap-1 ep:text-[11px] ep:text-obs-muted ep:hover:text-obs-normal ep:transition-colors ep:py-0.5"
 				onClick={() => setExpanded((v) => !v)}
@@ -88,11 +88,11 @@ function SourceRow({ group, navigation }: SourceRowProps) {
 			/>
 			<div class="ep:flex ep:flex-col ep:min-w-0">
 				<div class="ep:flex ep:items-center ep:gap-1 ep:min-w-0">
-					<span class="ep:text-[11px] ep:font-medium ep:text-obs-normal ep:truncate ep:max-w-[140px]">
+					<span class="ep:text-[11px] ep:font-medium ep:text-obs-normal ep:truncate ep:min-w-0 ep:shrink">
 						{group.displayName || "Untitled"}
 					</span>
 					{heading && (
-						<span class="ep:text-[10px] ep:text-obs-faint ep:truncate ep:max-w-[120px]">
+						<span class="ep:text-[10px] ep:text-obs-faint ep:truncate ep:min-w-0 ep:shrink">
 							{heading}
 						</span>
 					)}

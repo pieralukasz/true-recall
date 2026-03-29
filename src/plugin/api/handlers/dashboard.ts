@@ -1,4 +1,4 @@
-import type { IncomingMessage, ServerResponse } from "http";
+import type { IncomingMessage, ServerResponse } from "node:http";
 import type { HierarchyTreeNode } from "@features/core/services/hierarchy.service";
 import { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
 import { aggregateDashboardData } from "@features/study/ui/dashboard/helpers/note-aggregation";
@@ -46,7 +46,9 @@ export async function handleGetDashboard(
 	const now = new Date();
 
 	const projects = hierarchy.map((node) =>
-		buildProjectWithStats(node, ctx, cardsBySourceUid, aggregation.notes, now),
+		buildProjectWithStats(node, ctx, cardsBySourceUid, aggregation.notes, now, {
+			includeMembers: false,
+		}),
 	);
 
 	sendOk(res, {
@@ -101,13 +103,19 @@ interface ProjectStat {
 	}>;
 }
 
+interface BuildProjectOptions {
+	includeMembers?: boolean;
+}
+
 function buildProjectWithStats(
 	node: HierarchyTreeNode,
 	ctx: ApiContext,
 	cardsBySourceUid: Map<string, FSRSFlashcardItem[]>,
 	allNotes: DashboardNoteEntry[],
 	now: Date,
+	options: BuildProjectOptions = {},
 ): ProjectStat {
+	const { includeMembers = false } = options;
 	const memberUids = ctx.plugin.hierarchyService.getSourceUidsForProject(
 		node.path,
 		false,
@@ -163,33 +171,39 @@ function buildProjectWithStats(
 			}
 		}
 
-		// Find the note entry for this member
-		const memberNote = node.memberPaths
-			.map((p) => notesByPath.get(p))
-			.find((n) => {
-				if (!n) return false;
-				const frontmatterIndex = ctx.plugin.frontmatterIndex;
-				const uids = frontmatterIndex.getValues("flashcard_uid", n.path ?? "");
-				return uids.includes(uid);
-			});
+		if (includeMembers) {
+			const memberNote = node.memberPaths
+				.map((p) => notesByPath.get(p))
+				.find((n) => {
+					if (!n) return false;
+					const frontmatterIndex = ctx.plugin.frontmatterIndex;
+					const uids = frontmatterIndex.getValues(
+						"flashcard_uid",
+						n.path ?? "",
+					);
+					return uids.includes(uid);
+				});
 
-		members.push({
-			name: memberNote?.name ?? cards[0]?.sourceNoteName ?? uid,
-			path: memberNote?.path ?? null,
-			due: memberDue,
-			newCount: memberNew,
-			learning: memberLearning,
-			total: cards.filter(
-				(c) =>
-					!c.fsrs.suspended &&
-					!(c.fsrs.buriedUntil && new Date(c.fsrs.buriedUntil) > now),
-			).length,
-			overdueDays: memberOverdue,
-		});
+			members.push({
+				name: memberNote?.name ?? cards[0]?.sourceNoteName ?? uid,
+				path: memberNote?.path ?? null,
+				due: memberDue,
+				newCount: memberNew,
+				learning: memberLearning,
+				total: cards.filter(
+					(c) =>
+						!c.fsrs.suspended &&
+						!(c.fsrs.buriedUntil && new Date(c.fsrs.buriedUntil) > now),
+				).length,
+				overdueDays: memberOverdue,
+			});
+		}
 	}
 
 	const children = node.children.map((child) =>
-		buildProjectWithStats(child, ctx, cardsBySourceUid, allNotes, now),
+		buildProjectWithStats(child, ctx, cardsBySourceUid, allNotes, now, {
+			includeMembers: false,
+		}),
 	);
 
 	// Roll up child stats
@@ -254,8 +268,78 @@ export async function handleGetProjects(
 	});
 
 	const projects = hierarchy.map((node) =>
-		buildProjectWithStats(node, ctx, cardsBySourceUid, aggregation.notes, now),
+		buildProjectWithStats(node, ctx, cardsBySourceUid, aggregation.notes, now, {
+			includeMembers: false,
+		}),
 	);
 
 	sendOk(res, projects);
+}
+
+function findProjectNode(
+	nodes: HierarchyTreeNode[],
+	targetPath: string,
+): HierarchyTreeNode | null {
+	for (const node of nodes) {
+		if (node.path === targetPath) return node;
+		const found = findProjectNode(node.children, targetPath);
+		if (found) return found;
+	}
+	return null;
+}
+
+export async function handleGetProject(
+	req: IncomingMessage,
+	res: ServerResponse,
+	ctx: ApiContext,
+): Promise<void> {
+	if (!ctx.plugin.isStoreReady()) {
+		sendError(res, 503, "Database not ready");
+		return;
+	}
+
+	const url = new URL(req.url ?? "/", "http://localhost");
+	const projectPath = url.searchParams.get("path");
+	if (!projectPath) {
+		sendError(res, 400, "Query param 'path' is required");
+		return;
+	}
+
+	const hierarchy = ctx.plugin.hierarchyService.buildHierarchy();
+	const node = findProjectNode(hierarchy, projectPath);
+	if (!node) {
+		sendError(res, 404, `Project not found: ${projectPath}`);
+		return;
+	}
+
+	const allCards = ctx.plugin.flashcardManager.getAllFSRSCards();
+	const cardsBySourceUid = buildCardsBySourceUid(allCards);
+	const now = new Date();
+
+	const aggregation = aggregateDashboardData({
+		allCards,
+		streakCurrent: 0,
+		todaySummary: {
+			studied: 0,
+			minutes: 0,
+			newCards: 0,
+			reviewCards: 0,
+			again: 0,
+			correctRate: 0,
+		},
+		newCardsCap: ctx.plugin.settings.newCardsPerDay,
+		reviewsCap: ctx.plugin.settings.reviewsPerDay,
+		archivedSourceUids: ctx.plugin.hierarchyService.getArchivedSourceUids(),
+	});
+
+	const project = buildProjectWithStats(
+		node,
+		ctx,
+		cardsBySourceUid,
+		aggregation.notes,
+		now,
+		{ includeMembers: true },
+	);
+
+	sendOk(res, project);
 }

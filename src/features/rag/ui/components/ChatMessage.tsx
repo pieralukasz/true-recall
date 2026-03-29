@@ -166,7 +166,7 @@ export function ChatMessage({ turn, isStreaming, navigation }: Props) {
 			)}
 
 			{grouped && (
-				<div class="ep:flex ep:flex-wrap ep:gap-1.5 ep:max-w-[90%]">
+				<div class="ep:flex ep:flex-wrap ep:gap-1.5 ep:px-1">
 					{grouped.slice(0, 5).map((g) => {
 						const label =
 							g.sourceType === "note"

@@ -24,7 +24,11 @@ import {
 	handleGetProblemCards,
 	handleListCards,
 } from "./handlers/cards";
-import { handleGetDashboard, handleGetProjects } from "./handlers/dashboard";
+import {
+	handleGetDashboard,
+	handleGetProject,
+	handleGetProjects,
+} from "./handlers/dashboard";
 import {
 	handleCreatePreset,
 	handleGetFsrsStats,
@@ -129,6 +133,7 @@ const routes: Route[] = [
 	// Dashboard & Projects
 	route("GET", "/dashboard", handleGetDashboard),
 	route("GET", "/projects", handleGetProjects),
+	route("GET", "/project", handleGetProject),
 
 	// FSRS
 	route("GET", "/presets", handleGetPresets),
