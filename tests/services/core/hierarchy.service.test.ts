@@ -196,8 +196,11 @@ describe("HierarchyService", () => {
 			});
 			frontmatterIndex.rebuildIndex();
 
-			// Should not crash, just skip the unresolvable parent
-			expect(service.buildHierarchy()).toHaveLength(0);
+			// Virtual parent created for unresolvable name
+			const hierarchy = service.buildHierarchy();
+			expect(hierarchy).toHaveLength(1);
+			expect(hierarchy[0]!.name).toBe("NonExistent");
+			expect(hierarchy[0]!.memberPaths).toContain("Note.md");
 		});
 	});
 

@@ -163,8 +163,11 @@ export class HierarchyService {
 
 		// For each unique parent name, find all children that declare it
 		for (const parentName of allParentNames) {
-			const parentPath = this.resolveNameToPath(parentName);
-			if (!parentPath) continue;
+			const trimmed = parentName.trim();
+			if (!trimmed) continue;
+			const parentPath =
+				this.resolveNameToPath(trimmed) ?? `${trimmed}.md`;
+
 
 			const childFiles = this.frontmatterIndex.getFilesByValue(
 				"parents",
@@ -304,7 +307,9 @@ export class HierarchyService {
 
 		const file = this.app.vault.getAbstractFileByPath(path);
 		const name =
-			file?.name?.replace(/\.md$/, "") ?? path.split("/").pop() ?? path;
+			file?.name?.replace(/\.md$/, "") ??
+			path.split("/").pop()?.replace(/\.md$/, "") ??
+			path;
 
 		const childPaths = graph.childMap.get(path);
 		const nextAncestors = new Set(ancestors);

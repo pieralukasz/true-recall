@@ -1,7 +1,7 @@
 import { FlashcardPanelView } from "@features/library/ui/panel/FlashcardPanelView";
 import type { DeletionHandlerService } from "@features/study/services/flashcard/deletion-handler.service";
 import { VIEW_TYPE_FLASHCARD_PANEL, VIEW_TYPE_REVIEW } from "@shared/constants";
-import { ItemView, normalizePath, TFile, TFolder } from "obsidian";
+import { ItemView, Notice, normalizePath, TFile, TFolder } from "obsidian";
 import type TrueRecallPlugin from "../main";
 
 export function registerEventHandlers(plugin: TrueRecallPlugin): void {
@@ -21,6 +21,37 @@ export function registerEventHandlers(plugin: TrueRecallPlugin): void {
 						.setTitle("Open flashcard panel")
 						.setIcon("book-text")
 						.onClick(() => void plugin.activateView());
+				});
+
+				menu.addItem((item) => {
+					item
+						.setTitle("Create project from this note")
+						.setIcon("folder-plus")
+						.onClick(async () => {
+							const { NamePromptModal } = await import(
+								"@features/study/modals/NamePromptModal"
+							);
+							const modal = new NamePromptModal(plugin.app, file.basename);
+							const result = await modal.openAndWait();
+							if (result.cancelled) return;
+
+							const name = result.name;
+							const folderPath = file.parent?.path ?? "";
+							const projectPath = normalizePath(
+								folderPath ? `${folderPath}/${name}.md` : `${name}.md`,
+							);
+
+							if (plugin.app.vault.getAbstractFileByPath(projectPath)) {
+								new Notice(`A note already exists at "${projectPath}".`);
+								return;
+							}
+
+							await plugin.app.vault.create(projectPath, "");
+							const frontmatterService =
+								plugin.flashcardManager.getFrontmatterService();
+							await frontmatterService.addParent(file, name);
+							new Notice(`Created project "${name}"`);
+						});
 				});
 			}
 		}),

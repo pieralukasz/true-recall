@@ -73,6 +73,7 @@ import {
 	initCardStore,
 	initMetadataStore,
 	refreshCards,
+	refreshHierarchy,
 	refreshMetadata,
 	refreshSettings,
 } from "@shared/services/reactive-card-store";
@@ -175,10 +176,12 @@ export default class TrueRecallPlugin extends Plugin {
 		});
 		this.frontmatterIndex.onFieldChange("parents", () => {
 			this.hierarchyService.invalidateGraph();
+			refreshHierarchy();
 			refreshMetadata();
 		});
 		this.frontmatterIndex.onFieldChange("include", () => {
 			this.hierarchyService.invalidateGraph();
+			refreshHierarchy();
 			refreshMetadata();
 		});
 		this.frontmatterIndex.onFieldChange("archive", () => refreshMetadata());
@@ -304,6 +307,7 @@ export default class TrueRecallPlugin extends Plugin {
 			this.app.vault.on("delete", (file) => {
 				if (file instanceof TFile && file.extension === "md") {
 					this.hierarchyService.invalidateGraph();
+					refreshHierarchy();
 					refreshMetadata();
 				}
 			}),

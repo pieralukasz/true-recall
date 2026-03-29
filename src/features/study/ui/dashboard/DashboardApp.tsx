@@ -6,6 +6,7 @@ import { useSignal } from "@preact/signals";
 import {
 	allCardsArray,
 	archivedSourceUids as archivedSourceUidsSignal,
+	hierarchyVersion,
 	pluginSettings,
 } from "@shared/services/reactive-card-store";
 import { AppNavBar } from "@shared/ui/components";
@@ -51,6 +52,7 @@ export function DashboardApp() {
 	const allCards = allCardsArray.value;
 	const _settings = pluginSettings.value;
 	const archived = archivedSourceUidsSignal.value;
+	const _hv = hierarchyVersion.value;
 
 	const cachedActiveCards = useMemo(
 		() =>
@@ -161,11 +163,9 @@ export function DashboardApp() {
 			if (!note.path) return true;
 			return !isNoteUnderArchivedHierarchy(note.path, plugin.hierarchyService);
 		});
-	}, [data.notes, plugin, showArchived.value]);
+	}, [data.notes, plugin, showArchived.value, _hv]);
 
 	const projectData = useMemo(() => {
-		const allCards = allCardsArray.value;
-		const archived = archivedSourceUidsSignal.value;
 		return aggregateProjectData({
 			notes: visibleNotes,
 			showArchived: showArchived.value,
