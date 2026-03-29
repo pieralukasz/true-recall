@@ -59,6 +59,8 @@ export const BYOK_MODELS: ByokModelConfig[] = [
 	},
 ];
 
+export const CUSTOM_MODEL_ID = "__custom__";
+
 export const DEFAULT_BYOK_MODEL = "google/gemini-2.5-flash";
 
 export const DEFAULT_FSRS_PRESET: FSRSPreset = {
@@ -257,7 +259,7 @@ export const RAG_CONFIG = {
 } as const;
 
 export const TRUERECALL_WEB_URL = "https://truerecall.app";
-export const TRUERECALL_BMC_URL = "https://buymeacoffee.com/pieralukasz";
+export const TRUERECALL_BMC_URL = "https://www.buymeacoffee.com/1Hzbip1K9Q";
 export const TRUERECALL_GITHUB_URL =
 	"https://github.com/pieralukasz/true-recall";
 export const TRUERECALL_DISCORD_URL = "https://discord.gg/Zp5wGupP4b";

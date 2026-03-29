@@ -395,6 +395,30 @@ export function usePanelActions() {
 		});
 	}, [flashcardInfo, plugin]);
 
+	const handleDeleteNoteAndCards = useCallback(async () => {
+		const { notify } = await import("@shared/services/notification.service");
+		if (!currentFile) return;
+
+		const count = flashcardInfo?.flashcards.length ?? 0;
+		const confirmed = window.confirm(
+			`Delete "${currentFile.basename}" and its ${count} flashcard(s)? This cannot be undone.`,
+		);
+		if (!confirmed) return;
+
+		try {
+			if (count > 0) {
+				const cardIds = flashcardInfo!.flashcards.map((card) => card.id);
+				plugin.flashcardManager.removeFlashcardsByIdsWithDetails(cardIds);
+			}
+
+			await app.vault.trash(currentFile, true);
+			notify().success(`Deleted note and ${count} flashcard(s)`);
+		} catch (error) {
+			console.error("[True Recall] Failed to delete note and cards:", error);
+			notify().error("Failed to delete note. Some flashcards may have been removed.");
+		}
+	}, [currentFile, flashcardInfo, plugin, app]);
+
 	return {
 		handleGenerateFromNote,
 		handleGenerateFromHighlights,
@@ -410,5 +434,6 @@ export function usePanelActions() {
 		handleSearchChange,
 		handleForgetAll,
 		handleDeleteAll,
+		handleDeleteNoteAndCards,
 	};
 }

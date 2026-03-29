@@ -229,7 +229,11 @@ function resolveNoteMapping(data: FSRSCardData): {
 			return {
 				noteTypeId: data.noteTypeId,
 				fieldsJson: JSON.stringify(data.fields),
-				templateOrd: data.templateOrd ?? 0,
+				// Cloze cards: templateOrd stores the 1-based cloze index, not the template ordinal
+				templateOrd:
+					data.cardType === "cloze" && data.clozeIndex != null
+						? data.clozeIndex
+						: (data.templateOrd ?? 0),
 			};
 		}
 
@@ -241,7 +245,10 @@ function resolveNoteMapping(data: FSRSCardData): {
 					? { Text: data.clozeTemplate ?? "", Extra: "" }
 					: { Front: data.question ?? "", Back: data.answer ?? "" },
 			),
-			templateOrd: data.templateOrd ?? 0,
+			templateOrd:
+				data.cardType === "cloze" && data.clozeIndex != null
+					? data.clozeIndex
+					: (data.templateOrd ?? 0),
 		};
 	}
 

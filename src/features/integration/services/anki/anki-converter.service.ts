@@ -1,3 +1,5 @@
+import { renderTemplate } from "@features/core/services/template-engine";
+import { stripHtmlFromTemplate } from "@features/integration/services/anki/anki-note-type-mapper";
 import type {
 	AnkiCard,
 	AnkiModel,
@@ -73,17 +75,17 @@ export class AnkiConverterService {
 		deckName: string,
 		tags: string[],
 	): ConvertedCard | null {
-		const rawFront = rawFields[0] ?? "";
-		const rawBack = rawFields[1] ?? "";
+		const tmpl = model.tmpls[card.ord] ?? model.tmpls[0];
+		const allContent = rawFields.join("");
 
 		if (model.type === 1) {
 			return this.convertClozeCard(
 				card,
 				note,
 				model,
-				rawFront,
-				rawBack,
+				tmpl,
 				fieldValues,
+				allContent,
 				deckName,
 				tags,
 			);
@@ -97,9 +99,9 @@ export class AnkiConverterService {
 				card,
 				note,
 				model,
-				rawFront,
-				rawBack,
+				tmpl,
 				fieldValues,
+				allContent,
 				deckName,
 				tags,
 			);
@@ -109,9 +111,9 @@ export class AnkiConverterService {
 			card,
 			note,
 			model,
-			rawFront,
-			rawBack,
+			tmpl,
 			fieldValues,
+			allContent,
 			deckName,
 			tags,
 		);
@@ -121,15 +123,16 @@ export class AnkiConverterService {
 		card: AnkiCard,
 		note: AnkiNote,
 		model: AnkiModel,
-		rawFront: string,
-		rawBack: string,
+		tmpl: { qfmt: string; afmt: string } | undefined,
 		fieldValues: Record<string, string>,
+		allContent: string,
 		deckName: string,
 		tags: string[],
 	): ConvertedCard {
-		const question = this.htmlToMarkdown(rawFront);
-		const answer = this.htmlToMarkdown(rawBack);
-		const allContent = rawFront + rawBack;
+		const { question, answer } = this.renderAnkiTemplate(
+			tmpl,
+			fieldValues,
+		);
 
 		return {
 			ankiCardId: card.id,
@@ -150,31 +153,38 @@ export class AnkiConverterService {
 		card: AnkiCard,
 		note: AnkiNote,
 		model: AnkiModel,
-		rawTemplate: string,
-		rawExtra: string,
+		tmpl: { qfmt: string; afmt: string } | undefined,
 		fieldValues: Record<string, string>,
+		allContent: string,
 		deckName: string,
 		tags: string[],
 	): ConvertedCard {
-		// Anki cloze syntax is identical to True Recall: {{c1::text}} / {{c1::text::hint}}
 		// card.ord is 0-based, cloze numbers are 1-based
 		const clozeIndex = card.ord + 1;
-		const template = this.htmlToMarkdown(rawTemplate);
-		const extra = this.htmlToMarkdown(rawExtra);
-		const answer = extra ? `${template}\n\n${extra}` : template;
+
+		const { question, answer } = this.renderAnkiTemplate(
+			tmpl,
+			fieldValues,
+			clozeIndex,
+		);
+
+		// clozeTemplate stores the raw cloze field for editing
+		const clozeFieldName = this.findClozeFieldName(tmpl?.qfmt ?? "");
+		const clozeTemplate =
+			fieldValues[clozeFieldName] ?? question;
 
 		return {
 			ankiCardId: card.id,
 			ankiNoteId: note.id,
 			ankiModelId: model.id,
-			question: template,
+			question,
 			answer,
 			cardType: "cloze",
-			clozeTemplate: template,
+			clozeTemplate,
 			clozeIndex,
 			tags,
 			deckName,
-			mediaFiles: this.extractMediaFiles(rawTemplate + rawExtra),
+			mediaFiles: this.extractMediaFiles(allContent),
 			fieldValues,
 			templateOrd: card.ord,
 		};
@@ -184,15 +194,16 @@ export class AnkiConverterService {
 		card: AnkiCard,
 		note: AnkiNote,
 		model: AnkiModel,
-		rawFront: string,
-		rawBack: string,
+		tmpl: { qfmt: string; afmt: string } | undefined,
 		fieldValues: Record<string, string>,
+		allContent: string,
 		deckName: string,
 		tags: string[],
 	): ConvertedCard {
-		const question = this.htmlToMarkdown(rawBack);
-		const answer = this.htmlToMarkdown(rawFront);
-		const allContent = rawFront + rawBack;
+		const { question, answer } = this.renderAnkiTemplate(
+			tmpl,
+			fieldValues,
+		);
 
 		return {
 			ankiCardId: card.id,
@@ -207,6 +218,42 @@ export class AnkiConverterService {
 			fieldValues,
 			templateOrd: card.ord,
 		};
+	}
+
+	private renderAnkiTemplate(
+		tmpl: { qfmt: string; afmt: string } | undefined,
+		fieldValues: Record<string, string>,
+		clozeIndex?: number,
+	): { question: string; answer: string } {
+		if (!tmpl) {
+			// Fallback: use first two fields directly
+			const values = Object.values(fieldValues);
+			return {
+				question: values[0] ?? "",
+				answer: values[1] ?? values[0] ?? "",
+			};
+		}
+
+		const qfmt = stripHtmlFromTemplate(tmpl.qfmt);
+		const afmt = stripHtmlFromTemplate(tmpl.afmt);
+
+		const question = renderTemplate(qfmt, {
+			fields: fieldValues,
+			clozeIndex,
+		});
+
+		const answer = renderTemplate(afmt, {
+			fields: fieldValues,
+			frontSide: "",
+			clozeIndex,
+		});
+
+		return { question, answer };
+	}
+
+	private findClozeFieldName(qfmt: string): string {
+		const match = /\{\{\s*cloze:([\w][\w ]*?)\s*\}\}/.exec(qfmt);
+		return match?.[1] ?? "Text";
 	}
 
 	/**

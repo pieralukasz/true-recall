@@ -29,7 +29,7 @@ interface RawAnkiModel {
 // Wire format: tag = (field_number << 3) | wire_type
 //   wire_type 0 = varint, 2 = length-delimited (string/bytes)
 
-function readProtobufVarint(
+export function readProtobufVarint(
 	blob: Uint8Array,
 	offset: number,
 ): { value: number; next: number } | null {
@@ -48,7 +48,7 @@ function readProtobufVarint(
 	return null;
 }
 
-function readProtobufString(blob: Uint8Array, fieldNumber: number): string {
+export function readProtobufString(blob: Uint8Array, fieldNumber: number): string {
 	const targetTag = (fieldNumber << 3) | 2; // wire type 2 = length-delimited
 	let pos = 0;
 
@@ -86,6 +86,49 @@ function readProtobufString(blob: Uint8Array, fieldNumber: number): string {
 	return "";
 }
 
+// Anki v18+ stores media entries as protobuf:
+// repeated MediaEntry { string name = 1; uint32 size = 2; bytes sha1 = 3; }
+// The ordinal index of each entry is the numeric ZIP key.
+export function parseMediaProtobuf(data: Uint8Array): Record<string, string> {
+	const result: Record<string, string> = {};
+	let pos = 0;
+	let entryIndex = 0;
+
+	while (pos < data.length) {
+		const tag = readProtobufVarint(data, pos);
+		if (!tag) break;
+		pos = tag.next;
+
+		const wireType = tag.value & 0x07;
+
+		if (wireType === 2) {
+			const len = readProtobufVarint(data, pos);
+			if (!len) break;
+			pos = len.next;
+
+			const entryEnd = pos + len.value;
+			const name = readProtobufString(data.slice(pos, entryEnd), 1);
+			if (name) {
+				result[String(entryIndex)] = name;
+			}
+			entryIndex++;
+			pos = entryEnd;
+		} else if (wireType === 0) {
+			const v = readProtobufVarint(data, pos);
+			if (!v) break;
+			pos = v.next;
+		} else if (wireType === 5) {
+			pos += 4;
+		} else if (wireType === 1) {
+			pos += 8;
+		} else {
+			break;
+		}
+	}
+
+	return result;
+}
+
 interface RawAnkiDeck {
 	name: string;
 }
@@ -118,6 +161,7 @@ export class ApkgParserService {
 			dbData = decompress(dbData);
 		}
 
+		this.patchWalMode(dbData);
 		const { db } = await loadDatabase(this.app, dbData);
 
 		try {
@@ -366,12 +410,20 @@ export class ApkgParserService {
 			return { media, mediaMap };
 		}
 
+		let rawBytes = await mediaFile.async("uint8array");
+
+		// Modern Anki (2.1.50+) may zstd-compress the media file
+		if (this.isZstdCompressed(rawBytes)) {
+			rawBytes = decompress(rawBytes);
+		}
+
+		// Try JSON first (legacy format: {"0": "filename.jpg", ...})
 		try {
-			const mediaJson = await mediaFile.async("string");
-			mediaMap = JSON.parse(mediaJson) as Record<string, string>;
+			const text = new TextDecoder().decode(rawBytes);
+			mediaMap = JSON.parse(text) as Record<string, string>;
 		} catch {
-			console.error("[True Recall] Failed to parse media mapping from .apkg");
-			return { media, mediaMap };
+			// Modern Anki uses protobuf: repeated { string name = 1; ... }
+			mediaMap = this.parseMediaProtobuf(rawBytes);
 		}
 
 		const extractionPromises: Promise<void>[] = [];
@@ -381,7 +433,13 @@ export class ApkgParserService {
 
 			extractionPromises.push(
 				mediaEntry.async("arraybuffer").then((data) => {
-					media.set(originalName, data);
+					const raw = new Uint8Array(data);
+					if (this.isZstdCompressed(raw)) {
+						const out = decompress(raw);
+						media.set(originalName, out.buffer as ArrayBuffer);
+					} else {
+						media.set(originalName, data);
+					}
 				}),
 			);
 		}
@@ -389,6 +447,31 @@ export class ApkgParserService {
 		await Promise.all(extractionPromises);
 
 		return { media, mediaMap };
+	}
+
+	private isZstdCompressed(data: Uint8Array): boolean {
+		return (
+			data.length >= 4 &&
+			data[0] === 0x28 &&
+			data[1] === 0xb5 &&
+			data[2] === 0x2f &&
+			data[3] === 0xfd
+		);
+	}
+
+	private parseMediaProtobuf(data: Uint8Array): Record<string, string> {
+		return parseMediaProtobuf(data);
+	}
+
+	// SQLite header bytes 18-19: file format read/write version
+	// 1 = rollback journal, 2 = WAL
+	// sqlite3_deserialize cannot handle WAL-mode databases (throws SQLITE_CANTOPEN)
+	// Safe to patch: Anki checkpoints WAL before export, all data is in the main file
+	private patchWalMode(data: Uint8Array): void {
+		if (data.byteLength > 19 && data[18] === 2) {
+			data[18] = 1;
+			data[19] = 1;
+		}
 	}
 
 	private mapRows<T>(

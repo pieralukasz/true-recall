@@ -150,6 +150,8 @@ export interface TrueRecallSettings {
 	openRouterApiKey: string;
 	/** Selected BYOK model ID (OpenRouter) */
 	aiModel: string;
+	/** Custom OpenRouter model ID — used when aiModel is __custom__ */
+	customAiModel?: string;
 	/** Custom temperature override — when undefined, uses model's default */
 	aiTemperature?: number;
 

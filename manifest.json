@@ -1,11 +1,11 @@
 {
 	"id": "true-recall",
 	"name": "True Recall",
-	"version": "1.1.0",
+	"version": "1.1.1",
 	"minAppVersion": "1.7.2",
 	"description": "Review flashcards with FSRS spaced repetition. Supports Anki import/export, projects, and detailed statistics.",
 	"author": "Lucas Piera",
 	"authorUrl": "https://www.truerecall.app/",
-	"fundingUrl": "https://buymeacoffee.com/pieralukasz",
+	"fundingUrl": "https://www.buymeacoffee.com/1Hzbip1K9Q",
 	"isDesktopOnly": false
 }

@@ -3,26 +3,32 @@ import {
 	type TrueRetentionEntry,
 } from "../../../src/features/metrics/services/fsrs-tools/statistics/true-retention.calculator";
 
+function daysAgo(n: number): string {
+	const d = new Date();
+	d.setDate(d.getDate() - n);
+	return d.toISOString().slice(0, 10);
+}
+
 describe("TrueRetentionCalculator", () => {
 	it("getSummaryAndRolling matches getSummary + getRollingAverage", () => {
 		const reviews = [
-			{ date: "2026-02-25", rating: 4 },
-			{ date: "2026-02-25", rating: 3 },
-			{ date: "2026-02-26", rating: 1 },
-			{ date: "2026-02-26", rating: 4 },
-			{ date: "2026-02-27", rating: 3 },
-			{ date: "2026-02-27", rating: 3 },
-			{ date: "2026-02-28", rating: 2 },
-			{ date: "2026-03-01", rating: 4 },
-			{ date: "2026-03-02", rating: 3 },
-			{ date: "2026-03-03", rating: 1 },
-			{ date: "2026-03-04", rating: 3 },
-			{ date: "2026-03-05", rating: 4 },
-			{ date: "2026-03-06", rating: 4 },
-			{ date: "2026-03-07", rating: 3 },
-			{ date: "2026-03-08", rating: 2 },
-			{ date: "2026-03-09", rating: 4 },
-			{ date: "2026-03-10", rating: 3 },
+			{ date: daysAgo(20), rating: 4 },
+			{ date: daysAgo(20), rating: 3 },
+			{ date: daysAgo(19), rating: 1 },
+			{ date: daysAgo(19), rating: 4 },
+			{ date: daysAgo(18), rating: 3 },
+			{ date: daysAgo(18), rating: 3 },
+			{ date: daysAgo(17), rating: 2 },
+			{ date: daysAgo(15), rating: 4 },
+			{ date: daysAgo(13), rating: 3 },
+			{ date: daysAgo(11), rating: 1 },
+			{ date: daysAgo(9), rating: 3 },
+			{ date: daysAgo(7), rating: 4 },
+			{ date: daysAgo(6), rating: 4 },
+			{ date: daysAgo(5), rating: 3 },
+			{ date: daysAgo(4), rating: 2 },
+			{ date: daysAgo(3), rating: 4 },
+			{ date: daysAgo(2), rating: 3 },
 		];
 		const cardStore = {
 			getReviewsForRetention: vi.fn(() => reviews),

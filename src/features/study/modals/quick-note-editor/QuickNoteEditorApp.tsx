@@ -445,6 +445,7 @@ function FooterBar({
 				class="mod-cta ep-btn"
 				onClick={onSave}
 				disabled={!canSave || saving || requiresSourceNote}
+				title={requiresSourceNote ? "Select a source note to save" : undefined}
 				stopPropagation={false}
 			>
 				{isEdit ? "Save Changes" : "Save"}

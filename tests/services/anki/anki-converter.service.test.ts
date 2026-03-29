@@ -216,7 +216,7 @@ describe("AnkiConverterService", () => {
 			expect(result[0].clozeTemplate).toBe(template);
 		});
 
-		it("appends extra field to answer when present", () => {
+		it("renders answer through template with extra field", () => {
 			const model = createClozeModel();
 			const template = "{{c1::Paris}} is the capital of France";
 			const extra = "Source: Wikipedia";
@@ -236,7 +236,55 @@ describe("AnkiConverterService", () => {
 
 			const result = converter.convert(data);
 
-			expect(result[0].answer).toBe(`${template}\n\n${extra}`);
+			// afmt: "{{cloze:Text}}<br>{{Extra}}" renders cloze answer (bold) + extra
+			expect(result[0].answer).toBe(
+				"**Paris** is the capital of France\nSource: Wikipedia",
+			);
+		});
+
+		it("handles custom cloze note type with non-standard field names", () => {
+			const model = createClozeModel({
+				id: 4000,
+				name: "Cloze Anking v.2",
+				flds: [
+					{ name: "Text", ord: 0 },
+					{ name: "Back Extra", ord: 1 },
+				],
+				tmpls: [
+					{
+						name: "Cloze",
+						qfmt: "{{cloze:Text}}",
+						afmt: '{{cloze:Text}}<br>{{#Back Extra}}<br>Rationale<br>{{Back Extra}}<br>{{/Back Extra}}',
+						ord: 0,
+					},
+				],
+			});
+			const note = createAnkiNote({
+				mid: model.id,
+				flds: "Disease is caused by {{c1::Cadmium}}\x1fReference info",
+			});
+			const card = createAnkiCard({ nid: note.id, did: 1, ord: 0 });
+			const deck = createAnkiDeck({ id: 1 });
+
+			const data = createApkgData({
+				notes: [note],
+				cards: [card],
+				models: [model],
+				decks: [deck],
+			});
+
+			const result = converter.convert(data);
+
+			expect(result).toHaveLength(1);
+			expect(result[0].cardType).toBe("cloze");
+			expect(result[0].clozeIndex).toBe(1);
+			expect(result[0].question).toBe("Disease is caused by [...]");
+			expect(result[0].answer).toContain("**Cadmium**");
+			expect(result[0].answer).toContain("Rationale");
+			expect(result[0].answer).toContain("Reference info");
+			expect(result[0].clozeTemplate).toBe(
+				"Disease is caused by {{c1::Cadmium}}",
+			);
 		});
 	});
 

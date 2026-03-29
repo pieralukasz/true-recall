@@ -97,6 +97,12 @@ export function NormalHeader({
 						.setIcon("trash-2")
 						.onClick(panelActions.handleDeleteAll),
 				);
+				menu.addItem((item) =>
+					item
+						.setTitle("Delete note & all flashcards")
+						.setIcon("file-x-2")
+						.onClick(panelActions.handleDeleteNoteAndCards),
+				);
 			}
 
 			menu.showAtMouseEvent(e);
