@@ -182,7 +182,7 @@ export function stripHtmlFromTemplate(template: string): string {
 		.replace(/&apos;/gi, "'");
 
 	// Strip Anki field modifiers: {{edit:Field}} → {{Field}}
-	result = result.replace(/\{\{\s*edit:(\w+)\s*\}\}/g, "{{$1}}");
+	result = result.replace(/\{\{\s*edit:([\w][\w ]*?)\s*\}\}/g, "{{$1}}");
 
 	// Collapse excessive blank lines
 	result = result.replace(/\n{3,}/g, "\n\n");
