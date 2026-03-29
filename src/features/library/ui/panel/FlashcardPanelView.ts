@@ -394,6 +394,12 @@ export class FlashcardPanelView extends ItemView {
 			return;
 		}
 
+		if (!this.app.vault.getAbstractFileByPath(file.path)) {
+			this.panel.setFlashcardInfo(null);
+			this.panel.setUncollectedInfo(0);
+			return;
+		}
+
 		const renderVersion = this.panel.incrementRenderVersion();
 
 		try {

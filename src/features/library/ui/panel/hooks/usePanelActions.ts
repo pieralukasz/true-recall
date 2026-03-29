@@ -413,6 +413,7 @@ export function usePanelActions() {
 
 			await app.vault.trash(currentFile, true);
 			notify().success(`Deleted note and ${count} flashcard(s)`);
+			await plugin.openDashboard();
 		} catch (error) {
 			console.error("[True Recall] Failed to delete note and cards:", error);
 			notify().error("Failed to delete note. Some flashcards may have been removed.");
