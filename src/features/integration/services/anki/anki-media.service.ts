@@ -26,8 +26,8 @@ export class AnkiMediaService {
 			const targetPath = normalizePath(`${targetFolder}/${originalName}`);
 
 			try {
-				if (!(await this.app.vault.adapter.exists(targetPath))) {
-					await this.app.vault.adapter.writeBinary(targetPath, fileData);
+				if (!this.app.vault.getAbstractFileByPath(targetPath)) {
+					await this.app.vault.createBinary(targetPath, fileData);
 				}
 				pathMapping.set(originalName, targetPath);
 			} catch (err) {
@@ -149,14 +149,15 @@ export class AnkiMediaService {
 	}
 
 	private async ensureFolder(folderPath: string): Promise<void> {
-		if (await this.app.vault.adapter.exists(folderPath)) return;
+		if (this.app.vault.getAbstractFileByPath(folderPath)) return;
 
 		const parts = folderPath.split("/");
 		let current = "";
 		for (const part of parts) {
 			current = current ? `${current}/${part}` : part;
-			if (!(await this.app.vault.adapter.exists(current))) {
-				await this.app.vault.adapter.mkdir(current);
+			const normalized = normalizePath(current);
+			if (!this.app.vault.getAbstractFileByPath(normalized)) {
+				await this.app.vault.createFolder(normalized);
 			}
 		}
 	}

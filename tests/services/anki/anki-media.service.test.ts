@@ -7,14 +7,17 @@ function createMockApp(): any {
 		vault: {
 			adapter: {
 				exists: vi.fn(async (path: string) => path in files),
-				writeBinary: vi.fn(async (path: string, data: ArrayBuffer) => {
-					files[path] = data;
-				}),
 				readBinary: vi.fn(
 					async (path: string) => files[path] ?? new ArrayBuffer(0),
 				),
-				mkdir: vi.fn(async () => {}),
 			},
+			getAbstractFileByPath: vi.fn((path: string) =>
+				path in files ? { path } : null,
+			),
+			createBinary: vi.fn(async (path: string, data: ArrayBuffer) => {
+				files[path] = data;
+			}),
+			createFolder: vi.fn(async () => {}),
 			getFiles: vi.fn(() => []),
 		},
 		_files: files,
@@ -194,7 +197,7 @@ describe("AnkiMediaService", () => {
 
 			await service.importMedia(media, mediaMap, "anki-media");
 
-			expect(app.vault.adapter.writeBinary).toHaveBeenCalledWith(
+			expect(app.vault.createBinary).toHaveBeenCalledWith(
 				"anki-media/photo.png",
 				expect.any(ArrayBuffer),
 			);
@@ -202,7 +205,7 @@ describe("AnkiMediaService", () => {
 
 		it("skips existing files", async () => {
 			const app = createMockApp();
-			// Pre-populate the file so exists returns true
+			// Pre-populate the file so getAbstractFileByPath returns truthy
 			app._files["anki-media/photo.png"] = new ArrayBuffer(4);
 			const service = new AnkiMediaService(app);
 
@@ -211,7 +214,7 @@ describe("AnkiMediaService", () => {
 
 			await service.importMedia(media, mediaMap, "anki-media");
 
-			expect(app.vault.adapter.writeBinary).not.toHaveBeenCalled();
+			expect(app.vault.createBinary).not.toHaveBeenCalled();
 		});
 
 		it("returns correct path mapping", async () => {
@@ -244,7 +247,7 @@ describe("AnkiMediaService", () => {
 			const result = await service.importMedia(media, mediaMap, "media");
 
 			expect(result.size).toBe(0);
-			expect(app.vault.adapter.writeBinary).not.toHaveBeenCalled();
+			expect(app.vault.createBinary).not.toHaveBeenCalled();
 		});
 
 		it("handles empty mediaMap", async () => {

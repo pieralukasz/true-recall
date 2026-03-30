@@ -27,6 +27,12 @@ Use the **Feature Request** template. Describe the problem you're trying to solv
 5. Open a PR against `main` using the PR template
 6. Wait for review — all PRs require maintainer approval
 
+### Branch Model
+
+- **Contributors**: Always open PRs against `main`
+- **Releases**: Maintainer promotes `main → pre-release → release` via internal PRs
+- **Tags**: Only created on the `release` branch
+
 ### Code Standards
 
 - TypeScript with strict mode

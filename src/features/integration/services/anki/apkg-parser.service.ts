@@ -48,7 +48,10 @@ export function readProtobufVarint(
 	return null;
 }
 
-export function readProtobufString(blob: Uint8Array, fieldNumber: number): string {
+export function readProtobufString(
+	blob: Uint8Array,
+	fieldNumber: number,
+): string {
 	const targetTag = (fieldNumber << 3) | 2; // wire type 2 = length-delimited
 	let pos = 0;
 
@@ -436,7 +439,13 @@ export class ApkgParserService {
 					const raw = new Uint8Array(data);
 					if (this.isZstdCompressed(raw)) {
 						const out = decompress(raw);
-						media.set(originalName, out.buffer as ArrayBuffer);
+						media.set(
+							originalName,
+							out.buffer.slice(
+								out.byteOffset,
+								out.byteOffset + out.byteLength,
+							) as ArrayBuffer,
+						);
 					} else {
 						media.set(originalName, data);
 					}

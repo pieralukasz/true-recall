@@ -152,8 +152,13 @@ export class AnkiImportService {
 
 		// Create source notes per deck so imported cards appear in panel/projects
 		if (deckToCardIds.size > 0) {
-			await this.createSourceNotesForDecks(deckToCardIds);
-			await this.store.flush();
+			try {
+				await this.createSourceNotesForDecks(deckToCardIds);
+				await this.store.flush();
+			} catch (err) {
+				const msg = err instanceof Error ? err.message : String(err);
+				result.errors.push(`Failed to create project notes: ${msg}`);
+			}
 		}
 
 		if (importedCardIds.length > 0) {

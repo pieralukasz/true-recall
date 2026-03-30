@@ -4,7 +4,7 @@ on:
     push:
         branches: ["**"]
     pull_request:
-        branches: ["**"]
+        branches: [main, pre-release, release]
 
 env:
     FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true

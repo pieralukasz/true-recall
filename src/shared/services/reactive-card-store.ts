@@ -66,6 +66,13 @@ export function refreshMetadata(): void {
 	_archivedSourceUids.value = metadataService.getArchivedSourceUids();
 }
 
+const _hierarchyVersion = signal(0);
+export const hierarchyVersion: ReadonlySignal<number> = _hierarchyVersion;
+
+export function refreshHierarchy(): void {
+	_hierarchyVersion.value++;
+}
+
 // ── Derived computeds ───────────────────────────────────────
 
 export const allCardsArray = computed(() => [...cards.value.values()]);

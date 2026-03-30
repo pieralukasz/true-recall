@@ -105,6 +105,7 @@ export class AnkiImportModal extends BaseModal {
 	private store: SqliteStoreService;
 	private fsrsService: FSRSService;
 	private fileData: ArrayBuffer | null = null;
+	private deckNames: string[] = [];
 
 	constructor(app: App, store: SqliteStoreService, fsrsService: FSRSService) {
 		super(app, { title: "Import Anki deck", width: "520px" });
@@ -134,13 +135,15 @@ export class AnkiImportModal extends BaseModal {
 			const converter = new AnkiConverterService();
 			const convertedCards = converter.convert(apkgData);
 
+			this.deckNames = this.getUniqueDecks(apkgData);
+
 			const preview: ImportPreview = {
 				totalCards: convertedCards.length,
 				basicCards: convertedCards.filter((c) => c.cardType === "basic").length,
 				clozeCards: convertedCards.filter((c) => c.cardType === "cloze").length,
 				reversedCards: convertedCards.filter((c) => c.cardType === "reversed")
 					.length,
-				decks: this.getUniqueDecks(apkgData),
+				decks: this.deckNames,
 				mediaCount: Object.keys(apkgData.mediaMap).length,
 			};
 
@@ -167,10 +170,16 @@ export class AnkiImportModal extends BaseModal {
 				this.fsrsService,
 			);
 
+			const topDeck = (this.deckNames[0] ?? "anki-import")
+				.split("/")[0]!
+				.replace(/[\\/:*?"<>|]/g, "-")
+				.trim();
+			const mediaFolder = `Attachments/anki-import/${topDeck}`;
+
 			const result = await importService.importApkg(this.fileData, {
 				importScheduling: opts.importScheduling,
 				importMedia: opts.importMedia,
-				mediaFolder: "Attachments/anki-import",
+				mediaFolder,
 				createProject: opts.createProject,
 			});
 

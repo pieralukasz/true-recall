@@ -1,4 +1,4 @@
-import type { NoteStatusCacheService } from "@features/core/cache/note-status-cache.service";
+import type { NoteStatusCache } from "@features/core/cache/note-status-cache.service";
 import type { FrontmatterIndexService } from "@features/core/services/frontmatter-index.service";
 import {
 	aggregateInfos,
@@ -10,7 +10,7 @@ import type { App, MarkdownPostProcessorContext, TFile } from "obsidian";
 
 export function createLinkStatusPostProcessor(
 	app: App,
-	noteStatusCache: NoteStatusCacheService,
+	noteStatusCache: NoteStatusCache,
 	frontmatterIndex: FrontmatterIndexService,
 	getEnabled: () => boolean,
 	getEnabledInPanel: () => boolean,
@@ -123,7 +123,7 @@ function collectFlashcardLinksAfterHeading(
 	app: App,
 	sourcePath: string,
 	frontmatterIndex: FrontmatterIndexService,
-	noteStatusCache: NoteStatusCacheService,
+	noteStatusCache: NoteStatusCache,
 ): { noteName: string; info: NoteStatusInfo }[] {
 	const results: { noteName: string; info: NoteStatusInfo }[] = [];
 	const headingLevel = parseInt(heading.tagName[1] ?? "0", 10);
