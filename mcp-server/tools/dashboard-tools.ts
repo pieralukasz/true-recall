@@ -1,65 +1,29 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import type { TrueRecallClient } from "../client.js";
+import { get, getWith, type ToolDef } from "./_register.js";
 
-export function registerDashboardTools(
-	server: McpServer,
-	client: TrueRecallClient,
-): void {
-	server.registerTool(
+export const dashboardTools: ToolDef[] = [
+	get(
 		"get_dashboard",
-		{
-			description:
-				"Get a full dashboard overview: total cards, due/new/learning/overdue counts, today's progress (studied, time, new vs review caps), streak, estimated study time, per-note breakdown with priority, and orphaned card stats.",
-		},
-		async () => {
-			const data = await client.get("/dashboard");
-			return {
-				content: [
-					{ type: "text" as const, text: JSON.stringify(data, null, 2) },
-				],
-			};
-		},
-	);
+		"Get a full dashboard overview: total cards, due/new/learning/overdue counts, today's progress (studied, time, new vs review caps), streak, estimated study time, per-note breakdown with priority, and orphaned card stats.",
+		"/dashboard",
+	),
 
-	server.registerTool(
+	get(
 		"get_projects",
-		{
-			description:
-				"Get the project/deck hierarchy tree with aggregate stats (total cards, due, new, learning, overdue counts per project). Returns summary without per-note member details. Use get_project for a detailed breakdown of a specific project.",
-		},
-		async () => {
-			const data = await client.get("/projects");
-			return {
-				content: [
-					{ type: "text" as const, text: JSON.stringify(data, null, 2) },
-				],
-			};
-		},
-	);
+		"Get the project/deck hierarchy tree with aggregate stats (total cards, due, new, learning, overdue counts per project). Returns summary without per-note member details. Use get_project for a detailed breakdown of a specific project.",
+		"/projects",
+	),
 
-	server.registerTool(
+	getWith(
 		"get_project",
+		"Get detailed stats for a single project including per-note member breakdown (name, path, due, new, learning, total cards, overdue days). Use get_projects first to discover project paths.",
 		{
-			description:
-				"Get detailed stats for a single project including per-note member breakdown (name, path, due, new, learning, total cards, overdue days). Use get_projects first to discover project paths.",
-			inputSchema: {
-				path: z
-					.string()
-					.describe(
-						"The project's vault-relative file path (e.g. 'Projects/Spanish.md'). Get this from the get_projects response.",
-					),
-			},
+			path: z
+				.string()
+				.describe(
+					"The project's vault-relative file path (e.g. 'Projects/Spanish.md'). Get this from the get_projects response.",
+				),
 		},
-		async (params) => {
-			const data = await client.get(
-				`/project?path=${encodeURIComponent(params.path)}`,
-			);
-			return {
-				content: [
-					{ type: "text" as const, text: JSON.stringify(data, null, 2) },
-				],
-			};
-		},
-	);
-}
+		(p) => `/project?path=${encodeURIComponent(String(p.path))}`,
+	),
+];

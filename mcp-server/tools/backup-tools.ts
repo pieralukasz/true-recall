@@ -1,55 +1,21 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { TrueRecallClient } from "../client.js";
+import { get, post, type ToolDef } from "./_register.js";
 
-export function registerBackupTools(
-	server: McpServer,
-	client: TrueRecallClient,
-): void {
-	server.registerTool(
+export const backupTools: ToolDef[] = [
+	post(
 		"create_backup",
-		{
-			description:
-				"Create a compressed backup of the True Recall database. Backups are stored in .true-recall/backups/.",
-		},
-		async () => {
-			const data = await client.post("/backups/create", {});
-			return {
-				content: [
-					{ type: "text" as const, text: JSON.stringify(data, null, 2) },
-				],
-			};
-		},
-	);
+		"Create a compressed backup of the True Recall database. Backups are stored in .true-recall/backups/.",
+		"/backups/create",
+	),
 
-	server.registerTool(
+	get(
 		"list_backups",
-		{
-			description:
-				"List all available database backups with dates and sizes.",
-		},
-		async () => {
-			const data = await client.get("/backups");
-			return {
-				content: [
-					{ type: "text" as const, text: JSON.stringify(data, null, 2) },
-				],
-			};
-		},
-	);
+		"List all available database backups with dates and sizes.",
+		"/backups",
+	),
 
-	server.registerTool(
+	get(
 		"check_integrity",
-		{
-			description:
-				"Run a database integrity check. Reports orphaned cards (no parent note), orphaned notes (no note type), and orphaned review logs (no parent card).",
-		},
-		async () => {
-			const data = await client.get("/integrity");
-			return {
-				content: [
-					{ type: "text" as const, text: JSON.stringify(data, null, 2) },
-				],
-			};
-		},
-	);
-}
+		"Run a database integrity check. Reports orphaned cards (no parent note), orphaned notes (no note type), and orphaned review logs (no parent card).",
+		"/integrity",
+	),
+];
