@@ -1,0 +1,1 @@
+export { TrueRecallSettingTab } from "./SettingsTab";

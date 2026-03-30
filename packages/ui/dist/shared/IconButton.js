@@ -1,0 +1,32 @@
+import { jsx as _jsx, jsxs as _jsxs } from "preact/jsx-runtime";
+import { cn } from "../utils/cn";
+import { useIcon } from "../hooks/use-icon";
+import { cva } from "class-variance-authority";
+import { Clickable } from "./Clickable";
+const iconButtonVariants = cva("clickable-icon ep:cursor-pointer ep:flex ep:items-center ep:justify-center ep:rounded-md ep:text-obs-muted ep:hover:bg-obs-modifier-hover ep:hover:text-obs-normal ep:transition-colors", {
+    variants: {
+        size: {
+            small: "ep:w-6 ep:h-6 [&_svg]:ep:w-3.5 [&_svg]:ep:h-3.5",
+            medium: "",
+        },
+        danger: {
+            true: "ep:hover:text-obs-red",
+        },
+        disabled: {
+            true: "ep:opacity-50 ep:cursor-not-allowed",
+        },
+        hasLabel: {
+            true: "ep:gap-1",
+        },
+    },
+    defaultVariants: { size: "medium" },
+});
+export function IconButton({ icon, ariaLabel, onClick, label, size = "medium", danger = false, disabled = false, class: cls, }) {
+    const iconRef = useIcon(icon);
+    return (_jsxs(Clickable, { class: cn(iconButtonVariants({
+            size,
+            danger,
+            disabled,
+            hasLabel: !!label,
+        }), cls), "aria-label": ariaLabel, disabled: disabled, onClick: (e) => onClick(e), children: [_jsx("span", { ref: iconRef }), label && _jsx("span", { class: "ep:text-ui-small", children: label })] }));
+}

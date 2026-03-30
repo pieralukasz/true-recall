@@ -6,6 +6,8 @@
 			"@true-recall/core": ["packages/core/src"],
 			"@true-recall/core/*": ["packages/core/src/*"]
 		},
+		"composite": true,
+		"declaration": true,
 		"outDir": "dist",
 		"rootDir": "src"
 	},
