@@ -201,7 +201,7 @@ export function GeneralTab() {
 								void (async () => {
 									if (!plugin.localApi) {
 										const { LocalApiServer } = await import(
-											"../../../plugin/api/LocalApiServer"
+											"@true-recall/obsidian/plugin/api/LocalApiServer"
 										);
 										plugin.localApi = new LocalApiServer(
 											plugin,

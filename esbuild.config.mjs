@@ -93,7 +93,7 @@ function copyToVault() {
 
 const context = await esbuild.context({
 	banner: { js: banner },
-	entryPoints: ["src/main.ts"],
+	entryPoints: ["packages/obsidian/src/main.ts"],
 	bundle: true,
 	metafile: true,
 	alias: {

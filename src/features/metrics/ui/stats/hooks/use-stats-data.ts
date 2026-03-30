@@ -6,6 +6,7 @@ import {
 } from "@features/metrics/services/stats/stats-filter.types";
 import type { Signal } from "@preact/signals";
 import { useSignal } from "@preact/signals";
+import { getErrorMessage } from "@shared/errors";
 import {
 	allCardsArray,
 	pluginSettings,
@@ -23,7 +24,6 @@ import type {
 	TodaySummary,
 } from "@shared/types";
 import { usePlugin } from "@shared/ui/preact";
-import { getErrorMessage } from "@shared/utils/error.utils";
 import { useEffect, useMemo } from "preact/hooks";
 
 export interface StatsData {

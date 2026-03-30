@@ -3,7 +3,7 @@
  */
 
 // Validation-specific types (from Zod schemas)
-export type { FlashcardInfo } from "./flashcard.schema";
+export type { FlashcardInfoPayload } from "./flashcard.schema";
 // Flashcard Schemas
 export {
 	FlashcardInfoSchema,

@@ -25,5 +25,5 @@ export const FlashcardInfoSchema = z.object({
 // Re-export types from flashcard.types for convenience
 export type { FlashcardItem } from "../../types/flashcard.types";
 
-// Types that are specific to validation
-export type FlashcardInfo = z.infer<typeof FlashcardInfoSchema>;
+// Zod-inferred type for API validation (includes filePath, differs from domain FlashcardInfo)
+export type FlashcardInfoPayload = z.infer<typeof FlashcardInfoSchema>;

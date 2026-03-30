@@ -1,6 +1,6 @@
 import { StreamingGenerationService } from "@features/ai/services/streaming-generation.service";
 import { QuickNoteEditorModal } from "@features/study/modals/quick-note-editor/QuickNoteEditorModal";
-import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpClient";
+import { ObsidianHttpClient } from "../adapters/ObsidianHttpClient";
 import { notify } from "@shared/services/notification.service";
 import { BUILTIN_BASIC_ID } from "@shared/types/note.types";
 import type TrueRecallPlugin from "../main";
