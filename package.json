@@ -35,8 +35,8 @@
 		"vitest": "^1.6.1"
 	},
 	"dependencies": {
-		"@codemirror/state": "^6.5.2",
-		"@codemirror/view": "^6.36.8",
+		"@codemirror/state": "6.5.0",
+		"@codemirror/view": "^6.35.0",
 		"@floating-ui/dom": "^1.7.5",
 		"@preact/signals": "^2.8.1",
 		"@sqlite.org/sqlite-wasm": "^3.51.2-build6",
