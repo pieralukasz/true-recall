@@ -33,7 +33,7 @@ export function usePanelActions() {
 		}
 
 		const { ChunkedGenerationService } = await import(
-			"@true-recall/core/ai/chunked-generation.service"
+			"@true-recall/core/ai/generation/chunked-generation.service"
 		);
 
 		const { ObsidianHttpClient } = await import(
@@ -122,7 +122,7 @@ export function usePanelActions() {
 		const joinedHighlights = newHighlights.join("\n\n");
 
 		const { StreamingGenerationService } = await import(
-			"@true-recall/core/ai/streaming-generation.service"
+			"@true-recall/core/ai/generation/streaming-generation.service"
 		);
 
 		const { ObsidianHttpClient: HttpClient } = await import(

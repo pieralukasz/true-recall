@@ -1,13 +1,13 @@
-import type { IHttpClient } from "../interfaces/http-client";
-import type { IORegion } from "../types/image-occlusion.types";
-import type { TrueRecallSettings } from "../types/settings.types";
-import { resolveAIClientConfig } from "./ai-client-config";
+import type { IHttpClient } from "../../interfaces/http-client";
+import type { IORegion } from "../../types/image-occlusion.types";
+import type { TrueRecallSettings } from "../../types/settings.types";
 import {
 	type ChatMessage,
 	type ContentPart,
 	getTextContent,
 	OpenRouterClient,
-} from "./openrouter-client";
+} from "../clients/openrouter-client";
+import { resolveAIClientConfig } from "../config/ai-client-config";
 
 // Gemini is the only model family trained for spatial coordinate output
 const IO_DETECTION_FALLBACK_MODEL = "google/gemini-2.5-flash";

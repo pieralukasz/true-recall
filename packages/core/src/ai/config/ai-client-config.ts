@@ -3,9 +3,9 @@ import {
 	CUSTOM_MODEL_ID,
 	DEFAULT_BYOK_MODEL,
 	LITELLM_URL,
-} from "../constants";
-import type { TrueRecallSettings } from "../types/settings.types";
-import { OPENROUTER_URL } from "./openrouter-client";
+} from "../../constants";
+import type { TrueRecallSettings } from "../../types/settings.types";
+import { OPENROUTER_URL } from "../clients/openrouter-client";
 
 const PRO_MODEL = "auto";
 

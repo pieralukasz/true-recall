@@ -1,7 +1,7 @@
 import type {
 	ToolCall,
 	ToolDefinition,
-} from "@true-recall/core/ai/openrouter-client";
+} from "@true-recall/core/ai/clients/openrouter-client";
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite";
 import type { DayBoundaryService } from "@true-recall/core/services/day-boundary.service";
 import type { HierarchyService } from "@true-recall/core/services/hierarchy.service";

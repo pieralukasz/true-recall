@@ -1,26 +1,26 @@
 import {
 	buildByokPrompt,
 	buildCardFormatSpec,
-} from "./prompts/block-prompt-builder";
-import type { IHttpClient } from "../interfaces/http-client";
-import type { NoteType } from "../types/note.types";
-import type { TrueRecallSettings } from "../types/settings.types";
-import type { AIClientConfig } from "./ai-client-config";
-import { resolveAIClientConfig } from "./ai-client-config";
-import { IncrementalFlashcardParser } from "./incremental-flashcard-parser";
-import {
-	type CardEventFlashcardManager,
-	processCardEvents,
-	type SourceFileRef,
-} from "./process-card-events";
-import { StreamingOpenRouterClient } from "./streaming-openrouter-client";
+} from "../prompts/block-prompt-builder";
+import type { IHttpClient } from "../../interfaces/http-client";
+import type { NoteType } from "../../types/note.types";
+import type { TrueRecallSettings } from "../../types/settings.types";
+import { StreamingOpenRouterClient } from "../clients/streaming-openrouter-client";
+import type { AIClientConfig } from "../config/ai-client-config";
+import { resolveAIClientConfig } from "../config/ai-client-config";
+import { IncrementalFlashcardParser } from "../parsing/incremental-flashcard-parser";
 import {
 	createThrottledPartialUpdater,
 	finishStreaming,
 	type ScheduleCallback,
 	startStreaming,
 	streamingGeneration,
-} from "./streaming-state";
+} from "../state/streaming-state";
+import {
+	type CardEventFlashcardManager,
+	processCardEvents,
+	type SourceFileRef,
+} from "./process-card-events";
 
 export const FALLBACK_BASIC_NOTE_TYPE = {
 	id: "builtin-basic",

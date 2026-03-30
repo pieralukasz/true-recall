@@ -1,7 +1,7 @@
 import {
 	AIRequestError,
 	buildOpenRouterHeaders,
-} from "@true-recall/core/ai/openrouter-client";
+} from "@true-recall/core/ai/clients/openrouter-client";
 import { LITELLM_EMBEDDINGS_URL, RAG_CONFIG } from "@true-recall/core/constants";
 import type { IHttpClient } from "@true-recall/core/interfaces/http-client";
 

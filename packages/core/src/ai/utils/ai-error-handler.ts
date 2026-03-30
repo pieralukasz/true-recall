@@ -1,4 +1,4 @@
-import { AIRequestError } from "./openrouter-client";
+import { AIRequestError } from "../clients/openrouter-client";
 
 export function formatAIError(error: unknown): string {
 	if (error instanceof AIRequestError) {

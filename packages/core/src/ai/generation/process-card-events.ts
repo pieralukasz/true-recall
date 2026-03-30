@@ -1,7 +1,7 @@
-import type { FlashcardItem } from "../types/flashcard.types";
-import type { IncrementalFlashcardParser } from "./incremental-flashcard-parser";
-import { fixSourceText } from "./source-text-fixer";
-import { addStreamedCard } from "./streaming-state";
+import type { FlashcardItem } from "../../types/flashcard.types";
+import type { IncrementalFlashcardParser } from "../parsing/incremental-flashcard-parser";
+import { addStreamedCard } from "../state/streaming-state";
+import { fixSourceText } from "../utils/source-text-fixer";
 
 type ParserEvents = ReturnType<IncrementalFlashcardParser["feed"]>;
 

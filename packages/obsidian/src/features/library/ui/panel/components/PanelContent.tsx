@@ -1,4 +1,4 @@
-import { clearRecentCards } from "@true-recall/core/ai/streaming-state";
+import { clearRecentCards } from "@true-recall/core/ai/state/streaming-state";
 import {
 	EmptyState,
 	EmptyStateMessages,

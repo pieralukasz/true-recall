@@ -1,4 +1,4 @@
-import { StreamingGenerationService } from "@true-recall/core/ai/streaming-generation.service";
+import { StreamingGenerationService } from "@true-recall/core/ai/generation/streaming-generation.service";
 import { QuickNoteEditorModal } from "@true-recall/obsidian/modals/study/quick-note-editor/QuickNoteEditorModal";
 import { ObsidianHttpClient } from "../adapters/ObsidianHttpClient";
 import { notify } from "@true-recall/obsidian/services/notification.service";

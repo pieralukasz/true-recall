@@ -1,4 +1,4 @@
-import type { StreamingGenerationState } from "@true-recall/core/ai/streaming-state";
+import type { StreamingGenerationState } from "@true-recall/core/ai/state/streaming-state";
 import {
 	useStreamingText,
 	useWordReveal,

@@ -1,4 +1,4 @@
-import { streamingGeneration } from "@true-recall/core/ai/streaming-state";
+import { streamingGeneration } from "@true-recall/core/ai/state/streaming-state";
 import { useSignalEffect } from "@preact/signals";
 import type { FSRSFlashcardItem } from "@true-recall/core/types/fsrs/card.types";
 import { useMemo, useState } from "preact/hooks";

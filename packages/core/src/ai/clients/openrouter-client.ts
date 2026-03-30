@@ -1,4 +1,4 @@
-import type { IHttpClient } from "../interfaces/http-client";
+import type { IHttpClient } from "../../interfaces/http-client";
 
 export interface TextContentPart {
 	type: "text";

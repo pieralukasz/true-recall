@@ -1,11 +1,19 @@
-import { buildCardFormatSpec } from "./prompts/block-prompt-builder";
-import type { IHttpClient } from "../interfaces/http-client";
-import type { NoteType } from "../types/note.types";
-import type { TrueRecallSettings } from "../types/settings.types";
-import type { AIClientConfig } from "./ai-client-config";
-import { resolveAIClientConfig } from "./ai-client-config";
-import { IncrementalFlashcardParser } from "./incremental-flashcard-parser";
-import { type ChunkingResult, chunkMarkdown } from "./markdown-chunker";
+import type { IHttpClient } from "../../interfaces/http-client";
+import type { NoteType } from "../../types/note.types";
+import type { TrueRecallSettings } from "../../types/settings.types";
+import { StreamingOpenRouterClient } from "../clients/streaming-openrouter-client";
+import type { AIClientConfig } from "../config/ai-client-config";
+import { resolveAIClientConfig } from "../config/ai-client-config";
+import { IncrementalFlashcardParser } from "../parsing/incremental-flashcard-parser";
+import { type ChunkingResult, chunkMarkdown } from "../parsing/markdown-chunker";
+import { buildCardFormatSpec } from "../prompts/block-prompt-builder";
+import {
+	createThrottledPartialUpdater,
+	finishStreaming,
+	type ScheduleCallback,
+	startStreaming,
+	updateChunkProgress,
+} from "../state/streaming-state";
 import { processCardEvents } from "./process-card-events";
 import {
 	buildGenerationPrompt,
@@ -15,14 +23,6 @@ import {
 	type StreamingFlashcardManager,
 	type StreamingSourceFile,
 } from "./streaming-generation.service";
-import { StreamingOpenRouterClient } from "./streaming-openrouter-client";
-import {
-	createThrottledPartialUpdater,
-	finishStreaming,
-	type ScheduleCallback,
-	startStreaming,
-	updateChunkProgress,
-} from "./streaming-state";
 
 const COST_CONFIRM_WORD_THRESHOLD = 5000;
 const COST_PER_TOKEN = 0.15 / 1_000_000;

@@ -3,23 +3,23 @@ export {
 	type AIClientConfig,
 	hasAIKey,
 	resolveAIClientConfig,
-} from "./ai-client-config";
+} from "./config/ai-client-config";
 
 // Error handling
-export { formatAIError } from "./ai-error-handler";
+export { formatAIError } from "./utils/ai-error-handler";
 
 // Chunked generation
 export {
 	type ChunkedGenerationResult,
 	ChunkedGenerationService,
 	type ConfirmLargeNote,
-} from "./chunked-generation.service";
+} from "./generation/chunked-generation.service";
 
 // Flashcard generation (non-streaming)
 export {
 	FlashcardGenerationService,
 	type GenerationResult,
-} from "./flashcard-generation.service";
+} from "./generation/flashcard-generation.service";
 
 // FSRS context for AI agents
 export {
@@ -27,7 +27,7 @@ export {
 	FSRS_QUICK_REFERENCE,
 	FSRS_SQL_EXAMPLES,
 	getFsrsContext,
-} from "./fsrs-context";
+} from "./context/fsrs-context";
 
 // Image region detection (image occlusion AI)
 export {
@@ -35,7 +35,7 @@ export {
 	detectRegionsFromImage,
 	getMimeType,
 	parseAIRegions,
-} from "./image-region-detection";
+} from "./vision/image-region-detection";
 
 // Incremental parser
 export {
@@ -43,7 +43,7 @@ export {
 	type IncrementalParseEvent,
 	type NoteTypeLookup,
 	parseBlockResponse,
-} from "./incremental-flashcard-parser";
+} from "./parsing/incremental-flashcard-parser";
 
 // Markdown chunker
 export {
@@ -51,7 +51,7 @@ export {
 	chunkMarkdown,
 	filterContent,
 	type MarkdownChunk,
-} from "./markdown-chunker";
+} from "./parsing/markdown-chunker";
 
 // OpenRouter client (non-streaming)
 export {
@@ -68,14 +68,14 @@ export {
 	type TextContentPart,
 	type ToolCall,
 	type ToolDefinition,
-} from "./openrouter-client";
+} from "./clients/openrouter-client";
 
 // Card event processing
 export {
 	type CardEventFlashcardManager,
 	processCardEvents,
 	type SourceFileRef,
-} from "./process-card-events";
+} from "./generation/process-card-events";
 
 // Prompts
 export {
@@ -93,17 +93,17 @@ export {
 } from "./prompts/type-in-grading-prompt";
 
 // Semantic answer grading
-export { SemanticAnswerGradingService } from "./semantic-answer-grading.service";
+export { SemanticAnswerGradingService } from "./grading/semantic-answer-grading.service";
 
 // Source text fixer
-export { fixBlockSourceTexts, fixSourceText } from "./source-text-fixer";
+export { fixBlockSourceTexts, fixSourceText } from "./utils/source-text-fixer";
 
 // SQL query adapter
 export {
 	type DatabaseLike,
 	type QueryExecResult,
 	SqlQueryAdapter,
-} from "./sql-query.adapter";
+} from "./adapters/sql-query.adapter";
 
 // Streaming generation
 export {
@@ -113,14 +113,14 @@ export {
 	type StreamingGenerationResult,
 	StreamingGenerationService,
 	type StreamingSourceFile,
-} from "./streaming-generation.service";
+} from "./generation/streaming-generation.service";
 
 // Streaming OpenRouter client
 export {
 	type StreamChunk,
 	type StreamingChatRequest,
 	StreamingOpenRouterClient,
-} from "./streaming-openrouter-client";
+} from "./clients/streaming-openrouter-client";
 
 // Streaming state management
 export {
@@ -137,4 +137,4 @@ export {
 	streamingGeneration,
 	updateChunkProgress,
 	updatePartial,
-} from "./streaming-state";
+} from "./state/streaming-state";

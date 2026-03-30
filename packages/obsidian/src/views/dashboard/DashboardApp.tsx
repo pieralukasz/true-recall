@@ -31,7 +31,7 @@ import {
 	hierarchyVersion,
 	pluginSettings,
 } from "@true-recall/obsidian/services/reactive-card-store";
-import { useCallback, useMemo, useRef } from "preact/hooks";
+import { useCallback, useEffect, useMemo, useRef } from "preact/hooks";
 
 export function DashboardApp() {
 	const plugin = usePlugin();
@@ -272,9 +272,11 @@ export function DashboardApp() {
 		}
 	};
 
-	if (activeTab.value === "orphaned" && data.orphanedCards.total === 0) {
-		activeTab.value = "projects";
-	}
+	useEffect(() => {
+		if (activeTab.value === "orphaned" && data.orphanedCards.total === 0) {
+			activeTab.value = "projects";
+		}
+	}, [data.orphanedCards.total]);
 
 	return (
 		<div class="ep-dashboard-container ep:flex ep:flex-col ep:h-full">

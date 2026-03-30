@@ -1,5 +1,5 @@
 import { effect } from "@preact/signals";
-import { SemanticAnswerGradingService } from "@true-recall/core/ai/semantic-answer-grading.service";
+import { SemanticAnswerGradingService } from "@true-recall/core/ai/grading/semantic-answer-grading.service";
 import { VIEW_TYPE_REVIEW } from "@true-recall/core/constants";
 import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
 import type { SessionPersistenceService } from "@true-recall/core/persistence/session-persistence.service";

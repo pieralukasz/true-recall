@@ -1,16 +1,16 @@
-import { buildTypeInGradingMessages } from "./prompts/type-in-grading-prompt";
-import {
-	type AIClientConfig,
-	resolveAIClientConfig,
-} from "./ai-client-config";
+import type { IHttpClient } from "../../interfaces/http-client";
+import type { SemanticGradingResult, TrueRecallSettings } from "../../types";
 import {
 	AIRequestError,
 	type ChatCompletionResponse,
 	getTextContent,
 	OpenRouterClient,
-} from "./openrouter-client";
-import type { IHttpClient } from "../interfaces/http-client";
-import type { SemanticGradingResult, TrueRecallSettings } from "../types";
+} from "../clients/openrouter-client";
+import {
+	type AIClientConfig,
+	resolveAIClientConfig,
+} from "../config/ai-client-config";
+import { buildTypeInGradingMessages } from "../prompts/type-in-grading-prompt";
 
 const DEFAULT_TIMEOUT_MS = 8000;
 const MAX_FEEDBACK_LENGTH = 280;

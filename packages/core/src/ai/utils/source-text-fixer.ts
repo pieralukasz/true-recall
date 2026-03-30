@@ -1,4 +1,4 @@
-import type { ParsedBlock } from "../flashcard/block-parser.service";
+import type { ParsedBlock } from "../../flashcard/block-parser.service";
 
 const MD_INLINE_RE =
 	/\*{1,3}|_{1,3}|~~|==|`{1,3}|\[([^\]]*)\]\([^)]*\)|!\[([^\]]*)\]\([^)]*\)/g;

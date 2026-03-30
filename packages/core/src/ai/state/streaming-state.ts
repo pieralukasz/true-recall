@@ -1,4 +1,4 @@
-import type { FlashcardItem } from "../types/flashcard.types";
+import type { FlashcardItem } from "../../types/flashcard.types";
 
 export type StreamingPhase = "idle" | "waiting" | "streaming";
 

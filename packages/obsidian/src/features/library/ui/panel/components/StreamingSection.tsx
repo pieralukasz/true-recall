@@ -1,5 +1,5 @@
 import { useSignalEffect } from "@preact/signals";
-import { streamingGeneration } from "@true-recall/core/ai/streaming-state";
+import { streamingGeneration } from "@true-recall/core/ai/state/streaming-state";
 import { PartialCard } from "@true-recall/obsidian/features/library/ui/panel/components/PartialCard";
 import { useEffect, useRef, useState } from "preact/hooks";
 

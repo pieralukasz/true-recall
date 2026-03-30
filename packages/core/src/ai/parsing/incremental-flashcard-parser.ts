@@ -1,5 +1,5 @@
-import type { ParsedBlock } from "../flashcard/block-parser.service";
-import type { NoteType } from "../types/note.types";
+import type { ParsedBlock } from "../../flashcard/block-parser.service";
+import type { NoteType } from "../../types/note.types";
 
 export interface IncrementalParseEvent {
 	type: "card_complete" | "partial_update";

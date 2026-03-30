@@ -1,4 +1,4 @@
-import type { SemanticAnswerGradingService } from "@true-recall/core/ai/semantic-answer-grading.service";
+import type { SemanticAnswerGradingService } from "@true-recall/core/ai/grading/semantic-answer-grading.service";
 import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
 import { assessTypedAnswer } from "@true-recall/core/helpers/answer-assessment";
 import { shouldTriggerLeech } from "@true-recall/core/helpers/leech-helpers";

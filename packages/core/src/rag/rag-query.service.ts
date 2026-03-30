@@ -1,8 +1,8 @@
 import {
 	type ChatMessage,
 	OpenRouterClient,
-} from "@true-recall/core/ai/openrouter-client";
-import { StreamingOpenRouterClient } from "@true-recall/core/ai/streaming-openrouter-client";
+} from "@true-recall/core/ai/clients/openrouter-client";
+import { StreamingOpenRouterClient } from "@true-recall/core/ai/clients/streaming-openrouter-client";
 import type { FrontmatterIndexService } from "@true-recall/core/services/frontmatter-index.service";
 import { LITELLM_URL } from "@true-recall/core/constants";
 import type {

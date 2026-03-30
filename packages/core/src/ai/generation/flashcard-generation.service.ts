@@ -1,12 +1,12 @@
-import { buildCardFormatSpec } from "./prompts/block-prompt-builder";
-import type { ParsedBlock } from "../flashcard/block-parser.service";
-import type { IHttpClient } from "../interfaces/http-client";
-import type { NoteType } from "../types/note.types";
-import type { TrueRecallSettings } from "../types/settings.types";
-import { resolveAIClientConfig } from "./ai-client-config";
-import { parseBlockResponse } from "./incremental-flashcard-parser";
-import { getTextContent, OpenRouterClient } from "./openrouter-client";
-import { fixBlockSourceTexts } from "./source-text-fixer";
+import type { ParsedBlock } from "../../flashcard/block-parser.service";
+import type { IHttpClient } from "../../interfaces/http-client";
+import type { NoteType } from "../../types/note.types";
+import type { TrueRecallSettings } from "../../types/settings.types";
+import { getTextContent, OpenRouterClient } from "../clients/openrouter-client";
+import { resolveAIClientConfig } from "../config/ai-client-config";
+import { parseBlockResponse } from "../parsing/incremental-flashcard-parser";
+import { buildCardFormatSpec } from "../prompts/block-prompt-builder";
+import { fixBlockSourceTexts } from "../utils/source-text-fixer";
 import {
 	buildGenerationPrompt,
 	FALLBACK_BASIC_NOTE_TYPE,
