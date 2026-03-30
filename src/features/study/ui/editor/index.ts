@@ -1,2 +1,2 @@
-export { createLinkStatusPostProcessor } from "@features/study/ui/editor/LinkStatusPostProcessor";
-export { createLinkStatusViewPlugin } from "@features/study/ui/editor/LinkStatusViewPlugin";
+export { createLinkStatusPostProcessor } from "@true-recall/obsidian/editor/study/LinkStatusPostProcessor";
+export { createLinkStatusViewPlugin } from "@true-recall/obsidian/editor/study/LinkStatusViewPlugin";

@@ -3,9 +3,9 @@ export {
 	insertAtCursor,
 	toggleAsymmetricMarker,
 	toggleMarker,
-} from "./cm6-formatting";
-export { FormattingToolbar } from "./FormattingToolbar";
+} from "@true-recall/obsidian/editor/shared/formatting";
+export { FormattingToolbar } from "@true-recall/obsidian/editor/shared/formatting";
 export type {
 	FormattingTargetRef,
 	GetFormattingEditorView,
-} from "./types";
+} from "@true-recall/obsidian/editor/shared/formatting";

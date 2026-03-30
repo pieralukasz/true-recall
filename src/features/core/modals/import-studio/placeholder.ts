@@ -1,3 +1,1 @@
-export function buildPlaceholder(): string {
-	return "Paste flashcards here...";
-}
+export * from "@true-recall/obsidian/modals/core/import-studio/placeholder";
