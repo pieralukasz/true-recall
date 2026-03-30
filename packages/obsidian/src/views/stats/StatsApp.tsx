@@ -1,16 +1,15 @@
+import { useComputed, useSignal } from "@preact/signals";
+import { getFilteredDistributions } from "@true-recall/core/metrics/distribution-filter";
+import {
+	buildDayOfWeekStats,
+	buildFilteredForecast,
+	buildForecastSummary,
+} from "@true-recall/core/metrics/forecast-filter";
 import { buildSourceUidToPresetMap } from "@true-recall/core/metrics/stats/stats-filter.helpers";
 import type { StatsFilterContext } from "@true-recall/core/metrics/stats/stats-filter.types";
-import { HeatmapWidget } from "@true-recall/obsidian/editor/study/widgets/analytics/HeatmapWidget";
-import { useComputed, useSignal } from "@preact/signals";
-import {
-	allCardsArray,
-	archivedSourceUids as archivedSourceUidsSignal,
-	pluginSettings,
-} from "@true-recall/obsidian/services/reactive-card-store";
 import type { StatsTimeRange } from "@true-recall/core/types";
 import { AppNavBar } from "@true-recall/obsidian/components";
-import { usePlugin } from "@true-recall/obsidian/preact";
-import { useEffect, useMemo, useState } from "preact/hooks";
+import { HeatmapWidget } from "@true-recall/obsidian/editor/study/widgets/analytics/HeatmapWidget";
 import {
 	CardMaturitySection,
 	ChartCard,
@@ -28,13 +27,14 @@ import {
 	TrueRetentionCard,
 	WorkloadForecastSection,
 } from "@true-recall/obsidian/features/metrics/ui/stats/components";
-import { getFilteredDistributions } from "@true-recall/obsidian/features/metrics/ui/stats/helpers/distribution-filter";
-import {
-	buildDayOfWeekStats,
-	buildFilteredForecast,
-	buildForecastSummary,
-} from "@true-recall/obsidian/features/metrics/ui/stats/helpers/forecast-filter";
 import { useStatsData } from "@true-recall/obsidian/features/metrics/ui/stats/hooks/use-stats-data";
+import { usePlugin } from "@true-recall/obsidian/preact";
+import {
+	allCardsArray,
+	archivedSourceUids as archivedSourceUidsSignal,
+	pluginSettings,
+} from "@true-recall/obsidian/services/reactive-card-store";
+import { useEffect, useMemo, useState } from "preact/hooks";
 
 export function StatsApp() {
 	const plugin = usePlugin();

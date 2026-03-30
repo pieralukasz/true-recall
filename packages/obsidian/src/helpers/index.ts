@@ -11,7 +11,7 @@ export {
 	countCardsByState,
 	countCardsByStateWithDue,
 	filterActiveCardsOnly,
-} from "@true-recall/obsidian/helpers/card-state";
+} from "@true-recall/core/helpers/card-state";
 
 export {
 	FSRS_COLORS,

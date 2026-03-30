@@ -1,7 +1,7 @@
+import type { DeviceDatabaseInfo } from "@true-recall/core/integration/device-discovery.service";
+import { ModalFooter } from "@true-recall/obsidian/components/ModalFooter";
 import { DatabaseItem } from "@true-recall/obsidian/modals/integration/device-selection/DatabaseItem";
 import { RadioOption } from "@true-recall/obsidian/modals/integration/device-selection/RadioOption";
-import type { DeviceDatabaseInfo } from "@true-recall/obsidian/features/integration/services/device.index";
-import { ModalFooter } from "@true-recall/obsidian/components/ModalFooter";
 import {
 	BasePromiseModal,
 	type CancellableResult,

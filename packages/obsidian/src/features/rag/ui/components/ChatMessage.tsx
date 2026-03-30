@@ -1,12 +1,13 @@
 import type { ChatTurn } from "@true-recall/core/rag/rag-query.service";
 import type { SearchResult } from "@true-recall/core/rag/rag-search.service";
+import type { GroupedSource } from "@true-recall/core/rag/rag-source-grouper";
+import { groupSources } from "@true-recall/core/rag/rag-source-grouper";
+import { stripBrTags } from "@true-recall/core/utils";
 import { Clickable } from "@true-recall/obsidian/components";
 import { useApp, useIcon } from "@true-recall/obsidian/preact";
-import { stripBrTags } from "@true-recall/core/utils";
 import { MarkdownRenderer, Component as ObsidianComponent } from "obsidian";
 import { useEffect, useRef } from "preact/hooks";
-import { groupSources } from "../helpers/group-sources";
-import type { GroupedSource, SourceNavigationHandlers } from "../types";
+import type { SourceNavigationHandlers } from "../types";
 import { SourcePanel } from "./SourcePanel";
 
 const CITE_RE = /\[(\d+(?:\s*,\s*\d+)*)\]/g;

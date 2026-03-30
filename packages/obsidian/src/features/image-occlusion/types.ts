@@ -1,30 +1,12 @@
-import type { FSRSCardData } from "@true-recall/core/types";
+import type { FSRSCardData, IODefinition } from "@true-recall/core/types";
 import type { Note } from "@true-recall/core/types/note.types";
 
-export type IOShape = "rect" | "ellipse";
-export type IOMaskMode = "solo" | "all";
-
-/** Normalized coordinates (0-1 range) for resolution independence */
-export interface IORegion {
-	id: string;
-	/** Left edge, normalized 0-1 */
-	x: number;
-	/** Top edge, normalized 0-1 */
-	y: number;
-	/** Width, normalized 0-1 */
-	w: number;
-	/** Height, normalized 0-1 */
-	h: number;
-	groupKey: string;
-	shape: IOShape;
-	label?: string;
-}
-
-export interface IODefinition {
-	regions: IORegion[];
-	maskMode: IOMaskMode;
-	version: 1;
-}
+export type {
+	IODefinition,
+	IOMaskMode,
+	IORegion,
+	IOShape,
+} from "@true-recall/core/types";
 
 export interface IOEditorAddMode {
 	mode: "add";

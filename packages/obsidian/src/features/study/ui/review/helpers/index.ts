@@ -3,7 +3,7 @@
  * Helper functions for the review view
  */
 
-export { assessTypedAnswer } from "@true-recall/obsidian/features/study/ui/review/helpers/answer-assessment";
+export { assessTypedAnswer } from "@true-recall/core/helpers/answer-assessment";
 export {
 	applyMutation,
 	buildGlobalPresetQueueContext,

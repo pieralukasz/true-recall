@@ -1,20 +1,13 @@
-import type { HierarchyService } from "@true-recall/core/services/hierarchy.service";
-import { StatsCalculatorService } from "@true-recall/core/metrics/stats/stats-calculator.service";
-import { computeActionableSessionSnapshot } from "@true-recall/obsidian/features/study/services/actionable-session-snapshot.service";
-import { filterActiveCards } from "@true-recall/obsidian/features/study/ui/review/helpers/session-helpers";
 import { useSignal } from "@preact/signals";
-import {
-	allCardsArray,
-	archivedSourceUids as archivedSourceUidsSignal,
-	hierarchyVersion,
-	pluginSettings,
-} from "@true-recall/obsidian/services/reactive-card-store";
+import { aggregateDashboardData } from "@true-recall/core/helpers/note-aggregation";
+import { computePriority } from "@true-recall/core/helpers/note-priority";
+import { estimateStudyMinutes } from "@true-recall/core/helpers/time-estimate";
+import { StatsCalculatorService } from "@true-recall/core/metrics/stats/stats-calculator.service";
+import type { HierarchyService } from "@true-recall/core/services/hierarchy.service";
 import { AppNavBar } from "@true-recall/obsidian/components";
 import { SearchCombobox } from "@true-recall/obsidian/components/SearchCombobox";
-import { PresetOptionsModal } from "@true-recall/obsidian/modals/shared/PresetOptionsModal";
-import { usePlugin } from "@true-recall/obsidian/preact";
-import { useCallback, useMemo, useRef } from "preact/hooks";
 import { HeatmapWidget } from "@true-recall/obsidian/editor/study/widgets/analytics/HeatmapWidget";
+import { computeActionableSessionSnapshot } from "@true-recall/obsidian/features/study/services/actionable-session-snapshot.service";
 import { BottomActionBar } from "@true-recall/obsidian/features/study/ui/dashboard/components/BottomActionBar";
 import { DashboardTabs } from "@true-recall/obsidian/features/study/ui/dashboard/components/DashboardTabs";
 import { NoteList } from "@true-recall/obsidian/features/study/ui/dashboard/components/NoteList";
@@ -22,13 +15,23 @@ import { OrphanedTab } from "@true-recall/obsidian/features/study/ui/dashboard/c
 import { ProjectsTab } from "@true-recall/obsidian/features/study/ui/dashboard/components/ProjectsTab";
 import { RecentlyStudiedBar } from "@true-recall/obsidian/features/study/ui/dashboard/components/RecentlyStudiedBar";
 import { TodayActionBar } from "@true-recall/obsidian/features/study/ui/dashboard/components/TodayActionBar";
-import { aggregateDashboardData } from "@true-recall/obsidian/features/study/ui/dashboard/helpers/note-aggregation";
-import { computePriority } from "@true-recall/obsidian/features/study/ui/dashboard/helpers/note-priority";
 import { aggregateProjectData } from "@true-recall/obsidian/features/study/ui/dashboard/helpers/project-aggregation";
 import { projectMatchesSearch } from "@true-recall/obsidian/features/study/ui/dashboard/helpers/project-tree-flatten";
-import { estimateStudyMinutes } from "@true-recall/obsidian/features/study/ui/dashboard/helpers/time-estimate";
 import { useDragAutoScroll } from "@true-recall/obsidian/features/study/ui/dashboard/helpers/use-drag-auto-scroll";
-import type { DashboardAggregation, DashboardTab } from "@true-recall/obsidian/features/study/ui/dashboard/types";
+import type {
+	DashboardAggregation,
+	DashboardTab,
+} from "@true-recall/obsidian/features/study/ui/dashboard/types";
+import { filterActiveCards } from "@true-recall/obsidian/features/study/ui/review/helpers/session-helpers";
+import { PresetOptionsModal } from "@true-recall/obsidian/modals/shared/PresetOptionsModal";
+import { usePlugin } from "@true-recall/obsidian/preact";
+import {
+	allCardsArray,
+	archivedSourceUids as archivedSourceUidsSignal,
+	hierarchyVersion,
+	pluginSettings,
+} from "@true-recall/obsidian/services/reactive-card-store";
+import { useCallback, useMemo, useRef } from "preact/hooks";
 
 export function DashboardApp() {
 	const plugin = usePlugin();

@@ -1,6 +1,7 @@
-import { NamePromptModal } from "@true-recall/obsidian/modals/study/NamePromptModal";
 import type { Signal } from "@preact/signals";
 import { useSignal } from "@preact/signals";
+import { prioritySortComparator } from "@true-recall/core/helpers/note-priority";
+import { NamePromptModal } from "@true-recall/obsidian/modals/study/NamePromptModal";
 import { usePlugin } from "@true-recall/obsidian/preact";
 import { Notice, normalizePath, TFile } from "obsidian";
 import type { RefObject } from "preact";
@@ -13,7 +14,6 @@ import {
 	executeDrop,
 	getDragClass,
 } from "../helpers/drag-drop";
-import { prioritySortComparator } from "../helpers/note-priority";
 import { useExternalVirtualList } from "../helpers/use-virtual-list";
 import type {
 	DashboardNoteEntry,

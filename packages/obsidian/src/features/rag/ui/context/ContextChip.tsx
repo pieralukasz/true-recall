@@ -1,10 +1,10 @@
-import { Clickable } from "@true-recall/obsidian/components";
-import { useIcon } from "@true-recall/obsidian/preact";
 import type {
 	CardContextItem,
 	ContextItem,
 	NoteContextItem,
-} from "./context.types";
+} from "@true-recall/core/rag/context/context.types";
+import { Clickable } from "@true-recall/obsidian/components";
+import { useIcon } from "@true-recall/obsidian/preact";
 
 interface Props {
 	item: ContextItem;

@@ -1,7 +1,7 @@
+import { formatEstimatedTime } from "@true-recall/core/helpers/time-estimate";
 import { ActionButton } from "@true-recall/obsidian/components";
 import { FSRS_COLORS } from "@true-recall/obsidian/helpers/fsrs-colors";
 import { usePlugin } from "@true-recall/obsidian/preact";
-import { formatEstimatedTime } from "../helpers/time-estimate";
 import type { TodayProgress } from "../types";
 
 interface TodayActionBarProps {

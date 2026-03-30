@@ -1,4 +1,4 @@
-import type { DeviceDatabaseInfo } from "@true-recall/obsidian/features/integration/services/device.index";
+import type { DeviceDatabaseInfo } from "@true-recall/core/integration/device-discovery.service";
 
 function formatDate(date: Date): string {
 	return date.toLocaleDateString("en-US", {

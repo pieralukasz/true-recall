@@ -1,10 +1,13 @@
+import type {
+	ContextItem,
+	NoteContextItem,
+} from "@true-recall/core/rag/context/context.types";
+import { contextKey } from "@true-recall/core/rag/context/context.types";
 import { Clickable } from "@true-recall/obsidian/components";
 import { useIcon } from "@true-recall/obsidian/preact";
 import type { TFile } from "obsidian";
 import { useCallback, useRef, useState } from "preact/hooks";
 import { ContextChip } from "../context/ContextChip";
-import type { ContextItem, NoteContextItem } from "../context/context.types";
-import { contextKey } from "../context/context.types";
 import { SuggestionPopup } from "../context/SuggestionPopup";
 import {
 	getTriggerRange,

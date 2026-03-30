@@ -1,8 +1,8 @@
-import type { HierarchyTreeNode } from "@true-recall/core/services/hierarchy.service";
+import { aggregateDashboardData } from "@true-recall/core/helpers/note-aggregation";
 import { StatsCalculatorService } from "@true-recall/core/metrics/stats/stats-calculator.service";
-import { aggregateDashboardData } from "@true-recall/obsidian/features/study/ui/dashboard/helpers/note-aggregation";
-import type { DashboardNoteEntry } from "@true-recall/obsidian/features/study/ui/dashboard/types";
+import type { HierarchyTreeNode } from "@true-recall/core/services/hierarchy.service";
 import type { FSRSFlashcardItem } from "@true-recall/core/types";
+import type { DashboardNoteEntry } from "@true-recall/obsidian/features/study/ui/dashboard/types";
 import { State } from "ts-fsrs";
 import type { ApiContext, ApiRequest, ApiResponseWriter } from "../api.types";
 import { sendError, sendOk } from "../api.types";

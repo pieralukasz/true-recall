@@ -1,16 +1,9 @@
-import { CardBrowserQueryService } from "@true-recall/core/services/card-browser-query.service";
-import { notifyDuplicateError } from "@true-recall/obsidian/features/library/ui/panel/utils/panel-helpers";
-import { DuplicateQuestionError } from "@true-recall/core/flashcard/card-repository.service";
 import { type Signal, useSignal } from "@preact/signals";
-import { notify } from "@true-recall/obsidian/services/notification.service";
-import { pluginSettings } from "@true-recall/obsidian/services/reactive-card-store";
-import { useQuerySignal } from "@true-recall/obsidian/hooks/use-query";
-import { QK } from "@true-recall/obsidian/services/query-keys";
+import { DuplicateQuestionError } from "@true-recall/core/flashcard/card-repository.service";
+import { parseSearchQuery } from "@true-recall/core/helpers/search-parser";
+import { CardBrowserQueryService } from "@true-recall/core/services/card-browser-query.service";
 import type { FSRSFlashcardItem } from "@true-recall/core/types";
-import { pushDeleteUndo } from "@true-recall/obsidian/services/undo.service";
 import { AppNavBar } from "@true-recall/obsidian/components";
-import { useApp, usePlugin } from "@true-recall/obsidian/preact";
-import { useCallback, useEffect, useMemo, useRef } from "preact/hooks";
 import { BrowserSidebar } from "@true-recall/obsidian/features/library/ui/browser/components/BrowserSidebar";
 import { BrowserToolbar } from "@true-recall/obsidian/features/library/ui/browser/components/BrowserToolbar";
 import { BulkActionsBar } from "@true-recall/obsidian/features/library/ui/browser/components/BulkActionsBar";
@@ -22,7 +15,6 @@ import {
 	BROWSER_PAGE_SIZE,
 	getBrowserQueryResetKey,
 } from "@true-recall/obsidian/features/library/ui/browser/helpers/infinite-scroll";
-import { parseSearchQuery } from "@true-recall/obsidian/features/library/ui/browser/helpers/search-parser";
 import { useKeyboardNav } from "@true-recall/obsidian/features/library/ui/browser/hooks/useKeyboardNav";
 import {
 	type BrowserCard,
@@ -32,6 +24,14 @@ import {
 	type SortConfig,
 	type StateFilterValue,
 } from "@true-recall/obsidian/features/library/ui/browser/types";
+import { notifyDuplicateError } from "@true-recall/obsidian/features/library/ui/panel/utils/panel-helpers";
+import { useQuerySignal } from "@true-recall/obsidian/hooks/use-query";
+import { useApp, usePlugin } from "@true-recall/obsidian/preact";
+import { notify } from "@true-recall/obsidian/services/notification.service";
+import { QK } from "@true-recall/obsidian/services/query-keys";
+import { pluginSettings } from "@true-recall/obsidian/services/reactive-card-store";
+import { pushDeleteUndo } from "@true-recall/obsidian/services/undo.service";
+import { useCallback, useEffect, useMemo, useRef } from "preact/hooks";
 
 const PAGE_SIZE = BROWSER_PAGE_SIZE;
 
@@ -88,7 +88,9 @@ export function CardBrowserApp({
 	);
 
 	// Signal reads — subscribe component to reactive data changes
-	const allCardsSignal = useQuerySignal<Map<string, FSRSFlashcardItem>>(QK.ALL_CARDS);
+	const allCardsSignal = useQuerySignal<Map<string, FSRSFlashcardItem>>(
+		QK.ALL_CARDS,
+	);
 	const allCards = allCardsSignal.value;
 	const _settings = pluginSettings.value;
 	const searchTextVal = searchText.value;
@@ -295,7 +297,9 @@ export function CardBrowserApp({
 		if (orphanedIds.length === 0) return;
 
 		const cardWord = orphanedIds.length === 1 ? "card" : "cards";
-		const { confirm } = await import("@true-recall/obsidian/modals/shared/ConfirmModal");
+		const { confirm } = await import(
+			"@true-recall/obsidian/modals/shared/ConfirmModal"
+		);
 		const confirmed = await confirm(app, {
 			message: `Remove ${orphanedIds.length} orphaned ${cardWord}?`,
 		});

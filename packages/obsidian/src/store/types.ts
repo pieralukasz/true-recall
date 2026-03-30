@@ -1,19 +1,19 @@
+import type { AppError } from "@true-recall/core/errors";
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite";
 import type { DayBoundaryService } from "@true-recall/core/services/day-boundary.service";
 import type { FrontmatterIndexService } from "@true-recall/core/services/frontmatter-index.service";
-import type {
-	MetricType,
-	SequenceSimulation,
-} from "@true-recall/obsidian/features/metrics/ui/simulator/types";
-import type { TrueRecallSettings } from "@true-recall/obsidian/settings";
-import type { AppError } from "@true-recall/core/errors";
 import type {
 	FlashcardInfo,
 	FSRSFlashcardItem,
 	ReviewResult,
 	ReviewSessionStats,
 	SchedulingPreview,
+	TrueRecallSettings,
 } from "@true-recall/core/types";
+import type {
+	MetricType,
+	SequenceSimulation,
+} from "@true-recall/obsidian/features/metrics/ui/simulator/types";
 import type { App, TFile } from "obsidian";
 import type { Grade } from "ts-fsrs";
 

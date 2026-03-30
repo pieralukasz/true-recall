@@ -1,11 +1,21 @@
-import { createSelectionToolbarExtension } from "@true-recall/obsidian/editor/ai/SelectionToolbarPlugin";
+import { effect } from "@preact/signals";
 import {
-	createNoteStatusCache,
-	type NoteStatusCache,
-} from "@true-recall/obsidian/features/core/cache/note-status-cache.service";
-import { CardTypesEditorModal } from "@true-recall/obsidian/modals/core/card-types-editor/CardTypesEditorModal";
-import { NoteTypeSuggestModal } from "@true-recall/obsidian/modals/core/card-types-editor/NoteTypeSuggestModal";
-import { ImportStudioModal } from "@true-recall/obsidian/modals/core/import-studio/ImportStudioModal";
+	DEFAULT_SETTINGS,
+	ENABLE_RAG,
+	VIEW_TYPE_CARD_BROWSER,
+	VIEW_TYPE_DASHBOARD,
+	VIEW_TYPE_FLASHCARD_PANEL,
+	VIEW_TYPE_KNOWLEDGE_CHAT,
+	VIEW_TYPE_REVIEW,
+	VIEW_TYPE_SIMULATOR,
+	VIEW_TYPE_STATS,
+} from "@true-recall/core/constants";
+import { onCardChange as onCoreCardChange } from "@true-recall/core/events";
+import { DeletionHandlerService } from "@true-recall/core/flashcard/deletion-handler.service";
+import { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
+import { DeviceDiscoveryService } from "@true-recall/core/integration/device-discovery.service";
+import { DeviceIdService } from "@true-recall/core/integration/device-id.service";
+import { FSRSHelperService } from "@true-recall/core/metrics/fsrs-tools";
 import { BackgroundBackupManager } from "@true-recall/core/persistence/background-backup.service";
 import { BackupService } from "@true-recall/core/persistence/backup.service";
 import { SessionPersistenceService } from "@true-recall/core/persistence/session-persistence.service";
@@ -21,11 +31,35 @@ import { FSRSService } from "@true-recall/core/services/fsrs.service";
 import { HierarchyService } from "@true-recall/core/services/hierarchy.service";
 import { NoteTypeService } from "@true-recall/core/services/note-type.service";
 import { PresetService } from "@true-recall/core/services/preset.service";
+import type { TrueRecallSettings } from "@true-recall/core/types";
+import { extractFSRSSettings } from "@true-recall/core/types";
+import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpClient";
+import { ObsidianPersistence } from "@true-recall/obsidian/adapters/ObsidianPersistence";
+import { createSelectionToolbarExtension } from "@true-recall/obsidian/editor/ai/SelectionToolbarPlugin";
+import {
+	createLinkStatusPostProcessor,
+	createLinkStatusViewPlugin,
+} from "@true-recall/obsidian/editor/study";
+import type { StatusBarWidget } from "@true-recall/obsidian/editor/study/widgets/StatusBarWidget";
+import {
+	createNoteStatusCache,
+	type NoteStatusCache,
+} from "@true-recall/obsidian/features/core/cache/note-status-cache.service";
 import { IOEditorModal } from "@true-recall/obsidian/features/image-occlusion/IOEditorModal";
 import type {
 	IOEditorMode,
 	IOEditorResult,
 } from "@true-recall/obsidian/features/image-occlusion/types";
+import { UidGuardianService } from "@true-recall/obsidian/features/study/services/flashcard/uid-guardian.service";
+import {
+	filtersToViewState,
+	normalizeSessionFilters,
+	type SessionFilters,
+} from "@true-recall/obsidian/features/study/ui/review/review.types";
+import { setQueryRuntime } from "@true-recall/obsidian/hooks/use-query";
+import { CardTypesEditorModal } from "@true-recall/obsidian/modals/core/card-types-editor/CardTypesEditorModal";
+import { NoteTypeSuggestModal } from "@true-recall/obsidian/modals/core/card-types-editor/NoteTypeSuggestModal";
+import { ImportStudioModal } from "@true-recall/obsidian/modals/core/import-studio/ImportStudioModal";
 import { AnkiExportModal } from "@true-recall/obsidian/modals/integration/AnkiExportModal";
 import { AnkiImportModal } from "@true-recall/obsidian/modals/integration/AnkiImportModal";
 import { CsvExportModal } from "@true-recall/obsidian/modals/integration/CsvExportModal";
@@ -33,52 +67,18 @@ import {
 	DeviceSelectionModal,
 	type DeviceSelectionResult,
 } from "@true-recall/obsidian/modals/integration/DeviceSelectionModal";
-import { DeviceDiscoveryService } from "@true-recall/core/integration/device-discovery.service";
-import { DeviceIdService } from "@true-recall/core/integration/device-id.service";
-import { ObsidianPersistence } from "@true-recall/obsidian/adapters/ObsidianPersistence";
-import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpClient";
-import { CardBrowserView } from "@true-recall/obsidian/views/browser/CardBrowserView";
-import { FlashcardPanelView } from "@true-recall/obsidian/views/panel/FlashcardPanelView";
-import { FSRSHelperService } from "@true-recall/core/metrics/fsrs-tools";
-import { SimulatorView } from "@true-recall/obsidian/views/simulator/SimulatorView";
-import { StatsView } from "@true-recall/obsidian/views/stats/StatsView";
-import { KnowledgeChatView } from "@true-recall/obsidian/views/chat/KnowledgeChatView";
-import {
-	DEFAULT_SETTINGS,
-	type TrueRecallSettings,
-	TrueRecallSettingTab,
-} from "@true-recall/obsidian/settings";
+import { PresetInspectorModal } from "@true-recall/obsidian/modals/shared";
 import {
 	CustomStudyModal,
 	type CustomStudyModalScope,
 } from "@true-recall/obsidian/modals/study/CustomStudyModal";
 import { QuickNoteEditorModal } from "@true-recall/obsidian/modals/study/quick-note-editor/QuickNoteEditorModal";
-import { DeletionHandlerService } from "@true-recall/core/flashcard/deletion-handler.service";
-import { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
-import { UidGuardianService } from "@true-recall/obsidian/features/study/services/flashcard/uid-guardian.service";
-import { DashboardView } from "@true-recall/obsidian/views/dashboard/DashboardView";
 import {
-	createLinkStatusPostProcessor,
-	createLinkStatusViewPlugin,
-} from "@true-recall/obsidian/editor/study";
-import type { StatusBarWidget } from "@true-recall/obsidian/editor/study/widgets/StatusBarWidget";
-import { ReviewView } from "@true-recall/obsidian/views/review/ReviewView";
-import {
-	filtersToViewState,
-	normalizeSessionFilters,
-	type SessionFilters,
-} from "@true-recall/obsidian/features/study/ui/review/review.types";
-import {
-	ENABLE_RAG,
-	VIEW_TYPE_CARD_BROWSER,
-	VIEW_TYPE_DASHBOARD,
-	VIEW_TYPE_FLASHCARD_PANEL,
-	VIEW_TYPE_KNOWLEDGE_CHAT,
-	VIEW_TYPE_REVIEW,
-	VIEW_TYPE_SIMULATOR,
-	VIEW_TYPE_STATS,
-} from "@true-recall/core/constants";
+	mapOldMutationType,
+	reconcileMutation,
+} from "@true-recall/obsidian/services/invalidation-map";
 import { notify } from "@true-recall/obsidian/services/notification.service";
+import { QueryRuntime } from "@true-recall/obsidian/services/query-runtime";
 import {
 	cards,
 	initCardStore,
@@ -88,20 +88,27 @@ import {
 	refreshMetadata,
 	refreshSettings,
 } from "@true-recall/obsidian/services/reactive-card-store";
-import { lastMutation, notifyCardChange as obsidianNotifyCardChange } from "@true-recall/obsidian/services/signals";
-import { onCardChange as onCoreCardChange } from "@true-recall/core/events";
-import { effect } from "@preact/signals";
-import { QueryRuntime } from "@true-recall/obsidian/services/query-runtime";
-import { registerCoreQueries, patchReviewedCard } from "@true-recall/obsidian/services/register-queries";
-import { reconcileMutation, mapOldMutationType } from "@true-recall/obsidian/services/invalidation-map";
-import { setQueryRuntime } from "@true-recall/obsidian/hooks/use-query";
+import {
+	patchReviewedCard,
+	registerCoreQueries,
+} from "@true-recall/obsidian/services/register-queries";
+import {
+	lastMutation,
+	notifyCardChange as obsidianNotifyCardChange,
+} from "@true-recall/obsidian/services/signals";
 import { UndoService } from "@true-recall/obsidian/services/undo.service";
+import { TrueRecallSettingTab } from "@true-recall/obsidian/settings";
 import { type AppStore, createAppStore } from "@true-recall/obsidian/store";
-import { extractFSRSSettings } from "@true-recall/core/types";
-import { PresetInspectorModal } from "@true-recall/obsidian/modals/shared";
 import { isDesktop } from "@true-recall/obsidian/utils/platform";
-import { createObsidianAdapters, type ObsidianAdapters } from "./context";
+import { CardBrowserView } from "@true-recall/obsidian/views/browser/CardBrowserView";
+import { KnowledgeChatView } from "@true-recall/obsidian/views/chat/KnowledgeChatView";
+import { DashboardView } from "@true-recall/obsidian/views/dashboard/DashboardView";
+import { FlashcardPanelView } from "@true-recall/obsidian/views/panel/FlashcardPanelView";
+import { ReviewView } from "@true-recall/obsidian/views/review/ReviewView";
+import { SimulatorView } from "@true-recall/obsidian/views/simulator/SimulatorView";
+import { StatsView } from "@true-recall/obsidian/views/stats/StatsView";
 import { normalizePath, Plugin, TFile } from "obsidian";
+import { createObsidianAdapters, type ObsidianAdapters } from "./context";
 import type { LocalApiServer } from "./plugin/api/LocalApiServer";
 import { BackupRecoveryManager } from "./plugin/BackupRecoveryManager";
 import { registerCommands } from "./plugin/PluginCommands";
@@ -189,7 +196,9 @@ export default class TrueRecallPlugin extends Plugin {
 
 		this.adapters = createObsidianAdapters(this.app);
 
-		this.frontmatterIndex = new FrontmatterIndexService(this.adapters.metadataIndex);
+		this.frontmatterIndex = new FrontmatterIndexService(
+			this.adapters.metadataIndex,
+		);
 		this.frontmatterIndex.register({
 			field: "flashcard_uid",
 			type: "string",
@@ -230,7 +239,10 @@ export default class TrueRecallPlugin extends Plugin {
 		// Register Obsidian events that feed the platform-agnostic frontmatter index
 		this.registerEvent(
 			this.app.metadataCache.on("changed", (file, _data, cache) => {
-				this.frontmatterIndex.handleMetadataChanged(file.path, cache?.frontmatter);
+				this.frontmatterIndex.handleMetadataChanged(
+					file.path,
+					cache?.frontmatter,
+				);
 			}),
 		);
 		this.registerEvent(
@@ -369,7 +381,10 @@ export default class TrueRecallPlugin extends Plugin {
 				const { RagSearchService } = await import(
 					"@true-recall/core/rag/rag-search.service"
 				);
-				const embedder = new RagEmbeddingServiceImpl(new ObsidianHttpClient(), this.settings.proKey);
+				const embedder = new RagEmbeddingServiceImpl(
+					new ObsidianHttpClient(),
+					this.settings.proKey,
+				);
 				this.ragSearch = new RagSearchService(this.ragActions, embedder);
 				this.ragIndexer = new RagIndexerService(
 					this.app,
@@ -661,7 +676,9 @@ export default class TrueRecallPlugin extends Plugin {
 
 		try {
 			const frontmatterService = this.flashcardManager.getFrontmatterService();
-			let sourceUid = await frontmatterService.getSourceNoteUid(activeFile.path);
+			let sourceUid = await frontmatterService.getSourceNoteUid(
+				activeFile.path,
+			);
 			if (!sourceUid) {
 				sourceUid = frontmatterService.generateUid();
 				await frontmatterService.setSourceNoteUid(activeFile.path, sourceUid);
@@ -691,21 +708,22 @@ export default class TrueRecallPlugin extends Plugin {
 		if (result.cancelled || !result.sessionResult) return;
 
 		if (result.saveAsPreset && result.presetName) {
-			const preset: import("@true-recall/core/types/settings.types").SessionPreset = {
-				id: crypto.randomUUID(),
-				name: result.presetName,
-				createdAt: Date.now(),
-				stateFilter: result.sessionResult.stateFilter,
-				difficultyRange: result.sessionResult.difficultyRange,
-				lapsesRange: result.sessionResult.lapsesRange,
-				stabilityRange: result.sessionResult.stabilityRange,
-				overdueOnly: result.sessionResult.overdueOnly,
-				recentlyFailed: result.sessionResult.recentlyFailed,
-				reviewOrder: result.sessionResult.reviewOrder,
-				cardLimit: result.sessionResult.cardLimit,
-				studyAheadDays: result.sessionResult.studyAheadDays,
-				crammingMode: result.sessionResult.crammingMode,
-			};
+			const preset: import("@true-recall/core/types/settings.types").SessionPreset =
+				{
+					id: crypto.randomUUID(),
+					name: result.presetName,
+					createdAt: Date.now(),
+					stateFilter: result.sessionResult.stateFilter,
+					difficultyRange: result.sessionResult.difficultyRange,
+					lapsesRange: result.sessionResult.lapsesRange,
+					stabilityRange: result.sessionResult.stabilityRange,
+					overdueOnly: result.sessionResult.overdueOnly,
+					recentlyFailed: result.sessionResult.recentlyFailed,
+					reviewOrder: result.sessionResult.reviewOrder,
+					cardLimit: result.sessionResult.cardLimit,
+					studyAheadDays: result.sessionResult.studyAheadDays,
+					crammingMode: result.sessionResult.crammingMode,
+				};
 			this.settings.sessionPresets = [...this.settings.sessionPresets, preset];
 			await this.saveSettings();
 			notify().success(`Preset "${result.presetName}" saved`);
@@ -824,7 +842,10 @@ export default class TrueRecallPlugin extends Plugin {
 	private async initializeDeviceContext(): Promise<string> {
 		this.deviceIdService = new DeviceIdService();
 		const deviceId = this.deviceIdService.getDeviceId();
-		this.deviceDiscovery = new DeviceDiscoveryService(new ObsidianPersistence(this.app), deviceId);
+		this.deviceDiscovery = new DeviceDiscoveryService(
+			new ObsidianPersistence(this.app),
+			deviceId,
+		);
 		const deviceDbPath = normalizePath(
 			`${DB_FOLDER}/${getDeviceDbFilename(deviceId)}`,
 		);
@@ -872,7 +893,9 @@ export default class TrueRecallPlugin extends Plugin {
 			return;
 		}
 
-		const { WhatsNewModal } = await import("@true-recall/obsidian/modals/shared/WhatsNewModal");
+		const { WhatsNewModal } = await import(
+			"@true-recall/obsidian/modals/shared/WhatsNewModal"
+		);
 		new WhatsNewModal(this, release).open();
 		this.settings.lastSeenVersion = currentVersion;
 		await this.saveSettings();
@@ -899,7 +922,7 @@ export default class TrueRecallPlugin extends Plugin {
 	}
 
 	private async showDeviceSelectionModal(
-		databases: import("@true-recall/obsidian/features/integration/services/device-discovery.service").DeviceDatabaseInfo[],
+		databases: import("@true-recall/core/integration/device-discovery.service").DeviceDatabaseInfo[],
 		hasLegacy: boolean,
 	): Promise<DeviceSelectionResult> {
 		const modal = new DeviceSelectionModal(this.app, {
@@ -944,7 +967,10 @@ export default class TrueRecallPlugin extends Plugin {
 				() => this.cardStore,
 			);
 
-			this.cardStore = new SqliteStoreService(this.adapters.persistence, deviceId);
+			this.cardStore = new SqliteStoreService(
+				this.adapters.persistence,
+				deviceId,
+			);
 
 			try {
 				await this.cardStore.load();
@@ -955,7 +981,10 @@ export default class TrueRecallPlugin extends Plugin {
 				const recovered =
 					await this.backupRecovery.tryAutoRecoverFromBackup(deviceId);
 				if (recovered) {
-					this.cardStore = new SqliteStoreService(this.adapters.persistence, deviceId);
+					this.cardStore = new SqliteStoreService(
+						this.adapters.persistence,
+						deviceId,
+					);
 					await this.cardStore.load();
 				} else {
 					throw loadError;
@@ -986,7 +1015,9 @@ export default class TrueRecallPlugin extends Plugin {
 			// but the UI listens to obsidian/signals.ts notifyCardChange.
 			// Forward core mutations → obsidian signals so UI refreshes.
 			this._disposeCoreCardBridge = onCoreCardChange((mutation) => {
-				obsidianNotifyCardChange(mutation as Parameters<typeof obsidianNotifyCardChange>[0]);
+				obsidianNotifyCardChange(
+					mutation as Parameters<typeof obsidianNotifyCardChange>[0],
+				);
 			});
 
 			// QueryRuntime: new reactive query cache (runs alongside old signals during migration)
@@ -1033,16 +1064,24 @@ export default class TrueRecallPlugin extends Plugin {
 				console.error("[True Recall] Stats migration failed:", e);
 			});
 
-			this.backupService = new BackupService(this.adapters.persistence, this.cardStore);
+			this.backupService = new BackupService(
+				this.adapters.persistence,
+				this.cardStore,
+			);
 			this.backgroundBackupManager = new BackgroundBackupManager(
 				this.backupService,
 				this.settings,
 				{
-					onCardsChanged: (cb) => effect(() => { void cards.value; cb(); }),
-					onMutation: (cb) => effect(() => {
-						const m = lastMutation.value;
-						if (m) cb(m.type);
-					}),
+					onCardsChanged: (cb) =>
+						effect(() => {
+							void cards.value;
+							cb();
+						}),
+					onMutation: (cb) =>
+						effect(() => {
+							const m = lastMutation.value;
+							if (m) cb(m.type);
+						}),
 				},
 			);
 
@@ -1158,24 +1197,24 @@ export default class TrueRecallPlugin extends Plugin {
 	}
 
 	private initializeStatusBar(): void {
-		void import("@true-recall/obsidian/editor/study/widgets/StatusBarWidget").then(
-			({ StatusBarWidget }) => {
-				const statusBarEl = this.addStatusBarItem();
-				this.statusBarWidget = new StatusBarWidget(
-					statusBarEl,
-					this.flashcardManager,
-					() => {
-						this.openDashboard().catch(() => {});
-					},
-					() => this.settings.showStatusBarWidget,
-					{
-						presetService: this.presetService,
-						sessionPersistence: this.sessionPersistence,
-					},
-				);
-				this.statusBarWidget.start();
-			},
-		);
+		void import(
+			"@true-recall/obsidian/editor/study/widgets/StatusBarWidget"
+		).then(({ StatusBarWidget }) => {
+			const statusBarEl = this.addStatusBarItem();
+			this.statusBarWidget = new StatusBarWidget(
+				statusBarEl,
+				this.flashcardManager,
+				() => {
+					this.openDashboard().catch(() => {});
+				},
+				() => this.settings.showStatusBarWidget,
+				{
+					presetService: this.presetService,
+					sessionPersistence: this.sessionPersistence,
+				},
+			);
+			this.statusBarWidget.start();
+		});
 	}
 
 	private initializeDashboardCodeblocks(): void {
@@ -1197,7 +1236,9 @@ export default class TrueRecallPlugin extends Plugin {
 		if (activeFile && activeFile.extension === "md") {
 			const frontmatterService = this.flashcardManager.getFrontmatterService();
 			void (async () => {
-				let sourceUid = await frontmatterService.getSourceNoteUid(activeFile.path);
+				let sourceUid = await frontmatterService.getSourceNoteUid(
+					activeFile.path,
+				);
 				if (!sourceUid) {
 					sourceUid = frontmatterService.generateUid();
 					await frontmatterService.setSourceNoteUid(activeFile.path, sourceUid);
@@ -1277,15 +1318,15 @@ export default class TrueRecallPlugin extends Plugin {
 		);
 
 		// Source text highlight extension (Card → Text jump)
-		void import("@true-recall/obsidian/editor/study/SourceHighlightPlugin").then(
-			({ createSourceHighlightExtension }) => {
-				this.registerEditorExtension(
-					createSourceHighlightExtension(
-						() => this.app.workspace.getActiveFile()?.path,
-					),
-				);
-			},
-		);
+		void import(
+			"@true-recall/obsidian/editor/study/SourceHighlightPlugin"
+		).then(({ createSourceHighlightExtension }) => {
+			this.registerEditorExtension(
+				createSourceHighlightExtension(
+					() => this.app.workspace.getActiveFile()?.path,
+				),
+			);
+		});
 	}
 
 	async createMasterDashboard(): Promise<void> {

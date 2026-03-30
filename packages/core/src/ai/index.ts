@@ -1,105 +1,25 @@
 // AI client configuration
 export {
 	type AIClientConfig,
-	resolveAIClientConfig,
 	hasAIKey,
+	resolveAIClientConfig,
 } from "./ai-client-config";
 
 // Error handling
 export { formatAIError } from "./ai-error-handler";
 
-// OpenRouter client (non-streaming)
-export {
-	type TextContentPart,
-	type ImageUrlContentPart,
-	type ContentPart,
-	type ChatMessage,
-	type ToolCall,
-	type ToolDefinition,
-	type ChatCompletionResponse,
-	type AIClientOptions,
-	OPENROUTER_URL,
-	buildOpenRouterHeaders,
-	getTextContent,
-	AIRequestError,
-	OpenRouterClient,
-} from "./openrouter-client";
-
-// Streaming OpenRouter client
-export {
-	type StreamingChatRequest,
-	type StreamChunk,
-	StreamingOpenRouterClient,
-} from "./streaming-openrouter-client";
-
-// Streaming state management
-export {
-	type StreamingPhase,
-	type StreamingGenerationState,
-	type StateListener,
-	type ScheduleCallback,
-	streamingGeneration,
-	startStreaming,
-	addStreamedCard,
-	updatePartial,
-	updateChunkProgress,
-	finishStreaming,
-	clearRecentCards,
-	cancelStreaming,
-	createThrottledPartialUpdater,
-} from "./streaming-state";
-
-// Flashcard generation (non-streaming)
-export {
-	type GenerationResult,
-	FlashcardGenerationService,
-} from "./flashcard-generation.service";
-
-// Streaming generation
-export {
-	FALLBACK_BASIC_NOTE_TYPE,
-	buildGenerationPrompt,
-	type StreamingGenerationResult,
-	type StreamingSourceFile,
-	type StreamingFlashcardManager,
-	StreamingGenerationService,
-} from "./streaming-generation.service";
-
 // Chunked generation
 export {
 	type ChunkedGenerationResult,
-	type ConfirmLargeNote,
 	ChunkedGenerationService,
+	type ConfirmLargeNote,
 } from "./chunked-generation.service";
 
-// Card event processing
+// Flashcard generation (non-streaming)
 export {
-	type SourceFileRef,
-	type CardEventFlashcardManager,
-	processCardEvents,
-} from "./process-card-events";
-
-// Incremental parser
-export {
-	type IncrementalParseEvent,
-	type NoteTypeLookup,
-	parseBlockResponse,
-	IncrementalFlashcardParser,
-} from "./incremental-flashcard-parser";
-
-// Semantic answer grading
-export { SemanticAnswerGradingService } from "./semantic-answer-grading.service";
-
-// Source text fixer
-export { fixSourceText, fixBlockSourceTexts } from "./source-text-fixer";
-
-// Markdown chunker
-export {
-	type MarkdownChunk,
-	type ChunkingResult,
-	filterContent,
-	chunkMarkdown,
-} from "./markdown-chunker";
+	FlashcardGenerationService,
+	type GenerationResult,
+} from "./flashcard-generation.service";
 
 // FSRS context for AI agents
 export {
@@ -109,24 +29,112 @@ export {
 	getFsrsContext,
 } from "./fsrs-context";
 
-// SQL query adapter
+// Image region detection (image occlusion AI)
 export {
-	type QueryExecResult,
-	type DatabaseLike,
-	SqlQueryAdapter,
-} from "./sql-query.adapter";
+	type DetectRegionsOptions,
+	detectRegionsFromImage,
+	getMimeType,
+	parseAIRegions,
+} from "./image-region-detection";
+
+// Incremental parser
+export {
+	IncrementalFlashcardParser,
+	type IncrementalParseEvent,
+	type NoteTypeLookup,
+	parseBlockResponse,
+} from "./incremental-flashcard-parser";
+
+// Markdown chunker
+export {
+	type ChunkingResult,
+	chunkMarkdown,
+	filterContent,
+	type MarkdownChunk,
+} from "./markdown-chunker";
+
+// OpenRouter client (non-streaming)
+export {
+	type AIClientOptions,
+	AIRequestError,
+	buildOpenRouterHeaders,
+	type ChatCompletionResponse,
+	type ChatMessage,
+	type ContentPart,
+	getTextContent,
+	type ImageUrlContentPart,
+	OPENROUTER_URL,
+	OpenRouterClient,
+	type TextContentPart,
+	type ToolCall,
+	type ToolDefinition,
+} from "./openrouter-client";
+
+// Card event processing
+export {
+	type CardEventFlashcardManager,
+	processCardEvents,
+	type SourceFileRef,
+} from "./process-card-events";
 
 // Prompts
 export {
-	buildCardFormatSpec,
 	buildByokPrompt,
+	buildCardFormatSpec,
 } from "./prompts/block-prompt-builder";
 export {
-	GENERATION_LANGUAGES,
 	buildLanguageSuffix,
+	GENERATION_LANGUAGES,
 } from "./prompts/default-prompts";
 export {
-	type TypeInGradingPromptInput,
-	DEFAULT_TYPE_IN_GRADING_SYSTEM_PROMPT,
 	buildTypeInGradingMessages,
+	DEFAULT_TYPE_IN_GRADING_SYSTEM_PROMPT,
+	type TypeInGradingPromptInput,
 } from "./prompts/type-in-grading-prompt";
+
+// Semantic answer grading
+export { SemanticAnswerGradingService } from "./semantic-answer-grading.service";
+
+// Source text fixer
+export { fixBlockSourceTexts, fixSourceText } from "./source-text-fixer";
+
+// SQL query adapter
+export {
+	type DatabaseLike,
+	type QueryExecResult,
+	SqlQueryAdapter,
+} from "./sql-query.adapter";
+
+// Streaming generation
+export {
+	buildGenerationPrompt,
+	FALLBACK_BASIC_NOTE_TYPE,
+	type StreamingFlashcardManager,
+	type StreamingGenerationResult,
+	StreamingGenerationService,
+	type StreamingSourceFile,
+} from "./streaming-generation.service";
+
+// Streaming OpenRouter client
+export {
+	type StreamChunk,
+	type StreamingChatRequest,
+	StreamingOpenRouterClient,
+} from "./streaming-openrouter-client";
+
+// Streaming state management
+export {
+	addStreamedCard,
+	cancelStreaming,
+	clearRecentCards,
+	createThrottledPartialUpdater,
+	finishStreaming,
+	type ScheduleCallback,
+	type StateListener,
+	type StreamingGenerationState,
+	type StreamingPhase,
+	startStreaming,
+	streamingGeneration,
+	updateChunkProgress,
+	updatePartial,
+} from "./streaming-state";

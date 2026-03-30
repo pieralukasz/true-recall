@@ -1,9 +1,12 @@
+import {
+	computePriority,
+	PRIORITY_DOT,
+} from "@true-recall/core/helpers/note-priority";
 import { CardCountDisplay } from "@true-recall/obsidian/components/CardCountDisplay";
 import { Clickable } from "@true-recall/obsidian/components/Clickable";
 import { IconButton } from "@true-recall/obsidian/components/IconButton";
 import { useContextMenu } from "@true-recall/obsidian/preact/useContextMenu";
 import { cn } from "@true-recall/obsidian/utils";
-import { computePriority, PRIORITY_DOT } from "../helpers/note-priority";
 import type { DashboardProject } from "../types";
 
 interface ProjectHeaderRowProps {

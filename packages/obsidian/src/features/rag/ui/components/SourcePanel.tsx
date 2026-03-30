@@ -1,9 +1,13 @@
 import type { SearchResult } from "@true-recall/core/rag/rag-search.service";
+import type { GroupedSource } from "@true-recall/core/rag/rag-source-grouper";
+import {
+	groupSources,
+	stripMarkdown,
+} from "@true-recall/core/rag/rag-source-grouper";
 import { Clickable } from "@true-recall/obsidian/components";
 import { useIcon } from "@true-recall/obsidian/preact";
 import { useState } from "preact/hooks";
-import { groupSources, stripMarkdown } from "../helpers/group-sources";
-import type { GroupedSource, SourceNavigationHandlers } from "../types";
+import type { SourceNavigationHandlers } from "../types";
 
 const FSRS_STATE_LABELS: Record<number, string> = {
 	0: "new",
