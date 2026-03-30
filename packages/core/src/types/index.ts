@@ -113,3 +113,9 @@ export type {
 	TypeInMode,
 } from "./settings.types";
 export { extractFSRSSettings } from "./settings.types";
+export type {
+	IODefinition,
+	IOMaskMode,
+	IORegion,
+	IOShape,
+} from "./image-occlusion.types";

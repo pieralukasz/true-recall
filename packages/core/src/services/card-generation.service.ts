@@ -9,7 +9,7 @@
 import {
 	getIOGroupOrds,
 	parseIODefinition,
-} from "@features/image-occlusion/io-definition";
+} from "../utils/io-definition";
 import { extractClozeIndices } from "../flashcard/cloze-parser.service";
 import type { Note, NoteType } from "../types/note.types";
 import { BUILTIN_IMAGE_OCCLUSION_ID } from "../types/note.types";

@@ -1,11 +1,11 @@
 import type { FSRSService } from "./fsrs.service";
-import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
+import type { FlashcardManager } from "../flashcard/flashcard.service";
 import {
 	LEARN_AHEAD_LIMIT_MINUTES,
 	RANDOM_QUEUE_INSERT_MAX_POS,
 	WEAK_CARD_STABILITY_THRESHOLD,
 } from "../constants";
-import { notifyCardChange } from "@shared/services/signals";
+import { notifyCardChange } from "../events";
 import type {
 	DailyStats,
 	FSRSFlashcardItem,
@@ -725,7 +725,7 @@ export class ReviewService {
 		rating: Grade,
 		fsrsService: FSRSService,
 		responseTime: number,
-		presetSettings?: import("@shared/types/settings.types").FSRSSettings,
+		presetSettings?: import("../types/settings.types").FSRSSettings,
 	): {
 		updatedCard: FSRSFlashcardItem;
 		result: ReviewResult;
@@ -873,7 +873,7 @@ export class ReviewService {
 			reviewsPerDay: number;
 			dayStartHour?: number;
 		},
-		dayBoundaryService?: import("@features/core/services/day-boundary.service").DayBoundaryService,
+		dayBoundaryService?: import("./day-boundary.service").DayBoundaryService,
 	): DailyStats {
 		const now = new Date();
 		const dayStartHour = settings.dayStartHour ?? 4;

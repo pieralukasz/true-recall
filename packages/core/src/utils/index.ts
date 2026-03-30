@@ -20,3 +20,12 @@ export {
 	stripMarkdownSyntax,
 	stripWikiLinkSyntax,
 } from "./string.utils";
+export {
+	createEmptyIODefinition,
+	getIOGroupOrds,
+	getNextIOGroupKey,
+	getRegionsForOrd,
+	normalizeIOImagePath,
+	parseIODefinition,
+	serializeIODefinition,
+} from "./io-definition";
