@@ -1,4 +1,7 @@
-import { FSRSSimulatorService } from "@true-recall/obsidian/features/core/services/fsrs-simulator.service";
+import {
+	FSRSSimulatorService,
+	type SequenceSimulation,
+} from "@true-recall/core/services/fsrs-simulator.service";
 import {
 	ParametersBar,
 	SimulatorChart,
@@ -6,7 +9,7 @@ import {
 	SimulatorResultsTable,
 	SimulatorSliders,
 } from "@true-recall/obsidian/features/metrics/ui/simulator/components";
-import type { SequenceSimulation } from "@true-recall/obsidian/features/metrics/ui/simulator/types";
+import { getSequenceColors } from "@true-recall/obsidian/features/metrics/ui/simulator/constants";
 import { useSignal } from "@preact/signals";
 import { usePlugin } from "@true-recall/obsidian/preact";
 import { useCallback, useEffect, useMemo, useRef } from "preact/hooks";
@@ -27,7 +30,7 @@ export function SimulatorApp() {
 		const sequences = simulator.getSequences();
 		const parameters = simulator.getParameters();
 		const retention = simulator.getDesiredRetention();
-		const results = simulatorService.simulate(sequences, parameters, retention);
+		const results = simulatorService.simulate(sequences, parameters, retention, getSequenceColors());
 		simulator.setSimulations(results);
 		simulations.value = results;
 		parametersString.value = simulator.getParametersString();

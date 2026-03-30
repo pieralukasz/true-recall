@@ -1,5 +1,5 @@
 import { RagChatService } from "@true-recall/obsidian/features/rag/services/rag-chat.service";
-import { RagToolExecutor } from "@true-recall/obsidian/features/rag/services/rag-chat-tools";
+import { RagToolExecutor } from "@true-recall/core/rag/rag-chat-tools";
 import { RagQueryService } from "@true-recall/obsidian/features/rag/services/rag-query.service";
 import { VIEW_TYPE_KNOWLEDGE_CHAT } from "@true-recall/core/constants";
 import { mountPreact } from "@true-recall/obsidian/preact";

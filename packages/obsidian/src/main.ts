@@ -34,7 +34,7 @@ import {
 	type DeviceSelectionResult,
 } from "@true-recall/obsidian/modals/integration/DeviceSelectionModal";
 import { DeviceDiscoveryService } from "@true-recall/obsidian/features/integration/services/device-discovery.service";
-import { DeviceIdService } from "@true-recall/obsidian/features/integration/services/device-id.service";
+import { DeviceIdService } from "@true-recall/core/integration/device-id.service";
 import { CardBrowserView } from "@true-recall/obsidian/views/browser/CardBrowserView";
 import { FlashcardPanelView } from "@true-recall/obsidian/views/panel/FlashcardPanelView";
 import { FSRSHelperService } from "@true-recall/core/metrics/fsrs-tools";
@@ -135,13 +135,13 @@ export default class TrueRecallPlugin extends Plugin {
 	backupRecovery: BackupRecoveryManager | null = null;
 	localApi: LocalApiServer | null = null;
 	ragActions:
-		| import("@true-recall/obsidian/features/rag/persistence/rag-chunk-actions").RagChunkActions
+		| import("@true-recall/core/rag/rag-chunk-actions").RagChunkActions
 		| null = null;
 	ragIndexer:
 		| import("@true-recall/obsidian/features/rag/services/rag-indexer.service").RagIndexerService
 		| null = null;
 	ragSearch:
-		| import("@true-recall/obsidian/features/rag/services/rag-search.service").RagSearchService
+		| import("@true-recall/core/rag/rag-search.service").RagSearchService
 		| null = null;
 	private adapters!: ObsidianAdapters;
 	private _unloaded = false;
@@ -338,10 +338,10 @@ export default class TrueRecallPlugin extends Plugin {
 
 		if (ENABLE_RAG && this.cardStore) {
 			const { RagChunkActions } = await import(
-				"@true-recall/obsidian/features/rag/persistence/rag-chunk-actions"
+				"@true-recall/core/rag/rag-chunk-actions"
 			);
 			const { RagSchemaManager } = await import(
-				"@true-recall/obsidian/features/rag/persistence/rag-schema"
+				"@true-recall/core/rag/rag-schema"
 			);
 			const ragSchema = new RagSchemaManager(this.cardStore.getDatabase());
 			ragSchema.createTables();
@@ -355,7 +355,7 @@ export default class TrueRecallPlugin extends Plugin {
 					"@true-recall/obsidian/features/rag/services/rag-indexer.service"
 				);
 				const { RagSearchService } = await import(
-					"@true-recall/obsidian/features/rag/services/rag-search.service"
+					"@true-recall/core/rag/rag-search.service"
 				);
 				const embedder = new RagEmbeddingService(this.settings.proKey);
 				this.ragSearch = new RagSearchService(this.ragActions, embedder);

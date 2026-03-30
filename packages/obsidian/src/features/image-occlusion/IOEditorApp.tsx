@@ -8,7 +8,7 @@ import {
 	createEmptyIODefinition,
 	getNextIOGroupKey,
 	parseIODefinition,
-} from "./io-definition";
+} from "@true-recall/core/utils/io-definition";
 import type {
 	IODefinition,
 	IOEditorMode,

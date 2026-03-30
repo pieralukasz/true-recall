@@ -1,4 +1,4 @@
-import { parseIODefinition } from "./io-definition";
+import { parseIODefinition } from "@true-recall/core/utils/io-definition";
 import { resolveImageFile } from "./resolve-image";
 import type { IORegion } from "./types";
 import { useApp } from "@true-recall/obsidian/preact/ObsidianContext";

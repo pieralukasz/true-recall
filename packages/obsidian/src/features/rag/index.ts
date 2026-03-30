@@ -3,11 +3,11 @@ export type {
 	RagChunkRow,
 	RagIndexMetaRow,
 	RagSourceType,
-} from "./persistence/rag-chunk-actions";
-export { RagChunkActions } from "./persistence/rag-chunk-actions";
-export { RagSchemaManager } from "./persistence/rag-schema";
-export type { RagChunk } from "./services/rag-chunker.service";
+} from "@true-recall/core/rag/rag-chunk-actions";
+export { RagChunkActions } from "@true-recall/core/rag/rag-chunk-actions";
+export { RagSchemaManager } from "@true-recall/core/rag/rag-schema";
+export type { RagChunk } from "@true-recall/core/rag/rag-chunker.service";
 export {
 	chunkFlashcard,
 	chunkNote,
-} from "./services/rag-chunker.service";
+} from "@true-recall/core/rag/rag-chunker.service";

@@ -1,5 +1,5 @@
 import { IOCardRenderer } from "@true-recall/obsidian/features/image-occlusion/IOCardRenderer";
-import { parseIODefinition } from "@true-recall/obsidian/features/image-occlusion/io-definition";
+import { parseIODefinition } from "@true-recall/core/utils/io-definition";
 import type { FlashcardItem } from "@true-recall/core/types";
 import type { FSRSFlashcardItem } from "@true-recall/core/types/fsrs/card.types";
 import { Clickable } from "@true-recall/obsidian/components/Clickable";

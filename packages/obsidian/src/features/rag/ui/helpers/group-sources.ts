@@ -1,4 +1,4 @@
-import type { SearchResult } from "../../services/rag-search.service";
+import type { SearchResult } from "@true-recall/core/rag/rag-search.service";
 import { fileBasename } from "@true-recall/core/utils";
 import type { GroupedSource } from "../types";
 

@@ -1,5 +1,5 @@
-import type { RagSourceType } from "../persistence/rag-chunk-actions";
-import type { SearchResult } from "../services/rag-search.service";
+import type { RagSourceType } from "@true-recall/core/rag/rag-chunk-actions";
+import type { SearchResult } from "@true-recall/core/rag/rag-search.service";
 
 export interface GroupedSource {
 	sourceId: string;

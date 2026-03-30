@@ -1,6 +1,5 @@
 import { filterContent } from "@true-recall/core/ai/markdown-chunker";
-import type { DailyNoteInfo } from "./daily-note-detector";
-import { preprocessDailyNote } from "./daily-note-preprocessor";
+import { type DailyNoteInfo, preprocessDailyNote } from "./daily-note-preprocessor";
 
 export interface RagChunk {
 	content: string;

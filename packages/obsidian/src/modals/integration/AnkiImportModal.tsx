@@ -9,7 +9,7 @@ import {
 	ProgressPhase,
 	ResultPhase,
 } from "@true-recall/obsidian/modals/integration/anki-import";
-import { AnkiConverterService } from "@true-recall/obsidian/features/integration/services/anki/anki-converter.service";
+import { AnkiConverterService } from "@true-recall/core/integration/anki-converter.service";
 import { AnkiImportService } from "@true-recall/obsidian/features/integration/services/anki/anki-import.service";
 import { ApkgParserService } from "@true-recall/obsidian/features/integration/services/anki/apkg-parser.service";
 import type { ApkgData } from "@true-recall/core/types";

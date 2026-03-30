@@ -1,31 +1,50 @@
 /**
  * FSRS Simulator Service
- * Simulates FSRS v6 scheduling for visualization
+ * Simulates FSRS v6 scheduling for visualization.
+ * Platform-agnostic: colors are injected by the caller.
  */
 
-import { getSequenceColors } from "../../metrics/ui/simulator/constants";
-import type {
-	SequenceReview,
-	SequenceSimulation,
-} from "../../metrics/ui/simulator/types";
 import { createEmptyCard, FSRS, type Grade } from "ts-fsrs";
+
+/** Review data at a specific point in a sequence */
+export interface SequenceReview {
+	reviewNumber: number;
+	grade: Grade | 0;
+	interval: number;
+	stability: number;
+	difficulty: number;
+	cumulativeInterval: number;
+}
+
+/** Complete simulation data for a review sequence */
+export interface SequenceSimulation {
+	sequence: string;
+	color: string;
+	reviews: SequenceReview[];
+}
+
+const DEFAULT_COLOR = "#3b82f6";
 
 /**
  * Service for simulating FSRS review sequences
  */
 export class FSRSSimulatorService {
 	/**
-	 * Simulate review sequences with given parameters
+	 * Simulate review sequences with given parameters.
+	 * @param sequences  Rating strings, e.g. ["3333", "3332"]
+	 * @param weights    FSRS v6 weight array (21 values)
+	 * @param desiredRetention  Target recall probability (0-1)
+	 * @param colors     Optional color palette for chart lines
 	 */
 	simulate(
 		sequences: string[],
 		weights: number[],
 		desiredRetention: number,
+		colors: string[] = [],
 	): SequenceSimulation[] {
-		const colors = getSequenceColors();
 		return sequences.map((seq, i) => ({
 			sequence: seq,
-			color: colors[i % colors.length] ?? "#3b82f6",
+			color: colors[i % (colors.length || 1)] ?? DEFAULT_COLOR,
 			reviews: this.simulateSequence(seq, weights, desiredRetention),
 		}));
 	}

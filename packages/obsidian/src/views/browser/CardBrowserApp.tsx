@@ -1,4 +1,4 @@
-import { CardBrowserQueryService } from "@true-recall/obsidian/features/library/services/card-browser-query.service";
+import { CardBrowserQueryService } from "@true-recall/core/services/card-browser-query.service";
 import { notifyDuplicateError } from "@true-recall/obsidian/features/library/ui/panel/utils/panel-helpers";
 import { DuplicateQuestionError } from "@true-recall/core/flashcard/card-repository.service";
 import { type Signal, useSignal } from "@preact/signals";

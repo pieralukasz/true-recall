@@ -1,5 +1,5 @@
-import { clamp } from "./canvas-geometry";
-import { getNextIOGroupKey } from "./io-definition";
+import { clamp } from "@true-recall/core/utils/canvas-geometry";
+import { getNextIOGroupKey } from "@true-recall/core/utils/io-definition";
 import type {
 	IODefinition,
 	IORegion,

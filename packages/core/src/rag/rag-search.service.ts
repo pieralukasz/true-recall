@@ -2,9 +2,13 @@ import type {
 	EmbeddingRow,
 	RagChunkActions,
 	RagSourceType,
-} from "../persistence/rag-chunk-actions";
+} from "./rag-chunk-actions";
 import { RAG_CONFIG } from "@true-recall/core/constants";
-import type { RagEmbeddingService } from "./rag-embedding.service";
+
+export interface RagEmbeddingService {
+	embedSingle(text: string): Promise<Float32Array>;
+	embed(texts: string[]): Promise<Float32Array[]>;
+}
 
 export interface SearchResult {
 	chunkId: number;

@@ -1,7 +1,7 @@
 import type {
 	RagChunkActions,
 	RagSourceType,
-} from "../persistence/rag-chunk-actions";
+} from "@true-recall/core/rag/rag-chunk-actions";
 import { effect } from "@preact/signals-core";
 import { RAG_CONFIG } from "@true-recall/core/constants";
 import { lastMutation } from "@true-recall/obsidian/services/signals";
@@ -12,9 +12,9 @@ import {
 	chunkDailyNote,
 	chunkFlashcard,
 	chunkNote,
-} from "./rag-chunker.service";
+} from "@true-recall/core/rag/rag-chunker.service";
 import type { RagEmbeddingService } from "./rag-embedding.service";
-import type { RagSearchService } from "./rag-search.service";
+import type { RagSearchService } from "@true-recall/core/rag/rag-search.service";
 
 export interface IndexResult {
 	indexed: number;

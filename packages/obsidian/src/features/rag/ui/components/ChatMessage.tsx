@@ -1,5 +1,5 @@
 import type { ChatTurn } from "../../services/rag-query.service";
-import type { SearchResult } from "../../services/rag-search.service";
+import type { SearchResult } from "@true-recall/core/rag/rag-search.service";
 import { Clickable } from "@true-recall/obsidian/components";
 import { useApp, useIcon } from "@true-recall/obsidian/preact";
 import { stripBrTags } from "@true-recall/core/utils";

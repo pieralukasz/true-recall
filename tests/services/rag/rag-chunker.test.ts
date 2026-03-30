@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
 	chunkFlashcard,
 	chunkNote,
-} from "../../../src/features/rag/services/rag-chunker.service";
+} from "../../../packages/core/src/rag/rag-chunker.service";
 
 describe("chunkNote", () => {
 	it("returns single chunk for short content", () => {

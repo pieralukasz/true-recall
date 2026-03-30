@@ -1,11 +1,6 @@
 import type { App, TFile } from "obsidian";
-
-export interface DailyNoteInfo {
-	isDailyNote: boolean;
-	date: string | null;
-	displayDate: string | null;
-	dayOfWeek: string | null;
-}
+import type { DailyNoteInfo } from "@true-recall/core/rag/daily-note-preprocessor";
+export type { DailyNoteInfo } from "@true-recall/core/rag/daily-note-preprocessor";
 
 const NOT_DAILY: DailyNoteInfo = {
 	isDailyNote: false,

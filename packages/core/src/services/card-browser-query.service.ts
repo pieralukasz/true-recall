@@ -4,13 +4,13 @@ import type { FrontmatterIndexService } from "@true-recall/core/services/frontma
 import type { HierarchyService } from "@true-recall/core/services/hierarchy.service";
 import type { FSRSCardData } from "@true-recall/core/types";
 import { fileBasename } from "@true-recall/core/utils";
-import { buildBrowserQuery } from "../ui/browser/helpers/query-builder";
+import { buildBrowserQuery } from "@true-recall/obsidian/features/library/ui/browser/helpers/query-builder";
 import type {
 	BrowserCard,
 	BrowserResult,
 	FilterState,
 	SortConfig,
-} from "../ui/browser/types";
+} from "@true-recall/obsidian/features/library/ui/browser/types";
 
 export class CardBrowserQueryService {
 	constructor(

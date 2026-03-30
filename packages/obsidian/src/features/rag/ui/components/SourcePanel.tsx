@@ -1,4 +1,4 @@
-import type { SearchResult } from "../../services/rag-search.service";
+import type { SearchResult } from "@true-recall/core/rag/rag-search.service";
 import { Clickable } from "@true-recall/obsidian/components";
 import { useIcon } from "@true-recall/obsidian/preact";
 import { useState } from "preact/hooks";

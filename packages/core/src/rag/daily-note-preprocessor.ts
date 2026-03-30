@@ -1,4 +1,9 @@
-import type { DailyNoteInfo } from "./daily-note-detector";
+export interface DailyNoteInfo {
+	isDailyNote: boolean;
+	date: string | null;
+	displayDate: string | null;
+	dayOfWeek: string | null;
+}
 
 const HEADING_RE = /^#{1,6}\s+(.+)$/;
 const MIN_PARAGRAPH_TOKENS = 15;

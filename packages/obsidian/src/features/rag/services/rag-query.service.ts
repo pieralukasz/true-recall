@@ -12,8 +12,8 @@ import type {
 import { fileBasename, formatLocalDate } from "@true-recall/core/utils";
 import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpClient";
 import type { ContextItem } from "../ui/context/context.types";
-import { RAG_CHAT_TOOLS, type RagToolExecutor } from "./rag-chat-tools";
-import type { RagSearchService, SearchResult } from "./rag-search.service";
+import { RAG_CHAT_TOOLS, type RagToolExecutor } from "@true-recall/core/rag/rag-chat-tools";
+import type { RagSearchService, SearchResult } from "@true-recall/core/rag/rag-search.service";
 
 function agenticPrompt(): string {
 	const today = formatLocalDate(new Date());

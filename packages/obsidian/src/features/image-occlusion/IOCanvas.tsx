@@ -1,7 +1,7 @@
 import {
 	clamp,
 	normalizePointFromRect,
-} from "./canvas-geometry";
+} from "@true-recall/core/utils/canvas-geometry";
 import {
 	buildDraftRegion,
 	buildMoveUpdate,

@@ -1,10 +1,10 @@
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite/SqliteStoreService";
 import { generateUUID } from "@true-recall/core/persistence/sqlite/sqlite.types";
 import type { FSRSService } from "@true-recall/core/services/fsrs.service";
-import { AnkiConverterService } from "./anki-converter.service";
+import { AnkiConverterService } from "@true-recall/core/integration/anki-converter.service";
 import { AnkiMediaService } from "./anki-media.service";
-import { AnkiNoteTypeMapper } from "./anki-note-type-mapper";
-import { AnkiSchedulingService } from "./anki-scheduling.service";
+import { AnkiNoteTypeMapper } from "@true-recall/core/integration/anki-note-type-mapper";
+import { AnkiSchedulingService } from "@true-recall/core/integration/anki-scheduling.service";
 import { ApkgParserService } from "./apkg-parser.service";
 import { notifyCardChange } from "@true-recall/obsidian/services/signals";
 import type {
