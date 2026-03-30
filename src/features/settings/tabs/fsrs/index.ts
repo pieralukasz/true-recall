@@ -1,10 +1,1 @@
-export { AlgorithmSection } from "@true-recall/obsidian/settings/tabs/fsrs/AlgorithmSection";
-export { BulkOperationsSection } from "@true-recall/obsidian/settings/tabs/fsrs/BulkOperationsSection";
-export { DailyLimitsSection } from "@true-recall/obsidian/settings/tabs/fsrs/DailyLimitsSection";
-export { EasyDaysSection } from "@true-recall/obsidian/settings/tabs/fsrs/EasyDaysSection";
-export { LoadBalanceSection } from "@true-recall/obsidian/settings/tabs/fsrs/LoadBalanceSection";
-export { ParametersSection } from "@true-recall/obsidian/settings/tabs/fsrs/ParametersSection";
-export { PresetSection } from "@true-recall/obsidian/settings/tabs/fsrs/PresetSection";
-export { ScheduledBreaksSection } from "@true-recall/obsidian/settings/tabs/fsrs/ScheduledBreaksSection";
-export { SchedulingSection } from "@true-recall/obsidian/settings/tabs/fsrs/SchedulingSection";
-export { SiblingDisperseSection } from "@true-recall/obsidian/settings/tabs/fsrs/SiblingDisperseSection";
+export * from "@true-recall/obsidian/settings/tabs/fsrs";

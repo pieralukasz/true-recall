@@ -1,6 +1,1 @@
-export {
-	StatBadge,
-	type StatBadgeProps,
-	StatGrid,
-	type StatGridProps,
-} from "@true-recall/obsidian/components/StatBadge";
+export * from "@true-recall/obsidian/components/StatBadge";

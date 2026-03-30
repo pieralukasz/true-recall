@@ -1,17 +1,1 @@
-export type {
-	AnswerUndoPayload,
-	BatchCreateUndoPayload,
-	BatchDeleteUndoPayload,
-	BuryUndoPayload,
-	CreateUndoPayload,
-	DeleteUndoPayload,
-	ForgetUndoPayload,
-	FSRSHelperOperationType,
-	FSRSHelperUndoPayload,
-	SuspendUndoPayload,
-	UndoActionType,
-	UndoEntry,
-	UndoPayload,
-	UpdateNoteFieldsUndoPayload,
-	UpdateUndoPayload,
-} from "@true-recall/obsidian/services/undo.types";
+export * from "@true-recall/obsidian/services/undo.types";

@@ -1,9 +1,1 @@
-export { BackgroundBackupSection } from "@true-recall/obsidian/settings/tabs/data/BackgroundBackupSection";
-export { BackupSettingsSection } from "@true-recall/obsidian/settings/tabs/data/BackupSettingsSection";
-export { BackupStatusSection } from "@true-recall/obsidian/settings/tabs/data/BackupStatusSection";
-export { DeviceDatabaseSection } from "@true-recall/obsidian/settings/tabs/data/DeviceDatabaseSection";
-export { ImportExportSection } from "@true-recall/obsidian/settings/tabs/data/ImportExportSection";
-export { IntegrityCheckSection } from "@true-recall/obsidian/settings/tabs/data/IntegrityCheckSection";
-export { ManualBackupSection } from "@true-recall/obsidian/settings/tabs/data/ManualBackupSection";
-export { SmartRetentionSection } from "@true-recall/obsidian/settings/tabs/data/SmartRetentionSection";
-export { StorageDiagnosticsSection } from "@true-recall/obsidian/settings/tabs/data/StorageDiagnosticsSection";
+export * from "@true-recall/obsidian/settings/tabs/data";
