@@ -47,7 +47,6 @@ export class AnswerHandler {
 		);
 	}
 
-	// Let the browser paint the next card before computing the preview
 	private deferSchedulingPreview(): void {
 		if (this.pendingPreviewRafId !== null) {
 			cancelAnimationFrame(this.pendingPreviewRafId);
@@ -267,10 +266,8 @@ export class AnswerHandler {
 		}, 0);
 	}
 
-	/**
-	 * Remove sibling IO/cloze cards from the queue after answering one.
-	 * Returns the removed cards so they can be restored on undo.
-	 */
+	// Remove sibling IO/cloze cards from the queue after answering one.
+	// Returns removed cards so they can be restored on undo.
 	private burySiblingCards(card: FSRSFlashcardItem): FSRSFlashcardItem[] {
 		if (card.cardType !== "image-occlusion" && card.cardType !== "cloze") {
 			return [];
@@ -298,10 +295,7 @@ export class AnswerHandler {
 		return siblings;
 	}
 
-	/**
-	 * Anki-style leech detection: triggers at threshold, then every half-threshold after.
-	 * E.g. with threshold=8: triggers at lapses 8, 12, 16, 20, ...
-	 */
+	// Anki-style leech detection: triggers at threshold, then every half-threshold after.
 	private checkLeech(card: FSRSFlashcardItem, preset: FSRSPreset): void {
 		const threshold = preset.leechThreshold ?? 8;
 		if (!shouldTriggerLeech(card.fsrs.lapses, threshold)) return;

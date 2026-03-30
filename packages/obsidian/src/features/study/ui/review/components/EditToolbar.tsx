@@ -1,7 +1,7 @@
 import type {
 	ToolbarButton,
 	ToolbarButtonAction,
-} from "@true-recall/obsidian/features/study/ui/editor/edit-toolbar.utils";
+} from "@true-recall/obsidian/editor/study/edit-toolbar.utils";
 
 export function EditToolbar({
 	buttons,

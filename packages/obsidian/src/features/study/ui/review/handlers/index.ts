@@ -1,8 +1,3 @@
-/**
- * Review Handlers
- * Exports handlers for ReviewView
- */
-
 export {
 	AnswerHandler,
 	type AnswerHandlerDeps,
@@ -19,5 +14,4 @@ export {
 export {
 	type KeyboardActionCallbacks,
 	KeyboardHandler,
-	type KeyboardShortcuts,
 } from "@true-recall/obsidian/features/study/ui/review/handlers/KeyboardHandler";

@@ -1,31 +1,6 @@
-/**
- * Keyboard Handler for ReviewView
- * Centralizes keyboard shortcut handling for review sessions
- */
-
 import type { ReviewApi } from "@true-recall/obsidian/store";
 import { Rating } from "ts-fsrs";
 
-/**
- * Keyboard shortcut configuration
- */
-export interface KeyboardShortcuts {
-	showAnswer: string; // Space
-	again: string; // 1
-	hard: string; // 2
-	good: string; // 3 or Space (when revealed)
-	easy: string; // 4
-	undo: string; // Cmd/Ctrl+Z
-	suspend: string; // Shift+1 (!)
-	buryCard: string; // -
-	buryNote: string; // =
-	moveCard: string; // M
-	editCard: string; // E
-}
-
-/**
- * Callbacks for keyboard actions
- */
 export interface KeyboardActionCallbacks {
 	onShowAnswer: () => void;
 	onAnswer: (rating: Rating) => void;
@@ -43,15 +18,6 @@ export interface KeyboardActionCallbacks {
 	onFocusTypeIn?: () => void;
 }
 
-/**
- * KeyboardHandler manages keyboard shortcuts for the review view
- *
- * Usage:
- * ```typescript
- * const handler = new KeyboardHandler(stateManager, callbacks);
- * document.addEventListener("keydown", handler.handleKeyDown);
- * ```
- */
 export class KeyboardHandler {
 	private getReview: () => ReviewApi;
 	private callbacks: KeyboardActionCallbacks;
@@ -61,124 +27,60 @@ export class KeyboardHandler {
 		this.callbacks = callbacks;
 	}
 
-	/**
-	 * Handle keydown events
-	 * Bound method for direct use as event listener
-	 */
 	handleKeyDown = (e: KeyboardEvent): void => {
-		// Ignore if typing in input/textarea or contenteditable
-		if (this.isInputFocused(e.target)) {
-			return;
-		}
+		if (this.isInputFocused(e.target)) return;
 
-		// Cmd+Z (Mac) or Ctrl+Z (Windows/Linux) for undo
 		if ((e.metaKey || e.ctrlKey) && e.key === "z") {
 			e.preventDefault();
 			void this.callbacks.onUndo();
 			return;
 		}
 
-		// Global shortcuts (work regardless of session state)
-		if (this.handleGlobalShortcuts(e)) {
-			return;
-		}
-
-		// Session-specific shortcuts
+		if (this.handleGlobalShortcuts(e)) return;
 		this.handleSessionShortcuts(e);
 	};
 
-	/**
-	 * Check if an input element is focused
-	 */
 	private isInputFocused(target: EventTarget | null): boolean {
-		if (
-			typeof HTMLInputElement !== "undefined" &&
-			target instanceof HTMLInputElement
-		) {
-			return true;
-		}
-		if (
-			typeof HTMLTextAreaElement !== "undefined" &&
-			target instanceof HTMLTextAreaElement
-		) {
-			return true;
-		}
-		if (
-			typeof HTMLElement !== "undefined" &&
-			target instanceof HTMLElement &&
-			target.isContentEditable
-		) {
-			return true;
-		}
+		if (target instanceof HTMLInputElement) return true;
+		if (target instanceof HTMLTextAreaElement) return true;
+		if (target instanceof HTMLElement && target.isContentEditable) return true;
 		return false;
 	}
 
-	/**
-	 * Handle global shortcuts that work regardless of session state
-	 */
 	private handleGlobalShortcuts(e: KeyboardEvent): boolean {
-		// Shift+1 = Suspend card
-		if (e.shiftKey && e.key === "!") {
+		const key = e.key;
+
+		if (e.shiftKey && key === "!") {
 			e.preventDefault();
 			void this.callbacks.onSuspend();
 			return true;
 		}
 
-		// F = Forget card (reset to New + clear history)
-		if (e.key === "f" || e.key === "F") {
-			e.preventDefault();
-			void this.callbacks.onForget();
-			return true;
-		}
+		const handlers: Record<string, () => void> = {
+			f: () => void this.callbacks.onForget(),
+			F: () => void this.callbacks.onForget(),
+			"-": () => void this.callbacks.onBuryCard(),
+			"=": () => void this.callbacks.onBuryNote(),
+			m: () => void this.callbacks.onMoveCard(),
+			M: () => void this.callbacks.onMoveCard(),
+			e: () => void this.callbacks.onEditCard(),
+			E: () => void this.callbacks.onEditCard(),
+			a: () => void this.callbacks.onAddCard(),
+			A: () => void this.callbacks.onAddCard(),
+			t: () => this.callbacks.onCycleTypeInMode(),
+			T: () => this.callbacks.onCycleTypeInMode(),
+		};
 
-		// - (minus) = Bury card until tomorrow
-		if (e.key === "-") {
+		const handler = handlers[key];
+		if (handler) {
 			e.preventDefault();
-			void this.callbacks.onBuryCard();
-			return true;
-		}
-
-		// = (equals) = Bury note (all cards from same source) until tomorrow
-		if (e.key === "=") {
-			e.preventDefault();
-			void this.callbacks.onBuryNote();
-			return true;
-		}
-
-		// M = Move card to another note
-		if (e.key === "m" || e.key === "M") {
-			e.preventDefault();
-			void this.callbacks.onMoveCard();
-			return true;
-		}
-
-		// E = Edit current card (modal)
-		if (e.key === "e" || e.key === "E") {
-			e.preventDefault();
-			void this.callbacks.onEditCard();
-			return true;
-		}
-
-		// A = Add new flashcard
-		if (e.key === "a" || e.key === "A") {
-			e.preventDefault();
-			void this.callbacks.onAddCard();
-			return true;
-		}
-
-		// T = Cycle type-in mode (off -> AI -> Diff -> off)
-		if (e.key === "t" || e.key === "T") {
-			e.preventDefault();
-			this.callbacks.onCycleTypeInMode();
+			handler();
 			return true;
 		}
 
 		return false;
 	}
 
-	/**
-	 * Handle session-specific shortcuts (answer reveal, ratings)
-	 */
 	private handleSessionShortcuts(e: KeyboardEvent): void {
 		const review = this.getReview();
 		if (!review.isActive || review.isComplete()) return;
@@ -190,7 +92,6 @@ export class KeyboardHandler {
 				return;
 			}
 
-			// When type-in is active, Space focuses the editor instead of revealing
 			if (e.code === "Space") {
 				e.preventDefault();
 				if (this.callbacks.isTypeInActive?.()) {
@@ -208,32 +109,22 @@ export class KeyboardHandler {
 				return;
 			}
 
-			// Rating buttons: 1=Again, 2=Hard, 3=Good, 4=Easy
-			switch (e.key) {
-				case "1":
-					e.preventDefault();
-					void this.callbacks.onAnswer(Rating.Again);
-					break;
-				case "2":
-					e.preventDefault();
-					void this.callbacks.onAnswer(Rating.Hard);
-					break;
-				case "3":
-				case " ": // Space bar also triggers Good
-					e.preventDefault();
-					void this.callbacks.onAnswer(Rating.Good);
-					break;
-				case "4":
-					e.preventDefault();
-					void this.callbacks.onAnswer(Rating.Easy);
-					break;
+			const ratingMap: Record<string, Rating> = {
+				"1": Rating.Again,
+				"2": Rating.Hard,
+				"3": Rating.Good,
+				" ": Rating.Good,
+				"4": Rating.Easy,
+			};
+
+			const rating = ratingMap[e.key];
+			if (rating !== undefined) {
+				e.preventDefault();
+				void this.callbacks.onAnswer(rating);
 			}
 		}
 	}
 
-	/**
-	 * Get keyboard shortcuts help text
-	 */
 	static getShortcutsHelp(): Array<{ key: string; description: string }> {
 		return [
 			{ key: "Space", description: "Reveal / Good rating" },

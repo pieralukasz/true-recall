@@ -150,20 +150,20 @@ export function notifyCardChange(mutation: CardMutation): void {
 			? { ...mutation, action: normalizedAction }
 			: mutation;
 
-	batch(() => {
-		_lastMutation.value = normalizedMutation;
-		if (normalizedMutation.type !== "reviewed") {
-			if (reviewRefreshTimer) {
-				clearTimeout(reviewRefreshTimer);
-				reviewRefreshTimer = null;
-			}
-			applyIncrementalUpdate(normalizedMutation);
-		}
-	});
+	// Set lastMutation first (consumers like ReviewView listen to this)
+	_lastMutation.value = normalizedMutation;
 
-	// Debounced incremental refresh for "reviewed" so dashboard / panel
-	// header updates after rapid answering pauses.
-	if (normalizedMutation.type === "reviewed") {
+	// Apply incremental card index update OUTSIDE the mutation signal
+	// to avoid "Cycle detected" when computed signals cascade.
+	if (normalizedMutation.type !== "reviewed") {
+		if (reviewRefreshTimer) {
+			clearTimeout(reviewRefreshTimer);
+			reviewRefreshTimer = null;
+		}
+		applyIncrementalUpdate(normalizedMutation);
+	} else {
+		// Debounced incremental refresh for "reviewed" so dashboard / panel
+		// header updates after rapid answering pauses.
 		if (reviewRefreshTimer) clearTimeout(reviewRefreshTimer);
 		reviewRefreshTimer = setTimeout(() => {
 			reviewRefreshTimer = null;

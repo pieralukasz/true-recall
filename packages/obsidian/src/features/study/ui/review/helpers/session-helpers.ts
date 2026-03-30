@@ -1,16 +1,14 @@
-// Re-export pure functions from core
 export {
-	type CardFilterOptions,
-	type GlobalPresetQueueContext,
-	filterActiveCards,
-	getEmptyQueueMessage,
-	buildQueueOptions,
-	isGlobalReviewSession,
 	buildGlobalPresetQueueContext,
+	buildQueueOptions,
+	type CardFilterOptions,
+	filterActiveCards,
+	type GlobalPresetQueueContext,
+	getEmptyQueueMessage,
+	isGlobalReviewSession,
 	matchesSessionFilters,
 } from "@true-recall/core/services/session-helpers";
 
-// applyMutation stays in obsidian — it depends on signals/store
 import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite";
 import { matchesSessionFilters } from "@true-recall/core/services/session-helpers";

@@ -1,10 +1,10 @@
 import { DuplicateQuestionError } from "@true-recall/core/flashcard/card-repository.service";
 import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
+import type { FSRSFlashcardItem } from "@true-recall/core/types";
+import { BR_REGEX } from "@true-recall/core/utils";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 import type { UndoService } from "@true-recall/obsidian/services/undo.service";
 import type { ReviewApi } from "@true-recall/obsidian/store";
-import type { FSRSFlashcardItem } from "@true-recall/core/types";
-import { BR_REGEX } from "@true-recall/core/utils";
 import type { App } from "obsidian";
 
 export interface EditHandlerDeps {
@@ -17,10 +17,6 @@ export interface EditHandlerDeps {
 export class EditHandler {
 	constructor(private deps: EditHandlerDeps) {}
 
-	/**
-	 * Auto-save content from the live-preview editor.
-	 * Called on editor blur and before card transitions.
-	 */
 	async saveContent(
 		newContent: string,
 		field: "question" | "answer",
@@ -31,67 +27,21 @@ export class EditHandler {
 
 		const cardIdBeforeSave = card.id;
 
-		// Cloze template editing
 		if (
 			card.cardType === "cloze" &&
 			card.clozeTemplate &&
 			card.sourceUid &&
 			field === "question"
 		) {
-			const hasChanges = newContent !== card.clozeTemplate;
-			if (!hasChanges) return;
-
-			try {
-				const { hasClozeContent, parseClozeTemplate } = await import(
-					"@true-recall/core/flashcard/cloze-parser.service"
-				);
-				if (hasClozeContent(newContent)) {
-					this.deps.flashcardManager.updateClozeTemplate(
-						card.sourceUid,
-						card.clozeTemplate,
-						newContent,
-						card.sourceNoteName,
-					);
-
-					const newCards = parseClozeTemplate(newContent);
-					const thisCard = newCards.find(
-						(c: { clozeIndex: number }) => c.clozeIndex === card.clozeIndex,
-					);
-					if (thisCard) {
-						review.updateCurrentCardContent(thisCard.question, thisCard.answer);
-					}
-				} else {
-					this.pushEditUndo(card, "question");
-					this.deps.flashcardManager.updateCardContent(
-						cardIdBeforeSave,
-						newContent,
-						card.answer,
-					);
-					review.updateCurrentCardContent(newContent, card.answer);
-				}
-			} catch (error) {
-				if (error instanceof DuplicateQuestionError) {
-					const sourceInfo = error.existingSourceUid
-						? this.deps.flashcardManager
-								.getSourceNoteService()
-								.resolveSourceNote(error.existingSourceUid)
-						: {};
-					notify().duplicateFound(newContent, sourceInfo.noteName);
-				} else {
-					console.error("Error saving cloze template:", error);
-					notify().operationFailed("save cloze template", error);
-				}
-			}
+			await this.saveClozeTemplate(card, newContent, review);
 			return;
 		}
 
-		// Regular card editing
 		const normalizedOriginal =
 			field === "question"
 				? card.question.replace(BR_REGEX, "\n")
 				: (card.answer ?? "").replace(BR_REGEX, "\n");
-		const hasChanges = newContent !== normalizedOriginal;
-		if (!hasChanges) return;
+		if (newContent === normalizedOriginal) return;
 
 		const newQuestion = field === "question" ? newContent : card.question;
 		const newAnswer = field === "answer" ? newContent : card.answer;
@@ -110,17 +60,61 @@ export class EditHandler {
 				review.updateCurrentCardContent(newQuestion, newAnswer);
 			}
 		} catch (error) {
-			if (error instanceof DuplicateQuestionError) {
-				const sourceInfo = error.existingSourceUid
-					? this.deps.flashcardManager
-							.getSourceNoteService()
-							.resolveSourceNote(error.existingSourceUid)
-					: {};
-				notify().duplicateFound(newQuestion, sourceInfo.noteName);
+			this.handleSaveError(error, newQuestion);
+		}
+	}
+
+	private async saveClozeTemplate(
+		card: FSRSFlashcardItem,
+		newContent: string,
+		review: ReviewApi,
+	): Promise<void> {
+		if (newContent === card.clozeTemplate) return;
+
+		try {
+			const { hasClozeContent, parseClozeTemplate } = await import(
+				"@true-recall/core/flashcard/cloze-parser.service"
+			);
+			if (hasClozeContent(newContent)) {
+				this.deps.flashcardManager.updateClozeTemplate(
+					card.sourceUid!,
+					card.clozeTemplate!,
+					newContent,
+					card.sourceNoteName,
+				);
+
+				const newCards = parseClozeTemplate(newContent);
+				const thisCard = newCards.find(
+					(c: { clozeIndex: number }) => c.clozeIndex === card.clozeIndex,
+				);
+				if (thisCard) {
+					review.updateCurrentCardContent(thisCard.question, thisCard.answer);
+				}
 			} else {
-				console.error("Error saving card content:", error);
-				notify().operationFailed("save card", error);
+				this.pushEditUndo(card, "question");
+				this.deps.flashcardManager.updateCardContent(
+					card.id,
+					newContent,
+					card.answer,
+				);
+				review.updateCurrentCardContent(newContent, card.answer);
 			}
+		} catch (error) {
+			this.handleSaveError(error, newContent);
+		}
+	}
+
+	private handleSaveError(error: unknown, question: string): void {
+		if (error instanceof DuplicateQuestionError) {
+			const sourceInfo = error.existingSourceUid
+				? this.deps.flashcardManager
+						.getSourceNoteService()
+						.resolveSourceNote(error.existingSourceUid)
+				: {};
+			notify().duplicateFound(question, sourceInfo.noteName);
+		} else {
+			console.error("Error saving card content:", error);
+			notify().operationFailed("save card", error);
 		}
 	}
 

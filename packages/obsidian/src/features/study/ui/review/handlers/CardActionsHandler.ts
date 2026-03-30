@@ -1,58 +1,40 @@
-/**
- * Card Actions Handler for ReviewView
- * Handles card operations: suspend, bury, move, add, copy, edit
- */
-
+import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite";
 import type { FSRSService } from "@true-recall/core/services/fsrs.service";
-import { QuickNoteEditorModal } from "@true-recall/obsidian/modals/study/quick-note-editor/QuickNoteEditorModal";
-import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
 import type { ReviewService } from "@true-recall/core/services/review.service";
+import type {
+	FSRSFlashcardItem,
+	TrueRecallSettings,
+} from "@true-recall/core/types";
+import type { FSRSCardData } from "@true-recall/core/types/fsrs/card.types";
+import { BUILTIN_IMAGE_OCCLUSION_ID } from "@true-recall/core/types/note.types";
+import type TrueRecallPlugin from "@true-recall/obsidian/main";
+import { MoveCardModal } from "@true-recall/obsidian/modals/shared";
+import { QuickNoteEditorModal } from "@true-recall/obsidian/modals/study/quick-note-editor/QuickNoteEditorModal";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 import { notifyCardChange } from "@true-recall/obsidian/services/signals";
 import type { ReviewApi } from "@true-recall/obsidian/store";
-import type { TrueRecallSettings } from "@true-recall/core/types";
-import { BUILTIN_IMAGE_OCCLUSION_ID } from "@true-recall/core/types/note.types";
-import { MoveCardModal } from "@true-recall/obsidian/modals/shared";
 import type { App } from "obsidian";
 import { Rating, State } from "ts-fsrs";
-import type TrueRecallPlugin from "@true-recall/obsidian/main";
 
 const FORGET_NON_NEW_WARNING =
 	"Forget is only available for cards that are not New.";
 
-/**
- * Dependencies required by CardActionsHandler
- */
 export interface CardActionsHandlerDeps {
 	app: App;
 	getReview: () => ReviewApi;
 	flashcardManager: FlashcardManager;
 	fsrsService: FSRSService;
 	reviewService: ReviewService;
-	/** SQLite store for registering source notes */
 	cardStore: SqliteStoreService;
 	settings: TrueRecallSettings;
-	/** Plugin instance for accessing AgentService */
 	plugin: TrueRecallPlugin;
 }
 
-/**
- * Callbacks for actions that require view updates
- */
 export interface CardActionsCallbacks {
 	onUpdateSchedulingPreview: () => void;
 }
 
-/**
- * CardActionsHandler encapsulates card manipulation logic
- *
- * Extracts business logic from ReviewView for:
- * - Suspend/bury operations
- * - Move card to another note
- * - Add/copy/edit flashcards
- * - Undo operations (delegated to global UndoService)
- */
 export class CardActionsHandler {
 	private deps: CardActionsHandlerDeps;
 	private callbacks: CardActionsCallbacks;
@@ -62,9 +44,6 @@ export class CardActionsHandler {
 		this.callbacks = callbacks;
 	}
 
-	/**
-	 * Check if undo is available (delegated to global UndoService)
-	 */
 	canUndo(): boolean {
 		return this.deps.plugin.undoService?.canUndo() ?? false;
 	}
@@ -74,155 +53,65 @@ export class CardActionsHandler {
 		return !!card && card.fsrs.state !== State.New;
 	}
 
-	/**
-	 * Suspend the current card
-	 * For cloze/reverse cards, suspends all siblings as a group
-	 */
 	handleSuspend(): void {
 		const card = this.deps.getReview().getCurrentCard();
 		if (!card) return;
 
-		const currentIndex = this.deps.getReview().currentIndex;
-		const undoService = this.deps.plugin.undoService;
-
-		// Find cloze siblings in the review queue
 		const siblingIds = this.getGroupSiblingIds(card);
 
-		let writeExecuted = false;
-		let pendingTimeoutId: ReturnType<typeof setTimeout> | null = null;
-
-		undoService?.push({
-			id: crypto.randomUUID(),
-			actionType: "suspend",
+		this.deferCardWrite({
+			undoType: "suspend",
 			description:
 				siblingIds.length > 1
 					? `Suspend ${siblingIds.length} cards`
 					: "Suspend card",
-			timestamp: Date.now(),
-			payload: {
-				type: "suspend",
-				card: { ...card },
-				originalFsrs: { ...card.fsrs },
-				previousIndex: currentIndex,
-			},
-			cancelPendingWrite: () => {
-				if (!writeExecuted && pendingTimeoutId !== null) {
-					clearTimeout(pendingTimeoutId);
-					pendingTimeoutId = null;
-					return true;
-				}
-				return false;
-			},
-		});
-
-		// Remove all siblings from the review queue
-		for (const id of siblingIds) {
-			this.deps.getReview().removeCardById(id);
-		}
-
-		if (!this.deps.getReview().isComplete()) {
-			this.callbacks.onUpdateSchedulingPreview();
-		}
-
-		notify().cardSuspended();
-
-		pendingTimeoutId = setTimeout(() => {
-			writeExecuted = true;
-			pendingTimeoutId = null;
-			try {
-				// Suspend all siblings
+			card,
+			siblingIds,
+			execute: () => {
 				for (const id of siblingIds) {
-					const siblingData = this.deps.cardStore.get(id);
-					if (siblingData) {
+					const data = this.deps.cardStore.get(id);
+					if (data) {
 						this.deps.flashcardManager.updateCardFSRS(id, {
-							...siblingData,
+							...data,
 							suspended: true,
 						});
 					}
 				}
-			} catch (error) {
-				console.error("[CardActionsHandler] Error suspending card(s):", error);
-			}
-		}, 0);
+			},
+		});
+
+		notify().cardSuspended();
 	}
 
-	/**
-	 * Bury the current card until tomorrow
-	 * For cloze/reverse cards, buries all siblings as a group
-	 */
 	handleBuryCard(): void {
 		const card = this.deps.getReview().getCurrentCard();
 		if (!card) return;
 
-		const currentIndex = this.deps.getReview().currentIndex;
-		const undoService = this.deps.plugin.undoService;
-
-		const tomorrow = this.getTomorrowDate();
-		const buriedUntil = tomorrow.toISOString();
-
-		// Find cloze siblings in the review queue
+		const buriedUntil = this.getTomorrowDate().toISOString();
 		const siblingIds = this.getGroupSiblingIds(card);
 
-		let writeExecuted = false;
-		let pendingTimeoutId: ReturnType<typeof setTimeout> | null = null;
-
-		undoService?.push({
-			id: crypto.randomUUID(),
-			actionType: "bury",
+		this.deferCardWrite({
+			undoType: "bury",
 			description:
 				siblingIds.length > 1 ? `Bury ${siblingIds.length} cards` : "Bury card",
-			timestamp: Date.now(),
-			payload: {
-				type: "bury",
-				card: { ...card },
-				originalFsrs: { ...card.fsrs },
-				previousIndex: currentIndex,
-			},
-			cancelPendingWrite: () => {
-				if (!writeExecuted && pendingTimeoutId !== null) {
-					clearTimeout(pendingTimeoutId);
-					pendingTimeoutId = null;
-					return true;
-				}
-				return false;
-			},
-		});
-
-		// Remove all siblings from the review queue
-		for (const id of siblingIds) {
-			this.deps.getReview().removeCardById(id);
-		}
-
-		if (!this.deps.getReview().isComplete()) {
-			this.callbacks.onUpdateSchedulingPreview();
-		}
-
-		notify().cardBuried();
-
-		pendingTimeoutId = setTimeout(() => {
-			writeExecuted = true;
-			pendingTimeoutId = null;
-			try {
-				// Bury all siblings
+			card,
+			siblingIds,
+			execute: () => {
 				for (const id of siblingIds) {
-					const siblingData = this.deps.cardStore.get(id);
-					if (siblingData) {
+					const data = this.deps.cardStore.get(id);
+					if (data) {
 						this.deps.flashcardManager.updateCardFSRS(id, {
-							...siblingData,
+							...data,
 							buriedUntil,
 						});
 					}
 				}
-			} catch (error) {
-				console.error("[CardActionsHandler] Error burying card(s):", error);
-			}
-		}, 0);
+			},
+		});
+
+		notify().cardBuried();
 	}
 
-	/**
-	 * Forget the current card — reset to New and clear review history.
-	 * For cloze/reverse cards, forgets all siblings as a group.
-	 */
 	handleForget(): void {
 		const card = this.deps.getReview().getCurrentCard();
 		if (!card) return;
@@ -231,14 +120,9 @@ export class CardActionsHandler {
 			return;
 		}
 
-		const currentIndex = this.deps.getReview().currentIndex;
-		const undoService = this.deps.plugin.undoService;
-
 		const siblingIds = this.getGroupSiblingIds(card);
 		const forgettableIds = siblingIds.filter((id) => {
-			if (id === card.id) {
-				return card.fsrs.state !== State.New;
-			}
+			if (id === card.id) return card.fsrs.state !== State.New;
 			const sibling = this.deps.cardStore.get(id);
 			return !!sibling && sibling.state !== State.New;
 		});
@@ -247,51 +131,15 @@ export class CardActionsHandler {
 			return;
 		}
 
-		let writeExecuted = false;
-		let pendingTimeoutId: ReturnType<typeof setTimeout> | null = null;
-
-		undoService?.push({
-			id: crypto.randomUUID(),
-			actionType: "forget",
+		this.deferCardWrite({
+			undoType: "forget",
 			description:
 				forgettableIds.length > 1
 					? `Forget ${forgettableIds.length} cards`
 					: "Forget card",
-			timestamp: Date.now(),
-			payload: {
-				type: "forget",
-				card: { ...card },
-				originalFsrs: { ...card.fsrs },
-				previousIndex: currentIndex,
-			},
-			cancelPendingWrite: () => {
-				if (!writeExecuted && pendingTimeoutId !== null) {
-					clearTimeout(pendingTimeoutId);
-					pendingTimeoutId = null;
-					return true;
-				}
-				return false;
-			},
-		});
-
-		for (const id of forgettableIds) {
-			this.deps.getReview().removeCardById(id);
-		}
-
-		if (!this.deps.getReview().isComplete()) {
-			this.callbacks.onUpdateSchedulingPreview();
-		}
-
-		if (forgettableIds.length === 1) {
-			notify().cardForgotten();
-		} else {
-			notify().cardsForgotten(forgettableIds.length);
-		}
-
-		pendingTimeoutId = setTimeout(() => {
-			writeExecuted = true;
-			pendingTimeoutId = null;
-			try {
+			card,
+			siblingIds: forgettableIds,
+			execute: () => {
 				this.deps.cardStore.cards.bulkForget(forgettableIds);
 				this.deps.plugin.sessionPersistence?.removeReviewedCards(
 					forgettableIds,
@@ -301,28 +149,26 @@ export class CardActionsHandler {
 					cardIds: forgettableIds,
 					action: "reset",
 				});
-			} catch (error) {
-				console.error("[CardActionsHandler] Error forgetting card(s):", error);
-			}
-		}, 0);
+			},
+		});
+
+		if (forgettableIds.length === 1) {
+			notify().cardForgotten();
+		} else {
+			notify().cardsForgotten(forgettableIds.length);
+		}
 	}
 
-	/**
-	 * Bury all cards from the same source note
-	 * All sibling cards will reappear in the next day's review
-	 */
 	handleBuryNote(): void {
 		const card = this.deps.getReview().getCurrentCard();
 		if (!card) return;
 
 		const sourceNoteName = card.sourceNoteName;
 		if (!sourceNoteName) {
-			// If no source note, just bury the current card
 			this.handleBuryCard();
 			return;
 		}
 
-		// Find all cards from the same source note in the queue
 		const queue = this.deps.getReview().queue;
 		const siblingCards = queue.filter(
 			(c) => c.sourceNoteName === sourceNoteName,
@@ -336,25 +182,20 @@ export class CardActionsHandler {
 
 		const currentIndex = this.deps.getReview().currentIndex;
 		const undoService = this.deps.plugin.undoService;
+		const buriedUntil = this.getTomorrowDate().toISOString();
 
-		// Calculate tomorrow's date based on dayStartHour
-		const tomorrow = this.getTomorrowDate();
-		const buriedUntil = tomorrow.toISOString();
-
-		// Capture undo data for all sibling cards BEFORE making changes
 		const additionalCards = siblingCards.slice(1).map((c) => ({
 			card: { ...c },
 			originalFsrs: { ...c.fsrs },
 		}));
 
 		let buriedCount = 0;
-
-		// Bury all sibling cards
 		for (const siblingCard of siblingCards) {
-			const updatedFsrs = { ...siblingCard.fsrs, buriedUntil };
-
 			try {
-				this.deps.flashcardManager.updateCardFSRS(siblingCard.id, updatedFsrs);
+				this.deps.flashcardManager.updateCardFSRS(siblingCard.id, {
+					...siblingCard.fsrs,
+					buriedUntil,
+				});
 				buriedCount++;
 			} catch (error) {
 				console.error(
@@ -362,12 +203,9 @@ export class CardActionsHandler {
 					error,
 				);
 			}
-
-			// Remove from queue (by ID since indices change)
 			this.deps.getReview().removeCardById(siblingCard.id);
 		}
 
-		// Push undo entry AFTER successful operations
 		if (buriedCount > 0) {
 			undoService?.push({
 				id: crypto.randomUUID(),
@@ -385,22 +223,14 @@ export class CardActionsHandler {
 			});
 		}
 
-		if (!this.deps.getReview().isComplete()) {
-			this.callbacks.onUpdateSchedulingPreview();
-		}
-
+		this.refreshIfActive();
 		notify().cardsBuried(buriedCount);
-		// Note: render triggered by removeCardById() → notifyListeners()
 	}
 
-	/**
-	 * Move the current card to another note
-	 */
 	async handleMoveCard(): Promise<void> {
 		const card = this.deps.getReview().getCurrentCard();
 		if (!card) return;
 
-		// Open move modal with card content for backlink suggestions
 		const modal = new MoveCardModal(this.deps.app, {
 			cardCount: 1,
 			sourceNoteName: card.sourceNoteName,
@@ -412,7 +242,6 @@ export class CardActionsHandler {
 		if (result.cancelled || !result.targetNotePath) return;
 
 		try {
-			// Grade card as "Good" before moving (updates FSRS scheduling)
 			const { persisted } = await this.deps.reviewService.gradeCard(
 				card,
 				Rating.Good,
@@ -421,28 +250,19 @@ export class CardActionsHandler {
 			);
 			if (!persisted) {
 				this.deps.getReview().removeCardById(card.id);
-				if (!this.deps.getReview().isComplete()) {
-					this.callbacks.onUpdateSchedulingPreview();
-				}
+				this.refreshIfActive();
 				notify().warning("Card was deleted before move could be saved.");
 				return;
 			}
 
-			// Move the card
 			const success = await this.deps.flashcardManager.moveCard(
 				card.id,
 				result.targetNotePath,
 			);
 
 			if (success) {
-				// Remove from current queue (card no longer exists in original file)
 				this.deps.getReview().removeCurrentCard();
-
-				// Update scheduling preview for next card
-				if (!this.deps.getReview().isComplete()) {
-					this.callbacks.onUpdateSchedulingPreview();
-				}
-
+				this.refreshIfActive();
 				notify().cardGradedAndMoved();
 			}
 		} catch (error) {
@@ -451,9 +271,6 @@ export class CardActionsHandler {
 		}
 	}
 
-	/**
-	 * Add a new flashcard linked to the same source as the current card.
-	 */
 	async handleAddNewFlashcard(): Promise<void> {
 		const card = this.deps.getReview().getCurrentCard();
 		if (!card) return;
@@ -468,31 +285,11 @@ export class CardActionsHandler {
 		});
 
 		const result = await modal.openAndWait();
-		if (result.cancelled) return;
-
-		const cardCount = result.createdCards?.length ?? 0;
-		if (cardCount > 0) {
-			this.deps.plugin.undoService?.push({
-				id: crypto.randomUUID(),
-				actionType: "batch-create",
-				description: `Add ${cardCount} card${cardCount !== 1 ? "s" : ""}`,
-				timestamp: Date.now(),
-				payload: {
-					type: "batch-create",
-					cardIds: result.createdCards?.map((c) => c.id) ?? [],
-				},
-			});
-			const noteName = card.sourceNotePath
-				?.split("/")
-				.pop()
-				?.replace(/\.md$/, "");
-			notify().cardsCreated(cardCount, noteName);
+		if (!result.cancelled) {
+			this.pushBatchCreateUndo(card, result.createdCards);
 		}
 	}
 
-	/**
-	 * Add a new image occlusion card linked to the same source as the current card.
-	 */
 	async handleAddImageOcclusion(): Promise<void> {
 		const card = this.deps.getReview().getCurrentCard();
 		if (!card) return;
@@ -501,31 +298,11 @@ export class CardActionsHandler {
 			mode: "add",
 			sourceUid: card.sourceUid,
 		});
-		if (result.cancelled) return;
-
-		const cardCount = result.createdCards?.length ?? 0;
-		if (cardCount > 0) {
-			this.deps.plugin.undoService?.push({
-				id: crypto.randomUUID(),
-				actionType: "batch-create",
-				description: `Add ${cardCount} image occlusion card${cardCount !== 1 ? "s" : ""}`,
-				timestamp: Date.now(),
-				payload: {
-					type: "batch-create",
-					cardIds: result.createdCards?.map((c) => c.id) ?? [],
-				},
-			});
-			const noteName = card.sourceNotePath
-				?.split("/")
-				.pop()
-				?.replace(/\.md$/, "");
-			notify().cardsCreated(cardCount, noteName);
+		if (!result.cancelled) {
+			this.pushBatchCreateUndo(card, result.createdCards, "image occlusion ");
 		}
 	}
 
-	/**
-	 * Edit the current card via the QuickNoteEditor modal (v26 note-aware).
-	 */
 	async handleEditCardModal(): Promise<void> {
 		const card = this.deps.getReview().getCurrentCard();
 		if (!card) return;
@@ -558,17 +335,7 @@ export class CardActionsHandler {
 			});
 			if (result.cancelled) return;
 
-			this.deps.plugin.undoService?.push({
-				id: crypto.randomUUID(),
-				actionType: "update-note-fields",
-				description: "Edit image occlusion",
-				timestamp: Date.now(),
-				payload: {
-					type: "update-note-fields",
-					noteId: note.id,
-					previousFields,
-				},
-			});
+			this.pushFieldEditUndo(note.id, previousFields, "Edit image occlusion");
 			return;
 		}
 
@@ -583,20 +350,8 @@ export class CardActionsHandler {
 		const result = await modal.openAndWait();
 		if (result.cancelled) return;
 
-		// Push undo entry for note-level field edit
-		this.deps.plugin.undoService?.push({
-			id: crypto.randomUUID(),
-			actionType: "update-note-fields",
-			description: "Edit card",
-			timestamp: Date.now(),
-			payload: {
-				type: "update-note-fields",
-				noteId: note.id,
-				previousFields,
-			},
-		});
+		this.pushFieldEditUndo(note.id, previousFields, "Edit card");
 
-		// Refresh the current card display in review
 		if (result.updatedCardIds?.includes(card.id)) {
 			const [updatedCard] = this.deps.cardStore.cards.getByIds([card.id]);
 			if (updatedCard) {
@@ -610,10 +365,6 @@ export class CardActionsHandler {
 		}
 	}
 
-	/**
-	 * Change the note type for the current card's note.
-	 * Opens ChangeNoteTypeModal, then reconciles cards and updates the review queue.
-	 */
 	async handleChangeNoteType(): Promise<void> {
 		const card = this.deps.getReview().getCurrentCard();
 		if (!card?.noteId) return;
@@ -653,18 +404,14 @@ export class CardActionsHandler {
 			result.fieldMapping,
 		);
 
-		// Remove deleted cards from review queue
 		for (const id of r.deletedCardIds) {
 			this.deps.getReview().removeCardById(id);
 		}
-		// If current card was not kept, remove it too
 		if (!r.keptCardIds.includes(card.id)) {
 			this.deps.getReview().removeCardById(card.id);
 		}
 
-		if (!this.deps.getReview().isComplete()) {
-			this.callbacks.onUpdateSchedulingPreview();
-		}
+		this.refreshIfActive();
 
 		const parts: string[] = ["Note type changed"];
 		if (r.createdCardIds.length > 0)
@@ -674,26 +421,123 @@ export class CardActionsHandler {
 		notify().success(parts.join(", "));
 	}
 
-	/**
-	 * Undo the last action (delegated to global UndoService)
-	 * All undo logic is now unified in UndoService for proper LIFO ordering
-	 */
 	async handleUndo(): Promise<boolean> {
 		const undoService = this.deps.plugin.undoService;
 		if (!undoService?.canUndo()) {
 			notify().nothingToUndo();
 			return false;
 		}
-
-		const success = await undoService.undo();
-		// Note: render triggered by UndoService via insertCardAtPosition/undoLastAnswer → notifyListeners()
-		return success;
+		return undoService.undo();
 	}
 
-	/**
-	 * Get IDs of all group siblings for cloze/reverse cards.
-	 * Returns [card.id] for basic cards (no siblings).
-	 */
+	// ── Private helpers ─────────────────────────────────
+
+	private refreshIfActive(): void {
+		if (!this.deps.getReview().isComplete()) {
+			this.callbacks.onUpdateSchedulingPreview();
+		}
+	}
+
+	// Shared pattern for suspend/bury/forget: push undo with deferred write,
+	// remove siblings from queue, refresh preview.
+	private deferCardWrite(opts: {
+		undoType: "suspend" | "bury" | "forget";
+		description: string;
+		card: FSRSFlashcardItem;
+		siblingIds: string[];
+		execute: () => void;
+	}): void {
+		const currentIndex = this.deps.getReview().currentIndex;
+		const undoService = this.deps.plugin.undoService;
+
+		let writeExecuted = false;
+		let pendingTimeoutId: ReturnType<typeof setTimeout> | null = null;
+
+		undoService?.push({
+			id: crypto.randomUUID(),
+			actionType: opts.undoType,
+			description: opts.description,
+			timestamp: Date.now(),
+			payload: {
+				type: opts.undoType,
+				card: { ...opts.card } as FSRSFlashcardItem,
+				originalFsrs: { ...opts.card.fsrs } as FSRSCardData,
+				previousIndex: currentIndex,
+			},
+			cancelPendingWrite: () => {
+				if (!writeExecuted && pendingTimeoutId !== null) {
+					clearTimeout(pendingTimeoutId);
+					pendingTimeoutId = null;
+					return true;
+				}
+				return false;
+			},
+		});
+
+		for (const id of opts.siblingIds) {
+			this.deps.getReview().removeCardById(id);
+		}
+
+		this.refreshIfActive();
+
+		pendingTimeoutId = setTimeout(() => {
+			writeExecuted = true;
+			pendingTimeoutId = null;
+			try {
+				opts.execute();
+			} catch (error) {
+				console.error(
+					`[CardActionsHandler] Error in deferred ${opts.undoType}:`,
+					error,
+				);
+			}
+		}, 0);
+	}
+
+	private pushBatchCreateUndo(
+		card: { sourceNotePath?: string },
+		createdCards?: Array<{ id: string }>,
+		prefix = "",
+	): void {
+		const count = createdCards?.length ?? 0;
+		if (count === 0) return;
+
+		this.deps.plugin.undoService?.push({
+			id: crypto.randomUUID(),
+			actionType: "batch-create",
+			description: `Add ${count} ${prefix}card${count !== 1 ? "s" : ""}`,
+			timestamp: Date.now(),
+			payload: {
+				type: "batch-create",
+				cardIds: createdCards?.map((c) => c.id) ?? [],
+			},
+		});
+
+		const noteName = card.sourceNotePath
+			?.split("/")
+			.pop()
+			?.replace(/\.md$/, "");
+		notify().cardsCreated(count, noteName);
+	}
+
+	private pushFieldEditUndo(
+		noteId: string,
+		previousFields: Record<string, string>,
+		description: string,
+	): void {
+		this.deps.plugin.undoService?.push({
+			id: crypto.randomUUID(),
+			actionType: "update-note-fields",
+			description,
+			timestamp: Date.now(),
+			payload: {
+				type: "update-note-fields",
+				noteId,
+				previousFields,
+			},
+		});
+	}
+
 	private getGroupSiblingIds(card: {
 		id: string;
 		cardType?: string;
@@ -701,44 +545,32 @@ export class CardActionsHandler {
 		clozeTemplate?: string;
 		reverseOf?: string;
 	}): string[] {
-		// Cloze card: get all cards sharing the same template
 		if (card.cardType === "cloze" && card.sourceUid && card.clozeTemplate) {
 			const siblings = this.deps.cardStore.getClozeSiblings(
 				card.sourceUid,
 				card.clozeTemplate,
 			);
-			if (siblings.length > 0) {
-				return siblings.map((s) => s.id);
-			}
+			if (siblings.length > 0) return siblings.map((s) => s.id);
 		}
 
-		// Reversed card: include the paired card
 		if (card.cardType === "reversed" && card.reverseOf) {
 			return [card.id, card.reverseOf];
 		}
 
-		// Original card with a reverse
 		const reverseCard = this.deps.cardStore.cards.getCardByReverseOf(card.id);
-		if (reverseCard) {
-			return [card.id, reverseCard.id];
-		}
+		if (reverseCard) return [card.id, reverseCard.id];
 
 		return [card.id];
 	}
 
-	/**
-	 * Calculate tomorrow's date based on dayStartHour setting
-	 */
 	private getTomorrowDate(): Date {
 		const now = new Date();
 		const tomorrow = new Date(now);
-
-		// If we're past the day start hour, tomorrow means the next calendar day
-		// If we're before the day start hour, tomorrow means today at dayStartHour
+		// If past day-start-hour, tomorrow = next calendar day at dayStartHour.
+		// If before, tomorrow = today at dayStartHour.
 		if (now.getHours() >= this.deps.settings.dayStartHour) {
 			tomorrow.setDate(tomorrow.getDate() + 1);
 		}
-
 		tomorrow.setHours(this.deps.settings.dayStartHour, 0, 0, 0);
 		return tomorrow;
 	}
