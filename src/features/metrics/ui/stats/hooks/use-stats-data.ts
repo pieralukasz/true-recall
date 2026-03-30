@@ -80,7 +80,7 @@ export function useStatsData(
 		loading.value = true;
 
 		const cards = allCardsArray.value;
-		pluginSettings.value;
+		void pluginSettings.value;
 		const range = timeRange.value;
 		const f = filter?.value;
 

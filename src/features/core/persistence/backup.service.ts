@@ -185,7 +185,7 @@ export class BackupService {
 			const dbPath = normalizePath(
 				`${DB_FOLDER}/${getDeviceDbFilename(deviceId)}`,
 			);
-			await this.app.vault.adapter.writeBinary(dbPath, dbData as ArrayBuffer);
+			await this.app.vault.adapter.writeBinary(dbPath, dbData);
 			const backupName = backupPath.split("/").pop() || backupPath;
 
 			notify().success(

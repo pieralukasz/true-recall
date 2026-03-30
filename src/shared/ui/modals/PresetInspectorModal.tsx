@@ -140,9 +140,9 @@ export class PresetInspectorModal extends BasePromiseModal<PresetInspectorResult
 			<PresetInspectorBody
 				chain={chain}
 				effectivePresetName={effective.preset.name}
-				onResolve={async (result) => {
+				onResolve={(result) => {
 					if (result.action === "set") {
-						await this.openPresetPicker(result);
+						void this.openPresetPicker(result);
 					} else {
 						this.resolve(result);
 					}

@@ -1,7 +1,6 @@
-import type { IncomingMessage, ServerResponse } from "http";
 import { ReviewService } from "@features/study/services/review.service";
 import { type Grade, Rating } from "ts-fsrs";
-import type { ApiContext } from "../api.types";
+import type { ApiContext, ApiRequest, ApiResponseWriter } from "../api.types";
 import { parseJsonBody, readBody, sendError, sendOk } from "../api.types";
 
 interface GradeInput {
@@ -9,8 +8,8 @@ interface GradeInput {
 }
 
 export async function handleGradeCard(
-	req: IncomingMessage,
-	res: ServerResponse,
+	req: ApiRequest,
+	res: ApiResponseWriter,
 	ctx: ApiContext,
 	params: Record<string, string>,
 ): Promise<void> {

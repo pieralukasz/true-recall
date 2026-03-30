@@ -160,15 +160,17 @@ function ActiveReview({
 				presetName={presetName}
 				presetOptions={presetOptions}
 				onPresetChange={onPresetChange}
-				useTypeInMode={typeInState.useTypeInMode}
-				aiEnabled={typeInState.aiEnabled}
-				typedAnswer={typeInState.typedAnswer}
-				onTypedAnswerChange={onTypedAnswerChange}
-				onShowAnswer={onShowAnswer}
-				isCheckingAnswer={typeInState.isCheckingAnswer}
-				localAssessment={typeInState.localAssessment}
-				semanticResult={typeInState.semanticResult}
-				semanticMessage={typeInState.semanticMessage}
+				typeIn={{
+					enabled: typeInState.useTypeInMode,
+					aiEnabled: typeInState.aiEnabled,
+					typedAnswer: typeInState.typedAnswer,
+					onTypedAnswerChange,
+					onShowAnswer,
+					isCheckingAnswer: typeInState.isCheckingAnswer,
+					localAssessment: typeInState.localAssessment,
+					semanticResult: typeInState.semanticResult,
+					semanticMessage: typeInState.semanticMessage,
+				}}
 			/>
 
 			<ButtonBar

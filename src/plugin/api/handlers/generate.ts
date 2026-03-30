@@ -1,8 +1,7 @@
-import type { IncomingMessage, ServerResponse } from "http";
 import { hasAIKey } from "@features/ai/services/ai-client-config";
 import { FlashcardGenerationService } from "@features/ai/services/flashcard-generation.service";
 import { fixBlockSourceTexts } from "@features/ai/services/source-text-fixer";
-import type { ApiContext } from "../api.types";
+import type { ApiContext, ApiRequest, ApiResponseWriter } from "../api.types";
 import { parseJsonBody, readBody, sendError, sendOk } from "../api.types";
 
 interface GenerateInput {
@@ -12,8 +11,8 @@ interface GenerateInput {
 }
 
 export async function handleGenerate(
-	req: IncomingMessage,
-	res: ServerResponse,
+	req: ApiRequest,
+	res: ApiResponseWriter,
 	ctx: ApiContext,
 ): Promise<void> {
 	if (!ctx.plugin.isStoreReady()) {
@@ -105,11 +104,11 @@ export async function handleGenerate(
 	});
 }
 
-export async function handleGetNoteTypes(
-	_req: IncomingMessage,
-	res: ServerResponse,
+export function handleGetNoteTypes(
+	_req: ApiRequest,
+	res: ApiResponseWriter,
 	ctx: ApiContext,
-): Promise<void> {
+): void {
 	if (!ctx.plugin.isStoreReady()) {
 		sendError(res, 503, "Database not ready");
 		return;

@@ -20,7 +20,7 @@ export function ForecastWidget({ source }: { source: string }) {
 	const showChart = configValue(config, "showChart", true);
 
 	const data = useComputed(() => {
-		cards.value;
+		void cards.value;
 		if (!plugin.fsrsHelper) return null;
 
 		const summary = plugin.fsrsHelper.getWorkloadForecastSummary(days);

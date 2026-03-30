@@ -27,8 +27,7 @@ export class NoteTypeSuggestModal extends SuggestModal<SuggestItem> {
 	renderSuggestion(item: SuggestItem, el: HTMLElement): void {
 		if (item === "create") {
 			el.setText("+ Create new note type");
-			el.addClass("mod-complex");
-			el.style.color = "var(--text-accent)";
+			el.addClasses(["mod-complex", "u-text-accent"]);
 			return;
 		}
 		const suffix = item.isBuiltin ? " (built-in)" : "";
@@ -36,45 +35,47 @@ export class NoteTypeSuggestModal extends SuggestModal<SuggestItem> {
 		el.setText(`${item.name}${type}${suffix}`);
 	}
 
-	async onChooseSuggestion(item: SuggestItem): Promise<void> {
+	onChooseSuggestion(item: SuggestItem): void {
 		if (item === "create") {
-			const allTypes = this.plugin.noteTypeService.getAll();
-			const result = await new CreateNoteTypeModal(
-				this.app,
-				allTypes,
-			).openAndWait();
-			if (result.cancelled) return;
-
-			try {
-				let fields = ["Front", "Back"];
-				let templates = [
-					{ name: "Card 1", ordinal: 0, qfmt: "{{Front}}", afmt: "{{Back}}" },
-				];
-				let css: string | undefined;
-
-				if (result.cloneFromId) {
-					const source = this.plugin.noteTypeService.getById(
-						result.cloneFromId,
-					);
-					if (source) {
-						fields = [...source.fields];
-						templates = source.templates.map((t) => ({ ...t }));
-						css = source.css;
-					}
-				}
-
-				const created = this.plugin.noteTypeService.create({
-					name: result.name,
-					fields,
-					templates,
-					css,
-				});
-				new CardTypesEditorModal(this.app, this.plugin, created.id).open();
-			} catch (e) {
-				new Notice((e as Error).message);
-			}
+			void this.handleCreate();
 			return;
 		}
 		new CardTypesEditorModal(this.app, this.plugin, item.id).open();
+	}
+
+	private async handleCreate(): Promise<void> {
+		const allTypes = this.plugin.noteTypeService.getAll();
+		const result = await new CreateNoteTypeModal(
+			this.app,
+			allTypes,
+		).openAndWait();
+		if (result.cancelled) return;
+
+		try {
+			let fields = ["Front", "Back"];
+			let templates = [
+				{ name: "Card 1", ordinal: 0, qfmt: "{{Front}}", afmt: "{{Back}}" },
+			];
+			let css: string | undefined;
+
+			if (result.cloneFromId) {
+				const source = this.plugin.noteTypeService.getById(result.cloneFromId);
+				if (source) {
+					fields = [...source.fields];
+					templates = source.templates.map((t) => ({ ...t }));
+					css = source.css;
+				}
+			}
+
+			const created = this.plugin.noteTypeService.create({
+				name: result.name,
+				fields,
+				templates,
+				css,
+			});
+			new CardTypesEditorModal(this.app, this.plugin, created.id).open();
+		} catch (e) {
+			new Notice((e as Error).message);
+		}
 	}
 }

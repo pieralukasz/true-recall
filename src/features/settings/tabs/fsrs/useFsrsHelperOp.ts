@@ -22,12 +22,10 @@ export function useFsrsHelperOp(config: FsrsHelperOpConfig) {
 	const [running, setRunning] = useState(false);
 
 	const execute = useCallback(
-		async (
-			helperCall: () => Promise<SchedulingResult | undefined> | undefined,
-		) => {
+		(helperCall: () => SchedulingResult | undefined) => {
 			setRunning(true);
 			try {
-				const result = await helperCall();
+				const result = helperCall();
 				if (result && result.affectedCount > 0) {
 					config.plugin.undoService?.push({
 						id: crypto.randomUUID(),

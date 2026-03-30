@@ -28,7 +28,7 @@ export function ComparisonWidget({ source }: { source: string }) {
 	const config = useMemo(() => parseCodeblockConfig(source), [source]);
 
 	const data = useComputed((): ComparisonData | null => {
-		cards.value;
+		void cards.value;
 		if (!plugin.sessionPersistence) return null;
 
 		const statsCalc = new StatsCalculatorService(

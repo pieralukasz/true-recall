@@ -51,7 +51,7 @@ export function SiblingDisperseSection({
 			>
 				<ToggleInput
 					value={settings.siblingDisperseEnabled}
-					onChange={(v) => save({ siblingDisperseEnabled: v })}
+					onChange={(v) => void save({ siblingDisperseEnabled: v })}
 				/>
 			</FormField>
 
@@ -78,7 +78,7 @@ export function SiblingDisperseSection({
 					variant="secondary"
 					disabled={dispersing}
 					onClick={() =>
-						execute(() =>
+						void execute(() =>
 							plugin.fsrsHelper?.disperseSiblings({ dryRun: false }),
 						)
 					}

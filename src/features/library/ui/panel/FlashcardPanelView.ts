@@ -286,8 +286,8 @@ export class FlashcardPanelView extends ItemView {
 
 	private subscribeToDataChanges(): void {
 		this.signalDisposer = effect(() => {
-			cards.value;
-			pluginSettings.value;
+			void cards.value;
+			void pluginSettings.value;
 			this.invalidateCardsCache();
 			this.scheduleHeaderStatsUpdate();
 			this.scheduleFlashcardInfoReload();
@@ -533,9 +533,10 @@ export class FlashcardPanelView extends ItemView {
 			return;
 
 		const count = state.flashcardInfo.flashcards.length;
-		const confirmed = window.confirm(
-			`Delete all ${count} flashcard(s) for this note?`,
-		);
+		const { confirm } = await import("@shared/ui/modals/ConfirmModal");
+		const confirmed = await confirm(this.app, {
+			message: `Delete all ${count} flashcard(s) for this note?`,
+		});
 		if (!confirmed) return;
 
 		const cardIds = state.flashcardInfo.flashcards.map((card) => card.id);
@@ -567,7 +568,7 @@ export class FlashcardPanelView extends ItemView {
 		);
 	}
 
-	private async handleExportCsv(): Promise<void> {
+	private handleExportCsv(): void {
 		const state = this.panel;
 		if (
 			!state.flashcardInfo?.flashcards ||

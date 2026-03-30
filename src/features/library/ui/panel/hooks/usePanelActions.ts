@@ -356,11 +356,12 @@ export function usePanelActions() {
 		if (!flashcardInfo || flashcardInfo.flashcards.length === 0) return;
 		const { notify } = await import("@shared/services/notification.service");
 		const { notifyCardChange } = await import("@shared/services/signals");
+		const { confirm } = await import("@shared/ui/modals/ConfirmModal");
 
 		const count = flashcardInfo.flashcards.length;
-		const confirmed = window.confirm(
-			`Forget all ${count} flashcard(s) for this note? This resets scheduling and clears review history.`,
-		);
+		const confirmed = await confirm(app, {
+			message: `Forget all ${count} flashcard(s) for this note? This resets scheduling and clears review history.`,
+		});
 		if (!confirmed) return;
 
 		const cardIds = flashcardInfo.flashcards.map((card) => card.id);
@@ -378,10 +379,11 @@ export function usePanelActions() {
 		const { notify } = await import("@shared/services/notification.service");
 		if (!flashcardInfo || flashcardInfo.flashcards.length === 0) return;
 
+		const { confirm } = await import("@shared/ui/modals/ConfirmModal");
 		const count = flashcardInfo.flashcards.length;
-		const confirmed = window.confirm(
-			`Delete all ${count} flashcard(s) for this note?`,
-		);
+		const confirmed = await confirm(app, {
+			message: `Delete all ${count} flashcard(s) for this note?`,
+		});
 		if (!confirmed) return;
 
 		const cardIds = flashcardInfo.flashcards.map((card) => card.id);
@@ -399,15 +401,16 @@ export function usePanelActions() {
 		const { notify } = await import("@shared/services/notification.service");
 		if (!currentFile) return;
 
+		const { confirm } = await import("@shared/ui/modals/ConfirmModal");
 		const count = flashcardInfo?.flashcards.length ?? 0;
-		const confirmed = window.confirm(
-			`Delete "${currentFile.basename}" and its ${count} flashcard(s)? This cannot be undone.`,
-		);
+		const confirmed = await confirm(app, {
+			message: `Delete "${currentFile.basename}" and its ${count} flashcard(s)? This cannot be undone.`,
+		});
 		if (!confirmed) return;
 
 		try {
-			if (count > 0) {
-				const cardIds = flashcardInfo!.flashcards.map((card) => card.id);
+			if (count > 0 && flashcardInfo) {
+				const cardIds = flashcardInfo.flashcards.map((card) => card.id);
 				plugin.flashcardManager.removeFlashcardsByIdsWithDetails(cardIds);
 			}
 
@@ -416,7 +419,9 @@ export function usePanelActions() {
 			await plugin.openDashboard();
 		} catch (error) {
 			console.error("[True Recall] Failed to delete note and cards:", error);
-			notify().error("Failed to delete note. Some flashcards may have been removed.");
+			notify().error(
+				"Failed to delete note. Some flashcards may have been removed.",
+			);
 		}
 	}, [currentFile, flashcardInfo, plugin, app]);
 

@@ -1,10 +1,9 @@
-import type { IncomingMessage, ServerResponse } from "http";
-import type { ApiContext } from "../api.types";
+import type { ApiContext, ApiRequest, ApiResponseWriter } from "../api.types";
 import { sendError, sendOk } from "../api.types";
 
 export async function handleCreateBackup(
-	_req: IncomingMessage,
-	res: ServerResponse,
+	_req: ApiRequest,
+	res: ApiResponseWriter,
 	ctx: ApiContext,
 ): Promise<void> {
 	if (!ctx.plugin.backupService) {
@@ -17,8 +16,8 @@ export async function handleCreateBackup(
 }
 
 export async function handleListBackups(
-	_req: IncomingMessage,
-	res: ServerResponse,
+	_req: ApiRequest,
+	res: ApiResponseWriter,
 	ctx: ApiContext,
 ): Promise<void> {
 	if (!ctx.plugin.backupService) {
@@ -37,11 +36,11 @@ export async function handleListBackups(
 	);
 }
 
-export async function handleGetIntegrity(
-	_req: IncomingMessage,
-	res: ServerResponse,
+export function handleGetIntegrity(
+	_req: ApiRequest,
+	res: ApiResponseWriter,
 	ctx: ApiContext,
-): Promise<void> {
+): void {
 	if (!ctx.plugin.isStoreReady()) {
 		sendError(res, 503, "Database not ready");
 		return;

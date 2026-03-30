@@ -1,5 +1,6 @@
 import type { FSRSFlashcardItem } from "@shared/types/fsrs/card.types";
 import type { TodaySummary } from "@shared/types/fsrs/stats.types";
+import { State } from "ts-fsrs";
 import type { DashboardAggregation, DashboardNoteEntry } from "../types";
 import { computePriority } from "./note-priority";
 import { estimateStudyMinutes } from "./time-estimate";
@@ -52,14 +53,14 @@ export function aggregateDashboardData(
 		const noteName = card.sourceNoteName;
 
 		switch (fsrs.state) {
-			case 0:
+			case State.New:
 				totalNew++;
 				break;
-			case 1:
-			case 3:
+			case State.Learning:
+			case State.Relearning:
 				totalLearning++;
 				break;
-			case 2:
+			case State.Review:
 				if (new Date(fsrs.due) <= now) totalDue++;
 				break;
 		}
@@ -67,14 +68,14 @@ export function aggregateDashboardData(
 		if (!noteName) {
 			orphaned.total++;
 			switch (fsrs.state) {
-				case 0:
+				case State.New:
 					orphaned.new++;
 					break;
-				case 1:
-				case 3:
+				case State.Learning:
+				case State.Relearning:
 					orphaned.learning++;
 					break;
-				case 2:
+				case State.Review:
 					if (new Date(fsrs.due) <= now) orphaned.due++;
 					break;
 			}
@@ -100,14 +101,14 @@ export function aggregateDashboardData(
 		entry.total++;
 
 		switch (fsrs.state) {
-			case 0:
+			case State.New:
 				entry.newCount++;
 				break;
-			case 1:
-			case 3:
+			case State.Learning:
+			case State.Relearning:
 				entry.learning++;
 				break;
-			case 2: {
+			case State.Review: {
 				const dueDate = new Date(fsrs.due);
 				if (dueDate <= now) {
 					entry.due++;

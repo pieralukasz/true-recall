@@ -6,6 +6,7 @@ import {
 } from "@shared/services/reactive-card-store";
 import { usePlugin } from "@shared/ui/preact";
 import { useMemo } from "preact/hooks";
+import { State } from "ts-fsrs";
 import { configValue, parseCodeblockConfig } from "../config-parser";
 import { WidgetCta } from "../WidgetCta";
 
@@ -38,7 +39,7 @@ export function DecayWidget({
 	const config = useMemo(() => parseCodeblockConfig(source), [source]);
 
 	const data = useComputed((): DecayData | null => {
-		cards.value;
+		void cards.value;
 		if (!sourceUid) return null;
 
 		const noteCards = cardsBySourceUid.value.get(sourceUid) ?? [];
@@ -62,7 +63,7 @@ export function DecayWidget({
 		for (const card of noteCards) {
 			const fsrs = card.fsrs;
 			if (fsrs.suspended) continue;
-			if (fsrs.state === 0) continue; // skip new cards — no retrievability
+			if (fsrs.state === State.New) continue; // skip new cards — no retrievability
 
 			const r = plugin.fsrsService.getRetrievability(fsrs, now);
 			totalRetention += r;

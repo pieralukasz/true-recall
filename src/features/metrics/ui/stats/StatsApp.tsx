@@ -150,6 +150,11 @@ export function StatsApp() {
 
 	const { data, loading, error } = useStatsData(timeRange, filterContext);
 
+	// Staged chart rendering to avoid blocking the main thread.
+	// Charts are expensive to mount (Chart.js, D3 heatmap), so we paint them
+	// in three passes: stage 1 = hero + retention, stage 2 = core charts,
+	// stage 3 = distributions. Each stage defers to the next animation frame
+	// or idle callback so the browser stays responsive.
 	useEffect(() => {
 		if (!data) {
 			setRenderStage(0);

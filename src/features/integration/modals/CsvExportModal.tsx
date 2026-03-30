@@ -42,7 +42,7 @@ function CsvExportBody({
 		selectedSourceUids: Set<string>;
 		includeScheduling: boolean;
 		separator: CsvSeparator;
-	}) => Promise<ExportPhase>;
+	}) => ExportPhase | Promise<ExportPhase>;
 	onClose: () => void;
 }) {
 	const [phase, setPhase] = useState<ExportPhase>({ type: "form" });
@@ -155,7 +155,7 @@ function CsvExportBody({
 				<OptionCheckbox
 					label="Include scheduling data"
 					description="Adds State, Due, Interval, Lapses columns"
-					initialChecked={includeScheduling}
+					checked={includeScheduling}
 					onChange={setIncludeScheduling}
 				/>
 			</div>
@@ -195,12 +195,12 @@ export class CsvExportModal extends BaseModal {
 		);
 	}
 
-	private async startExport(opts: {
+	private startExport(opts: {
 		exportMode: ExportMode;
 		selectedSourceUids: Set<string>;
 		includeScheduling: boolean;
 		separator: CsvSeparator;
-	}): Promise<ExportPhase> {
+	}): ExportPhase {
 		try {
 			const service = new CsvExportService(this.app, this.store);
 

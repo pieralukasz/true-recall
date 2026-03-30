@@ -43,10 +43,10 @@ export class ParameterOptimizerService {
 	/**
 	 * Optimize FSRS parameters from review history
 	 */
-	async optimize(
+	optimize(
 		input: OptimizationInput,
 		options?: OptimizerOptions,
-	): Promise<OptimizationOutput> {
+	): OptimizationOutput {
 		const minReviews = input.minReviews ?? MIN_REVIEWS_FOR_OPTIMIZATION;
 
 		if (input.reviews.length < minReviews) {

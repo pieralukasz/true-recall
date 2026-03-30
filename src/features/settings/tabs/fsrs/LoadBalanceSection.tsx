@@ -44,7 +44,7 @@ export function LoadBalanceSection({
 			>
 				<ToggleInput
 					value={settings.loadBalanceEnabled}
-					onChange={(v) => save({ loadBalanceEnabled: v })}
+					onChange={(v) => void save({ loadBalanceEnabled: v })}
 				/>
 			</FormField>
 
@@ -68,7 +68,7 @@ export function LoadBalanceSection({
 			>
 				<SliderInput
 					value={settings.loadBalanceMaxDeviation}
-					onChange={(v) => save({ loadBalanceMaxDeviation: v })}
+					onChange={(v) => void save({ loadBalanceMaxDeviation: v })}
 					min={0}
 					max={50}
 					step={5}
@@ -85,7 +85,9 @@ export function LoadBalanceSection({
 					variant="secondary"
 					disabled={balancing}
 					onClick={() =>
-						execute(() => plugin.fsrsHelper?.balanceWorkload({ dryRun: false }))
+						void execute(() =>
+							plugin.fsrsHelper?.balanceWorkload({ dryRun: false }),
+						)
 					}
 				/>
 			</FormField>

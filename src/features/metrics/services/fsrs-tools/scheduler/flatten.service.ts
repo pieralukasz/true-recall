@@ -24,7 +24,7 @@ export class FlattenService {
 	/**
 	 * Flatten a specific date by moving excess cards
 	 */
-	async flatten(options: FlattenOptions): Promise<SchedulingResult> {
+	flatten(options: FlattenOptions): SchedulingResult {
 		const { date, maxCards, dryRun = true } = options;
 
 		const nextDate = new Date(date);
@@ -95,7 +95,7 @@ export class FlattenService {
 		// Apply changes if not dry run
 		if (!dryRun) {
 			for (const change of changes) {
-				await this.cardStore.updateCardDue(change.cardId, change.newDue);
+				this.cardStore.updateCardDue(change.cardId, change.newDue);
 			}
 		}
 

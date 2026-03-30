@@ -42,8 +42,8 @@ export function QuickNoteEditorApp({
 	const plugin = usePlugin();
 
 	const isEdit = mode.mode === "edit";
-	const editMode = isEdit ? (mode as EditMode) : null;
-	const addMode = !isEdit ? (mode as AddMode) : null;
+	const editMode = isEdit ? mode : null;
+	const addMode = !isEdit ? mode : null;
 
 	// ── State ──
 
@@ -306,7 +306,7 @@ export function QuickNoteEditorApp({
 			if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
 				e.preventDefault();
 				e.stopPropagation();
-				handleSaveRef.current();
+				void handleSaveRef.current();
 			}
 		};
 		document.addEventListener("keydown", onKeyDown, true);
@@ -329,7 +329,7 @@ export function QuickNoteEditorApp({
 				noteTypeId={noteTypeId}
 				onNoteTypeChange={handleNoteTypeChange}
 				isEdit={isEdit}
-				onChangeType={isEdit ? handleChangeType : undefined}
+				onChangeType={isEdit ? () => void handleChangeType() : undefined}
 				showSourcePicker={showSourcePicker}
 				selectedSourceNote={selectedSourceNote}
 				onSourceSelect={setSelectedSourceNote}
@@ -349,7 +349,7 @@ export function QuickNoteEditorApp({
 				fields={fields}
 				onFieldChange={handleFieldChange}
 				onFieldFocus={handleFieldFocus}
-				onModEnter={handleSave}
+				onModEnter={() => void handleSave()}
 				onEscape={onRequestClose}
 				pinnedFields={pinnedFields}
 				onTogglePin={togglePin}
@@ -363,7 +363,7 @@ export function QuickNoteEditorApp({
 				saving={saving}
 				requiresSourceNote={showSourcePicker && !selectedSourceNote}
 				sourceNoteFile={sourceNoteFile}
-				onSave={handleSave}
+				onSave={() => void handleSave()}
 				onOpenFields={openFields}
 				onOpenCards={openCards}
 			/>

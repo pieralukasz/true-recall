@@ -1,8 +1,7 @@
-import { StreamingGenerationService } from "@features/ai/services/streaming-generation.service";
 import { createSelectionToolbarExtension } from "@features/ai/ui/editor/SelectionToolbarPlugin";
 import {
-	type NoteStatusCache,
 	createNoteStatusCache,
+	type NoteStatusCache,
 } from "@features/core/cache/note-status-cache.service";
 import { CardTypesEditorModal } from "@features/core/modals/card-types-editor/CardTypesEditorModal";
 import { NoteTypeSuggestModal } from "@features/core/modals/card-types-editor/NoteTypeSuggestModal";
@@ -36,9 +35,12 @@ import {
 } from "@features/integration/modals/DeviceSelectionModal";
 import { DeviceDiscoveryService } from "@features/integration/services/device-discovery.service";
 import { DeviceIdService } from "@features/integration/services/device-id.service";
+import { CardBrowserView } from "@features/library/ui/browser/CardBrowserView";
 import { FlashcardPanelView } from "@features/library/ui/panel/FlashcardPanelView";
 import { FSRSHelperService } from "@features/metrics/services/fsrs-tools";
 import { SimulatorView } from "@features/metrics/ui/simulator";
+import { StatsView } from "@features/metrics/ui/stats";
+import { KnowledgeChatView } from "@features/rag/ui/KnowledgeChatView";
 import {
 	DEFAULT_SETTINGS,
 	type TrueRecallSettings,
@@ -52,6 +54,7 @@ import { QuickNoteEditorModal } from "@features/study/modals/quick-note-editor/Q
 import { DeletionHandlerService } from "@features/study/services/flashcard/deletion-handler.service";
 import { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
 import { UidGuardianService } from "@features/study/services/flashcard/uid-guardian.service";
+import { DashboardView } from "@features/study/ui/dashboard/DashboardView";
 import {
 	createLinkStatusPostProcessor,
 	createLinkStatusViewPlugin,
@@ -64,9 +67,11 @@ import {
 	type SessionFilters,
 } from "@features/study/ui/review/review.types";
 import {
+	ENABLE_RAG,
 	VIEW_TYPE_CARD_BROWSER,
 	VIEW_TYPE_DASHBOARD,
 	VIEW_TYPE_FLASHCARD_PANEL,
+	VIEW_TYPE_KNOWLEDGE_CHAT,
 	VIEW_TYPE_REVIEW,
 	VIEW_TYPE_SIMULATOR,
 	VIEW_TYPE_STATS,
@@ -83,7 +88,6 @@ import {
 import { UndoService } from "@shared/services/undo.service";
 import { type AppStore, createAppStore } from "@shared/store";
 import { extractFSRSSettings } from "@shared/types";
-import { BUILTIN_BASIC_ID, type NoteType } from "@shared/types/note.types";
 import { PresetInspectorModal } from "@shared/ui/modals";
 import { isDesktop } from "@shared/utils/platform";
 import { normalizePath, Plugin, TFile } from "obsidian";
@@ -94,6 +98,12 @@ import {
 	registerDeletionHandler,
 	registerEventHandlers,
 } from "./plugin/PluginEventHandlers";
+import {
+	editSelectionAsFlashcard,
+	generateFlashcardsFromSelection,
+	hasApiKey,
+	quickAddFlashcardFromSelection,
+} from "./plugin/SelectionActions";
 import {
 	activateReviewView,
 	activateView,
@@ -123,6 +133,15 @@ export default class TrueRecallPlugin extends Plugin {
 	statusBarWidget: StatusBarWidget | null = null;
 	backupRecovery: BackupRecoveryManager | null = null;
 	localApi: LocalApiServer | null = null;
+	ragActions:
+		| import("@features/rag/persistence/rag-chunk-actions").RagChunkActions
+		| null = null;
+	ragIndexer:
+		| import("@features/rag/services/rag-indexer.service").RagIndexerService
+		| null = null;
+	ragSearch:
+		| import("@features/rag/services/rag-search.service").RagSearchService
+		| null = null;
 	private _unloaded = false;
 	EmbeddableEditor:
 		| import("@shared/ui/editor/embedded-editor").EmbeddableEditorClass
@@ -256,40 +275,75 @@ export default class TrueRecallPlugin extends Plugin {
 			(leaf) => new SimulatorView(leaf, this),
 		);
 
-		this.registerView(VIEW_TYPE_DASHBOARD, (leaf) => {
-			const { DashboardView } =
-				require("@features/study/ui/dashboard/DashboardView") as {
-					DashboardView: typeof import("@features/study/ui/dashboard/DashboardView").DashboardView;
-				};
-			return new DashboardView(leaf, this);
-		});
+		this.registerView(
+			VIEW_TYPE_DASHBOARD,
+			(leaf) => new DashboardView(leaf, this),
+		);
 
-		this.addRibbonIcon("layout-dashboard", "True Recall - dashboard", () => {
-			this.openDashboard().catch((error) => {
-				notify().error("Failed to open dashboard", error);
-			});
-		});
+		this.addRibbonIcon(
+			"layout-dashboard",
+			"True Recall: Open dashboard",
+			() => {
+				this.openDashboard().catch((error) => {
+					notify().error("Failed to open dashboard", error);
+				});
+			},
+		);
 
-		this.registerView(VIEW_TYPE_CARD_BROWSER, (leaf) => {
-			const { CardBrowserView } =
-				require("@features/library/ui/browser/CardBrowserView") as {
-					CardBrowserView: typeof import("@features/library/ui/browser/CardBrowserView").CardBrowserView;
-				};
-			return new CardBrowserView(leaf, this);
-		});
+		this.registerView(
+			VIEW_TYPE_CARD_BROWSER,
+			(leaf) => new CardBrowserView(leaf, this),
+		);
 
-		this.registerView(VIEW_TYPE_STATS, (leaf) => {
-			const { StatsView } = require("@features/metrics/ui/stats") as {
-				StatsView: typeof import("@features/metrics/ui/stats").StatsView;
-			};
-			return new StatsView(leaf, this);
-		});
+		this.registerView(VIEW_TYPE_STATS, (leaf) => new StatsView(leaf, this));
+
+		if (ENABLE_RAG) {
+			this.registerView(
+				VIEW_TYPE_KNOWLEDGE_CHAT,
+				(leaf) => new KnowledgeChatView(leaf, this),
+			);
+		}
 
 		registerCommands(this);
 		this.addSettingTab(new TrueRecallSettingTab(this.app, this));
 		registerEventHandlers(this);
 
 		this.undoService = new UndoService(this);
+
+		if (ENABLE_RAG && this.cardStore) {
+			const { RagChunkActions } = await import(
+				"@features/rag/persistence/rag-chunk-actions"
+			);
+			const { RagSchemaManager } = await import(
+				"@features/rag/persistence/rag-schema"
+			);
+			const ragSchema = new RagSchemaManager(this.cardStore.getDatabase());
+			ragSchema.createTables();
+			this.ragActions = new RagChunkActions(this.cardStore.getSqliteDb());
+
+			if (this.settings.ragEnabled && this.settings.proKey) {
+				const { RagEmbeddingService } = await import(
+					"@features/rag/services/rag-embedding.service"
+				);
+				const { RagIndexerService } = await import(
+					"@features/rag/services/rag-indexer.service"
+				);
+				const { RagSearchService } = await import(
+					"@features/rag/services/rag-search.service"
+				);
+				const embedder = new RagEmbeddingService(this.settings.proKey);
+				this.ragSearch = new RagSearchService(this.ragActions, embedder);
+				this.ragIndexer = new RagIndexerService(
+					this.app,
+					this.ragActions,
+					embedder,
+					() => this.settings,
+				);
+				this.ragIndexer.setSearchService(this.ragSearch);
+				this.ragIndexer.registerVaultEvents(this);
+				this.ragIndexer.registerCardSignals(this);
+			}
+		}
 
 		if (this.settings.enableLocalApi) {
 			void import("./plugin/api/LocalApiServer")
@@ -304,7 +358,7 @@ export default class TrueRecallPlugin extends Plugin {
 		}
 
 		const tTotal = performance.now();
-		console.log(
+		console.debug(
 			`[True Recall Startup] settings: ${(tSettings - t0).toFixed(1)}ms` +
 				` | setup: ${(tSetup - tSettings).toFixed(1)}ms` +
 				` | store: ${(tStore - tSetup).toFixed(1)}ms` +
@@ -515,6 +569,17 @@ export default class TrueRecallPlugin extends Plugin {
 			return;
 		}
 		await activateView(this.app, VIEW_TYPE_STATS, { useMainArea: true });
+	}
+
+	async openKnowledgeChat(): Promise<void> {
+		const existingLeaf = getView(this.app, VIEW_TYPE_KNOWLEDGE_CHAT);
+		if (existingLeaf) {
+			void this.app.workspace.revealLeaf(existingLeaf);
+			return;
+		}
+		await activateView(this.app, VIEW_TYPE_KNOWLEDGE_CHAT, {
+			useMainArea: false,
+		});
 	}
 
 	openCardTypesEditor(noteTypeId?: string): void {
@@ -929,7 +994,7 @@ export default class TrueRecallPlugin extends Plugin {
 			this.initializeSelectionToolbar();
 
 			const sEnd = performance.now();
-			console.log(
+			console.debug(
 				`[True Recall Startup]   db.load: ${(sDbLoad - s0).toFixed(1)}ms` +
 					` | refreshCards: ${(sCards - sDbLoad).toFixed(1)}ms` +
 					` | services: ${(sEnd - sCards).toFixed(1)}ms`,
@@ -1069,77 +1134,12 @@ export default class TrueRecallPlugin extends Plugin {
 	}
 
 	private initializeSelectionToolbar(): void {
-		const streamingService = new StreamingGenerationService(
-			() => this.settings,
-			this.flashcardManager,
-		);
-
 		const extension = createSelectionToolbarExtension({
-			onGenerate: async (text) => {
-				const file = this.app.workspace.getActiveFile();
-				if (!file) {
-					notify().error("No active file");
-					return;
-				}
-
-				try {
-					// Open panel so user can see cards streaming in
-					await this.activateView();
-
-					const noteType = this.getBasicNoteType();
-					const result = await streamingService.generateStreaming(
-						text,
-						file,
-						noteType,
-					);
-					if (result.created === 0 && result.duplicates === 0) {
-						notify().warning("No flashcards found in AI response");
-					} else if (result.duplicates > 0) {
-						notify().info(
-							`Created ${result.created} flashcard(s), ${result.duplicates} duplicate(s) skipped`,
-						);
-					} else {
-						notify().info(`Created ${result.created} flashcard(s)`);
-					}
-				} catch (error) {
-					if (error instanceof DOMException && error.name === "AbortError")
-						return;
-					const msg = error instanceof Error ? error.message : String(error);
-					notify().error(`Flashcard generation failed: ${msg}`);
-				}
-			},
-			onEdit: (text: string) => {
-				const modal = new QuickNoteEditorModal(this.app, this, {
-					mode: "add",
-					initialFields: { Front: text },
-				});
-				void modal.openAndWait();
-			},
-			onQuickAdd: async (text) => {
-				try {
-					const file = this.app.workspace.getActiveFile();
-					if (!file) {
-						notify().error("No active file");
-						return;
-					}
-					const parts = text.split(/\n\s*\n/);
-					const question = (parts[0] ?? text).trim();
-					const answer = parts.slice(1).join("\n\n").trim();
-					await this.flashcardManager.saveFlashcardsToSql(
-						file,
-						[{ id: crypto.randomUUID(), question, answer }],
-						undefined,
-						text,
-					);
-					notify().info("Quick-added 1 flashcard");
-				} catch (error) {
-					const msg = error instanceof Error ? error.message : String(error);
-					notify().error(`Quick add failed: ${msg}`);
-				}
-			},
+			onGenerate: (text) => generateFlashcardsFromSelection(this, text),
+			onEdit: (text) => editSelectionAsFlashcard(this, text),
+			onQuickAdd: (text) => quickAddFlashcardFromSelection(this, text),
 			onImageOcclusion: (imagePath) => this.handleImageOcclusion(imagePath),
-			hasApiKey: () =>
-				!!(this.settings.proKey || this.settings.openRouterApiKey),
+			hasApiKey: () => hasApiKey(this),
 			isEnabled: () => this.settings.selectionToolbarEnabled,
 		});
 
@@ -1202,10 +1202,6 @@ export default class TrueRecallPlugin extends Plugin {
 				);
 			},
 		);
-	}
-
-	private getBasicNoteType(): NoteType | null {
-		return this.cardStore?.noteTypes.getById(BUILTIN_BASIC_ID) ?? null;
 	}
 
 	async createMasterDashboard(): Promise<void> {
@@ -1340,7 +1336,7 @@ export default class TrueRecallPlugin extends Plugin {
 		modal.open();
 	}
 
-	async exportAnki(): Promise<void> {
+	exportAnki(): void {
 		if (!this.isStoreReady()) {
 			notify().error(
 				"Database not ready. Please wait for plugin to fully load.",
@@ -1356,7 +1352,7 @@ export default class TrueRecallPlugin extends Plugin {
 		modal.open();
 	}
 
-	async exportCsv(): Promise<void> {
+	exportCsv(): void {
 		if (!this.isStoreReady()) {
 			notify().error(
 				"Database not ready. Please wait for plugin to fully load.",

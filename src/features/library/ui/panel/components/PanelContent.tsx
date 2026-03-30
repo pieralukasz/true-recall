@@ -81,7 +81,7 @@ function StreamingSection({
 }) {
 	const [, forceUpdate] = useState(0);
 	useSignalEffect(() => {
-		const _ = streamingGeneration.value;
+		void streamingGeneration.value;
 		forceUpdate((n) => n + 1);
 	});
 
@@ -329,26 +329,30 @@ export function PanelContent({
 						isSelected={selectedCardIds.has(card.id)}
 						isSelectionMode={isSelecting}
 						{...animationProps}
-						onToggleExpand={() => handlers.onToggleExpand(card.id)}
-						onToggleSelect={() => handlers.onToggleSelect(card.id)}
-						onSelect={() => handlers.onEnterSelectionMode(card.id)}
-						onLongPress={() => handlers.onEnterSelectionMode(card.id)}
-						onEdit={() => handlers.onEditButton(card)}
-						onDelete={() => handlers.onDeleteCard(card)}
-						onCopy={() => handlers.onCopyCard(card)}
-						onMove={() => handlers.onMoveCard(card)}
-						onChangeType={() => handlers.onChangeType(card)}
-						onToggleReversed={() => handlers.onToggleReversed(card)}
-						onForget={() => handlers.onForgetCard(card)}
-						onSuspend={() => handlers.onSuspendCard(card)}
-						onUnsuspend={() => handlers.onUnsuspendCard(card)}
-						onJumpToSource={
-							card.sourceText ? () => handlers.onJumpToSource(card) : undefined
-						}
-						onHoverSource={
-							card.sourceText ? () => handlers.onHoverSource(card) : undefined
-						}
-						onLeaveSource={card.sourceText ? handlers.onLeaveSource : undefined}
+						actions={{
+							onToggleExpand: () => handlers.onToggleExpand(card.id),
+							onToggleSelect: () => handlers.onToggleSelect(card.id),
+							onSelect: () => handlers.onEnterSelectionMode(card.id),
+							onLongPress: () => handlers.onEnterSelectionMode(card.id),
+							onEdit: () => handlers.onEditButton(card),
+							onDelete: () => handlers.onDeleteCard(card),
+							onCopy: () => handlers.onCopyCard(card),
+							onMove: () => handlers.onMoveCard(card),
+							onChangeType: () => handlers.onChangeType(card),
+							onToggleReversed: () => handlers.onToggleReversed(card),
+							onForget: () => handlers.onForgetCard(card),
+							onSuspend: () => handlers.onSuspendCard(card),
+							onUnsuspend: () => handlers.onUnsuspendCard(card),
+							onJumpToSource: card.sourceText
+								? () => handlers.onJumpToSource(card)
+								: undefined,
+							onHoverSource: card.sourceText
+								? () => handlers.onHoverSource(card)
+								: undefined,
+							onLeaveSource: card.sourceText
+								? handlers.onLeaveSource
+								: undefined,
+						}}
 					/>
 				);
 			})}

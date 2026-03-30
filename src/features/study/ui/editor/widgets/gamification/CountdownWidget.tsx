@@ -32,7 +32,7 @@ export function CountdownWidget({ source }: { source: string }) {
 	const dateStr = configValue(config, "date", "") as string;
 
 	const data = useComputed((): CountdownData | null => {
-		cards.value;
+		void cards.value;
 		if (!dateStr) return null;
 
 		const targetDate = new Date(dateStr);
@@ -185,7 +185,7 @@ export function CountdownWidget({ source }: { source: string }) {
 				<div class="ep:flex ep:justify-end">
 					<WidgetCta
 						label="Review at-risk cards →"
-						onClick={() => plugin.openCustomStudyModal().catch(() => {})}
+						onClick={() => void plugin.openCustomStudyModal().catch(() => {})}
 					/>
 				</div>
 			)}

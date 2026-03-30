@@ -43,7 +43,7 @@ export function SmartRetentionSection() {
 		settings.retentionPolicy;
 
 	const handleSave = (retentionPolicy: RetentionPolicy) =>
-		save({ retentionPolicy });
+		void save({ retentionPolicy });
 
 	return (
 		<FormCard title="Smart retention">

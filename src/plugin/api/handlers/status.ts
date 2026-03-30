@@ -1,12 +1,11 @@
-import type { IncomingMessage, ServerResponse } from "http";
-import type { ApiContext } from "../api.types";
+import type { ApiContext, ApiRequest, ApiResponseWriter } from "../api.types";
 import { sendError, sendOk } from "../api.types";
 
-export async function handleGetStatus(
-	_req: IncomingMessage,
-	res: ServerResponse,
+export function handleGetStatus(
+	_req: ApiRequest,
+	res: ApiResponseWriter,
 	ctx: ApiContext,
-): Promise<void> {
+): void {
 	sendOk(res, {
 		running: true,
 		dbReady: ctx.plugin.isStoreReady(),
@@ -15,8 +14,8 @@ export async function handleGetStatus(
 }
 
 export async function handleGetActiveNote(
-	_req: IncomingMessage,
-	res: ServerResponse,
+	_req: ApiRequest,
+	res: ApiResponseWriter,
 	ctx: ApiContext,
 ): Promise<void> {
 	const file = ctx.plugin.app.workspace.getActiveFile();

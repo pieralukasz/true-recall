@@ -3,6 +3,8 @@ import type {
 	TrueRecallSettings,
 } from "@shared/types/settings.types";
 
+export const ENABLE_RAG = false;
+
 export const VIEW_TYPE_FLASHCARD_PANEL = "true-recall-flashcard-panel";
 export const VIEW_TYPE_REVIEW = "true-recall-review";
 export const VIEW_TYPE_SIMULATOR = "true-recall-simulator";
@@ -166,6 +168,22 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 
 	enableLocalApi: false,
 	apiPort: 27182,
+
+	ragEnabled: false,
+	ragEmbeddingModel: "baai/bge-m3",
+	ragIncludeFolders: [],
+	ragExcludeFolders: [".true-recall", "templates"],
+	ragIndexFlashcards: true,
+	ragAutoIndex: true,
+	ragChunkMaxTokens: 400,
+	ragDailyNotesFolder: "",
+	ragDailyNoteExcludeHeadings: ["Thoughts", "Journal", "Reflections", "Random"],
+
+	ragChatConfig: {
+		presetId: "default",
+		customInstruction: "",
+		responseLength: "medium",
+	},
 };
 
 // FSRS v6 default weights (21 parameters)
@@ -229,6 +247,18 @@ export const GITHUB_RELEASES_API =
 	"https://api.github.com/repos/pieralukasz/true-recall/releases/latest";
 
 export const LITELLM_URL = "https://ai.truerecall.app/v1/chat/completions";
+export const LITELLM_EMBEDDINGS_URL = "https://ai.truerecall.app/v1/embeddings";
+
+export const VIEW_TYPE_KNOWLEDGE_CHAT = "true-recall-knowledge-chat";
+
+export const RAG_CONFIG = {
+	embeddingBatchSize: 64,
+	indexDebounceMs: 5000,
+	rrf_k: 60,
+	defaultTopK: 10,
+	embeddingDims: 1024,
+	cosineThreshold: 0.5,
+} as const;
 
 export const TRUERECALL_WEB_URL = "https://truerecall.app";
 export const TRUERECALL_BMC_URL = "https://www.buymeacoffee.com/1Hzbip1K9Q";

@@ -9,7 +9,7 @@
  */
 
 import { stripWikiLinkSyntax } from "@shared/utils";
-import { type App, type CachedMetadata, type Plugin, TFile } from "obsidian";
+import type { App, CachedMetadata, Plugin, TFile } from "obsidian";
 
 export interface FieldConfig {
 	/** Field path in frontmatter (e.g., "flashcard_uid", "parents", "metadata.category") */
@@ -264,12 +264,7 @@ export class FrontmatterIndexService {
 		if (typeof path !== "string") return null;
 
 		const file = this.app.vault.getAbstractFileByPath(path);
-		// Use instanceof for production, "extension" property check for test mocks
-		if (file instanceof TFile) return file;
-		// Fallback for test mocks that aren't actual TFile instances
-		if (file && typeof file === "object" && "extension" in file) {
-			return file as unknown as TFile;
-		}
+		if (file !== null && "extension" in file) return file as TFile;
 		return null;
 	}
 

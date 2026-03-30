@@ -1,6 +1,8 @@
+// ── Interactive ──────────────────────────────────────────────
 export {
 	ActionButton,
 	type ActionButtonProps,
+	type ActionButtonSize,
 	type ActionButtonVariant,
 } from "@shared/ui/components/ActionButton";
 export {
@@ -29,6 +31,11 @@ export {
 	type ErrorBoundaryProps,
 } from "@shared/ui/components/ErrorBoundary";
 export {
+	FolderPicker,
+	type FolderPickerProps,
+} from "@shared/ui/components/FolderPicker";
+// ── Form ─────────────────────────────────────────────────────
+export {
 	FormCard,
 	type FormCardProps,
 } from "@shared/ui/components/FormCard";
@@ -52,6 +59,7 @@ export {
 	LoadingSpinner,
 	type LoadingSpinnerProps,
 } from "@shared/ui/components/LoadingSpinner";
+// ── Content ──────────────────────────────────────────────────
 export {
 	MarkdownContent,
 	type MarkdownContentProps,
@@ -66,6 +74,7 @@ export {
 	NoteListItem,
 	type NoteListItemProps,
 } from "@shared/ui/components/NoteListItem";
+// ── Pickers ──────────────────────────────────────────────────
 export {
 	NotePicker,
 	type NotePickerProps,
@@ -74,6 +83,7 @@ export {
 	OptionCheckbox,
 	type OptionCheckboxProps,
 } from "@shared/ui/components/OptionCheckbox";
+// ── Layout ───────────────────────────────────────────────────
 export { Panel, type PanelProps } from "@shared/ui/components/Panel";
 export {
 	PasteDropZone,
@@ -98,6 +108,7 @@ export {
 	SliderInput,
 	type SliderInputProps,
 } from "@shared/ui/components/SliderInput";
+// ── Data Display ─────────────────────────────────────────────
 export {
 	StatBadge,
 	type StatBadgeProps,

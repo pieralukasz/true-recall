@@ -1,11 +1,14 @@
+import { State } from "ts-fsrs";
 import { StatsCalculatorService } from "../../../src/features/metrics/services/stats/stats-calculator.service";
-import { EMPTY_FILTER, type StatsFilterContext } from "../../../src/features/metrics/services/stats/stats-filter.types";
+import {
+	EMPTY_FILTER,
+	type StatsFilterContext,
+} from "../../../src/features/metrics/services/stats/stats-filter.types";
 import type {
 	ExtendedDailyStats,
 	FSRSCardData,
 	FSRSFlashcardItem,
 } from "../../../src/shared/types";
-import { State } from "ts-fsrs";
 
 function createCard(
 	id: string,
@@ -175,12 +178,16 @@ describe("StatsCalculatorService performance refactor", () => {
 		calc.getRetentionHistory("1m");
 		calc.getRatingDistributionHistory("1m");
 		calc.getTodaySummary();
-		expect(sqliteStore.stats.getDailyStatsFromReviewLog).toHaveBeenCalledTimes(1);
+		expect(sqliteStore.stats.getDailyStatsFromReviewLog).toHaveBeenCalledTimes(
+			1,
+		);
 
 		// Range queries now derive from full-history cache (no extra DB call)
-		await calc.getReviewHistory("1m");
-		await calc.getRangeSummary("1m");
-		expect(sqliteStore.stats.getDailyStatsFromReviewLog).toHaveBeenCalledTimes(1);
+		calc.getReviewHistory("1m");
+		calc.getRangeSummary("1m");
+		expect(sqliteStore.stats.getDailyStatsFromReviewLog).toHaveBeenCalledTimes(
+			1,
+		);
 	});
 
 	it("keeps metric outputs unchanged with and without snapshot for no filter and preset filter", async () => {
@@ -201,8 +208,14 @@ describe("StatsCalculatorService performance refactor", () => {
 		const flashcardManagerB = {
 			getAllFSRSCards: vi.fn(() => cards),
 		};
-		const sessionPersistenceA = createSessionPersistenceMock(allStats, todayStats);
-		const sessionPersistenceB = createSessionPersistenceMock(allStats, todayStats);
+		const sessionPersistenceA = createSessionPersistenceMock(
+			allStats,
+			todayStats,
+		);
+		const sessionPersistenceB = createSessionPersistenceMock(
+			allStats,
+			todayStats,
+		);
 		const fsrsService = {
 			getRetrievability: vi.fn(() => 0.9),
 		};
@@ -228,8 +241,8 @@ describe("StatsCalculatorService performance refactor", () => {
 		expect(calcWithSnapshot.getCollectionHealthSnapshot()).toEqual(
 			calcWithoutSnapshot.getCollectionHealthSnapshot(),
 		);
-		await expect(calcWithSnapshot.getRangeSummary("1m")).resolves.toEqual(
-			await calcWithoutSnapshot.getRangeSummary("1m"),
+		expect(calcWithSnapshot.getRangeSummary("1m")).toEqual(
+			calcWithoutSnapshot.getRangeSummary("1m"),
 		);
 
 		const sqliteRows = [createDailyStats("2026-03-10")];
@@ -252,11 +265,11 @@ describe("StatsCalculatorService performance refactor", () => {
 		expect(calcWithSnapshot.getRetentionHistory("1m")).toEqual(
 			calcWithoutSnapshot.getRetentionHistory("1m"),
 		);
-		await expect(calcWithSnapshot.getReviewHistory("1m")).resolves.toEqual(
-			await calcWithoutSnapshot.getReviewHistory("1m"),
+		expect(calcWithSnapshot.getReviewHistory("1m")).toEqual(
+			calcWithoutSnapshot.getReviewHistory("1m"),
 		);
-		await expect(calcWithSnapshot.getRangeSummary("1m")).resolves.toEqual(
-			await calcWithoutSnapshot.getRangeSummary("1m"),
+		expect(calcWithSnapshot.getRangeSummary("1m")).toEqual(
+			calcWithoutSnapshot.getRangeSummary("1m"),
 		);
 	});
 });

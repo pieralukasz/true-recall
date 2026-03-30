@@ -1,10 +1,9 @@
-import type { IncomingMessage, ServerResponse } from "http";
-import type { ApiContext } from "../api.types";
+import type { ApiContext, ApiRequest, ApiResponseWriter } from "../api.types";
 import { parseJsonBody, readBody, sendError, sendOk } from "../api.types";
 
 export async function handleAddFlashcardUid(
-	_req: IncomingMessage,
-	res: ServerResponse,
+	_req: ApiRequest,
+	res: ApiResponseWriter,
 	ctx: ApiContext,
 ): Promise<void> {
 	const file = ctx.plugin.app.workspace.getActiveFile();
@@ -28,8 +27,8 @@ export async function handleAddFlashcardUid(
 }
 
 export async function handleSetPresetForNote(
-	req: IncomingMessage,
-	res: ServerResponse,
+	req: ApiRequest,
+	res: ApiResponseWriter,
 	ctx: ApiContext,
 ): Promise<void> {
 	const raw = await readBody(req);
@@ -85,8 +84,8 @@ export async function handleSetPresetForNote(
 }
 
 export async function handleSetParent(
-	req: IncomingMessage,
-	res: ServerResponse,
+	req: ApiRequest,
+	res: ApiResponseWriter,
 	ctx: ApiContext,
 ): Promise<void> {
 	const raw = await readBody(req);
@@ -138,8 +137,8 @@ export async function handleSetParent(
 }
 
 export async function handleSetArchive(
-	req: IncomingMessage,
-	res: ServerResponse,
+	req: ApiRequest,
+	res: ApiResponseWriter,
 	ctx: ApiContext,
 ): Promise<void> {
 	const raw = await readBody(req);

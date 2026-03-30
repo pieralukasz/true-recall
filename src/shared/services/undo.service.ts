@@ -15,10 +15,7 @@ import type TrueRecallPlugin from "../../main";
 
 export interface ReviewUndoCallbacks {
 	onUpdateSchedulingPreview: () => void;
-	onUndoAnswer: (
-		payload: AnswerUndoPayload,
-		writeCancelled: boolean,
-	) => Promise<void>;
+	onUndoAnswer: (payload: AnswerUndoPayload, writeCancelled: boolean) => void;
 }
 
 export class UndoService {
@@ -135,12 +132,10 @@ export class UndoService {
 				return this.undoSuspend(payload, writeCancelled);
 
 			case "forget":
-				return this.undoForget(payload as ForgetUndoPayload, writeCancelled);
+				return this.undoForget(payload, writeCancelled);
 
 			case "update-note-fields":
-				return this.undoUpdateNoteFields(
-					payload as UpdateNoteFieldsUndoPayload,
-				);
+				return this.undoUpdateNoteFields(payload);
 
 			case "fsrs-helper-operation":
 				return this.undoFSRSHelperOperation(payload);
@@ -201,7 +196,7 @@ export class UndoService {
 		}
 
 		if (this.reviewCallbacks) {
-			await this.reviewCallbacks.onUndoAnswer(payload, writeCancelled);
+			this.reviewCallbacks.onUndoAnswer(payload, writeCancelled);
 			this.reviewCallbacks.onUpdateSchedulingPreview();
 		}
 

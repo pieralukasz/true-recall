@@ -1,7 +1,6 @@
-import type { IncomingMessage, ServerResponse } from "http";
-import { State, type Grade, Rating } from "ts-fsrs";
 import { ReviewService } from "@features/study/services/review.service";
-import type { ApiContext } from "../api.types";
+import { type Grade, Rating, State } from "ts-fsrs";
+import type { ApiContext, ApiRequest, ApiResponseWriter } from "../api.types";
 import { parseJsonBody, readBody, sendError, sendOk } from "../api.types";
 
 const STATE_LABELS: Record<number, string> = {
@@ -11,11 +10,11 @@ const STATE_LABELS: Record<number, string> = {
 	[State.Relearning]: "Relearning",
 };
 
-export async function handleRevealAnswer(
-	_req: IncomingMessage,
-	res: ServerResponse,
+export function handleRevealAnswer(
+	_req: ApiRequest,
+	res: ApiResponseWriter,
 	ctx: ApiContext,
-): Promise<void> {
+): void {
 	if (!ctx.plugin.store) {
 		sendError(res, 503, "Store not ready");
 		return;
@@ -47,8 +46,8 @@ interface GradeSessionInput {
 }
 
 export async function handleGradeSessionCard(
-	req: IncomingMessage,
-	res: ServerResponse,
+	req: ApiRequest,
+	res: ApiResponseWriter,
 	ctx: ApiContext,
 ): Promise<void> {
 	if (!ctx.plugin.store || !ctx.plugin.isStoreReady()) {
@@ -88,7 +87,7 @@ export async function handleGradeSessionCard(
 		4: Rating.Easy,
 	};
 
-	const rating = ratingMap[ratingValue]!;
+	const rating = ratingMap[ratingValue] as Grade;
 	const responseTime = Date.now() - review.questionShownTime;
 	const isNewCard = card.fsrs.state === State.New;
 	const previousState = card.fsrs.state;
@@ -106,9 +105,7 @@ export async function handleGradeSessionCard(
 	);
 
 	// Requeue logic for learning/relearning cards
-	let requeueData:
-		| { card: typeof updatedCard; position: number }
-		| undefined;
+	let requeueData: { card: typeof updatedCard; position: number } | undefined;
 	if (reviewService.shouldRequeue(updatedCard)) {
 		const relativePosition = reviewService.getRequeuePosition(
 			review.queue,
@@ -120,11 +117,7 @@ export async function handleGradeSessionCard(
 	}
 
 	// Advance session state
-	const hasMore = review.recordAnswerAndNext(
-		rating,
-		updatedCard,
-		requeueData,
-	);
+	const hasMore = review.recordAnswerAndNext(rating, updatedCard, requeueData);
 
 	// Persist FSRS update
 	ctx.plugin.flashcardManager.updateCardFSRS(card.id, updatedCard.fsrs);
@@ -165,8 +158,7 @@ export async function handleGradeSessionCard(
 			rating: ratingValue,
 			ratingLabel: ["", "Again", "Hard", "Good", "Easy"][ratingValue],
 			newState: updatedCard.fsrs.state,
-			newStateLabel:
-				STATE_LABELS[updatedCard.fsrs.state] ?? "Unknown",
+			newStateLabel: STATE_LABELS[updatedCard.fsrs.state] ?? "Unknown",
 			newDue: updatedCard.fsrs.due,
 			scheduledDays: result.scheduledDays,
 		},

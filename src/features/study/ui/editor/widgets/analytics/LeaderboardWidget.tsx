@@ -18,7 +18,7 @@ export function LeaderboardWidget({ source }: { source: string }) {
 	const config = useMemo(() => parseCodeblockConfig(source), [source]);
 
 	const data = useComputed((): LeaderboardEntry[] | null => {
-		cards.value;
+		void cards.value;
 		if (!plugin.sessionPersistence) return null;
 
 		const statsCalc = new StatsCalculatorService(

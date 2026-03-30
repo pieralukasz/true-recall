@@ -197,7 +197,7 @@ export function AchievementsWidget({ source }: { source: string }) {
 	const config = useMemo(() => parseCodeblockConfig(source), [source]);
 
 	const achievements = useComputed((): ComputedAchievement[] | null => {
-		cards.value;
+		void cards.value;
 		if (!plugin.sessionPersistence) return null;
 
 		const statsCalc = new StatsCalculatorService(

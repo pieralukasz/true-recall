@@ -2,18 +2,22 @@ import type { FlashcardManager } from "@features/study/services/flashcard/flashc
 import { notify } from "@shared/services/notification.service";
 import { pushDeleteUndo } from "@shared/services/undo.service";
 import type { FSRSFlashcardItem } from "@shared/types";
+import { confirm } from "@shared/ui/modals/ConfirmModal";
 import type { CardsSetter } from "@shared/ui/modals/card-preview/CardPreviewBody";
 import type { App } from "obsidian";
 import type TrueRecallPlugin from "../../../../main";
 
 export async function handleDeleteCard(
+	app: App,
 	card: FSRSFlashcardItem,
 	setCards: CardsSetter,
 	allCards: FSRSFlashcardItem[],
 	flashcardManager: FlashcardManager,
 	plugin?: TrueRecallPlugin,
 ): Promise<FSRSFlashcardItem[]> {
-	const confirmed = window.confirm("Delete this flashcard?");
+	const confirmed = await confirm(app, {
+		message: "Delete this flashcard?",
+	});
 	if (!confirmed) return allCards;
 
 	const result = await flashcardManager.removeFlashcardByIdWithDetails(card.id);
@@ -37,12 +41,12 @@ export async function handleDeleteCard(
 	return allCards;
 }
 
-export async function handleUnburyCard(
+export function handleUnburyCard(
 	card: FSRSFlashcardItem,
 	setCards: CardsSetter,
 	allCards: FSRSFlashcardItem[],
 	flashcardManager: FlashcardManager,
-): Promise<FSRSFlashcardItem[]> {
+): FSRSFlashcardItem[] {
 	const fullCard = allCards.find((c) => c.id === card.id);
 	if (!fullCard) {
 		notify().error("Could not find card");
@@ -64,11 +68,11 @@ export async function handleUnburyCard(
 	}
 }
 
-export async function handleUnburyAll(
+export function handleUnburyAll(
 	cards: FSRSFlashcardItem[],
 	setCards: CardsSetter,
 	flashcardManager: FlashcardManager,
-): Promise<void> {
+): void {
 	let unburiedCount = 0;
 	const failedCards: FSRSFlashcardItem[] = [];
 
@@ -97,14 +101,15 @@ export async function handleUnburyAll(
 }
 
 export async function handleDeleteAll(
+	app: App,
 	cards: FSRSFlashcardItem[],
 	setCards: CardsSetter,
 	flashcardManager: FlashcardManager,
 	plugin?: TrueRecallPlugin,
 ): Promise<void> {
-	const confirmed = window.confirm(
-		`Delete all ${cards.length} suspended cards?`,
-	);
+	const confirmed = await confirm(app, {
+		message: `Delete all ${cards.length} suspended cards?`,
+	});
 	if (!confirmed) return;
 
 	const result = flashcardManager.removeFlashcardsByIdsWithDetails(

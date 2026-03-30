@@ -129,10 +129,7 @@ export class AnkiConverterService {
 		deckName: string,
 		tags: string[],
 	): ConvertedCard {
-		const { question, answer } = this.renderAnkiTemplate(
-			tmpl,
-			fieldValues,
-		);
+		const { question, answer } = this.renderAnkiTemplate(tmpl, fieldValues);
 
 		return {
 			ankiCardId: card.id,
@@ -170,8 +167,7 @@ export class AnkiConverterService {
 
 		// clozeTemplate stores the raw cloze field for editing
 		const clozeFieldName = this.findClozeFieldName(tmpl?.qfmt ?? "");
-		const clozeTemplate =
-			fieldValues[clozeFieldName] ?? question;
+		const clozeTemplate = fieldValues[clozeFieldName] ?? question;
 
 		return {
 			ankiCardId: card.id,
@@ -200,10 +196,7 @@ export class AnkiConverterService {
 		deckName: string,
 		tags: string[],
 	): ConvertedCard {
-		const { question, answer } = this.renderAnkiTemplate(
-			tmpl,
-			fieldValues,
-		);
+		const { question, answer } = this.renderAnkiTemplate(tmpl, fieldValues);
 
 		return {
 			ankiCardId: card.id,

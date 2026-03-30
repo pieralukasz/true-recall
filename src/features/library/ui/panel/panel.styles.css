@@ -22,84 +22,68 @@
 		animation: none;
 	}
 
-	/* Source text highlight — temporary flash when jumping from card to source */
+	/* Source text highlight — temporary flash when jumping from card to source.
+	   Uses a single keyframe with --tr-highlight-color CSS variable per color variant. */
+	@keyframes true-recall-source-highlight-fade {
+		0%,
+		70% {
+			background-color: var(--tr-highlight-color);
+		}
+		100% {
+			background-color: transparent;
+		}
+	}
+
 	.true-recall-source-highlight {
-		background-color: var(--text-highlight-bg, rgba(255, 208, 0, 0.4));
+		--tr-highlight-color: var(--text-highlight-bg, rgba(255, 208, 0, 0.4));
+		background-color: var(--tr-highlight-color);
 		border-radius: 2px;
 		animation: true-recall-source-highlight-fade 2s ease-out forwards;
 	}
 	.true-recall-source-highlight-green {
-		background-color: color-mix(in srgb, var(--color-green) 25%, transparent);
+		--tr-highlight-color: color-mix(
+			in srgb,
+			var(--color-green) 25%,
+			transparent
+		);
+		background-color: var(--tr-highlight-color);
 		border-radius: 2px;
-		animation: true-recall-source-highlight-fade-green 2s ease-out forwards;
+		animation: true-recall-source-highlight-fade 2s ease-out forwards;
 	}
 	.true-recall-source-highlight-orange {
-		background-color: color-mix(in srgb, var(--color-orange) 25%, transparent);
+		--tr-highlight-color: color-mix(
+			in srgb,
+			var(--color-orange) 25%,
+			transparent
+		);
+		background-color: var(--tr-highlight-color);
 		border-radius: 2px;
-		animation: true-recall-source-highlight-fade-orange 2s ease-out forwards;
+		animation: true-recall-source-highlight-fade 2s ease-out forwards;
 	}
 	.true-recall-source-highlight-blue {
-		background-color: color-mix(in srgb, var(--color-blue) 25%, transparent);
+		--tr-highlight-color: color-mix(
+			in srgb,
+			var(--color-blue) 25%,
+			transparent
+		);
+		background-color: var(--tr-highlight-color);
 		border-radius: 2px;
-		animation: true-recall-source-highlight-fade-blue 2s ease-out forwards;
+		animation: true-recall-source-highlight-fade 2s ease-out forwards;
 	}
 	.true-recall-source-highlight-red {
-		background-color: color-mix(in srgb, var(--color-red) 25%, transparent);
+		--tr-highlight-color: color-mix(in srgb, var(--color-red) 25%, transparent);
+		background-color: var(--tr-highlight-color);
 		border-radius: 2px;
-		animation: true-recall-source-highlight-fade-red 2s ease-out forwards;
-	}
-
-	@keyframes true-recall-source-highlight-fade {
-		0%,
-		70% {
-			background-color: var(--text-highlight-bg, rgba(255, 208, 0, 0.4));
-		}
-		100% {
-			background-color: transparent;
-		}
-	}
-	@keyframes true-recall-source-highlight-fade-green {
-		0%,
-		70% {
-			background-color: color-mix(in srgb, var(--color-green) 25%, transparent);
-		}
-		100% {
-			background-color: transparent;
-		}
-	}
-	@keyframes true-recall-source-highlight-fade-orange {
-		0%,
-		70% {
-			background-color: color-mix(
-				in srgb,
-				var(--color-orange) 25%,
-				transparent
-			);
-		}
-		100% {
-			background-color: transparent;
-		}
-	}
-	@keyframes true-recall-source-highlight-fade-blue {
-		0%,
-		70% {
-			background-color: color-mix(in srgb, var(--color-blue) 25%, transparent);
-		}
-		100% {
-			background-color: transparent;
-		}
-	}
-	@keyframes true-recall-source-highlight-fade-red {
-		0%,
-		70% {
-			background-color: color-mix(in srgb, var(--color-red) 25%, transparent);
-		}
-		100% {
-			background-color: transparent;
-		}
+		animation: true-recall-source-highlight-fade 2s ease-out forwards;
 	}
 
 	/* Source text highlight — persistent while hovering a card (fades in over 300ms) */
+	@keyframes true-recall-highlight-fade-in {
+		from {
+			background-color: transparent;
+		}
+	}
+
 	.true-recall-source-highlight-hover {
 		background-color: var(--text-highlight-bg, rgba(255, 208, 0, 0.4));
 		border-radius: 2px;
@@ -125,16 +109,13 @@
 		border-radius: 2px;
 		animation: true-recall-highlight-fade-in 300ms ease-out;
 	}
-
-	@keyframes true-recall-highlight-fade-in {
-		from {
-			background-color: transparent;
-		}
-	}
 }
 
 @media (prefers-reduced-motion: reduce) {
 	[class*="true-recall-source-highlight"] {
+		animation: none;
+	}
+	.true-recall-pulse-collect {
 		animation: none;
 	}
 }

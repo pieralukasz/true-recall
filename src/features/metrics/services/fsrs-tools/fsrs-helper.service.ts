@@ -86,11 +86,11 @@ export class FSRSHelperService {
 		);
 	}
 
-	async optimizeParameters(
+	optimizeParameters(
 		options?: OptimizerOptions,
 		presetName?: string,
 		currentWeights?: number[] | null,
-	): Promise<OptimizationOutput> {
+	): OptimizationOutput {
 		const reviews = this.cardStore.getReviewDataForOptimization(presetName);
 
 		const input: OptimizationInput = {
@@ -106,9 +106,7 @@ export class FSRSHelperService {
 		return this.optimizer.validateWeights(weights);
 	}
 
-	async balanceWorkload(
-		options?: Partial<LoadBalanceOptions>,
-	): Promise<SchedulingResult> {
+	balanceWorkload(options?: Partial<LoadBalanceOptions>): SchedulingResult {
 		return this.loadBalancer.balance({
 			targetPerDay: options?.targetPerDay ?? this.settings.loadBalanceTarget,
 			maxDeviation:
@@ -125,9 +123,7 @@ export class FSRSHelperService {
 		return this.loadBalancer.getDistribution(days);
 	}
 
-	async applyEasyDays(
-		options?: Partial<EasyDaysOptions>,
-	): Promise<SchedulingResult> {
+	applyEasyDays(options?: Partial<EasyDaysOptions>): SchedulingResult {
 		return this.easyDays.applyEasyDays({
 			easyDays: options?.easyDays ?? this.settings.easyDays,
 			multiplier: options?.multiplier ?? this.settings.easyDaysMultiplier,
@@ -148,11 +144,11 @@ export class FSRSHelperService {
 		);
 	}
 
-	async shiftDueDates(options: ShiftOptions): Promise<SchedulingResult> {
+	shiftDueDates(options: ShiftOptions): SchedulingResult {
 		return this.postponeAdvance.shift(options);
 	}
 
-	async flattenDate(options: FlattenOptions): Promise<SchedulingResult> {
+	flattenDate(options: FlattenOptions): SchedulingResult {
 		return this.flatten.flatten(options);
 	}
 
@@ -163,9 +159,7 @@ export class FSRSHelperService {
 		return this.flatten.findOverloadedDays(maxCards, days);
 	}
 
-	async disperseSiblings(
-		options?: Partial<DisperseOptions>,
-	): Promise<SchedulingResult> {
+	disperseSiblings(options?: Partial<DisperseOptions>): SchedulingResult {
 		return this.siblingDisperse.disperse({
 			minInterval: options?.minInterval ?? this.settings.siblingMinInterval,
 			sourceUid: options?.sourceUid,
@@ -183,9 +177,7 @@ export class FSRSHelperService {
 		);
 	}
 
-	async scheduleBreakPeriod(
-		options: BreakScheduleOptions,
-	): Promise<SchedulingResult> {
+	scheduleBreakPeriod(options: BreakScheduleOptions): SchedulingResult {
 		return this.scheduleBreak.scheduleBreak(options);
 	}
 
@@ -196,7 +188,7 @@ export class FSRSHelperService {
 		return this.scheduleBreak.previewBreak(startDate, endDate);
 	}
 
-	async rescheduleCards(options: RescheduleOptions): Promise<SchedulingResult> {
+	rescheduleCards(options: RescheduleOptions): SchedulingResult {
 		return this.reschedule.reschedule(options);
 	}
 

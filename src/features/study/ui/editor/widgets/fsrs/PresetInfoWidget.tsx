@@ -28,8 +28,8 @@ export function PresetInfoWidget({ source }: { source: string }) {
 	const showLimits = configValue(config, "showLimits", true);
 
 	const preset = useComputed(() => {
-		cards.value;
-		pluginSettings.value;
+		void cards.value;
+		void pluginSettings.value;
 		if (presetName) {
 			return plugin.presetService.getPresetByName(presetName) ?? null;
 		}

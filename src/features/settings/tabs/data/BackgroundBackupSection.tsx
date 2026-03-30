@@ -31,7 +31,7 @@ export function BackgroundBackupSection() {
 			>
 				<ToggleInput
 					value={settings.periodicBackupEnabled}
-					onChange={(v) => save({ periodicBackupEnabled: v })}
+					onChange={(v) => void save({ periodicBackupEnabled: v })}
 				/>
 			</FormField>
 
@@ -42,7 +42,9 @@ export function BackgroundBackupSection() {
 				<SelectInput
 					value={String(settings.backupIntervalMinutes)}
 					onChange={(v) =>
-						save({ backupIntervalMinutes: parseInt(v, 10) as BackupInterval })
+						void save({
+							backupIntervalMinutes: parseInt(v, 10) as BackupInterval,
+						})
 					}
 					options={[
 						{ value: "15", label: "Every 15 minutes" },
@@ -60,7 +62,7 @@ export function BackgroundBackupSection() {
 			>
 				<ToggleInput
 					value={settings.activityTriggeredBackup}
-					onChange={(v) => save({ activityTriggeredBackup: v })}
+					onChange={(v) => void save({ activityTriggeredBackup: v })}
 				/>
 			</FormField>
 

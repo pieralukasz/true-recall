@@ -28,9 +28,6 @@ const COUNT_CLS = {
 	sep: "ep:text-obs-faint ep:mx-px",
 } as const;
 
-const _PLAY_BTN_BASE =
-	"ep:cursor-pointer ep:ml-0.5 ep:font-bold ep:transition-colors ep:hover:text-obs-accent";
-
 export interface LinkTextCountProps
 	extends VariantProps<typeof wrapperVariants> {
 	info: NoteStatusInfo;

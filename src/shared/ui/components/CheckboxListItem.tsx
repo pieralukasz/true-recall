@@ -1,4 +1,4 @@
-import { useCallback, useState } from "preact/hooks";
+import { useCallback } from "preact/hooks";
 
 export interface CheckboxListItemProps {
 	label: string;
@@ -13,12 +13,10 @@ export function CheckboxListItem({
 	selectedSet,
 	onToggle,
 }: CheckboxListItemProps) {
-	const [checked, setChecked] = useState(selectedSet.has(itemKey));
+	const checked = selectedSet.has(itemKey);
 
 	const toggle = useCallback(() => {
-		const next = !checked;
-		setChecked(next);
-		onToggle(itemKey, next);
+		onToggle(itemKey, !checked);
 	}, [checked, itemKey, onToggle]);
 
 	return (

@@ -80,10 +80,11 @@ export function attachTooltipListeners(
 	getStats: () => Promise<NoteDetailStats | null>,
 ): void {
 	element.addEventListener("mouseenter", () => {
-		hoverTimeout = setTimeout(async () => {
-			const stats = await getStats();
-			if (!stats) return;
-			showTooltip(element, stats);
+		hoverTimeout = setTimeout(() => {
+			void getStats().then((stats) => {
+				if (!stats) return;
+				showTooltip(element, stats);
+			});
 		}, 300);
 	});
 

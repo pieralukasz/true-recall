@@ -73,9 +73,9 @@ export function FSRSTab({ selectedPresetId, onPresetChange }: FSRSTabProps) {
 				isDefault={isDefault}
 				selectedPresetId={selectedPresetId}
 				onPresetChange={onPresetChange}
-				onCreate={handleCreatePreset}
-				onDelete={handleDeletePreset}
-				onRename={(name) => updatePreset({ name })}
+				onCreate={() => void handleCreatePreset()}
+				onDelete={() => void handleDeletePreset()}
+				onRename={(name) => void updatePreset({ name })}
 			/>
 
 			<AlgorithmSection preset={preset} updatePreset={updatePreset} />

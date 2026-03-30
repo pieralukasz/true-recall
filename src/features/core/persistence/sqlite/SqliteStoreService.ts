@@ -60,6 +60,10 @@ export class SqliteStoreService {
 		this.integrity = new IntegrityCheckService(this.db);
 	}
 
+	getSqliteDb(): SqliteDatabase {
+		return this.db;
+	}
+
 	getDeviceId(): string {
 		return this.deviceId;
 	}
@@ -158,7 +162,7 @@ export class SqliteStoreService {
 			this.db.run(`DROP TABLE "${tempName}"`);
 		});
 
-		console.log(`[True Recall] Fixed corrupted FK in table: ${tableName}`);
+		console.debug(`[True Recall] Fixed corrupted FK in table: ${tableName}`);
 	}
 
 	isReady(): boolean {
@@ -174,8 +178,7 @@ export class SqliteStoreService {
 	}
 
 	delete(cardId: string): void {
-		// Wrapper maintains backward compatibility
-		this.cards.delete(cardId);
+		this.cards.softDelete(cardId);
 	}
 
 	has(cardId: string): boolean {
@@ -457,14 +460,14 @@ export class SqliteStoreService {
 		return this.cards.getDueCardsByDateRange(startDate, endDate);
 	}
 
-	async updateCardDue(cardId: string, newDue: string): Promise<void> {
+	updateCardDue(cardId: string, newDue: string): void {
 		this.cards.updateCardDue(cardId, newDue);
 	}
 
-	async updateCardScheduling(
+	updateCardScheduling(
 		cardId: string,
 		data: { due: string; scheduledDays: number },
-	): Promise<void> {
+	): void {
 		this.cards.updateCardScheduling(cardId, data);
 	}
 

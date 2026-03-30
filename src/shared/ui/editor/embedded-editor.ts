@@ -11,7 +11,7 @@
 import { type Extension, Prec } from "@codemirror/state";
 import { EditorView, keymap, type ViewUpdate } from "@codemirror/view";
 import { around } from "monkey-around";
-import { type App, Scope, type TFile } from "obsidian";
+import { type App, type MarkdownFileInfo, Scope, type TFile } from "obsidian";
 
 // ─── Types for Obsidian internals (not in public typings) ────────────────────
 
@@ -20,6 +20,24 @@ interface WidgetEditorView {
 	showEditor(): void;
 	editMode: unknown;
 	unload(): void;
+}
+
+/** Minimal shape of the Obsidian internal MarkdownEditor base class */
+interface InternalEditorBase {
+	set(content: string): void;
+	containerEl: HTMLElement;
+	editor: { cm: EditorView };
+	editorEl: HTMLElement;
+	activeCM: EditorView;
+	cm: EditorView;
+	owner: Record<string, unknown>;
+	app: App;
+	register(cb: () => void): void;
+	unload(): void;
+	onUpdate(update: ViewUpdate, changed: boolean): void;
+	buildLocalExtensions(): Extension[];
+	destroy(): void;
+	onunload(): void;
 }
 
 // ─── Public API ──────────────────────────────────────────────────────────────
@@ -55,18 +73,36 @@ export interface EmbeddableEditorInstance {
  * Canvas-style embed widget and extracting its edit mode constructor.
  * Must be called AFTER app is fully loaded (onLayoutReady or later).
  */
-function resolveEditorPrototype(app: App): new (...args: unknown[]) => any {
+function resolveEditorPrototype(
+	app: App,
+): new (
+	...args: unknown[]
+) => InternalEditorBase {
 	// app.embedRegistry is internal API — used by Kanban, Task Genius, etc.
-	const embedRegistry = (app as any).embedRegistry;
+	const embedRegistry = (
+		app as unknown as {
+			embedRegistry: {
+				embedByExtension: {
+					md: (
+						ctx: { app: App; containerEl: HTMLElement },
+						file: TFile | null,
+						subpath: string,
+					) => WidgetEditorView;
+				};
+			};
+		}
+	).embedRegistry;
 	if (!embedRegistry?.embedByExtension?.md) {
 		throw new Error(
 			"[EmbeddableEditor] app.embedRegistry.embedByExtension.md not available",
 		);
 	}
 
+	// Intentionally passing null — we only need the editor prototype, not an actual file
+	const nullFile: TFile | null = null;
 	const widgetEditorView = embedRegistry.embedByExtension.md(
 		{ app, containerEl: document.createElement("div") },
-		null as unknown as TFile,
+		nullFile,
 		"",
 	) as WidgetEditorView;
 
@@ -111,26 +147,7 @@ const defaultOptions: Required<EmbeddableEditorOptions> = {
 export function createEmbeddableEditorClass(app: App) {
 	const Base = resolveEditorPrototype(app);
 
-	// Members inherited from the runtime prototype (not visible to TS):
-	// - set(content: string): void
-	// - containerEl: HTMLElement
-	// - editor: { cm: EditorView }
-	// - editorEl: HTMLElement
-	// - activeCM: EditorView
-	// - owner: any
-	// - app: App
-	// - register(cb: () => void): void
-	// - unload(): void
 	class EmbeddableMarkdownEditor extends Base {
-		declare set: (content: string) => void;
-		declare containerEl: HTMLElement;
-		declare editor: { cm: EditorView };
-		declare editorEl: HTMLElement;
-		declare activeCM: EditorView;
-		declare cm: EditorView;
-		declare owner: any;
-		declare app: App;
-
 		options: Required<EmbeddableEditorOptions>;
 		scope: Scope;
 		private _loaded = true;
@@ -166,12 +183,12 @@ export function createEmbeddableEditorClass(app: App) {
 			this.register(
 				around(editorApp.workspace, {
 					setActiveLeaf:
-						(oldMethod: (...args: any[]) => void) =>
-						(...args: any[]) => {
+						(oldMethod: (...args: unknown[]) => void) =>
+						(...args: unknown[]) => {
 							if (!this.activeCM?.hasFocus)
 								oldMethod.apply(editorApp.workspace, args);
 						},
-				} as any),
+				} as Parameters<typeof around>[1]),
 			);
 
 			// Blur handler — auto-save trigger
@@ -185,7 +202,8 @@ export function createEmbeddableEditorClass(app: App) {
 			// Focus handler — make commands work on this editor
 			this.editor.cm.contentDOM.addEventListener("focusin", () => {
 				editorApp.keymap.pushScope(this.scope);
-				editorApp.workspace.activeEditor = this.owner;
+				const owner = this.owner as unknown as MarkdownFileInfo;
+				editorApp.workspace.activeEditor = owner;
 			});
 
 			if (this.options.cls) this.editorEl.classList.add(this.options.cls);

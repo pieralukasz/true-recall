@@ -20,7 +20,7 @@ export class DeletionHandlerService {
 
 	// Called BEFORE FrontmatterIndexService updates its index,
 	// so the UID is still available for lookup
-	async handleFileDeletion(file: TFile): Promise<void> {
+	handleFileDeletion(file: TFile): void {
 		if (file.extension !== "md") return;
 
 		const uid = this.deps.frontmatterIndex.getValues(

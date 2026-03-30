@@ -36,12 +36,12 @@ export class SiblingDisperseService {
 	/**
 	 * Disperse sibling cards
 	 */
-	async disperse(options: DisperseOptions): Promise<SchedulingResult> {
+	disperse(options: DisperseOptions): SchedulingResult {
 		const { minInterval, sourceUid, dryRun = true } = options;
 
 		const groups = sourceUid
-			? [await this.getSiblingGroup(sourceUid)]
-			: await this.getAllSiblingGroups();
+			? [this.getSiblingGroup(sourceUid)]
+			: this.getAllSiblingGroups();
 
 		const changes: CardScheduleChange[] = [];
 		const beforeDistribution = new Map<string, number>();
@@ -107,7 +107,7 @@ export class SiblingDisperseService {
 		// Apply changes if not dry run
 		if (!dryRun) {
 			for (const change of changes) {
-				await this.cardStore.updateCardDue(change.cardId, change.newDue);
+				this.cardStore.updateCardDue(change.cardId, change.newDue);
 			}
 		}
 
@@ -122,9 +122,7 @@ export class SiblingDisperseService {
 	/**
 	 * Get sibling group for a specific source UID
 	 */
-	private async getSiblingGroup(
-		sourceUid: string,
-	): Promise<SiblingGroup | null> {
+	private getSiblingGroup(sourceUid: string): SiblingGroup | null {
 		const cards = this.cardStore
 			.getCards()
 			.filter(
@@ -147,7 +145,7 @@ export class SiblingDisperseService {
 	/**
 	 * Get all sibling groups (groups with more than 1 card)
 	 */
-	private async getAllSiblingGroups(): Promise<SiblingGroup[]> {
+	private getAllSiblingGroups(): SiblingGroup[] {
 		const cards = this.cardStore
 			.getCards()
 			.filter((c) => c.sourceUid && !c.suspended && c.state !== State.New);

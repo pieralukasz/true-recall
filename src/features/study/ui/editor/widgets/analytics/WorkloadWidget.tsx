@@ -32,7 +32,7 @@ export function WorkloadWidget({ source }: { source: string }) {
 	const config = useMemo(() => parseCodeblockConfig(source), [source]);
 
 	const data = useComputed((): WorkloadData | null => {
-		cards.value;
+		void cards.value;
 		if (!plugin.cardStore || !plugin.sessionPersistence) return null;
 
 		const forecastDays = configValue(config, "days", 14) as number;

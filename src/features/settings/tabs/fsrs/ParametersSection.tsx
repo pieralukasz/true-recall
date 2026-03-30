@@ -134,12 +134,12 @@ export function ParametersSection({
 					label={optimizing ? "Optimizing..." : "Optimize now"}
 					variant="primary"
 					disabled={!canOptimize || optimizing}
-					onClick={handleOptimize}
+					onClick={() => void handleOptimize()}
 				/>
 				<ActionButton
 					label="Reset to defaults"
 					variant="secondary"
-					onClick={handleReset}
+					onClick={() => void handleReset()}
 				/>
 			</FormField>
 
@@ -149,7 +149,7 @@ export function ParametersSection({
 			>
 				<TextAreaInput
 					value={weightsString}
-					onChange={handleWeightsChange}
+					onChange={(v) => void handleWeightsChange(v)}
 					placeholder="0.40255, 1.18385, 3.173, 15.69105, ..."
 					rows={3}
 					class="ep:w-full ep:font-mono ep:text-ui-small"

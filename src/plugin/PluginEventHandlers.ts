@@ -3,6 +3,12 @@ import type { DeletionHandlerService } from "@features/study/services/flashcard/
 import { VIEW_TYPE_FLASHCARD_PANEL, VIEW_TYPE_REVIEW } from "@shared/constants";
 import { ItemView, Notice, normalizePath, TFile, TFolder } from "obsidian";
 import type TrueRecallPlugin from "../main";
+import {
+	editSelectionAsFlashcard,
+	generateFlashcardsFromSelection,
+	hasApiKey,
+	quickAddFlashcardFromSelection,
+} from "./SelectionActions";
 
 export function registerEventHandlers(plugin: TrueRecallPlugin): void {
 	// Single file context menu
@@ -79,6 +85,39 @@ export function registerEventHandlers(plugin: TrueRecallPlugin): void {
 					});
 				}
 			}
+		}),
+	);
+
+	// Editor context menu (right-click / long-press) — flashcard from selection
+	plugin.registerEvent(
+		plugin.app.workspace.on("editor-menu", (menu, editor) => {
+			const selection = editor.getSelection();
+			if (!selection || selection.trim().length < 3) return;
+
+			const text = selection.trim();
+
+			if (hasApiKey(plugin)) {
+				menu.addItem((item) => {
+					item
+						.setTitle("Generate flashcards")
+						.setIcon("sparkles")
+						.onClick(() => void generateFlashcardsFromSelection(plugin, text));
+				});
+			}
+
+			menu.addItem((item) => {
+				item
+					.setTitle("Quick add flashcard")
+					.setIcon("zap")
+					.onClick(() => void quickAddFlashcardFromSelection(plugin, text));
+			});
+
+			menu.addItem((item) => {
+				item
+					.setTitle("Edit as flashcard")
+					.setIcon("pencil")
+					.onClick(() => editSelectionAsFlashcard(plugin, text));
+			});
 		}),
 	);
 

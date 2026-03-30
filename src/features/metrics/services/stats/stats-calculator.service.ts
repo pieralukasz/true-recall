@@ -239,7 +239,7 @@ export class StatsCalculatorService {
 		return this.chartDataCalculator.getFutureDueStats(cards, range);
 	}
 
-	async getReviewHistory(range: StatsTimeRange): Promise<ExtendedDailyStats[]> {
+	getReviewHistory(range: StatsTimeRange): ExtendedDailyStats[] {
 		return this.getReviewHistorySync(range);
 	}
 
@@ -300,7 +300,7 @@ export class StatsCalculatorService {
 		return this.streakCalculator.calculate(allStats, this.dayStartHour);
 	}
 
-	async getRangeSummary(range: StatsTimeRange): Promise<{
+	getRangeSummary(range: StatsTimeRange): {
 		daysStudied: number;
 		totalDays: number;
 		totalReviews: number;
@@ -308,7 +308,7 @@ export class StatsCalculatorService {
 		avgForStudiedDays: number;
 		dueTomorrow: number;
 		dailyLoad: number;
-	}> {
+	} {
 		return this.getRangeSummarySync(range);
 	}
 
@@ -492,9 +492,7 @@ export class StatsCalculatorService {
 		return this.maturityCalculator.getCardsByCategory(cards, category);
 	}
 
-	async getCardsCreatedHistoryFilled(
-		range: StatsTimeRange,
-	): Promise<CardsCreatedEntry[]> {
+	getCardsCreatedHistoryFilled(range: StatsTimeRange): CardsCreatedEntry[] {
 		return this.getCardsCreatedHistoryFilledSync(range);
 	}
 

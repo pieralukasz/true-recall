@@ -54,42 +54,42 @@ export function SelectionToolbar({ preserveScroll }: SelectionToolbarProps) {
 					<IconButton
 						icon="folder-input"
 						ariaLabel="Move selected"
-						onClick={handleMoveSelected}
+						onClick={() => void handleMoveSelected()}
 						size="small"
 						disabled={!hasSelection}
 					/>
 					<IconButton
 						icon="replace"
 						ariaLabel="Change note type"
-						onClick={handleChangeNoteType}
+						onClick={() => void handleChangeNoteType()}
 						size="small"
 						disabled={!hasSelection}
 					/>
 					<IconButton
 						icon="pause"
 						ariaLabel="Suspend selected"
-						onClick={handleSuspendSelected}
+						onClick={() => void handleSuspendSelected()}
 						size="small"
 						disabled={!hasSelection}
 					/>
 					<IconButton
 						icon="play"
 						ariaLabel="Unsuspend selected"
-						onClick={handleUnsuspendSelected}
+						onClick={() => void handleUnsuspendSelected()}
 						size="small"
 						disabled={!hasSelection}
 					/>
 					<IconButton
 						icon="rotate-ccw"
 						ariaLabel="Forget selected"
-						onClick={handleForgetSelected}
+						onClick={() => void handleForgetSelected()}
 						size="small"
 						disabled={!hasSelection}
 					/>
 					<IconButton
 						icon="trash-2"
 						ariaLabel="Delete selected"
-						onClick={handleDeleteSelected}
+						onClick={() => void handleDeleteSelected()}
 						size="small"
 						danger
 						disabled={!hasSelection}

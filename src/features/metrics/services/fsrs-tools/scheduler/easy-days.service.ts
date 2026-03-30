@@ -43,7 +43,7 @@ export function isEasyDay(date: Date, easyDays: EasyDaysConfig): boolean {
 export class EasyDaysService {
 	constructor(private cardStore: SchedulerCardStore) {}
 
-	async applyEasyDays(options: EasyDaysOptions): Promise<SchedulingResult> {
+	applyEasyDays(options: EasyDaysOptions): SchedulingResult {
 		const {
 			easyDays,
 			multiplier,
@@ -149,7 +149,7 @@ export class EasyDaysService {
 		// Apply changes if not dry run
 		if (!dryRun) {
 			for (const change of changes) {
-				await this.cardStore.updateCardDue(change.cardId, change.newDue);
+				this.cardStore.updateCardDue(change.cardId, change.newDue);
 			}
 		}
 

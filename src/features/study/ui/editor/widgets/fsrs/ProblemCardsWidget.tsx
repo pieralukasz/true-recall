@@ -36,7 +36,7 @@ export function ProblemCardsWidget({ source }: { source: string }) {
 	const showType = configValue(config, "showType", true);
 
 	const data = useComputed(() => {
-		cards.value;
+		void cards.value;
 		if (!plugin.cardStore?.stats) return null;
 		return plugin.cardStore.stats.getProblemCards(limit);
 	}).value;

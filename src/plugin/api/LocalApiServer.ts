@@ -1,3 +1,4 @@
+// eslint-disable-next-line import/no-nodejs-modules -- MCP server communication requires Node.js HTTP server on localhost
 import { createServer, type Server } from "http";
 import { Notice } from "obsidian";
 import type TrueRecallPlugin from "../../main";
@@ -63,7 +64,7 @@ export class LocalApiServer {
 
 		this.server.listen(this.port, "127.0.0.1", () => {
 			this.portRetryCount = 0;
-			console.log(
+			console.debug(
 				`[True Recall API] Listening on http://127.0.0.1:${this.port}`,
 			);
 		});
@@ -73,7 +74,7 @@ export class LocalApiServer {
 		if (!this.server) return;
 		this.server.close();
 		this.server = null;
-		console.log("[True Recall API] Server stopped");
+		console.debug("[True Recall API] Server stopped");
 	}
 
 	getPort(): number {

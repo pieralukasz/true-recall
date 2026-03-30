@@ -25,6 +25,13 @@ export function stripWikiLinkSyntax(value: string): string {
  * Ordered so that block-level constructs are removed before inline ones,
  * and greedy patterns (bold **) before narrow ones (italic *).
  */
+/** Extract filename without extension from a path: "folder/My Note.md" → "My Note" */
+export function fileBasename(path: string): string {
+	const withoutExt = path.replace(/\.md$/, "");
+	const lastSlash = withoutExt.lastIndexOf("/");
+	return lastSlash >= 0 ? withoutExt.slice(lastSlash + 1) : withoutExt;
+}
+
 export function stripMarkdownSyntax(text: string): string {
 	return (
 		text

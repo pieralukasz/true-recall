@@ -1,11 +1,10 @@
-import type { IncomingMessage, ServerResponse } from "http";
 import { notifyCardChange } from "@shared/services/signals";
-import type { ApiContext } from "../api.types";
+import type { ApiContext, ApiRequest, ApiResponseWriter } from "../api.types";
 import { parseJsonBody, readBody, sendError, sendOk } from "../api.types";
 
 export async function handleSuspendCard(
-	req: IncomingMessage,
-	res: ServerResponse,
+	req: ApiRequest,
+	res: ApiResponseWriter,
 	ctx: ApiContext,
 	params: Record<string, string>,
 ): Promise<void> {
@@ -53,8 +52,8 @@ interface UpdateCardInput {
 }
 
 export async function handleUpdateCard(
-	req: IncomingMessage,
-	res: ServerResponse,
+	req: ApiRequest,
+	res: ApiResponseWriter,
 	ctx: ApiContext,
 	params: Record<string, string>,
 ): Promise<void> {
@@ -134,8 +133,8 @@ export async function handleUpdateCard(
 }
 
 export async function handleDeleteCard(
-	_req: IncomingMessage,
-	res: ServerResponse,
+	_req: ApiRequest,
+	res: ApiResponseWriter,
 	ctx: ApiContext,
 	params: Record<string, string>,
 ): Promise<void> {
@@ -161,8 +160,8 @@ export async function handleDeleteCard(
 }
 
 export async function handleBulkDelete(
-	req: IncomingMessage,
-	res: ServerResponse,
+	req: ApiRequest,
+	res: ApiResponseWriter,
 	ctx: ApiContext,
 ): Promise<void> {
 	if (!ctx.plugin.isStoreReady()) {
@@ -186,8 +185,8 @@ export async function handleBulkDelete(
 }
 
 export async function handleRemoveCardsFromNote(
-	req: IncomingMessage,
-	res: ServerResponse,
+	req: ApiRequest,
+	res: ApiResponseWriter,
 	ctx: ApiContext,
 ): Promise<void> {
 	if (!ctx.plugin.isStoreReady()) {
@@ -243,8 +242,8 @@ export async function handleRemoveCardsFromNote(
 }
 
 export async function handleBulkSuspend(
-	req: IncomingMessage,
-	res: ServerResponse,
+	req: ApiRequest,
+	res: ApiResponseWriter,
 	ctx: ApiContext,
 ): Promise<void> {
 	if (!ctx.plugin.isStoreReady()) {
@@ -275,8 +274,8 @@ export async function handleBulkSuspend(
 }
 
 export async function handleBulkBury(
-	req: IncomingMessage,
-	res: ServerResponse,
+	req: ApiRequest,
+	res: ApiResponseWriter,
 	ctx: ApiContext,
 ): Promise<void> {
 	if (!ctx.plugin.isStoreReady()) {
