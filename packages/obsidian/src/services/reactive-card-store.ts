@@ -1,38 +1,72 @@
 import { computed, type ReadonlySignal, signal } from "@preact/signals";
 import { DEFAULT_SETTINGS } from "@true-recall/core/constants";
-import type { FSRSFlashcardItem, TrueRecallSettings } from "@true-recall/core/types";
+import type {
+	CardSchedulingMeta,
+	TrueRecallSettings,
+} from "@true-recall/core/types";
 import { State } from "ts-fsrs";
 
-// ── Central data signal ─────────────────────────────────────
-// Holds ALL enriched card data, mirrored from SQLite.
-// After any mutation, refreshCards() reloads once → all computeds cascade.
+// ── Central scheduling index ────────────────────────────────
+// Lightweight CardSchedulingMeta (no template rendering).
+// After mutations, updateCard/removeCard apply O(1) incremental patches.
 
-const _cards = signal<Map<string, FSRSFlashcardItem>>(new Map());
-export const cards: ReadonlySignal<Map<string, FSRSFlashcardItem>> = _cards;
+const _cards = signal<Map<string, CardSchedulingMeta>>(new Map());
+export const cards: ReadonlySignal<Map<string, CardSchedulingMeta>> = _cards;
 
-// ── Refresh from SQLite ─────────────────────────────────────
-// CardQueryService.getAll() returns enriched FSRSFlashcardItem[]
-// (raw SQLite data + vault-resolved sourceNoteName/sourceNotePath).
+// ── Query service interface ─────────────────────────────────
 
-export interface CardQueryLike {
-	getAll(): FSRSFlashcardItem[];
+export interface CardMetaQueryLike {
+	getAllMeta(): CardSchedulingMeta[];
+	getMetaById(cardId: string): CardSchedulingMeta | null;
 }
 
-let queryService: CardQueryLike | null = null;
+let queryService: CardMetaQueryLike | null = null;
 
-export function initCardStore(qs: CardQueryLike): void {
+export function initCardStore(qs: CardMetaQueryLike): void {
 	queryService = qs;
 }
 
-export function refreshCards(qs?: CardQueryLike): void {
+/** Full refresh — used on startup only. */
+export function refreshCards(qs?: CardMetaQueryLike): void {
 	const svc = qs ?? queryService;
 	if (!svc) return;
 	try {
-		const all = svc.getAll();
+		const all = svc.getAllMeta();
 		_cards.value = new Map(all.map((c) => [c.id, c]));
 	} catch (e) {
 		console.error("[reactive-card-store] refreshCards failed:", e);
 	}
+}
+
+/** Incremental update — fetch one card's scheduling meta and patch the Map. */
+export function updateCard(cardId: string): void {
+	if (!queryService) return;
+	const meta = queryService.getMetaById(cardId);
+	const map = new Map(_cards.value);
+	if (meta) {
+		map.set(cardId, meta);
+	} else {
+		map.delete(cardId);
+	}
+	_cards.value = map;
+}
+
+/** Incremental removal. */
+export function removeCard(cardId: string): void {
+	const map = new Map(_cards.value);
+	if (map.delete(cardId)) {
+		_cards.value = map;
+	}
+}
+
+/** Batch incremental removal. */
+export function removeCards(cardIds: string[]): void {
+	const map = new Map(_cards.value);
+	let changed = false;
+	for (const id of cardIds) {
+		if (map.delete(id)) changed = true;
+	}
+	if (changed) _cards.value = map;
 }
 
 // ── Plugin settings signal ───────────────────────────────────
@@ -123,7 +157,7 @@ export const globalCounts = computed((): GlobalCounts => {
 });
 
 export const cardsBySourceUid = computed(() => {
-	const map = new Map<string, FSRSFlashcardItem[]>();
+	const map = new Map<string, CardSchedulingMeta[]>();
 	for (const card of cards.value.values()) {
 		const uid = card.sourceUid;
 		if (!uid) continue;

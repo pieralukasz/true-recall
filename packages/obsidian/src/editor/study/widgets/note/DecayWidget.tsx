@@ -1,10 +1,10 @@
 import { useComputed } from "@preact/signals";
+import { usePlugin } from "@true-recall/obsidian/preact";
 import {
 	allCardsArray,
 	cards,
 	cardsBySourceUid,
 } from "@true-recall/obsidian/services/reactive-card-store";
-import { usePlugin } from "@true-recall/obsidian/preact";
 import { useMemo } from "preact/hooks";
 import { State } from "ts-fsrs";
 import { configValue, parseCodeblockConfig } from "../config-parser";
@@ -72,7 +72,11 @@ export function DecayWidget({
 
 			decayCards.push({
 				id: card.id,
-				question: truncateQuestion(card.question ?? "Card"),
+				question: truncateQuestion(
+					"question" in card
+						? ((card as { question?: string }).question ?? "Card")
+						: "Card",
+				),
 				retrievability: r,
 				stability: fsrs.stability,
 				sourceNoteName,

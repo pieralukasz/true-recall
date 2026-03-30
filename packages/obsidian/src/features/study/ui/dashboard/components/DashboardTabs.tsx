@@ -67,7 +67,7 @@ export function DashboardTabs({
 								</span>
 							)}
 							{isActive && (
-								<div class="ep:absolute ep:bottom-[-1px] ep:left-0 ep:right-0 ep:h-[2px] ep:bg-obs-interactive ep:rounded-t" />
+								<div class="ep:absolute ep:-bottom-px ep:left-0 ep:right-0 ep:h-[2px] ep:bg-obs-interactive ep:rounded-t" />
 							)}
 						</Clickable>
 					);

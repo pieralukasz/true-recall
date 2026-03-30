@@ -1,6 +1,11 @@
 {
 	"extends": "../../tsconfig.base.json",
 	"compilerOptions": {
+		"baseUrl": "../..",
+		"paths": {
+			"@true-recall/core": ["packages/core/src"],
+			"@true-recall/core/*": ["packages/core/src/*"]
+		},
 		"outDir": "dist",
 		"rootDir": "src"
 	},

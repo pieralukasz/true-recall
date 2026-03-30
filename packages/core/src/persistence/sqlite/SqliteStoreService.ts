@@ -3,6 +3,10 @@
  * Uses domain modules: store.cards.*, store.stats.*
  */
 
+import type { IPersistence } from "../../interfaces/persistence";
+import { IntegrityCheckService } from "../../services/integrity-check.service";
+import type { CardSchedulingMeta, FSRSCardData } from "../../types";
+import { NOTIFICATION_DURATION, notify } from "../notification";
 import {
 	CardActions,
 	NoteActions,
@@ -17,13 +21,6 @@ import {
 	SAVE_DEBOUNCE_MS,
 	toExactArrayBuffer,
 } from "./sqlite.types";
-import { IntegrityCheckService } from "../../services/integrity-check.service";
-import {
-	NOTIFICATION_DURATION,
-	notify,
-} from "../notification";
-import type { FSRSCardData } from "../../types";
-import type { IPersistence } from "../../interfaces/persistence";
 
 export class SqliteStoreService {
 	private static readonly FOLLOW_UP_FLUSH_MS = 250;
@@ -193,6 +190,14 @@ export class SqliteStoreService {
 		return this.cards.getAll();
 	}
 
+	getAllSchedulingMeta(): CardSchedulingMeta[] {
+		return this.cards.getAllSchedulingMeta();
+	}
+
+	getSchedulingMetaById(cardId: string): CardSchedulingMeta | null {
+		return this.cards.getSchedulingMetaById(cardId);
+	}
+
 	size(): number {
 		return this.cards.size();
 	}
@@ -320,10 +325,7 @@ export class SqliteStoreService {
 						await this.persistence.mkdir(DB_FOLDER);
 					}
 
-					await this.persistence.writeBinary(
-						dbPath,
-						toExactArrayBuffer(data),
-					);
+					await this.persistence.writeBinary(dbPath, toExactArrayBuffer(data));
 
 					this.lastFlushSucceededAt = Date.now();
 					this.lastFlushError = null;

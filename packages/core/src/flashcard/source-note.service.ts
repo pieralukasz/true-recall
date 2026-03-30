@@ -4,9 +4,9 @@
  */
 
 import type { IFileSystem } from "../interfaces/file-system";
+import type { IFrontmatter } from "../interfaces/frontmatter";
 import type { IMetadataIndex } from "../interfaces/metadata-index";
 import { FrontmatterService } from "./frontmatter.service";
-import type { IFrontmatter } from "../interfaces/frontmatter";
 
 export class SourceNoteService {
 	private frontmatterService: FrontmatterService;
@@ -18,7 +18,7 @@ export class SourceNoteService {
 	private fallbackCacheBuilt = false;
 
 	constructor(
-		private fileSystem: IFileSystem,
+		fileSystem: IFileSystem,
 		frontmatter: IFrontmatter,
 		metadataIndex?: IMetadataIndex,
 	) {
@@ -160,5 +160,49 @@ export class SourceNoteService {
 		}
 	> {
 		return cards.map((card) => this.enrichCard(card));
+	}
+
+	/**
+	 * In-place enrichment for scheduling metadata.
+	 * Mutates the objects directly to avoid spread-copy overhead on large arrays.
+	 */
+	enrichMeta<
+		T extends {
+			sourceUid?: string;
+			sourceNoteName?: string;
+			sourceNotePath?: string;
+		},
+	>(meta: T): T {
+		if (!meta.sourceUid) {
+			meta.sourceNoteName = "";
+			meta.sourceNotePath = "";
+			return meta;
+		}
+
+		const path = this.findPathByUidSync(meta.sourceUid);
+		if (!path) {
+			meta.sourceNoteName = "";
+			meta.sourceNotePath = "";
+			return meta;
+		}
+
+		const lastSlash = path.lastIndexOf("/");
+		const filename = lastSlash >= 0 ? path.substring(lastSlash + 1) : path;
+		meta.sourceNoteName = filename.replace(/\.md$/, "");
+		meta.sourceNotePath = path;
+		return meta;
+	}
+
+	enrichMetas<
+		T extends {
+			sourceUid?: string;
+			sourceNoteName?: string;
+			sourceNotePath?: string;
+		},
+	>(metas: T[]): T[] {
+		for (const meta of metas) {
+			this.enrichMeta(meta);
+		}
+		return metas;
 	}
 }

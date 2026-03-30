@@ -1,8 +1,10 @@
-import { IOCardRenderer } from "@true-recall/obsidian/features/image-occlusion/IOCardRenderer";
-import { parseIODefinition } from "@true-recall/core/utils/io-definition";
 import type { FlashcardItem } from "@true-recall/core/types";
 import type { FSRSFlashcardItem } from "@true-recall/core/types/fsrs/card.types";
+import { parseIODefinition } from "@true-recall/core/utils/io-definition";
 import { Clickable } from "@true-recall/obsidian/components/Clickable";
+import { IOCardRenderer } from "@true-recall/obsidian/features/image-occlusion/IOCardRenderer";
+import { useCardActions } from "@true-recall/obsidian/features/library/ui/panel/hooks/useCardActions";
+import { useSelectionActions } from "@true-recall/obsidian/features/library/ui/panel/hooks/useSelectionActions";
 import {
 	type MenuItem,
 	useContextMenu,
@@ -16,30 +18,23 @@ export interface PanelIOGroupProps {
 	isExpanded: boolean;
 	isSelected: boolean;
 	isSelectionMode: boolean;
-	onToggleExpand: () => void;
-	onToggleSelect: () => void;
-	onEdit: () => void;
-	onDelete: () => void;
-	onMove: () => void;
-	onSelect: () => void;
 }
 
 export function PanelIOGroup({
-	cards: _cards,
+	cards,
 	fsrsCards,
 	filePath: _filePath,
 	isExpanded,
 	isSelected,
 	isSelectionMode,
-	onToggleExpand,
-	onToggleSelect,
-	onEdit,
-	onDelete,
-	onMove,
-	onSelect,
 }: PanelIOGroupProps) {
 	const [revealedOrd, setRevealedOrd] = useState<number | null>(null);
 
+	const cardActions = useCardActions();
+	const selectionActions = useSelectionActions();
+
+	const firstCard = cards[0];
+	const groupKey = firstCard?.id ?? "";
 	const representative = fsrsCards[0];
 	const imagePath = representative?.ioImagePath;
 	const regionsJson = representative?.ioRegionsJson;
@@ -63,12 +58,12 @@ export function PanelIOGroup({
 		(e: MouseEvent) => {
 			if ((e.target as HTMLElement).closest("button")) return;
 			if (isSelectionMode) {
-				onToggleSelect();
+				for (const c of cards) selectionActions.handleToggleSelect(c.id);
 			} else {
-				onToggleExpand();
+				cardActions.handleToggleExpand(groupKey);
 			}
 		},
-		[isSelectionMode, onToggleSelect, onToggleExpand],
+		[isSelectionMode, selectionActions, cardActions, cards, groupKey],
 	);
 
 	const handleRegionClick = useCallback((ord: number) => {
@@ -78,20 +73,38 @@ export function PanelIOGroup({
 	const handleCheckboxClick = useCallback(
 		(e: MouseEvent) => {
 			e.stopPropagation();
-			onToggleSelect();
+			for (const c of cards) selectionActions.handleToggleSelect(c.id);
 		},
-		[onToggleSelect],
+		[selectionActions, cards],
 	);
 
 	const handleMenuClick = useContextMenu([
-		{ title: "Edit", icon: "pencil", onClick: onEdit },
-		{ title: "Move", icon: "folder-input", onClick: onMove },
+		{
+			title: "Edit",
+			icon: "pencil",
+			onClick: () => firstCard && cardActions.handleEditButton(firstCard),
+		},
+		{
+			title: "Move",
+			icon: "folder-input",
+			onClick: () => firstCard && cardActions.handleMoveCard(firstCard),
+		},
 		"separator",
-		{ title: "Delete all", icon: "trash-2", onClick: onDelete },
+		{
+			title: "Delete all",
+			icon: "trash-2",
+			onClick: () => {
+				for (const c of cards) cardActions.handleDeleteCard(c);
+			},
+		},
 		...(!isSelectionMode
 			? ([
 					"separator",
-					{ title: "Select", icon: "check-square", onClick: onSelect },
+					{
+						title: "Select",
+						icon: "check-square",
+						onClick: () => selectionActions.handleEnterSelectionMode(groupKey),
+					},
 				] as MenuItem[])
 			: []),
 	]);

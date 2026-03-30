@@ -1,13 +1,16 @@
+import type { FlashcardItem } from "@true-recall/core/types";
+import type { FSRSFlashcardItem } from "@true-recall/core/types/fsrs/card.types";
+import { Clickable } from "@true-recall/obsidian/components/Clickable";
+import { MarkdownContent } from "@true-recall/obsidian/components/MarkdownContent";
+import { useCardActions } from "@true-recall/obsidian/features/library/ui/panel/hooks/useCardActions";
+import { usePanelActions } from "@true-recall/obsidian/features/library/ui/panel/hooks/usePanelActions";
+import { useSelectionActions } from "@true-recall/obsidian/features/library/ui/panel/hooks/useSelectionActions";
 import {
 	getHighlightColor,
 	getStatusTitle,
 	isBuried,
 	isSuspended,
 } from "@true-recall/obsidian/features/library/ui/panel/utils/card-status.utils";
-import type { FlashcardItem } from "@true-recall/core/types";
-import type { FSRSFlashcardItem } from "@true-recall/core/types/fsrs/card.types";
-import { Clickable } from "@true-recall/obsidian/components/Clickable";
-import { MarkdownContent } from "@true-recall/obsidian/components/MarkdownContent";
 import { useApp } from "@true-recall/obsidian/preact/ObsidianContext";
 import {
 	type MenuItem,
@@ -38,25 +41,6 @@ const panelCardVariants = cva(
 
 // ── Types ──────────────────────────────────────────────────
 
-export interface PanelCardActions {
-	onToggleExpand: () => void;
-	onToggleSelect: () => void;
-	onEdit: () => void;
-	onDelete: () => void;
-	onCopy: () => void;
-	onMove: () => void;
-	onChangeType: () => void;
-	onToggleReversed: () => void;
-	onForget: () => void;
-	onSuspend: () => void;
-	onUnsuspend: () => void;
-	onSelect: () => void;
-	onLongPress: () => void;
-	onJumpToSource?: () => void;
-	onHoverSource?: () => void;
-	onLeaveSource?: () => void;
-}
-
 export interface PanelCardProps {
 	card: FlashcardItem;
 	fsrsCard?: FSRSFlashcardItem;
@@ -66,7 +50,6 @@ export interface PanelCardProps {
 	isSelectionMode: boolean;
 	enterClass?: string;
 	enterStyle?: Record<string, string | number>;
-	actions: PanelCardActions;
 }
 
 // ── Sub-components ──────────────────────────────────────────
@@ -121,41 +104,23 @@ function CardTypeBadge({ card }: { card: FlashcardItem }) {
 
 // ── Main component ─────────────────────────────────────────
 
-export function PanelCard(props: PanelCardProps) {
-	const {
-		card,
-		fsrsCard,
-		filePath,
-		isExpanded,
-		isSelected,
-		isSelectionMode,
-		enterClass,
-		enterStyle,
-		actions,
-	} = props;
-	const {
-		onToggleExpand,
-		onToggleSelect,
-		onEdit,
-		onDelete,
-		onCopy,
-		onMove,
-		onChangeType,
-		onToggleReversed,
-		onForget,
-		onSuspend,
-		onUnsuspend,
-		onSelect,
-		onLongPress: onLongPressProp,
-		onJumpToSource,
-		onHoverSource,
-		onLeaveSource,
-	} = actions;
-
+export function PanelCard({
+	card,
+	fsrsCard,
+	filePath,
+	isExpanded,
+	isSelected,
+	isSelectionMode,
+	enterClass,
+	enterStyle,
+}: PanelCardProps) {
 	const app = useApp();
+	const cardActions = useCardActions();
+	const selectionActions = useSelectionActions();
+	const panelActions = usePanelActions();
 
 	const { handlers: longPressHandlers, wasLongPress } = useLongPress({
-		onLongPress: onLongPressProp,
+		onLongPress: () => selectionActions.handleEnterSelectionMode(card.id),
 	});
 
 	const handleLinkClick = useCallback(
@@ -169,28 +134,45 @@ export function PanelCard(props: PanelCardProps) {
 			if ((e.target as HTMLElement).closest("button")) return;
 			if ((e.target as HTMLElement).closest("a")) return;
 			if (isSelectionMode) {
-				onToggleSelect();
-			} else if (onJumpToSource) {
-				onToggleExpand();
-				onJumpToSource();
+				selectionActions.handleToggleSelect(card.id);
+			} else if (card.sourceText) {
+				cardActions.handleToggleExpand(card.id);
+				panelActions.handleJumpToSource(card);
 			} else {
-				onToggleExpand();
+				cardActions.handleToggleExpand(card.id);
 			}
 		},
 		[
 			isSelectionMode,
-			onToggleSelect,
-			onToggleExpand,
-			onJumpToSource,
+			selectionActions,
+			cardActions,
+			panelActions,
+			card,
 			wasLongPress,
 		],
 	);
 
 	const handleMenuClick = useContextMenu([
-		{ title: "Edit", icon: "pencil", onClick: onEdit },
-		{ title: "Copy", icon: "copy", onClick: onCopy },
-		{ title: "Move", icon: "folder-input", onClick: onMove },
-		{ title: "Change type", icon: "replace", onClick: onChangeType },
+		{
+			title: "Edit",
+			icon: "pencil",
+			onClick: () => cardActions.handleEditButton(card),
+		},
+		{
+			title: "Copy",
+			icon: "copy",
+			onClick: () => cardActions.handleCopyCard(card),
+		},
+		{
+			title: "Move",
+			icon: "folder-input",
+			onClick: () => cardActions.handleMoveCard(card),
+		},
+		{
+			title: "Change type",
+			icon: "replace",
+			onClick: () => cardActions.handleChangeType(card),
+		},
 		...(card.cardType !== "cloze" && card.cardType !== "image-occlusion"
 			? ([
 					{
@@ -199,20 +181,40 @@ export function PanelCard(props: PanelCardProps) {
 								? "Remove reversed"
 								: "Make reversed",
 						icon: "arrow-left-right",
-						onClick: onToggleReversed,
+						onClick: () => cardActions.handleToggleReversed(card),
 					},
 				] as MenuItem[])
 			: []),
-		{ title: "Forget", icon: "rotate-ccw", onClick: onForget },
+		{
+			title: "Forget",
+			icon: "rotate-ccw",
+			onClick: () => cardActions.handleForgetCard(card),
+		},
 		isSuspended(fsrsCard)
-			? { title: "Unsuspend", icon: "play", onClick: onUnsuspend }
-			: { title: "Suspend", icon: "pause", onClick: onSuspend },
+			? {
+					title: "Unsuspend",
+					icon: "play",
+					onClick: () => cardActions.handleUnsuspendCard(card),
+				}
+			: {
+					title: "Suspend",
+					icon: "pause",
+					onClick: () => cardActions.handleSuspendCard(card),
+				},
 		"separator",
-		{ title: "Delete", icon: "trash-2", onClick: onDelete },
+		{
+			title: "Delete",
+			icon: "trash-2",
+			onClick: () => cardActions.handleDeleteCard(card),
+		},
 		...(!isSelectionMode
 			? ([
 					"separator",
-					{ title: "Select", icon: "check-square", onClick: onSelect },
+					{
+						title: "Select",
+						icon: "check-square",
+						onClick: () => selectionActions.handleEnterSelectionMode(card.id),
+					},
 				] as MenuItem[])
 			: []),
 	]);
@@ -220,14 +222,21 @@ export function PanelCard(props: PanelCardProps) {
 	const handleCheckboxClick = useCallback(
 		(e: MouseEvent) => {
 			e.stopPropagation();
-			onToggleSelect();
+			selectionActions.handleToggleSelect(card.id);
 		},
-		[onToggleSelect],
+		[selectionActions, card.id],
 	);
 
 	const title = getStatusTitle(fsrsCard);
 	const state = getHighlightColor(fsrsCard);
 	const selectedCls = isSelected ? "ep:border-obs-interactive" : "";
+
+	const onHoverSource = card.sourceText
+		? () => panelActions.handleHoverSource(card)
+		: undefined;
+	const onLeaveSource = card.sourceText
+		? panelActions.handleLeaveSource
+		: undefined;
 
 	return (
 		<Clickable

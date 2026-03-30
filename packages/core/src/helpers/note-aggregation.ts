@@ -1,12 +1,15 @@
-import type { FSRSFlashcardItem } from "@true-recall/core/types/fsrs/card.types";
-import type { TodaySummary } from "@true-recall/core/types/fsrs/stats.types";
-import type { DashboardAggregation, DashboardNoteEntry } from "@true-recall/core/types/dashboard.types";
 import { computePriority } from "@true-recall/core/helpers/note-priority";
 import { estimateStudyMinutes } from "@true-recall/core/helpers/time-estimate";
+import type {
+	DashboardAggregation,
+	DashboardNoteEntry,
+} from "@true-recall/core/types/dashboard.types";
+import type { CardSchedulingMeta } from "@true-recall/core/types/fsrs/card.types";
+import type { TodaySummary } from "@true-recall/core/types/fsrs/stats.types";
 import { State } from "ts-fsrs";
 
 interface AggregationDeps {
-	allCards: FSRSFlashcardItem[];
+	allCards: CardSchedulingMeta[];
 	streakCurrent: number;
 	todaySummary: TodaySummary;
 	newCardsCap: number;

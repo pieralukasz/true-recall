@@ -1,11 +1,9 @@
-import { useSettings } from "../hooks/useSettings";
 import {
 	TRUERECALL_BMC_URL,
 	TRUERECALL_DISCORD_URL,
 	TRUERECALL_GITHUB_URL,
 	TRUERECALL_WEB_URL,
 } from "@true-recall/core/constants";
-import { notify } from "@true-recall/obsidian/services/notification.service";
 import type { ReviewViewMode, TypeInMode } from "@true-recall/core/types";
 import {
 	Clickable,
@@ -18,6 +16,8 @@ import {
 	ToggleInput,
 } from "@true-recall/obsidian/components";
 import { useIcon } from "@true-recall/obsidian/preact";
+import { notify } from "@true-recall/obsidian/services/notification.service";
+import { useSettings } from "../hooks/useSettings";
 
 export function GeneralTab() {
 	const { settings, save, plugin } = useSettings();
@@ -153,16 +153,6 @@ export function GeneralTab() {
 					<ToggleInput
 						value={settings.showStatusBarWidget}
 						onChange={(v) => void save({ showStatusBarWidget: v })}
-					/>
-				</FormField>
-
-				<FormField
-					name="Show quick review in panel"
-					description="Show a collapsible quick-review section at the top of the flashcard panel"
-				>
-					<ToggleInput
-						value={settings.showQuickReviewInPanel}
-						onChange={(v) => void save({ showQuickReviewInPanel: v })}
 					/>
 				</FormField>
 			</FormCard>

@@ -267,9 +267,6 @@ export interface TrueRecallSettings {
 	/** Show status bar widget with global due/new/learning counts */
 	showStatusBarWidget: boolean;
 
-	/** Show quick review section at top of flashcard panel */
-	showQuickReviewInPanel: boolean;
-
 	/** Default type-in mode at the start of each review session */
 	defaultTypeInMode: TypeInMode;
 

@@ -2,13 +2,13 @@
  * Implements Anki-style "Next day starts at" logic for day-based scheduling
  */
 
-import type { FSRSFlashcardItem } from "../types";
+import { State } from "ts-fsrs";
+import type { CardSchedulingMeta } from "../types";
 import {
 	formatLocalDate as formatLocalDateUtil,
 	getTodayBoundary as getTodayBoundaryUtil,
 	getTomorrowBoundary as getTomorrowBoundaryUtil,
 } from "../utils";
-import { State } from "ts-fsrs";
 
 export class DayBoundaryService {
 	private dayStartHour: number;
@@ -34,7 +34,7 @@ export class DayBoundaryService {
 	 * For Review cards: due before tomorrow's boundary
 	 * For Learning/Relearning: exact timestamp check
 	 */
-	isCardDueToday(card: FSRSFlashcardItem, now?: Date): boolean {
+	isCardDueToday(card: CardSchedulingMeta, now?: Date): boolean {
 		const currentTime = now ?? new Date();
 		const dueDate = new Date(card.fsrs.due);
 
@@ -56,23 +56,20 @@ export class DayBoundaryService {
 		return false;
 	}
 
-	isCardAvailable(card: FSRSFlashcardItem, now?: Date): boolean {
+	isCardAvailable(card: CardSchedulingMeta, now?: Date): boolean {
 		if (card.fsrs.state === State.New) return true;
 		return this.isCardDueToday(card, now);
 	}
 
-	countDueCards(cards: FSRSFlashcardItem[], now?: Date): number {
+	countDueCards(cards: CardSchedulingMeta[], now?: Date): number {
 		return cards.filter((c) => this.isCardDueToday(c, now)).length;
 	}
 
-	getDueCards(cards: FSRSFlashcardItem[], now?: Date): FSRSFlashcardItem[] {
+	getDueCards<T extends CardSchedulingMeta>(cards: T[], now?: Date): T[] {
 		return cards.filter((c) => this.isCardDueToday(c, now));
 	}
 
-	getAvailableCards(
-		cards: FSRSFlashcardItem[],
-		now?: Date,
-	): FSRSFlashcardItem[] {
+	getAvailableCards<T extends CardSchedulingMeta>(cards: T[], now?: Date): T[] {
 		return cards.filter((c) => this.isCardAvailable(c, now));
 	}
 

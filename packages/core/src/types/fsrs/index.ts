@@ -6,6 +6,7 @@
 // Card types
 export type {
 	CardReviewLogEntry,
+	CardSchedulingMeta,
 	CardType,
 	FSRSCard,
 	FSRSCardData,

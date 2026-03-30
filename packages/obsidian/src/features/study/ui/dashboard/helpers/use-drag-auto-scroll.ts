@@ -5,10 +5,6 @@ const EDGE_ZONE = 50;
 const MIN_SPEED = 2;
 const MAX_SPEED = 10;
 
-/**
- * Auto-scrolls a container when the user drags near its top/bottom edges.
- * Speed ramps up the closer the cursor gets to the edge.
- */
 export function useDragAutoScroll(
 	scrollContainerRef: RefObject<HTMLDivElement>,
 ): void {

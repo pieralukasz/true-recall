@@ -1,16 +1,9 @@
-import { escapeFts5Query } from "./NoteActions";
-import type { SqliteDatabase } from "../SqliteDatabase";
-import { sqlPlaceholders } from "../sql-utils";
+import { FLASHCARD_CONFIG } from "../../../constants";
 import {
 	deriveCardType,
 	renderTemplate,
 } from "../../../services/template-engine";
-import {
-	normalizeIOImagePath,
-	parseIODefinition,
-} from "../../io-definition";
-import { FLASHCARD_CONFIG } from "../../../constants";
-import type { FSRSCardData } from "../../../types";
+import type { CardSchedulingMeta, FSRSCardData } from "../../../types";
 import type { CardTemplate } from "../../../types/note.types";
 import {
 	BUILTIN_BASIC_ID,
@@ -18,6 +11,10 @@ import {
 	BUILTIN_CLOZE_ID,
 	BUILTIN_IMAGE_OCCLUSION_ID,
 } from "../../../types/note.types";
+import { normalizeIOImagePath, parseIODefinition } from "../../io-definition";
+import type { SqliteDatabase } from "../SqliteDatabase";
+import { sqlPlaceholders } from "../sql-utils";
+import { escapeFts5Query } from "./NoteActions";
 
 // ── Column definitions (JOIN-based, computed q/a) ──────────────
 
@@ -71,6 +68,91 @@ const CARD_FROM = `
     JOIN note_types nt ON n.note_type_id = nt.id
 `;
 
+// ── Lightweight scheduling-only query (no fieldsJson/templatesJson) ──
+
+const META_SELECT = `
+    c.id, c.due, c.stability, c.difficulty, c.reps, c.lapses, c.state,
+    c.last_review AS lastReview,
+    c.scheduled_days AS scheduledDays,
+    c.learning_step AS learningStep,
+    c.suspended = 1 AS suspended,
+    c.buried_until AS buriedUntil,
+    c.created_at AS createdAt,
+    c.source_uid AS sourceUid,
+    c.note_id AS noteId,
+    c.template_ord AS templateOrd,
+    n.tags AS noteTags,
+    n.note_type_id AS noteTypeId,
+    nt.type AS noteTypeType,
+    nt.name AS noteTypeName
+`;
+
+interface MetaRow {
+	id: string;
+	due: string;
+	stability: number;
+	difficulty: number;
+	reps: number;
+	lapses: number;
+	state: number;
+	lastReview: string | null;
+	scheduledDays: number;
+	learningStep: number;
+	suspended: number;
+	buriedUntil: string | null;
+	createdAt: number | null;
+	sourceUid: string | null;
+	noteId: string;
+	templateOrd: number;
+	noteTags: string | null;
+	noteTypeId: string;
+	noteTypeType: number;
+	noteTypeName: string;
+}
+
+function mapMetaRow(row: MetaRow): CardSchedulingMeta {
+	const noteTags =
+		row.noteTags
+			?.split(" ")
+			.map((t: string) => t.trim())
+			.filter(Boolean) ?? [];
+
+	const noteTypeInfo = { id: row.noteTypeId, type: row.noteTypeType as 0 | 1 };
+	const cardType = deriveCardType(noteTypeInfo, row.templateOrd);
+
+	return {
+		id: row.id,
+		fsrs: {
+			id: row.id,
+			due: row.due,
+			stability: row.stability,
+			difficulty: row.difficulty,
+			reps: row.reps,
+			lapses: row.lapses,
+			state: row.state,
+			lastReview: row.lastReview,
+			scheduledDays: row.scheduledDays,
+			learningStep: row.learningStep,
+			suspended: row.suspended === 1,
+			buriedUntil: row.buriedUntil ?? undefined,
+			createdAt: row.createdAt ?? undefined,
+			sourceUid: row.sourceUid ?? undefined,
+			noteId: row.noteId,
+			templateOrd: row.templateOrd,
+			noteTypeId: row.noteTypeId,
+			noteTypeName: row.noteTypeName,
+		},
+		sourceUid: row.sourceUid ?? undefined,
+		cardType,
+		noteId: row.noteId,
+		templateOrd: row.templateOrd,
+		noteTypeName: row.noteTypeName,
+		alwaysTypeIn: noteTags.includes(FLASHCARD_CONFIG.alwaysTypeInTag),
+	};
+}
+
+// ── Full card row (with fieldsJson/templatesJson for rendering) ─────
+
 interface CardRow {
 	id: string;
 	due: string;
@@ -114,7 +196,9 @@ function mapRow(row: CardRow): FSRSCardData {
 	if (row.noteTypeType === 1) {
 		template = templates[0];
 	} else {
-		template = templates.find((t: CardTemplate) => t.ordinal === row.templateOrd);
+		template = templates.find(
+			(t: CardTemplate) => t.ordinal === row.templateOrd,
+		);
 	}
 
 	const noteTypeInfo = {
@@ -311,7 +395,25 @@ export class CardActions {
 		return { sql: "n.fields_json LIKE ?", param: `%${param}%` };
 	}
 
-	// ── Read methods ──────────────────────────────────────────
+	// ── Scheduling-only reads (no template rendering) ────────
+
+	getAllSchedulingMeta(): CardSchedulingMeta[] {
+		const rows = this.db.query<MetaRow>(
+			`SELECT ${META_SELECT} ${CARD_FROM} WHERE c.deleted_at IS NULL`,
+		);
+		return rows.map(mapMetaRow);
+	}
+
+	getSchedulingMetaById(cardId: string): CardSchedulingMeta | null {
+		const row = this.db.get<MetaRow>(
+			`SELECT ${META_SELECT} ${CARD_FROM} WHERE c.id = ? AND c.deleted_at IS NULL`,
+			[cardId],
+		);
+		if (!row) return null;
+		return mapMetaRow(row);
+	}
+
+	// ── Full card reads (with template rendering) ─────────────
 
 	get(cardId: string): FSRSCardData | undefined {
 		const row = this.db.get<CardRow>(

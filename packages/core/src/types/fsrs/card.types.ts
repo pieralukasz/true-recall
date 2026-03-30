@@ -127,26 +127,46 @@ export interface FSRSCardData {
 }
 
 /**
- * Extended flashcard with FSRS data
- * Used in UI (ReviewView, FlashcardPanel)
+ * Lightweight scheduling metadata — sufficient for queue building,
+ * filtering, badge counting, and preset resolution.
+ * No template rendering or content loading required.
+ *
+ * FSRSFlashcardItem extends this, so any function accepting
+ * CardSchedulingMeta also accepts FSRSFlashcardItem.
  */
-export interface FSRSFlashcardItem {
+export interface CardSchedulingMeta {
 	/** Unique ID (from FSRSCardData) */
 	id: string;
-	/** Question */
-	question: string;
-	/** Answer */
-	answer: string;
-	/** FSRS data */
+	/** FSRS scheduling data */
 	fsrs: FSRSCardData;
-	/** Source note name (resolved from vault at runtime via sourceUid) */
-	sourceNoteName?: string;
 	/** Source note UID (for MD note association) */
 	sourceUid?: string;
+	/** Source note name (resolved from vault at runtime via sourceUid) */
+	sourceNoteName?: string;
 	/** Path to source note (resolved from vault at runtime via sourceUid) */
 	sourceNotePath?: string;
 	/** Card type: 'basic' (default), 'cloze', or 'reversed' */
 	cardType?: CardType;
+	/** Note ID (v26: links card to its note) */
+	noteId?: string;
+	/** Template ordinal (v26: which template this card uses) */
+	templateOrd?: number;
+	/** Note type name (resolved at query time) */
+	noteTypeName?: string;
+	/** Force type-in mode for this card regardless of session default */
+	alwaysTypeIn?: boolean;
+}
+
+/**
+ * Extended flashcard with rendered content.
+ * Extends CardSchedulingMeta with template-rendered question/answer
+ * and display-only fields. Loaded on demand for individual cards.
+ */
+export interface FSRSFlashcardItem extends CardSchedulingMeta {
+	/** Question (rendered from template) */
+	question: string;
+	/** Answer (rendered from template) */
+	answer: string;
 	/** For cloze cards: original template with {{cN::...}} syntax */
 	clozeTemplate?: string;
 	/** For cloze cards: which cloze number this card tests */
@@ -163,12 +183,4 @@ export interface FSRSFlashcardItem {
 	ioParentId?: string;
 	/** Original selected text that generated this card (for jump-to-source) */
 	sourceText?: string;
-	/** Note ID (v26: links card to its note) */
-	noteId?: string;
-	/** Template ordinal (v26: which template this card uses) */
-	templateOrd?: number;
-	/** Note type name (resolved at query time) */
-	noteTypeName?: string;
-	/** Force type-in mode for this card regardless of session default */
-	alwaysTypeIn?: boolean;
 }

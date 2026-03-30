@@ -1,10 +1,19 @@
+import { effect } from "@preact/signals";
 import { SemanticAnswerGradingService } from "@true-recall/core/ai/semantic-answer-grading.service";
-import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpClient";
+import { VIEW_TYPE_REVIEW } from "@true-recall/core/constants";
+import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
 import type { SessionPersistenceService } from "@true-recall/core/persistence/session-persistence.service";
 import { FSRSService } from "@true-recall/core/services/fsrs.service";
-import { computeActionableSessionSnapshot } from "@true-recall/obsidian/features/study/services/actionable-session-snapshot.service";
-import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
 import { ReviewService } from "@true-recall/core/services/review.service";
+import {
+	extractFSRSSettings,
+	type FSRSFlashcardItem,
+	type FSRSPreset,
+	type LocalAnswerAssessment,
+	type SemanticGradingResult,
+} from "@true-recall/core/types";
+import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpClient";
+import { computeActionableSessionSnapshot } from "@true-recall/obsidian/features/study/services/actionable-session-snapshot.service";
 import type { PresetPickerOption } from "@true-recall/obsidian/features/study/ui/review/components/PresetPopover";
 import {
 	AnswerHandler,
@@ -28,29 +37,20 @@ import {
 	type TypeInMode,
 } from "@true-recall/obsidian/features/study/ui/review/helpers";
 import {
-	ReviewApp,
-	ReviewEmptyState,
-} from "@true-recall/obsidian/views/review/ReviewApp";
-import {
 	filtersFromViewState,
 	filtersToViewState,
 	isCustomSession,
 	type SessionFilters,
 } from "@true-recall/obsidian/features/study/ui/review/review.types";
-import { effect } from "@preact/signals";
-import { VIEW_TYPE_REVIEW } from "@true-recall/core/constants";
+import { mountPreact } from "@true-recall/obsidian/preact";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 import { refreshCards } from "@true-recall/obsidian/services/reactive-card-store";
 import { lastMutation } from "@true-recall/obsidian/services/signals";
 import type { ReviewApi } from "@true-recall/obsidian/store";
 import {
-	extractFSRSSettings,
-	type FSRSFlashcardItem,
-	type FSRSPreset,
-	type LocalAnswerAssessment,
-	type SemanticGradingResult,
-} from "@true-recall/core/types";
-import { mountPreact } from "@true-recall/obsidian/preact";
+	ReviewApp,
+	ReviewEmptyState,
+} from "@true-recall/obsidian/views/review/ReviewApp";
 import {
 	ItemView,
 	Menu,
@@ -422,7 +422,8 @@ export class ReviewView extends ItemView {
 
 	async setState(state: unknown, result: ViewStateResult): Promise<void> {
 		this.filters = filtersFromViewState(
-			(state as import("@true-recall/obsidian/features/study/ui/review/review.types").ReviewViewState) ?? null,
+			(state as import("@true-recall/obsidian/features/study/ui/review/review.types").ReviewViewState) ??
+				null,
 		);
 		this.filters.dayStartHour = this.plugin.settings.dayStartHour;
 		this.crammedCardIds.clear();
@@ -721,7 +722,12 @@ export class ReviewView extends ItemView {
 				}
 			}
 
-			this.review.startSession(queue);
+			// Load full content (question/answer) only for the ~50 queue cards,
+			// not all 3000+ in the collection. Queue was built from lightweight
+			// CardSchedulingMeta; now we fetch rendered content for just these IDs.
+			const queueIds = queue.map((c) => c.id);
+			const fullQueue = this.flashcardManager.getCardsByIds(queueIds);
+			this.review.startSession(fullQueue);
 			this.resetTypeInState(this.review.getCurrentCard()?.id ?? null);
 			this.subscribeToSessionEvents();
 			this.answerHandler.updateSchedulingPreview();

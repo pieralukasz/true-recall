@@ -1,11 +1,11 @@
+import { WEAK_CARD_STABILITY_THRESHOLD } from "@true-recall/core/constants";
 import type {
 	PresetDailyProgress,
 	SessionPersistenceService,
 } from "@true-recall/core/persistence/session-persistence.service";
 import type { QueueBuildOptions } from "@true-recall/core/services/review.service";
+import type { CardSchedulingMeta } from "@true-recall/core/types";
 import type { SessionFilters } from "@true-recall/core/types/review-session.types";
-import { WEAK_CARD_STABILITY_THRESHOLD } from "@true-recall/core/constants";
-import type { FSRSFlashcardItem } from "@true-recall/core/types";
 import type {
 	FSRSPreset,
 	TrueRecallSettings,
@@ -21,7 +21,7 @@ export interface CardFilterOptions {
 interface PresetServiceLike {
 	getPresets(): FSRSPreset[];
 	getDefaultPreset(): FSRSPreset;
-	resolvePresetForCard(card: FSRSFlashcardItem): FSRSPreset;
+	resolvePresetForCard(card: CardSchedulingMeta): FSRSPreset;
 }
 
 export interface GlobalPresetQueueContext {
@@ -42,9 +42,9 @@ export interface GlobalPresetQueueContext {
  * buried cards if stateFilter is "buried"
  */
 export function filterActiveCards(
-	cards: FSRSFlashcardItem[],
+	cards: CardSchedulingMeta[],
 	options: CardFilterOptions = {},
-): FSRSFlashcardItem[] {
+): CardSchedulingMeta[] {
 	const now = new Date();
 	const { stateFilter, archivedSourceUids } = options;
 
@@ -145,7 +145,7 @@ export function isGlobalReviewSession(filters: SessionFilters): boolean {
 }
 
 export function buildGlobalPresetQueueContext(
-	cards: FSRSFlashcardItem[],
+	cards: CardSchedulingMeta[],
 	presetService: PresetServiceLike,
 	sessionPersistence: SessionPersistenceService,
 ): GlobalPresetQueueContext {
@@ -215,7 +215,7 @@ export function buildGlobalPresetQueueContext(
 }
 
 export function matchesSessionFilters(
-	card: FSRSFlashcardItem,
+	card: CardSchedulingMeta,
 	filters: SessionFilters,
 ): boolean {
 	const now = Date.now();

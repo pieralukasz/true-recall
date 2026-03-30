@@ -1,3 +1,4 @@
+import { UNASSIGNED_PATH } from "@true-recall/core/constants";
 import type { SessionPersistenceService } from "@true-recall/core/persistence/session-persistence.service";
 import type { FSRSService } from "@true-recall/core/services/fsrs.service";
 import type {
@@ -5,19 +6,21 @@ import type {
 	HierarchyTreeNode,
 } from "@true-recall/core/services/hierarchy.service";
 import type { PresetService } from "@true-recall/core/services/preset.service";
-import {
-	type ActionableSessionSnapshot,
-	computeActionableSessionSnapshot,
-} from "@true-recall/obsidian/features/study/services/actionable-session-snapshot.service";
-import { UNASSIGNED_PATH } from "@true-recall/core/constants";
-import type { FSRSFlashcardItem, TrueRecallSettings } from "@true-recall/core/types";
+import type {
+	CardSchedulingMeta,
+	TrueRecallSettings,
+} from "@true-recall/core/types";
 import type { CardStore } from "@true-recall/core/types/fsrs/store.types";
-import type { MetadataCache } from "obsidian";
-import { State } from "ts-fsrs";
 import {
 	computeProjectStats,
 	type ProjectStats,
 } from "@true-recall/obsidian/editor/study/widgets/project-stats";
+import {
+	type ActionableSessionSnapshot,
+	computeActionableSessionSnapshot,
+} from "@true-recall/obsidian/features/study/services/actionable-session-snapshot.service";
+import type { MetadataCache } from "obsidian";
+import { State } from "ts-fsrs";
 import type {
 	DashboardNoteEntry,
 	DashboardProject,
@@ -36,9 +39,9 @@ interface ProjectAggregationDeps {
 		presetService: PresetService;
 		sessionPersistence: SessionPersistenceService;
 		settings: TrueRecallSettings;
-		allCards: FSRSFlashcardItem[];
+		allCards: CardSchedulingMeta[];
 		archivedSourceUids: ReadonlySet<string>;
-		activeCards: FSRSFlashcardItem[];
+		activeCards: CardSchedulingMeta[];
 		metadataCache: MetadataCache;
 	};
 }
@@ -50,14 +53,17 @@ interface ProjectAggregationIndexes {
 		string,
 		import("@true-recall/core/types/fsrs/card.types").FSRSCardData[]
 	>;
-	activeCardsBySourceUid: Map<string, FSRSFlashcardItem[]>;
+	activeCardsBySourceUid: Map<string, CardSchedulingMeta[]>;
 	retrievabilityByCardId: Map<string, number>;
 	now: Date;
 }
 
 function buildCardsBySourceUid(
-	cards: FSRSFlashcardItem[],
-): Map<string, import("@true-recall/core/types/fsrs/card.types").FSRSCardData[]> {
+	cards: CardSchedulingMeta[],
+): Map<
+	string,
+	import("@true-recall/core/types/fsrs/card.types").FSRSCardData[]
+> {
 	const map = new Map<
 		string,
 		import("@true-recall/core/types/fsrs/card.types").FSRSCardData[]
@@ -79,9 +85,9 @@ function buildCardsBySourceUid(
 }
 
 function buildActiveCardsBySourceUid(
-	cards: FSRSFlashcardItem[],
-): Map<string, FSRSFlashcardItem[]> {
-	const map = new Map<string, FSRSFlashcardItem[]>();
+	cards: CardSchedulingMeta[],
+): Map<string, CardSchedulingMeta[]> {
+	const map = new Map<string, CardSchedulingMeta[]>();
 	for (const card of cards) {
 		const uid = card.sourceUid ?? card.fsrs.sourceUid ?? "";
 		if (!uid) continue;
@@ -97,9 +103,9 @@ function buildActiveCardsBySourceUid(
 
 function collectActiveCardsForSources(
 	sourceUids: ReadonlySet<string>,
-	activeCardsBySourceUid: ReadonlyMap<string, FSRSFlashcardItem[]>,
-): FSRSFlashcardItem[] {
-	const collected: FSRSFlashcardItem[] = [];
+	activeCardsBySourceUid: ReadonlyMap<string, CardSchedulingMeta[]>,
+): CardSchedulingMeta[] {
+	const collected: CardSchedulingMeta[] = [];
 	for (const uid of sourceUids) {
 		const cards = activeCardsBySourceUid.get(uid);
 		if (!cards || cards.length === 0) continue;

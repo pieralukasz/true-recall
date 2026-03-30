@@ -1,6 +1,11 @@
 import { batch, type ReadonlySignal, signal } from "@preact/signals";
-import { refreshCards } from "@true-recall/obsidian/services/reactive-card-store";
 import type { HighlightColor } from "@true-recall/obsidian/helpers/fsrs-colors";
+import {
+	refreshCards,
+	removeCard,
+	removeCards,
+	updateCard,
+} from "@true-recall/obsidian/services/reactive-card-store";
 
 // ── Card mutation events ────────────────────────────────────
 
@@ -101,6 +106,40 @@ export function getNormalizedCardMutationAction(
 	}
 }
 
+function applyIncrementalUpdate(mutation: CardMutation): void {
+	switch (mutation.type) {
+		case "added":
+		case "updated":
+		case "reviewed":
+			if (mutation.cardId) {
+				updateCard(mutation.cardId);
+			} else {
+				refreshCards();
+			}
+			break;
+		case "removed":
+			if (mutation.cardId) {
+				removeCard(mutation.cardId);
+			} else if (mutation.cardIds) {
+				removeCards(mutation.cardIds);
+			} else {
+				refreshCards();
+			}
+			break;
+		case "bulk":
+			if (mutation.cardIds && mutation.action === "removed") {
+				removeCards(mutation.cardIds);
+			} else if (mutation.cardIds) {
+				for (const id of mutation.cardIds) updateCard(id);
+			} else {
+				refreshCards();
+			}
+			break;
+		default:
+			refreshCards();
+	}
+}
+
 let reviewRefreshTimer: ReturnType<typeof setTimeout> | null = null;
 const REVIEW_REFRESH_DELAY_MS = 300;
 
@@ -118,17 +157,17 @@ export function notifyCardChange(mutation: CardMutation): void {
 				clearTimeout(reviewRefreshTimer);
 				reviewRefreshTimer = null;
 			}
-			refreshCards();
+			applyIncrementalUpdate(normalizedMutation);
 		}
 	});
 
-	// Debounced refresh for "reviewed" so dashboard / panel header
-	// update after rapid answering pauses, without blocking each answer.
+	// Debounced incremental refresh for "reviewed" so dashboard / panel
+	// header updates after rapid answering pauses.
 	if (normalizedMutation.type === "reviewed") {
 		if (reviewRefreshTimer) clearTimeout(reviewRefreshTimer);
 		reviewRefreshTimer = setTimeout(() => {
 			reviewRefreshTimer = null;
-			refreshCards();
+			applyIncrementalUpdate(normalizedMutation);
 		}, REVIEW_REFRESH_DELAY_MS);
 	}
 }

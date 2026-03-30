@@ -1,16 +1,8 @@
-import { usePanelStore } from "@true-recall/obsidian/features/library/ui/panel/hooks/usePanelStore";
-import {
-	type UseSelectionActionsParams,
-	useSelectionActions,
-} from "@true-recall/obsidian/features/library/ui/panel/hooks/useSelectionActions";
 import { IconButton } from "@true-recall/obsidian/components";
+import { usePanelStore } from "@true-recall/obsidian/features/library/ui/panel/hooks/usePanelStore";
+import { useSelectionActions } from "@true-recall/obsidian/features/library/ui/panel/hooks/useSelectionActions";
 
-export type SelectionToolbarProps = Pick<
-	UseSelectionActionsParams,
-	"preserveScroll"
->;
-
-export function SelectionToolbar({ preserveScroll }: SelectionToolbarProps) {
+export function SelectionToolbar() {
 	const { selectedCardIds, flashcardInfo } = usePanelStore();
 	const {
 		handleExitSelectionMode,
@@ -21,7 +13,7 @@ export function SelectionToolbar({ preserveScroll }: SelectionToolbarProps) {
 		handleUnsuspendSelected,
 		handleForgetSelected,
 		handleDeleteSelected,
-	} = useSelectionActions({ preserveScroll });
+	} = useSelectionActions();
 
 	const selectedCount = selectedCardIds.size;
 	const totalCount = flashcardInfo?.flashcards.length ?? 0;

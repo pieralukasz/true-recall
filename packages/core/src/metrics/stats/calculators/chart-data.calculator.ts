@@ -1,16 +1,16 @@
+import { State } from "ts-fsrs";
 import type { SqliteStoreService } from "../../../persistence/sqlite/SqliteStoreService";
 import type {
+	CardSchedulingMeta,
 	CardsCreatedEntry,
 	CardsCreatedVsReviewedEntry,
 	ExtendedDailyStats,
-	FSRSFlashcardItem,
 	FutureDueEntry,
 	RatingDistributionEntry,
 	RetentionEntry,
 	StatsTimeRange,
 } from "../../../types";
 import { formatLocalDate } from "../../../utils";
-import { State } from "ts-fsrs";
 
 export class ChartDataCalculator {
 	constructor(private sqliteStore: SqliteStoreService | null = null) {}
@@ -20,7 +20,7 @@ export class ChartDataCalculator {
 	}
 
 	getFutureDueStats(
-		allCards: FSRSFlashcardItem[],
+		allCards: CardSchedulingMeta[],
 		range: StatsTimeRange,
 	): FutureDueEntry[] {
 		const today = new Date();
@@ -65,7 +65,7 @@ export class ChartDataCalculator {
 	}
 
 	getFutureDueStatsFilled(
-		allCards: FSRSFlashcardItem[],
+		allCards: CardSchedulingMeta[],
 		range: StatsTimeRange,
 	): FutureDueEntry[] {
 		const today = new Date();
@@ -118,14 +118,14 @@ export class ChartDataCalculator {
 	}
 
 	getCardsCreatedHistoryFilled(
-		allCards: FSRSFlashcardItem[],
+		allCards: CardSchedulingMeta[],
 		range: StatsTimeRange,
 	): CardsCreatedEntry[] {
 		return this.getCardsCreatedHistoryFilledSync(allCards, range);
 	}
 
 	getCardsCreatedHistoryFilledSync(
-		allCards: FSRSFlashcardItem[],
+		allCards: CardSchedulingMeta[],
 		range: StatsTimeRange,
 	): CardsCreatedEntry[] {
 		if (range === "backlog") {
@@ -281,9 +281,9 @@ export class ChartDataCalculator {
 	}
 
 	getCardsDueOnDate(
-		allCards: FSRSFlashcardItem[],
+		allCards: CardSchedulingMeta[],
 		date: string,
-	): FSRSFlashcardItem[] {
+	): CardSchedulingMeta[] {
 		// Parse date as local (not UTC)
 		const parts = date.split("-").map(Number);
 		const [year, month, day] = parts;
@@ -304,15 +304,15 @@ export class ChartDataCalculator {
 	}
 
 	getCardsCreatedOnDate(
-		allCards: FSRSFlashcardItem[],
+		allCards: CardSchedulingMeta[],
 		date: string,
-	): FSRSFlashcardItem[] {
+	): CardSchedulingMeta[] {
 		if (this.sqliteStore) {
 			const cardIds = this.sqliteStore.stats.getCardsCreatedOnDate(date);
 			const cardMap = new Map(allCards.map((c) => [c.id, c]));
 			return cardIds
 				.map((id: string) => cardMap.get(id))
-				.filter((c): c is FSRSFlashcardItem => c !== undefined);
+				.filter((c): c is CardSchedulingMeta => c !== undefined);
 		}
 
 		// Fallback: filter all cards

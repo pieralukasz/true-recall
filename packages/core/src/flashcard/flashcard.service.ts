@@ -7,30 +7,18 @@
  * instead of Obsidian's App.
  */
 
+import { FLASHCARD_CONFIG } from "../constants";
+import { notifyCardChange } from "../events";
+import type { IFileSystem } from "../interfaces/file-system";
+import type { IFrontmatter } from "../interfaces/frontmatter";
+import type { IMetadataIndex } from "../interfaces/metadata-index";
 import type { SqliteStoreService } from "../persistence/sqlite/SqliteStoreService";
 import {
 	type GeneratedCard,
 	generateCardsForNote,
 } from "../services/card-generation.service";
 import type { FrontmatterIndexService } from "../services/frontmatter-index.service";
-import {
-	deriveCardType,
-	renderTemplate,
-} from "../services/template-engine";
-import {
-	normalizeIOImagePath,
-	serializeIODefinition,
-} from "../utils/io-definition";
-import type { IODefinition } from "../types/image-occlusion.types";
-import { CardQueryService } from "./card-query.service";
-import {
-	CardRepository,
-	type CreateBatchResult,
-} from "./card-repository.service";
-import { FrontmatterService } from "./frontmatter.service";
-import { SourceNoteService } from "./source-note.service";
-import { FLASHCARD_CONFIG } from "../constants";
-import { notifyCardChange } from "../events";
+import { deriveCardType, renderTemplate } from "../services/template-engine";
 import type {
 	CardReviewLogEntry,
 	CardType,
@@ -40,15 +28,24 @@ import type {
 	TrueRecallSettings,
 } from "../types";
 import { createDefaultFSRSData } from "../types";
+import type { IODefinition } from "../types/image-occlusion.types";
 import {
 	BUILTIN_IMAGE_OCCLUSION_ID,
 	type Note,
 	type NoteType,
 } from "../types/note.types";
-import type { IFileSystem } from "../interfaces/file-system";
-import type { IFrontmatter } from "../interfaces/frontmatter";
-import type { IMetadataIndex } from "../interfaces/metadata-index";
+import {
+	normalizeIOImagePath,
+	serializeIODefinition,
+} from "../utils/io-definition";
+import { CardQueryService } from "./card-query.service";
+import {
+	CardRepository,
+	type CreateBatchResult,
+} from "./card-repository.service";
 import type { ISessionPersistence } from "./deletion-handler.service";
+import { FrontmatterService } from "./frontmatter.service";
+import { SourceNoteService } from "./source-note.service";
 
 export interface ScanResult {
 	totalCards: number;
@@ -151,6 +148,13 @@ export class FlashcardManager {
 		return this.store?.isReady() ?? false;
 	}
 
+	getCardQueryService(): CardQueryService {
+		if (!this.cardQueryService) {
+			throw new Error("Store not initialized.");
+		}
+		return this.cardQueryService;
+	}
+
 	/** Returns true if card was saved, false if skipped (already exists) */
 	setStoreData(cardId: string, fsrsData: FSRSCardData): boolean {
 		if (!this.cardRepository) {
@@ -189,8 +193,7 @@ export class FlashcardManager {
 	}
 
 	async getFlashcardInfo(filePath: string): Promise<FlashcardInfo> {
-		const sourceUid =
-			await this.frontmatterService.getSourceNoteUid(filePath);
+		const sourceUid = await this.frontmatterService.getSourceNoteUid(filePath);
 
 		if (!sourceUid) {
 			return this.createEmptyFlashcardInfo();

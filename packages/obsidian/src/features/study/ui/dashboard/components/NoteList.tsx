@@ -1,25 +1,15 @@
 import type { Signal } from "@preact/signals";
-import { useSignal } from "@preact/signals";
-import { prioritySortComparator } from "@true-recall/core/helpers/note-priority";
-import { NamePromptModal } from "@true-recall/obsidian/modals/study/NamePromptModal";
 import { usePlugin } from "@true-recall/obsidian/preact";
-import { Notice, normalizePath, TFile } from "obsidian";
+import { TFile } from "obsidian";
 import type { RefObject } from "preact";
-import { useCallback, useEffect, useMemo, useRef } from "preact/hooks";
-import {
-	DRAG_MIME,
-	type DragItem,
-	type DragState,
-	type DropResult,
-	executeDrop,
-	getDragClass,
-} from "../helpers/drag-drop";
+import { useRef } from "preact/hooks";
+import { getDragClass } from "../helpers/drag-drop";
+import { useNoteBulkActions } from "../helpers/use-note-bulk-actions";
+import { useNoteDragDrop } from "../helpers/use-note-drag-drop";
+import { useNoteFiltering } from "../helpers/use-note-filtering";
+import { useNoteSelection } from "../helpers/use-note-selection";
 import { useExternalVirtualList } from "../helpers/use-virtual-list";
-import type {
-	DashboardNoteEntry,
-	NoteFilterMode,
-	ProjectFilter,
-} from "../types";
+import type { DashboardNoteEntry } from "../types";
 import { NoteFilters } from "./NoteFilters";
 import { NoteRow } from "./NoteRow";
 import { SelectionBar } from "./SelectionBar";
@@ -32,24 +22,6 @@ interface NoteListProps {
 	onPresetClick?: (path: string | null) => void;
 }
 
-function matchesFilter(
-	note: DashboardNoteEntry,
-	filter: NoteFilterMode,
-): boolean {
-	switch (filter) {
-		case "all":
-			return true;
-		case "due":
-			return note.due > 0;
-		case "new":
-			return note.newCount > 0;
-		case "learning":
-			return note.learning > 0;
-		case "overdue":
-			return note.overdueCount > 0;
-	}
-}
-
 export function NoteList({
 	notes,
 	searchQuery,
@@ -58,51 +30,41 @@ export function NoteList({
 	onPresetClick,
 }: NoteListProps) {
 	const plugin = usePlugin();
-	const activeFilter = useSignal<NoteFilterMode>("all");
-	const projectFilter = useSignal<ProjectFilter>({ type: "none" });
 	const contentRef = useRef<HTMLDivElement>(null);
-	const dragState = useSignal<DragState | null>(null);
-	const selectionMode = useSignal(false);
-	const selectedPaths = useSignal<ReadonlySet<string>>(new Set());
 
-	const unassignedCount = useMemo(
-		() => notes.filter((n) => n.projects.length === 0).length,
-		[notes],
-	);
+	const {
+		activeFilter,
+		projectFilter,
+		filteredNotes,
+		counts,
+		unassignedCount,
+		handleFilterChange,
+		handleProjectFilterChange,
+	} = useNoteFiltering({ notes, searchQuery });
 
-	const projectFiltered = useMemo(() => {
-		const pf = projectFilter.value;
-		if (pf.type === "project")
-			return notes.filter((n) => n.projects.includes(pf.name));
-		if (pf.type === "unassigned")
-			return notes.filter((n) => n.projects.length === 0);
-		return notes;
-	}, [notes, projectFilter.value]);
+	const {
+		selectedPaths,
+		selectedCount,
+		isSelecting,
+		exitSelection,
+		toggleSelect,
+		enterSelection,
+		selectAll,
+	} = useNoteSelection({ filteredNotes });
 
-	const counts = useMemo((): Record<NoteFilterMode, number> => {
-		return {
-			all: projectFiltered.length,
-			due: projectFiltered.filter((n) => n.due > 0).length,
-			new: projectFiltered.filter((n) => n.newCount > 0).length,
-			learning: projectFiltered.filter((n) => n.learning > 0).length,
-			overdue: projectFiltered.filter((n) => n.overdueCount > 0).length,
-		};
-	}, [projectFiltered]);
+	const {
+		handleCreateProjectFromSelected,
+		handleArchiveSelected,
+		handleStudySelected,
+	} = useNoteBulkActions({ selectedPaths, filteredNotes, exitSelection });
 
-	const filteredNotes = useMemo(() => {
-		let result = projectFiltered;
-
-		if (activeFilter.value !== "all") {
-			result = result.filter((n) => matchesFilter(n, activeFilter.value));
-		}
-
-		if (searchQuery) {
-			const q = searchQuery.toLowerCase();
-			result = result.filter((n) => n.name.toLowerCase().includes(q));
-		}
-
-		return [...result].sort(prioritySortComparator);
-	}, [projectFiltered, searchQuery, activeFilter.value]);
+	const {
+		dragState,
+		handleDragStart,
+		handleDragEnd,
+		handleDragOver,
+		handleDrop,
+	} = useNoteDragDrop();
 
 	const { totalHeight, virtualItems } = useExternalVirtualList({
 		items: filteredNotes,
@@ -110,111 +72,6 @@ export function NoteList({
 		scrollTop,
 		contentOffsetRef: contentRef,
 	});
-
-	// ── Selection ───────────────────────────────────────
-
-	const exitSelection = useCallback(() => {
-		selectionMode.value = false;
-		selectedPaths.value = new Set();
-	}, [selectionMode, selectedPaths]);
-
-	// ESC exits selection mode
-	useEffect(() => {
-		if (!selectionMode.value) return;
-		const handler = (e: KeyboardEvent) => {
-			if (e.key === "Escape") exitSelection();
-		};
-		document.addEventListener("keydown", handler);
-		return () => document.removeEventListener("keydown", handler);
-	}, [selectionMode.value, exitSelection]);
-
-	const toggleSelect = useCallback(
-		(path: string) => {
-			const next = new Set(selectedPaths.value);
-			if (next.has(path)) next.delete(path);
-			else next.add(path);
-			selectedPaths.value = next;
-		},
-		[selectedPaths],
-	);
-
-	const enterSelection = useCallback(
-		(path: string) => {
-			selectionMode.value = true;
-			selectedPaths.value = new Set([path]);
-		},
-		[selectionMode, selectedPaths],
-	);
-
-	const selectAll = useCallback(() => {
-		const paths = new Set(
-			filteredNotes.filter((n) => n.path).map((n) => n.path as string),
-		);
-		selectedPaths.value = paths;
-	}, [filteredNotes, selectedPaths]);
-
-	const selectedCount = selectedPaths.value.size;
-
-	// ── Bulk actions ────────────────────────────────────
-
-	const handleCreateProjectFromSelected = useCallback(async () => {
-		if (selectedCount === 0) return;
-
-		const modal = new NamePromptModal(plugin.app, "New Project");
-		const result = await modal.openAndWait();
-		if (result.cancelled) return;
-
-		const name = result.name;
-		const projectPath = normalizePath(`${name}.md`);
-
-		if (plugin.app.vault.getAbstractFileByPath(projectPath)) {
-			new Notice(`A note already exists at "${projectPath}".`);
-			return;
-		}
-
-		await plugin.app.vault.create(projectPath, "");
-
-		const frontmatterService = plugin.flashcardManager.getFrontmatterService();
-		for (const path of selectedPaths.value) {
-			const file = plugin.app.vault.getAbstractFileByPath(path);
-			if (file instanceof TFile) {
-				await frontmatterService.addParent(file.path, name);
-			}
-		}
-
-		new Notice(`Created project "${name}" with ${selectedCount} notes`);
-		exitSelection();
-	}, [plugin, selectedPaths, selectedCount, exitSelection]);
-
-	const handleArchiveSelected = useCallback(async () => {
-		if (selectedCount === 0) return;
-
-		const frontmatterService = plugin.flashcardManager.getFrontmatterService();
-		for (const path of selectedPaths.value) {
-			const file = plugin.app.vault.getAbstractFileByPath(path);
-			if (file instanceof TFile) {
-				await frontmatterService.setArchive(file.path, true);
-			}
-		}
-
-		new Notice(`Archived ${selectedCount} notes`);
-		exitSelection();
-	}, [plugin, selectedPaths, selectedCount, exitSelection]);
-
-	const handleStudySelected = useCallback(() => {
-		if (selectedCount === 0) return;
-
-		const noteNames = filteredNotes
-			.filter((n) => n.path && selectedPaths.value.has(n.path))
-			.map((n) => n.name);
-
-		void plugin.openCustomStudyModal({
-			sourceNoteFilters: noteNames,
-			scopeLabel: `${noteNames.length} notes`,
-		});
-
-		exitSelection();
-	}, [plugin, filteredNotes, selectedPaths, selectedCount, exitSelection]);
 
 	// ── Note handlers ───────────────────────────────────
 
@@ -240,14 +97,6 @@ export function NoteList({
 		projectFilter.value = { type: "project", name: projectName };
 	};
 
-	const handleFilterChange = useCallback((f: NoteFilterMode) => {
-		activeFilter.value = f;
-	}, []);
-
-	const handleProjectFilterChange = useCallback((pf: ProjectFilter) => {
-		projectFilter.value = pf;
-	}, []);
-
 	const handleArchiveNote = (note: DashboardNoteEntry) => {
 		if (!note.path) return;
 		const file = plugin.app.vault.getAbstractFileByPath(note.path);
@@ -268,86 +117,7 @@ export function NoteList({
 		}
 	};
 
-	// ── Drag & Drop handlers (note-on-note → create project) ──
-
-	const handleDragStart = useCallback(
-		(e: DragEvent, note: DashboardNoteEntry) => {
-			if (!note.path) {
-				e.preventDefault();
-				return;
-			}
-			const item: DragItem = {
-				type: "note",
-				path: note.path,
-				name: note.name,
-				parentPath: null,
-			};
-			e.dataTransfer?.setData(DRAG_MIME, JSON.stringify(item));
-			if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
-			requestAnimationFrame(() => {
-				dragState.value = { item, dropTargetPath: null, isValid: false };
-			});
-		},
-		[dragState],
-	);
-
-	const handleDragEnd = useCallback(() => {
-		dragState.value = null;
-	}, [dragState]);
-
-	const handleDragOver = useCallback(
-		(e: DragEvent, targetNote: DashboardNoteEntry) => {
-			const ds = dragState.value;
-			if (!ds || !targetNote.path) return;
-			if (targetNote.path === ds.item.path) return;
-
-			if (targetNote.path !== ds.dropTargetPath) {
-				dragState.value = {
-					...ds,
-					dropTargetPath: targetNote.path,
-					isValid: true,
-				};
-			}
-
-			e.preventDefault();
-			if (e.dataTransfer) e.dataTransfer.dropEffect = "move";
-		},
-		[dragState],
-	);
-
-	const handleDrop = useCallback(
-		(e: DragEvent, targetNote: DashboardNoteEntry) => {
-			e.preventDefault();
-			const ds = dragState.value;
-			dragState.value = null;
-			if (!ds || !targetNote.path || targetNote.path === ds.item.path) return;
-
-			const result: DropResult = {
-				action: "create-project",
-				dragPath: ds.item.path,
-				dragName: ds.item.name,
-				targetPath: targetNote.path,
-				targetName: targetNote.name,
-			};
-
-			const frontmatterService =
-				plugin.flashcardManager.getFrontmatterService();
-			void executeDrop(result, {
-				app: plugin.app,
-				frontmatterService,
-				promptProjectName: async (defaultName: string) => {
-					const modal = new NamePromptModal(plugin.app, defaultName);
-					const res = await modal.openAndWait();
-					return res.cancelled ? null : res.name;
-				},
-			});
-		},
-		[dragState, plugin],
-	);
-
 	// ── Render ──────────────────────────────────────────
-
-	const isSelecting = selectionMode.value;
 
 	return (
 		<div class="ep:flex ep:flex-col">

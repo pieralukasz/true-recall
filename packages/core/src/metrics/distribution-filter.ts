@@ -2,7 +2,7 @@ import type {
 	DistributionStats,
 	HistogramBucket,
 } from "@true-recall/core/metrics/fsrs-tools/statistics/distribution.calculator";
-import type { FSRSFlashcardItem } from "@true-recall/core/types";
+import type { CardSchedulingMeta } from "@true-recall/core/types";
 import { State } from "ts-fsrs";
 
 type BucketDef = [min: number, max: number, label: string];
@@ -122,7 +122,7 @@ function computeDistribution(
 	};
 }
 
-export function getFilteredDistributions(cards: FSRSFlashcardItem[]): {
+export function getFilteredDistributions(cards: CardSchedulingMeta[]): {
 	interval: { histogram: HistogramBucket[]; stats: DistributionStats };
 	stability: { histogram: HistogramBucket[]; stats: DistributionStats };
 	difficulty: { histogram: HistogramBucket[]; stats: DistributionStats };

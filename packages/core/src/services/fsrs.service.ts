@@ -1,12 +1,3 @@
-import { DEFAULT_FSRS_WEIGHTS } from "../constants";
-import type {
-	FSRSCardData,
-	FSRSFlashcardItem,
-	SchedulingPreview,
-} from "../types";
-import { formatInterval } from "../types";
-import type { FSRSSettings } from "../types/settings.types";
-import { getTomorrowBoundary } from "../utils";
 import {
 	type Card,
 	createEmptyCard,
@@ -16,6 +7,15 @@ import {
 	type RecordLogItem,
 	State,
 } from "ts-fsrs";
+import { DEFAULT_FSRS_WEIGHTS } from "../constants";
+import type {
+	CardSchedulingMeta,
+	FSRSCardData,
+	SchedulingPreview,
+} from "../types";
+import { formatInterval } from "../types";
+import type { FSRSSettings } from "../types/settings.types";
+import { getTomorrowBoundary } from "../utils";
 
 export class FSRSService {
 	private fsrs: FSRS;
@@ -192,19 +192,22 @@ export class FSRSService {
 		return dueDate <= currentTime;
 	}
 
-	getDueCards(cards: FSRSFlashcardItem[], now?: Date): FSRSFlashcardItem[] {
+	getDueCards(cards: CardSchedulingMeta[], now?: Date): CardSchedulingMeta[] {
 		const currentTimestamp = (now ?? new Date()).getTime();
 		return cards.filter(
 			(card) => new Date(card.fsrs.due).getTime() <= currentTimestamp,
 		);
 	}
 
-	getNewCards(cards: FSRSFlashcardItem[], limit?: number): FSRSFlashcardItem[] {
+	getNewCards(
+		cards: CardSchedulingMeta[],
+		limit?: number,
+	): CardSchedulingMeta[] {
 		const newCards = cards.filter((card) => card.fsrs.state === State.New);
 		return limit !== undefined ? newCards.slice(0, limit) : newCards;
 	}
 
-	getLearningCards(cards: FSRSFlashcardItem[]): FSRSFlashcardItem[] {
+	getLearningCards(cards: CardSchedulingMeta[]): CardSchedulingMeta[] {
 		return cards.filter(
 			(card) =>
 				card.fsrs.state === State.Learning ||
@@ -217,10 +220,10 @@ export class FSRSService {
 	 * after the dayStartHour cutoff, regardless of exact time
 	 */
 	getReviewCards(
-		cards: FSRSFlashcardItem[],
+		cards: CardSchedulingMeta[],
 		now?: Date,
 		dayStartHour = 4,
-	): FSRSFlashcardItem[] {
+	): CardSchedulingMeta[] {
 		const tomorrowBoundary = getTomorrowBoundary(dayStartHour, now);
 
 		return cards.filter((card) => {
@@ -230,7 +233,7 @@ export class FSRSService {
 		});
 	}
 
-	sortByDue(cards: FSRSFlashcardItem[]): FSRSFlashcardItem[] {
+	sortByDue(cards: CardSchedulingMeta[]): CardSchedulingMeta[] {
 		return [...cards].sort((a, b) => {
 			const dateA = new Date(a.fsrs.due);
 			const dateB = new Date(b.fsrs.due);
@@ -240,10 +243,10 @@ export class FSRSService {
 
 	/** Sort cards by retrievability (lowest R first - most at risk of forgetting) */
 	sortByRetrievability(
-		cards: FSRSFlashcardItem[],
+		cards: CardSchedulingMeta[],
 		now?: Date,
 		presetSettings?: FSRSSettings,
-	): FSRSFlashcardItem[] {
+	): CardSchedulingMeta[] {
 		const currentTime = now ?? new Date();
 
 		// Single pass: compute R for all cards
@@ -277,7 +280,7 @@ export class FSRSService {
 	}
 
 	getStats(
-		cards: FSRSFlashcardItem[],
+		cards: CardSchedulingMeta[],
 		dayStartHour = 4,
 	): {
 		total: number;

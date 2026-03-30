@@ -1,10 +1,11 @@
-import type { HierarchyService } from "@true-recall/core/services/hierarchy.service";
+import type { Signal } from "@preact/signals";
 import type { FrontmatterService } from "@true-recall/core/flashcard/frontmatter.service";
+import type { HierarchyService } from "@true-recall/core/services/hierarchy.service";
+import type TrueRecallPlugin from "@true-recall/obsidian/main";
+import { NamePromptModal } from "@true-recall/obsidian/modals/study/NamePromptModal";
 import type { App } from "obsidian";
 import { Notice, normalizePath, TFile } from "obsidian";
 import type { FlatProjectItem } from "./project-tree-flatten";
-
-// ── DnD data types ──────────────────────────────────────
 
 export interface DragItem {
 	type: "project" | "note";
@@ -56,7 +57,45 @@ export function getDragClass(
 	return "";
 }
 
-// ── Drag item extraction ────────────────────────────────
+export function initDragTransfer(
+	e: DragEvent,
+	item: DragItem,
+	dragState: Signal<DragState | null>,
+): void {
+	e.dataTransfer?.setData(DRAG_MIME, JSON.stringify(item));
+	if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
+	requestAnimationFrame(() => {
+		dragState.value = { item, dropTargetPath: null, isValid: false };
+	});
+}
+
+export function consumeDragState(
+	e: DragEvent,
+	dragState: Signal<DragState | null>,
+): DragState | null {
+	e.preventDefault();
+	const ds = dragState.value;
+	dragState.value = null;
+	return ds;
+}
+
+export interface DropDeps {
+	app: App;
+	frontmatterService: FrontmatterService;
+	promptProjectName: (defaultName: string) => Promise<string | null>;
+}
+
+export function createDropDeps(plugin: TrueRecallPlugin): DropDeps {
+	return {
+		app: plugin.app,
+		frontmatterService: plugin.flashcardManager.getFrontmatterService(),
+		promptProjectName: async (defaultName: string) => {
+			const modal = new NamePromptModal(plugin.app, defaultName);
+			const res = await modal.openAndWait();
+			return res.cancelled ? null : res.name;
+		},
+	};
+}
 
 export function dragItemFromFlatItem(item: FlatProjectItem): DragItem | null {
 	if (item.type === "project-header") {
@@ -78,14 +117,11 @@ export function dragItemFromFlatItem(item: FlatProjectItem): DragItem | null {
 	return null;
 }
 
-// ── Drop validation ─────────────────────────────────────
-
 function nameFromPath(path: string): string {
 	const last = path.split("/").pop() ?? path;
 	return last.replace(/\.md$/, "");
 }
 
-/** BFS check: is candidatePath a descendant of ancestorPath? */
 function isDescendant(
 	ancestorPath: string,
 	candidatePath: string,
@@ -114,25 +150,19 @@ export function validateDrop(
 	target: FlatProjectItem,
 	hierarchyService: HierarchyService,
 ): DropResult | null {
-	// Can't drop on empty-project rows
 	if (target.type === "empty-project") return null;
 
 	const targetPath =
 		target.type === "project-header" ? target.project.path : target.note.path;
 
-	// Target must have a path
 	if (!targetPath) return null;
-
-	// Can't drop on yourself
 	if (drag.path === targetPath) return null;
 
 	const targetName = nameFromPath(targetPath);
 
 	if (target.type === "project-header") {
-		// Can't drop onto current parent (no-op)
 		if (drag.parentPath === targetPath) return null;
 
-		// Project onto project: check for cycles
 		if (
 			drag.type === "project" &&
 			isDescendant(drag.path, targetPath, hierarchyService)
@@ -150,7 +180,6 @@ export function validateDrop(
 		};
 	}
 
-	// Note onto note → create project
 	if (target.type === "note" && drag.type === "note") {
 		return {
 			action: "create-project",
@@ -161,16 +190,7 @@ export function validateDrop(
 		};
 	}
 
-	// Project onto note → invalid for v1
 	return null;
-}
-
-// ── Drop execution ──────────────────────────────────────
-
-export interface DropDeps {
-	app: App;
-	frontmatterService: FrontmatterService;
-	promptProjectName: (defaultName: string) => Promise<string | null>;
 }
 
 export async function executeDrop(
@@ -197,7 +217,6 @@ export async function executeDrop(
 			const name = await deps.promptProjectName("New Project");
 			if (!name) return;
 
-			// Determine folder from target note's location
 			const targetFile = app.vault.getAbstractFileByPath(result.targetPath);
 			if (!(targetFile instanceof TFile)) return;
 
@@ -211,10 +230,8 @@ export async function executeDrop(
 				return;
 			}
 
-			// Create project note (no frontmatter needed — children declare parents)
 			await app.vault.create(projectPath, "");
 
-			// Add parents to both notes
 			const dragFile = app.vault.getAbstractFileByPath(result.dragPath);
 			const targetFileForParent = app.vault.getAbstractFileByPath(
 				result.targetPath,

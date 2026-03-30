@@ -20,6 +20,7 @@ export type {
 	AnswerDiffTokenType,
 	CardMaturityBreakdown,
 	CardReviewLogEntry,
+	CardSchedulingMeta,
 	CardStore,
 	CardsCreatedEntry,
 	CardsCreatedVsReviewedEntry,
@@ -77,6 +78,12 @@ export {
 	VIDEO_EXTENSIONS,
 } from "./image.types";
 export type {
+	IODefinition,
+	IOMaskMode,
+	IORegion,
+	IOShape,
+} from "./image-occlusion.types";
+export type {
 	ExampleQuery,
 	NLQueryConfig,
 	NLQueryResult,
@@ -113,9 +120,3 @@ export type {
 	TypeInMode,
 } from "./settings.types";
 export { extractFSRSSettings } from "./settings.types";
-export type {
-	IODefinition,
-	IOMaskMode,
-	IORegion,
-	IOShape,
-} from "./image-occlusion.types";

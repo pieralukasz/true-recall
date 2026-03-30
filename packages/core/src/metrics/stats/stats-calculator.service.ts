@@ -1,22 +1,13 @@
+import { State } from "ts-fsrs";
+import type { FlashcardManager } from "../../flashcard/flashcard.service";
 import type { SqliteStoreService } from "../../persistence/sqlite/SqliteStoreService";
 import type { FSRSService } from "../../services/fsrs.service";
-import {
-	ChartDataCalculator,
-	MaturityCalculator,
-	StreakCalculator,
-	type StreakInfo,
-} from "./calculators";
-import {
-	EMPTY_FILTER,
-	type StatsFilterContext,
-} from "./stats-filter.types";
-import type { FlashcardManager } from "../../flashcard/flashcard.service";
 import type {
 	CardMaturityBreakdown,
+	CardSchedulingMeta,
 	CardsCreatedEntry,
 	CollectionHealthSnapshot,
 	ExtendedDailyStats,
-	FSRSFlashcardItem,
 	FutureDueEntry,
 	HealthBucket,
 	NotePerformanceRow,
@@ -30,7 +21,13 @@ import {
 	getTodayBoundary,
 	getTomorrowBoundary,
 } from "../../utils";
-import { State } from "ts-fsrs";
+import {
+	ChartDataCalculator,
+	MaturityCalculator,
+	StreakCalculator,
+	type StreakInfo,
+} from "./calculators";
+import { EMPTY_FILTER, type StatsFilterContext } from "./stats-filter.types";
 
 /**
  * Platform-agnostic session persistence interface for stats.
@@ -48,11 +45,11 @@ export class StatsCalculatorService {
 	private dayStartHour = 4;
 	private filter: StatsFilterContext = EMPTY_FILTER;
 	private filterCacheKey = this.buildFilterCacheKey(EMPTY_FILTER);
-	private cardSnapshot: FSRSFlashcardItem[] | null = null;
+	private cardSnapshot: CardSchedulingMeta[] | null = null;
 	private filteredCardsCache: {
 		filterKey: string;
-		source: FSRSFlashcardItem[];
-		result: FSRSFlashcardItem[];
+		source: CardSchedulingMeta[];
+		result: CardSchedulingMeta[];
 	} | null = null;
 	private dailyStatsCache = new Map<
 		string,
@@ -61,7 +58,7 @@ export class StatsCalculatorService {
 	private dailyStatsRangeCache = new Map<string, ExtendedDailyStats[]>();
 	private healthCache: {
 		filterKey: string;
-		source: FSRSFlashcardItem[];
+		source: CardSchedulingMeta[];
 		minuteBucket: number;
 		result: CollectionHealthSnapshot;
 	} | null = null;
@@ -101,7 +98,7 @@ export class StatsCalculatorService {
 		this.clearDailyStatsCaches();
 	}
 
-	setCardSnapshot(cards: FSRSFlashcardItem[]): void {
+	setCardSnapshot(cards: CardSchedulingMeta[]): void {
 		if (this.cardSnapshot === cards) return;
 		this.cardSnapshot = cards;
 		this.filteredCardsCache = null;
@@ -115,7 +112,7 @@ export class StatsCalculatorService {
 		);
 	}
 
-	private getFilteredCards(): FSRSFlashcardItem[] {
+	private getFilteredCards(): CardSchedulingMeta[] {
 		const sourceCards =
 			this.cardSnapshot ?? this.flashcardManager.getAllFSRSCards();
 		const cached = this.filteredCardsCache;
@@ -484,14 +481,14 @@ export class StatsCalculatorService {
 		return this.chartDataCalculator.getFutureDueStatsFilled(cards, range);
 	}
 
-	getCardsDueOnDate(date: string): FSRSFlashcardItem[] {
+	getCardsDueOnDate(date: string): CardSchedulingMeta[] {
 		const cards = this.getFilteredCards();
 		return this.chartDataCalculator.getCardsDueOnDate(cards, date);
 	}
 
 	getCardsByCategory(
 		category: keyof CardMaturityBreakdown,
-	): FSRSFlashcardItem[] {
+	): CardSchedulingMeta[] {
 		const cards = this.getFilteredCards();
 		return this.maturityCalculator.getCardsByCategory(cards, category);
 	}
@@ -508,7 +505,7 @@ export class StatsCalculatorService {
 		);
 	}
 
-	getCardsCreatedOnDate(date: string): FSRSFlashcardItem[] {
+	getCardsCreatedOnDate(date: string): CardSchedulingMeta[] {
 		const cards = this.getFilteredCards();
 		return this.chartDataCalculator.getCardsCreatedOnDate(cards, date);
 	}

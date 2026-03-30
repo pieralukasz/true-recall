@@ -1,8 +1,8 @@
+import { IconButton, SearchInput } from "@true-recall/obsidian/components";
 import { useCardActions } from "@true-recall/obsidian/features/library/ui/panel/hooks/useCardActions";
 import { usePanelActions } from "@true-recall/obsidian/features/library/ui/panel/hooks/usePanelActions";
 import { usePanelStore } from "@true-recall/obsidian/features/library/ui/panel/hooks/usePanelStore";
 import { countByState } from "@true-recall/obsidian/features/library/ui/panel/utils/card-status.utils";
-import { IconButton, SearchInput } from "@true-recall/obsidian/components";
 import { FSRS_COLORS } from "@true-recall/obsidian/helpers/fsrs-colors";
 import { usePlugin } from "@true-recall/obsidian/preact";
 import { Menu } from "obsidian";
@@ -11,15 +11,11 @@ import { useCallback } from "preact/hooks";
 export interface NormalHeaderProps {
 	streamingNewCount: number;
 	onRefresh: () => void;
-	preserveScroll: (action: () => void) => void;
-	captureScroll: () => () => void;
 }
 
 export function NormalHeader({
 	streamingNewCount,
 	onRefresh,
-	preserveScroll,
-	captureScroll,
 }: NormalHeaderProps) {
 	const plugin = usePlugin();
 	const {
@@ -32,7 +28,7 @@ export function NormalHeader({
 	} = usePanelStore();
 
 	const panelActions = usePanelActions();
-	const cardActions = useCardActions({ preserveScroll, captureScroll });
+	const cardActions = useCardActions();
 
 	const reviewedToday = plugin.sessionPersistence?.getReviewedToday();
 	const dayStartHour = plugin.settings.dayStartHour;

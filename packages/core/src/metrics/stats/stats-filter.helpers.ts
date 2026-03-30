@@ -1,9 +1,9 @@
 import type { PresetService } from "../../services/preset.service";
-import type { FSRSFlashcardItem } from "../../types";
+import type { CardSchedulingMeta } from "../../types";
 
 export function buildSourceUidToPresetMap(
 	presetService: PresetService,
-	allCards: FSRSFlashcardItem[],
+	allCards: CardSchedulingMeta[],
 ): Map<string, string> {
 	const map = new Map<string, string>();
 	const seenUids = new Set<string>();

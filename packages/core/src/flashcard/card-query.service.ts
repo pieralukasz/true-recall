@@ -1,6 +1,11 @@
 import type { SqliteStoreService } from "../persistence/sqlite/SqliteStoreService";
+import type {
+	CardSchedulingMeta,
+	CardType,
+	FSRSCardData,
+	FSRSFlashcardItem,
+} from "../types";
 import type { SourceNoteService } from "./source-note.service";
-import type { CardType, FSRSCardData, FSRSFlashcardItem } from "../types";
 
 interface RawFlashcardItem {
 	id: string;
@@ -25,6 +30,49 @@ export class CardQueryService {
 		private store: SqliteStoreService,
 		private sourceNoteService: SourceNoteService,
 	) {}
+
+	// ── Tier 1: Scheduling metadata (fast, no template rendering) ────
+
+	getAllMeta(): CardSchedulingMeta[] {
+		const metas = this.store.getAllSchedulingMeta();
+		return this.sourceNoteService.enrichMetas(metas);
+	}
+
+	getMetaById(cardId: string): CardSchedulingMeta | null {
+		const meta = this.store.getSchedulingMetaById(cardId);
+		if (!meta) return null;
+		return this.sourceNoteService.enrichMeta(meta);
+	}
+
+	// ── Tier 2: Full content (with template rendering, per card) ─────
+
+	getContent(cardId: string): FSRSFlashcardItem | null {
+		const card = this.store.get(cardId);
+		if (!card || !card.question) return null;
+		const item: FSRSFlashcardItem = {
+			id: card.id,
+			question: card.question,
+			answer: card.answer ?? "",
+			fsrs: card,
+			sourceUid: card.sourceUid,
+			cardType: card.cardType,
+			clozeTemplate: card.clozeTemplate,
+			clozeIndex: card.clozeIndex,
+			reverseOf: card.reverseOf,
+			sourceText: card.sourceText,
+			noteId: card.noteId,
+			templateOrd: card.templateOrd,
+			noteTypeName: card.noteTypeName,
+			ioImagePath: card.ioImagePath,
+			ioRegionsJson: card.ioRegionsJson,
+			ioGroupKey: card.ioGroupKey,
+			ioParentId: card.ioParentId,
+			alwaysTypeIn: card.alwaysTypeIn,
+		};
+		return this.sourceNoteService.enrichCard(item);
+	}
+
+	// ── Legacy API (full content for all cards) ──────────────────────
 
 	getAll(): FSRSFlashcardItem[] {
 		const cardsWithContent = this.store.getCardsWithContent();

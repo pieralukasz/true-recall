@@ -1,15 +1,8 @@
 import { Clickable, LoadingSpinner } from "@true-recall/obsidian/components";
-import { useIcon } from "@true-recall/obsidian/preact";
+import { usePanelActions } from "@true-recall/obsidian/features/library/ui/panel/hooks/usePanelActions";
+import { usePanelStore } from "@true-recall/obsidian/features/library/ui/panel/hooks/usePanelStore";
+import { useIcon, usePlugin } from "@true-recall/obsidian/preact";
 import { useState } from "preact/hooks";
-
-export interface PanelEmptyStateProps {
-	onGenerate: () => Promise<void>;
-	onGenerateFromHighlights: () => Promise<void>;
-	onCollect: () => Promise<void>;
-	uncollectedCount: number;
-	hasApiKey: boolean;
-	hasHighlights: boolean;
-}
 
 const CALLOUT_CLS =
 	"ep:w-full ep:rounded-lg ep:bg-obs-bg-secondary ep:border ep:border-obs-modifier-border ep:px-3.5 ep:py-3 ep:text-left ep:flex ep:flex-col ep:gap-2";
@@ -17,14 +10,15 @@ const CALLOUT_CLS =
 const BTN_BASE_CLS =
 	"ep:px-4 ep:py-1.5 ep:rounded-md ep:text-ui-small ep:font-medium ep:w-full ep:inline-flex ep:items-center ep:justify-center ep:gap-1.5";
 
-export function PanelEmptyState({
-	onGenerate,
-	onGenerateFromHighlights,
-	onCollect,
-	uncollectedCount,
-	hasApiKey,
-	hasHighlights,
-}: PanelEmptyStateProps) {
+export function PanelEmptyState() {
+	const plugin = usePlugin();
+	const { uncollectedCount, hasHighlights } = usePanelStore();
+	const panelActions = usePanelActions();
+
+	const hasApiKey = !!(
+		plugin.settings.proKey || plugin.settings.openRouterApiKey
+	);
+
 	const [generating, setGenerating] = useState(false);
 	const [generatingSource, setGeneratingSource] = useState<
 		"note" | "highlights" | null
@@ -34,32 +28,29 @@ export function PanelEmptyState({
 	const highlighterRef = useIcon("highlighter");
 	const fileTextRef = useIcon("file-text");
 
-	const handleGenerate = async () => {
+	const runGenerate = async (
+		source: "note" | "highlights",
+		fn: () => Promise<void>,
+	) => {
 		setGenerating(true);
-		setGeneratingSource("note");
+		setGeneratingSource(source);
 		try {
-			await onGenerate();
+			await fn();
 		} finally {
 			setGenerating(false);
 			setGeneratingSource(null);
 		}
 	};
 
-	const handleGenerateFromHighlights = async () => {
-		setGenerating(true);
-		setGeneratingSource("highlights");
-		try {
-			await onGenerateFromHighlights();
-		} finally {
-			setGenerating(false);
-			setGeneratingSource(null);
-		}
-	};
+	const handleGenerate = () =>
+		runGenerate("note", panelActions.handleGenerateFromNote);
+	const handleGenerateFromHighlights = () =>
+		runGenerate("highlights", panelActions.handleGenerateFromHighlights);
 
 	const handleCollect = async () => {
 		setCollecting(true);
 		try {
-			await onCollect();
+			await panelActions.handleCollect();
 		} finally {
 			setCollecting(false);
 		}
@@ -90,7 +81,6 @@ export function PanelEmptyState({
 
 	return (
 		<div class="ep:flex ep:flex-col ep:items-center ep:justify-center ep:h-full ep:py-6 ep:px-5 ep:text-center ep:gap-4">
-			{/* Collect button */}
 			{hasCollect && (
 				<Clickable
 					class={`mod-cta ${BTN_BASE_CLS}`}
@@ -101,7 +91,6 @@ export function PanelEmptyState({
 				</Clickable>
 			)}
 
-			{/* Callout with header + tip */}
 			<div class={CALLOUT_CLS}>
 				<div class="ep:flex ep:flex-col ep:items-center ep:gap-1">
 					<div class="ep:text-obs-muted ep:text-3xl">
@@ -117,14 +106,12 @@ export function PanelEmptyState({
 				</div>
 			</div>
 
-			{/* Divider */}
 			<div class="ep:flex ep:items-center ep:gap-2 ep:w-full">
 				<div class="ep:flex-1 ep:h-px ep:bg-obs-modifier-border" />
 				<span class="ep:text-ui-smaller ep:text-obs-faint">or</span>
 				<div class="ep:flex-1 ep:h-px ep:bg-obs-modifier-border" />
 			</div>
 
-			{/* Generate from highlights */}
 			<Clickable
 				class={generateBtnCls}
 				onClick={() => void handleGenerateFromHighlights()}
@@ -134,14 +121,12 @@ export function PanelEmptyState({
 				Generate from ==highlights==
 			</Clickable>
 
-			{/* Divider */}
 			<div class="ep:flex ep:items-center ep:gap-2 ep:w-full">
 				<div class="ep:flex-1 ep:h-px ep:bg-obs-modifier-border" />
 				<span class="ep:text-ui-smaller ep:text-obs-faint">or</span>
 				<div class="ep:flex-1 ep:h-px ep:bg-obs-modifier-border" />
 			</div>
 
-			{/* Generate from note */}
 			<Clickable
 				class={generateBtnCls}
 				onClick={() => void handleGenerate()}

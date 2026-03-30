@@ -1005,9 +1005,12 @@ export default class TrueRecallPlugin extends Plugin {
 				}, SAFETY_FLUSH_INTERVAL_MS),
 			);
 
-			// Reactive card store: cards signal mirrors SQLite, computeds derive all views
+			// Reactive card store: lightweight scheduling index mirrors SQLite
 			initCardStore({
-				getAll: () => this.flashcardManager.getAllFSRSCards(),
+				getAllMeta: () =>
+					this.flashcardManager.getCardQueryService().getAllMeta(),
+				getMetaById: (id: string) =>
+					this.flashcardManager.getCardQueryService().getMetaById(id),
 			});
 			refreshCards();
 

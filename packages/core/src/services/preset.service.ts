@@ -1,13 +1,13 @@
 import type { SqliteStoreService } from "../persistence/sqlite/SqliteStoreService";
-import type { FrontmatterIndexService } from "./frontmatter-index.service";
-import type { HierarchyService } from "./hierarchy.service";
-import type { FSRSFlashcardItem } from "../types/fsrs";
+import type { CardSchedulingMeta } from "../types/fsrs";
 import type {
 	FSRSPreset,
 	FSRSSettings,
 	TrueRecallSettings,
 } from "../types/settings.types";
 import { extractFSRSSettingsFromPreset } from "../types/settings.types";
+import type { FrontmatterIndexService } from "./frontmatter-index.service";
+import type { HierarchyService } from "./hierarchy.service";
 
 export interface PresetResolutionContext {
 	projectPath?: string;
@@ -109,7 +109,7 @@ export class PresetService {
 	 * 3. Global default preset
 	 */
 	resolvePresetForCard(
-		card: FSRSFlashcardItem,
+		card: CardSchedulingMeta,
 		context?: PresetResolutionContext,
 	): FSRSPreset {
 		const notePath = this.resolveNotePath(card);
@@ -174,7 +174,7 @@ export class PresetService {
 		return { chain, effective };
 	}
 
-	private resolveNotePath(card: FSRSFlashcardItem): string | null {
+	private resolveNotePath(card: CardSchedulingMeta): string | null {
 		if (!card.sourceUid) return null;
 		return this.frontmatterIndex.getFileByValue(
 			"flashcard_uid",

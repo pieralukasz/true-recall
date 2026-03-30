@@ -1,14 +1,14 @@
-import type { FSRSService } from "./fsrs.service";
-import type { FlashcardManager } from "../flashcard/flashcard.service";
+import { type Grade, Rating, State } from "ts-fsrs";
 import {
 	LEARN_AHEAD_LIMIT_MINUTES,
 	RANDOM_QUEUE_INSERT_MAX_POS,
 	WEAK_CARD_STABILITY_THRESHOLD,
 } from "../constants";
 import { notifyCardChange } from "../events";
+import type { FlashcardManager } from "../flashcard/flashcard.service";
 import type {
+	CardSchedulingMeta,
 	DailyStats,
-	FSRSFlashcardItem,
 	ReviewResult,
 	ReviewSessionStats,
 } from "../types";
@@ -22,7 +22,7 @@ import {
 	getTodayBoundary,
 	getTomorrowBoundary,
 } from "../utils";
-import { type Grade, Rating, State } from "ts-fsrs";
+import type { FSRSService } from "./fsrs.service";
 
 export interface QueueBuildOptions {
 	newCardsLimit: number;
@@ -131,7 +131,7 @@ export class ReviewService {
 		return result;
 	}
 
-	private sortByCreatedAt(cards: FSRSFlashcardItem[]): FSRSFlashcardItem[] {
+	private sortByCreatedAt(cards: CardSchedulingMeta[]): CardSchedulingMeta[] {
 		return [...cards].sort((a, b) => {
 			const aTime = a.fsrs.createdAt ?? 0;
 			const bTime = b.fsrs.createdAt ?? 0;
@@ -141,7 +141,9 @@ export class ReviewService {
 		});
 	}
 
-	private sortByCreatedAtDesc(cards: FSRSFlashcardItem[]): FSRSFlashcardItem[] {
+	private sortByCreatedAtDesc(
+		cards: CardSchedulingMeta[],
+	): CardSchedulingMeta[] {
 		return [...cards].sort((a, b) => {
 			const aTime = a.fsrs.createdAt ?? 0;
 			const bTime = b.fsrs.createdAt ?? 0;
@@ -165,11 +167,11 @@ export class ReviewService {
 	}
 
 	private filterCards(
-		cards: FSRSFlashcardItem[],
+		cards: CardSchedulingMeta[],
 		options: QueueBuildOptions,
 		todayBoundary: Date,
 		weekAgoBoundary: Date,
-	): FSRSFlashcardItem[] {
+	): CardSchedulingMeta[] {
 		const noteSet = options.sourceNoteFilters?.length
 			? new Set(options.sourceNoteFilters)
 			: null;
@@ -298,9 +300,9 @@ export class ReviewService {
 	}
 
 	private sortNewCards(
-		cards: FSRSFlashcardItem[],
+		cards: CardSchedulingMeta[],
 		order: NewCardOrder,
-	): FSRSFlashcardItem[] {
+	): CardSchedulingMeta[] {
 		switch (order) {
 			case "random":
 				return this.shuffle(cards);
@@ -314,10 +316,10 @@ export class ReviewService {
 	}
 
 	private sortReviewCards(
-		cards: FSRSFlashcardItem[],
+		cards: CardSchedulingMeta[],
 		order: ReviewOrder,
 		fsrsService: FSRSService,
-	): FSRSFlashcardItem[] {
+	): CardSchedulingMeta[] {
 		switch (order) {
 			case "due-date":
 				return fsrsService.sortByDue(cards);
@@ -326,7 +328,7 @@ export class ReviewService {
 			case "due-date-random": {
 				// Sort by due date, then shuffle within same-day groups
 				const sorted = fsrsService.sortByDue(cards);
-				const groupedByDue = new Map<string, FSRSFlashcardItem[]>();
+				const groupedByDue = new Map<string, CardSchedulingMeta[]>();
 				for (const card of sorted) {
 					const dueDay =
 						new Date(card.fsrs.due).toISOString().split("T")[0] ?? "";
@@ -335,7 +337,7 @@ export class ReviewService {
 					}
 					groupedByDue.get(dueDay)?.push(card);
 				}
-				const result: FSRSFlashcardItem[] = [];
+				const result: CardSchedulingMeta[] = [];
 				for (const [, group] of groupedByDue) {
 					result.push(...this.shuffle(group));
 				}
@@ -370,7 +372,7 @@ export class ReviewService {
 	 * When burySiblings is off, spread IO/cloze siblings apart in the queue
 	 * so cards from the same note don't appear back-to-back.
 	 */
-	spaceSiblings(queue: FSRSFlashcardItem[]): FSRSFlashcardItem[] {
+	spaceSiblings(queue: CardSchedulingMeta[]): CardSchedulingMeta[] {
 		if (queue.length <= 2) return queue;
 
 		// Build noteId → indices map (only IO and cloze cards have meaningful siblings)
@@ -389,8 +391,8 @@ export class ReviewService {
 		if (hasMultiple.size === 0) return queue;
 
 		// Greedy spacing: track last position of each sibling group
-		const result: FSRSFlashcardItem[] = [];
-		const deferred: FSRSFlashcardItem[] = [];
+		const result: CardSchedulingMeta[] = [];
+		const deferred: CardSchedulingMeta[] = [];
 		const lastSeen = new Map<string, number>();
 		const minSpacing = Math.max(
 			3,
@@ -426,7 +428,7 @@ export class ReviewService {
 		return result;
 	}
 
-	private getSiblingKey(card: FSRSFlashcardItem): string | null {
+	private getSiblingKey(card: CardSchedulingMeta): string | null {
 		if (card.cardType === "image-occlusion" && card.noteId) {
 			return `io:${card.noteId}`;
 		}
@@ -437,10 +439,10 @@ export class ReviewService {
 	}
 
 	private mixQueues(
-		reviews: FSRSFlashcardItem[],
-		newCards: FSRSFlashcardItem[],
+		reviews: CardSchedulingMeta[],
+		newCards: CardSchedulingMeta[],
 		mix: NewReviewMix,
-	): FSRSFlashcardItem[] {
+	): CardSchedulingMeta[] {
 		switch (mix) {
 			case "show-after-reviews":
 				return [...reviews, ...newCards];
@@ -460,10 +462,10 @@ export class ReviewService {
 	}
 
 	private applyPerPresetLimit(
-		cards: FSRSFlashcardItem[],
+		cards: CardSchedulingMeta[],
 		options: QueueBuildOptions,
 		type: "new" | "review",
-	): FSRSFlashcardItem[] {
+	): CardSchedulingMeta[] {
 		const presetLimits = options.presetDailyLimits;
 		const presetProgress = options.presetProgressToday;
 		const cardPresetById = options.cardPresetById;
@@ -495,7 +497,7 @@ export class ReviewService {
 			);
 		}
 
-		const result: FSRSFlashcardItem[] = [];
+		const result: CardSchedulingMeta[] = [];
 		for (const card of cards) {
 			const presetName = cardPresetById.get(card.id) ?? fallbackPresetName;
 
@@ -524,10 +526,10 @@ export class ReviewService {
 	}
 
 	private buildCustomStudyQueue(
-		availableCards: FSRSFlashcardItem[],
+		availableCards: CardSchedulingMeta[],
 		fsrsService: FSRSService,
 		options: QueueBuildOptions,
-	): FSRSFlashcardItem[] {
+	): CardSchedulingMeta[] {
 		const allLearningCards = fsrsService.getLearningCards(availableCards);
 
 		// All learning cards treated as due (no pending)
@@ -586,11 +588,11 @@ export class ReviewService {
 	}
 
 	private buildStandardQueue(
-		availableCards: FSRSFlashcardItem[],
+		availableCards: CardSchedulingMeta[],
 		fsrsService: FSRSService,
 		options: QueueBuildOptions,
 		now: Date,
-	): FSRSFlashcardItem[] {
+	): CardSchedulingMeta[] {
 		const allLearningCards = fsrsService.getLearningCards(availableCards);
 
 		// Split learning cards by due status
@@ -663,10 +665,10 @@ export class ReviewService {
 
 	/** Order (Anki-like): Due Learning → Review → New → Pending Learning */
 	buildQueue(
-		allCards: FSRSFlashcardItem[],
+		allCards: CardSchedulingMeta[],
 		fsrsService: FSRSService,
 		options: QueueBuildOptions,
-	): FSRSFlashcardItem[] {
+	): CardSchedulingMeta[] {
 		const { now, todayBoundary, weekAgoBoundary } = this.calculateBoundaries(
 			options.dayStartHour,
 		);
@@ -688,7 +690,7 @@ export class ReviewService {
 			return isLearning || !reviewedToday.has(card.id);
 		});
 
-		let queue: FSRSFlashcardItem[];
+		let queue: CardSchedulingMeta[];
 
 		if (options.bypassScheduling) {
 			queue = this.buildCustomStudyQueue(availableCards, fsrsService, options);
@@ -720,14 +722,14 @@ export class ReviewService {
 		return queue;
 	}
 
-	processAnswer(
-		card: FSRSFlashcardItem,
+	processAnswer<T extends CardSchedulingMeta>(
+		card: T,
 		rating: Grade,
 		fsrsService: FSRSService,
 		responseTime: number,
 		presetSettings?: import("../types/settings.types").FSRSSettings,
 	): {
-		updatedCard: FSRSFlashcardItem;
+		updatedCard: T;
 		result: ReviewResult;
 	} {
 		const now = new Date();
@@ -752,10 +754,10 @@ export class ReviewService {
 			presetSettings,
 		);
 
-		const updatedCard: FSRSFlashcardItem = {
+		const updatedCard = {
 			...card,
 			fsrs: newFsrsData,
-		};
+		} as T;
 
 		const result: ReviewResult = {
 			cardId: card.id,
@@ -770,14 +772,14 @@ export class ReviewService {
 		return { updatedCard, result };
 	}
 
-	gradeCard(
-		card: FSRSFlashcardItem,
+	gradeCard<T extends CardSchedulingMeta>(
+		card: T,
 		rating: Grade,
 		fsrsService: FSRSService,
 		flashcardManager: FlashcardManager,
 		responseTime: number = 0,
 	): {
-		updatedCard: FSRSFlashcardItem;
+		updatedCard: T;
 		result: ReviewResult;
 		persisted: boolean;
 	} {
@@ -866,7 +868,7 @@ export class ReviewService {
 	}
 
 	calculateDailyStats(
-		allCards: FSRSFlashcardItem[],
+		allCards: CardSchedulingMeta[],
 		todayResults: ReviewResult[],
 		settings: {
 			newCardsPerDay: number;
@@ -918,16 +920,16 @@ export class ReviewService {
 	 * by getRequeuePosition(). Cards due soon go near the front, cards due later
 	 * go at the end where getPhase() will trigger the waiting screen.
 	 */
-	shouldRequeue(card: FSRSFlashcardItem): boolean {
+	shouldRequeue(card: CardSchedulingMeta): boolean {
 		return (
 			card.fsrs.state === State.Learning || card.fsrs.state === State.Relearning
 		);
 	}
 
 	getRequeuePosition(
-		queue: FSRSFlashcardItem[],
+		queue: CardSchedulingMeta[],
 		startIndex: number,
-		card: FSRSFlashcardItem,
+		card: CardSchedulingMeta,
 		reviewOrder?: ReviewOrder,
 	): number {
 		const dueDate = new Date(card.fsrs.due);

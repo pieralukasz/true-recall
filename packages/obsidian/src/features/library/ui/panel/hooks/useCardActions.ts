@@ -1,32 +1,26 @@
-import { openPanelCardEditor } from "@true-recall/obsidian/features/library/ui/panel/helpers/panel-edit-routing";
-import {
-	cardToBlockText,
-	getSourceNoteNameFromFile,
-} from "@true-recall/obsidian/features/library/ui/panel/utils/panel-helpers";
-import { QuickNoteEditorModal } from "@true-recall/obsidian/modals/study/quick-note-editor/QuickNoteEditorModal";
-import { notify } from "@true-recall/obsidian/services/notification.service";
-import { notifyCardChange } from "@true-recall/obsidian/services/signals";
-import { pushDeleteUndo } from "@true-recall/obsidian/services/undo.service";
 import {
 	BUILTIN_BASIC_ID,
 	BUILTIN_BASIC_REVERSED_ID,
 	type FlashcardItem,
 } from "@true-recall/core/types";
 import type { FSRSFlashcardItem } from "@true-recall/core/types/fsrs/card.types";
+import { openPanelCardEditor } from "@true-recall/obsidian/features/library/ui/panel/helpers/panel-edit-routing";
+import {
+	cardToBlockText,
+	getSourceNoteNameFromFile,
+} from "@true-recall/obsidian/features/library/ui/panel/utils/panel-helpers";
+import { QuickNoteEditorModal } from "@true-recall/obsidian/modals/study/quick-note-editor/QuickNoteEditorModal";
 import { useApp, usePlugin } from "@true-recall/obsidian/preact";
+import { notify } from "@true-recall/obsidian/services/notification.service";
+import { notifyCardChange } from "@true-recall/obsidian/services/signals";
+import { pushDeleteUndo } from "@true-recall/obsidian/services/undo.service";
 import { useCallback } from "preact/hooks";
 
+import { usePanelScroll } from "./PanelScrollContext";
 import { usePanelStore } from "./usePanelStore";
 
-export interface UseCardActionsParams {
-	preserveScroll: (action: () => void) => void;
-	captureScroll: () => () => void;
-}
-
-export function useCardActions({
-	preserveScroll,
-	captureScroll,
-}: UseCardActionsParams) {
+export function useCardActions() {
+	const { preserveScroll, captureScroll } = usePanelScroll();
 	const plugin = usePlugin();
 	const app = useApp();
 	const { currentFile, flashcardInfo, cardsWithFsrs, panel } = usePanelStore();
@@ -138,7 +132,9 @@ export function useCardActions({
 				flashcardInfo,
 			);
 
-			const { MoveCardModal } = await import("@true-recall/obsidian/modals/shared/MoveCardModal");
+			const { MoveCardModal } = await import(
+				"@true-recall/obsidian/modals/shared/MoveCardModal"
+			);
 			const modal = new MoveCardModal(app, {
 				cardCount: 1,
 				sourceNoteName,
@@ -184,7 +180,9 @@ export function useCardActions({
 			const { ChangeNoteTypeModal } = await import(
 				"@true-recall/obsidian/modals/library/ChangeNoteTypeModal"
 			);
-			const { notifyCardChange } = await import("@true-recall/obsidian/services/signals");
+			const { notifyCardChange } = await import(
+				"@true-recall/obsidian/services/signals"
+			);
 
 			const allNoteTypes = plugin.cardStore.noteTypes.getAll();
 
@@ -244,7 +242,9 @@ export function useCardActions({
 				return;
 			}
 
-			const { notifyCardChange } = await import("@true-recall/obsidian/services/signals");
+			const { notifyCardChange } = await import(
+				"@true-recall/obsidian/services/signals"
+			);
 			const fieldMapping = { Front: "Front", Back: "Back" };
 			const r = plugin.flashcardManager.changeNoteType(
 				fsrsCard.noteId,

@@ -1,7 +1,4 @@
-import type {
-	FSRSPreset,
-	TrueRecallSettings,
-} from "./types/settings.types";
+import type { FSRSPreset, TrueRecallSettings } from "./types/settings.types";
 
 export const ENABLE_RAG = false;
 
@@ -161,7 +158,6 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 	showDonutsInReview: true,
 
 	showStatusBarWidget: true,
-	showQuickReviewInPanel: true,
 	defaultTypeInMode: "off",
 
 	selectionToolbarEnabled: true,

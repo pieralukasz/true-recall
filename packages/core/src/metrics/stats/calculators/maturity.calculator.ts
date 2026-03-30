@@ -3,9 +3,9 @@
  * Calculates card maturity breakdown statistics
  */
 
-import type { SqliteStoreService } from "../../../persistence/sqlite/SqliteStoreService";
-import type { CardMaturityBreakdown, FSRSFlashcardItem } from "../../../types";
 import { State } from "ts-fsrs";
+import type { SqliteStoreService } from "../../../persistence/sqlite/SqliteStoreService";
+import type { CardMaturityBreakdown, CardSchedulingMeta } from "../../../types";
 
 /**
  * Calculator for card maturity statistics
@@ -25,7 +25,7 @@ export class MaturityCalculator {
 	 * Young: Review cards with interval < 21 days
 	 * Mature: Review cards with interval >= 21 days
 	 */
-	calculate(allCards: FSRSFlashcardItem[]): CardMaturityBreakdown {
+	calculate(allCards: CardSchedulingMeta[]): CardMaturityBreakdown {
 		if (this.sqliteStore) {
 			return this.sqliteStore.stats.getCardMaturityBreakdown();
 		}
@@ -37,7 +37,7 @@ export class MaturityCalculator {
 	/**
 	 * Calculate breakdown from card array
 	 */
-	calculateFromCards(allCards: FSRSFlashcardItem[]): CardMaturityBreakdown {
+	calculateFromCards(allCards: CardSchedulingMeta[]): CardMaturityBreakdown {
 		const now = new Date();
 
 		// Single-pass accumulator (O(n) instead of O(n*6))
@@ -86,13 +86,13 @@ export class MaturityCalculator {
 	 * Get cards by maturity category
 	 */
 	getCardsByCategory(
-		allCards: FSRSFlashcardItem[],
+		allCards: CardSchedulingMeta[],
 		category: keyof CardMaturityBreakdown,
-	): FSRSFlashcardItem[] {
+	): CardSchedulingMeta[] {
 		const now = new Date();
 
 		// Helper to check if card is active (not suspended and not currently buried)
-		const isActive = (c: FSRSFlashcardItem): boolean => {
+		const isActive = (c: CardSchedulingMeta): boolean => {
 			if (c.fsrs.suspended) return false;
 			if (c.fsrs.buriedUntil && new Date(c.fsrs.buriedUntil) > now)
 				return false;
@@ -100,7 +100,7 @@ export class MaturityCalculator {
 		};
 
 		// Helper to check if card is currently buried
-		const isBuried = (c: FSRSFlashcardItem): boolean => {
+		const isBuried = (c: CardSchedulingMeta): boolean => {
 			if (c.fsrs.suspended) return false; // Suspended takes precedence
 			return !!(c.fsrs.buriedUntil && new Date(c.fsrs.buriedUntil) > now);
 		};

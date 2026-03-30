@@ -1,3 +1,8 @@
+export {
+	type PanelScrollApi,
+	PanelScrollProvider,
+	usePanelScroll,
+} from "./PanelScrollContext";
 export { useCardActions } from "./useCardActions";
 export { usePanelActions } from "./usePanelActions";
 export { usePanelStore } from "./usePanelStore";

@@ -9,17 +9,17 @@ import {
 	filterActiveCards,
 	isGlobalReviewSession,
 } from "@true-recall/core/services/session-helpers";
-import type { SessionFilters } from "@true-recall/core/types/review-session.types";
 import {
+	type CardSchedulingMeta,
 	extractFSRSSettings,
-	type FSRSFlashcardItem,
 	type FSRSPreset,
 	type TrueRecallSettings,
 } from "@true-recall/core/types";
+import type { SessionFilters } from "@true-recall/core/types/review-session.types";
 import { State } from "ts-fsrs";
 
 export interface ActionableSessionSnapshot {
-	queue: FSRSFlashcardItem[];
+	queue: CardSchedulingMeta[];
 	counts: {
 		new: number;
 		learning: number;
@@ -34,7 +34,7 @@ export interface INoteResolver {
 }
 
 export interface ActionableSessionSnapshotDeps {
-	allCards: FSRSFlashcardItem[];
+	allCards: CardSchedulingMeta[];
 	archivedSourceUids: ReadonlySet<string>;
 	settings: TrueRecallSettings;
 	sessionPersistence: SessionPersistenceService;
@@ -47,7 +47,7 @@ export interface ActionableSessionSnapshotDeps {
 
 export interface ActionableSessionSnapshotOptions {
 	cache?: Map<string, ActionableSessionSnapshot>;
-	activeCards?: FSRSFlashcardItem[];
+	activeCards?: CardSchedulingMeta[];
 }
 
 function buildScopeCacheKey(filters: SessionFilters): string {
@@ -96,7 +96,7 @@ function resolveSessionPresetForFilters(
 }
 
 function countQueue(
-	queue: FSRSFlashcardItem[],
+	queue: CardSchedulingMeta[],
 ): ActionableSessionSnapshot["counts"] {
 	let due = 0;
 	let newCount = 0;

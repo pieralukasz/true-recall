@@ -2,9 +2,8 @@ import { PRIORITY_DOT } from "@true-recall/core/helpers/note-priority";
 import { CardCountDisplay } from "@true-recall/obsidian/components/CardCountDisplay";
 import { Clickable } from "@true-recall/obsidian/components/Clickable";
 import { IconButton } from "@true-recall/obsidian/components/IconButton";
-import type { MenuItem } from "@true-recall/obsidian/preact/useContextMenu";
-import { useContextMenu } from "@true-recall/obsidian/preact/useContextMenu";
 import { cn } from "@true-recall/obsidian/utils";
+import { useNoteContextMenu } from "../helpers/use-note-context-menu";
 import type { DashboardNoteEntry } from "../types";
 
 interface NoteRowProps {
@@ -40,37 +39,17 @@ export function NoteRow({
 	onToggleSelect,
 	onEnterSelection,
 }: NoteRowProps) {
-	const menuItems: MenuItem[] = [
-		{ title: "Study", icon: "play", onClick: onStudy },
-		{
-			title: "Custom session",
-			icon: "sliders-horizontal",
-			onClick: onCustomStudy,
-		},
-		{ title: "Go to note", icon: "file-text", onClick: onNavigate },
-		{ title: "Rename", icon: "pencil", onClick: () => onRename?.() },
-		note.archived
-			? {
-					title: "Unarchive",
-					icon: "archive-restore",
-					onClick: () => onUnarchive?.(),
-				}
-			: { title: "Archive", icon: "archive", onClick: () => onArchive?.() },
-		...(onDetach
-			? [
-					"separator" as const,
-					{ title: "Detach from project", icon: "unlink", onClick: onDetach },
-				]
-			: []),
-		...(onEnterSelection
-			? [
-					"separator" as const,
-					{ title: "Select", icon: "check-square", onClick: onEnterSelection },
-				]
-			: []),
-	];
-
-	const handleContextMenu = useContextMenu(menuItems);
+	const handleContextMenu = useNoteContextMenu({
+		note,
+		onStudy,
+		onCustomStudy,
+		onNavigate,
+		onRename,
+		onArchive,
+		onUnarchive,
+		onDetach,
+		onEnterSelection,
+	});
 
 	const handleClick = isSelectionMode
 		? (onToggleSelect ?? onNavigate)
