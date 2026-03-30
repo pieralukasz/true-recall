@@ -1,6 +1,9 @@
 import { StreamingGenerationService } from "@features/ai/services/streaming-generation.service";
 import { createSelectionToolbarExtension } from "@features/ai/ui/editor/SelectionToolbarPlugin";
-import { NoteStatusCacheService } from "@features/core/cache/note-status-cache.service";
+import {
+	type NoteStatusCache,
+	createNoteStatusCache,
+} from "@features/core/cache/note-status-cache.service";
 import { CardTypesEditorModal } from "@features/core/modals/card-types-editor/CardTypesEditorModal";
 import { NoteTypeSuggestModal } from "@features/core/modals/card-types-editor/NoteTypeSuggestModal";
 import { ImportStudioModal } from "@features/core/modals/import-studio/ImportStudioModal";
@@ -116,10 +119,11 @@ export default class TrueRecallPlugin extends Plugin {
 	noteTypeService!: NoteTypeService;
 	hierarchyService!: HierarchyService;
 	store: AppStore | null = null;
-	noteStatusCache: NoteStatusCacheService | null = null;
+	noteStatusCache: NoteStatusCache | null = null;
 	statusBarWidget: StatusBarWidget | null = null;
 	backupRecovery: BackupRecoveryManager | null = null;
 	localApi: LocalApiServer | null = null;
+	private _unloaded = false;
 	EmbeddableEditor:
 		| import("@shared/ui/editor/embedded-editor").EmbeddableEditorClass
 		| null = null;
@@ -146,7 +150,9 @@ export default class TrueRecallPlugin extends Plugin {
 	}
 
 	async onload(): Promise<void> {
+		const t0 = performance.now();
 		await this.loadSettings();
+		const tSettings = performance.now();
 
 		this.frontmatterIndex = new FrontmatterIndexService(this.app);
 		this.frontmatterIndex.register({
@@ -201,7 +207,6 @@ export default class TrueRecallPlugin extends Plugin {
 			this.frontmatterIndex.rebuildIndex();
 			this.hierarchyService.invalidateGraph();
 			refreshMetadata();
-			refreshCards();
 			this.checkForWhatsNew().catch(() => {});
 		});
 
@@ -225,6 +230,8 @@ export default class TrueRecallPlugin extends Plugin {
 			this.settings.dayStartHour,
 		);
 
+		const tSetup = performance.now();
+
 		try {
 			await this.initializeDeviceAndStore();
 		} catch (error) {
@@ -234,6 +241,8 @@ export default class TrueRecallPlugin extends Plugin {
 			);
 			notify().error("Failed to initialize database. Please restart Obsidian.");
 		}
+
+		const tStore = performance.now();
 
 		this.registerView(
 			VIEW_TYPE_FLASHCARD_PANEL,
@@ -283,12 +292,25 @@ export default class TrueRecallPlugin extends Plugin {
 		this.undoService = new UndoService(this);
 
 		if (this.settings.enableLocalApi) {
-			const { LocalApiServer: ApiServer } = await import(
-				"./plugin/api/LocalApiServer"
-			);
-			this.localApi = new ApiServer(this, this.settings.apiPort);
-			this.localApi.start();
+			void import("./plugin/api/LocalApiServer")
+				.then(({ LocalApiServer: ApiServer }) => {
+					if (this._unloaded) return;
+					this.localApi = new ApiServer(this, this.settings.apiPort);
+					this.localApi.start();
+				})
+				.catch((e) => {
+					console.error("[True Recall] Failed to start Local API server:", e);
+				});
 		}
+
+		const tTotal = performance.now();
+		console.log(
+			`[True Recall Startup] settings: ${(tSettings - t0).toFixed(1)}ms` +
+				` | setup: ${(tSetup - tSettings).toFixed(1)}ms` +
+				` | store: ${(tStore - tSetup).toFixed(1)}ms` +
+				` | views+commands: ${(tTotal - tStore).toFixed(1)}ms` +
+				` | total: ${(tTotal - t0).toFixed(1)}ms`,
+		);
 	}
 
 	private initializeDeletionHandler(): void {
@@ -324,6 +346,7 @@ export default class TrueRecallPlugin extends Plugin {
 	}
 
 	onunload(): void {
+		this._unloaded = true;
 		this.localApi?.stop();
 		this.undoService?.clear();
 		this.backgroundBackupManager?.stop();
@@ -807,6 +830,8 @@ export default class TrueRecallPlugin extends Plugin {
 
 	private async initializeCardStore(deviceId: string): Promise<void> {
 		try {
+			const s0 = performance.now();
+
 			this.backupRecovery = new BackupRecoveryManager(
 				this.app,
 				() => this.backupService,
@@ -832,6 +857,8 @@ export default class TrueRecallPlugin extends Plugin {
 				}
 			}
 
+			const sDbLoad = performance.now();
+
 			this.flashcardManager.setStore(this.cardStore);
 
 			// Safety persistence: ensure dirty data is flushed regularly,
@@ -850,6 +877,8 @@ export default class TrueRecallPlugin extends Plugin {
 			});
 			refreshCards();
 
+			const sCards = performance.now();
+
 			this.sessionPersistence = new SessionPersistenceService(
 				this.app,
 				this.cardStore,
@@ -857,7 +886,11 @@ export default class TrueRecallPlugin extends Plugin {
 			);
 			this.flashcardManager.setSessionPersistence(this.sessionPersistence);
 
-			await this.sessionPersistence.migrateStatsJsonToSql();
+			// Fire-and-forget: migration is idempotent, non-critical for startup
+			this.sessionPersistence.migrateStatsJsonToSql().catch((e) => {
+				console.error("[True Recall] Stats migration failed:", e);
+			});
+
 			this.backupService = new BackupService(this.app, this.cardStore);
 			this.backgroundBackupManager = new BackgroundBackupManager(
 				this.app,
@@ -872,8 +905,11 @@ export default class TrueRecallPlugin extends Plugin {
 				this.backgroundBackupManager.start();
 			}
 
+			// Fire-and-forget: backup has no downstream dependencies
 			if (this.settings.autoBackupOnLoad) {
-				await this.backupRecovery.runAutoBackup();
+				this.backupRecovery.runAutoBackup().catch((e) => {
+					console.warn("[True Recall] Auto-backup failed:", e);
+				});
 			}
 
 			this.noteTypeService = new NoteTypeService({
@@ -891,6 +927,13 @@ export default class TrueRecallPlugin extends Plugin {
 			this.initializeLinkStatusIndicators();
 			this.initializeDashboardCodeblocks();
 			this.initializeSelectionToolbar();
+
+			const sEnd = performance.now();
+			console.log(
+				`[True Recall Startup]   db.load: ${(sDbLoad - s0).toFixed(1)}ms` +
+					` | refreshCards: ${(sCards - sDbLoad).toFixed(1)}ms` +
+					` | services: ${(sEnd - sCards).toFixed(1)}ms`,
+			);
 		} catch (error) {
 			console.error("[True Recall] Failed to initialize SQLite store:", error);
 			notify().error("Failed to load flashcard data. Please restart Obsidian.");
@@ -910,12 +953,9 @@ export default class TrueRecallPlugin extends Plugin {
 	private initializeLinkStatusIndicators(): void {
 		if (!this.cardStore || !this.frontmatterIndex) return;
 
-		this.noteStatusCache = new NoteStatusCacheService(this.cardStore);
+		this.noteStatusCache = createNoteStatusCache();
 
-		// Build cache after frontmatter index is ready
 		this.app.workspace.onLayoutReady(async () => {
-			this.noteStatusCache?.buildFromStore();
-			this.noteStatusCache?.registerEvents();
 			this.initializeStatusBar();
 
 			// Resolve the embeddable editor prototype for live-preview editing

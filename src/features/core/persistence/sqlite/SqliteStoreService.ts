@@ -96,7 +96,6 @@ export class SqliteStoreService {
 			this.isDirty = true;
 		}
 
-		// Reset per-session flag so integrity check runs on each plugin load
 		this.db.run("DELETE FROM meta WHERE key = 'integrity_checked'");
 		this.integrity.checkAndRepairOnce();
 

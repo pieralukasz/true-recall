@@ -106,8 +106,8 @@ export class BackupRecoveryManager {
 					"Startup snapshot created. This does not restore or overwrite your current database.",
 				);
 			}
-		} catch {
-			// Auto-backup failure is non-critical
+		} catch (error) {
+			console.error("[True Recall] Auto-backup failed:", error);
 		}
 	}
 

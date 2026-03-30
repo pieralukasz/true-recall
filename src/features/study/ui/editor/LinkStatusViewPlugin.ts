@@ -6,7 +6,7 @@ import {
 	type ViewUpdate,
 	WidgetType,
 } from "@codemirror/view";
-import type { NoteStatusCacheService } from "@features/core/cache/note-status-cache.service";
+import type { NoteStatusCache } from "@features/core/cache/note-status-cache.service";
 import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
 import type { FrontmatterIndexService } from "@features/core/services/frontmatter-index.service";
 import {
@@ -156,7 +156,7 @@ function createTooltipStatsFetcher(
 
 export function createLinkStatusViewPlugin(
 	app: App,
-	noteStatusCache: NoteStatusCacheService,
+	noteStatusCache: NoteStatusCache,
 	frontmatterIndex: FrontmatterIndexService,
 	getEnabled: () => boolean,
 	getEnabledInReview: () => boolean,
