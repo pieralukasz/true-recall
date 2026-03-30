@@ -16,6 +16,7 @@
 		"motion": "^12.35.0",
 		"motion-dom": "^12.35.0",
 		"@floating-ui/dom": "^1.7.5",
-		"sortablejs": "^1.15.6"
+		"sortablejs": "^1.15.6",
+		"ts-fsrs": "^5.2.3"
 	}
 }
