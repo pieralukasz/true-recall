@@ -4,3 +4,7 @@ export { ObsidianFileSystem } from "./ObsidianFileSystem";
 export { ObsidianMetadataIndex } from "./ObsidianMetadataIndex";
 export { ObsidianNotification } from "./ObsidianNotification";
 export { ObsidianHttpClient } from "./ObsidianHttpClient";
+export { ObsidianSourceUidResolver } from "./ObsidianSourceUidResolver";
+export { ObsidianVaultMediaReader } from "./ObsidianVaultMediaReader";
+export { ObsidianVaultFileReader } from "./ObsidianVaultFileReader";
+export { ObsidianAnkiImportVault } from "./ObsidianAnkiImportVault";

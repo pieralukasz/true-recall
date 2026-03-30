@@ -9,9 +9,9 @@ import {
 	getDeviceDbFilename,
 	toExactArrayBuffer,
 } from "@true-recall/core/persistence/sqlite";
-import { notify } from "@true-recall/obsidian/services/notification.service";
+import { notify } from "@true-recall/core/persistence/notification";
 import type { RetentionPolicy } from "@true-recall/core/types/settings.types";
-import { type App, normalizePath } from "obsidian";
+import type { IPersistence } from "@true-recall/core/interfaces/persistence";
 import pako from "pako";
 
 const BACKUP_PREFIX = "true-recall-backup-";
@@ -52,11 +52,11 @@ export interface PruneResult {
  * Service for managing database backups
  */
 export class BackupService {
-	private app: App;
+	private persistence: IPersistence;
 	private sqliteStore: SqliteStoreService;
 
-	constructor(app: App, sqliteStore: SqliteStoreService) {
-		this.app = app;
+	constructor(persistence: IPersistence, sqliteStore: SqliteStoreService) {
+		this.persistence = persistence;
 		this.sqliteStore = sqliteStore;
 	}
 
@@ -90,20 +90,23 @@ export class BackupService {
 		// Generate backup filename with timestamp
 		const timestamp = this.formatTimestamp(new Date());
 		const filename = `${BACKUP_PREFIX}${timestamp}.db.gz`;
-		const backupPath = normalizePath(`${this.getBackupFolder()}/${filename}`);
+		const backupPath = `${this.getBackupFolder()}/${filename}`;
 
 		// Write compressed backup file
-		await this.app.vault.adapter.writeBinary(
+		await this.persistence.writeBinary(
 			backupPath,
 			toExactArrayBuffer(compressed),
 		);
 
 		// Verify: decompress and check SQLite header
-		const written = await this.app.vault.adapter.readBinary(backupPath);
+		const written = await this.persistence.readBinary(backupPath);
+		if (!written) {
+			throw new Error("Backup verification failed — could not read back written file");
+		}
 		const decompressed = pako.ungzip(new Uint8Array(written));
 		const header = new TextDecoder().decode(decompressed.slice(0, 16));
 		if (!header.startsWith("SQLite format 3")) {
-			await this.app.vault.adapter.remove(backupPath);
+			await this.persistence.remove(backupPath);
 			throw new Error("Backup verification failed — corrupt write detected");
 		}
 
@@ -118,14 +121,14 @@ export class BackupService {
 		const backups: BackupInfo[] = [];
 
 		try {
-			const folderExists = await this.app.vault.adapter.exists(
+			const folderExists = await this.persistence.exists(
 				this.getBackupFolder(),
 			);
 			if (!folderExists) {
 				return [];
 			}
 
-			const files = await this.app.vault.adapter.list(this.getBackupFolder());
+			const files = await this.persistence.list(this.getBackupFolder());
 
 			for (const filePath of files.files) {
 				const filename = filePath.split("/").pop() || "";
@@ -142,7 +145,7 @@ export class BackupService {
 				const timestamp = this.parseFilenameTimestamp(filename);
 				if (!timestamp) continue;
 
-				const stat = await this.app.vault.adapter.stat(filePath);
+				const stat = await this.persistence.stat(filePath);
 				if (!stat) continue;
 
 				backups.push({
@@ -175,17 +178,18 @@ export class BackupService {
 			await this.createBackup();
 
 			// Read backup file, decompress if gzipped
-			const rawData = await this.app.vault.adapter.readBinary(backupPath);
+			const rawData = await this.persistence.readBinary(backupPath);
+			if (!rawData) {
+				throw new Error(`Backup file not found: ${backupPath}`);
+			}
 			const dbData = backupPath.endsWith(".gz")
 				? toExactArrayBuffer(pako.ungzip(new Uint8Array(rawData)))
-				: rawData;
+				: toExactArrayBuffer(rawData);
 
 			// Write to main database file
 			const deviceId = this.sqliteStore.getDeviceId();
-			const dbPath = normalizePath(
-				`${DB_FOLDER}/${getDeviceDbFilename(deviceId)}`,
-			);
-			await this.app.vault.adapter.writeBinary(dbPath, dbData);
+			const dbPath = `${DB_FOLDER}/${getDeviceDbFilename(deviceId)}`;
+			await this.persistence.writeBinary(dbPath, dbData);
 			const backupName = backupPath.split("/").pop() || backupPath;
 
 			notify().success(
@@ -215,7 +219,7 @@ export class BackupService {
 
 		for (const backup of toDelete) {
 			try {
-				await this.app.vault.adapter.remove(backup.path);
+				await this.persistence.remove(backup.path);
 				deleted++;
 			} catch (error) {
 				console.error(
@@ -235,7 +239,7 @@ export class BackupService {
 	 */
 	async deleteBackup(backupPath: string): Promise<boolean> {
 		try {
-			await this.app.vault.adapter.remove(backupPath);
+			await this.persistence.remove(backupPath);
 			return true;
 		} catch (error) {
 			console.error(
@@ -304,7 +308,7 @@ export class BackupService {
 
 		for (const backup of toDelete) {
 			try {
-				await this.app.vault.adapter.remove(backup.path);
+				await this.persistence.remove(backup.path);
 				deleted++;
 			} catch (error) {
 				console.error(
@@ -444,10 +448,10 @@ export class BackupService {
 	 * Ensure the backup folder exists
 	 */
 	private async ensureBackupFolder(): Promise<void> {
-		const folderPath = normalizePath(this.getBackupFolder());
-		const exists = await this.app.vault.adapter.exists(folderPath);
+		const folderPath = this.getBackupFolder();
+		const exists = await this.persistence.exists(folderPath);
 		if (!exists) {
-			await this.app.vault.adapter.mkdir(folderPath);
+			await this.persistence.mkdir(folderPath);
 		}
 	}
 

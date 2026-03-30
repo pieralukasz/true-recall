@@ -6,5 +6,5 @@
 export {
 	type DeviceDatabaseInfo,
 	DeviceDiscoveryService,
-} from "./device-discovery.service";
+} from "@true-recall/core/integration/device-discovery.service";
 export { DeviceIdService } from "@true-recall/core/integration/device-id.service";

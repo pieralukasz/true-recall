@@ -1,4 +1,4 @@
-import type { ChatTurn } from "@true-recall/obsidian/features/rag/services/rag-query.service";
+import type { ChatTurn } from "@true-recall/core/rag/rag-query.service";
 import type { ChatConfig } from "@true-recall/core/types";
 import { Clickable, IconButton } from "@true-recall/obsidian/components";
 import { useApp, useIcon, usePlugin } from "@true-recall/obsidian/preact";
@@ -8,8 +8,8 @@ import { ChatConfigPanel } from "@true-recall/obsidian/features/rag/ui/component
 import { ChatInput } from "@true-recall/obsidian/features/rag/ui/components/ChatInput";
 import { ChatMessage } from "@true-recall/obsidian/features/rag/ui/components/ChatMessage";
 import { IndexStatus } from "@true-recall/obsidian/features/rag/ui/components/IndexStatus";
-import type { ContextItem, NoteContextItem } from "@true-recall/obsidian/features/rag/ui/context/context.types";
-import { contextKey } from "@true-recall/obsidian/features/rag/ui/context/context.types";
+import type { ContextItem, NoteContextItem } from "@true-recall/core/rag/context/context.types";
+import { contextKey } from "@true-recall/core/rag/context/context.types";
 import { useAutoContext } from "@true-recall/obsidian/features/rag/ui/context/useAutoContext";
 import type { KnowledgeChatView } from "./KnowledgeChatView";
 import type { SourceNavigationHandlers } from "@true-recall/obsidian/features/rag/ui/types";

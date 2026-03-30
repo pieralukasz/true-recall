@@ -1,5 +1,5 @@
 import type { SemanticAnswerGradingService } from "@true-recall/core/ai/semantic-answer-grading.service";
-import type { SessionPersistenceService } from "@true-recall/obsidian/features/core/persistence/session-persistence.service";
+import type { SessionPersistenceService } from "@true-recall/core/persistence/session-persistence.service";
 import type { FSRSService } from "@true-recall/core/services/fsrs.service";
 import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
 import type { ReviewService } from "@true-recall/core/services/review.service";

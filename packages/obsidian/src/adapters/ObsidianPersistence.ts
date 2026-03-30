@@ -11,6 +11,10 @@ export class ObsidianPersistence implements IPersistence {
 		return new Uint8Array(buffer);
 	}
 
+	async read(path: string): Promise<string> {
+		return this.app.vault.adapter.read(normalizePath(path));
+	}
+
 	async writeBinary(path: string, data: ArrayBuffer): Promise<void> {
 		await this.app.vault.adapter.writeBinary(normalizePath(path), data);
 	}

@@ -1,7 +1,7 @@
 import type {
 	PresetDailyProgress,
 	SessionPersistenceService,
-} from "@true-recall/obsidian/features/core/persistence/session-persistence.service";
+} from "@true-recall/core/persistence/session-persistence.service";
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite";
 import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
 import type { QueueBuildOptions } from "@true-recall/core/services/review.service";

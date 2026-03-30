@@ -5,7 +5,7 @@ import type {
 	Grade,
 	PersistentStatsData,
 } from "@true-recall/core/types";
-import { type App, normalizePath } from "obsidian";
+import type { IPersistence } from "@true-recall/core/interfaces/persistence";
 import { Rating, State } from "ts-fsrs";
 
 const STATS_FOLDER = ".true-recall";
@@ -17,16 +17,16 @@ export interface PresetDailyProgress {
 }
 
 export class SessionPersistenceService {
-	private app: App;
+	private persistence: IPersistence;
 	private store: SqliteStoreService;
 	private dayBoundaryService: DayBoundaryService;
 
 	constructor(
-		app: App,
+		persistence: IPersistence,
 		store: SqliteStoreService,
 		dayBoundaryService: DayBoundaryService,
 	) {
-		this.app = app;
+		this.persistence = persistence;
 		this.store = store;
 		this.dayBoundaryService = dayBoundaryService;
 	}
@@ -240,15 +240,15 @@ export class SessionPersistenceService {
 	 * Call this during plugin initialization after SQL store is ready
 	 */
 	async migrateStatsJsonToSql(): Promise<void> {
-		const statsPath = normalizePath(`${STATS_FOLDER}/${STATS_FILE}`);
+		const statsPath = `${STATS_FOLDER}/${STATS_FILE}`;
 
 		try {
-			const exists = await this.app.vault.adapter.exists(statsPath);
+			const exists = await this.persistence.exists(statsPath);
 			if (!exists) {
 				return; // No JSON file to migrate
 			}
 
-			const content = await this.app.vault.adapter.read(statsPath);
+			const content = await this.persistence.read(statsPath);
 			const data = JSON.parse(content) as PersistentStatsData;
 
 			for (const [date, dayStats] of Object.entries(data.daily)) {
@@ -277,7 +277,7 @@ export class SessionPersistenceService {
 			// Flush to ensure data is persisted
 			await this.store.saveNow();
 
-			await this.app.vault.adapter.remove(statsPath);
+			await this.persistence.remove(statsPath);
 		} catch (error) {
 			console.error("[True Recall] Failed to migrate stats.json:", error);
 			// Don't throw - migration failure shouldn't block plugin startup

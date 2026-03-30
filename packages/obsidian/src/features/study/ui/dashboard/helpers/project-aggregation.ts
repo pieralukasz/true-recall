@@ -1,4 +1,4 @@
-import type { SessionPersistenceService } from "@true-recall/obsidian/features/core/persistence/session-persistence.service";
+import type { SessionPersistenceService } from "@true-recall/core/persistence/session-persistence.service";
 import type { FSRSService } from "@true-recall/core/services/fsrs.service";
 import type {
 	HierarchyService,

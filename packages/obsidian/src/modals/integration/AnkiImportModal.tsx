@@ -10,8 +10,12 @@ import {
 	ResultPhase,
 } from "@true-recall/obsidian/modals/integration/anki-import";
 import { AnkiConverterService } from "@true-recall/core/integration/anki-converter.service";
-import { AnkiImportService } from "@true-recall/obsidian/features/integration/services/anki/anki-import.service";
-import { ApkgParserService } from "@true-recall/obsidian/features/integration/services/anki/apkg-parser.service";
+import { AnkiImportService } from "@true-recall/core/integration/anki-import.service";
+import { ApkgParserService } from "@true-recall/core/integration/apkg-parser.service";
+import { ObsidianAnkiImportVault } from "@true-recall/obsidian/adapters/ObsidianAnkiImportVault";
+import { ObsidianVaultFileReader } from "@true-recall/obsidian/adapters/ObsidianVaultFileReader";
+import { ObsidianPersistence } from "@true-recall/obsidian/adapters/ObsidianPersistence";
+import { notifyCardChange } from "@true-recall/obsidian/services/signals";
 import type { ApkgData } from "@true-recall/core/types";
 import { BaseModal } from "@true-recall/obsidian/modals/shared/BaseModal";
 import type { App } from "obsidian";
@@ -129,7 +133,7 @@ export class AnkiImportModal extends BaseModal {
 		try {
 			this.fileData = await file.arrayBuffer();
 
-			const parser = new ApkgParserService(this.app);
+			const parser = new ApkgParserService();
 			const apkgData = await parser.parseApkg(this.fileData);
 
 			const converter = new AnkiConverterService();
@@ -165,9 +169,12 @@ export class AnkiImportModal extends BaseModal {
 
 		try {
 			const importService = new AnkiImportService(
-				this.app,
 				this.store,
 				this.fsrsService,
+				new ObsidianPersistence(this.app),
+				new ObsidianAnkiImportVault(this.app),
+				new ObsidianVaultFileReader(this.app),
+				(change) => notifyCardChange(change),
 			);
 
 			const topDeck = (this.deckNames[0] ?? "anki-import")

@@ -1,6 +1,6 @@
 import { SemanticAnswerGradingService } from "@true-recall/core/ai/semantic-answer-grading.service";
 import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpClient";
-import type { SessionPersistenceService } from "@true-recall/obsidian/features/core/persistence/session-persistence.service";
+import type { SessionPersistenceService } from "@true-recall/core/persistence/session-persistence.service";
 import { FSRSService } from "@true-recall/core/services/fsrs.service";
 import { computeActionableSessionSnapshot } from "@true-recall/obsidian/features/study/services/actionable-session-snapshot.service";
 import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";

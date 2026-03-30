@@ -1,7 +1,7 @@
 import type {
 	PresetDailyProgress,
 	SessionPersistenceService,
-} from "@true-recall/obsidian/features/core/persistence/session-persistence.service";
+} from "@true-recall/core/persistence/session-persistence.service";
 import type { PresetService } from "@true-recall/core/services/preset.service";
 import { computeActionableSessionSnapshot } from "@true-recall/obsidian/features/study/services/actionable-session-snapshot.service";
 import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";

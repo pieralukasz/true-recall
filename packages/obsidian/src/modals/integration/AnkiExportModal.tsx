@@ -7,7 +7,9 @@ import {
 	FormPhase,
 	SuccessPhase,
 } from "@true-recall/obsidian/modals/integration/anki-export";
-import { AnkiExportService } from "@true-recall/obsidian/features/integration/services/anki/anki-export.service";
+import { AnkiExportService } from "@true-recall/core/integration/anki-export.service";
+import { ObsidianSourceUidResolver } from "@true-recall/obsidian/adapters/ObsidianSourceUidResolver";
+import { ObsidianVaultMediaReader } from "@true-recall/obsidian/adapters/ObsidianVaultMediaReader";
 import {
 	downloadBlob,
 	type NoteEntry,
@@ -96,9 +98,10 @@ export class AnkiExportModal extends BaseModal {
 	private async startExport(opts: ExportFormValues): Promise<ExportPhase> {
 		try {
 			const exportService = new AnkiExportService(
-				this.app,
 				this.store,
 				this.fsrsService,
+				new ObsidianSourceUidResolver(this.app),
+				new ObsidianVaultMediaReader(this.app),
 			);
 
 			const options: AnkiExportOptions = {

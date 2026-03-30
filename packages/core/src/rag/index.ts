@@ -25,3 +25,21 @@ export {
 } from "./rag-chat-tools";
 export { StudyDataGatherer } from "./study-data-gatherer";
 export { classifyIntent, type StudyIntent } from "./study-intent-classifier";
+
+// Chat services
+export { RagEmbeddingServiceImpl } from "./rag-embedding.service";
+export {
+	RagQueryService,
+	type ChatTurn,
+	type ToolCallRecord,
+	type ContextResolver,
+} from "./rag-query.service";
+export { RagChatService } from "./rag-chat.service";
+
+// Context types
+export type {
+	NoteContextItem,
+	CardContextItem,
+	ContextItem,
+} from "./context/context.types";
+export { contextKey } from "./context/context.types";

@@ -5,6 +5,7 @@
  */
 export interface IPersistence {
 	readBinary(path: string): Promise<Uint8Array | null>;
+	read(path: string): Promise<string>;
 	writeBinary(path: string, data: ArrayBuffer): Promise<void>;
 	exists(path: string): Promise<boolean>;
 	mkdir(path: string): Promise<void>;

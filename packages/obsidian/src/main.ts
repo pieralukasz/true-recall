@@ -6,9 +6,9 @@ import {
 import { CardTypesEditorModal } from "@true-recall/obsidian/modals/core/card-types-editor/CardTypesEditorModal";
 import { NoteTypeSuggestModal } from "@true-recall/obsidian/modals/core/card-types-editor/NoteTypeSuggestModal";
 import { ImportStudioModal } from "@true-recall/obsidian/modals/core/import-studio/ImportStudioModal";
-import { BackgroundBackupManager } from "@true-recall/obsidian/features/core/persistence/background-backup.service";
-import { BackupService } from "@true-recall/obsidian/features/core/persistence/backup.service";
-import { SessionPersistenceService } from "@true-recall/obsidian/features/core/persistence/session-persistence.service";
+import { BackgroundBackupManager } from "@true-recall/core/persistence/background-backup.service";
+import { BackupService } from "@true-recall/core/persistence/backup.service";
+import { SessionPersistenceService } from "@true-recall/core/persistence/session-persistence.service";
 import { SqliteStoreService } from "@true-recall/core/persistence/sqlite";
 import {
 	DB_FOLDER,
@@ -33,8 +33,10 @@ import {
 	DeviceSelectionModal,
 	type DeviceSelectionResult,
 } from "@true-recall/obsidian/modals/integration/DeviceSelectionModal";
-import { DeviceDiscoveryService } from "@true-recall/obsidian/features/integration/services/device-discovery.service";
+import { DeviceDiscoveryService } from "@true-recall/core/integration/device-discovery.service";
 import { DeviceIdService } from "@true-recall/core/integration/device-id.service";
+import { ObsidianPersistence } from "@true-recall/obsidian/adapters/ObsidianPersistence";
+import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpClient";
 import { CardBrowserView } from "@true-recall/obsidian/views/browser/CardBrowserView";
 import { FlashcardPanelView } from "@true-recall/obsidian/views/panel/FlashcardPanelView";
 import { FSRSHelperService } from "@true-recall/core/metrics/fsrs-tools";
@@ -78,6 +80,7 @@ import {
 } from "@true-recall/core/constants";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 import {
+	cards,
 	initCardStore,
 	initMetadataStore,
 	refreshCards,
@@ -85,6 +88,8 @@ import {
 	refreshMetadata,
 	refreshSettings,
 } from "@true-recall/obsidian/services/reactive-card-store";
+import { lastMutation } from "@true-recall/obsidian/services/signals";
+import { effect } from "@preact/signals";
 import { UndoService } from "@true-recall/obsidian/services/undo.service";
 import { type AppStore, createAppStore } from "@true-recall/obsidian/store";
 import { extractFSRSSettings } from "@true-recall/core/types";
@@ -348,8 +353,8 @@ export default class TrueRecallPlugin extends Plugin {
 			this.ragActions = new RagChunkActions(this.cardStore.getSqliteDb());
 
 			if (this.settings.ragEnabled && this.settings.proKey) {
-				const { RagEmbeddingService } = await import(
-					"@true-recall/obsidian/features/rag/services/rag-embedding.service"
+				const { RagEmbeddingServiceImpl } = await import(
+					"@true-recall/core/rag/rag-embedding.service"
 				);
 				const { RagIndexerService } = await import(
 					"@true-recall/obsidian/features/rag/services/rag-indexer.service"
@@ -357,7 +362,7 @@ export default class TrueRecallPlugin extends Plugin {
 				const { RagSearchService } = await import(
 					"@true-recall/core/rag/rag-search.service"
 				);
-				const embedder = new RagEmbeddingService(this.settings.proKey);
+				const embedder = new RagEmbeddingServiceImpl(new ObsidianHttpClient(), this.settings.proKey);
 				this.ragSearch = new RagSearchService(this.ragActions, embedder);
 				this.ragIndexer = new RagIndexerService(
 					this.app,
@@ -810,7 +815,7 @@ export default class TrueRecallPlugin extends Plugin {
 	private async initializeDeviceContext(): Promise<string> {
 		this.deviceIdService = new DeviceIdService();
 		const deviceId = this.deviceIdService.getDeviceId();
-		this.deviceDiscovery = new DeviceDiscoveryService(this.app, deviceId);
+		this.deviceDiscovery = new DeviceDiscoveryService(new ObsidianPersistence(this.app), deviceId);
 		const deviceDbPath = normalizePath(
 			`${DB_FOLDER}/${getDeviceDbFilename(deviceId)}`,
 		);
@@ -971,7 +976,7 @@ export default class TrueRecallPlugin extends Plugin {
 			const sCards = performance.now();
 
 			this.sessionPersistence = new SessionPersistenceService(
-				this.app,
+				this.adapters.persistence,
 				this.cardStore,
 				this.dayBoundaryService,
 			);
@@ -982,11 +987,17 @@ export default class TrueRecallPlugin extends Plugin {
 				console.error("[True Recall] Stats migration failed:", e);
 			});
 
-			this.backupService = new BackupService(this.app, this.cardStore);
+			this.backupService = new BackupService(this.adapters.persistence, this.cardStore);
 			this.backgroundBackupManager = new BackgroundBackupManager(
-				this.app,
 				this.backupService,
 				this.settings,
+				{
+					onCardsChanged: (cb) => effect(() => { void cards.value; cb(); }),
+					onMutation: (cb) => effect(() => {
+						const m = lastMutation.value;
+						if (m) cb(m.type);
+					}),
+				},
 			);
 
 			if (

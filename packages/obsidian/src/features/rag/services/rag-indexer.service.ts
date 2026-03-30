@@ -13,7 +13,7 @@ import {
 	chunkFlashcard,
 	chunkNote,
 } from "@true-recall/core/rag/rag-chunker.service";
-import type { RagEmbeddingService } from "./rag-embedding.service";
+import type { RagEmbeddingService } from "@true-recall/core/rag/rag-search.service";
 import type { RagSearchService } from "@true-recall/core/rag/rag-search.service";
 
 export interface IndexResult {

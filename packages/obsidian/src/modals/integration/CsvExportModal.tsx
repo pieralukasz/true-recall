@@ -6,7 +6,8 @@ import {
 import {
 	CsvExportService,
 	type CsvSeparator,
-} from "@true-recall/obsidian/features/integration/services/csv-export.service";
+} from "@true-recall/core/integration/csv-export.service";
+import { ObsidianSourceUidResolver } from "@true-recall/obsidian/adapters/ObsidianSourceUidResolver";
 import {
 	downloadBlob,
 	type NoteEntry,
@@ -202,7 +203,7 @@ export class CsvExportModal extends BaseModal {
 		separator: CsvSeparator;
 	}): ExportPhase {
 		try {
-			const service = new CsvExportService(this.app, this.store);
+			const service = new CsvExportService(this.store, new ObsidianSourceUidResolver(this.app));
 
 			const { content, filename } = service.export({
 				sourceUids:

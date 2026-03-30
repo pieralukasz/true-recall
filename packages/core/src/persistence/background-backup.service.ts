@@ -1,14 +1,10 @@
 import type { BackupService } from "./backup.service";
-import { effect } from "@preact/signals";
-import { notify } from "@true-recall/obsidian/services/notification.service";
-import { cards } from "@true-recall/obsidian/services/reactive-card-store";
-import { lastMutation } from "@true-recall/obsidian/services/signals";
+import { notify } from "@true-recall/core/persistence/notification";
 import type {
 	BackupInterval,
 	RetentionPolicy,
 	TrueRecallSettings,
 } from "@true-recall/core/types/settings.types";
-import type { App } from "obsidian";
 
 export interface BackgroundBackupConfig {
 	periodicBackupEnabled: boolean;
@@ -26,6 +22,13 @@ export interface BackupStatus {
 	sessionStartBackupPath: string | null;
 }
 
+export interface BackgroundBackupDeps {
+	/** Called to subscribe to card-store changes. Returns a disposer. */
+	onCardsChanged: (cb: () => void) => () => void;
+	/** Called to subscribe to mutation events. Returns a disposer. */
+	onMutation: (cb: (type: string) => void) => () => void;
+}
+
 export class BackgroundBackupManager {
 	private backupService: BackupService;
 	private config: BackgroundBackupConfig;
@@ -36,17 +39,19 @@ export class BackgroundBackupManager {
 	private reviewsSinceLastBackup = 0;
 	private isBackupInProgress = false;
 	private isDirty = false;
-	private signalDisposers: (() => void)[] = [];
+	private disposers: (() => void)[] = [];
 	private consecutiveFailures = 0;
 	private sessionStartBackupPath: string | null = null;
+	private deps: BackgroundBackupDeps;
 
 	constructor(
-		_app: App,
 		backupService: BackupService,
 		settings: TrueRecallSettings,
+		deps: BackgroundBackupDeps,
 	) {
 		this.backupService = backupService;
 		this.config = this.extractConfig(settings);
+		this.deps = deps;
 	}
 
 	private extractConfig(settings: TrueRecallSettings): BackgroundBackupConfig {
@@ -110,14 +115,12 @@ export class BackgroundBackupManager {
 	}
 
 	private setupEventListeners(): void {
-		this.signalDisposers.push(
-			effect(() => {
-				void cards.value;
+		this.disposers.push(
+			this.deps.onCardsChanged(() => {
 				this.isDirty = true;
 			}),
-			effect(() => {
-				const m = lastMutation.value;
-				if (m?.type === "reviewed") {
+			this.deps.onMutation((type) => {
+				if (type === "reviewed") {
 					this.reviewsSinceLastBackup++;
 					this.checkActivityTrigger();
 				}
@@ -126,10 +129,10 @@ export class BackgroundBackupManager {
 	}
 
 	private cleanupEventListeners(): void {
-		for (const dispose of this.signalDisposers) {
+		for (const dispose of this.disposers) {
 			dispose();
 		}
-		this.signalDisposers = [];
+		this.disposers = [];
 	}
 
 	private startPeriodicBackups(): void {
