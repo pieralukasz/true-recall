@@ -69,7 +69,7 @@ export function MaturityWidget({ source }: { source: string }) {
 
 	const data = useComputed(
 		(): { segments: MaturitySegment[]; total: number } | null => {
-			cards.value;
+			void cards.value;
 			if (!plugin.sessionPersistence) return null;
 
 			const statsCalc = new StatsCalculatorService(

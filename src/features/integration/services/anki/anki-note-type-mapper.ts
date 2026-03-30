@@ -137,7 +137,7 @@ export class AnkiNoteTypeMapper {
 		const noteType: NoteType = {
 			id: crypto.randomUUID(),
 			name,
-			type: (model.type === 1 ? 1 : 0) as 0 | 1,
+			type: model.type === 1 ? 1 : 0,
 			fields,
 			templates,
 			css: model.css ?? "",

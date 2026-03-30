@@ -1,18 +1,17 @@
-import type { IncomingMessage, ServerResponse } from "node:http";
 import type { HierarchyTreeNode } from "@features/core/services/hierarchy.service";
 import { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
 import { aggregateDashboardData } from "@features/study/ui/dashboard/helpers/note-aggregation";
 import type { DashboardNoteEntry } from "@features/study/ui/dashboard/types";
 import type { FSRSFlashcardItem } from "@shared/types";
 import { State } from "ts-fsrs";
-import type { ApiContext } from "../api.types";
+import type { ApiContext, ApiRequest, ApiResponseWriter } from "../api.types";
 import { sendError, sendOk } from "../api.types";
 
-export async function handleGetDashboard(
-	_req: IncomingMessage,
-	res: ServerResponse,
+export function handleGetDashboard(
+	_req: ApiRequest,
+	res: ApiResponseWriter,
 	ctx: ApiContext,
-): Promise<void> {
+): void {
 	if (!ctx.plugin.isStoreReady()) {
 		sendError(res, 503, "Database not ready");
 		return;
@@ -236,11 +235,11 @@ function buildProjectWithStats(
 	};
 }
 
-export async function handleGetProjects(
-	_req: IncomingMessage,
-	res: ServerResponse,
+export function handleGetProjects(
+	_req: ApiRequest,
+	res: ApiResponseWriter,
 	ctx: ApiContext,
-): Promise<void> {
+): void {
 	if (!ctx.plugin.isStoreReady()) {
 		sendError(res, 503, "Database not ready");
 		return;
@@ -288,11 +287,11 @@ function findProjectNode(
 	return null;
 }
 
-export async function handleGetProject(
-	req: IncomingMessage,
-	res: ServerResponse,
+export function handleGetProject(
+	req: ApiRequest,
+	res: ApiResponseWriter,
 	ctx: ApiContext,
-): Promise<void> {
+): void {
 	if (!ctx.plugin.isStoreReady()) {
 		sendError(res, 503, "Database not ready");
 		return;

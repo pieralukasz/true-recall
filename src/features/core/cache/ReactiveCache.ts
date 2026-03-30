@@ -29,7 +29,7 @@ export class ReactiveCache<T> {
 		if (options.invalidateOn && options.invalidateOn.length > 0) {
 			const signals = options.invalidateOn;
 			this.disposer = effect(() => {
-				for (const s of signals) s.value;
+				for (const s of signals) void s.value;
 				this.invalidate();
 			});
 		}

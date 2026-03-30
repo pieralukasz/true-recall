@@ -1,9 +1,8 @@
-import type { IncomingMessage, ServerResponse } from "node:http";
 import { AIRequestError } from "@features/ai/services/openrouter-client";
-import type { ApiContext } from "../api.types";
+import type { ApiContext, ApiRequest, ApiResponseWriter } from "../api.types";
 import { parseJsonBody, readBody, sendError, sendOk } from "../api.types";
 
-function requirePro(ctx: ApiContext, res: ServerResponse): boolean {
+function requirePro(ctx: ApiContext, res: ApiResponseWriter): boolean {
 	if (!ctx.plugin.settings.proKey) {
 		sendError(res, 403, "Pro subscription required for Knowledge Base");
 		return false;
@@ -16,8 +15,8 @@ function requirePro(ctx: ApiContext, res: ServerResponse): boolean {
 }
 
 export async function handleRagSearch(
-	req: IncomingMessage,
-	res: ServerResponse,
+	req: ApiRequest,
+	res: ApiResponseWriter,
 	ctx: ApiContext,
 ): Promise<void> {
 	if (!requirePro(ctx, res)) return;
@@ -63,8 +62,8 @@ export async function handleRagSearch(
 }
 
 export async function handleRagIndex(
-	_req: IncomingMessage,
-	res: ServerResponse,
+	_req: ApiRequest,
+	res: ApiResponseWriter,
 	ctx: ApiContext,
 ): Promise<void> {
 	if (!requirePro(ctx, res)) return;
@@ -87,8 +86,8 @@ export async function handleRagIndex(
 }
 
 export async function handleRagStatus(
-	_req: IncomingMessage,
-	res: ServerResponse,
+	_req: ApiRequest,
+	res: ApiResponseWriter,
 	ctx: ApiContext,
 ): Promise<void> {
 	if (!requirePro(ctx, res)) return;

@@ -6,7 +6,7 @@ import { notify } from "@shared/services/notification.service";
 import { cards, pluginSettings } from "@shared/services/reactive-card-store";
 import { pushDeleteUndo } from "@shared/services/undo.service";
 import { AppNavBar } from "@shared/ui/components";
-import { usePlugin } from "@shared/ui/preact";
+import { useApp, usePlugin } from "@shared/ui/preact";
 import { useCallback, useEffect, useMemo, useRef } from "preact/hooks";
 import { BrowserSidebar } from "./components/BrowserSidebar";
 import { BrowserToolbar } from "./components/BrowserToolbar";
@@ -42,6 +42,7 @@ export function CardBrowserApp({
 	filterOrphaned,
 }: CardBrowserAppProps) {
 	const plugin = usePlugin();
+	const app = useApp();
 
 	const searchText = useSignal("");
 	const stateFilters = useSignal<StateFilterValue[]>([]);
@@ -285,14 +286,15 @@ export function CardBrowserApp({
 		loadedLimit.value += PAGE_SIZE;
 	}, [hasMore]);
 
-	const handleRemoveOrphanedCards = useCallback(() => {
+	const handleRemoveOrphanedCards = useCallback(async () => {
 		const orphanedIds = queryService.getOrphanedCardIds();
 		if (orphanedIds.length === 0) return;
 
 		const cardWord = orphanedIds.length === 1 ? "card" : "cards";
-		const confirmed = confirm(
-			`Remove ${orphanedIds.length} orphaned ${cardWord}?`,
-		);
+		const { confirm } = await import("@shared/ui/modals/ConfirmModal");
+		const confirmed = await confirm(app, {
+			message: `Remove ${orphanedIds.length} orphaned ${cardWord}?`,
+		});
 		if (!confirmed) return;
 
 		const deleteResult =
@@ -311,7 +313,7 @@ export function CardBrowserApp({
 		if (previewCard.value && deletedSet.has(previewCard.value.id)) {
 			previewCard.value = null;
 		}
-	}, [plugin, queryService]);
+	}, [app, plugin, queryService]);
 
 	const searchInputRef = useRef<HTMLInputElement>(null);
 

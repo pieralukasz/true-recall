@@ -22,13 +22,15 @@ export function IntegrityCheckSection() {
 				return;
 			}
 
-			const confirmed = confirm(
-				`Found ${report.totalIssues} orphaned records:\n` +
-					`• ${report.orphanedCards.length} cards with missing notes\n` +
-					`• ${report.orphanedNotes.length} notes with missing note types\n` +
-					`• ${report.orphanedReviewLogs.length} review logs with missing cards\n\n` +
+			const { confirm } = await import("@shared/ui/modals/ConfirmModal");
+			const confirmed = await confirm(plugin.app, {
+				message:
+					`Found ${report.totalIssues} orphaned records:\n` +
+					`- ${report.orphanedCards.length} cards with missing notes\n` +
+					`- ${report.orphanedNotes.length} notes with missing note types\n` +
+					`- ${report.orphanedReviewLogs.length} review logs with missing cards\n\n` +
 					`Soft-delete these records?`,
-			);
+			});
 
 			if (!confirmed) return;
 
@@ -60,7 +62,7 @@ export function IntegrityCheckSection() {
 				<ActionButton
 					label={running ? "Checking..." : "Check now"}
 					variant="primary"
-					onClick={handleCheck}
+					onClick={() => void handleCheck()}
 					disabled={running}
 				/>
 			</FormField>

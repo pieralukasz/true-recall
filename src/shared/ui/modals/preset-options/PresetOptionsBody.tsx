@@ -156,8 +156,8 @@ export function PresetOptionsBody({
 					preset={preset}
 					isDefault={isDefault}
 					onPresetChange={setSelectedPresetId}
-					onCreate={handleCreate}
-					onDelete={handleDelete}
+					onCreate={() => void handleCreate()}
+					onDelete={() => void handleDelete()}
 					onRename={(name) => void updatePreset({ name })}
 				/>
 

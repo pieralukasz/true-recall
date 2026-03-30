@@ -1,5 +1,9 @@
-import type { IncomingMessage, ServerResponse } from "node:http";
-import type { ApiContext, RouteHandler } from "./api.types";
+import type {
+	ApiContext,
+	ApiRequest,
+	ApiResponseWriter,
+	RouteHandler,
+} from "./api.types";
 import { CORS_HEADERS, sendError } from "./api.types";
 import {
 	handleCreateBackup,
@@ -166,8 +170,8 @@ const routes: Route[] = [
 ];
 
 export async function dispatch(
-	req: IncomingMessage,
-	res: ServerResponse,
+	req: ApiRequest,
+	res: ApiResponseWriter,
 	ctx: ApiContext,
 ): Promise<void> {
 	const method = req.method ?? "GET";

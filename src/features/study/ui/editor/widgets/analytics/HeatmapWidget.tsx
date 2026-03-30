@@ -60,7 +60,7 @@ export function HeatmapWidget({ source }: { source: string }) {
 	const config = useMemo(() => parseCodeblockConfig(source), [source]);
 
 	const data = useComputed((): HeatmapData | null => {
-		cards.value;
+		void cards.value;
 		if (!plugin.sessionPersistence) return null;
 
 		const statsCalculator = new StatsCalculatorService(

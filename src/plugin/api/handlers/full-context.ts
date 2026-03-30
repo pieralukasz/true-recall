@@ -1,5 +1,3 @@
-import type { IncomingMessage, ServerResponse } from "http";
-import { TFile } from "obsidian";
 import {
 	VIEW_TYPE_CARD_BROWSER,
 	VIEW_TYPE_DASHBOARD,
@@ -9,7 +7,7 @@ import {
 	VIEW_TYPE_STATS,
 } from "@shared/constants";
 import { State } from "ts-fsrs";
-import type { ApiContext } from "../api.types";
+import type { ApiContext, ApiRequest, ApiResponseWriter } from "../api.types";
 import { sendOk } from "../api.types";
 
 const STATE_LABELS: Record<number, string> = {
@@ -31,8 +29,8 @@ const VIEW_LABELS: Record<string, string> = {
 };
 
 export async function handleGetFullContext(
-	_req: IncomingMessage,
-	res: ServerResponse,
+	_req: ApiRequest,
+	res: ApiResponseWriter,
 	ctx: ApiContext,
 ): Promise<void> {
 	const result: Record<string, unknown> = {
@@ -41,8 +39,9 @@ export async function handleGetFullContext(
 	};
 
 	// Active view
-	const activeLeaf = ctx.plugin.app.workspace.activeLeaf;
-	const viewType = activeLeaf?.view?.getViewType() ?? "unknown";
+	const activeFile = ctx.plugin.app.workspace.getActiveFile();
+	const activeLf = ctx.plugin.app.workspace.getMostRecentLeaf();
+	const viewType = activeLf?.view?.getViewType() ?? "unknown";
 	result.activeView = VIEW_LABELS[viewType] ?? viewType;
 
 	// Active note
@@ -60,15 +59,13 @@ export async function handleGetFullContext(
 				(await frontmatterService.getSourceNoteUid(file)) ?? undefined;
 
 			if (sourceUid) {
-				const cards =
-					ctx.plugin.cardStore.cards.getCardsBySourceUid(sourceUid);
+				const cards = ctx.plugin.cardStore.cards.getCardsBySourceUid(sourceUid);
 				noteInfo.sourceUid = sourceUid;
 				noteInfo.cardCount = cards.length;
 				noteInfo.cardStates = {
 					new: cards.filter((c) => c.state === State.New).length,
 					learning: cards.filter(
-						(c) =>
-							c.state === State.Learning || c.state === State.Relearning,
+						(c) => c.state === State.Learning || c.state === State.Relearning,
 					).length,
 					review: cards.filter((c) => c.state === State.Review).length,
 				};
@@ -150,8 +147,7 @@ export async function handleGetFullContext(
 		}
 
 		// Due cards count
-		const archivedUids =
-			ctx.plugin.hierarchyService.getArchivedSourceUids();
+		const archivedUids = ctx.plugin.hierarchyService.getArchivedSourceUids();
 		let allCards = ctx.plugin.flashcardManager.getAllFSRSCards();
 		if (archivedUids.size > 0) {
 			allCards = allCards.filter(

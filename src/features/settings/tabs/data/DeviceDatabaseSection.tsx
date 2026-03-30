@@ -40,9 +40,10 @@ export function DeviceDatabaseSection() {
 			return;
 		}
 
-		const confirmed = confirm(
-			`Are you sure you want to replace the current database with data from device ${result.sourceDeviceId}?\n\nThe current database will be overwritten. This requires restarting Obsidian.`,
-		);
+		const { confirm } = await import("@shared/ui/modals/ConfirmModal");
+		const confirmed = await confirm(plugin.app, {
+			message: `Are you sure you want to replace the current database with data from device ${result.sourceDeviceId}?\n\nThe current database will be overwritten. This requires restarting Obsidian.`,
+		});
 
 		if (!confirmed) return;
 
@@ -103,7 +104,7 @@ export function DeviceDatabaseSection() {
 				<ActionButton
 					label="Switch..."
 					variant="primary"
-					onClick={handleSwitchDatabase}
+					onClick={() => void handleSwitchDatabase()}
 				/>
 			</FormField>
 		</FormCard>

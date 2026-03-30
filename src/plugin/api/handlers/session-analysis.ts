@@ -1,7 +1,6 @@
-import type { IncomingMessage, ServerResponse } from "http";
 import { formatLocalDate } from "@shared/utils";
 import { State } from "ts-fsrs";
-import type { ApiContext } from "../api.types";
+import type { ApiContext, ApiRequest, ApiResponseWriter } from "../api.types";
 import { sendError, sendOk } from "../api.types";
 
 const STATE_LABELS: Record<number, string> = {
@@ -11,11 +10,11 @@ const STATE_LABELS: Record<number, string> = {
 	[State.Relearning]: "Relearning",
 };
 
-export async function handleGetSessionAnalysis(
-	_req: IncomingMessage,
-	res: ServerResponse,
+export function handleGetSessionAnalysis(
+	_req: ApiRequest,
+	res: ApiResponseWriter,
 	ctx: ApiContext,
-): Promise<void> {
+): void {
 	if (!ctx.plugin.isStoreReady()) {
 		sendError(res, 503, "Database not ready");
 		return;
@@ -85,9 +84,7 @@ export async function handleGetSessionAnalysis(
 		}));
 
 	// Cards that got "Again" today (struggled)
-	const struggled = cards.filter(
-		(c) => c && c.todayRatings.includes(1),
-	);
+	const struggled = cards.filter((c) => c?.todayRatings.includes(1));
 
 	sendOk(res, {
 		date: today,
@@ -113,12 +110,12 @@ export async function handleGetSessionAnalysis(
 		},
 		noteBreakdown,
 		struggled: struggled.map((c) => ({
-			id: c!.id,
-			question: c!.question,
-			answer: c!.answer,
-			sourceNoteName: c!.sourceNoteName,
-			lapses: c!.lapses,
-			stability: c!.stability,
+			id: c?.id,
+			question: c?.question,
+			answer: c?.answer,
+			sourceNoteName: c?.sourceNoteName,
+			lapses: c?.lapses,
+			stability: c?.stability,
 		})),
 		reviewedCards: cards,
 	});

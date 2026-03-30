@@ -251,9 +251,6 @@ export class SessionPersistenceService {
 			const content = await this.app.vault.adapter.read(statsPath);
 			const data = JSON.parse(content) as PersistentStatsData;
 
-			let _migratedDays = 0;
-			let _migratedCards = 0;
-
 			for (const [date, dayStats] of Object.entries(data.daily)) {
 				const extendedStats = dayStats as ExtendedDailyStats;
 
@@ -270,12 +267,10 @@ export class SessionPersistenceService {
 					learningCards: extendedStats.learningCards || 0,
 					reviewCards: extendedStats.reviewCards || 0,
 				});
-				_migratedDays++;
 
 				// Migrate reviewed card IDs
 				for (const cardId of extendedStats.reviewedCardIds || []) {
 					this.store.stats.recordReviewedCard(date, cardId);
-					_migratedCards++;
 				}
 			}
 

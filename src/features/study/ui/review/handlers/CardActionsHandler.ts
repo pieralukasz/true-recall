@@ -78,7 +78,7 @@ export class CardActionsHandler {
 	 * Suspend the current card
 	 * For cloze/reverse cards, suspends all siblings as a group
 	 */
-	async handleSuspend(): Promise<void> {
+	handleSuspend(): void {
 		const card = this.deps.getReview().getCurrentCard();
 		if (!card) return;
 
@@ -150,7 +150,7 @@ export class CardActionsHandler {
 	 * Bury the current card until tomorrow
 	 * For cloze/reverse cards, buries all siblings as a group
 	 */
-	async handleBuryCard(): Promise<void> {
+	handleBuryCard(): void {
 		const card = this.deps.getReview().getCurrentCard();
 		if (!card) return;
 
@@ -223,7 +223,7 @@ export class CardActionsHandler {
 	 * Forget the current card — reset to New and clear review history.
 	 * For cloze/reverse cards, forgets all siblings as a group.
 	 */
-	async handleForget(): Promise<void> {
+	handleForget(): void {
 		const card = this.deps.getReview().getCurrentCard();
 		if (!card) return;
 		if (card.fsrs.state === State.New) {
@@ -311,14 +311,14 @@ export class CardActionsHandler {
 	 * Bury all cards from the same source note
 	 * All sibling cards will reappear in the next day's review
 	 */
-	async handleBuryNote(): Promise<void> {
+	handleBuryNote(): void {
 		const card = this.deps.getReview().getCurrentCard();
 		if (!card) return;
 
 		const sourceNoteName = card.sourceNoteName;
 		if (!sourceNoteName) {
 			// If no source note, just bury the current card
-			await this.handleBuryCard();
+			this.handleBuryCard();
 			return;
 		}
 
@@ -330,7 +330,7 @@ export class CardActionsHandler {
 
 		const firstSibling = siblingCards[0];
 		if (siblingCards.length === 0 || !firstSibling) {
-			await this.handleBuryCard();
+			this.handleBuryCard();
 			return;
 		}
 

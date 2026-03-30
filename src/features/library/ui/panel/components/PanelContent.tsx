@@ -81,7 +81,7 @@ function StreamingSection({
 }) {
 	const [, forceUpdate] = useState(0);
 	useSignalEffect(() => {
-		const _ = streamingGeneration.value;
+		void streamingGeneration.value;
 		forceUpdate((n) => n + 1);
 	});
 

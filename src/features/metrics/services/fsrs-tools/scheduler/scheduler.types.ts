@@ -22,11 +22,11 @@ export interface SchedulerCardStore {
 	get(cardId: string): SchedulerCardData | undefined;
 	getCards(): SchedulerCardData[];
 	getDueCardsByDateRange(startDate: string, endDate: string): CardDueInfo[];
-	updateCardDue(cardId: string, newDue: string): Promise<void>;
+	updateCardDue(cardId: string, newDue: string): void;
 	updateCardScheduling(
 		cardId: string,
 		data: { due: string; scheduledDays: number },
-	): Promise<void>;
+	): void;
 }
 
 export interface WorkloadDistribution {

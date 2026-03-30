@@ -139,8 +139,7 @@ function TemplateCodeEditor({
 			editorRef.current = null;
 			editor.destroy();
 		};
-		// Only create/destroy on mount/unmount or readOnly change
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- only recreate editor on mount or readOnly change; value sync handled separately
 	}, [app, plugin.EmbeddableEditor, readOnly]);
 
 	// Sync external value changes

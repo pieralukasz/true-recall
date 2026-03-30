@@ -19,7 +19,7 @@ export function useMarkdown(
 
 		el.empty();
 		const obsComponent = new ObsidianComponent();
-		MarkdownRenderer.render(app, markdown, el, sourcePath, obsComponent);
+		void MarkdownRenderer.render(app, markdown, el, sourcePath, obsComponent);
 
 		return () => obsComponent.unload();
 	}, [app, markdown, sourcePath]);

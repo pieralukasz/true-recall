@@ -53,9 +53,10 @@ function buildDueQueue(cards: FSRSFlashcardItem[]): FSRSFlashcardItem[] {
 
 export function QuickReview({ cardsWithFsrs }: QuickReviewProps) {
 	const plugin = usePlugin();
+	const app = plugin.app;
 	const [expanded, setExpanded] = useState(() => {
 		try {
-			return localStorage.getItem(STORAGE_KEY) === "true";
+			return app.loadLocalStorage(STORAGE_KEY) === "true";
 		} catch {
 			return false;
 		}
@@ -93,13 +94,13 @@ export function QuickReview({ cardsWithFsrs }: QuickReviewProps) {
 		setExpanded((prev) => {
 			const next = !prev;
 			try {
-				localStorage.setItem(STORAGE_KEY, String(next));
+				app.saveLocalStorage(STORAGE_KEY, String(next));
 			} catch {
-				// localStorage unavailable (e.g. private browsing) — state still works in-memory
+				// storage unavailable — state still works in-memory
 			}
 			return next;
 		});
-	}, []);
+	}, [app]);
 
 	const handleShowAnswer = useCallback(() => {
 		setAnswerShown(true);
@@ -194,7 +195,7 @@ export function QuickReview({ cardsWithFsrs }: QuickReviewProps) {
 							preview={preview}
 							remaining={queue.length}
 							onShowAnswer={handleShowAnswer}
-							onRate={handleRate}
+							onRate={(rating) => void handleRate(rating)}
 						/>
 					) : (
 						<div class="ep:text-xs ep:text-obs-muted ep:text-center ep:py-3">

@@ -7,6 +7,7 @@ import {
 import { FSRS_COLORS } from "@shared/ui/helpers/fsrs-colors";
 import { usePlugin } from "@shared/ui/preact";
 import { useMemo } from "preact/hooks";
+import { State } from "ts-fsrs";
 import { configValue, parseCodeblockConfig } from "../config-parser";
 import { WidgetCta } from "../WidgetCta";
 
@@ -31,7 +32,7 @@ export function NoteHealthWidget({
 	const config = useMemo(() => parseCodeblockConfig(source), [source]);
 
 	const data = useComputed((): NoteHealthData | null => {
-		cards.value;
+		void cards.value;
 		if (!sourceUid) return null;
 
 		const noteCards = cardsBySourceUid.value.get(sourceUid) ?? [];
@@ -55,11 +56,12 @@ export function NoteHealthWidget({
 			if (fsrs.buriedUntil && new Date(fsrs.buriedUntil) > now) continue;
 
 			// Due check
-			if (fsrs.state === 2 && new Date(fsrs.due) <= now) dueCount++;
-			if (fsrs.state === 1 || fsrs.state === 3) dueCount++; // learning/relearning always "due"
+			if (fsrs.state === State.Review && new Date(fsrs.due) <= now) dueCount++;
+			if (fsrs.state === State.Learning || fsrs.state === State.Relearning)
+				dueCount++; // learning/relearning always "due"
 
 			// Retrievability (skip new cards)
-			if (fsrs.state !== 0) {
+			if (fsrs.state !== State.New) {
 				const r = plugin.fsrsService.getRetrievability(fsrs, now);
 				totalRetention += r;
 				totalStability += fsrs.stability;

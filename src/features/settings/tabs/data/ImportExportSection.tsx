@@ -13,7 +13,7 @@ export function ImportExportSection() {
 				<ActionButton
 					label="Import .apkg"
 					variant="primary"
-					onClick={() => plugin.importAnki()}
+					onClick={() => void plugin.importAnki()}
 				/>
 			</FormField>
 

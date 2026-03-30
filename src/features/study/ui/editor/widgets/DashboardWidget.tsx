@@ -8,6 +8,7 @@ import {
 import { FSRS_COLORS } from "@shared/ui/helpers/fsrs-colors";
 import { usePlugin } from "@shared/ui/preact";
 import { useMemo } from "preact/hooks";
+import { State } from "ts-fsrs";
 
 interface TodayData {
 	studied: number;
@@ -185,14 +186,14 @@ export function NoteStatsWidget({ sourceUid }: { sourceUid: string | null }) {
 			}
 			if (fsrs.buriedUntil && new Date(fsrs.buriedUntil) > now) continue;
 			switch (fsrs.state) {
-				case 0:
+				case State.New:
 					newCount++;
 					break;
-				case 1:
-				case 3:
+				case State.Learning:
+				case State.Relearning:
 					learning++;
 					break;
-				case 2:
+				case State.Review:
 					if (new Date(fsrs.due) <= now) due++;
 					break;
 			}

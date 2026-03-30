@@ -23,10 +23,10 @@ export class PostponeAdvanceService {
 	/**
 	 * Shift card due dates
 	 */
-	async shift(options: ShiftOptions): Promise<SchedulingResult> {
+	shift(options: ShiftOptions): SchedulingResult {
 		const { action, days, scope, cardIds, dryRun = true } = options;
 
-		const cards = await this.getCardsForScope(scope, cardIds);
+		const cards = this.getCardsForScope(scope, cardIds);
 
 		// Calculate shift direction
 		const shiftDays = action === "postpone" ? days : -days;
@@ -75,7 +75,7 @@ export class PostponeAdvanceService {
 		// Apply changes if not dry run
 		if (!dryRun) {
 			for (const change of changes) {
-				await this.cardStore.updateCardDue(change.cardId, change.newDue);
+				this.cardStore.updateCardDue(change.cardId, change.newDue);
 			}
 		}
 
@@ -90,10 +90,10 @@ export class PostponeAdvanceService {
 	/**
 	 * Get cards based on scope
 	 */
-	private async getCardsForScope(
+	private getCardsForScope(
 		scope: ShiftOptions["scope"],
 		cardIds?: string[],
-	): Promise<{ id: string; due: string }[]> {
+	): { id: string; due: string }[] {
 		const today = new Date();
 		today.setHours(0, 0, 0, 0);
 

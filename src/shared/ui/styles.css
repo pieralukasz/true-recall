@@ -99,7 +99,7 @@ settings:
 		0 1px 3px hsl(var(--ep-shadow-color) / 0.08);
 	--ep-elevation-3:
 		0 8px 24px hsl(var(--ep-shadow-color) / 0.18),
-		0 2px 8px hsl(var(--ep-shadow-color) / 0.10);
+		0 2px 8px hsl(var(--ep-shadow-color) / 0.1);
 	--ep-elevation-4:
 		0 16px 48px hsl(var(--ep-shadow-color) / 0.24),
 		0 2px 8px hsl(var(--ep-shadow-color) / 0.12);
@@ -609,4 +609,10 @@ settings:
 		animation: none;
 		opacity: 1;
 	}
+}
+
+/* ── Utility classes for vanilla-DOM contexts (modals, suggest items) ── */
+
+.u-text-accent {
+	color: var(--text-accent);
 }

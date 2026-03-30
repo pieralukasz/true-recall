@@ -22,7 +22,7 @@ export class CardBrowserView extends ItemView {
 	}
 
 	getDisplayText(): string {
-		return "Card Browser";
+		return "Card browser";
 	}
 
 	getIcon(): string {

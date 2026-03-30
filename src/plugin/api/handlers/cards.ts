@@ -1,13 +1,13 @@
-import type { IncomingMessage, ServerResponse } from "http";
 import { BUILTIN_BASIC_ID, BUILTIN_CLOZE_ID } from "@shared/types/note.types";
-import type { ApiContext } from "../api.types";
+import { State } from "ts-fsrs";
+import type { ApiContext, ApiRequest, ApiResponseWriter } from "../api.types";
 import { parseJsonBody, readBody, sendError, sendOk } from "../api.types";
 
-export async function handleListCards(
-	req: IncomingMessage,
-	res: ServerResponse,
+export function handleListCards(
+	req: ApiRequest,
+	res: ApiResponseWriter,
 	ctx: ApiContext,
-): Promise<void> {
+): void {
 	if (!ctx.plugin.isStoreReady()) {
 		sendError(res, 503, "Database not ready");
 		return;
@@ -39,11 +39,11 @@ export async function handleListCards(
 	}
 
 	if (stateParam !== null) {
-		const stateMap: Record<string, number> = {
-			new: 0,
-			learning: 1,
-			review: 2,
-			relearning: 3,
+		const stateMap: Record<string, State> = {
+			new: State.New,
+			learning: State.Learning,
+			review: State.Review,
+			relearning: State.Relearning,
 		};
 		const stateValue = stateMap[stateParam];
 		if (stateValue !== undefined) {
@@ -79,12 +79,12 @@ export async function handleListCards(
 	sendOk(res, { total: allCards.length, count: cards.length, cards });
 }
 
-export async function handleGetCard(
-	_req: IncomingMessage,
-	res: ServerResponse,
+export function handleGetCard(
+	_req: ApiRequest,
+	res: ApiResponseWriter,
 	ctx: ApiContext,
 	params: Record<string, string>,
-): Promise<void> {
+): void {
 	if (!ctx.plugin.isStoreReady()) {
 		sendError(res, 503, "Database not ready");
 		return;
@@ -126,11 +126,11 @@ export async function handleGetCard(
 	});
 }
 
-export async function handleGetDueCards(
-	req: IncomingMessage,
-	res: ServerResponse,
+export function handleGetDueCards(
+	req: ApiRequest,
+	res: ApiResponseWriter,
 	ctx: ApiContext,
-): Promise<void> {
+): void {
 	if (!ctx.plugin.isStoreReady()) {
 		sendError(res, 503, "Database not ready");
 		return;
@@ -190,11 +190,11 @@ export async function handleGetDueCards(
 	});
 }
 
-export async function handleGetProblemCards(
-	req: IncomingMessage,
-	res: ServerResponse,
+export function handleGetProblemCards(
+	req: ApiRequest,
+	res: ApiResponseWriter,
 	ctx: ApiContext,
-): Promise<void> {
+): void {
 	if (!ctx.plugin.isStoreReady()) {
 		sendError(res, 503, "Database not ready");
 		return;
@@ -223,8 +223,8 @@ interface CreateBatchInput {
 }
 
 export async function handleCreateCards(
-	req: IncomingMessage,
-	res: ServerResponse,
+	req: ApiRequest,
+	res: ApiResponseWriter,
 	ctx: ApiContext,
 ): Promise<void> {
 	if (!ctx.plugin.isStoreReady()) {
@@ -239,15 +239,16 @@ export async function handleCreateCards(
 		return;
 	}
 
-	const isBatch = "cards" in body && Array.isArray(body.cards);
-	const inputs: CreateCardInput[] = isBatch
-		? (body as CreateBatchInput).cards
-		: [body as CreateCardInput];
+	let inputs: CreateCardInput[];
+	let batchSourceUid: string | undefined;
 
-	const batchSourceUid = isBatch
-		? (body as CreateBatchInput).source_uid
-		: undefined;
-	const _batchTags = isBatch ? (body as CreateBatchInput).tags : undefined;
+	if ("question" in body) {
+		inputs = [body];
+		batchSourceUid = undefined;
+	} else {
+		inputs = body.cards;
+		batchSourceUid = body.source_uid;
+	}
 
 	const noteParams = inputs.map((input) => {
 		const isCloze = input.card_type === "cloze";

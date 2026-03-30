@@ -17,7 +17,7 @@ import type {
 export class LoadBalanceService {
 	constructor(private cardStore: SchedulerCardStore) {}
 
-	async balance(options: LoadBalanceOptions): Promise<SchedulingResult> {
+	balance(options: LoadBalanceOptions): SchedulingResult {
 		const {
 			targetPerDay,
 			maxDeviation,
@@ -118,7 +118,7 @@ export class LoadBalanceService {
 		// Apply changes if not dry run
 		if (!dryRun) {
 			for (const change of changes) {
-				await this.cardStore.updateCardDue(change.cardId, change.newDue);
+				this.cardStore.updateCardDue(change.cardId, change.newDue);
 			}
 		}
 

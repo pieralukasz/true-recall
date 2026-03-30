@@ -165,7 +165,7 @@ export function NormalHeader({
 						<IconButton
 							icon="download"
 							ariaLabel={`Collect ${uncollectedCount} flashcards`}
-							onClick={panelActions.handleCollect}
+							onClick={() => void panelActions.handleCollect()}
 							size="small"
 							label={String(uncollectedCount)}
 							class="true-recall-pulse-collect"
@@ -176,7 +176,7 @@ export function NormalHeader({
 						<IconButton
 							icon="brain"
 							ariaLabel="Start review"
-							onClick={panelActions.handleReview}
+							onClick={() => void panelActions.handleReview()}
 							size="small"
 							disabled={(flashcardInfo?.cardCount ?? 0) === 0}
 						/>

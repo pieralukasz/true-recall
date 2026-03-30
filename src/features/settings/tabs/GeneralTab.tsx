@@ -41,7 +41,7 @@ export function GeneralTab() {
 				>
 					<SelectInput
 						value={settings.reviewMode}
-						onChange={(v) => save({ reviewMode: v as ReviewViewMode })}
+						onChange={(v) => void save({ reviewMode: v as ReviewViewMode })}
 						options={[
 							{ value: "fullscreen", label: "Fullscreen (main area)" },
 							{ value: "panel", label: "Side panel" },
@@ -55,7 +55,7 @@ export function GeneralTab() {
 				>
 					<ToggleInput
 						value={settings.showReviewHeader}
-						onChange={(v) => save({ showReviewHeader: v })}
+						onChange={(v) => void save({ showReviewHeader: v })}
 					/>
 				</FormField>
 
@@ -65,7 +65,7 @@ export function GeneralTab() {
 				>
 					<ToggleInput
 						value={settings.showReviewHeaderStats}
-						onChange={(v) => save({ showReviewHeaderStats: v })}
+						onChange={(v) => void save({ showReviewHeaderStats: v })}
 					/>
 				</FormField>
 
@@ -75,7 +75,7 @@ export function GeneralTab() {
 				>
 					<ToggleInput
 						value={settings.showNextReviewTime}
-						onChange={(v) => save({ showNextReviewTime: v })}
+						onChange={(v) => void save({ showNextReviewTime: v })}
 					/>
 				</FormField>
 
@@ -85,7 +85,7 @@ export function GeneralTab() {
 				>
 					<ToggleInput
 						value={settings.continuousCustomReviews}
-						onChange={(v) => save({ continuousCustomReviews: v })}
+						onChange={(v) => void save({ continuousCustomReviews: v })}
 					/>
 				</FormField>
 
@@ -95,7 +95,7 @@ export function GeneralTab() {
 				>
 					<ToggleInput
 						value={settings.ignoreDailyLimitsForNoteStudy}
-						onChange={(v) => save({ ignoreDailyLimitsForNoteStudy: v })}
+						onChange={(v) => void save({ ignoreDailyLimitsForNoteStudy: v })}
 					/>
 				</FormField>
 
@@ -105,7 +105,7 @@ export function GeneralTab() {
 				>
 					<SelectInput
 						value={settings.defaultTypeInMode}
-						onChange={(v) => save({ defaultTypeInMode: v as TypeInMode })}
+						onChange={(v) => void save({ defaultTypeInMode: v as TypeInMode })}
 						options={[
 							{ value: "off", label: "Off" },
 							{ value: "diff", label: "Diff" },
@@ -122,7 +122,7 @@ export function GeneralTab() {
 				>
 					<ToggleInput
 						value={settings.showLinkStatusIndicators}
-						onChange={(v) => save({ showLinkStatusIndicators: v })}
+						onChange={(v) => void save({ showLinkStatusIndicators: v })}
 					/>
 				</FormField>
 
@@ -132,7 +132,7 @@ export function GeneralTab() {
 				>
 					<ToggleInput
 						value={settings.showDonutsInPanel}
-						onChange={(v) => save({ showDonutsInPanel: v })}
+						onChange={(v) => void save({ showDonutsInPanel: v })}
 					/>
 				</FormField>
 
@@ -142,7 +142,7 @@ export function GeneralTab() {
 				>
 					<ToggleInput
 						value={settings.showDonutsInReview}
-						onChange={(v) => save({ showDonutsInReview: v })}
+						onChange={(v) => void save({ showDonutsInReview: v })}
 					/>
 				</FormField>
 
@@ -152,7 +152,7 @@ export function GeneralTab() {
 				>
 					<ToggleInput
 						value={settings.showStatusBarWidget}
-						onChange={(v) => save({ showStatusBarWidget: v })}
+						onChange={(v) => void save({ showStatusBarWidget: v })}
 					/>
 				</FormField>
 
@@ -162,7 +162,7 @@ export function GeneralTab() {
 				>
 					<ToggleInput
 						value={settings.showQuickReviewInPanel}
-						onChange={(v) => save({ showQuickReviewInPanel: v })}
+						onChange={(v) => void save({ showQuickReviewInPanel: v })}
 					/>
 				</FormField>
 			</FormCard>
@@ -174,7 +174,7 @@ export function GeneralTab() {
 				>
 					<SliderInput
 						value={settings.dayStartHour}
-						onChange={(v) => save({ dayStartHour: v })}
+						onChange={(v) => void save({ dayStartHour: v })}
 						min={0}
 						max={23}
 						step={1}
@@ -196,17 +196,20 @@ export function GeneralTab() {
 					<ToggleInput
 						value={settings.enableLocalApi}
 						onChange={(v) => {
-							save({ enableLocalApi: v });
+							void save({ enableLocalApi: v });
 							if (v) {
-								if (!plugin.localApi) {
-									const { LocalApiServer } =
-										require("../../../plugin/api/LocalApiServer") as typeof import("../../../plugin/api/LocalApiServer");
-									plugin.localApi = new LocalApiServer(
-										plugin,
-										settings.apiPort,
-									);
-								}
-								plugin.localApi?.start();
+								void (async () => {
+									if (!plugin.localApi) {
+										const { LocalApiServer } = await import(
+											"../../../plugin/api/LocalApiServer"
+										);
+										plugin.localApi = new LocalApiServer(
+											plugin,
+											settings.apiPort,
+										);
+									}
+									plugin.localApi?.start();
+								})();
 							} else {
 								plugin.localApi?.stop();
 							}
@@ -224,7 +227,7 @@ export function GeneralTab() {
 						onChange={(v) => {
 							const port = Number.parseInt(v, 10);
 							if (!Number.isNaN(port) && port >= 1024 && port <= 65535) {
-								save({ apiPort: port });
+								void save({ apiPort: port });
 							}
 						}}
 					/>
@@ -245,22 +248,24 @@ export function GeneralTab() {
 				>
 					<Clickable
 						class="ep-btn ep-btn-outline"
-						onClick={async () => {
-							const { fetchLatestRelease } = await import(
-								"@shared/services/release-notes.service"
-							);
-							const release = await fetchLatestRelease();
-							if (!release) {
-								notify().error(
-									"Could not fetch release notes. Check your internet connection.",
+						onClick={() =>
+							void (async () => {
+								const { fetchLatestRelease } = await import(
+									"@shared/services/release-notes.service"
 								);
-								return;
-							}
-							const { WhatsNewModal } = await import(
-								"@shared/ui/modals/WhatsNewModal"
-							);
-							new WhatsNewModal(plugin, release).open();
-						}}
+								const release = await fetchLatestRelease();
+								if (!release) {
+									notify().error(
+										"Could not fetch release notes. Check your internet connection.",
+									);
+									return;
+								}
+								const { WhatsNewModal } = await import(
+									"@shared/ui/modals/WhatsNewModal"
+								);
+								new WhatsNewModal(plugin, release).open();
+							})()
+						}
 					>
 						View release notes
 					</Clickable>

@@ -28,12 +28,12 @@ export interface KeyboardShortcuts {
  */
 export interface KeyboardActionCallbacks {
 	onShowAnswer: () => void;
-	onAnswer: (rating: Rating) => Promise<void>;
+	onAnswer: (rating: Rating) => void;
 	onUndo: () => Promise<void>;
-	onSuspend: () => Promise<void>;
-	onForget: () => Promise<void>;
-	onBuryCard: () => Promise<void>;
-	onBuryNote: () => Promise<void>;
+	onSuspend: () => void;
+	onForget: () => void;
+	onBuryCard: () => void;
+	onBuryNote: () => void;
 	onMoveCard: () => Promise<void>;
 	onAddCard: () => Promise<void>;
 	onEditCard: () => Promise<void>;

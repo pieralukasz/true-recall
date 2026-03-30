@@ -99,15 +99,16 @@ export function useSelectionActions({
 	const handleDeleteSelected = useCallback(async () => {
 		if (!flashcardInfo || !currentFile || selectedCardIds.size === 0) return;
 		const { notify } = await import("@shared/services/notification.service");
+		const { confirm } = await import("@shared/ui/modals/ConfirmModal");
 
 		const selectedCards = flashcardInfo.flashcards.filter((card) =>
 			selectedCardIds.has(card.id),
 		);
 		if (selectedCards.length === 0) return;
 
-		const confirmed = window.confirm(
-			`Delete ${selectedCards.length} selected card(s)?`,
-		);
+		const confirmed = await confirm(app, {
+			message: `Delete ${selectedCards.length} selected card(s)?`,
+		});
 		if (!confirmed) return;
 
 		const cardIds = selectedCards.map((card) => card.id);

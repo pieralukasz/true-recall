@@ -1,7 +1,6 @@
-import type { IncomingMessage, ServerResponse } from "http";
 import { TFile } from "obsidian";
 import { State } from "ts-fsrs";
-import type { ApiContext } from "../api.types";
+import type { ApiContext, ApiRequest, ApiResponseWriter } from "../api.types";
 import { sendError, sendOk } from "../api.types";
 
 const STATE_LABELS: Record<number, string> = {
@@ -12,8 +11,8 @@ const STATE_LABELS: Record<number, string> = {
 };
 
 export async function handleGetReviewContext(
-	req: IncomingMessage,
-	res: ServerResponse,
+	req: ApiRequest,
+	res: ApiResponseWriter,
 	ctx: ApiContext,
 ): Promise<void> {
 	if (!ctx.plugin.store) {

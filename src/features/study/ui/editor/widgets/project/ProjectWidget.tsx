@@ -23,14 +23,14 @@ export function ProjectWidget({
 
 	// A note is a "project" if any note declares it as a parent
 	const isProject = useComputed(() => {
-		cards.value;
-		archivedSourceUids.value;
+		void cards.value;
+		void archivedSourceUids.value;
 		const children = plugin.hierarchyService.getChildPaths(sourcePath);
 		return children.length > 0;
 	}).value;
 
 	const stats = useComputed((): ProjectStats | null => {
-		cards.value;
+		void cards.value;
 		const archived = archivedSourceUids.value;
 		if (!isProject || !plugin.cardStore) return null;
 

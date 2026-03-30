@@ -35,7 +35,7 @@ export function TemplateCodeEditor({
 			editorRef.current = null;
 			editor.destroy();
 		};
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- only recreate editor on mount or readOnly change; value sync handled separately
 	}, [app, plugin.EmbeddableEditor, readOnly]);
 
 	useLayoutEffect(() => {

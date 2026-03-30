@@ -31,7 +31,7 @@ export function CardTypesEditorApp({
 
 	const noteType = useMemo(
 		() => noteTypeService.getById(noteTypeId),
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- version signal triggers re-fetch when note type data changes
 		[noteTypeService, noteTypeId, version],
 	);
 

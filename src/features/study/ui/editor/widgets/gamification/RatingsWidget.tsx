@@ -67,7 +67,7 @@ function computeRatingsData(
 
 	// "month" -> "1m", "all" -> "all"
 	const range = period === "month" ? "1m" : "all";
-	const entries = statsCalc.getRatingDistributionHistory(range as "1m" | "all");
+	const entries = statsCalc.getRatingDistributionHistory(range);
 	let again = 0;
 	let hard = 0;
 	let good = 0;
@@ -214,7 +214,7 @@ export function RatingsWidget({ source }: { source: string }) {
 	const config = useMemo(() => parseCodeblockConfig(source), [source]);
 
 	const data = useComputed((): RatingsData | null => {
-		cards.value;
+		void cards.value;
 		if (!plugin.sessionPersistence) return null;
 
 		const statsCalc = new StatsCalculatorService(

@@ -1,6 +1,7 @@
 import { Clickable } from "@shared/ui/components";
 import { NotePicker } from "@shared/ui/components/NotePicker";
 import { BasePromiseModal } from "@shared/ui/modals/BasePromiseModal";
+import { confirm } from "@shared/ui/modals/ConfirmModal";
 import type { App, TFile } from "obsidian";
 import { render } from "preact";
 import { useCallback, useState } from "preact/hooks";
@@ -43,6 +44,7 @@ export class UidRemovedModal extends BasePromiseModal<UidRemovedResult> {
 	protected renderBody(container: HTMLElement): void {
 		render(
 			<UidRemovedBody
+				app={this.app}
 				fileName={this.options.fileName}
 				removedUid={this.options.removedUid}
 				cardCount={this.options.cardCount}
@@ -101,6 +103,7 @@ function ActionButton({
 }
 
 interface UidRemovedBodyProps {
+	app: App;
 	fileName: string;
 	removedUid: string;
 	cardCount: number;
@@ -109,6 +112,7 @@ interface UidRemovedBodyProps {
 }
 
 function UidRemovedBody({
+	app,
 	fileName,
 	removedUid,
 	cardCount,
@@ -117,14 +121,14 @@ function UidRemovedBody({
 }: UidRemovedBodyProps) {
 	const [showMoveSection, setShowMoveSection] = useState(false);
 
-	const handleDelete = useCallback(() => {
-		const confirmed = window.confirm(
-			`Are you sure you want to delete ${cardCount} flashcard${cardCount === 1 ? "" : "s"}? This cannot be undone.`,
-		);
+	const handleDelete = useCallback(async () => {
+		const confirmed = await confirm(app, {
+			message: `Are you sure you want to delete ${cardCount} flashcard${cardCount === 1 ? "" : "s"}? This cannot be undone.`,
+		});
 		if (confirmed) {
 			onResolve({ cancelled: false, action: "delete" });
 		}
-	}, [cardCount, onResolve]);
+	}, [app, cardCount, onResolve]);
 
 	return (
 		<>
@@ -155,7 +159,7 @@ function UidRemovedBody({
 					label="Delete cards"
 					description="Permanently remove these flashcards"
 					type="danger"
-					onClick={handleDelete}
+					onClick={() => void handleDelete()}
 				/>
 			</div>
 

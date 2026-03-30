@@ -35,9 +35,12 @@ import {
 } from "@features/integration/modals/DeviceSelectionModal";
 import { DeviceDiscoveryService } from "@features/integration/services/device-discovery.service";
 import { DeviceIdService } from "@features/integration/services/device-id.service";
+import { CardBrowserView } from "@features/library/ui/browser/CardBrowserView";
 import { FlashcardPanelView } from "@features/library/ui/panel/FlashcardPanelView";
 import { FSRSHelperService } from "@features/metrics/services/fsrs-tools";
 import { SimulatorView } from "@features/metrics/ui/simulator";
+import { StatsView } from "@features/metrics/ui/stats";
+import { KnowledgeChatView } from "@features/rag/ui/KnowledgeChatView";
 import {
 	DEFAULT_SETTINGS,
 	type TrueRecallSettings,
@@ -51,6 +54,7 @@ import { QuickNoteEditorModal } from "@features/study/modals/quick-note-editor/Q
 import { DeletionHandlerService } from "@features/study/services/flashcard/deletion-handler.service";
 import { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
 import { UidGuardianService } from "@features/study/services/flashcard/uid-guardian.service";
+import { DashboardView } from "@features/study/ui/dashboard/DashboardView";
 import {
 	createLinkStatusPostProcessor,
 	createLinkStatusViewPlugin,
@@ -270,42 +274,32 @@ export default class TrueRecallPlugin extends Plugin {
 			(leaf) => new SimulatorView(leaf, this),
 		);
 
-		this.registerView(VIEW_TYPE_DASHBOARD, (leaf) => {
-			const { DashboardView } =
-				require("@features/study/ui/dashboard/DashboardView") as {
-					DashboardView: typeof import("@features/study/ui/dashboard/DashboardView").DashboardView;
-				};
-			return new DashboardView(leaf, this);
-		});
+		this.registerView(
+			VIEW_TYPE_DASHBOARD,
+			(leaf) => new DashboardView(leaf, this),
+		);
 
-		this.addRibbonIcon("layout-dashboard", "True Recall - dashboard", () => {
-			this.openDashboard().catch((error) => {
-				notify().error("Failed to open dashboard", error);
-			});
-		});
+		this.addRibbonIcon(
+			"layout-dashboard",
+			"True Recall: Open dashboard",
+			() => {
+				this.openDashboard().catch((error) => {
+					notify().error("Failed to open dashboard", error);
+				});
+			},
+		);
 
-		this.registerView(VIEW_TYPE_CARD_BROWSER, (leaf) => {
-			const { CardBrowserView } =
-				require("@features/library/ui/browser/CardBrowserView") as {
-					CardBrowserView: typeof import("@features/library/ui/browser/CardBrowserView").CardBrowserView;
-				};
-			return new CardBrowserView(leaf, this);
-		});
+		this.registerView(
+			VIEW_TYPE_CARD_BROWSER,
+			(leaf) => new CardBrowserView(leaf, this),
+		);
 
-		this.registerView(VIEW_TYPE_STATS, (leaf) => {
-			const { StatsView } = require("@features/metrics/ui/stats") as {
-				StatsView: typeof import("@features/metrics/ui/stats").StatsView;
-			};
-			return new StatsView(leaf, this);
-		});
+		this.registerView(VIEW_TYPE_STATS, (leaf) => new StatsView(leaf, this));
 
-		this.registerView(VIEW_TYPE_KNOWLEDGE_CHAT, (leaf) => {
-			const { KnowledgeChatView } =
-				require("@features/rag/ui/KnowledgeChatView") as {
-					KnowledgeChatView: typeof import("@features/rag/ui/KnowledgeChatView").KnowledgeChatView;
-				};
-			return new KnowledgeChatView(leaf, this);
-		});
+		this.registerView(
+			VIEW_TYPE_KNOWLEDGE_CHAT,
+			(leaf) => new KnowledgeChatView(leaf, this),
+		);
 
 		registerCommands(this);
 		this.addSettingTab(new TrueRecallSettingTab(this.app, this));
@@ -361,7 +355,7 @@ export default class TrueRecallPlugin extends Plugin {
 		}
 
 		const tTotal = performance.now();
-		console.log(
+		console.debug(
 			`[True Recall Startup] settings: ${(tSettings - t0).toFixed(1)}ms` +
 				` | setup: ${(tSetup - tSettings).toFixed(1)}ms` +
 				` | store: ${(tStore - tSetup).toFixed(1)}ms` +
@@ -997,7 +991,7 @@ export default class TrueRecallPlugin extends Plugin {
 			this.initializeSelectionToolbar();
 
 			const sEnd = performance.now();
-			console.log(
+			console.debug(
 				`[True Recall Startup]   db.load: ${(sDbLoad - s0).toFixed(1)}ms` +
 					` | refreshCards: ${(sCards - sDbLoad).toFixed(1)}ms` +
 					` | services: ${(sEnd - sCards).toFixed(1)}ms`,
@@ -1339,7 +1333,7 @@ export default class TrueRecallPlugin extends Plugin {
 		modal.open();
 	}
 
-	async exportAnki(): Promise<void> {
+	exportAnki(): void {
 		if (!this.isStoreReady()) {
 			notify().error(
 				"Database not ready. Please wait for plugin to fully load.",
@@ -1355,7 +1349,7 @@ export default class TrueRecallPlugin extends Plugin {
 		modal.open();
 	}
 
-	async exportCsv(): Promise<void> {
+	exportCsv(): void {
 		if (!this.isStoreReady()) {
 			notify().error(
 				"Database not ready. Please wait for plugin to fully load.",

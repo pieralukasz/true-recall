@@ -20,7 +20,7 @@ export function TrueRetentionWidget({ source }: { source: string }) {
 	const showTarget = configValue(config, "showTarget", true);
 
 	const data = useComputed(() => {
-		cards.value;
+		void cards.value;
 		if (!plugin.fsrsHelper) return null;
 
 		const summary = plugin.fsrsHelper.getTrueRetentionSummary(days);
