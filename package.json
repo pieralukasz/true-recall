@@ -1,9 +1,11 @@
 {
-	"name": "obsidian-true-recall",
+	"name": "true-recall",
 	"version": "1.4.0",
-	"description": "Spaced repetition with FSRS algorithm for Obsidian",
+	"private": true,
+	"description": "Spaced repetition with FSRS algorithm",
 	"main": "main.js",
 	"type": "module",
+	"workspaces": ["packages/*"],
 	"scripts": {
 		"dev": "bun esbuild.config.mjs",
 		"build": "tsc -noEmit -skipLibCheck && bun esbuild.config.mjs production",

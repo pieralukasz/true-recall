@@ -99,6 +99,8 @@ const context = await esbuild.context({
 	alias: {
 		"@shared": resolve("src/shared"),
 		"@features": resolve("src/features"),
+		"@true-recall/core": resolve("packages/core/src"),
+		"@true-recall/ui": resolve("packages/ui/src"),
 		// downshift imports from 'react' — redirect to preact/compat
 		react: "preact/compat",
 		"react-dom": "preact/compat",
