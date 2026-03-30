@@ -1,6 +1,6 @@
 import { useFsrsHelperOp } from "@features/settings/tabs/fsrs/useFsrsHelperOp";
 import type { TrueRecallSettings } from "@shared/types";
-import type { FsrsPluginHost } from "@shared/types/plugin-host.types";
+import type { FsrsPluginHost } from "../../../../shared/types/plugin-host.types";
 import {
 	ActionButton,
 	FormCard,

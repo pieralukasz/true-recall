@@ -1,5 +1,6 @@
 import { StreamingGenerationService } from "@features/ai/services/streaming-generation.service";
 import { QuickNoteEditorModal } from "@features/study/modals/quick-note-editor/QuickNoteEditorModal";
+import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpClient";
 import { notify } from "@shared/services/notification.service";
 import { BUILTIN_BASIC_ID } from "@shared/types/note.types";
 import type TrueRecallPlugin from "../main";
@@ -12,7 +13,8 @@ function getStreamingService(
 	if (!streamingService) {
 		streamingService = new StreamingGenerationService(
 			() => plugin.settings,
-			plugin.flashcardManager,
+			plugin.flashcardManager as any,
+			new ObsidianHttpClient(),
 		);
 	}
 	return streamingService;
@@ -81,7 +83,8 @@ export async function quickAddFlashcardFromSelection(
 		const question = (parts[0] ?? text).trim();
 		const answer = parts.slice(1).join("\n\n").trim();
 		await plugin.flashcardManager.saveFlashcardsToSql(
-			file,
+			file.path,
+			file.basename,
 			[{ id: crypto.randomUUID(), question, answer }],
 			undefined,
 			text,

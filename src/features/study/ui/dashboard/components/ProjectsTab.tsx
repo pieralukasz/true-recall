@@ -82,7 +82,7 @@ export function ProjectsTab({
 			if (file instanceof TFile) {
 				void plugin.flashcardManager
 					.getFrontmatterService()
-					.setArchive(file, archived);
+					.setArchive(file.path, archived);
 			}
 		},
 		[plugin],
@@ -408,7 +408,7 @@ export function ProjectsTab({
 															?.replace(/\.md$/, "") ?? "";
 													void plugin.flashcardManager
 														.getFrontmatterService()
-														.removeParent(file, parentName);
+														.removeParent(file.path, parentName);
 												}
 											: undefined
 									}

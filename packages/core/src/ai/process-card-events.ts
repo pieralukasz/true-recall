@@ -13,7 +13,7 @@ export interface SourceFileRef {
 /** Minimal subset of FlashcardManager used during card event processing. */
 export interface CardEventFlashcardManager {
 	getFrontmatterService(): {
-		getSourceNoteUid(file: SourceFileRef): Promise<string | undefined>;
+		getSourceNoteUid(file: SourceFileRef): Promise<string | undefined | null>;
 		generateUid(): string;
 		setSourceNoteUid(file: SourceFileRef, uid: string): Promise<void>;
 	};

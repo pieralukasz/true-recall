@@ -89,7 +89,8 @@ import { UndoService } from "@shared/services/undo.service";
 import { type AppStore, createAppStore } from "@shared/store";
 import { extractFSRSSettings } from "@shared/types";
 import { PresetInspectorModal } from "@shared/ui/modals";
-import { isDesktop } from "@shared/utils/platform";
+import { isDesktop } from "./shared/utils/platform";
+import { createObsidianAdapters, type ObsidianAdapters } from "@true-recall/obsidian";
 import { normalizePath, Plugin, TFile } from "obsidian";
 import type { LocalApiServer } from "./plugin/api/LocalApiServer";
 import { BackupRecoveryManager } from "./plugin/BackupRecoveryManager";
@@ -142,6 +143,7 @@ export default class TrueRecallPlugin extends Plugin {
 	ragSearch:
 		| import("@features/rag/services/rag-search.service").RagSearchService
 		| null = null;
+	private adapters!: ObsidianAdapters;
 	private _unloaded = false;
 	EmbeddableEditor:
 		| import("@shared/ui/editor/embedded-editor").EmbeddableEditorClass
@@ -173,7 +175,9 @@ export default class TrueRecallPlugin extends Plugin {
 		await this.loadSettings();
 		const tSettings = performance.now();
 
-		this.frontmatterIndex = new FrontmatterIndexService(this.app);
+		this.adapters = createObsidianAdapters(this.app);
+
+		this.frontmatterIndex = new FrontmatterIndexService(this.adapters.metadataIndex);
 		this.frontmatterIndex.register({
 			field: "flashcard_uid",
 			type: "string",
@@ -211,11 +215,31 @@ export default class TrueRecallPlugin extends Plugin {
 		});
 		this.frontmatterIndex.onFieldChange("archive", () => refreshMetadata());
 		this.frontmatterIndex.onFieldChange("fsrs_preset", () => refreshMetadata());
-		this.frontmatterIndex.registerEvents(this);
+		// Register Obsidian events that feed the platform-agnostic frontmatter index
+		this.registerEvent(
+			this.app.metadataCache.on("changed", (file, _data, cache) => {
+				this.frontmatterIndex.handleMetadataChanged(file.path, cache?.frontmatter);
+			}),
+		);
+		this.registerEvent(
+			this.app.vault.on("delete", (file) => {
+				this.frontmatterIndex.handleFileDeleted(file.path);
+			}),
+		);
+		this.registerEvent(
+			this.app.vault.on("rename", (file, oldPath) => {
+				this.frontmatterIndex.handleFileRenamed(file.path, oldPath);
+			}),
+		);
 
+		const resolveLink = (name: string) => {
+			const file = this.app.metadataCache.getFirstLinkpathDest(name, "");
+			return file?.path ?? null;
+		};
 		this.hierarchyService = new HierarchyService(
-			this.app,
 			this.frontmatterIndex,
+			this.adapters.fileSystem,
+			resolveLink,
 		);
 		initMetadataStore(this.hierarchyService);
 
@@ -230,8 +254,10 @@ export default class TrueRecallPlugin extends Plugin {
 		});
 
 		this.flashcardManager = new FlashcardManager(
-			this.app,
+			this.adapters.fileSystem,
+			this.adapters.frontmatter,
 			this.settings,
+			this.adapters.metadataIndex,
 			this.frontmatterIndex,
 		);
 
@@ -621,10 +647,10 @@ export default class TrueRecallPlugin extends Plugin {
 
 		try {
 			const frontmatterService = this.flashcardManager.getFrontmatterService();
-			let sourceUid = await frontmatterService.getSourceNoteUid(activeFile);
+			let sourceUid = await frontmatterService.getSourceNoteUid(activeFile.path);
 			if (!sourceUid) {
 				sourceUid = frontmatterService.generateUid();
-				await frontmatterService.setSourceNoteUid(activeFile, sourceUid);
+				await frontmatterService.setSourceNoteUid(activeFile.path, sourceUid);
 			}
 			return await this.openImageOcclusionEditor({
 				mode: "add",
@@ -692,7 +718,7 @@ export default class TrueRecallPlugin extends Plugin {
 	async reviewNoteFlashcards(file: TFile): Promise<void> {
 		const sourceUid = await this.flashcardManager
 			.getFrontmatterService()
-			.getSourceNoteUid(file);
+			.getSourceNoteUid(file.path);
 		if (!sourceUid) {
 			notify().info(`No flashcards found for "${file.basename}"`);
 			return;
@@ -904,7 +930,7 @@ export default class TrueRecallPlugin extends Plugin {
 				() => this.cardStore,
 			);
 
-			this.cardStore = new SqliteStoreService(this.app, deviceId);
+			this.cardStore = new SqliteStoreService(this.adapters.persistence, deviceId);
 
 			try {
 				await this.cardStore.load();
@@ -915,7 +941,7 @@ export default class TrueRecallPlugin extends Plugin {
 				const recovered =
 					await this.backupRecovery.tryAutoRecoverFromBackup(deviceId);
 				if (recovered) {
-					this.cardStore = new SqliteStoreService(this.app, deviceId);
+					this.cardStore = new SqliteStoreService(this.adapters.persistence, deviceId);
 					await this.cardStore.load();
 				} else {
 					throw loadError;
@@ -1114,10 +1140,10 @@ export default class TrueRecallPlugin extends Plugin {
 		if (activeFile && activeFile.extension === "md") {
 			const frontmatterService = this.flashcardManager.getFrontmatterService();
 			void (async () => {
-				let sourceUid = await frontmatterService.getSourceNoteUid(activeFile);
+				let sourceUid = await frontmatterService.getSourceNoteUid(activeFile.path);
 				if (!sourceUid) {
 					sourceUid = frontmatterService.generateUid();
-					await frontmatterService.setSourceNoteUid(activeFile, sourceUid);
+					await frontmatterService.setSourceNoteUid(activeFile.path, sourceUid);
 				}
 				await this.openImageOcclusionEditor({
 					mode: "add",
@@ -1158,7 +1184,8 @@ export default class TrueRecallPlugin extends Plugin {
 							}
 							const imageEmbed = `![[${imagePath}]]`;
 							await this.flashcardManager.saveFlashcardsToSql(
-								file,
+								file.path,
+								file.basename,
 								[
 									{
 										id: crypto.randomUUID(),
@@ -1279,10 +1306,10 @@ export default class TrueRecallPlugin extends Plugin {
 
 		const frontmatterService = this.flashcardManager.getFrontmatterService();
 		if (result.action === "set" && result.presetName) {
-			await frontmatterService.setFsrsPreset(file, result.presetName);
+			await frontmatterService.setFsrsPreset(file.path, result.presetName);
 			notify().success(`FSRS preset set to: ${result.presetName}`);
 		} else {
-			await frontmatterService.setFsrsPreset(file, null);
+			await frontmatterService.setFsrsPreset(file.path, null);
 			notify().info("FSRS preset override removed");
 		}
 	}
@@ -1373,14 +1400,14 @@ export default class TrueRecallPlugin extends Plugin {
 
 		const frontmatterService = this.flashcardManager.getFrontmatterService();
 
-		const existingUid = await frontmatterService.getSourceNoteUid(file);
+		const existingUid = await frontmatterService.getSourceNoteUid(file.path);
 		if (existingUid) {
 			notify().info(`Note already has flashcard UID: ${existingUid}`);
 			return;
 		}
 
 		const newUid = frontmatterService.generateUid();
-		await frontmatterService.setSourceNoteUid(file, newUid);
+		await frontmatterService.setSourceNoteUid(file.path, newUid);
 
 		notify().success(`Added flashcard UID: ${newUid}`);
 	}

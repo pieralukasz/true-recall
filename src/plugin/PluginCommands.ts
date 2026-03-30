@@ -172,7 +172,7 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 				if (!checking) {
 					void plugin.flashcardManager
 						.getFrontmatterService()
-						.setArchive(file, true);
+						.setArchive(file.path, true);
 				}
 				return true;
 			}
@@ -190,7 +190,7 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 				if (!checking) {
 					void plugin.flashcardManager
 						.getFrontmatterService()
-						.setArchive(file, false);
+						.setArchive(file.path, false);
 				}
 				return true;
 			}

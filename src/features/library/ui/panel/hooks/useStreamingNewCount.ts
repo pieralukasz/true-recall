@@ -21,8 +21,8 @@ export function useStreamingNewCount(
 	return useMemo(() => {
 		if (!streamingNotePath || streamingNotePath !== currentFilePath) return 0;
 		const dbIds = new Set(cardsWithFsrs.map((c) => c.id));
-		const streaming = streamingGeneration.peek();
-		return streaming.completedCards.filter((c) => !dbIds.has(c.id)).length;
+		const streaming = streamingGeneration.value;
+		return streaming.completedCards.filter((c: { id: string }) => !dbIds.has(c.id)).length;
 	}, [
 		streamingCompletedCount,
 		streamingNotePath,

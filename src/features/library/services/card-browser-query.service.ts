@@ -3,6 +3,7 @@ import { sqlPlaceholders } from "@features/core/persistence/sqlite/sql-utils";
 import type { FrontmatterIndexService } from "@features/core/services/frontmatter-index.service";
 import type { HierarchyService } from "@features/core/services/hierarchy.service";
 import type { FSRSCardData } from "@shared/types";
+import { fileBasename } from "@shared/utils";
 import { buildBrowserQuery } from "../ui/browser/helpers/query-builder";
 import type {
 	BrowserCard,
@@ -117,10 +118,10 @@ export class CardBrowserQueryService {
 
 		const sourceNotes = Array.from(sourceMap.entries())
 			.map(([uid, count]) => {
-				const file = this.frontmatterIndex.getFileByValue("flashcard_uid", uid);
+				const filePath = this.frontmatterIndex.getFileByValue("flashcard_uid", uid);
 				return {
 					uid,
-					name: file?.basename ?? "(orphaned)",
+					name: filePath ? fileBasename(filePath) : "(orphaned)",
 					count,
 				};
 			})
@@ -196,9 +197,9 @@ export class CardBrowserQueryService {
 		const allUids = this.frontmatterIndex.getAllValues("flashcard_uid");
 		const basenameToUid = new Map<string, string>();
 		for (const uid of allUids) {
-			const file = this.frontmatterIndex.getFileByValue("flashcard_uid", uid);
-			if (file) {
-				basenameToUid.set(file.basename.toLowerCase(), uid);
+			const filePath = this.frontmatterIndex.getFileByValue("flashcard_uid", uid);
+			if (filePath) {
+				basenameToUid.set(fileBasename(filePath).toLowerCase(), uid);
 			}
 		}
 
@@ -223,13 +224,13 @@ export class CardBrowserQueryService {
 
 		let presetName: string | null = null;
 		if (file) {
-			const vals = this.frontmatterIndex.getValues("fsrs_preset", file.path);
+			const vals = this.frontmatterIndex.getValues("fsrs_preset", file);
 			if (vals.length > 0 && vals[0]) presetName = vals[0];
 		}
 
 		let projects: string[] = [];
 		if (file) {
-			const vals = this.frontmatterIndex.getValues("parents", file.path);
+			const vals = this.frontmatterIndex.getValues("parents", file);
 			projects = vals.filter(Boolean);
 		}
 
@@ -249,8 +250,8 @@ export class CardBrowserQueryService {
 			suspended: card.suspended ?? false,
 			buriedUntil: card.buriedUntil ?? null,
 			sourceUid: card.sourceUid ?? null,
-			sourceNoteName: file?.basename ?? null,
-			sourceNotePath: file?.path ?? null,
+			sourceNoteName: file?.split("/").pop()?.replace(/\.md$/, "") ?? null,
+			sourceNotePath: file ?? null,
 			cardType: card.cardType ?? "basic",
 			createdVia: card.createdVia ?? null,
 			presetName,

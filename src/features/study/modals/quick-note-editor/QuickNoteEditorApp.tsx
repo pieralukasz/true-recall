@@ -8,7 +8,7 @@ import {
 } from "@shared/ui/editor/formatting";
 import { useIcon } from "@shared/ui/preact/hooks";
 import { useApp, usePlugin } from "@shared/ui/preact/ObsidianContext";
-import { Notice, type TFile } from "obsidian";
+import { Notice, TFile } from "obsidian";
 import {
 	useCallback,
 	useEffect,
@@ -102,9 +102,10 @@ export function QuickNoteEditorApp({
 		if (showSourcePicker) return selectedSourceNote;
 		const uid = addMode?.sourceUid ?? editMode?.note.sourceUid;
 		if (!uid) return null;
-		return (
-			plugin.frontmatterIndex?.getFileByValue("flashcard_uid", uid) ?? null
-		);
+		const path = plugin.frontmatterIndex?.getFileByValue("flashcard_uid", uid);
+		if (!path) return null;
+		const f = app.vault.getAbstractFileByPath(path);
+		return f instanceof TFile ? f : null;
 	}, [
 		showSourcePicker,
 		selectedSourceNote,
@@ -217,10 +218,10 @@ export function QuickNoteEditorApp({
 		// Add mode with selected source note
 		if (!selectedSourceNote || !plugin.flashcardManager) return undefined;
 		const fmService = plugin.flashcardManager.getFrontmatterService();
-		let uid = await fmService.getSourceNoteUid(selectedSourceNote);
+		let uid = await fmService.getSourceNoteUid(selectedSourceNote.path);
 		if (!uid) {
 			uid = fmService.generateUid();
-			await fmService.setSourceNoteUid(selectedSourceNote, uid);
+			await fmService.setSourceNoteUid(selectedSourceNote.path, uid);
 		}
 		return uid;
 	}, [isEdit, editMode, addMode, selectedSourceNote, plugin.flashcardManager]);

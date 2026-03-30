@@ -157,7 +157,7 @@ export class DeviceDiscoveryService {
 	private async readDatabaseInfo(
 		data: Uint8Array,
 	): Promise<{ cardCount: number | null; lastReviewDate: Date | null }> {
-		const { db } = await loadDatabase(this.app, data);
+		const { db } = await loadDatabase(data);
 		try {
 			let cardCount: number | null = null;
 			let lastReviewDate: Date | null = null;

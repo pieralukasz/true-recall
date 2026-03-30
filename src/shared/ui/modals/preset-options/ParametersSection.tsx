@@ -1,7 +1,7 @@
 import { FSRS_CONFIG } from "@shared/constants";
 import { notify } from "@shared/services/notification.service";
 import type { FSRSPreset } from "@shared/types";
-import type { FsrsPluginHost } from "@shared/types/plugin-host.types";
+import type { FsrsPluginHost } from "../../../types/plugin-host.types";
 import {
 	ActionButton,
 	FormCard,

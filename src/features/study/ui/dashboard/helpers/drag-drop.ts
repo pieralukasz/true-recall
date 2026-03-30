@@ -186,9 +186,9 @@ export async function executeDrop(
 
 			if (result.oldParentPath) {
 				const oldParentName = nameFromPath(result.oldParentPath);
-				await frontmatterService.removeParent(file, oldParentName);
+				await frontmatterService.removeParent(file.path, oldParentName);
 			}
-			await frontmatterService.addParent(file, result.newParentName);
+			await frontmatterService.addParent(file.path, result.newParentName);
 			new Notice(`Moved "${result.dragName}" under "${result.newParentName}"`);
 			break;
 		}
@@ -221,10 +221,10 @@ export async function executeDrop(
 			);
 
 			if (dragFile instanceof TFile) {
-				await frontmatterService.addParent(dragFile, name);
+				await frontmatterService.addParent(dragFile.path, name);
 			}
 			if (targetFileForParent instanceof TFile) {
-				await frontmatterService.addParent(targetFileForParent, name);
+				await frontmatterService.addParent(targetFileForParent.path, name);
 			}
 
 			new Notice(`Created project "${name}" with 2 notes`);
@@ -235,7 +235,7 @@ export async function executeDrop(
 			const file = app.vault.getAbstractFileByPath(result.dragPath);
 			if (!(file instanceof TFile)) return;
 
-			await frontmatterService.removeParent(file, result.parentName);
+			await frontmatterService.removeParent(file.path, result.parentName);
 			new Notice(`Moved "${result.dragName}" to root`);
 			break;
 		}

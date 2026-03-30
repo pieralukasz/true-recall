@@ -97,10 +97,18 @@ const context = await esbuild.context({
 	bundle: true,
 	metafile: true,
 	alias: {
+		// Redirect shared types/constants/errors/utils → packages/core (canonical)
+		"@shared/types": resolve("packages/core/src/types"),
+		"@shared/constants": resolve("packages/core/src/constants"),
+		"@shared/errors": resolve("packages/core/src/errors"),
+		"@shared/utils": resolve("packages/core/src/utils"),
+		"@shared/validation": resolve("packages/core/src/validation"),
+		// Fallback for @shared/ui, @shared/services, @shared/store
 		"@shared": resolve("src/shared"),
 		"@features": resolve("src/features"),
 		"@true-recall/core": resolve("packages/core/src"),
 		"@true-recall/ui": resolve("packages/ui/src"),
+		"@true-recall/obsidian": resolve("packages/obsidian/src"),
 		// downshift imports from 'react' — redirect to preact/compat
 		react: "preact/compat",
 		"react-dom": "preact/compat",

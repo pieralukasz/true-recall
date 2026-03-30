@@ -178,7 +178,7 @@ export function NoteList({
 		for (const path of selectedPaths.value) {
 			const file = plugin.app.vault.getAbstractFileByPath(path);
 			if (file instanceof TFile) {
-				await frontmatterService.addParent(file, name);
+				await frontmatterService.addParent(file.path, name);
 			}
 		}
 
@@ -193,7 +193,7 @@ export function NoteList({
 		for (const path of selectedPaths.value) {
 			const file = plugin.app.vault.getAbstractFileByPath(path);
 			if (file instanceof TFile) {
-				await frontmatterService.setArchive(file, true);
+				await frontmatterService.setArchive(file.path, true);
 			}
 		}
 
@@ -254,7 +254,7 @@ export function NoteList({
 		if (file instanceof TFile) {
 			void plugin.flashcardManager
 				.getFrontmatterService()
-				.setArchive(file, true);
+				.setArchive(file.path, true);
 		}
 	};
 
@@ -264,7 +264,7 @@ export function NoteList({
 		if (file instanceof TFile) {
 			void plugin.flashcardManager
 				.getFrontmatterService()
-				.setArchive(file, false);
+				.setArchive(file.path, false);
 		}
 	};
 

@@ -82,14 +82,16 @@ export class FrontmatterService {
 		return crypto.randomUUID().replace(/-/g, "").slice(0, this.UID_LENGTH);
 	}
 
-	async getSourceNoteUid(filePath: string): Promise<string | null> {
-		const content = await this.fileSystem.read(filePath);
+	async getSourceNoteUid(filePath: string | { path: string }): Promise<string | null> {
+		const p = typeof filePath === "string" ? filePath : filePath.path;
+		const content = await this.fileSystem.read(p);
 		const match = content.match(FrontmatterService.UID_FIELD_REGEX);
 		return match?.[1] ?? null;
 	}
 
-	async setSourceNoteUid(filePath: string, uid: string): Promise<void> {
-		await this.frontmatter.update(filePath, {
+	async setSourceNoteUid(filePath: string | { path: string }, uid: string): Promise<void> {
+		const p = typeof filePath === "string" ? filePath : filePath.path;
+		await this.frontmatter.update(p, {
 			[this.SOURCE_UID_FIELD]: uid,
 		});
 	}

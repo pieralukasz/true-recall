@@ -173,7 +173,7 @@ function useStreamingCardState() {
 		}
 	});
 
-	return streamingGeneration.peek();
+	return streamingGeneration.value;
 }
 
 // ── Main component ──────────────────────────────────────────────
@@ -212,7 +212,7 @@ export function PanelContent({
 			return flashcards;
 		const existingIds = new Set(flashcards.map((c) => c.id));
 		const newCards = streaming.completedCards.filter(
-			(c) => !existingIds.has(c.id),
+			(c: { id: string }) => !existingIds.has(c.id),
 		);
 		if (newCards.length === 0) return flashcards;
 		return [...flashcards, ...newCards];

@@ -56,7 +56,7 @@ export async function handleGetFullContext(
 			const frontmatterService =
 				ctx.plugin.flashcardManager.getFrontmatterService();
 			const sourceUid =
-				(await frontmatterService.getSourceNoteUid(file)) ?? undefined;
+				(await frontmatterService.getSourceNoteUid(file.path)) ?? undefined;
 
 			if (sourceUid) {
 				const cards = ctx.plugin.cardStore.cards.getCardsBySourceUid(sourceUid);

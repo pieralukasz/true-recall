@@ -6,6 +6,7 @@ import {
 	OpenRouterClient,
 } from "@features/ai/services/openrouter-client";
 import type { TrueRecallSettings } from "@shared/types/settings.types";
+import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpClient";
 import { type App, TFile } from "obsidian";
 import type { IORegion } from "./types";
 
@@ -203,6 +204,7 @@ export async function detectRegions(
 	const client = new OpenRouterClient(
 		config.apiKey,
 		visionModel,
+		new ObsidianHttpClient(),
 		config.baseUrl,
 	);
 

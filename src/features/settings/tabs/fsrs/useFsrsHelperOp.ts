@@ -1,7 +1,7 @@
 import type { SchedulingResult } from "@features/metrics/services/fsrs-tools/scheduler/scheduler.types";
 import { notify } from "@shared/services/notification.service";
 import type { FSRSHelperOperationType } from "@shared/services/undo.types";
-import type { FsrsPluginHost } from "@shared/types/plugin-host.types";
+import type { FsrsPluginHost } from "../../../../shared/types/plugin-host.types";
 import { useCallback, useState } from "preact/hooks";
 
 interface FsrsHelperOpConfig {

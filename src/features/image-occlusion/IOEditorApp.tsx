@@ -25,7 +25,7 @@ import { Clickable } from "@shared/ui/components/Clickable";
 import { NotePickerCombobox } from "@shared/ui/components/NotePickerCombobox";
 import { useApp, usePlugin } from "@shared/ui/preact/ObsidianContext";
 import { cn } from "@shared/ui/utils/cn";
-import { isDesktop } from "@shared/utils/platform";
+import { isDesktop } from "../../shared/utils/platform";
 import { Notice, TFile } from "obsidian";
 import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
 
@@ -363,10 +363,10 @@ export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
 		if (!selectedSourceNote) return undefined;
 
 		const fmService = plugin.flashcardManager.getFrontmatterService();
-		let uid = await fmService.getSourceNoteUid(selectedSourceNote);
+		let uid = await fmService.getSourceNoteUid(selectedSourceNote.path);
 		if (!uid) {
 			uid = fmService.generateUid();
-			await fmService.setSourceNoteUid(selectedSourceNote, uid);
+			await fmService.setSourceNoteUid(selectedSourceNote.path, uid);
 		}
 		return uid;
 	}, [mode, plugin.flashcardManager, selectedSourceNote]);

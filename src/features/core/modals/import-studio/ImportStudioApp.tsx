@@ -114,10 +114,10 @@ export function ImportStudioApp({
 	> => {
 		if (!selectedSourceNote || !plugin.flashcardManager) return undefined;
 		const fmService = plugin.flashcardManager.getFrontmatterService();
-		let uid = await fmService.getSourceNoteUid(selectedSourceNote);
+		let uid = await fmService.getSourceNoteUid(selectedSourceNote.path);
 		if (!uid) {
 			uid = fmService.generateUid();
-			await fmService.setSourceNoteUid(selectedSourceNote, uid);
+			await fmService.setSourceNoteUid(selectedSourceNote.path, uid);
 		}
 		return uid;
 	}, [selectedSourceNote, plugin.flashcardManager]);

@@ -55,7 +55,7 @@ export function registerEventHandlers(plugin: TrueRecallPlugin): void {
 							await plugin.app.vault.create(projectPath, "");
 							const frontmatterService =
 								plugin.flashcardManager.getFrontmatterService();
-							await frontmatterService.addParent(file, name);
+							await frontmatterService.addParent(file.path, name);
 							new Notice(`Created project "${name}"`);
 						});
 				});
@@ -196,7 +196,7 @@ export function registerDeletionHandler(
 	plugin.registerEvent(
 		plugin.app.vault.on("delete", (file) => {
 			if (file instanceof TFile && file.extension === "md") {
-				void deletionHandler.handleFileDeletion(file);
+				void deletionHandler.handleFileDeletion(file.path);
 			}
 		}),
 	);

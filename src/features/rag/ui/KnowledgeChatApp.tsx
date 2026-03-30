@@ -91,28 +91,28 @@ export function KnowledgeChatApp({ view }: Props) {
 					new Notice("Cannot navigate: card no longer exists");
 					return;
 				}
-				const file = plugin.frontmatterIndex.getFileByValue(
+				const filePath = plugin.frontmatterIndex.getFileByValue(
 					"flashcard_uid",
 					sourceUid,
 				);
-				if (!file) {
+				if (!filePath) {
 					new Notice("Source note not found for this flashcard");
 					return;
 				}
-				void app.workspace.openLinkText(file.path, "", false).then(() => {
+				void app.workspace.openLinkText(filePath, "", false).then(() => {
 					void plugin.activateView();
 				});
 			},
 			onNavigateToUid: (flashcardUid: string) => {
-				const file = plugin.frontmatterIndex.getFileByValue(
+				const filePath = plugin.frontmatterIndex.getFileByValue(
 					"flashcard_uid",
 					flashcardUid,
 				);
-				if (!file) {
+				if (!filePath) {
 					new Notice("Source note not found");
 					return;
 				}
-				void app.workspace.openLinkText(file.path, "", false);
+				void app.workspace.openLinkText(filePath, "", false);
 			},
 		}),
 		[app, plugin],

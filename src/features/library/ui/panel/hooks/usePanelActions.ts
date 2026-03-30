@@ -36,9 +36,13 @@ export function usePanelActions() {
 			"@features/ai/services/chunked-generation.service"
 		);
 
+		const { ObsidianHttpClient } = await import(
+			"@true-recall/obsidian/adapters/ObsidianHttpClient"
+		);
 		const chunkedService = new ChunkedGenerationService(
 			() => plugin.settings,
-			plugin.flashcardManager,
+			plugin.flashcardManager as any,
+			new ObsidianHttpClient(),
 		);
 
 		try {
@@ -48,7 +52,6 @@ export function usePanelActions() {
 				content,
 				currentFile,
 				basicNoteType,
-				app,
 			);
 
 			if (result.created === 0 && result.duplicates === 0) {
@@ -93,7 +96,7 @@ export function usePanelActions() {
 		}
 
 		const frontmatterService = plugin.flashcardManager.getFrontmatterService();
-		const sourceUid = await frontmatterService.getSourceNoteUid(currentFile);
+		const sourceUid = await frontmatterService.getSourceNoteUid(currentFile.path);
 
 		const existingSourceTexts = sourceUid
 			? ((plugin.cardStore?.getCardsBySourceUid(sourceUid) ?? [])
@@ -122,9 +125,13 @@ export function usePanelActions() {
 			"@features/ai/services/streaming-generation.service"
 		);
 
+		const { ObsidianHttpClient: HttpClient } = await import(
+			"@true-recall/obsidian/adapters/ObsidianHttpClient"
+		);
 		const streamingService = new StreamingGenerationService(
 			() => plugin.settings,
-			plugin.flashcardManager,
+			plugin.flashcardManager as any,
+			new HttpClient(),
 		);
 
 		try {
@@ -182,7 +189,7 @@ export function usePanelActions() {
 
 			const frontmatterService =
 				plugin.flashcardManager.getFrontmatterService();
-			const sourceUid = await frontmatterService.getSourceNoteUid(currentFile);
+			const sourceUid = await frontmatterService.getSourceNoteUid(currentFile.path);
 
 			const contentToSave = plugin.settings.removeFlashcardContentAfterCollect
 				? collectResult.newContentWithoutFlashcards

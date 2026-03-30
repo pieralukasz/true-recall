@@ -404,7 +404,7 @@ export class FlashcardPanelView extends ItemView {
 
 		try {
 			const [info, content] = await Promise.all([
-				this.flashcardManager.getFlashcardInfo(file),
+				this.flashcardManager.getFlashcardInfo(file.path),
 				this.app.vault.read(file),
 			]);
 
@@ -523,7 +523,7 @@ export class FlashcardPanelView extends ItemView {
 	private async handleOpenFlashcardFile(): Promise<void> {
 		const state = this.panel;
 		if (state.currentFile) {
-			await this.flashcardManager.openSourceNote(state.currentFile);
+			await this.app.workspace.openLinkText(state.currentFile.path, "");
 		}
 	}
 

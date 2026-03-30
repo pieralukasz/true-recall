@@ -10,6 +10,7 @@ import type {
 	TrueRecallSettings,
 } from "@shared/types/settings.types";
 import { fileBasename, formatLocalDate } from "@shared/utils";
+import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpClient";
 import type { ContextItem } from "../ui/context/context.types";
 import { RAG_CHAT_TOOLS, type RagToolExecutor } from "./rag-chat-tools";
 import type { RagSearchService, SearchResult } from "./rag-search.service";
@@ -150,7 +151,7 @@ export class RagQueryService {
 		this.lastToolCalls = [];
 
 		try {
-			const client = new OpenRouterClient(apiKey, "auto", streamUrl);
+			const client = new OpenRouterClient(apiKey, "auto", new ObsidianHttpClient(), streamUrl);
 			const response = await client.chat({
 				messages,
 				tools: RAG_CHAT_TOOLS,
@@ -195,6 +196,7 @@ export class RagQueryService {
 		const streamClient = new StreamingOpenRouterClient(
 			apiKey,
 			"auto",
+			new ObsidianHttpClient(),
 			streamUrl,
 		);
 		for await (const chunk of streamClient.chatStream({ messages })) {
@@ -225,7 +227,7 @@ export class RagQueryService {
 			ragContext,
 		);
 
-		const client = new StreamingOpenRouterClient(apiKey, "auto", streamUrl);
+		const client = new StreamingOpenRouterClient(apiKey, "auto", new ObsidianHttpClient(), streamUrl);
 		for await (const chunk of client.chatStream({ messages })) {
 			yield chunk.content;
 		}
@@ -253,12 +255,12 @@ export class RagQueryService {
 				key = r.sourceId;
 				label = fileBasename(r.sourceId);
 			} else if (r.sourceNoteUid && this.frontmatterIndex) {
-				const noteFile = this.frontmatterIndex.getFileByValue(
+				const notePath = this.frontmatterIndex.getFileByValue(
 					"flashcard_uid",
 					r.sourceNoteUid,
 				);
-				key = noteFile?.path ?? `fc:${r.sourceId}`;
-				label = noteFile ? fileBasename(noteFile.path) : "Flashcards";
+				key = notePath ?? `fc:${r.sourceId}`;
+				label = notePath ? fileBasename(notePath) : "Flashcards";
 			} else {
 				key = `fc:${r.sourceId}`;
 				label = "Flashcard";

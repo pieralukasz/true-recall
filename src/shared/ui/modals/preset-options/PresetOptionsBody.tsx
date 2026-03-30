@@ -117,7 +117,7 @@ export function PresetOptionsBody({
 		if (context?.contextPath && frontmatterService) {
 			const file = plugin.app.vault.getFileByPath(context.contextPath);
 			if (file) {
-				await frontmatterService.setFsrsPreset(file, preset.name);
+				await frontmatterService.setFsrsPreset(file.path, preset.name);
 			}
 
 			if (applyToChildren) {
@@ -128,7 +128,7 @@ export function PresetOptionsBody({
 						descendantPaths.map((path) => {
 							const f = plugin.app.vault.getFileByPath(path);
 							return f
-								? frontmatterService.setFsrsPreset(f, preset.name)
+								? frontmatterService.setFsrsPreset(f.path, preset.name)
 								: Promise.resolve();
 						}),
 					);

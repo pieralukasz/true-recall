@@ -40,9 +40,13 @@ export async function handleGenerate(
 		? ctx.plugin.flashcardManager.getNoteTypeBySlug(body.note_type_slug)
 		: null;
 
+	const { ObsidianHttpClient } = await import(
+		"@true-recall/obsidian/adapters/ObsidianHttpClient"
+	);
 	const service = new FlashcardGenerationService(
 		() => ctx.plugin.settings,
 		(slug) => ctx.plugin.flashcardManager.getNoteTypeBySlug(slug),
+		new ObsidianHttpClient(),
 	);
 
 	let result: Awaited<ReturnType<FlashcardGenerationService["generate"]>>;
@@ -71,10 +75,10 @@ export async function handleGenerate(
 			const frontmatterService =
 				ctx.plugin.flashcardManager.getFrontmatterService();
 			sourceUid =
-				(await frontmatterService.getSourceNoteUid(file)) ?? undefined;
+				(await frontmatterService.getSourceNoteUid(file.path)) ?? undefined;
 			if (!sourceUid) {
 				sourceUid = frontmatterService.generateUid();
-				await frontmatterService.setSourceNoteUid(file, sourceUid);
+				await frontmatterService.setSourceNoteUid(file.path, sourceUid);
 			}
 		}
 	}

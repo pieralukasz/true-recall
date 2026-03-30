@@ -57,7 +57,7 @@ export class UidGuardianService {
 		// VALUE CHANGED — auto-restore to prevent silent orphaning
 		if (event.newValues.length > 0 && event.newValues[0] !== removedUid) {
 			this.restoringPaths.add(event.path);
-			await this.deps.frontmatterService.setSourceNoteUid(file, removedUid);
+			await this.deps.frontmatterService.setSourceNoteUid(file.path, removedUid);
 			notify().info(
 				`flashcard_uid restored — ${cards.length} card${cards.length === 1 ? "" : "s"} protected`,
 			);
@@ -78,7 +78,7 @@ export class UidGuardianService {
 		switch (result.action) {
 			case "restore":
 				this.restoringPaths.add(event.path);
-				await this.deps.frontmatterService.setSourceNoteUid(file, removedUid);
+				await this.deps.frontmatterService.setSourceNoteUid(file.path, removedUid);
 				break;
 
 			case "delete": {
@@ -113,11 +113,11 @@ export class UidGuardianService {
 		}
 
 		let targetUid =
-			await this.deps.frontmatterService.getSourceNoteUid(targetFile);
+			await this.deps.frontmatterService.getSourceNoteUid(targetFile.path);
 		if (!targetUid) {
 			targetUid = this.deps.frontmatterService.generateUid();
 			await this.deps.frontmatterService.setSourceNoteUid(
-				targetFile,
+				targetFile.path,
 				targetUid,
 			);
 		}

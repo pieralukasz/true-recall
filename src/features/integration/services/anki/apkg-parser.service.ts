@@ -165,7 +165,7 @@ export class ApkgParserService {
 		}
 
 		this.patchWalMode(dbData);
-		const { db } = await loadDatabase(this.app, dbData);
+		const { db } = await loadDatabase(dbData);
 
 		try {
 			const notes = this.readNotes(db);

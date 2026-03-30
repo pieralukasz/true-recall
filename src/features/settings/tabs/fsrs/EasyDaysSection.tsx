@@ -1,7 +1,7 @@
 import { EasyDaysModal } from "@features/metrics/modals/EasyDaysModal";
 import { notify } from "@shared/services/notification.service";
 import type { TrueRecallSettings } from "@shared/types";
-import type { FsrsPluginHost } from "@shared/types/plugin-host.types";
+import type { FsrsPluginHost } from "../../../../shared/types/plugin-host.types";
 import {
 	ActionButton,
 	FormCard,

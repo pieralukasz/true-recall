@@ -15,14 +15,14 @@ export async function handleAddFlashcardUid(
 	const frontmatterService =
 		ctx.plugin.flashcardManager.getFrontmatterService();
 
-	const existingUid = await frontmatterService.getSourceNoteUid(file);
+	const existingUid = await frontmatterService.getSourceNoteUid(file.path);
 	if (existingUid) {
 		sendOk(res, { uid: existingUid, alreadyExisted: true, path: file.path });
 		return;
 	}
 
 	const newUid = frontmatterService.generateUid();
-	await frontmatterService.setSourceNoteUid(file, newUid);
+	await frontmatterService.setSourceNoteUid(file.path, newUid);
 	sendOk(res, { uid: newUid, alreadyExisted: false, path: file.path });
 }
 
@@ -72,7 +72,7 @@ export async function handleSetPresetForNote(
 	const frontmatterService =
 		ctx.plugin.flashcardManager.getFrontmatterService();
 	await frontmatterService.setFsrsPreset(
-		abstractFile as import("obsidian").TFile,
+		abstractFile.path,
 		body.preset_name,
 	);
 
@@ -124,9 +124,9 @@ export async function handleSetParent(
 	const tFile = abstractFile as import("obsidian").TFile;
 
 	if (body.action === "add") {
-		await frontmatterService.addParent(tFile, body.parent_name);
+		await frontmatterService.addParent(tFile.path, body.parent_name);
 	} else {
-		await frontmatterService.removeParent(tFile, body.parent_name);
+		await frontmatterService.removeParent(tFile.path, body.parent_name);
 	}
 
 	sendOk(res, {
@@ -171,7 +171,7 @@ export async function handleSetArchive(
 	const frontmatterService =
 		ctx.plugin.flashcardManager.getFrontmatterService();
 	await frontmatterService.setArchive(
-		abstractFile as import("obsidian").TFile,
+		abstractFile.path,
 		body.archived,
 	);
 

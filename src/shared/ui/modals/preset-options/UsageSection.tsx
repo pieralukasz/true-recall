@@ -15,7 +15,7 @@ export function UsageSection({ preset }: UsageSectionProps) {
 			"fsrs_preset",
 			preset.name,
 		);
-		const noteNames = files.map((f) => f.basename);
+		const noteNames = files.map((f) => f.split("/").pop()?.replace(/\.md$/, "") || f);
 		return { count: files.length, names: noteNames.slice(0, 10) };
 	}, [plugin, preset.name]);
 

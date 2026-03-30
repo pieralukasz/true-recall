@@ -1,6 +1,6 @@
 import { useFsrsHelperOp } from "@features/settings/tabs/fsrs/useFsrsHelperOp";
 import { notify } from "@shared/services/notification.service";
-import type { FsrsPluginHost } from "@shared/types/plugin-host.types";
+import type { FsrsPluginHost } from "../../../../shared/types/plugin-host.types";
 import {
 	ActionButton,
 	FormCard,

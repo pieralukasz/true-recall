@@ -41,7 +41,7 @@ export class ApkgBuilderService {
 	constructor(private app: App) {}
 
 	async build(options: BuildOptions): Promise<ArrayBuffer> {
-		const { db } = await loadDatabase(this.app, null);
+		const { db } = await loadDatabase(null);
 
 		try {
 			this.createAnkiSchema(db);

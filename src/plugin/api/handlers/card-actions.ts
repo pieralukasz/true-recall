@@ -206,7 +206,7 @@ export async function handleRemoveCardsFromNote(
 			sourceUid =
 				(await ctx.plugin.flashcardManager
 					.getFrontmatterService()
-					.getSourceNoteUid(file as import("obsidian").TFile)) ?? undefined;
+					.getSourceNoteUid(file.path)) ?? undefined;
 		}
 	}
 	if (!sourceUid) {
@@ -215,7 +215,7 @@ export async function handleRemoveCardsFromNote(
 			sourceUid =
 				(await ctx.plugin.flashcardManager
 					.getFrontmatterService()
-					.getSourceNoteUid(file)) ?? undefined;
+					.getSourceNoteUid(file.path)) ?? undefined;
 		}
 	}
 

@@ -3,12 +3,23 @@
 	"compilerOptions": {
 		"baseUrl": "src",
 		"paths": {
+			"@shared/types": ["../packages/core/src/types"],
+			"@shared/types/*": ["../packages/core/src/types/*"],
+			"@shared/constants": ["../packages/core/src/constants"],
+			"@shared/errors": ["../packages/core/src/errors"],
+			"@shared/errors/*": ["../packages/core/src/errors/*"],
+			"@shared/utils": ["../packages/core/src/utils"],
+			"@shared/utils/*": ["../packages/core/src/utils/*"],
+			"@shared/validation": ["../packages/core/src/validation"],
+			"@shared/validation/*": ["../packages/core/src/validation/*"],
 			"@shared/*": ["shared/*"],
 			"@features/*": ["features/*"],
 			"@true-recall/core": ["../packages/core/src"],
 			"@true-recall/core/*": ["../packages/core/src/*"],
 			"@true-recall/ui": ["../packages/ui/src"],
-			"@true-recall/ui/*": ["../packages/ui/src/*"]
+			"@true-recall/ui/*": ["../packages/ui/src/*"],
+			"@true-recall/obsidian": ["../packages/obsidian/src"],
+			"@true-recall/obsidian/*": ["../packages/obsidian/src/*"]
 		},
 		"inlineSourceMap": true,
 		"inlineSources": true,

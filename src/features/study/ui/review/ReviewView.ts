@@ -1,4 +1,5 @@
 import { SemanticAnswerGradingService } from "@features/ai/services/semantic-answer-grading.service";
+import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpClient";
 import type { SessionPersistenceService } from "@features/core/persistence/session-persistence.service";
 import { FSRSService } from "@features/core/services/fsrs.service";
 import { computeActionableSessionSnapshot } from "@features/study/services/actionable-session-snapshot.service";
@@ -124,6 +125,7 @@ export class ReviewView extends ItemView {
 		this.sessionPersistence = plugin.sessionPersistence;
 		this.semanticGradingService = new SemanticAnswerGradingService(
 			() => this.plugin.settings,
+			new ObsidianHttpClient(),
 		);
 		this.applyDefaultTypeInMode();
 
@@ -619,7 +621,7 @@ export class ReviewView extends ItemView {
 		// Persist to frontmatter (async, fire-and-forget for UI responsiveness)
 		void this.flashcardManager
 			.getFrontmatterService()
-			.setFsrsPreset(sourceFile, newPresetName);
+			.setFsrsPreset(sourceFile.path, newPresetName);
 
 		const uid = card.sourceUid ?? "";
 		this.presetCache.set(uid, newPreset);
@@ -880,11 +882,14 @@ export class ReviewView extends ItemView {
 
 	private resolveSourceFile(card: FSRSFlashcardItem): TFile | null {
 		if (card.sourceUid && this.plugin.frontmatterIndex) {
-			const file = this.plugin.frontmatterIndex.getFileByValue(
+			const filePath = this.plugin.frontmatterIndex.getFileByValue(
 				"flashcard_uid",
 				card.sourceUid,
 			);
-			if (file) return file;
+			if (filePath) {
+				const abstractFile = this.app.vault.getAbstractFileByPath(filePath);
+				if (abstractFile instanceof TFile) return abstractFile;
+			}
 		}
 
 		if (card.sourceNotePath) {
