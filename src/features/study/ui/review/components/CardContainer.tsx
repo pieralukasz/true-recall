@@ -91,15 +91,8 @@ function CardFooter({
 	);
 }
 
-export interface CardContainerProps {
-	card: FSRSFlashcardItem;
-	isAnswerRevealed: boolean;
-	onContentChange: (value: string, field: "question" | "answer") => void;
-	onOpenSourceNote?: () => void;
-	presetName?: string;
-	presetOptions?: PresetPickerOption[];
-	onPresetChange?: (presetName: string) => void;
-	useTypeInMode: boolean;
+export interface TypeInState {
+	enabled: boolean;
 	aiEnabled: boolean;
 	typedAnswer: string;
 	onTypedAnswerChange: (value: string) => void;
@@ -108,6 +101,17 @@ export interface CardContainerProps {
 	localAssessment: LocalAnswerAssessment | null;
 	semanticResult: SemanticGradingResult | null;
 	semanticMessage: string | null;
+}
+
+export interface CardContainerProps {
+	card: FSRSFlashcardItem;
+	isAnswerRevealed: boolean;
+	onContentChange: (value: string, field: "question" | "answer") => void;
+	onOpenSourceNote?: () => void;
+	presetName?: string;
+	presetOptions?: PresetPickerOption[];
+	onPresetChange?: (presetName: string) => void;
+	typeIn: TypeInState;
 }
 
 function TokenRow({
@@ -159,16 +163,19 @@ export function CardContainer({
 	presetName,
 	presetOptions,
 	onPresetChange,
-	useTypeInMode,
-	aiEnabled,
-	typedAnswer,
-	onTypedAnswerChange,
-	onShowAnswer,
-	isCheckingAnswer,
-	localAssessment,
-	semanticResult,
-	semanticMessage,
+	typeIn,
 }: CardContainerProps) {
+	const {
+		enabled: useTypeInMode,
+		aiEnabled,
+		typedAnswer,
+		onTypedAnswerChange,
+		onShowAnswer,
+		isCheckingAnswer,
+		localAssessment,
+		semanticResult,
+		semanticMessage,
+	} = typeIn;
 	const answerPhase = useAnswerWarmup(isAnswerRevealed, card.id);
 	const sourcePath = card.sourceNotePath || "";
 

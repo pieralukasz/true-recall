@@ -39,15 +39,7 @@ const panelCardVariants = cva(
 
 // ── Types ──────────────────────────────────────────────────
 
-export interface PanelCardProps {
-	card: FlashcardItem;
-	fsrsCard?: FSRSFlashcardItem;
-	filePath: string;
-	isExpanded: boolean;
-	isSelected: boolean;
-	isSelectionMode: boolean;
-	enterClass?: string;
-	enterStyle?: Record<string, string | number>;
+export interface PanelCardActions {
 	onToggleExpand: () => void;
 	onToggleSelect: () => void;
 	onEdit: () => void;
@@ -64,6 +56,18 @@ export interface PanelCardProps {
 	onJumpToSource?: () => void;
 	onHoverSource?: () => void;
 	onLeaveSource?: () => void;
+}
+
+export interface PanelCardProps {
+	card: FlashcardItem;
+	fsrsCard?: FSRSFlashcardItem;
+	filePath: string;
+	isExpanded: boolean;
+	isSelected: boolean;
+	isSelectionMode: boolean;
+	enterClass?: string;
+	enterStyle?: Record<string, string | number>;
+	actions: PanelCardActions;
 }
 
 // ── Sub-components ──────────────────────────────────────────
@@ -128,6 +132,9 @@ export function PanelCard(props: PanelCardProps) {
 		isSelectionMode,
 		enterClass,
 		enterStyle,
+		actions,
+	} = props;
+	const {
 		onToggleExpand,
 		onToggleSelect,
 		onEdit,
@@ -144,7 +151,7 @@ export function PanelCard(props: PanelCardProps) {
 		onJumpToSource,
 		onHoverSource,
 		onLeaveSource,
-	} = props;
+	} = actions;
 
 	const app = useApp();
 
