@@ -3,6 +3,8 @@ import type {
 	TrueRecallSettings,
 } from "@shared/types/settings.types";
 
+export const ENABLE_RAG = false;
+
 export const VIEW_TYPE_FLASHCARD_PANEL = "true-recall-flashcard-panel";
 export const VIEW_TYPE_REVIEW = "true-recall-review";
 export const VIEW_TYPE_SIMULATOR = "true-recall-simulator";

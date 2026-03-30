@@ -3,6 +3,7 @@ import { DataTab } from "@features/settings/tabs/DataTab";
 import { FSRSTab } from "@features/settings/tabs/FSRSTab";
 import { GeneralTab } from "@features/settings/tabs/GeneralTab";
 import { KnowledgeBaseTab } from "@features/settings/tabs/KnowledgeBaseTab";
+import { ENABLE_RAG } from "@shared/constants";
 import { Clickable } from "@shared/ui/components";
 import { usePlugin } from "@shared/ui/preact";
 import { useCallback, useState } from "preact/hooks";
@@ -14,7 +15,9 @@ const TABS: { id: SettingsTabId; label: string }[] = [
 	{ id: "ai", label: "AI" },
 	{ id: "fsrs", label: "FSRS" },
 	{ id: "data", label: "Data & Backup" },
-	{ id: "knowledge-base", label: "Knowledge Base" },
+	...(ENABLE_RAG
+		? [{ id: "knowledge-base" as const, label: "Knowledge Base" }]
+		: []),
 ];
 
 const TAB_BTN_BASE =

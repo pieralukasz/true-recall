@@ -1,3 +1,4 @@
+import { ENABLE_RAG } from "@shared/constants";
 import type TrueRecallPlugin from "../main";
 import {
 	editSelectionAsFlashcard,
@@ -197,11 +198,13 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 		},
 	});
 
-	plugin.addCommand({
-		id: "open-knowledge-chat",
-		name: "Chat with knowledge base",
-		callback: () => void plugin.openKnowledgeChat(),
-	});
+	if (ENABLE_RAG) {
+		plugin.addCommand({
+			id: "open-knowledge-chat",
+			name: "Chat with knowledge base",
+			callback: () => void plugin.openKnowledgeChat(),
+		});
+	}
 
 	plugin.addCommand({
 		id: "generate-flashcards-from-selection",

@@ -67,6 +67,7 @@ import {
 	type SessionFilters,
 } from "@features/study/ui/review/review.types";
 import {
+	ENABLE_RAG,
 	VIEW_TYPE_CARD_BROWSER,
 	VIEW_TYPE_DASHBOARD,
 	VIEW_TYPE_FLASHCARD_PANEL,
@@ -296,10 +297,12 @@ export default class TrueRecallPlugin extends Plugin {
 
 		this.registerView(VIEW_TYPE_STATS, (leaf) => new StatsView(leaf, this));
 
-		this.registerView(
-			VIEW_TYPE_KNOWLEDGE_CHAT,
-			(leaf) => new KnowledgeChatView(leaf, this),
-		);
+		if (ENABLE_RAG) {
+			this.registerView(
+				VIEW_TYPE_KNOWLEDGE_CHAT,
+				(leaf) => new KnowledgeChatView(leaf, this),
+			);
+		}
 
 		registerCommands(this);
 		this.addSettingTab(new TrueRecallSettingTab(this.app, this));
@@ -307,7 +310,7 @@ export default class TrueRecallPlugin extends Plugin {
 
 		this.undoService = new UndoService(this);
 
-		if (this.cardStore) {
+		if (ENABLE_RAG && this.cardStore) {
 			const { RagChunkActions } = await import(
 				"@features/rag/persistence/rag-chunk-actions"
 			);
