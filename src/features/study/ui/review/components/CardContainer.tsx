@@ -14,6 +14,10 @@ import { Clickable } from "@shared/ui/components";
 import { cn } from "@shared/ui/utils/cn";
 import { useEffect, useRef, useState } from "preact/hooks";
 
+// Pre-renders the answer DOM one frame after the question paints,
+// but keeps it invisible (opacity:0, height:0). Without this,
+// revealing the answer causes a visible layout reflow as the
+// browser measures and paints the answer content for the first time.
 function useAnswerWarmup(
 	isRevealed: boolean,
 	cardId: string,

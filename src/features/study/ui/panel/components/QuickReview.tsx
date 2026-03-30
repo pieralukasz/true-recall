@@ -4,6 +4,7 @@ import type { SchedulingPreview } from "@shared/types";
 import type { FSRSFlashcardItem } from "@shared/types/fsrs/card.types";
 import { Clickable } from "@shared/ui/components";
 import { FSRS_COLORS } from "@shared/ui/helpers/fsrs-colors";
+import { useIcon } from "@shared/ui/preact/hooks";
 import { usePlugin } from "@shared/ui/preact/ObsidianContext";
 import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
 import { type Grade, State } from "ts-fsrs";
@@ -52,13 +53,18 @@ function buildDueQueue(cards: FSRSFlashcardItem[]): FSRSFlashcardItem[] {
 
 export function QuickReview({ cardsWithFsrs }: QuickReviewProps) {
 	const plugin = usePlugin();
-	const [expanded, setExpanded] = useState(
-		() => localStorage.getItem(STORAGE_KEY) === "true",
-	);
+	const [expanded, setExpanded] = useState(() => {
+		try {
+			return localStorage.getItem(STORAGE_KEY) === "true";
+		} catch {
+			return false;
+		}
+	});
 	const [currentIndex, setCurrentIndex] = useState(0);
 	const [answerShown, setAnswerShown] = useState(false);
 	const [preview, setPreview] = useState<SchedulingPreview | null>(null);
 
+	const chevronRef = useIcon(expanded ? "chevron-up" : "chevron-down");
 	const isReviewActive = plugin.store?.getState().review?.isActive ?? false;
 
 	const queue = useMemo(() => buildDueQueue(cardsWithFsrs), [cardsWithFsrs]);
@@ -86,7 +92,11 @@ export function QuickReview({ cardsWithFsrs }: QuickReviewProps) {
 	const toggleExpanded = useCallback(() => {
 		setExpanded((prev) => {
 			const next = !prev;
-			localStorage.setItem(STORAGE_KEY, String(next));
+			try {
+				localStorage.setItem(STORAGE_KEY, String(next));
+			} catch {
+				// localStorage unavailable (e.g. private browsing) — state still works in-memory
+			}
 			return next;
 		});
 	}, []);
@@ -167,7 +177,10 @@ export function QuickReview({ cardsWithFsrs }: QuickReviewProps) {
 					) : (
 						"All caught up!"
 					)}
-					<span class="ep:ml-2">{expanded ? "\u25B2" : "\u25BC"}</span>
+					<span
+						ref={chevronRef}
+						class="ep:ml-1 [&_svg]:ep:w-3 [&_svg]:ep:h-3"
+					/>
 				</span>
 			</Clickable>
 

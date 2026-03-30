@@ -56,19 +56,19 @@ export function PreviewPhase({
 				<OptionCheckbox
 					label="Import scheduling data"
 					description="Replay review history to preserve your progress"
-					initialChecked={importScheduling}
+					checked={importScheduling}
 					onChange={onSchedulingChange}
 				/>
 				<OptionCheckbox
 					label="Import media files"
 					description={`${preview.mediaCount} files will be saved to Attachments/anki-import`}
-					initialChecked={importMedia}
+					checked={importMedia}
 					onChange={onMediaChange}
 				/>
 				<OptionCheckbox
 					label="Create project"
 					description="Organize imported decks as a project hierarchy"
-					initialChecked={createProject}
+					checked={createProject}
 					onChange={onCreateProjectChange}
 				/>
 			</div>

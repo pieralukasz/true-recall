@@ -1,3 +1,4 @@
+import { cn } from "@shared/ui/utils";
 import { useCallback } from "preact/hooks";
 
 const BASE_CLS =
@@ -22,6 +23,7 @@ export interface SelectInputProps {
 	options: SelectInputOption[];
 	disabled?: boolean;
 	class?: string;
+	ariaLabel?: string;
 }
 
 function isOptionGroup(opt: SelectInputOption): opt is SelectOptionGroup {
@@ -34,6 +36,7 @@ export function SelectInput({
 	options,
 	disabled,
 	class: cls,
+	ariaLabel,
 }: SelectInputProps) {
 	const handleChange = useCallback(
 		(e: Event) => {
@@ -44,10 +47,11 @@ export function SelectInput({
 
 	return (
 		<select
-			class={`${BASE_CLS} ${cls ?? ""}`}
+			class={cn(BASE_CLS, cls)}
 			value={value}
 			onChange={handleChange}
 			disabled={disabled}
+			aria-label={ariaLabel}
 		>
 			{options.map((opt) =>
 				isOptionGroup(opt) ? (

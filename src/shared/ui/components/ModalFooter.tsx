@@ -1,7 +1,10 @@
+import { ActionButton } from "@shared/ui/components/ActionButton";
 import { Clickable } from "@shared/ui/components/Clickable";
 import type { ComponentChildren } from "preact";
 
+/** @deprecated Use ActionButton variant="primary" instead */
 const PRIMARY_BTN = "mod-cta ep-btn";
+/** @deprecated Use ActionButton variant="outline" instead */
 const SECONDARY_BTN = "ep-btn ep-btn-outline";
 
 export { PRIMARY_BTN, SECONDARY_BTN };
@@ -36,14 +39,12 @@ export function ModalFooter({
 				{cancelLabel}
 			</Clickable>
 			{onConfirm && (
-				<Clickable
-					class={PRIMARY_BTN}
+				<ActionButton
+					label={loading ? "..." : confirmLabel}
+					variant="primary"
 					onClick={onConfirm}
 					disabled={confirmDisabled || loading}
-					stopPropagation={false}
-				>
-					{loading ? "..." : confirmLabel}
-				</Clickable>
+				/>
 			)}
 		</div>
 	);

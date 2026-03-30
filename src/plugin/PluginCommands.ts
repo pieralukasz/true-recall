@@ -1,4 +1,10 @@
 import type TrueRecallPlugin from "../main";
+import {
+	editSelectionAsFlashcard,
+	generateFlashcardsFromSelection,
+	hasApiKey,
+	quickAddFlashcardFromSelection,
+} from "./SelectionActions";
 
 export function registerCommands(plugin: TrueRecallPlugin): void {
 	plugin.addCommand({
@@ -195,5 +201,42 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 		id: "open-knowledge-chat",
 		name: "Chat with knowledge base",
 		callback: () => void plugin.openKnowledgeChat(),
+	});
+
+	plugin.addCommand({
+		id: "generate-flashcards-from-selection",
+		name: "Generate flashcards from selection",
+		editorCheckCallback: (checking, editor) => {
+			const selection = editor.getSelection();
+			if (!selection || selection.trim().length < 3) return false;
+			if (!hasApiKey(plugin)) return false;
+			if (checking) return true;
+			void generateFlashcardsFromSelection(plugin, selection.trim());
+			return true;
+		},
+	});
+
+	plugin.addCommand({
+		id: "quick-add-flashcard-from-selection",
+		name: "Quick add flashcard from selection",
+		editorCheckCallback: (checking, editor) => {
+			const selection = editor.getSelection();
+			if (!selection || selection.trim().length < 3) return false;
+			if (checking) return true;
+			void quickAddFlashcardFromSelection(plugin, selection.trim());
+			return true;
+		},
+	});
+
+	plugin.addCommand({
+		id: "edit-selection-as-flashcard",
+		name: "Edit selection as flashcard",
+		editorCheckCallback: (checking, editor) => {
+			const selection = editor.getSelection();
+			if (!selection || selection.trim().length < 3) return false;
+			if (checking) return true;
+			editSelectionAsFlashcard(plugin, selection.trim());
+			return true;
+		},
 	});
 }

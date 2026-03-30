@@ -155,7 +155,7 @@ function CsvExportBody({
 				<OptionCheckbox
 					label="Include scheduling data"
 					description="Adds State, Due, Interval, Lapses columns"
-					initialChecked={includeScheduling}
+					checked={includeScheduling}
 					onChange={setIncludeScheduling}
 				/>
 			</div>

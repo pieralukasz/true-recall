@@ -15,13 +15,14 @@ import {
 	useContextMenu,
 } from "@shared/ui/preact/useContextMenu";
 import { useLongPress } from "@shared/ui/preact/useLongPress";
+import { cn } from "@shared/ui/utils";
 import { cva } from "class-variance-authority";
 import { useCallback } from "preact/hooks";
 
 // ── Variants ────────────────────────────────────────────────
 
 const panelCardVariants = cva(
-	"ep:flex ep:flex-col ep:mb-2 ep:rounded-lg ep:bg-obs-secondary ep:border-[1px] ep:border-obs-border/20 ep:shadow-sm ep:hover:bg-obs-modifier-hover ep:transition-colors ep:duration-300",
+	"ep:flex ep:flex-col ep:mb-2 ep:rounded-lg ep:bg-surface-raised ep:border-[1px] ep:border-obs-border/20 ep:shadow-raised ep:hover:bg-obs-modifier-hover ep:transition-colors ep:duration-300",
 	{
 		variants: {
 			state: {
@@ -225,7 +226,11 @@ export function PanelCard(props: PanelCardProps) {
 	return (
 		<Clickable
 			title={title}
-			class={`${panelCardVariants({ state: isSelected ? undefined : state })} ${selectedCls} ${enterClass ?? ""}`}
+			class={cn(
+				panelCardVariants({ state: isSelected ? undefined : state }),
+				selectedCls,
+				enterClass,
+			)}
 			style={enterStyle}
 			onClick={handleRowClick}
 			{...longPressHandlers}

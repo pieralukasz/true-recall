@@ -1,4 +1,3 @@
-import { StreamingGenerationService } from "@features/ai/services/streaming-generation.service";
 import { createSelectionToolbarExtension } from "@features/ai/ui/editor/SelectionToolbarPlugin";
 import {
 	createNoteStatusCache,
@@ -84,7 +83,6 @@ import {
 import { UndoService } from "@shared/services/undo.service";
 import { type AppStore, createAppStore } from "@shared/store";
 import { extractFSRSSettings } from "@shared/types";
-import { BUILTIN_BASIC_ID, type NoteType } from "@shared/types/note.types";
 import { PresetInspectorModal } from "@shared/ui/modals";
 import { isDesktop } from "@shared/utils/platform";
 import { normalizePath, Plugin, TFile } from "obsidian";
@@ -95,6 +93,12 @@ import {
 	registerDeletionHandler,
 	registerEventHandlers,
 } from "./plugin/PluginEventHandlers";
+import {
+	editSelectionAsFlashcard,
+	generateFlashcardsFromSelection,
+	hasApiKey,
+	quickAddFlashcardFromSelection,
+} from "./plugin/SelectionActions";
 import {
 	activateReviewView,
 	activateView,
@@ -1133,77 +1137,12 @@ export default class TrueRecallPlugin extends Plugin {
 	}
 
 	private initializeSelectionToolbar(): void {
-		const streamingService = new StreamingGenerationService(
-			() => this.settings,
-			this.flashcardManager,
-		);
-
 		const extension = createSelectionToolbarExtension({
-			onGenerate: async (text) => {
-				const file = this.app.workspace.getActiveFile();
-				if (!file) {
-					notify().error("No active file");
-					return;
-				}
-
-				try {
-					// Open panel so user can see cards streaming in
-					await this.activateView();
-
-					const noteType = this.getBasicNoteType();
-					const result = await streamingService.generateStreaming(
-						text,
-						file,
-						noteType,
-					);
-					if (result.created === 0 && result.duplicates === 0) {
-						notify().warning("No flashcards found in AI response");
-					} else if (result.duplicates > 0) {
-						notify().info(
-							`Created ${result.created} flashcard(s), ${result.duplicates} duplicate(s) skipped`,
-						);
-					} else {
-						notify().info(`Created ${result.created} flashcard(s)`);
-					}
-				} catch (error) {
-					if (error instanceof DOMException && error.name === "AbortError")
-						return;
-					const msg = error instanceof Error ? error.message : String(error);
-					notify().error(`Flashcard generation failed: ${msg}`);
-				}
-			},
-			onEdit: (text: string) => {
-				const modal = new QuickNoteEditorModal(this.app, this, {
-					mode: "add",
-					initialFields: { Front: text },
-				});
-				void modal.openAndWait();
-			},
-			onQuickAdd: async (text) => {
-				try {
-					const file = this.app.workspace.getActiveFile();
-					if (!file) {
-						notify().error("No active file");
-						return;
-					}
-					const parts = text.split(/\n\s*\n/);
-					const question = (parts[0] ?? text).trim();
-					const answer = parts.slice(1).join("\n\n").trim();
-					await this.flashcardManager.saveFlashcardsToSql(
-						file,
-						[{ id: crypto.randomUUID(), question, answer }],
-						undefined,
-						text,
-					);
-					notify().info("Quick-added 1 flashcard");
-				} catch (error) {
-					const msg = error instanceof Error ? error.message : String(error);
-					notify().error(`Quick add failed: ${msg}`);
-				}
-			},
+			onGenerate: (text) => generateFlashcardsFromSelection(this, text),
+			onEdit: (text) => editSelectionAsFlashcard(this, text),
+			onQuickAdd: (text) => quickAddFlashcardFromSelection(this, text),
 			onImageOcclusion: (imagePath) => this.handleImageOcclusion(imagePath),
-			hasApiKey: () =>
-				!!(this.settings.proKey || this.settings.openRouterApiKey),
+			hasApiKey: () => hasApiKey(this),
 			isEnabled: () => this.settings.selectionToolbarEnabled,
 		});
 
@@ -1266,10 +1205,6 @@ export default class TrueRecallPlugin extends Plugin {
 				);
 			},
 		);
-	}
-
-	private getBasicNoteType(): NoteType | null {
-		return this.cardStore?.noteTypes.getById(BUILTIN_BASIC_ID) ?? null;
 	}
 
 	async createMasterDashboard(): Promise<void> {

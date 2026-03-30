@@ -1,3 +1,36 @@
+/* @settings
+name: True Recall
+id: true-recall
+settings:
+  -
+    id: true-recall-card-radius
+    title: Card border radius
+    type: variable-select
+    default: var(--radius-m)
+    options:
+      -
+        label: None
+        value: '0'
+      -
+        label: Small
+        value: var(--radius-s)
+      -
+        label: Medium
+        value: var(--radius-m)
+      -
+        label: Large
+        value: var(--radius-l)
+  -
+    id: true-recall-review-font-size
+    title: Review card font size
+    type: variable-number-slider
+    default: 1.2
+    min: 0.9
+    max: 1.6
+    step: 0.05
+    format: rem
+*/
+
 /* Tailwind CSS v4 entry point with Obsidian theme integration */
 @import "tailwindcss" prefix(ep);
 
@@ -7,7 +40,6 @@
 @import "./modals/modals.styles.css";
 @import "../../features/library/ui/panel/panel.styles.css";
 @import "../../features/metrics/ui/simulator/styles.css";
-@import "../../features/metrics/ui/stats/styles.css";
 @import "../../features/ai/ui/editor/selection-toolbar.css";
 @import "../../features/image-occlusion/image-occlusion.styles.css";
 
@@ -20,6 +52,7 @@
  */
 .theme-dark,
 .theme-light {
+	/* ── Obsidian variable aliases ── */
 	--ep-color-obs-modifier-hover: var(--background-modifier-hover);
 	--ep-color-obs-modifier-border: var(--background-modifier-border);
 	--ep-color-obs-modifier-border-hover: var(--background-modifier-border-hover);
@@ -43,6 +76,47 @@
 	--ep-color-obs-blue: var(--color-blue);
 	--ep-color-obs-purple: var(--color-purple);
 	--ep-color-obs-pink: var(--color-pink);
+
+	/* ── Design System: Surfaces ──
+	   Semantic surface levels for consistent component backgrounds.
+	   Base < Secondary < Raised < Floating < Overlay */
+	--ep-surface-primary: var(--background-primary);
+	--ep-surface-secondary: var(--background-secondary);
+	--ep-surface-raised: var(--background-secondary);
+	--ep-surface-overlay: var(--background-primary);
+	--ep-surface-inset: var(--background-primary-alt);
+
+	/* ── Design System: Elevation ──
+	   Theme-aware box-shadows. Light themes use warm gray,
+	   dark themes use pure black for depth. */
+	--ep-shadow-color: 220 10% 20%;
+	--ep-elevation-0: none;
+	--ep-elevation-1:
+		0 1px 3px hsl(var(--ep-shadow-color) / 0.08),
+		0 1px 2px hsl(var(--ep-shadow-color) / 0.06);
+	--ep-elevation-2:
+		0 2px 8px hsl(var(--ep-shadow-color) / 0.12),
+		0 1px 3px hsl(var(--ep-shadow-color) / 0.08);
+	--ep-elevation-3:
+		0 8px 24px hsl(var(--ep-shadow-color) / 0.18),
+		0 2px 8px hsl(var(--ep-shadow-color) / 0.10);
+	--ep-elevation-4:
+		0 16px 48px hsl(var(--ep-shadow-color) / 0.24),
+		0 2px 8px hsl(var(--ep-shadow-color) / 0.12);
+
+	/* ── Design System: Transitions ── */
+	--ep-transition-fast: 100ms ease;
+	--ep-transition-normal: 150ms ease;
+	--ep-transition-slow: 300ms ease;
+	--ep-transition-spring: 300ms cubic-bezier(0.22, 1, 0.36, 1);
+
+	/* ── Design System: Backdrop ── */
+	--ep-backdrop: color-mix(in srgb, var(--background-primary) 30%, transparent);
+}
+
+/* Dark themes: pure black shadows for stronger depth contrast */
+.theme-dark {
+	--ep-shadow-color: 0 0% 0%;
 }
 
 /*
@@ -158,6 +232,68 @@
 	--radius-obs-md: var(--radius-m);
 	--radius-obs-lg: var(--radius-l);
 	--radius-obs-xl: var(--radius-xl);
+
+	/* === Design System: Surface colors (for ep:bg-surface-*) === */
+	--color-surface-primary: var(--ep-surface-primary);
+	--color-surface-secondary: var(--ep-surface-secondary);
+	--color-surface-raised: var(--ep-surface-raised);
+	--color-surface-overlay: var(--ep-surface-overlay);
+	--color-surface-inset: var(--ep-surface-inset);
+
+	/* === Design System: Elevation shadows (for ep:shadow-*) === */
+	--shadow-raised: var(--ep-elevation-1);
+	--shadow-floating: var(--ep-elevation-2);
+	--shadow-overlay: var(--ep-elevation-3);
+	--shadow-modal: var(--ep-elevation-4);
+}
+
+/* ── Design System: Typography Presets ──
+   Semantic text styles as Tailwind utilities. Usage: ep:ep-text-heading-md
+   Eliminates repeating 4-5 class combos for the same visual result. */
+
+@utility ep-text-heading-lg {
+	font-size: 1.5rem;
+	font-weight: 600;
+	color: var(--text-normal);
+	letter-spacing: -0.025em;
+	line-height: 1.3;
+}
+
+@utility ep-text-heading-md {
+	font-size: var(--font-ui-medium);
+	font-weight: 600;
+	color: var(--text-normal);
+	letter-spacing: -0.025em;
+}
+
+@utility ep-text-heading-sm {
+	font-size: var(--font-ui-small);
+	font-weight: 600;
+	color: var(--text-normal);
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+}
+
+@utility ep-text-body {
+	font-size: var(--font-ui-small);
+	color: var(--text-normal);
+}
+
+@utility ep-text-body-muted {
+	font-size: var(--font-ui-small);
+	color: var(--text-muted);
+}
+
+@utility ep-text-caption {
+	font-size: var(--font-ui-smaller);
+	color: var(--text-muted);
+}
+
+@utility ep-text-overline {
+	font-size: 0.75rem;
+	color: var(--text-faint);
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
 }
 
 @layer utilities {
@@ -193,18 +329,6 @@
 			var(--color-yellow),
 			var(--color-orange)
 		);
-	}
-	.ep-textarea-invisible {
-		font-size: inherit;
-		line-height: inherit;
-		text-align: inherit;
-		color: inherit;
-		padding: 0;
-		margin: 0;
-		border: none;
-		background: transparent;
-		outline: none;
-		box-shadow: none;
 	}
 	.ep-dashboard-container {
 		container-type: inline-size;

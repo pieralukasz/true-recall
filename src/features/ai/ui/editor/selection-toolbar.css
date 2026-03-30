@@ -10,9 +10,7 @@
 	background: var(--background-primary);
 	border: 1px solid var(--background-modifier-border);
 	border-radius: var(--radius-m);
-	box-shadow:
-		0 2px 8px rgba(0, 0, 0, 0.15),
-		0 0 1px rgba(0, 0, 0, 0.1);
+	box-shadow: var(--ep-elevation-2);
 	white-space: nowrap;
 }
 
@@ -38,6 +36,11 @@
 
 .true-recall-st-btn:active:not(:disabled):not([aria-disabled="true"]) {
 	background: var(--background-modifier-active-hover);
+}
+
+.true-recall-st-btn:focus-visible {
+	outline: 2px solid color-mix(in srgb, var(--interactive-accent) 50%, transparent);
+	outline-offset: 1px;
 }
 
 .true-recall-st-btn:disabled,
