@@ -337,7 +337,7 @@ export function ProjectsTab({
 									onRename={
 										isVirtual
 											? undefined
-											: () => handleRename(item.project.path)
+											: () => void handleRename(item.project.path)
 									}
 								/>
 							</div>
@@ -389,7 +389,9 @@ export function ProjectsTab({
 											: undefined
 									}
 									onRename={() =>
-										item.note.path ? handleRename(item.note.path) : undefined
+										item.note.path
+											? void handleRename(item.note.path)
+											: undefined
 									}
 									onDetach={
 										item.projectPath !== UNASSIGNED_PATH

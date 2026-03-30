@@ -131,9 +131,13 @@ export function ParametersSection({
 					label={optimizing ? "Optimizing..." : "Optimize"}
 					variant="primary"
 					disabled={!canOptimize || optimizing}
-					onClick={handleOptimize}
+					onClick={() => void handleOptimize()}
 				/>
-				<ActionButton label="Reset" variant="secondary" onClick={handleReset} />
+				<ActionButton
+					label="Reset"
+					variant="secondary"
+					onClick={() => void handleReset()}
+				/>
 			</FormField>
 
 			<div class="ep:pb-2">
@@ -149,7 +153,7 @@ export function ParametersSection({
 					<div class="ep:mt-2">
 						<TextAreaInput
 							value={weightsString}
-							onChange={handleWeightsChange}
+							onChange={(value) => void handleWeightsChange(value)}
 							placeholder="0.40255, 1.18385, 3.173, 15.69105, ..."
 							rows={3}
 							class="ep:w-full ep:font-mono ep:text-ui-small"

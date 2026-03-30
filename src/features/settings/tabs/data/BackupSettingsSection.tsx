@@ -31,7 +31,7 @@ export function BackupSettingsSection() {
 			>
 				<ToggleInput
 					value={settings.autoBackupOnLoad}
-					onChange={(v) => save({ autoBackupOnLoad: v })}
+					onChange={(v) => void save({ autoBackupOnLoad: v })}
 				/>
 			</FormField>
 		</FormCard>

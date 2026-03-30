@@ -6,7 +6,7 @@ import { cva } from "class-variance-authority";
 export interface IconButtonProps {
 	icon: string;
 	ariaLabel: string;
-	onClick: (e: MouseEvent) => void;
+	onClick: (e: MouseEvent | KeyboardEvent) => void;
 	label?: string;
 	size?: "small" | "medium";
 	danger?: boolean;

@@ -92,7 +92,10 @@ export function PanelEmptyState({
 		<div class="ep:flex ep:flex-col ep:items-center ep:justify-center ep:h-full ep:py-6 ep:px-5 ep:text-center ep:gap-4">
 			{/* Collect button */}
 			{hasCollect && (
-				<Clickable class={`mod-cta ${BTN_BASE_CLS}`} onClick={handleCollect}>
+				<Clickable
+					class={`mod-cta ${BTN_BASE_CLS}`}
+					onClick={() => void handleCollect()}
+				>
 					Collect {uncollectedCount} flashcard
 					{uncollectedCount !== 1 ? "s" : ""}
 				</Clickable>
@@ -124,7 +127,7 @@ export function PanelEmptyState({
 			{/* Generate from highlights */}
 			<Clickable
 				class={generateBtnCls}
-				onClick={handleGenerateFromHighlights}
+				onClick={() => void handleGenerateFromHighlights()}
 				disabled={!hasApiKey || !hasHighlights}
 			>
 				<span ref={highlighterRef} class="ep:shrink-0" />
@@ -141,7 +144,7 @@ export function PanelEmptyState({
 			{/* Generate from note */}
 			<Clickable
 				class={generateBtnCls}
-				onClick={handleGenerate}
+				onClick={() => void handleGenerate()}
 				disabled={!hasApiKey}
 			>
 				<span ref={fileTextRef} class="ep:shrink-0" />

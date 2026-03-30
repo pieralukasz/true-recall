@@ -60,7 +60,7 @@ export function TodayActionBar({
 		});
 
 	return (
-		<div class="ep:flex ep:flex-col ep:gap-3 ep:rounded-lg ep:border ep:border-obs-border ep:bg-obs-primary ep:p-4">
+		<div class="ep:flex ep:flex-col ep:gap-3 ep:rounded-lg ep:border ep:border-obs-border/30 ep:bg-surface-raised ep:shadow-raised ep:p-4">
 			{/* Top row: count cards + button */}
 			<div class="ep:flex ep:items-center ep:justify-between ep:gap-3">
 				<div class="ep:flex ep:items-center ep:gap-2">

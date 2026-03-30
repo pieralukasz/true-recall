@@ -13,7 +13,7 @@ export function ManualBackupSection() {
 				<ActionButton
 					label="Create backup"
 					variant="primary"
-					onClick={() => plugin.createManualBackup()}
+					onClick={() => void plugin.createManualBackup()}
 				/>
 			</FormField>
 
@@ -24,7 +24,7 @@ export function ManualBackupSection() {
 				<ActionButton
 					label="Restore..."
 					variant="danger"
-					onClick={() => plugin.openRestoreBackupModal()}
+					onClick={() => void plugin.openRestoreBackupModal()}
 				/>
 			</FormField>
 		</FormCard>

@@ -98,7 +98,7 @@ export class IntegrityCheckService {
 		let fixed = 0;
 		if (report.totalIssues > 0) {
 			fixed = this.repair(report);
-			console.log(
+			console.debug(
 				`[True Recall] Integrity check: fixed ${fixed} orphaned records`,
 			);
 		}

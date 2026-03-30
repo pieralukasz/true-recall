@@ -7,6 +7,7 @@ import {
 	BasePromiseModal,
 	type CancellableResult,
 } from "@shared/ui/modals/BasePromiseModal";
+import { confirm } from "@shared/ui/modals/ConfirmModal";
 import type { App } from "obsidian";
 import { render } from "preact";
 import { useCallback, useState } from "preact/hooks";
@@ -181,17 +182,20 @@ export class RestoreBackupModal extends BasePromiseModal<RestoreBackupResult> {
 	}
 
 	private async handleDeleteBackup(backup: BackupInfo): Promise<boolean> {
-		const confirmed = confirm(`Delete backup from ${backup.formattedDate}?`);
+		const confirmed = await confirm(this.app, {
+			message: `Delete backup from ${backup.formattedDate}?`,
+		});
 		if (!confirmed) return false;
 		return this.backupService.deleteBackup(backup.path);
 	}
 
 	private async handleRestore(backup: BackupInfo): Promise<boolean> {
-		const confirmed = confirm(
-			`Are you sure you want to restore the backup from ${backup.formattedDate}?\n\n` +
+		const confirmed = await confirm(this.app, {
+			message:
+				`Are you sure you want to restore the backup from ${backup.formattedDate}?\n\n` +
 				"Your current database will be replaced. A safety backup will be created first.\n\n" +
 				"You will need to reload Obsidian after restoration.",
-		);
+		});
 		if (!confirmed) return false;
 		return this.backupService.restoreFromBackup(backup.path);
 	}

@@ -104,6 +104,7 @@ function createTooltipStatsFetcher(
 	reviewCount: number;
 	futureDue: number[];
 } | null> {
+	// async needed: callers (attachTooltipListeners) await the result
 	return async () => {
 		const cards = store.getCardsBySourceUid(sourceUid);
 		if (cards.length === 0) return null;

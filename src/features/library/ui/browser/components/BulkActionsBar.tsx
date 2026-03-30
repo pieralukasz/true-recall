@@ -81,7 +81,6 @@ export function BulkActionsBar({
 		if (result.cancelled || !result.targetNoteTypeId || !result.fieldMapping)
 			return;
 
-		let _totalKept = 0;
 		let totalCreated = 0;
 		let totalDeleted = 0;
 
@@ -91,7 +90,6 @@ export function BulkActionsBar({
 				result.targetNoteTypeId,
 				result.fieldMapping,
 			);
-			_totalKept += r.keptCardIds.length;
 			totalCreated += r.createdCardIds.length;
 			totalDeleted += r.deletedCardIds.length;
 		}
@@ -103,8 +101,10 @@ export function BulkActionsBar({
 		onClearSelection();
 	}, [ids, plugin, app]);
 
-	const handleDelete = useCallback(() => {
-		if (!confirm(`Delete ${ids.length} cards?`)) return;
+	const handleDelete = useCallback(async () => {
+		const { confirm } = await import("@shared/ui/modals/ConfirmModal");
+		if (!(await confirm(app, { message: `Delete ${ids.length} cards?` })))
+			return;
 		const result =
 			plugin.flashcardManager.removeFlashcardsByIdsWithDetails(ids);
 		if (result.ok) {
@@ -114,7 +114,7 @@ export function BulkActionsBar({
 			void plugin.undoService?.undo();
 		});
 		onClearSelection();
-	}, [ids, plugin]);
+	}, [ids, plugin, app]);
 
 	return (
 		<div class="ep:shrink-0 ep:flex ep:items-center ep:gap-2 ep:px-3 ep:py-2 ep:bg-obs-interactive/5 ep:border-b ep:border-obs-interactive/20">
@@ -135,8 +135,15 @@ export function BulkActionsBar({
 				<ActionButton label="Suspend" onClick={handleSuspend} />
 				<ActionButton label="Unsuspend" onClick={handleUnsuspend} />
 				<ActionButton label="Forget" onClick={handleForget} />
-				<ActionButton label="Change type" onClick={handleChangeType} />
-				<ActionButton label="Delete" onClick={handleDelete} danger />
+				<ActionButton
+					label="Change type"
+					onClick={() => void handleChangeType()}
+				/>
+				<ActionButton
+					label="Delete"
+					onClick={() => void handleDelete()}
+					danger
+				/>
 			</div>
 
 			<Clickable

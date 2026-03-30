@@ -212,7 +212,7 @@ function CMField({
 			editorRef.current = null;
 			editor.destroy();
 		};
-	}, [app, plugin.EmbeddableEditor, isCollapsed]); // eslint-disable-line react-hooks/exhaustive-deps
+	}, [app, plugin.EmbeddableEditor, isCollapsed]); // eslint-disable-line react-hooks/exhaustive-deps -- only recreate editor on mount, collapse toggle, or editor class change; value sync handled by separate effect
 
 	// Sync content when parent updates fields (e.g. NoteType switch resets values).
 	// useLayoutEffect prevents a visible flash of stale content.

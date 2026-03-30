@@ -35,7 +35,6 @@ export function ProjectHeaderRow({
 	onUnarchive,
 	onRename,
 }: ProjectHeaderRowProps) {
-	const _activeDue = project.due + project.newCount + project.learning;
 	const priority = computePriority({
 		overdueCount: 0,
 		due: project.due,

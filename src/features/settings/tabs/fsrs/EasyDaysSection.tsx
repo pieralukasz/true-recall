@@ -73,7 +73,7 @@ export function EasyDaysSection({
 			});
 
 			if (result.applyNow) {
-				const applyResult = await plugin.fsrsHelper?.applyEasyDays({
+				const applyResult = plugin.fsrsHelper?.applyEasyDays({
 					dryRun: false,
 				});
 				if (applyResult && applyResult.affectedCount > 0) {
@@ -120,12 +120,12 @@ export function EasyDaysSection({
 				<ActionButton
 					label="Configure..."
 					variant="secondary"
-					onClick={handleConfigure}
+					onClick={() => void handleConfigure()}
 				/>
 				<ActionButton
 					label="Apply now"
 					variant="secondary"
-					onClick={handleApplyNow}
+					onClick={() => void handleApplyNow()}
 				/>
 			</FormField>
 		</FormCard>

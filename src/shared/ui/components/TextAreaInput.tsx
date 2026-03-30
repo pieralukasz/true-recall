@@ -1,3 +1,4 @@
+import { cn } from "@shared/ui/utils";
 import { useCallback } from "preact/hooks";
 
 const BASE_CLS =
@@ -10,7 +11,10 @@ export interface TextAreaInputProps {
 	rows?: number;
 	class?: string;
 	disabled?: boolean;
+	ariaLabel?: string;
 	onKeyDown?: (event: KeyboardEvent) => void;
+	onFocus?: () => void;
+	onBlur?: () => void;
 }
 
 export function TextAreaInput({
@@ -20,7 +24,10 @@ export function TextAreaInput({
 	rows = 3,
 	class: cls,
 	disabled,
+	ariaLabel,
 	onKeyDown,
+	onFocus,
+	onBlur,
 }: TextAreaInputProps) {
 	const handleInput = useCallback(
 		(e: Event) => {
@@ -36,8 +43,11 @@ export function TextAreaInput({
 			rows={rows}
 			onInput={handleInput}
 			onKeyDown={onKeyDown}
+			onFocus={onFocus}
+			onBlur={onBlur}
 			disabled={disabled}
-			class={`${BASE_CLS} ${cls ?? ""}`}
+			aria-label={ariaLabel}
+			class={cn(BASE_CLS, cls)}
 		/>
 	);
 }

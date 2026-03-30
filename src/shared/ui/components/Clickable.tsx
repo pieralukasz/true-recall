@@ -6,7 +6,7 @@ export interface ClickableProps
 		JSX.HTMLAttributes<HTMLDivElement>,
 		"role" | "tabIndex" | "onClick"
 	> {
-	onClick: (e: MouseEvent) => void;
+	onClick: (e: MouseEvent | KeyboardEvent) => void;
 	disabled?: boolean;
 	role?: JSX.HTMLAttributes<HTMLDivElement>["role"];
 	stopPropagation?: boolean;
@@ -37,7 +37,7 @@ export function Clickable({
 				if (e.key === "Enter" || e.key === " ") {
 					if (prevent) e.preventDefault();
 					if (stop) e.stopPropagation();
-					onClick(e as unknown as MouseEvent);
+					onClick(e);
 				}
 			};
 

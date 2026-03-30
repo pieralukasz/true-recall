@@ -75,7 +75,7 @@ export function SchedulingSection({
 				>
 					<SelectInput
 						value={settings.newCardOrder}
-						onChange={(v) => save({ newCardOrder: v as NewCardOrder })}
+						onChange={(v) => void save({ newCardOrder: v as NewCardOrder })}
 						options={[
 							{ value: "random", label: "Random" },
 							{
@@ -96,7 +96,7 @@ export function SchedulingSection({
 				>
 					<SelectInput
 						value={settings.reviewOrder}
-						onChange={(v) => save({ reviewOrder: v as ReviewOrder })}
+						onChange={(v) => void save({ reviewOrder: v as ReviewOrder })}
 						options={[
 							{ value: "due-date", label: "By due date" },
 							{ value: "random", label: "Random" },
@@ -115,7 +115,7 @@ export function SchedulingSection({
 				>
 					<SelectInput
 						value={settings.newReviewMix}
-						onChange={(v) => save({ newReviewMix: v as NewReviewMix })}
+						onChange={(v) => void save({ newReviewMix: v as NewReviewMix })}
 						options={[
 							{ value: "mix-with-reviews", label: "Mix with reviews" },
 							{ value: "show-after-reviews", label: "Show after reviews" },

@@ -112,7 +112,7 @@ export class BackgroundBackupManager {
 	private setupEventListeners(): void {
 		this.signalDisposers.push(
 			effect(() => {
-				cards.value;
+				void cards.value;
 				this.isDirty = true;
 			}),
 			effect(() => {

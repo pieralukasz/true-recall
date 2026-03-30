@@ -9,12 +9,25 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
-  build:
+  release:
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Verify tag is on release branch
+        run: |
+          tag="${GITHUB_REF#refs/tags/}"
+          tag_sha=$(git rev-list -n 1 "$tag")
+          if ! git branch -r --contains "$tag_sha" | grep -q 'origin/release'; then
+            echo "::error::Tag '$tag' is not on the 'release' branch."
+            echo "Release flow: main -> PR -> pre-release -> PR -> release -> tag"
+            exit 1
+          fi
+          echo "Tag '$tag' verified on release branch."
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2

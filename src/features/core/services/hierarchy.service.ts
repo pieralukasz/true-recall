@@ -165,9 +165,7 @@ export class HierarchyService {
 		for (const parentName of allParentNames) {
 			const trimmed = parentName.trim();
 			if (!trimmed) continue;
-			const parentPath =
-				this.resolveNameToPath(trimmed) ?? `${trimmed}.md`;
-
+			const parentPath = this.resolveNameToPath(trimmed) ?? `${trimmed}.md`;
 
 			const childFiles = this.frontmatterIndex.getFilesByValue(
 				"parents",

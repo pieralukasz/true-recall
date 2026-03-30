@@ -3,7 +3,6 @@ import { parseIODefinition } from "@features/image-occlusion/io-definition";
 import type { FlashcardItem } from "@shared/types";
 import type { FSRSFlashcardItem } from "@shared/types/fsrs/card.types";
 import { Clickable } from "@shared/ui/components/Clickable";
-import { IconButton } from "@shared/ui/components/IconButton";
 import {
 	type MenuItem,
 	useContextMenu,
@@ -103,6 +102,7 @@ export function PanelIOGroup({
 		<Clickable
 			class={`ep:flex ep:flex-col ep:mb-2 ep:rounded-lg ep:bg-obs-secondary ep:border-[1px] ep:border-obs-border/20 ep:shadow-sm ep:hover:bg-obs-modifier-hover ep:transition-colors ep:duration-300 ${selectedCls}`}
 			onClick={handleClick}
+			onContextMenu={isSelectionMode ? undefined : handleMenuClick}
 		>
 			<div class="ep:flex ep:items-center ep:gap-2 ep:p-3 ep:text-left ep:w-full">
 				{isSelectionMode && (
@@ -125,14 +125,6 @@ export function PanelIOGroup({
 						onRegionClick={handleRegionClick}
 					/>
 				</div>
-
-				<IconButton
-					icon="more-vertical"
-					ariaLabel="Group actions"
-					onClick={handleMenuClick}
-					size="small"
-					class="ep:opacity-30 ep:hover:opacity-100 ep:transition-opacity"
-				/>
 			</div>
 
 			{isExpanded && (

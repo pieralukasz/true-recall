@@ -43,6 +43,15 @@ export interface DatabaseLoadResult {
 /**
  * Wraps @sqlite.org/sqlite-wasm OO1 Database to match the DatabaseLike interface
  */
+/** Extended exec options supported by sqlite-wasm OO1 API but missing from TS declarations */
+interface ExecOptions {
+	sql: string;
+	bind?: BindParams;
+	returnValue?: string;
+	rowMode?: string;
+	columnNames?: string[];
+}
+
 class SqliteOrgWrapper implements DatabaseLike {
 	constructor(
 		private db: Database,
@@ -51,14 +60,17 @@ class SqliteOrgWrapper implements DatabaseLike {
 
 	exec(sql: string, params?: BindParams): QueryExecResult[] {
 		const columnNames: string[] = [];
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		const rows = (this.db.exec as any)({
+		const rows = (
+			this.db.exec as (
+				opts: ExecOptions,
+			) => (string | number | null | Uint8Array)[][]
+		)({
 			sql,
 			bind: params,
 			returnValue: "resultRows",
 			rowMode: "array",
 			columnNames,
-		}) as (string | number | null | Uint8Array)[][];
+		});
 
 		// No columns = DDL/DML or empty result — match sql.js returning []
 		if (columnNames.length === 0) return [];
@@ -66,8 +78,7 @@ class SqliteOrgWrapper implements DatabaseLike {
 	}
 
 	run(sql: string, params?: BindParams): void {
-		// eslint-disable-next-line @typescript-eslint/no-explicit-any
-		(this.db.exec as any)({ sql, bind: params });
+		(this.db.exec as (opts: ExecOptions) => void)({ sql, bind: params });
 	}
 
 	export(): Uint8Array {
@@ -97,7 +108,7 @@ async function loadSqlite3(): Promise<Sqlite3Static> {
 		// which fails because esbuild's CJS shim sets import.meta to {}
 		locateFile: (file: string) => file,
 		// WASM binary is embedded in the bundle by esbuild's binary loader
-		wasmBinary: new Uint8Array(embeddedWasm as ArrayBuffer),
+		wasmBinary: new Uint8Array(embeddedWasm),
 	};
 
 	// The TS types declare init() with no args, but the Emscripten runtime

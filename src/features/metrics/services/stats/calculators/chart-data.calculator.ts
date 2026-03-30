@@ -117,10 +117,10 @@ export class ChartDataCalculator {
 		});
 	}
 
-	async getCardsCreatedHistoryFilled(
+	getCardsCreatedHistoryFilled(
 		allCards: FSRSFlashcardItem[],
 		range: StatsTimeRange,
-	): Promise<CardsCreatedEntry[]> {
+	): CardsCreatedEntry[] {
 		return this.getCardsCreatedHistoryFilledSync(allCards, range);
 	}
 

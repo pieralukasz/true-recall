@@ -34,10 +34,10 @@ export class RescheduleService {
 	/**
 	 * Reschedule cards based on current FSRS weights
 	 */
-	async reschedule(options: RescheduleOptions): Promise<SchedulingResult> {
+	reschedule(options: RescheduleOptions): SchedulingResult {
 		const { scope, cardIds, dryRun = true } = options;
 
-		const cards = await this.getCardsForScope(scope, cardIds);
+		const cards = this.getCardsForScope(scope, cardIds);
 
 		const changes: CardScheduleChange[] = [];
 		const beforeDistribution = new Map<string, number>();
@@ -105,7 +105,7 @@ export class RescheduleService {
 					this.daysBetween(reviewDate, new Date(change.newDue)),
 				);
 
-				await this.cardStore.updateCardScheduling(change.cardId, {
+				this.cardStore.updateCardScheduling(change.cardId, {
 					due: change.newDue,
 					scheduledDays,
 				});
@@ -123,18 +123,16 @@ export class RescheduleService {
 	/**
 	 * Get cards based on scope
 	 */
-	private async getCardsForScope(
+	private getCardsForScope(
 		scope: RescheduleOptions["scope"],
 		cardIds?: string[],
-	): Promise<
-		{
-			id: string;
-			due: string;
-			state: number;
-			stability: number;
-			lastReview: string | null;
-		}[]
-	> {
+	): {
+		id: string;
+		due: string;
+		state: number;
+		stability: number;
+		lastReview: string | null;
+	}[] {
 		const today = new Date();
 		today.setHours(0, 0, 0, 0);
 

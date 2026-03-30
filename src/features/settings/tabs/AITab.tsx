@@ -1,6 +1,10 @@
 import { GENERATION_LANGUAGES } from "@features/ai/prompts/default-prompts";
 import { useSettings } from "@features/settings/hooks/useSettings";
-import { BYOK_MODELS, CUSTOM_MODEL_ID, TRUERECALL_WEB_URL } from "@shared/constants";
+import {
+	BYOK_MODELS,
+	CUSTOM_MODEL_ID,
+	TRUERECALL_WEB_URL,
+} from "@shared/constants";
 import {
 	Clickable,
 	FormCard,
@@ -70,7 +74,7 @@ export function AITab() {
 		}
 		setKeyStatus("checking");
 		const key = settings.proKey;
-		verifyProKey(key).then((ok) => {
+		void verifyProKey(key).then((ok) => {
 			const status = ok ? "valid" : "invalid";
 			cachedKey = key;
 			cachedStatus = status;
@@ -98,7 +102,7 @@ export function AITab() {
 					<TextInput
 						value={settings.proKey ?? ""}
 						onChange={(v) =>
-							save({ proKey: v.trim().length > 0 ? v.trim() : undefined })
+							void save({ proKey: v.trim().length > 0 ? v.trim() : undefined })
 						}
 						type="password"
 						placeholder="Paste key from dashboard"
@@ -139,7 +143,7 @@ export function AITab() {
 				>
 					<TextInput
 						value={settings.openRouterApiKey}
-						onChange={(v) => save({ openRouterApiKey: v })}
+						onChange={(v) => void save({ openRouterApiKey: v })}
 						type="password"
 						placeholder="Enter API key"
 						class="ep:w-[300px]"
@@ -152,7 +156,9 @@ export function AITab() {
 				>
 					<SelectInput
 						value={currentModel}
-						onChange={(v) => save({ aiModel: v, aiTemperature: undefined })}
+						onChange={(v) =>
+							void save({ aiModel: v, aiTemperature: undefined })
+						}
 						options={MODEL_OPTIONS}
 					/>
 				</FormField>
@@ -163,7 +169,7 @@ export function AITab() {
 					>
 						<TextInput
 							value={settings.customAiModel ?? ""}
-							onChange={(v) => save({ customAiModel: v })}
+							onChange={(v) => void save({ customAiModel: v })}
 							placeholder="e.g. openai/gpt-4o-mini"
 							class="ep:w-[300px]"
 						/>
@@ -178,7 +184,7 @@ export function AITab() {
 							{settings.aiTemperature != null ? (
 								<Clickable
 									class="ep:text-obs-accent ep:text-ui-smaller"
-									onClick={() => save({ aiTemperature: undefined })}
+									onClick={() => void save({ aiTemperature: undefined })}
 								>
 									Reset to model default ({modelDefault})
 								</Clickable>
@@ -192,7 +198,7 @@ export function AITab() {
 				>
 					<SliderInput
 						value={effectiveTemp}
-						onChange={(v) => save({ aiTemperature: v })}
+						onChange={(v) => void save({ aiTemperature: v })}
 						min={0}
 						max={2}
 						step={0.1}
@@ -213,7 +219,7 @@ export function AITab() {
 					<TextAreaInput
 						value={settings.aiGenerationPrompt ?? ""}
 						onChange={(v) =>
-							save({
+							void save({
 								aiGenerationPrompt: v.trim().length > 0 ? v : undefined,
 							})
 						}
@@ -233,7 +239,7 @@ export function AITab() {
 					<TextAreaInput
 						value={settings.aiTypeInGradingPrompt ?? ""}
 						onChange={(v) =>
-							save({
+							void save({
 								aiTypeInGradingPrompt: v.trim().length > 0 ? v : undefined,
 							})
 						}
@@ -248,7 +254,7 @@ export function AITab() {
 					<TextAreaInput
 						value={settings.aiIODetectionPrompt ?? ""}
 						onChange={(v) =>
-							save({
+							void save({
 								aiIODetectionPrompt: v.trim().length > 0 ? v : undefined,
 							})
 						}
@@ -265,7 +271,7 @@ export function AITab() {
 				>
 					<SelectInput
 						value={settings.generationLanguage ?? "auto"}
-						onChange={(v) => save({ generationLanguage: v })}
+						onChange={(v) => void save({ generationLanguage: v })}
 						options={[...GENERATION_LANGUAGES]}
 					/>
 				</FormField>
@@ -276,7 +282,7 @@ export function AITab() {
 				>
 					<ToggleInput
 						value={settings.selectionToolbarEnabled}
-						onChange={(v) => save({ selectionToolbarEnabled: v })}
+						onChange={(v) => void save({ selectionToolbarEnabled: v })}
 					/>
 				</FormField>
 			</FormCard>

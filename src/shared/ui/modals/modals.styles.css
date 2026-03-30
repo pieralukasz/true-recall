@@ -17,9 +17,7 @@
 	max-width: min(700px, 92vw);
 	max-height: min(80vh, 720px);
 	height: auto;
-	box-shadow:
-		0 16px 48px rgba(0, 0, 0, 0.24),
-		0 2px 8px rgba(0, 0, 0, 0.12);
+	box-shadow: var(--ep-elevation-4);
 	border: 1px solid var(--background-modifier-border);
 	background: var(--background-primary);
 	border-radius: var(--radius-l);
@@ -113,7 +111,7 @@
 		-webkit-backdrop-filter: none;
 		backdrop-filter: none;
 		opacity: 1;
-		background-color: rgba(0, 0, 0, 0.3);
+		background-color: var(--ep-backdrop);
 	}
 
 	/* ================================================================
@@ -172,13 +170,8 @@
 	}
 
 	.modal:has(.true-recall-modal) > .modal-close-button:hover {
-		background: rgba(0, 0, 0, 0.06);
-		border-color: rgba(0, 0, 0, 0.08);
-	}
-
-	.theme-dark .modal:has(.true-recall-modal) > .modal-close-button:hover {
-		background: rgba(255, 255, 255, 0.06);
-		border-color: rgba(255, 255, 255, 0.1);
+		background: color-mix(in srgb, var(--text-normal) 6%, transparent);
+		border-color: color-mix(in srgb, var(--text-normal) 8%, transparent);
 	}
 
 	/* ================================================================
@@ -301,7 +294,7 @@
 		padding: 0.375rem;
 		min-width: 32px;
 		min-height: 32px;
-		max-height: 33px;
+		max-height: 32px;
 		box-shadow: none;
 		display: inline-flex;
 		align-items: center;

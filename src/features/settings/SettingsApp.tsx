@@ -2,17 +2,22 @@ import { AITab } from "@features/settings/tabs/AITab";
 import { DataTab } from "@features/settings/tabs/DataTab";
 import { FSRSTab } from "@features/settings/tabs/FSRSTab";
 import { GeneralTab } from "@features/settings/tabs/GeneralTab";
+import { KnowledgeBaseTab } from "@features/settings/tabs/KnowledgeBaseTab";
+import { ENABLE_RAG } from "@shared/constants";
 import { Clickable } from "@shared/ui/components";
 import { usePlugin } from "@shared/ui/preact";
 import { useCallback, useState } from "preact/hooks";
 
-type SettingsTabId = "general" | "ai" | "fsrs" | "data";
+type SettingsTabId = "general" | "ai" | "fsrs" | "data" | "knowledge-base";
 
 const TABS: { id: SettingsTabId; label: string }[] = [
 	{ id: "general", label: "General" },
 	{ id: "ai", label: "AI" },
 	{ id: "fsrs", label: "FSRS" },
 	{ id: "data", label: "Data & Backup" },
+	...(ENABLE_RAG
+		? [{ id: "knowledge-base" as const, label: "Knowledge Base" }]
+		: []),
 ];
 
 const TAB_BTN_BASE =
@@ -78,6 +83,7 @@ export function SettingsApp() {
 					/>
 				)}
 				{activeTab === "data" && <DataTab />}
+				{activeTab === "knowledge-base" && <KnowledgeBaseTab />}
 			</div>
 		</>
 	);

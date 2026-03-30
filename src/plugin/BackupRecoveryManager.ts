@@ -72,7 +72,7 @@ export class BackupRecoveryManager {
 					const backupName = backupPath.split("/").pop() || "";
 					this.lastAutoRecoveryBackupPath = backupPath;
 					this.lastAutoRecoveryAt = Date.now();
-					console.log(
+					console.debug(
 						`[True Recall] Auto-recovered from backup: ${backupName}`,
 					);
 					notify().success(

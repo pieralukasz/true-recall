@@ -1,18 +1,32 @@
-import type { IncomingMessage, ServerResponse } from "http";
 import type TrueRecallPlugin from "../../main";
+
+export interface ApiRequest {
+	url?: string;
+	method?: string;
+	on(event: "data", listener: (chunk: Buffer) => void): void;
+	on(event: "end", listener: () => void): void;
+	on(event: "error", listener: (err: Error) => void): void;
+	destroy(): void;
+}
+
+export interface ApiResponseWriter {
+	writableEnded?: boolean;
+	writeHead(statusCode: number, headers?: Record<string, string>): void;
+	end(data?: string): void;
+}
 
 export interface ApiContext {
 	plugin: TrueRecallPlugin;
 }
 
 export type RouteHandler = (
-	req: IncomingMessage,
-	res: ServerResponse,
+	req: ApiRequest,
+	res: ApiResponseWriter,
 	ctx: ApiContext,
 	params: Record<string, string>,
-) => Promise<void>;
+) => void | Promise<void>;
 
-export type ApiResponse<T = unknown> =
+export type ApiResponseBody<T = unknown> =
 	| { ok: true; data: T }
 	| { ok: false; error: string };
 
@@ -23,9 +37,9 @@ const CORS_HEADERS = {
 } as const;
 
 export function sendJson(
-	res: ServerResponse,
+	res: ApiResponseWriter,
 	status: number,
-	body: ApiResponse,
+	body: ApiResponseBody,
 ): void {
 	res.writeHead(status, {
 		"Content-Type": "application/json",
@@ -34,12 +48,12 @@ export function sendJson(
 	res.end(JSON.stringify(body));
 }
 
-export function sendOk<T>(res: ServerResponse, data: T): void {
+export function sendOk<T>(res: ApiResponseWriter, data: T): void {
 	sendJson(res, 200, { ok: true, data });
 }
 
 export function sendError(
-	res: ServerResponse,
+	res: ApiResponseWriter,
 	status: number,
 	message: string,
 ): void {
@@ -50,7 +64,7 @@ export { CORS_HEADERS };
 
 const MAX_BODY_SIZE = 2 * 1024 * 1024; // 2 MB
 
-export async function readBody(req: IncomingMessage): Promise<string> {
+export async function readBody(req: ApiRequest): Promise<string> {
 	return new Promise((resolve, reject) => {
 		let body = "";
 		let size = 0;

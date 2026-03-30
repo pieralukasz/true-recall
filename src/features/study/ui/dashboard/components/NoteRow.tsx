@@ -40,8 +40,6 @@ export function NoteRow({
 	onToggleSelect,
 	onEnterSelection,
 }: NoteRowProps) {
-	const _hasActive = note.due + note.newCount + note.learning > 0;
-
 	const menuItems: MenuItem[] = [
 		{ title: "Study", icon: "play", onClick: onStudy },
 		{

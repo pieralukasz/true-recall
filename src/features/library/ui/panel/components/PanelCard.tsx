@@ -7,7 +7,6 @@ import {
 import type { FlashcardItem } from "@shared/types";
 import type { FSRSFlashcardItem } from "@shared/types/fsrs/card.types";
 import { Clickable } from "@shared/ui/components/Clickable";
-import { IconButton } from "@shared/ui/components/IconButton";
 import { MarkdownContent } from "@shared/ui/components/MarkdownContent";
 import { useApp } from "@shared/ui/preact/ObsidianContext";
 import {
@@ -15,13 +14,14 @@ import {
 	useContextMenu,
 } from "@shared/ui/preact/useContextMenu";
 import { useLongPress } from "@shared/ui/preact/useLongPress";
+import { cn } from "@shared/ui/utils";
 import { cva } from "class-variance-authority";
 import { useCallback } from "preact/hooks";
 
 // ── Variants ────────────────────────────────────────────────
 
 const panelCardVariants = cva(
-	"ep:flex ep:flex-col ep:mb-2 ep:rounded-lg ep:bg-obs-secondary ep:border-[1px] ep:border-obs-border/20 ep:shadow-sm ep:hover:bg-obs-modifier-hover ep:transition-colors ep:duration-300",
+	"ep:flex ep:flex-col ep:mb-2 ep:rounded-lg ep:bg-surface-raised ep:border-[1px] ep:border-obs-border/20 ep:shadow-raised ep:hover:bg-obs-modifier-hover ep:transition-colors ep:duration-300",
 	{
 		variants: {
 			state: {
@@ -38,15 +38,7 @@ const panelCardVariants = cva(
 
 // ── Types ──────────────────────────────────────────────────
 
-export interface PanelCardProps {
-	card: FlashcardItem;
-	fsrsCard?: FSRSFlashcardItem;
-	filePath: string;
-	isExpanded: boolean;
-	isSelected: boolean;
-	isSelectionMode: boolean;
-	enterClass?: string;
-	enterStyle?: Record<string, string | number>;
+export interface PanelCardActions {
 	onToggleExpand: () => void;
 	onToggleSelect: () => void;
 	onEdit: () => void;
@@ -63,6 +55,18 @@ export interface PanelCardProps {
 	onJumpToSource?: () => void;
 	onHoverSource?: () => void;
 	onLeaveSource?: () => void;
+}
+
+export interface PanelCardProps {
+	card: FlashcardItem;
+	fsrsCard?: FSRSFlashcardItem;
+	filePath: string;
+	isExpanded: boolean;
+	isSelected: boolean;
+	isSelectionMode: boolean;
+	enterClass?: string;
+	enterStyle?: Record<string, string | number>;
+	actions: PanelCardActions;
 }
 
 // ── Sub-components ──────────────────────────────────────────
@@ -127,6 +131,9 @@ export function PanelCard(props: PanelCardProps) {
 		isSelectionMode,
 		enterClass,
 		enterStyle,
+		actions,
+	} = props;
+	const {
 		onToggleExpand,
 		onToggleSelect,
 		onEdit,
@@ -143,7 +150,7 @@ export function PanelCard(props: PanelCardProps) {
 		onJumpToSource,
 		onHoverSource,
 		onLeaveSource,
-	} = props;
+	} = actions;
 
 	const app = useApp();
 
@@ -225,9 +232,14 @@ export function PanelCard(props: PanelCardProps) {
 	return (
 		<Clickable
 			title={title}
-			class={`${panelCardVariants({ state: isSelected ? undefined : state })} ${selectedCls} ${enterClass ?? ""}`}
+			class={cn(
+				panelCardVariants({ state: isSelected ? undefined : state }),
+				selectedCls,
+				enterClass,
+			)}
 			style={enterStyle}
 			onClick={handleRowClick}
+			onContextMenu={isSelectionMode ? undefined : handleMenuClick}
 			{...longPressHandlers}
 			onMouseEnter={onHoverSource}
 			onMouseLeave={onLeaveSource}
@@ -250,16 +262,6 @@ export function PanelCard(props: PanelCardProps) {
 					class="ep:flex-1 ep:text-ui-small ep:text-obs-normal true-recall-card-markdown"
 					onLinkClick={handleLinkClick}
 				/>
-
-				<div class="ep:flex ep:flex-col ep:items-center ep:justify-center ep:gap-1 ep:self-center">
-					<IconButton
-						icon="more-vertical"
-						ariaLabel="Card actions"
-						onClick={handleMenuClick}
-						size="small"
-						class="ep:opacity-30 ep:hover:opacity-100 ep:transition-opacity"
-					/>
-				</div>
 			</div>
 
 			{isExpanded && (

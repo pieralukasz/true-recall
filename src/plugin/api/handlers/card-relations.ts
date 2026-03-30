@@ -1,6 +1,5 @@
-import type { IncomingMessage, ServerResponse } from "http";
 import { State } from "ts-fsrs";
-import type { ApiContext } from "../api.types";
+import type { ApiContext, ApiRequest, ApiResponseWriter } from "../api.types";
 import { sendError, sendOk } from "../api.types";
 
 const STATE_LABELS: Record<number, string> = {
@@ -47,12 +46,12 @@ function mapCard(c: {
 	};
 }
 
-export async function handleGetCardRelations(
-	_req: IncomingMessage,
-	res: ServerResponse,
+export function handleGetCardRelations(
+	_req: ApiRequest,
+	res: ApiResponseWriter,
 	ctx: ApiContext,
 	params: Record<string, string>,
-): Promise<void> {
+): void {
 	if (!ctx.plugin.isStoreReady()) {
 		sendError(res, 503, "Database not ready");
 		return;

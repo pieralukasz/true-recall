@@ -25,9 +25,7 @@ export class ScheduleBreakService {
 	/**
 	 * Schedule a break and redistribute cards
 	 */
-	async scheduleBreak(
-		options: BreakScheduleOptions,
-	): Promise<SchedulingResult> {
+	scheduleBreak(options: BreakScheduleOptions): SchedulingResult {
 		const {
 			startDate,
 			endDate,
@@ -155,7 +153,7 @@ export class ScheduleBreakService {
 		// Apply changes if not dry run
 		if (!dryRun) {
 			for (const change of changes) {
-				await this.cardStore.updateCardDue(change.cardId, change.newDue);
+				this.cardStore.updateCardDue(change.cardId, change.newDue);
 			}
 		}
 

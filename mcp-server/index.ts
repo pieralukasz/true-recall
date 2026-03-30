@@ -11,6 +11,7 @@ import { registerGenerateTools } from "./tools/generate-tools.js";
 import { registerNavigationTools } from "./tools/navigation-tools.js";
 import { registerNoteTools } from "./tools/note-tools.js";
 import { registerQueryTools } from "./tools/query-tools.js";
+import { registerRagTools } from "./tools/rag-tools.js";
 import { registerReviewTools } from "./tools/review-tools.js";
 import { registerSessionTools } from "./tools/session-tools.js";
 import { registerStatsTools } from "./tools/stats-tools.js";
@@ -28,24 +29,42 @@ const server = new McpServer(
 	},
 	{
 		instructions: [
-			"TOOL SELECTION: Always call get_full_context FIRST before any other True Recall tool.",
-			"It returns the user's current state in one lightweight call: active view, review session with current card, active note, today's stats, due count.",
-			"Only call get_active_note when you need full note markdown content.",
-			"Never call get_due_cards just to check what's due — get_full_context already includes the due count.",
+			"AUTO-INJECTED CONTEXT: If you see 'True Recall live context:' in the conversation, you ALREADY have the user's current state.",
+			"Do NOT call get_full_context — the data is already there. Use it directly.",
+			"If no live context is present (Obsidian not running), call get_full_context as your first tool.",
 			"",
-			"ANSWER PRIVACY: When the response includes isAnswerRevealed: false, the user has NOT seen the answer yet.",
+			"DISAMBIGUATING USER INTENT: The live context includes both activeNote and reviewSession simultaneously.",
+			"'this card' / 'this flashcard' / 'nie rozumiem' → refers to reviewSession.currentCard",
+			"'this note' / 'this file' / 'ta notatka' → refers to activeNote",
+			"'what am I looking at' → describe both if both are present",
+			"If ambiguous, ask which one they mean.",
+			"",
+			"ANSWER PRIVACY: When isAnswerRevealed is false, the user has NOT seen the answer yet.",
 			"Do NOT reveal, paraphrase, or hint at the answer. Discuss only the question side.",
 			"Ask the user what they think first. Only discuss the answer after the user asks to see it or you call reveal_answer.",
 			"",
 			"REVIEW FLOW: During an active review session, use these tools in order:",
-			"1. get_full_context — see the current card's question (answer hidden if not revealed)",
+			"1. Read the live context (auto-injected) — see the current card's question",
 			"2. Discuss the question with the user, help them think through it",
 			"3. reveal_answer — when the user wants to see the answer (flips the card in Obsidian UI too)",
 			"4. grade_review_card — when the user is ready to rate (advances to the next card in the session)",
 			"Use grade_review_card (not grade_card) during active sessions — it advances the session and updates the UI.",
 			"",
-			"LARGE RESPONSES: get_due_cards and list_cards can return 100k+ characters and may exceed the output limit.",
-			"Prefer get_full_context for overview data. Use get_due_cards only when you actually need the card list.",
+			"TOOL TIPS: Only call get_active_note when you need the full markdown content of the note.",
+			"get_due_cards and list_cards can return 100k+ characters — prefer live context for counts.",
+			"",
+			"KNOWLEDGE BASE (Pro only): search_knowledge provides semantic search + FSRS mastery data.",
+			"Use it FIRST for conceptual/topic questions ('co wiem o X', 'explain Y', 'find notes about Z').",
+			"Use sourceIds param to scope search to specific notes (pass file paths from activeNote.path).",
+			"Results include FSRS data per flashcard — low stability + high lapses = struggling, high stability = mastered.",
+			"Results include modifiedAt timestamps for recency-aware answers.",
+			"If search_knowledge returns 'Pro subscription required', the user is on the free/BYOK tier.",
+			"",
+			"COOPERATING WITH OBSIDIAN TOOLS: True Recall and Obsidian MCP tools complement each other.",
+			"Use Obsidian search_notes for: exact text matches, tag queries, frontmatter filters, date-based lookups.",
+			"Use Obsidian read_note after search_knowledge to get the full content of a found note (search returns chunks, not full notes).",
+			"Use Obsidian list_directory to browse vault structure (Johnny.Decimal folders).",
+			"Use Obsidian write_note/patch_note for all note creation and editing.",
 		].join("\n"),
 	},
 );
@@ -62,6 +81,7 @@ registerNoteTools(server, client);
 registerBackupTools(server, client);
 registerStatsTools(server, client);
 registerQueryTools(server, client);
+registerRagTools(server, client);
 
 const transport = new StdioServerTransport();
 await server.connect(transport);

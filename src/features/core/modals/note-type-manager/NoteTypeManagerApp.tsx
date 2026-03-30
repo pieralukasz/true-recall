@@ -21,7 +21,7 @@ export function NoteTypeManagerApp({
 
 	const noteTypes = useMemo(
 		() => noteTypeService.getAll(),
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- version signal triggers re-fetch when note types change
 		[noteTypeService, version],
 	);
 
@@ -65,7 +65,6 @@ export function NoteTypeManagerApp({
 			setSelectedId(created.id);
 			refresh();
 		} catch (e) {
-			// eslint-disable-next-line no-new
 			new Notice((e as Error).message);
 		}
 	}, [draft, noteTypeService, refresh]);
@@ -84,7 +83,6 @@ export function NoteTypeManagerApp({
 				setSelectedId(null);
 				refresh();
 			} catch (e) {
-				// eslint-disable-next-line no-new
 				new Notice((e as Error).message);
 			}
 		},

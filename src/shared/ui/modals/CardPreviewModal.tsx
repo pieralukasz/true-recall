@@ -41,6 +41,7 @@ export class CardPreviewModal extends BaseModal {
 				category={this.options.category}
 				onDeleteCard={(card, setCards) => {
 					void handleDeleteCard(
+						this.app,
 						card,
 						setCards,
 						this.options.cards,
@@ -53,28 +54,26 @@ export class CardPreviewModal extends BaseModal {
 					void openSourceNote(card, this.app, () => this.close())
 				}
 				onUnburyCard={(card, setCards) => {
-					void handleUnburyCard(
+					const updated = handleUnburyCard(
 						card,
 						setCards,
 						this.options.cards,
 						this.flashcardManager,
-					).then((updated) => {
-						this.options.cards = updated;
-					});
+					);
+					this.options.cards = updated;
 				}}
 				onUnburyAll={(cards, setCards) => {
-					void handleUnburyAll(cards, setCards, this.flashcardManager).then(
-						() => {
-							this.options.cards = [];
-						},
-					);
+					handleUnburyAll(cards, setCards, this.flashcardManager);
+					this.options.cards = [];
 				}}
 				onDeleteAll={(cards, setCards) => {
-					void handleDeleteAll(cards, setCards, this.flashcardManager).then(
-						() => {
-							this.options.cards = [];
-						},
+					void handleDeleteAll(
+						this.app,
+						cards,
+						setCards,
+						this.flashcardManager,
 					);
+					this.options.cards = [];
 				}}
 				onUpdateTitle={(title) => this.updateTitle(title)}
 			/>,

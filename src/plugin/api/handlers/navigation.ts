@@ -1,5 +1,4 @@
-import type { IncomingMessage, ServerResponse } from "http";
-import type { ApiContext } from "../api.types";
+import type { ApiContext, ApiRequest, ApiResponseWriter } from "../api.types";
 import { parseJsonBody, readBody, sendError, sendOk } from "../api.types";
 
 interface OpenViewInput {
@@ -12,8 +11,8 @@ interface OpenNoteInput {
 }
 
 export async function handleOpenView(
-	req: IncomingMessage,
-	res: ServerResponse,
+	req: ApiRequest,
+	res: ApiResponseWriter,
 	ctx: ApiContext,
 ): Promise<void> {
 	const raw = await readBody(req);
@@ -66,8 +65,8 @@ export async function handleOpenView(
 }
 
 export async function handleOpenNote(
-	req: IncomingMessage,
-	res: ServerResponse,
+	req: ApiRequest,
+	res: ApiResponseWriter,
 	ctx: ApiContext,
 ): Promise<void> {
 	const raw = await readBody(req);

@@ -17,7 +17,7 @@ export function ProjectHubWidget() {
 	const plugin = usePlugin();
 
 	const projects = useComputed((): FlatProject[] => {
-		cards.value;
+		void cards.value;
 		const archived = archivedSourceUids.value;
 		if (!plugin.cardStore) return [];
 
@@ -71,7 +71,7 @@ export function ProjectHubWidget() {
 					stats={stats}
 					depth={depth}
 					onClickName={() => {
-						plugin.app.workspace.openLinkText(stats.path, "", false);
+						void plugin.app.workspace.openLinkText(stats.path, "", false);
 					}}
 					onReview={() => {
 						plugin

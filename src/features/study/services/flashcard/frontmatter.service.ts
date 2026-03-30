@@ -123,11 +123,9 @@ export class FrontmatterService {
 		await this.app.fileManager.processFrontMatter(
 			file,
 			(fm: Record<string, unknown>) => {
-				const existing: string[] = Array.isArray(fm.parents)
-					? (fm.parents as string[])
-					: [];
+				const existing: string[] = Array.isArray(fm.parents) ? fm.parents : [];
 				const names = new Set(
-					existing.map((p) => (p as string).replace(/^\[\[|\]\]$/g, "")),
+					existing.map((p) => p.replace(/^\[\[|\]\]$/g, "")),
 				);
 				if (!names.has(parentName)) {
 					existing.push(`[[${parentName}]]`);
@@ -141,13 +139,15 @@ export class FrontmatterService {
 		await this.app.fileManager.processFrontMatter(
 			file,
 			(fm: Record<string, unknown>) => {
-				const existing: string[] = Array.isArray(fm.parents)
-					? (fm.parents as string[])
-					: [];
-				fm.parents = existing.filter(
-					(p) => (p as string).replace(/^\[\[|\]\]$/g, "") !== parentName,
+				const existing: string[] = Array.isArray(fm.parents) ? fm.parents : [];
+				const filtered = existing.filter(
+					(p) => p.replace(/^\[\[|\]\]$/g, "") !== parentName,
 				);
-				if ((fm.parents as string[]).length === 0) delete fm.parents;
+				if (filtered.length === 0) {
+					delete fm.parents;
+				} else {
+					fm.parents = filtered;
+				}
 			},
 		);
 	}

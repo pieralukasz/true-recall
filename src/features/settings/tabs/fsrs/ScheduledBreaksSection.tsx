@@ -6,6 +6,7 @@ import {
 	FormField,
 	InfoBlock,
 } from "@shared/ui/components";
+import { useApp } from "@shared/ui/preact";
 import { useCallback } from "preact/hooks";
 
 interface ScheduledBreaksSectionProps {
@@ -19,6 +20,7 @@ export function ScheduledBreaksSection({
 	save,
 	onRefresh,
 }: ScheduledBreaksSectionProps) {
+	const app = useApp();
 	const breaks = settings.scheduledBreaks;
 
 	const handleDeleteBreak = useCallback(
@@ -32,24 +34,35 @@ export function ScheduledBreaksSection({
 	);
 
 	const handleAddBreak = useCallback(async () => {
-		const startDate = prompt("Start date (YYYY-MM-DD):");
-		const endDate = prompt("End date (YYYY-MM-DD):");
-		if (startDate && endDate) {
-			await save({
-				scheduledBreaks: [
-					...breaks,
-					{
-						id: crypto.randomUUID(),
-						startDate,
-						endDate,
-						redistributeBefore: true,
-						redistributeAfter: true,
-					},
-				],
-			});
-			onRefresh();
-		}
-	}, [breaks, save, onRefresh]);
+		const { promptText } = await import("@shared/ui/modals/TextInputModal");
+		const startDate = await promptText(app, {
+			title: "Add scheduled break",
+			label: "Start date (YYYY-MM-DD)",
+			placeholder: "YYYY-MM-DD",
+		});
+		if (!startDate) return;
+
+		const endDate = await promptText(app, {
+			title: "Add scheduled break",
+			label: "End date (YYYY-MM-DD)",
+			placeholder: "YYYY-MM-DD",
+		});
+		if (!endDate) return;
+
+		await save({
+			scheduledBreaks: [
+				...breaks,
+				{
+					id: crypto.randomUUID(),
+					startDate,
+					endDate,
+					redistributeBefore: true,
+					redistributeAfter: true,
+				},
+			],
+		});
+		onRefresh();
+	}, [app, breaks, save, onRefresh]);
 
 	return (
 		<FormCard title="Scheduled breaks">
@@ -73,7 +86,7 @@ export function ScheduledBreaksSection({
 							<Clickable
 								class="ep:text-ui-small"
 								stopPropagation={false}
-								onClick={() => handleDeleteBreak(index)}
+								onClick={() => void handleDeleteBreak(index)}
 							>
 								Delete
 							</Clickable>
@@ -89,7 +102,7 @@ export function ScheduledBreaksSection({
 				<ActionButton
 					label="Add break..."
 					variant="secondary"
-					onClick={handleAddBreak}
+					onClick={() => void handleAddBreak()}
 				/>
 			</FormField>
 		</FormCard>

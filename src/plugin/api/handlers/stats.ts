@@ -1,13 +1,12 @@
-import type { IncomingMessage, ServerResponse } from "http";
 import { formatLocalDate } from "@shared/utils";
-import type { ApiContext } from "../api.types";
+import type { ApiContext, ApiRequest, ApiResponseWriter } from "../api.types";
 import { sendError, sendOk } from "../api.types";
 
-export async function handleGetSummary(
-	_req: IncomingMessage,
-	res: ServerResponse,
+export function handleGetSummary(
+	_req: ApiRequest,
+	res: ApiResponseWriter,
 	ctx: ApiContext,
-): Promise<void> {
+): void {
 	if (!ctx.plugin.isStoreReady()) {
 		sendError(res, 503, "Database not ready");
 		return;
@@ -52,11 +51,11 @@ export async function handleGetSummary(
 	});
 }
 
-export async function handleGetDailyStats(
-	req: IncomingMessage,
-	res: ServerResponse,
+export function handleGetDailyStats(
+	req: ApiRequest,
+	res: ApiResponseWriter,
 	ctx: ApiContext,
-): Promise<void> {
+): void {
 	if (!ctx.plugin.isStoreReady()) {
 		sendError(res, 503, "Database not ready");
 		return;
@@ -105,11 +104,11 @@ export async function handleGetDailyStats(
 	sendOk(res, { days });
 }
 
-export async function handleGetPatterns(
-	_req: IncomingMessage,
-	res: ServerResponse,
+export function handleGetPatterns(
+	_req: ApiRequest,
+	res: ApiResponseWriter,
 	ctx: ApiContext,
-): Promise<void> {
+): void {
 	if (!ctx.plugin.isStoreReady()) {
 		sendError(res, 503, "Database not ready");
 		return;

@@ -1,3 +1,4 @@
+import { cn } from "@shared/ui/utils";
 import type { ComponentChildren } from "preact";
 
 export interface StatBadgeProps {
@@ -9,7 +10,10 @@ export interface StatBadgeProps {
 export function StatBadge({ label, count, colorCls }: StatBadgeProps) {
 	return (
 		<div
-			class={`ep:bg-obs-secondary ep:rounded-md ep:p-2 ep:text-center ${colorCls ?? ""}`}
+			class={cn(
+				"ep:bg-surface-raised ep:rounded-md ep:p-2 ep:text-center",
+				colorCls,
+			)}
 		>
 			<div class="ep:text-lg ep:font-bold">{count}</div>
 			<div class="ep:text-ui-smaller ep:text-obs-muted">{label}</div>

@@ -35,15 +35,13 @@ export function ImportStudioApp({
 }: ImportStudioAppProps) {
 	const app = useApp();
 	const plugin = usePlugin();
-	const prefs = useMemo(() => loadImportStudioPrefs(), []);
+	const prefs = useMemo(() => loadImportStudioPrefs(app), [app]);
 
 	const editorRef = useRef<EmbeddableEditorInstance | null>(null);
 	const focusedEditorRef = useRef<FormattingTargetRef | null>(null);
 
 	const [text, setText] = useState("");
-	const [noteTypeId, _setNoteTypeId] = useState(
-		defaultNoteTypeId ?? prefs.lastNoteTypeId,
-	);
+	const [noteTypeId] = useState(defaultNoteTypeId ?? prefs.lastNoteTypeId);
 	const [sessionCount, setSessionCount] = useState(0);
 	const [saving, setSaving] = useState(false);
 
@@ -103,10 +101,13 @@ export function ImportStudioApp({
 
 	// Handlers
 
-	const handleSourceNoteChange = useCallback((note: TFile | null) => {
-		setSelectedSourceNote(note);
-		saveImportStudioPrefs({ lastSourceNotePath: note?.path ?? "" });
-	}, []);
+	const handleSourceNoteChange = useCallback(
+		(note: TFile | null) => {
+			setSelectedSourceNote(note);
+			saveImportStudioPrefs(app, { lastSourceNotePath: note?.path ?? "" });
+		},
+		[app],
+	);
 
 	const resolveSourceUid = useCallback(async (): Promise<
 		string | undefined

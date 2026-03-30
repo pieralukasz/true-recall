@@ -1,3 +1,4 @@
+import { cn } from "@shared/ui/utils";
 import type { ComponentChildren } from "preact";
 import { useState } from "preact/hooks";
 
@@ -24,7 +25,10 @@ export function PasteDropZone({
 		<div
 			role="button"
 			tabIndex={0}
-			class={`ep:flex ep:flex-col ep:items-center ep:justify-center ep:p-6 ep:mb-4 ep:border-2 ep:border-dashed ep:rounded-lg ep:cursor-pointer ep:transition-all ep:hover:border-obs-interactive ep:bg-transparent ep:font-inherit ep:w-full ${dragActive ? "true-recall-paste-zone-active" : "ep:border-obs-border"}`}
+			class={cn(
+				"ep:flex ep:flex-col ep:items-center ep:justify-center ep:p-6 ep:mb-4 ep:border-2 ep:border-dashed ep:rounded-lg ep:cursor-pointer ep:transition-all ep:hover:border-obs-interactive ep:bg-transparent ep:font-inherit ep:w-full",
+				dragActive ? "true-recall-paste-zone-active" : "ep:border-obs-border",
+			)}
 			onDragOver={(e) => {
 				e.preventDefault();
 				setDragActive(true);

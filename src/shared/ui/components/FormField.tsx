@@ -1,3 +1,4 @@
+import { cn } from "@shared/ui/utils";
 import type { ComponentChildren } from "preact";
 
 export interface FormFieldProps {
@@ -15,7 +16,10 @@ export function FormField({
 }: FormFieldProps) {
 	return (
 		<div
-			class={`ep:flex ep:items-center ep:justify-between ep:gap-4 ep:py-3 ep:border-b ep:border-obs-border last:ep:border-b-0 ${cls ?? ""}`}
+			class={cn(
+				"ep:flex ep:items-center ep:justify-between ep:gap-4 ep:py-3 ep:border-b ep:border-obs-border last:ep:border-b-0",
+				cls,
+			)}
 		>
 			<div class="ep:flex ep:flex-col ep:min-w-0">
 				<span class="ep:text-ui-small ep:font-medium ep:text-obs-normal">

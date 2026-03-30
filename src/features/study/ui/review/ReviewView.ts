@@ -408,7 +408,7 @@ export class ReviewView extends ItemView {
 		if (this.isRatingLocked()) return;
 		this.isProcessingAnswer = true;
 		try {
-			await this.answerHandler.handleAnswer(rating);
+			this.answerHandler.handleAnswer(rating);
 			const nextCardId = this.review.getCurrentCard()?.id ?? null;
 			this.resetTypeInState(nextCardId);
 		} finally {
@@ -429,7 +429,7 @@ export class ReviewView extends ItemView {
 		this.resetTypeInState();
 
 		await super.setState(state, result);
-		await this.startSession();
+		this.startSession();
 	}
 
 	getState() {
@@ -600,7 +600,7 @@ export class ReviewView extends ItemView {
 		}));
 	}
 
-	private async handlePresetChange(newPresetName: string): Promise<void> {
+	private handlePresetChange(newPresetName: string): void {
 		const card = this.review.getCurrentCard();
 		if (!card) return;
 
@@ -633,7 +633,7 @@ export class ReviewView extends ItemView {
 
 	// ─── Session lifecycle ───────────────────────────────────────────────
 
-	async startSession(): Promise<void> {
+	startSession(): void {
 		const container = this.containerEl.children[1];
 		if (!(container instanceof HTMLElement)) return;
 

@@ -55,8 +55,7 @@ function parseCardObject(
 	const fields: Record<string, string> = {};
 	let hasContent = false;
 	for (const fieldName of noteType.fields) {
-		const value =
-			typeof obj[fieldName] === "string" ? (obj[fieldName] as string) : "";
+		const value = typeof obj[fieldName] === "string" ? obj[fieldName] : "";
 		fields[fieldName] = value;
 		if (value.trim()) hasContent = true;
 	}

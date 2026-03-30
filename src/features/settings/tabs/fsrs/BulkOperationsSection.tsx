@@ -94,7 +94,7 @@ export function BulkOperationsSection({ plugin }: BulkOperationsSectionProps) {
 					label={rescheduling ? "Calculating..." : "Preview reschedule"}
 					variant="secondary"
 					disabled={rescheduling}
-					onClick={handleReschedule}
+					onClick={() => void handleReschedule()}
 				/>
 			</FormField>
 
@@ -113,7 +113,7 @@ export function BulkOperationsSection({ plugin }: BulkOperationsSectionProps) {
 					disabled={postponing}
 					onClick={() => {
 						const days = parseInt(postponeDays, 10) || 7;
-						return executePostpone(() =>
+						void executePostpone(() =>
 							plugin.fsrsHelper?.shiftDueDates({
 								action: "postpone",
 								days,

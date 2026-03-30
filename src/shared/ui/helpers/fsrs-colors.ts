@@ -1,4 +1,4 @@
-import { State } from "ts-fsrs";
+import { Rating, State } from "ts-fsrs";
 
 // ── Types ────────────────────────────────────────────────────
 
@@ -12,6 +12,8 @@ export interface FsrsColorConfig {
 	textCls: string;
 	bgCls: string;
 	badgeCls: string;
+	borderCls: string;
+	chipCls: string;
 }
 
 // ── Canonical state → color mapping ──────────────────────────
@@ -27,6 +29,9 @@ export const FSRS_COLORS = {
 		textCls: "ep:text-obs-green",
 		bgCls: "ep:bg-obs-green/10",
 		badgeCls: "ep:bg-obs-green/15 ep:text-obs-green",
+		borderCls: "ep:border-obs-green/30",
+		chipCls:
+			"ep:bg-obs-green/15 ep:text-obs-green ep:border ep:border-obs-green/30",
 	},
 	learning: {
 		cssVar: "--color-orange",
@@ -34,6 +39,9 @@ export const FSRS_COLORS = {
 		textCls: "ep:text-obs-orange",
 		bgCls: "ep:bg-obs-orange/10",
 		badgeCls: "ep:bg-obs-orange/15 ep:text-obs-orange",
+		borderCls: "ep:border-obs-orange/30",
+		chipCls:
+			"ep:bg-obs-orange/15 ep:text-obs-orange ep:border ep:border-obs-orange/30",
 	},
 	relearning: {
 		cssVar: "--color-orange",
@@ -41,6 +49,9 @@ export const FSRS_COLORS = {
 		textCls: "ep:text-obs-orange",
 		bgCls: "ep:bg-obs-orange/10",
 		badgeCls: "ep:bg-obs-orange/15 ep:text-obs-orange",
+		borderCls: "ep:border-obs-orange/30",
+		chipCls:
+			"ep:bg-obs-orange/15 ep:text-obs-orange ep:border ep:border-obs-orange/30",
 	},
 	review: {
 		cssVar: "--color-blue",
@@ -48,6 +59,9 @@ export const FSRS_COLORS = {
 		textCls: "ep:text-obs-blue",
 		bgCls: "ep:bg-obs-blue/10",
 		badgeCls: "ep:bg-obs-blue/15 ep:text-obs-blue",
+		borderCls: "ep:border-obs-blue/30",
+		chipCls:
+			"ep:bg-obs-blue/15 ep:text-obs-blue ep:border ep:border-obs-blue/30",
 	},
 	suspended: {
 		cssVar: "--color-red",
@@ -55,6 +69,9 @@ export const FSRS_COLORS = {
 		textCls: "ep:text-obs-error",
 		bgCls: "ep:bg-obs-red/10",
 		badgeCls: "ep:bg-obs-red/15 ep:text-obs-error",
+		borderCls: "ep:border-obs-red/30",
+		chipCls:
+			"ep:bg-obs-red/15 ep:text-obs-error ep:border ep:border-obs-red/30",
 	},
 } as const satisfies Record<string, FsrsColorConfig>;
 
@@ -88,3 +105,33 @@ export function fsrsStateToCssVar(state: State): string {
 export function fsrsStateToColorName(state: State): FsrsColorName | null {
 	return fsrsStateToColor(state)?.name ?? null;
 }
+
+// ── Rating → color mapping (Again/Hard/Good/Easy) ──────────
+
+export interface RatingColorConfig {
+	borderCls: string;
+	hoverBgCls: string;
+}
+
+export const RATING_COLORS: Record<Rating, RatingColorConfig> = {
+	[Rating.Manual]: {
+		borderCls: "ep:border-obs-border/30",
+		hoverBgCls: "ep:hover:bg-obs-modifier-hover",
+	},
+	[Rating.Again]: {
+		borderCls: "ep:border-obs-red/30",
+		hoverBgCls: "ep:hover:bg-obs-red/10",
+	},
+	[Rating.Hard]: {
+		borderCls: "ep:border-obs-orange/30",
+		hoverBgCls: "ep:hover:bg-obs-orange/10",
+	},
+	[Rating.Good]: {
+		borderCls: "ep:border-obs-green/30",
+		hoverBgCls: "ep:hover:bg-obs-green/10",
+	},
+	[Rating.Easy]: {
+		borderCls: "ep:border-obs-cyan/30",
+		hoverBgCls: "ep:hover:bg-obs-cyan/10",
+	},
+};

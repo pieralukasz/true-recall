@@ -62,13 +62,13 @@ export function FormPhase({
 				<OptionCheckbox
 					label="Include scheduling data"
 					description="Export review history and card progress"
-					initialChecked={includeScheduling}
+					checked={includeScheduling}
 					onChange={setIncludeScheduling}
 				/>
 				<OptionCheckbox
 					label="Include media"
 					description="Export images and audio files"
-					initialChecked={includeMedia}
+					checked={includeMedia}
 					onChange={setIncludeMedia}
 				/>
 			</div>

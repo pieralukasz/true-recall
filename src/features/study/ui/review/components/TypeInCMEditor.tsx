@@ -57,8 +57,7 @@ export function TypeInCMEditor({
 			editorRef.current = null;
 			editor.destroy();
 		};
-		// Stable deps only; value/placeholder sync handled below.
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- only recreate editor on mount or editor class change; value/placeholder sync handled by separate effects
 	}, [app, plugin.EmbeddableEditor]);
 
 	useLayoutEffect(() => {

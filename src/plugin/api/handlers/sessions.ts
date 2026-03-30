@@ -1,5 +1,4 @@
-import type { IncomingMessage, ServerResponse } from "http";
-import type { ApiContext } from "../api.types";
+import type { ApiContext, ApiRequest, ApiResponseWriter } from "../api.types";
 import { parseJsonBody, readBody, sendError, sendOk } from "../api.types";
 
 interface StartSessionInput {
@@ -19,8 +18,8 @@ interface StartSessionInput {
 }
 
 export async function handleStartSession(
-	req: IncomingMessage,
-	res: ServerResponse,
+	req: ApiRequest,
+	res: ApiResponseWriter,
 	ctx: ApiContext,
 ): Promise<void> {
 	if (!ctx.plugin.isStoreReady()) {

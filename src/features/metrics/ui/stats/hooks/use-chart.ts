@@ -60,7 +60,7 @@ export function useChart<T extends keyof ChartTypeRegistry>(
 			chartRef.current?.destroy();
 			chartRef.current = null;
 		};
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- deps are passed dynamically by the caller; static analysis cannot verify them
 	}, deps);
 
 	// Rebuild on Obsidian theme change (dark ↔ light toggles class on body)
@@ -89,6 +89,6 @@ export function useChart<T extends keyof ChartTypeRegistry>(
 		});
 
 		return () => observer.disconnect();
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- configFactory is intentionally excluded; MutationObserver recreates chart using latest factory ref
 	}, []);
 }

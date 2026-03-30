@@ -3,6 +3,7 @@ import { cards, cardsBySourceUid } from "@shared/services/reactive-card-store";
 import { Clickable } from "@shared/ui/components";
 import { FSRS_COLORS } from "@shared/ui/helpers/fsrs-colors";
 import { usePlugin } from "@shared/ui/preact";
+import { State } from "ts-fsrs";
 import { WidgetCta } from "../WidgetCta";
 
 interface UnassignedNote {
@@ -17,7 +18,7 @@ export function UnassignedNotesWidget() {
 	const plugin = usePlugin();
 
 	const notes = useComputed((): UnassignedNote[] => {
-		cards.value;
+		void cards.value;
 
 		const unassignedPaths = plugin.hierarchyService.getUnassignedPaths();
 
@@ -43,9 +44,14 @@ export function UnassignedNotesWidget() {
 				if (fsrs.buriedUntil && new Date(fsrs.buriedUntil) > now) continue;
 				activeCount++;
 
-				if (fsrs.state === 0) newCount++;
-				else if (fsrs.state === 1 || fsrs.state === 3) dueCount++;
-				else if (fsrs.state === 2 && new Date(fsrs.due) <= now) dueCount++;
+				if (fsrs.state === State.New) newCount++;
+				else if (
+					fsrs.state === State.Learning ||
+					fsrs.state === State.Relearning
+				)
+					dueCount++;
+				else if (fsrs.state === State.Review && new Date(fsrs.due) <= now)
+					dueCount++;
 			}
 
 			const file = plugin.app.vault.getAbstractFileByPath(path);

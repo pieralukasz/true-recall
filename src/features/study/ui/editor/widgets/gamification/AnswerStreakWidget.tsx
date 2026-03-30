@@ -38,7 +38,7 @@ export function AnswerStreakWidget({ source }: { source: string }) {
 	const config = useMemo(() => parseCodeblockConfig(source), [source]);
 
 	const data = useComputed(() => {
-		cards.value;
+		void cards.value;
 		const stats = plugin.cardStore?.stats;
 		if (!stats) return null;
 		return stats.getAnswerStreakInfo();

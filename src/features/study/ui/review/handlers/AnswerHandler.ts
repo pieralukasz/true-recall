@@ -122,7 +122,7 @@ export class AnswerHandler {
 		return result;
 	}
 
-	async handleAnswer(rating: Grade): Promise<void> {
+	handleAnswer(rating: Grade): void {
 		const review = this.deps.getReview();
 		const card = review.getCurrentCard();
 		if (!card) return;
@@ -322,10 +322,7 @@ export class AnswerHandler {
 		}
 	}
 
-	async handleUndoAnswer(
-		payload: AnswerUndoPayload,
-		writeCancelled: boolean,
-	): Promise<void> {
+	handleUndoAnswer(payload: AnswerUndoPayload, writeCancelled: boolean): void {
 		try {
 			if (!writeCancelled) {
 				this.deps.sessionPersistence.removeLastReview(

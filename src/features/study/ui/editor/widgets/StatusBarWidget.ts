@@ -14,8 +14,9 @@ import {
 import type { FSRSFlashcardItem } from "@shared/types/fsrs";
 import type { FSRSPreset } from "@shared/types/settings.types";
 import { FSRS_COLORS } from "@shared/ui/helpers/fsrs-colors";
+import { State } from "ts-fsrs";
 
-const DOT = ' <span style="opacity:0.3; margin: 0 2px">·</span> ';
+const DOT = " \u00B7 ";
 
 interface StatusBarServices {
 	presetService: PresetService;
@@ -63,14 +64,14 @@ export function aggregateCardsWithPresetLimits(
 		}
 
 		switch (fsrs.state) {
-			case 0:
+			case State.New:
 				bucket.newRaw++;
 				break;
-			case 1:
-			case 3:
+			case State.Learning:
+			case State.Relearning:
 				bucket.learning++;
 				break;
-			case 2:
+			case State.Review:
 				if (new Date(fsrs.due) <= now) bucket.dueRaw++;
 				break;
 		}
@@ -113,15 +114,16 @@ export class StatusBarWidget {
 		private services?: StatusBarServices,
 	) {
 		this.el.addClass("true-recall-status-bar");
+		// eslint-disable-next-line @obsidianmd/no-direct-style-mutation -- Obsidian status bar element requires imperative styling
 		this.el.style.cursor = "pointer";
 		this.el.addEventListener("click", this.onClickDue);
 	}
 
 	start(): void {
 		this.disposer = effect(() => {
-			allCardsArray.value;
-			pluginSettings.value;
-			archivedSourceUids.value;
+			void allCardsArray.value;
+			void pluginSettings.value;
+			void archivedSourceUids.value;
 			this.render();
 		});
 	}
@@ -133,30 +135,52 @@ export class StatusBarWidget {
 		}
 
 		const global = this.aggregateGlobal();
-		const parts: string[] = [];
+
+		interface Part {
+			text: string;
+			cssVar: string;
+		}
+		const parts: Part[] = [];
 
 		if (global.newCount > 0) {
-			parts.push(
-				`<span style="color: var(${FSRS_COLORS.new.cssVar})">${global.newCount} new</span>`,
-			);
+			parts.push({
+				text: `${global.newCount} new`,
+				cssVar: FSRS_COLORS.new.cssVar,
+			});
 		}
 		if (global.learning > 0) {
-			parts.push(
-				`<span style="color: var(${FSRS_COLORS.learning.cssVar})">${global.learning} lrn</span>`,
-			);
+			parts.push({
+				text: `${global.learning} lrn`,
+				cssVar: FSRS_COLORS.learning.cssVar,
+			});
 		}
 		if (global.dueToday > 0) {
-			parts.push(
-				`<span style="color: var(${FSRS_COLORS.review.cssVar})">${global.dueToday} due</span>`,
-			);
+			parts.push({
+				text: `${global.dueToday} due`,
+				cssVar: FSRS_COLORS.review.cssVar,
+			});
 		}
 
+		this.el.empty();
+
 		if (parts.length === 0) {
-			this.el.innerHTML = '<span style="opacity:0.5">✓ All done</span>';
+			this.el.createSpan({
+				text: "\u2713 All done",
+				cls: "true-recall-status-done",
+			});
 			return;
 		}
 
-		this.el.innerHTML = parts.join(DOT);
+		parts.forEach((part, i) => {
+			if (i > 0) {
+				this.el.createSpan({
+					text: DOT,
+					cls: "true-recall-status-dot",
+				});
+			}
+			const span = this.el.createSpan({ text: part.text });
+			span.style.setProperty("color", `var(${part.cssVar})`);
+		});
 	}
 
 	private aggregateGlobal(): {
@@ -209,14 +233,14 @@ export class StatusBarWidget {
 			)
 				continue;
 			switch (fsrs.state) {
-				case 0:
+				case State.New:
 					newCount++;
 					break;
-				case 1:
-				case 3:
+				case State.Learning:
+				case State.Relearning:
 					learning++;
 					break;
-				case 2:
+				case State.Review:
 					if (new Date(fsrs.due) <= now) dueToday++;
 					break;
 			}

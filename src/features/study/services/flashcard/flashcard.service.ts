@@ -163,7 +163,7 @@ export class FlashcardManager {
 		return this.sourceNoteService;
 	}
 
-	async scanVault(): Promise<ScanResult> {
+	scanVault(): ScanResult {
 		if (!this.store) {
 			throw new Error("Store not initialized");
 		}
@@ -274,37 +274,35 @@ export class FlashcardManager {
 		);
 	}
 
-	async addSingleFlashcard(
+	addSingleFlashcard(
 		question: string,
 		answer: string,
 		sourceUid?: string,
-	): Promise<FSRSFlashcardItem> {
+	): FSRSFlashcardItem {
 		return this.addSingleFlashcardToSql(question, answer, sourceUid);
 	}
 
-	async addSingleFlashcardToSql(
+	addSingleFlashcardToSql(
 		question: string,
 		answer: string,
 		sourceUid?: string,
-	): Promise<FSRSFlashcardItem> {
+	): FSRSFlashcardItem {
 		if (!this.cardRepository) {
 			throw new Error("Card store not initialized");
 		}
 		return this.cardRepository.create(question, answer, sourceUid);
 	}
 
-	async removeFlashcard(cardId: string): Promise<boolean> {
+	removeFlashcard(cardId: string): boolean {
 		return this.removeFlashcardById(cardId);
 	}
 
-	async removeFlashcardById(cardId: string): Promise<boolean> {
-		const result = await this.removeFlashcardByIdWithDetails(cardId);
+	removeFlashcardById(cardId: string): boolean {
+		const result = this.removeFlashcardByIdWithDetails(cardId);
 		return result.ok;
 	}
 
-	async removeFlashcardByIdWithDetails(
-		cardId: string,
-	): Promise<DeleteFlashcardsResult> {
+	removeFlashcardByIdWithDetails(cardId: string): DeleteFlashcardsResult {
 		if (!this.cardRepository) {
 			return {
 				ok: false,

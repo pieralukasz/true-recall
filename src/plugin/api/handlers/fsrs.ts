@@ -1,12 +1,11 @@
-import type { IncomingMessage, ServerResponse } from "http";
-import type { ApiContext } from "../api.types";
+import type { ApiContext, ApiRequest, ApiResponseWriter } from "../api.types";
 import { parseJsonBody, readBody, sendError, sendOk } from "../api.types";
 
-export async function handleGetPresets(
-	_req: IncomingMessage,
-	res: ServerResponse,
+export function handleGetPresets(
+	_req: ApiRequest,
+	res: ApiResponseWriter,
 	ctx: ApiContext,
-): Promise<void> {
+): void {
 	const presets = ctx.plugin.presetService.getPresets();
 	const defaultId = ctx.plugin.settings.defaultPresetId;
 
@@ -40,8 +39,8 @@ interface CreatePresetInput {
 }
 
 export async function handleCreatePreset(
-	req: IncomingMessage,
-	res: ServerResponse,
+	req: ApiRequest,
+	res: ApiResponseWriter,
 	ctx: ApiContext,
 ): Promise<void> {
 	const raw = await readBody(req);
@@ -75,11 +74,11 @@ export async function handleCreatePreset(
 	sendOk(res, { id: preset.id, name: preset.name });
 }
 
-export async function handleGetFsrsStats(
-	req: IncomingMessage,
-	res: ServerResponse,
+export function handleGetFsrsStats(
+	req: ApiRequest,
+	res: ApiResponseWriter,
 	ctx: ApiContext,
-): Promise<void> {
+): void {
 	if (!ctx.plugin.isStoreReady()) {
 		sendError(res, 503, "Database not ready");
 		return;

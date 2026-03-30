@@ -1,5 +1,9 @@
-import type { IncomingMessage, ServerResponse } from "http";
-import type { ApiContext, RouteHandler } from "./api.types";
+import type {
+	ApiContext,
+	ApiRequest,
+	ApiResponseWriter,
+	RouteHandler,
+} from "./api.types";
 import { CORS_HEADERS, sendError } from "./api.types";
 import {
 	handleCreateBackup,
@@ -24,12 +28,17 @@ import {
 	handleGetProblemCards,
 	handleListCards,
 } from "./handlers/cards";
-import { handleGetDashboard, handleGetProjects } from "./handlers/dashboard";
+import {
+	handleGetDashboard,
+	handleGetProject,
+	handleGetProjects,
+} from "./handlers/dashboard";
 import {
 	handleCreatePreset,
 	handleGetFsrsStats,
 	handleGetPresets,
 } from "./handlers/fsrs";
+import { handleGetFullContext } from "./handlers/full-context";
 import { handleGenerate, handleGetNoteTypes } from "./handlers/generate";
 import { handleOpenNote, handleOpenView } from "./handlers/navigation";
 import {
@@ -38,8 +47,12 @@ import {
 	handleSetParent,
 	handleSetPresetForNote,
 } from "./handlers/notes";
-import { handleGetFullContext } from "./handlers/full-context";
 import { handleGetSchema, handleQuerySql } from "./handlers/query";
+import {
+	handleRagIndex,
+	handleRagSearch,
+	handleRagStatus,
+} from "./handlers/rag";
 import { handleGradeCard } from "./handlers/review";
 import {
 	handleGradeSessionCard,
@@ -124,6 +137,7 @@ const routes: Route[] = [
 	// Dashboard & Projects
 	route("GET", "/dashboard", handleGetDashboard),
 	route("GET", "/projects", handleGetProjects),
+	route("GET", "/project", handleGetProject),
 
 	// FSRS
 	route("GET", "/presets", handleGetPresets),
@@ -148,11 +162,16 @@ const routes: Route[] = [
 	// Query
 	route("POST", "/query", handleQuerySql),
 	route("GET", "/schema", handleGetSchema),
+
+	// RAG / Knowledge Base
+	route("POST", "/rag/search", handleRagSearch),
+	route("POST", "/rag/index", handleRagIndex),
+	route("GET", "/rag/status", handleRagStatus),
 ];
 
 export async function dispatch(
-	req: IncomingMessage,
-	res: ServerResponse,
+	req: ApiRequest,
+	res: ApiResponseWriter,
 	ctx: ApiContext,
 ): Promise<void> {
 	const method = req.method ?? "GET";

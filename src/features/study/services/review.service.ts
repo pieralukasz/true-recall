@@ -770,17 +770,17 @@ export class ReviewService {
 		return { updatedCard, result };
 	}
 
-	async gradeCard(
+	gradeCard(
 		card: FSRSFlashcardItem,
 		rating: Grade,
 		fsrsService: FSRSService,
 		flashcardManager: FlashcardManager,
 		responseTime: number = 0,
-	): Promise<{
+	): {
 		updatedCard: FSRSFlashcardItem;
 		result: ReviewResult;
 		persisted: boolean;
-	}> {
+	} {
 		// 1. Calculate new FSRS data
 		const { updatedCard, result } = this.processAnswer(
 			card,
@@ -999,8 +999,8 @@ export class ReviewService {
 		);
 		const sortedDays = [...uniqueDays]
 			.map((key) => {
-				const [y, m, d] = key.split("-").map(Number);
-				const date = new Date(y!, m!, d!);
+				const [y = 0, m = 0, d = 1] = key.split("-").map(Number);
+				const date = new Date(y, m, d);
 				date.setHours(0, 0, 0, 0);
 				return date.getTime();
 			})
