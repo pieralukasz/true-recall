@@ -7,7 +7,7 @@ export interface UseLongPressOptions {
 
 export interface UseLongPressResult {
 	handlers: {
-		onPointerDown: () => void;
+		onPointerDown: (e: PointerEvent) => void;
 		onPointerUp: () => void;
 		onPointerCancel: () => void;
 	};
@@ -36,15 +36,19 @@ export function useLongPress({
 		};
 	}, []);
 
-	const onPointerDown = useCallback(() => {
-		const lp = ref.current;
-		lp.wasLongPress = false;
-		lp.timer = setTimeout(() => {
-			lp.wasLongPress = true;
-			lp.timer = null;
-			onLongPress();
-		}, delay);
-	}, [onLongPress, delay]);
+	const onPointerDown = useCallback(
+		(e: PointerEvent) => {
+			if (e.button !== 0) return;
+			const lp = ref.current;
+			lp.wasLongPress = false;
+			lp.timer = setTimeout(() => {
+				lp.wasLongPress = true;
+				lp.timer = null;
+				onLongPress();
+			}, delay);
+		},
+		[onLongPress, delay],
+	);
 
 	const onPointerUp = useCallback(() => {
 		const lp = ref.current;

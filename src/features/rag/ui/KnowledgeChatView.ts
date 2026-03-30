@@ -1,6 +1,6 @@
 import { RagChatService } from "@features/rag/services/rag-chat.service";
+import { RagToolExecutor } from "@features/rag/services/rag-chat-tools";
 import { RagQueryService } from "@features/rag/services/rag-query.service";
-import { StudyDataGatherer } from "@features/rag/services/study-data-gatherer";
 import { VIEW_TYPE_KNOWLEDGE_CHAT } from "@shared/constants";
 import { mountPreact } from "@shared/ui/preact";
 import { ItemView, TFile, type WorkspaceLeaf } from "obsidian";
@@ -43,12 +43,13 @@ export class KnowledgeChatView extends ItemView {
 			const search = this.plugin.ragSearch;
 			if (!search) return;
 
-			const studyGatherer =
+			const toolExecutor =
 				this.plugin.cardStore &&
 				this.plugin.fsrsHelper &&
 				this.plugin.dayBoundaryService &&
 				this.plugin.hierarchyService
-					? new StudyDataGatherer(
+					? new RagToolExecutor(
+							search,
 							this.plugin.cardStore,
 							this.plugin.fsrsHelper,
 							this.plugin.flashcardManager,
@@ -63,7 +64,7 @@ export class KnowledgeChatView extends ItemView {
 				search,
 				() => this.plugin.settings,
 				this.plugin.frontmatterIndex,
-				studyGatherer,
+				toolExecutor,
 				contextResolver,
 			);
 			this.chatService = new RagChatService(query);

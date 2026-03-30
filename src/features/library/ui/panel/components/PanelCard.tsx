@@ -7,7 +7,6 @@ import {
 import type { FlashcardItem } from "@shared/types";
 import type { FSRSFlashcardItem } from "@shared/types/fsrs/card.types";
 import { Clickable } from "@shared/ui/components/Clickable";
-import { IconButton } from "@shared/ui/components/IconButton";
 import { MarkdownContent } from "@shared/ui/components/MarkdownContent";
 import { useApp } from "@shared/ui/preact/ObsidianContext";
 import {
@@ -240,6 +239,7 @@ export function PanelCard(props: PanelCardProps) {
 			)}
 			style={enterStyle}
 			onClick={handleRowClick}
+			onContextMenu={isSelectionMode ? undefined : handleMenuClick}
 			{...longPressHandlers}
 			onMouseEnter={onHoverSource}
 			onMouseLeave={onLeaveSource}
@@ -262,16 +262,6 @@ export function PanelCard(props: PanelCardProps) {
 					class="ep:flex-1 ep:text-ui-small ep:text-obs-normal true-recall-card-markdown"
 					onLinkClick={handleLinkClick}
 				/>
-
-				<div class="ep:flex ep:flex-col ep:items-center ep:justify-center ep:gap-1 ep:self-center">
-					<IconButton
-						icon="more-vertical"
-						ariaLabel="Card actions"
-						onClick={handleMenuClick}
-						size="small"
-						class="ep:opacity-30 ep:hover:opacity-100 ep:transition-opacity"
-					/>
-				</div>
 			</div>
 
 			{isExpanded && (
