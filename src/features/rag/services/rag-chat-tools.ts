@@ -86,8 +86,39 @@ export const RAG_CHAT_TOOLS: ToolDefinition[] = [
 		function: {
 			name: "get_session_analysis",
 			description:
-				"Analyze today's study session in detail: every card reviewed with ratings, which notes were studied, cards the user struggled with (rated Again), retention rate, and per-note breakdown.",
-			parameters: { type: "object", properties: {} },
+				"Analyze a study session in detail: every card reviewed with ratings, which notes were studied, cards the user struggled with (rated Again), retention rate, and per-note breakdown. Works for today or any past date.",
+			parameters: {
+				type: "object",
+				properties: {
+					date: {
+						type: "string",
+						description:
+							"Date in YYYY-MM-DD format. Defaults to today if omitted.",
+					},
+				},
+			},
+		},
+	},
+	{
+		type: "function",
+		function: {
+			name: "get_daily_stats",
+			description:
+				"Get daily statistics for a date range. Returns reviews completed, new cards studied, time spent, and rating breakdown (again/hard/good/easy) for each day. Use for questions about past days, yesterday, last week, specific dates, or historical trends.",
+			parameters: {
+				type: "object",
+				properties: {
+					start_date: {
+						type: "string",
+						description: "Start date in YYYY-MM-DD format",
+					},
+					end_date: {
+						type: "string",
+						description: "End date in YYYY-MM-DD format",
+					},
+				},
+				required: ["start_date", "end_date"],
+			},
 		},
 	},
 ];
@@ -129,7 +160,16 @@ export class RagToolExecutor {
 			case "get_study_patterns":
 				return { content: this.getStudyPatterns() };
 			case "get_session_analysis":
-				return { content: this.getSessionAnalysis() };
+				return {
+					content: this.getSessionAnalysis(args.date as string | undefined),
+				};
+			case "get_daily_stats":
+				return {
+					content: this.getDailyStats(
+						args.start_date as string,
+						args.end_date as string,
+					),
+				};
 			default:
 				return { content: `Unknown tool: ${call.function.name}` };
 		}
@@ -245,15 +285,15 @@ export class RagToolExecutor {
 		return JSON.stringify(patterns, null, 2);
 	}
 
-	private getSessionAnalysis(): string {
-		const today = formatLocalDate(new Date());
-		const dailyStats = this.cardStore.stats.getDailyStats(today);
+	private getSessionAnalysis(date?: string): string {
+		const targetDate = date || formatLocalDate(new Date());
+		const dailyStats = this.cardStore.stats.getDailyStats(targetDate);
 
 		if (!dailyStats || dailyStats.reviewsCompleted === 0) {
 			return JSON.stringify({
-				date: today,
+				date: targetDate,
 				hasData: false,
-				message: "No reviews completed today yet.",
+				message: `No reviews completed on ${targetDate}.`,
 			});
 		}
 
@@ -263,8 +303,8 @@ export class RagToolExecutor {
 				const card = this.cardStore.cards.get(id);
 				if (!card) return null;
 				const history = this.cardStore.stats.getCardReviewHistory(id, 5);
-				const todayReviews = history.filter(
-					(h) => formatLocalDate(new Date(h.t)) === today,
+				const dateReviews = history.filter(
+					(h) => formatLocalDate(new Date(h.t)) === targetDate,
 				);
 				return {
 					question: card.question ?? "",
@@ -273,7 +313,7 @@ export class RagToolExecutor {
 					difficulty: card.difficulty,
 					lapses: card.lapses,
 					sourceNoteName: card.sourceNoteName ?? "",
-					todayRatings: todayReviews.map((r) => r.r),
+					ratings: dateReviews.map((r) => r.r),
 				};
 			})
 			.filter(Boolean);
@@ -289,7 +329,7 @@ export class RagToolExecutor {
 
 		return JSON.stringify(
 			{
-				date: today,
+				date: targetDate,
 				hasData: true,
 				summary: {
 					reviewsCompleted: dailyStats.reviewsCompleted,
@@ -308,5 +348,40 @@ export class RagToolExecutor {
 			null,
 			2,
 		);
+	}
+
+	private getDailyStats(startDate: string, endDate: string): string {
+		const days: Array<{
+			date: string;
+			reviewsCompleted: number;
+			newCardsStudied: number;
+			totalTimeMs: number;
+			again: number;
+			hard: number;
+			good: number;
+			easy: number;
+		}> = [];
+
+		const current = new Date(startDate);
+		const end = new Date(endDate);
+		while (current <= end) {
+			const dateStr = formatLocalDate(current);
+			const stats = this.cardStore.stats.getDailyStats(dateStr);
+			if (stats) {
+				days.push({
+					date: stats.date,
+					reviewsCompleted: stats.reviewsCompleted,
+					newCardsStudied: stats.newCardsStudied,
+					totalTimeMs: stats.totalTimeMs,
+					again: stats.again,
+					hard: stats.hard,
+					good: stats.good,
+					easy: stats.easy,
+				});
+			}
+			current.setDate(current.getDate() + 1);
+		}
+
+		return JSON.stringify({ days }, null, 2);
 	}
 }

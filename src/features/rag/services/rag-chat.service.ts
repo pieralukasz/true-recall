@@ -29,10 +29,12 @@ export class RagChatService {
 			}
 
 			const sources = this.queryService.getLastSearchResults();
+			const toolCalls = this.queryService.getLastToolCalls();
 			this.history.push({
 				role: "assistant",
 				content: fullResponse,
 				sources,
+				toolCalls: toolCalls.length > 0 ? toolCalls : undefined,
 				timestamp: Date.now(),
 			});
 		} catch (e) {
