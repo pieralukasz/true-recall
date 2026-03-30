@@ -177,19 +177,32 @@ function AssistantMessage({
 			injectFlashcardUidLinks(el, navigation);
 		}
 
+		const onInternalLink = (e: MouseEvent) => {
+			const target = (e.target as HTMLElement).closest("a.internal-link");
+			if (!target) return;
+			e.preventDefault();
+			e.stopPropagation();
+			const href = target.getAttribute("data-href");
+			if (href) void app.workspace.openLinkText(href, "", false);
+		};
+		el.addEventListener("click", onInternalLink, true);
+
 		if (isStreaming) {
 			const cursor = document.createElement("span");
 			cursor.className = "ep-streaming-cursor";
 			el.appendChild(cursor);
 		}
 
-		return () => comp.unload();
+		return () => {
+			el.removeEventListener("click", onInternalLink, true);
+			comp.unload();
+		};
 	}, [app, content, sources, navigation, isStreaming]);
 
 	return (
 		<div
 			ref={ref}
-			class="ep:text-sm ep:leading-relaxed ep:select-text [&_p]:ep:my-2.5 [&_ul]:ep:my-2 [&_ul]:ep:pl-5 [&_ul]:ep:list-disc [&_ol]:ep:my-2 [&_ol]:ep:pl-5 [&_ol]:ep:list-decimal [&_li]:ep:my-1 [&_li]:ep:leading-relaxed [&_li>ul]:ep:mt-1 [&_li>ol]:ep:mt-1 [&_code]:ep:text-[0.85em] [&_code]:ep:bg-obs-modifier-hover [&_code]:ep:px-1 [&_code]:ep:py-px [&_code]:ep:rounded [&_pre]:ep:my-3 [&_pre]:ep:text-xs [&_pre]:ep:overflow-x-auto [&_pre]:ep:rounded-lg [&_pre]:ep:p-3 [&_pre]:ep:bg-obs-secondary [&_pre_code]:ep:bg-transparent [&_pre_code]:ep:px-0 [&_pre_code]:ep:py-0 [&_p:first-child]:ep:mt-0 [&_p:last-child]:ep:mb-0 [&_h1]:ep:mt-4 [&_h1]:ep:mb-2 [&_h1]:ep:font-semibold [&_h1]:ep:text-base [&_h2]:ep:mt-4 [&_h2]:ep:mb-1.5 [&_h2]:ep:font-semibold [&_h2]:ep:text-[0.95em] [&_h3]:ep:mt-3 [&_h3]:ep:mb-1 [&_h3]:ep:font-semibold [&_h3]:ep:text-[0.9em] [&_strong]:ep:font-semibold [&_blockquote]:ep:pl-3 [&_blockquote]:ep:border-l-2 [&_blockquote]:ep:border-obs-accent/30 [&_blockquote]:ep:my-3 [&_blockquote]:ep:text-obs-muted [&_hr]:ep:my-4 [&_hr]:ep:border-obs-border"
+			class="ep-chat-markdown ep:text-sm ep:leading-relaxed ep:select-text"
 		/>
 	);
 }
