@@ -1,4 +1,4 @@
-import type { NoteStatusInfo } from "@true-recall/obsidian/services/reactive-card-store";
+import type { NoteStatusInfo } from "@true-recall/obsidian/data";
 import { FSRS_COLORS } from "@true-recall/obsidian/helpers/fsrs-colors";
 import { Clickable } from "@true-recall/obsidian/preact";
 import { cva, type VariantProps } from "class-variance-authority";

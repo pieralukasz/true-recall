@@ -1,13 +1,7 @@
-import { batch, type ReadonlySignal, signal } from "@preact/signals";
+import { type ReadonlySignal, signal } from "@preact/signals";
 import type { HighlightColor } from "@true-recall/obsidian/helpers/fsrs-colors";
-import {
-	refreshCards,
-	removeCard,
-	removeCards,
-	updateCard,
-} from "@true-recall/obsidian/services/reactive-card-store";
 
-// ── Card mutation events ────────────────────────────────────
+// ── Card mutation types (used by session-helpers, ReviewView) ──
 
 export type CardMutationAction =
 	| "added"
@@ -106,70 +100,8 @@ export function getNormalizedCardMutationAction(
 	}
 }
 
-function applyIncrementalUpdate(mutation: CardMutation): void {
-	switch (mutation.type) {
-		case "added":
-		case "updated":
-		case "reviewed":
-			if (mutation.cardId) {
-				updateCard(mutation.cardId);
-			} else {
-				refreshCards();
-			}
-			break;
-		case "removed":
-			if (mutation.cardId) {
-				removeCard(mutation.cardId);
-			} else if (mutation.cardIds) {
-				removeCards(mutation.cardIds);
-			} else {
-				refreshCards();
-			}
-			break;
-		case "bulk":
-			if (mutation.cardIds && mutation.action === "removed") {
-				removeCards(mutation.cardIds);
-			} else if (mutation.cardIds) {
-				for (const id of mutation.cardIds) updateCard(id);
-			} else {
-				refreshCards();
-			}
-			break;
-		default:
-			refreshCards();
-	}
-}
-
-let reviewRefreshTimer: ReturnType<typeof setTimeout> | null = null;
-const REVIEW_REFRESH_DELAY_MS = 300;
-
-export function notifyCardChange(mutation: CardMutation): void {
-	const normalizedAction = normalizeCardMutationAction(mutation.action);
-	const normalizedMutation: CardMutation =
-		normalizedAction && normalizedAction !== mutation.action
-			? { ...mutation, action: normalizedAction }
-			: mutation;
-
-	// Set lastMutation first (consumers like ReviewView listen to this)
-	_lastMutation.value = normalizedMutation;
-
-	// Apply incremental card index update OUTSIDE the mutation signal
-	// to avoid "Cycle detected" when computed signals cascade.
-	if (normalizedMutation.type !== "reviewed") {
-		if (reviewRefreshTimer) {
-			clearTimeout(reviewRefreshTimer);
-			reviewRefreshTimer = null;
-		}
-		applyIncrementalUpdate(normalizedMutation);
-	} else {
-		// Debounced incremental refresh for "reviewed" so dashboard / panel
-		// header updates after rapid answering pauses.
-		if (reviewRefreshTimer) clearTimeout(reviewRefreshTimer);
-		reviewRefreshTimer = setTimeout(() => {
-			reviewRefreshTimer = null;
-			applyIncrementalUpdate(normalizedMutation);
-		}, REVIEW_REFRESH_DELAY_MS);
-	}
+export function setLastMutation(mutation: CardMutation): void {
+	_lastMutation.value = mutation;
 }
 
 // ── Source text highlight (Card → Text jump) ────────────────

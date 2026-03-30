@@ -1,9 +1,6 @@
 import { useComputed } from "@preact/signals";
-import {
-	allCardsArray,
-	cards,
-	cardsBySourceUid,
-} from "@true-recall/obsidian/services/reactive-card-store";
+import type { CardSchedulingMeta } from "@true-recall/core/types";
+import { Q, useQuery } from "@true-recall/obsidian/data";
 import { FSRS_COLORS } from "@true-recall/obsidian/helpers/fsrs-colors";
 import { usePlugin } from "@true-recall/obsidian/preact";
 import { useMemo } from "preact/hooks";
@@ -28,14 +25,18 @@ export function NoteHealthWidget({
 	source: string;
 }) {
 	const plugin = usePlugin();
+	const allMeta = useQuery<Map<string, CardSchedulingMeta>>(Q.ALL_META);
+	const cardsBySource = useQuery<Map<string, CardSchedulingMeta[]>>(
+		Q.CARDS_BY_SOURCE,
+	);
 
 	const config = useMemo(() => parseCodeblockConfig(source), [source]);
 
 	const data = useComputed((): NoteHealthData | null => {
-		void cards.value;
+		void allMeta.value;
 		if (!sourceUid) return null;
 
-		const noteCards = cardsBySourceUid.value.get(sourceUid) ?? [];
+		const noteCards = cardsBySource.value.get(sourceUid) ?? [];
 		if (noteCards.length === 0) return null;
 
 		const now = new Date();
@@ -46,7 +47,7 @@ export function NoteHealthWidget({
 		let dueCount = 0;
 
 		// Resolve note name from any card
-		const allFsrs = allCardsArray.value;
+		const allFsrs = [...allMeta.value.values()];
 		const noteCard = allFsrs.find((c) => c.fsrs.sourceUid === sourceUid);
 		const sourceNoteName = noteCard?.sourceNoteName ?? null;
 

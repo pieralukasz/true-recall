@@ -1,20 +1,20 @@
+import { effect } from "@preact/signals";
+import { VIEW_TYPE_FLASHCARD_PANEL } from "@true-recall/core/constants";
+import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
+import { CollectService } from "@true-recall/core/flashcard/lifecycle/collect.service";
+import type { FSRSFlashcardItem } from "@true-recall/core/types/fsrs/card.types";
+import { getDataLayer, Q } from "@true-recall/obsidian/data";
+import { extractHighlights } from "@true-recall/obsidian/features/library/ui/panel/utils/highlight-extractor";
+import { cardsToBlockText } from "@true-recall/obsidian/features/library/ui/panel/utils/panel-helpers";
+import { countCardsByState } from "@true-recall/obsidian/helpers";
+import { mountPreact } from "@true-recall/obsidian/preact/mount";
+import { notify } from "@true-recall/obsidian/services/notification.service";
+import { pushDeleteUndo } from "@true-recall/obsidian/services/undo.service";
+import type { PanelApi } from "@true-recall/obsidian/store";
 import {
 	FlashcardPanelApp,
 	type PanelAppActions,
 } from "@true-recall/obsidian/views/panel/FlashcardPanelApp";
-import { extractHighlights } from "@true-recall/obsidian/features/library/ui/panel/utils/highlight-extractor";
-import { cardsToBlockText } from "@true-recall/obsidian/features/library/ui/panel/utils/panel-helpers";
-import { CollectService } from "@true-recall/core/flashcard/lifecycle/collect.service";
-import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
-import { effect } from "@preact/signals";
-import { VIEW_TYPE_FLASHCARD_PANEL } from "@true-recall/core/constants";
-import { notify } from "@true-recall/obsidian/services/notification.service";
-import { cards, pluginSettings } from "@true-recall/obsidian/services/reactive-card-store";
-import { pushDeleteUndo } from "@true-recall/obsidian/services/undo.service";
-import type { PanelApi } from "@true-recall/obsidian/store";
-import type { FSRSFlashcardItem } from "@true-recall/core/types/fsrs/card.types";
-import { countCardsByState } from "@true-recall/obsidian/helpers";
-import { mountPreact } from "@true-recall/obsidian/preact/mount";
 import {
 	ItemView,
 	type Menu,
@@ -285,9 +285,12 @@ export class FlashcardPanelView extends ItemView {
 	}
 
 	private subscribeToDataChanges(): void {
+		const dl = getDataLayer();
+		const allMetaSig = dl.signal(Q.ALL_META);
+		const settingsSig = dl.signal(Q.SETTINGS);
 		this.signalDisposer = effect(() => {
-			void cards.value;
-			void pluginSettings.value;
+			void allMetaSig?.value;
+			void settingsSig?.value;
 			this.invalidateCardsCache();
 			this.scheduleHeaderStatsUpdate();
 			this.scheduleFlashcardInfoReload();
@@ -533,7 +536,9 @@ export class FlashcardPanelView extends ItemView {
 			return;
 
 		const count = state.flashcardInfo.flashcards.length;
-		const { confirm } = await import("@true-recall/obsidian/modals/shared/ConfirmModal");
+		const { confirm } = await import(
+			"@true-recall/obsidian/modals/shared/ConfirmModal"
+		);
 		const confirmed = await confirm(this.app, {
 			message: `Delete all ${count} flashcard(s) for this note?`,
 		});

@@ -8,11 +8,11 @@ import type {
 } from "@true-recall/core/types";
 import type { FSRSCardData } from "@true-recall/core/types/fsrs/card.types";
 import { BUILTIN_IMAGE_OCCLUSION_ID } from "@true-recall/core/types/note.types";
+import { mutate } from "@true-recall/obsidian/data";
 import type TrueRecallPlugin from "@true-recall/obsidian/main";
 import { MoveCardModal } from "@true-recall/obsidian/modals/shared";
 import { QuickNoteEditorModal } from "@true-recall/obsidian/modals/study/quick-note-editor/QuickNoteEditorModal";
 import { notify } from "@true-recall/obsidian/services/notification.service";
-import { notifyCardChange } from "@true-recall/obsidian/services/signals";
 import type { ReviewApi } from "@true-recall/obsidian/store";
 import type { App } from "obsidian";
 import { Rating, State } from "ts-fsrs";
@@ -144,11 +144,7 @@ export class CardActionsHandler {
 				this.deps.plugin.sessionPersistence?.removeReviewedCards(
 					forgettableIds,
 				);
-				notifyCardChange({
-					type: "bulk",
-					cardIds: forgettableIds,
-					action: "reset",
-				});
+				mutate("cards:bulk", () => {});
 			},
 		});
 

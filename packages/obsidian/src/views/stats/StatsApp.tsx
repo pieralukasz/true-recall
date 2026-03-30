@@ -7,8 +7,13 @@ import {
 } from "@true-recall/core/metrics/forecast-filter";
 import { buildSourceUidToPresetMap } from "@true-recall/core/metrics/stats/stats-filter.helpers";
 import type { StatsFilterContext } from "@true-recall/core/metrics/stats/stats-filter.types";
-import type { StatsTimeRange } from "@true-recall/core/types";
+import type {
+	CardSchedulingMeta,
+	StatsTimeRange,
+	TrueRecallSettings,
+} from "@true-recall/core/types";
 import { AppNavBar } from "@true-recall/obsidian/components";
+import { Q, useQuery } from "@true-recall/obsidian/data";
 import { HeatmapWidget } from "@true-recall/obsidian/editor/study/widgets/analytics/HeatmapWidget";
 import {
 	CardMaturitySection,
@@ -29,18 +34,18 @@ import {
 } from "@true-recall/obsidian/features/metrics/ui/stats/components";
 import { useStatsData } from "@true-recall/obsidian/features/metrics/ui/stats/hooks/use-stats-data";
 import { usePlugin } from "@true-recall/obsidian/preact";
-import {
-	allCardsArray,
-	archivedSourceUids as archivedSourceUidsSignal,
-	pluginSettings,
-} from "@true-recall/obsidian/services/reactive-card-store";
 import { useEffect, useMemo, useState } from "preact/hooks";
 
 export function StatsApp() {
 	const plugin = usePlugin();
+	const allMeta = useQuery<Map<string, CardSchedulingMeta>>(Q.ALL_META);
+	const settingsSignal = useQuery<TrueRecallSettings>(Q.SETTINGS);
+	const archivedSourceUidsSignal = useQuery<ReadonlySet<string>>(
+		Q.ARCHIVED_UIDS,
+	);
 	const timeRange = useSignal<StatsTimeRange>("1m");
-	const settings = pluginSettings.value;
-	const allCards = allCardsArray.value;
+	const settings = settingsSignal.value;
+	const allCards = [...allMeta.value.values()];
 	const [renderStage, setRenderStage] = useState(0);
 
 	const presetNames = settings.fsrsPresets.map((preset) => preset.name);

@@ -1,9 +1,9 @@
-import { ChangeNoteTypeModal } from "@true-recall/obsidian/modals/library/ChangeNoteTypeModal";
-import { notify } from "@true-recall/obsidian/services/notification.service";
-import { notifyCardChange } from "@true-recall/obsidian/services/signals";
-import { pushDeleteUndo } from "@true-recall/obsidian/services/undo.service";
 import { Clickable } from "@true-recall/obsidian/components";
+import { mutate } from "@true-recall/obsidian/data";
+import { ChangeNoteTypeModal } from "@true-recall/obsidian/modals/library/ChangeNoteTypeModal";
 import { useApp, usePlugin } from "@true-recall/obsidian/preact";
+import { notify } from "@true-recall/obsidian/services/notification.service";
+import { pushDeleteUndo } from "@true-recall/obsidian/services/undo.service";
 import { useCallback } from "preact/hooks";
 
 interface BulkActionsBarProps {
@@ -27,14 +27,14 @@ export function BulkActionsBar({
 
 	const handleSuspend = useCallback(() => {
 		const count = plugin.cardStore.cards.bulkSuspend(ids);
-		notifyCardChange({ type: "bulk", cardIds: ids, action: "suspend" });
+		mutate("card:suspended", () => {});
 		notify().success(`Suspended ${count} cards`);
 		onClearSelection();
 	}, [ids, plugin]);
 
 	const handleUnsuspend = useCallback(() => {
 		const count = plugin.cardStore.cards.bulkUnsuspend(ids);
-		notifyCardChange({ type: "bulk", cardIds: ids, action: "unsuspend" });
+		mutate("card:unsuspended", () => {});
 		notify().success(`Unsuspended ${count} cards`);
 		onClearSelection();
 	}, [ids, plugin]);
@@ -46,7 +46,7 @@ export function BulkActionsBar({
 			return;
 		}
 		plugin.sessionPersistence?.removeReviewedCards(ids);
-		notifyCardChange({ type: "bulk", cardIds: ids, action: "reset" });
+		mutate("card:reset", () => {});
 		notify().cardsForgotten(count);
 		onClearSelection();
 	}, [ids, plugin]);
@@ -102,7 +102,9 @@ export function BulkActionsBar({
 	}, [ids, plugin, app]);
 
 	const handleDelete = useCallback(async () => {
-		const { confirm } = await import("@true-recall/obsidian/modals/shared/ConfirmModal");
+		const { confirm } = await import(
+			"@true-recall/obsidian/modals/shared/ConfirmModal"
+		);
 		if (!(await confirm(app, { message: `Delete ${ids.length} cards?` })))
 			return;
 		const result =

@@ -1,13 +1,16 @@
-import { cards } from "@true-recall/obsidian/services/reactive-card-store";
+import type {
+	CardSchedulingMeta,
+	FlashcardInfo,
+} from "@true-recall/core/types";
+import type { FSRSFlashcardItem } from "@true-recall/core/types/fsrs/card.types";
+import { Q, useQuery } from "@true-recall/obsidian/data";
+import { usePlugin } from "@true-recall/obsidian/preact";
 import type {
 	PanelApi,
 	ProcessingStatus,
 	SelectionMode,
 	ViewMode,
 } from "@true-recall/obsidian/store";
-import type { FlashcardInfo } from "@true-recall/core/types";
-import type { FSRSFlashcardItem } from "@true-recall/core/types/fsrs/card.types";
-import { usePlugin } from "@true-recall/obsidian/preact";
 import type { TFile } from "obsidian";
 import { useEffect, useMemo, useState } from "preact/hooks";
 
@@ -102,7 +105,8 @@ export function usePanelStore(): PanelStoreResult {
 	}, [store]);
 
 	// ── Cards enriched with FSRS scheduling data ──
-	const cardsRef = cards.value;
+	const allMeta = useQuery<Map<string, CardSchedulingMeta>>(Q.ALL_META);
+	const cardsRef = allMeta.value;
 	const cardsWithFsrs = useMemo(() => {
 		if (!state.flashcardInfo?.flashcards) return [];
 		if (!plugin.flashcardManager.hasStore()) return [];

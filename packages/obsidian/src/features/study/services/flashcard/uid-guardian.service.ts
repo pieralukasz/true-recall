@@ -1,15 +1,15 @@
+import type { FrontmatterService } from "@true-recall/core/flashcard/source/frontmatter.service";
 import type { SessionPersistenceService } from "@true-recall/core/persistence/session/session-persistence.service";
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite/SqliteStoreService";
 import type {
 	FieldChangeEvent,
 	FrontmatterIndexService,
 } from "@true-recall/core/services/notes/frontmatter-index.service";
-import type { FrontmatterService } from "@true-recall/core/flashcard/source/frontmatter.service";
+import { mutate } from "@true-recall/obsidian/data";
+import { UidRemovedModal } from "@true-recall/obsidian/modals/study/UidRemovedModal";
 import { notify } from "@true-recall/obsidian/services/notification.service";
-import { notifyCardChange } from "@true-recall/obsidian/services/signals";
 import type { App } from "obsidian";
 import { TFile } from "obsidian";
-import { UidRemovedModal } from "@true-recall/obsidian/modals/study/UidRemovedModal";
 
 export interface UidGuardianDeps {
 	app: App;
@@ -57,7 +57,10 @@ export class UidGuardianService {
 		// VALUE CHANGED — auto-restore to prevent silent orphaning
 		if (event.newValues.length > 0 && event.newValues[0] !== removedUid) {
 			this.restoringPaths.add(event.path);
-			await this.deps.frontmatterService.setSourceNoteUid(file.path, removedUid);
+			await this.deps.frontmatterService.setSourceNoteUid(
+				file.path,
+				removedUid,
+			);
 			notify().info(
 				`flashcard_uid restored — ${cards.length} card${cards.length === 1 ? "" : "s"} protected`,
 			);
@@ -78,14 +81,17 @@ export class UidGuardianService {
 		switch (result.action) {
 			case "restore":
 				this.restoringPaths.add(event.path);
-				await this.deps.frontmatterService.setSourceNoteUid(file.path, removedUid);
+				await this.deps.frontmatterService.setSourceNoteUid(
+					file.path,
+					removedUid,
+				);
 				break;
 
 			case "delete": {
 				const cardIds = cards.map((c) => c.id);
 				this.deps.store.cards.bulkSoftDelete(cardIds);
 				this.deps.sessionPersistence.removeReviewedCards(cardIds);
-				notifyCardChange({ type: "bulk", cardIds, action: "removed" });
+				mutate("card:deleted", () => {});
 				notify().cardsDeleted(cardIds.length);
 				break;
 			}
@@ -112,8 +118,9 @@ export class UidGuardianService {
 			return;
 		}
 
-		let targetUid =
-			await this.deps.frontmatterService.getSourceNoteUid(targetFile.path);
+		let targetUid = await this.deps.frontmatterService.getSourceNoteUid(
+			targetFile.path,
+		);
 		if (!targetUid) {
 			targetUid = this.deps.frontmatterService.generateUid();
 			await this.deps.frontmatterService.setSourceNoteUid(
@@ -126,7 +133,7 @@ export class UidGuardianService {
 			this.deps.store.cards.updateCardSourceUid(cardId, targetUid);
 		}
 
-		notifyCardChange({ type: "bulk", cardIds, action: "update" });
+		mutate("card:updated", () => {});
 		notify().cardsMoved(cardIds.length, targetFile.basename);
 	}
 }

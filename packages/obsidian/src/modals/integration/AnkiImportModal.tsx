@@ -1,5 +1,13 @@
+import { AnkiConverterService } from "@true-recall/core/integration/anki/anki-converter.service";
+import { AnkiImportService } from "@true-recall/core/integration/anki/anki-import.service";
+import { ApkgParserService } from "@true-recall/core/integration/anki/apkg/apkg-parser.service";
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite/SqliteStoreService";
 import type { FSRSService } from "@true-recall/core/services/fsrs/fsrs.service";
+import type { ApkgData } from "@true-recall/core/types";
+import { ObsidianAnkiImportVault } from "@true-recall/obsidian/adapters/ObsidianAnkiImportVault";
+import { ObsidianPersistence } from "@true-recall/obsidian/adapters/ObsidianPersistence";
+import { ObsidianVaultFileReader } from "@true-recall/obsidian/adapters/ObsidianVaultFileReader";
+import { mutate } from "@true-recall/obsidian/data";
 import {
 	ErrorPhase,
 	FileSelectPhase,
@@ -9,14 +17,6 @@ import {
 	ProgressPhase,
 	ResultPhase,
 } from "@true-recall/obsidian/modals/integration/anki-import";
-import { AnkiConverterService } from "@true-recall/core/integration/anki/anki-converter.service";
-import { AnkiImportService } from "@true-recall/core/integration/anki/anki-import.service";
-import { ApkgParserService } from "@true-recall/core/integration/anki/apkg/apkg-parser.service";
-import { ObsidianAnkiImportVault } from "@true-recall/obsidian/adapters/ObsidianAnkiImportVault";
-import { ObsidianVaultFileReader } from "@true-recall/obsidian/adapters/ObsidianVaultFileReader";
-import { ObsidianPersistence } from "@true-recall/obsidian/adapters/ObsidianPersistence";
-import { notifyCardChange } from "@true-recall/obsidian/services/signals";
-import type { ApkgData } from "@true-recall/core/types";
 import { BaseModal } from "@true-recall/obsidian/modals/shared/BaseModal";
 import type { App } from "obsidian";
 import { render } from "preact";
@@ -174,7 +174,7 @@ export class AnkiImportModal extends BaseModal {
 				new ObsidianPersistence(this.app),
 				new ObsidianAnkiImportVault(this.app),
 				new ObsidianVaultFileReader(this.app),
-				(change) => notifyCardChange(change),
+				() => mutate("cards:imported", () => {}),
 			);
 
 			const topDeck = (this.deckNames[0] ?? "anki-import")

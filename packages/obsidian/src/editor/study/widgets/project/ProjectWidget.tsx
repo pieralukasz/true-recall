@@ -1,9 +1,7 @@
 import { useComputed } from "@preact/signals";
-import {
-	archivedSourceUids,
-	cards,
-} from "@true-recall/obsidian/services/reactive-card-store";
+import type { CardSchedulingMeta } from "@true-recall/core/types";
 import { Clickable } from "@true-recall/obsidian/components";
+import { Q, useQuery } from "@true-recall/obsidian/data";
 import { FSRS_COLORS } from "@true-recall/obsidian/helpers/fsrs-colors";
 import { usePlugin } from "@true-recall/obsidian/preact";
 import {
@@ -20,18 +18,20 @@ export function ProjectWidget({
 	sourcePath: string;
 }) {
 	const plugin = usePlugin();
+	const allMeta = useQuery<Map<string, CardSchedulingMeta>>(Q.ALL_META);
+	const archivedUids = useQuery<ReadonlySet<string>>(Q.ARCHIVED_UIDS);
 
 	// A note is a "project" if any note declares it as a parent
 	const isProject = useComputed(() => {
-		void cards.value;
-		void archivedSourceUids.value;
+		void allMeta.value;
+		void archivedUids.value;
 		const children = plugin.hierarchyService.getChildPaths(sourcePath);
 		return children.length > 0;
 	}).value;
 
 	const stats = useComputed((): ProjectStats | null => {
-		void cards.value;
-		const archived = archivedSourceUids.value;
+		void allMeta.value;
+		const archived = archivedUids.value;
 		if (!isProject || !plugin.cardStore) return null;
 
 		const file = plugin.app.vault.getAbstractFileByPath(sourcePath);

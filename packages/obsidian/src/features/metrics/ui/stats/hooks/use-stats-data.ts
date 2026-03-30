@@ -1,18 +1,15 @@
+import type { Signal } from "@preact/signals";
+import { useSignal } from "@preact/signals";
+import { getErrorMessage } from "@true-recall/core/errors";
 import type { TrueRetentionSnapshot } from "@true-recall/core/metrics/fsrs-tools/statistics/true-retention.calculator";
 import { StatsCalculatorService } from "@true-recall/core/metrics/stats/stats-calculator.service";
 import {
 	EMPTY_FILTER,
 	type StatsFilterContext,
 } from "@true-recall/core/metrics/stats/stats-filter.types";
-import type { Signal } from "@preact/signals";
-import { useSignal } from "@preact/signals";
-import { getErrorMessage } from "@true-recall/core/errors";
-import {
-	allCardsArray,
-	pluginSettings,
-} from "@true-recall/obsidian/services/reactive-card-store";
 import type {
 	CardMaturityBreakdown,
+	CardSchedulingMeta,
 	CardsCreatedEntry,
 	CollectionHealthSnapshot,
 	ExtendedDailyStats,
@@ -22,7 +19,9 @@ import type {
 	StatsTimeRange,
 	StreakInfo,
 	TodaySummary,
+	TrueRecallSettings,
 } from "@true-recall/core/types";
+import { Q, useQuery } from "@true-recall/obsidian/data";
 import { usePlugin } from "@true-recall/obsidian/preact";
 import { useEffect, useMemo } from "preact/hooks";
 
@@ -59,6 +58,8 @@ export function useStatsData(
 	error: string | null;
 } {
 	const plugin = usePlugin();
+	const allMeta = useQuery<Map<string, CardSchedulingMeta>>(Q.ALL_META);
+	const settingsSignal = useQuery<TrueRecallSettings>(Q.SETTINGS);
 	const loading = useSignal(true);
 	const data = useSignal<StatsData | null>(null);
 	const error = useSignal<string | null>(null);
@@ -79,8 +80,8 @@ export function useStatsData(
 		let cancelled = false;
 		loading.value = true;
 
-		const cards = allCardsArray.value;
-		void pluginSettings.value;
+		const cards = [...allMeta.value.values()];
+		void settingsSignal.value;
 		const range = timeRange.value;
 		const f = filter?.value;
 
@@ -151,8 +152,8 @@ export function useStatsData(
 			clearTimeout(timeoutId);
 		};
 	}, [
-		allCardsArray.value,
-		pluginSettings.value,
+		[...allMeta.value.values()],
+		settingsSignal.value,
 		timeRange.value,
 		filter?.value,
 		statsCalc,

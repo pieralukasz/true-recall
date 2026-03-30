@@ -1,5 +1,6 @@
 import { useComputed } from "@preact/signals";
-import { cards } from "@true-recall/obsidian/services/reactive-card-store";
+import type { CardSchedulingMeta } from "@true-recall/core/types";
+import { Q, useQuery } from "@true-recall/obsidian/data";
 import { usePlugin } from "@true-recall/obsidian/preact";
 import { useMemo } from "preact/hooks";
 import { configValue, parseCodeblockConfig } from "../config-parser";
@@ -13,6 +14,7 @@ function formatDateLabel(dateStr: string): string {
 
 export function ForecastWidget({ source }: { source: string }) {
 	const plugin = usePlugin();
+	const allMeta = useQuery<Map<string, CardSchedulingMeta>>(Q.ALL_META);
 
 	const config = useMemo(() => parseCodeblockConfig(source), [source]);
 
@@ -20,7 +22,7 @@ export function ForecastWidget({ source }: { source: string }) {
 	const showChart = configValue(config, "showChart", true);
 
 	const data = useComputed(() => {
-		void cards.value;
+		void allMeta.value;
 		if (!plugin.fsrsHelper) return null;
 
 		const summary = plugin.fsrsHelper.getWorkloadForecastSummary(days);

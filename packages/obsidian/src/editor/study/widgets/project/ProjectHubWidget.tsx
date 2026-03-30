@@ -1,9 +1,7 @@
-import type { HierarchyTreeNode } from "@true-recall/core/services/notes/hierarchy.service";
 import { useComputed } from "@preact/signals";
-import {
-	archivedSourceUids,
-	cards,
-} from "@true-recall/obsidian/services/reactive-card-store";
+import type { HierarchyTreeNode } from "@true-recall/core/services/notes/hierarchy.service";
+import type { CardSchedulingMeta } from "@true-recall/core/types";
+import { Q, useQuery } from "@true-recall/obsidian/data";
 import { usePlugin } from "@true-recall/obsidian/preact";
 import { computeProjectStats, type ProjectStats } from "../project-stats";
 import { ProjectCard } from "./ProjectWidget";
@@ -15,10 +13,12 @@ interface FlatProject {
 
 export function ProjectHubWidget() {
 	const plugin = usePlugin();
+	const allMeta = useQuery<Map<string, CardSchedulingMeta>>(Q.ALL_META);
+	const archivedUids = useQuery<ReadonlySet<string>>(Q.ARCHIVED_UIDS);
 
 	const projects = useComputed((): FlatProject[] => {
-		void cards.value;
-		const archived = archivedSourceUids.value;
+		void allMeta.value;
+		const archived = archivedUids.value;
 		if (!plugin.cardStore) return [];
 
 		const hierarchy = plugin.hierarchyService.buildHierarchy();

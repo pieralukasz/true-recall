@@ -1,6 +1,7 @@
 import { useComputed } from "@preact/signals";
-import { cards } from "@true-recall/obsidian/services/reactive-card-store";
+import type { CardSchedulingMeta } from "@true-recall/core/types";
 import { Clickable } from "@true-recall/obsidian/components";
+import { Q, useQuery } from "@true-recall/obsidian/data";
 import { usePlugin } from "@true-recall/obsidian/preact";
 import { useMemo } from "preact/hooks";
 import { configValue, parseCodeblockConfig } from "../config-parser";
@@ -34,11 +35,12 @@ const FLAMES: Record<Intensity, string> = {
 
 export function AnswerStreakWidget({ source }: { source: string }) {
 	const plugin = usePlugin();
+	const allMeta = useQuery<Map<string, CardSchedulingMeta>>(Q.ALL_META);
 
 	const config = useMemo(() => parseCodeblockConfig(source), [source]);
 
 	const data = useComputed(() => {
-		void cards.value;
+		void allMeta.value;
 		const stats = plugin.cardStore?.stats;
 		if (!stats) return null;
 		return stats.getAnswerStreakInfo();

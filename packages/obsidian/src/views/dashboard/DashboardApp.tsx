@@ -4,8 +4,13 @@ import { computePriority } from "@true-recall/core/helpers/note-priority";
 import { estimateStudyMinutes } from "@true-recall/core/helpers/time-estimate";
 import { StatsCalculatorService } from "@true-recall/core/metrics/stats/stats-calculator.service";
 import type { HierarchyService } from "@true-recall/core/services/notes/hierarchy.service";
+import type {
+	CardSchedulingMeta,
+	TrueRecallSettings,
+} from "@true-recall/core/types";
 import { AppNavBar } from "@true-recall/obsidian/components";
 import { SearchCombobox } from "@true-recall/obsidian/components/SearchCombobox";
+import { Q, useQuery } from "@true-recall/obsidian/data";
 import { HeatmapWidget } from "@true-recall/obsidian/editor/study/widgets/analytics/HeatmapWidget";
 import { computeActionableSessionSnapshot } from "@true-recall/obsidian/features/study/services/actionable-session-snapshot.service";
 import { BottomActionBar } from "@true-recall/obsidian/features/study/ui/dashboard/components/BottomActionBar";
@@ -25,16 +30,15 @@ import type {
 import { filterActiveCards } from "@true-recall/obsidian/features/study/ui/review/helpers/session-helpers";
 import { PresetOptionsModal } from "@true-recall/obsidian/modals/shared/PresetOptionsModal";
 import { usePlugin } from "@true-recall/obsidian/preact";
-import {
-	allCardsArray,
-	archivedSourceUids as archivedSourceUidsSignal,
-	hierarchyVersion,
-	pluginSettings,
-} from "@true-recall/obsidian/services/reactive-card-store";
 import { useCallback, useEffect, useMemo, useRef } from "preact/hooks";
 
 export function DashboardApp() {
 	const plugin = usePlugin();
+	const allMeta = useQuery<Map<string, CardSchedulingMeta>>(Q.ALL_META);
+	const settingsSignal = useQuery<TrueRecallSettings>(Q.SETTINGS);
+	const archivedSourceUidsSignal = useQuery<ReadonlySet<string>>(
+		Q.ARCHIVED_UIDS,
+	);
 	const activeTab = useSignal<DashboardTab>("projects");
 	const searchQuery = useSignal("");
 
@@ -52,10 +56,9 @@ export function DashboardApp() {
 	const showArchived = useSignal(false);
 
 	// Signal reads — subscribe component to reactive data changes
-	const allCards = allCardsArray.value;
-	const _settings = pluginSettings.value;
+	const allCards = [...allMeta.value.values()];
+	const _settings = settingsSignal.value;
 	const archived = archivedSourceUidsSignal.value;
-	const _hv = hierarchyVersion.value;
 
 	const cachedActiveCards = useMemo(
 		() =>
@@ -166,7 +169,7 @@ export function DashboardApp() {
 			if (!note.path) return true;
 			return !isNoteUnderArchivedHierarchy(note.path, plugin.hierarchyService);
 		});
-	}, [data.notes, plugin, showArchived.value, _hv]);
+	}, [data.notes, plugin, showArchived.value, allCards]);
 
 	const projectData = useMemo(() => {
 		return aggregateProjectData({

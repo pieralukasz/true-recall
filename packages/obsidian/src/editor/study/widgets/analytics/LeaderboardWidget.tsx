@@ -1,8 +1,9 @@
-import { StatsCalculatorService } from "@true-recall/core/metrics/stats/stats-calculator.service";
 import { useComputed } from "@preact/signals";
-import { allCardsArray, cards } from "@true-recall/obsidian/services/reactive-card-store";
+import { StatsCalculatorService } from "@true-recall/core/metrics/stats/stats-calculator.service";
+import type { CardSchedulingMeta } from "@true-recall/core/types";
 import type { NotePerformanceRow } from "@true-recall/core/types/fsrs/stats.types";
 import { Clickable } from "@true-recall/obsidian/components";
+import { Q, useQuery } from "@true-recall/obsidian/data";
 import { usePlugin } from "@true-recall/obsidian/preact";
 import { useMemo } from "preact/hooks";
 import { configValue, parseCodeblockConfig } from "../config-parser";
@@ -14,11 +15,12 @@ interface LeaderboardEntry extends NotePerformanceRow {
 
 export function LeaderboardWidget({ source }: { source: string }) {
 	const plugin = usePlugin();
+	const allMeta = useQuery<Map<string, CardSchedulingMeta>>(Q.ALL_META);
 
 	const config = useMemo(() => parseCodeblockConfig(source), [source]);
 
 	const data = useComputed((): LeaderboardEntry[] | null => {
-		void cards.value;
+		void allMeta.value;
 		if (!plugin.sessionPersistence) return null;
 
 		const statsCalc = new StatsCalculatorService(
@@ -35,7 +37,7 @@ export function LeaderboardWidget({ source }: { source: string }) {
 		const order = configValue(config, "order", "asc") as string;
 
 		// Resolve note names from sourceUid
-		const allCards = allCardsArray.value;
+		const allCards = [...allMeta.value.values()];
 		const uidToName = new Map<string, string>();
 		for (const card of allCards) {
 			if (card.fsrs.sourceUid && card.sourceNoteName) {

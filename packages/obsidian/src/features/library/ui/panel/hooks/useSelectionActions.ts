@@ -137,9 +137,7 @@ export function useSelectionActions() {
 		const { notify } = await import(
 			"@true-recall/obsidian/services/notification.service"
 		);
-		const { notifyCardChange } = await import(
-			"@true-recall/obsidian/services/signals"
-		);
+		const { mutate } = await import("@true-recall/obsidian/data");
 
 		const cardIds = Array.from(selectedCardIds);
 		const noteInfos = plugin.cardStore.cards.getNoteInfoForCardIds(cardIds);
@@ -187,11 +185,7 @@ export function useSelectionActions() {
 		const parts: string[] = [`${noteInfos.length} note(s) changed`];
 		if (totalCreated > 0) parts.push(`${totalCreated} cards created`);
 		if (totalDeleted > 0) parts.push(`${totalDeleted} cards removed`);
-		notifyCardChange({
-			type: "bulk",
-			cardIds,
-			action: "update",
-		});
+		mutate("card:updated", () => {});
 		notify().success(parts.join(", "));
 		panel.exitSelectionMode();
 	}, [flashcardInfo, selectedCardIds, app, plugin, panel]);
@@ -201,13 +195,11 @@ export function useSelectionActions() {
 		const { notify } = await import(
 			"@true-recall/obsidian/services/notification.service"
 		);
-		const { notifyCardChange } = await import(
-			"@true-recall/obsidian/services/signals"
-		);
+		const { mutate } = await import("@true-recall/obsidian/data");
 
 		const cardIds = Array.from(selectedCardIds);
 		const count = plugin.cardStore.cards.bulkSuspend(cardIds);
-		notifyCardChange({ type: "bulk", cardIds, action: "suspend" });
+		mutate("card:suspended", () => {});
 		panel.exitSelectionMode();
 		notify().success(`Suspended ${count} card(s)`);
 	}, [flashcardInfo, selectedCardIds, plugin, panel]);
@@ -217,13 +209,11 @@ export function useSelectionActions() {
 		const { notify } = await import(
 			"@true-recall/obsidian/services/notification.service"
 		);
-		const { notifyCardChange } = await import(
-			"@true-recall/obsidian/services/signals"
-		);
+		const { mutate } = await import("@true-recall/obsidian/data");
 
 		const cardIds = Array.from(selectedCardIds);
 		const count = plugin.cardStore.cards.bulkUnsuspend(cardIds);
-		notifyCardChange({ type: "bulk", cardIds, action: "unsuspend" });
+		mutate("card:unsuspended", () => {});
 		panel.exitSelectionMode();
 		notify().success(`Unsuspended ${count} card(s)`);
 	}, [flashcardInfo, selectedCardIds, plugin, panel]);
@@ -233,9 +223,7 @@ export function useSelectionActions() {
 		const { notify } = await import(
 			"@true-recall/obsidian/services/notification.service"
 		);
-		const { notifyCardChange } = await import(
-			"@true-recall/obsidian/services/signals"
-		);
+		const { mutate } = await import("@true-recall/obsidian/data");
 
 		const cardIds = Array.from(selectedCardIds);
 		const count = plugin.cardStore.cards.bulkForget(cardIds);
@@ -244,7 +232,7 @@ export function useSelectionActions() {
 			return;
 		}
 		plugin.sessionPersistence?.removeReviewedCards(cardIds);
-		notifyCardChange({ type: "bulk", cardIds, action: "reset" });
+		mutate("card:reset", () => {});
 		panel.exitSelectionMode();
 		notify().cardsForgotten(count);
 	}, [flashcardInfo, selectedCardIds, plugin, panel]);

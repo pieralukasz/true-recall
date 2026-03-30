@@ -1,10 +1,7 @@
 import { WorkloadForecastCalculator } from "@true-recall/core/metrics/fsrs-tools/statistics/workload-forecast.calculator";
 import { StatsCalculatorService } from "@true-recall/core/metrics/stats/stats-calculator.service";
-import {
-	cards,
-	cardsBySourceUid,
-	globalCounts,
-} from "@true-recall/obsidian/services/reactive-card-store";
+import type { CardSchedulingMeta } from "@true-recall/core/types";
+import { type GlobalCounts, Q, useQuery } from "@true-recall/obsidian/data";
 import { FSRS_COLORS } from "@true-recall/obsidian/helpers/fsrs-colors";
 import { usePlugin } from "@true-recall/obsidian/preact";
 import { useMemo } from "preact/hooks";
@@ -35,10 +32,12 @@ function formatDayLabel(date: Date): string {
 
 export function DashboardWidget() {
 	const plugin = usePlugin();
+	const globalCountsSignal = useQuery<GlobalCounts>(Q.GLOBAL_COUNTS);
+	const allMeta = useQuery<Map<string, CardSchedulingMeta>>(Q.ALL_META);
 
 	// Subscribe to reactive data changes
-	const _cards = cards.value;
-	const counts = globalCounts.value;
+	const _cards = allMeta.value;
+	const counts = globalCountsSignal.value;
 
 	// Cache service instances — avoid re-creating on every render
 	const { statsCalc, forecast } = useMemo(() => {
@@ -162,9 +161,13 @@ export function DashboardWidget() {
 }
 
 export function NoteStatsWidget({ sourceUid }: { sourceUid: string | null }) {
+	const allMeta = useQuery<Map<string, CardSchedulingMeta>>(Q.ALL_META);
+	const cardsBySource = useQuery<Map<string, CardSchedulingMeta[]>>(
+		Q.CARDS_BY_SOURCE,
+	);
 	// Subscribe to reactive data changes
-	const _cards = cards.value;
-	const bySourceUid = cardsBySourceUid.value;
+	const _cards = allMeta.value;
+	const bySourceUid = cardsBySource.value;
 
 	const data = useMemo(() => {
 		if (!sourceUid) return null;

@@ -1,5 +1,6 @@
+import type { FSRSCardData } from "@true-recall/core/types";
+import { mutate } from "@true-recall/obsidian/data";
 import { notify } from "@true-recall/obsidian/services/notification.service";
-import { notifyCardChange } from "@true-recall/obsidian/services/signals";
 import type {
 	AnswerUndoPayload,
 	BuryUndoPayload,
@@ -10,7 +11,6 @@ import type {
 	UpdateNoteFieldsUndoPayload,
 } from "@true-recall/obsidian/services/undo.types";
 import type { ReviewApi } from "@true-recall/obsidian/store";
-import type { FSRSCardData } from "@true-recall/core/types";
 import type TrueRecallPlugin from "../main";
 
 export interface ReviewUndoCallbacks {
@@ -153,7 +153,7 @@ export class UndoService {
 			// Restore the card using the store's set method
 			cardStore.set(cardData.id, cardData);
 
-			notifyCardChange({ type: "added", cardId: cardData.id });
+			mutate("card:created", () => {});
 
 			return true;
 		} catch (error) {
@@ -168,11 +168,7 @@ export class UndoService {
 			for (const cardData of cardsData) {
 				cardStore.set(cardData.id, cardData);
 			}
-			notifyCardChange({
-				type: "bulk",
-				cardIds: cardsData.map((c) => c.id),
-				action: "added",
-			});
+			mutate("cards:bulk", () => {});
 			return true;
 		} catch (error) {
 			console.error(
@@ -314,11 +310,7 @@ export class UndoService {
 				cardStore.cards.updateCardDue(change.cardId, change.originalDue);
 			}
 
-			notifyCardChange({
-				type: "bulk",
-				cardIds: payload.changes.map((c) => c.cardId),
-				action: "reschedule",
-			});
+			mutate("cards:bulk", () => {});
 
 			return true;
 		} catch (error) {

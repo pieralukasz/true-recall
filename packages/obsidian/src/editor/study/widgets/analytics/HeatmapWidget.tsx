@@ -1,6 +1,7 @@
-import { StatsCalculatorService } from "@true-recall/core/metrics/stats/stats-calculator.service";
 import { useComputed } from "@preact/signals";
-import { cards } from "@true-recall/obsidian/services/reactive-card-store";
+import { StatsCalculatorService } from "@true-recall/core/metrics/stats/stats-calculator.service";
+import type { CardSchedulingMeta } from "@true-recall/core/types";
+import { Q, useQuery } from "@true-recall/obsidian/data";
 import { usePlugin } from "@true-recall/obsidian/preact";
 import { useMemo, useRef, useState } from "preact/hooks";
 import { configValue, parseCodeblockConfig } from "../config-parser";
@@ -50,6 +51,7 @@ const LEVEL_OPACITIES = [1, 0.3, 0.5, 0.7, 1];
 
 export function HeatmapWidget({ source }: { source: string }) {
 	const plugin = usePlugin();
+	const allMeta = useQuery<Map<string, CardSchedulingMeta>>(Q.ALL_META);
 	const [tooltip, setTooltip] = useState<{
 		cell: HeatmapCell;
 		x: number;
@@ -60,7 +62,7 @@ export function HeatmapWidget({ source }: { source: string }) {
 	const config = useMemo(() => parseCodeblockConfig(source), [source]);
 
 	const data = useComputed((): HeatmapData | null => {
-		void cards.value;
+		void allMeta.value;
 		if (!plugin.sessionPersistence) return null;
 
 		const statsCalculator = new StatsCalculatorService(

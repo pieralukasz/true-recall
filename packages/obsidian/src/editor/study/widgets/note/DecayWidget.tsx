@@ -1,10 +1,7 @@
 import { useComputed } from "@preact/signals";
+import type { CardSchedulingMeta } from "@true-recall/core/types";
+import { Q, useQuery } from "@true-recall/obsidian/data";
 import { usePlugin } from "@true-recall/obsidian/preact";
-import {
-	allCardsArray,
-	cards,
-	cardsBySourceUid,
-} from "@true-recall/obsidian/services/reactive-card-store";
 import { useMemo } from "preact/hooks";
 import { State } from "ts-fsrs";
 import { configValue, parseCodeblockConfig } from "../config-parser";
@@ -35,14 +32,18 @@ export function DecayWidget({
 	source: string;
 }) {
 	const plugin = usePlugin();
+	const allMeta = useQuery<Map<string, CardSchedulingMeta>>(Q.ALL_META);
+	const cardsBySource = useQuery<Map<string, CardSchedulingMeta[]>>(
+		Q.CARDS_BY_SOURCE,
+	);
 
 	const config = useMemo(() => parseCodeblockConfig(source), [source]);
 
 	const data = useComputed((): DecayData | null => {
-		void cards.value;
+		void allMeta.value;
 		if (!sourceUid) return null;
 
-		const noteCards = cardsBySourceUid.value.get(sourceUid) ?? [];
+		const noteCards = cardsBySource.value.get(sourceUid) ?? [];
 		if (noteCards.length === 0) return null;
 
 		const now = new Date();
@@ -51,7 +52,7 @@ export function DecayWidget({
 		const sortBy = configValue(config, "sort", "retrievability") as string;
 
 		// Resolve note name
-		const allFsrs = allCardsArray.value;
+		const allFsrs = [...allMeta.value.values()];
 		const noteCard = allFsrs.find((c) => c.fsrs.sourceUid === sourceUid);
 		const sourceNoteName = noteCard?.sourceNoteName ?? null;
 

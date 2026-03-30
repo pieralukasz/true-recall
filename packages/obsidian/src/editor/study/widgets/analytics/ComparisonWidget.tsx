@@ -1,8 +1,9 @@
-import { StatsCalculatorService } from "@true-recall/core/metrics/stats/stats-calculator.service";
 import { useComputed } from "@preact/signals";
-import { cards } from "@true-recall/obsidian/services/reactive-card-store";
+import { StatsCalculatorService } from "@true-recall/core/metrics/stats/stats-calculator.service";
+import type { CardSchedulingMeta } from "@true-recall/core/types";
 import type { ExtendedDailyStats } from "@true-recall/core/types/fsrs/stats.types";
 import { Clickable } from "@true-recall/obsidian/components";
+import { Q, useQuery } from "@true-recall/obsidian/data";
 import { usePlugin } from "@true-recall/obsidian/preact";
 import { useMemo } from "preact/hooks";
 import { configValue, parseCodeblockConfig } from "../config-parser";
@@ -24,11 +25,12 @@ interface ComparisonData {
 
 export function ComparisonWidget({ source }: { source: string }) {
 	const plugin = usePlugin();
+	const allMeta = useQuery<Map<string, CardSchedulingMeta>>(Q.ALL_META);
 
 	const config = useMemo(() => parseCodeblockConfig(source), [source]);
 
 	const data = useComputed((): ComparisonData | null => {
-		void cards.value;
+		void allMeta.value;
 		if (!plugin.sessionPersistence) return null;
 
 		const statsCalc = new StatsCalculatorService(

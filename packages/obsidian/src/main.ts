@@ -10,9 +10,10 @@ import {
 	VIEW_TYPE_SIMULATOR,
 	VIEW_TYPE_STATS,
 } from "@true-recall/core/constants";
+import type { CardMutation as CoreCardMutation } from "@true-recall/core/events";
 import { onCardChange as onCoreCardChange } from "@true-recall/core/events";
-import { DeletionHandlerService } from "@true-recall/core/flashcard/lifecycle/deletion-handler.service";
 import { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
+import { DeletionHandlerService } from "@true-recall/core/flashcard/lifecycle/deletion-handler.service";
 import { DeviceDiscoveryService } from "@true-recall/core/integration/device/device-discovery.service";
 import { DeviceIdService } from "@true-recall/core/integration/device/device-id.service";
 import { FSRSHelperService } from "@true-recall/core/metrics/fsrs-tools";
@@ -25,16 +26,22 @@ import {
 	getDeviceDbFilename,
 	SAFETY_FLUSH_INTERVAL_MS,
 } from "@true-recall/core/persistence/sqlite/sqlite.types";
-import { DayBoundaryService } from "@true-recall/core/services/review/day-boundary.service";
-import { FrontmatterIndexService } from "@true-recall/core/services/notes/frontmatter-index.service";
 import { FSRSService } from "@true-recall/core/services/fsrs/fsrs.service";
+import { FrontmatterIndexService } from "@true-recall/core/services/notes/frontmatter-index.service";
 import { HierarchyService } from "@true-recall/core/services/notes/hierarchy.service";
 import { NoteTypeService } from "@true-recall/core/services/notes/note-type.service";
 import { PresetService } from "@true-recall/core/services/notes/preset.service";
+import { DayBoundaryService } from "@true-recall/core/services/review/day-boundary.service";
 import type { TrueRecallSettings } from "@true-recall/core/types";
 import { extractFSRSSettings } from "@true-recall/core/types";
 import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpClient";
 import { ObsidianPersistence } from "@true-recall/obsidian/adapters/ObsidianPersistence";
+import {
+	DataLayer,
+	G,
+	registerQueries as registerDataLayerQueries,
+	setDataLayer,
+} from "@true-recall/obsidian/data";
 import { createSelectionToolbarExtension } from "@true-recall/obsidian/editor/ai/SelectionToolbarPlugin";
 import {
 	createLinkStatusPostProcessor,
@@ -56,7 +63,6 @@ import {
 	normalizeSessionFilters,
 	type SessionFilters,
 } from "@true-recall/obsidian/features/study/ui/review/review.types";
-import { setQueryRuntime } from "@true-recall/obsidian/hooks/use-query";
 import { CardTypesEditorModal } from "@true-recall/obsidian/modals/core/card-types-editor/CardTypesEditorModal";
 import { NoteTypeSuggestModal } from "@true-recall/obsidian/modals/core/card-types-editor/NoteTypeSuggestModal";
 import { ImportStudioModal } from "@true-recall/obsidian/modals/core/import-studio/ImportStudioModal";
@@ -73,29 +79,8 @@ import {
 	type CustomStudyModalScope,
 } from "@true-recall/obsidian/modals/study/CustomStudyModal";
 import { QuickNoteEditorModal } from "@true-recall/obsidian/modals/study/quick-note-editor/QuickNoteEditorModal";
-import {
-	mapOldMutationType,
-	reconcileMutation,
-} from "@true-recall/obsidian/services/invalidation-map";
 import { notify } from "@true-recall/obsidian/services/notification.service";
-import { QueryRuntime } from "@true-recall/obsidian/services/query-runtime";
-import {
-	cards,
-	initCardStore,
-	initMetadataStore,
-	refreshCards,
-	refreshHierarchy,
-	refreshMetadata,
-	refreshSettings,
-} from "@true-recall/obsidian/services/reactive-card-store";
-import {
-	patchReviewedCard,
-	registerCoreQueries,
-} from "@true-recall/obsidian/services/register-queries";
-import {
-	lastMutation,
-	notifyCardChange as obsidianNotifyCardChange,
-} from "@true-recall/obsidian/services/signals";
+import { setLastMutation } from "@true-recall/obsidian/services/signals";
 import { UndoService } from "@true-recall/obsidian/services/undo.service";
 import { TrueRecallSettingTab } from "@true-recall/obsidian/settings";
 import { type AppStore, createAppStore } from "@true-recall/obsidian/store";
@@ -127,6 +112,23 @@ import {
 	activateView,
 	getView,
 } from "./plugin/ViewActivator";
+
+function mapCoreMutationToGroups(mutation: CoreCardMutation): string[] {
+	switch (mutation.type) {
+		case "reviewed":
+			return [G.DASHBOARD, G.STATS];
+		case "added":
+			return [G.CARDS, G.BROWSER, G.DASHBOARD, G.PANEL, G.STATS];
+		case "removed":
+			return [G.CARDS, G.BROWSER, G.DASHBOARD, G.PANEL, G.STATS];
+		case "updated":
+			return [G.CARDS, G.BROWSER, G.DASHBOARD, G.PANEL];
+		case "bulk":
+			return [G.CARDS, G.BROWSER, G.DASHBOARD, G.PANEL, G.REVIEW, G.STATS];
+		default:
+			return [G.CARDS, G.BROWSER, G.DASHBOARD, G.PANEL, G.REVIEW, G.STATS];
+	}
+}
 
 export default class TrueRecallPlugin extends Plugin {
 	settings!: TrueRecallSettings;
@@ -160,7 +162,7 @@ export default class TrueRecallPlugin extends Plugin {
 	ragSearch:
 		| import("@true-recall/core/rag/retrieval/rag-search.service").RagSearchService
 		| null = null;
-	queryRuntime: QueryRuntime | null = null;
+	dataLayer: DataLayer | null = null;
 	private _disposeCoreCardBridge: (() => void) | null = null;
 	private adapters!: ObsidianAdapters;
 	private _unloaded = false;
@@ -226,16 +228,18 @@ export default class TrueRecallPlugin extends Plugin {
 		});
 		this.frontmatterIndex.onFieldChange("parents", () => {
 			this.hierarchyService.invalidateGraph();
-			refreshHierarchy();
-			refreshMetadata();
+			this.dataLayer?.invalidateGroups(["cards", "dashboard", "review"]);
 		});
 		this.frontmatterIndex.onFieldChange("include", () => {
 			this.hierarchyService.invalidateGraph();
-			refreshHierarchy();
-			refreshMetadata();
+			this.dataLayer?.invalidateGroups(["cards", "dashboard", "review"]);
 		});
-		this.frontmatterIndex.onFieldChange("archive", () => refreshMetadata());
-		this.frontmatterIndex.onFieldChange("fsrs_preset", () => refreshMetadata());
+		this.frontmatterIndex.onFieldChange("archive", () =>
+			this.dataLayer?.invalidateGroups(["cards"]),
+		);
+		this.frontmatterIndex.onFieldChange("fsrs_preset", () =>
+			this.dataLayer?.invalidateGroups(["cards"]),
+		);
 		// Register Obsidian events that feed the platform-agnostic frontmatter index
 		this.registerEvent(
 			this.app.metadataCache.on("changed", (file, _data, cache) => {
@@ -265,15 +269,13 @@ export default class TrueRecallPlugin extends Plugin {
 			this.adapters.fileSystem,
 			resolveLink,
 		);
-		initMetadataStore(this.hierarchyService);
 
 		// Build index after metadataCache is fully loaded.
-		// Must be AFTER initMetadataStore so refreshMetadata() can populate archivedSourceUids.
+		// Must be AFTER hierarchy service init so DataLayer can populate archivedSourceUids.
 		// onLayoutReady fires synchronously if layout is already ready.
 		this.app.workspace.onLayoutReady(() => {
 			this.frontmatterIndex.rebuildIndex();
 			this.hierarchyService.invalidateGraph();
-			refreshMetadata();
 			this.checkForWhatsNew().catch(() => {});
 		});
 
@@ -436,8 +438,7 @@ export default class TrueRecallPlugin extends Plugin {
 			this.app.vault.on("delete", (file) => {
 				if (file instanceof TFile && file.extension === "md") {
 					this.hierarchyService.invalidateGraph();
-					refreshHierarchy();
-					refreshMetadata();
+					this.dataLayer?.invalidateGroups(["cards", "dashboard", "review"]);
 				}
 			}),
 		);
@@ -459,7 +460,7 @@ export default class TrueRecallPlugin extends Plugin {
 		this.backgroundBackupManager?.stop();
 		this.statusBarWidget?.dispose();
 		this.noteStatusCache?.dispose();
-		this.queryRuntime?.dispose();
+		this.dataLayer?.dispose();
 		this._disposeCoreCardBridge?.();
 
 		if (this.cardStore) {
@@ -513,8 +514,6 @@ export default class TrueRecallPlugin extends Plugin {
 			this.settings.defaultPresetId = "default";
 			await this.saveData(this.settings);
 		}
-
-		refreshSettings(this.settings);
 	}
 
 	async saveSettings(): Promise<void> {
@@ -538,8 +537,6 @@ export default class TrueRecallPlugin extends Plugin {
 		}
 		this.noteStatusCache?.bumpVersion();
 		this.hierarchyService.invalidateGraph();
-
-		refreshSettings(this.settings);
 	}
 
 	async activateView(): Promise<void> {
@@ -1005,52 +1002,21 @@ export default class TrueRecallPlugin extends Plugin {
 				}, SAFETY_FLUSH_INTERVAL_MS),
 			);
 
-			// Reactive card store: lightweight scheduling index mirrors SQLite
-			initCardStore({
-				getAllMeta: () =>
-					this.flashcardManager.getCardQueryService().getAllMeta(),
-				getMetaById: (id: string) =>
-					this.flashcardManager.getCardQueryService().getMetaById(id),
+			// DataLayer: unified reactive data layer (SQL → signals → UI)
+			const dl = new DataLayer();
+			this.dataLayer = dl;
+			setDataLayer(dl);
+			registerDataLayerQueries(dl, {
+				cardQuery: this.flashcardManager.getCardQueryService(),
+				hierarchy: this.hierarchyService,
+				getSettings: () => this.settings,
 			});
-			refreshCards();
 
-			// Bridge: core services call core/events.ts notifyCardChange,
-			// but the UI listens to obsidian/signals.ts notifyCardChange.
-			// Forward core mutations → obsidian signals so UI refreshes.
+			// Bridge: core mutations → DataLayer invalidation + lastMutation signal
 			this._disposeCoreCardBridge = onCoreCardChange((mutation) => {
-				obsidianNotifyCardChange(
-					mutation as Parameters<typeof obsidianNotifyCardChange>[0],
-				);
-			});
-
-			// QueryRuntime: new reactive query cache (runs alongside old signals during migration)
-			this.queryRuntime = new QueryRuntime();
-			setQueryRuntime(this.queryRuntime);
-			registerCoreQueries(this.queryRuntime, {
-				getAllCards: () => this.flashcardManager.getAllFSRSCards(),
-				getArchivedSourceUids: () =>
-					this.hierarchyService.getArchivedSourceUids(),
-			});
-
-			// Bridge: forward old signal mutations → QueryRuntime invalidation
-			// This runs both systems in parallel during migration.
-			const qr = this.queryRuntime;
-			effect(() => {
-				const m = lastMutation.value;
-				if (!m) return;
-				const ctx = mapOldMutationType(m);
-				if (!ctx) return;
-
-				// For review grades: patch single card instead of refetching 30k
-				if (ctx.type === "card:reviewed" && ctx.cardId) {
-					const updated = this.flashcardManager.getCardsByIds([ctx.cardId]);
-					const card = updated[0];
-					if (card) {
-						patchReviewedCard(qr, ctx.cardId, card);
-					}
-				}
-
-				reconcileMutation(qr, ctx);
+				setLastMutation(mutation as Parameters<typeof setLastMutation>[0]);
+				const groups = mapCoreMutationToGroups(mutation);
+				dl.invalidateGroups(groups);
 			});
 
 			const sCards = performance.now();
@@ -1075,16 +1041,14 @@ export default class TrueRecallPlugin extends Plugin {
 				this.backupService,
 				this.settings,
 				{
-					onCardsChanged: (cb) =>
-						effect(() => {
-							void cards.value;
+					onCardsChanged: (cb) => {
+						const allMetaSig = dl.signal("allMeta");
+						return effect(() => {
+							void allMetaSig?.value;
 							cb();
-						}),
-					onMutation: (cb) =>
-						effect(() => {
-							const m = lastMutation.value;
-							if (m) cb(m.type);
-						}),
+						});
+					},
+					onMutation: (cb) => onCoreCardChange((m) => cb(m.type)),
 				},
 			);
 
@@ -1121,7 +1085,7 @@ export default class TrueRecallPlugin extends Plugin {
 			const sEnd = performance.now();
 			console.debug(
 				`[True Recall Startup]   db.load: ${(sDbLoad - s0).toFixed(1)}ms` +
-					` | refreshCards: ${(sCards - sDbLoad).toFixed(1)}ms` +
+					` | dataLayer: ${(sCards - sDbLoad).toFixed(1)}ms` +
 					` | services: ${(sEnd - sCards).toFixed(1)}ms`,
 			);
 		} catch (error) {
@@ -1132,10 +1096,6 @@ export default class TrueRecallPlugin extends Plugin {
 
 	private initializeStore(): void {
 		this.store = createAppStore({
-			app: this.app,
-			cardStore: this.cardStore,
-			dayBoundaryService: this.dayBoundaryService,
-			frontmatterIndex: this.frontmatterIndex,
 			getSettings: () => this.settings,
 		});
 	}

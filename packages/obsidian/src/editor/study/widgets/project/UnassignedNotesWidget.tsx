@@ -1,6 +1,7 @@
 import { useComputed } from "@preact/signals";
-import { cards, cardsBySourceUid } from "@true-recall/obsidian/services/reactive-card-store";
+import type { CardSchedulingMeta } from "@true-recall/core/types";
 import { Clickable } from "@true-recall/obsidian/components";
+import { Q, useQuery } from "@true-recall/obsidian/data";
 import { FSRS_COLORS } from "@true-recall/obsidian/helpers/fsrs-colors";
 import { usePlugin } from "@true-recall/obsidian/preact";
 import { State } from "ts-fsrs";
@@ -16,15 +17,19 @@ interface UnassignedNote {
 
 export function UnassignedNotesWidget() {
 	const plugin = usePlugin();
+	const allMeta = useQuery<Map<string, CardSchedulingMeta>>(Q.ALL_META);
+	const cardsBySource = useQuery<Map<string, CardSchedulingMeta[]>>(
+		Q.CARDS_BY_SOURCE,
+	);
 
 	const notes = useComputed((): UnassignedNote[] => {
-		void cards.value;
+		void allMeta.value;
 
 		const unassignedPaths = plugin.hierarchyService.getUnassignedPaths();
 
 		const result: UnassignedNote[] = [];
 		const now = new Date();
-		const uidMap = cardsBySourceUid.value;
+		const uidMap = cardsBySource.value;
 
 		for (const path of unassignedPaths) {
 			const uids = plugin.frontmatterIndex.getValues("flashcard_uid", path);

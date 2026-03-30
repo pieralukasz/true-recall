@@ -1,4 +1,4 @@
-import { notifyCardChange } from "@true-recall/obsidian/services/signals";
+import { mutate } from "@true-recall/obsidian/data";
 import type { ApiContext, ApiRequest, ApiResponseWriter } from "../api.types";
 import { parseJsonBody, readBody, sendError, sendOk } from "../api.types";
 
@@ -38,7 +38,7 @@ export async function handleSuspendCard(
 		ctx.plugin.cardStore.cards.bulkUnsuspend([cardId]);
 	}
 
-	notifyCardChange({ type: "updated", cardId, changes: { suspended: true } });
+	mutate("card:updated", () => {});
 
 	sendOk(res, {
 		cardId,
@@ -116,14 +116,7 @@ export async function handleUpdateCard(
 	}
 
 	ctx.plugin.flashcardManager.updateNoteFields(noteId, updatedFields);
-	notifyCardChange({
-		type: "updated",
-		cardId,
-		changes: {
-			question: !!body.question,
-			answer: !!body.answer,
-		},
-	});
+	mutate("card:updated", () => {});
 
 	sendOk(res, {
 		cardId,
@@ -180,7 +173,7 @@ export async function handleBulkDelete(
 		body.card_ids,
 	);
 
-	notifyCardChange({ type: "bulk", cardIds: body.card_ids });
+	mutate("cards:bulk", () => {});
 	sendOk(res, { deleted: count, cardIds: body.card_ids });
 }
 
@@ -237,7 +230,7 @@ export async function handleRemoveCardsFromNote(
 	const ids = cards.map((c) => c.id);
 	const count = ctx.plugin.flashcardManager.removeFlashcardsByIds(ids);
 
-	notifyCardChange({ type: "bulk", cardIds: ids });
+	mutate("cards:bulk", () => {});
 	sendOk(res, { deleted: count, sourceUid, cardIds: ids });
 }
 
@@ -269,7 +262,7 @@ export async function handleBulkSuspend(
 		? ctx.plugin.cardStore.cards.bulkSuspend(body.card_ids)
 		: ctx.plugin.cardStore.cards.bulkUnsuspend(body.card_ids);
 
-	notifyCardChange({ type: "bulk", cardIds: body.card_ids });
+	mutate("cards:bulk", () => {});
 	sendOk(res, { affected: count, suspended: body.suspended });
 }
 
@@ -311,6 +304,6 @@ export async function handleBulkBury(
 
 	const count = ctx.plugin.cardStore.cards.bulkBury(body.card_ids, untilDate);
 
-	notifyCardChange({ type: "bulk", cardIds: body.card_ids });
+	mutate("cards:bulk", () => {});
 	sendOk(res, { buried: count, untilDate, cardIds: body.card_ids });
 }

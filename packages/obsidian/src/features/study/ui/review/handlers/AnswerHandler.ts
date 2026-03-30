@@ -11,10 +11,10 @@ import type {
 	LocalAnswerAssessment,
 	SemanticGradingResult,
 } from "@true-recall/core/types";
+import { mutate } from "@true-recall/obsidian/data";
 import type { SessionFilters } from "@true-recall/obsidian/features/study/ui/review/review.types";
 import type TrueRecallPlugin from "@true-recall/obsidian/main";
 import { notify } from "@true-recall/obsidian/services/notification.service";
-import { notifyCardChange } from "@true-recall/obsidian/services/signals";
 import type { AnswerUndoPayload } from "@true-recall/obsidian/services/undo.types";
 import type { ReviewApi } from "@true-recall/obsidian/store";
 import { type Grade, Rating, State } from "ts-fsrs";
@@ -257,12 +257,7 @@ export class AnswerHandler {
 				console.error("Error recording review to persistent storage:", error);
 			}
 
-			notifyCardChange({
-				type: "reviewed",
-				cardId: card.id,
-				rating: rating as number,
-				newState: updatedCard.fsrs.state,
-			});
+			mutate("card:reviewed", () => {});
 		}, 0);
 	}
 

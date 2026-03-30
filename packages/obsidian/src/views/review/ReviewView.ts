@@ -13,6 +13,7 @@ import {
 	type SemanticGradingResult,
 } from "@true-recall/core/types";
 import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpClient";
+import { G, getDataLayer } from "@true-recall/obsidian/data";
 import { computeActionableSessionSnapshot } from "@true-recall/obsidian/features/study/services/actionable-session-snapshot.service";
 import type { PresetPickerOption } from "@true-recall/obsidian/features/study/ui/review/components/PresetPopover";
 import {
@@ -44,7 +45,6 @@ import {
 } from "@true-recall/obsidian/features/study/ui/review/review.types";
 import { mountPreact } from "@true-recall/obsidian/preact";
 import { notify } from "@true-recall/obsidian/services/notification.service";
-import { refreshCards } from "@true-recall/obsidian/services/reactive-card-store";
 import { lastMutation } from "@true-recall/obsidian/services/signals";
 import type { ReviewApi } from "@true-recall/obsidian/store";
 import {
@@ -564,9 +564,8 @@ export class ReviewView extends ItemView {
 		this.unsubscribeFromSessionEvents();
 		this.unmountPreact?.();
 
-		// Sync card data signal with FSRS changes accumulated during review
-		// (skipped per-answer to avoid blocking rapid answers)
-		refreshCards();
+		// Sync card data after review session ends
+		getDataLayer().invalidateGroups([G.CARDS]);
 
 		if (this.openNoteAction) {
 			this.openNoteAction.remove();

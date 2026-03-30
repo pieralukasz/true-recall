@@ -2,8 +2,12 @@ import { type Signal, useSignal } from "@preact/signals";
 import { DuplicateQuestionError } from "@true-recall/core/flashcard/data/card-repository.service";
 import { parseSearchQuery } from "@true-recall/core/helpers/search-parser";
 import { CardBrowserQueryService } from "@true-recall/core/services/browser/card-browser-query.service";
-import type { FSRSFlashcardItem } from "@true-recall/core/types";
+import type {
+	FSRSFlashcardItem,
+	TrueRecallSettings,
+} from "@true-recall/core/types";
 import { AppNavBar } from "@true-recall/obsidian/components";
+import { Q, useQuery } from "@true-recall/obsidian/data";
 import { BrowserSidebar } from "@true-recall/obsidian/features/library/ui/browser/components/BrowserSidebar";
 import { BrowserToolbar } from "@true-recall/obsidian/features/library/ui/browser/components/BrowserToolbar";
 import { BulkActionsBar } from "@true-recall/obsidian/features/library/ui/browser/components/BulkActionsBar";
@@ -25,11 +29,8 @@ import {
 	type StateFilterValue,
 } from "@true-recall/obsidian/features/library/ui/browser/types";
 import { notifyDuplicateError } from "@true-recall/obsidian/features/library/ui/panel/utils/panel-helpers";
-import { useQuerySignal } from "@true-recall/obsidian/hooks/use-query";
 import { useApp, usePlugin } from "@true-recall/obsidian/preact";
 import { notify } from "@true-recall/obsidian/services/notification.service";
-import { QK } from "@true-recall/obsidian/services/query-keys";
-import { pluginSettings } from "@true-recall/obsidian/services/reactive-card-store";
 import { pushDeleteUndo } from "@true-recall/obsidian/services/undo.service";
 import { useCallback, useEffect, useMemo, useRef } from "preact/hooks";
 
@@ -45,6 +46,7 @@ export function CardBrowserApp({
 	filterOrphaned,
 }: CardBrowserAppProps) {
 	const plugin = usePlugin();
+	const settingsSignal = useQuery<TrueRecallSettings>(Q.SETTINGS);
 	const app = useApp();
 
 	const searchText = useSignal("");
@@ -88,11 +90,9 @@ export function CardBrowserApp({
 	);
 
 	// Signal reads — subscribe component to reactive data changes
-	const allCardsSignal = useQuerySignal<Map<string, FSRSFlashcardItem>>(
-		QK.ALL_CARDS,
-	);
+	const allCardsSignal = useQuery<Map<string, FSRSFlashcardItem>>(Q.ALL_META);
 	const allCards = allCardsSignal.value;
-	const _settings = pluginSettings.value;
+	const _settings = settingsSignal.value;
 	const searchTextVal = searchText.value;
 	const stateFiltersVal = stateFilters.value;
 	const sidebarFilterVal = sidebarFilter.value;

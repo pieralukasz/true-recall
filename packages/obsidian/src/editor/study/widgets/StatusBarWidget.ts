@@ -1,18 +1,18 @@
+import { effect } from "@preact/signals";
+import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
 import type {
 	PresetDailyProgress,
 	SessionPersistenceService,
 } from "@true-recall/core/persistence/session/session-persistence.service";
 import type { PresetService } from "@true-recall/core/services/notes/preset.service";
-import { computeActionableSessionSnapshot } from "@true-recall/obsidian/features/study/services/actionable-session-snapshot.service";
-import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
-import { effect } from "@preact/signals";
-import {
-	allCardsArray,
-	archivedSourceUids,
-	pluginSettings,
-} from "@true-recall/obsidian/services/reactive-card-store";
+import type {
+	CardSchedulingMeta,
+	TrueRecallSettings,
+} from "@true-recall/core/types";
 import type { FSRSFlashcardItem } from "@true-recall/core/types/fsrs";
 import type { FSRSPreset } from "@true-recall/core/types/settings.types";
+import { getDataLayer, Q } from "@true-recall/obsidian/data";
+import { computeActionableSessionSnapshot } from "@true-recall/obsidian/features/study/services/actionable-session-snapshot.service";
 import { FSRS_COLORS } from "@true-recall/obsidian/helpers/fsrs-colors";
 import { State } from "ts-fsrs";
 
@@ -120,10 +120,14 @@ export class StatusBarWidget {
 	}
 
 	start(): void {
+		const dl = getDataLayer();
+		const allMetaSig = dl.signal(Q.ALL_META);
+		const settingsSig = dl.signal(Q.SETTINGS);
+		const archivedSig = dl.signal(Q.ARCHIVED_UIDS);
 		this.disposer = effect(() => {
-			void allCardsArray.value;
-			void pluginSettings.value;
-			void archivedSourceUids.value;
+			void allMetaSig?.value;
+			void settingsSig?.value;
+			void archivedSig?.value;
 			this.render();
 		});
 	}
@@ -191,12 +195,19 @@ export class StatusBarWidget {
 		if (!this.services) return this.aggregateRaw();
 
 		const { presetService, sessionPersistence } = this.services;
-		const archived = archivedSourceUids.value;
+		const dl = getDataLayer();
+		const allMeta = dl.get<Map<string, CardSchedulingMeta>>(Q.ALL_META);
+		const archived =
+			dl.get<ReadonlySet<string>>(Q.ARCHIVED_UIDS) ?? new Set<string>();
+		const settings = dl.get<TrueRecallSettings>(Q.SETTINGS)!;
+		const allCards = allMeta
+			? ([...allMeta.values()] as FSRSFlashcardItem[])
+			: [];
 		const snapshot = computeActionableSessionSnapshot(
 			{
-				allCards: allCardsArray.value,
+				allCards,
 				archivedSourceUids: archived,
-				settings: pluginSettings.value,
+				settings,
 				sessionPersistence,
 				presetService,
 			},
@@ -216,8 +227,13 @@ export class StatusBarWidget {
 		newCount: number;
 		learning: number;
 	} {
-		const allCards = allCardsArray.value;
-		const archived = archivedSourceUids.value;
+		const dl = getDataLayer();
+		const allMeta = dl.get<Map<string, CardSchedulingMeta>>(Q.ALL_META);
+		const allCards = allMeta
+			? ([...allMeta.values()] as FSRSFlashcardItem[])
+			: [];
+		const archived =
+			dl.get<ReadonlySet<string>>(Q.ARCHIVED_UIDS) ?? new Set<string>();
 		const now = new Date();
 		let dueToday = 0;
 		let newCount = 0;

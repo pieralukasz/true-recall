@@ -1,7 +1,8 @@
 import { useComputed } from "@preact/signals";
-import { cards } from "@true-recall/obsidian/services/reactive-card-store";
+import type { CardSchedulingMeta } from "@true-recall/core/types";
 import type { ProblemCard } from "@true-recall/core/types/nl-query.types";
 import { Clickable } from "@true-recall/obsidian/components";
+import { Q, useQuery } from "@true-recall/obsidian/data";
 import { usePlugin } from "@true-recall/obsidian/preact";
 import { useMemo } from "preact/hooks";
 import { configValue, parseCodeblockConfig } from "../config-parser";
@@ -29,6 +30,7 @@ function getMetricLabel(card: ProblemCard): string {
 
 export function ProblemCardsWidget({ source }: { source: string }) {
 	const plugin = usePlugin();
+	const allMeta = useQuery<Map<string, CardSchedulingMeta>>(Q.ALL_META);
 
 	const config = useMemo(() => parseCodeblockConfig(source), [source]);
 
@@ -36,7 +38,7 @@ export function ProblemCardsWidget({ source }: { source: string }) {
 	const showType = configValue(config, "showType", true);
 
 	const data = useComputed(() => {
-		void cards.value;
+		void allMeta.value;
 		if (!plugin.cardStore?.stats) return null;
 		return plugin.cardStore.stats.getProblemCards(limit);
 	}).value;

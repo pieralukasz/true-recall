@@ -1,11 +1,11 @@
 import { effect } from "@preact/signals";
 import {
+	getDataLayer,
 	type NoteStatusInfo,
-	noteStatusMap,
-} from "@true-recall/obsidian/services/reactive-card-store";
-import { lastMutation } from "@true-recall/obsidian/services/signals";
+	Q,
+} from "@true-recall/obsidian/data";
 
-export type { NoteStatusInfo } from "@true-recall/obsidian/services/reactive-card-store";
+export type { NoteStatusInfo } from "@true-recall/obsidian/data";
 
 export interface NoteStatusCache {
 	get(sourceUid: string): NoteStatusInfo | null;
@@ -16,15 +16,17 @@ export interface NoteStatusCache {
 }
 
 export function createNoteStatusCache(): NoteStatusCache {
+	const dl = getDataLayer();
+	const noteStatusSig = dl.signal<Map<string, NoteStatusInfo>>(Q.NOTE_STATUS);
 	let version = 1;
 	const dispose = effect(() => {
-		if (!lastMutation.value) return;
+		void noteStatusSig?.value;
 		version++;
 	});
 
 	return {
-		get: (uid) => noteStatusMap.value.get(uid) ?? null,
-		hasData: () => noteStatusMap.value.size > 0,
+		get: (uid) => noteStatusSig?.value.get(uid) ?? null,
+		hasData: () => (noteStatusSig?.value.size ?? 0) > 0,
 		getVersion: () => version,
 		bumpVersion: () => {
 			version++;
