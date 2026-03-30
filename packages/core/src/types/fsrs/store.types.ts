@@ -1,5 +1,9 @@
 import type { FSRSCardData } from "./card.types";
 
+/**
+ * @deprecated Define a minimal structural type instead.
+ * Kept for backward compatibility with old src/ path aliases.
+ */
 export interface CardStore {
 	isReady(): boolean;
 	get(cardId: string): FSRSCardData | undefined;
