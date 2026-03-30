@@ -14,6 +14,19 @@ import { useAutoContext } from "./context/useAutoContext";
 import type { KnowledgeChatView } from "./KnowledgeChatView";
 import type { SourceNavigationHandlers } from "./types";
 
+function ThinkingIndicator() {
+	return (
+		<div class="ep:flex ep:items-center ep:gap-2 ep:px-1 ep:py-2">
+			<div class="ep:flex ep:items-center ep:gap-1">
+				<span class="ep:w-1.5 ep:h-1.5 ep:rounded-full ep:bg-obs-accent ep:opacity-70 ep:animate-bounce [animation-delay:0ms]" />
+				<span class="ep:w-1.5 ep:h-1.5 ep:rounded-full ep:bg-obs-accent ep:opacity-70 ep:animate-bounce [animation-delay:150ms]" />
+				<span class="ep:w-1.5 ep:h-1.5 ep:rounded-full ep:bg-obs-accent ep:opacity-70 ep:animate-bounce [animation-delay:300ms]" />
+			</div>
+			<span class="ep:text-xs ep:text-obs-muted">Thinking...</span>
+		</div>
+	);
+}
+
 const SUGGESTED_QUESTIONS = [
 	"Summarize my recent notes",
 	"How's my study progress?",
@@ -90,6 +103,17 @@ export function KnowledgeChatApp({ view }: Props) {
 					void plugin.activateView();
 				});
 			},
+			onNavigateToUid: (flashcardUid: string) => {
+				const file = plugin.frontmatterIndex.getFileByValue(
+					"flashcard_uid",
+					flashcardUid,
+				);
+				if (!file) {
+					new Notice("Source note not found");
+					return;
+				}
+				void app.workspace.openLinkText(file.path, "", false);
+			},
 		}),
 		[app, plugin],
 	);
@@ -151,7 +175,7 @@ export function KnowledgeChatApp({ view }: Props) {
 	}, [view.chatService]);
 
 	const handleConfigChange = useCallback(
-		(config: ChatConfig) => {
+		(_config: ChatConfig) => {
 			if (messages.length > 0) {
 				view.chatService?.clearHistory();
 				setMessages([]);
@@ -173,9 +197,9 @@ export function KnowledgeChatApp({ view }: Props) {
 		<div class="ep:flex ep:flex-col ep:h-full">
 			<div class="ep:flex ep:items-center ep:justify-between ep:px-2 ep:py-3 ep:border-b ep:border-obs-border">
 				<div class="ep:flex ep:items-center ep:gap-2">
-					<div
+					<span
 						ref={headerIconRef}
-						class="ep:w-4 ep:h-4 ep:text-obs-muted [&_svg]:ep:w-4 [&_svg]:ep:h-4"
+						class="ep:shrink-0 ep:flex ep:items-center ep:text-obs-muted [&_svg]:ep:w-4 [&_svg]:ep:h-4"
 					/>
 					<span class="ep:text-ui-small ep:font-semibold ep:text-obs-normal">
 						Chat
@@ -214,9 +238,9 @@ export function KnowledgeChatApp({ view }: Props) {
 				{messages.length === 0 && !streaming && (
 					<div class="ep:flex ep:flex-col ep:items-center ep:justify-center ep:h-full ep:gap-5 ep:px-2">
 						<div class="ep:flex ep:flex-col ep:items-center ep:gap-1">
-							<div
+							<span
 								ref={sparklesRef}
-								class="ep:flex ep:items-center ep:justify-center ep:w-10 ep:h-10 ep:text-obs-accent ep:opacity-70 ep:leading-none [&_svg]:ep:w-10 [&_svg]:ep:h-10"
+								class="ep:flex ep:items-center ep:justify-center ep:text-obs-accent ep:opacity-70 [&_svg]:ep:w-10 [&_svg]:ep:h-10"
 							/>
 							<div class="ep:text-center">
 								<div class="ep:text-ui-medium ep:font-semibold ep:text-obs-normal ep:mb-1">
@@ -244,6 +268,8 @@ export function KnowledgeChatApp({ view }: Props) {
 				{messages.map((msg, i) => (
 					<ChatMessage key={i} turn={msg} navigation={navigation} />
 				))}
+
+				{streaming && !streamingText && <ThinkingIndicator />}
 
 				{streaming && streamingText && (
 					<ChatMessage

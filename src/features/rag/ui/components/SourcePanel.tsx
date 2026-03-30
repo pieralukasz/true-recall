@@ -34,7 +34,10 @@ export function SourcePanel({ sources, navigation }: Props) {
 				class="ep:flex ep:items-center ep:gap-1 ep:text-[11px] ep:text-obs-muted ep:hover:text-obs-normal ep:transition-colors ep:py-0.5"
 				onClick={() => setExpanded((v) => !v)}
 			>
-				<div ref={chevronRef} class="ep:w-3 ep:h-3" />
+				<span
+					ref={chevronRef}
+					class="ep:shrink-0 ep:flex ep:items-center [&_svg]:ep:w-3 [&_svg]:ep:h-3"
+				/>
 				<span>Sources ({grouped.length})</span>
 			</Clickable>
 
@@ -82,9 +85,9 @@ function SourceRow({ group, navigation }: SourceRowProps) {
 				}
 			}}
 		>
-			<div
+			<span
 				ref={iconRef}
-				class="ep:w-3 ep:h-3 ep:mt-px ep:shrink-0 ep:text-obs-muted"
+				class="ep:shrink-0 ep:flex ep:items-center ep:mt-px ep:text-obs-muted [&_svg]:ep:w-3.5 [&_svg]:ep:h-3.5"
 			/>
 			<div class="ep:flex ep:flex-col ep:min-w-0">
 				<div class="ep:flex ep:items-center ep:gap-1 ep:min-w-0">

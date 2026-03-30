@@ -22,19 +22,19 @@ export function ContextChip({ item, onDismiss }: Props) {
 
 	return (
 		<div
-			class={`ep:flex ep:items-center ep:gap-1 ep:text-[11px] ep:pl-1.5 ep:pr-1 ep:py-0.5 ep:rounded-md ep:max-w-[180px] ep:text-obs-muted ep:transition-colors ${
+			class={`ep:inline-flex ep:items-center ep:gap-1 ep:text-xs ep:pl-1.5 ep:pr-0.5 ep:py-0.5 ep:rounded-md ep:max-w-[220px] ep:text-obs-muted ep:transition-colors ${
 				item.auto
 					? "ep:border ep:border-dashed ep:border-obs-border ep:bg-transparent"
 					: "ep:bg-obs-modifier-hover"
 			}`}
 		>
-			<div
+			<span
 				ref={iconRef}
-				class="ep:w-3 ep:h-3 ep:shrink-0 [&_svg]:ep:w-3 [&_svg]:ep:h-3"
+				class="ep:shrink-0 ep:flex ep:items-center [&_svg]:ep:w-3 [&_svg]:ep:h-3"
 			/>
-			<span class="ep:truncate ep:leading-tight">{label}</span>
+			<span class="ep:truncate ep:leading-none">{label}</span>
 			<Clickable
-				class="ep:w-3.5 ep:h-3.5 ep:shrink-0 ep:flex ep:items-center ep:justify-center ep:rounded-sm ep:text-obs-faint ep:hover:text-obs-normal ep:hover:bg-obs-modifier-hover ep:transition-colors [&_svg]:ep:w-2.5 [&_svg]:ep:h-2.5"
+				class="ep:w-5 ep:h-5 ep:shrink-0 ep:flex ep:items-center ep:justify-center ep:rounded-sm ep:text-obs-faint ep:hover:text-obs-normal ep:hover:bg-obs-modifier-hover ep:transition-colors [&_svg]:ep:w-3 [&_svg]:ep:h-3"
 				onClick={(e: MouseEvent) => {
 					e.stopPropagation();
 					onDismiss();

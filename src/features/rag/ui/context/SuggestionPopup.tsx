@@ -1,3 +1,4 @@
+import { useIcon } from "@shared/ui/preact";
 import { cn } from "@shared/ui/utils/cn";
 import type { TFile } from "obsidian";
 import { useEffect, useRef } from "preact/hooks";
@@ -7,6 +8,48 @@ interface Props {
 	highlightIndex: number;
 	onSelect: (file: TFile) => void;
 	onHover: (index: number) => void;
+}
+
+function SuggestionItem({
+	note,
+	highlighted,
+	onSelect,
+	onHover,
+}: {
+	note: TFile;
+	highlighted: boolean;
+	onSelect: (file: TFile) => void;
+	onHover: () => void;
+}) {
+	const iconRef = useIcon("file-text");
+	const folderPath = note.parent?.path;
+
+	return (
+		<li
+			class={cn(
+				"ep:px-2.5 ep:py-1.5 ep:cursor-pointer ep:text-ui-small ep:flex ep:items-center ep:gap-1.5",
+				highlighted
+					? "ep:bg-obs-modifier-hover ep:text-obs-normal"
+					: "ep:text-obs-muted",
+			)}
+			onMouseDown={(e) => {
+				e.preventDefault();
+				onSelect(note);
+			}}
+			onMouseEnter={onHover}
+		>
+			<span
+				ref={iconRef}
+				class="ep:shrink-0 ep:flex ep:items-center [&_svg]:ep:w-3.5 [&_svg]:ep:h-3.5"
+			/>
+			<span class="ep:font-medium ep:truncate ep:min-w-0">{note.basename}</span>
+			{folderPath && folderPath !== "/" && (
+				<span class="ep:text-[11px] ep:text-obs-faint ep:shrink-0 ep:ml-auto">
+					{folderPath}
+				</span>
+			)}
+		</li>
+	);
 }
 
 export function SuggestionPopup({
@@ -32,34 +75,15 @@ export function SuggestionPopup({
 				"ep:max-h-[200px] ep:overflow-y-auto ep:py-1 ep:w-full",
 			)}
 		>
-			{suggestions.map((note, index) => {
-				const folderPath = note.parent?.path;
-				return (
-					<li
-						key={note.path}
-						class={cn(
-							"ep:px-3 ep:py-1.5 ep:cursor-pointer ep:text-ui-small ep:flex ep:items-center ep:gap-2",
-							highlightIndex === index
-								? "ep:bg-obs-modifier-hover ep:text-obs-normal"
-								: "ep:text-obs-muted",
-						)}
-						onMouseDown={(e) => {
-							e.preventDefault();
-							onSelect(note);
-						}}
-						onMouseEnter={() => onHover(index)}
-					>
-						<span class="ep:font-medium ep:overflow-hidden ep:text-ellipsis ep:whitespace-nowrap ep:shrink">
-							{note.basename}
-						</span>
-						{folderPath && folderPath !== "/" && (
-							<span class="ep:text-[11px] ep:text-obs-faint ep:shrink-0">
-								{folderPath}
-							</span>
-						)}
-					</li>
-				);
-			})}
+			{suggestions.map((note, index) => (
+				<SuggestionItem
+					key={note.path}
+					note={note}
+					highlighted={highlightIndex === index}
+					onSelect={onSelect}
+					onHover={() => onHover(index)}
+				/>
+			))}
 		</ul>
 	);
 }
