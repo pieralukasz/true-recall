@@ -1,20 +1,34 @@
+import { effect } from "@preact/signals-core";
+import { RAG_CONFIG } from "@true-recall/core/constants";
 import type {
 	RagChunkActions,
 	RagSourceType,
 } from "@true-recall/core/rag/rag-chunk-actions";
-import { effect } from "@preact/signals-core";
-import { RAG_CONFIG } from "@true-recall/core/constants";
-import { lastMutation } from "@true-recall/obsidian/services/signals";
-import type { TrueRecallSettings } from "@true-recall/core/types/settings.types";
-import { type App, debounce, type Plugin, TFile } from "obsidian";
-import { detectDailyNote } from "./daily-note-detector";
 import {
 	chunkDailyNote,
 	chunkFlashcard,
 	chunkNote,
 } from "@true-recall/core/rag/rag-chunker.service";
-import type { RagEmbeddingService } from "@true-recall/core/rag/rag-search.service";
-import type { RagSearchService } from "@true-recall/core/rag/rag-search.service";
+import type {
+	RagEmbeddingService,
+	RagSearchService,
+} from "@true-recall/core/rag/rag-search.service";
+import type { TrueRecallSettings } from "@true-recall/core/types/settings.types";
+import { lastMutation } from "@true-recall/obsidian/services/signals";
+import { type App, debounce, type Plugin, TFile } from "obsidian";
+import { detectDailyNote } from "./daily-note-detector";
+
+function toUpsertChunks(
+	chunks: { content: string; headingBreadcrumb: string; tokenCount: number }[],
+	hash: string,
+) {
+	return chunks.map((c) => ({
+		content: c.content,
+		headingBreadcrumb: c.headingBreadcrumb,
+		tokenCount: c.tokenCount,
+		contentHash: hash,
+	}));
+}
 
 export interface IndexResult {
 	indexed: number;
@@ -117,16 +131,7 @@ export class RagIndexerService {
 			dailyInfo.isDailyNote && dailyInfo.date
 				? chunkDailyNote(content, dailyInfo, s.ragDailyNoteExcludeHeadings)
 				: chunkNote(content);
-		this.actions.upsertChunks(
-			"note",
-			file.path,
-			chunks.map((c) => ({
-				content: c.content,
-				headingBreadcrumb: c.headingBreadcrumb,
-				tokenCount: c.tokenCount,
-				contentHash: hash,
-			})),
-		);
+		this.actions.upsertChunks("note", file.path, toUpsertChunks(chunks, hash));
 
 		this.actions.upsertIndexMeta(
 			"note",
@@ -205,14 +210,8 @@ export class RagIndexerService {
 		this.actions.upsertChunks(
 			"flashcard",
 			card.id,
-			chunks.map((c) => ({
-				content: c.content,
-				headingBreadcrumb: c.headingBreadcrumb,
-				tokenCount: c.tokenCount,
-				contentHash: hash,
-			})),
+			toUpsertChunks(chunks, hash),
 		);
-
 		this.actions.upsertIndexMeta(
 			"flashcard",
 			card.id,
@@ -281,62 +280,25 @@ export class RagIndexerService {
 
 	private async indexFlashcards(
 		onProgress?: (progress: IndexProgress) => void,
-	): Promise<{
-		indexed: number;
-		skipped: number;
-		errors: number;
-	}> {
+	): Promise<{ indexed: number; skipped: number; errors: number }> {
 		let indexed = 0;
 		let skipped = 0;
 		let errors = 0;
 
 		const cards = this.actions.getFlashcardData();
-		const totalCards = cards.length;
-
 		for (const [i, card] of cards.entries()) {
 			try {
-				const content = [card.fields_json, card.source_text ?? ""].join(" ");
-				const hash = await this.contentHash(content);
-				const meta = this.actions.getIndexMeta("flashcard", card.id);
-				if (meta && meta.content_hash === hash) {
-					skipped++;
-					continue;
-				}
-
-				const chunks = chunkFlashcard(
-					card.fields_json,
-					card.source_text ?? undefined,
-					card.tags ?? undefined,
-				);
-
-				this.actions.upsertChunks(
-					"flashcard",
-					card.id,
-					chunks.map((c) => ({
-						content: c.content,
-						headingBreadcrumb: c.headingBreadcrumb,
-						tokenCount: c.tokenCount,
-						contentHash: hash,
-					})),
-				);
-
-				this.actions.upsertIndexMeta(
-					"flashcard",
-					card.id,
-					hash,
-					Date.now(),
-					chunks.length,
-				);
-				indexed++;
+				const wasIndexed = await this.indexSingleCard(card.id);
+				if (wasIndexed) indexed++;
+				else skipped++;
 			} catch (e) {
 				console.error("[True Recall RAG] Flashcard index error:", e);
 				errors++;
 			}
-
 			onProgress?.({
 				phase: "flashcards",
 				current: i + 1,
-				total: totalCards,
+				total: cards.length,
 			});
 		}
 
