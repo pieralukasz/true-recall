@@ -3,7 +3,10 @@ import { notifyDuplicateError } from "@true-recall/obsidian/features/library/ui/
 import { DuplicateQuestionError } from "@true-recall/core/flashcard/card-repository.service";
 import { type Signal, useSignal } from "@preact/signals";
 import { notify } from "@true-recall/obsidian/services/notification.service";
-import { cards, pluginSettings } from "@true-recall/obsidian/services/reactive-card-store";
+import { pluginSettings } from "@true-recall/obsidian/services/reactive-card-store";
+import { useQuerySignal } from "@true-recall/obsidian/hooks/use-query";
+import { QK } from "@true-recall/obsidian/services/query-keys";
+import type { FSRSFlashcardItem } from "@true-recall/core/types";
 import { pushDeleteUndo } from "@true-recall/obsidian/services/undo.service";
 import { AppNavBar } from "@true-recall/obsidian/components";
 import { useApp, usePlugin } from "@true-recall/obsidian/preact";
@@ -85,7 +88,8 @@ export function CardBrowserApp({
 	);
 
 	// Signal reads — subscribe component to reactive data changes
-	const allCards = cards.value;
+	const allCardsSignal = useQuerySignal<Map<string, FSRSFlashcardItem>>(QK.ALL_CARDS);
+	const allCards = allCardsSignal.value;
 	const _settings = pluginSettings.value;
 	const searchTextVal = searchText.value;
 	const stateFiltersVal = stateFilters.value;

@@ -43,3 +43,7 @@ export type {
 	ContextItem,
 } from "./context/context.types";
 export { contextKey } from "./context/context.types";
+
+// Source grouping
+export type { GroupedSource } from "./rag-source-grouper";
+export { groupSources, stripMarkdown } from "./rag-source-grouper";

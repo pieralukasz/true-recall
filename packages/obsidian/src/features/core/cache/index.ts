@@ -5,4 +5,5 @@ export {
 export {
 	ReactiveCache,
 	type ReactiveCacheOptions,
+	createSignalCache,
 } from "./ReactiveCache";

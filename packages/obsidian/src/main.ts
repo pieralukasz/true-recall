@@ -88,8 +88,13 @@ import {
 	refreshMetadata,
 	refreshSettings,
 } from "@true-recall/obsidian/services/reactive-card-store";
-import { lastMutation } from "@true-recall/obsidian/services/signals";
+import { lastMutation, notifyCardChange as obsidianNotifyCardChange } from "@true-recall/obsidian/services/signals";
+import { onCardChange as onCoreCardChange } from "@true-recall/core/events";
 import { effect } from "@preact/signals";
+import { QueryRuntime } from "@true-recall/obsidian/services/query-runtime";
+import { registerCoreQueries, patchReviewedCard } from "@true-recall/obsidian/services/register-queries";
+import { reconcileMutation, mapOldMutationType } from "@true-recall/obsidian/services/invalidation-map";
+import { setQueryRuntime } from "@true-recall/obsidian/hooks/use-query";
 import { UndoService } from "@true-recall/obsidian/services/undo.service";
 import { type AppStore, createAppStore } from "@true-recall/obsidian/store";
 import { extractFSRSSettings } from "@true-recall/core/types";
@@ -148,6 +153,8 @@ export default class TrueRecallPlugin extends Plugin {
 	ragSearch:
 		| import("@true-recall/core/rag/rag-search.service").RagSearchService
 		| null = null;
+	queryRuntime: QueryRuntime | null = null;
+	private _disposeCoreCardBridge: (() => void) | null = null;
 	private adapters!: ObsidianAdapters;
 	private _unloaded = false;
 	EmbeddableEditor:
@@ -437,6 +444,8 @@ export default class TrueRecallPlugin extends Plugin {
 		this.backgroundBackupManager?.stop();
 		this.statusBarWidget?.dispose();
 		this.noteStatusCache?.dispose();
+		this.queryRuntime?.dispose();
+		this._disposeCoreCardBridge?.();
 
 		if (this.cardStore) {
 			void this.cardStore.saveNow({ bestEffort: true });
@@ -972,6 +981,43 @@ export default class TrueRecallPlugin extends Plugin {
 				getAll: () => this.flashcardManager.getAllFSRSCards(),
 			});
 			refreshCards();
+
+			// Bridge: core services call core/events.ts notifyCardChange,
+			// but the UI listens to obsidian/signals.ts notifyCardChange.
+			// Forward core mutations → obsidian signals so UI refreshes.
+			this._disposeCoreCardBridge = onCoreCardChange((mutation) => {
+				obsidianNotifyCardChange(mutation as Parameters<typeof obsidianNotifyCardChange>[0]);
+			});
+
+			// QueryRuntime: new reactive query cache (runs alongside old signals during migration)
+			this.queryRuntime = new QueryRuntime();
+			setQueryRuntime(this.queryRuntime);
+			registerCoreQueries(this.queryRuntime, {
+				getAllCards: () => this.flashcardManager.getAllFSRSCards(),
+				getArchivedSourceUids: () =>
+					this.hierarchyService.getArchivedSourceUids(),
+			});
+
+			// Bridge: forward old signal mutations → QueryRuntime invalidation
+			// This runs both systems in parallel during migration.
+			const qr = this.queryRuntime;
+			effect(() => {
+				const m = lastMutation.value;
+				if (!m) return;
+				const ctx = mapOldMutationType(m);
+				if (!ctx) return;
+
+				// For review grades: patch single card instead of refetching 30k
+				if (ctx.type === "card:reviewed" && ctx.cardId) {
+					const updated = this.flashcardManager.getCardsByIds([ctx.cardId]);
+					const card = updated[0];
+					if (card) {
+						patchReviewedCard(qr, ctx.cardId, card);
+					}
+				}
+
+				reconcileMutation(qr, ctx);
+			});
 
 			const sCards = performance.now();
 
