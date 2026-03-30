@@ -3,7 +3,7 @@ import type {
 	PresetResolutionContext,
 	PresetService,
 	PresetSource,
-} from "@true-recall/core/services/preset.service";
+} from "@true-recall/core/services/notes/preset.service";
 import { Clickable } from "@true-recall/obsidian/components";
 import { BasePromiseModal } from "@true-recall/obsidian/modals/shared/BasePromiseModal";
 import { SetPresetModal } from "@true-recall/obsidian/modals/shared/SetPresetModal";

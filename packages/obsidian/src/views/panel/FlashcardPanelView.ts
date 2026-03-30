@@ -4,7 +4,7 @@ import {
 } from "@true-recall/obsidian/views/panel/FlashcardPanelApp";
 import { extractHighlights } from "@true-recall/obsidian/features/library/ui/panel/utils/highlight-extractor";
 import { cardsToBlockText } from "@true-recall/obsidian/features/library/ui/panel/utils/panel-helpers";
-import { CollectService } from "@true-recall/core/flashcard/collect.service";
+import { CollectService } from "@true-recall/core/flashcard/lifecycle/collect.service";
 import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
 import { effect } from "@preact/signals";
 import { VIEW_TYPE_FLASHCARD_PANEL } from "@true-recall/core/constants";

@@ -1,4 +1,4 @@
-import type { NoteTypeService } from "@true-recall/core/services/note-type.service";
+import type { NoteTypeService } from "@true-recall/core/services/notes/note-type.service";
 import type { CardTemplate, NoteType } from "@true-recall/core/types/note.types";
 import { Clickable } from "@true-recall/obsidian/components";
 import { useCallback } from "preact/hooks";

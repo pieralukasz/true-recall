@@ -2,9 +2,9 @@ import type { SemanticAnswerGradingService } from "@true-recall/core/ai/grading/
 import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
 import { assessTypedAnswer } from "@true-recall/core/helpers/answer-assessment";
 import { shouldTriggerLeech } from "@true-recall/core/helpers/leech-helpers";
-import type { SessionPersistenceService } from "@true-recall/core/persistence/session-persistence.service";
-import type { FSRSService } from "@true-recall/core/services/fsrs.service";
-import type { ReviewService } from "@true-recall/core/services/review.service";
+import type { SessionPersistenceService } from "@true-recall/core/persistence/session/session-persistence.service";
+import type { FSRSService } from "@true-recall/core/services/fsrs/fsrs.service";
+import type { ReviewService } from "@true-recall/core/services/review/review.service";
 import type {
 	FSRSFlashcardItem,
 	FSRSPreset,

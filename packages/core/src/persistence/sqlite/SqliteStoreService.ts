@@ -4,7 +4,7 @@
  */
 
 import type { IPersistence } from "../../interfaces/persistence";
-import { IntegrityCheckService } from "../../services/integrity-check.service";
+import { IntegrityCheckService } from "../../services/maintenance/integrity-check.service";
 import type { CardSchedulingMeta, FSRSCardData } from "../../types";
 import { NOTIFICATION_DURATION, notify } from "../notification";
 import {

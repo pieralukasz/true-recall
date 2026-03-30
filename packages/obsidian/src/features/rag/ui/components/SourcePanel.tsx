@@ -1,9 +1,9 @@
-import type { SearchResult } from "@true-recall/core/rag/rag-search.service";
-import type { GroupedSource } from "@true-recall/core/rag/rag-source-grouper";
+import type { SearchResult } from "@true-recall/core/rag/retrieval/rag-search.service";
+import type { GroupedSource } from "@true-recall/core/rag/retrieval/rag-source-grouper";
 import {
 	groupSources,
 	stripMarkdown,
-} from "@true-recall/core/rag/rag-source-grouper";
+} from "@true-recall/core/rag/retrieval/rag-source-grouper";
 import { Clickable } from "@true-recall/obsidian/components";
 import { useIcon } from "@true-recall/obsidian/preact";
 import { useState } from "preact/hooks";

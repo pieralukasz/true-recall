@@ -1,4 +1,4 @@
-import type { DeviceDatabaseInfo } from "@true-recall/core/integration/device-discovery.service";
+import type { DeviceDatabaseInfo } from "@true-recall/core/integration/device/device-discovery.service";
 import { ModalFooter } from "@true-recall/obsidian/components/ModalFooter";
 import { DatabaseItem } from "@true-recall/obsidian/modals/integration/device-selection/DatabaseItem";
 import { RadioOption } from "@true-recall/obsidian/modals/integration/device-selection/RadioOption";

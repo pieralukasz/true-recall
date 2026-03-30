@@ -1,4 +1,4 @@
-import type { ParsedCard } from "@true-recall/core/flashcard/bulk-card-parser";
+import type { ParsedCard } from "@true-recall/core/flashcard/parsing/bulk-card-parser";
 import { BUILTIN_CLOZE_ID } from "@true-recall/core/types/note.types";
 import { Clickable } from "@true-recall/obsidian/components/Clickable";
 import { useState } from "preact/hooks";

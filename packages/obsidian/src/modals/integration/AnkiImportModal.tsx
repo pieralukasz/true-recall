@@ -1,5 +1,5 @@
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite/SqliteStoreService";
-import type { FSRSService } from "@true-recall/core/services/fsrs.service";
+import type { FSRSService } from "@true-recall/core/services/fsrs/fsrs.service";
 import {
 	ErrorPhase,
 	FileSelectPhase,
@@ -9,9 +9,9 @@ import {
 	ProgressPhase,
 	ResultPhase,
 } from "@true-recall/obsidian/modals/integration/anki-import";
-import { AnkiConverterService } from "@true-recall/core/integration/anki-converter.service";
-import { AnkiImportService } from "@true-recall/core/integration/anki-import.service";
-import { ApkgParserService } from "@true-recall/core/integration/apkg-parser.service";
+import { AnkiConverterService } from "@true-recall/core/integration/anki/anki-converter.service";
+import { AnkiImportService } from "@true-recall/core/integration/anki/anki-import.service";
+import { ApkgParserService } from "@true-recall/core/integration/anki/apkg/apkg-parser.service";
 import { ObsidianAnkiImportVault } from "@true-recall/obsidian/adapters/ObsidianAnkiImportVault";
 import { ObsidianVaultFileReader } from "@true-recall/obsidian/adapters/ObsidianVaultFileReader";
 import { ObsidianPersistence } from "@true-recall/obsidian/adapters/ObsidianPersistence";

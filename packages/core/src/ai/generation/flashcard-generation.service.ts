@@ -1,4 +1,4 @@
-import type { ParsedBlock } from "../../flashcard/block-parser.service";
+import type { ParsedBlock } from "../../flashcard/parsing/block-parser.service";
 import type { IHttpClient } from "../../interfaces/http-client";
 import type { NoteType } from "../../types/note.types";
 import type { TrueRecallSettings } from "../../types/settings.types";

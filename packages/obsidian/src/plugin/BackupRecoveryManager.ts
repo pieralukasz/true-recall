@@ -1,5 +1,5 @@
-import type { BackgroundBackupManager } from "@true-recall/core/persistence/background-backup.service";
-import type { BackupService } from "@true-recall/core/persistence/backup.service";
+import type { BackgroundBackupManager } from "@true-recall/core/persistence/backup/background-backup.service";
+import type { BackupService } from "@true-recall/core/persistence/backup/backup.service";
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite";
 import {
 	decodeBackupToSqliteBytes,

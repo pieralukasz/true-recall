@@ -1,42 +1,42 @@
 // Integration — Anki import/export, CSV export, device discovery/ID
 
-export { AnkiConverterService } from "./anki-converter.service";
-export { AnkiSchedulingService } from "./anki-scheduling.service";
+export { AnkiConverterService } from "./anki/anki-converter.service";
+export { AnkiSchedulingService } from "./anki/anki-scheduling.service";
 export {
 	AnkiNoteTypeMapper,
 	stripHtmlFromTemplate,
 	type NoteTypeStore,
-} from "./anki-note-type-mapper";
-export { DeviceIdService } from "./device-id.service";
+} from "./anki/anki-note-type-mapper";
+export { DeviceIdService } from "./device/device-id.service";
 
 // Moved from obsidian
-export { ApkgBuilderService } from "./apkg-builder.service";
+export { ApkgBuilderService } from "./anki/apkg/apkg-builder.service";
 export {
 	ApkgParserService,
 	readProtobufVarint,
 	readProtobufString,
 	parseMediaProtobuf,
-} from "./apkg-parser.service";
+} from "./anki/apkg/apkg-parser.service";
 export {
 	CsvExportService,
 	type CsvSeparator,
 	type CsvExportOptions,
 	type ISourceUidResolver,
-} from "./csv-export.service";
+} from "./csv/csv-export.service";
 export {
 	AnkiExportService,
 	type IVaultMediaReader,
-} from "./anki-export.service";
+} from "./anki/anki-export.service";
 export {
 	AnkiMediaService,
 	type IVaultFileReader,
-} from "./anki-media.service";
+} from "./anki/anki-media.service";
 export {
 	AnkiImportService,
 	type IAnkiImportVault,
 	type CardChangeNotifier,
-} from "./anki-import.service";
+} from "./anki/anki-import.service";
 export {
 	DeviceDiscoveryService,
 	type DeviceDatabaseInfo,
-} from "./device-discovery.service";
+} from "./device/device-discovery.service";

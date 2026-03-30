@@ -1,4 +1,4 @@
-import type { ISourceUidResolver } from "@true-recall/core/integration/csv-export.service";
+import type { ISourceUidResolver } from "@true-recall/core/integration/csv/csv-export.service";
 import type { App } from "obsidian";
 
 /**

@@ -6,7 +6,7 @@ import { FooterBar } from "@true-recall/obsidian/modals/core/import-studio/Foote
 import {
 	type ParsedCard,
 	parseBulkText,
-} from "@true-recall/core/flashcard/bulk-card-parser";
+} from "@true-recall/core/flashcard/parsing/bulk-card-parser";
 import type { NoteType } from "@true-recall/core/types/note.types";
 import type { EmbeddableEditorInstance } from "@true-recall/obsidian/editor/shared/embedded-editor";
 import {

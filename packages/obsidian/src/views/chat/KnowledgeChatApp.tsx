@@ -1,4 +1,4 @@
-import type { ChatTurn } from "@true-recall/core/rag/rag-query.service";
+import type { ChatTurn } from "@true-recall/core/rag/chat/rag-query.service";
 import type { ChatConfig } from "@true-recall/core/types";
 import { Clickable, IconButton } from "@true-recall/obsidian/components";
 import { useApp, useIcon, usePlugin } from "@true-recall/obsidian/preact";

@@ -1,5 +1,5 @@
-import type { FSRSService } from "@true-recall/core/services/fsrs.service";
-import type { HierarchyService } from "@true-recall/core/services/hierarchy.service";
+import type { FSRSService } from "@true-recall/core/services/fsrs/fsrs.service";
+import type { HierarchyService } from "@true-recall/core/services/notes/hierarchy.service";
 import type { FSRSCardData } from "@true-recall/core/types/fsrs/card.types";
 import type { CardStore } from "@true-recall/core/types/fsrs/store.types";
 import { FSRS_COLORS } from "@true-recall/obsidian/helpers/fsrs-colors";

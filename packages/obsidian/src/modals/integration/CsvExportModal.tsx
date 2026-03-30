@@ -6,7 +6,7 @@ import {
 import {
 	CsvExportService,
 	type CsvSeparator,
-} from "@true-recall/core/integration/csv-export.service";
+} from "@true-recall/core/integration/csv/csv-export.service";
 import { ObsidianSourceUidResolver } from "@true-recall/obsidian/adapters/ObsidianSourceUidResolver";
 import {
 	downloadBlob,

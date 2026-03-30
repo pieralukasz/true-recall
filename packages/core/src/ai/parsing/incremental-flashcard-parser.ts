@@ -1,4 +1,4 @@
-import type { ParsedBlock } from "../../flashcard/block-parser.service";
+import type { ParsedBlock } from "../../flashcard/parsing/block-parser.service";
 import type { NoteType } from "../../types/note.types";
 
 export interface IncrementalParseEvent {

@@ -167,7 +167,7 @@ export function usePanelActions() {
 		if (!currentFile) return;
 		const { notify } = await import("@true-recall/obsidian/services/notification.service");
 		const { CollectService } = await import(
-			"@true-recall/core/flashcard/collect.service"
+			"@true-recall/core/flashcard/lifecycle/collect.service"
 		);
 
 		if (!plugin.flashcardManager.hasStore()) {

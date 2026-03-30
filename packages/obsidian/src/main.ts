@@ -11,26 +11,26 @@ import {
 	VIEW_TYPE_STATS,
 } from "@true-recall/core/constants";
 import { onCardChange as onCoreCardChange } from "@true-recall/core/events";
-import { DeletionHandlerService } from "@true-recall/core/flashcard/deletion-handler.service";
+import { DeletionHandlerService } from "@true-recall/core/flashcard/lifecycle/deletion-handler.service";
 import { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
-import { DeviceDiscoveryService } from "@true-recall/core/integration/device-discovery.service";
-import { DeviceIdService } from "@true-recall/core/integration/device-id.service";
+import { DeviceDiscoveryService } from "@true-recall/core/integration/device/device-discovery.service";
+import { DeviceIdService } from "@true-recall/core/integration/device/device-id.service";
 import { FSRSHelperService } from "@true-recall/core/metrics/fsrs-tools";
-import { BackgroundBackupManager } from "@true-recall/core/persistence/background-backup.service";
-import { BackupService } from "@true-recall/core/persistence/backup.service";
-import { SessionPersistenceService } from "@true-recall/core/persistence/session-persistence.service";
+import { BackgroundBackupManager } from "@true-recall/core/persistence/backup/background-backup.service";
+import { BackupService } from "@true-recall/core/persistence/backup/backup.service";
+import { SessionPersistenceService } from "@true-recall/core/persistence/session/session-persistence.service";
 import { SqliteStoreService } from "@true-recall/core/persistence/sqlite";
 import {
 	DB_FOLDER,
 	getDeviceDbFilename,
 	SAFETY_FLUSH_INTERVAL_MS,
 } from "@true-recall/core/persistence/sqlite/sqlite.types";
-import { DayBoundaryService } from "@true-recall/core/services/day-boundary.service";
-import { FrontmatterIndexService } from "@true-recall/core/services/frontmatter-index.service";
-import { FSRSService } from "@true-recall/core/services/fsrs.service";
-import { HierarchyService } from "@true-recall/core/services/hierarchy.service";
-import { NoteTypeService } from "@true-recall/core/services/note-type.service";
-import { PresetService } from "@true-recall/core/services/preset.service";
+import { DayBoundaryService } from "@true-recall/core/services/review/day-boundary.service";
+import { FrontmatterIndexService } from "@true-recall/core/services/notes/frontmatter-index.service";
+import { FSRSService } from "@true-recall/core/services/fsrs/fsrs.service";
+import { HierarchyService } from "@true-recall/core/services/notes/hierarchy.service";
+import { NoteTypeService } from "@true-recall/core/services/notes/note-type.service";
+import { PresetService } from "@true-recall/core/services/notes/preset.service";
 import type { TrueRecallSettings } from "@true-recall/core/types";
 import { extractFSRSSettings } from "@true-recall/core/types";
 import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpClient";
@@ -152,13 +152,13 @@ export default class TrueRecallPlugin extends Plugin {
 	backupRecovery: BackupRecoveryManager | null = null;
 	localApi: LocalApiServer | null = null;
 	ragActions:
-		| import("@true-recall/core/rag/rag-chunk-actions").RagChunkActions
+		| import("@true-recall/core/rag/indexing/rag-chunk-actions").RagChunkActions
 		| null = null;
 	ragIndexer:
 		| import("@true-recall/obsidian/features/rag/services/rag-indexer.service").RagIndexerService
 		| null = null;
 	ragSearch:
-		| import("@true-recall/core/rag/rag-search.service").RagSearchService
+		| import("@true-recall/core/rag/retrieval/rag-search.service").RagSearchService
 		| null = null;
 	queryRuntime: QueryRuntime | null = null;
 	private _disposeCoreCardBridge: (() => void) | null = null;
@@ -362,10 +362,10 @@ export default class TrueRecallPlugin extends Plugin {
 
 		if (ENABLE_RAG && this.cardStore) {
 			const { RagChunkActions } = await import(
-				"@true-recall/core/rag/rag-chunk-actions"
+				"@true-recall/core/rag/indexing/rag-chunk-actions"
 			);
 			const { RagSchemaManager } = await import(
-				"@true-recall/core/rag/rag-schema"
+				"@true-recall/core/rag/indexing/rag-schema"
 			);
 			const ragSchema = new RagSchemaManager(this.cardStore.getDatabase());
 			ragSchema.createTables();
@@ -373,13 +373,13 @@ export default class TrueRecallPlugin extends Plugin {
 
 			if (this.settings.ragEnabled && this.settings.proKey) {
 				const { RagEmbeddingServiceImpl } = await import(
-					"@true-recall/core/rag/rag-embedding.service"
+					"@true-recall/core/rag/retrieval/rag-embedding.service"
 				);
 				const { RagIndexerService } = await import(
 					"@true-recall/obsidian/features/rag/services/rag-indexer.service"
 				);
 				const { RagSearchService } = await import(
-					"@true-recall/core/rag/rag-search.service"
+					"@true-recall/core/rag/retrieval/rag-search.service"
 				);
 				const embedder = new RagEmbeddingServiceImpl(
 					new ObsidianHttpClient(),
@@ -922,7 +922,7 @@ export default class TrueRecallPlugin extends Plugin {
 	}
 
 	private async showDeviceSelectionModal(
-		databases: import("@true-recall/core/integration/device-discovery.service").DeviceDatabaseInfo[],
+		databases: import("@true-recall/core/integration/device/device-discovery.service").DeviceDatabaseInfo[],
 		hasLegacy: boolean,
 	): Promise<DeviceSelectionResult> {
 		const modal = new DeviceSelectionModal(this.app, {

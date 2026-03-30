@@ -1,6 +1,6 @@
 import { aggregateDashboardData } from "@true-recall/core/helpers/note-aggregation";
 import { StatsCalculatorService } from "@true-recall/core/metrics/stats/stats-calculator.service";
-import type { HierarchyTreeNode } from "@true-recall/core/services/hierarchy.service";
+import type { HierarchyTreeNode } from "@true-recall/core/services/notes/hierarchy.service";
 import type { FSRSFlashcardItem } from "@true-recall/core/types";
 import type { DashboardNoteEntry } from "@true-recall/obsidian/features/study/ui/dashboard/types";
 import { State } from "ts-fsrs";

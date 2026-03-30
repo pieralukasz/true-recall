@@ -16,9 +16,9 @@ import type { SqliteStoreService } from "../persistence/sqlite/SqliteStoreServic
 import {
 	type GeneratedCard,
 	generateCardsForNote,
-} from "../services/card-generation.service";
-import type { FrontmatterIndexService } from "../services/frontmatter-index.service";
-import { deriveCardType, renderTemplate } from "../services/template-engine";
+} from "../services/cards/card-generation.service";
+import type { FrontmatterIndexService } from "../services/notes/frontmatter-index.service";
+import { deriveCardType, renderTemplate } from "../services/cards/template-engine";
 import type {
 	CardReviewLogEntry,
 	CardType,
@@ -38,14 +38,14 @@ import {
 	normalizeIOImagePath,
 	serializeIODefinition,
 } from "../utils/io-definition";
-import { CardQueryService } from "./card-query.service";
+import { CardQueryService } from "./data/card-query.service";
 import {
 	CardRepository,
 	type CreateBatchResult,
-} from "./card-repository.service";
-import type { ISessionPersistence } from "./deletion-handler.service";
-import { FrontmatterService } from "./frontmatter.service";
-import { SourceNoteService } from "./source-note.service";
+} from "./data/card-repository.service";
+import type { ISessionPersistence } from "./lifecycle/deletion-handler.service";
+import { FrontmatterService } from "./source/frontmatter.service";
+import { SourceNoteService } from "./source/source-note.service";
 
 export interface ScanResult {
 	totalCards: number;

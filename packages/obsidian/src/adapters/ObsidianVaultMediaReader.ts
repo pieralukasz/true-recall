@@ -1,4 +1,4 @@
-import type { IVaultMediaReader } from "@true-recall/core/integration/anki-export.service";
+import type { IVaultMediaReader } from "@true-recall/core/integration/anki/anki-export.service";
 import type { App } from "obsidian";
 
 /**

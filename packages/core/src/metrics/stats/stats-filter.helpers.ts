@@ -1,4 +1,4 @@
-import type { PresetService } from "../../services/preset.service";
+import type { PresetService } from "../../services/notes/preset.service";
 import type { CardSchedulingMeta } from "../../types";
 
 export function buildSourceUidToPresetMap(

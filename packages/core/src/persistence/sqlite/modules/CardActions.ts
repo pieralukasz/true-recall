@@ -2,7 +2,7 @@ import { FLASHCARD_CONFIG } from "../../../constants";
 import {
 	deriveCardType,
 	renderTemplate,
-} from "../../../services/template-engine";
+} from "../../../services/cards/template-engine";
 import type { CardSchedulingMeta, FSRSCardData } from "../../../types";
 import type { CardTemplate } from "../../../types/note.types";
 import {

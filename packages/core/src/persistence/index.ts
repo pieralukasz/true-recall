@@ -2,19 +2,19 @@ export {
 	type BackupInfo,
 	type PruneResult,
 	BackupService,
-} from "./backup.service";
+} from "./backup/backup.service";
 
 export {
 	type BackgroundBackupConfig,
 	type BackupStatus,
 	type BackgroundBackupDeps,
 	BackgroundBackupManager,
-} from "./background-backup.service";
+} from "./backup/background-backup.service";
 
 export {
 	type PresetDailyProgress,
 	SessionPersistenceService,
-} from "./session-persistence.service";
+} from "./session/session-persistence.service";
 
 export {
 	type IOShape,

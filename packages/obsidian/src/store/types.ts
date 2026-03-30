@@ -1,7 +1,7 @@
 import type { AppError } from "@true-recall/core/errors";
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite";
-import type { DayBoundaryService } from "@true-recall/core/services/day-boundary.service";
-import type { FrontmatterIndexService } from "@true-recall/core/services/frontmatter-index.service";
+import type { DayBoundaryService } from "@true-recall/core/services/review/day-boundary.service";
+import type { FrontmatterIndexService } from "@true-recall/core/services/notes/frontmatter-index.service";
 import type {
 	FlashcardInfo,
 	FSRSFlashcardItem,

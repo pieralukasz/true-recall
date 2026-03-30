@@ -1,9 +1,9 @@
 export {
 	slugifyNoteTypeName,
 	resolveSlug,
-} from "./note-type-slug";
+} from "./note-types/note-type-slug";
 
-export { FrontmatterService } from "./frontmatter.service";
+export { FrontmatterService } from "./source/frontmatter.service";
 
 export {
 	type ParsedBlock,
@@ -12,7 +12,7 @@ export {
 	blockToText,
 	blocksToText,
 	countBlocks,
-} from "./block-parser.service";
+} from "./parsing/block-parser.service";
 
 export {
 	type ClozeCard,
@@ -21,24 +21,24 @@ export {
 	renderClozeQuestion,
 	renderClozeAnswer,
 	parseClozeTemplate,
-} from "./cloze-parser.service";
+} from "./parsing/cloze-parser.service";
 
 export {
 	type ISessionPersistence,
 	type DeletionHandlerDeps,
 	DeletionHandlerService,
-} from "./deletion-handler.service";
+} from "./lifecycle/deletion-handler.service";
 
 export {
 	type MigrationResult,
 	migrateContent,
 	migrateVault,
-} from "./migration.service";
+} from "./lifecycle/migration.service";
 
 export {
 	type CollectResult,
 	CollectService,
-} from "./collect.service";
+} from "./lifecycle/collect.service";
 
 export {
 	type ScanResult,
@@ -53,25 +53,25 @@ export {
 	FlashcardManager,
 } from "./flashcard.service";
 
-export { CardQueryService } from "./card-query.service";
+export { CardQueryService } from "./data/card-query.service";
 
 export {
 	INLINE_SEPARATOR_RE,
 	CLOZE_DETECT,
-} from "./parsing-patterns";
+} from "./parsing/parsing-patterns";
 
 export {
 	type DuplicateInfo,
 	type CreateBatchResult,
 	DuplicateQuestionError,
 	CardRepository,
-} from "./card-repository.service";
+} from "./data/card-repository.service";
 
-export { SourceNoteService } from "./source-note.service";
+export { SourceNoteService } from "./source/source-note.service";
 
 export {
 	type ParsedCard,
 	type BulkParseResult,
 	type ParseOptions,
 	parseBulkText,
-} from "./bulk-card-parser";
+} from "./parsing/bulk-card-parser";

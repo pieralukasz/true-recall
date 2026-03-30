@@ -1,7 +1,7 @@
 import type {
 	BackupInfo,
 	BackupService,
-} from "@true-recall/core/persistence/backup.service";
+} from "@true-recall/core/persistence/backup/backup.service";
 import { Clickable } from "@true-recall/obsidian/components";
 import {
 	BasePromiseModal,

@@ -1,45 +1,45 @@
 export {
 	type QueueBuildOptions,
 	ReviewService,
-} from "./review.service";
+} from "./review/review.service";
 
 export {
 	type FieldConfig,
 	type FieldChangeEvent,
 	type FieldChangeCallback,
 	FrontmatterIndexService,
-} from "./frontmatter-index.service";
+} from "./notes/frontmatter-index.service";
 
 export {
 	type HierarchyTreeNode,
 	type ProjectNode,
 	type LinkResolver,
 	HierarchyService,
-} from "./hierarchy.service";
+} from "./notes/hierarchy.service";
 
 export {
 	type NoteTypeServiceDeps,
 	NoteTypeService,
-} from "./note-type.service";
+} from "./notes/note-type.service";
 
-export { FSRSService } from "./fsrs.service";
+export { FSRSService } from "./fsrs/fsrs.service";
 
 export {
 	type SqlQuery,
 	type BuildQueryOptions,
 	buildBrowserQuery,
-} from "./browser-query-builder";
+} from "./browser/browser-query-builder";
 
 export {
 	type IntegrityReport,
 	IntegrityCheckService,
-} from "./integrity-check.service";
+} from "./maintenance/integrity-check.service";
 
 export {
 	type SequenceReview,
 	type SequenceSimulation,
 	FSRSSimulatorService,
-} from "./fsrs-simulator.service";
+} from "./fsrs/fsrs-simulator.service";
 
 export {
 	type CardFilterOptions,
@@ -50,14 +50,14 @@ export {
 	isGlobalReviewSession,
 	buildGlobalPresetQueueContext,
 	matchesSessionFilters,
-} from "./session-helpers";
+} from "./review/session-helpers";
 
 export {
 	type TemplateContext,
 	renderTemplate,
 	fieldIsEmpty,
 	deriveCardType,
-} from "./template-engine";
+} from "./cards/template-engine";
 
 export {
 	type PresetResolutionContext,
@@ -65,14 +65,14 @@ export {
 	type PresetChainEntry,
 	type PresetSource,
 	PresetService,
-} from "./preset.service";
+} from "./notes/preset.service";
 
 export {
 	type GeneratedCard,
 	type EmptyCardInfo,
 	generateCardsForNote,
 	detectEmptyCards,
-} from "./card-generation.service";
+} from "./cards/card-generation.service";
 
 export {
 	type ActionableSessionSnapshot,
@@ -80,8 +80,8 @@ export {
 	type ActionableSessionSnapshotDeps,
 	type ActionableSessionSnapshotOptions,
 	computeActionableSessionSnapshot,
-} from "./actionable-session-snapshot.service";
+} from "./review/actionable-session-snapshot.service";
 
-export { DayBoundaryService } from "./day-boundary.service";
+export { DayBoundaryService } from "./review/day-boundary.service";
 
-export { CardBrowserQueryService } from "./card-browser-query.service";
+export { CardBrowserQueryService } from "./browser/card-browser-query.service";

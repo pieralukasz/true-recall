@@ -3,7 +3,7 @@ export type {
 	ActionableSessionSnapshot,
 	ActionableSessionSnapshotOptions,
 	INoteResolver,
-} from "@true-recall/core/services/actionable-session-snapshot.service";
+} from "@true-recall/core/services/review/actionable-session-snapshot.service";
 
 import type { MetadataCache } from "obsidian";
 import {
@@ -11,7 +11,7 @@ import {
 	type ActionableSessionSnapshotDeps as CoreDeps,
 	type ActionableSessionSnapshot,
 	type ActionableSessionSnapshotOptions,
-} from "@true-recall/core/services/actionable-session-snapshot.service";
+} from "@true-recall/core/services/review/actionable-session-snapshot.service";
 import type { SessionFilters } from "@true-recall/core/types/review-session.types";
 
 /** Obsidian-specific deps that accept MetadataCache directly */

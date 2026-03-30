@@ -7,11 +7,11 @@ export {
 	getEmptyQueueMessage,
 	isGlobalReviewSession,
 	matchesSessionFilters,
-} from "@true-recall/core/services/session-helpers";
+} from "@true-recall/core/services/review/session-helpers";
 
 import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite";
-import { matchesSessionFilters } from "@true-recall/core/services/session-helpers";
+import { matchesSessionFilters } from "@true-recall/core/services/review/session-helpers";
 import type { SessionFilters } from "@true-recall/core/types/review-session.types";
 import {
 	CARD_MUTATION_ACTION_SEMANTICS,

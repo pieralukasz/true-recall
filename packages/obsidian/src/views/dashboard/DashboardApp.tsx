@@ -3,7 +3,7 @@ import { aggregateDashboardData } from "@true-recall/core/helpers/note-aggregati
 import { computePriority } from "@true-recall/core/helpers/note-priority";
 import { estimateStudyMinutes } from "@true-recall/core/helpers/time-estimate";
 import { StatsCalculatorService } from "@true-recall/core/metrics/stats/stats-calculator.service";
-import type { HierarchyService } from "@true-recall/core/services/hierarchy.service";
+import type { HierarchyService } from "@true-recall/core/services/notes/hierarchy.service";
 import { AppNavBar } from "@true-recall/obsidian/components";
 import { SearchCombobox } from "@true-recall/obsidian/components/SearchCombobox";
 import { HeatmapWidget } from "@true-recall/obsidian/editor/study/widgets/analytics/HeatmapWidget";

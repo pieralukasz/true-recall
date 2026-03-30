@@ -1,5 +1,5 @@
 import { FlashcardPanelView } from "@true-recall/obsidian/views/panel/FlashcardPanelView";
-import type { DeletionHandlerService } from "@true-recall/core/flashcard/deletion-handler.service";
+import type { DeletionHandlerService } from "@true-recall/core/flashcard/lifecycle/deletion-handler.service";
 import { VIEW_TYPE_FLASHCARD_PANEL, VIEW_TYPE_REVIEW } from "@true-recall/core/constants";
 import { ItemView, Notice, normalizePath, TFile, TFolder } from "obsidian";
 import type TrueRecallPlugin from "../main";

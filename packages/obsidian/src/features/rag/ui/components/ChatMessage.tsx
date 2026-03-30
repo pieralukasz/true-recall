@@ -1,7 +1,7 @@
-import type { ChatTurn } from "@true-recall/core/rag/rag-query.service";
-import type { SearchResult } from "@true-recall/core/rag/rag-search.service";
-import type { GroupedSource } from "@true-recall/core/rag/rag-source-grouper";
-import { groupSources } from "@true-recall/core/rag/rag-source-grouper";
+import type { ChatTurn } from "@true-recall/core/rag/chat/rag-query.service";
+import type { SearchResult } from "@true-recall/core/rag/retrieval/rag-search.service";
+import type { GroupedSource } from "@true-recall/core/rag/retrieval/rag-source-grouper";
+import { groupSources } from "@true-recall/core/rag/retrieval/rag-source-grouper";
 import { stripBrTags } from "@true-recall/core/utils";
 import { Clickable } from "@true-recall/obsidian/components";
 import { useApp, useIcon } from "@true-recall/obsidian/preact";

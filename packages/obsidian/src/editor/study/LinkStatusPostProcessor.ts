@@ -1,5 +1,5 @@
 import type { NoteStatusCache } from "@true-recall/obsidian/features/core/cache/note-status-cache.service";
-import type { FrontmatterIndexService } from "@true-recall/core/services/frontmatter-index.service";
+import type { FrontmatterIndexService } from "@true-recall/core/services/notes/frontmatter-index.service";
 import {
 	aggregateInfos,
 	createLinkStatusElement,

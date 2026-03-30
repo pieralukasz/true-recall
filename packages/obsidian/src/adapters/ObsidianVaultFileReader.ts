@@ -1,4 +1,4 @@
-import type { IVaultFileReader } from "@true-recall/core/integration/anki-media.service";
+import type { IVaultFileReader } from "@true-recall/core/integration/anki/anki-media.service";
 import { type App, normalizePath } from "obsidian";
 
 /**

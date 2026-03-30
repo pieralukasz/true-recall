@@ -5,36 +5,36 @@ export type {
 	RagChunkRow,
 	RagIndexMetaRow,
 	RagSourceType,
-} from "./rag-chunk-actions";
-export { RagChunkActions } from "./rag-chunk-actions";
-export { RagSchemaManager } from "./rag-schema";
-export type { RagChunk } from "./rag-chunker.service";
-export { chunkDailyNote, chunkFlashcard, chunkNote } from "./rag-chunker.service";
-export type { DailyNoteInfo } from "./daily-note-preprocessor";
-export { preprocessDailyNote } from "./daily-note-preprocessor";
+} from "./indexing/rag-chunk-actions";
+export { RagChunkActions } from "./indexing/rag-chunk-actions";
+export { RagSchemaManager } from "./indexing/rag-schema";
+export type { RagChunk } from "./ingestion/rag-chunker.service";
+export { chunkDailyNote, chunkFlashcard, chunkNote } from "./ingestion/rag-chunker.service";
+export type { DailyNoteInfo } from "./ingestion/daily-note-preprocessor";
+export { preprocessDailyNote } from "./ingestion/daily-note-preprocessor";
 export type {
 	RagEmbeddingService,
 	SearchResult,
 	SearchStats,
-} from "./rag-search.service";
-export { RagSearchService } from "./rag-search.service";
+} from "./retrieval/rag-search.service";
+export { RagSearchService } from "./retrieval/rag-search.service";
 export {
 	RAG_CHAT_TOOLS,
 	RagToolExecutor,
 	type ToolResult,
-} from "./rag-chat-tools";
-export { StudyDataGatherer } from "./study-data-gatherer";
-export { classifyIntent, type StudyIntent } from "./study-intent-classifier";
+} from "./chat/rag-chat-tools";
+export { StudyDataGatherer } from "./study/study-data-gatherer";
+export { classifyIntent, type StudyIntent } from "./study/study-intent-classifier";
 
 // Chat services
-export { RagEmbeddingServiceImpl } from "./rag-embedding.service";
+export { RagEmbeddingServiceImpl } from "./retrieval/rag-embedding.service";
 export {
 	RagQueryService,
 	type ChatTurn,
 	type ToolCallRecord,
 	type ContextResolver,
-} from "./rag-query.service";
-export { RagChatService } from "./rag-chat.service";
+} from "./chat/rag-query.service";
+export { RagChatService } from "./chat/rag-chat.service";
 
 // Context types
 export type {
@@ -45,5 +45,5 @@ export type {
 export { contextKey } from "./context/context.types";
 
 // Source grouping
-export type { GroupedSource } from "./rag-source-grouper";
-export { groupSources, stripMarkdown } from "./rag-source-grouper";
+export type { GroupedSource } from "./retrieval/rag-source-grouper";
+export { groupSources, stripMarkdown } from "./retrieval/rag-source-grouper";

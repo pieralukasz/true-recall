@@ -5,7 +5,7 @@
  * to generate flashcards in the correct #type/<slug> format.
  */
 
-import { resolveSlug } from "@true-recall/core/flashcard/note-type-slug";
+import { resolveSlug } from "@true-recall/core/flashcard/note-types/note-type-slug";
 import type { NoteType } from "@true-recall/core/types/note.types";
 
 /**

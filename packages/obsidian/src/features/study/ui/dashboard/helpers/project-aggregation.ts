@@ -1,11 +1,11 @@
 import { UNASSIGNED_PATH } from "@true-recall/core/constants";
-import type { SessionPersistenceService } from "@true-recall/core/persistence/session-persistence.service";
-import type { FSRSService } from "@true-recall/core/services/fsrs.service";
+import type { SessionPersistenceService } from "@true-recall/core/persistence/session/session-persistence.service";
+import type { FSRSService } from "@true-recall/core/services/fsrs/fsrs.service";
 import type {
 	HierarchyService,
 	HierarchyTreeNode,
-} from "@true-recall/core/services/hierarchy.service";
-import type { PresetService } from "@true-recall/core/services/preset.service";
+} from "@true-recall/core/services/notes/hierarchy.service";
+import type { PresetService } from "@true-recall/core/services/notes/preset.service";
 import type {
 	CardSchedulingMeta,
 	TrueRecallSettings,

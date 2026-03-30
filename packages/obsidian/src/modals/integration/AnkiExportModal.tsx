@@ -1,5 +1,5 @@
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite/SqliteStoreService";
-import type { FSRSService } from "@true-recall/core/services/fsrs.service";
+import type { FSRSService } from "@true-recall/core/services/fsrs/fsrs.service";
 import {
 	ErrorPhase,
 	type ExportFormValues,
@@ -7,7 +7,7 @@ import {
 	FormPhase,
 	SuccessPhase,
 } from "@true-recall/obsidian/modals/integration/anki-export";
-import { AnkiExportService } from "@true-recall/core/integration/anki-export.service";
+import { AnkiExportService } from "@true-recall/core/integration/anki/anki-export.service";
 import { ObsidianSourceUidResolver } from "@true-recall/obsidian/adapters/ObsidianSourceUidResolver";
 import { ObsidianVaultMediaReader } from "@true-recall/obsidian/adapters/ObsidianVaultMediaReader";
 import {

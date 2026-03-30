@@ -1,7 +1,7 @@
 import {
 	FSRSSimulatorService,
 	type SequenceSimulation,
-} from "@true-recall/core/services/fsrs-simulator.service";
+} from "@true-recall/core/services/fsrs/fsrs-simulator.service";
 import {
 	ParametersBar,
 	SimulatorChart,

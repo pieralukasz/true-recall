@@ -2,9 +2,9 @@ import { effect } from "@preact/signals";
 import { SemanticAnswerGradingService } from "@true-recall/core/ai/grading/semantic-answer-grading.service";
 import { VIEW_TYPE_REVIEW } from "@true-recall/core/constants";
 import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
-import type { SessionPersistenceService } from "@true-recall/core/persistence/session-persistence.service";
-import { FSRSService } from "@true-recall/core/services/fsrs.service";
-import { ReviewService } from "@true-recall/core/services/review.service";
+import type { SessionPersistenceService } from "@true-recall/core/persistence/session/session-persistence.service";
+import { FSRSService } from "@true-recall/core/services/fsrs/fsrs.service";
+import { ReviewService } from "@true-recall/core/services/review/review.service";
 import {
 	extractFSRSSettings,
 	type FSRSFlashcardItem,

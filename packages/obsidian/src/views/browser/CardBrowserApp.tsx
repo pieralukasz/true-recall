@@ -1,7 +1,7 @@
 import { type Signal, useSignal } from "@preact/signals";
-import { DuplicateQuestionError } from "@true-recall/core/flashcard/card-repository.service";
+import { DuplicateQuestionError } from "@true-recall/core/flashcard/data/card-repository.service";
 import { parseSearchQuery } from "@true-recall/core/helpers/search-parser";
-import { CardBrowserQueryService } from "@true-recall/core/services/card-browser-query.service";
+import { CardBrowserQueryService } from "@true-recall/core/services/browser/card-browser-query.service";
 import type { FSRSFlashcardItem } from "@true-recall/core/types";
 import { AppNavBar } from "@true-recall/obsidian/components";
 import { BrowserSidebar } from "@true-recall/obsidian/features/library/ui/browser/components/BrowserSidebar";

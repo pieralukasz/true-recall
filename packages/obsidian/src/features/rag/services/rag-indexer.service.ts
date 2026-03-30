@@ -3,16 +3,16 @@ import { RAG_CONFIG } from "@true-recall/core/constants";
 import type {
 	RagChunkActions,
 	RagSourceType,
-} from "@true-recall/core/rag/rag-chunk-actions";
+} from "@true-recall/core/rag/indexing/rag-chunk-actions";
 import {
 	chunkDailyNote,
 	chunkFlashcard,
 	chunkNote,
-} from "@true-recall/core/rag/rag-chunker.service";
+} from "@true-recall/core/rag/ingestion/rag-chunker.service";
 import type {
 	RagEmbeddingService,
 	RagSearchService,
-} from "@true-recall/core/rag/rag-search.service";
+} from "@true-recall/core/rag/retrieval/rag-search.service";
 import type { TrueRecallSettings } from "@true-recall/core/types/settings.types";
 import { lastMutation } from "@true-recall/obsidian/services/signals";
 import { type App, debounce, type Plugin, TFile } from "obsidian";

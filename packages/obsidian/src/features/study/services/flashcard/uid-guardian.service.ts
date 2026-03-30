@@ -1,10 +1,10 @@
-import type { SessionPersistenceService } from "@true-recall/core/persistence/session-persistence.service";
+import type { SessionPersistenceService } from "@true-recall/core/persistence/session/session-persistence.service";
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite/SqliteStoreService";
 import type {
 	FieldChangeEvent,
 	FrontmatterIndexService,
-} from "@true-recall/core/services/frontmatter-index.service";
-import type { FrontmatterService } from "@true-recall/core/flashcard/frontmatter.service";
+} from "@true-recall/core/services/notes/frontmatter-index.service";
+import type { FrontmatterService } from "@true-recall/core/flashcard/source/frontmatter.service";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 import { notifyCardChange } from "@true-recall/obsidian/services/signals";
 import type { App } from "obsidian";

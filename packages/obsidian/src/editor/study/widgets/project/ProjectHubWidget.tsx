@@ -1,4 +1,4 @@
-import type { HierarchyTreeNode } from "@true-recall/core/services/hierarchy.service";
+import type { HierarchyTreeNode } from "@true-recall/core/services/notes/hierarchy.service";
 import { useComputed } from "@preact/signals";
 import {
 	archivedSourceUids,

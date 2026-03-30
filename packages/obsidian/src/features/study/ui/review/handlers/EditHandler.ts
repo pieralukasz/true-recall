@@ -1,4 +1,4 @@
-import { DuplicateQuestionError } from "@true-recall/core/flashcard/card-repository.service";
+import { DuplicateQuestionError } from "@true-recall/core/flashcard/data/card-repository.service";
 import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
 import type { FSRSFlashcardItem } from "@true-recall/core/types";
 import { BR_REGEX } from "@true-recall/core/utils";
@@ -73,7 +73,7 @@ export class EditHandler {
 
 		try {
 			const { hasClozeContent, parseClozeTemplate } = await import(
-				"@true-recall/core/flashcard/cloze-parser.service"
+				"@true-recall/core/flashcard/parsing/cloze-parser.service"
 			);
 			if (hasClozeContent(newContent)) {
 				this.deps.flashcardManager.updateClozeTemplate(

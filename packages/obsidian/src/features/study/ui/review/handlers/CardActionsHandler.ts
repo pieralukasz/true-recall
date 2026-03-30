@@ -1,7 +1,7 @@
 import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite";
-import type { FSRSService } from "@true-recall/core/services/fsrs.service";
-import type { ReviewService } from "@true-recall/core/services/review.service";
+import type { FSRSService } from "@true-recall/core/services/fsrs/fsrs.service";
+import type { ReviewService } from "@true-recall/core/services/review/review.service";
 import type {
 	FSRSFlashcardItem,
 	TrueRecallSettings,

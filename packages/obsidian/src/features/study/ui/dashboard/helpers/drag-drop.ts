@@ -1,6 +1,6 @@
 import type { Signal } from "@preact/signals";
-import type { FrontmatterService } from "@true-recall/core/flashcard/frontmatter.service";
-import type { HierarchyService } from "@true-recall/core/services/hierarchy.service";
+import type { FrontmatterService } from "@true-recall/core/flashcard/source/frontmatter.service";
+import type { HierarchyService } from "@true-recall/core/services/notes/hierarchy.service";
 import type TrueRecallPlugin from "@true-recall/obsidian/main";
 import { NamePromptModal } from "@true-recall/obsidian/modals/study/NamePromptModal";
 import type { App } from "obsidian";
