@@ -1,4 +1,4 @@
-import { PasteDropZone } from "@shared/ui/components/PasteDropZone";
+import { PasteDropZone } from "@true-recall/obsidian/components/PasteDropZone";
 import { useRef } from "preact/hooks";
 
 export interface FileSelectPhaseProps {

@@ -3,17 +3,17 @@ import {
 	NormalHeader,
 	PanelContent,
 	SelectionToolbar,
-} from "@features/library/ui/panel/components";
+} from "@true-recall/obsidian/features/library/ui/panel/components";
 import {
 	useCardActions,
 	usePanelActions,
 	usePanelStore,
 	useScrollPreservation,
 	useSelectionActions,
-} from "@features/library/ui/panel/hooks";
-import { useStreamingNewCount } from "@features/library/ui/panel/hooks/useStreamingNewCount";
-import { Panel } from "@shared/ui/components";
-import { usePlugin } from "@shared/ui/preact";
+} from "@true-recall/obsidian/features/library/ui/panel/hooks";
+import { useStreamingNewCount } from "@true-recall/obsidian/features/library/ui/panel/hooks/useStreamingNewCount";
+import { Panel } from "@true-recall/obsidian/components";
+import { usePlugin } from "@true-recall/obsidian/preact";
 import { Platform } from "obsidian";
 import { useMemo } from "preact/hooks";
 

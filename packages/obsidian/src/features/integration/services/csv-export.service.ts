@@ -1,5 +1,5 @@
-import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
-import type { FSRSCardData } from "@shared/types";
+import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite/SqliteStoreService";
+import type { FSRSCardData } from "@true-recall/core/types";
 import type { App } from "obsidian";
 
 export type CsvSeparator = "," | "\t" | ";";

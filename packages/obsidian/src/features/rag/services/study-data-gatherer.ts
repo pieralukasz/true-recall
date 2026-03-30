@@ -1,9 +1,9 @@
-import type { SqliteStoreService } from "@features/core/persistence/sqlite";
-import type { DayBoundaryService } from "@features/core/services/day-boundary.service";
-import type { HierarchyService } from "@features/core/services/hierarchy.service";
-import type { FSRSHelperService } from "@features/metrics/services/fsrs-tools/fsrs-helper.service";
-import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
-import { formatLocalDate } from "@shared/utils";
+import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite";
+import type { DayBoundaryService } from "@true-recall/core/services/day-boundary.service";
+import type { HierarchyService } from "@true-recall/core/services/hierarchy.service";
+import type { FSRSHelperService } from "@true-recall/core/metrics/fsrs-tools/fsrs-helper.service";
+import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
+import { formatLocalDate } from "@true-recall/core/utils";
 
 interface TopicMatch {
 	topic: string;

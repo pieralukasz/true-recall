@@ -1,8 +1,8 @@
 import type {
 	WorkloadForecastEntry,
 	WorkloadForecastSummary,
-} from "@features/metrics/services/fsrs-tools/statistics/workload-forecast.calculator";
-import type { FSRSCardData } from "@shared/types";
+} from "@true-recall/core/metrics/fsrs-tools/statistics/workload-forecast.calculator";
+import type { FSRSCardData } from "@true-recall/core/types";
 import { State } from "ts-fsrs";
 
 /**

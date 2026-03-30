@@ -1,7 +1,7 @@
 import { parseIODefinition } from "./io-definition";
 import { resolveImageFile } from "./resolve-image";
 import type { IORegion } from "./types";
-import { useApp } from "@shared/ui/preact/ObsidianContext";
+import { useApp } from "@true-recall/obsidian/preact/ObsidianContext";
 import { useCallback, useMemo, useState } from "preact/hooks";
 
 export interface IOCardRendererProps {

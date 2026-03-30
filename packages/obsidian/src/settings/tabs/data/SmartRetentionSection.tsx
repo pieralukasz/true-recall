@@ -1,11 +1,11 @@
 import { useSettings } from "../../hooks/useSettings";
-import type { RetentionPolicy } from "@shared/types/settings.types";
+import type { RetentionPolicy } from "@true-recall/core/types/settings.types";
 import {
 	FormCard,
 	FormField,
 	InfoBlock,
 	SliderInput,
-} from "@shared/ui/components";
+} from "@true-recall/obsidian/components";
 
 interface RetentionPolicySliderProps {
 	name: string;

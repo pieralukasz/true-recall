@@ -1,13 +1,13 @@
 import type { EditorView } from "@codemirror/view";
-import { CardTypesEditorModal } from "@features/core/modals/card-types-editor/CardTypesEditorModal";
-import { NoteTypeManagerModal } from "@features/core/modals/NoteTypeManagerModal";
-import { Clickable } from "@shared/ui/components/Clickable";
+import { CardTypesEditorModal } from "@true-recall/obsidian/modals/core/card-types-editor/CardTypesEditorModal";
+import { NoteTypeManagerModal } from "@true-recall/obsidian/modals/core/NoteTypeManagerModal";
+import { Clickable } from "@true-recall/obsidian/components/Clickable";
 import {
 	type FormattingTargetRef,
 	FormattingToolbar,
-} from "@shared/ui/editor/formatting";
-import { useIcon } from "@shared/ui/preact/hooks";
-import { useApp, usePlugin } from "@shared/ui/preact/ObsidianContext";
+} from "@true-recall/obsidian/editor/shared/formatting";
+import { useIcon } from "@true-recall/obsidian/preact/hooks";
+import { useApp, usePlugin } from "@true-recall/obsidian/preact/ObsidianContext";
 import { Notice, TFile } from "obsidian";
 import {
 	useCallback,
@@ -150,7 +150,7 @@ export function QuickNoteEditorApp({
 		if (!noteType || !editMode?.noteId) return;
 
 		const { ChangeNoteTypeModal } = await import(
-			"@features/library/modals/ChangeNoteTypeModal"
+			"@true-recall/obsidian/modals/library/ChangeNoteTypeModal"
 		);
 		const allNoteTypes = plugin.cardStore.noteTypes.getAll();
 

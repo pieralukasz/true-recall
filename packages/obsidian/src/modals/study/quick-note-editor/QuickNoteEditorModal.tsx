@@ -1,7 +1,7 @@
-import { ErrorBoundary } from "@shared/ui/components/ErrorBoundary";
-import { BasePromiseModal } from "@shared/ui/modals/BasePromiseModal";
-import { confirm } from "@shared/ui/modals/ConfirmModal";
-import { ObsidianProvider } from "@shared/ui/preact/ObsidianContext";
+import { ErrorBoundary } from "@true-recall/obsidian/components/ErrorBoundary";
+import { BasePromiseModal } from "@true-recall/obsidian/modals/shared/BasePromiseModal";
+import { confirm } from "@true-recall/obsidian/modals/shared/ConfirmModal";
+import { ObsidianProvider } from "@true-recall/obsidian/preact/ObsidianContext";
 import type { App } from "obsidian";
 import { render } from "preact";
 import type TrueRecallPlugin from "../../../main";

@@ -1,6 +1,6 @@
-import { FlashcardPanelView } from "@features/library/ui/panel/FlashcardPanelView";
-import type { DeletionHandlerService } from "@features/study/services/flashcard/deletion-handler.service";
-import { VIEW_TYPE_FLASHCARD_PANEL, VIEW_TYPE_REVIEW } from "@shared/constants";
+import { FlashcardPanelView } from "@true-recall/obsidian/views/panel/FlashcardPanelView";
+import type { DeletionHandlerService } from "@true-recall/core/flashcard/deletion-handler.service";
+import { VIEW_TYPE_FLASHCARD_PANEL, VIEW_TYPE_REVIEW } from "@true-recall/core/constants";
 import { ItemView, Notice, normalizePath, TFile, TFolder } from "obsidian";
 import type TrueRecallPlugin from "../main";
 import {
@@ -35,7 +35,7 @@ export function registerEventHandlers(plugin: TrueRecallPlugin): void {
 						.setIcon("folder-plus")
 						.onClick(async () => {
 							const { NamePromptModal } = await import(
-								"@features/study/modals/NamePromptModal"
+								"@true-recall/obsidian/modals/study/NamePromptModal"
 							);
 							const modal = new NamePromptModal(plugin.app, file.basename);
 							const result = await modal.openAndWait();

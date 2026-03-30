@@ -1,6 +1,6 @@
 import { SimulatorSliderRow } from "./SimulatorSliderRow";
 import { ALL_SLIDERS } from "../constants";
-import type { SimulatorApi } from "@shared/store";
+import type { SimulatorApi } from "@true-recall/obsidian/store";
 import { useCallback } from "preact/hooks";
 
 interface SimulatorSlidersProps {

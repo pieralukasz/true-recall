@@ -1,9 +1,9 @@
-import type { SqliteStoreService } from "@features/core/persistence/sqlite";
-import { sqlPlaceholders } from "@features/core/persistence/sqlite/sql-utils";
-import type { FrontmatterIndexService } from "@features/core/services/frontmatter-index.service";
-import type { HierarchyService } from "@features/core/services/hierarchy.service";
-import type { FSRSCardData } from "@shared/types";
-import { fileBasename } from "@shared/utils";
+import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite";
+import { sqlPlaceholders } from "@true-recall/core/persistence/sqlite/sql-utils";
+import type { FrontmatterIndexService } from "@true-recall/core/services/frontmatter-index.service";
+import type { HierarchyService } from "@true-recall/core/services/hierarchy.service";
+import type { FSRSCardData } from "@true-recall/core/types";
+import { fileBasename } from "@true-recall/core/utils";
 import { buildBrowserQuery } from "../ui/browser/helpers/query-builder";
 import type {
 	BrowserCard,

@@ -1,4 +1,4 @@
-import { ReviewService } from "@features/study/services/review.service";
+import { ReviewService } from "@true-recall/core/services/review.service";
 import { type Grade, Rating, State } from "ts-fsrs";
 import type { ApiContext, ApiRequest, ApiResponseWriter } from "../api.types";
 import { parseJsonBody, readBody, sendError, sendOk } from "../api.types";
@@ -133,7 +133,7 @@ export async function handleGradeSessionCard(
 			responseTime,
 			preset.name,
 		);
-		const { formatLocalDate } = await import("@shared/utils");
+		const { formatLocalDate } = await import("@true-recall/core/utils");
 		const today = formatLocalDate(new Date());
 		ctx.plugin.cardStore.stats.updateDailyStats(today, {
 			reviewsCompleted: 1,

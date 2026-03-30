@@ -1,13 +1,13 @@
 import type { BackupService } from "./backup.service";
 import { effect } from "@preact/signals";
-import { notify } from "@shared/services/notification.service";
-import { cards } from "@shared/services/reactive-card-store";
-import { lastMutation } from "@shared/services/signals";
+import { notify } from "@true-recall/obsidian/services/notification.service";
+import { cards } from "@true-recall/obsidian/services/reactive-card-store";
+import { lastMutation } from "@true-recall/obsidian/services/signals";
 import type {
 	BackupInterval,
 	RetentionPolicy,
 	TrueRecallSettings,
-} from "@shared/types/settings.types";
+} from "@true-recall/core/types/settings.types";
 import type { App } from "obsidian";
 
 export interface BackgroundBackupConfig {

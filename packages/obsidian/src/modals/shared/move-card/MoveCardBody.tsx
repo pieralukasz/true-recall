@@ -1,14 +1,14 @@
-import { Clickable } from "@shared/ui/components/Clickable";
-import { SearchInput } from "@shared/ui/components/SearchInput";
-import type { MoveCardResult } from "@shared/ui/modals/MoveCardModal";
+import { Clickable } from "@true-recall/obsidian/components/Clickable";
+import { SearchInput } from "@true-recall/obsidian/components/SearchInput";
+import type { MoveCardResult } from "@true-recall/obsidian/modals/shared/MoveCardModal";
 import {
 	extractBacklinks,
 	noteHasTagPrefix,
-} from "@shared/ui/modals/move-card/move-card.utils";
+} from "@true-recall/obsidian/modals/shared/move-card/move-card.utils";
 import {
 	filterNotesByQuery,
 	MAX_DISPLAY_NOTES,
-} from "@shared/ui/modals/note-filter.utils";
+} from "@true-recall/obsidian/modals/shared/note-filter.utils";
 import type { App, TFile } from "obsidian";
 import { useCallback, useState } from "preact/hooks";
 

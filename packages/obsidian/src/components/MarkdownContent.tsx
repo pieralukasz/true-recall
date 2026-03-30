@@ -1,5 +1,5 @@
-import { useApp } from "@shared/ui/preact/ObsidianContext";
-import { stripBrTags } from "@shared/utils";
+import { useApp } from "@true-recall/obsidian/preact/ObsidianContext";
+import { stripBrTags } from "@true-recall/core/utils";
 import { MarkdownRenderer, Component as ObsidianComponent } from "obsidian";
 import { useEffect, useRef } from "preact/hooks";
 

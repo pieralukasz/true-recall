@@ -1,13 +1,13 @@
-import { EasyDaysModal } from "@features/metrics/modals/EasyDaysModal";
-import { notify } from "@shared/services/notification.service";
-import type { TrueRecallSettings } from "@shared/types";
+import { EasyDaysModal } from "@true-recall/obsidian/features/metrics/modals/EasyDaysModal";
+import { notify } from "@true-recall/obsidian/services/notification.service";
+import type { TrueRecallSettings } from "@true-recall/core/types";
 import type { FsrsPluginHost } from "../../../types/plugin-host.types";
 import {
 	ActionButton,
 	FormCard,
 	FormField,
 	InfoBlock,
-} from "@shared/ui/components";
+} from "@true-recall/obsidian/components";
 import type { App } from "obsidian";
 import { useCallback } from "preact/hooks";
 

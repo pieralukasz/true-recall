@@ -1,4 +1,4 @@
-import { notifyCardChange } from "@shared/services/signals";
+import { notifyCardChange } from "@true-recall/obsidian/services/signals";
 import type { ApiContext, ApiRequest, ApiResponseWriter } from "../api.types";
 import { parseJsonBody, readBody, sendError, sendOk } from "../api.types";
 

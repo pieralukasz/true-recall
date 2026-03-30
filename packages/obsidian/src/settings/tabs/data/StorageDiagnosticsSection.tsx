@@ -1,5 +1,5 @@
 import { useSettings } from "../../hooks/useSettings";
-import { FormCard } from "@shared/ui/components";
+import { FormCard } from "@true-recall/obsidian/components";
 import { useEffect, useState } from "preact/hooks";
 
 function fmt(value: number | null): string {

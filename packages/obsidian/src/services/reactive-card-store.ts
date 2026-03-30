@@ -1,6 +1,6 @@
 import { computed, type ReadonlySignal, signal } from "@preact/signals";
-import { DEFAULT_SETTINGS } from "@shared/constants";
-import type { FSRSFlashcardItem, TrueRecallSettings } from "@shared/types";
+import { DEFAULT_SETTINGS } from "@true-recall/core/constants";
+import type { FSRSFlashcardItem, TrueRecallSettings } from "@true-recall/core/types";
 import { State } from "ts-fsrs";
 
 // ── Central data signal ─────────────────────────────────────

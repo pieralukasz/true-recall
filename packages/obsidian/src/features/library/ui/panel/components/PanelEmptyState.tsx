@@ -1,5 +1,5 @@
-import { Clickable, LoadingSpinner } from "@shared/ui/components";
-import { useIcon } from "@shared/ui/preact";
+import { Clickable, LoadingSpinner } from "@true-recall/obsidian/components";
+import { useIcon } from "@true-recall/obsidian/preact";
 import { useState } from "preact/hooks";
 
 export interface PanelEmptyStateProps {

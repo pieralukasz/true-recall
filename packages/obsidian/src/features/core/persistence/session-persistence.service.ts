@@ -4,7 +4,7 @@ import type {
 	ExtendedDailyStats,
 	Grade,
 	PersistentStatsData,
-} from "@shared/types";
+} from "@true-recall/core/types";
 import { type App, normalizePath } from "obsidian";
 import { Rating, State } from "ts-fsrs";
 

@@ -1,6 +1,6 @@
 import { DonutChart } from "./components/DonutChart";
 import { LinkTextCount } from "./components/LinkTextCount";
-import type { NoteStatusInfo } from "@shared/services/reactive-card-store";
+import type { NoteStatusInfo } from "@true-recall/obsidian/services/reactive-card-store";
 import { h, render } from "preact";
 
 export interface LinkStatusOptions {

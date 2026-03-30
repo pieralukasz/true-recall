@@ -1,8 +1,8 @@
 import type { ChatTurn } from "../../services/rag-query.service";
 import type { SearchResult } from "../../services/rag-search.service";
-import { Clickable } from "@shared/ui/components";
-import { useApp, useIcon } from "@shared/ui/preact";
-import { stripBrTags } from "@shared/utils";
+import { Clickable } from "@true-recall/obsidian/components";
+import { useApp, useIcon } from "@true-recall/obsidian/preact";
+import { stripBrTags } from "@true-recall/core/utils";
 import { MarkdownRenderer, Component as ObsidianComponent } from "obsidian";
 import { useEffect, useRef } from "preact/hooks";
 import { groupSources } from "../helpers/group-sources";

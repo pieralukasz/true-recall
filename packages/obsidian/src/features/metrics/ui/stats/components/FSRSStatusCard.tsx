@@ -1,7 +1,7 @@
 import type { Signal } from "@preact/signals";
 import { useSignal } from "@preact/signals";
-import type { FSRSPreset, OptimizationMetrics } from "@shared/types";
-import { usePlugin } from "@shared/ui/preact";
+import type { FSRSPreset, OptimizationMetrics } from "@true-recall/core/types";
+import { usePlugin } from "@true-recall/obsidian/preact";
 import { useMemo } from "preact/hooks";
 import { ChartCard } from "./ChartCard";
 

@@ -1,23 +1,23 @@
-import type { SessionPersistenceService } from "@features/core/persistence/session-persistence.service";
-import type { FSRSService } from "@features/core/services/fsrs.service";
+import type { SessionPersistenceService } from "@true-recall/obsidian/features/core/persistence/session-persistence.service";
+import type { FSRSService } from "@true-recall/core/services/fsrs.service";
 import type {
 	HierarchyService,
 	HierarchyTreeNode,
-} from "@features/core/services/hierarchy.service";
-import type { PresetService } from "@features/core/services/preset.service";
+} from "@true-recall/core/services/hierarchy.service";
+import type { PresetService } from "@true-recall/core/services/preset.service";
 import {
 	type ActionableSessionSnapshot,
 	computeActionableSessionSnapshot,
-} from "@features/study/services/actionable-session-snapshot.service";
-import { UNASSIGNED_PATH } from "@shared/constants";
-import type { FSRSFlashcardItem, TrueRecallSettings } from "@shared/types";
-import type { CardStore } from "@shared/types/fsrs/store.types";
+} from "@true-recall/obsidian/features/study/services/actionable-session-snapshot.service";
+import { UNASSIGNED_PATH } from "@true-recall/core/constants";
+import type { FSRSFlashcardItem, TrueRecallSettings } from "@true-recall/core/types";
+import type { CardStore } from "@true-recall/core/types/fsrs/store.types";
 import type { MetadataCache } from "obsidian";
 import { State } from "ts-fsrs";
 import {
 	computeProjectStats,
 	type ProjectStats,
-} from "@features/study/ui/editor/widgets/project-stats";
+} from "@true-recall/obsidian/editor/study/widgets/project-stats";
 import type {
 	DashboardNoteEntry,
 	DashboardProject,
@@ -48,7 +48,7 @@ const MAX_RECENTLY_STUDIED = 5;
 interface ProjectAggregationIndexes {
 	allCardsBySourceUid: Map<
 		string,
-		import("@shared/types/fsrs/card.types").FSRSCardData[]
+		import("@true-recall/core/types/fsrs/card.types").FSRSCardData[]
 	>;
 	activeCardsBySourceUid: Map<string, FSRSFlashcardItem[]>;
 	retrievabilityByCardId: Map<string, number>;
@@ -57,10 +57,10 @@ interface ProjectAggregationIndexes {
 
 function buildCardsBySourceUid(
 	cards: FSRSFlashcardItem[],
-): Map<string, import("@shared/types/fsrs/card.types").FSRSCardData[]> {
+): Map<string, import("@true-recall/core/types/fsrs/card.types").FSRSCardData[]> {
 	const map = new Map<
 		string,
-		import("@shared/types/fsrs/card.types").FSRSCardData[]
+		import("@true-recall/core/types/fsrs/card.types").FSRSCardData[]
 	>();
 	for (const card of cards) {
 		const uid = card.sourceUid ?? card.fsrs.sourceUid;
@@ -111,7 +111,7 @@ function collectActiveCardsForSources(
 function buildRetrievabilityCache(
 	cardsBySourceUid: ReadonlyMap<
 		string,
-		import("@shared/types/fsrs/card.types").FSRSCardData[]
+		import("@true-recall/core/types/fsrs/card.types").FSRSCardData[]
 	>,
 	fsrsService: FSRSService,
 	now: Date,

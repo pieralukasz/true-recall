@@ -1,7 +1,7 @@
 import type {
 	WorkloadForecastEntry,
 	WorkloadForecastSummary,
-} from "@features/metrics/services/fsrs-tools/statistics/workload-forecast.calculator";
+} from "@true-recall/core/metrics/fsrs-tools/statistics/workload-forecast.calculator";
 import type { ChartConfiguration } from "chart.js";
 import { useRef } from "preact/hooks";
 import { CHART_COLORS, withAlpha } from "../helpers/chart-theme";

@@ -4,21 +4,21 @@ import {
 	ReviewHeader,
 	SummaryScreen,
 	WaitingScreen,
-} from "@features/study/ui/review/components";
-import type { PresetPickerOption } from "@features/study/ui/review/components/PresetPopover";
-import type { TypeInMode } from "@features/study/ui/review/helpers/type-in-flow";
-import type { ReviewApi } from "@shared/store";
+} from "@true-recall/obsidian/features/study/ui/review/components";
+import type { PresetPickerOption } from "@true-recall/obsidian/features/study/ui/review/components/PresetPopover";
+import type { TypeInMode } from "@true-recall/obsidian/features/study/ui/review/helpers/type-in-flow";
+import type { ReviewApi } from "@true-recall/obsidian/store";
 import type {
 	FSRSFlashcardItem,
 	LocalAnswerAssessment,
 	SemanticGradingResult,
-} from "@shared/types";
-import { usePlugin } from "@shared/ui/preact/ObsidianContext";
+} from "@true-recall/core/types";
+import { usePlugin } from "@true-recall/obsidian/preact/ObsidianContext";
 import { useEffect, useLayoutEffect, useState } from "preact/hooks";
 import type { Grade } from "ts-fsrs";
 
 // Re-export for consumers that import from this file
-export { ReviewEmptyState } from "@features/study/ui/review/components";
+export { ReviewEmptyState } from "@true-recall/obsidian/features/study/ui/review/components";
 
 // ─── Props ───────────────────────────────────────────────────────────────────
 

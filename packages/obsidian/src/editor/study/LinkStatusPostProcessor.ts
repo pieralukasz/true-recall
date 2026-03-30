@@ -1,11 +1,11 @@
-import type { NoteStatusCache } from "@features/core/cache/note-status-cache.service";
-import type { FrontmatterIndexService } from "@features/core/services/frontmatter-index.service";
+import type { NoteStatusCache } from "@true-recall/obsidian/features/core/cache/note-status-cache.service";
+import type { FrontmatterIndexService } from "@true-recall/core/services/frontmatter-index.service";
 import {
 	aggregateInfos,
 	createLinkStatusElement,
 	createLinkTextCountElement,
 } from "./LinkStatusWidget";
-import type { NoteStatusInfo } from "@shared/services/reactive-card-store";
+import type { NoteStatusInfo } from "@true-recall/obsidian/services/reactive-card-store";
 import type { App, MarkdownPostProcessorContext, TFile } from "obsidian";
 
 export function createLinkStatusPostProcessor(

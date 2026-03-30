@@ -1,4 +1,4 @@
-import { GITHUB_RELEASES_API } from "@shared/constants";
+import { GITHUB_RELEASES_API } from "@true-recall/core/constants";
 import { requestUrl } from "obsidian";
 
 export interface ReleaseInfo {

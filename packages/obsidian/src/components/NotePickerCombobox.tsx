@@ -1,9 +1,9 @@
-import { SearchInput } from "@shared/ui/components/SearchInput";
+import { SearchInput } from "@true-recall/obsidian/components/SearchInput";
 import {
 	filterNotesByQuery,
 	MAX_DISPLAY_NOTES,
-} from "@shared/ui/modals/note-filter.utils";
-import { cn } from "@shared/ui/utils/cn";
+} from "@true-recall/obsidian/modals/shared/note-filter.utils";
+import { cn } from "@true-recall/ui/utils/cn";
 import type { App, TFile } from "obsidian";
 import {
 	useCallback,

@@ -1,24 +1,24 @@
 import type {
 	PresetDailyProgress,
 	SessionPersistenceService,
-} from "@features/core/persistence/session-persistence.service";
-import type { SqliteStoreService } from "@features/core/persistence/sqlite";
-import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
-import type { QueueBuildOptions } from "@features/study/services/review.service";
-import type { SessionFilters } from "@features/study/ui/review/review.types";
-import { WEAK_CARD_STABILITY_THRESHOLD } from "@shared/constants";
+} from "@true-recall/obsidian/features/core/persistence/session-persistence.service";
+import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite";
+import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
+import type { QueueBuildOptions } from "@true-recall/core/services/review.service";
+import type { SessionFilters } from "@true-recall/obsidian/features/study/ui/review/review.types";
+import { WEAK_CARD_STABILITY_THRESHOLD } from "@true-recall/core/constants";
 import {
 	CARD_MUTATION_ACTION_SEMANTICS,
 	type CardMutation,
 	getNormalizedCardMutationAction,
-} from "@shared/services/signals";
-import type { ReviewApi } from "@shared/store";
-import type { FSRSFlashcardItem } from "@shared/types";
+} from "@true-recall/obsidian/services/signals";
+import type { ReviewApi } from "@true-recall/obsidian/store";
+import type { FSRSFlashcardItem } from "@true-recall/core/types";
 import type {
 	FSRSPreset,
 	TrueRecallSettings,
-} from "@shared/types/settings.types";
-import { getTodayBoundary } from "@shared/utils/date.utils";
+} from "@true-recall/core/types/settings.types";
+import { getTodayBoundary } from "@true-recall/core/utils/date.utils";
 import { Rating, State } from "ts-fsrs";
 
 export interface CardFilterOptions {

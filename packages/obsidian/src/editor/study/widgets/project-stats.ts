@@ -1,8 +1,8 @@
-import type { FSRSService } from "@features/core/services/fsrs.service";
-import type { HierarchyService } from "@features/core/services/hierarchy.service";
-import type { FSRSCardData } from "@shared/types/fsrs/card.types";
-import type { CardStore } from "@shared/types/fsrs/store.types";
-import { FSRS_COLORS } from "@shared/ui/helpers/fsrs-colors";
+import type { FSRSService } from "@true-recall/core/services/fsrs.service";
+import type { HierarchyService } from "@true-recall/core/services/hierarchy.service";
+import type { FSRSCardData } from "@true-recall/core/types/fsrs/card.types";
+import type { CardStore } from "@true-recall/core/types/fsrs/store.types";
+import { FSRS_COLORS } from "@true-recall/obsidian/helpers/fsrs-colors";
 import { State } from "ts-fsrs";
 
 export interface ProjectStats {

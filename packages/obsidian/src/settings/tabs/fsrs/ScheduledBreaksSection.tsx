@@ -1,12 +1,12 @@
-import type { TrueRecallSettings } from "@shared/types";
+import type { TrueRecallSettings } from "@true-recall/core/types";
 import {
 	ActionButton,
 	Clickable,
 	FormCard,
 	FormField,
 	InfoBlock,
-} from "@shared/ui/components";
-import { useApp } from "@shared/ui/preact";
+} from "@true-recall/obsidian/components";
+import { useApp } from "@true-recall/obsidian/preact";
 import { useCallback } from "preact/hooks";
 
 interface ScheduledBreaksSectionProps {
@@ -34,7 +34,7 @@ export function ScheduledBreaksSection({
 	);
 
 	const handleAddBreak = useCallback(async () => {
-		const { promptText } = await import("@shared/ui/modals/TextInputModal");
+		const { promptText } = await import("@true-recall/obsidian/modals/shared/TextInputModal");
 		const startDate = await promptText(app, {
 			title: "Add scheduled break",
 			label: "Start date (YYYY-MM-DD)",

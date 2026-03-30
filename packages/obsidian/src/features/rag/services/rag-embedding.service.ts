@@ -1,8 +1,8 @@
 import {
 	AIRequestError,
 	buildOpenRouterHeaders,
-} from "@features/ai/services/openrouter-client";
-import { LITELLM_EMBEDDINGS_URL, RAG_CONFIG } from "@shared/constants";
+} from "@true-recall/core/ai/openrouter-client";
+import { LITELLM_EMBEDDINGS_URL, RAG_CONFIG } from "@true-recall/core/constants";
 import { requestUrl } from "obsidian";
 
 export class RagEmbeddingService {

@@ -1,12 +1,12 @@
-import { FSRS_CONFIG } from "@shared/constants";
-import type { FSRSPreset, ReviewOrder } from "@shared/types";
+import { FSRS_CONFIG } from "@true-recall/core/constants";
+import type { FSRSPreset, ReviewOrder } from "@true-recall/core/types";
 import {
 	FormCard,
 	FormField,
 	SelectInput,
 	SliderInput,
 	TextInput,
-} from "@shared/ui/components";
+} from "@true-recall/obsidian/components";
 
 interface SchedulingSectionProps {
 	preset: FSRSPreset;

@@ -2,7 +2,7 @@ import {
 	type DatabaseLike,
 	loadDatabase,
 	type QueryExecResult,
-} from "@features/core/persistence/sqlite/loader";
+} from "@true-recall/core/persistence/sqlite/loader";
 import type {
 	AnkiCard,
 	AnkiDeck,
@@ -10,7 +10,7 @@ import type {
 	AnkiNote,
 	AnkiRevlogEntry,
 	ApkgData,
-} from "@shared/types";
+} from "@true-recall/core/types";
 import { decompress } from "fzstd";
 import JSZip from "jszip";
 import type { App } from "obsidian";

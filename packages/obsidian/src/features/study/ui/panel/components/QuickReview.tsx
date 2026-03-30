@@ -1,11 +1,11 @@
-import { ReviewService } from "@features/study/services/review.service";
-import { QuickReviewCard } from "@features/study/ui/panel/components/QuickReviewCard";
-import type { SchedulingPreview } from "@shared/types";
-import type { FSRSFlashcardItem } from "@shared/types/fsrs/card.types";
-import { Clickable } from "@shared/ui/components";
-import { FSRS_COLORS } from "@shared/ui/helpers/fsrs-colors";
-import { useIcon } from "@shared/ui/preact/hooks";
-import { usePlugin } from "@shared/ui/preact/ObsidianContext";
+import { ReviewService } from "@true-recall/core/services/review.service";
+import { QuickReviewCard } from "@true-recall/obsidian/features/study/ui/panel/components/QuickReviewCard";
+import type { SchedulingPreview } from "@true-recall/core/types";
+import type { FSRSFlashcardItem } from "@true-recall/core/types/fsrs/card.types";
+import { Clickable } from "@true-recall/obsidian/components";
+import { FSRS_COLORS } from "@true-recall/obsidian/helpers/fsrs-colors";
+import { useIcon } from "@true-recall/obsidian/preact/hooks";
+import { usePlugin } from "@true-recall/obsidian/preact/ObsidianContext";
 import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
 import { type Grade, State } from "ts-fsrs";
 

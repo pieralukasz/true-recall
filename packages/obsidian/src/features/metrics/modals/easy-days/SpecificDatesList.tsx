@@ -1,4 +1,4 @@
-import { Clickable } from "@shared/ui/components";
+import { Clickable } from "@true-recall/obsidian/components";
 
 function formatDate(dateStr: string): string {
 	const date = new Date(`${dateStr}T00:00:00`);

@@ -1,10 +1,10 @@
-import type { FSRSService } from "@features/core/services/fsrs.service";
+import type { FSRSService } from "@true-recall/core/services/fsrs.service";
 import type {
 	AnkiCard,
 	AnkiRevlogEntry,
 	FSRSCardData,
 	Grade,
-} from "@shared/types";
+} from "@true-recall/core/types";
 import { State } from "ts-fsrs";
 
 const VALID_EASE_MIN = 1;

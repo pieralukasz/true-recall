@@ -1,10 +1,10 @@
-import type { FSRSPreset, LeechAction } from "@shared/types";
+import type { FSRSPreset, LeechAction } from "@true-recall/core/types";
 import {
 	FormCard,
 	FormField,
 	SelectInput,
 	TextInput,
-} from "@shared/ui/components";
+} from "@true-recall/obsidian/components";
 
 interface LapsesSectionProps {
 	preset: FSRSPreset;

@@ -1,5 +1,5 @@
-import { BasePromiseModal } from "@shared/ui/modals/BasePromiseModal";
-import { MoveCardBody } from "@shared/ui/modals/move-card/MoveCardBody";
+import { BasePromiseModal } from "@true-recall/obsidian/modals/shared/BasePromiseModal";
+import { MoveCardBody } from "@true-recall/obsidian/modals/shared/move-card/MoveCardBody";
 import type { App, TFile } from "obsidian";
 import { render } from "preact";
 

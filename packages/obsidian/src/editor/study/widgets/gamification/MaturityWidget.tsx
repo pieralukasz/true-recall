@@ -1,8 +1,8 @@
-import { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
+import { StatsCalculatorService } from "@true-recall/core/metrics/stats/stats-calculator.service";
 import { useComputed } from "@preact/signals";
-import { cards } from "@shared/services/reactive-card-store";
-import type { CardMaturityBreakdown } from "@shared/types/fsrs/stats.types";
-import { usePlugin } from "@shared/ui/preact";
+import { cards } from "@true-recall/obsidian/services/reactive-card-store";
+import type { CardMaturityBreakdown } from "@true-recall/core/types/fsrs/stats.types";
+import { usePlugin } from "@true-recall/obsidian/preact";
 import { useMemo } from "preact/hooks";
 import { configValue, parseCodeblockConfig } from "../config-parser";
 

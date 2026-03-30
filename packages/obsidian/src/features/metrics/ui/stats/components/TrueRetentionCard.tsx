@@ -1,7 +1,7 @@
 import type {
 	TrueRetentionEntry,
 	TrueRetentionSummary,
-} from "@features/metrics/services/fsrs-tools/statistics/true-retention.calculator";
+} from "@true-recall/core/metrics/fsrs-tools/statistics/true-retention.calculator";
 import type { ChartConfiguration } from "chart.js";
 import { useRef } from "preact/hooks";
 import { CHART_COLORS, withAlpha } from "../helpers/chart-theme";

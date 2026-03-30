@@ -1,6 +1,6 @@
-import { getSourceNoteNameFromFile } from "@features/library/ui/panel/utils/panel-helpers";
-import { pushDeleteUndo } from "@shared/services/undo.service";
-import { useApp, usePlugin } from "@shared/ui/preact";
+import { getSourceNoteNameFromFile } from "@true-recall/obsidian/features/library/ui/panel/utils/panel-helpers";
+import { pushDeleteUndo } from "@true-recall/obsidian/services/undo.service";
+import { useApp, usePlugin } from "@true-recall/obsidian/preact";
 import { useCallback } from "preact/hooks";
 
 import { usePanelStore } from "./usePanelStore";
@@ -45,8 +45,8 @@ export function useSelectionActions({
 
 	const handleMoveSelected = useCallback(async () => {
 		if (!flashcardInfo || selectedCardIds.size === 0) return;
-		const { MoveCardModal } = await import("@shared/ui/modals/MoveCardModal");
-		const { notify } = await import("@shared/services/notification.service");
+		const { MoveCardModal } = await import("@true-recall/obsidian/modals/shared/MoveCardModal");
+		const { notify } = await import("@true-recall/obsidian/services/notification.service");
 
 		const selectedCards = flashcardInfo.flashcards.filter((card) =>
 			selectedCardIds.has(card.id),
@@ -98,8 +98,8 @@ export function useSelectionActions({
 
 	const handleDeleteSelected = useCallback(async () => {
 		if (!flashcardInfo || !currentFile || selectedCardIds.size === 0) return;
-		const { notify } = await import("@shared/services/notification.service");
-		const { confirm } = await import("@shared/ui/modals/ConfirmModal");
+		const { notify } = await import("@true-recall/obsidian/services/notification.service");
+		const { confirm } = await import("@true-recall/obsidian/modals/shared/ConfirmModal");
 
 		const selectedCards = flashcardInfo.flashcards.filter((card) =>
 			selectedCardIds.has(card.id),
@@ -128,10 +128,10 @@ export function useSelectionActions({
 	const handleChangeNoteType = useCallback(async () => {
 		if (!flashcardInfo || selectedCardIds.size === 0) return;
 		const { ChangeNoteTypeModal } = await import(
-			"@features/library/modals/ChangeNoteTypeModal"
+			"@true-recall/obsidian/modals/library/ChangeNoteTypeModal"
 		);
-		const { notify } = await import("@shared/services/notification.service");
-		const { notifyCardChange } = await import("@shared/services/signals");
+		const { notify } = await import("@true-recall/obsidian/services/notification.service");
+		const { notifyCardChange } = await import("@true-recall/obsidian/services/signals");
 
 		const cardIds = Array.from(selectedCardIds);
 		const noteInfos = plugin.cardStore.cards.getNoteInfoForCardIds(cardIds);
@@ -190,8 +190,8 @@ export function useSelectionActions({
 
 	const handleSuspendSelected = useCallback(async () => {
 		if (!flashcardInfo || selectedCardIds.size === 0) return;
-		const { notify } = await import("@shared/services/notification.service");
-		const { notifyCardChange } = await import("@shared/services/signals");
+		const { notify } = await import("@true-recall/obsidian/services/notification.service");
+		const { notifyCardChange } = await import("@true-recall/obsidian/services/signals");
 
 		const cardIds = Array.from(selectedCardIds);
 		const count = plugin.cardStore.cards.bulkSuspend(cardIds);
@@ -202,8 +202,8 @@ export function useSelectionActions({
 
 	const handleUnsuspendSelected = useCallback(async () => {
 		if (!flashcardInfo || selectedCardIds.size === 0) return;
-		const { notify } = await import("@shared/services/notification.service");
-		const { notifyCardChange } = await import("@shared/services/signals");
+		const { notify } = await import("@true-recall/obsidian/services/notification.service");
+		const { notifyCardChange } = await import("@true-recall/obsidian/services/signals");
 
 		const cardIds = Array.from(selectedCardIds);
 		const count = plugin.cardStore.cards.bulkUnsuspend(cardIds);
@@ -214,8 +214,8 @@ export function useSelectionActions({
 
 	const handleForgetSelected = useCallback(async () => {
 		if (!flashcardInfo || selectedCardIds.size === 0) return;
-		const { notify } = await import("@shared/services/notification.service");
-		const { notifyCardChange } = await import("@shared/services/signals");
+		const { notify } = await import("@true-recall/obsidian/services/notification.service");
+		const { notifyCardChange } = await import("@true-recall/obsidian/services/signals");
 
 		const cardIds = Array.from(selectedCardIds);
 		const count = plugin.cardStore.cards.bulkForget(cardIds);

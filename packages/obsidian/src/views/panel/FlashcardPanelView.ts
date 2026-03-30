@@ -1,20 +1,20 @@
 import {
 	FlashcardPanelApp,
 	type PanelAppActions,
-} from "@features/library/ui/panel/FlashcardPanelApp";
-import { extractHighlights } from "@features/library/ui/panel/utils/highlight-extractor";
-import { cardsToBlockText } from "@features/library/ui/panel/utils/panel-helpers";
-import { CollectService } from "@features/study/services/flashcard/collect.service";
-import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
+} from "@true-recall/obsidian/views/panel/FlashcardPanelApp";
+import { extractHighlights } from "@true-recall/obsidian/features/library/ui/panel/utils/highlight-extractor";
+import { cardsToBlockText } from "@true-recall/obsidian/features/library/ui/panel/utils/panel-helpers";
+import { CollectService } from "@true-recall/core/flashcard/collect.service";
+import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
 import { effect } from "@preact/signals";
-import { VIEW_TYPE_FLASHCARD_PANEL } from "@shared/constants";
-import { notify } from "@shared/services/notification.service";
-import { cards, pluginSettings } from "@shared/services/reactive-card-store";
-import { pushDeleteUndo } from "@shared/services/undo.service";
-import type { PanelApi } from "@shared/store";
-import type { FSRSFlashcardItem } from "@shared/types/fsrs/card.types";
-import { countCardsByState } from "@shared/ui/helpers";
-import { mountPreact } from "@shared/ui/preact/mount";
+import { VIEW_TYPE_FLASHCARD_PANEL } from "@true-recall/core/constants";
+import { notify } from "@true-recall/obsidian/services/notification.service";
+import { cards, pluginSettings } from "@true-recall/obsidian/services/reactive-card-store";
+import { pushDeleteUndo } from "@true-recall/obsidian/services/undo.service";
+import type { PanelApi } from "@true-recall/obsidian/store";
+import type { FSRSFlashcardItem } from "@true-recall/core/types/fsrs/card.types";
+import { countCardsByState } from "@true-recall/obsidian/helpers";
+import { mountPreact } from "@true-recall/obsidian/preact/mount";
 import {
 	ItemView,
 	type Menu,
@@ -533,7 +533,7 @@ export class FlashcardPanelView extends ItemView {
 			return;
 
 		const count = state.flashcardInfo.flashcards.length;
-		const { confirm } = await import("@shared/ui/modals/ConfirmModal");
+		const { confirm } = await import("@true-recall/obsidian/modals/shared/ConfirmModal");
 		const confirmed = await confirm(this.app, {
 			message: `Delete all ${count} flashcard(s) for this note?`,
 		});

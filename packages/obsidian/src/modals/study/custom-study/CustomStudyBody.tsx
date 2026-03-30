@@ -1,14 +1,14 @@
-import { useCustomStudyConfig } from "@features/study/modals/custom-study/hooks/useCustomStudyConfig";
-import { NumberField } from "@features/study/modals/custom-study/NumberField";
-import type { CustomStudyModalResult } from "@features/study/modals/custom-study/types";
-import type { ReviewOrder } from "@shared/types/settings.types";
+import { useCustomStudyConfig } from "@true-recall/obsidian/modals/study/custom-study/hooks/useCustomStudyConfig";
+import { NumberField } from "@true-recall/obsidian/modals/study/custom-study/NumberField";
+import type { CustomStudyModalResult } from "@true-recall/obsidian/modals/study/custom-study/types";
+import type { ReviewOrder } from "@true-recall/core/types/settings.types";
 import {
 	Clickable,
 	FormCard,
 	FormField,
 	SelectInput,
-} from "@shared/ui/components";
-import { ModalFooter } from "@shared/ui/components/ModalFooter";
+} from "@true-recall/obsidian/components";
+import { ModalFooter } from "@true-recall/obsidian/components/ModalFooter";
 import { useRef } from "preact/hooks";
 
 const REVIEW_ORDER_OPTIONS = [

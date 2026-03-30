@@ -1,4 +1,4 @@
-import { mountPreact } from "@shared/ui/preact/mount";
+import { mountPreact } from "@true-recall/obsidian/preact/mount";
 import { h } from "preact";
 import type TrueRecallPlugin from "../../../main";
 import { ComparisonWidget } from "./analytics/ComparisonWidget";

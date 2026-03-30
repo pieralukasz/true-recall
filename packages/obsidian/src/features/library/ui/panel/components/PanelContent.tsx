@@ -1,18 +1,18 @@
 import {
 	clearRecentCards,
 	streamingGeneration,
-} from "@features/ai/services/streaming-state";
-import { PanelCard } from "@features/library/ui/panel/components/PanelCard";
-import { PanelEmptyState } from "@features/library/ui/panel/components/PanelEmptyState";
-import { PanelIOGroup } from "@features/library/ui/panel/components/PanelIOGroup";
-import { PartialCard } from "@features/library/ui/panel/components/PartialCard";
-import { groupCards } from "@features/library/ui/panel/group-cards";
-import { matchesCardSearch } from "@features/library/ui/panel/utils/search-query.utils";
+} from "@true-recall/core/ai/streaming-state";
+import { PanelCard } from "@true-recall/obsidian/features/library/ui/panel/components/PanelCard";
+import { PanelEmptyState } from "@true-recall/obsidian/features/library/ui/panel/components/PanelEmptyState";
+import { PanelIOGroup } from "@true-recall/obsidian/features/library/ui/panel/components/PanelIOGroup";
+import { PartialCard } from "@true-recall/obsidian/features/library/ui/panel/components/PartialCard";
+import { groupCards } from "@true-recall/obsidian/features/library/ui/panel/group-cards";
+import { matchesCardSearch } from "@true-recall/obsidian/features/library/ui/panel/utils/search-query.utils";
 import { useSignalEffect } from "@preact/signals";
-import type { SelectionMode } from "@shared/store";
-import type { FlashcardInfo, FlashcardItem } from "@shared/types";
-import type { FSRSFlashcardItem } from "@shared/types/fsrs/card.types";
-import { EmptyState, EmptyStateMessages } from "@shared/ui/components";
+import type { SelectionMode } from "@true-recall/obsidian/store";
+import type { FlashcardInfo, FlashcardItem } from "@true-recall/core/types";
+import type { FSRSFlashcardItem } from "@true-recall/core/types/fsrs/card.types";
+import { EmptyState, EmptyStateMessages } from "@true-recall/obsidian/components";
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 
 export interface ContentHandlers {

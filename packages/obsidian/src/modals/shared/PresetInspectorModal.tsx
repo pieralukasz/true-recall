@@ -3,10 +3,10 @@ import type {
 	PresetResolutionContext,
 	PresetService,
 	PresetSource,
-} from "@features/core/services/preset.service";
-import { Clickable } from "@shared/ui/components";
-import { BasePromiseModal } from "@shared/ui/modals/BasePromiseModal";
-import { SetPresetModal } from "@shared/ui/modals/SetPresetModal";
+} from "@true-recall/core/services/preset.service";
+import { Clickable } from "@true-recall/obsidian/components";
+import { BasePromiseModal } from "@true-recall/obsidian/modals/shared/BasePromiseModal";
+import { SetPresetModal } from "@true-recall/obsidian/modals/shared/SetPresetModal";
 import type { App } from "obsidian";
 import { render } from "preact";
 

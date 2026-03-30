@@ -20,11 +20,11 @@ import {
 	truncateMiddlePath,
 } from "./ui-helpers";
 import { ImageService } from "../integration/services/ImageService";
-import { isImageExtension } from "@shared/types";
-import { Clickable } from "@shared/ui/components/Clickable";
-import { NotePickerCombobox } from "@shared/ui/components/NotePickerCombobox";
-import { useApp, usePlugin } from "@shared/ui/preact/ObsidianContext";
-import { cn } from "@shared/ui/utils/cn";
+import { isImageExtension } from "@true-recall/core/types";
+import { Clickable } from "@true-recall/obsidian/components/Clickable";
+import { NotePickerCombobox } from "@true-recall/obsidian/components/NotePickerCombobox";
+import { useApp, usePlugin } from "@true-recall/obsidian/preact/ObsidianContext";
+import { cn } from "@true-recall/ui/utils/cn";
 import { isDesktop } from "../../utils/platform";
 import { Notice, TFile } from "obsidian";
 import { useCallback, useEffect, useMemo, useState } from "preact/hooks";

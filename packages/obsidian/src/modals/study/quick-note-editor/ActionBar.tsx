@@ -1,6 +1,6 @@
-import { NoteTypePicker } from "@features/core/modals/add-flashcards/NoteTypePicker";
-import { Clickable } from "@shared/ui/components/Clickable";
-import { NotePickerCombobox } from "@shared/ui/components/NotePickerCombobox";
+import { NoteTypePicker } from "@true-recall/obsidian/modals/core/add-flashcards/NoteTypePicker";
+import { Clickable } from "@true-recall/obsidian/components/Clickable";
+import { NotePickerCombobox } from "@true-recall/obsidian/components/NotePickerCombobox";
 import type { App, TFile } from "obsidian";
 
 interface ActionBarProps {

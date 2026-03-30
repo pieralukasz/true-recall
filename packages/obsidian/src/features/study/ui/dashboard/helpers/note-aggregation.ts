@@ -1,5 +1,5 @@
-import type { FSRSFlashcardItem } from "@shared/types/fsrs/card.types";
-import type { TodaySummary } from "@shared/types/fsrs/stats.types";
+import type { FSRSFlashcardItem } from "@true-recall/core/types/fsrs/card.types";
+import type { TodaySummary } from "@true-recall/core/types/fsrs/stats.types";
 import { State } from "ts-fsrs";
 import type { DashboardAggregation, DashboardNoteEntry } from "../types";
 import { computePriority } from "./note-priority";

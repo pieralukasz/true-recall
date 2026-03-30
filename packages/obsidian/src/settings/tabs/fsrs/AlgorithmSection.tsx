@@ -1,11 +1,11 @@
-import { FSRS_CONFIG } from "@shared/constants";
-import type { FSRSPreset } from "@shared/types";
+import { FSRS_CONFIG } from "@true-recall/core/constants";
+import type { FSRSPreset } from "@true-recall/core/types";
 import {
 	FormCard,
 	FormField,
 	SliderInput,
 	TextInput,
-} from "@shared/ui/components";
+} from "@true-recall/obsidian/components";
 
 interface AlgorithmSectionProps {
 	preset: FSRSPreset;

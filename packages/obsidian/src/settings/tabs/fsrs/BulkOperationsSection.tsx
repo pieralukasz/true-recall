@@ -1,13 +1,13 @@
 import { useFsrsHelperOp } from "./useFsrsHelperOp";
-import { notify } from "@shared/services/notification.service";
+import { notify } from "@true-recall/obsidian/services/notification.service";
 import type { FsrsPluginHost } from "../../../types/plugin-host.types";
 import {
 	ActionButton,
 	FormCard,
 	FormField,
 	TextInput,
-} from "@shared/ui/components";
-import { confirm } from "@shared/ui/modals";
+} from "@true-recall/obsidian/components";
+import { confirm } from "@true-recall/obsidian/modals/shared";
 import { useCallback, useMemo, useState } from "preact/hooks";
 
 interface BulkOperationsSectionProps {

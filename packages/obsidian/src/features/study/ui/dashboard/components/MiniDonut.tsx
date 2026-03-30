@@ -1,4 +1,4 @@
-import { FSRS_COLORS } from "@shared/ui/helpers/fsrs-colors";
+import { FSRS_COLORS } from "@true-recall/obsidian/helpers/fsrs-colors";
 
 const CIRCUMFERENCE = 100;
 const RADIUS = 15.91549430918954;

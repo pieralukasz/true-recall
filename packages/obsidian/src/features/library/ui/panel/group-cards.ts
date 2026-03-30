@@ -1,5 +1,5 @@
-import type { FlashcardItem } from "@shared/types";
-import type { FSRSFlashcardItem } from "@shared/types/fsrs/card.types";
+import type { FlashcardItem } from "@true-recall/core/types";
+import type { FSRSFlashcardItem } from "@true-recall/core/types/fsrs/card.types";
 
 export type PanelItem =
 	| { type: "card"; card: FlashcardItem }

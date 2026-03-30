@@ -1,5 +1,5 @@
-import type { HierarchyService } from "@features/core/services/hierarchy.service";
-import type { FrontmatterService } from "@features/study/services/flashcard/frontmatter.service";
+import type { HierarchyService } from "@true-recall/core/services/hierarchy.service";
+import type { FrontmatterService } from "@true-recall/core/flashcard/frontmatter.service";
 import type { App } from "obsidian";
 import { Notice, normalizePath, TFile } from "obsidian";
 import type { FlatProjectItem } from "./project-tree-flatten";

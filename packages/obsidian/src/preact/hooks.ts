@@ -1,4 +1,4 @@
-import { useApp } from "@shared/ui/preact/ObsidianContext";
+import { useApp } from "@true-recall/obsidian/preact/ObsidianContext";
 import {
 	MarkdownRenderer,
 	Component as ObsidianComponent,

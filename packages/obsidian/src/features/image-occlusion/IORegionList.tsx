@@ -1,6 +1,6 @@
 import { IconToolButton } from "./IOIconToolButton";
 import type { IORegion } from "./types";
-import { Clickable } from "@shared/ui/components/Clickable";
+import { Clickable } from "@true-recall/obsidian/components/Clickable";
 
 interface RegionListItemProps {
 	region: IORegion;

@@ -1,4 +1,4 @@
-import type { RatingDistributionEntry } from "@shared/types";
+import type { RatingDistributionEntry } from "@true-recall/core/types";
 import type { ChartConfiguration } from "chart.js";
 import { useRef } from "preact/hooks";
 import { CHART_COLORS, withAlpha } from "../helpers/chart-theme";

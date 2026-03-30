@@ -1,10 +1,10 @@
 import {
 	type ExportMode,
 	ExportScopeSelector,
-} from "@features/integration/components/ExportScopeSelector";
-import type { NoteEntry } from "@features/integration/utils/export-helpers";
-import { ModalFooter } from "@shared/ui/components/ModalFooter";
-import { OptionCheckbox } from "@shared/ui/components/OptionCheckbox";
+} from "@true-recall/obsidian/features/integration/components/ExportScopeSelector";
+import type { NoteEntry } from "@true-recall/obsidian/features/integration/utils/export-helpers";
+import { ModalFooter } from "@true-recall/obsidian/components/ModalFooter";
+import { OptionCheckbox } from "@true-recall/obsidian/components/OptionCheckbox";
 import { useCallback, useRef, useState } from "preact/hooks";
 
 export interface ExportFormValues {

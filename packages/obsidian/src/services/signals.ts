@@ -1,6 +1,6 @@
 import { batch, type ReadonlySignal, signal } from "@preact/signals";
-import { refreshCards } from "@shared/services/reactive-card-store";
-import type { HighlightColor } from "@shared/ui/helpers/fsrs-colors";
+import { refreshCards } from "@true-recall/obsidian/services/reactive-card-store";
+import type { HighlightColor } from "@true-recall/obsidian/helpers/fsrs-colors";
 
 // ── Card mutation events ────────────────────────────────────
 
@@ -135,7 +135,7 @@ export function notifyCardChange(mutation: CardMutation): void {
 
 // ── Source text highlight (Card → Text jump) ────────────────
 
-export type { HighlightColor } from "@shared/ui/helpers/fsrs-colors";
+export type { HighlightColor } from "@true-recall/obsidian/helpers/fsrs-colors";
 
 export interface HighlightRequest {
 	sourceNotePath: string;

@@ -1,7 +1,7 @@
 import type {
 	SearchSuggestion,
 	SuggestionCategory,
-} from "@shared/ui/helpers/search-suggestions.types";
+} from "@true-recall/obsidian/helpers/search-suggestions.types";
 
 export const SEARCH_CATEGORY_LABELS: Record<SuggestionCategory, string> = {
 	keyword: "Filters",

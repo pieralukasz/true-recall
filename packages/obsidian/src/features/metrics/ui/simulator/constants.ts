@@ -3,8 +3,8 @@
  */
 
 import type { SliderConfig } from "./types";
-import { DEFAULT_FSRS_WEIGHTS } from "@shared/constants";
-import { getThemeColor } from "@shared/ui/utils/theme-colors";
+import { DEFAULT_FSRS_WEIGHTS } from "@true-recall/core/constants";
+import { getThemeColor } from "@true-recall/obsidian/utils/theme-colors";
 
 /** Default review sequences */
 export const DEFAULT_SEQUENCES = [

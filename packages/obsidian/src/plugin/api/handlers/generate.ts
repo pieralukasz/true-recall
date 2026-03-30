@@ -1,6 +1,6 @@
-import { hasAIKey } from "@features/ai/services/ai-client-config";
-import { FlashcardGenerationService } from "@features/ai/services/flashcard-generation.service";
-import { fixBlockSourceTexts } from "@features/ai/services/source-text-fixer";
+import { hasAIKey } from "@true-recall/core/ai/ai-client-config";
+import { FlashcardGenerationService } from "@true-recall/core/ai/flashcard-generation.service";
+import { fixBlockSourceTexts } from "@true-recall/core/ai/source-text-fixer";
 import type { ApiContext, ApiRequest, ApiResponseWriter } from "../api.types";
 import { parseJsonBody, readBody, sendError, sendOk } from "../api.types";
 

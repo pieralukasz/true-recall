@@ -1,10 +1,10 @@
-import { GENERATION_LANGUAGES } from "@features/ai/prompts/default-prompts";
+import { GENERATION_LANGUAGES } from "@true-recall/core/ai/prompts/default-prompts";
 import { useSettings } from "../hooks/useSettings";
 import {
 	BYOK_MODELS,
 	CUSTOM_MODEL_ID,
 	TRUERECALL_WEB_URL,
-} from "@shared/constants";
+} from "@true-recall/core/constants";
 import {
 	Clickable,
 	FormCard,
@@ -15,7 +15,7 @@ import {
 	TextAreaInput,
 	TextInput,
 	ToggleInput,
-} from "@shared/ui/components";
+} from "@true-recall/obsidian/components";
 import { requestUrl } from "obsidian";
 import { useEffect, useState } from "preact/hooks";
 

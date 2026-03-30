@@ -1,19 +1,19 @@
 import type { EditorView } from "@codemirror/view";
-import { CardPreviewList } from "@features/core/modals/add-flashcards/CardPreviewList";
-import { ActionBar } from "@features/core/modals/import-studio/ActionBar";
-import { EditorSection } from "@features/core/modals/import-studio/EditorSection";
-import { FooterBar } from "@features/core/modals/import-studio/FooterBar";
+import { CardPreviewList } from "@true-recall/obsidian/modals/core/add-flashcards/CardPreviewList";
+import { ActionBar } from "@true-recall/obsidian/modals/core/import-studio/ActionBar";
+import { EditorSection } from "@true-recall/obsidian/modals/core/import-studio/EditorSection";
+import { FooterBar } from "@true-recall/obsidian/modals/core/import-studio/FooterBar";
 import {
 	type ParsedCard,
 	parseBulkText,
-} from "@features/study/services/flashcard/bulk-card-parser";
-import type { NoteType } from "@shared/types/note.types";
-import type { EmbeddableEditorInstance } from "@shared/ui/editor/embedded-editor";
+} from "@true-recall/core/flashcard/bulk-card-parser";
+import type { NoteType } from "@true-recall/core/types/note.types";
+import type { EmbeddableEditorInstance } from "@true-recall/obsidian/editor/shared/embedded-editor";
 import {
 	type FormattingTargetRef,
 	FormattingToolbar,
-} from "@shared/ui/editor/formatting";
-import { useApp, usePlugin } from "@shared/ui/preact/ObsidianContext";
+} from "@true-recall/obsidian/editor/shared/formatting";
+import { useApp, usePlugin } from "@true-recall/obsidian/preact/ObsidianContext";
 import { Notice, TFile } from "obsidian";
 import {
 	useCallback,

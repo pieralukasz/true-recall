@@ -1,8 +1,8 @@
-import { Clickable } from "@shared/ui/components/Clickable";
-import { SearchInput } from "@shared/ui/components/SearchInput";
-import { useIcon } from "@shared/ui/preact";
-import { useApp } from "@shared/ui/preact/ObsidianContext";
-import { cn } from "@shared/ui/utils";
+import { Clickable } from "@true-recall/obsidian/components/Clickable";
+import { SearchInput } from "@true-recall/obsidian/components/SearchInput";
+import { useIcon } from "@true-recall/obsidian/preact";
+import { useApp } from "@true-recall/obsidian/preact/ObsidianContext";
+import { cn } from "@true-recall/obsidian/utils";
 import { TFolder } from "obsidian";
 import {
 	useCallback,

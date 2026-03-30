@@ -1,5 +1,5 @@
-import { Clickable } from "@shared/ui/components/Clickable";
-import { usePlugin } from "@shared/ui/preact";
+import { Clickable } from "@true-recall/obsidian/components/Clickable";
+import { usePlugin } from "@true-recall/obsidian/preact";
 import { useCallback } from "preact/hooks";
 import type { DashboardNoteEntry } from "../types";
 import { MiniDonut } from "./MiniDonut";

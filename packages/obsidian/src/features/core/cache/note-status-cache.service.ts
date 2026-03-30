@@ -2,10 +2,10 @@ import { effect } from "@preact/signals";
 import {
 	type NoteStatusInfo,
 	noteStatusMap,
-} from "@shared/services/reactive-card-store";
-import { lastMutation } from "@shared/services/signals";
+} from "@true-recall/obsidian/services/reactive-card-store";
+import { lastMutation } from "@true-recall/obsidian/services/signals";
 
-export type { NoteStatusInfo } from "@shared/services/reactive-card-store";
+export type { NoteStatusInfo } from "@true-recall/obsidian/services/reactive-card-store";
 
 export interface NoteStatusCache {
 	get(sourceUid: string): NoteStatusInfo | null;

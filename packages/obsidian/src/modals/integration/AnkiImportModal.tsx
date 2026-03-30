@@ -1,5 +1,5 @@
-import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
-import type { FSRSService } from "@features/core/services/fsrs.service";
+import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite/SqliteStoreService";
+import type { FSRSService } from "@true-recall/core/services/fsrs.service";
 import {
 	ErrorPhase,
 	FileSelectPhase,
@@ -8,12 +8,12 @@ import {
 	PreviewPhase,
 	ProgressPhase,
 	ResultPhase,
-} from "@features/integration/modals/anki-import";
-import { AnkiConverterService } from "@features/integration/services/anki/anki-converter.service";
-import { AnkiImportService } from "@features/integration/services/anki/anki-import.service";
-import { ApkgParserService } from "@features/integration/services/anki/apkg-parser.service";
-import type { ApkgData } from "@shared/types";
-import { BaseModal } from "@shared/ui/modals/BaseModal";
+} from "@true-recall/obsidian/modals/integration/anki-import";
+import { AnkiConverterService } from "@true-recall/obsidian/features/integration/services/anki/anki-converter.service";
+import { AnkiImportService } from "@true-recall/obsidian/features/integration/services/anki/anki-import.service";
+import { ApkgParserService } from "@true-recall/obsidian/features/integration/services/anki/apkg-parser.service";
+import type { ApkgData } from "@true-recall/core/types";
+import { BaseModal } from "@true-recall/obsidian/modals/shared/BaseModal";
 import type { App } from "obsidian";
 import { render } from "preact";
 import { useCallback, useState } from "preact/hooks";

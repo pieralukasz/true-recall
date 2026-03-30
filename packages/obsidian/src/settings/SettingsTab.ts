@@ -1,5 +1,5 @@
 import { SettingsApp } from "./SettingsApp";
-import { mountPreact } from "@shared/ui/preact";
+import { mountPreact } from "@true-recall/obsidian/preact";
 import { type App, PluginSettingTab } from "obsidian";
 import { h } from "preact";
 import type TrueRecallPlugin from "../main";

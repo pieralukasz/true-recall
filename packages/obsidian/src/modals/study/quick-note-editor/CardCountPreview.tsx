@@ -1,5 +1,5 @@
-import { generateCardsForNote } from "@features/core/services/card-generation.service";
-import type { NoteType } from "@shared/types/note.types";
+import { generateCardsForNote } from "@true-recall/core/services/card-generation.service";
+import type { NoteType } from "@true-recall/core/types/note.types";
 import { useMemo } from "preact/hooks";
 
 interface CardCountPreviewProps {

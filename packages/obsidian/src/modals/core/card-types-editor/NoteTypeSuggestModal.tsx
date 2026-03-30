@@ -1,4 +1,4 @@
-import type { NoteType } from "@shared/types/note.types";
+import type { NoteType } from "@true-recall/core/types/note.types";
 import { type App, Notice, SuggestModal } from "obsidian";
 import type TrueRecallPlugin from "../../../main";
 import { CardTypesEditorModal } from "./CardTypesEditorModal";

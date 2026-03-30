@@ -1,8 +1,8 @@
-import { NamePromptModal } from "@features/study/modals/NamePromptModal";
-import { RenameModal } from "@features/study/modals/RenameModal";
+import { NamePromptModal } from "@true-recall/obsidian/modals/study/NamePromptModal";
+import { RenameModal } from "@true-recall/obsidian/modals/study/RenameModal";
 import type { Signal } from "@preact/signals";
 import { useSignal } from "@preact/signals";
-import { usePlugin } from "@shared/ui/preact";
+import { usePlugin } from "@true-recall/obsidian/preact";
 import { Notice, normalizePath, TFile, TFolder } from "obsidian";
 import type { RefObject } from "preact";
 import { useCallback, useEffect, useMemo, useRef } from "preact/hooks";

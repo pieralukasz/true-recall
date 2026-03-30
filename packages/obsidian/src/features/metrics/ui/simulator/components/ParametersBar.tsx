@@ -1,5 +1,5 @@
 import { BUTTON_CLS } from "../utils/simulator-helpers";
-import { Clickable } from "@shared/ui/components";
+import { Clickable } from "@true-recall/obsidian/components";
 
 interface ParametersBarProps {
 	parametersString: string;

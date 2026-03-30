@@ -1,9 +1,9 @@
-import { BaseModal } from "@shared/ui/modals/BaseModal";
+import { BaseModal } from "@true-recall/obsidian/modals/shared/BaseModal";
 import {
 	PresetOptionsBody,
 	type PresetOptionsContext,
-} from "@shared/ui/modals/preset-options/PresetOptionsBody";
-import { ObsidianProvider } from "@shared/ui/preact/ObsidianContext";
+} from "@true-recall/obsidian/modals/shared/preset-options/PresetOptionsBody";
+import { ObsidianProvider } from "@true-recall/obsidian/preact/ObsidianContext";
 import type { App } from "obsidian";
 import { render } from "preact";
 import type TrueRecallPlugin from "../../main";

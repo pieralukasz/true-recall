@@ -1,11 +1,11 @@
-import type { FSRSPreset } from "@shared/types";
+import type { FSRSPreset } from "@true-recall/core/types";
 import {
 	ActionButton,
 	FormCard,
 	FormField,
 	SelectInput,
 	TextInput,
-} from "@shared/ui/components";
+} from "@true-recall/obsidian/components";
 
 interface PresetSectionProps {
 	presets: FSRSPreset[];

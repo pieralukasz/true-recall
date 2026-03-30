@@ -4,133 +4,133 @@ export {
 	type ActionButtonProps,
 	type ActionButtonSize,
 	type ActionButtonVariant,
-} from "@shared/ui/components/ActionButton";
+} from "@true-recall/obsidian/components/ActionButton";
 export {
 	AppNavBar,
 	type AppNavBarProps,
-} from "@shared/ui/components/AppNavBar";
+} from "@true-recall/obsidian/components/AppNavBar";
 export {
 	CardCountDisplay,
 	type CardCountDisplayProps,
-} from "@shared/ui/components/CardCountDisplay";
+} from "@true-recall/obsidian/components/CardCountDisplay";
 export {
 	CheckboxListItem,
 	type CheckboxListItemProps,
-} from "@shared/ui/components/CheckboxListItem";
+} from "@true-recall/obsidian/components/CheckboxListItem";
 export {
 	Clickable,
 	type ClickableProps,
-} from "@shared/ui/components/Clickable";
+} from "@true-recall/obsidian/components/Clickable";
 export {
 	EmptyState,
 	EmptyStateMessages,
 	type EmptyStateProps,
-} from "@shared/ui/components/EmptyState";
+} from "@true-recall/obsidian/components/EmptyState";
 export {
 	ErrorBoundary,
 	type ErrorBoundaryProps,
-} from "@shared/ui/components/ErrorBoundary";
+} from "@true-recall/obsidian/components/ErrorBoundary";
 export {
 	FolderPicker,
 	type FolderPickerProps,
-} from "@shared/ui/components/FolderPicker";
+} from "@true-recall/obsidian/components/FolderPicker";
 // ── Form ─────────────────────────────────────────────────────
 export {
 	FormCard,
 	type FormCardProps,
-} from "@shared/ui/components/FormCard";
+} from "@true-recall/obsidian/components/FormCard";
 export {
 	FormField,
 	type FormFieldProps,
-} from "@shared/ui/components/FormField";
+} from "@true-recall/obsidian/components/FormField";
 export {
 	FormSection,
 	type FormSectionProps,
-} from "@shared/ui/components/FormSection";
+} from "@true-recall/obsidian/components/FormSection";
 export {
 	IconButton,
 	type IconButtonProps,
-} from "@shared/ui/components/IconButton";
+} from "@true-recall/obsidian/components/IconButton";
 export {
 	InfoBlock,
 	type InfoBlockProps,
-} from "@shared/ui/components/InfoBlock";
+} from "@true-recall/obsidian/components/InfoBlock";
 export {
 	LoadingSpinner,
 	type LoadingSpinnerProps,
-} from "@shared/ui/components/LoadingSpinner";
+} from "@true-recall/obsidian/components/LoadingSpinner";
 // ── Content ──────────────────────────────────────────────────
 export {
 	MarkdownContent,
 	type MarkdownContentProps,
-} from "@shared/ui/components/MarkdownContent";
+} from "@true-recall/obsidian/components/MarkdownContent";
 export {
 	ModalFooter,
 	type ModalFooterProps,
 	PRIMARY_BTN,
 	SECONDARY_BTN,
-} from "@shared/ui/components/ModalFooter";
+} from "@true-recall/obsidian/components/ModalFooter";
 export {
 	NoteListItem,
 	type NoteListItemProps,
-} from "@shared/ui/components/NoteListItem";
+} from "@true-recall/obsidian/components/NoteListItem";
 // ── Pickers ──────────────────────────────────────────────────
 export {
 	NotePicker,
 	type NotePickerProps,
-} from "@shared/ui/components/NotePicker";
+} from "@true-recall/obsidian/components/NotePicker";
 export {
 	OptionCheckbox,
 	type OptionCheckboxProps,
-} from "@shared/ui/components/OptionCheckbox";
+} from "@true-recall/obsidian/components/OptionCheckbox";
 // ── Layout ───────────────────────────────────────────────────
-export { Panel, type PanelProps } from "@shared/ui/components/Panel";
+export { Panel, type PanelProps } from "@true-recall/obsidian/components/Panel";
 export {
 	PasteDropZone,
 	type PasteDropZoneProps,
-} from "@shared/ui/components/PasteDropZone";
+} from "@true-recall/obsidian/components/PasteDropZone";
 export {
 	SearchCombobox,
 	type SearchComboboxProps,
-} from "@shared/ui/components/SearchCombobox";
+} from "@true-recall/obsidian/components/SearchCombobox";
 export {
 	SearchInput,
 	type SearchInputProps,
-} from "@shared/ui/components/SearchInput";
+} from "@true-recall/obsidian/components/SearchInput";
 export {
 	SelectInput,
 	type SelectInputOption,
 	type SelectInputProps,
 	type SelectOption,
 	type SelectOptionGroup,
-} from "@shared/ui/components/SelectInput";
+} from "@true-recall/obsidian/components/SelectInput";
 export {
 	SliderInput,
 	type SliderInputProps,
-} from "@shared/ui/components/SliderInput";
+} from "@true-recall/obsidian/components/SliderInput";
 // ── Data Display ─────────────────────────────────────────────
 export {
 	StatBadge,
 	type StatBadgeProps,
 	StatGrid,
 	type StatGridProps,
-} from "@shared/ui/components/StatBadge";
+} from "@true-recall/obsidian/components/StatBadge";
 export {
 	type CardStateType,
 	getCardStateType,
 	getStateConfig,
 	StateBadge,
 	type StateBadgeProps,
-} from "@shared/ui/components/StateBadge";
+} from "@true-recall/obsidian/components/StateBadge";
 export {
 	TextAreaInput,
 	type TextAreaInputProps,
-} from "@shared/ui/components/TextAreaInput";
+} from "@true-recall/obsidian/components/TextAreaInput";
 export {
 	TextInput,
 	type TextInputProps,
-} from "@shared/ui/components/TextInput";
+} from "@true-recall/obsidian/components/TextInput";
 export {
 	ToggleInput,
 	type ToggleInputProps,
-} from "@shared/ui/components/ToggleInput";
+} from "@true-recall/obsidian/components/ToggleInput";

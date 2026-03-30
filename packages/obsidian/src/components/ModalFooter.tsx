@@ -1,5 +1,5 @@
-import { ActionButton } from "@shared/ui/components/ActionButton";
-import { Clickable } from "@shared/ui/components/Clickable";
+import { ActionButton } from "@true-recall/obsidian/components/ActionButton";
+import { Clickable } from "@true-recall/obsidian/components/Clickable";
 import type { ComponentChildren } from "preact";
 
 /** @deprecated Use ActionButton variant="primary" instead */

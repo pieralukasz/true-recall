@@ -1,5 +1,5 @@
 import { useSignal } from "@preact/signals";
-import { Clickable } from "@shared/ui/components";
+import { Clickable } from "@true-recall/obsidian/components";
 import type { RefObject } from "preact";
 import { useCallback, useEffect, useMemo, useRef } from "preact/hooks";
 import { ALL_COLUMNS, type ColumnDef } from "../helpers/column-defs";

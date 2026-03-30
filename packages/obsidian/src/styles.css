@@ -1,0 +1,618 @@
+/* @settings
+name: True Recall
+id: true-recall
+settings:
+  -
+    id: true-recall-card-radius
+    title: Card border radius
+    type: variable-select
+    default: var(--radius-m)
+    options:
+      -
+        label: None
+        value: '0'
+      -
+        label: Small
+        value: var(--radius-s)
+      -
+        label: Medium
+        value: var(--radius-m)
+      -
+        label: Large
+        value: var(--radius-l)
+  -
+    id: true-recall-review-font-size
+    title: Review card font size
+    type: variable-number-slider
+    default: 1.2
+    min: 0.9
+    max: 1.6
+    step: 0.05
+    format: rem
+*/
+
+/* Tailwind CSS v4 entry point with Obsidian theme integration */
+@import "tailwindcss" prefix(ep);
+
+/* Domain-specific CSS (complex selectors, SVG, animations that can't be Tailwind utilities) */
+@import "./editor/study/editor.styles.css";
+@import "./features/study/ui/review/review.styles.css";
+@import "./modals/shared/modals.styles.css";
+@import "./features/library/ui/panel/panel.styles.css";
+@import "./features/metrics/ui/simulator/styles.css";
+@import "./editor/ai/selection-toolbar.css";
+@import "./features/image-occlusion/image-occlusion.styles.css";
+
+/*
+ * Obsidian Theme Variables - Runtime Inheritance
+ *
+ * IMPORTANT: Obsidian sets CSS variables on .theme-dark/.theme-light, NOT :root.
+ * We must define our variables to inherit from these classes, not from :root.
+ * This block runs AFTER @theme and allows proper inheritance.
+ */
+.theme-dark,
+.theme-light {
+	/* ── Obsidian variable aliases ── */
+	--ep-color-obs-modifier-hover: var(--background-modifier-hover);
+	--ep-color-obs-modifier-border: var(--background-modifier-border);
+	--ep-color-obs-modifier-border-hover: var(--background-modifier-border-hover);
+	--ep-color-obs-modifier-border-focus: var(--background-modifier-border-focus);
+	--ep-color-obs-border: var(--background-modifier-border);
+	--ep-color-obs-primary: var(--background-primary);
+	--ep-color-obs-primary-alt: var(--background-primary-alt);
+	--ep-color-obs-secondary: var(--background-secondary);
+	--ep-color-obs-secondary-alt: var(--background-secondary-alt);
+	--ep-color-obs-normal: var(--text-normal);
+	--ep-color-obs-muted: var(--text-muted);
+	--ep-color-obs-faint: var(--text-faint);
+	--ep-color-obs-accent: var(--text-accent);
+	--ep-color-obs-interactive: var(--interactive-accent);
+	--ep-color-obs-interactive-hover: var(--interactive-accent-hover);
+	--ep-color-obs-red: var(--color-red);
+	--ep-color-obs-orange: var(--color-orange);
+	--ep-color-obs-yellow: var(--color-yellow);
+	--ep-color-obs-green: var(--color-green);
+	--ep-color-obs-cyan: var(--color-cyan);
+	--ep-color-obs-blue: var(--color-blue);
+	--ep-color-obs-purple: var(--color-purple);
+	--ep-color-obs-pink: var(--color-pink);
+
+	/* ── Design System: Surfaces ──
+	   Semantic surface levels for consistent component backgrounds.
+	   Base < Secondary < Raised < Floating < Overlay */
+	--ep-surface-primary: var(--background-primary);
+	--ep-surface-secondary: var(--background-secondary);
+	--ep-surface-raised: var(--background-secondary);
+	--ep-surface-overlay: var(--background-primary);
+	--ep-surface-inset: var(--background-primary-alt);
+
+	/* ── Design System: Elevation ──
+	   Theme-aware box-shadows. Light themes use warm gray,
+	   dark themes use pure black for depth. */
+	--ep-shadow-color: 220 10% 20%;
+	--ep-elevation-0: none;
+	--ep-elevation-1:
+		0 1px 3px hsl(var(--ep-shadow-color) / 0.08),
+		0 1px 2px hsl(var(--ep-shadow-color) / 0.06);
+	--ep-elevation-2:
+		0 2px 8px hsl(var(--ep-shadow-color) / 0.12),
+		0 1px 3px hsl(var(--ep-shadow-color) / 0.08);
+	--ep-elevation-3:
+		0 8px 24px hsl(var(--ep-shadow-color) / 0.18),
+		0 2px 8px hsl(var(--ep-shadow-color) / 0.1);
+	--ep-elevation-4:
+		0 16px 48px hsl(var(--ep-shadow-color) / 0.24),
+		0 2px 8px hsl(var(--ep-shadow-color) / 0.12);
+
+	/* ── Design System: Transitions ── */
+	--ep-transition-fast: 100ms ease;
+	--ep-transition-normal: 150ms ease;
+	--ep-transition-slow: 300ms ease;
+	--ep-transition-spring: 300ms cubic-bezier(0.22, 1, 0.36, 1);
+
+	/* ── Design System: Backdrop ── */
+	--ep-backdrop: color-mix(in srgb, var(--background-primary) 30%, transparent);
+}
+
+/* Dark themes: pure black shadows for stronger depth contrast */
+.theme-dark {
+	--ep-shadow-color: 0 0% 0%;
+}
+
+/*
+ * Obsidian Theme Variables Mapping
+ *
+ * These custom theme variables map Obsidian's CSS variables to Tailwind utilities.
+ * Usage: ep:text-obs-normal, ep:bg-obs-primary, ep:border-obs-border, etc.
+ *
+ * NOTE: The @theme block defines fallbacks for :root, but the actual values
+ * are overridden by the .theme-dark/.theme-light block above at runtime.
+ */
+@theme {
+	/* === Base colors (mono scale) === */
+	--color-obs-base-00: var(--color-base-00);
+	--color-obs-base-05: var(--color-base-05);
+	--color-obs-base-10: var(--color-base-10);
+	--color-obs-base-20: var(--color-base-20);
+	--color-obs-base-25: var(--color-base-25);
+	--color-obs-base-30: var(--color-base-30);
+	--color-obs-base-35: var(--color-base-35);
+	--color-obs-base-40: var(--color-base-40);
+	--color-obs-base-50: var(--color-base-50);
+	--color-obs-base-60: var(--color-base-60);
+	--color-obs-base-70: var(--color-base-70);
+	--color-obs-base-100: var(--color-base-100);
+
+	/* === Text colors === */
+	--color-obs-normal: var(--text-normal);
+	--color-obs-muted: var(--text-muted);
+	--color-obs-faint: var(--text-faint);
+	--color-obs-accent: var(--text-accent);
+	--color-obs-accent-hover: var(--text-accent-hover);
+	--color-obs-on-accent: var(--text-on-accent);
+	--color-obs-on-accent-inverted: var(--text-on-accent-inverted);
+	--color-obs-error: var(--text-error);
+	--color-obs-warning: var(--text-warning);
+	--color-obs-success: var(--text-success);
+	--color-obs-selection: var(--text-selection);
+
+	/* === Interactive colors === */
+	--color-obs-interactive: var(--interactive-accent);
+	--color-obs-interactive-hover: var(--interactive-accent-hover);
+	--color-obs-interactive-normal: var(--interactive-normal);
+	--color-obs-interactive-hover-bg: var(--interactive-hover);
+	--color-obs-interactive-accent-hsl: var(--interactive-accent-hsl);
+
+	/* === Background colors === */
+	--color-obs-primary: var(--background-primary);
+	--color-obs-primary-alt: var(--background-primary-alt);
+	--color-obs-secondary: var(--background-secondary);
+	--color-obs-secondary-alt: var(--background-secondary-alt);
+	--color-obs-modifier-hover: var(--background-modifier-hover);
+	--color-obs-modifier-active: var(--background-modifier-active-hover);
+	--color-obs-border: var(--background-modifier-border);
+	--color-obs-modifier-border: var(--background-modifier-border);
+	--color-obs-modifier-border-hover: var(--background-modifier-border-hover);
+	--color-obs-modifier-border-focus: var(--background-modifier-border-focus);
+	--color-obs-modifier-error: var(--background-modifier-error);
+	--color-obs-modifier-error-hover: var(--background-modifier-error-hover);
+	--color-obs-modifier-success: var(--background-modifier-success);
+	--color-obs-modifier-message: var(--background-modifier-message);
+	--color-obs-modifier-form-field: var(--background-modifier-form-field);
+
+	/* === Extended colors === */
+	--color-obs-red: var(--color-red);
+	--color-obs-orange: var(--color-orange);
+	--color-obs-yellow: var(--color-yellow);
+	--color-obs-green: var(--color-green);
+	--color-obs-cyan: var(--color-cyan);
+	--color-obs-blue: var(--color-blue);
+	--color-obs-purple: var(--color-purple);
+	--color-obs-pink: var(--color-pink);
+
+	/* === Caret color === */
+	--color-obs-caret: var(--caret-color);
+
+	/* === Button colors === */
+	--color-btn-primary: var(--interactive-accent);
+	--color-btn-primary-hover: var(--interactive-accent-hover);
+
+	/* === Fonts (legacy) === */
+	--font-obs-interface: var(--font-interface);
+	--font-obs-text: var(--font-text);
+	--font-obs-monospace: var(--font-monospace);
+
+	/* === Font sizes (legacy) === */
+	--font-size-obs-smaller: var(--font-ui-smaller);
+	--font-size-obs-small: var(--font-ui-small);
+	--font-size-obs-medium: var(--font-ui-medium);
+	--font-size-obs-large: var(--font-ui-large);
+
+	/* === UI Font sizes (for ep:text-ui-*) === */
+	--text-ui-smaller: var(--font-ui-smaller); /* 12px */
+	--text-ui-small: var(--font-ui-small); /* 13px */
+	--text-ui-medium: var(--font-ui-medium); /* 15px */
+	--text-ui-large: var(--font-ui-large); /* 20px */
+
+	/* === Fixed font sizes (for ep:text-*) === */
+	--text-lg: 1.125rem; /* 18px - between sm (14px) and xl (20px) */
+	--text-lg--line-height: calc(1.75 / 1.125); /* Proportional line height */
+
+	/* === Font families (for ep:font-*) === */
+	--font-family-interface: var(--font-interface-theme);
+	--font-family-text: var(--font-text-theme);
+	--font-family-mono: var(--font-monospace-theme);
+
+	/* === Line heights (for ep:leading-*) === */
+	--line-height-tight: 1.3;
+	--line-height-normal: 1.5;
+
+	/* === Border radius === */
+	--radius-obs-sm: var(--radius-s);
+	--radius-obs-md: var(--radius-m);
+	--radius-obs-lg: var(--radius-l);
+	--radius-obs-xl: var(--radius-xl);
+
+	/* === Design System: Surface colors (for ep:bg-surface-*) === */
+	--color-surface-primary: var(--ep-surface-primary);
+	--color-surface-secondary: var(--ep-surface-secondary);
+	--color-surface-raised: var(--ep-surface-raised);
+	--color-surface-overlay: var(--ep-surface-overlay);
+	--color-surface-inset: var(--ep-surface-inset);
+
+	/* === Design System: Elevation shadows (for ep:shadow-*) === */
+	--shadow-raised: var(--ep-elevation-1);
+	--shadow-floating: var(--ep-elevation-2);
+	--shadow-overlay: var(--ep-elevation-3);
+	--shadow-modal: var(--ep-elevation-4);
+}
+
+/* ── Design System: Typography Presets ──
+   Semantic text styles as Tailwind utilities. Usage: ep:ep-text-heading-md
+   Eliminates repeating 4-5 class combos for the same visual result. */
+
+@utility ep-text-heading-lg {
+	font-size: 1.5rem;
+	font-weight: 600;
+	color: var(--text-normal);
+	letter-spacing: -0.025em;
+	line-height: 1.3;
+}
+
+@utility ep-text-heading-md {
+	font-size: var(--font-ui-medium);
+	font-weight: 600;
+	color: var(--text-normal);
+	letter-spacing: -0.025em;
+}
+
+@utility ep-text-heading-sm {
+	font-size: var(--font-ui-small);
+	font-weight: 600;
+	color: var(--text-normal);
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+}
+
+@utility ep-text-body {
+	font-size: var(--font-ui-small);
+	color: var(--text-normal);
+}
+
+@utility ep-text-body-muted {
+	font-size: var(--font-ui-small);
+	color: var(--text-muted);
+}
+
+@utility ep-text-caption {
+	font-size: var(--font-ui-smaller);
+	color: var(--text-muted);
+}
+
+@utility ep-text-overline {
+	font-size: 0.75rem;
+	color: var(--text-faint);
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+}
+
+@layer utilities {
+	.ep-dynamic-bg {
+		background-color: var(--ep-dynamic-color);
+	}
+	.ep-dynamic-color {
+		color: var(--ep-dynamic-color);
+	}
+	.ep-dynamic-accent {
+		accent-color: var(--ep-dynamic-color);
+	}
+	.ep-hidden {
+		display: none;
+	}
+	.ep-tree-indent {
+		padding-left: var(--ep-indent, 12px);
+	}
+	.ep-modal-width {
+		width: var(--ep-modal-width, fit-content);
+	}
+	.ep-selectable-highlight {
+		background-color: var(--interactive-accent);
+		border: 2px solid var(--interactive-accent-hover);
+	}
+	.ep-radio-active {
+		background-color: var(--background-modifier-hover);
+		border: 1px solid var(--interactive-accent);
+	}
+	.ep-bg-collect-gradient {
+		background: linear-gradient(
+			135deg,
+			var(--color-yellow),
+			var(--color-orange)
+		);
+	}
+	.ep-dashboard-container {
+		container-type: inline-size;
+	}
+}
+
+/* Reset padding for app-shell views — must be unlayered to override Obsidian defaults */
+[data-type="true-recall-dashboard-view"] .view-content,
+[data-type="true-recall-stats"] .view-content,
+[data-type="true-recall-card-browser"] .view-content {
+	padding: 0;
+}
+[data-type="true-recall-flashcard-panel"] .view-content {
+	padding-bottom: 12px;
+}
+
+/* ── Streaming flashcard generation animations ── */
+
+/* Word reveal is handled imperatively by Motion One (useWordReveal hook)
+   via Web Animations API with spring physics — no CSS keyframes needed. */
+
+/* Skeleton shimmer for loading state before first AI token */
+.ep-shimmer {
+	background: linear-gradient(
+		90deg,
+		var(--background-secondary) 25%,
+		var(--background-modifier-hover) 50%,
+		var(--background-secondary) 75%
+	);
+	background-size: 200% 100%;
+	animation: ep-shimmer-sweep 1.5s ease-in-out infinite;
+}
+
+@keyframes ep-shimmer-sweep {
+	0% {
+		background-position: 200% 0;
+	}
+	100% {
+		background-position: -200% 0;
+	}
+}
+
+/* Card completion: brief green glow pulse confirming card is saved */
+.ep-card-complete {
+	animation: ep-completion-glow 700ms ease-out;
+}
+
+@keyframes ep-completion-glow {
+	0% {
+		box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-green) 40%, transparent);
+	}
+	50% {
+		box-shadow: 0 0 12px 2px
+			color-mix(in srgb, var(--color-green) 20%, transparent);
+	}
+	100% {
+		box-shadow: none;
+	}
+}
+
+@layer components {
+	.true-recall-search-suggest-section {
+		font-size: var(--font-ui-smaller);
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+		color: var(--text-faint);
+		margin: 6px 0 2px;
+		pointer-events: none;
+	}
+
+	.suggestion-item:first-child .true-recall-search-suggest-section {
+		margin-top: 0;
+	}
+}
+
+/* Card entry: keyframe animation is more reliable than @starting-style
+   with VDOM frameworks (Preact) that may recycle DOM nodes.
+   Uses --card-index CSS variable for staggered delays (80ms per card) */
+@keyframes ep-card-enter-anim {
+	from {
+		transform: translateY(8px) scale(0.98);
+	}
+	to {
+		transform: translateY(0) scale(1);
+	}
+}
+
+.ep-card-enter {
+	animation: ep-card-enter-anim 400ms cubic-bezier(0.22, 1, 0.36, 1) both;
+	animation-delay: calc(var(--card-index, 0) * 60ms);
+}
+
+/* Dashboard section entry: slide-up without scale for full-width blocks.
+   Uses --section-index CSS variable for staggered delays (80ms per section) */
+@keyframes ep-section-enter-anim {
+	from {
+		opacity: 0;
+		transform: translateY(12px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+.ep-section-enter {
+	animation: ep-section-enter-anim 300ms cubic-bezier(0.22, 1, 0.36, 1) both;
+	animation-delay: calc(var(--section-index, 0) * 80ms);
+}
+
+/* Streaming cursor: step-end for authentic terminal-like blink */
+@keyframes ep-cursor-blink {
+	0%,
+	100% {
+		opacity: 1;
+	}
+	50% {
+		opacity: 0;
+	}
+}
+
+.ep-streaming-cursor::after {
+	content: "";
+	display: inline-block;
+	width: 2px;
+	height: 1em;
+	background: var(--text-accent);
+	margin-left: 2px;
+	vertical-align: text-bottom;
+	animation: ep-cursor-blink 1s step-end infinite;
+	border-radius: 1px;
+}
+
+/* ── Chat message markdown (overrides Obsidian's .markdown-rendered) ── */
+
+.ep-chat-markdown p {
+	margin: 0.625rem 0;
+}
+
+.ep-chat-markdown p:first-child {
+	margin-top: 0;
+}
+
+.ep-chat-markdown p:last-child {
+	margin-bottom: 0;
+}
+
+.ep-chat-markdown ul,
+.ep-chat-markdown ol {
+	margin: 0.5rem 0;
+	padding-left: 1.25rem;
+}
+
+.ep-chat-markdown ul {
+	list-style-type: disc;
+}
+
+.ep-chat-markdown ol {
+	list-style-type: decimal;
+}
+
+.ep-chat-markdown li {
+	margin: 0.375rem 0;
+	line-height: 1.625;
+}
+
+.ep-chat-markdown h1,
+.ep-chat-markdown h2,
+.ep-chat-markdown h3 {
+	font-weight: 600;
+}
+
+.ep-chat-markdown h1 {
+	margin: 1rem 0 0.5rem;
+	font-size: 1rem;
+}
+
+.ep-chat-markdown h2 {
+	margin: 1rem 0 0.375rem;
+	font-size: 0.95em;
+}
+
+.ep-chat-markdown h3 {
+	margin: 0.75rem 0 0.25rem;
+	font-size: 0.9em;
+}
+
+.ep-chat-markdown code {
+	font-size: 0.85em;
+	background: var(--background-modifier-hover);
+	padding: 1px 0.25rem;
+	border-radius: 0.25rem;
+}
+
+.ep-chat-markdown pre {
+	margin: 0.75rem 0;
+	padding: 0.75rem;
+	font-size: 0.75rem;
+	overflow-x: auto;
+	border-radius: 0.5rem;
+	background: var(--background-secondary);
+}
+
+.ep-chat-markdown pre code {
+	background: transparent;
+	padding: 0;
+}
+
+.ep-chat-markdown strong {
+	font-weight: 600;
+}
+
+.ep-chat-markdown blockquote {
+	padding-left: 0.75rem;
+	border-left: 2px solid color-mix(in srgb, var(--text-accent) 30%, transparent);
+	margin: 0.75rem 0;
+	color: var(--text-muted);
+}
+
+.ep-chat-markdown hr {
+	margin: 1rem 0;
+	border-color: var(--background-modifier-border);
+}
+
+.ep-chat-markdown a.internal-link {
+	color: var(--text-accent);
+	text-decoration: none;
+	cursor: pointer;
+}
+
+.ep-chat-markdown a.internal-link:hover {
+	text-decoration: underline;
+}
+
+/* ── Drag-and-drop indicators ── */
+
+.ep-drag-source {
+	opacity: 0.4;
+}
+
+.ep-drop-target {
+	box-shadow: inset 3px 0 0 var(--interactive-accent);
+	background: color-mix(in srgb, var(--interactive-accent) 8%, transparent);
+}
+
+.ep-drop-root-zone {
+	border-color: var(--interactive-accent);
+	background: color-mix(in srgb, var(--interactive-accent) 6%, transparent);
+}
+
+/* Reduced motion: remove spatial motion, keep opacity fades */
+@media (prefers-reduced-motion: reduce) {
+	.true-recall-donut-due,
+	.true-recall-donut-new,
+	.true-recall-donut-learning {
+		transition: none;
+	}
+	.true-recall-chart-fade-in {
+		animation: none;
+	}
+	.true-recall-pulse-collect {
+		animation: none;
+	}
+	.ep-shimmer {
+		animation: none;
+	}
+	.ep-card-enter {
+		animation: none;
+	}
+	.ep-section-enter {
+		animation: none;
+		opacity: 1;
+	}
+	.ep-card-complete {
+		animation: none;
+	}
+	.ep-streaming-cursor::after {
+		animation: none;
+		opacity: 1;
+	}
+}
+
+/* ── Utility classes for vanilla-DOM contexts (modals, suggest items) ── */
+
+.u-text-accent {
+	color: var(--text-accent);
+}

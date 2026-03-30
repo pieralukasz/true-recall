@@ -1,7 +1,7 @@
 import type { IndexProgress } from "../../services/rag-indexer.service";
-import { notify } from "@shared/services/notification.service";
-import { IconButton } from "@shared/ui/components";
-import { usePlugin } from "@shared/ui/preact";
+import { notify } from "@true-recall/obsidian/services/notification.service";
+import { IconButton } from "@true-recall/obsidian/components";
+import { usePlugin } from "@true-recall/obsidian/preact";
 import { Notice } from "obsidian";
 import { useCallback, useMemo, useState } from "preact/hooks";
 import type { KnowledgeChatView } from "../../../../views/chat/KnowledgeChatView";

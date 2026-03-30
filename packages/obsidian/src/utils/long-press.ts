@@ -2,7 +2,7 @@
  * Long Press Utility
  * Reusable long press detection for touch/pointer events
  */
-import type { EventRegistry } from "@shared/utils/event.utils";
+import type { EventRegistry } from "@true-recall/core/utils/event.utils";
 
 /** Default long press duration in milliseconds */
 export const LONG_PRESS_DURATION = 500;

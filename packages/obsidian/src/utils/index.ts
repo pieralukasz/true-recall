@@ -1,13 +1,13 @@
-export { cn } from "@shared/ui/utils/cn";
+export { cn } from "@true-recall/obsidian/utils/cn";
 export {
 	type InternalLinkHandlerOptions,
 	setupInternalLinkHandler,
-} from "@shared/ui/utils/internal-link.utils";
+} from "@true-recall/obsidian/utils/internal-link.utils";
 export {
 	LONG_PRESS_DURATION,
 	type LongPressOptions,
 	type LongPressResult,
 	setupLongPress,
-} from "@shared/ui/utils/long-press";
-export { SubscriptionManager } from "@shared/ui/utils/SubscriptionManager";
-export { SECONDARY_BUTTON_CLASSES } from "@shared/ui/utils/tailwind";
+} from "@true-recall/obsidian/utils/long-press";
+export { SubscriptionManager } from "@true-recall/obsidian/utils/SubscriptionManager";
+export { SECONDARY_BUTTON_CLASSES } from "@true-recall/obsidian/utils/tailwind";

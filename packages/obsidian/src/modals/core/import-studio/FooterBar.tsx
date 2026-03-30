@@ -1,5 +1,5 @@
-import { Clickable } from "@shared/ui/components/Clickable";
-import { useIcon } from "@shared/ui/preact/hooks";
+import { Clickable } from "@true-recall/obsidian/components/Clickable";
+import { useIcon } from "@true-recall/obsidian/preact/hooks";
 import { useCallback, useEffect, useRef, useState } from "preact/hooks";
 
 interface FooterBarProps {

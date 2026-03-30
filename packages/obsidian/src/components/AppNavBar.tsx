@@ -1,7 +1,7 @@
-import { QuickNoteEditorModal } from "@features/study/modals/quick-note-editor/QuickNoteEditorModal";
-import { Clickable } from "@shared/ui/components/Clickable";
-import { useApp, useIcon, usePlugin } from "@shared/ui/preact";
-import { cn } from "@shared/ui/utils";
+import { QuickNoteEditorModal } from "@true-recall/obsidian/modals/study/quick-note-editor/QuickNoteEditorModal";
+import { Clickable } from "@true-recall/obsidian/components/Clickable";
+import { useApp, useIcon, usePlugin } from "@true-recall/obsidian/preact";
+import { cn } from "@true-recall/obsidian/utils";
 import { useCallback, useState } from "preact/hooks";
 
 type NavItemId = "dashboard" | "add" | "stats" | "browse";

@@ -1,5 +1,5 @@
-import { FSRS_COLORS, MUTED_STATES } from "@shared/ui/helpers/fsrs-colors";
-import { cn } from "@shared/ui/utils";
+import { FSRS_COLORS, MUTED_STATES } from "@true-recall/obsidian/helpers/fsrs-colors";
+import { cn } from "@true-recall/obsidian/utils";
 import { cva } from "class-variance-authority";
 import { State } from "ts-fsrs";
 

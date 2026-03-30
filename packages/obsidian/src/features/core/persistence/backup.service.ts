@@ -9,8 +9,8 @@ import {
 	getDeviceDbFilename,
 	toExactArrayBuffer,
 } from "@true-recall/core/persistence/sqlite";
-import { notify } from "@shared/services/notification.service";
-import type { RetentionPolicy } from "@shared/types/settings.types";
+import { notify } from "@true-recall/obsidian/services/notification.service";
+import type { RetentionPolicy } from "@true-recall/core/types/settings.types";
 import { type App, normalizePath } from "obsidian";
 import pako from "pako";
 

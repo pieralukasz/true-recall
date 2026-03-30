@@ -11,7 +11,7 @@ import {
 	SchedulingSection,
 	SiblingDisperseSection,
 } from "./fsrs";
-import { useApp } from "@shared/ui/preact";
+import { useApp } from "@true-recall/obsidian/preact";
 import { useCallback, useState } from "preact/hooks";
 
 interface FSRSTabProps {

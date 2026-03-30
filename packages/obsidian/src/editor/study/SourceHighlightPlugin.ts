@@ -10,7 +10,7 @@ import { effect } from "@preact/signals";
 import {
 	type HighlightRequest,
 	highlightRequest,
-} from "@shared/services/signals";
+} from "@true-recall/obsidian/services/signals";
 
 const addHighlight = StateEffect.define<{
 	from: number;

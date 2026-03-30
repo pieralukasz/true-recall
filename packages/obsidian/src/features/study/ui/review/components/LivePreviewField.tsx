@@ -1,6 +1,6 @@
-import type { EmbeddableEditorInstance } from "@shared/ui/editor/embedded-editor";
-import { useApp, usePlugin } from "@shared/ui/preact/ObsidianContext";
-import { stripBrTags } from "@shared/utils";
+import type { EmbeddableEditorInstance } from "@true-recall/obsidian/editor/shared/embedded-editor";
+import { useApp, usePlugin } from "@true-recall/obsidian/preact/ObsidianContext";
+import { stripBrTags } from "@true-recall/core/utils";
 import { useCallback, useEffect, useLayoutEffect, useRef } from "preact/hooks";
 
 const AUTOSAVE_DELAY_MS = 1500;
@@ -85,7 +85,7 @@ export function LivePreviewField({
 
 		const normalizedContent = stripBrTags(content);
 
-		let editor: import("@shared/ui/editor/embedded-editor").EmbeddableEditorInstance;
+		let editor: import("@true-recall/obsidian/editor/shared/embedded-editor").EmbeddableEditorInstance;
 		try {
 			editor = new plugin.EmbeddableEditor(app, el, {
 				value: normalizedContent,

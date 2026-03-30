@@ -1,6 +1,6 @@
-import type { NoteType } from "@shared/types/note.types";
-import { BUILTIN_IMAGE_OCCLUSION_ID } from "@shared/types/note.types";
-import { Clickable } from "@shared/ui/components";
+import type { NoteType } from "@true-recall/core/types/note.types";
+import { BUILTIN_IMAGE_OCCLUSION_ID } from "@true-recall/core/types/note.types";
+import { Clickable } from "@true-recall/obsidian/components";
 import { useCallback, useMemo, useState } from "preact/hooks";
 import type { ChangeNoteTypeResult } from "../ChangeNoteTypeModal";
 

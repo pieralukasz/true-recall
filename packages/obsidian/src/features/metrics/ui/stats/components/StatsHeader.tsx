@@ -1,7 +1,7 @@
 import type { Signal } from "@preact/signals";
-import type { StatsTimeRange } from "@shared/types";
-import { Clickable } from "@shared/ui/components/Clickable";
-import { cn } from "@shared/ui/utils";
+import type { StatsTimeRange } from "@true-recall/core/types";
+import { Clickable } from "@true-recall/obsidian/components/Clickable";
+import { cn } from "@true-recall/obsidian/utils";
 
 const TIME_RANGES: { value: StatsTimeRange; label: string }[] = [
 	{ value: "1m", label: "1M" },

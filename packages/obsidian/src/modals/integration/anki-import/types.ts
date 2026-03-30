@@ -1,4 +1,4 @@
-import type { AnkiImportResult } from "@shared/types";
+import type { AnkiImportResult } from "@true-recall/core/types";
 
 export interface ImportPreview {
 	totalCards: number;

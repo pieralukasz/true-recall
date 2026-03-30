@@ -1,34 +1,34 @@
-import type { HierarchyService } from "@features/core/services/hierarchy.service";
-import { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
-import { computeActionableSessionSnapshot } from "@features/study/services/actionable-session-snapshot.service";
-import { filterActiveCards } from "@features/study/ui/review/helpers/session-helpers";
+import type { HierarchyService } from "@true-recall/core/services/hierarchy.service";
+import { StatsCalculatorService } from "@true-recall/core/metrics/stats/stats-calculator.service";
+import { computeActionableSessionSnapshot } from "@true-recall/obsidian/features/study/services/actionable-session-snapshot.service";
+import { filterActiveCards } from "@true-recall/obsidian/features/study/ui/review/helpers/session-helpers";
 import { useSignal } from "@preact/signals";
 import {
 	allCardsArray,
 	archivedSourceUids as archivedSourceUidsSignal,
 	hierarchyVersion,
 	pluginSettings,
-} from "@shared/services/reactive-card-store";
-import { AppNavBar } from "@shared/ui/components";
-import { SearchCombobox } from "@shared/ui/components/SearchCombobox";
-import { PresetOptionsModal } from "@shared/ui/modals/PresetOptionsModal";
-import { usePlugin } from "@shared/ui/preact";
+} from "@true-recall/obsidian/services/reactive-card-store";
+import { AppNavBar } from "@true-recall/obsidian/components";
+import { SearchCombobox } from "@true-recall/obsidian/components/SearchCombobox";
+import { PresetOptionsModal } from "@true-recall/obsidian/modals/shared/PresetOptionsModal";
+import { usePlugin } from "@true-recall/obsidian/preact";
 import { useCallback, useMemo, useRef } from "preact/hooks";
-import { HeatmapWidget } from "@features/study/ui/editor/widgets/analytics/HeatmapWidget";
-import { BottomActionBar } from "@features/study/ui/dashboard/components/BottomActionBar";
-import { DashboardTabs } from "@features/study/ui/dashboard/components/DashboardTabs";
-import { NoteList } from "@features/study/ui/dashboard/components/NoteList";
-import { OrphanedTab } from "@features/study/ui/dashboard/components/OrphanedTab";
-import { ProjectsTab } from "@features/study/ui/dashboard/components/ProjectsTab";
-import { RecentlyStudiedBar } from "@features/study/ui/dashboard/components/RecentlyStudiedBar";
-import { TodayActionBar } from "@features/study/ui/dashboard/components/TodayActionBar";
-import { aggregateDashboardData } from "@features/study/ui/dashboard/helpers/note-aggregation";
-import { computePriority } from "@features/study/ui/dashboard/helpers/note-priority";
-import { aggregateProjectData } from "@features/study/ui/dashboard/helpers/project-aggregation";
-import { projectMatchesSearch } from "@features/study/ui/dashboard/helpers/project-tree-flatten";
-import { estimateStudyMinutes } from "@features/study/ui/dashboard/helpers/time-estimate";
-import { useDragAutoScroll } from "@features/study/ui/dashboard/helpers/use-drag-auto-scroll";
-import type { DashboardAggregation, DashboardTab } from "@features/study/ui/dashboard/types";
+import { HeatmapWidget } from "@true-recall/obsidian/editor/study/widgets/analytics/HeatmapWidget";
+import { BottomActionBar } from "@true-recall/obsidian/features/study/ui/dashboard/components/BottomActionBar";
+import { DashboardTabs } from "@true-recall/obsidian/features/study/ui/dashboard/components/DashboardTabs";
+import { NoteList } from "@true-recall/obsidian/features/study/ui/dashboard/components/NoteList";
+import { OrphanedTab } from "@true-recall/obsidian/features/study/ui/dashboard/components/OrphanedTab";
+import { ProjectsTab } from "@true-recall/obsidian/features/study/ui/dashboard/components/ProjectsTab";
+import { RecentlyStudiedBar } from "@true-recall/obsidian/features/study/ui/dashboard/components/RecentlyStudiedBar";
+import { TodayActionBar } from "@true-recall/obsidian/features/study/ui/dashboard/components/TodayActionBar";
+import { aggregateDashboardData } from "@true-recall/obsidian/features/study/ui/dashboard/helpers/note-aggregation";
+import { computePriority } from "@true-recall/obsidian/features/study/ui/dashboard/helpers/note-priority";
+import { aggregateProjectData } from "@true-recall/obsidian/features/study/ui/dashboard/helpers/project-aggregation";
+import { projectMatchesSearch } from "@true-recall/obsidian/features/study/ui/dashboard/helpers/project-tree-flatten";
+import { estimateStudyMinutes } from "@true-recall/obsidian/features/study/ui/dashboard/helpers/time-estimate";
+import { useDragAutoScroll } from "@true-recall/obsidian/features/study/ui/dashboard/helpers/use-drag-auto-scroll";
+import type { DashboardAggregation, DashboardTab } from "@true-recall/obsidian/features/study/ui/dashboard/types";
 
 export function DashboardApp() {
 	const plugin = usePlugin();

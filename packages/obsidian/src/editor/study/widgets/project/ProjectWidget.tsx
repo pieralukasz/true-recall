@@ -2,10 +2,10 @@ import { useComputed } from "@preact/signals";
 import {
 	archivedSourceUids,
 	cards,
-} from "@shared/services/reactive-card-store";
-import { Clickable } from "@shared/ui/components";
-import { FSRS_COLORS } from "@shared/ui/helpers/fsrs-colors";
-import { usePlugin } from "@shared/ui/preact";
+} from "@true-recall/obsidian/services/reactive-card-store";
+import { Clickable } from "@true-recall/obsidian/components";
+import { FSRS_COLORS } from "@true-recall/obsidian/helpers/fsrs-colors";
+import { usePlugin } from "@true-recall/obsidian/preact";
 import {
 	computeProjectStats,
 	healthColor,

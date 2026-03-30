@@ -1,5 +1,5 @@
 import type { NoteEntry } from "../utils/export-helpers";
-import { CheckboxListItem } from "@shared/ui/components/CheckboxListItem";
+import { CheckboxListItem } from "@true-recall/obsidian/components/CheckboxListItem";
 
 export type ExportMode = "all" | "notes";
 

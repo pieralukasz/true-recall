@@ -1,7 +1,7 @@
 import { useComputed } from "@preact/signals";
-import { cards } from "@shared/services/reactive-card-store";
-import { Clickable } from "@shared/ui/components";
-import { usePlugin } from "@shared/ui/preact";
+import { cards } from "@true-recall/obsidian/services/reactive-card-store";
+import { Clickable } from "@true-recall/obsidian/components";
+import { usePlugin } from "@true-recall/obsidian/preact";
 import { useMemo } from "preact/hooks";
 import { configValue, parseCodeblockConfig } from "../config-parser";
 import { WidgetCta } from "../WidgetCta";

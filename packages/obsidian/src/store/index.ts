@@ -1,7 +1,7 @@
 // Main store exports
 
-export type { AppStore } from "@shared/store/app-store";
-export { createAppStore } from "@shared/store/app-store";
+export type { AppStore } from "@true-recall/obsidian/store/app-store";
+export { createAppStore } from "@true-recall/obsidian/store/app-store";
 
 // Type exports
 export type {
@@ -27,4 +27,4 @@ export type {
 	// Helper types
 	SliceCreator,
 	ViewMode,
-} from "@shared/store/types";
+} from "@true-recall/obsidian/store/types";

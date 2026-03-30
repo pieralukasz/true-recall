@@ -3,13 +3,13 @@ import type {
 	MetricType,
 	SequenceSimulation,
 } from "../ui/simulator/types";
-import { DEFAULT_FSRS_WEIGHTS } from "@shared/constants";
+import { DEFAULT_FSRS_WEIGHTS } from "@true-recall/core/constants";
 import type {
 	AppState,
 	AppStoreDeps,
 	SimulatorSliceActions,
 	SimulatorSliceState,
-} from "@shared/store/types";
+} from "@true-recall/obsidian/store/types";
 
 const MAX_HISTORY_SIZE = 50;
 

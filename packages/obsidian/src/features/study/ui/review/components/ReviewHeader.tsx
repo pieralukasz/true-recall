@@ -1,4 +1,4 @@
-import type { ReviewApi } from "@shared/store";
+import type { ReviewApi } from "@true-recall/obsidian/store";
 import { cva } from "class-variance-authority";
 
 const reviewStatVariants = cva("ep:font-bold", {

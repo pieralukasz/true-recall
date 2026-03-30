@@ -3,17 +3,17 @@
  * Handles card operations: suspend, bury, move, add, copy, edit
  */
 
-import type { SqliteStoreService } from "@features/core/persistence/sqlite";
-import type { FSRSService } from "@features/core/services/fsrs.service";
-import { QuickNoteEditorModal } from "@features/study/modals/quick-note-editor/QuickNoteEditorModal";
-import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
-import type { ReviewService } from "@features/study/services/review.service";
-import { notify } from "@shared/services/notification.service";
-import { notifyCardChange } from "@shared/services/signals";
-import type { ReviewApi } from "@shared/store";
-import type { TrueRecallSettings } from "@shared/types";
-import { BUILTIN_IMAGE_OCCLUSION_ID } from "@shared/types/note.types";
-import { MoveCardModal } from "@shared/ui/modals";
+import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite";
+import type { FSRSService } from "@true-recall/core/services/fsrs.service";
+import { QuickNoteEditorModal } from "@true-recall/obsidian/modals/study/quick-note-editor/QuickNoteEditorModal";
+import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
+import type { ReviewService } from "@true-recall/core/services/review.service";
+import { notify } from "@true-recall/obsidian/services/notification.service";
+import { notifyCardChange } from "@true-recall/obsidian/services/signals";
+import type { ReviewApi } from "@true-recall/obsidian/store";
+import type { TrueRecallSettings } from "@true-recall/core/types";
+import { BUILTIN_IMAGE_OCCLUSION_ID } from "@true-recall/core/types/note.types";
+import { MoveCardModal } from "@true-recall/obsidian/modals/shared";
 import type { App } from "obsidian";
 import { Rating, State } from "ts-fsrs";
 import type TrueRecallPlugin from "@true-recall/obsidian/main";
@@ -633,7 +633,7 @@ export class CardActionsHandler {
 		}
 
 		const { ChangeNoteTypeModal } = await import(
-			"@features/library/modals/ChangeNoteTypeModal"
+			"@true-recall/obsidian/modals/library/ChangeNoteTypeModal"
 		);
 
 		const allNoteTypes = this.deps.cardStore.noteTypes.getAll();

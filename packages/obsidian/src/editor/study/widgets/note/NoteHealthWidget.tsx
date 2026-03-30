@@ -3,9 +3,9 @@ import {
 	allCardsArray,
 	cards,
 	cardsBySourceUid,
-} from "@shared/services/reactive-card-store";
-import { FSRS_COLORS } from "@shared/ui/helpers/fsrs-colors";
-import { usePlugin } from "@shared/ui/preact";
+} from "@true-recall/obsidian/services/reactive-card-store";
+import { FSRS_COLORS } from "@true-recall/obsidian/helpers/fsrs-colors";
+import { usePlugin } from "@true-recall/obsidian/preact";
 import { useMemo } from "preact/hooks";
 import { State } from "ts-fsrs";
 import { configValue, parseCodeblockConfig } from "../config-parser";

@@ -3,18 +3,18 @@ import {
 	getStatusTitle,
 	isBuried,
 	isSuspended,
-} from "@features/library/ui/panel/utils/card-status.utils";
-import type { FlashcardItem } from "@shared/types";
-import type { FSRSFlashcardItem } from "@shared/types/fsrs/card.types";
-import { Clickable } from "@shared/ui/components/Clickable";
-import { MarkdownContent } from "@shared/ui/components/MarkdownContent";
-import { useApp } from "@shared/ui/preact/ObsidianContext";
+} from "@true-recall/obsidian/features/library/ui/panel/utils/card-status.utils";
+import type { FlashcardItem } from "@true-recall/core/types";
+import type { FSRSFlashcardItem } from "@true-recall/core/types/fsrs/card.types";
+import { Clickable } from "@true-recall/obsidian/components/Clickable";
+import { MarkdownContent } from "@true-recall/obsidian/components/MarkdownContent";
+import { useApp } from "@true-recall/obsidian/preact/ObsidianContext";
 import {
 	type MenuItem,
 	useContextMenu,
-} from "@shared/ui/preact/useContextMenu";
-import { useLongPress } from "@shared/ui/preact/useLongPress";
-import { cn } from "@shared/ui/utils";
+} from "@true-recall/obsidian/preact/useContextMenu";
+import { useLongPress } from "@true-recall/obsidian/preact/useLongPress";
+import { cn } from "@true-recall/obsidian/utils";
 import { cva } from "class-variance-authority";
 import { useCallback } from "preact/hooks";
 

@@ -1,4 +1,4 @@
-import { usePlugin } from "@shared/ui/preact/ObsidianContext";
+import { usePlugin } from "@true-recall/obsidian/preact/ObsidianContext";
 import { Notice } from "obsidian";
 import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
 import { NoteTypeEditor } from "./NoteTypeEditor";

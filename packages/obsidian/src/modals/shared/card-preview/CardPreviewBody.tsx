@@ -1,5 +1,5 @@
-import type { CardMaturityBreakdown, FSRSFlashcardItem } from "@shared/types";
-import { Clickable } from "@shared/ui/components";
+import type { CardMaturityBreakdown, FSRSFlashcardItem } from "@true-recall/core/types";
+import { Clickable } from "@true-recall/obsidian/components";
 import { useCallback, useState } from "preact/hooks";
 
 interface CardItemProps {

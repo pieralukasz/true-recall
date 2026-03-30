@@ -1,5 +1,5 @@
-import type { FSRSCardData } from "@shared/types";
-import type { Note, NoteType } from "@shared/types/note.types";
+import type { FSRSCardData } from "@true-recall/core/types";
+import type { Note, NoteType } from "@true-recall/core/types/note.types";
 
 // ── Mode: discriminated union ──
 

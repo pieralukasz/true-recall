@@ -1,6 +1,6 @@
-import type { SchedulingResult } from "@features/metrics/services/fsrs-tools/scheduler/scheduler.types";
-import { notify } from "@shared/services/notification.service";
-import type { FSRSHelperOperationType } from "@shared/services/undo.types";
+import type { SchedulingResult } from "@true-recall/core/metrics/fsrs-tools/scheduler/scheduler.types";
+import { notify } from "@true-recall/obsidian/services/notification.service";
+import type { FSRSHelperOperationType } from "@true-recall/obsidian/services/undo.types";
 import type { FsrsPluginHost } from "../../../types/plugin-host.types";
 import { useCallback, useState } from "preact/hooks";
 

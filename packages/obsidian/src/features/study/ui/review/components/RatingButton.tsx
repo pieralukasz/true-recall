@@ -1,4 +1,4 @@
-import { Clickable } from "@shared/ui/components";
+import { Clickable } from "@true-recall/obsidian/components";
 import { cva } from "class-variance-authority";
 import type { Grade } from "ts-fsrs";
 import { Rating } from "ts-fsrs";

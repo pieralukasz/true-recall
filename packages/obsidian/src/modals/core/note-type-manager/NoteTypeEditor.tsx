@@ -1,6 +1,6 @@
-import type { NoteTypeService } from "@features/core/services/note-type.service";
-import type { CardTemplate, NoteType } from "@shared/types/note.types";
-import { Clickable } from "@shared/ui/components";
+import type { NoteTypeService } from "@true-recall/core/services/note-type.service";
+import type { CardTemplate, NoteType } from "@true-recall/core/types/note.types";
+import { Clickable } from "@true-recall/obsidian/components";
 import { useCallback } from "preact/hooks";
 import { FieldManager } from "./FieldManager";
 import { TemplateEditor } from "./TemplateEditor";

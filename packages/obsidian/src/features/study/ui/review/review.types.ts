@@ -1,5 +1,5 @@
-import { UNASSIGNED_PATH } from "@shared/constants";
-import type { ReviewOrder } from "@shared/types/settings.types";
+import { UNASSIGNED_PATH } from "@true-recall/core/constants";
+import type { ReviewOrder } from "@true-recall/core/types/settings.types";
 
 export interface ReviewViewState extends Record<string, unknown> {
 	/** Project note path — scopes review to project members */

@@ -1,15 +1,15 @@
 import {
 	type ChatMessage,
 	OpenRouterClient,
-} from "@features/ai/services/openrouter-client";
-import { StreamingOpenRouterClient } from "@features/ai/services/streaming-openrouter-client";
-import type { FrontmatterIndexService } from "@features/core/services/frontmatter-index.service";
-import { LITELLM_URL } from "@shared/constants";
+} from "@true-recall/core/ai/openrouter-client";
+import { StreamingOpenRouterClient } from "@true-recall/core/ai/streaming-openrouter-client";
+import type { FrontmatterIndexService } from "@true-recall/core/services/frontmatter-index.service";
+import { LITELLM_URL } from "@true-recall/core/constants";
 import type {
 	ChatResponseLength,
 	TrueRecallSettings,
-} from "@shared/types/settings.types";
-import { fileBasename, formatLocalDate } from "@shared/utils";
+} from "@true-recall/core/types/settings.types";
+import { fileBasename, formatLocalDate } from "@true-recall/core/utils";
 import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpClient";
 import type { ContextItem } from "../ui/context/context.types";
 import { RAG_CHAT_TOOLS, type RagToolExecutor } from "./rag-chat-tools";

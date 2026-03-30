@@ -5,7 +5,7 @@ import {
 	VIEW_TYPE_REVIEW,
 	VIEW_TYPE_SIMULATOR,
 	VIEW_TYPE_STATS,
-} from "@shared/constants";
+} from "@true-recall/core/constants";
 import { State } from "ts-fsrs";
 import type { ApiContext, ApiRequest, ApiResponseWriter } from "../api.types";
 import { sendOk } from "../api.types";
@@ -126,7 +126,7 @@ export async function handleGetFullContext(
 
 	// Today's study summary (lightweight)
 	if (ctx.plugin.isStoreReady()) {
-		const { formatLocalDate } = await import("@shared/utils");
+		const { formatLocalDate } = await import("@true-recall/core/utils");
 		const today = formatLocalDate(new Date());
 		const dailyStats = ctx.plugin.cardStore.stats.getDailyStats(today);
 

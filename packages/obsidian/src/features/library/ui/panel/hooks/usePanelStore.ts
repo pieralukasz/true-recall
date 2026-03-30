@@ -1,13 +1,13 @@
-import { cards } from "@shared/services/reactive-card-store";
+import { cards } from "@true-recall/obsidian/services/reactive-card-store";
 import type {
 	PanelApi,
 	ProcessingStatus,
 	SelectionMode,
 	ViewMode,
-} from "@shared/store";
-import type { FlashcardInfo } from "@shared/types";
-import type { FSRSFlashcardItem } from "@shared/types/fsrs/card.types";
-import { usePlugin } from "@shared/ui/preact";
+} from "@true-recall/obsidian/store";
+import type { FlashcardInfo } from "@true-recall/core/types";
+import type { FSRSFlashcardItem } from "@true-recall/core/types/fsrs/card.types";
+import { usePlugin } from "@true-recall/obsidian/preact";
 import type { TFile } from "obsidian";
 import { useEffect, useMemo, useState } from "preact/hooks";
 

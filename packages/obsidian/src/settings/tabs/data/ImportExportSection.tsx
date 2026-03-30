@@ -1,5 +1,5 @@
 import { useSettings } from "../../hooks/useSettings";
-import { ActionButton, FormCard, FormField } from "@shared/ui/components";
+import { ActionButton, FormCard, FormField } from "@true-recall/obsidian/components";
 
 export function ImportExportSection() {
 	const { plugin } = useSettings();

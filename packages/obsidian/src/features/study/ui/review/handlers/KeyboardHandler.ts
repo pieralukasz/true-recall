@@ -3,7 +3,7 @@
  * Centralizes keyboard shortcut handling for review sessions
  */
 
-import type { ReviewApi } from "@shared/store";
+import type { ReviewApi } from "@true-recall/obsidian/store";
 import { Rating } from "ts-fsrs";
 
 /**

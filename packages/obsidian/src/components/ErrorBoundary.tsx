@@ -1,4 +1,4 @@
-import { Clickable } from "@shared/ui/components/Clickable";
+import { Clickable } from "@true-recall/obsidian/components/Clickable";
 import type { ComponentChildren } from "preact";
 import { useErrorBoundary } from "preact/hooks";
 

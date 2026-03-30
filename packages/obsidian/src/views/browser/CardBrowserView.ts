@@ -1,6 +1,6 @@
 import { signal } from "@preact/signals";
-import { VIEW_TYPE_CARD_BROWSER } from "@shared/constants";
-import { mountPreact } from "@shared/ui/preact";
+import { VIEW_TYPE_CARD_BROWSER } from "@true-recall/core/constants";
+import { mountPreact } from "@true-recall/obsidian/preact";
 import { ItemView, type ViewStateResult, type WorkspaceLeaf } from "obsidian";
 import { h } from "preact";
 import type TrueRecallPlugin from "../../main";

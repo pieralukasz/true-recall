@@ -1,8 +1,8 @@
-import type { AppError } from "@shared/errors";
+import type { AppError } from "@true-recall/core/errors";
 import {
 	createSelectionActions,
 	toggleSetItem,
-} from "@shared/store/helpers/slice-helpers";
+} from "@true-recall/obsidian/store/helpers/slice-helpers";
 import type {
 	AppState,
 	AppStoreDeps,
@@ -10,8 +10,8 @@ import type {
 	PanelSliceState,
 	ProcessingStatus,
 	ViewMode,
-} from "@shared/store/types";
-import type { FlashcardInfo } from "@shared/types";
+} from "@true-recall/obsidian/store/types";
+import type { FlashcardInfo } from "@true-recall/core/types";
 import type { TFile } from "obsidian";
 
 type PanelSlice = PanelSliceState & PanelSliceActions;

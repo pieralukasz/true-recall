@@ -1,5 +1,5 @@
-import { BaseModal } from "@shared/ui/modals/BaseModal";
-import { ObsidianProvider } from "@shared/ui/preact/ObsidianContext";
+import { BaseModal } from "@true-recall/obsidian/modals/shared/BaseModal";
+import { ObsidianProvider } from "@true-recall/obsidian/preact/ObsidianContext";
 import type { App } from "obsidian";
 import { render } from "preact";
 import type TrueRecallPlugin from "../../../main";

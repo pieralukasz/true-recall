@@ -1,8 +1,8 @@
 import {
 	filterNotesByQuery,
 	MAX_DISPLAY_NOTES,
-} from "@shared/ui/modals/note-filter.utils";
-import { useApp } from "@shared/ui/preact";
+} from "@true-recall/obsidian/modals/shared/note-filter.utils";
+import { useApp } from "@true-recall/obsidian/preact";
 import type { TFile } from "obsidian";
 import { useCallback, useMemo, useState } from "preact/hooks";
 

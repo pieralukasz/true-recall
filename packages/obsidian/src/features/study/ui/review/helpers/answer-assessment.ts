@@ -1,5 +1,5 @@
-import type { AnswerDiffToken, LocalAnswerAssessment } from "@shared/types";
-import { stripMarkdownSyntax } from "@shared/utils";
+import type { AnswerDiffToken, LocalAnswerAssessment } from "@true-recall/core/types";
+import { stripMarkdownSyntax } from "@true-recall/core/utils";
 
 function normalizeAnswer(text: string): string {
 	return stripMarkdownSyntax(text)

@@ -1,4 +1,4 @@
-import { filterContent } from "@features/ai/services/markdown-chunker";
+import { filterContent } from "@true-recall/core/ai/markdown-chunker";
 import type { DailyNoteInfo } from "./daily-note-detector";
 import { preprocessDailyNote } from "./daily-note-preprocessor";
 

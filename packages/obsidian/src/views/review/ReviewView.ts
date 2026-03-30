@@ -1,17 +1,17 @@
-import { SemanticAnswerGradingService } from "@features/ai/services/semantic-answer-grading.service";
+import { SemanticAnswerGradingService } from "@true-recall/core/ai/semantic-answer-grading.service";
 import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpClient";
-import type { SessionPersistenceService } from "@features/core/persistence/session-persistence.service";
-import { FSRSService } from "@features/core/services/fsrs.service";
-import { computeActionableSessionSnapshot } from "@features/study/services/actionable-session-snapshot.service";
-import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
-import { ReviewService } from "@features/study/services/review.service";
-import type { PresetPickerOption } from "@features/study/ui/review/components/PresetPopover";
+import type { SessionPersistenceService } from "@true-recall/obsidian/features/core/persistence/session-persistence.service";
+import { FSRSService } from "@true-recall/core/services/fsrs.service";
+import { computeActionableSessionSnapshot } from "@true-recall/obsidian/features/study/services/actionable-session-snapshot.service";
+import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
+import { ReviewService } from "@true-recall/core/services/review.service";
+import type { PresetPickerOption } from "@true-recall/obsidian/features/study/ui/review/components/PresetPopover";
 import {
 	AnswerHandler,
 	CardActionsHandler,
 	EditHandler,
 	KeyboardHandler,
-} from "@features/study/ui/review/handlers";
+} from "@true-recall/obsidian/features/study/ui/review/handlers";
 import {
 	applyMutation,
 	assessTypedAnswer,
@@ -26,31 +26,31 @@ import {
 	readPersistedTypeInMode,
 	shouldRunAIGradingOnReveal,
 	type TypeInMode,
-} from "@features/study/ui/review/helpers";
+} from "@true-recall/obsidian/features/study/ui/review/helpers";
 import {
 	ReviewApp,
 	ReviewEmptyState,
-} from "@features/study/ui/review/ReviewApp";
+} from "@true-recall/obsidian/views/review/ReviewApp";
 import {
 	filtersFromViewState,
 	filtersToViewState,
 	isCustomSession,
 	type SessionFilters,
-} from "@features/study/ui/review/review.types";
+} from "@true-recall/obsidian/features/study/ui/review/review.types";
 import { effect } from "@preact/signals";
-import { VIEW_TYPE_REVIEW } from "@shared/constants";
-import { notify } from "@shared/services/notification.service";
-import { refreshCards } from "@shared/services/reactive-card-store";
-import { lastMutation } from "@shared/services/signals";
-import type { ReviewApi } from "@shared/store";
+import { VIEW_TYPE_REVIEW } from "@true-recall/core/constants";
+import { notify } from "@true-recall/obsidian/services/notification.service";
+import { refreshCards } from "@true-recall/obsidian/services/reactive-card-store";
+import { lastMutation } from "@true-recall/obsidian/services/signals";
+import type { ReviewApi } from "@true-recall/obsidian/store";
 import {
 	extractFSRSSettings,
 	type FSRSFlashcardItem,
 	type FSRSPreset,
 	type LocalAnswerAssessment,
 	type SemanticGradingResult,
-} from "@shared/types";
-import { mountPreact } from "@shared/ui/preact";
+} from "@true-recall/core/types";
+import { mountPreact } from "@true-recall/obsidian/preact";
 import {
 	ItemView,
 	Menu,
@@ -422,7 +422,7 @@ export class ReviewView extends ItemView {
 
 	async setState(state: unknown, result: ViewStateResult): Promise<void> {
 		this.filters = filtersFromViewState(
-			(state as import("@features/study/ui/review/review.types").ReviewViewState) ?? null,
+			(state as import("@true-recall/obsidian/features/study/ui/review/review.types").ReviewViewState) ?? null,
 		);
 		this.filters.dayStartHour = this.plugin.settings.dayStartHour;
 		this.crammedCardIds.clear();

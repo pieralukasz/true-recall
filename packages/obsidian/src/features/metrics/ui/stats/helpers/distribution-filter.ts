@@ -1,8 +1,8 @@
 import type {
 	DistributionStats,
 	HistogramBucket,
-} from "@features/metrics/services/fsrs-tools/statistics/distribution.calculator";
-import type { FSRSFlashcardItem } from "@shared/types";
+} from "@true-recall/core/metrics/fsrs-tools/statistics/distribution.calculator";
+import type { FSRSFlashcardItem } from "@true-recall/core/types";
 import { State } from "ts-fsrs";
 
 type BucketDef = [min: number, max: number, label: string];

@@ -5,7 +5,7 @@ import {
 	getTextContent,
 	OpenRouterClient,
 } from "@true-recall/core/ai/openrouter-client";
-import type { TrueRecallSettings } from "@shared/types/settings.types";
+import type { TrueRecallSettings } from "@true-recall/core/types/settings.types";
 import { ObsidianHttpClient } from "../../adapters/ObsidianHttpClient";
 import { type App, TFile } from "obsidian";
 import type { IORegion } from "./types";

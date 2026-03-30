@@ -1,4 +1,4 @@
-import { FormField } from "@shared/ui/components";
+import { FormField } from "@true-recall/obsidian/components";
 
 export interface NumberFieldProps {
 	id: string;

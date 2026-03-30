@@ -1,5 +1,5 @@
 import { useSettings } from "../../hooks/useSettings";
-import type { BackupInterval } from "@shared/types";
+import type { BackupInterval } from "@true-recall/core/types";
 import {
 	FormCard,
 	FormField,
@@ -7,7 +7,7 @@ import {
 	SelectInput,
 	TextInput,
 	ToggleInput,
-} from "@shared/ui/components";
+} from "@true-recall/obsidian/components";
 
 export function BackgroundBackupSection() {
 	const { settings, save } = useSettings();

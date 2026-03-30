@@ -3,9 +3,9 @@ import type {
 	RagSourceType,
 } from "../persistence/rag-chunk-actions";
 import { effect } from "@preact/signals-core";
-import { RAG_CONFIG } from "@shared/constants";
-import { lastMutation } from "@shared/services/signals";
-import type { TrueRecallSettings } from "@shared/types/settings.types";
+import { RAG_CONFIG } from "@true-recall/core/constants";
+import { lastMutation } from "@true-recall/obsidian/services/signals";
+import type { TrueRecallSettings } from "@true-recall/core/types/settings.types";
 import { type App, debounce, type Plugin, TFile } from "obsidian";
 import { detectDailyNote } from "./daily-note-detector";
 import {

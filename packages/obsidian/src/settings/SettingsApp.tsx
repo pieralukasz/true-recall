@@ -3,9 +3,9 @@ import { DataTab } from "./tabs/DataTab";
 import { FSRSTab } from "./tabs/FSRSTab";
 import { GeneralTab } from "./tabs/GeneralTab";
 import { KnowledgeBaseTab } from "./tabs/KnowledgeBaseTab";
-import { ENABLE_RAG } from "@shared/constants";
-import { Clickable } from "@shared/ui/components";
-import { usePlugin } from "@shared/ui/preact";
+import { ENABLE_RAG } from "@true-recall/core/constants";
+import { Clickable } from "@true-recall/obsidian/components";
+import { usePlugin } from "@true-recall/obsidian/preact";
 import { useCallback, useState } from "preact/hooks";
 
 type SettingsTabId = "general" | "ai" | "fsrs" | "data" | "knowledge-base";

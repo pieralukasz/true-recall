@@ -3,7 +3,7 @@
  * Helper functions for the review view
  */
 
-export { assessTypedAnswer } from "@features/study/ui/review/helpers/answer-assessment";
+export { assessTypedAnswer } from "@true-recall/obsidian/features/study/ui/review/helpers/answer-assessment";
 export {
 	applyMutation,
 	buildGlobalPresetQueueContext,
@@ -12,17 +12,17 @@ export {
 	filterActiveCards,
 	getEmptyQueueMessage,
 	isGlobalReviewSession,
-} from "@features/study/ui/review/helpers/session-helpers";
-export type { TypeInMode } from "@features/study/ui/review/helpers/type-in-flow";
+} from "@true-recall/obsidian/features/study/ui/review/helpers/session-helpers";
+export type { TypeInMode } from "@true-recall/obsidian/features/study/ui/review/helpers/type-in-flow";
 export {
 	deriveTypeInMode,
 	isRatingLockedForTypeIn,
 	isTypeInRequiredForCard,
 	nextTypeInMode,
 	shouldRunAIGradingOnReveal,
-} from "@features/study/ui/review/helpers/type-in-flow";
+} from "@true-recall/obsidian/features/study/ui/review/helpers/type-in-flow";
 export {
 	getTypeInModeStorage,
 	persistTypeInMode,
 	readPersistedTypeInMode,
-} from "@features/study/ui/review/helpers/type-in-storage";
+} from "@true-recall/obsidian/features/study/ui/review/helpers/type-in-storage";

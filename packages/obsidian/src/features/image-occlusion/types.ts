@@ -1,5 +1,5 @@
-import type { FSRSCardData } from "@shared/types";
-import type { Note } from "@shared/types/note.types";
+import type { FSRSCardData } from "@true-recall/core/types";
+import type { Note } from "@true-recall/core/types/note.types";
 
 export type IOShape = "rect" | "ellipse";
 export type IOMaskMode = "solo" | "all";

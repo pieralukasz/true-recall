@@ -1,17 +1,17 @@
-import { IOCardRenderer } from "@features/image-occlusion/IOCardRenderer";
-import { LivePreviewField } from "@features/study/ui/review/components/LivePreviewField";
+import { IOCardRenderer } from "@true-recall/obsidian/features/image-occlusion/IOCardRenderer";
+import { LivePreviewField } from "@true-recall/obsidian/features/study/ui/review/components/LivePreviewField";
 import {
 	type PresetPickerOption,
 	PresetPopover,
-} from "@features/study/ui/review/components/PresetPopover";
-import { TypeInCMEditor } from "@features/study/ui/review/components/TypeInCMEditor";
+} from "@true-recall/obsidian/features/study/ui/review/components/PresetPopover";
+import { TypeInCMEditor } from "@true-recall/obsidian/features/study/ui/review/components/TypeInCMEditor";
 import type {
 	FSRSFlashcardItem,
 	LocalAnswerAssessment,
 	SemanticGradingResult,
-} from "@shared/types";
-import { Clickable } from "@shared/ui/components";
-import { cn } from "@shared/ui/utils/cn";
+} from "@true-recall/core/types";
+import { Clickable } from "@true-recall/obsidian/components";
+import { cn } from "@true-recall/ui/utils/cn";
 import { useEffect, useRef, useState } from "preact/hooks";
 
 // Pre-renders the answer DOM one frame after the question paints,

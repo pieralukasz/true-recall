@@ -3,12 +3,12 @@
  * Discovers and provides metadata about device-specific databases in the vault.
  */
 
-import { loadDatabase } from "@features/core/persistence/sqlite/loader";
+import { loadDatabase } from "@true-recall/core/persistence/sqlite/loader";
 import {
 	DB_FOLDER,
 	extractDeviceIdFromFilename,
 	LEGACY_DB_FILE,
-} from "@features/core/persistence/sqlite/sqlite.types";
+} from "@true-recall/core/persistence/sqlite/sqlite.types";
 import { type App, normalizePath } from "obsidian";
 
 /**

@@ -1,4 +1,4 @@
-import type { AppState } from "@shared/store/types";
+import type { AppState } from "@true-recall/obsidian/store/types";
 
 type SetFn = (fn: (state: AppState) => Partial<AppState>) => void;
 type GetFn = () => AppState;

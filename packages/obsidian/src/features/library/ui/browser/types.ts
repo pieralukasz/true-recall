@@ -1,4 +1,4 @@
-import type { CardType } from "@shared/types";
+import type { CardType } from "@true-recall/core/types";
 import type { State } from "ts-fsrs";
 
 /** Flattened card row optimized for table display */

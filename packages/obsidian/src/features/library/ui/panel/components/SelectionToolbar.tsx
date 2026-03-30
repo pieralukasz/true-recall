@@ -1,9 +1,9 @@
-import { usePanelStore } from "@features/library/ui/panel/hooks/usePanelStore";
+import { usePanelStore } from "@true-recall/obsidian/features/library/ui/panel/hooks/usePanelStore";
 import {
 	type UseSelectionActionsParams,
 	useSelectionActions,
-} from "@features/library/ui/panel/hooks/useSelectionActions";
-import { IconButton } from "@shared/ui/components";
+} from "@true-recall/obsidian/features/library/ui/panel/hooks/useSelectionActions";
+import { IconButton } from "@true-recall/obsidian/components";
 
 export type SelectionToolbarProps = Pick<
 	UseSelectionActionsParams,

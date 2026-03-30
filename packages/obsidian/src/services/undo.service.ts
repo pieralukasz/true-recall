@@ -1,5 +1,5 @@
-import { notify } from "@shared/services/notification.service";
-import { notifyCardChange } from "@shared/services/signals";
+import { notify } from "@true-recall/obsidian/services/notification.service";
+import { notifyCardChange } from "@true-recall/obsidian/services/signals";
 import type {
 	AnswerUndoPayload,
 	BuryUndoPayload,
@@ -8,9 +8,9 @@ import type {
 	SuspendUndoPayload,
 	UndoEntry,
 	UpdateNoteFieldsUndoPayload,
-} from "@shared/services/undo.types";
-import type { ReviewApi } from "@shared/store";
-import type { FSRSCardData } from "@shared/types";
+} from "@true-recall/obsidian/services/undo.types";
+import type { ReviewApi } from "@true-recall/obsidian/store";
+import type { FSRSCardData } from "@true-recall/core/types";
 import type TrueRecallPlugin from "../main";
 
 export interface ReviewUndoCallbacks {

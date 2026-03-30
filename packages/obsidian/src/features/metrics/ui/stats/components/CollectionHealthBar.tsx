@@ -1,4 +1,4 @@
-import type { CollectionHealthSnapshot } from "@shared/types";
+import type { CollectionHealthSnapshot } from "@true-recall/core/types";
 import { getThemeColor } from "../helpers/chart-theme";
 import { ChartCard } from "./ChartCard";
 

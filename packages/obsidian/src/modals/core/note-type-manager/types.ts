@@ -1,4 +1,4 @@
-import type { CardTemplate } from "@shared/types/note.types";
+import type { CardTemplate } from "@true-recall/core/types/note.types";
 
 export interface NoteTypeDraft {
 	name: string;

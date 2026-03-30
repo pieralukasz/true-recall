@@ -1,8 +1,8 @@
-import type { StreamingGenerationState } from "@features/ai/services/streaming-state";
+import type { StreamingGenerationState } from "@true-recall/core/ai/streaming-state";
 import {
 	useStreamingText,
 	useWordReveal,
-} from "@features/library/ui/panel/hooks";
+} from "@true-recall/obsidian/features/library/ui/panel/hooks";
 import { useRef } from "preact/hooks";
 
 interface ClozePart {

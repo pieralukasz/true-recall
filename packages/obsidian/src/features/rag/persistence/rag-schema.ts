@@ -1,4 +1,4 @@
-import type { DatabaseLike } from "@features/core/persistence/sqlite/sqlite.types";
+import type { DatabaseLike } from "@true-recall/core/persistence/sqlite/sqlite.types";
 
 export class RagSchemaManager {
 	fts5Available = false;

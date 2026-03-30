@@ -1,5 +1,5 @@
-import { Clickable, SearchInput } from "@shared/ui/components";
-import { BasePromiseModal } from "@shared/ui/modals/BasePromiseModal";
+import { Clickable, SearchInput } from "@true-recall/obsidian/components";
+import { BasePromiseModal } from "@true-recall/obsidian/modals/shared/BasePromiseModal";
 import { type App, normalizePath, TFolder } from "obsidian";
 import { render } from "preact";
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";

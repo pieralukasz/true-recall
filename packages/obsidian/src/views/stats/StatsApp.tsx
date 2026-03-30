@@ -1,15 +1,15 @@
-import { buildSourceUidToPresetMap } from "@features/metrics/services/stats/stats-filter.helpers";
-import type { StatsFilterContext } from "@features/metrics/services/stats/stats-filter.types";
-import { HeatmapWidget } from "@features/study/ui/editor/widgets/analytics/HeatmapWidget";
+import { buildSourceUidToPresetMap } from "@true-recall/core/metrics/stats/stats-filter.helpers";
+import type { StatsFilterContext } from "@true-recall/core/metrics/stats/stats-filter.types";
+import { HeatmapWidget } from "@true-recall/obsidian/editor/study/widgets/analytics/HeatmapWidget";
 import { useComputed, useSignal } from "@preact/signals";
 import {
 	allCardsArray,
 	archivedSourceUids as archivedSourceUidsSignal,
 	pluginSettings,
-} from "@shared/services/reactive-card-store";
-import type { StatsTimeRange } from "@shared/types";
-import { AppNavBar } from "@shared/ui/components";
-import { usePlugin } from "@shared/ui/preact";
+} from "@true-recall/obsidian/services/reactive-card-store";
+import type { StatsTimeRange } from "@true-recall/core/types";
+import { AppNavBar } from "@true-recall/obsidian/components";
+import { usePlugin } from "@true-recall/obsidian/preact";
 import { useEffect, useMemo, useState } from "preact/hooks";
 import {
 	CardMaturitySection,
@@ -27,14 +27,14 @@ import {
 	TodayHero,
 	TrueRetentionCard,
 	WorkloadForecastSection,
-} from "@features/metrics/ui/stats/components";
-import { getFilteredDistributions } from "@features/metrics/ui/stats/helpers/distribution-filter";
+} from "@true-recall/obsidian/features/metrics/ui/stats/components";
+import { getFilteredDistributions } from "@true-recall/obsidian/features/metrics/ui/stats/helpers/distribution-filter";
 import {
 	buildDayOfWeekStats,
 	buildFilteredForecast,
 	buildForecastSummary,
-} from "@features/metrics/ui/stats/helpers/forecast-filter";
-import { useStatsData } from "@features/metrics/ui/stats/hooks/use-stats-data";
+} from "@true-recall/obsidian/features/metrics/ui/stats/helpers/forecast-filter";
+import { useStatsData } from "@true-recall/obsidian/features/metrics/ui/stats/hooks/use-stats-data";
 
 export function StatsApp() {
 	const plugin = usePlugin();

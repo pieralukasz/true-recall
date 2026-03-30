@@ -1,10 +1,10 @@
-import type { FSRSPreset, NewCardOrder, NewReviewMix } from "@shared/types";
+import type { FSRSPreset, NewCardOrder, NewReviewMix } from "@true-recall/core/types";
 import {
 	FormCard,
 	FormField,
 	SelectInput,
 	TextInput,
-} from "@shared/ui/components";
+} from "@true-recall/obsidian/components";
 
 interface NewCardsSectionProps {
 	preset: FSRSPreset;

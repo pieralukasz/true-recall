@@ -1,18 +1,18 @@
-import type { ChatTurn } from "@features/rag/services/rag-query.service";
-import type { ChatConfig } from "@shared/types";
-import { Clickable, IconButton } from "@shared/ui/components";
-import { useApp, useIcon, usePlugin } from "@shared/ui/preact";
+import type { ChatTurn } from "@true-recall/obsidian/features/rag/services/rag-query.service";
+import type { ChatConfig } from "@true-recall/core/types";
+import { Clickable, IconButton } from "@true-recall/obsidian/components";
+import { useApp, useIcon, usePlugin } from "@true-recall/obsidian/preact";
 import { Notice } from "obsidian";
 import { useCallback, useMemo, useRef, useState } from "preact/hooks";
-import { ChatConfigPanel } from "@features/rag/ui/components/ChatConfigPanel";
-import { ChatInput } from "@features/rag/ui/components/ChatInput";
-import { ChatMessage } from "@features/rag/ui/components/ChatMessage";
-import { IndexStatus } from "@features/rag/ui/components/IndexStatus";
-import type { ContextItem, NoteContextItem } from "@features/rag/ui/context/context.types";
-import { contextKey } from "@features/rag/ui/context/context.types";
-import { useAutoContext } from "@features/rag/ui/context/useAutoContext";
+import { ChatConfigPanel } from "@true-recall/obsidian/features/rag/ui/components/ChatConfigPanel";
+import { ChatInput } from "@true-recall/obsidian/features/rag/ui/components/ChatInput";
+import { ChatMessage } from "@true-recall/obsidian/features/rag/ui/components/ChatMessage";
+import { IndexStatus } from "@true-recall/obsidian/features/rag/ui/components/IndexStatus";
+import type { ContextItem, NoteContextItem } from "@true-recall/obsidian/features/rag/ui/context/context.types";
+import { contextKey } from "@true-recall/obsidian/features/rag/ui/context/context.types";
+import { useAutoContext } from "@true-recall/obsidian/features/rag/ui/context/useAutoContext";
 import type { KnowledgeChatView } from "./KnowledgeChatView";
-import type { SourceNavigationHandlers } from "@features/rag/ui/types";
+import type { SourceNavigationHandlers } from "@true-recall/obsidian/features/rag/ui/types";
 
 function ThinkingIndicator() {
 	return (

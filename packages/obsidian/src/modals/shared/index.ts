@@ -2,40 +2,40 @@
  * Shared modals exports - general-purpose modals used across features
  */
 
-export { BaseModal, type BaseModalOptions } from "@shared/ui/modals/BaseModal";
+export { BaseModal, type BaseModalOptions } from "@true-recall/obsidian/modals/shared/BaseModal";
 export {
 	BasePromiseModal,
 	type CancellableResult,
 	createCancelledResult,
-} from "@shared/ui/modals/BasePromiseModal";
+} from "@true-recall/obsidian/modals/shared/BasePromiseModal";
 export {
 	CardPreviewModal,
 	type CardPreviewModalOptions,
-} from "@shared/ui/modals/CardPreviewModal";
+} from "@true-recall/obsidian/modals/shared/CardPreviewModal";
 export {
 	ConfirmModal,
 	type ConfirmModalOptions,
 	confirm,
-} from "@shared/ui/modals/ConfirmModal";
+} from "@true-recall/obsidian/modals/shared/ConfirmModal";
 export {
 	MoveCardModal,
 	type MoveCardModalOptions,
 	type MoveCardResult,
-} from "@shared/ui/modals/MoveCardModal";
+} from "@true-recall/obsidian/modals/shared/MoveCardModal";
 export {
 	PresetInspectorModal,
 	type PresetInspectorResult,
-} from "@shared/ui/modals/PresetInspectorModal";
+} from "@true-recall/obsidian/modals/shared/PresetInspectorModal";
 export {
 	PresetOptionsModal,
 	type PresetOptionsModalOptions,
-} from "@shared/ui/modals/PresetOptionsModal";
+} from "@true-recall/obsidian/modals/shared/PresetOptionsModal";
 export {
 	SelectNoteModal,
 	type SelectNoteModalOptions,
 	type SelectNoteResult,
-} from "@shared/ui/modals/SelectNoteModal";
+} from "@true-recall/obsidian/modals/shared/SelectNoteModal";
 export {
 	SetPresetModal,
 	type SetPresetResult,
-} from "@shared/ui/modals/SetPresetModal";
+} from "@true-recall/obsidian/modals/shared/SetPresetModal";

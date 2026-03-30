@@ -1,5 +1,5 @@
 import type { SearchResult } from "../../services/rag-search.service";
-import { fileBasename } from "@shared/utils";
+import { fileBasename } from "@true-recall/core/utils";
 import type { GroupedSource } from "../types";
 
 export function groupSources(sources: SearchResult[]): GroupedSource[] {

@@ -3,7 +3,7 @@ import type {
 	RagChunkActions,
 	RagSourceType,
 } from "../persistence/rag-chunk-actions";
-import { RAG_CONFIG } from "@shared/constants";
+import { RAG_CONFIG } from "@true-recall/core/constants";
 import type { RagEmbeddingService } from "./rag-embedding.service";
 
 export interface SearchResult {

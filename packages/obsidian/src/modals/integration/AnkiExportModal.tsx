@@ -1,20 +1,20 @@
-import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
-import type { FSRSService } from "@features/core/services/fsrs.service";
+import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite/SqliteStoreService";
+import type { FSRSService } from "@true-recall/core/services/fsrs.service";
 import {
 	ErrorPhase,
 	type ExportFormValues,
 	ExportingPhase,
 	FormPhase,
 	SuccessPhase,
-} from "@features/integration/modals/anki-export";
-import { AnkiExportService } from "@features/integration/services/anki/anki-export.service";
+} from "@true-recall/obsidian/modals/integration/anki-export";
+import { AnkiExportService } from "@true-recall/obsidian/features/integration/services/anki/anki-export.service";
 import {
 	downloadBlob,
 	type NoteEntry,
 	resolveNotes,
-} from "@features/integration/utils/export-helpers";
-import type { AnkiExportOptions } from "@shared/types";
-import { BaseModal } from "@shared/ui/modals/BaseModal";
+} from "@true-recall/obsidian/features/integration/utils/export-helpers";
+import type { AnkiExportOptions } from "@true-recall/core/types";
+import { BaseModal } from "@true-recall/obsidian/modals/shared/BaseModal";
 import type { App } from "obsidian";
 import { render } from "preact";
 import { useCallback, useState } from "preact/hooks";

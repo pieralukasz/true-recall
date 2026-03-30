@@ -1,8 +1,8 @@
-export * from "@shared/ui/components";
-export { useIcon, useMarkdown } from "@shared/ui/preact/hooks";
-export { mountPreact } from "@shared/ui/preact/mount";
+export * from "@true-recall/obsidian/components";
+export { useIcon, useMarkdown } from "@true-recall/obsidian/preact/hooks";
+export { mountPreact } from "@true-recall/obsidian/preact/mount";
 export {
 	ObsidianProvider,
 	useApp,
 	usePlugin,
-} from "@shared/ui/preact/ObsidianContext";
+} from "@true-recall/obsidian/preact/ObsidianContext";

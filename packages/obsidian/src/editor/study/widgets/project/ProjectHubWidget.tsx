@@ -1,10 +1,10 @@
-import type { HierarchyTreeNode } from "@features/core/services/hierarchy.service";
+import type { HierarchyTreeNode } from "@true-recall/core/services/hierarchy.service";
 import { useComputed } from "@preact/signals";
 import {
 	archivedSourceUids,
 	cards,
-} from "@shared/services/reactive-card-store";
-import { usePlugin } from "@shared/ui/preact";
+} from "@true-recall/obsidian/services/reactive-card-store";
+import { usePlugin } from "@true-recall/obsidian/preact";
 import { computeProjectStats, type ProjectStats } from "../project-stats";
 import { ProjectCard } from "./ProjectWidget";
 

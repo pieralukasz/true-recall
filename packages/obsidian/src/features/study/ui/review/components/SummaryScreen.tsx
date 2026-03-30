@@ -1,5 +1,5 @@
-import type { ReviewApi } from "@shared/store";
-import { Clickable } from "@shared/ui/components";
+import type { ReviewApi } from "@true-recall/obsidian/store";
+import { Clickable } from "@true-recall/obsidian/components";
 import { useEffect } from "preact/hooks";
 
 function StatItem({

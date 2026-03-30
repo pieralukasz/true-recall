@@ -1,4 +1,4 @@
-import { renderTemplate } from "@features/core/services/template-engine";
+import { renderTemplate } from "@true-recall/core/services/template-engine";
 import { stripHtmlFromTemplate } from "./anki-note-type-mapper";
 import type {
 	AnkiCard,
@@ -6,7 +6,7 @@ import type {
 	AnkiNote,
 	ApkgData,
 	ConvertedCard,
-} from "@shared/types";
+} from "@true-recall/core/types";
 
 const FIELD_SEPARATOR = "\x1f";
 

@@ -1,6 +1,6 @@
-import type { NoteType } from "@shared/types/note.types";
-import { BUILTIN_IMAGE_OCCLUSION_ID } from "@shared/types/note.types";
-import { usePlugin } from "@shared/ui/preact/ObsidianContext";
+import type { NoteType } from "@true-recall/core/types/note.types";
+import { BUILTIN_IMAGE_OCCLUSION_ID } from "@true-recall/core/types/note.types";
+import { usePlugin } from "@true-recall/obsidian/preact/ObsidianContext";
 import { useEffect, useMemo, useState } from "preact/hooks";
 
 interface NoteTypePickerProps {

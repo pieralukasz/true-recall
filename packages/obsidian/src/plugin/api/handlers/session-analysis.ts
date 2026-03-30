@@ -1,4 +1,4 @@
-import { formatLocalDate } from "@shared/utils";
+import { formatLocalDate } from "@true-recall/core/utils";
 import { State } from "ts-fsrs";
 import type { ApiContext, ApiRequest, ApiResponseWriter } from "../api.types";
 import { sendError, sendOk } from "../api.types";

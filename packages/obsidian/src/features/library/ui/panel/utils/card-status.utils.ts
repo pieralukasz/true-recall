@@ -1,9 +1,9 @@
-import type { FSRSFlashcardItem } from "@shared/types";
+import type { FSRSFlashcardItem } from "@true-recall/core/types";
 import {
 	FSRS_COLORS,
 	fsrsStateToColorName,
 	type HighlightColor,
-} from "@shared/ui/helpers/fsrs-colors";
+} from "@true-recall/obsidian/helpers/fsrs-colors";
 import { State } from "ts-fsrs";
 
 export interface StatusCounts {

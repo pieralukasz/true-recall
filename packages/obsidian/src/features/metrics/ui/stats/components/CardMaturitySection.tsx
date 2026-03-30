@@ -1,4 +1,4 @@
-import type { CardMaturityBreakdown } from "@shared/types";
+import type { CardMaturityBreakdown } from "@true-recall/core/types";
 import type { ChartConfiguration } from "chart.js";
 import { useRef } from "preact/hooks";
 import { CHART_COLORS } from "../helpers/chart-theme";

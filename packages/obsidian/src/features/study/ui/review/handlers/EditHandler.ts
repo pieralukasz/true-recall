@@ -1,10 +1,10 @@
-import { DuplicateQuestionError } from "@features/study/services/flashcard/card-repository.service";
-import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
-import { notify } from "@shared/services/notification.service";
-import type { UndoService } from "@shared/services/undo.service";
-import type { ReviewApi } from "@shared/store";
-import type { FSRSFlashcardItem } from "@shared/types";
-import { BR_REGEX } from "@shared/utils";
+import { DuplicateQuestionError } from "@true-recall/core/flashcard/card-repository.service";
+import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
+import { notify } from "@true-recall/obsidian/services/notification.service";
+import type { UndoService } from "@true-recall/obsidian/services/undo.service";
+import type { ReviewApi } from "@true-recall/obsidian/store";
+import type { FSRSFlashcardItem } from "@true-recall/core/types";
+import { BR_REGEX } from "@true-recall/core/utils";
 import type { App } from "obsidian";
 
 export interface EditHandlerDeps {
@@ -43,7 +43,7 @@ export class EditHandler {
 
 			try {
 				const { hasClozeContent, parseClozeTemplate } = await import(
-					"@features/study/services/flashcard/cloze-parser.service"
+					"@true-recall/core/flashcard/cloze-parser.service"
 				);
 				if (hasClozeContent(newContent)) {
 					this.deps.flashcardManager.updateClozeTemplate(

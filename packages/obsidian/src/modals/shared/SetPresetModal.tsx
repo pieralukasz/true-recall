@@ -1,6 +1,6 @@
-import { Clickable } from "@shared/ui/components";
-import { ModalFooter } from "@shared/ui/components/ModalFooter";
-import { BasePromiseModal } from "@shared/ui/modals/BasePromiseModal";
+import { Clickable } from "@true-recall/obsidian/components";
+import { ModalFooter } from "@true-recall/obsidian/components/ModalFooter";
+import { BasePromiseModal } from "@true-recall/obsidian/modals/shared/BasePromiseModal";
 import type { App } from "obsidian";
 import { render } from "preact";
 

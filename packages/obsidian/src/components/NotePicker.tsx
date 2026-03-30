@@ -1,6 +1,6 @@
-import { Clickable } from "@shared/ui/components/Clickable";
-import { NoteListItem } from "@shared/ui/components/NoteListItem";
-import { SearchInput } from "@shared/ui/components/SearchInput";
+import { Clickable } from "@true-recall/obsidian/components/Clickable";
+import { NoteListItem } from "@true-recall/obsidian/components/NoteListItem";
+import { SearchInput } from "@true-recall/obsidian/components/SearchInput";
 import type { TFile } from "obsidian";
 import { useMemo, useState } from "preact/hooks";
 

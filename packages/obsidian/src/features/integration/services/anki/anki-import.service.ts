@@ -1,12 +1,12 @@
-import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
-import { generateUUID } from "@features/core/persistence/sqlite/sqlite.types";
-import type { FSRSService } from "@features/core/services/fsrs.service";
+import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite/SqliteStoreService";
+import { generateUUID } from "@true-recall/core/persistence/sqlite/sqlite.types";
+import type { FSRSService } from "@true-recall/core/services/fsrs.service";
 import { AnkiConverterService } from "./anki-converter.service";
 import { AnkiMediaService } from "./anki-media.service";
 import { AnkiNoteTypeMapper } from "./anki-note-type-mapper";
 import { AnkiSchedulingService } from "./anki-scheduling.service";
 import { ApkgParserService } from "./apkg-parser.service";
-import { notifyCardChange } from "@shared/services/signals";
+import { notifyCardChange } from "@true-recall/obsidian/services/signals";
 import type {
 	AnkiCard,
 	AnkiImportOptions,
@@ -14,7 +14,7 @@ import type {
 	AnkiRevlogEntry,
 	ConvertedCard,
 	FSRSCardData,
-} from "@shared/types";
+} from "@true-recall/core/types";
 import { type App, normalizePath, type TFile } from "obsidian";
 
 const IMPORT_FOLDER = "Anki Import";

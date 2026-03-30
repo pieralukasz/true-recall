@@ -1,4 +1,4 @@
-import { ReviewService } from "@features/study/services/review.service";
+import { ReviewService } from "@true-recall/core/services/review.service";
 import { type Grade, Rating } from "ts-fsrs";
 import type { ApiContext, ApiRequest, ApiResponseWriter } from "../api.types";
 import { parseJsonBody, readBody, sendError, sendOk } from "../api.types";

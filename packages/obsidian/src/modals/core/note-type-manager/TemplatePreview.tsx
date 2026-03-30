@@ -1,7 +1,7 @@
-import { renderTemplate } from "@features/core/services/template-engine";
-import type { CardTemplate } from "@shared/types/note.types";
-import { Clickable } from "@shared/ui/components";
-import { MarkdownContent } from "@shared/ui/components/MarkdownContent";
+import { renderTemplate } from "@true-recall/core/services/template-engine";
+import type { CardTemplate } from "@true-recall/core/types/note.types";
+import { Clickable } from "@true-recall/obsidian/components";
+import { MarkdownContent } from "@true-recall/obsidian/components/MarkdownContent";
 import { useMemo, useState } from "preact/hooks";
 
 interface TemplatePreviewProps {

@@ -1,13 +1,13 @@
 import type {
 	BackupInfo,
 	BackupService,
-} from "@features/core/persistence/backup.service";
-import { Clickable } from "@shared/ui/components";
+} from "@true-recall/obsidian/features/core/persistence/backup.service";
+import { Clickable } from "@true-recall/obsidian/components";
 import {
 	BasePromiseModal,
 	type CancellableResult,
-} from "@shared/ui/modals/BasePromiseModal";
-import { confirm } from "@shared/ui/modals/ConfirmModal";
+} from "@true-recall/obsidian/modals/shared/BasePromiseModal";
+import { confirm } from "@true-recall/obsidian/modals/shared/ConfirmModal";
 import type { App } from "obsidian";
 import { render } from "preact";
 import { useCallback, useState } from "preact/hooks";

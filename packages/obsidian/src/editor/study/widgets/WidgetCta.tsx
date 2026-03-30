@@ -1,4 +1,4 @@
-import { Clickable } from "@shared/ui/components";
+import { Clickable } from "@true-recall/obsidian/components";
 import { cva, type VariantProps } from "class-variance-authority";
 
 const widgetCtaVariants = cva(

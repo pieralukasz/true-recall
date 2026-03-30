@@ -1,5 +1,5 @@
-import type { FSRSPreset, TrueRecallSettings } from "@shared/types";
-import { usePlugin } from "@shared/ui/preact";
+import type { FSRSPreset, TrueRecallSettings } from "@true-recall/core/types";
+import { usePlugin } from "@true-recall/obsidian/preact";
 import { useCallback, useMemo, useState } from "preact/hooks";
 
 export function useSettings() {

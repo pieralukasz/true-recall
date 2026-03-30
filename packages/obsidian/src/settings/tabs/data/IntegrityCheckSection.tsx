@@ -1,6 +1,6 @@
 import { useSettings } from "../../hooks/useSettings";
-import { notify } from "@shared/services/notification.service";
-import { ActionButton, FormCard, FormField } from "@shared/ui/components";
+import { notify } from "@true-recall/obsidian/services/notification.service";
+import { ActionButton, FormCard, FormField } from "@true-recall/obsidian/components";
 import { useCallback, useState } from "preact/hooks";
 
 export function IntegrityCheckSection() {
@@ -22,7 +22,7 @@ export function IntegrityCheckSection() {
 				return;
 			}
 
-			const { confirm } = await import("@shared/ui/modals/ConfirmModal");
+			const { confirm } = await import("@true-recall/obsidian/modals/shared/ConfirmModal");
 			const confirmed = await confirm(plugin.app, {
 				message:
 					`Found ${report.totalIssues} orphaned records:\n` +

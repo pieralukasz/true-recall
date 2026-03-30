@@ -1,4 +1,4 @@
-import { cn } from "@shared/ui/utils";
+import { cn } from "@true-recall/obsidian/utils";
 import type { ComponentChildren } from "preact";
 import { useState } from "preact/hooks";
 

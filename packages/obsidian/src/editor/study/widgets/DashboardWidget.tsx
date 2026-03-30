@@ -1,12 +1,12 @@
-import { WorkloadForecastCalculator } from "@features/metrics/services/fsrs-tools/statistics/workload-forecast.calculator";
-import { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
+import { WorkloadForecastCalculator } from "@true-recall/core/metrics/fsrs-tools/statistics/workload-forecast.calculator";
+import { StatsCalculatorService } from "@true-recall/core/metrics/stats/stats-calculator.service";
 import {
 	cards,
 	cardsBySourceUid,
 	globalCounts,
-} from "@shared/services/reactive-card-store";
-import { FSRS_COLORS } from "@shared/ui/helpers/fsrs-colors";
-import { usePlugin } from "@shared/ui/preact";
+} from "@true-recall/obsidian/services/reactive-card-store";
+import { FSRS_COLORS } from "@true-recall/obsidian/helpers/fsrs-colors";
+import { usePlugin } from "@true-recall/obsidian/preact";
 import { useMemo } from "preact/hooks";
 import { State } from "ts-fsrs";
 

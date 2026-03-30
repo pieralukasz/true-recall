@@ -1,10 +1,10 @@
-import { useCardActions } from "@features/library/ui/panel/hooks/useCardActions";
-import { usePanelActions } from "@features/library/ui/panel/hooks/usePanelActions";
-import { usePanelStore } from "@features/library/ui/panel/hooks/usePanelStore";
-import { countByState } from "@features/library/ui/panel/utils/card-status.utils";
-import { IconButton, SearchInput } from "@shared/ui/components";
-import { FSRS_COLORS } from "@shared/ui/helpers/fsrs-colors";
-import { usePlugin } from "@shared/ui/preact";
+import { useCardActions } from "@true-recall/obsidian/features/library/ui/panel/hooks/useCardActions";
+import { usePanelActions } from "@true-recall/obsidian/features/library/ui/panel/hooks/usePanelActions";
+import { usePanelStore } from "@true-recall/obsidian/features/library/ui/panel/hooks/usePanelStore";
+import { countByState } from "@true-recall/obsidian/features/library/ui/panel/utils/card-status.utils";
+import { IconButton, SearchInput } from "@true-recall/obsidian/components";
+import { FSRS_COLORS } from "@true-recall/obsidian/helpers/fsrs-colors";
+import { usePlugin } from "@true-recall/obsidian/preact";
 import { Menu } from "obsidian";
 import { useCallback } from "preact/hooks";
 

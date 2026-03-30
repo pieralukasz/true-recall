@@ -1,4 +1,4 @@
-import { cn } from "@shared/ui/utils";
+import { cn } from "@true-recall/obsidian/utils";
 import { useCallback } from "preact/hooks";
 
 export interface ToggleInputProps {

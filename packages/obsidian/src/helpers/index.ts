@@ -11,7 +11,7 @@ export {
 	countCardsByState,
 	countCardsByStateWithDue,
 	filterActiveCardsOnly,
-} from "@shared/ui/helpers/card-state";
+} from "@true-recall/obsidian/helpers/card-state";
 
 export {
 	FSRS_COLORS,
@@ -23,4 +23,4 @@ export {
 	fsrsStateToCssVar,
 	type HighlightColor,
 	MUTED_STATES,
-} from "@shared/ui/helpers/fsrs-colors";
+} from "@true-recall/obsidian/helpers/fsrs-colors";

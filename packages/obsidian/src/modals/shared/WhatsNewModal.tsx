@@ -1,7 +1,7 @@
-import type { ReleaseInfo } from "@shared/services/release-notes.service";
-import { Clickable, MarkdownContent } from "@shared/ui/components";
-import { BaseModal } from "@shared/ui/modals/BaseModal";
-import { ObsidianProvider } from "@shared/ui/preact/ObsidianContext";
+import type { ReleaseInfo } from "@true-recall/obsidian/services/release-notes.service";
+import { Clickable, MarkdownContent } from "@true-recall/obsidian/components";
+import { BaseModal } from "@true-recall/obsidian/modals/shared/BaseModal";
+import { ObsidianProvider } from "@true-recall/obsidian/preact/ObsidianContext";
 import { render } from "preact";
 import type TrueRecallPlugin from "../../main";
 

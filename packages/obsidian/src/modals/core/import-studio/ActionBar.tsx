@@ -1,5 +1,5 @@
-import { NotePickerCombobox } from "@shared/ui/components/NotePickerCombobox";
-import { useIcon } from "@shared/ui/preact/hooks";
+import { NotePickerCombobox } from "@true-recall/obsidian/components/NotePickerCombobox";
+import { useIcon } from "@true-recall/obsidian/preact/hooks";
 import type { App, TFile } from "obsidian";
 import { useCallback, useEffect, useRef, useState } from "preact/hooks";
 

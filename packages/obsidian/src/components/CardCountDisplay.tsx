@@ -1,4 +1,4 @@
-import { FSRS_COLORS } from "@shared/ui/helpers/fsrs-colors";
+import { FSRS_COLORS } from "@true-recall/obsidian/helpers/fsrs-colors";
 import { cva } from "class-variance-authority";
 
 export interface CardCountDisplayProps {

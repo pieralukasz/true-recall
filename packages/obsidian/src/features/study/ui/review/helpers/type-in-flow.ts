@@ -1,4 +1,4 @@
-import type { FSRSFlashcardItem } from "@shared/types";
+import type { FSRSFlashcardItem } from "@true-recall/core/types";
 
 export type TypeInMode = "off" | "ai" | "diff";
 

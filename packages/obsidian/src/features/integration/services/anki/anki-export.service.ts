@@ -1,7 +1,7 @@
-import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
-import type { FSRSService } from "@features/core/services/fsrs.service";
+import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite/SqliteStoreService";
+import type { FSRSService } from "@true-recall/core/services/fsrs.service";
 import { ApkgBuilderService } from "./apkg-builder.service";
-import type { AnkiExportOptions, FSRSCardData } from "@shared/types";
+import type { AnkiExportOptions, FSRSCardData } from "@true-recall/core/types";
 import type { App } from "obsidian";
 
 interface DeckInfo {

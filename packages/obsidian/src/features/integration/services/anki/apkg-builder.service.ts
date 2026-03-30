@@ -1,9 +1,9 @@
 import {
 	type DatabaseLike,
 	loadDatabase,
-} from "@features/core/persistence/sqlite/loader";
-import type { ReviewLogForSync } from "@features/core/persistence/sqlite/modules/StatsActions";
-import type { FSRSCardData } from "@shared/types";
+} from "@true-recall/core/persistence/sqlite/loader";
+import type { ReviewLogForSync } from "@true-recall/core/persistence/sqlite/modules/StatsActions";
+import type { FSRSCardData } from "@true-recall/core/types";
 import JSZip from "jszip";
 import type { App } from "obsidian";
 import { State } from "ts-fsrs";

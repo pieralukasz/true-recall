@@ -1,6 +1,6 @@
-import type { NoteType } from "@shared/types/note.types";
-import { Clickable } from "@shared/ui/components";
-import { cn } from "@shared/ui/utils/cn";
+import type { NoteType } from "@true-recall/core/types/note.types";
+import { Clickable } from "@true-recall/obsidian/components";
+import { cn } from "@true-recall/ui/utils/cn";
 
 interface NoteTypeListProps {
 	noteTypes: NoteType[];

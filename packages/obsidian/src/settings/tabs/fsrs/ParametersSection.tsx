@@ -1,6 +1,6 @@
-import { FSRS_CONFIG } from "@shared/constants";
-import { notify } from "@shared/services/notification.service";
-import type { FSRSPreset } from "@shared/types";
+import { FSRS_CONFIG } from "@true-recall/core/constants";
+import { notify } from "@true-recall/obsidian/services/notification.service";
+import type { FSRSPreset } from "@true-recall/core/types";
 import type { FsrsPluginHost } from "../../../types/plugin-host.types";
 import {
 	ActionButton,
@@ -8,7 +8,7 @@ import {
 	FormField,
 	InfoBlock,
 	TextAreaInput,
-} from "@shared/ui/components";
+} from "@true-recall/obsidian/components";
 import { useCallback, useState } from "preact/hooks";
 
 interface ParametersSectionProps {

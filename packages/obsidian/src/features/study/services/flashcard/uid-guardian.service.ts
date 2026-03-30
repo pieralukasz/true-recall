@@ -1,12 +1,12 @@
-import type { SessionPersistenceService } from "@features/core/persistence/session-persistence.service";
-import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
+import type { SessionPersistenceService } from "@true-recall/obsidian/features/core/persistence/session-persistence.service";
+import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite/SqliteStoreService";
 import type {
 	FieldChangeEvent,
 	FrontmatterIndexService,
-} from "@features/core/services/frontmatter-index.service";
-import type { FrontmatterService } from "@features/study/services/flashcard/frontmatter.service";
-import { notify } from "@shared/services/notification.service";
-import { notifyCardChange } from "@shared/services/signals";
+} from "@true-recall/core/services/frontmatter-index.service";
+import type { FrontmatterService } from "@true-recall/core/flashcard/frontmatter.service";
+import { notify } from "@true-recall/obsidian/services/notification.service";
+import { notifyCardChange } from "@true-recall/obsidian/services/signals";
 import type { App } from "obsidian";
 import { TFile } from "obsidian";
 import { UidRemovedModal } from "@true-recall/obsidian/modals/study/UidRemovedModal";

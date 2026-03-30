@@ -1,4 +1,4 @@
-import { BUILTIN_BASIC_ID, BUILTIN_CLOZE_ID } from "@shared/types/note.types";
+import { BUILTIN_BASIC_ID, BUILTIN_CLOZE_ID } from "@true-recall/core/types/note.types";
 import { State } from "ts-fsrs";
 import type { ApiContext, ApiRequest, ApiResponseWriter } from "../api.types";
 import { parseJsonBody, readBody, sendError, sendOk } from "../api.types";

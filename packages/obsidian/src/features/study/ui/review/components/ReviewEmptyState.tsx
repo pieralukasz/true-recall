@@ -1,4 +1,4 @@
-import { Clickable } from "@shared/ui/components";
+import { Clickable } from "@true-recall/obsidian/components";
 
 export function ReviewEmptyState({
 	message,

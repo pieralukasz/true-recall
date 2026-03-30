@@ -1,25 +1,25 @@
-import type { SqliteStoreService } from "@features/core/persistence/sqlite/SqliteStoreService";
+import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite/SqliteStoreService";
 import {
 	type ExportMode,
 	ExportScopeSelector,
-} from "@features/integration/components/ExportScopeSelector";
+} from "@true-recall/obsidian/features/integration/components/ExportScopeSelector";
 import {
 	CsvExportService,
 	type CsvSeparator,
-} from "@features/integration/services/csv-export.service";
+} from "@true-recall/obsidian/features/integration/services/csv-export.service";
 import {
 	downloadBlob,
 	type NoteEntry,
 	resolveNotes,
-} from "@features/integration/utils/export-helpers";
-import { Clickable } from "@shared/ui/components";
+} from "@true-recall/obsidian/features/integration/utils/export-helpers";
+import { Clickable } from "@true-recall/obsidian/components";
 import {
 	ModalFooter,
 	PRIMARY_BTN,
 	SECONDARY_BTN,
-} from "@shared/ui/components/ModalFooter";
-import { OptionCheckbox } from "@shared/ui/components/OptionCheckbox";
-import { BaseModal } from "@shared/ui/modals/BaseModal";
+} from "@true-recall/obsidian/components/ModalFooter";
+import { OptionCheckbox } from "@true-recall/obsidian/components/OptionCheckbox";
+import { BaseModal } from "@true-recall/obsidian/modals/shared/BaseModal";
 import type { App } from "obsidian";
 import { render } from "preact";
 import { useCallback, useRef, useState } from "preact/hooks";

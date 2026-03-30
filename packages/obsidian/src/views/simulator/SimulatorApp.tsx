@@ -1,14 +1,14 @@
-import { FSRSSimulatorService } from "@features/core/services/fsrs-simulator.service";
+import { FSRSSimulatorService } from "@true-recall/obsidian/features/core/services/fsrs-simulator.service";
 import {
 	ParametersBar,
 	SimulatorChart,
 	SimulatorControls,
 	SimulatorResultsTable,
 	SimulatorSliders,
-} from "@features/metrics/ui/simulator/components";
-import type { SequenceSimulation } from "@features/metrics/ui/simulator/types";
+} from "@true-recall/obsidian/features/metrics/ui/simulator/components";
+import type { SequenceSimulation } from "@true-recall/obsidian/features/metrics/ui/simulator/types";
 import { useSignal } from "@preact/signals";
-import { usePlugin } from "@shared/ui/preact";
+import { usePlugin } from "@true-recall/obsidian/preact";
 import { useCallback, useEffect, useMemo, useRef } from "preact/hooks";
 
 export function SimulatorApp() {

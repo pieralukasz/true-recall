@@ -1,11 +1,11 @@
-import { slugifyNoteTypeName } from "@features/study/services/flashcard/note-type-slug";
-import type { AnkiModel } from "@shared/types";
-import type { CardTemplate, NoteType } from "@shared/types/note.types";
+import { slugifyNoteTypeName } from "@true-recall/core/flashcard/note-type-slug";
+import type { AnkiModel } from "@true-recall/core/types";
+import type { CardTemplate, NoteType } from "@true-recall/core/types/note.types";
 import {
 	BUILTIN_BASIC_ID,
 	BUILTIN_BASIC_REVERSED_ID,
 	BUILTIN_CLOZE_ID,
-} from "@shared/types/note.types";
+} from "@true-recall/core/types/note.types";
 
 export interface NoteTypeStore {
 	getAll(): NoteType[];

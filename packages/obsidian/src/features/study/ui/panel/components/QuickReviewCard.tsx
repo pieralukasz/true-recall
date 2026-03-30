@@ -1,6 +1,6 @@
-import type { SchedulingPreview } from "@shared/types";
-import type { FSRSFlashcardItem } from "@shared/types/fsrs/card.types";
-import { Clickable } from "@shared/ui/components";
+import type { SchedulingPreview } from "@true-recall/core/types";
+import type { FSRSFlashcardItem } from "@true-recall/core/types/fsrs/card.types";
+import { Clickable } from "@true-recall/obsidian/components";
 import { type Grade, Rating } from "ts-fsrs";
 
 const RATING_BTN_BASE =

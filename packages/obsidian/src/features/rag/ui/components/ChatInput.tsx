@@ -1,5 +1,5 @@
-import { Clickable } from "@shared/ui/components";
-import { useIcon } from "@shared/ui/preact";
+import { Clickable } from "@true-recall/obsidian/components";
+import { useIcon } from "@true-recall/obsidian/preact";
 import type { TFile } from "obsidian";
 import { useCallback, useRef, useState } from "preact/hooks";
 import { ContextChip } from "../context/ContextChip";

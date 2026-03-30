@@ -52,7 +52,7 @@ function buildCSS() {
 	try {
 		const minifyFlag = prod ? " --minify" : "";
 		execSync(
-			`bunx @tailwindcss/cli -i src/shared/ui/styles.css -o styles.css${minifyFlag}`,
+			`bunx @tailwindcss/cli -i packages/obsidian/src/styles.css -o styles.css${minifyFlag}`,
 			{ stdio: "pipe" },
 		);
 		console.log(`\u2713 CSS built${prod ? " (minified)" : ""}`);
@@ -97,15 +97,6 @@ const context = await esbuild.context({
 	bundle: true,
 	metafile: true,
 	alias: {
-		// Redirect shared types/constants/errors/utils → packages/core (canonical)
-		"@shared/types": resolve("packages/core/src/types"),
-		"@shared/constants": resolve("packages/core/src/constants"),
-		"@shared/errors": resolve("packages/core/src/errors"),
-		"@shared/utils": resolve("packages/core/src/utils"),
-		"@shared/validation": resolve("packages/core/src/validation"),
-		// Fallback for @shared/ui, @shared/services, @shared/store
-		"@shared": resolve("src/shared"),
-		"@features": resolve("src/features"),
 		"@true-recall/core": resolve("packages/core/src"),
 		"@true-recall/ui": resolve("packages/ui/src"),
 		"@true-recall/obsidian": resolve("packages/obsidian/src"),
@@ -169,7 +160,7 @@ if (prod) {
 		[
 			"@tailwindcss/cli",
 			"-i",
-			"src/shared/ui/styles.css",
+			"packages/obsidian/src/styles.css",
 			"-o",
 			"styles.css",
 			"--watch",

@@ -1,4 +1,4 @@
-import { ENABLE_RAG } from "@shared/constants";
+import { ENABLE_RAG } from "@true-recall/core/constants";
 import type TrueRecallPlugin from "../main";
 import {
 	editSelectionAsFlashcard,

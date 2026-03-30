@@ -1,4 +1,4 @@
-import type { SqliteDatabase } from "@features/core/persistence/sqlite/SqliteDatabase";
+import type { SqliteDatabase } from "@true-recall/core/persistence/sqlite/SqliteDatabase";
 
 export type RagSourceType = "note" | "flashcard";
 

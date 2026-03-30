@@ -1,4 +1,4 @@
-import { usePlugin } from "@shared/ui/preact";
+import { usePlugin } from "@true-recall/obsidian/preact";
 import type { TFile } from "obsidian";
 import { useCallback, useEffect, useRef, useState } from "preact/hooks";
 import type {

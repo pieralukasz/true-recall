@@ -2,11 +2,11 @@ import {
 	buildStaticSuggestions,
 	getTokenAtCursor,
 	getTokenContext,
-} from "@shared/ui/helpers/search-suggestions";
+} from "@true-recall/obsidian/helpers/search-suggestions";
 import type {
 	SearchSuggestion,
 	SuggestionProvider,
-} from "@shared/ui/helpers/search-suggestions.types";
+} from "@true-recall/obsidian/helpers/search-suggestions.types";
 
 interface BrowserSuggestionData {
 	sourceNotes: { uid: string; name: string; count: number }[];

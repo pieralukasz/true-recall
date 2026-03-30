@@ -1,16 +1,16 @@
-import type { TrueRetentionSnapshot } from "@features/metrics/services/fsrs-tools/statistics/true-retention.calculator";
-import { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
+import type { TrueRetentionSnapshot } from "@true-recall/core/metrics/fsrs-tools/statistics/true-retention.calculator";
+import { StatsCalculatorService } from "@true-recall/core/metrics/stats/stats-calculator.service";
 import {
 	EMPTY_FILTER,
 	type StatsFilterContext,
-} from "@features/metrics/services/stats/stats-filter.types";
+} from "@true-recall/core/metrics/stats/stats-filter.types";
 import type { Signal } from "@preact/signals";
 import { useSignal } from "@preact/signals";
-import { getErrorMessage } from "@shared/errors";
+import { getErrorMessage } from "@true-recall/core/errors";
 import {
 	allCardsArray,
 	pluginSettings,
-} from "@shared/services/reactive-card-store";
+} from "@true-recall/obsidian/services/reactive-card-store";
 import type {
 	CardMaturityBreakdown,
 	CardsCreatedEntry,
@@ -22,8 +22,8 @@ import type {
 	StatsTimeRange,
 	StreakInfo,
 	TodaySummary,
-} from "@shared/types";
-import { usePlugin } from "@shared/ui/preact";
+} from "@true-recall/core/types";
+import { usePlugin } from "@true-recall/obsidian/preact";
 import { useEffect, useMemo } from "preact/hooks";
 
 export interface StatsData {

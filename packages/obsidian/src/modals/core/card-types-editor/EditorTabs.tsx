@@ -1,5 +1,5 @@
-import { Clickable } from "@shared/ui/components";
-import { cn } from "@shared/ui/utils/cn";
+import { Clickable } from "@true-recall/obsidian/components";
+import { cn } from "@true-recall/ui/utils/cn";
 
 export type EditorTab = "front" | "back" | "styling";
 

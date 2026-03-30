@@ -1,9 +1,9 @@
-import { CardCountDisplay } from "@shared/ui/components/CardCountDisplay";
-import { Clickable } from "@shared/ui/components/Clickable";
-import { IconButton } from "@shared/ui/components/IconButton";
-import type { MenuItem } from "@shared/ui/preact/useContextMenu";
-import { useContextMenu } from "@shared/ui/preact/useContextMenu";
-import { cn } from "@shared/ui/utils";
+import { CardCountDisplay } from "@true-recall/obsidian/components/CardCountDisplay";
+import { Clickable } from "@true-recall/obsidian/components/Clickable";
+import { IconButton } from "@true-recall/obsidian/components/IconButton";
+import type { MenuItem } from "@true-recall/obsidian/preact/useContextMenu";
+import { useContextMenu } from "@true-recall/obsidian/preact/useContextMenu";
+import { cn } from "@true-recall/obsidian/utils";
 import { PRIORITY_DOT } from "../helpers/note-priority";
 import type { DashboardNoteEntry } from "../types";
 

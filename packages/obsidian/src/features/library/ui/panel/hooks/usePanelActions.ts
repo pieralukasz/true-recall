@@ -1,11 +1,11 @@
-import { getHighlightColor } from "@features/library/ui/panel/utils/card-status.utils";
-import { extractHighlights } from "@features/library/ui/panel/utils/highlight-extractor";
-import { cardsToBlockText } from "@features/library/ui/panel/utils/panel-helpers";
-import { pushDeleteUndo } from "@shared/services/undo.service";
-import type { FlashcardItem } from "@shared/types";
-import type { FSRSFlashcardItem } from "@shared/types/fsrs/card.types";
-import { BUILTIN_BASIC_ID } from "@shared/types/note.types";
-import { useApp, usePlugin } from "@shared/ui/preact";
+import { getHighlightColor } from "@true-recall/obsidian/features/library/ui/panel/utils/card-status.utils";
+import { extractHighlights } from "@true-recall/obsidian/features/library/ui/panel/utils/highlight-extractor";
+import { cardsToBlockText } from "@true-recall/obsidian/features/library/ui/panel/utils/panel-helpers";
+import { pushDeleteUndo } from "@true-recall/obsidian/services/undo.service";
+import type { FlashcardItem } from "@true-recall/core/types";
+import type { FSRSFlashcardItem } from "@true-recall/core/types/fsrs/card.types";
+import { BUILTIN_BASIC_ID } from "@true-recall/core/types/note.types";
+import { useApp, usePlugin } from "@true-recall/obsidian/preact";
 import { useCallback } from "preact/hooks";
 
 import { usePanelStore } from "./usePanelStore";
@@ -19,7 +19,7 @@ export function usePanelActions() {
 
 	const handleGenerateFromNote = useCallback(async () => {
 		if (!currentFile) return;
-		const { notify } = await import("@shared/services/notification.service");
+		const { notify } = await import("@true-recall/obsidian/services/notification.service");
 
 		if (!plugin.settings.proKey && !plugin.settings.openRouterApiKey) {
 			notify().aiNotConfigured();
@@ -33,7 +33,7 @@ export function usePanelActions() {
 		}
 
 		const { ChunkedGenerationService } = await import(
-			"@features/ai/services/chunked-generation.service"
+			"@true-recall/core/ai/chunked-generation.service"
 		);
 
 		const { ObsidianHttpClient } = await import(
@@ -80,7 +80,7 @@ export function usePanelActions() {
 
 	const handleGenerateFromHighlights = useCallback(async () => {
 		if (!currentFile) return;
-		const { notify } = await import("@shared/services/notification.service");
+		const { notify } = await import("@true-recall/obsidian/services/notification.service");
 
 		if (!plugin.settings.proKey && !plugin.settings.openRouterApiKey) {
 			notify().aiNotConfigured();
@@ -122,7 +122,7 @@ export function usePanelActions() {
 		const joinedHighlights = newHighlights.join("\n\n");
 
 		const { StreamingGenerationService } = await import(
-			"@features/ai/services/streaming-generation.service"
+			"@true-recall/core/ai/streaming-generation.service"
 		);
 
 		const { ObsidianHttpClient: HttpClient } = await import(
@@ -165,9 +165,9 @@ export function usePanelActions() {
 
 	const handleCollect = useCallback(async () => {
 		if (!currentFile) return;
-		const { notify } = await import("@shared/services/notification.service");
+		const { notify } = await import("@true-recall/obsidian/services/notification.service");
 		const { CollectService } = await import(
-			"@features/study/services/flashcard/collect.service"
+			"@true-recall/core/flashcard/collect.service"
 		);
 
 		if (!plugin.flashcardManager.hasStore()) {
@@ -222,7 +222,7 @@ export function usePanelActions() {
 	// ── Export ──
 
 	const handleExportCsv = useCallback(async () => {
-		const { notify } = await import("@shared/services/notification.service");
+		const { notify } = await import("@true-recall/obsidian/services/notification.service");
 		if (!flashcardInfo?.flashcards || flashcardInfo.flashcards.length === 0) {
 			notify().warning("No flashcards to export");
 			return;
@@ -263,7 +263,7 @@ export function usePanelActions() {
 	}, [flashcardInfo, currentFile]);
 
 	const handleCopyAllToClipboard = useCallback(async () => {
-		const { notify } = await import("@shared/services/notification.service");
+		const { notify } = await import("@true-recall/obsidian/services/notification.service");
 		if (!flashcardInfo?.flashcards || flashcardInfo.flashcards.length === 0) {
 			notify().warning("No flashcards to copy");
 			return;
@@ -295,7 +295,7 @@ export function usePanelActions() {
 		async (card: FlashcardItem) => {
 			if (!card.sourceText || !currentFile) return;
 			const { requestSourceHighlight } = await import(
-				"@shared/services/signals"
+				"@true-recall/obsidian/services/signals"
 			);
 
 			const filePath = currentFile.path;
@@ -323,7 +323,7 @@ export function usePanelActions() {
 				(c: FSRSFlashcardItem) => c.id === card.id,
 			);
 			const colorHint = getHighlightColor(fsrsCard);
-			void import("@shared/services/signals").then(
+			void import("@true-recall/obsidian/services/signals").then(
 				({ requestSourceHighlight }) => {
 					requestSourceHighlight(
 						currentFile?.path,
@@ -338,7 +338,7 @@ export function usePanelActions() {
 	);
 
 	const handleLeaveSource = useCallback(() => {
-		void import("@shared/services/signals").then(({ clearSourceHighlight }) => {
+		void import("@true-recall/obsidian/services/signals").then(({ clearSourceHighlight }) => {
 			clearSourceHighlight();
 		});
 	}, []);
@@ -361,9 +361,9 @@ export function usePanelActions() {
 
 	const handleForgetAll = useCallback(async () => {
 		if (!flashcardInfo || flashcardInfo.flashcards.length === 0) return;
-		const { notify } = await import("@shared/services/notification.service");
-		const { notifyCardChange } = await import("@shared/services/signals");
-		const { confirm } = await import("@shared/ui/modals/ConfirmModal");
+		const { notify } = await import("@true-recall/obsidian/services/notification.service");
+		const { notifyCardChange } = await import("@true-recall/obsidian/services/signals");
+		const { confirm } = await import("@true-recall/obsidian/modals/shared/ConfirmModal");
 
 		const count = flashcardInfo.flashcards.length;
 		const confirmed = await confirm(app, {
@@ -383,10 +383,10 @@ export function usePanelActions() {
 	}, [flashcardInfo, plugin]);
 
 	const handleDeleteAll = useCallback(async () => {
-		const { notify } = await import("@shared/services/notification.service");
+		const { notify } = await import("@true-recall/obsidian/services/notification.service");
 		if (!flashcardInfo || flashcardInfo.flashcards.length === 0) return;
 
-		const { confirm } = await import("@shared/ui/modals/ConfirmModal");
+		const { confirm } = await import("@true-recall/obsidian/modals/shared/ConfirmModal");
 		const count = flashcardInfo.flashcards.length;
 		const confirmed = await confirm(app, {
 			message: `Delete all ${count} flashcard(s) for this note?`,
@@ -405,10 +405,10 @@ export function usePanelActions() {
 	}, [flashcardInfo, plugin]);
 
 	const handleDeleteNoteAndCards = useCallback(async () => {
-		const { notify } = await import("@shared/services/notification.service");
+		const { notify } = await import("@true-recall/obsidian/services/notification.service");
 		if (!currentFile) return;
 
-		const { confirm } = await import("@shared/ui/modals/ConfirmModal");
+		const { confirm } = await import("@true-recall/obsidian/modals/shared/ConfirmModal");
 		const count = flashcardInfo?.flashcards.length ?? 0;
 		const confirmed = await confirm(app, {
 			message: `Delete "${currentFile.basename}" and its ${count} flashcard(s)? This cannot be undone.`,

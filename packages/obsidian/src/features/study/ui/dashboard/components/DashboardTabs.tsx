@@ -1,5 +1,5 @@
-import { Clickable } from "@shared/ui/components/Clickable";
-import { cn } from "@shared/ui/utils";
+import { Clickable } from "@true-recall/obsidian/components/Clickable";
+import { cn } from "@true-recall/obsidian/utils";
 import type { DashboardTab } from "../types";
 
 interface DashboardTabsProps {

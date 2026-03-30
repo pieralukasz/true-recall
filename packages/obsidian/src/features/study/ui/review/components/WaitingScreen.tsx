@@ -1,6 +1,6 @@
-import { UI_CONFIG } from "@shared/constants";
-import type { ReviewApi } from "@shared/store";
-import { Clickable } from "@shared/ui/components";
+import { UI_CONFIG } from "@true-recall/core/constants";
+import type { ReviewApi } from "@true-recall/obsidian/store";
+import { Clickable } from "@true-recall/obsidian/components";
 import { useCallback, useEffect, useState } from "preact/hooks";
 
 export function WaitingScreen({

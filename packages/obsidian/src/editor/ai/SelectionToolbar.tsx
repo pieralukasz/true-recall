@@ -1,4 +1,4 @@
-import { Clickable } from "@shared/ui/components";
+import { Clickable } from "@true-recall/obsidian/components";
 import { useCallback, useState } from "preact/hooks";
 
 export interface SelectionToolbarProps {

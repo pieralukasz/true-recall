@@ -1,6 +1,6 @@
-import { streamingGeneration } from "@features/ai/services/streaming-state";
+import { streamingGeneration } from "@true-recall/core/ai/streaming-state";
 import { useSignalEffect } from "@preact/signals";
-import type { FSRSFlashcardItem } from "@shared/types/fsrs/card.types";
+import type { FSRSFlashcardItem } from "@true-recall/core/types/fsrs/card.types";
 import { useMemo, useState } from "preact/hooks";
 
 export function useStreamingNewCount(

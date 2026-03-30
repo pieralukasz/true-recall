@@ -1,11 +1,11 @@
 export {
 	CardPreviewBody,
 	type CardPreviewBodyProps,
-} from "@shared/ui/modals/card-preview/CardPreviewBody";
+} from "@true-recall/obsidian/modals/shared/card-preview/CardPreviewBody";
 export {
 	handleDeleteAll,
 	handleDeleteCard,
 	handleUnburyAll,
 	handleUnburyCard,
 	openSourceNote,
-} from "@shared/ui/modals/card-preview/card-preview-handlers";
+} from "@true-recall/obsidian/modals/shared/card-preview/card-preview-handlers";

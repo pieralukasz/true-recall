@@ -1,6 +1,6 @@
-import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
-import type { CardMaturityBreakdown, FSRSFlashcardItem } from "@shared/types";
-import { BaseModal } from "@shared/ui/modals/BaseModal";
+import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
+import type { CardMaturityBreakdown, FSRSFlashcardItem } from "@true-recall/core/types";
+import { BaseModal } from "@true-recall/obsidian/modals/shared/BaseModal";
 import {
 	CardPreviewBody,
 	handleDeleteAll,
@@ -8,7 +8,7 @@ import {
 	handleUnburyAll,
 	handleUnburyCard,
 	openSourceNote,
-} from "@shared/ui/modals/card-preview";
+} from "@true-recall/obsidian/modals/shared/card-preview";
 import type { App } from "obsidian";
 import { render } from "preact";
 

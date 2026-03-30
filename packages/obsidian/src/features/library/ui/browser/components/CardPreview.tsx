@@ -1,8 +1,8 @@
-import { IOCardRenderer } from "@features/image-occlusion/IOCardRenderer";
-import { LivePreviewField } from "@features/study/ui/review/components/LivePreviewField";
-import { Clickable } from "@shared/ui/components";
-import { FSRS_COLORS, MUTED_STATES } from "@shared/ui/helpers/fsrs-colors";
-import { useApp } from "@shared/ui/preact/ObsidianContext";
+import { IOCardRenderer } from "@true-recall/obsidian/features/image-occlusion/IOCardRenderer";
+import { LivePreviewField } from "@true-recall/obsidian/features/study/ui/review/components/LivePreviewField";
+import { Clickable } from "@true-recall/obsidian/components";
+import { FSRS_COLORS, MUTED_STATES } from "@true-recall/obsidian/helpers/fsrs-colors";
+import { useApp } from "@true-recall/obsidian/preact/ObsidianContext";
 import { State } from "ts-fsrs";
 import type { BrowserCard } from "../types";
 

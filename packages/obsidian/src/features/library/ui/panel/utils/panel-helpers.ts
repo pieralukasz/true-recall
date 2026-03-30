@@ -1,10 +1,10 @@
 import {
 	blockToText,
 	type ParsedBlock,
-} from "@features/study/services/flashcard/block-parser.service";
-import { resolveSlug } from "@features/study/services/flashcard/note-type-slug";
-import { notify } from "@shared/services/notification.service";
-import type { FlashcardInfo, FlashcardItem } from "@shared/types";
+} from "@true-recall/core/flashcard/block-parser.service";
+import { resolveSlug } from "@true-recall/core/flashcard/note-type-slug";
+import { notify } from "@true-recall/obsidian/services/notification.service";
+import type { FlashcardInfo, FlashcardItem } from "@true-recall/core/types";
 import type { App, TFile } from "obsidian";
 import type TrueRecallPlugin from "@true-recall/obsidian/main";
 

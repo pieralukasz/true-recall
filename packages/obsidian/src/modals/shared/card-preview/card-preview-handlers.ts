@@ -1,9 +1,9 @@
-import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
-import { notify } from "@shared/services/notification.service";
-import { pushDeleteUndo } from "@shared/services/undo.service";
-import type { FSRSFlashcardItem } from "@shared/types";
-import { confirm } from "@shared/ui/modals/ConfirmModal";
-import type { CardsSetter } from "@shared/ui/modals/card-preview/CardPreviewBody";
+import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
+import { notify } from "@true-recall/obsidian/services/notification.service";
+import { pushDeleteUndo } from "@true-recall/obsidian/services/undo.service";
+import type { FSRSFlashcardItem } from "@true-recall/core/types";
+import { confirm } from "@true-recall/obsidian/modals/shared/ConfirmModal";
+import type { CardsSetter } from "@true-recall/obsidian/modals/shared/card-preview/CardPreviewBody";
 import type { App } from "obsidian";
 import type TrueRecallPlugin from "../../../main";
 

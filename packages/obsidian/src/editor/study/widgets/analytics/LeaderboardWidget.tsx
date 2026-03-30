@@ -1,9 +1,9 @@
-import { StatsCalculatorService } from "@features/metrics/services/stats/stats-calculator.service";
+import { StatsCalculatorService } from "@true-recall/core/metrics/stats/stats-calculator.service";
 import { useComputed } from "@preact/signals";
-import { allCardsArray, cards } from "@shared/services/reactive-card-store";
-import type { NotePerformanceRow } from "@shared/types/fsrs/stats.types";
-import { Clickable } from "@shared/ui/components";
-import { usePlugin } from "@shared/ui/preact";
+import { allCardsArray, cards } from "@true-recall/obsidian/services/reactive-card-store";
+import type { NotePerformanceRow } from "@true-recall/core/types/fsrs/stats.types";
+import { Clickable } from "@true-recall/obsidian/components";
+import { usePlugin } from "@true-recall/obsidian/preact";
 import { useMemo } from "preact/hooks";
 import { configValue, parseCodeblockConfig } from "../config-parser";
 import { WidgetCta } from "../WidgetCta";

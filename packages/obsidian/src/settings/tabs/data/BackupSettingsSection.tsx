@@ -4,7 +4,7 @@ import {
 	FormField,
 	InfoBlock,
 	ToggleInput,
-} from "@shared/ui/components";
+} from "@true-recall/obsidian/components";
 
 export function BackupSettingsSection() {
 	const { settings, save } = useSettings();

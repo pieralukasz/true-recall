@@ -1,19 +1,19 @@
 import type {
 	PresetDailyProgress,
 	SessionPersistenceService,
-} from "@features/core/persistence/session-persistence.service";
-import type { PresetService } from "@features/core/services/preset.service";
-import { computeActionableSessionSnapshot } from "@features/study/services/actionable-session-snapshot.service";
-import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
+} from "@true-recall/obsidian/features/core/persistence/session-persistence.service";
+import type { PresetService } from "@true-recall/core/services/preset.service";
+import { computeActionableSessionSnapshot } from "@true-recall/obsidian/features/study/services/actionable-session-snapshot.service";
+import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
 import { effect } from "@preact/signals";
 import {
 	allCardsArray,
 	archivedSourceUids,
 	pluginSettings,
-} from "@shared/services/reactive-card-store";
-import type { FSRSFlashcardItem } from "@shared/types/fsrs";
-import type { FSRSPreset } from "@shared/types/settings.types";
-import { FSRS_COLORS } from "@shared/ui/helpers/fsrs-colors";
+} from "@true-recall/obsidian/services/reactive-card-store";
+import type { FSRSFlashcardItem } from "@true-recall/core/types/fsrs";
+import type { FSRSPreset } from "@true-recall/core/types/settings.types";
+import { FSRS_COLORS } from "@true-recall/obsidian/helpers/fsrs-colors";
 import { State } from "ts-fsrs";
 
 const DOT = " \u00B7 ";

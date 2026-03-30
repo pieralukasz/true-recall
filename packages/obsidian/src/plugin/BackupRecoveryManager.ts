@@ -1,21 +1,21 @@
-import type { BackgroundBackupManager } from "@features/core/persistence/background-backup.service";
-import type { BackupService } from "@features/core/persistence/backup.service";
-import type { SqliteStoreService } from "@features/core/persistence/sqlite";
+import type { BackgroundBackupManager } from "@true-recall/obsidian/features/core/persistence/background-backup.service";
+import type { BackupService } from "@true-recall/obsidian/features/core/persistence/backup.service";
+import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite";
 import {
 	decodeBackupToSqliteBytes,
 	isSupportedBackupPath,
 	sortBackupPathsNewest,
 	toExactBackupBuffer,
-} from "@features/core/persistence/sqlite/recovery.utils";
+} from "@true-recall/core/persistence/sqlite/recovery.utils";
 import {
 	DB_FOLDER,
 	getDeviceDbFilename,
-} from "@features/core/persistence/sqlite/sqlite.types";
-import { RestoreBackupModal } from "@features/integration/modals/RestoreBackupModal";
+} from "@true-recall/core/persistence/sqlite/sqlite.types";
+import { RestoreBackupModal } from "@true-recall/obsidian/modals/integration/RestoreBackupModal";
 import {
 	NOTIFICATION_DURATION,
 	notify,
-} from "@shared/services/notification.service";
+} from "@true-recall/obsidian/services/notification.service";
 import { type App, normalizePath } from "obsidian";
 
 export class BackupRecoveryManager {

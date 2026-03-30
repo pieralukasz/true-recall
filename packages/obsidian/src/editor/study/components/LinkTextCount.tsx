@@ -1,5 +1,5 @@
-import type { NoteStatusInfo } from "@shared/services/reactive-card-store";
-import { FSRS_COLORS } from "@shared/ui/helpers/fsrs-colors";
+import type { NoteStatusInfo } from "@true-recall/obsidian/services/reactive-card-store";
+import { FSRS_COLORS } from "@true-recall/obsidian/helpers/fsrs-colors";
 import { cva, type VariantProps } from "class-variance-authority";
 
 const wrapperVariants = cva(

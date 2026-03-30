@@ -1,21 +1,21 @@
-import type { SessionPersistenceService } from "@features/core/persistence/session-persistence.service";
-import { FSRSService } from "@features/core/services/fsrs.service";
-import type { HierarchyService } from "@features/core/services/hierarchy.service";
-import type { PresetService } from "@features/core/services/preset.service";
-import { ReviewService } from "@features/study/services/review.service";
+import type { SessionPersistenceService } from "@true-recall/obsidian/features/core/persistence/session-persistence.service";
+import { FSRSService } from "@true-recall/core/services/fsrs.service";
+import type { HierarchyService } from "@true-recall/core/services/hierarchy.service";
+import type { PresetService } from "@true-recall/core/services/preset.service";
+import { ReviewService } from "@true-recall/core/services/review.service";
 import {
 	buildGlobalPresetQueueContext,
 	buildQueueOptions,
 	filterActiveCards,
 	isGlobalReviewSession,
-} from "@features/study/ui/review/helpers/session-helpers";
-import type { SessionFilters } from "@features/study/ui/review/review.types";
+} from "@true-recall/obsidian/features/study/ui/review/helpers/session-helpers";
+import type { SessionFilters } from "@true-recall/obsidian/features/study/ui/review/review.types";
 import {
 	extractFSRSSettings,
 	type FSRSFlashcardItem,
 	type FSRSPreset,
 	type TrueRecallSettings,
-} from "@shared/types";
+} from "@true-recall/core/types";
 import type { MetadataCache } from "obsidian";
 import { State } from "ts-fsrs";
 

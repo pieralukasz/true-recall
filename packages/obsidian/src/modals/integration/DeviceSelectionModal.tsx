@@ -1,11 +1,11 @@
-import { DatabaseItem } from "@features/integration/modals/device-selection/DatabaseItem";
-import { RadioOption } from "@features/integration/modals/device-selection/RadioOption";
-import type { DeviceDatabaseInfo } from "@features/integration/services/device.index";
-import { ModalFooter } from "@shared/ui/components/ModalFooter";
+import { DatabaseItem } from "@true-recall/obsidian/modals/integration/device-selection/DatabaseItem";
+import { RadioOption } from "@true-recall/obsidian/modals/integration/device-selection/RadioOption";
+import type { DeviceDatabaseInfo } from "@true-recall/obsidian/features/integration/services/device.index";
+import { ModalFooter } from "@true-recall/obsidian/components/ModalFooter";
 import {
 	BasePromiseModal,
 	type CancellableResult,
-} from "@shared/ui/modals/BasePromiseModal";
+} from "@true-recall/obsidian/modals/shared/BasePromiseModal";
 import type { App } from "obsidian";
 import { render } from "preact";
 import { useCallback, useState } from "preact/hooks";

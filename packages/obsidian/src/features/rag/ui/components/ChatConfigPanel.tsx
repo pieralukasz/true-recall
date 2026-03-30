@@ -1,6 +1,6 @@
-import type { ChatConfig, ChatResponseLength } from "@shared/types";
-import { Clickable, TextAreaInput } from "@shared/ui/components";
-import { usePlugin } from "@shared/ui/preact";
+import type { ChatConfig, ChatResponseLength } from "@true-recall/core/types";
+import { Clickable, TextAreaInput } from "@true-recall/obsidian/components";
+import { usePlugin } from "@true-recall/obsidian/preact";
 import { useCallback, useRef, useState } from "preact/hooks";
 import { CHAT_PRESETS } from "../chat-config-presets";
 

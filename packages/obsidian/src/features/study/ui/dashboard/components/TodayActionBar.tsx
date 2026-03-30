@@ -1,6 +1,6 @@
-import { ActionButton } from "@shared/ui/components";
-import { FSRS_COLORS } from "@shared/ui/helpers/fsrs-colors";
-import { usePlugin } from "@shared/ui/preact";
+import { ActionButton } from "@true-recall/obsidian/components";
+import { FSRS_COLORS } from "@true-recall/obsidian/helpers/fsrs-colors";
+import { usePlugin } from "@true-recall/obsidian/preact";
 import { formatEstimatedTime } from "../helpers/time-estimate";
 import type { TodayProgress } from "../types";
 

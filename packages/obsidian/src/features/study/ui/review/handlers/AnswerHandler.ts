@@ -1,21 +1,21 @@
-import type { SemanticAnswerGradingService } from "@features/ai/services/semantic-answer-grading.service";
-import type { SessionPersistenceService } from "@features/core/persistence/session-persistence.service";
-import type { FSRSService } from "@features/core/services/fsrs.service";
-import type { FlashcardManager } from "@features/study/services/flashcard/flashcard.service";
-import type { ReviewService } from "@features/study/services/review.service";
-import { assessTypedAnswer } from "@features/study/ui/review/helpers/answer-assessment";
-import { shouldTriggerLeech } from "@features/study/ui/review/helpers/leech-helpers";
-import type { SessionFilters } from "@features/study/ui/review/review.types";
-import { notify } from "@shared/services/notification.service";
-import { notifyCardChange } from "@shared/services/signals";
-import type { AnswerUndoPayload } from "@shared/services/undo.types";
-import type { ReviewApi } from "@shared/store";
+import type { SemanticAnswerGradingService } from "@true-recall/core/ai/semantic-answer-grading.service";
+import type { SessionPersistenceService } from "@true-recall/obsidian/features/core/persistence/session-persistence.service";
+import type { FSRSService } from "@true-recall/core/services/fsrs.service";
+import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
+import type { ReviewService } from "@true-recall/core/services/review.service";
+import { assessTypedAnswer } from "@true-recall/obsidian/features/study/ui/review/helpers/answer-assessment";
+import { shouldTriggerLeech } from "@true-recall/obsidian/features/study/ui/review/helpers/leech-helpers";
+import type { SessionFilters } from "@true-recall/obsidian/features/study/ui/review/review.types";
+import { notify } from "@true-recall/obsidian/services/notification.service";
+import { notifyCardChange } from "@true-recall/obsidian/services/signals";
+import type { AnswerUndoPayload } from "@true-recall/obsidian/services/undo.types";
+import type { ReviewApi } from "@true-recall/obsidian/store";
 import type {
 	FSRSFlashcardItem,
 	FSRSPreset,
 	LocalAnswerAssessment,
 	SemanticGradingResult,
-} from "@shared/types";
+} from "@true-recall/core/types";
 import { type Grade, Rating, State } from "ts-fsrs";
 import type TrueRecallPlugin from "@true-recall/obsidian/main";
 

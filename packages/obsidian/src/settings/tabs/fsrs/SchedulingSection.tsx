@@ -4,14 +4,14 @@ import type {
 	NewReviewMix,
 	ReviewOrder,
 	TrueRecallSettings,
-} from "@shared/types";
+} from "@true-recall/core/types";
 import {
 	FormCard,
 	FormField,
 	SelectInput,
 	TextInput,
 	ToggleInput,
-} from "@shared/ui/components";
+} from "@true-recall/obsidian/components";
 
 interface SchedulingSectionProps {
 	preset: FSRSPreset;

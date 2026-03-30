@@ -1,5 +1,5 @@
 import { IconToolButton } from "./IOIconToolButton";
-import { Clickable } from "@shared/ui/components/Clickable";
+import { Clickable } from "@true-recall/obsidian/components/Clickable";
 
 type Tool = "select" | "rect" | "ellipse";
 

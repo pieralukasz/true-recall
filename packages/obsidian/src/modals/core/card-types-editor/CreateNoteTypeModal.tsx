@@ -1,6 +1,6 @@
-import type { NoteType } from "@shared/types/note.types";
-import { Clickable } from "@shared/ui/components";
-import { BasePromiseModal } from "@shared/ui/modals/BasePromiseModal";
+import type { NoteType } from "@true-recall/core/types/note.types";
+import { Clickable } from "@true-recall/obsidian/components";
+import { BasePromiseModal } from "@true-recall/obsidian/modals/shared/BasePromiseModal";
 import type { App } from "obsidian";
 import { render } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";

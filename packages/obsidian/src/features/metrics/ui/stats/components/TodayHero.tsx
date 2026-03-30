@@ -1,5 +1,5 @@
-import type { StreakInfo, TodaySummary } from "@shared/types";
-import { useIcon } from "@shared/ui/preact";
+import type { StreakInfo, TodaySummary } from "@true-recall/core/types";
+import { useIcon } from "@true-recall/obsidian/preact";
 
 interface TodayHeroProps {
 	today: TodaySummary;

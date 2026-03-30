@@ -4,9 +4,9 @@ import {
 	TRUERECALL_DISCORD_URL,
 	TRUERECALL_GITHUB_URL,
 	TRUERECALL_WEB_URL,
-} from "@shared/constants";
-import { notify } from "@shared/services/notification.service";
-import type { ReviewViewMode, TypeInMode } from "@shared/types";
+} from "@true-recall/core/constants";
+import { notify } from "@true-recall/obsidian/services/notification.service";
+import type { ReviewViewMode, TypeInMode } from "@true-recall/core/types";
 import {
 	Clickable,
 	FormCard,
@@ -16,8 +16,8 @@ import {
 	SliderInput,
 	TextInput,
 	ToggleInput,
-} from "@shared/ui/components";
-import { useIcon } from "@shared/ui/preact";
+} from "@true-recall/obsidian/components";
+import { useIcon } from "@true-recall/obsidian/preact";
 
 export function GeneralTab() {
 	const { settings, save, plugin } = useSettings();
@@ -251,7 +251,7 @@ export function GeneralTab() {
 						onClick={() =>
 							void (async () => {
 								const { fetchLatestRelease } = await import(
-									"@shared/services/release-notes.service"
+									"@true-recall/obsidian/services/release-notes.service"
 								);
 								const release = await fetchLatestRelease();
 								if (!release) {
@@ -261,7 +261,7 @@ export function GeneralTab() {
 									return;
 								}
 								const { WhatsNewModal } = await import(
-									"@shared/ui/modals/WhatsNewModal"
+									"@true-recall/obsidian/modals/shared/WhatsNewModal"
 								);
 								new WhatsNewModal(plugin, release).open();
 							})()

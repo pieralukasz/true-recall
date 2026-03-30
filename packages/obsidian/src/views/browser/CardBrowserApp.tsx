@@ -1,26 +1,26 @@
-import { CardBrowserQueryService } from "@features/library/services/card-browser-query.service";
-import { notifyDuplicateError } from "@features/library/ui/panel/utils/panel-helpers";
-import { DuplicateQuestionError } from "@features/study/services/flashcard/card-repository.service";
+import { CardBrowserQueryService } from "@true-recall/obsidian/features/library/services/card-browser-query.service";
+import { notifyDuplicateError } from "@true-recall/obsidian/features/library/ui/panel/utils/panel-helpers";
+import { DuplicateQuestionError } from "@true-recall/core/flashcard/card-repository.service";
 import { type Signal, useSignal } from "@preact/signals";
-import { notify } from "@shared/services/notification.service";
-import { cards, pluginSettings } from "@shared/services/reactive-card-store";
-import { pushDeleteUndo } from "@shared/services/undo.service";
-import { AppNavBar } from "@shared/ui/components";
-import { useApp, usePlugin } from "@shared/ui/preact";
+import { notify } from "@true-recall/obsidian/services/notification.service";
+import { cards, pluginSettings } from "@true-recall/obsidian/services/reactive-card-store";
+import { pushDeleteUndo } from "@true-recall/obsidian/services/undo.service";
+import { AppNavBar } from "@true-recall/obsidian/components";
+import { useApp, usePlugin } from "@true-recall/obsidian/preact";
 import { useCallback, useEffect, useMemo, useRef } from "preact/hooks";
-import { BrowserSidebar } from "@features/library/ui/browser/components/BrowserSidebar";
-import { BrowserToolbar } from "@features/library/ui/browser/components/BrowserToolbar";
-import { BulkActionsBar } from "@features/library/ui/browser/components/BulkActionsBar";
-import { CardPreview } from "@features/library/ui/browser/components/CardPreview";
-import { CardTable } from "@features/library/ui/browser/components/CardTable";
-import { createBrowserSuggestionProvider } from "@features/library/ui/browser/helpers/browser-suggestions";
-import { DEFAULT_VISIBLE_KEYS } from "@features/library/ui/browser/helpers/column-defs";
+import { BrowserSidebar } from "@true-recall/obsidian/features/library/ui/browser/components/BrowserSidebar";
+import { BrowserToolbar } from "@true-recall/obsidian/features/library/ui/browser/components/BrowserToolbar";
+import { BulkActionsBar } from "@true-recall/obsidian/features/library/ui/browser/components/BulkActionsBar";
+import { CardPreview } from "@true-recall/obsidian/features/library/ui/browser/components/CardPreview";
+import { CardTable } from "@true-recall/obsidian/features/library/ui/browser/components/CardTable";
+import { createBrowserSuggestionProvider } from "@true-recall/obsidian/features/library/ui/browser/helpers/browser-suggestions";
+import { DEFAULT_VISIBLE_KEYS } from "@true-recall/obsidian/features/library/ui/browser/helpers/column-defs";
 import {
 	BROWSER_PAGE_SIZE,
 	getBrowserQueryResetKey,
-} from "@features/library/ui/browser/helpers/infinite-scroll";
-import { parseSearchQuery } from "@features/library/ui/browser/helpers/search-parser";
-import { useKeyboardNav } from "@features/library/ui/browser/hooks/useKeyboardNav";
+} from "@true-recall/obsidian/features/library/ui/browser/helpers/infinite-scroll";
+import { parseSearchQuery } from "@true-recall/obsidian/features/library/ui/browser/helpers/search-parser";
+import { useKeyboardNav } from "@true-recall/obsidian/features/library/ui/browser/hooks/useKeyboardNav";
 import {
 	type BrowserCard,
 	type BrowserResult,
@@ -28,7 +28,7 @@ import {
 	type FilterState,
 	type SortConfig,
 	type StateFilterValue,
-} from "@features/library/ui/browser/types";
+} from "@true-recall/obsidian/features/library/ui/browser/types";
 
 const PAGE_SIZE = BROWSER_PAGE_SIZE;
 
@@ -291,7 +291,7 @@ export function CardBrowserApp({
 		if (orphanedIds.length === 0) return;
 
 		const cardWord = orphanedIds.length === 1 ? "card" : "cards";
-		const { confirm } = await import("@shared/ui/modals/ConfirmModal");
+		const { confirm } = await import("@true-recall/obsidian/modals/shared/ConfirmModal");
 		const confirmed = await confirm(app, {
 			message: `Remove ${orphanedIds.length} orphaned ${cardWord}?`,
 		});

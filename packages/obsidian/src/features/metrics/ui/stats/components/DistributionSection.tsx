@@ -1,10 +1,10 @@
 import type {
 	DistributionStats,
 	HistogramBucket,
-} from "@features/metrics/services/fsrs-tools/statistics/distribution.calculator";
+} from "@true-recall/core/metrics/fsrs-tools/statistics/distribution.calculator";
 import { useSignal } from "@preact/signals";
-import { Clickable } from "@shared/ui/components/Clickable";
-import { cn } from "@shared/ui/utils";
+import { Clickable } from "@true-recall/obsidian/components/Clickable";
+import { cn } from "@true-recall/obsidian/utils";
 import type { ChartConfiguration } from "chart.js";
 import { useRef } from "preact/hooks";
 import { CHART_COLORS, withAlpha } from "../helpers/chart-theme";

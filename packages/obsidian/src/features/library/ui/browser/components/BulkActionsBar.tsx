@@ -1,9 +1,9 @@
-import { ChangeNoteTypeModal } from "@features/library/modals/ChangeNoteTypeModal";
-import { notify } from "@shared/services/notification.service";
-import { notifyCardChange } from "@shared/services/signals";
-import { pushDeleteUndo } from "@shared/services/undo.service";
-import { Clickable } from "@shared/ui/components";
-import { useApp, usePlugin } from "@shared/ui/preact";
+import { ChangeNoteTypeModal } from "@true-recall/obsidian/modals/library/ChangeNoteTypeModal";
+import { notify } from "@true-recall/obsidian/services/notification.service";
+import { notifyCardChange } from "@true-recall/obsidian/services/signals";
+import { pushDeleteUndo } from "@true-recall/obsidian/services/undo.service";
+import { Clickable } from "@true-recall/obsidian/components";
+import { useApp, usePlugin } from "@true-recall/obsidian/preact";
 import { useCallback } from "preact/hooks";
 
 interface BulkActionsBarProps {
@@ -102,7 +102,7 @@ export function BulkActionsBar({
 	}, [ids, plugin, app]);
 
 	const handleDelete = useCallback(async () => {
-		const { confirm } = await import("@shared/ui/modals/ConfirmModal");
+		const { confirm } = await import("@true-recall/obsidian/modals/shared/ConfirmModal");
 		if (!(await confirm(app, { message: `Delete ${ids.length} cards?` })))
 			return;
 		const result =

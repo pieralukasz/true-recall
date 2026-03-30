@@ -5,8 +5,8 @@
  * to generate flashcards in the correct #type/<slug> format.
  */
 
-import { resolveSlug } from "@features/study/services/flashcard/note-type-slug";
-import type { NoteType } from "@shared/types/note.types";
+import { resolveSlug } from "@true-recall/core/flashcard/note-type-slug";
+import type { NoteType } from "@true-recall/core/types/note.types";
 
 /**
  * Returns an AI prompt string tailored to the given NoteType using block format.

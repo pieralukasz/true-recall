@@ -1,7 +1,7 @@
-import { Clickable } from "@shared/ui/components";
-import { NotePicker } from "@shared/ui/components/NotePicker";
-import { BasePromiseModal } from "@shared/ui/modals/BasePromiseModal";
-import { confirm } from "@shared/ui/modals/ConfirmModal";
+import { Clickable } from "@true-recall/obsidian/components";
+import { NotePicker } from "@true-recall/obsidian/components/NotePicker";
+import { BasePromiseModal } from "@true-recall/obsidian/modals/shared/BasePromiseModal";
+import { confirm } from "@true-recall/obsidian/modals/shared/ConfirmModal";
 import type { App, TFile } from "obsidian";
 import { render } from "preact";
 import { useCallback, useState } from "preact/hooks";

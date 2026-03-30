@@ -1,13 +1,13 @@
-import { DeviceSelectionModal } from "@features/integration/modals/DeviceSelectionModal";
+import { DeviceSelectionModal } from "@true-recall/obsidian/modals/integration/DeviceSelectionModal";
 import { useSettings } from "../../hooks/useSettings";
-import { notify } from "@shared/services/notification.service";
+import { notify } from "@true-recall/obsidian/services/notification.service";
 import {
 	ActionButton,
 	FormCard,
 	FormField,
 	InfoBlock,
 	TextInput,
-} from "@shared/ui/components";
+} from "@true-recall/obsidian/components";
 import { useCallback } from "preact/hooks";
 
 export function DeviceDatabaseSection() {
@@ -40,7 +40,7 @@ export function DeviceDatabaseSection() {
 			return;
 		}
 
-		const { confirm } = await import("@shared/ui/modals/ConfirmModal");
+		const { confirm } = await import("@true-recall/obsidian/modals/shared/ConfirmModal");
 		const confirmed = await confirm(plugin.app, {
 			message: `Are you sure you want to replace the current database with data from device ${result.sourceDeviceId}?\n\nThe current database will be overwritten. This requires restarting Obsidian.`,
 		});
@@ -54,7 +54,7 @@ export function DeviceDatabaseSection() {
 			const currentDeviceId = plugin.deviceIdService?.getDeviceId();
 			const { normalizePath } = await import("obsidian");
 			const { DB_FOLDER, getDeviceDbFilename } = await import(
-				"@features/core/persistence/sqlite/sqlite.types"
+				"@true-recall/core/persistence/sqlite/sqlite.types"
 			);
 
 			const targetPath = normalizePath(

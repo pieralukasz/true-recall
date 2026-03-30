@@ -1,8 +1,8 @@
-import { RatingButton } from "@features/study/ui/review/components/RatingButton";
-import type { TypeInMode } from "@features/study/ui/review/helpers/type-in-flow";
-import type { SchedulingPreview } from "@shared/types";
-import { Clickable } from "@shared/ui/components";
-import { useIcon } from "@shared/ui/preact/hooks";
+import { RatingButton } from "@true-recall/obsidian/features/study/ui/review/components/RatingButton";
+import type { TypeInMode } from "@true-recall/obsidian/features/study/ui/review/helpers/type-in-flow";
+import type { SchedulingPreview } from "@true-recall/core/types";
+import { Clickable } from "@true-recall/obsidian/components";
+import { useIcon } from "@true-recall/obsidian/preact/hooks";
 import { cva } from "class-variance-authority";
 import type { Grade } from "ts-fsrs";
 import { Rating } from "ts-fsrs";

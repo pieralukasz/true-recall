@@ -1,4 +1,4 @@
-import { BaseModal } from "@shared/ui/modals/BaseModal";
+import { BaseModal } from "@true-recall/obsidian/modals/shared/BaseModal";
 
 export abstract class BasePromiseModal<T> extends BaseModal {
 	protected resolvePromise: ((result: T) => void) | null = null;
