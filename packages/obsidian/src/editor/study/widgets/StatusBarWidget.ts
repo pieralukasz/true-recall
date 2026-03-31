@@ -1,4 +1,5 @@
 import { effect } from "@preact/signals";
+import { DEFAULT_SETTINGS } from "@true-recall/core/constants";
 import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
 import type {
 	PresetDailyProgress,
@@ -199,7 +200,7 @@ export class StatusBarWidget {
 		const allMeta = dl.get<Map<string, CardSchedulingMeta>>(Q.ALL_META);
 		const archived =
 			dl.get<ReadonlySet<string>>(Q.ARCHIVED_UIDS) ?? new Set<string>();
-		const settings = dl.get<TrueRecallSettings>(Q.SETTINGS)!;
+		const settings = dl.get<TrueRecallSettings>(Q.SETTINGS) ?? DEFAULT_SETTINGS;
 		const allCards = allMeta
 			? ([...allMeta.values()] as FSRSFlashcardItem[])
 			: [];

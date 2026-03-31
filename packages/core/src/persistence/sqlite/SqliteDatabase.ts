@@ -1,21 +1,13 @@
-import type {
-	BindParams,
-	DatabaseLike,
-	DatabaseLoadResult,
-} from "./loader";
+import type { BindParams, DatabaseLike, DatabaseLoadResult } from "./loader";
 import { loadDatabase } from "./loader";
 
 export class SqliteDatabase {
 	private db: DatabaseLike | null = null;
 
-	constructor(
-		private onDirty: () => void,
-	) {}
+	constructor(private onDirty: () => void) {}
 
 	async init(existingData: Uint8Array | null): Promise<void> {
-		const result: DatabaseLoadResult = await loadDatabase(
-			existingData,
-		);
+		const result: DatabaseLoadResult = await loadDatabase(existingData);
 		this.db = result.db;
 	}
 

@@ -1,5 +1,5 @@
-import { cn } from "../utils/cn";
 import { useCallback } from "preact/hooks";
+import { cn } from "../utils/cn";
 
 export interface ToggleInputProps {
 	value: boolean;

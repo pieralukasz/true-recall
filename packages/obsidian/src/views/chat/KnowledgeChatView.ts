@@ -1,17 +1,17 @@
+import { VIEW_TYPE_KNOWLEDGE_CHAT } from "@true-recall/core/constants";
 import { RagChatService } from "@true-recall/core/rag/chat/rag-chat.service";
 import { RagToolExecutor } from "@true-recall/core/rag/chat/rag-chat-tools";
 import { RagQueryService } from "@true-recall/core/rag/chat/rag-query.service";
-import { VIEW_TYPE_KNOWLEDGE_CHAT } from "@true-recall/core/constants";
-import { mountPreact } from "@true-recall/obsidian/preact";
-import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpClient";
-import { ItemView, TFile, type WorkspaceLeaf } from "obsidian";
-import { h } from "preact";
-import type TrueRecallPlugin from "../../main";
 import type {
 	CardContextItem,
 	ContextItem,
 	NoteContextItem,
 } from "@true-recall/core/rag/context/context.types";
+import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpClient";
+import { mountPreact } from "@true-recall/obsidian/preact";
+import { ItemView, TFile, type WorkspaceLeaf } from "obsidian";
+import { h } from "preact";
+import type TrueRecallPlugin from "../../main";
 import { KnowledgeChatApp } from "./KnowledgeChatApp";
 
 const ATTACHED_CONTEXT_CHAR_LIMIT = 6000;

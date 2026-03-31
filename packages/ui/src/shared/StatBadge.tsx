@@ -1,5 +1,5 @@
-import { cn } from "../utils/cn";
 import type { ComponentChildren } from "preact";
+import { cn } from "../utils/cn";
 
 export interface StatBadgeProps {
 	label: string;

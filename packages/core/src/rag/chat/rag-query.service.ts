@@ -3,17 +3,23 @@ import {
 	OpenRouterClient,
 } from "@true-recall/core/ai/clients/openrouter-client";
 import { StreamingOpenRouterClient } from "@true-recall/core/ai/clients/streaming-openrouter-client";
-import type { FrontmatterIndexService } from "@true-recall/core/services/notes/frontmatter-index.service";
 import { LITELLM_URL } from "@true-recall/core/constants";
+import type { IHttpClient } from "@true-recall/core/interfaces/http-client";
+import {
+	RAG_CHAT_TOOLS,
+	type RagToolExecutor,
+} from "@true-recall/core/rag/chat/rag-chat-tools";
+import type {
+	RagSearchService,
+	SearchResult,
+} from "@true-recall/core/rag/retrieval/rag-search.service";
+import type { FrontmatterIndexService } from "@true-recall/core/services/notes/frontmatter-index.service";
 import type {
 	ChatResponseLength,
 	TrueRecallSettings,
 } from "@true-recall/core/types/settings.types";
 import { fileBasename, formatLocalDate } from "@true-recall/core/utils";
-import type { IHttpClient } from "@true-recall/core/interfaces/http-client";
 import type { ContextItem } from "../context/context.types";
-import { RAG_CHAT_TOOLS, type RagToolExecutor } from "@true-recall/core/rag/chat/rag-chat-tools";
-import type { RagSearchService, SearchResult } from "@true-recall/core/rag/retrieval/rag-search.service";
 
 function agenticPrompt(): string {
 	const today = formatLocalDate(new Date());
@@ -152,7 +158,12 @@ export class RagQueryService {
 		this.lastToolCalls = [];
 
 		try {
-			const client = new OpenRouterClient(apiKey, "auto", this.httpClient, streamUrl);
+			const client = new OpenRouterClient(
+				apiKey,
+				"auto",
+				this.httpClient,
+				streamUrl,
+			);
 			const response = await client.chat({
 				messages,
 				tools: RAG_CHAT_TOOLS,
@@ -228,7 +239,12 @@ export class RagQueryService {
 			ragContext,
 		);
 
-		const client = new StreamingOpenRouterClient(apiKey, "auto", this.httpClient, streamUrl);
+		const client = new StreamingOpenRouterClient(
+			apiKey,
+			"auto",
+			this.httpClient,
+			streamUrl,
+		);
 		for await (const chunk of client.chatStream({ messages })) {
 			yield chunk.content;
 		}

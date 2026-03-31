@@ -1,8 +1,8 @@
 import type { Extension } from "@codemirror/state";
 import { type EditorView, ViewPlugin, type ViewUpdate } from "@codemirror/view";
-import { ImageToolbar } from "./ImageToolbar";
 import { computePosition, flip, offset, shift } from "@floating-ui/dom";
 import { h, render } from "preact";
+import { ImageToolbar } from "./ImageToolbar";
 
 export interface ImageToolbarCallbacks {
 	onQuickAddImage: (imagePath: string) => Promise<void>;

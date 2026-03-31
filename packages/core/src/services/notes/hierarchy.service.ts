@@ -1,5 +1,5 @@
-import type { FrontmatterIndexService } from "./frontmatter-index.service";
 import type { IFileSystem } from "../../interfaces/file-system";
+import type { FrontmatterIndexService } from "./frontmatter-index.service";
 
 export interface HierarchyTreeNode {
 	path: string;
@@ -29,7 +29,7 @@ export class HierarchyService {
 
 	constructor(
 		private frontmatterIndex: FrontmatterIndexService,
-		private fileSystem: IFileSystem,
+		_fileSystem: IFileSystem,
 		private resolveLinkPath?: LinkResolver,
 	) {}
 
@@ -268,8 +268,7 @@ export class HierarchyService {
 		// Prevent infinite recursion from any remaining cycles
 		if (ancestors.has(path)) return null;
 
-		const name =
-			path.split("/").pop()?.replace(/\.md$/, "") ?? path;
+		const name = path.split("/").pop()?.replace(/\.md$/, "") ?? path;
 
 		const childPaths = graph.childMap.get(path);
 		const nextAncestors = new Set(ancestors);

@@ -1,5 +1,8 @@
 import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
-import type { CardMaturityBreakdown, FSRSFlashcardItem } from "@true-recall/core/types";
+import type {
+	CardMaturityBreakdown,
+	FSRSFlashcardItem,
+} from "@true-recall/core/types";
 import { BaseModal } from "@true-recall/obsidian/modals/shared/BaseModal";
 import {
 	CardPreviewBody,

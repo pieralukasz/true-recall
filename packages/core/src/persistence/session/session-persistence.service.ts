@@ -1,3 +1,4 @@
+import type { IPersistence } from "@true-recall/core/interfaces/persistence";
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite";
 import type { DayBoundaryService } from "@true-recall/core/services/review/day-boundary.service";
 import type {
@@ -5,7 +6,6 @@ import type {
 	Grade,
 	PersistentStatsData,
 } from "@true-recall/core/types";
-import type { IPersistence } from "@true-recall/core/interfaces/persistence";
 import { Rating, State } from "ts-fsrs";
 
 const STATS_FOLDER = ".true-recall";

@@ -2,7 +2,10 @@
  * Shared modals exports - general-purpose modals used across features
  */
 
-export { BaseModal, type BaseModalOptions } from "@true-recall/obsidian/modals/shared/BaseModal";
+export {
+	BaseModal,
+	type BaseModalOptions,
+} from "@true-recall/obsidian/modals/shared/BaseModal";
 export {
 	BasePromiseModal,
 	type CancellableResult,

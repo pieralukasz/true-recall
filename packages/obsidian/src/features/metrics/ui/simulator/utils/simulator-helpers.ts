@@ -1,8 +1,4 @@
-import type {
-	MetricType,
-	SequenceReview,
-	SliderConfig,
-} from "../types";
+import type { MetricType, SequenceReview, SliderConfig } from "../types";
 
 export function getMetricData(
 	reviews: SequenceReview[],

@@ -1,12 +1,12 @@
+import { resolveSlug } from "@true-recall/core/flashcard/note-types/note-type-slug";
 import {
 	blockToText,
 	type ParsedBlock,
 } from "@true-recall/core/flashcard/parsing/block-parser.service";
-import { resolveSlug } from "@true-recall/core/flashcard/note-types/note-type-slug";
-import { notify } from "@true-recall/obsidian/services/notification.service";
 import type { FlashcardInfo, FlashcardItem } from "@true-recall/core/types";
-import type { App, TFile } from "obsidian";
 import type TrueRecallPlugin from "@true-recall/obsidian/main";
+import { notify } from "@true-recall/obsidian/services/notification.service";
+import type { App, TFile } from "obsidian";
 
 interface DuplicateEntry {
 	flashcard: { question: string };

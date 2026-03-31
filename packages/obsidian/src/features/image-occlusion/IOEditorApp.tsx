@@ -1,14 +1,26 @@
+import { isImageExtension } from "@true-recall/core/types";
+import {
+	createEmptyIODefinition,
+	getNextIOGroupKey,
+	parseIODefinition,
+} from "@true-recall/core/utils/io-definition";
+import { Clickable } from "@true-recall/obsidian/components";
+import { NotePickerCombobox } from "@true-recall/obsidian/components/NotePickerCombobox";
+import {
+	useApp,
+	usePlugin,
+} from "@true-recall/obsidian/preact/ObsidianContext";
+import { cn } from "@true-recall/ui/utils/cn";
+import { Notice, TFile } from "obsidian";
+import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
+import { isDesktop } from "../../utils/platform";
+import { ImageService } from "../integration/services/ImageService";
 import { deleteRegion } from "./canvas-interactions";
 import { IOCanvas } from "./IOCanvas";
 import { IconToolButton } from "./IOIconToolButton";
 import { IORegionList } from "./IORegionList";
 import { IOToolsPanel } from "./IOToolsPanel";
 import { detectRegions } from "./io-ai.service";
-import {
-	createEmptyIODefinition,
-	getNextIOGroupKey,
-	parseIODefinition,
-} from "@true-recall/core/utils/io-definition";
 import type {
 	IODefinition,
 	IOEditorMode,
@@ -19,15 +31,6 @@ import {
 	shouldImagePanelStartExpanded,
 	truncateMiddlePath,
 } from "./ui-helpers";
-import { ImageService } from "../integration/services/ImageService";
-import { isImageExtension } from "@true-recall/core/types";
-import { Clickable } from "@true-recall/obsidian/components";
-import { NotePickerCombobox } from "@true-recall/obsidian/components/NotePickerCombobox";
-import { useApp, usePlugin } from "@true-recall/obsidian/preact/ObsidianContext";
-import { cn } from "@true-recall/ui/utils/cn";
-import { isDesktop } from "../../utils/platform";
-import { Notice, TFile } from "obsidian";
-import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
 
 type Tool = "select" | "rect" | "ellipse";
 type NonSelectTool = Exclude<Tool, "select">;

@@ -1,13 +1,12 @@
 // @true-recall/obsidian — public API
 
 export {
-	ObsidianPersistence,
-	ObsidianFrontmatter,
 	ObsidianFileSystem,
+	ObsidianFrontmatter,
+	ObsidianHttpClient,
 	ObsidianMetadataIndex,
 	ObsidianNotification,
-	ObsidianHttpClient,
+	ObsidianPersistence,
 } from "./adapters";
-
-export { createObsidianAdapters } from "./context";
 export type { ObsidianAdapters } from "./context";
+export { createObsidianAdapters } from "./context";

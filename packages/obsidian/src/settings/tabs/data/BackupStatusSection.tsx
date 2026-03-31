@@ -1,6 +1,6 @@
-import { useSettings } from "../../hooks/useSettings";
 import { FormCard } from "@true-recall/obsidian/components";
 import { useEffect, useState } from "preact/hooks";
+import { useSettings } from "../../hooks/useSettings";
 
 export function BackupStatusSection() {
 	const { plugin } = useSettings();

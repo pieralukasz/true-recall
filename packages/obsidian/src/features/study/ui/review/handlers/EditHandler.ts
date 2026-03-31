@@ -76,10 +76,10 @@ export class EditHandler {
 			const { hasClozeContent, parseClozeTemplate } = await import(
 				"@true-recall/core/flashcard/parsing/cloze-parser.service"
 			);
-			if (hasClozeContent(newContent)) {
+			if (hasClozeContent(newContent) && card.sourceUid && card.clozeTemplate) {
 				this.deps.flashcardManager.updateClozeTemplate(
-					card.sourceUid!,
-					card.clozeTemplate!,
+					card.sourceUid,
+					card.clozeTemplate,
 					newContent,
 					card.sourceNoteName,
 				);

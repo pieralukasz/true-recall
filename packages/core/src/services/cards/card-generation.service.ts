@@ -6,13 +6,10 @@
  * and image-occlusion (1 per region) note types.
  */
 
-import {
-	getIOGroupOrds,
-	parseIODefinition,
-} from "../../utils/io-definition";
 import { extractClozeIndices } from "@true-recall/core/flashcard/parsing/cloze-parser.service";
 import type { Note, NoteType } from "../../types/note.types";
 import { BUILTIN_IMAGE_OCCLUSION_ID } from "../../types/note.types";
+import { getIOGroupOrds, parseIODefinition } from "../../utils/io-definition";
 import { fieldIsEmpty, renderTemplate } from "./template-engine";
 
 export interface GeneratedCard {

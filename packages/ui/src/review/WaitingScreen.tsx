@@ -1,6 +1,6 @@
 import { UI_CONFIG } from "@true-recall/core";
-import { Clickable } from "../shared/Clickable";
 import { useCallback, useEffect, useState } from "preact/hooks";
+import { Clickable } from "../shared/Clickable";
 import type { ReviewApi } from "./types";
 
 export function WaitingScreen({

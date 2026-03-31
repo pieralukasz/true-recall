@@ -1,8 +1,8 @@
 import { parseIODefinition } from "@true-recall/core/utils/io-definition";
-import { resolveImageFile } from "./resolve-image";
-import type { IORegion } from "./types";
 import { useApp } from "@true-recall/obsidian/preact/ObsidianContext";
 import { useCallback, useMemo, useState } from "preact/hooks";
+import { resolveImageFile } from "./resolve-image";
+import type { IORegion } from "./types";
 
 export interface IOCardRendererProps {
 	imagePath?: string;

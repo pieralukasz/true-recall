@@ -2,20 +2,6 @@ import {
 	clamp,
 	normalizePointFromRect,
 } from "@true-recall/core/utils/canvas-geometry";
-import {
-	buildDraftRegion,
-	buildMoveUpdate,
-	buildResizeUpdate,
-	commitDraftRegion,
-	getRegionCorner,
-	type ResizeCorner,
-	updateRegion,
-} from "./canvas-interactions";
-import type {
-	IODefinition,
-	IORegion,
-	IOShape,
-} from "./types";
 import { Clickable } from "@true-recall/obsidian/components";
 import { useIcon } from "@true-recall/obsidian/preact/hooks";
 import {
@@ -25,6 +11,16 @@ import {
 	useRef,
 	useState,
 } from "preact/hooks";
+import {
+	buildDraftRegion,
+	buildMoveUpdate,
+	buildResizeUpdate,
+	commitDraftRegion,
+	getRegionCorner,
+	type ResizeCorner,
+	updateRegion,
+} from "./canvas-interactions";
+import type { IODefinition, IORegion, IOShape } from "./types";
 
 type Tool = "select" | IOShape;
 

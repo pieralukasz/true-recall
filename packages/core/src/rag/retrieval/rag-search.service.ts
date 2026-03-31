@@ -1,9 +1,9 @@
+import { RAG_CONFIG } from "@true-recall/core/constants";
 import type {
 	EmbeddingRow,
 	RagChunkActions,
 	RagSourceType,
 } from "../indexing/rag-chunk-actions";
-import { RAG_CONFIG } from "@true-recall/core/constants";
 
 export interface RagEmbeddingService {
 	embedSingle(text: string): Promise<Float32Array>;

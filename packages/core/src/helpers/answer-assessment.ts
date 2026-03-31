@@ -1,4 +1,7 @@
-import type { AnswerDiffToken, LocalAnswerAssessment } from "@true-recall/core/types";
+import type {
+	AnswerDiffToken,
+	LocalAnswerAssessment,
+} from "@true-recall/core/types";
 import { stripMarkdownSyntax } from "@true-recall/core/utils";
 
 function normalizeAnswer(text: string): string {

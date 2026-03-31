@@ -11,7 +11,5 @@ export interface IPersistence {
 	mkdir(path: string): Promise<void>;
 	list(path: string): Promise<{ files: string[]; folders: string[] }>;
 	remove(path: string): Promise<void>;
-	stat(
-		path: string,
-	): Promise<{ size: number; mtime: number } | null>;
+	stat(path: string): Promise<{ size: number; mtime: number } | null>;
 }

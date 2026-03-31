@@ -1,5 +1,5 @@
-import { BYOK_MODELS } from "../../constants";
 import { z } from "zod";
+import { BYOK_MODELS } from "../../constants";
 
 const modelIds = BYOK_MODELS.map((m) => m.id) as [string, ...string[]];
 

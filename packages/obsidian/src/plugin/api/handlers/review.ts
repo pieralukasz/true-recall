@@ -55,10 +55,16 @@ export async function handleGradeCard(
 		4: Rating.Easy,
 	};
 
+	const grade = ratingMap[ratingValue];
+	if (!grade) {
+		sendError(res, 400, "Invalid rating value");
+		return;
+	}
+
 	const reviewService = new ReviewService();
 	const { updatedCard, result, persisted } = await reviewService.gradeCard(
 		card,
-		ratingMap[ratingValue]!,
+		grade,
 		ctx.plugin.fsrsService,
 		ctx.plugin.flashcardManager,
 	);

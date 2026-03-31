@@ -3,8 +3,8 @@
  * Helper functions for FSRS operations
  */
 
-import type { FSRSCardData } from "./card.types";
 import type { State } from "ts-fsrs";
+import type { FSRSCardData } from "./card.types";
 
 /**
  * Review view display mode

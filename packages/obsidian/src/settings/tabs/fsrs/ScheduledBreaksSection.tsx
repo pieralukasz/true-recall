@@ -34,7 +34,9 @@ export function ScheduledBreaksSection({
 	);
 
 	const handleAddBreak = useCallback(async () => {
-		const { promptText } = await import("@true-recall/obsidian/modals/shared/TextInputModal");
+		const { promptText } = await import(
+			"@true-recall/obsidian/modals/shared/TextInputModal"
+		);
 		const startDate = await promptText(app, {
 			title: "Add scheduled break",
 			label: "Start date (YYYY-MM-DD)",

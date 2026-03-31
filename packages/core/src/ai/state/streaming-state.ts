@@ -38,7 +38,10 @@ export type StateListener = (state: StreamingGenerationState) => void;
 
 /** Simple observable state container (platform-agnostic replacement for @preact/signals). */
 class StreamingStateStore {
-	private _value: StreamingGenerationState = { ...INITIAL_STATE, recentCardIds: new Set<string>() };
+	private _value: StreamingGenerationState = {
+		...INITIAL_STATE,
+		recentCardIds: new Set<string>(),
+	};
 	private listeners: Set<StateListener> = new Set();
 
 	get value(): StreamingGenerationState {
@@ -134,7 +137,10 @@ export function clearRecentCards(): void {
 export function cancelStreaming(): void {
 	const current = streamingGeneration.value;
 	current.abortController?.abort();
-	streamingGeneration.value = { ...INITIAL_STATE, recentCardIds: new Set<string>() };
+	streamingGeneration.value = {
+		...INITIAL_STATE,
+		recentCardIds: new Set<string>(),
+	};
 }
 
 /**

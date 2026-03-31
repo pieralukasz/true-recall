@@ -1,5 +1,5 @@
-import { FSRS_COLORS } from "../helpers/fsrs-colors";
 import { cva } from "class-variance-authority";
+import { FSRS_COLORS } from "../helpers/fsrs-colors";
 
 export interface CardCountDisplayProps {
 	newCount: number;

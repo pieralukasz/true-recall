@@ -1,5 +1,9 @@
+import {
+	ActionButton,
+	FormCard,
+	FormField,
+} from "@true-recall/obsidian/components";
 import { useSettings } from "../../hooks/useSettings";
-import { ActionButton, FormCard, FormField } from "@true-recall/obsidian/components";
 
 export function ManualBackupSection() {
 	const { plugin } = useSettings();

@@ -1,5 +1,5 @@
-import { normalizeIOImagePath } from "@true-recall/core/utils/io-definition";
 import { isImageExtension } from "@true-recall/core/types";
+import { normalizeIOImagePath } from "@true-recall/core/utils/io-definition";
 import type { App } from "obsidian";
 import { TFile } from "obsidian";
 

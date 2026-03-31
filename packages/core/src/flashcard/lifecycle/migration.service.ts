@@ -7,13 +7,16 @@
  * 3. Replace the old lines in the note content
  */
 
-import type { IFileSystem } from "@true-recall/core/interfaces/file-system";
 import { blockToText } from "@true-recall/core/flashcard/parsing/block-parser.service";
 import {
 	CLOZE_DETECT,
 	INLINE_SEPARATOR_RE,
 } from "@true-recall/core/flashcard/parsing/parsing-patterns";
-import { BUILTIN_BASIC_ID, BUILTIN_CLOZE_ID } from "@true-recall/core/types/note.types";
+import type { IFileSystem } from "@true-recall/core/interfaces/file-system";
+import {
+	BUILTIN_BASIC_ID,
+	BUILTIN_CLOZE_ID,
+} from "@true-recall/core/types/note.types";
 
 export interface MigrationResult {
 	migratedFiles: number;

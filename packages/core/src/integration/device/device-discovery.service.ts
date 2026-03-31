@@ -3,13 +3,13 @@
  * Discovers and provides metadata about device-specific databases in the vault.
  */
 
+import type { IPersistence } from "@true-recall/core/interfaces/persistence";
 import { loadDatabase } from "@true-recall/core/persistence/sqlite/loader";
 import {
 	DB_FOLDER,
 	extractDeviceIdFromFilename,
 	LEGACY_DB_FILE,
 } from "@true-recall/core/persistence/sqlite/sqlite.types";
-import type { IPersistence } from "@true-recall/core/interfaces/persistence";
 
 /**
  * Information about a discovered device database.

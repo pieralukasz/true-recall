@@ -7,7 +7,6 @@ import {
 	getDeviceDbFilename,
 	SAFETY_FLUSH_INTERVAL_MS,
 } from "@true-recall/core/persistence/sqlite/sqlite.types";
-import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpClient";
 import { ObsidianPersistence } from "@true-recall/obsidian/adapters/ObsidianPersistence";
 import { ObsidianUidPrompt } from "@true-recall/obsidian/adapters/ObsidianUidPrompt";
 import {
@@ -25,7 +24,7 @@ import { createNoteStatusCache } from "@true-recall/obsidian/features/core/cache
 import type { DeviceSelectionResult } from "@true-recall/obsidian/modals/integration/DeviceSelectionModal";
 import { QuickNoteEditorModal } from "@true-recall/obsidian/modals/study/quick-note-editor/QuickNoteEditorModal";
 import { notify } from "@true-recall/obsidian/services/notification.service";
-import { type AppStore, createAppStore } from "@true-recall/obsidian/store";
+import { createAppStore } from "@true-recall/obsidian/store";
 import { normalizePath, TFile } from "obsidian";
 import type TrueRecallPlugin from "../main";
 import { BackupRecoveryManager } from "./BackupRecoveryManager";

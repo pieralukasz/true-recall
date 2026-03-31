@@ -1,6 +1,6 @@
-import { useSettings } from "../../hooks/useSettings";
 import { FormCard } from "@true-recall/obsidian/components";
 import { useEffect, useState } from "preact/hooks";
+import { useSettings } from "../../hooks/useSettings";
 
 function fmt(value: number | null): string {
 	return value ? new Date(value).toLocaleString() : "N/A";

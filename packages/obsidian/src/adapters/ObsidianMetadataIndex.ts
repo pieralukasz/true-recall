@@ -38,11 +38,7 @@ export class ObsidianMetadataIndex implements IMetadataIndex {
 
 	onFieldChange(
 		field: string,
-		callback: (
-			path: string,
-			oldValue: unknown,
-			newValue: unknown,
-		) => void,
+		callback: (path: string, oldValue: unknown, newValue: unknown) => void,
 	): () => void {
 		// Track current values so we can detect changes
 		const tracked = new Map<string, unknown>();
@@ -57,22 +53,19 @@ export class ObsidianMetadataIndex implements IMetadataIndex {
 			}
 		}
 
-		const ref = this.app.metadataCache.on(
-			"changed",
-			(file, _data, cache) => {
-				const newValue = cache.frontmatter?.[field];
-				const oldValue = tracked.get(file.path);
+		const ref = this.app.metadataCache.on("changed", (file, _data, cache) => {
+			const newValue = cache.frontmatter?.[field];
+			const oldValue = tracked.get(file.path);
 
-				if (oldValue !== newValue) {
-					if (newValue !== undefined) {
-						tracked.set(file.path, newValue);
-					} else {
-						tracked.delete(file.path);
-					}
-					callback(file.path, oldValue, newValue);
+			if (oldValue !== newValue) {
+				if (newValue !== undefined) {
+					tracked.set(file.path, newValue);
+				} else {
+					tracked.delete(file.path);
 				}
-			},
-		);
+				callback(file.path, oldValue, newValue);
+			}
+		});
 
 		return () => {
 			this.app.metadataCache.offref(ref);

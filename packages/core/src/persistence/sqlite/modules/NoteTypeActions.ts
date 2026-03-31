@@ -3,7 +3,6 @@
  * CRUD operations for note_types table
  */
 
-import type { SqliteDatabase } from "../SqliteDatabase";
 import type { CardTemplate, NoteType } from "../../../types/note.types";
 import {
 	BUILTIN_BASIC_ID,
@@ -12,6 +11,7 @@ import {
 	BUILTIN_IMAGE_OCCLUSION_ID,
 	BUILTIN_SLUGS,
 } from "../../../types/note.types";
+import type { SqliteDatabase } from "../SqliteDatabase";
 
 interface NoteTypeRow {
 	id: string;

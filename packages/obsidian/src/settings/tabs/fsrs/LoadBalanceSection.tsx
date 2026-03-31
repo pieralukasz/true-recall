@@ -1,6 +1,4 @@
-import { useFsrsHelperOp } from "./useFsrsHelperOp";
 import type { TrueRecallSettings } from "@true-recall/core/types";
-import type { FsrsPluginHost } from "../../../types/plugin-host.types";
 import {
 	ActionButton,
 	FormCard,
@@ -10,6 +8,8 @@ import {
 	ToggleInput,
 } from "@true-recall/obsidian/components";
 import { useMemo } from "preact/hooks";
+import type { FsrsPluginHost } from "../../../types/plugin-host.types";
+import { useFsrsHelperOp } from "./useFsrsHelperOp";
 
 interface LoadBalanceSectionProps {
 	settings: TrueRecallSettings;

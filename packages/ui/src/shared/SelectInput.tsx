@@ -1,5 +1,5 @@
-import { cn } from "../utils/cn";
 import { useCallback } from "preact/hooks";
+import { cn } from "../utils/cn";
 
 const BASE_CLS =
 	"ep:py-2 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-ui-small ep:focus:outline-none ep:focus:border-obs-interactive ep:transition-colors ep:disabled:opacity-50 ep:disabled:cursor-not-allowed";

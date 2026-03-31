@@ -1,3 +1,5 @@
+import { useApp } from "@true-recall/obsidian/preact";
+import { useCallback, useState } from "preact/hooks";
 import { usePreset, useSettings } from "../hooks/useSettings";
 import {
 	AlgorithmSection,
@@ -11,8 +13,6 @@ import {
 	SchedulingSection,
 	SiblingDisperseSection,
 } from "./fsrs";
-import { useApp } from "@true-recall/obsidian/preact";
-import { useCallback, useState } from "preact/hooks";
 
 interface FSRSTabProps {
 	selectedPresetId: string;

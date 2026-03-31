@@ -1,5 +1,4 @@
 import { GENERATION_LANGUAGES } from "@true-recall/core/ai/prompts/default-prompts";
-import { useSettings } from "../hooks/useSettings";
 import {
 	BYOK_MODELS,
 	CUSTOM_MODEL_ID,
@@ -18,6 +17,7 @@ import {
 } from "@true-recall/obsidian/components";
 import { requestUrl } from "obsidian";
 import { useEffect, useState } from "preact/hooks";
+import { useSettings } from "../hooks/useSettings";
 
 const MODEL_OPTIONS = [
 	...BYOK_MODELS.map((m) => ({

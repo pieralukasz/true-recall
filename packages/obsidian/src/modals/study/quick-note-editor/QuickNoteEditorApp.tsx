@@ -1,13 +1,16 @@
 import type { EditorView } from "@codemirror/view";
-import { CardTypesEditorModal } from "@true-recall/obsidian/modals/core/card-types-editor/CardTypesEditorModal";
-import { NoteTypeManagerModal } from "@true-recall/obsidian/modals/core/NoteTypeManagerModal";
 import { Clickable } from "@true-recall/obsidian/components";
 import {
 	type FormattingTargetRef,
 	FormattingToolbar,
 } from "@true-recall/obsidian/editor/shared/formatting";
+import { CardTypesEditorModal } from "@true-recall/obsidian/modals/core/card-types-editor/CardTypesEditorModal";
+import { NoteTypeManagerModal } from "@true-recall/obsidian/modals/core/NoteTypeManagerModal";
 import { useIcon } from "@true-recall/obsidian/preact/hooks";
-import { useApp, usePlugin } from "@true-recall/obsidian/preact/ObsidianContext";
+import {
+	useApp,
+	usePlugin,
+} from "@true-recall/obsidian/preact/ObsidianContext";
 import { Notice, TFile } from "obsidian";
 import {
 	useCallback,
@@ -18,12 +21,7 @@ import {
 } from "preact/hooks";
 import { ActionBar } from "./ActionBar";
 import { NoteFieldsForm } from "./NoteFieldsForm";
-import type {
-	AddMode,
-	EditMode,
-	QuickNoteEditorMode,
-	QuickNoteEditorResult,
-} from "./types";
+import type { QuickNoteEditorMode, QuickNoteEditorResult } from "./types";
 
 interface QuickNoteEditorAppProps {
 	mode: QuickNoteEditorMode;

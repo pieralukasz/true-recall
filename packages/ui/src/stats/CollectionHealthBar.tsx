@@ -1,6 +1,6 @@
 import type { CollectionHealthSnapshot } from "@true-recall/core";
-import { getThemeColor } from "./chart-theme";
 import { ChartCard } from "./ChartCard";
+import { getThemeColor } from "./chart-theme";
 
 interface CollectionHealthBarProps {
 	data: CollectionHealthSnapshot;
@@ -9,7 +9,10 @@ interface CollectionHealthBarProps {
 export function CollectionHealthBar({ data }: CollectionHealthBarProps) {
 	if (data.cardCount === 0) {
 		return (
-			<ChartCard title="Collection Health" subtitle="Predicted retention distribution">
+			<ChartCard
+				title="Collection Health"
+				subtitle="Predicted retention distribution"
+			>
 				<p class="ep:text-xs ep:text-obs-muted ep:py-8 ep:text-center">
 					No cards yet
 				</p>

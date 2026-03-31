@@ -9,9 +9,6 @@ export interface IFileSystem {
 	delete(path: string): Promise<void>;
 	listMarkdownFiles(): Promise<string[]>;
 	watch(
-		callback: (
-			event: "create" | "modify" | "delete",
-			path: string,
-		) => void,
+		callback: (event: "create" | "modify" | "delete", path: string) => void,
 	): () => void;
 }

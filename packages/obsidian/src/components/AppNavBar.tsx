@@ -1,5 +1,5 @@
-import { QuickNoteEditorModal } from "@true-recall/obsidian/modals/study/quick-note-editor/QuickNoteEditorModal";
 import { Clickable } from "@true-recall/obsidian/components";
+import { QuickNoteEditorModal } from "@true-recall/obsidian/modals/study/quick-note-editor/QuickNoteEditorModal";
 import { useApp, useIcon, usePlugin } from "@true-recall/obsidian/preact";
 import { cn } from "@true-recall/obsidian/utils";
 import { useCallback, useState } from "preact/hooks";

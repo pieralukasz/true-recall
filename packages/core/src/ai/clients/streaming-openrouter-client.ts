@@ -1,6 +1,5 @@
 import type { IHttpClient } from "../../interfaces/http-client";
 import {
-	AIRequestError,
 	buildOpenRouterHeaders,
 	type ChatMessage,
 	OPENROUTER_URL,
@@ -47,50 +46,32 @@ export class StreamingOpenRouterClient {
 			throw new DOMException("The operation was aborted.", "AbortError");
 		}
 
-		// Set up abort listener
-		let abortHandler: (() => void) | undefined;
-		const abortPromise = signal
-			? new Promise<never>((_, reject) => {
-					abortHandler = () =>
-						reject(
-							new DOMException("The operation was aborted.", "AbortError"),
-						);
-					signal.addEventListener("abort", abortHandler, { once: true });
-				})
-			: null;
-
-		try {
-			for await (const sseData of stream) {
-				if (signal?.aborted) {
-					throw new DOMException("The operation was aborted.", "AbortError");
-				}
-
-				// Parse SSE lines from the chunk
-				const lines = sseData.split("\n");
-
-				for (const line of lines) {
-					const trimmed = line.trim();
-					if (!trimmed || trimmed === "data: [DONE]") continue;
-					if (!trimmed.startsWith("data: ")) continue;
-
-					try {
-						const json = JSON.parse(trimmed.slice(6));
-						const choice = json.choices?.[0];
-						const content = choice?.delta?.content;
-						if (content) {
-							yield {
-								content,
-								finishReason: choice.finish_reason ?? null,
-							};
-						}
-					} catch {
-						// Skip malformed SSE chunks
-					}
-				}
+		for await (const sseData of stream) {
+			if (signal?.aborted) {
+				throw new DOMException("The operation was aborted.", "AbortError");
 			}
-		} finally {
-			if (abortHandler && signal) {
-				signal.removeEventListener("abort", abortHandler);
+
+			// Parse SSE lines from the chunk
+			const lines = sseData.split("\n");
+
+			for (const line of lines) {
+				const trimmed = line.trim();
+				if (!trimmed || trimmed === "data: [DONE]") continue;
+				if (!trimmed.startsWith("data: ")) continue;
+
+				try {
+					const json = JSON.parse(trimmed.slice(6));
+					const choice = json.choices?.[0];
+					const content = choice?.delta?.content;
+					if (content) {
+						yield {
+							content,
+							finishReason: choice.finish_reason ?? null,
+						};
+					}
+				} catch {
+					// Skip malformed SSE chunks
+				}
 			}
 		}
 	}

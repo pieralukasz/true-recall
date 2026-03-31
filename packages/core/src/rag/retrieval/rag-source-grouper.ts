@@ -52,16 +52,14 @@ function makeDisplayName(s: SearchResult): string {
 }
 
 export function stripMarkdown(text: string): string {
-	return (
-		text
-			.replace(/^#{1,6}\s+/gm, "")
-			.replace(/\*{1,3}([^*]+)\*{1,3}/g, "$1")
-			.replace(/_{1,3}([^_]+)_{1,3}/g, "$1")
-			.replace(/`([^`]+)`/g, "$1")
-			.replace(/!\[([^\]]*)\]\([^)]+\)/g, "$1")
-			.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
-			.replace(/~~([^~]+)~~/g, "$1")
-			.replace(/==([^=]+)==/g, "$1")
-			.trim()
-	);
+	return text
+		.replace(/^#{1,6}\s+/gm, "")
+		.replace(/\*{1,3}([^*]+)\*{1,3}/g, "$1")
+		.replace(/_{1,3}([^_]+)_{1,3}/g, "$1")
+		.replace(/`([^`]+)`/g, "$1")
+		.replace(/!\[([^\]]*)\]\([^)]+\)/g, "$1")
+		.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+		.replace(/~~([^~]+)~~/g, "$1")
+		.replace(/==([^=]+)==/g, "$1")
+		.trim();
 }

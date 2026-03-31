@@ -2,14 +2,14 @@
  * FSRS Parameter Optimizer Service
  */
 
+import { forgetting_curve, type Rating, type State } from "ts-fsrs";
+import { DEFAULT_FSRS_WEIGHTS } from "../../../constants";
 import type {
 	OptimizationInput,
 	OptimizationOutput,
 	OptimizationReviewEntry,
 	OptimizerOptions,
 } from "./optimizer.types";
-import { DEFAULT_FSRS_WEIGHTS } from "../../../constants";
-import { forgetting_curve, type Rating, type State } from "ts-fsrs";
 
 const MIN_REVIEWS_FOR_OPTIMIZATION = 400;
 const MAX_ITERATIONS = 1000;
@@ -227,11 +227,26 @@ export class ParameterOptimizerService {
 
 	private clipWeight(value: number, index: number): number {
 		const ranges: [number, number][] = [
-			[0.01, 1.0], [0.5, 5.0], [1.0, 10.0], [2.0, 20.0],
-			[1.0, 15.0], [0.1, 2.0], [0.5, 5.0], [0.0001, 0.1],
-			[1.0, 5.0], [0.01, 0.5], [0.3, 2.0], [0.5, 3.0],
-			[0.01, 0.3], [0.1, 0.5], [0.5, 3.0], [0.3, 1.0],
-			[1.0, 3.0], [0.1, 1.0], [0.01, 0.3], [0.01, 0.2],
+			[0.01, 1.0],
+			[0.5, 5.0],
+			[1.0, 10.0],
+			[2.0, 20.0],
+			[1.0, 15.0],
+			[0.1, 2.0],
+			[0.5, 5.0],
+			[0.0001, 0.1],
+			[1.0, 5.0],
+			[0.01, 0.5],
+			[0.3, 2.0],
+			[0.5, 3.0],
+			[0.01, 0.3],
+			[0.1, 0.5],
+			[0.5, 3.0],
+			[0.3, 1.0],
+			[1.0, 3.0],
+			[0.1, 1.0],
+			[0.01, 0.3],
+			[0.01, 0.2],
 			[0.05, 0.5],
 		];
 

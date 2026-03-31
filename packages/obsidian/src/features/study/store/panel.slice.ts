@@ -1,4 +1,5 @@
 import type { AppError } from "@true-recall/core/errors";
+import type { FlashcardInfo } from "@true-recall/core/types";
 import {
 	createSelectionActions,
 	toggleSetItem,
@@ -11,7 +12,6 @@ import type {
 	ProcessingStatus,
 	ViewMode,
 } from "@true-recall/obsidian/store/types";
-import type { FlashcardInfo } from "@true-recall/core/types";
 import type { TFile } from "obsidian";
 
 type PanelSlice = PanelSliceState & PanelSliceActions;

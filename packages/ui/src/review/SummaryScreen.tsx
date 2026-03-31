@@ -1,5 +1,5 @@
-import { Clickable } from "../shared/Clickable";
 import { useEffect } from "preact/hooks";
+import { Clickable } from "../shared/Clickable";
 import type { ReviewApi } from "./types";
 
 function StatItem({

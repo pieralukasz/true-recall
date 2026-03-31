@@ -39,30 +39,41 @@ export class ObsidianAnkiImportVault implements IAnkiImportVault {
 
 	async appendToFile(path: string, content: string): Promise<void> {
 		const normalized = normalizePath(path);
-		const file = this.app.vault.getAbstractFileByPath(normalized) as TFile | null;
+		const file = this.app.vault.getAbstractFileByPath(
+			normalized,
+		) as TFile | null;
 		if (!file) throw new Error(`File not found: ${path}`);
 		await this.app.vault.process(file, (existing) => `${existing}${content}`);
 	}
 
 	async prependToFile(path: string, content: string): Promise<void> {
 		const normalized = normalizePath(path);
-		const file = this.app.vault.getAbstractFileByPath(normalized) as TFile | null;
+		const file = this.app.vault.getAbstractFileByPath(
+			normalized,
+		) as TFile | null;
 		if (!file) throw new Error(`File not found: ${path}`);
 		await this.app.vault.process(file, (existing) => `${content}${existing}`);
 	}
 
 	async getFrontmatterUid(path: string): Promise<string | null> {
 		const normalized = normalizePath(path);
-		const file = this.app.vault.getAbstractFileByPath(normalized) as TFile | null;
+		const file = this.app.vault.getAbstractFileByPath(
+			normalized,
+		) as TFile | null;
 		if (!file) return null;
 
 		const cache = this.app.metadataCache.getFileCache(file);
 		return (cache?.frontmatter?.flashcard_uid as string | undefined) ?? null;
 	}
 
-	async addParentToFrontmatter(path: string, parentName: string): Promise<void> {
+	async addParentToFrontmatter(
+		path: string,
+		parentName: string,
+	): Promise<void> {
 		const normalized = normalizePath(path);
-		const file = this.app.vault.getAbstractFileByPath(normalized) as TFile | null;
+		const file = this.app.vault.getAbstractFileByPath(
+			normalized,
+		) as TFile | null;
 		if (!file) return;
 
 		await this.app.fileManager.processFrontMatter(

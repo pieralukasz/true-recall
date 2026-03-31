@@ -1,35 +1,31 @@
 export {
-	type BackupInfo,
-	type PruneResult,
-	BackupService,
-} from "./backup/backup.service";
-
-export {
 	type BackgroundBackupConfig,
-	type BackupStatus,
 	type BackgroundBackupDeps,
 	BackgroundBackupManager,
+	type BackupStatus,
 } from "./backup/background-backup.service";
-
+export {
+	type BackupInfo,
+	BackupService,
+	type PruneResult,
+} from "./backup/backup.service";
+export {
+	type IODefinition,
+	type IOMaskMode,
+	type IORegion,
+	type IOShape,
+	normalizeIOImagePath,
+	parseIODefinition,
+} from "./io-definition";
+export {
+	NOTIFICATION_DURATION,
+	type NotificationSink,
+	notify,
+	setNotificationSink,
+} from "./notification";
 export {
 	type PresetDailyProgress,
 	SessionPersistenceService,
 } from "./session/session-persistence.service";
-
-export {
-	type IOShape,
-	type IOMaskMode,
-	type IORegion,
-	type IODefinition,
-	parseIODefinition,
-	normalizeIOImagePath,
-} from "./io-definition";
-
-export {
-	NOTIFICATION_DURATION,
-	type NotificationSink,
-	setNotificationSink,
-	notify,
-} from "./notification";
 
 export * from "./sqlite";

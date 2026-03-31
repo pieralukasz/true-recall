@@ -1,16 +1,16 @@
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite";
 import { sqlPlaceholders } from "@true-recall/core/persistence/sqlite/sql-utils";
+import { buildBrowserQuery } from "@true-recall/core/services/browser/browser-query-builder";
 import type { FrontmatterIndexService } from "@true-recall/core/services/notes/frontmatter-index.service";
 import type { HierarchyService } from "@true-recall/core/services/notes/hierarchy.service";
 import type { FSRSCardData } from "@true-recall/core/types";
-import { fileBasename } from "@true-recall/core/utils";
-import { buildBrowserQuery } from "@true-recall/core/services/browser/browser-query-builder";
 import type {
 	BrowserCard,
 	BrowserResult,
 	FilterState,
 	SortConfig,
 } from "@true-recall/core/types/browser.types";
+import { fileBasename } from "@true-recall/core/utils";
 
 export class CardBrowserQueryService {
 	constructor(
@@ -118,7 +118,10 @@ export class CardBrowserQueryService {
 
 		const sourceNotes = Array.from(sourceMap.entries())
 			.map(([uid, count]) => {
-				const filePath = this.frontmatterIndex.getFileByValue("flashcard_uid", uid);
+				const filePath = this.frontmatterIndex.getFileByValue(
+					"flashcard_uid",
+					uid,
+				);
 				return {
 					uid,
 					name: filePath ? fileBasename(filePath) : "(orphaned)",
@@ -197,7 +200,10 @@ export class CardBrowserQueryService {
 		const allUids = this.frontmatterIndex.getAllValues("flashcard_uid");
 		const basenameToUid = new Map<string, string>();
 		for (const uid of allUids) {
-			const filePath = this.frontmatterIndex.getFileByValue("flashcard_uid", uid);
+			const filePath = this.frontmatterIndex.getFileByValue(
+				"flashcard_uid",
+				uid,
+			);
 			if (filePath) {
 				basenameToUid.set(fileBasename(filePath).toLowerCase(), uid);
 			}

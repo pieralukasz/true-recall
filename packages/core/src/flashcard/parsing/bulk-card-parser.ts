@@ -10,16 +10,13 @@
  * - Cloze auto-detection is restricted to noteType.type === 1
  */
 
-import {
-	type NoteTypeLookup,
-	parseBlocks,
-} from "./block-parser.service";
-import {
-	CLOZE_DETECT,
-	INLINE_SEPARATOR_RE,
-} from "./parsing-patterns";
 import type { NoteType } from "@true-recall/core/types/note.types";
-import { BUILTIN_BASIC_ID, BUILTIN_CLOZE_ID } from "@true-recall/core/types/note.types";
+import {
+	BUILTIN_BASIC_ID,
+	BUILTIN_CLOZE_ID,
+} from "@true-recall/core/types/note.types";
+import { type NoteTypeLookup, parseBlocks } from "./block-parser.service";
+import { CLOZE_DETECT, INLINE_SEPARATOR_RE } from "./parsing-patterns";
 
 // ── Types ─────────────────────────────────────────────────────
 

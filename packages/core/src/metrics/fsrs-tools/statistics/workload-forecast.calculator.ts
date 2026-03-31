@@ -4,9 +4,9 @@
  * Predicts future review workload based on current card scheduling.
  */
 
+import { State } from "ts-fsrs";
 import type { SqliteStoreService } from "../../../persistence/sqlite/SqliteStoreService";
 import { formatLocalDate } from "../../../utils";
-import { State } from "ts-fsrs";
 
 /**
  * Daily workload forecast entry

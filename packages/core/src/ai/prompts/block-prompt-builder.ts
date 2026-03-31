@@ -1,6 +1,6 @@
-import { buildLanguageSuffix } from "./default-prompts";
 import { resolveSlug } from "../../flashcard/note-types/note-type-slug";
 import type { NoteType } from "../../types/note.types";
+import { buildLanguageSuffix } from "./default-prompts";
 
 export function buildCardFormatSpec(noteType: NoteType): string {
 	const slug = resolveSlug(noteType);

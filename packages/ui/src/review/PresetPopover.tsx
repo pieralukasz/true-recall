@@ -1,6 +1,6 @@
+import { useEffect, useRef, useState } from "preact/hooks";
 import { Clickable } from "../shared/Clickable";
 import { cn } from "../utils/cn";
-import { useEffect, useRef, useState } from "preact/hooks";
 
 export interface PresetPickerOption {
 	value: string;

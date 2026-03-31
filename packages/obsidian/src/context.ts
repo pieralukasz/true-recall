@@ -1,18 +1,18 @@
 import type {
-	IPersistence,
-	IFrontmatter,
 	IFileSystem,
+	IFrontmatter,
+	IHttpClient,
 	IMetadataIndex,
 	INotification,
-	IHttpClient,
+	IPersistence,
 } from "@true-recall/core";
 import type { App } from "obsidian";
-import { ObsidianPersistence } from "./adapters/ObsidianPersistence";
-import { ObsidianFrontmatter } from "./adapters/ObsidianFrontmatter";
 import { ObsidianFileSystem } from "./adapters/ObsidianFileSystem";
+import { ObsidianFrontmatter } from "./adapters/ObsidianFrontmatter";
+import { ObsidianHttpClient } from "./adapters/ObsidianHttpClient";
 import { ObsidianMetadataIndex } from "./adapters/ObsidianMetadataIndex";
 import { ObsidianNotification } from "./adapters/ObsidianNotification";
-import { ObsidianHttpClient } from "./adapters/ObsidianHttpClient";
+import { ObsidianPersistence } from "./adapters/ObsidianPersistence";
 
 export interface ObsidianAdapters {
 	persistence: IPersistence;

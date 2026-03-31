@@ -4,18 +4,11 @@
  * Desktop: folder scanner with chokidar watcher
  */
 export interface IMetadataIndex {
-	getPathByFieldValue(
-		field: string,
-		value: string,
-	): string | null;
+	getPathByFieldValue(field: string, value: string): string | null;
 	getFieldValue(path: string, field: string): unknown;
 	getAllPathsWithField(field: string): Map<string, unknown>;
 	onFieldChange(
 		field: string,
-		callback: (
-			path: string,
-			oldValue: unknown,
-			newValue: unknown,
-		) => void,
+		callback: (path: string, oldValue: unknown, newValue: unknown) => void,
 	): () => void;
 }

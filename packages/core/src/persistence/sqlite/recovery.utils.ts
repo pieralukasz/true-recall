@@ -1,5 +1,5 @@
-import { toExactArrayBuffer } from "./sqlite.types";
 import pako from "pako";
+import { toExactArrayBuffer } from "./sqlite.types";
 
 const BACKUP_NAME_REGEX =
 	/^true-recall-backup-(\d{4})-(\d{2})-(\d{2})-(\d{2})(\d{2})(\d{2})\.db(?:\.gz)?$/;

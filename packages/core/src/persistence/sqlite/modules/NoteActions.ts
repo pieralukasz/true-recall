@@ -3,8 +3,8 @@
  * CRUD operations for notes table
  */
 
-import type { SqliteDatabase } from "../SqliteDatabase";
 import type { Note } from "../../../types/note.types";
+import type { SqliteDatabase } from "../SqliteDatabase";
 
 interface NoteRow {
 	id: string;

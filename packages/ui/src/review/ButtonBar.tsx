@@ -1,9 +1,9 @@
 import type { SchedulingPreview } from "@true-recall/core";
-import { Clickable } from "../shared/Clickable";
-import { useIcon } from "../hooks/use-icon";
 import { cva } from "class-variance-authority";
 import type { Grade } from "ts-fsrs";
 import { Rating } from "ts-fsrs";
+import { useIcon } from "../hooks/use-icon";
+import { Clickable } from "../shared/Clickable";
 import { RatingButton } from "./RatingButton";
 import type { TypeInMode } from "./types";
 

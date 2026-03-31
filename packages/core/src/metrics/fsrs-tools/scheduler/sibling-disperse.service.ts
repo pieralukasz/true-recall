@@ -5,6 +5,7 @@
  * too close together in time.
  */
 
+import { State } from "ts-fsrs";
 import type {
 	CardScheduleChange,
 	DisperseOptions,
@@ -12,7 +13,6 @@ import type {
 	SchedulingResult,
 	WorkloadDistribution,
 } from "./scheduler.types";
-import { State } from "ts-fsrs";
 
 /**
  * Sibling group for dispersion

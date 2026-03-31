@@ -1,9 +1,9 @@
-import type { IOEditorMode } from "@true-recall/obsidian/features/image-occlusion/types";
 import {
 	BUILTIN_IMAGE_OCCLUSION_ID,
 	type Note,
 	type NoteType,
 } from "@true-recall/core/types/note.types";
+import type { IOEditorMode } from "@true-recall/obsidian/features/image-occlusion/types";
 
 interface PanelEditRoutingParams {
 	note: Note;

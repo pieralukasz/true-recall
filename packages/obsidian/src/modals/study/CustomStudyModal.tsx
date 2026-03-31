@@ -1,10 +1,10 @@
+import type { BaseModalOptions } from "@true-recall/obsidian/modals/shared/BaseModal";
+import { BasePromiseModal } from "@true-recall/obsidian/modals/shared/BasePromiseModal";
 import { CustomStudyBody } from "@true-recall/obsidian/modals/study/custom-study/CustomStudyBody";
 import type {
 	CustomStudyModalResult,
 	CustomStudyModalScope,
 } from "@true-recall/obsidian/modals/study/custom-study/types";
-import type { BaseModalOptions } from "@true-recall/obsidian/modals/shared/BaseModal";
-import { BasePromiseModal } from "@true-recall/obsidian/modals/shared/BasePromiseModal";
 import type { App } from "obsidian";
 import { render } from "preact";
 

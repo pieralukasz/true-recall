@@ -1,10 +1,10 @@
-import type { BackupService } from "./backup.service";
 import { notify } from "@true-recall/core/persistence/notification";
 import type {
 	BackupInterval,
 	RetentionPolicy,
 	TrueRecallSettings,
 } from "@true-recall/core/types/settings.types";
+import type { BackupService } from "./backup.service";
 
 export interface BackgroundBackupConfig {
 	periodicBackupEnabled: boolean;

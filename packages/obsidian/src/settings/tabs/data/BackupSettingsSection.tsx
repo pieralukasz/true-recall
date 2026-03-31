@@ -1,10 +1,10 @@
-import { useSettings } from "../../hooks/useSettings";
 import {
 	FormCard,
 	FormField,
 	InfoBlock,
 	ToggleInput,
 } from "@true-recall/obsidian/components";
+import { useSettings } from "../../hooks/useSettings";
 
 export function BackupSettingsSection() {
 	const { settings, save } = useSettings();

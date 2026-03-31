@@ -1,5 +1,6 @@
-import type { App, TFile } from "obsidian";
 import type { DailyNoteInfo } from "@true-recall/core/rag/ingestion/daily-note-preprocessor";
+import type { App, TFile } from "obsidian";
+
 export type { DailyNoteInfo } from "@true-recall/core/rag/ingestion/daily-note-preprocessor";
 
 const NOT_DAILY: DailyNoteInfo = {

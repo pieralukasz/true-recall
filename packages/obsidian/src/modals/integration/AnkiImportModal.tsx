@@ -177,8 +177,9 @@ export class AnkiImportModal extends BaseModal {
 				() => mutate("cards:imported", () => {}),
 			);
 
-			const topDeck = (this.deckNames[0] ?? "anki-import")
-				.split("/")[0]!
+			const topDeck = (
+				(this.deckNames[0] ?? "anki-import").split("/").at(0) ?? "anki-import"
+			)
 				.replace(/[\\/:*?"<>|]/g, "-")
 				.trim();
 			const mediaFolder = `Attachments/anki-import/${topDeck}`;

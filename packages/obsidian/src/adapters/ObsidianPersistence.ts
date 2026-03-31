@@ -27,9 +27,7 @@ export class ObsidianPersistence implements IPersistence {
 		await this.app.vault.adapter.mkdir(normalizePath(path));
 	}
 
-	async list(
-		path: string,
-	): Promise<{ files: string[]; folders: string[] }> {
+	async list(path: string): Promise<{ files: string[]; folders: string[] }> {
 		return this.app.vault.adapter.list(normalizePath(path));
 	}
 
@@ -37,9 +35,7 @@ export class ObsidianPersistence implements IPersistence {
 		await this.app.vault.adapter.remove(normalizePath(path));
 	}
 
-	async stat(
-		path: string,
-	): Promise<{ size: number; mtime: number } | null> {
+	async stat(path: string): Promise<{ size: number; mtime: number } | null> {
 		const s = await this.app.vault.adapter.stat(normalizePath(path));
 		return s ? { size: s.size, mtime: s.mtime } : null;
 	}

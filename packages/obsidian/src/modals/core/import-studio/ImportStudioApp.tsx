@@ -1,8 +1,4 @@
 import type { EditorView } from "@codemirror/view";
-import { CardPreviewList } from "@true-recall/obsidian/modals/core/add-flashcards/CardPreviewList";
-import { ActionBar } from "@true-recall/obsidian/modals/core/import-studio/ActionBar";
-import { EditorSection } from "@true-recall/obsidian/modals/core/import-studio/EditorSection";
-import { FooterBar } from "@true-recall/obsidian/modals/core/import-studio/FooterBar";
 import {
 	type ParsedCard,
 	parseBulkText,
@@ -13,7 +9,14 @@ import {
 	type FormattingTargetRef,
 	FormattingToolbar,
 } from "@true-recall/obsidian/editor/shared/formatting";
-import { useApp, usePlugin } from "@true-recall/obsidian/preact/ObsidianContext";
+import { CardPreviewList } from "@true-recall/obsidian/modals/core/add-flashcards/CardPreviewList";
+import { ActionBar } from "@true-recall/obsidian/modals/core/import-studio/ActionBar";
+import { EditorSection } from "@true-recall/obsidian/modals/core/import-studio/EditorSection";
+import { FooterBar } from "@true-recall/obsidian/modals/core/import-studio/FooterBar";
+import {
+	useApp,
+	usePlugin,
+} from "@true-recall/obsidian/preact/ObsidianContext";
 import { Notice, TFile } from "obsidian";
 import {
 	useCallback,

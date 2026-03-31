@@ -69,9 +69,14 @@ function extractJsonBlock(text: string): string | null {
 export class SemanticAnswerGradingService {
 	constructor(
 		private getSettings: () => TrueRecallSettings,
-		private httpClient: IHttpClient,
+		httpClient: IHttpClient,
 		private createClient: ClientFactory = (config) =>
-			new OpenRouterClient(config.apiKey, config.model, httpClient, config.baseUrl),
+			new OpenRouterClient(
+				config.apiKey,
+				config.model,
+				httpClient,
+				config.baseUrl,
+			),
 	) {}
 
 	async gradeAnswer(input: GradeAnswerInput): Promise<SemanticGradingResult> {

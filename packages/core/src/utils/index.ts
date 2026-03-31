@@ -14,13 +14,6 @@ export {
 	throttle,
 } from "./event.utils";
 export {
-	BR_REGEX,
-	fileBasename,
-	stripBrTags,
-	stripMarkdownSyntax,
-	stripWikiLinkSyntax,
-} from "./string.utils";
-export {
 	createEmptyIODefinition,
 	getIOGroupOrds,
 	getNextIOGroupKey,
@@ -29,3 +22,10 @@ export {
 	parseIODefinition,
 	serializeIODefinition,
 } from "./io-definition";
+export {
+	BR_REGEX,
+	fileBasename,
+	stripBrTags,
+	stripMarkdownSyntax,
+	stripWikiLinkSyntax,
+} from "./string.utils";

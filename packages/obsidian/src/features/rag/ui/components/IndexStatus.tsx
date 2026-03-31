@@ -1,10 +1,10 @@
-import type { IndexProgress } from "../../services/rag-indexer.service";
-import { notify } from "@true-recall/obsidian/services/notification.service";
 import { IconButton } from "@true-recall/obsidian/components";
 import { usePlugin } from "@true-recall/obsidian/preact";
+import { notify } from "@true-recall/obsidian/services/notification.service";
 import { Notice } from "obsidian";
 import { useCallback, useMemo, useState } from "preact/hooks";
 import type { KnowledgeChatView } from "../../../../views/chat/KnowledgeChatView";
+import type { IndexProgress } from "../../services/rag-indexer.service";
 
 function formatProgress(p: IndexProgress): string {
 	switch (p.phase) {
@@ -21,7 +21,7 @@ interface Props {
 	view: KnowledgeChatView;
 }
 
-export function IndexStatus({ view }: Props) {
+export function IndexStatus({ view: _view }: Props) {
 	const plugin = usePlugin();
 	const [reindexing, setReindexing] = useState(false);
 	const [progress, setProgress] = useState("");

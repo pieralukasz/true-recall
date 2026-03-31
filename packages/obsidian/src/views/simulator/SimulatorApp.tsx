@@ -1,3 +1,4 @@
+import { useSignal } from "@preact/signals";
 import {
 	FSRSSimulatorService,
 	type SequenceSimulation,
@@ -10,7 +11,6 @@ import {
 	SimulatorSliders,
 } from "@true-recall/obsidian/features/metrics/ui/simulator/components";
 import { getSequenceColors } from "@true-recall/obsidian/features/metrics/ui/simulator/constants";
-import { useSignal } from "@preact/signals";
 import { usePlugin } from "@true-recall/obsidian/preact";
 import { useCallback, useEffect, useMemo, useRef } from "preact/hooks";
 
@@ -30,7 +30,12 @@ export function SimulatorApp() {
 		const sequences = simulator.getSequences();
 		const parameters = simulator.getParameters();
 		const retention = simulator.getDesiredRetention();
-		const results = simulatorService.simulate(sequences, parameters, retention, getSequenceColors());
+		const results = simulatorService.simulate(
+			sequences,
+			parameters,
+			retention,
+			getSequenceColors(),
+		);
 		simulator.setSimulations(results);
 		simulations.value = results;
 		parametersString.value = simulator.getParametersString();

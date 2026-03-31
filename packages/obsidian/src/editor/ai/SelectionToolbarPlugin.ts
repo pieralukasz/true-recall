@@ -1,8 +1,8 @@
 import type { Extension } from "@codemirror/state";
 import { type EditorView, ViewPlugin, type ViewUpdate } from "@codemirror/view";
-import { SelectionToolbar } from "./SelectionToolbar";
 import { computePosition, flip, offset, shift } from "@floating-ui/dom";
 import { h, render } from "preact";
+import { SelectionToolbar } from "./SelectionToolbar";
 
 export interface SelectionToolbarCallbacks {
 	onGenerate: (text: string) => Promise<void>;

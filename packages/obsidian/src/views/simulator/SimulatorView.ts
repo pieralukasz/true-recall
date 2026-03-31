@@ -1,6 +1,6 @@
-import { SimulatorApp } from "@true-recall/obsidian/views/simulator/SimulatorApp";
 import { VIEW_TYPE_SIMULATOR } from "@true-recall/core/constants";
 import { mountPreact } from "@true-recall/obsidian/preact";
+import { SimulatorApp } from "@true-recall/obsidian/views/simulator/SimulatorApp";
 import {
 	CategoryScale,
 	Chart,

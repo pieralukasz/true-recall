@@ -39,7 +39,6 @@ export async function handleGetFullContext(
 	};
 
 	// Active view
-	const activeFile = ctx.plugin.app.workspace.getActiveFile();
 	const activeLf = ctx.plugin.app.workspace.getMostRecentLeaf();
 	const viewType = activeLf?.view?.getViewType() ?? "unknown";
 	result.activeView = VIEW_LABELS[viewType] ?? viewType;

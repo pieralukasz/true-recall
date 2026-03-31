@@ -1,6 +1,3 @@
-import type { SqliteDatabase } from "../SqliteDatabase";
-import { sqlPlaceholders } from "../sql-utils";
-import { generateUUID } from "../sqlite.types";
 import type {
 	CardMaturityBreakdown,
 	CardReviewLogEntry,
@@ -13,6 +10,9 @@ import type {
 	TimeToMasteryStats,
 } from "../../../types";
 import { formatLocalDate } from "../../../utils";
+import type { SqliteDatabase } from "../SqliteDatabase";
+import { sqlPlaceholders } from "../sql-utils";
+import { generateUUID } from "../sqlite.types";
 
 export interface ReviewLogForSync {
 	id: string;
@@ -172,11 +172,17 @@ export class StatsActions {
 			[startIso, endIso],
 		);
 
-		return rows.map((row: { presetName: string; newStudied: number; reviewsCompleted: number }) => ({
-			presetName: row.presetName,
-			newStudied: row.newStudied ?? 0,
-			reviewsCompleted: row.reviewsCompleted ?? 0,
-		}));
+		return rows.map(
+			(row: {
+				presetName: string;
+				newStudied: number;
+				reviewsCompleted: number;
+			}) => ({
+				presetName: row.presetName,
+				newStudied: row.newStudied ?? 0,
+				reviewsCompleted: row.reviewsCompleted ?? 0,
+			}),
+		);
 	}
 
 	updateReviewLogPresetName(oldName: string, newName: string): void {
@@ -619,7 +625,10 @@ export class StatsActions {
 			[startDate, endDate],
 		);
 
-		return rows.map((r: { due_date: string; count: number }) => ({ date: r.due_date, count: r.count }));
+		return rows.map((r: { due_date: string; count: number }) => ({
+			date: r.due_date,
+			count: r.count,
+		}));
 	}
 
 	/**
@@ -659,22 +668,31 @@ export class StatsActions {
 		);
 
 		let malformedCount = 0;
-		const result = rows.map((r: { id: string; fieldsJson: string; lapses: number; stability: number; difficulty: number; problem_type: ProblemCard["problemType"] }) => {
-			let fields: Record<string, string> = {};
-			try {
-				fields = JSON.parse(r.fieldsJson) as Record<string, string>;
-			} catch {
-				malformedCount++;
-			}
-			return {
-				id: r.id,
-				question: Object.values(fields)[0] ?? "",
-				lapses: r.lapses,
-				stability: r.stability,
-				difficulty: r.difficulty,
-				problemType: r.problem_type,
-			};
-		});
+		const result = rows.map(
+			(r: {
+				id: string;
+				fieldsJson: string;
+				lapses: number;
+				stability: number;
+				difficulty: number;
+				problem_type: ProblemCard["problemType"];
+			}) => {
+				let fields: Record<string, string> = {};
+				try {
+					fields = JSON.parse(r.fieldsJson) as Record<string, string>;
+				} catch {
+					malformedCount++;
+				}
+				return {
+					id: r.id,
+					question: Object.values(fields)[0] ?? "",
+					lapses: r.lapses,
+					stability: r.stability,
+					difficulty: r.difficulty,
+					problemType: r.problem_type,
+				};
+			},
+		);
 		if (malformedCount > 0) {
 			console.error(
 				`[StatsActions] ${malformedCount} cards with malformed fields_json`,
@@ -753,7 +771,12 @@ export class StatsActions {
 				successRate:
 					stats.total > 0 ? Math.round((stats.success / stats.total) * 100) : 0,
 			}))
-			.sort((a: { day: number; successRate: number }, b: { day: number; successRate: number }) => b.successRate - a.successRate);
+			.sort(
+				(
+					a: { day: number; successRate: number },
+					b: { day: number; successRate: number },
+				) => b.successRate - a.successRate,
+			);
 
 		// Calculate best hours
 		pattern.bestHours = Array.from(hourStats.entries())
@@ -762,7 +785,12 @@ export class StatsActions {
 				successRate:
 					stats.total > 0 ? Math.round((stats.success / stats.total) * 100) : 0,
 			}))
-			.sort((a: { hour: number; successRate: number }, b: { hour: number; successRate: number }) => b.successRate - a.successRate);
+			.sort(
+				(
+					a: { hour: number; successRate: number },
+					b: { hour: number; successRate: number },
+				) => b.successRate - a.successRate,
+			);
 
 		return pattern;
 	}
@@ -787,7 +815,10 @@ export class StatsActions {
 			[startDate, endDate],
 		);
 
-		return rows.map((r: { created_date: string; count: number }) => ({ date: r.created_date, count: r.count }));
+		return rows.map((r: { created_date: string; count: number }) => ({
+			date: r.created_date,
+			count: r.count,
+		}));
 	}
 
 	/**
@@ -853,11 +884,22 @@ export class StatsActions {
 
 		// Parse results into maps
 		const createdMap = new Map(
-			createdRows.map((r: { created_date: string; count: number }) => [r.created_date, r.count]),
+			createdRows.map((r: { created_date: string; count: number }) => [
+				r.created_date,
+				r.count,
+			]),
 		);
-		const reviewedMap = new Map(reviewedRows.map((r: { date: string; count: number }) => [r.date, r.count]));
+		const reviewedMap = new Map(
+			reviewedRows.map((r: { date: string; count: number }) => [
+				r.date,
+				r.count,
+			]),
+		);
 		const sameDayMap = new Map(
-			sameDayRows.map((r: { created_date: string; count: number }) => [r.created_date, r.count]),
+			sameDayRows.map((r: { created_date: string; count: number }) => [
+				r.created_date,
+				r.count,
+			]),
 		);
 
 		const allDates = new Set([
@@ -878,7 +920,10 @@ export class StatsActions {
 		}
 
 		// Sort by date
-		entries.sort((a: CardsCreatedVsReviewedEntry, b: CardsCreatedVsReviewedEntry) => a.date.localeCompare(b.date));
+		entries.sort(
+			(a: CardsCreatedVsReviewedEntry, b: CardsCreatedVsReviewedEntry) =>
+				a.date.localeCompare(b.date),
+		);
 
 		return entries;
 	}
@@ -1038,10 +1083,21 @@ export class StatsActions {
 			[filterByPreset ? 1 : 0, presetName ?? null, isDefault ? 1 : 0],
 		);
 
-		return rows.map((row: { cardId: string; reviewedAt: string; rating: number; scheduledDays: number; elapsedDays: number; state: number; stability: number; difficulty: number }) => ({
-			...row,
-			reviewedAt: new Date(row.reviewedAt).getTime(),
-		}));
+		return rows.map(
+			(row: {
+				cardId: string;
+				reviewedAt: string;
+				rating: number;
+				scheduledDays: number;
+				elapsedDays: number;
+				state: number;
+				stability: number;
+				difficulty: number;
+			}) => ({
+				...row,
+				reviewedAt: new Date(row.reviewedAt).getTime(),
+			}),
+		);
 	}
 
 	/**
@@ -1275,20 +1331,32 @@ export class StatsActions {
 			params,
 		);
 
-		return rows.map((row: { date: string; reviewsCompleted: number; newCardsStudied: number; totalTimeMs: number; again: number; hard: number; good: number; easy: number; reviewCards: number }) => ({
-			date: row.date,
-			reviewsCompleted: row.reviewsCompleted,
-			newCardsStudied: row.newCardsStudied,
-			totalTimeMs: row.totalTimeMs,
-			again: row.again,
-			hard: row.hard,
-			good: row.good,
-			easy: row.easy,
-			newCards: 0,
-			learningCards: 0,
-			reviewCards: row.reviewCards,
-			reviewedCardIds: [],
-		}));
+		return rows.map(
+			(row: {
+				date: string;
+				reviewsCompleted: number;
+				newCardsStudied: number;
+				totalTimeMs: number;
+				again: number;
+				hard: number;
+				good: number;
+				easy: number;
+				reviewCards: number;
+			}) => ({
+				date: row.date,
+				reviewsCompleted: row.reviewsCompleted,
+				newCardsStudied: row.newCardsStudied,
+				totalTimeMs: row.totalTimeMs,
+				again: row.again,
+				hard: row.hard,
+				good: row.good,
+				easy: row.easy,
+				newCards: 0,
+				learningCards: 0,
+				reviewCards: row.reviewCards,
+				reviewedCardIds: [],
+			}),
+		);
 	}
 
 	getNotePerformanceFiltered(

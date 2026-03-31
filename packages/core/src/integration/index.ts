@@ -1,42 +1,41 @@
 // Integration — Anki import/export, CSV export, device discovery/ID
 
 export { AnkiConverterService } from "./anki/anki-converter.service";
-export { AnkiSchedulingService } from "./anki/anki-scheduling.service";
-export {
-	AnkiNoteTypeMapper,
-	stripHtmlFromTemplate,
-	type NoteTypeStore,
-} from "./anki/anki-note-type-mapper";
-export { DeviceIdService } from "./device/device-id.service";
-
-// Moved from obsidian
-export { ApkgBuilderService } from "./anki/apkg/apkg-builder.service";
-export {
-	ApkgParserService,
-	readProtobufVarint,
-	readProtobufString,
-	parseMediaProtobuf,
-} from "./anki/apkg/apkg-parser.service";
-export {
-	CsvExportService,
-	type CsvSeparator,
-	type CsvExportOptions,
-	type ISourceUidResolver,
-} from "./csv/csv-export.service";
 export {
 	AnkiExportService,
 	type IVaultMediaReader,
 } from "./anki/anki-export.service";
 export {
+	AnkiImportService,
+	type CardChangeNotifier,
+	type IAnkiImportVault,
+} from "./anki/anki-import.service";
+export {
 	AnkiMediaService,
 	type IVaultFileReader,
 } from "./anki/anki-media.service";
 export {
-	AnkiImportService,
-	type IAnkiImportVault,
-	type CardChangeNotifier,
-} from "./anki/anki-import.service";
+	AnkiNoteTypeMapper,
+	type NoteTypeStore,
+	stripHtmlFromTemplate,
+} from "./anki/anki-note-type-mapper";
+export { AnkiSchedulingService } from "./anki/anki-scheduling.service";
+// Moved from obsidian
+export { ApkgBuilderService } from "./anki/apkg/apkg-builder.service";
 export {
-	DeviceDiscoveryService,
+	ApkgParserService,
+	parseMediaProtobuf,
+	readProtobufString,
+	readProtobufVarint,
+} from "./anki/apkg/apkg-parser.service";
+export {
+	type CsvExportOptions,
+	CsvExportService,
+	type CsvSeparator,
+	type ISourceUidResolver,
+} from "./csv/csv-export.service";
+export {
 	type DeviceDatabaseInfo,
+	DeviceDiscoveryService,
 } from "./device/device-discovery.service";
+export { DeviceIdService } from "./device/device-id.service";

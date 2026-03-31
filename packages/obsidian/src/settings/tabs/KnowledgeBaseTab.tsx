@@ -1,6 +1,3 @@
-import type { IndexProgress } from "@true-recall/obsidian/features/rag/services/rag-indexer.service";
-import { useSettings } from "../hooks/useSettings";
-import { notify } from "@true-recall/obsidian/services/notification.service";
 import {
 	ActionButton,
 	FolderPicker,
@@ -10,9 +7,12 @@ import {
 	TextAreaInput,
 	ToggleInput,
 } from "@true-recall/obsidian/components";
+import type { IndexProgress } from "@true-recall/obsidian/features/rag/services/rag-indexer.service";
 import { usePlugin } from "@true-recall/obsidian/preact";
+import { notify } from "@true-recall/obsidian/services/notification.service";
 import { Notice } from "obsidian";
 import { useCallback, useState } from "preact/hooks";
+import { useSettings } from "../hooks/useSettings";
 
 function formatProgress(p: IndexProgress): string {
 	switch (p.phase) {

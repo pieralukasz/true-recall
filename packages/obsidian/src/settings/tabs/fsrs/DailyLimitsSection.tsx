@@ -1,5 +1,9 @@
 import type { FSRSPreset } from "@true-recall/core/types";
-import { FormCard, FormField, TextInput } from "@true-recall/obsidian/components";
+import {
+	FormCard,
+	FormField,
+	TextInput,
+} from "@true-recall/obsidian/components";
 
 interface DailyLimitsSectionProps {
 	preset: FSRSPreset;

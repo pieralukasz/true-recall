@@ -5,8 +5,5 @@
  */
 export interface IFrontmatter {
 	read(filePath: string): Promise<Record<string, unknown>>;
-	update(
-		filePath: string,
-		changes: Record<string, unknown>,
-	): Promise<void>;
+	update(filePath: string, changes: Record<string, unknown>): Promise<void>;
 }

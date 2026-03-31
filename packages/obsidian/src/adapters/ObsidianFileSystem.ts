@@ -31,10 +31,7 @@ export class ObsidianFileSystem implements IFileSystem {
 	}
 
 	watch(
-		callback: (
-			event: "create" | "modify" | "delete",
-			path: string,
-		) => void,
+		callback: (event: "create" | "modify" | "delete", path: string) => void,
 	): () => void {
 		const onCreate = this.app.vault.on("create", (file) =>
 			callback("create", file.path),

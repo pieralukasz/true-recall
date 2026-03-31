@@ -1,7 +1,7 @@
-import { FSRS_COLORS, MUTED_STATES } from "../helpers/fsrs-colors";
-import { cn } from "../utils/cn";
 import { cva } from "class-variance-authority";
 import { State } from "ts-fsrs";
+import { FSRS_COLORS, MUTED_STATES } from "../helpers/fsrs-colors";
+import { cn } from "../utils/cn";
 
 export type CardStateType =
 	| "new"

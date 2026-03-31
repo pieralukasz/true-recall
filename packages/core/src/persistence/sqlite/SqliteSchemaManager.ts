@@ -1,6 +1,6 @@
+import { BUILTIN_SLUGS } from "../../types/note.types";
 import { getBuiltinNoteTypes } from "./modules/NoteTypeActions";
 import type { DatabaseLike } from "./sqlite.types";
-import { BUILTIN_SLUGS } from "../../types/note.types";
 
 export class SqliteSchemaManager {
 	constructor(private db: DatabaseLike) {}

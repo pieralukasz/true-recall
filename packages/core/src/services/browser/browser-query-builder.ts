@@ -1,13 +1,13 @@
 import { escapeFts5Query } from "@true-recall/core/persistence/sqlite/modules/NoteActions";
 import { sqlPlaceholders } from "@true-recall/core/persistence/sqlite/sql-utils";
-import { BUILTIN_IMAGE_OCCLUSION_ID } from "@true-recall/core/types/note.types";
-import { State } from "ts-fsrs";
 import type {
 	FilterState,
 	PropFilter,
 	SortConfig,
 	StateFilterValue,
 } from "@true-recall/core/types/browser.types";
+import { BUILTIN_IMAGE_OCCLUSION_ID } from "@true-recall/core/types/note.types";
+import { State } from "ts-fsrs";
 
 export interface SqlQuery {
 	where: string;

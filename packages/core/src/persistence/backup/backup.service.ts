@@ -3,15 +3,15 @@
  * Handles database backup creation, restoration, and management
  */
 
+import type { IPersistence } from "@true-recall/core/interfaces/persistence";
+import { notify } from "@true-recall/core/persistence/notification";
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite";
 import {
 	DB_FOLDER,
 	getDeviceDbFilename,
 	toExactArrayBuffer,
 } from "@true-recall/core/persistence/sqlite";
-import { notify } from "@true-recall/core/persistence/notification";
 import type { RetentionPolicy } from "@true-recall/core/types/settings.types";
-import type { IPersistence } from "@true-recall/core/interfaces/persistence";
 import pako from "pako";
 
 const BACKUP_PREFIX = "true-recall-backup-";
@@ -101,7 +101,9 @@ export class BackupService {
 		// Verify: decompress and check SQLite header
 		const written = await this.persistence.readBinary(backupPath);
 		if (!written) {
-			throw new Error("Backup verification failed — could not read back written file");
+			throw new Error(
+				"Backup verification failed — could not read back written file",
+			);
 		}
 		const decompressed = pako.ungzip(new Uint8Array(written));
 		const header = new TextDecoder().decode(decompressed.slice(0, 16));

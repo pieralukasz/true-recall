@@ -1,7 +1,10 @@
 import type { CardTemplate } from "@true-recall/core/types/note.types";
 import { Clickable } from "@true-recall/obsidian/components";
 import type { EmbeddableEditorInstance } from "@true-recall/obsidian/editor/shared/embedded-editor";
-import { useApp, usePlugin } from "@true-recall/obsidian/preact/ObsidianContext";
+import {
+	useApp,
+	usePlugin,
+} from "@true-recall/obsidian/preact/ObsidianContext";
 import { useEffect, useLayoutEffect, useRef } from "preact/hooks";
 import { TemplatePreview } from "./TemplatePreview";
 

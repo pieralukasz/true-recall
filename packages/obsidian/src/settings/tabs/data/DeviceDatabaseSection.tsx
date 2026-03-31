@@ -1,6 +1,3 @@
-import { DeviceSelectionModal } from "@true-recall/obsidian/modals/integration/DeviceSelectionModal";
-import { useSettings } from "../../hooks/useSettings";
-import { notify } from "@true-recall/obsidian/services/notification.service";
 import {
 	ActionButton,
 	FormCard,
@@ -8,7 +5,10 @@ import {
 	InfoBlock,
 	TextInput,
 } from "@true-recall/obsidian/components";
+import { DeviceSelectionModal } from "@true-recall/obsidian/modals/integration/DeviceSelectionModal";
+import { notify } from "@true-recall/obsidian/services/notification.service";
 import { useCallback } from "preact/hooks";
+import { useSettings } from "../../hooks/useSettings";
 
 export function DeviceDatabaseSection() {
 	const { plugin } = useSettings();
@@ -40,7 +40,9 @@ export function DeviceDatabaseSection() {
 			return;
 		}
 
-		const { confirm } = await import("@true-recall/obsidian/modals/shared/ConfirmModal");
+		const { confirm } = await import(
+			"@true-recall/obsidian/modals/shared/ConfirmModal"
+		);
 		const confirmed = await confirm(plugin.app, {
 			message: `Are you sure you want to replace the current database with data from device ${result.sourceDeviceId}?\n\nThe current database will be overwritten. This requires restarting Obsidian.`,
 		});

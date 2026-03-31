@@ -1,4 +1,8 @@
-import type { FSRSPreset, NewCardOrder, NewReviewMix } from "@true-recall/core/types";
+import type {
+	FSRSPreset,
+	NewCardOrder,
+	NewReviewMix,
+} from "@true-recall/core/types";
 import {
 	FormCard,
 	FormField,

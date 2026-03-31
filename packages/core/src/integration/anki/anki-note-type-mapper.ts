@@ -1,6 +1,9 @@
 import { slugifyNoteTypeName } from "@true-recall/core/flashcard/note-types/note-type-slug";
 import type { AnkiModel } from "@true-recall/core/types";
-import type { CardTemplate, NoteType } from "@true-recall/core/types/note.types";
+import type {
+	CardTemplate,
+	NoteType,
+} from "@true-recall/core/types/note.types";
 import {
 	BUILTIN_BASIC_ID,
 	BUILTIN_BASIC_REVERSED_ID,

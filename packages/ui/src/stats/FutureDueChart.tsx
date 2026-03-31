@@ -1,9 +1,9 @@
 import type { FutureDueEntry } from "@true-recall/core";
 import type { ChartConfiguration } from "chart.js";
 import { useRef } from "preact/hooks";
+import { ChartCard } from "./ChartCard";
 import { CHART_COLORS, withAlpha } from "./chart-theme";
 import { useChart } from "./use-chart";
-import { ChartCard } from "./ChartCard";
 
 interface FutureDueChartProps {
 	data: FutureDueEntry[];

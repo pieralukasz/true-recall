@@ -1,6 +1,6 @@
+import { State } from "ts-fsrs";
 import { FSRS_COLORS, MUTED_STATES } from "../helpers/fsrs-colors";
 import { stripMarkdownSyntax } from "../utils/strip-markdown";
-import { State } from "ts-fsrs";
 import type { BrowserCard } from "./types";
 
 const STATE_BADGE: Record<string, { cls: string; label: string }> = {

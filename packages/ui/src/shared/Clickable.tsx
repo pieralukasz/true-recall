@@ -1,5 +1,5 @@
-import { cn } from "../utils/cn";
 import type { JSX } from "preact";
+import { cn } from "../utils/cn";
 
 export interface ClickableProps
 	extends Omit<

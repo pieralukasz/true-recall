@@ -12,7 +12,10 @@ export interface QueryExecResult {
 
 /** Database interface compatible with sql.js API (read-only subset) */
 export interface DatabaseLike {
-	exec(sql: string, params?: (string | number | null | Uint8Array)[]): QueryExecResult[];
+	exec(
+		sql: string,
+		params?: (string | number | null | Uint8Array)[],
+	): QueryExecResult[];
 }
 
 export class SqlQueryAdapter {

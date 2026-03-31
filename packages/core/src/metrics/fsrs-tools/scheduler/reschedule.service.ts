@@ -5,6 +5,9 @@
  * Useful after parameter optimization to apply new weights to existing cards.
  */
 
+import { FSRS, State } from "ts-fsrs";
+import { DEFAULT_FSRS_WEIGHTS } from "../../../constants";
+import type { FSRSSettings } from "../../../types";
 import type {
 	CardScheduleChange,
 	RescheduleOptions,
@@ -12,9 +15,6 @@ import type {
 	SchedulingResult,
 	WorkloadDistribution,
 } from "./scheduler.types";
-import { DEFAULT_FSRS_WEIGHTS } from "../../../constants";
-import type { FSRSSettings } from "../../../types";
-import { FSRS, State } from "ts-fsrs";
 
 export class RescheduleService {
 	private fsrs: FSRS;

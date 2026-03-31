@@ -1,4 +1,7 @@
-import type { DashboardNoteEntry, NotePriority } from "@true-recall/core/types/dashboard.types";
+import type {
+	DashboardNoteEntry,
+	NotePriority,
+} from "@true-recall/core/types/dashboard.types";
 
 export const PRIORITY_DOT: Record<NotePriority, string> = {
 	overdue: "ep:bg-obs-red",

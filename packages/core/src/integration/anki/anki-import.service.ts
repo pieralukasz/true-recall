@@ -1,12 +1,10 @@
+import { AnkiConverterService } from "@true-recall/core/integration/anki/anki-converter.service";
+import { AnkiNoteTypeMapper } from "@true-recall/core/integration/anki/anki-note-type-mapper";
+import { AnkiSchedulingService } from "@true-recall/core/integration/anki/anki-scheduling.service";
+import type { IPersistence } from "@true-recall/core/interfaces/persistence";
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite/SqliteStoreService";
 import { generateUUID } from "@true-recall/core/persistence/sqlite/sqlite.types";
 import type { FSRSService } from "@true-recall/core/services/fsrs/fsrs.service";
-import { AnkiConverterService } from "@true-recall/core/integration/anki/anki-converter.service";
-import { AnkiMediaService, type IVaultFileReader } from "./anki-media.service";
-import { AnkiNoteTypeMapper } from "@true-recall/core/integration/anki/anki-note-type-mapper";
-import { AnkiSchedulingService } from "@true-recall/core/integration/anki/anki-scheduling.service";
-import { ApkgParserService } from "./apkg/apkg-parser.service";
-import type { IPersistence } from "@true-recall/core/interfaces/persistence";
 import type {
 	AnkiCard,
 	AnkiImportOptions,
@@ -15,6 +13,8 @@ import type {
 	ConvertedCard,
 	FSRSCardData,
 } from "@true-recall/core/types";
+import { AnkiMediaService, type IVaultFileReader } from "./anki-media.service";
+import { ApkgParserService } from "./apkg/apkg-parser.service";
 
 const IMPORT_FOLDER = "Anki Import";
 
@@ -86,7 +86,10 @@ export class AnkiImportService {
 		// 3. Import media files (if enabled)
 		let mediaPathMapping = new Map<string, string>();
 		if (options.importMedia && apkgData.media.size > 0) {
-			const mediaService = new AnkiMediaService(this.persistence, this.fileReader);
+			const mediaService = new AnkiMediaService(
+				this.persistence,
+				this.fileReader,
+			);
 			mediaPathMapping = await mediaService.importMedia(
 				apkgData.media,
 				apkgData.mediaMap,
@@ -110,7 +113,10 @@ export class AnkiImportService {
 
 		// 6. Prepare services
 		const schedulingService = new AnkiSchedulingService(this.fsrsService);
-		const mediaService = new AnkiMediaService(this.persistence, this.fileReader);
+		const mediaService = new AnkiMediaService(
+			this.persistence,
+			this.fileReader,
+		);
 
 		// 6.5 Map Anki models → True Recall NoteTypes
 		const noteTypeMapper = new AnkiNoteTypeMapper(this.store.noteTypes);
@@ -453,10 +459,7 @@ export class AnkiImportService {
 					: basePath;
 
 			// Ensure folder exists
-			if (
-				folderPath !== basePath &&
-				!(await this.vault.exists(folderPath))
-			) {
+			if (folderPath !== basePath && !(await this.vault.exists(folderPath))) {
 				await this.vault.ensureFolderRecursive(folderPath);
 			}
 
