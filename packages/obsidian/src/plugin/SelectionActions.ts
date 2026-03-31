@@ -1,0 +1,97 @@
+import { StreamingGenerationService } from "@true-recall/core/ai/generation/streaming-generation.service";
+import { BUILTIN_BASIC_ID } from "@true-recall/core/types/note.types";
+import { QuickNoteEditorModal } from "@true-recall/obsidian/modals/study/quick-note-editor/QuickNoteEditorModal";
+import { notify } from "@true-recall/obsidian/services/notification.service";
+import { ObsidianHttpClient } from "../adapters/ObsidianHttpClient";
+import type TrueRecallPlugin from "../main";
+
+let streamingService: StreamingGenerationService | null = null;
+
+function getStreamingService(
+	plugin: TrueRecallPlugin,
+): StreamingGenerationService {
+	if (!streamingService) {
+		streamingService = new StreamingGenerationService(
+			() => plugin.settings,
+			plugin.flashcardManager as any,
+			new ObsidianHttpClient(),
+		);
+	}
+	return streamingService;
+}
+
+export function hasApiKey(plugin: TrueRecallPlugin): boolean {
+	return !!(plugin.settings.proKey || plugin.settings.openRouterApiKey);
+}
+
+export async function generateFlashcardsFromSelection(
+	plugin: TrueRecallPlugin,
+	text: string,
+): Promise<void> {
+	const file = plugin.app.workspace.getActiveFile();
+	if (!file) {
+		notify().error("No active file");
+		return;
+	}
+
+	try {
+		await plugin.activateView();
+
+		const noteType =
+			plugin.cardStore?.noteTypes.getById(BUILTIN_BASIC_ID) ?? null;
+		const service = getStreamingService(plugin);
+		const result = await service.generateStreaming(text, file, noteType);
+
+		if (result.created === 0 && result.duplicates === 0) {
+			notify().warning("No flashcards found in AI response");
+		} else if (result.duplicates > 0) {
+			notify().info(
+				`Created ${result.created} flashcard(s), ${result.duplicates} duplicate(s) skipped`,
+			);
+		} else {
+			notify().info(`Created ${result.created} flashcard(s)`);
+		}
+	} catch (error) {
+		if (error instanceof DOMException && error.name === "AbortError") return;
+		const msg = error instanceof Error ? error.message : String(error);
+		notify().error(`Flashcard generation failed: ${msg}`);
+	}
+}
+
+export function editSelectionAsFlashcard(
+	plugin: TrueRecallPlugin,
+	text: string,
+): void {
+	const modal = new QuickNoteEditorModal(plugin.app, plugin, {
+		mode: "add",
+		initialFields: { Front: text },
+	});
+	void modal.openAndWait();
+}
+
+export async function quickAddFlashcardFromSelection(
+	plugin: TrueRecallPlugin,
+	text: string,
+): Promise<void> {
+	try {
+		const file = plugin.app.workspace.getActiveFile();
+		if (!file) {
+			notify().error("No active file");
+			return;
+		}
+		const parts = text.split(/\n\s*\n/);
+		const question = (parts[0] ?? text).trim();
+		const answer = parts.slice(1).join("\n\n").trim();
+		await plugin.flashcardManager.saveFlashcardsToSql(
+			file.path,
+			file.basename,
+			[{ id: crypto.randomUUID(), question, answer }],
+			undefined,
+			text,
+		);
+		notify().info("Quick-added 1 flashcard");
+	} catch (error) {
+		const msg = error instanceof Error ? error.message : String(error);
+		notify().error(`Quick add failed: ${msg}`);
+	}
+}

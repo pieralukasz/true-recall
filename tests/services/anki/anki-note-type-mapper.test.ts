@@ -2,7 +2,7 @@ import {
 	AnkiNoteTypeMapper,
 	stripHtmlFromTemplate,
 	type NoteTypeStore,
-} from "../../../src/features/integration/services/anki/anki-note-type-mapper";
+} from "../../../packages/core/src/integration/anki-note-type-mapper";
 import type { NoteType } from "../../../src/shared/types/note.types";
 import {
 	BUILTIN_BASIC_ID,

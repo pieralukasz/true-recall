@@ -1,0 +1,6 @@
+import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "preact/jsx-runtime";
+import { ModalFooter } from "@true-recall/obsidian/components/ModalFooter";
+import { StatBadge, StatGrid } from "@true-recall/obsidian/components/StatBadge";
+export function ResultPhase({ result, onClose }) {
+    return (_jsxs(_Fragment, { children: [_jsxs("div", { class: "ep:mb-4", children: [_jsxs(StatGrid, { columns: 2, children: [_jsx(StatBadge, { label: "Imported", count: result.imported }), _jsx(StatBadge, { label: "Duplicates", count: result.duplicates }), _jsx(StatBadge, { label: "Skipped", count: result.skipped }), _jsx(StatBadge, { label: "Errors", count: result.errors.length })] }), result.errors.length > 0 && (_jsxs("div", { class: "ep:mb-3", children: [_jsx("div", { class: "ep:text-ui-small ep:font-medium ep:mb-1 ep:text-red-500", children: "Errors:" }), _jsxs("div", { class: "ep:border ep:border-obs-border ep:rounded-md ep:max-h-[100px] ep:overflow-y-auto ep:p-2", children: [result.errors.slice(0, 20).map((err, i) => (_jsx("div", { class: "ep:text-ui-smaller ep:text-obs-muted ep:py-0.5", children: err }, i))), result.errors.length > 20 && (_jsxs("div", { class: "ep:text-ui-smaller ep:text-obs-muted ep:italic", children: ["...and ", result.errors.length - 20, " more"] }))] })] }))] }), _jsx(ModalFooter, { onCancel: onClose, cancelLabel: "Done" })] }));
+}

@@ -52,7 +52,7 @@ function buildCSS() {
 	try {
 		const minifyFlag = prod ? " --minify" : "";
 		execSync(
-			`bunx @tailwindcss/cli -i src/shared/ui/styles.css -o styles.css${minifyFlag}`,
+			`bunx @tailwindcss/cli -i packages/obsidian/src/styles.css -o styles.css${minifyFlag}`,
 			{ stdio: "pipe" },
 		);
 		console.log(`\u2713 CSS built${prod ? " (minified)" : ""}`);
@@ -93,12 +93,13 @@ function copyToVault() {
 
 const context = await esbuild.context({
 	banner: { js: banner },
-	entryPoints: ["src/main.ts"],
+	entryPoints: ["packages/obsidian/src/main.ts"],
 	bundle: true,
 	metafile: true,
 	alias: {
-		"@shared": resolve("src/shared"),
-		"@features": resolve("src/features"),
+		"@true-recall/core": resolve("packages/core/src"),
+		"@true-recall/ui": resolve("packages/ui/src"),
+		"@true-recall/obsidian": resolve("packages/obsidian/src"),
 		// downshift imports from 'react' — redirect to preact/compat
 		react: "preact/compat",
 		"react-dom": "preact/compat",
@@ -159,7 +160,7 @@ if (prod) {
 		[
 			"@tailwindcss/cli",
 			"-i",
-			"src/shared/ui/styles.css",
+			"packages/obsidian/src/styles.css",
 			"-o",
 			"styles.css",
 			"--watch",
