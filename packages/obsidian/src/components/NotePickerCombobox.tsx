@@ -3,7 +3,7 @@ import {
 	filterNotesByQuery,
 	MAX_DISPLAY_NOTES,
 } from "@true-recall/obsidian/modals/shared/note-filter.utils";
-import { cn } from "@true-recall/ui/utils/cn";
+import { cn } from "@true-recall/obsidian/utils/cn";
 import type { App, TFile } from "obsidian";
 import {
 	useCallback,

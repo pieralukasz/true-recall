@@ -2,7 +2,7 @@ import type { Signal } from "@preact/signals";
 import { useSignal } from "@preact/signals";
 import type { FSRSPreset, OptimizationMetrics } from "@true-recall/core/types";
 import { usePlugin } from "@true-recall/obsidian/preact";
-import { ChartCard } from "@true-recall/ui/stats";
+import { ChartCard } from "./ChartCard";
 import { useMemo } from "preact/hooks";
 
 interface FSRSStatusCardProps {

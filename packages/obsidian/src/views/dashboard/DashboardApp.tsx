@@ -14,6 +14,7 @@ import { Q, useQuery } from "@true-recall/obsidian/data";
 import { HeatmapWidget } from "@true-recall/obsidian/editor/study/widgets/analytics/HeatmapWidget";
 import { computeActionableSessionSnapshot } from "@true-recall/obsidian/features/study/services/actionable-session-snapshot.service";
 import { BottomActionBar } from "@true-recall/obsidian/features/study/ui/dashboard/components/BottomActionBar";
+import { DashboardTabs } from "@true-recall/obsidian/features/study/ui/dashboard/components/DashboardTabs";
 import { NoteList } from "@true-recall/obsidian/features/study/ui/dashboard/components/NoteList";
 import { OrphanedTab } from "@true-recall/obsidian/features/study/ui/dashboard/components/OrphanedTab";
 import { ProjectsTab } from "@true-recall/obsidian/features/study/ui/dashboard/components/ProjectsTab";
@@ -29,7 +30,6 @@ import type {
 import { filterActiveCards } from "@true-recall/obsidian/features/study/ui/review/helpers/session-helpers";
 import { PresetOptionsModal } from "@true-recall/obsidian/modals/shared/PresetOptionsModal";
 import { usePlugin } from "@true-recall/obsidian/preact";
-import { DashboardTabs } from "@true-recall/ui/dashboard";
 import { useCallback, useEffect, useMemo, useRef } from "preact/hooks";
 
 export function DashboardApp() {

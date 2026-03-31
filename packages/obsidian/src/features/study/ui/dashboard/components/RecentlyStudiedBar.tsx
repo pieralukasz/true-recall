@@ -1,8 +1,8 @@
 import { Clickable } from "@true-recall/obsidian/components";
 import { usePlugin } from "@true-recall/obsidian/preact";
-import { MiniDonut } from "@true-recall/ui/dashboard";
 import { useCallback } from "preact/hooks";
 import type { DashboardNoteEntry } from "../types";
+import { MiniDonut } from "./MiniDonut";
 
 interface RecentlyStudiedBarProps {
 	notes: DashboardNoteEntry[];

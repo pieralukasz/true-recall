@@ -4,7 +4,6 @@ import { defineConfig } from "vitest/config";
 const root = __dirname;
 const coreDir = resolve(root, "packages/core/src");
 const obsidianDir = resolve(root, "packages/obsidian/src");
-const uiDir = resolve(root, "packages/ui/src");
 const mocks = resolve(root, "tests/__mocks__");
 
 export default defineConfig({
@@ -18,8 +17,6 @@ export default defineConfig({
 				replacement: `${obsidianDir}/$1`,
 			},
 			{ find: "@true-recall/obsidian", replacement: obsidianDir },
-			{ find: /^@true-recall\/ui\/(.+)$/, replacement: `${uiDir}/$1` },
-			{ find: "@true-recall/ui", replacement: uiDir },
 
 			// Test mocks
 			{ find: "obsidian", replacement: `${mocks}/obsidian.ts` },
@@ -355,11 +352,7 @@ export default defineConfig({
 		coverage: {
 			provider: "v8",
 			reporter: ["text", "html", "json"],
-			include: [
-				"packages/core/src/**/*.ts",
-				"packages/obsidian/src/**/*.ts",
-				"packages/ui/src/**/*.ts",
-			],
+			include: ["packages/core/src/**/*.ts", "packages/obsidian/src/**/*.ts"],
 			exclude: ["packages/obsidian/src/main.ts", "**/*.d.ts"],
 		},
 	},

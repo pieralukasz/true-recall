@@ -1,5 +1,5 @@
 import { useIcon } from "@true-recall/obsidian/preact";
-import { cn } from "@true-recall/ui/utils/cn";
+import { cn } from "@true-recall/obsidian/utils/cn";
 import type { TFile } from "obsidian";
 import { useEffect, useRef } from "preact/hooks";
 

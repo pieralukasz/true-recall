@@ -13,7 +13,7 @@ import {
 import type { TypeInMode } from "@true-recall/obsidian/features/study/ui/review/helpers/type-in-flow";
 import { usePlugin } from "@true-recall/obsidian/preact/ObsidianContext";
 import type { ReviewApi } from "@true-recall/obsidian/store";
-import type { PresetPickerOption } from "@true-recall/ui/review";
+import type { PresetPickerOption } from "@true-recall/obsidian/features/study/ui/review/components";
 import { useEffect, useLayoutEffect, useState } from "preact/hooks";
 import type { Grade } from "ts-fsrs";
 

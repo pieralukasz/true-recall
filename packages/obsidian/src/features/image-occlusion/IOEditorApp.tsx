@@ -10,7 +10,7 @@ import {
 	useApp,
 	usePlugin,
 } from "@true-recall/obsidian/preact/ObsidianContext";
-import { cn } from "@true-recall/ui/utils/cn";
+import { cn } from "@true-recall/obsidian/utils/cn";
 import { Notice, TFile } from "obsidian";
 import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
 import { isDesktop } from "../../utils/platform";

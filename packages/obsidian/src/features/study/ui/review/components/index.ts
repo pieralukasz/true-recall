@@ -1,18 +1,8 @@
-// ── Re-exported from @true-recall/ui (platform-agnostic) ────
 export {
 	ButtonBar,
 	type ButtonBarProps,
-	type PresetPickerOption,
-	PresetPopover,
-	type PresetPopoverProps,
-	RatingButton,
-	ReviewEmptyState,
-	ReviewHeader,
-	SummaryScreen,
-	WaitingScreen,
-} from "@true-recall/ui/review";
-
-// ── Obsidian-specific (kept local) ──────────────────────────
+} from "./ButtonBar";
+// ── Obsidian-specific ──────────────────────────────────────
 export {
 	CardContainer,
 	type CardContainerProps,
@@ -22,3 +12,13 @@ export {
 	LivePreviewField,
 	type LivePreviewFieldProps,
 } from "./LivePreviewField";
+export {
+	type PresetPickerOption,
+	PresetPopover,
+	type PresetPopoverProps,
+} from "./PresetPopover";
+export { RatingButton } from "./RatingButton";
+export { ReviewEmptyState } from "./ReviewEmptyState";
+export { ReviewHeader } from "./ReviewHeader";
+export { SummaryScreen } from "./SummaryScreen";
+export { WaitingScreen } from "./WaitingScreen";

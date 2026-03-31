@@ -51,7 +51,7 @@ import {
 	ReviewApp,
 	ReviewEmptyState,
 } from "@true-recall/obsidian/views/review/ReviewApp";
-import type { PresetPickerOption } from "@true-recall/ui/review";
+import type { PresetPickerOption } from "@true-recall/obsidian/features/study/ui/review/components";
 import {
 	ItemView,
 	Menu,
