@@ -1,8 +1,8 @@
 import { CardActionsHandler } from "@features/study/ui/review/handlers/CardActionsHandler";
 import type { ReviewApi } from "@shared/store";
-import { createMockFlashcard } from "../../services/mocks/fsrs.mocks";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { State } from "ts-fsrs";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { createMockFlashcard } from "../../services/mocks/fsrs.mocks";
 
 const notificationSpies = vi.hoisted(() => ({
 	warning: vi.fn(),
@@ -80,7 +80,7 @@ describe("CardActionsHandler.handleForget", () => {
 					},
 				} as never,
 				settings: {} as never,
-				plugin: { sessionPersistence: null, undoService: null } as never,
+				plugin: { sessionPersistence: null, commandService: null } as never,
 			},
 			{ onUpdateSchedulingPreview: vi.fn() },
 		);
@@ -124,7 +124,9 @@ describe("CardActionsHandler.handleForget", () => {
 				reviewService: {} as never,
 				cardStore: {
 					get: vi.fn((id: string) =>
-						id === "new-sibling" ? { state: State.New } : { state: State.Review },
+						id === "new-sibling"
+							? { state: State.New }
+							: { state: State.Review },
 					),
 					cards: {
 						bulkForget,
@@ -134,7 +136,7 @@ describe("CardActionsHandler.handleForget", () => {
 				settings: {} as never,
 				plugin: {
 					sessionPersistence: { removeReviewedCards },
-					undoService: null,
+					commandService: null,
 				} as never,
 			},
 			{ onUpdateSchedulingPreview },

@@ -1,183 +1,117 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import type { TrueRecallClient } from "../client.js";
+import {
+	custom,
+	getWith,
+	jsonResult,
+	postParams,
+	type ToolDef,
+} from "./_register.js";
 
-export function registerCardTools(
-	server: McpServer,
-	client: TrueRecallClient,
-): void {
-	server.registerTool(
+export const cardTools: ToolDef[] = [
+	custom(
 		"list_cards",
+		"Search and list flashcards with optional filtering by query text, state, source note, and sorting",
 		{
-			description:
-				"Search and list flashcards with optional filtering by query text, state, source note, and sorting",
-			inputSchema: {
-				query: z
-					.string()
-					.optional()
-					.describe("Text search in question/answer"),
-				state: z
-					.enum(["new", "learning", "review", "relearning"])
-					.optional()
-					.describe("Filter by card state"),
-				source_uid: z
-					.string()
-					.optional()
-					.describe("Filter by source note UID"),
-				limit: z
-					.number()
-					.optional()
-					.default(50)
-					.describe("Max cards to return (max 200)"),
-			},
+			query: z.string().optional().describe("Text search in question/answer"),
+			state: z
+				.enum(["new", "learning", "review", "relearning"])
+				.optional()
+				.describe("Filter by card state"),
+			source_uid: z
+				.string()
+				.optional()
+				.describe(
+					"Filter by source note UID (flashcard_uid from note frontmatter, e.g. 'b5a5a6d6')",
+				),
+			limit: z
+				.number()
+				.optional()
+				.default(50)
+				.describe("Max cards to return (max 200)"),
 		},
-		async (params) => {
-			const searchParams = new URLSearchParams();
-			if (params.query) searchParams.set("q", params.query);
-			if (params.state) searchParams.set("state", params.state);
-			if (params.source_uid) searchParams.set("source_uid", params.source_uid);
-			if (params.limit) searchParams.set("limit", String(params.limit));
-
-			const qs = searchParams.toString();
-			const data = await client.get(`/cards${qs ? `?${qs}` : ""}`);
-			return {
-				content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }],
-			};
+		async (params, client) => {
+			const sp = new URLSearchParams();
+			if (params.query) sp.set("q", params.query);
+			if (params.state) sp.set("state", params.state);
+			if (params.source_uid) sp.set("source_uid", params.source_uid);
+			if (params.limit) sp.set("limit", String(params.limit));
+			const qs = sp.toString();
+			return jsonResult(await client.get(`/cards${qs ? `?${qs}` : ""}`));
 		},
-	);
+	),
 
-	server.registerTool(
+	getWith(
 		"get_card",
+		"Get a single flashcard with full details and review history",
 		{
-			description:
-				"Get a single flashcard with full details and review history",
-			inputSchema: {
-				card_id: z.string().describe("The card's UUID"),
-			},
+			card_id: z.string().describe("The card's UUID"),
 		},
-		async (params) => {
-			const data = await client.get(`/cards/${params.card_id}`);
-			return {
-				content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }],
-			};
-		},
-	);
+		(p) => `/cards/${p.card_id}`,
+	),
 
-	server.registerTool(
+	getWith(
 		"get_card_context",
-		{
-			description:
-				"Get deep context for a flashcard: the card with full FSRS data, its complete review history, the full markdown content of the source note, and all sibling cards from the same note. Use this to understand a card's topic in depth — for explaining, tutoring, or diagnosing why a card is difficult.",
-			inputSchema: {
-				card_id: z.string().describe("The card's UUID"),
-			},
-		},
-		async (params) => {
-			const data = await client.get(
-				`/cards/${params.card_id}/context`,
-			);
-			return {
-				content: [
-					{ type: "text" as const, text: JSON.stringify(data, null, 2) },
-				],
-			};
-		},
-	);
+		"Get deep context for a flashcard: the card with full FSRS data, its complete review history, the full markdown content of the source note, and all sibling cards from the same note. Use this to understand a card's topic in depth — for explaining, tutoring, or diagnosing why a card is difficult.",
+		{ card_id: z.string().describe("The card's UUID") },
+		(p) => `/cards/${p.card_id}/context`,
+	),
 
-	server.registerTool(
+	getWith(
 		"get_card_relations",
-		{
-			description:
-				"Get all related cards for a flashcard: sibling cards from the same note, reverse card pairs, and cloze siblings (same template, different deletions). Use this to understand how a card fits within its note and find related content.",
-			inputSchema: {
-				card_id: z.string().describe("The card's UUID"),
-			},
-		},
-		async (params) => {
-			const data = await client.get(
-				`/cards/${params.card_id}/relations`,
-			);
-			return {
-				content: [
-					{ type: "text" as const, text: JSON.stringify(data, null, 2) },
-				],
-			};
-		},
-	);
+		"Get all related cards for a flashcard: sibling cards from the same note, reverse card pairs, and cloze siblings (same template, different deletions). Use this to understand how a card fits within its note and find related content.",
+		{ card_id: z.string().describe("The card's UUID") },
+		(p) => `/cards/${p.card_id}/relations`,
+	),
 
-	server.registerTool(
+	postParams(
 		"create_flashcard",
+		"Create a new flashcard. Goes through the plugin's proper creation flow with FSRS initialization and signal notifications. The card appears instantly in Obsidian.",
+		"/cards",
 		{
-			description:
-				"Create a new flashcard. Goes through the plugin's proper creation flow with FSRS initialization and signal notifications. The card appears instantly in Obsidian.",
-			inputSchema: {
-				question: z.string().describe("The question (front of card)"),
-				answer: z.string().describe("The answer (back of card)"),
-				source_uid: z
-					.string()
-					.optional()
-					.describe("Source note UID to link this card to an Obsidian note"),
-				source_text: z
-					.string()
-					.optional()
-					.describe("Original text that generated this card"),
-				card_type: z
-					.enum(["basic", "cloze"])
-					.optional()
-					.default("basic")
-					.describe("Card type: basic (Q/A) or cloze (fill-in-the-blank)"),
-			},
+			question: z.string().describe("The question (front of card)"),
+			answer: z.string().describe("The answer (back of card)"),
+			source_uid: z
+				.string()
+				.optional()
+				.describe(
+					"Source note UID (flashcard_uid from note frontmatter, e.g. 'b5a5a6d6')",
+				),
+			source_text: z
+				.string()
+				.optional()
+				.describe("Original text that generated this card"),
+			card_type: z
+				.enum(["basic", "cloze"])
+				.optional()
+				.default("basic")
+				.describe("Card type: basic (Q/A) or cloze (fill-in-the-blank)"),
 		},
-		async (params) => {
-			const data = await client.post("/cards", {
-				question: params.question,
-				answer: params.answer,
-				source_uid: params.source_uid,
-				source_text: params.source_text,
-				card_type: params.card_type,
-			});
-			return {
-				content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }],
-			};
-		},
-	);
+	),
 
-	server.registerTool(
+	postParams(
 		"create_flashcards_batch",
+		"Create multiple flashcards at once. Useful for bulk generation from code, documentation, or notes. All cards are tracked as created_via='claude_code'.",
+		"/cards",
 		{
-			description:
-				"Create multiple flashcards at once. Useful for bulk generation from code, documentation, or notes. All cards are tracked as created_via='claude_code'.",
-			inputSchema: {
-				cards: z
-					.array(
-						z.object({
-							question: z.string().describe("The question"),
-							answer: z.string().describe("The answer"),
-							source_text: z
-								.string()
-								.optional()
-								.describe("Original text that generated this card"),
-							card_type: z
-								.enum(["basic", "cloze"])
-								.optional()
-								.default("basic"),
-						}),
-					)
-					.describe("Array of flashcards to create"),
-				source_uid: z
-					.string()
-					.optional()
-					.describe("Source note UID to link all cards to"),
-			},
+			cards: z
+				.array(
+					z.object({
+						question: z.string().describe("The question"),
+						answer: z.string().describe("The answer"),
+						source_text: z
+							.string()
+							.optional()
+							.describe("Original text that generated this card"),
+						card_type: z.enum(["basic", "cloze"]).optional().default("basic"),
+					}),
+				)
+				.describe("Array of flashcards to create"),
+			source_uid: z
+				.string()
+				.optional()
+				.describe(
+					"Source note UID to link all cards to (flashcard_uid from note frontmatter, e.g. 'b5a5a6d6')",
+				),
 		},
-		async (params) => {
-			const data = await client.post("/cards", {
-				cards: params.cards,
-				source_uid: params.source_uid,
-			});
-			return {
-				content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }],
-			};
-		},
-	);
-}
+	),
+];

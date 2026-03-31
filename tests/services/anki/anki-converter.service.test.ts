@@ -1,4 +1,4 @@
-import { AnkiConverterService } from "../../../src/features/integration/services/anki/anki-converter.service";
+import { AnkiConverterService } from "../../../packages/core/src/integration/anki-converter.service";
 import {
 	createAnkiCard,
 	createAnkiDeck,

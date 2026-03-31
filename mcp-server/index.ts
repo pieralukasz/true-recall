@@ -2,19 +2,20 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { TrueRecallClient } from "./client.js";
-import { registerBackupTools } from "./tools/backup-tools.js";
-import { registerCardTools } from "./tools/card-tools.js";
-import { registerContextTools } from "./tools/context-tools.js";
-import { registerDashboardTools } from "./tools/dashboard-tools.js";
-import { registerFsrsTools } from "./tools/fsrs-tools.js";
-import { registerGenerateTools } from "./tools/generate-tools.js";
-import { registerNavigationTools } from "./tools/navigation-tools.js";
-import { registerNoteTools } from "./tools/note-tools.js";
-import { registerQueryTools } from "./tools/query-tools.js";
-import { registerRagTools } from "./tools/rag-tools.js";
-import { registerReviewTools } from "./tools/review-tools.js";
-import { registerSessionTools } from "./tools/session-tools.js";
-import { registerStatsTools } from "./tools/stats-tools.js";
+import { registerTools } from "./tools/_register.js";
+import { backupTools } from "./tools/backup-tools.js";
+import { cardTools } from "./tools/card-tools.js";
+import { contextTools } from "./tools/context-tools.js";
+import { dashboardTools } from "./tools/dashboard-tools.js";
+import { fsrsTools } from "./tools/fsrs-tools.js";
+import { generateTools } from "./tools/generate-tools.js";
+import { navigationTools } from "./tools/navigation-tools.js";
+import { noteTools } from "./tools/note-tools.js";
+import { queryTools } from "./tools/query-tools.js";
+import { ragTools } from "./tools/rag-tools.js";
+import { reviewTools } from "./tools/review-tools.js";
+import { sessionTools } from "./tools/session-tools.js";
+import { statsTools } from "./tools/stats-tools.js";
 
 const port = process.env.TRUE_RECALL_PORT
 	? Number(process.env.TRUE_RECALL_PORT)
@@ -69,19 +70,21 @@ const server = new McpServer(
 	},
 );
 
-registerContextTools(server, client);
-registerCardTools(server, client);
-registerReviewTools(server, client);
-registerGenerateTools(server, client);
-registerSessionTools(server, client);
-registerDashboardTools(server, client);
-registerFsrsTools(server, client);
-registerNavigationTools(server, client);
-registerNoteTools(server, client);
-registerBackupTools(server, client);
-registerStatsTools(server, client);
-registerQueryTools(server, client);
-registerRagTools(server, client);
+registerTools(server, client, [
+	...contextTools,
+	...cardTools,
+	...reviewTools,
+	...generateTools,
+	...sessionTools,
+	...dashboardTools,
+	...fsrsTools,
+	...navigationTools,
+	...noteTools,
+	...backupTools,
+	...statsTools,
+	...queryTools,
+	...ragTools,
+]);
 
 const transport = new StdioServerTransport();
 await server.connect(transport);
