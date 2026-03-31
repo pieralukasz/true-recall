@@ -1,4 +1,3 @@
-import { useSignalEffect } from "@preact/signals";
 import { streamingGeneration } from "@true-recall/core/ai/state/streaming-state";
 import { PartialCard } from "@true-recall/obsidian/features/library/ui/panel/components/PartialCard";
 import { useEffect, useRef, useState } from "preact/hooks";
@@ -28,13 +27,8 @@ export function StreamingSection({
 }: {
 	currentFilePath: string | null;
 }) {
-	const [, forceUpdate] = useState(0);
-	useSignalEffect(() => {
-		void streamingGeneration.value;
-		forceUpdate((n) => n + 1);
-	});
-
-	const streaming = streamingGeneration.value;
+	const [streaming, setStreaming] = useState(streamingGeneration.value);
+	useEffect(() => streamingGeneration.subscribe(setStreaming), []);
 	const isActive =
 		streaming.isGenerating && streaming.notePath === currentFilePath;
 
@@ -95,7 +89,7 @@ export function StreamingSection({
 }
 
 export function useStreamingCardState() {
-	const [, forceUpdate] = useState(0);
+	const [state, setState] = useState(streamingGeneration.value);
 	const prevRef = useRef({
 		isGenerating: false,
 		completedCount: 0,
@@ -103,24 +97,27 @@ export function useStreamingCardState() {
 		notePath: null as string | null,
 	});
 
-	useSignalEffect(() => {
-		const s = streamingGeneration.value;
-		const prev = prevRef.current;
-		if (
-			prev.isGenerating !== s.isGenerating ||
-			prev.completedCount !== s.completedCards.length ||
-			prev.recentCount !== s.recentCardIds.size ||
-			prev.notePath !== s.notePath
-		) {
-			prevRef.current = {
-				isGenerating: s.isGenerating,
-				completedCount: s.completedCards.length,
-				recentCount: s.recentCardIds.size,
-				notePath: s.notePath,
-			};
-			forceUpdate((n) => n + 1);
-		}
-	});
+	useEffect(
+		() =>
+			streamingGeneration.subscribe((s) => {
+				const prev = prevRef.current;
+				if (
+					prev.isGenerating !== s.isGenerating ||
+					prev.completedCount !== s.completedCards.length ||
+					prev.recentCount !== s.recentCardIds.size ||
+					prev.notePath !== s.notePath
+				) {
+					prevRef.current = {
+						isGenerating: s.isGenerating,
+						completedCount: s.completedCards.length,
+						recentCount: s.recentCardIds.size,
+						notePath: s.notePath,
+					};
+					setState(s);
+				}
+			}),
+		[],
+	);
 
-	return streamingGeneration.value;
+	return state;
 }

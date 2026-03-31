@@ -88,9 +88,16 @@ export class CardQueryService {
 
 		const cards = this.store.getByIds(cardIds);
 		const rawCards = this.filterAndMapCards(cards);
+		const enriched = this.sourceNoteService.enrichCards(rawCards);
 
-		// Enrich with source note info from vault
-		return this.sourceNoteService.enrichCards(rawCards);
+		// SQL IN() returns rows in arbitrary order — restore caller's order
+		const byId = new Map(enriched.map((c) => [c.id, c]));
+		const ordered: FSRSFlashcardItem[] = [];
+		for (const id of cardIds) {
+			const card = byId.get(id);
+			if (card) ordered.push(card);
+		}
+		return ordered;
 	}
 
 	getBySourceUid(sourceUid: string): FSRSFlashcardItem[] {

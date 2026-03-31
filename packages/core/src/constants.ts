@@ -1,6 +1,6 @@
 import type { FSRSPreset, TrueRecallSettings } from "./types/settings.types";
 
-export const ENABLE_RAG = false;
+export const ENABLE_RAG = true;
 
 export const VIEW_TYPE_FLASHCARD_PANEL = "true-recall-flashcard-panel";
 export const VIEW_TYPE_REVIEW = "true-recall-review";
