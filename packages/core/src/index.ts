@@ -10,32 +10,34 @@
 //   @true-recall/core/utils
 //   @true-recall/core/metrics
 
-// Interfaces (platform adapters)
-export type {
-	IPersistence,
-	IFrontmatter,
-	IMetadataIndex,
-	IFileSystem,
-	INotification,
-	IHttpClient,
-} from "./interfaces";
-
-// Types
-export * from "./types";
-
-// Errors
-export * from "./errors";
-
+// AI services
+export * from "./ai";
 // Constants
 export * from "./constants";
 
-// AI services
-export * from "./ai";
-
+// Errors
+export * from "./errors";
 // Events
 export {
-	type CardMutation,
 	type CardChangeListener,
+	type CardMutation,
 	notifyCardChange,
 	onCardChange,
 } from "./events";
+// Interfaces (platform adapters)
+export type {
+	IFileSystem,
+	IFrontmatter,
+	IHttpClient,
+	ILinkResolver,
+	IMetadataIndex,
+	INotification,
+	IPersistence,
+	ISettingsPersistence,
+	IUidRemovalPrompt,
+	IVaultEventBridge,
+	UidChangeEvent,
+	UidRemovalAction,
+} from "./interfaces";
+// Types
+export * from "./types";

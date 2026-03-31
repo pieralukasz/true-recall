@@ -4,7 +4,6 @@ import {
 	RANDOM_QUEUE_INSERT_MAX_POS,
 	WEAK_CARD_STABILITY_THRESHOLD,
 } from "../../constants";
-import { notifyCardChange } from "../../events";
 import type { FlashcardManager } from "../../flashcard/flashcard.service";
 import type {
 	CardSchedulingMeta,
@@ -797,8 +796,7 @@ export class ReviewService {
 			persisted = flashcardManager.updateCardFSRS(card.id, updatedCard.fsrs);
 
 			if (persisted) {
-				notifyCardChange({
-					type: "reviewed",
+				flashcardManager.getEventBus()?.emit("card:reviewed", {
 					cardId: card.id,
 					rating: rating as number,
 					newState: updatedCard.fsrs.state,

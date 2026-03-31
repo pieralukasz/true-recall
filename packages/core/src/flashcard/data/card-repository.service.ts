@@ -1,5 +1,6 @@
 import { CARD_HISTORY_LIMIT } from "@true-recall/core/constants";
-import { type CardMutation, notifyCardChange } from "@true-recall/core/events";
+import type { DomainEventBus } from "@true-recall/core/events/event-bus";
+import type { CardChanges } from "@true-recall/core/events/event-types";
 import { parseClozeTemplate } from "@true-recall/core/flashcard/parsing/cloze-parser.service";
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite/SqliteStoreService";
 import type {
@@ -33,7 +34,32 @@ export interface CreateBatchResult {
 }
 
 export class CardRepository {
+	private bus: DomainEventBus | null = null;
+	private busWarnLogged = false;
+
 	constructor(private store: SqliteStoreService) {}
+
+	setEventBus(bus: DomainEventBus): void {
+		this.bus = bus;
+	}
+
+	private emit<
+		K extends import("@true-recall/core/events/event-types").DomainEventType,
+	>(
+		event: K,
+		payload: import("@true-recall/core/events/event-types").DomainEventMap[K],
+	): void {
+		if (!this.bus) {
+			if (!this.busWarnLogged) {
+				console.warn(
+					"[CardRepository] Event bus not wired — events will not propagate to UI",
+				);
+				this.busWarnLogged = true;
+			}
+			return;
+		}
+		this.bus.emit(event, payload);
+	}
 
 	/** @throws DuplicateQuestionError if card with same question already exists */
 	create(
@@ -82,7 +108,7 @@ export class CardRepository {
 			reverseOf: options?.reverseOf,
 		};
 
-		notifyCardChange({ type: "added", cardId, sourceNoteName });
+		this.emit("card:added", { cardId, sourceNoteName });
 
 		return card;
 	}
@@ -203,8 +229,7 @@ export class CardRepository {
 		}
 
 		if (createdCards.length > 0) {
-			notifyCardChange({
-				type: "bulk",
+			this.emit("cards:bulk", {
 				cardIds: createdCards.map((c) => c.id),
 			});
 		}
@@ -242,8 +267,7 @@ export class CardRepository {
 
 		this.store.cards.updateCardContent(cardId, newQuestion, newAnswer);
 
-		notifyCardChange({
-			type: "updated",
+		this.emit("card:updated", {
 			cardId,
 			changes: { question: true, answer: true },
 		});
@@ -350,7 +374,7 @@ export class CardRepository {
 
 		this.store.set(cardId, entry);
 
-		const changes: CardMutation["changes"] = { fsrs: true };
+		const changes: CardChanges = { fsrs: true };
 		if (existing && newFSRSData.suspended !== existing.suspended) {
 			changes.suspended = true;
 		}
@@ -359,7 +383,7 @@ export class CardRepository {
 		}
 
 		if (!options?.skipNotification) {
-			notifyCardChange({ type: "updated", cardId, changes });
+			this.emit("card:updated", { cardId, changes });
 		}
 		return true;
 	}
@@ -372,7 +396,7 @@ export class CardRepository {
 
 		this.store.cards.updateCardSourceUid(cardId, newSourceUid);
 
-		notifyCardChange({ type: "updated", cardId, changes: { sourceUid: true } });
+		this.emit("card:updated", { cardId, changes: { sourceUid: true } });
 
 		return true;
 	}
@@ -429,7 +453,7 @@ export class CardRepository {
 		}
 
 		if (affectedCardIds.length > 0) {
-			notifyCardChange({ type: "bulk", cardIds: affectedCardIds });
+			this.emit("cards:bulk", { cardIds: affectedCardIds });
 		}
 	}
 
@@ -458,7 +482,7 @@ export class CardRepository {
 
 		this.store.cards.bulkSoftDelete(removedIds);
 
-		notifyCardChange({ type: "removed", cardId, cardIds: removedIds });
+		this.emit("card:removed", { cardId, cardIds: removedIds });
 
 		return { removedIds, cardsData };
 	}
@@ -494,7 +518,7 @@ export class CardRepository {
 
 		this.store.cards.bulkSoftDelete(removedIds);
 
-		notifyCardChange({ type: "bulk", cardIds: removedIds, action: "removed" });
+		this.emit("cards:bulk", { cardIds: removedIds, action: "removed" });
 
 		return { removedIds, cardsData };
 	}

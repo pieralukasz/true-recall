@@ -8,7 +8,7 @@
  */
 
 import { FLASHCARD_CONFIG } from "../constants";
-import { notifyCardChange } from "../events";
+import type { DomainEventBus } from "../events/event-bus";
 import type { IFileSystem } from "../interfaces/file-system";
 import type { IFrontmatter } from "../interfaces/frontmatter";
 import type { IMetadataIndex } from "../interfaces/metadata-index";
@@ -17,8 +17,11 @@ import {
 	type GeneratedCard,
 	generateCardsForNote,
 } from "../services/cards/card-generation.service";
+import {
+	deriveCardType,
+	renderTemplate,
+} from "../services/cards/template-engine";
 import type { FrontmatterIndexService } from "../services/notes/frontmatter-index.service";
-import { deriveCardType, renderTemplate } from "../services/cards/template-engine";
 import type {
 	CardReviewLogEntry,
 	CardType,
@@ -112,6 +115,8 @@ export class FlashcardManager {
 	private sessionPersistence: ISessionPersistence | null = null;
 	private frontmatterService: FrontmatterService;
 	private sourceNoteService: SourceNoteService;
+	private bus: DomainEventBus | null = null;
+	private busWarnLogged = false;
 
 	// Specialized services (initialized after setStore)
 	private cardRepository: CardRepository | null = null;
@@ -130,13 +135,18 @@ export class FlashcardManager {
 			frontmatter,
 			metadataIndex,
 		);
-		// frontmatterIndex is stored for later use if needed
 		void frontmatterIndex;
+	}
+
+	setEventBus(bus: DomainEventBus): void {
+		this.bus = bus;
+		this.cardRepository?.setEventBus(bus);
 	}
 
 	setStore(store: SqliteStoreService): void {
 		this.store = store;
 		this.cardRepository = new CardRepository(store);
+		if (this.bus) this.cardRepository.setEventBus(this.bus);
 		this.cardQueryService = new CardQueryService(store, this.sourceNoteService);
 	}
 
@@ -177,6 +187,26 @@ export class FlashcardManager {
 
 	getSourceNoteService(): SourceNoteService {
 		return this.sourceNoteService;
+	}
+
+	getEventBus(): DomainEventBus | null {
+		return this.bus;
+	}
+
+	private emitEvent<K extends import("../events/event-types").DomainEventType>(
+		event: K,
+		payload: import("../events/event-types").DomainEventMap[K],
+	): void {
+		if (!this.bus) {
+			if (!this.busWarnLogged) {
+				console.warn(
+					"[FlashcardManager] Event bus not wired — events will not propagate to UI",
+				);
+				this.busWarnLogged = true;
+			}
+			return;
+		}
+		this.bus.emit(event, payload);
 	}
 
 	scanVault(): ScanResult {
@@ -532,8 +562,7 @@ export class FlashcardManager {
 		}
 
 		if (cards.length > 0) {
-			notifyCardChange({
-				type: "bulk",
+			this.emitEvent("cards:bulk", {
 				cardIds: cards.map((c) => c.id),
 			});
 		}
@@ -615,8 +644,7 @@ export class FlashcardManager {
 		}
 
 		if (cards.length > 0) {
-			notifyCardChange({
-				type: "bulk",
+			this.emitEvent("cards:bulk", {
 				cardIds: cards.map((c) => c.id),
 			});
 		}
@@ -670,8 +698,7 @@ export class FlashcardManager {
 		}
 
 		if (updatedCardIds.length > 0) {
-			notifyCardChange({
-				type: "bulk",
+			this.emitEvent("cards:bulk", {
 				cardIds: updatedCardIds,
 			});
 		}
@@ -747,7 +774,7 @@ export class FlashcardManager {
 			...deletedCardIds,
 		];
 		if (allAffectedIds.length > 0) {
-			notifyCardChange({ type: "bulk", cardIds: allAffectedIds });
+			this.emitEvent("cards:bulk", { cardIds: allAffectedIds });
 		}
 
 		return { keptCardIds, createdCardIds, deletedCardIds };
@@ -789,8 +816,7 @@ export class FlashcardManager {
 		if (removedCardIds.length > 0) {
 			this.store?.cards.bulkSoftDelete(removedCardIds);
 			this.sessionPersistence?.removeReviewedCards(removedCardIds);
-			notifyCardChange({
-				type: "bulk",
+			this.emitEvent("cards:bulk", {
 				cardIds: removedCardIds,
 				action: "removed",
 			});
@@ -802,8 +828,7 @@ export class FlashcardManager {
 		];
 
 		if (updatedCardIds.length > 0) {
-			notifyCardChange({
-				type: "bulk",
+			this.emitEvent("cards:bulk", {
 				cardIds: updatedCardIds,
 			});
 		}

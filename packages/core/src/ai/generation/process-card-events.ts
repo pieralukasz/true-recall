@@ -77,8 +77,13 @@ export async function processCardEvents(
 				} else {
 					onCount(0, 1);
 				}
-			} catch {
-				onCount(0, 1);
+			} catch (error) {
+				if (error instanceof Error && error.name === "DuplicateQuestionError") {
+					onCount(0, 1);
+				} else {
+					console.error("[processCardEvents] Card creation failed:", error);
+					onCount(0, 1);
+				}
 			}
 		} else if (event.type === "partial_update") {
 			onPartial(event.partialQuestion ?? null, event.partialAnswer ?? null);

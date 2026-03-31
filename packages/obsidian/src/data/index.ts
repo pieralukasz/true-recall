@@ -11,3 +11,4 @@ export {
 	registerQueries,
 } from "./queries";
 export { getDataLayer, setDataLayer, useQuery } from "./use-data";
+export { wireDataLayer } from "./wire-data-layer";

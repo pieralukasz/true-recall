@@ -1,6 +1,5 @@
-import { effect } from "@preact/signals";
+import { TrueRecallApp } from "@true-recall/core/app";
 import {
-	DEFAULT_SETTINGS,
 	ENABLE_RAG,
 	VIEW_TYPE_CARD_BROWSER,
 	VIEW_TYPE_DASHBOARD,
@@ -10,40 +9,27 @@ import {
 	VIEW_TYPE_SIMULATOR,
 	VIEW_TYPE_STATS,
 } from "@true-recall/core/constants";
-import type { CardMutation as CoreCardMutation } from "@true-recall/core/events";
-import { onCardChange as onCoreCardChange } from "@true-recall/core/events";
-import { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
 import { DeletionHandlerService } from "@true-recall/core/flashcard/lifecycle/deletion-handler.service";
+import { UidGuardianService } from "@true-recall/core/flashcard/lifecycle/uid-guardian.service";
 import { DeviceDiscoveryService } from "@true-recall/core/integration/device/device-discovery.service";
 import { DeviceIdService } from "@true-recall/core/integration/device/device-id.service";
-import { FSRSHelperService } from "@true-recall/core/metrics/fsrs-tools";
-import { BackgroundBackupManager } from "@true-recall/core/persistence/backup/background-backup.service";
-import { BackupService } from "@true-recall/core/persistence/backup/backup.service";
-import { SessionPersistenceService } from "@true-recall/core/persistence/session/session-persistence.service";
-import { SqliteStoreService } from "@true-recall/core/persistence/sqlite";
 import {
 	DB_FOLDER,
 	getDeviceDbFilename,
 	SAFETY_FLUSH_INTERVAL_MS,
 } from "@true-recall/core/persistence/sqlite/sqlite.types";
-import { FSRSService } from "@true-recall/core/services/fsrs/fsrs.service";
-import { FrontmatterIndexService } from "@true-recall/core/services/notes/frontmatter-index.service";
-import { HierarchyService } from "@true-recall/core/services/notes/hierarchy.service";
-import { NoteTypeService } from "@true-recall/core/services/notes/note-type.service";
-import { PresetService } from "@true-recall/core/services/notes/preset.service";
-import { DayBoundaryService } from "@true-recall/core/services/review/day-boundary.service";
 import { SessionService } from "@true-recall/core/services/review/session.service";
 import type { TrueRecallSettings } from "@true-recall/core/types";
-import { extractFSRSSettings } from "@true-recall/core/types";
 import type { SessionConfig } from "@true-recall/core/types/session-config.types";
 import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpClient";
 import { ObsidianPersistence } from "@true-recall/obsidian/adapters/ObsidianPersistence";
+import { ObsidianUidPrompt } from "@true-recall/obsidian/adapters/ObsidianUidPrompt";
 import type { CommandService } from "@true-recall/obsidian/commands";
 import {
 	DataLayer,
-	G,
 	registerQueries as registerDataLayerQueries,
 	setDataLayer,
+	wireDataLayer,
 } from "@true-recall/obsidian/data";
 import { createSelectionToolbarExtension } from "@true-recall/obsidian/editor/ai/SelectionToolbarPlugin";
 import {
@@ -60,7 +46,6 @@ import type {
 	IOEditorMode,
 	IOEditorResult,
 } from "@true-recall/obsidian/features/image-occlusion/types";
-import { UidGuardianService } from "@true-recall/obsidian/features/study/services/flashcard/uid-guardian.service";
 import {
 	filtersToViewState,
 	normalizeSessionFilters,
@@ -83,7 +68,6 @@ import {
 } from "@true-recall/obsidian/modals/study/CustomStudyModal";
 import { QuickNoteEditorModal } from "@true-recall/obsidian/modals/study/quick-note-editor/QuickNoteEditorModal";
 import { notify } from "@true-recall/obsidian/services/notification.service";
-import { setLastMutation } from "@true-recall/obsidian/services/signals";
 import { TrueRecallSettingTab } from "@true-recall/obsidian/settings";
 import { type AppStore, createAppStore } from "@true-recall/obsidian/store";
 import { isDesktop } from "@true-recall/obsidian/utils/platform";
@@ -115,41 +99,72 @@ import {
 	getView,
 } from "./plugin/ViewActivator";
 
-function mapCoreMutationToGroups(mutation: CoreCardMutation): string[] {
-	switch (mutation.type) {
-		case "reviewed":
-			return [G.CARDS, G.DASHBOARD, G.STATS, G.PANEL];
-		case "added":
-			return [G.CARDS, G.BROWSER, G.DASHBOARD, G.PANEL, G.STATS];
-		case "removed":
-			return [G.CARDS, G.BROWSER, G.DASHBOARD, G.PANEL, G.STATS];
-		case "updated":
-			return [G.CARDS, G.BROWSER, G.DASHBOARD, G.PANEL];
-		case "bulk":
-			return [G.CARDS, G.BROWSER, G.DASHBOARD, G.PANEL, G.REVIEW, G.STATS];
-		default:
-			return [G.CARDS, G.BROWSER, G.DASHBOARD, G.PANEL, G.REVIEW, G.STATS];
-	}
-}
-
 export default class TrueRecallPlugin extends Plugin {
-	settings!: TrueRecallSettings;
-	flashcardManager!: FlashcardManager;
-	fsrsService!: FSRSService;
-	sessionPersistence!: SessionPersistenceService;
-	cardStore!: SqliteStoreService;
-	dayBoundaryService!: DayBoundaryService;
-	frontmatterIndex!: FrontmatterIndexService;
-	backupService: BackupService | null = null;
-	backgroundBackupManager: BackgroundBackupManager | null = null;
+	coreApp!: TrueRecallApp;
+
+	// Backward-compat getters — all existing code reads plugin.settings, plugin.cardStore, etc.
+	get settings(): TrueRecallSettings {
+		return this.coreApp.settings;
+	}
+	set settings(v: TrueRecallSettings) {
+		this.coreApp.settings = v;
+	}
+	get flashcardManager() {
+		return this.coreApp.flashcardManager;
+	}
+	get fsrsService() {
+		return this.coreApp.fsrsService;
+	}
+	get sessionPersistence() {
+		const v = this.coreApp.sessionPersistence;
+		if (!v)
+			throw new Error(
+				"Session persistence not initialized. Wait for plugin to fully load.",
+			);
+		return v;
+	}
+	get cardStore() {
+		const v = this.coreApp.cardStore;
+		if (!v)
+			throw new Error(
+				"Card store not initialized. Wait for plugin to fully load.",
+			);
+		return v;
+	}
+	get dayBoundaryService() {
+		return this.coreApp.dayBoundary;
+	}
+	get frontmatterIndex() {
+		return this.coreApp.frontmatterIndex;
+	}
+	get backupService() {
+		return this.coreApp.backupService;
+	}
+	get backgroundBackupManager() {
+		return this.coreApp.backgroundBackupManager;
+	}
+	get fsrsHelper() {
+		return this.coreApp.fsrsHelper;
+	}
+	get presetService() {
+		return this.coreApp.presetService;
+	}
+	get noteTypeService() {
+		const v = this.coreApp.noteTypeService;
+		if (!v)
+			throw new Error(
+				"Note type service not initialized. Wait for plugin to fully load.",
+			);
+		return v;
+	}
+	get hierarchyService() {
+		return this.coreApp.hierarchyService;
+	}
+
 	deviceIdService: DeviceIdService | null = null;
 	deviceDiscovery: DeviceDiscoveryService | null = null;
 	deletionHandler: DeletionHandlerService | null = null;
 	commandService: CommandService | null = null;
-	fsrsHelper: FSRSHelperService | null = null;
-	presetService!: PresetService;
-	noteTypeService!: NoteTypeService;
-	hierarchyService!: HierarchyService;
 	store: AppStore | null = null;
 	noteStatusCache: NoteStatusCache | null = null;
 	statusBarWidget: StatusBarWidget | null = null;
@@ -165,7 +180,7 @@ export default class TrueRecallPlugin extends Plugin {
 		| import("@true-recall/core/rag/retrieval/rag-search.service").RagSearchService
 		| null = null;
 	dataLayer: DataLayer | null = null;
-	private _disposeCoreCardBridge: (() => void) | null = null;
+	private _disposeWireDataLayer: (() => void) | null = null;
 	private adapters!: ObsidianAdapters;
 	private _unloaded = false;
 	private sessionService = new SessionService();
@@ -173,143 +188,51 @@ export default class TrueRecallPlugin extends Plugin {
 		| import("@true-recall/obsidian/editor/shared/embedded-editor").EmbeddableEditorClass
 		| null = null;
 
-	/**
-	 * Assert that the card store is initialized and ready.
-	 * Throws an error if called before initialization completes.
-	 */
-	private assertStoreReady(): asserts this is this & {
-		cardStore: SqliteStoreService;
-	} {
-		if (!this.cardStore) {
-			throw new Error(
-				"Card store not initialized. Please wait for plugin to fully load.",
-			);
-		}
-	}
-
-	/**
-	 * Check if the card store is ready (non-throwing version)
-	 */
 	isStoreReady(): boolean {
-		return this.cardStore !== null && this.cardStore !== undefined;
+		return this.coreApp.isReady();
 	}
 
 	async onload(): Promise<void> {
 		const t0 = performance.now();
-		await this.loadSettings();
-		const tSettings = performance.now();
 
-		this.adapters = createObsidianAdapters(this.app);
+		// 1. Create platform adapters + core app
+		try {
+			this.adapters = createObsidianAdapters(this.app);
+			const { ObsidianSettingsPersistence } = await import(
+				"@true-recall/obsidian/adapters/ObsidianSettingsPersistence"
+			);
+			const { ObsidianLinkResolver } = await import(
+				"@true-recall/obsidian/adapters/ObsidianLinkResolver"
+			);
+			const { ObsidianVaultEventBridge } = await import(
+				"@true-recall/obsidian/adapters/ObsidianVaultEventBridge"
+			);
 
-		this.frontmatterIndex = new FrontmatterIndexService(
-			this.adapters.metadataIndex,
-		);
-		this.frontmatterIndex.register({
-			field: "flashcard_uid",
-			type: "string",
-			unique: true,
-		});
-		this.frontmatterIndex.register({
-			field: "fsrs_preset",
-			type: "string",
-			unique: false,
-		});
-		this.frontmatterIndex.register({
-			field: "parents",
-			type: "array",
-			unique: false,
-		});
-		this.frontmatterIndex.register({
-			field: "include",
-			type: "string",
-			unique: false,
-		});
-		this.frontmatterIndex.register({
-			field: "archive",
-			type: "string",
-			unique: false,
-		});
-		this.frontmatterIndex.onFieldChange("parents", () => {
-			this.hierarchyService.invalidateGraph();
-			this.dataLayer?.invalidateGroups(["cards", "dashboard", "review"]);
-		});
-		this.frontmatterIndex.onFieldChange("include", () => {
-			this.hierarchyService.invalidateGraph();
-			this.dataLayer?.invalidateGroups(["cards", "dashboard", "review"]);
-		});
-		this.frontmatterIndex.onFieldChange("archive", () =>
-			this.dataLayer?.invalidateGroups(["cards"]),
-		);
-		this.frontmatterIndex.onFieldChange("fsrs_preset", () =>
-			this.dataLayer?.invalidateGroups(["cards"]),
-		);
-		// Register Obsidian events that feed the platform-agnostic frontmatter index
-		this.registerEvent(
-			this.app.metadataCache.on("changed", (file, _data, cache) => {
-				this.frontmatterIndex.handleMetadataChanged(
-					file.path,
-					cache?.frontmatter,
-				);
-			}),
-		);
-		this.registerEvent(
-			this.app.vault.on("delete", (file) => {
-				this.frontmatterIndex.handleFileDeleted(file.path);
-			}),
-		);
-		this.registerEvent(
-			this.app.vault.on("rename", (file, oldPath) => {
-				this.frontmatterIndex.handleFileRenamed(file.path, oldPath);
-			}),
-		);
+			this.coreApp = new TrueRecallApp({
+				...this.adapters,
+				settingsPersistence: new ObsidianSettingsPersistence(this),
+				linkResolver: new ObsidianLinkResolver(this.app),
+				vaultEvents: new ObsidianVaultEventBridge(this.app, this),
+			});
+			await this.coreApp.initialize();
+		} catch (error) {
+			console.error("[True Recall] Core initialization failed:", error);
+			notify().error(
+				"True Recall failed to initialize. Try reinstalling the plugin.",
+			);
+			return;
+		}
 
-		const resolveLink = (name: string) => {
-			const file = this.app.metadataCache.getFirstLinkpathDest(name, "");
-			return file?.path ?? null;
-		};
-		this.hierarchyService = new HierarchyService(
-			this.frontmatterIndex,
-			this.adapters.fileSystem,
-			resolveLink,
-		);
-
-		// Build index after metadataCache is fully loaded.
-		// Must be AFTER hierarchy service init so DataLayer can populate archivedSourceUids.
-		// onLayoutReady fires synchronously if layout is already ready.
+		// What's New check after layout ready
 		this.app.workspace.onLayoutReady(() => {
-			this.frontmatterIndex.rebuildIndex();
-			this.hierarchyService.invalidateGraph();
-			this.checkForWhatsNew().catch(() => {});
+			this.checkForWhatsNew().catch((e) => {
+				console.debug("[True Recall] What's New check failed:", e);
+			});
 		});
-
-		this.flashcardManager = new FlashcardManager(
-			this.adapters.fileSystem,
-			this.adapters.frontmatter,
-			this.settings,
-			this.adapters.metadataIndex,
-			this.frontmatterIndex,
-		);
-		// Use O(1) indexed lookups for sourceUid → notePath instead of O(n) vault scan
-		this.flashcardManager
-			.getSourceNoteService()
-			.setFrontmatterIndex(this.frontmatterIndex);
-
-		this.presetService = new PresetService(
-			() => this.settings,
-			() => this.saveSettings(),
-			this.frontmatterIndex,
-			this.hierarchyService,
-			() => this.cardStore ?? null,
-		);
-
-		const fsrsSettings = extractFSRSSettings(this.settings);
-		this.fsrsService = new FSRSService(fsrsSettings);
-		this.dayBoundaryService = new DayBoundaryService(
-			this.settings.dayStartHour,
-		);
 
 		const tSetup = performance.now();
 
+		// 2. Initialize device context + card store
 		try {
 			await this.initializeDeviceAndStore();
 		} catch (error) {
@@ -318,6 +241,7 @@ export default class TrueRecallPlugin extends Plugin {
 				error,
 			);
 			notify().error("Failed to initialize database. Please restart Obsidian.");
+			return;
 		}
 
 		const tStore = performance.now();
@@ -428,8 +352,7 @@ export default class TrueRecallPlugin extends Plugin {
 
 		const tTotal = performance.now();
 		console.debug(
-			`[True Recall Startup] settings: ${(tSettings - t0).toFixed(1)}ms` +
-				` | setup: ${(tSetup - tSettings).toFixed(1)}ms` +
+			`[True Recall Startup] setup: ${(tSetup - t0).toFixed(1)}ms` +
 				` | store: ${(tStore - tSetup).toFixed(1)}ms` +
 				` | views+commands: ${(tTotal - tStore).toFixed(1)}ms` +
 				` | total: ${(tTotal - t0).toFixed(1)}ms`,
@@ -444,6 +367,7 @@ export default class TrueRecallPlugin extends Plugin {
 			frontmatterIndex: this.frontmatterIndex,
 			store: this.cardStore,
 			sessionPersistence: this.sessionPersistence,
+			bus: this.coreApp.events,
 		});
 
 		registerDeletionHandler(this, this.deletionHandler);
@@ -458,11 +382,13 @@ export default class TrueRecallPlugin extends Plugin {
 		);
 
 		const uidGuardian = new UidGuardianService({
-			app: this.app,
 			frontmatterIndex: this.frontmatterIndex,
 			store: this.cardStore,
 			sessionPersistence: this.sessionPersistence,
 			frontmatterService: this.flashcardManager.getFrontmatterService(),
+			prompt: new ObsidianUidPrompt(this.app),
+			notification: this.adapters.notification,
+			bus: this.coreApp.events,
 		});
 		uidGuardian.register();
 	}
@@ -471,86 +397,21 @@ export default class TrueRecallPlugin extends Plugin {
 		this._unloaded = true;
 		this.localApi?.stop();
 		this.commandService?.clear();
-		this.backgroundBackupManager?.stop();
 		this.statusBarWidget?.dispose();
 		this.noteStatusCache?.dispose();
 		this.dataLayer?.dispose();
-		this._disposeCoreCardBridge?.();
-
-		if (this.cardStore) {
-			void this.cardStore.saveNow({ bestEffort: true });
-		}
-	}
-
-	async loadSettings(): Promise<void> {
-		const rawData =
-			(await this.loadData()) as Partial<TrueRecallSettings> | null;
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, rawData);
-
-		if (Array.isArray(this.settings.easyDays)) {
-			this.settings.easyDays = {
-				recurringDays: this.settings.easyDays as unknown as number[],
-				specificDates: [],
-			};
-		}
-
-		// Backfill new preset fields for existing presets
-		if (this.settings.fsrsPresets) {
-			for (const preset of this.settings.fsrsPresets) {
-				preset.leechThreshold ??= 8;
-				preset.leechAction ??= "tag-only";
-				preset.newCardOrder ??= this.settings.newCardOrder;
-				preset.reviewOrder ??= this.settings.reviewOrder;
-				preset.newReviewMix ??= this.settings.newReviewMix;
-			}
-		}
-
-		// Migrate global FSRS settings → Default preset for existing users
-		if (!rawData?.fsrsPresets) {
-			this.settings.fsrsPresets = [
-				{
-					id: "default",
-					name: "Default",
-					requestRetention: this.settings.fsrsRequestRetention,
-					maximumInterval: this.settings.fsrsMaximumInterval,
-					weights: this.settings.fsrsWeights,
-					learningSteps: this.settings.learningSteps,
-					relearningSteps: this.settings.relearningSteps,
-					newCardsPerDay: this.settings.newCardsPerDay,
-					reviewsPerDay: this.settings.reviewsPerDay,
-					createdAt: Date.now(),
-					lastOptimization: this.settings.lastOptimization,
-					lastOptimizationReviewCount:
-						this.settings.lastOptimizationReviewCount,
-					lastOptimizationMetrics: this.settings.lastOptimizationMetrics,
-				},
-			];
-			this.settings.defaultPresetId = "default";
-			await this.saveData(this.settings);
-		}
+		this._disposeWireDataLayer?.();
+		void this.coreApp?.shutdown().catch((e) => {
+			console.error(
+				"[True Recall] Shutdown failed — data may not be saved:",
+				e,
+			);
+		});
 	}
 
 	async saveSettings(): Promise<void> {
-		await this.saveData(this.settings);
-
-		if (this.flashcardManager) {
-			this.flashcardManager.updateSettings(this.settings);
-		}
-		if (this.fsrsService) {
-			const fsrsSettings = extractFSRSSettings(this.settings);
-			this.fsrsService.updateSettings(fsrsSettings);
-		}
-		if (this.dayBoundaryService) {
-			this.dayBoundaryService.updateDayStartHour(this.settings.dayStartHour);
-		}
-		if (this.fsrsHelper) {
-			this.fsrsHelper.updateSettings(this.settings);
-		}
-		if (this.backgroundBackupManager) {
-			this.backgroundBackupManager.updateConfig(this.settings);
-		}
+		await this.coreApp.updateSettings(this.settings);
 		this.noteStatusCache?.bumpVersion();
-		this.hierarchyService.invalidateGraph();
 	}
 
 	async activateView(): Promise<void> {
@@ -955,18 +816,14 @@ export default class TrueRecallPlugin extends Plugin {
 
 			this.backupRecovery = new BackupRecoveryManager(
 				this.app,
-				() => this.backupService,
-				() => this.backgroundBackupManager,
-				() => this.cardStore,
+				() => this.coreApp.backupService,
+				() => this.coreApp.backgroundBackupManager,
+				() => this.coreApp.cardStore ?? undefined,
 			);
 
-			this.cardStore = new SqliteStoreService(
-				this.adapters.persistence,
-				deviceId,
-			);
-
+			// Delegate DB + service init to core kernel
 			try {
-				await this.cardStore.load();
+				await this.coreApp.initializeStore(deviceId);
 			} catch (loadError) {
 				console.warn(
 					"[True Recall] Database load failed, attempting auto-recovery from backup...",
@@ -974,11 +831,7 @@ export default class TrueRecallPlugin extends Plugin {
 				const recovered =
 					await this.backupRecovery.tryAutoRecoverFromBackup(deviceId);
 				if (recovered) {
-					this.cardStore = new SqliteStoreService(
-						this.adapters.persistence,
-						deviceId,
-					);
-					await this.cardStore.load();
+					await this.coreApp.initializeStore(deviceId);
 				} else {
 					throw loadError;
 				}
@@ -986,19 +839,16 @@ export default class TrueRecallPlugin extends Plugin {
 
 			const sDbLoad = performance.now();
 
-			this.flashcardManager.setStore(this.cardStore);
-
-			// Safety persistence: ensure dirty data is flushed regularly,
-			// even if user exits before debounce timer fires.
+			// Safety flush (platform-specific: uses window.setInterval)
 			this.registerInterval(
 				window.setInterval(() => {
-					if (this.cardStore) {
-						void this.cardStore.saveNow();
+					if (this.coreApp.cardStore) {
+						void this.coreApp.cardStore.saveNow();
 					}
 				}, SAFETY_FLUSH_INTERVAL_MS),
 			);
 
-			// DataLayer: unified reactive data layer (SQL → signals → UI)
+			// DataLayer: reactive cache (SQL -> signals -> UI)
 			const dl = new DataLayer();
 			this.dataLayer = dl;
 			setDataLayer(dl);
@@ -1008,70 +858,18 @@ export default class TrueRecallPlugin extends Plugin {
 				getSettings: () => this.settings,
 			});
 
-			// Bridge: core mutations → DataLayer invalidation + lastMutation signal
-			this._disposeCoreCardBridge = onCoreCardChange((mutation) => {
-				setLastMutation(mutation as Parameters<typeof setLastMutation>[0]);
-				const groups = mapCoreMutationToGroups(mutation);
-				dl.invalidateGroups(groups);
-			});
+			// Bridge: core events -> DataLayer invalidation + lastMutation signal
+			this._disposeWireDataLayer = wireDataLayer(dl, this.coreApp.events);
 
 			const sCards = performance.now();
 
-			this.sessionPersistence = new SessionPersistenceService(
-				this.adapters.persistence,
-				this.cardStore,
-				this.dayBoundaryService,
-			);
-			this.flashcardManager.setSessionPersistence(this.sessionPersistence);
-
-			// Fire-and-forget: migration is idempotent, non-critical for startup
-			this.sessionPersistence.migrateStatsJsonToSql().catch((e) => {
-				console.error("[True Recall] Stats migration failed:", e);
-			});
-
-			this.backupService = new BackupService(
-				this.adapters.persistence,
-				this.cardStore,
-			);
-			this.backgroundBackupManager = new BackgroundBackupManager(
-				this.backupService,
-				this.settings,
-				{
-					onCardsChanged: (cb) => {
-						const allMetaSig = dl.signal("allMeta");
-						return effect(() => {
-							void allMetaSig?.value;
-							cb();
-						});
-					},
-					onMutation: (cb) => onCoreCardChange((m) => cb(m.type)),
-				},
-			);
-
-			if (
-				this.settings.periodicBackupEnabled ||
-				this.settings.activityTriggeredBackup
-			) {
-				this.backgroundBackupManager.start();
-			}
-
-			// Fire-and-forget: backup has no downstream dependencies
+			// Auto-backup on load
 			if (this.settings.autoBackupOnLoad) {
 				this.backupRecovery.runAutoBackup().catch((e) => {
 					console.warn("[True Recall] Auto-backup failed:", e);
 				});
 			}
 
-			this.noteTypeService = new NoteTypeService({
-				noteTypeActions: this.cardStore.noteTypes,
-				noteActions: {
-					getByNoteTypeId: (id) => this.cardStore.notes.getByNoteTypeId(id),
-					countByNoteType: (id) => this.cardStore.notes.countByNoteType(id),
-				},
-			});
-			this.noteTypeService.initialize();
-
-			this.fsrsHelper = new FSRSHelperService(this.cardStore, this.settings);
 			this.initializeDeletionHandler();
 			this.initializeStore();
 			this.initializeLinkStatusIndicators();
@@ -1152,24 +950,26 @@ export default class TrueRecallPlugin extends Plugin {
 	}
 
 	private initializeStatusBar(): void {
-		void import(
-			"@true-recall/obsidian/editor/study/widgets/StatusBarWidget"
-		).then(({ StatusBarWidget }) => {
-			const statusBarEl = this.addStatusBarItem();
-			this.statusBarWidget = new StatusBarWidget(
-				statusBarEl,
-				this.flashcardManager,
-				() => {
-					this.openDashboard().catch(() => {});
-				},
-				() => this.settings.showStatusBarWidget,
-				{
-					presetService: this.presetService,
-					sessionPersistence: this.sessionPersistence,
-				},
-			);
-			this.statusBarWidget.start();
-		});
+		void import("@true-recall/obsidian/editor/study/widgets/StatusBarWidget")
+			.then(({ StatusBarWidget }) => {
+				const statusBarEl = this.addStatusBarItem();
+				this.statusBarWidget = new StatusBarWidget(
+					statusBarEl,
+					this.flashcardManager,
+					() => {
+						this.openDashboard().catch(() => {});
+					},
+					() => this.settings.showStatusBarWidget,
+					{
+						presetService: this.presetService,
+						sessionPersistence: this.sessionPersistence,
+					},
+				);
+				this.statusBarWidget.start();
+			})
+			.catch((e) => {
+				console.warn("[True Recall] Failed to load status bar widget:", e);
+			});
 	}
 
 	private initializeDashboardCodeblocks(): void {
