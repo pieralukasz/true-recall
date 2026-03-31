@@ -1,0 +1,11 @@
+{
+	"name": "true-recall-cli",
+	"version": "1.0.0",
+	"description": "CLI for True Recall — Claude Code integration",
+	"type": "module",
+	"main": "index.ts",
+	"scripts": {
+		"start": "bun run index.ts",
+		"build": "bun build --compile --minify index.ts --outfile true-recall"
+	}
+}
