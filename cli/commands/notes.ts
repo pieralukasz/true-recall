@@ -70,4 +70,37 @@ export const noteCommands: CommandDef[] = [
 			},
 		},
 	),
+
+	postParams(
+		"dissolve_project",
+		"Dissolve a project by removing all parent references from its children. Children become unassigned.",
+		C,
+		"/notes/dissolve-project",
+		{
+			path: {
+				type: "string",
+				description: "Project note file path",
+				required: true,
+			},
+		},
+	),
+
+	postParams(
+		"move_project_children",
+		"Move all children from one project to another. Removes old parent and adds new parent for each child.",
+		C,
+		"/notes/move-children",
+		{
+			path: {
+				type: "string",
+				description: "Source project note file path",
+				required: true,
+			},
+			target_parent_name: {
+				type: "string",
+				description: "Name of the target project note (without .md)",
+				required: true,
+			},
+		},
+	),
 ];

@@ -11,11 +11,17 @@ export const dashboardCommands: CommandDef[] = [
 		"/dashboard",
 	),
 
-	get(
+	getWith(
 		"get_projects",
-		"Project/deck hierarchy tree with aggregate stats",
+		"Project/deck hierarchy tree with aggregate stats (excludes archived by default)",
 		C,
-		"/projects",
+		{
+			archived: {
+				type: "boolean",
+				description: "Include archived projects (default: false)",
+			},
+		},
+		(p) => (p.archived ? "/projects?archived=true" : "/projects"),
 	),
 
 	getWith(

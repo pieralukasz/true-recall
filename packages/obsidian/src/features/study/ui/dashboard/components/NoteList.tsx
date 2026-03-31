@@ -6,6 +6,7 @@ import type { RefObject } from "preact";
 import { useRef } from "preact/hooks";
 import { getDragClass } from "../helpers/drag-drop";
 import { useNoteBulkActions } from "../helpers/use-note-bulk-actions";
+import { useNoteContextMenu } from "../helpers/use-note-context-menu";
 import { useNoteDragDrop } from "../helpers/use-note-drag-drop";
 import { useNoteFiltering } from "../helpers/use-note-filtering";
 import { useNoteSelection } from "../helpers/use-note-selection";
@@ -155,58 +156,136 @@ export function NoteList({
 					{virtualItems.map(({ item, offsetTop }) => {
 						const dragCls = getDragClass(dragState.value, item.path);
 						return (
-							<div
-								role="listitem"
+							<NoteListItem
 								key={item.name}
-								class={dragCls || undefined}
-								draggable={!isSelecting && !!item.path}
+								note={item}
+								offsetTop={offsetTop}
+								dragCls={dragCls}
+								isSelecting={isSelecting}
+								isSelected={
+									item.path ? selectedPaths.value.has(item.path) : false
+								}
+								onNavigate={() => handleNavigateToNote(item)}
+								onStudy={() => handleStudyNote(item.name)}
+								onCustomStudy={() => handleCustomStudy(item)}
+								onProjectClick={handleProjectClick}
+								onPresetClick={onPresetClick}
+								onArchive={() => handleArchiveNote(item)}
+								onUnarchive={() => handleUnarchiveNote(item)}
+								onToggleSelect={
+									item.path
+										? () => {
+												const p = item.path;
+												if (p) toggleSelect(p);
+											}
+										: undefined
+								}
+								onEnterSelection={
+									item.path
+										? () => {
+												const p = item.path;
+												if (p) enterSelection(p);
+											}
+										: undefined
+								}
 								onDragStart={(e) => handleDragStart(e, item)}
 								onDragEnd={handleDragEnd}
 								onDragOver={(e) => handleDragOver(e, item)}
 								onDrop={(e) => handleDrop(e, item)}
-								style={{
-									position: "absolute",
-									top: `${offsetTop}px`,
-									left: 0,
-									right: 0,
-									height: "36px",
-								}}
-							>
-								<NoteRow
-									note={item}
-									onNavigate={() => handleNavigateToNote(item)}
-									onStudy={() => handleStudyNote(item.name)}
-									onCustomStudy={() => handleCustomStudy(item)}
-									onProjectClick={handleProjectClick}
-									onPresetClick={onPresetClick}
-									onArchive={() => handleArchiveNote(item)}
-									onUnarchive={() => handleUnarchiveNote(item)}
-									isSelectionMode={isSelecting}
-									isSelected={
-										item.path ? selectedPaths.value.has(item.path) : false
-									}
-									onToggleSelect={
-										item.path
-											? () => {
-													const p = item.path;
-													if (p) toggleSelect(p);
-												}
-											: undefined
-									}
-									onEnterSelection={
-										item.path
-											? () => {
-													const p = item.path;
-													if (p) enterSelection(p);
-												}
-											: undefined
-									}
-								/>
-							</div>
+							/>
 						);
 					})}
 				</div>
 			)}
+		</div>
+	);
+}
+
+// ── Sub-component ──────────────────────────────────────
+
+interface NoteListItemProps {
+	note: DashboardNoteEntry;
+	offsetTop: number;
+	dragCls: string | null;
+	isSelecting: boolean;
+	isSelected: boolean;
+	onNavigate: () => void;
+	onStudy: () => void;
+	onCustomStudy: () => void;
+	onProjectClick: (projectName: string) => void;
+	onPresetClick?: (path: string | null) => void;
+	onArchive: () => void;
+	onUnarchive: () => void;
+	onToggleSelect?: () => void;
+	onEnterSelection?: () => void;
+	onDragStart: (e: DragEvent) => void;
+	onDragEnd: () => void;
+	onDragOver: (e: DragEvent) => void;
+	onDrop: (e: DragEvent) => void;
+}
+
+function NoteListItem({
+	note,
+	offsetTop,
+	dragCls,
+	isSelecting,
+	isSelected,
+	onNavigate,
+	onStudy,
+	onCustomStudy,
+	onProjectClick,
+	onPresetClick,
+	onArchive,
+	onUnarchive,
+	onToggleSelect,
+	onEnterSelection,
+	onDragStart,
+	onDragEnd,
+	onDragOver,
+	onDrop,
+}: NoteListItemProps) {
+	const handleContextMenu = useNoteContextMenu({
+		note,
+		onStudy,
+		onCustomStudy,
+		onNavigate,
+		onArchive,
+		onUnarchive,
+		onEnterSelection,
+	});
+
+	return (
+		<div
+			role="listitem"
+			class={dragCls || undefined}
+			draggable={!isSelecting && !!note.path}
+			onDragStart={onDragStart}
+			onDragEnd={onDragEnd}
+			onDragOver={onDragOver}
+			onDrop={onDrop}
+			style={{
+				position: "absolute",
+				top: `${offsetTop}px`,
+				left: 0,
+				right: 0,
+				height: "36px",
+			}}
+		>
+			<NoteRow
+				note={note}
+				onContextMenu={handleContextMenu}
+				onNavigate={onNavigate}
+				onStudy={onStudy}
+				onCustomStudy={onCustomStudy}
+				onProjectClick={onProjectClick}
+				onPresetClick={onPresetClick}
+				onArchive={onArchive}
+				onUnarchive={onUnarchive}
+				isSelectionMode={isSelecting}
+				isSelected={isSelected}
+				onToggleSelect={onToggleSelect}
+				onEnterSelection={onEnterSelection}
+			/>
 		</div>
 	);
 }

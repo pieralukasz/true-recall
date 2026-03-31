@@ -1,6 +1,10 @@
 import type { ApiContext, ApiRequest, ApiResponseWriter } from "../api.types";
 import { parseJsonBody, readBody, sendError, sendOk } from "../api.types";
 
+function nameFromPath(path: string): string {
+	return path.split("/").pop()?.replace(/\.md$/, "") ?? path;
+}
+
 export async function handleAddFlashcardUid(
 	_req: ApiRequest,
 	res: ApiResponseWriter,
@@ -71,10 +75,7 @@ export async function handleSetPresetForNote(
 
 	const frontmatterService =
 		ctx.plugin.flashcardManager.getFrontmatterService();
-	await frontmatterService.setFsrsPreset(
-		abstractFile.path,
-		body.preset_name,
-	);
+	await frontmatterService.setFsrsPreset(abstractFile.path, body.preset_name);
 
 	sendOk(res, {
 		path: filePath,
@@ -170,10 +171,83 @@ export async function handleSetArchive(
 
 	const frontmatterService =
 		ctx.plugin.flashcardManager.getFrontmatterService();
-	await frontmatterService.setArchive(
-		abstractFile.path,
-		body.archived,
-	);
+	await frontmatterService.setArchive(abstractFile.path, body.archived);
 
 	sendOk(res, { path: filePath, archived: body.archived });
+}
+
+export async function handleDissolveProject(
+	req: ApiRequest,
+	res: ApiResponseWriter,
+	ctx: ApiContext,
+): Promise<void> {
+	const raw = await readBody(req);
+	const body = parseJsonBody<{ path?: string }>(raw);
+	if (!body?.path) {
+		sendError(res, 400, "Body must contain { path: string }");
+		return;
+	}
+
+	const childPaths = ctx.plugin.hierarchyService.getChildPaths(body.path);
+	if (childPaths.length === 0) {
+		sendError(res, 404, `No children found for project: ${body.path}`);
+		return;
+	}
+
+	const parentName = nameFromPath(body.path);
+	const frontmatterService =
+		ctx.plugin.flashcardManager.getFrontmatterService();
+	const count = await frontmatterService.dissolveProject(
+		childPaths,
+		parentName,
+	);
+
+	ctx.plugin.hierarchyService.invalidateGraph();
+	ctx.plugin.dataLayer?.invalidateGroups(["cards", "dashboard", "review"]);
+
+	sendOk(res, { path: body.path, dissolved: count });
+}
+
+export async function handleMoveChildren(
+	req: ApiRequest,
+	res: ApiResponseWriter,
+	ctx: ApiContext,
+): Promise<void> {
+	const raw = await readBody(req);
+	const body = parseJsonBody<{
+		path?: string;
+		target_parent_name: string;
+	}>(raw);
+	if (!body?.path || !body.target_parent_name) {
+		sendError(
+			res,
+			400,
+			"Body must contain { path: string, target_parent_name: string }",
+		);
+		return;
+	}
+
+	const childPaths = ctx.plugin.hierarchyService.getChildPaths(body.path);
+	if (childPaths.length === 0) {
+		sendError(res, 404, `No children found for project: ${body.path}`);
+		return;
+	}
+
+	const fromName = nameFromPath(body.path);
+	const frontmatterService =
+		ctx.plugin.flashcardManager.getFrontmatterService();
+	const count = await frontmatterService.moveChildren(
+		childPaths,
+		fromName,
+		body.target_parent_name,
+	);
+
+	ctx.plugin.hierarchyService.invalidateGraph();
+	ctx.plugin.dataLayer?.invalidateGroups(["cards", "dashboard", "review"]);
+
+	sendOk(res, {
+		path: body.path,
+		targetParent: body.target_parent_name,
+		moved: count,
+	});
 }

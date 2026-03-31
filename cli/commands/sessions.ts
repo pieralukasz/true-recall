@@ -25,7 +25,8 @@ export const sessionCommands: CommandDef[] = [
 			},
 			source_uid: {
 				type: "string",
-				description: "For custom mode: scope to a specific source note",
+				description:
+					"For custom mode: source note UID (flashcard_uid from note frontmatter, e.g. 'b5a5a6d6')",
 			},
 			card_limit: {
 				type: "number",

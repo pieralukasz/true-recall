@@ -19,7 +19,8 @@ export class UpdateCardCommand implements Command {
 	}
 
 	undo(ctx: CommandContext): void {
-		ctx.flashcardManager.updateCardContent(
+		// Bypass duplicate check — restoring previous content is always valid
+		ctx.cardStore.cards.updateCardContent(
 			this.cardId,
 			this.previousQuestion,
 			this.previousAnswer,

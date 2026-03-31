@@ -12,7 +12,8 @@ export const exportCommands: CommandDef[] = [
 		{
 			source_uids: {
 				type: "json",
-				description: "JSON array of source UIDs to filter by",
+				description:
+					"JSON array of source UIDs to filter by (flashcard_uid values from note frontmatter)",
 			},
 			include_scheduling: {
 				type: "boolean",

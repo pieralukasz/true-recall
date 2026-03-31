@@ -17,7 +17,12 @@ export const cardTools: ToolDef[] = [
 				.enum(["new", "learning", "review", "relearning"])
 				.optional()
 				.describe("Filter by card state"),
-			source_uid: z.string().optional().describe("Filter by source note UID"),
+			source_uid: z
+				.string()
+				.optional()
+				.describe(
+					"Filter by source note UID (flashcard_uid from note frontmatter, e.g. 'b5a5a6d6')",
+				),
 			limit: z
 				.number()
 				.optional()
@@ -68,7 +73,9 @@ export const cardTools: ToolDef[] = [
 			source_uid: z
 				.string()
 				.optional()
-				.describe("Source note UID to link this card to an Obsidian note"),
+				.describe(
+					"Source note UID (flashcard_uid from note frontmatter, e.g. 'b5a5a6d6')",
+				),
 			source_text: z
 				.string()
 				.optional()
@@ -102,7 +109,9 @@ export const cardTools: ToolDef[] = [
 			source_uid: z
 				.string()
 				.optional()
-				.describe("Source note UID to link all cards to"),
+				.describe(
+					"Source note UID to link all cards to (flashcard_uid from note frontmatter, e.g. 'b5a5a6d6')",
+				),
 		},
 	),
 ];

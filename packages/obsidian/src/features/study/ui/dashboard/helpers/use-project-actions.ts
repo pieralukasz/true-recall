@@ -1,7 +1,63 @@
+import type { HierarchyTreeNode } from "@true-recall/core/services/notes/hierarchy.service";
+import { mutate } from "@true-recall/obsidian/data";
+import { confirm } from "@true-recall/obsidian/modals/shared/ConfirmModal";
 import { RenameModal } from "@true-recall/obsidian/modals/study/RenameModal";
 import { usePlugin } from "@true-recall/obsidian/preact";
-import { Notice, normalizePath, TFile, TFolder } from "obsidian";
+import type { App } from "obsidian";
+import { Notice, normalizePath, SuggestModal, TFile, TFolder } from "obsidian";
 import { useCallback } from "preact/hooks";
+
+class ProjectSuggestModal extends SuggestModal<HierarchyTreeNode> {
+	private resolve: ((node: HierarchyTreeNode | null) => void) | null = null;
+
+	constructor(
+		app: App,
+		private nodes: HierarchyTreeNode[],
+	) {
+		super(app);
+		this.setPlaceholder("Choose target project...");
+	}
+
+	openAndWait(): Promise<HierarchyTreeNode | null> {
+		return new Promise((resolve) => {
+			this.resolve = resolve;
+			this.open();
+		});
+	}
+
+	onClose(): void {
+		this.resolve?.(null);
+		this.resolve = null;
+	}
+
+	getSuggestions(query: string): HierarchyTreeNode[] {
+		const q = query.toLowerCase();
+		return q
+			? this.nodes.filter((n) => n.name.toLowerCase().includes(q))
+			: this.nodes;
+	}
+
+	renderSuggestion(item: HierarchyTreeNode, el: HTMLElement): void {
+		el.setText(item.name);
+	}
+
+	onChooseSuggestion(item: HierarchyTreeNode): void {
+		this.resolve?.(item);
+		this.resolve = null;
+	}
+}
+
+function flattenNodes(nodes: HierarchyTreeNode[]): HierarchyTreeNode[] {
+	const result: HierarchyTreeNode[] = [];
+	const walk = (list: HierarchyTreeNode[]) => {
+		for (const n of list) {
+			result.push(n);
+			walk(n.children);
+		}
+	};
+	walk(nodes);
+	return result;
+}
 
 export function useProjectActions() {
 	const plugin = usePlugin();
@@ -46,5 +102,65 @@ export function useProjectActions() {
 		[plugin],
 	);
 
-	return { handleArchive, handleRename };
+	const handleDissolve = useCallback(
+		async (path: string) => {
+			const childPaths = plugin.hierarchyService.getChildPaths(path);
+			if (childPaths.length === 0) {
+				new Notice("This project has no children.");
+				return;
+			}
+
+			const projectName = path.split("/").pop()?.replace(/\.md$/, "") ?? path;
+			const confirmed = await confirm(plugin.app, {
+				title: "Dissolve project",
+				message: `This will detach ${childPaths.length} note${childPaths.length > 1 ? "s" : ""} from "${projectName}". The notes and their cards will remain but become unassigned.`,
+				confirmLabel: "Dissolve",
+			});
+			if (!confirmed) return;
+
+			const frontmatterService =
+				plugin.flashcardManager.getFrontmatterService();
+			await mutate("hierarchy:changed", () =>
+				frontmatterService.dissolveProject(childPaths, projectName),
+			);
+			plugin.hierarchyService.invalidateGraph();
+			new Notice(
+				`Dissolved "${projectName}" — ${childPaths.length} notes detached.`,
+			);
+		},
+		[plugin],
+	);
+
+	const handleMoveChildren = useCallback(
+		async (path: string) => {
+			const childPaths = plugin.hierarchyService.getChildPaths(path);
+			if (childPaths.length === 0) {
+				new Notice("This project has no children.");
+				return;
+			}
+
+			const hierarchy = plugin.hierarchyService.buildHierarchy();
+			const allNodes = flattenNodes(hierarchy).filter((n) => n.path !== path);
+			if (allNodes.length === 0) {
+				new Notice("No other projects available.");
+				return;
+			}
+
+			const modal = new ProjectSuggestModal(plugin.app, allNodes);
+			const target = await modal.openAndWait();
+			if (!target) return;
+
+			const fromName = path.split("/").pop()?.replace(/\.md$/, "") ?? path;
+			const frontmatterService =
+				plugin.flashcardManager.getFrontmatterService();
+			await mutate("hierarchy:changed", () =>
+				frontmatterService.moveChildren(childPaths, fromName, target.name),
+			);
+			plugin.hierarchyService.invalidateGraph();
+			new Notice(`Moved ${childPaths.length} notes to "${target.name}".`);
+		},
+		[plugin],
+	);
+
+	return { handleArchive, handleRename, handleDissolve, handleMoveChildren };
 }

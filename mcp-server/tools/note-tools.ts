@@ -56,4 +56,25 @@ export const noteTools: ToolDef[] = [
 				.describe("Note file path. If omitted, uses the active note."),
 		},
 	),
+
+	postParams(
+		"dissolve_project",
+		"Dissolve a project by removing all parent references from its children. Children become unassigned notes.",
+		"/notes/dissolve-project",
+		{
+			path: z.string().describe("Project note file path"),
+		},
+	),
+
+	postParams(
+		"move_project_children",
+		"Move all children from one project to another. Removes old parent and adds new parent for each child note.",
+		"/notes/move-children",
+		{
+			path: z.string().describe("Source project note file path"),
+			target_parent_name: z
+				.string()
+				.describe("Name of the target project note (without .md)"),
+		},
+	),
 ];

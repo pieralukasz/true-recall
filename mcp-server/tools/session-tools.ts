@@ -22,7 +22,9 @@ export const sessionTools: ToolDef[] = [
 			source_uid: z
 				.string()
 				.optional()
-				.describe("For custom mode: scope to a specific source note"),
+				.describe(
+					"For custom mode: source note UID (flashcard_uid from note frontmatter, e.g. 'b5a5a6d6')",
+				),
 			card_limit: z
 				.number()
 				.optional()
@@ -93,7 +95,9 @@ export const sessionTools: ToolDef[] = [
 			source_uid: z
 				.string()
 				.optional()
-				.describe("Source note UID. If omitted, uses path or active note."),
+				.describe(
+					"Source note UID (flashcard_uid from note frontmatter, e.g. 'b5a5a6d6'). If omitted, uses path or active note.",
+				),
 			path: z
 				.string()
 				.optional()

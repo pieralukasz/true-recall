@@ -8,10 +8,16 @@ export const dashboardTools: ToolDef[] = [
 		"/dashboard",
 	),
 
-	get(
+	getWith(
 		"get_projects",
-		"Get the project/deck hierarchy tree with aggregate stats (total cards, due, new, learning, overdue counts per project). Returns summary without per-note member details. Use get_project for a detailed breakdown of a specific project.",
-		"/projects",
+		"Get the project/deck hierarchy tree with aggregate stats (total cards, due, new, learning, overdue counts per project). Excludes archived projects by default. Returns summary without per-note member details. Use get_project for a detailed breakdown of a specific project.",
+		{
+			archived: z
+				.boolean()
+				.optional()
+				.describe("Include archived projects (default: false)"),
+		},
+		(p) => (p.archived ? "/projects?archived=true" : "/projects"),
 	),
 
 	getWith(

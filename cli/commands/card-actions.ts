@@ -77,7 +77,8 @@ export const cardActionCommands: CommandDef[] = [
 		{
 			source_uid: {
 				type: "string",
-				description: "Source note UID. If omitted, uses path or active note.",
+				description:
+					"Source note UID (flashcard_uid from note frontmatter, e.g. 'b5a5a6d6'). If omitted, uses path or active note.",
 			},
 			path: {
 				type: "string",

@@ -21,7 +21,7 @@ export const navigationTools: ToolDef[] = [
 				.string()
 				.optional()
 				.describe(
-					"For card-browser: filter to cards from this source note UID",
+					"For card-browser: source note UID (flashcard_uid from note frontmatter, e.g. 'b5a5a6d6')",
 				),
 		},
 	),

@@ -15,7 +15,11 @@ export const cardCommands: CommandDef[] = [
 				description: "Filter by card state",
 				enum: ["new", "learning", "review", "relearning"],
 			},
-			source_uid: { type: "string", description: "Filter by source note UID" },
+			source_uid: {
+				type: "string",
+				description:
+					"Filter by source note UID (flashcard_uid from note frontmatter, e.g. 'b5a5a6d6')",
+			},
 			limit: {
 				type: "number",
 				description: "Max cards to return (max 200)",
@@ -122,7 +126,11 @@ export const cardCommands: CommandDef[] = [
 				description: "The answer (back of card)",
 				required: true,
 			},
-			source_uid: { type: "string", description: "Source note UID to link to" },
+			source_uid: {
+				type: "string",
+				description:
+					"Source note UID to link to (flashcard_uid from note frontmatter, e.g. 'b5a5a6d6')",
+			},
 			source_text: {
 				type: "string",
 				description: "Original text that generated this card",
@@ -150,7 +158,8 @@ export const cardCommands: CommandDef[] = [
 			},
 			source_uid: {
 				type: "string",
-				description: "Source note UID to link all cards to",
+				description:
+					"Source note UID to link all cards to (flashcard_uid from note frontmatter, e.g. 'b5a5a6d6')",
 			},
 		},
 	),

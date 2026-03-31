@@ -33,16 +33,26 @@ import {
 	handleGetProject,
 	handleGetProjects,
 } from "./handlers/dashboard";
+import { handleExportCsv } from "./handlers/export";
 import {
 	handleCreatePreset,
 	handleGetFsrsStats,
 	handleGetPresets,
 } from "./handlers/fsrs";
+import {
+	handleGetRetrievability,
+	handleGetSchedulingPreview,
+	handleGetWorkloadForecast,
+	handleOptimizeParameters,
+	handleSimulateReviews,
+} from "./handlers/fsrs-advanced";
 import { handleGetFullContext } from "./handlers/full-context";
 import { handleGenerate, handleGetNoteTypes } from "./handlers/generate";
 import { handleOpenNote, handleOpenView } from "./handlers/navigation";
 import {
 	handleAddFlashcardUid,
+	handleDissolveProject,
+	handleMoveChildren,
 	handleSetArchive,
 	handleSetParent,
 	handleSetPresetForNote,
@@ -153,6 +163,8 @@ const routes: Route[] = [
 	route("POST", "/notes/set-preset", handleSetPresetForNote),
 	route("POST", "/notes/set-parent", handleSetParent),
 	route("POST", "/notes/set-archive", handleSetArchive),
+	route("POST", "/notes/dissolve-project", handleDissolveProject),
+	route("POST", "/notes/move-children", handleMoveChildren),
 
 	// Backup & Integrity
 	route("POST", "/backups/create", handleCreateBackup),
@@ -167,6 +179,16 @@ const routes: Route[] = [
 	route("POST", "/rag/search", handleRagSearch),
 	route("POST", "/rag/index", handleRagIndex),
 	route("GET", "/rag/status", handleRagStatus),
+
+	// Export
+	route("POST", "/export/csv", handleExportCsv),
+
+	// FSRS Advanced
+	route("GET", "/fsrs/optimize", handleOptimizeParameters),
+	route("POST", "/fsrs/simulate", handleSimulateReviews),
+	route("GET", "/fsrs/forecast", handleGetWorkloadForecast),
+	route("GET", "/cards/:id/retrievability", handleGetRetrievability),
+	route("GET", "/cards/:id/preview", handleGetSchedulingPreview),
 ];
 
 export async function dispatch(

@@ -82,14 +82,19 @@ export class FrontmatterService {
 		return crypto.randomUUID().replace(/-/g, "").slice(0, this.UID_LENGTH);
 	}
 
-	async getSourceNoteUid(filePath: string | { path: string }): Promise<string | null> {
+	async getSourceNoteUid(
+		filePath: string | { path: string },
+	): Promise<string | null> {
 		const p = typeof filePath === "string" ? filePath : filePath.path;
 		const content = await this.fileSystem.read(p);
 		const match = content.match(FrontmatterService.UID_FIELD_REGEX);
 		return match?.[1] ?? null;
 	}
 
-	async setSourceNoteUid(filePath: string | { path: string }, uid: string): Promise<void> {
+	async setSourceNoteUid(
+		filePath: string | { path: string },
+		uid: string,
+	): Promise<void> {
 		const p = typeof filePath === "string" ? filePath : filePath.path;
 		await this.frontmatter.update(p, {
 			[this.SOURCE_UID_FIELD]: uid,
@@ -120,9 +125,7 @@ export class FrontmatterService {
 		const existing: string[] = Array.isArray(fm.parents)
 			? (fm.parents as string[])
 			: [];
-		const names = new Set(
-			existing.map((p) => p.replace(/^\[\[|\]\]$/g, "")),
-		);
+		const names = new Set(existing.map((p) => p.replace(/^\[\[|\]\]$/g, "")));
 		if (!names.has(parentName)) {
 			existing.push(`[[${parentName}]]`);
 		}
@@ -142,6 +145,32 @@ export class FrontmatterService {
 		} else {
 			await this.frontmatter.update(filePath, { parents: filtered });
 		}
+	}
+
+	async dissolveProject(
+		childPaths: string[],
+		parentName: string,
+	): Promise<number> {
+		let count = 0;
+		for (const childPath of childPaths) {
+			await this.removeParent(childPath, parentName);
+			count++;
+		}
+		return count;
+	}
+
+	async moveChildren(
+		childPaths: string[],
+		fromParent: string,
+		toParent: string,
+	): Promise<number> {
+		let count = 0;
+		for (const childPath of childPaths) {
+			await this.removeParent(childPath, fromParent);
+			await this.addParent(childPath, toParent);
+			count++;
+		}
+		return count;
 	}
 
 	/**

@@ -16,7 +16,9 @@ import {
 	collectMatchingPaths,
 	flattenProjectTree,
 } from "../helpers/project-tree-flatten";
+import { useNoteContextMenu } from "../helpers/use-note-context-menu";
 import { useProjectActions } from "../helpers/use-project-actions";
+import { useProjectContextMenu } from "../helpers/use-project-context-menu";
 import { useProjectDragDrop } from "../helpers/use-project-drag-drop";
 import { useExternalVirtualList } from "../helpers/use-virtual-list";
 import type { DashboardProject } from "../types";
@@ -42,7 +44,8 @@ export function ProjectsTab({
 	const expandedPaths = useSignal<ReadonlySet<string>>(new Set());
 	const contentRef = useRef<HTMLDivElement>(null);
 
-	const { handleArchive, handleRename } = useProjectActions();
+	const { handleArchive, handleRename, handleDissolve, handleMoveChildren } =
+		useProjectActions();
 	const {
 		dragState,
 		handleDragStart,
@@ -114,6 +117,8 @@ export function ProjectsTab({
 								onToggleExpand={toggleExpand}
 								onArchive={handleArchive}
 								onRename={handleRename}
+								onDissolve={handleDissolve}
+								onMoveChildren={handleMoveChildren}
 								onDragStart={handleDragStart}
 								onDragEnd={handleDragEnd}
 								onDragOver={handleDragOver}
@@ -177,6 +182,8 @@ interface ProjectHeaderItemProps {
 	onToggleExpand: (path: string) => void;
 	onArchive: (path: string, archived: boolean) => void;
 	onRename: (path: string) => Promise<void>;
+	onDissolve: (path: string) => Promise<void>;
+	onMoveChildren: (path: string) => Promise<void>;
 	onDragStart: (e: DragEvent, item: FlatProjectItem) => void;
 	onDragEnd: () => void;
 	onDragOver: (e: DragEvent, item: FlatProjectItem) => void;
@@ -192,6 +199,8 @@ function ProjectHeaderItem({
 	onToggleExpand,
 	onArchive,
 	onRename,
+	onDissolve,
+	onMoveChildren,
 	onDragStart,
 	onDragEnd,
 	onDragOver,
@@ -199,6 +208,51 @@ function ProjectHeaderItem({
 }: ProjectHeaderItemProps) {
 	const isVirtual = item.project.path === UNASSIGNED_PATH;
 	const dragCls = getDragClass(dragState.value, item.project.path);
+
+	const handleStudyProject = () => {
+		if (isVirtual) {
+			void plugin.openCustomStudyModal({
+				sourceNoteFilters: item.project.memberNotes.map((m) => m.name),
+				scopeLabel: "Unassigned",
+			});
+		} else {
+			void plugin.startReview({
+				mode: "project",
+				projectPath: item.project.path,
+			});
+		}
+	};
+
+	const handleCustomStudy = () => {
+		void plugin.openCustomStudyModal({
+			sourceNoteFilters: item.project.memberNotes.map((m) => m.name),
+			scopeLabel: item.project.name,
+		});
+	};
+
+	const handleContextMenu = useProjectContextMenu({
+		project: item.project,
+		isVirtual,
+		onStudyProject: handleStudyProject,
+		onCustomStudy: handleCustomStudy,
+		onNavigate: isVirtual
+			? undefined
+			: () => void plugin.app.workspace.openLinkText(item.project.name, ""),
+		onPresetClick: isVirtual
+			? undefined
+			: () => onPresetClick?.(item.project.path),
+		onRename: isVirtual ? undefined : () => void onRename(item.project.path),
+		onArchive: isVirtual ? undefined : () => onArchive(item.project.path, true),
+		onUnarchive: isVirtual
+			? undefined
+			: () => onArchive(item.project.path, false),
+		onDissolve: isVirtual
+			? undefined
+			: () => void onDissolve(item.project.path),
+		onMoveChildren: isVirtual
+			? undefined
+			: () => void onMoveChildren(item.project.path),
+	});
 
 	return (
 		<div
@@ -223,25 +277,9 @@ function ProjectHeaderItem({
 				isExpanded={item.isExpanded}
 				isVirtual={isVirtual}
 				onToggle={() => onToggleExpand(item.project.path)}
-				onStudyProject={() => {
-					if (isVirtual) {
-						void plugin.openCustomStudyModal({
-							sourceNoteFilters: item.project.memberNotes.map((m) => m.name),
-							scopeLabel: "Unassigned",
-						});
-					} else {
-						void plugin.startReview({
-							mode: "project",
-							projectPath: item.project.path,
-						});
-					}
-				}}
-				onCustomStudy={() => {
-					void plugin.openCustomStudyModal({
-						sourceNoteFilters: item.project.memberNotes.map((m) => m.name),
-						scopeLabel: item.project.name,
-					});
-				}}
+				onStudyProject={handleStudyProject}
+				onCustomStudy={handleCustomStudy}
+				onContextMenu={handleContextMenu}
 				onNavigate={
 					isVirtual
 						? undefined
@@ -295,6 +333,44 @@ function NoteItem({
 }: NoteItemProps) {
 	const dragCls = getDragClass(dragState.value, item.note.path);
 
+	const handleNavigate = () =>
+		void plugin.app.workspace.openLinkText(item.note.name, "");
+
+	const handleStudy = () => onStudyNote(item.note.name, item.projectPath);
+
+	const handleCustomStudy = () => {
+		void plugin.openCustomStudyModal({
+			sourceNoteFilters: [item.note.name],
+			scopeLabel: item.note.name,
+		});
+	};
+
+	const handleDetach =
+		item.projectPath !== UNASSIGNED_PATH
+			? () => {
+					if (!item.note.path) return;
+					const file = plugin.app.vault.getAbstractFileByPath(item.note.path);
+					if (!(file instanceof TFile)) return;
+					const parentName =
+						item.projectPath.split("/").pop()?.replace(/\.md$/, "") ?? "";
+					void plugin.flashcardManager
+						.getFrontmatterService()
+						.removeParent(file.path, parentName);
+				}
+			: undefined;
+
+	const notePath = item.note.path;
+	const handleContextMenu = useNoteContextMenu({
+		note: item.note,
+		onStudy: handleStudy,
+		onCustomStudy: handleCustomStudy,
+		onNavigate: handleNavigate,
+		onRename: notePath ? () => void onRename(notePath) : undefined,
+		onArchive: notePath ? () => onArchive(notePath, true) : undefined,
+		onUnarchive: notePath ? () => onArchive(notePath, false) : undefined,
+		onDetach: handleDetach,
+	});
+
 	return (
 		<div
 			role="listitem"
@@ -315,16 +391,10 @@ function NoteItem({
 		>
 			<NoteRow
 				note={item.note}
-				onNavigate={() =>
-					void plugin.app.workspace.openLinkText(item.note.name, "")
-				}
-				onStudy={() => onStudyNote(item.note.name, item.projectPath)}
-				onCustomStudy={() => {
-					void plugin.openCustomStudyModal({
-						sourceNoteFilters: [item.note.name],
-						scopeLabel: item.note.name,
-					});
-				}}
+				onContextMenu={handleContextMenu}
+				onNavigate={handleNavigate}
+				onStudy={handleStudy}
+				onCustomStudy={handleCustomStudy}
 				onPresetClick={onPresetClick}
 				onArchive={() =>
 					item.note.path ? onArchive(item.note.path, true) : undefined
@@ -335,22 +405,7 @@ function NoteItem({
 				onRename={() =>
 					item.note.path ? void onRename(item.note.path) : undefined
 				}
-				onDetach={
-					item.projectPath !== UNASSIGNED_PATH
-						? () => {
-								if (!item.note.path) return;
-								const file = plugin.app.vault.getAbstractFileByPath(
-									item.note.path,
-								);
-								if (!(file instanceof TFile)) return;
-								const parentName =
-									item.projectPath.split("/").pop()?.replace(/\.md$/, "") ?? "";
-								void plugin.flashcardManager
-									.getFrontmatterService()
-									.removeParent(file.path, parentName);
-							}
-						: undefined
-				}
+				onDetach={handleDetach}
 			/>
 		</div>
 	);

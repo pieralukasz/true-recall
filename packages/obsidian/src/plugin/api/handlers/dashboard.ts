@@ -39,16 +39,25 @@ export function handleGetDashboard(
 		archivedSourceUids: archivedUids,
 	});
 
-	// Build project stats
+	// Build project stats (exclude archived by default, matching UI behavior)
 	const hierarchy = ctx.plugin.hierarchyService.buildHierarchy();
 	const cardsBySourceUid = buildCardsBySourceUid(allCards);
 	const now = new Date();
 
-	const projects = hierarchy.map((node) =>
-		buildProjectWithStats(node, ctx, cardsBySourceUid, aggregation.notes, now, {
-			includeMembers: false,
-		}),
-	);
+	const projects = hierarchy
+		.map((node) =>
+			buildProjectWithStats(
+				node,
+				ctx,
+				cardsBySourceUid,
+				aggregation.notes,
+				now,
+				{
+					includeMembers: false,
+				},
+			),
+		)
+		.filter((p) => !ctx.plugin.hierarchyService.isProjectArchived(p.path));
 
 	sendOk(res, {
 		totalCards: aggregation.totalCards,
@@ -236,7 +245,7 @@ function buildProjectWithStats(
 }
 
 export function handleGetProjects(
-	_req: ApiRequest,
+	req: ApiRequest,
 	res: ApiResponseWriter,
 	ctx: ApiContext,
 ): void {
@@ -244,6 +253,9 @@ export function handleGetProjects(
 		sendError(res, 503, "Database not ready");
 		return;
 	}
+
+	const url = new URL(req.url ?? "/", "http://localhost");
+	const showArchived = url.searchParams.get("archived") === "true";
 
 	const allCards = ctx.plugin.flashcardManager.getAllFSRSCards();
 	const hierarchy = ctx.plugin.hierarchyService.buildHierarchy();
@@ -266,13 +278,28 @@ export function handleGetProjects(
 		archivedSourceUids: ctx.plugin.hierarchyService.getArchivedSourceUids(),
 	});
 
-	const projects = hierarchy.map((node) =>
+	const allProjects = hierarchy.map((node) =>
 		buildProjectWithStats(node, ctx, cardsBySourceUid, aggregation.notes, now, {
 			includeMembers: false,
 		}),
 	);
 
-	sendOk(res, projects);
+	if (showArchived) {
+		sendOk(
+			res,
+			allProjects.map((p) => ({
+				...p,
+				archived: ctx.plugin.hierarchyService.isProjectArchived(p.path),
+			})),
+		);
+	} else {
+		sendOk(
+			res,
+			allProjects.filter(
+				(p) => !ctx.plugin.hierarchyService.isProjectArchived(p.path),
+			),
+		);
+	}
 }
 
 function findProjectNode(

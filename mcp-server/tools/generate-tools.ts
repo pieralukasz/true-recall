@@ -22,7 +22,7 @@ export const generateTools: ToolDef[] = [
 				.string()
 				.optional()
 				.describe(
-					"Source note UID to link cards to. If omitted, links to the currently active note.",
+					"Source note UID to link cards to (flashcard_uid from note frontmatter, e.g. 'b5a5a6d6'). If omitted, links to the currently active note.",
 				),
 		},
 	),
