@@ -5,6 +5,11 @@
 	"type": "module",
 	"main": "src/index.ts",
 	"types": "src/index.ts",
+	"scripts": {
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"test:coverage": "vitest run --coverage"
+	},
 	"dependencies": {
 		"ts-fsrs": "^5.2.3",
 		"sql.js": "^1.14.1",
