@@ -1,6 +1,6 @@
 import type { NoteType } from "@true-recall/core/types/note.types";
 import { Clickable } from "@true-recall/obsidian/components";
-import { cn } from "@true-recall/ui/utils/cn";
+import { cn } from "@true-recall/obsidian/utils/cn";
 
 interface NoteTypeListProps {
 	noteTypes: NoteType[];

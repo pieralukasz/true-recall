@@ -98,7 +98,6 @@ const context = await esbuild.context({
 	metafile: true,
 	alias: {
 		"@true-recall/core": resolve("packages/core/src"),
-		"@true-recall/ui": resolve("packages/ui/src"),
 		"@true-recall/obsidian": resolve("packages/obsidian/src"),
 		// downshift imports from 'react' — redirect to preact/compat
 		react: "preact/compat",
