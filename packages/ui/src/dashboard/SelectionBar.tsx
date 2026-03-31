@@ -4,6 +4,7 @@ interface SelectionBarProps {
 	selectedCount: number;
 	onSelectAll: () => void;
 	onCreateProject: () => void;
+	onAssignToProject: () => void;
 	onArchive: () => void;
 	onStudy: () => void;
 	onCancel: () => void;
@@ -13,6 +14,7 @@ export function SelectionBar({
 	selectedCount,
 	onSelectAll,
 	onCreateProject,
+	onAssignToProject,
 	onArchive,
 	onStudy,
 	onCancel,
@@ -32,6 +34,13 @@ export function SelectionBar({
 				disabled={selectedCount === 0}
 			>
 				Create project
+			</Clickable>
+			<Clickable
+				class={btnCls}
+				onClick={onAssignToProject}
+				disabled={selectedCount === 0}
+			>
+				Assign to project
 			</Clickable>
 			<Clickable
 				class={btnCls}

@@ -7,7 +7,7 @@ import type { App } from "obsidian";
 import { Notice, normalizePath, SuggestModal, TFile, TFolder } from "obsidian";
 import { useCallback } from "preact/hooks";
 
-class ProjectSuggestModal extends SuggestModal<HierarchyTreeNode> {
+export class ProjectSuggestModal extends SuggestModal<HierarchyTreeNode> {
 	private resolve: ((node: HierarchyTreeNode | null) => void) | null = null;
 
 	constructor(
@@ -47,7 +47,7 @@ class ProjectSuggestModal extends SuggestModal<HierarchyTreeNode> {
 	}
 }
 
-function flattenNodes(nodes: HierarchyTreeNode[]): HierarchyTreeNode[] {
+export function flattenNodes(nodes: HierarchyTreeNode[]): HierarchyTreeNode[] {
 	const result: HierarchyTreeNode[] = [];
 	const walk = (list: HierarchyTreeNode[]) => {
 		for (const n of list) {
@@ -111,9 +111,16 @@ export function useProjectActions() {
 			}
 
 			const projectName = path.split("/").pop()?.replace(/\.md$/, "") ?? path;
+			const subProjects = childPaths.filter(
+				(cp) => plugin.hierarchyService.getChildPaths(cp).length > 0,
+			);
+			const subWarning =
+				subProjects.length > 0
+					? ` ${subProjects.length} sub-project${subProjects.length > 1 ? "s" : ""} will become root-level.`
+					: "";
 			const confirmed = await confirm(plugin.app, {
 				title: "Dissolve project",
-				message: `This will detach ${childPaths.length} note${childPaths.length > 1 ? "s" : ""} from "${projectName}". The notes and their cards will remain but become unassigned.`,
+				message: `This will detach ${childPaths.length} note${childPaths.length > 1 ? "s" : ""} from "${projectName}". The notes and their cards will remain but become unassigned.${subWarning}`,
 				confirmLabel: "Dissolve",
 			});
 			if (!confirmed) return;
@@ -151,6 +158,13 @@ export function useProjectActions() {
 			if (!target) return;
 
 			const fromName = path.split("/").pop()?.replace(/\.md$/, "") ?? path;
+			const confirmed = await confirm(plugin.app, {
+				title: "Move children",
+				message: `Move ${childPaths.length} note${childPaths.length > 1 ? "s" : ""} from "${fromName}" to "${target.name}"?`,
+				confirmLabel: "Move",
+			});
+			if (!confirmed) return;
+
 			const frontmatterService =
 				plugin.flashcardManager.getFrontmatterService();
 			await mutate("hierarchy:changed", () =>

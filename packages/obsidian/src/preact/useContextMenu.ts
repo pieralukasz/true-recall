@@ -7,7 +7,37 @@ export interface MenuAction {
 	onClick: () => void;
 }
 
-export type MenuItem = MenuAction | "separator";
+export interface MenuSubmenu {
+	title: string;
+	icon?: string;
+	children: MenuItem[];
+}
+
+export type MenuItem = MenuAction | MenuSubmenu | "separator";
+
+function isSubmenu(item: MenuAction | MenuSubmenu): item is MenuSubmenu {
+	return "children" in item;
+}
+
+function buildMenu(menu: Menu, items: MenuItem[]): void {
+	for (const entry of items) {
+		if (entry === "separator") {
+			menu.addSeparator();
+		} else if (isSubmenu(entry)) {
+			menu.addItem((mi) => {
+				mi.setTitle(entry.title);
+				if (entry.icon) mi.setIcon(entry.icon);
+				const sub = (mi as unknown as { setSubmenu: () => Menu }).setSubmenu();
+				buildMenu(sub, entry.children);
+			});
+		} else {
+			menu.addItem((mi) => {
+				mi.setTitle(entry.title).onClick(entry.onClick);
+				if (entry.icon) mi.setIcon(entry.icon);
+			});
+		}
+	}
+}
 
 /**
  * Returns a stable click handler that shows an Obsidian context menu
@@ -21,16 +51,7 @@ export function useContextMenu(items: MenuItem[]): (e: MouseEvent) => void {
 	return useCallback((e: MouseEvent) => {
 		e.stopPropagation();
 		const menu = new Menu();
-		for (const entry of itemsRef.current) {
-			if (entry === "separator") {
-				menu.addSeparator();
-			} else {
-				menu.addItem((mi) => {
-					mi.setTitle(entry.title).onClick(entry.onClick);
-					if (entry.icon) mi.setIcon(entry.icon);
-				});
-			}
-		}
+		buildMenu(menu, itemsRef.current);
 		menu.showAtMouseEvent(e);
 	}, []);
 }

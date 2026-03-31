@@ -53,6 +53,7 @@ export function NoteList({
 
 	const {
 		handleCreateProjectFromSelected,
+		handleAssignToProject,
 		handleArchiveSelected,
 		handleStudySelected,
 	} = useNoteBulkActions({ selectedPaths, filteredNotes, exitSelection });
@@ -133,6 +134,7 @@ export function NoteList({
 					selectedCount={selectedCount}
 					onSelectAll={selectAll}
 					onCreateProject={() => void handleCreateProjectFromSelected()}
+					onAssignToProject={() => void handleAssignToProject()}
 					onArchive={() => void handleArchiveSelected()}
 					onStudy={handleStudySelected}
 					onCancel={exitSelection}

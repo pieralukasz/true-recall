@@ -44,11 +44,6 @@ export function useProjectContextMenu({
 						icon: "file-text",
 						onClick: () => onNavigate?.(),
 					},
-					{
-						title: "Set preset",
-						icon: "settings",
-						onClick: () => onPresetClick?.(),
-					},
 					{ title: "Rename", icon: "pencil", onClick: () => onRename?.() },
 					project.archived
 						? {
@@ -63,14 +58,25 @@ export function useProjectContextMenu({
 							},
 					"separator" as const,
 					{
-						title: "Move children to…",
-						icon: "folder-input",
-						onClick: () => onMoveChildren?.(),
-					},
-					{
-						title: "Dissolve project",
-						icon: "unlink",
-						onClick: () => onDissolve?.(),
+						title: "Project",
+						icon: "folder-cog",
+						children: [
+							{
+								title: "Set preset",
+								icon: "settings",
+								onClick: () => onPresetClick?.(),
+							},
+							{
+								title: "Move children to…",
+								icon: "folder-input",
+								onClick: () => onMoveChildren?.(),
+							},
+							{
+								title: "Dissolve project",
+								icon: "unlink",
+								onClick: () => onDissolve?.(),
+							},
+						],
 					},
 				]
 			: []),
