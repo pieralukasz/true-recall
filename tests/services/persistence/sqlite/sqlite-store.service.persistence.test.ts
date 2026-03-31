@@ -1,6 +1,6 @@
 import { SqliteStoreService } from "../../../../src/features/core/persistence/sqlite/SqliteStoreService";
 import { SAVE_DEBOUNCE_MS } from "../../../../src/features/core/persistence/sqlite/sqlite.types";
-import type { App } from "obsidian";
+import type { IPersistence } from "../../../../packages/core/src/interfaces/persistence";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 describe("SqliteStoreService persistence durability", () => {
@@ -17,44 +17,45 @@ describe("SqliteStoreService persistence durability", () => {
 		onWrite?: () => void;
 		writeBinary?: (_path: string, _data: ArrayBuffer) => Promise<void>;
 	}) {
-		const adapter = {
+		const persistence: IPersistence = {
 			exists: vi.fn(async () => true),
 			mkdir: vi.fn(async () => {}),
 			writeBinary: vi.fn(
 				async (path: string, data: ArrayBuffer) =>
 					opts?.writeBinary?.(path, data) ?? opts?.onWrite?.(),
 			),
+			readBinary: vi.fn(async () => null),
+			read: vi.fn(async () => ""),
+			list: vi.fn(async () => ({ files: [], folders: [] })),
+			remove: vi.fn(async () => {}),
+			stat: vi.fn(async () => null),
 		};
 
-		const app = {
-			vault: { adapter },
-		} as unknown as App;
-
-		const store = new SqliteStoreService(app, "dev12345");
+		const store = new SqliteStoreService(persistence, "dev12345");
 		(store as unknown as { db: unknown }).db = {
 			isReady: () => true,
 			export: () => opts?.exportData ?? new Uint8Array([1, 2, 3, 4]),
 			close: () => {},
 		};
 
-		return { store, adapter };
+		return { store, persistence };
 	}
 
 	it("uses 5s debounce window instead of 60s", async () => {
-		const { store, adapter } = createStoreWithMocks();
+		const { store, persistence } = createStoreWithMocks();
 
 		(store as unknown as { markDirty: () => void }).markDirty();
 
 		await vi.advanceTimersByTimeAsync(SAVE_DEBOUNCE_MS - 1);
-		expect(adapter.writeBinary).not.toHaveBeenCalled();
+		expect(persistence.writeBinary).not.toHaveBeenCalled();
 
 		await vi.advanceTimersByTimeAsync(1);
-		expect(adapter.writeBinary).toHaveBeenCalledTimes(1);
+		expect(persistence.writeBinary).toHaveBeenCalledTimes(1);
 	});
 
 	it("preserves writes that happen during an in-flight flush", async () => {
 		let writeCount = 0;
-		const { store, adapter } = createStoreWithMocks({
+		const { store, persistence } = createStoreWithMocks({
 			onWrite: () => {
 				writeCount++;
 				if (writeCount === 1) {
@@ -67,23 +68,23 @@ describe("SqliteStoreService persistence durability", () => {
 		(store as unknown as { isDirty: boolean }).isDirty = true;
 
 		await (store as unknown as { doFlush: () => Promise<boolean> }).doFlush();
-		expect(adapter.writeBinary).toHaveBeenCalledTimes(1);
+		expect(persistence.writeBinary).toHaveBeenCalledTimes(1);
 
 		// Follow-up flush should run quickly (250ms), not after full debounce.
 		await vi.advanceTimersByTimeAsync(250);
-		expect(adapter.writeBinary).toHaveBeenCalledTimes(2);
+		expect(persistence.writeBinary).toHaveBeenCalledTimes(2);
 	});
 
 	it("writes exact byte range from Uint8Array views", async () => {
 		const oversized = new Uint8Array([9, 9, 9, 1, 2, 3, 4]);
 		const view = oversized.subarray(3); // [1,2,3,4] over bigger buffer
-		const { store, adapter } = createStoreWithMocks({ exportData: view });
+		const { store, persistence } = createStoreWithMocks({ exportData: view });
 
 		(store as unknown as { isDirty: boolean }).isDirty = true;
 		await (store as unknown as { doFlush: () => Promise<boolean> }).doFlush();
 
-		expect(adapter.writeBinary).toHaveBeenCalledTimes(1);
-		const arg = adapter.writeBinary.mock.calls[0]?.[1] as ArrayBuffer;
+		expect(persistence.writeBinary).toHaveBeenCalledTimes(1);
+		const arg = (persistence.writeBinary as ReturnType<typeof vi.fn>).mock.calls[0]?.[1] as ArrayBuffer;
 		expect(Array.from(new Uint8Array(arg))).toEqual([1, 2, 3, 4]);
 	});
 
@@ -92,7 +93,7 @@ describe("SqliteStoreService persistence durability", () => {
 		const writeGate = new Promise<void>((resolve) => {
 			releaseWrite = resolve;
 		});
-		const { store, adapter } = createStoreWithMocks({
+		const { store, persistence } = createStoreWithMocks({
 			writeBinary: async () => {
 				await writeGate;
 			},
@@ -113,7 +114,7 @@ describe("SqliteStoreService persistence durability", () => {
 		await saveNowPromise;
 
 		expect(settled).toBe(true);
-		expect(adapter.writeBinary).toHaveBeenCalledTimes(1);
+		expect(persistence.writeBinary).toHaveBeenCalledTimes(1);
 		expect((store as unknown as { isDirty: boolean }).isDirty).toBe(false);
 	});
 });

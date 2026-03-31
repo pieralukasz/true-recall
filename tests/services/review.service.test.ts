@@ -175,6 +175,7 @@ describe("ReviewService", () => {
 			});
 			const flashcardManager = {
 				updateCardFSRS: vi.fn(() => true),
+				getEventBus: vi.fn(() => ({ emit: vi.fn() })),
 			} as never;
 
 			const result = await reviewService.gradeCard(

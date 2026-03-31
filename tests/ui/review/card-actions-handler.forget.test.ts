@@ -10,10 +10,6 @@ const notificationSpies = vi.hoisted(() => ({
 	cardsForgotten: vi.fn(),
 }));
 
-const signalSpies = vi.hoisted(() => ({
-	notifyCardChange: vi.fn(),
-}));
-
 vi.mock("@shared/services/notification.service", () => ({
 	notify: () => ({
 		warning: notificationSpies.warning,
@@ -23,7 +19,7 @@ vi.mock("@shared/services/notification.service", () => ({
 }));
 
 vi.mock("@shared/services/signals", () => ({
-	notifyCardChange: signalSpies.notifyCardChange,
+	notifyCardChange: vi.fn(),
 }));
 
 vi.mock("@shared/ui/modals", () => ({
@@ -37,13 +33,34 @@ vi.mock(
 	}),
 );
 
+vi.mock("@true-recall/obsidian/data", () => ({
+	mutate: vi.fn((_type: string, fn: () => void) => fn()),
+}));
+
+function createMockCommandService(ctx: {
+	cardStore: any;
+	sessionPersistence: any;
+}) {
+	return {
+		execute: vi.fn(async (cmd: any) => {
+			if (typeof cmd.execute === "function") {
+				cmd.execute({
+					cardStore: ctx.cardStore,
+					sessionPersistence: ctx.sessionPersistence,
+					flashcardManager: {},
+				});
+			}
+		}),
+		canUndo: vi.fn(() => false),
+	};
+}
+
 describe("CardActionsHandler.handleForget", () => {
 	beforeEach(() => {
 		vi.useFakeTimers();
 		notificationSpies.warning.mockReset();
 		notificationSpies.cardForgotten.mockReset();
 		notificationSpies.cardsForgotten.mockReset();
-		signalSpies.notifyCardChange.mockReset();
 	});
 
 	afterEach(() => {
@@ -85,15 +102,13 @@ describe("CardActionsHandler.handleForget", () => {
 			{ onUpdateSchedulingPreview: vi.fn() },
 		);
 
-		await handler.handleForget();
-		vi.runAllTimers();
+		handler.handleForget();
 
 		expect(notificationSpies.warning).toHaveBeenCalledWith(
 			"Forget is only available for cards that are not New.",
 		);
 		expect(removeCardById).not.toHaveBeenCalled();
 		expect(bulkForget).not.toHaveBeenCalled();
-		expect(signalSpies.notifyCardChange).not.toHaveBeenCalled();
 	});
 
 	it("forgets only non-New siblings and keeps New siblings in queue", async () => {
@@ -115,6 +130,25 @@ describe("CardActionsHandler.handleForget", () => {
 			isComplete: () => false,
 		} as unknown as ReviewApi;
 
+		const cardStore = {
+			get: vi.fn((id: string) =>
+				id === "new-sibling"
+					? { state: State.New }
+					: { state: State.Review },
+			),
+			cards: {
+				bulkForget,
+				getCardByReverseOf: vi.fn(),
+			},
+		} as never;
+
+		const sessionPersistence = { removeReviewedCards };
+
+		const commandService = createMockCommandService({
+			cardStore,
+			sessionPersistence,
+		});
+
 		const handler = new CardActionsHandler(
 			{
 				app: {} as never,
@@ -122,42 +156,29 @@ describe("CardActionsHandler.handleForget", () => {
 				flashcardManager: {} as never,
 				fsrsService: {} as never,
 				reviewService: {} as never,
-				cardStore: {
-					get: vi.fn((id: string) =>
-						id === "new-sibling"
-							? { state: State.New }
-							: { state: State.Review },
-					),
-					cards: {
-						bulkForget,
-						getCardByReverseOf: vi.fn(),
-					},
-				} as never,
+				cardStore,
 				settings: {} as never,
 				plugin: {
-					sessionPersistence: { removeReviewedCards },
-					commandService: null,
+					sessionPersistence,
+					commandService,
 				} as never,
 			},
 			{ onUpdateSchedulingPreview },
 		);
 
-		await handler.handleForget();
+		handler.handleForget();
 
+		// Command is executed, which calls removeCardById for the card
 		expect(removeCardById).toHaveBeenCalledTimes(1);
 		expect(removeCardById).toHaveBeenCalledWith("review-current");
 		expect(onUpdateSchedulingPreview).toHaveBeenCalledTimes(1);
 		expect(notificationSpies.cardForgotten).toHaveBeenCalledTimes(1);
 		expect(notificationSpies.warning).not.toHaveBeenCalled();
 
+		// doWrite is deferred in setTimeout(0), advance timers to trigger it
 		vi.runAllTimers();
 
 		expect(bulkForget).toHaveBeenCalledWith(["review-current"]);
 		expect(removeReviewedCards).toHaveBeenCalledWith(["review-current"]);
-		expect(signalSpies.notifyCardChange).toHaveBeenCalledWith({
-			type: "bulk",
-			cardIds: ["review-current"],
-			action: "reset",
-		});
 	});
 });

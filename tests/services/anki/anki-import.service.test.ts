@@ -33,26 +33,36 @@ vi.mock("../../../src/shared/services/signals", () => ({
 import { AnkiImportService } from "../../../src/features/integration/services/anki/anki-import.service";
 import type { AnkiImportOptions } from "../../../src/shared/types";
 
-function createMockApp(): any {
+function createMockPersistence(): any {
 	const files: Record<string, ArrayBuffer> = {};
 	return {
-		vault: {
-			adapter: {
-				exists: vi.fn(async (path: string) => path in files),
-				writeBinary: vi.fn(async (path: string, data: ArrayBuffer) => {
-					files[path] = data;
-				}),
-				readBinary: vi.fn(async (path: string) => files[path] ?? new ArrayBuffer(0)),
-				mkdir: vi.fn(async () => {}),
-			},
-			getFiles: vi.fn(() => []),
-			getAbstractFileByPath: vi.fn(() => null),
-			createFolder: vi.fn(async () => {}),
-			create: vi.fn(async () => {}),
-		},
-		metadataCache: {
-			getFileCache: vi.fn(() => null),
-		},
+		exists: vi.fn(async (path: string) => path in files),
+		writeBinary: vi.fn(async (path: string, data: ArrayBuffer) => {
+			files[path] = data;
+		}),
+		readBinary: vi.fn(async (path: string) => files[path] ?? null),
+		mkdir: vi.fn(async () => {}),
+		read: vi.fn(async () => ""),
+		list: vi.fn(async () => ({ files: [], folders: [] })),
+		remove: vi.fn(async () => {}),
+		stat: vi.fn(async () => null),
+		_files: files,
+	};
+}
+
+function createMockVault(): any {
+	const files: Record<string, string> = {};
+	return {
+		exists: vi.fn(async (path: string) => path in files),
+		ensureFolderRecursive: vi.fn(async () => {}),
+		createFile: vi.fn(async (path: string, content: string) => {
+			files[path] = content;
+		}),
+		readFile: vi.fn(async (path: string) => files[path] ?? ""),
+		appendToFile: vi.fn(async () => {}),
+		prependToFile: vi.fn(async () => {}),
+		getFrontmatterUid: vi.fn(async () => null),
+		addParentToFrontmatter: vi.fn(async () => {}),
 	};
 }
 
@@ -111,19 +121,21 @@ function defaultOptions(overrides: Partial<AnkiImportOptions> = {}): AnkiImportO
 }
 
 describe("AnkiImportService", () => {
-	let app: any;
 	let store: any;
 	let fsrsService: any;
+	let persistence: any;
+	let vault: any;
 	let service: AnkiImportService;
 
 	beforeEach(() => {
 		vi.clearAllMocks();
 		uuidCounter = 0;
 
-		app = createMockApp();
 		store = createMockStore();
 		fsrsService = createMockFsrsService();
-		service = new AnkiImportService(app, store, fsrsService);
+		persistence = createMockPersistence();
+		vault = createMockVault();
+		service = new AnkiImportService(store, fsrsService, persistence, vault, undefined, mockNotifyCardChange);
 	});
 
 	describe("importApkg", () => {
@@ -422,7 +434,7 @@ describe("AnkiImportService", () => {
 			expect(result.imported).toBe(2);
 
 			// Should create notes for: Math (MOC), Math/Math (synthetic leaf), Math/Calculus (leaf)
-			const createCalls = app.vault.create.mock.calls.map((c: any[]) => c[0]);
+			const createCalls = vault.createFile.mock.calls.map((c: any[]) => c[0]);
 			const syntheticLeaf = createCalls.find((p: string) => p.includes("Math/Math.md"));
 			expect(syntheticLeaf).toBeDefined();
 		});
@@ -453,7 +465,7 @@ describe("AnkiImportService", () => {
 			expect(result.imported).toBe(2);
 
 			// Should use "Math (Cards)" since "Math" child already exists
-			const createCalls = app.vault.create.mock.calls.map((c: any[]) => c[0]);
+			const createCalls = vault.createFile.mock.calls.map((c: any[]) => c[0]);
 			const cardsLeaf = createCalls.find((p: string) => p.includes("Math (Cards).md"));
 			expect(cardsLeaf).toBeDefined();
 		});
