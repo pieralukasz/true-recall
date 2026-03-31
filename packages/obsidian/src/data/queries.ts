@@ -39,7 +39,7 @@ export const MUTATION_GROUPS = {
 	"card:suspended": [G.CARDS, G.BROWSER, G.DASHBOARD, G.PANEL, G.REVIEW],
 	"card:unsuspended": [G.CARDS, G.BROWSER, G.DASHBOARD, G.PANEL, G.REVIEW],
 	"card:buried": [G.CARDS, G.BROWSER, G.DASHBOARD, G.REVIEW],
-	"card:reviewed": [G.CARDS, G.BROWSER, G.DASHBOARD, G.PANEL, G.STATS],
+	"card:reviewed": [G.CARDS, G.DASHBOARD, G.STATS, G.PANEL],
 	"card:reset": [G.CARDS, G.BROWSER, G.DASHBOARD, G.REVIEW, G.STATS],
 	"cards:bulk": [G.CARDS, G.BROWSER, G.DASHBOARD, G.PANEL, G.REVIEW, G.STATS],
 	"cards:imported": [G.CARDS, G.BROWSER, G.DASHBOARD, G.PANEL, G.STATS],

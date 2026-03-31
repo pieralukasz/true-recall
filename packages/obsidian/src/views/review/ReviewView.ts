@@ -644,7 +644,11 @@ export class ReviewView extends ItemView {
 			const fsrsSettings = extractFSRSSettings(this.plugin.settings);
 			this.fsrsService.updateSettings(fsrsSettings);
 
-			const allCards = this.flashcardManager.getAllFSRSCards();
+			const allMetaMap =
+				this.plugin.dataLayer?.get<
+					Map<string, import("@true-recall/core/types").CardSchedulingMeta>
+				>("allMeta");
+			const allCards = allMetaMap ? [...allMetaMap.values()] : [];
 
 			if (allCards.length === 0) {
 				this.mountEmptyState(

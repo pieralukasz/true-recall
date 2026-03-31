@@ -6,8 +6,20 @@ export type ValidationResult<T> =
 	| { success: true; data: T }
 	| { success: false; error: ValidationError };
 
+/** Default missing/falsy cardType to "basic" so the discriminated union can match. */
+function normalizeCardType(data: unknown): unknown {
+	if (
+		typeof data === "object" &&
+		data !== null &&
+		!("cardType" in data && (data as Record<string, unknown>).cardType)
+	) {
+		return { ...data, cardType: "basic" };
+	}
+	return data;
+}
+
 export function validateFlashcardItem(data: unknown): FlashcardItem {
-	const result = FlashcardItemSchema.safeParse(data);
+	const result = FlashcardItemSchema.safeParse(normalizeCardType(data));
 
 	if (!result.success) {
 		// Zod v4 uses 'issues' with PropertyKey[] paths
@@ -22,14 +34,14 @@ export function validateFlashcardItem(data: unknown): FlashcardItem {
 		);
 	}
 
-	return result.data;
+	return result.data as FlashcardItem;
 }
 
 export function validateFlashcardItems(data: unknown[]): FlashcardItem[] {
 	return data
 		.map((item) => {
-			const result = FlashcardItemSchema.safeParse(item);
-			return result.success ? result.data : null;
+			const result = FlashcardItemSchema.safeParse(normalizeCardType(item));
+			return result.success ? (result.data as FlashcardItem) : null;
 		})
 		.filter((item): item is FlashcardItem => item !== null);
 }

@@ -116,7 +116,7 @@ import {
 function mapCoreMutationToGroups(mutation: CoreCardMutation): string[] {
 	switch (mutation.type) {
 		case "reviewed":
-			return [G.DASHBOARD, G.STATS];
+			return [G.CARDS, G.DASHBOARD, G.STATS, G.PANEL];
 		case "added":
 			return [G.CARDS, G.BROWSER, G.DASHBOARD, G.PANEL, G.STATS];
 		case "removed":
@@ -286,6 +286,10 @@ export default class TrueRecallPlugin extends Plugin {
 			this.adapters.metadataIndex,
 			this.frontmatterIndex,
 		);
+		// Use O(1) indexed lookups for sourceUid → notePath instead of O(n) vault scan
+		this.flashcardManager
+			.getSourceNoteService()
+			.setFrontmatterIndex(this.frontmatterIndex);
 
 		this.presetService = new PresetService(
 			() => this.settings,

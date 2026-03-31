@@ -11,6 +11,9 @@ import { FrontmatterService } from "./frontmatter.service";
 export class SourceNoteService {
 	private frontmatterService: FrontmatterService;
 	private metadataIndex: IMetadataIndex | null;
+	private frontmatterIndex: {
+		getFileByValue(field: string, value: string): string | null;
+	} | null = null;
 
 	// Fallback cache for when IMetadataIndex is not available
 	// Built lazily on first access, invalidated on vault changes
@@ -24,6 +27,12 @@ export class SourceNoteService {
 	) {
 		this.frontmatterService = new FrontmatterService(fileSystem, frontmatter);
 		this.metadataIndex = metadataIndex ?? null;
+	}
+
+	setFrontmatterIndex(index: {
+		getFileByValue(field: string, value: string): string | null;
+	}): void {
+		this.frontmatterIndex = index;
 	}
 
 	async getOrCreateSourceUid(filePath: string): Promise<string> {
@@ -84,7 +93,12 @@ export class SourceNoteService {
 	}
 
 	private findPathByUidSync(uid: string): string | null {
-		// O(1) lookup via index (preferred)
+		// O(1) lookup via FrontmatterIndexService (fastest — indexed Map)
+		if (this.frontmatterIndex) {
+			return this.frontmatterIndex.getFileByValue("flashcard_uid", uid);
+		}
+
+		// Fallback: O(n) scan via IMetadataIndex
 		if (this.metadataIndex) {
 			return this.metadataIndex.getPathByFieldValue("flashcard_uid", uid);
 		}
