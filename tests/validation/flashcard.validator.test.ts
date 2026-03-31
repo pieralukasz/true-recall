@@ -1,9 +1,9 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
+import { ValidationError } from "../../packages/core/src/errors";
 import {
 	validateFlashcardItem,
 	validateFlashcardItems,
-} from "../../src/shared/validation/flashcard.validator";
-import { ValidationError } from "../../src/shared/errors";
+} from "../../packages/core/src/validation/flashcard.validator";
 
 describe("Flashcard Validator", () => {
 	describe("validateFlashcardItem", () => {
@@ -17,6 +17,18 @@ describe("Flashcard Validator", () => {
 			const result = validateFlashcardItem(item);
 
 			expect(result.question).toBe("What is Zod?");
+		});
+
+		it("should normalize missing cardType to basic", () => {
+			const item = {
+				question: "Q",
+				answer: "A",
+				id: "id-1",
+			};
+
+			const result = validateFlashcardItem(item);
+
+			expect(result).toBeDefined();
 		});
 
 		it("should throw for empty question", () => {
@@ -36,6 +48,60 @@ describe("Flashcard Validator", () => {
 			};
 
 			expect(() => validateFlashcardItem(item)).toThrow(ValidationError);
+		});
+
+		it("should validate cloze card with required fields", () => {
+			const item = {
+				question: "France is in [...]",
+				answer: "Europe",
+				id: "cloze-1",
+				cardType: "cloze",
+				clozeTemplate: "{{c1::France}} is in {{c2::Europe}}",
+				clozeIndex: 1,
+			};
+
+			const result = validateFlashcardItem(item);
+
+			expect(result.question).toBe("France is in [...]");
+		});
+
+		it("should throw for cloze card missing clozeTemplate", () => {
+			const item = {
+				question: "France is in [...]",
+				answer: "Europe",
+				id: "cloze-1",
+				cardType: "cloze",
+				clozeIndex: 1,
+			};
+
+			expect(() => validateFlashcardItem(item)).toThrow(ValidationError);
+		});
+
+		it("should validate reversed card", () => {
+			const item = {
+				question: "Europe",
+				answer: "What continent?",
+				id: "rev-1",
+				cardType: "reversed",
+				reverseOfBatchId: "orig-1",
+			};
+
+			const result = validateFlashcardItem(item);
+
+			expect(result.question).toBe("Europe");
+		});
+
+		it("should validate image-occlusion card", () => {
+			const item = {
+				question: "What is highlighted?",
+				answer: "Heart",
+				id: "io-1",
+				cardType: "image-occlusion",
+			};
+
+			const result = validateFlashcardItem(item);
+
+			expect(result.question).toBe("What is highlighted?");
 		});
 	});
 
@@ -69,6 +135,29 @@ describe("Flashcard Validator", () => {
 
 			expect(result).toHaveLength(1);
 			expect(result[0].question).toBe("Valid");
+		});
+
+		it("should filter out cloze cards missing required fields", () => {
+			const items = [
+				{
+					question: "Valid basic",
+					answer: "A",
+					id: "id-1",
+					cardType: "basic",
+				},
+				{
+					question: "Bad cloze",
+					answer: "A",
+					id: "id-2",
+					cardType: "cloze",
+					// missing clozeTemplate and clozeIndex
+				},
+			];
+
+			const result = validateFlashcardItems(items);
+
+			expect(result).toHaveLength(1);
+			expect(result[0].question).toBe("Valid basic");
 		});
 	});
 });

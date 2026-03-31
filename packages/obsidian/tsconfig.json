@@ -1,0 +1,20 @@
+{
+	"extends": "../../tsconfig.base.json",
+	"compilerOptions": {
+		"baseUrl": "../..",
+		"paths": {
+			"@true-recall/core": ["packages/core/src"],
+			"@true-recall/core/*": ["packages/core/src/*"],
+			"@true-recall/ui": ["packages/ui/src"],
+			"@true-recall/ui/*": ["packages/ui/src/*"],
+			"@true-recall/obsidian": ["packages/obsidian/src"],
+			"@true-recall/obsidian/*": ["packages/obsidian/src/*"]
+		},
+		"outDir": "dist",
+		"rootDir": "src",
+		"jsx": "react-jsx",
+		"jsxImportSource": "preact"
+	},
+	"include": ["src/**/*.ts", "src/**/*.tsx"],
+	"references": [{ "path": "../core" }, { "path": "../ui" }]
+}

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { SearchResult } from "../../../src/features/rag/services/rag-search.service";
+import type { SearchResult } from "../../../packages/core/src/rag/rag-search.service";
 import {
 	groupSources,
 	stripMarkdown,

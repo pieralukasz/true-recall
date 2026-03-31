@@ -1,7 +1,7 @@
 import { vi } from "vitest";
 import { State } from "ts-fsrs";
 import { FSRSService } from "../../../src/features/core/services/fsrs.service";
-import { AnkiSchedulingService } from "../../../src/features/integration/services/anki/anki-scheduling.service";
+import { AnkiSchedulingService } from "../../../packages/core/src/integration/anki-scheduling.service";
 import { createDefaultFSRSSettings } from "../mocks/fsrs.mocks";
 import { createAnkiCard, createAnkiRevlog } from "./mocks/anki.mocks";
 

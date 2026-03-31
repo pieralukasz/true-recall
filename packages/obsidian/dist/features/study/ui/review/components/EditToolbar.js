@@ -1,0 +1,15 @@
+import { jsx as _jsx } from "preact/jsx-runtime";
+export function EditToolbar({ buttons, onAction, }) {
+    return (_jsx("div", { class: "true-recall-edit-toolbar ep:flex ep:flex-wrap ep:justify-center ep:gap-1 ep:py-2 ep:border-t ep:border-obs-border ep:absolute ep:left-0 ep:right-0 ep:top-full ep:mt-1 ep:z-10", children: buttons.map((btn) => {
+            const title = btn.shortcut
+                ? `${btn.title} (${btn.shortcut})`
+                : btn.title;
+            return (_jsx("div", { role: "button", class: "ep:px-2 ep:py-1 ep:text-ui-smaller ep:bg-obs-secondary ep:text-obs-normal ep:border ep:border-obs-border ep:rounded-md ep:cursor-pointer ep:hover:bg-obs-modifier-hover ep:hover:border-obs-interactive ep:transition-colors", title: title, "aria-label": title, tabIndex: -1, onMouseDown: (e) => e.preventDefault(), onClick: (e) => {
+                    e.preventDefault();
+                    onAction(btn.action);
+                }, onKeyDown: (e) => {
+                    if (e.key === "Enter" || e.key === " ")
+                        onAction(btn.action);
+                }, children: btn.label }, btn.id));
+        }) }));
+}

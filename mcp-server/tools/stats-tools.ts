@@ -1,116 +1,59 @@
-import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import type { TrueRecallClient } from "../client.js";
+import { custom, get, getWith, jsonResult, type ToolDef } from "./_register.js";
 
-export function registerStatsTools(
-	server: McpServer,
-	client: TrueRecallClient,
-): void {
-	server.registerTool(
+export const statsTools: ToolDef[] = [
+	get(
 		"get_study_summary",
-		{
-			description:
-				"Get a comprehensive study summary: total cards, due count, today's stats (reviews, time, ratings), card maturity breakdown (new/learning/young/mature/suspended), and answer streaks.",
-		},
-		async () => {
-			const data = await client.get("/stats/summary");
-			return {
-				content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }],
-			};
-		},
-	);
+		"Get a comprehensive study summary: total cards, due count, today's stats (reviews, time, ratings), card maturity breakdown (new/learning/young/mature/suspended), and answer streaks.",
+		"/stats/summary",
+	),
 
-	server.registerTool(
+	getWith(
 		"get_daily_stats",
+		"Get daily statistics for a date range. Returns reviews completed, new cards studied, time spent, and rating breakdown for each day.",
 		{
-			description:
-				"Get daily statistics for a date range. Returns reviews completed, new cards studied, time spent, and rating breakdown for each day.",
-			inputSchema: {
-				start_date: z
-					.string()
-					.describe("Start date in YYYY-MM-DD format"),
-				end_date: z
-					.string()
-					.describe("End date in YYYY-MM-DD format"),
-			},
+			start_date: z.string().describe("Start date in YYYY-MM-DD format"),
+			end_date: z.string().describe("End date in YYYY-MM-DD format"),
 		},
-		async (params) => {
-			const data = await client.get(
-				`/stats/daily?start=${params.start_date}&end=${params.end_date}`,
-			);
-			return {
-				content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }],
-			};
-		},
-	);
+		(p) => `/stats/daily?start=${p.start_date}&end=${p.end_date}`,
+	),
 
-	server.registerTool(
+	get(
 		"get_study_patterns",
-		{
-			description:
-				"Analyze study patterns over the last 30 days: best days of week, best hours, and a day/hour heatmap of review activity and success rates.",
-		},
-		async () => {
-			const data = await client.get("/stats/patterns");
-			return {
-				content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }],
-			};
-		},
-	);
+		"Analyze study patterns over the last 30 days: best days of week, best hours, and a day/hour heatmap of review activity and success rates.",
+		"/stats/patterns",
+	),
 
-	server.registerTool(
+	getWith(
 		"get_problem_cards",
+		"Identify leech cards — cards with high lapses (>3), low stability (<2 days), or in relearning state. These are cards the user struggles to remember.",
 		{
-			description:
-				"Identify leech cards — cards with high lapses (>3), low stability (<2 days), or in relearning state. These are cards the user struggles to remember.",
-			inputSchema: {
-				limit: z
-					.number()
-					.optional()
-					.default(20)
-					.describe("Max number of problem cards to return"),
-			},
+			limit: z
+				.number()
+				.optional()
+				.default(20)
+				.describe("Max number of problem cards to return"),
 		},
-		async (params) => {
-			const data = await client.get(
-				`/cards/problems?limit=${params.limit}`,
-			);
-			return {
-				content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }],
-			};
-		},
-	);
+		(p) => `/cards/problems?limit=${p.limit}`,
+	),
 
-	server.registerTool(
+	get(
 		"get_session_analysis",
-		{
-			description:
-				"Analyze today's study session in detail: every card reviewed with its ratings, which notes were studied, cards the user struggled with (rated Again), retention rate, time spent, and per-note breakdown. Use this to discuss the user's study performance today.",
-		},
-		async () => {
-			const data = await client.get("/stats/session-analysis");
-			return {
-				content: [
-					{ type: "text" as const, text: JSON.stringify(data, null, 2) },
-				],
-			};
-		},
-	);
+		"Analyze today's study session in detail: every card reviewed with its ratings, which notes were studied, cards the user struggled with (rated Again), retention rate, time spent, and per-note breakdown. Use this to discuss the user's study performance today.",
+		"/stats/session-analysis",
+	),
 
-	server.registerTool(
+	custom(
 		"get_study_recommendations",
+		"Get AI-powered study recommendations based on current data. Analyzes overdue backlog, problem cards, study patterns, maturity distribution, and suggests what to focus on.",
 		{
-			description:
-				"Get AI-powered study recommendations based on current data. Analyzes overdue backlog, problem cards, study patterns, maturity distribution, and suggests what to focus on.",
-			inputSchema: {
-				focus: z
-					.enum(["retention", "efficiency", "problem_cards", "general"])
-					.optional()
-					.default("general")
-					.describe("What aspect to focus recommendations on"),
-			},
+			focus: z
+				.enum(["retention", "efficiency", "problem_cards", "general"])
+				.optional()
+				.default("general")
+				.describe("What aspect to focus recommendations on"),
 		},
-		async (params) => {
+		async (params, client) => {
 			const results = await Promise.allSettled([
 				client.get<Record<string, unknown>>("/stats/summary"),
 				client.get<Record<string, unknown>>("/stats/patterns"),
@@ -118,28 +61,22 @@ export function registerStatsTools(
 			]);
 
 			const unwrap = (r: PromiseSettledResult<Record<string, unknown>>) =>
-				r.status === "fulfilled" ? r.value : { error: r.reason?.message ?? "Failed to fetch" };
+				r.status === "fulfilled"
+					? r.value
+					: { error: (r.reason as Error)?.message ?? "Failed to fetch" };
 
-			const analysisContext = {
+			const [summary, patterns, problems] = results;
+			return jsonResult({
 				focus: params.focus,
-				summary: unwrap(results[0]!),
-				patterns: unwrap(results[1]!),
-				problems: unwrap(results[2]!),
+				summary: unwrap(summary),
+				patterns: unwrap(patterns),
+				problems: unwrap(problems),
 				instructions:
 					"Based on the study data above, provide actionable recommendations. " +
 					"Consider: overdue cards, problem card patterns, optimal study times, " +
 					"maturity balance, and recent performance trends. " +
 					"Be specific and practical.",
-			};
-
-			return {
-				content: [
-					{
-						type: "text" as const,
-						text: JSON.stringify(analysisContext, null, 2),
-					},
-				],
-			};
+			});
 		},
-	);
-}
+	),
+];
