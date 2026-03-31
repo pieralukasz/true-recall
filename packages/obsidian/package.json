@@ -4,6 +4,11 @@
 	"private": true,
 	"type": "module",
 	"main": "src/main.ts",
+	"scripts": {
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"test:coverage": "vitest run --coverage"
+	},
 	"dependencies": {
 		"@true-recall/core": "workspace:*",
 		"@codemirror/state": "6.5.0",

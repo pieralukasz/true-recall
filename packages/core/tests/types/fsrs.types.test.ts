@@ -1,0 +1,239 @@
+/**
+ * Tests for FSRS utility functions in fsrs.types.ts
+ */
+import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
+import { State } from "ts-fsrs";
+import {
+	createDefaultFSRSData,
+	formatInterval,
+} from "../../src/types";
+import type { FSRSFlashcardItem } from "../../src/types";
+import {
+	createMockFlashcard,
+	createMockFlashcardWithSourcePath,
+	createMockSourceNote,
+} from "../mocks/fsrs.mocks";
+import type { SourceNoteInfo } from "../mocks/fsrs.mocks";
+
+describe("fsrs.types utilities", () => {
+	describe("createDefaultFSRSData", () => {
+		beforeEach(() => {
+			vi.useFakeTimers();
+			vi.setSystemTime(new Date("2024-01-15T10:00:00Z"));
+		});
+
+		afterEach(() => {
+			vi.useRealTimers();
+		});
+
+		it("should create card with New state (0)", () => {
+			const card = createDefaultFSRSData("test-id");
+			expect(card.state).toBe(State.New);
+			expect(card.state).toBe(0);
+		});
+
+		it("should preserve the provided ID", () => {
+			const card = createDefaultFSRSData("my-unique-id");
+			expect(card.id).toBe("my-unique-id");
+		});
+
+		it("should set all numeric values to zero", () => {
+			const card = createDefaultFSRSData("test-id");
+			expect(card.stability).toBe(0);
+			expect(card.difficulty).toBe(0);
+			expect(card.reps).toBe(0);
+			expect(card.lapses).toBe(0);
+			expect(card.scheduledDays).toBe(0);
+			expect(card.learningStep).toBe(0);
+		});
+
+		it("should set lastReview to null", () => {
+			const card = createDefaultFSRSData("test-id");
+			expect(card.lastReview).toBeNull();
+		});
+
+		it("should set due date to current time", () => {
+			const card = createDefaultFSRSData("test-id");
+			expect(card.due).toBe("2024-01-15T10:00:00.000Z");
+		});
+
+		it("should set createdAt timestamp", () => {
+			const card = createDefaultFSRSData("test-id");
+			expect(card.createdAt).toBe(Date.now());
+		});
+	});
+
+	describe("formatInterval", () => {
+		describe("sub-minute intervals", () => {
+			it('should return "<1m" for 0 minutes', () => {
+				expect(formatInterval(0)).toBe("<1m");
+			});
+
+			it('should return "<1m" for 0.5 minutes', () => {
+				expect(formatInterval(0.5)).toBe("<1m");
+			});
+
+			it('should return "<1m" for 0.99 minutes', () => {
+				expect(formatInterval(0.99)).toBe("<1m");
+			});
+		});
+
+		describe("minute intervals", () => {
+			it("should return exact minutes for 1 minute", () => {
+				expect(formatInterval(1)).toBe("1m");
+			});
+
+			it("should return minutes for values under 60", () => {
+				expect(formatInterval(10)).toBe("10m");
+				expect(formatInterval(30)).toBe("30m");
+				expect(formatInterval(59)).toBe("59m");
+			});
+
+			it("should round fractional minutes", () => {
+				expect(formatInterval(10.4)).toBe("10m");
+				expect(formatInterval(10.6)).toBe("11m");
+			});
+		});
+
+		describe("hour intervals", () => {
+			it("should convert 60 minutes to 1h", () => {
+				expect(formatInterval(60)).toBe("1h");
+			});
+
+			it("should handle multiple hours", () => {
+				expect(formatInterval(120)).toBe("2h");
+				expect(formatInterval(180)).toBe("3h");
+			});
+
+			it("should round to nearest hour", () => {
+				expect(formatInterval(90)).toBe("2h"); // 1.5 hours rounds to 2
+				expect(formatInterval(150)).toBe("3h"); // 2.5 hours rounds to 3
+			});
+
+			it("should return hours up to 23h", () => {
+				expect(formatInterval(23 * 60)).toBe("23h");
+			});
+		});
+
+		describe("day intervals", () => {
+			it("should convert 24 hours to 1d", () => {
+				expect(formatInterval(24 * 60)).toBe("1d");
+			});
+
+			it("should handle multiple days", () => {
+				expect(formatInterval(2 * 24 * 60)).toBe("2d");
+				expect(formatInterval(7 * 24 * 60)).toBe("7d");
+				expect(formatInterval(14 * 24 * 60)).toBe("14d");
+			});
+
+			it("should return days up to 29d", () => {
+				expect(formatInterval(29 * 24 * 60)).toBe("29d");
+			});
+		});
+
+		describe("month intervals", () => {
+			it("should convert 30 days to 1mo", () => {
+				expect(formatInterval(30 * 24 * 60)).toBe("1mo");
+			});
+
+			it("should handle multiple months", () => {
+				expect(formatInterval(60 * 24 * 60)).toBe("2mo");
+				expect(formatInterval(90 * 24 * 60)).toBe("3mo");
+				expect(formatInterval(180 * 24 * 60)).toBe("6mo");
+			});
+
+			it("should return months up to 11mo", () => {
+				expect(formatInterval(330 * 24 * 60)).toBe("11mo");
+			});
+		});
+
+		describe("year intervals", () => {
+			it("should convert 365 days to 1y", () => {
+				expect(formatInterval(365 * 24 * 60)).toBe("1y");
+			});
+
+			it("should handle multiple years", () => {
+				expect(formatInterval(730 * 24 * 60)).toBe("2y");
+				expect(formatInterval(1095 * 24 * 60)).toBe("3y");
+			});
+
+			it("should handle large intervals", () => {
+				expect(formatInterval(10 * 365 * 24 * 60)).toBe("10y");
+			});
+		});
+	});
+
+	describe("FSRSFlashcardItem type", () => {
+		it("should have sourceNotePath property for SQL-only cards", () => {
+			const card = createMockFlashcardWithSourcePath({
+				sourceNotePath: "input/my-source.md",
+			});
+
+			expect(card.sourceNotePath).toBe("input/my-source.md");
+		});
+
+		it("should support sourceNotePath for source note linking", () => {
+			const card: FSRSFlashcardItem = {
+				id: "card-1",
+				question: "Test question?",
+				answer: "Test answer",
+				fsrs: createDefaultFSRSData("card-1"),
+				sourceNotePath: "notes/source.md",
+			};
+
+			expect(card.sourceNotePath).toBe("notes/source.md");
+		});
+
+		it("should work with createMockFlashcard defaults", () => {
+			const card = createMockFlashcard();
+
+			expect(card).toHaveProperty("id");
+			expect(card).toHaveProperty("question");
+			expect(card).toHaveProperty("answer");
+			expect(card).toHaveProperty("fsrs");
+		});
+
+		it("should support sourceUid for source note linking", () => {
+			const card = createMockFlashcardWithSourcePath({
+				sourceUid: "abc12345",
+				sourceNoteName: "Machine Learning",
+			});
+
+			expect(card.sourceUid).toBe("abc12345");
+			expect(card.sourceNoteName).toBe("Machine Learning");
+		});
+	});
+
+	describe("SourceNoteInfo type", () => {
+		it("should create source note with all fields", () => {
+			const sourceNote = createMockSourceNote({
+				uid: "test-uid",
+				noteName: "Test Note",
+				notePath: "folder/test-note.md",
+			});
+
+			expect(sourceNote.uid).toBe("test-uid");
+			expect(sourceNote.noteName).toBe("Test Note");
+			expect(sourceNote.notePath).toBe("folder/test-note.md");
+			expect(sourceNote.createdAt).toBeDefined();
+			expect(sourceNote.updatedAt).toBeDefined();
+		});
+
+		it("should allow optional notePath", () => {
+			const sourceNote: SourceNoteInfo = {
+				uid: "no-path",
+				noteName: "Note Without Path",
+			};
+
+			expect(sourceNote.notePath).toBeUndefined();
+		});
+
+		it("should have default values from factory", () => {
+			const sourceNote = createMockSourceNote();
+
+			expect(sourceNote.uid).toBeDefined();
+			expect(sourceNote.noteName).toBe("Test Note");
+			expect(sourceNote.notePath).toBe("notes/test-note.md");
+		});
+	});
+});
