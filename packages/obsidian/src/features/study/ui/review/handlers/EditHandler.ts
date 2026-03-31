@@ -2,8 +2,9 @@ import { DuplicateQuestionError } from "@true-recall/core/flashcard/data/card-re
 import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
 import type { FSRSFlashcardItem } from "@true-recall/core/types";
 import { BR_REGEX } from "@true-recall/core/utils";
+import type { CommandService } from "@true-recall/obsidian/commands";
+import { UpdateCardCommand } from "@true-recall/obsidian/commands/commands/card-update.cmd";
 import { notify } from "@true-recall/obsidian/services/notification.service";
-import type { UndoService } from "@true-recall/obsidian/services/undo.service";
 import type { ReviewApi } from "@true-recall/obsidian/store";
 import type { App } from "obsidian";
 
@@ -11,7 +12,7 @@ export interface EditHandlerDeps {
 	app: App;
 	getReview: () => ReviewApi;
 	flashcardManager: FlashcardManager;
-	undoService?: UndoService;
+	commandService?: CommandService;
 }
 
 export class EditHandler {
@@ -122,17 +123,12 @@ export class EditHandler {
 		card: FSRSFlashcardItem,
 		field: "question" | "answer",
 	): void {
-		this.deps.undoService?.push({
-			id: crypto.randomUUID(),
-			actionType: "update",
-			description: `Edit card ${field}`,
-			timestamp: Date.now(),
-			payload: {
-				type: "update",
-				cardId: card.id,
-				previousQuestion: card.question,
-				previousAnswer: card.answer ?? "",
-			},
-		});
+		const cmd = new UpdateCardCommand(
+			card.id,
+			card.question,
+			card.answer ?? "",
+			`Edit card ${field}`,
+		);
+		void this.deps.commandService?.execute(cmd);
 	}
 }

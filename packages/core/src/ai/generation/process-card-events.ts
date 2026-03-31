@@ -34,13 +34,15 @@ export async function processCardEvents(
 	onPartial: (q: string | null, a: string | null) => void,
 	onCount: (created: number, dups: number) => void,
 	inputText?: string,
-): Promise<void> {
+): Promise<string[]> {
 	const frontmatterService = flashcardManager.getFrontmatterService();
 	let sourceUid = await frontmatterService.getSourceNoteUid(sourceFile);
 	if (!sourceUid) {
 		sourceUid = frontmatterService.generateUid();
 		await frontmatterService.setSourceNoteUid(sourceFile, sourceUid);
 	}
+
+	const createdIds: string[] = [];
 
 	for (const event of events) {
 		if (event.type === "card_complete" && event.block) {
@@ -61,6 +63,7 @@ export async function processCardEvents(
 				if (result.cards.length > 0) {
 					onCount(result.cards.length, 0);
 					for (const card of result.cards) {
+						createdIds.push(card.id);
 						addStreamedCard({
 							id: card.id,
 							question: card.question ?? "",
@@ -81,4 +84,6 @@ export async function processCardEvents(
 			onPartial(event.partialQuestion ?? null, event.partialAnswer ?? null);
 		}
 	}
+
+	return createdIds;
 }

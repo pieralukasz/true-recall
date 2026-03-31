@@ -1,18 +1,19 @@
 import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
-import { notify } from "@true-recall/obsidian/services/notification.service";
-import { pushDeleteUndo } from "@true-recall/obsidian/services/undo.service";
 import type { FSRSFlashcardItem } from "@true-recall/core/types";
+import { UnburyCommand } from "@true-recall/obsidian/commands/commands/card-bury.cmd";
+import { DeleteCardCommand } from "@true-recall/obsidian/commands/commands/card-delete.cmd";
 import { confirm } from "@true-recall/obsidian/modals/shared/ConfirmModal";
-import type { CardsSetter } from "@true-recall/obsidian/modals/shared/card-preview/CardPreviewBody";
+import { notify } from "@true-recall/obsidian/services/notification.service";
 import type { App } from "obsidian";
 import type TrueRecallPlugin from "../../../main";
+import type { CardsSetter } from "./CardPreviewBody";
 
 export async function handleDeleteCard(
 	app: App,
 	card: FSRSFlashcardItem,
 	setCards: CardsSetter,
 	allCards: FSRSFlashcardItem[],
-	flashcardManager: FlashcardManager,
+	_flashcardManager: FlashcardManager,
 	plugin?: TrueRecallPlugin,
 ): Promise<FSRSFlashcardItem[]> {
 	const confirmed = await confirm(app, {
@@ -20,24 +21,23 @@ export async function handleDeleteCard(
 	});
 	if (!confirmed) return allCards;
 
-	const result = await flashcardManager.removeFlashcardByIdWithDetails(card.id);
+	if (plugin?.commandService) {
+		const cmd = new DeleteCardCommand([card.id]);
+		await plugin.commandService.execute(cmd);
 
-	if (result.ok) {
-		if (plugin) {
-			pushDeleteUndo(plugin, result);
-			notify().cardsDeletedWithUndo(result.affectedCount, () => {
-				void plugin.undoService?.undo();
+		if (cmd.deletedCount > 0) {
+			notify().cardsDeletedWithUndo(cmd.deletedCount, () => {
+				void plugin.commandService?.undo();
 			});
-		} else {
-			notify().cardsDeleted(result.affectedCount);
+			const removedIds = new Set([card.id]);
+			const updated = allCards.filter((c) => !removedIds.has(c.id));
+			setCards(updated);
+			return updated;
 		}
-		const removedIds = new Set(result.affectedIds);
-		const updated = allCards.filter((c) => !removedIds.has(c.id));
-		setCards(updated);
-		return updated;
+	} else {
+		notify().operationFailed("delete flashcard");
 	}
 
-	notify().operationFailed("delete flashcard");
 	return allCards;
 }
 
@@ -45,7 +45,8 @@ export function handleUnburyCard(
 	card: FSRSFlashcardItem,
 	setCards: CardsSetter,
 	allCards: FSRSFlashcardItem[],
-	flashcardManager: FlashcardManager,
+	_flashcardManager: FlashcardManager,
+	plugin?: TrueRecallPlugin,
 ): FSRSFlashcardItem[] {
 	const fullCard = allCards.find((c) => c.id === card.id);
 	if (!fullCard) {
@@ -53,10 +54,19 @@ export function handleUnburyCard(
 		return allCards;
 	}
 
-	const updatedFsrs = { ...fullCard.fsrs, buriedUntil: undefined };
+	if (plugin?.commandService) {
+		const cmd = new UnburyCommand([card.id]);
+		void plugin.commandService.execute(cmd);
+		const updated = allCards.filter((c) => c.id !== card.id);
+		setCards(updated);
+		notify().cardsStatusChanged(1, "unburied");
+		return updated;
+	}
 
+	// Fallback without command service
+	const updatedFsrs = { ...fullCard.fsrs, buriedUntil: undefined };
 	try {
-		flashcardManager.updateCardFSRS(fullCard.id, updatedFsrs);
+		plugin?.flashcardManager.updateCardFSRS(fullCard.id, updatedFsrs);
 		const updated = allCards.filter((c) => c.id !== card.id);
 		setCards(updated);
 		notify().cardsStatusChanged(1, "unburied");
@@ -71,15 +81,25 @@ export function handleUnburyCard(
 export function handleUnburyAll(
 	cards: FSRSFlashcardItem[],
 	setCards: CardsSetter,
-	flashcardManager: FlashcardManager,
+	_flashcardManager: FlashcardManager,
+	plugin?: TrueRecallPlugin,
 ): void {
+	if (plugin?.commandService) {
+		const cmd = new UnburyCommand(cards.map((c) => c.id));
+		void plugin.commandService.execute(cmd);
+		setCards([]);
+		notify().cardsStatusChanged(cards.length, "unburied");
+		return;
+	}
+
+	// Fallback
 	let unburiedCount = 0;
 	const failedCards: FSRSFlashcardItem[] = [];
 
 	for (const card of cards) {
 		const updatedFsrs = { ...card.fsrs, buriedUntil: undefined };
 		try {
-			flashcardManager.updateCardFSRS(card.id, updatedFsrs);
+			plugin?.flashcardManager.updateCardFSRS(card.id, updatedFsrs);
 			unburiedCount++;
 		} catch (error) {
 			console.error(`Error unburying card ${card.id}:`, error);
@@ -104,7 +124,7 @@ export async function handleDeleteAll(
 	app: App,
 	cards: FSRSFlashcardItem[],
 	setCards: CardsSetter,
-	flashcardManager: FlashcardManager,
+	_flashcardManager: FlashcardManager,
 	plugin?: TrueRecallPlugin,
 ): Promise<void> {
 	const confirmed = await confirm(app, {
@@ -112,20 +132,15 @@ export async function handleDeleteAll(
 	});
 	if (!confirmed) return;
 
-	const result = flashcardManager.removeFlashcardsByIdsWithDetails(
-		cards.map((card) => card.id),
-	);
-	if (result.ok && plugin) {
-		pushDeleteUndo(plugin, result);
-	}
-	const removedIds = new Set(result.affectedIds);
-	setCards(cards.filter((card) => !removedIds.has(card.id)));
-	if (result.ok && plugin) {
-		notify().cardsDeletedWithUndo(result.affectedCount, () => {
-			void plugin.undoService?.undo();
+	if (plugin?.commandService) {
+		const cmd = new DeleteCardCommand(cards.map((c) => c.id));
+		await plugin.commandService.execute(cmd);
+		setCards([]);
+		notify().cardsDeletedWithUndo(cmd.deletedCount, () => {
+			void plugin.commandService?.undo();
 		});
 	} else {
-		notify().cardsDeleted(result.affectedCount);
+		notify().operationFailed("delete cards");
 	}
 }
 

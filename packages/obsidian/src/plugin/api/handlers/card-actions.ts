@@ -1,4 +1,10 @@
-import { mutate } from "@true-recall/obsidian/data";
+import { BuryCommand } from "@true-recall/obsidian/commands/commands/card-bury.cmd";
+import { DeleteCardCommand } from "@true-recall/obsidian/commands/commands/card-delete.cmd";
+import {
+	SuspendCommand,
+	UnsuspendCommand,
+} from "@true-recall/obsidian/commands/commands/card-suspend.cmd";
+import { UpdateNoteFieldsCommand } from "@true-recall/obsidian/commands/commands/card-update.cmd";
 import type { ApiContext, ApiRequest, ApiResponseWriter } from "../api.types";
 import { parseJsonBody, readBody, sendError, sendOk } from "../api.types";
 
@@ -32,13 +38,10 @@ export async function handleSuspendCard(
 		return;
 	}
 
-	if (body.suspended) {
-		ctx.plugin.cardStore.cards.bulkSuspend([cardId]);
-	} else {
-		ctx.plugin.cardStore.cards.bulkUnsuspend([cardId]);
-	}
-
-	mutate("card:updated", () => {});
+	const cmd = body.suspended
+		? new SuspendCommand([cardId])
+		: new UnsuspendCommand([cardId]);
+	await ctx.plugin.commandService?.execute(cmd);
 
 	sendOk(res, {
 		cardId,
@@ -103,7 +106,6 @@ export async function handleUpdateCard(
 		return;
 	}
 
-	// Map question/answer to the appropriate fields
 	const isCloze = noteType.type === 1;
 	const updatedFields = { ...note.fields };
 
@@ -115,8 +117,11 @@ export async function handleUpdateCard(
 		if (body.answer) updatedFields.Back = body.answer;
 	}
 
+	const previousFields = { ...note.fields };
 	ctx.plugin.flashcardManager.updateNoteFields(noteId, updatedFields);
-	mutate("card:updated", () => {});
+
+	const cmd = new UpdateNoteFieldsCommand(noteId, previousFields, "Edit card");
+	await ctx.plugin.commandService?.execute(cmd);
 
 	sendOk(res, {
 		cardId,
@@ -142,9 +147,10 @@ export async function handleDeleteCard(
 		return;
 	}
 
-	const ok = await ctx.plugin.flashcardManager.removeFlashcard(cardId);
+	const cmd = new DeleteCardCommand([cardId]);
+	await ctx.plugin.commandService?.execute(cmd);
 
-	if (!ok) {
+	if (cmd.deletedCount === 0) {
 		sendError(res, 404, "Card not found or already deleted");
 		return;
 	}
@@ -169,12 +175,10 @@ export async function handleBulkDelete(
 		return;
 	}
 
-	const count = ctx.plugin.flashcardManager.removeFlashcardsByIds(
-		body.card_ids,
-	);
+	const cmd = new DeleteCardCommand(body.card_ids);
+	await ctx.plugin.commandService?.execute(cmd);
 
-	mutate("cards:bulk", () => {});
-	sendOk(res, { deleted: count, cardIds: body.card_ids });
+	sendOk(res, { deleted: cmd.deletedCount, cardIds: body.card_ids });
 }
 
 export async function handleRemoveCardsFromNote(
@@ -192,7 +196,6 @@ export async function handleRemoveCardsFromNote(
 
 	let sourceUid = body?.source_uid;
 
-	// Resolve from path or active note
 	if (!sourceUid && body?.path) {
 		const file = ctx.plugin.app.vault.getAbstractFileByPath(body.path);
 		if (file && "extension" in file) {
@@ -228,10 +231,10 @@ export async function handleRemoveCardsFromNote(
 	}
 
 	const ids = cards.map((c) => c.id);
-	const count = ctx.plugin.flashcardManager.removeFlashcardsByIds(ids);
+	const cmd = new DeleteCardCommand(ids);
+	await ctx.plugin.commandService?.execute(cmd);
 
-	mutate("cards:bulk", () => {});
-	sendOk(res, { deleted: count, sourceUid, cardIds: ids });
+	sendOk(res, { deleted: cmd.deletedCount, sourceUid, cardIds: ids });
 }
 
 export async function handleBulkSuspend(
@@ -258,12 +261,12 @@ export async function handleBulkSuspend(
 		return;
 	}
 
-	const count = body.suspended
-		? ctx.plugin.cardStore.cards.bulkSuspend(body.card_ids)
-		: ctx.plugin.cardStore.cards.bulkUnsuspend(body.card_ids);
+	const cmd = body.suspended
+		? new SuspendCommand(body.card_ids)
+		: new UnsuspendCommand(body.card_ids);
+	await ctx.plugin.commandService?.execute(cmd);
 
-	mutate("cards:bulk", () => {});
-	sendOk(res, { affected: count, suspended: body.suspended });
+	sendOk(res, { affected: body.card_ids.length, suspended: body.suspended });
 }
 
 export async function handleBulkBury(
@@ -302,8 +305,12 @@ export async function handleBulkBury(
 		untilDate = d.toISOString();
 	}
 
-	const count = ctx.plugin.cardStore.cards.bulkBury(body.card_ids, untilDate);
+	const cmd = new BuryCommand(body.card_ids, untilDate);
+	await ctx.plugin.commandService?.execute(cmd);
 
-	mutate("cards:bulk", () => {});
-	sendOk(res, { buried: count, untilDate, cardIds: body.card_ids });
+	sendOk(res, {
+		buried: body.card_ids.length,
+		untilDate,
+		cardIds: body.card_ids,
+	});
 }

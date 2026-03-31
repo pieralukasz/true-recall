@@ -4,7 +4,17 @@ import {
 	type FlashcardItem,
 } from "@true-recall/core/types";
 import type { FSRSFlashcardItem } from "@true-recall/core/types/fsrs/card.types";
-import { mutate } from "@true-recall/obsidian/data";
+import { DeleteCardCommand } from "@true-recall/obsidian/commands/commands/card-delete.cmd";
+import { ForgetCommand } from "@true-recall/obsidian/commands/commands/card-forget.cmd";
+import { MoveCardCommand } from "@true-recall/obsidian/commands/commands/card-move.cmd";
+import {
+	SuspendCommand,
+	UnsuspendCommand,
+} from "@true-recall/obsidian/commands/commands/card-suspend.cmd";
+import {
+	ChangeNoteTypeCommand,
+	ToggleReversedCommand,
+} from "@true-recall/obsidian/commands/commands/note-type.cmd";
 import { openPanelCardEditor } from "@true-recall/obsidian/features/library/ui/panel/helpers/panel-edit-routing";
 import {
 	cardToBlockText,
@@ -13,7 +23,6 @@ import {
 import { QuickNoteEditorModal } from "@true-recall/obsidian/modals/study/quick-note-editor/QuickNoteEditorModal";
 import { useApp, usePlugin } from "@true-recall/obsidian/preact";
 import { notify } from "@true-recall/obsidian/services/notification.service";
-import { pushDeleteUndo } from "@true-recall/obsidian/services/undo.service";
 import { useCallback } from "preact/hooks";
 
 import { usePanelScroll } from "./PanelScrollContext";
@@ -92,12 +101,11 @@ export function useCardActions() {
 		async (card: FlashcardItem) => {
 			if (!currentFile) return;
 			const restoreScroll = captureScroll();
-			const result =
-				await plugin.flashcardManager.removeFlashcardByIdWithDetails(card.id);
-			if (result.ok) {
-				pushDeleteUndo(plugin, result);
-				notify().cardsDeletedWithUndo(result.affectedCount, () => {
-					void plugin.undoService?.undo();
+			const cmd = new DeleteCardCommand([card.id]);
+			await plugin.commandService?.execute(cmd);
+			if (cmd.deletedCount > 0) {
+				notify().cardsDeletedWithUndo(cmd.deletedCount, () => {
+					void plugin.commandService?.undo();
 				});
 				restoreScroll();
 			} else {
@@ -146,7 +154,8 @@ export function useCardActions() {
 			if (result.cancelled || !result.targetNotePath) return;
 
 			try {
-				await plugin.flashcardManager.moveCard(card.id, result.targetNotePath);
+				const cmd = new MoveCardCommand(card.id, result.targetNotePath);
+				await plugin.commandService?.execute(cmd);
 				notify().cardsMoved(1, result.targetNotePath);
 			} catch (error) {
 				notify().operationFailed("move card", error);
@@ -180,7 +189,6 @@ export function useCardActions() {
 			const { ChangeNoteTypeModal } = await import(
 				"@true-recall/obsidian/modals/library/ChangeNoteTypeModal"
 			);
-			const { mutate } = await import("@true-recall/obsidian/data");
 
 			const allNoteTypes = plugin.cardStore.noteTypes.getAll();
 
@@ -194,19 +202,13 @@ export function useCardActions() {
 			if (result.cancelled || !result.targetNoteTypeId || !result.fieldMapping)
 				return;
 
-			const r = plugin.flashcardManager.changeNoteType(
+			const cmd = new ChangeNoteTypeCommand(
 				fsrsCard.noteId,
 				result.targetNoteTypeId,
 				result.fieldMapping,
 			);
-
-			const parts: string[] = ["Note type changed"];
-			if (r.createdCardIds.length > 0)
-				parts.push(`${r.createdCardIds.length} cards created`);
-			if (r.deletedCardIds.length > 0)
-				parts.push(`${r.deletedCardIds.length} cards removed`);
-			mutate("cards:bulk", () => {});
-			notify().success(parts.join(", "));
+			await plugin.commandService?.execute(cmd);
+			notify().success("Note type changed");
 		},
 		[app, plugin, cardsWithFsrs],
 	);
@@ -236,15 +238,13 @@ export function useCardActions() {
 				return;
 			}
 
-			const { mutate } = await import("@true-recall/obsidian/data");
 			const fieldMapping = { Front: "Front", Back: "Back" };
-			const r = plugin.flashcardManager.changeNoteType(
+			const cmd = new ToggleReversedCommand(
 				fsrsCard.noteId,
 				targetNoteTypeId,
 				fieldMapping,
 			);
-
-			mutate("cards:bulk", () => {});
+			await plugin.commandService?.execute(cmd);
 
 			if (targetNoteTypeId === BUILTIN_BASIC_REVERSED_ID) {
 				notify().success("Reversed card created");
@@ -257,13 +257,13 @@ export function useCardActions() {
 
 	const handleForgetCard = useCallback(
 		(card: FlashcardItem) => {
-			const forgottenCount = plugin.cardStore.cards.bulkForget([card.id]);
-			if (forgottenCount === 0) {
+			const data = plugin.cardStore.get(card.id);
+			if (!data || data.state === 0) {
 				notify().warning("Forget is only available for non-New cards");
 				return;
 			}
-			plugin.sessionPersistence?.removeReviewedCards([card.id]);
-			mutate("card:reset", () => {});
+			const cmd = new ForgetCommand([card.id]);
+			void plugin.commandService?.execute(cmd);
 			notify().cardForgotten();
 		},
 		[plugin],
@@ -271,8 +271,8 @@ export function useCardActions() {
 
 	const handleSuspendCard = useCallback(
 		(card: FlashcardItem) => {
-			plugin.cardStore.cards.bulkSuspend([card.id]);
-			mutate("card:suspended", () => {});
+			const cmd = new SuspendCommand([card.id]);
+			void plugin.commandService?.execute(cmd);
 			notify().success("Card suspended");
 		},
 		[plugin],
@@ -280,8 +280,8 @@ export function useCardActions() {
 
 	const handleUnsuspendCard = useCallback(
 		(card: FlashcardItem) => {
-			plugin.cardStore.cards.bulkUnsuspend([card.id]);
-			mutate("cards:bulk", () => {});
+			const cmd = new UnsuspendCommand([card.id]);
+			void plugin.commandService?.execute(cmd);
 			notify().success("Card unsuspended");
 		},
 		[plugin],

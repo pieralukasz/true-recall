@@ -5,7 +5,10 @@ import { StreamingOpenRouterClient } from "../clients/streaming-openrouter-clien
 import type { AIClientConfig } from "../config/ai-client-config";
 import { resolveAIClientConfig } from "../config/ai-client-config";
 import { IncrementalFlashcardParser } from "../parsing/incremental-flashcard-parser";
-import { type ChunkingResult, chunkMarkdown } from "../parsing/markdown-chunker";
+import {
+	type ChunkingResult,
+	chunkMarkdown,
+} from "../parsing/markdown-chunker";
 import { buildCardFormatSpec } from "../prompts/block-prompt-builder";
 import {
 	createThrottledPartialUpdater,
@@ -18,9 +21,9 @@ import { processCardEvents } from "./process-card-events";
 import {
 	buildGenerationPrompt,
 	FALLBACK_BASIC_NOTE_TYPE,
+	type StreamingFlashcardManager,
 	type StreamingGenerationResult,
 	StreamingGenerationService,
-	type StreamingFlashcardManager,
 	type StreamingSourceFile,
 } from "./streaming-generation.service";
 
@@ -83,7 +86,12 @@ export class ChunkedGenerationService {
 			};
 		}
 
-		return this.runChunkedGeneration(chunkingResult, sourceFile, noteType, confirmLargeNote);
+		return this.runChunkedGeneration(
+			chunkingResult,
+			sourceFile,
+			noteType,
+			confirmLargeNote,
+		);
 	}
 
 	private async runChunkedGeneration(
@@ -126,6 +134,7 @@ export class ChunkedGenerationService {
 		let totalDuplicates = 0;
 		let failedChunks = 0;
 		const errors: string[] = [];
+		const allCreatedCardIds: string[] = [];
 
 		try {
 			for (const chunk of chunks) {
@@ -152,6 +161,7 @@ export class ChunkedGenerationService {
 					);
 					totalCreated += result.created;
 					totalDuplicates += result.duplicates;
+					allCreatedCardIds.push(...result.createdCardIds);
 				} catch (error) {
 					if (error instanceof DOMException && error.name === "AbortError") {
 						break;
@@ -174,6 +184,7 @@ export class ChunkedGenerationService {
 		return {
 			created: totalCreated,
 			duplicates: totalDuplicates,
+			createdCardIds: allCreatedCardIds,
 			failedChunks,
 			totalChunks: chunks.length,
 			errors,
@@ -201,6 +212,7 @@ export class ChunkedGenerationService {
 
 		let createdCount = 0;
 		let duplicateCount = 0;
+		const createdCardIds: string[] = [];
 		const throttledUpdatePartial = createThrottledPartialUpdater(this.schedule);
 		const onCount = (created: number, dups: number) => {
 			createdCount += created;
@@ -229,7 +241,7 @@ export class ChunkedGenerationService {
 
 		for await (const chunk of stream) {
 			const events = parser.feed(chunk.content);
-			await processCardEvents(
+			const ids = await processCardEvents(
 				events,
 				sourceFile,
 				this.flashcardManager,
@@ -237,10 +249,11 @@ export class ChunkedGenerationService {
 				onCount,
 				chunkContent,
 			);
+			createdCardIds.push(...ids);
 		}
 
 		const finalEvents = parser.finish();
-		await processCardEvents(
+		const finalIds = await processCardEvents(
 			finalEvents,
 			sourceFile,
 			this.flashcardManager,
@@ -248,7 +261,12 @@ export class ChunkedGenerationService {
 			onCount,
 			chunkContent,
 		);
+		createdCardIds.push(...finalIds);
 
-		return { created: createdCount, duplicates: duplicateCount };
+		return {
+			created: createdCount,
+			duplicates: duplicateCount,
+			createdCardIds,
+		};
 	}
 }

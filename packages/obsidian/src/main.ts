@@ -36,6 +36,7 @@ import type { TrueRecallSettings } from "@true-recall/core/types";
 import { extractFSRSSettings } from "@true-recall/core/types";
 import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpClient";
 import { ObsidianPersistence } from "@true-recall/obsidian/adapters/ObsidianPersistence";
+import type { CommandService } from "@true-recall/obsidian/commands";
 import {
 	DataLayer,
 	G,
@@ -144,6 +145,7 @@ export default class TrueRecallPlugin extends Plugin {
 	deviceDiscovery: DeviceDiscoveryService | null = null;
 	deletionHandler: DeletionHandlerService | null = null;
 	undoService: UndoService | null = null;
+	commandService: CommandService | null = null;
 	fsrsHelper: FSRSHelperService | null = null;
 	presetService!: PresetService;
 	noteTypeService!: NoteTypeService;
@@ -366,6 +368,15 @@ export default class TrueRecallPlugin extends Plugin {
 
 		this.undoService = new UndoService(this);
 
+		const { CommandService: CmdService } = await import(
+			"@true-recall/obsidian/commands"
+		);
+		this.commandService = new CmdService({
+			flashcardManager: this.flashcardManager,
+			cardStore: this.cardStore,
+			sessionPersistence: this.sessionPersistence,
+		});
+
 		if (ENABLE_RAG && this.cardStore) {
 			const { RagChunkActions } = await import(
 				"@true-recall/core/rag/indexing/rag-chunk-actions"
@@ -461,6 +472,7 @@ export default class TrueRecallPlugin extends Plugin {
 		this._unloaded = true;
 		this.localApi?.stop();
 		this.undoService?.clear();
+		this.commandService?.clear();
 		this.backgroundBackupManager?.stop();
 		this.statusBarWidget?.dispose();
 		this.noteStatusCache?.dispose();

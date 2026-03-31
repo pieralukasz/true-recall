@@ -1,11 +1,13 @@
 import type { FlashcardItem } from "@true-recall/core/types";
 import type { FSRSFlashcardItem } from "@true-recall/core/types/fsrs/card.types";
 import { BUILTIN_BASIC_ID } from "@true-recall/core/types/note.types";
+import { BatchCreateCommand } from "@true-recall/obsidian/commands/commands/card-create.cmd";
+import { DeleteCardCommand } from "@true-recall/obsidian/commands/commands/card-delete.cmd";
+import { ForgetCommand } from "@true-recall/obsidian/commands/commands/card-forget.cmd";
 import { getHighlightColor } from "@true-recall/obsidian/features/library/ui/panel/utils/card-status.utils";
 import { extractHighlights } from "@true-recall/obsidian/features/library/ui/panel/utils/highlight-extractor";
 import { cardsToBlockText } from "@true-recall/obsidian/features/library/ui/panel/utils/panel-helpers";
 import { useApp, usePlugin } from "@true-recall/obsidian/preact";
-import { pushDeleteUndo } from "@true-recall/obsidian/services/undo.service";
 import { useCallback } from "preact/hooks";
 
 import { usePanelStore } from "./usePanelStore";
@@ -72,6 +74,12 @@ export function usePanelActions() {
 				notify().warning(
 					`${result.failedChunks} of ${result.totalChunks} sections failed: ${result.errors.join("; ")}`,
 				);
+			}
+
+			// Register undo for created cards
+			if (result.createdCardIds && result.createdCardIds.length > 0) {
+				const cmd = new BatchCreateCommand(result.createdCardIds);
+				await plugin.commandService?.execute(cmd);
 			}
 		} catch (error) {
 			if (error instanceof DOMException && error.name === "AbortError") return;
@@ -160,6 +168,12 @@ export function usePanelActions() {
 			} else {
 				notify().cardsCreated(result.created, currentFile.basename);
 			}
+
+			// Register undo for created cards
+			if (result.createdCardIds && result.createdCardIds.length > 0) {
+				const cmd = new BatchCreateCommand(result.createdCardIds);
+				await plugin.commandService?.execute(cmd);
+			}
 		} catch (error) {
 			if (error instanceof DOMException && error.name === "AbortError") return;
 			const msg = error instanceof Error ? error.message : String(error);
@@ -206,7 +220,7 @@ export function usePanelActions() {
 				: collectResult.newContent;
 			await app.vault.process(currentFile, () => contentToSave);
 
-			const { notes, cards } = plugin.flashcardManager.createNoteBatch(
+			const { cards } = plugin.flashcardManager.createNoteBatch(
 				collectResult.parsedBlocks.map((block) => ({
 					noteTypeId: block.noteTypeId,
 					fields: block.fields,
@@ -220,8 +234,12 @@ export function usePanelActions() {
 			if (cards.length === 0) {
 				notify().info("No new flashcards collected");
 			} else {
+				// Register undo for collected cards
+				const cardIds = cards.map((c) => c.id);
+				const cmd = new BatchCreateCommand(cardIds);
+				await plugin.commandService?.execute(cmd);
 				notify().success(
-					`Collected ${notes.length} note(s) → ${cards.length} card(s)`,
+					`Collected ${collectResult.parsedBlocks.length} note(s) → ${cards.length} card(s)`,
 				);
 			}
 		} catch (error) {
@@ -380,7 +398,6 @@ export function usePanelActions() {
 		const { notify } = await import(
 			"@true-recall/obsidian/services/notification.service"
 		);
-		const { mutate } = await import("@true-recall/obsidian/data");
 		const { confirm } = await import(
 			"@true-recall/obsidian/modals/shared/ConfirmModal"
 		);
@@ -392,14 +409,9 @@ export function usePanelActions() {
 		if (!confirmed) return;
 
 		const cardIds = flashcardInfo.flashcards.map((card) => card.id);
-		const forgotten = plugin.cardStore.cards.bulkForget(cardIds);
-		if (forgotten === 0) {
-			notify().warning("Forget is only available for non-New cards");
-			return;
-		}
-		plugin.sessionPersistence?.removeReviewedCards(cardIds);
-		mutate("card:reset", () => {});
-		notify().cardsForgotten(forgotten);
+		const cmd = new ForgetCommand(cardIds);
+		await plugin.commandService?.execute(cmd);
+		notify().cardsForgotten(count);
 	}, [flashcardInfo, plugin]);
 
 	const handleDeleteAll = useCallback(async () => {
@@ -418,13 +430,10 @@ export function usePanelActions() {
 		if (!confirmed) return;
 
 		const cardIds = flashcardInfo.flashcards.map((card) => card.id);
-		const result =
-			plugin.flashcardManager.removeFlashcardsByIdsWithDetails(cardIds);
-		if (result.ok) {
-			pushDeleteUndo(plugin, result);
-		}
-		notify().cardsDeletedWithUndo(result.affectedCount, () => {
-			void plugin.undoService?.undo();
+		const cmd = new DeleteCardCommand(cardIds);
+		await plugin.commandService?.execute(cmd);
+		notify().cardsDeletedWithUndo(cmd.deletedCount, () => {
+			void plugin.commandService?.undo();
 		});
 	}, [flashcardInfo, plugin]);
 

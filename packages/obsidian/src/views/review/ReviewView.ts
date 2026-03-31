@@ -136,7 +136,7 @@ export class ReviewView extends ItemView {
 			app: this.app,
 			getReview: () => this.review,
 			flashcardManager: this.flashcardManager,
-			undoService: plugin.undoService ?? undefined,
+			commandService: plugin.commandService ?? undefined,
 		});
 
 		this.answerHandler = new AnswerHandler({

@@ -1,6 +1,12 @@
+import { DeleteCardCommand } from "@true-recall/obsidian/commands/commands/card-delete.cmd";
+import { ForgetCommand } from "@true-recall/obsidian/commands/commands/card-forget.cmd";
+import {
+	SuspendCommand,
+	UnsuspendCommand,
+} from "@true-recall/obsidian/commands/commands/card-suspend.cmd";
+import { ChangeNoteTypeCommand } from "@true-recall/obsidian/commands/commands/note-type.cmd";
 import { getSourceNoteNameFromFile } from "@true-recall/obsidian/features/library/ui/panel/utils/panel-helpers";
 import { useApp, usePlugin } from "@true-recall/obsidian/preact";
-import { pushDeleteUndo } from "@true-recall/obsidian/services/undo.service";
 import { useCallback } from "preact/hooks";
 
 import { usePanelScroll } from "./PanelScrollContext";
@@ -116,16 +122,12 @@ export function useSelectionActions() {
 		if (!confirmed) return;
 
 		const cardIds = selectedCards.map((card) => card.id);
-		const result =
-			plugin.flashcardManager.removeFlashcardsByIdsWithDetails(cardIds);
-
-		if (result.ok) {
-			pushDeleteUndo(plugin, result);
-		}
+		const cmd = new DeleteCardCommand(cardIds);
+		await plugin.commandService?.execute(cmd);
 
 		panel.exitSelectionMode();
-		notify().cardsDeletedWithUndo(result.affectedCount, () => {
-			void plugin.undoService?.undo();
+		notify().cardsDeletedWithUndo(cmd.deletedCount, () => {
+			void plugin.commandService?.undo();
 		});
 	}, [flashcardInfo, currentFile, selectedCardIds, plugin, panel]);
 
@@ -137,7 +139,6 @@ export function useSelectionActions() {
 		const { notify } = await import(
 			"@true-recall/obsidian/services/notification.service"
 		);
-		const { mutate } = await import("@true-recall/obsidian/data");
 
 		const cardIds = Array.from(selectedCardIds);
 		const noteInfos = plugin.cardStore.cards.getNoteInfoForCardIds(cardIds);
@@ -169,24 +170,16 @@ export function useSelectionActions() {
 		if (result.cancelled || !result.targetNoteTypeId || !result.fieldMapping)
 			return;
 
-		let totalCreated = 0;
-		let totalDeleted = 0;
-
 		for (const info of noteInfos) {
-			const r = plugin.flashcardManager.changeNoteType(
+			const cmd = new ChangeNoteTypeCommand(
 				info.noteId,
 				result.targetNoteTypeId,
 				result.fieldMapping,
 			);
-			totalCreated += r.createdCardIds.length;
-			totalDeleted += r.deletedCardIds.length;
+			await plugin.commandService?.execute(cmd);
 		}
 
-		const parts: string[] = [`${noteInfos.length} note(s) changed`];
-		if (totalCreated > 0) parts.push(`${totalCreated} cards created`);
-		if (totalDeleted > 0) parts.push(`${totalDeleted} cards removed`);
-		mutate("card:updated", () => {});
-		notify().success(parts.join(", "));
+		notify().success(`${noteInfos.length} note(s) changed`);
 		panel.exitSelectionMode();
 	}, [flashcardInfo, selectedCardIds, app, plugin, panel]);
 
@@ -195,13 +188,12 @@ export function useSelectionActions() {
 		const { notify } = await import(
 			"@true-recall/obsidian/services/notification.service"
 		);
-		const { mutate } = await import("@true-recall/obsidian/data");
 
 		const cardIds = Array.from(selectedCardIds);
-		const count = plugin.cardStore.cards.bulkSuspend(cardIds);
-		mutate("card:suspended", () => {});
+		const cmd = new SuspendCommand(cardIds);
+		await plugin.commandService?.execute(cmd);
 		panel.exitSelectionMode();
-		notify().success(`Suspended ${count} card(s)`);
+		notify().success(`Suspended ${cardIds.length} card(s)`);
 	}, [flashcardInfo, selectedCardIds, plugin, panel]);
 
 	const handleUnsuspendSelected = useCallback(async () => {
@@ -209,13 +201,12 @@ export function useSelectionActions() {
 		const { notify } = await import(
 			"@true-recall/obsidian/services/notification.service"
 		);
-		const { mutate } = await import("@true-recall/obsidian/data");
 
 		const cardIds = Array.from(selectedCardIds);
-		const count = plugin.cardStore.cards.bulkUnsuspend(cardIds);
-		mutate("card:unsuspended", () => {});
+		const cmd = new UnsuspendCommand(cardIds);
+		await plugin.commandService?.execute(cmd);
 		panel.exitSelectionMode();
-		notify().success(`Unsuspended ${count} card(s)`);
+		notify().success(`Unsuspended ${cardIds.length} card(s)`);
 	}, [flashcardInfo, selectedCardIds, plugin, panel]);
 
 	const handleForgetSelected = useCallback(async () => {
@@ -223,18 +214,12 @@ export function useSelectionActions() {
 		const { notify } = await import(
 			"@true-recall/obsidian/services/notification.service"
 		);
-		const { mutate } = await import("@true-recall/obsidian/data");
 
 		const cardIds = Array.from(selectedCardIds);
-		const count = plugin.cardStore.cards.bulkForget(cardIds);
-		if (count === 0) {
-			notify().warning("Forget is only available for non-New cards");
-			return;
-		}
-		plugin.sessionPersistence?.removeReviewedCards(cardIds);
-		mutate("card:reset", () => {});
+		const cmd = new ForgetCommand(cardIds);
+		await plugin.commandService?.execute(cmd);
 		panel.exitSelectionMode();
-		notify().cardsForgotten(count);
+		notify().cardsForgotten(cardIds.length);
 	}, [flashcardInfo, selectedCardIds, plugin, panel]);
 
 	return {

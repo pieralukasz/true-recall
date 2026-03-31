@@ -1,7 +1,3 @@
-import {
-	buildByokPrompt,
-	buildCardFormatSpec,
-} from "../prompts/block-prompt-builder";
 import type { IHttpClient } from "../../interfaces/http-client";
 import type { NoteType } from "../../types/note.types";
 import type { TrueRecallSettings } from "../../types/settings.types";
@@ -9,6 +5,10 @@ import { StreamingOpenRouterClient } from "../clients/streaming-openrouter-clien
 import type { AIClientConfig } from "../config/ai-client-config";
 import { resolveAIClientConfig } from "../config/ai-client-config";
 import { IncrementalFlashcardParser } from "../parsing/incremental-flashcard-parser";
+import {
+	buildByokPrompt,
+	buildCardFormatSpec,
+} from "../prompts/block-prompt-builder";
 import {
 	createThrottledPartialUpdater,
 	finishStreaming,
@@ -47,6 +47,7 @@ export function buildGenerationPrompt(
 export interface StreamingGenerationResult {
 	created: number;
 	duplicates: number;
+	createdCardIds: string[];
 }
 
 /** Minimal file reference for streaming generation (replaces Obsidian TFile). */
@@ -133,6 +134,7 @@ export class StreamingGenerationService {
 
 		let createdCount = 0;
 		let duplicateCount = 0;
+		const createdCardIds: string[] = [];
 		const throttledUpdatePartial = createThrottledPartialUpdater(this.schedule);
 		const onCount = (created: number, dups: number) => {
 			createdCount += created;
@@ -157,7 +159,7 @@ export class StreamingGenerationService {
 
 		for await (const chunk of stream) {
 			const events = parser.feed(chunk.content);
-			await processCardEvents(
+			const ids = await processCardEvents(
 				events,
 				sourceFile,
 				this.flashcardManager,
@@ -165,10 +167,11 @@ export class StreamingGenerationService {
 				onCount,
 				text,
 			);
+			createdCardIds.push(...ids);
 		}
 
 		const finalEvents = parser.finish();
-		await processCardEvents(
+		const finalIds = await processCardEvents(
 			finalEvents,
 			sourceFile,
 			this.flashcardManager,
@@ -176,8 +179,13 @@ export class StreamingGenerationService {
 			onCount,
 			text,
 		);
+		createdCardIds.push(...finalIds);
 
 		finishStreaming();
-		return { created: createdCount, duplicates: duplicateCount };
+		return {
+			created: createdCount,
+			duplicates: duplicateCount,
+			createdCardIds,
+		};
 	}
 }

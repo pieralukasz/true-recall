@@ -102,11 +102,15 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 		id: "undo-flashcard-action",
 		name: "Undo last flashcard action",
 		checkCallback: (checking) => {
-			if (!plugin.undoService?.canUndo()) {
-				return false;
-			}
+			const canUndo =
+				plugin.commandService?.canUndo() || plugin.undoService?.canUndo();
+			if (!canUndo) return false;
 			if (!checking) {
-				void plugin.undoService.undo();
+				if (plugin.commandService?.canUndo()) {
+					void plugin.commandService.undo();
+				} else {
+					void plugin.undoService?.undo();
+				}
 			}
 			return true;
 		},

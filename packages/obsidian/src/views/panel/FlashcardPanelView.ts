@@ -3,13 +3,13 @@ import { VIEW_TYPE_FLASHCARD_PANEL } from "@true-recall/core/constants";
 import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
 import { CollectService } from "@true-recall/core/flashcard/lifecycle/collect.service";
 import type { FSRSFlashcardItem } from "@true-recall/core/types/fsrs/card.types";
+import { DeleteCardCommand } from "@true-recall/obsidian/commands/commands/card-delete.cmd";
 import { getDataLayer, Q } from "@true-recall/obsidian/data";
 import { extractHighlights } from "@true-recall/obsidian/features/library/ui/panel/utils/highlight-extractor";
 import { cardsToBlockText } from "@true-recall/obsidian/features/library/ui/panel/utils/panel-helpers";
 import { countCardsByState } from "@true-recall/obsidian/helpers";
 import { mountPreact } from "@true-recall/obsidian/preact/mount";
 import { notify } from "@true-recall/obsidian/services/notification.service";
-import { pushDeleteUndo } from "@true-recall/obsidian/services/undo.service";
 import type { PanelApi } from "@true-recall/obsidian/store";
 import {
 	FlashcardPanelApp,
@@ -545,13 +545,10 @@ export class FlashcardPanelView extends ItemView {
 		if (!confirmed) return;
 
 		const cardIds = state.flashcardInfo.flashcards.map((card) => card.id);
-		const result =
-			this.flashcardManager.removeFlashcardsByIdsWithDetails(cardIds);
-		if (result.ok) {
-			pushDeleteUndo(this.plugin, result);
-		}
-		notify().cardsDeletedWithUndo(result.affectedCount, () => {
-			void this.plugin.undoService?.undo();
+		const cmd = new DeleteCardCommand(cardIds);
+		await this.plugin.commandService?.execute(cmd);
+		notify().cardsDeletedWithUndo(cmd.deletedCount, () => {
+			void this.plugin.commandService?.undo();
 		});
 	}
 
