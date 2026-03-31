@@ -5,8 +5,6 @@
 		"paths": {
 			"@true-recall/core": ["packages/core/src"],
 			"@true-recall/core/*": ["packages/core/src/*"],
-			"@true-recall/ui": ["packages/ui/src"],
-			"@true-recall/ui/*": ["packages/ui/src/*"],
 			"@true-recall/obsidian": ["packages/obsidian/src"],
 			"@true-recall/obsidian/*": ["packages/obsidian/src/*"]
 		},
@@ -17,8 +15,6 @@
 	},
 	"include": [
 		"packages/core/src/**/*.ts",
-		"packages/ui/src/**/*.ts",
-		"packages/ui/src/**/*.tsx",
 		"packages/obsidian/src/**/*.ts",
 		"packages/obsidian/src/**/*.tsx"
 	]
