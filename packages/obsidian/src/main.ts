@@ -32,8 +32,10 @@ import { HierarchyService } from "@true-recall/core/services/notes/hierarchy.ser
 import { NoteTypeService } from "@true-recall/core/services/notes/note-type.service";
 import { PresetService } from "@true-recall/core/services/notes/preset.service";
 import { DayBoundaryService } from "@true-recall/core/services/review/day-boundary.service";
+import { SessionService } from "@true-recall/core/services/review/session.service";
 import type { TrueRecallSettings } from "@true-recall/core/types";
 import { extractFSRSSettings } from "@true-recall/core/types";
+import type { SessionConfig } from "@true-recall/core/types/session-config.types";
 import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpClient";
 import { ObsidianPersistence } from "@true-recall/obsidian/adapters/ObsidianPersistence";
 import type { CommandService } from "@true-recall/obsidian/commands";
@@ -82,7 +84,6 @@ import {
 import { QuickNoteEditorModal } from "@true-recall/obsidian/modals/study/quick-note-editor/QuickNoteEditorModal";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 import { setLastMutation } from "@true-recall/obsidian/services/signals";
-import { UndoService } from "@true-recall/obsidian/services/undo.service";
 import { TrueRecallSettingTab } from "@true-recall/obsidian/settings";
 import { type AppStore, createAppStore } from "@true-recall/obsidian/store";
 import { isDesktop } from "@true-recall/obsidian/utils/platform";
@@ -144,7 +145,6 @@ export default class TrueRecallPlugin extends Plugin {
 	deviceIdService: DeviceIdService | null = null;
 	deviceDiscovery: DeviceDiscoveryService | null = null;
 	deletionHandler: DeletionHandlerService | null = null;
-	undoService: UndoService | null = null;
 	commandService: CommandService | null = null;
 	fsrsHelper: FSRSHelperService | null = null;
 	presetService!: PresetService;
@@ -168,6 +168,7 @@ export default class TrueRecallPlugin extends Plugin {
 	private _disposeCoreCardBridge: (() => void) | null = null;
 	private adapters!: ObsidianAdapters;
 	private _unloaded = false;
+	private sessionService = new SessionService();
 	EmbeddableEditor:
 		| import("@true-recall/obsidian/editor/shared/embedded-editor").EmbeddableEditorClass
 		| null = null;
@@ -366,8 +367,6 @@ export default class TrueRecallPlugin extends Plugin {
 		this.addSettingTab(new TrueRecallSettingTab(this.app, this));
 		registerEventHandlers(this);
 
-		this.undoService = new UndoService(this);
-
 		const { CommandService: CmdService } = await import(
 			"@true-recall/obsidian/commands"
 		);
@@ -471,7 +470,6 @@ export default class TrueRecallPlugin extends Plugin {
 	onunload(): void {
 		this._unloaded = true;
 		this.localApi?.stop();
-		this.undoService?.clear();
 		this.commandService?.clear();
 		this.backgroundBackupManager?.stop();
 		this.statusBarWidget?.dispose();
@@ -563,17 +561,47 @@ export default class TrueRecallPlugin extends Plugin {
 		await activateView(this.app, VIEW_TYPE_SIMULATOR, { useMainArea: true });
 	}
 
+	async startReview(config: SessionConfig): Promise<void> {
+		if (!this.isStoreReady()) {
+			notify().error(
+				"Database not ready. Please wait for plugin to fully load.",
+			);
+			return;
+		}
+
+		const allCards = this.flashcardManager.getAllFSRSCards();
+		const archivedSourceUids = this.hierarchyService.getArchivedSourceUids();
+
+		const result = this.sessionService.validate(
+			config,
+			allCards,
+			archivedSourceUids,
+			{
+				ignoreDailyLimitsForNoteStudy:
+					this.settings.ignoreDailyLimitsForNoteStudy,
+			},
+		);
+
+		if (!result.valid) {
+			if (result.message) notify().info(result.message);
+			return;
+		}
+
+		await this.openReviewViewWithFilters(result.filters);
+	}
+
 	private async handleSessionResult(
 		result: import("@true-recall/core/types/events.types").SessionResult,
 	): Promise<void> {
 		if (result.cancelled) return;
 
 		if (result.useDefaultDeck) {
-			await this.openReviewViewWithFilters({});
+			await this.startReview({ mode: "all_due" });
 			return;
 		}
 
-		await this.openReviewViewWithFilters({
+		await this.startReview({
+			mode: "custom",
 			sourceNoteFilter: result.sourceNoteFilter,
 			sourceNoteFilters: result.sourceNoteFilters,
 			filePathFilter: result.filePathFilter,
@@ -588,7 +616,7 @@ export default class TrueRecallPlugin extends Plugin {
 			recentlyFailed: result.recentlyFailed,
 			cardLimit: result.cardLimit,
 			studyAheadDays: result.studyAheadDays,
-			customReviewOrder: result.reviewOrder,
+			reviewOrder: result.reviewOrder,
 			crammingMode: result.crammingMode,
 		});
 	}
@@ -768,59 +796,11 @@ export default class TrueRecallPlugin extends Plugin {
 			notify().info(`No flashcards found for "${file.basename}"`);
 			return;
 		}
-
-		const allCards = this.flashcardManager.getAllFSRSCards();
-		const noteCards = allCards.filter((c) => c.sourceUid === sourceUid);
-
-		if (noteCards.length === 0) {
-			notify().info(`No flashcards found for "${file.basename}"`);
-			return;
-		}
-
-		const availableCards = noteCards.filter((c) => {
-			return this.dayBoundaryService.isCardAvailable(c);
-		});
-
-		if (availableCards.length === 0) {
-			notify().info(
-				`No cards due for "${file.basename}". All ${noteCards.length} cards are scheduled for later.`,
-			);
-			return;
-		}
-
-		await this.openReviewViewWithFilters({
-			sourceUidFilter: sourceUid,
-			ignoreDailyLimits: true,
-		});
+		await this.startReview({ mode: "note", sourceUid });
 	}
 
 	async reviewTodaysCards(): Promise<void> {
-		if (!this.isStoreReady()) {
-			notify().error(
-				"Database not ready. Please wait for plugin to fully load.",
-			);
-			return;
-		}
-		const allCards = this.flashcardManager.getAllFSRSCards();
-
-		const todayStart = new Date();
-		todayStart.setHours(0, 0, 0, 0);
-
-		const todaysCards = allCards.filter((c) => {
-			const createdAt = c.fsrs.createdAt;
-			if (!createdAt || createdAt < todayStart.getTime()) return false;
-			return this.dayBoundaryService.isCardAvailable(c);
-		});
-
-		if (todaysCards.length === 0) {
-			notify().info("No new cards created today");
-			return;
-		}
-
-		await this.openReviewViewWithFilters({
-			createdTodayOnly: true,
-			ignoreDailyLimits: true,
-		});
+		await this.startReview({ mode: "created_today" });
 	}
 
 	async openReviewViewWithFilters(rawFilters: SessionFilters): Promise<void> {
@@ -1142,11 +1122,7 @@ export default class TrueRecallPlugin extends Plugin {
 		};
 
 		const onReviewNotes = (noteNames: string[], dueOnly: boolean) => {
-			this.openReviewViewWithFilters({
-				sourceNoteFilters: noteNames,
-				ignoreDailyLimits: true,
-				stateFilter: dueOnly ? "due" : undefined,
-			}).catch((error) => {
+			this.startReview({ mode: "notes", noteNames, dueOnly }).catch((error) => {
 				notify().error("Failed to start review session", error);
 			});
 		};

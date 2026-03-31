@@ -4,6 +4,7 @@ import type { Command, CommandContext, CommandHook } from "./command.types";
 
 export class CommandService {
 	private stack: Command[] = [];
+	private redoStack: Command[] = [];
 	private readonly maxStackSize = 50;
 	private hooks = new Set<CommandHook>();
 	private ctx: CommandContext;
@@ -14,7 +15,6 @@ export class CommandService {
 
 	async execute(command: Command): Promise<void> {
 		if (command.deferred) {
-			// Deferred commands manage their own mutate() timing
 			await command.execute(this.ctx);
 		} else {
 			await mutate(command.mutationType, () => command.execute(this.ctx));
@@ -28,6 +28,9 @@ export class CommandService {
 		if (this.stack.length > this.maxStackSize) {
 			this.stack.shift();
 		}
+
+		// New action invalidates redo history
+		this.redoStack = [];
 	}
 
 	async undo(): Promise<boolean> {
@@ -52,11 +55,45 @@ export class CommandService {
 				hook.afterUndo?.(command);
 			}
 
+			// Deferred commands can't be redone (ephemeral queue state)
+			if (!command.deferred) {
+				this.redoStack.push(command);
+			}
+
 			notify().undoComplete(command.description);
 			return true;
 		} catch (error) {
 			console.error("[CommandService] Error executing undo:", error);
 			notify().undoFailed(command.description);
+			return false;
+		}
+	}
+
+	async redo(): Promise<boolean> {
+		const command = this.redoStack.pop();
+		if (!command) {
+			notify().nothingToRedo();
+			return false;
+		}
+
+		try {
+			for (const hook of this.hooks) {
+				hook.beforeRedo?.(command);
+			}
+
+			await mutate(command.mutationType, () => command.execute(this.ctx));
+
+			for (const hook of this.hooks) {
+				hook.afterRedo?.(command);
+			}
+
+			this.stack.push(command);
+
+			notify().redoComplete(command.description);
+			return true;
+		} catch (error) {
+			console.error("[CommandService] Error executing redo:", error);
+			notify().redoFailed(command.description);
 			return false;
 		}
 	}
@@ -72,6 +109,10 @@ export class CommandService {
 		return this.stack.length > 0;
 	}
 
+	canRedo(): boolean {
+		return this.redoStack.length > 0;
+	}
+
 	peekDescription(): string | null {
 		const entry = this.stack[this.stack.length - 1];
 		return entry?.description ?? null;
@@ -83,10 +124,12 @@ export class CommandService {
 
 	clear(): void {
 		this.stack = [];
+		this.redoStack = [];
 	}
 
 	clearByType(...types: string[]): void {
 		const typeSet = new Set(types);
 		this.stack = this.stack.filter((cmd) => !typeSet.has(cmd.type));
+		this.redoStack = this.redoStack.filter((cmd) => !typeSet.has(cmd.type));
 	}
 }

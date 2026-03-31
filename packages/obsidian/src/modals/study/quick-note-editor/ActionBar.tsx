@@ -1,5 +1,5 @@
 import { NoteTypePicker } from "@true-recall/obsidian/modals/core/add-flashcards/NoteTypePicker";
-import { Clickable } from "@true-recall/obsidian/components/Clickable";
+import { Clickable } from "@true-recall/obsidian/components";
 import { NotePickerCombobox } from "@true-recall/obsidian/components/NotePickerCombobox";
 import type { App, TFile } from "obsidian";
 

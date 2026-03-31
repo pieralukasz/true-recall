@@ -87,12 +87,7 @@ export function LeaderboardWidget({ source }: { source: string }) {
 	const dangerBelow = configValue(config, "dangerBelow", 65) as number;
 
 	const handleNoteClick = (name: string) => {
-		plugin
-			.openReviewViewWithFilters({
-				sourceNoteFilter: name,
-				ignoreDailyLimits: true,
-			})
-			.catch(() => {});
+		plugin.startReview({ mode: "notes", noteNames: [name] }).catch(() => {});
 	};
 
 	const handleReviewWeakest = () => {

@@ -122,10 +122,9 @@ export function DecayWidget({
 	const handleReviewAtRisk = () => {
 		if (!data.sourceNoteName) return;
 		plugin
-			.openReviewViewWithFilters({
+			.startReview({
+				mode: "weak_cards",
 				sourceNoteFilter: data.sourceNoteName,
-				weakCardsOnly: true,
-				ignoreDailyLimits: true,
 			})
 			.catch(() => {});
 	};

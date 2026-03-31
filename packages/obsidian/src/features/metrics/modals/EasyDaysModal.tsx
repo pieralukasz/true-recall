@@ -1,8 +1,9 @@
-import { DayOfWeekSelector } from "./easy-days/DayOfWeekSelector";
-import { SpecificDatesList } from "./easy-days/SpecificDatesList";
 import type { EasyDaysConfig } from "@true-recall/core/types";
-import { Clickable } from "@true-recall/obsidian/components";
-import { ModalFooter, SECONDARY_BTN } from "@true-recall/obsidian/components/ModalFooter";
+import {
+	Clickable,
+	ModalFooter,
+	SECONDARY_BTN,
+} from "@true-recall/obsidian/components";
 import {
 	BasePromiseModal,
 	type CancellableResult,
@@ -10,6 +11,8 @@ import {
 import type { App } from "obsidian";
 import { render } from "preact";
 import { useState } from "preact/hooks";
+import { DayOfWeekSelector } from "./easy-days/DayOfWeekSelector";
+import { SpecificDatesList } from "./easy-days/SpecificDatesList";
 
 export interface EasyDaysResult extends CancellableResult {
 	easyDays?: EasyDaysConfig;

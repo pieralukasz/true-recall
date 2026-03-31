@@ -1,87 +1,81 @@
 export {
-	type QueueBuildOptions,
-	ReviewService,
-} from "./review/review.service";
-
-export {
-	type FieldConfig,
-	type FieldChangeEvent,
-	type FieldChangeCallback,
-	FrontmatterIndexService,
-} from "./notes/frontmatter-index.service";
-
-export {
-	type HierarchyTreeNode,
-	type ProjectNode,
-	type LinkResolver,
-	HierarchyService,
-} from "./notes/hierarchy.service";
-
-export {
-	type NoteTypeServiceDeps,
-	NoteTypeService,
-} from "./notes/note-type.service";
-
-export { FSRSService } from "./fsrs/fsrs.service";
-
-export {
-	type SqlQuery,
 	type BuildQueryOptions,
 	buildBrowserQuery,
+	type SqlQuery,
 } from "./browser/browser-query-builder";
-
+export { CardBrowserQueryService } from "./browser/card-browser-query.service";
 export {
-	type IntegrityReport,
-	IntegrityCheckService,
-} from "./maintenance/integrity-check.service";
-
+	detectEmptyCards,
+	type EmptyCardInfo,
+	type GeneratedCard,
+	generateCardsForNote,
+} from "./cards/card-generation.service";
 export {
+	deriveCardType,
+	fieldIsEmpty,
+	renderTemplate,
+	type TemplateContext,
+} from "./cards/template-engine";
+
+export { FSRSService } from "./fsrs/fsrs.service";
+export {
+	FSRSSimulatorService,
 	type SequenceReview,
 	type SequenceSimulation,
-	FSRSSimulatorService,
 } from "./fsrs/fsrs-simulator.service";
 
 export {
-	type CardFilterOptions,
-	type GlobalPresetQueueContext,
-	filterActiveCards,
-	getEmptyQueueMessage,
-	buildQueueOptions,
-	isGlobalReviewSession,
-	buildGlobalPresetQueueContext,
-	matchesSessionFilters,
-} from "./review/session-helpers";
+	IntegrityCheckService,
+	type IntegrityReport,
+} from "./maintenance/integrity-check.service";
+export {
+	type FieldChangeCallback,
+	type FieldChangeEvent,
+	type FieldConfig,
+	FrontmatterIndexService,
+} from "./notes/frontmatter-index.service";
+export {
+	HierarchyService,
+	type HierarchyTreeNode,
+	type LinkResolver,
+	type ProjectNode,
+} from "./notes/hierarchy.service";
+export {
+	NoteTypeService,
+	type NoteTypeServiceDeps,
+} from "./notes/note-type.service";
 
 export {
-	type TemplateContext,
-	renderTemplate,
-	fieldIsEmpty,
-	deriveCardType,
-} from "./cards/template-engine";
-
-export {
+	type PresetChainEntry,
 	type PresetResolutionContext,
 	type PresetResolutionResult,
-	type PresetChainEntry,
-	type PresetSource,
 	PresetService,
+	type PresetSource,
 } from "./notes/preset.service";
-
-export {
-	type GeneratedCard,
-	type EmptyCardInfo,
-	generateCardsForNote,
-	detectEmptyCards,
-} from "./cards/card-generation.service";
-
 export {
 	type ActionableSessionSnapshot,
-	type INoteResolver,
 	type ActionableSessionSnapshotDeps,
 	type ActionableSessionSnapshotOptions,
 	computeActionableSessionSnapshot,
+	type INoteResolver,
 } from "./review/actionable-session-snapshot.service";
-
 export { DayBoundaryService } from "./review/day-boundary.service";
-
-export { CardBrowserQueryService } from "./browser/card-browser-query.service";
+export {
+	type QueueBuildOptions,
+	ReviewService,
+} from "./review/review.service";
+export {
+	SessionService,
+	type SessionServiceSettings,
+	type SessionValidation,
+} from "./review/session.service";
+export {
+	buildGlobalPresetQueueContext,
+	buildQueueOptions,
+	type CardFilterOptions,
+	filterActiveCards,
+	type GlobalPresetQueueContext,
+	getEmptyQueueMessage,
+	isGlobalReviewSession,
+	matchesSessionFilters,
+} from "./review/session-helpers";

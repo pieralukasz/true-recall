@@ -1,15 +1,15 @@
-import { EasyDaysModal } from "@true-recall/obsidian/features/metrics/modals/EasyDaysModal";
-import { notify } from "@true-recall/obsidian/services/notification.service";
 import type { TrueRecallSettings } from "@true-recall/core/types";
-import type { FsrsPluginHost } from "../../../types/plugin-host.types";
 import {
 	ActionButton,
 	FormCard,
 	FormField,
 	InfoBlock,
 } from "@true-recall/obsidian/components";
+import { EasyDaysModal } from "@true-recall/obsidian/features/metrics/modals/EasyDaysModal";
+import { notify } from "@true-recall/obsidian/services/notification.service";
 import type { App } from "obsidian";
 import { useCallback } from "preact/hooks";
+import type { FsrsPluginHost } from "../../../types/plugin-host.types";
 
 interface EasyDaysSectionProps {
 	plugin: FsrsPluginHost;
@@ -35,25 +35,22 @@ export function EasyDaysSection({
 	const specificDatesCount = easyDays.specificDates.length;
 
 	const pushUndo = useCallback(
-		(
+		async (
 			affectedCount: number,
 			changes: Array<{ cardId: string; originalDue: string; newDue: string }>,
 		) => {
-			plugin.undoService?.push({
-				id: crypto.randomUUID(),
-				actionType: "fsrs-helper-operation",
-				description: `Apply easy days (${affectedCount} cards)`,
-				timestamp: Date.now(),
-				payload: {
-					type: "fsrs-helper-operation",
-					operation: "apply-easy-days",
-					changes: changes.map((c) => ({
-						cardId: c.cardId,
-						originalDue: c.originalDue,
-						newDue: c.newDue,
-					})),
-				},
-			});
+			const { FSRSHelperCommand } = await import(
+				"@true-recall/obsidian/commands/commands/fsrs-helper.cmd"
+			);
+			const cmd = new FSRSHelperCommand(
+				`Apply easy days (${affectedCount} cards)`,
+				changes.map((c) => ({
+					cardId: c.cardId,
+					originalDue: c.originalDue,
+					newDue: c.newDue,
+				})),
+			);
+			void plugin.commandService?.execute(cmd);
 		},
 		[plugin],
 	);

@@ -49,9 +49,7 @@ export function HealthWidget({ source }: { source: string }) {
 					: "var(--color-red)";
 
 	const handleBarClick = () => {
-		plugin
-			.openReviewViewWithFilters({ overdueOnly: true, ignoreDailyLimits: true })
-			.catch(() => {});
+		plugin.startReview({ mode: "overdue" }).catch(() => {});
 	};
 
 	const handleBucketClick = (bucketIdx: number) => {
@@ -68,7 +66,8 @@ export function HealthWidget({ source }: { source: string }) {
 		if (!range) return;
 
 		plugin
-			.openReviewViewWithFilters({
+			.startReview({
+				mode: "custom",
 				stabilityRange: range,
 				ignoreDailyLimits: true,
 			})

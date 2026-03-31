@@ -6,6 +6,7 @@ import type {
 	FSRSFlashcardItem,
 	TrueRecallSettings,
 } from "@true-recall/core/types";
+import { DeleteCardCommand } from "@true-recall/obsidian/commands/commands/card-delete.cmd";
 import { AppNavBar } from "@true-recall/obsidian/components";
 import { Q, useQuery } from "@true-recall/obsidian/data";
 import { BrowserSidebar } from "@true-recall/obsidian/features/library/ui/browser/components/BrowserSidebar";
@@ -31,7 +32,6 @@ import {
 import { notifyDuplicateError } from "@true-recall/obsidian/features/library/ui/panel/utils/panel-helpers";
 import { useApp, usePlugin } from "@true-recall/obsidian/preact";
 import { notify } from "@true-recall/obsidian/services/notification.service";
-import { pushDeleteUndo } from "@true-recall/obsidian/services/undo.service";
 import { useCallback, useEffect, useMemo, useRef } from "preact/hooks";
 
 const PAGE_SIZE = BROWSER_PAGE_SIZE;
@@ -305,16 +305,13 @@ export function CardBrowserApp({
 		});
 		if (!confirmed) return;
 
-		const deleteResult =
-			plugin.flashcardManager.removeFlashcardsByIdsWithDetails(orphanedIds);
-		if (deleteResult.ok) {
-			pushDeleteUndo(plugin, deleteResult);
-		}
-		notify().cardsDeletedWithUndo(deleteResult.affectedCount, () => {
-			void plugin.undoService?.undo();
+		const cmd = new DeleteCardCommand(orphanedIds);
+		await plugin.commandService?.execute(cmd);
+		notify().cardsDeletedWithUndo(cmd.deletedCount, () => {
+			void plugin.commandService?.undo();
 		});
 
-		const deletedSet = new Set(deleteResult.affectedIds);
+		const deletedSet = new Set(orphanedIds);
 		selectedIds.value = new Set(
 			[...selectedIds.value].filter((id) => !deletedSet.has(id)),
 		);

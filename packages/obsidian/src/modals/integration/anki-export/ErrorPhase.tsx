@@ -1,5 +1,4 @@
-import { Clickable } from "@true-recall/obsidian/components";
-import { SECONDARY_BTN } from "@true-recall/obsidian/components/ModalFooter";
+import { Clickable, SECONDARY_BTN } from "@true-recall/obsidian/components";
 
 export interface ErrorPhaseProps {
 	message: string;

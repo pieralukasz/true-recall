@@ -1,4 +1,4 @@
-import { Clickable } from "@true-recall/obsidian/components/Clickable";
+import { Clickable } from "@true-recall/obsidian/components";
 import { SearchInput } from "@true-recall/obsidian/components/SearchInput";
 import type { MoveCardResult } from "@true-recall/obsidian/modals/shared/MoveCardModal";
 import {

@@ -1,5 +1,5 @@
 import type { FSRSPreset } from "@true-recall/core/types";
-import { Clickable } from "@true-recall/obsidian/components/Clickable";
+import { Clickable } from "@true-recall/obsidian/components";
 import { usePlugin } from "@true-recall/obsidian/preact";
 import { useCallback, useMemo, useState } from "preact/hooks";
 import { DailyLimitsSection } from "./DailyLimitsSection";

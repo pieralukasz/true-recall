@@ -77,10 +77,7 @@ export function ProjectWidget({
 			stats={stats}
 			onReview={() => {
 				plugin
-					.openReviewViewWithFilters({
-						projectPath: sourcePath,
-						ignoreDailyLimits: true,
-					})
+					.startReview({ mode: "project", projectPath: sourcePath })
 					.catch(() => {});
 			}}
 			onCustomStudy={() => {

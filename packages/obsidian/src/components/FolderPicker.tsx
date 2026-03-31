@@ -1,4 +1,4 @@
-import { Clickable } from "@true-recall/obsidian/components/Clickable";
+import { Clickable } from "@true-recall/obsidian/components";
 import { SearchInput } from "@true-recall/obsidian/components/SearchInput";
 import { useIcon } from "@true-recall/obsidian/preact";
 import { useApp } from "@true-recall/obsidian/preact/ObsidianContext";

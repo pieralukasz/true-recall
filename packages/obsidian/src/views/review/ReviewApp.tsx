@@ -1,3 +1,8 @@
+import type {
+	FSRSFlashcardItem,
+	LocalAnswerAssessment,
+	SemanticGradingResult,
+} from "@true-recall/core/types";
 import {
 	ButtonBar,
 	CardContainer,
@@ -5,15 +10,10 @@ import {
 	SummaryScreen,
 	WaitingScreen,
 } from "@true-recall/obsidian/features/study/ui/review/components";
-import type { PresetPickerOption } from "@true-recall/obsidian/features/study/ui/review/components/PresetPopover";
 import type { TypeInMode } from "@true-recall/obsidian/features/study/ui/review/helpers/type-in-flow";
-import type { ReviewApi } from "@true-recall/obsidian/store";
-import type {
-	FSRSFlashcardItem,
-	LocalAnswerAssessment,
-	SemanticGradingResult,
-} from "@true-recall/core/types";
 import { usePlugin } from "@true-recall/obsidian/preact/ObsidianContext";
+import type { ReviewApi } from "@true-recall/obsidian/store";
+import type { PresetPickerOption } from "@true-recall/ui/review";
 import { useEffect, useLayoutEffect, useState } from "preact/hooks";
 import type { Grade } from "ts-fsrs";
 

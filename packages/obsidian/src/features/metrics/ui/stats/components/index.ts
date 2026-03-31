@@ -1,16 +1,21 @@
-export { CardMaturitySection } from "./CardMaturitySection";
-export { ChartCard } from "./ChartCard";
-export { CollectionHealthBar } from "./CollectionHealthBar";
-export { CreatedVsReviewedChart } from "./CreatedVsReviewedChart";
-export { DistributionSection } from "./DistributionSection";
+// ── Re-exported from @true-recall/ui (platform-agnostic) ────
+export {
+	CardMaturitySection,
+	ChartCard,
+	CollectionHealthBar,
+	CreatedVsReviewedChart,
+	DistributionSection,
+	FutureDueChart,
+	PresetFilter,
+	RangeSummary,
+	RatingDistributionChart,
+	RetentionChart,
+	ReviewHistoryChart,
+	StatsHeader,
+	TodayHero,
+	TrueRetentionCard,
+	WorkloadForecastSection,
+} from "@true-recall/ui/stats";
+
+// ── Obsidian-specific (kept local) ──────────────────────────
 export { FSRSStatusCard } from "./FSRSStatusCard";
-export { FutureDueChart } from "./FutureDueChart";
-export { PresetFilter } from "./PresetFilter";
-export { RangeSummary } from "./RangeSummary";
-export { RatingDistributionChart } from "./RatingDistributionChart";
-export { RetentionChart } from "./RetentionChart";
-export { ReviewHistoryChart } from "./ReviewHistoryChart";
-export { StatsHeader } from "./StatsHeader";
-export { TodayHero } from "./TodayHero";
-export { TrueRetentionCard } from "./TrueRetentionCard";
-export { WorkloadForecastSection } from "./WorkloadForecastSection";

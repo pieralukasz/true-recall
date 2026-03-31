@@ -1,6 +1,7 @@
-import { useApp } from "@true-recall/obsidian/preact/ObsidianContext";
 import { stripBrTags } from "@true-recall/core/utils";
+import { useApp } from "@true-recall/obsidian/preact/ObsidianContext";
 import { MarkdownRenderer, Component as ObsidianComponent } from "obsidian";
+import { memo } from "preact/compat";
 import { useEffect, useRef } from "preact/hooks";
 
 export interface MarkdownContentProps {
@@ -10,7 +11,7 @@ export interface MarkdownContentProps {
 	onLinkClick?: (href: string) => void;
 }
 
-export function MarkdownContent({
+export const MarkdownContent = memo(function MarkdownContent({
 	markdown,
 	filePath = "",
 	class: className,
@@ -55,4 +56,4 @@ export function MarkdownContent({
 	}, [app, markdown, filePath, onLinkClick]);
 
 	return <div ref={ref} class={className ?? ""} />;
-}
+});

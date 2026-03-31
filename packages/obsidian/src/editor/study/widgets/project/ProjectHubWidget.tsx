@@ -75,10 +75,7 @@ export function ProjectHubWidget() {
 					}}
 					onReview={() => {
 						plugin
-							.openReviewViewWithFilters({
-								projectPath: stats.path,
-								ignoreDailyLimits: true,
-							})
+							.startReview({ mode: "project", projectPath: stats.path })
 							.catch(() => {});
 					}}
 					onCustomStudy={() => {

@@ -1,7 +1,7 @@
 import type { FlashcardItem } from "@true-recall/core/types";
 import type { FSRSFlashcardItem } from "@true-recall/core/types/fsrs/card.types";
 import { parseIODefinition } from "@true-recall/core/utils/io-definition";
-import { Clickable } from "@true-recall/obsidian/components/Clickable";
+import { Clickable } from "@true-recall/obsidian/components";
 import { IOCardRenderer } from "@true-recall/obsidian/features/image-occlusion/IOCardRenderer";
 import { useCardActions } from "@true-recall/obsidian/features/library/ui/panel/hooks/useCardActions";
 import { useSelectionActions } from "@true-recall/obsidian/features/library/ui/panel/hooks/useSelectionActions";
@@ -9,6 +9,7 @@ import {
 	type MenuItem,
 	useContextMenu,
 } from "@true-recall/obsidian/preact/useContextMenu";
+import { memo } from "preact/compat";
 import { useCallback, useMemo, useState } from "preact/hooks";
 
 export interface PanelIOGroupProps {
@@ -20,7 +21,7 @@ export interface PanelIOGroupProps {
 	isSelectionMode: boolean;
 }
 
-export function PanelIOGroup({
+export const PanelIOGroup = memo(function PanelIOGroup({
 	cards,
 	fsrsCards,
 	filePath: _filePath,
@@ -161,4 +162,4 @@ export function PanelIOGroup({
 			)}
 		</Clickable>
 	);
-}
+});

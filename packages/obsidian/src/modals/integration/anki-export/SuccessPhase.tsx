@@ -1,5 +1,4 @@
-import { Clickable } from "@true-recall/obsidian/components";
-import { PRIMARY_BTN } from "@true-recall/obsidian/components/ModalFooter";
+import { Clickable, PRIMARY_BTN } from "@true-recall/obsidian/components";
 
 export interface SuccessPhaseProps {
 	filename: string;

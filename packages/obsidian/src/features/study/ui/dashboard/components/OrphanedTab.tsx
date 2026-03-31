@@ -1,5 +1,4 @@
-import { CardCountDisplay } from "@true-recall/obsidian/components/CardCountDisplay";
-import { Clickable } from "@true-recall/obsidian/components/Clickable";
+import { CardCountDisplay, Clickable } from "@true-recall/obsidian/components";
 import { usePlugin } from "@true-recall/obsidian/preact";
 import type { OrphanedCardStats } from "../types";
 

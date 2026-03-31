@@ -1,16 +1,13 @@
-import { IOCardRenderer } from "@true-recall/obsidian/features/image-occlusion/IOCardRenderer";
-import { LivePreviewField } from "@true-recall/obsidian/features/study/ui/review/components/LivePreviewField";
-import {
-	type PresetPickerOption,
-	PresetPopover,
-} from "@true-recall/obsidian/features/study/ui/review/components/PresetPopover";
-import { TypeInCMEditor } from "@true-recall/obsidian/features/study/ui/review/components/TypeInCMEditor";
 import type {
 	FSRSFlashcardItem,
 	LocalAnswerAssessment,
 	SemanticGradingResult,
 } from "@true-recall/core/types";
 import { Clickable } from "@true-recall/obsidian/components";
+import { IOCardRenderer } from "@true-recall/obsidian/features/image-occlusion/IOCardRenderer";
+import { LivePreviewField } from "@true-recall/obsidian/features/study/ui/review/components/LivePreviewField";
+import { TypeInCMEditor } from "@true-recall/obsidian/features/study/ui/review/components/TypeInCMEditor";
+import { type PresetPickerOption, PresetPopover } from "@true-recall/ui/review";
 import { cn } from "@true-recall/ui/utils/cn";
 import { useEffect, useRef, useState } from "preact/hooks";
 

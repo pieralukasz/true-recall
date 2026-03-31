@@ -1,4 +1,4 @@
-import { Clickable } from "@true-recall/obsidian/components/Clickable";
+import { Clickable } from "@true-recall/obsidian/components";
 import type { App } from "obsidian";
 import { render } from "preact";
 import { useCallback, useRef } from "preact/hooks";

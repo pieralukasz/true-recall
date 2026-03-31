@@ -13,9 +13,9 @@ import {
 	type SemanticGradingResult,
 } from "@true-recall/core/types";
 import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpClient";
+import { ReviewUndoHook } from "@true-recall/obsidian/commands";
 import { G, getDataLayer } from "@true-recall/obsidian/data";
 import { computeActionableSessionSnapshot } from "@true-recall/obsidian/features/study/services/actionable-session-snapshot.service";
-import type { PresetPickerOption } from "@true-recall/obsidian/features/study/ui/review/components/PresetPopover";
 import {
 	AnswerHandler,
 	CardActionsHandler,
@@ -51,6 +51,7 @@ import {
 	ReviewApp,
 	ReviewEmptyState,
 } from "@true-recall/obsidian/views/review/ReviewApp";
+import type { PresetPickerOption } from "@true-recall/ui/review";
 import {
 	ItemView,
 	Menu,
@@ -107,6 +108,7 @@ export class ReviewView extends ItemView {
 	private openNoteAction: HTMLElement | null = null;
 	private unsubscribe: (() => void) | null = null;
 	private sessionSignalDisposer: (() => void) | null = null;
+	private disposeReviewHook: (() => void) | null = null;
 	private typeInState: TypeInAssessmentState = createEmptyTypeInState();
 	private sessionTypeInModeEnabled = false;
 	private aiEnabledForTypeIn = false;
@@ -469,12 +471,13 @@ export class ReviewView extends ItemView {
 			},
 		);
 
-		this.plugin.undoService?.setReviewStateManager(this.review, {
-			onUpdateSchedulingPreview: () =>
-				this.answerHandler.updateSchedulingPreview(),
-			onUndoAnswer: (payload, writeCancelled) =>
-				this.answerHandler.handleUndoAnswer(payload, writeCancelled),
-		});
+		this.disposeReviewHook =
+			this.plugin.commandService?.registerHook(
+				new ReviewUndoHook(() => this.review, {
+					onUpdateSchedulingPreview: () =>
+						this.answerHandler.updateSchedulingPreview(),
+				}),
+			) ?? null;
 
 		this.registerDomEvent(document, "keydown", (e: KeyboardEvent) => {
 			const activeView = this.app.workspace.getActiveViewOfType(ReviewView);
@@ -553,8 +556,14 @@ export class ReviewView extends ItemView {
 	}
 
 	async onClose(): Promise<void> {
-		this.plugin.undoService?.setReviewStateManager(null, null);
-		this.plugin.undoService?.clearSessionEntries();
+		this.disposeReviewHook?.();
+		this.disposeReviewHook = null;
+		this.plugin.commandService?.clearByType(
+			"review:answer",
+			"review:bury",
+			"review:suspend",
+			"review:forget",
+		);
 
 		if (this.plugin.cardStore) {
 			await this.plugin.cardStore.flush();

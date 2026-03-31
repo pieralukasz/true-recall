@@ -1,9 +1,9 @@
+import { DeleteCardCommand } from "@true-recall/obsidian/commands/commands/card-delete.cmd";
 import { Clickable } from "@true-recall/obsidian/components";
 import { mutate } from "@true-recall/obsidian/data";
 import { ChangeNoteTypeModal } from "@true-recall/obsidian/modals/library/ChangeNoteTypeModal";
 import { useApp, usePlugin } from "@true-recall/obsidian/preact";
 import { notify } from "@true-recall/obsidian/services/notification.service";
-import { pushDeleteUndo } from "@true-recall/obsidian/services/undo.service";
 import { useCallback } from "preact/hooks";
 
 interface BulkActionsBarProps {
@@ -107,13 +107,10 @@ export function BulkActionsBar({
 		);
 		if (!(await confirm(app, { message: `Delete ${ids.length} cards?` })))
 			return;
-		const result =
-			plugin.flashcardManager.removeFlashcardsByIdsWithDetails(ids);
-		if (result.ok) {
-			pushDeleteUndo(plugin, result);
-		}
-		notify().cardsDeletedWithUndo(result.affectedCount, () => {
-			void plugin.undoService?.undo();
+		const cmd = new DeleteCardCommand(ids);
+		await plugin.commandService?.execute(cmd);
+		notify().cardsDeletedWithUndo(cmd.deletedCount, () => {
+			void plugin.commandService?.undo();
 		});
 		onClearSelection();
 	}, [ids, plugin, app]);

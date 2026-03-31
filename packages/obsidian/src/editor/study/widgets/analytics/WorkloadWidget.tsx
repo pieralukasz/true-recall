@@ -123,10 +123,7 @@ export function WorkloadWidget({ source }: { source: string }) {
 			return;
 		}
 		plugin
-			.openReviewViewWithFilters({
-				studyAheadDays: daysAhead,
-				ignoreDailyLimits: true,
-			})
+			.startReview({ mode: "study_ahead", days: daysAhead })
 			.catch(() => {});
 	};
 

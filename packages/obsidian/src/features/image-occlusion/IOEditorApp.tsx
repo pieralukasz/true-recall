@@ -21,7 +21,7 @@ import {
 } from "./ui-helpers";
 import { ImageService } from "../integration/services/ImageService";
 import { isImageExtension } from "@true-recall/core/types";
-import { Clickable } from "@true-recall/obsidian/components/Clickable";
+import { Clickable } from "@true-recall/obsidian/components";
 import { NotePickerCombobox } from "@true-recall/obsidian/components/NotePickerCombobox";
 import { useApp, usePlugin } from "@true-recall/obsidian/preact/ObsidianContext";
 import { cn } from "@true-recall/ui/utils/cn";

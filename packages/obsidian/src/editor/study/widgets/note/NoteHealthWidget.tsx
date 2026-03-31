@@ -108,20 +108,16 @@ export function NoteHealthWidget({
 	const handleReviewDue = () => {
 		if (!data.sourceNoteName) return;
 		plugin
-			.openReviewViewWithFilters({
-				sourceNoteFilter: data.sourceNoteName,
-				ignoreDailyLimits: true,
-			})
+			.startReview({ mode: "notes", noteNames: [data.sourceNoteName] })
 			.catch(() => {});
 	};
 
 	const handleFixWeak = () => {
 		if (!data.sourceNoteName) return;
 		plugin
-			.openReviewViewWithFilters({
+			.startReview({
+				mode: "weak_cards",
 				sourceNoteFilter: data.sourceNoteName,
-				weakCardsOnly: true,
-				ignoreDailyLimits: true,
 			})
 			.catch(() => {});
 	};

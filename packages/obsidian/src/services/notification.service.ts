@@ -170,6 +170,18 @@ export class NotificationService {
 		this.error(`Failed to undo ${action.toLowerCase()}`);
 	}
 
+	nothingToRedo(): void {
+		this.info("Nothing to redo");
+	}
+
+	redoComplete(action: string): void {
+		this.success(`${action} redone`);
+	}
+
+	redoFailed(action: string): void {
+		this.error(`Failed to redo ${action.toLowerCase()}`);
+	}
+
 	noCardsAvailable(reason?: string): void {
 		const msg = reason
 			? `No cards to review: ${reason}`

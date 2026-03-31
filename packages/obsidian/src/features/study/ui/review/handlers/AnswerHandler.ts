@@ -11,11 +11,11 @@ import type {
 	LocalAnswerAssessment,
 	SemanticGradingResult,
 } from "@true-recall/core/types";
-import { mutate } from "@true-recall/obsidian/data";
+import type { CommandService } from "@true-recall/obsidian/commands";
+import { ReviewAnswerCommand } from "@true-recall/obsidian/commands/commands/review-answer.cmd";
 import type { SessionFilters } from "@true-recall/obsidian/features/study/ui/review/review.types";
 import type TrueRecallPlugin from "@true-recall/obsidian/main";
 import { notify } from "@true-recall/obsidian/services/notification.service";
-import type { AnswerUndoPayload } from "@true-recall/obsidian/services/undo.types";
 import type { ReviewApi } from "@true-recall/obsidian/store";
 import { type Grade, Rating, State } from "ts-fsrs";
 
@@ -36,6 +36,10 @@ export class AnswerHandler {
 	private pendingPreviewRafId: number | null = null;
 
 	constructor(private deps: AnswerHandlerDeps) {}
+
+	private get commandService(): CommandService | null {
+		return this.deps.plugin.commandService ?? null;
+	}
 
 	resolvePreset(card: FSRSFlashcardItem): FSRSPreset {
 		const uid = card.sourceUid ?? "";
@@ -182,83 +186,31 @@ export class AnswerHandler {
 			this.deferSchedulingPreview();
 		}
 
-		// Leech detection: check if card has exceeded the lapse threshold
+		// Leech detection
 		if (rating === Rating.Again) {
 			this.checkLeech(updatedCard, preset);
 		}
 
-		// Undo entry with deferred persistence
-		let writeExecuted = false;
-		let pendingTimeoutId: ReturnType<typeof setTimeout> | null = null;
-
-		this.deps.plugin.undoService?.push({
-			id: crypto.randomUUID(),
-			actionType: "answer",
-			description: `Review (${Rating[rating]})`,
-			timestamp: Date.now(),
-			payload: {
-				type: "answer",
-				card: { ...card },
-				originalFsrs: { ...card.fsrs },
-				previousIndex: currentIndex,
-				wasNewCard: isNewCard,
-				rating,
-				previousState,
-				requeuedAtIndex: requeueData?.position,
-				buriedSiblingIds:
-					buriedSiblings.length > 0
-						? buriedSiblings.map((s) => s.id)
-						: undefined,
-				buriedSiblings: buriedSiblings.length > 0 ? buriedSiblings : undefined,
-			},
-			cancelPendingWrite: () => {
-				if (!writeExecuted && pendingTimeoutId !== null) {
-					clearTimeout(pendingTimeoutId);
-					pendingTimeoutId = null;
-					return true;
-				}
-				return false;
-			},
+		// Push command for undo (deferred write happens inside the command)
+		const cmd = new ReviewAnswerCommand({
+			card: { ...card },
+			originalFsrs: { ...card.fsrs },
+			updatedFsrs: updatedCard.fsrs,
+			previousIndex: currentIndex,
+			wasNewCard: isNewCard,
+			rating,
+			previousState,
+			scheduledDays: result.scheduledDays,
+			elapsedDays: result.elapsedDays,
+			responseTime,
+			presetName: preset.name,
+			requeuedAtIndex: requeueData?.position,
+			buriedSiblingIds:
+				buriedSiblings.length > 0 ? buriedSiblings.map((s) => s.id) : undefined,
+			buriedSiblings: buriedSiblings.length > 0 ? buriedSiblings : undefined,
 		});
 
-		// Defer persistence until after the browser paints the next card
-		pendingTimeoutId = setTimeout(() => {
-			writeExecuted = true;
-			pendingTimeoutId = null;
-
-			const persisted = this.deps.flashcardManager.updateCardFSRS(
-				card.id,
-				updatedCard.fsrs,
-				undefined,
-				{ skipNotification: true },
-			);
-			if (!persisted) {
-				const runtimeReview = this.deps.getReview();
-				runtimeReview.removeCardById(card.id);
-				this.deps.sessionPersistence.removeReviewedCards([card.id]);
-				if (!runtimeReview.isComplete()) {
-					this.updateSchedulingPreview();
-				}
-				return;
-			}
-
-			try {
-				this.deps.sessionPersistence.recordReview(
-					card.id,
-					isNewCard,
-					responseTime,
-					rating,
-					previousState,
-					result.scheduledDays,
-					result.elapsedDays,
-					preset.name,
-				);
-			} catch (error) {
-				console.error("Error recording review to persistent storage:", error);
-			}
-
-			mutate("card:reviewed", () => {});
-		}, 0);
+		void this.commandService?.execute(cmd);
 	}
 
 	// Remove sibling IO/cloze cards from the queue after answering one.
@@ -290,7 +242,7 @@ export class AnswerHandler {
 		return siblings;
 	}
 
-	// Anki-style leech detection: triggers at threshold, then every half-threshold after.
+	// Anki-style leech detection
 	private checkLeech(card: FSRSFlashcardItem, preset: FSRSPreset): void {
 		const threshold = preset.leechThreshold ?? 8;
 		if (!shouldTriggerLeech(card.fsrs.lapses, threshold)) return;
@@ -308,37 +260,6 @@ export class AnswerHandler {
 			notify().warning(`Leech suspended (${lapses} lapses): ${preview}`);
 		} else {
 			notify().info(`Leech detected (${lapses} lapses): ${preview}`);
-		}
-	}
-
-	handleUndoAnswer(payload: AnswerUndoPayload, writeCancelled: boolean): void {
-		try {
-			if (!writeCancelled) {
-				this.deps.sessionPersistence.removeLastReview(
-					payload.card.id,
-					payload.wasNewCard ?? false,
-					payload.rating,
-					payload.previousState,
-				);
-			}
-
-			// Restore buried siblings back into the queue before undoing the answer
-			if (payload.buriedSiblings && payload.buriedSiblings.length > 0) {
-				const review = this.deps.getReview();
-				for (const sibling of payload.buriedSiblings) {
-					review.insertCardAtPosition(sibling, review.queue.length);
-				}
-			}
-
-			this.deps
-				.getReview()
-				.undoLastAnswer(
-					payload.previousIndex,
-					{ ...payload.card, fsrs: payload.originalFsrs },
-					payload.requeuedAtIndex,
-				);
-		} catch (error) {
-			console.error("Error undoing answer:", error);
 		}
 	}
 }

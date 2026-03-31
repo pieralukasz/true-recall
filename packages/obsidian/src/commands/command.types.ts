@@ -25,4 +25,6 @@ export interface CommandHook {
 	afterExecute?(command: Command): void;
 	beforeUndo?(command: Command): void;
 	afterUndo?(command: Command): void;
+	beforeRedo?(command: Command): void;
+	afterRedo?(command: Command): void;
 }

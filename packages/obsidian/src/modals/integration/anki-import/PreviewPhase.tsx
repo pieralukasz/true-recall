@@ -1,7 +1,10 @@
+import {
+	ModalFooter,
+	OptionCheckbox,
+	StatBadge,
+	StatGrid,
+} from "@true-recall/obsidian/components";
 import type { ImportPreview } from "@true-recall/obsidian/modals/integration/anki-import/types";
-import { ModalFooter } from "@true-recall/obsidian/components/ModalFooter";
-import { OptionCheckbox } from "@true-recall/obsidian/components/OptionCheckbox";
-import { StatBadge, StatGrid } from "@true-recall/obsidian/components/StatBadge";
 
 export interface PreviewPhaseProps {
 	preview: ImportPreview;

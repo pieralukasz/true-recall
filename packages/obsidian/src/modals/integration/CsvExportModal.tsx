@@ -1,25 +1,25 @@
+import {
+	CsvExportService,
+	type CsvSeparator,
+} from "@true-recall/core/integration/csv/csv-export.service";
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite/SqliteStoreService";
+import { ObsidianSourceUidResolver } from "@true-recall/obsidian/adapters/ObsidianSourceUidResolver";
+import {
+	Clickable,
+	ModalFooter,
+	OptionCheckbox,
+	PRIMARY_BTN,
+	SECONDARY_BTN,
+} from "@true-recall/obsidian/components";
 import {
 	type ExportMode,
 	ExportScopeSelector,
 } from "@true-recall/obsidian/features/integration/components/ExportScopeSelector";
 import {
-	CsvExportService,
-	type CsvSeparator,
-} from "@true-recall/core/integration/csv/csv-export.service";
-import { ObsidianSourceUidResolver } from "@true-recall/obsidian/adapters/ObsidianSourceUidResolver";
-import {
 	downloadBlob,
 	type NoteEntry,
 	resolveNotes,
 } from "@true-recall/obsidian/features/integration/utils/export-helpers";
-import { Clickable } from "@true-recall/obsidian/components";
-import {
-	ModalFooter,
-	PRIMARY_BTN,
-	SECONDARY_BTN,
-} from "@true-recall/obsidian/components/ModalFooter";
-import { OptionCheckbox } from "@true-recall/obsidian/components/OptionCheckbox";
 import { BaseModal } from "@true-recall/obsidian/modals/shared/BaseModal";
 import type { App } from "obsidian";
 import { render } from "preact";
@@ -203,7 +203,10 @@ export class CsvExportModal extends BaseModal {
 		separator: CsvSeparator;
 	}): ExportPhase {
 		try {
-			const service = new CsvExportService(this.store, new ObsidianSourceUidResolver(this.app));
+			const service = new CsvExportService(
+				this.store,
+				new ObsidianSourceUidResolver(this.app),
+			);
 
 			const { content, filename } = service.export({
 				sourceUids:

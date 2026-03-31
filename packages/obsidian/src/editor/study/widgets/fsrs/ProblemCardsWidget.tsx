@@ -57,12 +57,7 @@ export function ProblemCardsWidget({ source }: { source: string }) {
 	}
 
 	const handleReview = () => {
-		plugin
-			.openReviewViewWithFilters({
-				overdueOnly: true,
-				ignoreDailyLimits: true,
-			})
-			.catch(() => {});
+		plugin.startReview({ mode: "overdue" }).catch(() => {});
 	};
 
 	return (

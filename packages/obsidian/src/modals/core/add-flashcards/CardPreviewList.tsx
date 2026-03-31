@@ -1,6 +1,6 @@
 import type { ParsedCard } from "@true-recall/core/flashcard/parsing/bulk-card-parser";
 import { BUILTIN_CLOZE_ID } from "@true-recall/core/types/note.types";
-import { Clickable } from "@true-recall/obsidian/components/Clickable";
+import { Clickable } from "@true-recall/obsidian/components";
 import { useState } from "preact/hooks";
 
 const COLLAPSED_COUNT = 5;

@@ -1,3 +1,4 @@
+import type { SessionConfig } from "@true-recall/core/types/session-config.types";
 import type { ApiContext, ApiRequest, ApiResponseWriter } from "../api.types";
 import { parseJsonBody, readBody, sendError, sendOk } from "../api.types";
 
@@ -31,6 +32,8 @@ export async function handleStartSession(
 	const body = parseJsonBody<StartSessionInput>(raw);
 	const mode = body?.mode ?? "all_due";
 
+	let config: SessionConfig;
+
 	switch (mode) {
 		case "current_note": {
 			const file = ctx.plugin.app.workspace.getActiveFile();
@@ -38,38 +41,32 @@ export async function handleStartSession(
 				sendError(res, 404, "No active markdown note");
 				return;
 			}
-			await ctx.plugin.reviewNoteFlashcards(file);
-			sendOk(res, { started: true, mode, note: file.basename });
-			return;
+			const sourceUid = await ctx.plugin.flashcardManager
+				.getFrontmatterService()
+				.getSourceNoteUid(file.path);
+			if (!sourceUid) {
+				sendError(res, 404, "No flashcards found for active note");
+				return;
+			}
+			config = { mode: "note", sourceUid };
+			break;
 		}
 
-		case "created_today": {
-			await ctx.plugin.reviewTodaysCards();
-			sendOk(res, { started: true, mode });
-			return;
-		}
+		case "created_today":
+			config = { mode: "created_today" };
+			break;
 
-		case "weak_cards": {
-			await ctx.plugin.openReviewViewWithFilters({
-				weakCardsOnly: true,
-				ignoreDailyLimits: true,
-				bypassScheduling: true,
-			});
-			sendOk(res, { started: true, mode });
-			return;
-		}
+		case "weak_cards":
+			config = { mode: "weak_cards" };
+			break;
 
-		case "overdue": {
-			await ctx.plugin.openReviewViewWithFilters({
-				overdueOnly: true,
-				ignoreDailyLimits: true,
-			});
-			sendOk(res, { started: true, mode });
-			return;
-		}
+		case "overdue":
+			config = { mode: "overdue" };
+			break;
 
-		case "custom": {
-			await ctx.plugin.openReviewViewWithFilters({
+		case "custom":
+			config = {
+				mode: "custom",
 				sourceUidFilter: body?.source_uid,
 				cardLimit: body?.card_limit,
 				stateFilter: body?.state_filter,
@@ -77,15 +74,13 @@ export async function handleStartSession(
 				recentlyFailed: body?.recently_failed,
 				crammingMode: body?.cramming,
 				ignoreDailyLimits: true,
-			});
-			sendOk(res, { started: true, mode, filters: body });
-			return;
-		}
+			};
+			break;
 
-		default: {
-			// "all_due" — standard review with daily limits
-			await ctx.plugin.openReviewViewWithFilters({});
-			sendOk(res, { started: true, mode: "all_due" });
-		}
+		default:
+			config = { mode: "all_due" };
 	}
+
+	await ctx.plugin.startReview(config);
+	sendOk(res, { started: true, mode });
 }

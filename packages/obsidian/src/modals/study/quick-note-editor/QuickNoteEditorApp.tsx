@@ -1,7 +1,7 @@
 import type { EditorView } from "@codemirror/view";
 import { CardTypesEditorModal } from "@true-recall/obsidian/modals/core/card-types-editor/CardTypesEditorModal";
 import { NoteTypeManagerModal } from "@true-recall/obsidian/modals/core/NoteTypeManagerModal";
-import { Clickable } from "@true-recall/obsidian/components/Clickable";
+import { Clickable } from "@true-recall/obsidian/components";
 import {
 	type FormattingTargetRef,
 	FormattingToolbar,

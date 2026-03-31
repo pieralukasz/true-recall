@@ -1,8 +1,8 @@
-import { Clickable } from "@true-recall/obsidian/components/Clickable";
+import { Clickable } from "@true-recall/obsidian/components";
 import { usePlugin } from "@true-recall/obsidian/preact";
+import { MiniDonut } from "@true-recall/ui/dashboard";
 import { useCallback } from "preact/hooks";
 import type { DashboardNoteEntry } from "../types";
-import { MiniDonut } from "./MiniDonut";
 
 interface RecentlyStudiedBarProps {
 	notes: DashboardNoteEntry[];
@@ -16,10 +16,7 @@ export function RecentlyStudiedBar({ notes }: RecentlyStudiedBarProps) {
 			if (note.priority === "done" && note.path) {
 				void plugin.app.workspace.openLinkText(note.name, "");
 			} else {
-				void plugin.openReviewViewWithFilters({
-					sourceNoteFilter: note.name,
-					ignoreDailyLimits: true,
-				});
+				void plugin.startReview({ mode: "notes", noteNames: [note.name] });
 			}
 		},
 		[plugin],

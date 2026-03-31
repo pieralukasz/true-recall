@@ -5,24 +5,28 @@ import { cn } from "../utils/cn";
 import { PRIORITY_DOT } from "./helpers";
 import type { DashboardNoteEntry } from "./types";
 
-interface NoteRowProps {
+export interface NoteRowProps {
 	note: DashboardNoteEntry;
 	onNavigate: () => void;
 	onStudy: () => void;
-	onCustomStudy: () => void;
+	onCustomStudy?: () => void;
 	onProjectClick?: (projectName: string) => void;
 	onPresetClick?: (notePath: string | null) => void;
 	onContextMenu?: (e: MouseEvent) => void;
+	onArchive?: () => void;
+	onUnarchive?: () => void;
+	onRename?: () => void;
+	onDetach?: () => void;
 	isSelectionMode?: boolean;
 	isSelected?: boolean;
 	onToggleSelect?: () => void;
+	onEnterSelection?: () => void;
 }
 
 export function NoteRow({
 	note,
 	onNavigate,
 	onStudy,
-	onCustomStudy: _onCustomStudy,
 	onProjectClick,
 	onPresetClick,
 	onContextMenu,

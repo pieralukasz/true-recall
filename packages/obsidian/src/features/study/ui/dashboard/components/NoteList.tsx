@@ -1,5 +1,6 @@
 import type { Signal } from "@preact/signals";
 import { usePlugin } from "@true-recall/obsidian/preact";
+import { NoteFilters, NoteRow, SelectionBar } from "@true-recall/ui/dashboard";
 import { TFile } from "obsidian";
 import type { RefObject } from "preact";
 import { useRef } from "preact/hooks";
@@ -10,9 +11,6 @@ import { useNoteFiltering } from "../helpers/use-note-filtering";
 import { useNoteSelection } from "../helpers/use-note-selection";
 import { useExternalVirtualList } from "../helpers/use-virtual-list";
 import type { DashboardNoteEntry } from "../types";
-import { NoteFilters } from "./NoteFilters";
-import { NoteRow } from "./NoteRow";
-import { SelectionBar } from "./SelectionBar";
 
 interface NoteListProps {
 	notes: DashboardNoteEntry[];
@@ -80,10 +78,7 @@ export function NoteList({
 	};
 
 	const handleStudyNote = (noteName: string) => {
-		void plugin.openReviewViewWithFilters({
-			sourceNoteFilter: noteName,
-			ignoreDailyLimits: plugin.settings.ignoreDailyLimitsForNoteStudy,
-		});
+		void plugin.startReview({ mode: "notes", noteNames: [noteName] });
 	};
 
 	const handleCustomStudy = (note: DashboardNoteEntry) => {

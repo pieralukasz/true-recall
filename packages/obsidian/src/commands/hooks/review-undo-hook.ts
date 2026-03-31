@@ -1,54 +1,46 @@
 import type { ReviewApi } from "@true-recall/obsidian/store";
 import type { Command, CommandHook } from "../command.types";
-
-export interface ReviewCommandData {
-	previousIndex: number;
-}
+import type { ReviewAnswerCommand } from "../commands/review-answer.cmd";
 
 export interface ReviewUndoCallbacks {
 	onUpdateSchedulingPreview: () => void;
-	onUndoAnswer: (command: Command, writeCancelled: boolean) => void;
 }
 
 export class ReviewUndoHook implements CommandHook {
-	private snapshots = new WeakMap<Command, ReviewCommandData>();
-
 	constructor(
 		private getReview: () => ReviewApi,
 		private callbacks: ReviewUndoCallbacks,
 	) {}
 
-	afterExecute(command: Command): void {
-		if (!isReviewCommand(command)) return;
-
-		this.snapshots.set(command, {
-			previousIndex: this.getReview().currentIndex,
-		});
-	}
-
 	beforeUndo(command: Command): void {
-		if (!isReviewCommand(command)) return;
+		if (!command.type.startsWith("review:")) return;
 
-		const type = command.type;
-
-		if (type === "review:answer") {
-			const writeCancelled = command.cancelPendingWrite?.() ?? false;
-			this.callbacks.onUndoAnswer(command, writeCancelled);
+		if (command.type === "review:answer") {
+			this.undoAnswer(command as ReviewAnswerCommand);
 		}
 
-		if (
-			type === "review:bury" ||
-			type === "review:suspend" ||
-			type === "review:forget"
-		) {
-			// Queue restoration is handled inside the command's undo()
-			// which calls insertCardAtPosition via the getReview callback
-		}
+		// review:bury, review:suspend, review:forget handle their own
+		// queue restoration in their undo() method via getReview()
 
 		this.callbacks.onUpdateSchedulingPreview();
 	}
-}
 
-function isReviewCommand(command: Command): boolean {
-	return command.type.startsWith("review:");
+	private undoAnswer(command: ReviewAnswerCommand): void {
+		const p = command.params;
+		const review = this.getReview();
+
+		// Restore buried siblings back into the queue
+		if (p.buriedSiblings && p.buriedSiblings.length > 0) {
+			for (const sibling of p.buriedSiblings) {
+				review.insertCardAtPosition(sibling, review.queue.length);
+			}
+		}
+
+		// Restore the answered card at its original queue position
+		review.undoLastAnswer(
+			p.previousIndex,
+			{ ...p.card, fsrs: p.originalFsrs },
+			p.requeuedAtIndex,
+		);
+	}
 }

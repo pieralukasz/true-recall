@@ -1,6 +1,9 @@
 import type { AnkiImportResult } from "@true-recall/core/types";
-import { ModalFooter } from "@true-recall/obsidian/components/ModalFooter";
-import { StatBadge, StatGrid } from "@true-recall/obsidian/components/StatBadge";
+import {
+	ModalFooter,
+	StatBadge,
+	StatGrid,
+} from "@true-recall/obsidian/components";
 
 export interface ResultPhaseProps {
 	result: AnkiImportResult;

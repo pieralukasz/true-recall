@@ -5,13 +5,19 @@ import { cn } from "../utils/cn";
 import { computePriority, PRIORITY_DOT } from "./helpers";
 import type { DashboardProject } from "./types";
 
-interface ProjectHeaderRowProps {
+export interface ProjectHeaderRowProps {
 	project: DashboardProject;
 	depth: number;
 	isExpanded: boolean;
 	isVirtual?: boolean;
 	onToggle: () => void;
 	onStudyProject: () => void;
+	onCustomStudy?: () => void;
+	onNavigate?: () => void;
+	onPresetClick?: (path: string | null) => void;
+	onArchive?: () => void;
+	onUnarchive?: () => void;
+	onRename?: () => void;
 	onContextMenu?: (e: MouseEvent) => void;
 }
 

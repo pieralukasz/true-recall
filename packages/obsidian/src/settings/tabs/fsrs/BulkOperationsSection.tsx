@@ -1,6 +1,3 @@
-import { useFsrsHelperOp } from "./useFsrsHelperOp";
-import { notify } from "@true-recall/obsidian/services/notification.service";
-import type { FsrsPluginHost } from "../../../types/plugin-host.types";
 import {
 	ActionButton,
 	FormCard,
@@ -8,7 +5,10 @@ import {
 	TextInput,
 } from "@true-recall/obsidian/components";
 import { confirm } from "@true-recall/obsidian/modals/shared";
+import { notify } from "@true-recall/obsidian/services/notification.service";
 import { useCallback, useMemo, useState } from "preact/hooks";
+import type { FsrsPluginHost } from "../../../types/plugin-host.types";
+import { useFsrsHelperOp } from "./useFsrsHelperOp";
 
 interface BulkOperationsSectionProps {
 	plugin: FsrsPluginHost;
@@ -54,21 +54,18 @@ export function BulkOperationsSection({ plugin }: BulkOperationsSectionProps) {
 						dryRun: false,
 					});
 					if (result && result.affectedCount > 0) {
-						plugin.undoService?.push({
-							id: crypto.randomUUID(),
-							actionType: "fsrs-helper-operation",
-							description: `Reschedule cards (${result.affectedCount} cards)`,
-							timestamp: Date.now(),
-							payload: {
-								type: "fsrs-helper-operation",
-								operation: "reschedule-cards",
-								changes: result.changes.map((c) => ({
-									cardId: c.cardId,
-									originalDue: c.originalDue,
-									newDue: c.newDue,
-								})),
-							},
-						});
+						const { FSRSHelperCommand } = await import(
+							"@true-recall/obsidian/commands/commands/fsrs-helper.cmd"
+						);
+						const cmd = new FSRSHelperCommand(
+							`Reschedule cards (${result.affectedCount} cards)`,
+							result.changes.map((c) => ({
+								cardId: c.cardId,
+								originalDue: c.originalDue,
+								newDue: c.newDue,
+							})),
+						);
+						void plugin.commandService?.execute(cmd);
 						notify().success(
 							`Rescheduled ${result.affectedCount} cards (Ctrl+Z to undo)`,
 						);

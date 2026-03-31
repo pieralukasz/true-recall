@@ -103,12 +103,7 @@ export function UnassignedNotesWidget() {
 
 		// Open review with these UIDs as sourceNoteFilters
 		const noteNames = notes.map((n) => n.name).filter((n): n is string => !!n);
-		plugin
-			.openReviewViewWithFilters({
-				sourceNoteFilters: noteNames,
-				ignoreDailyLimits: true,
-			})
-			.catch(() => {});
+		plugin.startReview({ mode: "notes", noteNames }).catch(() => {});
 	};
 
 	const totalDue = notes.reduce((sum, n) => sum + n.dueCount, 0);

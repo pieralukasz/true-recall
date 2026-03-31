@@ -4,9 +4,9 @@ import type {
 } from "@true-recall/core/metrics/fsrs-tools/statistics/workload-forecast.calculator";
 import type { ChartConfiguration } from "chart.js";
 import { useRef } from "preact/hooks";
-import { CHART_COLORS, withAlpha } from "../helpers/chart-theme";
-import { useChart } from "../hooks/use-chart";
 import { ChartCard } from "./ChartCard";
+import { CHART_COLORS, withAlpha } from "./chart-theme";
+import { useChart } from "./use-chart";
 
 interface WorkloadForecastSectionProps {
 	forecast: WorkloadForecastEntry[];

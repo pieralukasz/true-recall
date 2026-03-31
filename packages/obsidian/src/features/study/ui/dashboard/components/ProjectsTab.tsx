@@ -1,6 +1,11 @@
 import type { Signal } from "@preact/signals";
 import { useSignal } from "@preact/signals";
 import { usePlugin } from "@true-recall/obsidian/preact";
+import {
+	EmptyProjectRow,
+	NoteRow,
+	ProjectHeaderRow,
+} from "@true-recall/ui/dashboard";
 import { TFile } from "obsidian";
 import type { RefObject } from "preact";
 import { useCallback, useEffect, useMemo, useRef } from "preact/hooks";
@@ -15,8 +20,6 @@ import { useProjectActions } from "../helpers/use-project-actions";
 import { useProjectDragDrop } from "../helpers/use-project-drag-drop";
 import { useExternalVirtualList } from "../helpers/use-virtual-list";
 import type { DashboardProject } from "../types";
-import { NoteRow } from "./NoteRow";
-import { EmptyProjectRow, ProjectHeaderRow } from "./ProjectHeaderRow";
 
 interface ProjectsTabProps {
 	projects: DashboardProject[];
@@ -227,7 +230,8 @@ function ProjectHeaderItem({
 							scopeLabel: "Unassigned",
 						});
 					} else {
-						void plugin.openReviewViewWithFilters({
+						void plugin.startReview({
+							mode: "project",
 							projectPath: item.project.path,
 						});
 					}

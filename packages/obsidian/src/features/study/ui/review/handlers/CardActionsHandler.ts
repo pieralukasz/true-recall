@@ -2,13 +2,16 @@ import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.ser
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite";
 import type { FSRSService } from "@true-recall/core/services/fsrs/fsrs.service";
 import type { ReviewService } from "@true-recall/core/services/review/review.service";
-import type {
-	FSRSFlashcardItem,
-	TrueRecallSettings,
-} from "@true-recall/core/types";
-import type { FSRSCardData } from "@true-recall/core/types/fsrs/card.types";
+import type { TrueRecallSettings } from "@true-recall/core/types";
 import { BUILTIN_IMAGE_OCCLUSION_ID } from "@true-recall/core/types/note.types";
-import { mutate } from "@true-recall/obsidian/data";
+import type { CommandService } from "@true-recall/obsidian/commands";
+import { BatchCreateCommand } from "@true-recall/obsidian/commands/commands/card-create.cmd";
+import { UpdateNoteFieldsCommand } from "@true-recall/obsidian/commands/commands/card-update.cmd";
+import {
+	ReviewBuryCommand,
+	ReviewForgetCommand,
+	ReviewSuspendCommand,
+} from "@true-recall/obsidian/commands/commands/review-actions.cmd";
 import type TrueRecallPlugin from "@true-recall/obsidian/main";
 import { MoveCardModal } from "@true-recall/obsidian/modals/shared";
 import { QuickNoteEditorModal } from "@true-recall/obsidian/modals/study/quick-note-editor/QuickNoteEditorModal";
@@ -44,8 +47,12 @@ export class CardActionsHandler {
 		this.callbacks = callbacks;
 	}
 
+	private get commandService(): CommandService | null {
+		return this.deps.plugin.commandService ?? null;
+	}
+
 	canUndo(): boolean {
-		return this.deps.plugin.undoService?.canUndo() ?? false;
+		return this.deps.plugin.commandService?.canUndo() ?? false;
 	}
 
 	canForgetCurrentCard(): boolean {
@@ -58,28 +65,18 @@ export class CardActionsHandler {
 		if (!card) return;
 
 		const siblingIds = this.getGroupSiblingIds(card);
+		const currentIndex = this.deps.getReview().currentIndex;
 
-		this.deferCardWrite({
-			undoType: "suspend",
-			description:
-				siblingIds.length > 1
-					? `Suspend ${siblingIds.length} cards`
-					: "Suspend card",
-			card,
+		const cmd = new ReviewSuspendCommand({
+			card: { ...card },
+			originalFsrs: { ...card.fsrs },
+			previousIndex: currentIndex,
 			siblingIds,
-			execute: () => {
-				for (const id of siblingIds) {
-					const data = this.deps.cardStore.get(id);
-					if (data) {
-						this.deps.flashcardManager.updateCardFSRS(id, {
-							...data,
-							suspended: true,
-						});
-					}
-				}
-			},
+			getReview: () => this.deps.getReview(),
 		});
 
+		void this.commandService?.execute(cmd);
+		this.refreshIfActive();
 		notify().cardSuspended();
 	}
 
@@ -89,26 +86,21 @@ export class CardActionsHandler {
 
 		const buriedUntil = this.getTomorrowDate().toISOString();
 		const siblingIds = this.getGroupSiblingIds(card);
+		const currentIndex = this.deps.getReview().currentIndex;
 
-		this.deferCardWrite({
-			undoType: "bury",
-			description:
-				siblingIds.length > 1 ? `Bury ${siblingIds.length} cards` : "Bury card",
-			card,
-			siblingIds,
-			execute: () => {
-				for (const id of siblingIds) {
-					const data = this.deps.cardStore.get(id);
-					if (data) {
-						this.deps.flashcardManager.updateCardFSRS(id, {
-							...data,
-							buriedUntil,
-						});
-					}
-				}
+		const cmd = new ReviewBuryCommand(
+			{
+				card: { ...card },
+				originalFsrs: { ...card.fsrs },
+				previousIndex: currentIndex,
+				siblingIds,
+				getReview: () => this.deps.getReview(),
 			},
-		});
+			buriedUntil,
+		);
 
+		void this.commandService?.execute(cmd);
+		this.refreshIfActive();
 		notify().cardBuried();
 	}
 
@@ -131,22 +123,18 @@ export class CardActionsHandler {
 			return;
 		}
 
-		this.deferCardWrite({
-			undoType: "forget",
-			description:
-				forgettableIds.length > 1
-					? `Forget ${forgettableIds.length} cards`
-					: "Forget card",
-			card,
+		const currentIndex = this.deps.getReview().currentIndex;
+
+		const cmd = new ReviewForgetCommand({
+			card: { ...card },
+			originalFsrs: { ...card.fsrs },
+			previousIndex: currentIndex,
 			siblingIds: forgettableIds,
-			execute: () => {
-				this.deps.cardStore.cards.bulkForget(forgettableIds);
-				this.deps.plugin.sessionPersistence?.removeReviewedCards(
-					forgettableIds,
-				);
-				mutate("cards:bulk", () => {});
-			},
+			getReview: () => this.deps.getReview(),
 		});
+
+		void this.commandService?.execute(cmd);
+		this.refreshIfActive();
 
 		if (forgettableIds.length === 1) {
 			notify().cardForgotten();
@@ -177,7 +165,6 @@ export class CardActionsHandler {
 		}
 
 		const currentIndex = this.deps.getReview().currentIndex;
-		const undoService = this.deps.plugin.undoService;
 		const buriedUntil = this.getTomorrowDate().toISOString();
 
 		const additionalCards = siblingCards.slice(1).map((c) => ({
@@ -185,42 +172,23 @@ export class CardActionsHandler {
 			originalFsrs: { ...c.fsrs },
 		}));
 
-		let buriedCount = 0;
-		for (const siblingCard of siblingCards) {
-			try {
-				this.deps.flashcardManager.updateCardFSRS(siblingCard.id, {
-					...siblingCard.fsrs,
-					buriedUntil,
-				});
-				buriedCount++;
-			} catch (error) {
-				console.error(
-					`[CardActionsHandler] Error burying card ${siblingCard.id}:`,
-					error,
-				);
-			}
-			this.deps.getReview().removeCardById(siblingCard.id);
-		}
+		const allIds = siblingCards.map((c) => c.id);
 
-		if (buriedCount > 0) {
-			undoService?.push({
-				id: crypto.randomUUID(),
-				actionType: "bury",
-				description: `Bury ${buriedCount} cards`,
-				timestamp: Date.now(),
-				payload: {
-					type: "bury",
-					card: { ...firstSibling },
-					originalFsrs: { ...firstSibling.fsrs },
-					previousIndex: currentIndex,
-					additionalCards:
-						additionalCards.length > 0 ? additionalCards : undefined,
-				},
-			});
-		}
+		const cmd = new ReviewBuryCommand(
+			{
+				card: { ...firstSibling },
+				originalFsrs: { ...firstSibling.fsrs },
+				previousIndex: currentIndex,
+				siblingIds: allIds,
+				getReview: () => this.deps.getReview(),
+			},
+			buriedUntil,
+			additionalCards.length > 0 ? additionalCards : undefined,
+		);
 
+		void this.commandService?.execute(cmd);
 		this.refreshIfActive();
-		notify().cardsBuried(buriedCount);
+		notify().cardsBuried(siblingCards.length);
 	}
 
 	async handleMoveCard(): Promise<void> {
@@ -418,12 +386,12 @@ export class CardActionsHandler {
 	}
 
 	async handleUndo(): Promise<boolean> {
-		const undoService = this.deps.plugin.undoService;
-		if (!undoService?.canUndo()) {
+		const cs = this.commandService;
+		if (!cs?.canUndo()) {
 			notify().nothingToUndo();
 			return false;
 		}
-		return undoService.undo();
+		return cs.undo();
 	}
 
 	// ── Private helpers ─────────────────────────────────
@@ -434,80 +402,16 @@ export class CardActionsHandler {
 		}
 	}
 
-	// Shared pattern for suspend/bury/forget: push undo with deferred write,
-	// remove siblings from queue, refresh preview.
-	private deferCardWrite(opts: {
-		undoType: "suspend" | "bury" | "forget";
-		description: string;
-		card: FSRSFlashcardItem;
-		siblingIds: string[];
-		execute: () => void;
-	}): void {
-		const currentIndex = this.deps.getReview().currentIndex;
-		const undoService = this.deps.plugin.undoService;
-
-		let writeExecuted = false;
-		let pendingTimeoutId: ReturnType<typeof setTimeout> | null = null;
-
-		undoService?.push({
-			id: crypto.randomUUID(),
-			actionType: opts.undoType,
-			description: opts.description,
-			timestamp: Date.now(),
-			payload: {
-				type: opts.undoType,
-				card: { ...opts.card } as FSRSFlashcardItem,
-				originalFsrs: { ...opts.card.fsrs } as FSRSCardData,
-				previousIndex: currentIndex,
-			},
-			cancelPendingWrite: () => {
-				if (!writeExecuted && pendingTimeoutId !== null) {
-					clearTimeout(pendingTimeoutId);
-					pendingTimeoutId = null;
-					return true;
-				}
-				return false;
-			},
-		});
-
-		for (const id of opts.siblingIds) {
-			this.deps.getReview().removeCardById(id);
-		}
-
-		this.refreshIfActive();
-
-		pendingTimeoutId = setTimeout(() => {
-			writeExecuted = true;
-			pendingTimeoutId = null;
-			try {
-				opts.execute();
-			} catch (error) {
-				console.error(
-					`[CardActionsHandler] Error in deferred ${opts.undoType}:`,
-					error,
-				);
-			}
-		}, 0);
-	}
-
 	private pushBatchCreateUndo(
 		card: { sourceNotePath?: string },
 		createdCards?: Array<{ id: string }>,
-		prefix = "",
+		_prefix = "",
 	): void {
 		const count = createdCards?.length ?? 0;
 		if (count === 0) return;
 
-		this.deps.plugin.undoService?.push({
-			id: crypto.randomUUID(),
-			actionType: "batch-create",
-			description: `Add ${count} ${prefix}card${count !== 1 ? "s" : ""}`,
-			timestamp: Date.now(),
-			payload: {
-				type: "batch-create",
-				cardIds: createdCards?.map((c) => c.id) ?? [],
-			},
-		});
+		const cmd = new BatchCreateCommand(createdCards?.map((c) => c.id) ?? []);
+		void this.commandService?.execute(cmd);
 
 		const noteName = card.sourceNotePath
 			?.split("/")
@@ -521,17 +425,12 @@ export class CardActionsHandler {
 		previousFields: Record<string, string>,
 		description: string,
 	): void {
-		this.deps.plugin.undoService?.push({
-			id: crypto.randomUUID(),
-			actionType: "update-note-fields",
+		const cmd = new UpdateNoteFieldsCommand(
+			noteId,
+			previousFields,
 			description,
-			timestamp: Date.now(),
-			payload: {
-				type: "update-note-fields",
-				noteId,
-				previousFields,
-			},
-		});
+		);
+		void this.commandService?.execute(cmd);
 	}
 
 	private getGroupSiblingIds(card: {
@@ -562,8 +461,6 @@ export class CardActionsHandler {
 	private getTomorrowDate(): Date {
 		const now = new Date();
 		const tomorrow = new Date(now);
-		// If past day-start-hour, tomorrow = next calendar day at dayStartHour.
-		// If before, tomorrow = today at dayStartHour.
 		if (now.getHours() >= this.deps.settings.dayStartHour) {
 			tomorrow.setDate(tomorrow.getDate() + 1);
 		}

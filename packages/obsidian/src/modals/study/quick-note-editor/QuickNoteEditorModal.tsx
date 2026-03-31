@@ -1,4 +1,4 @@
-import { ErrorBoundary } from "@true-recall/obsidian/components/ErrorBoundary";
+import { ErrorBoundary } from "@true-recall/obsidian/components";
 import { BasePromiseModal } from "@true-recall/obsidian/modals/shared/BasePromiseModal";
 import { confirm } from "@true-recall/obsidian/modals/shared/ConfirmModal";
 import { ObsidianProvider } from "@true-recall/obsidian/preact/ObsidianContext";

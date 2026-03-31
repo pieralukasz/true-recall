@@ -1,15 +1,15 @@
+import { useSignal } from "@preact/signals";
 import type {
 	DistributionStats,
 	HistogramBucket,
 } from "@true-recall/core/metrics/fsrs-tools/statistics/distribution.calculator";
-import { useSignal } from "@preact/signals";
-import { Clickable } from "@true-recall/obsidian/components/Clickable";
-import { cn } from "@true-recall/obsidian/utils";
 import type { ChartConfiguration } from "chart.js";
 import { useRef } from "preact/hooks";
-import { CHART_COLORS, withAlpha } from "../helpers/chart-theme";
-import { useChart } from "../hooks/use-chart";
+import { Clickable } from "../shared/Clickable";
+import { cn } from "../utils/cn";
 import { ChartCard } from "./ChartCard";
+import { CHART_COLORS, withAlpha } from "./chart-theme";
+import { useChart } from "./use-chart";
 
 type DistTab = "interval" | "stability" | "difficulty";
 
