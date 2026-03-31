@@ -12,6 +12,8 @@ interface QueryEntry<T = unknown> {
 
 export class DataLayer {
 	private queries = new Map<QueryKey, QueryEntry>();
+	private batchDepth = 0;
+	private pendingGroups = new Set<QueryGroup>();
 
 	register<T>(
 		key: QueryKey,
@@ -43,10 +45,26 @@ export class DataLayer {
 		return this.queries.get(key)?.readonly as ReadonlySignal<T> | undefined;
 	}
 
+	batch<R>(fn: () => R): R {
+		this.batchDepth++;
+		try {
+			return fn();
+		} finally {
+			this.batchDepth--;
+			if (this.batchDepth === 0 && this.pendingGroups.size > 0) {
+				const groups = [...this.pendingGroups];
+				this.pendingGroups.clear();
+				this.reloadByGroups(groups);
+			}
+		}
+	}
+
 	mutate<R>(groups: QueryGroup[], fn: () => R): R {
-		const result = fn();
-		this.invalidateGroups(groups);
-		return result;
+		return this.batch(() => {
+			const result = fn();
+			this.invalidateGroups(groups);
+			return result;
+		});
 	}
 
 	patch<T>(key: QueryKey, patcher: (current: T) => T | undefined): void {
@@ -62,6 +80,14 @@ export class DataLayer {
 	}
 
 	invalidateGroups(groups: QueryGroup[]): void {
+		if (this.batchDepth > 0) {
+			for (const g of groups) this.pendingGroups.add(g);
+			return;
+		}
+		this.reloadByGroups(groups);
+	}
+
+	private reloadByGroups(groups: QueryGroup[]): void {
 		for (const [key, entry] of this.queries) {
 			for (const g of groups) {
 				if (entry.groups.includes(g)) {

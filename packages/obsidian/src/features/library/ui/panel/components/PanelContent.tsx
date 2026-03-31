@@ -1,3 +1,4 @@
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { clearRecentCards } from "@true-recall/core/ai/state/streaming-state";
 import {
 	EmptyState,
@@ -11,6 +12,7 @@ import {
 	useStreamingCardState,
 } from "@true-recall/obsidian/features/library/ui/panel/components/StreamingSection";
 import { groupCards } from "@true-recall/obsidian/features/library/ui/panel/group-cards";
+import { usePanelScroll } from "@true-recall/obsidian/features/library/ui/panel/hooks/PanelScrollContext";
 import { usePanelStore } from "@true-recall/obsidian/features/library/ui/panel/hooks/usePanelStore";
 import { matchesCardSearch } from "@true-recall/obsidian/features/library/ui/panel/utils/search-query.utils";
 import { useEffect, useMemo } from "preact/hooks";
@@ -25,6 +27,8 @@ export function PanelContent() {
 		cardsWithFsrs,
 		searchQuery,
 	} = usePanelStore();
+
+	const { scrollRef } = usePanelScroll();
 
 	const fsrsMap = useMemo(
 		() => new Map(cardsWithFsrs.map((c) => [c.id, c])),
@@ -78,6 +82,13 @@ export function PanelContent() {
 		return undefined;
 	}, [streaming.isGenerating, recentCardIds.size]);
 
+	const virtualizer = useVirtualizer({
+		count: filteredItems.length,
+		getScrollElement: () => scrollRef.current,
+		estimateSize: () => 56,
+		overscan: 5,
+	});
+
 	if (!currentFile) {
 		return <EmptyState message={EmptyStateMessages.NO_FILE} />;
 	}
@@ -93,57 +104,57 @@ export function PanelContent() {
 	const filePath = currentFile.path;
 	const isSelecting = selectionMode === "selecting";
 
-	let recentIndex = 0;
-
 	return (
 		<div class="ep:flex ep:flex-col">
-			{filteredItems.map((item) => {
-				if (item.type === "io-group") {
-					const firstCard = item.cards[0];
-					if (!firstCard) return null;
-					const groupKey = firstCard.id;
-					const allSelected = item.cards.every((c) =>
-						selectedCardIds.has(c.id),
-					);
+			<div
+				style={{
+					height: `${virtualizer.getTotalSize()}px`,
+					width: "100%",
+					position: "relative",
+				}}
+			>
+				{virtualizer.getVirtualItems().map((virtualRow) => {
+					const item = filteredItems[virtualRow.index];
+					if (!item) return null;
+
 					return (
-						<PanelIOGroup
-							key={`io-${groupKey}`}
-							cards={item.cards}
-							fsrsCards={item.fsrsCards}
-							filePath={filePath}
-							isExpanded={expandedCardIds.has(groupKey)}
-							isSelected={allSelected}
-							isSelectionMode={isSelecting}
-						/>
+						<div
+							key={virtualRow.key}
+							ref={virtualizer.measureElement}
+							data-index={virtualRow.index}
+							style={{
+								position: "absolute",
+								top: 0,
+								left: 0,
+								width: "100%",
+								transform: `translateY(${virtualRow.start}px)`,
+							}}
+						>
+							{item.type === "io-group" ? (
+								<PanelIOGroup
+									cards={item.cards}
+									fsrsCards={item.fsrsCards}
+									filePath={filePath}
+									isExpanded={expandedCardIds.has(item.cards[0]?.id ?? "")}
+									isSelected={item.cards.every((c) =>
+										selectedCardIds.has(c.id),
+									)}
+									isSelectionMode={isSelecting}
+								/>
+							) : (
+								<PanelCard
+									card={item.card}
+									fsrsCard={fsrsMap.get(item.card.id)}
+									filePath={filePath}
+									isExpanded={expandedCardIds.has(item.card.id)}
+									isSelected={selectedCardIds.has(item.card.id)}
+									isSelectionMode={isSelecting}
+								/>
+							)}
+						</div>
 					);
-				}
-
-				const { card } = item;
-				const isNewlyStreamed = recentCardIds.has(card.id);
-				const cardIndex = isNewlyStreamed ? recentIndex++ : 0;
-
-				const animationProps = isNewlyStreamed
-					? {
-							enterClass: "ep-card-enter ep-card-complete",
-							enterStyle: {
-								"--card-index": cardIndex,
-							} as Record<string, string | number>,
-						}
-					: {};
-
-				return (
-					<PanelCard
-						key={card.id}
-						card={card}
-						fsrsCard={fsrsMap.get(card.id)}
-						filePath={filePath}
-						isExpanded={expandedCardIds.has(card.id)}
-						isSelected={selectedCardIds.has(card.id)}
-						isSelectionMode={isSelecting}
-						{...animationProps}
-					/>
-				);
-			})}
+				})}
+			</div>
 			{isStreamingForFile && (
 				<StreamingSection currentFilePath={currentFile?.path ?? null} />
 			)}

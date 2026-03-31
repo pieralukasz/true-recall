@@ -22,8 +22,8 @@ export function FlashcardPanelApp({
 	const { contentRef, preserveScroll, captureScroll } = useScrollPreservation();
 
 	const scrollApi = useMemo(
-		() => ({ preserveScroll, captureScroll }),
-		[preserveScroll, captureScroll],
+		() => ({ preserveScroll, captureScroll, scrollRef: contentRef }),
+		[preserveScroll, captureScroll, contentRef],
 	);
 
 	const streamingNewCount = useStreamingNewCount(
