@@ -3,6 +3,11 @@ import { KeyboardHandler } from "../../../src/features/study/ui/review/handlers/
 import { Rating } from "ts-fsrs";
 import type { ReviewApi } from "../../../src/shared/store";
 
+// Stub DOM globals for Node test environment
+globalThis.HTMLInputElement ??= class {} as never;
+globalThis.HTMLTextAreaElement ??= class {} as never;
+globalThis.HTMLElement ??= class { isContentEditable = false; } as never;
+
 function createReviewState(
 	overrides: Partial<Pick<ReviewApi, "isActive" | "isAnswerRevealed">> = {},
 ): ReviewApi {

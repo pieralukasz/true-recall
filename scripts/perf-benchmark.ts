@@ -1,14 +1,16 @@
-import { DEFAULT_SETTINGS } from "../src/shared/constants";
-import { FSRSService } from "../src/features/core/services/fsrs.service";
-import { computeActionableSessionSnapshot } from "../src/features/study/services/actionable-session-snapshot.service";
-import { buildGlobalPresetQueueContext } from "../src/features/study/ui/review/helpers/session-helpers";
 import type {
 	FSRSFlashcardItem,
 	FSRSPreset,
 	TrueRecallSettings,
-} from "../src/shared/types";
-import type { PresetService } from "../src/features/core/services/preset.service";
-import type { SessionPersistenceService } from "../src/features/core/persistence/session-persistence.service";
+} from "@true-recall/core";
+import { DEFAULT_SETTINGS } from "@true-recall/core";
+import type { SessionPersistenceService } from "@true-recall/core/persistence";
+import type { PresetService } from "@true-recall/core/services";
+import {
+	buildGlobalPresetQueueContext,
+	computeActionableSessionSnapshot,
+	FSRSService,
+} from "@true-recall/core/services";
 import { State } from "ts-fsrs";
 
 function benchmark<T>(label: string, fn: () => T): T {

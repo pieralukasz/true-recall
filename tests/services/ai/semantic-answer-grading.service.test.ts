@@ -11,11 +11,14 @@ function createSettings(overrides: Partial<TrueRecallSettings>): TrueRecallSetti
 	};
 }
 
+const dummyHttpClient = {} as never;
+
 describe("SemanticAnswerGradingService", () => {
 	it("parses valid JSON and returns AI result", async () => {
 		const settings = createSettings({ openRouterApiKey: "byok-key" });
 		const service = new SemanticAnswerGradingService(
 			() => settings,
+			dummyHttpClient,
 			() => ({
 				chat: async () => ({
 					id: "resp-1",
@@ -53,6 +56,7 @@ describe("SemanticAnswerGradingService", () => {
 		const settings = createSettings({ openRouterApiKey: "byok-key" });
 		const service = new SemanticAnswerGradingService(
 			() => settings,
+			dummyHttpClient,
 			() => ({
 				chat: async () => new Promise(() => {}),
 			}),
@@ -76,6 +80,7 @@ describe("SemanticAnswerGradingService", () => {
 		const settings = createSettings({ openRouterApiKey: "byok-key" });
 		const service = new SemanticAnswerGradingService(
 			() => settings,
+			dummyHttpClient,
 			() => ({
 				chat: async () => ({
 					id: "resp-2",
@@ -112,6 +117,7 @@ describe("SemanticAnswerGradingService", () => {
 
 		const service = new SemanticAnswerGradingService(
 			() => settings,
+			dummyHttpClient,
 			() => ({
 				chat: async () => {
 					throw new AIRequestError(429, "rate limited");
@@ -141,6 +147,7 @@ describe("SemanticAnswerGradingService", () => {
 
 		const service = new SemanticAnswerGradingService(
 			() => settings,
+			dummyHttpClient,
 			() => ({
 				chat: async (request) => {
 					capturedSystem = request.messages[0]?.content ?? "";
@@ -177,6 +184,7 @@ describe("SemanticAnswerGradingService", () => {
 
 		const service = new SemanticAnswerGradingService(
 			() => settings,
+			dummyHttpClient,
 			() => ({
 				chat: async (request) => {
 					capturedUserMessage = request.messages[1]?.content ?? "";
@@ -217,6 +225,7 @@ describe("SemanticAnswerGradingService", () => {
 
 		const service = new SemanticAnswerGradingService(
 			() => settings,
+			dummyHttpClient,
 			() => ({
 				chat: async (request) => {
 					capturedUserMessage = request.messages[1]?.content ?? "";

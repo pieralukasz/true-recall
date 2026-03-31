@@ -1,72 +1,68 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import type { App, Vault, MetadataCache, TFile, CachedMetadata } from "obsidian";
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { IMetadataIndex } from "../../../packages/core/src/interfaces/metadata-index";
 import { FrontmatterIndexService } from "../../../src/features/core/services/frontmatter-index.service";
 
+/**
+ * Creates a mock IMetadataIndex backed by a simple Map of path → frontmatter.
+ * `getAllPathsWithField` returns entries where the field is present (supports dot-notation).
+ */
+function createMockMetadataIndex(
+	fileData: Map<string, Record<string, unknown>>,
+): IMetadataIndex {
+	function getNestedValue(obj: Record<string, unknown>, path: string): unknown {
+		const parts = path.split(".");
+		let current: unknown = obj;
+		for (const part of parts) {
+			if (current == null || typeof current !== "object") return undefined;
+			current = (current as Record<string, unknown>)[part];
+		}
+		return current;
+	}
+
+	return {
+		getPathByFieldValue: vi.fn((field: string, value: string) => {
+			for (const [path, fm] of fileData) {
+				if (getNestedValue(fm, field) === value) return path;
+			}
+			return null;
+		}),
+		getFieldValue: vi.fn((path: string, field: string) => {
+			const fm = fileData.get(path);
+			if (!fm) return undefined;
+			return getNestedValue(fm, field);
+		}),
+		getAllPathsWithField: vi.fn((field: string) => {
+			const result = new Map<string, unknown>();
+			for (const [path, fm] of fileData) {
+				const val = getNestedValue(fm, field);
+				if (val !== undefined && val !== null) {
+					result.set(path, val);
+				}
+			}
+			return result;
+		}),
+		onFieldChange: vi.fn(() => () => {}),
+	};
+}
+
 describe("FrontmatterIndexService", () => {
-	let mockApp: App;
-	let mockVault: Vault;
-	let mockMetadataCache: MetadataCache;
-	let mockFiles: TFile[];
-	let mockCacheData: Map<string, CachedMetadata>;
-	let onChangedHandler: ((file: TFile, data: string, cache: CachedMetadata) => void) | null;
-	let onDeleteHandler: ((file: TFile) => void) | null;
-	let onRenameHandler: ((file: TFile, oldPath: string) => void) | null;
+	let fileData: Map<string, Record<string, unknown>>;
+	let metadataIndex: IMetadataIndex;
 	let service: FrontmatterIndexService;
 
-	function createMockFile(path: string): TFile {
-		// eslint-disable-next-line obsidianmd/no-tfile-tfolder-cast -- Test mock helper
-		return { path, extension: "md" } as TFile;
-	}
-
-	function createMockCache(frontmatter?: Record<string, unknown>): CachedMetadata {
-		return { frontmatter } as CachedMetadata;
-	}
-
-	function addMockFile(path: string, frontmatter?: Record<string, unknown>): TFile {
-		const file = createMockFile(path);
-		mockFiles.push(file);
-		mockCacheData.set(path, createMockCache(frontmatter));
-		return file;
+	function addMockFile(path: string, frontmatter?: Record<string, unknown>): void {
+		fileData.set(path, frontmatter ?? {});
 	}
 
 	beforeEach(() => {
-		onChangedHandler = null;
-		onDeleteHandler = null;
-		onRenameHandler = null;
-		mockFiles = [];
-		mockCacheData = new Map();
-
-		mockVault = {
-			getMarkdownFiles: vi.fn(() => mockFiles),
-			getAbstractFileByPath: vi.fn((path: string) => mockFiles.find((f) => f.path === path) ?? null),
-			on: vi.fn((event: string, handler: (...args: unknown[]) => void) => {
-				if (event === "delete") onDeleteHandler = handler as typeof onDeleteHandler;
-				if (event === "rename") onRenameHandler = handler as typeof onRenameHandler;
-				return { unload: vi.fn() };
-			}),
-			off: vi.fn(),
-		} as unknown as Vault;
-
-		mockMetadataCache = {
-			getFileCache: vi.fn((file: TFile) => mockCacheData.get(file.path) ?? null),
-			on: vi.fn((event: string, handler: (...args: unknown[]) => void) => {
-				if (event === "changed") onChangedHandler = handler as typeof onChangedHandler;
-				return { unload: vi.fn() };
-			}),
-			off: vi.fn(),
-		} as unknown as MetadataCache;
-
-		mockApp = { vault: mockVault, metadataCache: mockMetadataCache } as unknown as App;
+		fileData = new Map();
 	});
 
 	describe("unique string field (like flashcard_uid)", () => {
 		beforeEach(() => {
-			service = new FrontmatterIndexService(mockApp);
+			metadataIndex = createMockMetadataIndex(fileData);
+			service = new FrontmatterIndexService(metadataIndex);
 			service.register({ field: "flashcard_uid", type: "string", unique: true });
-		});
-
-		afterEach(() => {
-			service.unregisterEventsDirect();
 		});
 
 		it("indexes unique string field and provides O(1) lookup", () => {
@@ -75,35 +71,31 @@ describe("FrontmatterIndexService", () => {
 			addMockFile("note3.md", {}); // no uid
 
 			service.rebuildIndex();
-			service.registerEventsDirect();
 
-			expect(service.getFileByValue("flashcard_uid", "uid-1")?.path).toBe("note1.md");
-			expect(service.getFileByValue("flashcard_uid", "uid-2")?.path).toBe("note2.md");
+			expect(service.getFileByValue("flashcard_uid", "uid-1")).toBe("note1.md");
+			expect(service.getFileByValue("flashcard_uid", "uid-2")).toBe("note2.md");
 			expect(service.getFileByValue("flashcard_uid", "uid-3")).toBeNull();
 		});
 
 		it("updates index when file metadata changes", () => {
-			const file = addMockFile("note.md", { flashcard_uid: "old-uid" });
+			addMockFile("note.md", { flashcard_uid: "old-uid" });
 			service.rebuildIndex();
-			service.registerEventsDirect();
 
-			expect(service.getFileByValue("flashcard_uid", "old-uid")?.path).toBe("note.md");
+			expect(service.getFileByValue("flashcard_uid", "old-uid")).toBe("note.md");
 
-			// Simulate UID change
-			mockCacheData.set("note.md", createMockCache({ flashcard_uid: "new-uid" }));
-			onChangedHandler?.(file, "", mockCacheData.get("note.md")!);
+			// Simulate UID change via handleMetadataChanged
+			fileData.set("note.md", { flashcard_uid: "new-uid" });
+			service.handleMetadataChanged("note.md", { flashcard_uid: "new-uid" });
 
 			expect(service.getFileByValue("flashcard_uid", "old-uid")).toBeNull();
-			expect(service.getFileByValue("flashcard_uid", "new-uid")?.path).toBe("note.md");
+			expect(service.getFileByValue("flashcard_uid", "new-uid")).toBe("note.md");
 		});
 
 		it("removes from index when file deleted", () => {
-			const file = addMockFile("note.md", { flashcard_uid: "uid-1" });
+			addMockFile("note.md", { flashcard_uid: "uid-1" });
 			service.rebuildIndex();
-			service.registerEventsDirect();
 
-			mockFiles = [];
-			onDeleteHandler?.(file);
+			service.handleFileDeleted("note.md");
 
 			expect(service.getFileByValue("flashcard_uid", "uid-1")).toBeNull();
 		});
@@ -111,21 +103,20 @@ describe("FrontmatterIndexService", () => {
 		it("updates path when file renamed", () => {
 			addMockFile("old.md", { flashcard_uid: "uid-1" });
 			service.rebuildIndex();
-			service.registerEventsDirect();
 
 			// Simulate rename
-			mockFiles = [createMockFile("new.md")];
-			mockCacheData.set("new.md", mockCacheData.get("old.md")!);
-			const newFile = mockFiles[0]!;
-			onRenameHandler?.(newFile, "old.md");
+			fileData.set("new.md", fileData.get("old.md")!);
+			fileData.delete("old.md");
+			service.handleFileRenamed("new.md", "old.md");
 
-			expect(service.getFileByValue("flashcard_uid", "uid-1")?.path).toBe("new.md");
+			expect(service.getFileByValue("flashcard_uid", "uid-1")).toBe("new.md");
 		});
 	});
 
 	describe("non-unique array field (like tags)", () => {
 		beforeEach(() => {
-			service = new FrontmatterIndexService(mockApp);
+			metadataIndex = createMockMetadataIndex(fileData);
+			service = new FrontmatterIndexService(metadataIndex);
 			service.register({ field: "tags", type: "array", unique: false });
 		});
 
@@ -137,10 +128,10 @@ describe("FrontmatterIndexService", () => {
 			service.rebuildIndex();
 
 			const filesA = service.getFilesByValue("tags", "Tag A");
-			expect(filesA.map((f) => f.path).sort()).toEqual(["note1.md", "note2.md"]);
+			expect(filesA.sort()).toEqual(["note1.md", "note2.md"]);
 
 			const filesB = service.getFilesByValue("tags", "Tag B");
-			expect(filesB.map((f) => f.path)).toEqual(["note1.md"]);
+			expect(filesB).toEqual(["note1.md"]);
 
 			expect(service.getFilesByValue("tags", "Tag D")).toEqual([]);
 		});
@@ -166,7 +157,8 @@ describe("FrontmatterIndexService", () => {
 
 	describe("nested path field", () => {
 		beforeEach(() => {
-			service = new FrontmatterIndexService(mockApp);
+			metadataIndex = createMockMetadataIndex(fileData);
+			service = new FrontmatterIndexService(metadataIndex);
 			service.register({ field: "metadata.category", type: "string", unique: false });
 		});
 
@@ -178,7 +170,7 @@ describe("FrontmatterIndexService", () => {
 			service.rebuildIndex();
 
 			const scienceFiles = service.getFilesByValue("metadata.category", "science");
-			expect(scienceFiles.map((f) => f.path).sort()).toEqual(["note1.md", "note2.md"]);
+			expect(scienceFiles.sort()).toEqual(["note1.md", "note2.md"]);
 		});
 
 		it("handles missing nested path gracefully", () => {
