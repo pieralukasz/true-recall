@@ -21,6 +21,8 @@ export class DropdownComponent {}
 export class ToggleComponent {}
 export class SliderComponent {}
 export class ButtonComponent {}
+export class SuggestModal {}
+export class AbstractInputSuggest {}
 
 export function normalizePath(path: string): string {
 	return path;

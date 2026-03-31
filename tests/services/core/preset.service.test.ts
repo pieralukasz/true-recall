@@ -1,11 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import type {
-	App,
-	Vault,
-	MetadataCache,
-	TFile,
-	CachedMetadata,
-} from "obsidian";
+import type { IMetadataIndex } from "../../../packages/core/src/interfaces/metadata-index";
+import type { IFileSystem } from "../../../packages/core/src/interfaces/file-system";
 import { FrontmatterIndexService } from "../../../src/features/core/services/frontmatter-index.service";
 import { HierarchyService } from "../../../src/features/core/services/hierarchy.service";
 import { PresetService } from "../../../src/features/core/services/preset.service";
@@ -56,12 +51,47 @@ function makeCard(sourceUid?: string): FSRSFlashcardItem {
 	} as FSRSFlashcardItem;
 }
 
+function getNestedValue(obj: Record<string, unknown>, path: string): unknown {
+	const parts = path.split(".");
+	let current: unknown = obj;
+	for (const part of parts) {
+		if (current == null || typeof current !== "object") return undefined;
+		current = (current as Record<string, unknown>)[part];
+	}
+	return current;
+}
+
+function createMockMetadataIndex(
+	fileData: Map<string, Record<string, unknown>>,
+): IMetadataIndex {
+	return {
+		getPathByFieldValue: vi.fn((field: string, value: string) => {
+			for (const [path, fm] of fileData) {
+				if (getNestedValue(fm, field) === value) return path;
+			}
+			return null;
+		}),
+		getFieldValue: vi.fn((path: string, field: string) => {
+			const fm = fileData.get(path);
+			if (!fm) return undefined;
+			return getNestedValue(fm, field);
+		}),
+		getAllPathsWithField: vi.fn((field: string) => {
+			const result = new Map<string, unknown>();
+			for (const [path, fm] of fileData) {
+				const val = getNestedValue(fm, field);
+				if (val !== undefined && val !== null) {
+					result.set(path, val);
+				}
+			}
+			return result;
+		}),
+		onFieldChange: vi.fn(() => () => {}),
+	};
+}
+
 describe("PresetService — 3-tier resolution", () => {
-	let mockApp: App;
-	let mockVault: Vault;
-	let mockMetadataCache: MetadataCache;
-	let mockFiles: TFile[];
-	let mockCacheData: Map<string, CachedMetadata>;
+	let fileData: Map<string, Record<string, unknown>>;
 	let frontmatterIndex: FrontmatterIndexService;
 	let hierarchyService: HierarchyService;
 	let presetService: PresetService;
@@ -72,57 +102,19 @@ describe("PresetService — 3-tier resolution", () => {
 	const sciencePreset = makePreset("Science", "science-id");
 	const notePreset = makePreset("NoteSpecific", "note-id");
 
-	function createMockFile(path: string): TFile {
-		const name = path.split("/").pop() ?? path;
-		// eslint-disable-next-line obsidianmd/no-tfile-tfolder-cast -- Test mock
-		return { path, name, extension: "md" } as TFile;
-	}
-
 	function addMockFile(
 		path: string,
 		frontmatter?: Record<string, unknown>,
-	): TFile {
-		const file = createMockFile(path);
-		mockFiles.push(file);
-		mockCacheData.set(path, { frontmatter } as CachedMetadata);
-		return file;
+	): void {
+		fileData.set(path, frontmatter ?? {});
 	}
 
 	beforeEach(() => {
-		mockFiles = [];
-		mockCacheData = new Map();
+		fileData = new Map();
 
-		mockVault = {
-			getMarkdownFiles: vi.fn(() => mockFiles),
-			getAbstractFileByPath: vi.fn(
-				(path: string) =>
-					mockFiles.find((f) => f.path === path) ?? null,
-			),
-			on: vi.fn(() => ({ unload: vi.fn() })),
-			off: vi.fn(),
-		} as unknown as Vault;
+		const metadataIndex = createMockMetadataIndex(fileData);
 
-		mockMetadataCache = {
-			getFileCache: vi.fn(
-				(file: TFile) => mockCacheData.get(file.path) ?? null,
-			),
-			getFirstLinkpathDest: vi.fn((name: string) => {
-				return (
-					mockFiles.find(
-						(f) => f.name === `${name}.md` || f.name === name,
-					) ?? null
-				);
-			}),
-			on: vi.fn(() => ({ unload: vi.fn() })),
-			off: vi.fn(),
-		} as unknown as MetadataCache;
-
-		mockApp = {
-			vault: mockVault,
-			metadataCache: mockMetadataCache,
-		} as unknown as App;
-
-		frontmatterIndex = new FrontmatterIndexService(mockApp);
+		frontmatterIndex = new FrontmatterIndexService(metadataIndex);
 		frontmatterIndex.register({
 			field: "flashcard_uid",
 			type: "string",
@@ -144,7 +136,24 @@ describe("PresetService — 3-tier resolution", () => {
 			defaultPresetId: "default-id",
 		} as unknown as TrueRecallSettings;
 
-		hierarchyService = new HierarchyService(mockApp, frontmatterIndex);
+		const mockFileSystem: IFileSystem = {
+			read: vi.fn(async () => ""),
+			write: vi.fn(async () => {}),
+			delete: vi.fn(async () => {}),
+			listMarkdownFiles: vi.fn(async () => [...fileData.keys()]),
+			watch: vi.fn(() => () => {}),
+		};
+
+		const resolveLinkPath = (name: string): string | null => {
+			if (fileData.has(`${name}.md`)) return `${name}.md`;
+			for (const path of fileData.keys()) {
+				const basename = path.split("/").pop()?.replace(/\.md$/, "");
+				if (basename === name) return path;
+			}
+			return null;
+		};
+
+		hierarchyService = new HierarchyService(frontmatterIndex, mockFileSystem, resolveLinkPath);
 
 		presetService = new PresetService(
 			() => settings,

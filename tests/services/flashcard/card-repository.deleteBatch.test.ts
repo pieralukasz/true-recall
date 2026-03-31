@@ -6,14 +6,11 @@ import {
 	type TestContext,
 } from "../persistence/sqlite/__setup__/test-database";
 import { CardRepository } from "../../../src/features/study/services/flashcard/card-repository.service";
-import { FlashcardManager } from "../../../src/features/study/services/flashcard/flashcard.service";
+import { FlashcardManager } from "../../../packages/core/src/flashcard/flashcard.service";
 import type { SqliteStoreService } from "../../../src/features/core/persistence/sqlite/SqliteStoreService";
 import type { App } from "obsidian";
 
-const mockNotifyCardChange = vi.fn();
-vi.mock("../../../src/shared/services/signals", () => ({
-	notifyCardChange: (...args: unknown[]) => mockNotifyCardChange(...args),
-}));
+const mockBusEmit = vi.fn();
 
 function createMockStore(ctx: TestContext): SqliteStoreService {
 	return {
@@ -36,7 +33,8 @@ describe("CardRepository.deleteBatch", () => {
 		vi.setSystemTime(new Date("2026-02-01T10:00:00Z"));
 		ctx = await createTestContext();
 		repository = new CardRepository(createMockStore(ctx));
-		mockNotifyCardChange.mockClear();
+		repository.setEventBus({ emit: mockBusEmit, on: vi.fn(() => () => {}) } as never);
+		mockBusEmit.mockClear();
 	});
 
 	afterEach(() => {
@@ -77,7 +75,7 @@ describe("CardRepository.deleteBatch", () => {
 		const count = repository.deleteBatch([]);
 
 		expect(count).toBe(0);
-		expect(mockNotifyCardChange).not.toHaveBeenCalled();
+		expect(mockBusEmit).not.toHaveBeenCalled();
 	});
 
 	it("should cascade soft delete to review_log", () => {
@@ -101,14 +99,14 @@ describe("CardRepository.deleteBatch", () => {
 
 		repository.deleteBatch(["card-1", "card-2"]);
 
-		expect(mockNotifyCardChange).toHaveBeenCalledTimes(1);
-		expect(mockNotifyCardChange).toHaveBeenCalledWith(
+		expect(mockBusEmit).toHaveBeenCalledTimes(1);
+		expect(mockBusEmit).toHaveBeenCalledWith(
+			"cards:bulk",
 			expect.objectContaining({
-				type: "bulk",
 				action: "removed",
 				cardIds: ["card-1", "card-2"],
-				})
-			);
+			}),
+		);
 	});
 
 	it("cascades reverse pair deletion in bulk mode", () => {
@@ -125,9 +123,9 @@ describe("CardRepository.deleteBatch", () => {
 
 		expect(count).toBe(2);
 		expect(ctx.cards.size()).toBe(0);
-		expect(mockNotifyCardChange).toHaveBeenCalledWith(
+		expect(mockBusEmit).toHaveBeenCalledWith(
+			"cards:bulk",
 			expect.objectContaining({
-				type: "bulk",
 				action: "removed",
 				cardIds: expect.arrayContaining(["card-original", "card-reverse"]),
 			}),
@@ -162,10 +160,9 @@ describe("CardRepository.deleteBatch", () => {
 
 		expect(count).toBe(3);
 		expect(ctx.cards.size()).toBe(0);
-		const lastCall =
-			mockNotifyCardChange.mock.calls[mockNotifyCardChange.mock.calls.length - 1];
-		const mutation = (lastCall?.[0] as { cardIds?: string[] } | undefined) ?? {};
-		expect(new Set(mutation?.cardIds ?? []).size).toBe(3);
+		const lastCall = mockBusEmit.mock.calls[mockBusEmit.mock.calls.length - 1];
+		const payload = (lastCall?.[1] as { cardIds?: string[] } | undefined) ?? {};
+		expect(new Set(payload?.cardIds ?? []).size).toBe(3);
 	});
 });
 
@@ -176,13 +173,17 @@ describe("FlashcardManager.removeFlashcardsByIds", () => {
 		vi.useFakeTimers();
 		vi.setSystemTime(new Date("2026-02-01T10:00:00Z"));
 		ctx = await createTestContext();
-		mockNotifyCardChange.mockClear();
+		mockBusEmit.mockClear();
 	});
 
 	afterEach(() => {
 		ctx.close();
 		vi.useRealTimers();
 	});
+
+	function createMockStoreLocal(): SqliteStoreService {
+		return createMockStore(ctx);
+	}
 
 	it("should return 0 when store not initialized", () => {
 		const manager = new FlashcardManager(
@@ -202,7 +203,7 @@ describe("FlashcardManager.removeFlashcardsByIds", () => {
 			{} as never,
 			{} as never,
 		);
-		manager.setStore(createMockStore(ctx));
+		manager.setStore(createMockStoreLocal());
 
 		const cards = [
 			createTestCard({ id: "card-1" }),
@@ -222,7 +223,7 @@ describe("FlashcardManager.removeFlashcardsByIds", () => {
 			{} as never,
 			{} as never,
 		);
-		manager.setStore(createMockStore(ctx));
+		manager.setStore(createMockStoreLocal());
 		const removeReviewedCards = vi.fn();
 		manager.setSessionPersistence({
 			removeReviewedCards,
@@ -252,7 +253,7 @@ describe("FlashcardManager.removeFlashcardsByIds", () => {
 			{} as never,
 			{} as never,
 		);
-		manager.setStore(createMockStore(ctx));
+		manager.setStore(createMockStoreLocal());
 
 		const original = createTestCard({ id: "detail-original" });
 		ctx.cards.set(original.id, original);

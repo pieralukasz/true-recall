@@ -82,10 +82,7 @@ function createService({
 		getFileByValue: vi.fn((field: string, uid: string) => {
 			if (field !== "flashcard_uid") return null;
 			if (!existingUids.has(uid)) return null;
-			return {
-				path: `Notes/${uid}.md`,
-				basename: uid === "uid-archived" ? "Archived" : uid,
-			} as unknown;
+			return `Notes/${uid}.md`;
 		}),
 		getAllValues: vi.fn(() => new Set(existingUids)),
 		getValues: vi.fn(() => []),
