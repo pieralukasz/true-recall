@@ -5,11 +5,9 @@ import {
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite/SqliteStoreService";
 import { ObsidianSourceUidResolver } from "@true-recall/obsidian/adapters/ObsidianSourceUidResolver";
 import {
-	Clickable,
+	ActionButton,
 	ModalFooter,
 	OptionCheckbox,
-	PRIMARY_BTN,
-	SECONDARY_BTN,
 } from "@true-recall/obsidian/components";
 import {
 	type ExportMode,
@@ -76,13 +74,7 @@ function CsvExportBody({
 					</div>
 				</div>
 				<div class="ep-modal-footer ep:flex ep:justify-end ep:gap-2">
-					<Clickable
-						stopPropagation={false}
-						class={PRIMARY_BTN}
-						onClick={onClose}
-					>
-						Done
-					</Clickable>
+					<ActionButton label="Done" variant="primary" onClick={onClose} />
 				</div>
 			</>
 		);
@@ -95,13 +87,7 @@ function CsvExportBody({
 					Export failed: {phase.message}
 				</div>
 				<div class="ep-modal-footer ep:flex ep:justify-end ep:gap-2">
-					<Clickable
-						stopPropagation={false}
-						class={SECONDARY_BTN}
-						onClick={onClose}
-					>
-						Close
-					</Clickable>
+					<ActionButton label="Close" variant="outline" onClick={onClose} />
 				</div>
 			</>
 		);

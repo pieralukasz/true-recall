@@ -1,6 +1,5 @@
 import type { ComponentChildren } from "preact";
 import { ActionButton } from "./ActionButton";
-import { Clickable } from "./Clickable";
 
 /** @deprecated Use ActionButton variant="primary" instead */
 const PRIMARY_BTN = "mod-cta ep-btn";
@@ -31,13 +30,7 @@ export function ModalFooter({
 	return (
 		<div class="ep-modal-footer ep:flex ep:justify-end ep:gap-2">
 			{children}
-			<Clickable
-				class={SECONDARY_BTN}
-				onClick={onCancel}
-				stopPropagation={false}
-			>
-				{cancelLabel}
-			</Clickable>
+			<ActionButton label={cancelLabel} variant="outline" onClick={onCancel} />
 			{onConfirm && (
 				<ActionButton
 					label={loading ? "..." : confirmLabel}

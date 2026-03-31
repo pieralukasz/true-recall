@@ -141,7 +141,6 @@ export function registerEventHandlers(plugin: TrueRecallPlugin): void {
 /** Respects review follow mode and panel interactions */
 function updatePanelView(plugin: TrueRecallPlugin, file: TFile | null): void {
 	const { workspace } = plugin.app;
-	const activeLeaf = workspace.activeLeaf;
 	const activeView = workspace.getActiveViewOfType(ItemView);
 	const isReviewViewActive = activeView?.getViewType() === VIEW_TYPE_REVIEW;
 	const isPanelActive = activeView?.getViewType() === VIEW_TYPE_FLASHCARD_PANEL;
@@ -149,7 +148,7 @@ function updatePanelView(plugin: TrueRecallPlugin, file: TFile | null): void {
 	// Only react to main editor area leaf changes
 	// Sidebar clicks (stats, etc.) should not affect the panel
 	// Review view and panel itself get special handling below
-	const isMainArea = activeLeaf?.getContainer() === workspace.rootSplit;
+	const isMainArea = activeView?.leaf?.getContainer() === workspace.rootSplit;
 	if (!isMainArea && !isReviewViewActive && !isPanelActive) {
 		return;
 	}

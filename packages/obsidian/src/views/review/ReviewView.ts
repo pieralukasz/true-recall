@@ -16,6 +16,7 @@ import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpC
 import { ReviewUndoHook } from "@true-recall/obsidian/commands";
 import { G, getDataLayer } from "@true-recall/obsidian/data";
 import { computeActionableSessionSnapshot } from "@true-recall/obsidian/features/study/services/actionable-session-snapshot.service";
+import type { PresetPickerOption } from "@true-recall/obsidian/features/study/ui/review/components";
 import {
 	AnswerHandler,
 	CardActionsHandler,
@@ -51,7 +52,6 @@ import {
 	ReviewApp,
 	ReviewEmptyState,
 } from "@true-recall/obsidian/views/review/ReviewApp";
-import type { PresetPickerOption } from "@true-recall/obsidian/features/study/ui/review/components";
 import {
 	ItemView,
 	Menu,
@@ -407,7 +407,7 @@ export class ReviewView extends ItemView {
 		});
 	}
 
-	private async handleAnswer(rating: Grade): Promise<void> {
+	private handleAnswer(rating: Grade): void {
 		if (this.isProcessingAnswer) return;
 		if (this.isRatingLocked()) return;
 		this.isProcessingAnswer = true;
@@ -457,13 +457,13 @@ export class ReviewView extends ItemView {
 		return this.review.getCurrentCard();
 	}
 
-	async onOpen(): Promise<void> {
+	onOpen(): Promise<void> {
 		const container = this.containerEl.children[1];
-		if (!(container instanceof HTMLElement)) return;
+		if (!(container instanceof HTMLElement)) return Promise.resolve();
 		container.empty();
 		this.applyDefaultTypeInMode();
 
-		if (!this.plugin.store) return;
+		if (!this.plugin.store) return Promise.resolve();
 		this.unsubscribe = this.plugin.store.subscribe(
 			(state) => state.review,
 			() => {
@@ -485,6 +485,7 @@ export class ReviewView extends ItemView {
 			if (document.querySelector(".modal-container")) return;
 			this.keyboardHandler.handleKeyDown(e);
 		});
+		return Promise.resolve();
 	}
 
 	private mountApp(container: HTMLElement): void {

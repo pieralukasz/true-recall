@@ -242,7 +242,7 @@ export class FlashcardPanelView extends ItemView {
 		}
 	}
 
-	async onClose(): Promise<void> {
+	onClose(): Promise<void> {
 		this.unmountPreact?.();
 		this.unmountPreact = null;
 
@@ -282,6 +282,7 @@ export class FlashcardPanelView extends ItemView {
 			this.mobileStatusEl.remove();
 			this.mobileStatusEl = null;
 		}
+		return Promise.resolve();
 	}
 
 	private subscribeToDataChanges(): void {

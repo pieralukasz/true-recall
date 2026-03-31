@@ -1,4 +1,4 @@
-import { Clickable, SECONDARY_BTN } from "@true-recall/obsidian/components";
+import { ActionButton } from "@true-recall/obsidian/components";
 
 export interface ErrorPhaseProps {
 	message: string;
@@ -12,13 +12,7 @@ export function ErrorPhase({ message, onClose }: ErrorPhaseProps) {
 				Export failed: {message}
 			</div>
 			<div class="ep-modal-footer ep:flex ep:justify-end ep:gap-2">
-				<Clickable
-					stopPropagation={false}
-					class={SECONDARY_BTN}
-					onClick={onClose}
-				>
-					Close
-				</Clickable>
+				<ActionButton label="Close" variant="outline" onClick={onClose} />
 			</div>
 		</>
 	);

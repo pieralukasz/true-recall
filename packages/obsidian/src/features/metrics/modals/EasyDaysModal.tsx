@@ -1,9 +1,5 @@
 import type { EasyDaysConfig } from "@true-recall/core/types";
-import {
-	Clickable,
-	ModalFooter,
-	SECONDARY_BTN,
-} from "@true-recall/obsidian/components";
+import { ActionButton, ModalFooter } from "@true-recall/obsidian/components";
 import {
 	BasePromiseModal,
 	type CancellableResult,
@@ -133,9 +129,11 @@ function EasyDaysBody({
 				onConfirm={() => handleSave(true)}
 				confirmLabel="Apply Now"
 			>
-				<Clickable class={SECONDARY_BTN} onClick={() => handleSave(false)}>
-					Save
-				</Clickable>
+				<ActionButton
+					label="Save"
+					variant="outline"
+					onClick={() => handleSave(false)}
+				/>
 			</ModalFooter>
 		</>
 	);

@@ -130,9 +130,9 @@ export class NotificationService {
 		const link = fragment.createEl("a", { text: "Undo" });
 		// eslint-disable-next-line @obsidianmd/no-direct-style-mutation -- Notice API only supports imperative DOM styling
 		link.style.cursor = "pointer";
-		// eslint-disable-next-line @obsidianmd/no-direct-style-mutation
+		// eslint-disable-next-line @obsidianmd/no-direct-style-mutation -- Notice API only supports imperative DOM styling
 		link.style.textDecoration = "underline";
-		// eslint-disable-next-line @obsidianmd/no-direct-style-mutation
+		// eslint-disable-next-line @obsidianmd/no-direct-style-mutation -- Notice API only supports imperative DOM styling
 		link.style.fontWeight = "600";
 		const notice = new Notice(fragment, NOTIFICATION_DURATION.LONG);
 		link.addEventListener("click", (e) => {

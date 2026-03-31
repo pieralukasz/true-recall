@@ -26,20 +26,22 @@ export class DashboardView extends ItemView {
 		return "layout-dashboard";
 	}
 
-	async onOpen(): Promise<void> {
+	onOpen(): Promise<void> {
 		const container = this.containerEl.children[1];
-		if (!(container instanceof HTMLElement)) return;
-		container.empty();
-		container.addClasses(["ep:h-full", "ep:overflow-hidden"]);
-
-		this.unmountPreact = mountPreact(
-			container,
-			this.plugin,
-			h(DashboardApp, null),
-		);
+		if (container instanceof HTMLElement) {
+			container.empty();
+			container.addClasses(["ep:h-full", "ep:overflow-hidden"]);
+			this.unmountPreact = mountPreact(
+				container,
+				this.plugin,
+				h(DashboardApp, null),
+			);
+		}
+		return Promise.resolve();
 	}
 
-	async onClose(): Promise<void> {
+	onClose(): Promise<void> {
 		this.unmountPreact?.();
+		return Promise.resolve();
 	}
 }

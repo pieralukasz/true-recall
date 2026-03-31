@@ -162,7 +162,7 @@ export function insertAtTextareaCursor(
 export function autoResizeTextarea(textarea: HTMLTextAreaElement): void {
 	// eslint-disable-next-line @obsidianmd/no-direct-style-mutation -- native textarea requires imperative height calc
 	textarea.style.height = "auto";
-	// eslint-disable-next-line @obsidianmd/no-direct-style-mutation
+	// eslint-disable-next-line @obsidianmd/no-direct-style-mutation -- native textarea requires imperative height calc
 	textarea.style.height = `${textarea.scrollHeight}px`;
 }
 

@@ -1,8 +1,4 @@
-import {
-	Clickable,
-	ModalFooter,
-	SECONDARY_BTN,
-} from "@true-recall/obsidian/components";
+import { ActionButton, ModalFooter } from "@true-recall/obsidian/components";
 
 export interface ErrorPhaseProps {
 	message: string;
@@ -25,13 +21,7 @@ export function ErrorPhase({
 			</div>
 			<ModalFooter onCancel={onClose} cancelLabel="Close">
 				{canRetry && (
-					<Clickable
-						stopPropagation={false}
-						class={SECONDARY_BTN}
-						onClick={onRetry}
-					>
-						Try again
-					</Clickable>
+					<ActionButton label="Try again" variant="outline" onClick={onRetry} />
 				)}
 			</ModalFooter>
 		</>

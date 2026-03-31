@@ -51,24 +51,26 @@ export class SimulatorView extends ItemView {
 		return "activity";
 	}
 
-	async onOpen(): Promise<void> {
+	onOpen(): Promise<void> {
 		const container = this.containerEl.children[1];
-		if (!(container instanceof HTMLElement)) return;
-		container.empty();
-		container.addClasses([
-			"ep:overflow-y-auto",
-			"ep:h-full",
-			"ep:bg-obs-primary",
-		]);
-
-		this.unmountPreact = mountPreact(
-			container,
-			this.plugin,
-			h(SimulatorApp, null),
-		);
+		if (container instanceof HTMLElement) {
+			container.empty();
+			container.addClasses([
+				"ep:overflow-y-auto",
+				"ep:h-full",
+				"ep:bg-obs-primary",
+			]);
+			this.unmountPreact = mountPreact(
+				container,
+				this.plugin,
+				h(SimulatorApp, null),
+			);
+		}
+		return Promise.resolve();
 	}
 
-	async onClose(): Promise<void> {
+	onClose(): Promise<void> {
 		this.unmountPreact?.();
+		return Promise.resolve();
 	}
 }

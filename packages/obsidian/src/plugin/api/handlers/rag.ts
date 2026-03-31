@@ -85,11 +85,11 @@ export async function handleRagIndex(
 	}
 }
 
-export async function handleRagStatus(
+export function handleRagStatus(
 	_req: ApiRequest,
 	res: ApiResponseWriter,
 	ctx: ApiContext,
-): Promise<void> {
+): void {
 	if (!requirePro(ctx, res)) return;
 	if (!ctx.plugin.isStoreReady()) {
 		sendError(res, 503, "Database not ready");

@@ -1,4 +1,4 @@
-import { Clickable, PRIMARY_BTN } from "@true-recall/obsidian/components";
+import { ActionButton } from "@true-recall/obsidian/components";
 
 export interface SuccessPhaseProps {
 	filename: string;
@@ -14,13 +14,7 @@ export function SuccessPhase({ filename, onClose }: SuccessPhaseProps) {
 				</div>
 			</div>
 			<div class="ep-modal-footer ep:flex ep:justify-end ep:gap-2">
-				<Clickable
-					stopPropagation={false}
-					class={PRIMARY_BTN}
-					onClick={onClose}
-				>
-					Done
-				</Clickable>
+				<ActionButton label="Done" variant="primary" onClick={onClose} />
 			</div>
 		</>
 	);

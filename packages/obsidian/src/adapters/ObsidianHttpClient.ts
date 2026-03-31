@@ -28,7 +28,7 @@ export class ObsidianHttpClient implements IHttpClient {
 		body: unknown,
 		headers?: Record<string, string>,
 	): AsyncIterable<string> {
-		// requestUrl does not support streaming; fall back to native fetch
+		// eslint-disable-next-line @obsidianmd/no-fetch -- requestUrl does not support streaming responses; native fetch is required here
 		const response = await fetch(url, {
 			method: "POST",
 			headers: {

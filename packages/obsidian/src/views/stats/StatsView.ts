@@ -26,16 +26,22 @@ export class StatsView extends ItemView {
 		return "bar-chart-3";
 	}
 
-	async onOpen(): Promise<void> {
+	onOpen(): Promise<void> {
 		const container = this.containerEl.children[1];
-		if (!(container instanceof HTMLElement)) return;
-		container.empty();
-		container.addClasses(["ep:h-full", "ep:overflow-hidden"]);
-
-		this.unmountPreact = mountPreact(container, this.plugin, h(StatsApp, null));
+		if (container instanceof HTMLElement) {
+			container.empty();
+			container.addClasses(["ep:h-full", "ep:overflow-hidden"]);
+			this.unmountPreact = mountPreact(
+				container,
+				this.plugin,
+				h(StatsApp, null),
+			);
+		}
+		return Promise.resolve();
 	}
 
-	async onClose(): Promise<void> {
+	onClose(): Promise<void> {
 		this.unmountPreact?.();
+		return Promise.resolve();
 	}
 }

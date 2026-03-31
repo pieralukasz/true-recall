@@ -39,7 +39,7 @@ export function KnowledgeBaseTab() {
 		try {
 			const result = await plugin.ragIndexer.fullReindex((p) => {
 				const msg = formatProgress(p);
-				notice.noticeEl.setText(msg);
+				notice.messageEl.setText(msg);
 				setProgress(msg);
 			});
 

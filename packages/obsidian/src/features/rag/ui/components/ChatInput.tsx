@@ -61,6 +61,7 @@ export function ChatInput({
 		onSend(trimmed);
 		setText("");
 		suggestions.close();
+		// eslint-disable-next-line @obsidianmd/no-direct-style-mutation -- textarea auto-resize requires imperative height reset
 		if (textareaRef.current) textareaRef.current.style.height = "auto";
 	}, [text, disabled, onSend, suggestions]);
 
@@ -100,7 +101,9 @@ export function ChatInput({
 		(e: Event) => {
 			const target = e.target as HTMLTextAreaElement;
 			setText(target.value);
+			// eslint-disable-next-line @obsidianmd/no-direct-style-mutation -- textarea auto-resize requires imperative height calculation
 			target.style.height = "auto";
+			// eslint-disable-next-line @obsidianmd/no-direct-style-mutation -- textarea auto-resize requires imperative height calculation
 			target.style.height = `${Math.min(target.scrollHeight, 120)}px`;
 			suggestions.handleTrigger(target.value, target.selectionStart);
 		},

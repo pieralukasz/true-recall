@@ -38,55 +38,57 @@ export class KnowledgeChatView extends ItemView {
 		return "bot";
 	}
 
-	async onOpen(): Promise<void> {
+	onOpen(): Promise<void> {
 		const s = this.plugin.settings;
 		if (s.proKey && s.ragEnabled && this.plugin.ragActions) {
 			const search = this.plugin.ragSearch;
-			if (!search) return;
+			if (search) {
+				const toolExecutor =
+					this.plugin.cardStore &&
+					this.plugin.fsrsHelper &&
+					this.plugin.dayBoundaryService &&
+					this.plugin.hierarchyService
+						? new RagToolExecutor(
+								search,
+								this.plugin.cardStore,
+								this.plugin.fsrsHelper,
+								this.plugin.flashcardManager,
+								this.plugin.dayBoundaryService,
+								this.plugin.hierarchyService,
+							)
+						: undefined;
 
-			const toolExecutor =
-				this.plugin.cardStore &&
-				this.plugin.fsrsHelper &&
-				this.plugin.dayBoundaryService &&
-				this.plugin.hierarchyService
-					? new RagToolExecutor(
-							search,
-							this.plugin.cardStore,
-							this.plugin.fsrsHelper,
-							this.plugin.flashcardManager,
-							this.plugin.dayBoundaryService,
-							this.plugin.hierarchyService,
-						)
-					: undefined;
+				const contextResolver = this.createContextResolver();
 
-			const contextResolver = this.createContextResolver();
-
-			const query = new RagQueryService(
-				search,
-				() => this.plugin.settings,
-				new ObsidianHttpClient(),
-				this.plugin.frontmatterIndex,
-				toolExecutor,
-				contextResolver,
-			);
-			this.chatService = new RagChatService(query);
-			this.plugin.ragIndexer?.setSearchService(search);
+				const query = new RagQueryService(
+					search,
+					() => this.plugin.settings,
+					new ObsidianHttpClient(),
+					this.plugin.frontmatterIndex,
+					toolExecutor,
+					contextResolver,
+				);
+				this.chatService = new RagChatService(query);
+				this.plugin.ragIndexer?.setSearchService(search);
+			}
 		}
 
 		const container = this.containerEl.children[1];
-		if (!(container instanceof HTMLElement)) return;
-		container.empty();
-		container.addClasses(["ep:h-full", "ep:overflow-hidden"]);
-
-		this.unmountPreact = mountPreact(
-			container,
-			this.plugin,
-			h(KnowledgeChatApp, { view: this }),
-		);
+		if (container instanceof HTMLElement) {
+			container.empty();
+			container.addClasses(["ep:h-full", "ep:overflow-hidden"]);
+			this.unmountPreact = mountPreact(
+				container,
+				this.plugin,
+				h(KnowledgeChatApp, { view: this }),
+			);
+		}
+		return Promise.resolve();
 	}
 
-	async onClose(): Promise<void> {
+	onClose(): Promise<void> {
 		this.unmountPreact?.();
+		return Promise.resolve();
 	}
 
 	private createContextResolver() {

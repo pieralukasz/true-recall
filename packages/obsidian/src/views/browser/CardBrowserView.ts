@@ -29,20 +29,21 @@ export class CardBrowserView extends ItemView {
 		return "table-2";
 	}
 
-	async onOpen(): Promise<void> {
+	onOpen(): Promise<void> {
 		const container = this.containerEl.children[1];
-		if (!(container instanceof HTMLElement)) return;
-		container.empty();
-		container.addClasses(["ep:h-full", "ep:overflow-hidden"]);
-
-		this.unmountPreact = mountPreact(
-			container,
-			this.plugin,
-			h(CardBrowserApp, {
-				filterSourceUid: this.filterSourceUid,
-				filterOrphaned: this.filterOrphaned,
-			}),
-		);
+		if (container instanceof HTMLElement) {
+			container.empty();
+			container.addClasses(["ep:h-full", "ep:overflow-hidden"]);
+			this.unmountPreact = mountPreact(
+				container,
+				this.plugin,
+				h(CardBrowserApp, {
+					filterSourceUid: this.filterSourceUid,
+					filterOrphaned: this.filterOrphaned,
+				}),
+			);
+		}
+		return Promise.resolve();
 	}
 
 	async setState(state: unknown, result: ViewStateResult): Promise<void> {
@@ -56,7 +57,8 @@ export class CardBrowserView extends ItemView {
 		await super.setState(state, result);
 	}
 
-	async onClose(): Promise<void> {
+	onClose(): Promise<void> {
 		this.unmountPreact?.();
+		return Promise.resolve();
 	}
 }
