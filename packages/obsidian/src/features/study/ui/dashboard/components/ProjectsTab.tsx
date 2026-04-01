@@ -41,8 +41,18 @@ export function ProjectsTab({
 	const expandedPaths = useSignal<ReadonlySet<string>>(new Set());
 	const contentRef = useRef<HTMLDivElement>(null);
 
-	const { handleArchive, handleRename, handleDissolve, handleMoveChildren } =
-		useProjectActions();
+	const {
+		handleArchive,
+		handleRename,
+		handleDissolve,
+		handleMoveChildren,
+		handleDelete,
+		handleExportAnki,
+		handleExportCsv,
+		handleCreateSubProject,
+		handleCreateProjectFromNote,
+		handleAssignNoteToProject,
+	} = useProjectActions();
 	const {
 		dragState,
 		handleDragStart,
@@ -93,8 +103,16 @@ export function ProjectsTab({
 
 	return (
 		<div>
-			{dragState.value?.item.parentPath && (
-				<RootDropZone position="top" onDrop={handleRootDrop} />
+			{dragState.value && (
+				<RootDropZone
+					position="top"
+					label={
+						dragState.value.item.parentPath
+							? "Move to root level"
+							: "Create project"
+					}
+					onDrop={handleRootDrop}
+				/>
 			)}
 
 			<div
@@ -116,6 +134,10 @@ export function ProjectsTab({
 								onRename={handleRename}
 								onDissolve={handleDissolve}
 								onMoveChildren={handleMoveChildren}
+								onDelete={handleDelete}
+								onExportAnki={handleExportAnki}
+								onExportCsv={handleExportCsv}
+								onCreateSubProject={handleCreateSubProject}
 								onDragStart={handleDragStart}
 								onDragEnd={handleDragEnd}
 								onDragOver={handleDragOver}
@@ -136,6 +158,8 @@ export function ProjectsTab({
 								onPresetClick={onPresetClick}
 								onArchive={handleArchive}
 								onRename={handleRename}
+								onCreateProject={handleCreateProjectFromNote}
+								onAssignToProject={handleAssignNoteToProject}
 								onDragStart={handleDragStart}
 								onDragEnd={handleDragEnd}
 								onDragOver={handleDragOver}
@@ -161,8 +185,16 @@ export function ProjectsTab({
 				})}
 			</div>
 
-			{dragState.value?.item.parentPath && (
-				<RootDropZone position="bottom" onDrop={handleRootDrop} />
+			{dragState.value && (
+				<RootDropZone
+					position="bottom"
+					label={
+						dragState.value.item.parentPath
+							? "Move to root level"
+							: "Create project"
+					}
+					onDrop={handleRootDrop}
+				/>
 			)}
 		</div>
 	);
@@ -181,6 +213,10 @@ interface ProjectHeaderItemProps {
 	onRename: (path: string) => Promise<void>;
 	onDissolve: (path: string) => Promise<void>;
 	onMoveChildren: (path: string) => Promise<void>;
+	onDelete: (path: string) => Promise<void>;
+	onExportAnki: (path: string) => Promise<void>;
+	onExportCsv: (path: string) => Promise<void>;
+	onCreateSubProject: (path: string) => Promise<void>;
 	onDragStart: (e: DragEvent, item: FlatProjectItem) => void;
 	onDragEnd: () => void;
 	onDragOver: (e: DragEvent, item: FlatProjectItem) => void;
@@ -198,6 +234,10 @@ function ProjectHeaderItem({
 	onRename,
 	onDissolve,
 	onMoveChildren,
+	onDelete,
+	onExportAnki,
+	onExportCsv,
+	onCreateSubProject,
 	onDragStart,
 	onDragEnd,
 	onDragOver,
@@ -249,6 +289,12 @@ function ProjectHeaderItem({
 		onMoveChildren: isVirtual
 			? undefined
 			: () => void onMoveChildren(item.project.path),
+		onDelete: isVirtual ? undefined : () => void onDelete(item.project.path),
+		onExportAnki: () => void onExportAnki(item.project.path),
+		onExportCsv: () => void onExportCsv(item.project.path),
+		onCreateSubProject: isVirtual
+			? undefined
+			: () => void onCreateSubProject(item.project.path),
 	});
 
 	return (
@@ -308,6 +354,8 @@ interface NoteItemProps {
 	onPresetClick?: (path: string | null) => void;
 	onArchive: (path: string, archived: boolean) => void;
 	onRename: (path: string) => Promise<void>;
+	onCreateProject: (path: string) => Promise<void>;
+	onAssignToProject: (path: string) => Promise<void>;
 	onDragStart: (e: DragEvent, item: FlatProjectItem) => void;
 	onDragEnd: () => void;
 	onDragOver: (e: DragEvent, item: FlatProjectItem) => void;
@@ -323,6 +371,8 @@ function NoteItem({
 	onPresetClick,
 	onArchive,
 	onRename,
+	onCreateProject,
+	onAssignToProject,
 	onDragStart,
 	onDragEnd,
 	onDragOver,
@@ -357,6 +407,7 @@ function NoteItem({
 			: undefined;
 
 	const notePath = item.note.path;
+	const isUnassigned = item.projectPath === UNASSIGNED_PATH;
 	const handleContextMenu = useNoteContextMenu({
 		note: item.note,
 		onStudy: handleStudy,
@@ -366,6 +417,14 @@ function NoteItem({
 		onArchive: notePath ? () => onArchive(notePath, true) : undefined,
 		onUnarchive: notePath ? () => onArchive(notePath, false) : undefined,
 		onDetach: handleDetach,
+		onCreateProject:
+			isUnassigned && notePath
+				? () => void onCreateProject(notePath)
+				: undefined,
+		onAssignToProject:
+			isUnassigned && notePath
+				? () => void onAssignToProject(notePath)
+				: undefined,
 	});
 
 	return (
@@ -410,9 +469,11 @@ function NoteItem({
 
 function RootDropZone({
 	position,
+	label,
 	onDrop,
 }: {
 	position: "top" | "bottom";
+	label: string;
 	onDrop: (e: DragEvent) => void;
 }) {
 	const spacing = position === "top" ? "ep:mb-1" : "ep:mt-1";
@@ -430,7 +491,7 @@ function RootDropZone({
 			}}
 			onDrop={onDrop}
 		>
-			Move to root level
+			{label}
 		</div>
 	);
 }

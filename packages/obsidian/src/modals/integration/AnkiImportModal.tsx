@@ -1,9 +1,15 @@
 import { AnkiConverterService } from "@true-recall/core/integration/anki/anki-converter.service";
 import { AnkiImportService } from "@true-recall/core/integration/anki/anki-import.service";
+import { AnkiNoteTypeMapper } from "@true-recall/core/integration/anki/anki-note-type-mapper";
 import { ApkgParserService } from "@true-recall/core/integration/anki/apkg/apkg-parser.service";
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite/SqliteStoreService";
 import type { FSRSService } from "@true-recall/core/services/fsrs/fsrs.service";
-import type { ConvertedCard } from "@true-recall/core/types";
+import type {
+	ApkgData,
+	ConvertedCard,
+	NoteTypeMapping,
+} from "@true-recall/core/types";
+import type { NoteType } from "@true-recall/core/types/note.types";
 import { ObsidianAnkiImportVault } from "@true-recall/obsidian/adapters/ObsidianAnkiImportVault";
 import { ObsidianPersistence } from "@true-recall/obsidian/adapters/ObsidianPersistence";
 import { ObsidianVaultFileReader } from "@true-recall/obsidian/adapters/ObsidianVaultFileReader";
@@ -13,6 +19,7 @@ import {
 	FileSelectPhase,
 	type ImportPhase,
 	type ImportPreview,
+	MappingPhase,
 	PreviewPhase,
 	ProgressPhase,
 	ResultPhase,
@@ -24,23 +31,26 @@ import { useCallback, useState } from "preact/hooks";
 
 function AnkiImportBody({
 	onFileSelected,
+	onShowMapping,
 	onImport,
 	onClose,
 	onUpdateTitle,
+	existingNoteTypes,
 }: {
 	onFileSelected: (file: File) => Promise<ImportPhase>;
+	onShowMapping: (preview: ImportPreview) => ImportPhase;
 	onImport: (opts: {
 		importScheduling: boolean;
 		importMedia: boolean;
-		createProject: boolean;
+		modelMappings: Map<number, string>;
 	}) => Promise<ImportPhase>;
 	onClose: () => void;
 	onUpdateTitle: (title: string) => void;
+	existingNoteTypes: NoteType[];
 }) {
 	const [phase, setPhase] = useState<ImportPhase>({ type: "file-select" });
 	const [importScheduling, setImportScheduling] = useState(true);
 	const [importMedia, setImportMedia] = useState(true);
-	const [createProject, setCreateProject] = useState(true);
 
 	const handleFile = useCallback(
 		async (file: File) => {
@@ -54,18 +64,29 @@ function AnkiImportBody({
 		[onFileSelected, onUpdateTitle],
 	);
 
-	const handleImport = useCallback(async () => {
-		setPhase({ type: "importing" });
-		const result = await onImport({
-			importScheduling,
-			importMedia,
-			createProject,
-		});
-		setPhase(result);
-		if (result.type === "result") {
-			onUpdateTitle("Import complete");
-		}
-	}, [onImport, importScheduling, importMedia, createProject, onUpdateTitle]);
+	const handleContinueToMapping = useCallback(
+		(preview: ImportPreview) => {
+			const mappingPhase = onShowMapping(preview);
+			setPhase(mappingPhase);
+		},
+		[onShowMapping],
+	);
+
+	const handleImport = useCallback(
+		async (modelMappings: Map<number, string>) => {
+			setPhase({ type: "importing" });
+			const result = await onImport({
+				importScheduling,
+				importMedia,
+				modelMappings,
+			});
+			setPhase(result);
+			if (result.type === "result") {
+				onUpdateTitle("Import complete");
+			}
+		},
+		[onImport, importScheduling, importMedia, onUpdateTitle],
+	);
 
 	switch (phase.type) {
 		case "parsing":
@@ -91,11 +112,19 @@ function AnkiImportBody({
 					preview={phase.preview}
 					importScheduling={importScheduling}
 					importMedia={importMedia}
-					createProject={createProject}
 					onSchedulingChange={setImportScheduling}
 					onMediaChange={setImportMedia}
-					onCreateProjectChange={setCreateProject}
-					onImport={() => void handleImport()}
+					onContinue={() => handleContinueToMapping(phase.preview)}
+					onCancel={onClose}
+				/>
+			);
+
+		case "mapping":
+			return (
+				<MappingPhase
+					suggestions={phase.suggestions}
+					existingNoteTypes={existingNoteTypes}
+					onImport={(mappings) => void handleImport(mappings)}
 					onCancel={onClose}
 				/>
 			);
@@ -109,7 +138,9 @@ export class AnkiImportModal extends BaseModal {
 	private store: SqliteStoreService;
 	private fsrsService: FSRSService;
 	private fileData: ArrayBuffer | null = null;
+	private apkgData: ApkgData | null = null;
 	private deckNames: string[] = [];
+	private mappingSuggestions: NoteTypeMapping[] = [];
 
 	constructor(app: App, store: SqliteStoreService, fsrsService: FSRSService) {
 		super(app, { title: "Import Anki deck", width: "520px" });
@@ -118,12 +149,16 @@ export class AnkiImportModal extends BaseModal {
 	}
 
 	protected renderBody(container: HTMLElement): void {
+		const existingNoteTypes = this.store.noteTypes.getAll();
+
 		render(
 			<AnkiImportBody
 				onFileSelected={(file) => this.handleFileSelected(file)}
+				onShowMapping={(preview) => this.buildMappingPhase(preview)}
 				onImport={(opts) => this.startImport(opts)}
 				onClose={() => this.close()}
 				onUpdateTitle={(title) => this.updateTitle(title)}
+				existingNoteTypes={existingNoteTypes}
 			/>,
 			container,
 		);
@@ -134,12 +169,20 @@ export class AnkiImportModal extends BaseModal {
 			this.fileData = await file.arrayBuffer();
 
 			const parser = new ApkgParserService();
-			const apkgData = await parser.parseApkg(this.fileData);
+			this.apkgData = await parser.parseApkg(this.fileData);
 
 			const converter = new AnkiConverterService();
-			const convertedCards = converter.convert(apkgData);
+			const convertedCards = converter.convert(this.apkgData);
 
 			this.deckNames = this.getDecksWithCards(convertedCards);
+
+			// Pre-compute note type mapping suggestions
+			const mapper = new AnkiNoteTypeMapper(this.store.noteTypes);
+			const cardCountByModel = this.countCardsByModel(convertedCards);
+			this.mappingSuggestions = mapper.suggestMappings(
+				this.apkgData.models,
+				cardCountByModel,
+			);
 
 			const preview: ImportPreview = {
 				totalCards: convertedCards.length,
@@ -148,7 +191,7 @@ export class AnkiImportModal extends BaseModal {
 				reversedCards: convertedCards.filter((c) => c.cardType === "reversed")
 					.length,
 				decks: this.deckNames,
-				mediaCount: Object.keys(apkgData.mediaMap).length,
+				mediaCount: Object.keys(this.apkgData.mediaMap).length,
 			};
 
 			return { type: "preview", preview };
@@ -158,10 +201,18 @@ export class AnkiImportModal extends BaseModal {
 		}
 	}
 
+	private buildMappingPhase(preview: ImportPreview): ImportPhase {
+		return {
+			type: "mapping",
+			suggestions: this.mappingSuggestions,
+			preview,
+		};
+	}
+
 	private async startImport(opts: {
 		importScheduling: boolean;
 		importMedia: boolean;
-		createProject: boolean;
+		modelMappings: Map<number, string>;
 	}): Promise<ImportPhase> {
 		if (!this.fileData) {
 			return { type: "error", message: "No file data", canRetry: true };
@@ -188,12 +239,10 @@ export class AnkiImportModal extends BaseModal {
 				importScheduling: opts.importScheduling,
 				importMedia: opts.importMedia,
 				mediaFolder,
-				createProject: opts.createProject,
+				modelMappings: opts.modelMappings,
 			});
 
-			// Delay hierarchy invalidation so Obsidian's metadata cache
-			// has time to process newly created source notes
-			if (opts.createProject && result.imported > 0) {
+			if (result.imported > 0) {
 				setTimeout(() => mutate("hierarchy:changed", () => {}), 2000);
 			}
 
@@ -212,5 +261,15 @@ export class AnkiImportModal extends BaseModal {
 			}
 		}
 		return [...names].sort();
+	}
+
+	private countCardsByModel(
+		convertedCards: ConvertedCard[],
+	): Map<number, number> {
+		const counts = new Map<number, number>();
+		for (const card of convertedCards) {
+			counts.set(card.ankiModelId, (counts.get(card.ankiModelId) ?? 0) + 1);
+		}
+		return counts;
 	}
 }

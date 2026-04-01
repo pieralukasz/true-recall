@@ -59,7 +59,20 @@ export interface AnkiImportOptions {
 	importScheduling: boolean;
 	importMedia: boolean;
 	mediaFolder: string;
-	createProject: boolean;
+	/** Organize imported decks as a project hierarchy */
+	createProject?: boolean;
+	/** User-chosen note type mappings: ankiModelId → noteTypeId (or "auto" to auto-create) */
+	modelMappings?: Map<number, string>;
+}
+
+export interface NoteTypeMapping {
+	ankiModelId: number;
+	ankiModelName: string;
+	ankiFields: string[];
+	ankiType: 0 | 1;
+	cardCount: number;
+	suggestedNoteTypeId: string | null;
+	suggestedNoteTypeName: string | null;
 }
 
 export interface AnkiImportResult {

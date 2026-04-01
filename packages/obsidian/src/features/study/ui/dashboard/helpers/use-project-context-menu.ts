@@ -14,6 +14,10 @@ interface UseProjectContextMenuOptions {
 	onUnarchive?: () => void;
 	onDissolve?: () => void;
 	onMoveChildren?: () => void;
+	onDelete?: () => void;
+	onExportAnki?: () => void;
+	onExportCsv?: () => void;
+	onCreateSubProject?: () => void;
 }
 
 export function useProjectContextMenu({
@@ -28,6 +32,10 @@ export function useProjectContextMenu({
 	onUnarchive,
 	onDissolve,
 	onMoveChildren,
+	onDelete,
+	onExportAnki,
+	onExportCsv,
+	onCreateSubProject,
 }: UseProjectContextMenuOptions) {
 	const menuItems: MenuItem[] = [
 		{ title: "Study", icon: "play", onClick: onStudyProject },
@@ -56,11 +64,32 @@ export function useProjectContextMenu({
 								icon: "archive",
 								onClick: () => onArchive?.(),
 							},
+					{
+						title: "Export",
+						icon: "download",
+						children: [
+							{
+								title: "Anki (.apkg)",
+								icon: "file-down",
+								onClick: () => onExportAnki?.(),
+							},
+							{
+								title: "CSV",
+								icon: "file-spreadsheet",
+								onClick: () => onExportCsv?.(),
+							},
+						],
+					},
 					"separator" as const,
 					{
 						title: "Project",
 						icon: "folder-cog",
 						children: [
+							{
+								title: "Create sub-project",
+								icon: "folder-plus",
+								onClick: () => onCreateSubProject?.(),
+							},
 							{
 								title: "Set preset",
 								icon: "settings",
@@ -75,6 +104,12 @@ export function useProjectContextMenu({
 								title: "Dissolve project",
 								icon: "unlink",
 								onClick: () => onDissolve?.(),
+							},
+							"separator" as const,
+							{
+								title: "Delete project",
+								icon: "trash-2",
+								onClick: () => onDelete?.(),
 							},
 						],
 					},

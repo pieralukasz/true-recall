@@ -10,11 +10,9 @@ export interface PreviewPhaseProps {
 	preview: ImportPreview;
 	importScheduling: boolean;
 	importMedia: boolean;
-	createProject: boolean;
 	onSchedulingChange: (val: boolean) => void;
 	onMediaChange: (val: boolean) => void;
-	onCreateProjectChange: (val: boolean) => void;
-	onImport: () => void;
+	onContinue: () => void;
 	onCancel: () => void;
 }
 
@@ -22,11 +20,9 @@ export function PreviewPhase({
 	preview,
 	importScheduling,
 	importMedia,
-	createProject,
 	onSchedulingChange,
 	onMediaChange,
-	onCreateProjectChange,
-	onImport,
+	onContinue,
 	onCancel,
 }: PreviewPhaseProps) {
 	return (
@@ -68,18 +64,12 @@ export function PreviewPhase({
 					checked={importMedia}
 					onChange={onMediaChange}
 				/>
-				<OptionCheckbox
-					label="Create project"
-					description="Organize imported decks as a project hierarchy"
-					checked={createProject}
-					onChange={onCreateProjectChange}
-				/>
 			</div>
 
 			<ModalFooter
 				onCancel={onCancel}
-				onConfirm={onImport}
-				confirmLabel="Import"
+				onConfirm={onContinue}
+				confirmLabel="Continue"
 			/>
 		</>
 	);

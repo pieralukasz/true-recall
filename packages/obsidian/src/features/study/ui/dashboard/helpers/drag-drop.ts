@@ -233,18 +233,24 @@ export async function executeDrop(
 			await app.vault.create(projectPath, "");
 
 			const dragFile = app.vault.getAbstractFileByPath(result.dragPath);
-			const targetFileForParent = app.vault.getAbstractFileByPath(
-				result.targetPath,
-			);
-
 			if (dragFile instanceof TFile) {
 				await frontmatterService.addParent(dragFile.path, name);
 			}
-			if (targetFileForParent instanceof TFile) {
-				await frontmatterService.addParent(targetFileForParent.path, name);
+
+			const isSameNote = result.dragPath === result.targetPath;
+			if (!isSameNote) {
+				const targetFileForParent = app.vault.getAbstractFileByPath(
+					result.targetPath,
+				);
+				if (targetFileForParent instanceof TFile) {
+					await frontmatterService.addParent(targetFileForParent.path, name);
+				}
 			}
 
-			new Notice(`Created project "${name}" with 2 notes`);
+			const noteCount = isSameNote ? 1 : 2;
+			new Notice(
+				`Created project "${name}" with ${noteCount} note${noteCount > 1 ? "s" : ""}`,
+			);
 			break;
 		}
 

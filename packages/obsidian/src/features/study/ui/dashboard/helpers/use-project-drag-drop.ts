@@ -82,21 +82,34 @@ export function useProjectDragDrop() {
 	const handleRootDrop = useCallback(
 		(e: DragEvent) => {
 			const ds = consumeDragState(e, dragState);
-			if (!ds || !ds.item.parentPath) return;
+			if (!ds) return;
 
-			const parentName = (
-				ds.item.parentPath.split("/").pop() ?? ds.item.parentPath
-			).replace(/\.md$/, "");
+			if (ds.item.parentPath) {
+				const parentName = (
+					ds.item.parentPath.split("/").pop() ?? ds.item.parentPath
+				).replace(/\.md$/, "");
 
-			const result: DropResult = {
-				action: "unnest",
-				dragPath: ds.item.path,
-				dragName: ds.item.name,
-				parentPath: ds.item.parentPath,
-				parentName,
-			};
+				const result: DropResult = {
+					action: "unnest",
+					dragPath: ds.item.path,
+					dragName: ds.item.name,
+					parentPath: ds.item.parentPath,
+					parentName,
+				};
 
-			void executeDrop(result, createDropDeps(plugin));
+				void executeDrop(result, createDropDeps(plugin));
+			} else {
+				// Unassigned note → create project
+				const result: DropResult = {
+					action: "create-project",
+					dragPath: ds.item.path,
+					dragName: ds.item.name,
+					targetPath: ds.item.path,
+					targetName: ds.item.name,
+				};
+
+				void executeDrop(result, createDropDeps(plugin));
+			}
 		},
 		[dragState, plugin],
 	);

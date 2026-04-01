@@ -12,6 +12,8 @@ interface UseNoteContextMenuOptions {
 	onUnarchive?: () => void;
 	onDetach?: () => void;
 	onEnterSelection?: () => void;
+	onCreateProject?: () => void;
+	onAssignToProject?: () => void;
 }
 
 export function useNoteContextMenu({
@@ -24,6 +26,8 @@ export function useNoteContextMenu({
 	onUnarchive,
 	onDetach,
 	onEnterSelection,
+	onCreateProject,
+	onAssignToProject,
 }: UseNoteContextMenuOptions) {
 	const menuItems: MenuItem[] = [
 		{ title: "Study", icon: "play", onClick: onStudy },
@@ -45,6 +49,29 @@ export function useNoteContextMenu({
 			? [
 					"separator" as const,
 					{ title: "Detach from project", icon: "unlink", onClick: onDetach },
+				]
+			: []),
+		...(onCreateProject || onAssignToProject
+			? [
+					"separator" as const,
+					...(onCreateProject
+						? [
+								{
+									title: "Create project",
+									icon: "folder-plus",
+									onClick: onCreateProject,
+								},
+							]
+						: []),
+					...(onAssignToProject
+						? [
+								{
+									title: "Assign to project",
+									icon: "folder-input",
+									onClick: onAssignToProject,
+								},
+							]
+						: []),
 				]
 			: []),
 		...(onEnterSelection

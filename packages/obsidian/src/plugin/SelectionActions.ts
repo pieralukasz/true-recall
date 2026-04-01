@@ -219,8 +219,11 @@ export async function createNoteFromSelection(
 
 		const file = await plugin.app.vault.create(path, text);
 
+		const fmService = plugin.flashcardManager.getFrontmatterService();
+		const uid = fmService.generateUid();
+		await fmService.setSourceNoteUid(file.path, uid);
+
 		if (result.parentProject) {
-			const fmService = plugin.flashcardManager.getFrontmatterService();
 			await fmService.addParent(file.path, result.parentProject);
 			plugin.hierarchyService.invalidateGraph();
 		}
