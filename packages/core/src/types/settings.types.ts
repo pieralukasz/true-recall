@@ -6,6 +6,11 @@ import type { ReviewViewMode } from "./fsrs";
 
 export type AITier = "pro" | "byok";
 
+export interface ToolbarButtonConfig {
+	id: string;
+	enabled: boolean;
+}
+
 /**
  * Optimization result metrics from FSRS parameter optimization
  */
@@ -272,6 +277,11 @@ export interface TrueRecallSettings {
 
 	/** Show floating toolbar above selected text for AI flashcard generation */
 	selectionToolbarEnabled: boolean;
+
+	/** Button configuration for the editor (CodeMirror) selection toolbar */
+	editorToolbarButtons: ToolbarButtonConfig[];
+	/** Button configuration for the global (non-editor) selection toolbar */
+	globalToolbarButtons: ToolbarButtonConfig[];
 
 	/** Custom generation prompt — appended to both Pro and BYOK system prompts */
 	aiGenerationPrompt?: string;

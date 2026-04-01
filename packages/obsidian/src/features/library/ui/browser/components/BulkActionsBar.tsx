@@ -12,6 +12,7 @@ interface BulkActionsBarProps {
 	onClearSelection: () => void;
 	onSelectAll: () => void;
 	totalCount: number;
+	onMove: () => Promise<void>;
 }
 
 export function BulkActionsBar({
@@ -20,6 +21,7 @@ export function BulkActionsBar({
 	onClearSelection,
 	onSelectAll,
 	totalCount,
+	onMove,
 }: BulkActionsBarProps) {
 	const app = useApp();
 	const plugin = usePlugin();
@@ -138,6 +140,7 @@ export function BulkActionsBar({
 					label="Change type"
 					onClick={() => void handleChangeType()}
 				/>
+				<ActionButton label="Move" onClick={() => void onMove()} />
 				<ActionButton
 					label="Delete"
 					onClick={() => void handleDelete()}

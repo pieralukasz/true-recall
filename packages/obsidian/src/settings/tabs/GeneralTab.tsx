@@ -18,6 +18,7 @@ import {
 import { useIcon } from "@true-recall/obsidian/preact";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 import { useSettings } from "../hooks/useSettings";
+import { ToolbarConfigSection } from "../ToolbarConfigSection";
 
 export function GeneralTab() {
 	const { settings, save, plugin } = useSettings();
@@ -166,6 +167,25 @@ export function GeneralTab() {
 					/>
 				</FormField>
 			</FormCard>
+
+			{settings.selectionToolbarEnabled && (
+				<>
+					<ToolbarConfigSection
+						title="Editor toolbar"
+						description="Buttons shown when selecting text in the markdown editor"
+						buttons={settings.editorToolbarButtons}
+						onChange={(b) => void save({ editorToolbarButtons: b })}
+						context="editor"
+					/>
+					<ToolbarConfigSection
+						title="Global toolbar"
+						description="Buttons shown when selecting text outside the editor (sidebars, terminal, reading view)"
+						buttons={settings.globalToolbarButtons}
+						onChange={(b) => void save({ globalToolbarButtons: b })}
+						context="global"
+					/>
+				</>
+			)}
 
 			<FormCard title="Day boundary">
 				<FormField

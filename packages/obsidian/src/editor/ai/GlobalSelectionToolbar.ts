@@ -1,11 +1,11 @@
 import { computePosition, flip, offset, shift } from "@floating-ui/dom";
+import type { ToolbarButtonConfig } from "@true-recall/core/types";
 import { h, render } from "preact";
-import { SelectionToolbar } from "./SelectionToolbar";
+import { SelectionToolbar, type ToolbarActions } from "./SelectionToolbar";
 
 export interface GlobalSelectionToolbarCallbacks {
-	onGenerate: (text: string) => Promise<void>;
-	onEdit: (text: string) => void;
-	onQuickAdd: (text: string) => Promise<void>;
+	actions: ToolbarActions;
+	getButtons: () => ToolbarButtonConfig[];
 	hasApiKey: () => boolean;
 	isEnabled: () => boolean;
 }
@@ -109,22 +109,12 @@ export class GlobalSelectionToolbar {
 		render(
 			h(SelectionToolbar, {
 				selectedText: text,
-				onGenerate: async () => {
-					this.removeToolbar();
-					await this.callbacks.onGenerate(text);
+				buttons: this.callbacks.getButtons(),
+				actions: {
+					...this.callbacks.actions,
+					onDismiss: () => this.removeToolbar(),
 				},
-				onEdit: () => {
-					this.removeToolbar();
-					this.callbacks.onEdit(text);
-				},
-				onQuickAdd: async () => {
-					this.removeToolbar();
-					await this.callbacks.onQuickAdd(text);
-				},
-				onDismiss: () => this.removeToolbar(),
-				onHighlight: () => {},
 				hasApiKey: this.callbacks.hasApiKey(),
-				showHighlight: false,
 			}),
 			this.container,
 		);

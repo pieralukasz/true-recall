@@ -6,24 +6,10 @@ import type {
 	ApkgData,
 	ConvertedCard,
 } from "@true-recall/core/types";
+import { htmlToMarkdown } from "./anki-html-converter";
 import { stripHtmlFromTemplate } from "./anki-note-type-mapper";
 
 const FIELD_SEPARATOR = "\x1f";
-
-const HTML_ENTITIES: Record<string, string> = {
-	"&amp;": "&",
-	"&lt;": "<",
-	"&gt;": ">",
-	"&nbsp;": " ",
-	"&quot;": '"',
-	"&#39;": "'",
-	"&apos;": "'",
-};
-
-const HTML_ENTITY_REGEX = new RegExp(
-	Object.keys(HTML_ENTITIES).join("|"),
-	"gi",
-);
 
 export class AnkiConverterService {
 	convert(data: ApkgData): ConvertedCard[] {
@@ -46,7 +32,7 @@ export class AnkiConverterService {
 			const fieldValues: Record<string, string> = {};
 			for (const fieldDef of model.flds) {
 				const rawValue = rawFields[fieldDef.ord] ?? "";
-				fieldValues[fieldDef.name] = this.htmlToMarkdown(rawValue);
+				fieldValues[fieldDef.name] = htmlToMarkdown(rawValue);
 			}
 
 			const converted = this.convertCard(
@@ -270,65 +256,6 @@ export class AnkiConverterService {
 				}
 			}
 		}
-	}
-
-	private htmlToMarkdown(html: string): string {
-		let text = html;
-
-		// Line breaks
-		text = text.replace(/<br\s*\/?>/gi, "\n");
-
-		// Pre-formatted blocks (before other tag stripping)
-		text = text.replace(
-			/<pre[^>]*>([\s\S]*?)<\/pre>/gi,
-			(_match, content: string) => {
-				const inner = this.stripTags(content);
-				return `\n\`\`\`\n${inner}\n\`\`\`\n`;
-			},
-		);
-
-		// Inline code
-		text = text.replace(
-			/<code[^>]*>([\s\S]*?)<\/code>/gi,
-			(_match, content: string) => {
-				const inner = this.stripTags(content);
-				return `\`${inner}\``;
-			},
-		);
-
-		// Bold
-		text = text.replace(/<(?:b|strong)>([\s\S]*?)<\/(?:b|strong)>/gi, "**$1**");
-
-		// Italic
-		text = text.replace(/<(?:i|em)>([\s\S]*?)<\/(?:i|em)>/gi, "*$1*");
-
-		// Images → Obsidian embeds
-		text = text.replace(/<img[^>]+src=["']([^"']+)["'][^>]*>/gi, "![[$1]]");
-
-		// Anki sound references → Obsidian embeds
-		text = text.replace(/\[sound:([^\]]+)\]/g, "![[$1]]");
-
-		// Strip remaining block-level tags, preserving content with newlines
-		text = text.replace(/<\/(?:div|p)>/gi, "\n");
-		text = text.replace(/<(?:div|p|span)[^>]*>/gi, "");
-
-		// Underline tags are kept (Obsidian renders them natively)
-		// Strip any remaining unknown HTML tags, preserving content
-		text = text.replace(/<\/?(?!u\b)[a-z][a-z0-9]*[^>]*>/gi, "");
-
-		// Decode HTML entities
-		text = text.replace(HTML_ENTITY_REGEX, (entity) => {
-			return HTML_ENTITIES[entity.toLowerCase()] ?? entity;
-		});
-
-		// Collapse excessive blank lines (3+ newlines → 2)
-		text = text.replace(/\n{3,}/g, "\n\n");
-
-		return text.trim();
-	}
-
-	private stripTags(html: string): string {
-		return html.replace(/<[^>]+>/g, "");
 	}
 
 	private extractMediaFiles(content: string): string[] {

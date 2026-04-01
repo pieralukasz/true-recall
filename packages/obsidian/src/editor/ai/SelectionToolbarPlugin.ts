@@ -1,14 +1,13 @@
 import type { Extension } from "@codemirror/state";
 import { type EditorView, ViewPlugin, type ViewUpdate } from "@codemirror/view";
 import { computePosition, flip, offset, shift } from "@floating-ui/dom";
+import type { ToolbarButtonConfig } from "@true-recall/core/types";
 import { h, render } from "preact";
-import { SelectionToolbar } from "./SelectionToolbar";
+import { SelectionToolbar, type ToolbarActions } from "./SelectionToolbar";
 
 export interface SelectionToolbarCallbacks {
-	onGenerate: (text: string) => Promise<void>;
-	onEdit: (text: string) => void;
-	onQuickAdd: (text: string) => Promise<void>;
-	onImageOcclusion: (imagePath: string) => void;
+	actions: ToolbarActions;
+	getButtons: () => ToolbarButtonConfig[];
 	hasApiKey: () => boolean;
 	isEnabled: () => boolean;
 }
@@ -91,7 +90,6 @@ export function createSelectionToolbarExtension(
 					return;
 				}
 
-				// Reuse existing container if text unchanged
 				if (this.container && this.currentText === selectedText) {
 					this.positionToolbar(selection.from);
 					return;
@@ -109,32 +107,29 @@ export function createSelectionToolbarExtension(
 				}
 
 				const detectedImagePath = extractFirstImagePath(text);
+				const highlightAction = () => {
+					const { state } = this.view;
+					const sel = state.selection.main;
+					if (sel.empty) return;
+					this.view.dispatch({
+						changes: [
+							{ from: sel.from, insert: "==" },
+							{ from: sel.to, insert: "==" },
+						],
+					});
+				};
 
 				render(
 					h(SelectionToolbar, {
 						selectedText: text,
-						onGenerate: async () => {
-							await callbacks.onGenerate(text);
+						buttons: callbacks.getButtons(),
+						actions: {
+							...callbacks.actions,
+							onHighlight: highlightAction,
+							onDismiss: () => this.removeToolbar(),
 						},
-						onEdit: () => callbacks.onEdit(text),
-						onQuickAdd: async () => {
-							await callbacks.onQuickAdd(text);
-						},
-						onDismiss: () => this.removeToolbar(),
-						onHighlight: () => {
-							const { state } = this.view;
-							const sel = state.selection.main;
-							if (sel.empty) return;
-							this.view.dispatch({
-								changes: [
-									{ from: sel.from, insert: "==" },
-									{ from: sel.to, insert: "==" },
-								],
-							});
-						},
-						onImageOcclusion: (path) => callbacks.onImageOcclusion(path),
-						detectedImagePath,
 						hasApiKey: callbacks.hasApiKey(),
+						detectedImagePath,
 					}),
 					this.container,
 				);

@@ -20,12 +20,14 @@ interface CardPreviewProps {
 	card: BrowserCard;
 	onClose: () => void;
 	onContentChange?: (value: string, field: "question" | "answer") => void;
+	onMove?: () => void;
 }
 
 export function CardPreview({
 	card,
 	onClose,
 	onContentChange,
+	onMove,
 }: CardPreviewProps) {
 	const app = useApp();
 	const isImageOcclusion =
@@ -64,23 +66,48 @@ export function CardPreview({
 				>
 					{stateLabel}
 				</span>
-				<Clickable
-					class="ep:p-1 ep:rounded hover:ep:bg-obs-modifier-hover ep:text-obs-muted"
-					onClick={onClose}
-				>
-					<svg
-						width="14"
-						height="14"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-						aria-hidden="true"
+				<div class="ep:flex ep:items-center ep:gap-1">
+					{onMove && (
+						<Clickable
+							class="ep:p-1 ep:rounded hover:ep:bg-obs-modifier-hover ep:text-obs-muted"
+							onClick={onMove}
+							aria-label="Move card"
+						>
+							<svg
+								width="14"
+								height="14"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								aria-hidden="true"
+							>
+								<path d="M2 9V5c0-1.1.9-2 2-2h3.93a2 2 0 0 1 1.66.9l.82 1.2a2 2 0 0 0 1.66.9H20a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2v-1" />
+								<path d="M2 13h10" />
+								<path d="M9 16l3-3-3-3" />
+							</svg>
+						</Clickable>
+					)}
+					<Clickable
+						class="ep:p-1 ep:rounded hover:ep:bg-obs-modifier-hover ep:text-obs-muted"
+						onClick={onClose}
 					>
-						<line x1="18" y1="6" x2="6" y2="18" />
-						<line x1="6" y1="6" x2="18" y2="18" />
-					</svg>
-				</Clickable>
+						<svg
+							width="14"
+							height="14"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							aria-hidden="true"
+						>
+							<line x1="18" y1="6" x2="6" y2="18" />
+							<line x1="6" y1="6" x2="18" y2="18" />
+						</svg>
+					</Clickable>
+				</div>
 			</div>
 
 			{/* Question */}

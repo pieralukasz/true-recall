@@ -175,3 +175,64 @@ export async function quickAddFlashcardGlobal(
 		notify().error(`Quick add failed: ${msg}`);
 	}
 }
+
+function deriveNoteName(text: string): string {
+	const firstLine = text.split("\n")[0]?.trim() ?? "";
+	const cleaned = firstLine
+		.replace(/^#+\s*/, "")
+		.replace(/[\\/:*?"<>|]/g, "")
+		.trim();
+	return cleaned.slice(0, 80) || "Selection Note";
+}
+
+async function findUniquePath(
+	plugin: TrueRecallPlugin,
+	baseName: string,
+): Promise<string> {
+	let path = `${baseName}.md`;
+	let i = 1;
+	while (plugin.app.vault.getAbstractFileByPath(path)) {
+		path = `${baseName} ${i}.md`;
+		i++;
+	}
+	return path;
+}
+
+export async function createNoteFromSelection(
+	plugin: TrueRecallPlugin,
+	text: string,
+): Promise<void> {
+	try {
+		const name = deriveNoteName(text);
+		const path = await findUniquePath(plugin, name);
+		const file = await plugin.app.vault.create(path, text);
+		await plugin.app.workspace.openLinkText(file.path, "", false);
+		notify().info(`Created "${file.basename}"`);
+	} catch (error) {
+		const msg = error instanceof Error ? error.message : String(error);
+		notify().error(`Failed to create note: ${msg}`);
+	}
+}
+
+export async function appendToCurrentNote(
+	plugin: TrueRecallPlugin,
+	text: string,
+): Promise<void> {
+	const file =
+		plugin.app.workspace.getActiveFile() ?? findMostRecentMarkdownFile(plugin);
+	if (!file) {
+		notify().error("No active note to append to");
+		return;
+	}
+
+	try {
+		await plugin.app.vault.process(file, (content) => {
+			const separator = content.endsWith("\n") ? "\n" : "\n\n";
+			return `${content}${separator}${text}\n`;
+		});
+		notify().info(`Appended to "${file.basename}"`);
+	} catch (error) {
+		const msg = error instanceof Error ? error.message : String(error);
+		notify().error(`Failed to append: ${msg}`);
+	}
+}

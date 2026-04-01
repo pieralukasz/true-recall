@@ -35,9 +35,9 @@ export class MoveCardModal extends BasePromiseModal<MoveCardResult> {
 	}
 
 	onOpen(): void {
+		this.allNotes = this.getValidNotes();
 		super.onOpen();
 		this.contentEl.addClass("true-recall-move-card-modal");
-		this.allNotes = this.getValidNotes();
 	}
 
 	protected renderBody(container: HTMLElement): void {

@@ -30,6 +30,8 @@ import type TrueRecallPlugin from "../main";
 import { BackupRecoveryManager } from "./BackupRecoveryManager";
 import { registerDeletionHandler } from "./PluginEventHandlers";
 import {
+	appendToCurrentNote,
+	createNoteFromSelection,
 	editSelectionAsFlashcard,
 	generateFlashcardsFromSelection,
 	generateFlashcardsGlobal,
@@ -297,12 +299,27 @@ function initializeDashboardCodeblocks(plugin: TrueRecallPlugin): void {
 		.catch(() => {});
 }
 
+function executeCommand(plugin: TrueRecallPlugin, commandId: string): void {
+	(plugin.app as any).commands.executeCommandById(commandId);
+}
+
 function initializeSelectionToolbar(plugin: TrueRecallPlugin): void {
+	const editorActions = {
+		onGenerate: (text: string) => generateFlashcardsFromSelection(plugin, text),
+		onEdit: (text: string) => editSelectionAsFlashcard(plugin, text),
+		onQuickAdd: (text: string) => quickAddFlashcardFromSelection(plugin, text),
+		onImageOcclusion: (imagePath: string) =>
+			handleImageOcclusion(plugin, imagePath),
+		onHighlight: () => {},
+		onNewNote: (text: string) => createNoteFromSelection(plugin, text),
+		onAppend: (text: string) => appendToCurrentNote(plugin, text),
+		onCommand: (id: string) => executeCommand(plugin, id),
+		onDismiss: () => {},
+	};
+
 	const extension = createSelectionToolbarExtension({
-		onGenerate: (text) => generateFlashcardsFromSelection(plugin, text),
-		onEdit: (text) => editSelectionAsFlashcard(plugin, text),
-		onQuickAdd: (text) => quickAddFlashcardFromSelection(plugin, text),
-		onImageOcclusion: (imagePath) => handleImageOcclusion(plugin, imagePath),
+		actions: editorActions,
+		getButtons: () => plugin.settings.editorToolbarButtons,
 		hasApiKey: () => hasApiKey(plugin),
 		isEnabled: () => plugin.settings.selectionToolbarEnabled,
 	});
@@ -358,10 +375,20 @@ function initializeSelectionToolbar(plugin: TrueRecallPlugin): void {
 
 	void import("@true-recall/obsidian/editor/ai/GlobalSelectionToolbar").then(
 		({ GlobalSelectionToolbar }) => {
+			const globalActions = {
+				onGenerate: (text: string) => generateFlashcardsGlobal(plugin, text),
+				onEdit: (text: string) => editSelectionAsFlashcard(plugin, text),
+				onQuickAdd: (text: string) => quickAddFlashcardGlobal(plugin, text),
+				onHighlight: () => {},
+				onNewNote: (text: string) => createNoteFromSelection(plugin, text),
+				onAppend: (text: string) => appendToCurrentNote(plugin, text),
+				onCommand: (id: string) => executeCommand(plugin, id),
+				onDismiss: () => {},
+			};
+
 			const toolbar = new GlobalSelectionToolbar({
-				onGenerate: (text) => generateFlashcardsGlobal(plugin, text),
-				onEdit: (text) => editSelectionAsFlashcard(plugin, text),
-				onQuickAdd: (text) => quickAddFlashcardGlobal(plugin, text),
+				actions: globalActions,
+				getButtons: () => plugin.settings.globalToolbarButtons,
 				hasApiKey: () => hasApiKey(plugin),
 				isEnabled: () => plugin.settings.selectionToolbarEnabled,
 			});

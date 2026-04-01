@@ -7,8 +7,9 @@ import type {
 	TrueRecallSettings,
 } from "@true-recall/core/types";
 import { DeleteCardCommand } from "@true-recall/obsidian/commands/commands/card-delete.cmd";
+import { MoveCardCommand } from "@true-recall/obsidian/commands/commands/card-move.cmd";
 import { AppNavBar } from "@true-recall/obsidian/components";
-import { Q, useQuery } from "@true-recall/obsidian/data";
+import { mutate, Q, useQuery } from "@true-recall/obsidian/data";
 import { BrowserSidebar } from "@true-recall/obsidian/features/library/ui/browser/components/BrowserSidebar";
 import { BrowserToolbar } from "@true-recall/obsidian/features/library/ui/browser/components/BrowserToolbar";
 import { BulkActionsBar } from "@true-recall/obsidian/features/library/ui/browser/components/BulkActionsBar";
@@ -30,6 +31,7 @@ import {
 	type StateFilterValue,
 } from "@true-recall/obsidian/features/library/ui/browser/types";
 import { notifyDuplicateError } from "@true-recall/obsidian/features/library/ui/panel/utils/panel-helpers";
+import { MoveCardModal } from "@true-recall/obsidian/modals/shared/MoveCardModal";
 import { useApp, usePlugin } from "@true-recall/obsidian/preact";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 import { useCallback, useEffect, useMemo, useRef } from "preact/hooks";
@@ -320,6 +322,36 @@ export function CardBrowserApp({
 		}
 	}, [app, plugin, queryService]);
 
+	const handleMoveCard = useCallback(async () => {
+		const card = previewCard.value;
+		if (!card) return;
+		const modal = new MoveCardModal(app, {
+			cardCount: 1,
+			sourceNoteName: card.sourceNoteName ?? undefined,
+			cardQuestion: card.question,
+			cardAnswer: card.answer,
+		});
+		const result = await modal.openAndWait();
+		if (result.cancelled || !result.targetNotePath) return;
+		const cmd = new MoveCardCommand(card.id, result.targetNotePath);
+		await plugin.commandService?.execute(cmd);
+		notify().cardsMoved(1, result.targetNotePath);
+	}, [app, plugin, previewCard]);
+
+	const handleBulkMove = useCallback(async () => {
+		const ids = Array.from(selectedIds.value);
+		if (ids.length === 0) return;
+		const modal = new MoveCardModal(app, { cardCount: ids.length });
+		const result = await modal.openAndWait();
+		if (result.cancelled || !result.targetNotePath) return;
+		for (const id of ids) {
+			await plugin.flashcardManager.moveCard(id, result.targetNotePath);
+		}
+		mutate("cards:bulk", () => {});
+		notify().cardsMoved(ids.length, result.targetNotePath);
+		handleClearSelection();
+	}, [app, plugin, selectedIds, handleClearSelection]);
+
 	const searchInputRef = useRef<HTMLInputElement>(null);
 
 	useEffect(() => {
@@ -369,6 +401,7 @@ export function CardBrowserApp({
 					onClearSelection={handleClearSelection}
 					onSelectAll={handleSelectAll}
 					totalCount={result.totalCount}
+					onMove={handleBulkMove}
 				/>
 			)}
 
@@ -406,6 +439,7 @@ export function CardBrowserApp({
 							previewCard.value = null;
 						}}
 						onContentChange={handleContentChange}
+						onMove={handleMoveCard}
 					/>
 				)}
 			</div>

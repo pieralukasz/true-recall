@@ -117,6 +117,7 @@ export type {
 	OptimizationMetrics,
 	ReviewOrder,
 	ScheduledBreak,
+	ToolbarButtonConfig,
 	TrueRecallSettings,
 	TypeInMode,
 } from "./settings.types";

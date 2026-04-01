@@ -162,6 +162,23 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 
 	selectionToolbarEnabled: true,
 
+	editorToolbarButtons: [
+		{ id: "flashcards", enabled: true },
+		{ id: "io", enabled: true },
+		{ id: "edit", enabled: true },
+		{ id: "quick-add", enabled: true },
+		{ id: "highlight", enabled: true },
+		{ id: "copy", enabled: true },
+	],
+	globalToolbarButtons: [
+		{ id: "flashcards", enabled: true },
+		{ id: "edit", enabled: true },
+		{ id: "quick-add", enabled: true },
+		{ id: "copy", enabled: true },
+		{ id: "new-note", enabled: true },
+		{ id: "append", enabled: true },
+	],
+
 	enableLocalApi: false,
 	apiPort: 27182,
 
