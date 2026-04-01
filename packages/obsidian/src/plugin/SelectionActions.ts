@@ -112,9 +112,12 @@ export async function quickAddFlashcardFromSelection(
 export async function generateFlashcardsGlobal(
 	plugin: TrueRecallPlugin,
 	text: string,
+	sourceFile?: TFile | null,
 ): Promise<void> {
 	const file =
-		plugin.app.workspace.getActiveFile() ?? findMostRecentMarkdownFile(plugin);
+		sourceFile ??
+		plugin.app.workspace.getActiveFile() ??
+		findMostRecentMarkdownFile(plugin);
 	if (!file) {
 		editSelectionAsFlashcard(plugin, text);
 		notify().info("No active note found — opened editor instead");
@@ -149,9 +152,12 @@ export async function generateFlashcardsGlobal(
 export async function quickAddFlashcardGlobal(
 	plugin: TrueRecallPlugin,
 	text: string,
+	sourceFile?: TFile | null,
 ): Promise<void> {
 	const file =
-		plugin.app.workspace.getActiveFile() ?? findMostRecentMarkdownFile(plugin);
+		sourceFile ??
+		plugin.app.workspace.getActiveFile() ??
+		findMostRecentMarkdownFile(plugin);
 	if (!file) {
 		editSelectionAsFlashcard(plugin, text);
 		notify().info("No active note found — opened editor instead");
@@ -185,27 +191,40 @@ function deriveNoteName(text: string): string {
 	return cleaned.slice(0, 80) || "Selection Note";
 }
 
-async function findUniquePath(
-	plugin: TrueRecallPlugin,
-	baseName: string,
-): Promise<string> {
-	let path = `${baseName}.md`;
-	let i = 1;
-	while (plugin.app.vault.getAbstractFileByPath(path)) {
-		path = `${baseName} ${i}.md`;
-		i++;
-	}
-	return path;
-}
-
 export async function createNoteFromSelection(
 	plugin: TrueRecallPlugin,
 	text: string,
 ): Promise<void> {
 	try {
-		const name = deriveNoteName(text);
-		const path = await findUniquePath(plugin, name);
+		const { CreateNoteFromSelectionModal } = await import(
+			"@true-recall/obsidian/modals/study/CreateNoteFromSelectionModal"
+		);
+		const defaultName = deriveNoteName(text);
+		const modal = new CreateNoteFromSelectionModal(
+			plugin.app,
+			plugin,
+			defaultName,
+		);
+		const result = await modal.openAndWait();
+		if (result.cancelled) return;
+
+		const path = CreateNoteFromSelectionModal.buildNotePath(
+			result.name,
+			result.folder,
+		);
+		if (plugin.app.vault.getAbstractFileByPath(path)) {
+			notify().error(`Note "${result.name}" already exists`);
+			return;
+		}
+
 		const file = await plugin.app.vault.create(path, text);
+
+		if (result.parentProject) {
+			const fmService = plugin.flashcardManager.getFrontmatterService();
+			await fmService.addParent(file.path, result.parentProject);
+			plugin.hierarchyService.invalidateGraph();
+		}
+
 		await plugin.app.workspace.openLinkText(file.path, "", false);
 		notify().info(`Created "${file.basename}"`);
 	} catch (error) {

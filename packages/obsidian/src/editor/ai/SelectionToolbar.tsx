@@ -1,12 +1,13 @@
 import type { ToolbarButtonConfig } from "@true-recall/core/types";
 import { Clickable } from "@true-recall/obsidian/components";
+import type { TFile } from "obsidian";
 import { useCallback, useState } from "preact/hooks";
 import { BUILTIN_BUTTONS } from "./toolbar-buttons";
 
 export interface ToolbarActions {
-	onGenerate: (text: string) => Promise<void>;
+	onGenerate: (text: string, sourceFile?: TFile | null) => Promise<void>;
 	onEdit: (text: string) => void;
-	onQuickAdd: (text: string) => Promise<void>;
+	onQuickAdd: (text: string, sourceFile?: TFile | null) => Promise<void>;
 	onHighlight: () => void;
 	onNewNote: (text: string) => Promise<void>;
 	onAppend: (text: string) => Promise<void>;

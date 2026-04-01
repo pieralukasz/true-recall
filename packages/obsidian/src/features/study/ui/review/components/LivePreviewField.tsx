@@ -1,3 +1,4 @@
+import type { ViewUpdate } from "@codemirror/view";
 import { stripBrTags } from "@true-recall/core/utils";
 import type { EmbeddableEditorInstance } from "@true-recall/obsidian/editor/shared/embedded-editor";
 import {
@@ -78,9 +79,23 @@ export function LivePreviewField({
 		editor.cm.contentDOM.blur();
 	}, []);
 
-	const handleChange = useCallback(() => {
-		scheduleSave();
-	}, [scheduleSave]);
+	const handleChange = useCallback(
+		(update: ViewUpdate) => {
+			// Only autosave for user-initiated edits (typing, pasting, deleting).
+			// Obsidian's internal CM6 extensions can modify the document (e.g., replacing
+			// $$ math delimiters with widget markers), which would corrupt stored content.
+			const isUserEdit = update.transactions.some(
+				(tr) =>
+					tr.isUserEvent("input") ||
+					tr.isUserEvent("delete") ||
+					tr.isUserEvent("move"),
+			);
+			if (isUserEdit) {
+				scheduleSave();
+			}
+		},
+		[scheduleSave],
+	);
 
 	useEffect(() => {
 		const el = containerRef.current;

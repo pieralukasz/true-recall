@@ -1,5 +1,6 @@
 import { computePosition, flip, offset, shift } from "@floating-ui/dom";
 import type { ToolbarButtonConfig } from "@true-recall/core/types";
+import type { TFile } from "obsidian";
 import { h, render } from "preact";
 import { SelectionToolbar, type ToolbarActions } from "./SelectionToolbar";
 
@@ -8,6 +9,7 @@ export interface GlobalSelectionToolbarCallbacks {
 	getButtons: () => ToolbarButtonConfig[];
 	hasApiKey: () => boolean;
 	isEnabled: () => boolean;
+	getSourceFile: (range: Range) => TFile | null;
 }
 
 const MIN_SELECTION_LENGTH = 3;
@@ -106,12 +108,18 @@ export class GlobalSelectionToolbar {
 			this.container.addEventListener("mousedown", (e) => e.stopPropagation());
 		}
 
+		const sourceFile = this.callbacks.getSourceFile(range);
+
 		render(
 			h(SelectionToolbar, {
 				selectedText: text,
 				buttons: this.callbacks.getButtons(),
 				actions: {
 					...this.callbacks.actions,
+					onGenerate: (_t: string) =>
+						this.callbacks.actions.onGenerate(text, sourceFile),
+					onQuickAdd: (_t: string) =>
+						this.callbacks.actions.onQuickAdd(text, sourceFile),
 					onDismiss: () => this.removeToolbar(),
 				},
 				hasApiKey: this.callbacks.hasApiKey(),

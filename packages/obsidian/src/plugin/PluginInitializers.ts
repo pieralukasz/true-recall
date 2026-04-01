@@ -303,6 +303,31 @@ function executeCommand(plugin: TrueRecallPlugin, commandId: string): void {
 	(plugin.app as any).commands.executeCommandById(commandId);
 }
 
+function getSourceFileFromDOM(
+	plugin: TrueRecallPlugin,
+	range: Range,
+): TFile | null {
+	const el =
+		range.commonAncestorContainer instanceof Element
+			? range.commonAncestorContainer
+			: range.commonAncestorContainer.parentElement;
+
+	const leafContent = el?.closest(".workspace-leaf-content");
+	if (!leafContent) return null;
+
+	let found: TFile | null = null;
+	plugin.app.workspace.iterateAllLeaves((leaf) => {
+		if (found) return;
+		if ((leaf as any).containerEl?.contains(leafContent)) {
+			const view = leaf.view;
+			if (view && "file" in view && view.file instanceof TFile) {
+				found = view.file as TFile;
+			}
+		}
+	});
+	return found;
+}
+
 function initializeSelectionToolbar(plugin: TrueRecallPlugin): void {
 	const editorActions = {
 		onGenerate: (text: string) => generateFlashcardsFromSelection(plugin, text),
@@ -376,9 +401,11 @@ function initializeSelectionToolbar(plugin: TrueRecallPlugin): void {
 	void import("@true-recall/obsidian/editor/ai/GlobalSelectionToolbar").then(
 		({ GlobalSelectionToolbar }) => {
 			const globalActions = {
-				onGenerate: (text: string) => generateFlashcardsGlobal(plugin, text),
+				onGenerate: (text: string, sourceFile?: TFile | null) =>
+					generateFlashcardsGlobal(plugin, text, sourceFile),
 				onEdit: (text: string) => editSelectionAsFlashcard(plugin, text),
-				onQuickAdd: (text: string) => quickAddFlashcardGlobal(plugin, text),
+				onQuickAdd: (text: string, sourceFile?: TFile | null) =>
+					quickAddFlashcardGlobal(plugin, text, sourceFile),
 				onHighlight: () => {},
 				onNewNote: (text: string) => createNoteFromSelection(plugin, text),
 				onAppend: (text: string) => appendToCurrentNote(plugin, text),
@@ -391,6 +418,7 @@ function initializeSelectionToolbar(plugin: TrueRecallPlugin): void {
 				getButtons: () => plugin.settings.globalToolbarButtons,
 				hasApiKey: () => hasApiKey(plugin),
 				isEnabled: () => plugin.settings.selectionToolbarEnabled,
+				getSourceFile: (range) => getSourceFileFromDOM(plugin, range),
 			});
 			toolbar.register();
 			plugin._globalSelectionToolbar = toolbar;

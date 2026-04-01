@@ -169,6 +169,7 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 		{ id: "quick-add", enabled: true },
 		{ id: "highlight", enabled: true },
 		{ id: "copy", enabled: true },
+		{ id: "new-note", enabled: true },
 	],
 	globalToolbarButtons: [
 		{ id: "flashcards", enabled: true },

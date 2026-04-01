@@ -37,6 +37,14 @@ jobs:
           bun install --frozen-lockfile
           bun run build
 
+      - name: Extract release notes
+        run: |
+          tag="${GITHUB_REF#refs/tags/}"
+          awk "/^## ${tag} /,/^## [0-9]/" CHANGELOG.md | sed '1d;$d' > release-notes.md
+          if [ ! -s release-notes.md ]; then
+            echo "Release ${tag}" > release-notes.md
+          fi
+
       - name: Create release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -45,5 +53,5 @@ jobs:
 
           gh release create "$tag" \
             --title="$tag" \
-            --generate-notes \
+            --notes-file release-notes.md \
             main.js manifest.json styles.css sqlite3.wasm

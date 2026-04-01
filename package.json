@@ -16,6 +16,8 @@
 		"test:watch": "bun vitest",
 		"test:coverage": "bun vitest run --coverage",
 		"render:excalidraw": "bunx --bun excalirender",
+		"changelog": "bun scripts/generate-changelog.ts",
+		"changelog:preview": "bun scripts/generate-changelog.ts --preview",
 		"perf:benchmark": "bun scripts/perf-benchmark.ts",
 		"cli:build": "cd cli && bun build --compile --minify index.ts --outfile true-recall"
 	},
