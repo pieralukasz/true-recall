@@ -1,16 +1,26 @@
-import { AnkiConverterService } from "@true-recall/core/integration/anki/anki-converter.service";
+import {
+	hasAIKey,
+	resolveAIClientConfig,
+} from "@true-recall/core/ai/config/ai-client-config";
+import {
+	AnkiImportAIService,
+	shouldClassifyDecks,
+} from "@true-recall/core/ai/import/anki-import-ai.service";
+import { normalizeDeckName } from "@true-recall/core/integration/anki/anki-converter.service";
 import { AnkiImportService } from "@true-recall/core/integration/anki/anki-import.service";
 import { AnkiNoteTypeMapper } from "@true-recall/core/integration/anki/anki-note-type-mapper";
-import { ApkgParserService } from "@true-recall/core/integration/anki/apkg/apkg-parser.service";
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite/SqliteStoreService";
 import type { FSRSService } from "@true-recall/core/services/fsrs/fsrs.service";
 import type {
 	ApkgData,
 	ConvertedCard,
+	ModelMapping,
 	NoteTypeMapping,
 } from "@true-recall/core/types";
 import type { NoteType } from "@true-recall/core/types/note.types";
+import type { TrueRecallSettings } from "@true-recall/core/types/settings.types";
 import { ObsidianAnkiImportVault } from "@true-recall/obsidian/adapters/ObsidianAnkiImportVault";
+import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpClient";
 import { ObsidianPersistence } from "@true-recall/obsidian/adapters/ObsidianPersistence";
 import { ObsidianVaultFileReader } from "@true-recall/obsidian/adapters/ObsidianVaultFileReader";
 import { mutate } from "@true-recall/obsidian/data";
@@ -36,21 +46,26 @@ function AnkiImportBody({
 	onClose,
 	onUpdateTitle,
 	existingNoteTypes,
+	aiKeyAvailable,
 }: {
 	onFileSelected: (file: File) => Promise<ImportPhase>;
 	onShowMapping: (preview: ImportPreview) => ImportPhase;
 	onImport: (opts: {
 		importScheduling: boolean;
 		importMedia: boolean;
-		modelMappings: Map<number, string>;
+		useAI: boolean;
+		modelMappings: Map<number, ModelMapping>;
+		setPhase: (phase: ImportPhase) => void;
 	}) => Promise<ImportPhase>;
 	onClose: () => void;
 	onUpdateTitle: (title: string) => void;
 	existingNoteTypes: NoteType[];
+	aiKeyAvailable: boolean;
 }) {
 	const [phase, setPhase] = useState<ImportPhase>({ type: "file-select" });
 	const [importScheduling, setImportScheduling] = useState(true);
 	const [importMedia, setImportMedia] = useState(true);
+	const [useAI, setUseAI] = useState(aiKeyAvailable);
 
 	const handleFile = useCallback(
 		async (file: File) => {
@@ -73,25 +88,31 @@ function AnkiImportBody({
 	);
 
 	const handleImport = useCallback(
-		async (modelMappings: Map<number, string>) => {
+		async (modelMappings: Map<number, ModelMapping>) => {
 			setPhase({ type: "importing" });
 			const result = await onImport({
 				importScheduling,
 				importMedia,
+				useAI,
 				modelMappings,
+				setPhase,
 			});
 			setPhase(result);
 			if (result.type === "result") {
 				onUpdateTitle("Import complete");
 			}
 		},
-		[onImport, importScheduling, importMedia, onUpdateTitle],
+		[onImport, importScheduling, importMedia, useAI, onUpdateTitle],
 	);
 
 	switch (phase.type) {
 		case "parsing":
 		case "importing":
 			return <ProgressPhase type={phase.type} />;
+
+		case "ai-classifying":
+		case "ai-cleaning":
+			return <ProgressPhase type={phase.type} progress={phase.progress} />;
 
 		case "error":
 			return (
@@ -112,8 +133,11 @@ function AnkiImportBody({
 					preview={phase.preview}
 					importScheduling={importScheduling}
 					importMedia={importMedia}
+					useAI={useAI}
+					hasAIKey={aiKeyAvailable}
 					onSchedulingChange={setImportScheduling}
 					onMediaChange={setImportMedia}
+					onUseAIChange={setUseAI}
 					onContinue={() => handleContinueToMapping(phase.preview)}
 					onCancel={onClose}
 				/>
@@ -137,19 +161,28 @@ function AnkiImportBody({
 export class AnkiImportModal extends BaseModal {
 	private store: SqliteStoreService;
 	private fsrsService: FSRSService;
+	private getSettings: () => TrueRecallSettings;
 	private fileData: ArrayBuffer | null = null;
 	private apkgData: ApkgData | null = null;
+	private convertedCards: ConvertedCard[] = [];
 	private deckNames: string[] = [];
 	private mappingSuggestions: NoteTypeMapping[] = [];
 
-	constructor(app: App, store: SqliteStoreService, fsrsService: FSRSService) {
+	constructor(
+		app: App,
+		store: SqliteStoreService,
+		fsrsService: FSRSService,
+		getSettings?: () => TrueRecallSettings,
+	) {
 		super(app, { title: "Import Anki deck", width: "520px" });
 		this.store = store;
 		this.fsrsService = fsrsService;
+		this.getSettings = getSettings ?? (() => ({}) as TrueRecallSettings);
 	}
 
 	protected renderBody(container: HTMLElement): void {
 		const existingNoteTypes = this.store.noteTypes.getAll();
+		const aiKeyAvailable = hasAIKey(this.getSettings());
 
 		render(
 			<AnkiImportBody
@@ -159,6 +192,7 @@ export class AnkiImportModal extends BaseModal {
 				onClose={() => this.close()}
 				onUpdateTitle={(title) => this.updateTitle(title)}
 				existingNoteTypes={existingNoteTypes}
+				aiKeyAvailable={aiKeyAvailable}
 			/>,
 			container,
 		);
@@ -168,19 +202,17 @@ export class AnkiImportModal extends BaseModal {
 		try {
 			this.fileData = await file.arrayBuffer();
 
-			const parser = new ApkgParserService();
-			this.apkgData = await parser.parseApkg(this.fileData);
-
-			const converter = new AnkiConverterService();
-			const convertedCards = converter.convert(this.apkgData);
+			const { apkgData, convertedCards } =
+				await AnkiImportService.parseAndConvert(this.fileData);
+			this.apkgData = apkgData;
+			this.convertedCards = convertedCards;
 
 			this.deckNames = this.getDecksWithCards(convertedCards);
 
-			// Pre-compute note type mapping suggestions
 			const mapper = new AnkiNoteTypeMapper(this.store.noteTypes);
 			const cardCountByModel = this.countCardsByModel(convertedCards);
 			this.mappingSuggestions = mapper.suggestMappings(
-				this.apkgData.models,
+				apkgData.models,
 				cardCountByModel,
 			);
 
@@ -191,7 +223,7 @@ export class AnkiImportModal extends BaseModal {
 				reversedCards: convertedCards.filter((c) => c.cardType === "reversed")
 					.length,
 				decks: this.deckNames,
-				mediaCount: Object.keys(this.apkgData.mediaMap).length,
+				mediaCount: Object.keys(apkgData.mediaMap).length,
 			};
 
 			return { type: "preview", preview };
@@ -212,13 +244,26 @@ export class AnkiImportModal extends BaseModal {
 	private async startImport(opts: {
 		importScheduling: boolean;
 		importMedia: boolean;
-		modelMappings: Map<number, string>;
+		useAI: boolean;
+		modelMappings: Map<number, ModelMapping>;
+		setPhase: (phase: ImportPhase) => void;
 	}): Promise<ImportPhase> {
-		if (!this.fileData) {
+		if (!this.apkgData || this.convertedCards.length === 0) {
 			return { type: "error", message: "No file data", canRetry: true };
 		}
 
 		try {
+			// Run AI enhancement before import
+			if (opts.useAI) {
+				await this.runAIEnhancement(
+					this.convertedCards,
+					this.apkgData,
+					opts.setPhase,
+				);
+			}
+
+			opts.setPhase({ type: "importing" });
+
 			const importService = new AnkiImportService(
 				this.store,
 				this.fsrsService,
@@ -235,12 +280,16 @@ export class AnkiImportModal extends BaseModal {
 				.trim();
 			const mediaFolder = `Attachments/anki-import/${topDeck}`;
 
-			const result = await importService.importApkg(this.fileData, {
-				importScheduling: opts.importScheduling,
-				importMedia: opts.importMedia,
-				mediaFolder,
-				modelMappings: opts.modelMappings,
-			});
+			const result = await importService.importCards(
+				this.apkgData,
+				this.convertedCards,
+				{
+					importScheduling: opts.importScheduling,
+					importMedia: opts.importMedia,
+					mediaFolder,
+					modelMappings: opts.modelMappings,
+				},
+			);
 
 			if (result.imported > 0) {
 				setTimeout(() => mutate("hierarchy:changed", () => {}), 2000);
@@ -250,6 +299,78 @@ export class AnkiImportModal extends BaseModal {
 		} catch (err) {
 			const errMsg = err instanceof Error ? err.message : String(err);
 			return { type: "error", message: errMsg, canRetry: false };
+		}
+	}
+
+	private async runAIEnhancement(
+		cards: ConvertedCard[],
+		apkgData: ApkgData,
+		setPhase: (phase: ImportPhase) => void,
+	): Promise<void> {
+		const settings = this.getSettings();
+		if (!hasAIKey(settings)) return;
+
+		const config = resolveAIClientConfig(settings);
+		const httpClient = new ObsidianHttpClient();
+		const aiService = new AnkiImportAIService(config, httpClient);
+
+		// 1. Deck classification
+		const allDeckNames = [...apkgData.decks.values()]
+			.map((d) => normalizeDeckName(d.name))
+			.filter((n) => n !== "Default");
+
+		if (shouldClassifyDecks(cards, allDeckNames.length)) {
+			setPhase({ type: "ai-classifying" });
+
+			const cardSummaries = cards.map((c) => ({
+				id: c.ankiNoteId,
+				question: c.question,
+			}));
+
+			const deckMap = await aiService.classifyDecks(
+				allDeckNames,
+				cardSummaries,
+				(done, total) => {
+					setPhase({
+						type: "ai-classifying",
+						progress: `Batch ${done}/${total}`,
+					});
+				},
+			);
+
+			// Apply AI deck assignments
+			for (const card of cards) {
+				const newDeck = deckMap.get(card.ankiNoteId);
+				if (newDeck) {
+					card.deckName = newDeck;
+				}
+			}
+		}
+
+		// 2. Content cleanup
+		setPhase({ type: "ai-cleaning" });
+
+		const cardFields = cards.map((c) => ({
+			id: c.ankiNoteId,
+			fields: c.fieldValues,
+		}));
+
+		const cleanedMap = await aiService.cleanupContent(
+			cardFields,
+			(done, total) => {
+				setPhase({
+					type: "ai-cleaning",
+					progress: `Batch ${done}/${total}`,
+				});
+			},
+		);
+
+		// Apply cleaned content
+		for (const card of cards) {
+			const cleaned = cleanedMap.get(card.ankiNoteId);
+			if (cleaned) {
+				card.fieldValues = cleaned;
+			}
 		}
 	}
 

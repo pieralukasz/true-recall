@@ -3,6 +3,7 @@ export interface OptionCheckboxProps {
 	description: string;
 	checked: boolean;
 	onChange: (val: boolean) => void;
+	disabled?: boolean;
 }
 
 export function OptionCheckbox({
@@ -10,13 +11,17 @@ export function OptionCheckbox({
 	description,
 	checked,
 	onChange,
+	disabled,
 }: OptionCheckboxProps) {
 	return (
-		<div class="ep:flex ep:items-start ep:gap-3 ep:py-2">
+		<div
+			class={`ep:flex ep:items-start ep:gap-3 ep:py-2${disabled ? " ep:opacity-50" : ""}`}
+		>
 			<input
 				type="checkbox"
 				class="ep:w-4 ep:h-4 ep:accent-obs-interactive ep:shrink-0 ep:mt-0.5"
 				checked={checked}
+				disabled={disabled}
 				onChange={() => onChange(!checked)}
 			/>
 			<div>

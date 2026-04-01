@@ -59,10 +59,15 @@ export interface AnkiImportOptions {
 	importScheduling: boolean;
 	importMedia: boolean;
 	mediaFolder: string;
-	/** Organize imported decks as a project hierarchy */
-	createProject?: boolean;
-	/** User-chosen note type mappings: ankiModelId → noteTypeId (or "auto" to auto-create) */
-	modelMappings?: Map<number, string>;
+	/** User-chosen note type mappings: ankiModelId → mapping config */
+	modelMappings?: Map<number, ModelMapping>;
+}
+
+export interface ModelMapping {
+	/** Target note type ID, or "auto" to auto-create from Anki model */
+	noteTypeId: string;
+	/** Optional field remapping: ankiFieldName → trFieldName. Fields not in map are dropped. */
+	fieldMapping?: Map<string, string>;
 }
 
 export interface NoteTypeMapping {

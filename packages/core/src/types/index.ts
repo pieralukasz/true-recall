@@ -9,6 +9,7 @@ export type {
 	AnkiRevlogEntry,
 	ApkgData,
 	ConvertedCard,
+	ModelMapping,
 	NoteTypeMapping,
 } from "./anki.types";
 export type { SessionResult } from "./events.types";

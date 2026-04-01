@@ -10,19 +10,16 @@ import type {
 	AnkiImportOptions,
 	AnkiImportResult,
 	AnkiRevlogEntry,
+	ApkgData,
 	ConvertedCard,
 	FSRSCardData,
+	ModelMapping,
 } from "@true-recall/core/types";
 import { AnkiMediaService, type IVaultFileReader } from "./anki-media.service";
 import { ApkgParserService } from "./apkg/apkg-parser.service";
 
 const IMPORT_FOLDER = "Anki Import";
-const MAX_FILENAME_LENGTH = 60;
 
-/**
- * Handles vault-level file operations needed for Anki import (creating notes, frontmatter, etc.).
- * Obsidian: wraps app.vault, app.metadataCache, app.fileManager.
- */
 export interface IAnkiImportVault {
 	exists(path: string): Promise<boolean>;
 	ensureFolderRecursive(folderPath: string): Promise<void>;
@@ -40,15 +37,6 @@ export type CardChangeNotifier = (change: {
 	action: "added";
 }) => void;
 
-interface ImportedNoteGroup {
-	ankiNoteId: number;
-	deckName: string;
-	cardIds: string[];
-	fields: Record<string, string>;
-	cardType: "basic" | "cloze" | "reversed";
-	clozeTemplate?: string;
-}
-
 export class AnkiImportService {
 	constructor(
 		private store: SqliteStoreService,
@@ -59,8 +47,28 @@ export class AnkiImportService {
 		private onCardChange?: CardChangeNotifier,
 	) {}
 
+	static async parseAndConvert(
+		fileData: ArrayBuffer,
+	): Promise<{ apkgData: ApkgData; convertedCards: ConvertedCard[] }> {
+		const parser = new ApkgParserService();
+		const apkgData = await parser.parseApkg(fileData);
+		const converter = new AnkiConverterService();
+		const convertedCards = converter.convert(apkgData);
+		return { apkgData, convertedCards };
+	}
+
 	async importApkg(
 		fileData: ArrayBuffer,
+		options: AnkiImportOptions,
+	): Promise<AnkiImportResult> {
+		const { apkgData, convertedCards } =
+			await AnkiImportService.parseAndConvert(fileData);
+		return this.importCards(apkgData, convertedCards, options);
+	}
+
+	async importCards(
+		apkgData: ApkgData,
+		convertedCards: ConvertedCard[],
 		options: AnkiImportOptions,
 	): Promise<AnkiImportResult> {
 		const result: AnkiImportResult = {
@@ -71,20 +79,11 @@ export class AnkiImportService {
 			noteTypesCreated: 0,
 		};
 
-		// 1. Parse the .apkg file
-		const parser = new ApkgParserService();
-		const apkgData = await parser.parseApkg(fileData);
-
-		// 2. Convert Anki notes to cards
-		const converter = new AnkiConverterService();
-		const convertedCards = converter.convert(apkgData);
-
 		if (convertedCards.length === 0) {
 			result.errors.push("No cards found in the .apkg file");
 			return result;
 		}
 
-		// 3. Import media files (if enabled)
 		let mediaPathMapping = new Map<string, string>();
 		if (options.importMedia && apkgData.media.size > 0) {
 			const mediaService = new AnkiMediaService(
@@ -98,7 +97,6 @@ export class AnkiImportService {
 			);
 		}
 
-		// 4. Build revlog lookup: ankiCardId → revlog entries
 		const revlogByCard = new Map<number, AnkiRevlogEntry[]>();
 		for (const entry of apkgData.revlog) {
 			const list = revlogByCard.get(entry.cid) ?? [];
@@ -106,13 +104,11 @@ export class AnkiImportService {
 			revlogByCard.set(entry.cid, list);
 		}
 
-		// 5. Build AnkiCard lookup for scheduling
 		const ankiCardMap = new Map<number, AnkiCard>();
 		for (const card of apkgData.cards) {
 			ankiCardMap.set(card.id, card);
 		}
 
-		// 6. Prepare services
 		const schedulingService = new AnkiSchedulingService(this.fsrsService);
 		const mediaService = new AnkiMediaService(
 			this.persistence,
@@ -120,9 +116,8 @@ export class AnkiImportService {
 		);
 		const noteTypeMapper = new AnkiNoteTypeMapper(this.store.noteTypes);
 
-		// 7. Process each converted card
 		const importedCardIds: string[] = [];
-		const noteGroups = new Map<number, ImportedNoteGroup>();
+		const deckToCardIds = new Map<string, string[]>();
 
 		this.store.transaction(() => {
 			noteTypeMapper.mapModels(apkgData.models, options.modelMappings);
@@ -149,20 +144,9 @@ export class AnkiImportService {
 						importedCardIds.push(importResult.cardId);
 						result.imported++;
 
-						// Accumulate per-note groups for source note creation
-						let group = noteGroups.get(converted.ankiNoteId);
-						if (!group) {
-							group = {
-								ankiNoteId: converted.ankiNoteId,
-								deckName: converted.deckName,
-								cardIds: [],
-								fields: converted.fieldValues,
-								cardType: converted.cardType,
-								clozeTemplate: converted.clozeTemplate,
-							};
-							noteGroups.set(converted.ankiNoteId, group);
-						}
-						group.cardIds.push(importResult.cardId);
+						const list = deckToCardIds.get(converted.deckName) ?? [];
+						list.push(importResult.cardId);
+						deckToCardIds.set(converted.deckName, list);
 					} else if (importResult.status === "duplicate") {
 						result.duplicates++;
 					} else {
@@ -187,10 +171,20 @@ export class AnkiImportService {
 
 		await this.store.flush();
 
-		// 8. Create source notes in vault (one per Anki note, deck hierarchy as folders)
-		if (noteGroups.size > 0) {
+		// Inject ancestor deck paths so the full hierarchy is created
+		for (const deckPath of [...deckToCardIds.keys()]) {
+			const segments = deckPath.split("/");
+			for (let i = 1; i < segments.length; i++) {
+				const ancestorPath = segments.slice(0, i).join("/");
+				if (!deckToCardIds.has(ancestorPath)) {
+					deckToCardIds.set(ancestorPath, []);
+				}
+			}
+		}
+
+		if (deckToCardIds.size > 0) {
 			try {
-				await this.createSourceNotes(noteGroups);
+				await this.createDeckNotes(deckToCardIds);
 				await this.store.flush();
 			} catch (err) {
 				const msg = err instanceof Error ? err.message : String(err);
@@ -267,12 +261,19 @@ export class AnkiImportService {
 		cardData.answer = answer;
 		cardData.cardType = converted.cardType;
 
-		const fieldValues: Record<string, string> = {};
+		// Apply media path updates to field values
+		let fieldValues: Record<string, string> = {};
 		for (const [key, value] of Object.entries(converted.fieldValues)) {
 			fieldValues[key] =
 				mediaPathMapping.size > 0
 					? mediaService.updateImportedContent(value, mediaPathMapping)
 					: value;
+		}
+
+		// Apply field remapping if user specified one
+		const mapping = options.modelMappings?.get(converted.ankiModelId);
+		if (mapping?.fieldMapping) {
+			fieldValues = remapFields(fieldValues, mapping.fieldMapping);
 		}
 
 		const noteTypeId = noteTypeMapper.getNoteTypeId(converted.ankiModelId);
@@ -362,128 +363,80 @@ export class AnkiImportService {
 	}
 
 	/**
-	 * Creates one source note per Anki note, organized in deck-based folder hierarchy.
-	 *
-	 * For deck "Math::Calculus" with 3 notes:
-	 *   Anki Import/Math.md                       (MOC with child links)
-	 *   Anki Import/Math/Calculus.md               (MOC with child links)
-	 *   Anki Import/Math/Calculus/What is X.md     (source note, cards linked)
-	 *   Anki Import/Math/Calculus/Derivative.md    (source note, cards linked)
-	 *   Anki Import/Math/Calculus/Limit.md         (source note, cards linked)
+	 * Creates one source note per deck.
+	 * Leaf decks get cards linked; ancestor decks become MOC nodes in the hierarchy.
 	 */
-	private async createSourceNotes(
-		noteGroups: Map<number, ImportedNoteGroup>,
+	private async createDeckNotes(
+		deckToCardIds: Map<string, string[]>,
 	): Promise<void> {
-		const basePath = IMPORT_FOLDER;
-		if (!(await this.vault.exists(basePath))) {
-			await this.vault.ensureFolderRecursive(basePath);
+		if (!(await this.vault.exists(IMPORT_FOLDER))) {
+			await this.vault.ensureFolderRecursive(IMPORT_FOLDER);
 		}
 
-		// Collect all unique deck paths for folder/MOC creation
-		const deckPaths = new Set<string>();
-		for (const group of noteGroups.values()) {
-			const segments = group.deckName.split("/");
-			for (let i = 0; i < segments.length; i++) {
-				deckPaths.add(segments.slice(0, i + 1).join("/"));
-			}
-		}
-
-		// Build parent→children relationships for MOC links
-		const parentToChildren = new Map<string, Set<string>>();
-		for (const deckPath of deckPaths) {
-			const segments = deckPath.split("/");
-			if (segments.length > 1) {
-				const parentPath = segments.slice(0, -1).join("/");
-				if (!parentToChildren.has(parentPath)) {
-					parentToChildren.set(parentPath, new Set());
-				}
-				const childName = segments[segments.length - 1];
-				if (childName) {
-					parentToChildren.get(parentPath)?.add(childName);
-				}
-			}
-		}
-
-		// Create deck hierarchy (folders + MOC notes), sorted parents-first
-		const sortedPaths = [...deckPaths].sort(
-			(a, b) => a.split("/").length - b.split("/").length,
+		// Sort by depth so parent folders are created first
+		const sortedDecks = [...deckToCardIds.entries()].sort(
+			(a, b) => a[0].split("/").length - b[0].split("/").length,
 		);
 
-		for (const deckPath of sortedPaths) {
+		for (const [deckPath, cardIds] of sortedDecks) {
 			const segments = deckPath.split("/");
 			const name = segments[segments.length - 1] ?? "Default";
+			const safeName = sanitize(name);
 
-			const parentSegment =
-				segments.length > 1 ? segments[segments.length - 2] : undefined;
-			const safeParentName = parentSegment
-				? sanitizeFilename(parentSegment)
-				: undefined;
-
-			const folderSegments = segments.map((s) => sanitizeFilename(s));
-			const folderPath = `${IMPORT_FOLDER}/${folderSegments.join("/")}`;
+			// Build folder path (parent segments)
+			const folderSegments = segments.slice(0, -1).map((s) => sanitize(s));
+			const folderPath =
+				folderSegments.length > 0
+					? `${IMPORT_FOLDER}/${folderSegments.join("/")}`
+					: IMPORT_FOLDER;
 
 			if (!(await this.vault.exists(folderPath))) {
 				await this.vault.ensureFolderRecursive(folderPath);
 			}
 
-			// Create MOC note at deck level
-			const mocPath = `${folderPath}.md`;
-			const children = parentToChildren.get(deckPath);
+			const notePath = `${folderPath}/${safeName}.md`;
 
-			if (!(await this.vault.exists(mocPath))) {
-				const uid = this.generateUid();
-				const frontmatter = this.buildFrontmatter(uid, safeParentName);
-				const childLinks =
-					children && children.size > 0
-						? [...children]
-								.sort()
-								.map((c) => `- [[${c}]]`)
-								.join("\n")
-						: "";
-				const body = `# ${name}\n\n${childLinks}`.trim();
-				await this.vault.createFile(mocPath, `${frontmatter}\n\n${body}\n`);
-			} else if (children && children.size > 0) {
-				await this.updateChildLinks(mocPath, children);
-			}
-		}
+			// Get or create the note
+			const uid = await this.getOrCreateNote(notePath, name, segments);
 
-		// Create one source note per Anki note
-		const usedPaths = new Set<string>();
-
-		for (const group of noteGroups.values()) {
-			const deckSegments = group.deckName
-				.split("/")
-				.map((s) => sanitizeFilename(s));
-			const folderPath = `${IMPORT_FOLDER}/${deckSegments.join("/")}`;
-
-			const baseName = deriveNoteName(
-				group.fields,
-				group.cardType,
-				group.clozeTemplate,
-			);
-
-			// Ensure unique filename within folder
-			let notePath = `${folderPath}/${baseName}.md`;
-			let counter = 2;
-			while (usedPaths.has(notePath) || (await this.vault.exists(notePath))) {
-				notePath = `${folderPath}/${baseName} ${counter}.md`;
-				counter++;
-			}
-			usedPaths.add(notePath);
-
-			const uid = this.generateUid();
-			const deckLeafName =
-				deckSegments[deckSegments.length - 1] ?? "Anki Import";
-			const frontmatter = this.buildFrontmatter(uid, deckLeafName);
-			const body = buildNoteContent(group.fields);
-
-			await this.vault.createFile(notePath, `${frontmatter}\n\n${body}\n`);
-
-			// Link all cards from this Anki note to the source note
-			for (const cardId of group.cardIds) {
+			// Link all cards to this deck note
+			for (const cardId of cardIds) {
 				this.store.cards.updateCardSourceUid(cardId, uid);
 			}
 		}
+	}
+
+	private async getOrCreateNote(
+		notePath: string,
+		title: string,
+		segments: string[],
+	): Promise<string> {
+		if (await this.vault.exists(notePath)) {
+			const existingUid = await this.vault.getFrontmatterUid(notePath);
+			if (existingUid) return existingUid;
+
+			const uid = this.generateUid();
+			const parentName =
+				segments.length > 1
+					? sanitize(segments[segments.length - 2] ?? "")
+					: undefined;
+			const frontmatter = this.buildFrontmatter(uid, parentName);
+			await this.vault.prependToFile(notePath, `${frontmatter}\n\n`);
+			return uid;
+		}
+
+		const uid = this.generateUid();
+		const parentName =
+			segments.length > 1
+				? sanitize(segments[segments.length - 2] ?? "")
+				: undefined;
+		const frontmatter = this.buildFrontmatter(uid, parentName);
+
+		await this.vault.createFile(
+			notePath,
+			`${frontmatter}\n\n# ${title}\n\nImported from Anki.\n`,
+		);
+		return uid;
 	}
 
 	private buildFrontmatter(uid: string, parentName?: string): string {
@@ -493,21 +446,6 @@ export class AnkiImportService {
 		}
 		lines.push("---");
 		return lines.join("\n");
-	}
-
-	private async updateChildLinks(
-		filePath: string,
-		children: Set<string>,
-	): Promise<void> {
-		const content = await this.vault.readFile(filePath);
-		const missingChildren = [...children].filter(
-			(child) => !content.includes(`[[${child}]]`),
-		);
-		if (missingChildren.length === 0) return;
-		const newLinks = missingChildren
-			.map((child) => `- [[${child}]]`)
-			.join("\n");
-		await this.vault.appendToFile(filePath, `\n${newLinks}\n`);
 	}
 
 	private generateUid(): string {
@@ -531,55 +469,25 @@ export class AnkiImportService {
 	}
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-export function deriveNoteName(
+function remapFields(
 	fields: Record<string, string>,
-	cardType: string,
-	clozeTemplate?: string,
-): string {
-	let raw = "";
-
-	if (cardType === "cloze" && clozeTemplate) {
-		// Strip cloze markers: {{c1::text}} → text, {{c1::text::hint}} → text
-		raw = clozeTemplate.replace(/\{\{c\d+::(.*?)(?:::.*?)?\}\}/g, "$1");
-	} else {
-		// Use first field value
-		const firstValue = Object.values(fields)[0];
-		raw = firstValue ?? "";
+	mapping: Map<string, string>,
+): Record<string, string> {
+	const result: Record<string, string> = {};
+	for (const [ankiField, value] of Object.entries(fields)) {
+		const targetField = mapping.get(ankiField);
+		if (targetField) {
+			result[targetField] = value;
+		}
+		// Fields not in the mapping are dropped (user chose "skip")
 	}
-
-	// Strip markdown formatting for filename
-	raw = raw
-		.replace(/\*\*(.+?)\*\*/g, "$1") // bold
-		.replace(/\*(.+?)\*/g, "$1") // italic
-		.replace(/~~(.+?)~~/g, "$1") // strikethrough
-		.replace(/`(.+?)`/g, "$1") // inline code
-		.replace(/!\[\[.+?\]\]/g, "") // embeds
-		.replace(/\[\[(.+?)\]\]/g, "$1") // wikilinks
-		.replace(/\[(.+?)\]\(.+?\)/g, "$1") // markdown links
-		.replace(/\$\$?.+?\$\$?/g, "") // math
-		.replace(/\n/g, " "); // newlines to spaces
-
-	raw = raw.trim();
-
-	if (!raw) return "Card";
-
-	return sanitizeFilename(
-		raw.length > MAX_FILENAME_LENGTH
-			? raw.slice(0, MAX_FILENAME_LENGTH).trim()
-			: raw,
-	);
+	return result;
 }
 
-export function buildNoteContent(fields: Record<string, string>): string {
-	return Object.values(fields).filter(Boolean).join("\n\n");
-}
-
-function sanitizeFilename(name: string): string {
+function sanitize(name: string): string {
 	return (
 		name
-			.replace(/[\\/:*?"<>|#^[\]]/g, " ")
+			.replace(/[\\/:*?"<>|]/g, " - ")
 			.replace(/\s+/g, " ")
 			.trim() || "Default"
 	);

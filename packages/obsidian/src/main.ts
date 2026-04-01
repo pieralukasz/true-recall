@@ -745,6 +745,7 @@ export default class TrueRecallPlugin extends Plugin {
 			this.app,
 			this.cardStore,
 			this.fsrsService,
+			() => this.settings,
 		);
 		modal.open();
 	}

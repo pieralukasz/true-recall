@@ -10,8 +10,11 @@ export interface PreviewPhaseProps {
 	preview: ImportPreview;
 	importScheduling: boolean;
 	importMedia: boolean;
+	useAI: boolean;
+	hasAIKey: boolean;
 	onSchedulingChange: (val: boolean) => void;
 	onMediaChange: (val: boolean) => void;
+	onUseAIChange: (val: boolean) => void;
 	onContinue: () => void;
 	onCancel: () => void;
 }
@@ -20,8 +23,11 @@ export function PreviewPhase({
 	preview,
 	importScheduling,
 	importMedia,
+	useAI,
+	hasAIKey,
 	onSchedulingChange,
 	onMediaChange,
+	onUseAIChange,
 	onContinue,
 	onCancel,
 }: PreviewPhaseProps) {
@@ -63,6 +69,17 @@ export function PreviewPhase({
 					description={`${preview.mediaCount} files will be saved to Attachments/anki-import`}
 					checked={importMedia}
 					onChange={onMediaChange}
+				/>
+				<OptionCheckbox
+					label="Organize with AI"
+					description={
+						hasAIKey
+							? "Classify cards into sub-decks and clean up formatting"
+							: "Requires API key — configure in settings"
+					}
+					checked={useAI}
+					onChange={onUseAIChange}
+					disabled={!hasAIKey}
 				/>
 			</div>
 

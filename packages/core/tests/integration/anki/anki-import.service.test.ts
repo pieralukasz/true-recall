@@ -441,20 +441,12 @@ describe("AnkiImportService", () => {
 		});
 	});
 
-	describe("per-note source file creation", () => {
-		it("creates one source note per Anki note in deck folder", async () => {
+	describe("deck-based source notes", () => {
+		it("creates one source note per deck with cards", async () => {
 			const model = createAnkiModel();
 			const deck = createAnkiDeck({ id: 1, name: "Science" });
-			const note1 = createAnkiNote({
-				id: 1,
-				mid: model.id,
-				flds: "What is gravity?\x1fA fundamental force",
-			});
-			const note2 = createAnkiNote({
-				id: 2,
-				mid: model.id,
-				flds: "What is light?\x1fElectromagnetic radiation",
-			});
+			const note1 = createAnkiNote({ id: 1, mid: model.id, flds: "Q1\x1fA1" });
+			const note2 = createAnkiNote({ id: 2, mid: model.id, flds: "Q2\x1fA2" });
 			const card1 = createAnkiCard({ id: 100, nid: 1, did: 1 });
 			const card2 = createAnkiCard({ id: 101, nid: 2, did: 1 });
 
@@ -474,27 +466,19 @@ describe("AnkiImportService", () => {
 
 			expect(result.imported).toBe(2);
 
-			// Should create individual source notes (one per Anki note) plus a deck MOC
+			// One deck note for "Science", not one per card
 			const createCalls = vault.createFile.mock.calls.map((c: any[]) => c[0]);
-			const noteFiles = createCalls.filter(
-				(p: string) => p.includes("Science/") && !p.endsWith("/Science.md"),
-			);
-			expect(noteFiles.length).toBe(2);
+			expect(
+				createCalls.filter((p: string) => p.includes("Science")).length,
+			).toBe(1);
 		});
 
-		it("creates deck hierarchy as folders with MOC notes", async () => {
+		it("creates ancestor MOC notes for full project hierarchy", async () => {
 			const model = createAnkiModel();
 			const parentDeck = createAnkiDeck({ id: 1, name: "Math" });
-			const childDeck = createAnkiDeck({
-				id: 2,
-				name: "Math::Calculus",
-			});
+			const childDeck = createAnkiDeck({ id: 2, name: "Math::Calculus" });
 
-			const note = createAnkiNote({
-				id: 1,
-				mid: model.id,
-				flds: "What is calculus?\x1fStudy of change",
-			});
+			const note = createAnkiNote({ id: 1, mid: model.id, flds: "Q\x1fA" });
 			const card = createAnkiCard({ id: 100, nid: 1, did: 2 });
 
 			mockParseApkg.mockResolvedValue(
@@ -506,21 +490,17 @@ describe("AnkiImportService", () => {
 				}),
 			);
 
-			const result = await service.importApkg(
-				new ArrayBuffer(0),
-				defaultOptions(),
-			);
-
-			expect(result.imported).toBe(1);
+			await service.importApkg(new ArrayBuffer(0), defaultOptions());
 
 			const createCalls = vault.createFile.mock.calls.map((c: any[]) => c[0]);
-			expect(createCalls.some((p: string) => p.includes("Math.md"))).toBe(true);
+			// Both Math.md (MOC) and Calculus.md (leaf with cards) are created
 			expect(createCalls.some((p: string) => p.includes("Calculus.md"))).toBe(
 				true,
 			);
+			expect(createCalls.some((p: string) => p.includes("Math.md"))).toBe(true);
 		});
 
-		it("links cards from same Anki note to same source file", async () => {
+		it("links all cards in a deck to the same source note", async () => {
 			const model = createReversedModel();
 			const deck = createAnkiDeck({ id: 1, name: "TestDeck" });
 			const note = createAnkiNote({
@@ -528,18 +508,8 @@ describe("AnkiImportService", () => {
 				mid: model.id,
 				flds: "Front\x1fBack",
 			});
-			const basicCard = createAnkiCard({
-				id: 200,
-				nid: 1,
-				did: 1,
-				ord: 0,
-			});
-			const reversedCard = createAnkiCard({
-				id: 201,
-				nid: 1,
-				did: 1,
-				ord: 1,
-			});
+			const basicCard = createAnkiCard({ id: 200, nid: 1, did: 1, ord: 0 });
+			const reversedCard = createAnkiCard({ id: 201, nid: 1, did: 1, ord: 1 });
 
 			mockParseApkg.mockResolvedValue(
 				createApkgData({
@@ -552,9 +522,9 @@ describe("AnkiImportService", () => {
 
 			await service.importApkg(new ArrayBuffer(0), defaultOptions());
 
-			// Both cards should get the same sourceUid
 			const sourceUidCalls = store.cards.updateCardSourceUid.mock.calls;
 			expect(sourceUidCalls.length).toBe(2);
+			// Both cards get the same sourceUid (same deck)
 			expect(sourceUidCalls[0][1]).toBe(sourceUidCalls[1][1]);
 		});
 	});

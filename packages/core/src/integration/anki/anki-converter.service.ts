@@ -11,6 +11,12 @@ import { stripHtmlFromTemplate } from "./anki-note-type-mapper";
 
 const FIELD_SEPARATOR = "\x1f";
 
+/** Normalize Anki deck name to path: `::` (legacy) and `\x1f` (v18) → `/` */
+export function normalizeDeckName(name: string): string {
+	// biome-ignore lint/suspicious/noControlCharactersInRegex: Anki v18 uses U+001F as deck hierarchy separator
+	return name.replace(/::|[\x1f]/g, "/");
+}
+
 export class AnkiConverterService {
 	convert(data: ApkgData): ConvertedCard[] {
 		const results: ConvertedCard[] = [];
@@ -24,7 +30,7 @@ export class AnkiConverterService {
 			if (!model) continue;
 
 			const deck = data.decks.get(card.did);
-			const deckName = deck ? deck.name.replace(/::/g, "/") : "Default";
+			const deckName = deck ? normalizeDeckName(deck.name) : "Default";
 			const tags = note.tags.trim().split(/\s+/).filter(Boolean);
 			const rawFields = note.flds.split(FIELD_SEPARATOR);
 

@@ -1,5 +1,9 @@
 import { slugifyNoteTypeName } from "@true-recall/core/flashcard/note-types/note-type-slug";
-import type { AnkiModel, NoteTypeMapping } from "@true-recall/core/types";
+import type {
+	AnkiModel,
+	ModelMapping,
+	NoteTypeMapping,
+} from "@true-recall/core/types";
 import type {
 	CardTemplate,
 	NoteType,
@@ -69,14 +73,13 @@ export class AnkiNoteTypeMapper {
 
 	mapModels(
 		models: Map<number, AnkiModel>,
-		overrides?: Map<number, string>,
+		overrides?: Map<number, ModelMapping>,
 	): void {
 		for (const [modelId, model] of models) {
 			const override = overrides?.get(modelId);
 
-			if (override && override !== "auto") {
-				// User explicitly chose a note type
-				this.modelToNoteType.set(modelId, override);
+			if (override && override.noteTypeId !== "auto") {
+				this.modelToNoteType.set(modelId, override.noteTypeId);
 				continue;
 			}
 

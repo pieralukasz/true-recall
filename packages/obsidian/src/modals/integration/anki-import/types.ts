@@ -21,6 +21,8 @@ export type ImportPhase =
 			suggestions: NoteTypeMapping[];
 			preview: ImportPreview;
 	  }
+	| { type: "ai-classifying"; progress?: string }
+	| { type: "ai-cleaning"; progress?: string }
 	| { type: "importing" }
 	| { type: "result"; result: AnkiImportResult }
 	| { type: "error"; message: string; canRetry: boolean };
