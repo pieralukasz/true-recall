@@ -177,13 +177,17 @@ export class AnkiImportService {
 
 		await this.store.flush();
 
-		// When "Create project" is enabled, inject ALL deck names (even empty ones)
-		// so the full hierarchy is created as projects with parents frontmatter
+		// When "Create project" is enabled, inject intermediate ancestor segments
+		// needed to connect decks that have cards into a hierarchy
 		if (options.createProject) {
-			for (const [, deck] of apkgData.decks) {
-				const name = deck.name.replace(/::/g, "/");
-				if (name !== "Default" && !deckToCardIds.has(name)) {
-					deckToCardIds.set(name, []);
+			const existingPaths = [...deckToCardIds.keys()];
+			for (const deckPath of existingPaths) {
+				const segments = deckPath.split("/");
+				for (let i = 0; i < segments.length - 1; i++) {
+					const ancestorPath = segments.slice(0, i + 1).join("/");
+					if (!deckToCardIds.has(ancestorPath)) {
+						deckToCardIds.set(ancestorPath, []);
+					}
 				}
 			}
 		}
@@ -421,9 +425,7 @@ export class AnkiImportService {
 			if (!cardIds || cardIds.length === 0) continue;
 
 			const parentName = deckPath.split("/").pop() ?? deckPath;
-			const leafName = children.has(parentName)
-				? `${parentName} (Cards)`
-				: parentName;
+			const leafName = `${parentName} (Cards)`;
 
 			const leafPath = `${deckPath}/${leafName}`;
 			allSegmentPaths.add(leafPath);

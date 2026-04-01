@@ -1,12 +1,12 @@
 import { vi } from "vitest";
 import {
-	createAnkiNote,
 	createAnkiCard,
+	createAnkiDeck,
 	createAnkiModel,
+	createAnkiNote,
+	createApkgData,
 	createClozeModel,
 	createReversedModel,
-	createAnkiDeck,
-	createApkgData,
 } from "./mocks/anki.mocks";
 
 // Mock ApkgParserService so importApkg does not try to unzip real files
@@ -111,7 +111,9 @@ function createMockFsrsService(): any {
 	};
 }
 
-function defaultOptions(overrides: Partial<AnkiImportOptions> = {}): AnkiImportOptions {
+function defaultOptions(
+	overrides: Partial<AnkiImportOptions> = {},
+): AnkiImportOptions {
 	return {
 		importScheduling: false,
 		importMedia: false,
@@ -135,7 +137,14 @@ describe("AnkiImportService", () => {
 		fsrsService = createMockFsrsService();
 		persistence = createMockPersistence();
 		vault = createMockVault();
-		service = new AnkiImportService(store, fsrsService, persistence, vault, undefined, mockNotifyCardChange);
+		service = new AnkiImportService(
+			store,
+			fsrsService,
+			persistence,
+			vault,
+			undefined,
+			mockNotifyCardChange,
+		);
 	});
 
 	describe("importApkg", () => {
@@ -156,7 +165,10 @@ describe("AnkiImportService", () => {
 				}),
 			);
 
-			const result = await service.importApkg(new ArrayBuffer(0), defaultOptions());
+			const result = await service.importApkg(
+				new ArrayBuffer(0),
+				defaultOptions(),
+			);
 
 			expect(result.imported).toBe(2);
 			expect(result.skipped).toBe(0);
@@ -167,7 +179,11 @@ describe("AnkiImportService", () => {
 		it("skips cards with empty question", async () => {
 			const model = createAnkiModel();
 			const deck = createAnkiDeck({ id: 1 });
-			const note = createAnkiNote({ id: 1, mid: model.id, flds: "\x1fSome answer" });
+			const note = createAnkiNote({
+				id: 1,
+				mid: model.id,
+				flds: "\x1fSome answer",
+			});
 			const card = createAnkiCard({ id: 100, nid: 1, did: 1 });
 
 			mockParseApkg.mockResolvedValue(
@@ -179,7 +195,10 @@ describe("AnkiImportService", () => {
 				}),
 			);
 
-			const result = await service.importApkg(new ArrayBuffer(0), defaultOptions());
+			const result = await service.importApkg(
+				new ArrayBuffer(0),
+				defaultOptions(),
+			);
 
 			expect(result.skipped).toBe(1);
 			expect(result.imported).toBe(0);
@@ -188,7 +207,11 @@ describe("AnkiImportService", () => {
 		it("detects duplicates", async () => {
 			const model = createAnkiModel();
 			const deck = createAnkiDeck({ id: 1 });
-			const note = createAnkiNote({ id: 1, mid: model.id, flds: "Existing Q\x1fA" });
+			const note = createAnkiNote({
+				id: 1,
+				mid: model.id,
+				flds: "Existing Q\x1fA",
+			});
 			const card = createAnkiCard({ id: 100, nid: 1, did: 1 });
 
 			store.cards.getCardIdByQuestion.mockReturnValue("existing-card-id");
@@ -202,7 +225,10 @@ describe("AnkiImportService", () => {
 				}),
 			);
 
-			const result = await service.importApkg(new ArrayBuffer(0), defaultOptions());
+			const result = await service.importApkg(
+				new ArrayBuffer(0),
+				defaultOptions(),
+			);
 
 			expect(result.duplicates).toBe(1);
 			expect(result.imported).toBe(0);
@@ -211,7 +237,11 @@ describe("AnkiImportService", () => {
 		it("saves card via store.set", async () => {
 			const model = createAnkiModel();
 			const deck = createAnkiDeck({ id: 1 });
-			const note = createAnkiNote({ id: 1, mid: model.id, flds: "Question\x1fAnswer" });
+			const note = createAnkiNote({
+				id: 1,
+				mid: model.id,
+				flds: "Question\x1fAnswer",
+			});
 			const card = createAnkiCard({ id: 100, nid: 1, did: 1 });
 
 			mockParseApkg.mockResolvedValue(
@@ -385,7 +415,10 @@ describe("AnkiImportService", () => {
 				}),
 			);
 
-			const result = await service.importApkg(new ArrayBuffer(0), defaultOptions());
+			const result = await service.importApkg(
+				new ArrayBuffer(0),
+				defaultOptions(),
+			);
 
 			expect(result.imported).toBe(1);
 			expect(result.skipped).toBe(1);
@@ -398,12 +431,14 @@ describe("AnkiImportService", () => {
 				createApkgData({ notes: [], cards: [], models: [], decks: [] }),
 			);
 
-			const result = await service.importApkg(new ArrayBuffer(0), defaultOptions());
+			const result = await service.importApkg(
+				new ArrayBuffer(0),
+				defaultOptions(),
+			);
 
 			expect(result.imported).toBe(0);
 			expect(result.errors).toContain("No cards found in the .apkg file");
 		});
-
 	});
 
 	describe("hybrid deck handling", () => {
@@ -413,11 +448,19 @@ describe("AnkiImportService", () => {
 			const childDeck = createAnkiDeck({ id: 2, name: "Math::Calculus" });
 
 			// Card on parent deck (hybrid)
-			const parentNote = createAnkiNote({ id: 1, mid: model.id, flds: "What is math?\x1fA field of study" });
+			const parentNote = createAnkiNote({
+				id: 1,
+				mid: model.id,
+				flds: "What is math?\x1fA field of study",
+			});
 			const parentCard = createAnkiCard({ id: 100, nid: 1, did: 1 });
 
 			// Card on child deck
-			const childNote = createAnkiNote({ id: 2, mid: model.id, flds: "What is calculus?\x1fStudy of change" });
+			const childNote = createAnkiNote({
+				id: 2,
+				mid: model.id,
+				flds: "What is calculus?\x1fStudy of change",
+			});
 			const childCard = createAnkiCard({ id: 101, nid: 2, did: 2 });
 
 			mockParseApkg.mockResolvedValue(
@@ -429,13 +472,18 @@ describe("AnkiImportService", () => {
 				}),
 			);
 
-			const result = await service.importApkg(new ArrayBuffer(0), defaultOptions());
+			const result = await service.importApkg(
+				new ArrayBuffer(0),
+				defaultOptions(),
+			);
 
 			expect(result.imported).toBe(2);
 
-			// Should create notes for: Math (MOC), Math/Math (synthetic leaf), Math/Calculus (leaf)
+			// Should create notes for: Math (MOC), Math/Math (Cards) (synthetic leaf), Math/Calculus (leaf)
 			const createCalls = vault.createFile.mock.calls.map((c: any[]) => c[0]);
-			const syntheticLeaf = createCalls.find((p: string) => p.includes("Math/Math.md"));
+			const syntheticLeaf = createCalls.find((p: string) =>
+				p.includes("Math (Cards).md"),
+			);
 			expect(syntheticLeaf).toBeDefined();
 		});
 
@@ -445,10 +493,18 @@ describe("AnkiImportService", () => {
 			const parentDeck = createAnkiDeck({ id: 1, name: "Math" });
 			const childDeck = createAnkiDeck({ id: 2, name: "Math::Math" });
 
-			const parentNote = createAnkiNote({ id: 1, mid: model.id, flds: "Parent Q\x1fParent A" });
+			const parentNote = createAnkiNote({
+				id: 1,
+				mid: model.id,
+				flds: "Parent Q\x1fParent A",
+			});
 			const parentCard = createAnkiCard({ id: 100, nid: 1, did: 1 });
 
-			const childNote = createAnkiNote({ id: 2, mid: model.id, flds: "Child Q\x1fChild A" });
+			const childNote = createAnkiNote({
+				id: 2,
+				mid: model.id,
+				flds: "Child Q\x1fChild A",
+			});
 			const childCard = createAnkiCard({ id: 101, nid: 2, did: 2 });
 
 			mockParseApkg.mockResolvedValue(
@@ -460,13 +516,18 @@ describe("AnkiImportService", () => {
 				}),
 			);
 
-			const result = await service.importApkg(new ArrayBuffer(0), defaultOptions());
+			const result = await service.importApkg(
+				new ArrayBuffer(0),
+				defaultOptions(),
+			);
 
 			expect(result.imported).toBe(2);
 
 			// Should use "Math (Cards)" since "Math" child already exists
 			const createCalls = vault.createFile.mock.calls.map((c: any[]) => c[0]);
-			const cardsLeaf = createCalls.find((p: string) => p.includes("Math (Cards).md"));
+			const cardsLeaf = createCalls.find((p: string) =>
+				p.includes("Math (Cards).md"),
+			);
 			expect(cardsLeaf).toBeDefined();
 		});
 	});

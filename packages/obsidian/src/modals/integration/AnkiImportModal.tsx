@@ -3,7 +3,7 @@ import { AnkiImportService } from "@true-recall/core/integration/anki/anki-impor
 import { ApkgParserService } from "@true-recall/core/integration/anki/apkg/apkg-parser.service";
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite/SqliteStoreService";
 import type { FSRSService } from "@true-recall/core/services/fsrs/fsrs.service";
-import type { ApkgData } from "@true-recall/core/types";
+import type { ConvertedCard } from "@true-recall/core/types";
 import { ObsidianAnkiImportVault } from "@true-recall/obsidian/adapters/ObsidianAnkiImportVault";
 import { ObsidianPersistence } from "@true-recall/obsidian/adapters/ObsidianPersistence";
 import { ObsidianVaultFileReader } from "@true-recall/obsidian/adapters/ObsidianVaultFileReader";
@@ -139,7 +139,7 @@ export class AnkiImportModal extends BaseModal {
 			const converter = new AnkiConverterService();
 			const convertedCards = converter.convert(apkgData);
 
-			this.deckNames = this.getUniqueDecks(apkgData);
+			this.deckNames = this.getDecksWithCards(convertedCards);
 
 			const preview: ImportPreview = {
 				totalCards: convertedCards.length,
@@ -191,6 +191,12 @@ export class AnkiImportModal extends BaseModal {
 				createProject: opts.createProject,
 			});
 
+			// Delay hierarchy invalidation so Obsidian's metadata cache
+			// has time to process newly created source notes
+			if (opts.createProject && result.imported > 0) {
+				setTimeout(() => mutate("hierarchy:changed", () => {}), 2000);
+			}
+
 			return { type: "result", result };
 		} catch (err) {
 			const errMsg = err instanceof Error ? err.message : String(err);
@@ -198,11 +204,11 @@ export class AnkiImportModal extends BaseModal {
 		}
 	}
 
-	private getUniqueDecks(data: ApkgData): string[] {
+	private getDecksWithCards(convertedCards: ConvertedCard[]): string[] {
 		const names = new Set<string>();
-		for (const [, deck] of data.decks) {
-			if (deck.name !== "Default") {
-				names.add(deck.name.replace(/::/g, "/"));
+		for (const card of convertedCards) {
+			if (card.deckName !== "Default") {
+				names.add(card.deckName);
 			}
 		}
 		return [...names].sort();
