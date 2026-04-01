@@ -3,8 +3,10 @@ import type TrueRecallPlugin from "../main";
 import {
 	editSelectionAsFlashcard,
 	generateFlashcardsFromSelection,
+	generateFlashcardsGlobal,
 	hasApiKey,
 	quickAddFlashcardFromSelection,
+	quickAddFlashcardGlobal,
 } from "./SelectionActions";
 
 export function registerCommands(plugin: TrueRecallPlugin): void {
@@ -249,6 +251,43 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 			if (!selection || selection.trim().length < 3) return false;
 			if (checking) return true;
 			editSelectionAsFlashcard(plugin, selection.trim());
+			return true;
+		},
+	});
+
+	plugin.addCommand({
+		id: "global-generate-flashcards-from-selection",
+		name: "Generate flashcards from selection (any view)",
+		checkCallback: (checking) => {
+			const text = window.getSelection()?.toString().trim();
+			if (!text || text.length < 3) return false;
+			if (!hasApiKey(plugin)) return false;
+			if (checking) return true;
+			void generateFlashcardsGlobal(plugin, text);
+			return true;
+		},
+	});
+
+	plugin.addCommand({
+		id: "global-quick-add-flashcard-from-selection",
+		name: "Quick add flashcard from selection (any view)",
+		checkCallback: (checking) => {
+			const text = window.getSelection()?.toString().trim();
+			if (!text || text.length < 3) return false;
+			if (checking) return true;
+			void quickAddFlashcardGlobal(plugin, text);
+			return true;
+		},
+	});
+
+	plugin.addCommand({
+		id: "global-edit-selection-as-flashcard",
+		name: "Edit selection as flashcard (any view)",
+		checkCallback: (checking) => {
+			const text = window.getSelection()?.toString().trim();
+			if (!text || text.length < 3) return false;
+			if (checking) return true;
+			editSelectionAsFlashcard(plugin, text);
 			return true;
 		},
 	});

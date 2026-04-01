@@ -4,7 +4,7 @@ import { confirm } from "@true-recall/obsidian/modals/shared/ConfirmModal";
 import { RenameModal } from "@true-recall/obsidian/modals/study/RenameModal";
 import { usePlugin } from "@true-recall/obsidian/preact";
 import type { App } from "obsidian";
-import { Notice, normalizePath, SuggestModal, TFile, TFolder } from "obsidian";
+import { Notice, TFile, TFolder, normalizePath, SuggestModal } from "obsidian";
 import { useCallback } from "preact/hooks";
 
 export class ProjectSuggestModal extends SuggestModal<HierarchyTreeNode> {
@@ -63,12 +63,15 @@ export function useProjectActions() {
 	const plugin = usePlugin();
 
 	const handleArchive = useCallback(
-		(path: string, archived: boolean) => {
+		async (path: string, archived: boolean) => {
 			const file = plugin.app.vault.getAbstractFileByPath(path);
 			if (file instanceof TFile) {
-				void plugin.flashcardManager
-					.getFrontmatterService()
-					.setArchive(file.path, archived);
+				await mutate("hierarchy:changed", () =>
+					plugin.flashcardManager
+						.getFrontmatterService()
+						.setArchive(file.path, archived),
+				);
+				plugin.hierarchyService.invalidateGraph();
 			}
 		},
 		[plugin],

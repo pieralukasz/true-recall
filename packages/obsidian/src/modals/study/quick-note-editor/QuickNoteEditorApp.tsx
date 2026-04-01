@@ -11,6 +11,7 @@ import {
 	useApp,
 	usePlugin,
 } from "@true-recall/obsidian/preact/ObsidianContext";
+import { notify } from "@true-recall/obsidian/services/notification.service";
 import { Notice, TFile } from "obsidian";
 import {
 	useCallback,
@@ -265,7 +266,7 @@ export function QuickNoteEditorApp({
 				});
 
 				const totalCards = result.cards.length;
-				new Notice(`Created ${totalCards} card${totalCards !== 1 ? "s" : ""}`);
+				notify().cardsCreated(totalCards, sourceNoteFile?.basename);
 
 				// Clear unpinned fields, keep pinned — modal stays open
 				const next: Record<string, string> = {};
@@ -293,6 +294,7 @@ export function QuickNoteEditorApp({
 		plugin.flashcardManager,
 		onDone,
 		pinnedFields,
+		sourceNoteFile,
 	]);
 
 	// Cmd/Ctrl+Enter saves from anywhere in the modal (not just CM fields).

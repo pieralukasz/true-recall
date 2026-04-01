@@ -13,7 +13,6 @@ import {
 	SliderInput,
 	TextAreaInput,
 	TextInput,
-	ToggleInput,
 } from "@true-recall/obsidian/components";
 import { requestUrl } from "obsidian";
 import { useEffect, useState } from "preact/hooks";
@@ -273,16 +272,6 @@ export function AITab() {
 						value={settings.generationLanguage ?? "auto"}
 						onChange={(v) => void save({ generationLanguage: v })}
 						options={[...GENERATION_LANGUAGES]}
-					/>
-				</FormField>
-
-				<FormField
-					name="Selection toolbar"
-					description="Show a floating toolbar above selected text for AI-powered flashcard creation."
-				>
-					<ToggleInput
-						value={settings.selectionToolbarEnabled}
-						onChange={(v) => void save({ selectionToolbarEnabled: v })}
 					/>
 				</FormField>
 			</FormCard>

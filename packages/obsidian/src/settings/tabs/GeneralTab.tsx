@@ -155,6 +155,16 @@ export function GeneralTab() {
 						onChange={(v) => void save({ showStatusBarWidget: v })}
 					/>
 				</FormField>
+
+				<FormField
+					name="Selection toolbar"
+					description="Show a floating toolbar above selected text for AI-powered flashcard creation."
+				>
+					<ToggleInput
+						value={settings.selectionToolbarEnabled}
+						onChange={(v) => void save({ selectionToolbarEnabled: v })}
+					/>
+				</FormField>
 			</FormCard>
 
 			<FormCard title="Day boundary">

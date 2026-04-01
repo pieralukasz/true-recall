@@ -11,6 +11,7 @@ export interface SelectionToolbarProps {
 	hasApiKey: boolean;
 	detectedImagePath?: string | null;
 	onImageOcclusion?: (path: string) => void;
+	showHighlight?: boolean;
 }
 
 export function SelectionToolbar({
@@ -23,6 +24,7 @@ export function SelectionToolbar({
 	hasApiKey,
 	detectedImagePath,
 	onImageOcclusion,
+	showHighlight = true,
 }: SelectionToolbarProps) {
 	const [copied, setCopied] = useState(false);
 
@@ -100,15 +102,17 @@ export function SelectionToolbar({
 				<span>Quick+</span>
 			</Clickable>
 
-			<span class="true-recall-st-divider" />
+			{showHighlight && <span class="true-recall-st-divider" />}
 
-			<Clickable
-				class="true-recall-st-btn"
-				onClick={handleHighlight}
-				title="Wrap selection with ==highlight=="
-			>
-				<span>Highlight</span>
-			</Clickable>
+			{showHighlight && (
+				<Clickable
+					class="true-recall-st-btn"
+					onClick={handleHighlight}
+					title="Wrap selection with ==highlight=="
+				>
+					<span>Highlight</span>
+				</Clickable>
+			)}
 
 			<Clickable
 				class="true-recall-st-btn"

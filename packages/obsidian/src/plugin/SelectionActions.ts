@@ -2,6 +2,7 @@ import { StreamingGenerationService } from "@true-recall/core/ai/generation/stre
 import { BUILTIN_BASIC_ID } from "@true-recall/core/types/note.types";
 import { QuickNoteEditorModal } from "@true-recall/obsidian/modals/study/quick-note-editor/QuickNoteEditorModal";
 import { notify } from "@true-recall/obsidian/services/notification.service";
+import { TFile } from "obsidian";
 import { ObsidianHttpClient } from "../adapters/ObsidianHttpClient";
 import type TrueRecallPlugin from "../main";
 
@@ -22,6 +23,16 @@ function getStreamingService(
 
 export function hasApiKey(plugin: TrueRecallPlugin): boolean {
 	return !!(plugin.settings.proKey || plugin.settings.openRouterApiKey);
+}
+
+function findMostRecentMarkdownFile(plugin: TrueRecallPlugin): TFile | null {
+	const recentPaths = plugin.app.workspace.getLastOpenFiles();
+	for (const path of recentPaths) {
+		if (!path.endsWith(".md")) continue;
+		const file = plugin.app.vault.getAbstractFileByPath(path);
+		if (file instanceof TFile) return file;
+	}
+	return null;
 }
 
 export async function generateFlashcardsFromSelection(
@@ -45,11 +56,13 @@ export async function generateFlashcardsFromSelection(
 		if (result.created === 0 && result.duplicates === 0) {
 			notify().warning("No flashcards found in AI response");
 		} else if (result.duplicates > 0) {
-			notify().info(
-				`Created ${result.created} flashcard(s), ${result.duplicates} duplicate(s) skipped`,
+			notify().cardsCreatedWithDuplicates(
+				result.created,
+				result.duplicates,
+				file.basename,
 			);
 		} else {
-			notify().info(`Created ${result.created} flashcard(s)`);
+			notify().cardsCreated(result.created, file.basename);
 		}
 	} catch (error) {
 		if (error instanceof DOMException && error.name === "AbortError") return;
@@ -89,7 +102,74 @@ export async function quickAddFlashcardFromSelection(
 			undefined,
 			text,
 		);
-		notify().info("Quick-added 1 flashcard");
+		notify().cardsCreated(1, file.basename);
+	} catch (error) {
+		const msg = error instanceof Error ? error.message : String(error);
+		notify().error(`Quick add failed: ${msg}`);
+	}
+}
+
+export async function generateFlashcardsGlobal(
+	plugin: TrueRecallPlugin,
+	text: string,
+): Promise<void> {
+	const file =
+		plugin.app.workspace.getActiveFile() ?? findMostRecentMarkdownFile(plugin);
+	if (!file) {
+		editSelectionAsFlashcard(plugin, text);
+		notify().info("No active note found — opened editor instead");
+		return;
+	}
+
+	try {
+		await plugin.activateView();
+		const noteType =
+			plugin.cardStore?.noteTypes.getById(BUILTIN_BASIC_ID) ?? null;
+		const service = getStreamingService(plugin);
+		const result = await service.generateStreaming(text, file, noteType);
+
+		if (result.created === 0 && result.duplicates === 0) {
+			notify().warning("No flashcards found in AI response");
+		} else if (result.duplicates > 0) {
+			notify().cardsCreatedWithDuplicates(
+				result.created,
+				result.duplicates,
+				file.basename,
+			);
+		} else {
+			notify().cardsCreated(result.created, file.basename);
+		}
+	} catch (error) {
+		if (error instanceof DOMException && error.name === "AbortError") return;
+		const msg = error instanceof Error ? error.message : String(error);
+		notify().error(`Flashcard generation failed: ${msg}`);
+	}
+}
+
+export async function quickAddFlashcardGlobal(
+	plugin: TrueRecallPlugin,
+	text: string,
+): Promise<void> {
+	const file =
+		plugin.app.workspace.getActiveFile() ?? findMostRecentMarkdownFile(plugin);
+	if (!file) {
+		editSelectionAsFlashcard(plugin, text);
+		notify().info("No active note found — opened editor instead");
+		return;
+	}
+
+	try {
+		const parts = text.split(/\n\s*\n/);
+		const question = (parts[0] ?? text).trim();
+		const answer = parts.slice(1).join("\n\n").trim();
+		await plugin.flashcardManager.saveFlashcardsToSql(
+			file.path,
+			file.basename,
+			[{ id: crypto.randomUUID(), question, answer }],
+			undefined,
+			text,
+		);
+		notify().cardsCreated(1, file.basename);
 	} catch (error) {
 		const msg = error instanceof Error ? error.message : String(error);
 		notify().error(`Quick add failed: ${msg}`);

@@ -32,8 +32,10 @@ import { registerDeletionHandler } from "./PluginEventHandlers";
 import {
 	editSelectionAsFlashcard,
 	generateFlashcardsFromSelection,
+	generateFlashcardsGlobal,
 	hasApiKey,
 	quickAddFlashcardFromSelection,
+	quickAddFlashcardGlobal,
 } from "./SelectionActions";
 
 export async function initializeDeviceAndStore(
@@ -331,7 +333,7 @@ function initializeSelectionToolbar(plugin: TrueRecallPlugin): void {
 							undefined,
 							imageEmbed,
 						);
-						notify().info("Quick-added image flashcard");
+						notify().cardsCreated(1, file.basename);
 					} catch (error) {
 						const msg = error instanceof Error ? error.message : String(error);
 						notify().error(`Quick add failed: ${msg}`);
@@ -351,6 +353,20 @@ function initializeSelectionToolbar(plugin: TrueRecallPlugin): void {
 				isEnabled: () => plugin.settings.selectionToolbarEnabled,
 			});
 			plugin.registerEditorExtension([imageExtension]);
+		},
+	);
+
+	void import("@true-recall/obsidian/editor/ai/GlobalSelectionToolbar").then(
+		({ GlobalSelectionToolbar }) => {
+			const toolbar = new GlobalSelectionToolbar({
+				onGenerate: (text) => generateFlashcardsGlobal(plugin, text),
+				onEdit: (text) => editSelectionAsFlashcard(plugin, text),
+				onQuickAdd: (text) => quickAddFlashcardGlobal(plugin, text),
+				hasApiKey: () => hasApiKey(plugin),
+				isEnabled: () => plugin.settings.selectionToolbarEnabled,
+			});
+			toolbar.register();
+			plugin._globalSelectionToolbar = toolbar;
 		},
 	);
 
