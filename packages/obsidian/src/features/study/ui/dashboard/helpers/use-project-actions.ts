@@ -165,41 +165,48 @@ export function useProjectActions() {
 
 	const handleDelete = useCallback(
 		async (projectPath: string) => {
-			const hierarchy = plugin.hierarchyService.buildHierarchy();
-			const projectNode = findNode(hierarchy, projectPath);
-			if (!projectNode) {
-				new Notice("Project not found in hierarchy.");
-				return;
-			}
-
-			const allPaths = collectAllPaths(projectNode);
-			const sourceUids =
-				plugin.hierarchyService.getSourceUidsForProject(projectPath);
-
-			const allCardIds: string[] = [];
-			for (const uid of sourceUids) {
-				const cards = plugin.cardStore.cards.getCardsBySourceUid(uid);
-				for (const c of cards) allCardIds.push(c.id);
-			}
-
-			const projectName =
-				projectPath.split("/").pop()?.replace(/\.md$/, "") ?? projectPath;
-			const confirmed = await confirm(plugin.app, {
-				title: "Delete project",
-				message: `Permanently delete "${projectName}" with ${allPaths.length} note(s) and ${allCardIds.length} flashcard(s)? Notes will be moved to trash.`,
-				confirmLabel: "Delete",
-			});
-			if (!confirmed) return;
-
-			await service.deleteProject(allPaths, () => {
-				if (allCardIds.length > 0) {
-					plugin.cardStore.cards.bulkSoftDelete(allCardIds);
+			try {
+				const hierarchy = plugin.hierarchyService.buildHierarchy();
+				const projectNode = findNode(hierarchy, projectPath);
+				if (!projectNode) {
+					new Notice("Project not found in hierarchy.");
+					return;
 				}
-			});
 
-			new Notice(
-				`Deleted "${projectName}" — ${allPaths.length} notes, ${allCardIds.length} cards.`,
-			);
+				const allPaths = collectAllPaths(projectNode);
+				const sourceUids =
+					plugin.hierarchyService.getSourceUidsForProject(projectPath);
+
+				const allCardIds: string[] = [];
+				for (const uid of sourceUids) {
+					const cards = plugin.cardStore.cards.getCardsBySourceUid(uid);
+					for (const c of cards) allCardIds.push(c.id);
+				}
+
+				const projectName =
+					projectPath.split("/").pop()?.replace(/\.md$/, "") ?? projectPath;
+				const confirmed = await confirm(plugin.app, {
+					title: "Delete project",
+					message: `Permanently delete "${projectName}" with ${allPaths.length} note(s) and ${allCardIds.length} flashcard(s)? Notes will be moved to trash.`,
+					confirmLabel: "Delete",
+				});
+				if (!confirmed) return;
+
+				await service.deleteProject(allPaths, () => {
+					if (allCardIds.length > 0) {
+						plugin.cardStore.cards.bulkSoftDelete(allCardIds);
+					}
+				});
+
+				new Notice(
+					`Deleted "${projectName}" — ${allPaths.length} notes, ${allCardIds.length} cards.`,
+				);
+			} catch (err) {
+				console.error("[True Recall] Delete project failed:", err);
+				new Notice(
+					`Delete failed: ${err instanceof Error ? err.message : String(err)}`,
+				);
+			}
 		},
 		[plugin, service],
 	);
