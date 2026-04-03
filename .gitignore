@@ -38,6 +38,7 @@ CLAUDE.md
 .claude/agents/sql-migration.md
 .claude/skills/
 .claude/rules/
+.claude/memory/
 .mcp.json
 
 # Documentation and plans
