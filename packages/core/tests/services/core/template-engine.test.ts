@@ -56,6 +56,20 @@ describe("renderTemplate", () => {
 			expect(result).toBe("**bold** and _italic_ and `code`");
 		});
 
+		it("preserves $$ block math delimiters in field values", () => {
+			const result = renderTemplate("{{Front}}", {
+				fields: { Front: "$$\ny = x^2\n$$" },
+			});
+			expect(result).toBe("$$\ny = x^2\n$$");
+		});
+
+		it("preserves $ inline math in field values", () => {
+			const result = renderTemplate("{{Front}}", {
+				fields: { Front: "The formula $E = mc^2$ is famous" },
+			});
+			expect(result).toBe("The formula $E = mc^2$ is famous");
+		});
+
 		it("handles field with HTML content (preserves HTML)", () => {
 			const result = renderTemplate("{{Front}}", {
 				fields: { Front: "<b>bold</b><br><i>italic</i>" },

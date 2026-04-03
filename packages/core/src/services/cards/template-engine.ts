@@ -106,7 +106,7 @@ export function renderTemplate(
 	for (let i = 0; i < fieldPlaceholders.length; i++) {
 		const placeholder = fieldPlaceholders[i];
 		if (placeholder !== undefined) {
-			working = working.replace(`\x00FIELD_${i}\x00`, placeholder);
+			working = working.replace(`\x00FIELD_${i}\x00`, () => placeholder);
 		}
 	}
 
@@ -114,7 +114,7 @@ export function renderTemplate(
 	for (let i = 0; i < commentPlaceholders.length; i++) {
 		const comment = commentPlaceholders[i];
 		if (comment !== undefined) {
-			working = working.replace(`\x00COMMENT_${i}\x00`, comment);
+			working = working.replace(`\x00COMMENT_${i}\x00`, () => comment);
 		}
 	}
 

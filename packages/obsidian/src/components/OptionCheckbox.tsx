@@ -15,7 +15,7 @@ export function OptionCheckbox({
 }: OptionCheckboxProps) {
 	return (
 		<div
-			class={`ep:flex ep:items-start ep:gap-3 ep:py-2${disabled ? " ep:opacity-50" : ""}`}
+			class={`ep:flex ep:items-start ep:gap-3 ep:py-1.5${disabled ? " ep:opacity-50" : ""}`}
 		>
 			<input
 				type="checkbox"

@@ -68,7 +68,7 @@ function AnkiImportBody({
 	const [phase, setPhase] = useState<ImportPhase>({ type: "file-select" });
 	const [importScheduling, setImportScheduling] = useState(true);
 	const [importMedia, setImportMedia] = useState(true);
-	const [useAI, setUseAI] = useState(aiKeyAvailable);
+	const [useAI, setUseAI] = useState(false);
 	const [importFolder, setImportFolder] = useState(DEFAULT_IMPORT_FOLDER);
 
 	const handleFile = useCallback(

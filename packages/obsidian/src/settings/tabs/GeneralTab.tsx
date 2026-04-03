@@ -271,6 +271,23 @@ export function GeneralTab() {
 						<code>http://127.0.0.1:{plugin.localApi.getPort()}</code>
 					</InfoBlock>
 				)}
+
+				<FormField
+					name="Claude Code Skill"
+					description="Install the True Recall skill for Claude Code to control flashcards from the terminal"
+				>
+					<Clickable
+						class="ep-btn ep-btn-outline"
+						onClick={() =>
+							window.open(
+								`${TRUERECALL_WEB_URL}/reference/claude-code-skill/`,
+								"_blank",
+							)
+						}
+					>
+						Get skill
+					</Clickable>
+				</FormField>
 			</FormCard>
 
 			<FormCard title="About">

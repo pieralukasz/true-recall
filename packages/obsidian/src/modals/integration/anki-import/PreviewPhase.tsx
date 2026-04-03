@@ -1,12 +1,11 @@
 import {
-	FolderPicker,
 	ModalFooter,
 	OptionCheckbox,
 	StatBadge,
 	StatGrid,
+	TextInput,
 } from "@true-recall/obsidian/components";
 import type { ImportPreview } from "@true-recall/obsidian/modals/integration/anki-import/types";
-import { useCallback } from "preact/hooks";
 
 export interface PreviewPhaseProps {
 	preview: ImportPreview;
@@ -37,12 +36,6 @@ export function PreviewPhase({
 	onContinue,
 	onCancel,
 }: PreviewPhaseProps) {
-	const handleFolderChange = useCallback(
-		(folders: string[]) => {
-			onImportFolderChange(folders[0] ?? "Anki Import");
-		},
-		[onImportFolderChange],
-	);
 	return (
 		<>
 			<StatGrid columns={2}>
@@ -99,11 +92,10 @@ export function PreviewPhase({
 				<div class="ep:text-ui-small ep:font-medium ep:mb-2">
 					Import destination
 				</div>
-				<FolderPicker
-					value={[importFolder]}
-					onChange={handleFolderChange}
+				<TextInput
+					value={importFolder}
+					onChange={onImportFolderChange}
 					placeholder="Anki Import"
-					single
 				/>
 			</div>
 
