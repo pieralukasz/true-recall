@@ -176,7 +176,7 @@ export function NormalHeader({
 
 					{!isFollowingReview && (
 						<IconButton
-							icon="book-open-check"
+							icon={hasNoteReview ? "toggle-right" : "toggle-left"}
 							ariaLabel={
 								hasNoteReview ? "Disable note review" : "Enable note review"
 							}
