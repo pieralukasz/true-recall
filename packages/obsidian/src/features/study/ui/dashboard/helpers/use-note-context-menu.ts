@@ -57,7 +57,7 @@ export function useNoteContextMenu({
 					...(onCreateProject
 						? [
 								{
-									title: "Create project",
+									title: "Convert to project",
 									icon: "folder-plus",
 									onClick: onCreateProject,
 								},

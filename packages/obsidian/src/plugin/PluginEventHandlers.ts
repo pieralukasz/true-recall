@@ -4,7 +4,7 @@ import {
 } from "@true-recall/core/constants";
 import type { DeletionHandlerService } from "@true-recall/core/flashcard/lifecycle/deletion-handler.service";
 import { FlashcardPanelView } from "@true-recall/obsidian/views/panel/FlashcardPanelView";
-import { ItemView, Notice, normalizePath, TFile, TFolder } from "obsidian";
+import { ItemView, normalizePath, TFile, TFolder } from "obsidian";
 import type TrueRecallPlugin from "../main";
 import {
 	editSelectionAsFlashcard,
@@ -41,33 +41,11 @@ export function registerEventHandlers(plugin: TrueRecallPlugin): void {
 
 				menu.addItem((item) => {
 					item
-						.setTitle("Create project from this note")
+						.setTitle("Convert to project")
 						.setIcon("folder-plus")
-						.onClick(async () => {
-							const { NamePromptModal } = await import(
-								"@true-recall/obsidian/modals/study/NamePromptModal"
-							);
-							const modal = new NamePromptModal(plugin.app, file.basename);
-							const result = await modal.openAndWait();
-							if (result.cancelled) return;
-
-							const name = result.name;
-							const folderPath = file.parent?.path ?? "";
-							const projectPath = normalizePath(
-								folderPath ? `${folderPath}/${name}.md` : `${name}.md`,
-							);
-
-							if (plugin.app.vault.getAbstractFileByPath(projectPath)) {
-								new Notice(`A note already exists at "${projectPath}".`);
-								return;
-							}
-
-							await plugin.app.vault.create(projectPath, "");
-							const frontmatterService =
-								plugin.flashcardManager.getFrontmatterService();
-							await frontmatterService.addParent(file.path, name);
-							new Notice(`Created project "${name}"`);
-						});
+						.onClick(() =>
+							plugin.projectManagement.convertToProject(file.path),
+						);
 				});
 			}
 		}),

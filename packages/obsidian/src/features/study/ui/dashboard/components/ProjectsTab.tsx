@@ -53,7 +53,7 @@ export function ProjectsTab({
 		handleExportAnki,
 		handleExportCsv,
 		handleCreateSubProject,
-		handleCreateProjectFromNote,
+		handleConvertToProject,
 		handleAssignNoteToProject,
 	} = useProjectActions();
 	const {
@@ -205,7 +205,7 @@ export function ProjectsTab({
 								onPresetClick={onPresetClick}
 								onArchive={handleArchive}
 								onRename={handleRename}
-								onCreateProject={handleCreateProjectFromNote}
+								onCreateProject={handleConvertToProject}
 								onAssignToProject={handleAssignNoteToProject}
 								onToggleSelect={
 									item.note.path

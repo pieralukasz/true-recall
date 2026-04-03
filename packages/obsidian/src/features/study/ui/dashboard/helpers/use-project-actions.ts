@@ -307,58 +307,18 @@ export function useProjectActions() {
 
 	const handleCreateSubProject = useCallback(
 		async (parentPath: string) => {
-			const parentName =
-				parentPath.split("/").pop()?.replace(/\.md$/, "") ?? parentPath;
-
 			const modal = new NamePromptModal(plugin.app, "New Sub-project");
 			const result = await modal.openAndWait();
 			if (result.cancelled) return;
 
-			const name = result.name;
-			const projectPath = normalizePath(`${name}.md`);
-
-			if (plugin.app.vault.getAbstractFileByPath(projectPath)) {
-				new Notice(`A note already exists at "${projectPath}".`);
-				return;
-			}
-
-			await plugin.app.vault.create(projectPath, "");
-			const frontmatterService =
-				plugin.flashcardManager.getFrontmatterService();
-			await frontmatterService.addParent(projectPath, parentName);
-
-			plugin.hierarchyService.invalidateGraph();
-			mutate("hierarchy:changed", () => {});
-			new Notice(`Created sub-project "${name}" under "${parentName}"`);
+			await plugin.projectManagement.createSubProject(result.name, parentPath);
 		},
 		[plugin],
 	);
 
-	const handleCreateProjectFromNote = useCallback(
+	const handleConvertToProject = useCallback(
 		async (notePath: string) => {
-			const modal = new NamePromptModal(plugin.app, "New Project");
-			const result = await modal.openAndWait();
-			if (result.cancelled) return;
-
-			const name = result.name;
-			const projectPath = normalizePath(`${name}.md`);
-
-			if (plugin.app.vault.getAbstractFileByPath(projectPath)) {
-				new Notice(`A note already exists at "${projectPath}".`);
-				return;
-			}
-
-			await plugin.app.vault.create(projectPath, "");
-			const file = plugin.app.vault.getAbstractFileByPath(notePath);
-			if (file instanceof TFile) {
-				await plugin.flashcardManager
-					.getFrontmatterService()
-					.addParent(file.path, name);
-			}
-
-			plugin.hierarchyService.invalidateGraph();
-			mutate("hierarchy:changed", () => {});
-			new Notice(`Created project "${name}"`);
+			await plugin.projectManagement.convertToProject(notePath);
 		},
 		[plugin],
 	);
@@ -399,7 +359,7 @@ export function useProjectActions() {
 		handleExportAnki,
 		handleExportCsv,
 		handleCreateSubProject,
-		handleCreateProjectFromNote,
+		handleConvertToProject,
 		handleAssignNoteToProject,
 	};
 }

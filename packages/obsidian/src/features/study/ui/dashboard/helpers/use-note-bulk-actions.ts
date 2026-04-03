@@ -1,7 +1,7 @@
 import type { Signal } from "@preact/signals";
-import { NamePromptModal } from "@true-recall/obsidian/modals/study/NamePromptModal";
+import { CreateProjectModal } from "@true-recall/obsidian/modals/study/CreateProjectModal";
 import { usePlugin } from "@true-recall/obsidian/preact";
-import { Notice, normalizePath, TFile } from "obsidian";
+import { Notice, TFile } from "obsidian";
 import { useCallback } from "preact/hooks";
 import type { DashboardNoteEntry } from "../types";
 import { flattenNodes, ProjectSuggestModal } from "./use-project-actions";
@@ -20,30 +20,14 @@ export function useNoteBulkActions({
 	const handleCreateProjectFromSelected = useCallback(async () => {
 		if (selectedPaths.value.size === 0) return;
 
-		const modal = new NamePromptModal(plugin.app, "New Project");
+		const modal = new CreateProjectModal(plugin.app);
 		const result = await modal.openAndWait();
 		if (result.cancelled) return;
 
-		const name = result.name;
-		const projectPath = normalizePath(`${name}.md`);
-
-		if (plugin.app.vault.getAbstractFileByPath(projectPath)) {
-			new Notice(`A note already exists at "${projectPath}".`);
-			return;
-		}
-
-		await plugin.app.vault.create(projectPath, "");
-
-		const frontmatterService = plugin.flashcardManager.getFrontmatterService();
-		for (const path of selectedPaths.value) {
-			const file = plugin.app.vault.getAbstractFileByPath(path);
-			if (file instanceof TFile) {
-				await frontmatterService.addParent(file.path, name);
-			}
-		}
-
-		new Notice(
-			`Created project "${name}" with ${selectedPaths.value.size} notes`,
+		await plugin.projectManagement.createProjectWithChildren(
+			result.name,
+			result.folder,
+			[...selectedPaths.value],
 		);
 		exitSelection();
 	}, [plugin, selectedPaths, exitSelection]);

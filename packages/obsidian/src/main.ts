@@ -43,6 +43,7 @@ import {
 } from "@true-recall/obsidian/modals/study/CustomStudyModal";
 import { QuickNoteEditorModal } from "@true-recall/obsidian/modals/study/quick-note-editor/QuickNoteEditorModal";
 import { notify } from "@true-recall/obsidian/services/notification.service";
+import { ProjectManagementService } from "@true-recall/obsidian/services/project-management.service";
 import { TrueRecallSettingTab } from "@true-recall/obsidian/settings";
 import type { AppStore } from "@true-recall/obsidian/store";
 import { isDesktop } from "@true-recall/obsidian/utils/platform";
@@ -129,6 +130,18 @@ export default class TrueRecallPlugin extends Plugin {
 	}
 	get hierarchyService() {
 		return this.coreApp.hierarchyService;
+	}
+
+	private _projectManagement: ProjectManagementService | null = null;
+	get projectManagement(): ProjectManagementService {
+		if (!this._projectManagement) {
+			this._projectManagement = new ProjectManagementService(
+				this.app,
+				this.flashcardManager.getFrontmatterService(),
+				this.hierarchyService,
+			);
+		}
+		return this._projectManagement;
 	}
 
 	deviceIdService: DeviceIdService | null = null;

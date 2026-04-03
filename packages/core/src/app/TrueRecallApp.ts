@@ -269,6 +269,11 @@ export class TrueRecallApp {
 			type: "string",
 			unique: false,
 		});
+		this.frontmatterIndex.register({
+			field: "project",
+			type: "string",
+			unique: false,
+		});
 	}
 
 	private wireVaultEvents(): void {

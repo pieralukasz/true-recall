@@ -159,6 +159,14 @@ export class FrontmatterService {
 		return count;
 	}
 
+	async markAsProject(filePath: string): Promise<void> {
+		await this.frontmatter.update(filePath, { project: true });
+	}
+
+	async unmarkProject(filePath: string): Promise<void> {
+		await this.frontmatter.update(filePath, { project: undefined });
+	}
+
 	async moveChildren(
 		childPaths: string[],
 		fromParent: string,

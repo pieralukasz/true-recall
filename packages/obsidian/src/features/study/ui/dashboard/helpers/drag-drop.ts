@@ -3,8 +3,9 @@ import type { FrontmatterService } from "@true-recall/core/flashcard/source/fron
 import type { HierarchyService } from "@true-recall/core/services/notes/hierarchy.service";
 import type TrueRecallPlugin from "@true-recall/obsidian/main";
 import { NamePromptModal } from "@true-recall/obsidian/modals/study/NamePromptModal";
+import type { ProjectManagementService } from "@true-recall/obsidian/services/project-management.service";
 import type { App } from "obsidian";
-import { Notice, normalizePath, TFile } from "obsidian";
+import { Notice, TFile } from "obsidian";
 import type { FlatProjectItem } from "./project-tree-flatten";
 
 export interface DragItem {
@@ -82,6 +83,7 @@ export function consumeDragState(
 export interface DropDeps {
 	app: App;
 	frontmatterService: FrontmatterService;
+	projectManagement: ProjectManagementService;
 	promptProjectName: (defaultName: string) => Promise<string | null>;
 }
 
@@ -89,6 +91,7 @@ export function createDropDeps(plugin: TrueRecallPlugin): DropDeps {
 	return {
 		app: plugin.app,
 		frontmatterService: plugin.flashcardManager.getFrontmatterService(),
+		projectManagement: plugin.projectManagement,
 		promptProjectName: async (defaultName: string) => {
 			const modal = new NamePromptModal(plugin.app, defaultName);
 			const res = await modal.openAndWait();
@@ -221,35 +224,15 @@ export async function executeDrop(
 			if (!(targetFile instanceof TFile)) return;
 
 			const folder = targetFile.parent?.path ?? "";
-			const projectPath = normalizePath(
-				folder ? `${folder}/${name}.md` : `${name}.md`,
-			);
-
-			if (app.vault.getAbstractFileByPath(projectPath)) {
-				new Notice(`A note already exists at "${projectPath}".`);
-				return;
-			}
-
-			await app.vault.create(projectPath, "");
-
-			const dragFile = app.vault.getAbstractFileByPath(result.dragPath);
-			if (dragFile instanceof TFile) {
-				await frontmatterService.addParent(dragFile.path, name);
-			}
-
 			const isSameNote = result.dragPath === result.targetPath;
-			if (!isSameNote) {
-				const targetFileForParent = app.vault.getAbstractFileByPath(
-					result.targetPath,
-				);
-				if (targetFileForParent instanceof TFile) {
-					await frontmatterService.addParent(targetFileForParent.path, name);
-				}
-			}
+			const childPaths = isSameNote
+				? [result.dragPath]
+				: [result.dragPath, result.targetPath];
 
-			const noteCount = isSameNote ? 1 : 2;
-			new Notice(
-				`Created project "${name}" with ${noteCount} note${noteCount > 1 ? "s" : ""}`,
+			await deps.projectManagement.createProjectWithChildren(
+				name,
+				folder,
+				childPaths,
 			);
 			break;
 		}

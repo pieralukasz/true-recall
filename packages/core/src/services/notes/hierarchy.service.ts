@@ -97,10 +97,17 @@ export class HierarchyService {
 			if (path) flashcardPaths.add(path);
 		}
 
-		// A note is "assigned" if it has parents or is itself a parent (root project)
+		// A note is "assigned" if it has parents, is itself a parent (root project),
+		// or has an explicit project: true marker
 		const assigned = new Set<string>();
 		for (const path of graph.parentMap.keys()) assigned.add(path);
 		for (const path of graph.childMap.keys()) assigned.add(path);
+		for (const path of this.frontmatterIndex.getFilesByValue(
+			"project",
+			"true",
+		)) {
+			assigned.add(path);
+		}
 
 		return Array.from(flashcardPaths).filter((p) => !assigned.has(p));
 	}
@@ -125,9 +132,11 @@ export class HierarchyService {
 		const uids = new Set<string>();
 
 		for (const filePath of archivedPaths) {
-			// Check if this archived note is a "project" (has children)
+			// Check if this archived note is a "project" (has children or project: true)
 			const graph = this.ensureGraph();
-			if (graph.childMap.has(filePath)) {
+			const isProject =
+				graph.childMap.has(filePath) || this.isExplicitProject(filePath);
+			if (isProject) {
 				// Archived project -> collect all descendant UIDs
 				const projectUids = this.getSourceUidsForProject(filePath, true);
 				for (const uid of projectUids) uids.add(uid);
@@ -151,6 +160,11 @@ export class HierarchyService {
 
 	isProjectArchived(projectPath: string): boolean {
 		return this.isNoteArchived(projectPath);
+	}
+
+	isExplicitProject(notePath: string): boolean {
+		const [val] = this.frontmatterIndex.getValues("project", notePath);
+		return val === "true";
 	}
 
 	// ---- Internal ----
@@ -194,6 +208,17 @@ export class HierarchyService {
 					childMap.set(parentPath, children);
 				}
 				children.add(childPath);
+			}
+		}
+
+		// Include notes with explicit project: true marker
+		const projectPaths = this.frontmatterIndex.getFilesByValue(
+			"project",
+			"true",
+		);
+		for (const path of projectPaths) {
+			if (!childMap.has(path)) {
+				childMap.set(path, new Set());
 			}
 		}
 

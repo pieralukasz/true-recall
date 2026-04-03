@@ -81,6 +81,11 @@ describe("HierarchyService", () => {
 			type: "string",
 			unique: false,
 		});
+		frontmatterIndex.register({
+			field: "project",
+			type: "string",
+			unique: false,
+		});
 
 		const mockFileSystem: IFileSystem = {
 			read: vi.fn(async () => ""),
@@ -491,6 +496,109 @@ describe("HierarchyService", () => {
 
 			const h2 = service.buildHierarchy();
 			expect(h2[0]?.memberPaths).toHaveLength(2);
+		});
+	});
+
+	describe("explicit project marker (project: true)", () => {
+		it("treats a note with project: true as a root project even without children", () => {
+			addMockFile("MyProject.md", {
+				flashcard_uid: "uid-1",
+				project: true,
+			});
+			frontmatterIndex.rebuildIndex();
+
+			const hierarchy = service.buildHierarchy();
+			expect(hierarchy).toHaveLength(1);
+			expect(hierarchy[0]?.path).toBe("MyProject.md");
+			expect(hierarchy[0]?.name).toBe("MyProject");
+			expect(hierarchy[0]?.children).toHaveLength(0);
+			expect(hierarchy[0]?.memberPaths).toHaveLength(0);
+		});
+
+		it("treats project: true with parents as a sub-project", () => {
+			addMockFile("Root.md", {});
+			addMockFile("Sub.md", {
+				parents: ["[[Root]]"],
+				project: true,
+			});
+			addMockFile("Leaf.md", {
+				parents: ["[[Root]]"],
+				flashcard_uid: "uid-1",
+			});
+			frontmatterIndex.rebuildIndex();
+
+			const hierarchy = service.buildHierarchy();
+			expect(hierarchy).toHaveLength(1);
+			expect(hierarchy[0]?.path).toBe("Root.md");
+			// Sub.md should be in children (sub-project), not memberPaths
+			expect(hierarchy[0]?.children).toHaveLength(1);
+			expect(hierarchy[0]?.children[0]?.path).toBe("Sub.md");
+			// Leaf.md should be in memberPaths
+			expect(hierarchy[0]?.memberPaths).toContain("Leaf.md");
+		});
+
+		it("excludes project: true notes from unassigned paths", () => {
+			addMockFile("MyProject.md", {
+				flashcard_uid: "uid-1",
+				project: true,
+			});
+			addMockFile("Unassigned.md", {
+				flashcard_uid: "uid-2",
+			});
+			frontmatterIndex.rebuildIndex();
+
+			const unassigned = service.getUnassignedPaths();
+			expect(unassigned).not.toContain("MyProject.md");
+			expect(unassigned).toContain("Unassigned.md");
+		});
+
+		it("preserves backward compatibility — implicit projects still work", () => {
+			addMockFile("ML.md", {});
+			addMockFile("Note.md", {
+				parents: ["[[ML]]"],
+				flashcard_uid: "uid-1",
+			});
+			frontmatterIndex.rebuildIndex();
+
+			const hierarchy = service.buildHierarchy();
+			expect(hierarchy).toHaveLength(1);
+			expect(hierarchy[0]?.path).toBe("ML.md");
+			expect(hierarchy[0]?.memberPaths).toContain("Note.md");
+		});
+
+		it("includes archived project: true notes in archived UIDs", () => {
+			addMockFile("ArchivedProject.md", {
+				flashcard_uid: "uid-1",
+				project: true,
+				archive: "true",
+			});
+			frontmatterIndex.rebuildIndex();
+
+			const archivedUids = service.getArchivedSourceUids();
+			expect(archivedUids.has("uid-1")).toBe(true);
+		});
+
+		it("does not duplicate root when project: true note also has children", () => {
+			addMockFile("ML.md", { project: true });
+			addMockFile("Note.md", {
+				parents: ["[[ML]]"],
+				flashcard_uid: "uid-1",
+			});
+			frontmatterIndex.rebuildIndex();
+
+			const hierarchy = service.buildHierarchy();
+			expect(hierarchy).toHaveLength(1);
+			expect(hierarchy[0]?.path).toBe("ML.md");
+			expect(hierarchy[0]?.memberPaths).toContain("Note.md");
+		});
+
+		it("isExplicitProject returns true for project: true notes", () => {
+			addMockFile("Proj.md", { project: true });
+			addMockFile("Regular.md", { flashcard_uid: "uid-1" });
+			frontmatterIndex.rebuildIndex();
+
+			expect(service.isExplicitProject("Proj.md")).toBe(true);
+			expect(service.isExplicitProject("Regular.md")).toBe(false);
 		});
 	});
 
