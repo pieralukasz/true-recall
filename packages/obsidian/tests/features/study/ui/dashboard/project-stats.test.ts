@@ -1,7 +1,7 @@
-import { describe, expect, it, vi } from "vitest";
-import { State } from "ts-fsrs";
-import { computeProjectStats } from "../../../../../src/editor/study/widgets/project-stats";
 import type { FSRSCardData } from "@true-recall/core/types/fsrs/card.types";
+import { State } from "ts-fsrs";
+import { describe, expect, it, vi } from "vitest";
+import { computeProjectStats } from "../../../../../src/editor/study/widgets/project-stats";
 
 function makeCard(overrides: Partial<FSRSCardData>): FSRSCardData {
 	return {

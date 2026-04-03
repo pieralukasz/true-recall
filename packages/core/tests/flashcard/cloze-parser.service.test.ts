@@ -1,10 +1,10 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
-	hasClozeContent,
 	extractClozeIndices,
-	renderClozeQuestion,
-	renderClozeAnswer,
+	hasClozeContent,
 	parseClozeTemplate,
+	renderClozeAnswer,
+	renderClozeQuestion,
 } from "../../src/flashcard/parsing/cloze-parser.service";
 
 describe("cloze-parser.service", () => {
@@ -48,48 +48,63 @@ describe("cloze-parser.service", () => {
 
 	describe("renderClozeQuestion", () => {
 		it("hides target cloze with [...]", () => {
-			expect(renderClozeQuestion("{{c1::Tokyo}} is the capital", 1))
-				.toBe("[...] is the capital");
+			expect(renderClozeQuestion("{{c1::Tokyo}} is the capital", 1)).toBe(
+				"[...] is the capital",
+			);
 		});
 
 		it("uses hint when provided", () => {
-			expect(renderClozeQuestion("{{c1::Tokyo::city}} is the capital", 1))
-				.toBe("[city] is the capital");
+			expect(renderClozeQuestion("{{c1::Tokyo::city}} is the capital", 1)).toBe(
+				"[city] is the capital",
+			);
 		});
 
 		it("reveals non-target clozes", () => {
 			const template = "{{c1::Tokyo}} is the capital of {{c2::Japan}}";
-			expect(renderClozeQuestion(template, 1)).toBe("[...] is the capital of Japan");
-			expect(renderClozeQuestion(template, 2)).toBe("Tokyo is the capital of [...]");
+			expect(renderClozeQuestion(template, 1)).toBe(
+				"[...] is the capital of Japan",
+			);
+			expect(renderClozeQuestion(template, 2)).toBe(
+				"Tokyo is the capital of [...]",
+			);
 		});
 
 		it("hides all occurrences of same index", () => {
-			expect(renderClozeQuestion("{{c1::Paris}} and {{c1::London}} are cities", 1))
-				.toBe("[...] and [...] are cities");
+			expect(
+				renderClozeQuestion("{{c1::Paris}} and {{c1::London}} are cities", 1),
+			).toBe("[...] and [...] are cities");
 		});
 	});
 
 	describe("renderClozeAnswer", () => {
 		it("shows target cloze bold", () => {
-			expect(renderClozeAnswer("{{c1::Tokyo}} is the capital", 1))
-				.toBe("**Tokyo** is the capital");
+			expect(renderClozeAnswer("{{c1::Tokyo}} is the capital", 1)).toBe(
+				"**Tokyo** is the capital",
+			);
 		});
 
 		it("reveals non-target clozes normally", () => {
 			const template = "{{c1::Tokyo}} is the capital of {{c2::Japan}}";
-			expect(renderClozeAnswer(template, 1)).toBe("**Tokyo** is the capital of Japan");
-			expect(renderClozeAnswer(template, 2)).toBe("Tokyo is the capital of **Japan**");
+			expect(renderClozeAnswer(template, 1)).toBe(
+				"**Tokyo** is the capital of Japan",
+			);
+			expect(renderClozeAnswer(template, 2)).toBe(
+				"Tokyo is the capital of **Japan**",
+			);
 		});
 
 		it("bolds all occurrences of same index", () => {
-			expect(renderClozeAnswer("{{c1::Paris}} and {{c1::London}} are cities", 1))
-				.toBe("**Paris** and **London** are cities");
+			expect(
+				renderClozeAnswer("{{c1::Paris}} and {{c1::London}} are cities", 1),
+			).toBe("**Paris** and **London** are cities");
 		});
 	});
 
 	describe("parseClozeTemplate", () => {
 		it("generates one card per unique index", () => {
-			const cards = parseClozeTemplate("{{c1::Tokyo}} is the capital of {{c2::Japan}}");
+			const cards = parseClozeTemplate(
+				"{{c1::Tokyo}} is the capital of {{c2::Japan}}",
+			);
 			expect(cards).toHaveLength(2);
 			expect(cards[0]!.clozeIndex).toBe(1);
 			expect(cards[0]!.question).toBe("[...] is the capital of Japan");
@@ -100,21 +115,29 @@ describe("cloze-parser.service", () => {
 		});
 
 		it("handles single cloze", () => {
-			const cards = parseClozeTemplate("Mitochondria is the {{c1::powerhouse}} of the cell");
+			const cards = parseClozeTemplate(
+				"Mitochondria is the {{c1::powerhouse}} of the cell",
+			);
 			expect(cards).toHaveLength(1);
 			expect(cards[0]!.question).toBe("Mitochondria is the [...] of the cell");
-			expect(cards[0]!.answer).toBe("Mitochondria is the **powerhouse** of the cell");
+			expect(cards[0]!.answer).toBe(
+				"Mitochondria is the **powerhouse** of the cell",
+			);
 		});
 
 		it("handles multiple occurrences of same index", () => {
-			const cards = parseClozeTemplate("{{c1::H2O}} is also known as {{c1::water}}");
+			const cards = parseClozeTemplate(
+				"{{c1::H2O}} is also known as {{c1::water}}",
+			);
 			expect(cards).toHaveLength(1);
 			expect(cards[0]!.question).toBe("[...] is also known as [...]");
 			expect(cards[0]!.answer).toBe("**H2O** is also known as **water**");
 		});
 
 		it("handles cloze with hints", () => {
-			const cards = parseClozeTemplate("{{c1::Tokyo::capital city}} is in {{c2::Japan::country}}");
+			const cards = parseClozeTemplate(
+				"{{c1::Tokyo::capital city}} is in {{c2::Japan::country}}",
+			);
 			expect(cards).toHaveLength(2);
 			expect(cards[0]!.question).toBe("[capital city] is in Japan");
 			expect(cards[1]!.question).toBe("Tokyo is in [country]");

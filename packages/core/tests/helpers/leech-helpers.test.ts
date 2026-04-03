@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { shouldTriggerLeech } from "../../src/helpers/leech-helpers";
 
 describe("shouldTriggerLeech", () => {

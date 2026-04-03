@@ -1,13 +1,13 @@
 /**
  * Shared mock factories for FSRS and Review tests
  */
-import { State, Rating, type Grade } from "ts-fsrs";
+import { type Grade, Rating, State } from "ts-fsrs";
 import type {
 	FSRSCardData,
 	FSRSFlashcardItem,
+	FSRSSettings,
 	ReviewResult,
 	ReviewSessionState,
-	FSRSSettings,
 } from "../../src/types";
 
 /**
@@ -25,7 +25,7 @@ export interface SourceNoteInfo {
  * Create a mock FSRSCardData with sensible defaults
  */
 export function createMockCard(
-	overrides: Partial<FSRSCardData> = {}
+	overrides: Partial<FSRSCardData> = {},
 ): FSRSCardData {
 	const now = new Date();
 	return {
@@ -65,7 +65,7 @@ export function createNewCard(id?: string): FSRSCardData {
  */
 export function createLearningCard(
 	id?: string,
-	learningStep = 0
+	learningStep = 0,
 ): FSRSCardData {
 	const now = new Date();
 	return createMockCard({
@@ -82,10 +82,7 @@ export function createLearningCard(
 /**
  * Create a review card (graduated, in review phase)
  */
-export function createReviewCard(
-	id?: string,
-	daysOverdue = 0
-): FSRSCardData {
+export function createReviewCard(id?: string, daysOverdue = 0): FSRSCardData {
 	const now = new Date();
 	const due = new Date(now);
 	due.setDate(due.getDate() - daysOverdue);
@@ -95,9 +92,7 @@ export function createReviewCard(
 		state: State.Review,
 		reps: 5,
 		lapses: 0,
-		lastReview: new Date(
-			now.getTime() - 7 * 24 * 60 * 60 * 1000
-		).toISOString(),
+		lastReview: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString(),
 		due: due.toISOString(),
 		stability: 7,
 		difficulty: 5,
@@ -126,7 +121,9 @@ export function createRelearningCard(id?: string): FSRSCardData {
  * Create a mock FSRSFlashcardItem (UI flashcard with full data)
  */
 export function createMockFlashcard(
-	overrides: Partial<Omit<FSRSFlashcardItem, "fsrs">> & { fsrs?: Partial<FSRSCardData> } = {}
+	overrides: Partial<Omit<FSRSFlashcardItem, "fsrs">> & {
+		fsrs?: Partial<FSRSCardData>;
+	} = {},
 ): FSRSFlashcardItem {
 	const cardData = createMockCard(overrides.fsrs);
 	return {
@@ -161,7 +158,7 @@ export function createDefaultFSRSSettings(): FSRSSettings {
  * Create a mock ReviewResult
  */
 export function createMockReviewResult(
-	overrides: Partial<ReviewResult> = {}
+	overrides: Partial<ReviewResult> = {},
 ): ReviewResult {
 	return {
 		cardId: overrides.cardId ?? "card-1",
@@ -178,7 +175,7 @@ export function createMockReviewResult(
  * Create a mock review session state
  */
 export function createMockSessionState(
-	overrides: Partial<ReviewSessionState> = {}
+	overrides: Partial<ReviewSessionState> = {},
 ): ReviewSessionState {
 	return {
 		isActive: overrides.isActive ?? false,
@@ -255,7 +252,7 @@ export function createMixedCardQueue(): FSRSFlashcardItem[] {
  * Create a mock SourceNoteInfo with sensible defaults
  */
 export function createMockSourceNote(
-	overrides: Partial<SourceNoteInfo> = {}
+	overrides: Partial<SourceNoteInfo> = {},
 ): SourceNoteInfo {
 	const now = Date.now();
 	return {
@@ -271,7 +268,9 @@ export function createMockSourceNote(
  * Create a mock flashcard with source note path (SQL-only card)
  */
 export function createMockFlashcardWithSourcePath(
-	overrides: Partial<Omit<FSRSFlashcardItem, "fsrs">> & { fsrs?: Partial<FSRSCardData> } = {}
+	overrides: Partial<Omit<FSRSFlashcardItem, "fsrs">> & {
+		fsrs?: Partial<FSRSCardData>;
+	} = {},
 ): FSRSFlashcardItem {
 	const cardData = createMockCard(overrides.fsrs);
 	return {

@@ -1,10 +1,13 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import {
 	formatBrowserTotalCount,
 	getBrowserQueryResetKey,
 	shouldLoadMoreCards,
 } from "../../../src/features/library/ui/browser/helpers/infinite-scroll";
-import { EMPTY_FILTER, type SortConfig } from "../../../src/features/library/ui/browser/types";
+import {
+	EMPTY_FILTER,
+	type SortConfig,
+} from "../../../src/features/library/ui/browser/types";
 
 describe("browser infinite scroll helpers", () => {
 	it("should trigger load when near bottom and has more cards", () => {

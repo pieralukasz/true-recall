@@ -1,10 +1,12 @@
-import { DEFAULT_SETTINGS } from "../../src/constants";
 import { describe, expect, it } from "vitest";
 import { AIRequestError } from "../../src/ai/clients/openrouter-client";
 import { SemanticAnswerGradingService } from "../../src/ai/grading/semantic-answer-grading.service";
+import { DEFAULT_SETTINGS } from "../../src/constants";
 import type { TrueRecallSettings } from "../../src/types";
 
-function createSettings(overrides: Partial<TrueRecallSettings>): TrueRecallSettings {
+function createSettings(
+	overrides: Partial<TrueRecallSettings>,
+): TrueRecallSettings {
 	return {
 		...DEFAULT_SETTINGS,
 		...overrides,
@@ -210,7 +212,8 @@ describe("SemanticAnswerGradingService", () => {
 			userAnswer: "ATP is the energy currency",
 			passThreshold: 85,
 			localFallbackScore: 10,
-			sourceContext: "ATP (adenosine triphosphate) is the primary energy carrier in cells.",
+			sourceContext:
+				"ATP (adenosine triphosphate) is the primary energy carrier in cells.",
 		});
 
 		expect(capturedUserMessage).toContain("<context>");

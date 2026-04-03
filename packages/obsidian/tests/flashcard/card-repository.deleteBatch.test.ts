@@ -1,14 +1,14 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { State } from "ts-fsrs";
-import {
-	createTestContext,
-	createTestCard,
-	type TestContext,
-} from "../../../core/tests/persistence/sqlite/__setup__/test-database";
 import { CardRepository } from "@true-recall/core/flashcard/data/card-repository.service";
 import { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite/SqliteStoreService";
 import type { App } from "obsidian";
+import { State } from "ts-fsrs";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+	createTestCard,
+	createTestContext,
+	type TestContext,
+} from "../../../core/tests/persistence/sqlite/__setup__/test-database";
 
 const mockBusEmit = vi.fn();
 
@@ -33,7 +33,10 @@ describe("CardRepository.deleteBatch", () => {
 		vi.setSystemTime(new Date("2026-02-01T10:00:00Z"));
 		ctx = await createTestContext();
 		repository = new CardRepository(createMockStore(ctx));
-		repository.setEventBus({ emit: mockBusEmit, on: vi.fn(() => () => {}) } as never);
+		repository.setEventBus({
+			emit: mockBusEmit,
+			on: vi.fn(() => () => {}),
+		} as never);
 		mockBusEmit.mockClear();
 	});
 
@@ -186,11 +189,7 @@ describe("FlashcardManager.removeFlashcardsByIds", () => {
 	}
 
 	it("should return 0 when store not initialized", () => {
-		const manager = new FlashcardManager(
-			{} as App,
-			{} as never,
-			{} as never,
-		);
+		const manager = new FlashcardManager({} as App, {} as never, {} as never);
 
 		const count = manager.removeFlashcardsByIds(["card-1"]);
 
@@ -198,11 +197,7 @@ describe("FlashcardManager.removeFlashcardsByIds", () => {
 	});
 
 	it("should delete cards via store", () => {
-		const manager = new FlashcardManager(
-			{} as App,
-			{} as never,
-			{} as never,
-		);
+		const manager = new FlashcardManager({} as App, {} as never, {} as never);
 		manager.setStore(createMockStoreLocal());
 
 		const cards = [
@@ -218,11 +213,7 @@ describe("FlashcardManager.removeFlashcardsByIds", () => {
 	});
 
 	it("cleans reviewed cards with full cascade ids", () => {
-		const manager = new FlashcardManager(
-			{} as App,
-			{} as never,
-			{} as never,
-		);
+		const manager = new FlashcardManager({} as App, {} as never, {} as never);
 		manager.setStore(createMockStoreLocal());
 		const removeReviewedCards = vi.fn();
 		manager.setSessionPersistence({
@@ -248,11 +239,7 @@ describe("FlashcardManager.removeFlashcardsByIds", () => {
 	});
 
 	it("returns detailed affected ids for single delete with cascade", async () => {
-		const manager = new FlashcardManager(
-			{} as App,
-			{} as never,
-			{} as never,
-		);
+		const manager = new FlashcardManager({} as App, {} as never, {} as never);
 		manager.setStore(createMockStoreLocal());
 
 		const original = createTestCard({ id: "detail-original" });
@@ -264,9 +251,8 @@ describe("FlashcardManager.removeFlashcardsByIds", () => {
 		};
 		ctx.cards.set(reverse.id, reverse);
 
-		const result = await manager.removeFlashcardByIdWithDetails(
-			"detail-original",
-		);
+		const result =
+			await manager.removeFlashcardByIdWithDetails("detail-original");
 
 		expect(result.ok).toBe(true);
 		expect(result.affectedCount).toBe(2);

@@ -1,11 +1,11 @@
 import type { SchedulingPreview } from "@true-recall/core";
+import { Clickable } from "@true-recall/obsidian/components";
+import { useIcon } from "@true-recall/obsidian/preact/hooks";
 import { cva } from "class-variance-authority";
 import type { Grade } from "ts-fsrs";
 import { Rating } from "ts-fsrs";
-import { useIcon } from "@true-recall/obsidian/preact/hooks";
-import { Clickable } from "@true-recall/obsidian/components";
-import { RatingButton } from "./RatingButton";
 import type { TypeInMode } from "../helpers/type-in-flow";
+import { RatingButton } from "./RatingButton";
 
 const typeInButtonVariants = cva(
 	"ep:flex ep:items-center ep:justify-center ep:h-10 ep:px-3 ep:rounded-md ep:border ep:bg-obs-primary ep:text-ui-smaller ep:font-medium ep:text-obs-muted ep:transition-colors ep:transition-transform ep:duration-150 ep:focus-visible:outline-none ep:focus-visible:ring-2 ep:focus-visible:ring-obs-interactive/45 ep:active:scale-95",

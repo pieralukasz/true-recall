@@ -2,12 +2,13 @@
  * Tests for SessionPersistenceService
  * Specifically tests recordReview() calling addReviewLog() correctly
  */
-import { describe, it, expect, beforeEach, vi } from "vitest";
-import { State, Rating } from "ts-fsrs";
+
+import type { App } from "obsidian";
+import { Rating, State } from "ts-fsrs";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { SessionPersistenceService } from "../../src/persistence/session/session-persistence.service";
 import type { SqliteStoreService } from "../../src/persistence/sqlite";
 import type { DayBoundaryService } from "../../src/services/review/day-boundary.service";
-import type { App } from "obsidian";
 
 describe("SessionPersistenceService", () => {
 	let service: SessionPersistenceService;
@@ -35,8 +36,12 @@ describe("SessionPersistenceService", () => {
 			updateDailyStats: vi.fn(),
 			addReviewLog: vi.fn(),
 			getDailyStats: vi.fn().mockReturnValue(null) as ReturnType<typeof vi.fn>,
-			getReviewedCardIds: vi.fn().mockReturnValue([]) as ReturnType<typeof vi.fn>,
-			getPresetProgressInRange: vi.fn().mockReturnValue([]) as ReturnType<typeof vi.fn>,
+			getReviewedCardIds: vi.fn().mockReturnValue([]) as ReturnType<
+				typeof vi.fn
+			>,
+			getPresetProgressInRange: vi.fn().mockReturnValue([]) as ReturnType<
+				typeof vi.fn
+			>,
 		};
 
 		mockStore = {
@@ -46,19 +51,25 @@ describe("SessionPersistenceService", () => {
 		mockApp = {};
 
 		mockDayBoundaryService = {
-			getTodayKey: vi.fn().mockReturnValue("2024-01-15") as ReturnType<typeof vi.fn>,
+			getTodayKey: vi.fn().mockReturnValue("2024-01-15") as ReturnType<
+				typeof vi.fn
+			>,
 			getTodayBoundary: vi
 				.fn()
-				.mockReturnValue(new Date("2024-01-15T04:00:00.000Z")) as ReturnType<typeof vi.fn>,
+				.mockReturnValue(new Date("2024-01-15T04:00:00.000Z")) as ReturnType<
+				typeof vi.fn
+			>,
 			getTomorrowBoundary: vi
 				.fn()
-				.mockReturnValue(new Date("2024-01-16T04:00:00.000Z")) as ReturnType<typeof vi.fn>,
+				.mockReturnValue(new Date("2024-01-16T04:00:00.000Z")) as ReturnType<
+				typeof vi.fn
+			>,
 		};
 
 		service = new SessionPersistenceService(
 			mockApp as App,
 			mockStore as unknown as SqliteStoreService,
-			mockDayBoundaryService as unknown as DayBoundaryService
+			mockDayBoundaryService as unknown as DayBoundaryService,
 		);
 	});
 
@@ -71,7 +82,7 @@ describe("SessionPersistenceService", () => {
 				Rating.Good,
 				State.New, // previousState
 				14, // scheduledDays
-				7 // elapsedDays
+				7, // elapsedDays
 			);
 
 			expect(mockStats.addReviewLog).toHaveBeenCalledWith(
@@ -81,7 +92,7 @@ describe("SessionPersistenceService", () => {
 				7,
 				State.New,
 				5000,
-				undefined
+				undefined,
 			);
 		});
 
@@ -91,7 +102,7 @@ describe("SessionPersistenceService", () => {
 				false, // isNewCard
 				3000, // durationMs
 				Rating.Good,
-				State.Review // previousState
+				State.Review, // previousState
 				// scheduledDays and elapsedDays not provided
 			);
 
@@ -102,7 +113,7 @@ describe("SessionPersistenceService", () => {
 				0, // defaults to 0
 				State.Review,
 				3000,
-				undefined
+				undefined,
 			);
 		});
 
@@ -110,7 +121,7 @@ describe("SessionPersistenceService", () => {
 			service.recordReview(
 				"card-1",
 				true, // isNewCard
-				1000 // durationMs
+				1000, // durationMs
 				// No rating provided
 			);
 
@@ -118,15 +129,7 @@ describe("SessionPersistenceService", () => {
 		});
 
 		it("should still update daily stats when addReviewLog is called", () => {
-			service.recordReview(
-				"card-1",
-				true,
-				5000,
-				Rating.Good,
-				State.New,
-				14,
-				7
-			);
+			service.recordReview("card-1", true, 5000, Rating.Good, State.New, 14, 7);
 
 			// Both should be called
 			expect(mockStats.updateDailyStats).toHaveBeenCalled();
@@ -151,7 +154,7 @@ describe("SessionPersistenceService", () => {
 					rating,
 					State.Review,
 					10,
-					5
+					5,
 				);
 
 				expect(mockStats.addReviewLog).toHaveBeenCalledWith(
@@ -161,7 +164,7 @@ describe("SessionPersistenceService", () => {
 					5,
 					State.Review,
 					1000,
-					undefined
+					undefined,
 				);
 			});
 		});
@@ -171,7 +174,7 @@ describe("SessionPersistenceService", () => {
 				"card-1",
 				true,
 				2000,
-				Rating.Good
+				Rating.Good,
 				// previousState undefined
 			);
 
@@ -182,7 +185,7 @@ describe("SessionPersistenceService", () => {
 				0,
 				0, // defaults to 0 when undefined
 				2000,
-				undefined
+				undefined,
 			);
 		});
 	});
@@ -198,7 +201,7 @@ describe("SessionPersistenceService", () => {
 
 			expect(mockStats.getPresetProgressInRange).toHaveBeenCalledWith(
 				"2024-01-15T04:00:00.000Z",
-				"2024-01-16T04:00:00.000Z"
+				"2024-01-16T04:00:00.000Z",
 			);
 			expect(result.get("Default")).toEqual({
 				newStudied: 2,

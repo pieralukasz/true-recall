@@ -11,7 +11,10 @@ import type {
 } from "../../../../src/persistence/sqlite/loader";
 import { CardActions } from "../../../../src/persistence/sqlite/modules/CardActions";
 import { NoteActions } from "../../../../src/persistence/sqlite/modules/NoteActions";
-import { NoteTypeActions, getBuiltinNoteTypes } from "../../../../src/persistence/sqlite/modules/NoteTypeActions";
+import {
+	getBuiltinNoteTypes,
+	NoteTypeActions,
+} from "../../../../src/persistence/sqlite/modules/NoteTypeActions";
 import { StatsActions } from "../../../../src/persistence/sqlite/modules/StatsActions";
 import type { FSRSCardData } from "../../../../src/types";
 import type { Note, NoteType } from "../../../../src/types/note.types";
@@ -304,7 +307,9 @@ export async function createTestContext(): Promise<TestContext> {
 
 // ── Card test factories ────────────────────────────────────────
 
-export function createTestCard(overrides: Partial<FSRSCardData> = {}): FSRSCardData {
+export function createTestCard(
+	overrides: Partial<FSRSCardData> = {},
+): FSRSCardData {
 	const now = new Date();
 	const id = overrides.id ?? `card-${Math.random().toString(36).slice(2, 10)}`;
 
@@ -339,7 +344,9 @@ export function createCardWithSource(
 	});
 }
 
-export function createOrphanedCard(overrides: Partial<FSRSCardData> = {}): FSRSCardData {
+export function createOrphanedCard(
+	overrides: Partial<FSRSCardData> = {},
+): FSRSCardData {
 	return createTestCard({
 		...overrides,
 		sourceUid: undefined,
@@ -354,17 +361,18 @@ export function getRawCard(
 	db: TestSqliteDatabase,
 	cardId: string,
 ): Record<string, unknown> | null {
-	return db.get<Record<string, unknown>>(
-		`SELECT * FROM cards WHERE id = ?`,
-		[cardId],
-	);
+	return db.get<Record<string, unknown>>(`SELECT * FROM cards WHERE id = ?`, [
+		cardId,
+	]);
 }
 
 // ── Note type test factories ───────────────────────────────────
 
 let noteTypeCounter = 0;
 
-export function createTestNoteType(overrides: Partial<NoteType> = {}): NoteType {
+export function createTestNoteType(
+	overrides: Partial<NoteType> = {},
+): NoteType {
 	noteTypeCounter++;
 	return {
 		id: overrides.id ?? `test-note-type-${noteTypeCounter}`,
@@ -393,7 +401,10 @@ export function createTestNote(overrides: Partial<Note> = {}): Note {
 	return {
 		id: overrides.id ?? `test-note-${noteCounter}`,
 		noteTypeId: overrides.noteTypeId ?? "builtin-basic",
-		fields: overrides.fields ?? { Front: `Question ${noteCounter}`, Back: `Answer ${noteCounter}` },
+		fields: overrides.fields ?? {
+			Front: `Question ${noteCounter}`,
+			Back: `Answer ${noteCounter}`,
+		},
 		tags: overrides.tags ?? [],
 		sourceUid: overrides.sourceUid,
 		sourceText: overrides.sourceText,
@@ -427,10 +438,7 @@ export function insertNoteTypeDirect(
 	);
 }
 
-export function insertNoteDirect(
-	db: TestSqliteDatabase,
-	note: Note,
-): void {
+export function insertNoteDirect(db: TestSqliteDatabase, note: Note): void {
 	db.run(
 		`INSERT INTO notes (id, note_type_id, fields_json, tags, source_uid, source_text, created_via, created_at, updated_at)
 		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -462,8 +470,7 @@ export function getRawNote(
 	db: TestSqliteDatabase,
 	id: string,
 ): Record<string, unknown> | null {
-	return db.get<Record<string, unknown>>(
-		`SELECT * FROM notes WHERE id = ?`,
-		[id],
-	);
+	return db.get<Record<string, unknown>>(`SELECT * FROM notes WHERE id = ?`, [
+		id,
+	]);
 }

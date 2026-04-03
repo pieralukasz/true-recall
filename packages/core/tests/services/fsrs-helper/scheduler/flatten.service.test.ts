@@ -1,9 +1,12 @@
 /**
  * Flatten Service Tests
  */
-import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { FlattenService } from "../../../../src/metrics/fsrs-tools/scheduler/flatten.service";
-import { createMockCardStore, createCardsOnDate } from "../mocks/scheduler.mocks";
+import {
+	createCardsOnDate,
+	createMockCardStore,
+} from "../mocks/scheduler.mocks";
 
 describe("FlattenService", () => {
 	let service: FlattenService;
@@ -13,7 +16,7 @@ describe("FlattenService", () => {
 		vi.useFakeTimers();
 		vi.setSystemTime(new Date("2026-02-01T10:00:00Z"));
 		mockStore = createMockCardStore();
-		service = new FlattenService(mockStore );
+		service = new FlattenService(mockStore);
 	});
 
 	afterEach(() => {
@@ -25,7 +28,7 @@ describe("FlattenService", () => {
 			const cards = createCardsOnDate("2026-02-01", 5);
 			mockStore = createMockCardStore(cards);
 			mockStore.getDueCardsByDateRange.mockReturnValue(cards);
-			service = new FlattenService(mockStore );
+			service = new FlattenService(mockStore);
 
 			const result = await service.flatten({
 				date: "2026-02-01",
@@ -48,7 +51,7 @@ describe("FlattenService", () => {
 			];
 			mockStore = createMockCardStore(cards);
 			mockStore.getDueCardsByDateRange.mockReturnValue(cards);
-			service = new FlattenService(mockStore );
+			service = new FlattenService(mockStore);
 
 			const result = await service.flatten({
 				date: "2026-02-01",
@@ -70,7 +73,7 @@ describe("FlattenService", () => {
 			const cards = createCardsOnDate("2026-02-01", 10);
 			mockStore = createMockCardStore(cards);
 			mockStore.getDueCardsByDateRange.mockReturnValue(cards);
-			service = new FlattenService(mockStore );
+			service = new FlattenService(mockStore);
 
 			const result = await service.flatten({
 				date: "2026-02-01",
@@ -94,7 +97,7 @@ describe("FlattenService", () => {
 			const cards = createCardsOnDate("2026-02-01", 15);
 			mockStore = createMockCardStore(cards);
 			mockStore.getDueCardsByDateRange.mockReturnValue(cards);
-			service = new FlattenService(mockStore );
+			service = new FlattenService(mockStore);
 
 			const result = await service.flatten({
 				date: "2026-02-01",
@@ -106,7 +109,7 @@ describe("FlattenService", () => {
 
 			// Check distribution after
 			const day2Count = result.afterDistribution.find(
-				(d) => d.date === "2026-02-02"
+				(d) => d.date === "2026-02-02",
 			);
 			expect(day2Count?.count).toBe(5);
 		});
@@ -115,7 +118,7 @@ describe("FlattenService", () => {
 			const cards = createCardsOnDate("2026-02-01", 10);
 			mockStore = createMockCardStore(cards);
 			mockStore.getDueCardsByDateRange.mockReturnValue(cards);
-			service = new FlattenService(mockStore );
+			service = new FlattenService(mockStore);
 
 			await service.flatten({
 				date: "2026-02-01",
@@ -130,7 +133,7 @@ describe("FlattenService", () => {
 			const cards = createCardsOnDate("2026-02-01", 10);
 			mockStore = createMockCardStore(cards);
 			mockStore.getDueCardsByDateRange.mockReturnValue(cards);
-			service = new FlattenService(mockStore );
+			service = new FlattenService(mockStore);
 
 			await service.flatten({
 				date: "2026-02-01",
@@ -145,7 +148,7 @@ describe("FlattenService", () => {
 			const cards = createCardsOnDate("2026-02-01", 10);
 			mockStore = createMockCardStore(cards);
 			mockStore.getDueCardsByDateRange.mockReturnValue(cards);
-			service = new FlattenService(mockStore );
+			service = new FlattenService(mockStore);
 
 			const result = await service.flatten({
 				date: "2026-02-01",
@@ -155,13 +158,13 @@ describe("FlattenService", () => {
 
 			// Before should show 10 on target date
 			const before = result.beforeDistribution.find(
-				(d) => d.date === "2026-02-01"
+				(d) => d.date === "2026-02-01",
 			);
 			expect(before?.count).toBe(10);
 
 			// After should show 5 on target date
 			const after = result.afterDistribution.find(
-				(d) => d.date === "2026-02-01"
+				(d) => d.date === "2026-02-01",
 			);
 			expect(after?.count).toBe(5);
 		});
@@ -176,7 +179,7 @@ describe("FlattenService", () => {
 			];
 			mockStore = createMockCardStore(cards);
 			mockStore.getDueCardsByDateRange.mockReturnValue(cards);
-			service = new FlattenService(mockStore );
+			service = new FlattenService(mockStore);
 
 			const overloaded = service.findOverloadedDays(10, 7);
 
@@ -189,7 +192,7 @@ describe("FlattenService", () => {
 			const cards = createCardsOnDate("2026-02-01", 25);
 			mockStore = createMockCardStore(cards);
 			mockStore.getDueCardsByDateRange.mockReturnValue(cards);
-			service = new FlattenService(mockStore );
+			service = new FlattenService(mockStore);
 
 			const overloaded = service.findOverloadedDays(10, 7);
 
@@ -205,7 +208,7 @@ describe("FlattenService", () => {
 			];
 			mockStore = createMockCardStore(cards);
 			mockStore.getDueCardsByDateRange.mockReturnValue(cards);
-			service = new FlattenService(mockStore );
+			service = new FlattenService(mockStore);
 
 			const overloaded = service.findOverloadedDays(10, 7);
 
@@ -220,7 +223,7 @@ describe("FlattenService", () => {
 			];
 			mockStore = createMockCardStore(cards);
 			mockStore.getDueCardsByDateRange.mockReturnValue(cards);
-			service = new FlattenService(mockStore );
+			service = new FlattenService(mockStore);
 
 			const overloaded = service.findOverloadedDays(10, 7);
 

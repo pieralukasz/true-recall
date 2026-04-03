@@ -1,7 +1,12 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { State, Rating } from "ts-fsrs";
-import { createTestStore, createMockCard, createMockCardWithState, countRemainingCards } from "./test-helpers";
+import { Rating, State } from "ts-fsrs";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { AppStore } from "../../src/store";
+import {
+	countRemainingCards,
+	createMockCard,
+	createMockCardWithState,
+	createTestStore,
+} from "./test-helpers";
 
 describe("Review Slice", () => {
 	let store: AppStore;
@@ -150,7 +155,9 @@ describe("Review Slice", () => {
 
 		it("should update badge counts on recordAnswerAndNext", () => {
 			const card = createMockCardWithState(State.New);
-			store.getState().review.startSession([card, createMockCardWithState(State.Review)]);
+			store
+				.getState()
+				.review.startSession([card, createMockCardWithState(State.Review)]);
 
 			const updatedCard = {
 				...card,
@@ -166,7 +173,9 @@ describe("Review Slice", () => {
 
 		it("should update badge counts when card is requeued", () => {
 			const card = createMockCardWithState(State.New);
-			store.getState().review.startSession([card, createMockCardWithState(State.Review)]);
+			store
+				.getState()
+				.review.startSession([card, createMockCardWithState(State.Review)]);
 
 			const updatedCard = {
 				...card,
@@ -317,14 +326,19 @@ describe("Review Slice", () => {
 
 		it("should restore badge counts correctly on undo with requeued card", () => {
 			const card = createMockCardWithState(State.Learning);
-			store.getState().review.startSession([card, createMockCardWithState(State.Review)]);
+			store
+				.getState()
+				.review.startSession([card, createMockCardWithState(State.Review)]);
 
 			const countsBefore = store.getState().review.getBadgeCounts();
 			expect(countsBefore.learning).toBe(1);
 			expect(countsBefore.due).toBe(1);
 
 			// Answer and requeue
-			const updatedCard = { ...card, fsrs: { ...card.fsrs, state: State.Learning } };
+			const updatedCard = {
+				...card,
+				fsrs: { ...card.fsrs, state: State.Learning },
+			};
 			const requeuedCard = { ...updatedCard, id: "requeued" };
 			store.getState().review.recordAnswerAndNext(Rating.Again, updatedCard, {
 				card: requeuedCard,
@@ -360,7 +374,10 @@ describe("Review Slice", () => {
 			// Verify after each transition
 			for (let i = 0; i < 10; i++) {
 				const state = store.getState().review;
-				const manualCounts = countRemainingCards(state.queue, state.currentIndex);
+				const manualCounts = countRemainingCards(
+					state.queue,
+					state.currentIndex,
+				);
 				const badgeCounts = state.getBadgeCounts();
 
 				expect(badgeCounts.new).toBe(manualCounts.new);
@@ -481,7 +498,9 @@ describe("Review Slice", () => {
 			const learningPast = createMockCardWithState(State.Learning, -1);
 			const reviewCard = createMockCardWithState(State.Review);
 
-			store.getState().review.startSession([learningFuture, learningPast, reviewCard]);
+			store
+				.getState()
+				.review.startSession([learningFuture, learningPast, reviewCard]);
 
 			const pending = store.getState().review.getPendingLearningCards();
 			expect(pending).toHaveLength(1);
@@ -592,14 +611,14 @@ describe("Review Slice", () => {
 			store.getState().review.startSession([newCard, reviewCard]);
 
 			// Answer both cards
-			store.getState().review.recordAnswerAndNext(
-				Rating.Good,
-				{ ...newCard, fsrs: { ...newCard.fsrs, state: State.Learning } }
-			);
-			store.getState().review.recordAnswerAndNext(
-				Rating.Easy,
-				{ ...reviewCard, fsrs: { ...reviewCard.fsrs } }
-			);
+			store.getState().review.recordAnswerAndNext(Rating.Good, {
+				...newCard,
+				fsrs: { ...newCard.fsrs, state: State.Learning },
+			});
+			store.getState().review.recordAnswerAndNext(Rating.Easy, {
+				...reviewCard,
+				fsrs: { ...reviewCard.fsrs },
+			});
 
 			const phase = store.getState().review.getPhase();
 			expect(phase.type).toBe("complete");
@@ -677,7 +696,10 @@ describe("Review Slice", () => {
 	describe("Undo Support", () => {
 		it("should undo last answer", () => {
 			const card = createMockCardWithState(State.New);
-			const updatedCard = { ...card, fsrs: { ...card.fsrs, state: State.Learning } };
+			const updatedCard = {
+				...card,
+				fsrs: { ...card.fsrs, state: State.Learning },
+			};
 			store.getState().review.startSession([card, createMockCard()]);
 
 			store.getState().review.recordAnswerAndNext(Rating.Good, updatedCard);
@@ -693,7 +715,10 @@ describe("Review Slice", () => {
 			const card = createMockCardWithState(State.New);
 			store.getState().review.startSession([card]);
 
-			const updatedCard = { ...card, fsrs: { ...card.fsrs, state: State.Learning } };
+			const updatedCard = {
+				...card,
+				fsrs: { ...card.fsrs, state: State.Learning },
+			};
 			const requeuedCard = { ...updatedCard, id: "requeued" };
 
 			store.getState().review.recordAnswerAndNext(Rating.Again, updatedCard, {
@@ -777,14 +802,14 @@ describe("Review Slice", () => {
 			const reviewCard = createMockCardWithState(State.Review);
 			store.getState().review.startSession([newCard, reviewCard]);
 
-			store.getState().review.recordAnswerAndNext(
-				Rating.Good,
-				{ ...newCard, fsrs: { ...newCard.fsrs, state: State.Learning } }
-			);
-			store.getState().review.recordAnswerAndNext(
-				Rating.Easy,
-				{ ...reviewCard, fsrs: { ...reviewCard.fsrs } }
-			);
+			store.getState().review.recordAnswerAndNext(Rating.Good, {
+				...newCard,
+				fsrs: { ...newCard.fsrs, state: State.Learning },
+			});
+			store.getState().review.recordAnswerAndNext(Rating.Easy, {
+				...reviewCard,
+				fsrs: { ...reviewCard.fsrs },
+			});
 
 			const stats = store.getState().review.getStats();
 			expect(stats.reviewed).toBe(2);
@@ -837,7 +862,9 @@ describe("Review Slice", () => {
 			const reviewCard2 = createMockCardWithState(State.Review);
 			const reviewCard3 = createMockCardWithState(State.Review);
 
-			store.getState().review.startSession([reviewCard1, reviewCard2, reviewCard3]);
+			store
+				.getState()
+				.review.startSession([reviewCard1, reviewCard2, reviewCard3]);
 
 			// Answer first card with requeue - relearning card goes to position 1 (nextIndex)
 			const updatedCard = {
@@ -892,7 +919,9 @@ describe("Review Slice", () => {
 			// Requeue at position 1 (nextIndex). After swap, the relearning card
 			// should be at position 2, and reviewCard2 at position 1.
 			const requeueData = { card: relearningCard, position: 1 };
-			store.getState().review.recordAnswerAndNext(Rating.Again, updatedCard, requeueData);
+			store
+				.getState()
+				.review.recordAnswerAndNext(Rating.Again, updatedCard, requeueData);
 
 			// requeueData.position should have been updated to reflect the swap
 			expect(requeueData.position).toBe(2);

@@ -13,12 +13,9 @@ import type {
 	ApkgData,
 	ConvertedCard,
 	FSRSCardData,
-	ModelMapping,
 } from "@true-recall/core/types";
 import { AnkiMediaService, type IVaultFileReader } from "./anki-media.service";
 import { ApkgParserService } from "./apkg/apkg-parser.service";
-
-const IMPORT_FOLDER = "Anki Import";
 
 export interface IAnkiImportVault {
 	exists(path: string): Promise<boolean>;
@@ -184,7 +181,7 @@ export class AnkiImportService {
 
 		if (deckToCardIds.size > 0) {
 			try {
-				await this.createDeckNotes(deckToCardIds);
+				await this.createDeckNotes(deckToCardIds, options.importFolder);
 				await this.store.flush();
 			} catch (err) {
 				const msg = err instanceof Error ? err.message : String(err);
@@ -368,9 +365,10 @@ export class AnkiImportService {
 	 */
 	private async createDeckNotes(
 		deckToCardIds: Map<string, string[]>,
+		importFolder: string,
 	): Promise<void> {
-		if (!(await this.vault.exists(IMPORT_FOLDER))) {
-			await this.vault.ensureFolderRecursive(IMPORT_FOLDER);
+		if (!(await this.vault.exists(importFolder))) {
+			await this.vault.ensureFolderRecursive(importFolder);
 		}
 
 		// Sort by depth so parent folders are created first
@@ -387,8 +385,8 @@ export class AnkiImportService {
 			const folderSegments = segments.slice(0, -1).map((s) => sanitize(s));
 			const folderPath =
 				folderSegments.length > 0
-					? `${IMPORT_FOLDER}/${folderSegments.join("/")}`
-					: IMPORT_FOLDER;
+					? `${importFolder}/${folderSegments.join("/")}`
+					: importFolder;
 
 			if (!(await this.vault.exists(folderPath))) {
 				await this.vault.ensureFolderRecursive(folderPath);

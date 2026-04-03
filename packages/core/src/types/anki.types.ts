@@ -59,6 +59,8 @@ export interface AnkiImportOptions {
 	importScheduling: boolean;
 	importMedia: boolean;
 	mediaFolder: string;
+	/** Vault folder where deck notes are created (default: "Anki Import") */
+	importFolder: string;
 	/** User-chosen note type mappings: ankiModelId → mapping config */
 	modelMappings?: Map<number, ModelMapping>;
 }

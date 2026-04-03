@@ -6,8 +6,8 @@
  */
 import { describe, expect, it } from "vitest";
 import {
-	generateCardsForNote,
 	detectEmptyCards,
+	generateCardsForNote,
 } from "../../../src/services/cards/card-generation.service";
 import type { Note, NoteType } from "../../../src/types/note.types";
 import {
@@ -56,7 +56,12 @@ function clozeNoteType(): NoteType {
 		type: 1,
 		fields: ["Text", "Extra"],
 		templates: [
-			{ name: "Cloze", ordinal: 0, qfmt: "{{cloze:Text}}", afmt: "{{cloze:Text}}<br>{{Extra}}" },
+			{
+				name: "Cloze",
+				ordinal: 0,
+				qfmt: "{{cloze:Text}}",
+				afmt: "{{cloze:Text}}<br>{{Extra}}",
+			},
 		],
 		css: "",
 		isBuiltin: true,
@@ -70,7 +75,12 @@ function ioNoteType(): NoteType {
 		type: 0,
 		fields: ["Image", "Regions"],
 		templates: [
-			{ name: "IO", ordinal: 0, qfmt: "{{Image}}", afmt: "{{Image}}{{Regions}}" },
+			{
+				name: "IO",
+				ordinal: 0,
+				qfmt: "{{Image}}",
+				afmt: "{{Image}}{{Regions}}",
+			},
 		],
 		css: "",
 		isBuiltin: true,
@@ -120,7 +130,12 @@ describe("card generation from notes", () => {
 				templates: [
 					{ name: "Card 1", ordinal: 0, qfmt: "{{Front}}", afmt: "{{Back}}" },
 					{ name: "Card 2", ordinal: 1, qfmt: "{{Back}}", afmt: "{{Front}}" },
-					{ name: "Card 3", ordinal: 2, qfmt: "{{Front}} {{Back}}", afmt: "Combined" },
+					{
+						name: "Card 3",
+						ordinal: 2,
+						qfmt: "{{Front}} {{Back}}",
+						afmt: "Combined",
+					},
 				],
 			});
 			const note = makeNote({ noteTypeId: "custom-3" });
@@ -367,7 +382,12 @@ describe("card generation from notes", () => {
 				id: "multi-tmpl",
 				templates: [
 					{ name: "Card 1", ordinal: 0, qfmt: "{{Front}}", afmt: "{{Back}}" },
-					{ name: "Card 2", ordinal: 1, qfmt: "{{#Extra}}{{Extra}}{{/Extra}}", afmt: "{{Back}}" },
+					{
+						name: "Card 2",
+						ordinal: 1,
+						qfmt: "{{#Extra}}{{Extra}}{{/Extra}}",
+						afmt: "{{Back}}",
+					},
 				],
 				fields: ["Front", "Back", "Extra"],
 			});
@@ -397,11 +417,7 @@ describe("card generation from notes", () => {
 			});
 
 			// Existing cards for c1 and c2
-			const newCards = generateCardsForNote(
-				note,
-				clozeNoteType(),
-				[1, 2],
-			);
+			const newCards = generateCardsForNote(note, clozeNoteType(), [1, 2]);
 
 			expect(newCards).toHaveLength(1);
 			expect(newCards[0]!.templateOrd).toBe(3);

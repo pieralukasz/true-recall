@@ -1,9 +1,9 @@
+import type { DashboardNoteEntry } from "@true-recall/obsidian/features/study/ui/dashboard/types";
 import { describe, expect, it } from "vitest";
 import {
 	computePriority,
 	prioritySortComparator,
 } from "../../src/helpers/note-priority";
-import type { DashboardNoteEntry } from "@true-recall/obsidian/features/study/ui/dashboard/types";
 
 describe("computePriority", () => {
 	it("returns 'overdue' when overdueCount > 0", () => {

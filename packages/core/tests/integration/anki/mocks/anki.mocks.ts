@@ -1,9 +1,9 @@
 import type {
-	AnkiNote,
 	AnkiCard,
-	AnkiRevlogEntry,
-	AnkiModel,
 	AnkiDeck,
+	AnkiModel,
+	AnkiNote,
+	AnkiRevlogEntry,
 	ApkgData,
 	ConvertedCard,
 } from "../../../../src/types";
@@ -37,7 +37,7 @@ export function createAnkiCard(overrides: Partial<AnkiCard> = {}): AnkiCard {
 }
 
 export function createAnkiRevlog(
-	overrides: Partial<AnkiRevlogEntry> = {}
+	overrides: Partial<AnkiRevlogEntry> = {},
 ): AnkiRevlogEntry {
 	return {
 		id: 1700000000000,
@@ -52,9 +52,7 @@ export function createAnkiRevlog(
 	};
 }
 
-export function createAnkiModel(
-	overrides: Partial<AnkiModel> = {}
-): AnkiModel {
+export function createAnkiModel(overrides: Partial<AnkiModel> = {}): AnkiModel {
 	return {
 		id: 1000,
 		name: "Basic",
@@ -63,15 +61,13 @@ export function createAnkiModel(
 			{ name: "Front", ord: 0 },
 			{ name: "Back", ord: 1 },
 		],
-		tmpls: [
-			{ name: "Card 1", qfmt: "{{Front}}", afmt: "{{Back}}", ord: 0 },
-		],
+		tmpls: [{ name: "Card 1", qfmt: "{{Front}}", afmt: "{{Back}}", ord: 0 }],
 		...overrides,
 	};
 }
 
 export function createClozeModel(
-	overrides: Partial<AnkiModel> = {}
+	overrides: Partial<AnkiModel> = {},
 ): AnkiModel {
 	return {
 		id: 2000,
@@ -94,7 +90,7 @@ export function createClozeModel(
 }
 
 export function createReversedModel(
-	overrides: Partial<AnkiModel> = {}
+	overrides: Partial<AnkiModel> = {},
 ): AnkiModel {
 	return {
 		id: 3000,
@@ -153,7 +149,7 @@ export function createApkgData(overrides: ApkgDataInput = {}): ApkgData {
 }
 
 export function createConvertedCard(
-	overrides: Partial<ConvertedCard> = {}
+	overrides: Partial<ConvertedCard> = {},
 ): ConvertedCard {
 	return {
 		ankiCardId: 100,

@@ -2,8 +2,9 @@
  * DayBoundaryService Tests
  * Behavior-first tests for Anki-style day boundary scheduling
  */
-import { describe, it, expect, beforeEach } from "vitest";
+
 import { State } from "ts-fsrs";
+import { beforeEach, describe, expect, it } from "vitest";
 import { DayBoundaryService } from "../../../src/services/review/day-boundary.service";
 import type { FSRSFlashcardItem } from "../../../src/types";
 import { createMockFlashcard } from "../../mocks/fsrs.mocks";
@@ -14,7 +15,7 @@ import { createMockFlashcard } from "../../mocks/fsrs.mocks";
 function createCard(
 	state: State,
 	dueDate: Date,
-	id?: string
+	id?: string,
 ): FSRSFlashcardItem {
 	return createMockFlashcard({
 		id: id ?? `card-${Math.random().toString(36).slice(2, 8)}`,
@@ -28,7 +29,13 @@ function createCard(
 /**
  * Create a date at specific hour on a given date
  */
-function createDateAt(year: number, month: number, day: number, hour: number, minute = 0): Date {
+function createDateAt(
+	year: number,
+	month: number,
+	day: number,
+	hour: number,
+	minute = 0,
+): Date {
 	return new Date(year, month - 1, day, hour, minute, 0, 0);
 }
 
@@ -132,14 +139,14 @@ describe("DayBoundaryService", () => {
 			// Card due at 9:59 AM (1 minute ago) - should be due
 			const duePast = createCard(
 				State.Learning,
-				createDateAt(2024, 6, 15, 9, 59)
+				createDateAt(2024, 6, 15, 9, 59),
 			);
 			expect(service.isCardDueToday(duePast, now)).toBe(true);
 
 			// Card due at 10:01 AM (1 minute from now) - should NOT be due
 			const dueFuture = createCard(
 				State.Learning,
-				createDateAt(2024, 6, 15, 10, 1)
+				createDateAt(2024, 6, 15, 10, 1),
 			);
 			expect(service.isCardDueToday(dueFuture, now)).toBe(false);
 		});
@@ -165,14 +172,14 @@ describe("DayBoundaryService", () => {
 			// Relearning card due in past - should be due
 			const duePast = createCard(
 				State.Relearning,
-				createDateAt(2024, 6, 15, 9, 0)
+				createDateAt(2024, 6, 15, 9, 0),
 			);
 			expect(service.isCardDueToday(duePast, now)).toBe(true);
 
 			// Relearning card due in future - should NOT be due
 			const dueFuture = createCard(
 				State.Relearning,
-				createDateAt(2024, 6, 15, 11, 0)
+				createDateAt(2024, 6, 15, 11, 0),
 			);
 			expect(service.isCardDueToday(dueFuture, now)).toBe(false);
 		});
@@ -191,14 +198,14 @@ describe("DayBoundaryService", () => {
 			// Review card due yesterday - should be due
 			const dueYesterday = createCard(
 				State.Review,
-				createDateAt(2024, 6, 14, 10, 0)
+				createDateAt(2024, 6, 14, 10, 0),
 			);
 			expect(service.isCardDueToday(dueYesterday, now)).toBe(true);
 
 			// Review card due later today - should be due (day-based, not exact)
 			const dueLaterToday = createCard(
 				State.Review,
-				createDateAt(2024, 6, 15, 23, 0)
+				createDateAt(2024, 6, 15, 23, 0),
 			);
 			expect(service.isCardDueToday(dueLaterToday, now)).toBe(true);
 		});
@@ -207,7 +214,7 @@ describe("DayBoundaryService", () => {
 			const now = createDateAt(2024, 6, 15, 10, 0);
 			const card = createCard(
 				State.Review,
-				createDateAt(2024, 6, 14, 23, 59) // Yesterday 11:59 PM
+				createDateAt(2024, 6, 14, 23, 59), // Yesterday 11:59 PM
 			);
 
 			expect(service.isCardDueToday(card, now)).toBe(true);
@@ -217,7 +224,7 @@ describe("DayBoundaryService", () => {
 			const now = createDateAt(2024, 6, 15, 14, 0); // 2 PM
 			const card = createCard(
 				State.Review,
-				createDateAt(2024, 6, 15, 8, 0) // 8 AM today
+				createDateAt(2024, 6, 15, 8, 0), // 8 AM today
 			);
 
 			expect(service.isCardDueToday(card, now)).toBe(true);
@@ -227,10 +234,7 @@ describe("DayBoundaryService", () => {
 			const now = createDateAt(2024, 6, 15, 10, 0);
 
 			// Card due at 3:59 AM tomorrow (before 4 AM boundary)
-			const card = createCard(
-				State.Review,
-				createDateAt(2024, 6, 16, 3, 59)
-			);
+			const card = createCard(State.Review, createDateAt(2024, 6, 16, 3, 59));
 
 			// Tomorrow boundary is June 16, 4:00 AM
 			// Card due at 3:59 AM is before boundary, so it's "today"
@@ -243,14 +247,14 @@ describe("DayBoundaryService", () => {
 			// Card due at 4:00 AM tomorrow (at boundary = tomorrow)
 			const cardAtBoundary = createCard(
 				State.Review,
-				createDateAt(2024, 6, 16, 4, 0)
+				createDateAt(2024, 6, 16, 4, 0),
 			);
 			expect(service.isCardDueToday(cardAtBoundary, now)).toBe(false);
 
 			// Card due at 10 AM tomorrow
 			const cardTomorrow = createCard(
 				State.Review,
-				createDateAt(2024, 6, 16, 10, 0)
+				createDateAt(2024, 6, 16, 10, 0),
 			);
 			expect(service.isCardDueToday(cardTomorrow, now)).toBe(false);
 		});
@@ -287,7 +291,7 @@ describe("DayBoundaryService", () => {
 			// Review card due exactly at tomorrow's boundary (4 AM)
 			const card = createCard(
 				State.Review,
-				createDateAt(2024, 6, 16, 4, 0, 0) // Exact boundary
+				createDateAt(2024, 6, 16, 4, 0, 0), // Exact boundary
 			);
 
 			// At boundary = tomorrow, not today
@@ -407,8 +411,16 @@ describe("DayBoundaryService", () => {
 			const now = createDateAt(2024, 6, 15, 10, 0);
 			const cards = [
 				createCard(State.New, now, "new-1"),
-				createCard(State.Review, createDateAt(2024, 6, 14, 10, 0), "review-due"),
-				createCard(State.Review, createDateAt(2024, 6, 17, 10, 0), "review-future"),
+				createCard(
+					State.Review,
+					createDateAt(2024, 6, 14, 10, 0),
+					"review-due",
+				),
+				createCard(
+					State.Review,
+					createDateAt(2024, 6, 17, 10, 0),
+					"review-future",
+				),
 			];
 
 			const dueCards = service.getDueCards(cards, now);
@@ -421,15 +433,23 @@ describe("DayBoundaryService", () => {
 			const now = createDateAt(2024, 6, 15, 10, 0);
 			const cards = [
 				createCard(State.New, now, "new-1"),
-				createCard(State.Review, createDateAt(2024, 6, 14, 10, 0), "review-due"),
-				createCard(State.Review, createDateAt(2024, 6, 17, 10, 0), "review-future"),
+				createCard(
+					State.Review,
+					createDateAt(2024, 6, 14, 10, 0),
+					"review-due",
+				),
+				createCard(
+					State.Review,
+					createDateAt(2024, 6, 17, 10, 0),
+					"review-future",
+				),
 			];
 
 			const available = service.getAvailableCards(cards, now);
 
 			expect(available).toHaveLength(2);
-			expect(available.map(c => c.id)).toContain("new-1");
-			expect(available.map(c => c.id)).toContain("review-due");
+			expect(available.map((c) => c.id)).toContain("new-1");
+			expect(available.map((c) => c.id)).toContain("review-due");
 		});
 	});
 });

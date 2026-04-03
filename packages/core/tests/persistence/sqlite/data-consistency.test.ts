@@ -5,11 +5,12 @@
  * Some tests are expected to FAIL with current implementation.
  * Code needs to be modified to add validation.
  */
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+
 import { State } from "ts-fsrs";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
-	createTestContext,
 	createTestCard,
+	createTestContext,
 	getRawCard,
 	getRawNote,
 	type TestContext,
@@ -95,7 +96,12 @@ describe("Data Consistency", () => {
 		 */
 
 		it("should store valid FSRS state values (0-3)", async () => {
-			const validStates = [State.New, State.Learning, State.Review, State.Relearning];
+			const validStates = [
+				State.New,
+				State.Learning,
+				State.Review,
+				State.Relearning,
+			];
 
 			for (const state of validStates) {
 				const card = createTestCard({ id: `card-${state}`, state });
@@ -194,7 +200,10 @@ describe("Data Consistency", () => {
 			const rawCard = getRawCard(ctx.db, card.id);
 			const noteId = rawCard?.note_id as string;
 			const rawNote = getRawNote(ctx.db, noteId);
-			const fields = JSON.parse(rawNote?.fields_json as string) as Record<string, string>;
+			const fields = JSON.parse(rawNote?.fields_json as string) as Record<
+				string,
+				string
+			>;
 			expect(fields.Front).toBe("");
 		});
 
@@ -240,10 +249,10 @@ describe("Data Consistency", () => {
 			try {
 				ctx.db.transaction(() => {
 					// Update card
-					ctx.db.run(
-						`UPDATE cards SET stability = ? WHERE id = ?`,
-						[10, card.id]
-					);
+					ctx.db.run(`UPDATE cards SET stability = ? WHERE id = ?`, [
+						10,
+						card.id,
+					]);
 					// Force an error
 					throw new Error("Intentional error");
 				});
@@ -263,14 +272,14 @@ describe("Data Consistency", () => {
 			ctx.cards.set(card2.id, card2);
 
 			ctx.db.transaction(() => {
-				ctx.db.run(
-					`UPDATE cards SET stability = ? WHERE id = ?`,
-					[10, "card-1"]
-				);
-				ctx.db.run(
-					`UPDATE cards SET stability = ? WHERE id = ?`,
-					[20, "card-2"]
-				);
+				ctx.db.run(`UPDATE cards SET stability = ? WHERE id = ?`, [
+					10,
+					"card-1",
+				]);
+				ctx.db.run(`UPDATE cards SET stability = ? WHERE id = ?`, [
+					20,
+					"card-2",
+				]);
 			});
 
 			expect(ctx.cards.get("card-1")?.stability).toBe(10);
@@ -284,11 +293,11 @@ describe("Data Consistency", () => {
 			// Add review log entries
 			ctx.db.run(
 				`INSERT INTO review_log (id, card_id, reviewed_at, rating) VALUES (?, ?, ?, ?)`,
-				["log-1", card.id, new Date().toISOString(), 3]
+				["log-1", card.id, new Date().toISOString(), 3],
 			);
 			ctx.db.run(
 				`INSERT INTO review_log (id, card_id, reviewed_at, rating) VALUES (?, ?, ?, ?)`,
-				["log-2", card.id, new Date().toISOString(), 4]
+				["log-2", card.id, new Date().toISOString(), 4],
 			);
 
 			// softDeleteWithCascade should be atomic
@@ -300,7 +309,7 @@ describe("Data Consistency", () => {
 
 			const logs = ctx.db.query<{ deleted_at: number | null }>(
 				`SELECT deleted_at FROM review_log WHERE card_id = ?`,
-				[card.id]
+				[card.id],
 			);
 			expect(logs.every((l) => l.deleted_at !== null)).toBe(true);
 		});
@@ -369,7 +378,10 @@ describe("Data Consistency", () => {
 			ctx.cards.set("card-4", createTestCard({ id: "card-4" }));
 			expect(ctx.cards.size()).toBe(3);
 
-			ctx.cards.set("card-2", createTestCard({ id: "card-2", question: "Updated" }));
+			ctx.cards.set(
+				"card-2",
+				createTestCard({ id: "card-2", question: "Updated" }),
+			);
 			expect(ctx.cards.size()).toBe(3); // Update shouldn't change count
 		});
 	});

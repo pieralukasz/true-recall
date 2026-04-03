@@ -1,10 +1,10 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { TestSqliteDatabase } from "../../../core/tests/persistence/sqlite/__setup__/test-database";
 import {
-	createTestContext,
 	createTestCard,
+	createTestContext,
 	type TestContext,
 } from "../../../core/tests/persistence/sqlite/__setup__/test-database";
-import type { TestSqliteDatabase } from "../../../core/tests/persistence/sqlite/__setup__/test-database";
 
 function getRawNoteForCard(
 	db: TestSqliteDatabase,
@@ -15,11 +15,11 @@ function getRawNoteForCard(
 		[cardId],
 	);
 	if (!card) return null;
-	return db.get<Record<string, unknown>>(
-		`SELECT * FROM notes WHERE id = ?`,
-		[card.note_id],
-	);
+	return db.get<Record<string, unknown>>(`SELECT * FROM notes WHERE id = ?`, [
+		card.note_id,
+	]);
 }
+
 import { CardRepository } from "@true-recall/core/flashcard/data/card-repository.service";
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite/SqliteStoreService";
 
@@ -242,9 +242,10 @@ describe("Source text linking", () => {
 
 	describe("signal communication", () => {
 		it("requestSourceHighlight updates signal with incremented requestId and mode", async () => {
-			const { requestSourceHighlight, highlightRequest } = await vi.importActual<
-				typeof import("../../src/services/signals")
-			>("../../src/services/signals");
+			const { requestSourceHighlight, highlightRequest } =
+				await vi.importActual<typeof import("../../src/services/signals")>(
+					"../../src/services/signals",
+				);
 
 			requestSourceHighlight("notes/biology.md", "Cell division");
 			const req1 = highlightRequest.value;
@@ -263,9 +264,9 @@ describe("Source text linking", () => {
 
 		it("clearSourceHighlight sets signal to null", async () => {
 			const { requestSourceHighlight, clearSourceHighlight, highlightRequest } =
-				await vi.importActual<
-					typeof import("../../src/services/signals")
-				>("../../src/services/signals");
+				await vi.importActual<typeof import("../../src/services/signals")>(
+					"../../src/services/signals",
+				);
 
 			requestSourceHighlight("notes/test.md", "Some text");
 			expect(highlightRequest.value).not.toBeNull();

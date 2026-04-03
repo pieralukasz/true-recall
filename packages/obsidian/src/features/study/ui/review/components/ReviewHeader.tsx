@@ -1,5 +1,5 @@
-import { cva } from "class-variance-authority";
 import type { ReviewApi } from "@true-recall/obsidian/store";
+import { cva } from "class-variance-authority";
 
 const reviewStatVariants = cva("ep:font-bold", {
 	variants: {

@@ -55,7 +55,9 @@ describe("TrueRetentionCalculator", () => {
 
 	it("returns empty snapshot for empty review history", () => {
 		const cardStore = {
-			getReviewsForRetention: vi.fn(() => [] as { date: string; rating: number }[]),
+			getReviewsForRetention: vi.fn(
+				() => [] as { date: string; rating: number }[],
+			),
 		};
 		const calculator = new TrueRetentionCalculator(cardStore as any);
 

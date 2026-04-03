@@ -1,10 +1,15 @@
 import {
+	DEFAULT_SETTINGS,
 	TRUERECALL_BMC_URL,
 	TRUERECALL_DISCORD_URL,
 	TRUERECALL_GITHUB_URL,
 	TRUERECALL_WEB_URL,
 } from "@true-recall/core/constants";
-import type { ReviewViewMode, TypeInMode } from "@true-recall/core/types";
+import type {
+	ReviewKeybindings,
+	ReviewViewMode,
+	TypeInMode,
+} from "@true-recall/core/types";
 import {
 	Clickable,
 	FormCard,
@@ -15,8 +20,10 @@ import {
 	TextInput,
 	ToggleInput,
 } from "@true-recall/obsidian/components";
+import { KeyboardHandler } from "@true-recall/obsidian/features/study/ui/review/handlers/KeyboardHandler";
 import { useIcon } from "@true-recall/obsidian/preact";
 import { notify } from "@true-recall/obsidian/services/notification.service";
+import { useCallback, useRef, useState } from "preact/hooks";
 import { useSettings } from "../hooks/useSettings";
 import { ToolbarConfigSection } from "../ToolbarConfigSection";
 
@@ -114,6 +121,11 @@ export function GeneralTab() {
 						]}
 					/>
 				</FormField>
+
+				<ReviewKeybindingsSection
+					keybindings={settings.reviewKeybindings}
+					onSave={(kb) => void save({ reviewKeybindings: kb })}
+				/>
 			</FormCard>
 
 			<FormCard title="Editor integration">
@@ -203,15 +215,15 @@ export function GeneralTab() {
 				</FormField>
 			</FormCard>
 
-			<FormCard title="Local API (MCP)">
+			<FormCard title="Local API (CLI)">
 				<InfoBlock>
-					Expose a local HTTP API for Claude Code and other MCP-compatible
-					tools. Binds to 127.0.0.1 only — never exposed to the network.
+					Expose a local HTTP API for the True Recall CLI. Binds to 127.0.0.1
+					only — never exposed to the network.
 				</InfoBlock>
 
 				<FormField
 					name="Enable local API"
-					description="Start an HTTP server for MCP/CLI integration when the plugin loads"
+					description="Start an HTTP server for CLI integration when the plugin loads"
 				>
 					<ToggleInput
 						value={settings.enableLocalApi}
@@ -312,6 +324,144 @@ export function GeneralTab() {
 
 			<SupportCard />
 		</div>
+	);
+}
+
+const KEYBINDING_FIELDS: {
+	key: keyof ReviewKeybindings;
+	label: string;
+	description: string;
+}[] = [
+	{
+		key: "revealAndGood",
+		label: "Reveal / Good",
+		description: "Reveal answer, then rate Good",
+	},
+	{ key: "again", label: "Again", description: "Rate Again (fail)" },
+	{ key: "hard", label: "Hard", description: "Rate Hard" },
+	{ key: "easy", label: "Easy", description: "Rate Easy" },
+];
+
+function ReviewKeybindingsSection({
+	keybindings,
+	onSave,
+}: {
+	keybindings: ReviewKeybindings;
+	onSave: (kb: ReviewKeybindings) => void;
+}) {
+	const [error, setError] = useState<string | null>(null);
+
+	const handleKeyChange = useCallback(
+		(field: keyof ReviewKeybindings, key: string) => {
+			const next = { ...keybindings, [field]: key };
+			const values = Object.values(next);
+			const hasDuplicate = values.length !== new Set(values).size;
+			if (hasDuplicate) {
+				setError(
+					`"${KeyboardHandler.formatKeyName(key)}" is already bound to another action`,
+				);
+				return;
+			}
+			setError(null);
+			onSave(next);
+		},
+		[keybindings, onSave],
+	);
+
+	const isDefault =
+		keybindings.revealAndGood ===
+			DEFAULT_SETTINGS.reviewKeybindings.revealAndGood &&
+		keybindings.again === DEFAULT_SETTINGS.reviewKeybindings.again &&
+		keybindings.hard === DEFAULT_SETTINGS.reviewKeybindings.hard &&
+		keybindings.easy === DEFAULT_SETTINGS.reviewKeybindings.easy;
+
+	return (
+		<>
+			<div class="ep:border-t ep:border-obs-border ep:mt-2 ep:pt-3">
+				<div class="ep:flex ep:items-center ep:justify-between ep:mb-2">
+					<span class="ep:text-ui-small ep:font-medium ep:text-obs-muted">
+						Review keybindings
+					</span>
+					{!isDefault && (
+						<Clickable
+							class="ep:text-ui-smallest ep:text-obs-muted ep:hover:text-obs-normal ep:cursor-pointer"
+							onClick={() => {
+								setError(null);
+								onSave(DEFAULT_SETTINGS.reviewKeybindings);
+							}}
+						>
+							Reset to defaults
+						</Clickable>
+					)}
+				</div>
+				<InfoBlock>
+					Number keys 1-4 always work as rating shortcuts regardless of custom
+					bindings.
+				</InfoBlock>
+			</div>
+			{KEYBINDING_FIELDS.map(({ key, label, description }) => (
+				<FormField key={key} name={label} description={description}>
+					<KeyCapture
+						value={keybindings[key]}
+						onChange={(v) => handleKeyChange(key, v)}
+					/>
+				</FormField>
+			))}
+			{error && (
+				<div class="ep:text-ui-smallest ep:text-red-500 ep:mt-1">{error}</div>
+			)}
+		</>
+	);
+}
+
+function KeyCapture({
+	value,
+	onChange,
+}: {
+	value: string;
+	onChange: (key: string) => void;
+}) {
+	const [isCapturing, setIsCapturing] = useState(false);
+	const btnRef = useRef<HTMLButtonElement>(null);
+
+	const handleKeyDown = useCallback(
+		(e: KeyboardEvent) => {
+			e.preventDefault();
+			e.stopPropagation();
+			if (e.key === "Escape") {
+				setIsCapturing(false);
+				return;
+			}
+			if (e.key === "Tab") return;
+			onChange(e.key);
+			setIsCapturing(false);
+		},
+		[onChange],
+	);
+
+	const handleClick = useCallback(() => {
+		setIsCapturing(true);
+	}, []);
+
+	const handleBlur = useCallback(() => {
+		setIsCapturing(false);
+	}, []);
+
+	return (
+		<button
+			ref={btnRef}
+			type="button"
+			class={`ep:px-3 ep:py-1.5 ep:rounded-md ep:border ep:text-ui-small ep:font-mono ep:min-w-[80px] ep:text-center ep:cursor-pointer ep:transition-colors ${
+				isCapturing
+					? "ep:border-obs-interactive ep:bg-obs-interactive/10 ep:text-obs-interactive"
+					: "ep:border-obs-border ep:bg-obs-primary ep:text-obs-normal ep:hover:border-obs-interactive"
+			}`}
+			onClick={handleClick}
+			onBlur={handleBlur}
+			onKeyDown={handleKeyDown}
+		>
+			{isCapturing ? "Press a key..." : KeyboardHandler.formatKeyName(value)}
+		</button>
 	);
 }
 

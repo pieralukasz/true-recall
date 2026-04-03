@@ -1,7 +1,14 @@
 /**
  * Tests for session helpers
  */
-import { describe, it, expect, vi } from "vitest";
+
+import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
+import type { SessionPersistenceService } from "@true-recall/core/persistence/session/session-persistence.service";
+import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite";
+import type { FSRSFlashcardItem } from "@true-recall/core/types";
+import type { FSRSPreset } from "@true-recall/core/types/settings.types";
+import { State } from "ts-fsrs";
+import { describe, expect, it, vi } from "vitest";
 import {
 	applyMutation,
 	buildGlobalPresetQueueContext,
@@ -9,16 +16,12 @@ import {
 	getEmptyQueueMessage,
 	isGlobalReviewSession,
 } from "../../../../../src/features/study/ui/review/helpers/session-helpers";
-import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite";
-import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
 import type { ReviewApi } from "../../../../../src/store";
-import { State } from "ts-fsrs";
-import type { FSRSFlashcardItem } from "@true-recall/core/types";
-import type { FSRSPreset } from "@true-recall/core/types/settings.types";
-import type { SessionPersistenceService } from "@true-recall/core/persistence/session/session-persistence.service";
 
 // Helper to create mock card
-function createMockCard(overrides: Partial<FSRSFlashcardItem> = {}): FSRSFlashcardItem {
+function createMockCard(
+	overrides: Partial<FSRSFlashcardItem> = {},
+): FSRSFlashcardItem {
 	return {
 		id: "test-id",
 		question: "Test question",
@@ -170,7 +173,9 @@ describe("isGlobalReviewSession", () => {
 		expect(isGlobalReviewSession({ projectPath: "Projects/A.md" })).toBe(false);
 		expect(isGlobalReviewSession({ sourceUidFilter: "uid-a" })).toBe(false);
 		expect(isGlobalReviewSession({ sourceNoteFilter: "Note A" })).toBe(false);
-		expect(isGlobalReviewSession({ sourceNoteFilters: ["Note A"] })).toBe(false);
+		expect(isGlobalReviewSession({ sourceNoteFilters: ["Note A"] })).toBe(
+			false,
+		);
 		expect(isGlobalReviewSession({ filePathFilter: "Notes/A.md" })).toBe(false);
 	});
 
@@ -292,7 +297,8 @@ describe("buildGlobalPresetQueueContext", () => {
 		};
 
 		const sessionPersistence = {
-			getTodayProgressByPreset: () => new Map<string, { newStudied: number; reviewsCompleted: number }>(),
+			getTodayProgressByPreset: () =>
+				new Map<string, { newStudied: number; reviewsCompleted: number }>(),
 		} as unknown as SessionPersistenceService;
 
 		const result = buildGlobalPresetQueueContext(
@@ -404,7 +410,10 @@ describe("applyMutation", () => {
 			addCardToQueue,
 		} as unknown as ReviewApi;
 
-		const updatedExisting = createMockCard({ id: "c-1", sourceUid: "uid-other" });
+		const updatedExisting = createMockCard({
+			id: "c-1",
+			sourceUid: "uid-other",
+		});
 		const newMatching = createMockCard({ id: "c-3", sourceUid: "uid-target" });
 		const flashcardManager = {
 			getCardsByIds: () => [updatedExisting, newMatching],
@@ -477,7 +486,9 @@ describe("applyMutation", () => {
 		} as unknown as ReviewApi;
 
 		const flashcardManager = {
-			getCardsByIds: () => [createMockCard({ id: "c-1", sourceUid: "uid-other" })],
+			getCardsByIds: () => [
+				createMockCard({ id: "c-1", sourceUid: "uid-other" }),
+			],
 		} as unknown as FlashcardManager;
 
 		applyMutation(

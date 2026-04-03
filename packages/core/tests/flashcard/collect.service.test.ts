@@ -1,17 +1,16 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { CollectService } from "../../src/flashcard/lifecycle/collect.service";
 import type { NoteType } from "../../src/types/note.types";
-import {
-	BUILTIN_BASIC_ID,
-	BUILTIN_CLOZE_ID,
-} from "../../src/types/note.types";
+import { BUILTIN_BASIC_ID, BUILTIN_CLOZE_ID } from "../../src/types/note.types";
 
 const basicType: NoteType = {
 	id: BUILTIN_BASIC_ID,
 	name: "Basic",
 	type: 0,
 	fields: ["Front", "Back"],
-	templates: [{ name: "Card 1", ordinal: 0, qfmt: "{{Front}}", afmt: "{{Back}}" }],
+	templates: [
+		{ name: "Card 1", ordinal: 0, qfmt: "{{Front}}", afmt: "{{Back}}" },
+	],
 	css: "",
 	isBuiltin: true,
 	slug: "basic",
@@ -22,7 +21,14 @@ const clozeType: NoteType = {
 	name: "Cloze",
 	type: 1,
 	fields: ["Text", "Extra"],
-	templates: [{ name: "Cloze", ordinal: 0, qfmt: "{{cloze:Text}}", afmt: "{{cloze:Text}}<br>{{Extra}}" }],
+	templates: [
+		{
+			name: "Cloze",
+			ordinal: 0,
+			qfmt: "{{cloze:Text}}",
+			afmt: "{{cloze:Text}}<br>{{Extra}}",
+		},
+	],
 	css: "",
 	isBuiltin: true,
 	slug: "cloze",

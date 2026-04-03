@@ -1,9 +1,9 @@
-import { describe, expect, it } from "vitest";
 import type { PresetDailyProgress } from "@true-recall/core/persistence/session/session-persistence.service";
-import { aggregateCardsWithPresetLimits } from "../../src/editor/study/widgets/StatusBarWidget";
 import type { FSRSFlashcardItem } from "@true-recall/core/types/fsrs";
 import type { FSRSPreset } from "@true-recall/core/types/settings.types";
 import { State } from "ts-fsrs";
+import { describe, expect, it } from "vitest";
+import { aggregateCardsWithPresetLimits } from "../../src/editor/study/widgets/StatusBarWidget";
 
 function makePreset(
 	id: string,
@@ -98,16 +98,37 @@ describe("aggregateCardsWithPresetLimits", () => {
 			{ card: makeCard({ id: "m-new-1", state: State.New }), preset: medical },
 			{ card: makeCard({ id: "m-new-2", state: State.New }), preset: medical },
 			{ card: makeCard({ id: "m-new-3", state: State.New }), preset: medical },
-			{ card: makeCard({ id: "m-due-1", state: State.Review }), preset: medical },
-			{ card: makeCard({ id: "m-due-2", state: State.Review }), preset: medical },
-			{ card: makeCard({ id: "m-due-3", state: State.Review }), preset: medical },
-			{ card: makeCard({ id: "m-due-4", state: State.Review }), preset: medical },
+			{
+				card: makeCard({ id: "m-due-1", state: State.Review }),
+				preset: medical,
+			},
+			{
+				card: makeCard({ id: "m-due-2", state: State.Review }),
+				preset: medical,
+			},
+			{
+				card: makeCard({ id: "m-due-3", state: State.Review }),
+				preset: medical,
+			},
+			{
+				card: makeCard({ id: "m-due-4", state: State.Review }),
+				preset: medical,
+			},
 			{ card: makeCard({ id: "l-new-1", state: State.New }), preset: language },
 			{ card: makeCard({ id: "l-new-2", state: State.New }), preset: language },
 			{ card: makeCard({ id: "l-new-3", state: State.New }), preset: language },
-			{ card: makeCard({ id: "l-due-1", state: State.Review }), preset: language },
-			{ card: makeCard({ id: "l-due-2", state: State.Review }), preset: language },
-			{ card: makeCard({ id: "l-due-3", state: State.Review }), preset: language },
+			{
+				card: makeCard({ id: "l-due-1", state: State.Review }),
+				preset: language,
+			},
+			{
+				card: makeCard({ id: "l-due-2", state: State.Review }),
+				preset: language,
+			},
+			{
+				card: makeCard({ id: "l-due-3", state: State.Review }),
+				preset: language,
+			},
 		];
 
 		const result = aggregateCardsWithPresetLimits(
@@ -132,11 +153,19 @@ describe("aggregateCardsWithPresetLimits", () => {
 		const result = aggregateCardsWithPresetLimits(
 			[
 				{
-					card: makeCard({ id: "archived-new", state: State.New, sourceUid: "uid-arch" }),
+					card: makeCard({
+						id: "archived-new",
+						state: State.New,
+						sourceUid: "uid-arch",
+					}),
 					preset,
 				},
 				{
-					card: makeCard({ id: "suspended-due", state: State.Review, suspended: true }),
+					card: makeCard({
+						id: "suspended-due",
+						state: State.Review,
+						suspended: true,
+					}),
 					preset,
 				},
 				{
@@ -165,11 +194,19 @@ describe("aggregateCardsWithPresetLimits", () => {
 		const result = aggregateCardsWithPresetLimits(
 			[
 				{
-					card: makeCard({ id: "orphaned-new", state: State.New, sourceNotePath: "" }),
+					card: makeCard({
+						id: "orphaned-new",
+						state: State.New,
+						sourceNotePath: "",
+					}),
 					preset,
 				},
 				{
-					card: makeCard({ id: "linked-new", state: State.New, sourceNotePath: "linked.md" }),
+					card: makeCard({
+						id: "linked-new",
+						state: State.New,
+						sourceNotePath: "linked.md",
+					}),
 					preset,
 				},
 			],

@@ -1,11 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { fixSourceText, fixBlockSourceTexts } from "../../src/ai/utils/source-text-fixer";
+import {
+	fixBlockSourceTexts,
+	fixSourceText,
+} from "../../src/ai/utils/source-text-fixer";
 import type { ParsedBlock } from "../../src/flashcard/parsing/block-parser.service";
 
 describe("fixSourceText", () => {
 	it("returns exact match as-is", () => {
-		const input = "Herbata jest drugim najczęściej spożywanym napojem na świecie.";
-		const source = "Herbata jest drugim najczęściej spożywanym napojem na świecie.";
+		const input =
+			"Herbata jest drugim najczęściej spożywanym napojem na świecie.";
+		const source =
+			"Herbata jest drugim najczęściej spożywanym napojem na świecie.";
 		expect(fixSourceText(source, input)).toBe(source);
 	});
 
@@ -20,24 +25,36 @@ describe("fixSourceText", () => {
 	});
 
 	it("fixes source with stripped bold markers", () => {
-		const input = "Pochodzi z liści rośliny **Camellia sinensis**, uprawianej od ponad 5000 lat.";
-		const source = "Pochodzi z liści rośliny Camellia sinensis, uprawianej od ponad 5000 lat.";
+		const input =
+			"Pochodzi z liści rośliny **Camellia sinensis**, uprawianej od ponad 5000 lat.";
+		const source =
+			"Pochodzi z liści rośliny Camellia sinensis, uprawianej od ponad 5000 lat.";
 		const result = fixSourceText(source, input);
-		expect(result).toBe("Pochodzi z liści rośliny **Camellia sinensis**, uprawianej od ponad 5000 lat.");
+		expect(result).toBe(
+			"Pochodzi z liści rośliny **Camellia sinensis**, uprawianej od ponad 5000 lat.",
+		);
 	});
 
 	it("fixes source with stripped italic markers", () => {
-		const input = "Lu Yu napisał *Cha Jing* (Klasyka herbaty) — pierwszą monografię o herbacie.";
-		const source = "Lu Yu napisał Cha Jing (Klasyka herbaty) — pierwszą monografię o herbacie.";
+		const input =
+			"Lu Yu napisał *Cha Jing* (Klasyka herbaty) — pierwszą monografię o herbacie.";
+		const source =
+			"Lu Yu napisał Cha Jing (Klasyka herbaty) — pierwszą monografię o herbacie.";
 		const result = fixSourceText(source, input);
-		expect(result).toBe("Lu Yu napisał *Cha Jing* (Klasyka herbaty) — pierwszą monografię o herbacie.");
+		expect(result).toBe(
+			"Lu Yu napisał *Cha Jing* (Klasyka herbaty) — pierwszą monografię o herbacie.",
+		);
 	});
 
 	it("fixes source with stripped bold date at list item start", () => {
-		const input = "- **2737 p.n.e.** — według legendy chiński cesarz Shen Nung odkrył herbatę.";
-		const source = "2737 p.n.e. — według legendy chiński cesarz Shen Nung odkrył herbatę.";
+		const input =
+			"- **2737 p.n.e.** — według legendy chiński cesarz Shen Nung odkrył herbatę.";
+		const source =
+			"2737 p.n.e. — według legendy chiński cesarz Shen Nung odkrył herbatę.";
 		const result = fixSourceText(source, input);
-		expect(result).toBe("**2737 p.n.e.** — według legendy chiński cesarz Shen Nung odkrył herbatę.");
+		expect(result).toBe(
+			"**2737 p.n.e.** — według legendy chiński cesarz Shen Nung odkrył herbatę.",
+		);
 	});
 
 	it("fixes source with stripped heading markers", () => {
@@ -62,10 +79,13 @@ describe("fixSourceText", () => {
 	});
 
 	it("fixes source with stripped link syntax", () => {
-		const input = "Więcej na [Wikipedia](https://pl.wikipedia.org/wiki/Herbata).";
+		const input =
+			"Więcej na [Wikipedia](https://pl.wikipedia.org/wiki/Herbata).";
 		const source = "Więcej na Wikipedia.";
 		const result = fixSourceText(source, input);
-		expect(result).toBe("Więcej na [Wikipedia](https://pl.wikipedia.org/wiki/Herbata).");
+		expect(result).toBe(
+			"Więcej na [Wikipedia](https://pl.wikipedia.org/wiki/Herbata).",
+		);
 	});
 
 	it("handles trimmed whitespace", () => {
@@ -75,10 +95,14 @@ describe("fixSourceText", () => {
 	});
 
 	it("handles multiple bold segments", () => {
-		const input = "**Dynastia Tang** (618–907) — herbata stała się **napojem narodowym** Chin.";
-		const source = "Dynastia Tang (618–907) — herbata stała się napojem narodowym Chin.";
+		const input =
+			"**Dynastia Tang** (618–907) — herbata stała się **napojem narodowym** Chin.";
+		const source =
+			"Dynastia Tang (618–907) — herbata stała się napojem narodowym Chin.";
 		const result = fixSourceText(source, input);
-		expect(result).toBe("**Dynastia Tang** (618–907) — herbata stała się **napojem narodowym** Chin.");
+		expect(result).toBe(
+			"**Dynastia Tang** (618–907) — herbata stała się **napojem narodowym** Chin.",
+		);
 	});
 
 	it("fixes source with backtick code stripped", () => {

@@ -1,9 +1,13 @@
 /**
  * Schedule Break Service Tests
  */
-import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ScheduleBreakService } from "../../../../src/metrics/fsrs-tools/scheduler/schedule-break.service";
-import { createMockCardStore, createCardsOnDate, createCardsInRange } from "../mocks/scheduler.mocks";
+import {
+	createCardsInRange,
+	createCardsOnDate,
+	createMockCardStore,
+} from "../mocks/scheduler.mocks";
 
 describe("ScheduleBreakService", () => {
 	let service: ScheduleBreakService;
@@ -13,7 +17,7 @@ describe("ScheduleBreakService", () => {
 		vi.useFakeTimers();
 		vi.setSystemTime(new Date("2026-02-01T10:00:00Z"));
 		mockStore = createMockCardStore();
-		service = new ScheduleBreakService(mockStore );
+		service = new ScheduleBreakService(mockStore);
 	});
 
 	afterEach(() => {
@@ -24,7 +28,7 @@ describe("ScheduleBreakService", () => {
 		it("returns empty when no cards during break", async () => {
 			mockStore = createMockCardStore([]);
 			mockStore.getDueCardsByDateRange.mockReturnValue([]);
-			service = new ScheduleBreakService(mockStore );
+			service = new ScheduleBreakService(mockStore);
 
 			const result = await service.scheduleBreak({
 				startDate: "2026-02-10",
@@ -40,7 +44,7 @@ describe("ScheduleBreakService", () => {
 			const breakCards = createCardsInRange("2026-02-10", "2026-02-13", 2);
 			mockStore = createMockCardStore(breakCards);
 			mockStore.getDueCardsByDateRange.mockReturnValue(breakCards);
-			service = new ScheduleBreakService(mockStore );
+			service = new ScheduleBreakService(mockStore);
 
 			const result = await service.scheduleBreak({
 				startDate: "2026-02-10",
@@ -54,9 +58,7 @@ describe("ScheduleBreakService", () => {
 			// All cards should be moved to dates before Feb 10
 			result.changes.forEach((change) => {
 				const newDue = new Date(change.newDue);
-				expect(newDue.getTime()).toBeLessThan(
-					new Date("2026-02-10").getTime()
-				);
+				expect(newDue.getTime()).toBeLessThan(new Date("2026-02-10").getTime());
 			});
 		});
 
@@ -64,7 +66,7 @@ describe("ScheduleBreakService", () => {
 			const breakCards = createCardsInRange("2026-02-10", "2026-02-13", 2);
 			mockStore = createMockCardStore(breakCards);
 			mockStore.getDueCardsByDateRange.mockReturnValue(breakCards);
-			service = new ScheduleBreakService(mockStore );
+			service = new ScheduleBreakService(mockStore);
 
 			const result = await service.scheduleBreak({
 				startDate: "2026-02-10",
@@ -79,7 +81,7 @@ describe("ScheduleBreakService", () => {
 			result.changes.forEach((change) => {
 				const newDue = new Date(change.newDue);
 				expect(newDue.getTime()).toBeGreaterThan(
-					new Date("2026-02-13").getTime()
+					new Date("2026-02-13").getTime(),
 				);
 			});
 		});
@@ -88,7 +90,7 @@ describe("ScheduleBreakService", () => {
 			const breakCards = createCardsOnDate("2026-02-12", 10);
 			mockStore = createMockCardStore(breakCards);
 			mockStore.getDueCardsByDateRange.mockReturnValue(breakCards);
-			service = new ScheduleBreakService(mockStore );
+			service = new ScheduleBreakService(mockStore);
 
 			const result = await service.scheduleBreak({
 				startDate: "2026-02-10",
@@ -102,10 +104,10 @@ describe("ScheduleBreakService", () => {
 
 			// Cards should be split between before and after
 			const beforeBreak = result.changes.filter(
-				(c) => new Date(c.newDue) < new Date("2026-02-10")
+				(c) => new Date(c.newDue) < new Date("2026-02-10"),
 			);
 			const afterBreak = result.changes.filter(
-				(c) => new Date(c.newDue) > new Date("2026-02-14")
+				(c) => new Date(c.newDue) > new Date("2026-02-14"),
 			);
 
 			expect(beforeBreak.length).toBeGreaterThan(0);
@@ -116,7 +118,7 @@ describe("ScheduleBreakService", () => {
 			const breakCards = createCardsOnDate("2026-02-12", 5);
 			mockStore = createMockCardStore(breakCards);
 			mockStore.getDueCardsByDateRange.mockReturnValue(breakCards);
-			service = new ScheduleBreakService(mockStore );
+			service = new ScheduleBreakService(mockStore);
 
 			const result = await service.scheduleBreak({
 				startDate: "2026-02-10",
@@ -137,7 +139,7 @@ describe("ScheduleBreakService", () => {
 			const breakCards = createCardsOnDate("2026-02-10", 5);
 			mockStore = createMockCardStore(breakCards);
 			mockStore.getDueCardsByDateRange.mockReturnValue(breakCards);
-			service = new ScheduleBreakService(mockStore );
+			service = new ScheduleBreakService(mockStore);
 
 			const result = await service.scheduleBreak({
 				startDate: "2026-02-10",
@@ -155,7 +157,7 @@ describe("ScheduleBreakService", () => {
 			const breakCards = createCardsInRange("2026-02-10", "2026-02-23", 2);
 			mockStore = createMockCardStore(breakCards);
 			mockStore.getDueCardsByDateRange.mockReturnValue(breakCards);
-			service = new ScheduleBreakService(mockStore );
+			service = new ScheduleBreakService(mockStore);
 
 			const result = await service.scheduleBreak({
 				startDate: "2026-02-10",
@@ -172,7 +174,7 @@ describe("ScheduleBreakService", () => {
 			const breakCards = createCardsOnDate("2026-02-12", 5);
 			mockStore = createMockCardStore(breakCards);
 			mockStore.getDueCardsByDateRange.mockReturnValue(breakCards);
-			service = new ScheduleBreakService(mockStore );
+			service = new ScheduleBreakService(mockStore);
 
 			await service.scheduleBreak({
 				startDate: "2026-02-10",
@@ -187,7 +189,7 @@ describe("ScheduleBreakService", () => {
 			const breakCards = createCardsOnDate("2026-02-12", 5);
 			mockStore = createMockCardStore(breakCards);
 			mockStore.getDueCardsByDateRange.mockReturnValue(breakCards);
-			service = new ScheduleBreakService(mockStore );
+			service = new ScheduleBreakService(mockStore);
 
 			await service.scheduleBreak({
 				startDate: "2026-02-10",
@@ -204,7 +206,7 @@ describe("ScheduleBreakService", () => {
 			const breakCards = createCardsOnDate("2026-02-12", 12);
 			mockStore = createMockCardStore(breakCards);
 			mockStore.getDueCardsByDateRange.mockReturnValue(breakCards);
-			service = new ScheduleBreakService(mockStore );
+			service = new ScheduleBreakService(mockStore);
 
 			const result = await service.scheduleBreak({
 				startDate: "2026-02-10",
@@ -234,7 +236,7 @@ describe("ScheduleBreakService", () => {
 			const breakCards = createCardsOnDate("2026-02-12", 10);
 			mockStore = createMockCardStore(breakCards);
 			mockStore.getDueCardsByDateRange.mockReturnValue(breakCards);
-			service = new ScheduleBreakService(mockStore );
+			service = new ScheduleBreakService(mockStore);
 
 			const preview = service.previewBreak("2026-02-10", "2026-02-14");
 
@@ -244,7 +246,7 @@ describe("ScheduleBreakService", () => {
 		it("calculates breakDays correctly", () => {
 			mockStore = createMockCardStore([]);
 			mockStore.getDueCardsByDateRange.mockReturnValue([]);
-			service = new ScheduleBreakService(mockStore );
+			service = new ScheduleBreakService(mockStore);
 
 			const preview = service.previewBreak("2026-02-10", "2026-02-14");
 
@@ -255,7 +257,7 @@ describe("ScheduleBreakService", () => {
 		it("handles single-day break preview", () => {
 			mockStore = createMockCardStore([]);
 			mockStore.getDueCardsByDateRange.mockReturnValue([]);
-			service = new ScheduleBreakService(mockStore );
+			service = new ScheduleBreakService(mockStore);
 
 			const preview = service.previewBreak("2026-02-10", "2026-02-10");
 

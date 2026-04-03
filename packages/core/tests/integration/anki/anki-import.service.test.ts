@@ -118,6 +118,7 @@ function defaultOptions(
 		importScheduling: false,
 		importMedia: false,
 		mediaFolder: "anki-media",
+		importFolder: "Anki Import",
 		...overrides,
 	};
 }

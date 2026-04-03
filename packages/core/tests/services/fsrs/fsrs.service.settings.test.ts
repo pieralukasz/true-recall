@@ -2,17 +2,18 @@
  * FSRS Settings Impact Tests
  * Behavior-first tests for how settings affect scheduling
  */
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { State, Rating } from "ts-fsrs";
+
+import { Rating, State } from "ts-fsrs";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { FSRSService } from "../../../src/services/fsrs/fsrs.service";
-import {
-	createNewCard,
-	createReviewCard,
-	createRelearningCard,
-	createDefaultFSRSSettings,
-} from "../../mocks/fsrs.mocks";
-import type { FSRSSettings } from "../../../src/types/settings.types";
 import type { FSRSCardData } from "../../../src/types";
+import type { FSRSSettings } from "../../../src/types/settings.types";
+import {
+	createDefaultFSRSSettings,
+	createNewCard,
+	createRelearningCard,
+	createReviewCard,
+} from "../../mocks/fsrs.mocks";
 
 /**
  * Create settings with specific overrides
@@ -38,7 +39,9 @@ function createEstablishedCard(id: string): FSRSCardData {
 		reps: 15,
 		lapses: 0,
 		state: State.Review,
-		lastReview: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString(),
+		lastReview: new Date(
+			now.getTime() - 30 * 24 * 60 * 60 * 1000,
+		).toISOString(),
 		scheduledDays: 30,
 		learningStep: 0,
 	};
@@ -76,8 +79,8 @@ describe("FSRS Settings Impact", () => {
 		});
 
 		it("should produce longer intervals at 0.80 retention vs 0.90", () => {
-			const retention80 = createSettings({ requestRetention: 0.80 });
-			const retention90 = createSettings({ requestRetention: 0.90 });
+			const retention80 = createSettings({ requestRetention: 0.8 });
+			const retention90 = createSettings({ requestRetention: 0.9 });
 
 			const service80 = new FSRSService(retention80);
 			const service90 = new FSRSService(retention90);
@@ -94,7 +97,7 @@ describe("FSRS Settings Impact", () => {
 
 		it("should affect all ratings proportionally", () => {
 			const highRetention = createSettings({ requestRetention: 0.95 });
-			const lowRetention = createSettings({ requestRetention: 0.80 });
+			const lowRetention = createSettings({ requestRetention: 0.8 });
 
 			const serviceHigh = new FSRSService(highRetention);
 			const serviceLow = new FSRSService(lowRetention);
@@ -103,11 +106,16 @@ describe("FSRS Settings Impact", () => {
 			const cardHighEasy = createEstablishedCard("high-easy");
 			const cardLowEasy = createEstablishedCard("low-easy");
 
-			const resultHighEasy = serviceHigh.scheduleCard(cardHighEasy, Rating.Easy);
+			const resultHighEasy = serviceHigh.scheduleCard(
+				cardHighEasy,
+				Rating.Easy,
+			);
 			const resultLowEasy = serviceLow.scheduleCard(cardLowEasy, Rating.Easy);
 
 			// Lower retention should still yield longer intervals on Easy
-			expect(resultLowEasy.scheduledDays).toBeGreaterThan(resultHighEasy.scheduledDays);
+			expect(resultLowEasy.scheduledDays).toBeGreaterThan(
+				resultHighEasy.scheduledDays,
+			);
 		});
 	});
 
@@ -129,7 +137,9 @@ describe("FSRS Settings Impact", () => {
 				reps: 100,
 				lapses: 0,
 				state: State.Review,
-				lastReview: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString(),
+				lastReview: new Date(
+					Date.now() - 365 * 24 * 60 * 60 * 1000,
+				).toISOString(),
 				scheduledDays: 365,
 				learningStep: 0,
 			};
@@ -158,13 +168,21 @@ describe("FSRS Settings Impact", () => {
 				reps: 50,
 				lapses: 0,
 				state: State.Review,
-				lastReview: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(),
+				lastReview: new Date(
+					Date.now() - 60 * 24 * 60 * 60 * 1000,
+				).toISOString(),
 				scheduledDays: 60,
 				learningStep: 0,
 			};
 
-			const resultLow = serviceLow.scheduleCard({ ...card, id: "low" }, Rating.Easy);
-			const resultHigh = serviceHigh.scheduleCard({ ...card, id: "high" }, Rating.Easy);
+			const resultLow = serviceLow.scheduleCard(
+				{ ...card, id: "low" },
+				Rating.Easy,
+			);
+			const resultHigh = serviceHigh.scheduleCard(
+				{ ...card, id: "high" },
+				Rating.Easy,
+			);
 
 			// High cap should allow longer intervals
 			expect(resultHigh.scheduledDays).toBeGreaterThan(resultLow.scheduledDays);
@@ -426,7 +444,9 @@ describe("FSRS Settings Impact", () => {
 
 			// Update to lower max interval
 			const newMaxInterval = 30;
-			service.updateSettings(createSettings({ maximumInterval: newMaxInterval }));
+			service.updateSettings(
+				createSettings({ maximumInterval: newMaxInterval }),
+			);
 
 			const card = createEstablishedCard("update-test");
 			const result = service.scheduleCard(card, Rating.Easy);
@@ -437,14 +457,16 @@ describe("FSRS Settings Impact", () => {
 		});
 
 		it("should apply new retention setting after update", () => {
-			const service = new FSRSService(createSettings({ requestRetention: 0.90 }));
+			const service = new FSRSService(
+				createSettings({ requestRetention: 0.9 }),
+			);
 
 			// Get baseline interval
 			const card1 = createEstablishedCard("baseline");
 			const result1 = service.scheduleCard(card1, Rating.Good);
 
 			// Update to lower retention (longer intervals)
-			service.updateSettings(createSettings({ requestRetention: 0.80 }));
+			service.updateSettings(createSettings({ requestRetention: 0.8 }));
 
 			const card2 = createEstablishedCard("updated");
 			const result2 = service.scheduleCard(card2, Rating.Good);
@@ -492,7 +514,7 @@ describe("FSRS Settings Impact", () => {
 			expect(resultHigh.scheduledDays).toBeGreaterThan(0);
 
 			// Low retention (70%)
-			const lowRetention = createSettings({ requestRetention: 0.70 });
+			const lowRetention = createSettings({ requestRetention: 0.7 });
 			const serviceLow = new FSRSService(lowRetention);
 
 			const cardLow = createEstablishedCard("low-r");

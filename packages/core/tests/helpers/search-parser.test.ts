@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 import { parseSearchQuery } from "../../src/helpers/search-parser";
 
 describe("parseSearchQuery", () => {

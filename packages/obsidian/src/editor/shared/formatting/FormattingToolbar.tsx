@@ -207,6 +207,40 @@ export function FormattingToolbar({
 			>
 				U
 			</div>
+			<div
+				role="button"
+				tabIndex={0}
+				title="Superscript"
+				class={`${btnCls} ep:text-[11px]`}
+				onMouseDown={(e: MouseEvent) => {
+					prevent(e);
+					const v = getEditorView();
+					if (v) toggleAsymmetricMarker(v, "<sup>", "</sup>");
+				}}
+				onKeyDown={handleKeyDown(() => {
+					const v = getEditorView();
+					if (v) toggleAsymmetricMarker(v, "<sup>", "</sup>");
+				})}
+			>
+				X<sup>2</sup>
+			</div>
+			<div
+				role="button"
+				tabIndex={0}
+				title="Subscript"
+				class={`${btnCls} ep:text-[11px]`}
+				onMouseDown={(e: MouseEvent) => {
+					prevent(e);
+					const v = getEditorView();
+					if (v) toggleAsymmetricMarker(v, "<sub>", "</sub>");
+				}}
+				onKeyDown={handleKeyDown(() => {
+					const v = getEditorView();
+					if (v) toggleAsymmetricMarker(v, "<sub>", "</sub>");
+				})}
+			>
+				X<sub>2</sub>
+			</div>
 			<IconButton
 				iconId="highlighter"
 				title="Highlight (Ctrl+Shift+H)"

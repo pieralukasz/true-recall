@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import {
-	parseBlocks,
-	blockToText,
 	blocksToText,
+	blockToText,
 	countBlocks,
 	type NoteTypeLookup,
+	parseBlocks,
 } from "../../src/flashcard/parsing/block-parser.service";
 import type { NoteType } from "../../src/types/note.types";
 import {
@@ -20,7 +20,9 @@ const basicType: NoteType = {
 	name: "Basic",
 	type: 0,
 	fields: ["Front", "Back"],
-	templates: [{ name: "Card 1", ordinal: 0, qfmt: "{{Front}}", afmt: "{{Back}}" }],
+	templates: [
+		{ name: "Card 1", ordinal: 0, qfmt: "{{Front}}", afmt: "{{Back}}" },
+	],
 	css: "",
 	isBuiltin: true,
 	slug: "basic",
@@ -45,7 +47,14 @@ const clozeType: NoteType = {
 	name: "Cloze",
 	type: 1,
 	fields: ["Text", "Extra"],
-	templates: [{ name: "Cloze", ordinal: 0, qfmt: "{{cloze:Text}}", afmt: "{{cloze:Text}}<br>{{Extra}}" }],
+	templates: [
+		{
+			name: "Cloze",
+			ordinal: 0,
+			qfmt: "{{cloze:Text}}",
+			afmt: "{{cloze:Text}}<br>{{Extra}}",
+		},
+	],
 	css: "",
 	isBuiltin: true,
 	slug: "cloze",
@@ -56,7 +65,14 @@ const customType: NoteType = {
 	name: "Vocabulary",
 	type: 0,
 	fields: ["Word", "Translation", "Example"],
-	templates: [{ name: "Card 1", ordinal: 0, qfmt: "{{Word}}", afmt: "{{Translation}}<br>{{Example}}" }],
+	templates: [
+		{
+			name: "Card 1",
+			ordinal: 0,
+			qfmt: "{{Word}}",
+			afmt: "{{Translation}}<br>{{Example}}",
+		},
+	],
 	css: "",
 	isBuiltin: false,
 	slug: "vocabulary",
@@ -86,7 +102,9 @@ Back: Process of converting light to energy`;
 			expect(blocks[0]!.noteTypeId).toBe(BUILTIN_BASIC_ID);
 			expect(blocks[0]!.noteTypeSlug).toBe("basic");
 			expect(blocks[0]!.fields.Front).toBe("What is photosynthesis?");
-			expect(blocks[0]!.fields.Back).toBe("Process of converting light to energy");
+			expect(blocks[0]!.fields.Back).toBe(
+				"Process of converting light to energy",
+			);
 		});
 
 		it("should parse multiple blocks separated by ---", () => {
@@ -112,7 +130,9 @@ Extra: Geography fact`;
 			const { blocks } = parseBlocks(content, lookup);
 			expect(blocks).toHaveLength(1);
 			expect(blocks[0]!.noteTypeId).toBe(BUILTIN_CLOZE_ID);
-			expect(blocks[0]!.fields.Text).toBe("{{c1::Tokio}} is the capital of {{c2::Japan}}");
+			expect(blocks[0]!.fields.Text).toBe(
+				"{{c1::Tokio}} is the capital of {{c2::Japan}}",
+			);
 			expect(blocks[0]!.fields.Extra).toBe("Geography fact");
 		});
 
@@ -265,7 +285,9 @@ Extra: European capitals`;
 			expect(blocks[0]!.noteTypeSlug).toBe("basic");
 			expect(blocks[1]!.noteTypeSlug).toBe("cloze");
 			expect(contentWithoutBlocks).toContain("Some introduction text.");
-			expect(contentWithoutBlocks).toContain("Middle paragraph that is not a card.");
+			expect(contentWithoutBlocks).toContain(
+				"Middle paragraph that is not a card.",
+			);
 		});
 
 		it("should handle empty fields gracefully", () => {

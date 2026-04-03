@@ -1,19 +1,21 @@
+import type { HierarchyService } from "@true-recall/core/services/notes/hierarchy.service";
 import { describe, expect, it, vi } from "vitest";
 import {
-	getDragClass,
-	dragItemFromFlatItem,
-	validateDrop,
 	type DragItem,
 	type DragState,
+	dragItemFromFlatItem,
+	getDragClass,
+	validateDrop,
 } from "../../../../../src/features/study/ui/dashboard/helpers/drag-drop";
 import type { FlatProjectItem } from "../../../../../src/features/study/ui/dashboard/helpers/project-tree-flatten";
-import type { HierarchyService } from "@true-recall/core/services/notes/hierarchy.service";
 import type {
 	DashboardNoteEntry,
 	DashboardProject,
 } from "../../../../../src/features/study/ui/dashboard/types";
 
-function makeNote(overrides: Partial<DashboardNoteEntry> = {}): DashboardNoteEntry {
+function makeNote(
+	overrides: Partial<DashboardNoteEntry> = {},
+): DashboardNoteEntry {
 	return {
 		name: "Note",
 		path: "notes/note.md",
@@ -31,7 +33,9 @@ function makeNote(overrides: Partial<DashboardNoteEntry> = {}): DashboardNoteEnt
 	};
 }
 
-function makeProject(overrides: Partial<DashboardProject> = {}): DashboardProject {
+function makeProject(
+	overrides: Partial<DashboardProject> = {},
+): DashboardProject {
 	return {
 		name: "Project",
 		path: "p/project",
@@ -170,7 +174,12 @@ describe("validateDrop", () => {
 	const hs = makeHierarchyService();
 
 	it("note → project = reparent", () => {
-		const drag: DragItem = { type: "note", path: "n/a.md", name: "A", parentPath: "p/old" };
+		const drag: DragItem = {
+			type: "note",
+			path: "n/a.md",
+			name: "A",
+			parentPath: "p/old",
+		};
 		const target: FlatProjectItem = {
 			type: "project-header",
 			project: makeProject({ name: "New", path: "p/new" }),
@@ -191,7 +200,12 @@ describe("validateDrop", () => {
 	});
 
 	it("note → same parent project = null (no-op)", () => {
-		const drag: DragItem = { type: "note", path: "n/a.md", name: "A", parentPath: "p/same" };
+		const drag: DragItem = {
+			type: "note",
+			path: "n/a.md",
+			name: "A",
+			parentPath: "p/same",
+		};
 		const target: FlatProjectItem = {
 			type: "project-header",
 			project: makeProject({ name: "Same", path: "p/same" }),
@@ -204,7 +218,12 @@ describe("validateDrop", () => {
 	});
 
 	it("note → note = create-project", () => {
-		const drag: DragItem = { type: "note", path: "n/a.md", name: "A", parentPath: "p/x" };
+		const drag: DragItem = {
+			type: "note",
+			path: "n/a.md",
+			name: "A",
+			parentPath: "p/x",
+		};
 		const target: FlatProjectItem = {
 			type: "note",
 			note: makeNote({ name: "B", path: "n/b.md" }),
@@ -223,7 +242,12 @@ describe("validateDrop", () => {
 	});
 
 	it("drop on self = null", () => {
-		const drag: DragItem = { type: "note", path: "n/a.md", name: "A", parentPath: null };
+		const drag: DragItem = {
+			type: "note",
+			path: "n/a.md",
+			name: "A",
+			parentPath: null,
+		};
 		const target: FlatProjectItem = {
 			type: "note",
 			note: makeNote({ name: "A", path: "n/a.md" }),
@@ -240,7 +264,12 @@ describe("validateDrop", () => {
 			"p/child": ["p/grandchild"],
 		});
 
-		const drag: DragItem = { type: "project", path: "p/parent", name: "Parent", parentPath: null };
+		const drag: DragItem = {
+			type: "project",
+			path: "p/parent",
+			name: "Parent",
+			parentPath: null,
+		};
 		const target: FlatProjectItem = {
 			type: "project-header",
 			project: makeProject({ name: "Grandchild", path: "p/grandchild" }),
@@ -253,7 +282,12 @@ describe("validateDrop", () => {
 	});
 
 	it("anything → empty-project = null", () => {
-		const drag: DragItem = { type: "note", path: "n/a.md", name: "A", parentPath: null };
+		const drag: DragItem = {
+			type: "note",
+			path: "n/a.md",
+			name: "A",
+			parentPath: null,
+		};
 		const target: FlatProjectItem = {
 			type: "empty-project",
 			depth: 1,
@@ -264,7 +298,12 @@ describe("validateDrop", () => {
 	});
 
 	it("target note without path = null", () => {
-		const drag: DragItem = { type: "note", path: "n/a.md", name: "A", parentPath: null };
+		const drag: DragItem = {
+			type: "note",
+			path: "n/a.md",
+			name: "A",
+			parentPath: null,
+		};
 		const target: FlatProjectItem = {
 			type: "note",
 			note: makeNote({ name: "Ghost", path: null }),
@@ -276,7 +315,12 @@ describe("validateDrop", () => {
 	});
 
 	it("project → note = null (not supported)", () => {
-		const drag: DragItem = { type: "project", path: "p/src", name: "Src", parentPath: null };
+		const drag: DragItem = {
+			type: "project",
+			path: "p/src",
+			name: "Src",
+			parentPath: null,
+		};
 		const target: FlatProjectItem = {
 			type: "note",
 			note: makeNote({ name: "B", path: "n/b.md" }),

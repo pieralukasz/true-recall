@@ -5,9 +5,12 @@ import type {
 } from "@true-recall/core/types";
 import { Clickable } from "@true-recall/obsidian/components";
 import { IOCardRenderer } from "@true-recall/obsidian/features/image-occlusion/IOCardRenderer";
+import {
+	type PresetPickerOption,
+	PresetPopover,
+} from "@true-recall/obsidian/features/study/ui/review/components";
 import { LivePreviewField } from "@true-recall/obsidian/features/study/ui/review/components/LivePreviewField";
 import { TypeInCMEditor } from "@true-recall/obsidian/features/study/ui/review/components/TypeInCMEditor";
-import { type PresetPickerOption, PresetPopover } from "@true-recall/obsidian/features/study/ui/review/components";
 import { cn } from "@true-recall/obsidian/utils/cn";
 import { useEffect, useRef, useState } from "preact/hooks";
 
@@ -202,6 +205,7 @@ export function CardContainer({
 						templateOrd={card.templateOrd}
 						revealed={isAnswerRevealed}
 						revealSingleOnly
+						expandable
 					/>
 
 					<CardFooter

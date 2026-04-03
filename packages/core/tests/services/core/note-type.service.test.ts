@@ -5,9 +5,7 @@
  * Uses in-memory SQLite v26 through NoteTypeActions/NoteActions.
  */
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import {
-	NoteTypeService,
-} from "../../../src/services/notes/note-type.service";
+import { NoteTypeService } from "../../../src/services/notes/note-type.service";
 import {
 	BUILTIN_BASIC_ID,
 	BUILTIN_BASIC_REVERSED_ID,
@@ -15,12 +13,12 @@ import {
 	BUILTIN_IMAGE_OCCLUSION_ID,
 } from "../../../src/types/note.types";
 import {
-	type TestContext,
 	createTestContext,
 	createTestNote,
+	createTestNoteType,
 	insertNoteDirect,
 	insertNoteTypeDirect,
-	createTestNoteType,
+	type TestContext,
 } from "../../persistence/sqlite/__setup__/test-database";
 
 describe("NoteTypeService", () => {
@@ -162,18 +160,14 @@ describe("NoteTypeService", () => {
 			service.create({
 				name: "Unique Name",
 				fields: ["A"],
-				templates: [
-					{ name: "C1", ordinal: 0, qfmt: "{{A}}", afmt: "{{A}}" },
-				],
+				templates: [{ name: "C1", ordinal: 0, qfmt: "{{A}}", afmt: "{{A}}" }],
 			});
 
 			expect(() =>
 				service.create({
 					name: "Unique Name",
 					fields: ["B"],
-					templates: [
-						{ name: "C1", ordinal: 0, qfmt: "{{B}}", afmt: "{{B}}" },
-					],
+					templates: [{ name: "C1", ordinal: 0, qfmt: "{{B}}", afmt: "{{B}}" }],
 				}),
 			).toThrow();
 		});
@@ -198,9 +192,7 @@ describe("NoteTypeService", () => {
 			const created = service.create({
 				name: "Original",
 				fields: ["A", "B"],
-				templates: [
-					{ name: "C1", ordinal: 0, qfmt: "{{A}}", afmt: "{{B}}" },
-				],
+				templates: [{ name: "C1", ordinal: 0, qfmt: "{{A}}", afmt: "{{B}}" }],
 			});
 
 			service.update(created.id, {
@@ -225,9 +217,7 @@ describe("NoteTypeService", () => {
 			const created = service.create({
 				name: "TS Test",
 				fields: ["A"],
-				templates: [
-					{ name: "C1", ordinal: 0, qfmt: "{{A}}", afmt: "{{A}}" },
-				],
+				templates: [{ name: "C1", ordinal: 0, qfmt: "{{A}}", afmt: "{{A}}" }],
 			});
 
 			const beforeTs = created.updatedAt;
@@ -242,9 +232,7 @@ describe("NoteTypeService", () => {
 			const created = service.create({
 				name: "To Delete",
 				fields: ["A"],
-				templates: [
-					{ name: "C1", ordinal: 0, qfmt: "{{A}}", afmt: "{{A}}" },
-				],
+				templates: [{ name: "C1", ordinal: 0, qfmt: "{{A}}", afmt: "{{A}}" }],
 			});
 
 			service.delete(created.id);
@@ -262,16 +250,11 @@ describe("NoteTypeService", () => {
 			const created = service.create({
 				name: "In Use",
 				fields: ["A"],
-				templates: [
-					{ name: "C1", ordinal: 0, qfmt: "{{A}}", afmt: "{{A}}" },
-				],
+				templates: [{ name: "C1", ordinal: 0, qfmt: "{{A}}", afmt: "{{A}}" }],
 			});
 
 			// Insert a note using this type (type already in DB from service.create)
-			insertNoteDirect(
-				ctx.db,
-				createTestNote({ noteTypeId: created.id }),
-			);
+			insertNoteDirect(ctx.db, createTestNote({ noteTypeId: created.id }));
 
 			expect(() => service.delete(created.id)).toThrow();
 		});
@@ -280,9 +263,7 @@ describe("NoteTypeService", () => {
 			const created = service.create({
 				name: "Unused",
 				fields: ["A"],
-				templates: [
-					{ name: "C1", ordinal: 0, qfmt: "{{A}}", afmt: "{{A}}" },
-				],
+				templates: [{ name: "C1", ordinal: 0, qfmt: "{{A}}", afmt: "{{A}}" }],
 			});
 
 			// No notes reference it
@@ -293,9 +274,7 @@ describe("NoteTypeService", () => {
 			const created = service.create({
 				name: "Will Delete",
 				fields: ["A"],
-				templates: [
-					{ name: "C1", ordinal: 0, qfmt: "{{A}}", afmt: "{{A}}" },
-				],
+				templates: [{ name: "C1", ordinal: 0, qfmt: "{{A}}", afmt: "{{A}}" }],
 			});
 
 			const beforeCount = service.getAll().length;

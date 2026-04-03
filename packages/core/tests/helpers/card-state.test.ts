@@ -1,18 +1,21 @@
 /**
  * Tests for card state helpers
  */
-import { describe, it, expect } from "vitest";
+
 import { State } from "ts-fsrs";
+import { describe, expect, it } from "vitest";
 import {
-	filterActiveCardsOnly,
+	aggregateCardStateCounts,
 	countCardsByState,
 	countCardsByStateWithDue,
-	aggregateCardStateCounts,
+	filterActiveCardsOnly,
 } from "../../src/helpers/card-state";
 import type { FSRSFlashcardItem } from "../../src/types";
 
 // Helper to create mock FSRS card
-function createMockFsrsCard(overrides: Partial<FSRSFlashcardItem> = {}): FSRSFlashcardItem {
+function createMockFsrsCard(
+	overrides: Partial<FSRSFlashcardItem> = {},
+): FSRSFlashcardItem {
 	return {
 		id: "test-id",
 		question: "Test question",
@@ -36,7 +39,9 @@ function createMockFsrsCard(overrides: Partial<FSRSFlashcardItem> = {}): FSRSFla
 }
 
 // Helper to create mock raw card (for filtering)
-function createMockRawCard(overrides: Partial<{ suspended?: boolean; buriedUntil?: string | null }> = {}) {
+function createMockRawCard(
+	overrides: Partial<{ suspended?: boolean; buriedUntil?: string | null }> = {},
+) {
 	return {
 		id: "test-id",
 		suspended: false,
@@ -102,8 +107,12 @@ describe("filterActiveCardsOnly", () => {
 describe("countCardsByState", () => {
 	it("should count new cards", () => {
 		const cards = [
-			createMockFsrsCard({ fsrs: { ...createMockFsrsCard().fsrs, state: State.New } }),
-			createMockFsrsCard({ fsrs: { ...createMockFsrsCard().fsrs, state: State.New } }),
+			createMockFsrsCard({
+				fsrs: { ...createMockFsrsCard().fsrs, state: State.New },
+			}),
+			createMockFsrsCard({
+				fsrs: { ...createMockFsrsCard().fsrs, state: State.New },
+			}),
 		];
 
 		const counts = countCardsByState(cards);
@@ -115,8 +124,12 @@ describe("countCardsByState", () => {
 
 	it("should count learning and relearning cards together", () => {
 		const cards = [
-			createMockFsrsCard({ fsrs: { ...createMockFsrsCard().fsrs, state: State.Learning } }),
-			createMockFsrsCard({ fsrs: { ...createMockFsrsCard().fsrs, state: State.Relearning } }),
+			createMockFsrsCard({
+				fsrs: { ...createMockFsrsCard().fsrs, state: State.Learning },
+			}),
+			createMockFsrsCard({
+				fsrs: { ...createMockFsrsCard().fsrs, state: State.Relearning },
+			}),
 		];
 
 		const counts = countCardsByState(cards);
@@ -126,7 +139,9 @@ describe("countCardsByState", () => {
 
 	it("should count review cards", () => {
 		const cards = [
-			createMockFsrsCard({ fsrs: { ...createMockFsrsCard().fsrs, state: State.Review } }),
+			createMockFsrsCard({
+				fsrs: { ...createMockFsrsCard().fsrs, state: State.Review },
+			}),
 		];
 
 		const counts = countCardsByState(cards);
@@ -136,7 +151,13 @@ describe("countCardsByState", () => {
 
 	it("should skip suspended cards", () => {
 		const cards = [
-			createMockFsrsCard({ fsrs: { ...createMockFsrsCard().fsrs, state: State.New, suspended: true } }),
+			createMockFsrsCard({
+				fsrs: {
+					...createMockFsrsCard().fsrs,
+					state: State.New,
+					suspended: true,
+				},
+			}),
 		];
 
 		const counts = countCardsByState(cards);
@@ -150,7 +171,11 @@ describe("countCardsByState", () => {
 
 		const cards = [
 			createMockFsrsCard({
-				fsrs: { ...createMockFsrsCard().fsrs, state: State.New, buriedUntil: tomorrow.toISOString() },
+				fsrs: {
+					...createMockFsrsCard().fsrs,
+					state: State.New,
+					buriedUntil: tomorrow.toISOString(),
+				},
 			}),
 		];
 
@@ -174,8 +199,18 @@ describe("countCardsByStateWithDue", () => {
 		dueTomorrow.setDate(dueTomorrow.getDate() + 2);
 
 		const cards = [
-			{ state: State.Review, due: dueYesterday.toISOString(), suspended: false, buriedUntil: null },
-			{ state: State.Review, due: dueTomorrow.toISOString(), suspended: false, buriedUntil: null },
+			{
+				state: State.Review,
+				due: dueYesterday.toISOString(),
+				suspended: false,
+				buriedUntil: null,
+			},
+			{
+				state: State.Review,
+				due: dueTomorrow.toISOString(),
+				suspended: false,
+				buriedUntil: null,
+			},
 		];
 
 		const counts = countCardsByStateWithDue(cards, tomorrowBoundary);

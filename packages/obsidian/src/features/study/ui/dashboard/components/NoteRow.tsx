@@ -35,10 +35,21 @@ export function NoteRow({
 	isSelectionMode,
 	isSelected,
 	onToggleSelect,
+	onEnterSelection,
 }: NoteRowProps) {
-	const handleClick = isSelectionMode
-		? (onToggleSelect ?? onNavigate)
-		: onNavigate;
+	const handleClick = (e: MouseEvent | KeyboardEvent) => {
+		const isModifier = "metaKey" in e && (e.metaKey || e.ctrlKey);
+
+		if (isModifier && !isSelectionMode) {
+			onEnterSelection?.();
+		} else if (isModifier && isSelectionMode) {
+			onToggleSelect?.();
+		} else if (isSelectionMode) {
+			(onToggleSelect ?? onNavigate)();
+		} else {
+			onNavigate();
+		}
+	};
 
 	return (
 		<Clickable

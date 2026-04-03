@@ -1,8 +1,13 @@
 import { vi } from "vitest";
-import { AnkiMediaService, type IVaultFileReader } from "../../../src/integration/anki/anki-media.service";
+import {
+	AnkiMediaService,
+	type IVaultFileReader,
+} from "../../../src/integration/anki/anki-media.service";
 import type { IPersistence } from "../../../src/interfaces/persistence";
 
-function createMockPersistence(): IPersistence & { _files: Record<string, ArrayBuffer> } {
+function createMockPersistence(): IPersistence & {
+	_files: Record<string, ArrayBuffer>;
+} {
 	const files: Record<string, ArrayBuffer> = {};
 	return {
 		exists: vi.fn(async (path: string) => path in files),
@@ -22,7 +27,9 @@ function createMockPersistence(): IPersistence & { _files: Record<string, ArrayB
 	};
 }
 
-function createMockFileReader(files: Record<string, ArrayBuffer>): IVaultFileReader {
+function createMockFileReader(
+	files: Record<string, ArrayBuffer>,
+): IVaultFileReader {
 	return {
 		exists: vi.fn(async (path: string) => path in files),
 		readBinary: vi.fn(async (path: string) => {

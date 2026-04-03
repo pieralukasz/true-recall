@@ -5,12 +5,13 @@
  * These tests define expected behavior for data integrity.
  * Code may need to be modified to pass these tests.
  */
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+
 import { State } from "ts-fsrs";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
-	createTestContext,
-	createTestCard,
 	createCardWithSource,
+	createTestCard,
+	createTestContext,
 	getRawCard,
 	type TestContext,
 } from "./__setup__/test-database";
@@ -60,8 +61,10 @@ describe("Card Lifecycle", () => {
 		});
 
 		it("should store question and answer content correctly", async () => {
-			const question = "What is **markdown** with `code` and special chars: <>&\"'?";
-			const answer = "Content with:\n- newlines\n- unicode: 日本語 🎉\n- tabs:\t\there";
+			const question =
+				"What is **markdown** with `code` and special chars: <>&\"'?";
+			const answer =
+				"Content with:\n- newlines\n- unicode: 日本語 🎉\n- tabs:\t\there";
 
 			const card = createTestCard({ question, answer });
 			ctx.cards.set(card.id, card);
@@ -267,11 +270,11 @@ describe("Card Lifecycle", () => {
 			const reviewId2 = "review-2";
 			ctx.db.run(
 				`INSERT INTO review_log (id, card_id, reviewed_at, rating) VALUES (?, ?, ?, ?)`,
-				[reviewId1, card.id, new Date().toISOString(), 3]
+				[reviewId1, card.id, new Date().toISOString(), 3],
 			);
 			ctx.db.run(
 				`INSERT INTO review_log (id, card_id, reviewed_at, rating) VALUES (?, ?, ?, ?)`,
-				[reviewId2, card.id, new Date().toISOString(), 4]
+				[reviewId2, card.id, new Date().toISOString(), 4],
 			);
 
 			// Soft delete with cascade
@@ -280,7 +283,7 @@ describe("Card Lifecycle", () => {
 			// Check review logs are also soft deleted
 			const logs = ctx.db.query<{ id: string; deleted_at: number | null }>(
 				`SELECT id, deleted_at FROM review_log WHERE card_id = ?`,
-				[card.id]
+				[card.id],
 			);
 
 			expect(logs).toHaveLength(2);
@@ -363,9 +366,18 @@ describe("Card Lifecycle", () => {
 	describe("Source UID Operations", () => {
 		it("should find multiple cards by source UID", async () => {
 			const sourceUid = "source123";
-			ctx.cards.set("card-1", createCardWithSource(sourceUid, { id: "card-1" }));
-			ctx.cards.set("card-2", createCardWithSource(sourceUid, { id: "card-2" }));
-			ctx.cards.set("card-3", createCardWithSource("other456", { id: "card-3" }));
+			ctx.cards.set(
+				"card-1",
+				createCardWithSource(sourceUid, { id: "card-1" }),
+			);
+			ctx.cards.set(
+				"card-2",
+				createCardWithSource(sourceUid, { id: "card-2" }),
+			);
+			ctx.cards.set(
+				"card-3",
+				createCardWithSource("other456", { id: "card-3" }),
+			);
 
 			const cards = ctx.cards.getCardsBySourceUid(sourceUid);
 			expect(cards).toHaveLength(2);
@@ -383,21 +395,21 @@ describe("Card Lifecycle", () => {
 				createCardWithSource(sourceUid, {
 					id: "card-b",
 					createdAt: now + 1000,
-				})
+				}),
 			);
 			ctx.cards.set(
 				"card-a",
 				createCardWithSource(sourceUid, {
 					id: "card-a",
 					createdAt: now,
-				})
+				}),
 			);
 			ctx.cards.set(
 				"card-c",
 				createCardWithSource(sourceUid, {
 					id: "card-c",
 					createdAt: now + 2000,
-				})
+				}),
 			);
 
 			const cards = ctx.cards.getCardsBySourceUid(sourceUid);
@@ -406,8 +418,14 @@ describe("Card Lifecycle", () => {
 
 		it("should exclude deleted cards when fetching by source UID", async () => {
 			const sourceUid = "source123";
-			ctx.cards.set("card-1", createCardWithSource(sourceUid, { id: "card-1" }));
-			ctx.cards.set("card-2", createCardWithSource(sourceUid, { id: "card-2" }));
+			ctx.cards.set(
+				"card-1",
+				createCardWithSource(sourceUid, { id: "card-1" }),
+			);
+			ctx.cards.set(
+				"card-2",
+				createCardWithSource(sourceUid, { id: "card-2" }),
+			);
 
 			ctx.cards.softDelete("card-1");
 

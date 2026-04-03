@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
-	buildForecastSummary,
 	buildDayOfWeekStats,
+	buildForecastSummary,
 } from "../../src/metrics/forecast-filter";
 import type { WorkloadForecastEntry } from "../../src/metrics/fsrs-tools/statistics/workload-forecast.calculator";
 

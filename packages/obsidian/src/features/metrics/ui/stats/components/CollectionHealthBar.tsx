@@ -1,6 +1,6 @@
 import type { CollectionHealthSnapshot } from "@true-recall/core";
-import { ChartCard } from "./ChartCard";
 import { getThemeColor } from "../helpers/chart-theme";
+import { ChartCard } from "./ChartCard";
 
 interface CollectionHealthBarProps {
 	data: CollectionHealthSnapshot;

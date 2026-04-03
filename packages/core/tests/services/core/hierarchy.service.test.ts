@@ -1,6 +1,6 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import type { IMetadataIndex } from "../../../src/interfaces/metadata-index";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { IFileSystem } from "../../../src/interfaces/file-system";
+import type { IMetadataIndex } from "../../../src/interfaces/metadata-index";
 import { FrontmatterIndexService } from "../../../src/services/notes/frontmatter-index.service";
 import { HierarchyService } from "../../../src/services/notes/hierarchy.service";
 
@@ -102,7 +102,11 @@ describe("HierarchyService", () => {
 			return null;
 		};
 
-		service = new HierarchyService(frontmatterIndex, mockFileSystem, resolveLinkPath);
+		service = new HierarchyService(
+			frontmatterIndex,
+			mockFileSystem,
+			resolveLinkPath,
+		);
 	});
 
 	describe("buildHierarchy", () => {

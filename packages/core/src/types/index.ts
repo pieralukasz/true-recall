@@ -117,6 +117,7 @@ export type {
 	NewCardOrder,
 	NewReviewMix,
 	OptimizationMetrics,
+	ReviewKeybindings,
 	ReviewOrder,
 	ScheduledBreak,
 	ToolbarButtonConfig,

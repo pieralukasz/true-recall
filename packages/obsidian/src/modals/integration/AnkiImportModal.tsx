@@ -39,6 +39,8 @@ import type { App } from "obsidian";
 import { render } from "preact";
 import { useCallback, useState } from "preact/hooks";
 
+const DEFAULT_IMPORT_FOLDER = "Anki Import";
+
 function AnkiImportBody({
 	onFileSelected,
 	onShowMapping,
@@ -54,6 +56,7 @@ function AnkiImportBody({
 		importScheduling: boolean;
 		importMedia: boolean;
 		useAI: boolean;
+		importFolder: string;
 		modelMappings: Map<number, ModelMapping>;
 		setPhase: (phase: ImportPhase) => void;
 	}) => Promise<ImportPhase>;
@@ -66,6 +69,7 @@ function AnkiImportBody({
 	const [importScheduling, setImportScheduling] = useState(true);
 	const [importMedia, setImportMedia] = useState(true);
 	const [useAI, setUseAI] = useState(aiKeyAvailable);
+	const [importFolder, setImportFolder] = useState(DEFAULT_IMPORT_FOLDER);
 
 	const handleFile = useCallback(
 		async (file: File) => {
@@ -94,6 +98,7 @@ function AnkiImportBody({
 				importScheduling,
 				importMedia,
 				useAI,
+				importFolder,
 				modelMappings,
 				setPhase,
 			});
@@ -102,7 +107,14 @@ function AnkiImportBody({
 				onUpdateTitle("Import complete");
 			}
 		},
-		[onImport, importScheduling, importMedia, useAI, onUpdateTitle],
+		[
+			onImport,
+			importScheduling,
+			importMedia,
+			useAI,
+			importFolder,
+			onUpdateTitle,
+		],
 	);
 
 	switch (phase.type) {
@@ -135,9 +147,11 @@ function AnkiImportBody({
 					importMedia={importMedia}
 					useAI={useAI}
 					hasAIKey={aiKeyAvailable}
+					importFolder={importFolder}
 					onSchedulingChange={setImportScheduling}
 					onMediaChange={setImportMedia}
 					onUseAIChange={setUseAI}
+					onImportFolderChange={setImportFolder}
 					onContinue={() => handleContinueToMapping(phase.preview)}
 					onCancel={onClose}
 				/>
@@ -245,6 +259,7 @@ export class AnkiImportModal extends BaseModal {
 		importScheduling: boolean;
 		importMedia: boolean;
 		useAI: boolean;
+		importFolder: string;
 		modelMappings: Map<number, ModelMapping>;
 		setPhase: (phase: ImportPhase) => void;
 	}): Promise<ImportPhase> {
@@ -274,11 +289,11 @@ export class AnkiImportModal extends BaseModal {
 			);
 
 			const topDeck = (
-				(this.deckNames[0] ?? "anki-import").split("/").at(0) ?? "anki-import"
+				(this.deckNames[0] ?? "import").split("/").at(0) ?? "import"
 			)
 				.replace(/[\\/:*?"<>|]/g, "-")
 				.trim();
-			const mediaFolder = `Attachments/anki-import/${topDeck}`;
+			const mediaFolder = `Attachments/${opts.importFolder}/${topDeck}`;
 
 			const result = await importService.importCards(
 				this.apkgData,
@@ -286,6 +301,7 @@ export class AnkiImportModal extends BaseModal {
 				{
 					importScheduling: opts.importScheduling,
 					importMedia: opts.importMedia,
+					importFolder: opts.importFolder,
 					mediaFolder,
 					modelMappings: opts.modelMappings,
 				},

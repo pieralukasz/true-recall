@@ -1,14 +1,14 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import type { IMetadataIndex } from "../../../src/interfaces/metadata-index";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { IFileSystem } from "../../../src/interfaces/file-system";
+import type { IMetadataIndex } from "../../../src/interfaces/metadata-index";
 import { FrontmatterIndexService } from "../../../src/services/notes/frontmatter-index.service";
 import { HierarchyService } from "../../../src/services/notes/hierarchy.service";
 import { PresetService } from "../../../src/services/notes/preset.service";
+import type { FSRSFlashcardItem } from "../../../src/types/fsrs";
 import type {
 	FSRSPreset,
 	TrueRecallSettings,
 } from "../../../src/types/settings.types";
-import type { FSRSFlashcardItem } from "../../../src/types/fsrs";
 
 function makePreset(name: string, id?: string): FSRSPreset {
 	return {
@@ -153,7 +153,11 @@ describe("PresetService — 3-tier resolution", () => {
 			return null;
 		};
 
-		hierarchyService = new HierarchyService(frontmatterIndex, mockFileSystem, resolveLinkPath);
+		hierarchyService = new HierarchyService(
+			frontmatterIndex,
+			mockFileSystem,
+			resolveLinkPath,
+		);
 
 		presetService = new PresetService(
 			() => settings,
@@ -363,9 +367,8 @@ describe("PresetService — 3-tier resolution", () => {
 			frontmatterIndex.rebuildIndex();
 			hierarchyService.invalidateGraph();
 
-			const { chain, effective } = presetService.resolvePresetChain(
-				"Notes/Bones.md",
-			);
+			const { chain, effective } =
+				presetService.resolvePresetChain("Notes/Bones.md");
 
 			expect(chain).toHaveLength(3);
 			expect(chain[0]).toMatchObject({
@@ -419,16 +422,15 @@ describe("PresetService — updatePreset rename propagation", () => {
 		mockUpdatePresetName = vi.fn();
 
 		settings = {
-			fsrsPresets: [
-				makePreset("Default", "default-id"),
-				{ ...presetA },
-			],
+			fsrsPresets: [makePreset("Default", "default-id"), { ...presetA }],
 			defaultPresetId: "default-id",
 		} as unknown as TrueRecallSettings;
 	});
 
 	function createServiceWithCardStore(
-		getCardStore?: () => { stats: { updateReviewLogPresetName: ReturnType<typeof vi.fn> } } | null,
+		getCardStore?: () => {
+			stats: { updateReviewLogPresetName: ReturnType<typeof vi.fn> };
+		} | null,
 	): PresetService {
 		return new PresetService(
 			() => settings,

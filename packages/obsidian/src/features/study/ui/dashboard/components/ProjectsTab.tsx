@@ -11,7 +11,9 @@ import {
 	collectMatchingPaths,
 	flattenProjectTree,
 } from "../helpers/project-tree-flatten";
+import { useNoteBulkActions } from "../helpers/use-note-bulk-actions";
 import { useNoteContextMenu } from "../helpers/use-note-context-menu";
+import { useNoteSelection } from "../helpers/use-note-selection";
 import { useProjectActions } from "../helpers/use-project-actions";
 import { useProjectContextMenu } from "../helpers/use-project-context-menu";
 import { useProjectDragDrop } from "../helpers/use-project-drag-drop";
@@ -19,6 +21,7 @@ import { useExternalVirtualList } from "../helpers/use-virtual-list";
 import type { DashboardProject } from "../types";
 import { NoteRow } from "./NoteRow";
 import { EmptyProjectRow, ProjectHeaderRow } from "./ProjectHeaderRow";
+import { SelectionBar } from "./SelectionBar";
 
 interface ProjectsTabProps {
 	projects: DashboardProject[];
@@ -72,6 +75,32 @@ export function ProjectsTab({
 		[projects, expandedPaths.value, searchQuery],
 	);
 
+	const allNotes = useMemo(
+		() => flatItems.filter((i) => i.type === "note").map((i) => i.note),
+		[flatItems],
+	);
+
+	const {
+		selectedPaths,
+		selectedCount,
+		isSelecting,
+		exitSelection,
+		toggleSelect,
+		enterSelection,
+		selectAll,
+	} = useNoteSelection({ filteredNotes: allNotes });
+
+	const {
+		handleCreateProjectFromSelected,
+		handleAssignToProject,
+		handleArchiveSelected,
+		handleStudySelected,
+	} = useNoteBulkActions({
+		selectedPaths,
+		filteredNotes: allNotes,
+		exitSelection,
+	});
+
 	const { totalHeight, virtualItems } = useExternalVirtualList({
 		items: flatItems,
 		scrollContainerRef,
@@ -103,6 +132,18 @@ export function ProjectsTab({
 
 	return (
 		<div>
+			{isSelecting && (
+				<SelectionBar
+					selectedCount={selectedCount}
+					onSelectAll={selectAll}
+					onCreateProject={() => void handleCreateProjectFromSelected()}
+					onAssignToProject={() => void handleAssignToProject()}
+					onArchive={() => void handleArchiveSelected()}
+					onStudy={handleStudySelected}
+					onCancel={exitSelection}
+				/>
+			)}
+
 			{dragState.value && (
 				<RootDropZone
 					position="top"
@@ -153,6 +194,12 @@ export function ProjectsTab({
 								item={item}
 								offsetTop={offsetTop}
 								dragState={dragState}
+								isSelecting={isSelecting}
+								isSelected={
+									item.note.path
+										? selectedPaths.value.has(item.note.path)
+										: false
+								}
 								plugin={plugin}
 								onStudyNote={onStudyNote}
 								onPresetClick={onPresetClick}
@@ -160,6 +207,22 @@ export function ProjectsTab({
 								onRename={handleRename}
 								onCreateProject={handleCreateProjectFromNote}
 								onAssignToProject={handleAssignNoteToProject}
+								onToggleSelect={
+									item.note.path
+										? () => {
+												const p = item.note.path;
+												if (p) toggleSelect(p);
+											}
+										: undefined
+								}
+								onEnterSelection={
+									item.note.path
+										? () => {
+												const p = item.note.path;
+												if (p) enterSelection(p);
+											}
+										: undefined
+								}
 								onDragStart={handleDragStart}
 								onDragEnd={handleDragEnd}
 								onDragOver={handleDragOver}
@@ -349,6 +412,8 @@ interface NoteItemProps {
 	item: Extract<FlatProjectItem, { type: "note" }>;
 	offsetTop: number;
 	dragState: Signal<import("../helpers/drag-drop").DragState | null>;
+	isSelecting: boolean;
+	isSelected: boolean;
 	plugin: ReturnType<typeof usePlugin>;
 	onStudyNote: (noteName: string, projectPath?: string) => void;
 	onPresetClick?: (path: string | null) => void;
@@ -356,6 +421,8 @@ interface NoteItemProps {
 	onRename: (path: string) => Promise<void>;
 	onCreateProject: (path: string) => Promise<void>;
 	onAssignToProject: (path: string) => Promise<void>;
+	onToggleSelect?: () => void;
+	onEnterSelection?: () => void;
 	onDragStart: (e: DragEvent, item: FlatProjectItem) => void;
 	onDragEnd: () => void;
 	onDragOver: (e: DragEvent, item: FlatProjectItem) => void;
@@ -366,6 +433,8 @@ function NoteItem({
 	item,
 	offsetTop,
 	dragState,
+	isSelecting,
+	isSelected,
 	plugin,
 	onStudyNote,
 	onPresetClick,
@@ -373,6 +442,8 @@ function NoteItem({
 	onRename,
 	onCreateProject,
 	onAssignToProject,
+	onToggleSelect,
+	onEnterSelection,
 	onDragStart,
 	onDragEnd,
 	onDragOver,
@@ -417,6 +488,7 @@ function NoteItem({
 		onArchive: notePath ? () => onArchive(notePath, true) : undefined,
 		onUnarchive: notePath ? () => onArchive(notePath, false) : undefined,
 		onDetach: handleDetach,
+		onEnterSelection,
 		onCreateProject:
 			isUnassigned && notePath
 				? () => void onCreateProject(notePath)
@@ -431,7 +503,7 @@ function NoteItem({
 		<div
 			role="listitem"
 			class={dragCls || undefined}
-			draggable={!!item.note.path}
+			draggable={!isSelecting && !!item.note.path}
 			onDragStart={(e) => onDragStart(e, item)}
 			onDragEnd={onDragEnd}
 			onDragOver={(e) => onDragOver(e, item)}
@@ -452,6 +524,10 @@ function NoteItem({
 				onStudy={handleStudy}
 				onCustomStudy={handleCustomStudy}
 				onPresetClick={onPresetClick}
+				isSelectionMode={isSelecting}
+				isSelected={isSelected}
+				onToggleSelect={onToggleSelect}
+				onEnterSelection={onEnterSelection}
 				onArchive={() =>
 					item.note.path ? onArchive(item.note.path, true) : undefined
 				}

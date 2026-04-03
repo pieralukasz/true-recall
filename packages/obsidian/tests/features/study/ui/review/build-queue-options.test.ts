@@ -1,8 +1,11 @@
-import { describe, it, expect, vi } from "vitest";
+import type { SessionPersistenceService } from "@true-recall/core/persistence/session/session-persistence.service";
+import type {
+	FSRSPreset,
+	TrueRecallSettings,
+} from "@true-recall/core/types/settings.types";
+import { describe, expect, it, vi } from "vitest";
 import { buildQueueOptions } from "../../../../../src/features/study/ui/review/helpers/session-helpers";
 import type { SessionFilters } from "../../../../../src/features/study/ui/review/review.types";
-import type { FSRSPreset, TrueRecallSettings } from "@true-recall/core/types/settings.types";
-import type { SessionPersistenceService } from "@true-recall/core/persistence/session/session-persistence.service";
 
 function makeSettings(
 	overrides: Partial<TrueRecallSettings> = {},
@@ -46,8 +49,7 @@ function makeSessionPersistence(
 	const reviewedToday = (overrides.reviewedToday ??
 		new Set<string>()) as Set<string>;
 	const newStudied = (overrides.newCardsStudiedToday ?? 0) as number;
-	const reviewsCompleted =
-		(overrides.reviewCardsCompletedToday ?? 0) as number;
+	const reviewsCompleted = (overrides.reviewCardsCompletedToday ?? 0) as number;
 
 	return {
 		getReviewedToday: vi.fn(() => reviewedToday),
@@ -56,9 +58,7 @@ function makeSessionPersistence(
 	} as unknown as SessionPersistenceService;
 }
 
-function makeFilters(
-	overrides: Partial<SessionFilters> = {},
-): SessionFilters {
+function makeFilters(overrides: Partial<SessionFilters> = {}): SessionFilters {
 	return { ...overrides };
 }
 

@@ -109,4 +109,3 @@ describe("image occlusion definition helpers", () => {
 		expect(normalizeIOImagePath("folder/pic.webp")).toBe("folder/pic.webp");
 	});
 });
-

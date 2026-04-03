@@ -105,7 +105,8 @@ describe("cm6-formatting", () => {
 	});
 
 	it("clears known markdown formatting from selection", () => {
-		const text = "**bold** [[link]] <u>under</u> <span style=\"color:var(--color-red)\">red</span>";
+		const text =
+			'**bold** [[link]] <u>under</u> <span style="color:var(--color-red)">red</span>';
 		const view = new MockEditorView(text, 0, text.length);
 
 		clearFormatting(view as never);

@@ -1,17 +1,18 @@
 /**
  * Tests for FSRSService - core FSRS scheduling logic
  */
-import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
-import { State, Rating } from "ts-fsrs";
+
+import { Rating, State } from "ts-fsrs";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { FSRSService } from "../../../src/services/fsrs/fsrs.service";
 import {
-	createMockCard,
-	createNewCard,
-	createLearningCard,
-	createReviewCard,
-	createMockFlashcard,
 	createDefaultFSRSSettings,
+	createLearningCard,
 	createMixedCardQueue,
+	createMockCard,
+	createMockFlashcard,
+	createNewCard,
+	createReviewCard,
 } from "../../mocks/fsrs.mocks";
 
 describe("FSRSService", () => {
@@ -94,9 +95,7 @@ describe("FSRSService", () => {
 			const customTime = new Date("2024-01-20T15:00:00Z");
 
 			const result = service.scheduleCard(card, Rating.Good, customTime);
-			expect(new Date(result.lastReview!).getTime()).toBe(
-				customTime.getTime()
-			);
+			expect(new Date(result.lastReview!).getTime()).toBe(customTime.getTime());
 		});
 
 		it("should handle Again rating on Review card (lapse)", () => {
@@ -172,9 +171,8 @@ describe("FSRSService", () => {
 			service.getSchedulingPreview(card, customPreset);
 			service.getSchedulingPreview(card, customPreset);
 
-			const cache = (
-				service as unknown as { fsrsCache: Map<string, unknown> }
-			).fsrsCache;
+			const cache = (service as unknown as { fsrsCache: Map<string, unknown> })
+				.fsrsCache;
 			// default settings engine + one cached preset engine
 			expect(cache.size).toBe(2);
 		});
@@ -232,7 +230,7 @@ describe("FSRSService", () => {
 			expect(dueCards.length).toBeGreaterThan(0);
 			dueCards.forEach((card) => {
 				expect(new Date(card.fsrs.due).getTime()).toBeLessThanOrEqual(
-					Date.now()
+					Date.now(),
 				);
 			});
 		});
@@ -313,7 +311,7 @@ describe("FSRSService", () => {
 			const learningCards = service.getLearningCards(cards);
 
 			const hasLearning = learningCards.some(
-				(c) => c.fsrs.state === State.Learning
+				(c) => c.fsrs.state === State.Learning,
 			);
 			expect(hasLearning).toBe(true);
 		});
@@ -500,10 +498,7 @@ describe("FSRSService", () => {
 
 			// 7 days later
 			const laterDate = new Date(Date.now() + 7 * 86400000);
-			const laterRetrievability = service.getRetrievability(
-				card,
-				laterDate
-			);
+			const laterRetrievability = service.getRetrievability(card, laterDate);
 
 			expect(laterRetrievability).toBeLessThan(nowRetrievability);
 		});
@@ -649,11 +644,19 @@ describe("FSRSService", () => {
 			const cards = [
 				createMockFlashcard({
 					id: "a",
-					fsrs: { state: State.Review, stability: 10, lastReview: new Date("2024-06-14").toISOString() },
+					fsrs: {
+						state: State.Review,
+						stability: 10,
+						lastReview: new Date("2024-06-14").toISOString(),
+					},
 				}),
 				createMockFlashcard({
 					id: "b",
-					fsrs: { state: State.Review, stability: 5, lastReview: new Date("2024-06-14").toISOString() },
+					fsrs: {
+						state: State.Review,
+						stability: 5,
+						lastReview: new Date("2024-06-14").toISOString(),
+					},
 				}),
 			];
 			const originalFirst = cards[0].id;
@@ -681,7 +684,9 @@ describe("FSRSService", () => {
 				presetSettings,
 			);
 
-			expect(resultPreset.scheduledDays).toBeGreaterThan(resultDefault.scheduledDays);
+			expect(resultPreset.scheduledDays).toBeGreaterThan(
+				resultDefault.scheduledDays,
+			);
 		});
 
 		it("should respect preset maximumInterval", () => {
@@ -691,7 +696,12 @@ describe("FSRSService", () => {
 				maximumInterval: 5,
 			};
 
-			const result = service.scheduleCard(card, Rating.Easy, undefined, presetSettings);
+			const result = service.scheduleCard(
+				card,
+				Rating.Easy,
+				undefined,
+				presetSettings,
+			);
 
 			// With max interval 5, scheduled days should be capped
 			expect(result.scheduledDays).toBeLessThanOrEqual(8); // fuzz tolerance

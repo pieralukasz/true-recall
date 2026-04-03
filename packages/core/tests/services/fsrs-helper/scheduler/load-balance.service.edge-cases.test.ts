@@ -2,13 +2,13 @@
  * Load Balance Service Edge Case Tests
  * Behavior-first tests for edge cases and boundary conditions
  */
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { LoadBalanceService } from "../../../../src/metrics/fsrs-tools/scheduler/load-balance.service";
 import {
-	createMockCardStore,
+	addDays,
 	createCardsOnDate,
 	createEasyDaysConfig,
-	addDays,
+	createMockCardStore,
 } from "../mocks/scheduler.mocks";
 
 describe("LoadBalanceService - Edge Cases", () => {
@@ -391,8 +391,14 @@ describe("LoadBalanceService - Edge Cases", () => {
 			});
 
 			// Total cards should remain the same
-			const beforeTotal = result.beforeDistribution.reduce((sum, d) => sum + d.count, 0);
-			const afterTotal = result.afterDistribution.reduce((sum, d) => sum + d.count, 0);
+			const beforeTotal = result.beforeDistribution.reduce(
+				(sum, d) => sum + d.count,
+				0,
+			);
+			const afterTotal = result.afterDistribution.reduce(
+				(sum, d) => sum + d.count,
+				0,
+			);
 
 			expect(afterTotal).toBe(beforeTotal);
 		});

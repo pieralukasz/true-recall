@@ -1,4 +1,4 @@
-// eslint-disable-next-line import/no-nodejs-modules -- MCP server communication requires Node.js HTTP server on localhost
+// eslint-disable-next-line import/no-nodejs-modules -- CLI API server requires Node.js HTTP server on localhost
 // biome-ignore lint/style/useNodejsImportProtocol: esbuild can't resolve node: prefix in Obsidian/Electron bundle
 import { createServer, type Server } from "http";
 import { Notice } from "obsidian";

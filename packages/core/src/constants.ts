@@ -107,6 +107,13 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 	continuousCustomReviews: true,
 	ignoreDailyLimitsForNoteStudy: true,
 
+	reviewKeybindings: {
+		revealAndGood: " ",
+		again: "1",
+		hard: "2",
+		easy: "4",
+	},
+
 	removeFlashcardContentAfterCollect: false, // keep flashcard lines in note after collecting
 
 	newCardOrder: "random",

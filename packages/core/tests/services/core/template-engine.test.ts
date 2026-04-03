@@ -6,9 +6,9 @@
  */
 import { describe, expect, it } from "vitest";
 import {
-	renderTemplate,
-	fieldIsEmpty,
 	deriveCardType,
+	fieldIsEmpty,
+	renderTemplate,
 } from "../../../src/services/cards/template-engine";
 import {
 	BUILTIN_BASIC_ID,
@@ -119,13 +119,10 @@ describe("renderTemplate", () => {
 		});
 
 		it("strips all {{FrontSide}} occurrences", () => {
-			const result = renderTemplate(
-				"{{FrontSide}} -- {{FrontSide}}",
-				{
-					fields: {},
-					frontSide: "Q",
-				},
-			);
+			const result = renderTemplate("{{FrontSide}} -- {{FrontSide}}", {
+				fields: {},
+				frontSide: "Q",
+			});
 			expect(result).toBe(" -- ");
 		});
 
@@ -217,10 +214,9 @@ describe("renderTemplate", () => {
 		});
 
 		it("handles nested conditionals: {{#A}}{{#B}}text{{/B}}{{/A}}", () => {
-			const result = renderTemplate(
-				"{{#A}}{{#B}}nested{{/B}}{{/A}}",
-				{ fields: { A: "yes", B: "yes" } },
-			);
+			const result = renderTemplate("{{#A}}{{#B}}nested{{/B}}{{/A}}", {
+				fields: { A: "yes", B: "yes" },
+			});
 			expect(result).toBe("nested");
 		});
 
@@ -233,26 +229,23 @@ describe("renderTemplate", () => {
 		});
 
 		it("nested conditional hides when inner field empty", () => {
-			const result = renderTemplate(
-				"{{#A}}{{#B}}nested{{/B}}{{/A}}",
-				{ fields: { A: "yes", B: "" } },
-			);
+			const result = renderTemplate("{{#A}}{{#B}}nested{{/B}}{{/A}}", {
+				fields: { A: "yes", B: "" },
+			});
 			expect(result).toBe("");
 		});
 
 		it("handles multiple sequential conditionals", () => {
-			const result = renderTemplate(
-				"{{#A}}aaa{{/A}}{{#B}}bbb{{/B}}",
-				{ fields: { A: "yes", B: "" } },
-			);
+			const result = renderTemplate("{{#A}}aaa{{/A}}{{#B}}bbb{{/B}}", {
+				fields: { A: "yes", B: "" },
+			});
 			expect(result).toBe("aaa");
 		});
 
 		it("handles conditional with field substitution inside", () => {
-			const result = renderTemplate(
-				"{{#Extra}}Extra: {{Extra}}{{/Extra}}",
-				{ fields: { Extra: "bonus info" } },
-			);
+			const result = renderTemplate("{{#Extra}}Extra: {{Extra}}{{/Extra}}", {
+				fields: { Extra: "bonus info" },
+			});
 			expect(result).toBe("Extra: bonus info");
 		});
 	});
@@ -275,24 +268,21 @@ describe("renderTemplate", () => {
 		});
 
 		it("handles nested inverse conditionals", () => {
-			const result = renderTemplate(
-				"{{^A}}{{^B}}both empty{{/B}}{{/A}}",
-				{ fields: { A: "", B: "" } },
-			);
+			const result = renderTemplate("{{^A}}{{^B}}both empty{{/B}}{{/A}}", {
+				fields: { A: "", B: "" },
+			});
 			expect(result).toBe("both empty");
 		});
 
 		it("handles mixed: {{#A}}has A{{/A}}{{^A}}no A{{/A}}", () => {
-			const withA = renderTemplate(
-				"{{#A}}has A{{/A}}{{^A}}no A{{/A}}",
-				{ fields: { A: "yes" } },
-			);
+			const withA = renderTemplate("{{#A}}has A{{/A}}{{^A}}no A{{/A}}", {
+				fields: { A: "yes" },
+			});
 			expect(withA).toBe("has A");
 
-			const withoutA = renderTemplate(
-				"{{#A}}has A{{/A}}{{^A}}no A{{/A}}",
-				{ fields: { A: "" } },
-			);
+			const withoutA = renderTemplate("{{#A}}has A{{/A}}{{^A}}no A{{/A}}", {
+				fields: { A: "" },
+			});
 			expect(withoutA).toBe("no A");
 		});
 	});
@@ -444,10 +434,9 @@ describe("renderTemplate", () => {
 		});
 
 		it("HTML comments containing handlebars — not processed", () => {
-			const result = renderTemplate(
-				"before<!--{{Front}}-->after",
-				{ fields: { Front: "SHOULD NOT APPEAR" } },
-			);
+			const result = renderTemplate("before<!--{{Front}}-->after", {
+				fields: { Front: "SHOULD NOT APPEAR" },
+			});
 			// Handlebars inside HTML comments should be left as-is
 			expect(result).not.toContain("SHOULD NOT APPEAR");
 			expect(result).toContain("before");
@@ -563,38 +552,32 @@ describe("fieldIsEmpty", () => {
 
 describe("deriveCardType", () => {
 	it("noteType.type=0, templateOrd=0 → basic", () => {
-		expect(
-			deriveCardType({ id: BUILTIN_BASIC_ID, type: 0 }, 0),
-		).toBe("basic");
+		expect(deriveCardType({ id: BUILTIN_BASIC_ID, type: 0 }, 0)).toBe("basic");
 	});
 
 	it("noteType.type=0, templateOrd=1 → reversed", () => {
-		expect(
-			deriveCardType({ id: BUILTIN_BASIC_REVERSED_ID, type: 0 }, 1),
-		).toBe("reversed");
+		expect(deriveCardType({ id: BUILTIN_BASIC_REVERSED_ID, type: 0 }, 1)).toBe(
+			"reversed",
+		);
 	});
 
 	it("noteType.type=0, templateOrd=2 → reversed", () => {
-		expect(
-			deriveCardType({ id: "custom-3-template", type: 0 }, 2),
-		).toBe("reversed");
+		expect(deriveCardType({ id: "custom-3-template", type: 0 }, 2)).toBe(
+			"reversed",
+		);
 	});
 
 	it("noteType.type=1, any templateOrd → cloze", () => {
-		expect(
-			deriveCardType({ id: BUILTIN_CLOZE_ID, type: 1 }, 0),
-		).toBe("cloze");
-		expect(
-			deriveCardType({ id: BUILTIN_CLOZE_ID, type: 1 }, 5),
-		).toBe("cloze");
+		expect(deriveCardType({ id: BUILTIN_CLOZE_ID, type: 1 }, 0)).toBe("cloze");
+		expect(deriveCardType({ id: BUILTIN_CLOZE_ID, type: 1 }, 5)).toBe("cloze");
 	});
 
 	it('noteType.id="builtin-image-occlusion" → image-occlusion', () => {
-		expect(
-			deriveCardType({ id: BUILTIN_IMAGE_OCCLUSION_ID, type: 0 }, 0),
-		).toBe("image-occlusion");
-		expect(
-			deriveCardType({ id: BUILTIN_IMAGE_OCCLUSION_ID, type: 0 }, 3),
-		).toBe("image-occlusion");
+		expect(deriveCardType({ id: BUILTIN_IMAGE_OCCLUSION_ID, type: 0 }, 0)).toBe(
+			"image-occlusion",
+		);
+		expect(deriveCardType({ id: BUILTIN_IMAGE_OCCLUSION_ID, type: 0 }, 3)).toBe(
+			"image-occlusion",
+		);
 	});
 });

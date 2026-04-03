@@ -1,3 +1,4 @@
+import type { FSRSFlashcardItem } from "@true-recall/core/types";
 import { describe, expect, it } from "vitest";
 import {
 	deriveTypeInMode,
@@ -6,7 +7,6 @@ import {
 	nextTypeInMode,
 	shouldRunAIGradingOnReveal,
 } from "../../../../../src/features/study/ui/review/helpers/type-in-flow";
-import type { FSRSFlashcardItem } from "@true-recall/core/types";
 
 function createCard(
 	answer: string,

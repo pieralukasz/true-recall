@@ -9,12 +9,12 @@
  * The tests below use mock data that represents the filtered result (only
  * Review and New cards), as that's what the service receives in production.
  */
-import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { LoadBalanceService } from "../../../../src/metrics/fsrs-tools/scheduler/load-balance.service";
 import {
-	createMockCardStore,
 	createCardsOnDate,
 	createEasyDaysConfig,
+	createMockCardStore,
 } from "../mocks/scheduler.mocks";
 
 describe("LoadBalanceService", () => {
@@ -25,7 +25,7 @@ describe("LoadBalanceService", () => {
 		vi.useFakeTimers();
 		vi.setSystemTime(new Date("2026-02-01T10:00:00Z"));
 		mockStore = createMockCardStore();
-		service = new LoadBalanceService(mockStore );
+		service = new LoadBalanceService(mockStore);
 	});
 
 	afterEach(() => {
@@ -42,7 +42,7 @@ describe("LoadBalanceService", () => {
 			];
 			mockStore = createMockCardStore(cards);
 			mockStore.getDueCardsByDateRange.mockReturnValue(cards);
-			service = new LoadBalanceService(mockStore );
+			service = new LoadBalanceService(mockStore);
 
 			const result = await service.balance({
 				targetPerDay: 10,
@@ -63,7 +63,7 @@ describe("LoadBalanceService", () => {
 			];
 			mockStore = createMockCardStore(cards);
 			mockStore.getDueCardsByDateRange.mockReturnValue(cards);
-			service = new LoadBalanceService(mockStore );
+			service = new LoadBalanceService(mockStore);
 
 			const result = await service.balance({
 				targetPerDay: 10,
@@ -81,7 +81,7 @@ describe("LoadBalanceService", () => {
 			const cards = createCardsOnDate("2026-02-01", 14);
 			mockStore = createMockCardStore(cards);
 			mockStore.getDueCardsByDateRange.mockReturnValue(cards);
-			service = new LoadBalanceService(mockStore );
+			service = new LoadBalanceService(mockStore);
 
 			const result = await service.balance({
 				targetPerDay: 10,
@@ -101,7 +101,7 @@ describe("LoadBalanceService", () => {
 			];
 			mockStore = createMockCardStore(cards);
 			mockStore.getDueCardsByDateRange.mockReturnValue(cards);
-			service = new LoadBalanceService(mockStore );
+			service = new LoadBalanceService(mockStore);
 
 			const result = await service.balance({
 				targetPerDay: 10,
@@ -126,7 +126,7 @@ describe("LoadBalanceService", () => {
 			];
 			mockStore = createMockCardStore(cards);
 			mockStore.getDueCardsByDateRange.mockReturnValue(cards);
-			service = new LoadBalanceService(mockStore );
+			service = new LoadBalanceService(mockStore);
 
 			const result = await service.balance({
 				targetPerDay: 10,
@@ -144,7 +144,7 @@ describe("LoadBalanceService", () => {
 			const cards = createCardsOnDate("2026-02-01", 20);
 			mockStore = createMockCardStore(cards);
 			mockStore.getDueCardsByDateRange.mockReturnValue(cards);
-			service = new LoadBalanceService(mockStore );
+			service = new LoadBalanceService(mockStore);
 
 			await service.balance({
 				targetPerDay: 10,
@@ -159,7 +159,7 @@ describe("LoadBalanceService", () => {
 			const cards = createCardsOnDate("2026-02-01", 20);
 			mockStore = createMockCardStore(cards);
 			mockStore.getDueCardsByDateRange.mockReturnValue(cards);
-			service = new LoadBalanceService(mockStore );
+			service = new LoadBalanceService(mockStore);
 
 			await service.balance({
 				targetPerDay: 10,
@@ -181,7 +181,7 @@ describe("LoadBalanceService", () => {
 			];
 			mockStore = createMockCardStore(cards);
 			mockStore.getDueCardsByDateRange.mockReturnValue(cards);
-			service = new LoadBalanceService(mockStore );
+			service = new LoadBalanceService(mockStore);
 
 			const result = await service.balance({
 				targetPerDay: 10,
@@ -203,7 +203,7 @@ describe("LoadBalanceService", () => {
 			];
 			mockStore = createMockCardStore(cards);
 			mockStore.getDueCardsByDateRange.mockReturnValue(cards);
-			service = new LoadBalanceService(mockStore );
+			service = new LoadBalanceService(mockStore);
 
 			const result = await service.balance({
 				targetPerDay: 10,
@@ -213,13 +213,13 @@ describe("LoadBalanceService", () => {
 
 			// Before should show original distribution
 			const beforeDay1 = result.beforeDistribution.find(
-				(d) => d.date === "2026-02-01"
+				(d) => d.date === "2026-02-01",
 			);
 			expect(beforeDay1?.count).toBe(20);
 
 			// After should show balanced distribution
 			const afterDay1 = result.afterDistribution.find(
-				(d) => d.date === "2026-02-01"
+				(d) => d.date === "2026-02-01",
 			);
 			expect(afterDay1?.count).toBeLessThan(20);
 		});
@@ -234,7 +234,7 @@ describe("LoadBalanceService", () => {
 			];
 			mockStore = createMockCardStore(cards);
 			mockStore.getDueCardsByDateRange.mockReturnValue(cards);
-			service = new LoadBalanceService(mockStore );
+			service = new LoadBalanceService(mockStore);
 
 			const distribution = service.getDistribution(7);
 
@@ -251,7 +251,7 @@ describe("LoadBalanceService", () => {
 			const cards = createCardsOnDate("2026-02-01", 5);
 			mockStore = createMockCardStore(cards);
 			mockStore.getDueCardsByDateRange.mockReturnValue(cards);
-			service = new LoadBalanceService(mockStore );
+			service = new LoadBalanceService(mockStore);
 
 			const distribution = service.getDistribution(3);
 
@@ -266,7 +266,7 @@ describe("LoadBalanceService", () => {
 		it("handles empty date range", () => {
 			mockStore = createMockCardStore([]);
 			mockStore.getDueCardsByDateRange.mockReturnValue([]);
-			service = new LoadBalanceService(mockStore );
+			service = new LoadBalanceService(mockStore);
 
 			const distribution = service.getDistribution(7);
 

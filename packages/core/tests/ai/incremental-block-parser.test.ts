@@ -6,37 +6,60 @@ import {
 import type { NoteType } from "../../src/types/note.types";
 import {
 	BUILTIN_BASIC_ID,
-	BUILTIN_CLOZE_ID,
 	BUILTIN_BASIC_REVERSED_ID,
+	BUILTIN_CLOZE_ID,
 } from "../../src/types/note.types";
 
 const basicType: NoteType = {
-	id: BUILTIN_BASIC_ID, name: "Basic", type: 0,
+	id: BUILTIN_BASIC_ID,
+	name: "Basic",
+	type: 0,
 	fields: ["Front", "Back"],
-	templates: [{ name: "Card 1", ordinal: 0, qfmt: "{{Front}}", afmt: "{{Back}}" }],
-	css: "", isBuiltin: true, slug: "basic",
+	templates: [
+		{ name: "Card 1", ordinal: 0, qfmt: "{{Front}}", afmt: "{{Back}}" },
+	],
+	css: "",
+	isBuiltin: true,
+	slug: "basic",
 };
 
 const clozeType: NoteType = {
-	id: BUILTIN_CLOZE_ID, name: "Cloze", type: 1,
+	id: BUILTIN_CLOZE_ID,
+	name: "Cloze",
+	type: 1,
 	fields: ["Text", "Extra"],
-	templates: [{ name: "Cloze", ordinal: 0, qfmt: "{{cloze:Text}}", afmt: "{{cloze:Text}}<br>{{Extra}}" }],
-	css: "", isBuiltin: true, slug: "cloze",
+	templates: [
+		{
+			name: "Cloze",
+			ordinal: 0,
+			qfmt: "{{cloze:Text}}",
+			afmt: "{{cloze:Text}}<br>{{Extra}}",
+		},
+	],
+	css: "",
+	isBuiltin: true,
+	slug: "cloze",
 };
 
 const reversedType: NoteType = {
-	id: BUILTIN_BASIC_REVERSED_ID, name: "Basic (reversed)", type: 0,
+	id: BUILTIN_BASIC_REVERSED_ID,
+	name: "Basic (reversed)",
+	type: 0,
 	fields: ["Front", "Back"],
 	templates: [
 		{ name: "Card 1", ordinal: 0, qfmt: "{{Front}}", afmt: "{{Back}}" },
 		{ name: "Card 2", ordinal: 1, qfmt: "{{Back}}", afmt: "{{Front}}" },
 	],
-	css: "", isBuiltin: true, slug: "basic-reversed",
+	css: "",
+	isBuiltin: true,
+	slug: "basic-reversed",
 };
 
 const lookup = (slug: string) => {
 	const map: Record<string, NoteType> = {
-		basic: basicType, cloze: clozeType, "basic-reversed": reversedType,
+		basic: basicType,
+		cloze: clozeType,
+		"basic-reversed": reversedType,
 	};
 	return map[slug] ?? null;
 };
@@ -95,8 +118,10 @@ describe("IncrementalFlashcardParser (JSON format)", () => {
 	it("should emit partial updates during streaming", () => {
 		const parser = new IncrementalFlashcardParser(lookup);
 
-		parser.feed('[');
-		const events = parser.feed('{"type": "basic", "Front": "Partial question", "Back": "Partial ans');
+		parser.feed("[");
+		const events = parser.feed(
+			'{"type": "basic", "Front": "Partial question", "Back": "Partial ans',
+		);
 
 		const partials = events.filter((e) => e.type === "partial_update");
 		expect(partials.length).toBeGreaterThanOrEqual(1);
@@ -106,7 +131,8 @@ describe("IncrementalFlashcardParser (JSON format)", () => {
 
 	it("should handle reversed type", () => {
 		const parser = new IncrementalFlashcardParser(lookup);
-		const json = '[{"type": "basic-reversed", "Front": "Capital of France", "Back": "Paris"}]';
+		const json =
+			'[{"type": "basic-reversed", "Front": "Capital of France", "Back": "Paris"}]';
 		const events = [...parser.feed(json), ...parser.finish()];
 
 		const completes = events.filter((e) => e.type === "card_complete");
@@ -124,7 +150,8 @@ describe("IncrementalFlashcardParser (JSON format)", () => {
 
 	it("should handle strings with escaped quotes", () => {
 		const parser = new IncrementalFlashcardParser(lookup);
-		const json = '[{"type": "basic", "Front": "What is \\"DNA\\"?", "Back": "Deoxyribonucleic acid"}]';
+		const json =
+			'[{"type": "basic", "Front": "What is \\"DNA\\"?", "Back": "Deoxyribonucleic acid"}]';
 		const events = [...parser.feed(json), ...parser.finish()];
 
 		const completes = events.filter((e) => e.type === "card_complete");
@@ -135,13 +162,19 @@ describe("IncrementalFlashcardParser (JSON format)", () => {
 	it("should handle cloze braces inside JSON strings", () => {
 		const parser = new IncrementalFlashcardParser(lookup);
 		const json = JSON.stringify([
-			{ type: "cloze", Text: "The {{c1::mitochondria}} is the powerhouse", Extra: "" },
+			{
+				type: "cloze",
+				Text: "The {{c1::mitochondria}} is the powerhouse",
+				Extra: "",
+			},
 		]);
 		const events = [...parser.feed(json), ...parser.finish()];
 
 		const completes = events.filter((e) => e.type === "card_complete");
 		expect(completes).toHaveLength(1);
-		expect(completes[0]!.block!.fields.Text).toBe("The {{c1::mitochondria}} is the powerhouse");
+		expect(completes[0]!.block!.fields.Text).toBe(
+			"The {{c1::mitochondria}} is the powerhouse",
+		);
 	});
 
 	it("should skip empty-content objects", () => {
@@ -155,7 +188,12 @@ describe("IncrementalFlashcardParser (JSON format)", () => {
 	it("should extract source field as sourceText", () => {
 		const parser = new IncrementalFlashcardParser(lookup);
 		const json = JSON.stringify([
-			{ type: "basic", Front: "What is X?", Back: "Y", source: "X is defined as Y." },
+			{
+				type: "basic",
+				Front: "What is X?",
+				Back: "Y",
+				source: "X is defined as Y.",
+			},
 		]);
 		const events = [...parser.feed(json), ...parser.finish()];
 		const completes = events.filter((e) => e.type === "card_complete");
@@ -191,7 +229,8 @@ describe("parseBlockResponse (non-streaming JSON)", () => {
 	});
 
 	it("should handle extra text around JSON array", () => {
-		const text = 'Here are the flashcards:\n[{"type": "basic", "Front": "Q", "Back": "A"}]\nDone!';
+		const text =
+			'Here are the flashcards:\n[{"type": "basic", "Front": "Q", "Back": "A"}]\nDone!';
 		const blocks = parseBlockResponse(text, lookup);
 		expect(blocks).toHaveLength(1);
 	});

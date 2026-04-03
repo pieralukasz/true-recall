@@ -171,24 +171,28 @@ export class ReviewView extends ItemView {
 			},
 		);
 
-		this.keyboardHandler = new KeyboardHandler(() => this.review, {
-			onShowAnswer: () => void this.handleReveal(),
-			onAnswer: (rating) => this.handleAnswer(rating as Grade),
-			onUndo: async () => {
-				await this.cardActionsHandler.handleUndo();
+		this.keyboardHandler = new KeyboardHandler(
+			() => this.review,
+			{
+				onShowAnswer: () => void this.handleReveal(),
+				onAnswer: (rating) => this.handleAnswer(rating as Grade),
+				onUndo: async () => {
+					await this.cardActionsHandler.handleUndo();
+				},
+				onSuspend: () => this.cardActionsHandler.handleSuspend(),
+				onForget: () => this.cardActionsHandler.handleForget(),
+				onBuryCard: () => this.cardActionsHandler.handleBuryCard(),
+				onBuryNote: () => this.cardActionsHandler.handleBuryNote(),
+				onMoveCard: () => this.cardActionsHandler.handleMoveCard(),
+				onAddCard: () => this.cardActionsHandler.handleAddNewFlashcard(),
+				onEditCard: () => this.cardActionsHandler.handleEditCardModal(),
+				onCycleTypeInMode: () => this.cycleTypeInMode(),
+				canRateShortcuts: () => !this.isRatingLocked(),
+				isTypeInActive: () => this.isTypeInRequiredForCurrentCard(),
+				onFocusTypeIn: () => this.focusTypeInEditor(),
 			},
-			onSuspend: () => this.cardActionsHandler.handleSuspend(),
-			onForget: () => this.cardActionsHandler.handleForget(),
-			onBuryCard: () => this.cardActionsHandler.handleBuryCard(),
-			onBuryNote: () => this.cardActionsHandler.handleBuryNote(),
-			onMoveCard: () => this.cardActionsHandler.handleMoveCard(),
-			onAddCard: () => this.cardActionsHandler.handleAddNewFlashcard(),
-			onEditCard: () => this.cardActionsHandler.handleEditCardModal(),
-			onCycleTypeInMode: () => this.cycleTypeInMode(),
-			canRateShortcuts: () => !this.isRatingLocked(),
-			isTypeInActive: () => this.isTypeInRequiredForCurrentCard(),
-			onFocusTypeIn: () => this.focusTypeInEditor(),
-		});
+			this.plugin.settings.reviewKeybindings,
+		);
 	}
 
 	private getCurrentTypeInState(cardId: string): TypeInAssessmentState {

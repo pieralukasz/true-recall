@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { IMetadataIndex } from "../../../src/interfaces/metadata-index";
 import { FrontmatterIndexService } from "../../../src/services/notes/frontmatter-index.service";
 
@@ -50,7 +50,10 @@ describe("FrontmatterIndexService", () => {
 	let metadataIndex: IMetadataIndex;
 	let service: FrontmatterIndexService;
 
-	function addMockFile(path: string, frontmatter?: Record<string, unknown>): void {
+	function addMockFile(
+		path: string,
+		frontmatter?: Record<string, unknown>,
+	): void {
 		fileData.set(path, frontmatter ?? {});
 	}
 
@@ -62,7 +65,11 @@ describe("FrontmatterIndexService", () => {
 		beforeEach(() => {
 			metadataIndex = createMockMetadataIndex(fileData);
 			service = new FrontmatterIndexService(metadataIndex);
-			service.register({ field: "flashcard_uid", type: "string", unique: true });
+			service.register({
+				field: "flashcard_uid",
+				type: "string",
+				unique: true,
+			});
 		});
 
 		it("indexes unique string field and provides O(1) lookup", () => {
@@ -81,14 +88,18 @@ describe("FrontmatterIndexService", () => {
 			addMockFile("note.md", { flashcard_uid: "old-uid" });
 			service.rebuildIndex();
 
-			expect(service.getFileByValue("flashcard_uid", "old-uid")).toBe("note.md");
+			expect(service.getFileByValue("flashcard_uid", "old-uid")).toBe(
+				"note.md",
+			);
 
 			// Simulate UID change via handleMetadataChanged
 			fileData.set("note.md", { flashcard_uid: "new-uid" });
 			service.handleMetadataChanged("note.md", { flashcard_uid: "new-uid" });
 
 			expect(service.getFileByValue("flashcard_uid", "old-uid")).toBeNull();
-			expect(service.getFileByValue("flashcard_uid", "new-uid")).toBe("note.md");
+			expect(service.getFileByValue("flashcard_uid", "new-uid")).toBe(
+				"note.md",
+			);
 		});
 
 		it("removes from index when file deleted", () => {
@@ -159,7 +170,11 @@ describe("FrontmatterIndexService", () => {
 		beforeEach(() => {
 			metadataIndex = createMockMetadataIndex(fileData);
 			service = new FrontmatterIndexService(metadataIndex);
-			service.register({ field: "metadata.category", type: "string", unique: false });
+			service.register({
+				field: "metadata.category",
+				type: "string",
+				unique: false,
+			});
 		});
 
 		it("extracts nested frontmatter values", () => {
@@ -169,7 +184,10 @@ describe("FrontmatterIndexService", () => {
 
 			service.rebuildIndex();
 
-			const scienceFiles = service.getFilesByValue("metadata.category", "science");
+			const scienceFiles = service.getFilesByValue(
+				"metadata.category",
+				"science",
+			);
 			expect(scienceFiles.sort()).toEqual(["note1.md", "note2.md"]);
 		});
 

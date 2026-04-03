@@ -1,11 +1,14 @@
+import { State } from "ts-fsrs";
 import { describe, expect, it } from "vitest";
 import { FSRSService } from "../../../src/services/fsrs/fsrs.service";
 import {
-	ReviewService,
 	type QueueBuildOptions,
+	ReviewService,
 } from "../../../src/services/review/review.service";
-import { createDefaultFSRSSettings, createMockFlashcard } from "../../mocks/fsrs.mocks";
-import { State } from "ts-fsrs";
+import {
+	createDefaultFSRSSettings,
+	createMockFlashcard,
+} from "../../mocks/fsrs.mocks";
 
 describe("ReviewService sourceUidFilter", () => {
 	const options: QueueBuildOptions = {

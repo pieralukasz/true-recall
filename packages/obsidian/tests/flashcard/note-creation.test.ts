@@ -4,13 +4,12 @@
  * Tests FlashcardManager.createNote() and updateNoteFields() methods
  * using the v26 test database infrastructure.
  */
-import { describe, expect, it, beforeEach, afterEach } from "vitest";
-import {
-	generateCardsForNote,
-} from "@true-recall/core/services/cards/card-generation.service";
-import { renderTemplate } from "@true-recall/core/services/cards/template-engine";
+
+import { FLASHCARD_CONFIG } from "@true-recall/core/constants";
 import { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite/SqliteStoreService";
+import { generateCardsForNote } from "@true-recall/core/services/cards/card-generation.service";
+import { renderTemplate } from "@true-recall/core/services/cards/template-engine";
 import type { Note, NoteType } from "@true-recall/core/types/note.types";
 import {
 	BUILTIN_BASIC_ID,
@@ -19,15 +18,15 @@ import {
 	BUILTIN_IMAGE_OCCLUSION_ID,
 } from "@true-recall/core/types/note.types";
 import type { App } from "obsidian";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import {
-	type TestContext,
 	createTestContext,
-	createTestNoteType,
 	createTestNote,
-	insertNoteTypeDirect,
+	createTestNoteType,
 	insertNoteDirect,
+	insertNoteTypeDirect,
+	type TestContext,
 } from "../../../core/tests/persistence/sqlite/__setup__/test-database";
-import { FLASHCARD_CONFIG } from "@true-recall/core/constants";
 
 // ── Helpers ────────────────────────────────────────────────────
 
@@ -445,7 +444,9 @@ describe("note-based card creation", () => {
 			});
 
 			const activeCards = ctx.cards.getCardsByNoteId(created.note.id);
-			expect(activeCards.map((card) => card.templateOrd).sort()).toEqual([0, 2]);
+			expect(activeCards.map((card) => card.templateOrd).sort()).toEqual([
+				0, 2,
+			]);
 			const keptOrd0 = activeCards.find((card) => card.templateOrd === 0)!;
 			expect(keptOrd0.id).toBe(cardOrd0.id);
 			expect(updated.updatedCardIds).toContain(cardOrd0.id);

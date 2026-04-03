@@ -1,3 +1,4 @@
+import type { ReviewKeybindings } from "@true-recall/core/types";
 import type { ReviewApi } from "@true-recall/obsidian/store";
 import { Rating } from "ts-fsrs";
 
@@ -21,10 +22,16 @@ export interface KeyboardActionCallbacks {
 export class KeyboardHandler {
 	private getReview: () => ReviewApi;
 	private callbacks: KeyboardActionCallbacks;
+	private keybindings: ReviewKeybindings;
 
-	constructor(getReview: () => ReviewApi, callbacks: KeyboardActionCallbacks) {
+	constructor(
+		getReview: () => ReviewApi,
+		callbacks: KeyboardActionCallbacks,
+		keybindings: ReviewKeybindings,
+	) {
 		this.getReview = getReview;
 		this.callbacks = callbacks;
+		this.keybindings = keybindings;
 	}
 
 	handleKeyDown = (e: KeyboardEvent): void => {
@@ -81,6 +88,12 @@ export class KeyboardHandler {
 		return false;
 	}
 
+	private isRevealKey(e: KeyboardEvent): boolean {
+		const key = this.keybindings.revealAndGood;
+		if (key === " ") return e.code === "Space" || e.key === " ";
+		return e.key === key;
+	}
+
 	private handleSessionShortcuts(e: KeyboardEvent): void {
 		const review = this.getReview();
 		if (!review.isActive || review.isComplete()) return;
@@ -92,7 +105,7 @@ export class KeyboardHandler {
 				return;
 			}
 
-			if (e.code === "Space") {
+			if (this.isRevealKey(e)) {
 				e.preventDefault();
 				if (this.callbacks.isTypeInActive?.()) {
 					this.callbacks.onFocusTypeIn?.();
@@ -103,21 +116,13 @@ export class KeyboardHandler {
 		} else {
 			const canRate = this.callbacks.canRateShortcuts?.() ?? true;
 			if (!canRate) {
-				if (["1", "2", "3", "4", " "].includes(e.key)) {
+				if (this.isRatingKey(e.key)) {
 					e.preventDefault();
 				}
 				return;
 			}
 
-			const ratingMap: Record<string, Rating> = {
-				"1": Rating.Again,
-				"2": Rating.Hard,
-				"3": Rating.Good,
-				" ": Rating.Good,
-				"4": Rating.Easy,
-			};
-
-			const rating = ratingMap[e.key];
+			const rating = this.buildRatingMap()[e.key];
 			if (rating !== undefined) {
 				e.preventDefault();
 				void this.callbacks.onAnswer(rating);
@@ -125,11 +130,42 @@ export class KeyboardHandler {
 		}
 	}
 
-	static getShortcutsHelp(): Array<{ key: string; description: string }> {
+	private isRatingKey(key: string): boolean {
+		return key in this.buildRatingMap();
+	}
+
+	private buildRatingMap(): Record<string, Rating> {
+		const map: Record<string, Rating> = {
+			"1": Rating.Again,
+			"2": Rating.Hard,
+			"3": Rating.Good,
+			"4": Rating.Easy,
+		};
+		map[this.keybindings.revealAndGood] = Rating.Good;
+		map[this.keybindings.again] = Rating.Again;
+		map[this.keybindings.hard] = Rating.Hard;
+		map[this.keybindings.easy] = Rating.Easy;
+		return map;
+	}
+
+	static formatKeyName(key: string): string {
+		if (key === " ") return "Space";
+		if (key.length === 1) return key.toUpperCase();
+		return key;
+	}
+
+	getShortcutsHelp(): Array<{ key: string; description: string }> {
+		const fmt = KeyboardHandler.formatKeyName;
 		return [
-			{ key: "Space", description: "Reveal / Good rating" },
+			{
+				key: fmt(this.keybindings.revealAndGood),
+				description: "Reveal / Good rating",
+			},
 			{ key: "Cmd/Ctrl+Enter", description: "Show answer (in input)" },
-			{ key: "1-4", description: "Rate: Again(1), Hard(2), Good(3), Easy(4)" },
+			{
+				key: "1-4",
+				description: "Rate: Again(1), Hard(2), Good(3), Easy(4)",
+			},
 			{ key: "Cmd/Ctrl+Z", description: "Undo last action" },
 			{ key: "!", description: "Suspend card" },
 			{ key: "-", description: "Bury card until tomorrow" },

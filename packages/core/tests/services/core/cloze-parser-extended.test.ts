@@ -45,26 +45,17 @@ describe("cloze parser — extended edge cases", () => {
 		});
 
 		it("handles hint with single quotes", () => {
-			const result = renderClozeQuestion(
-				"{{c1::answer::it's a hint}}",
-				1,
-			);
+			const result = renderClozeQuestion("{{c1::answer::it's a hint}}", 1);
 			expect(result).toBe("[it's a hint]");
 		});
 
 		it("handles hint with parentheses", () => {
-			const result = renderClozeQuestion(
-				"{{c1::answer::hint (optional)}}",
-				1,
-			);
+			const result = renderClozeQuestion("{{c1::answer::hint (optional)}}", 1);
 			expect(result).toBe("[hint (optional)]");
 		});
 
 		it("handles hint with unicode/emoji", () => {
-			const result = renderClozeQuestion(
-				"{{c1::東京::capital 🏙️}}",
-				1,
-			);
+			const result = renderClozeQuestion("{{c1::東京::capital 🏙️}}", 1);
 			expect(result).toBe("[capital 🏙️]");
 		});
 	});
@@ -152,16 +143,12 @@ describe("cloze parser — extended edge cases", () => {
 		});
 
 		it("non-sequential indices: c1, c5, c3 — sorted", () => {
-			const indices = extractClozeIndices(
-				"{{c1::a}} {{c5::b}} {{c3::c}}",
-			);
+			const indices = extractClozeIndices("{{c1::a}} {{c5::b}} {{c3::c}}");
 			expect(indices).toEqual([1, 3, 5]);
 		});
 
 		it("non-sequential indices produce correct number of cards", () => {
-			const cards = parseClozeTemplate(
-				"{{c1::a}} {{c5::b}} {{c3::c}}",
-			);
+			const cards = parseClozeTemplate("{{c1::a}} {{c5::b}} {{c3::c}}");
 			expect(cards).toHaveLength(3);
 			expect(cards[0]!.clozeIndex).toBe(1);
 			expect(cards[1]!.clozeIndex).toBe(3);
@@ -169,9 +156,7 @@ describe("cloze parser — extended edge cases", () => {
 		});
 
 		it("duplicate index c1 used twice — 1 card, both blanked", () => {
-			const cards = parseClozeTemplate(
-				"{{c1::a}} middle {{c1::b}}",
-			);
+			const cards = parseClozeTemplate("{{c1::a}} middle {{c1::b}}");
 			expect(cards).toHaveLength(1);
 			expect(cards[0]!.question).toBe("[...] middle [...]");
 			expect(cards[0]!.answer).toBe("**a** middle **b**");

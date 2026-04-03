@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
-import { groupCards } from "../../../../../src/features/library/ui/panel/group-cards";
 import type { FlashcardItem } from "@true-recall/core/types";
+import { describe, expect, it } from "vitest";
+import { groupCards } from "../../../../../src/features/library/ui/panel/group-cards";
 
 function basicCard(id: string, q = "Q", a = "A"): FlashcardItem {
 	return { id, question: q, answer: a };

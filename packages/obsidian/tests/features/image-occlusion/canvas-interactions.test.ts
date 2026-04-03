@@ -137,21 +137,33 @@ describe("buildDraftRegion", () => {
 describe("buildMoveUpdate", () => {
 	it("moves region by offset", () => {
 		const region = makeRegion({ x: 0.2, y: 0.3, w: 0.3, h: 0.2 });
-		const result = buildMoveUpdate(region, { x: 0.5, y: 0.5 }, { x: 0.1, y: 0.1 });
+		const result = buildMoveUpdate(
+			region,
+			{ x: 0.5, y: 0.5 },
+			{ x: 0.1, y: 0.1 },
+		);
 		expect(result.x).toBeCloseTo(0.4);
 		expect(result.y).toBeCloseTo(0.4);
 	});
 
 	it("clamps to left/top boundary", () => {
 		const region = makeRegion({ x: 0.1, y: 0.1, w: 0.3, h: 0.2 });
-		const result = buildMoveUpdate(region, { x: 0.05, y: 0.02 }, { x: 0.1, y: 0.1 });
+		const result = buildMoveUpdate(
+			region,
+			{ x: 0.05, y: 0.02 },
+			{ x: 0.1, y: 0.1 },
+		);
 		expect(result.x).toBe(0);
 		expect(result.y).toBe(0);
 	});
 
 	it("clamps to right/bottom boundary", () => {
 		const region = makeRegion({ x: 0.5, y: 0.5, w: 0.3, h: 0.4 });
-		const result = buildMoveUpdate(region, { x: 0.95, y: 0.95 }, { x: 0.1, y: 0.1 });
+		const result = buildMoveUpdate(
+			region,
+			{ x: 0.95, y: 0.95 },
+			{ x: 0.1, y: 0.1 },
+		);
 		expect(result.x).toBeCloseTo(0.7); // 1 - 0.3
 		expect(result.y).toBeCloseTo(0.6); // 1 - 0.4
 	});

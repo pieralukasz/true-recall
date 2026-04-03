@@ -1,19 +1,17 @@
 /**
  * Tests for FSRS utility functions in fsrs.types.ts
  */
-import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
+
 import { State } from "ts-fsrs";
-import {
-	createDefaultFSRSData,
-	formatInterval,
-} from "../../src/types";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { FSRSFlashcardItem } from "../../src/types";
+import { createDefaultFSRSData, formatInterval } from "../../src/types";
+import type { SourceNoteInfo } from "../mocks/fsrs.mocks";
 import {
 	createMockFlashcard,
 	createMockFlashcardWithSourcePath,
 	createMockSourceNote,
 } from "../mocks/fsrs.mocks";
-import type { SourceNoteInfo } from "../mocks/fsrs.mocks";
 
 describe("fsrs.types utilities", () => {
 	describe("createDefaultFSRSData", () => {

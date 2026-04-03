@@ -5,14 +5,18 @@
  * These tests focus on queue ordering, learn-ahead logic, and edge cases
  * not covered in the main review.service.test.ts
  */
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+
 import { State } from "ts-fsrs";
-import { ReviewService, type QueueBuildOptions } from "../../../src/services/review/review.service";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { FSRSService } from "../../../src/services/fsrs/fsrs.service";
+import {
+	type QueueBuildOptions,
+	ReviewService,
+} from "../../../src/services/review/review.service";
 import type { FSRSFlashcardItem } from "../../../src/types";
 import {
-	createMockFlashcard,
 	createDefaultFSRSSettings,
+	createMockFlashcard,
 } from "../../mocks/fsrs.mocks";
 
 /**
@@ -21,7 +25,7 @@ import {
 function createCardWithDue(
 	id: string,
 	state: State,
-	dueOffsetMinutes: number
+	dueOffsetMinutes: number,
 ): FSRSFlashcardItem {
 	const due = new Date(Date.now() + dueOffsetMinutes * 60 * 1000);
 	return createMockFlashcard({
@@ -73,7 +77,11 @@ describe("Queue Building - Advanced", () => {
 				createCardWithDue("learning-pending", State.Learning, 25),
 			];
 
-			const queue = reviewService.buildQueue(cards, fsrsService, defaultOptions);
+			const queue = reviewService.buildQueue(
+				cards,
+				fsrsService,
+				defaultOptions,
+			);
 
 			// Order should be: learning-due, review-1, new-1, learning-pending
 			expect(queue.length).toBe(4);
@@ -90,7 +98,11 @@ describe("Queue Building - Advanced", () => {
 				createCardWithDue("learning-middle", State.Learning, -5), // 5 min ago
 			];
 
-			const queue = reviewService.buildQueue(cards, fsrsService, defaultOptions);
+			const queue = reviewService.buildQueue(
+				cards,
+				fsrsService,
+				defaultOptions,
+			);
 
 			// Earliest due should be first
 			expect(queue[0]?.id).toBe("learning-earlier");
@@ -106,7 +118,11 @@ describe("Queue Building - Advanced", () => {
 				createCardWithDue("learning-19", State.Learning, 19),
 			];
 
-			const queue = reviewService.buildQueue(cards, fsrsService, defaultOptions);
+			const queue = reviewService.buildQueue(
+				cards,
+				fsrsService,
+				defaultOptions,
+			);
 
 			expect(queue).toHaveLength(2);
 			// Queue order: [due learning] → [review] → [new] → [pending learning]
@@ -116,21 +132,25 @@ describe("Queue Building - Advanced", () => {
 		});
 
 		it("should include learning card due exactly at 20 minutes", () => {
-			const cards = [
-				createCardWithDue("learning-20", State.Learning, 20),
-			];
+			const cards = [createCardWithDue("learning-20", State.Learning, 20)];
 
-			const queue = reviewService.buildQueue(cards, fsrsService, defaultOptions);
+			const queue = reviewService.buildQueue(
+				cards,
+				fsrsService,
+				defaultOptions,
+			);
 
 			expect(queue).toHaveLength(1);
 		});
 
 		it("should exclude learning card beyond learn-ahead window (>20 min)", () => {
-			const cards = [
-				createCardWithDue("learning-21", State.Learning, 21),
-			];
+			const cards = [createCardWithDue("learning-21", State.Learning, 21)];
 
-			const queue = reviewService.buildQueue(cards, fsrsService, defaultOptions);
+			const queue = reviewService.buildQueue(
+				cards,
+				fsrsService,
+				defaultOptions,
+			);
 
 			// Still in queue (for waiting screen display) but at the end
 			expect(queue).toHaveLength(1);
@@ -144,7 +164,11 @@ describe("Queue Building - Advanced", () => {
 				createCardWithDue("learning-due", State.Learning, -5), // 5 min overdue
 			];
 
-			const queue = reviewService.buildQueue(cards, fsrsService, defaultOptions);
+			const queue = reviewService.buildQueue(
+				cards,
+				fsrsService,
+				defaultOptions,
+			);
 
 			// Due learning cards always come first in the queue
 			expect(queue[0]?.id).toBe("learning-due");
@@ -172,7 +196,11 @@ describe("Queue Building - Advanced", () => {
 
 	describe("Learning Card Multi-Study", () => {
 		it("should allow same learning card to appear multiple times in session", () => {
-			const learningCard = createCardWithDue("learning-multi", State.Learning, -5);
+			const learningCard = createCardWithDue(
+				"learning-multi",
+				State.Learning,
+				-5,
+			);
 
 			// First pass: card is in queue even if marked as "reviewed today"
 			const queue = reviewService.buildQueue([learningCard], fsrsService, {
@@ -185,7 +213,11 @@ describe("Queue Building - Advanced", () => {
 		});
 
 		it("should exclude Review cards that were reviewed today", () => {
-			const reviewCard = createCardWithDue("review-done", State.Review, -60 * 24);
+			const reviewCard = createCardWithDue(
+				"review-done",
+				State.Review,
+				-60 * 24,
+			);
 
 			const queue = reviewService.buildQueue([reviewCard], fsrsService, {
 				...defaultOptions,
@@ -204,7 +236,7 @@ describe("Queue Building - Advanced", () => {
 					createMockFlashcard({
 						id: `new-${i}`,
 						fsrs: { state: State.New },
-					})
+					}),
 				);
 			}
 
@@ -224,7 +256,7 @@ describe("Queue Building - Advanced", () => {
 					createMockFlashcard({
 						id: `new-${i}`,
 						fsrs: { state: State.New },
-					})
+					}),
 				);
 			}
 
@@ -371,8 +403,9 @@ describe("Queue Building - Advanced", () => {
 			expect(
 				queue.every(
 					(c) =>
-						c.fsrs.state === State.Learning || c.fsrs.state === State.Relearning
-				)
+						c.fsrs.state === State.Learning ||
+						c.fsrs.state === State.Relearning,
+				),
 			).toBe(true);
 		});
 
@@ -445,7 +478,11 @@ describe("Queue Building - Advanced", () => {
 			];
 
 			// Normal mode: not due, not in queue
-			const normalQueue = reviewService.buildQueue(cards, fsrsService, defaultOptions);
+			const normalQueue = reviewService.buildQueue(
+				cards,
+				fsrsService,
+				defaultOptions,
+			);
 			expect(normalQueue).toHaveLength(0);
 
 			// Bypass mode: included regardless
@@ -487,7 +524,11 @@ describe("Queue Building - Advanced", () => {
 				createCardWithDue("learning-45min", State.Learning, 45),
 			];
 
-			const queue = reviewService.buildQueue(cards, fsrsService, defaultOptions);
+			const queue = reviewService.buildQueue(
+				cards,
+				fsrsService,
+				defaultOptions,
+			);
 
 			// Both should be in queue as pending
 			expect(queue).toHaveLength(2);
@@ -503,6 +544,5 @@ describe("Queue Building - Advanced", () => {
 
 			expect(queue).toHaveLength(0);
 		});
-
 	});
 });

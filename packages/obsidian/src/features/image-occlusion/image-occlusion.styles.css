@@ -518,6 +518,84 @@
 			color-mix(in srgb, var(--background-modifier-border) 85%, transparent);
 	}
 
+	/* ── Expand / zoom controls ──────────────────────────────────── */
+
+	.true-recall-io-expand-btn {
+		position: absolute;
+		top: 8px;
+		right: 8px;
+		z-index: 10;
+		width: 32px;
+		height: 32px;
+		border: 1px solid
+			color-mix(in srgb, var(--background-modifier-border) 60%, transparent);
+		border-radius: var(--radius-s);
+		background: color-mix(in srgb, var(--background-primary) 82%, transparent);
+		backdrop-filter: blur(4px);
+		color: var(--text-muted);
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+		opacity: 0;
+		transition:
+			opacity 150ms ease,
+			background 120ms ease,
+			color 120ms ease;
+	}
+
+	.true-recall-io-render-frame:hover .true-recall-io-expand-btn,
+	.true-recall-io-expand-btn:focus-visible {
+		opacity: 1;
+	}
+
+	.true-recall-io-expand-btn:hover {
+		background: var(--background-modifier-hover);
+		color: var(--text-normal);
+	}
+
+	/* Fullscreen expanded overlay */
+	.true-recall-io-render.is-expanded {
+		position: fixed;
+		inset: 0;
+		z-index: 100;
+		width: 100%;
+		max-width: 100%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: color-mix(in srgb, var(--background-primary) 88%, transparent);
+		backdrop-filter: blur(8px);
+		padding: 24px;
+	}
+
+	.true-recall-io-render-frame.is-expanded {
+		max-height: calc(100vh - 48px);
+		max-width: min(100%, 1200px);
+		border: none;
+		box-shadow: 0 16px 48px color-mix(in srgb, black 30%, transparent);
+	}
+
+	/* Keep expand button visible when expanded */
+	.true-recall-io-render.is-expanded .true-recall-io-expand-btn {
+		opacity: 1;
+	}
+
+	.true-recall-io-zoom-indicator {
+		position: absolute;
+		bottom: 8px;
+		right: 8px;
+		z-index: 10;
+		padding: 2px 8px;
+		border-radius: 999px;
+		background: color-mix(in srgb, var(--background-primary) 78%, transparent);
+		backdrop-filter: blur(4px);
+		font-size: var(--font-ui-smaller);
+		color: var(--text-muted);
+		font-variant-numeric: tabular-nums;
+		pointer-events: none;
+	}
+
 	@keyframes true-recall-io-pulse {
 		0% {
 			fill: color-mix(in srgb, var(--color-green) 25%, transparent);

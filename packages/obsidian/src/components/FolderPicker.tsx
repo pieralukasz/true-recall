@@ -16,6 +16,8 @@ export interface FolderPickerProps {
 	value: string[];
 	onChange: (folders: string[]) => void;
 	placeholder?: string;
+	/** When true, only one folder can be selected at a time (new selection replaces old). */
+	single?: boolean;
 }
 
 function FolderTag({ path, onRemove }: { path: string; onRemove: () => void }) {
@@ -41,6 +43,7 @@ export function FolderPicker({
 	value,
 	onChange,
 	placeholder = "Search folders...",
+	single = false,
 }: FolderPickerProps) {
 	const app = useApp();
 	const listRef = useRef<HTMLUListElement>(null);
@@ -69,12 +72,12 @@ export function FolderPicker({
 
 	const addFolder = useCallback(
 		(folder: string) => {
-			onChange([...value, folder]);
+			onChange(single ? [folder] : [...value, folder]);
 			setQuery("");
 			setIsOpen(false);
 			setHighlightIndex(-1);
 		},
-		[value, onChange],
+		[value, onChange, single],
 	);
 
 	const removeFolder = useCallback(
@@ -149,9 +152,11 @@ export function FolderPicker({
 		setHighlightIndex(-1);
 	}, []);
 
+	const singleValue = single ? (value[0] ?? "") : "";
+
 	return (
 		<div class="ep:flex ep:flex-col ep:gap-1.5">
-			{value.length > 0 && (
+			{!single && value.length > 0 && (
 				<div class="ep:flex ep:flex-wrap ep:gap-1">
 					{value.map((folder) => (
 						<FolderTag
@@ -166,7 +171,7 @@ export function FolderPicker({
 			<div class="ep:relative">
 				<SearchInput
 					value={query}
-					placeholder={placeholder}
+					placeholder={singleValue || placeholder}
 					ariaLabel={placeholder}
 					onChange={handleInput}
 					onFocus={handleFocus}

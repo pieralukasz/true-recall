@@ -308,5 +308,8 @@ export class TrueRecallApp {
 		this.frontmatterIndex.onFieldChange("fsrs_preset", () => {
 			this.events.emit("settings:changed", {});
 		});
+		this.frontmatterIndex.onFieldChange("flashcard_uid", () => {
+			this.events.emit("hierarchy:changed", {});
+		});
 	}
 }

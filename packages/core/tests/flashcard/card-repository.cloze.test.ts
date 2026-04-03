@@ -1,11 +1,11 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import {
-	createTestContext,
-	createTestCard,
-	type TestContext,
-} from "../persistence/sqlite/__setup__/test-database";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CardRepository } from "../../src/flashcard/data/card-repository.service";
 import type { SqliteStoreService } from "../../src/persistence/sqlite/SqliteStoreService";
+import {
+	createTestCard,
+	createTestContext,
+	type TestContext,
+} from "../persistence/sqlite/__setup__/test-database";
 
 const mockBusEmit = vi.fn();
 
@@ -30,7 +30,10 @@ describe("CardRepository - cloze operations", () => {
 		vi.setSystemTime(new Date("2026-02-01T10:00:00Z"));
 		ctx = await createTestContext();
 		repository = new CardRepository(createMockStore(ctx));
-		repository.setEventBus({ emit: mockBusEmit, on: vi.fn(() => () => {}) } as never);
+		repository.setEventBus({
+			emit: mockBusEmit,
+			on: vi.fn(() => () => {}),
+		} as never);
 		mockBusEmit.mockClear();
 	});
 
@@ -50,7 +53,7 @@ describe("CardRepository - cloze operations", () => {
 					cardType: "cloze",
 					clozeTemplate: "{{c1::France}} is in {{c2::Europe}}",
 					clozeIndex: 1,
-				}
+				},
 			);
 
 			const stored = ctx.cards.get(card.id);
@@ -70,7 +73,7 @@ describe("CardRepository - cloze operations", () => {
 					cardType: "cloze",
 					clozeTemplate: "{{c1::France}} is in {{c2::Europe}}",
 					clozeIndex: 1,
-				}
+				},
 			);
 
 			expect(card.cardType).toBe("cloze");
@@ -113,7 +116,7 @@ describe("CardRepository - cloze operations", () => {
 					},
 				],
 				"source-uid-1",
-				"My Note"
+				"My Note",
 			);
 
 			expect(result.created).toHaveLength(2);
@@ -143,7 +146,7 @@ describe("CardRepository - cloze operations", () => {
 						clozeIndex: 1,
 					},
 				],
-				"source-uid-1"
+				"source-uid-1",
 			);
 
 			// Second batch tries to create same cloze (same source, template, index)
@@ -158,7 +161,7 @@ describe("CardRepository - cloze operations", () => {
 						clozeIndex: 1,
 					},
 				],
-				"source-uid-1"
+				"source-uid-1",
 			);
 
 			expect(result.created).toHaveLength(0);
@@ -178,7 +181,7 @@ describe("CardRepository - cloze operations", () => {
 						clozeIndex: 1,
 					},
 				],
-				"source-A"
+				"source-A",
 			);
 
 			const result = repository.createBatch(
@@ -192,7 +195,7 @@ describe("CardRepository - cloze operations", () => {
 						clozeIndex: 1,
 					},
 				],
-				"source-B"
+				"source-B",
 			);
 
 			// Different source_uid means it's not a duplicate
@@ -208,7 +211,7 @@ describe("CardRepository - cloze operations", () => {
 						answer: "4",
 					},
 				],
-				"source-uid-1"
+				"source-uid-1",
 			);
 
 			expect(result.created).toHaveLength(1);
@@ -242,7 +245,7 @@ describe("CardRepository - cloze operations", () => {
 						clozeIndex: 2,
 					},
 				],
-				"source-uid-1"
+				"source-uid-1",
 			);
 
 			expect(result.created).toHaveLength(3);
@@ -275,7 +278,7 @@ describe("CardRepository - cloze operations", () => {
 						reverseOfBatchId: "orig-1",
 					},
 				],
-				"source-uid-1"
+				"source-uid-1",
 			);
 
 			expect(result.created).toHaveLength(2);
@@ -315,7 +318,7 @@ describe("CardRepository - cloze operations", () => {
 						clozeIndex: 2,
 					},
 				],
-				"source-uid-1"
+				"source-uid-1",
 			);
 
 			mockBusEmit.mockClear();
@@ -349,7 +352,7 @@ describe("CardRepository - cloze operations", () => {
 						clozeIndex: 2,
 					},
 				],
-				"source-uid-1"
+				"source-uid-1",
 			);
 
 			mockBusEmit.mockClear();
@@ -369,7 +372,7 @@ describe("CardRepository - cloze operations", () => {
 					{ id: "basic-1", question: "Q1", answer: "A1" },
 					{ id: "basic-2", question: "Q2", answer: "A2" },
 				],
-				"source-uid-1"
+				"source-uid-1",
 			);
 
 			repository.delete("basic-1");
@@ -390,7 +393,7 @@ describe("CardRepository - cloze operations", () => {
 						clozeIndex: 1,
 					},
 				],
-				"source-A"
+				"source-A",
 			);
 
 			repository.createBatch(
@@ -404,7 +407,7 @@ describe("CardRepository - cloze operations", () => {
 						clozeIndex: 1,
 					},
 				],
-				"source-B"
+				"source-B",
 			);
 
 			repository.delete("c1-note-a");
@@ -438,7 +441,7 @@ describe("CardRepository - cloze operations", () => {
 						clozeIndex: 2,
 					},
 				],
-				SOURCE_UID
+				SOURCE_UID,
 			);
 			mockBusEmit.mockClear();
 		});
@@ -461,7 +464,8 @@ describe("CardRepository - cloze operations", () => {
 		});
 
 		it("creates new card when cloze index is added", () => {
-			const newTemplate = "{{c1::France}} is in {{c2::Europe}}, specifically {{c3::Western Europe}}";
+			const newTemplate =
+				"{{c1::France}} is in {{c2::Europe}}, specifically {{c3::Western Europe}}";
 			repository.updateClozeTemplate(SOURCE_UID, OLD_TEMPLATE, newTemplate);
 
 			// c1 and c2 should be updated
@@ -504,7 +508,8 @@ describe("CardRepository - cloze operations", () => {
 		});
 
 		it("notifies bulk change when adding new siblings", () => {
-			const newTemplate = "{{c1::France}} is in {{c2::Europe}}, part of {{c3::EU}}";
+			const newTemplate =
+				"{{c1::France}} is in {{c2::Europe}}, part of {{c3::EU}}";
 			repository.updateClozeTemplate(SOURCE_UID, OLD_TEMPLATE, newTemplate);
 
 			expect(mockBusEmit).toHaveBeenCalledWith(

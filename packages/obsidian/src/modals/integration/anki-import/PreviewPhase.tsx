@@ -1,10 +1,12 @@
 import {
+	FolderPicker,
 	ModalFooter,
 	OptionCheckbox,
 	StatBadge,
 	StatGrid,
 } from "@true-recall/obsidian/components";
 import type { ImportPreview } from "@true-recall/obsidian/modals/integration/anki-import/types";
+import { useCallback } from "preact/hooks";
 
 export interface PreviewPhaseProps {
 	preview: ImportPreview;
@@ -12,9 +14,11 @@ export interface PreviewPhaseProps {
 	importMedia: boolean;
 	useAI: boolean;
 	hasAIKey: boolean;
+	importFolder: string;
 	onSchedulingChange: (val: boolean) => void;
 	onMediaChange: (val: boolean) => void;
 	onUseAIChange: (val: boolean) => void;
+	onImportFolderChange: (val: string) => void;
 	onContinue: () => void;
 	onCancel: () => void;
 }
@@ -25,12 +29,20 @@ export function PreviewPhase({
 	importMedia,
 	useAI,
 	hasAIKey,
+	importFolder,
 	onSchedulingChange,
 	onMediaChange,
 	onUseAIChange,
+	onImportFolderChange,
 	onContinue,
 	onCancel,
 }: PreviewPhaseProps) {
+	const handleFolderChange = useCallback(
+		(folders: string[]) => {
+			onImportFolderChange(folders[0] ?? "Anki Import");
+		},
+		[onImportFolderChange],
+	);
 	return (
 		<>
 			<StatGrid columns={2}>
@@ -66,7 +78,7 @@ export function PreviewPhase({
 				/>
 				<OptionCheckbox
 					label="Import media files"
-					description={`${preview.mediaCount} files will be saved to Attachments/anki-import`}
+					description={`${preview.mediaCount} files will be saved to Attachments/${importFolder}`}
 					checked={importMedia}
 					onChange={onMediaChange}
 				/>
@@ -80,6 +92,18 @@ export function PreviewPhase({
 					checked={useAI}
 					onChange={onUseAIChange}
 					disabled={!hasAIKey}
+				/>
+			</div>
+
+			<div class="ep:mb-4">
+				<div class="ep:text-ui-small ep:font-medium ep:mb-2">
+					Import destination
+				</div>
+				<FolderPicker
+					value={[importFolder]}
+					onChange={handleFolderChange}
+					placeholder="Anki Import"
+					single
 				/>
 			</div>
 

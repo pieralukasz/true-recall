@@ -1,16 +1,23 @@
 /**
  * Tests for ReviewService - queue building, answer processing, statistics
  */
-import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
-import { State, Rating } from "ts-fsrs";
-import { ReviewService, type QueueBuildOptions } from "../../../src/services/review/review.service";
+
+import { Rating, State } from "ts-fsrs";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { FSRSService } from "../../../src/services/fsrs/fsrs.service";
-import type { FSRSFlashcardItem, ReviewResult } from "../../../src/types/fsrs/index";
 import {
-	createMockFlashcard,
+	type QueueBuildOptions,
+	ReviewService,
+} from "../../../src/services/review/review.service";
+import type {
+	FSRSFlashcardItem,
+	ReviewResult,
+} from "../../../src/types/fsrs/index";
+import {
 	createDefaultFSRSSettings,
-	createMockReviewResult,
 	createMixedCardQueue,
+	createMockFlashcard,
+	createMockReviewResult,
 } from "../../mocks/fsrs.mocks";
 
 describe("ReviewService", () => {
@@ -43,7 +50,7 @@ describe("ReviewService", () => {
 				card,
 				Rating.Good,
 				fsrsService,
-				3000
+				3000,
 			);
 
 			expect(result.cardId).toBe("test-card");
@@ -62,7 +69,7 @@ describe("ReviewService", () => {
 				card,
 				Rating.Good,
 				fsrsService,
-				1000
+				1000,
 			);
 
 			expect(updatedCard.fsrs.state).toBe(State.Learning);
@@ -79,7 +86,7 @@ describe("ReviewService", () => {
 				card,
 				Rating.Good,
 				fsrsService,
-				1000
+				1000,
 			);
 
 			expect(result.elapsedDays).toBe(0);
@@ -101,7 +108,7 @@ describe("ReviewService", () => {
 				card,
 				Rating.Good,
 				fsrsService,
-				1000
+				1000,
 			);
 
 			expect(result.elapsedDays).toBe(5);
@@ -123,7 +130,7 @@ describe("ReviewService", () => {
 				card,
 				Rating.Good,
 				fsrsService,
-				1000
+				1000,
 			);
 
 			expect(result.scheduledDays).toBe(7);
@@ -137,7 +144,7 @@ describe("ReviewService", () => {
 				card,
 				Rating.Good,
 				fsrsService,
-				1000
+				1000,
 			);
 
 			expect(result.timestamp).toBe(now);
@@ -204,7 +211,7 @@ describe("ReviewService", () => {
 			const stats = reviewService.calculateSessionStats(
 				results,
 				10,
-				Date.now() - 60000
+				Date.now() - 60000,
 			);
 
 			expect(stats.again).toBe(2);
@@ -465,15 +472,19 @@ describe("ReviewService", () => {
 					createMockFlashcard({
 						id: `new-${i}`,
 						fsrs: { state: State.New },
-					})
+					}),
 				);
 			}
 
 			// eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- Test mocks with minimal types
-			const queue = reviewService.buildQueue(cards as FSRSFlashcardItem[], fsrsService, {
-				...defaultOptions,
-				newCardsLimit: 5,
-			});
+			const queue = reviewService.buildQueue(
+				cards as FSRSFlashcardItem[],
+				fsrsService,
+				{
+					...defaultOptions,
+					newCardsLimit: 5,
+				},
+			);
 
 			const newInQueue = queue.filter((c) => c.fsrs.state === State.New);
 			expect(newInQueue.length).toBe(5);
@@ -537,16 +548,20 @@ describe("ReviewService", () => {
 					createMockFlashcard({
 						id: `new-${i}`,
 						fsrs: { state: State.New },
-					})
+					}),
 				);
 			}
 
 			// eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- Test mocks with minimal types
-			const queue = reviewService.buildQueue(cards as FSRSFlashcardItem[], fsrsService, {
-				...defaultOptions,
-				newCardsLimit: 5,
-				newCardsStudiedToday: 3, // Already studied 3
-			});
+			const queue = reviewService.buildQueue(
+				cards as FSRSFlashcardItem[],
+				fsrsService,
+				{
+					...defaultOptions,
+					newCardsLimit: 5,
+					newCardsStudiedToday: 3, // Already studied 3
+				},
+			);
 
 			const newInQueue = queue.filter((c) => c.fsrs.state === State.New);
 			expect(newInQueue.length).toBe(2); // 5 - 3 = 2 remaining
@@ -673,7 +688,11 @@ describe("ReviewService", () => {
 				}),
 			];
 
-			const queue = reviewService.buildQueue(cards, fsrsService, defaultOptions);
+			const queue = reviewService.buildQueue(
+				cards,
+				fsrsService,
+				defaultOptions,
+			);
 
 			// Learning cards due now should be first
 			expect(queue[0].id).toBe("learning-due");
@@ -699,7 +718,8 @@ describe("ReviewService", () => {
 				createMockReviewResult({ timestamp: today.getTime() }),
 			];
 
-			const { currentStreak, longestStreak } = reviewService.getStreakInfo(results);
+			const { currentStreak, longestStreak } =
+				reviewService.getStreakInfo(results);
 
 			expect(currentStreak).toBe(3);
 			expect(longestStreak).toBe(3);
@@ -716,7 +736,8 @@ describe("ReviewService", () => {
 				createMockReviewResult({ timestamp: today.getTime() }),
 			];
 
-			const { currentStreak, longestStreak } = reviewService.getStreakInfo(results);
+			const { currentStreak, longestStreak } =
+				reviewService.getStreakInfo(results);
 
 			// Current streak is just today (1), longest was 2 (four days ago + three days ago)
 			expect(currentStreak).toBe(1);
@@ -750,7 +771,8 @@ describe("ReviewService", () => {
 				createMockReviewResult({ timestamp: todayLater.getTime() }),
 			];
 
-			const { currentStreak, longestStreak } = reviewService.getStreakInfo(results);
+			const { currentStreak, longestStreak } =
+				reviewService.getStreakInfo(results);
 
 			// Multiple reviews on same day count as one day
 			expect(currentStreak).toBe(2);
@@ -796,10 +818,14 @@ describe("ReviewService", () => {
 			}
 
 			// eslint-disable-next-line @typescript-eslint/no-unsafe-argument -- Test mocks with minimal types
-			const stats = reviewService.calculateDailyStats([], results as ReviewResult[], {
-				newCardsPerDay: 20,
-				reviewsPerDay: 200,
-			});
+			const stats = reviewService.calculateDailyStats(
+				[],
+				results as ReviewResult[],
+				{
+					newCardsPerDay: 20,
+					reviewsPerDay: 200,
+				},
+			);
 
 			expect(stats.newRemaining).toBe(0);
 		});

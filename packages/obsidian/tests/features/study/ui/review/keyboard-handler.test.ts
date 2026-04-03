@@ -1,12 +1,22 @@
+import type { ReviewKeybindings } from "@true-recall/core/types";
+import { Rating } from "ts-fsrs";
 import { describe, expect, it, vi } from "vitest";
 import { KeyboardHandler } from "../../../../../src/features/study/ui/review/handlers/KeyboardHandler";
-import { Rating } from "ts-fsrs";
 import type { ReviewApi } from "../../../../../src/store";
 
 // Stub DOM globals for Node test environment
 globalThis.HTMLInputElement ??= class {} as never;
 globalThis.HTMLTextAreaElement ??= class {} as never;
-globalThis.HTMLElement ??= class { isContentEditable = false; } as never;
+globalThis.HTMLElement ??= class {
+	isContentEditable = false;
+} as never;
+
+const DEFAULT_KEYBINDINGS: ReviewKeybindings = {
+	revealAndGood: " ",
+	again: "1",
+	hard: "2",
+	easy: "4",
+};
 
 function createReviewState(
 	overrides: Partial<Pick<ReviewApi, "isActive" | "isAnswerRevealed">> = {},
@@ -37,21 +47,30 @@ function createEvent(
 	} as KeyboardEvent & { preventDefault: ReturnType<typeof vi.fn> };
 }
 
+function defaultCallbacks(overrides = {}) {
+	return {
+		onShowAnswer: vi.fn(),
+		onAnswer: vi.fn(async () => {}),
+		onUndo: vi.fn(async () => {}),
+		onSuspend: vi.fn(async () => {}),
+		onBuryCard: vi.fn(async () => {}),
+		onBuryNote: vi.fn(async () => {}),
+		onMoveCard: vi.fn(async () => {}),
+		onAddCard: vi.fn(async () => {}),
+		onEditCard: vi.fn(async () => {}),
+		onCycleTypeInMode: vi.fn(),
+		...overrides,
+	};
+}
+
 describe("KeyboardHandler", () => {
 	it("triggers plain reveal on Space before answer is revealed", () => {
 		const onShowAnswer = vi.fn();
-		const handler = new KeyboardHandler(() => createReviewState(), {
-			onShowAnswer,
-			onAnswer: vi.fn(async () => {}),
-			onUndo: vi.fn(async () => {}),
-			onSuspend: vi.fn(async () => {}),
-			onBuryCard: vi.fn(async () => {}),
-			onBuryNote: vi.fn(async () => {}),
-			onMoveCard: vi.fn(async () => {}),
-			onAddCard: vi.fn(async () => {}),
-			onEditCard: vi.fn(async () => {}),
-			onCycleTypeInMode: vi.fn(),
-		});
+		const handler = new KeyboardHandler(
+			() => createReviewState(),
+			defaultCallbacks({ onShowAnswer }),
+			DEFAULT_KEYBINDINGS,
+		);
 
 		const event = createEvent({ key: " ", code: "Space" });
 		handler.handleKeyDown(event);
@@ -62,18 +81,11 @@ describe("KeyboardHandler", () => {
 
 	it("triggers show answer on Cmd/Ctrl+Enter before reveal", () => {
 		const onShowAnswer = vi.fn();
-		const handler = new KeyboardHandler(() => createReviewState(), {
-			onShowAnswer,
-			onAnswer: vi.fn(async () => {}),
-			onUndo: vi.fn(async () => {}),
-			onSuspend: vi.fn(async () => {}),
-			onBuryCard: vi.fn(async () => {}),
-			onBuryNote: vi.fn(async () => {}),
-			onMoveCard: vi.fn(async () => {}),
-			onAddCard: vi.fn(async () => {}),
-			onEditCard: vi.fn(async () => {}),
-			onCycleTypeInMode: vi.fn(),
-		});
+		const handler = new KeyboardHandler(
+			() => createReviewState(),
+			defaultCallbacks({ onShowAnswer }),
+			DEFAULT_KEYBINDINGS,
+		);
 
 		const event = createEvent({ key: "Enter", ctrlKey: true });
 		handler.handleKeyDown(event);
@@ -84,18 +96,11 @@ describe("KeyboardHandler", () => {
 
 	it("cycles type-in mode with T", () => {
 		const onCycleTypeInMode = vi.fn();
-		const handler = new KeyboardHandler(() => createReviewState(), {
-			onShowAnswer: vi.fn(),
-			onAnswer: vi.fn(async () => {}),
-			onUndo: vi.fn(async () => {}),
-			onSuspend: vi.fn(async () => {}),
-			onBuryCard: vi.fn(async () => {}),
-			onBuryNote: vi.fn(async () => {}),
-			onMoveCard: vi.fn(async () => {}),
-			onAddCard: vi.fn(async () => {}),
-			onEditCard: vi.fn(async () => {}),
-			onCycleTypeInMode,
-		});
+		const handler = new KeyboardHandler(
+			() => createReviewState(),
+			defaultCallbacks({ onCycleTypeInMode }),
+			DEFAULT_KEYBINDINGS,
+		);
 
 		const event = createEvent({ key: "t" });
 		handler.handleKeyDown(event);
@@ -107,23 +112,9 @@ describe("KeyboardHandler", () => {
 	it("blocks 1-4 shortcuts only while ratings are locked", () => {
 		const onAnswer = vi.fn(async () => {});
 		const handler = new KeyboardHandler(
-			() =>
-				createReviewState({
-					isAnswerRevealed: true,
-				}),
-			{
-				onShowAnswer: vi.fn(),
-				onAnswer,
-				onUndo: vi.fn(async () => {}),
-				onSuspend: vi.fn(async () => {}),
-				onBuryCard: vi.fn(async () => {}),
-				onBuryNote: vi.fn(async () => {}),
-				onMoveCard: vi.fn(async () => {}),
-				onAddCard: vi.fn(async () => {}),
-				onEditCard: vi.fn(async () => {}),
-				onCycleTypeInMode: vi.fn(),
-				canRateShortcuts: () => false,
-			},
+			() => createReviewState({ isAnswerRevealed: true }),
+			defaultCallbacks({ onAnswer, canRateShortcuts: () => false }),
+			DEFAULT_KEYBINDINGS,
 		);
 
 		const lockedEvent = createEvent({ key: "1" });
@@ -132,28 +123,108 @@ describe("KeyboardHandler", () => {
 		expect(onAnswer).not.toHaveBeenCalled();
 
 		const unlockedHandler = new KeyboardHandler(
-			() =>
-				createReviewState({
-					isAnswerRevealed: true,
-				}),
-			{
-				onShowAnswer: vi.fn(),
-				onAnswer,
-				onUndo: vi.fn(async () => {}),
-				onSuspend: vi.fn(async () => {}),
-				onBuryCard: vi.fn(async () => {}),
-				onBuryNote: vi.fn(async () => {}),
-				onMoveCard: vi.fn(async () => {}),
-				onAddCard: vi.fn(async () => {}),
-				onEditCard: vi.fn(async () => {}),
-				onCycleTypeInMode: vi.fn(),
-				canRateShortcuts: () => true,
-			},
+			() => createReviewState({ isAnswerRevealed: true }),
+			defaultCallbacks({ onAnswer, canRateShortcuts: () => true }),
+			DEFAULT_KEYBINDINGS,
 		);
 
 		const unlockedEvent = createEvent({ key: "1" });
 		unlockedHandler.handleKeyDown(unlockedEvent);
 		expect(unlockedEvent.preventDefault).toHaveBeenCalledOnce();
 		expect(onAnswer).toHaveBeenCalledWith(Rating.Again);
+	});
+
+	describe("custom keybindings", () => {
+		it("uses custom reveal key (Enter) to show answer", () => {
+			const onShowAnswer = vi.fn();
+			const handler = new KeyboardHandler(
+				() => createReviewState(),
+				defaultCallbacks({ onShowAnswer }),
+				{ ...DEFAULT_KEYBINDINGS, revealAndGood: "Enter" },
+			);
+
+			const event = createEvent({ key: "Enter" });
+			handler.handleKeyDown(event);
+
+			expect(event.preventDefault).toHaveBeenCalledOnce();
+			expect(onShowAnswer).toHaveBeenCalledOnce();
+		});
+
+		it("uses custom reveal key to rate Good when answer is shown", () => {
+			const onAnswer = vi.fn(async () => {});
+			const handler = new KeyboardHandler(
+				() => createReviewState({ isAnswerRevealed: true }),
+				defaultCallbacks({ onAnswer }),
+				{ ...DEFAULT_KEYBINDINGS, revealAndGood: "Enter" },
+			);
+
+			const event = createEvent({ key: "Enter" });
+			handler.handleKeyDown(event);
+
+			expect(onAnswer).toHaveBeenCalledWith(Rating.Good);
+		});
+
+		it("1-4 fallbacks still work when custom keys are set", () => {
+			const onAnswer = vi.fn(async () => {});
+			const handler = new KeyboardHandler(
+				() => createReviewState({ isAnswerRevealed: true }),
+				defaultCallbacks({ onAnswer }),
+				{
+					revealAndGood: "Enter",
+					again: "q",
+					hard: "w",
+					easy: "p",
+				},
+			);
+
+			handler.handleKeyDown(createEvent({ key: "1" }));
+			expect(onAnswer).toHaveBeenCalledWith(Rating.Again);
+
+			handler.handleKeyDown(createEvent({ key: "2" }));
+			expect(onAnswer).toHaveBeenCalledWith(Rating.Hard);
+
+			handler.handleKeyDown(createEvent({ key: "3" }));
+			expect(onAnswer).toHaveBeenCalledWith(Rating.Good);
+
+			handler.handleKeyDown(createEvent({ key: "4" }));
+			expect(onAnswer).toHaveBeenCalledWith(Rating.Easy);
+		});
+
+		it("custom rating keys work alongside fallbacks", () => {
+			const onAnswer = vi.fn(async () => {});
+			const handler = new KeyboardHandler(
+				() => createReviewState({ isAnswerRevealed: true }),
+				defaultCallbacks({ onAnswer }),
+				{
+					revealAndGood: "Enter",
+					again: "q",
+					hard: "w",
+					easy: "p",
+				},
+			);
+
+			handler.handleKeyDown(createEvent({ key: "q" }));
+			expect(onAnswer).toHaveBeenCalledWith(Rating.Again);
+
+			handler.handleKeyDown(createEvent({ key: "w" }));
+			expect(onAnswer).toHaveBeenCalledWith(Rating.Hard);
+
+			handler.handleKeyDown(createEvent({ key: "p" }));
+			expect(onAnswer).toHaveBeenCalledWith(Rating.Easy);
+		});
+	});
+
+	describe("formatKeyName", () => {
+		it("formats space as Space", () => {
+			expect(KeyboardHandler.formatKeyName(" ")).toBe("Space");
+		});
+
+		it("uppercases single characters", () => {
+			expect(KeyboardHandler.formatKeyName("a")).toBe("A");
+		});
+
+		it("preserves multi-character key names", () => {
+			expect(KeyboardHandler.formatKeyName("Enter")).toBe("Enter");
+		});
 	});
 });

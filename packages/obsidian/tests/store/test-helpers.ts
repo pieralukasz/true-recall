@@ -1,10 +1,13 @@
-import { State } from "ts-fsrs";
-import type { App } from "obsidian";
-import type { AppStoreDeps, BadgeCounts } from "../../src/store";
-import type { FSRSFlashcardItem, TrueRecallSettings } from "@true-recall/core/types";
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite/SqliteStoreService";
-import type { DayBoundaryService } from "@true-recall/core/services/review/day-boundary.service";
 import type { FrontmatterIndexService } from "@true-recall/core/services/notes/frontmatter-index.service";
+import type { DayBoundaryService } from "@true-recall/core/services/review/day-boundary.service";
+import type {
+	FSRSFlashcardItem,
+	TrueRecallSettings,
+} from "@true-recall/core/types";
+import type { App } from "obsidian";
+import { State } from "ts-fsrs";
+import type { AppStoreDeps, BadgeCounts } from "../../src/store";
 import { createAppStore } from "../../src/store";
 
 export function createMockDeps(): AppStoreDeps {
@@ -13,9 +16,10 @@ export function createMockDeps(): AppStoreDeps {
 		cardStore: {} as unknown as SqliteStoreService,
 		dayBoundaryService: {} as unknown as DayBoundaryService,
 		frontmatterIndex: {} as unknown as FrontmatterIndexService,
-		getSettings: () => ({
-			dayStartHour: 4,
-		}) as TrueRecallSettings,
+		getSettings: () =>
+			({
+				dayStartHour: 4,
+			}) as TrueRecallSettings,
 	};
 }
 
@@ -23,7 +27,9 @@ export function createTestStore() {
 	return createAppStore(createMockDeps());
 }
 
-export function createMockCard(overrides: Partial<FSRSFlashcardItem> = {}): FSRSFlashcardItem {
+export function createMockCard(
+	overrides: Partial<FSRSFlashcardItem> = {},
+): FSRSFlashcardItem {
 	return {
 		id: `card-${Math.random().toString(36).slice(2)}`,
 		question: "Test question",
@@ -48,7 +54,10 @@ export function createMockCard(overrides: Partial<FSRSFlashcardItem> = {}): FSRS
 	};
 }
 
-export function createMockCardWithState(state: State, dueOffset = 0): FSRSFlashcardItem {
+export function createMockCardWithState(
+	state: State,
+	dueOffset = 0,
+): FSRSFlashcardItem {
 	const due = new Date();
 	due.setMinutes(due.getMinutes() + dueOffset);
 
@@ -74,7 +83,7 @@ export function createMockCardWithState(state: State, dueOffset = 0): FSRSFlashc
  */
 export function countRemainingCards(
 	queue: FSRSFlashcardItem[],
-	currentIndex: number
+	currentIndex: number,
 ): BadgeCounts {
 	const counts: BadgeCounts = { new: 0, learning: 0, due: 0 };
 

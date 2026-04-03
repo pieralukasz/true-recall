@@ -2,11 +2,12 @@
  * Sync Operations Tests
  * Behavior-first tests for multi-device sync functionality
  */
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+
 import { State } from "ts-fsrs";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
-	createTestContext,
 	createTestCard,
+	createTestContext,
 	type TestContext,
 } from "./__setup__/test-database";
 

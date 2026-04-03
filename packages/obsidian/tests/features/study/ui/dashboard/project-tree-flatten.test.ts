@@ -1,15 +1,17 @@
 import { describe, expect, it } from "vitest";
 import {
-	projectMatchesSearch,
-	flattenProjectTree,
 	collectMatchingPaths,
+	flattenProjectTree,
+	projectMatchesSearch,
 } from "../../../../../src/features/study/ui/dashboard/helpers/project-tree-flatten";
 import type {
 	DashboardNoteEntry,
 	DashboardProject,
 } from "../../../../../src/features/study/ui/dashboard/types";
 
-function makeNote(overrides: Partial<DashboardNoteEntry> = {}): DashboardNoteEntry {
+function makeNote(
+	overrides: Partial<DashboardNoteEntry> = {},
+): DashboardNoteEntry {
 	return {
 		name: "Note A",
 		path: "notes/note-a.md",
@@ -27,7 +29,9 @@ function makeNote(overrides: Partial<DashboardNoteEntry> = {}): DashboardNoteEnt
 	};
 }
 
-function makeProject(overrides: Partial<DashboardProject> = {}): DashboardProject {
+function makeProject(
+	overrides: Partial<DashboardProject> = {},
+): DashboardProject {
 	return {
 		name: "Project A",
 		path: "projects/project-a",
@@ -89,8 +93,20 @@ describe("flattenProjectTree", () => {
 	});
 
 	it("returns header + notes when expanded", () => {
-		const noteA = makeNote({ name: "A", priority: "due", due: 3, learning: 1, newCount: 0 });
-		const noteB = makeNote({ name: "B", priority: "done", due: 0, learning: 0, newCount: 0 });
+		const noteA = makeNote({
+			name: "A",
+			priority: "due",
+			due: 3,
+			learning: 1,
+			newCount: 0,
+		});
+		const noteB = makeNote({
+			name: "B",
+			priority: "done",
+			due: 0,
+			learning: 0,
+			newCount: 0,
+		});
 		const project = makeProject({
 			path: "p/root",
 			memberNotes: [noteB, noteA],
@@ -102,9 +118,13 @@ describe("flattenProjectTree", () => {
 		expect(result[0].type).toBe("project-header");
 		// Notes are sorted by priority — "due" before "done"
 		expect(result[1].type).toBe("note");
-		expect((result[1] as { type: "note"; note: DashboardNoteEntry }).note.name).toBe("A");
+		expect(
+			(result[1] as { type: "note"; note: DashboardNoteEntry }).note.name,
+		).toBe("A");
 		expect(result[2].type).toBe("note");
-		expect((result[2] as { type: "note"; note: DashboardNoteEntry }).note.name).toBe("B");
+		expect(
+			(result[2] as { type: "note"; note: DashboardNoteEntry }).note.name,
+		).toBe("B");
 	});
 
 	it("handles nested depths correctly", () => {
@@ -137,7 +157,11 @@ describe("flattenProjectTree", () => {
 
 		expect(result).toHaveLength(2);
 		expect(result[0].type).toBe("project-header");
-		expect(result[1]).toMatchObject({ type: "empty-project", projectPath: "p/empty", depth: 1 });
+		expect(result[1]).toMatchObject({
+			type: "empty-project",
+			projectPath: "p/empty",
+			depth: 1,
+		});
 	});
 
 	it("filters notes by search query when expanded", () => {
@@ -153,7 +177,9 @@ describe("flattenProjectTree", () => {
 		// Header + only the matching note
 		expect(result).toHaveLength(2);
 		expect(result[1].type).toBe("note");
-		expect((result[1] as { type: "note"; note: DashboardNoteEntry }).note.name).toBe("Alpha");
+		expect(
+			(result[1] as { type: "note"; note: DashboardNoteEntry }).note.name,
+		).toBe("Alpha");
 	});
 
 	it("excludes projects that do not match search", () => {
@@ -164,7 +190,8 @@ describe("flattenProjectTree", () => {
 		expect(result).toHaveLength(1);
 		expect(result[0].type).toBe("project-header");
 		expect(
-			(result[0] as { type: "project-header"; project: DashboardProject }).project.name,
+			(result[0] as { type: "project-header"; project: DashboardProject })
+				.project.name,
 		).toBe("Biology");
 	});
 });
@@ -174,8 +201,16 @@ describe("flattenProjectTree", () => {
 describe("collectMatchingPaths", () => {
 	it("returns paths of all matching projects including nested", () => {
 		const grandchild = makeProject({ name: "Cell Biology", path: "p/cell" });
-		const child = makeProject({ name: "Genetics", path: "p/gen", children: [grandchild] });
-		const parent = makeProject({ name: "Science", path: "p/sci", children: [child] });
+		const child = makeProject({
+			name: "Genetics",
+			path: "p/gen",
+			children: [grandchild],
+		});
+		const parent = makeProject({
+			name: "Science",
+			path: "p/sci",
+			children: [child],
+		});
 
 		const paths = collectMatchingPaths([parent], "cell");
 

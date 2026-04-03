@@ -1,5 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createRequire } from "node:module";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const require = createRequire(import.meta.url);
 const hasSqlJs = (() => {
@@ -202,7 +202,9 @@ describe("StatsActions date-range SQL compatibility", () => {
 
 		const next = ctx.stats
 			.getReviewsForRetention(start, end, presets)
-			.sort((a, b) => `${a.date}-${a.rating}`.localeCompare(`${b.date}-${b.rating}`));
+			.sort((a, b) =>
+				`${a.date}-${a.rating}`.localeCompare(`${b.date}-${b.rating}`),
+			);
 		const legacy = legacyReviewsForRetention(ctx, start, end, presets).sort(
 			(a, b) => `${a.date}-${a.rating}`.localeCompare(`${b.date}-${b.rating}`),
 		);

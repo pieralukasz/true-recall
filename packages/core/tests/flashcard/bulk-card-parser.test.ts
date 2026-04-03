@@ -5,13 +5,10 @@
  */
 import { describe, expect, it } from "vitest";
 import {
-	parseBulkText,
 	type ParsedCard,
+	parseBulkText,
 } from "../../src/flashcard/parsing/bulk-card-parser";
-import {
-	BUILTIN_BASIC_ID,
-	BUILTIN_CLOZE_ID,
-} from "../../src/types/note.types";
+import { BUILTIN_BASIC_ID, BUILTIN_CLOZE_ID } from "../../src/types/note.types";
 
 describe("BulkCardParser", () => {
 	// ── Double-colon format ───────────────────────────────────
@@ -175,15 +172,15 @@ describe("BulkCardParser", () => {
 
 	describe("format detection", () => {
 		it("detects double-colon format", () => {
-			expect(
-				parseBulkText("Capital of France :: Paris").detectedFormat,
-			).toBe("double-colon");
+			expect(parseBulkText("Capital of France :: Paris").detectedFormat).toBe(
+				"double-colon",
+			);
 		});
 
 		it("detects standalone cloze as double-colon format", () => {
-			expect(
-				parseBulkText("{{c1::Paris}} is the capital").detectedFormat,
-			).toBe("double-colon");
+			expect(parseBulkText("{{c1::Paris}} is the capital").detectedFormat).toBe(
+				"double-colon",
+			);
 		});
 	});
 });

@@ -23,7 +23,9 @@ describe("migrateContent", () => {
 		const input = "{{c1::Paris}} is the capital of {{c2::France}}";
 		const result = migrateContent(input);
 		expect(result).toContain("#type/cloze");
-		expect(result).toContain("Text: {{c1::Paris}} is the capital of {{c2::France}}");
+		expect(result).toContain(
+			"Text: {{c1::Paris}} is the capital of {{c2::France}}",
+		);
 	});
 
 	it("should return null when no :: lines exist", () => {

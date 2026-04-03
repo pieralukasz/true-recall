@@ -75,9 +75,9 @@ describe("stripMarkdownSyntax", () => {
 	});
 
 	it("strips markdown links ([text](url))", () => {
-		expect(
-			stripMarkdownSyntax("Visit [Google](https://google.com) now"),
-		).toBe("Visit Google now");
+		expect(stripMarkdownSyntax("Visit [Google](https://google.com) now")).toBe(
+			"Visit Google now",
+		);
 	});
 
 	// ── Images ─────────────────────────────────────────────────────────
@@ -97,9 +97,9 @@ describe("stripMarkdownSyntax", () => {
 	// ── Code fences ────────────────────────────────────────────────────
 
 	it("strips code fences", () => {
-		expect(
-			stripMarkdownSyntax("Before\n```js\nconst x = 1;\n```\nAfter"),
-		).toBe("Before After");
+		expect(stripMarkdownSyntax("Before\n```js\nconst x = 1;\n```\nAfter")).toBe(
+			"Before After",
+		);
 	});
 
 	// ── Headings ───────────────────────────────────────────────────────
@@ -113,9 +113,7 @@ describe("stripMarkdownSyntax", () => {
 	// ── Block elements ─────────────────────────────────────────────────
 
 	it("strips blockquotes", () => {
-		expect(stripMarkdownSyntax("> This is a quote")).toBe(
-			"This is a quote",
-		);
+		expect(stripMarkdownSyntax("> This is a quote")).toBe("This is a quote");
 	});
 
 	it("strips unordered list markers", () => {
@@ -125,9 +123,7 @@ describe("stripMarkdownSyntax", () => {
 	});
 
 	it("strips ordered list markers", () => {
-		expect(stripMarkdownSyntax("1. First\n2. Second")).toBe(
-			"First Second",
-		);
+		expect(stripMarkdownSyntax("1. First\n2. Second")).toBe("First Second");
 	});
 
 	it("strips horizontal rules", () => {
@@ -145,9 +141,9 @@ describe("stripMarkdownSyntax", () => {
 	// ── Cloze deletions ────────────────────────────────────────────────
 
 	it("strips cloze deletions ({{c1::text}})", () => {
-		expect(
-			stripMarkdownSyntax("The capital of France is {{c1::Paris}}"),
-		).toBe("The capital of France is Paris");
+		expect(stripMarkdownSyntax("The capital of France is {{c1::Paris}}")).toBe(
+			"The capital of France is Paris",
+		);
 	});
 
 	it("strips cloze deletions with hint ({{c1::text::hint}})", () => {
@@ -178,9 +174,7 @@ describe("stripMarkdownSyntax", () => {
 		const input =
 			"# **Bold** heading with [[wiki link]] and `code`\n> A *quoted* line";
 		const result = stripMarkdownSyntax(input);
-		expect(result).toBe(
-			"Bold heading with wiki link and code A quoted line",
-		);
+		expect(result).toBe("Bold heading with wiki link and code A quoted line");
 	});
 
 	it("collapses excessive whitespace from stripped content", () => {

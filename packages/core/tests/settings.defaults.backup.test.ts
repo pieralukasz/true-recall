@@ -1,5 +1,5 @@
-import { DEFAULT_SETTINGS } from "../src/constants";
 import { describe, expect, it } from "vitest";
+import { DEFAULT_SETTINGS } from "../src/constants";
 
 describe("backup defaults", () => {
 	it("new install defaults to periodic backup (60 min) with startup backup disabled", () => {

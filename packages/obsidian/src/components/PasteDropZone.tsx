@@ -1,6 +1,6 @@
+import { cn } from "@true-recall/obsidian/utils/cn";
 import type { ComponentChildren } from "preact";
 import { useState } from "preact/hooks";
-import { cn } from "@true-recall/obsidian/utils/cn";
 
 export interface PasteDropZoneProps {
 	onFileDrop: (file: File) => void;

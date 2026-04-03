@@ -12,10 +12,7 @@ describe("assessTypedAnswer", () => {
 	});
 
 	it("marks missing and extra words with LCS diff", () => {
-		const result = assessTypedAnswer(
-			"alpha beta gamma",
-			"alpha gamma delta",
-		);
+		const result = assessTypedAnswer("alpha beta gamma", "alpha gamma delta");
 
 		expect(result.score).toBe(67);
 		expect(result.diff).toEqual([

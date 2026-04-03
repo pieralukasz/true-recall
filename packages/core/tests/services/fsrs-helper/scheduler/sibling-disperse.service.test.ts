@@ -1,7 +1,7 @@
 /**
  * Sibling Disperse Service Tests
  */
-import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { SiblingDisperseService } from "../../../../src/metrics/fsrs-tools/scheduler/sibling-disperse.service";
 import {
 	createMockCardStore,
@@ -16,7 +16,7 @@ describe("SiblingDisperseService", () => {
 		vi.useFakeTimers();
 		vi.setSystemTime(new Date("2026-02-01T10:00:00Z"));
 		mockStore = createMockCardStore();
-		service = new SiblingDisperseService(mockStore );
+		service = new SiblingDisperseService(mockStore);
 	});
 
 	afterEach(() => {
@@ -33,9 +33,9 @@ describe("SiblingDisperseService", () => {
 			]);
 			mockStore = createMockCardStore(siblings);
 			mockStore.getCards.mockReturnValue(
-				siblings.map((c) => ({ ...c, suspended: false, state: 2 }))
+				siblings.map((c) => ({ ...c, suspended: false, state: 2 })),
 			);
-			service = new SiblingDisperseService(mockStore );
+			service = new SiblingDisperseService(mockStore);
 
 			const result = await service.disperse({
 				minInterval: 3,
@@ -46,7 +46,7 @@ describe("SiblingDisperseService", () => {
 			expect(result.affectedCount).toBe(2);
 
 			const changes = result.changes.sort(
-				(a, b) => a.daysChanged - b.daysChanged
+				(a, b) => a.daysChanged - b.daysChanged,
 			);
 			expect(changes[0]!.daysChanged).toBe(3);
 			expect(changes[1]!.daysChanged).toBe(6);
@@ -57,9 +57,9 @@ describe("SiblingDisperseService", () => {
 			const singleCard = createSiblingCards("note-1", ["2026-02-01"]);
 			mockStore = createMockCardStore(singleCard);
 			mockStore.getCards.mockReturnValue(
-				singleCard.map((c) => ({ ...c, suspended: false, state: 2 }))
+				singleCard.map((c) => ({ ...c, suspended: false, state: 2 })),
 			);
-			service = new SiblingDisperseService(mockStore );
+			service = new SiblingDisperseService(mockStore);
 
 			const result = await service.disperse({
 				minInterval: 3,
@@ -77,9 +77,9 @@ describe("SiblingDisperseService", () => {
 			]);
 			mockStore = createMockCardStore(siblings);
 			mockStore.getCards.mockReturnValue(
-				siblings.map((c) => ({ ...c, suspended: false, state: 2 }))
+				siblings.map((c) => ({ ...c, suspended: false, state: 2 })),
 			);
-			service = new SiblingDisperseService(mockStore );
+			service = new SiblingDisperseService(mockStore);
 
 			const result = await service.disperse({
 				minInterval: 3,
@@ -92,21 +92,15 @@ describe("SiblingDisperseService", () => {
 		});
 
 		it("works for specific sourceUid", async () => {
-			const group1 = createSiblingCards("note-1", [
-				"2026-02-01",
-				"2026-02-01",
-			]);
-			const group2 = createSiblingCards("note-2", [
-				"2026-02-01",
-				"2026-02-01",
-			]);
+			const group1 = createSiblingCards("note-1", ["2026-02-01", "2026-02-01"]);
+			const group2 = createSiblingCards("note-2", ["2026-02-01", "2026-02-01"]);
 			const allCards = [...group1, ...group2];
 
 			mockStore = createMockCardStore(allCards);
 			mockStore.getCards.mockReturnValue(
-				allCards.map((c) => ({ ...c, suspended: false, state: 2 }))
+				allCards.map((c) => ({ ...c, suspended: false, state: 2 })),
 			);
-			service = new SiblingDisperseService(mockStore );
+			service = new SiblingDisperseService(mockStore);
 
 			const result = await service.disperse({
 				minInterval: 3,
@@ -120,21 +114,15 @@ describe("SiblingDisperseService", () => {
 		});
 
 		it("works for all sources when no sourceUid provided", async () => {
-			const group1 = createSiblingCards("note-1", [
-				"2026-02-01",
-				"2026-02-01",
-			]);
-			const group2 = createSiblingCards("note-2", [
-				"2026-02-01",
-				"2026-02-01",
-			]);
+			const group1 = createSiblingCards("note-1", ["2026-02-01", "2026-02-01"]);
+			const group2 = createSiblingCards("note-2", ["2026-02-01", "2026-02-01"]);
 			const allCards = [...group1, ...group2];
 
 			mockStore = createMockCardStore(allCards);
 			mockStore.getCards.mockReturnValue(
-				allCards.map((c) => ({ ...c, suspended: false, state: 2 }))
+				allCards.map((c) => ({ ...c, suspended: false, state: 2 })),
 			);
-			service = new SiblingDisperseService(mockStore );
+			service = new SiblingDisperseService(mockStore);
 
 			const result = await service.disperse({
 				minInterval: 3,
@@ -153,9 +141,9 @@ describe("SiblingDisperseService", () => {
 			]);
 			mockStore = createMockCardStore(siblings);
 			mockStore.getCards.mockReturnValue(
-				siblings.map((c) => ({ ...c, suspended: false, state: 2 }))
+				siblings.map((c) => ({ ...c, suspended: false, state: 2 })),
 			);
-			service = new SiblingDisperseService(mockStore );
+			service = new SiblingDisperseService(mockStore);
 
 			const result = await service.disperse({
 				minInterval: 3,
@@ -172,9 +160,9 @@ describe("SiblingDisperseService", () => {
 			]);
 			mockStore = createMockCardStore(siblings);
 			mockStore.getCards.mockReturnValue(
-				siblings.map((c) => ({ ...c, suspended: false, state: 2 }))
+				siblings.map((c) => ({ ...c, suspended: false, state: 2 })),
 			);
-			service = new SiblingDisperseService(mockStore );
+			service = new SiblingDisperseService(mockStore);
 
 			await service.disperse({
 				minInterval: 3,
@@ -191,9 +179,9 @@ describe("SiblingDisperseService", () => {
 			]);
 			mockStore = createMockCardStore(siblings);
 			mockStore.getCards.mockReturnValue(
-				siblings.map((c) => ({ ...c, suspended: false, state: 2 }))
+				siblings.map((c) => ({ ...c, suspended: false, state: 2 })),
 			);
-			service = new SiblingDisperseService(mockStore );
+			service = new SiblingDisperseService(mockStore);
 
 			await service.disperse({
 				minInterval: 3,
@@ -214,9 +202,9 @@ describe("SiblingDisperseService", () => {
 			]);
 			mockStore = createMockCardStore(siblings);
 			mockStore.getCards.mockReturnValue(
-				siblings.map((c) => ({ ...c, suspended: false, state: 2 }))
+				siblings.map((c) => ({ ...c, suspended: false, state: 2 })),
 			);
-			service = new SiblingDisperseService(mockStore );
+			service = new SiblingDisperseService(mockStore);
 
 			const result = await service.disperse({
 				minInterval: 2,
@@ -228,7 +216,7 @@ describe("SiblingDisperseService", () => {
 
 			// Cards should be spaced: Feb 1, Feb 3, Feb 5, Feb 7, Feb 9
 			const sortedChanges = result.changes.sort(
-				(a, b) => a.daysChanged - b.daysChanged
+				(a, b) => a.daysChanged - b.daysChanged,
 			);
 			expect(sortedChanges[0]!.daysChanged).toBe(2);
 			expect(sortedChanges[1]!.daysChanged).toBe(4);
@@ -245,9 +233,9 @@ describe("SiblingDisperseService", () => {
 			]);
 			mockStore = createMockCardStore(siblings);
 			mockStore.getCards.mockReturnValue(
-				siblings.map((c) => ({ ...c, suspended: false, state: 2 }))
+				siblings.map((c) => ({ ...c, suspended: false, state: 2 })),
 			);
-			service = new SiblingDisperseService(mockStore );
+			service = new SiblingDisperseService(mockStore);
 
 			const violations = service.findViolations(3);
 
@@ -265,9 +253,9 @@ describe("SiblingDisperseService", () => {
 			]);
 			mockStore = createMockCardStore(siblings);
 			mockStore.getCards.mockReturnValue(
-				siblings.map((c) => ({ ...c, suspended: false, state: 2 }))
+				siblings.map((c) => ({ ...c, suspended: false, state: 2 })),
 			);
-			service = new SiblingDisperseService(mockStore );
+			service = new SiblingDisperseService(mockStore);
 
 			const violations = service.findViolations(3);
 
@@ -282,9 +270,9 @@ describe("SiblingDisperseService", () => {
 			]);
 			mockStore = createMockCardStore(siblings);
 			mockStore.getCards.mockReturnValue(
-				siblings.map((c) => ({ ...c, suspended: false, state: 2 }))
+				siblings.map((c) => ({ ...c, suspended: false, state: 2 })),
 			);
-			service = new SiblingDisperseService(mockStore );
+			service = new SiblingDisperseService(mockStore);
 
 			const violations = service.findViolations(3);
 
@@ -292,10 +280,7 @@ describe("SiblingDisperseService", () => {
 		});
 
 		it("handles multiple groups", () => {
-			const group1 = createSiblingCards("note-1", [
-				"2026-02-01",
-				"2026-02-01",
-			]);
+			const group1 = createSiblingCards("note-1", ["2026-02-01", "2026-02-01"]);
 			const group2 = createSiblingCards("note-2", [
 				"2026-02-01",
 				"2026-02-05", // No violation
@@ -304,9 +289,9 @@ describe("SiblingDisperseService", () => {
 
 			mockStore = createMockCardStore(allCards);
 			mockStore.getCards.mockReturnValue(
-				allCards.map((c) => ({ ...c, suspended: false, state: 2 }))
+				allCards.map((c) => ({ ...c, suspended: false, state: 2 })),
 			);
-			service = new SiblingDisperseService(mockStore );
+			service = new SiblingDisperseService(mockStore);
 
 			const violations = service.findViolations(3);
 

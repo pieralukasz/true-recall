@@ -8,17 +8,18 @@
  *   Review → Review (retention) or Relearning (lapse)
  *   Relearning → Review (re-graduation)
  */
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { State, Rating } from "ts-fsrs";
+
+import { Rating, State } from "ts-fsrs";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { FSRSService } from "../../../src/services/fsrs/fsrs.service";
-import {
-	createNewCard,
-	createReviewCard,
-	createRelearningCard,
-	createDefaultFSRSSettings,
-} from "../../mocks/fsrs.mocks";
 import type { FSRSCardData } from "../../../src/types";
 import type { FSRSSettings } from "../../../src/types/settings.types";
+import {
+	createDefaultFSRSSettings,
+	createNewCard,
+	createRelearningCard,
+	createReviewCard,
+} from "../../mocks/fsrs.mocks";
 
 /**
  * Helper to create a learning card at a specific step
@@ -26,7 +27,7 @@ import type { FSRSSettings } from "../../../src/types/settings.types";
 function createCardAtLearningStep(
 	id: string,
 	step: number,
-	state: State.Learning | State.Relearning = State.Learning
+	state: State.Learning | State.Relearning = State.Learning,
 ): FSRSCardData {
 	const now = new Date();
 	return {
@@ -48,7 +49,7 @@ function createCardAtLearningStep(
  */
 function createSettingsWithSteps(
 	learningSteps: number[],
-	relearningSteps: number[] = [10]
+	relearningSteps: number[] = [10],
 ): FSRSSettings {
 	return {
 		...createDefaultFSRSSettings(),
@@ -348,7 +349,9 @@ describe("FSRS State Transitions", () => {
 			const resultEasy = service.scheduleCard(cardEasy, Rating.Easy);
 			const resultGood = service.scheduleCard(cardGood, Rating.Good);
 
-			expect(resultEasy.scheduledDays).toBeGreaterThan(resultGood.scheduledDays);
+			expect(resultEasy.scheduledDays).toBeGreaterThan(
+				resultGood.scheduledDays,
+			);
 		});
 
 		it("should give longer interval for Good than Hard on Review card", () => {
@@ -358,7 +361,9 @@ describe("FSRS State Transitions", () => {
 			const resultGood = service.scheduleCard(cardGood, Rating.Good);
 			const resultHard = service.scheduleCard(cardHard, Rating.Hard);
 
-			expect(resultGood.scheduledDays).toBeGreaterThanOrEqual(resultHard.scheduledDays);
+			expect(resultGood.scheduledDays).toBeGreaterThanOrEqual(
+				resultHard.scheduledDays,
+			);
 		});
 
 		it("should give shortest interval for Again", () => {
@@ -435,7 +440,11 @@ describe("FSRS State Transitions", () => {
 
 	describe("Relearning vs Learning Intervals", () => {
 		it("should have short intervals for Learning cards", () => {
-			const learning = createCardAtLearningStep("learning-interval", 0, State.Learning);
+			const learning = createCardAtLearningStep(
+				"learning-interval",
+				0,
+				State.Learning,
+			);
 			const resultLearning = service.scheduleCard(learning, Rating.Good);
 
 			// Learning cards should have short intervals (minutes to hours)
@@ -447,7 +456,11 @@ describe("FSRS State Transitions", () => {
 		});
 
 		it("should have short intervals for Relearning cards", () => {
-			const relearning = createCardAtLearningStep("relearning-interval", 0, State.Relearning);
+			const relearning = createCardAtLearningStep(
+				"relearning-interval",
+				0,
+				State.Relearning,
+			);
 			const resultRelearning = service.scheduleCard(relearning, Rating.Good);
 
 			// Relearning cards should also have short intervals

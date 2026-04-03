@@ -1,6 +1,6 @@
-import { useEffect } from "preact/hooks";
 import { Clickable } from "@true-recall/obsidian/components";
 import type { ReviewApi } from "@true-recall/obsidian/store";
+import { useEffect } from "preact/hooks";
 
 function StatItem({
 	label,

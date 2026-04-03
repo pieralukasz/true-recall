@@ -1,9 +1,12 @@
 /**
  * Postpone/Advance Service Tests
  */
-import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { PostponeAdvanceService } from "../../../../src/metrics/fsrs-tools/scheduler/postpone-advance.service";
-import { createMockCardStore, createCardsOnDate } from "../mocks/scheduler.mocks";
+import {
+	createCardsOnDate,
+	createMockCardStore,
+} from "../mocks/scheduler.mocks";
 
 describe("PostponeAdvanceService", () => {
 	let service: PostponeAdvanceService;
@@ -13,7 +16,7 @@ describe("PostponeAdvanceService", () => {
 		vi.useFakeTimers();
 		vi.setSystemTime(new Date("2026-02-01T10:00:00Z"));
 		mockStore = createMockCardStore();
-		service = new PostponeAdvanceService(mockStore );
+		service = new PostponeAdvanceService(mockStore);
 	});
 
 	afterEach(() => {
@@ -26,9 +29,9 @@ describe("PostponeAdvanceService", () => {
 			mockStore = createMockCardStore(cards);
 			mockStore.getDueCardsByDateRange.mockReturnValue(cards);
 			mockStore.getCards.mockReturnValue(
-				cards.map((c) => ({ ...c, suspended: false, state: 2 }))
+				cards.map((c) => ({ ...c, suspended: false, state: 2 })),
 			);
-			service = new PostponeAdvanceService(mockStore );
+			service = new PostponeAdvanceService(mockStore);
 
 			const result = await service.shift({
 				action: "postpone",
@@ -51,7 +54,7 @@ describe("PostponeAdvanceService", () => {
 
 			mockStore = createMockCardStore(allCards);
 			mockStore.getDueCardsByDateRange.mockReturnValue(todayCards);
-			service = new PostponeAdvanceService(mockStore );
+			service = new PostponeAdvanceService(mockStore);
 
 			const result = await service.shift({
 				action: "postpone",
@@ -65,8 +68,20 @@ describe("PostponeAdvanceService", () => {
 
 		it("scope overdue only affects past-due cards", async () => {
 			const overdueCards = [
-				{ id: "overdue-1", due: "2026-01-25T10:00:00.000Z", scheduledDays: 7, suspended: false, state: 2 },
-				{ id: "overdue-2", due: "2026-01-28T10:00:00.000Z", scheduledDays: 7, suspended: false, state: 2 },
+				{
+					id: "overdue-1",
+					due: "2026-01-25T10:00:00.000Z",
+					scheduledDays: 7,
+					suspended: false,
+					state: 2,
+				},
+				{
+					id: "overdue-2",
+					due: "2026-01-28T10:00:00.000Z",
+					scheduledDays: 7,
+					suspended: false,
+					state: 2,
+				},
 			];
 			const todayCards = createCardsOnDate("2026-02-01", 3).map((c) => ({
 				...c,
@@ -77,7 +92,7 @@ describe("PostponeAdvanceService", () => {
 
 			mockStore = createMockCardStore(allCards);
 			mockStore.getCards.mockReturnValue(allCards);
-			service = new PostponeAdvanceService(mockStore );
+			service = new PostponeAdvanceService(mockStore);
 
 			const result = await service.shift({
 				action: "postpone",
@@ -92,8 +107,10 @@ describe("PostponeAdvanceService", () => {
 		it("scope selected uses provided cardIds", async () => {
 			const cards = createCardsOnDate("2026-02-01", 5);
 			mockStore = createMockCardStore(cards);
-			mockStore.get.mockImplementation((id: string) => cards.find((c) => c.id === id));
-			service = new PostponeAdvanceService(mockStore );
+			mockStore.get.mockImplementation((id: string) =>
+				cards.find((c) => c.id === id),
+			);
+			service = new PostponeAdvanceService(mockStore);
 
 			const result = await service.shift({
 				action: "postpone",
@@ -108,14 +125,32 @@ describe("PostponeAdvanceService", () => {
 
 		it("scope all excludes new and suspended cards", async () => {
 			const cards = [
-				{ id: "review", due: "2026-02-01T10:00:00.000Z", scheduledDays: 7, suspended: false, state: 2 },
-				{ id: "new", due: "2026-02-01T10:00:00.000Z", scheduledDays: 0, suspended: false, state: 0 },
-				{ id: "suspended", due: "2026-02-01T10:00:00.000Z", scheduledDays: 7, suspended: true, state: 2 },
+				{
+					id: "review",
+					due: "2026-02-01T10:00:00.000Z",
+					scheduledDays: 7,
+					suspended: false,
+					state: 2,
+				},
+				{
+					id: "new",
+					due: "2026-02-01T10:00:00.000Z",
+					scheduledDays: 0,
+					suspended: false,
+					state: 0,
+				},
+				{
+					id: "suspended",
+					due: "2026-02-01T10:00:00.000Z",
+					scheduledDays: 7,
+					suspended: true,
+					state: 2,
+				},
 			];
 
 			mockStore = createMockCardStore(cards);
 			mockStore.getCards.mockReturnValue(cards);
-			service = new PostponeAdvanceService(mockStore );
+			service = new PostponeAdvanceService(mockStore);
 
 			const result = await service.shift({
 				action: "postpone",
@@ -135,9 +170,9 @@ describe("PostponeAdvanceService", () => {
 			const cards = createCardsOnDate("2026-02-10", 5);
 			mockStore = createMockCardStore(cards);
 			mockStore.getCards.mockReturnValue(
-				cards.map((c) => ({ ...c, suspended: false, state: 2 }))
+				cards.map((c) => ({ ...c, suspended: false, state: 2 })),
 			);
-			service = new PostponeAdvanceService(mockStore );
+			service = new PostponeAdvanceService(mockStore);
 
 			const result = await service.shift({
 				action: "advance",
@@ -158,9 +193,9 @@ describe("PostponeAdvanceService", () => {
 			const cards = createCardsOnDate("2026-02-05", 3);
 			mockStore = createMockCardStore(cards);
 			mockStore.getCards.mockReturnValue(
-				cards.map((c) => ({ ...c, suspended: false, state: 2 }))
+				cards.map((c) => ({ ...c, suspended: false, state: 2 })),
 			);
-			service = new PostponeAdvanceService(mockStore );
+			service = new PostponeAdvanceService(mockStore);
 
 			const result = await service.shift({
 				action: "advance",
@@ -184,9 +219,9 @@ describe("PostponeAdvanceService", () => {
 			const cards = createCardsOnDate("2026-02-01", 3);
 			mockStore = createMockCardStore(cards);
 			mockStore.getCards.mockReturnValue(
-				cards.map((c) => ({ ...c, suspended: false, state: 2 }))
+				cards.map((c) => ({ ...c, suspended: false, state: 2 })),
 			);
-			service = new PostponeAdvanceService(mockStore );
+			service = new PostponeAdvanceService(mockStore);
 
 			await service.shift({
 				action: "postpone",
@@ -202,9 +237,9 @@ describe("PostponeAdvanceService", () => {
 			const cards = createCardsOnDate("2026-02-01", 3);
 			mockStore = createMockCardStore(cards);
 			mockStore.getCards.mockReturnValue(
-				cards.map((c) => ({ ...c, suspended: false, state: 2 }))
+				cards.map((c) => ({ ...c, suspended: false, state: 2 })),
 			);
-			service = new PostponeAdvanceService(mockStore );
+			service = new PostponeAdvanceService(mockStore);
 
 			await service.shift({
 				action: "postpone",
@@ -220,11 +255,17 @@ describe("PostponeAdvanceService", () => {
 	describe("preserves time-of-day", () => {
 		it("keeps original time when postponing", async () => {
 			const cards = [
-				{ id: "card-1", due: "2026-02-01T14:30:45.123Z", scheduledDays: 7, suspended: false, state: 2 },
+				{
+					id: "card-1",
+					due: "2026-02-01T14:30:45.123Z",
+					scheduledDays: 7,
+					suspended: false,
+					state: 2,
+				},
 			];
 			mockStore = createMockCardStore(cards);
 			mockStore.getCards.mockReturnValue(cards);
-			service = new PostponeAdvanceService(mockStore );
+			service = new PostponeAdvanceService(mockStore);
 
 			const result = await service.shift({
 				action: "postpone",
@@ -242,9 +283,9 @@ describe("PostponeAdvanceService", () => {
 			const cards = createCardsOnDate("2026-02-01", 5);
 			mockStore = createMockCardStore(cards);
 			mockStore.getCards.mockReturnValue(
-				cards.map((c) => ({ ...c, suspended: false, state: 2 }))
+				cards.map((c) => ({ ...c, suspended: false, state: 2 })),
 			);
-			service = new PostponeAdvanceService(mockStore );
+			service = new PostponeAdvanceService(mockStore);
 
 			const result = await service.shift({
 				action: "postpone",
@@ -255,13 +296,13 @@ describe("PostponeAdvanceService", () => {
 
 			// Before should show original date
 			const beforeDay = result.beforeDistribution.find(
-				(d) => d.date === "2026-02-01"
+				(d) => d.date === "2026-02-01",
 			);
 			expect(beforeDay?.count).toBe(5);
 
 			// After should show new date
 			const afterDay = result.afterDistribution.find(
-				(d) => d.date === "2026-02-08"
+				(d) => d.date === "2026-02-08",
 			);
 			expect(afterDay?.count).toBe(5);
 		});

@@ -145,6 +145,17 @@ export interface FSRSPreset {
 	burySiblings?: boolean;
 }
 
+export interface ReviewKeybindings {
+	/** Key for reveal answer + Good rating (KeyboardEvent.key value) */
+	revealAndGood: string;
+	/** Key for Again rating */
+	again: string;
+	/** Key for Hard rating */
+	hard: string;
+	/** Key for Easy rating */
+	easy: string;
+}
+
 /**
  * True Recall plugin settings
  */
@@ -195,6 +206,9 @@ export interface TrueRecallSettings {
 	continuousCustomReviews: boolean;
 	/** Bypass daily limits when studying a specific note from the dashboard */
 	ignoreDailyLimitsForNoteStudy: boolean;
+
+	/** Custom review keybindings */
+	reviewKeybindings: ReviewKeybindings;
 
 	/** Remove flashcard content from markdown after collecting (default: false = keep content, only remove tag) */
 	removeFlashcardContentAfterCollect: boolean;
@@ -296,7 +310,7 @@ export interface TrueRecallSettings {
 	/** Last version the user has seen release notes for */
 	lastSeenVersion?: string;
 
-	/** Enable local HTTP API for MCP/CLI integration */
+	/** Enable local HTTP API for CLI integration */
 	enableLocalApi: boolean;
 	/** Port for local HTTP API (default 27182) */
 	apiPort: number;

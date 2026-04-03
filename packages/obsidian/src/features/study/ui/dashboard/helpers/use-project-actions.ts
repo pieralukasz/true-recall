@@ -219,12 +219,17 @@ export function useProjectActions() {
 				if (file) await plugin.app.vault.trash(file, true);
 			}
 
-			// Trash parent folder if it became empty
-			const folderPath = projectPath.replace(/\/[^/]+$/, "");
-			if (folderPath !== projectPath) {
-				const folder = plugin.app.vault.getAbstractFileByPath(folderPath);
+			// Trash empty ancestor folders up the tree
+			let ancestorPath = projectPath.replace(/\/[^/]+$/, "");
+			while (ancestorPath && ancestorPath !== projectPath) {
+				const folder = plugin.app.vault.getAbstractFileByPath(ancestorPath);
 				if (folder instanceof TFolder && folder.children.length === 0) {
 					await plugin.app.vault.trash(folder, true);
+					const next = ancestorPath.replace(/\/[^/]+$/, "");
+					if (next === ancestorPath) break;
+					ancestorPath = next;
+				} else {
+					break;
 				}
 			}
 

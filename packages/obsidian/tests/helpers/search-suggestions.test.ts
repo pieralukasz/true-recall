@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+	buildStaticSuggestions,
 	getTokenAtCursor,
 	getTokenContext,
-	buildStaticSuggestions,
 	replaceTokenAtCursor,
 } from "../../src/helpers/search-suggestions";
 
@@ -275,7 +275,11 @@ describe("replaceTokenAtCursor", () => {
 	});
 
 	it("replaces token in the middle of input", () => {
-		const result = replaceTokenAtCursor("is:new prop:la type:cloze", 14, "prop:lapses>");
+		const result = replaceTokenAtCursor(
+			"is:new prop:la type:cloze",
+			14,
+			"prop:lapses>",
+		);
 		expect(result.text).toBe("is:new prop:lapses> type:cloze");
 	});
 

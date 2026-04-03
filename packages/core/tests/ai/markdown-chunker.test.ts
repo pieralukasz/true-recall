@@ -75,9 +75,7 @@ describe("chunkMarkdown", () => {
 		const result = chunkMarkdown("Short note with a few words.");
 		expect(result.strategy).toBe("single");
 		expect(result.chunks).toHaveLength(1);
-		expect(result.chunks[0]!.content).toBe(
-			"Short note with a few words.",
-		);
+		expect(result.chunks[0]!.content).toBe("Short note with a few words.");
 	});
 
 	it("returns single strategy for content under 3000 words", () => {
@@ -214,10 +212,7 @@ all code
 		// 50 headings with ~100 words each = 5000 words total
 		const sections = Array(50)
 			.fill(null)
-			.map(
-				(_, i) =>
-					`## Term ${i}\n\n${Array(100).fill("word").join(" ")}`,
-			)
+			.map((_, i) => `## Term ${i}\n\n${Array(100).fill("word").join(" ")}`)
 			.join("\n\n");
 		const result = chunkMarkdown(sections);
 		expect(result.strategy).toBe("chunked");
@@ -228,10 +223,7 @@ all code
 	it("splits very long single section by paragraphs", () => {
 		const paragraphs = Array(30)
 			.fill(null)
-			.map(
-				(_, i) =>
-					`Paragraph ${i}: ${Array(200).fill("concept").join(" ")}`,
-			)
+			.map((_, i) => `Paragraph ${i}: ${Array(200).fill("concept").join(" ")}`)
 			.join("\n\n");
 		const content = `# Huge Section\n\n${paragraphs}`;
 

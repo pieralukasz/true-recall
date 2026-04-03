@@ -1,14 +1,17 @@
-import { describe, expect, it, vi } from "vitest";
 import { State } from "ts-fsrs";
+import { describe, expect, it, vi } from "vitest";
 import { DEFAULT_SETTINGS } from "../../../src/constants";
-import {
-	computeActionableSessionSnapshot,
-	type ActionableSessionSnapshotDeps,
-} from "../../../src/services/review/actionable-session-snapshot.service";
 import type { SessionPersistenceService } from "../../../src/persistence/session/session-persistence.service";
 import type { HierarchyService } from "../../../src/services/notes/hierarchy.service";
 import type { PresetService } from "../../../src/services/notes/preset.service";
-import type { FSRSPreset, TrueRecallSettings } from "../../../src/types/settings.types";
+import {
+	type ActionableSessionSnapshotDeps,
+	computeActionableSessionSnapshot,
+} from "../../../src/services/review/actionable-session-snapshot.service";
+import type {
+	FSRSPreset,
+	TrueRecallSettings,
+} from "../../../src/types/settings.types";
 import { createMockFlashcard } from "../../mocks/fsrs.mocks";
 
 function createPreset(
@@ -36,7 +39,10 @@ function createPreset(
 	};
 }
 
-function createSettings(presets: FSRSPreset[], defaultPresetId: string): TrueRecallSettings {
+function createSettings(
+	presets: FSRSPreset[],
+	defaultPresetId: string,
+): TrueRecallSettings {
 	return {
 		...DEFAULT_SETTINGS,
 		fsrsPresets: presets,
@@ -59,7 +65,8 @@ function createDeps(
 		getReviewedToday: () => new Set<string>(),
 		getNewCardsStudiedToday: () => 0,
 		getReviewCardsCompletedToday: () => 0,
-		getTodayProgressByPreset: () => new Map<string, { newStudied: number; reviewsCompleted: number }>(),
+		getTodayProgressByPreset: () =>
+			new Map<string, { newStudied: number; reviewsCompleted: number }>(),
 	} as unknown as SessionPersistenceService;
 	const hierarchyService = {
 		getSourceUidsForProject: () => new Set<string>(),
@@ -80,7 +87,10 @@ describe("computeActionableSessionSnapshot", () => {
 	it("applies per-preset limits in global mode", () => {
 		const defaultPreset = createPreset("Default", { reviewsPerDay: 1 });
 		const proPreset = createPreset("Pro", { reviewsPerDay: 10 });
-		const settings = createSettings([defaultPreset, proPreset], defaultPreset.id);
+		const settings = createSettings(
+			[defaultPreset, proPreset],
+			defaultPreset.id,
+		);
 
 		const cards = [
 			createMockFlashcard({

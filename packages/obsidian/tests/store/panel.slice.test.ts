@@ -1,9 +1,9 @@
-import { describe, it, expect, beforeEach } from "vitest";
-import type { TFile } from "obsidian";
-import { createTestStore } from "./test-helpers";
-import type { AppStore } from "../../src/store";
-import type { FlashcardInfo } from "@true-recall/core/types";
 import type { AppError } from "@true-recall/core/errors";
+import type { FlashcardInfo } from "@true-recall/core/types";
+import type { TFile } from "obsidian";
+import { beforeEach, describe, expect, it } from "vitest";
+import type { AppStore } from "../../src/store";
+import { createTestStore } from "./test-helpers";
 
 describe("Panel Slice", () => {
 	let store: AppStore;
@@ -93,7 +93,11 @@ describe("Panel Slice", () => {
 
 			expect(store.getState().panel.isCurrentFile(mockFile)).toBe(true);
 			// eslint-disable-next-line obsidianmd/no-tfile-tfolder-cast -- test mock
-			expect(store.getState().panel.isCurrentFile({ path: "/other.md" } as unknown as TFile)).toBe(false);
+			expect(
+				store
+					.getState()
+					.panel.isCurrentFile({ path: "/other.md" } as unknown as TFile),
+			).toBe(false);
 			expect(store.getState().panel.isCurrentFile(null)).toBe(false);
 		});
 	});
@@ -265,5 +269,4 @@ describe("Panel Slice", () => {
 			expect(panel.isFollowingReview).toBe(false);
 		});
 	});
-
 });

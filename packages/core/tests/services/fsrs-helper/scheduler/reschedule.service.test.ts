@@ -1,22 +1,25 @@
 /**
  * Reschedule Service Tests
  */
-import { describe, it, expect, beforeEach, vi, afterEach } from "vitest";
+
 import { State } from "ts-fsrs";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { RescheduleService } from "../../../../src/metrics/fsrs-tools/scheduler/reschedule.service";
 import { createMockCardStore } from "../mocks/scheduler.mocks";
 
 // Helper to create cards with FSRS data
-function createFSRSCard(overrides?: Partial<{
-	id: string;
-	due: string;
-	state: State;
-	stability: number;
-	difficulty: number;
-	lastReview: string;
-	scheduledDays: number;
-	suspended: boolean;
-}>) {
+function createFSRSCard(
+	overrides?: Partial<{
+		id: string;
+		due: string;
+		state: State;
+		stability: number;
+		difficulty: number;
+		lastReview: string;
+		scheduledDays: number;
+		suspended: boolean;
+	}>,
+) {
 	return {
 		id: crypto.randomUUID(),
 		due: "2026-02-10T10:00:00.000Z",
@@ -46,7 +49,7 @@ describe("RescheduleService", () => {
 		vi.useFakeTimers();
 		vi.setSystemTime(new Date("2026-02-01T10:00:00Z"));
 		mockStore = createMockCardStore();
-		service = new RescheduleService(mockStore , defaultFSRSSettings);
+		service = new RescheduleService(mockStore, defaultFSRSSettings);
 	});
 
 	afterEach(() => {
@@ -78,7 +81,7 @@ describe("RescheduleService", () => {
 			const newDue = new Date(change.newDue);
 			const lastReview = new Date("2026-01-25T10:00:00.000Z");
 			const interval = Math.round(
-				(newDue.getTime() - lastReview.getTime()) / (1000 * 60 * 60 * 24)
+				(newDue.getTime() - lastReview.getTime()) / (1000 * 60 * 60 * 24),
 			);
 			// FSRS-6 at retention=0.9: interval ≈ stability (with interval_modifier ~1.0)
 			expect(interval).toBeGreaterThanOrEqual(15);
@@ -109,7 +112,7 @@ describe("RescheduleService", () => {
 			const newDue = new Date(result.changes[0]!.newDue);
 			const lastReview = new Date("2026-01-01T10:00:00.000Z");
 			const interval = Math.round(
-				(newDue.getTime() - lastReview.getTime()) / (1000 * 60 * 60 * 24)
+				(newDue.getTime() - lastReview.getTime()) / (1000 * 60 * 60 * 24),
 			);
 			expect(interval).toBeLessThanOrEqual(30);
 		});
@@ -124,7 +127,7 @@ describe("RescheduleService", () => {
 			});
 			mockStore = createMockCardStore([card]);
 			mockStore.getCards.mockReturnValue([card]);
-			service = new RescheduleService(mockStore , defaultFSRSSettings);
+			service = new RescheduleService(mockStore, defaultFSRSSettings);
 
 			const result = await service.reschedule({
 				scope: "all",
@@ -145,15 +148,27 @@ describe("RescheduleService", () => {
 				due: "2026-02-05T10:00:00.000Z",
 			});
 			const newCard = createFSRSCard({ id: "new", state: State.New });
-			const learningCard = createFSRSCard({ id: "learning", state: State.Learning });
-			const relearningCard = createFSRSCard({ id: "relearning", state: State.Relearning });
+			const learningCard = createFSRSCard({
+				id: "learning",
+				state: State.Learning,
+			});
+			const relearningCard = createFSRSCard({
+				id: "relearning",
+				state: State.Relearning,
+			});
 			const suspendedCard = createFSRSCard({
 				id: "suspended",
 				state: State.Review,
 				suspended: true,
 			});
 
-			const allCards = [reviewCard, newCard, learningCard, relearningCard, suspendedCard];
+			const allCards = [
+				reviewCard,
+				newCard,
+				learningCard,
+				relearningCard,
+				suspendedCard,
+			];
 			mockStore = createMockCardStore(allCards);
 			mockStore.getCards.mockReturnValue(allCards);
 			service = new RescheduleService(mockStore, defaultFSRSSettings);
@@ -184,7 +199,7 @@ describe("RescheduleService", () => {
 
 			mockStore = createMockCardStore([dueCard, futureCard]);
 			mockStore.getCards.mockReturnValue([dueCard, futureCard]);
-			service = new RescheduleService(mockStore , defaultFSRSSettings);
+			service = new RescheduleService(mockStore, defaultFSRSSettings);
 
 			const result = await service.reschedule({
 				scope: "due",
@@ -211,7 +226,7 @@ describe("RescheduleService", () => {
 
 			mockStore = createMockCardStore([overdueCard, dueToday]);
 			mockStore.getCards.mockReturnValue([overdueCard, dueToday]);
-			service = new RescheduleService(mockStore , defaultFSRSSettings);
+			service = new RescheduleService(mockStore, defaultFSRSSettings);
 
 			const result = await service.reschedule({
 				scope: "overdue",
@@ -231,7 +246,7 @@ describe("RescheduleService", () => {
 			mockStore.get.mockImplementation((id: string) => {
 				return [card1, card2, card3].find((c) => c.id === id);
 			});
-			service = new RescheduleService(mockStore , defaultFSRSSettings);
+			service = new RescheduleService(mockStore, defaultFSRSSettings);
 
 			const result = await service.reschedule({
 				scope: "selected",
@@ -247,7 +262,7 @@ describe("RescheduleService", () => {
 			const card = createFSRSCard({ stability: 30 });
 			mockStore = createMockCardStore([card]);
 			mockStore.getCards.mockReturnValue([card]);
-			service = new RescheduleService(mockStore , defaultFSRSSettings);
+			service = new RescheduleService(mockStore, defaultFSRSSettings);
 
 			await service.reschedule({
 				scope: "all",
@@ -262,7 +277,7 @@ describe("RescheduleService", () => {
 			const card = createFSRSCard({ stability: 30 });
 			mockStore = createMockCardStore([card]);
 			mockStore.getCards.mockReturnValue([card]);
-			service = new RescheduleService(mockStore , defaultFSRSSettings);
+			service = new RescheduleService(mockStore, defaultFSRSSettings);
 
 			await service.reschedule({
 				scope: "all",
@@ -290,7 +305,8 @@ describe("RescheduleService", () => {
 
 			// stability=50, retention=0.9 → interval ~50 days; old was 5 days → must change
 			expect(mockStore.updateCardScheduling).toHaveBeenCalled();
-			const [cardId, updateData] = mockStore.updateCardScheduling.mock.calls[0]!;
+			const [cardId, updateData] =
+				mockStore.updateCardScheduling.mock.calls[0]!;
 			expect(cardId).toBe("update-test");
 			expect(updateData).toHaveProperty("due");
 			expect(updateData).toHaveProperty("scheduledDays");
@@ -314,7 +330,7 @@ describe("RescheduleService", () => {
 
 			// Should have before distribution showing original date
 			const beforeDist = result.beforeDistribution.find(
-				(d) => d.date === "2026-02-10"
+				(d) => d.date === "2026-02-10",
 			);
 			expect(beforeDist?.count).toBe(1);
 		});
@@ -351,7 +367,7 @@ describe("RescheduleService", () => {
 			const newDue = new Date(change.newDue);
 			const lastReview = new Date("2026-01-25T10:00:00.000Z");
 			const interval = Math.round(
-				(newDue.getTime() - lastReview.getTime()) / (1000 * 60 * 60 * 24)
+				(newDue.getTime() - lastReview.getTime()) / (1000 * 60 * 60 * 24),
 			);
 
 			// At retention=0.9, interval ≈ stability (~100 days)
