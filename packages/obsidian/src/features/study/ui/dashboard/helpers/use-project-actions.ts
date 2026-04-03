@@ -114,7 +114,9 @@ export function useProjectActions() {
 	const handleDissolve = useCallback(
 		async (path: string) => {
 			const childPaths = plugin.hierarchyService.getChildPaths(path);
-			if (childPaths.length === 0) {
+			const isExplicit = plugin.hierarchyService.isExplicitProject(path);
+
+			if (childPaths.length === 0 && !isExplicit) {
 				new Notice("This project has no children.");
 				return;
 			}
@@ -127,18 +129,27 @@ export function useProjectActions() {
 				subProjects.length > 0
 					? ` ${subProjects.length} sub-project${subProjects.length > 1 ? "s" : ""} will become root-level.`
 					: "";
+			const childMsg =
+				childPaths.length > 0
+					? `This will detach ${childPaths.length} note${childPaths.length > 1 ? "s" : ""} from "${projectName}". The notes and their cards will remain but become unassigned.${subWarning}`
+					: `This will remove the project status from "${projectName}".`;
 			const confirmed = await confirm(plugin.app, {
 				title: "Dissolve project",
-				message: `This will detach ${childPaths.length} note${childPaths.length > 1 ? "s" : ""} from "${projectName}". The notes and their cards will remain but become unassigned.${subWarning}`,
+				message: childMsg,
 				confirmLabel: "Dissolve",
 			});
 			if (!confirmed) return;
 
 			const frontmatterService =
 				plugin.flashcardManager.getFrontmatterService();
-			await mutate("hierarchy:changed", () =>
-				frontmatterService.dissolveProject(childPaths, projectName),
-			);
+			await mutate("hierarchy:changed", async () => {
+				if (childPaths.length > 0) {
+					await frontmatterService.dissolveProject(childPaths, projectName);
+				}
+				if (isExplicit) {
+					await frontmatterService.unmarkProject(path);
+				}
+			});
 			plugin.hierarchyService.invalidateGraph();
 			new Notice(
 				`Dissolved "${projectName}" — ${childPaths.length} notes detached.`,
