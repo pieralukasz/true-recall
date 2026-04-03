@@ -847,36 +847,50 @@ export class ReviewView extends ItemView {
 					.onClick(() => this.cardActionsHandler.handleForget()),
 			);
 		}
-		menu.addItem((item) =>
-			item
-				.setTitle("Edit card (e)")
-				.setIcon("pencil")
-				.onClick(() => void this.cardActionsHandler.handleEditCardModal()),
-		);
-		menu.addItem((item) =>
-			item
-				.setTitle("Change note type")
-				.setIcon("replace")
-				.onClick(() => void this.cardActionsHandler.handleChangeNoteType()),
-		);
-		menu.addItem((item) =>
-			item
-				.setTitle("Add flashcard (a)")
-				.setIcon("plus")
-				.onClick(() => void this.cardActionsHandler.handleAddNewFlashcard()),
-		);
-		menu.addItem((item) =>
-			item
-				.setTitle("Add image occlusion")
-				.setIcon("image")
-				.onClick(() => void this.cardActionsHandler.handleAddImageOcclusion()),
-		);
-		menu.addItem((item) =>
-			item
-				.setTitle("Open source note")
-				.setIcon("external-link")
-				.onClick(() => this.handleOpenSourceNote()),
-		);
+		const currentCard = this.review.getCurrentCard();
+		const isNoteReview = currentCard?.cardType === "note-review";
+
+		if (isNoteReview) {
+			menu.addItem((item) =>
+				item
+					.setTitle("Open note (e)")
+					.setIcon("external-link")
+					.onClick(() => this.handleOpenSourceNote()),
+			);
+		} else {
+			menu.addItem((item) =>
+				item
+					.setTitle("Edit card (e)")
+					.setIcon("pencil")
+					.onClick(() => void this.cardActionsHandler.handleEditCardModal()),
+			);
+			menu.addItem((item) =>
+				item
+					.setTitle("Change note type")
+					.setIcon("replace")
+					.onClick(() => void this.cardActionsHandler.handleChangeNoteType()),
+			);
+			menu.addItem((item) =>
+				item
+					.setTitle("Add flashcard (a)")
+					.setIcon("plus")
+					.onClick(() => void this.cardActionsHandler.handleAddNewFlashcard()),
+			);
+			menu.addItem((item) =>
+				item
+					.setTitle("Add image occlusion")
+					.setIcon("image")
+					.onClick(
+						() => void this.cardActionsHandler.handleAddImageOcclusion(),
+					),
+			);
+			menu.addItem((item) =>
+				item
+					.setTitle("Open source note")
+					.setIcon("external-link")
+					.onClick(() => this.handleOpenSourceNote()),
+			);
+		}
 
 		menu.showAtMouseEvent(event);
 	}

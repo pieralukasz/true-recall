@@ -98,6 +98,16 @@ export function GeneralTab() {
 				</FormField>
 
 				<FormField
+					name="Show frontmatter in note review"
+					description="Display YAML frontmatter when reviewing whole notes"
+				>
+					<ToggleInput
+						value={settings.noteReviewShowFrontmatter}
+						onChange={(v) => void save({ noteReviewShowFrontmatter: v })}
+					/>
+				</FormField>
+
+				<FormField
 					name="Ignore daily limits for note study"
 					description="When studying a specific note from the dashboard, show all its cards regardless of daily limits"
 				>

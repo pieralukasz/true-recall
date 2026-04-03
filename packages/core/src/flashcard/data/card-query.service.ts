@@ -48,10 +48,11 @@ export class CardQueryService {
 
 	getContent(cardId: string): FSRSFlashcardItem | null {
 		const card = this.store.get(cardId);
-		if (!card || !card.question) return null;
+		if (!card) return null;
+		if (!card.question && card.cardType !== "note-review") return null;
 		const item: FSRSFlashcardItem = {
 			id: card.id,
-			question: card.question,
+			question: card.question ?? "",
 			answer: card.answer ?? "",
 			fsrs: card,
 			sourceUid: card.sourceUid,
@@ -104,12 +105,12 @@ export class CardQueryService {
 		const cards = this.store.getCardsBySourceUid(sourceUid);
 
 		return cards
-			.filter((card): card is FSRSCardData & { question: string } =>
-				Boolean(card.question),
+			.filter(
+				(card) => Boolean(card.question) || card.cardType === "note-review",
 			)
 			.map((card) => ({
 				id: card.id,
-				question: card.question,
+				question: card.question ?? "",
 				answer: card.answer ?? "",
 				fsrs: card,
 				sourceUid: card.sourceUid,
@@ -143,12 +144,12 @@ export class CardQueryService {
 
 	private filterAndMapCards(cards: FSRSCardData[]): RawFlashcardItem[] {
 		return cards
-			.filter((card): card is FSRSCardData & { question: string } =>
-				Boolean(card.question),
+			.filter(
+				(card) => Boolean(card.question) || card.cardType === "note-review",
 			)
 			.map((card) => ({
 				id: card.id,
-				question: card.question,
+				question: card.question ?? "",
 				answer: card.answer ?? "",
 				fsrs: card,
 				sourceUid: card.sourceUid,

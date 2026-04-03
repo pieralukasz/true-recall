@@ -166,6 +166,7 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 
 	showStatusBarWidget: true,
 	defaultTypeInMode: "off",
+	noteReviewShowFrontmatter: false,
 
 	selectionToolbarEnabled: true,
 

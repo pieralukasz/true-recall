@@ -6,7 +6,7 @@ import { countByState } from "@true-recall/obsidian/features/library/ui/panel/ut
 import { FSRS_COLORS } from "@true-recall/obsidian/helpers/fsrs-colors";
 import { usePlugin } from "@true-recall/obsidian/preact";
 import { Menu } from "obsidian";
-import { useCallback } from "preact/hooks";
+import { useCallback, useMemo } from "preact/hooks";
 
 export interface NormalHeaderProps {
 	streamingNewCount: number;
@@ -36,22 +36,17 @@ export function NormalHeader({
 	const totalCount =
 		(flashcardInfo?.flashcards.length ?? 0) + streamingNewCount;
 
+	const hasNoteReview = useMemo(() => {
+		const sourceUid = flashcardInfo?.sourceUid;
+		if (!sourceUid) return false;
+		return plugin.flashcardManager.hasNoteReview(sourceUid);
+	}, [flashcardInfo?.sourceUid, flashcardInfo?.cardCount, plugin]);
+
 	const handleMoreMenu = useCallback(
 		(e: MouseEvent) => {
 			const menu = new Menu();
 			const hasFlashcards = (flashcardInfo?.cardCount ?? 0) > 0;
 
-			menu.addItem((item) => {
-				const sourceUid = flashcardInfo?.sourceUid;
-				const hasReview = sourceUid
-					? plugin.flashcardManager.hasNoteReview(sourceUid)
-					: false;
-				item
-					.setTitle(hasReview ? "Disable note review" : "Enable note review")
-					.setIcon("book-open-check")
-					.onClick(() => void plugin.toggleNoteReview());
-			});
-			menu.addSeparator();
 			menu.addItem((item) =>
 				item.setTitle("Refresh").setIcon("refresh-cw").onClick(onRefresh),
 			);
@@ -176,6 +171,18 @@ export function NormalHeader({
 							size="small"
 							label={String(uncollectedCount)}
 							class="true-recall-pulse-collect"
+						/>
+					)}
+
+					{!isFollowingReview && (
+						<IconButton
+							icon="book-open-check"
+							ariaLabel={
+								hasNoteReview ? "Disable note review" : "Enable note review"
+							}
+							onClick={() => void plugin.toggleNoteReview()}
+							size="small"
+							class={hasNoteReview ? "ep:text-obs-accent" : undefined}
 						/>
 					)}
 

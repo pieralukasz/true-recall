@@ -175,6 +175,7 @@ export class ApkgBuilderService {
 		const standalone: FSRSCardData[] = [];
 
 		for (const card of cards) {
+			if (card.cardType === "note-review") continue;
 			if (card.cardType === "reversed" && card.reverseOf) {
 				reversePairs.set(card.reverseOf, card);
 			} else {

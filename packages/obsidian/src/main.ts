@@ -779,30 +779,41 @@ export default class TrueRecallPlugin extends Plugin {
 	}
 
 	async toggleNoteReview(file?: TFile): Promise<void> {
+		if (!this.isStoreReady()) {
+			notify().error(
+				"Database not ready. Please wait for plugin to fully load.",
+			);
+			return;
+		}
+
 		const target = file ?? this.app.workspace.getActiveFile();
 		if (!target || target.extension !== "md") {
 			notify().noActiveFile();
 			return;
 		}
 
-		const frontmatterService = this.flashcardManager.getFrontmatterService();
-		let sourceUid = await frontmatterService.getSourceNoteUid(target.path);
+		try {
+			const frontmatterService = this.flashcardManager.getFrontmatterService();
+			let sourceUid = await frontmatterService.getSourceNoteUid(target.path);
 
-		if (!sourceUid) {
-			sourceUid = frontmatterService.generateUid();
-			await frontmatterService.setSourceNoteUid(target.path, sourceUid);
+			if (!sourceUid) {
+				sourceUid = frontmatterService.generateUid();
+				await frontmatterService.setSourceNoteUid(target.path, sourceUid);
+			}
+
+			const hasReview = this.flashcardManager.hasNoteReview(sourceUid);
+			if (hasReview) {
+				this.flashcardManager.disableNoteReview(sourceUid);
+				notify().success("Note review disabled");
+			} else {
+				this.flashcardManager.enableNoteReview(sourceUid);
+				notify().success("Note review enabled");
+			}
+
+			this.dataLayer?.invalidateGroups(["cards", "dashboard", "review"]);
+		} catch (error) {
+			notify().operationFailed("toggle note review", error);
 		}
-
-		const hasReview = this.flashcardManager.hasNoteReview(sourceUid);
-		if (hasReview) {
-			this.flashcardManager.disableNoteReview(sourceUid);
-			notify().success("Note review disabled");
-		} else {
-			this.flashcardManager.enableNoteReview(sourceUid);
-			notify().success("Note review enabled");
-		}
-
-		this.dataLayer?.invalidateGroups(["cards"]);
 	}
 
 	async addFlashcardUidToCurrentNote(): Promise<void> {

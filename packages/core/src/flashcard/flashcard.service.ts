@@ -21,6 +21,7 @@ import {
 	deriveCardType,
 	renderTemplate,
 } from "../services/cards/template-engine";
+import { NoteReviewService } from "../services/note-review/note-review.service";
 import type { FrontmatterIndexService } from "../services/notes/frontmatter-index.service";
 import type {
 	CardReviewLogEntry,
@@ -122,6 +123,7 @@ export class FlashcardManager {
 	// Specialized services (initialized after setStore)
 	private cardRepository: CardRepository | null = null;
 	private cardQueryService: CardQueryService | null = null;
+	private _noteReview: NoteReviewService | null = null;
 
 	constructor(
 		fileSystem: IFileSystem,
@@ -149,6 +151,7 @@ export class FlashcardManager {
 		this.cardRepository = new CardRepository(store);
 		if (this.bus) this.cardRepository.setEventBus(this.bus);
 		this.cardQueryService = new CardQueryService(store, this.sourceNoteService);
+		this._noteReview = new NoteReviewService(store);
 	}
 
 	setSessionPersistence(sessionPersistence: ISessionPersistence): void {
@@ -655,12 +658,17 @@ export class FlashcardManager {
 
 	// ---- Note-level review ----
 
+	get noteReview(): NoteReviewService {
+		if (!this._noteReview) throw new Error("Store not initialized");
+		return this._noteReview;
+	}
+
 	enableNoteReview(sourceUid: string): CreateNoteResult {
 		if (!this.store) {
 			throw new Error("Store not initialized");
 		}
 
-		const existing = this.findNoteReviewNote(sourceUid);
+		const existing = this.noteReview.findNote(sourceUid);
 		if (existing) {
 			const cards = this.store.cards.getCardsByNoteId(existing.id);
 			return { note: existing, cards };
@@ -675,9 +683,11 @@ export class FlashcardManager {
 	}
 
 	disableNoteReview(sourceUid: string): boolean {
-		if (!this.store) return false;
+		if (!this.store) {
+			throw new Error("Store not initialized");
+		}
 
-		const existing = this.findNoteReviewNote(sourceUid);
+		const existing = this.noteReview.findNote(sourceUid);
 		if (!existing) return false;
 
 		const cards = this.store.cards.getCardsByNoteId(existing.id);
@@ -689,13 +699,7 @@ export class FlashcardManager {
 	}
 
 	hasNoteReview(sourceUid: string): boolean {
-		return this.findNoteReviewNote(sourceUid) !== null;
-	}
-
-	private findNoteReviewNote(sourceUid: string): Note | null {
-		if (!this.store) return null;
-		const notes = this.store.notes.getBySourceUid(sourceUid);
-		return notes.find((n) => n.noteTypeId === BUILTIN_NOTE_REVIEW_ID) ?? null;
+		return this.noteReview.has(sourceUid);
 	}
 
 	/**

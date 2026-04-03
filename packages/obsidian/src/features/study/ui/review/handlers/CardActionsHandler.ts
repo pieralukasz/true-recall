@@ -271,6 +271,15 @@ export class CardActionsHandler {
 		const card = this.deps.getReview().getCurrentCard();
 		if (!card) return;
 
+		if (card.cardType === "note-review" && card.sourceNotePath) {
+			void this.deps.plugin.app.workspace.openLinkText(
+				card.sourceNotePath,
+				"",
+				false,
+			);
+			return;
+		}
+
 		if (!card.noteId) {
 			notify().error(
 				"Cannot edit card: missing note link. Please restart Obsidian to complete database migration.",

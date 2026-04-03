@@ -100,6 +100,16 @@ function CardTypeBadge({ card }: { card: FlashcardItem }) {
 			</span>
 		);
 	}
+	if (card.cardType === "note-review") {
+		return (
+			<span
+				class="ep:text-xs ep:text-obs-muted ep:bg-obs-base-25 ep:rounded-full ep:px-1.5 ep:py-0.5 ep:shrink-0 ep:leading-none"
+				title="Note review"
+			>
+				NR
+			</span>
+		);
+	}
 	return null;
 }
 
@@ -174,7 +184,9 @@ export const PanelCard = memo(function PanelCard({
 			icon: "replace",
 			onClick: () => cardActions.handleChangeType(card),
 		},
-		...(card.cardType !== "cloze" && card.cardType !== "image-occlusion"
+		...(card.cardType !== "cloze" &&
+		card.cardType !== "image-occlusion" &&
+		card.cardType !== "note-review"
 			? ([
 					{
 						title:
@@ -267,7 +279,11 @@ export const PanelCard = memo(function PanelCard({
 				<CardStatusBadge fsrsCard={fsrsCard} />
 				<CardTypeBadge card={card} />
 				<MarkdownContent
-					markdown={card.question}
+					markdown={
+						card.cardType === "note-review"
+							? (fsrsCard?.sourceNoteName ?? "Note Review")
+							: card.question
+					}
 					filePath={filePath}
 					class="ep:flex-1 ep:text-ui-small ep:text-obs-normal true-recall-card-markdown"
 					onLinkClick={handleLinkClick}
@@ -276,15 +292,25 @@ export const PanelCard = memo(function PanelCard({
 
 			{isExpanded && (
 				<div class="ep:px-3 ep:pb-3 ep:pt-2 ep:border-t ep:border-obs-border">
-					{!card.answer && (
-						<span class="ep:text-ui-smaller ep:text-obs-muted">No answer</span>
+					{card.cardType === "note-review" ? (
+						<span class="ep:text-ui-smaller ep:text-obs-muted">
+							Whole-note review
+						</span>
+					) : (
+						<>
+							{!card.answer && (
+								<span class="ep:text-ui-smaller ep:text-obs-muted">
+									No answer
+								</span>
+							)}
+							<MarkdownContent
+								markdown={card.answer ?? "empty"}
+								filePath={filePath}
+								class="ep:text-ui-small ep:text-obs-normal true-recall-panel-card-field"
+								onLinkClick={handleLinkClick}
+							/>
+						</>
 					)}
-					<MarkdownContent
-						markdown={card.answer ?? "empty"}
-						filePath={filePath}
-						class="ep:text-ui-small ep:text-obs-normal true-recall-panel-card-field"
-						onLinkClick={handleLinkClick}
-					/>
 					{fsrsCard && fsrsCard.fsrs.reps > 0 && (
 						<div class="ep:flex ep:items-center ep:gap-3 ep:mt-2 ep:pt-2 ep:border-t ep:border-obs-border/50">
 							<span class="ep:text-ui-smaller ep:text-obs-faint">

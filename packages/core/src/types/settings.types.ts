@@ -289,6 +289,9 @@ export interface TrueRecallSettings {
 	/** Default type-in mode at the start of each review session */
 	defaultTypeInMode: TypeInMode;
 
+	/** Show YAML frontmatter in note review cards (default: false) */
+	noteReviewShowFrontmatter: boolean;
+
 	/** Show floating toolbar above selected text for AI flashcard generation */
 	selectionToolbarEnabled: boolean;
 
