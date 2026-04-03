@@ -36,29 +36,44 @@ main (version bump + changelog + commit) -> PR -> pre-release -> PR -> release -
 10. **Verify** CHANGELOG.md has the correct version heading: `## X.Y.Z (YYYY-MM-DD)`
 11. **WAIT FOR APPROVAL**: Show the user the polished changelog and ask them to review it. Present it clearly formatted. Do NOT proceed until the user explicitly approves. If the user requests changes, edit CHANGELOG.md accordingly and show the updated version for re-approval.
 
+### Update Documentation Site
+
+12. **Update releases page**: Edit `/Users/lukaszpiera/Projects/true-recall-docs/src/content/docs/reference/releases.md`:
+    - Change the "(upcoming)" entry heading to the actual version and date: `## X.Y.Z (YYYY-MM-DD)`
+    - Use the same polished changelog content you wrote for CHANGELOG.md
+    - Add a new `## Next (upcoming)` section at the top for future changes
+    - Commit in the docs repo:
+      ```bash
+      cd /Users/lukaszpiera/Projects/true-recall-docs
+      git add src/content/docs/reference/releases.md
+      git commit -m "docs: add X.Y.Z release notes"
+      git push origin main
+      cd /Users/lukaszpiera/Projects/true-recall
+      ```
+
 ### Commit & Promote
 
-12. **Commit** version bump + changelog:
+13. **Commit** version bump + changelog:
     ```bash
     git add package.json manifest.json versions.json CHANGELOG.md
     git commit -m "release: vX.Y.Z"
     ```
-13. **Push to main**: `git push origin main`
-14. **Create promotion PR**: main -> pre-release (use changelog as PR body)
+14. **Push to main**: `git push origin main`
+15. **Create promotion PR**: main -> pre-release (use changelog as PR body)
     ```bash
     gh pr create --base pre-release --head main \
       --title "release: vX.Y.Z" \
       --body "<paste the polished changelog here>"
     ```
-15. **Wait for CI**, then **merge promotion PR** (rebase): `gh pr merge <number> --rebase`
-16. **Create promotion PR**: pre-release -> release (use same changelog as PR body)
+16. **Wait for CI**, then **merge promotion PR** (rebase): `gh pr merge <number> --rebase`
+17. **Create promotion PR**: pre-release -> release (use same changelog as PR body)
     ```bash
     gh pr create --base release --head pre-release \
       --title "release: vX.Y.Z" \
       --body "<paste the polished changelog here>"
     ```
-17. **Wait for CI**, then **merge promotion PR** (rebase): `gh pr merge <number> --rebase`
-18. **Tag on release branch**:
+18. **Wait for CI**, then **merge promotion PR** (rebase): `gh pr merge <number> --rebase`
+19. **Tag on release branch**:
     ```bash
     git fetch origin release
     git checkout release
@@ -66,8 +81,8 @@ main (version bump + changelog + commit) -> PR -> pre-release -> PR -> release -
     git tag -a X.Y.Z -m "X.Y.Z"
     git push origin tag X.Y.Z
     ```
-19. **Return to main**: `git checkout main`
-20. **Verify**: Check GitHub Actions for the release workflow run
+20. **Return to main**: `git checkout main`
+21. **Verify**: Check GitHub Actions for the release workflow run
 
 ## Key Rules
 

@@ -42,6 +42,7 @@ import { useCallback, useState } from "preact/hooks";
 const DEFAULT_IMPORT_FOLDER = "Anki Import";
 
 function AnkiImportBody({
+	app,
 	onFileSelected,
 	onShowMapping,
 	onImport,
@@ -50,6 +51,7 @@ function AnkiImportBody({
 	existingNoteTypes,
 	aiKeyAvailable,
 }: {
+	app: App;
 	onFileSelected: (file: File) => Promise<ImportPhase>;
 	onShowMapping: (preview: ImportPreview) => ImportPhase;
 	onImport: (opts: {
@@ -142,6 +144,7 @@ function AnkiImportBody({
 		case "preview":
 			return (
 				<PreviewPhase
+					app={app}
 					preview={phase.preview}
 					importScheduling={importScheduling}
 					importMedia={importMedia}
@@ -200,6 +203,7 @@ export class AnkiImportModal extends BaseModal {
 
 		render(
 			<AnkiImportBody
+				app={this.app}
 				onFileSelected={(file) => this.handleFileSelected(file)}
 				onShowMapping={(preview) => this.buildMappingPhase(preview)}
 				onImport={(opts) => this.startImport(opts)}

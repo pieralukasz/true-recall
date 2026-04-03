@@ -8,6 +8,10 @@ export {
 	type FolderPickerProps,
 } from "@true-recall/obsidian/components/FolderPicker";
 export {
+	FolderSuggestInput,
+	type FolderSuggestInputProps,
+} from "@true-recall/obsidian/components/FolderSuggestInput";
+export {
 	MarkdownContent,
 	type MarkdownContentProps,
 } from "@true-recall/obsidian/components/MarkdownContent";

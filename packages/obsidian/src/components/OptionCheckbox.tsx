@@ -19,7 +19,7 @@ export function OptionCheckbox({
 		>
 			<input
 				type="checkbox"
-				class="ep:w-4 ep:h-4 ep:accent-obs-interactive ep:shrink-0 ep:mt-0.5"
+				class="ep:shrink-0 ep:mt-0.5"
 				checked={checked}
 				disabled={disabled}
 				onChange={() => onChange(!checked)}

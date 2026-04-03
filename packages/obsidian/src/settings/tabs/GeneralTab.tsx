@@ -215,7 +215,7 @@ export function GeneralTab() {
 				</FormField>
 			</FormCard>
 
-			<FormCard title="Local API (CLI)">
+			<FormCard title="Local API">
 				<InfoBlock>
 					Expose a local HTTP API for the True Recall CLI. Binds to 127.0.0.1
 					only — never exposed to the network.

@@ -1,13 +1,15 @@
 import {
+	FolderSuggestInput,
 	ModalFooter,
 	OptionCheckbox,
 	StatBadge,
 	StatGrid,
-	TextInput,
 } from "@true-recall/obsidian/components";
 import type { ImportPreview } from "@true-recall/obsidian/modals/integration/anki-import/types";
+import type { App } from "obsidian";
 
 export interface PreviewPhaseProps {
+	app: App;
 	preview: ImportPreview;
 	importScheduling: boolean;
 	importMedia: boolean;
@@ -23,6 +25,7 @@ export interface PreviewPhaseProps {
 }
 
 export function PreviewPhase({
+	app,
 	preview,
 	importScheduling,
 	importMedia,
@@ -92,7 +95,8 @@ export function PreviewPhase({
 				<div class="ep:text-ui-small ep:font-medium ep:mb-2">
 					Import destination
 				</div>
-				<TextInput
+				<FolderSuggestInput
+					app={app}
 					value={importFolder}
 					onChange={onImportFolderChange}
 					placeholder="Anki Import"
