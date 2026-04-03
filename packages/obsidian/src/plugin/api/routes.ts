@@ -53,9 +53,11 @@ import {
 	handleAddFlashcardUid,
 	handleDissolveProject,
 	handleMoveChildren,
+	handleNoteReviewStatus,
 	handleSetArchive,
 	handleSetParent,
 	handleSetPresetForNote,
+	handleToggleNoteReview,
 } from "./handlers/notes";
 import { handleGetSchema, handleQuerySql } from "./handlers/query";
 import {
@@ -165,6 +167,8 @@ const routes: Route[] = [
 	route("POST", "/notes/set-archive", handleSetArchive),
 	route("POST", "/notes/dissolve-project", handleDissolveProject),
 	route("POST", "/notes/move-children", handleMoveChildren),
+	route("POST", "/notes/note-review/toggle", handleToggleNoteReview),
+	route("POST", "/notes/note-review/status", handleNoteReviewStatus),
 
 	// Backup & Integrity
 	route("POST", "/backups/create", handleCreateBackup),

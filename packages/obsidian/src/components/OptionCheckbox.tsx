@@ -14,12 +14,12 @@ export function OptionCheckbox({
 	disabled,
 }: OptionCheckboxProps) {
 	return (
-		<div
+		<label
 			class={`ep:flex ep:items-start ep:gap-3 ep:py-1.5${disabled ? " ep:opacity-50" : ""}`}
 		>
 			<input
 				type="checkbox"
-				class="ep:shrink-0 ep:mt-0.5"
+				class="ep:mt-0.5 ep:accent-obs-interactive ep:shrink-0"
 				checked={checked}
 				disabled={disabled}
 				onChange={() => onChange(!checked)}
@@ -28,6 +28,6 @@ export function OptionCheckbox({
 				<div class="ep:text-ui-small ep:font-medium">{label}</div>
 				<div class="ep:text-ui-smaller ep:text-obs-muted">{description}</div>
 			</div>
-		</div>
+		</label>
 	);
 }

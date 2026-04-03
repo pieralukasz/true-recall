@@ -16,6 +16,7 @@ import {
 import type { CardType } from "../../types";
 import {
 	BUILTIN_IMAGE_OCCLUSION_ID,
+	BUILTIN_NOTE_REVIEW_ID,
 	type NoteType,
 } from "../../types/note.types";
 
@@ -301,6 +302,9 @@ export function deriveCardType(
 	noteType: Pick<NoteType, "id" | "type">,
 	templateOrd: number,
 ): CardType {
+	if (noteType.id === BUILTIN_NOTE_REVIEW_ID) {
+		return "note-review";
+	}
 	if (noteType.id === BUILTIN_IMAGE_OCCLUSION_ID) {
 		return "image-occlusion";
 	}

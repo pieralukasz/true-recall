@@ -34,6 +34,7 @@ import { createDefaultFSRSData } from "../types";
 import type { IODefinition } from "../types/image-occlusion.types";
 import {
 	BUILTIN_IMAGE_OCCLUSION_ID,
+	BUILTIN_NOTE_REVIEW_ID,
 	type Note,
 	type NoteType,
 } from "../types/note.types";
@@ -650,6 +651,51 @@ export class FlashcardManager {
 		}
 
 		return { notes, cards };
+	}
+
+	// ---- Note-level review ----
+
+	enableNoteReview(sourceUid: string): CreateNoteResult {
+		if (!this.store) {
+			throw new Error("Store not initialized");
+		}
+
+		const existing = this.findNoteReviewNote(sourceUid);
+		if (existing) {
+			const cards = this.store.cards.getCardsByNoteId(existing.id);
+			return { note: existing, cards };
+		}
+
+		return this.createNote({
+			noteTypeId: BUILTIN_NOTE_REVIEW_ID,
+			fields: { Content: "" },
+			sourceUid,
+			createdVia: "manual",
+		});
+	}
+
+	disableNoteReview(sourceUid: string): boolean {
+		if (!this.store) return false;
+
+		const existing = this.findNoteReviewNote(sourceUid);
+		if (!existing) return false;
+
+		const cards = this.store.cards.getCardsByNoteId(existing.id);
+		if (cards.length > 0) {
+			this.removeFlashcardsByIds(cards.map((c) => c.id));
+		}
+		this.store.notes.delete(existing.id);
+		return true;
+	}
+
+	hasNoteReview(sourceUid: string): boolean {
+		return this.findNoteReviewNote(sourceUid) !== null;
+	}
+
+	private findNoteReviewNote(sourceUid: string): Note | null {
+		if (!this.store) return null;
+		const notes = this.store.notes.getBySourceUid(sourceUid);
+		return notes.find((n) => n.noteTypeId === BUILTIN_NOTE_REVIEW_ID) ?? null;
 	}
 
 	/**

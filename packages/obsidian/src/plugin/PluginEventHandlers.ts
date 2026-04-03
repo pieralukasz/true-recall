@@ -34,6 +34,13 @@ export function registerEventHandlers(plugin: TrueRecallPlugin): void {
 
 				menu.addItem((item) => {
 					item
+						.setTitle("Toggle note review")
+						.setIcon("book-open-check")
+						.onClick(() => void plugin.toggleNoteReview(file));
+				});
+
+				menu.addItem((item) => {
+					item
 						.setTitle("Create project from this note")
 						.setIcon("folder-plus")
 						.onClick(async () => {

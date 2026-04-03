@@ -13,6 +13,7 @@ import { LivePreviewField } from "@true-recall/obsidian/features/study/ui/review
 import { TypeInCMEditor } from "@true-recall/obsidian/features/study/ui/review/components/TypeInCMEditor";
 import { cn } from "@true-recall/obsidian/utils/cn";
 import { useEffect, useRef, useState } from "preact/hooks";
+import { NoteReviewRenderer } from "./NoteReviewRenderer";
 
 // Pre-renders the answer DOM one frame after the question paints,
 // but keeps it invisible (opacity:0, height:0). Without this,
@@ -193,6 +194,18 @@ export function CardContainer({
 		localAssessment?.diff.filter((token) => token.type !== "extra") ?? [];
 	const userTokens =
 		localAssessment?.diff.filter((token) => token.type !== "missing") ?? [];
+
+	if (card.cardType === "note-review") {
+		return (
+			<NoteReviewRenderer
+				card={card}
+				presetName={presetName}
+				presetOptions={presetOptions}
+				onPresetChange={onPresetChange}
+				onOpenSourceNote={onOpenSourceNote}
+			/>
+		);
+	}
 
 	if (isImageOcclusion) {
 		return (

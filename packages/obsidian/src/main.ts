@@ -778,6 +778,33 @@ export default class TrueRecallPlugin extends Plugin {
 		modal.open();
 	}
 
+	async toggleNoteReview(file?: TFile): Promise<void> {
+		const target = file ?? this.app.workspace.getActiveFile();
+		if (!target || target.extension !== "md") {
+			notify().noActiveFile();
+			return;
+		}
+
+		const frontmatterService = this.flashcardManager.getFrontmatterService();
+		let sourceUid = await frontmatterService.getSourceNoteUid(target.path);
+
+		if (!sourceUid) {
+			sourceUid = frontmatterService.generateUid();
+			await frontmatterService.setSourceNoteUid(target.path, sourceUid);
+		}
+
+		const hasReview = this.flashcardManager.hasNoteReview(sourceUid);
+		if (hasReview) {
+			this.flashcardManager.disableNoteReview(sourceUid);
+			notify().success("Note review disabled");
+		} else {
+			this.flashcardManager.enableNoteReview(sourceUid);
+			notify().success("Note review enabled");
+		}
+
+		this.dataLayer?.invalidateGroups(["cards"]);
+	}
+
 	async addFlashcardUidToCurrentNote(): Promise<void> {
 		const file = this.app.workspace.getActiveFile();
 		if (!file || file.extension !== "md") {

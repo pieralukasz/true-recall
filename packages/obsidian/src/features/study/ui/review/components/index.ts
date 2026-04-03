@@ -12,6 +12,7 @@ export {
 	LivePreviewField,
 	type LivePreviewFieldProps,
 } from "./LivePreviewField";
+export { NoteReviewRenderer } from "./NoteReviewRenderer";
 export {
 	type PresetPickerOption,
 	PresetPopover,

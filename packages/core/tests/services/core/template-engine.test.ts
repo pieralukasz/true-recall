@@ -15,6 +15,7 @@ import {
 	BUILTIN_BASIC_REVERSED_ID,
 	BUILTIN_CLOZE_ID,
 	BUILTIN_IMAGE_OCCLUSION_ID,
+	BUILTIN_NOTE_REVIEW_ID,
 } from "../../../src/types/note.types";
 
 // ── renderTemplate: field substitution ──────────────────────────
@@ -592,6 +593,12 @@ describe("deriveCardType", () => {
 		);
 		expect(deriveCardType({ id: BUILTIN_IMAGE_OCCLUSION_ID, type: 0 }, 3)).toBe(
 			"image-occlusion",
+		);
+	});
+
+	it('noteType.id="builtin-note-review" → note-review', () => {
+		expect(deriveCardType({ id: BUILTIN_NOTE_REVIEW_ID, type: 0 }, 0)).toBe(
+			"note-review",
 		);
 	});
 });

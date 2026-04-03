@@ -103,4 +103,30 @@ export const noteCommands: CommandDef[] = [
 			},
 		},
 	),
+
+	postParams(
+		"toggle_note_review",
+		"Toggle whole-note spaced repetition review for a note. Creates or removes the note-review card.",
+		C,
+		"/notes/note-review/toggle",
+		{
+			path: {
+				type: "string",
+				description: "Note file path. If omitted, uses active note.",
+			},
+		},
+	),
+
+	postParams(
+		"note_review_status",
+		"Check whether whole-note review is enabled for a note.",
+		C,
+		"/notes/note-review/status",
+		{
+			path: {
+				type: "string",
+				description: "Note file path. If omitted, uses active note.",
+			},
+		},
+	),
 ];

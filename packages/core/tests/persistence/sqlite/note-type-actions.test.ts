@@ -10,6 +10,7 @@ import {
 	BUILTIN_BASIC_REVERSED_ID,
 	BUILTIN_CLOZE_ID,
 	BUILTIN_IMAGE_OCCLUSION_ID,
+	BUILTIN_NOTE_REVIEW_ID,
 } from "../../../src/types/note.types";
 import {
 	createTestContext,
@@ -112,8 +113,8 @@ describe("NoteTypeActions", () => {
 			insertNoteTypeDirect(ctx.db, createTestNoteType({ id: "type-2" }));
 
 			const all = ctx.noteTypes.getAll();
-			// 4 seeded builtins + 2 inserted above
-			expect(all).toHaveLength(6);
+			// 5 seeded builtins + 2 inserted above
+			expect(all).toHaveLength(7);
 		});
 
 		it("update: changes name, fields, templates, css", () => {
@@ -153,8 +154,8 @@ describe("NoteTypeActions", () => {
 			]);
 
 			const all = ctx.noteTypes.getAll();
-			// 4 seeded builtins + 1 alive (1 soft-deleted excluded)
-			expect(all).toHaveLength(5);
+			// 5 seeded builtins + 1 alive (1 soft-deleted excluded)
+			expect(all).toHaveLength(6);
 			expect(all.map((t) => t.id)).toContain("alive");
 			expect(all.map((t) => t.id)).not.toContain("dead");
 		});
@@ -163,17 +164,18 @@ describe("NoteTypeActions", () => {
 	// ── Built-in types seeding ─────────────────────────────────
 
 	describe("built-in types seeding", () => {
-		it("seedBuiltinTypes: inserts all 4 types", () => {
+		it("seedBuiltinTypes: inserts all 5 types", () => {
 			ctx.noteTypes.seedBuiltinTypes();
 
 			const all = ctx.noteTypes.getAll();
-			expect(all.length).toBeGreaterThanOrEqual(4);
+			expect(all.length).toBeGreaterThanOrEqual(5);
 
 			const ids = all.map((t) => t.id);
 			expect(ids).toContain(BUILTIN_BASIC_ID);
 			expect(ids).toContain(BUILTIN_BASIC_REVERSED_ID);
 			expect(ids).toContain(BUILTIN_CLOZE_ID);
 			expect(ids).toContain(BUILTIN_IMAGE_OCCLUSION_ID);
+			expect(ids).toContain(BUILTIN_NOTE_REVIEW_ID);
 		});
 
 		it("seedBuiltinTypes: idempotent (re-seeding doesn't duplicate)", () => {
@@ -193,6 +195,7 @@ describe("NoteTypeActions", () => {
 				BUILTIN_BASIC_REVERSED_ID,
 				BUILTIN_CLOZE_ID,
 				BUILTIN_IMAGE_OCCLUSION_ID,
+				BUILTIN_NOTE_REVIEW_ID,
 			];
 
 			for (const id of builtinIds) {
@@ -235,6 +238,17 @@ describe("NoteTypeActions", () => {
 			const io = ctx.noteTypes.getById(BUILTIN_IMAGE_OCCLUSION_ID);
 			expect(io?.fields).toContain("Image");
 			expect(io?.fields).toContain("Regions");
+		});
+
+		it("builtin-note-review: correct fields and 1 template", () => {
+			ctx.noteTypes.seedBuiltinTypes();
+
+			const nr = ctx.noteTypes.getById(BUILTIN_NOTE_REVIEW_ID);
+			expect(nr).not.toBeNull();
+			expect(nr?.fields).toEqual(["Content"]);
+			expect(nr?.templates).toHaveLength(1);
+			expect(nr?.type).toBe(0);
+			expect(nr?.isBuiltin).toBe(true);
 		});
 	});
 });

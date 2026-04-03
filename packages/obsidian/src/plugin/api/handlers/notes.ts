@@ -208,6 +208,77 @@ export async function handleDissolveProject(
 	sendOk(res, { path: body.path, dissolved: count });
 }
 
+export async function handleToggleNoteReview(
+	req: ApiRequest,
+	res: ApiResponseWriter,
+	ctx: ApiContext,
+): Promise<void> {
+	const raw = await readBody(req);
+	const body = parseJsonBody<{ path?: string }>(raw);
+
+	const file = body?.path
+		? ctx.plugin.app.vault.getFileByPath(body.path)
+		: ctx.plugin.app.workspace.getActiveFile();
+
+	if (!file || file.extension !== "md") {
+		sendError(res, 404, "No markdown note found");
+		return;
+	}
+
+	const frontmatterService =
+		ctx.plugin.flashcardManager.getFrontmatterService();
+	let sourceUid = await frontmatterService.getSourceNoteUid(file.path);
+
+	if (!sourceUid) {
+		sourceUid = frontmatterService.generateUid();
+		await frontmatterService.setSourceNoteUid(file.path, sourceUid);
+	}
+
+	const wasEnabled = ctx.plugin.flashcardManager.hasNoteReview(sourceUid);
+	if (wasEnabled) {
+		ctx.plugin.flashcardManager.disableNoteReview(sourceUid);
+	} else {
+		ctx.plugin.flashcardManager.enableNoteReview(sourceUid);
+	}
+
+	ctx.plugin.dataLayer?.invalidateGroups(["cards", "dashboard", "review"]);
+
+	sendOk(res, {
+		path: file.path,
+		noteReview: !wasEnabled,
+	});
+}
+
+export async function handleNoteReviewStatus(
+	req: ApiRequest,
+	res: ApiResponseWriter,
+	ctx: ApiContext,
+): Promise<void> {
+	const raw = await readBody(req);
+	const body = parseJsonBody<{ path?: string }>(raw);
+
+	const file = body?.path
+		? ctx.plugin.app.vault.getFileByPath(body.path)
+		: ctx.plugin.app.workspace.getActiveFile();
+
+	if (!file || file.extension !== "md") {
+		sendError(res, 404, "No markdown note found");
+		return;
+	}
+
+	const frontmatterService =
+		ctx.plugin.flashcardManager.getFrontmatterService();
+	const sourceUid = await frontmatterService.getSourceNoteUid(file.path);
+
+	if (!sourceUid) {
+		sendOk(res, { path: file.path, noteReview: false });
+		return;
+	}
+
+	const isEnabled = ctx.plugin.flashcardManager.hasNoteReview(sourceUid);
+	sendOk(res, { path: file.path, noteReview: isEnabled, sourceUid });
+}
+
 export async function handleMoveChildren(
 	req: ApiRequest,
 	res: ApiResponseWriter,

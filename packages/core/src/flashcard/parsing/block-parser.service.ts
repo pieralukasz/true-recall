@@ -13,7 +13,10 @@
  * (field names come from the NoteType), and ends at --- or EOF.
  */
 
-import type { NoteType } from "@true-recall/core/types/note.types";
+import {
+	BUILTIN_NOTE_REVIEW_ID,
+	type NoteType,
+} from "@true-recall/core/types/note.types";
 
 export interface ParsedBlock {
 	noteTypeId: string;
@@ -86,7 +89,7 @@ export function parseBlocks(
 			if (!matchedType) continue;
 			const slug = matchedType;
 			const noteType = getNoteType(slug);
-			if (noteType) {
+			if (noteType && noteType.id !== BUILTIN_NOTE_REVIEW_ID) {
 				const { fields, sourceText, alwaysTypeIn } = parseFieldValues(
 					blockLines,
 					noteType.fields,

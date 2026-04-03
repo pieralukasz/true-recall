@@ -6,7 +6,10 @@ import type {
 	SortConfig,
 	StateFilterValue,
 } from "@true-recall/core/types/browser.types";
-import { BUILTIN_IMAGE_OCCLUSION_ID } from "@true-recall/core/types/note.types";
+import {
+	BUILTIN_IMAGE_OCCLUSION_ID,
+	BUILTIN_NOTE_REVIEW_ID,
+} from "@true-recall/core/types/note.types";
 import { State } from "ts-fsrs";
 
 export interface SqlQuery {
@@ -166,6 +169,10 @@ export function buildBrowserQuery(
 				case "image-occlusion":
 					typeConditions.push("(nt.id = ?)");
 					params.push(BUILTIN_IMAGE_OCCLUSION_ID);
+					break;
+				case "note-review":
+					typeConditions.push("(nt.id = ?)");
+					params.push(BUILTIN_NOTE_REVIEW_ID);
 					break;
 			}
 		}

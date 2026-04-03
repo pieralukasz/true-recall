@@ -30,11 +30,19 @@ const ImageOcclusionFlashcardSchema = z.object({
 	cardType: z.literal("image-occlusion"),
 });
 
+const NoteReviewFlashcardSchema = z.object({
+	...baseFields,
+	question: z.string(),
+	answer: z.string(),
+	cardType: z.literal("note-review"),
+});
+
 export const FlashcardItemSchema = z.discriminatedUnion("cardType", [
 	BasicFlashcardSchema,
 	ClozeFlashcardSchema,
 	ReversedFlashcardSchema,
 	ImageOcclusionFlashcardSchema,
+	NoteReviewFlashcardSchema,
 ]);
 
 export const FlashcardInfoSchema = z.object({

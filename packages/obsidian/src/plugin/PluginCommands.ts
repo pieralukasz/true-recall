@@ -101,6 +101,21 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 	});
 
 	plugin.addCommand({
+		id: "toggle-note-review",
+		name: "Toggle note review",
+		checkCallback: (checking) => {
+			const file = plugin.app.workspace.getActiveFile();
+			if (file && file.extension === "md") {
+				if (!checking) {
+					void plugin.toggleNoteReview(file);
+				}
+				return true;
+			}
+			return false;
+		},
+	});
+
+	plugin.addCommand({
 		id: "undo-flashcard-action",
 		name: "Undo last flashcard action",
 		checkCallback: (checking) => {

@@ -10,7 +10,12 @@ export { State, Rating };
 export type { Grade };
 export type { Card as FSRSCard };
 
-export type CardType = "basic" | "cloze" | "reversed" | "image-occlusion";
+export type CardType =
+	| "basic"
+	| "cloze"
+	| "reversed"
+	| "image-occlusion"
+	| "note-review";
 
 /**
  * Single review log entry stored per-card for FSRS optimization

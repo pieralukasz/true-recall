@@ -11,6 +11,7 @@ import {
 	BUILTIN_BASIC_ID,
 	BUILTIN_BASIC_REVERSED_ID,
 	BUILTIN_CLOZE_ID,
+	BUILTIN_NOTE_REVIEW_ID,
 } from "../../src/types/note.types";
 
 // ── Test NoteType fixtures ──────────────────────────────
@@ -78,12 +79,31 @@ const customType: NoteType = {
 	slug: "vocabulary",
 };
 
+const noteReviewType: NoteType = {
+	id: BUILTIN_NOTE_REVIEW_ID,
+	name: "Note Review",
+	type: 0,
+	fields: ["Content"],
+	templates: [
+		{
+			name: "Note Review",
+			ordinal: 0,
+			qfmt: "{{Content}}",
+			afmt: "{{Content}}",
+		},
+	],
+	css: "",
+	isBuiltin: true,
+	slug: "note-review",
+};
+
 const lookup: NoteTypeLookup = (slug) => {
 	const map: Record<string, NoteType> = {
 		basic: basicType,
 		"basic-reversed": reversedType,
 		cloze: clozeType,
 		vocabulary: customType,
+		"note-review": noteReviewType,
 	};
 	return map[slug] ?? null;
 };
@@ -407,6 +427,29 @@ Back: A2
 Not a block`;
 
 			expect(countBlocks(content, lookup)).toBe(2);
+		});
+	});
+
+	describe("note-review guard", () => {
+		it("does not parse #type/note-review blocks", () => {
+			const content = `#type/note-review
+Content: Some text
+---`;
+			const { blocks } = parseBlocks(content, lookup);
+			expect(blocks).toHaveLength(0);
+		});
+
+		it("still parses other types alongside ignored note-review", () => {
+			const content = `#type/basic
+Front: Q
+Back: A
+---
+#type/note-review
+Content: Some text
+---`;
+			const { blocks } = parseBlocks(content, lookup);
+			expect(blocks).toHaveLength(1);
+			expect(blocks[0].noteTypeId).toBe(BUILTIN_BASIC_ID);
 		});
 	});
 });

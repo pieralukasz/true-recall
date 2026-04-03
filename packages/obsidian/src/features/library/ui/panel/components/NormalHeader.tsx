@@ -41,6 +41,17 @@ export function NormalHeader({
 			const menu = new Menu();
 			const hasFlashcards = (flashcardInfo?.cardCount ?? 0) > 0;
 
+			menu.addItem((item) => {
+				const sourceUid = flashcardInfo?.sourceUid;
+				const hasReview = sourceUid
+					? plugin.flashcardManager.hasNoteReview(sourceUid)
+					: false;
+				item
+					.setTitle(hasReview ? "Disable note review" : "Enable note review")
+					.setIcon("book-open-check")
+					.onClick(() => void plugin.toggleNoteReview());
+			});
+			menu.addSeparator();
 			menu.addItem((item) =>
 				item.setTitle("Refresh").setIcon("refresh-cw").onClick(onRefresh),
 			);

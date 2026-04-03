@@ -21,7 +21,8 @@ export function isTypeInRequiredForCard(
 	typeInModeEnabled: boolean,
 ): boolean {
 	if (!card) return false;
-	if (card.cardType === "image-occlusion") return false;
+	if (card.cardType === "image-occlusion" || card.cardType === "note-review")
+		return false;
 	if (!card.answer?.trim()) return false;
 	if (card.alwaysTypeIn || card.fsrs.alwaysTypeIn) return true;
 	if (!typeInModeEnabled) return false;

@@ -101,48 +101,6 @@
 }
 
 /* ================================================================
-   CHECKBOX — normalized sizing for checked and unchecked states
-   (unlayered — must override Obsidian's unlayered checkbox defaults)
-   ================================================================ */
-.true-recall-modal input[type="checkbox"] {
-	appearance: none;
-	-webkit-appearance: none;
-	width: 18px;
-	height: 18px;
-	min-width: 18px;
-	min-height: 18px;
-	border: 2px solid var(--text-muted);
-	border-radius: 4px;
-	background: transparent;
-	cursor: pointer;
-	position: relative;
-	margin: 0;
-	vertical-align: middle;
-}
-
-.true-recall-modal input[type="checkbox"]:checked {
-	background: var(--interactive-accent);
-	border-color: var(--interactive-accent);
-}
-
-.true-recall-modal input[type="checkbox"]:checked::after {
-	content: "";
-	position: absolute;
-	left: 5px;
-	top: 1px;
-	width: 5px;
-	height: 10px;
-	border: solid var(--text-on-accent);
-	border-width: 0 2px 2px 0;
-	transform: rotate(45deg);
-}
-
-.true-recall-modal input[type="checkbox"]:disabled {
-	opacity: 0.5;
-	cursor: not-allowed;
-}
-
-/* ================================================================
    Decorative styles — safe inside @layer components
    ================================================================ */
 @layer components {
