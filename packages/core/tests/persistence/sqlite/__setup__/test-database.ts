@@ -329,6 +329,7 @@ export function createTestCard(
 		createdAt: overrides.createdAt ?? Date.now(),
 		question: overrides.question ?? `Question for ${id}`,
 		answer: overrides.answer ?? `Answer for ${id}`,
+		cardType: overrides.cardType,
 		sourceUid: overrides.sourceUid,
 		sourceText: overrides.sourceText,
 	};

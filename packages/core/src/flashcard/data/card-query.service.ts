@@ -7,6 +7,10 @@ import type {
 	FSRSFlashcardItem,
 } from "@true-recall/core/types";
 
+export function hasDisplayableContent(card: FSRSCardData): boolean {
+	return Boolean(card.question) || card.cardType === "note-review";
+}
+
 interface RawFlashcardItem {
 	id: string;
 	question: string;
@@ -49,7 +53,7 @@ export class CardQueryService {
 	getContent(cardId: string): FSRSFlashcardItem | null {
 		const card = this.store.get(cardId);
 		if (!card) return null;
-		if (!card.question && card.cardType !== "note-review") return null;
+		if (!hasDisplayableContent(card)) return null;
 		const item: FSRSFlashcardItem = {
 			id: card.id,
 			question: card.question ?? "",
@@ -105,9 +109,7 @@ export class CardQueryService {
 		const cards = this.store.getCardsBySourceUid(sourceUid);
 
 		return cards
-			.filter(
-				(card) => Boolean(card.question) || card.cardType === "note-review",
-			)
+			.filter((card) => hasDisplayableContent(card))
 			.map((card) => ({
 				id: card.id,
 				question: card.question ?? "",
@@ -144,9 +146,7 @@ export class CardQueryService {
 
 	private filterAndMapCards(cards: FSRSCardData[]): RawFlashcardItem[] {
 		return cards
-			.filter(
-				(card) => Boolean(card.question) || card.cardType === "note-review",
-			)
+			.filter((card) => hasDisplayableContent(card))
 			.map((card) => ({
 				id: card.id,
 				question: card.question ?? "",

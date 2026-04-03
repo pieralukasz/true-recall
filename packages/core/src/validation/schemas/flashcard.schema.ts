@@ -31,10 +31,11 @@ const ImageOcclusionFlashcardSchema = z.object({
 });
 
 const NoteReviewFlashcardSchema = z.object({
-	...baseFields,
+	id: z.string().min(1, "Card ID is required"),
 	question: z.string(),
 	answer: z.string(),
 	cardType: z.literal("note-review"),
+	alwaysTypeIn: z.boolean().optional(),
 });
 
 export const FlashcardItemSchema = z.discriminatedUnion("cardType", [

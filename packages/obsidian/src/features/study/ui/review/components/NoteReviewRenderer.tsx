@@ -21,7 +21,7 @@ export function NoteReviewRenderer({
 	onOpenSourceNote,
 }: NoteReviewRendererProps) {
 	const { noteReviewShowFrontmatter } = usePlugin().settings;
-	const content = useNoteReviewContent(
+	const { content, save } = useNoteReviewContent(
 		card.sourceNotePath,
 		card.id,
 		noteReviewShowFrontmatter,
@@ -40,6 +40,7 @@ export function NoteReviewRenderer({
 						field="question"
 						sourcePath={card.sourceNotePath ?? ""}
 						cls="true-recall-review-note ep:leading-relaxed ep:text-obs-normal"
+						onContentChange={(value) => save(value)}
 					/>
 				) : (
 					<div class="ep:text-obs-muted ep:italic">

@@ -1,24 +1,32 @@
 import { NoteReviewService } from "@true-recall/core/services/note-review/note-review.service";
 import { useApp } from "@true-recall/obsidian/preact/ObsidianContext";
-import { useEffect, useState } from "preact/hooks";
+import { useCallback, useEffect, useRef, useState } from "preact/hooks";
+
+export interface NoteReviewContent {
+	content: string | null;
+	save: (edited: string) => void;
+}
 
 export function useNoteReviewContent(
 	sourceNotePath: string | undefined,
 	cardId: string,
 	showFrontmatter: boolean,
-): string | null {
+): NoteReviewContent {
 	const app = useApp();
 	const [content, setContent] = useState<string | null>(null);
+	const frontmatterRef = useRef("");
 
 	useEffect(() => {
 		if (!sourceNotePath) {
 			setContent(null);
+			frontmatterRef.current = "";
 			return;
 		}
 
 		const file = app.vault.getFileByPath(sourceNotePath);
 		if (!file) {
 			setContent(null);
+			frontmatterRef.current = "";
 			return;
 		}
 
@@ -27,10 +35,9 @@ export function useNoteReviewContent(
 			.cachedRead(file)
 			.then((text) => {
 				if (cancelled) return;
-				const processed = showFrontmatter
-					? text
-					: NoteReviewService.stripFrontmatter(text);
-				setContent(processed);
+				const { frontmatter, body } = NoteReviewService.splitFrontmatter(text);
+				frontmatterRef.current = frontmatter;
+				setContent(showFrontmatter ? text : body);
 			})
 			.catch(() => {
 				if (!cancelled) setContent(null);
@@ -41,5 +48,18 @@ export function useNoteReviewContent(
 		};
 	}, [app, sourceNotePath, cardId, showFrontmatter]);
 
-	return content;
+	const save = useCallback(
+		(edited: string) => {
+			if (!sourceNotePath) return;
+			const file = app.vault.getFileByPath(sourceNotePath);
+			if (!file) return;
+			const fullContent = showFrontmatter
+				? edited
+				: frontmatterRef.current + edited;
+			void app.vault.modify(file, fullContent);
+		},
+		[app, sourceNotePath, showFrontmatter],
+	);
+
+	return { content, save };
 }
