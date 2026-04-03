@@ -602,6 +602,140 @@ describe("HierarchyService", () => {
 		});
 	});
 
+	describe("project CRUD scenarios", () => {
+		it("dissolve: removing project marker makes note unassigned again", () => {
+			addMockFile("MyProject.md", {
+				flashcard_uid: "uid-1",
+				project: true,
+			});
+			frontmatterIndex.rebuildIndex();
+
+			// Before dissolve: project exists, note is not unassigned
+			expect(service.buildHierarchy()).toHaveLength(1);
+			expect(service.getUnassignedPaths()).not.toContain("MyProject.md");
+
+			// Simulate dissolve: remove project marker
+			fileData.set("MyProject.md", { flashcard_uid: "uid-1" });
+			frontmatterIndex.rebuildIndex();
+			service.invalidateGraph();
+
+			// After dissolve: no projects, note is unassigned
+			expect(service.buildHierarchy()).toHaveLength(0);
+			expect(service.getUnassignedPaths()).toContain("MyProject.md");
+		});
+
+		it("dissolve: removing marker + detaching children restores all to unassigned", () => {
+			addMockFile("Project.md", { project: true });
+			addMockFile("Child1.md", {
+				flashcard_uid: "uid-1",
+				parents: ["[[Project]]"],
+			});
+			addMockFile("Child2.md", {
+				flashcard_uid: "uid-2",
+				parents: ["[[Project]]"],
+			});
+			frontmatterIndex.rebuildIndex();
+
+			expect(service.buildHierarchy()).toHaveLength(1);
+			expect(service.getUnassignedPaths()).toHaveLength(0);
+
+			// Simulate dissolve: remove parents from children + unmark project
+			fileData.set("Project.md", {});
+			fileData.set("Child1.md", { flashcard_uid: "uid-1" });
+			fileData.set("Child2.md", { flashcard_uid: "uid-2" });
+			frontmatterIndex.rebuildIndex();
+			service.invalidateGraph();
+
+			expect(service.buildHierarchy()).toHaveLength(0);
+			expect(service.getUnassignedPaths()).toContain("Child1.md");
+			expect(service.getUnassignedPaths()).toContain("Child2.md");
+		});
+
+		it("assign: adding parent to unassigned note removes it from unassigned", () => {
+			addMockFile("Project.md", { project: true });
+			addMockFile("Note.md", { flashcard_uid: "uid-1" });
+			frontmatterIndex.rebuildIndex();
+
+			expect(service.getUnassignedPaths()).toContain("Note.md");
+
+			// Simulate assign
+			fileData.set("Note.md", {
+				flashcard_uid: "uid-1",
+				parents: ["[[Project]]"],
+			});
+			frontmatterIndex.rebuildIndex();
+			service.invalidateGraph();
+
+			expect(service.getUnassignedPaths()).not.toContain("Note.md");
+			const hierarchy = service.buildHierarchy();
+			expect(hierarchy).toHaveLength(1);
+			expect(hierarchy[0]?.memberPaths).toContain("Note.md");
+		});
+
+		it("detach: removing parent from assigned note makes it unassigned", () => {
+			addMockFile("Project.md", { project: true });
+			addMockFile("Note.md", {
+				flashcard_uid: "uid-1",
+				parents: ["[[Project]]"],
+			});
+			frontmatterIndex.rebuildIndex();
+
+			expect(service.getUnassignedPaths()).not.toContain("Note.md");
+
+			// Simulate detach
+			fileData.set("Note.md", { flashcard_uid: "uid-1" });
+			frontmatterIndex.rebuildIndex();
+			service.invalidateGraph();
+
+			expect(service.getUnassignedPaths()).toContain("Note.md");
+		});
+
+		it("reparent: moving note between projects updates hierarchy", () => {
+			addMockFile("ProjectA.md", { project: true });
+			addMockFile("ProjectB.md", { project: true });
+			addMockFile("Note.md", {
+				flashcard_uid: "uid-1",
+				parents: ["[[ProjectA]]"],
+			});
+			frontmatterIndex.rebuildIndex();
+
+			const h1 = service.buildHierarchy();
+			const projA = h1.find((n) => n.name === "ProjectA");
+			expect(projA?.memberPaths).toContain("Note.md");
+
+			// Simulate reparent: remove old parent, add new
+			fileData.set("Note.md", {
+				flashcard_uid: "uid-1",
+				parents: ["[[ProjectB]]"],
+			});
+			frontmatterIndex.rebuildIndex();
+			service.invalidateGraph();
+
+			const h2 = service.buildHierarchy();
+			const projA2 = h2.find((n) => n.name === "ProjectA");
+			const projB2 = h2.find((n) => n.name === "ProjectB");
+			expect(projA2?.memberPaths).not.toContain("Note.md");
+			expect(projB2?.memberPaths).toContain("Note.md");
+		});
+
+		it("convert: marking note as project removes it from unassigned and adds to hierarchy", () => {
+			addMockFile("Note.md", { flashcard_uid: "uid-1" });
+			frontmatterIndex.rebuildIndex();
+
+			expect(service.getUnassignedPaths()).toContain("Note.md");
+			expect(service.buildHierarchy()).toHaveLength(0);
+
+			// Simulate convert
+			fileData.set("Note.md", { flashcard_uid: "uid-1", project: true });
+			frontmatterIndex.rebuildIndex();
+			service.invalidateGraph();
+
+			expect(service.getUnassignedPaths()).not.toContain("Note.md");
+			expect(service.buildHierarchy()).toHaveLength(1);
+			expect(service.buildHierarchy()[0]?.path).toBe("Note.md");
+		});
+	});
+
 	// NOTE: "include: folder" feature was removed during the core package reorganization.
 	// These tests are commented out pending re-implementation or deletion.
 	// describe("include: folder", () => { ... });

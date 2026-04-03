@@ -3,7 +3,6 @@ import { CsvExportService } from "@true-recall/core/integration/csv/csv-export.s
 import type { HierarchyTreeNode } from "@true-recall/core/services/notes/hierarchy.service";
 import { ObsidianSourceUidResolver } from "@true-recall/obsidian/adapters/ObsidianSourceUidResolver";
 import { ObsidianVaultMediaReader } from "@true-recall/obsidian/adapters/ObsidianVaultMediaReader";
-import { mutate } from "@true-recall/obsidian/data";
 import { downloadBlob } from "@true-recall/obsidian/features/integration/utils/export-helpers";
 import { confirm } from "@true-recall/obsidian/modals/shared/ConfirmModal";
 import { NamePromptModal } from "@true-recall/obsidian/modals/study/NamePromptModal";
@@ -67,26 +66,19 @@ export function flattenNodes(nodes: HierarchyTreeNode[]): HierarchyTreeNode[] {
 
 export function useProjectActions() {
 	const plugin = usePlugin();
+	const service = plugin.projectManagement;
 
 	const handleArchive = useCallback(
 		async (path: string, archived: boolean) => {
-			const file = plugin.app.vault.getAbstractFileByPath(path);
-			if (file instanceof TFile) {
-				await mutate("hierarchy:changed", () =>
-					plugin.flashcardManager
-						.getFrontmatterService()
-						.setArchive(file.path, archived),
-				);
-				plugin.hierarchyService.invalidateGraph();
-			}
+			await service.setArchive(path, archived);
 		},
-		[plugin],
+		[service],
 	);
 
 	const handleRename = useCallback(
 		async (path: string) => {
 			const file = plugin.app.vault.getAbstractFileByPath(path);
-			if (!file) return;
+			if (!file || !(file instanceof TFile || file instanceof TFolder)) return;
 
 			const modal = new RenameModal(plugin.app, file);
 			const result = await modal.openAndWait();
@@ -99,16 +91,9 @@ export function useProjectActions() {
 					: result.newName;
 			const newPath = normalizePath(parent ? `${parent}/${newName}` : newName);
 
-			if (plugin.app.vault.getAbstractFileByPath(newPath)) {
-				new Notice(
-					`A ${file instanceof TFolder ? "folder" : "file"} already exists at "${newPath}".`,
-				);
-				return;
-			}
-
-			await plugin.app.fileManager.renameFile(file, newPath);
+			await service.renameProject(file, newPath);
 		},
-		[plugin],
+		[plugin, service],
 	);
 
 	const handleDissolve = useCallback(
@@ -140,22 +125,9 @@ export function useProjectActions() {
 			});
 			if (!confirmed) return;
 
-			const frontmatterService =
-				plugin.flashcardManager.getFrontmatterService();
-			await mutate("hierarchy:changed", async () => {
-				if (childPaths.length > 0) {
-					await frontmatterService.dissolveProject(childPaths, projectName);
-				}
-				if (isExplicit) {
-					await frontmatterService.unmarkProject(path);
-				}
-			});
-			plugin.hierarchyService.invalidateGraph();
-			new Notice(
-				`Dissolved "${projectName}" — ${childPaths.length} notes detached.`,
-			);
+			await service.dissolveProject(path);
 		},
-		[plugin],
+		[plugin, service],
 	);
 
 	const handleMoveChildren = useCallback(
@@ -185,22 +157,20 @@ export function useProjectActions() {
 			});
 			if (!confirmed) return;
 
-			const frontmatterService =
-				plugin.flashcardManager.getFrontmatterService();
-			await mutate("hierarchy:changed", () =>
-				frontmatterService.moveChildren(childPaths, fromName, target.name),
-			);
-			plugin.hierarchyService.invalidateGraph();
+			await service.moveChildren(childPaths, fromName, target.name);
 			new Notice(`Moved ${childPaths.length} notes to "${target.name}".`);
 		},
-		[plugin],
+		[plugin, service],
 	);
 
 	const handleDelete = useCallback(
 		async (projectPath: string) => {
 			const hierarchy = plugin.hierarchyService.buildHierarchy();
 			const projectNode = findNode(hierarchy, projectPath);
-			if (!projectNode) return;
+			if (!projectNode) {
+				new Notice("Project not found in hierarchy.");
+				return;
+			}
 
 			const allPaths = collectAllPaths(projectNode);
 			const sourceUids =
@@ -221,38 +191,17 @@ export function useProjectActions() {
 			});
 			if (!confirmed) return;
 
-			if (allCardIds.length > 0) {
-				plugin.cardStore.cards.bulkSoftDelete(allCardIds);
-			}
-
-			for (const path of allPaths.reverse()) {
-				const file = plugin.app.vault.getAbstractFileByPath(path);
-				if (file) await plugin.app.vault.trash(file, true);
-			}
-
-			// Trash empty ancestor folders up the tree
-			let ancestorPath = projectPath.replace(/\/[^/]+$/, "");
-			while (ancestorPath && ancestorPath !== projectPath) {
-				const folder = plugin.app.vault.getAbstractFileByPath(ancestorPath);
-				if (folder instanceof TFolder && folder.children.length === 0) {
-					await plugin.app.vault.trash(folder, true);
-					const next = ancestorPath.replace(/\/[^/]+$/, "");
-					if (next === ancestorPath) break;
-					ancestorPath = next;
-				} else {
-					break;
+			await service.deleteProject(allPaths, () => {
+				if (allCardIds.length > 0) {
+					plugin.cardStore.cards.bulkSoftDelete(allCardIds);
 				}
-			}
-
-			mutate("cards:bulk", () => {});
-			plugin.hierarchyService.invalidateGraph();
-			setTimeout(() => mutate("hierarchy:changed", () => {}), 100);
+			});
 
 			new Notice(
 				`Deleted "${projectName}" — ${allPaths.length} notes, ${allCardIds.length} cards.`,
 			);
 		},
-		[plugin],
+		[plugin, service],
 	);
 
 	const handleExportAnki = useCallback(
@@ -322,16 +271,16 @@ export function useProjectActions() {
 			const result = await modal.openAndWait();
 			if (result.cancelled) return;
 
-			await plugin.projectManagement.createSubProject(result.name, parentPath);
+			await service.createSubProject(result.name, parentPath);
 		},
-		[plugin],
+		[plugin, service],
 	);
 
 	const handleConvertToProject = useCallback(
 		async (notePath: string) => {
-			await plugin.projectManagement.convertToProject(notePath);
+			await service.convertToProject(notePath);
 		},
-		[plugin],
+		[service],
 	);
 
 	const handleAssignNoteToProject = useCallback(
@@ -347,18 +296,10 @@ export function useProjectActions() {
 			const target = await modal.openAndWait();
 			if (!target) return;
 
-			const file = plugin.app.vault.getAbstractFileByPath(notePath);
-			if (file instanceof TFile) {
-				await plugin.flashcardManager
-					.getFrontmatterService()
-					.addParent(file.path, target.name);
-			}
-
-			plugin.hierarchyService.invalidateGraph();
-			mutate("hierarchy:changed", () => {});
+			await service.assignToProject([notePath], target.name);
 			new Notice(`Assigned to "${target.name}"`);
 		},
-		[plugin],
+		[plugin, service],
 	);
 
 	return {
