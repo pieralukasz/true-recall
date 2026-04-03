@@ -139,6 +139,7 @@ export default class TrueRecallPlugin extends Plugin {
 				this.app,
 				this.flashcardManager.getFrontmatterService(),
 				this.hierarchyService,
+				this.frontmatterIndex,
 			);
 		}
 		return this._projectManagement;

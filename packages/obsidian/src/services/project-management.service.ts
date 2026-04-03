@@ -1,4 +1,5 @@
 import type { FrontmatterService } from "@true-recall/core/flashcard/source/frontmatter.service";
+import type { FrontmatterIndexService } from "@true-recall/core/services/notes/frontmatter-index.service";
 import type { HierarchyService } from "@true-recall/core/services/notes/hierarchy.service";
 import { mutate } from "@true-recall/obsidian/data";
 import type { App } from "obsidian";
@@ -9,6 +10,7 @@ export class ProjectManagementService {
 		private app: App,
 		private frontmatterService: FrontmatterService,
 		private hierarchyService: HierarchyService,
+		private frontmatterIndex: FrontmatterIndexService,
 	) {}
 
 	// === Project lifecycle ===
@@ -18,6 +20,7 @@ export class ProjectManagementService {
 		if (!(file instanceof TFile)) return;
 
 		await this.frontmatterService.markAsProject(file.path);
+		this.syncIndex(file.path);
 		this.invalidate();
 		new Notice(`"${file.basename}" is now a project`);
 	}
@@ -38,11 +41,13 @@ export class ProjectManagementService {
 
 		await this.app.vault.create(projectPath, "");
 		await this.frontmatterService.markAsProject(projectPath);
+		this.syncIndex(projectPath);
 
 		for (const childPath of childPaths) {
 			const file = this.app.vault.getAbstractFileByPath(childPath);
 			if (file instanceof TFile) {
 				await this.frontmatterService.addParent(file.path, name);
+				this.syncIndex(file.path);
 			}
 		}
 
@@ -63,6 +68,7 @@ export class ProjectManagementService {
 		await this.app.vault.create(projectPath, "");
 		await this.frontmatterService.markAsProject(projectPath);
 		await this.frontmatterService.addParent(projectPath, parentName);
+		this.syncIndex(projectPath);
 
 		this.invalidate();
 		new Notice(`Created sub-project "${name}" under "${parentName}"`);
@@ -75,10 +81,12 @@ export class ProjectManagementService {
 
 		if (childPaths.length > 0) {
 			await this.frontmatterService.dissolveProject(childPaths, projectName);
+			for (const cp of childPaths) this.syncIndex(cp);
 		}
 		if (isExplicit) {
 			await this.frontmatterService.unmarkProject(projectPath);
 		}
+		this.syncIndex(projectPath);
 
 		this.invalidate();
 		new Notice(
@@ -114,6 +122,7 @@ export class ProjectManagementService {
 		if (!(file instanceof TFile)) return;
 
 		await this.frontmatterService.setArchive(file.path, archived);
+		this.syncIndex(file.path);
 		this.invalidate();
 	}
 
@@ -122,6 +131,7 @@ export class ProjectManagementService {
 			const file = this.app.vault.getAbstractFileByPath(path);
 			if (file instanceof TFile) {
 				await this.frontmatterService.setArchive(file.path, archived);
+				this.syncIndex(file.path);
 			}
 		}
 		this.invalidate();
@@ -135,6 +145,7 @@ export class ProjectManagementService {
 			const file = this.app.vault.getAbstractFileByPath(notePath);
 			if (file instanceof TFile) {
 				await this.frontmatterService.addParent(file.path, targetName);
+				this.syncIndex(file.path);
 			}
 		}
 		this.invalidate();
@@ -145,6 +156,7 @@ export class ProjectManagementService {
 		if (!(file instanceof TFile)) return;
 
 		await this.frontmatterService.removeParent(file.path, parentName);
+		this.syncIndex(file.path);
 		this.invalidate();
 	}
 
@@ -161,6 +173,7 @@ export class ProjectManagementService {
 			await this.frontmatterService.removeParent(file.path, oldParentName);
 		}
 		await this.frontmatterService.addParent(file.path, newParentName);
+		this.syncIndex(file.path);
 		this.invalidate();
 	}
 
@@ -174,6 +187,7 @@ export class ProjectManagementService {
 			fromParent,
 			toParent,
 		);
+		for (const cp of childPaths) this.syncIndex(cp);
 		this.invalidate();
 	}
 
@@ -188,6 +202,21 @@ export class ProjectManagementService {
 	}
 
 	// === Internal ===
+
+	/**
+	 * Force-sync the frontmatter index for a file path.
+	 * Obsidian's metadataCache fires "changed" asynchronously after processFrontMatter,
+	 * so we read the cache directly and push it into the index before invalidating queries.
+	 */
+	private syncIndex(filePath: string): void {
+		const file = this.app.vault.getAbstractFileByPath(filePath);
+		if (!file || !(file instanceof TFile)) return;
+		const cache = this.app.metadataCache.getFileCache(file);
+		this.frontmatterIndex.indexFile(
+			filePath,
+			cache?.frontmatter as Record<string, unknown> | undefined,
+		);
+	}
 
 	private invalidate(): void {
 		this.hierarchyService.invalidateGraph();
