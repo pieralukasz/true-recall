@@ -74,6 +74,16 @@ export class ProjectManagementService {
 		new Notice(`Created sub-project "${name}" under "${parentName}"`);
 	}
 
+	async removeProjectStatus(notePath: string): Promise<void> {
+		const file = this.app.vault.getAbstractFileByPath(notePath);
+		if (!(file instanceof TFile)) return;
+
+		await this.frontmatterService.unmarkProject(file.path);
+		this.syncIndex(file.path);
+		this.invalidate();
+		new Notice(`"${file.basename}" is no longer a project`);
+	}
+
 	async dissolveProject(projectPath: string): Promise<void> {
 		const childPaths = this.hierarchyService.getChildPaths(projectPath);
 		const isExplicit = this.hierarchyService.isExplicitProject(projectPath);

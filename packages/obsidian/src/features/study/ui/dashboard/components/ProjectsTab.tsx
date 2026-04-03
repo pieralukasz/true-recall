@@ -54,6 +54,7 @@ export function ProjectsTab({
 		handleExportCsv,
 		handleCreateSubProject,
 		handleConvertToProject,
+		handleRemoveProjectStatus,
 		handleAssignNoteToProject,
 	} = useProjectActions();
 	const {
@@ -206,6 +207,7 @@ export function ProjectsTab({
 								onArchive={handleArchive}
 								onRename={handleRename}
 								onCreateProject={handleConvertToProject}
+								onRemoveProjectStatus={handleRemoveProjectStatus}
 								onAssignToProject={handleAssignNoteToProject}
 								onToggleSelect={
 									item.note.path
@@ -420,6 +422,7 @@ interface NoteItemProps {
 	onArchive: (path: string, archived: boolean) => void;
 	onRename: (path: string) => Promise<void>;
 	onCreateProject: (path: string) => Promise<void>;
+	onRemoveProjectStatus: (path: string) => Promise<void>;
 	onAssignToProject: (path: string) => Promise<void>;
 	onToggleSelect?: () => void;
 	onEnterSelection?: () => void;
@@ -441,6 +444,7 @@ function NoteItem({
 	onArchive,
 	onRename,
 	onCreateProject,
+	onRemoveProjectStatus,
 	onAssignToProject,
 	onToggleSelect,
 	onEnterSelection,
@@ -479,6 +483,8 @@ function NoteItem({
 
 	const notePath = item.note.path;
 	const isUnassigned = item.projectPath === UNASSIGNED_PATH;
+	const isExplicitProject =
+		notePath && plugin.hierarchyService.isExplicitProject(notePath);
 	const handleContextMenu = useNoteContextMenu({
 		note: item.note,
 		onStudy: handleStudy,
@@ -490,8 +496,12 @@ function NoteItem({
 		onDetach: handleDetach,
 		onEnterSelection,
 		onCreateProject:
-			isUnassigned && notePath
+			isUnassigned && notePath && !isExplicitProject
 				? () => void onCreateProject(notePath)
+				: undefined,
+		onRemoveProjectStatus:
+			isExplicitProject && notePath
+				? () => void onRemoveProjectStatus(notePath)
 				: undefined,
 		onAssignToProject:
 			isUnassigned && notePath

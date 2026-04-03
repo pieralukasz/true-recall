@@ -13,6 +13,7 @@ interface UseNoteContextMenuOptions {
 	onDetach?: () => void;
 	onEnterSelection?: () => void;
 	onCreateProject?: () => void;
+	onRemoveProjectStatus?: () => void;
 	onAssignToProject?: () => void;
 }
 
@@ -27,6 +28,7 @@ export function useNoteContextMenu({
 	onDetach,
 	onEnterSelection,
 	onCreateProject,
+	onRemoveProjectStatus,
 	onAssignToProject,
 }: UseNoteContextMenuOptions) {
 	const menuItems: MenuItem[] = [
@@ -51,7 +53,7 @@ export function useNoteContextMenu({
 					{ title: "Detach from project", icon: "unlink", onClick: onDetach },
 				]
 			: []),
-		...(onCreateProject || onAssignToProject
+		...(onCreateProject || onRemoveProjectStatus || onAssignToProject
 			? [
 					"separator" as const,
 					...(onCreateProject
@@ -60,6 +62,15 @@ export function useNoteContextMenu({
 									title: "Convert to project",
 									icon: "folder-plus",
 									onClick: onCreateProject,
+								},
+							]
+						: []),
+					...(onRemoveProjectStatus
+						? [
+								{
+									title: "Remove project status",
+									icon: "folder-minus",
+									onClick: onRemoveProjectStatus,
 								},
 							]
 						: []),

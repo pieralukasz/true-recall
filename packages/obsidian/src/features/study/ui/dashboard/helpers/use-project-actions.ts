@@ -283,6 +283,13 @@ export function useProjectActions() {
 		[service],
 	);
 
+	const handleRemoveProjectStatus = useCallback(
+		async (notePath: string) => {
+			await service.removeProjectStatus(notePath);
+		},
+		[service],
+	);
+
 	const handleAssignNoteToProject = useCallback(
 		async (notePath: string) => {
 			const hierarchy = plugin.hierarchyService.buildHierarchy();
@@ -312,6 +319,7 @@ export function useProjectActions() {
 		handleExportCsv,
 		handleCreateSubProject,
 		handleConvertToProject,
+		handleRemoveProjectStatus,
 		handleAssignNoteToProject,
 	};
 }
