@@ -198,16 +198,15 @@ export function DashboardApp() {
 				? plugin.presetService.resolvePresetChain(note.path).effective.preset
 				: null;
 
-			const archived =
-				showArchived.value && note.path
-					? plugin.hierarchyService.isNoteArchived(note.path)
-					: undefined;
+			const archived = note.path
+				? plugin.hierarchyService.isNoteArchived(note.path)
+				: false;
 
 			return {
 				...note,
 				projects,
 				presetName: preset?.name,
-				...(archived ? { archived } : {}),
+				archived,
 			};
 		});
 	}, [visibleNotes, projectData.noteProjectMap, plugin, showArchived.value]);
