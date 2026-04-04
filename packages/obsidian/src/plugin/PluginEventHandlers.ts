@@ -1,6 +1,11 @@
 import {
+	VIEW_TYPE_CARD_BROWSER,
+	VIEW_TYPE_DASHBOARD,
 	VIEW_TYPE_FLASHCARD_PANEL,
+	VIEW_TYPE_KNOWLEDGE_CHAT,
 	VIEW_TYPE_REVIEW,
+	VIEW_TYPE_SIMULATOR,
+	VIEW_TYPE_STATS,
 } from "@true-recall/core/constants";
 import type { DeletionHandlerService } from "@true-recall/core/flashcard/lifecycle/deletion-handler.service";
 import { FlashcardPanelView } from "@true-recall/obsidian/views/panel/FlashcardPanelView";
@@ -121,18 +126,36 @@ export function registerEventHandlers(plugin: TrueRecallPlugin): void {
 	);
 }
 
+const VIEW_CONTEXT_MAP: Record<string, string> = {
+	[VIEW_TYPE_DASHBOARD]: "Dashboard",
+	[VIEW_TYPE_CARD_BROWSER]: "Card Browser",
+	[VIEW_TYPE_STATS]: "Statistics",
+	[VIEW_TYPE_REVIEW]: "Review",
+	[VIEW_TYPE_SIMULATOR]: "Simulator",
+	[VIEW_TYPE_KNOWLEDGE_CHAT]: "Knowledge Chat",
+};
+
 /** Respects review follow mode and panel interactions */
 function updatePanelView(plugin: TrueRecallPlugin, file: TFile | null): void {
 	const { workspace } = plugin.app;
 	const activeView = workspace.getActiveViewOfType(ItemView);
-	const isReviewViewActive = activeView?.getViewType() === VIEW_TYPE_REVIEW;
-	const isPanelActive = activeView?.getViewType() === VIEW_TYPE_FLASHCARD_PANEL;
+	const activeViewType = activeView?.getViewType() ?? "";
+	const isReviewViewActive = activeViewType === VIEW_TYPE_REVIEW;
+	const isPanelActive = activeViewType === VIEW_TYPE_FLASHCARD_PANEL;
+
+	// Detect if a True Recall view is active (Dashboard, Browser, Stats, etc.)
+	const viewContext = VIEW_CONTEXT_MAP[activeViewType] ?? null;
 
 	// Only react to main editor area leaf changes
-	// Sidebar clicks (stats, etc.) should not affect the panel
 	// Review view and panel itself get special handling below
 	const isMainArea = activeView?.leaf?.getContainer() === workspace.rootSplit;
 	if (!isMainArea && !isReviewViewActive && !isPanelActive) {
+		// Non-main-area TR view: update context label only
+		if (viewContext) {
+			plugin.store
+				?.getState()
+				.panel.setState({ activeViewContext: viewContext });
+		}
 		return;
 	}
 
@@ -140,6 +163,11 @@ function updatePanelView(plugin: TrueRecallPlugin, file: TFile | null): void {
 	leaves.forEach((leaf) => {
 		const view = leaf.view;
 		if (view instanceof FlashcardPanelView) {
+			// Clear view context when navigating to a file or main area view
+			plugin.store?.getState().panel.setState({
+				activeViewContext: viewContext,
+			});
+
 			if (isReviewViewActive && view.isFollowingReview()) {
 				return;
 			}

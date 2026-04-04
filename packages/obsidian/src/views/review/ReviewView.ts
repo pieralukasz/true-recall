@@ -438,7 +438,7 @@ export class ReviewView extends ItemView {
 		this.resetTypeInState();
 
 		await super.setState(state, result);
-		this.startSession();
+		await this.startSession();
 	}
 
 	getState() {
@@ -649,7 +649,7 @@ export class ReviewView extends ItemView {
 
 	// ─── Session lifecycle ───────────────────────────────────────────────
 
-	startSession(): void {
+	async startSession(): Promise<void> {
 		const container = this.containerEl.children[1];
 		if (!(container instanceof HTMLElement)) return;
 
@@ -699,6 +699,10 @@ export class ReviewView extends ItemView {
 				);
 				return;
 			}
+
+			// Yield to let the browser paint before heavy queue building
+			await new Promise((r) => requestAnimationFrame(r));
+			if (!this.containerEl.isConnected) return;
 
 			const snapshot = computeActionableSessionSnapshot(
 				{

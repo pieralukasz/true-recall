@@ -15,7 +15,7 @@ import { groupCards } from "@true-recall/obsidian/features/library/ui/panel/grou
 import { usePanelScroll } from "@true-recall/obsidian/features/library/ui/panel/hooks/PanelScrollContext";
 import { usePanelStore } from "@true-recall/obsidian/features/library/ui/panel/hooks/usePanelStore";
 import { matchesCardSearch } from "@true-recall/obsidian/features/library/ui/panel/utils/search-query.utils";
-import { useEffect, useMemo } from "preact/hooks";
+import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 
 export function PanelContent() {
 	const {
@@ -26,6 +26,7 @@ export function PanelContent() {
 		expandedCardIds,
 		cardsWithFsrs,
 		searchQuery,
+		activeViewContext,
 	} = usePanelStore();
 
 	const { scrollRef } = usePanelScroll();
@@ -58,21 +59,31 @@ export function PanelContent() {
 		[allFlashcards, fsrsMap],
 	);
 
+	const [debouncedSearch, setDebouncedSearch] = useState(searchQuery);
+	const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+	useEffect(() => {
+		debounceRef.current = setTimeout(
+			() => setDebouncedSearch(searchQuery),
+			150,
+		);
+		return () => clearTimeout(debounceRef.current);
+	}, [searchQuery]);
+
 	const filteredItems = useMemo(() => {
-		if (!searchQuery.trim()) return items;
+		if (!debouncedSearch.trim()) return items;
 		return items.filter((item) => {
 			if (item.type === "io-group") {
 				return item.cards.some((c) =>
-					matchesCardSearch(c.question, c.answer, searchQuery),
+					matchesCardSearch(c.question, c.answer, debouncedSearch),
 				);
 			}
 			return matchesCardSearch(
 				item.card.question,
 				item.card.answer,
-				searchQuery,
+				debouncedSearch,
 			);
 		});
-	}, [items, searchQuery]);
+	}, [items, debouncedSearch]);
 
 	useEffect(() => {
 		if (!streaming.isGenerating && recentCardIds.size > 0) {
@@ -90,6 +101,13 @@ export function PanelContent() {
 	});
 
 	if (!currentFile) {
+		if (activeViewContext) {
+			return (
+				<EmptyState
+					message={`${activeViewContext} is active. Open a note to see its flashcards.`}
+				/>
+			);
+		}
 		return <EmptyState message={EmptyStateMessages.NO_FILE} />;
 	}
 

@@ -27,6 +27,7 @@ interface PanelState {
 	expandedCardIds: Set<string>;
 	searchQuery: string;
 	hasHighlights: boolean;
+	activeViewContext: string | null;
 }
 
 export interface PanelStoreResult extends PanelState {
@@ -47,6 +48,7 @@ const DEFAULT_STATE: PanelState = {
 	expandedCardIds: new Set<string>(),
 	searchQuery: "",
 	hasHighlights: false,
+	activeViewContext: null,
 };
 
 function buildPanelState(p: {
@@ -62,6 +64,7 @@ function buildPanelState(p: {
 	expandedCardIds: Set<string>;
 	searchQuery: string;
 	hasHighlights: boolean;
+	activeViewContext: string | null;
 }): PanelState {
 	return {
 		currentFile: p.currentFile,
@@ -76,6 +79,7 @@ function buildPanelState(p: {
 		expandedCardIds: p.expandedCardIds,
 		searchQuery: p.searchQuery,
 		hasHighlights: p.hasHighlights,
+		activeViewContext: p.activeViewContext,
 	};
 }
 
@@ -105,14 +109,26 @@ export function usePanelStore(): PanelStoreResult {
 	}, [store]);
 
 	// ── Cards enriched with FSRS scheduling data ──
+	// Full load (SQL + template rendering) only when flashcardInfo changes (file switch).
+	// FSRS merge (O(k) map lookups, no SQL) on every ALL_META signal change.
 	const allMeta = useQuery<Map<string, CardSchedulingMeta>>(Q.ALL_META);
 	const cardsRef = allMeta.value;
-	const cardsWithFsrs = useMemo(() => {
+
+	const fullCards = useMemo(() => {
 		if (!state.flashcardInfo?.flashcards) return [];
 		if (!plugin.flashcardManager.hasStore()) return [];
 		const cardIds = state.flashcardInfo.flashcards.map((c) => c.id);
 		return plugin.flashcardManager.getCardsByIds(cardIds);
-	}, [state.flashcardInfo, plugin, cardsRef]);
+	}, [state.flashcardInfo, plugin]);
+
+	const cardsWithFsrs = useMemo(() => {
+		if (!cardsRef || fullCards.length === 0) return fullCards;
+		return fullCards.map((card) => {
+			const meta = cardsRef.get(card.id);
+			if (!meta) return card;
+			return { ...card, fsrs: meta.fsrs };
+		});
+	}, [fullCards, cardsRef]);
 
 	return {
 		...state,

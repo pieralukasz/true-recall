@@ -170,12 +170,20 @@ export class ReviewService {
 		options: QueueBuildOptions,
 		todayBoundary: Date,
 		weekAgoBoundary: Date,
+		reviewedToday?: Set<string>,
 	): CardSchedulingMeta[] {
 		const noteSet = options.sourceNoteFilters?.length
 			? new Set(options.sourceNoteFilters)
 			: null;
 
 		return cards.filter((card) => {
+			// Exclude already reviewed (but keep learning cards)
+			if (reviewedToday?.size) {
+				const isLearning =
+					card.fsrs.state === State.Learning ||
+					card.fsrs.state === State.Relearning;
+				if (!isLearning && reviewedToday.has(card.id)) return false;
+			}
 			// Source UID filter (used for project-scoped review)
 			if (options.sourceUidFilter) {
 				if (!card.sourceUid || !options.sourceUidFilter.has(card.sourceUid))
@@ -592,26 +600,39 @@ export class ReviewService {
 		options: QueueBuildOptions,
 		now: Date,
 	): CardSchedulingMeta[] {
-		const allLearningCards = fsrsService.getLearningCards(availableCards);
-
-		// Split learning cards by due status
-		// For Learning cards: use strict check (must be actually due, not just within learn-ahead)
-		// This aligns with isCardDueNow() which doesn't apply learn-ahead to Learning cards
-		const dueLearningCards = allLearningCards.filter(
-			(card) => new Date(card.fsrs.due) <= now,
-		);
-		const pendingLearningCards = allLearningCards.filter(
-			(card) => new Date(card.fsrs.due) > now,
-		);
+		// Single-pass classification: bucket cards by state instead of
+		// 3 separate filter passes (getLearningCards + getReviewCards + getNewCards).
+		const dueLearningCards: CardSchedulingMeta[] = [];
+		const pendingLearningCards: CardSchedulingMeta[] = [];
+		const rawNewCards: CardSchedulingMeta[] = [];
+		const rawReviewCards: CardSchedulingMeta[] = [];
 
 		const dayStartHour = options.dayStartHour ?? 4;
-		const reviewCards = fsrsService.getReviewCards(
-			availableCards,
-			now,
-			dayStartHour,
-		);
+		const tomorrowBoundary = getTomorrowBoundary(dayStartHour, now);
+
+		for (const card of availableCards) {
+			switch (card.fsrs.state) {
+				case State.Learning:
+				case State.Relearning:
+					if (new Date(card.fsrs.due) <= now) {
+						dueLearningCards.push(card);
+					} else {
+						pendingLearningCards.push(card);
+					}
+					break;
+				case State.New:
+					rawNewCards.push(card);
+					break;
+				case State.Review:
+					if (new Date(card.fsrs.due) < tomorrowBoundary) {
+						rawReviewCards.push(card);
+					}
+					break;
+			}
+		}
+
 		const sortedReviewCards = this.sortReviewCards(
-			reviewCards,
+			rawReviewCards,
 			options.reviewOrder ?? "due-date",
 			fsrsService,
 		);
@@ -629,7 +650,7 @@ export class ReviewService {
 
 		// New cards
 		const sortedNewCards = this.sortNewCards(
-			fsrsService.getNewCards(availableCards),
+			rawNewCards,
 			options.newCardOrder ?? "random",
 		);
 		const newCards = options.ignoreDailyLimits
@@ -673,21 +694,14 @@ export class ReviewService {
 		);
 		const reviewedToday = options.reviewedToday ?? new Set<string>();
 
-		// Filter cards based on options
-		const filteredCards = this.filterCards(
+		// Combined filter + reviewed-today exclusion in one pass
+		const availableCards = this.filterCards(
 			allCards,
 			options,
 			todayBoundary,
 			weekAgoBoundary,
+			reviewedToday,
 		);
-
-		// Exclude already reviewed cards (but keep learning cards - they need multiple reviews)
-		const availableCards = filteredCards.filter((card) => {
-			const isLearning =
-				card.fsrs.state === State.Learning ||
-				card.fsrs.state === State.Relearning;
-			return isLearning || !reviewedToday.has(card.id);
-		});
 
 		let queue: CardSchedulingMeta[];
 

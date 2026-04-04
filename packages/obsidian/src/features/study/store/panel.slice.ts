@@ -34,6 +34,7 @@ function createInitialState(): PanelSliceState {
 		isFollowingReview: false,
 		reviewSourceNotePath: null,
 		hasHighlights: false,
+		activeViewContext: null,
 	};
 }
 

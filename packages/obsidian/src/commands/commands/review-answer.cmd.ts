@@ -1,5 +1,9 @@
-import type { FSRSCardData, FSRSFlashcardItem } from "@true-recall/core/types";
-import { mutate } from "@true-recall/obsidian/data";
+import type {
+	CardSchedulingMeta,
+	FSRSCardData,
+	FSRSFlashcardItem,
+} from "@true-recall/core/types";
+import { mutateReviewGrade } from "@true-recall/obsidian/data";
 import type { Command, CommandContext } from "../command.types";
 
 export interface ReviewAnswerParams {
@@ -66,7 +70,11 @@ export class ReviewAnswerCommand implements Command {
 				console.error("Error recording review to persistent storage:", error);
 			}
 
-			mutate("card:reviewed", () => {});
+			mutateReviewGrade(
+				p.card.id,
+				() => {},
+				() => buildMetaFromCard(p.card, p.updatedFsrs),
+			);
 		}, 0);
 	}
 
@@ -91,7 +99,29 @@ export class ReviewAnswerCommand implements Command {
 				p.rating,
 				p.previousState,
 			);
-			mutate("card:reviewed", () => {});
+			mutateReviewGrade(
+				p.card.id,
+				() => {},
+				() => buildMetaFromCard(p.card, p.originalFsrs),
+			);
 		}
 	}
+}
+
+function buildMetaFromCard(
+	card: FSRSFlashcardItem,
+	fsrs: FSRSCardData,
+): CardSchedulingMeta {
+	return {
+		id: card.id,
+		fsrs,
+		sourceUid: card.sourceUid,
+		sourceNoteName: card.sourceNoteName,
+		sourceNotePath: card.sourceNotePath,
+		cardType: card.cardType,
+		noteId: card.noteId,
+		templateOrd: card.templateOrd,
+		noteTypeName: card.noteTypeName,
+		alwaysTypeIn: card.alwaysTypeIn,
+	};
 }

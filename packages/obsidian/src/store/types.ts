@@ -132,6 +132,7 @@ export interface PanelSliceState {
 	isFollowingReview: boolean;
 	reviewSourceNotePath: string | null;
 	hasHighlights: boolean;
+	activeViewContext: string | null;
 }
 
 export interface PanelSliceActions {

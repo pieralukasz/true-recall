@@ -294,7 +294,12 @@ export class FlashcardPanelView extends ItemView {
 			void settingsSig?.value;
 			this.invalidateCardsCache();
 			this.scheduleHeaderStatsUpdate();
-			this.scheduleFlashcardInfoReload();
+			// During review, only FSRS scheduling data changes — skip full reload.
+			// Card content (question/answer/template) doesn't change per answer.
+			// Full reload triggers when review ends via G.CARDS invalidation.
+			if (!this.isFollowingReview()) {
+				this.scheduleFlashcardInfoReload();
+			}
 		});
 	}
 
