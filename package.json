@@ -1,11 +1,13 @@
 {
 	"name": "true-recall",
-	"version": "1.5.0",
+	"version": "1.6.0",
 	"private": true,
 	"description": "Spaced repetition with FSRS algorithm",
 	"main": "main.js",
 	"type": "module",
-	"workspaces": ["packages/*"],
+	"workspaces": [
+		"packages/*"
+	],
 	"scripts": {
 		"dev": "bun esbuild.config.mjs",
 		"build": "tsc -noEmit -skipLibCheck && bun esbuild.config.mjs production",
