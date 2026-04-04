@@ -74,6 +74,7 @@ export class AnkiImportService {
 			duplicates: 0,
 			errors: [],
 			noteTypesCreated: 0,
+			fieldsDropped: 0,
 		};
 
 		if (convertedCards.length === 0) {
@@ -81,18 +82,22 @@ export class AnkiImportService {
 			return result;
 		}
 
+		const mediaService = new AnkiMediaService(
+			this.persistence,
+			this.fileReader,
+		);
+
 		let mediaPathMapping = new Map<string, string>();
 		if (options.importMedia && apkgData.media.size > 0) {
-			const mediaService = new AnkiMediaService(
-				this.persistence,
-				this.fileReader,
-			);
 			mediaPathMapping = await mediaService.importMedia(
 				apkgData.media,
 				apkgData.mediaMap,
 				options.mediaFolder,
 			);
 		}
+
+		const replaceMediaPaths =
+			mediaService.buildContentReplacer(mediaPathMapping);
 
 		const revlogByCard = new Map<number, AnkiRevlogEntry[]>();
 		for (const entry of apkgData.revlog) {
@@ -107,10 +112,6 @@ export class AnkiImportService {
 		}
 
 		const schedulingService = new AnkiSchedulingService(this.fsrsService);
-		const mediaService = new AnkiMediaService(
-			this.persistence,
-			this.fileReader,
-		);
 		const noteTypeMapper = new AnkiNoteTypeMapper(this.store.noteTypes);
 
 		const importedCardIds: string[] = [];
@@ -129,8 +130,7 @@ export class AnkiImportService {
 						ankiCardMap,
 						revlogByCard,
 						schedulingService,
-						mediaService,
-						mediaPathMapping,
+						replaceMediaPaths,
 						options,
 						ankiToTrCardId,
 						noteTypeMapper,
@@ -140,6 +140,7 @@ export class AnkiImportService {
 					if (importResult.status === "imported") {
 						importedCardIds.push(importResult.cardId);
 						result.imported++;
+						result.fieldsDropped += importResult.fieldsDropped;
 
 						const list = deckToCardIds.get(converted.deckName) ?? [];
 						list.push(importResult.cardId);
@@ -206,22 +207,16 @@ export class AnkiImportService {
 		ankiCardMap: Map<number, AnkiCard>,
 		revlogByCard: Map<number, AnkiRevlogEntry[]>,
 		schedulingService: AnkiSchedulingService,
-		mediaService: AnkiMediaService,
-		mediaPathMapping: Map<string, string>,
+		replaceMediaPaths: (content: string) => string,
 		options: AnkiImportOptions,
 		ankiToTrCardId: Map<number, string>,
 		noteTypeMapper: AnkiNoteTypeMapper,
 		ankiNoteToTrNote: Map<number, string>,
 	):
-		| { status: "imported"; cardId: string }
+		| { status: "imported"; cardId: string; fieldsDropped: number }
 		| { status: "duplicate" | "skipped" } {
-		let question = converted.question;
-		let answer = converted.answer;
-
-		if (mediaPathMapping.size > 0) {
-			question = mediaService.updateImportedContent(question, mediaPathMapping);
-			answer = mediaService.updateImportedContent(answer, mediaPathMapping);
-		}
+		const question = replaceMediaPaths(converted.question);
+		const answer = replaceMediaPaths(converted.answer);
 
 		if (!question.trim()) {
 			return { status: "skipped" };
@@ -261,16 +256,16 @@ export class AnkiImportService {
 		// Apply media path updates to field values
 		let fieldValues: Record<string, string> = {};
 		for (const [key, value] of Object.entries(converted.fieldValues)) {
-			fieldValues[key] =
-				mediaPathMapping.size > 0
-					? mediaService.updateImportedContent(value, mediaPathMapping)
-					: value;
+			fieldValues[key] = replaceMediaPaths(value);
 		}
 
 		// Apply field remapping if user specified one
+		let fieldsDropped = 0;
 		const mapping = options.modelMappings?.get(converted.ankiModelId);
-		if (mapping?.fieldMapping) {
-			fieldValues = remapFields(fieldValues, mapping.fieldMapping);
+		if (mapping?.fieldMapping && mapping.fieldMapping.size > 0) {
+			const remap = remapFields(fieldValues, mapping.fieldMapping);
+			fieldValues = remap.mapped;
+			fieldsDropped = remap.dropped;
 		}
 
 		const noteTypeId = noteTypeMapper.getNoteTypeId(converted.ankiModelId);
@@ -299,13 +294,9 @@ export class AnkiImportService {
 		}
 
 		if (converted.cardType === "cloze") {
-			let clozeTemplate = converted.clozeTemplate ?? question;
-			if (mediaPathMapping.size > 0) {
-				clozeTemplate = mediaService.updateImportedContent(
-					clozeTemplate,
-					mediaPathMapping,
-				);
-			}
+			const clozeTemplate = replaceMediaPaths(
+				converted.clozeTemplate ?? question,
+			);
 			cardData.clozeTemplate = clozeTemplate;
 			cardData.clozeIndex = converted.clozeIndex;
 		}
@@ -323,7 +314,7 @@ export class AnkiImportService {
 		cardData.createdVia = "anki_import";
 		this.store.set(cardId, cardData);
 
-		return { status: "imported", cardId };
+		return { status: "imported", cardId, fieldsDropped };
 	}
 
 	private importReviewLogs(
@@ -470,16 +461,18 @@ export class AnkiImportService {
 function remapFields(
 	fields: Record<string, string>,
 	mapping: Map<string, string>,
-): Record<string, string> {
-	const result: Record<string, string> = {};
+): { mapped: Record<string, string>; dropped: number } {
+	const mapped: Record<string, string> = {};
+	let dropped = 0;
 	for (const [ankiField, value] of Object.entries(fields)) {
 		const targetField = mapping.get(ankiField);
 		if (targetField) {
-			result[targetField] = value;
+			mapped[targetField] = value;
+		} else {
+			dropped++;
 		}
-		// Fields not in the mapping are dropped (user chose "skip")
 	}
-	return result;
+	return { mapped, dropped };
 }
 
 function sanitize(name: string): string {

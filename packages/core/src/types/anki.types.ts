@@ -88,6 +88,7 @@ export interface AnkiImportResult {
 	duplicates: number;
 	errors: string[];
 	noteTypesCreated: number;
+	fieldsDropped: number;
 }
 
 export interface AnkiExportOptions {

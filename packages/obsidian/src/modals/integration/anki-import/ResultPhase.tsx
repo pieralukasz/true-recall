@@ -21,6 +21,13 @@ export function ResultPhase({ result, onClose }: ResultPhaseProps) {
 					<StatBadge label="Errors" count={result.errors.length} />
 				</StatGrid>
 
+				{result.fieldsDropped > 0 && (
+					<div class="ep:text-ui-smaller ep:text-obs-muted ep:mt-2">
+						{result.fieldsDropped} field{result.fieldsDropped !== 1 ? "s" : ""}{" "}
+						dropped during remapping (marked as skip)
+					</div>
+				)}
+
 				{result.errors.length > 0 && (
 					<div class="ep:mb-3">
 						<div class="ep:text-ui-small ep:font-medium ep:mb-1 ep:text-red-500">

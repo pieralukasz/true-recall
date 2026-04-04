@@ -179,7 +179,6 @@ export class AnkiImportModal extends BaseModal {
 	private store: SqliteStoreService;
 	private fsrsService: FSRSService;
 	private getSettings: () => TrueRecallSettings;
-	private fileData: ArrayBuffer | null = null;
 	private apkgData: ApkgData | null = null;
 	private convertedCards: ConvertedCard[] = [];
 	private deckNames: string[] = [];
@@ -218,10 +217,10 @@ export class AnkiImportModal extends BaseModal {
 
 	private async handleFileSelected(file: File): Promise<ImportPhase> {
 		try {
-			this.fileData = await file.arrayBuffer();
+			const fileData = await file.arrayBuffer();
 
 			const { apkgData, convertedCards } =
-				await AnkiImportService.parseAndConvert(this.fileData);
+				await AnkiImportService.parseAndConvert(fileData);
 			this.apkgData = apkgData;
 			this.convertedCards = convertedCards;
 
@@ -234,12 +233,20 @@ export class AnkiImportModal extends BaseModal {
 				cardCountByModel,
 			);
 
+			let basicCards = 0;
+			let clozeCards = 0;
+			let reversedCards = 0;
+			for (const c of convertedCards) {
+				if (c.cardType === "basic") basicCards++;
+				else if (c.cardType === "cloze") clozeCards++;
+				else if (c.cardType === "reversed") reversedCards++;
+			}
+
 			const preview: ImportPreview = {
 				totalCards: convertedCards.length,
-				basicCards: convertedCards.filter((c) => c.cardType === "basic").length,
-				clozeCards: convertedCards.filter((c) => c.cardType === "cloze").length,
-				reversedCards: convertedCards.filter((c) => c.cardType === "reversed")
-					.length,
+				basicCards,
+				clozeCards,
+				reversedCards,
 				decks: this.deckNames,
 				mediaCount: Object.keys(apkgData.mediaMap).length,
 			};
