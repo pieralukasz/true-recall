@@ -78,17 +78,7 @@ export function PreviewPhase({
 					checked={importMedia}
 					onChange={onMediaChange}
 				/>
-				<OptionCheckbox
-					label="Organize with AI"
-					description={
-						hasAIKey
-							? "Classify cards into sub-decks and clean up formatting"
-							: "Requires API key — configure in settings"
-					}
-					checked={useAI}
-					onChange={onUseAIChange}
-					disabled={!hasAIKey}
-				/>
+				{/* AI import temporarily disabled — will be improved in a future release */}
 			</div>
 
 			<div class="ep:mb-4">
