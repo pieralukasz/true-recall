@@ -106,6 +106,76 @@ describe("AnkiMediaService", () => {
 		});
 	});
 
+	describe("buildContentReplacer", () => {
+		let service: AnkiMediaService;
+
+		beforeEach(() => {
+			service = new AnkiMediaService(createMockPersistence());
+		});
+
+		it("replaces media reference with vault path", () => {
+			const pathMapping = new Map([["image.png", "anki-media/image.png"]]);
+			const replace = service.buildContentReplacer(pathMapping);
+
+			expect(replace("Here is ![[image.png]] in text")).toBe(
+				"Here is ![[anki-media/image.png]] in text",
+			);
+		});
+
+		it("handles multiple media references in one pass", () => {
+			const pathMapping = new Map([
+				["photo.jpg", "media/photo.jpg"],
+				["audio.mp3", "media/audio.mp3"],
+			]);
+			const replace = service.buildContentReplacer(pathMapping);
+
+			expect(replace("Image: ![[photo.jpg]] and sound: ![[audio.mp3]]")).toBe(
+				"Image: ![[media/photo.jpg]] and sound: ![[media/audio.mp3]]",
+			);
+		});
+
+		it("skips replacement when name equals path", () => {
+			const pathMapping = new Map([["image.png", "image.png"]]);
+			const replace = service.buildContentReplacer(pathMapping);
+
+			expect(replace("Here is ![[image.png]] unchanged")).toBe(
+				"Here is ![[image.png]] unchanged",
+			);
+		});
+
+		it("returns identity function for empty mapping", () => {
+			const replace = service.buildContentReplacer(new Map());
+			const content = "Keep ![[image.png]] as is";
+
+			expect(replace(content)).toBe(content);
+		});
+
+		it("handles no media references in content", () => {
+			const pathMapping = new Map([["image.png", "media/image.png"]]);
+			const replace = service.buildContentReplacer(pathMapping);
+
+			expect(replace("Plain text without any media")).toBe(
+				"Plain text without any media",
+			);
+		});
+
+		it("handles filenames with regex special characters", () => {
+			const pathMapping = new Map([["file (1).png", "media/file (1).png"]]);
+			const replace = service.buildContentReplacer(pathMapping);
+
+			expect(replace("![[file (1).png]]")).toBe("![[media/file (1).png]]");
+		});
+
+		it("replaces multiple occurrences of same file", () => {
+			const pathMapping = new Map([["img.png", "media/img.png"]]);
+			const replace = service.buildContentReplacer(pathMapping);
+
+			expect(replace("![[img.png]] and again ![[img.png]]")).toBe(
+				"![[media/img.png]] and again ![[media/img.png]]",
+			);
+		});
+	});
+
 	describe("importMedia", () => {
 		it("writes files to target folder", async () => {
 			const persistence = createMockPersistence();

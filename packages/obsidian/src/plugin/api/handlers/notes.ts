@@ -1,3 +1,4 @@
+import { G } from "@true-recall/obsidian/data";
 import type { ApiContext, ApiRequest, ApiResponseWriter } from "../api.types";
 import { parseJsonBody, readBody, sendError, sendOk } from "../api.types";
 
@@ -203,7 +204,13 @@ export async function handleDissolveProject(
 	);
 
 	ctx.plugin.hierarchyService.invalidateGraph();
-	ctx.plugin.dataLayer?.invalidateGroups(["cards", "dashboard", "review"]);
+	ctx.plugin.dataLayer?.invalidateGroups([
+		G.CARDS,
+		G.BROWSER,
+		G.DASHBOARD,
+		G.PANEL,
+		G.REVIEW,
+	]);
 
 	sendOk(res, { path: body.path, dissolved: count });
 }
@@ -241,7 +248,13 @@ export async function handleToggleNoteReview(
 		ctx.plugin.flashcardManager.enableNoteReview(sourceUid);
 	}
 
-	ctx.plugin.dataLayer?.invalidateGroups(["cards", "dashboard", "review"]);
+	ctx.plugin.dataLayer?.invalidateGroups([
+		G.CARDS,
+		G.BROWSER,
+		G.DASHBOARD,
+		G.PANEL,
+		G.REVIEW,
+	]);
 
 	sendOk(res, {
 		path: file.path,
@@ -314,7 +327,13 @@ export async function handleMoveChildren(
 	);
 
 	ctx.plugin.hierarchyService.invalidateGraph();
-	ctx.plugin.dataLayer?.invalidateGroups(["cards", "dashboard", "review"]);
+	ctx.plugin.dataLayer?.invalidateGroups([
+		G.CARDS,
+		G.BROWSER,
+		G.DASHBOARD,
+		G.PANEL,
+		G.REVIEW,
+	]);
 
 	sendOk(res, {
 		path: body.path,

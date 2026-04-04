@@ -11,6 +11,7 @@ import { ObsidianPersistence } from "@true-recall/obsidian/adapters/ObsidianPers
 import { ObsidianUidPrompt } from "@true-recall/obsidian/adapters/ObsidianUidPrompt";
 import {
 	DataLayer,
+	G,
 	registerQueries as registerDataLayerQueries,
 	setDataLayer,
 	wireDataLayer,
@@ -144,6 +145,13 @@ async function initializeCardStore(
 
 		plugin._disposeWireDataLayer = wireDataLayer(dl, plugin.coreApp.events);
 
+		// Startup race fix: rebuildIndex() runs in an earlier onLayoutReady with
+		// silent=true, so no domain events fire and the DataLayer keeps stale
+		// enrichment data. Re-execute CARDS loaders once the index is populated.
+		plugin.app.workspace.onLayoutReady(() => {
+			dl.invalidateGroups([G.CARDS]);
+		});
+
 		const sCards = performance.now();
 
 		if (plugin.settings.autoBackupOnLoad) {
@@ -191,7 +199,13 @@ function initializeDeletionHandler(plugin: TrueRecallPlugin): void {
 		plugin.app.vault.on("delete", (file) => {
 			if (file instanceof TFile && file.extension === "md") {
 				plugin.hierarchyService.invalidateGraph();
-				plugin.dataLayer?.invalidateGroups(["cards", "dashboard", "review"]);
+				plugin.dataLayer?.invalidateGroups([
+					G.CARDS,
+					G.BROWSER,
+					G.DASHBOARD,
+					G.PANEL,
+					G.REVIEW,
+				]);
 			}
 		}),
 	);
