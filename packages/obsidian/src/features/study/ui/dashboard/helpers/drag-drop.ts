@@ -1,5 +1,4 @@
 import type { Signal } from "@preact/signals";
-import type { FrontmatterService } from "@true-recall/core/flashcard/source/frontmatter.service";
 import type { HierarchyService } from "@true-recall/core/services/notes/hierarchy.service";
 import type TrueRecallPlugin from "@true-recall/obsidian/main";
 import { NamePromptModal } from "@true-recall/obsidian/modals/study/NamePromptModal";
@@ -82,7 +81,6 @@ export function consumeDragState(
 
 export interface DropDeps {
 	app: App;
-	frontmatterService: FrontmatterService;
 	projectManagement: ProjectManagementService;
 	promptProjectName: (defaultName: string) => Promise<string | null>;
 }
@@ -90,7 +88,6 @@ export interface DropDeps {
 export function createDropDeps(plugin: TrueRecallPlugin): DropDeps {
 	return {
 		app: plugin.app,
-		frontmatterService: plugin.flashcardManager.getFrontmatterService(),
 		projectManagement: plugin.projectManagement,
 		promptProjectName: async (defaultName: string) => {
 			const modal = new NamePromptModal(plugin.app, defaultName);
@@ -200,18 +197,15 @@ export async function executeDrop(
 	result: DropResult,
 	deps: DropDeps,
 ): Promise<void> {
-	const { app, frontmatterService } = deps;
+	const { projectManagement } = deps;
 
 	switch (result.action) {
 		case "reparent": {
-			const file = app.vault.getAbstractFileByPath(result.dragPath);
-			if (!(file instanceof TFile)) return;
-
-			if (result.oldParentPath) {
-				const oldParentName = nameFromPath(result.oldParentPath);
-				await frontmatterService.removeParent(file.path, oldParentName);
-			}
-			await frontmatterService.addParent(file.path, result.newParentName);
+			await projectManagement.reparent(
+				result.dragPath,
+				result.oldParentPath,
+				result.newParentName,
+			);
 			new Notice(`Moved "${result.dragName}" under "${result.newParentName}"`);
 			break;
 		}
@@ -220,7 +214,9 @@ export async function executeDrop(
 			const name = await deps.promptProjectName("New Project");
 			if (!name) return;
 
-			const targetFile = app.vault.getAbstractFileByPath(result.targetPath);
+			const targetFile = deps.app.vault.getAbstractFileByPath(
+				result.targetPath,
+			);
 			if (!(targetFile instanceof TFile)) return;
 
 			const folder = targetFile.parent?.path ?? "";
@@ -229,7 +225,7 @@ export async function executeDrop(
 				? [result.dragPath]
 				: [result.dragPath, result.targetPath];
 
-			await deps.projectManagement.createProjectWithChildren(
+			await projectManagement.createProjectWithChildren(
 				name,
 				folder,
 				childPaths,
@@ -238,10 +234,10 @@ export async function executeDrop(
 		}
 
 		case "unnest": {
-			const file = app.vault.getAbstractFileByPath(result.dragPath);
-			if (!(file instanceof TFile)) return;
-
-			await frontmatterService.removeParent(file.path, result.parentName);
+			await projectManagement.detachFromProject(
+				result.dragPath,
+				result.parentName,
+			);
 			new Notice(`Moved "${result.dragName}" to root`);
 			break;
 		}

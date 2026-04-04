@@ -1,7 +1,7 @@
 import type { Signal } from "@preact/signals";
 import { CreateProjectModal } from "@true-recall/obsidian/modals/study/CreateProjectModal";
 import { usePlugin } from "@true-recall/obsidian/preact";
-import { Notice, TFile } from "obsidian";
+import { Notice } from "obsidian";
 import { useCallback } from "preact/hooks";
 import type { DashboardNoteEntry } from "../types";
 import { flattenNodes, ProjectSuggestModal } from "./use-project-actions";
@@ -16,6 +16,7 @@ export function useNoteBulkActions({
 	exitSelection: () => void;
 }) {
 	const plugin = usePlugin();
+	const service = plugin.projectManagement;
 
 	const handleCreateProjectFromSelected = useCallback(async () => {
 		if (selectedPaths.value.size === 0) return;
@@ -24,28 +25,19 @@ export function useNoteBulkActions({
 		const result = await modal.openAndWait();
 		if (result.cancelled) return;
 
-		await plugin.projectManagement.createProjectWithChildren(
-			result.name,
-			result.folder,
-			[...selectedPaths.value],
-		);
+		await service.createProjectWithChildren(result.name, result.folder, [
+			...selectedPaths.value,
+		]);
 		exitSelection();
-	}, [plugin, selectedPaths, exitSelection]);
+	}, [plugin, service, selectedPaths, exitSelection]);
 
 	const handleArchiveSelected = useCallback(async () => {
 		if (selectedPaths.value.size === 0) return;
 
-		const frontmatterService = plugin.flashcardManager.getFrontmatterService();
-		for (const path of selectedPaths.value) {
-			const file = plugin.app.vault.getAbstractFileByPath(path);
-			if (file instanceof TFile) {
-				await frontmatterService.setArchive(file.path, true);
-			}
-		}
-
+		await service.setArchiveBatch([...selectedPaths.value], true);
 		new Notice(`Archived ${selectedPaths.value.size} notes`);
 		exitSelection();
-	}, [plugin, selectedPaths, exitSelection]);
+	}, [service, selectedPaths, exitSelection]);
 
 	const handleStudySelected = useCallback(() => {
 		if (selectedPaths.value.size === 0) return;
@@ -76,19 +68,12 @@ export function useNoteBulkActions({
 		const target = await modal.openAndWait();
 		if (!target) return;
 
-		const frontmatterService = plugin.flashcardManager.getFrontmatterService();
-		for (const path of selectedPaths.value) {
-			const file = plugin.app.vault.getAbstractFileByPath(path);
-			if (file instanceof TFile) {
-				await frontmatterService.addParent(file.path, target.name);
-			}
-		}
-
+		await service.assignToProject([...selectedPaths.value], target.name);
 		new Notice(
 			`Assigned ${selectedPaths.value.size} notes to "${target.name}"`,
 		);
 		exitSelection();
-	}, [plugin, selectedPaths, exitSelection]);
+	}, [plugin, service, selectedPaths, exitSelection]);
 
 	return {
 		handleCreateProjectFromSelected,

@@ -79,39 +79,51 @@ export function useProjectDragDrop() {
 		[dragState, plugin],
 	);
 
-	const handleRootDrop = useCallback(
+	const unnestItem = useCallback(
+		(ds: DragState) => {
+			if (!ds.item.parentPath) return;
+			const parentName = (
+				ds.item.parentPath.split("/").pop() ?? ds.item.parentPath
+			).replace(/\.md$/, "");
+
+			const result: DropResult = {
+				action: "unnest",
+				dragPath: ds.item.path,
+				dragName: ds.item.name,
+				parentPath: ds.item.parentPath,
+				parentName,
+			};
+			void executeDrop(result, createDropDeps(plugin));
+		},
+		[plugin],
+	);
+
+	const handleTopDrop = useCallback(
 		(e: DragEvent) => {
 			const ds = consumeDragState(e, dragState);
 			if (!ds) return;
 
 			if (ds.item.parentPath) {
-				const parentName = (
-					ds.item.parentPath.split("/").pop() ?? ds.item.parentPath
-				).replace(/\.md$/, "");
-
-				const result: DropResult = {
-					action: "unnest",
-					dragPath: ds.item.path,
-					dragName: ds.item.name,
-					parentPath: ds.item.parentPath,
-					parentName,
-				};
-
-				void executeDrop(result, createDropDeps(plugin));
+				unnestItem(ds);
 			} else {
-				// Unassigned note → create project
-				const result: DropResult = {
-					action: "create-project",
-					dragPath: ds.item.path,
-					dragName: ds.item.name,
-					targetPath: ds.item.path,
-					targetName: ds.item.name,
-				};
-
-				void executeDrop(result, createDropDeps(plugin));
+				void plugin.projectManagement.convertToProject(ds.item.path);
 			}
 		},
-		[dragState, plugin],
+		[dragState, plugin, unnestItem],
+	);
+
+	const handleBottomDrop = useCallback(
+		(e: DragEvent) => {
+			const ds = consumeDragState(e, dragState);
+			if (!ds) return;
+
+			if (ds.item.parentPath) {
+				unnestItem(ds);
+			} else {
+				void plugin.projectManagement.setArchive(ds.item.path, true);
+			}
+		},
+		[dragState, plugin, unnestItem],
 	);
 
 	return {
@@ -120,6 +132,7 @@ export function useProjectDragDrop() {
 		handleDragEnd,
 		handleDragOver,
 		handleDrop,
-		handleRootDrop,
+		handleTopDrop,
+		handleBottomDrop,
 	};
 }

@@ -64,9 +64,7 @@ export function registerEventHandlers(plugin: TrueRecallPlugin): void {
 							.setTitle("Create project note")
 							.setIcon("folder-plus")
 							.onClick(async () => {
-								const content = ["---", "include: folder", "---", ""].join(
-									"\n",
-								);
+								const content = ["---", "project: true", "---", ""].join("\n");
 								await plugin.app.vault.create(notePath, content);
 								await plugin.app.workspace.openLinkText(notePath, "", false);
 							});

@@ -307,6 +307,10 @@ export class TrueRecallApp {
 			this.hierarchyService.invalidateGraph();
 			this.events.emit("hierarchy:changed", {});
 		});
+		this.frontmatterIndex.onFieldChange("project", () => {
+			this.hierarchyService.invalidateGraph();
+			this.events.emit("hierarchy:changed", {});
+		});
 		this.frontmatterIndex.onFieldChange("archive", () => {
 			this.events.emit("hierarchy:changed", {});
 		});
