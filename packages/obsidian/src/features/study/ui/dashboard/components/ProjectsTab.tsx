@@ -63,7 +63,8 @@ export function ProjectsTab({
 		handleDragEnd,
 		handleDragOver,
 		handleDrop,
-		handleRootDrop,
+		handleTopDrop,
+		handleBottomDrop,
 	} = useProjectDragDrop();
 
 	useEffect(() => {
@@ -151,9 +152,9 @@ export function ProjectsTab({
 					label={
 						dragState.value.item.parentPath
 							? "Move to root level"
-							: "Create project"
+							: "Convert to project"
 					}
-					onDrop={handleRootDrop}
+					onDrop={handleTopDrop}
 				/>
 			)}
 
@@ -254,11 +255,9 @@ export function ProjectsTab({
 				<RootDropZone
 					position="bottom"
 					label={
-						dragState.value.item.parentPath
-							? "Move to root level"
-							: "Create project"
+						dragState.value.item.parentPath ? "Move to root level" : "Archive"
 					}
-					onDrop={handleRootDrop}
+					onDrop={handleBottomDrop}
 				/>
 			)}
 		</div>
