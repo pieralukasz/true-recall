@@ -162,7 +162,7 @@ export class SessionPersistenceService {
 	 * Remove the last review (for undo functionality)
 	 */
 	removeLastReview(
-		_cardId: string,
+		cardId: string,
 		wasNewCard: boolean,
 		rating?: Grade,
 		previousState?: State,
@@ -189,9 +189,11 @@ export class SessionPersistenceService {
 
 		this.store.stats.decrementDailyStats(today, statsDecrement);
 
-		// Note: We don't remove cardId from daily_reviewed_cards because:
-		// 1. The card might have been reviewed multiple times
-		// 2. The undo is just for the rating, not for "unlearning" the card
+		// Remove from daily_reviewed_cards when reverting a first review so
+		// countByState doesn't hide the card from panel header counts.
+		if (previousState === State.New) {
+			this.store.stats.removeReviewedCard(today, cardId);
+		}
 	}
 
 	/**
