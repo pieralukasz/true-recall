@@ -1,13 +1,6 @@
 import type { ComponentChildren } from "preact";
 import { ActionButton } from "./ActionButton";
 
-/** @deprecated Use ActionButton variant="primary" instead */
-const PRIMARY_BTN = "mod-cta ep-btn";
-/** @deprecated Use ActionButton variant="outline" instead */
-const SECONDARY_BTN = "ep-btn ep-btn-outline";
-
-export { PRIMARY_BTN, SECONDARY_BTN };
-
 export interface ModalFooterProps {
 	onCancel: () => void;
 	onConfirm?: () => void;

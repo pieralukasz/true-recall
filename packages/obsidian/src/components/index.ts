@@ -93,8 +93,6 @@ export {
 export {
 	ModalFooter,
 	type ModalFooterProps,
-	PRIMARY_BTN,
-	SECONDARY_BTN,
 } from "./ModalFooter";
 export {
 	OptionCheckbox,

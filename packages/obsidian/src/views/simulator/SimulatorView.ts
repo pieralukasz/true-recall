@@ -44,7 +44,7 @@ export class SimulatorView extends ItemView {
 	}
 
 	getDisplayText(): string {
-		return "FSRS simulator";
+		return "FSRS Simulator";
 	}
 
 	getIcon(): string {

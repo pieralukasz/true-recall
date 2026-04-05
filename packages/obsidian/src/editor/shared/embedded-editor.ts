@@ -100,6 +100,7 @@ function resolveEditorPrototype(
 
 	// Intentionally passing null — we only need the editor prototype, not an actual file
 	const nullFile: TFile | null = null;
+	// eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- embedRegistry returns untyped Obsidian internal; cast is required
 	const widgetEditorView = embedRegistry.embedByExtension.md(
 		{ app, containerEl: document.createElement("div") },
 		nullFile,

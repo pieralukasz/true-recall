@@ -26,7 +26,7 @@ export class NoteTypeSuggestModal extends SuggestModal<SuggestItem> {
 
 	renderSuggestion(item: SuggestItem, el: HTMLElement): void {
 		if (item === "create") {
-			el.setText("+ Create new note type");
+			el.setText("+ Create New Note Type");
 			el.addClasses(["mod-complex", "u-text-accent"]);
 			return;
 		}
