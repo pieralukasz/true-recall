@@ -53,7 +53,9 @@ import {
 	handleAddFlashcardUid,
 	handleDissolveProject,
 	handleMoveChildren,
+	handleNoteCards,
 	handleNoteReviewStatus,
+	handleNoteStats,
 	handleSetArchive,
 	handleSetParent,
 	handleSetPresetForNote,
@@ -161,6 +163,8 @@ const routes: Route[] = [
 	route("POST", "/open-note", handleOpenNote),
 
 	// Notes / Frontmatter
+	route("GET", "/notes/stats", handleNoteStats),
+	route("GET", "/notes/cards", handleNoteCards),
 	route("POST", "/notes/add-uid", handleAddFlashcardUid),
 	route("POST", "/notes/set-preset", handleSetPresetForNote),
 	route("POST", "/notes/set-parent", handleSetParent),

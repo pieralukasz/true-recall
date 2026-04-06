@@ -1,4 +1,5 @@
 import { G } from "@true-recall/obsidian/data";
+import { State } from "ts-fsrs";
 import type { ApiContext, ApiRequest, ApiResponseWriter } from "../api.types";
 import { parseJsonBody, readBody, sendError, sendOk } from "../api.types";
 
@@ -339,5 +340,194 @@ export async function handleMoveChildren(
 		path: body.path,
 		targetParent: body.target_parent_name,
 		moved: count,
+	});
+}
+
+// ── Note stats & cards ──────────────────────────────────────────
+
+interface ResolvedNote {
+	sourceUid: string;
+	noteName: string;
+	notePath: string;
+}
+
+async function resolveSourceUid(
+	req: ApiRequest,
+	res: ApiResponseWriter,
+	ctx: ApiContext,
+): Promise<ResolvedNote | null> {
+	const url = new URL(req.url ?? "/", "http://localhost");
+	const sourceUidParam = url.searchParams.get("source_uid");
+	const pathParam = url.searchParams.get("path");
+
+	const frontmatterService =
+		ctx.plugin.flashcardManager.getFrontmatterService();
+
+	let sourceUid: string | null = null;
+	let notePath: string | null = null;
+
+	if (sourceUidParam) {
+		sourceUid = sourceUidParam;
+		notePath =
+			ctx.plugin.frontmatterIndex.getFileByValue(
+				"flashcard_uid",
+				sourceUidParam,
+			) ?? null;
+	} else if (pathParam) {
+		const abstractFile = ctx.plugin.app.vault.getAbstractFileByPath(pathParam);
+		if (!abstractFile || !("extension" in abstractFile)) {
+			sendError(res, 404, `File not found: ${pathParam}`);
+			return null;
+		}
+		notePath = pathParam;
+		sourceUid = await frontmatterService.getSourceNoteUid(pathParam);
+	} else {
+		const file = ctx.plugin.app.workspace.getActiveFile();
+		if (!file || file.extension !== "md") {
+			sendError(
+				res,
+				404,
+				"No active markdown note and no path or source_uid provided",
+			);
+			return null;
+		}
+		notePath = file.path;
+		sourceUid = await frontmatterService.getSourceNoteUid(file.path);
+	}
+
+	if (!sourceUid) {
+		sendError(res, 404, "Note has no flashcard_uid in frontmatter");
+		return null;
+	}
+
+	return {
+		sourceUid,
+		noteName: notePath ? nameFromPath(notePath) : sourceUid,
+		notePath: notePath ?? "",
+	};
+}
+
+export async function handleNoteStats(
+	req: ApiRequest,
+	res: ApiResponseWriter,
+	ctx: ApiContext,
+): Promise<void> {
+	if (!ctx.plugin.isStoreReady()) {
+		sendError(res, 503, "Database not ready");
+		return;
+	}
+
+	const resolved = await resolveSourceUid(req, res, ctx);
+	if (!resolved) return;
+
+	const cards = ctx.plugin.cardStore.cards.getCardsBySourceUid(
+		resolved.sourceUid,
+	);
+
+	const now = new Date();
+	let newCount = 0;
+	let learning = 0;
+	let review = 0;
+	let relearning = 0;
+	let suspended = 0;
+	let buried = 0;
+
+	for (const card of cards) {
+		if (card.suspended) {
+			suspended++;
+			continue;
+		}
+		if (card.buriedUntil && new Date(card.buriedUntil) > now) {
+			buried++;
+			continue;
+		}
+		switch (card.state) {
+			case State.New:
+				newCount++;
+				break;
+			case State.Learning:
+				learning++;
+				break;
+			case State.Review:
+				review++;
+				break;
+			case State.Relearning:
+				relearning++;
+				break;
+		}
+	}
+
+	sendOk(res, {
+		sourceUid: resolved.sourceUid,
+		noteName: resolved.noteName,
+		notePath: resolved.notePath,
+		counts: {
+			new: newCount,
+			learning,
+			review,
+			relearning,
+			suspended,
+			buried,
+			total: cards.length,
+		},
+	});
+}
+
+export async function handleNoteCards(
+	req: ApiRequest,
+	res: ApiResponseWriter,
+	ctx: ApiContext,
+): Promise<void> {
+	if (!ctx.plugin.isStoreReady()) {
+		sendError(res, 503, "Database not ready");
+		return;
+	}
+
+	const resolved = await resolveSourceUid(req, res, ctx);
+	if (!resolved) return;
+
+	const url = new URL(req.url ?? "/", "http://localhost");
+	const stateParam = url.searchParams.get("state");
+	const limit = Math.min(Number(url.searchParams.get("limit")) || 50, 200);
+
+	let allCards = ctx.plugin.cardStore.cards.getCardsBySourceUid(
+		resolved.sourceUid,
+	);
+
+	if (stateParam !== null) {
+		const stateMap: Record<string, State> = {
+			new: State.New,
+			learning: State.Learning,
+			review: State.Review,
+			relearning: State.Relearning,
+		};
+		const stateValue = stateMap[stateParam];
+		if (stateValue !== undefined) {
+			allCards = allCards.filter((c) => c.state === stateValue);
+		}
+	}
+
+	const total = allCards.length;
+	const cards = allCards.slice(0, limit).map((c) => ({
+		id: c.id,
+		question: c.question ?? "",
+		answer: c.answer ?? "",
+		state: c.state,
+		due: c.due,
+		stability: c.stability,
+		difficulty: c.difficulty,
+		reps: c.reps,
+		lapses: c.lapses,
+		suspended: c.suspended ?? false,
+		cardType: c.cardType ?? "basic",
+	}));
+
+	sendOk(res, {
+		sourceUid: resolved.sourceUid,
+		noteName: resolved.noteName,
+		notePath: resolved.notePath,
+		total,
+		count: cards.length,
+		cards,
 	});
 }
