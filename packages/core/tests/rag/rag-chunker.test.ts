@@ -13,10 +13,9 @@ describe("chunkNote", () => {
 		expect(chunks[0]?.tokenCount).toBeGreaterThan(0);
 	});
 
-	it("returns empty-ish chunk for empty input", () => {
+	it("returns no chunks for empty input", () => {
 		const chunks = chunkNote("");
-		expect(chunks).toHaveLength(1);
-		expect(chunks[0]?.tokenCount).toBe(0);
+		expect(chunks).toHaveLength(0);
 	});
 
 	it("splits by headings and builds breadcrumbs", () => {
@@ -111,7 +110,6 @@ describe("chunkFlashcard", () => {
 	it("handles empty fields gracefully", () => {
 		const json = JSON.stringify({});
 		const chunks = chunkFlashcard(json);
-		expect(chunks).toHaveLength(1);
-		expect(chunks[0]?.content).toBe("");
+		expect(chunks).toHaveLength(0);
 	});
 });

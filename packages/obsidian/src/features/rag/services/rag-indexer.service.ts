@@ -34,6 +34,7 @@ export interface IndexResult {
 	indexed: number;
 	skipped: number;
 	errors: number;
+	removed: number;
 	embedded: number;
 	embeddingTruncated: boolean;
 	embeddingRemaining: number;
@@ -63,11 +64,18 @@ export class RagIndexerService {
 
 	async fullReindex(
 		onProgress?: (progress: IndexProgress) => void,
+		options?: { force?: boolean },
 	): Promise<IndexResult> {
+		if (options?.force) {
+			this.actions.deleteAll();
+			this.searchService?.invalidateCache();
+		}
+
 		const result: IndexResult = {
 			indexed: 0,
 			skipped: 0,
 			errors: 0,
+			removed: 0,
 			embedded: 0,
 			embeddingTruncated: false,
 			embeddingRemaining: 0,
@@ -99,11 +107,35 @@ export class RagIndexerService {
 			if (i % 20 === 0) await new Promise((r) => setTimeout(r, 0));
 		}
 
+		// Clean up orphaned note sources (deleted from vault but still in index)
+		const indexedSources = this.actions.getIndexedSources();
+		const vaultPaths = new Set(files.map((f) => f.path));
+		for (const src of indexedSources) {
+			if (src.source_type === "note" && !vaultPaths.has(src.source_id)) {
+				this.removeSource("note", src.source_id);
+				result.removed++;
+			}
+		}
+
 		if (s.ragIndexFlashcards) {
 			const fcResult = await this.indexFlashcards(onProgress);
 			result.flashcardsIndexed = fcResult.indexed;
 			result.flashcardsSkipped = fcResult.skipped;
 			result.errors += fcResult.errors;
+
+			// Clean up orphaned flashcard sources
+			const activeCardIds = new Set(
+				this.actions.getFlashcardData().map((c) => c.id),
+			);
+			for (const src of indexedSources) {
+				if (
+					src.source_type === "flashcard" &&
+					!activeCardIds.has(src.source_id)
+				) {
+					this.removeSource("flashcard", src.source_id);
+					result.removed++;
+				}
+			}
 		}
 
 		const embedResult = await this.embedPending(onProgress);

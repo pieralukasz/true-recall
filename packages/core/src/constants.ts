@@ -279,7 +279,7 @@ export const RAG_CONFIG = {
 	rrf_k: 60,
 	defaultTopK: 10,
 	embeddingDims: 1024,
-	cosineThreshold: 0.5,
+	cosineThreshold: 0.35,
 } as const;
 
 export const TRUERECALL_WEB_URL = "https://truerecall.app";

@@ -408,7 +408,7 @@ function FooterBar({
 
 	const openNote = useCallback(() => {
 		if (sourceNoteFile) {
-			void app.workspace.getLeaf().openFile(sourceNoteFile);
+			void app.workspace.getLeaf("tab").openFile(sourceNoteFile);
 		}
 	}, [app, sourceNoteFile]);
 
