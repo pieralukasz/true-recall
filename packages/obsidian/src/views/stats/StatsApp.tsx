@@ -45,7 +45,7 @@ export function StatsApp() {
 	);
 	const timeRange = useSignal<StatsTimeRange>("1m");
 	const settings = settingsSignal.value;
-	const allCards = [...allMeta.value.values()];
+	const allCards = useMemo(() => [...allMeta.value.values()], [allMeta.value]);
 	const [renderStage, setRenderStage] = useState(0);
 	const initialStagingDone = useRef(false);
 
