@@ -46,7 +46,10 @@ import { notify } from "@true-recall/obsidian/services/notification.service";
 import { ProjectManagementService } from "@true-recall/obsidian/services/project-management.service";
 import { TrueRecallSettingTab } from "@true-recall/obsidian/settings";
 import type { AppStore } from "@true-recall/obsidian/store";
-import { isDesktop } from "@true-recall/obsidian/utils/platform";
+import {
+	isDesktop,
+	isViewAllowedOnCurrentPlatform,
+} from "@true-recall/obsidian/utils/platform";
 import { CardBrowserView } from "@true-recall/obsidian/views/browser/CardBrowserView";
 import { KnowledgeChatView } from "@true-recall/obsidian/views/chat/KnowledgeChatView";
 import { DashboardView } from "@true-recall/obsidian/views/dashboard/DashboardView";
@@ -231,19 +234,30 @@ export default class TrueRecallPlugin extends Plugin {
 
 		const tStore = performance.now();
 
-		this.registerView(
+		const registerIfAllowed = (
+			viewType: string,
+			factory: (
+				leaf: import("obsidian").WorkspaceLeaf,
+			) => import("obsidian").View,
+		) => {
+			if (isViewAllowedOnCurrentPlatform(viewType)) {
+				this.registerView(viewType, factory);
+			}
+		};
+
+		registerIfAllowed(
 			VIEW_TYPE_FLASHCARD_PANEL,
 			(leaf) => new FlashcardPanelView(leaf, this),
 		);
 
-		this.registerView(VIEW_TYPE_REVIEW, (leaf) => new ReviewView(leaf, this));
+		registerIfAllowed(VIEW_TYPE_REVIEW, (leaf) => new ReviewView(leaf, this));
 
-		this.registerView(
+		registerIfAllowed(
 			VIEW_TYPE_SIMULATOR,
 			(leaf) => new SimulatorView(leaf, this),
 		);
 
-		this.registerView(
+		registerIfAllowed(
 			VIEW_TYPE_DASHBOARD,
 			(leaf) => new DashboardView(leaf, this),
 		);
@@ -258,15 +272,15 @@ export default class TrueRecallPlugin extends Plugin {
 			},
 		);
 
-		this.registerView(
+		registerIfAllowed(
 			VIEW_TYPE_CARD_BROWSER,
 			(leaf) => new CardBrowserView(leaf, this),
 		);
 
-		this.registerView(VIEW_TYPE_STATS, (leaf) => new StatsView(leaf, this));
+		registerIfAllowed(VIEW_TYPE_STATS, (leaf) => new StatsView(leaf, this));
 
 		if (ENABLE_RAG) {
-			this.registerView(
+			registerIfAllowed(
 				VIEW_TYPE_KNOWLEDGE_CHAT,
 				(leaf) => new KnowledgeChatView(leaf, this),
 			);

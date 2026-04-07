@@ -22,7 +22,7 @@ export function SelectionBar({
 	const btnCls =
 		"ep:px-2 ep:py-1 ep:rounded ep:text-obs-muted ep:hover:text-obs-normal ep:hover:bg-obs-modifier-hover ep:transition-colors";
 	return (
-		<div class="ep:flex ep:items-center ep:gap-2 ep:px-3 ep:py-2 ep:bg-obs-secondary ep:rounded-lg ep:mb-2 ep:text-ui-small">
+		<div class="ep:flex ep:flex-wrap ep:items-center ep:gap-2 ep:px-3 ep:py-2 ep:bg-obs-secondary ep:rounded-lg ep:mb-2 ep:text-ui-small">
 			<span class="ep:text-obs-muted">{selectedCount} selected</span>
 			<div class="ep:flex-1" />
 			<Clickable class={btnCls} onClick={onSelectAll}>

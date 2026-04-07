@@ -1,5 +1,6 @@
 import { Clickable } from "@true-recall/obsidian/components";
 import { cn } from "@true-recall/obsidian/utils/cn";
+import { isMobile } from "@true-recall/obsidian/utils/platform";
 import type { DashboardTab } from "../types";
 
 interface DashboardTabsProps {
@@ -43,7 +44,13 @@ export function DashboardTabs({
 
 	return (
 		<div class="ep:border-b ep:border-obs-border">
-			<div class="ep:flex ep:items-center ep:gap-6" role="tablist">
+			<div
+				class={cn(
+					"ep:flex ep:items-center",
+					isMobile() ? "ep:gap-3" : "ep:gap-6",
+				)}
+				role="tablist"
+			>
 				{tabs.map(({ id, label }) => {
 					const isActive = activeTab === id;
 					const count = counts[id];

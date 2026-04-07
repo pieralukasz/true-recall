@@ -1,4 +1,5 @@
 import { ENABLE_RAG } from "@true-recall/core/constants";
+import { isDesktop } from "@true-recall/obsidian/utils/platform";
 import type TrueRecallPlugin from "../main";
 import {
 	editSelectionAsFlashcard,
@@ -13,7 +14,11 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 	plugin.addCommand({
 		id: "open-flashcard-panel",
 		name: "Open flashcard panel",
-		callback: () => void plugin.activateView(),
+		checkCallback: (checking) => {
+			if (!isDesktop()) return false;
+			if (!checking) void plugin.activateView();
+			return true;
+		},
 	});
 
 	plugin.addCommand({
@@ -46,19 +51,31 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 	plugin.addCommand({
 		id: "open-card-browser",
 		name: "Open card browser",
-		callback: () => void plugin.openCardBrowser(),
+		checkCallback: (checking) => {
+			if (!isDesktop()) return false;
+			if (!checking) void plugin.openCardBrowser();
+			return true;
+		},
 	});
 
 	plugin.addCommand({
 		id: "open-fsrs-simulator",
 		name: "Open FSRS simulator",
-		callback: () => void plugin.openSimulator(),
+		checkCallback: (checking) => {
+			if (!isDesktop()) return false;
+			if (!checking) void plugin.openSimulator();
+			return true;
+		},
 	});
 
 	plugin.addCommand({
 		id: "open-stats",
 		name: "Open statistics",
-		callback: () => void plugin.openStats(),
+		checkCallback: (checking) => {
+			if (!isDesktop()) return false;
+			if (!checking) void plugin.openStats();
+			return true;
+		},
 	});
 
 	plugin.addCommand({
@@ -229,7 +246,11 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 		plugin.addCommand({
 			id: "open-knowledge-chat",
 			name: "Chat with knowledge base",
-			callback: () => void plugin.openKnowledgeChat(),
+			checkCallback: (checking) => {
+				if (!isDesktop()) return false;
+				if (!checking) void plugin.openKnowledgeChat();
+				return true;
+			},
 		});
 	}
 

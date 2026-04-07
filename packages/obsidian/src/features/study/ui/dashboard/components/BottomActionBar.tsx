@@ -1,5 +1,6 @@
 import { Clickable } from "@true-recall/obsidian/components";
 import { usePlugin } from "@true-recall/obsidian/preact";
+import { isMobile } from "@true-recall/obsidian/utils/platform";
 import { setIcon } from "obsidian";
 import { useEffect, useRef } from "preact/hooks";
 
@@ -43,6 +44,8 @@ function BarButton({
 
 export function BottomActionBar() {
 	const plugin = usePlugin();
+
+	if (isMobile()) return null;
 
 	return (
 		<div class="ep:shrink-0 ep:bg-obs-primary">

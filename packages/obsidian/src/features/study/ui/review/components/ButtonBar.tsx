@@ -1,6 +1,7 @@
 import type { SchedulingPreview } from "@true-recall/core";
 import { Clickable } from "@true-recall/obsidian/components";
 import { useIcon } from "@true-recall/obsidian/preact/hooks";
+import { isMobile } from "@true-recall/obsidian/utils/platform";
 import { cva } from "class-variance-authority";
 import type { Grade } from "ts-fsrs";
 import { Rating } from "ts-fsrs";
@@ -55,75 +56,92 @@ export function ButtonBar({
 	const typeInCurrent =
 		typeInMode === "ai" ? "AI" : typeInMode === "diff" ? "Diff" : "Off";
 
+	const mobile = isMobile();
+
+	const ratingButtons = !isAnswerRevealed ? (
+		<Clickable
+			stopPropagation={false}
+			class="ep-btn mod-cta"
+			onClick={onShowAnswer}
+		>
+			Show answer
+		</Clickable>
+	) : (
+		<>
+			<RatingButton
+				label="Again"
+				rating={Rating.Again}
+				interval={preview?.again.interval}
+				showInterval={showNextReviewTime && !mobile}
+				onAnswer={onAnswer}
+				disabled={isRatingLocked}
+			/>
+			<RatingButton
+				label="Hard"
+				rating={Rating.Hard}
+				interval={preview?.hard.interval}
+				showInterval={showNextReviewTime && !mobile}
+				onAnswer={onAnswer}
+				disabled={isRatingLocked}
+			/>
+			<RatingButton
+				label="Good"
+				rating={Rating.Good}
+				interval={preview?.good.interval}
+				showInterval={showNextReviewTime && !mobile}
+				onAnswer={onAnswer}
+				disabled={isRatingLocked}
+			/>
+			<RatingButton
+				label="Easy"
+				rating={Rating.Easy}
+				interval={preview?.easy.interval}
+				showInterval={showNextReviewTime && !mobile}
+				onAnswer={onAnswer}
+				disabled={isRatingLocked}
+			/>
+		</>
+	);
+
+	const secondaryButtons = (
+		<div class="ep:flex ep:items-center ep:gap-2">
+			<Clickable
+				class={typeInButtonVariants({ mode: typeInMode })}
+				aria-label={`Cycle type in mode (current: ${typeInCurrent})`}
+				aria-pressed={typeInEnabled}
+				title={`Cycle type in mode (T) \u00B7 current: ${typeInCurrent}`}
+				onClick={onCycleTypeInMode}
+			>
+				{typeInLabel}
+			</Clickable>
+
+			<Clickable
+				class="ep:flex ep:items-center ep:justify-center ep:w-10 ep:h-10 ep:p-0 ep:rounded-lg ep:bg-obs-modifier-hover ep:text-obs-muted ep:transition-colors ep:hover:bg-obs-border ep:hover:text-obs-normal ep:active:scale-95"
+				aria-label="Card actions"
+				onClick={onActionsMenu}
+			>
+				<div ref={menuIconRef} />
+			</Clickable>
+		</div>
+	);
+
+	if (mobile) {
+		return (
+			<div class="true-recall-review-buttons ep:flex ep:flex-col ep:gap-2 ep:border-t ep:border-obs-border ep:shrink-0 ep:px-3 ep:pt-2 ep:pb-3">
+				<div class="ep:flex ep:justify-center ep:gap-2">{ratingButtons}</div>
+				<div class="ep:flex ep:justify-center">{secondaryButtons}</div>
+			</div>
+		);
+	}
+
 	return (
 		<div class="true-recall-review-buttons ep:relative ep:flex ep:justify-center ep:gap-3 ep:border-t ep:border-obs-border ep:flex-nowrap ep:shrink-0 ep:p-4">
 			<div class="ep:flex ep:items-center ep:justify-center ep:w-full ep:relative">
 				<div class="ep:flex ep:justify-center ep:gap-3 ep:flex-nowrap ep:py-4">
-					{!isAnswerRevealed ? (
-						<Clickable
-							stopPropagation={false}
-							class="ep-btn mod-cta"
-							onClick={onShowAnswer}
-						>
-							Show answer
-						</Clickable>
-					) : (
-						<>
-							<RatingButton
-								label="Again"
-								rating={Rating.Again}
-								interval={preview?.again.interval}
-								showInterval={showNextReviewTime}
-								onAnswer={onAnswer}
-								disabled={isRatingLocked}
-							/>
-							<RatingButton
-								label="Hard"
-								rating={Rating.Hard}
-								interval={preview?.hard.interval}
-								showInterval={showNextReviewTime}
-								onAnswer={onAnswer}
-								disabled={isRatingLocked}
-							/>
-							<RatingButton
-								label="Good"
-								rating={Rating.Good}
-								interval={preview?.good.interval}
-								showInterval={showNextReviewTime}
-								onAnswer={onAnswer}
-								disabled={isRatingLocked}
-							/>
-							<RatingButton
-								label="Easy"
-								rating={Rating.Easy}
-								interval={preview?.easy.interval}
-								showInterval={showNextReviewTime}
-								onAnswer={onAnswer}
-								disabled={isRatingLocked}
-							/>
-						</>
-					)}
+					{ratingButtons}
 				</div>
 
-				<div class="ep:flex ep:items-center ep:gap-2 ep:absolute ep:right-0">
-					<Clickable
-						class={typeInButtonVariants({ mode: typeInMode })}
-						aria-label={`Cycle type in mode (current: ${typeInCurrent})`}
-						aria-pressed={typeInEnabled}
-						title={`Cycle type in mode (T) \u00B7 current: ${typeInCurrent}`}
-						onClick={onCycleTypeInMode}
-					>
-						{typeInLabel}
-					</Clickable>
-
-					<Clickable
-						class="ep:flex ep:items-center ep:justify-center ep:w-10 ep:h-10 ep:p-0 ep:rounded-lg ep:bg-obs-modifier-hover ep:text-obs-muted ep:transition-colors ep:hover:bg-obs-border ep:hover:text-obs-normal ep:active:scale-95"
-						aria-label="Card actions"
-						onClick={onActionsMenu}
-					>
-						<div ref={menuIconRef} />
-					</Clickable>
-				</div>
+				<div class="ep:absolute ep:right-0">{secondaryButtons}</div>
 			</div>
 		</div>
 	);
