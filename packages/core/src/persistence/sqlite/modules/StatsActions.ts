@@ -983,7 +983,16 @@ export class StatsActions {
 		);
 	}
 
-	upsertReviewLogFromRemote(data: ReviewLogForSync): void {
+	upsertReviewLogFromRemote(data: ReviewLogForSync): boolean {
+		// LWW: skip if local version is newer or equal
+		const existing = this.db.get<{ updated_at: number }>(
+			`SELECT updated_at FROM review_log WHERE id = ?`,
+			[data.id],
+		);
+		if (existing && existing.updated_at >= (data.updatedAt ?? 0)) {
+			return false;
+		}
+
 		this.db.run(
 			`
             INSERT OR REPLACE INTO review_log (
@@ -1005,6 +1014,7 @@ export class StatsActions {
 				data.presetName ?? null,
 			],
 		);
+		return true;
 	}
 
 	getReviewLogForSync(id: string): ReviewLogForSync | null {

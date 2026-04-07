@@ -727,8 +727,17 @@ export class CardActions {
 
 	upsertFromRemote(
 		data: FSRSCardData & { updatedAt?: number; deletedAt?: number | null },
-	): void {
+	): boolean {
 		const now = Date.now();
+
+		// LWW: skip if local version is newer or equal
+		const existing = this.db.get<{ updated_at: number }>(
+			`SELECT updated_at FROM cards WHERE id = ?`,
+			[data.id],
+		);
+		if (existing && existing.updated_at >= (data.updatedAt ?? 0)) {
+			return false;
+		}
 
 		const { noteTypeId, fieldsJson, templateOrd } = resolveNoteMapping(data);
 
@@ -782,6 +791,7 @@ export class CardActions {
 				data.sourceUid ?? null,
 			],
 		);
+		return true;
 	}
 
 	// ── Lookup methods ────────────────────────────────────────

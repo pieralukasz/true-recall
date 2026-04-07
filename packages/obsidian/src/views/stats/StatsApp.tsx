@@ -34,7 +34,7 @@ import {
 } from "@true-recall/obsidian/features/metrics/ui/stats/components";
 import { useStatsData } from "@true-recall/obsidian/features/metrics/ui/stats/hooks/use-stats-data";
 import { usePlugin } from "@true-recall/obsidian/preact";
-import { useEffect, useMemo, useState } from "preact/hooks";
+import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 
 export function StatsApp() {
 	const plugin = usePlugin();
@@ -47,6 +47,7 @@ export function StatsApp() {
 	const settings = settingsSignal.value;
 	const allCards = [...allMeta.value.values()];
 	const [renderStage, setRenderStage] = useState(0);
+	const initialStagingDone = useRef(false);
 
 	const presetNames = settings.fsrsPresets.map((preset) => preset.name);
 	const selectedPresets = useSignal<Set<string>>(new Set(presetNames));
@@ -163,6 +164,13 @@ export function StatsApp() {
 	useEffect(() => {
 		if (!data) {
 			setRenderStage(0);
+			initialStagingDone.current = false;
+			return;
+		}
+
+		// After initial load, skip staging — charts update via props
+		if (initialStagingDone.current) {
+			setRenderStage(3);
 			return;
 		}
 
@@ -177,7 +185,10 @@ export function StatsApp() {
 			setRenderStage(2);
 
 			const flushFinalStage = () => {
-				if (!cancelled) setRenderStage(3);
+				if (!cancelled) {
+					setRenderStage(3);
+					initialStagingDone.current = true;
+				}
 			};
 
 			if ("requestIdleCallback" in window) {

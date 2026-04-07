@@ -52,7 +52,7 @@ export async function initializeDeviceAndStore(
 		notify().error(
 			"Failed to initialize device context. Using default configuration.",
 		);
-		plugin.deviceIdService = new DeviceIdService();
+		plugin.deviceIdService = new DeviceIdService(plugin.settings.deviceId);
 		await initializeCardStore(plugin, plugin.deviceIdService.getDeviceId());
 	}
 }
@@ -60,7 +60,13 @@ export async function initializeDeviceAndStore(
 async function initializeDeviceContext(
 	plugin: TrueRecallPlugin,
 ): Promise<string> {
-	plugin.deviceIdService = new DeviceIdService();
+	plugin.deviceIdService = new DeviceIdService(
+		plugin.settings.deviceId,
+		(newId) => {
+			plugin.settings.deviceId = newId;
+			void plugin.saveSettings();
+		},
+	);
 	const deviceId = plugin.deviceIdService.getDeviceId();
 	plugin.deviceDiscovery = new DeviceDiscoveryService(
 		new ObsidianPersistence(plugin.app),

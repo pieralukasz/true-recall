@@ -12,12 +12,16 @@ import {
 import type { DeletionHandlerService } from "@true-recall/core/flashcard/lifecycle/deletion-handler.service";
 import type { DeviceDiscoveryService } from "@true-recall/core/integration/device/device-discovery.service";
 import type { DeviceIdService } from "@true-recall/core/integration/device/device-id.service";
+import { DeviceLockService } from "@true-recall/core/integration/device/device-lock.service";
+import { DeviceSyncService } from "@true-recall/core/integration/device/device-sync.service";
 import { SessionService } from "@true-recall/core/services/review/session.service";
 import type { TrueRecallSettings } from "@true-recall/core/types";
 import type { SessionConfig } from "@true-recall/core/types/session-config.types";
 import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpClient";
+import { ObsidianPersistence } from "@true-recall/obsidian/adapters/ObsidianPersistence";
 import type { CommandService } from "@true-recall/obsidian/commands";
 import type { DataLayer } from "@true-recall/obsidian/data";
+import { G } from "@true-recall/obsidian/data";
 import type { StatusBarWidget } from "@true-recall/obsidian/editor/study/widgets/StatusBarWidget";
 import type { NoteStatusCache } from "@true-recall/obsidian/features/core/cache/note-status-cache.service";
 import { IOEditorModal } from "@true-recall/obsidian/features/image-occlusion/IOEditorModal";
@@ -48,6 +52,7 @@ import { TrueRecallSettingTab } from "@true-recall/obsidian/settings";
 import type { AppStore } from "@true-recall/obsidian/store";
 import {
 	isDesktop,
+	isMobile,
 	isViewAllowedOnCurrentPlatform,
 } from "@true-recall/obsidian/utils/platform";
 import { CardBrowserView } from "@true-recall/obsidian/views/browser/CardBrowserView";
@@ -150,6 +155,7 @@ export default class TrueRecallPlugin extends Plugin {
 
 	deviceIdService: DeviceIdService | null = null;
 	deviceDiscovery: DeviceDiscoveryService | null = null;
+	private deviceLock: DeviceLockService | null = null;
 	deletionHandler: DeletionHandlerService | null = null;
 	commandService: CommandService | null = null;
 	store: AppStore | null = null;
@@ -230,6 +236,67 @@ export default class TrueRecallPlugin extends Plugin {
 			);
 			notify().error("Failed to initialize database. Please restart Obsidian.");
 			return;
+		}
+
+		// 3. Device lock
+		if (this.deviceIdService) {
+			try {
+				const persistence = new ObsidianPersistence(this.app);
+				const deviceId = this.deviceIdService.getDeviceId();
+				const label = this.deviceIdService.getDisplayName();
+				this.deviceLock = new DeviceLockService(
+					persistence,
+					deviceId,
+					isMobile() ? "mobile" : "desktop",
+					label,
+				);
+
+				const conflicting = await this.deviceLock.isConflicting();
+				if (conflicting) {
+					notify().warning(
+						`True Recall is open on ${conflicting.label} (${conflicting.platform}). Close it first to avoid sync issues.`,
+					);
+				}
+				await this.deviceLock.writeLock();
+				this.deviceLock.startHeartbeat();
+			} catch (error) {
+				console.error("[True Recall] Device lock setup failed:", error);
+			}
+		}
+
+		// 4. Cross-device sync
+		try {
+			if (this.deviceDiscovery && this.cardStore) {
+				const syncService = new DeviceSyncService(
+					this.cardStore,
+					this.deviceDiscovery,
+					new ObsidianPersistence(this.app),
+				);
+				const syncResult = await syncService.syncOnStartup();
+				if (syncResult.errors.length > 0) {
+					notify().warning(
+						`Sync completed with ${syncResult.errors.length} error(s). Some changes may not have been applied.`,
+					);
+				}
+				if (syncResult.cardsApplied > 0 || syncResult.reviewLogsApplied > 0) {
+					this.dataLayer?.invalidateGroups([
+						G.CARDS,
+						G.BROWSER,
+						G.DASHBOARD,
+						G.PANEL,
+						G.REVIEW,
+						G.STATS,
+					]);
+					notify().info(
+						`Synced ${syncResult.cardsApplied} cards and ${syncResult.reviewLogsApplied} reviews from other devices.`,
+					);
+				}
+			}
+		} catch (error) {
+			console.error("[True Recall] Device sync failed:", error);
+			notify().warning(
+				"Cross-device sync failed. Your cards may not be up to date.",
+			);
 		}
 
 		const tStore = performance.now();
@@ -360,6 +427,8 @@ export default class TrueRecallPlugin extends Plugin {
 
 	onunload(): void {
 		this._unloaded = true;
+		this.deviceLock?.stopHeartbeat();
+		void this.deviceLock?.clearLock();
 		this.localApi?.stop();
 		this.commandService?.clear();
 		this.statusBarWidget?.dispose();
