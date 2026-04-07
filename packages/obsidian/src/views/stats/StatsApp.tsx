@@ -16,6 +16,7 @@ import { AppNavBar } from "@true-recall/obsidian/components";
 import { Q, useQuery } from "@true-recall/obsidian/data";
 import { HeatmapWidget } from "@true-recall/obsidian/editor/study/widgets/analytics/HeatmapWidget";
 import {
+	ArchivedToggle,
 	CardMaturitySection,
 	ChartCard,
 	CollectionHealthBar,
@@ -44,15 +45,17 @@ export function StatsApp() {
 		Q.ARCHIVED_UIDS,
 	);
 	const timeRange = useSignal<StatsTimeRange>("1m");
+	const showArchived = useSignal(false);
 	const settings = settingsSignal.value;
 	const archivedUids = archivedSourceUidsSignal.value;
 	const allCards = useMemo(() => {
 		const archived = archivedUids;
-		if (!archived || archived.size === 0) return [...allMeta.value.values()];
+		if (showArchived.value || !archived || archived.size === 0)
+			return [...allMeta.value.values()];
 		return [...allMeta.value.values()].filter(
 			(card) => !archived.has(card.sourceUid ?? ""),
 		);
-	}, [allMeta.value, archivedUids]);
+	}, [allMeta.value, archivedUids, showArchived.value]);
 	const [renderStage, setRenderStage] = useState(0);
 	const initialStagingDone = useRef(false);
 
@@ -109,7 +112,9 @@ export function StatsApp() {
 	const filterContext = useComputed((): StatsFilterContext => {
 		const selected = selectedPresets.value;
 		const allPresets = presetNames;
-		const archived = archivedSourceUidsSignal.value;
+		const archived = showArchived.value
+			? new Set<string>()
+			: archivedSourceUidsSignal.value;
 
 		// All selected = no preset filter, but still apply archived filter
 		if (selected.size >= allPresets.length && allPresets.length > 0) {
@@ -248,7 +253,15 @@ export function StatsApp() {
 				<div class="ep:p-3 ep:mx-auto ep:max-w-5xl ep:flex ep:flex-col ep:gap-3">
 					<StatsHeader timeRange={timeRange} />
 
-					<PresetFilter presets={presetNames} selected={selectedPresets} />
+					<div class="ep:flex ep:flex-wrap ep:items-center ep:gap-3">
+						<PresetFilter presets={presetNames} selected={selectedPresets} />
+						<ArchivedToggle
+							isActive={showArchived.value}
+							onToggle={() => {
+								showArchived.value = !showArchived.value;
+							}}
+						/>
+					</div>
 
 					{!data && !error && loading && (
 						<div class="ep:text-xs ep:text-obs-muted ep:text-center ep:py-12">
