@@ -45,7 +45,14 @@ export function StatsApp() {
 	);
 	const timeRange = useSignal<StatsTimeRange>("1m");
 	const settings = settingsSignal.value;
-	const allCards = useMemo(() => [...allMeta.value.values()], [allMeta.value]);
+	const archivedUids = archivedSourceUidsSignal.value;
+	const allCards = useMemo(() => {
+		const archived = archivedUids;
+		if (!archived || archived.size === 0) return [...allMeta.value.values()];
+		return [...allMeta.value.values()].filter(
+			(card) => !archived.has(card.sourceUid ?? ""),
+		);
+	}, [allMeta.value, archivedUids]);
 	const [renderStage, setRenderStage] = useState(0);
 	const initialStagingDone = useRef(false);
 
