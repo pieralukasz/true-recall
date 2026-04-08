@@ -257,6 +257,8 @@ export const FSRS_CONFIG = {
 	maxRetention: 0.99,
 } as const;
 
+export const MS_PER_DAY = 86_400_000;
+
 export const WEAK_CARD_STABILITY_THRESHOLD = 7; // days
 
 export const REQUEUE_WINDOW_MS = 10 * 60 * 1000; // 10 minutes

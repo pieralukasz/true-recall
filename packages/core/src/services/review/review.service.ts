@@ -1,27 +1,26 @@
 import { type Grade, Rating, State } from "ts-fsrs";
 import {
 	LEARN_AHEAD_LIMIT_MINUTES,
+	MS_PER_DAY,
 	RANDOM_QUEUE_INSERT_MAX_POS,
-	WEAK_CARD_STABILITY_THRESHOLD,
 } from "../../constants";
 import type { FlashcardManager } from "../../flashcard/flashcard.service";
+import { isLearningState } from "../../helpers/card-state";
 import type {
 	CardSchedulingMeta,
 	DailyStats,
 	ReviewResult,
 	ReviewSessionStats,
 } from "../../types";
-import type {
-	NewCardOrder,
-	NewReviewMix,
-	ReviewOrder,
-} from "../../types/settings.types";
+import type { ReviewOrder } from "../../types/settings.types";
 import {
 	formatLocalDate,
 	getTodayBoundary,
 	getTomorrowBoundary,
 } from "../../utils";
 import type { FSRSService } from "../fsrs/fsrs.service";
+import { buildQueue as buildQueueImpl } from "./queue-builder";
+import { spaceSiblings as spaceSiblingsImpl } from "./sibling-spacer";
 
 export interface QueueBuildOptions {
 	newCardsLimit: number;
@@ -32,9 +31,9 @@ export interface QueueBuildOptions {
 	reviewsCompletedToday?: number;
 	/** Filter to only cards with these source UIDs */
 	sourceUidFilter?: Set<string>;
-	newCardOrder?: NewCardOrder;
+	newCardOrder?: import("../../types/settings.types").NewCardOrder;
 	reviewOrder?: ReviewOrder;
-	newReviewMix?: NewReviewMix;
+	newReviewMix?: import("../../types/settings.types").NewReviewMix;
 
 	// Custom session filters
 	sourceNoteFilter?: string;
@@ -88,651 +87,21 @@ export interface QueueBuildOptions {
 }
 
 export class ReviewService {
-	private shuffle<T>(array: T[]): T[] {
-		const result = [...array];
-		for (let i = result.length - 1; i > 0; i--) {
-			const j = Math.floor(Math.random() * (i + 1));
-			const temp = result[i] as T;
-			result[i] = result[j] as T;
-			result[j] = temp;
-		}
-		return result;
-	}
-
-	private interleave<T>(primary: T[], secondary: T[]): T[] {
-		if (secondary.length === 0) return [...primary];
-		if (primary.length === 0) return [...secondary];
-
-		const result: T[] = [];
-		const ratio = primary.length / secondary.length;
-		let primaryIndex = 0;
-		let secondaryIndex = 0;
-
-		while (primaryIndex < primary.length || secondaryIndex < secondary.length) {
-			const targetPrimary = Math.floor((secondaryIndex + 1) * ratio);
-			while (primaryIndex < targetPrimary && primaryIndex < primary.length) {
-				const item = primary[primaryIndex];
-				if (item !== undefined) result.push(item);
-				primaryIndex++;
-			}
-			if (secondaryIndex < secondary.length) {
-				const item = secondary[secondaryIndex];
-				if (item !== undefined) result.push(item);
-				secondaryIndex++;
-			}
-		}
-		while (primaryIndex < primary.length) {
-			const item = primary[primaryIndex];
-			if (item !== undefined) result.push(item);
-			primaryIndex++;
-		}
-
-		return result;
-	}
-
-	private sortByCreatedAt(cards: CardSchedulingMeta[]): CardSchedulingMeta[] {
-		return [...cards].sort((a, b) => {
-			const aTime = a.fsrs.createdAt ?? 0;
-			const bTime = b.fsrs.createdAt ?? 0;
-			if (aTime !== bTime) return aTime - bTime;
-			// Fallback to ID for deterministic order
-			return a.id.localeCompare(b.id);
-		});
-	}
-
-	private sortByCreatedAtDesc(
-		cards: CardSchedulingMeta[],
-	): CardSchedulingMeta[] {
-		return [...cards].sort((a, b) => {
-			const aTime = a.fsrs.createdAt ?? 0;
-			const bTime = b.fsrs.createdAt ?? 0;
-			if (aTime !== bTime) return bTime - aTime;
-			return b.id.localeCompare(a.id);
-		});
-	}
-
-	private calculateBoundaries(dayStartHour: number = 4): {
-		now: Date;
-		todayBoundary: Date;
-		weekAgoBoundary: Date;
-	} {
-		const now = new Date();
-		const todayBoundary = getTodayBoundary(dayStartHour, now);
-
-		const weekAgoBoundary = new Date(todayBoundary);
-		weekAgoBoundary.setDate(weekAgoBoundary.getDate() - 7);
-
-		return { now, todayBoundary, weekAgoBoundary };
-	}
-
-	private filterCards(
-		cards: CardSchedulingMeta[],
-		options: QueueBuildOptions,
-		todayBoundary: Date,
-		weekAgoBoundary: Date,
-		reviewedToday?: Set<string>,
-	): CardSchedulingMeta[] {
-		const noteSet = options.sourceNoteFilters?.length
-			? new Set(options.sourceNoteFilters)
-			: null;
-
-		return cards.filter((card) => {
-			// Exclude already reviewed (but keep learning cards)
-			if (reviewedToday?.size) {
-				const isLearning =
-					card.fsrs.state === State.Learning ||
-					card.fsrs.state === State.Relearning;
-				if (!isLearning && reviewedToday.has(card.id)) return false;
-			}
-			// Source UID filter (used for project-scoped review)
-			if (options.sourceUidFilter) {
-				if (!card.sourceUid || !options.sourceUidFilter.has(card.sourceUid))
-					return false;
-			}
-
-			// Source note filter
-			if (noteSet) {
-				if (!card.sourceNoteName || !noteSet.has(card.sourceNoteName))
-					return false;
-			} else if (options.sourceNoteFilter) {
-				if (card.sourceNoteName !== options.sourceNoteFilter) return false;
-			}
-
-			// File path filter (uses sourceNotePath)
-			if (
-				options.filePathFilter &&
-				card.sourceNotePath !== options.filePathFilter
-			) {
-				return false;
-			}
-
-			// Created today filter
-			if (options.createdTodayOnly) {
-				const createdAt = card.fsrs.createdAt;
-				if (!createdAt || createdAt < todayBoundary.getTime()) return false;
-			}
-
-			// Created this week filter
-			if (options.createdThisWeek) {
-				const createdAt = card.fsrs.createdAt;
-				if (!createdAt || createdAt < weekAgoBoundary.getTime()) return false;
-			}
-
-			// Weak cards filter
-			if (
-				options.weakCardsOnly &&
-				card.fsrs.stability >= WEAK_CARD_STABILITY_THRESHOLD
-			) {
-				return false;
-			}
-
-			// State filter
-			if (options.stateFilter) {
-				switch (options.stateFilter) {
-					case "new":
-						if (card.fsrs.state !== State.New) return false;
-						break;
-					case "learning":
-						if (
-							card.fsrs.state !== State.Learning &&
-							card.fsrs.state !== State.Relearning
-						)
-							return false;
-						break;
-					case "due":
-						if (card.fsrs.state !== State.Review) return false;
-						break;
-					case "buried": {
-						// Card is buried if buriedUntil is set and hasn't passed
-						const buriedUntil = card.fsrs.buriedUntil;
-						if (!buriedUntil || new Date(buriedUntil).getTime() <= Date.now())
-							return false;
-						break;
-					}
-				}
-			}
-
-			// Difficulty range filter
-			if (options.difficultyRange) {
-				if (
-					card.fsrs.difficulty < options.difficultyRange.min ||
-					card.fsrs.difficulty > options.difficultyRange.max
-				)
-					return false;
-			}
-
-			// Lapses range filter
-			if (options.lapsesRange) {
-				if (
-					card.fsrs.lapses < options.lapsesRange.min ||
-					card.fsrs.lapses > options.lapsesRange.max
-				)
-					return false;
-			}
-
-			// Stability range filter
-			if (options.stabilityRange) {
-				if (
-					card.fsrs.stability < options.stabilityRange.min ||
-					card.fsrs.stability > options.stabilityRange.max
-				)
-					return false;
-			}
-
-			// Overdue only: exclude new cards and cards not yet due
-			if (options.overdueOnly) {
-				if (card.fsrs.state === State.New) return false;
-				if (new Date(card.fsrs.due) > new Date()) return false;
-			}
-
-			// Recently failed: last review was Again
-			if (options.recentlyFailed) {
-				const history = card.fsrs.history;
-				if (!history || history.length === 0) return false;
-				if (history[history.length - 1]?.r !== Rating.Again) return false;
-			}
-
-			// Study ahead: include cards due within the next N days
-			if (options.studyAheadDays !== undefined && options.studyAheadDays > 0) {
-				if (card.fsrs.state === State.Review) {
-					const cutoff = new Date(
-						Date.now() + options.studyAheadDays * 86_400_000,
-					);
-					if (new Date(card.fsrs.due) > cutoff) return false;
-				}
-			}
-
-			return true;
-		});
-	}
-
-	private sortNewCards(
-		cards: CardSchedulingMeta[],
-		order: NewCardOrder,
-	): CardSchedulingMeta[] {
-		switch (order) {
-			case "random":
-				return this.shuffle(cards);
-			case "oldest-first":
-				return this.sortByCreatedAt(cards);
-			case "newest-first":
-				return this.sortByCreatedAtDesc(cards);
-			default:
-				return this.shuffle(cards);
-		}
-	}
-
-	private sortReviewCards(
-		cards: CardSchedulingMeta[],
-		order: ReviewOrder,
-		fsrsService: FSRSService,
-	): CardSchedulingMeta[] {
-		switch (order) {
-			case "due-date":
-				return fsrsService.sortByDue(cards);
-			case "random":
-				return this.shuffle(cards);
-			case "due-date-random": {
-				// Sort by due date, then shuffle within same-day groups
-				const sorted = fsrsService.sortByDue(cards);
-				const groupedByDue = new Map<string, CardSchedulingMeta[]>();
-				for (const card of sorted) {
-					const dueDay =
-						new Date(card.fsrs.due).toISOString().split("T")[0] ?? "";
-					if (!groupedByDue.has(dueDay)) {
-						groupedByDue.set(dueDay, []);
-					}
-					groupedByDue.get(dueDay)?.push(card);
-				}
-				const result: CardSchedulingMeta[] = [];
-				for (const [, group] of groupedByDue) {
-					result.push(...this.shuffle(group));
-				}
-				return result;
-			}
-			case "by-retrievability":
-				return fsrsService.sortByRetrievability(cards);
-			case "most-lapses":
-				return [...cards].sort((a, b) => b.fsrs.lapses - a.fsrs.lapses);
-			case "relative-overdueness": {
-				const now = Date.now();
-				return [...cards].sort((a, b) => {
-					const aOverdue =
-						(now - new Date(a.fsrs.due).getTime()) /
-						Math.max(1, a.fsrs.scheduledDays * 86_400_000);
-					const bOverdue =
-						(now - new Date(b.fsrs.due).getTime()) /
-						Math.max(1, b.fsrs.scheduledDays * 86_400_000);
-					return bOverdue - aOverdue;
-				});
-			}
-			case "lowest-stability":
-				return [...cards].sort((a, b) => a.fsrs.stability - b.fsrs.stability);
-			case "order-added":
-				return this.sortByCreatedAt(cards);
-			default:
-				return fsrsService.sortByDue(cards);
-		}
-	}
-
 	/**
 	 * When burySiblings is off, spread IO/cloze siblings apart in the queue
 	 * so cards from the same note don't appear back-to-back.
 	 */
 	spaceSiblings(queue: CardSchedulingMeta[]): CardSchedulingMeta[] {
-		if (queue.length <= 2) return queue;
-
-		// Build noteId → indices map (only IO and cloze cards have meaningful siblings)
-		const noteGroups = new Map<string, number>();
-		const hasMultiple = new Set<string>();
-
-		for (const card of queue) {
-			const key = this.getSiblingKey(card);
-			if (!key) continue;
-			if (noteGroups.has(key)) {
-				hasMultiple.add(key);
-			}
-			noteGroups.set(key, (noteGroups.get(key) ?? 0) + 1);
-		}
-
-		if (hasMultiple.size === 0) return queue;
-
-		// Greedy spacing: track last position of each sibling group
-		const result: CardSchedulingMeta[] = [];
-		const deferred: CardSchedulingMeta[] = [];
-		const lastSeen = new Map<string, number>();
-		const minSpacing = Math.max(
-			3,
-			Math.ceil(
-				queue.length /
-					Math.max(...[...hasMultiple].map((k) => noteGroups.get(k) ?? 1)),
-			),
-		);
-
-		for (const card of queue) {
-			const key = this.getSiblingKey(card);
-			if (key && hasMultiple.has(key)) {
-				const last = lastSeen.get(key);
-				if (last !== undefined && result.length - last < minSpacing) {
-					deferred.push(card);
-					continue;
-				}
-				lastSeen.set(key, result.length);
-			}
-			result.push(card);
-		}
-
-		// Re-insert deferred cards at spaced positions
-		for (const card of deferred) {
-			const key = this.getSiblingKey(card);
-			if (!key) continue;
-			const last = lastSeen.get(key) ?? -minSpacing;
-			const targetPos = Math.min(last + minSpacing, result.length);
-			result.splice(targetPos, 0, card);
-			lastSeen.set(key, targetPos);
-		}
-
-		return result;
+		return spaceSiblingsImpl(queue);
 	}
 
-	private getSiblingKey(card: CardSchedulingMeta): string | null {
-		if (card.cardType === "image-occlusion" && card.noteId) {
-			return `io:${card.noteId}`;
-		}
-		if (card.cardType === "cloze" && card.noteId) {
-			return `cloze:${card.noteId}`;
-		}
-		return null;
-	}
-
-	private mixQueues(
-		reviews: CardSchedulingMeta[],
-		newCards: CardSchedulingMeta[],
-		mix: NewReviewMix,
-	): CardSchedulingMeta[] {
-		switch (mix) {
-			case "show-after-reviews":
-				return [...reviews, ...newCards];
-			case "show-before-reviews":
-				return [...newCards, ...reviews];
-			default:
-				return this.interleave(reviews, newCards);
-		}
-	}
-
-	private usePerPresetLimits(options: QueueBuildOptions): boolean {
-		return Boolean(
-			options.cardPresetById &&
-				options.presetDailyLimits &&
-				options.presetProgressToday,
-		);
-	}
-
-	private applyPerPresetLimit(
-		cards: CardSchedulingMeta[],
-		options: QueueBuildOptions,
-		type: "new" | "review",
-	): CardSchedulingMeta[] {
-		const presetLimits = options.presetDailyLimits;
-		const presetProgress = options.presetProgressToday;
-		const cardPresetById = options.cardPresetById;
-		if (!presetLimits || !presetProgress || !cardPresetById) return cards;
-
-		const remainingByPreset = new Map<string, number>();
-		for (const [presetName, limits] of presetLimits) {
-			const progress = presetProgress.get(presetName);
-			const dailyLimit =
-				type === "new" ? limits.newCardsPerDay : limits.reviewsPerDay;
-			const completed =
-				type === "new"
-					? (progress?.newStudied ?? 0)
-					: (progress?.reviewsCompleted ?? 0);
-			remainingByPreset.set(presetName, Math.max(0, dailyLimit - completed));
-		}
-
-		const fallbackPresetName = options.defaultPresetName ?? "Default";
-		if (!remainingByPreset.has(fallbackPresetName)) {
-			const fallbackLimit =
-				type === "new" ? options.newCardsLimit : options.reviewsLimit;
-			const fallbackDone =
-				type === "new"
-					? (options.newCardsStudiedToday ?? 0)
-					: (options.reviewsCompletedToday ?? 0);
-			remainingByPreset.set(
-				fallbackPresetName,
-				Math.max(0, fallbackLimit - fallbackDone),
-			);
-		}
-
-		const result: CardSchedulingMeta[] = [];
-		for (const card of cards) {
-			const presetName = cardPresetById.get(card.id) ?? fallbackPresetName;
-
-			// If preset is missing from limits map, fall back to global limits.
-			if (!remainingByPreset.has(presetName)) {
-				const fallbackLimit =
-					type === "new" ? options.newCardsLimit : options.reviewsLimit;
-				const presetDone =
-					type === "new"
-						? (presetProgress.get(presetName)?.newStudied ?? 0)
-						: (presetProgress.get(presetName)?.reviewsCompleted ?? 0);
-				remainingByPreset.set(
-					presetName,
-					Math.max(0, fallbackLimit - presetDone),
-				);
-			}
-
-			const remaining = remainingByPreset.get(presetName) ?? 0;
-			if (remaining <= 0) continue;
-
-			result.push(card);
-			remainingByPreset.set(presetName, remaining - 1);
-		}
-
-		return result;
-	}
-
-	private buildCustomStudyQueue(
-		availableCards: CardSchedulingMeta[],
-		fsrsService: FSRSService,
-		options: QueueBuildOptions,
-	): CardSchedulingMeta[] {
-		const allLearningCards = fsrsService.getLearningCards(availableCards);
-
-		// All learning cards treated as due (no pending)
-		const dueLearningCards = allLearningCards;
-
-		// All review state cards included
-		const reviewCards = availableCards.filter(
-			(card) => card.fsrs.state === State.Review,
-		);
-		const sortedReviewCards = this.sortReviewCards(
-			reviewCards,
-			options.reviewOrder ?? "due-date",
-			fsrsService,
-		);
-		const limitedReviewCards = options.ignoreDailyLimits
-			? sortedReviewCards
-			: this.usePerPresetLimits(options)
-				? this.applyPerPresetLimit(sortedReviewCards, options, "review")
-				: sortedReviewCards.slice(
-						0,
-						Math.max(
-							0,
-							options.reviewsLimit - (options.reviewsCompletedToday ?? 0),
-						),
-					);
-
-		// New cards
-		const sortedNewCards = this.sortNewCards(
-			fsrsService.getNewCards(availableCards),
-			options.newCardOrder ?? "random",
-		);
-		const newCards = options.ignoreDailyLimits
-			? sortedNewCards
-			: this.usePerPresetLimits(options)
-				? this.applyPerPresetLimit(sortedNewCards, options, "new")
-				: sortedNewCards.slice(
-						0,
-						Math.max(
-							0,
-							options.newCardsLimit - (options.newCardsStudiedToday ?? 0),
-						),
-					);
-
-		const mainQueue = this.mixQueues(
-			limitedReviewCards,
-			newCards,
-			options.newReviewMix ?? "mix-with-reviews",
-		);
-
-		const spacedQueue =
-			options.burySiblings === false
-				? this.spaceSiblings(mainQueue)
-				: mainQueue;
-
-		return [...fsrsService.sortByDue(dueLearningCards), ...spacedQueue];
-	}
-
-	private buildStandardQueue(
-		availableCards: CardSchedulingMeta[],
-		fsrsService: FSRSService,
-		options: QueueBuildOptions,
-		now: Date,
-	): CardSchedulingMeta[] {
-		// Single-pass classification: bucket cards by state instead of
-		// 3 separate filter passes (getLearningCards + getReviewCards + getNewCards).
-		const dueLearningCards: CardSchedulingMeta[] = [];
-		const pendingLearningCards: CardSchedulingMeta[] = [];
-		const rawNewCards: CardSchedulingMeta[] = [];
-		const rawReviewCards: CardSchedulingMeta[] = [];
-
-		const dayStartHour = options.dayStartHour ?? 4;
-		const tomorrowBoundary = getTomorrowBoundary(dayStartHour, now);
-
-		for (const card of availableCards) {
-			switch (card.fsrs.state) {
-				case State.Learning:
-				case State.Relearning:
-					if (new Date(card.fsrs.due) <= now) {
-						dueLearningCards.push(card);
-					} else {
-						pendingLearningCards.push(card);
-					}
-					break;
-				case State.New:
-					rawNewCards.push(card);
-					break;
-				case State.Review:
-					if (new Date(card.fsrs.due) < tomorrowBoundary) {
-						rawReviewCards.push(card);
-					}
-					break;
-			}
-		}
-
-		const sortedReviewCards = this.sortReviewCards(
-			rawReviewCards,
-			options.reviewOrder ?? "due-date",
-			fsrsService,
-		);
-		const limitedReviewCards = options.ignoreDailyLimits
-			? sortedReviewCards
-			: this.usePerPresetLimits(options)
-				? this.applyPerPresetLimit(sortedReviewCards, options, "review")
-				: sortedReviewCards.slice(
-						0,
-						Math.max(
-							0,
-							options.reviewsLimit - (options.reviewsCompletedToday ?? 0),
-						),
-					);
-
-		// New cards
-		const sortedNewCards = this.sortNewCards(
-			rawNewCards,
-			options.newCardOrder ?? "random",
-		);
-		const newCards = options.ignoreDailyLimits
-			? sortedNewCards
-			: this.usePerPresetLimits(options)
-				? this.applyPerPresetLimit(sortedNewCards, options, "new")
-				: sortedNewCards.slice(
-						0,
-						Math.max(
-							0,
-							options.newCardsLimit - (options.newCardsStudiedToday ?? 0),
-						),
-					);
-
-		const mainQueue = this.mixQueues(
-			limitedReviewCards,
-			newCards,
-			options.newReviewMix ?? "mix-with-reviews",
-		);
-
-		const spacedQueue =
-			options.burySiblings === false
-				? this.spaceSiblings(mainQueue)
-				: mainQueue;
-
-		return [
-			...fsrsService.sortByDue(dueLearningCards),
-			...spacedQueue,
-			...fsrsService.sortByDue(pendingLearningCards),
-		];
-	}
-
-	/** Order (Anki-like): Due Learning → Review → New → Pending Learning */
+	/** Order (Anki-like): Due Learning -> Review -> New -> Pending Learning */
 	buildQueue(
 		allCards: CardSchedulingMeta[],
 		fsrsService: FSRSService,
 		options: QueueBuildOptions,
 	): CardSchedulingMeta[] {
-		const { now, todayBoundary, weekAgoBoundary } = this.calculateBoundaries(
-			options.dayStartHour,
-		);
-		const reviewedToday = options.reviewedToday ?? new Set<string>();
-
-		// Combined filter + reviewed-today exclusion in one pass
-		const availableCards = this.filterCards(
-			allCards,
-			options,
-			todayBoundary,
-			weekAgoBoundary,
-			reviewedToday,
-		);
-
-		let queue: CardSchedulingMeta[];
-
-		if (options.bypassScheduling) {
-			queue = this.buildCustomStudyQueue(availableCards, fsrsService, options);
-		} else {
-			queue = this.buildStandardQueue(
-				availableCards,
-				fsrsService,
-				options,
-				now,
-			);
-		}
-
-		if (
-			options.cardLimit &&
-			options.cardLimit > 0 &&
-			queue.length > options.cardLimit
-		) {
-			// Preserve pending learning cards that would be cut off - they need
-			// follow-up reviews within the session
-			const pendingLearning = queue.slice(options.cardLimit).filter((card) => {
-				const isLearning =
-					card.fsrs.state === State.Learning ||
-					card.fsrs.state === State.Relearning;
-				return isLearning && new Date(card.fsrs.due) > now;
-			});
-			queue = [...queue.slice(0, options.cardLimit), ...pendingLearning];
-		}
-
-		return queue;
+		return buildQueueImpl(allCards, fsrsService, options);
 	}
 
 	processAnswer<T extends CardSchedulingMeta>(
@@ -933,9 +302,7 @@ export class ReviewService {
 	 * go at the end where getPhase() will trigger the waiting screen.
 	 */
 	shouldRequeue(card: CardSchedulingMeta): boolean {
-		return (
-			card.fsrs.state === State.Learning || card.fsrs.state === State.Relearning
-		);
+		return isLearningState(card.fsrs.state);
 	}
 
 	getRequeuePosition(
@@ -1020,7 +387,7 @@ export class ReviewService {
 			})
 			.sort((a, b) => b - a);
 
-		const DAY_MS = 86400000;
+		const DAY_MS = MS_PER_DAY;
 		let longestStreak = 1;
 		let currentStreak = 1;
 

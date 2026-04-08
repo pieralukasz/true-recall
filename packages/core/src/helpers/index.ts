@@ -7,6 +7,10 @@ export {
 	countCardsByState,
 	countCardsByStateWithDue,
 	filterActiveCardsOnly,
+	isCardActive,
+	isLearningState,
+	isNewState,
+	isReviewState,
 } from "./card-state";
 
 export { shouldTriggerLeech } from "./leech-helpers";

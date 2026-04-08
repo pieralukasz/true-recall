@@ -1,4 +1,11 @@
-import { WEAK_CARD_STABILITY_THRESHOLD } from "@true-recall/core/constants";
+import {
+	MS_PER_DAY,
+	WEAK_CARD_STABILITY_THRESHOLD,
+} from "@true-recall/core/constants";
+import {
+	isCardActive,
+	isLearningState,
+} from "@true-recall/core/helpers/card-state";
 import type {
 	PresetDailyProgress,
 	SessionPersistenceService,
@@ -49,25 +56,16 @@ export function filterActiveCards(
 	const { stateFilter, archivedSourceUids } = options;
 
 	return cards.filter((card) => {
-		// Skip archived source notes always
 		if (archivedSourceUids?.has(card.sourceUid ?? "")) return false;
 
-		// Skip suspended cards always
-		if (card.fsrs.suspended) return false;
-
-		// If reviewing buried cards, ONLY include buried
+		// Buried-only mode: return only currently buried cards
 		if (stateFilter === "buried") {
+			if (card.fsrs.suspended) return false;
 			if (!card.fsrs.buriedUntil) return false;
 			return new Date(card.fsrs.buriedUntil) > now;
 		}
 
-		// Normal mode: exclude buried cards
-		if (card.fsrs.buriedUntil) {
-			const buriedUntil = new Date(card.fsrs.buriedUntil);
-			if (buriedUntil > now) return false;
-		}
-
-		return true;
+		return isCardActive(card.fsrs.suspended, card.fsrs.buriedUntil, now);
 	});
 }
 
@@ -221,7 +219,7 @@ export function matchesSessionFilters(
 	const now = Date.now();
 	const dayStartHour = filters.dayStartHour ?? 4;
 	const todayBoundary = getTodayBoundary(dayStartHour).getTime();
-	const weekAgoBoundary = todayBoundary - 7 * 86_400_000;
+	const weekAgoBoundary = todayBoundary - 7 * MS_PER_DAY;
 
 	if (card.fsrs.suspended) return false;
 
@@ -281,10 +279,7 @@ export function matchesSessionFilters(
 				if (card.fsrs.state !== State.New) return false;
 				break;
 			case "learning":
-				if (
-					card.fsrs.state !== State.Learning &&
-					card.fsrs.state !== State.Relearning
-				) {
+				if (!isLearningState(card.fsrs.state)) {
 					return false;
 				}
 				break;
@@ -334,7 +329,7 @@ export function matchesSessionFilters(
 
 	if (filters.studyAheadDays !== undefined && filters.studyAheadDays > 0) {
 		if (card.fsrs.state === State.Review) {
-			const cutoff = now + filters.studyAheadDays * 86_400_000;
+			const cutoff = now + filters.studyAheadDays * MS_PER_DAY;
 			if (new Date(card.fsrs.due).getTime() > cutoff) return false;
 		}
 	}

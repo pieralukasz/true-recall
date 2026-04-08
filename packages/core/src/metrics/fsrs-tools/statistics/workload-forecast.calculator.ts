@@ -5,6 +5,7 @@
  */
 
 import { State } from "ts-fsrs";
+import { isLearningState } from "../../../helpers/card-state";
 import type { SqliteStoreService } from "../../../persistence/sqlite/SqliteStoreService";
 import { formatLocalDate } from "../../../utils";
 
@@ -88,10 +89,7 @@ export class WorkloadForecastCalculator {
 				// State.Review = 2
 				if (card.state === State.Review) {
 					existing.review++;
-				} else if (
-					card.state === State.Learning ||
-					card.state === State.Relearning
-				) {
+				} else if (isLearningState(card.state)) {
 					existing.learning++;
 				}
 			}

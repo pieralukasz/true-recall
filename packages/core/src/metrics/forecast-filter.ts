@@ -1,3 +1,4 @@
+import { isLearningState } from "@true-recall/core/helpers/card-state";
 import type {
 	WorkloadForecastEntry,
 	WorkloadForecastSummary,
@@ -41,10 +42,7 @@ export function buildFilteredForecast(
 
 		if (card.state === State.Review) {
 			bucket.review++;
-		} else if (
-			card.state === State.Learning ||
-			card.state === State.Relearning
-		) {
+		} else if (isLearningState(card.state)) {
 			bucket.learning++;
 		}
 	}

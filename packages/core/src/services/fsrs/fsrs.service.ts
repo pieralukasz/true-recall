@@ -8,6 +8,7 @@ import {
 	State,
 } from "ts-fsrs";
 import { DEFAULT_FSRS_WEIGHTS } from "../../constants";
+import { isLearningState } from "../../helpers/card-state";
 import type {
 	CardSchedulingMeta,
 	FSRSCardData,
@@ -208,11 +209,7 @@ export class FSRSService {
 	}
 
 	getLearningCards(cards: CardSchedulingMeta[]): CardSchedulingMeta[] {
-		return cards.filter(
-			(card) =>
-				card.fsrs.state === State.Learning ||
-				card.fsrs.state === State.Relearning,
-		);
+		return cards.filter((card) => isLearningState(card.fsrs.state));
 	}
 
 	/**
@@ -321,10 +318,7 @@ export class FSRSService {
 
 			// Learning/Relearning: exact timestamp; Review: day-based boundary
 			const dueTime = new Date(c.fsrs.due).getTime();
-			if (
-				c.fsrs.state === State.Learning ||
-				c.fsrs.state === State.Relearning
-			) {
+			if (isLearningState(c.fsrs.state)) {
 				if (dueTime <= nowTime) stats.dueToday++;
 			} else if (c.fsrs.state === State.Review) {
 				if (dueTime < tomorrowBoundary.getTime()) stats.dueToday++;

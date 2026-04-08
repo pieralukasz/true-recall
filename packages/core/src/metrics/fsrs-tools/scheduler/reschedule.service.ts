@@ -6,7 +6,8 @@
  */
 
 import { FSRS, State } from "ts-fsrs";
-import { DEFAULT_FSRS_WEIGHTS } from "../../../constants";
+import { DEFAULT_FSRS_WEIGHTS, MS_PER_DAY } from "../../../constants";
+import { isLearningState } from "../../../helpers/card-state";
 import type { FSRSSettings } from "../../../types";
 import type {
 	CardScheduleChange,
@@ -45,11 +46,7 @@ export class RescheduleService {
 
 		for (const card of cards) {
 			// Skip New and Learning/Relearning cards — only Review cards use stability-based intervals
-			if (
-				card.state === (State.New as number) ||
-				card.state === (State.Learning as number) ||
-				card.state === (State.Relearning as number)
-			)
+			if (card.state === (State.New as number) || isLearningState(card.state))
 				continue;
 
 			// Record before
@@ -64,7 +61,7 @@ export class RescheduleService {
 				: new Date();
 			const elapsedDays = Math.max(
 				0,
-				Math.floor((Date.now() - lastReview.getTime()) / 86400000),
+				Math.floor((Date.now() - lastReview.getTime()) / MS_PER_DAY),
 			);
 
 			// Delegate to ts-fsrs which uses the correct FSRS-6 power-law formula
@@ -83,7 +80,7 @@ export class RescheduleService {
 			const originalDueMs = new Date(card.due).getTime();
 			const newDueMs = newDue.getTime();
 
-			if (Math.abs(originalDueMs - newDueMs) > 86400000) {
+			if (Math.abs(originalDueMs - newDueMs) > MS_PER_DAY) {
 				const change: CardScheduleChange = {
 					cardId: card.id,
 					originalDue: card.due,

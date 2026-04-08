@@ -6,6 +6,11 @@
  * and cascading updates to notes and cards.
  */
 
+import {
+	DuplicateError,
+	NotFoundError,
+} from "@true-recall/core/errors/domain.error";
+import { ValidationError } from "@true-recall/core/errors/validation.error";
 import { slugifyNoteTypeName } from "@true-recall/core/flashcard/note-types/note-type-slug";
 import type { CardTemplate, NoteType } from "../../types/note.types";
 
@@ -55,15 +60,21 @@ export class NoteTypeService {
 		const name = input.name.trim();
 
 		if (input.fields.length === 0) {
-			throw new Error("Note type must have at least one field");
+			throw new ValidationError(
+				"Note type must have at least one field",
+				"fields",
+			);
 		}
 		if (input.templates.length === 0) {
-			throw new Error("Note type must have at least one template");
+			throw new ValidationError(
+				"Note type must have at least one template",
+				"templates",
+			);
 		}
 
 		const existing = this.deps.noteTypeActions.getAll();
 		if (existing.some((nt) => nt.name === name)) {
-			throw new Error(`Note type with name "${name}" already exists`);
+			throw new DuplicateError(`Note type with name "${name}" already exists`);
 		}
 
 		// Auto-generate slug if not provided, ensure uniqueness
@@ -100,10 +111,10 @@ export class NoteTypeService {
 	): void {
 		const existing = this.deps.noteTypeActions.getById(id);
 		if (!existing) {
-			throw new Error(`Note type "${id}" not found`);
+			throw new NotFoundError("Note type", id);
 		}
 		if (existing.isBuiltin) {
-			throw new Error("Cannot update built-in note types");
+			throw new ValidationError("Cannot update built-in note types");
 		}
 
 		this.deps.noteTypeActions.update(id, updates);
@@ -112,15 +123,15 @@ export class NoteTypeService {
 	delete(id: string): void {
 		const existing = this.deps.noteTypeActions.getById(id);
 		if (!existing) {
-			throw new Error(`Note type "${id}" not found`);
+			throw new NotFoundError("Note type", id);
 		}
 		if (existing.isBuiltin) {
-			throw new Error("Cannot delete built-in note types");
+			throw new ValidationError("Cannot delete built-in note types");
 		}
 
 		const noteCount = this.deps.noteActions.countByNoteType(id);
 		if (noteCount > 0) {
-			throw new Error(
+			throw new ValidationError(
 				`Cannot delete note type "${existing.name}": ${noteCount} notes are using it`,
 			);
 		}
@@ -131,10 +142,10 @@ export class NoteTypeService {
 	addField(noteTypeId: string, fieldName: string): void {
 		const existing = this.deps.noteTypeActions.getById(noteTypeId);
 		if (!existing) {
-			throw new Error(`Note type "${noteTypeId}" not found`);
+			throw new NotFoundError("Note type", noteTypeId);
 		}
 		if (existing.isBuiltin) {
-			throw new Error("Cannot modify built-in note types");
+			throw new ValidationError("Cannot modify built-in note types");
 		}
 
 		const fields = [...existing.fields, fieldName];
@@ -144,13 +155,16 @@ export class NoteTypeService {
 	removeField(noteTypeId: string, fieldName: string): void {
 		const existing = this.deps.noteTypeActions.getById(noteTypeId);
 		if (!existing) {
-			throw new Error(`Note type "${noteTypeId}" not found`);
+			throw new NotFoundError("Note type", noteTypeId);
 		}
 		if (existing.isBuiltin) {
-			throw new Error("Cannot modify built-in note types");
+			throw new ValidationError("Cannot modify built-in note types");
 		}
 		if (existing.fields.length <= 1) {
-			throw new Error("Cannot remove the last field from a note type");
+			throw new ValidationError(
+				"Cannot remove the last field from a note type",
+				"fields",
+			);
 		}
 
 		const fields = existing.fields.filter((f) => f !== fieldName);
@@ -160,10 +174,10 @@ export class NoteTypeService {
 	renameField(noteTypeId: string, oldName: string, newName: string): void {
 		const existing = this.deps.noteTypeActions.getById(noteTypeId);
 		if (!existing) {
-			throw new Error(`Note type "${noteTypeId}" not found`);
+			throw new NotFoundError("Note type", noteTypeId);
 		}
 		if (existing.isBuiltin) {
-			throw new Error("Cannot modify built-in note types");
+			throw new ValidationError("Cannot modify built-in note types");
 		}
 
 		const fields = existing.fields.map((f) => (f === oldName ? newName : f));

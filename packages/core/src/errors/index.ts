@@ -5,7 +5,12 @@ export {
 	TimeoutError,
 } from "./api.error";
 export { AppError } from "./base.error";
-
+export {
+	DatabaseError,
+	DuplicateError,
+	NotFoundError,
+	NotInitializedError,
+} from "./domain.error";
 export {
 	ConfigurationError,
 	FileError,
