@@ -1,4 +1,5 @@
 import { FLASHCARD_CONFIG } from "../../../../constants";
+import { DatabaseError } from "../../../../errors";
 import {
 	deriveCardType,
 	renderTemplate,
@@ -185,13 +186,29 @@ export function mapMetaRow(row: MetaRow): CardSchedulingMeta {
 }
 
 export function mapRow(row: CardRow): FSRSCardData {
-	const fields = JSON.parse(row.fieldsJson) as Record<string, string>;
+	let fields: Record<string, string>;
+	try {
+		fields = JSON.parse(row.fieldsJson) as Record<string, string>;
+	} catch {
+		throw new DatabaseError(
+			`Corrupt fields JSON for card ${row.id}`,
+			"card:parse",
+		);
+	}
 	const noteTags =
 		row.noteTags
 			?.split(" ")
 			.map((t: string) => t.trim())
 			.filter(Boolean) ?? [];
-	const templates = JSON.parse(row.templatesJson) as CardTemplate[];
+	let templates: CardTemplate[];
+	try {
+		templates = JSON.parse(row.templatesJson) as CardTemplate[];
+	} catch {
+		throw new DatabaseError(
+			`Corrupt templates JSON for card ${row.id}`,
+			"card:parse",
+		);
+	}
 
 	// Cloze types: always use first template (templateOrd = cloze index, not template ordinal)
 	let template: CardTemplate | undefined;

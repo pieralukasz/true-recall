@@ -12,7 +12,12 @@ import type {
 	ReviewResult,
 	ReviewSessionStats,
 } from "../../types";
-import type { ReviewOrder } from "../../types/settings.types";
+import type {
+	FSRSSettings,
+	NewCardOrder,
+	NewReviewMix,
+	ReviewOrder,
+} from "../../types/settings.types";
 import {
 	formatLocalDate,
 	getTodayBoundary,
@@ -31,9 +36,9 @@ export interface QueueBuildOptions {
 	reviewsCompletedToday?: number;
 	/** Filter to only cards with these source UIDs */
 	sourceUidFilter?: Set<string>;
-	newCardOrder?: import("../../types/settings.types").NewCardOrder;
+	newCardOrder?: NewCardOrder;
 	reviewOrder?: ReviewOrder;
-	newReviewMix?: import("../../types/settings.types").NewReviewMix;
+	newReviewMix?: NewReviewMix;
 
 	// Custom session filters
 	sourceNoteFilter?: string;
@@ -109,7 +114,7 @@ export class ReviewService {
 		rating: Grade,
 		fsrsService: FSRSService,
 		responseTime: number,
-		presetSettings?: import("../../types/settings.types").FSRSSettings,
+		presetSettings?: FSRSSettings,
 	): {
 		updatedCard: T;
 		result: ReviewResult;
@@ -124,7 +129,7 @@ export class ReviewService {
 					0,
 					Math.floor(
 						(now.getTime() - new Date(card.fsrs.lastReview).getTime()) /
-							(1000 * 60 * 60 * 24),
+							MS_PER_DAY,
 					),
 				)
 			: 0;

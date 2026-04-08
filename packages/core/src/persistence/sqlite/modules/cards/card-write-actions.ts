@@ -1,4 +1,5 @@
 import { FLASHCARD_CONFIG } from "../../../../constants";
+import { NotFoundError } from "../../../../errors";
 import type { FSRSCardData } from "../../../../types";
 import {
 	BUILTIN_BASIC_REVERSED_ID,
@@ -96,7 +97,7 @@ export class CardWriteActions {
 			 WHERE c.id = ?`,
 			[cardId],
 		);
-		if (!card) return;
+		if (!card) throw new NotFoundError("Card", cardId);
 		if (card.note_type_id === BUILTIN_IMAGE_OCCLUSION_ID) {
 			throw new Error(
 				"Image occlusion cards must be edited in the image occlusion editor.",
@@ -122,7 +123,7 @@ export class CardWriteActions {
 			`SELECT note_id FROM cards WHERE id = ?`,
 			[cardId],
 		);
-		if (!card) return;
+		if (!card) throw new NotFoundError("Card", cardId);
 		const note = this.db.get<{ fields_json: string }>(
 			`SELECT fields_json FROM notes WHERE id = ?`,
 			[card.note_id],
