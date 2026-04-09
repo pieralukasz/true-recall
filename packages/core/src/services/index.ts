@@ -16,14 +16,12 @@ export {
 	renderTemplate,
 	type TemplateContext,
 } from "./cards/template-engine";
-
 export { FSRSService } from "./fsrs/fsrs.service";
 export {
 	FSRSSimulatorService,
 	type SequenceReview,
 	type SequenceSimulation,
 } from "./fsrs/fsrs-simulator.service";
-
 export {
 	IntegrityCheckService,
 	type IntegrityReport,
@@ -44,7 +42,6 @@ export {
 	NoteTypeService,
 	type NoteTypeServiceDeps,
 } from "./notes/note-type.service";
-
 export {
 	type PresetChainEntry,
 	type PresetResolutionContext,

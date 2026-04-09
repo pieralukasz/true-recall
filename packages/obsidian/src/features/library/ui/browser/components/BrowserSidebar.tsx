@@ -1,7 +1,9 @@
 import { useSignal } from "@preact/signals";
+import { useMemo } from "preact/hooks";
+
 import { Clickable, SearchInput } from "@true-recall/obsidian/components";
 import { FSRS_COLORS } from "@true-recall/obsidian/helpers/fsrs-colors";
-import { useMemo } from "preact/hooks";
+
 import type { FilterState } from "../types";
 
 interface BrowserSidebarProps {

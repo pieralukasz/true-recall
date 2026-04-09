@@ -1,5 +1,7 @@
-import type { NoteStatusInfo } from "@true-recall/obsidian/data";
 import { h, render } from "preact";
+
+import type { NoteStatusInfo } from "@true-recall/obsidian/data";
+
 import { DonutChart } from "./components/DonutChart";
 import { LinkTextCount } from "./components/LinkTextCount";
 

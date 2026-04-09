@@ -1,5 +1,6 @@
 import { useSignal } from "@preact/signals";
 import { useCallback, useEffect } from "preact/hooks";
+
 import type { DashboardNoteEntry } from "../types";
 
 function toggleSetItem<T>(set: ReadonlySet<T>, item: T): ReadonlySet<T> {

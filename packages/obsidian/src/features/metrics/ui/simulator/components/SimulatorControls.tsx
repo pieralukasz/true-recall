@@ -1,6 +1,8 @@
+import { useCallback, useRef } from "preact/hooks";
+
 import { Clickable } from "@true-recall/obsidian/components";
 import type { SimulatorApi } from "@true-recall/obsidian/store";
-import { useCallback, useRef } from "preact/hooks";
+
 import type { MetricType } from "../types";
 
 interface SimulatorControlsProps {

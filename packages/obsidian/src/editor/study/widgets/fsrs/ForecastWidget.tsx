@@ -1,8 +1,11 @@
 import { useComputed } from "@preact/signals";
+import { useMemo } from "preact/hooks";
+
 import type { CardSchedulingMeta } from "@true-recall/core/types";
+
 import { Q, useQuery } from "@true-recall/obsidian/data";
 import { usePlugin } from "@true-recall/obsidian/preact";
-import { useMemo } from "preact/hooks";
+
 import { configValue, parseCodeblockConfig } from "../config-parser";
 
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];

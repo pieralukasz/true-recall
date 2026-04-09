@@ -1,8 +1,10 @@
 import type { Signal } from "@preact/signals";
-import { usePlugin } from "@true-recall/obsidian/preact";
 import { TFile } from "obsidian";
 import type { RefObject } from "preact";
 import { useRef } from "preact/hooks";
+
+import { usePlugin } from "@true-recall/obsidian/preact";
+
 import { getDragClass } from "../helpers/drag-drop";
 import { useNoteBulkActions } from "../helpers/use-note-bulk-actions";
 import { useNoteContextMenu } from "../helpers/use-note-context-menu";

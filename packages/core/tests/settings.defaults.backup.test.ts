@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { DEFAULT_SETTINGS } from "../src/constants";
 
 describe("backup defaults", () => {

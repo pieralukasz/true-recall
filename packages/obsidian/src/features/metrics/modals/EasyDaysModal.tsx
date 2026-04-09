@@ -1,12 +1,15 @@
+import type { App } from "obsidian";
+import { render } from "preact";
+import { useState } from "preact/hooks";
+
 import type { EasyDaysConfig } from "@true-recall/core/types";
+
 import { ActionButton, ModalFooter } from "@true-recall/obsidian/components";
 import {
 	BasePromiseModal,
 	type CancellableResult,
 } from "@true-recall/obsidian/modals/shared/BasePromiseModal";
-import type { App } from "obsidian";
-import { render } from "preact";
-import { useState } from "preact/hooks";
+
 import { DayOfWeekSelector } from "./easy-days/DayOfWeekSelector";
 import { SpecificDatesList } from "./easy-days/SpecificDatesList";
 

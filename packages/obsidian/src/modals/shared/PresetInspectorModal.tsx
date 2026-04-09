@@ -1,14 +1,16 @@
+import type { App } from "obsidian";
+import { render } from "preact";
+
 import type {
 	PresetChainEntry,
 	PresetResolutionContext,
 	PresetService,
 	PresetSource,
 } from "@true-recall/core/services/notes/preset.service";
+
 import { Clickable } from "@true-recall/obsidian/components";
 import { BasePromiseModal } from "@true-recall/obsidian/modals/shared/BasePromiseModal";
 import { SetPresetModal } from "@true-recall/obsidian/modals/shared/SetPresetModal";
-import type { App } from "obsidian";
-import { render } from "preact";
 
 export interface PresetInspectorResult {
 	action: "set" | "clear" | "cancel";

@@ -1,5 +1,6 @@
-import type { IVaultMediaReader } from "@true-recall/core/integration/anki/anki-export.service";
 import type { App } from "obsidian";
+
+import type { IVaultMediaReader } from "@true-recall/core/integration/anki/anki-export.service";
 
 /**
  * Reads binary media files from the Obsidian vault.

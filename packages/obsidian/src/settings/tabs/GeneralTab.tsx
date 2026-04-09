@@ -1,3 +1,5 @@
+import { useCallback, useRef, useState } from "preact/hooks";
+
 import {
 	DEFAULT_SETTINGS,
 	TRUERECALL_BMC_URL,
@@ -10,6 +12,7 @@ import type {
 	ReviewViewMode,
 	TypeInMode,
 } from "@true-recall/core/types";
+
 import {
 	Clickable,
 	FormCard,
@@ -23,7 +26,7 @@ import {
 import { KeyboardHandler } from "@true-recall/obsidian/features/study/ui/review/handlers/KeyboardHandler";
 import { useIcon } from "@true-recall/obsidian/preact";
 import { notify } from "@true-recall/obsidian/services/notification.service";
-import { useCallback, useRef, useState } from "preact/hooks";
+
 import { useSettings } from "../hooks/useSettings";
 import { ToolbarConfigSection } from "../ToolbarConfigSection";
 

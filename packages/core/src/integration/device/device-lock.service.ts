@@ -13,8 +13,32 @@ export interface DeviceLock {
 	lastActiveAt: string;
 }
 
+function isValidDeviceLock(value: unknown): value is DeviceLock {
+	if (typeof value !== "object" || value === null) return false;
+	const obj = value as Record<string, unknown>;
+	return (
+		typeof obj.deviceId === "string" &&
+		typeof obj.lastActiveAt === "string" &&
+		typeof obj.platform === "string" &&
+		typeof obj.label === "string" &&
+		typeof obj.startedAt === "string"
+	);
+}
+
+function pessimisticLock(): DeviceLock {
+	const now = new Date().toISOString();
+	return {
+		deviceId: "unknown",
+		platform: "desktop",
+		label: "Unknown device",
+		startedAt: now,
+		lastActiveAt: now,
+	};
+}
+
 export class DeviceLockService {
 	private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
+	private consecutiveHeartbeatFailures = 0;
 
 	constructor(
 		private persistence: IPersistence,
@@ -39,10 +63,20 @@ export class DeviceLockService {
 		if (!exists) return null;
 		try {
 			const content = await this.persistence.read(LOCK_FILE);
-			return JSON.parse(content) as DeviceLock;
+			const parsed: unknown = JSON.parse(content);
+			if (!isValidDeviceLock(parsed)) {
+				console.warn(
+					"[True Recall] Device lock file has unexpected shape, treating as locked",
+				);
+				return pessimisticLock();
+			}
+			return parsed;
 		} catch (err) {
-			console.error("[True Recall] Failed to read device lock file:", err);
-			return null;
+			console.warn(
+				"[True Recall] Failed to read device lock file, treating as potentially locked:",
+				err,
+			);
+			return pessimisticLock();
 		}
 	}
 
@@ -54,7 +88,7 @@ export class DeviceLockService {
 				await this.persistence.remove(LOCK_FILE);
 			}
 		} catch (err) {
-			console.error("[True Recall] Failed to clear device lock:", err);
+			console.warn("[True Recall] Failed to clear device lock:", err);
 		}
 	}
 
@@ -73,6 +107,7 @@ export class DeviceLockService {
 
 	startHeartbeat(): void {
 		this.stopHeartbeat();
+		this.consecutiveHeartbeatFailures = 0;
 		this.heartbeatTimer = setInterval(() => {
 			void this.updateHeartbeat();
 		}, HEARTBEAT_INTERVAL_MS);
@@ -91,8 +126,17 @@ export class DeviceLockService {
 			if (!lock || lock.deviceId !== this.deviceId) return;
 			lock.lastActiveAt = new Date().toISOString();
 			await this.writeLockFile(lock);
+			this.consecutiveHeartbeatFailures = 0;
 		} catch (err) {
-			console.debug("[True Recall] Heartbeat update failed:", err);
+			this.consecutiveHeartbeatFailures++;
+			if (this.consecutiveHeartbeatFailures >= 2) {
+				console.warn(
+					`[True Recall] Heartbeat update failed ${this.consecutiveHeartbeatFailures} times:`,
+					err,
+				);
+			} else {
+				console.debug("[True Recall] Heartbeat update failed:", err);
+			}
 		}
 	}
 

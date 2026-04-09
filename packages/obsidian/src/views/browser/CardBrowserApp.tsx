@@ -1,4 +1,6 @@
 import { type Signal, useSignal } from "@preact/signals";
+import { useCallback, useEffect, useMemo, useRef } from "preact/hooks";
+
 import { DuplicateQuestionError } from "@true-recall/core/flashcard/data/card-repository.service";
 import { parseSearchQuery } from "@true-recall/core/helpers/search-parser";
 import { CardBrowserQueryService } from "@true-recall/core/services/browser/card-browser-query.service";
@@ -6,6 +8,7 @@ import type {
 	FSRSFlashcardItem,
 	TrueRecallSettings,
 } from "@true-recall/core/types";
+
 import { DeleteCardCommand } from "@true-recall/obsidian/commands/commands/card-delete.cmd";
 import { MoveCardCommand } from "@true-recall/obsidian/commands/commands/card-move.cmd";
 import { AppNavBar } from "@true-recall/obsidian/components";
@@ -34,7 +37,6 @@ import { notifyDuplicateError } from "@true-recall/obsidian/features/library/ui/
 import { MoveCardModal } from "@true-recall/obsidian/modals/shared/MoveCardModal";
 import { useApp, usePlugin } from "@true-recall/obsidian/preact";
 import { notify } from "@true-recall/obsidian/services/notification.service";
-import { useCallback, useEffect, useMemo, useRef } from "preact/hooks";
 
 const PAGE_SIZE = BROWSER_PAGE_SIZE;
 

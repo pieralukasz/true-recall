@@ -2,12 +2,14 @@ import {
 	computePriority,
 	PRIORITY_DOT,
 } from "@true-recall/core/helpers/note-priority";
+
 import {
 	CardCountDisplay,
 	Clickable,
 	IconButton,
 } from "@true-recall/obsidian/components";
 import { cn } from "@true-recall/obsidian/utils/cn";
+
 import type { DashboardProject } from "../types";
 
 export interface ProjectHeaderRowProps {

@@ -1,8 +1,11 @@
+import { useCallback, useMemo, useState } from "preact/hooks";
+
 import { clamp } from "@true-recall/core/utils/canvas-geometry";
 import { parseIODefinition } from "@true-recall/core/utils/io-definition";
+
 import { useIcon } from "@true-recall/obsidian/preact/hooks";
 import { useApp } from "@true-recall/obsidian/preact/ObsidianContext";
-import { useCallback, useMemo, useState } from "preact/hooks";
+
 import { resolveImageFile } from "./resolve-image";
 import type { IORegion } from "./types";
 

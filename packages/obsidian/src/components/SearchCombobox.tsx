@@ -1,3 +1,6 @@
+import { AbstractInputSuggest, type App, SearchComponent } from "obsidian";
+import { useEffect, useRef } from "preact/hooks";
+
 import {
 	type SectionedSuggestion,
 	withSectionLabels,
@@ -6,8 +9,6 @@ import { replaceTokenAtCursor } from "@true-recall/obsidian/helpers/search-sugge
 import type { SuggestionProvider } from "@true-recall/obsidian/helpers/search-suggestions.types";
 import { useApp } from "@true-recall/obsidian/preact/ObsidianContext";
 import { cn } from "@true-recall/obsidian/utils/cn";
-import { AbstractInputSuggest, type App, SearchComponent } from "obsidian";
-import { useEffect, useRef } from "preact/hooks";
 
 export interface SearchComboboxProps {
 	value: string;

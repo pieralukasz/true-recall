@@ -1,6 +1,10 @@
+import { memo } from "preact/compat";
+import { useCallback, useMemo, useState } from "preact/hooks";
+
 import type { FlashcardItem } from "@true-recall/core/types";
 import type { FSRSFlashcardItem } from "@true-recall/core/types/fsrs/card.types";
 import { parseIODefinition } from "@true-recall/core/utils/io-definition";
+
 import { Clickable } from "@true-recall/obsidian/components";
 import { IOCardRenderer } from "@true-recall/obsidian/features/image-occlusion/IOCardRenderer";
 import { useCardActions } from "@true-recall/obsidian/features/library/ui/panel/hooks/useCardActions";
@@ -9,8 +13,6 @@ import {
 	type MenuItem,
 	useContextMenu,
 } from "@true-recall/obsidian/preact/useContextMenu";
-import { memo } from "preact/compat";
-import { useCallback, useMemo, useState } from "preact/hooks";
 
 export interface PanelIOGroupProps {
 	cards: FlashcardItem[];

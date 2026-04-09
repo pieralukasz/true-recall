@@ -1,16 +1,19 @@
 import {
-	clamp,
-	normalizePointFromRect,
-} from "@true-recall/core/utils/canvas-geometry";
-import { Clickable } from "@true-recall/obsidian/components";
-import { useIcon } from "@true-recall/obsidian/preact/hooks";
-import {
 	useCallback,
 	useEffect,
 	useMemo,
 	useRef,
 	useState,
 } from "preact/hooks";
+
+import {
+	clamp,
+	normalizePointFromRect,
+} from "@true-recall/core/utils/canvas-geometry";
+
+import { Clickable } from "@true-recall/obsidian/components";
+import { useIcon } from "@true-recall/obsidian/preact/hooks";
+
 import {
 	buildDraftRegion,
 	buildMoveUpdate,

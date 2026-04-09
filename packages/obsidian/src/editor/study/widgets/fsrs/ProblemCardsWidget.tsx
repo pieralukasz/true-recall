@@ -1,10 +1,13 @@
 import { useComputed } from "@preact/signals";
+import { useMemo } from "preact/hooks";
+
 import type { CardSchedulingMeta } from "@true-recall/core/types";
 import type { ProblemCard } from "@true-recall/core/types/nl-query.types";
+
 import { Clickable } from "@true-recall/obsidian/components";
 import { Q, useQuery } from "@true-recall/obsidian/data";
 import { usePlugin } from "@true-recall/obsidian/preact";
-import { useMemo } from "preact/hooks";
+
 import { configValue, parseCodeblockConfig } from "../config-parser";
 import { WidgetCta } from "../WidgetCta";
 

@@ -1,5 +1,9 @@
 import { FLASHCARD_CONFIG } from "../../../../constants";
-import { NotFoundError } from "../../../../errors";
+import {
+	DatabaseError,
+	NotFoundError,
+	ValidationError,
+} from "../../../../errors";
 import type { FSRSCardData } from "../../../../types";
 import {
 	BUILTIN_BASIC_REVERSED_ID,
@@ -99,7 +103,7 @@ export class CardWriteActions {
 		);
 		if (!card) throw new NotFoundError("Card", cardId);
 		if (card.note_type_id === BUILTIN_IMAGE_OCCLUSION_ID) {
-			throw new Error(
+			throw new ValidationError(
 				"Image occlusion cards must be edited in the image occlusion editor.",
 			);
 		}
@@ -128,9 +132,17 @@ export class CardWriteActions {
 			`SELECT fields_json FROM notes WHERE id = ?`,
 			[card.note_id],
 		);
-		const fields = note
-			? (JSON.parse(note.fields_json) as Record<string, string>)
-			: {};
+		let fields: Record<string, string>;
+		try {
+			fields = note
+				? (JSON.parse(note.fields_json) as Record<string, string>)
+				: {};
+		} catch {
+			throw new DatabaseError(
+				`Corrupt fields JSON for card ${cardId}`,
+				"card:parse",
+			);
+		}
 		fields.Text = clozeTemplate;
 		this.db.run(
 			`UPDATE notes SET fields_json = ?, updated_at = ? WHERE id = ?`,

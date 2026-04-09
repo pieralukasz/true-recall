@@ -2,6 +2,7 @@
  * Flatten Service Tests
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
 import { FlattenService } from "../../../../src/metrics/fsrs-tools/scheduler/flatten.service";
 import {
 	createCardsOnDate,

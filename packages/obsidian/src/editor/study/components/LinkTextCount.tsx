@@ -1,6 +1,7 @@
+import { cva, type VariantProps } from "class-variance-authority";
+
 import type { NoteStatusInfo } from "@true-recall/obsidian/data";
 import { FSRS_COLORS } from "@true-recall/obsidian/helpers/fsrs-colors";
-import { cva, type VariantProps } from "class-variance-authority";
 
 const wrapperVariants = cva(
 	"ep-link-count ep:inline-flex ep:items-center ep:gap-0.5 ep:align-middle  ",

@@ -1,4 +1,7 @@
+import { useRef } from "preact/hooks";
+
 import type { StreamingGenerationState } from "@true-recall/core/ai/state/streaming-state";
+
 import {
 	useStreamingText,
 	useWordReveal,
@@ -7,7 +10,6 @@ import {
 	hasClozeSyntax,
 	parseClozeText,
 } from "@true-recall/obsidian/features/library/ui/panel/utils/cloze-parser";
-import { useRef } from "preact/hooks";
 
 function ClozeRenderer({ text }: { text: string }) {
 	if (!text) return null;

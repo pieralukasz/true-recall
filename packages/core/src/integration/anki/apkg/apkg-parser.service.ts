@@ -1,3 +1,6 @@
+import { decompress } from "fzstd";
+import JSZip from "jszip";
+
 import {
 	type DatabaseLike,
 	loadDatabase,
@@ -11,8 +14,6 @@ import type {
 	AnkiRevlogEntry,
 	ApkgData,
 } from "@true-recall/core/types";
-import { decompress } from "fzstd";
-import JSZip from "jszip";
 
 // Legacy format: models/decks stored as JSON in the `col` table
 interface RawAnkiModel {

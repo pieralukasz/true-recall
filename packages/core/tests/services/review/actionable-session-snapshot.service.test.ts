@@ -1,5 +1,6 @@
 import { State } from "ts-fsrs";
 import { describe, expect, it, vi } from "vitest";
+
 import { DEFAULT_SETTINGS } from "../../../src/constants";
 import type { SessionPersistenceService } from "../../../src/persistence/session/session-persistence.service";
 import type { HierarchyService } from "../../../src/services/notes/hierarchy.service";

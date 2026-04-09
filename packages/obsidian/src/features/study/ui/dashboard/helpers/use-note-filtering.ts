@@ -1,6 +1,8 @@
 import { useSignal } from "@preact/signals";
-import { prioritySortComparator } from "@true-recall/core/helpers/note-priority";
 import { useCallback, useMemo } from "preact/hooks";
+
+import { prioritySortComparator } from "@true-recall/core/helpers/note-priority";
+
 import type {
 	DashboardNoteEntry,
 	NoteFilterMode,

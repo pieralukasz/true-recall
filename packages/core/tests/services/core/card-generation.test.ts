@@ -5,6 +5,7 @@
  * Pure logic tests, no database needed.
  */
 import { describe, expect, it } from "vitest";
+
 import {
 	detectEmptyCards,
 	generateCardsForNote,

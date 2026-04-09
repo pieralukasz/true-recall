@@ -1,5 +1,7 @@
-import { mountPreact } from "@true-recall/obsidian/preact/mount";
 import { h } from "preact";
+
+import { mountPreact } from "@true-recall/obsidian/preact/mount";
+
 import type TrueRecallPlugin from "../../../main";
 import { ComparisonWidget } from "./analytics/ComparisonWidget";
 import { HealthWidget } from "./analytics/HealthWidget";

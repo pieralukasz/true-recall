@@ -1,7 +1,8 @@
+import { cva, type VariantProps } from "class-variance-authority";
+
 import type { NoteStatusInfo } from "@true-recall/obsidian/data";
 import { FSRS_COLORS } from "@true-recall/obsidian/helpers/fsrs-colors";
 import { Clickable } from "@true-recall/obsidian/preact";
-import { cva, type VariantProps } from "class-variance-authority";
 
 const CIRCUMFERENCE = 100;
 const RADIUS = 15.91549430918954; // circumference / (2 * PI)

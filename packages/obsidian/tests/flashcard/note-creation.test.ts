@@ -5,6 +5,9 @@
  * using the v26 test database infrastructure.
  */
 
+import type { App } from "obsidian";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
+
 import { FLASHCARD_CONFIG } from "@true-recall/core/constants";
 import { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite/SqliteStoreService";
@@ -17,8 +20,7 @@ import {
 	BUILTIN_CLOZE_ID,
 	BUILTIN_IMAGE_OCCLUSION_ID,
 } from "@true-recall/core/types/note.types";
-import type { App } from "obsidian";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+
 import {
 	createTestContext,
 	createTestNote,

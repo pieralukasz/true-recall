@@ -1,9 +1,12 @@
 import { useComputed } from "@preact/signals";
+
 import type { CardSchedulingMeta } from "@true-recall/core/types";
+
 import { Clickable } from "@true-recall/obsidian/components";
 import { Q, useQuery } from "@true-recall/obsidian/data";
 import { FSRS_COLORS } from "@true-recall/obsidian/helpers/fsrs-colors";
 import { usePlugin } from "@true-recall/obsidian/preact";
+
 import {
 	computeProjectStats,
 	healthColor,

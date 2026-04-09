@@ -1,3 +1,5 @@
+import { useCallback } from "preact/hooks";
+
 import {
 	ActionButton,
 	FormCard,
@@ -7,7 +9,7 @@ import {
 } from "@true-recall/obsidian/components";
 import { DeviceSelectionModal } from "@true-recall/obsidian/modals/integration/DeviceSelectionModal";
 import { notify } from "@true-recall/obsidian/services/notification.service";
-import { useCallback } from "preact/hooks";
+
 import { useSettings } from "../../hooks/useSettings";
 
 export function DeviceDatabaseSection() {

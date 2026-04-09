@@ -1,9 +1,10 @@
+import { useCallback, useMemo, useState } from "preact/hooks";
+
 import { Clickable } from "@true-recall/obsidian/components";
 import { QuickNoteEditorModal } from "@true-recall/obsidian/modals/study/quick-note-editor/QuickNoteEditorModal";
 import { useApp, useIcon, usePlugin } from "@true-recall/obsidian/preact";
 import { cn } from "@true-recall/obsidian/utils";
 import { isMobile } from "@true-recall/obsidian/utils/platform";
-import { useCallback, useMemo, useState } from "preact/hooks";
 
 type NavItemId = "dashboard" | "add" | "stats" | "browse";
 

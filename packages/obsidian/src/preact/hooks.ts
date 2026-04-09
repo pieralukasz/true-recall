@@ -1,10 +1,11 @@
-import { useApp } from "@true-recall/obsidian/preact/ObsidianContext";
 import {
 	MarkdownRenderer,
 	Component as ObsidianComponent,
 	setIcon,
 } from "obsidian";
 import { useEffect, useLayoutEffect, useRef } from "preact/hooks";
+
+import { useApp } from "@true-recall/obsidian/preact/ObsidianContext";
 
 export function useMarkdown(
 	markdown: string,

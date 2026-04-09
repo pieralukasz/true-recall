@@ -1,4 +1,6 @@
 import { useComputed, useSignal } from "@preact/signals";
+import { useEffect, useMemo, useRef, useState } from "preact/hooks";
+
 import { getFilteredDistributions } from "@true-recall/core/metrics/distribution-filter";
 import {
 	buildDayOfWeekStats,
@@ -12,6 +14,7 @@ import type {
 	StatsTimeRange,
 	TrueRecallSettings,
 } from "@true-recall/core/types";
+
 import { AppNavBar } from "@true-recall/obsidian/components";
 import { Q, useQuery } from "@true-recall/obsidian/data";
 import { HeatmapWidget } from "@true-recall/obsidian/editor/study/widgets/analytics/HeatmapWidget";
@@ -35,7 +38,6 @@ import {
 } from "@true-recall/obsidian/features/metrics/ui/stats/components";
 import { useStatsData } from "@true-recall/obsidian/features/metrics/ui/stats/hooks/use-stats-data";
 import { usePlugin } from "@true-recall/obsidian/preact";
-import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 
 export function StatsApp() {
 	const plugin = usePlugin();

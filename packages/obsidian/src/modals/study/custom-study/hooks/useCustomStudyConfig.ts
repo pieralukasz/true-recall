@@ -1,7 +1,9 @@
+import { useCallback, useState } from "preact/hooks";
+
 import type { SessionResult } from "@true-recall/core/types/events.types";
 import type { ReviewOrder } from "@true-recall/core/types/settings.types";
+
 import type { CustomStudyModalResult } from "@true-recall/obsidian/modals/study/custom-study/types";
-import { useCallback, useState } from "preact/hooks";
 
 export interface CustomStudyConfig {
 	stateFilter: "all" | "new" | "learning" | "due";

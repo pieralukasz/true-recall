@@ -1,3 +1,5 @@
+import { Rating, State } from "ts-fsrs";
+
 import { isLearningState } from "@true-recall/core/helpers/card-state";
 import type { IPersistence } from "@true-recall/core/interfaces/persistence";
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite";
@@ -7,7 +9,6 @@ import type {
 	Grade,
 	PersistentStatsData,
 } from "@true-recall/core/types";
-import { Rating, State } from "ts-fsrs";
 
 const STATS_FOLDER = ".true-recall";
 const STATS_FILE = "stats.json";

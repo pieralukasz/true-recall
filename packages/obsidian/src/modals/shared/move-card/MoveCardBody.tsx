@@ -1,3 +1,6 @@
+import type { App, TFile } from "obsidian";
+import { useCallback, useState } from "preact/hooks";
+
 import { Clickable } from "@true-recall/obsidian/components";
 import { SearchInput } from "@true-recall/obsidian/components/SearchInput";
 import type { MoveCardResult } from "@true-recall/obsidian/modals/shared/MoveCardModal";
@@ -9,8 +12,6 @@ import {
 	filterNotesByQuery,
 	MAX_DISPLAY_NOTES,
 } from "@true-recall/obsidian/modals/shared/note-filter.utils";
-import type { App, TFile } from "obsidian";
-import { useCallback, useState } from "preact/hooks";
 
 function NoteItem({
 	note,

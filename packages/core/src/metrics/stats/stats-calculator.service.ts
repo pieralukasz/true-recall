@@ -1,4 +1,5 @@
 import { State } from "ts-fsrs";
+
 import type { FlashcardManager } from "../../flashcard/flashcard.service";
 import type { SqliteStoreService } from "../../persistence/sqlite/SqliteStoreService";
 import type { FSRSService } from "../../services/fsrs/fsrs.service";

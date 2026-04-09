@@ -1,7 +1,8 @@
 import type { Signal } from "@preact/signals";
-import { isMobile } from "@true-recall/obsidian/utils/platform";
 import type { RefObject } from "preact";
 import { useMemo } from "preact/hooks";
+
+import { isMobile } from "@true-recall/obsidian/utils/platform";
 
 const DESKTOP_ROW_HEIGHT = 36;
 const MOBILE_ROW_HEIGHT = 44;

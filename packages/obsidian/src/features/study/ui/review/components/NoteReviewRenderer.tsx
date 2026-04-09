@@ -1,6 +1,8 @@
 import type { FSRSFlashcardItem } from "@true-recall/core/types";
+
 import { Clickable } from "@true-recall/obsidian/components";
 import { usePlugin } from "@true-recall/obsidian/preact/ObsidianContext";
+
 import { useNoteReviewContent } from "../hooks/useNoteReviewContent";
 import { LivePreviewField } from "./LivePreviewField";
 import { type PresetPickerOption, PresetPopover } from "./PresetPopover";

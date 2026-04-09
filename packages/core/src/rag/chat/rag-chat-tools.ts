@@ -8,6 +8,7 @@ import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite";
 import type { HierarchyService } from "@true-recall/core/services/notes/hierarchy.service";
 import type { DayBoundaryService } from "@true-recall/core/services/review/day-boundary.service";
 import { formatLocalDate } from "@true-recall/core/utils";
+
 import type {
 	RagSearchService,
 	SearchResult,

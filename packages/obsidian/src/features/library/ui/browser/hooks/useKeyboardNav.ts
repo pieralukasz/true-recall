@@ -1,4 +1,5 @@
 import { useEffect } from "preact/hooks";
+
 import type { BrowserCard } from "../types";
 
 interface KeyboardNavOptions {

@@ -1,5 +1,6 @@
-import { cn } from "@true-recall/obsidian/utils/cn";
 import { useCallback } from "preact/hooks";
+
+import { cn } from "@true-recall/obsidian/utils/cn";
 
 export interface ToggleInputProps {
 	value: boolean;

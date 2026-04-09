@@ -3,6 +3,7 @@ import { CardActions } from "@true-recall/core/persistence/sqlite/modules/CardAc
 import { StatsActions } from "@true-recall/core/persistence/sqlite/modules/StatsActions";
 import { SqliteDatabase } from "@true-recall/core/persistence/sqlite/SqliteDatabase";
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite/SqliteStoreService";
+
 import type { DeviceDiscoveryService } from "./device-discovery.service";
 
 export interface SyncResult {
@@ -75,6 +76,9 @@ export class DeviceSyncService {
 	): Promise<{ cards: number; reviewLogs: number }> {
 		const data = await this.persistence.readBinary(remotePath);
 		if (!data || data.byteLength === 0) {
+			console.warn(
+				`[True Recall] Remote database at ${remotePath} is empty or unreadable, skipping sync`,
+			);
 			return { cards: 0, reviewLogs: 0 };
 		}
 

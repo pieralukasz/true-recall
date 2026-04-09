@@ -1,5 +1,7 @@
 import { ENABLE_RAG } from "@true-recall/core/constants";
+
 import { isDesktop } from "@true-recall/obsidian/utils/platform";
+
 import type TrueRecallPlugin from "../main";
 import {
 	editSelectionAsFlashcard,

@@ -1,5 +1,6 @@
-import type { ILinkResolver } from "@true-recall/core";
 import type { App } from "obsidian";
+
+import type { ILinkResolver } from "@true-recall/core";
 
 export class ObsidianLinkResolver implements ILinkResolver {
 	constructor(private app: App) {}

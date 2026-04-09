@@ -6,6 +6,7 @@
  * c0 handling, non-sequential indices, and empty content.
  */
 import { describe, expect, it } from "vitest";
+
 import {
 	extractClozeIndices,
 	hasClozeContent,

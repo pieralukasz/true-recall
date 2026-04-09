@@ -1,10 +1,12 @@
+import type { App } from "obsidian";
+
 import type {
 	IUidRemovalPrompt,
 	UidChangeEvent,
 	UidRemovalAction,
 } from "@true-recall/core";
+
 import { UidRemovedModal } from "@true-recall/obsidian/modals/study/UidRemovedModal";
-import type { App } from "obsidian";
 
 export class ObsidianUidPrompt implements IUidRemovalPrompt {
 	constructor(private app: App) {}

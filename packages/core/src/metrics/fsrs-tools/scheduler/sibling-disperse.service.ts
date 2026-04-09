@@ -6,6 +6,7 @@
  */
 
 import { State } from "ts-fsrs";
+
 import type {
 	CardScheduleChange,
 	DisperseOptions,

@@ -1,7 +1,9 @@
 import { useSignal } from "@preact/signals";
-import { Clickable } from "@true-recall/obsidian/components";
 import type { RefObject } from "preact";
 import { useCallback, useEffect, useMemo, useRef } from "preact/hooks";
+
+import { Clickable } from "@true-recall/obsidian/components";
+
 import { ALL_COLUMNS, type ColumnDef } from "../helpers/column-defs";
 import { shouldLoadMoreCards } from "../helpers/infinite-scroll";
 import type { BrowserCard, SortConfig } from "../types";

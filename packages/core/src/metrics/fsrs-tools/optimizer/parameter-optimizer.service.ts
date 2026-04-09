@@ -3,6 +3,7 @@
  */
 
 import { forgetting_curve, type Rating, type State } from "ts-fsrs";
+
 import { DEFAULT_FSRS_WEIGHTS } from "../../../constants";
 import type {
 	OptimizationInput,

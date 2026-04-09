@@ -1,3 +1,5 @@
+import { State } from "ts-fsrs";
+
 import { Clickable } from "@true-recall/obsidian/components";
 import { IOCardRenderer } from "@true-recall/obsidian/features/image-occlusion/IOCardRenderer";
 import { LivePreviewField } from "@true-recall/obsidian/features/study/ui/review/components/LivePreviewField";
@@ -6,7 +8,7 @@ import {
 	MUTED_STATES,
 } from "@true-recall/obsidian/helpers/fsrs-colors";
 import { useApp } from "@true-recall/obsidian/preact/ObsidianContext";
-import { State } from "ts-fsrs";
+
 import type { BrowserCard } from "../types";
 
 const STATE_LABELS: Record<number, string> = {

@@ -4,6 +4,7 @@ import {
 	InfoBlock,
 	ToggleInput,
 } from "@true-recall/obsidian/components";
+
 import { useSettings } from "../../hooks/useSettings";
 
 export function BackupSettingsSection() {

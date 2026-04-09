@@ -2,6 +2,7 @@
  * Schedule Break Service Tests
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
 import { ScheduleBreakService } from "../../../../src/metrics/fsrs-tools/scheduler/schedule-break.service";
 import {
 	createCardsInRange,

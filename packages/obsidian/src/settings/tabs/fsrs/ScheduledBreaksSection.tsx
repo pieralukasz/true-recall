@@ -1,4 +1,7 @@
+import { useCallback } from "preact/hooks";
+
 import type { TrueRecallSettings } from "@true-recall/core/types";
+
 import {
 	ActionButton,
 	Clickable,
@@ -7,7 +10,6 @@ import {
 	InfoBlock,
 } from "@true-recall/obsidian/components";
 import { useApp } from "@true-recall/obsidian/preact";
-import { useCallback } from "preact/hooks";
 
 interface ScheduledBreaksSectionProps {
 	settings: TrueRecallSettings;

@@ -1,9 +1,13 @@
+import { requestUrl } from "obsidian";
+import { useEffect, useState } from "preact/hooks";
+
 import { GENERATION_LANGUAGES } from "@true-recall/core/ai/prompts/default-prompts";
 import {
 	BYOK_MODELS,
 	CUSTOM_MODEL_ID,
 	TRUERECALL_WEB_URL,
 } from "@true-recall/core/constants";
+
 import {
 	Clickable,
 	FormCard,
@@ -14,8 +18,7 @@ import {
 	TextAreaInput,
 	TextInput,
 } from "@true-recall/obsidian/components";
-import { requestUrl } from "obsidian";
-import { useEffect, useState } from "preact/hooks";
+
 import { useSettings } from "../hooks/useSettings";
 
 const MODEL_OPTIONS = [

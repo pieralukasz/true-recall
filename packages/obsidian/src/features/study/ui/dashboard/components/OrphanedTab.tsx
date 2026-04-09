@@ -1,5 +1,6 @@
 import { CardCountDisplay, Clickable } from "@true-recall/obsidian/components";
 import { usePlugin } from "@true-recall/obsidian/preact";
+
 import type { OrphanedCardStats } from "../types";
 
 interface OrphanedTabProps {

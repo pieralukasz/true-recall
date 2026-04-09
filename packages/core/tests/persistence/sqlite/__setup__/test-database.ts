@@ -4,6 +4,7 @@
  */
 import initSqlJs, { type Database as SqlJsDatabase } from "sql.js";
 import { State } from "ts-fsrs";
+
 import type {
 	BindParams,
 	DatabaseLike,

@@ -1,3 +1,6 @@
+import type { App } from "obsidian";
+import { TFile } from "obsidian";
+
 import type { FrontmatterService } from "@true-recall/core/flashcard/source/frontmatter.service";
 import type { SessionPersistenceService } from "@true-recall/core/persistence/session/session-persistence.service";
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite/SqliteStoreService";
@@ -5,11 +8,10 @@ import type {
 	FieldChangeEvent,
 	FrontmatterIndexService,
 } from "@true-recall/core/services/notes/frontmatter-index.service";
+
 import { mutate } from "@true-recall/obsidian/data";
 import { UidRemovedModal } from "@true-recall/obsidian/modals/study/UidRemovedModal";
 import { notify } from "@true-recall/obsidian/services/notification.service";
-import type { App } from "obsidian";
-import { TFile } from "obsidian";
 
 export interface UidGuardianDeps {
 	app: App;

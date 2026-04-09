@@ -6,6 +6,7 @@
 import type { IFileSystem } from "@true-recall/core/interfaces/file-system";
 import type { IFrontmatter } from "@true-recall/core/interfaces/frontmatter";
 import type { IMetadataIndex } from "@true-recall/core/interfaces/metadata-index";
+
 import { FrontmatterService } from "./frontmatter.service";
 
 export class SourceNoteService {

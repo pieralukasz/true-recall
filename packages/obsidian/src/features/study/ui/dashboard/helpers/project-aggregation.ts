@@ -1,3 +1,6 @@
+import type { MetadataCache } from "obsidian";
+import { State } from "ts-fsrs";
+
 import { UNASSIGNED_PATH } from "@true-recall/core/constants";
 import type { SessionPersistenceService } from "@true-recall/core/persistence/session/session-persistence.service";
 import type { FSRSService } from "@true-recall/core/services/fsrs/fsrs.service";
@@ -11,6 +14,7 @@ import type {
 	TrueRecallSettings,
 } from "@true-recall/core/types";
 import type { CardStore } from "@true-recall/core/types/fsrs/store.types";
+
 import {
 	computeProjectStats,
 	type ProjectStats,
@@ -19,8 +23,7 @@ import {
 	type ActionableSessionSnapshot,
 	computeActionableSessionSnapshot,
 } from "@true-recall/obsidian/features/study/services/actionable-session-snapshot.service";
-import type { MetadataCache } from "obsidian";
-import { State } from "ts-fsrs";
+
 import type {
 	DashboardNoteEntry,
 	DashboardProject,

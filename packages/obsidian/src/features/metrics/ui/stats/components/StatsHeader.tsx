@@ -1,5 +1,7 @@
 import type { Signal } from "@preact/signals";
+
 import type { StatsTimeRange } from "@true-recall/core";
+
 import { Clickable } from "@true-recall/obsidian/components";
 import { cn } from "@true-recall/obsidian/utils/cn";
 

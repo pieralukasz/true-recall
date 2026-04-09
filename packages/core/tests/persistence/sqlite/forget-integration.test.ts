@@ -10,9 +10,11 @@
  * 3. Queue rebuilt / badge counts recalculated
  */
 
-import { countByState } from "@true-recall/obsidian/features/library/ui/panel/utils/card-status.utils";
 import { State } from "ts-fsrs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { countByState } from "@true-recall/obsidian/features/library/ui/panel/utils/card-status.utils";
+
 import { FSRSService } from "../../../src/services/fsrs/fsrs.service";
 import {
 	type QueueBuildOptions,

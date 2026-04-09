@@ -1,10 +1,11 @@
+import type { App, TFile } from "obsidian";
+import { render } from "preact";
+import { useCallback, useState } from "preact/hooks";
+
 import { Clickable } from "@true-recall/obsidian/components";
 import { NotePicker } from "@true-recall/obsidian/components/NotePicker";
 import { BasePromiseModal } from "@true-recall/obsidian/modals/shared/BasePromiseModal";
 import { confirm } from "@true-recall/obsidian/modals/shared/ConfirmModal";
-import type { App, TFile } from "obsidian";
-import { render } from "preact";
-import { useCallback, useState } from "preact/hooks";
 
 export type UidRemovedAction = "restore" | "delete" | "move";
 

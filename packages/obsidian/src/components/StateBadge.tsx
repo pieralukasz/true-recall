@@ -1,10 +1,11 @@
+import { cva } from "class-variance-authority";
+import { State } from "ts-fsrs";
+
 import {
 	FSRS_COLORS,
 	MUTED_STATES,
 } from "@true-recall/obsidian/helpers/fsrs-colors";
 import { cn } from "@true-recall/obsidian/utils/cn";
-import { cva } from "class-variance-authority";
-import { State } from "ts-fsrs";
 
 export type CardStateType =
 	| "new"

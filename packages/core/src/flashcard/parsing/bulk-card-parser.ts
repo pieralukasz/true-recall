@@ -15,6 +15,7 @@ import {
 	BUILTIN_BASIC_ID,
 	BUILTIN_CLOZE_ID,
 } from "@true-recall/core/types/note.types";
+
 import { type NoteTypeLookup, parseBlocks } from "./block-parser.service";
 import { CLOZE_DETECT, INLINE_SEPARATOR_RE } from "./parsing-patterns";
 

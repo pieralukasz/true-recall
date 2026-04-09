@@ -1,9 +1,11 @@
 import type { Signal } from "@preact/signals";
 import { useSignal } from "@preact/signals";
-import { usePlugin } from "@true-recall/obsidian/preact";
 import { TFile } from "obsidian";
 import type { RefObject } from "preact";
 import { useCallback, useEffect, useMemo, useRef } from "preact/hooks";
+
+import { usePlugin } from "@true-recall/obsidian/preact";
+
 import { getDragClass } from "../helpers/drag-drop";
 import { UNASSIGNED_PATH } from "../helpers/project-aggregation";
 import type { FlatProjectItem } from "../helpers/project-tree-flatten";

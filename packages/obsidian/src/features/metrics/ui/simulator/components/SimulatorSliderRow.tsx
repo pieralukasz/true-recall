@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef } from "preact/hooks";
+
 import type { SliderConfig } from "../types";
 import { formatSliderValue } from "../utils/simulator-helpers";
 
