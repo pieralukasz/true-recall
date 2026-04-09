@@ -1,7 +1,10 @@
-import type { NoteType } from "@true-recall/core/types/note.types";
-import { BasePromiseModal } from "@true-recall/obsidian/modals/shared/BasePromiseModal";
 import type { App } from "obsidian";
 import { render } from "preact";
+
+import type { NoteType } from "@true-recall/core/types/note.types";
+
+import { BasePromiseModal } from "@true-recall/obsidian/modals/shared/BasePromiseModal";
+
 import { ChangeNoteTypeBody } from "./change-note-type/ChangeNoteTypeBody";
 
 export interface ChangeNoteTypeResult {

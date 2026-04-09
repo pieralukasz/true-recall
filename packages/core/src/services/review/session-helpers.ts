@@ -1,3 +1,5 @@
+import { Rating, State } from "ts-fsrs";
+
 import {
 	MS_PER_DAY,
 	WEAK_CARD_STABILITY_THRESHOLD,
@@ -18,7 +20,6 @@ import type {
 	TrueRecallSettings,
 } from "@true-recall/core/types/settings.types";
 import { getTodayBoundary } from "@true-recall/core/utils/date.utils";
-import { Rating, State } from "ts-fsrs";
 
 export interface CardFilterOptions {
 	stateFilter?: "due" | "learning" | "new" | "buried";

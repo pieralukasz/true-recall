@@ -35,7 +35,6 @@ export {
 	chunkFlashcard,
 	chunkNote,
 } from "./ingestion/rag-chunker.service";
-
 // Chat services
 export { RagEmbeddingServiceImpl } from "./retrieval/rag-embedding.service";
 export type {

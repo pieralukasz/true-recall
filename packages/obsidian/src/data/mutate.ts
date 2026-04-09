@@ -1,5 +1,7 @@
-import type { CardSchedulingMeta } from "@true-recall/core/types";
 import { State } from "ts-fsrs";
+
+import type { CardSchedulingMeta } from "@true-recall/core/types";
+
 import {
 	G,
 	type GlobalCounts,

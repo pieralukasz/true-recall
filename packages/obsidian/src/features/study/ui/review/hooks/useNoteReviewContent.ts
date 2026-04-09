@@ -1,6 +1,8 @@
-import { NoteReviewService } from "@true-recall/core/services/note-review/note-review.service";
-import { useApp } from "@true-recall/obsidian/preact/ObsidianContext";
 import { useCallback, useEffect, useRef, useState } from "preact/hooks";
+
+import { NoteReviewService } from "@true-recall/core/services/note-review/note-review.service";
+
+import { useApp } from "@true-recall/obsidian/preact/ObsidianContext";
 
 export interface NoteReviewContent {
 	content: string | null;

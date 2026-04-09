@@ -1,4 +1,6 @@
 import { effect } from "@preact/signals-core";
+import { type App, debounce, type Plugin, TFile } from "obsidian";
+
 import { RAG_CONFIG } from "@true-recall/core/constants";
 import type {
 	RagChunkActions,
@@ -14,8 +16,9 @@ import type {
 	RagSearchService,
 } from "@true-recall/core/rag/retrieval/rag-search.service";
 import type { TrueRecallSettings } from "@true-recall/core/types/settings.types";
+
 import { lastMutation } from "@true-recall/obsidian/services/signals";
-import { type App, debounce, type Plugin, TFile } from "obsidian";
+
 import { detectDailyNote } from "./daily-note-detector";
 
 function toUpsertChunks(

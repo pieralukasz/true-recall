@@ -1,10 +1,13 @@
 import type { Signal } from "@preact/signals";
+import type { App } from "obsidian";
+import { Notice, TFile } from "obsidian";
+
 import type { HierarchyService } from "@true-recall/core/services/notes/hierarchy.service";
+
 import type TrueRecallPlugin from "@true-recall/obsidian/main";
 import { NamePromptModal } from "@true-recall/obsidian/modals/study/NamePromptModal";
 import type { ProjectManagementService } from "@true-recall/obsidian/services/project-management.service";
-import type { App } from "obsidian";
-import { Notice, TFile } from "obsidian";
+
 import type { FlatProjectItem } from "./project-tree-flatten";
 
 export interface DragItem {

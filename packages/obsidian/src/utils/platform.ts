@@ -1,8 +1,9 @@
+import { Platform } from "obsidian";
+
 import {
 	VIEW_TYPE_DASHBOARD,
 	VIEW_TYPE_REVIEW,
 } from "@true-recall/core/constants";
-import { Platform } from "obsidian";
 
 const MOBILE_ALLOWED_VIEWS = new Set([VIEW_TYPE_REVIEW, VIEW_TYPE_DASHBOARD]);
 

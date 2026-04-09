@@ -1,8 +1,12 @@
+import type { App } from "obsidian";
+import { render } from "preact";
+
 import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
 import type {
 	CardMaturityBreakdown,
 	FSRSFlashcardItem,
 } from "@true-recall/core/types";
+
 import { BaseModal } from "@true-recall/obsidian/modals/shared/BaseModal";
 import {
 	CardPreviewBody,
@@ -12,8 +16,6 @@ import {
 	handleUnburyCard,
 	openSourceNote,
 } from "@true-recall/obsidian/modals/shared/card-preview";
-import type { App } from "obsidian";
-import { render } from "preact";
 
 export interface CardPreviewModalOptions {
 	title: string;

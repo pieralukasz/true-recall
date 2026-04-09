@@ -1,10 +1,13 @@
-import type { SchedulingPreview } from "@true-recall/core";
-import { Clickable } from "@true-recall/obsidian/components";
-import { useIcon } from "@true-recall/obsidian/preact/hooks";
-import { isMobile } from "@true-recall/obsidian/utils/platform";
 import { cva } from "class-variance-authority";
 import type { Grade } from "ts-fsrs";
 import { Rating } from "ts-fsrs";
+
+import type { SchedulingPreview } from "@true-recall/core";
+
+import { Clickable } from "@true-recall/obsidian/components";
+import { useIcon } from "@true-recall/obsidian/preact/hooks";
+import { isMobile } from "@true-recall/obsidian/utils/platform";
+
 import type { TypeInMode } from "../helpers/type-in-flow";
 import { RatingButton } from "./RatingButton";
 

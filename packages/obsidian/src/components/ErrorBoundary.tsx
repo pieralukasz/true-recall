@@ -1,5 +1,6 @@
 import type { ComponentChildren } from "preact";
 import { useErrorBoundary } from "preact/hooks";
+
 import { Clickable } from "./Clickable";
 
 export interface ErrorBoundaryProps {

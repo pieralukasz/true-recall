@@ -3,6 +3,8 @@
  * Handles database backup creation, restoration, and management
  */
 
+import pako from "pako";
+
 import { MS_PER_DAY } from "@true-recall/core/constants";
 import { DatabaseError } from "@true-recall/core/errors/domain.error";
 import type { IPersistence } from "@true-recall/core/interfaces/persistence";
@@ -14,7 +16,6 @@ import {
 	toExactArrayBuffer,
 } from "@true-recall/core/persistence/sqlite";
 import type { RetentionPolicy } from "@true-recall/core/types/settings.types";
-import pako from "pako";
 
 const BACKUP_PREFIX = "true-recall-backup-";
 

@@ -1,11 +1,13 @@
+import type { TFile } from "obsidian";
+import { useCallback, useEffect, useRef, useState } from "preact/hooks";
+
 import type {
 	CardContextItem,
 	ContextItem,
 	NoteContextItem,
 } from "@true-recall/core/rag/context/context.types";
+
 import { usePlugin } from "@true-recall/obsidian/preact";
-import type { TFile } from "obsidian";
-import { useCallback, useEffect, useRef, useState } from "preact/hooks";
 
 interface AutoContextState {
 	activeNote: NoteContextItem | null;

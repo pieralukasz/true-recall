@@ -1,10 +1,11 @@
+import { type App, normalizePath, TFile } from "obsidian";
+
 import {
 	isImageExtension,
 	isVideoExtension,
 	MAX_IMAGE_SIZE_BYTES,
 	MAX_VIDEO_SIZE_BYTES,
 } from "@true-recall/core/types";
-import { type App, normalizePath, TFile } from "obsidian";
 
 export class ImageService {
 	private app: App;

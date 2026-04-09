@@ -1,5 +1,7 @@
 import type { Signal } from "@preact/signals";
 import { useSignal } from "@preact/signals";
+import { useEffect, useMemo } from "preact/hooks";
+
 import { getErrorMessage } from "@true-recall/core/errors";
 import type { TrueRetentionSnapshot } from "@true-recall/core/metrics/fsrs-tools/statistics/true-retention.calculator";
 import { StatsCalculatorService } from "@true-recall/core/metrics/stats/stats-calculator.service";
@@ -21,9 +23,9 @@ import type {
 	TodaySummary,
 	TrueRecallSettings,
 } from "@true-recall/core/types";
+
 import { Q, useQuery } from "@true-recall/obsidian/data";
 import { usePlugin } from "@true-recall/obsidian/preact";
-import { useEffect, useMemo } from "preact/hooks";
 
 export interface StatsData {
 	today: TodaySummary;

@@ -1,5 +1,6 @@
-import type { IVaultFileReader } from "@true-recall/core/integration/anki/anki-media.service";
 import { type App, normalizePath } from "obsidian";
+
+import type { IVaultFileReader } from "@true-recall/core/integration/anki/anki-media.service";
 
 /**
  * Reads vault files for the AnkiMediaService.

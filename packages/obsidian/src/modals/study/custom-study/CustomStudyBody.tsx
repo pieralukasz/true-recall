@@ -1,4 +1,7 @@
+import { useRef } from "preact/hooks";
+
 import type { ReviewOrder } from "@true-recall/core/types/settings.types";
+
 import {
 	Clickable,
 	FormCard,
@@ -9,7 +12,6 @@ import {
 import { useCustomStudyConfig } from "@true-recall/obsidian/modals/study/custom-study/hooks/useCustomStudyConfig";
 import { NumberField } from "@true-recall/obsidian/modals/study/custom-study/NumberField";
 import type { CustomStudyModalResult } from "@true-recall/obsidian/modals/study/custom-study/types";
-import { useRef } from "preact/hooks";
 
 const REVIEW_ORDER_OPTIONS = [
 	{ value: "due-date", label: "Due date" },

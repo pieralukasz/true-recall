@@ -4,6 +4,7 @@
 
 import { State } from "ts-fsrs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
 import type { FSRSFlashcardItem } from "../../src/types";
 import { createDefaultFSRSData, formatInterval } from "../../src/types";
 import type { SourceNoteInfo } from "../mocks/fsrs.mocks";

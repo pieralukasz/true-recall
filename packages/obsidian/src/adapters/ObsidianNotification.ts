@@ -1,5 +1,6 @@
-import type { INotification } from "@true-recall/core";
 import { Notice } from "obsidian";
+
+import type { INotification } from "@true-recall/core";
 
 export class ObsidianNotification implements INotification {
 	show(message: string, timeout?: number): void {

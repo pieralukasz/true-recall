@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { AIRequestError } from "../../src/ai/clients/openrouter-client";
 import { SemanticAnswerGradingService } from "../../src/ai/grading/semantic-answer-grading.service";
 import { DEFAULT_SETTINGS } from "../../src/constants";

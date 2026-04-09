@@ -1,4 +1,5 @@
 import { type ReadonlySignal, signal } from "@preact/signals";
+
 import type { HighlightColor } from "@true-recall/obsidian/helpers/fsrs-colors";
 
 // ── Card mutation types (used by session-helpers, ReviewView) ──

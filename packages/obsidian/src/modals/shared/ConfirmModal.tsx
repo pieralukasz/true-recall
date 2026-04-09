@@ -1,6 +1,8 @@
-import { Clickable } from "@true-recall/obsidian/components";
 import type { App } from "obsidian";
 import { render } from "preact";
+
+import { Clickable } from "@true-recall/obsidian/components";
+
 import { BasePromiseModal } from "./BasePromiseModal";
 
 export interface ConfirmResult {

@@ -82,8 +82,10 @@ export function sortNewCards(
 			return sortByCreatedAt(cards);
 		case "newest-first":
 			return sortByCreatedAtDesc(cards);
-		default:
+		default: {
+			const _exhaustive: never = order;
 			return shuffle(cards);
+		}
 	}
 }
 
@@ -134,8 +136,10 @@ export function sortReviewCards(
 			return [...cards].sort((a, b) => a.fsrs.stability - b.fsrs.stability);
 		case "order-added":
 			return sortByCreatedAt(cards);
-		default:
+		default: {
+			const _exhaustive: never = order;
 			return fsrsService.sortByDue(cards);
+		}
 	}
 }
 
@@ -149,7 +153,7 @@ export function mixQueues(
 			return [...reviews, ...newCards];
 		case "show-before-reviews":
 			return [...newCards, ...reviews];
-		default:
+		case "mix-with-reviews":
 			return interleave(reviews, newCards);
 	}
 }

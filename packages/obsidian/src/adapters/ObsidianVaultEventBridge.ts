@@ -1,5 +1,6 @@
-import type { IVaultEventBridge } from "@true-recall/core";
 import type { App, Plugin } from "obsidian";
+
+import type { IVaultEventBridge } from "@true-recall/core";
 
 export class ObsidianVaultEventBridge implements IVaultEventBridge {
 	constructor(

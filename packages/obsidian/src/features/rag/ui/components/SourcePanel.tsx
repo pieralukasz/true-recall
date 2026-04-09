@@ -1,12 +1,15 @@
+import { useState } from "preact/hooks";
+
 import type { SearchResult } from "@true-recall/core/rag/retrieval/rag-search.service";
 import type { GroupedSource } from "@true-recall/core/rag/retrieval/rag-source-grouper";
 import {
 	groupSources,
 	stripMarkdown,
 } from "@true-recall/core/rag/retrieval/rag-source-grouper";
+
 import { Clickable } from "@true-recall/obsidian/components";
 import { useIcon } from "@true-recall/obsidian/preact";
-import { useState } from "preact/hooks";
+
 import type { SourceNavigationHandlers } from "../types";
 
 const FSRS_STATE_LABELS: Record<number, string> = {

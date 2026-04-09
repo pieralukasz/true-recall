@@ -3,8 +3,9 @@
  * Shared utilities for filtering and counting cards by FSRS state
  */
 
-import type { FSRSFlashcardItem } from "@true-recall/core/types";
 import { State } from "ts-fsrs";
+
+import type { FSRSFlashcardItem } from "@true-recall/core/types";
 
 /** Learning or Relearning */
 export function isLearningState(state: State | number): boolean {

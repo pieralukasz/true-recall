@@ -9,7 +9,6 @@ export {
 	FlashcardInfoSchema,
 	FlashcardItemSchema,
 } from "./flashcard.schema";
-
 // Settings Schemas
 export {
 	type AIModel,

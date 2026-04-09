@@ -1,10 +1,11 @@
+import { State } from "ts-fsrs";
+
 import { isLearningState } from "@true-recall/core/helpers/card-state";
 import type {
 	WorkloadForecastEntry,
 	WorkloadForecastSummary,
 } from "@true-recall/core/metrics/fsrs-tools/statistics/workload-forecast.calculator";
 import type { FSRSCardData } from "@true-recall/core/types";
-import { State } from "ts-fsrs";
 
 /**
  * Build forecast entries from a pre-filtered card list.

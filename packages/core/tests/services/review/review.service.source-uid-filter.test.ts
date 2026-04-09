@@ -1,5 +1,6 @@
 import { State } from "ts-fsrs";
 import { describe, expect, it } from "vitest";
+
 import { FSRSService } from "../../../src/services/fsrs/fsrs.service";
 import {
 	type QueueBuildOptions,

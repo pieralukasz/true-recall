@@ -1,8 +1,9 @@
-import { FolderSuggestInput } from "@true-recall/obsidian/components/FolderSuggestInput";
-import { BasePromiseModal } from "@true-recall/obsidian/modals/shared/BasePromiseModal";
 import { type App, normalizePath } from "obsidian";
 import { render } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
+
+import { FolderSuggestInput } from "@true-recall/obsidian/components/FolderSuggestInput";
+import { BasePromiseModal } from "@true-recall/obsidian/modals/shared/BasePromiseModal";
 
 export interface CreateProjectResult {
 	cancelled: boolean;

@@ -2,6 +2,7 @@
  * Easy Days Service Tests
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
 import {
 	EasyDaysService,
 	isEasyDay,

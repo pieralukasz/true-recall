@@ -1,10 +1,11 @@
+import { useCallback } from "preact/hooks";
+
 import { DeleteCardCommand } from "@true-recall/obsidian/commands/commands/card-delete.cmd";
 import { Clickable } from "@true-recall/obsidian/components";
 import { mutate } from "@true-recall/obsidian/data";
 import { ChangeNoteTypeModal } from "@true-recall/obsidian/modals/library/ChangeNoteTypeModal";
 import { useApp, usePlugin } from "@true-recall/obsidian/preact";
 import { notify } from "@true-recall/obsidian/services/notification.service";
-import { useCallback } from "preact/hooks";
 
 interface BulkActionsBarProps {
 	selectedCount: number;

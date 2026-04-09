@@ -1,9 +1,11 @@
+import type { App } from "obsidian";
+import { render } from "preact";
+
 import { ErrorBoundary } from "@true-recall/obsidian/components";
 import { BasePromiseModal } from "@true-recall/obsidian/modals/shared/BasePromiseModal";
 import { confirm } from "@true-recall/obsidian/modals/shared/ConfirmModal";
 import { ObsidianProvider } from "@true-recall/obsidian/preact/ObsidianContext";
-import type { App } from "obsidian";
-import { render } from "preact";
+
 import type TrueRecallPlugin from "../../../main";
 import { QuickNoteEditorApp } from "./QuickNoteEditorApp";
 import type { QuickNoteEditorMode, QuickNoteEditorResult } from "./types";

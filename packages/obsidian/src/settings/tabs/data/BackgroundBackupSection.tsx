@@ -1,4 +1,5 @@
 import type { BackupInterval } from "@true-recall/core/types";
+
 import {
 	FormCard,
 	FormField,
@@ -7,6 +8,7 @@ import {
 	TextInput,
 	ToggleInput,
 } from "@true-recall/obsidian/components";
+
 import { useSettings } from "../../hooks/useSettings";
 
 export function BackgroundBackupSection() {

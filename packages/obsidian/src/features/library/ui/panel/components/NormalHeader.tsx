@@ -1,3 +1,6 @@
+import { Menu } from "obsidian";
+import { useCallback, useMemo } from "preact/hooks";
+
 import { IconButton, SearchInput } from "@true-recall/obsidian/components";
 import { useCardActions } from "@true-recall/obsidian/features/library/ui/panel/hooks/useCardActions";
 import { usePanelActions } from "@true-recall/obsidian/features/library/ui/panel/hooks/usePanelActions";
@@ -5,8 +8,6 @@ import { usePanelStore } from "@true-recall/obsidian/features/library/ui/panel/h
 import { countByState } from "@true-recall/obsidian/features/library/ui/panel/utils/card-status.utils";
 import { FSRS_COLORS } from "@true-recall/obsidian/helpers/fsrs-colors";
 import { usePlugin } from "@true-recall/obsidian/preact";
-import { Menu } from "obsidian";
-import { useCallback, useMemo } from "preact/hooks";
 
 export interface NormalHeaderProps {
 	streamingNewCount: number;

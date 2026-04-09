@@ -1,7 +1,10 @@
-import type { CardTemplate } from "@true-recall/core/types/note.types";
-import { usePlugin } from "@true-recall/obsidian/preact/ObsidianContext";
 import { Notice } from "obsidian";
 import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
+
+import type { CardTemplate } from "@true-recall/core/types/note.types";
+
+import { usePlugin } from "@true-recall/obsidian/preact/ObsidianContext";
+
 import { FieldManager } from "../note-type-manager/FieldManager";
 import { BottomBar } from "./BottomBar";
 import { CardTypeDropdown } from "./CardTypeDropdown";

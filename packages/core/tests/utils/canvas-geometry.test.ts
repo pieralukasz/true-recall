@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { normalizePointFromRect } from "../../src/utils/canvas-geometry";
 
 describe("canvas geometry helpers", () => {

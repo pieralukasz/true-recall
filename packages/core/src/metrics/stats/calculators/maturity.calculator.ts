@@ -4,6 +4,7 @@
  */
 
 import { State } from "ts-fsrs";
+
 import { isLearningState } from "../../../helpers/card-state";
 import type { SqliteStoreService } from "../../../persistence/sqlite/SqliteStoreService";
 import type { CardMaturityBreakdown, CardSchedulingMeta } from "../../../types";

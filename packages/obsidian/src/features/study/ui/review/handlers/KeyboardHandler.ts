@@ -1,6 +1,8 @@
-import type { ReviewKeybindings } from "@true-recall/core/types";
-import type { ReviewApi } from "@true-recall/obsidian/store";
 import { Rating } from "ts-fsrs";
+
+import type { ReviewKeybindings } from "@true-recall/core/types";
+
+import type { ReviewApi } from "@true-recall/obsidian/store";
 
 export interface KeyboardActionCallbacks {
 	onShowAnswer: () => void;

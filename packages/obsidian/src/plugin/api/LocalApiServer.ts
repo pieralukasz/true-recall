@@ -2,6 +2,7 @@
 // biome-ignore lint/style/useNodejsImportProtocol: esbuild can't resolve node: prefix in Obsidian/Electron bundle
 import { createServer, type Server } from "http";
 import { Notice } from "obsidian";
+
 import type TrueRecallPlugin from "../../main";
 import { dispatch } from "./routes";
 

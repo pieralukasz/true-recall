@@ -1,8 +1,9 @@
+import { useState } from "preact/hooks";
+
 import { Clickable, LoadingSpinner } from "@true-recall/obsidian/components";
 import { usePanelActions } from "@true-recall/obsidian/features/library/ui/panel/hooks/usePanelActions";
 import { usePanelStore } from "@true-recall/obsidian/features/library/ui/panel/hooks/usePanelStore";
 import { useIcon, usePlugin } from "@true-recall/obsidian/preact";
-import { useState } from "preact/hooks";
 
 const CALLOUT_CLS =
 	"ep:w-full ep:rounded-lg ep:bg-obs-bg-secondary ep:border ep:border-obs-modifier-border ep:px-3.5 ep:py-3 ep:text-left ep:flex ep:flex-col ep:gap-2";

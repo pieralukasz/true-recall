@@ -1,8 +1,18 @@
 import { effect } from "@preact/signals";
+import {
+	ItemView,
+	type Menu,
+	Platform,
+	TFile,
+	type WorkspaceLeaf,
+} from "obsidian";
+import { h } from "preact";
+
 import { VIEW_TYPE_FLASHCARD_PANEL } from "@true-recall/core/constants";
 import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
 import { CollectService } from "@true-recall/core/flashcard/lifecycle/collect.service";
 import type { FSRSFlashcardItem } from "@true-recall/core/types/fsrs/card.types";
+
 import { DeleteCardCommand } from "@true-recall/obsidian/commands/commands/card-delete.cmd";
 import { getDataLayer, Q } from "@true-recall/obsidian/data";
 import { extractHighlights } from "@true-recall/obsidian/features/library/ui/panel/utils/highlight-extractor";
@@ -15,14 +25,7 @@ import {
 	FlashcardPanelApp,
 	type PanelAppActions,
 } from "@true-recall/obsidian/views/panel/FlashcardPanelApp";
-import {
-	ItemView,
-	type Menu,
-	Platform,
-	TFile,
-	type WorkspaceLeaf,
-} from "obsidian";
-import { h } from "preact";
+
 import type TrueRecallPlugin from "../../main";
 
 export class FlashcardPanelView extends ItemView {

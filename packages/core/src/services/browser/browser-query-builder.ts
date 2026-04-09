@@ -1,3 +1,5 @@
+import { State } from "ts-fsrs";
+
 import { MS_PER_DAY } from "@true-recall/core/constants";
 import { escapeFts5Query } from "@true-recall/core/persistence/sqlite/modules/NoteActions";
 import { sqlPlaceholders } from "@true-recall/core/persistence/sqlite/sql-utils";
@@ -11,7 +13,6 @@ import {
 	BUILTIN_IMAGE_OCCLUSION_ID,
 	BUILTIN_NOTE_REVIEW_ID,
 } from "@true-recall/core/types/note.types";
-import { State } from "ts-fsrs";
 
 export interface SqlQuery {
 	where: string;

@@ -1,8 +1,9 @@
-import { Clickable } from "@true-recall/obsidian/components";
-import { BasePromiseModal } from "@true-recall/obsidian/modals/shared/BasePromiseModal";
 import type { App } from "obsidian";
 import { render } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
+
+import { Clickable } from "@true-recall/obsidian/components";
+import { BasePromiseModal } from "@true-recall/obsidian/modals/shared/BasePromiseModal";
 
 export interface NamePromptResult {
 	cancelled: boolean;

@@ -1,9 +1,10 @@
+import { State } from "ts-fsrs";
+
 import type {
 	DistributionStats,
 	HistogramBucket,
 } from "@true-recall/core/metrics/fsrs-tools/statistics/distribution.calculator";
 import type { CardSchedulingMeta } from "@true-recall/core/types";
-import { State } from "ts-fsrs";
 
 type BucketDef = [min: number, max: number, label: string];
 

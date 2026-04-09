@@ -1,9 +1,11 @@
+import { describe, expect, it, vi } from "vitest";
+
 import {
 	BUILTIN_BASIC_ID,
 	BUILTIN_IMAGE_OCCLUSION_ID,
 	type NoteType,
 } from "@true-recall/core/types/note.types";
-import { describe, expect, it, vi } from "vitest";
+
 import { openPanelCardEditor } from "../../../../../src/features/library/ui/panel/helpers/panel-edit-routing";
 
 function makeNoteType(id: string): NoteType {

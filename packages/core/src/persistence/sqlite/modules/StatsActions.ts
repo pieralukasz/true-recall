@@ -10,9 +10,12 @@ import type {
 	TimeToMasteryStats,
 } from "../../../types";
 import type { SqliteDatabase } from "../SqliteDatabase";
-import { AnalyticsActions } from "./stats/analytics-actions";
+import { AnalyticsCardActions } from "./stats/analytics-card-actions";
+import { AnalyticsPerformanceActions } from "./stats/analytics-performance-actions";
 import { DailyProgressActions } from "./stats/daily-progress-actions";
+import { DailyProgressQueryActions } from "./stats/daily-progress-query-actions";
 import { ReviewLogActions } from "./stats/review-log-actions";
+import { ReviewLogSyncActions } from "./stats/review-log-sync-actions";
 
 export type {
 	PresetDailyProgressRow,
@@ -21,13 +24,19 @@ export type {
 
 export class StatsActions {
 	private reviewLog: ReviewLogActions;
+	private reviewLogSync: ReviewLogSyncActions;
 	private dailyProgress: DailyProgressActions;
-	private analytics: AnalyticsActions;
+	private dailyProgressQuery: DailyProgressQueryActions;
+	private analyticsCard: AnalyticsCardActions;
+	private analyticsPerformance: AnalyticsPerformanceActions;
 
 	constructor(db: SqliteDatabase) {
 		this.reviewLog = new ReviewLogActions(db);
+		this.reviewLogSync = new ReviewLogSyncActions(db);
 		this.dailyProgress = new DailyProgressActions(db);
-		this.analytics = new AnalyticsActions(db);
+		this.dailyProgressQuery = new DailyProgressQueryActions(db);
+		this.analyticsCard = new AnalyticsCardActions(db);
+		this.analyticsPerformance = new AnalyticsPerformanceActions(db);
 	}
 
 	// ── Review log operations ─────────────────────────────────────
@@ -96,7 +105,7 @@ export class StatsActions {
 		deletedAt: number | null;
 		presetName: string | null;
 	}[] {
-		return this.reviewLog.getModifiedReviewLogSince(timestamp);
+		return this.reviewLogSync.getModifiedReviewLogSince(timestamp);
 	}
 
 	upsertReviewLogFromRemote(data: {
@@ -112,7 +121,7 @@ export class StatsActions {
 		deletedAt: number | null;
 		presetName: string | null;
 	}): boolean {
-		return this.reviewLog.upsertReviewLogFromRemote(data);
+		return this.reviewLogSync.upsertReviewLogFromRemote(data);
 	}
 
 	getReviewLogForSync(id: string): {
@@ -128,11 +137,11 @@ export class StatsActions {
 		deletedAt: number | null;
 		presetName: string | null;
 	} | null {
-		return this.reviewLog.getReviewLogForSync(id);
+		return this.reviewLogSync.getReviewLogForSync(id);
 	}
 
 	deleteAllReviewLogForSync(): void {
-		this.reviewLog.deleteAllReviewLogForSync();
+		this.reviewLogSync.deleteAllReviewLogForSync();
 	}
 
 	getReviewDataForOptimization(presetName?: string): {
@@ -145,7 +154,7 @@ export class StatsActions {
 		stability: number;
 		difficulty: number;
 	}[] {
-		return this.reviewLog.getReviewDataForOptimization(presetName);
+		return this.reviewLogSync.getReviewDataForOptimization(presetName);
 	}
 
 	// ── Daily progress operations ─────────────────────────────────
@@ -179,11 +188,11 @@ export class StatsActions {
 	}
 
 	getAllDailyStats(): Record<string, ExtendedDailyStats> {
-		return this.dailyProgress.getAllDailyStats();
+		return this.dailyProgressQuery.getAllDailyStats();
 	}
 
 	getAllDailyStatsSummary(): Record<string, ExtendedDailyStats> {
-		return this.dailyProgress.getAllDailyStatsSummary();
+		return this.dailyProgressQuery.getAllDailyStatsSummary();
 	}
 
 	getDailyStatsFromReviewLog(
@@ -194,7 +203,7 @@ export class StatsActions {
 			excludeSourceUids?: string[];
 		},
 	): ExtendedDailyStats[] {
-		return this.dailyProgress.getDailyStatsFromReviewLog(
+		return this.dailyProgressQuery.getDailyStatsFromReviewLog(
 			startDate,
 			endDate,
 			opts,
@@ -204,44 +213,47 @@ export class StatsActions {
 	// ── Analytics operations ──────────────────────────────────────
 
 	getCardMaturityBreakdown(): CardMaturityBreakdown {
-		return this.analytics.getCardMaturityBreakdown();
+		return this.analyticsCard.getCardMaturityBreakdown();
 	}
 
 	getDueCardsByDate(
 		startDate: string,
 		endDate: string,
 	): { date: string; count: number }[] {
-		return this.analytics.getDueCardsByDate(startDate, endDate);
+		return this.analyticsCard.getDueCardsByDate(startDate, endDate);
 	}
 
 	getProblemCards(limit = 20): ProblemCard[] {
-		return this.analytics.getProblemCards(limit);
+		return this.analyticsCard.getProblemCards(limit);
 	}
 
 	getStudyPatterns(): StudyPattern {
-		return this.analytics.getStudyPatterns();
+		return this.analyticsCard.getStudyPatterns();
 	}
 
 	getCardsCreatedByDate(
 		startDate: string,
 		endDate: string,
 	): { date: string; count: number }[] {
-		return this.analytics.getCardsCreatedByDate(startDate, endDate);
+		return this.analyticsPerformance.getCardsCreatedByDate(startDate, endDate);
 	}
 
 	getCardsCreatedOnDate(date: string): string[] {
-		return this.analytics.getCardsCreatedOnDate(date);
+		return this.analyticsPerformance.getCardsCreatedOnDate(date);
 	}
 
 	getCardsCreatedVsReviewed(
 		startDate: string,
 		endDate: string,
 	): CardsCreatedVsReviewedEntry[] {
-		return this.analytics.getCardsCreatedVsReviewed(startDate, endDate);
+		return this.analyticsPerformance.getCardsCreatedVsReviewed(
+			startDate,
+			endDate,
+		);
 	}
 
 	getTimeToMastery(): TimeToMasteryStats[] {
-		return this.analytics.getTimeToMastery();
+		return this.analyticsPerformance.getTimeToMastery();
 	}
 
 	getReviewsForRetention(
@@ -249,7 +261,7 @@ export class StatsActions {
 		endDate: string,
 		presetNames?: string[],
 	): { date: string; rating: number }[] {
-		return this.analytics.getReviewsForRetention(
+		return this.analyticsPerformance.getReviewsForRetention(
 			startDate,
 			endDate,
 			presetNames,
@@ -257,11 +269,11 @@ export class StatsActions {
 	}
 
 	getTrueRetention(startDate: string, endDate: string): number {
-		return this.analytics.getTrueRetention(startDate, endDate);
+		return this.analyticsPerformance.getTrueRetention(startDate, endDate);
 	}
 
 	getForecastDueByDay(days: number): { date: string; count: number }[] {
-		return this.analytics.getForecastDueByDay(days);
+		return this.analyticsPerformance.getForecastDueByDay(days);
 	}
 
 	getSiblingCards(sourceUid: string): {
@@ -269,22 +281,22 @@ export class StatsActions {
 		due: string;
 		scheduledDays: number;
 	}[] {
-		return this.analytics.getSiblingCards(sourceUid);
+		return this.analyticsPerformance.getSiblingCards(sourceUid);
 	}
 
 	getNotePerformance(): NotePerformanceRow[] {
-		return this.analytics.getNotePerformance();
+		return this.analyticsPerformance.getNotePerformance();
 	}
 
 	getCreationSourcePerformance(): CreationSourceStats[] {
-		return this.analytics.getCreationSourcePerformance();
+		return this.analyticsPerformance.getCreationSourcePerformance();
 	}
 
 	getNotePerformanceFiltered(
 		excludeSourceUids: string[],
 		includeSourceUids?: string[],
 	): NotePerformanceRow[] {
-		return this.analytics.getNotePerformanceFiltered(
+		return this.analyticsPerformance.getNotePerformanceFiltered(
 			excludeSourceUids,
 			includeSourceUids,
 		);

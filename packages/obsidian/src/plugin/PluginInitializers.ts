@@ -1,3 +1,5 @@
+import { normalizePath, TFile } from "obsidian";
+
 import { DeletionHandlerService } from "@true-recall/core/flashcard/lifecycle/deletion-handler.service";
 import { UidGuardianService } from "@true-recall/core/flashcard/lifecycle/uid-guardian.service";
 import { DeviceDiscoveryService } from "@true-recall/core/integration/device/device-discovery.service";
@@ -7,6 +9,7 @@ import {
 	getDeviceDbFilename,
 	SAFETY_FLUSH_INTERVAL_MS,
 } from "@true-recall/core/persistence/sqlite/sqlite.types";
+
 import { ObsidianPersistence } from "@true-recall/obsidian/adapters/ObsidianPersistence";
 import { ObsidianUidPrompt } from "@true-recall/obsidian/adapters/ObsidianUidPrompt";
 import {
@@ -26,7 +29,7 @@ import type { DeviceSelectionResult } from "@true-recall/obsidian/modals/integra
 import { QuickNoteEditorModal } from "@true-recall/obsidian/modals/study/quick-note-editor/QuickNoteEditorModal";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 import { createAppStore } from "@true-recall/obsidian/store";
-import { normalizePath, TFile } from "obsidian";
+
 import type TrueRecallPlugin from "../main";
 import { BackupRecoveryManager } from "./BackupRecoveryManager";
 import { registerDeletionHandler } from "./PluginEventHandlers";

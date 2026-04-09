@@ -1,4 +1,8 @@
+import type { App } from "obsidian";
+import { useCallback } from "preact/hooks";
+
 import type { TrueRecallSettings } from "@true-recall/core/types";
+
 import {
 	ActionButton,
 	FormCard,
@@ -7,8 +11,7 @@ import {
 } from "@true-recall/obsidian/components";
 import { EasyDaysModal } from "@true-recall/obsidian/features/metrics/modals/EasyDaysModal";
 import { notify } from "@true-recall/obsidian/services/notification.service";
-import type { App } from "obsidian";
-import { useCallback } from "preact/hooks";
+
 import type { FsrsPluginHost } from "../../../types/plugin-host.types";
 
 interface EasyDaysSectionProps {

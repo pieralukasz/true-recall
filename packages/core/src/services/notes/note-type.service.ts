@@ -12,6 +12,7 @@ import {
 } from "@true-recall/core/errors/domain.error";
 import { ValidationError } from "@true-recall/core/errors/validation.error";
 import { slugifyNoteTypeName } from "@true-recall/core/flashcard/note-types/note-type-slug";
+
 import type { CardTemplate, NoteType } from "../../types/note.types";
 
 export interface NoteTypeServiceDeps {

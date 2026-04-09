@@ -1,4 +1,5 @@
 import type { Signal } from "@preact/signals";
+
 import { Clickable } from "@true-recall/obsidian/components";
 import { cn } from "@true-recall/obsidian/utils/cn";
 

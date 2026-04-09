@@ -1,4 +1,5 @@
 import type { MutationType } from "@true-recall/obsidian/data/queries";
+
 import type { Command, CommandContext } from "./command.types";
 
 export class CompoundCommand implements Command {

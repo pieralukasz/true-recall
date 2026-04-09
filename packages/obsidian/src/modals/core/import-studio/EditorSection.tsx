@@ -1,9 +1,11 @@
 import type { EditorView } from "@codemirror/view";
 import { placeholder } from "@codemirror/view";
-import type { EmbeddableEditorInstance } from "@true-recall/obsidian/editor/shared/embedded-editor";
-import { usePlugin } from "@true-recall/obsidian/preact/ObsidianContext";
 import type { App } from "obsidian";
 import { useCallback, useEffect, useRef } from "preact/hooks";
+
+import type { EmbeddableEditorInstance } from "@true-recall/obsidian/editor/shared/embedded-editor";
+import { usePlugin } from "@true-recall/obsidian/preact/ObsidianContext";
+
 import { buildPlaceholder } from "./placeholder";
 
 const BLANK_CARD_TEMPLATE = "#type/basic\nFront: \nBack: \n\n---\n";

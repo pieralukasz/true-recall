@@ -1,3 +1,5 @@
+import { State } from "ts-fsrs";
+
 import { MS_PER_DAY } from "@true-recall/core/constants";
 import type { FSRSService } from "@true-recall/core/services/fsrs/fsrs.service";
 import type {
@@ -6,7 +8,6 @@ import type {
 	FSRSCardData,
 	Grade,
 } from "@true-recall/core/types";
-import { State } from "ts-fsrs";
 
 const VALID_EASE_MIN = 1;
 const VALID_EASE_MAX = 4;

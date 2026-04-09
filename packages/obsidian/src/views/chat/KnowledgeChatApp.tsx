@@ -1,3 +1,6 @@
+import { Notice } from "obsidian";
+import { useCallback, useMemo, useRef, useState } from "preact/hooks";
+
 import type { ChatTurn } from "@true-recall/core/rag/chat/rag-query.service";
 import type {
 	ContextItem,
@@ -5,6 +8,7 @@ import type {
 } from "@true-recall/core/rag/context/context.types";
 import { contextKey } from "@true-recall/core/rag/context/context.types";
 import type { ChatConfig } from "@true-recall/core/types";
+
 import { Clickable, IconButton } from "@true-recall/obsidian/components";
 import { ChatConfigPanel } from "@true-recall/obsidian/features/rag/ui/components/ChatConfigPanel";
 import { ChatInput } from "@true-recall/obsidian/features/rag/ui/components/ChatInput";
@@ -13,8 +17,7 @@ import { IndexStatus } from "@true-recall/obsidian/features/rag/ui/components/In
 import { useAutoContext } from "@true-recall/obsidian/features/rag/ui/context/useAutoContext";
 import type { SourceNavigationHandlers } from "@true-recall/obsidian/features/rag/ui/types";
 import { useApp, useIcon, usePlugin } from "@true-recall/obsidian/preact";
-import { Notice } from "obsidian";
-import { useCallback, useMemo, useRef, useState } from "preact/hooks";
+
 import type { KnowledgeChatView } from "./KnowledgeChatView";
 
 function ThinkingIndicator() {

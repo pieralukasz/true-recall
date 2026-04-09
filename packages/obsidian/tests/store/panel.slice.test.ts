@@ -1,7 +1,9 @@
-import type { AppError } from "@true-recall/core/errors";
-import type { FlashcardInfo } from "@true-recall/core/types";
 import type { TFile } from "obsidian";
 import { beforeEach, describe, expect, it } from "vitest";
+
+import type { AppError } from "@true-recall/core/errors";
+import type { FlashcardInfo } from "@true-recall/core/types";
+
 import type { AppStore } from "../../src/store";
 import { createTestStore } from "./test-helpers";
 

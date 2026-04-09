@@ -1,7 +1,9 @@
+import { useState } from "preact/hooks";
+
 import type { ModelMapping, NoteTypeMapping } from "@true-recall/core/types";
 import type { NoteType } from "@true-recall/core/types/note.types";
+
 import { ModalFooter } from "@true-recall/obsidian/components";
-import { useState } from "preact/hooks";
 
 const AUTO_CREATE = "auto";
 const SKIP_FIELD = "__skip__";

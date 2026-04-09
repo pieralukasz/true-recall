@@ -1,5 +1,6 @@
-import type { IHttpClient } from "@true-recall/core";
 import { requestUrl } from "obsidian";
+
+import type { IHttpClient } from "@true-recall/core";
 
 export class ObsidianHttpClient implements IHttpClient {
 	async post(

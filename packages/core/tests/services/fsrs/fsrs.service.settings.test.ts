@@ -5,6 +5,7 @@
 
 import { Rating, State } from "ts-fsrs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
 import { FSRSService } from "../../../src/services/fsrs/fsrs.service";
 import type { FSRSCardData } from "../../../src/types";
 import type { FSRSSettings } from "../../../src/types/settings.types";

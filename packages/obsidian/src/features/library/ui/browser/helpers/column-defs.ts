@@ -1,4 +1,5 @@
 import { State } from "ts-fsrs";
+
 import type { BrowserCard } from "../types";
 
 export interface ColumnDef {

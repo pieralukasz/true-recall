@@ -1,4 +1,5 @@
 import type { FSRSCardData } from "@true-recall/core/types";
+
 import type { Command, CommandContext } from "../command.types";
 
 export class BuryCommand implements Command {

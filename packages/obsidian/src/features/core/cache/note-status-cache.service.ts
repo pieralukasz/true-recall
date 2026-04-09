@@ -1,4 +1,5 @@
 import { effect } from "@preact/signals";
+
 import {
 	getDataLayer,
 	type NoteStatusInfo,

@@ -1,12 +1,13 @@
+import { type App, normalizePath, type TFile } from "obsidian";
+import { render } from "preact";
+import { useState } from "preact/hooks";
+
 import { Clickable, SearchInput } from "@true-recall/obsidian/components";
 import { BasePromiseModal } from "@true-recall/obsidian/modals/shared/BasePromiseModal";
 import {
 	filterNotesByQuery,
 	MAX_DISPLAY_NOTES,
 } from "@true-recall/obsidian/modals/shared/note-filter.utils";
-import { type App, normalizePath, type TFile } from "obsidian";
-import { render } from "preact";
-import { useState } from "preact/hooks";
 
 export interface SelectNoteResult {
 	cancelled: boolean;

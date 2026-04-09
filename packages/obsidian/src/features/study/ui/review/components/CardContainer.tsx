@@ -1,8 +1,11 @@
+import { useEffect, useRef, useState } from "preact/hooks";
+
 import type {
 	FSRSFlashcardItem,
 	LocalAnswerAssessment,
 	SemanticGradingResult,
 } from "@true-recall/core/types";
+
 import { Clickable } from "@true-recall/obsidian/components";
 import { IOCardRenderer } from "@true-recall/obsidian/features/image-occlusion/IOCardRenderer";
 import {
@@ -12,7 +15,7 @@ import {
 import { LivePreviewField } from "@true-recall/obsidian/features/study/ui/review/components/LivePreviewField";
 import { TypeInCMEditor } from "@true-recall/obsidian/features/study/ui/review/components/TypeInCMEditor";
 import { cn } from "@true-recall/obsidian/utils/cn";
-import { useEffect, useRef, useState } from "preact/hooks";
+
 import { NoteReviewRenderer } from "./NoteReviewRenderer";
 
 // Pre-renders the answer DOM one frame after the question paints,

@@ -1,3 +1,5 @@
+import { Plugin, type TFile } from "obsidian";
+
 import { TrueRecallApp } from "@true-recall/core/app";
 import {
 	ENABLE_RAG,
@@ -17,6 +19,7 @@ import { DeviceSyncService } from "@true-recall/core/integration/device/device-s
 import { SessionService } from "@true-recall/core/services/review/session.service";
 import type { TrueRecallSettings } from "@true-recall/core/types";
 import type { SessionConfig } from "@true-recall/core/types/session-config.types";
+
 import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpClient";
 import { ObsidianPersistence } from "@true-recall/obsidian/adapters/ObsidianPersistence";
 import type { CommandService } from "@true-recall/obsidian/commands";
@@ -62,7 +65,7 @@ import { FlashcardPanelView } from "@true-recall/obsidian/views/panel/FlashcardP
 import { ReviewView } from "@true-recall/obsidian/views/review/ReviewView";
 import { SimulatorView } from "@true-recall/obsidian/views/simulator/SimulatorView";
 import { StatsView } from "@true-recall/obsidian/views/stats/StatsView";
-import { Plugin, type TFile } from "obsidian";
+
 import { createObsidianAdapters, type ObsidianAdapters } from "./context";
 import type { LocalApiServer } from "./plugin/api/LocalApiServer";
 import type { BackupRecoveryManager } from "./plugin/BackupRecoveryManager";
@@ -238,8 +241,8 @@ export default class TrueRecallPlugin extends Plugin {
 			return;
 		}
 
-		// 3. Device lock
-		if (this.deviceIdService) {
+		// 3. Device lock (only when sync is enabled)
+		if (this.settings.enableDeviceSync && this.deviceIdService) {
 			try {
 				const persistence = new ObsidianPersistence(this.app);
 				const deviceId = this.deviceIdService.getDeviceId();

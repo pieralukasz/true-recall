@@ -3,7 +3,9 @@
  */
 
 import { DEFAULT_FSRS_WEIGHTS } from "@true-recall/core/constants";
+
 import { getThemeColor } from "@true-recall/obsidian/utils/theme-colors";
+
 import type { SliderConfig } from "./types";
 
 /** Default review sequences */

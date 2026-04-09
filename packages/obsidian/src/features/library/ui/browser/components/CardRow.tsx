@@ -1,9 +1,12 @@
+import { State } from "ts-fsrs";
+
 import { stripMarkdownSyntax } from "@true-recall/core/utils";
+
 import {
 	FSRS_COLORS,
 	MUTED_STATES,
 } from "@true-recall/obsidian/helpers/fsrs-colors";
-import { State } from "ts-fsrs";
+
 import type { ColumnDef } from "../helpers/column-defs";
 import type { BrowserCard } from "../types";
 

@@ -29,5 +29,4 @@ export {
 	type PresetDailyProgress,
 	SessionPersistenceService,
 } from "./session/session-persistence.service";
-
 export * from "./sqlite";

@@ -1,5 +1,6 @@
-import { cn } from "@true-recall/obsidian/utils";
 import type { TFile } from "obsidian";
+
+import { cn } from "@true-recall/obsidian/utils";
 
 export interface NoteListItemProps {
 	note: TFile;

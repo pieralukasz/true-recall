@@ -1,7 +1,9 @@
-import { useIcon } from "@true-recall/obsidian/preact/hooks";
 import type { App, TFile } from "obsidian";
 import { SuggestModal } from "obsidian";
 import { useCallback, useEffect, useRef, useState } from "preact/hooks";
+
+import { useIcon } from "@true-recall/obsidian/preact/hooks";
+
 import {
 	clearFormatting,
 	insertAtCursor,

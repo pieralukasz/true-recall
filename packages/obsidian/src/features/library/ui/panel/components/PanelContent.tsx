@@ -1,5 +1,8 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
+import { useEffect, useMemo, useRef, useState } from "preact/hooks";
+
 import { clearRecentCards } from "@true-recall/core/ai/state/streaming-state";
+
 import {
 	EmptyState,
 	EmptyStateMessages,
@@ -15,7 +18,6 @@ import { groupCards } from "@true-recall/obsidian/features/library/ui/panel/grou
 import { usePanelScroll } from "@true-recall/obsidian/features/library/ui/panel/hooks/PanelScrollContext";
 import { usePanelStore } from "@true-recall/obsidian/features/library/ui/panel/hooks/usePanelStore";
 import { matchesCardSearch } from "@true-recall/obsidian/features/library/ui/panel/utils/search-query.utils";
-import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 
 export function PanelContent() {
 	const {

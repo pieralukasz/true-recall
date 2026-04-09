@@ -5,6 +5,7 @@
 
 import { State } from "ts-fsrs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
 import {
 	createTestCard,
 	createTestContext,
@@ -416,6 +417,159 @@ describe("Sync Operations", () => {
 
 			expect(modifiedCards.some((c) => c.id === "cascade-test")).toBe(true);
 			expect(modifiedLogs.some((l) => l.cardId === "cascade-test")).toBe(true);
+		});
+	});
+
+	describe("LWW conflict resolution", () => {
+		it("upsertFromRemote returns false when local card has newer updated_at", async () => {
+			vi.setSystemTime(new Date(2000));
+			const card = createTestCard({ id: "lww-newer-local" });
+			ctx.cards.set(card.id, card);
+
+			const result = ctx.cards.upsertFromRemote({
+				id: "lww-newer-local",
+				due: new Date().toISOString(),
+				stability: 99,
+				difficulty: 99,
+				reps: 10,
+				lapses: 5,
+				state: State.Review,
+				lastReview: new Date().toISOString(),
+				scheduledDays: 30,
+				learningStep: 0,
+				suspended: false,
+				question: "Remote question",
+				answer: "Remote answer",
+				updatedAt: 1000,
+				deletedAt: null,
+			});
+
+			expect(result).toBe(false);
+
+			const stored = ctx.cards.get("lww-newer-local");
+			expect(stored?.question).toBe("Question for lww-newer-local");
+			expect(stored?.stability).toBe(0);
+		});
+
+		it("upsertFromRemote returns false when timestamps are equal", async () => {
+			vi.setSystemTime(new Date(1000));
+			const card = createTestCard({ id: "lww-equal" });
+			ctx.cards.set(card.id, card);
+
+			const result = ctx.cards.upsertFromRemote({
+				id: "lww-equal",
+				due: new Date().toISOString(),
+				stability: 99,
+				difficulty: 99,
+				reps: 10,
+				lapses: 5,
+				state: State.Review,
+				lastReview: new Date().toISOString(),
+				scheduledDays: 30,
+				learningStep: 0,
+				suspended: false,
+				question: "Remote question",
+				answer: "Remote answer",
+				updatedAt: 1000,
+				deletedAt: null,
+			});
+
+			expect(result).toBe(false);
+
+			const stored = ctx.cards.get("lww-equal");
+			expect(stored?.question).toBe("Question for lww-equal");
+		});
+
+		it("upsertFromRemote returns false when remote updatedAt is undefined", async () => {
+			vi.setSystemTime(new Date(1000));
+			const card = createTestCard({ id: "lww-undefined" });
+			ctx.cards.set(card.id, card);
+
+			const result = ctx.cards.upsertFromRemote({
+				id: "lww-undefined",
+				due: new Date().toISOString(),
+				stability: 99,
+				difficulty: 99,
+				reps: 10,
+				lapses: 5,
+				state: State.Review,
+				lastReview: new Date().toISOString(),
+				scheduledDays: 30,
+				learningStep: 0,
+				suspended: false,
+				question: "Remote question",
+				answer: "Remote answer",
+				updatedAt: undefined,
+				deletedAt: null,
+			});
+
+			expect(result).toBe(false);
+
+			const stored = ctx.cards.get("lww-undefined");
+			expect(stored?.question).toBe("Question for lww-undefined");
+		});
+
+		it("upsertReviewLogFromRemote returns false when local log has newer updated_at", async () => {
+			const newerTimestamp = 2000;
+			const olderTimestamp = 1000;
+
+			const initialLog = {
+				id: "lww-log-newer",
+				cardId: "card-1",
+				reviewedAt: new Date().toISOString(),
+				rating: 3,
+				scheduledDays: 7,
+				elapsedDays: 0,
+				state: State.Review,
+				timeSpentMs: 5000,
+				updatedAt: newerTimestamp,
+				deletedAt: null,
+				presetName: null,
+			};
+
+			ctx.stats.upsertReviewLogFromRemote(initialLog);
+
+			const result = ctx.stats.upsertReviewLogFromRemote({
+				...initialLog,
+				rating: 1,
+				updatedAt: olderTimestamp,
+			});
+
+			expect(result).toBe(false);
+
+			const stored = ctx.stats.getReviewLogForSync("lww-log-newer");
+			expect(stored?.rating).toBe(3);
+		});
+
+		it("upsertReviewLogFromRemote returns false when timestamps are equal", async () => {
+			const timestamp = 1000;
+
+			const initialLog = {
+				id: "lww-log-equal",
+				cardId: "card-1",
+				reviewedAt: new Date().toISOString(),
+				rating: 3,
+				scheduledDays: 7,
+				elapsedDays: 0,
+				state: State.Review,
+				timeSpentMs: 5000,
+				updatedAt: timestamp,
+				deletedAt: null,
+				presetName: null,
+			};
+
+			ctx.stats.upsertReviewLogFromRemote(initialLog);
+
+			const result = ctx.stats.upsertReviewLogFromRemote({
+				...initialLog,
+				rating: 1,
+				updatedAt: timestamp,
+			});
+
+			expect(result).toBe(false);
+
+			const stored = ctx.stats.getReviewLogForSync("lww-log-equal");
+			expect(stored?.rating).toBe(3);
 		});
 	});
 });

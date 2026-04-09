@@ -1,6 +1,8 @@
-import type { ReviewKeybindings } from "@true-recall/core/types";
 import { Rating } from "ts-fsrs";
 import { describe, expect, it, vi } from "vitest";
+
+import type { ReviewKeybindings } from "@true-recall/core/types";
+
 import { KeyboardHandler } from "../../../../../src/features/study/ui/review/handlers/KeyboardHandler";
 import type { ReviewApi } from "../../../../../src/store";
 

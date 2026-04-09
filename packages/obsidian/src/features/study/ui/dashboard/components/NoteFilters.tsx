@@ -1,5 +1,6 @@
 import { Clickable } from "@true-recall/obsidian/components";
 import { cn } from "@true-recall/obsidian/utils/cn";
+
 import type { NoteFilterMode, ProjectFilter } from "../types";
 
 interface NoteFiltersProps {

@@ -1,5 +1,6 @@
-import type { CardType } from "@true-recall/core/types";
 import type { State } from "ts-fsrs";
+
+import type { CardType } from "@true-recall/core/types";
 
 /** Flattened card row optimized for table display */
 export interface BrowserCard {

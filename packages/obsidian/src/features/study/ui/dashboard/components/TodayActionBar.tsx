@@ -1,8 +1,10 @@
 import { formatEstimatedTime } from "@true-recall/core/helpers/time-estimate";
+
 import { ActionButton } from "@true-recall/obsidian/components";
 import { FSRS_COLORS } from "@true-recall/obsidian/helpers/fsrs-colors";
 import { usePlugin } from "@true-recall/obsidian/preact";
 import { isMobile } from "@true-recall/obsidian/utils/platform";
+
 import type { TodayProgress } from "../types";
 
 interface TodayActionBarProps {

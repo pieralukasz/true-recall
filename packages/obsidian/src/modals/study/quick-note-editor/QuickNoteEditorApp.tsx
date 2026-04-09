@@ -1,4 +1,13 @@
 import type { EditorView } from "@codemirror/view";
+import { Notice, TFile } from "obsidian";
+import {
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "preact/hooks";
+
 import { Clickable } from "@true-recall/obsidian/components";
 import {
 	type FormattingTargetRef,
@@ -12,14 +21,7 @@ import {
 	usePlugin,
 } from "@true-recall/obsidian/preact/ObsidianContext";
 import { notify } from "@true-recall/obsidian/services/notification.service";
-import { Notice, TFile } from "obsidian";
-import {
-	useCallback,
-	useEffect,
-	useMemo,
-	useRef,
-	useState,
-} from "preact/hooks";
+
 import { ActionBar } from "./ActionBar";
 import { NoteFieldsForm } from "./NoteFieldsForm";
 import type { QuickNoteEditorMode, QuickNoteEditorResult } from "./types";

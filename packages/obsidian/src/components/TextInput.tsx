@@ -1,6 +1,7 @@
-import { cn } from "@true-recall/obsidian/utils";
 import { TextComponent } from "obsidian";
 import { useEffect, useRef } from "preact/hooks";
+
+import { cn } from "@true-recall/obsidian/utils";
 
 export interface TextInputProps {
 	value: string;

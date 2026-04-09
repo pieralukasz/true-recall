@@ -1,4 +1,5 @@
 import { PRIORITY_DOT } from "@true-recall/core/helpers/note-priority";
+
 import {
 	CardCountDisplay,
 	Clickable,
@@ -6,6 +7,7 @@ import {
 } from "@true-recall/obsidian/components";
 import { cn } from "@true-recall/obsidian/utils/cn";
 import { isMobile } from "@true-recall/obsidian/utils/platform";
+
 import type { DashboardNoteEntry } from "../types";
 
 export interface NoteRowProps {

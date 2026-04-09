@@ -6,6 +6,7 @@
 import type { App } from "obsidian";
 import { Rating, State } from "ts-fsrs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
 import { SessionPersistenceService } from "../../src/persistence/session/session-persistence.service";
 import type { SqliteStoreService } from "../../src/persistence/sqlite";
 import type { DayBoundaryService } from "../../src/services/review/day-boundary.service";
