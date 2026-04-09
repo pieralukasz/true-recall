@@ -94,8 +94,14 @@ export function handleGetWorkloadForecast(
 	const days = Number(url.searchParams.get("days")) || 30;
 
 	const archivedUids = ctx.plugin.hierarchyService.getArchivedSourceUids();
-	const forecast = ctx.plugin.fsrsHelper.getWorkloadForecast(days, archivedUids);
-	const byDay = ctx.plugin.fsrsHelper.getWorkloadByDayOfWeek(days, archivedUids);
+	const forecast = ctx.plugin.fsrsHelper.getWorkloadForecast(
+		days,
+		archivedUids,
+	);
+	const byDay = ctx.plugin.fsrsHelper.getWorkloadByDayOfWeek(
+		days,
+		archivedUids,
+	);
 
 	sendOk(res, { forecast, byDayOfWeek: byDay });
 }

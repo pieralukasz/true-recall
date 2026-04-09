@@ -178,7 +178,10 @@ export class StudyDataGatherer {
 			gather: () => {
 				try {
 					const archivedUids = this.hierarchy.getArchivedSourceUids();
-					const w = this.fsrsHelper.getWorkloadForecastSummary(30, archivedUids);
+					const w = this.fsrsHelper.getWorkloadForecastSummary(
+						30,
+						archivedUids,
+					);
 					return `## Workload Forecast (next 30 days)
 - Average daily reviews: ${Math.round(w.avgDaily)}
 - Peak day: ${w.peakDay.date} (${w.peakDay.count} cards)

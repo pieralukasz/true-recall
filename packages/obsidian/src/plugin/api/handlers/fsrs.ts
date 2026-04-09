@@ -94,9 +94,14 @@ export function handleGetFsrsStats(
 
 	const archivedUids = ctx.plugin.hierarchyService.getArchivedSourceUids();
 	const snapshot = ctx.plugin.fsrsHelper.getTrueRetentionSnapshot(days);
-	const workloadForecast =
-		ctx.plugin.fsrsHelper.getWorkloadForecastSummary(days, archivedUids);
-	const workloadByDay = ctx.plugin.fsrsHelper.getWorkloadByDayOfWeek(days, archivedUids);
+	const workloadForecast = ctx.plugin.fsrsHelper.getWorkloadForecastSummary(
+		days,
+		archivedUids,
+	);
+	const workloadByDay = ctx.plugin.fsrsHelper.getWorkloadByDayOfWeek(
+		days,
+		archivedUids,
+	);
 	const distributions = ctx.plugin.fsrsHelper.getDistributions();
 
 	sendOk(res, {

@@ -70,8 +70,7 @@ export class WorkloadForecastCalculator {
 					(!c.buriedUntil || new Date(c.buriedUntil) <= today) &&
 					new Date(c.due) >= today &&
 					new Date(c.due) <= endDate &&
-					(!excludeSourceUids ||
-						!excludeSourceUids.has(c.sourceUid ?? "")),
+					(!excludeSourceUids || !excludeSourceUids.has(c.sourceUid ?? "")),
 			);
 
 		// Build forecast by date
