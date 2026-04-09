@@ -113,6 +113,11 @@ export function DashboardApp() {
 		);
 
 		const actionableNotes = raw.notes.map((note) => {
+			const isArchived = note.path
+				? isNoteUnderArchivedHierarchy(note.path, plugin.hierarchyService)
+				: false;
+			if (isArchived) return note;
+
 			const scopedActiveCards = cardsByNoteName.get(note.name) ?? [];
 			const noteSnapshot = computeActionableSessionSnapshot(
 				snapshotDeps,

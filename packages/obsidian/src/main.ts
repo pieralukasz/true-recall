@@ -12,12 +12,16 @@ import {
 import type { DeletionHandlerService } from "@true-recall/core/flashcard/lifecycle/deletion-handler.service";
 import type { DeviceDiscoveryService } from "@true-recall/core/integration/device/device-discovery.service";
 import type { DeviceIdService } from "@true-recall/core/integration/device/device-id.service";
+import { DeviceLockService } from "@true-recall/core/integration/device/device-lock.service";
+import { DeviceSyncService } from "@true-recall/core/integration/device/device-sync.service";
 import { SessionService } from "@true-recall/core/services/review/session.service";
 import type { TrueRecallSettings } from "@true-recall/core/types";
 import type { SessionConfig } from "@true-recall/core/types/session-config.types";
 import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpClient";
+import { ObsidianPersistence } from "@true-recall/obsidian/adapters/ObsidianPersistence";
 import type { CommandService } from "@true-recall/obsidian/commands";
 import type { DataLayer } from "@true-recall/obsidian/data";
+import { G } from "@true-recall/obsidian/data";
 import type { StatusBarWidget } from "@true-recall/obsidian/editor/study/widgets/StatusBarWidget";
 import type { NoteStatusCache } from "@true-recall/obsidian/features/core/cache/note-status-cache.service";
 import { IOEditorModal } from "@true-recall/obsidian/features/image-occlusion/IOEditorModal";
@@ -46,7 +50,11 @@ import { notify } from "@true-recall/obsidian/services/notification.service";
 import { ProjectManagementService } from "@true-recall/obsidian/services/project-management.service";
 import { TrueRecallSettingTab } from "@true-recall/obsidian/settings";
 import type { AppStore } from "@true-recall/obsidian/store";
-import { isDesktop } from "@true-recall/obsidian/utils/platform";
+import {
+	isDesktop,
+	isMobile,
+	isViewAllowedOnCurrentPlatform,
+} from "@true-recall/obsidian/utils/platform";
 import { CardBrowserView } from "@true-recall/obsidian/views/browser/CardBrowserView";
 import { KnowledgeChatView } from "@true-recall/obsidian/views/chat/KnowledgeChatView";
 import { DashboardView } from "@true-recall/obsidian/views/dashboard/DashboardView";
@@ -147,6 +155,7 @@ export default class TrueRecallPlugin extends Plugin {
 
 	deviceIdService: DeviceIdService | null = null;
 	deviceDiscovery: DeviceDiscoveryService | null = null;
+	private deviceLock: DeviceLockService | null = null;
 	deletionHandler: DeletionHandlerService | null = null;
 	commandService: CommandService | null = null;
 	store: AppStore | null = null;
@@ -229,21 +238,93 @@ export default class TrueRecallPlugin extends Plugin {
 			return;
 		}
 
+		// 3. Device lock
+		if (this.deviceIdService) {
+			try {
+				const persistence = new ObsidianPersistence(this.app);
+				const deviceId = this.deviceIdService.getDeviceId();
+				const label = this.deviceIdService.getDisplayName();
+				this.deviceLock = new DeviceLockService(
+					persistence,
+					deviceId,
+					isMobile() ? "mobile" : "desktop",
+					label,
+				);
+
+				const conflicting = await this.deviceLock.isConflicting();
+				if (conflicting) {
+					notify().warning(
+						`True Recall is open on ${conflicting.label} (${conflicting.platform}). Close it first to avoid sync issues.`,
+					);
+				}
+				await this.deviceLock.writeLock();
+				this.deviceLock.startHeartbeat();
+			} catch (error) {
+				console.error("[True Recall] Device lock setup failed:", error);
+			}
+		}
+
+		// 4. Cross-device sync
+		try {
+			if (this.deviceDiscovery && this.cardStore) {
+				const syncService = new DeviceSyncService(
+					this.cardStore,
+					this.deviceDiscovery,
+					new ObsidianPersistence(this.app),
+				);
+				const syncResult = await syncService.syncOnStartup();
+				if (syncResult.errors.length > 0) {
+					notify().warning(
+						`Sync completed with ${syncResult.errors.length} error(s). Some changes may not have been applied.`,
+					);
+				}
+				if (syncResult.cardsApplied > 0 || syncResult.reviewLogsApplied > 0) {
+					this.dataLayer?.invalidateGroups([
+						G.CARDS,
+						G.BROWSER,
+						G.DASHBOARD,
+						G.PANEL,
+						G.REVIEW,
+						G.STATS,
+					]);
+					notify().info(
+						`Synced ${syncResult.cardsApplied} cards and ${syncResult.reviewLogsApplied} reviews from other devices.`,
+					);
+				}
+			}
+		} catch (error) {
+			console.error("[True Recall] Device sync failed:", error);
+			notify().warning(
+				"Cross-device sync failed. Your cards may not be up to date.",
+			);
+		}
+
 		const tStore = performance.now();
 
-		this.registerView(
+		const registerIfAllowed = (
+			viewType: string,
+			factory: (
+				leaf: import("obsidian").WorkspaceLeaf,
+			) => import("obsidian").View,
+		) => {
+			if (isViewAllowedOnCurrentPlatform(viewType)) {
+				this.registerView(viewType, factory);
+			}
+		};
+
+		registerIfAllowed(
 			VIEW_TYPE_FLASHCARD_PANEL,
 			(leaf) => new FlashcardPanelView(leaf, this),
 		);
 
-		this.registerView(VIEW_TYPE_REVIEW, (leaf) => new ReviewView(leaf, this));
+		registerIfAllowed(VIEW_TYPE_REVIEW, (leaf) => new ReviewView(leaf, this));
 
-		this.registerView(
+		registerIfAllowed(
 			VIEW_TYPE_SIMULATOR,
 			(leaf) => new SimulatorView(leaf, this),
 		);
 
-		this.registerView(
+		registerIfAllowed(
 			VIEW_TYPE_DASHBOARD,
 			(leaf) => new DashboardView(leaf, this),
 		);
@@ -258,15 +339,15 @@ export default class TrueRecallPlugin extends Plugin {
 			},
 		);
 
-		this.registerView(
+		registerIfAllowed(
 			VIEW_TYPE_CARD_BROWSER,
 			(leaf) => new CardBrowserView(leaf, this),
 		);
 
-		this.registerView(VIEW_TYPE_STATS, (leaf) => new StatsView(leaf, this));
+		registerIfAllowed(VIEW_TYPE_STATS, (leaf) => new StatsView(leaf, this));
 
 		if (ENABLE_RAG) {
-			this.registerView(
+			registerIfAllowed(
 				VIEW_TYPE_KNOWLEDGE_CHAT,
 				(leaf) => new KnowledgeChatView(leaf, this),
 			);
@@ -346,6 +427,8 @@ export default class TrueRecallPlugin extends Plugin {
 
 	onunload(): void {
 		this._unloaded = true;
+		this.deviceLock?.stopHeartbeat();
+		void this.deviceLock?.clearLock();
 		this.localApi?.stop();
 		this.commandService?.clear();
 		this.statusBarWidget?.dispose();

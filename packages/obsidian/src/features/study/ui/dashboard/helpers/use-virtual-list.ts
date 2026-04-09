@@ -1,9 +1,13 @@
 import type { Signal } from "@preact/signals";
+import { isMobile } from "@true-recall/obsidian/utils/platform";
 import type { RefObject } from "preact";
 import { useMemo } from "preact/hooks";
 
-const ROW_HEIGHT = 36;
+const DESKTOP_ROW_HEIGHT = 36;
+const MOBILE_ROW_HEIGHT = 44;
 const OVERSCAN = 5;
+
+export const ROW_HEIGHT = isMobile() ? MOBILE_ROW_HEIGHT : DESKTOP_ROW_HEIGHT;
 
 export interface VirtualItem<T> {
 	item: T;
