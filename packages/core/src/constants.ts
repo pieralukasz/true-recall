@@ -84,6 +84,7 @@ export const DEFAULT_FSRS_PRESET: FSRSPreset = {
 };
 
 export const DEFAULT_SETTINGS: TrueRecallSettings = {
+	enableDeviceSync: false,
 	openRouterApiKey: "",
 	aiModel: DEFAULT_BYOK_MODEL,
 	aiTier: "byok",
@@ -257,6 +258,8 @@ export const FSRS_CONFIG = {
 	maxRetention: 0.99,
 } as const;
 
+export const MS_PER_DAY = 86_400_000;
+
 export const WEAK_CARD_STABILITY_THRESHOLD = 7; // days
 
 export const REQUEUE_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
@@ -279,7 +282,7 @@ export const RAG_CONFIG = {
 	rrf_k: 60,
 	defaultTopK: 10,
 	embeddingDims: 1024,
-	cosineThreshold: 0.5,
+	cosineThreshold: 0.35,
 } as const;
 
 export const TRUERECALL_WEB_URL = "https://truerecall.app";

@@ -1,3 +1,6 @@
+import { Notice } from "obsidian";
+import { useCallback, useState } from "preact/hooks";
+
 import {
 	ActionButton,
 	FolderPicker,
@@ -10,8 +13,7 @@ import {
 import type { IndexProgress } from "@true-recall/obsidian/features/rag/services/rag-indexer.service";
 import { usePlugin } from "@true-recall/obsidian/preact";
 import { notify } from "@true-recall/obsidian/services/notification.service";
-import { Notice } from "obsidian";
-import { useCallback, useState } from "preact/hooks";
+
 import { useSettings } from "../hooks/useSettings";
 
 function formatProgress(p: IndexProgress): string {

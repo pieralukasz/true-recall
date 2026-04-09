@@ -1,6 +1,8 @@
+import { type ComponentChildren, render } from "preact";
+
 import { ErrorBoundary } from "@true-recall/obsidian/components/ErrorBoundary";
 import { ObsidianProvider } from "@true-recall/obsidian/preact/ObsidianContext";
-import { type ComponentChildren, render } from "preact";
+
 import type TrueRecallPlugin from "../main";
 
 export function mountPreact(

@@ -1,9 +1,3 @@
-import { SearchInput } from "@true-recall/obsidian/components/SearchInput";
-import {
-	filterNotesByQuery,
-	MAX_DISPLAY_NOTES,
-} from "@true-recall/obsidian/modals/shared/note-filter.utils";
-import { cn } from "@true-recall/obsidian/utils/cn";
 import type { App, TFile } from "obsidian";
 import {
 	useCallback,
@@ -12,6 +6,13 @@ import {
 	useRef,
 	useState,
 } from "preact/hooks";
+
+import { SearchInput } from "@true-recall/obsidian/components/SearchInput";
+import {
+	filterNotesByQuery,
+	MAX_DISPLAY_NOTES,
+} from "@true-recall/obsidian/modals/shared/note-filter.utils";
+import { cn } from "@true-recall/obsidian/utils/cn";
 
 export interface NotePickerComboboxProps {
 	app: App;

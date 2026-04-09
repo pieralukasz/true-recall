@@ -1,4 +1,6 @@
 import { State } from "ts-fsrs";
+
+import { isLearningState } from "../../helpers/card-state";
 import type { CardSchedulingMeta } from "../../types";
 import type { SessionFilters } from "../../types/review-session.types";
 import type { SessionConfig } from "../../types/session-config.types";
@@ -103,8 +105,7 @@ export class SessionService {
 				const anyDue = noteCards.some(
 					(c) =>
 						c.fsrs.state === State.New ||
-						c.fsrs.state === State.Learning ||
-						c.fsrs.state === State.Relearning ||
+						isLearningState(c.fsrs.state) ||
 						new Date(c.fsrs.due) <= now,
 				);
 				if (!anyDue) {

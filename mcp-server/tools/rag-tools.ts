@@ -4,7 +4,7 @@ import { get, post, postParams, type ToolDef } from "./_register.js";
 export const ragTools: ToolDef[] = [
 	postParams(
 		"search_knowledge",
-		"Semantic search over the user's notes and flashcards. Returns ranked chunks with content, source info, and FSRS mastery data for flashcards. Use this to find relevant context before discussing any topic with the user. Pro subscription required.",
+		"Semantic search over the user's notes and flashcards. Returns ranked chunks with content, source info, source note paths, and FSRS mastery data. Supports time filtering and grouped output. Pro subscription required.",
 		"/rag/search",
 		{
 			query: z
@@ -28,15 +28,37 @@ export const ragTools: ToolDef[] = [
 				.array(z.string())
 				.optional()
 				.describe(
-					"Optional list of source IDs (file paths for notes, card IDs for flashcards) to restrict search scope. Use to search within specific notes.",
+					"Optional list of source IDs (file paths for notes, card IDs for flashcards) to restrict search scope.",
+				),
+			since: z
+				.string()
+				.optional()
+				.describe(
+					'Only return results modified after this time. Relative durations like "7d", "24h", "30m" or ISO dates like "2026-01-01".',
+				),
+			groupBySource: z
+				.boolean()
+				.optional()
+				.default(false)
+				.describe(
+					"Group results by source note. Flashcards from the same note are merged into one group.",
 				),
 		},
 	),
 
-	post(
+	postParams(
 		"index_knowledge",
 		"Trigger a full reindex of the knowledge base. Indexes all vault notes and flashcards, computes embeddings for new/changed content. Pro subscription required.",
 		"/rag/index",
+		{
+			force: z
+				.boolean()
+				.optional()
+				.default(false)
+				.describe(
+					"Clear all existing chunks and re-embed everything from scratch",
+				),
+		},
 	),
 
 	get(

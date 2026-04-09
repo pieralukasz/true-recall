@@ -1,8 +1,10 @@
+import { Notice } from "obsidian";
+import { useCallback, useMemo, useState } from "preact/hooks";
+
 import { IconButton } from "@true-recall/obsidian/components";
 import { usePlugin } from "@true-recall/obsidian/preact";
 import { notify } from "@true-recall/obsidian/services/notification.service";
-import { Notice } from "obsidian";
-import { useCallback, useMemo, useState } from "preact/hooks";
+
 import type { KnowledgeChatView } from "../../../../views/chat/KnowledgeChatView";
 import type { IndexProgress } from "../../services/rag-indexer.service";
 

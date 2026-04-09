@@ -1,5 +1,6 @@
 import type { MenuItem } from "@true-recall/obsidian/preact/useContextMenu";
 import { useContextMenu } from "@true-recall/obsidian/preact/useContextMenu";
+
 import type { DashboardProject } from "../types";
 
 interface UseProjectContextMenuOptions {

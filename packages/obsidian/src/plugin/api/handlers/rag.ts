@@ -1,4 +1,5 @@
 import { AIRequestError } from "@true-recall/core/ai/clients/openrouter-client";
+
 import type { ApiContext, ApiRequest, ApiResponseWriter } from "../api.types";
 import { parseJsonBody, readBody, sendError, sendOk } from "../api.types";
 
@@ -12,6 +13,25 @@ function requirePro(ctx: ApiContext, res: ApiResponseWriter): boolean {
 		return false;
 	}
 	return true;
+}
+
+function parseSinceMs(since?: string): number | undefined {
+	if (!since) return undefined;
+	// Support relative durations like "7d", "24h", "30m"
+	const match = /^(\d+)([dhm])$/.exec(since);
+	if (match) {
+		const value = Number(match[1]);
+		const unit = match[2] ?? "d";
+		const multipliers: Record<string, number> = {
+			d: 86400000,
+			h: 3600000,
+			m: 60000,
+		};
+		return Date.now() - value * (multipliers[unit] ?? 0);
+	}
+	// Try ISO date
+	const ts = Date.parse(since);
+	return Number.isNaN(ts) ? undefined : ts;
 }
 
 export async function handleRagSearch(
@@ -31,6 +51,8 @@ export async function handleRagSearch(
 		topK?: number;
 		sourceType?: "note" | "flashcard" | "all";
 		sourceIds?: string[];
+		since?: string;
+		groupBySource?: boolean;
 	}>(body);
 
 	if (!data?.query) {
@@ -44,12 +66,40 @@ export async function handleRagSearch(
 			sendError(res, 400, "RAG not initialized");
 			return;
 		}
-		const result = await search.search(
-			data.query,
-			data.topK,
-			data.sourceType,
-			data.sourceIds,
-		);
+		const result = await search.search(data.query, {
+			topK: data.topK,
+			sourceType: data.sourceType,
+			sourceIds: data.sourceIds,
+			sinceMs: parseSinceMs(data.since),
+			groupBySource: data.groupBySource,
+		});
+
+		// Enrich flashcard results with sourceNotePath
+		const fmIndex = ctx.plugin.frontmatterIndex;
+		if (fmIndex) {
+			for (const r of result.results) {
+				if (r.sourceNoteUid) {
+					r.sourceNotePath =
+						fmIndex.getFileByValue("flashcard_uid", r.sourceNoteUid) ??
+						undefined;
+				}
+			}
+			if (result.grouped) {
+				for (const g of result.grouped) {
+					// Resolve path from first chunk's sourceNoteUid
+					const uid = g.chunks[0]?.sourceNoteUid;
+					if (uid) {
+						const path = fmIndex.getFileByValue("flashcard_uid", uid);
+						if (path) {
+							g.sourceNotePath = path;
+							g.displayName =
+								path.split("/").pop()?.replace(/\.md$/, "") ?? g.displayName;
+						}
+					}
+				}
+			}
+		}
+
 		sendOk(res, result);
 	} catch (e) {
 		const msg =
@@ -62,7 +112,7 @@ export async function handleRagSearch(
 }
 
 export async function handleRagIndex(
-	_req: ApiRequest,
+	req: ApiRequest,
 	res: ApiResponseWriter,
 	ctx: ApiContext,
 ): Promise<void> {
@@ -73,7 +123,12 @@ export async function handleRagIndex(
 	}
 
 	try {
-		const result = await ctx.plugin.ragIndexer.fullReindex();
+		const raw = await readBody(req);
+		const body = parseJsonBody<{ force?: boolean }>(raw);
+		const force = body?.force === true;
+		const result = await ctx.plugin.ragIndexer.fullReindex(undefined, {
+			force,
+		});
 		sendOk(res, result);
 	} catch (e) {
 		console.error("[True Recall RAG] Index handler error:", e);

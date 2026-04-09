@@ -8,6 +8,7 @@ import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite";
 import type { HierarchyService } from "@true-recall/core/services/notes/hierarchy.service";
 import type { DayBoundaryService } from "@true-recall/core/services/review/day-boundary.service";
 import { formatLocalDate } from "@true-recall/core/utils";
+
 import type {
 	RagSearchService,
 	SearchResult,
@@ -245,9 +246,13 @@ export class RagToolExecutor {
 	}
 
 	private getRetentionAnalytics(days: number): string {
+		const archivedUids = this.hierarchy.getArchivedSourceUids();
 		const snapshot = this.fsrsHelper.getTrueRetentionSnapshot(days);
-		const workload = this.fsrsHelper.getWorkloadForecastSummary(days);
-		const byDay = this.fsrsHelper.getWorkloadByDayOfWeek(days);
+		const workload = this.fsrsHelper.getWorkloadForecastSummary(
+			days,
+			archivedUids,
+		);
+		const byDay = this.fsrsHelper.getWorkloadByDayOfWeek(days, archivedUids);
 		const distributions = this.fsrsHelper.getDistributions();
 
 		return JSON.stringify(

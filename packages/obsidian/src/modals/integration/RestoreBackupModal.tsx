@@ -1,16 +1,18 @@
+import type { App } from "obsidian";
+import { render } from "preact";
+import { useCallback, useState } from "preact/hooks";
+
 import type {
 	BackupInfo,
 	BackupService,
 } from "@true-recall/core/persistence/backup/backup.service";
+
 import { Clickable } from "@true-recall/obsidian/components";
 import {
 	BasePromiseModal,
 	type CancellableResult,
 } from "@true-recall/obsidian/modals/shared/BasePromiseModal";
 import { confirm } from "@true-recall/obsidian/modals/shared/ConfirmModal";
-import type { App } from "obsidian";
-import { render } from "preact";
-import { useCallback, useState } from "preact/hooks";
 
 export interface RestoreBackupResult extends CancellableResult {
 	restoredPath?: string;

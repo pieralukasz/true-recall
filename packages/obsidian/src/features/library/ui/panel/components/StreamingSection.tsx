@@ -1,6 +1,8 @@
-import { streamingGeneration } from "@true-recall/core/ai/state/streaming-state";
-import { PartialCard } from "@true-recall/obsidian/features/library/ui/panel/components/PartialCard";
 import { useEffect, useRef, useState } from "preact/hooks";
+
+import { streamingGeneration } from "@true-recall/core/ai/state/streaming-state";
+
+import { PartialCard } from "@true-recall/obsidian/features/library/ui/panel/components/PartialCard";
 
 const SCROLL_THROTTLE_MS = 250;
 const NEAR_BOTTOM_PX = 80;

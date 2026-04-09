@@ -1,8 +1,10 @@
+import { useMemo, useState } from "preact/hooks";
+
 import { renderTemplate } from "@true-recall/core/services/cards/template-engine";
 import type { CardTemplate } from "@true-recall/core/types/note.types";
+
 import { Clickable } from "@true-recall/obsidian/components";
 import { MarkdownContent } from "@true-recall/obsidian/components/MarkdownContent";
-import { useMemo, useState } from "preact/hooks";
 
 interface TemplatePreviewProps {
 	template: CardTemplate;

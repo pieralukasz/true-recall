@@ -1,5 +1,7 @@
-import type { SimulatorApi } from "@true-recall/obsidian/store";
 import { useCallback } from "preact/hooks";
+
+import type { SimulatorApi } from "@true-recall/obsidian/store";
+
 import { ALL_SLIDERS } from "../constants";
 import { SimulatorSliderRow } from "./SimulatorSliderRow";
 

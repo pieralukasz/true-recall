@@ -1,6 +1,8 @@
+import { cva } from "class-variance-authority";
+
 import { useIcon } from "@true-recall/obsidian/preact/hooks";
 import { cn } from "@true-recall/obsidian/utils/cn";
-import { cva } from "class-variance-authority";
+
 import { Clickable } from "./Clickable";
 
 export interface IconButtonProps {

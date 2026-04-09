@@ -1,9 +1,12 @@
+import { useCallback } from "preact/hooks";
+
 import {
 	BUILTIN_BASIC_ID,
 	BUILTIN_BASIC_REVERSED_ID,
 	type FlashcardItem,
 } from "@true-recall/core/types";
 import type { FSRSFlashcardItem } from "@true-recall/core/types/fsrs/card.types";
+
 import { DeleteCardCommand } from "@true-recall/obsidian/commands/commands/card-delete.cmd";
 import { ForgetCommand } from "@true-recall/obsidian/commands/commands/card-forget.cmd";
 import { MoveCardCommand } from "@true-recall/obsidian/commands/commands/card-move.cmd";
@@ -23,7 +26,6 @@ import {
 import { QuickNoteEditorModal } from "@true-recall/obsidian/modals/study/quick-note-editor/QuickNoteEditorModal";
 import { useApp, usePlugin } from "@true-recall/obsidian/preact";
 import { notify } from "@true-recall/obsidian/services/notification.service";
-import { useCallback } from "preact/hooks";
 
 import { usePanelScroll } from "./PanelScrollContext";
 import { usePanelStore } from "./usePanelStore";

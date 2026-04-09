@@ -1,4 +1,6 @@
 import { useSignal } from "@preact/signals";
+import { useCallback, useEffect, useMemo, useRef } from "preact/hooks";
+
 import { aggregateDashboardData } from "@true-recall/core/helpers/note-aggregation";
 import { computePriority } from "@true-recall/core/helpers/note-priority";
 import { estimateStudyMinutes } from "@true-recall/core/helpers/time-estimate";
@@ -8,6 +10,7 @@ import type {
 	CardSchedulingMeta,
 	TrueRecallSettings,
 } from "@true-recall/core/types";
+
 import { AppNavBar } from "@true-recall/obsidian/components";
 import { SearchCombobox } from "@true-recall/obsidian/components/SearchCombobox";
 import { Q, useQuery } from "@true-recall/obsidian/data";
@@ -30,7 +33,6 @@ import type {
 import { filterActiveCards } from "@true-recall/obsidian/features/study/ui/review/helpers/session-helpers";
 import { PresetOptionsModal } from "@true-recall/obsidian/modals/shared/PresetOptionsModal";
 import { usePlugin } from "@true-recall/obsidian/preact";
-import { useCallback, useEffect, useMemo, useRef } from "preact/hooks";
 
 export function DashboardApp() {
 	const plugin = usePlugin();
@@ -113,6 +115,11 @@ export function DashboardApp() {
 		);
 
 		const actionableNotes = raw.notes.map((note) => {
+			const isArchived = note.path
+				? isNoteUnderArchivedHierarchy(note.path, plugin.hierarchyService)
+				: false;
+			if (isArchived) return note;
+
 			const scopedActiveCards = cardsByNoteName.get(note.name) ?? [];
 			const noteSnapshot = computeActionableSessionSnapshot(
 				snapshotDeps,

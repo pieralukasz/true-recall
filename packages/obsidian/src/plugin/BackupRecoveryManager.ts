@@ -1,3 +1,5 @@
+import { type App, normalizePath } from "obsidian";
+
 import type { BackgroundBackupManager } from "@true-recall/core/persistence/backup/background-backup.service";
 import type { BackupService } from "@true-recall/core/persistence/backup/backup.service";
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite";
@@ -11,12 +13,12 @@ import {
 	DB_FOLDER,
 	getDeviceDbFilename,
 } from "@true-recall/core/persistence/sqlite/sqlite.types";
+
 import { RestoreBackupModal } from "@true-recall/obsidian/modals/integration/RestoreBackupModal";
 import {
 	NOTIFICATION_DURATION,
 	notify,
 } from "@true-recall/obsidian/services/notification.service";
-import { type App, normalizePath } from "obsidian";
 
 export class BackupRecoveryManager {
 	lastAutoRecoveryBackupPath: string | null = null;

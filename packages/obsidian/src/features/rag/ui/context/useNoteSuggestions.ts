@@ -1,10 +1,11 @@
+import type { TFile } from "obsidian";
+import { useCallback, useMemo, useState } from "preact/hooks";
+
 import {
 	filterNotesByQuery,
 	MAX_DISPLAY_NOTES,
 } from "@true-recall/obsidian/modals/shared/note-filter.utils";
 import { useApp } from "@true-recall/obsidian/preact";
-import type { TFile } from "obsidian";
-import { useCallback, useMemo, useState } from "preact/hooks";
 
 const MAX_SUGGESTIONS = 8;
 

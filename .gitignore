@@ -33,12 +33,7 @@ coverage/
 
 # Claude Code configuration (project-specific)
 CLAUDE.md
-.claude/plans/
-.claude/agents/supabase-sync-updater.md
-.claude/agents/sql-migration.md
-.claude/skills/
-.claude/rules/
-.claude/memory/
+.claude/*
 .mcp.json
 
 # Documentation and plans

@@ -1,7 +1,9 @@
-import { BasePromiseModal } from "@true-recall/obsidian/modals/shared/BasePromiseModal";
-import { ObsidianProvider } from "@true-recall/obsidian/preact/ObsidianContext";
 import type { App } from "obsidian";
 import { render } from "preact";
+
+import { BasePromiseModal } from "@true-recall/obsidian/modals/shared/BasePromiseModal";
+import { ObsidianProvider } from "@true-recall/obsidian/preact/ObsidianContext";
+
 import type TrueRecallPlugin from "../../main";
 import { IOEditorApp } from "./IOEditorApp";
 import type { IOEditorMode, IOEditorResult } from "./types";

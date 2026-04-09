@@ -6,11 +6,14 @@ import {
 	type ViewUpdate,
 	WidgetType,
 } from "@codemirror/view";
+import type { App, TFile } from "obsidian";
+
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite/SqliteStoreService";
 import type { FrontmatterIndexService } from "@true-recall/core/services/notes/frontmatter-index.service";
+
 import type { NoteStatusInfo } from "@true-recall/obsidian/data";
 import type { NoteStatusCache } from "@true-recall/obsidian/features/core/cache/note-status-cache.service";
-import type { App, TFile } from "obsidian";
+
 import {
 	aggregateInfos,
 	createLinkStatusElement,

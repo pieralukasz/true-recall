@@ -222,21 +222,32 @@ export class FSRSHelperService {
 		return this.trueRetention.getRollingAverage(days, 7, presetNames);
 	}
 
-	getWorkloadForecast(days: number = 30): WorkloadForecastEntry[] {
-		return this.workloadForecast.getForecast(days);
+	getWorkloadForecast(
+		days: number = 30,
+		excludeSourceUids?: ReadonlySet<string>,
+	): WorkloadForecastEntry[] {
+		return this.workloadForecast.getForecast(days, excludeSourceUids);
 	}
 
-	getWorkloadForecastSummary(days: number = 30): WorkloadForecastSummary {
+	getWorkloadForecastSummary(
+		days: number = 30,
+		excludeSourceUids?: ReadonlySet<string>,
+	): WorkloadForecastSummary {
 		return this.workloadForecast.getSummary(
 			this.settings.loadBalanceTarget,
 			days,
+			excludeSourceUids,
 		);
 	}
 
 	getWorkloadByDayOfWeek(
 		days: number = 30,
+		excludeSourceUids?: ReadonlySet<string>,
 	): { day: number; dayName: string; avgCount: number }[] {
-		return this.workloadForecast.getWorkloadByDayOfWeek(days);
+		return this.workloadForecast.getWorkloadByDayOfWeek(
+			days,
+			excludeSourceUids,
+		);
 	}
 
 	getDistributions(): {

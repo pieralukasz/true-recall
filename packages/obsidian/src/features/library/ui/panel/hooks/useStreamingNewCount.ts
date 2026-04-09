@@ -1,6 +1,7 @@
+import { useEffect, useMemo, useState } from "preact/hooks";
+
 import { streamingGeneration } from "@true-recall/core/ai/state/streaming-state";
 import type { FSRSFlashcardItem } from "@true-recall/core/types/fsrs/card.types";
-import { useEffect, useMemo, useState } from "preact/hooks";
 
 export function useStreamingNewCount(
 	cardsWithFsrs: FSRSFlashcardItem[],

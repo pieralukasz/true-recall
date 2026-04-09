@@ -1,11 +1,13 @@
+import type { App } from "obsidian";
+import { render } from "preact";
+
 import { BaseModal } from "@true-recall/obsidian/modals/shared/BaseModal";
 import {
 	PresetOptionsBody,
 	type PresetOptionsContext,
 } from "@true-recall/obsidian/modals/shared/preset-options/PresetOptionsBody";
 import { ObsidianProvider } from "@true-recall/obsidian/preact/ObsidianContext";
-import type { App } from "obsidian";
-import { render } from "preact";
+
 import type TrueRecallPlugin from "../../main";
 
 export interface PresetOptionsModalOptions {

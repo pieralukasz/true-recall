@@ -1,8 +1,10 @@
 import type { Signal } from "@preact/signals";
-import { CreateProjectModal } from "@true-recall/obsidian/modals/study/CreateProjectModal";
-import { usePlugin } from "@true-recall/obsidian/preact";
 import { Notice } from "obsidian";
 import { useCallback } from "preact/hooks";
+
+import { CreateProjectModal } from "@true-recall/obsidian/modals/study/CreateProjectModal";
+import { usePlugin } from "@true-recall/obsidian/preact";
+
 import type { DashboardNoteEntry } from "../types";
 import { flattenNodes, ProjectSuggestModal } from "./use-project-actions";
 

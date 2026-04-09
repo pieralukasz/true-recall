@@ -1,10 +1,13 @@
 import { PRIORITY_DOT } from "@true-recall/core/helpers/note-priority";
+
 import {
 	CardCountDisplay,
 	Clickable,
 	IconButton,
 } from "@true-recall/obsidian/components";
 import { cn } from "@true-recall/obsidian/utils/cn";
+import { isMobile } from "@true-recall/obsidian/utils/platform";
+
 import type { DashboardNoteEntry } from "../types";
 
 export interface NoteRowProps {
@@ -90,7 +93,7 @@ export function NoteRow({
 				>
 					{note.name}
 				</span>
-				{note.presetName && (
+				{!isMobile() && note.presetName && (
 					<Clickable
 						class="ep:text-[10px] ep:px-1.5 ep:py-0.5 ep:rounded-full ep:bg-obs-modifier-hover ep:text-obs-muted ep:hover:text-obs-normal ep:hover:bg-obs-modifier-active-hover ep:transition-colors ep:shrink-0"
 						title={`FSRS preset: ${note.presetName}`}
@@ -101,7 +104,7 @@ export function NoteRow({
 				)}
 			</div>
 
-			{note.projects.length > 0 && (
+			{!isMobile() && note.projects.length > 0 && (
 				<div
 					class="ep:flex ep:items-center ep:gap-1 ep:shrink-0 ep:max-w-[200px] ep:overflow-hidden"
 					title={note.projects.join(", ")}

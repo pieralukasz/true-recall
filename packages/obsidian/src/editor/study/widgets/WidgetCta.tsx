@@ -1,5 +1,6 @@
-import { Clickable } from "@true-recall/obsidian/components";
 import { cva, type VariantProps } from "class-variance-authority";
+
+import { Clickable } from "@true-recall/obsidian/components";
 
 const widgetCtaVariants = cva(
 	"ep:inline-flex ep:items-center ep:justify-center ep:text-xs ep:px-2 ep:py-0.5 ep:rounded ep:transition-colors",

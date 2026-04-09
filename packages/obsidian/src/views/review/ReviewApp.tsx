@@ -1,8 +1,12 @@
+import { useEffect, useLayoutEffect, useState } from "preact/hooks";
+import type { Grade } from "ts-fsrs";
+
 import type {
 	FSRSFlashcardItem,
 	LocalAnswerAssessment,
 	SemanticGradingResult,
 } from "@true-recall/core/types";
+
 import type { PresetPickerOption } from "@true-recall/obsidian/features/study/ui/review/components";
 import {
 	ButtonBar,
@@ -14,8 +18,6 @@ import {
 import type { TypeInMode } from "@true-recall/obsidian/features/study/ui/review/helpers/type-in-flow";
 import { usePlugin } from "@true-recall/obsidian/preact/ObsidianContext";
 import type { ReviewApi } from "@true-recall/obsidian/store";
-import { useEffect, useLayoutEffect, useState } from "preact/hooks";
-import type { Grade } from "ts-fsrs";
 
 // Re-export for consumers that import from this file
 export { ReviewEmptyState } from "@true-recall/obsidian/features/study/ui/review/components";

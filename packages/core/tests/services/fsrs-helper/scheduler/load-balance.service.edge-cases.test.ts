@@ -3,6 +3,7 @@
  * Behavior-first tests for edge cases and boundary conditions
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
 import { LoadBalanceService } from "../../../../src/metrics/fsrs-tools/scheduler/load-balance.service";
 import {
 	addDays,

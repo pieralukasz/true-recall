@@ -1,4 +1,3 @@
-import { cn } from "@true-recall/obsidian/utils";
 import {
 	AbstractInputSuggest,
 	type App,
@@ -6,6 +5,8 @@ import {
 	TFolder,
 } from "obsidian";
 import { useEffect, useMemo, useRef } from "preact/hooks";
+
+import { cn } from "@true-recall/obsidian/utils";
 
 export interface FolderSuggestInputProps {
 	app: App;

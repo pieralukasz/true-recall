@@ -1,3 +1,6 @@
+import { State } from "ts-fsrs";
+
+import { MS_PER_DAY } from "@true-recall/core/constants";
 import type { FSRSService } from "@true-recall/core/services/fsrs/fsrs.service";
 import type {
 	AnkiCard,
@@ -5,7 +8,6 @@ import type {
 	FSRSCardData,
 	Grade,
 } from "@true-recall/core/types";
-import { State } from "ts-fsrs";
 
 const VALID_EASE_MIN = 1;
 const VALID_EASE_MAX = 4;
@@ -82,7 +84,7 @@ export class AnkiSchedulingService {
 			// This is a lossy fallback — cards with revlog use replayScheduling instead.
 			card.due = now.toISOString();
 			card.lastReview = new Date(
-				now.getTime() - ankiCard.ivl * 24 * 60 * 60 * 1000,
+				now.getTime() - ankiCard.ivl * MS_PER_DAY,
 			).toISOString();
 		}
 

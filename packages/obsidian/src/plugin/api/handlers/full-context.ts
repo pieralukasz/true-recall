@@ -1,3 +1,5 @@
+import { State } from "ts-fsrs";
+
 import {
 	VIEW_TYPE_CARD_BROWSER,
 	VIEW_TYPE_DASHBOARD,
@@ -6,7 +8,7 @@ import {
 	VIEW_TYPE_SIMULATOR,
 	VIEW_TYPE_STATS,
 } from "@true-recall/core/constants";
-import { State } from "ts-fsrs";
+
 import type { ApiContext, ApiRequest, ApiResponseWriter } from "../api.types";
 import { sendOk } from "../api.types";
 

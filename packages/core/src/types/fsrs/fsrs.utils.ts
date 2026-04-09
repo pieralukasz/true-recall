@@ -4,6 +4,7 @@
  */
 
 import type { State } from "ts-fsrs";
+
 import type { FSRSCardData } from "./card.types";
 
 /**

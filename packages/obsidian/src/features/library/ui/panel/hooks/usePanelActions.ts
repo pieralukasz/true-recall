@@ -1,6 +1,9 @@
+import { useCallback } from "preact/hooks";
+
 import type { FlashcardItem } from "@true-recall/core/types";
 import type { FSRSFlashcardItem } from "@true-recall/core/types/fsrs/card.types";
 import { BUILTIN_BASIC_ID } from "@true-recall/core/types/note.types";
+
 import { BatchCreateCommand } from "@true-recall/obsidian/commands/commands/card-create.cmd";
 import { DeleteCardCommand } from "@true-recall/obsidian/commands/commands/card-delete.cmd";
 import { ForgetCommand } from "@true-recall/obsidian/commands/commands/card-forget.cmd";
@@ -8,7 +11,6 @@ import { getHighlightColor } from "@true-recall/obsidian/features/library/ui/pan
 import { extractHighlights } from "@true-recall/obsidian/features/library/ui/panel/utils/highlight-extractor";
 import { cardsToBlockText } from "@true-recall/obsidian/features/library/ui/panel/utils/panel-helpers";
 import { useApp, usePlugin } from "@true-recall/obsidian/preact";
-import { useCallback } from "preact/hooks";
 
 import { usePanelStore } from "./usePanelStore";
 

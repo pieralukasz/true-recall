@@ -1,7 +1,8 @@
-import { Clickable, ModalFooter } from "@true-recall/obsidian/components";
-import { BasePromiseModal } from "@true-recall/obsidian/modals/shared/BasePromiseModal";
 import type { App } from "obsidian";
 import { render } from "preact";
+
+import { Clickable, ModalFooter } from "@true-recall/obsidian/components";
+import { BasePromiseModal } from "@true-recall/obsidian/modals/shared/BasePromiseModal";
 
 export interface SetPresetResult {
 	cancelled: boolean;

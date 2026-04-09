@@ -1,6 +1,7 @@
+import { useEffect, useRef, useState } from "preact/hooks";
+
 import { Clickable } from "@true-recall/obsidian/components";
 import { cn } from "@true-recall/obsidian/utils/cn";
-import { useEffect, useRef, useState } from "preact/hooks";
 
 export interface PresetPickerOption {
 	value: string;

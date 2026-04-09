@@ -1,5 +1,6 @@
-import type { IFileSystem } from "@true-recall/core";
 import { type App, TFile } from "obsidian";
+
+import type { IFileSystem } from "@true-recall/core";
 
 export class ObsidianFileSystem implements IFileSystem {
 	constructor(private app: App) {}

@@ -6,7 +6,7 @@ const C = "Knowledge Base";
 export const ragCommands: CommandDef[] = [
 	postParams(
 		"search_knowledge",
-		"Semantic search over the user's notes and flashcards. Returns ranked chunks with FSRS mastery data. Pro required.",
+		"Semantic search over the user's notes and flashcards. Returns ranked chunks with FSRS mastery data and source note paths. Supports time filtering and grouped output. Pro required.",
 		C,
 		"/rag/search",
 		{
@@ -30,14 +30,33 @@ export const ragCommands: CommandDef[] = [
 				type: "json",
 				description: "JSON array of source IDs to restrict search scope",
 			},
+			since: {
+				type: "string",
+				description:
+					'Only return results modified after this time. Supports relative durations (e.g. "7d", "24h", "30m") or ISO dates (e.g. "2026-01-01")',
+			},
+			groupBySource: {
+				type: "boolean",
+				description:
+					"Group results by source note. Flashcards from the same note are merged into one group with the note path and all matching chunks",
+				default: false,
+			},
 		},
 	),
 
-	post(
+	postParams(
 		"index_knowledge",
 		"Trigger a full reindex of the knowledge base. Pro required.",
 		C,
 		"/rag/index",
+		{
+			force: {
+				type: "boolean",
+				description:
+					"Clear all existing chunks and re-embed everything from scratch",
+				default: false,
+			},
+		},
 	),
 
 	get(

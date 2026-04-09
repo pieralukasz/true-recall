@@ -1,6 +1,7 @@
+import { useCallback, useEffect, useRef, useState } from "preact/hooks";
+
 import { Clickable } from "@true-recall/obsidian/components";
 import { cn } from "@true-recall/obsidian/utils/cn";
-import { useCallback, useEffect, useRef, useState } from "preact/hooks";
 
 interface OptionsMenuProps {
 	onAdd: () => void;

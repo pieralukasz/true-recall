@@ -1,9 +1,10 @@
+import { useEffect, useLayoutEffect, useRef } from "preact/hooks";
+
 import type { EmbeddableEditorInstance } from "@true-recall/obsidian/editor/shared/embedded-editor";
 import {
 	useApp,
 	usePlugin,
 } from "@true-recall/obsidian/preact/ObsidianContext";
-import { useEffect, useLayoutEffect, useRef } from "preact/hooks";
 
 interface TemplateCodeEditorProps {
 	value: string;

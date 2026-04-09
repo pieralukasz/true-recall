@@ -101,6 +101,30 @@
 		text-decoration: none;
 	}
 
+	/* ── Mobile overrides ─────────────────────────────────────────────── */
+
+	/* Review view handles its own bottom padding via ButtonBar */
+	.is-mobile [data-type="true-recall-review"] .view-content {
+		padding-bottom: 0;
+	}
+
+	/* Reduce horizontal padding on mobile */
+	.is-mobile .true-recall-review-card-container {
+		padding-left: 0.75rem;
+		padding-right: 0.75rem;
+	}
+
+	/* Smaller rating buttons on mobile */
+	.is-mobile .true-recall-review-buttons button {
+		min-width: 4rem;
+		padding: 0.5rem 0.625rem;
+	}
+
+	/* Safe area inset for notched phones */
+	.is-mobile .true-recall-review-buttons {
+		padding-bottom: env(safe-area-inset-bottom, 0.5rem);
+	}
+
 	/* Preview panel (320px) — prevent overflow from images, code, tables, LaTeX */
 	.true-recall-card-preview-markdown img {
 		max-width: 100%;
@@ -165,6 +189,9 @@
 .true-recall-review-question .cm-editor .cm-content,
 .true-recall-review-answer .cm-editor .cm-content {
 	text-align: center;
+	display: flex !important;
+	flex-direction: column;
+	align-items: center;
 }
 
 .true-recall-review-question:has(

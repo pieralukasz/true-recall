@@ -19,6 +19,7 @@ import type {
 	TrueRecallSettings,
 } from "@true-recall/core/types/settings.types";
 import { fileBasename, formatLocalDate } from "@true-recall/core/utils";
+
 import type { ContextItem } from "../context/context.types";
 
 function agenticPrompt(): string {

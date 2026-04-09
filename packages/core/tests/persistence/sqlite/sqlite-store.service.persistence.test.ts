@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
 import type { IPersistence } from "../../../src/interfaces/persistence";
 import { SqliteStoreService } from "../../../src/persistence/sqlite/SqliteStoreService";
 import { SAVE_DEBOUNCE_MS } from "../../../src/persistence/sqlite/sqlite.types";

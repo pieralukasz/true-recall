@@ -1,5 +1,6 @@
-import type { IPersistence } from "@true-recall/core";
 import { type App, normalizePath } from "obsidian";
+
+import type { IPersistence } from "@true-recall/core";
 
 export class ObsidianPersistence implements IPersistence {
 	constructor(private app: App) {}

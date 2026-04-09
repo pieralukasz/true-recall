@@ -1,8 +1,10 @@
 import { useSignal } from "@preact/signals";
+import { useRef } from "preact/hooks";
+
 import { Clickable } from "@true-recall/obsidian/components";
 import { SearchCombobox } from "@true-recall/obsidian/components/SearchCombobox";
 import type { SuggestionProvider } from "@true-recall/obsidian/helpers/search-suggestions.types";
-import { useRef } from "preact/hooks";
+
 import { ALL_COLUMNS } from "../helpers/column-defs";
 import { formatBrowserTotalCount } from "../helpers/infinite-scroll";
 import type { SortConfig, StateFilterValue } from "../types";

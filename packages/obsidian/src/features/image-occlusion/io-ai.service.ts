@@ -1,9 +1,11 @@
+import { type App, TFile } from "obsidian";
+
 import {
 	detectRegionsFromImage,
 	getMimeType,
 } from "@true-recall/core/ai/vision/image-region-detection";
 import type { TrueRecallSettings } from "@true-recall/core/types/settings.types";
-import { type App, TFile } from "obsidian";
+
 import { ObsidianHttpClient } from "../../adapters/ObsidianHttpClient";
 import type { IORegion } from "./types";
 

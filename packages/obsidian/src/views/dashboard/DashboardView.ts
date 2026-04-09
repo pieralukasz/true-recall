@@ -1,8 +1,11 @@
-import { VIEW_TYPE_DASHBOARD } from "@true-recall/core/constants";
-import { mountPreact } from "@true-recall/obsidian/preact";
-import { DashboardApp } from "@true-recall/obsidian/views/dashboard/DashboardApp";
 import { ItemView, type WorkspaceLeaf } from "obsidian";
 import { h } from "preact";
+
+import { VIEW_TYPE_DASHBOARD } from "@true-recall/core/constants";
+
+import { mountPreact } from "@true-recall/obsidian/preact";
+import { DashboardApp } from "@true-recall/obsidian/views/dashboard/DashboardApp";
+
 import type TrueRecallPlugin from "../../main";
 
 export class DashboardView extends ItemView {

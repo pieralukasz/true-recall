@@ -1,5 +1,7 @@
-import { FormCard } from "@true-recall/obsidian/components";
 import { useEffect, useState } from "preact/hooks";
+
+import { FormCard } from "@true-recall/obsidian/components";
+
 import { useSettings } from "../../hooks/useSettings";
 
 export function BackupStatusSection() {

@@ -1,5 +1,6 @@
-import type { ISourceUidResolver } from "@true-recall/core/integration/csv/csv-export.service";
 import type { App } from "obsidian";
+
+import type { ISourceUidResolver } from "@true-recall/core/integration/csv/csv-export.service";
 
 /**
  * Resolves flashcard_uid → note name by scanning the vault's metadata cache.

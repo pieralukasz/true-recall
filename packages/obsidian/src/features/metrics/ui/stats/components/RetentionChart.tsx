@@ -1,6 +1,8 @@
-import type { RetentionEntry } from "@true-recall/core";
 import type { ChartConfiguration } from "chart.js";
 import { useRef } from "preact/hooks";
+
+import type { RetentionEntry } from "@true-recall/core";
+
 import { CHART_COLORS, withAlpha } from "../helpers/chart-theme";
 import { useChart } from "../helpers/use-chart";
 import { ChartCard } from "./ChartCard";

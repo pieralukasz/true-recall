@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { buildBrowserQuery } from "../../../src/services/browser/browser-query-builder";
 import type { FilterState, SortConfig } from "../../../src/types/browser.types";
 import { EMPTY_FILTER } from "../../../src/types/browser.types";

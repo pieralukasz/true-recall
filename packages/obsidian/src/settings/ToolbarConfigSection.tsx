@@ -1,4 +1,7 @@
+import { useCallback, useRef, useState } from "preact/hooks";
+
 import type { ToolbarButtonConfig } from "@true-recall/core/types";
+
 import { Clickable, FormCard } from "@true-recall/obsidian/components";
 import {
 	BUILTIN_BUTTONS,
@@ -6,7 +9,6 @@ import {
 	isBuiltinButton,
 } from "@true-recall/obsidian/editor/ai/toolbar-buttons";
 import { useIcon, usePlugin } from "@true-recall/obsidian/preact";
-import { useCallback, useRef, useState } from "preact/hooks";
 
 interface ToolbarConfigListProps {
 	title: string;

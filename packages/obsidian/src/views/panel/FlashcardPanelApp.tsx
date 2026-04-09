@@ -1,3 +1,6 @@
+import { Platform } from "obsidian";
+import { useMemo } from "preact/hooks";
+
 import { Panel } from "@true-recall/obsidian/components";
 import {
 	NormalHeader,
@@ -10,8 +13,6 @@ import {
 	useScrollPreservation,
 } from "@true-recall/obsidian/features/library/ui/panel/hooks";
 import { useStreamingNewCount } from "@true-recall/obsidian/features/library/ui/panel/hooks/useStreamingNewCount";
-import { Platform } from "obsidian";
-import { useMemo } from "preact/hooks";
 
 export function FlashcardPanelApp({
 	onActions,

@@ -1,15 +1,20 @@
 import type { Signal } from "@preact/signals";
-import { usePlugin } from "@true-recall/obsidian/preact";
 import { TFile } from "obsidian";
 import type { RefObject } from "preact";
 import { useRef } from "preact/hooks";
+
+import { usePlugin } from "@true-recall/obsidian/preact";
+
 import { getDragClass } from "../helpers/drag-drop";
 import { useNoteBulkActions } from "../helpers/use-note-bulk-actions";
 import { useNoteContextMenu } from "../helpers/use-note-context-menu";
 import { useNoteDragDrop } from "../helpers/use-note-drag-drop";
 import { useNoteFiltering } from "../helpers/use-note-filtering";
 import { useNoteSelection } from "../helpers/use-note-selection";
-import { useExternalVirtualList } from "../helpers/use-virtual-list";
+import {
+	ROW_HEIGHT,
+	useExternalVirtualList,
+} from "../helpers/use-virtual-list";
 import type { DashboardNoteEntry } from "../types";
 import { NoteFilters } from "./NoteFilters";
 import { NoteRow } from "./NoteRow";
@@ -272,7 +277,7 @@ function NoteListItem({
 				top: `${offsetTop}px`,
 				left: 0,
 				right: 0,
-				height: "36px",
+				height: `${ROW_HEIGHT}px`,
 			}}
 		>
 			<NoteRow

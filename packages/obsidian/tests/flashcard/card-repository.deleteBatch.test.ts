@@ -1,9 +1,11 @@
-import { CardRepository } from "@true-recall/core/flashcard/data/card-repository.service";
-import { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
-import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite/SqliteStoreService";
 import type { App } from "obsidian";
 import { State } from "ts-fsrs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { CardRepository } from "@true-recall/core/flashcard/data/card-repository.service";
+import { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
+import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite/SqliteStoreService";
+
 import {
 	createTestCard,
 	createTestContext,

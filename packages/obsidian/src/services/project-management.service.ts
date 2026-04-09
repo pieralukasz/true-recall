@@ -1,9 +1,11 @@
+import type { App } from "obsidian";
+import { Notice, normalizePath, TFile, TFolder } from "obsidian";
+
 import type { FrontmatterService } from "@true-recall/core/flashcard/source/frontmatter.service";
 import type { FrontmatterIndexService } from "@true-recall/core/services/notes/frontmatter-index.service";
 import type { HierarchyService } from "@true-recall/core/services/notes/hierarchy.service";
+
 import { mutate } from "@true-recall/obsidian/data";
-import type { App } from "obsidian";
-import { Notice, normalizePath, TFile, TFolder } from "obsidian";
 
 export class ProjectManagementService {
 	constructor(

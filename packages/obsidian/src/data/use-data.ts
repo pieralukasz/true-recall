@@ -1,4 +1,5 @@
 import { type ReadonlySignal, signal } from "@preact/signals";
+
 import type { DataLayer, QueryKey } from "./data-layer";
 
 let _dl: DataLayer | null = null;

@@ -1,5 +1,6 @@
-import type { IFrontmatter } from "@true-recall/core";
 import { type App, TFile } from "obsidian";
+
+import type { IFrontmatter } from "@true-recall/core";
 
 export class ObsidianFrontmatter implements IFrontmatter {
 	constructor(private app: App) {}

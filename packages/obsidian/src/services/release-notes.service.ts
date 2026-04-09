@@ -1,5 +1,6 @@
-import { GITHUB_RELEASES_API } from "@true-recall/core/constants";
 import { requestUrl } from "obsidian";
+
+import { GITHUB_RELEASES_API } from "@true-recall/core/constants";
 
 export interface ReleaseInfo {
 	version: string;

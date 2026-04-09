@@ -1,4 +1,5 @@
 import { Clickable } from "@true-recall/obsidian/components";
+
 import { BUTTON_CLS } from "../utils/simulator-helpers";
 
 interface ParametersBarProps {

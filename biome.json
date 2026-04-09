@@ -47,7 +47,21 @@
 		"enabled": true,
 		"actions": {
 			"source": {
-				"organizeImports": "on"
+				"organizeImports": {
+					"level": "on",
+					"options": {
+						"groups": [
+							[":BUN:", ":NODE:"],
+							[":PACKAGE:", "!@true-recall/**"],
+							":BLANK_LINE:",
+							["@true-recall/core", "@true-recall/core/**"],
+							":BLANK_LINE:",
+							["@true-recall/obsidian", "@true-recall/obsidian/**"],
+							":BLANK_LINE:",
+							":PATH:"
+						]
+					}
+				}
 			}
 		}
 	}

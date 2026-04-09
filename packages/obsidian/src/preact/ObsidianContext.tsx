@@ -1,6 +1,7 @@
 import type { App } from "obsidian";
 import { createContext } from "preact";
 import { useContext } from "preact/hooks";
+
 import type TrueRecallPlugin from "../main";
 
 interface ObsidianContextValue {

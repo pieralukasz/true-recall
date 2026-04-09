@@ -1,11 +1,12 @@
+import JSZip from "jszip";
+import { State } from "ts-fsrs";
+
 import {
 	type DatabaseLike,
 	loadDatabase,
 } from "@true-recall/core/persistence/sqlite/loader";
 import type { ReviewLogForSync } from "@true-recall/core/persistence/sqlite/modules/StatsActions";
 import type { FSRSCardData } from "@true-recall/core/types";
-import JSZip from "jszip";
-import { State } from "ts-fsrs";
 
 const FIELD_SEPARATOR = "\x1f";
 

@@ -1,5 +1,7 @@
-import type { FSRSFlashcardItem } from "@true-recall/core/types";
 import { describe, expect, it } from "vitest";
+
+import type { FSRSFlashcardItem } from "@true-recall/core/types";
+
 import {
 	deriveTypeInMode,
 	isRatingLockedForTypeIn,

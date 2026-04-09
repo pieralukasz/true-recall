@@ -1,12 +1,15 @@
 import { useSignal } from "@preact/signals";
+import type { ChartConfiguration } from "chart.js";
+import { useRef } from "preact/hooks";
+
 import type {
 	DistributionStats,
 	HistogramBucket,
 } from "@true-recall/core/metrics/fsrs-tools/statistics/distribution.calculator";
+
 import { Clickable } from "@true-recall/obsidian/components";
 import { cn } from "@true-recall/obsidian/utils/cn";
-import type { ChartConfiguration } from "chart.js";
-import { useRef } from "preact/hooks";
+
 import { CHART_COLORS, withAlpha } from "../helpers/chart-theme";
 import { useChart } from "../helpers/use-chart";
 import { ChartCard } from "./ChartCard";

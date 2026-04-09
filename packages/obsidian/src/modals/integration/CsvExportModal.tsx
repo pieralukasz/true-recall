@@ -1,8 +1,13 @@
+import type { App } from "obsidian";
+import { render } from "preact";
+import { useCallback, useRef, useState } from "preact/hooks";
+
 import {
 	CsvExportService,
 	type CsvSeparator,
 } from "@true-recall/core/integration/csv/csv-export.service";
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite/SqliteStoreService";
+
 import { ObsidianSourceUidResolver } from "@true-recall/obsidian/adapters/ObsidianSourceUidResolver";
 import {
 	ActionButton,
@@ -19,9 +24,6 @@ import {
 	resolveNotes,
 } from "@true-recall/obsidian/features/integration/utils/export-helpers";
 import { BaseModal } from "@true-recall/obsidian/modals/shared/BaseModal";
-import type { App } from "obsidian";
-import { render } from "preact";
-import { useCallback, useRef, useState } from "preact/hooks";
 
 type ExportPhase =
 	| { type: "form" }

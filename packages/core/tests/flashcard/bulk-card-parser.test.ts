@@ -4,6 +4,7 @@
  * Tests `Front :: Back` text → ParsedCard[] conversion for the Quick tab.
  */
 import { describe, expect, it } from "vitest";
+
 import {
 	type ParsedCard,
 	parseBulkText,

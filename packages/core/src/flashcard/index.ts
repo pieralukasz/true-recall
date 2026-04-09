@@ -21,13 +21,11 @@ export {
 	type CollectResult,
 	CollectService,
 } from "./lifecycle/collect.service";
-
 export {
 	type DeletionHandlerDeps,
 	DeletionHandlerService,
 	type ISessionPersistence,
 } from "./lifecycle/deletion-handler.service";
-
 export {
 	type MigrationResult,
 	migrateContent,

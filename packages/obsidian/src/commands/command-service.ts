@@ -1,5 +1,6 @@
 import { mutate } from "@true-recall/obsidian/data";
 import { notify } from "@true-recall/obsidian/services/notification.service";
+
 import type { Command, CommandContext, CommandHook } from "./command.types";
 
 export class CommandService {

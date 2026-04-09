@@ -1,4 +1,5 @@
 import { RAG_CONFIG } from "@true-recall/core/constants";
+
 import type {
 	EmbeddingRow,
 	RagChunkActions,
@@ -18,6 +19,8 @@ export interface SearchResult {
 	sourceId: string;
 	/** For flashcards: the source_uid linking to the originating note */
 	sourceNoteUid?: string;
+	/** Resolved file path of the source note (enriched post-search) */
+	sourceNotePath?: string;
 	score: number;
 	tokenCount: number;
 	/** Source file modification time (ms since epoch) from rag_index_meta */
@@ -31,6 +34,34 @@ export interface SearchResult {
 		lastReview?: string;
 		due: string;
 	};
+}
+
+export interface SearchOptions {
+	topK?: number;
+	sourceType?: RagSourceType | "all";
+	sourceIds?: string[];
+	/** Only return results modified after this timestamp (ms since epoch) */
+	sinceMs?: number;
+	/** Group results by source note/flashcard origin */
+	groupBySource?: boolean;
+}
+
+export interface GroupedSearchResult {
+	sourceId: string;
+	sourceType: RagSourceType;
+	displayName: string;
+	/** Resolved note path (enriched post-search) */
+	sourceNotePath?: string;
+	headings: string[];
+	bestScore: number;
+	modifiedAt?: number;
+	chunks: SearchResult[];
+}
+
+export interface SearchResponse {
+	results: SearchResult[];
+	grouped?: GroupedSearchResult[];
+	stats: SearchStats;
 }
 
 export interface SearchStats {
@@ -55,31 +86,55 @@ export class RagSearchService {
 
 	async search(
 		query: string,
-		topK: number = RAG_CONFIG.defaultTopK,
+		topKOrOpts?: number | SearchOptions,
 		sourceType?: RagSourceType | "all",
 		sourceIds?: string[],
-	): Promise<{ results: SearchResult[]; stats: SearchStats }> {
+	): Promise<SearchResponse> {
+		const opts: SearchOptions =
+			typeof topKOrOpts === "object"
+				? topKOrOpts
+				: {
+						topK: topKOrOpts,
+						sourceType,
+						sourceIds,
+					};
+
+		const topK = opts.topK ?? RAG_CONFIG.defaultTopK;
+		const effSourceType = opts.sourceType;
+		const effSourceIds = opts.sourceIds;
+		const sinceMs = opts.sinceMs;
+
 		// Over-fetch when filtering so we still get topK results after filtering
 		const isFiltered =
-			(sourceType && sourceType !== "all") ||
-			(sourceIds && sourceIds.length > 0);
+			(effSourceType && effSourceType !== "all") ||
+			(effSourceIds && effSourceIds.length > 0) ||
+			sinceMs !== undefined;
 		const fetchMultiplier = isFiltered ? 4 : 2;
 		const fetchSize = topK * fetchMultiplier;
 
 		const ftsResults = this.actions.searchFts(query, fetchSize);
 
-		const queryEmbedding = await this.embedder.embedSingle(query);
-		const vectorResults = this.cosineSearch(queryEmbedding, fetchSize);
+		let queryEmbedding: Float32Array | null = null;
+		try {
+			queryEmbedding = await this.embedder.embedSingle(query);
+		} catch {
+			// Embedding service unavailable — fall back to keyword search
+		}
 
-		// Track which chunks passed vector threshold — FTS-only results without
-		// sufficient cosine similarity are noise
+		let vectorResults: { id: number; score: number }[] = [];
+		if (queryEmbedding) {
+			vectorResults = this.cosineSearch(queryEmbedding, fetchSize);
+		}
+
 		const vectorPassedIds = new Set(vectorResults.map((r) => r.id));
+		const merged = this.rrfMerge(ftsResults, vectorResults, fetchSize);
 
-		const merged = this.rrfMerge(ftsResults, vectorResults, fetchSize).filter(
-			(m) => vectorPassedIds.has(m.id),
-		);
+		// When vector search is available, filter out FTS-only noise
+		const filtered = queryEmbedding
+			? merged.filter((m) => vectorPassedIds.has(m.id))
+			: merged;
 
-		const chunkIds = merged.map((m) => m.id);
+		const chunkIds = filtered.map((m) => m.id);
 		const chunks = this.actions.getChunksByIds(chunkIds);
 		const chunkMap = new Map(chunks.map((c) => [c.id, c]));
 
@@ -88,22 +143,26 @@ export class RagSearchService {
 		const mtimeMap = this.actions.getMtimeForChunks(chunkIds);
 
 		const results: SearchResult[] = [];
-		for (const m of merged) {
+		for (const m of filtered) {
 			const chunk = chunkMap.get(m.id);
 			if (!chunk) continue;
 
 			if (
-				sourceType &&
-				sourceType !== "all" &&
-				chunk.source_type !== sourceType
+				effSourceType &&
+				effSourceType !== "all" &&
+				chunk.source_type !== effSourceType
 			)
 				continue;
 
 			if (
-				sourceIds &&
-				sourceIds.length > 0 &&
-				!sourceIds.includes(chunk.source_id)
+				effSourceIds &&
+				effSourceIds.length > 0 &&
+				!effSourceIds.includes(chunk.source_id)
 			)
+				continue;
+
+			const mtime = mtimeMap.get(chunk.id);
+			if (sinceMs !== undefined && (mtime === undefined || mtime < sinceMs))
 				continue;
 
 			const result: SearchResult = {
@@ -114,7 +173,7 @@ export class RagSearchService {
 				sourceId: chunk.source_id,
 				score: m.score,
 				tokenCount: chunk.token_count,
-				modifiedAt: mtimeMap.get(chunk.id),
+				modifiedAt: mtime,
 			};
 
 			if (chunk.source_type === "flashcard") {
@@ -136,8 +195,70 @@ export class RagSearchService {
 			results.push(result);
 		}
 
-		const stats = this.computeStats(results);
-		return { results: results.slice(0, topK), stats };
+		const trimmed = results.slice(0, topK);
+		const stats = this.computeStats(trimmed);
+
+		const response: SearchResponse = { results: trimmed, stats };
+
+		if (opts.groupBySource) {
+			response.grouped = this.groupBySource(trimmed);
+		}
+
+		return response;
+	}
+
+	private groupBySource(results: SearchResult[]): GroupedSearchResult[] {
+		const groups = new Map<string, GroupedSearchResult>();
+
+		for (const r of results) {
+			// Group flashcards by their source note when available
+			const key =
+				r.sourceType === "flashcard" && r.sourceNoteUid
+					? `note:${r.sourceNoteUid}`
+					: `${r.sourceType}:${r.sourceId}`;
+
+			const existing = groups.get(key);
+			if (existing) {
+				existing.chunks.push(r);
+				if (
+					r.headingBreadcrumb &&
+					!existing.headings.includes(r.headingBreadcrumb)
+				) {
+					existing.headings.push(r.headingBreadcrumb);
+				}
+				if (r.score > existing.bestScore) existing.bestScore = r.score;
+				if (r.modifiedAt) {
+					existing.modifiedAt = Math.max(
+						existing.modifiedAt ?? 0,
+						r.modifiedAt,
+					);
+				}
+			} else {
+				groups.set(key, {
+					sourceId: r.sourceId,
+					sourceType: r.sourceType,
+					displayName: this.makeGroupDisplayName(r),
+					headings: r.headingBreadcrumb ? [r.headingBreadcrumb] : [],
+					bestScore: r.score,
+					modifiedAt: r.modifiedAt,
+					chunks: [r],
+				});
+			}
+		}
+
+		return Array.from(groups.values()).sort(
+			(a, b) => b.bestScore - a.bestScore,
+		);
+	}
+
+	private makeGroupDisplayName(r: SearchResult): string {
+		if (r.sourceType === "note") {
+			const parts = r.sourceId.split("/");
+			const filename = parts[parts.length - 1] ?? r.sourceId;
+			return filename.replace(/\.md$/, "");
+		}
+		const qMatch = r.content.match(/^Q:\s*([^\n]+)/);
+		return (qMatch?.[1]?.trim() || r.content.slice(0, 50)).slice(0, 50);
 	}
 
 	private cosineSearch(

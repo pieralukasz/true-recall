@@ -1,3 +1,5 @@
+import { type Grade, Rating, State } from "ts-fsrs";
+
 import { LEARN_AHEAD_LIMIT_MINUTES } from "@true-recall/core/constants";
 import type {
 	FSRSFlashcardItem,
@@ -5,6 +7,7 @@ import type {
 	ReviewSessionStats,
 	SchedulingPreview,
 } from "@true-recall/core/types";
+
 import type {
 	AppState,
 	AppStoreDeps,
@@ -14,7 +17,6 @@ import type {
 	ReviewSliceState,
 	SessionPhase,
 } from "@true-recall/obsidian/store/types";
-import { type Grade, Rating, State } from "ts-fsrs";
 
 type ReviewSlice = ReviewSliceState & ReviewSliceActions;
 

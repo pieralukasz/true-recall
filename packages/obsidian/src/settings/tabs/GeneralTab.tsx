@@ -1,3 +1,5 @@
+import { useCallback, useRef, useState } from "preact/hooks";
+
 import {
 	DEFAULT_SETTINGS,
 	TRUERECALL_BMC_URL,
@@ -10,6 +12,7 @@ import type {
 	ReviewViewMode,
 	TypeInMode,
 } from "@true-recall/core/types";
+
 import {
 	Clickable,
 	FormCard,
@@ -23,7 +26,7 @@ import {
 import { KeyboardHandler } from "@true-recall/obsidian/features/study/ui/review/handlers/KeyboardHandler";
 import { useIcon } from "@true-recall/obsidian/preact";
 import { notify } from "@true-recall/obsidian/services/notification.service";
-import { useCallback, useRef, useState } from "preact/hooks";
+
 import { useSettings } from "../hooks/useSettings";
 import { ToolbarConfigSection } from "../ToolbarConfigSection";
 
@@ -297,6 +300,26 @@ export function GeneralTab() {
 					>
 						Get skill
 					</Clickable>
+				</FormField>
+			</FormCard>
+
+			<FormCard title="Device Sync">
+				<InfoBlock>
+					Sync flashcards and review history across devices via iCloud. Each
+					device keeps its own database — changes are merged on startup using
+					last-write-wins.
+				</InfoBlock>
+
+				<FormField
+					name="Enable device sync"
+					description="Merge changes from other devices when the plugin loads"
+				>
+					<ToggleInput
+						value={settings.enableDeviceSync}
+						onChange={(v) => {
+							void save({ enableDeviceSync: v });
+						}}
+					/>
 				</FormField>
 			</FormCard>
 

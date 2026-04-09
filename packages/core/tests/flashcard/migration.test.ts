@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { migrateContent } from "../../src/flashcard/lifecycle/migration.service";
 
 describe("migrateContent", () => {

@@ -1,4 +1,5 @@
 import { Clickable } from "@true-recall/obsidian/components";
+
 import { IconToolButton } from "./IOIconToolButton";
 import type { IORegion } from "./types";
 

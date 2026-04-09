@@ -1,3 +1,6 @@
+import { ItemView, TFile, type WorkspaceLeaf } from "obsidian";
+import { h } from "preact";
+
 import { VIEW_TYPE_KNOWLEDGE_CHAT } from "@true-recall/core/constants";
 import { RagChatService } from "@true-recall/core/rag/chat/rag-chat.service";
 import { RagToolExecutor } from "@true-recall/core/rag/chat/rag-chat-tools";
@@ -7,10 +10,10 @@ import type {
 	ContextItem,
 	NoteContextItem,
 } from "@true-recall/core/rag/context/context.types";
+
 import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpClient";
 import { mountPreact } from "@true-recall/obsidian/preact";
-import { ItemView, TFile, type WorkspaceLeaf } from "obsidian";
-import { h } from "preact";
+
 import type TrueRecallPlugin from "../../main";
 import { KnowledgeChatApp } from "./KnowledgeChatApp";
 

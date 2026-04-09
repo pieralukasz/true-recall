@@ -1,8 +1,3 @@
-import { Clickable } from "@true-recall/obsidian/components";
-import { SearchInput } from "@true-recall/obsidian/components/SearchInput";
-import { useIcon } from "@true-recall/obsidian/preact";
-import { useApp } from "@true-recall/obsidian/preact/ObsidianContext";
-import { cn } from "@true-recall/obsidian/utils";
 import { TFolder } from "obsidian";
 import {
 	useCallback,
@@ -11,6 +6,12 @@ import {
 	useRef,
 	useState,
 } from "preact/hooks";
+
+import { Clickable } from "@true-recall/obsidian/components";
+import { SearchInput } from "@true-recall/obsidian/components/SearchInput";
+import { useIcon } from "@true-recall/obsidian/preact";
+import { useApp } from "@true-recall/obsidian/preact/ObsidianContext";
+import { cn } from "@true-recall/obsidian/utils";
 
 export interface FolderPickerProps {
 	value: string[];

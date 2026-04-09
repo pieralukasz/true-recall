@@ -1,5 +1,6 @@
-import type { IAnkiImportVault } from "@true-recall/core/integration/anki/anki-import.service";
 import { type App, normalizePath, type TFile } from "obsidian";
+
+import type { IAnkiImportVault } from "@true-recall/core/integration/anki/anki-import.service";
 
 /**
  * Implements vault operations needed by AnkiImportService using Obsidian's API.

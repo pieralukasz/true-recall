@@ -1,5 +1,6 @@
 import { Chart, type ChartConfiguration } from "chart.js";
 import { useEffect, useRef } from "preact/hooks";
+
 import { GRADE_NAMES } from "../constants";
 import type { MetricType, SequenceSimulation } from "../types";
 import { getMetricData, getMetricLabel } from "../utils/simulator-helpers";

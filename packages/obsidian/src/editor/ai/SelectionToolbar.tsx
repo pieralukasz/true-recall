@@ -1,7 +1,10 @@
-import type { ToolbarButtonConfig } from "@true-recall/core/types";
-import { Clickable } from "@true-recall/obsidian/components";
 import type { TFile } from "obsidian";
 import { useCallback, useState } from "preact/hooks";
+
+import type { ToolbarButtonConfig } from "@true-recall/core/types";
+
+import { Clickable } from "@true-recall/obsidian/components";
+
 import { BUILTIN_BUTTONS } from "./toolbar-buttons";
 
 export interface ToolbarActions {

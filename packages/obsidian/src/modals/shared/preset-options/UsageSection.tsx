@@ -1,7 +1,9 @@
+import { useMemo } from "preact/hooks";
+
 import type { FSRSPreset } from "@true-recall/core/types";
+
 import { FormCard } from "@true-recall/obsidian/components";
 import { usePlugin } from "@true-recall/obsidian/preact";
-import { useMemo } from "preact/hooks";
 
 interface UsageSectionProps {
 	preset: FSRSPreset;

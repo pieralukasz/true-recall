@@ -1,3 +1,5 @@
+import { State } from "ts-fsrs";
+
 import type { SessionPersistenceService } from "@true-recall/core/persistence/session/session-persistence.service";
 import { FSRSService } from "@true-recall/core/services/fsrs/fsrs.service";
 import type { HierarchyService } from "@true-recall/core/services/notes/hierarchy.service";
@@ -16,7 +18,6 @@ import {
 	type TrueRecallSettings,
 } from "@true-recall/core/types";
 import type { SessionFilters } from "@true-recall/core/types/review-session.types";
-import { State } from "ts-fsrs";
 
 export interface ActionableSessionSnapshot {
 	queue: CardSchedulingMeta[];

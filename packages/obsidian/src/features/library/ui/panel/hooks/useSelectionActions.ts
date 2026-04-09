@@ -1,3 +1,5 @@
+import { useCallback } from "preact/hooks";
+
 import { DeleteCardCommand } from "@true-recall/obsidian/commands/commands/card-delete.cmd";
 import { ForgetCommand } from "@true-recall/obsidian/commands/commands/card-forget.cmd";
 import {
@@ -7,7 +9,6 @@ import {
 import { ChangeNoteTypeCommand } from "@true-recall/obsidian/commands/commands/note-type.cmd";
 import { getSourceNoteNameFromFile } from "@true-recall/obsidian/features/library/ui/panel/utils/panel-helpers";
 import { useApp, usePlugin } from "@true-recall/obsidian/preact";
-import { useCallback } from "preact/hooks";
 
 import { usePanelScroll } from "./PanelScrollContext";
 import { usePanelStore } from "./usePanelStore";
