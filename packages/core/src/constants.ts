@@ -84,6 +84,7 @@ export const DEFAULT_FSRS_PRESET: FSRSPreset = {
 };
 
 export const DEFAULT_SETTINGS: TrueRecallSettings = {
+	enableDeviceSync: false,
 	openRouterApiKey: "",
 	aiModel: DEFAULT_BYOK_MODEL,
 	aiTier: "byok",

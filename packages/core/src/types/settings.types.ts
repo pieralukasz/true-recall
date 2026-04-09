@@ -163,6 +163,9 @@ export interface TrueRecallSettings {
 	/** Device ID backup — survives reinstall via iCloud sync */
 	deviceId?: string;
 
+	/** Enable cross-device sync on plugin startup */
+	enableDeviceSync: boolean;
+
 	/** True Recall Pro key (LiteLLM) — takes priority over OpenRouter */
 	proKey?: string;
 	/** OpenRouter API key (BYOK tier) */

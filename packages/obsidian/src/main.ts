@@ -266,7 +266,11 @@ export default class TrueRecallPlugin extends Plugin {
 
 		// 4. Cross-device sync
 		try {
-			if (this.deviceDiscovery && this.cardStore) {
+			if (
+				this.settings.enableDeviceSync &&
+				this.deviceDiscovery &&
+				this.cardStore
+			) {
 				const syncService = new DeviceSyncService(
 					this.cardStore,
 					this.deviceDiscovery,

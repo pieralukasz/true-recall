@@ -300,6 +300,26 @@ export function GeneralTab() {
 				</FormField>
 			</FormCard>
 
+			<FormCard title="Device Sync">
+				<InfoBlock>
+					Sync flashcards and review history across devices via iCloud. Each
+					device keeps its own database — changes are merged on startup using
+					last-write-wins.
+				</InfoBlock>
+
+				<FormField
+					name="Enable device sync"
+					description="Merge changes from other devices when the plugin loads"
+				>
+					<ToggleInput
+						value={settings.enableDeviceSync}
+						onChange={(v) => {
+							void save({ enableDeviceSync: v });
+						}}
+					/>
+				</FormField>
+			</FormCard>
+
 			<FormCard title="About">
 				<FormField
 					name="What's New"
