@@ -111,8 +111,8 @@ export class StatsActions {
 		updatedAt: number;
 		deletedAt: number | null;
 		presetName: string | null;
-	}): void {
-		this.reviewLog.upsertReviewLogFromRemote(data);
+	}): boolean {
+		return this.reviewLog.upsertReviewLogFromRemote(data);
 	}
 
 	getReviewLogForSync(id: string): {
