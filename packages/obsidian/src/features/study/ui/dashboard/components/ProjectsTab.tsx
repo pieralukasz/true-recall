@@ -17,7 +17,10 @@ import { useNoteSelection } from "../helpers/use-note-selection";
 import { useProjectActions } from "../helpers/use-project-actions";
 import { useProjectContextMenu } from "../helpers/use-project-context-menu";
 import { useProjectDragDrop } from "../helpers/use-project-drag-drop";
-import { useExternalVirtualList } from "../helpers/use-virtual-list";
+import {
+	ROW_HEIGHT,
+	useExternalVirtualList,
+} from "../helpers/use-virtual-list";
 import type { DashboardProject } from "../types";
 import { NoteRow } from "./NoteRow";
 import { EmptyProjectRow, ProjectHeaderRow } from "./ProjectHeaderRow";
@@ -242,7 +245,7 @@ export function ProjectsTab({
 								top: `${offsetTop}px`,
 								left: 0,
 								right: 0,
-								height: "36px",
+								height: `${ROW_HEIGHT}px`,
 							}}
 						>
 							<EmptyProjectRow depth={item.depth} />
@@ -375,7 +378,7 @@ function ProjectHeaderItem({
 				top: `${offsetTop}px`,
 				left: 0,
 				right: 0,
-				height: "36px",
+				height: `${ROW_HEIGHT}px`,
 			}}
 		>
 			<ProjectHeaderRow
@@ -522,7 +525,7 @@ function NoteItem({
 				top: `${offsetTop}px`,
 				left: 0,
 				right: 0,
-				height: "36px",
+				height: `${ROW_HEIGHT}px`,
 				paddingLeft: `${item.depth * 20}px`,
 			}}
 		>

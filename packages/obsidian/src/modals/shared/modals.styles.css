@@ -101,6 +101,30 @@
 }
 
 /* ================================================================
+   MOBILE DASHBOARD — taller rows, larger touch targets
+   ================================================================ */
+
+/* Taller rows for touch targets (44px instead of 36px) */
+.is-mobile .ep-dashboard-container [role="listitem"] > [role="button"],
+.is-mobile .ep-dashboard-container [role="listitem"] > div > [role="button"] {
+	height: 2.75rem;
+}
+.is-mobile .ep-dashboard-container [role="listitem"] .clickable-icon {
+	min-width: 2.5rem;
+	min-height: 2.5rem;
+}
+
+/* Reduce tab gap for narrow screens */
+.is-mobile .ep-dashboard-container [role="tablist"] {
+	gap: 0.75rem;
+}
+
+/* Safe area inset for dashboard bottom */
+.is-mobile .ep-dashboard-container {
+	padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+/* ================================================================
    Decorative styles — safe inside @layer components
    ================================================================ */
 @layer components {

@@ -84,6 +84,7 @@ export const DEFAULT_FSRS_PRESET: FSRSPreset = {
 };
 
 export const DEFAULT_SETTINGS: TrueRecallSettings = {
+	enableDeviceSync: false,
 	openRouterApiKey: "",
 	aiModel: DEFAULT_BYOK_MODEL,
 	aiTier: "byok",
@@ -256,6 +257,8 @@ export const FSRS_CONFIG = {
 	minRetention: 0.7,
 	maxRetention: 0.99,
 } as const;
+
+export const MS_PER_DAY = 86_400_000;
 
 export const WEAK_CARD_STABILITY_THRESHOLD = 7; // days
 

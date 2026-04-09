@@ -1,3 +1,4 @@
+export { ArchivedToggle } from "./ArchivedToggle";
 export { CardMaturitySection } from "./CardMaturitySection";
 export { ChartCard } from "./ChartCard";
 export { CollectionHealthBar } from "./CollectionHealthBar";

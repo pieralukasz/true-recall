@@ -92,10 +92,16 @@ export function handleGetFsrsStats(
 	const url = new URL(req.url ?? "/", "http://localhost");
 	const days = Number(url.searchParams.get("days")) || 30;
 
+	const archivedUids = ctx.plugin.hierarchyService.getArchivedSourceUids();
 	const snapshot = ctx.plugin.fsrsHelper.getTrueRetentionSnapshot(days);
-	const workloadForecast =
-		ctx.plugin.fsrsHelper.getWorkloadForecastSummary(days);
-	const workloadByDay = ctx.plugin.fsrsHelper.getWorkloadByDayOfWeek(days);
+	const workloadForecast = ctx.plugin.fsrsHelper.getWorkloadForecastSummary(
+		days,
+		archivedUids,
+	);
+	const workloadByDay = ctx.plugin.fsrsHelper.getWorkloadByDayOfWeek(
+		days,
+		archivedUids,
+	);
 	const distributions = ctx.plugin.fsrsHelper.getDistributions();
 
 	sendOk(res, {

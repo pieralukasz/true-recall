@@ -245,9 +245,13 @@ export class RagToolExecutor {
 	}
 
 	private getRetentionAnalytics(days: number): string {
+		const archivedUids = this.hierarchy.getArchivedSourceUids();
 		const snapshot = this.fsrsHelper.getTrueRetentionSnapshot(days);
-		const workload = this.fsrsHelper.getWorkloadForecastSummary(days);
-		const byDay = this.fsrsHelper.getWorkloadByDayOfWeek(days);
+		const workload = this.fsrsHelper.getWorkloadForecastSummary(
+			days,
+			archivedUids,
+		);
+		const byDay = this.fsrsHelper.getWorkloadByDayOfWeek(days, archivedUids);
 		const distributions = this.fsrsHelper.getDistributions();
 
 		return JSON.stringify(

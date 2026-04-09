@@ -6,6 +6,19 @@
 import type { FSRSFlashcardItem } from "@true-recall/core/types";
 import { State } from "ts-fsrs";
 
+/** Learning or Relearning */
+export function isLearningState(state: State | number): boolean {
+	return state === State.Learning || state === State.Relearning;
+}
+
+export function isNewState(state: State | number): boolean {
+	return state === State.New;
+}
+
+export function isReviewState(state: State | number): boolean {
+	return state === State.Review;
+}
+
 /**
  * Card state counts (FSRS states)
  */
@@ -20,6 +33,22 @@ export interface CardStateCounts {
  */
 export interface CardStateCountsWithDue extends CardStateCounts {
 	due: number;
+}
+
+/**
+ * Check whether a card is active (not suspended, not currently buried).
+ * Works with any data shape — pass the individual fields.
+ */
+export function isCardActive(
+	suspended: boolean | undefined,
+	buriedUntil: string | null | undefined,
+	now?: Date,
+): boolean {
+	if (suspended) return false;
+	if (buriedUntil) {
+		if (new Date(buriedUntil) > (now ?? new Date())) return false;
+	}
+	return true;
 }
 
 /**
@@ -38,15 +67,9 @@ export function filterActiveCardsOnly<
 	T extends { suspended?: boolean; buriedUntil?: string | null },
 >(cards: T[], options: ActiveCardFilterOptions = {}): T[] {
 	const now = options.now ?? new Date();
-
-	return cards.filter((card) => {
-		if (card.suspended) return false;
-		if (card.buriedUntil) {
-			const buriedUntil = new Date(card.buriedUntil);
-			if (buriedUntil > now) return false;
-		}
-		return true;
-	});
+	return cards.filter((card) =>
+		isCardActive(card.suspended, card.buriedUntil, now),
+	);
 }
 
 /**
@@ -58,8 +81,7 @@ export function countCardsByState(cards: FSRSFlashcardItem[]): CardStateCounts {
 	const now = new Date();
 
 	for (const card of cards) {
-		if (card.fsrs.suspended) continue;
-		if (card.fsrs.buriedUntil && new Date(card.fsrs.buriedUntil) > now)
+		if (!isCardActive(card.fsrs.suspended, card.fsrs.buriedUntil, now))
 			continue;
 
 		switch (card.fsrs.state) {
@@ -101,11 +123,7 @@ export function countCardsByStateWithDue(
 	const now = new Date();
 
 	for (const card of cards) {
-		if (card.suspended) continue;
-		if (card.buriedUntil) {
-			const buriedUntil = new Date(card.buriedUntil);
-			if (buriedUntil > now) continue;
-		}
+		if (!isCardActive(card.suspended, card.buriedUntil, now)) continue;
 
 		const dueDate = new Date(card.due);
 

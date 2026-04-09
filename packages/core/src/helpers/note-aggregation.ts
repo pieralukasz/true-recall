@@ -1,3 +1,4 @@
+import { MS_PER_DAY } from "@true-recall/core/constants";
 import { computePriority } from "@true-recall/core/helpers/note-priority";
 import { estimateStudyMinutes } from "@true-recall/core/helpers/time-estimate";
 import type {
@@ -116,7 +117,7 @@ export function aggregateDashboardData(
 				if (dueDate <= now) {
 					entry.due++;
 					const daysOverdue = Math.floor(
-						(now.getTime() - dueDate.getTime()) / 86_400_000,
+						(now.getTime() - dueDate.getTime()) / MS_PER_DAY,
 					);
 					if (daysOverdue > 0) {
 						entry.overdueCount++;

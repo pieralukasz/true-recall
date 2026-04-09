@@ -75,18 +75,20 @@ export function useStatsData(
 		return calc;
 	}, [plugin]);
 
+	const cardSnapshot = useMemo(
+		() => [...allMeta.value.values()],
+		[allMeta.value],
+	);
+
 	// Single unified async pipeline — stale-while-revalidate
 	useEffect(() => {
 		let cancelled = false;
 		loading.value = true;
 
-		const cards = [...allMeta.value.values()];
-		void settingsSignal.value;
 		const range = timeRange.value;
 		const f = filter?.value;
 
-		// Fast O(1) setup — does not block render
-		statsCalc.setCardSnapshot(cards);
+		statsCalc.setCardSnapshot(cardSnapshot);
 		statsCalc.setFilter(f ?? EMPTY_FILTER);
 
 		// Yield to renderer, then compute everything in one batch
@@ -134,7 +136,7 @@ export function useStatsData(
 					cardsCreated,
 					rangeSummary,
 					allDailyStats,
-					totalCards: cards.length,
+					totalCards: cardSnapshot.length,
 					trueRetention,
 				};
 			} catch (e) {
@@ -152,14 +154,12 @@ export function useStatsData(
 			clearTimeout(timeoutId);
 		};
 	}, [
-		[...allMeta.value.values()],
+		cardSnapshot,
 		settingsSignal.value,
 		timeRange.value,
 		filter?.value,
 		statsCalc,
 		plugin.fsrsHelper,
-		loading,
-		data,
 	]);
 
 	return {

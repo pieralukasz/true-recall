@@ -3,6 +3,7 @@
  */
 
 import { State } from "ts-fsrs";
+import { isLearningState } from "../../helpers/card-state";
 import type { CardSchedulingMeta } from "../../types";
 import {
 	formatLocalDate as formatLocalDateUtil,
@@ -39,10 +40,7 @@ export class DayBoundaryService {
 		const dueDate = new Date(card.fsrs.due);
 
 		// Learning cards use exact timestamp
-		if (
-			card.fsrs.state === State.Learning ||
-			card.fsrs.state === State.Relearning
-		) {
+		if (isLearningState(card.fsrs.state)) {
 			return dueDate <= currentTime;
 		}
 
