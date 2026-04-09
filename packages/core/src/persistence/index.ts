@@ -1,3 +1,13 @@
+export type {
+	IODefinition,
+	IOMaskMode,
+	IORegion,
+	IOShape,
+} from "../types/image-occlusion.types";
+export {
+	normalizeIOImagePath,
+	parseIODefinition,
+} from "../utils/io-definition";
 export {
 	type BackgroundBackupConfig,
 	type BackgroundBackupDeps,
@@ -10,14 +20,6 @@ export {
 	type PruneResult,
 } from "./backup/backup.service";
 export {
-	type IODefinition,
-	type IOMaskMode,
-	type IORegion,
-	type IOShape,
-	normalizeIOImagePath,
-	parseIODefinition,
-} from "./io-definition";
-export {
 	NOTIFICATION_DURATION,
 	type NotificationSink,
 	notify,
@@ -27,5 +29,4 @@ export {
 	type PresetDailyProgress,
 	SessionPersistenceService,
 } from "./session/session-persistence.service";
-
 export * from "./sqlite";

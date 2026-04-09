@@ -1,6 +1,8 @@
 import type { DomainEventBus } from "@true-recall/core/events/event-bus";
 import type { DomainEventType } from "@true-recall/core/events/event-types";
+
 import { setLastMutation } from "@true-recall/obsidian/services/signals";
+
 import type { DataLayer } from "./data-layer";
 import { G } from "./queries";
 

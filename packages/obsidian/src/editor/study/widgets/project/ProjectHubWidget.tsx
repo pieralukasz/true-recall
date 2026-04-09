@@ -1,8 +1,11 @@
 import { useComputed } from "@preact/signals";
+
 import type { HierarchyTreeNode } from "@true-recall/core/services/notes/hierarchy.service";
 import type { CardSchedulingMeta } from "@true-recall/core/types";
+
 import { Q, useQuery } from "@true-recall/obsidian/data";
 import { usePlugin } from "@true-recall/obsidian/preact";
+
 import { computeProjectStats, type ProjectStats } from "../project-stats";
 import { ProjectCard } from "./ProjectWidget";
 

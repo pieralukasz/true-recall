@@ -5,6 +5,7 @@
  * Uses in-memory SQLite v26 through NoteTypeActions/NoteActions.
  */
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+
 import { NoteTypeService } from "../../../src/services/notes/note-type.service";
 import {
 	BUILTIN_BASIC_ID,

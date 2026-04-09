@@ -1,3 +1,5 @@
+import type { App } from "obsidian";
+
 import {
 	FolderSuggestInput,
 	ModalFooter,
@@ -6,7 +8,6 @@ import {
 	StatGrid,
 } from "@true-recall/obsidian/components";
 import type { ImportPreview } from "@true-recall/obsidian/modals/integration/anki-import/types";
-import type { App } from "obsidian";
 
 export interface PreviewPhaseProps {
 	app: App;

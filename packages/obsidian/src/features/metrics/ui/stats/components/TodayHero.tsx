@@ -1,4 +1,5 @@
 import type { StreakInfo, TodaySummary } from "@true-recall/core";
+
 import { useIcon } from "@true-recall/obsidian/preact/hooks";
 
 interface TodayHeroProps {

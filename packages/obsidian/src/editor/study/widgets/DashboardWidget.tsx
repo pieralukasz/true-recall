@@ -1,11 +1,13 @@
+import { useMemo } from "preact/hooks";
+import { State } from "ts-fsrs";
+
 import { WorkloadForecastCalculator } from "@true-recall/core/metrics/fsrs-tools/statistics/workload-forecast.calculator";
 import { StatsCalculatorService } from "@true-recall/core/metrics/stats/stats-calculator.service";
 import type { CardSchedulingMeta } from "@true-recall/core/types";
+
 import { type GlobalCounts, Q, useQuery } from "@true-recall/obsidian/data";
 import { FSRS_COLORS } from "@true-recall/obsidian/helpers/fsrs-colors";
 import { usePlugin } from "@true-recall/obsidian/preact";
-import { useMemo } from "preact/hooks";
-import { State } from "ts-fsrs";
 
 interface TodayData {
 	studied: number;

@@ -1,10 +1,13 @@
 import { useComputed } from "@preact/signals";
+import { useMemo } from "preact/hooks";
+import { State } from "ts-fsrs";
+
 import type { CardSchedulingMeta } from "@true-recall/core/types";
+
 import { Q, useQuery } from "@true-recall/obsidian/data";
 import { FSRS_COLORS } from "@true-recall/obsidian/helpers/fsrs-colors";
 import { usePlugin } from "@true-recall/obsidian/preact";
-import { useMemo } from "preact/hooks";
-import { State } from "ts-fsrs";
+
 import { configValue, parseCodeblockConfig } from "../config-parser";
 import { WidgetCta } from "../WidgetCta";
 

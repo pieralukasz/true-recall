@@ -1,7 +1,10 @@
 import { formatEstimatedTime } from "@true-recall/core/helpers/time-estimate";
+
 import { ActionButton } from "@true-recall/obsidian/components";
 import { FSRS_COLORS } from "@true-recall/obsidian/helpers/fsrs-colors";
 import { usePlugin } from "@true-recall/obsidian/preact";
+import { isMobile } from "@true-recall/obsidian/utils/platform";
+
 import type { TodayProgress } from "../types";
 
 interface TodayActionBarProps {
@@ -59,10 +62,18 @@ export function TodayActionBar({
 			colorCls: FSRS_COLORS.learning.textCls,
 		});
 
+	const mobile = isMobile();
+
 	return (
 		<div class="ep:flex ep:flex-col ep:gap-3 ep:rounded-lg ep:border ep:border-obs-border/30 ep:bg-surface-raised ep:shadow-raised ep:p-4">
 			{/* Top row: count cards + button */}
-			<div class="ep:flex ep:items-center ep:justify-between ep:gap-3">
+			<div
+				class={
+					mobile
+						? "ep:flex ep:flex-col ep:gap-3"
+						: "ep:flex ep:items-center ep:justify-between ep:gap-3"
+				}
+			>
 				<div class="ep:flex ep:items-center ep:gap-2">
 					{counts.map((c) => (
 						<div

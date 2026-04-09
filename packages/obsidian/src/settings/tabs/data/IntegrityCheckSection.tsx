@@ -1,10 +1,12 @@
+import { useCallback, useState } from "preact/hooks";
+
 import {
 	ActionButton,
 	FormCard,
 	FormField,
 } from "@true-recall/obsidian/components";
 import { notify } from "@true-recall/obsidian/services/notification.service";
-import { useCallback, useState } from "preact/hooks";
+
 import { useSettings } from "../../hooks/useSettings";
 
 export function IntegrityCheckSection() {

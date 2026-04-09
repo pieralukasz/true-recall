@@ -5,6 +5,7 @@
  * Inspired by Anki's rslib/src/template.rs + cloze.rs test suites.
  */
 import { describe, expect, it } from "vitest";
+
 import {
 	deriveCardType,
 	fieldIsEmpty,

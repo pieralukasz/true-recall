@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+
 import type { IMetadataIndex } from "../../../src/interfaces/metadata-index";
 import { FrontmatterIndexService } from "../../../src/services/notes/frontmatter-index.service";
 

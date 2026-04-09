@@ -1,8 +1,10 @@
+import { State } from "ts-fsrs";
+import { describe, expect, it } from "vitest";
+
 import type { PresetDailyProgress } from "@true-recall/core/persistence/session/session-persistence.service";
 import type { FSRSFlashcardItem } from "@true-recall/core/types/fsrs";
 import type { FSRSPreset } from "@true-recall/core/types/settings.types";
-import { State } from "ts-fsrs";
-import { describe, expect, it } from "vitest";
+
 import { aggregateCardsWithPresetLimits } from "../../src/editor/study/widgets/StatusBarWidget";
 
 function makePreset(

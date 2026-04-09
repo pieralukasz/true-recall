@@ -1,4 +1,5 @@
 import { filterContent } from "@true-recall/core/ai/parsing/markdown-chunker";
+
 import {
 	type DailyNoteInfo,
 	preprocessDailyNote,
@@ -206,7 +207,9 @@ function chunkFiltered(text: string): RagChunk[] {
 }
 
 export function chunkNote(rawContent: string): RagChunk[] {
-	return chunkFiltered(filterContent(rawContent));
+	const filtered = filterContent(rawContent);
+	if (!filtered) return [];
+	return chunkFiltered(filtered);
 }
 
 export function chunkDailyNote(
@@ -220,6 +223,7 @@ export function chunkDailyNote(
 		dailyInfo,
 		excludeHeadings,
 	);
+	if (!preprocessed) return [];
 	return chunkFiltered(preprocessed);
 }
 
@@ -245,6 +249,8 @@ export function chunkFlashcard(
 		);
 		content = fieldsJson;
 	}
+
+	if (!content) return [];
 
 	return [
 		{

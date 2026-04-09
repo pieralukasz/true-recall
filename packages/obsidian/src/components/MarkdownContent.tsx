@@ -1,8 +1,10 @@
-import { stripBrTags } from "@true-recall/core/utils";
-import { useApp } from "@true-recall/obsidian/preact/ObsidianContext";
 import { MarkdownRenderer, Component as ObsidianComponent } from "obsidian";
 import { memo } from "preact/compat";
 import { useEffect, useRef } from "preact/hooks";
+
+import { stripBrTags } from "@true-recall/core/utils";
+
+import { useApp } from "@true-recall/obsidian/preact/ObsidianContext";
 
 export interface MarkdownContentProps {
 	markdown: string;

@@ -1,3 +1,6 @@
+import type { MetadataCache } from "obsidian";
+import { State } from "ts-fsrs";
+
 import { UNASSIGNED_PATH } from "@true-recall/core/constants";
 import type { SessionPersistenceService } from "@true-recall/core/persistence/session/session-persistence.service";
 import type { FSRSService } from "@true-recall/core/services/fsrs/fsrs.service";
@@ -11,6 +14,7 @@ import type {
 	TrueRecallSettings,
 } from "@true-recall/core/types";
 import type { CardStore } from "@true-recall/core/types/fsrs/store.types";
+
 import {
 	computeProjectStats,
 	type ProjectStats,
@@ -19,8 +23,7 @@ import {
 	type ActionableSessionSnapshot,
 	computeActionableSessionSnapshot,
 } from "@true-recall/obsidian/features/study/services/actionable-session-snapshot.service";
-import type { MetadataCache } from "obsidian";
-import { State } from "ts-fsrs";
+
 import type {
 	DashboardNoteEntry,
 	DashboardProject,
@@ -114,6 +117,37 @@ function collectActiveCardsForSources(
 	return collected;
 }
 
+function computeRawCounts(
+	sourceUids: ReadonlySet<string>,
+	allCardsBySourceUid: ProjectAggregationIndexes["allCardsBySourceUid"],
+	now: Date,
+): { newCount: number; learning: number; due: number } {
+	let newCount = 0;
+	let learning = 0;
+	let due = 0;
+	for (const uid of sourceUids) {
+		const cards = allCardsBySourceUid.get(uid);
+		if (!cards) continue;
+		for (const card of cards) {
+			if (card.suspended) continue;
+			if (card.buriedUntil && new Date(card.buriedUntil) > now) continue;
+			switch (card.state) {
+				case State.New:
+					newCount++;
+					break;
+				case State.Learning:
+				case State.Relearning:
+					learning++;
+					break;
+				case State.Review:
+					if (new Date(card.due) <= now) due++;
+					break;
+			}
+		}
+	}
+	return { newCount, learning, due };
+}
+
 function buildRetrievabilityCache(
 	cardsBySourceUid: ReadonlyMap<
 		string,
@@ -163,7 +197,14 @@ export function aggregateProjectData(
 	};
 
 	const allProjects = hierarchy.map((node) =>
-		buildProjectFromNode(node, noteByPath, plugin, snapshotCache, indexes),
+		buildProjectFromNode(
+			node,
+			noteByPath,
+			plugin,
+			snapshotCache,
+			indexes,
+			showArchived,
+		),
 	);
 
 	let projects: DashboardProject[];
@@ -237,6 +278,7 @@ function buildProjectFromNode(
 	plugin: ProjectAggregationDeps["plugin"],
 	snapshotCache: Map<string, ActionableSessionSnapshot>,
 	indexes: ProjectAggregationIndexes,
+	showArchived?: boolean,
 ): DashboardProject {
 	const sourceUids = plugin.hierarchyService.getSourceUidsForProject(node.path);
 	const stats: ProjectStats = computeProjectStats(
@@ -281,28 +323,48 @@ function buildProjectFromNode(
 	}
 
 	const children = node.children.map((child) =>
-		buildProjectFromNode(child, noteByPath, plugin, snapshotCache, indexes),
+		buildProjectFromNode(
+			child,
+			noteByPath,
+			plugin,
+			snapshotCache,
+			indexes,
+			showArchived,
+		),
 	);
 
-	const scopedActiveCards = collectActiveCardsForSources(
-		sourceUids,
-		indexes.activeCardsBySourceUid,
-	);
+	const isArchived =
+		showArchived && plugin.hierarchyService.isProjectArchived(node.path);
 
-	const snapshot = computeActionableSessionSnapshot(
-		{
-			allCards: plugin.allCards,
-			archivedSourceUids: plugin.archivedSourceUids,
-			settings: plugin.settings,
-			sessionPersistence: plugin.sessionPersistence,
-			presetService: plugin.presetService,
-			metadataCache: plugin.metadataCache,
-			hierarchyService: plugin.hierarchyService,
-			fsrsService: plugin.fsrsService,
-		},
-		{ projectPath: node.path },
-		{ cache: snapshotCache, activeCards: scopedActiveCards },
-	);
+	let counts: { new: number; learning: number; due: number };
+	if (isArchived) {
+		const raw = computeRawCounts(
+			sourceUids,
+			indexes.allCardsBySourceUid,
+			indexes.now,
+		);
+		counts = { new: raw.newCount, learning: raw.learning, due: raw.due };
+	} else {
+		const scopedActiveCards = collectActiveCardsForSources(
+			sourceUids,
+			indexes.activeCardsBySourceUid,
+		);
+		const snapshot = computeActionableSessionSnapshot(
+			{
+				allCards: plugin.allCards,
+				archivedSourceUids: plugin.archivedSourceUids,
+				settings: plugin.settings,
+				sessionPersistence: plugin.sessionPersistence,
+				presetService: plugin.presetService,
+				metadataCache: plugin.metadataCache,
+				hierarchyService: plugin.hierarchyService,
+				fsrsService: plugin.fsrsService,
+			},
+			{ projectPath: node.path },
+			{ cache: snapshotCache, activeCards: scopedActiveCards },
+		);
+		counts = snapshot.counts;
+	}
 
 	const preset = plugin.presetService.resolvePresetChain(node.path).effective
 		.preset;
@@ -312,9 +374,9 @@ function buildProjectFromNode(
 		name: stats.name,
 		path: stats.path,
 		healthPct: stats.healthPct,
-		newCount: snapshot.counts.new,
-		learning: snapshot.counts.learning,
-		due: snapshot.counts.due,
+		newCount: counts.new,
+		learning: counts.learning,
+		due: counts.due,
 		totalCards: stats.totalCards,
 		childCount: stats.childCount,
 		lastReviewed: stats.lastReviewed,

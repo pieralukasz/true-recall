@@ -1,4 +1,5 @@
 import pako from "pako";
+
 import { toExactArrayBuffer } from "./sqlite.types";
 
 const BACKUP_NAME_REGEX =

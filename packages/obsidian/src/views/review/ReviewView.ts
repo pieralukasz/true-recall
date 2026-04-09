@@ -1,4 +1,14 @@
 import { effect } from "@preact/signals";
+import {
+	ItemView,
+	Menu,
+	TFile,
+	type ViewStateResult,
+	type WorkspaceLeaf,
+} from "obsidian";
+import { h } from "preact";
+import type { Grade } from "ts-fsrs";
+
 import { SemanticAnswerGradingService } from "@true-recall/core/ai/grading/semantic-answer-grading.service";
 import { VIEW_TYPE_REVIEW } from "@true-recall/core/constants";
 import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
@@ -12,6 +22,7 @@ import {
 	type LocalAnswerAssessment,
 	type SemanticGradingResult,
 } from "@true-recall/core/types";
+
 import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpClient";
 import { ReviewUndoHook } from "@true-recall/obsidian/commands";
 import { G, getDataLayer } from "@true-recall/obsidian/data";
@@ -52,15 +63,7 @@ import {
 	ReviewApp,
 	ReviewEmptyState,
 } from "@true-recall/obsidian/views/review/ReviewApp";
-import {
-	ItemView,
-	Menu,
-	TFile,
-	type ViewStateResult,
-	type WorkspaceLeaf,
-} from "obsidian";
-import { h } from "preact";
-import type { Grade } from "ts-fsrs";
+
 import type TrueRecallPlugin from "../../main";
 
 interface TypeInAssessmentState {

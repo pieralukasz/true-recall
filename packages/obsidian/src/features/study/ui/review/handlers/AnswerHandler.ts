@@ -1,3 +1,5 @@
+import { type Grade, Rating, State } from "ts-fsrs";
+
 import type { SemanticAnswerGradingService } from "@true-recall/core/ai/grading/semantic-answer-grading.service";
 import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
 import { assessTypedAnswer } from "@true-recall/core/helpers/answer-assessment";
@@ -11,13 +13,13 @@ import type {
 	LocalAnswerAssessment,
 	SemanticGradingResult,
 } from "@true-recall/core/types";
+
 import type { CommandService } from "@true-recall/obsidian/commands";
 import { ReviewAnswerCommand } from "@true-recall/obsidian/commands/commands/review-answer.cmd";
 import type { SessionFilters } from "@true-recall/obsidian/features/study/ui/review/review.types";
 import type TrueRecallPlugin from "@true-recall/obsidian/main";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 import type { ReviewApi } from "@true-recall/obsidian/store";
-import { type Grade, Rating, State } from "ts-fsrs";
 
 export interface AnswerHandlerDeps {
 	getReview: () => ReviewApi;

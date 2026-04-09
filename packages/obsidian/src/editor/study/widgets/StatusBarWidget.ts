@@ -1,4 +1,6 @@
 import { effect } from "@preact/signals";
+import { State } from "ts-fsrs";
+
 import { DEFAULT_SETTINGS } from "@true-recall/core/constants";
 import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
 import type {
@@ -12,10 +14,10 @@ import type {
 } from "@true-recall/core/types";
 import type { FSRSFlashcardItem } from "@true-recall/core/types/fsrs";
 import type { FSRSPreset } from "@true-recall/core/types/settings.types";
+
 import { getDataLayer, Q } from "@true-recall/obsidian/data";
 import { computeActionableSessionSnapshot } from "@true-recall/obsidian/features/study/services/actionable-session-snapshot.service";
 import { FSRS_COLORS } from "@true-recall/obsidian/helpers/fsrs-colors";
-import { State } from "ts-fsrs";
 
 const DOT = " \u00B7 ";
 

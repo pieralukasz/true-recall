@@ -1,3 +1,7 @@
+import type { App } from "obsidian";
+import { render } from "preact";
+import { useCallback, useState } from "preact/hooks";
+
 import {
 	hasAIKey,
 	resolveAIClientConfig,
@@ -19,6 +23,7 @@ import type {
 } from "@true-recall/core/types";
 import type { NoteType } from "@true-recall/core/types/note.types";
 import type { TrueRecallSettings } from "@true-recall/core/types/settings.types";
+
 import { ObsidianAnkiImportVault } from "@true-recall/obsidian/adapters/ObsidianAnkiImportVault";
 import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpClient";
 import { ObsidianPersistence } from "@true-recall/obsidian/adapters/ObsidianPersistence";
@@ -35,9 +40,6 @@ import {
 	ResultPhase,
 } from "@true-recall/obsidian/modals/integration/anki-import";
 import { BaseModal } from "@true-recall/obsidian/modals/shared/BaseModal";
-import type { App } from "obsidian";
-import { render } from "preact";
-import { useCallback, useState } from "preact/hooks";
 
 const DEFAULT_IMPORT_FOLDER = "Anki Import";
 

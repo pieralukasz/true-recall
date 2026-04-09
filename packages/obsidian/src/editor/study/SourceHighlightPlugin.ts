@@ -7,6 +7,7 @@ import {
 	type ViewUpdate,
 } from "@codemirror/view";
 import { effect } from "@preact/signals";
+
 import {
 	type HighlightRequest,
 	highlightRequest,

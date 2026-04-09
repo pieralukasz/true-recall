@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { CollectService } from "../../src/flashcard/lifecycle/collect.service";
 import type { NoteType } from "../../src/types/note.types";
 import { BUILTIN_BASIC_ID, BUILTIN_CLOZE_ID } from "../../src/types/note.types";

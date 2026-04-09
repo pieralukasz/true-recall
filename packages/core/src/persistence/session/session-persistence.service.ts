@@ -1,3 +1,6 @@
+import { Rating, State } from "ts-fsrs";
+
+import { isLearningState } from "@true-recall/core/helpers/card-state";
 import type { IPersistence } from "@true-recall/core/interfaces/persistence";
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite";
 import type { DayBoundaryService } from "@true-recall/core/services/review/day-boundary.service";
@@ -6,7 +9,6 @@ import type {
 	Grade,
 	PersistentStatsData,
 } from "@true-recall/core/types";
-import { Rating, State } from "ts-fsrs";
 
 const STATS_FOLDER = ".true-recall";
 const STATS_FILE = "stats.json";
@@ -84,9 +86,7 @@ export class SessionPersistenceService {
 			// Card type breakdown
 			newCards: previousState === State.New ? 1 : 0,
 			learningCards:
-				previousState === State.Learning || previousState === State.Relearning
-					? 1
-					: 0,
+				previousState != null && isLearningState(previousState) ? 1 : 0,
 			reviewCards: previousState === State.Review ? 1 : 0,
 		};
 
@@ -181,9 +181,7 @@ export class SessionPersistenceService {
 			// Card type breakdown
 			newCards: previousState === State.New ? 1 : 0,
 			learningCards:
-				previousState === State.Learning || previousState === State.Relearning
-					? 1
-					: 0,
+				previousState != null && isLearningState(previousState) ? 1 : 0,
 			reviewCards: previousState === State.Review ? 1 : 0,
 		};
 

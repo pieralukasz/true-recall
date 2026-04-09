@@ -4,6 +4,7 @@ import type {
 	RetentionPolicy,
 	TrueRecallSettings,
 } from "@true-recall/core/types/settings.types";
+
 import type { BackupService } from "./backup.service";
 
 export interface BackgroundBackupConfig {

@@ -1,12 +1,14 @@
+import type { App } from "obsidian";
+
 import { DuplicateQuestionError } from "@true-recall/core/flashcard/data/card-repository.service";
 import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
 import type { FSRSFlashcardItem } from "@true-recall/core/types";
 import { BR_REGEX } from "@true-recall/core/utils";
+
 import type { CommandService } from "@true-recall/obsidian/commands";
 import { UpdateCardCommand } from "@true-recall/obsidian/commands/commands/card-update.cmd";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 import type { ReviewApi } from "@true-recall/obsidian/store";
-import type { App } from "obsidian";
 
 export interface EditHandlerDeps {
 	app: App;

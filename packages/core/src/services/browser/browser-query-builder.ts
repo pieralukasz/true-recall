@@ -1,3 +1,6 @@
+import { State } from "ts-fsrs";
+
+import { MS_PER_DAY } from "@true-recall/core/constants";
 import { escapeFts5Query } from "@true-recall/core/persistence/sqlite/modules/NoteActions";
 import { sqlPlaceholders } from "@true-recall/core/persistence/sqlite/sql-utils";
 import type {
@@ -10,7 +13,6 @@ import {
 	BUILTIN_IMAGE_OCCLUSION_ID,
 	BUILTIN_NOTE_REVIEW_ID,
 } from "@true-recall/core/types/note.types";
-import { State } from "ts-fsrs";
 
 export interface SqlQuery {
 	where: string;
@@ -199,14 +201,14 @@ export function buildBrowserQuery(
 
 	// ── Date filters ─────────────────────────────────────────
 	if (filter.addedDaysAgo != null) {
-		const cutoff = Date.now() - filter.addedDaysAgo * 86_400_000;
+		const cutoff = Date.now() - filter.addedDaysAgo * MS_PER_DAY;
 		conditions.push(`${col}created_at >= ?`);
 		params.push(cutoff);
 	}
 
 	if (filter.reviewedDaysAgo != null) {
 		const cutoff = new Date(
-			Date.now() - filter.reviewedDaysAgo * 86_400_000,
+			Date.now() - filter.reviewedDaysAgo * MS_PER_DAY,
 		).toISOString();
 		conditions.push(`${col}last_review >= ?`);
 		params.push(cutoff);

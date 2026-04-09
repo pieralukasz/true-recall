@@ -1,3 +1,5 @@
+import { ItemView, normalizePath, TFile, TFolder } from "obsidian";
+
 import {
 	VIEW_TYPE_CARD_BROWSER,
 	VIEW_TYPE_DASHBOARD,
@@ -8,8 +10,9 @@ import {
 	VIEW_TYPE_STATS,
 } from "@true-recall/core/constants";
 import type { DeletionHandlerService } from "@true-recall/core/flashcard/lifecycle/deletion-handler.service";
+
 import { FlashcardPanelView } from "@true-recall/obsidian/views/panel/FlashcardPanelView";
-import { ItemView, normalizePath, TFile, TFolder } from "obsidian";
+
 import type TrueRecallPlugin from "../main";
 import {
 	editSelectionAsFlashcard,

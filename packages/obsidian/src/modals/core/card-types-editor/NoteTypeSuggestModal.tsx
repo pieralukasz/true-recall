@@ -1,5 +1,7 @@
-import type { NoteType } from "@true-recall/core/types/note.types";
 import { type App, Notice, SuggestModal } from "obsidian";
+
+import type { NoteType } from "@true-recall/core/types/note.types";
+
 import type TrueRecallPlugin from "../../../main";
 import { CardTypesEditorModal } from "./CardTypesEditorModal";
 import { CreateNoteTypeModal } from "./CreateNoteTypeModal";
@@ -26,7 +28,7 @@ export class NoteTypeSuggestModal extends SuggestModal<SuggestItem> {
 
 	renderSuggestion(item: SuggestItem, el: HTMLElement): void {
 		if (item === "create") {
-			el.setText("+ Create new note type");
+			el.setText("+ Create New Note Type");
 			el.addClasses(["mod-complex", "u-text-accent"]);
 			return;
 		}

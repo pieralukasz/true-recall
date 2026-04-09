@@ -1,13 +1,5 @@
 import { StateEffect } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
-import type { NoteType } from "@true-recall/core/types/note.types";
-import { Clickable } from "@true-recall/obsidian/components";
-import type { EmbeddableEditorInstance } from "@true-recall/obsidian/editor/shared/embedded-editor";
-import { useIcon } from "@true-recall/obsidian/preact/hooks";
-import {
-	useApp,
-	usePlugin,
-} from "@true-recall/obsidian/preact/ObsidianContext";
 import {
 	useCallback,
 	useEffect,
@@ -15,6 +7,16 @@ import {
 	useRef,
 	useState,
 } from "preact/hooks";
+
+import type { NoteType } from "@true-recall/core/types/note.types";
+
+import { Clickable } from "@true-recall/obsidian/components";
+import type { EmbeddableEditorInstance } from "@true-recall/obsidian/editor/shared/embedded-editor";
+import { useIcon } from "@true-recall/obsidian/preact/hooks";
+import {
+	useApp,
+	usePlugin,
+} from "@true-recall/obsidian/preact/ObsidianContext";
 
 // ── NoteFieldsForm ────────────────────────────────────────────────────────
 

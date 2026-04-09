@@ -1,5 +1,7 @@
-import type { HierarchyService } from "@true-recall/core/services/notes/hierarchy.service";
 import { describe, expect, it, vi } from "vitest";
+
+import type { HierarchyService } from "@true-recall/core/services/notes/hierarchy.service";
+
 import {
 	type DragItem,
 	type DragState,

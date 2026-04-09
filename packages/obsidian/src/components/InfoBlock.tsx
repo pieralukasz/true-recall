@@ -1,5 +1,6 @@
-import { cn } from "@true-recall/obsidian/utils/cn";
 import type { ComponentChildren } from "preact";
+
+import { cn } from "@true-recall/obsidian/utils/cn";
 
 export interface InfoBlockProps {
 	children: ComponentChildren;

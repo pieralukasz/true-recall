@@ -1,9 +1,11 @@
-import type { NoteType } from "@true-recall/core/types/note.types";
-import { Clickable } from "@true-recall/obsidian/components";
-import { BasePromiseModal } from "@true-recall/obsidian/modals/shared/BasePromiseModal";
 import type { App } from "obsidian";
 import { render } from "preact";
 import { useEffect, useRef, useState } from "preact/hooks";
+
+import type { NoteType } from "@true-recall/core/types/note.types";
+
+import { Clickable } from "@true-recall/obsidian/components";
+import { BasePromiseModal } from "@true-recall/obsidian/modals/shared/BasePromiseModal";
 
 export interface CreateNoteTypeResult {
 	cancelled: boolean;

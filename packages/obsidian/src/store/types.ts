@@ -1,3 +1,6 @@
+import type { TFile } from "obsidian";
+import type { Grade } from "ts-fsrs";
+
 import type { AppError } from "@true-recall/core/errors";
 import type {
 	FlashcardInfo,
@@ -7,12 +10,11 @@ import type {
 	SchedulingPreview,
 	TrueRecallSettings,
 } from "@true-recall/core/types";
+
 import type {
 	MetricType,
 	SequenceSimulation,
 } from "@true-recall/obsidian/features/metrics/ui/simulator/types";
-import type { TFile } from "obsidian";
-import type { Grade } from "ts-fsrs";
 
 export interface AppStoreDeps {
 	getSettings: () => TrueRecallSettings;

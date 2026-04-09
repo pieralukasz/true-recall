@@ -5,6 +5,7 @@
  * Uses in-memory SQLite (v26 schema).
  */
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+
 import {
 	BUILTIN_BASIC_ID,
 	BUILTIN_BASIC_REVERSED_ID,

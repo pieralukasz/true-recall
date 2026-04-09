@@ -1,10 +1,13 @@
+import type { App } from "obsidian";
+
 import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
 import type { FSRSFlashcardItem } from "@true-recall/core/types";
+
 import { UnburyCommand } from "@true-recall/obsidian/commands/commands/card-bury.cmd";
 import { DeleteCardCommand } from "@true-recall/obsidian/commands/commands/card-delete.cmd";
 import { confirm } from "@true-recall/obsidian/modals/shared/ConfirmModal";
 import { notify } from "@true-recall/obsidian/services/notification.service";
-import type { App } from "obsidian";
+
 import type TrueRecallPlugin from "../../../main";
 import type { CardsSetter } from "./CardPreviewBody";
 

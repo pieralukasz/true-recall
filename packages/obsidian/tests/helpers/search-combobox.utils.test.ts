@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { withSectionLabels } from "../../src/components/search-combobox.utils";
 import type { SearchSuggestion } from "../../src/helpers/search-suggestions.types";
 

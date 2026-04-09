@@ -1,6 +1,3 @@
-import { VIEW_TYPE_SIMULATOR } from "@true-recall/core/constants";
-import { mountPreact } from "@true-recall/obsidian/preact";
-import { SimulatorApp } from "@true-recall/obsidian/views/simulator/SimulatorApp";
 import {
 	CategoryScale,
 	Chart,
@@ -15,6 +12,12 @@ import {
 } from "chart.js";
 import { ItemView, type WorkspaceLeaf } from "obsidian";
 import { h } from "preact";
+
+import { VIEW_TYPE_SIMULATOR } from "@true-recall/core/constants";
+
+import { mountPreact } from "@true-recall/obsidian/preact";
+import { SimulatorApp } from "@true-recall/obsidian/views/simulator/SimulatorApp";
+
 import type TrueRecallPlugin from "../../main";
 
 // Register Chart.js components before any Preact rendering
@@ -44,7 +47,7 @@ export class SimulatorView extends ItemView {
 	}
 
 	getDisplayText(): string {
-		return "FSRS simulator";
+		return "FSRS Simulator";
 	}
 
 	getIcon(): string {

@@ -1,5 +1,6 @@
-import type { IMetadataIndex } from "@true-recall/core";
 import { type App, TFile } from "obsidian";
+
+import type { IMetadataIndex } from "@true-recall/core";
 
 export class ObsidianMetadataIndex implements IMetadataIndex {
 	constructor(private app: App) {}

@@ -1,4 +1,6 @@
 import { useComputed, useSignal } from "@preact/signals";
+import { useEffect, useMemo, useRef, useState } from "preact/hooks";
+
 import { getFilteredDistributions } from "@true-recall/core/metrics/distribution-filter";
 import {
 	buildDayOfWeekStats,
@@ -12,10 +14,12 @@ import type {
 	StatsTimeRange,
 	TrueRecallSettings,
 } from "@true-recall/core/types";
+
 import { AppNavBar } from "@true-recall/obsidian/components";
 import { Q, useQuery } from "@true-recall/obsidian/data";
 import { HeatmapWidget } from "@true-recall/obsidian/editor/study/widgets/analytics/HeatmapWidget";
 import {
+	ArchivedToggle,
 	CardMaturitySection,
 	ChartCard,
 	CollectionHealthBar,
@@ -34,7 +38,6 @@ import {
 } from "@true-recall/obsidian/features/metrics/ui/stats/components";
 import { useStatsData } from "@true-recall/obsidian/features/metrics/ui/stats/hooks/use-stats-data";
 import { usePlugin } from "@true-recall/obsidian/preact";
-import { useEffect, useMemo, useState } from "preact/hooks";
 
 export function StatsApp() {
 	const plugin = usePlugin();
@@ -44,9 +47,19 @@ export function StatsApp() {
 		Q.ARCHIVED_UIDS,
 	);
 	const timeRange = useSignal<StatsTimeRange>("1m");
+	const showArchived = useSignal(false);
 	const settings = settingsSignal.value;
-	const allCards = [...allMeta.value.values()];
+	const archivedUids = archivedSourceUidsSignal.value;
+	const allCards = useMemo(() => {
+		const archived = archivedUids;
+		if (showArchived.value || !archived || archived.size === 0)
+			return [...allMeta.value.values()];
+		return [...allMeta.value.values()].filter(
+			(card) => !archived.has(card.sourceUid ?? ""),
+		);
+	}, [allMeta.value, archivedUids, showArchived.value]);
 	const [renderStage, setRenderStage] = useState(0);
+	const initialStagingDone = useRef(false);
 
 	const presetNames = settings.fsrsPresets.map((preset) => preset.name);
 	const selectedPresets = useSignal<Set<string>>(new Set(presetNames));
@@ -101,7 +114,9 @@ export function StatsApp() {
 	const filterContext = useComputed((): StatsFilterContext => {
 		const selected = selectedPresets.value;
 		const allPresets = presetNames;
-		const archived = archivedSourceUidsSignal.value;
+		const archived = showArchived.value
+			? new Set<string>()
+			: archivedSourceUidsSignal.value;
 
 		// All selected = no preset filter, but still apply archived filter
 		if (selected.size >= allPresets.length && allPresets.length > 0) {
@@ -163,6 +178,13 @@ export function StatsApp() {
 	useEffect(() => {
 		if (!data) {
 			setRenderStage(0);
+			initialStagingDone.current = false;
+			return;
+		}
+
+		// After initial load, skip staging — charts update via props
+		if (initialStagingDone.current) {
+			setRenderStage(3);
 			return;
 		}
 
@@ -177,7 +199,10 @@ export function StatsApp() {
 			setRenderStage(2);
 
 			const flushFinalStage = () => {
-				if (!cancelled) setRenderStage(3);
+				if (!cancelled) {
+					setRenderStage(3);
+					initialStagingDone.current = true;
+				}
 			};
 
 			if ("requestIdleCallback" in window) {
@@ -230,7 +255,15 @@ export function StatsApp() {
 				<div class="ep:p-3 ep:mx-auto ep:max-w-5xl ep:flex ep:flex-col ep:gap-3">
 					<StatsHeader timeRange={timeRange} />
 
-					<PresetFilter presets={presetNames} selected={selectedPresets} />
+					<div class="ep:flex ep:flex-wrap ep:items-center ep:gap-3">
+						<PresetFilter presets={presetNames} selected={selectedPresets} />
+						<ArchivedToggle
+							isActive={showArchived.value}
+							onToggle={() => {
+								showArchived.value = !showArchived.value;
+							}}
+						/>
+					</div>
 
 					{!data && !error && loading && (
 						<div class="ep:text-xs ep:text-obs-muted ep:text-center ep:py-12">

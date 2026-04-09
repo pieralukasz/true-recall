@@ -1,8 +1,10 @@
+import { useCallback, useMemo, useState } from "preact/hooks";
+
 import { Clickable } from "@true-recall/obsidian/components";
 import { QuickNoteEditorModal } from "@true-recall/obsidian/modals/study/quick-note-editor/QuickNoteEditorModal";
 import { useApp, useIcon, usePlugin } from "@true-recall/obsidian/preact";
 import { cn } from "@true-recall/obsidian/utils";
-import { useCallback, useState } from "preact/hooks";
+import { isMobile } from "@true-recall/obsidian/utils/platform";
 
 type NavItemId = "dashboard" | "add" | "stats" | "browse";
 
@@ -24,11 +26,20 @@ export interface AppNavBarProps {
 	collapsible?: boolean;
 }
 
+const MOBILE_ALLOWED_NAV: Set<NavItemId> = new Set(["dashboard", "add"]);
+
 export function AppNavBar({ activeItem, collapsible = false }: AppNavBarProps) {
 	const plugin = usePlugin();
 	const app = useApp();
 	const [collapsed, setCollapsed] = useState(false);
 	const chevronRef = useIcon(collapsed ? "chevron-down" : "chevron-up");
+	const items = useMemo(
+		() =>
+			isMobile()
+				? NAV_ITEMS.filter((item) => MOBILE_ALLOWED_NAV.has(item.id))
+				: NAV_ITEMS,
+		[],
+	);
 
 	const handleClick = useCallback(
 		async (id: NavItemId) => {
@@ -63,7 +74,7 @@ export function AppNavBar({ activeItem, collapsible = false }: AppNavBarProps) {
 			>
 				<div class="ep:overflow-hidden ep:min-h-0">
 					<div class="ep:flex ep:justify-center ep:gap-1 ep:px-2 ep:py-1.5">
-						{NAV_ITEMS.map((item) => (
+						{items.map((item) => (
 							<NavBarItem
 								key={item.id}
 								item={item}

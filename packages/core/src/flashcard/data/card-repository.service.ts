@@ -1,4 +1,8 @@
 import { CARD_HISTORY_LIMIT } from "@true-recall/core/constants";
+import {
+	DuplicateError,
+	NotFoundError,
+} from "@true-recall/core/errors/domain.error";
 import type { DomainEventBus } from "@true-recall/core/events/event-bus";
 import type { CardChanges } from "@true-recall/core/events/event-types";
 import { parseClozeTemplate } from "@true-recall/core/flashcard/parsing/cloze-parser.service";
@@ -18,13 +22,12 @@ export interface DuplicateInfo {
 	existingSourceUid?: string;
 }
 
-export class DuplicateQuestionError extends Error {
+export class DuplicateQuestionError extends DuplicateError {
 	constructor(
 		public existingCardId: string,
 		public existingSourceUid?: string,
 	) {
-		super("A card with this question already exists");
-		this.name = "DuplicateQuestionError";
+		super("A card with this question already exists", existingCardId);
 	}
 }
 
@@ -249,7 +252,7 @@ export class CardRepository {
 	updateContent(cardId: string, newQuestion: string, newAnswer: string): void {
 		const existing = this.store.get(cardId);
 		if (!existing) {
-			throw new Error(`Card ${cardId} not found`);
+			throw new NotFoundError("Card", cardId);
 		}
 
 		if (newQuestion !== existing.question) {

@@ -1,5 +1,5 @@
 import type { CommandDef } from "../registry.js";
-import { post, postParams } from "../registry.js";
+import { getWith, post, postParams } from "../registry.js";
 
 const C = "Notes";
 
@@ -127,6 +127,64 @@ export const noteCommands: CommandDef[] = [
 				type: "string",
 				description: "Note file path. If omitted, uses active note.",
 			},
+		},
+	),
+
+	getWith(
+		"note_stats",
+		"Get card count breakdown by state for a note: new, learning, review, relearning, suspended, buried, total.",
+		C,
+		{
+			path: {
+				type: "string",
+				description: "Note file path. If omitted, uses active note.",
+			},
+			source_uid: {
+				type: "string",
+				description: "Source UID (flashcard_uid) of the note.",
+			},
+		},
+		(p) => {
+			const params = new URLSearchParams();
+			if (p.source_uid) params.set("source_uid", String(p.source_uid));
+			else if (p.path) params.set("path", String(p.path));
+			const qs = params.toString();
+			return qs ? `/notes/stats?${qs}` : "/notes/stats";
+		},
+	),
+
+	getWith(
+		"note_cards",
+		"List cards belonging to a note with scheduling details: state, due, stability, difficulty, reps, lapses.",
+		C,
+		{
+			path: {
+				type: "string",
+				description: "Note file path. If omitted, uses active note.",
+			},
+			source_uid: {
+				type: "string",
+				description: "Source UID (flashcard_uid) of the note.",
+			},
+			state: {
+				type: "string",
+				description: "Filter by state",
+				enum: ["new", "learning", "review", "relearning"],
+			},
+			limit: {
+				type: "number",
+				description: "Max cards to return (default 50, max 200)",
+				default: 50,
+			},
+		},
+		(p) => {
+			const params = new URLSearchParams();
+			if (p.source_uid) params.set("source_uid", String(p.source_uid));
+			else if (p.path) params.set("path", String(p.path));
+			if (p.state) params.set("state", String(p.state));
+			if (p.limit) params.set("limit", String(p.limit));
+			const qs = params.toString();
+			return qs ? `/notes/cards?${qs}` : "/notes/cards";
 		},
 	),
 ];

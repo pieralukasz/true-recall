@@ -1,6 +1,7 @@
+import type { Plugin } from "obsidian";
+
 import type { ISettingsPersistence } from "@true-recall/core";
 import type { TrueRecallSettings } from "@true-recall/core/types";
-import type { Plugin } from "obsidian";
 
 export class ObsidianSettingsPersistence implements ISettingsPersistence {
 	constructor(private plugin: Plugin) {}

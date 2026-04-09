@@ -1,3 +1,5 @@
+import type { App } from "obsidian";
+
 import type {
 	IFileSystem,
 	IFrontmatter,
@@ -6,7 +8,7 @@ import type {
 	INotification,
 	IPersistence,
 } from "@true-recall/core";
-import type { App } from "obsidian";
+
 import { ObsidianFileSystem } from "./adapters/ObsidianFileSystem";
 import { ObsidianFrontmatter } from "./adapters/ObsidianFrontmatter";
 import { ObsidianHttpClient } from "./adapters/ObsidianHttpClient";

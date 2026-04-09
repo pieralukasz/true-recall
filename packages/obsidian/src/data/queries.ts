@@ -1,10 +1,12 @@
+import { State } from "ts-fsrs";
+
 import type { CardQueryService } from "@true-recall/core/flashcard/data/card-query.service";
 import type { HierarchyService } from "@true-recall/core/services/notes/hierarchy.service";
 import type {
 	CardSchedulingMeta,
 	TrueRecallSettings,
 } from "@true-recall/core/types";
-import { State } from "ts-fsrs";
+
 import type { DataLayer } from "./data-layer";
 
 // ── Groups ──────────────────────────────────────────────────

@@ -1,8 +1,10 @@
 import type { Extension } from "@codemirror/state";
 import { type EditorView, ViewPlugin, type ViewUpdate } from "@codemirror/view";
 import { computePosition, flip, offset, shift } from "@floating-ui/dom";
-import type { ToolbarButtonConfig } from "@true-recall/core/types";
 import { h, render } from "preact";
+
+import type { ToolbarButtonConfig } from "@true-recall/core/types";
+
 import { SelectionToolbar, type ToolbarActions } from "./SelectionToolbar";
 
 export interface SelectionToolbarCallbacks {

@@ -1,5 +1,7 @@
-import { useApp } from "@true-recall/obsidian/preact";
 import { useCallback, useState } from "preact/hooks";
+
+import { useApp } from "@true-recall/obsidian/preact";
+
 import { usePreset, useSettings } from "../hooks/useSettings";
 import {
 	AlgorithmSection,

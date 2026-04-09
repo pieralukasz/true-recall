@@ -19,8 +19,12 @@ export class DeviceIdService {
 	private deviceId: string | null = null;
 	private deviceLabel: string | null = null;
 
-	constructor() {
-		this.deviceId = this.loadOrCreateDeviceId();
+	/**
+	 * @param fallbackId - Device ID from settings (survives reinstall via iCloud sync)
+	 * @param onDeviceIdCreated - Called when a new device ID is generated (save to settings)
+	 */
+	constructor(fallbackId?: string, onDeviceIdCreated?: (id: string) => void) {
+		this.deviceId = this.loadOrCreateDeviceId(fallbackId, onDeviceIdCreated);
 		this.deviceLabel = this.loadDeviceLabel();
 	}
 
@@ -82,8 +86,15 @@ export class DeviceIdService {
 	/**
 	 * Load existing device ID or create a new one.
 	 */
-	private loadOrCreateDeviceId(): string {
+	private loadOrCreateDeviceId(
+		fallbackId?: string,
+		onCreated?: (id: string) => void,
+	): string {
 		if (!this.isLocalStorageAvailable()) {
+			// Try settings fallback before generating ephemeral ID
+			if (fallbackId && this.isValidDeviceId(fallbackId)) {
+				return fallbackId;
+			}
 			console.error(
 				"[True Recall] localStorage unavailable - using ephemeral device ID",
 			);
@@ -95,8 +106,15 @@ export class DeviceIdService {
 			return existingId;
 		}
 
+		// Restore from settings (survives reinstall via iCloud sync)
+		if (fallbackId && this.isValidDeviceId(fallbackId)) {
+			window.localStorage.setItem(DEVICE_ID_KEY, fallbackId);
+			return fallbackId;
+		}
+
 		const newId = this.generateDeviceId();
 		window.localStorage.setItem(DEVICE_ID_KEY, newId);
+		onCreated?.(newId);
 		return newId;
 	}
 

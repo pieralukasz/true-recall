@@ -1,10 +1,11 @@
+import { SearchComponent } from "obsidian";
+import { useEffect, useRef } from "preact/hooks";
+
 import {
 	clearSearchValue,
 	getSearchValueAfterEscape,
 } from "@true-recall/obsidian/components/search-input.utils";
 import { cn } from "@true-recall/obsidian/utils";
-import { SearchComponent } from "obsidian";
-import { useEffect, useRef } from "preact/hooks";
 
 export interface SearchInputProps {
 	value: string;

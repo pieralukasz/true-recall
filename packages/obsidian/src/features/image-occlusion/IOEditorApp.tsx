@@ -1,9 +1,13 @@
+import { Notice, TFile } from "obsidian";
+import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
+
 import { isImageExtension } from "@true-recall/core/types";
 import {
 	createEmptyIODefinition,
 	getNextIOGroupKey,
 	parseIODefinition,
 } from "@true-recall/core/utils/io-definition";
+
 import { Clickable } from "@true-recall/obsidian/components";
 import { NotePickerCombobox } from "@true-recall/obsidian/components/NotePickerCombobox";
 import {
@@ -11,8 +15,7 @@ import {
 	usePlugin,
 } from "@true-recall/obsidian/preact/ObsidianContext";
 import { cn } from "@true-recall/obsidian/utils/cn";
-import { Notice, TFile } from "obsidian";
-import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
+
 import { isDesktop } from "../../utils/platform";
 import { ImageService } from "../integration/services/ImageService";
 import { deleteRegion } from "./canvas-interactions";

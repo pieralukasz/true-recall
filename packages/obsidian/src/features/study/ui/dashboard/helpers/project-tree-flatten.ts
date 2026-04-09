@@ -1,4 +1,5 @@
 import { prioritySortComparator } from "@true-recall/core/helpers/note-priority";
+
 import type { DashboardNoteEntry, DashboardProject } from "../types";
 
 export type FlatProjectItem =

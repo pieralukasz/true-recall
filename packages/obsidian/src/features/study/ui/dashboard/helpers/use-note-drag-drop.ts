@@ -1,6 +1,8 @@
 import { useSignal } from "@preact/signals";
-import { usePlugin } from "@true-recall/obsidian/preact";
 import { useCallback } from "preact/hooks";
+
+import { usePlugin } from "@true-recall/obsidian/preact";
+
 import type { DashboardNoteEntry } from "../types";
 import {
 	consumeDragState,

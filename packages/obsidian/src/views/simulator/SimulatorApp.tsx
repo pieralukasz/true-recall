@@ -1,8 +1,11 @@
 import { useSignal } from "@preact/signals";
+import { useCallback, useEffect, useMemo, useRef } from "preact/hooks";
+
 import {
 	FSRSSimulatorService,
 	type SequenceSimulation,
 } from "@true-recall/core/services/fsrs/fsrs-simulator.service";
+
 import {
 	ParametersBar,
 	SimulatorChart,
@@ -12,7 +15,6 @@ import {
 } from "@true-recall/obsidian/features/metrics/ui/simulator/components";
 import { getSequenceColors } from "@true-recall/obsidian/features/metrics/ui/simulator/constants";
 import { usePlugin } from "@true-recall/obsidian/preact";
-import { useCallback, useEffect, useMemo, useRef } from "preact/hooks";
 
 export function SimulatorApp() {
 	const plugin = usePlugin();

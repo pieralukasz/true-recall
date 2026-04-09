@@ -3,6 +3,7 @@ import type { INotification } from "@true-recall/core/interfaces/notification";
 import type { IUidRemovalPrompt } from "@true-recall/core/interfaces/uid-removal-prompt";
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite/SqliteStoreService";
 import type { FrontmatterIndexService } from "@true-recall/core/services/notes/frontmatter-index.service";
+
 import type { FrontmatterService } from "../source/frontmatter.service";
 import type { ISessionPersistence } from "./deletion-handler.service";
 

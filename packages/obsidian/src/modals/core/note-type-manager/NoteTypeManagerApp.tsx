@@ -1,6 +1,8 @@
-import { usePlugin } from "@true-recall/obsidian/preact/ObsidianContext";
 import { Notice } from "obsidian";
 import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
+
+import { usePlugin } from "@true-recall/obsidian/preact/ObsidianContext";
+
 import { NoteTypeEditor } from "./NoteTypeEditor";
 import { NoteTypeList } from "./NoteTypeList";
 import { createDefaultDraft, type NoteTypeDraft } from "./types";

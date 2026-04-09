@@ -1,9 +1,12 @@
+import { TFile } from "obsidian";
+
 import { StreamingGenerationService } from "@true-recall/core/ai/generation/streaming-generation.service";
 import { BUILTIN_BASIC_ID } from "@true-recall/core/types/note.types";
+
 import { mutate } from "@true-recall/obsidian/data";
 import { QuickNoteEditorModal } from "@true-recall/obsidian/modals/study/quick-note-editor/QuickNoteEditorModal";
 import { notify } from "@true-recall/obsidian/services/notification.service";
-import { TFile } from "obsidian";
+
 import { ObsidianHttpClient } from "../adapters/ObsidianHttpClient";
 import type TrueRecallPlugin from "../main";
 

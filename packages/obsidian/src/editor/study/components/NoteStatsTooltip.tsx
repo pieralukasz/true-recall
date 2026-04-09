@@ -1,5 +1,6 @@
-import { FSRS_COLORS } from "@true-recall/obsidian/helpers/fsrs-colors";
 import { h, render } from "preact";
+
+import { FSRS_COLORS } from "@true-recall/obsidian/helpers/fsrs-colors";
 
 export interface NoteDetailStats {
 	retentionRate: number | null;

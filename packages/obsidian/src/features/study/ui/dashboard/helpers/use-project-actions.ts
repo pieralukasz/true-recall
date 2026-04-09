@@ -1,6 +1,11 @@
+import type { App } from "obsidian";
+import { Notice, normalizePath, SuggestModal, TFile, TFolder } from "obsidian";
+import { useCallback } from "preact/hooks";
+
 import { AnkiExportService } from "@true-recall/core/integration/anki/anki-export.service";
 import { CsvExportService } from "@true-recall/core/integration/csv/csv-export.service";
 import type { HierarchyTreeNode } from "@true-recall/core/services/notes/hierarchy.service";
+
 import { ObsidianSourceUidResolver } from "@true-recall/obsidian/adapters/ObsidianSourceUidResolver";
 import { ObsidianVaultMediaReader } from "@true-recall/obsidian/adapters/ObsidianVaultMediaReader";
 import { downloadBlob } from "@true-recall/obsidian/features/integration/utils/export-helpers";
@@ -8,9 +13,6 @@ import { confirm } from "@true-recall/obsidian/modals/shared/ConfirmModal";
 import { NamePromptModal } from "@true-recall/obsidian/modals/study/NamePromptModal";
 import { RenameModal } from "@true-recall/obsidian/modals/study/RenameModal";
 import { usePlugin } from "@true-recall/obsidian/preact";
-import type { App } from "obsidian";
-import { Notice, normalizePath, SuggestModal, TFile, TFolder } from "obsidian";
-import { useCallback } from "preact/hooks";
 
 export class ProjectSuggestModal extends SuggestModal<HierarchyTreeNode> {
 	private resolve: ((node: HierarchyTreeNode | null) => void) | null = null;

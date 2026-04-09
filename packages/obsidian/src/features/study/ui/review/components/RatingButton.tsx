@@ -1,7 +1,8 @@
-import { Clickable } from "@true-recall/obsidian/components";
 import { cva } from "class-variance-authority";
 import type { Grade } from "ts-fsrs";
 import { Rating } from "ts-fsrs";
+
+import { Clickable } from "@true-recall/obsidian/components";
 
 const ratingButtonVariants = cva(
 	"ep:flex ep:flex-col ep:items-center ep:gap-1 ep:!py-2 ep:px-4 ep:h-auto ep:border ep:border-solid ep:rounded-lg ep:cursor-pointer ep:font-medium ep:text-ui-small ep:min-w-20 ep:whitespace-nowrap ep:transition-all ep:bg-transparent ep:hover:brightness-110 ep:active:scale-98 ep:text-obs-normal",

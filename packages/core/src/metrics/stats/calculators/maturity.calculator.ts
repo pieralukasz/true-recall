@@ -4,6 +4,8 @@
  */
 
 import { State } from "ts-fsrs";
+
+import { isLearningState } from "../../../helpers/card-state";
 import type { SqliteStoreService } from "../../../persistence/sqlite/SqliteStoreService";
 import type { CardMaturityBreakdown, CardSchedulingMeta } from "../../../types";
 
@@ -65,10 +67,7 @@ export class MaturityCalculator {
 			// Active cards - categorize by state
 			if (c.fsrs.state === State.New) {
 				counts.new++;
-			} else if (
-				c.fsrs.state === State.Learning ||
-				c.fsrs.state === State.Relearning
-			) {
+			} else if (isLearningState(c.fsrs.state)) {
 				counts.learning++;
 			} else if (c.fsrs.state === State.Review) {
 				if (c.fsrs.scheduledDays < 21) {
@@ -112,10 +111,7 @@ export class MaturityCalculator {
 				);
 			case "learning":
 				return allCards.filter(
-					(c) =>
-						isActive(c) &&
-						(c.fsrs.state === State.Learning ||
-							c.fsrs.state === State.Relearning),
+					(c) => isActive(c) && isLearningState(c.fsrs.state),
 				);
 			case "young":
 				return allCards.filter(

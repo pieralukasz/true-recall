@@ -1,9 +1,19 @@
 import type { EditorView } from "@codemirror/view";
+import { Notice, TFile } from "obsidian";
+import {
+	useCallback,
+	useEffect,
+	useMemo,
+	useRef,
+	useState,
+} from "preact/hooks";
+
 import {
 	type ParsedCard,
 	parseBulkText,
 } from "@true-recall/core/flashcard/parsing/bulk-card-parser";
 import type { NoteType } from "@true-recall/core/types/note.types";
+
 import type { EmbeddableEditorInstance } from "@true-recall/obsidian/editor/shared/embedded-editor";
 import {
 	type FormattingTargetRef,
@@ -17,14 +27,7 @@ import {
 	useApp,
 	usePlugin,
 } from "@true-recall/obsidian/preact/ObsidianContext";
-import { Notice, TFile } from "obsidian";
-import {
-	useCallback,
-	useEffect,
-	useMemo,
-	useRef,
-	useState,
-} from "preact/hooks";
+
 import { loadImportStudioPrefs, saveImportStudioPrefs } from "./types";
 
 interface ImportStudioAppProps {

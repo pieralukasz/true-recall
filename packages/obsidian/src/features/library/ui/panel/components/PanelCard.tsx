@@ -1,5 +1,10 @@
+import { cva } from "class-variance-authority";
+import { memo } from "preact/compat";
+import { useCallback } from "preact/hooks";
+
 import type { FlashcardItem } from "@true-recall/core/types";
 import type { FSRSFlashcardItem } from "@true-recall/core/types/fsrs/card.types";
+
 import { Clickable } from "@true-recall/obsidian/components";
 import { MarkdownContent } from "@true-recall/obsidian/components/MarkdownContent";
 import { useCardActions } from "@true-recall/obsidian/features/library/ui/panel/hooks/useCardActions";
@@ -18,9 +23,6 @@ import {
 } from "@true-recall/obsidian/preact/useContextMenu";
 import { useLongPress } from "@true-recall/obsidian/preact/useLongPress";
 import { cn } from "@true-recall/obsidian/utils";
-import { cva } from "class-variance-authority";
-import { memo } from "preact/compat";
-import { useCallback } from "preact/hooks";
 
 // ── Variants ────────────────────────────────────────────────
 
