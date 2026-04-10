@@ -11,8 +11,4 @@ export {
 } from "@true-recall/obsidian/modals/shared/MoveCardModal";
 export { PresetInspectorModal } from "@true-recall/obsidian/modals/shared/PresetInspectorModal";
 export { type PresetOptionsModalOptions } from "@true-recall/obsidian/modals/shared/PresetOptionsModal";
-export {
-	type SelectNoteModalOptions,
-	type SelectNoteResult,
-} from "@true-recall/obsidian/modals/shared/SelectNoteModal";
 export { type SetPresetResult } from "@true-recall/obsidian/modals/shared/SetPresetModal";

@@ -6,7 +6,6 @@
 import { describe, expect, it } from "vitest";
 
 import {
-	type ParsedCard,
 	parseBulkText,
 } from "../../src/flashcard/parsing/bulk-card-parser";
 import { BUILTIN_BASIC_ID, BUILTIN_CLOZE_ID } from "../../src/types/note.types";

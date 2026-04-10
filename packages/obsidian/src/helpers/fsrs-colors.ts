@@ -1,4 +1,4 @@
-import { Rating, State } from "ts-fsrs";
+import { State } from "ts-fsrs";
 
 // ── Types ────────────────────────────────────────────────────
 
@@ -75,8 +75,6 @@ export const FSRS_COLORS = {
 	},
 } as const satisfies Record<string, FsrsColorConfig>;
 
-type FsrsStateKey = keyof typeof FSRS_COLORS;
-
 // Non-FSRS visual states (muted, no color mapping)
 export const MUTED_STATES = {
 	buried: { badgeCls: "ep:bg-obs-modifier-hover ep:text-obs-muted" },
@@ -85,6 +83,8 @@ export const MUTED_STATES = {
 
 // ── Helpers ──────────────────────────────────────────────────
 
+type FsrsStateKey = keyof typeof FSRS_COLORS;
+
 const STATE_TO_KEY: Partial<Record<State, FsrsStateKey>> = {
 	[State.New]: "new",
 	[State.Learning]: "learning",
@@ -92,46 +92,7 @@ const STATE_TO_KEY: Partial<Record<State, FsrsStateKey>> = {
 	[State.Review]: "review",
 };
 
-function fsrsStateToColor(state: State): FsrsColorConfig | null {
-	const key = STATE_TO_KEY[state];
-	return key ? FSRS_COLORS[key] : null;
-}
-
-function fsrsStateToCssVar(state: State): string {
-	const config = fsrsStateToColor(state);
-	return config ? `var(${config.cssVar})` : "var(--text-muted)";
-}
-
 export function fsrsStateToColorName(state: State): FsrsColorName | null {
-	return fsrsStateToColor(state)?.name ?? null;
+	const key = STATE_TO_KEY[state];
+	return key ? FSRS_COLORS[key].name : null;
 }
-
-// ── Rating → color mapping (Again/Hard/Good/Easy) ──────────
-
-interface RatingColorConfig {
-	borderCls: string;
-	hoverBgCls: string;
-}
-
-const RATING_COLORS: Record<Rating, RatingColorConfig> = {
-	[Rating.Manual]: {
-		borderCls: "ep:border-obs-border/30",
-		hoverBgCls: "ep:hover:bg-obs-modifier-hover",
-	},
-	[Rating.Again]: {
-		borderCls: "ep:border-obs-red/30",
-		hoverBgCls: "ep:hover:bg-obs-red/10",
-	},
-	[Rating.Hard]: {
-		borderCls: "ep:border-obs-orange/30",
-		hoverBgCls: "ep:hover:bg-obs-orange/10",
-	},
-	[Rating.Good]: {
-		borderCls: "ep:border-obs-green/30",
-		hoverBgCls: "ep:hover:bg-obs-green/10",
-	},
-	[Rating.Easy]: {
-		borderCls: "ep:border-obs-cyan/30",
-		hoverBgCls: "ep:hover:bg-obs-cyan/10",
-	},
-};

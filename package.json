@@ -55,6 +55,7 @@
 		"fzstd": "^0.1.1",
 		"jszip": "^3.10.1",
 		"monkey-around": "^3.0.0",
+		"motion": "12.35.0",
 		"motion-dom": "^12.35.0",
 		"obsidian": "latest",
 		"pako": "^2.1.0",

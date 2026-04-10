@@ -98,17 +98,6 @@ export async function activateReviewView(
 	return null;
 }
 
-function closeAllViews(app: App, viewType: string): void {
-	const leaves = app.workspace.getLeavesOfType(viewType);
-	for (const leaf of leaves) {
-		leaf.detach();
-	}
-}
-
-function viewExists(app: App, viewType: string): boolean {
-	return app.workspace.getLeavesOfType(viewType).length > 0;
-}
-
 export function getView(app: App, viewType: string): WorkspaceLeaf | null {
 	return app.workspace.getLeavesOfType(viewType)[0] ?? null;
 }
