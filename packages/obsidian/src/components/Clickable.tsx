@@ -2,7 +2,7 @@ import type { JSX } from "preact";
 
 import { cn } from "@true-recall/obsidian/utils/cn";
 
-export interface ClickableProps
+interface ClickableProps
 	extends Omit<
 		JSX.HTMLAttributes<HTMLDivElement>,
 		"role" | "tabIndex" | "onClick"

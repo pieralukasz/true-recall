@@ -9,7 +9,7 @@ import {
 } from "@true-recall/obsidian/components";
 import type { ImportPreview } from "@true-recall/obsidian/modals/integration/anki-import/types";
 
-export interface PreviewPhaseProps {
+interface PreviewPhaseProps {
 	app: App;
 	preview: ImportPreview;
 	importScheduling: boolean;

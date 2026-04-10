@@ -1,9 +1,9 @@
 import type { FilterState, SortConfig } from "../types";
 
 export const BROWSER_PAGE_SIZE = 200;
-export const LOAD_MORE_THRESHOLD_PX = 36 * 8;
+const LOAD_MORE_THRESHOLD_PX = 36 * 8;
 
-export interface ScrollMetrics {
+interface ScrollMetrics {
 	scrollTop: number;
 	clientHeight: number;
 	scrollHeight: number;

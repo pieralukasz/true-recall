@@ -17,7 +17,7 @@ const widgetCtaVariants = cva(
 	},
 );
 
-export interface WidgetCtaProps extends VariantProps<typeof widgetCtaVariants> {
+interface WidgetCtaProps extends VariantProps<typeof widgetCtaVariants> {
 	label: string;
 	onClick: () => void;
 	class?: string;

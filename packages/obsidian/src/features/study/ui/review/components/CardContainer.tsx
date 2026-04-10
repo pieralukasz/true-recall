@@ -95,7 +95,7 @@ function CardFooter({
 	);
 }
 
-export interface TypeInState {
+interface TypeInState {
 	enabled: boolean;
 	aiEnabled: boolean;
 	typedAnswer: string;
@@ -107,7 +107,7 @@ export interface TypeInState {
 	semanticMessage: string | null;
 }
 
-export interface CardContainerProps {
+interface CardContainerProps {
 	card: FSRSFlashcardItem;
 	isAnswerRevealed: boolean;
 	onContentChange: (value: string, field: "question" | "answer") => void;

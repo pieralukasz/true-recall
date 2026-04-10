@@ -4,7 +4,7 @@
  */
 import type { App } from "obsidian";
 
-export interface InternalLinkHandlerOptions {
+interface InternalLinkHandlerOptions {
 	/** Obsidian app instance */
 	app: App;
 	/** File path for link resolution context */
@@ -21,7 +21,7 @@ export interface InternalLinkHandlerOptions {
  * @param options - Handler configuration
  * @returns Cleanup function to remove the event listener
  */
-export function setupInternalLinkHandler(
+function setupInternalLinkHandler(
 	element: HTMLElement,
 	options: InternalLinkHandlerOptions,
 ): () => void {

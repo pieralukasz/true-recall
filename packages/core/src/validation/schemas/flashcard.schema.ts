@@ -55,8 +55,5 @@ export const FlashcardInfoSchema = z.object({
 	lastModified: z.number().nullable(),
 });
 
-// Re-export types from flashcard.types for convenience
-export type { FlashcardItem } from "../../types/flashcard.types";
-
 // Zod-inferred type for API validation (includes filePath, differs from domain FlashcardInfo)
 export type FlashcardInfoPayload = z.infer<typeof FlashcardInfoSchema>;

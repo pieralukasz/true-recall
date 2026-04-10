@@ -7,7 +7,7 @@ import type { ToolbarButtonConfig } from "@true-recall/core/types";
 
 import { SelectionToolbar, type ToolbarActions } from "./SelectionToolbar";
 
-export interface SelectionToolbarCallbacks {
+interface SelectionToolbarCallbacks {
 	actions: ToolbarActions;
 	getButtons: () => ToolbarButtonConfig[];
 	hasApiKey: () => boolean;

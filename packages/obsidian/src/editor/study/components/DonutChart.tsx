@@ -32,7 +32,7 @@ interface DonutSegment {
 	stroke: string;
 }
 
-export interface DonutChartProps extends VariantProps<typeof donutVariants> {
+interface DonutChartProps extends VariantProps<typeof donutVariants> {
 	info: NoteStatusInfo;
 	onPlay?: () => void;
 }

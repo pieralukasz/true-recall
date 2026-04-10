@@ -2,7 +2,7 @@ import { useRef } from "preact/hooks";
 
 import { PasteDropZone } from "@true-recall/obsidian/components";
 
-export interface FileSelectPhaseProps {
+interface FileSelectPhaseProps {
 	onFile: (file: File) => void;
 }
 

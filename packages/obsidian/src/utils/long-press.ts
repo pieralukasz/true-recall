@@ -5,7 +5,7 @@
 import type { EventRegistry } from "@true-recall/core/utils/event.utils";
 
 /** Default long press duration in milliseconds */
-export const LONG_PRESS_DURATION = 500;
+const LONG_PRESS_DURATION = 500;
 
 export interface LongPressOptions {
 	/** Duration in ms before long press triggers (default: 500) */
@@ -39,7 +39,7 @@ export interface LongPressResult {
  * }
  * ```
  */
-export function setupLongPress(
+function setupLongPress(
 	element: HTMLElement,
 	events: EventRegistry,
 	options: LongPressOptions,

@@ -18,7 +18,7 @@ export interface DeviceSelectionResult extends CancellableResult {
 	sourcePath?: string;
 }
 
-export interface DeviceSelectionModalOptions {
+interface DeviceSelectionModalOptions {
 	databases: DeviceDatabaseInfo[];
 	hasLegacy: boolean;
 }

@@ -2,7 +2,7 @@ import { useCallback } from "preact/hooks";
 
 import { Clickable } from "@true-recall/obsidian/components";
 
-export interface ImageToolbarProps {
+interface ImageToolbarProps {
 	imagePath: string;
 	onQuickAdd: () => Promise<void>;
 	onEdit: () => void;

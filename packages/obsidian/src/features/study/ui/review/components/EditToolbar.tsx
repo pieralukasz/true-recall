@@ -3,7 +3,7 @@ import type {
 	ToolbarButtonAction,
 } from "@true-recall/obsidian/editor/study/edit-toolbar.utils";
 
-export function EditToolbar({
+function EditToolbar({
 	buttons,
 	onAction,
 }: {

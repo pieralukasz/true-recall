@@ -17,10 +17,7 @@ import { DailyProgressQueryActions } from "./stats/daily-progress-query-actions"
 import { ReviewLogActions } from "./stats/review-log-actions";
 import { ReviewLogSyncActions } from "./stats/review-log-sync-actions";
 
-export type {
-	PresetDailyProgressRow,
-	ReviewLogForSync,
-} from "./stats/review-log-actions";
+export type { ReviewLogForSync } from "./stats/review-log-actions";
 
 export class StatsActions {
 	private reviewLog: ReviewLogActions;

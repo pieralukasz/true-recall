@@ -13,7 +13,7 @@ import { useIcon } from "@true-recall/obsidian/preact";
 import { useApp } from "@true-recall/obsidian/preact/ObsidianContext";
 import { cn } from "@true-recall/obsidian/utils";
 
-export interface FolderPickerProps {
+interface FolderPickerProps {
 	value: string[];
 	onChange: (folders: string[]) => void;
 	placeholder?: string;

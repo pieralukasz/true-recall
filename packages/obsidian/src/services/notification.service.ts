@@ -7,7 +7,7 @@ export const NOTIFICATION_DURATION = {
 	PERSIST: 0, // Stay until dismissed
 } as const;
 
-export class NotificationService {
+class NotificationService {
 	success(message: string, duration?: number): void {
 		new Notice(message, duration ?? NOTIFICATION_DURATION.SHORT);
 	}
@@ -262,7 +262,7 @@ export class NotificationService {
 // Singleton instance for convenience
 let notificationService: NotificationService | null = null;
 
-export function getNotificationService(): NotificationService {
+function getNotificationService(): NotificationService {
 	if (!notificationService) {
 		notificationService = new NotificationService();
 	}

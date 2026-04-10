@@ -6,7 +6,7 @@ const modelIds = BYOK_MODELS.map((m) => m.id) as [string, ...string[]];
 
 export const AIModelSchema = z.enum(modelIds).or(z.string());
 
-export const AITierSchema = z.enum(["pro", "byok"]).default("byok");
+const AITierSchema = z.enum(["pro", "byok"]).default("byok");
 
 export const SettingsSchema = z.object({
 	proKey: z.string().optional(),

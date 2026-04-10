@@ -19,7 +19,7 @@ export interface ToolbarActions {
 	onDismiss: () => void;
 }
 
-export interface SelectionToolbarProps {
+interface SelectionToolbarProps {
 	selectedText: string;
 	buttons: ToolbarButtonConfig[];
 	actions: ToolbarActions;

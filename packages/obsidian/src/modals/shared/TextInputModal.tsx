@@ -19,7 +19,7 @@ export interface TextInputModalOptions {
 	cancelLabel?: string;
 }
 
-export class TextInputModal extends BasePromiseModal<TextInputResult> {
+class TextInputModal extends BasePromiseModal<TextInputResult> {
 	private options: TextInputModalOptions;
 
 	constructor(app: App, options: TextInputModalOptions) {

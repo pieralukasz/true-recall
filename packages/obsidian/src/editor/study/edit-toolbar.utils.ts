@@ -19,7 +19,7 @@ export interface ToolbarButton {
 	shortcut?: string;
 }
 
-export const TOOLBAR_BUTTONS = {
+const TOOLBAR_BUTTONS = {
 	UNIFIED: [
 		{
 			id: "bold",
@@ -119,7 +119,7 @@ export const TOOLBAR_BUTTONS = {
  * Toggle wrap selected text with before/after strings
  * If selection is already wrapped, unwrap it; otherwise wrap it
  */
-export function toggleTextareaWrap(
+function toggleTextareaWrap(
 	textarea: HTMLTextAreaElement,
 	before: string,
 	after: string,
@@ -145,7 +145,7 @@ export function toggleTextareaWrap(
 /**
  * Insert text at cursor position
  */
-export function insertAtTextareaCursor(
+function insertAtTextareaCursor(
 	textarea: HTMLTextAreaElement,
 	text: string,
 ): void {
@@ -159,7 +159,7 @@ export function insertAtTextareaCursor(
 /**
  * Auto-resize textarea to fit content
  */
-export function autoResizeTextarea(textarea: HTMLTextAreaElement): void {
+function autoResizeTextarea(textarea: HTMLTextAreaElement): void {
 	// eslint-disable-next-line @obsidianmd/no-direct-style-mutation -- native textarea requires imperative height calc
 	textarea.style.height = "auto";
 	// eslint-disable-next-line @obsidianmd/no-direct-style-mutation -- native textarea requires imperative height calc
@@ -169,7 +169,7 @@ export function autoResizeTextarea(textarea: HTMLTextAreaElement): void {
 /**
  * Setup auto-resize listener on textarea
  */
-export function setupAutoResize(textarea: HTMLTextAreaElement): () => void {
+function setupAutoResize(textarea: HTMLTextAreaElement): () => void {
 	const handler = () => autoResizeTextarea(textarea);
 	textarea.addEventListener("input", handler);
 	// Initial resize

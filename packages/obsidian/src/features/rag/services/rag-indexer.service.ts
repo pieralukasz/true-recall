@@ -33,7 +33,7 @@ function toUpsertChunks(
 	}));
 }
 
-export interface IndexResult {
+interface IndexResult {
 	indexed: number;
 	skipped: number;
 	errors: number;

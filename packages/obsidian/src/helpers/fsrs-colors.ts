@@ -6,7 +6,7 @@ export type FsrsColorName = "green" | "orange" | "blue" | "red";
 
 export type HighlightColor = FsrsColorName | "default";
 
-export interface FsrsColorConfig {
+interface FsrsColorConfig {
 	cssVar: string;
 	name: FsrsColorName;
 	textCls: string;
@@ -75,7 +75,7 @@ export const FSRS_COLORS = {
 	},
 } as const satisfies Record<string, FsrsColorConfig>;
 
-export type FsrsStateKey = keyof typeof FSRS_COLORS;
+type FsrsStateKey = keyof typeof FSRS_COLORS;
 
 // Non-FSRS visual states (muted, no color mapping)
 export const MUTED_STATES = {
@@ -92,12 +92,12 @@ const STATE_TO_KEY: Partial<Record<State, FsrsStateKey>> = {
 	[State.Review]: "review",
 };
 
-export function fsrsStateToColor(state: State): FsrsColorConfig | null {
+function fsrsStateToColor(state: State): FsrsColorConfig | null {
 	const key = STATE_TO_KEY[state];
 	return key ? FSRS_COLORS[key] : null;
 }
 
-export function fsrsStateToCssVar(state: State): string {
+function fsrsStateToCssVar(state: State): string {
 	const config = fsrsStateToColor(state);
 	return config ? `var(${config.cssVar})` : "var(--text-muted)";
 }
@@ -108,12 +108,12 @@ export function fsrsStateToColorName(state: State): FsrsColorName | null {
 
 // ── Rating → color mapping (Again/Hard/Good/Easy) ──────────
 
-export interface RatingColorConfig {
+interface RatingColorConfig {
 	borderCls: string;
 	hoverBgCls: string;
 }
 
-export const RATING_COLORS: Record<Rating, RatingColorConfig> = {
+const RATING_COLORS: Record<Rating, RatingColorConfig> = {
 	[Rating.Manual]: {
 		borderCls: "ep:border-obs-border/30",
 		hoverBgCls: "ep:hover:bg-obs-modifier-hover",

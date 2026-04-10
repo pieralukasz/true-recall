@@ -1,6 +1,6 @@
 import { ActionButton } from "@true-recall/obsidian/components";
 
-export interface SuccessPhaseProps {
+interface SuccessPhaseProps {
 	filename: string;
 	onClose: () => void;
 }

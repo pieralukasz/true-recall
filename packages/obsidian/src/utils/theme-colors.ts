@@ -9,7 +9,7 @@ export function getThemeColor(cssVar: string): string {
 	return getComputedStyle(document.body).getPropertyValue(cssVar).trim();
 }
 
-export function getThemeColorWithAlpha(cssVar: string, alpha: number): string {
+function getThemeColorWithAlpha(cssVar: string, alpha: number): string {
 	const rgb = getComputedStyle(document.body)
 		.getPropertyValue(`${cssVar}-rgb`)
 		.trim();

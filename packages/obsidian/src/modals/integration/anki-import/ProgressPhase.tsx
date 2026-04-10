@@ -1,4 +1,4 @@
-export interface ProgressPhaseProps {
+interface ProgressPhaseProps {
 	type: "parsing" | "importing" | "ai-classifying" | "ai-cleaning";
 	progress?: string;
 }

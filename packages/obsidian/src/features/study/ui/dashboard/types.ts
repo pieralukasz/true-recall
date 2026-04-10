@@ -5,7 +5,6 @@ export type {
 	DashboardProjectAggregation,
 	DashboardTab,
 	NoteFilterMode,
-	NotePriority,
 	OrphanedCardStats,
 	ProjectFilter,
 	TodayProgress,

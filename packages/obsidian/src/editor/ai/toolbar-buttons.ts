@@ -1,4 +1,4 @@
-export interface ToolbarButtonDef {
+interface ToolbarButtonDef {
 	id: string;
 	label: string;
 	title: string;

@@ -2,7 +2,7 @@ import { Clickable } from "@true-recall/obsidian/components";
 import { useIcon } from "@true-recall/obsidian/preact/hooks";
 import { cn } from "@true-recall/obsidian/utils/cn";
 
-export interface IconToolButtonProps {
+interface IconToolButtonProps {
 	icon: string;
 	label: string;
 	shortcut?: string;

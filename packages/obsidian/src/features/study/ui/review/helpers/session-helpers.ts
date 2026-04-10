@@ -1,12 +1,9 @@
 export {
 	buildGlobalPresetQueueContext,
 	buildQueueOptions,
-	type CardFilterOptions,
 	filterActiveCards,
-	type GlobalPresetQueueContext,
 	getEmptyQueueMessage,
 	isGlobalReviewSession,
-	matchesSessionFilters,
 } from "@true-recall/core/services/review/session-helpers";
 
 import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";

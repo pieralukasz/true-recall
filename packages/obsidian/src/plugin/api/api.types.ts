@@ -36,7 +36,7 @@ const CORS_HEADERS = {
 	"Access-Control-Allow-Headers": "Content-Type",
 } as const;
 
-export function sendJson(
+function sendJson(
 	res: ApiResponseWriter,
 	status: number,
 	body: ApiResponseBody,

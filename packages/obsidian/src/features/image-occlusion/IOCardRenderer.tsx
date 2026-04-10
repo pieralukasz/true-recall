@@ -9,7 +9,7 @@ import { useApp } from "@true-recall/obsidian/preact/ObsidianContext";
 import { resolveImageFile } from "./resolve-image";
 import type { IORegion } from "./types";
 
-export interface IOCardRendererProps {
+interface IOCardRendererProps {
 	imagePath?: string;
 	regionsJson?: string;
 	templateOrd?: number;

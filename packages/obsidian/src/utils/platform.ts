@@ -31,7 +31,7 @@ export function isViewAllowedOnCurrentPlatform(viewType: string): boolean {
  *
  * @param syncEnabled - Whether the sync server is configured and enabled
  */
-export function canModifyData(syncEnabled: boolean): boolean {
+function canModifyData(syncEnabled: boolean): boolean {
 	// Desktop: always can modify
 	// Mobile: only if sync is enabled
 	return isDesktop() || syncEnabled;

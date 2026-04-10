@@ -1,6 +1,6 @@
 import type { Command, CommandContext } from "../command.types";
 
-export interface FSRSHelperChange {
+interface FSRSHelperChange {
 	cardId: string;
 	originalDue: string;
 	newDue: string;

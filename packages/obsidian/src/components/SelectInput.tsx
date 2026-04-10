@@ -5,20 +5,20 @@ import { cn } from "@true-recall/obsidian/utils/cn";
 const BASE_CLS =
 	"ep:py-2 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-ui-small ep:focus:outline-none ep:focus:border-obs-interactive ep:transition-colors ep:disabled:opacity-50 ep:disabled:cursor-not-allowed";
 
-export interface SelectOption {
+interface SelectOption {
 	value: string;
 	label: string;
 	disabled?: boolean;
 }
 
-export interface SelectOptionGroup {
+interface SelectOptionGroup {
 	label: string;
 	options: SelectOption[];
 }
 
-export type SelectInputOption = SelectOption | SelectOptionGroup;
+type SelectInputOption = SelectOption | SelectOptionGroup;
 
-export interface SelectInputProps {
+interface SelectInputProps {
 	value: string;
 	onChange: (value: string) => void;
 	options: SelectInputOption[];

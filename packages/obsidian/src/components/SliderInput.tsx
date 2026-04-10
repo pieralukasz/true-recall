@@ -1,6 +1,6 @@
 import { useCallback } from "preact/hooks";
 
-export interface SliderInputProps {
+interface SliderInputProps {
 	value: number;
 	onChange: (value: number) => void;
 	min: number;

@@ -17,14 +17,14 @@ import {
 	openSourceNote,
 } from "@true-recall/obsidian/modals/shared/card-preview";
 
-export interface CardPreviewModalOptions {
+interface CardPreviewModalOptions {
 	title: string;
 	cards: FSRSFlashcardItem[];
 	flashcardManager: FlashcardManager;
 	category?: keyof CardMaturityBreakdown;
 }
 
-export class CardPreviewModal extends BaseModal {
+class CardPreviewModal extends BaseModal {
 	private options: CardPreviewModalOptions;
 	private flashcardManager: FlashcardManager;
 

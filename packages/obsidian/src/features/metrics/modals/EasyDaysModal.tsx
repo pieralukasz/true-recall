@@ -13,7 +13,7 @@ import {
 import { DayOfWeekSelector } from "./easy-days/DayOfWeekSelector";
 import { SpecificDatesList } from "./easy-days/SpecificDatesList";
 
-export interface EasyDaysResult extends CancellableResult {
+interface EasyDaysResult extends CancellableResult {
 	easyDays?: EasyDaysConfig;
 	multiplier?: number;
 	applyNow?: boolean;

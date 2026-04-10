@@ -25,7 +25,7 @@ const typeInButtonVariants = cva(
 	},
 );
 
-export interface ButtonBarProps {
+interface ButtonBarProps {
 	isAnswerRevealed: boolean;
 	preview: SchedulingPreview | null;
 	showNextReviewTime: boolean;

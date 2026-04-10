@@ -39,7 +39,7 @@ function RegionListItem({
 	);
 }
 
-export interface IORegionListProps {
+interface IORegionListProps {
 	regions: IORegion[];
 	selectedRegionId: string | null;
 	onSelectRegion: (id: string) => void;

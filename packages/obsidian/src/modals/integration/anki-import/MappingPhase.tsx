@@ -8,7 +8,7 @@ import { ModalFooter } from "@true-recall/obsidian/components";
 const AUTO_CREATE = "auto";
 const SKIP_FIELD = "__skip__";
 
-export interface MappingPhaseProps {
+interface MappingPhaseProps {
 	suggestions: NoteTypeMapping[];
 	existingNoteTypes: NoteType[];
 	onImport: (mappings: Map<number, ModelMapping>) => void;

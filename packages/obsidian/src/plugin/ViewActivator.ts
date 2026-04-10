@@ -43,7 +43,7 @@ export async function activateView(
 	return leaf;
 }
 
-export async function activateMainAreaView(
+async function activateMainAreaView(
 	app: App,
 	viewType: string,
 	state?: Record<string, unknown>,
@@ -98,14 +98,14 @@ export async function activateReviewView(
 	return null;
 }
 
-export function closeAllViews(app: App, viewType: string): void {
+function closeAllViews(app: App, viewType: string): void {
 	const leaves = app.workspace.getLeavesOfType(viewType);
 	for (const leaf of leaves) {
 		leaf.detach();
 	}
 }
 
-export function viewExists(app: App, viewType: string): boolean {
+function viewExists(app: App, viewType: string): boolean {
 	return app.workspace.getLeavesOfType(viewType).length > 0;
 }
 

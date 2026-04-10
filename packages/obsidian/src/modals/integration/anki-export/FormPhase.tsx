@@ -14,7 +14,7 @@ export interface ExportFormValues {
 	includeMedia: boolean;
 }
 
-export interface FormPhaseProps {
+interface FormPhaseProps {
 	totalCards: number;
 	allNotes: NoteEntry[];
 	onExport: (values: ExportFormValues) => void;

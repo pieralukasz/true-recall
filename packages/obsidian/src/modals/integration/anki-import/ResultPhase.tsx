@@ -6,7 +6,7 @@ import {
 	StatGrid,
 } from "@true-recall/obsidian/components";
 
-export interface ResultPhaseProps {
+interface ResultPhaseProps {
 	result: AnkiImportResult;
 	onClose: () => void;
 }

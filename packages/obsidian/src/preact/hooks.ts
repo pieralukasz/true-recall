@@ -7,7 +7,7 @@ import { useEffect, useLayoutEffect, useRef } from "preact/hooks";
 
 import { useApp } from "@true-recall/obsidian/preact/ObsidianContext";
 
-export function useMarkdown(
+function useMarkdown(
 	markdown: string,
 	sourcePath = "",
 ): preact.RefObject<HTMLDivElement> {

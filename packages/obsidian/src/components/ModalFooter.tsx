@@ -2,7 +2,7 @@ import type { ComponentChildren } from "preact";
 
 import { ActionButton } from "./ActionButton";
 
-export interface ModalFooterProps {
+interface ModalFooterProps {
 	onCancel: () => void;
 	onConfirm?: () => void;
 	confirmLabel?: string;

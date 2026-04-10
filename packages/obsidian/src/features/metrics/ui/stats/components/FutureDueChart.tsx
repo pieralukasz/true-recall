@@ -11,7 +11,7 @@ interface FutureDueChartProps {
 	data: FutureDueEntry[];
 }
 
-export function FutureDueChart({ data }: FutureDueChartProps) {
+function FutureDueChart({ data }: FutureDueChartProps) {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 
 	useChart(canvasRef, (): ChartConfiguration<"bar"> | null => {

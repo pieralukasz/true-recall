@@ -10,7 +10,7 @@ import { isMobile } from "@true-recall/obsidian/utils/platform";
 
 import type { DashboardNoteEntry } from "../types";
 
-export interface NoteRowProps {
+interface NoteRowProps {
 	note: DashboardNoteEntry;
 	onNavigate: () => void;
 	onStudy: () => void;

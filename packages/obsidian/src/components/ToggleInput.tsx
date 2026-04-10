@@ -2,7 +2,7 @@ import { useCallback } from "preact/hooks";
 
 import { cn } from "@true-recall/obsidian/utils/cn";
 
-export interface ToggleInputProps {
+interface ToggleInputProps {
 	value: boolean;
 	onChange: (value: boolean) => void;
 	disabled?: boolean;

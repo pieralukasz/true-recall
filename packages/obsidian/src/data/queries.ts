@@ -78,7 +78,7 @@ export interface NoteStatusInfo {
 
 // ── Registration ────────────────────────────────────────────
 
-export interface RegisterQueryDeps {
+interface RegisterQueryDeps {
 	cardQuery: CardQueryService;
 	hierarchy: HierarchyService;
 	getSettings: () => TrueRecallSettings;

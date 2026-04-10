@@ -29,8 +29,7 @@ const COUNT_CLS = {
 	sep: "ep:text-obs-faint ep:mx-px",
 } as const;
 
-export interface LinkTextCountProps
-	extends VariantProps<typeof wrapperVariants> {
+interface LinkTextCountProps extends VariantProps<typeof wrapperVariants> {
 	info: NoteStatusInfo;
 	onPlay?: () => void;
 }

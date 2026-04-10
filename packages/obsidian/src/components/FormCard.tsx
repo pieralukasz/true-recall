@@ -2,7 +2,7 @@ import type { ComponentChildren } from "preact";
 
 import { cn } from "@true-recall/obsidian/utils/cn";
 
-export interface FormCardProps {
+interface FormCardProps {
 	title?: string;
 	description?: string;
 	children: ComponentChildren;

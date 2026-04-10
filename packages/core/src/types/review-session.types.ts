@@ -1,7 +1,7 @@
 import { UNASSIGNED_PATH } from "@true-recall/core/constants";
 import type { ReviewOrder } from "@true-recall/core/types/settings.types";
 
-export interface ReviewViewState extends Record<string, unknown> {
+interface ReviewViewState extends Record<string, unknown> {
 	/** Project note path — scopes review to project members */
 	projectPath?: string;
 	/** Single source UID scope (note-level review) */

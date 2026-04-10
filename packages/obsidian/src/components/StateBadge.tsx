@@ -7,7 +7,7 @@ import {
 } from "@true-recall/obsidian/helpers/fsrs-colors";
 import { cn } from "@true-recall/obsidian/utils/cn";
 
-export type CardStateType =
+type CardStateType =
 	| "new"
 	| "learning"
 	| "review"
@@ -16,7 +16,7 @@ export type CardStateType =
 	| "buried"
 	| "unknown";
 
-export interface StateBadgeProps {
+interface StateBadgeProps {
 	state: State;
 	suspended?: boolean;
 	buriedUntil?: string | null;
@@ -51,7 +51,7 @@ const stateBadgeVariants = cva(
 	},
 );
 
-export function getCardStateType(props: StateBadgeProps): CardStateType {
+function getCardStateType(props: StateBadgeProps): CardStateType {
 	const now = new Date();
 	if (props.suspended) return "suspended";
 	if (props.buriedUntil && new Date(props.buriedUntil) > now) return "buried";
@@ -70,11 +70,11 @@ export function getCardStateType(props: StateBadgeProps): CardStateType {
 	}
 }
 
-export function getStateConfig(stateType: CardStateType): StateConfig {
+function getStateConfig(stateType: CardStateType): StateConfig {
 	return STATE_CONFIGS[stateType];
 }
 
-export function StateBadge(props: StateBadgeProps) {
+function StateBadge(props: StateBadgeProps) {
 	const stateType = getCardStateType(props);
 	const config = getStateConfig(stateType);
 

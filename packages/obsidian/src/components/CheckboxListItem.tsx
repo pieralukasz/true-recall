@@ -1,6 +1,6 @@
 import { useCallback } from "preact/hooks";
 
-export interface CheckboxListItemProps {
+interface CheckboxListItemProps {
 	label: string;
 	itemKey: string;
 	selectedSet: Set<string>;

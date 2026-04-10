@@ -72,30 +72,9 @@ export interface PropFilter {
 	value: number;
 }
 
-export interface BrowserQuery {
-	filter: FilterState;
-	sort: SortConfig;
-	limit: number;
-	offset: number;
-}
-
 export interface BrowserResult {
 	cards: BrowserCard[];
 	totalCount: number;
-}
-
-export interface SidebarSection {
-	key: string;
-	label: string;
-	items: SidebarItem[];
-	collapsed: boolean;
-}
-
-export interface SidebarItem {
-	label: string;
-	count: number;
-	filterValue: string;
-	active: boolean;
 }
 
 export const EMPTY_FILTER: FilterState = {

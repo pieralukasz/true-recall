@@ -4,7 +4,7 @@ import { IconToolButton } from "./IOIconToolButton";
 
 type Tool = "select" | "rect" | "ellipse";
 
-export interface IOToolsPanelProps {
+interface IOToolsPanelProps {
 	tool: Tool;
 	hasRegions: boolean;
 	selectedRegionId: string | null;

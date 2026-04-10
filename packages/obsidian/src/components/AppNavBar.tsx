@@ -21,7 +21,7 @@ const NAV_ITEMS: NavItem[] = [
 	{ id: "browse", label: "Browse", icon: "list" },
 ];
 
-export interface AppNavBarProps {
+interface AppNavBarProps {
 	activeItem: NavItemId;
 	collapsible?: boolean;
 }

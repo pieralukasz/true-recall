@@ -1,6 +1,6 @@
 import { Clickable } from "./Clickable";
 
-export interface EmptyStateProps {
+interface EmptyStateProps {
 	message: string;
 	icon?: string;
 	actionLabel?: string;

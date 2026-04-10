@@ -25,7 +25,7 @@ import type { ReviewApi } from "@true-recall/obsidian/store";
 const FORGET_NON_NEW_WARNING =
 	"Forget is only available for cards that are not New.";
 
-export interface CardActionsHandlerDeps {
+interface CardActionsHandlerDeps {
 	app: App;
 	getReview: () => ReviewApi;
 	flashcardManager: FlashcardManager;
@@ -36,7 +36,7 @@ export interface CardActionsHandlerDeps {
 	plugin: TrueRecallPlugin;
 }
 
-export interface CardActionsCallbacks {
+interface CardActionsCallbacks {
 	onUpdateSchedulingPreview: () => void;
 }
 

@@ -44,7 +44,7 @@ const panelCardVariants = cva(
 
 // ── Types ──────────────────────────────────────────────────
 
-export interface PanelCardProps {
+interface PanelCardProps {
 	card: FlashcardItem;
 	fsrsCard?: FSRSFlashcardItem;
 	filePath: string;

@@ -9,7 +9,7 @@ import type { TrueRecallSettings } from "@true-recall/core/types/settings.types"
 import { ObsidianHttpClient } from "../../adapters/ObsidianHttpClient";
 import type { IORegion } from "./types";
 
-export async function imageToBase64(
+async function imageToBase64(
 	app: App,
 	imagePath: string,
 ): Promise<{ base64: string; mimeType: string }> {

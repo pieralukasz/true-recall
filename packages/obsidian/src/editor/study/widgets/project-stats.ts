@@ -19,7 +19,7 @@ export interface ProjectStats {
 	lastReviewed: string | null;
 }
 
-export interface ProjectStatsContext {
+interface ProjectStatsContext {
 	sourceUids?: ReadonlySet<string>;
 	cardsBySourceUid?: ReadonlyMap<string, FSRSCardData[]>;
 	retrievabilityByCardId?: ReadonlyMap<string, number>;

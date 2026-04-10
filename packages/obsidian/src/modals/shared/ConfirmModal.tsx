@@ -5,18 +5,18 @@ import { Clickable } from "@true-recall/obsidian/components";
 
 import { BasePromiseModal } from "./BasePromiseModal";
 
-export interface ConfirmResult {
+interface ConfirmResult {
 	confirmed: boolean;
 }
 
-export interface ConfirmModalOptions {
+interface ConfirmModalOptions {
 	title?: string;
 	message: string;
 	confirmLabel?: string;
 	cancelLabel?: string;
 }
 
-export class ConfirmModal extends BasePromiseModal<ConfirmResult> {
+class ConfirmModal extends BasePromiseModal<ConfirmResult> {
 	private options: ConfirmModalOptions;
 
 	constructor(app: App, options: ConfirmModalOptions) {

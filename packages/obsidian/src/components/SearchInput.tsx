@@ -7,7 +7,7 @@ import {
 } from "@true-recall/obsidian/components/search-input.utils";
 import { cn } from "@true-recall/obsidian/utils";
 
-export interface SearchInputProps {
+interface SearchInputProps {
 	value: string;
 	placeholder: string;
 	onChange: (query: string) => void;

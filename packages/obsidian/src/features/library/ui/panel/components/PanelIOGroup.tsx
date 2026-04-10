@@ -14,7 +14,7 @@ import {
 	useContextMenu,
 } from "@true-recall/obsidian/preact/useContextMenu";
 
-export interface PanelIOGroupProps {
+interface PanelIOGroupProps {
 	cards: FlashcardItem[];
 	fsrsCards: FSRSFlashcardItem[];
 	filePath: string;

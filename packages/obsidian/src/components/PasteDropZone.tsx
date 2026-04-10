@@ -3,7 +3,7 @@ import { useState } from "preact/hooks";
 
 import { cn } from "@true-recall/obsidian/utils/cn";
 
-export interface PasteDropZoneProps {
+interface PasteDropZoneProps {
 	onFileDrop: (file: File) => void;
 	accept?: string;
 	icon?: ComponentChildren;

@@ -110,7 +110,7 @@ function SelectNoteBody({
 	);
 }
 
-export class SelectNoteModal extends BasePromiseModal<SelectNoteResult> {
+class SelectNoteModal extends BasePromiseModal<SelectNoteResult> {
 	private options: SelectNoteModalOptions;
 	private allNotes: TFile[] = [];
 

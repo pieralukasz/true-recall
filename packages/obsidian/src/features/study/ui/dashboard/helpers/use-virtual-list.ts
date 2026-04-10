@@ -10,13 +10,13 @@ const OVERSCAN = 5;
 
 export const ROW_HEIGHT = isMobile() ? MOBILE_ROW_HEIGHT : DESKTOP_ROW_HEIGHT;
 
-export interface VirtualItem<T> {
+interface VirtualItem<T> {
 	item: T;
 	index: number;
 	offsetTop: number;
 }
 
-export interface ExternalVirtualListOptions<T> {
+interface ExternalVirtualListOptions<T> {
 	items: T[];
 	scrollContainerRef: RefObject<HTMLDivElement>;
 	scrollTop: Signal<number>;

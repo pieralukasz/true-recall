@@ -2,7 +2,7 @@ import type { RefObject } from "preact";
 import { createContext } from "preact";
 import { useContext } from "preact/hooks";
 
-export interface PanelScrollApi {
+interface PanelScrollApi {
 	preserveScroll: (action: () => void) => void;
 	captureScroll: () => () => void;
 	scrollRef: RefObject<HTMLDivElement>;

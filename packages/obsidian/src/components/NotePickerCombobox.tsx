@@ -14,7 +14,7 @@ import {
 } from "@true-recall/obsidian/modals/shared/note-filter.utils";
 import { cn } from "@true-recall/obsidian/utils/cn";
 
-export interface NotePickerComboboxProps {
+interface NotePickerComboboxProps {
 	app: App;
 	selectedNote: TFile | null;
 	onSelect: (note: TFile | null) => void;

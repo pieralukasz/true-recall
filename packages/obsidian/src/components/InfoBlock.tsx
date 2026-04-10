@@ -2,7 +2,7 @@ import type { ComponentChildren } from "preact";
 
 import { cn } from "@true-recall/obsidian/utils/cn";
 
-export interface InfoBlockProps {
+interface InfoBlockProps {
 	children: ComponentChildren;
 	class?: string;
 }

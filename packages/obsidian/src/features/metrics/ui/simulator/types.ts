@@ -26,7 +26,7 @@ export interface SequenceSimulation {
 export type MetricType = "interval" | "stability" | "difficulty" | "cumulative";
 
 /** Simulator state */
-export interface SimulatorState {
+interface SimulatorState {
 	// Input
 	sequences: string[];
 	parameters: number[]; // 21 FSRS v6 weights

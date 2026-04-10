@@ -8,7 +8,7 @@ import { useEffect, useMemo, useRef } from "preact/hooks";
 
 import { cn } from "@true-recall/obsidian/utils";
 
-export interface FolderSuggestInputProps {
+interface FolderSuggestInputProps {
 	app: App;
 	value: string;
 	onChange: (value: string) => void;

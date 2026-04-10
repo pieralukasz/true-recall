@@ -1,6 +1,6 @@
 import { ActionButton, ModalFooter } from "@true-recall/obsidian/components";
 
-export interface ErrorPhaseProps {
+interface ErrorPhaseProps {
 	message: string;
 	canRetry: boolean;
 	onRetry: () => void;

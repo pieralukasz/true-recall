@@ -459,7 +459,7 @@ function initializeSelectionToolbar(plugin: TrueRecallPlugin): void {
 	);
 }
 
-export function handleImageOcclusion(
+function handleImageOcclusion(
 	plugin: TrueRecallPlugin,
 	imagePath: string,
 ): void {

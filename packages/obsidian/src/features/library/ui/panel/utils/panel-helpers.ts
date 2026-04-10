@@ -35,7 +35,7 @@ export async function getSourceNoteNameFromFile(
 	}
 }
 
-export function showDuplicateNotifications(
+function showDuplicateNotifications(
 	plugin: TrueRecallPlugin,
 	duplicates: DuplicateEntry[],
 ): void {

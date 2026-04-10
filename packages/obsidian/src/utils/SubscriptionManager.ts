@@ -17,7 +17,7 @@
  *   // In onClose/cleanup:
  *   this.subs.dispose();
  */
-export class SubscriptionManager {
+class SubscriptionManager {
 	private unsubscribers: (() => void)[] = [];
 	private timeouts: Set<ReturnType<typeof setTimeout>> = new Set();
 	private intervals: Set<ReturnType<typeof setInterval>> = new Set();

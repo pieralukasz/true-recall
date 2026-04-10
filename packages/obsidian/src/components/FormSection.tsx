@@ -1,12 +1,12 @@
 import type { ComponentChildren } from "preact";
 
-export interface FormSectionProps {
+interface FormSectionProps {
 	title: string;
 	description?: string;
 	children?: ComponentChildren;
 }
 
-export function FormSection({
+function FormSection({
 	title,
 	description,
 	children,

@@ -12,7 +12,7 @@ import { Clickable } from "@true-recall/obsidian/components";
 import { BasePromiseModal } from "@true-recall/obsidian/modals/shared/BasePromiseModal";
 import { SetPresetModal } from "@true-recall/obsidian/modals/shared/SetPresetModal";
 
-export interface PresetInspectorResult {
+interface PresetInspectorResult {
 	action: "set" | "clear" | "cancel";
 	presetName?: string;
 }

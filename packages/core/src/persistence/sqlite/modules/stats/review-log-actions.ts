@@ -16,7 +16,7 @@ export interface ReviewLogForSync {
 	presetName: string | null;
 }
 
-export interface PresetDailyProgressRow {
+interface PresetDailyProgressRow {
 	presetName: string;
 	newStudied: number;
 	reviewsCompleted: number;
