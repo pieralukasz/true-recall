@@ -1,6 +1,6 @@
 import { type App, Platform, type WorkspaceLeaf } from "obsidian";
 
-export interface ViewActivationOptions {
+interface ViewActivationOptions {
 	useMainArea?: boolean;
 	state?: Record<string, unknown>;
 	skipReveal?: boolean;

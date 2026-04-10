@@ -17,7 +17,11 @@ const config: KnipConfig = {
 			ignore: ["dist/**"],
 		},
 		"packages/obsidian": {
-			entry: ["src/main.ts", "src/index.ts"],
+			entry: [
+				"src/main.ts",
+				"src/index.ts",
+				"src/editor/shared/embedded-editor.ts", // dynamically imported
+			],
 			project: ["src/**/*.{ts,tsx}"],
 			ignoreDependencies: [
 				"obsidian", // types-only peer dependency, externalized in build
@@ -26,6 +30,7 @@ const config: KnipConfig = {
 	},
 	ignore: ["**/dist/**", "**/coverage/**", "cli/**", "mcp-server/**"],
 	ignoreDependencies: ["tslib"],
+	ignoreExportsUsedInFile: true,
 };
 
 export default config;

@@ -1,6 +1,6 @@
 import { FormField } from "@true-recall/obsidian/components";
 
-export interface NumberFieldProps {
+interface NumberFieldProps {
 	id: string;
 	label: string;
 	description?: string;

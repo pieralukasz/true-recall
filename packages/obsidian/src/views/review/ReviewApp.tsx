@@ -24,7 +24,7 @@ export { ReviewEmptyState } from "@true-recall/obsidian/features/study/ui/review
 
 // ─── Props ───────────────────────────────────────────────────────────────────
 
-export interface ReviewAppProps {
+interface ReviewAppProps {
 	onShowAnswer: () => void;
 	onAnswer: (rating: Grade) => void;
 	onTypedAnswerChange: (value: string) => void;

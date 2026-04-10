@@ -36,35 +36,3 @@ export class BuryCommand implements Command {
 		}
 	}
 }
-
-export class UnburyCommand implements Command {
-	readonly type = "card:unbury";
-	readonly mutationType = "card:buried" as const;
-	readonly description: string;
-
-	private originalFsrsSnapshots: Array<{ id: string; fsrs: FSRSCardData }> = [];
-
-	constructor(private cardIds: string[]) {
-		const n = cardIds.length;
-		this.description = n === 1 ? "Unbury card" : `Unbury ${n} cards`;
-	}
-
-	execute(ctx: CommandContext): void {
-		for (const id of this.cardIds) {
-			const data = ctx.cardStore.get(id);
-			if (data) {
-				this.originalFsrsSnapshots.push({ id, fsrs: { ...data } });
-				ctx.flashcardManager.updateCardFSRS(id, {
-					...data,
-					buriedUntil: undefined,
-				});
-			}
-		}
-	}
-
-	undo(ctx: CommandContext): void {
-		for (const { id, fsrs } of this.originalFsrsSnapshots) {
-			ctx.flashcardManager.updateCardFSRS(id, fsrs);
-		}
-	}
-}

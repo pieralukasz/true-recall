@@ -81,7 +81,7 @@ export function sortNewCards(
 		case "newest-first":
 			return sortByCreatedAtDesc(cards);
 		default: {
-			const _exhaustive: never = order;
+			order satisfies never;
 			return shuffle(cards);
 		}
 	}
@@ -135,7 +135,7 @@ export function sortReviewCards(
 		case "order-added":
 			return sortByCreatedAt(cards);
 		default: {
-			const _exhaustive: never = order;
+			order satisfies never;
 			return fsrsService.sortByDue(cards);
 		}
 	}

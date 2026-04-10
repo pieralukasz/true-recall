@@ -4,7 +4,7 @@ import { render } from "preact";
 import { Clickable, ModalFooter } from "@true-recall/obsidian/components";
 import { BasePromiseModal } from "@true-recall/obsidian/modals/shared/BasePromiseModal";
 
-export interface SetPresetResult {
+interface SetPresetResult {
 	cancelled: boolean;
 	presetName: string | null;
 }

@@ -26,7 +26,7 @@ export type RouteHandler = (
 	params: Record<string, string>,
 ) => void | Promise<void>;
 
-export type ApiResponseBody<T = unknown> =
+type ApiResponseBody<T = unknown> =
 	| { ok: true; data: T }
 	| { ok: false; error: string };
 

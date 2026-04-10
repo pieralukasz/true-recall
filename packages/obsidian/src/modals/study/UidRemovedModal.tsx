@@ -7,9 +7,9 @@ import { NotePicker } from "@true-recall/obsidian/components/NotePicker";
 import { BasePromiseModal } from "@true-recall/obsidian/modals/shared/BasePromiseModal";
 import { confirm } from "@true-recall/obsidian/modals/shared/ConfirmModal";
 
-export type UidRemovedAction = "restore" | "delete" | "move";
+type UidRemovedAction = "restore" | "delete" | "move";
 
-export interface UidRemovedResult {
+interface UidRemovedResult {
 	cancelled: boolean;
 	action: UidRemovedAction;
 	targetNotePath?: string;

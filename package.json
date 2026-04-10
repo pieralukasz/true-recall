@@ -21,7 +21,8 @@
 		"changelog": "bun scripts/generate-changelog.ts",
 		"changelog:preview": "bun scripts/generate-changelog.ts --preview",
 		"perf:benchmark": "bun scripts/perf-benchmark.ts",
-		"cli:build": "cd cli && bun build --compile --minify index.ts --outfile true-recall"
+		"cli:build": "cd cli && bun build --compile --minify index.ts --outfile true-recall",
+		"knip": "bunx knip"
 	},
 	"keywords": [],
 	"license": "SEE LICENSE IN LICENSE",
@@ -56,7 +57,6 @@
 		"jszip": "^3.10.1",
 		"monkey-around": "^3.0.0",
 		"motion": "12.35.0",
-		"motion-dom": "^12.35.0",
 		"obsidian": "latest",
 		"pako": "^2.1.0",
 		"preact": "^10.28.4",
