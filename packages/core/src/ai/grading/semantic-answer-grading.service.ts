@@ -132,7 +132,7 @@ export class SemanticAnswerGradingService {
 
 		return {
 			score,
-			feedback: truncateFeedback(parsed.feedback),
+			feedback: config.isPro ? truncateFeedback(parsed.feedback) : "",
 			passed: score >= clamp100(input.passThreshold),
 			source: "ai",
 		};

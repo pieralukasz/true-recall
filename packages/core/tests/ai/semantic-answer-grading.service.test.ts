@@ -17,7 +17,7 @@ function createSettings(
 const dummyHttpClient = {} as never;
 
 describe("SemanticAnswerGradingService", () => {
-	it("parses valid JSON and returns AI result", async () => {
+	it("returns pass/fail without feedback for BYOK users", async () => {
 		const settings = createSettings({ openRouterApiKey: "byok-key" });
 		const service = new SemanticAnswerGradingService(
 			() => settings,
@@ -25,6 +25,44 @@ describe("SemanticAnswerGradingService", () => {
 			() => ({
 				chat: async () => ({
 					id: "resp-1",
+					choices: [
+						{
+							message: {
+								role: "assistant",
+								content:
+									'{"score": 92, "feedback": "Meaning is correct with minor wording differences."}',
+							},
+							finish_reason: "stop",
+						},
+					],
+				}),
+			}),
+		);
+
+		const result = await service.gradeAnswer({
+			question: "Main cause of WW2",
+			correctAnswer: "Germany invaded Poland",
+			userAnswer: "Hitler invaded Polish lands",
+			passThreshold: 85,
+			localFallbackScore: 70,
+		});
+
+		expect(result).toEqual({
+			score: 92,
+			passed: true,
+			source: "ai",
+			feedback: "",
+		});
+	});
+
+	it("returns full feedback for Pro users", async () => {
+		const settings = createSettings({ proKey: "sk-pro-key" });
+		const service = new SemanticAnswerGradingService(
+			() => settings,
+			dummyHttpClient,
+			() => ({
+				chat: async () => ({
+					id: "resp-pro",
 					choices: [
 						{
 							message: {

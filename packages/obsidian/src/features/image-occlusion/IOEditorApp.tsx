@@ -239,9 +239,7 @@ export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
 		return () => window.removeEventListener("keydown", onKeyDown);
 	}, [selectedRegionId, deleteSelected, hasRegions]);
 
-	const hasAIKey = Boolean(
-		plugin.settings.proKey || plugin.settings.openRouterApiKey,
-	);
+	const hasProKey = Boolean(plugin.settings.proKey);
 
 	const handleAIDetect = useCallback(
 		async (hint?: string) => {
@@ -606,7 +604,7 @@ export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
 						aiPromptVisible={aiPromptVisible}
 						aiLoading={aiLoading}
 						aiCustomHint={aiCustomHint}
-						hasAIKey={hasAIKey}
+						hasAIKey={hasProKey}
 						hasImage={!!imagePath}
 						onToolChange={setTool}
 						onSetLastNonSelectTool={setLastNonSelectTool}

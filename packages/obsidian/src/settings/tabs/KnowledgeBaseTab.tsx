@@ -1,6 +1,9 @@
 import { Notice } from "obsidian";
 import { useCallback, useState } from "preact/hooks";
 
+import { hasAIKey } from "@true-recall/core/ai/config/ai-client-config";
+import { RAG_FREE_NOTE_LIMIT } from "@true-recall/core/constants";
+
 import {
 	ActionButton,
 	FolderPicker,
@@ -32,6 +35,8 @@ export function KnowledgeBaseTab() {
 	const plugin = usePlugin();
 	const [reindexing, setReindexing] = useState(false);
 	const [progress, setProgress] = useState("");
+	const isPro = !!settings.proKey;
+	const hasKey = hasAIKey(settings);
 
 	const handleReindex = useCallback(async () => {
 		if (!plugin.ragIndexer || reindexing) return;
@@ -58,14 +63,14 @@ export function KnowledgeBaseTab() {
 		}
 	}, [plugin, reindexing]);
 
-	if (settings.aiTier !== "pro") {
+	if (!hasKey) {
 		return (
 			<div class="ep:flex ep:flex-col ep:gap-3">
 				<FormCard title="Knowledge Base">
 					<InfoBlock>
-						Knowledge Base is a <strong>Pro-only</strong> feature. It indexes
-						your vault notes and flashcards for semantic search, so AI
-						assistants can find relevant information without reading every file.
+						Knowledge Base indexes your vault notes and flashcards for semantic
+						search. Configure an AI key in the <strong>AI</strong> tab to get
+						started.
 					</InfoBlock>
 				</FormCard>
 			</div>
@@ -79,6 +84,13 @@ export function KnowledgeBaseTab() {
 					Index your vault for semantic search. AI assistants can search your
 					notes and flashcards with awareness of FSRS mastery levels.
 				</InfoBlock>
+
+				{!isPro && (
+					<InfoBlock>
+						Free tier: up to {RAG_FREE_NOTE_LIMIT} notes indexed.{" "}
+						<strong>Upgrade to Pro</strong> for unlimited indexing.
+					</InfoBlock>
+				)}
 
 				<FormField
 					name="Enable Knowledge Base"

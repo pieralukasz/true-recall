@@ -194,7 +194,7 @@ export function KnowledgeChatApp({ view }: Props) {
 	if (!view.chatService) {
 		return (
 			<div class="ep:flex ep:items-center ep:justify-center ep:h-full ep:p-4 ep:text-obs-muted">
-				<p>Knowledge Base requires a Pro subscription and enabled RAG.</p>
+				<p>Knowledge Base requires an AI key and enabled RAG in settings.</p>
 			</div>
 		);
 	}

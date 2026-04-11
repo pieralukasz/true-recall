@@ -384,19 +384,26 @@ export default class TrueRecallPlugin extends Plugin {
 			ragSchema.createTables();
 			this.ragActions = new RagChunkActions(this.cardStore.getSqliteDb());
 
-			if (this.settings.ragEnabled && this.settings.proKey) {
+			const embeddingKey =
+				this.settings.proKey || this.settings.openRouterApiKey;
+			if (this.settings.ragEnabled && embeddingKey) {
 				const { RagEmbeddingServiceImpl } = await import(
 					"@true-recall/core/rag/retrieval/rag-embedding.service"
 				);
+				const { LITELLM_EMBEDDINGS_URL, OPENROUTER_EMBEDDINGS_URL } =
+					await import("@true-recall/core/constants");
 				const { RagIndexerService } = await import(
 					"@true-recall/obsidian/features/rag/services/rag-indexer.service"
 				);
 				const { RagSearchService } = await import(
 					"@true-recall/core/rag/retrieval/rag-search.service"
 				);
+				const isPro = !!this.settings.proKey;
 				const embedder = new RagEmbeddingServiceImpl(
 					new ObsidianHttpClient(),
-					this.settings.proKey,
+					embeddingKey,
+					isPro ? LITELLM_EMBEDDINGS_URL : OPENROUTER_EMBEDDINGS_URL,
+					isPro ? "embedding" : "baai/bge-m3",
 				);
 				this.ragSearch = new RagSearchService(this.ragActions, embedder);
 				this.ragIndexer = new RagIndexerService(

@@ -5,9 +5,7 @@
  */
 import { describe, expect, it } from "vitest";
 
-import {
-	parseBulkText,
-} from "../../src/flashcard/parsing/bulk-card-parser";
+import { parseBulkText } from "../../src/flashcard/parsing/bulk-card-parser";
 import { BUILTIN_BASIC_ID, BUILTIN_CLOZE_ID } from "../../src/types/note.types";
 
 describe("BulkCardParser", () => {
