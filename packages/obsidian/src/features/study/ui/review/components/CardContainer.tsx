@@ -16,6 +16,7 @@ import { LivePreviewField } from "@true-recall/obsidian/features/study/ui/review
 import { TypeInCMEditor } from "@true-recall/obsidian/features/study/ui/review/components/TypeInCMEditor";
 import { cn } from "@true-recall/obsidian/utils/cn";
 
+import { AudioPlayButton } from "./AudioPlayButton";
 import { NoteReviewRenderer } from "./NoteReviewRenderer";
 
 // Pre-renders the answer DOM one frame after the question paints,
@@ -116,6 +117,7 @@ interface CardContainerProps {
 	presetOptions?: PresetPickerOption[];
 	onPresetChange?: (presetName: string) => void;
 	typeIn: TypeInState;
+	audioPath?: string;
 }
 
 function TokenRow({
@@ -168,6 +170,7 @@ export function CardContainer({
 	presetOptions,
 	onPresetChange,
 	typeIn,
+	audioPath,
 }: CardContainerProps) {
 	const {
 		enabled: useTypeInMode,
@@ -263,6 +266,10 @@ export function CardContainer({
 					cls="true-recall-review-question ep:leading-relaxed ep:text-obs-normal ep:mb-6"
 					onContentChange={isCloze ? undefined : onContentChange}
 				/>
+
+				{audioPath && (
+					<AudioPlayButton audioPath={audioPath} autoplay={false} />
+				)}
 
 				{showTypeIn && !isAnswerRevealed && (
 					<div class="ep:mb-6">

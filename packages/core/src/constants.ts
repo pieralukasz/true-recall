@@ -1,4 +1,8 @@
-import type { FSRSPreset, TrueRecallSettings } from "./types/settings.types";
+import type {
+	FSRSPreset,
+	GenerationPreset,
+	TrueRecallSettings,
+} from "./types/settings.types";
 
 export const ENABLE_RAG = true;
 
@@ -82,6 +86,52 @@ export const DEFAULT_FSRS_PRESET: FSRSPreset = {
 	reviewOrder: "due-date",
 	newReviewMix: "mix-with-reviews",
 };
+
+export const TTS_VOICES = [
+	"alloy",
+	"echo",
+	"fable",
+	"onyx",
+	"nova",
+	"shimmer",
+] as const;
+export type TTSVoice = (typeof TTS_VOICES)[number];
+
+export const BUILTIN_GENERATION_PRESETS: GenerationPreset[] = [
+	{
+		id: "builtin-vocabulary-flashcard",
+		name: "Vocabulary Flashcard",
+		noteTypeSlug: "basic",
+		sourceLanguage: "",
+		targetLanguage: "",
+		systemPrompt: "",
+		ttsField: "Back",
+		ttsEnabled: false,
+		isBuiltin: true,
+	},
+	{
+		id: "builtin-standard-vocabulary",
+		name: "Standard Vocabulary",
+		noteTypeSlug: "basic-reversed",
+		sourceLanguage: "",
+		targetLanguage: "",
+		systemPrompt: "",
+		ttsField: "Front",
+		ttsEnabled: false,
+		isBuiltin: true,
+	},
+	{
+		id: "builtin-cloze-sentences",
+		name: "Cloze Sentences",
+		noteTypeSlug: "cloze",
+		sourceLanguage: "",
+		targetLanguage: "",
+		systemPrompt: "",
+		ttsField: "Text",
+		ttsEnabled: false,
+		isBuiltin: true,
+	},
+];
 
 export const DEFAULT_SETTINGS: TrueRecallSettings = {
 	enableDeviceSync: false,
@@ -207,6 +257,11 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 		customInstruction: "",
 		responseLength: "medium",
 	},
+
+	generationPresets: BUILTIN_GENERATION_PRESETS,
+	activeGenerationPresetId: null,
+	ttsVoice: "nova",
+	ttsAutoplay: true,
 };
 
 // FSRS v6 default weights (21 parameters)

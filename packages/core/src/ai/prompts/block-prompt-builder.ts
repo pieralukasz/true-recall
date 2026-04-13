@@ -1,6 +1,8 @@
 import { resolveSlug } from "../../flashcard/note-types/note-type-slug";
 import type { NoteType } from "../../types/note.types";
+import type { GenerationPreset } from "../../types/settings.types";
 import { buildLanguageSuffix } from "./default-prompts";
+import { buildPresetPrompt } from "./language-presets";
 
 export function buildCardFormatSpec(noteType: NoteType): string {
 	const slug = resolveSlug(noteType);
@@ -30,4 +32,13 @@ export function buildByokPrompt(
 		"Return ONLY the raw JSON array. No markdown fences, no explanation." +
 		langSuffix
 	);
+}
+
+export function buildLanguagePresetByokPrompt(
+	preset: GenerationPreset,
+	_noteType: NoteType,
+): string | null {
+	const presetPrompt = buildPresetPrompt(preset);
+	if (!presetPrompt) return null;
+	return presetPrompt;
 }
