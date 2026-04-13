@@ -1,6 +1,7 @@
 import { Notice } from "obsidian";
 import { useCallback, useMemo, useRef, useState } from "preact/hooks";
 
+import { TRUERECALL_WEB_URL } from "@true-recall/core/constants";
 import type { ChatTurn } from "@true-recall/core/rag/chat/rag-query.service";
 import type {
 	ContextItem,
@@ -193,8 +194,17 @@ export function KnowledgeChatApp({ view }: Props) {
 
 	if (!view.chatService) {
 		return (
-			<div class="ep:flex ep:items-center ep:justify-center ep:h-full ep:p-4 ep:text-obs-muted">
+			<div class="ep:flex ep:flex-col ep:items-center ep:justify-center ep:h-full ep:p-4 ep:text-obs-muted ep:gap-2 ep:text-center">
 				<p>Knowledge Base requires an AI key and enabled RAG in settings.</p>
+				<p>
+					Create a free Pro account at{" "}
+					<a
+						href={`${TRUERECALL_WEB_URL}/dashboard`}
+						class="ep:text-obs-accent"
+					>
+						truerecall.app/dashboard
+					</a>
+				</p>
 			</div>
 		);
 	}
