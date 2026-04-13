@@ -1,7 +1,6 @@
-# true-recall
+c# true-recall
 
 This repository inherits the shared project baseline from `/Users/lukaszpiera/Projects/AGENTS.md`.
-Canonical coding standards for this repository live in `/Users/lukaszpiera/.claude/rules/coding-baseline.md`.
 
 ## Scope
 

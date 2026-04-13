@@ -273,8 +273,12 @@ export const GITHUB_RELEASES_API =
 
 export const LITELLM_URL = "https://ai.truerecall.app/v1/chat/completions";
 export const LITELLM_EMBEDDINGS_URL = "https://ai.truerecall.app/v1/embeddings";
+export const OPENROUTER_EMBEDDINGS_URL =
+	"https://openrouter.ai/api/v1/embeddings";
 
 export const VIEW_TYPE_KNOWLEDGE_CHAT = "true-recall-knowledge-chat";
+
+export const RAG_FREE_NOTE_LIMIT = 100;
 
 export const RAG_CONFIG = {
 	embeddingBatchSize: 64,
