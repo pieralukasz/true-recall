@@ -547,6 +547,17 @@ export class ReviewView extends ItemView {
 					this.answerHandler.resolvePreset(card).name,
 				getPresetOptions: () => this.getPresetOptions(),
 				onPresetChange: (name: string) => void this.handlePresetChange(name),
+				resolveAudioPath: (card: FSRSFlashcardItem) => {
+					if (!card.noteId) return undefined;
+					const note = this.plugin.cardStore?.notes.getById(card.noteId);
+					if (!note?.fields) return undefined;
+					for (const [key, value] of Object.entries(note.fields)) {
+						if (key.startsWith("_audio_") && value) {
+							return value;
+						}
+					}
+					return undefined;
+				},
 			}),
 		);
 	}

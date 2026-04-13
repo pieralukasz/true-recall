@@ -58,6 +58,7 @@ interface ReviewAppProps {
 	getPresetName?: (card: FSRSFlashcardItem) => string;
 	getPresetOptions?: () => PresetPickerOption[];
 	onPresetChange?: (presetName: string) => void;
+	resolveAudioPath?: (card: FSRSFlashcardItem) => string | undefined;
 }
 
 // ─── Main App ────────────────────────────────────────────────────────────────
@@ -131,12 +132,14 @@ function ActiveReview({
 	getPresetName,
 	getPresetOptions,
 	onPresetChange,
+	resolveAudioPath,
 }: ActiveReviewProps) {
 	const hasAnswer = !!card.answer?.trim();
 	const isAnswerRevealed = !hasAnswer || review.isAnswerRevealed;
 	const presetName = getPresetName?.(card);
 	const presetOptions = getPresetOptions?.();
 	const typeInState = getTypeInState(card, isAnswerRevealed);
+	const audioPath = resolveAudioPath?.(card);
 
 	useLayoutEffect(() => {
 		if (!hasAnswer && !review.isAnswerRevealed) {
@@ -162,6 +165,7 @@ function ActiveReview({
 				presetName={presetName}
 				presetOptions={presetOptions}
 				onPresetChange={onPresetChange}
+				audioPath={audioPath}
 				typeIn={{
 					enabled: typeInState.useTypeInMode,
 					aiEnabled: typeInState.aiEnabled,

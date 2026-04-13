@@ -14,6 +14,33 @@ import { useApp, usePlugin } from "@true-recall/obsidian/preact";
 
 import { usePanelStore } from "./usePanelStore";
 
+function runTTSPostProcessing(
+	plugin: {
+		app: import("obsidian").App;
+		settings: import("@true-recall/core/types").TrueRecallSettings;
+		cardStore: import("@true-recall/core/persistence/sqlite/SqliteStoreService").SqliteStoreService;
+	},
+	createdCardIds: string[],
+): void {
+	const { settings } = plugin;
+	const preset = settings.activeGenerationPresetId
+		? settings.generationPresets.find(
+				(p) => p.id === settings.activeGenerationPresetId,
+			)
+		: null;
+	if (!preset?.ttsEnabled) return;
+	void import("@true-recall/obsidian/services/tts-post-processor").then(
+		({ TTSPostProcessor }) => {
+			const processor = new TTSPostProcessor(
+				plugin.app,
+				() => plugin.settings,
+				plugin.cardStore,
+			);
+			void processor.processCards(createdCardIds, preset);
+		},
+	);
+}
+
 export function usePanelActions() {
 	const plugin = usePlugin();
 	const app = useApp();
@@ -82,6 +109,7 @@ export function usePanelActions() {
 			if (result.createdCardIds && result.createdCardIds.length > 0) {
 				const cmd = new BatchCreateCommand(result.createdCardIds);
 				await plugin.commandService?.execute(cmd);
+				runTTSPostProcessing(plugin, result.createdCardIds);
 			}
 		} catch (error) {
 			if (error instanceof DOMException && error.name === "AbortError") return;
@@ -175,6 +203,7 @@ export function usePanelActions() {
 			if (result.createdCardIds && result.createdCardIds.length > 0) {
 				const cmd = new BatchCreateCommand(result.createdCardIds);
 				await plugin.commandService?.execute(cmd);
+				runTTSPostProcessing(plugin, result.createdCardIds);
 			}
 		} catch (error) {
 			if (error instanceof DOMException && error.name === "AbortError") return;

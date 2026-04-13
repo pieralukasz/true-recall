@@ -6,11 +6,13 @@ import { BUILTIN_BASIC_ID } from "@true-recall/core/types/note.types";
 import { mutate } from "@true-recall/obsidian/data";
 import { QuickNoteEditorModal } from "@true-recall/obsidian/modals/study/quick-note-editor/QuickNoteEditorModal";
 import { notify } from "@true-recall/obsidian/services/notification.service";
+import { TTSPostProcessor } from "@true-recall/obsidian/services/tts-post-processor";
 
 import { ObsidianHttpClient } from "../adapters/ObsidianHttpClient";
 import type TrueRecallPlugin from "../main";
 
 let streamingService: StreamingGenerationService | null = null;
+let ttsProcessor: TTSPostProcessor | null = null;
 
 function getStreamingService(
 	plugin: TrueRecallPlugin,
@@ -23,6 +25,32 @@ function getStreamingService(
 		);
 	}
 	return streamingService;
+}
+
+function getTTSPostProcessor(plugin: TrueRecallPlugin): TTSPostProcessor {
+	if (!ttsProcessor) {
+		ttsProcessor = new TTSPostProcessor(
+			plugin.app,
+			() => plugin.settings,
+			plugin.cardStore,
+		);
+	}
+	return ttsProcessor;
+}
+
+function runTTSIfNeeded(
+	plugin: TrueRecallPlugin,
+	createdCardIds: string[],
+): void {
+	if (createdCardIds.length === 0) return;
+	const { settings } = plugin;
+	const preset = settings.activeGenerationPresetId
+		? settings.generationPresets.find(
+				(p) => p.id === settings.activeGenerationPresetId,
+			)
+		: null;
+	if (!preset?.ttsEnabled) return;
+	void getTTSPostProcessor(plugin).processCards(createdCardIds, preset);
 }
 
 export function hasApiKey(plugin: TrueRecallPlugin): boolean {
@@ -56,6 +84,8 @@ export async function generateFlashcardsFromSelection(
 			plugin.cardStore?.noteTypes.getById(BUILTIN_BASIC_ID) ?? null;
 		const service = getStreamingService(plugin);
 		const result = await service.generateStreaming(text, file, noteType);
+
+		runTTSIfNeeded(plugin, result.createdCardIds);
 
 		if (result.created === 0 && result.duplicates === 0) {
 			notify().warning("No flashcards found in AI response");
@@ -134,6 +164,8 @@ export async function generateFlashcardsGlobal(
 			plugin.cardStore?.noteTypes.getById(BUILTIN_BASIC_ID) ?? null;
 		const service = getStreamingService(plugin);
 		const result = await service.generateStreaming(text, file, noteType);
+
+		runTTSIfNeeded(plugin, result.createdCardIds);
 
 		if (result.created === 0 && result.duplicates === 0) {
 			notify().warning("No flashcards found in AI response");
