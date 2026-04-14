@@ -220,6 +220,25 @@ export default class TrueRecallPlugin extends Plugin {
 			return;
 		}
 
+		// Migrate ragEnabled → pluginStates["knowledge-base"]
+		try {
+			if (
+				this.settings.ragEnabled &&
+				this.settings.pluginStates?.["knowledge-base"] === undefined
+			) {
+				this.settings.pluginStates = {
+					...this.settings.pluginStates,
+					"knowledge-base": true,
+				};
+				await this.saveSettings();
+			}
+		} catch (error) {
+			console.warn(
+				"[True Recall] ragEnabled migration failed to persist, will retry next load:",
+				error,
+			);
+		}
+
 		// What's New check after layout ready
 		this.app.workspace.onLayoutReady(() => {
 			checkForWhatsNew(this).catch((e) => {

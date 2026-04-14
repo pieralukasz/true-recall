@@ -10,7 +10,6 @@ import {
 import type {
 	ReviewKeybindings,
 	ReviewViewMode,
-	TypeInMode,
 } from "@true-recall/core/types";
 
 import {
@@ -28,22 +27,13 @@ import { notify } from "@true-recall/obsidian/services/notification.service";
 
 import { useSettings } from "../hooks/useSettings";
 import { ToolbarConfigSection } from "../ToolbarConfigSection";
+import { AIProviderSection } from "./AIProviderSection";
 
 export function GeneralTab() {
 	const { settings, save, plugin } = useSettings();
 
 	return (
 		<div class="ep:flex ep:flex-col ep:gap-3">
-			{!settings.proKey && (
-				<FormCard title="True Recall Pro">
-					<InfoBlock>
-						True Recall Pro — zero-setup AI with optimized prompts, included in
-						your subscription. Set up your key in the <strong>AI</strong>{" "}
-						settings tab.
-					</InfoBlock>
-				</FormCard>
-			)}
-
 			<FormCard title="Review interface">
 				<FormField
 					name="Review mode"
@@ -116,21 +106,6 @@ export function GeneralTab() {
 					<ToggleInput
 						value={settings.ignoreDailyLimitsForNoteStudy}
 						onChange={(v) => void save({ ignoreDailyLimitsForNoteStudy: v })}
-					/>
-				</FormField>
-
-				<FormField
-					name="Default type-in mode"
-					description="Type-in mode used when a new review session starts (T still cycles modes in-session)"
-				>
-					<SelectInput
-						value={settings.defaultTypeInMode}
-						onChange={(v) => void save({ defaultTypeInMode: v as TypeInMode })}
-						options={[
-							{ value: "off", label: "Off" },
-							{ value: "diff", label: "Diff" },
-							{ value: "ai", label: "AI" },
-						]}
 					/>
 				</FormField>
 
@@ -226,6 +201,8 @@ export function GeneralTab() {
 					/>
 				</FormField>
 			</FormCard>
+
+			<AIProviderSection />
 
 			<FormCard title="About">
 				<FormField

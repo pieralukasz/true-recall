@@ -1,37 +1,22 @@
 import { useCallback, useState } from "preact/hooks";
 
-import { ENABLE_RAG } from "@true-recall/core/constants";
-
 import { Clickable } from "@true-recall/obsidian/components";
 import { usePlugin } from "@true-recall/obsidian/preact";
 
-import { AITab } from "./tabs/AITab";
 import { DataTab } from "./tabs/DataTab";
 import { FSRSTab } from "./tabs/FSRSTab";
 import { GeneralTab } from "./tabs/GeneralTab";
 import { IntegrationsTab } from "./tabs/IntegrationsTab";
-import { KnowledgeBaseTab } from "./tabs/KnowledgeBaseTab";
 import { PluginsTab } from "./tabs/PluginsTab";
 
-type SettingsTabId =
-	| "general"
-	| "ai"
-	| "fsrs"
-	| "data"
-	| "knowledge-base"
-	| "integrations"
-	| "plugins";
+type SettingsTabId = "general" | "fsrs" | "data" | "integrations" | "plugins";
 
 const TABS: { id: SettingsTabId; label: string }[] = [
 	{ id: "general", label: "General" },
-	{ id: "ai", label: "AI" },
 	{ id: "fsrs", label: "FSRS" },
 	{ id: "data", label: "Data & Backup" },
-	...(ENABLE_RAG
-		? [{ id: "knowledge-base" as const, label: "Knowledge Base" }]
-		: []),
-	{ id: "integrations" as const, label: "Integrations" },
-	{ id: "plugins" as const, label: "Plugins" },
+	{ id: "integrations", label: "Integrations" },
+	{ id: "plugins", label: "Plugins" },
 ];
 
 const TAB_BTN_BASE =
@@ -89,7 +74,6 @@ export function SettingsApp() {
 				class="ep:mx-auto ep:max-w-3xl ep:pb-4 ep-section-enter"
 			>
 				{activeTab === "general" && <GeneralTab />}
-				{activeTab === "ai" && <AITab />}
 				{activeTab === "fsrs" && (
 					<FSRSTab
 						selectedPresetId={selectedPresetId}
@@ -97,7 +81,6 @@ export function SettingsApp() {
 					/>
 				)}
 				{activeTab === "data" && <DataTab />}
-				{activeTab === "knowledge-base" && <KnowledgeBaseTab />}
 				{activeTab === "integrations" && <IntegrationsTab />}
 				{activeTab === "plugins" && <PluginsTab />}
 			</div>
