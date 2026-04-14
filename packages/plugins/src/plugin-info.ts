@@ -44,6 +44,34 @@ export const ALL_PLUGINS: PluginInfo[] = [
 		requiresPro: true,
 	},
 	{
+		id: "knowledge-base",
+		name: "Knowledge Base",
+		description:
+			"Chat with your notes using RAG-powered AI. Index your vault, ask questions, and get answers grounded in your own knowledge.",
+		features: [
+			"Semantic search across your vault",
+			"AI chat grounded in your notes",
+			"Automatic indexing on file changes",
+			"Folder include/exclude filters",
+		],
+		icon: "library",
+		requiresPro: true,
+	},
+	{
+		id: "type-in-mode",
+		name: "Type-in Mode",
+		description:
+			"Test your recall by typing answers instead of just revealing them. AI grades your response semantically.",
+		features: [
+			"Type your answer before revealing",
+			"AI semantic grading with detailed feedback",
+			"Diff view showing exact differences",
+			"Works with all card types",
+		],
+		icon: "keyboard",
+		requiresPro: true,
+	},
+	{
 		id: "healing-flashcards",
 		name: "Healing Flashcards",
 		description:

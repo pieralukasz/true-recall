@@ -36,21 +36,19 @@ function PluginCard({ plugin, isPro, isEnabled, onToggle }: PluginCardProps) {
 			<div class="ep:flex ep:items-start ep:justify-between ep:gap-3">
 				<div class="ep:flex ep:items-center ep:gap-2.5">
 					<PluginIcon icon={plugin.icon} />
-					<div>
-						<div class="ep:text-ui-small ep:font-semibold ep:text-obs-normal">
-							{plugin.name}
-						</div>
-						<span
-							class={cn(
-								"ep:text-ui-smaller ep:px-1.5 ep:py-0.5 ep:rounded ep:font-medium",
-								isActive
-									? "ep:bg-green-500/15 ep:text-green-600"
-									: "ep:bg-obs-accent/10 ep:text-obs-accent",
-							)}
-						>
-							{isActive ? "Active" : "Pro"}
-						</span>
+					<div class="ep:text-ui-small ep:font-semibold ep:text-obs-normal">
+						{plugin.name}
 					</div>
+					<span
+						class={cn(
+							"ep:text-ui-smaller ep:px-1.5 ep:py-0.5 ep:rounded ep:font-medium",
+							isActive
+								? "ep:bg-green-500/15 ep:text-green-600"
+								: "ep:bg-obs-accent/10 ep:text-obs-accent",
+						)}
+					>
+						{isActive ? "Active" : "Pro"}
+					</span>
 				</div>
 
 				{isPro ? (
