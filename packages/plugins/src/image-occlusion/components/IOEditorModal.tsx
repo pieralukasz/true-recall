@@ -1,12 +1,12 @@
 import type { App } from "obsidian";
 import { render } from "preact";
 
+import type TrueRecallPlugin from "@true-recall/obsidian/main";
 import { BasePromiseModal } from "@true-recall/obsidian/modals/shared/BasePromiseModal";
 import { ObsidianProvider } from "@true-recall/obsidian/preact/ObsidianContext";
 
-import type TrueRecallPlugin from "../../main";
+import type { IOEditorMode, IOEditorResult } from "../types";
 import { IOEditorApp } from "./IOEditorApp";
-import type { IOEditorMode, IOEditorResult } from "./types";
 
 export class IOEditorModal extends BasePromiseModal<IOEditorResult> {
 	constructor(

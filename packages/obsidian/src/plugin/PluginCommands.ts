@@ -12,6 +12,11 @@ import {
 	quickAddFlashcardGlobal,
 } from "./SelectionActions";
 
+function isPluginEnabled(plugin: TrueRecallPlugin, pluginId: string): boolean {
+	if (!plugin.settings.proKey) return false;
+	return plugin.settings.pluginStates?.[pluginId] !== false;
+}
+
 export function registerCommands(plugin: TrueRecallPlugin): void {
 	plugin.addCommand({
 		id: "open-flashcard-panel",
@@ -92,11 +97,13 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 		callback: () => plugin.openImportStudio(),
 	});
 
-	plugin.addCommand({
-		id: "create-image-occlusion-card",
-		name: "Create image occlusion card",
-		callback: () => void plugin.openImageOcclusionEditorForActiveNote(),
-	});
+	if (isPluginEnabled(plugin, "image-occlusion")) {
+		plugin.addCommand({
+			id: "create-image-occlusion-card",
+			name: "Create image occlusion card",
+			callback: () => void plugin.openImageOcclusionEditorForActiveNote(),
+		});
+	}
 
 	plugin.addCommand({
 		id: "create-backup",

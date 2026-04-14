@@ -1,7 +1,7 @@
 import { clamp } from "@true-recall/core/utils/canvas-geometry";
 import { getNextIOGroupKey } from "@true-recall/core/utils/io-definition";
 
-import type { IODefinition, IORegion, IOShape } from "./types";
+import type { IODefinition, IORegion, IOShape } from "../types";
 
 export type ResizeCorner = "nw" | "ne" | "sw" | "se";
 

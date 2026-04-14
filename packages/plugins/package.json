@@ -1,0 +1,14 @@
+{
+	"name": "@true-recall/plugins",
+	"version": "1.0.0",
+	"private": true,
+	"type": "module",
+	"main": "src/index.ts",
+	"dependencies": {
+		"@true-recall/core": "workspace:*"
+	},
+	"peerDependencies": {
+		"@true-recall/obsidian": "*",
+		"obsidian": "*"
+	}
+}

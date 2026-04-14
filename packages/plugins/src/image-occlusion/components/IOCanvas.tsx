@@ -14,6 +14,7 @@ import {
 import { Clickable } from "@true-recall/obsidian/components";
 import { useIcon } from "@true-recall/obsidian/preact/hooks";
 
+import type { IODefinition, IORegion, IOShape } from "../types";
 import {
 	buildDraftRegion,
 	buildMoveUpdate,
@@ -22,8 +23,7 @@ import {
 	getRegionCorner,
 	type ResizeCorner,
 	updateRegion,
-} from "./canvas-interactions";
-import type { IODefinition, IORegion, IOShape } from "./types";
+} from "../utils/canvas-interactions";
 
 type Tool = "select" | IOShape;
 

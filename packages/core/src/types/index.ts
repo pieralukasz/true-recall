@@ -105,6 +105,7 @@ export {
 	BUILTIN_CLOZE_ID,
 	BUILTIN_IMAGE_OCCLUSION_ID,
 } from "./note.types";
+export type { PluginInfo } from "./plugin.types";
 export type { SessionConfig } from "./session-config.types";
 export type {
 	BackupInterval,

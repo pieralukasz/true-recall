@@ -10,30 +10,30 @@ import {
 
 import { Clickable } from "@true-recall/obsidian/components";
 import { NotePickerCombobox } from "@true-recall/obsidian/components/NotePickerCombobox";
+import { ImageService } from "@true-recall/obsidian/features/integration/services/ImageService";
 import {
 	useApp,
 	usePlugin,
 } from "@true-recall/obsidian/preact/ObsidianContext";
 import { cn } from "@true-recall/obsidian/utils/cn";
+import { isDesktop } from "@true-recall/obsidian/utils/platform";
 
-import { isDesktop } from "../../utils/platform";
-import { ImageService } from "../integration/services/ImageService";
-import { deleteRegion } from "./canvas-interactions";
-import { IOCanvas } from "./IOCanvas";
-import { IconToolButton } from "./IOIconToolButton";
-import { IORegionList } from "./IORegionList";
-import { IOToolsPanel } from "./IOToolsPanel";
-import { detectRegions } from "./io-ai.service";
+import { detectRegions } from "../services/io-ai.service";
 import type {
 	IODefinition,
 	IOEditorMode,
 	IOEditorResult,
 	IORegion,
-} from "./types";
+} from "../types";
+import { deleteRegion } from "../utils/canvas-interactions";
 import {
 	shouldImagePanelStartExpanded,
 	truncateMiddlePath,
-} from "./ui-helpers";
+} from "../utils/ui-helpers";
+import { IOCanvas } from "./IOCanvas";
+import { IconToolButton } from "./IOIconToolButton";
+import { IORegionList } from "./IORegionList";
+import { IOToolsPanel } from "./IOToolsPanel";
 
 type Tool = "select" | "rect" | "ellipse";
 type NonSelectTool = Exclude<Tool, "select">;

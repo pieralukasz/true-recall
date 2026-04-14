@@ -6,8 +6,8 @@ import { parseIODefinition } from "@true-recall/core/utils/io-definition";
 import { useIcon } from "@true-recall/obsidian/preact/hooks";
 import { useApp } from "@true-recall/obsidian/preact/ObsidianContext";
 
-import { resolveImageFile } from "./resolve-image";
-import type { IORegion } from "./types";
+import type { IORegion } from "../types";
+import { resolveImageFile } from "../utils/resolve-image";
 
 interface IOCardRendererProps {
 	imagePath?: string;

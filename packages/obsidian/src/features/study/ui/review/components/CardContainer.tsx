@@ -7,7 +7,6 @@ import type {
 } from "@true-recall/core/types";
 
 import { Clickable } from "@true-recall/obsidian/components";
-import { IOCardRenderer } from "@true-recall/obsidian/features/image-occlusion/IOCardRenderer";
 import {
 	type PresetPickerOption,
 	PresetPopover,
@@ -18,6 +17,7 @@ import { cn } from "@true-recall/obsidian/utils/cn";
 
 import { AudioPlayButton } from "./AudioPlayButton";
 import { NoteReviewRenderer } from "./NoteReviewRenderer";
+import { IOCardRenderer } from "@true-recall/plugins/image-occlusion";
 
 // Pre-renders the answer DOM one frame after the question paints,
 // but keeps it invisible (opacity:0, height:0). Without this,

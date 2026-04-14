@@ -9,9 +9,18 @@ import { AITab } from "./tabs/AITab";
 import { DataTab } from "./tabs/DataTab";
 import { FSRSTab } from "./tabs/FSRSTab";
 import { GeneralTab } from "./tabs/GeneralTab";
+import { IntegrationsTab } from "./tabs/IntegrationsTab";
 import { KnowledgeBaseTab } from "./tabs/KnowledgeBaseTab";
+import { PluginsTab } from "./tabs/PluginsTab";
 
-type SettingsTabId = "general" | "ai" | "fsrs" | "data" | "knowledge-base";
+type SettingsTabId =
+	| "general"
+	| "ai"
+	| "fsrs"
+	| "data"
+	| "knowledge-base"
+	| "integrations"
+	| "plugins";
 
 const TABS: { id: SettingsTabId; label: string }[] = [
 	{ id: "general", label: "General" },
@@ -21,6 +30,8 @@ const TABS: { id: SettingsTabId; label: string }[] = [
 	...(ENABLE_RAG
 		? [{ id: "knowledge-base" as const, label: "Knowledge Base" }]
 		: []),
+	{ id: "integrations" as const, label: "Integrations" },
+	{ id: "plugins" as const, label: "Plugins" },
 ];
 
 const TAB_BTN_BASE =
@@ -87,6 +98,8 @@ export function SettingsApp() {
 				)}
 				{activeTab === "data" && <DataTab />}
 				{activeTab === "knowledge-base" && <KnowledgeBaseTab />}
+				{activeTab === "integrations" && <IntegrationsTab />}
+				{activeTab === "plugins" && <PluginsTab />}
 			</div>
 		</>
 	);

@@ -27,11 +27,6 @@ import type { DataLayer } from "@true-recall/obsidian/data";
 import { G } from "@true-recall/obsidian/data";
 import type { StatusBarWidget } from "@true-recall/obsidian/editor/study/widgets/StatusBarWidget";
 import type { NoteStatusCache } from "@true-recall/obsidian/features/core/cache/note-status-cache.service";
-import { IOEditorModal } from "@true-recall/obsidian/features/image-occlusion/IOEditorModal";
-import type {
-	IOEditorMode,
-	IOEditorResult,
-} from "@true-recall/obsidian/features/image-occlusion/types";
 import {
 	filtersToViewState,
 	normalizeSessionFilters,
@@ -80,6 +75,11 @@ import {
 	activateView,
 	getView,
 } from "./plugin/ViewActivator";
+import {
+	IOEditorModal,
+	type IOEditorMode,
+	type IOEditorResult,
+} from "@true-recall/plugins/image-occlusion";
 
 export default class TrueRecallPlugin extends Plugin {
 	coreApp!: TrueRecallApp;

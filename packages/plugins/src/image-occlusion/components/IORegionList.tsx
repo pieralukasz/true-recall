@@ -1,7 +1,7 @@
 import { Clickable } from "@true-recall/obsidian/components";
 
+import type { IORegion } from "../types";
 import { IconToolButton } from "./IOIconToolButton";
-import type { IORegion } from "./types";
 
 interface RegionListItemProps {
 	region: IORegion;

@@ -11,6 +11,7 @@
 	},
 	"dependencies": {
 		"@true-recall/core": "workspace:*",
+		"@true-recall/plugins": "workspace:*",
 		"@codemirror/state": "6.5.0",
 		"@codemirror/view": "^6.35.0",
 		"monkey-around": "^3.0.0",

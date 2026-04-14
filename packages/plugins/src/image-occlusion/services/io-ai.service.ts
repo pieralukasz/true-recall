@@ -6,8 +6,9 @@ import {
 } from "@true-recall/core/ai/vision/image-region-detection";
 import type { TrueRecallSettings } from "@true-recall/core/types/settings.types";
 
-import { ObsidianHttpClient } from "../../adapters/ObsidianHttpClient";
-import type { IORegion } from "./types";
+import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpClient";
+
+import type { IORegion } from "../types";
 
 async function imageToBase64(
 	app: App,

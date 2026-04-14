@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
 	shouldImagePanelStartExpanded,
 	truncateMiddlePath,
-} from "../../../src/features/image-occlusion/ui-helpers";
+} from "@true-recall/plugins/image-occlusion/utils/ui-helpers";
 
 describe("image occlusion ui helpers", () => {
 	describe("shouldImagePanelStartExpanded", () => {

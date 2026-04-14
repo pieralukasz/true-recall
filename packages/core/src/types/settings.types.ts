@@ -370,6 +370,9 @@ export interface TrueRecallSettings {
 
 	/** Chat persona and response style configuration */
 	ragChatConfig: ChatConfig;
+
+	/** Per-plugin enabled/disabled state (plugin ID → boolean). All enabled by default. */
+	pluginStates?: Record<string, boolean>;
 }
 
 export interface SessionPreset {
