@@ -8,7 +8,7 @@ interface ToolbarButtonDef {
 export const BUILTIN_BUTTONS: ToolbarButtonDef[] = [
 	{
 		id: "flashcards",
-		label: "Flashcards",
+		label: "AI Flashcards",
 		title: "Generate flashcard(s) with AI",
 		editorOnly: false,
 	},
@@ -20,7 +20,7 @@ export const BUILTIN_BUTTONS: ToolbarButtonDef[] = [
 	},
 	{
 		id: "io",
-		label: "IO",
+		label: "Image Occlusion",
 		title: "Create image occlusion card",
 		editorOnly: true,
 	},

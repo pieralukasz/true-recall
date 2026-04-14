@@ -6,6 +6,7 @@ import type { ToolbarButtonConfig } from "@true-recall/core/types";
 import { Clickable } from "@true-recall/obsidian/components";
 
 import { BUILTIN_BUTTONS } from "./toolbar-buttons";
+import { BUTTON_PLUGIN_MAP } from "@true-recall/plugins";
 
 export interface ToolbarActions {
 	onGenerate: (text: string, sourceFile?: TFile | null) => Promise<void>;
@@ -27,7 +28,14 @@ interface SelectionToolbarProps {
 	hasApiKey: boolean;
 	hasActivePreset: boolean;
 	detectedImagePath?: string | null;
+	pluginStates?: Record<string, boolean>;
 }
+
+const PRO_BADGE = (
+	<span class="ep:text-[9px] ep:px-1 ep:rounded ep:font-semibold ep:bg-obs-accent/15 ep:text-obs-accent ep:leading-none ep:ml-0.5">
+		PRO
+	</span>
+);
 
 export function SelectionToolbar({
 	selectedText,
@@ -36,6 +44,7 @@ export function SelectionToolbar({
 	hasApiKey,
 	hasActivePreset,
 	detectedImagePath,
+	pluginStates = {},
 }: SelectionToolbarProps) {
 	const [copied, setCopied] = useState(false);
 
@@ -46,7 +55,12 @@ export function SelectionToolbar({
 		});
 	}, [selectedText]);
 
-	const enabledButtons = buttons.filter((b) => b.enabled);
+	const enabledButtons = buttons.filter((b) => {
+		if (!b.enabled) return false;
+		const pluginInfo = BUTTON_PLUGIN_MAP.get(b.id);
+		if (pluginInfo && pluginStates[pluginInfo.pluginId] === false) return false;
+		return true;
+	});
 
 	return (
 		<div class="true-recall-selection-toolbar ep:flex ep:items-center ep:gap-0.5 ep:p-1">
@@ -112,7 +126,7 @@ function ToolbarButton({
 								: "Add an OpenRouter API key in settings"
 						}
 					>
-						<span>Flashcards</span>
+						<span>Flashcards{PRO_BADGE}</span>
 					</Clickable>
 				</>
 			);
@@ -138,7 +152,7 @@ function ToolbarButton({
 									: "Generate vocabulary flashcards"
 						}
 					>
-						<span>Vocab</span>
+						<span>Vocab{PRO_BADGE}</span>
 					</Clickable>
 				</>
 			);
@@ -157,7 +171,7 @@ function ToolbarButton({
 						}}
 						title="Create image occlusion card"
 					>
-						<span>IO</span>
+						<span>IO{PRO_BADGE}</span>
 					</Clickable>
 				</>
 			);

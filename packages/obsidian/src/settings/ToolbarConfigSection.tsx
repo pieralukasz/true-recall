@@ -10,6 +10,8 @@ import {
 } from "@true-recall/obsidian/editor/ai/toolbar-buttons";
 import { useIcon, usePlugin } from "@true-recall/obsidian/preact";
 
+import { BUTTON_PLUGIN_MAP } from "@true-recall/plugins";
+
 interface ToolbarConfigListProps {
 	title: string;
 	description: string;
@@ -26,6 +28,7 @@ export function ToolbarConfigSection({
 	context,
 }: ToolbarConfigListProps) {
 	const plugin = usePlugin();
+	const pluginStates = plugin.settings.pluginStates ?? {};
 	const [dragIndex, setDragIndex] = useState<number | null>(null);
 	const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 	const dragNodeRef = useRef<HTMLDivElement | null>(null);
@@ -116,6 +119,13 @@ export function ToolbarConfigSection({
 						context === "global" &&
 						BUILTIN_BUTTONS.some((b) => b.id === btn.id && b.editorOnly);
 
+					const pluginInfo = BUTTON_PLUGIN_MAP.get(btn.id);
+					const isPluginDisabled =
+						pluginInfo !== undefined &&
+						pluginStates[pluginInfo.pluginId] === false;
+					const isProButton = pluginInfo?.requiresPro;
+					const isDisabled = isEditorOnly || isPluginDisabled;
+
 					return (
 						<ToolbarButtonRow
 							key={`${btn.id}-${i}`}
@@ -124,10 +134,15 @@ export function ToolbarConfigSection({
 							isCustom={!isBuiltinButton(btn.id)}
 							isDragging={dragIndex === i}
 							isDragOver={dragOverIndex === i}
-							disabled={isEditorOnly}
+							disabled={isDisabled}
 							disabledReason={
-								isEditorOnly ? "Only available in editor" : undefined
+								isPluginDisabled
+									? "Plugin disabled"
+									: isEditorOnly
+										? "Only available in editor"
+										: undefined
 							}
+							showProBadge={isProButton}
 							onToggle={() => handleToggle(i)}
 							onRemove={() => handleRemove(i)}
 							onDragStart={(e) => handleDragStart(e, i)}
@@ -157,6 +172,7 @@ interface ToolbarButtonRowProps {
 	isDragOver: boolean;
 	disabled?: boolean;
 	disabledReason?: string;
+	showProBadge?: boolean;
 	onToggle: () => void;
 	onRemove: () => void;
 	onDragStart: (e: DragEvent) => void;
@@ -173,6 +189,7 @@ function ToolbarButtonRow({
 	isDragOver,
 	disabled,
 	disabledReason,
+	showProBadge,
 	onToggle,
 	onRemove,
 	onDragStart,
@@ -200,9 +217,14 @@ function ToolbarButtonRow({
 			</span>
 
 			<span
-				class={`ep:flex-1 ep:text-sm ${disabled ? "ep:text-obs-text-faint" : ""}`}
+				class={`ep:flex-1 ep:text-sm ep:flex ep:items-center ep:gap-1.5 ${disabled ? "ep:text-obs-text-faint" : ""}`}
 			>
 				{label}
+				{showProBadge && (
+					<span class="ep:text-[10px] ep:px-1 ep:py-0.5 ep:rounded ep:font-medium ep:bg-obs-accent/10 ep:text-obs-accent ep:leading-none">
+						PRO
+					</span>
+				)}
 			</span>
 
 			{isCustom && (

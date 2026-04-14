@@ -1,5 +1,6 @@
 export { ALL_PLUGINS } from "./plugin-info";
-export { PLUGIN_MANIFESTS } from "./registry";
+export type { ButtonPluginInfo } from "./registry";
+export { BUTTON_PLUGIN_MAP, PLUGIN_MANIFESTS } from "./registry";
 export {
 	aggregateCardsWithPresetLimits,
 	StatusBarWidget,

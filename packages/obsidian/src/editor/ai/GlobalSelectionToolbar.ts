@@ -12,6 +12,7 @@ export interface GlobalSelectionToolbarCallbacks {
 	hasApiKey: () => boolean;
 	hasActivePreset: () => boolean;
 	isEnabled: () => boolean;
+	getPluginStates: () => Record<string, boolean>;
 	getSourceFile: (range: Range) => TFile | null;
 }
 
@@ -129,6 +130,7 @@ export class GlobalSelectionToolbar {
 				},
 				hasApiKey: this.callbacks.hasApiKey(),
 				hasActivePreset: this.callbacks.hasActivePreset(),
+				pluginStates: this.callbacks.getPluginStates(),
 			}),
 			this.container,
 		);

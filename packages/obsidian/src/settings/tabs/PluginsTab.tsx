@@ -30,8 +30,22 @@ function ChevronIcon({ expanded }: { expanded: boolean }) {
 	);
 }
 
-function pluginTooltip(description: string, features: string[]): string {
-	return `${description}\n\nFeatures:\n${features.map((f) => `• ${f}`).join("\n")}`;
+const DOCS_BASE = "https://docs.truerecall.com/plugins";
+
+function DocsLink({ pluginId }: { pluginId: string }) {
+	const iconRef = useIcon("external-link");
+	return (
+		<a
+			href={`${DOCS_BASE}/${pluginId}`}
+			target="_blank"
+			rel="noopener noreferrer"
+			class="ep:inline-flex ep:items-center ep:gap-1 ep:text-[11px] ep:text-obs-accent ep:hover:underline"
+			onClick={(e) => e.stopPropagation()}
+		>
+			Documentation
+			<span ref={iconRef} class="ep:w-3 ep:h-3" />
+		</a>
+	);
 }
 
 interface PluginAccordionProps {
@@ -69,7 +83,6 @@ function PluginAccordion({
 				!isActive && "ep:opacity-50",
 				isActive && !isOn && "ep:opacity-70",
 			)}
-			title={pluginTooltip(info.description, info.features)}
 		>
 			<Clickable
 				class={cn(
@@ -98,7 +111,7 @@ function PluginAccordion({
 									: "ep:bg-green-500/15 ep:text-green-600",
 							)}
 						>
-							{info.requiresPro ? "PRO" : "Free"}
+							{info.requiresPro ? "PRO" : "FREE"}
 						</span>
 						{canExpand && <ChevronIcon expanded={isExpanded} />}
 					</div>
@@ -131,9 +144,12 @@ function PluginAccordion({
 
 			{isExpanded && (
 				<div class="ep:border-t ep:border-obs-border ep:flex ep:flex-col">
-					<p class="ep:text-[12px] ep:text-obs-muted ep:leading-relaxed ep:py-3 ep:px-6 ep:mb-1">
-						{info.description}
-					</p>
+					<div class="ep:py-3 ep:px-6 ep:flex ep:flex-col ep:gap-1.5">
+						<p class="ep:text-[12px] ep:text-obs-muted ep:leading-relaxed">
+							{info.description}
+						</p>
+						<DocsLink pluginId={info.id} />
+					</div>
 					{SettingsPanel && (
 						<div class="ep:px-4 ep:pb-2">
 							<SettingsPanel settings={settings} save={save} />

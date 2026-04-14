@@ -16,5 +16,6 @@ export const aiGenerationManifest: PluginManifest = {
 		icon: "sparkles",
 		requiresPro: true,
 	},
+	toolbarButtonIds: ["flashcards"],
 	settingsPanel: AIGenerationSettingsPanel,
 };

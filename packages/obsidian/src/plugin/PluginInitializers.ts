@@ -309,6 +309,7 @@ function initializeSelectionToolbar(plugin: TrueRecallPlugin): void {
 		hasApiKey: () => hasApiKey(plugin),
 		hasActivePreset,
 		isEnabled: () => plugin.settings.selectionToolbarEnabled,
+		getPluginStates: () => plugin.settings.pluginStates ?? {},
 	});
 
 	plugin.registerEditorExtension([extension]);
@@ -383,6 +384,7 @@ function initializeSelectionToolbar(plugin: TrueRecallPlugin): void {
 				hasApiKey: () => hasApiKey(plugin),
 				hasActivePreset,
 				isEnabled: () => plugin.settings.selectionToolbarEnabled,
+				getPluginStates: () => plugin.settings.pluginStates ?? {},
 				getSourceFile: (range) => getSourceFileFromDOM(plugin, range),
 			});
 			toolbar.register();

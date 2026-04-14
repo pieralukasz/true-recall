@@ -16,5 +16,6 @@ export const languageLearningManifest: PluginManifest = {
 		icon: "languages",
 		requiresPro: true,
 	},
+	toolbarButtonIds: ["vocab"],
 	settingsPanel: LanguageLearningSettingsPanel,
 };

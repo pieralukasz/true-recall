@@ -13,6 +13,7 @@ interface SelectionToolbarCallbacks {
 	hasApiKey: () => boolean;
 	hasActivePreset: () => boolean;
 	isEnabled: () => boolean;
+	getPluginStates: () => Record<string, boolean>;
 }
 
 function extractFirstImagePath(text: string): string | null {
@@ -134,6 +135,7 @@ export function createSelectionToolbarExtension(
 						hasApiKey: callbacks.hasApiKey(),
 						hasActivePreset: callbacks.hasActivePreset(),
 						detectedImagePath,
+						pluginStates: callbacks.getPluginStates(),
 					}),
 					this.container,
 				);

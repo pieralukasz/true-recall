@@ -6,13 +6,13 @@ export { AnkiImportModal } from "./AnkiImportModal";
 export const ankiImportExportManifest: PluginManifest = {
 	info: {
 		id: "anki-import-export",
-		name: "Anki Import/Export",
+		name: "AI Anki Import",
 		description:
-			"Import Anki decks (.apkg) and export your flashcards to Anki format.",
+			"AI-powered Anki import with automatic deck classification, field cleanup, and note type mapping.",
 		features: [
-			"Import .apkg files with scheduling data",
 			"AI-assisted deck classification and field cleanup",
-			"Export to .apkg with media",
+			"Automatic note type mapping",
+			"Import .apkg files with scheduling data",
 		],
 		icon: "import",
 		requiresPro: true,

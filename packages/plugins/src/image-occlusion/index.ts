@@ -21,5 +21,6 @@ export const imageOcclusionManifest: PluginManifest = {
 		icon: "image",
 		requiresPro: true,
 	},
+	toolbarButtonIds: ["io"],
 	settingsPanel: ImageOcclusionSettingsPanel,
 };

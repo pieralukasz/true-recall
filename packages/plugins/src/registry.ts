@@ -24,3 +24,18 @@ export const PLUGIN_MANIFESTS: PluginManifest[] = [
 	statusBarWidgetManifest,
 	ankiImportExportManifest,
 ];
+
+export interface ButtonPluginInfo {
+	pluginId: string;
+	requiresPro: boolean;
+}
+
+export const BUTTON_PLUGIN_MAP = new Map<string, ButtonPluginInfo>();
+for (const m of PLUGIN_MANIFESTS) {
+	for (const btnId of m.toolbarButtonIds ?? []) {
+		BUTTON_PLUGIN_MAP.set(btnId, {
+			pluginId: m.info.id,
+			requiresPro: m.info.requiresPro,
+		});
+	}
+}
