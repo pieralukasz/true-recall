@@ -10,6 +10,7 @@ export interface GlobalSelectionToolbarCallbacks {
 	actions: ToolbarActions;
 	getButtons: () => ToolbarButtonConfig[];
 	hasApiKey: () => boolean;
+	hasActivePreset: () => boolean;
 	isEnabled: () => boolean;
 	getSourceFile: (range: Range) => TFile | null;
 }
@@ -120,11 +121,14 @@ export class GlobalSelectionToolbar {
 					...this.callbacks.actions,
 					onGenerate: (_t: string) =>
 						this.callbacks.actions.onGenerate(text, sourceFile),
+					onVocab: (_t: string) =>
+						this.callbacks.actions.onVocab(text, sourceFile),
 					onQuickAdd: (_t: string) =>
 						this.callbacks.actions.onQuickAdd(text, sourceFile),
 					onDismiss: () => this.removeToolbar(),
 				},
 				hasApiKey: this.callbacks.hasApiKey(),
+				hasActivePreset: this.callbacks.hasActivePreset(),
 			}),
 			this.container,
 		);

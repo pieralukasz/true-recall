@@ -13,6 +13,12 @@ export const BUILTIN_BUTTONS: ToolbarButtonDef[] = [
 		editorOnly: false,
 	},
 	{
+		id: "vocab",
+		label: "Vocab",
+		title: "Generate vocabulary flashcards using active language preset",
+		editorOnly: false,
+	},
+	{
 		id: "io",
 		label: "IO",
 		title: "Create image occlusion card",

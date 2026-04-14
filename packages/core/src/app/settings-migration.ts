@@ -54,5 +54,33 @@ export function migrateSettings(raw: Partial<TrueRecallSettings> | null): {
 		needsSave = true;
 	}
 
+	// Inject "vocab" toolbar button for existing users who don't have it yet
+	if (
+		raw?.editorToolbarButtons &&
+		!settings.editorToolbarButtons.some((b) => b.id === "vocab")
+	) {
+		const idx = settings.editorToolbarButtons.findIndex(
+			(b) => b.id === "flashcards",
+		);
+		settings.editorToolbarButtons.splice(idx + 1, 0, {
+			id: "vocab",
+			enabled: true,
+		});
+		needsSave = true;
+	}
+	if (
+		raw?.globalToolbarButtons &&
+		!settings.globalToolbarButtons.some((b) => b.id === "vocab")
+	) {
+		const idx = settings.globalToolbarButtons.findIndex(
+			(b) => b.id === "flashcards",
+		);
+		settings.globalToolbarButtons.splice(idx + 1, 0, {
+			id: "vocab",
+			enabled: true,
+		});
+		needsSave = true;
+	}
+
 	return { settings, needsSave };
 }

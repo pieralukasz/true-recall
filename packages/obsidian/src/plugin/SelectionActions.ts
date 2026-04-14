@@ -105,6 +105,122 @@ export async function generateFlashcardsFromSelection(
 	}
 }
 
+export async function generateVocabFromSelection(
+	plugin: TrueRecallPlugin,
+	text: string,
+): Promise<void> {
+	const { settings } = plugin;
+	const preset = settings.activeGenerationPresetId
+		? settings.generationPresets.find(
+				(p) => p.id === settings.activeGenerationPresetId,
+			)
+		: null;
+
+	if (!preset) {
+		notify().error(
+			"No active generation preset — configure one in Settings → AI",
+		);
+		return;
+	}
+
+	if (!preset.sourceLanguage || !preset.targetLanguage) {
+		notify().error(
+			"Configure source and target language in Settings → AI → Language Learning",
+		);
+		return;
+	}
+
+	const file = plugin.app.workspace.getActiveFile();
+	if (!file) {
+		notify().error("No active file");
+		return;
+	}
+
+	try {
+		await plugin.activateView();
+		const service = getStreamingService(plugin);
+		const result = await service.generateStreaming(text, file, null);
+
+		runTTSIfNeeded(plugin, result.createdCardIds);
+
+		if (result.created === 0 && result.duplicates === 0) {
+			notify().warning("No flashcards found in AI response");
+		} else if (result.duplicates > 0) {
+			notify().cardsCreatedWithDuplicates(
+				result.created,
+				result.duplicates,
+				file.basename,
+			);
+		} else {
+			notify().cardsCreated(result.created, file.basename);
+		}
+	} catch (error) {
+		if (error instanceof DOMException && error.name === "AbortError") return;
+		const msg = error instanceof Error ? error.message : String(error);
+		notify().error(`Vocab generation failed: ${msg}`);
+	}
+}
+
+export async function generateVocabGlobal(
+	plugin: TrueRecallPlugin,
+	text: string,
+	sourceFile?: TFile | null,
+): Promise<void> {
+	const { settings } = plugin;
+	const preset = settings.activeGenerationPresetId
+		? settings.generationPresets.find(
+				(p) => p.id === settings.activeGenerationPresetId,
+			)
+		: null;
+
+	if (!preset) {
+		notify().error(
+			"No active generation preset — configure one in Settings → AI",
+		);
+		return;
+	}
+
+	if (!preset.sourceLanguage || !preset.targetLanguage) {
+		notify().error(
+			"Configure source and target language in Settings → AI → Language Learning",
+		);
+		return;
+	}
+
+	const file =
+		sourceFile ??
+		plugin.app.workspace.getActiveFile() ??
+		findMostRecentMarkdownFile(plugin);
+	if (!file) {
+		notify().error("No active file");
+		return;
+	}
+
+	try {
+		await plugin.activateView();
+		const service = getStreamingService(plugin);
+		const result = await service.generateStreaming(text, file, null);
+
+		runTTSIfNeeded(plugin, result.createdCardIds);
+
+		if (result.created === 0 && result.duplicates === 0) {
+			notify().warning("No flashcards found in AI response");
+		} else if (result.duplicates > 0) {
+			notify().cardsCreatedWithDuplicates(
+				result.created,
+				result.duplicates,
+				file.basename,
+			);
+		} else {
+			notify().cardsCreated(result.created, file.basename);
+		}
+	} catch (error) {
+		if (error instanceof DOMException && error.name === "AbortError") return;
+		const msg = error instanceof Error ? error.message : String(error);
+		notify().error(`Vocab generation failed: ${msg}`);
+	}
+}
+
 export function editSelectionAsFlashcard(
 	plugin: TrueRecallPlugin,
 	text: string,

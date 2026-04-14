@@ -39,6 +39,8 @@ import {
 	editSelectionAsFlashcard,
 	generateFlashcardsFromSelection,
 	generateFlashcardsGlobal,
+	generateVocabFromSelection,
+	generateVocabGlobal,
 	hasApiKey,
 	quickAddFlashcardFromSelection,
 	quickAddFlashcardGlobal,
@@ -352,8 +354,11 @@ function getSourceFileFromDOM(
 }
 
 function initializeSelectionToolbar(plugin: TrueRecallPlugin): void {
+	const hasActivePreset = () => !!plugin.settings.activeGenerationPresetId;
+
 	const editorActions = {
 		onGenerate: (text: string) => generateFlashcardsFromSelection(plugin, text),
+		onVocab: (text: string) => generateVocabFromSelection(plugin, text),
 		onEdit: (text: string) => editSelectionAsFlashcard(plugin, text),
 		onQuickAdd: (text: string) => quickAddFlashcardFromSelection(plugin, text),
 		onImageOcclusion: (imagePath: string) =>
@@ -369,6 +374,7 @@ function initializeSelectionToolbar(plugin: TrueRecallPlugin): void {
 		actions: editorActions,
 		getButtons: () => plugin.settings.editorToolbarButtons,
 		hasApiKey: () => hasApiKey(plugin),
+		hasActivePreset,
 		isEnabled: () => plugin.settings.selectionToolbarEnabled,
 	});
 
@@ -426,6 +432,8 @@ function initializeSelectionToolbar(plugin: TrueRecallPlugin): void {
 			const globalActions = {
 				onGenerate: (text: string, sourceFile?: TFile | null) =>
 					generateFlashcardsGlobal(plugin, text, sourceFile),
+				onVocab: (text: string, sourceFile?: TFile | null) =>
+					generateVocabGlobal(plugin, text, sourceFile),
 				onEdit: (text: string) => editSelectionAsFlashcard(plugin, text),
 				onQuickAdd: (text: string, sourceFile?: TFile | null) =>
 					quickAddFlashcardGlobal(plugin, text, sourceFile),
@@ -440,6 +448,7 @@ function initializeSelectionToolbar(plugin: TrueRecallPlugin): void {
 				actions: globalActions,
 				getButtons: () => plugin.settings.globalToolbarButtons,
 				hasApiKey: () => hasApiKey(plugin),
+				hasActivePreset,
 				isEnabled: () => plugin.settings.selectionToolbarEnabled,
 				getSourceFile: (range) => getSourceFileFromDOM(plugin, range),
 			});

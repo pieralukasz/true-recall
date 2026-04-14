@@ -9,6 +9,7 @@ import { BUILTIN_BUTTONS } from "./toolbar-buttons";
 
 export interface ToolbarActions {
 	onGenerate: (text: string, sourceFile?: TFile | null) => Promise<void>;
+	onVocab: (text: string, sourceFile?: TFile | null) => Promise<void>;
 	onEdit: (text: string) => void;
 	onQuickAdd: (text: string, sourceFile?: TFile | null) => Promise<void>;
 	onHighlight: () => void;
@@ -24,6 +25,7 @@ interface SelectionToolbarProps {
 	buttons: ToolbarButtonConfig[];
 	actions: ToolbarActions;
 	hasApiKey: boolean;
+	hasActivePreset: boolean;
 	detectedImagePath?: string | null;
 }
 
@@ -32,6 +34,7 @@ export function SelectionToolbar({
 	buttons,
 	actions,
 	hasApiKey,
+	hasActivePreset,
 	detectedImagePath,
 }: SelectionToolbarProps) {
 	const [copied, setCopied] = useState(false);
@@ -54,6 +57,7 @@ export function SelectionToolbar({
 					actions={actions}
 					selectedText={selectedText}
 					hasApiKey={hasApiKey}
+					hasActivePreset={hasActivePreset}
 					detectedImagePath={detectedImagePath}
 					copied={copied}
 					onCopy={handleCopy}
@@ -69,6 +73,7 @@ interface ToolbarButtonProps {
 	actions: ToolbarActions;
 	selectedText: string;
 	hasApiKey: boolean;
+	hasActivePreset: boolean;
 	detectedImagePath?: string | null;
 	copied: boolean;
 	onCopy: () => void;
@@ -80,6 +85,7 @@ function ToolbarButton({
 	actions,
 	selectedText,
 	hasApiKey,
+	hasActivePreset,
 	detectedImagePath,
 	copied,
 	onCopy,
@@ -110,6 +116,33 @@ function ToolbarButton({
 					</Clickable>
 				</>
 			);
+
+		case "vocab": {
+			const vocabEnabled = hasApiKey && hasActivePreset;
+			return (
+				<>
+					{showDivider && <span class="true-recall-st-divider" />}
+					<Clickable
+						class={`true-recall-st-btn ${!vocabEnabled ? "true-recall-st-btn-disabled" : ""}`}
+						disabled={!vocabEnabled}
+						onClick={() => {
+							if (!vocabEnabled) return;
+							actions.onDismiss();
+							void actions.onVocab(selectedText);
+						}}
+						title={
+							!hasApiKey
+								? "Add an OpenRouter API key in settings"
+								: !hasActivePreset
+									? "Select a generation preset in Settings → AI"
+									: "Generate vocabulary flashcards"
+						}
+					>
+						<span>Vocab</span>
+					</Clickable>
+				</>
+			);
+		}
 
 		case "io":
 			if (!detectedImagePath || !actions.onImageOcclusion) return null;
