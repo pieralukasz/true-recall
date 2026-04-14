@@ -2,6 +2,8 @@ import type { ComponentChildren } from "preact";
 
 import { cn } from "@true-recall/obsidian/utils/cn";
 
+import { useFormVariant } from "./FormVariantContext";
+
 interface FormFieldProps {
 	name: string;
 	description?: string | ComponentChildren;
@@ -15,6 +17,22 @@ export function FormField({
 	children,
 	class: cls,
 }: FormFieldProps) {
+	const variant = useFormVariant();
+
+	if (variant === "native") {
+		return (
+			<div class={cn("setting-item", cls)}>
+				<div class="setting-item-info">
+					<div class="setting-item-name">{name}</div>
+					{description && (
+						<div class="setting-item-description">{description}</div>
+					)}
+				</div>
+				{children && <div class="setting-item-control">{children}</div>}
+			</div>
+		);
+	}
+
 	return (
 		<div
 			class={cn(

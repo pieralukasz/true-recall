@@ -1,6 +1,7 @@
 import { useCallback, useState } from "preact/hooks";
 
 import { Clickable } from "@true-recall/obsidian/components";
+import { FormVariantProvider } from "@true-recall/obsidian/components/FormVariantContext";
 import { usePlugin } from "@true-recall/obsidian/preact";
 
 import { DataTab } from "./tabs/DataTab";
@@ -65,7 +66,7 @@ export function SettingsApp() {
 	}, []);
 
 	return (
-		<>
+		<FormVariantProvider value="native">
 			<TabBar activeTab={activeTab} onTabChange={handleTabChange} />
 			<div
 				key={activeTab}
@@ -84,6 +85,6 @@ export function SettingsApp() {
 				{activeTab === "integrations" && <IntegrationsTab />}
 				{activeTab === "plugins" && <PluginsTab />}
 			</div>
-		</>
+		</FormVariantProvider>
 	);
 }
