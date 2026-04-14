@@ -11,9 +11,11 @@ import {
 	quickAddFlashcardFromSelection,
 	quickAddFlashcardGlobal,
 } from "./SelectionActions";
+import { PLUGIN_MANIFESTS } from "@true-recall/plugins";
 
 function isPluginEnabled(plugin: TrueRecallPlugin, pluginId: string): boolean {
-	if (!plugin.settings.proKey) return false;
+	const manifest = PLUGIN_MANIFESTS.find((m) => m.info.id === pluginId);
+	if (manifest?.info.requiresPro && !plugin.settings.proKey) return false;
 	return plugin.settings.pluginStates?.[pluginId] !== false;
 }
 
@@ -166,38 +168,9 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 	});
 
 	plugin.addCommand({
-		id: "import-anki",
-		name: "Import Anki deck (.apkg)",
-		callback: () => void plugin.importAnki(),
-	});
-
-	plugin.addCommand({
-		id: "export-anki",
-		name: "Export to Anki (.apkg)",
-		callback: () => void plugin.exportAnki(),
-	});
-
-	plugin.addCommand({
 		id: "export-csv",
 		name: "Export as CSV/TSV",
 		callback: () => void plugin.exportCsv(),
-	});
-
-	plugin.addCommand({
-		id: "insert-project-dashboard",
-		name: "Insert project dashboard",
-		editorCheckCallback: (checking, editor) => {
-			if (checking) return true;
-
-			editor.replaceSelection("```true-recall-project\n```\n");
-			return true;
-		},
-	});
-
-	plugin.addCommand({
-		id: "create-master-dashboard",
-		name: "Create master dashboard note",
-		callback: () => void plugin.createMasterDashboard(),
 	});
 
 	plugin.addCommand({

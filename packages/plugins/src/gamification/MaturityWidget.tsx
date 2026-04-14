@@ -8,7 +8,10 @@ import type { CardMaturityBreakdown } from "@true-recall/core/types/fsrs/stats.t
 import { Q, useQuery } from "@true-recall/obsidian/data";
 import { usePlugin } from "@true-recall/obsidian/preact";
 
-import { configValue, parseCodeblockConfig } from "../config-parser";
+import {
+	configValue,
+	parseCodeblockConfig,
+} from "@true-recall/plugins/dashboard-codeblock/config-parser";
 
 interface MaturitySegment {
 	label: string;

@@ -7,7 +7,8 @@ import {
 	StatBadge,
 	StatGrid,
 } from "@true-recall/obsidian/components";
-import type { ImportPreview } from "@true-recall/obsidian/modals/integration/anki-import/types";
+
+import type { ImportPreview } from "./types";
 
 interface PreviewPhaseProps {
 	app: App;

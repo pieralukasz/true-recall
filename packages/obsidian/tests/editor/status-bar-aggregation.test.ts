@@ -5,7 +5,7 @@ import type { PresetDailyProgress } from "@true-recall/core/persistence/session/
 import type { FSRSFlashcardItem } from "@true-recall/core/types/fsrs";
 import type { FSRSPreset } from "@true-recall/core/types/settings.types";
 
-import { aggregateCardsWithPresetLimits } from "../../src/editor/study/widgets/StatusBarWidget";
+import { aggregateCardsWithPresetLimits } from "@true-recall/plugins/status-bar-widget/StatusBarWidget";
 
 function makePreset(
 	id: string,

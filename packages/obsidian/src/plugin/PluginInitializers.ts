@@ -20,10 +20,6 @@ import {
 	wireDataLayer,
 } from "@true-recall/obsidian/data";
 import { createSelectionToolbarExtension } from "@true-recall/obsidian/editor/ai/SelectionToolbarPlugin";
-import {
-	createLinkStatusPostProcessor,
-	createLinkStatusViewPlugin,
-} from "@true-recall/obsidian/editor/study";
 import { createNoteStatusCache } from "@true-recall/obsidian/features/core/cache/note-status-cache.service";
 import type { DeviceSelectionResult } from "@true-recall/obsidian/modals/integration/DeviceSelectionModal";
 import { QuickNoteEditorModal } from "@true-recall/obsidian/modals/study/quick-note-editor/QuickNoteEditorModal";
@@ -33,6 +29,7 @@ import { createAppStore } from "@true-recall/obsidian/store";
 import type TrueRecallPlugin from "../main";
 import { BackupRecoveryManager } from "./BackupRecoveryManager";
 import { registerDeletionHandler } from "./PluginEventHandlers";
+import { PluginLoader } from "./plugin-loader";
 import {
 	appendToCurrentNote,
 	createNoteFromSelection,
@@ -173,8 +170,11 @@ async function initializeCardStore(
 
 		initializeDeletionHandler(plugin);
 		initializeAppStore(plugin);
-		initializeLinkStatusIndicators(plugin);
-		initializeDashboardCodeblocks(plugin);
+		initializeCoreWidgets(plugin);
+
+		plugin.pluginLoader = new PluginLoader(plugin);
+		plugin.pluginLoader.activateAll();
+
 		initializeSelectionToolbar(plugin);
 
 		const sEnd = performance.now();
@@ -239,14 +239,13 @@ function initializeAppStore(plugin: TrueRecallPlugin): void {
 	});
 }
 
-function initializeLinkStatusIndicators(plugin: TrueRecallPlugin): void {
+/** Core widget setup that must run before plugin activation. */
+function initializeCoreWidgets(plugin: TrueRecallPlugin): void {
 	if (!plugin.coreApp.cardStore || !plugin.frontmatterIndex) return;
 
 	plugin.noteStatusCache = createNoteStatusCache();
 
 	plugin.app.workspace.onLayoutReady(async () => {
-		initializeStatusBar(plugin);
-
 		try {
 			const { createEmbeddableEditorClass } = await import(
 				"@true-recall/obsidian/editor/shared/embedded-editor"
@@ -256,72 +255,6 @@ function initializeLinkStatusIndicators(plugin: TrueRecallPlugin): void {
 			console.warn("[TrueRecall] Failed to resolve editor prototype:", e);
 		}
 	});
-
-	const onReviewNote = (file: TFile) => {
-		plugin.reviewNoteFlashcards(file).catch((error) => {
-			notify().error("Failed to start review session", error);
-		});
-	};
-
-	const onReviewNotes = (noteNames: string[], dueOnly: boolean) => {
-		plugin.startReview({ mode: "notes", noteNames, dueOnly }).catch((error) => {
-			notify().error("Failed to start review session", error);
-		});
-	};
-
-	const viewPlugin = createLinkStatusViewPlugin(
-		plugin.app,
-		plugin.noteStatusCache,
-		plugin.frontmatterIndex,
-		() => plugin.settings.showLinkStatusIndicators,
-		() => plugin.settings.showDonutsInReview,
-		onReviewNote,
-		onReviewNotes,
-		plugin.coreApp.cardStore,
-	);
-	plugin.registerEditorExtension([viewPlugin]);
-
-	const postProcessor = createLinkStatusPostProcessor(
-		plugin.app,
-		plugin.noteStatusCache,
-		plugin.frontmatterIndex,
-		() => plugin.settings.showLinkStatusIndicators,
-		() => plugin.settings.showDonutsInPanel,
-		onReviewNote,
-		onReviewNotes,
-	);
-	plugin.registerMarkdownPostProcessor(postProcessor);
-}
-
-function initializeStatusBar(plugin: TrueRecallPlugin): void {
-	void import("@true-recall/obsidian/editor/study/widgets/StatusBarWidget")
-		.then(({ StatusBarWidget }) => {
-			const statusBarEl = plugin.addStatusBarItem();
-			plugin.statusBarWidget = new StatusBarWidget(
-				statusBarEl,
-				plugin.flashcardManager,
-				() => {
-					plugin.openDashboard().catch(() => {});
-				},
-				() => plugin.settings.showStatusBarWidget,
-				{
-					presetService: plugin.presetService,
-					sessionPersistence: plugin.sessionPersistence,
-				},
-			);
-			plugin.statusBarWidget.start();
-		})
-		.catch((e) => {
-			console.warn("[True Recall] Failed to load status bar widget:", e);
-		});
-}
-
-function initializeDashboardCodeblocks(plugin: TrueRecallPlugin): void {
-	import("@true-recall/obsidian/editor/study/widgets/DashboardCodeblock")
-		.then(({ registerDashboardCodeblocks }) => {
-			registerDashboardCodeblocks(plugin);
-		})
-		.catch(() => {});
 }
 
 function executeCommand(plugin: TrueRecallPlugin, commandId: string): void {

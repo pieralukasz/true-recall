@@ -14,14 +14,15 @@ import {
 	type NoteEntry,
 	resolveNotes,
 } from "@true-recall/obsidian/features/integration/utils/export-helpers";
+import { BaseModal } from "@true-recall/obsidian/modals/shared/BaseModal";
+
 import {
 	ErrorPhase,
 	type ExportFormValues,
 	ExportingPhase,
 	FormPhase,
 	SuccessPhase,
-} from "@true-recall/obsidian/modals/integration/anki-export";
-import { BaseModal } from "@true-recall/obsidian/modals/shared/BaseModal";
+} from "./anki-export";
 
 type ExportPhase =
 	| { type: "form" }

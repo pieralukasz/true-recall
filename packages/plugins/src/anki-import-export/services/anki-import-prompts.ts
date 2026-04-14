@@ -1,4 +1,4 @@
-import type { ChatMessage } from "../clients/openrouter-client";
+import type { ChatMessage } from "@true-recall/core/ai/clients/openrouter-client";
 
 const CLASSIFY_SYSTEM = `You classify flashcards into the most appropriate category from a given list.
 

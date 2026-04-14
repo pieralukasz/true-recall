@@ -6,10 +6,6 @@ import {
 	hasAIKey,
 	resolveAIClientConfig,
 } from "@true-recall/core/ai/config/ai-client-config";
-import {
-	AnkiImportAIService,
-	shouldClassifyDecks,
-} from "@true-recall/core/ai/import/anki-import-ai.service";
 import { normalizeDeckName } from "@true-recall/core/integration/anki/anki-converter.service";
 import { AnkiImportService } from "@true-recall/core/integration/anki/anki-import.service";
 import { AnkiNoteTypeMapper } from "@true-recall/core/integration/anki/anki-note-type-mapper";
@@ -29,6 +25,8 @@ import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpC
 import { ObsidianPersistence } from "@true-recall/obsidian/adapters/ObsidianPersistence";
 import { ObsidianVaultFileReader } from "@true-recall/obsidian/adapters/ObsidianVaultFileReader";
 import { mutate } from "@true-recall/obsidian/data";
+import { BaseModal } from "@true-recall/obsidian/modals/shared/BaseModal";
+
 import {
 	ErrorPhase,
 	FileSelectPhase,
@@ -38,8 +36,11 @@ import {
 	PreviewPhase,
 	ProgressPhase,
 	ResultPhase,
-} from "@true-recall/obsidian/modals/integration/anki-import";
-import { BaseModal } from "@true-recall/obsidian/modals/shared/BaseModal";
+} from "./anki-import";
+import {
+	AnkiImportAIService,
+	shouldClassifyDecks,
+} from "./services/anki-import-ai.service";
 
 const DEFAULT_IMPORT_FOLDER = "Anki Import";
 

@@ -1,8 +1,8 @@
 import { h } from "preact";
 
+import type TrueRecallPlugin from "@true-recall/obsidian/main";
 import { mountPreact } from "@true-recall/obsidian/preact/mount";
 
-import type TrueRecallPlugin from "../../../main";
 import { ComparisonWidget } from "./analytics/ComparisonWidget";
 import { HealthWidget } from "./analytics/HealthWidget";
 import { HeatmapWidget } from "./analytics/HeatmapWidget";
@@ -14,21 +14,43 @@ import { ForecastWidget } from "./fsrs/ForecastWidget";
 import { PresetInfoWidget } from "./fsrs/PresetInfoWidget";
 import { ProblemCardsWidget } from "./fsrs/ProblemCardsWidget";
 import { TrueRetentionWidget } from "./fsrs/TrueRetentionWidget";
-import { AchievementsWidget } from "./gamification/AchievementsWidget";
-import { AnswerStreakWidget } from "./gamification/AnswerStreakWidget";
-import { CountdownWidget } from "./gamification/CountdownWidget";
-import { MaturityWidget } from "./gamification/MaturityWidget";
-import { ProgressWidget } from "./gamification/ProgressWidget";
-import { RatingsWidget } from "./gamification/RatingsWidget";
 import { DecayWidget } from "./note/DecayWidget";
 import { NoteHealthWidget } from "./note/NoteHealthWidget";
 import { ProjectHubWidget } from "./project/ProjectHubWidget";
 import { ProjectWidget } from "./project/ProjectWidget";
 import { UnassignedNotesWidget } from "./project/UnassignedNotesWidget";
 
-export function registerDashboardCodeblocks(plugin: TrueRecallPlugin): void {
-	// ── Existing widgets ────────────────────────────────────────
+// ── Shared utilities ───────────────────────────────────────
 
+function resolveSourceUid(
+	plugin: TrueRecallPlugin,
+	sourcePath: string,
+): string | null {
+	const file = plugin.app.vault.getAbstractFileByPath(sourcePath);
+	if (!file) return null;
+
+	const uids = plugin.frontmatterIndex.getValues("flashcard_uid", sourcePath);
+	return uids[0] ?? null;
+}
+
+function registerCleanup(el: HTMLElement, unmount: () => void): void {
+	const observer = new MutationObserver(() => {
+		if (!el.isConnected) {
+			unmount();
+			observer.disconnect();
+		}
+	});
+	observer.observe(el.parentElement ?? document.body, {
+		childList: true,
+		subtree: true,
+	});
+}
+
+// ── Core dashboard codeblocks ──────────────────────────────
+
+export function registerCoreDashboardCodeblocks(
+	plugin: TrueRecallPlugin,
+): void {
 	plugin.registerMarkdownCodeBlockProcessor(
 		"true-recall-dashboard",
 		(_source, el, _ctx) => {
@@ -51,8 +73,6 @@ export function registerDashboardCodeblocks(plugin: TrueRecallPlugin): void {
 			registerCleanup(el, unmount);
 		},
 	);
-
-	// ── Global widgets ──────────────────────────────────────────
 
 	plugin.registerMarkdownCodeBlockProcessor(
 		"true-recall-streak",
@@ -141,70 +161,6 @@ export function registerDashboardCodeblocks(plugin: TrueRecallPlugin): void {
 		},
 	);
 
-	// ── New global widgets ──────────────────────────────────────
-
-	plugin.registerMarkdownCodeBlockProcessor(
-		"true-recall-progress",
-		(source, el, _ctx) => {
-			el.addClass("true-recall-codeblock-progress");
-			const unmount = mountPreact(el, plugin, h(ProgressWidget, { source }));
-			registerCleanup(el, unmount);
-		},
-	);
-
-	plugin.registerMarkdownCodeBlockProcessor(
-		"true-recall-achievements",
-		(source, el, _ctx) => {
-			el.addClass("true-recall-codeblock-achievements");
-			const unmount = mountPreact(
-				el,
-				plugin,
-				h(AchievementsWidget, { source }),
-			);
-			registerCleanup(el, unmount);
-		},
-	);
-
-	plugin.registerMarkdownCodeBlockProcessor(
-		"true-recall-answer-streak",
-		(source, el, _ctx) => {
-			el.addClass("true-recall-codeblock-answer-streak");
-			const unmount = mountPreact(
-				el,
-				plugin,
-				h(AnswerStreakWidget, { source }),
-			);
-			registerCleanup(el, unmount);
-		},
-	);
-
-	plugin.registerMarkdownCodeBlockProcessor(
-		"true-recall-countdown",
-		(source, el, _ctx) => {
-			el.addClass("true-recall-codeblock-countdown");
-			const unmount = mountPreact(el, plugin, h(CountdownWidget, { source }));
-			registerCleanup(el, unmount);
-		},
-	);
-
-	plugin.registerMarkdownCodeBlockProcessor(
-		"true-recall-maturity",
-		(source, el, _ctx) => {
-			el.addClass("true-recall-codeblock-maturity");
-			const unmount = mountPreact(el, plugin, h(MaturityWidget, { source }));
-			registerCleanup(el, unmount);
-		},
-	);
-
-	plugin.registerMarkdownCodeBlockProcessor(
-		"true-recall-ratings",
-		(source, el, _ctx) => {
-			el.addClass("true-recall-codeblock-ratings");
-			const unmount = mountPreact(el, plugin, h(RatingsWidget, { source }));
-			registerCleanup(el, unmount);
-		},
-	);
-
 	// ── FSRS management widgets ────────────────────────────────
 
 	plugin.registerMarkdownCodeBlockProcessor(
@@ -280,28 +236,4 @@ export function registerDashboardCodeblocks(plugin: TrueRecallPlugin): void {
 			registerCleanup(el, unmount);
 		},
 	);
-}
-
-function resolveSourceUid(
-	plugin: TrueRecallPlugin,
-	sourcePath: string,
-): string | null {
-	const file = plugin.app.vault.getAbstractFileByPath(sourcePath);
-	if (!file) return null;
-
-	const uids = plugin.frontmatterIndex.getValues("flashcard_uid", sourcePath);
-	return uids[0] ?? null;
-}
-
-function registerCleanup(el: HTMLElement, unmount: () => void): void {
-	const observer = new MutationObserver(() => {
-		if (!el.isConnected) {
-			unmount();
-			observer.disconnect();
-		}
-	});
-	observer.observe(el.parentElement ?? document.body, {
-		childList: true,
-		subtree: true,
-	});
 }

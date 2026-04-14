@@ -25,7 +25,6 @@ import { ObsidianPersistence } from "@true-recall/obsidian/adapters/ObsidianPers
 import type { CommandService } from "@true-recall/obsidian/commands";
 import type { DataLayer } from "@true-recall/obsidian/data";
 import { G } from "@true-recall/obsidian/data";
-import type { StatusBarWidget } from "@true-recall/obsidian/editor/study/widgets/StatusBarWidget";
 import type { NoteStatusCache } from "@true-recall/obsidian/features/core/cache/note-status-cache.service";
 import {
 	filtersToViewState,
@@ -35,8 +34,6 @@ import {
 import { CardTypesEditorModal } from "@true-recall/obsidian/modals/core/card-types-editor/CardTypesEditorModal";
 import { NoteTypeSuggestModal } from "@true-recall/obsidian/modals/core/card-types-editor/NoteTypeSuggestModal";
 import { ImportStudioModal } from "@true-recall/obsidian/modals/core/import-studio/ImportStudioModal";
-import { AnkiExportModal } from "@true-recall/obsidian/modals/integration/AnkiExportModal";
-import { AnkiImportModal } from "@true-recall/obsidian/modals/integration/AnkiImportModal";
 import { CsvExportModal } from "@true-recall/obsidian/modals/integration/CsvExportModal";
 import { PresetInspectorModal } from "@true-recall/obsidian/modals/shared";
 import {
@@ -75,11 +72,14 @@ import {
 	activateView,
 	getView,
 } from "./plugin/ViewActivator";
+import { AnkiExportModal } from "@true-recall/plugins/anki-import-export/AnkiExportModal";
+import { AnkiImportModal } from "@true-recall/plugins/anki-import-export/AnkiImportModal";
 import {
 	IOEditorModal,
 	type IOEditorMode,
 	type IOEditorResult,
 } from "@true-recall/plugins/image-occlusion";
+import type { StatusBarWidget } from "@true-recall/plugins/status-bar-widget/StatusBarWidget";
 
 export default class TrueRecallPlugin extends Plugin {
 	coreApp!: TrueRecallApp;
@@ -176,6 +176,7 @@ export default class TrueRecallPlugin extends Plugin {
 		| import("@true-recall/core/rag/retrieval/rag-search.service").RagSearchService
 		| null = null;
 	dataLayer: DataLayer | null = null;
+	pluginLoader: import("./plugin/plugin-loader").PluginLoader | null = null;
 	_disposeWireDataLayer: (() => void) | null = null;
 	adapters!: ObsidianAdapters;
 	private _unloaded = false;
@@ -460,6 +461,7 @@ export default class TrueRecallPlugin extends Plugin {
 
 	onunload(): void {
 		this._unloaded = true;
+		this.pluginLoader?.deactivateAll();
 		this.deviceLock?.stopHeartbeat();
 		void this.deviceLock?.clearLock();
 		this.localApi?.stop();

@@ -7,8 +7,11 @@ import type { CardSchedulingMeta } from "@true-recall/core/types";
 import { Q, useQuery } from "@true-recall/obsidian/data";
 import { usePlugin } from "@true-recall/obsidian/preact";
 
-import { configValue, parseCodeblockConfig } from "../config-parser";
-import { WidgetCta } from "../WidgetCta";
+import {
+	configValue,
+	parseCodeblockConfig,
+} from "@true-recall/plugins/dashboard-codeblock/config-parser";
+import { WidgetCta } from "@true-recall/plugins/dashboard-codeblock/WidgetCta";
 
 interface CountdownData {
 	daysRemaining: number;

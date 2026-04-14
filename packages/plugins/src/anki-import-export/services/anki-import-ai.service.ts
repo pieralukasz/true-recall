@@ -1,7 +1,8 @@
-import type { IHttpClient } from "../../interfaces/http-client";
-import type { ContentPart } from "../clients/openrouter-client";
-import { OpenRouterClient } from "../clients/openrouter-client";
-import type { AIClientConfig } from "../config/ai-client-config";
+import type { ContentPart } from "@true-recall/core/ai/clients/openrouter-client";
+import { OpenRouterClient } from "@true-recall/core/ai/clients/openrouter-client";
+import type { AIClientConfig } from "@true-recall/core/ai/config/ai-client-config";
+import type { IHttpClient } from "@true-recall/core/interfaces/http-client";
+
 import {
 	buildClassifyMessages,
 	buildCleanupMessages,

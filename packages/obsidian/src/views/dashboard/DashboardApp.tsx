@@ -14,7 +14,6 @@ import type {
 import { AppNavBar } from "@true-recall/obsidian/components";
 import { SearchCombobox } from "@true-recall/obsidian/components/SearchCombobox";
 import { Q, useQuery } from "@true-recall/obsidian/data";
-import { HeatmapWidget } from "@true-recall/obsidian/editor/study/widgets/analytics/HeatmapWidget";
 import { computeActionableSessionSnapshot } from "@true-recall/obsidian/features/study/services/actionable-session-snapshot.service";
 import { BottomActionBar } from "@true-recall/obsidian/features/study/ui/dashboard/components/BottomActionBar";
 import { DashboardTabs } from "@true-recall/obsidian/features/study/ui/dashboard/components/DashboardTabs";
@@ -33,6 +32,8 @@ import type {
 import { filterActiveCards } from "@true-recall/obsidian/features/study/ui/review/helpers/session-helpers";
 import { PresetOptionsModal } from "@true-recall/obsidian/modals/shared/PresetOptionsModal";
 import { usePlugin } from "@true-recall/obsidian/preact";
+
+import { HeatmapWidget } from "@true-recall/plugins/dashboard-codeblock/analytics/HeatmapWidget";
 
 export function DashboardApp() {
 	const plugin = usePlugin();
