@@ -1,6 +1,5 @@
-import type { PluginInfo } from "@true-recall/core/types";
-
 import type TrueRecallPlugin from "../main";
+import { isPluginEnabled } from "./plugin-utils";
 import {
 	type Cleanup,
 	PLUGIN_MANIFESTS,
@@ -15,7 +14,7 @@ export class PluginLoader {
 	activateAll(): void {
 		for (const manifest of PLUGIN_MANIFESTS) {
 			if (!manifest.activate) continue;
-			if (!this.isEnabled(manifest.info)) continue;
+			if (!this.isEnabled(manifest.info.id)) continue;
 
 			try {
 				const ctx = this.buildContext();
@@ -45,9 +44,8 @@ export class PluginLoader {
 		}
 	}
 
-	private isEnabled(info: PluginInfo): boolean {
-		if (info.requiresPro && !this.plugin.settings.proKey) return false;
-		return this.plugin.settings.pluginStates?.[info.id] !== false;
+	private isEnabled(id: string): boolean {
+		return isPluginEnabled(this.plugin.settings, id);
 	}
 
 	private buildContext(): PluginContext {

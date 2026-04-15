@@ -65,6 +65,7 @@ import {
 } from "@true-recall/obsidian/views/review/ReviewApp";
 
 import type TrueRecallPlugin from "../../main";
+import { isPluginEnabled } from "../../plugin/plugin-utils";
 
 interface TypeInAssessmentState {
 	cardId: string | null;
@@ -223,6 +224,11 @@ export class ReviewView extends ItemView {
 	}
 
 	private applyDefaultTypeInMode(): void {
+		if (!isPluginEnabled(this.plugin.settings, "type-in-mode")) {
+			this.sessionTypeInModeEnabled = false;
+			this.aiEnabledForTypeIn = false;
+			return;
+		}
 		const persisted = readPersistedTypeInMode(getTypeInModeStorage());
 		const mode = persisted ?? this.plugin.settings.defaultTypeInMode;
 		this.sessionTypeInModeEnabled = mode !== "off";
@@ -237,6 +243,7 @@ export class ReviewView extends ItemView {
 	}
 
 	private cycleTypeInMode(): void {
+		if (!isPluginEnabled(this.plugin.settings, "type-in-mode")) return;
 		const currentMode = this.getTypeInMode();
 		const card = this.review.getCurrentCard();
 		const alwaysTypeIn = !!(card?.alwaysTypeIn || card?.fsrs.alwaysTypeIn);

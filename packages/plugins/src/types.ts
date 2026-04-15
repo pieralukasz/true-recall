@@ -16,17 +16,6 @@ interface PluginSettingsProps {
 	save: (patch: Partial<TrueRecallSettings>) => Promise<void>;
 }
 
-/**
- * A command contributed by a plugin.
- * The host wraps each callback with an `isPluginEnabled` guard
- * and injects the plugin instance at registration time.
- */
-interface PluginCommandDef {
-	id: string;
-	name: string;
-	icon?: string;
-}
-
 type Cleanup = () => void;
 
 /** Runtime context passed to a plugin's activate function. */
@@ -47,16 +36,9 @@ interface PluginContext {
 interface PluginManifest {
 	info: PluginInfo;
 	settingsPanel?: ComponentType<PluginSettingsProps>;
-	commands?: PluginCommandDef[];
 	toolbarButtonIds?: string[];
 	activate?: (ctx: PluginContext) => Cleanup | void;
 	deactivate?: () => void;
 }
 
-export type {
-	Cleanup,
-	PluginCommandDef,
-	PluginContext,
-	PluginManifest,
-	PluginSettingsProps,
-};
+export type { Cleanup, PluginContext, PluginManifest, PluginSettingsProps };

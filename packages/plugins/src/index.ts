@@ -7,7 +7,6 @@ export {
 } from "./status-bar-widget/StatusBarWidget";
 export type {
 	Cleanup,
-	PluginCommandDef,
 	PluginContext,
 	PluginManifest,
 	PluginSettingsProps,

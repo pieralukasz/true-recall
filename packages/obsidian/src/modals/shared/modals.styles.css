@@ -125,6 +125,90 @@
 }
 
 /* ================================================================
+   MOBILE ADD FLASHCARD — responsive layout for QuickNoteEditor
+   ================================================================ */
+
+/* Tighter content padding */
+.is-mobile .modal:has(.true-recall-quick-editor) .modal-content {
+	padding: 12px 12px 0;
+	padding-bottom: env(safe-area-inset-bottom, 12px);
+}
+
+/* Tighter vertical gap between sections */
+.is-mobile .true-recall-quick-editor {
+	gap: 0.5rem;
+}
+
+/* ── ActionBar: stack vertically ── */
+.is-mobile .true-recall-action-bar {
+	flex-direction: column;
+	align-items: stretch;
+	gap: 0.5rem;
+}
+
+.is-mobile .true-recall-action-bar > div {
+	min-width: 100%;
+}
+
+.is-mobile .true-recall-action-bar select {
+	min-height: 2.75rem;
+}
+
+/* ── FormattingToolbar: horizontal scroll ── */
+.is-mobile .true-recall-formatting-toolbar {
+	overflow-x: auto;
+	overflow-y: hidden;
+	-webkit-overflow-scrolling: touch;
+	scrollbar-width: none;
+	padding: 0.375rem 0.5rem;
+}
+
+.is-mobile .true-recall-formatting-toolbar::-webkit-scrollbar {
+	display: none;
+}
+
+.is-mobile .true-recall-formatting-toolbar > * {
+	flex-shrink: 0;
+}
+
+.is-mobile .true-recall-formatting-toolbar [role="button"] {
+	min-width: 2.5rem;
+	min-height: 2.5rem;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+}
+
+/* ── Field headers: adequate touch targets ── */
+.is-mobile .true-recall-quick-editor div:has(> .true-recall-add-field) > [role="button"]:first-child {
+	padding-top: 0.625rem;
+	padding-bottom: 0.625rem;
+}
+
+.is-mobile .true-recall-add-field .cm-editor {
+	font-size: 1.05rem;
+}
+
+/* ── FooterBar: wrap, safe area, touch targets ── */
+.is-mobile .true-recall-quick-editor .ep-modal-footer {
+	flex-wrap: wrap;
+	gap: 0.375rem;
+	padding-top: 0.75rem;
+	padding-bottom: env(safe-area-inset-bottom, 0.75rem);
+}
+
+.is-mobile .true-recall-quick-editor .ep-modal-footer .ep-btn.ep-btn-ghost {
+	min-height: 2.5rem;
+	max-height: none;
+}
+
+.is-mobile .true-recall-quick-editor .ep-modal-footer .ep-btn.mod-cta {
+	min-height: 2.75rem;
+	max-height: none;
+	flex-grow: 1;
+}
+
+/* ================================================================
    Decorative styles — safe inside @layer components
    ================================================================ */
 @layer components {

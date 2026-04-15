@@ -1,8 +1,7 @@
-import { ENABLE_RAG } from "@true-recall/core/constants";
-
 import { isDesktop } from "@true-recall/obsidian/utils/platform";
 
 import type TrueRecallPlugin from "../main";
+import { isPluginEnabled } from "./plugin-utils";
 import {
 	editSelectionAsFlashcard,
 	generateFlashcardsFromSelection,
@@ -11,13 +10,6 @@ import {
 	quickAddFlashcardFromSelection,
 	quickAddFlashcardGlobal,
 } from "./SelectionActions";
-import { PLUGIN_MANIFESTS } from "@true-recall/plugins";
-
-function isPluginEnabled(plugin: TrueRecallPlugin, pluginId: string): boolean {
-	const manifest = PLUGIN_MANIFESTS.find((m) => m.info.id === pluginId);
-	if (manifest?.info.requiresPro && !plugin.settings.proKey) return false;
-	return plugin.settings.pluginStates?.[pluginId] !== false;
-}
 
 export function registerCommands(plugin: TrueRecallPlugin): void {
 	plugin.addCommand({
@@ -99,13 +91,15 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 		callback: () => plugin.openImportStudio(),
 	});
 
-	if (isPluginEnabled(plugin, "image-occlusion")) {
-		plugin.addCommand({
-			id: "create-image-occlusion-card",
-			name: "Create image occlusion card",
-			callback: () => void plugin.openImageOcclusionEditorForActiveNote(),
-		});
-	}
+	plugin.addCommand({
+		id: "create-image-occlusion-card",
+		name: "Create image occlusion card",
+		checkCallback: (checking) => {
+			if (!isPluginEnabled(plugin.settings, "image-occlusion")) return false;
+			if (!checking) void plugin.openImageOcclusionEditorForActiveNote();
+			return true;
+		},
+	});
 
 	plugin.addCommand({
 		id: "create-backup",
@@ -224,22 +218,22 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 		},
 	});
 
-	if (ENABLE_RAG) {
-		plugin.addCommand({
-			id: "open-knowledge-chat",
-			name: "Chat with knowledge base",
-			checkCallback: (checking) => {
-				if (!isDesktop()) return false;
-				if (!checking) void plugin.openKnowledgeChat();
-				return true;
-			},
-		});
-	}
+	plugin.addCommand({
+		id: "open-knowledge-chat",
+		name: "Chat with knowledge base",
+		checkCallback: (checking) => {
+			if (!isDesktop()) return false;
+			if (!isPluginEnabled(plugin.settings, "knowledge-base")) return false;
+			if (!checking) void plugin.openKnowledgeChat();
+			return true;
+		},
+	});
 
 	plugin.addCommand({
 		id: "generate-flashcards-from-selection",
 		name: "Generate flashcards from selection",
 		editorCheckCallback: (checking, editor) => {
+			if (!isPluginEnabled(plugin.settings, "ai-generation")) return false;
 			const selection = editor.getSelection();
 			if (!selection || selection.trim().length < 3) return false;
 			if (!hasApiKey(plugin)) return false;
@@ -277,6 +271,7 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 		id: "global-generate-flashcards-from-selection",
 		name: "Generate flashcards from selection (any view)",
 		checkCallback: (checking) => {
+			if (!isPluginEnabled(plugin.settings, "ai-generation")) return false;
 			const text = window.getSelection()?.toString().trim();
 			if (!text || text.length < 3) return false;
 			if (!hasApiKey(plugin)) return false;
