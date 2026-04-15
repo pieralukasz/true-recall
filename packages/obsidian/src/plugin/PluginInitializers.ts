@@ -158,6 +158,7 @@ async function initializeCardStore(
 		// enrichment data. Re-execute CARDS loaders once the index is populated.
 		plugin.app.workspace.onLayoutReady(() => {
 			dl.invalidateGroups([G.CARDS]);
+			void migrateArchiveCascade(plugin);
 		});
 
 		const sCards = performance.now();
@@ -515,4 +516,39 @@ async function handleDeviceSelection(
 			throw error;
 		}
 	}
+}
+
+async function migrateArchiveCascade(plugin: TrueRecallPlugin): Promise<void> {
+	if (plugin.settings.archiveCascadeMigrated) return;
+
+	const hierarchy = plugin.coreApp.hierarchyService;
+	const frontmatterIndex = plugin.coreApp.frontmatterIndex;
+
+	const archivedProjectPaths = frontmatterIndex
+		.getFilesByValue("archive", "true")
+		.filter(
+			(path) =>
+				hierarchy.getChildPaths(path).length > 0 ||
+				hierarchy.isExplicitProject(path),
+		);
+
+	if (archivedProjectPaths.length > 0) {
+		for (const projectPath of archivedProjectPaths) {
+			const descendants = hierarchy.getDescendantPaths(projectPath);
+			for (const descPath of descendants) {
+				if (!hierarchy.isNoteArchived(descPath)) {
+					const file = plugin.app.vault.getAbstractFileByPath(descPath);
+					if (file instanceof TFile) {
+						await plugin.flashcardManager
+							.getFrontmatterService()
+							.setArchive(file.path, true);
+					}
+				}
+			}
+		}
+		hierarchy.invalidateGraph();
+	}
+
+	plugin.settings.archiveCascadeMigrated = true;
+	await plugin.saveSettings();
 }

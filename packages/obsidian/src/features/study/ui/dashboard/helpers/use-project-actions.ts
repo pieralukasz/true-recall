@@ -72,7 +72,7 @@ export function useProjectActions() {
 
 	const handleArchive = useCallback(
 		async (path: string, archived: boolean) => {
-			await service.setArchive(path, archived);
+			await service.cascadeArchive(path, archived);
 		},
 		[service],
 	);

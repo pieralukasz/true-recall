@@ -365,6 +365,9 @@ export interface TrueRecallSettings {
 
 	/** Per-plugin enabled/disabled state (plugin ID → boolean). All enabled by default. */
 	pluginStates?: Record<string, boolean>;
+
+	/** One-time migration: cascaded archive to descendants of archived projects */
+	archiveCascadeMigrated?: boolean;
 }
 
 export interface SessionPreset {

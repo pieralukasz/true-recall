@@ -426,35 +426,153 @@ describe("HierarchyService", () => {
 		});
 	});
 
+	describe("getDescendantPaths", () => {
+		it("returns empty array for leaf note", () => {
+			addMockFile("Leaf.md", { flashcard_uid: "uid-1" });
+			frontmatterIndex.rebuildIndex();
+			expect(service.getDescendantPaths("Leaf.md")).toEqual([]);
+		});
+
+		it("returns immediate children", () => {
+			addMockFile("Project.md", {});
+			addMockFile("Note1.md", { parents: ["[[Project]]"] });
+			addMockFile("Note2.md", { parents: ["[[Project]]"] });
+			frontmatterIndex.rebuildIndex();
+			const paths = service.getDescendantPaths("Project.md");
+			expect(paths).toHaveLength(2);
+			expect(paths).toContain("Note1.md");
+			expect(paths).toContain("Note2.md");
+		});
+
+		it("returns deeply nested descendants", () => {
+			addMockFile("Root.md", {});
+			addMockFile("Sub.md", { parents: ["[[Root]]"] });
+			addMockFile("Leaf.md", { parents: ["[[Sub]]"] });
+			frontmatterIndex.rebuildIndex();
+			const paths = service.getDescendantPaths("Root.md");
+			expect(paths).toHaveLength(2);
+			expect(paths).toContain("Sub.md");
+			expect(paths).toContain("Leaf.md");
+		});
+
+		it("handles cycles without infinite loop", () => {
+			addMockFile("A.md", { parents: ["[[B]]"] });
+			addMockFile("B.md", { parents: ["[[A]]"] });
+			frontmatterIndex.rebuildIndex();
+			const paths = service.getDescendantPaths("A.md");
+			expect(paths).toContain("B.md");
+		});
+	});
+
+	describe("getPathsForCascade", () => {
+		it("archive: returns all descendants when no multi-parent", () => {
+			addMockFile("Project.md", {});
+			addMockFile("Note1.md", { parents: ["[[Project]]"] });
+			addMockFile("Note2.md", { parents: ["[[Project]]"] });
+			frontmatterIndex.rebuildIndex();
+			const paths = service.getPathsForCascade("Project.md", true);
+			expect(paths).toHaveLength(2);
+			expect(paths).toContain("Note1.md");
+			expect(paths).toContain("Note2.md");
+		});
+
+		it("archive: skips note with another active parent", () => {
+			addMockFile("ProjectA.md", {});
+			addMockFile("ProjectB.md", {});
+			addMockFile("Shared.md", {
+				parents: ["[[ProjectA]]", "[[ProjectB]]"],
+			});
+			addMockFile("OnlyA.md", { parents: ["[[ProjectA]]"] });
+			frontmatterIndex.rebuildIndex();
+			const paths = service.getPathsForCascade("ProjectA.md", true);
+			expect(paths).toContain("OnlyA.md");
+			expect(paths).not.toContain("Shared.md");
+		});
+
+		it("archive: includes shared note if other parent is also archived", () => {
+			addMockFile("ProjectA.md", {});
+			addMockFile("ProjectB.md", { archive: true });
+			addMockFile("Shared.md", {
+				parents: ["[[ProjectA]]", "[[ProjectB]]"],
+			});
+			frontmatterIndex.rebuildIndex();
+			const paths = service.getPathsForCascade("ProjectA.md", true);
+			expect(paths).toContain("Shared.md");
+		});
+
+		it("unarchive: returns all descendants unconditionally", () => {
+			addMockFile("Project.md", { archive: true });
+			addMockFile("ProjectB.md", { archive: true });
+			addMockFile("Shared.md", {
+				parents: ["[[Project]]", "[[ProjectB]]"],
+				archive: true,
+			});
+			addMockFile("OnlyP.md", {
+				parents: ["[[Project]]"],
+				archive: true,
+			});
+			frontmatterIndex.rebuildIndex();
+			const paths = service.getPathsForCascade("Project.md", false);
+			expect(paths).toHaveLength(2);
+			expect(paths).toContain("Shared.md");
+			expect(paths).toContain("OnlyP.md");
+		});
+
+		it("archive: handles deep nesting with multi-parent at leaf", () => {
+			addMockFile("Root.md", {});
+			addMockFile("Sub.md", { parents: ["[[Root]]"] });
+			addMockFile("ActiveParent.md", {});
+			addMockFile("Leaf.md", {
+				parents: ["[[Sub]]", "[[ActiveParent]]"],
+			});
+			frontmatterIndex.rebuildIndex();
+			const paths = service.getPathsForCascade("Root.md", true);
+			expect(paths).toContain("Sub.md");
+			expect(paths).not.toContain("Leaf.md");
+		});
+	});
+
 	describe("getArchivedSourceUids", () => {
-		it("collects UIDs from archived regular notes", () => {
+		it("collects UIDs from notes with archive: true", () => {
 			addMockFile("Archived.md", {
 				archive: true,
 				flashcard_uid: "uid-arch",
 			});
 			addMockFile("Active.md", { flashcard_uid: "uid-active" });
 			frontmatterIndex.rebuildIndex();
-
 			const uids = service.getArchivedSourceUids();
 			expect(uids).toContain("uid-arch");
 			expect(uids).not.toContain("uid-active");
 		});
 
-		it("collects all descendant UIDs from archived project nodes", () => {
+		it("collects UIDs from individually archived descendants", () => {
 			addMockFile("ArchivedProject.md", { archive: true });
 			addMockFile("Note1.md", {
 				parents: ["[[ArchivedProject]]"],
 				flashcard_uid: "uid-1",
+				archive: true,
 			});
 			addMockFile("Note2.md", {
 				parents: ["[[ArchivedProject]]"],
 				flashcard_uid: "uid-2",
+				archive: true,
+			});
+			addMockFile("ActiveNote.md", {
+				parents: ["[[ArchivedProject]]"],
+				flashcard_uid: "uid-3",
 			});
 			frontmatterIndex.rebuildIndex();
-
 			const uids = service.getArchivedSourceUids();
 			expect(uids).toContain("uid-1");
 			expect(uids).toContain("uid-2");
+			expect(uids).not.toContain("uid-3");
+		});
+
+		it("ignores notes without flashcard_uid", () => {
+			addMockFile("NoUid.md", { archive: true });
+			frontmatterIndex.rebuildIndex();
+			const uids = service.getArchivedSourceUids();
+			expect(uids.size).toBe(0);
 		});
 	});
 
