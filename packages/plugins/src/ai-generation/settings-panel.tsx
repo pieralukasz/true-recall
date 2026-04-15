@@ -1,10 +1,12 @@
 import { GENERATION_LANGUAGES } from "@true-recall/core/ai/prompts/default-prompts";
+import { BUILTIN_BASIC_ID } from "@true-recall/core/types/note.types";
 
 import {
 	FormField,
 	SelectInput,
 	TextAreaInput,
 } from "@true-recall/obsidian/components";
+import { NoteTypePicker } from "@true-recall/obsidian/modals/core/add-flashcards/NoteTypePicker";
 
 import type { PluginSettingsProps } from "../types";
 
@@ -16,6 +18,20 @@ export function AIGenerationSettingsPanel({
 
 	return (
 		<>
+			<FormField
+				name="Note type"
+				description="Which note type to use for AI-generated flashcards. The AI fills all fields based on their names."
+			>
+				<NoteTypePicker
+					value={settings.generationNoteTypeId ?? BUILTIN_BASIC_ID}
+					onChange={(id) =>
+						void save({
+							generationNoteTypeId: id === BUILTIN_BASIC_ID ? null : id,
+						})
+					}
+				/>
+			</FormField>
+
 			<FormField
 				name="Generation prompt"
 				description={

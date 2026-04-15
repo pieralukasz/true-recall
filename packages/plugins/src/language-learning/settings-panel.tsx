@@ -1,5 +1,6 @@
 import { GENERATION_LANGUAGES } from "@true-recall/core/ai/prompts/default-prompts";
 import { TTS_VOICES } from "@true-recall/core/constants";
+import { BUILTIN_BASIC_ID } from "@true-recall/core/types/note.types";
 
 import {
 	FormField,
@@ -7,6 +8,7 @@ import {
 	TextInput,
 	ToggleInput,
 } from "@true-recall/obsidian/components";
+import { NoteTypePicker } from "@true-recall/obsidian/modals/core/add-flashcards/NoteTypePicker";
 
 import type { PluginSettingsProps } from "../types";
 
@@ -20,6 +22,23 @@ export function LanguageLearningSettingsPanel({
 
 	return (
 		<>
+			<FormField
+				name="Note type"
+				description="Note type for vocabulary flashcards. Leave as Basic to use the same as standard generation."
+			>
+				<NoteTypePicker
+					value={
+						settings.languageNoteTypeId ??
+						settings.generationNoteTypeId ??
+						BUILTIN_BASIC_ID
+					}
+					onChange={(id) =>
+						void save({
+							languageNoteTypeId: id === BUILTIN_BASIC_ID ? null : id,
+						})
+					}
+				/>
+			</FormField>
 			<FormField
 				name="Source language"
 				description="The language being learned"

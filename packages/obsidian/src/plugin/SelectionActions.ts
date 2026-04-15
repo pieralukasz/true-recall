@@ -56,6 +56,25 @@ function runTTSIfNeeded(
 	});
 }
 
+function resolveNoteType(plugin: TrueRecallPlugin, id: string | null) {
+	if (!id) return plugin.cardStore?.noteTypes.getById(BUILTIN_BASIC_ID) ?? null;
+	return (
+		plugin.cardStore?.noteTypes.getById(id) ??
+		plugin.cardStore?.noteTypes.getById(BUILTIN_BASIC_ID) ??
+		null
+	);
+}
+
+function resolveGenerationNoteType(plugin: TrueRecallPlugin) {
+	return resolveNoteType(plugin, plugin.settings.generationNoteTypeId);
+}
+
+function resolveLanguageNoteType(plugin: TrueRecallPlugin) {
+	const id =
+		plugin.settings.languageNoteTypeId ?? plugin.settings.generationNoteTypeId;
+	return resolveNoteType(plugin, id);
+}
+
 export function hasApiKey(plugin: TrueRecallPlugin): boolean {
 	return !!(plugin.settings.proKey || plugin.settings.openRouterApiKey);
 }
@@ -83,8 +102,7 @@ export async function generateFlashcardsFromSelection(
 	try {
 		await plugin.activateView();
 
-		const noteType =
-			plugin.cardStore?.noteTypes.getById(BUILTIN_BASIC_ID) ?? null;
+		const noteType = resolveGenerationNoteType(plugin);
 		const service = getStreamingService(plugin);
 		const result = await service.generateStreaming(text, file, noteType);
 
@@ -130,6 +148,7 @@ export async function generateVocabFromSelection(
 
 	try {
 		await plugin.activateView();
+		const noteType = resolveLanguageNoteType(plugin);
 		const service = getStreamingService(plugin);
 		const languageContext = {
 			sourceLanguage: languageSource,
@@ -138,7 +157,7 @@ export async function generateVocabFromSelection(
 		const result = await service.generateStreaming(
 			text,
 			file,
-			null,
+			noteType,
 			languageContext,
 		);
 
@@ -188,6 +207,7 @@ export async function generateVocabGlobal(
 
 	try {
 		await plugin.activateView();
+		const noteType = resolveLanguageNoteType(plugin);
 		const service = getStreamingService(plugin);
 		const languageContext = {
 			sourceLanguage: languageSource,
@@ -196,7 +216,7 @@ export async function generateVocabGlobal(
 		const result = await service.generateStreaming(
 			text,
 			file,
-			null,
+			noteType,
 			languageContext,
 		);
 
@@ -275,8 +295,7 @@ export async function generateFlashcardsGlobal(
 
 	try {
 		await plugin.activateView();
-		const noteType =
-			plugin.cardStore?.noteTypes.getById(BUILTIN_BASIC_ID) ?? null;
+		const noteType = resolveGenerationNoteType(plugin);
 		const service = getStreamingService(plugin);
 		const result = await service.generateStreaming(text, file, noteType);
 

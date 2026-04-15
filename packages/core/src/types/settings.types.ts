@@ -318,6 +318,8 @@ export interface TrueRecallSettings {
 	/** Custom user prompt for AI image occlusion region detection */
 	aiIODetectionPrompt?: string;
 
+	/** Language learning: note type for vocab generation (null = use generationNoteTypeId) */
+	languageNoteTypeId: string | null;
 	/** Language learning: source language code (language being learned) */
 	languageSource: string;
 	/** Language learning: target language code (your native language) */

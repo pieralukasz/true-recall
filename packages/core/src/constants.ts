@@ -221,6 +221,7 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 		responseLength: "medium",
 	},
 
+	languageNoteTypeId: null,
 	languageSource: "",
 	languageTarget: "",
 	languageTtsField: "",

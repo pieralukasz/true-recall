@@ -160,59 +160,68 @@ export function AIProviderSection() {
 				/>
 			</FormField>
 
-			<FormField
-				name="Model"
-				description="Reasoning model used for flashcard generation."
-			>
-				<SelectInput
-					value={currentModel}
-					onChange={(v) => void save({ aiModel: v, aiTemperature: undefined })}
-					options={MODEL_OPTIONS}
-				/>
-			</FormField>
-			{currentModel === CUSTOM_MODEL_ID && (
-				<FormField
-					name="Custom Model ID"
-					description="Enter any OpenRouter-compatible model ID."
-				>
-					<TextInput
-						value={settings.customAiModel ?? ""}
-						onChange={(v) => void save({ customAiModel: v })}
-						placeholder="e.g. openai/gpt-4o-mini"
-						class="ep:w-[300px]"
-					/>
-				</FormField>
-			)}
+			<details class="ep:mt-2">
+				<summary class="ep:cursor-pointer ep:text-ui-small ep:text-obs-muted ep:select-none ep:py-1">
+					Advanced
+				</summary>
+				<div class="ep:mt-1">
+					<FormField
+						name="Model"
+						description="Reasoning model used for flashcard generation."
+					>
+						<SelectInput
+							value={currentModel}
+							onChange={(v) =>
+								void save({ aiModel: v, aiTemperature: undefined })
+							}
+							options={MODEL_OPTIONS}
+						/>
+					</FormField>
+					{currentModel === CUSTOM_MODEL_ID && (
+						<FormField
+							name="Custom Model ID"
+							description="Enter any OpenRouter-compatible model ID."
+						>
+							<TextInput
+								value={settings.customAiModel ?? ""}
+								onChange={(v) => void save({ customAiModel: v })}
+								placeholder="e.g. openai/gpt-4o-mini"
+								class="ep:w-[300px]"
+							/>
+						</FormField>
+					)}
 
-			<FormField
-				name="Temperature"
-				description={
-					<span>
-						Controls randomness.{" "}
-						{settings.aiTemperature != null ? (
-							<Clickable
-								class="ep:text-obs-accent ep:text-ui-smaller"
-								onClick={() => void save({ aiTemperature: undefined })}
-							>
-								Reset to model default ({modelDefault})
-							</Clickable>
-						) : (
-							<span class="ep:text-obs-muted">
-								Using model default ({modelDefault})
+					<FormField
+						name="Temperature"
+						description={
+							<span>
+								Controls randomness.{" "}
+								{settings.aiTemperature != null ? (
+									<Clickable
+										class="ep:text-obs-accent ep:text-ui-smaller"
+										onClick={() => void save({ aiTemperature: undefined })}
+									>
+										Reset to model default ({modelDefault})
+									</Clickable>
+								) : (
+									<span class="ep:text-obs-muted">
+										Using model default ({modelDefault})
+									</span>
+								)}
 							</span>
-						)}
-					</span>
-				}
-			>
-				<SliderInput
-					value={effectiveTemp}
-					onChange={(v) => void save({ aiTemperature: v })}
-					min={0}
-					max={2}
-					step={0.1}
-					formatTooltip={(v) => v.toFixed(1)}
-				/>
-			</FormField>
+						}
+					>
+						<SliderInput
+							value={effectiveTemp}
+							onChange={(v) => void save({ aiTemperature: v })}
+							min={0}
+							max={2}
+							step={0.1}
+							formatTooltip={(v) => v.toFixed(1)}
+						/>
+					</FormField>
+				</div>
+			</details>
 		</FormCard>
 	);
 }
