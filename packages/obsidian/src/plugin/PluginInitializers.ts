@@ -287,7 +287,8 @@ function getSourceFileFromDOM(
 }
 
 function initializeSelectionToolbar(plugin: TrueRecallPlugin): void {
-	const hasActivePreset = () => !!plugin.settings.activeGenerationPresetId;
+	const hasLanguageConfigured = () =>
+		!!plugin.settings.languageSource && !!plugin.settings.languageTarget;
 
 	const editorActions = {
 		onGenerate: (text: string) => generateFlashcardsFromSelection(plugin, text),
@@ -307,7 +308,7 @@ function initializeSelectionToolbar(plugin: TrueRecallPlugin): void {
 		actions: editorActions,
 		getButtons: () => plugin.settings.editorToolbarButtons,
 		hasApiKey: () => hasApiKey(plugin),
-		hasActivePreset,
+		hasLanguageConfigured,
 		isEnabled: () => plugin.settings.selectionToolbarEnabled,
 		getPluginStates: () => plugin.settings.pluginStates ?? {},
 	});
@@ -382,7 +383,7 @@ function initializeSelectionToolbar(plugin: TrueRecallPlugin): void {
 				actions: globalActions,
 				getButtons: () => plugin.settings.globalToolbarButtons,
 				hasApiKey: () => hasApiKey(plugin),
-				hasActivePreset,
+				hasLanguageConfigured,
 				isEnabled: () => plugin.settings.selectionToolbarEnabled,
 				getPluginStates: () => plugin.settings.pluginStates ?? {},
 				getSourceFile: (range) => getSourceFileFromDOM(plugin, range),

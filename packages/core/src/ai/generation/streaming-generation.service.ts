@@ -1,9 +1,6 @@
 import type { IHttpClient } from "../../interfaces/http-client";
 import type { NoteType } from "../../types/note.types";
-import type {
-	GenerationPreset,
-	TrueRecallSettings,
-} from "../../types/settings.types";
+import type { TrueRecallSettings } from "../../types/settings.types";
 import { StreamingOpenRouterClient } from "../clients/streaming-openrouter-client";
 import type { AIClientConfig } from "../config/ai-client-config";
 import { resolveAIClientConfig } from "../config/ai-client-config";
@@ -11,7 +8,7 @@ import { IncrementalFlashcardParser } from "../parsing/incremental-flashcard-par
 import {
 	buildByokPrompt,
 	buildCardFormatSpec,
-	buildLanguagePresetByokPrompt,
+	buildLanguageByokPrompt,
 } from "../prompts/block-prompt-builder";
 import {
 	createThrottledPartialUpdater,
@@ -37,17 +34,23 @@ export const FALLBACK_BASIC_NOTE_TYPE = {
 	slug: "basic",
 } as NoteType;
 
+export interface LanguageContext {
+	sourceLanguage: string;
+	targetLanguage: string;
+}
+
 export function buildGenerationPrompt(
 	settings: TrueRecallSettings,
 	noteType?: NoteType | null,
-	preset?: GenerationPreset | null,
+	languageContext?: LanguageContext | null,
 ): string {
-	if (preset) {
-		const presetPrompt = buildLanguagePresetByokPrompt(
-			preset,
+	if (languageContext?.sourceLanguage && languageContext?.targetLanguage) {
+		return buildLanguageByokPrompt(
 			noteType ?? FALLBACK_BASIC_NOTE_TYPE,
+			languageContext.sourceLanguage,
+			languageContext.targetLanguage,
+			settings.aiGenerationPrompt,
 		);
-		if (presetPrompt) return presetPrompt;
 	}
 
 	return buildByokPrompt(
@@ -85,6 +88,7 @@ export class StreamingGenerationService {
 		text: string,
 		sourceFile: StreamingSourceFile,
 		noteType?: NoteType | null,
+		languageContext?: LanguageContext | null,
 	): Promise<StreamingGenerationResult> {
 		if (streamingGeneration.value.isGenerating) {
 			throw new Error("Generation already in progress");
@@ -92,24 +96,6 @@ export class StreamingGenerationService {
 
 		const settings = this.getSettings();
 		const aiConfig = resolveAIClientConfig(settings);
-
-		const activePreset = settings.activeGenerationPresetId
-			? settings.generationPresets.find(
-					(p) => p.id === settings.activeGenerationPresetId,
-				)
-			: null;
-
-		const resolvedNoteType = (() => {
-			if (noteType) return noteType;
-			if (activePreset) {
-				return (
-					this.flashcardManager.getNoteTypeBySlug?.(
-						activePreset.noteTypeSlug,
-					) ?? null
-				);
-			}
-			return null;
-		})();
 
 		const abortController = new AbortController();
 		startStreaming(sourceFile.basename, sourceFile.path, abortController);
@@ -120,8 +106,8 @@ export class StreamingGenerationService {
 				text,
 				sourceFile,
 				abortController,
-				resolvedNoteType,
-				activePreset ?? null,
+				noteType ?? null,
+				languageContext ?? null,
 			);
 		} catch (error) {
 			if (abortController.signal.aborted) {
@@ -139,7 +125,7 @@ export class StreamingGenerationService {
 		sourceFile: StreamingSourceFile,
 		abortController: AbortController,
 		noteType: NoteType | null,
-		activePreset: GenerationPreset | null,
+		languageContext: LanguageContext | null,
 	): Promise<StreamingGenerationResult> {
 		const client = new StreamingOpenRouterClient(
 			aiConfig.apiKey,
@@ -155,13 +141,18 @@ export class StreamingGenerationService {
 		const customPrompt = settings.aiGenerationPrompt?.trim() || "";
 		const systemPrompt = aiConfig.isPro
 			? customPrompt
-			: buildGenerationPrompt(settings, noteType, activePreset);
+			: buildGenerationPrompt(settings, noteType, languageContext);
 
 		const metadata = aiConfig.isPro
 			? {
 					call_context: "generation",
 					note_type: noteType?.slug ?? "basic",
-					...(activePreset ? { language_preset: activePreset.id } : {}),
+					...(languageContext?.sourceLanguage
+						? { source_language: languageContext.sourceLanguage }
+						: {}),
+					...(languageContext?.targetLanguage
+						? { target_language: languageContext.targetLanguage }
+						: {}),
 				}
 			: undefined;
 

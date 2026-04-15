@@ -180,7 +180,9 @@
 }
 
 /* ── Field headers: adequate touch targets ── */
-.is-mobile .true-recall-quick-editor div:has(> .true-recall-add-field) > [role="button"]:first-child {
+.is-mobile .true-recall-quick-editor
+	div:has(> .true-recall-add-field)
+	> [role="button"]:first-child {
 	padding-top: 0.625rem;
 	padding-bottom: 0.625rem;
 }

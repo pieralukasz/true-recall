@@ -6,12 +6,12 @@ export const languageLearningManifest: PluginManifest = {
 		id: "language-learning",
 		name: "Language Learning",
 		description:
-			"Study vocabulary with language-specific flashcard presets, TTS audio, and targeted generation prompts.",
+			"Generate vocabulary flashcards with language-aware prompts and TTS audio for any note type.",
 		features: [
-			"29 language presets with curated prompts",
+			"Works with any note type",
+			"29 supported languages",
 			"Text-to-speech audio generation",
-			"Per-preset source and target language",
-			"Custom vocabulary note types",
+			"Server-side language prompt injection (Pro)",
 		],
 		icon: "languages",
 		requiresPro: true,

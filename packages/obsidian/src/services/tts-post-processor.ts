@@ -7,10 +7,12 @@ import {
 	TTS_AUDIO_DIR,
 } from "@true-recall/core/ai/tts/tts.service";
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite/SqliteStoreService";
-import type {
-	GenerationPreset,
-	TrueRecallSettings,
-} from "@true-recall/core/types/settings.types";
+import type { TrueRecallSettings } from "@true-recall/core/types/settings.types";
+
+export interface TTSConfig {
+	ttsField: string;
+	languageCode: string;
+}
 
 type VaultAdapter = App["vault"]["adapter"];
 
@@ -21,15 +23,11 @@ export class TTSPostProcessor {
 		private cardStore: SqliteStoreService,
 	) {}
 
-	async processCards(
-		cardIds: string[],
-		preset: GenerationPreset,
-	): Promise<void> {
-		if (!preset.ttsEnabled || !preset.ttsField || !preset.sourceLanguage)
-			return;
+	async processCards(cardIds: string[], config: TTSConfig): Promise<void> {
+		if (!config.ttsField || !config.languageCode) return;
 
 		const settings = this.getSettings();
-		const { ttsField, sourceLanguage: languageCode } = preset;
+		const { ttsField, languageCode } = config;
 		const adapter = this.app.vault.adapter;
 
 		if (!(await adapter.exists(TTS_AUDIO_DIR))) {

@@ -1,8 +1,4 @@
-import type {
-	FSRSPreset,
-	GenerationPreset,
-	TrueRecallSettings,
-} from "./types/settings.types";
+import type { FSRSPreset, TrueRecallSettings } from "./types/settings.types";
 
 export const ENABLE_RAG = true;
 
@@ -97,48 +93,13 @@ export const TTS_VOICES = [
 ] as const;
 export type TTSVoice = (typeof TTS_VOICES)[number];
 
-export const BUILTIN_GENERATION_PRESETS: GenerationPreset[] = [
-	{
-		id: "builtin-vocabulary-flashcard",
-		name: "Vocabulary Flashcard",
-		noteTypeSlug: "basic",
-		sourceLanguage: "",
-		targetLanguage: "",
-		systemPrompt: "",
-		ttsField: "Back",
-		ttsEnabled: false,
-		isBuiltin: true,
-	},
-	{
-		id: "builtin-standard-vocabulary",
-		name: "Standard Vocabulary",
-		noteTypeSlug: "basic-reversed",
-		sourceLanguage: "",
-		targetLanguage: "",
-		systemPrompt: "",
-		ttsField: "Front",
-		ttsEnabled: false,
-		isBuiltin: true,
-	},
-	{
-		id: "builtin-cloze-sentences",
-		name: "Cloze Sentences",
-		noteTypeSlug: "cloze",
-		sourceLanguage: "",
-		targetLanguage: "",
-		systemPrompt: "",
-		ttsField: "Text",
-		ttsEnabled: false,
-		isBuiltin: true,
-	},
-];
-
 export const DEFAULT_SETTINGS: TrueRecallSettings = {
 	enableDeviceSync: false,
 	openRouterApiKey: "",
 	aiModel: DEFAULT_BYOK_MODEL,
 	aiTier: "byok",
 	generationLanguage: "auto",
+	generationNoteTypeId: null,
 	fsrsRequestRetention: 0.9,
 	fsrsMaximumInterval: 36500, // 100 years
 	newCardsPerDay: 20,
@@ -260,8 +221,10 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 		responseLength: "medium",
 	},
 
-	generationPresets: BUILTIN_GENERATION_PRESETS,
-	activeGenerationPresetId: null,
+	languageSource: "",
+	languageTarget: "",
+	languageTtsField: "",
+	languageTtsEnabled: false,
 	ttsVoice: "nova",
 	ttsAutoplay: true,
 };

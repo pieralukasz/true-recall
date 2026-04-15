@@ -23,12 +23,16 @@ function runTTSPostProcessing(
 	createdCardIds: string[],
 ): void {
 	const { settings } = plugin;
-	const preset = settings.activeGenerationPresetId
-		? settings.generationPresets.find(
-				(p) => p.id === settings.activeGenerationPresetId,
-			)
-		: null;
-	if (!preset?.ttsEnabled) return;
+	if (
+		!settings.languageTtsEnabled ||
+		!settings.languageTtsField ||
+		!settings.languageSource
+	)
+		return;
+	const config = {
+		ttsField: settings.languageTtsField,
+		languageCode: settings.languageSource,
+	};
 	void import("@true-recall/obsidian/services/tts-post-processor").then(
 		({ TTSPostProcessor }) => {
 			const processor = new TTSPostProcessor(
@@ -36,7 +40,7 @@ function runTTSPostProcessing(
 				() => plugin.settings,
 				plugin.cardStore,
 			);
-			void processor.processCards(createdCardIds, preset);
+			void processor.processCards(createdCardIds, config);
 		},
 	);
 }

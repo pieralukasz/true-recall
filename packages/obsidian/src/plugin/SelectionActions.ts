@@ -44,13 +44,16 @@ function runTTSIfNeeded(
 ): void {
 	if (createdCardIds.length === 0) return;
 	const { settings } = plugin;
-	const preset = settings.activeGenerationPresetId
-		? settings.generationPresets.find(
-				(p) => p.id === settings.activeGenerationPresetId,
-			)
-		: null;
-	if (!preset?.ttsEnabled) return;
-	void getTTSPostProcessor(plugin).processCards(createdCardIds, preset);
+	if (
+		!settings.languageTtsEnabled ||
+		!settings.languageTtsField ||
+		!settings.languageSource
+	)
+		return;
+	void getTTSPostProcessor(plugin).processCards(createdCardIds, {
+		ttsField: settings.languageTtsField,
+		languageCode: settings.languageSource,
+	});
 }
 
 export function hasApiKey(plugin: TrueRecallPlugin): boolean {
@@ -110,22 +113,11 @@ export async function generateVocabFromSelection(
 	text: string,
 ): Promise<void> {
 	const { settings } = plugin;
-	const preset = settings.activeGenerationPresetId
-		? settings.generationPresets.find(
-				(p) => p.id === settings.activeGenerationPresetId,
-			)
-		: null;
+	const { languageSource, languageTarget } = settings;
 
-	if (!preset) {
+	if (!languageSource || !languageTarget) {
 		notify().error(
-			"No active generation preset — configure one in Settings → AI",
-		);
-		return;
-	}
-
-	if (!preset.sourceLanguage || !preset.targetLanguage) {
-		notify().error(
-			"Configure source and target language in Settings → AI → Language Learning",
+			"Configure source and target language in Settings → Plugins → Language Learning",
 		);
 		return;
 	}
@@ -139,7 +131,16 @@ export async function generateVocabFromSelection(
 	try {
 		await plugin.activateView();
 		const service = getStreamingService(plugin);
-		const result = await service.generateStreaming(text, file, null);
+		const languageContext = {
+			sourceLanguage: languageSource,
+			targetLanguage: languageTarget,
+		};
+		const result = await service.generateStreaming(
+			text,
+			file,
+			null,
+			languageContext,
+		);
 
 		runTTSIfNeeded(plugin, result.createdCardIds);
 
@@ -167,22 +168,11 @@ export async function generateVocabGlobal(
 	sourceFile?: TFile | null,
 ): Promise<void> {
 	const { settings } = plugin;
-	const preset = settings.activeGenerationPresetId
-		? settings.generationPresets.find(
-				(p) => p.id === settings.activeGenerationPresetId,
-			)
-		: null;
+	const { languageSource, languageTarget } = settings;
 
-	if (!preset) {
+	if (!languageSource || !languageTarget) {
 		notify().error(
-			"No active generation preset — configure one in Settings → AI",
-		);
-		return;
-	}
-
-	if (!preset.sourceLanguage || !preset.targetLanguage) {
-		notify().error(
-			"Configure source and target language in Settings → AI → Language Learning",
+			"Configure source and target language in Settings → Plugins → Language Learning",
 		);
 		return;
 	}
@@ -199,7 +189,16 @@ export async function generateVocabGlobal(
 	try {
 		await plugin.activateView();
 		const service = getStreamingService(plugin);
-		const result = await service.generateStreaming(text, file, null);
+		const languageContext = {
+			sourceLanguage: languageSource,
+			targetLanguage: languageTarget,
+		};
+		const result = await service.generateStreaming(
+			text,
+			file,
+			null,
+			languageContext,
+		);
 
 		runTTSIfNeeded(plugin, result.createdCardIds);
 

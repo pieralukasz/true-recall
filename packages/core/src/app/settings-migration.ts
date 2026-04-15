@@ -82,5 +82,22 @@ export function migrateSettings(raw: Partial<TrueRecallSettings> | null): {
 		needsSave = true;
 	}
 
+	// Migrate GenerationPreset → flat language settings
+	if ((raw as any)?.activeGenerationPresetId) {
+		const presets = (raw as any)?.generationPresets ?? [];
+		const active = presets.find(
+			(p: any) => p.id === (raw as any).activeGenerationPresetId,
+		);
+		if (active) {
+			settings.languageSource = active.sourceLanguage ?? "";
+			settings.languageTarget = active.targetLanguage ?? "";
+			settings.languageTtsField = active.ttsField ?? "";
+			settings.languageTtsEnabled = active.ttsEnabled ?? false;
+		}
+		delete (settings as any).generationPresets;
+		delete (settings as any).activeGenerationPresetId;
+		needsSave = true;
+	}
+
 	return { settings, needsSave };
 }

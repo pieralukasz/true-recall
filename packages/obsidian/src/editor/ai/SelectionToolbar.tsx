@@ -26,7 +26,7 @@ interface SelectionToolbarProps {
 	buttons: ToolbarButtonConfig[];
 	actions: ToolbarActions;
 	hasApiKey: boolean;
-	hasActivePreset: boolean;
+	hasLanguageConfigured: boolean;
 	detectedImagePath?: string | null;
 	pluginStates?: Record<string, boolean>;
 }
@@ -42,7 +42,7 @@ export function SelectionToolbar({
 	buttons,
 	actions,
 	hasApiKey,
-	hasActivePreset,
+	hasLanguageConfigured,
 	detectedImagePath,
 	pluginStates = {},
 }: SelectionToolbarProps) {
@@ -71,7 +71,7 @@ export function SelectionToolbar({
 					actions={actions}
 					selectedText={selectedText}
 					hasApiKey={hasApiKey}
-					hasActivePreset={hasActivePreset}
+					hasLanguageConfigured={hasLanguageConfigured}
 					detectedImagePath={detectedImagePath}
 					copied={copied}
 					onCopy={handleCopy}
@@ -87,7 +87,7 @@ interface ToolbarButtonProps {
 	actions: ToolbarActions;
 	selectedText: string;
 	hasApiKey: boolean;
-	hasActivePreset: boolean;
+	hasLanguageConfigured: boolean;
 	detectedImagePath?: string | null;
 	copied: boolean;
 	onCopy: () => void;
@@ -99,7 +99,7 @@ function ToolbarButton({
 	actions,
 	selectedText,
 	hasApiKey,
-	hasActivePreset,
+	hasLanguageConfigured,
 	detectedImagePath,
 	copied,
 	onCopy,
@@ -132,7 +132,7 @@ function ToolbarButton({
 			);
 
 		case "vocab": {
-			const vocabEnabled = hasApiKey && hasActivePreset;
+			const vocabEnabled = hasApiKey && hasLanguageConfigured;
 			return (
 				<>
 					{showDivider && <span class="true-recall-st-divider" />}
@@ -147,8 +147,8 @@ function ToolbarButton({
 						title={
 							!hasApiKey
 								? "Add an OpenRouter API key in settings"
-								: !hasActivePreset
-									? "Select a generation preset in Settings → AI"
+								: !hasLanguageConfigured
+									? "Configure languages in Settings → Plugins → Language Learning"
 									: "Generate vocabulary flashcards"
 						}
 					>

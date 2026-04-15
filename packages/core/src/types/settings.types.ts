@@ -157,22 +157,6 @@ export interface ReviewKeybindings {
 }
 
 /**
- * Language learning generation preset.
- * Configures how AI generates vocabulary flashcards from selected text.
- */
-export interface GenerationPreset {
-	id: string;
-	name: string;
-	noteTypeSlug: string;
-	sourceLanguage: string;
-	targetLanguage: string;
-	systemPrompt: string;
-	ttsField?: string;
-	ttsEnabled: boolean;
-	isBuiltin: boolean;
-}
-
-/**
  * True Recall plugin settings
  */
 export interface TrueRecallSettings {
@@ -327,15 +311,21 @@ export interface TrueRecallSettings {
 
 	/** Language for AI-generated flashcards ("auto" = match source text) */
 	generationLanguage?: string;
+	/** Note type used for AI generation (null = Basic) */
+	generationNoteTypeId: string | null;
 	/** Custom system prompt for AI semantic grading in review type-in mode */
 	aiTypeInGradingPrompt?: string;
 	/** Custom user prompt for AI image occlusion region detection */
 	aiIODetectionPrompt?: string;
 
-	/** Language learning generation presets */
-	generationPresets: GenerationPreset[];
-	/** ID of the active generation preset (null = standard generation) */
-	activeGenerationPresetId: string | null;
+	/** Language learning: source language code (language being learned) */
+	languageSource: string;
+	/** Language learning: target language code (your native language) */
+	languageTarget: string;
+	/** Language learning: which note field to generate TTS for */
+	languageTtsField: string;
+	/** Language learning: enable TTS generation after vocab creation */
+	languageTtsEnabled: boolean;
 	/** TTS voice for audio generation (OpenAI voices: alloy, echo, fable, onyx, nova, shimmer) */
 	ttsVoice: string;
 	/** Auto-play TTS audio when card is shown in review */

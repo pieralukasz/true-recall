@@ -11,7 +11,7 @@ interface SelectionToolbarCallbacks {
 	actions: ToolbarActions;
 	getButtons: () => ToolbarButtonConfig[];
 	hasApiKey: () => boolean;
-	hasActivePreset: () => boolean;
+	hasLanguageConfigured: () => boolean;
 	isEnabled: () => boolean;
 	getPluginStates: () => Record<string, boolean>;
 }
@@ -133,7 +133,7 @@ export function createSelectionToolbarExtension(
 							onDismiss: () => this.removeToolbar(),
 						},
 						hasApiKey: callbacks.hasApiKey(),
-						hasActivePreset: callbacks.hasActivePreset(),
+						hasLanguageConfigured: callbacks.hasLanguageConfigured(),
 						detectedImagePath,
 						pluginStates: callbacks.getPluginStates(),
 					}),

@@ -10,7 +10,7 @@ export interface GlobalSelectionToolbarCallbacks {
 	actions: ToolbarActions;
 	getButtons: () => ToolbarButtonConfig[];
 	hasApiKey: () => boolean;
-	hasActivePreset: () => boolean;
+	hasLanguageConfigured: () => boolean;
 	isEnabled: () => boolean;
 	getPluginStates: () => Record<string, boolean>;
 	getSourceFile: (range: Range) => TFile | null;
@@ -129,7 +129,7 @@ export class GlobalSelectionToolbar {
 					onDismiss: () => this.removeToolbar(),
 				},
 				hasApiKey: this.callbacks.hasApiKey(),
-				hasActivePreset: this.callbacks.hasActivePreset(),
+				hasLanguageConfigured: this.callbacks.hasLanguageConfigured(),
 				pluginStates: this.callbacks.getPluginStates(),
 			}),
 			this.container,
