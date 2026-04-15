@@ -30,6 +30,7 @@ import type {
 } from "@true-recall/obsidian/features/study/ui/dashboard/types";
 import { filterActiveCards } from "@true-recall/obsidian/features/study/ui/review/helpers/session-helpers";
 import { PresetOptionsModal } from "@true-recall/obsidian/modals/shared/PresetOptionsModal";
+import { NamePromptModal } from "@true-recall/obsidian/modals/study/NamePromptModal";
 import { usePlugin } from "@true-recall/obsidian/preact";
 
 import { HeatmapWidget } from "@true-recall/plugins/dashboard-codeblock/analytics/HeatmapWidget";
@@ -273,6 +274,17 @@ export function DashboardApp() {
 		scrollTop.value = (e.currentTarget as HTMLDivElement).scrollTop;
 	}, []);
 
+	const handleCreateProject = useCallback(async () => {
+		const modal = new NamePromptModal(plugin.app, "New project");
+		const result = await modal.openAndWait();
+		if (result.cancelled || !result.name.trim()) return;
+		await plugin.projectManagement.createProjectWithChildren(
+			result.name.trim(),
+			"",
+			[],
+		);
+	}, [plugin]);
+
 	const handleTabChange = (tab: DashboardTab) => {
 		activeTab.value = tab;
 		scrollTop.value = 0;
@@ -327,6 +339,7 @@ export function DashboardApp() {
 						onToggleArchived={() => {
 							showArchived.value = !showArchived.value;
 						}}
+						onCreateProject={handleCreateProject}
 					/>
 
 					<div class="ep:flex ep:flex-col ep:flex-1">

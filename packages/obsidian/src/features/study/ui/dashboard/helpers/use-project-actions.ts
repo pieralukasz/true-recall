@@ -14,18 +14,22 @@ import { NamePromptModal } from "@true-recall/obsidian/modals/study/NamePromptMo
 import { RenameModal } from "@true-recall/obsidian/modals/study/RenameModal";
 import { usePlugin } from "@true-recall/obsidian/preact";
 
-export class ProjectSuggestModal extends SuggestModal<HierarchyTreeNode> {
-	private resolve: ((node: HierarchyTreeNode | null) => void) | null = null;
+export type ProjectChoice =
+	| { kind: "existing"; node: HierarchyTreeNode }
+	| { kind: "create"; name: string };
+
+export class ProjectSuggestModal extends SuggestModal<ProjectChoice> {
+	private resolve: ((choice: ProjectChoice | null) => void) | null = null;
 
 	constructor(
 		app: App,
 		private nodes: HierarchyTreeNode[],
 	) {
 		super(app);
-		this.setPlaceholder("Choose target project...");
+		this.setPlaceholder("Choose or create a project...");
 	}
 
-	openAndWait(): Promise<HierarchyTreeNode | null> {
+	openAndWait(): Promise<ProjectChoice | null> {
 		return new Promise((resolve) => {
 			this.resolve = resolve;
 			this.open();
@@ -37,18 +41,39 @@ export class ProjectSuggestModal extends SuggestModal<HierarchyTreeNode> {
 		this.resolve = null;
 	}
 
-	getSuggestions(query: string): HierarchyTreeNode[] {
-		const q = query.toLowerCase();
-		return q
-			? this.nodes.filter((n) => n.name.toLowerCase().includes(q))
-			: this.nodes;
+	getSuggestions(query: string): ProjectChoice[] {
+		const q = query.toLowerCase().trim();
+		const existing: ProjectChoice[] = (
+			q
+				? this.nodes.filter((n) => n.name.toLowerCase().includes(q))
+				: this.nodes
+		).map((node) => ({ kind: "existing", node }));
+
+		if (q && !this.nodes.some((n) => n.name.toLowerCase() === q)) {
+			existing.push({ kind: "create", name: query.trim() });
+		}
+
+		return existing;
 	}
 
-	renderSuggestion(item: HierarchyTreeNode, el: HTMLElement): void {
-		el.setText(item.name);
+	renderSuggestion(item: ProjectChoice, el: HTMLElement): void {
+		if (item.kind === "create") {
+			el.addClass("mod-complex");
+			const content = el.createDiv({ cls: "suggestion-content" });
+			content.createDiv({
+				cls: "suggestion-title",
+				text: `Create "${item.name}"`,
+			});
+			content.createDiv({
+				cls: "suggestion-note",
+				text: "New project",
+			});
+		} else {
+			el.setText(item.node.name);
+		}
 	}
 
-	onChooseSuggestion(item: HierarchyTreeNode): void {
+	onChooseSuggestion(item: ProjectChoice): void {
 		this.resolve?.(item);
 		this.resolve = null;
 	}
@@ -148,19 +173,27 @@ export function useProjectActions() {
 			}
 
 			const modal = new ProjectSuggestModal(plugin.app, allNodes);
-			const target = await modal.openAndWait();
-			if (!target) return;
+			const choice = await modal.openAndWait();
+			if (!choice) return;
+
+			let targetName: string;
+			if (choice.kind === "create") {
+				await service.createProjectWithChildren(choice.name, "", []);
+				targetName = choice.name;
+			} else {
+				targetName = choice.node.name;
+			}
 
 			const fromName = path.split("/").pop()?.replace(/\.md$/, "") ?? path;
 			const confirmed = await confirm(plugin.app, {
 				title: "Move children",
-				message: `Move ${childPaths.length} note${childPaths.length > 1 ? "s" : ""} from "${fromName}" to "${target.name}"?`,
+				message: `Move ${childPaths.length} note${childPaths.length > 1 ? "s" : ""} from "${fromName}" to "${targetName}"?`,
 				confirmLabel: "Move",
 			});
 			if (!confirmed) return;
 
-			await service.moveChildren(childPaths, fromName, target.name);
-			new Notice(`Moved ${childPaths.length} notes to "${target.name}".`);
+			await service.moveChildren(childPaths, fromName, targetName);
+			new Notice(`Moved ${childPaths.length} notes to "${targetName}".`);
 		},
 		[plugin, service],
 	);
@@ -303,17 +336,21 @@ export function useProjectActions() {
 		async (notePath: string) => {
 			const hierarchy = plugin.hierarchyService.buildHierarchy();
 			const allNodes = flattenNodes(hierarchy);
-			if (allNodes.length === 0) {
-				new Notice("No projects available. Create one first.");
-				return;
-			}
 
 			const modal = new ProjectSuggestModal(plugin.app, allNodes);
-			const target = await modal.openAndWait();
-			if (!target) return;
+			const choice = await modal.openAndWait();
+			if (!choice) return;
 
-			await service.assignToProject([notePath], target.name);
-			new Notice(`Assigned to "${target.name}"`);
+			let targetName: string;
+			if (choice.kind === "create") {
+				await service.createProjectWithChildren(choice.name, "", []);
+				targetName = choice.name;
+			} else {
+				targetName = choice.node.name;
+			}
+
+			await service.assignToProject([notePath], targetName);
+			new Notice(`Assigned to "${targetName}"`);
 		},
 		[plugin, service],
 	);
