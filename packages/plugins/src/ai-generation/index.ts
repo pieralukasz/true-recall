@@ -5,17 +5,10 @@ export const aiGenerationManifest: PluginManifest = {
 	info: {
 		id: "ai-generation",
 		name: "AI Flashcard Generation",
-		description:
-			"Generate flashcards from your notes using AI. Select text, pick a note type, and let AI create structured flashcards.",
-		features: [
-			"Generate from selected text or entire notes",
-			"Multiple note type support (basic, cloze, reversed)",
-			"Custom generation prompts",
-			"Semantic answer grading in type-in mode",
-		],
+		description: "Generate flashcards with AI using customizable presets",
+		features: ["AI generation", "TTS", "Image generation", "Custom presets"],
 		icon: "sparkles",
 		requiresPro: true,
 	},
-	toolbarButtonIds: ["flashcards"],
 	settingsPanel: AIGenerationSettingsPanel,
 };
