@@ -20,6 +20,7 @@ import {
 	startStreaming,
 	streamingGeneration,
 } from "../state/streaming-state";
+import { resolveGenerationPresetAndNoteType } from "./preset-resolver";
 import {
 	type CardEventFlashcardManager,
 	processCardEvents,
@@ -67,6 +68,7 @@ export interface StreamingGenerationResult {
 	created: number;
 	duplicates: number;
 	createdCardIds: string[];
+	preset: GenerationPreset;
 }
 
 /** Minimal file reference for streaming generation (replaces Obsidian TFile). */
@@ -87,6 +89,57 @@ export class StreamingGenerationService {
 		private httpClient: IHttpClient,
 		private schedule?: ScheduleCallback,
 	) {}
+
+	async generate(
+		text: string,
+		sourceFile: StreamingSourceFile,
+		presetId: string,
+	): Promise<StreamingGenerationResult> {
+		const settings = this.getSettings();
+		const { preset, noteType } = resolveGenerationPresetAndNoteType(
+			settings,
+			this.flashcardManager,
+			presetId,
+		);
+
+		if (streamingGeneration.value.isGenerating) {
+			throw new Error("Generation already in progress");
+		}
+
+		const aiConfig = resolveAIClientConfig(settings);
+		const abortController = new AbortController();
+		startStreaming(sourceFile.basename, sourceFile.path, abortController);
+
+		try {
+			return await this.runPresetGeneration(
+				aiConfig,
+				text,
+				sourceFile,
+				abortController,
+				preset,
+				noteType,
+			);
+		} catch (error) {
+			if (abortController.signal.aborted) {
+				finishStreaming();
+			} else {
+				finishStreaming(error instanceof Error ? error.message : String(error));
+			}
+			throw error;
+		}
+	}
+
+	/**
+	 * @deprecated Use `generate(text, sourceFile, presetId)` instead. Removed in Task 11.
+	 */
+	async generateWithPreset(
+		text: string,
+		sourceFile: StreamingSourceFile,
+		preset: GenerationPreset,
+		_noteType: NoteType,
+	): Promise<StreamingGenerationResult> {
+		return this.generate(text, sourceFile, preset.id);
+	}
 
 	async generateStreaming(
 		text: string,
@@ -112,41 +165,6 @@ export class StreamingGenerationService {
 				abortController,
 				noteType ?? null,
 				languageContext ?? null,
-			);
-		} catch (error) {
-			if (abortController.signal.aborted) {
-				finishStreaming();
-			} else {
-				finishStreaming(error instanceof Error ? error.message : String(error));
-			}
-			throw error;
-		}
-	}
-
-	async generateWithPreset(
-		text: string,
-		sourceFile: StreamingSourceFile,
-		preset: GenerationPreset,
-		noteType: NoteType,
-	): Promise<StreamingGenerationResult> {
-		if (streamingGeneration.value.isGenerating) {
-			throw new Error("Generation already in progress");
-		}
-
-		const settings = this.getSettings();
-		const aiConfig = resolveAIClientConfig(settings);
-
-		const abortController = new AbortController();
-		startStreaming(sourceFile.basename, sourceFile.path, abortController);
-
-		try {
-			return await this.runPresetGeneration(
-				aiConfig,
-				text,
-				sourceFile,
-				abortController,
-				preset,
-				noteType,
 			);
 		} catch (error) {
 			if (abortController.signal.aborted) {
@@ -242,6 +260,7 @@ export class StreamingGenerationService {
 			created: createdCount,
 			duplicates: duplicateCount,
 			createdCardIds,
+			preset,
 		};
 	}
 
@@ -268,6 +287,19 @@ export class StreamingGenerationService {
 		const systemPrompt = aiConfig.isPro
 			? customPrompt
 			: buildGenerationPrompt(settings, noteType, languageContext);
+
+		const _legacyPlaceholderPreset: GenerationPreset =
+			settings.generationPresets?.[0] ??
+			({
+				id: "_legacy",
+				name: "Legacy",
+				noteTypeId: (noteType ?? FALLBACK_BASIC_NOTE_TYPE).id,
+				fields: {},
+				isPinned: false,
+				isDefault: false,
+				createdAt: 0,
+				updatedAt: 0,
+			} as GenerationPreset);
 
 		const metadata = aiConfig.isPro
 			? {
@@ -340,6 +372,7 @@ export class StreamingGenerationService {
 			created: createdCount,
 			duplicates: duplicateCount,
 			createdCardIds,
+			preset: _legacyPlaceholderPreset,
 		};
 	}
 }
