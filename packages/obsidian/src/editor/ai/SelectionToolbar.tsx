@@ -2,13 +2,24 @@ import type { TFile } from "obsidian";
 import { useCallback, useState } from "preact/hooks";
 
 import type { ToolbarButtonConfig } from "@true-recall/core/types";
+import type { GenerationPreset } from "@true-recall/core/types/generation-preset.types";
 
 import { Clickable } from "@true-recall/obsidian/components";
+import { isPresetProRequired } from "@true-recall/obsidian/plugin/generation-post-processing";
 
-import { BUILTIN_BUTTONS } from "./toolbar-buttons";
+import {
+	BUILTIN_BUTTONS,
+	extractPresetId,
+	isPresetButton,
+} from "./toolbar-buttons";
+import { BUTTON_PLUGIN_MAP } from "@true-recall/plugins";
 
 export interface ToolbarActions {
-	onGenerate: (text: string, sourceFile?: TFile | null) => Promise<void>;
+	onPreset: (
+		presetId: string,
+		text: string,
+		sourceFile?: TFile | null,
+	) => Promise<void>;
 	onEdit: (text: string) => void;
 	onQuickAdd: (text: string, sourceFile?: TFile | null) => Promise<void>;
 	onHighlight: () => void;
@@ -24,15 +35,27 @@ interface SelectionToolbarProps {
 	buttons: ToolbarButtonConfig[];
 	actions: ToolbarActions;
 	hasApiKey: boolean;
+	isPro: boolean;
+	presets?: GenerationPreset[];
 	detectedImagePath?: string | null;
+	pluginStates?: Record<string, boolean>;
 }
+
+const PRO_BADGE = (
+	<span class="ep:text-[9px] ep:px-1 ep:rounded ep:font-semibold ep:bg-obs-accent/15 ep:text-obs-accent ep:leading-none ep:ml-0.5">
+		PRO
+	</span>
+);
 
 export function SelectionToolbar({
 	selectedText,
 	buttons,
 	actions,
 	hasApiKey,
+	isPro,
+	presets,
 	detectedImagePath,
+	pluginStates = {},
 }: SelectionToolbarProps) {
 	const [copied, setCopied] = useState(false);
 
@@ -43,7 +66,16 @@ export function SelectionToolbar({
 		});
 	}, [selectedText]);
 
-	const enabledButtons = buttons.filter((b) => b.enabled);
+	const enabledButtons = buttons.filter((b) => {
+		if (!b.enabled) return false;
+		if (isPresetButton(b.id)) {
+			if (pluginStates["ai-generation"] === false) return false;
+			return true;
+		}
+		const pluginInfo = BUTTON_PLUGIN_MAP.get(b.id);
+		if (pluginInfo && pluginStates[pluginInfo.pluginId] === false) return false;
+		return true;
+	});
 
 	return (
 		<div class="true-recall-selection-toolbar ep:flex ep:items-center ep:gap-0.5 ep:p-1">
@@ -54,6 +86,8 @@ export function SelectionToolbar({
 					actions={actions}
 					selectedText={selectedText}
 					hasApiKey={hasApiKey}
+					isPro={isPro}
+					presets={presets}
 					detectedImagePath={detectedImagePath}
 					copied={copied}
 					onCopy={handleCopy}
@@ -69,6 +103,8 @@ interface ToolbarButtonProps {
 	actions: ToolbarActions;
 	selectedText: string;
 	hasApiKey: boolean;
+	isPro: boolean;
+	presets?: GenerationPreset[];
 	detectedImagePath?: string | null;
 	copied: boolean;
 	onCopy: () => void;
@@ -80,6 +116,8 @@ function ToolbarButton({
 	actions,
 	selectedText,
 	hasApiKey,
+	isPro,
+	presets,
 	detectedImagePath,
 	copied,
 	onCopy,
@@ -88,29 +126,6 @@ function ToolbarButton({
 	const builtin = BUILTIN_BUTTONS.find((b) => b.id === config.id);
 
 	switch (config.id) {
-		case "flashcards":
-			return (
-				<>
-					{showDivider && <span class="true-recall-st-divider" />}
-					<Clickable
-						class={`true-recall-st-btn ${!hasApiKey ? "true-recall-st-btn-disabled" : ""}`}
-						disabled={!hasApiKey}
-						onClick={() => {
-							if (!hasApiKey) return;
-							actions.onDismiss();
-							void actions.onGenerate(selectedText);
-						}}
-						title={
-							hasApiKey
-								? "Generate flashcard(s) with AI"
-								: "Add an OpenRouter API key in settings"
-						}
-					>
-						<span>Flashcards</span>
-					</Clickable>
-				</>
-			);
-
 		case "io":
 			if (!detectedImagePath || !actions.onImageOcclusion) return null;
 			return (
@@ -124,7 +139,7 @@ function ToolbarButton({
 						}}
 						title="Create image occlusion card"
 					>
-						<span>IO</span>
+						<span>IO{PRO_BADGE}</span>
 					</Clickable>
 				</>
 			);
@@ -229,6 +244,40 @@ function ToolbarButton({
 			);
 
 		default: {
+			if (isPresetButton(config.id)) {
+				const presetId = extractPresetId(config.id);
+				const preset = presets?.find((p) => p.id === presetId);
+				if (!preset) return null;
+				const label =
+					preset.name.length > 12
+						? `${preset.name.slice(0, 11)}\u2026`
+						: preset.name;
+				return (
+					<>
+						{showDivider && <span class="true-recall-st-divider" />}
+						<Clickable
+							class={`true-recall-st-btn ${!hasApiKey ? "true-recall-st-btn-disabled" : ""}`}
+							disabled={!hasApiKey}
+							onClick={() => {
+								if (!hasApiKey) return;
+								actions.onDismiss();
+								void actions.onPreset(presetId, selectedText);
+							}}
+							title={
+								hasApiKey
+									? `Generate: ${preset.name}`
+									: "Add API key in settings"
+							}
+						>
+							<span>
+								{label}
+								{!isPro && isPresetProRequired(preset) && PRO_BADGE}
+							</span>
+						</Clickable>
+					</>
+				);
+			}
+
 			if (!actions.onCommand) return null;
 			const label = builtin?.label ?? config.id.split(":").pop() ?? config.id;
 			return (

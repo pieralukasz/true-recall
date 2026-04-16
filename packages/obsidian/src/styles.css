@@ -41,7 +41,7 @@ settings:
 @import "./features/library/ui/panel/panel.styles.css";
 @import "./features/metrics/ui/simulator/styles.css";
 @import "./editor/ai/selection-toolbar.css";
-@import "./features/image-occlusion/image-occlusion.styles.css";
+@import "../../../packages/plugins/src/image-occlusion/styles/image-occlusion.styles.css";
 
 /*
  * Obsidian Theme Variables - Runtime Inheritance

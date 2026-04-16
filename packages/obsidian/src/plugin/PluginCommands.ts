@@ -1,12 +1,11 @@
-import { ENABLE_RAG } from "@true-recall/core/constants";
-
 import { isDesktop } from "@true-recall/obsidian/utils/platform";
 
 import type TrueRecallPlugin from "../main";
+import { isPluginEnabled } from "./plugin-utils";
 import {
 	editSelectionAsFlashcard,
-	generateFlashcardsFromSelection,
-	generateFlashcardsGlobal,
+	generateWithPreset,
+	generateWithPresetGlobal,
 	hasApiKey,
 	quickAddFlashcardFromSelection,
 	quickAddFlashcardGlobal,
@@ -95,7 +94,11 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 	plugin.addCommand({
 		id: "create-image-occlusion-card",
 		name: "Create image occlusion card",
-		callback: () => void plugin.openImageOcclusionEditorForActiveNote(),
+		checkCallback: (checking) => {
+			if (!isPluginEnabled(plugin.settings, "image-occlusion")) return false;
+			if (!checking) void plugin.openImageOcclusionEditorForActiveNote();
+			return true;
+		},
 	});
 
 	plugin.addCommand({
@@ -159,38 +162,9 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 	});
 
 	plugin.addCommand({
-		id: "import-anki",
-		name: "Import Anki deck (.apkg)",
-		callback: () => void plugin.importAnki(),
-	});
-
-	plugin.addCommand({
-		id: "export-anki",
-		name: "Export to Anki (.apkg)",
-		callback: () => void plugin.exportAnki(),
-	});
-
-	plugin.addCommand({
 		id: "export-csv",
 		name: "Export as CSV/TSV",
 		callback: () => void plugin.exportCsv(),
-	});
-
-	plugin.addCommand({
-		id: "insert-project-dashboard",
-		name: "Insert project dashboard",
-		editorCheckCallback: (checking, editor) => {
-			if (checking) return true;
-
-			editor.replaceSelection("```true-recall-project\n```\n");
-			return true;
-		},
-	});
-
-	plugin.addCommand({
-		id: "create-master-dashboard",
-		name: "Create master dashboard note",
-		callback: () => void plugin.createMasterDashboard(),
 	});
 
 	plugin.addCommand({
@@ -244,27 +218,31 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 		},
 	});
 
-	if (ENABLE_RAG) {
-		plugin.addCommand({
-			id: "open-knowledge-chat",
-			name: "Chat with knowledge base",
-			checkCallback: (checking) => {
-				if (!isDesktop()) return false;
-				if (!checking) void plugin.openKnowledgeChat();
-				return true;
-			},
-		});
-	}
+	plugin.addCommand({
+		id: "open-knowledge-chat",
+		name: "Chat with knowledge base",
+		checkCallback: (checking) => {
+			if (!isDesktop()) return false;
+			if (!isPluginEnabled(plugin.settings, "knowledge-base")) return false;
+			if (!checking) void plugin.openKnowledgeChat();
+			return true;
+		},
+	});
 
 	plugin.addCommand({
 		id: "generate-flashcards-from-selection",
 		name: "Generate flashcards from selection",
 		editorCheckCallback: (checking, editor) => {
+			if (!isPluginEnabled(plugin.settings, "ai-generation")) return false;
 			const selection = editor.getSelection();
 			if (!selection || selection.trim().length < 3) return false;
 			if (!hasApiKey(plugin)) return false;
 			if (checking) return true;
-			void generateFlashcardsFromSelection(plugin, selection.trim());
+			void generateWithPreset(
+				plugin,
+				plugin.settings.defaultGenerationPresetId,
+				selection.trim(),
+			);
 			return true;
 		},
 	});
@@ -297,11 +275,16 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 		id: "global-generate-flashcards-from-selection",
 		name: "Generate flashcards from selection (any view)",
 		checkCallback: (checking) => {
+			if (!isPluginEnabled(plugin.settings, "ai-generation")) return false;
 			const text = window.getSelection()?.toString().trim();
 			if (!text || text.length < 3) return false;
 			if (!hasApiKey(plugin)) return false;
 			if (checking) return true;
-			void generateFlashcardsGlobal(plugin, text);
+			void generateWithPresetGlobal(
+				plugin,
+				plugin.settings.defaultGenerationPresetId,
+				text,
+			);
 			return true;
 		},
 	});

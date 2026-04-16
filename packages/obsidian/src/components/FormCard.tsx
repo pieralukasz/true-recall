@@ -2,6 +2,8 @@ import type { ComponentChildren } from "preact";
 
 import { cn } from "@true-recall/obsidian/utils/cn";
 
+import { useFormVariant } from "./FormVariantContext";
+
 interface FormCardProps {
 	title?: string;
 	description?: string;
@@ -15,6 +17,20 @@ export function FormCard({
 	children,
 	class: cls,
 }: FormCardProps) {
+	const variant = useFormVariant();
+
+	if (variant === "native") {
+		return (
+			<div class={cn(cls)}>
+				{title && <div class="setting-item setting-item-heading">{title}</div>}
+				{description && (
+					<div class="setting-item-description">{description}</div>
+				)}
+				{children}
+			</div>
+		);
+	}
+
 	return (
 		<div class={cn("ep:p-4 ep:rounded-lg ep:bg-surface-raised", cls)}>
 			{title && (

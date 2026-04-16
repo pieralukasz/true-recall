@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { FSRSCardData } from "@true-recall/core/types/fsrs/card.types";
 
-import { computeProjectStats } from "../../../../../src/editor/study/widgets/project-stats";
+import { computeProjectStats } from "@true-recall/plugins/dashboard-codeblock/project-stats";
 
 function makeCard(overrides: Partial<FSRSCardData>): FSRSCardData {
 	return {

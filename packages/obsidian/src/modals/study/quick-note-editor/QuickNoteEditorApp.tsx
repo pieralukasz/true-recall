@@ -325,7 +325,7 @@ export function QuickNoteEditorApp({
 	}
 
 	return (
-		<div class="ep:flex ep:flex-col ep:gap-3">
+		<div class="true-recall-quick-editor ep:flex ep:flex-col ep:gap-3">
 			{/* Action bar: Note type, Source note, AI */}
 			<ActionBar
 				app={app}

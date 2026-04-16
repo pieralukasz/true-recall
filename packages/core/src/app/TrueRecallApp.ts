@@ -312,6 +312,7 @@ export class TrueRecallApp {
 			this.events.emit("hierarchy:changed", {});
 		});
 		this.frontmatterIndex.onFieldChange("archive", () => {
+			this.hierarchyService.invalidateGraph();
 			this.events.emit("hierarchy:changed", {});
 		});
 		this.frontmatterIndex.onFieldChange("fsrs_preset", () => {

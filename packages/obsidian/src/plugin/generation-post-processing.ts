@@ -1,0 +1,74 @@
+import type { GenerationPreset } from "@true-recall/core/types/generation-preset.types";
+
+import { ImagePostProcessor } from "@true-recall/obsidian/services/image-post-processor";
+import { TTSPostProcessor } from "@true-recall/obsidian/services/tts-post-processor";
+
+import type TrueRecallPlugin from "../main";
+
+let ttsProcessor: TTSPostProcessor | null = null;
+let imageProcessor: ImagePostProcessor | null = null;
+
+export function getTTSPostProcessor(
+	plugin: TrueRecallPlugin,
+): TTSPostProcessor {
+	if (!ttsProcessor) {
+		ttsProcessor = new TTSPostProcessor(
+			plugin.app,
+			() => plugin.settings,
+			plugin.cardStore,
+		);
+	}
+	return ttsProcessor;
+}
+
+export function getImagePostProcessor(
+	plugin: TrueRecallPlugin,
+): ImagePostProcessor {
+	if (!imageProcessor) {
+		imageProcessor = new ImagePostProcessor(
+			plugin.app,
+			() => plugin.settings,
+			plugin.cardStore,
+		);
+	}
+	return imageProcessor;
+}
+
+export function isPresetProRequired(preset: GenerationPreset): boolean {
+	if (preset.tts?.field) return true;
+	return Object.values(preset.fields).some((f) => f.role === "image");
+}
+
+export function runPresetPostProcessing(
+	plugin: TrueRecallPlugin,
+	preset: GenerationPreset,
+	createdCardIds: string[],
+): void {
+	if (createdCardIds.length === 0) return;
+
+	if (preset.tts?.field) {
+		void getTTSPostProcessor(plugin).processCards(createdCardIds, {
+			ttsField: preset.tts.field,
+			languageCode: preset.tts.voice,
+		});
+	}
+
+	const imageFields = Object.entries(preset.fields)
+		.filter(([_, cfg]) => cfg.role === "image")
+		.map(([name, cfg]) => {
+			const imageCfg = cfg as { sourceField: string; style?: string };
+			return {
+				fieldName: name,
+				sourceField: imageCfg.sourceField,
+				style: imageCfg.style,
+			};
+		});
+
+	if (imageFields.length > 0) {
+		void getImagePostProcessor(plugin)
+			.processCards(createdCardIds, imageFields)
+			.catch((e) => {
+				console.warn("[ImagePostProcessor] processing failed", e);
+			});
+	}
+}

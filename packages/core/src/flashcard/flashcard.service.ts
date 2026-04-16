@@ -185,6 +185,10 @@ export class FlashcardManager {
 		return this.store?.noteTypes.getBySlug(slug) ?? null;
 	}
 
+	getNoteTypeById(id: string): NoteType | null {
+		return this.store?.noteTypes.getById(id) ?? null;
+	}
+
 	getFrontmatterService(): FrontmatterService {
 		return this.frontmatterService;
 	}
@@ -568,6 +572,7 @@ export class FlashcardManager {
 		if (cards.length > 0) {
 			this.emitEvent("cards:bulk", {
 				cardIds: cards.map((c) => c.id),
+				action: "added",
 			});
 		}
 
@@ -650,6 +655,7 @@ export class FlashcardManager {
 		if (cards.length > 0) {
 			this.emitEvent("cards:bulk", {
 				cardIds: cards.map((c) => c.id),
+				action: "added",
 			});
 		}
 

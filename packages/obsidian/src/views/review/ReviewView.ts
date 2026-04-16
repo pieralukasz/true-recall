@@ -65,6 +65,7 @@ import {
 } from "@true-recall/obsidian/views/review/ReviewApp";
 
 import type TrueRecallPlugin from "../../main";
+import { isPluginEnabled } from "../../plugin/plugin-utils";
 
 interface TypeInAssessmentState {
 	cardId: string | null;
@@ -99,6 +100,7 @@ export class ReviewView extends ItemView {
 	private semanticGradingService: SemanticAnswerGradingService;
 
 	private filters: SessionFilters = {};
+	private resolvedProjectUids: Set<string> | null = null;
 	private crammedCardIds = new Set<string>();
 	private isProcessingAnswer = false;
 	private presetCache = new Map<string, FSRSPreset>();
@@ -223,6 +225,11 @@ export class ReviewView extends ItemView {
 	}
 
 	private applyDefaultTypeInMode(): void {
+		if (!isPluginEnabled(this.plugin.settings, "type-in-mode")) {
+			this.sessionTypeInModeEnabled = false;
+			this.aiEnabledForTypeIn = false;
+			return;
+		}
 		const persisted = readPersistedTypeInMode(getTypeInModeStorage());
 		const mode = persisted ?? this.plugin.settings.defaultTypeInMode;
 		this.sessionTypeInModeEnabled = mode !== "off";
@@ -237,6 +244,7 @@ export class ReviewView extends ItemView {
 	}
 
 	private cycleTypeInMode(): void {
+		if (!isPluginEnabled(this.plugin.settings, "type-in-mode")) return;
 		const currentMode = this.getTypeInMode();
 		const card = this.review.getCurrentCard();
 		const alwaysTypeIn = !!(card?.alwaysTypeIn || card?.fsrs.alwaysTypeIn);
@@ -547,6 +555,17 @@ export class ReviewView extends ItemView {
 					this.answerHandler.resolvePreset(card).name,
 				getPresetOptions: () => this.getPresetOptions(),
 				onPresetChange: (name: string) => void this.handlePresetChange(name),
+				resolveAudioPath: (card: FSRSFlashcardItem) => {
+					if (!card.noteId) return undefined;
+					const note = this.plugin.cardStore?.notes.getById(card.noteId);
+					if (!note?.fields) return undefined;
+					for (const [key, value] of Object.entries(note.fields)) {
+						if (key.startsWith("_audio_") && value) {
+							return value;
+						}
+					}
+					return undefined;
+				},
 			}),
 		);
 	}
@@ -724,6 +743,12 @@ export class ReviewView extends ItemView {
 			);
 			const queue = snapshot.queue;
 
+			this.resolvedProjectUids = this.filters.projectPath
+				? this.plugin.hierarchyService.getSourceUidsForProject(
+						this.filters.projectPath,
+					)
+				: null;
+
 			if (queue.length === 0) {
 				this.mountEmptyState(
 					container,
@@ -783,6 +808,7 @@ export class ReviewView extends ItemView {
 				this.flashcardManager,
 				this.plugin.cardStore,
 				this.filters,
+				this.resolvedProjectUids ?? undefined,
 			);
 		});
 	}
@@ -871,6 +897,14 @@ export class ReviewView extends ItemView {
 					.setIcon("pencil")
 					.onClick(() => void this.cardActionsHandler.handleEditCardModal()),
 			);
+			if (this.cardActionsHandler.canHealCard()) {
+				menu.addItem((item) =>
+					item
+						.setTitle("Heal card")
+						.setIcon("heart-pulse")
+						.onClick(() => void this.cardActionsHandler.handleHealCard()),
+				);
+			}
 			menu.addItem((item) =>
 				item
 					.setTitle("Change note type")

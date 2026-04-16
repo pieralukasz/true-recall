@@ -3,6 +3,7 @@
  */
 
 import type { ReviewViewMode } from "./fsrs";
+import type { GenerationPreset } from "./generation-preset.types";
 
 export type AITier = "pro" | "byok";
 
@@ -311,10 +312,27 @@ export interface TrueRecallSettings {
 
 	/** Language for AI-generated flashcards ("auto" = match source text) */
 	generationLanguage?: string;
+	/** Note type used for AI generation (null = Basic) */
+	generationNoteTypeId: string | null;
 	/** Custom system prompt for AI semantic grading in review type-in mode */
 	aiTypeInGradingPrompt?: string;
 	/** Custom user prompt for AI image occlusion region detection */
 	aiIODetectionPrompt?: string;
+
+	/** Language learning: note type for vocab generation (null = use generationNoteTypeId) */
+	languageNoteTypeId: string | null;
+	/** Language learning: source language code (language being learned) */
+	languageSource: string;
+	/** Language learning: target language code (your native language) */
+	languageTarget: string;
+	/** Language learning: which note field to generate TTS for */
+	languageTtsField: string;
+	/** Language learning: enable TTS generation after vocab creation */
+	languageTtsEnabled: boolean;
+	/** TTS voice for audio generation (OpenAI voices: alloy, echo, fable, onyx, nova, shimmer) */
+	ttsVoice: string;
+	/** Auto-play TTS audio when card is shown in review */
+	ttsAutoplay: boolean;
 
 	/** Last version the user has seen release notes for */
 	lastSeenVersion?: string;
@@ -345,6 +363,17 @@ export interface TrueRecallSettings {
 
 	/** Chat persona and response style configuration */
 	ragChatConfig: ChatConfig;
+
+	/** Per-plugin enabled/disabled state (plugin ID → boolean). All enabled by default. */
+	pluginStates?: Record<string, boolean>;
+
+	/** One-time migration: cascaded archive to descendants of archived projects */
+	archiveCascadeMigrated?: boolean;
+
+	/** Generation presets for AI flashcard creation */
+	generationPresets: GenerationPreset[];
+	/** ID of the default generation preset */
+	defaultGenerationPresetId: string;
 }
 
 export interface SessionPreset {

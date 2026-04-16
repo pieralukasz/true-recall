@@ -4,6 +4,7 @@ import { computePosition, flip, offset, shift } from "@floating-ui/dom";
 import { h, render } from "preact";
 
 import type { ToolbarButtonConfig } from "@true-recall/core/types";
+import type { GenerationPreset } from "@true-recall/core/types/generation-preset.types";
 
 import { SelectionToolbar, type ToolbarActions } from "./SelectionToolbar";
 
@@ -11,7 +12,10 @@ interface SelectionToolbarCallbacks {
 	actions: ToolbarActions;
 	getButtons: () => ToolbarButtonConfig[];
 	hasApiKey: () => boolean;
+	isPro: () => boolean;
 	isEnabled: () => boolean;
+	getPluginStates: () => Record<string, boolean>;
+	getPresets: () => GenerationPreset[];
 }
 
 function extractFirstImagePath(text: string): string | null {
@@ -131,7 +135,10 @@ export function createSelectionToolbarExtension(
 							onDismiss: () => this.removeToolbar(),
 						},
 						hasApiKey: callbacks.hasApiKey(),
+						isPro: callbacks.isPro(),
+						presets: callbacks.getPresets(),
 						detectedImagePath,
+						pluginStates: callbacks.getPluginStates(),
 					}),
 					this.container,
 				);

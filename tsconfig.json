@@ -6,7 +6,9 @@
 			"@true-recall/core": ["packages/core/src"],
 			"@true-recall/core/*": ["packages/core/src/*"],
 			"@true-recall/obsidian": ["packages/obsidian/src"],
-			"@true-recall/obsidian/*": ["packages/obsidian/src/*"]
+			"@true-recall/obsidian/*": ["packages/obsidian/src/*"],
+			"@true-recall/plugins": ["packages/plugins/src"],
+			"@true-recall/plugins/*": ["packages/plugins/src/*"]
 		},
 		"inlineSourceMap": true,
 		"inlineSources": true,
@@ -16,6 +18,8 @@
 	"include": [
 		"packages/core/src/**/*.ts",
 		"packages/obsidian/src/**/*.ts",
-		"packages/obsidian/src/**/*.tsx"
+		"packages/obsidian/src/**/*.tsx",
+		"packages/plugins/src/**/*.ts",
+		"packages/plugins/src/**/*.tsx"
 	]
 }

@@ -7,7 +7,6 @@ import type {
 } from "@true-recall/core/types";
 
 import { Clickable } from "@true-recall/obsidian/components";
-import { IOCardRenderer } from "@true-recall/obsidian/features/image-occlusion/IOCardRenderer";
 import {
 	type PresetPickerOption,
 	PresetPopover,
@@ -16,7 +15,9 @@ import { LivePreviewField } from "@true-recall/obsidian/features/study/ui/review
 import { TypeInCMEditor } from "@true-recall/obsidian/features/study/ui/review/components/TypeInCMEditor";
 import { cn } from "@true-recall/obsidian/utils/cn";
 
+import { AudioPlayButton } from "./AudioPlayButton";
 import { NoteReviewRenderer } from "./NoteReviewRenderer";
+import { IOCardRenderer } from "@true-recall/plugins/image-occlusion";
 
 // Pre-renders the answer DOM one frame after the question paints,
 // but keeps it invisible (opacity:0, height:0). Without this,
@@ -116,6 +117,7 @@ interface CardContainerProps {
 	presetOptions?: PresetPickerOption[];
 	onPresetChange?: (presetName: string) => void;
 	typeIn: TypeInState;
+	audioPath?: string;
 }
 
 function TokenRow({
@@ -168,6 +170,7 @@ export function CardContainer({
 	presetOptions,
 	onPresetChange,
 	typeIn,
+	audioPath,
 }: CardContainerProps) {
 	const {
 		enabled: useTypeInMode,
@@ -263,6 +266,10 @@ export function CardContainer({
 					cls="true-recall-review-question ep:leading-relaxed ep:text-obs-normal ep:mb-6"
 					onContentChange={isCloze ? undefined : onContentChange}
 				/>
+
+				{audioPath && (
+					<AudioPlayButton audioPath={audioPath} autoplay={false} />
+				)}
 
 				{showTypeIn && !isAnswerRevealed && (
 					<div class="ep:mb-6">

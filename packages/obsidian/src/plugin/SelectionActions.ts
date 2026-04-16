@@ -1,7 +1,7 @@
-import { TFile } from "obsidian";
+import type { TFile } from "obsidian";
 
 import { StreamingGenerationService } from "@true-recall/core/ai/generation/streaming-generation.service";
-import { BUILTIN_BASIC_ID } from "@true-recall/core/types/note.types";
+import type { GenerationPreset } from "@true-recall/core/types/generation-preset.types";
 
 import { mutate } from "@true-recall/obsidian/data";
 import { QuickNoteEditorModal } from "@true-recall/obsidian/modals/study/quick-note-editor/QuickNoteEditorModal";
@@ -9,6 +9,7 @@ import { notify } from "@true-recall/obsidian/services/notification.service";
 
 import { ObsidianHttpClient } from "../adapters/ObsidianHttpClient";
 import type TrueRecallPlugin from "../main";
+import { runPresetPostProcessing } from "./generation-post-processing";
 
 let streamingService: StreamingGenerationService | null = null;
 
@@ -25,54 +26,20 @@ function getStreamingService(
 	return streamingService;
 }
 
-export function hasApiKey(plugin: TrueRecallPlugin): boolean {
-	return !!(plugin.settings.proKey || plugin.settings.openRouterApiKey);
-}
-
 function findMostRecentMarkdownFile(plugin: TrueRecallPlugin): TFile | null {
 	const recentPaths = plugin.app.workspace.getLastOpenFiles();
 	for (const path of recentPaths) {
 		if (!path.endsWith(".md")) continue;
 		const file = plugin.app.vault.getAbstractFileByPath(path);
-		if (file instanceof TFile) return file;
+		if (file instanceof (plugin.app.vault.adapter.constructor as any)) continue;
+		// Use type narrowing via duck-typing since TFile is not importable as value
+		if (file && "basename" in file) return file as TFile;
 	}
 	return null;
 }
 
-export async function generateFlashcardsFromSelection(
-	plugin: TrueRecallPlugin,
-	text: string,
-): Promise<void> {
-	const file = plugin.app.workspace.getActiveFile();
-	if (!file) {
-		notify().error("No active file");
-		return;
-	}
-
-	try {
-		await plugin.activateView();
-
-		const noteType =
-			plugin.cardStore?.noteTypes.getById(BUILTIN_BASIC_ID) ?? null;
-		const service = getStreamingService(plugin);
-		const result = await service.generateStreaming(text, file, noteType);
-
-		if (result.created === 0 && result.duplicates === 0) {
-			notify().warning("No flashcards found in AI response");
-		} else if (result.duplicates > 0) {
-			notify().cardsCreatedWithDuplicates(
-				result.created,
-				result.duplicates,
-				file.basename,
-			);
-		} else {
-			notify().cardsCreated(result.created, file.basename);
-		}
-	} catch (error) {
-		if (error instanceof DOMException && error.name === "AbortError") return;
-		const msg = error instanceof Error ? error.message : String(error);
-		notify().error(`Flashcard generation failed: ${msg}`);
-	}
+export function hasApiKey(plugin: TrueRecallPlugin): boolean {
+	return !!(plugin.settings.proKey || plugin.settings.openRouterApiKey);
 }
 
 export function editSelectionAsFlashcard(
@@ -110,46 +77,6 @@ export async function quickAddFlashcardFromSelection(
 	} catch (error) {
 		const msg = error instanceof Error ? error.message : String(error);
 		notify().error(`Quick add failed: ${msg}`);
-	}
-}
-
-export async function generateFlashcardsGlobal(
-	plugin: TrueRecallPlugin,
-	text: string,
-	sourceFile?: TFile | null,
-): Promise<void> {
-	const file =
-		sourceFile ??
-		plugin.app.workspace.getActiveFile() ??
-		findMostRecentMarkdownFile(plugin);
-	if (!file) {
-		editSelectionAsFlashcard(plugin, text);
-		notify().info("No active note found — opened editor instead");
-		return;
-	}
-
-	try {
-		await plugin.activateView();
-		const noteType =
-			plugin.cardStore?.noteTypes.getById(BUILTIN_BASIC_ID) ?? null;
-		const service = getStreamingService(plugin);
-		const result = await service.generateStreaming(text, file, noteType);
-
-		if (result.created === 0 && result.duplicates === 0) {
-			notify().warning("No flashcards found in AI response");
-		} else if (result.duplicates > 0) {
-			notify().cardsCreatedWithDuplicates(
-				result.created,
-				result.duplicates,
-				file.basename,
-			);
-		} else {
-			notify().cardsCreated(result.created, file.basename);
-		}
-	} catch (error) {
-		if (error instanceof DOMException && error.name === "AbortError") return;
-		const msg = error instanceof Error ? error.message : String(error);
-		notify().error(`Flashcard generation failed: ${msg}`);
 	}
 }
 
@@ -261,5 +188,103 @@ export async function appendToCurrentNote(
 	} catch (error) {
 		const msg = error instanceof Error ? error.message : String(error);
 		notify().error(`Failed to append: ${msg}`);
+	}
+}
+
+function resolvePreset(
+	plugin: TrueRecallPlugin,
+	presetId: string,
+): GenerationPreset | null {
+	return (
+		plugin.settings.generationPresets.find((p) => p.id === presetId) ?? null
+	);
+}
+
+export async function generateWithPreset(
+	plugin: TrueRecallPlugin,
+	presetId: string,
+	text: string,
+): Promise<void> {
+	const preset = resolvePreset(plugin, presetId);
+	if (!preset) {
+		notify().error("Generation preset not found");
+		return;
+	}
+
+	const file = plugin.app.workspace.getActiveFile();
+	if (!file) {
+		notify().error("No active file");
+		return;
+	}
+
+	try {
+		await plugin.activateView();
+		const service = getStreamingService(plugin);
+		const result = await service.generate(text, file, preset.id);
+
+		runPresetPostProcessing(plugin, preset, result.createdCardIds);
+
+		if (result.created === 0 && result.duplicates === 0) {
+			notify().warning("No flashcards found in AI response");
+		} else if (result.duplicates > 0) {
+			notify().cardsCreatedWithDuplicates(
+				result.created,
+				result.duplicates,
+				file.basename,
+			);
+		} else {
+			notify().cardsCreated(result.created, file.basename);
+		}
+	} catch (error) {
+		if (error instanceof DOMException && error.name === "AbortError") return;
+		const msg = error instanceof Error ? error.message : String(error);
+		notify().error(`Generation failed: ${msg}`);
+	}
+}
+
+export async function generateWithPresetGlobal(
+	plugin: TrueRecallPlugin,
+	presetId: string,
+	text: string,
+	sourceFile?: TFile | null,
+): Promise<void> {
+	const preset = resolvePreset(plugin, presetId);
+	if (!preset) {
+		notify().error("Generation preset not found");
+		return;
+	}
+
+	const file =
+		sourceFile ??
+		plugin.app.workspace.getActiveFile() ??
+		findMostRecentMarkdownFile(plugin);
+	if (!file) {
+		editSelectionAsFlashcard(plugin, text);
+		notify().info("No active note found — opened editor instead");
+		return;
+	}
+
+	try {
+		await plugin.activateView();
+		const service = getStreamingService(plugin);
+		const result = await service.generate(text, file, preset.id);
+
+		runPresetPostProcessing(plugin, preset, result.createdCardIds);
+
+		if (result.created === 0 && result.duplicates === 0) {
+			notify().warning("No flashcards found in AI response");
+		} else if (result.duplicates > 0) {
+			notify().cardsCreatedWithDuplicates(
+				result.created,
+				result.duplicates,
+				file.basename,
+			);
+		} else {
+			notify().cardsCreated(result.created, file.basename);
+		}
+	} catch (error) {
+		if (error instanceof DOMException && error.name === "AbortError") return;
+		const msg = error instanceof Error ? error.message : String(error);
+		notify().error(`Generation failed: ${msg}`);
 	}
 }

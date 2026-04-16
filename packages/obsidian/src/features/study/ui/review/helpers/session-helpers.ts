@@ -9,6 +9,7 @@ export {
 import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite";
 import { matchesSessionFilters } from "@true-recall/core/services/review/session-helpers";
+import type { CardSchedulingMeta } from "@true-recall/core/types";
 import type { SessionFilters } from "@true-recall/core/types/review-session.types";
 
 import {
@@ -24,6 +25,7 @@ export function applyMutation(
 	flashcardManager: FlashcardManager,
 	cardStore: SqliteStoreService,
 	filters: SessionFilters,
+	resolvedProjectUids?: ReadonlySet<string>,
 ): void {
 	const normalizedAction = getNormalizedCardMutationAction(m);
 	const actionSemantics = normalizedAction
@@ -52,6 +54,8 @@ export function applyMutation(
 					review,
 					flashcardManager,
 					filters,
+					false,
+					resolvedProjectUids,
 				);
 			}
 			break;
@@ -75,13 +79,21 @@ export function applyMutation(
 					flashcardManager,
 					filters,
 					forceRequeue,
+					resolvedProjectUids,
 				);
 			}
 			break;
 		}
 		case "added": {
 			if (!m.cardId) return;
-			syncQueueWithMutatedCards([m.cardId], review, flashcardManager, filters);
+			syncQueueWithMutatedCards(
+				[m.cardId],
+				review,
+				flashcardManager,
+				filters,
+				false,
+				resolvedProjectUids,
+			);
 			break;
 		}
 	}
@@ -109,6 +121,7 @@ function syncQueueWithMutatedCards(
 	flashcardManager: FlashcardManager,
 	filters: SessionFilters,
 	forceAdd = false,
+	resolvedProjectUids?: ReadonlySet<string>,
 ): void {
 	const uniqueIds = [...new Set(cardIds)];
 	if (uniqueIds.length === 0) return;
@@ -121,7 +134,6 @@ function syncQueueWithMutatedCards(
 		: new Set(review.queue.map((card) => card.id));
 	const cards = flashcardManager.getCardsByIds(uniqueIds);
 	const cardsById = new Map(cards.map((card) => [card.id, card]));
-	const canAutoAdd = forceAdd || canAutoAddMutatedCards(filters);
 	const idsToRemove: string[] = [];
 
 	for (const id of uniqueIds) {
@@ -133,7 +145,10 @@ function syncQueueWithMutatedCards(
 			continue;
 		}
 
-		if (canAutoAdd && !queueIds.has(id)) {
+		if (
+			!queueIds.has(id) &&
+			(forceAdd || canAutoAddCard(card, filters, resolvedProjectUids))
+		) {
 			review.addCardToQueue(card);
 		}
 	}
@@ -143,11 +158,25 @@ function syncQueueWithMutatedCards(
 	}
 }
 
-function canAutoAddMutatedCards(filters: SessionFilters): boolean {
+function canAutoAddCard(
+	card: CardSchedulingMeta,
+	filters: SessionFilters,
+	resolvedProjectUids?: ReadonlySet<string>,
+): boolean {
 	const hasDirectScope =
 		Boolean(filters.sourceUidFilter) ||
 		Boolean(filters.sourceNoteFilter) ||
 		Boolean(filters.filePathFilter) ||
 		Boolean(filters.sourceNoteFilters?.length);
-	return !filters.projectPath || hasDirectScope;
+
+	// Direct scope or no project: matchesSessionFilters already validated
+	if (!filters.projectPath || hasDirectScope) return true;
+
+	// Project-only scope: check card belongs to project
+	if (resolvedProjectUids) {
+		return Boolean(card.sourceUid && resolvedProjectUids.has(card.sourceUid));
+	}
+
+	// No resolved UIDs available: reject (safety guard)
+	return false;
 }

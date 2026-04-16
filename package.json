@@ -6,7 +6,8 @@
 	"main": "main.js",
 	"type": "module",
 	"workspaces": [
-		"packages/*"
+		"packages/*",
+		"packages/plugins"
 	],
 	"scripts": {
 		"dev": "bun esbuild.config.mjs",

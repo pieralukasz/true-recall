@@ -5,10 +5,14 @@ import type { ToolbarButtonConfig } from "@true-recall/core/types";
 import { Clickable, FormCard } from "@true-recall/obsidian/components";
 import {
 	BUILTIN_BUTTONS,
+	extractPresetId,
 	getButtonLabel,
 	isBuiltinButton,
+	isPresetButton,
 } from "@true-recall/obsidian/editor/ai/toolbar-buttons";
 import { useIcon, usePlugin } from "@true-recall/obsidian/preact";
+
+import { BUTTON_PLUGIN_MAP } from "@true-recall/plugins";
 
 interface ToolbarConfigListProps {
 	title: string;
@@ -26,6 +30,7 @@ export function ToolbarConfigSection({
 	context,
 }: ToolbarConfigListProps) {
 	const plugin = usePlugin();
+	const pluginStates = plugin.settings.pluginStates ?? {};
 	const [dragIndex, setDragIndex] = useState<number | null>(null);
 	const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 	const dragNodeRef = useRef<HTMLDivElement | null>(null);
@@ -96,16 +101,36 @@ export function ToolbarConfigSection({
 		}
 	}, [buttons, onChange, plugin.app]);
 
+	const handleAddPreset = useCallback(async () => {
+		const { PresetSuggestModal } = await import(
+			"@true-recall/obsidian/modals/shared/PresetSuggestModal"
+		);
+		const existingIds = buttons.map((b) => b.id);
+		const presets = plugin.settings.generationPresets ?? [];
+		const modal = new PresetSuggestModal(plugin.app, presets, existingIds);
+		const result = await modal.openAndWait();
+		if (result) {
+			onChange([...buttons, { id: `preset:${result.id}`, enabled: true }]);
+		}
+	}, [buttons, onChange, plugin.app, plugin.settings.generationPresets]);
+
 	const getLabel = useCallback(
 		(id: string) => {
 			if (isBuiltinButton(id)) return getButtonLabel(id);
+			if (isPresetButton(id)) {
+				const presetId = extractPresetId(id);
+				const preset = plugin.settings.generationPresets?.find(
+					(p) => p.id === presetId,
+				);
+				return preset?.name ?? "Deleted preset";
+			}
 			const commands = (plugin.app as any).commands.commands as Record<
 				string,
 				{ name: string }
 			>;
 			return commands[id]?.name ?? id;
 		},
-		[plugin.app],
+		[plugin.app, plugin.settings.generationPresets],
 	);
 
 	return (
@@ -116,6 +141,20 @@ export function ToolbarConfigSection({
 						context === "global" &&
 						BUILTIN_BUTTONS.some((b) => b.id === btn.id && b.editorOnly);
 
+					const pluginInfo = BUTTON_PLUGIN_MAP.get(btn.id);
+					const isPluginDisabled =
+						pluginInfo !== undefined &&
+						pluginStates[pluginInfo.pluginId] === false;
+					const isPreset = isPresetButton(btn.id);
+					const presetExists = isPreset
+						? (plugin.settings.generationPresets?.some(
+								(p) => p.id === extractPresetId(btn.id),
+							) ?? false)
+						: true;
+					const isOrphan = isPreset && !presetExists;
+					const isProButton = pluginInfo?.requiresPro;
+					const isDisabled = isEditorOnly || isPluginDisabled || isOrphan;
+
 					return (
 						<ToolbarButtonRow
 							key={`${btn.id}-${i}`}
@@ -124,10 +163,17 @@ export function ToolbarConfigSection({
 							isCustom={!isBuiltinButton(btn.id)}
 							isDragging={dragIndex === i}
 							isDragOver={dragOverIndex === i}
-							disabled={isEditorOnly}
+							disabled={isDisabled}
 							disabledReason={
-								isEditorOnly ? "Only available in editor" : undefined
+								isOrphan
+									? "Preset deleted"
+									: isPluginDisabled
+										? "Plugin disabled"
+										: isEditorOnly
+											? "Only available in editor"
+											: undefined
 							}
+							showProBadge={isProButton}
 							onToggle={() => handleToggle(i)}
 							onRemove={() => handleRemove(i)}
 							onDragStart={(e) => handleDragStart(e, i)}
@@ -139,12 +185,20 @@ export function ToolbarConfigSection({
 				})}
 			</div>
 
-			<Clickable
-				class="ep-btn ep-btn-outline ep:mt-2 ep:text-xs"
-				onClick={() => void handleAddCommand()}
-			>
-				+ Add command
-			</Clickable>
+			<div class="ep:flex ep:gap-2 ep:mt-2">
+				<Clickable
+					class="ep-btn ep-btn-outline ep:text-xs"
+					onClick={() => void handleAddCommand()}
+				>
+					+ Add command
+				</Clickable>
+				<Clickable
+					class="ep-btn ep-btn-outline ep:text-xs"
+					onClick={() => void handleAddPreset()}
+				>
+					+ Add preset
+				</Clickable>
+			</div>
 		</FormCard>
 	);
 }
@@ -157,6 +211,7 @@ interface ToolbarButtonRowProps {
 	isDragOver: boolean;
 	disabled?: boolean;
 	disabledReason?: string;
+	showProBadge?: boolean;
 	onToggle: () => void;
 	onRemove: () => void;
 	onDragStart: (e: DragEvent) => void;
@@ -173,6 +228,7 @@ function ToolbarButtonRow({
 	isDragOver,
 	disabled,
 	disabledReason,
+	showProBadge,
 	onToggle,
 	onRemove,
 	onDragStart,
@@ -200,9 +256,14 @@ function ToolbarButtonRow({
 			</span>
 
 			<span
-				class={`ep:flex-1 ep:text-sm ${disabled ? "ep:text-obs-text-faint" : ""}`}
+				class={`ep:flex-1 ep:text-sm ep:flex ep:items-center ep:gap-1.5 ${disabled ? "ep:text-obs-text-faint" : ""}`}
 			>
 				{label}
+				{showProBadge && (
+					<span class="ep:text-[10px] ep:px-1 ep:py-0.5 ep:rounded ep:font-medium ep:bg-obs-accent/10 ep:text-obs-accent ep:leading-none">
+						PRO
+					</span>
+				)}
 			</span>
 
 			{isCustom && (

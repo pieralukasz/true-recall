@@ -63,10 +63,22 @@
         "@codemirror/state": "6.5.0",
         "@codemirror/view": "^6.35.0",
         "@true-recall/core": "workspace:*",
+        "@true-recall/plugins": "workspace:*",
         "monkey-around": "^3.0.0",
         "zustand": "^5.0.11",
       },
       "peerDependencies": {
+        "obsidian": "*",
+      },
+    },
+    "packages/plugins": {
+      "name": "@true-recall/plugins",
+      "version": "1.0.0",
+      "dependencies": {
+        "@true-recall/core": "workspace:*",
+      },
+      "peerDependencies": {
+        "@true-recall/obsidian": "*",
         "obsidian": "*",
       },
     },
@@ -401,6 +413,8 @@
     "@true-recall/core": ["@true-recall/core@workspace:packages/core"],
 
     "@true-recall/obsidian": ["@true-recall/obsidian@workspace:packages/obsidian"],
+
+    "@true-recall/plugins": ["@true-recall/plugins@workspace:packages/plugins"],
 
     "@tybys/wasm-util": ["@tybys/wasm-util@0.10.1", "", { "dependencies": { "tslib": "^2.4.0" } }, "sha512-9tTaPJLSiejZKx+Bmog4uSubteqTvFrVrURwkmHixBo0G4seD0zUxp98E1DzUBJxLQ3NPwXrGKDiVjwx/DpPsg=="],
 

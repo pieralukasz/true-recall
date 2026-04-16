@@ -2,7 +2,6 @@ import { useCallback } from "preact/hooks";
 
 import type { FlashcardItem } from "@true-recall/core/types";
 import type { FSRSFlashcardItem } from "@true-recall/core/types/fsrs/card.types";
-import { BUILTIN_BASIC_ID } from "@true-recall/core/types/note.types";
 
 import { BatchCreateCommand } from "@true-recall/obsidian/commands/commands/card-create.cmd";
 import { DeleteCardCommand } from "@true-recall/obsidian/commands/commands/card-delete.cmd";
@@ -10,6 +9,7 @@ import { ForgetCommand } from "@true-recall/obsidian/commands/commands/card-forg
 import { getHighlightColor } from "@true-recall/obsidian/features/library/ui/panel/utils/card-status.utils";
 import { extractHighlights } from "@true-recall/obsidian/features/library/ui/panel/utils/highlight-extractor";
 import { cardsToBlockText } from "@true-recall/obsidian/features/library/ui/panel/utils/panel-helpers";
+import { runPresetPostProcessing } from "@true-recall/obsidian/plugin/generation-post-processing";
 import { useApp, usePlugin } from "@true-recall/obsidian/preact";
 
 import { usePanelStore } from "./usePanelStore";
@@ -52,12 +52,10 @@ export function usePanelActions() {
 		);
 
 		try {
-			const basicNoteType =
-				plugin.cardStore?.noteTypes?.getById(BUILTIN_BASIC_ID) ?? null;
 			const result = await chunkedService.generateFromNote(
 				content,
 				currentFile,
-				basicNoteType,
+				plugin.settings.defaultGenerationPresetId,
 			);
 
 			if (result.created === 0 && result.duplicates === 0) {
@@ -82,6 +80,7 @@ export function usePanelActions() {
 			if (result.createdCardIds && result.createdCardIds.length > 0) {
 				const cmd = new BatchCreateCommand(result.createdCardIds);
 				await plugin.commandService?.execute(cmd);
+				runPresetPostProcessing(plugin, result.preset, result.createdCardIds);
 			}
 		} catch (error) {
 			if (error instanceof DOMException && error.name === "AbortError") return;
@@ -151,12 +150,10 @@ export function usePanelActions() {
 		);
 
 		try {
-			const basicNoteType =
-				plugin.cardStore?.noteTypes?.getById(BUILTIN_BASIC_ID) ?? null;
-			const result = await streamingService.generateStreaming(
+			const result = await streamingService.generate(
 				joinedHighlights,
 				currentFile,
-				basicNoteType,
+				plugin.settings.defaultGenerationPresetId,
 			);
 
 			if (result.created === 0 && result.duplicates === 0) {
@@ -175,6 +172,7 @@ export function usePanelActions() {
 			if (result.createdCardIds && result.createdCardIds.length > 0) {
 				const cmd = new BatchCreateCommand(result.createdCardIds);
 				await plugin.commandService?.execute(cmd);
+				runPresetPostProcessing(plugin, result.preset, result.createdCardIds);
 			}
 		} catch (error) {
 			if (error instanceof DOMException && error.name === "AbortError") return;

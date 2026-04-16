@@ -20,10 +20,6 @@ import {
 	wireDataLayer,
 } from "@true-recall/obsidian/data";
 import { createSelectionToolbarExtension } from "@true-recall/obsidian/editor/ai/SelectionToolbarPlugin";
-import {
-	createLinkStatusPostProcessor,
-	createLinkStatusViewPlugin,
-} from "@true-recall/obsidian/editor/study";
 import { createNoteStatusCache } from "@true-recall/obsidian/features/core/cache/note-status-cache.service";
 import type { DeviceSelectionResult } from "@true-recall/obsidian/modals/integration/DeviceSelectionModal";
 import { QuickNoteEditorModal } from "@true-recall/obsidian/modals/study/quick-note-editor/QuickNoteEditorModal";
@@ -33,12 +29,13 @@ import { createAppStore } from "@true-recall/obsidian/store";
 import type TrueRecallPlugin from "../main";
 import { BackupRecoveryManager } from "./BackupRecoveryManager";
 import { registerDeletionHandler } from "./PluginEventHandlers";
+import { PluginLoader } from "./plugin-loader";
 import {
 	appendToCurrentNote,
 	createNoteFromSelection,
 	editSelectionAsFlashcard,
-	generateFlashcardsFromSelection,
-	generateFlashcardsGlobal,
+	generateWithPreset,
+	generateWithPresetGlobal,
 	hasApiKey,
 	quickAddFlashcardFromSelection,
 	quickAddFlashcardGlobal,
@@ -159,6 +156,7 @@ async function initializeCardStore(
 		// enrichment data. Re-execute CARDS loaders once the index is populated.
 		plugin.app.workspace.onLayoutReady(() => {
 			dl.invalidateGroups([G.CARDS]);
+			void migrateArchiveCascade(plugin);
 		});
 
 		const sCards = performance.now();
@@ -171,8 +169,11 @@ async function initializeCardStore(
 
 		initializeDeletionHandler(plugin);
 		initializeAppStore(plugin);
-		initializeLinkStatusIndicators(plugin);
-		initializeDashboardCodeblocks(plugin);
+		initializeCoreWidgets(plugin);
+
+		plugin.pluginLoader = new PluginLoader(plugin);
+		plugin.pluginLoader.activateAll();
+
 		initializeSelectionToolbar(plugin);
 
 		const sEnd = performance.now();
@@ -237,14 +238,13 @@ function initializeAppStore(plugin: TrueRecallPlugin): void {
 	});
 }
 
-function initializeLinkStatusIndicators(plugin: TrueRecallPlugin): void {
+/** Core widget setup that must run before plugin activation. */
+function initializeCoreWidgets(plugin: TrueRecallPlugin): void {
 	if (!plugin.coreApp.cardStore || !plugin.frontmatterIndex) return;
 
 	plugin.noteStatusCache = createNoteStatusCache();
 
 	plugin.app.workspace.onLayoutReady(async () => {
-		initializeStatusBar(plugin);
-
 		try {
 			const { createEmbeddableEditorClass } = await import(
 				"@true-recall/obsidian/editor/shared/embedded-editor"
@@ -254,72 +254,6 @@ function initializeLinkStatusIndicators(plugin: TrueRecallPlugin): void {
 			console.warn("[TrueRecall] Failed to resolve editor prototype:", e);
 		}
 	});
-
-	const onReviewNote = (file: TFile) => {
-		plugin.reviewNoteFlashcards(file).catch((error) => {
-			notify().error("Failed to start review session", error);
-		});
-	};
-
-	const onReviewNotes = (noteNames: string[], dueOnly: boolean) => {
-		plugin.startReview({ mode: "notes", noteNames, dueOnly }).catch((error) => {
-			notify().error("Failed to start review session", error);
-		});
-	};
-
-	const viewPlugin = createLinkStatusViewPlugin(
-		plugin.app,
-		plugin.noteStatusCache,
-		plugin.frontmatterIndex,
-		() => plugin.settings.showLinkStatusIndicators,
-		() => plugin.settings.showDonutsInReview,
-		onReviewNote,
-		onReviewNotes,
-		plugin.coreApp.cardStore,
-	);
-	plugin.registerEditorExtension([viewPlugin]);
-
-	const postProcessor = createLinkStatusPostProcessor(
-		plugin.app,
-		plugin.noteStatusCache,
-		plugin.frontmatterIndex,
-		() => plugin.settings.showLinkStatusIndicators,
-		() => plugin.settings.showDonutsInPanel,
-		onReviewNote,
-		onReviewNotes,
-	);
-	plugin.registerMarkdownPostProcessor(postProcessor);
-}
-
-function initializeStatusBar(plugin: TrueRecallPlugin): void {
-	void import("@true-recall/obsidian/editor/study/widgets/StatusBarWidget")
-		.then(({ StatusBarWidget }) => {
-			const statusBarEl = plugin.addStatusBarItem();
-			plugin.statusBarWidget = new StatusBarWidget(
-				statusBarEl,
-				plugin.flashcardManager,
-				() => {
-					plugin.openDashboard().catch(() => {});
-				},
-				() => plugin.settings.showStatusBarWidget,
-				{
-					presetService: plugin.presetService,
-					sessionPersistence: plugin.sessionPersistence,
-				},
-			);
-			plugin.statusBarWidget.start();
-		})
-		.catch((e) => {
-			console.warn("[True Recall] Failed to load status bar widget:", e);
-		});
-}
-
-function initializeDashboardCodeblocks(plugin: TrueRecallPlugin): void {
-	import("@true-recall/obsidian/editor/study/widgets/DashboardCodeblock")
-		.then(({ registerDashboardCodeblocks }) => {
-			registerDashboardCodeblocks(plugin);
-		})
-		.catch(() => {});
 }
 
 function executeCommand(plugin: TrueRecallPlugin, commandId: string): void {
@@ -353,7 +287,8 @@ function getSourceFileFromDOM(
 
 function initializeSelectionToolbar(plugin: TrueRecallPlugin): void {
 	const editorActions = {
-		onGenerate: (text: string) => generateFlashcardsFromSelection(plugin, text),
+		onPreset: (presetId: string, text: string) =>
+			generateWithPreset(plugin, presetId, text),
 		onEdit: (text: string) => editSelectionAsFlashcard(plugin, text),
 		onQuickAdd: (text: string) => quickAddFlashcardFromSelection(plugin, text),
 		onImageOcclusion: (imagePath: string) =>
@@ -369,7 +304,10 @@ function initializeSelectionToolbar(plugin: TrueRecallPlugin): void {
 		actions: editorActions,
 		getButtons: () => plugin.settings.editorToolbarButtons,
 		hasApiKey: () => hasApiKey(plugin),
+		isPro: () => !!plugin.settings.proKey,
 		isEnabled: () => plugin.settings.selectionToolbarEnabled,
+		getPluginStates: () => plugin.settings.pluginStates ?? {},
+		getPresets: () => plugin.settings.generationPresets,
 	});
 
 	plugin.registerEditorExtension([extension]);
@@ -424,8 +362,8 @@ function initializeSelectionToolbar(plugin: TrueRecallPlugin): void {
 	void import("@true-recall/obsidian/editor/ai/GlobalSelectionToolbar").then(
 		({ GlobalSelectionToolbar }) => {
 			const globalActions = {
-				onGenerate: (text: string, sourceFile?: TFile | null) =>
-					generateFlashcardsGlobal(plugin, text, sourceFile),
+				onPreset: (presetId: string, text: string, sourceFile?: TFile | null) =>
+					generateWithPresetGlobal(plugin, presetId, text, sourceFile),
 				onEdit: (text: string) => editSelectionAsFlashcard(plugin, text),
 				onQuickAdd: (text: string, sourceFile?: TFile | null) =>
 					quickAddFlashcardGlobal(plugin, text, sourceFile),
@@ -440,8 +378,11 @@ function initializeSelectionToolbar(plugin: TrueRecallPlugin): void {
 				actions: globalActions,
 				getButtons: () => plugin.settings.globalToolbarButtons,
 				hasApiKey: () => hasApiKey(plugin),
+				isPro: () => !!plugin.settings.proKey,
 				isEnabled: () => plugin.settings.selectionToolbarEnabled,
+				getPluginStates: () => plugin.settings.pluginStates ?? {},
 				getSourceFile: (range) => getSourceFileFromDOM(plugin, range),
+				getPresets: () => plugin.settings.generationPresets,
 			});
 			toolbar.register();
 			plugin._globalSelectionToolbar = toolbar;
@@ -570,4 +511,39 @@ async function handleDeviceSelection(
 			throw error;
 		}
 	}
+}
+
+async function migrateArchiveCascade(plugin: TrueRecallPlugin): Promise<void> {
+	if (plugin.settings.archiveCascadeMigrated) return;
+
+	const hierarchy = plugin.coreApp.hierarchyService;
+	const frontmatterIndex = plugin.coreApp.frontmatterIndex;
+
+	const archivedProjectPaths = frontmatterIndex
+		.getFilesByValue("archive", "true")
+		.filter(
+			(path) =>
+				hierarchy.getChildPaths(path).length > 0 ||
+				hierarchy.isExplicitProject(path),
+		);
+
+	if (archivedProjectPaths.length > 0) {
+		for (const projectPath of archivedProjectPaths) {
+			const descendants = hierarchy.getDescendantPaths(projectPath);
+			for (const descPath of descendants) {
+				if (!hierarchy.isNoteArchived(descPath)) {
+					const file = plugin.app.vault.getAbstractFileByPath(descPath);
+					if (file instanceof TFile) {
+						await plugin.flashcardManager
+							.getFrontmatterService()
+							.setArchive(file.path, true);
+					}
+				}
+			}
+		}
+		hierarchy.invalidateGraph();
+	}
+
+	plugin.settings.archiveCascadeMigrated = true;
+	await plugin.saveSettings();
 }

@@ -1,3 +1,5 @@
+import type { GenerationPreset } from "./types/generation-preset.types";
+import { BUILTIN_BASIC_ID } from "./types/note.types";
 import type { FSRSPreset, TrueRecallSettings } from "./types/settings.types";
 
 export const ENABLE_RAG = true;
@@ -83,12 +85,43 @@ export const DEFAULT_FSRS_PRESET: FSRSPreset = {
 	newReviewMix: "mix-with-reviews",
 };
 
+export const BUILTIN_BASIC_PRESET_ID = "builtin-basic-flashcards";
+
+export const BUILTIN_BASIC_PRESET: GenerationPreset = {
+	id: BUILTIN_BASIC_PRESET_ID,
+	name: "Basic Flashcards",
+	noteTypeId: BUILTIN_BASIC_ID,
+	fields: {
+		Front: {
+			role: "ai-text",
+			instruction: "A clear, specific question about the key concept",
+		},
+		Back: { role: "ai-text", instruction: "A concise, accurate answer" },
+	},
+	tts: null,
+	isPinned: true,
+	isDefault: true,
+	createdAt: 0,
+	updatedAt: 0,
+};
+
+export const TTS_VOICES = [
+	"alloy",
+	"echo",
+	"fable",
+	"onyx",
+	"nova",
+	"shimmer",
+] as const;
+export type TTSVoice = (typeof TTS_VOICES)[number];
+
 export const DEFAULT_SETTINGS: TrueRecallSettings = {
 	enableDeviceSync: false,
 	openRouterApiKey: "",
 	aiModel: DEFAULT_BYOK_MODEL,
 	aiTier: "byok",
 	generationLanguage: "auto",
+	generationNoteTypeId: null,
 	fsrsRequestRetention: 0.9,
 	fsrsMaximumInterval: 36500, // 100 years
 	newCardsPerDay: 20,
@@ -172,7 +205,7 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 	selectionToolbarEnabled: true,
 
 	editorToolbarButtons: [
-		{ id: "flashcards", enabled: true },
+		{ id: `preset:${BUILTIN_BASIC_PRESET_ID}`, enabled: true },
 		{ id: "io", enabled: true },
 		{ id: "edit", enabled: true },
 		{ id: "quick-add", enabled: true },
@@ -181,7 +214,7 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 		{ id: "new-note", enabled: true },
 	],
 	globalToolbarButtons: [
-		{ id: "flashcards", enabled: true },
+		{ id: `preset:${BUILTIN_BASIC_PRESET_ID}`, enabled: true },
 		{ id: "edit", enabled: true },
 		{ id: "quick-add", enabled: true },
 		{ id: "copy", enabled: true },
@@ -207,6 +240,17 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 		customInstruction: "",
 		responseLength: "medium",
 	},
+
+	languageNoteTypeId: null,
+	languageSource: "",
+	languageTarget: "",
+	languageTtsField: "",
+	languageTtsEnabled: false,
+	ttsVoice: "nova",
+	ttsAutoplay: true,
+
+	generationPresets: [BUILTIN_BASIC_PRESET],
+	defaultGenerationPresetId: BUILTIN_BASIC_PRESET_ID,
 };
 
 // FSRS v6 default weights (21 parameters)
