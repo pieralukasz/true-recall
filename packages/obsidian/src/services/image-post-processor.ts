@@ -8,6 +8,25 @@ import { mutate } from "@true-recall/obsidian/data";
 
 const IMAGE_DIR = ".true-recall/images";
 
+const ALLOWED_IMAGE_HOSTS = new Set([
+	"oaidalleapiprodscus.blob.core.windows.net", // OpenAI DALL-E
+	"replicate.delivery", // Replicate
+	"cdn.openai.com", // OpenAI CDN
+	"storage.googleapis.com", // Google AI storage
+	"fal.media", // Fal.ai
+	"d3phaj0sfxyh6p.cloudfront.net", // OpenAI dev CDN
+]);
+
+function isAllowedImageUrl(url: string): boolean {
+	try {
+		const parsed = new URL(url);
+		if (parsed.protocol !== "https:") return false;
+		return ALLOWED_IMAGE_HOSTS.has(parsed.hostname);
+	} catch {
+		return false;
+	}
+}
+
 type VaultAdapter = App["vault"]["adapter"];
 
 export interface ImageFieldConfig {
@@ -113,6 +132,11 @@ export class ImagePostProcessor {
 		const data = response.json;
 		const imageUrl = data?.data?.[0]?.url;
 		if (!imageUrl) throw new Error("No image URL in response");
+		if (!isAllowedImageUrl(imageUrl)) {
+			throw new Error(
+				`Image URL not from an allowed host: ${new URL(imageUrl).hostname}`,
+			);
+		}
 
 		const imageResponse = await requestUrl({ url: imageUrl });
 		await adapter.writeBinary(imagePath, imageResponse.arrayBuffer);
