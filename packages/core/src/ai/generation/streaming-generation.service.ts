@@ -118,9 +118,11 @@ export class StreamingGenerationService {
 			this.flashcardManager.getNoteTypeBySlug?.(slug) ?? null;
 		const parser = new IncrementalFlashcardParser(getNoteType);
 
-		const systemPrompt = aiConfig.isPro
-			? preset.customPrompt?.trim() || ""
-			: buildPresetPrompt(preset, noteType);
+		const customSystemPrompt = preset.customPrompt?.trim();
+		const systemPrompt =
+			aiConfig.isPro && customSystemPrompt
+				? customSystemPrompt
+				: buildPresetPrompt(preset, noteType);
 
 		const metadata = aiConfig.isPro
 			? { call_context: "generation", note_type: noteType.slug ?? "basic" }

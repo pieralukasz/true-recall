@@ -31,5 +31,11 @@ export function resolveGenerationPresetAndNoteType(
 		);
 	}
 
+	if (preset.tts?.field && !(preset.tts.field in preset.fields)) {
+		throw new Error(
+			`Preset "${preset.id}" has TTS configured for field "${preset.tts.field}" which is not in the preset's fields`,
+		);
+	}
+
 	return { preset, noteType };
 }

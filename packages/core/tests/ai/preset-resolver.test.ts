@@ -86,4 +86,24 @@ describe("resolveGenerationPresetAndNoteType", () => {
 			resolveGenerationPresetAndNoteType(makeSettings(), {}, basicPreset.id),
 		).toThrow('Preset "preset-basic" references unknown note type "nt-basic"');
 	});
+
+	it("throws when tts.field does not match any preset field", () => {
+		const settings = makeSettings({
+			generationPresets: [
+				{
+					...basicPreset,
+					tts: { field: "Missing", voice: "en-US", autoplay: false },
+				},
+			],
+		});
+		expect(() =>
+			resolveGenerationPresetAndNoteType(
+				settings,
+				managerWithBasic,
+				basicPreset.id,
+			),
+		).toThrow(
+			'Preset "preset-basic" has TTS configured for field "Missing" which is not in the preset\'s fields',
+		);
+	});
 });
