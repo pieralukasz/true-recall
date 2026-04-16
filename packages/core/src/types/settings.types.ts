@@ -3,6 +3,7 @@
  */
 
 import type { ReviewViewMode } from "./fsrs";
+import type { GenerationPreset } from "./generation-preset.types";
 
 export type AITier = "pro" | "byok";
 
@@ -368,6 +369,11 @@ export interface TrueRecallSettings {
 
 	/** One-time migration: cascaded archive to descendants of archived projects */
 	archiveCascadeMigrated?: boolean;
+
+	/** Generation presets for AI flashcard creation */
+	generationPresets: GenerationPreset[];
+	/** ID of the default generation preset */
+	defaultGenerationPresetId: string;
 }
 
 export interface SessionPreset {

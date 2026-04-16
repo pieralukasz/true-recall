@@ -64,6 +64,11 @@ export {
 	State,
 } from "./fsrs";
 export type {
+	FieldConfig,
+	GenerationPreset,
+	PresetTTSConfig,
+} from "./generation-preset.types";
+export type {
 	ImageExtension,
 	ImageInsertOptions,
 	MediaExtension,
