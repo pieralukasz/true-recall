@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 
 import { FlashcardManager } from "../../src/flashcard/flashcard.service";
 import type { IFileSystem } from "../../src/interfaces/file-system";
@@ -40,7 +40,9 @@ const clozeType: NoteType = {
 
 describe("FlashcardManager", () => {
 	describe("getNoteTypeById", () => {
-		it("returns the note type when id matches", () => {
+		let fm: FlashcardManager;
+
+		beforeEach(() => {
 			const mockFileSystem: IFileSystem = {
 				exists: async () => false,
 				read: async () => "",
@@ -67,41 +69,18 @@ describe("FlashcardManager", () => {
 				isReady: () => true,
 			} as unknown as SqliteStoreService;
 
-			const fm = new FlashcardManager(mockFileSystem, mockFrontmatter, {});
+			fm = new FlashcardManager(mockFileSystem, mockFrontmatter, {});
 			fm.setStore(mockStore);
+		});
 
+		it("returns the note type when id matches", () => {
 			const result = fm.getNoteTypeById(BUILTIN_BASIC_ID);
 			expect(result).not.toBeNull();
 			expect(result?.id).toBe(BUILTIN_BASIC_ID);
 		});
 
-		it("returns null when id does not match", () => {
-			const mockFileSystem: IFileSystem = {
-				exists: async () => false,
-				read: async () => "",
-				write: async () => {},
-				delete: async () => {},
-				list: async () => [],
-			};
-
-			const mockFrontmatter: IFrontmatter = {
-				parse: () => ({ metadata: {}, content: "" }),
-				stringify: () => "",
-			};
-
-			const mockStore = {
-				noteTypes: {
-					getById: () => null,
-					getBySlug: () => null,
-				},
-				isReady: () => true,
-			} as unknown as SqliteStoreService;
-
-			const fm = new FlashcardManager(mockFileSystem, mockFrontmatter, {});
-			fm.setStore(mockStore);
-
-			const result = fm.getNoteTypeById("nope");
-			expect(result).toBeNull();
+		it("returns null when store has no note type with that id", () => {
+			expect(fm.getNoteTypeById("nope")).toBeNull();
 		});
 	});
 });
