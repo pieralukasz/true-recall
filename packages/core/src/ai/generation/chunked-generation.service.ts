@@ -168,8 +168,8 @@ export class ChunkedGenerationService {
 						sourceFile,
 						abortController.signal,
 						noteType,
-						chunk.content,
 						preset,
+						chunk.content,
 					);
 					totalCreated += result.created;
 					totalDuplicates += result.duplicates;
@@ -211,8 +211,8 @@ export class ChunkedGenerationService {
 		sourceFile: StreamingSourceFile,
 		signal: AbortSignal,
 		noteType: NoteType,
+		preset: GenerationPreset,
 		chunkContent?: string,
-		preset?: GenerationPreset,
 	): Promise<StreamingGenerationResult> {
 		const client = new StreamingOpenRouterClient(
 			aiConfig.apiKey,
@@ -281,7 +281,7 @@ export class ChunkedGenerationService {
 			created: createdCount,
 			duplicates: duplicateCount,
 			createdCardIds,
-			preset: preset ?? ({} as GenerationPreset),
+			preset,
 		};
 	}
 }
