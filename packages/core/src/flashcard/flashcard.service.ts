@@ -568,6 +568,7 @@ export class FlashcardManager {
 		if (cards.length > 0) {
 			this.emitEvent("cards:bulk", {
 				cardIds: cards.map((c) => c.id),
+				action: "added",
 			});
 		}
 
@@ -650,6 +651,7 @@ export class FlashcardManager {
 		if (cards.length > 0) {
 			this.emitEvent("cards:bulk", {
 				cardIds: cards.map((c) => c.id),
+				action: "added",
 			});
 		}
 

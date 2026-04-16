@@ -100,6 +100,7 @@ export class ReviewView extends ItemView {
 	private semanticGradingService: SemanticAnswerGradingService;
 
 	private filters: SessionFilters = {};
+	private resolvedProjectUids: Set<string> | null = null;
 	private crammedCardIds = new Set<string>();
 	private isProcessingAnswer = false;
 	private presetCache = new Map<string, FSRSPreset>();
@@ -742,6 +743,12 @@ export class ReviewView extends ItemView {
 			);
 			const queue = snapshot.queue;
 
+			this.resolvedProjectUids = this.filters.projectPath
+				? this.plugin.hierarchyService.getSourceUidsForProject(
+						this.filters.projectPath,
+					)
+				: null;
+
 			if (queue.length === 0) {
 				this.mountEmptyState(
 					container,
@@ -801,6 +808,7 @@ export class ReviewView extends ItemView {
 				this.flashcardManager,
 				this.plugin.cardStore,
 				this.filters,
+				this.resolvedProjectUids ?? undefined,
 			);
 		});
 	}
