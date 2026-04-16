@@ -1,6 +1,7 @@
 import { TFile } from "obsidian";
 
 import { StreamingGenerationService } from "@true-recall/core/ai/generation/streaming-generation.service";
+import type { GenerationPreset } from "@true-recall/core/types/generation-preset.types";
 import { BUILTIN_BASIC_ID } from "@true-recall/core/types/note.types";
 
 import { mutate } from "@true-recall/obsidian/data";
@@ -427,5 +428,144 @@ export async function appendToCurrentNote(
 	} catch (error) {
 		const msg = error instanceof Error ? error.message : String(error);
 		notify().error(`Failed to append: ${msg}`);
+	}
+}
+
+function resolvePreset(
+	plugin: TrueRecallPlugin,
+	presetId: string,
+): GenerationPreset | null {
+	return (
+		plugin.settings.generationPresets.find((p) => p.id === presetId) ?? null
+	);
+}
+
+function resolvePresetNoteType(
+	plugin: TrueRecallPlugin,
+	preset: GenerationPreset,
+) {
+	return resolveNoteType(plugin, preset.noteTypeId);
+}
+
+function runPresetPostProcessing(
+	plugin: TrueRecallPlugin,
+	preset: GenerationPreset,
+	createdCardIds: string[],
+): void {
+	if (createdCardIds.length === 0) return;
+	if (preset.tts?.field) {
+		void getTTSPostProcessor(plugin).processCards(createdCardIds, {
+			ttsField: preset.tts.field,
+			languageCode: preset.tts.voice,
+		});
+	}
+}
+
+export async function generateWithPreset(
+	plugin: TrueRecallPlugin,
+	presetId: string,
+	text: string,
+): Promise<void> {
+	const preset = resolvePreset(plugin, presetId);
+	if (!preset) {
+		notify().error("Generation preset not found");
+		return;
+	}
+
+	const file = plugin.app.workspace.getActiveFile();
+	if (!file) {
+		notify().error("No active file");
+		return;
+	}
+
+	try {
+		await plugin.activateView();
+		const noteType = resolvePresetNoteType(plugin, preset);
+		if (!noteType) {
+			notify().error("Note type not found for preset");
+			return;
+		}
+		const service = getStreamingService(plugin);
+		const result = await service.generateWithPreset(
+			text,
+			file,
+			preset,
+			noteType,
+		);
+
+		runPresetPostProcessing(plugin, preset, result.createdCardIds);
+
+		if (result.created === 0 && result.duplicates === 0) {
+			notify().warning("No flashcards found in AI response");
+		} else if (result.duplicates > 0) {
+			notify().cardsCreatedWithDuplicates(
+				result.created,
+				result.duplicates,
+				file.basename,
+			);
+		} else {
+			notify().cardsCreated(result.created, file.basename);
+		}
+	} catch (error) {
+		if (error instanceof DOMException && error.name === "AbortError") return;
+		const msg = error instanceof Error ? error.message : String(error);
+		notify().error(`Generation failed: ${msg}`);
+	}
+}
+
+export async function generateWithPresetGlobal(
+	plugin: TrueRecallPlugin,
+	presetId: string,
+	text: string,
+	sourceFile?: TFile | null,
+): Promise<void> {
+	const preset = resolvePreset(plugin, presetId);
+	if (!preset) {
+		notify().error("Generation preset not found");
+		return;
+	}
+
+	const file =
+		sourceFile ??
+		plugin.app.workspace.getActiveFile() ??
+		findMostRecentMarkdownFile(plugin);
+	if (!file) {
+		editSelectionAsFlashcard(plugin, text);
+		notify().info("No active note found — opened editor instead");
+		return;
+	}
+
+	try {
+		await plugin.activateView();
+		const noteType = resolvePresetNoteType(plugin, preset);
+		if (!noteType) {
+			notify().error("Note type not found for preset");
+			return;
+		}
+		const service = getStreamingService(plugin);
+		const result = await service.generateWithPreset(
+			text,
+			file,
+			preset,
+			noteType,
+		);
+
+		runPresetPostProcessing(plugin, preset, result.createdCardIds);
+
+		if (result.created === 0 && result.duplicates === 0) {
+			notify().warning("No flashcards found in AI response");
+		} else if (result.duplicates > 0) {
+			notify().cardsCreatedWithDuplicates(
+				result.created,
+				result.duplicates,
+				file.basename,
+			);
+		} else {
+			notify().cardsCreated(result.created, file.basename);
+		}
+	} catch (error) {
+		if (error instanceof DOMException && error.name === "AbortError") return;
+		const msg = error instanceof Error ? error.message : String(error);
+		notify().error(`Generation failed: ${msg}`);
 	}
 }
