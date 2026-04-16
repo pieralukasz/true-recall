@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
+	buildByokPrompt,
 	buildPresetFormatSpec,
 	buildPresetPrompt,
 } from "../../../src/ai/prompts/block-prompt-builder";
@@ -85,7 +86,7 @@ describe("buildPresetPrompt", () => {
 		// Image field should not appear in the JSON output spec entries
 		const jsonSpecMatch = result.match(/Each element:\n(\{.*?\})/s);
 		expect(jsonSpecMatch).not.toBeNull();
-		expect(jsonSpecMatch![1]).not.toContain('"Image"');
+		expect(jsonSpecMatch?.[1]).not.toContain('"Image"');
 	});
 
 	it("omits image fields from field instructions", () => {
@@ -164,7 +165,7 @@ describe("buildPresetFormatSpec", () => {
 
 		const jsonSpecMatch = result.match(/Each element: (\{.*?\})/);
 		expect(jsonSpecMatch).not.toBeNull();
-		expect(jsonSpecMatch![1]).not.toContain('"Image"');
+		expect(jsonSpecMatch?.[1]).not.toContain('"Image"');
 	});
 
 	it("does not include manual fields in field context", () => {
@@ -190,5 +191,20 @@ describe("buildPresetFormatSpec", () => {
 		const result = buildPresetFormatSpec(basicPreset, basicNoteType);
 
 		expect(result).toContain("Return ONLY the raw JSON array.");
+	});
+});
+
+describe("buildByokPrompt", () => {
+	it("includes custom prompt, note type slug, and source rule", () => {
+		const noteType: NoteType = {
+			...basicNoteType,
+			id: "nt-basic",
+			slug: "basic",
+		};
+		const result = buildByokPrompt(noteType, "auto", "my custom prompt");
+
+		expect(result).toContain("my custom prompt");
+		expect(result).toContain('"type": "basic"');
+		expect(result).toContain("source");
 	});
 });
