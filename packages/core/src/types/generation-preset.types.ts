@@ -14,7 +14,7 @@ export interface GenerationPreset {
 	name: string;
 	noteTypeId: string;
 	fields: Record<string, FieldConfig>;
-	tts?: PresetTTSConfig | null;
+	tts: PresetTTSConfig | null;
 	customPrompt?: string;
 	isPinned: boolean;
 	isDefault: boolean;

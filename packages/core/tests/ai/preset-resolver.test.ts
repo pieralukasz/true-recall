@@ -24,6 +24,7 @@ const basicPreset: GenerationPreset = {
 		Front: { role: "ai-text", instruction: "Question" },
 		Back: { role: "ai-text", instruction: "Answer" },
 	},
+	tts: null,
 	isPinned: true,
 	isDefault: true,
 	createdAt: 0,
@@ -81,9 +82,23 @@ describe("resolveGenerationPresetAndNoteType", () => {
 		);
 	});
 
-	it("throws when manager has no getNoteTypeById method", () => {
+	it("throws when tts.field does not match any preset field", () => {
+		const settings = makeSettings({
+			generationPresets: [
+				{
+					...basicPreset,
+					tts: { field: "Missing", voice: "en-US", autoplay: false },
+				},
+			],
+		});
 		expect(() =>
-			resolveGenerationPresetAndNoteType(makeSettings(), {}, basicPreset.id),
-		).toThrow('Preset "preset-basic" references unknown note type "nt-basic"');
+			resolveGenerationPresetAndNoteType(
+				settings,
+				managerWithBasic,
+				basicPreset.id,
+			),
+		).toThrow(
+			'Preset "preset-basic" has TTS configured for field "Missing" which is not in the preset\'s fields',
+		);
 	});
 });

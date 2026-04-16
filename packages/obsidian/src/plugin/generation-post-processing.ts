@@ -1,6 +1,7 @@
 import type { GenerationPreset } from "@true-recall/core/types/generation-preset.types";
 
 import { ImagePostProcessor } from "@true-recall/obsidian/services/image-post-processor";
+import { notify } from "@true-recall/obsidian/services/notification.service";
 import { TTSPostProcessor } from "@true-recall/obsidian/services/tts-post-processor";
 
 import type TrueRecallPlugin from "../main";
@@ -47,10 +48,17 @@ export function runPresetPostProcessing(
 	if (createdCardIds.length === 0) return;
 
 	if (preset.tts?.field) {
-		void getTTSPostProcessor(plugin).processCards(createdCardIds, {
-			ttsField: preset.tts.field,
-			languageCode: preset.tts.voice,
-		});
+		void getTTSPostProcessor(plugin)
+			.processCards(createdCardIds, {
+				ttsField: preset.tts.field,
+				languageCode: preset.tts.voice,
+			})
+			.catch((e) => {
+				console.warn("[TTSPostProcessor] processing failed", e);
+				notify().warning(
+					`Audio generation failed: ${e instanceof Error ? e.message : String(e)}`,
+				);
+			});
 	}
 
 	const imageFields = Object.entries(preset.fields)
@@ -69,6 +77,9 @@ export function runPresetPostProcessing(
 			.processCards(createdCardIds, imageFields)
 			.catch((e) => {
 				console.warn("[ImagePostProcessor] processing failed", e);
+				notify().warning(
+					`Image generation failed: ${e instanceof Error ? e.message : String(e)}`,
+				);
 			});
 	}
 }

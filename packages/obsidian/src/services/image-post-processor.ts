@@ -4,7 +4,28 @@ import { requestUrl } from "obsidian";
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite/SqliteStoreService";
 import type { TrueRecallSettings } from "@true-recall/core/types/settings.types";
 
+import { mutate } from "@true-recall/obsidian/data";
+
 const IMAGE_DIR = ".true-recall/images";
+
+const ALLOWED_IMAGE_HOSTS = new Set([
+	"oaidalleapiprodscus.blob.core.windows.net", // OpenAI DALL-E
+	"replicate.delivery", // Replicate
+	"cdn.openai.com", // OpenAI CDN
+	"storage.googleapis.com", // Google AI storage
+	"fal.media", // Fal.ai
+	"d3phaj0sfxyh6p.cloudfront.net", // OpenAI dev CDN
+]);
+
+function isAllowedImageUrl(url: string): boolean {
+	try {
+		const parsed = new URL(url);
+		if (parsed.protocol !== "https:") return false;
+		return ALLOWED_IMAGE_HOSTS.has(parsed.hostname);
+	} catch {
+		return false;
+	}
+}
 
 type VaultAdapter = App["vault"]["adapter"];
 
@@ -32,10 +53,12 @@ export class ImagePostProcessor {
 			await adapter.mkdir(IMAGE_DIR);
 		}
 
+		let updated = false;
 		for (const cardId of cardIds) {
 			for (const field of fields) {
 				try {
-					await this.processCardField(cardId, field, adapter);
+					const didUpdate = await this.processCardField(cardId, field, adapter);
+					if (didUpdate) updated = true;
 				} catch (e) {
 					console.warn(
 						`[True Recall Image] Failed for card ${cardId}, field ${field.fieldName}:`,
@@ -44,27 +67,31 @@ export class ImagePostProcessor {
 				}
 			}
 		}
+
+		if (updated) {
+			mutate("card:updated", () => {});
+		}
 	}
 
 	private async processCardField(
 		cardId: string,
 		field: ImageFieldConfig,
 		adapter: VaultAdapter,
-	): Promise<void> {
+	): Promise<boolean> {
 		const card = this.cardStore.cards.get(cardId);
-		if (!card?.noteId) return;
+		if (!card?.noteId) return false;
 
 		const note = this.cardStore.notes.getById(card.noteId);
-		if (!note?.fields) return;
+		if (!note?.fields) return false;
 
 		const sourceText = note.fields[field.sourceField];
-		if (!sourceText) return;
+		if (!sourceText) return false;
 
-		if (note.fields[field.fieldName]) return;
+		if (note.fields[field.fieldName]) return false;
 
 		const settings = this.getSettings();
 		const apiKey = settings.openRouterApiKey;
-		if (!apiKey) return;
+		if (!apiKey) return false;
 
 		const prompt = field.style
 			? `${sourceText}. Style: ${field.style}. No text, no words, no letters.`
@@ -80,7 +107,7 @@ export class ImagePostProcessor {
 				field.fieldName,
 				`![[${imagePath}]]`,
 			);
-			return;
+			return true;
 		}
 
 		const response = await requestUrl({
@@ -105,6 +132,11 @@ export class ImagePostProcessor {
 		const data = response.json;
 		const imageUrl = data?.data?.[0]?.url;
 		if (!imageUrl) throw new Error("No image URL in response");
+		if (!isAllowedImageUrl(imageUrl)) {
+			throw new Error(
+				`Image URL not from an allowed host: ${new URL(imageUrl).hostname}`,
+			);
+		}
 
 		const imageResponse = await requestUrl({ url: imageUrl });
 		await adapter.writeBinary(imagePath, imageResponse.arrayBuffer);
@@ -115,6 +147,7 @@ export class ImagePostProcessor {
 			field.fieldName,
 			`![[${imagePath}]]`,
 		);
+		return true;
 	}
 
 	private updateNoteField(

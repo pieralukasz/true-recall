@@ -50,7 +50,7 @@ export interface StreamingSourceFile extends SourceFileRef {
 /** Minimal FlashcardManager interface for streaming generation. */
 export interface StreamingFlashcardManager extends CardEventFlashcardManager {
 	getNoteTypeBySlug?(slug: string): NoteType | null;
-	getNoteTypeById?(id: string): NoteType | null;
+	getNoteTypeById(id: string): NoteType | null;
 }
 
 export class StreamingGenerationService {
@@ -118,9 +118,11 @@ export class StreamingGenerationService {
 			this.flashcardManager.getNoteTypeBySlug?.(slug) ?? null;
 		const parser = new IncrementalFlashcardParser(getNoteType);
 
-		const systemPrompt = aiConfig.isPro
-			? preset.customPrompt?.trim() || ""
-			: buildPresetPrompt(preset, noteType);
+		const customSystemPrompt = preset.customPrompt?.trim();
+		const systemPrompt =
+			aiConfig.isPro && customSystemPrompt
+				? customSystemPrompt
+				: buildPresetPrompt(preset, noteType);
 
 		const metadata = aiConfig.isPro
 			? { call_context: "generation", note_type: noteType.slug ?? "basic" }
