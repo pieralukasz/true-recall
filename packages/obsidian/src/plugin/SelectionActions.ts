@@ -2,7 +2,6 @@ import type { TFile } from "obsidian";
 
 import { StreamingGenerationService } from "@true-recall/core/ai/generation/streaming-generation.service";
 import type { GenerationPreset } from "@true-recall/core/types/generation-preset.types";
-import { BUILTIN_BASIC_ID } from "@true-recall/core/types/note.types";
 
 import { mutate } from "@true-recall/obsidian/data";
 import { QuickNoteEditorModal } from "@true-recall/obsidian/modals/study/quick-note-editor/QuickNoteEditorModal";
@@ -37,15 +36,6 @@ function getTTSPostProcessor(plugin: TrueRecallPlugin): TTSPostProcessor {
 		);
 	}
 	return ttsProcessor;
-}
-
-function resolveNoteType(plugin: TrueRecallPlugin, id: string | null) {
-	if (!id) return plugin.cardStore?.noteTypes.getById(BUILTIN_BASIC_ID) ?? null;
-	return (
-		plugin.cardStore?.noteTypes.getById(id) ??
-		plugin.cardStore?.noteTypes.getById(BUILTIN_BASIC_ID) ??
-		null
-	);
 }
 
 function findMostRecentMarkdownFile(plugin: TrueRecallPlugin): TFile | null {
@@ -222,13 +212,6 @@ function resolvePreset(
 	);
 }
 
-function resolvePresetNoteType(
-	plugin: TrueRecallPlugin,
-	preset: GenerationPreset,
-) {
-	return resolveNoteType(plugin, preset.noteTypeId);
-}
-
 function runPresetPostProcessing(
 	plugin: TrueRecallPlugin,
 	preset: GenerationPreset,
@@ -262,18 +245,8 @@ export async function generateWithPreset(
 
 	try {
 		await plugin.activateView();
-		const noteType = resolvePresetNoteType(plugin, preset);
-		if (!noteType) {
-			notify().error("Note type not found for preset");
-			return;
-		}
 		const service = getStreamingService(plugin);
-		const result = await service.generateWithPreset(
-			text,
-			file,
-			preset,
-			noteType,
-		);
+		const result = await service.generate(text, file, preset.id);
 
 		runPresetPostProcessing(plugin, preset, result.createdCardIds);
 
@@ -319,18 +292,8 @@ export async function generateWithPresetGlobal(
 
 	try {
 		await plugin.activateView();
-		const noteType = resolvePresetNoteType(plugin, preset);
-		if (!noteType) {
-			notify().error("Note type not found for preset");
-			return;
-		}
 		const service = getStreamingService(plugin);
-		const result = await service.generateWithPreset(
-			text,
-			file,
-			preset,
-			noteType,
-		);
+		const result = await service.generate(text, file, preset.id);
 
 		runPresetPostProcessing(plugin, preset, result.createdCardIds);
 
