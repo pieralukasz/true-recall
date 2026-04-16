@@ -9,40 +9,10 @@ import { ForgetCommand } from "@true-recall/obsidian/commands/commands/card-forg
 import { getHighlightColor } from "@true-recall/obsidian/features/library/ui/panel/utils/card-status.utils";
 import { extractHighlights } from "@true-recall/obsidian/features/library/ui/panel/utils/highlight-extractor";
 import { cardsToBlockText } from "@true-recall/obsidian/features/library/ui/panel/utils/panel-helpers";
+import { runPresetPostProcessing } from "@true-recall/obsidian/plugin/generation-post-processing";
 import { useApp, usePlugin } from "@true-recall/obsidian/preact";
 
 import { usePanelStore } from "./usePanelStore";
-
-function runTTSPostProcessing(
-	plugin: {
-		app: import("obsidian").App;
-		settings: import("@true-recall/core/types").TrueRecallSettings;
-		cardStore: import("@true-recall/core/persistence/sqlite/SqliteStoreService").SqliteStoreService;
-	},
-	createdCardIds: string[],
-): void {
-	const { settings } = plugin;
-	if (
-		!settings.languageTtsEnabled ||
-		!settings.languageTtsField ||
-		!settings.languageSource
-	)
-		return;
-	const config = {
-		ttsField: settings.languageTtsField,
-		languageCode: settings.languageSource,
-	};
-	void import("@true-recall/obsidian/services/tts-post-processor").then(
-		({ TTSPostProcessor }) => {
-			const processor = new TTSPostProcessor(
-				plugin.app,
-				() => plugin.settings,
-				plugin.cardStore,
-			);
-			void processor.processCards(createdCardIds, config);
-		},
-	);
-}
 
 export function usePanelActions() {
 	const plugin = usePlugin();
@@ -110,7 +80,7 @@ export function usePanelActions() {
 			if (result.createdCardIds && result.createdCardIds.length > 0) {
 				const cmd = new BatchCreateCommand(result.createdCardIds);
 				await plugin.commandService?.execute(cmd);
-				runTTSPostProcessing(plugin, result.createdCardIds);
+				runPresetPostProcessing(plugin, result.preset, result.createdCardIds);
 			}
 		} catch (error) {
 			if (error instanceof DOMException && error.name === "AbortError") return;
@@ -202,7 +172,7 @@ export function usePanelActions() {
 			if (result.createdCardIds && result.createdCardIds.length > 0) {
 				const cmd = new BatchCreateCommand(result.createdCardIds);
 				await plugin.commandService?.execute(cmd);
-				runTTSPostProcessing(plugin, result.createdCardIds);
+				runPresetPostProcessing(plugin, result.preset, result.createdCardIds);
 			}
 		} catch (error) {
 			if (error instanceof DOMException && error.name === "AbortError") return;

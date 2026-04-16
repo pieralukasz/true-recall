@@ -6,13 +6,12 @@ import type { GenerationPreset } from "@true-recall/core/types/generation-preset
 import { mutate } from "@true-recall/obsidian/data";
 import { QuickNoteEditorModal } from "@true-recall/obsidian/modals/study/quick-note-editor/QuickNoteEditorModal";
 import { notify } from "@true-recall/obsidian/services/notification.service";
-import { TTSPostProcessor } from "@true-recall/obsidian/services/tts-post-processor";
 
 import { ObsidianHttpClient } from "../adapters/ObsidianHttpClient";
 import type TrueRecallPlugin from "../main";
+import { runPresetPostProcessing } from "./generation-post-processing";
 
 let streamingService: StreamingGenerationService | null = null;
-let ttsProcessor: TTSPostProcessor | null = null;
 
 function getStreamingService(
 	plugin: TrueRecallPlugin,
@@ -25,17 +24,6 @@ function getStreamingService(
 		);
 	}
 	return streamingService;
-}
-
-function getTTSPostProcessor(plugin: TrueRecallPlugin): TTSPostProcessor {
-	if (!ttsProcessor) {
-		ttsProcessor = new TTSPostProcessor(
-			plugin.app,
-			() => plugin.settings,
-			plugin.cardStore,
-		);
-	}
-	return ttsProcessor;
 }
 
 function findMostRecentMarkdownFile(plugin: TrueRecallPlugin): TFile | null {
@@ -210,20 +198,6 @@ function resolvePreset(
 	return (
 		plugin.settings.generationPresets.find((p) => p.id === presetId) ?? null
 	);
-}
-
-function runPresetPostProcessing(
-	plugin: TrueRecallPlugin,
-	preset: GenerationPreset,
-	createdCardIds: string[],
-): void {
-	if (createdCardIds.length === 0) return;
-	if (preset.tts?.field) {
-		void getTTSPostProcessor(plugin).processCards(createdCardIds, {
-			ttsField: preset.tts.field,
-			languageCode: preset.tts.voice,
-		});
-	}
 }
 
 export async function generateWithPreset(
