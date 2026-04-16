@@ -5,6 +5,7 @@ import type { ToolbarButtonConfig } from "@true-recall/core/types";
 import type { GenerationPreset } from "@true-recall/core/types/generation-preset.types";
 
 import { Clickable } from "@true-recall/obsidian/components";
+import { isPresetProRequired } from "@true-recall/obsidian/plugin/generation-post-processing";
 
 import {
 	BUILTIN_BUTTONS,
@@ -34,6 +35,7 @@ interface SelectionToolbarProps {
 	buttons: ToolbarButtonConfig[];
 	actions: ToolbarActions;
 	hasApiKey: boolean;
+	isPro: boolean;
 	presets?: GenerationPreset[];
 	detectedImagePath?: string | null;
 	pluginStates?: Record<string, boolean>;
@@ -50,6 +52,7 @@ export function SelectionToolbar({
 	buttons,
 	actions,
 	hasApiKey,
+	isPro,
 	presets,
 	detectedImagePath,
 	pluginStates = {},
@@ -65,6 +68,10 @@ export function SelectionToolbar({
 
 	const enabledButtons = buttons.filter((b) => {
 		if (!b.enabled) return false;
+		if (isPresetButton(b.id)) {
+			if (pluginStates["ai-generation"] === false) return false;
+			return true;
+		}
 		const pluginInfo = BUTTON_PLUGIN_MAP.get(b.id);
 		if (pluginInfo && pluginStates[pluginInfo.pluginId] === false) return false;
 		return true;
@@ -79,6 +86,7 @@ export function SelectionToolbar({
 					actions={actions}
 					selectedText={selectedText}
 					hasApiKey={hasApiKey}
+					isPro={isPro}
 					presets={presets}
 					detectedImagePath={detectedImagePath}
 					copied={copied}
@@ -95,6 +103,7 @@ interface ToolbarButtonProps {
 	actions: ToolbarActions;
 	selectedText: string;
 	hasApiKey: boolean;
+	isPro: boolean;
 	presets?: GenerationPreset[];
 	detectedImagePath?: string | null;
 	copied: boolean;
@@ -107,6 +116,7 @@ function ToolbarButton({
 	actions,
 	selectedText,
 	hasApiKey,
+	isPro,
 	presets,
 	detectedImagePath,
 	copied,
@@ -261,7 +271,7 @@ function ToolbarButton({
 						>
 							<span>
 								{label}
-								{PRO_BADGE}
+								{!isPro && isPresetProRequired(preset) && PRO_BADGE}
 							</span>
 						</Clickable>
 					</>

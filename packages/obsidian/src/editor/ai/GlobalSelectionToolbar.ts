@@ -11,6 +11,7 @@ export interface GlobalSelectionToolbarCallbacks {
 	actions: ToolbarActions;
 	getButtons: () => ToolbarButtonConfig[];
 	hasApiKey: () => boolean;
+	isPro: () => boolean;
 	isEnabled: () => boolean;
 	getPluginStates: () => Record<string, boolean>;
 	getSourceFile: (range: Range) => TFile | null;
@@ -128,6 +129,7 @@ export class GlobalSelectionToolbar {
 					onDismiss: () => this.removeToolbar(),
 				},
 				hasApiKey: this.callbacks.hasApiKey(),
+				isPro: this.callbacks.isPro(),
 				presets: this.callbacks.getPresets(),
 				pluginStates: this.callbacks.getPluginStates(),
 			}),
