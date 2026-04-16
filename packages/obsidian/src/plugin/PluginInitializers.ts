@@ -34,10 +34,8 @@ import {
 	appendToCurrentNote,
 	createNoteFromSelection,
 	editSelectionAsFlashcard,
-	generateFlashcardsFromSelection,
-	generateFlashcardsGlobal,
-	generateVocabFromSelection,
-	generateVocabGlobal,
+	generateWithPreset,
+	generateWithPresetGlobal,
 	hasApiKey,
 	quickAddFlashcardFromSelection,
 	quickAddFlashcardGlobal,
@@ -288,12 +286,9 @@ function getSourceFileFromDOM(
 }
 
 function initializeSelectionToolbar(plugin: TrueRecallPlugin): void {
-	const hasLanguageConfigured = () =>
-		!!plugin.settings.languageSource && !!plugin.settings.languageTarget;
-
 	const editorActions = {
-		onGenerate: (text: string) => generateFlashcardsFromSelection(plugin, text),
-		onVocab: (text: string) => generateVocabFromSelection(plugin, text),
+		onPreset: (presetId: string, text: string) =>
+			generateWithPreset(plugin, presetId, text),
 		onEdit: (text: string) => editSelectionAsFlashcard(plugin, text),
 		onQuickAdd: (text: string) => quickAddFlashcardFromSelection(plugin, text),
 		onImageOcclusion: (imagePath: string) =>
@@ -309,9 +304,9 @@ function initializeSelectionToolbar(plugin: TrueRecallPlugin): void {
 		actions: editorActions,
 		getButtons: () => plugin.settings.editorToolbarButtons,
 		hasApiKey: () => hasApiKey(plugin),
-		hasLanguageConfigured,
 		isEnabled: () => plugin.settings.selectionToolbarEnabled,
 		getPluginStates: () => plugin.settings.pluginStates ?? {},
+		getPresets: () => plugin.settings.generationPresets,
 	});
 
 	plugin.registerEditorExtension([extension]);
@@ -366,10 +361,8 @@ function initializeSelectionToolbar(plugin: TrueRecallPlugin): void {
 	void import("@true-recall/obsidian/editor/ai/GlobalSelectionToolbar").then(
 		({ GlobalSelectionToolbar }) => {
 			const globalActions = {
-				onGenerate: (text: string, sourceFile?: TFile | null) =>
-					generateFlashcardsGlobal(plugin, text, sourceFile),
-				onVocab: (text: string, sourceFile?: TFile | null) =>
-					generateVocabGlobal(plugin, text, sourceFile),
+				onPreset: (presetId: string, text: string, sourceFile?: TFile | null) =>
+					generateWithPresetGlobal(plugin, presetId, text, sourceFile),
 				onEdit: (text: string) => editSelectionAsFlashcard(plugin, text),
 				onQuickAdd: (text: string, sourceFile?: TFile | null) =>
 					quickAddFlashcardGlobal(plugin, text, sourceFile),
@@ -384,10 +377,10 @@ function initializeSelectionToolbar(plugin: TrueRecallPlugin): void {
 				actions: globalActions,
 				getButtons: () => plugin.settings.globalToolbarButtons,
 				hasApiKey: () => hasApiKey(plugin),
-				hasLanguageConfigured,
 				isEnabled: () => plugin.settings.selectionToolbarEnabled,
 				getPluginStates: () => plugin.settings.pluginStates ?? {},
 				getSourceFile: (range) => getSourceFileFromDOM(plugin, range),
+				getPresets: () => plugin.settings.generationPresets,
 			});
 			toolbar.register();
 			plugin._globalSelectionToolbar = toolbar;

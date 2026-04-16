@@ -7,18 +7,6 @@ interface ToolbarButtonDef {
 
 export const BUILTIN_BUTTONS: ToolbarButtonDef[] = [
 	{
-		id: "flashcards",
-		label: "AI Flashcards",
-		title: "Generate flashcard(s) with AI",
-		editorOnly: false,
-	},
-	{
-		id: "vocab",
-		label: "Vocab",
-		title: "Generate vocabulary flashcards using active language preset",
-		editorOnly: false,
-	},
-	{
 		id: "io",
 		label: "Image Occlusion",
 		title: "Create image occlusion card",
@@ -69,4 +57,12 @@ export function getButtonLabel(id: string): string {
 
 export function isBuiltinButton(id: string): boolean {
 	return BUILTIN_BUTTONS.some((b) => b.id === id);
+}
+
+export function isPresetButton(id: string): boolean {
+	return id.startsWith("preset:");
+}
+
+export function extractPresetId(buttonId: string): string {
+	return buttonId.replace("preset:", "");
 }

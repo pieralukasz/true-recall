@@ -205,8 +205,7 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 	selectionToolbarEnabled: true,
 
 	editorToolbarButtons: [
-		{ id: "flashcards", enabled: true },
-		{ id: "vocab", enabled: true },
+		{ id: `preset:${BUILTIN_BASIC_PRESET_ID}`, enabled: true },
 		{ id: "io", enabled: true },
 		{ id: "edit", enabled: true },
 		{ id: "quick-add", enabled: true },
@@ -215,8 +214,7 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 		{ id: "new-note", enabled: true },
 	],
 	globalToolbarButtons: [
-		{ id: "flashcards", enabled: true },
-		{ id: "vocab", enabled: true },
+		{ id: `preset:${BUILTIN_BASIC_PRESET_ID}`, enabled: true },
 		{ id: "edit", enabled: true },
 		{ id: "quick-add", enabled: true },
 		{ id: "copy", enabled: true },

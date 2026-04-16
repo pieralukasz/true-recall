@@ -3,6 +3,7 @@ import type { TFile } from "obsidian";
 import { h, render } from "preact";
 
 import type { ToolbarButtonConfig } from "@true-recall/core/types";
+import type { GenerationPreset } from "@true-recall/core/types/generation-preset.types";
 
 import { SelectionToolbar, type ToolbarActions } from "./SelectionToolbar";
 
@@ -10,10 +11,10 @@ export interface GlobalSelectionToolbarCallbacks {
 	actions: ToolbarActions;
 	getButtons: () => ToolbarButtonConfig[];
 	hasApiKey: () => boolean;
-	hasLanguageConfigured: () => boolean;
 	isEnabled: () => boolean;
 	getPluginStates: () => Record<string, boolean>;
 	getSourceFile: (range: Range) => TFile | null;
+	getPresets: () => GenerationPreset[];
 }
 
 const MIN_SELECTION_LENGTH = 3;
@@ -120,16 +121,14 @@ export class GlobalSelectionToolbar {
 				buttons: this.callbacks.getButtons(),
 				actions: {
 					...this.callbacks.actions,
-					onGenerate: (_t: string) =>
-						this.callbacks.actions.onGenerate(text, sourceFile),
-					onVocab: (_t: string) =>
-						this.callbacks.actions.onVocab(text, sourceFile),
+					onPreset: (presetId: string, _t: string) =>
+						this.callbacks.actions.onPreset(presetId, text, sourceFile),
 					onQuickAdd: (_t: string) =>
 						this.callbacks.actions.onQuickAdd(text, sourceFile),
 					onDismiss: () => this.removeToolbar(),
 				},
 				hasApiKey: this.callbacks.hasApiKey(),
-				hasLanguageConfigured: this.callbacks.hasLanguageConfigured(),
+				presets: this.callbacks.getPresets(),
 				pluginStates: this.callbacks.getPluginStates(),
 			}),
 			this.container,
