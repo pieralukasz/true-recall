@@ -1,4 +1,5 @@
 import type { IHttpClient } from "../../interfaces/http-client";
+import type { GenerationPreset } from "../../types/generation-preset.types";
 import type { NoteType } from "../../types/note.types";
 import type { TrueRecallSettings } from "../../types/settings.types";
 import { StreamingOpenRouterClient } from "../clients/streaming-openrouter-client";
@@ -124,6 +125,18 @@ export class ChunkedGenerationService {
 		);
 
 		const settings = this.getSettings();
+		const _legacyPlaceholderPreset: GenerationPreset =
+			settings.generationPresets?.[0] ??
+			({
+				id: "_legacy",
+				name: "Legacy",
+				noteTypeId: (noteType ?? FALLBACK_BASIC_NOTE_TYPE).id,
+				fields: {},
+				isPinned: false,
+				isDefault: false,
+				createdAt: 0,
+				updatedAt: 0,
+			} as GenerationPreset);
 		const aiConfig = resolveAIClientConfig(settings);
 		const customPrompt = settings.aiGenerationPrompt?.trim() || "";
 		const systemPrompt = aiConfig.isPro
@@ -158,6 +171,7 @@ export class ChunkedGenerationService {
 						abortController.signal,
 						noteType,
 						chunk.content,
+						_legacyPlaceholderPreset,
 					);
 					totalCreated += result.created;
 					totalDuplicates += result.duplicates;
@@ -185,6 +199,7 @@ export class ChunkedGenerationService {
 			created: totalCreated,
 			duplicates: totalDuplicates,
 			createdCardIds: allCreatedCardIds,
+			preset: _legacyPlaceholderPreset,
 			failedChunks,
 			totalChunks: chunks.length,
 			errors,
@@ -199,6 +214,7 @@ export class ChunkedGenerationService {
 		signal: AbortSignal,
 		noteType?: NoteType | null,
 		chunkContent?: string,
+		preset?: GenerationPreset,
 	): Promise<StreamingGenerationResult> {
 		const client = new StreamingOpenRouterClient(
 			aiConfig.apiKey,
@@ -267,6 +283,7 @@ export class ChunkedGenerationService {
 			created: createdCount,
 			duplicates: duplicateCount,
 			createdCardIds,
+			preset: preset ?? ({} as GenerationPreset),
 		};
 	}
 }
