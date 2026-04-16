@@ -77,6 +77,7 @@ export interface StreamingSourceFile extends SourceFileRef {
 /** Minimal FlashcardManager interface for streaming generation. */
 export interface StreamingFlashcardManager extends CardEventFlashcardManager {
 	getNoteTypeBySlug?(slug: string): NoteType | null;
+	getNoteTypeById?(id: string): NoteType | null;
 }
 
 export class StreamingGenerationService {
