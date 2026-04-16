@@ -1,0 +1,139 @@
+import type { App } from "obsidian";
+import { requestUrl } from "obsidian";
+
+import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite/SqliteStoreService";
+import type { TrueRecallSettings } from "@true-recall/core/types/settings.types";
+
+const IMAGE_DIR = ".true-recall/images";
+
+type VaultAdapter = App["vault"]["adapter"];
+
+export interface ImageFieldConfig {
+	fieldName: string;
+	sourceField: string;
+	style?: string;
+}
+
+export class ImagePostProcessor {
+	constructor(
+		private app: App,
+		private getSettings: () => TrueRecallSettings,
+		private cardStore: SqliteStoreService,
+	) {}
+
+	async processCards(
+		cardIds: string[],
+		fields: ImageFieldConfig[],
+	): Promise<void> {
+		if (fields.length === 0) return;
+
+		const adapter = this.app.vault.adapter;
+		if (!(await adapter.exists(IMAGE_DIR))) {
+			await adapter.mkdir(IMAGE_DIR);
+		}
+
+		for (const cardId of cardIds) {
+			for (const field of fields) {
+				try {
+					await this.processCardField(cardId, field, adapter);
+				} catch (e) {
+					console.warn(
+						`[True Recall Image] Failed for card ${cardId}, field ${field.fieldName}:`,
+						e,
+					);
+				}
+			}
+		}
+	}
+
+	private async processCardField(
+		cardId: string,
+		field: ImageFieldConfig,
+		adapter: VaultAdapter,
+	): Promise<void> {
+		const card = this.cardStore.cards.get(cardId);
+		if (!card?.noteId) return;
+
+		const note = this.cardStore.notes.getById(card.noteId);
+		if (!note?.fields) return;
+
+		const sourceText = note.fields[field.sourceField];
+		if (!sourceText) return;
+
+		if (note.fields[field.fieldName]) return;
+
+		const settings = this.getSettings();
+		const apiKey = settings.openRouterApiKey;
+		if (!apiKey) return;
+
+		const prompt = field.style
+			? `${sourceText}. Style: ${field.style}. No text, no words, no letters.`
+			: `${sourceText}. Simple, clear illustration. No text, no words, no letters.`;
+
+		const hash = this.hashText(`${sourceText}:${field.style ?? ""}`);
+		const imagePath = `${IMAGE_DIR}/${hash}.png`;
+
+		if (await adapter.exists(imagePath)) {
+			this.updateNoteField(
+				note.id,
+				note.fields,
+				field.fieldName,
+				`![[${imagePath}]]`,
+			);
+			return;
+		}
+
+		const response = await requestUrl({
+			url: "https://openrouter.ai/api/v1/images/generations",
+			method: "POST",
+			headers: {
+				Authorization: `Bearer ${apiKey}`,
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({
+				model: "openai/dall-e-3",
+				prompt,
+				n: 1,
+				size: "1024x1024",
+			}),
+		});
+
+		if (response.status !== 200) {
+			throw new Error(`Image API returned ${response.status}`);
+		}
+
+		const data = response.json;
+		const imageUrl = data?.data?.[0]?.url;
+		if (!imageUrl) throw new Error("No image URL in response");
+
+		const imageResponse = await requestUrl({ url: imageUrl });
+		await adapter.writeBinary(imagePath, imageResponse.arrayBuffer);
+
+		this.updateNoteField(
+			note.id,
+			note.fields,
+			field.fieldName,
+			`![[${imagePath}]]`,
+		);
+	}
+
+	private updateNoteField(
+		noteId: string,
+		currentFields: Record<string, string>,
+		fieldName: string,
+		value: string,
+	): void {
+		const updatedFields = { ...currentFields, [fieldName]: value };
+		this.cardStore.notes.update(noteId, { fields: updatedFields });
+	}
+
+	private hashText(text: string): string {
+		let hash = 0;
+		for (let i = 0; i < text.length; i++) {
+			const char = text.charCodeAt(i);
+			hash = (hash << 5) - hash + char;
+			hash |= 0;
+		}
+		return Math.abs(hash).toString(36);
+	}
+}
