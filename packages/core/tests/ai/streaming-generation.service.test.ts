@@ -24,6 +24,7 @@ const basicPreset: GenerationPreset = {
 		Front: { role: "ai-text", instruction: "Question" },
 		Back: { role: "ai-text", instruction: "Answer" },
 	},
+	tts: null,
 	isPinned: true,
 	isDefault: true,
 	createdAt: 0,

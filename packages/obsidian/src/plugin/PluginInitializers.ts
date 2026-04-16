@@ -303,8 +303,11 @@ function initializeSelectionToolbar(plugin: TrueRecallPlugin): void {
 	const extension = createSelectionToolbarExtension({
 		actions: editorActions,
 		getButtons: () => plugin.settings.editorToolbarButtons,
-		hasApiKey: () => hasApiKey(plugin),
-		isPro: () => !!plugin.settings.proKey,
+		tier: () => {
+			if (plugin.settings.proKey) return "pro";
+			if (hasApiKey(plugin)) return "byok";
+			return "none";
+		},
 		isEnabled: () => plugin.settings.selectionToolbarEnabled,
 		getPluginStates: () => plugin.settings.pluginStates ?? {},
 		getPresets: () => plugin.settings.generationPresets,
@@ -377,8 +380,11 @@ function initializeSelectionToolbar(plugin: TrueRecallPlugin): void {
 			const toolbar = new GlobalSelectionToolbar({
 				actions: globalActions,
 				getButtons: () => plugin.settings.globalToolbarButtons,
-				hasApiKey: () => hasApiKey(plugin),
-				isPro: () => !!plugin.settings.proKey,
+				tier: () => {
+					if (plugin.settings.proKey) return "pro";
+					if (hasApiKey(plugin)) return "byok";
+					return "none";
+				},
 				isEnabled: () => plugin.settings.selectionToolbarEnabled,
 				getPluginStates: () => plugin.settings.pluginStates ?? {},
 				getSourceFile: (range) => getSourceFileFromDOM(plugin, range),

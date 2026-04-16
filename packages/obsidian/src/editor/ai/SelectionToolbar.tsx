@@ -30,12 +30,13 @@ export interface ToolbarActions {
 	onDismiss: () => void;
 }
 
+export type ToolbarTier = "none" | "byok" | "pro";
+
 interface SelectionToolbarProps {
 	selectedText: string;
 	buttons: ToolbarButtonConfig[];
 	actions: ToolbarActions;
-	hasApiKey: boolean;
-	isPro: boolean;
+	tier: ToolbarTier;
 	presets?: GenerationPreset[];
 	detectedImagePath?: string | null;
 	pluginStates?: Record<string, boolean>;
@@ -51,8 +52,7 @@ export function SelectionToolbar({
 	selectedText,
 	buttons,
 	actions,
-	hasApiKey,
-	isPro,
+	tier,
 	presets,
 	detectedImagePath,
 	pluginStates = {},
@@ -85,8 +85,7 @@ export function SelectionToolbar({
 					config={btn}
 					actions={actions}
 					selectedText={selectedText}
-					hasApiKey={hasApiKey}
-					isPro={isPro}
+					tier={tier}
 					presets={presets}
 					detectedImagePath={detectedImagePath}
 					copied={copied}
@@ -102,8 +101,7 @@ interface ToolbarButtonProps {
 	config: ToolbarButtonConfig;
 	actions: ToolbarActions;
 	selectedText: string;
-	hasApiKey: boolean;
-	isPro: boolean;
+	tier: ToolbarTier;
 	presets?: GenerationPreset[];
 	detectedImagePath?: string | null;
 	copied: boolean;
@@ -115,8 +113,7 @@ function ToolbarButton({
 	config,
 	actions,
 	selectedText,
-	hasApiKey,
-	isPro,
+	tier,
 	presets,
 	detectedImagePath,
 	copied,
@@ -256,22 +253,22 @@ function ToolbarButton({
 					<>
 						{showDivider && <span class="true-recall-st-divider" />}
 						<Clickable
-							class={`true-recall-st-btn ${!hasApiKey ? "true-recall-st-btn-disabled" : ""}`}
-							disabled={!hasApiKey}
+							class={`true-recall-st-btn ${tier === "none" ? "true-recall-st-btn-disabled" : ""}`}
+							disabled={tier === "none"}
 							onClick={() => {
-								if (!hasApiKey) return;
+								if (tier === "none") return;
 								actions.onDismiss();
 								void actions.onPreset(presetId, selectedText);
 							}}
 							title={
-								hasApiKey
+								tier !== "none"
 									? `Generate: ${preset.name}`
 									: "Add API key in settings"
 							}
 						>
 							<span>
 								{label}
-								{!isPro && isPresetProRequired(preset) && PRO_BADGE}
+								{tier !== "pro" && isPresetProRequired(preset) && PRO_BADGE}
 							</span>
 						</Clickable>
 					</>

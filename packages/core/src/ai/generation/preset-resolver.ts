@@ -3,7 +3,7 @@ import type { NoteType } from "../../types/note.types";
 import type { TrueRecallSettings } from "../../types/settings.types";
 
 export interface PresetResolverFlashcardManager {
-	getNoteTypeById?(id: string): NoteType | null;
+	getNoteTypeById(id: string): NoteType | null;
 }
 
 export interface ResolvedGenerationPreset {
@@ -23,8 +23,7 @@ export function resolveGenerationPresetAndNoteType(
 		throw new Error(`Generation preset "${presetId}" not found`);
 	}
 
-	const noteType =
-		flashcardManager.getNoteTypeById?.(preset.noteTypeId) ?? null;
+	const noteType = flashcardManager.getNoteTypeById(preset.noteTypeId);
 	if (!noteType) {
 		throw new Error(
 			`Preset "${preset.id}" references unknown note type "${preset.noteTypeId}"`,

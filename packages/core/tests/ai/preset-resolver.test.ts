@@ -24,6 +24,7 @@ const basicPreset: GenerationPreset = {
 		Front: { role: "ai-text", instruction: "Question" },
 		Back: { role: "ai-text", instruction: "Answer" },
 	},
+	tts: null,
 	isPinned: true,
 	isDefault: true,
 	createdAt: 0,
@@ -79,12 +80,6 @@ describe("resolveGenerationPresetAndNoteType", () => {
 		).toThrow(
 			'Preset "preset-basic" references unknown note type "ghost-note-type"',
 		);
-	});
-
-	it("throws when manager has no getNoteTypeById method", () => {
-		expect(() =>
-			resolveGenerationPresetAndNoteType(makeSettings(), {}, basicPreset.id),
-		).toThrow('Preset "preset-basic" references unknown note type "nt-basic"');
 	});
 
 	it("throws when tts.field does not match any preset field", () => {
