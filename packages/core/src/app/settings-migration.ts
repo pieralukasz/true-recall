@@ -1,4 +1,5 @@
-import { DEFAULT_SETTINGS } from "../constants";
+import { BUILTIN_BASIC_PRESET, DEFAULT_SETTINGS } from "../constants";
+import type { GenerationPreset } from "../types/generation-preset.types";
 import type { TrueRecallSettings } from "../types/settings.types";
 
 /**
@@ -96,6 +97,90 @@ export function migrateSettings(raw: Partial<TrueRecallSettings> | null): {
 		}
 		delete (settings as any).generationPresets;
 		delete (settings as any).activeGenerationPresetId;
+		needsSave = true;
+	}
+
+	// Generation preset migration
+	if (!raw?.generationPresets) {
+		const presets: GenerationPreset[] = [];
+		const now = Date.now();
+
+		// Migrate generationNoteTypeId → preset (if custom note type was configured)
+		const genNoteTypeId = (raw as any)?.generationNoteTypeId;
+		if (genNoteTypeId && genNoteTypeId !== "builtin-basic") {
+			presets.push({
+				id: `migrated-gen-${now}`,
+				name: "Flashcards",
+				noteTypeId: genNoteTypeId,
+				fields: {},
+				customPrompt: (raw as any)?.aiGenerationPrompt || undefined,
+				tts: null,
+				isPinned: true,
+				isDefault: true,
+				createdAt: now,
+				updatedAt: now,
+			});
+		}
+
+		// Migrate language learning → vocab preset
+		const langNoteTypeId = (raw as any)?.languageNoteTypeId;
+		const langSource = (raw as any)?.languageSource;
+		if (langNoteTypeId || langSource) {
+			const ttsEnabled = (raw as any)?.languageTtsEnabled;
+			const ttsField = (raw as any)?.languageTtsField;
+			presets.push({
+				id: `migrated-vocab-${now}`,
+				name: "Vocabulary",
+				noteTypeId: langNoteTypeId ?? genNoteTypeId ?? "builtin-basic",
+				fields: {},
+				tts:
+					ttsEnabled && ttsField
+						? {
+								field: ttsField,
+								voice: (raw as any)?.ttsVoice ?? "nova",
+								autoplay: (raw as any)?.ttsAutoplay ?? false,
+							}
+						: null,
+				isPinned: true,
+				isDefault: presets.length === 0,
+				createdAt: now,
+				updatedAt: now,
+			});
+		}
+
+		// Fallback: built-in basic preset
+		if (presets.length === 0) {
+			presets.push({ ...BUILTIN_BASIC_PRESET });
+		}
+
+		const defaultPreset =
+			presets.find((p) => p.isDefault) ?? presets[0] ?? BUILTIN_BASIC_PRESET;
+		settings.generationPresets = presets;
+		settings.defaultGenerationPresetId = defaultPreset.id;
+
+		// Migrate toolbar button IDs: replace "flashcards"/"vocab" with preset: prefixed IDs
+		for (const key of [
+			"editorToolbarButtons",
+			"globalToolbarButtons",
+		] as const) {
+			if (raw?.[key]) {
+				const insertIdx = settings[key].findIndex(
+					(b: any) => b.id === "flashcards" || b.id === "vocab",
+				);
+				const nonPresetButtons = settings[key].filter(
+					(b: any) => b.id !== "flashcards" && b.id !== "vocab",
+				);
+				const presetButtons = presets
+					.filter((p) => p.isPinned)
+					.map((p) => ({
+						id: `preset:${p.id}`,
+						enabled: true,
+					}));
+				nonPresetButtons.splice(Math.max(insertIdx, 0), 0, ...presetButtons);
+				settings[key] = nonPresetButtons;
+			}
+		}
+
 		needsSave = true;
 	}
 
