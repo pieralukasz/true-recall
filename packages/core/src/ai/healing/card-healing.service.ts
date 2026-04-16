@@ -70,8 +70,8 @@ export class CardHealingService {
 					: undefined,
 				mnemonic: parsed.mnemonic ? String(parsed.mnemonic) : undefined,
 			};
-		} catch {
-			throw new Error("Failed to parse healing suggestion");
+		} catch (cause) {
+			throw new Error("Failed to parse healing suggestion", { cause });
 		}
 	}
 }
