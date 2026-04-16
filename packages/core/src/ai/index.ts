@@ -59,7 +59,6 @@ export {
 } from "./generation/process-card-events";
 // Streaming generation
 export {
-	buildGenerationPrompt,
 	FALLBACK_BASIC_NOTE_TYPE,
 	type StreamingFlashcardManager,
 	type StreamingGenerationResult,
@@ -83,10 +82,7 @@ export {
 	type MarkdownChunk,
 } from "./parsing/markdown-chunker";
 // Prompts
-export {
-	buildByokPrompt,
-	buildCardFormatSpec,
-} from "./prompts/block-prompt-builder";
+export { buildCardFormatSpec } from "./prompts/block-prompt-builder";
 export {
 	buildLanguageSuffix,
 	GENERATION_LANGUAGES,
