@@ -4,8 +4,8 @@ import type TrueRecallPlugin from "../main";
 import { isPluginEnabled } from "./plugin-utils";
 import {
 	editSelectionAsFlashcard,
-	generateFlashcardsFromSelection,
-	generateFlashcardsGlobal,
+	generateWithPreset,
+	generateWithPresetGlobal,
 	hasApiKey,
 	quickAddFlashcardFromSelection,
 	quickAddFlashcardGlobal,
@@ -238,7 +238,11 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 			if (!selection || selection.trim().length < 3) return false;
 			if (!hasApiKey(plugin)) return false;
 			if (checking) return true;
-			void generateFlashcardsFromSelection(plugin, selection.trim());
+			void generateWithPreset(
+				plugin,
+				plugin.settings.defaultGenerationPresetId,
+				selection.trim(),
+			);
 			return true;
 		},
 	});
@@ -276,7 +280,11 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 			if (!text || text.length < 3) return false;
 			if (!hasApiKey(plugin)) return false;
 			if (checking) return true;
-			void generateFlashcardsGlobal(plugin, text);
+			void generateWithPresetGlobal(
+				plugin,
+				plugin.settings.defaultGenerationPresetId,
+				text,
+			);
 			return true;
 		},
 	});

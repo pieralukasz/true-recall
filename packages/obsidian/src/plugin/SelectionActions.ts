@@ -1,4 +1,4 @@
-import { TFile } from "obsidian";
+import type { TFile } from "obsidian";
 
 import { StreamingGenerationService } from "@true-recall/core/ai/generation/streaming-generation.service";
 import type { GenerationPreset } from "@true-recall/core/types/generation-preset.types";
@@ -39,24 +39,6 @@ function getTTSPostProcessor(plugin: TrueRecallPlugin): TTSPostProcessor {
 	return ttsProcessor;
 }
 
-function runTTSIfNeeded(
-	plugin: TrueRecallPlugin,
-	createdCardIds: string[],
-): void {
-	if (createdCardIds.length === 0) return;
-	const { settings } = plugin;
-	if (
-		!settings.languageTtsEnabled ||
-		!settings.languageTtsField ||
-		!settings.languageSource
-	)
-		return;
-	void getTTSPostProcessor(plugin).processCards(createdCardIds, {
-		ttsField: settings.languageTtsField,
-		languageCode: settings.languageSource,
-	});
-}
-
 function resolveNoteType(plugin: TrueRecallPlugin, id: string | null) {
 	if (!id) return plugin.cardStore?.noteTypes.getById(BUILTIN_BASIC_ID) ?? null;
 	return (
@@ -66,179 +48,20 @@ function resolveNoteType(plugin: TrueRecallPlugin, id: string | null) {
 	);
 }
 
-function resolveGenerationNoteType(plugin: TrueRecallPlugin) {
-	return resolveNoteType(plugin, plugin.settings.generationNoteTypeId);
-}
-
-function resolveLanguageNoteType(plugin: TrueRecallPlugin) {
-	const id =
-		plugin.settings.languageNoteTypeId ?? plugin.settings.generationNoteTypeId;
-	return resolveNoteType(plugin, id);
-}
-
-export function hasApiKey(plugin: TrueRecallPlugin): boolean {
-	return !!(plugin.settings.proKey || plugin.settings.openRouterApiKey);
-}
-
 function findMostRecentMarkdownFile(plugin: TrueRecallPlugin): TFile | null {
 	const recentPaths = plugin.app.workspace.getLastOpenFiles();
 	for (const path of recentPaths) {
 		if (!path.endsWith(".md")) continue;
 		const file = plugin.app.vault.getAbstractFileByPath(path);
-		if (file instanceof TFile) return file;
+		if (file instanceof (plugin.app.vault.adapter.constructor as any)) continue;
+		// Use type narrowing via duck-typing since TFile is not importable as value
+		if (file && "basename" in file) return file as TFile;
 	}
 	return null;
 }
 
-export async function generateFlashcardsFromSelection(
-	plugin: TrueRecallPlugin,
-	text: string,
-): Promise<void> {
-	const file = plugin.app.workspace.getActiveFile();
-	if (!file) {
-		notify().error("No active file");
-		return;
-	}
-
-	try {
-		await plugin.activateView();
-
-		const noteType = resolveGenerationNoteType(plugin);
-		const service = getStreamingService(plugin);
-		const result = await service.generateStreaming(text, file, noteType);
-
-		runTTSIfNeeded(plugin, result.createdCardIds);
-
-		if (result.created === 0 && result.duplicates === 0) {
-			notify().warning("No flashcards found in AI response");
-		} else if (result.duplicates > 0) {
-			notify().cardsCreatedWithDuplicates(
-				result.created,
-				result.duplicates,
-				file.basename,
-			);
-		} else {
-			notify().cardsCreated(result.created, file.basename);
-		}
-	} catch (error) {
-		if (error instanceof DOMException && error.name === "AbortError") return;
-		const msg = error instanceof Error ? error.message : String(error);
-		notify().error(`Flashcard generation failed: ${msg}`);
-	}
-}
-
-export async function generateVocabFromSelection(
-	plugin: TrueRecallPlugin,
-	text: string,
-): Promise<void> {
-	const { settings } = plugin;
-	const { languageSource, languageTarget } = settings;
-
-	if (!languageSource || !languageTarget) {
-		notify().error(
-			"Configure source and target language in Settings → Plugins → Language Learning",
-		);
-		return;
-	}
-
-	const file = plugin.app.workspace.getActiveFile();
-	if (!file) {
-		notify().error("No active file");
-		return;
-	}
-
-	try {
-		await plugin.activateView();
-		const noteType = resolveLanguageNoteType(plugin);
-		const service = getStreamingService(plugin);
-		const languageContext = {
-			sourceLanguage: languageSource,
-			targetLanguage: languageTarget,
-		};
-		const result = await service.generateStreaming(
-			text,
-			file,
-			noteType,
-			languageContext,
-		);
-
-		runTTSIfNeeded(plugin, result.createdCardIds);
-
-		if (result.created === 0 && result.duplicates === 0) {
-			notify().warning("No flashcards found in AI response");
-		} else if (result.duplicates > 0) {
-			notify().cardsCreatedWithDuplicates(
-				result.created,
-				result.duplicates,
-				file.basename,
-			);
-		} else {
-			notify().cardsCreated(result.created, file.basename);
-		}
-	} catch (error) {
-		if (error instanceof DOMException && error.name === "AbortError") return;
-		const msg = error instanceof Error ? error.message : String(error);
-		notify().error(`Vocab generation failed: ${msg}`);
-	}
-}
-
-export async function generateVocabGlobal(
-	plugin: TrueRecallPlugin,
-	text: string,
-	sourceFile?: TFile | null,
-): Promise<void> {
-	const { settings } = plugin;
-	const { languageSource, languageTarget } = settings;
-
-	if (!languageSource || !languageTarget) {
-		notify().error(
-			"Configure source and target language in Settings → Plugins → Language Learning",
-		);
-		return;
-	}
-
-	const file =
-		sourceFile ??
-		plugin.app.workspace.getActiveFile() ??
-		findMostRecentMarkdownFile(plugin);
-	if (!file) {
-		notify().error("No active file");
-		return;
-	}
-
-	try {
-		await plugin.activateView();
-		const noteType = resolveLanguageNoteType(plugin);
-		const service = getStreamingService(plugin);
-		const languageContext = {
-			sourceLanguage: languageSource,
-			targetLanguage: languageTarget,
-		};
-		const result = await service.generateStreaming(
-			text,
-			file,
-			noteType,
-			languageContext,
-		);
-
-		runTTSIfNeeded(plugin, result.createdCardIds);
-
-		if (result.created === 0 && result.duplicates === 0) {
-			notify().warning("No flashcards found in AI response");
-		} else if (result.duplicates > 0) {
-			notify().cardsCreatedWithDuplicates(
-				result.created,
-				result.duplicates,
-				file.basename,
-			);
-		} else {
-			notify().cardsCreated(result.created, file.basename);
-		}
-	} catch (error) {
-		if (error instanceof DOMException && error.name === "AbortError") return;
-		const msg = error instanceof Error ? error.message : String(error);
-		notify().error(`Vocab generation failed: ${msg}`);
-	}
+export function hasApiKey(plugin: TrueRecallPlugin): boolean {
+	return !!(plugin.settings.proKey || plugin.settings.openRouterApiKey);
 }
 
 export function editSelectionAsFlashcard(
@@ -276,47 +99,6 @@ export async function quickAddFlashcardFromSelection(
 	} catch (error) {
 		const msg = error instanceof Error ? error.message : String(error);
 		notify().error(`Quick add failed: ${msg}`);
-	}
-}
-
-export async function generateFlashcardsGlobal(
-	plugin: TrueRecallPlugin,
-	text: string,
-	sourceFile?: TFile | null,
-): Promise<void> {
-	const file =
-		sourceFile ??
-		plugin.app.workspace.getActiveFile() ??
-		findMostRecentMarkdownFile(plugin);
-	if (!file) {
-		editSelectionAsFlashcard(plugin, text);
-		notify().info("No active note found — opened editor instead");
-		return;
-	}
-
-	try {
-		await plugin.activateView();
-		const noteType = resolveGenerationNoteType(plugin);
-		const service = getStreamingService(plugin);
-		const result = await service.generateStreaming(text, file, noteType);
-
-		runTTSIfNeeded(plugin, result.createdCardIds);
-
-		if (result.created === 0 && result.duplicates === 0) {
-			notify().warning("No flashcards found in AI response");
-		} else if (result.duplicates > 0) {
-			notify().cardsCreatedWithDuplicates(
-				result.created,
-				result.duplicates,
-				file.basename,
-			);
-		} else {
-			notify().cardsCreated(result.created, file.basename);
-		}
-	} catch (error) {
-		if (error instanceof DOMException && error.name === "AbortError") return;
-		const msg = error instanceof Error ? error.message : String(error);
-		notify().error(`Flashcard generation failed: ${msg}`);
 	}
 }
 

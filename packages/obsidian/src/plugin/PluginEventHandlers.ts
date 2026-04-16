@@ -16,7 +16,7 @@ import { FlashcardPanelView } from "@true-recall/obsidian/views/panel/FlashcardP
 import type TrueRecallPlugin from "../main";
 import {
 	editSelectionAsFlashcard,
-	generateFlashcardsFromSelection,
+	generateWithPreset,
 	hasApiKey,
 	quickAddFlashcardFromSelection,
 } from "./SelectionActions";
@@ -95,7 +95,14 @@ export function registerEventHandlers(plugin: TrueRecallPlugin): void {
 					item
 						.setTitle("Generate flashcards")
 						.setIcon("sparkles")
-						.onClick(() => void generateFlashcardsFromSelection(plugin, text));
+						.onClick(
+							() =>
+								void generateWithPreset(
+									plugin,
+									plugin.settings.defaultGenerationPresetId,
+									text,
+								),
+						);
 				});
 			}
 
