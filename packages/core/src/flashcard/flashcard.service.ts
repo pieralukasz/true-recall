@@ -185,6 +185,10 @@ export class FlashcardManager {
 		return this.store?.noteTypes.getBySlug(slug) ?? null;
 	}
 
+	getNoteTypeById(id: string): NoteType | null {
+		return this.store?.noteTypes.getById(id) ?? null;
+	}
+
 	getFrontmatterService(): FrontmatterService {
 		return this.frontmatterService;
 	}
