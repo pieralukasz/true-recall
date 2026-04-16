@@ -3,6 +3,7 @@ import { useState } from "preact/hooks";
 import { Clickable, LoadingSpinner } from "@true-recall/obsidian/components";
 import { usePanelActions } from "@true-recall/obsidian/features/library/ui/panel/hooks/usePanelActions";
 import { usePanelStore } from "@true-recall/obsidian/features/library/ui/panel/hooks/usePanelStore";
+import { isPluginEnabled } from "@true-recall/obsidian/plugin/plugin-utils";
 import { useIcon, usePlugin } from "@true-recall/obsidian/preact";
 
 const CALLOUT_CLS =
@@ -19,6 +20,9 @@ export function PanelEmptyState() {
 	const hasApiKey = !!(
 		plugin.settings.proKey || plugin.settings.openRouterApiKey
 	);
+	const aiGenerationEnabled = isPluginEnabled(plugin.settings, "ai-generation");
+	const hasPresets = (plugin.settings.generationPresets?.length ?? 0) > 0;
+	const canGenerate = aiGenerationEnabled && hasPresets;
 
 	const [generating, setGenerating] = useState(false);
 	const [generatingSource, setGeneratingSource] = useState<
@@ -80,6 +84,43 @@ export function PanelEmptyState() {
 	const hasCollect = uncollectedCount > 0;
 	const generateBtnCls = `${BTN_BASE_CLS} ep:border ep:border-obs-modifier-border ep:text-obs-muted`;
 
+	if (!canGenerate) {
+		const heading = !aiGenerationEnabled
+			? "Flashcard generation is disabled"
+			: "No generation presets";
+		const body = !aiGenerationEnabled
+			? "Enable the AI Generation plugin in Settings to create flashcards."
+			: "Add a generation preset in Settings to create flashcards.";
+
+		return (
+			<div class="ep:flex ep:flex-col ep:items-center ep:justify-center ep:h-full ep:py-6 ep:px-5 ep:text-center ep:gap-4">
+				{hasCollect && (
+					<Clickable
+						class={`mod-cta ${BTN_BASE_CLS}`}
+						onClick={() => void handleCollect()}
+					>
+						Collect {uncollectedCount} flashcard
+						{uncollectedCount !== 1 ? "s" : ""}
+					</Clickable>
+				)}
+
+				<div class={CALLOUT_CLS}>
+					<div class="ep:flex ep:flex-col ep:items-center ep:gap-1">
+						<div class="ep:text-obs-muted ep:text-3xl">
+							<span ref={sparklesRef} />
+						</div>
+						<div class="ep:text-ui-small ep:text-obs-muted ep:font-medium">
+							{heading}
+						</div>
+					</div>
+					<div class="ep:text-ui-smaller ep:text-obs-faint ep:text-center">
+						{body}
+					</div>
+				</div>
+			</div>
+		);
+	}
+
 	return (
 		<div class="ep:flex ep:flex-col ep:items-center ep:justify-center ep:h-full ep:py-6 ep:px-5 ep:text-center ep:gap-4">
 			{hasCollect && (
@@ -98,19 +139,12 @@ export function PanelEmptyState() {
 						<span ref={sparklesRef} />
 					</div>
 					<div class="ep:text-ui-small ep:text-obs-muted ep:font-medium">
-						No flashcards yet
+						Start learning this note
 					</div>
 				</div>
 				<div class="ep:text-ui-smaller ep:text-obs-faint ep:text-center">
-					For best results, select text in the editor, then right-click or use
-					the command palette to generate focused cards.
+					Select text for focused cards, or generate from the whole note below.
 				</div>
-			</div>
-
-			<div class="ep:flex ep:items-center ep:gap-2 ep:w-full">
-				<div class="ep:flex-1 ep:h-px ep:bg-obs-modifier-border" />
-				<span class="ep:text-ui-smaller ep:text-obs-faint">or</span>
-				<div class="ep:flex-1 ep:h-px ep:bg-obs-modifier-border" />
 			</div>
 
 			<Clickable
@@ -119,14 +153,8 @@ export function PanelEmptyState() {
 				disabled={!hasApiKey || !hasHighlights}
 			>
 				<span ref={highlighterRef} class="ep:shrink-0" />
-				Generate from ==highlights==
+				Generate from highlights
 			</Clickable>
-
-			<div class="ep:flex ep:items-center ep:gap-2 ep:w-full">
-				<div class="ep:flex-1 ep:h-px ep:bg-obs-modifier-border" />
-				<span class="ep:text-ui-smaller ep:text-obs-faint">or</span>
-				<div class="ep:flex-1 ep:h-px ep:bg-obs-modifier-border" />
-			</div>
 
 			<Clickable
 				class={generateBtnCls}
@@ -134,7 +162,7 @@ export function PanelEmptyState() {
 				disabled={!hasApiKey}
 			>
 				<span ref={fileTextRef} class="ep:shrink-0" />
-				Generate from entire note
+				Generate from full note
 			</Clickable>
 		</div>
 	);
