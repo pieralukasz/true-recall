@@ -9,6 +9,8 @@ import {
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite/SqliteStoreService";
 import type { TrueRecallSettings } from "@true-recall/core/types/settings.types";
 
+import { mutate } from "@true-recall/obsidian/data";
+
 export interface TTSConfig {
 	ttsField: string;
 	languageCode: string;
@@ -34,18 +36,24 @@ export class TTSPostProcessor {
 			await adapter.mkdir(TTS_AUDIO_DIR);
 		}
 
+		let updated = false;
 		for (const cardId of cardIds) {
 			try {
-				await this.processCard(
+				const didUpdate = await this.processCard(
 					cardId,
 					ttsField,
 					languageCode,
 					settings,
 					adapter,
 				);
+				if (didUpdate) updated = true;
 			} catch (e) {
 				console.warn(`[True Recall TTS] Failed for card ${cardId}:`, e);
 			}
+		}
+
+		if (updated) {
+			mutate("card:updated", () => {});
 		}
 	}
 
@@ -55,25 +63,25 @@ export class TTSPostProcessor {
 		languageCode: string,
 		settings: TrueRecallSettings,
 		adapter: VaultAdapter,
-	): Promise<void> {
+	): Promise<boolean> {
 		const card = this.cardStore.cards.get(cardId);
-		if (!card?.noteId) return;
+		if (!card?.noteId) return false;
 
 		const note = this.cardStore.notes.getById(card.noteId);
-		if (!note?.fields) return;
+		if (!note?.fields) return false;
 
 		const text = note.fields[ttsField];
-		if (!text) return;
+		if (!text) return false;
 
 		const audioKey = `_audio_${ttsField}`;
-		if (note.fields[audioKey]) return;
+		if (note.fields[audioKey]) return false;
 
 		const filename = getTTSAudioFilename(text, languageCode);
 		const audioPath = `${TTS_AUDIO_DIR}/${filename}`;
 
 		if (await adapter.exists(audioPath)) {
 			this.updateNoteAudioField(note.id, note.fields, audioKey, audioPath);
-			return;
+			return true;
 		}
 
 		const { url, body, headers } = buildTTSRequest(settings, {
@@ -95,6 +103,7 @@ export class TTSPostProcessor {
 		await adapter.writeBinary(audioPath, response.arrayBuffer);
 
 		this.updateNoteAudioField(note.id, note.fields, audioKey, audioPath);
+		return true;
 	}
 
 	private updateNoteAudioField(
