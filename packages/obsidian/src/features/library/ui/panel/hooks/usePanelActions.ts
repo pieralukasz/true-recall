@@ -2,7 +2,6 @@ import { useCallback } from "preact/hooks";
 
 import type { FlashcardItem } from "@true-recall/core/types";
 import type { FSRSFlashcardItem } from "@true-recall/core/types/fsrs/card.types";
-import { BUILTIN_BASIC_ID } from "@true-recall/core/types/note.types";
 
 import { BatchCreateCommand } from "@true-recall/obsidian/commands/commands/card-create.cmd";
 import { DeleteCardCommand } from "@true-recall/obsidian/commands/commands/card-delete.cmd";
@@ -83,12 +82,10 @@ export function usePanelActions() {
 		);
 
 		try {
-			const basicNoteType =
-				plugin.cardStore?.noteTypes?.getById(BUILTIN_BASIC_ID) ?? null;
 			const result = await chunkedService.generateFromNote(
 				content,
 				currentFile,
-				basicNoteType,
+				plugin.settings.defaultGenerationPresetId,
 			);
 
 			if (result.created === 0 && result.duplicates === 0) {
@@ -183,12 +180,10 @@ export function usePanelActions() {
 		);
 
 		try {
-			const basicNoteType =
-				plugin.cardStore?.noteTypes?.getById(BUILTIN_BASIC_ID) ?? null;
-			const result = await streamingService.generateStreaming(
+			const result = await streamingService.generate(
 				joinedHighlights,
 				currentFile,
-				basicNoteType,
+				plugin.settings.defaultGenerationPresetId,
 			);
 
 			if (result.created === 0 && result.duplicates === 0) {
