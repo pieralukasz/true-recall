@@ -19,6 +19,7 @@ import {
 	ToggleReversedCommand,
 } from "@true-recall/obsidian/commands/commands/note-type.cmd";
 import { openPanelCardEditor } from "@true-recall/obsidian/features/library/ui/panel/helpers/panel-edit-routing";
+import { openCardPreviewModal } from "@true-recall/obsidian/features/library/ui/panel/preview/CardPreviewModal";
 import {
 	cardToBlockText,
 	getSourceNoteNameFromFile,
@@ -298,6 +299,15 @@ export function useCardActions() {
 		[panel, preserveScroll],
 	);
 
+	const handlePreviewCard = useCallback(
+		(card: FlashcardItem) => {
+			const fsrsCard = findFsrsCard(card.id);
+			if (!fsrsCard) return;
+			openCardPreviewModal(app, fsrsCard, currentFile?.path ?? "");
+		},
+		[app, cardsWithFsrs, currentFile],
+	);
+
 	return {
 		handleAddFlashcard,
 		handleEditButton,
@@ -310,5 +320,6 @@ export function useCardActions() {
 		handleSuspendCard,
 		handleUnsuspendCard,
 		handleToggleExpand,
+		handlePreviewCard,
 	};
 }
