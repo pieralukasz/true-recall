@@ -195,7 +195,7 @@ describe("StreamingGenerationService.generate", () => {
 		);
 	});
 
-	it("Pro path: includes metadata with call_context and note_type, omits temperature", async () => {
+	it("Pro path: includes metadata with call_context, note_type, preset_id, omits temperature", async () => {
 		const proPreset: GenerationPreset = {
 			...basicPreset,
 			customPrompt: "Pro prompt",
@@ -217,6 +217,7 @@ describe("StreamingGenerationService.generate", () => {
 		expect(body.metadata).toEqual({
 			call_context: "generation",
 			note_type: "basic",
+			preset_id: proPreset.id,
 		});
 		expect(body.temperature).toBeUndefined();
 	});

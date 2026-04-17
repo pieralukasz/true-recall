@@ -1,4 +1,9 @@
-import { BUILTIN_BASIC_PRESET, DEFAULT_SETTINGS } from "../constants";
+import {
+	BUILTIN_BASIC_PRESET,
+	BUILTIN_BASIC_PRO_PRESET,
+	BUILTIN_BASIC_PRO_PRESET_ID,
+	DEFAULT_SETTINGS,
+} from "../constants";
 import type { GenerationPreset } from "../types/generation-preset.types";
 import type { TrueRecallSettings } from "../types/settings.types";
 
@@ -182,6 +187,30 @@ export function migrateSettings(raw: Partial<TrueRecallSettings> | null): {
 		}
 
 		needsSave = true;
+	}
+
+	// Backfill built-in Pro preset for existing installations
+	if (
+		settings.generationPresets &&
+		!settings.generationPresets.some(
+			(p) => p.id === BUILTIN_BASIC_PRO_PRESET_ID,
+		)
+	) {
+		settings.generationPresets = [
+			...settings.generationPresets,
+			{ ...BUILTIN_BASIC_PRO_PRESET },
+		];
+		needsSave = true;
+	}
+
+	// Ensure the legacy builtin basic preset is flagged as isBuiltin for existing installs
+	if (settings.generationPresets) {
+		for (const preset of settings.generationPresets) {
+			if (preset.id === BUILTIN_BASIC_PRESET.id && !preset.isBuiltin) {
+				preset.isBuiltin = true;
+				needsSave = true;
+			}
+		}
 	}
 
 	return { settings, needsSave };

@@ -1,4 +1,4 @@
-import { BUILTIN_BASIC_PRESET_ID, TTS_VOICES } from "../../constants";
+import { TTS_VOICES } from "../../constants";
 import type {
 	CreateGenerationPresetInput,
 	GenerationPreset,
@@ -142,6 +142,10 @@ export class GenerationPresetService {
 			throw new Error(`Preset '${id}' not found`);
 		}
 
+		if (current.isBuiltin) {
+			throw new Error("Cannot edit built-in preset");
+		}
+
 		const allowedKeys: Array<keyof UpdateGenerationPresetPatch> = [
 			"name",
 			"noteTypeId",
@@ -191,14 +195,14 @@ export class GenerationPresetService {
 	}
 
 	async delete(id: string): Promise<void> {
-		if (id === BUILTIN_BASIC_PRESET_ID) {
-			throw new Error("Cannot delete built-in preset");
-		}
-
 		const current = this.getSettings().generationPresets;
 		const target = current.find((p) => p.id === id);
 		if (!target) {
 			throw new Error(`Preset '${id}' not found`);
+		}
+
+		if (target.isBuiltin) {
+			throw new Error("Cannot delete built-in preset");
 		}
 
 		if (current.length === 1) {

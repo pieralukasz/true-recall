@@ -77,6 +77,12 @@ export class StreamingGenerationService {
 			throw new Error("Generation already in progress");
 		}
 
+		if (preset.isPro && !settings.proKey) {
+			throw new Error(
+				`Preset "${preset.name}" requires True Recall Pro. Upgrade or pick a different preset.`,
+			);
+		}
+
 		const aiConfig = resolveAIClientConfig(settings);
 		const abortController = new AbortController();
 		startStreaming(sourceFile.basename, sourceFile.path, abortController);
@@ -125,7 +131,11 @@ export class StreamingGenerationService {
 				: buildPresetPrompt(preset, noteType);
 
 		const metadata = aiConfig.isPro
-			? { call_context: "generation", note_type: noteType.slug ?? "basic" }
+			? {
+					call_context: "generation",
+					note_type: noteType.slug ?? "basic",
+					preset_id: preset.id,
+				}
 			: undefined;
 
 		const userContent = aiConfig.isPro

@@ -13,6 +13,11 @@ import type {
 import type { NoteType } from "../../../src/types/note.types";
 import type { TrueRecallSettings } from "../../../src/types/settings.types";
 
+const BASE_PRESET: GenerationPreset = {
+	...BUILTIN_BASIC_PRESET,
+	isBuiltin: false,
+};
+
 const BASIC_NOTE_TYPE: NoteType = {
 	id: "builtin-basic",
 	name: "Basic",
@@ -313,7 +318,7 @@ describe("GenerationPresetService.create", () => {
 
 	it("with isDefault:true unsets default on others", async () => {
 		const existing: GenerationPreset = {
-			...BUILTIN_BASIC_PRESET,
+			...BASE_PRESET,
 			isDefault: true,
 		};
 		const { service, getSettings } = makeMutableService([existing]);
@@ -335,7 +340,7 @@ describe("GenerationPresetService.create", () => {
 describe("GenerationPresetService.update", () => {
 	it("patches top-level fields", async () => {
 		const { service, getSettings } = makeMutableService([
-			{ ...BUILTIN_BASIC_PRESET, id: "p1", name: "Old", isDefault: true },
+			{ ...BASE_PRESET, id: "p1", name: "Old", isDefault: true },
 		]);
 		const updated = await service.update("p1", { name: "New" });
 		expect(updated.name).toBe("New");
@@ -347,7 +352,7 @@ describe("GenerationPresetService.update", () => {
 
 	it("atomically replaces fields sub-object", async () => {
 		const { service } = makeMutableService([
-			{ ...BUILTIN_BASIC_PRESET, id: "p1", isDefault: true },
+			{ ...BASE_PRESET, id: "p1", isDefault: true },
 		]);
 		const updated = await service.update("p1", {
 			fields: {
@@ -371,7 +376,7 @@ describe("GenerationPresetService.update", () => {
 
 	it("rejects unknown patch keys", async () => {
 		const { service } = makeMutableService([
-			{ ...BUILTIN_BASIC_PRESET, id: "p1", isDefault: true },
+			{ ...BASE_PRESET, id: "p1", isDefault: true },
 		]);
 		await expect(
 			service.update("p1", {
@@ -382,7 +387,7 @@ describe("GenerationPresetService.update", () => {
 
 	it("throws on validation failure (e.g. invalid fields)", async () => {
 		const { service } = makeMutableService([
-			{ ...BUILTIN_BASIC_PRESET, id: "p1", isDefault: true },
+			{ ...BASE_PRESET, id: "p1", isDefault: true },
 		]);
 		await expect(service.update("p1", { fields: {} })).rejects.toThrow(
 			/Preset validation failed/,
@@ -391,8 +396,8 @@ describe("GenerationPresetService.update", () => {
 
 	it("with isDefault:true unsets default on others", async () => {
 		const { service, getSettings } = makeMutableService([
-			{ ...BUILTIN_BASIC_PRESET, id: "p1", isDefault: true },
-			{ ...BUILTIN_BASIC_PRESET, id: "p2", isDefault: false },
+			{ ...BASE_PRESET, id: "p1", isDefault: true },
+			{ ...BASE_PRESET, id: "p2", isDefault: false },
 		]);
 		await service.update("p2", { isDefault: true });
 		const presets = getSettings().generationPresets;
@@ -410,7 +415,7 @@ describe("GenerationPresetService.delete", () => {
 				id: BUILTIN_BASIC_PRESET_ID,
 				isDefault: true,
 			},
-			{ ...BUILTIN_BASIC_PRESET, id: "p2", isDefault: false },
+			{ ...BASE_PRESET, id: "p2", isDefault: false },
 		]);
 		await expect(service.delete(BUILTIN_BASIC_PRESET_ID)).rejects.toThrow(
 			/Cannot delete built-in/,
@@ -419,15 +424,15 @@ describe("GenerationPresetService.delete", () => {
 
 	it("blocks deletion of last remaining preset", async () => {
 		const { service } = makeMutableService([
-			{ ...BUILTIN_BASIC_PRESET, id: "only", isDefault: true },
+			{ ...BASE_PRESET, id: "only", isDefault: true },
 		]);
 		await expect(service.delete("only")).rejects.toThrow(/last preset/);
 	});
 
 	it("removes a non-default preset without changing the default", async () => {
 		const { service, getSettings } = makeMutableService([
-			{ ...BUILTIN_BASIC_PRESET, id: "p1", isDefault: true },
-			{ ...BUILTIN_BASIC_PRESET, id: "p2", isDefault: false },
+			{ ...BASE_PRESET, id: "p1", isDefault: true },
+			{ ...BASE_PRESET, id: "p2", isDefault: false },
 		]);
 		await service.delete("p2");
 		const presets = getSettings().generationPresets;
@@ -437,8 +442,8 @@ describe("GenerationPresetService.delete", () => {
 
 	it("auto-promotes first remaining preset when default is deleted", async () => {
 		const { service, getSettings } = makeMutableService([
-			{ ...BUILTIN_BASIC_PRESET, id: "p1", isDefault: true },
-			{ ...BUILTIN_BASIC_PRESET, id: "p2", isDefault: false },
+			{ ...BASE_PRESET, id: "p1", isDefault: true },
+			{ ...BASE_PRESET, id: "p2", isDefault: false },
 		]);
 		await service.delete("p1");
 		const presets = getSettings().generationPresets;
@@ -449,8 +454,8 @@ describe("GenerationPresetService.delete", () => {
 
 	it("returns 404-like error for unknown id", async () => {
 		const { service } = makeMutableService([
-			{ ...BUILTIN_BASIC_PRESET, id: "p1", isDefault: true },
-			{ ...BUILTIN_BASIC_PRESET, id: "p2", isDefault: false },
+			{ ...BASE_PRESET, id: "p1", isDefault: true },
+			{ ...BASE_PRESET, id: "p2", isDefault: false },
 		]);
 		await expect(service.delete("nope")).rejects.toThrow(/not found/);
 	});

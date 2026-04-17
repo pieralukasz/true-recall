@@ -1,20 +1,31 @@
 import { describe, expect, it } from "vitest";
 
 import { migrateSettings } from "../../src/app/settings-migration";
-import { BUILTIN_BASIC_PRESET } from "../../src/constants";
+import {
+	BUILTIN_BASIC_PRESET,
+	BUILTIN_BASIC_PRO_PRESET_ID,
+} from "../../src/constants";
 
 describe("migrateSettings — generation preset migration", () => {
 	it("creates default preset for fresh install", () => {
 		const { settings, needsSave } = migrateSettings(null);
 
 		expect(needsSave).toBe(true);
-		expect(settings.generationPresets).toHaveLength(1);
-		expect(settings.generationPresets[0]).toMatchObject({
+		expect(settings.generationPresets).toHaveLength(2);
+		const basic = settings.generationPresets.find(
+			(p) => p.id === BUILTIN_BASIC_PRESET.id,
+		);
+		expect(basic).toMatchObject({
 			id: BUILTIN_BASIC_PRESET.id,
 			name: BUILTIN_BASIC_PRESET.name,
 			noteTypeId: BUILTIN_BASIC_PRESET.noteTypeId,
 			isDefault: true,
 		});
+		expect(
+			settings.generationPresets.some(
+				(p) => p.id === BUILTIN_BASIC_PRO_PRESET_ID,
+			),
+		).toBe(true);
 		expect(settings.defaultGenerationPresetId).toBe(BUILTIN_BASIC_PRESET.id);
 	});
 
@@ -38,7 +49,14 @@ describe("migrateSettings — generation preset migration", () => {
 			defaultGenerationPresetId: "my-preset",
 		} as any);
 
-		expect(settings.generationPresets).toEqual(existingPresets);
+		expect(
+			settings.generationPresets.find((p) => p.id === "my-preset"),
+		).toEqual(existingPresets[0]);
+		expect(
+			settings.generationPresets.some(
+				(p) => p.id === BUILTIN_BASIC_PRO_PRESET_ID,
+			),
+		).toBe(true);
 		expect(settings.defaultGenerationPresetId).toBe("my-preset");
 	});
 
@@ -174,10 +192,15 @@ describe("migrateSettings — generation preset migration", () => {
 
 		const { settings } = migrateSettings(raw);
 
-		expect(settings.generationPresets).toHaveLength(2);
+		expect(settings.generationPresets).toHaveLength(3);
 		const names = settings.generationPresets.map((p) => p.name);
 		expect(names).toContain("Flashcards");
 		expect(names).toContain("Vocabulary");
+		expect(
+			settings.generationPresets.some(
+				(p) => p.id === BUILTIN_BASIC_PRO_PRESET_ID,
+			),
+		).toBe(true);
 
 		// Flashcards is isDefault=true (added first), Vocabulary is isDefault=false
 		const flashcards = settings.generationPresets.find(
