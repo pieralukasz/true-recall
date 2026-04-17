@@ -18,6 +18,7 @@ import type { PluginManifest } from "../types";
 import { GlobalSelectionToolbar } from "./GlobalSelectionToolbar";
 import { createImageToolbarExtension } from "./ImageToolbarPlugin";
 import { createSelectionToolbarExtension } from "./SelectionToolbarPlugin";
+import { SelectionToolbarSettingsPanel } from "./settings-panel";
 
 function executeCommand(plugin: TrueRecallPlugin, commandId: string): void {
 	(
@@ -103,6 +104,7 @@ export const selectionToolbarManifest: PluginManifest = {
 		icon: "mouse-pointer-square-dashed",
 		requiresPro: false,
 	},
+	settingsPanel: SelectionToolbarSettingsPanel,
 	activate: (ctx) => {
 		const plugin = ctx.obsidianPlugin;
 

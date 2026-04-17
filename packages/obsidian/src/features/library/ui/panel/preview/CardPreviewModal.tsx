@@ -79,6 +79,7 @@ export function PreviewModalBody({
 				preview={preview}
 				showNextReviewTime={plugin.settings.showNextReviewTime}
 				isRatingLocked={!isGradable}
+				compact
 				onShowAnswer={reveal}
 				onAnswer={grade}
 			/>

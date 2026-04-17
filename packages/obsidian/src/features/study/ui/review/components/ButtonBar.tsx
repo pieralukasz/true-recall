@@ -31,6 +31,7 @@ interface ButtonBarProps {
 	showNextReviewTime: boolean;
 	typeInMode?: TypeInMode;
 	isRatingLocked?: boolean;
+	compact?: boolean;
 	onShowAnswer: () => void;
 	onAnswer: (rating: Grade) => void;
 	onCycleTypeInMode?: () => void;
@@ -43,6 +44,7 @@ export function ButtonBar({
 	showNextReviewTime,
 	typeInMode = "off",
 	isRatingLocked = false,
+	compact = false,
 	onShowAnswer,
 	onAnswer,
 	onCycleTypeInMode,
@@ -132,6 +134,13 @@ export function ButtonBar({
 			)}
 		</div>
 	) : null;
+
+	if (compact) {
+		const row = mobile
+			? "ep:flex ep:flex-wrap ep:justify-center ep:gap-2"
+			: "ep:flex ep:justify-center ep:gap-3 ep:flex-nowrap";
+		return <div class={row}>{ratingButtons}</div>;
+	}
 
 	if (mobile) {
 		return (

@@ -6,14 +6,14 @@ import type { ToolbarButtonConfig } from "@true-recall/core/types";
 import { Clickable, FormCard } from "@true-recall/obsidian/components";
 import { useIcon, usePlugin } from "@true-recall/obsidian/preact";
 
-import { BUTTON_PLUGIN_MAP } from "@true-recall/plugins";
+import { BUTTON_PLUGIN_MAP } from "../registry";
 import {
 	BUILTIN_BUTTONS,
 	extractPresetId,
 	getButtonLabel,
 	isBuiltinButton,
 	isPresetButton,
-} from "@true-recall/plugins/selection-toolbar/toolbar-buttons";
+} from "./toolbar-buttons";
 
 const BASIC_PRO_BUTTON_ID = `preset:${BUILTIN_BASIC_PRO_PRESET_ID}`;
 
@@ -158,11 +158,15 @@ export function ToolbarConfigSection({
 					const isProButton = pluginInfo?.requiresPro;
 					const isBasicPro = btn.id === BASIC_PRO_BUTTON_ID;
 					const isDisabled = isEditorOnly || isPluginDisabled || isOrphan;
+					const rawLabel = getLabel(btn.id);
+					const label = isBasicPro
+						? rawLabel.replace(/\s*\(Pro\)\s*$/i, "")
+						: rawLabel;
 
 					return (
 						<ToolbarButtonRow
 							key={`${btn.id}-${i}`}
-							label={getLabel(btn.id)}
+							label={label}
 							enabled={btn.enabled}
 							isCustom={!isBuiltinButton(btn.id) && !isBasicPro}
 							isDragging={dragIndex === i}
@@ -177,7 +181,7 @@ export function ToolbarConfigSection({
 											? "Only available in editor"
 											: undefined
 							}
-							showProBadge={isProButton}
+							showProBadge={isProButton || isBasicPro}
 							onToggle={() => handleToggle(i)}
 							onRemove={() => handleRemove(i)}
 							onDragStart={(e) => handleDragStart(e, i)}

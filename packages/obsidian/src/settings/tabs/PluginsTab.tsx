@@ -9,6 +9,7 @@ import { useIcon } from "@true-recall/obsidian/preact/hooks";
 import { cn } from "@true-recall/obsidian/utils/cn";
 
 import { useSettings } from "../hooks/useSettings";
+import { AIProviderSection } from "./AIProviderSection";
 import type { PluginManifest, PluginSettingsProps } from "@true-recall/plugins";
 import { PLUGIN_MANIFESTS } from "@true-recall/plugins";
 
@@ -165,7 +166,7 @@ export function PluginsTab() {
 	const { settings, save } = useSettings();
 	const isPro = !!settings.proKey;
 	const pluginStates = settings.pluginStates ?? {};
-	const [expandedId, setExpandedId] = useState<string | null>(null);
+	const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
 
 	const handleToggle = (pluginId: string, enabled: boolean) => {
 		const patch: Partial<typeof settings> = {
@@ -175,36 +176,52 @@ export function PluginsTab() {
 			patch.ragEnabled = enabled;
 		}
 		void save(patch);
-		if (!enabled && expandedId === pluginId) {
-			setExpandedId(null);
+		if (!enabled) {
+			setExpandedIds((prev) => {
+				if (!prev.has(pluginId)) return prev;
+				const next = new Set(prev);
+				next.delete(pluginId);
+				return next;
+			});
 		}
 	};
 
 	const handleExpandToggle = (pluginId: string) => {
-		setExpandedId((prev) => (prev === pluginId ? null : pluginId));
+		setExpandedIds((prev) => {
+			const next = new Set(prev);
+			if (next.has(pluginId)) {
+				next.delete(pluginId);
+			} else {
+				next.add(pluginId);
+			}
+			return next;
+		});
 	};
 
 	return (
-		<FormCard title="Plugins" description="">
-			<div class="ep:flex ep:flex-col ep:gap-1.5">
-				{[...PLUGIN_MANIFESTS]
-					.sort(
-						(a, b) => Number(a.info.requiresPro) - Number(b.info.requiresPro),
-					)
-					.map((manifest) => (
-						<PluginAccordion
-							key={manifest.info.id}
-							manifest={manifest}
-							isPro={isPro}
-							isEnabled={pluginStates[manifest.info.id] !== false}
-							isExpanded={expandedId === manifest.info.id}
-							onToggle={(enabled) => handleToggle(manifest.info.id, enabled)}
-							onExpandToggle={() => handleExpandToggle(manifest.info.id)}
-							settings={settings}
-							save={save}
-						/>
-					))}
-			</div>
-		</FormCard>
+		<div class="ep:flex ep:flex-col ep:gap-3">
+			<AIProviderSection />
+			<FormCard title="Plugins" description="">
+				<div class="ep:flex ep:flex-col ep:gap-1.5">
+					{[...PLUGIN_MANIFESTS]
+						.sort(
+							(a, b) => Number(a.info.requiresPro) - Number(b.info.requiresPro),
+						)
+						.map((manifest) => (
+							<PluginAccordion
+								key={manifest.info.id}
+								manifest={manifest}
+								isPro={isPro}
+								isEnabled={pluginStates[manifest.info.id] !== false}
+								isExpanded={expandedIds.has(manifest.info.id)}
+								onToggle={(enabled) => handleToggle(manifest.info.id, enabled)}
+								onExpandToggle={() => handleExpandToggle(manifest.info.id)}
+								settings={settings}
+								save={save}
+							/>
+						))}
+				</div>
+			</FormCard>
+		</div>
 	);
 }

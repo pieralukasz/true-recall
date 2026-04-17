@@ -60,35 +60,12 @@ export function migrateSettings(raw: Partial<TrueRecallSettings> | null): {
 		needsSave = true;
 	}
 
-	// Pre-preset migration: inject legacy "vocab" toolbar button so the later
-	// preset rewrite (below, gated on !raw.generationPresets) picks it up.
-	// Once presets exist, the preset:* IDs are canonical — skip to avoid
-	// re-adding a stale "vocab" button on every load.
-	if (!raw?.generationPresets) {
-		if (
-			raw?.editorToolbarButtons &&
-			!settings.editorToolbarButtons.some((b) => b.id === "vocab")
-		) {
-			const idx = settings.editorToolbarButtons.findIndex(
-				(b) => b.id === "flashcards",
-			);
-			settings.editorToolbarButtons.splice(idx + 1, 0, {
-				id: "vocab",
-				enabled: true,
-			});
-			needsSave = true;
-		}
-		if (
-			raw?.globalToolbarButtons &&
-			!settings.globalToolbarButtons.some((b) => b.id === "vocab")
-		) {
-			const idx = settings.globalToolbarButtons.findIndex(
-				(b) => b.id === "flashcards",
-			);
-			settings.globalToolbarButtons.splice(idx + 1, 0, {
-				id: "vocab",
-				enabled: true,
-			});
+	// Strip legacy "vocab" toolbar button from persisted settings (the button
+	// has been replaced by preset:* IDs; migration used to re-inject it on
+	// every load, leaving a zombie entry in user settings).
+	for (const key of ["editorToolbarButtons", "globalToolbarButtons"] as const) {
+		if (raw?.[key] && settings[key].some((b) => b.id === "vocab")) {
+			settings[key] = settings[key].filter((b) => b.id !== "vocab");
 			needsSave = true;
 		}
 	}
@@ -149,32 +126,6 @@ export function migrateSettings(raw: Partial<TrueRecallSettings> | null): {
 			});
 		}
 
-		// Migrate language learning → vocab preset
-		const langNoteTypeId = (raw as any)?.languageNoteTypeId;
-		const langSource = (raw as any)?.languageSource;
-		if (langNoteTypeId || langSource) {
-			const ttsEnabled = (raw as any)?.languageTtsEnabled;
-			const ttsField = (raw as any)?.languageTtsField;
-			presets.push({
-				id: `migrated-vocab-${now}`,
-				name: "Vocabulary",
-				noteTypeId: langNoteTypeId ?? genNoteTypeId ?? "builtin-basic",
-				fields: {},
-				tts:
-					ttsEnabled && ttsField
-						? {
-								field: ttsField,
-								voice: (raw as any)?.ttsVoice ?? "nova",
-								autoplay: (raw as any)?.ttsAutoplay ?? false,
-							}
-						: null,
-				isPinned: true,
-				isDefault: presets.length === 0,
-				createdAt: now,
-				updatedAt: now,
-			});
-		}
-
 		// Fallback: built-in basic preset
 		if (presets.length === 0) {
 			presets.push({ ...BUILTIN_BASIC_PRESET });
@@ -185,17 +136,17 @@ export function migrateSettings(raw: Partial<TrueRecallSettings> | null): {
 		settings.generationPresets = presets;
 		settings.defaultGenerationPresetId = defaultPreset.id;
 
-		// Migrate toolbar button IDs: replace "flashcards"/"vocab" with preset: prefixed IDs
+		// Migrate legacy "flashcards" toolbar button ID → preset:* prefixed IDs
 		for (const key of [
 			"editorToolbarButtons",
 			"globalToolbarButtons",
 		] as const) {
 			if (raw?.[key]) {
 				const insertIdx = settings[key].findIndex(
-					(b: any) => b.id === "flashcards" || b.id === "vocab",
+					(b: any) => b.id === "flashcards",
 				);
 				const nonPresetButtons = settings[key].filter(
-					(b: any) => b.id !== "flashcards" && b.id !== "vocab",
+					(b: any) => b.id !== "flashcards",
 				);
 				const presetButtons = presets
 					.filter((p) => p.isPinned)
