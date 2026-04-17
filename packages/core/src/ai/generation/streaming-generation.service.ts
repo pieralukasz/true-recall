@@ -125,12 +125,11 @@ export class StreamingGenerationService {
 		const parser = new IncrementalFlashcardParser(getNoteType);
 
 		const customSystemPrompt = preset.customPrompt?.trim();
-		const systemPrompt =
-			aiConfig.isPro && customSystemPrompt
-				? customSystemPrompt
-				: buildPresetPrompt(preset, noteType);
+		const systemPrompt = customSystemPrompt
+			? customSystemPrompt
+			: buildPresetPrompt(preset, noteType);
 
-		const metadata = aiConfig.isPro
+		const metadata = aiConfig.hasProTier
 			? {
 					call_context: "generation",
 					note_type: noteType.slug ?? "basic",
@@ -138,7 +137,7 @@ export class StreamingGenerationService {
 				}
 			: undefined;
 
-		const userContent = aiConfig.isPro
+		const userContent = customSystemPrompt
 			? `${buildPresetFormatSpec(preset, noteType)}\n\n${text}`
 			: text;
 
@@ -161,7 +160,7 @@ export class StreamingGenerationService {
 		const stream = client.chatStream(
 			{
 				messages,
-				...(aiConfig.isPro ? {} : { temperature: aiConfig.temperature }),
+				...(aiConfig.hasProTier ? {} : { temperature: aiConfig.temperature }),
 				metadata,
 			},
 			abortController.signal,

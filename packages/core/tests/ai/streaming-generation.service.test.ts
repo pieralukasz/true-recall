@@ -222,6 +222,33 @@ describe("StreamingGenerationService.generate", () => {
 		expect(body.temperature).toBeUndefined();
 	});
 
+	it("BYOK path honors customPrompt when set on a non-Pro preset", async () => {
+		const byokPreset: GenerationPreset = {
+			...basicPreset,
+			customPrompt: "My BYOK custom prompt",
+		};
+		const settings = makeByokSettings({
+			generationPresets: [byokPreset],
+			defaultGenerationPresetId: byokPreset.id,
+		});
+		const { httpClient, capturedRequests } = makeCapturingHttpClient();
+		const svc = new StreamingGenerationService(
+			() => settings,
+			flashcardManager,
+			httpClient,
+		);
+
+		await svc.generate("study text", sourceFile, byokPreset.id);
+
+		const body = capturedRequests[0] as any;
+		const messages: Array<{ role: string; content: string }> = body.messages;
+		expect(messages[0]?.content).toBe("My BYOK custom prompt");
+		expect(messages[1]?.content).toBe(
+			`${buildPresetFormatSpec(byokPreset, basicNoteType)}\n\nstudy text`,
+		);
+		expect(body.metadata).toBeUndefined();
+	});
+
 	it("rejects Pro preset when user has no Pro key", async () => {
 		const proPreset: GenerationPreset = { ...basicPreset, isPro: true };
 		const settings = makeByokSettings({

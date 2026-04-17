@@ -106,7 +106,9 @@ export class SemanticAnswerGradingService {
 		const client = this.createClient(config);
 		const timeoutMs = input.timeoutMs ?? DEFAULT_TIMEOUT_MS;
 
-		const metadata = config.isPro ? { call_context: "grading" } : undefined;
+		const metadata = config.hasProTier
+			? { call_context: "grading" }
+			: undefined;
 
 		const response = await this.withTimeout(
 			client.chat({
@@ -120,7 +122,7 @@ export class SemanticAnswerGradingService {
 					},
 					this.getSettings().aiTypeInGradingPrompt,
 				),
-				...(config.isPro ? {} : { temperature: 0 }),
+				...(config.hasProTier ? {} : { temperature: 0 }),
 				metadata,
 			}),
 			timeoutMs,
@@ -132,7 +134,7 @@ export class SemanticAnswerGradingService {
 
 		return {
 			score,
-			feedback: config.isPro ? truncateFeedback(parsed.feedback) : "",
+			feedback: config.hasProTier ? truncateFeedback(parsed.feedback) : "",
 			passed: score >= clamp100(input.passThreshold),
 			source: "ai",
 		};

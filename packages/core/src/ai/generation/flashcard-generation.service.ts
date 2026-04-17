@@ -37,7 +37,7 @@ export class FlashcardGenerationService {
 			config.baseUrl,
 		);
 
-		const systemPrompt = config.isPro
+		const systemPrompt = config.hasProTier
 			? settings.aiGenerationPrompt?.trim() || ""
 			: buildByokPrompt(
 					noteType ?? FALLBACK_BASIC_NOTE_TYPE,
@@ -45,7 +45,7 @@ export class FlashcardGenerationService {
 					settings.aiGenerationPrompt,
 				);
 
-		const userContent = config.isPro
+		const userContent = config.hasProTier
 			? `${buildCardFormatSpec(noteType ?? FALLBACK_BASIC_NOTE_TYPE)}\n\n${selectedText}`
 			: selectedText;
 
@@ -56,13 +56,13 @@ export class FlashcardGenerationService {
 				]
 			: [{ role: "user" as const, content: userContent }];
 
-		const metadata = config.isPro
+		const metadata = config.hasProTier
 			? { call_context: "generation", note_type: noteType?.slug ?? "basic" }
 			: undefined;
 
 		const request = {
 			messages,
-			...(config.isPro ? {} : { temperature: config.temperature }),
+			...(config.hasProTier ? {} : { temperature: config.temperature }),
 			metadata,
 		};
 

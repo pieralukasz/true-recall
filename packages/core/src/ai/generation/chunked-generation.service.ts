@@ -138,10 +138,9 @@ export class ChunkedGenerationService {
 		const settings = this.getSettings();
 		const aiConfig = resolveAIClientConfig(settings);
 		const customSystemPrompt = preset.customPrompt?.trim();
-		const systemPrompt =
-			aiConfig.isPro && customSystemPrompt
-				? customSystemPrompt
-				: buildPresetPrompt(preset, noteType);
+		const systemPrompt = customSystemPrompt
+			? customSystemPrompt
+			: buildPresetPrompt(preset, noteType);
 
 		let totalCreated = 0;
 		let totalDuplicates = 0;
@@ -155,7 +154,7 @@ export class ChunkedGenerationService {
 
 				updateChunkProgress(chunk.index, chunk.headingBreadcrumb || null);
 
-				const formatPrefix = aiConfig.isPro
+				const formatPrefix = customSystemPrompt
 					? `${buildPresetFormatSpec(preset, noteType)}\n\n`
 					: "";
 				const userMessage = chunk.headingBreadcrumb
@@ -242,14 +241,14 @@ export class ChunkedGenerationService {
 				]
 			: [{ role: "user" as const, content: userMessage }];
 
-		const metadata = aiConfig.isPro
+		const metadata = aiConfig.hasProTier
 			? { call_context: "generation", note_type: noteType?.slug ?? "basic" }
 			: undefined;
 
 		const stream = client.chatStream(
 			{
 				messages,
-				...(aiConfig.isPro ? {} : { temperature: aiConfig.temperature }),
+				...(aiConfig.hasProTier ? {} : { temperature: aiConfig.temperature }),
 				metadata,
 			},
 			signal,

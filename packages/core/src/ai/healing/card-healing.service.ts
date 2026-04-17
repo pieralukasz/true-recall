@@ -29,7 +29,7 @@ export class CardHealingService {
 			temperature: 0.7,
 		};
 
-		if (config.isPro) {
+		if (config.hasProTier) {
 			body.metadata = { call_context: "card-healing" };
 		}
 
