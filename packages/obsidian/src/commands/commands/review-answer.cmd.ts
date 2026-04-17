@@ -12,7 +12,7 @@ interface ReviewAnswerParams {
 	card: FSRSFlashcardItem;
 	originalFsrs: FSRSCardData;
 	updatedFsrs: FSRSCardData;
-	previousIndex: number;
+	previousIndex: number | null;
 	wasNewCard: boolean;
 	rating: number;
 	previousState: number;
