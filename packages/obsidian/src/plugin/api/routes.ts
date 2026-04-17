@@ -48,6 +48,14 @@ import {
 } from "./handlers/fsrs-advanced";
 import { handleGetFullContext } from "./handlers/full-context";
 import { handleGenerate, handleGetNoteTypes } from "./handlers/generate";
+import {
+	handleCreateGenerationPreset,
+	handleDeleteGenerationPreset,
+	handleGenerateWithPreset,
+	handleGetGenerationPreset,
+	handleListGenerationPresets,
+	handleUpdateGenerationPreset,
+} from "./handlers/generation-presets";
 import { handleOpenNote, handleOpenView } from "./handlers/navigation";
 import {
 	handleAddFlashcardUid,
@@ -134,6 +142,14 @@ const routes: Route[] = [
 	// AI generation
 	route("POST", "/generate", handleGenerate),
 	route("GET", "/note-types", handleGetNoteTypes),
+
+	// Generation presets
+	route("GET", "/generation-presets", handleListGenerationPresets),
+	route("GET", "/generation-presets/:id", handleGetGenerationPreset),
+	route("POST", "/generation-presets", handleCreateGenerationPreset),
+	route("POST", "/generation-presets/:id", handleUpdateGenerationPreset),
+	route("DELETE", "/generation-presets/:id", handleDeleteGenerationPreset),
+	route("POST", "/generate-with-preset", handleGenerateWithPreset),
 
 	// Review actions (in-session)
 	route("POST", "/review/reveal", handleRevealAnswer),

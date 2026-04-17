@@ -1,6 +1,7 @@
 import { DEFAULT_SETTINGS } from "../constants";
 import { DomainEventBus } from "../events/event-bus";
 import { FlashcardManager } from "../flashcard/flashcard.service";
+import { GenerationPresetService } from "../flashcard/presets/generation-preset.service";
 import type { IFileSystem } from "../interfaces/file-system";
 import type { IFrontmatter } from "../interfaces/frontmatter";
 import type { IHttpClient } from "../interfaces/http-client";
@@ -46,6 +47,7 @@ export class TrueRecallApp {
 	readonly hierarchyService: HierarchyService;
 	readonly flashcardManager: FlashcardManager;
 	readonly presetService: PresetService;
+	readonly generationPresetService: GenerationPresetService;
 	readonly fsrsService: FSRSService;
 	readonly dayBoundary: DayBoundaryService;
 
@@ -91,6 +93,12 @@ export class TrueRecallApp {
 			this.frontmatterIndex,
 			this.hierarchyService,
 			() => this.cardStore ?? null,
+		);
+
+		this.generationPresetService = new GenerationPresetService(
+			() => this.settings,
+			(patch) => this.updateSettings(patch),
+			(id) => this.flashcardManager.getNoteTypeById(id),
 		);
 
 		this.fsrsService = new FSRSService(extractFSRSSettings(this.settings));

@@ -21,3 +21,10 @@ export interface GenerationPreset {
 	createdAt: number;
 	updatedAt: number;
 }
+
+export type CreateGenerationPresetInput = Omit<
+	GenerationPreset,
+	"id" | "createdAt" | "updatedAt"
+>;
+
+export type UpdateGenerationPresetPatch = Partial<CreateGenerationPresetInput>;

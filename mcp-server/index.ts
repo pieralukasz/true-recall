@@ -1,6 +1,7 @@
 #!/usr/bin/env bun
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+
 import { TrueRecallClient } from "./client.js";
 import { registerTools } from "./tools/_register.js";
 import { backupTools } from "./tools/backup-tools.js";
@@ -11,6 +12,7 @@ import { fsrsTools } from "./tools/fsrs-tools.js";
 import { generateTools } from "./tools/generate-tools.js";
 import { navigationTools } from "./tools/navigation-tools.js";
 import { noteTools } from "./tools/note-tools.js";
+import { presetTools } from "./tools/preset-tools.js";
 import { queryTools } from "./tools/query-tools.js";
 import { ragTools } from "./tools/rag-tools.js";
 import { reviewTools } from "./tools/review-tools.js";
@@ -75,6 +77,7 @@ registerTools(server, client, [
 	...cardTools,
 	...reviewTools,
 	...generateTools,
+	...presetTools,
 	...sessionTools,
 	...dashboardTools,
 	...fsrsTools,
