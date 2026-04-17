@@ -70,6 +70,8 @@ export function AIGenerationSettingsPanel({
 			name: `${preset.name} (copy)`,
 			isPinned: false,
 			isDefault: false,
+			isBuiltin: false,
+			isPro: false,
 			createdAt: Date.now(),
 			updatedAt: Date.now(),
 		};
@@ -77,6 +79,8 @@ export function AIGenerationSettingsPanel({
 	};
 
 	const handleDelete = async (id: string) => {
+		const target = presets.find((p) => p.id === id);
+		if (target?.isBuiltin) return;
 		await save({ generationPresets: presets.filter((p) => p.id !== id) });
 	};
 
@@ -104,14 +108,29 @@ export function AIGenerationSettingsPanel({
 						preset.noteTypeId,
 					);
 					const isOnly = presets.length === 1;
+					const isBuiltin = !!preset.isBuiltin;
+					const editTitle = isBuiltin
+						? "Built-in preset — duplicate to customize"
+						: undefined;
+					const deleteTitle = isBuiltin
+						? "Built-in preset cannot be deleted"
+						: undefined;
 					return (
 						<div
 							key={preset.id}
 							class="ep:flex ep:items-center ep:gap-2 ep:px-2 ep:py-1.5 ep:rounded ep:border ep:border-obs-border ep:bg-obs-primary"
 						>
 							<div class="ep:flex ep:flex-col ep:flex-1 ep:min-w-0">
-								<span class="ep:text-ui-small ep:font-medium ep:truncate">
+								<span class="ep:text-ui-small ep:font-medium ep:truncate ep:flex ep:items-center ep:gap-1.5">
 									{preset.name}
+									{preset.isPro && (
+										<span
+											title="Requires True Recall Pro"
+											class="ep:text-ui-smallest ep:font-semibold ep:px-1.5 ep:py-0.5 ep:rounded ep:bg-obs-interactive ep:text-obs-on-accent"
+										>
+											PRO
+										</span>
+									)}
 								</span>
 								<span class="ep:text-ui-smaller ep:text-obs-muted ep:truncate">
 									{noteTypeName}
@@ -136,7 +155,9 @@ export function AIGenerationSettingsPanel({
 								)}
 								<button
 									type="button"
-									class="ep:px-2 ep:py-0.5 ep:text-ui-smaller ep:border ep:border-obs-border ep:rounded ep:bg-obs-primary ep:hover:bg-obs-secondary ep:cursor-pointer"
+									title={editTitle}
+									disabled={isBuiltin}
+									class="ep:px-2 ep:py-0.5 ep:text-ui-smaller ep:border ep:border-obs-border ep:rounded ep:bg-obs-primary ep:hover:bg-obs-secondary ep:cursor-pointer ep:disabled:opacity-40 ep:disabled:cursor-not-allowed"
 									onClick={() => setEditingId(preset.id)}
 								>
 									Edit
@@ -150,7 +171,8 @@ export function AIGenerationSettingsPanel({
 								</button>
 								<button
 									type="button"
-									disabled={isOnly}
+									title={deleteTitle}
+									disabled={isOnly || isBuiltin}
 									class="ep:px-2 ep:py-0.5 ep:text-ui-smaller ep:border ep:border-obs-border ep:rounded ep:bg-obs-primary ep:hover:bg-obs-secondary ep:cursor-pointer ep:disabled:opacity-40 ep:disabled:cursor-not-allowed"
 									onClick={() => void handleDelete(preset.id)}
 								>
