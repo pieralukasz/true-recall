@@ -303,9 +303,9 @@ export function useCardActions() {
 		(card: FlashcardItem) => {
 			const fsrsCard = findFsrsCard(card.id);
 			if (!fsrsCard) return;
-			openCardPreviewModal(app, fsrsCard, currentFile?.path ?? "");
+			openCardPreviewModal(app, plugin, fsrsCard, currentFile?.path ?? "");
 		},
-		[app, cardsWithFsrs, currentFile],
+		[app, plugin, cardsWithFsrs, currentFile],
 	);
 
 	return {

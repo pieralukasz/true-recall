@@ -6,7 +6,10 @@ import { type Grade, Rating } from "ts-fsrs";
 import type { FSRSFlashcardItem } from "@true-recall/core/types/fsrs/card.types";
 
 import { Clickable } from "@true-recall/obsidian/components";
+import { ErrorBoundary } from "@true-recall/obsidian/components/ErrorBoundary";
+import type TrueRecallPlugin from "@true-recall/obsidian/main";
 import { BaseModal } from "@true-recall/obsidian/modals/shared/BaseModal";
+import { ObsidianProvider } from "@true-recall/obsidian/preact/ObsidianContext";
 
 import { PreviewCardBody } from "./PreviewCardBody";
 import { resolvePreviewKeyAction } from "./preview-keyboard";
@@ -152,6 +155,7 @@ function RatingButton({ label, interval, hotkey, onClick }: RatingButtonProps) {
 class CardPreviewModal extends BaseModal {
 	constructor(
 		app: App,
+		private readonly plugin: TrueRecallPlugin,
 		private readonly card: FSRSFlashcardItem,
 		private readonly sourcePath: string,
 	) {
@@ -160,11 +164,15 @@ class CardPreviewModal extends BaseModal {
 
 	protected renderBody(container: HTMLElement): void {
 		render(
-			<PreviewModalBody
-				card={this.card}
-				sourcePath={this.sourcePath}
-				onClose={() => this.close()}
-			/>,
+			<ObsidianProvider value={{ app: this.app, plugin: this.plugin }}>
+				<ErrorBoundary>
+					<PreviewModalBody
+						card={this.card}
+						sourcePath={this.sourcePath}
+						onClose={() => this.close()}
+					/>
+				</ErrorBoundary>
+			</ObsidianProvider>,
 			container,
 		);
 	}
@@ -177,11 +185,12 @@ class CardPreviewModal extends BaseModal {
 
 export function openCardPreviewModal(
 	app: App,
+	plugin: TrueRecallPlugin,
 	card: FSRSFlashcardItem,
 	sourcePath: string,
 ): void {
 	withViewTransition(() => {
 		setPreviewingCard(card.id);
-		new CardPreviewModal(app, card, sourcePath).open();
+		new CardPreviewModal(app, plugin, card, sourcePath).open();
 	});
 }
