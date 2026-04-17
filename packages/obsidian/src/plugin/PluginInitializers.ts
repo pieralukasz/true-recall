@@ -19,10 +19,8 @@ import {
 	setDataLayer,
 	wireDataLayer,
 } from "@true-recall/obsidian/data";
-import { createSelectionToolbarExtension } from "@true-recall/obsidian/editor/ai/SelectionToolbarPlugin";
 import { createNoteStatusCache } from "@true-recall/obsidian/features/core/cache/note-status-cache.service";
 import type { DeviceSelectionResult } from "@true-recall/obsidian/modals/integration/DeviceSelectionModal";
-import { QuickNoteEditorModal } from "@true-recall/obsidian/modals/study/quick-note-editor/QuickNoteEditorModal";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 import { createAppStore } from "@true-recall/obsidian/store";
 
@@ -30,16 +28,6 @@ import type TrueRecallPlugin from "../main";
 import { BackupRecoveryManager } from "./BackupRecoveryManager";
 import { registerDeletionHandler } from "./PluginEventHandlers";
 import { PluginLoader } from "./plugin-loader";
-import {
-	appendToCurrentNote,
-	createNoteFromSelection,
-	editSelectionAsFlashcard,
-	generateWithPreset,
-	generateWithPresetGlobal,
-	hasApiKey,
-	quickAddFlashcardFromSelection,
-	quickAddFlashcardGlobal,
-} from "./SelectionActions";
 
 export async function initializeDeviceAndStore(
 	plugin: TrueRecallPlugin,
@@ -174,7 +162,7 @@ async function initializeCardStore(
 		plugin.pluginLoader = new PluginLoader(plugin);
 		plugin.pluginLoader.activateAll();
 
-		initializeSelectionToolbar(plugin);
+		initializeSourceHighlight(plugin);
 
 		const sEnd = performance.now();
 		console.debug(
@@ -256,145 +244,7 @@ function initializeCoreWidgets(plugin: TrueRecallPlugin): void {
 	});
 }
 
-function executeCommand(plugin: TrueRecallPlugin, commandId: string): void {
-	(plugin.app as any).commands.executeCommandById(commandId);
-}
-
-function getSourceFileFromDOM(
-	plugin: TrueRecallPlugin,
-	range: Range,
-): TFile | null {
-	const el =
-		range.commonAncestorContainer instanceof Element
-			? range.commonAncestorContainer
-			: range.commonAncestorContainer.parentElement;
-
-	const leafContent = el?.closest(".workspace-leaf-content");
-	if (!leafContent) return null;
-
-	let found: TFile | null = null;
-	plugin.app.workspace.iterateAllLeaves((leaf) => {
-		if (found) return;
-		if ((leaf as any).containerEl?.contains(leafContent)) {
-			const view = leaf.view;
-			if (view && "file" in view && view.file instanceof TFile) {
-				found = view.file as TFile;
-			}
-		}
-	});
-	return found;
-}
-
-function initializeSelectionToolbar(plugin: TrueRecallPlugin): void {
-	const editorActions = {
-		onPreset: (presetId: string, text: string) =>
-			generateWithPreset(plugin, presetId, text),
-		onEdit: (text: string) => editSelectionAsFlashcard(plugin, text),
-		onQuickAdd: (text: string) => quickAddFlashcardFromSelection(plugin, text),
-		onImageOcclusion: (imagePath: string) =>
-			handleImageOcclusion(plugin, imagePath),
-		onHighlight: () => {},
-		onNewNote: (text: string) => createNoteFromSelection(plugin, text),
-		onAppend: (text: string) => appendToCurrentNote(plugin, text),
-		onCommand: (id: string) => executeCommand(plugin, id),
-		onDismiss: () => {},
-	};
-
-	const extension = createSelectionToolbarExtension({
-		actions: editorActions,
-		getButtons: () => plugin.settings.editorToolbarButtons,
-		tier: () => {
-			if (plugin.settings.proKey) return "pro";
-			if (hasApiKey(plugin)) return "byok";
-			return "none";
-		},
-		isEnabled: () => plugin.settings.selectionToolbarEnabled,
-		getPluginStates: () => plugin.settings.pluginStates ?? {},
-		getPresets: () => plugin.settings.generationPresets,
-	});
-
-	plugin.registerEditorExtension([extension]);
-
-	void import("@true-recall/obsidian/editor/ai/ImageToolbarPlugin").then(
-		({ createImageToolbarExtension }) => {
-			const imageExtension = createImageToolbarExtension({
-				onQuickAddImage: async (imagePath) => {
-					try {
-						const file = plugin.app.workspace.getActiveFile();
-						if (!file) {
-							notify().error("No active file");
-							return;
-						}
-						const imageEmbed = `![[${imagePath}]]`;
-						await plugin.flashcardManager.saveFlashcardsToSql(
-							file.path,
-							file.basename,
-							[
-								{
-									id: crypto.randomUUID(),
-									question: imageEmbed,
-									answer: "",
-								},
-							],
-							undefined,
-							imageEmbed,
-						);
-						notify().cardsCreated(1, file.basename);
-					} catch (error) {
-						const msg = error instanceof Error ? error.message : String(error);
-						notify().error(`Quick add failed: ${msg}`);
-					}
-				},
-				onEdit: (imagePath) => {
-					const modal = new QuickNoteEditorModal(plugin.app, plugin, {
-						mode: "add",
-						initialFields: {
-							Front: `![[${imagePath}]]`,
-						},
-					});
-					void modal.openAndWait();
-				},
-				onImageOcclusion: (imagePath) =>
-					handleImageOcclusion(plugin, imagePath),
-				isEnabled: () => plugin.settings.selectionToolbarEnabled,
-			});
-			plugin.registerEditorExtension([imageExtension]);
-		},
-	);
-
-	void import("@true-recall/obsidian/editor/ai/GlobalSelectionToolbar").then(
-		({ GlobalSelectionToolbar }) => {
-			const globalActions = {
-				onPreset: (presetId: string, text: string, sourceFile?: TFile | null) =>
-					generateWithPresetGlobal(plugin, presetId, text, sourceFile),
-				onEdit: (text: string) => editSelectionAsFlashcard(plugin, text),
-				onQuickAdd: (text: string, sourceFile?: TFile | null) =>
-					quickAddFlashcardGlobal(plugin, text, sourceFile),
-				onHighlight: () => {},
-				onNewNote: (text: string) => createNoteFromSelection(plugin, text),
-				onAppend: (text: string) => appendToCurrentNote(plugin, text),
-				onCommand: (id: string) => executeCommand(plugin, id),
-				onDismiss: () => {},
-			};
-
-			const toolbar = new GlobalSelectionToolbar({
-				actions: globalActions,
-				getButtons: () => plugin.settings.globalToolbarButtons,
-				tier: () => {
-					if (plugin.settings.proKey) return "pro";
-					if (hasApiKey(plugin)) return "byok";
-					return "none";
-				},
-				isEnabled: () => plugin.settings.selectionToolbarEnabled,
-				getPluginStates: () => plugin.settings.pluginStates ?? {},
-				getSourceFile: (range) => getSourceFileFromDOM(plugin, range),
-				getPresets: () => plugin.settings.generationPresets,
-			});
-			toolbar.register();
-			plugin._globalSelectionToolbar = toolbar;
-		},
-	);
-
+function initializeSourceHighlight(plugin: TrueRecallPlugin): void {
 	void import("@true-recall/obsidian/editor/study/SourceHighlightPlugin").then(
 		({ createSourceHighlightExtension }) => {
 			plugin.registerEditorExtension(
@@ -404,41 +254,6 @@ function initializeSelectionToolbar(plugin: TrueRecallPlugin): void {
 			);
 		},
 	);
-}
-
-function handleImageOcclusion(
-	plugin: TrueRecallPlugin,
-	imagePath: string,
-): void {
-	const activeFile = plugin.app.workspace.getActiveFile();
-	const resolved = plugin.app.metadataCache.getFirstLinkpathDest(
-		imagePath,
-		activeFile?.path ?? "",
-	);
-	const resolvedPath = resolved?.path ?? imagePath;
-
-	if (activeFile && activeFile.extension === "md") {
-		const frontmatterService = plugin.flashcardManager.getFrontmatterService();
-		void (async () => {
-			let sourceUid = await frontmatterService.getSourceNoteUid(
-				activeFile.path,
-			);
-			if (!sourceUid) {
-				sourceUid = frontmatterService.generateUid();
-				await frontmatterService.setSourceNoteUid(activeFile.path, sourceUid);
-			}
-			await plugin.openImageOcclusionEditor({
-				mode: "add",
-				sourceUid,
-				imagePath: resolvedPath,
-			});
-		})();
-	} else {
-		void plugin.openImageOcclusionEditor({
-			mode: "add",
-			imagePath: resolvedPath,
-		});
-	}
 }
 
 export async function checkForWhatsNew(

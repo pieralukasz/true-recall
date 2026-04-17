@@ -16,14 +16,12 @@ function extractImagePathFromClick(
 	target: HTMLElement,
 	view: EditorView,
 ): string | null {
-	// Wiki embed: ![[image.png]] → .internal-embed[src] wrapping an <img>
 	const embed = target.closest(".internal-embed");
 	if (embed) {
 		const src = embed.getAttribute("src");
 		if (src) return src;
 	}
 
-	// Markdown image: ![alt](path) → use CM position to read source
 	if (target instanceof HTMLImageElement) {
 		const pos = view.posAtDOM(target);
 		if (pos != null) {
@@ -69,7 +67,6 @@ export function createImageToolbarExtension(
 
 				if (!callbacks.isEnabled()) return;
 
-				// Skip in review/browser contexts
 				if (
 					this.view.dom.closest(
 						".true-recall-review-card-container, .ep-card-browser",
@@ -94,7 +91,6 @@ export function createImageToolbarExtension(
 					return;
 				}
 
-				// Same image clicked — keep toolbar
 				if (this.container && this.currentImagePath === imagePath) return;
 
 				this.currentImagePath = imagePath;
@@ -145,10 +141,8 @@ export function createImageToolbarExtension(
 					const target = e.target;
 					if (!(target instanceof Node)) return;
 
-					// Don't dismiss if clicking inside the toolbar
 					if (this.container.contains(target)) return;
 
-					// Don't dismiss if clicking the same image
 					if (
 						this.currentImgEl &&
 						(this.currentImgEl === target || this.currentImgEl.contains(target))
@@ -158,7 +152,6 @@ export function createImageToolbarExtension(
 					this.removeToolbar();
 				};
 
-				// Use setTimeout so the current click doesn't immediately dismiss
 				setTimeout(() => {
 					if (this.outsideClickHandler) {
 						document.addEventListener("mousedown", this.outsideClickHandler);

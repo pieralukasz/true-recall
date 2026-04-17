@@ -23,7 +23,7 @@ export interface PreviewIntervals {
 
 export interface CardPreviewHandle {
 	isAnswerRevealed: boolean;
-	intervals: PreviewIntervals | null;
+	preview: SchedulingPreview | null;
 	isGradable: boolean;
 	reveal: () => void;
 	grade: (rating: Grade) => void;
@@ -95,7 +95,7 @@ export function useCardPreview({
 }: UseCardPreviewArgs): CardPreviewHandle {
 	const plugin = usePlugin();
 	const [isAnswerRevealed, setAnswerRevealed] = useState(false);
-	const [intervals, setIntervals] = useState<PreviewIntervals | null>(null);
+	const [preview, setPreview] = useState<SchedulingPreview | null>(null);
 
 	const isGradable = isCardGradable(card);
 
@@ -104,11 +104,7 @@ export function useCardPreview({
 		if (!isGradable) return;
 		const preset = plugin.presetService.resolvePresetForCard(card, {});
 		const settings = plugin.presetService.toFSRSSettings(preset);
-		const preview = plugin.fsrsService.getSchedulingPreview(
-			card.fsrs,
-			settings,
-		);
-		setIntervals(toPreviewIntervals(preview));
+		setPreview(plugin.fsrsService.getSchedulingPreview(card.fsrs, settings));
 	}, [card, plugin, isGradable]);
 
 	const grade = useCallback(
@@ -133,11 +129,11 @@ export function useCardPreview({
 	return useMemo(
 		() => ({
 			isAnswerRevealed,
-			intervals,
+			preview,
 			isGradable,
 			reveal,
 			grade,
 		}),
-		[isAnswerRevealed, intervals, isGradable, reveal, grade],
+		[isAnswerRevealed, preview, isGradable, reveal, grade],
 	);
 }

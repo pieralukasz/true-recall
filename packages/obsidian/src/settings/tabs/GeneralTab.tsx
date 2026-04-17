@@ -155,36 +155,22 @@ export function GeneralTab() {
 						onChange={(v) => void save({ showStatusBarWidget: v })}
 					/>
 				</FormField>
-
-				<FormField
-					name="Selection toolbar"
-					description="Show a floating toolbar above selected text for AI-powered flashcard creation."
-				>
-					<ToggleInput
-						value={settings.selectionToolbarEnabled}
-						onChange={(v) => void save({ selectionToolbarEnabled: v })}
-					/>
-				</FormField>
 			</FormCard>
 
-			{settings.selectionToolbarEnabled && (
-				<>
-					<ToolbarConfigSection
-						title="Editor toolbar"
-						description="Buttons shown when selecting text in the markdown editor"
-						buttons={settings.editorToolbarButtons}
-						onChange={(b) => void save({ editorToolbarButtons: b })}
-						context="editor"
-					/>
-					<ToolbarConfigSection
-						title="Global toolbar"
-						description="Buttons shown when selecting text outside the editor (sidebars, terminal, reading view)"
-						buttons={settings.globalToolbarButtons}
-						onChange={(b) => void save({ globalToolbarButtons: b })}
-						context="global"
-					/>
-				</>
-			)}
+			<ToolbarConfigSection
+				title="Editor toolbar"
+				description="Buttons shown when selecting text in the markdown editor"
+				buttons={settings.editorToolbarButtons}
+				onChange={(b) => void save({ editorToolbarButtons: b })}
+				context="editor"
+			/>
+			<ToolbarConfigSection
+				title="Global toolbar"
+				description="Buttons shown when selecting text outside the editor (sidebars, terminal, reading view)"
+				buttons={settings.globalToolbarButtons}
+				onChange={(b) => void save({ globalToolbarButtons: b })}
+				context="global"
+			/>
 
 			<FormCard title="Day boundary">
 				<FormField

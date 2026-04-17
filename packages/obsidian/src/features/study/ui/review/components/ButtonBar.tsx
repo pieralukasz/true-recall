@@ -29,20 +29,20 @@ interface ButtonBarProps {
 	isAnswerRevealed: boolean;
 	preview: SchedulingPreview | null;
 	showNextReviewTime: boolean;
-	typeInMode: TypeInMode;
-	isRatingLocked: boolean;
+	typeInMode?: TypeInMode;
+	isRatingLocked?: boolean;
 	onShowAnswer: () => void;
 	onAnswer: (rating: Grade) => void;
-	onCycleTypeInMode: () => void;
-	onActionsMenu: (e: MouseEvent) => void;
+	onCycleTypeInMode?: () => void;
+	onActionsMenu?: (e: MouseEvent) => void;
 }
 
 export function ButtonBar({
 	isAnswerRevealed,
 	preview,
 	showNextReviewTime,
-	typeInMode,
-	isRatingLocked,
+	typeInMode = "off",
+	isRatingLocked = false,
 	onShowAnswer,
 	onAnswer,
 	onCycleTypeInMode,
@@ -60,6 +60,7 @@ export function ButtonBar({
 		typeInMode === "ai" ? "AI" : typeInMode === "diff" ? "Diff" : "Off";
 
 	const mobile = isMobile();
+	const hasSecondary = Boolean(onCycleTypeInMode || onActionsMenu);
 
 	const ratingButtons = !isAnswerRevealed ? (
 		<Clickable
@@ -106,33 +107,39 @@ export function ButtonBar({
 		</>
 	);
 
-	const secondaryButtons = (
+	const secondaryButtons = hasSecondary ? (
 		<div class="ep:flex ep:items-center ep:gap-2">
-			<Clickable
-				class={typeInButtonVariants({ mode: typeInMode })}
-				aria-label={`Cycle type in mode (current: ${typeInCurrent})`}
-				aria-pressed={typeInEnabled}
-				title={`Cycle type in mode (T) \u00B7 current: ${typeInCurrent}`}
-				onClick={onCycleTypeInMode}
-			>
-				{typeInLabel}
-			</Clickable>
+			{onCycleTypeInMode && (
+				<Clickable
+					class={typeInButtonVariants({ mode: typeInMode })}
+					aria-label={`Cycle type in mode (current: ${typeInCurrent})`}
+					aria-pressed={typeInEnabled}
+					title={`Cycle type in mode (T) \u00B7 current: ${typeInCurrent}`}
+					onClick={onCycleTypeInMode}
+				>
+					{typeInLabel}
+				</Clickable>
+			)}
 
-			<Clickable
-				class="ep:flex ep:items-center ep:justify-center ep:w-10 ep:h-10 ep:p-0 ep:rounded-lg ep:bg-obs-modifier-hover ep:text-obs-muted ep:transition-colors ep:hover:bg-obs-border ep:hover:text-obs-normal ep:active:scale-95"
-				aria-label="Card actions"
-				onClick={onActionsMenu}
-			>
-				<div ref={menuIconRef} />
-			</Clickable>
+			{onActionsMenu && (
+				<Clickable
+					class="ep:flex ep:items-center ep:justify-center ep:w-10 ep:h-10 ep:p-0 ep:rounded-lg ep:bg-obs-modifier-hover ep:text-obs-muted ep:transition-colors ep:hover:bg-obs-border ep:hover:text-obs-normal ep:active:scale-95"
+					aria-label="Card actions"
+					onClick={onActionsMenu}
+				>
+					<div ref={menuIconRef} />
+				</Clickable>
+			)}
 		</div>
-	);
+	) : null;
 
 	if (mobile) {
 		return (
 			<div class="true-recall-review-buttons ep:flex ep:flex-col ep:gap-2 ep:border-t ep:border-obs-border ep:shrink-0 ep:px-3 ep:pt-2 ep:pb-3">
 				<div class="ep:flex ep:justify-center ep:gap-2">{ratingButtons}</div>
-				<div class="ep:flex ep:justify-center">{secondaryButtons}</div>
+				{secondaryButtons && (
+					<div class="ep:flex ep:justify-center">{secondaryButtons}</div>
+				)}
 			</div>
 		);
 	}
@@ -144,7 +151,9 @@ export function ButtonBar({
 					{ratingButtons}
 				</div>
 
-				<div class="ep:absolute ep:right-0">{secondaryButtons}</div>
+				{secondaryButtons && (
+					<div class="ep:absolute ep:right-0">{secondaryButtons}</div>
+				)}
 			</div>
 		</div>
 	);

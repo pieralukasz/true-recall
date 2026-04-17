@@ -187,7 +187,6 @@ export default class TrueRecallPlugin extends Plugin {
 	EmbeddableEditor:
 		| import("@true-recall/obsidian/editor/shared/embedded-editor").EmbeddableEditorClass
 		| null = null;
-	_globalSelectionToolbar: { destroy(): void } | null = null;
 
 	isStoreReady(): boolean {
 		return this.coreApp.isReady();
@@ -471,7 +470,6 @@ export default class TrueRecallPlugin extends Plugin {
 		this.commandService?.clear();
 		this.statusBarWidget?.dispose();
 		this.noteStatusCache?.dispose();
-		this._globalSelectionToolbar?.destroy();
 		this.dataLayer?.dispose();
 		this._disposeWireDataLayer?.();
 		void this.coreApp?.shutdown().catch((e) => {

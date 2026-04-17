@@ -6,6 +6,7 @@ import { healingFlashcardsManifest } from "./healing-flashcards";
 import { imageOcclusionManifest } from "./image-occlusion";
 import { knowledgeBaseManifest } from "./knowledge-base";
 import { linkStatusIndicatorsManifest } from "./link-status-indicators";
+import { selectionToolbarManifest } from "./selection-toolbar";
 import { statusBarWidgetManifest } from "./status-bar-widget";
 import { typeInModeManifest } from "./type-in-mode";
 import type { PluginManifest } from "./types";
@@ -21,6 +22,7 @@ export const PLUGIN_MANIFESTS: PluginManifest[] = [
 	gamificationManifest,
 	statusBarWidgetManifest,
 	ankiImportExportManifest,
+	selectionToolbarManifest,
 ];
 
 export interface ButtonPluginInfo {

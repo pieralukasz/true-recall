@@ -7,12 +7,12 @@ import type { GenerationPreset } from "@true-recall/core/types/generation-preset
 import { Clickable } from "@true-recall/obsidian/components";
 import { isPresetProRequired } from "@true-recall/obsidian/plugin/generation-post-processing";
 
+import { BUTTON_PLUGIN_MAP } from "../registry";
 import {
 	BUILTIN_BUTTONS,
 	extractPresetId,
 	isPresetButton,
 } from "./toolbar-buttons";
-import { BUTTON_PLUGIN_MAP } from "@true-recall/plugins";
 
 export interface ToolbarActions {
 	onPreset: (

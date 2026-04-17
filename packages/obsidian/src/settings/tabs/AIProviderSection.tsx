@@ -92,6 +92,16 @@ export function AIProviderSection() {
 
 	return (
 		<FormCard title="AI Provider">
+			<div class="ep:text-ui-smaller ep:text-obs-muted ep:leading-relaxed ep:pb-2 ep:mb-2 ep:border-b ep:border-obs-modifier-border">
+				<p class="ep:font-medium ep:text-obs-normal">
+					Zero setup, optimized results
+				</p>
+				<p class="ep:mt-1">
+					Optimized prompts and model selection managed server-side. AI budget
+					included with your subscription.
+				</p>
+			</div>
+
 			<FormField
 				name="Pro Key"
 				description={
@@ -137,34 +147,24 @@ export function AIProviderSection() {
 					Could not verify key — check your internet connection and try again.
 				</InfoBlock>
 			)}
-			<div class="ep:text-ui-smaller ep:text-obs-muted ep:leading-relaxed ep:pt-2 ep:mt-2 ep:border-t ep:border-obs-modifier-border">
-				<p class="ep:font-medium ep:text-obs-normal">
-					Zero setup, optimized results
-				</p>
-				<p class="ep:mt-1">
-					Optimized prompts and model selection managed server-side. AI budget
-					included with your subscription.
-				</p>
-			</div>
-
-			<FormField
-				name="OpenRouter API key"
-				description="Your own API key — you pay OpenRouter directly per token. Also used as fallback when Pro budget is exhausted."
-			>
-				<TextInput
-					value={settings.openRouterApiKey}
-					onChange={(v) => void save({ openRouterApiKey: v })}
-					type="password"
-					placeholder="Enter API key"
-					class="ep:w-[300px]"
-				/>
-			</FormField>
-
 			<details class="ep:mt-2">
 				<summary class="ep:cursor-pointer ep:text-ui-small ep:text-obs-muted ep:select-none ep:py-1">
 					Advanced
 				</summary>
 				<div class="ep:mt-1">
+					<FormField
+						name="OpenRouter API key"
+						description="Your own API key — you pay OpenRouter directly per token. Also used as fallback when Pro budget is exhausted."
+					>
+						<TextInput
+							value={settings.openRouterApiKey}
+							onChange={(v) => void save({ openRouterApiKey: v })}
+							type="password"
+							placeholder="Enter API key"
+							class="ep:w-[300px]"
+						/>
+					</FormField>
+
 					<FormField
 						name="Model"
 						description="Reasoning model used for flashcard generation."

@@ -1,14 +1,14 @@
 import type { App } from "obsidian";
 import { render } from "preact";
 import { useEffect } from "preact/hooks";
-import { type Grade, Rating } from "ts-fsrs";
 
 import type { FSRSFlashcardItem } from "@true-recall/core/types/fsrs/card.types";
 
-import { Clickable } from "@true-recall/obsidian/components";
 import { ErrorBoundary } from "@true-recall/obsidian/components/ErrorBoundary";
+import { ButtonBar } from "@true-recall/obsidian/features/study/ui/review/components";
 import type TrueRecallPlugin from "@true-recall/obsidian/main";
 import { BaseModal } from "@true-recall/obsidian/modals/shared/BaseModal";
+import { usePlugin } from "@true-recall/obsidian/preact";
 import { ObsidianProvider } from "@true-recall/obsidian/preact/ObsidianContext";
 
 import { PreviewCardBody } from "./PreviewCardBody";
@@ -19,7 +19,7 @@ import {
 	VIEW_TRANSITION_NAME,
 	withViewTransition,
 } from "./preview-signal";
-import { type PreviewIntervals, useCardPreview } from "./useCardPreview";
+import { useCardPreview } from "./useCardPreview";
 
 interface PreviewModalBodyProps {
 	card: FSRSFlashcardItem;
@@ -32,7 +32,8 @@ export function PreviewModalBody({
 	sourcePath,
 	onClose,
 }: PreviewModalBodyProps) {
-	const { isAnswerRevealed, intervals, isGradable, reveal, grade } =
+	const plugin = usePlugin();
+	const { isAnswerRevealed, preview, isGradable, reveal, grade } =
 		useCardPreview({ card, onClose });
 
 	useEffect(() => {
@@ -64,91 +65,30 @@ export function PreviewModalBody({
 				<PreviewCardBody card={card} side="question" sourcePath={sourcePath} />
 			</section>
 
-			{!isAnswerRevealed && (
-				<Clickable class="mod-cta ep-btn" onClick={reveal}>
-					Pokaż odpowiedź (Space)
-				</Clickable>
-			)}
-
 			{isAnswerRevealed && (
-				<>
-					<section class="ep:border-t ep:border-obs-border ep:pt-3">
-						<div class="ep:text-[10px] ep:uppercase ep:tracking-wider ep:text-obs-muted ep:mb-1.5">
-							Answer
-						</div>
-						<PreviewCardBody
-							card={card}
-							side="answer"
-							sourcePath={sourcePath}
-						/>
-					</section>
-					{isGradable && intervals && (
-						<RatingRow intervals={intervals} onGrade={grade} />
-					)}
-					{!isGradable && (
-						<div class="ep:text-ui-smaller ep:text-obs-muted ep:italic">
-							Suspended or buried — grading disabled.
-						</div>
-					)}
-				</>
+				<section class="ep:border-t ep:border-obs-border ep:pt-3">
+					<div class="ep:text-[10px] ep:uppercase ep:tracking-wider ep:text-obs-muted ep:mb-1.5">
+						Answer
+					</div>
+					<PreviewCardBody card={card} side="answer" sourcePath={sourcePath} />
+				</section>
+			)}
+
+			<ButtonBar
+				isAnswerRevealed={isAnswerRevealed}
+				preview={preview}
+				showNextReviewTime={plugin.settings.showNextReviewTime}
+				isRatingLocked={!isGradable}
+				onShowAnswer={reveal}
+				onAnswer={grade}
+			/>
+
+			{isAnswerRevealed && !isGradable && (
+				<div class="ep:text-ui-smaller ep:text-obs-muted ep:italic">
+					Suspended or buried — grading disabled.
+				</div>
 			)}
 		</div>
-	);
-}
-
-interface RatingRowProps {
-	intervals: PreviewIntervals;
-	onGrade: (rating: Grade) => void;
-}
-
-function RatingRow({ intervals, onGrade }: RatingRowProps) {
-	return (
-		<div class="ep:grid ep:grid-cols-4 ep:gap-2">
-			<RatingButton
-				label="Again"
-				interval={intervals.again}
-				hotkey="1"
-				onClick={() => onGrade(Rating.Again)}
-			/>
-			<RatingButton
-				label="Hard"
-				interval={intervals.hard}
-				hotkey="2"
-				onClick={() => onGrade(Rating.Hard)}
-			/>
-			<RatingButton
-				label="Good"
-				interval={intervals.good}
-				hotkey="3"
-				onClick={() => onGrade(Rating.Good)}
-			/>
-			<RatingButton
-				label="Easy"
-				interval={intervals.easy}
-				hotkey="4"
-				onClick={() => onGrade(Rating.Easy)}
-			/>
-		</div>
-	);
-}
-
-interface RatingButtonProps {
-	label: string;
-	interval: string;
-	hotkey: string;
-	onClick: () => void;
-}
-
-function RatingButton({ label, interval, hotkey, onClick }: RatingButtonProps) {
-	return (
-		<Clickable
-			class="ep-btn ep:flex ep:flex-col ep:items-center"
-			onClick={onClick}
-		>
-			<span class="ep:font-medium">{label}</span>
-			<span class="ep:text-ui-smaller ep:text-obs-muted">{interval}</span>
-			<span class="ep:text-[10px] ep:text-obs-faint">({hotkey})</span>
-		</Clickable>
 	);
 }
 

@@ -60,32 +60,54 @@ export function migrateSettings(raw: Partial<TrueRecallSettings> | null): {
 		needsSave = true;
 	}
 
-	// Inject "vocab" toolbar button for existing users who don't have it yet
-	if (
-		raw?.editorToolbarButtons &&
-		!settings.editorToolbarButtons.some((b) => b.id === "vocab")
-	) {
-		const idx = settings.editorToolbarButtons.findIndex(
-			(b) => b.id === "flashcards",
-		);
-		settings.editorToolbarButtons.splice(idx + 1, 0, {
-			id: "vocab",
-			enabled: true,
-		});
-		needsSave = true;
+	// Pre-preset migration: inject legacy "vocab" toolbar button so the later
+	// preset rewrite (below, gated on !raw.generationPresets) picks it up.
+	// Once presets exist, the preset:* IDs are canonical — skip to avoid
+	// re-adding a stale "vocab" button on every load.
+	if (!raw?.generationPresets) {
+		if (
+			raw?.editorToolbarButtons &&
+			!settings.editorToolbarButtons.some((b) => b.id === "vocab")
+		) {
+			const idx = settings.editorToolbarButtons.findIndex(
+				(b) => b.id === "flashcards",
+			);
+			settings.editorToolbarButtons.splice(idx + 1, 0, {
+				id: "vocab",
+				enabled: true,
+			});
+			needsSave = true;
+		}
+		if (
+			raw?.globalToolbarButtons &&
+			!settings.globalToolbarButtons.some((b) => b.id === "vocab")
+		) {
+			const idx = settings.globalToolbarButtons.findIndex(
+				(b) => b.id === "flashcards",
+			);
+			settings.globalToolbarButtons.splice(idx + 1, 0, {
+				id: "vocab",
+				enabled: true,
+			});
+			needsSave = true;
+		}
 	}
-	if (
-		raw?.globalToolbarButtons &&
-		!settings.globalToolbarButtons.some((b) => b.id === "vocab")
-	) {
-		const idx = settings.globalToolbarButtons.findIndex(
-			(b) => b.id === "flashcards",
-		);
-		settings.globalToolbarButtons.splice(idx + 1, 0, {
-			id: "vocab",
-			enabled: true,
-		});
-		needsSave = true;
+
+	// Inject built-in Basic Pro preset toolbar button for existing users
+	const basicPresetButtonId = "preset:builtin-basic-flashcards";
+	const basicProButtonId = `preset:${BUILTIN_BASIC_PRO_PRESET_ID}`;
+	for (const key of ["editorToolbarButtons", "globalToolbarButtons"] as const) {
+		if (raw?.[key] && !settings[key].some((b) => b.id === basicProButtonId)) {
+			const basicIdx = settings[key].findIndex(
+				(b) => b.id === basicPresetButtonId,
+			);
+			const insertIdx = basicIdx >= 0 ? basicIdx + 1 : 0;
+			settings[key].splice(insertIdx, 0, {
+				id: basicProButtonId,
+				enabled: true,
+			});
+			needsSave = true;
+		}
 	}
 
 	// Migrate GenerationPreset → flat language settings

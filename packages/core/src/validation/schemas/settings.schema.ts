@@ -15,7 +15,6 @@ export const SettingsSchema = z.object({
 	customAiModel: z.string().optional(),
 	aiTier: AITierSchema,
 	autoSyncToAnki: z.boolean().default(false),
-	selectionToolbarEnabled: z.boolean().default(true),
 	aiGenerationPrompt: z.string().optional(),
 });
 

@@ -1,18 +1,21 @@
 import { useCallback, useRef, useState } from "preact/hooks";
 
+import { BUILTIN_BASIC_PRO_PRESET_ID } from "@true-recall/core/constants";
 import type { ToolbarButtonConfig } from "@true-recall/core/types";
 
 import { Clickable, FormCard } from "@true-recall/obsidian/components";
+import { useIcon, usePlugin } from "@true-recall/obsidian/preact";
+
+import { BUTTON_PLUGIN_MAP } from "@true-recall/plugins";
 import {
 	BUILTIN_BUTTONS,
 	extractPresetId,
 	getButtonLabel,
 	isBuiltinButton,
 	isPresetButton,
-} from "@true-recall/obsidian/editor/ai/toolbar-buttons";
-import { useIcon, usePlugin } from "@true-recall/obsidian/preact";
+} from "@true-recall/plugins/selection-toolbar/toolbar-buttons";
 
-import { BUTTON_PLUGIN_MAP } from "@true-recall/plugins";
+const BASIC_PRO_BUTTON_ID = `preset:${BUILTIN_BASIC_PRO_PRESET_ID}`;
 
 interface ToolbarConfigListProps {
 	title: string;
@@ -153,6 +156,7 @@ export function ToolbarConfigSection({
 						: true;
 					const isOrphan = isPreset && !presetExists;
 					const isProButton = pluginInfo?.requiresPro;
+					const isBasicPro = btn.id === BASIC_PRO_BUTTON_ID;
 					const isDisabled = isEditorOnly || isPluginDisabled || isOrphan;
 
 					return (
@@ -160,7 +164,7 @@ export function ToolbarConfigSection({
 							key={`${btn.id}-${i}`}
 							label={getLabel(btn.id)}
 							enabled={btn.enabled}
-							isCustom={!isBuiltinButton(btn.id)}
+							isCustom={!isBuiltinButton(btn.id) && !isBasicPro}
 							isDragging={dragIndex === i}
 							isDragOver={dragOverIndex === i}
 							disabled={isDisabled}

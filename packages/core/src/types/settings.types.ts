@@ -299,9 +299,6 @@ export interface TrueRecallSettings {
 	/** Show YAML frontmatter in note review cards (default: false) */
 	noteReviewShowFrontmatter: boolean;
 
-	/** Show floating toolbar above selected text for AI flashcard generation */
-	selectionToolbarEnabled: boolean;
-
 	/** Button configuration for the editor (CodeMirror) selection toolbar */
 	editorToolbarButtons: ToolbarButtonConfig[];
 	/** Button configuration for the global (non-editor) selection toolbar */
