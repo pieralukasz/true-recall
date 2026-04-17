@@ -203,11 +203,11 @@ export function migrateSettings(raw: Partial<TrueRecallSettings> | null): {
 		needsSave = true;
 	}
 
-	// Ensure the legacy builtin basic preset is flagged as isBuiltin for existing installs
+	// Retrofit isPro on a pre-existing Pro preset that predates the flag
 	if (settings.generationPresets) {
 		for (const preset of settings.generationPresets) {
-			if (preset.id === BUILTIN_BASIC_PRESET.id && !preset.isBuiltin) {
-				preset.isBuiltin = true;
+			if (preset.id === BUILTIN_BASIC_PRO_PRESET_ID && !preset.isPro) {
+				preset.isPro = true;
 				needsSave = true;
 			}
 		}

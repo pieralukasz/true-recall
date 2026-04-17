@@ -70,7 +70,6 @@ export function AIGenerationSettingsPanel({
 			name: `${preset.name} (copy)`,
 			isPinned: false,
 			isDefault: false,
-			isBuiltin: false,
 			isPro: false,
 			createdAt: Date.now(),
 			updatedAt: Date.now(),
@@ -80,7 +79,7 @@ export function AIGenerationSettingsPanel({
 
 	const handleDelete = async (id: string) => {
 		const target = presets.find((p) => p.id === id);
-		if (target?.isBuiltin) return;
+		if (target?.isPro) return;
 		await save({ generationPresets: presets.filter((p) => p.id !== id) });
 	};
 
@@ -108,12 +107,12 @@ export function AIGenerationSettingsPanel({
 						preset.noteTypeId,
 					);
 					const isOnly = presets.length === 1;
-					const isBuiltin = !!preset.isBuiltin;
-					const editTitle = isBuiltin
-						? "Built-in preset — duplicate to customize"
+					const isPro = !!preset.isPro;
+					const editTitle = isPro
+						? "Pro preset — duplicate to customize"
 						: undefined;
-					const deleteTitle = isBuiltin
-						? "Built-in preset cannot be deleted"
+					const deleteTitle = isPro
+						? "Pro preset cannot be deleted"
 						: undefined;
 					return (
 						<div
@@ -156,7 +155,7 @@ export function AIGenerationSettingsPanel({
 								<button
 									type="button"
 									title={editTitle}
-									disabled={isBuiltin}
+									disabled={isPro}
 									class="ep:px-2 ep:py-0.5 ep:text-ui-smaller ep:border ep:border-obs-border ep:rounded ep:bg-obs-primary ep:hover:bg-obs-secondary ep:cursor-pointer ep:disabled:opacity-40 ep:disabled:cursor-not-allowed"
 									onClick={() => setEditingId(preset.id)}
 								>
@@ -172,7 +171,7 @@ export function AIGenerationSettingsPanel({
 								<button
 									type="button"
 									title={deleteTitle}
-									disabled={isOnly || isBuiltin}
+									disabled={isOnly || isPro}
 									class="ep:px-2 ep:py-0.5 ep:text-ui-smaller ep:border ep:border-obs-border ep:rounded ep:bg-obs-primary ep:hover:bg-obs-secondary ep:cursor-pointer ep:disabled:opacity-40 ep:disabled:cursor-not-allowed"
 									onClick={() => void handleDelete(preset.id)}
 								>

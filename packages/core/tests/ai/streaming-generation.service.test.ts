@@ -222,6 +222,25 @@ describe("StreamingGenerationService.generate", () => {
 		expect(body.temperature).toBeUndefined();
 	});
 
+	it("rejects Pro preset when user has no Pro key", async () => {
+		const proPreset: GenerationPreset = { ...basicPreset, isPro: true };
+		const settings = makeByokSettings({
+			generationPresets: [proPreset],
+			defaultGenerationPresetId: proPreset.id,
+		});
+		const { httpClient, capturedRequests } = makeCapturingHttpClient();
+		const svc = new StreamingGenerationService(
+			() => settings,
+			flashcardManager,
+			httpClient,
+		);
+
+		await expect(
+			svc.generate("text", sourceFile, proPreset.id),
+		).rejects.toThrow(/requires True Recall Pro/);
+		expect(capturedRequests).toHaveLength(0);
+	});
+
 	it("Pro path with empty customPrompt falls back to buildPresetPrompt", async () => {
 		const proPresetEmpty: GenerationPreset = {
 			...basicPreset,

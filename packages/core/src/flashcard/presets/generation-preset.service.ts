@@ -142,8 +142,8 @@ export class GenerationPresetService {
 			throw new Error(`Preset '${id}' not found`);
 		}
 
-		if (current.isBuiltin) {
-			throw new Error("Cannot edit built-in preset");
+		if (current.isPro) {
+			throw new Error("Cannot edit Pro preset");
 		}
 
 		const allowedKeys: Array<keyof UpdateGenerationPresetPatch> = [
@@ -201,8 +201,8 @@ export class GenerationPresetService {
 			throw new Error(`Preset '${id}' not found`);
 		}
 
-		if (target.isBuiltin) {
-			throw new Error("Cannot delete built-in preset");
+		if (target.isPro) {
+			throw new Error("Cannot delete Pro preset");
 		}
 
 		if (current.length === 1) {

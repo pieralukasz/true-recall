@@ -9,11 +9,19 @@ import { parseJsonBody, readBody, sendError, sendOk } from "../api.types";
 
 function mapErrorToStatus(message: string): number {
 	if (message.includes("not found")) return 404;
+	if (message.includes("Cannot edit")) return 403;
 	if (message.includes("Cannot delete")) return 403;
 	if (message.includes("last preset")) return 403;
 	if (message.includes("validation failed")) return 400;
 	if (message.includes("Unknown field")) return 400;
 	return 500;
+}
+
+function mapGenerateErrorToStatus(message: string): number {
+	if (message.includes("requires True Recall Pro")) return 403;
+	if (message.includes("already in progress")) return 409;
+	if (message.includes("not found")) return 404;
+	return 502;
 }
 
 export function handleListGenerationPresets(
@@ -191,6 +199,6 @@ export async function handleGenerateWithPreset(
 		});
 	} catch (e) {
 		const message = e instanceof Error ? e.message : String(e);
-		sendError(res, 502, `Generation failed: ${message}`);
+		sendError(res, mapGenerateErrorToStatus(message), message);
 	}
 }

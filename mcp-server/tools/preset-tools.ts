@@ -54,7 +54,7 @@ export const presetTools: ToolDef[] = [
 
 	postTo(
 		"update_generation_preset",
-		"Update a generation preset (PATCH semantics). Only provided top-level keys are changed. If fields or tts are provided, they atomically replace the existing sub-object — there is no deep merge. Unknown keys are rejected with 400. Setting isDefault:true auto-unsets default on all other presets.",
+		"Update a generation preset (PATCH semantics). Only provided top-level keys are changed. If fields or tts are provided, they atomically replace the existing sub-object — there is no deep merge. Unknown keys are rejected with 400. Setting isDefault:true auto-unsets default on all other presets. Pro presets (e.g. 'builtin-basic-pro-flashcards') cannot be edited — duplicate them first with duplicate semantics (use list + create).",
 		{
 			preset_id: z.string().describe("Preset id to update"),
 			patch: z
@@ -82,7 +82,7 @@ export const presetTools: ToolDef[] = [
 
 	del(
 		"delete_generation_preset",
-		"Delete a generation preset. Built-in preset ('builtin-basic-flashcards') cannot be deleted. Deleting the default preset auto-promotes the next preset to default. Deleting the last preset is blocked.",
+		"Delete a generation preset. Pro presets (e.g. 'builtin-basic-pro-flashcards') cannot be deleted. Deleting the default preset auto-promotes the next preset to default. Deleting the last preset is blocked.",
 		{
 			preset_id: z.string().describe("Preset id to delete"),
 		},

@@ -101,7 +101,6 @@ export const BUILTIN_BASIC_PRESET: GenerationPreset = {
 	tts: null,
 	isPinned: true,
 	isDefault: true,
-	isBuiltin: true,
 	createdAt: 0,
 	updatedAt: 0,
 };
@@ -178,7 +177,6 @@ export const BUILTIN_BASIC_PRO_PRESET: GenerationPreset = {
 	customPrompt: BUILTIN_BASIC_PRO_PROMPT,
 	isPinned: true,
 	isDefault: false,
-	isBuiltin: true,
 	isPro: true,
 	createdAt: 0,
 	updatedAt: 0,

@@ -60,6 +60,30 @@ describe("migrateSettings — generation preset migration", () => {
 		expect(settings.defaultGenerationPresetId).toBe("my-preset");
 	});
 
+	it("retrofits isPro on pre-existing Pro preset that lacks the flag", () => {
+		const stalePro = {
+			id: BUILTIN_BASIC_PRO_PRESET_ID,
+			name: "Basic Flashcards (Pro)",
+			noteTypeId: "builtin-basic",
+			fields: {},
+			tts: null,
+			isPinned: true,
+			isDefault: false,
+			createdAt: 1,
+			updatedAt: 1,
+		};
+		const { settings, needsSave } = migrateSettings({
+			generationPresets: [stalePro],
+			defaultGenerationPresetId: stalePro.id,
+		} as any);
+
+		const pro = settings.generationPresets.find(
+			(p) => p.id === BUILTIN_BASIC_PRO_PRESET_ID,
+		);
+		expect(pro?.isPro).toBe(true);
+		expect(needsSave).toBe(true);
+	});
+
 	it("migrates old generationNoteTypeId to a Flashcards preset", () => {
 		const raw = {
 			generationNoteTypeId: "my-custom-note-type",

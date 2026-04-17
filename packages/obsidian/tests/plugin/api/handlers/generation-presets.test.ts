@@ -196,11 +196,11 @@ describe("generation-presets handlers", () => {
 		expect(res.calls[0]?.status).toBe(404);
 	});
 
-	it("DELETE on built-in returns 403", async () => {
+	it("DELETE on Pro returns 403", async () => {
 		const res = mockRes();
 		const plugin = mockPlugin();
 		plugin.generationPresetService.delete = vi.fn(async () => {
-			throw new Error("Cannot delete built-in preset");
+			throw new Error("Cannot delete Pro preset");
 		});
 		await handleDeleteGenerationPreset(
 			{} as never,

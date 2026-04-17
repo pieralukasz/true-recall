@@ -18,7 +18,6 @@ export interface GenerationPreset {
 	customPrompt?: string;
 	isPinned: boolean;
 	isDefault: boolean;
-	isBuiltin?: boolean;
 	isPro?: boolean;
 	createdAt: number;
 	updatedAt: number;

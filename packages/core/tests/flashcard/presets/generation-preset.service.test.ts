@@ -3,6 +3,8 @@ import { describe, expect, it } from "vitest";
 import {
 	BUILTIN_BASIC_PRESET,
 	BUILTIN_BASIC_PRESET_ID,
+	BUILTIN_BASIC_PRO_PRESET,
+	BUILTIN_BASIC_PRO_PRESET_ID,
 } from "../../../src/constants";
 import { GenerationPresetService } from "../../../src/flashcard/presets/generation-preset.service";
 import type {
@@ -405,11 +407,51 @@ describe("GenerationPresetService.update", () => {
 		expect(presets.find((p) => p.id === "p2")?.isDefault).toBe(true);
 		expect(getSettings().defaultGenerationPresetId).toBe("p2");
 	});
+
+	it("blocks update of Pro preset", async () => {
+		const { service } = makeMutableService([
+			{
+				...BUILTIN_BASIC_PRO_PRESET,
+				id: BUILTIN_BASIC_PRO_PRESET_ID,
+				isDefault: true,
+			},
+			{ ...BASE_PRESET, id: "p2", isDefault: false },
+		]);
+		await expect(
+			service.update(BUILTIN_BASIC_PRO_PRESET_ID, { name: "Hacked" }),
+		).rejects.toThrow(/Cannot edit Pro/);
+	});
+
+	it("allows update of non-Pro built-in preset", async () => {
+		const { service, getSettings } = makeMutableService([
+			{
+				...BUILTIN_BASIC_PRESET,
+				id: BUILTIN_BASIC_PRESET_ID,
+				isDefault: true,
+			},
+		]);
+		await service.update(BUILTIN_BASIC_PRESET_ID, { name: "Renamed" });
+		expect(getSettings().generationPresets[0]?.name).toBe("Renamed");
+	});
 });
 
 describe("GenerationPresetService.delete", () => {
-	it("blocks deletion of built-in preset", async () => {
+	it("blocks deletion of Pro preset", async () => {
 		const { service } = makeMutableService([
+			{
+				...BUILTIN_BASIC_PRO_PRESET,
+				id: BUILTIN_BASIC_PRO_PRESET_ID,
+				isDefault: true,
+			},
+			{ ...BASE_PRESET, id: "p2", isDefault: false },
+		]);
+		await expect(service.delete(BUILTIN_BASIC_PRO_PRESET_ID)).rejects.toThrow(
+			/Cannot delete Pro/,
+		);
+	});
+
+	it("allows deletion of non-Pro built-in preset", async () => {
+		const { service, getSettings } = makeMutableService([
 			{
 				...BUILTIN_BASIC_PRESET,
 				id: BUILTIN_BASIC_PRESET_ID,
@@ -417,9 +459,8 @@ describe("GenerationPresetService.delete", () => {
 			},
 			{ ...BASE_PRESET, id: "p2", isDefault: false },
 		]);
-		await expect(service.delete(BUILTIN_BASIC_PRESET_ID)).rejects.toThrow(
-			/Cannot delete built-in/,
-		);
+		await service.delete(BUILTIN_BASIC_PRESET_ID);
+		expect(getSettings().generationPresets.map((p) => p.id)).toEqual(["p2"]);
 	});
 
 	it("blocks deletion of last remaining preset", async () => {
