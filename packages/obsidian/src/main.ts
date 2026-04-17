@@ -131,6 +131,9 @@ export default class TrueRecallPlugin extends Plugin {
 	get presetService() {
 		return this.coreApp.presetService;
 	}
+	get generationPresetService() {
+		return this.coreApp.generationPresetService;
+	}
 	get noteTypeService() {
 		const v = this.coreApp.noteTypeService;
 		if (!v)
