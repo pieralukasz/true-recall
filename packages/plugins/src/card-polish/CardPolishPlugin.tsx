@@ -22,6 +22,10 @@ import { DEFAULT_CARD_POLISH_SETTINGS } from "./default-presets";
 import { PolishButton } from "./PolishButton";
 import { PolishMenu } from "./PolishMenu";
 
+type PolishTargetCard = { id: string; question: string; answer: string };
+
+// If this file grows past ~300 lines, extract the error-handler branch in
+// handlePolishError into its own module.
 export class CardPolishPlugin {
 	private container: HTMLDivElement | null = null;
 	private menuContainer: HTMLDivElement | null = null;
@@ -45,6 +49,8 @@ export class CardPolishPlugin {
 			this.leafObserverRef = null;
 		}
 		this.closeMenu();
+		this.abortController?.abort();
+		this.abortController = null;
 		this.unmount();
 	}
 
@@ -162,17 +168,17 @@ export class CardPolishPlugin {
 		if (!service) return; // buildService shows a Notice if AI is unconfigured.
 
 		this.abortController?.abort();
-		this.abortController = new AbortController();
+		const controller = new AbortController();
+		this.abortController = controller;
 
 		const notice = new Notice("Polishing…", 0);
 		try {
 			const result = await service.transform({
 				cardFront: card.question,
-				cardBack: card.answer ?? "",
+				cardBack: card.answer,
 				prompt: preset.prompt,
-				signal: this.abortController.signal,
+				signal: controller.signal,
 			});
-			notice.hide();
 
 			if (preset.autoApply) {
 				this.applyPolishResult(card, {
@@ -188,13 +194,17 @@ export class CardPolishPlugin {
 				);
 			}
 		} catch (err) {
-			notice.hide();
 			this.handlePolishError(err);
+		} finally {
+			notice.hide();
+			if (this.abortController === controller) {
+				this.abortController = null;
+			}
 		}
 	}
 
 	private applyPolishResult(
-		card: { id: string; question: string; answer: string },
+		card: PolishTargetCard,
 		result: { front: string; back: string },
 	): void {
 		const plugin = this.ctx.obsidianPlugin;
@@ -231,11 +241,7 @@ export class CardPolishPlugin {
 		return new CardPolishService(client);
 	}
 
-	private getCurrentCard(): {
-		id: string;
-		question: string;
-		answer: string;
-	} | null {
+	private getCurrentCard(): PolishTargetCard | null {
 		const review = this.ctx.obsidianPlugin.store?.getState().review;
 		const card = review?.getCurrentCard();
 		if (!card) return null;
@@ -247,7 +253,7 @@ export class CardPolishPlugin {
 	}
 
 	private openPreview(
-		_card: { id: string; question: string; answer: string },
+		_card: PolishTargetCard,
 		_result: { front: string; back: string },
 		_preset: CardPolishPreset,
 	): void {
