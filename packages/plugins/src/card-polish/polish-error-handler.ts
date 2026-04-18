@@ -11,10 +11,7 @@ export interface PolishErrorHooks {
 	onRawFallback: (rawResponse: string) => void;
 }
 
-export function handlePolishError(
-	err: unknown,
-	hooks: PolishErrorHooks,
-): void {
+export function handlePolishError(err: unknown, hooks: PolishErrorHooks): void {
 	if (err instanceof PolishAbortedError) return;
 	if (err instanceof PolishParseError) {
 		hooks.onRawFallback(err.rawResponse);

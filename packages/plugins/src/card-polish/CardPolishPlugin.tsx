@@ -1,6 +1,6 @@
 import { computePosition, flip, offset, shift } from "@floating-ui/dom";
-import { Modal, Notice } from "obsidian";
 import type { EventRef } from "obsidian";
+import { Modal, Notice } from "obsidian";
 import { render } from "preact";
 
 import {
@@ -16,10 +16,10 @@ import { UpdateCardCommand } from "@true-recall/obsidian/commands/commands/card-
 import type { PluginContext } from "../types";
 import { CustomPromptInput } from "./CustomPromptInput";
 import { DEFAULT_CARD_POLISH_SETTINGS } from "./default-presets";
-import { handlePolishError } from "./polish-error-handler";
 import { PolishButton } from "./PolishButton";
 import { PolishMenu } from "./PolishMenu";
 import { PolishPreviewModal } from "./PolishPreviewModal";
+import { handlePolishError } from "./polish-error-handler";
 
 type PolishTargetCard = { id: string; question: string; answer: string };
 
@@ -159,11 +159,7 @@ export class CardPolishPlugin {
 				document.addEventListener("keydown", this.menuKeyListener);
 			}
 			if (this.menuClickListener) {
-				document.addEventListener(
-					"pointerdown",
-					this.menuClickListener,
-					true,
-				);
+				document.addEventListener("pointerdown", this.menuClickListener, true);
 			}
 		}, 0);
 	}
@@ -174,11 +170,7 @@ export class CardPolishPlugin {
 			this.menuKeyListener = null;
 		}
 		if (this.menuClickListener) {
-			document.removeEventListener(
-				"pointerdown",
-				this.menuClickListener,
-				true,
-			);
+			document.removeEventListener("pointerdown", this.menuClickListener, true);
 			this.menuClickListener = null;
 		}
 		if (!this.menuContainer) return;
@@ -446,11 +438,7 @@ export class CardPolishPlugin {
 				document.addEventListener("keydown", this.menuKeyListener);
 			}
 			if (this.menuClickListener) {
-				document.addEventListener(
-					"pointerdown",
-					this.menuClickListener,
-					true,
-				);
+				document.addEventListener("pointerdown", this.menuClickListener, true);
 			}
 		}, 0);
 	}

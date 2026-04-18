@@ -25,9 +25,7 @@ export function PresetEditor({
 					type="text"
 					value={preset.name}
 					disabled={readOnly}
-					onInput={(e) =>
-						patch({ name: (e.target as HTMLInputElement).value })
-					}
+					onInput={(e) => patch({ name: (e.target as HTMLInputElement).value })}
 				/>
 			</label>
 			<label className="tr-card-polish-preset-field">
@@ -73,8 +71,7 @@ export function PresetEditor({
 					value={preset.modelOverride ?? ""}
 					onInput={(e) =>
 						patch({
-							modelOverride:
-								(e.target as HTMLInputElement).value || undefined,
+							modelOverride: (e.target as HTMLInputElement).value || undefined,
 						})
 					}
 				/>
