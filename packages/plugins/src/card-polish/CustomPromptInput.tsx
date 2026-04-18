@@ -19,7 +19,7 @@ export function CustomPromptInput({
 	}, []);
 
 	return (
-		<div className="tr-card-polish-custom">
+		<div class="ep:absolute ep:z-50 ep:min-w-[320px] ep:flex ep:flex-col ep:gap-2 ep:p-2 ep:rounded-md ep:border ep:border-obs-border ep:bg-obs-primary ep:shadow-lg">
 			<input
 				ref={inputRef}
 				type="text"
@@ -30,11 +30,18 @@ export function CustomPromptInput({
 					if (e.key === "Enter" && value.trim()) onSubmit(value.trim());
 					if (e.key === "Escape") onCancel();
 				}}
+				class="ep:w-full ep:py-1.5 ep:px-2 ep:text-ui-small ep:rounded ep:border ep:border-obs-border ep:bg-obs-primary ep:text-obs-normal ep:focus:outline-none ep:focus:border-obs-interactive"
 			/>
 			{recent.length > 0 && (
-				<div className="tr-card-polish-custom-recent">
+				<div class="ep:flex ep:flex-wrap ep:gap-1">
 					{recent.map((r) => (
-						<button key={r} type="button" onClick={() => onSubmit(r)}>
+						<button
+							key={r}
+							type="button"
+							onClick={() => onSubmit(r)}
+							class="ep:text-ui-smaller ep:px-1.5 ep:py-0.5 ep:rounded ep:border ep:border-obs-border ep:bg-obs-secondary ep:text-obs-muted ep:hover:bg-obs-modifier-hover ep:hover:text-obs-normal ep:cursor-pointer ep:truncate ep:max-w-[220px]"
+							title={r}
+						>
 							{r}
 						</button>
 					))}

@@ -1,41 +1,3 @@
-.tr-card-polish-menu {
-	position: absolute;
-	z-index: 50;
-	min-width: 220px;
-	background: var(--background-primary);
-	border: 1px solid var(--background-modifier-border);
-	border-radius: 8px;
-	box-shadow: var(--shadow-m);
-	padding: 4px;
-}
-.tr-card-polish-menu-item {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-	width: 100%;
-	background: transparent;
-	border: none;
-	padding: 6px 8px;
-	border-radius: 4px;
-	cursor: pointer;
-	text-align: left;
-}
-.tr-card-polish-menu-item:hover {
-	background: var(--background-modifier-hover);
-}
-.tr-card-polish-menu-badge {
-	font-size: 10px;
-	padding: 1px 6px;
-	border-radius: 10px;
-	background: var(--background-modifier-border);
-	text-transform: uppercase;
-	color: var(--text-muted);
-}
-.tr-card-polish-menu-divider {
-	height: 1px;
-	background: var(--background-modifier-border);
-	margin: 4px 0;
-}
 .tr-card-polish-preview-root {
 	display: flex;
 	flex-direction: column;
@@ -61,29 +23,4 @@
 }
 .tr-card-polish-preview-actions input[type="text"] {
 	flex: 1;
-}
-.tr-card-polish-custom {
-	position: absolute;
-	z-index: 50;
-	min-width: 320px;
-	background: var(--background-primary);
-	border: 1px solid var(--background-modifier-border);
-	border-radius: 8px;
-	box-shadow: var(--shadow-m);
-	padding: 8px;
-	display: flex;
-	flex-direction: column;
-	gap: 6px;
-}
-.tr-card-polish-custom input[type="text"] {
-	width: 100%;
-}
-.tr-card-polish-custom-recent {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 4px;
-}
-.tr-card-polish-custom-recent button {
-	font-size: 11px;
-	padding: 2px 6px;
 }

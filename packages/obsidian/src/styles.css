@@ -42,6 +42,7 @@ settings:
 @import "./features/metrics/ui/simulator/styles.css";
 @import "../../../packages/plugins/src/selection-toolbar/selection-toolbar.css";
 @import "../../../packages/plugins/src/image-occlusion/styles/image-occlusion.styles.css";
+@import "../../../packages/plugins/src/card-polish/card-polish.css";
 
 /*
  * Obsidian Theme Variables - Runtime Inheritance
