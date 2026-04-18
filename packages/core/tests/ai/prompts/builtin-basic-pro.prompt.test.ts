@@ -49,7 +49,8 @@ describe("BUILTIN_BASIC_PRO_PROMPT", () => {
 
 	it("contains six labelled few-shot example pairs", () => {
 		const badCount = (BUILTIN_BASIC_PRO_PROMPT.match(/\[BAD\]/g) ?? []).length;
-		const goodCount = (BUILTIN_BASIC_PRO_PROMPT.match(/\[GOOD\]/g) ?? []).length;
+		const goodCount = (BUILTIN_BASIC_PRO_PROMPT.match(/\[GOOD\]/g) ?? [])
+			.length;
 		const whyCount = (BUILTIN_BASIC_PRO_PROMPT.match(/\[WHY\]/g) ?? []).length;
 		expect(badCount).toBeGreaterThanOrEqual(5); // Example 4 is a positive-only baseline
 		expect(goodCount).toBe(6);

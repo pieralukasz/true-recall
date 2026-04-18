@@ -345,9 +345,7 @@ describe("StreamingGenerationService.generate — existingCards injection", () =
 		);
 
 		await svc.generate("Selected text", sourceFile, proPreset.id, {
-			existingCards: [
-				{ id: "c1", question: "What is X?", answer: "A thing" },
-			],
+			existingCards: [{ id: "c1", question: "What is X?", answer: "A thing" }],
 		});
 
 		const body = capturedRequests[0] as any;

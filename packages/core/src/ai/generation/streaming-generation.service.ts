@@ -139,7 +139,9 @@ export class StreamingGenerationService {
 		const rawSystemPrompt = customSystemPrompt
 			? customSystemPrompt
 			: buildPresetPrompt(preset, noteType);
-		const existingCardsBlock = renderExistingCardsBlock(options?.existingCards ?? []);
+		const existingCardsBlock = renderExistingCardsBlock(
+			options?.existingCards ?? [],
+		);
 		const systemPrompt = rawSystemPrompt.replace(
 			"{{EXISTING_CARDS}}",
 			existingCardsBlock,

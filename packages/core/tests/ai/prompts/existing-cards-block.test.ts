@@ -20,7 +20,11 @@ describe("renderExistingCardsBlock", () => {
 	it("renders each card as a '- Q: ... | A: ...' bullet", () => {
 		const cards = [
 			makeCard("1", "What is rosacea?", "Skin reddening"),
-			makeCard("2", "When is phase 2 close?", "When last 20% of effort yields <5%"),
+			makeCard(
+				"2",
+				"When is phase 2 close?",
+				"When last 20% of effort yields <5%",
+			),
 		];
 		const result = renderExistingCardsBlock(cards);
 		expect(result).toContain("- Q: What is rosacea? | A: Skin reddening");
@@ -35,8 +39,12 @@ describe("renderExistingCardsBlock", () => {
 		);
 		const result = renderExistingCardsBlock(cards);
 		expect(result).toContain("- Q: Q0 | A: A0");
-		expect(result).toContain(`- Q: Q${EXISTING_CARDS_MAX_COUNT - 1} | A: A${EXISTING_CARDS_MAX_COUNT - 1}`);
-		expect(result).not.toContain(`- Q: Q${EXISTING_CARDS_MAX_COUNT} | A: A${EXISTING_CARDS_MAX_COUNT}`);
+		expect(result).toContain(
+			`- Q: Q${EXISTING_CARDS_MAX_COUNT - 1} | A: A${EXISTING_CARDS_MAX_COUNT - 1}`,
+		);
+		expect(result).not.toContain(
+			`- Q: Q${EXISTING_CARDS_MAX_COUNT} | A: A${EXISTING_CARDS_MAX_COUNT}`,
+		);
 	});
 
 	it("truncates further when estimated tokens exceed EXISTING_CARDS_MAX_TOKENS", () => {
