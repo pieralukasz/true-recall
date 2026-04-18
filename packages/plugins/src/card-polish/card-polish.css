@@ -1,21 +1,3 @@
-.tr-card-polish-button {
-	position: absolute;
-	top: 8px;
-	right: 8px;
-	background: transparent;
-	border: 1px solid var(--background-modifier-border);
-	border-radius: 6px;
-	padding: 4px 6px;
-	cursor: pointer;
-	display: inline-flex;
-	align-items: center;
-	gap: 4px;
-	opacity: 0.7;
-}
-.tr-card-polish-button:hover {
-	opacity: 1;
-	background: var(--background-modifier-hover);
-}
 .tr-card-polish-menu {
 	position: absolute;
 	z-index: 50;
@@ -104,39 +86,4 @@
 .tr-card-polish-custom-recent button {
 	font-size: 11px;
 	padding: 2px 6px;
-}
-.tr-card-polish-settings {
-	display: flex;
-	flex-direction: column;
-	gap: 12px;
-}
-.tr-card-polish-setting-row {
-	display: flex;
-	justify-content: space-between;
-	align-items: center;
-}
-.tr-card-polish-preset-editor {
-	border: 1px solid var(--background-modifier-border);
-	border-radius: 8px;
-	padding: 12px;
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
-}
-.tr-card-polish-preset-field {
-	display: flex;
-	flex-direction: column;
-	gap: 4px;
-}
-.tr-card-polish-preset-field > span {
-	font-size: 12px;
-	color: var(--text-muted);
-}
-.tr-card-polish-preset-field input[type="checkbox"] {
-	align-self: flex-start;
-}
-.tr-card-polish-preset-editor-actions {
-	display: flex;
-	justify-content: flex-end;
-	gap: 8px;
 }

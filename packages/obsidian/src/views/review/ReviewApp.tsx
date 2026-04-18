@@ -34,6 +34,7 @@ interface ReviewAppProps {
 	onNextSession: () => void;
 	onEndSession: () => void;
 	onActionsMenu: (e: MouseEvent) => void;
+	onPolishMenu?: (e: MouseEvent) => void;
 	isCustomSession: boolean;
 	crammingMode: boolean;
 	showHeader: boolean;
@@ -123,6 +124,7 @@ function ActiveReview({
 	onOpenSourceNote,
 	onClose: _onClose,
 	onActionsMenu,
+	onPolishMenu,
 	crammingMode,
 	showHeader,
 	showHeaderStats,
@@ -189,6 +191,7 @@ function ActiveReview({
 				onAnswer={onAnswer}
 				onCycleTypeInMode={onCycleTypeInMode}
 				onActionsMenu={onActionsMenu}
+				onPolishMenu={onPolishMenu}
 			/>
 		</div>
 	);

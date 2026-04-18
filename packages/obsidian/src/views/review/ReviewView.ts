@@ -522,6 +522,9 @@ export class ReviewView extends ItemView {
 					/* handled in Preact component */
 				},
 				onActionsMenu: (e: MouseEvent) => this.showActionsMenu(e),
+				onPolishMenu: isPluginEnabled(this.plugin.settings, "card-polish")
+					? (e: MouseEvent) => this.openCardPolishMenu(e)
+					: undefined,
 				isCustomSession: isCustomSession(this.filters),
 				crammingMode: this.filters.crammingMode ?? false,
 				showHeader: this.plugin.settings.showReviewHeader,
@@ -819,6 +822,14 @@ export class ReviewView extends ItemView {
 	}
 
 	// ─── Actions menu ────────────────────────────────────────────────────
+
+	private openCardPolishMenu(e: MouseEvent): void {
+		window.dispatchEvent(
+			new CustomEvent("true-recall:card-polish-menu", {
+				detail: { anchor: e.currentTarget },
+			}),
+		);
+	}
 
 	private showActionsMenu(event: MouseEvent): void {
 		const menu = new Menu();

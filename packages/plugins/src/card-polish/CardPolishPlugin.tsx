@@ -1,5 +1,4 @@
 import { computePosition, flip, offset, shift } from "@floating-ui/dom";
-import type { EventRef } from "obsidian";
 import { Modal, Notice } from "obsidian";
 import { render } from "preact";
 
@@ -16,7 +15,6 @@ import { UpdateCardCommand } from "@true-recall/obsidian/commands/commands/card-
 import type { PluginContext } from "../types";
 import { CustomPromptInput } from "./CustomPromptInput";
 import { DEFAULT_CARD_POLISH_SETTINGS } from "./default-presets";
-import { PolishButton } from "./PolishButton";
 import { PolishMenu } from "./PolishMenu";
 import { PolishPreviewModal } from "./PolishPreviewModal";
 import { handlePolishError } from "./polish-error-handler";
@@ -24,9 +22,8 @@ import { handlePolishError } from "./polish-error-handler";
 type PolishTargetCard = { id: string; question: string; answer: string };
 
 export class CardPolishPlugin {
-	private container: HTMLDivElement | null = null;
 	private menuContainer: HTMLDivElement | null = null;
-	private leafObserverRef: EventRef | null = null;
+	private polishMenuListener: ((e: Event) => void) | null = null;
 	private menuKeyListener: ((e: KeyboardEvent) => void) | null = null;
 	private menuClickListener: ((e: PointerEvent) => void) | null = null;
 	private abortController: AbortController | null = null;
@@ -36,23 +33,31 @@ export class CardPolishPlugin {
 	constructor(private readonly ctx: PluginContext) {}
 
 	activate(): void {
-		this.leafObserverRef = this.ctx.workspace.on("active-leaf-change", () => {
-			this.syncMount();
-		});
-		this.syncMount();
+		this.polishMenuListener = (e: Event) => {
+			const customEvent = e as CustomEvent<{ anchor: HTMLElement }>;
+			const anchor = customEvent.detail?.anchor;
+			if (!(anchor instanceof HTMLElement)) return;
+			this.openMenu(anchor);
+		};
+		window.addEventListener(
+			"true-recall:card-polish-menu",
+			this.polishMenuListener,
+		);
 		this.registerHotkeys();
 	}
 
 	deactivate(): void {
-		if (this.leafObserverRef) {
-			this.ctx.workspace.offref(this.leafObserverRef);
-			this.leafObserverRef = null;
+		if (this.polishMenuListener) {
+			window.removeEventListener(
+				"true-recall:card-polish-menu",
+				this.polishMenuListener,
+			);
+			this.polishMenuListener = null;
 		}
 		this.closeMenu();
 		this.abortController?.abort();
 		this.abortController = null;
 		this.unregisterHotkeys();
-		this.unmount();
 	}
 
 	private registerHotkeys(): void {
@@ -67,8 +72,8 @@ export class CardPolishPlugin {
 					const leaf = this.ctx.workspace.activeLeaf;
 					const viewType = leaf?.view?.getViewType?.() ?? "";
 					if (viewType !== VIEW_TYPE_REVIEW) return false;
-					// When the plugin is inactive (no mounted button), also return false.
-					if (!this.container) return false;
+					// When the plugin is inactive (no active listener), also return false.
+					if (!this.polishMenuListener) return false;
 					if (!checking) {
 						void this.runPreset(preset);
 					}
@@ -82,36 +87,8 @@ export class CardPolishPlugin {
 	private unregisterHotkeys(): void {
 		// Obsidian does not expose a public removeCommand. Commands persist for the
 		// lifetime of TrueRecallPlugin. The checkCallback above already guards against
-		// running when this instance has been deactivated (this.container is null).
+		// running when this instance has been deactivated (this.polishMenuListener is null).
 		this.registeredCommandIds = [];
-	}
-
-	private syncMount(): void {
-		const leaf = this.ctx.workspace.getLeavesOfType(VIEW_TYPE_REVIEW)[0];
-		if (!leaf) {
-			this.unmount();
-			return;
-		}
-		const viewEl = leaf.view.containerEl;
-		if (this.container && this.container.parentElement !== viewEl) {
-			this.unmount();
-		}
-		if (!this.container) {
-			this.container = document.createElement("div");
-			this.container.className = "tr-card-polish-mount";
-			viewEl.appendChild(this.container);
-		}
-		render(
-			<PolishButton onClick={(anchor) => this.openMenu(anchor)} />,
-			this.container,
-		);
-	}
-
-	private unmount(): void {
-		if (!this.container) return;
-		render(null, this.container);
-		this.container.remove();
-		this.container = null;
 	}
 
 	private openMenu(anchor: HTMLElement): void {

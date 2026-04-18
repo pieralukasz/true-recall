@@ -36,6 +36,7 @@ interface ButtonBarProps {
 	onAnswer: (rating: Grade) => void;
 	onCycleTypeInMode?: () => void;
 	onActionsMenu?: (e: MouseEvent) => void;
+	onPolishMenu?: (e: MouseEvent) => void;
 }
 
 export function ButtonBar({
@@ -49,6 +50,7 @@ export function ButtonBar({
 	onAnswer,
 	onCycleTypeInMode,
 	onActionsMenu,
+	onPolishMenu,
 }: ButtonBarProps) {
 	const menuIconRef = useIcon("more-vertical");
 	const typeInEnabled = typeInMode !== "off";
@@ -62,7 +64,9 @@ export function ButtonBar({
 		typeInMode === "ai" ? "AI" : typeInMode === "diff" ? "Diff" : "Off";
 
 	const mobile = isMobile();
-	const hasSecondary = Boolean(onCycleTypeInMode || onActionsMenu);
+	const hasSecondary = Boolean(
+		onCycleTypeInMode || onActionsMenu || onPolishMenu,
+	);
 
 	const ratingButtons = !isAnswerRevealed ? (
 		<Clickable
@@ -111,6 +115,17 @@ export function ButtonBar({
 
 	const secondaryButtons = hasSecondary ? (
 		<div class="ep:flex ep:items-center ep:gap-2">
+			{onPolishMenu && (
+				<Clickable
+					class="ep:flex ep:items-center ep:justify-center ep:w-10 ep:h-10 ep:p-0 ep:rounded-lg ep:bg-obs-modifier-hover ep:text-obs-muted ep:transition-colors ep:hover:bg-obs-border ep:hover:text-obs-normal ep:active:scale-95"
+					aria-label="Polish card (AI)"
+					title="Polish card (AI)"
+					onClick={onPolishMenu}
+				>
+					✨
+				</Clickable>
+			)}
+
 			{onCycleTypeInMode && (
 				<Clickable
 					class={typeInButtonVariants({ mode: typeInMode })}
