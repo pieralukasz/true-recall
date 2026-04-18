@@ -81,6 +81,19 @@ export {
 	filterContent,
 	type MarkdownChunk,
 } from "./parsing/markdown-chunker";
+export { CardPolishService } from "./polish/card-polish.service";
+export {
+	type CardPolishPreset,
+	type CardPolishSettings,
+	PolishAbortedError,
+	PolishParseError,
+	PolishProviderError,
+	type PolishRequest,
+	PolishResponseSchema,
+	type PolishResult,
+} from "./polish/card-polish.types";
+// Card polish
+export { buildPolishMessages } from "./polish/card-polish-prompts";
 // Prompts
 export { buildCardFormatSpec } from "./prompts/block-prompt-builder";
 export {
