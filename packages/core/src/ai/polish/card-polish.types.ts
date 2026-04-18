@@ -19,7 +19,6 @@ export interface PolishRequest {
 	cardFront: string;
 	cardBack: string;
 	prompt: string;
-	modelOverride?: string;
 	signal?: AbortSignal;
 }
 
@@ -30,7 +29,6 @@ export interface PolishResult {
 	usage: {
 		promptTokens: number;
 		completionTokens: number;
-		costUsd?: number;
 	};
 }
 

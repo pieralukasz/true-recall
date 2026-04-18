@@ -48,6 +48,11 @@ export interface ChatCompletionResponse {
 		message: ChatMessage;
 		finish_reason: string;
 	}>;
+	usage?: {
+		prompt_tokens?: number;
+		completion_tokens?: number;
+		total_tokens?: number;
+	};
 }
 
 export const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";

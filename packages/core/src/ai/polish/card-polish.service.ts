@@ -17,6 +17,7 @@ export class CardPolishService {
 	constructor(private readonly client: OpenRouterClient) {}
 
 	async transform(req: PolishRequest): Promise<PolishResult> {
+		// Abort is checked pre-call and post-error; mid-flight cancellation would require plumbing AbortSignal into OpenRouterClient.chat.
 		if (req.signal?.aborted) throw new PolishAbortedError();
 
 		const messages = buildPolishMessages({
@@ -41,12 +42,7 @@ export class CardPolishService {
 
 		const raw = getTextContent(response.choices[0]?.message);
 		const parsed = this.parseResponse(raw);
-
-		const usage = (
-			response as unknown as {
-				usage?: { prompt_tokens?: number; completion_tokens?: number };
-			}
-		).usage;
+		const usage = response.usage;
 
 		return {
 			front: parsed.front,

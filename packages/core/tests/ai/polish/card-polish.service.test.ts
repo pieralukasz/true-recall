@@ -6,6 +6,7 @@ import {
 } from "../../../src/ai/clients/openrouter-client";
 import { CardPolishService } from "../../../src/ai/polish/card-polish.service";
 import {
+	PolishAbortedError,
 	PolishParseError,
 	PolishProviderError,
 } from "../../../src/ai/polish/card-polish.types";
@@ -110,5 +111,20 @@ describe("CardPolishService", () => {
 		await expect(
 			svc.transform({ cardFront: "Q", cardBack: "A", prompt: "fix" }),
 		).rejects.toBeInstanceOf(PolishProviderError);
+	});
+
+	it("throws PolishAbortedError when signal is already aborted", async () => {
+		const { client } = makeClient({ json: validLLMResponse("X", "Y") });
+		const svc = new CardPolishService(client);
+		const controller = new AbortController();
+		controller.abort();
+		await expect(
+			svc.transform({
+				cardFront: "Q",
+				cardBack: "A",
+				prompt: "fix",
+				signal: controller.signal,
+			}),
+		).rejects.toBeInstanceOf(PolishAbortedError);
 	});
 });
