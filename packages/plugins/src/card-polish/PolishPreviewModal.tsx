@@ -10,6 +10,7 @@ interface PolishPreviewModalProps {
 }
 
 export function PolishPreviewModal(props: PolishPreviewModalProps) {
+	// Hooks must stay at the top level; the `proposed === null` branch renders a different UI but reuses the same hook state.
 	const [extra, setExtra] = useState("");
 	const [retrying, setRetrying] = useState(false);
 

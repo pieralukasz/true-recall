@@ -192,6 +192,7 @@ export class CardPolishPlugin {
 					card,
 					{ front: result.front, back: result.back },
 					preset,
+					service,
 				);
 			}
 		} catch (err) {
@@ -257,17 +258,15 @@ export class CardPolishPlugin {
 		card: PolishTargetCard,
 		initialResult: { front: string; back: string },
 		preset: CardPolishPreset,
+		service: CardPolishService,
 	): void {
-		const service = this.buildService(preset.modelOverride);
-		if (!service) return;
-
 		const modal = new Modal(this.ctx.app);
 		modal.titleEl.setText("Polish preview");
 		let currentProposal = initialResult;
+		let isOpen = true;
 
+		const host = modal.contentEl.createDiv();
 		const mount = () => {
-			modal.contentEl.empty();
-			const host = modal.contentEl.createDiv();
 			render(
 				<PolishPreviewModal
 					original={{ front: card.question, back: card.answer }}
@@ -279,16 +278,26 @@ export class CardPolishPlugin {
 					}}
 					onReject={() => modal.close()}
 					onRetry={async (extra: string) => {
+						this.abortController?.abort();
+						const controller = new AbortController();
+						this.abortController = controller;
 						try {
 							const next = await service.transform({
 								cardFront: card.question,
 								cardBack: card.answer,
 								prompt: `${preset.prompt}\n\nAdditional instruction: ${extra}`,
+								signal: controller.signal,
 							});
+							if (!isOpen) return;
 							currentProposal = { front: next.front, back: next.back };
 							mount();
 						} catch (err) {
+							if (!isOpen) return;
 							this.handlePolishError(err);
+						} finally {
+							if (this.abortController === controller) {
+								this.abortController = null;
+							}
 						}
 					}}
 				/>,
@@ -296,7 +305,11 @@ export class CardPolishPlugin {
 			);
 		};
 		mount();
-		modal.onClose = () => render(null, modal.contentEl);
+		modal.onClose = () => {
+			isOpen = false;
+			this.abortController?.abort();
+			render(null, host);
+		};
 		modal.open();
 	}
 
