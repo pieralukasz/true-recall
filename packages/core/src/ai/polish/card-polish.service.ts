@@ -56,13 +56,11 @@ export class CardPolishService {
 	}
 
 	private parseResponse(raw: string): { front: string; back: string } {
-		let asJson: unknown;
-		try {
-			asJson = JSON.parse(raw);
-		} catch {
+		const parsed = tryParseJsonCandidates(raw);
+		if (parsed === undefined) {
 			throw new PolishParseError(raw, "LLM did not return valid JSON");
 		}
-		const result = PolishResponseSchema.safeParse(asJson);
+		const result = PolishResponseSchema.safeParse(parsed);
 		if (!result.success) {
 			throw new PolishParseError(
 				raw,
@@ -71,4 +69,33 @@ export class CardPolishService {
 		}
 		return result.data;
 	}
+}
+
+// Models that should return pure JSON sometimes wrap it in ```json fences or
+// add preamble text. Try the raw text first, then progressively strip layers.
+function tryParseJsonCandidates(raw: string): unknown {
+	const candidates = [raw, stripCodeFence(raw), extractBraceSpan(raw)];
+	for (const candidate of candidates) {
+		if (!candidate) continue;
+		try {
+			return JSON.parse(candidate);
+		} catch {
+			// try next candidate
+		}
+	}
+	return undefined;
+}
+
+function stripCodeFence(text: string): string | null {
+	const match = text
+		.trim()
+		.match(/^```(?:json|JSON)?\s*\n?([\s\S]*?)\n?```\s*$/);
+	return match?.[1] ? match[1].trim() : null;
+}
+
+function extractBraceSpan(text: string): string | null {
+	const start = text.indexOf("{");
+	const end = text.lastIndexOf("}");
+	if (start === -1 || end <= start) return null;
+	return text.slice(start, end + 1);
 }

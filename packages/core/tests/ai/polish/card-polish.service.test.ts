@@ -62,6 +62,47 @@ describe("CardPolishService", () => {
 		expect(result.usage.completionTokens).toBe(20);
 	});
 
+	it.each([
+		["fenced ```json block", '```json\n{"front":"New Q","back":"New A"}\n```'],
+		[
+			"fenced block without language label",
+			'```\n{"front":"New Q","back":"New A"}\n```',
+		],
+		[
+			"JSON after preamble with fence",
+			'Here you go:\n```json\n{"front":"New Q","back":"New A"}\n```',
+		],
+		[
+			"bare JSON after preamble",
+			'Sure! {"front":"New Q","back":"New A"} Hope that helps.',
+		],
+		[
+			"JSON with trailing commentary after fence",
+			'```json\n{"front":"New Q","back":"New A"}\n```\nLet me know!',
+		],
+	])("parses %s", async (_label, content) => {
+		const { client } = makeClient({
+			json: {
+				id: "x",
+				choices: [
+					{
+						message: { role: "assistant", content },
+						finish_reason: "stop",
+					},
+				],
+				usage: { prompt_tokens: 1, completion_tokens: 2 },
+			},
+		});
+		const svc = new CardPolishService(client);
+		const result = await svc.transform({
+			cardFront: "Old Q",
+			cardBack: "Old A",
+			prompt: "Fix formatting.",
+		});
+		expect(result.front).toBe("New Q");
+		expect(result.back).toBe("New A");
+	});
+
 	it("throws PolishParseError when content is not valid JSON", async () => {
 		const { client } = makeClient({
 			json: {
