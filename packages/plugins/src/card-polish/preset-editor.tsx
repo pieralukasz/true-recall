@@ -1,5 +1,11 @@
 import type { CardPolishPreset } from "@true-recall/core";
 
+import {
+	ActionButton,
+	TextAreaInput,
+	TextInput,
+} from "@true-recall/obsidian/components";
+
 interface PresetEditorProps {
 	preset: CardPolishPreset;
 	onChange: (next: CardPolishPreset) => void;
@@ -17,77 +23,103 @@ export function PresetEditor({
 	const patch = (partial: Partial<CardPolishPreset>) =>
 		onChange({ ...preset, ...partial });
 
+	const autoApplyId = `card-polish-auto-${preset.id}`;
+
 	return (
-		<div className="tr-card-polish-preset-editor">
-			<label className="tr-card-polish-preset-field">
-				<span>Name</span>
-				<input
-					type="text"
+		<div class="ep:flex ep:flex-col ep:gap-3 ep:p-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary">
+			<div class="ep:flex ep:items-center ep:gap-2">
+				<span class="ep:text-ui-small ep:font-semibold ep:text-obs-normal ep:flex-1 ep:truncate">
+					{preset.name}
+				</span>
+				{preset.builtin && (
+					<span class="ep:text-ui-smallest ep:font-semibold ep:px-1.5 ep:py-0.5 ep:rounded ep:bg-obs-border ep:text-obs-muted ep:uppercase">
+						Built-in
+					</span>
+				)}
+			</div>
+
+			<div class="ep:flex ep:flex-col ep:gap-1">
+				<span class="ep:text-ui-smaller ep:text-obs-muted ep:font-medium">
+					Name
+				</span>
+				<TextInput
 					value={preset.name}
 					disabled={readOnly}
-					onInput={(e) => patch({ name: (e.target as HTMLInputElement).value })}
+					onChange={(v) => patch({ name: v })}
 				/>
-			</label>
-			<label className="tr-card-polish-preset-field">
-				<span>Prompt</span>
-				<textarea
-					rows={6}
+			</div>
+
+			<div class="ep:flex ep:flex-col ep:gap-1">
+				<span class="ep:text-ui-smaller ep:text-obs-muted ep:font-medium">
+					Prompt
+				</span>
+				<TextAreaInput
 					value={preset.prompt}
 					disabled={readOnly}
-					onInput={(e) =>
-						patch({ prompt: (e.target as HTMLTextAreaElement).value })
-					}
+					onChange={(v) => patch({ prompt: v })}
+					rows={4}
+					class="ep:font-mono ep:text-ui-smaller"
 				/>
-			</label>
-			<label className="tr-card-polish-preset-field">
-				<span>Hotkey</span>
-				<input
-					type="text"
-					placeholder="Mod+Alt+F"
-					value={preset.hotkey ?? ""}
-					onInput={(e) =>
-						patch({
-							hotkey: (e.target as HTMLInputElement).value || undefined,
-						})
-					}
-				/>
-			</label>
-			<label className="tr-card-polish-preset-field">
-				<span>Auto-apply</span>
-				<input
-					type="checkbox"
-					checked={preset.autoApply}
-					disabled={readOnly}
-					onChange={(e) =>
-						patch({ autoApply: (e.target as HTMLInputElement).checked })
-					}
-				/>
-			</label>
-			<label className="tr-card-polish-preset-field">
-				<span>Model override</span>
-				<input
-					type="text"
-					placeholder="e.g. anthropic/claude-haiku-4-5"
-					value={preset.modelOverride ?? ""}
-					onInput={(e) =>
-						patch({
-							modelOverride: (e.target as HTMLInputElement).value || undefined,
-						})
-					}
-				/>
-			</label>
-			<div className="tr-card-polish-preset-editor-actions">
-				{readOnly ? (
-					<button type="button" onClick={onFork}>
-						Fork to edit
-					</button>
-				) : (
-					onDelete && (
-						<button type="button" onClick={onDelete}>
-							Delete
-						</button>
-					)
-				)}
+			</div>
+
+			<div class="ep:grid ep:grid-cols-1 sm:ep:grid-cols-2 ep:gap-3">
+				<div class="ep:flex ep:flex-col ep:gap-1 ep:min-w-0">
+					<span class="ep:text-ui-smaller ep:text-obs-muted ep:font-medium">
+						Hotkey
+					</span>
+					<TextInput
+						value={preset.hotkey ?? ""}
+						placeholder="Mod+Alt+F"
+						onChange={(v) => patch({ hotkey: v || undefined })}
+					/>
+				</div>
+				<div class="ep:flex ep:flex-col ep:gap-1 ep:min-w-0">
+					<span class="ep:text-ui-smaller ep:text-obs-muted ep:font-medium">
+						Model override
+					</span>
+					<TextInput
+						value={preset.modelOverride ?? ""}
+						placeholder="e.g. anthropic/claude-haiku-4-5"
+						onChange={(v) => patch({ modelOverride: v || undefined })}
+					/>
+				</div>
+			</div>
+
+			<div class="ep:flex ep:items-center ep:justify-between ep:gap-3 ep:pt-1">
+				<label
+					for={autoApplyId}
+					class="ep:flex ep:items-center ep:gap-2 ep:text-ui-small ep:text-obs-normal ep:cursor-pointer"
+				>
+					<input
+						id={autoApplyId}
+						type="checkbox"
+						checked={preset.autoApply}
+						disabled={readOnly}
+						onChange={(e) =>
+							patch({ autoApply: (e.target as HTMLInputElement).checked })
+						}
+					/>
+					<span>Auto-apply</span>
+				</label>
+				<div class="ep:flex ep:gap-2">
+					{readOnly ? (
+						<ActionButton
+							label="Fork to edit"
+							variant="outline"
+							size="sm"
+							onClick={onFork}
+						/>
+					) : (
+						onDelete && (
+							<ActionButton
+								label="Delete"
+								variant="danger"
+								size="sm"
+								onClick={onDelete}
+							/>
+						)
+					)}
+				</div>
 			</div>
 		</div>
 	);

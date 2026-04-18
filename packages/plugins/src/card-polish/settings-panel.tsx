@@ -1,5 +1,7 @@
 import type { CardPolishPreset, CardPolishSettings } from "@true-recall/core";
 
+import { FormField, ToggleInput } from "@true-recall/obsidian/components";
+
 import type { PluginSettingsProps } from "../types";
 import { DEFAULT_CARD_POLISH_SETTINGS } from "./default-presets";
 import { PresetEditor } from "./preset-editor";
@@ -44,29 +46,36 @@ export function CardPolishSettingsPanel({
 	};
 
 	return (
-		<div className="tr-card-polish-settings">
-			<label className="tr-card-polish-setting-row">
-				<span>Custom prompt: auto-apply</span>
-				<input
-					type="checkbox"
-					checked={slice.customPromptAutoApply}
-					onChange={(e) =>
-						persist({
-							...slice,
-							customPromptAutoApply: (e.target as HTMLInputElement).checked,
-						})
-					}
+		<>
+			<FormField
+				name="Auto-apply custom prompts"
+				description="Run freeform polish prompts instantly without a preview step"
+			>
+				<ToggleInput
+					value={slice.customPromptAutoApply}
+					onChange={(v) => persist({ ...slice, customPromptAutoApply: v })}
 				/>
-			</label>
-			{slice.presets.map((p) => (
-				<PresetEditor
-					key={p.id}
-					preset={p}
-					onChange={updatePreset}
-					onFork={() => fork(p)}
-					onDelete={p.builtin ? undefined : () => remove(p)}
-				/>
-			))}
-		</div>
+			</FormField>
+
+			<div class="ep:flex ep:flex-col ep:gap-3 ep:mt-4">
+				<div class="ep:flex ep:flex-col ep:gap-0.5">
+					<h3 class="ep:text-ui-small ep:font-semibold ep:text-obs-normal ep:m-0">
+						Presets
+					</h3>
+					<span class="ep:text-ui-smaller ep:text-obs-muted">
+						Reusable polish recipes available from the card menu and hotkeys
+					</span>
+				</div>
+				{slice.presets.map((p) => (
+					<PresetEditor
+						key={p.id}
+						preset={p}
+						onChange={updatePreset}
+						onFork={() => fork(p)}
+						onDelete={p.builtin ? undefined : () => remove(p)}
+					/>
+				))}
+			</div>
+		</>
 	);
 }
