@@ -1,6 +1,7 @@
 import type { TFile } from "obsidian";
 
 import { StreamingGenerationService } from "@true-recall/core/ai/generation/streaming-generation.service";
+import type { ExistingCardContext } from "@true-recall/core/ai/prompts/existing-cards-block";
 import type { GenerationPreset } from "@true-recall/core/types/generation-preset.types";
 
 import { mutate } from "@true-recall/obsidian/data";
@@ -200,6 +201,35 @@ function resolvePreset(
 	);
 }
 
+async function fetchExistingCardsForFile(
+	plugin: TrueRecallPlugin,
+	file: TFile,
+): Promise<ExistingCardContext[]> {
+	try {
+		const fmService = plugin.flashcardManager.getFrontmatterService();
+		const sourceUid = await fmService.getSourceNoteUid(file.path);
+		if (!sourceUid) return [];
+
+		const cards = plugin.cardStore.cards.getCardsBySourceUid(sourceUid);
+		const sorted = [...cards].sort(
+			(a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0),
+		);
+		return sorted
+			.filter((c) => c.question && c.answer)
+			.map((c) => ({
+				id: c.id,
+				question: c.question as string,
+				answer: c.answer as string,
+			}));
+	} catch (error) {
+		console.warn(
+			"[SelectionActions] Failed to fetch existing cards for note:",
+			error,
+		);
+		return [];
+	}
+}
+
 export async function generateWithPreset(
 	plugin: TrueRecallPlugin,
 	presetId: string,
@@ -220,7 +250,10 @@ export async function generateWithPreset(
 	try {
 		await plugin.activateView();
 		const service = getStreamingService(plugin);
-		const result = await service.generate(text, file, preset.id);
+		const existingCards = await fetchExistingCardsForFile(plugin, file);
+		const result = await service.generate(text, file, preset.id, {
+			existingCards,
+		});
 
 		runPresetPostProcessing(plugin, preset, result.createdCardIds);
 
@@ -267,7 +300,10 @@ export async function generateWithPresetGlobal(
 	try {
 		await plugin.activateView();
 		const service = getStreamingService(plugin);
-		const result = await service.generate(text, file, preset.id);
+		const existingCards = await fetchExistingCardsForFile(plugin, file);
+		const result = await service.generate(text, file, preset.id, {
+			existingCards,
+		});
 
 		runPresetPostProcessing(plugin, preset, result.createdCardIds);
 
