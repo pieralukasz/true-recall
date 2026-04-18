@@ -1,5 +1,5 @@
 import { computePosition, flip, offset, shift } from "@floating-ui/dom";
-import { Modal, Notice } from "obsidian";
+import { Menu, Modal, Notice } from "obsidian";
 import { render } from "preact";
 
 import {
@@ -15,7 +15,6 @@ import { UpdateCardCommand } from "@true-recall/obsidian/commands/commands/card-
 import type { PluginContext } from "../types";
 import { CustomPromptInput } from "./CustomPromptInput";
 import { DEFAULT_CARD_POLISH_SETTINGS } from "./default-presets";
-import { PolishMenu } from "./PolishMenu";
 import { PolishPreviewModal } from "./PolishPreviewModal";
 import { handlePolishError } from "./polish-error-handler";
 
@@ -93,52 +92,36 @@ export class CardPolishPlugin {
 
 	private openMenu(anchor: HTMLElement): void {
 		this.closeMenu();
-		this.menuContainer = document.createElement("div");
-		document.body.appendChild(this.menuContainer);
 		const presets = this.readSettings().presets;
-		render(
-			<PolishMenu
-				presets={presets}
-				onPreset={(p) => this.runPreset(p)}
-				onCustom={() => this.openCustomPrompt(anchor)}
-				onClose={() => this.closeMenu()}
-			/>,
-			this.menuContainer,
+		const menu = new Menu();
+
+		for (const preset of presets) {
+			menu.addItem((item) =>
+				item
+					.setTitle(preset.name)
+					.setIcon(preset.autoApply ? "zap" : "eye")
+					.onClick(() => void this.runPreset(preset)),
+			);
+		}
+		menu.addSeparator();
+		menu.addItem((item) =>
+			item
+				.setTitle("Custom…")
+				.setIcon("pencil")
+				.onClick(() => this.openCustomPrompt(anchor)),
 		);
-		const menuEl = this.menuContainer.firstElementChild as HTMLElement | null;
+
+		const rect = anchor.getBoundingClientRect();
+		menu.showAtPosition({ x: rect.left, y: rect.top });
+		// Obsidian opens menus downward by default. Reposition above the button
+		// so the menu doesn't cover review controls below.
+		const menuEl = (menu as unknown as { dom?: HTMLElement }).dom;
 		if (menuEl) {
-			void computePosition(anchor, menuEl, {
-				placement: "bottom-end",
-				middleware: [offset(6), flip(), shift({ padding: 8 })],
-			}).then(({ x, y }) => {
-				if (this.menuContainer?.firstElementChild !== menuEl) return;
-				menuEl.style.left = `${x}px`;
-				menuEl.style.top = `${y}px`;
-				menuEl.style.position = "absolute";
+			requestAnimationFrame(() => {
+				const height = menuEl.offsetHeight;
+				menuEl.style.top = `${Math.max(8, rect.top - height - 6)}px`;
 			});
 		}
-
-		this.menuKeyListener = (e: KeyboardEvent) => {
-			if (e.key === "Escape") this.closeMenu();
-		};
-		this.menuClickListener = (e: PointerEvent) => {
-			const target = e.target as Node | null;
-			if (!target) return;
-			if (this.menuContainer?.contains(target)) return;
-			if (anchor.contains(target)) return;
-			this.closeMenu();
-		};
-		// Schedule listener install after the current event loop tick so the
-		// click that opened the menu doesn't immediately close it.
-		window.setTimeout(() => {
-			if (!this.menuContainer) return;
-			if (this.menuKeyListener) {
-				document.addEventListener("keydown", this.menuKeyListener);
-			}
-			if (this.menuClickListener) {
-				document.addEventListener("pointerdown", this.menuClickListener, true);
-			}
-		}, 0);
 	}
 
 	private closeMenu(): void {
@@ -243,21 +226,24 @@ export class CardPolishPlugin {
 	}
 
 	private buildService(modelOverride?: string): CardPolishService | null {
-		const settings = this.ctx.settings;
-		const key = settings.proKey ?? settings.openRouterApiKey;
-		if (!key) {
+		let config: AIClientConfig;
+		try {
+			config = resolveAIClientConfig(this.ctx.settings);
+		} catch {
 			new Notice(
 				"Card Polish: configure a Pro key or OpenRouter BYOK key in Settings.",
 			);
 			return null;
 		}
-		const model = modelOverride ?? settings.aiModel;
+		// Pro tier uses LiteLLM "auto" routing — modelOverride only applies to BYOK.
+		const model =
+			!config.hasProTier && modelOverride ? modelOverride : config.model;
 		const httpClient = new ObsidianHttpClient();
 		const client = new OpenRouterClient(
-			key,
+			config.apiKey,
 			model,
 			httpClient,
-			undefined,
+			config.baseUrl,
 			undefined,
 			"card-polish",
 		);
@@ -388,7 +374,7 @@ export class CardPolishPlugin {
 		const el = this.menuContainer.firstElementChild as HTMLElement | null;
 		if (el) {
 			void computePosition(anchor, el, {
-				placement: "bottom-end",
+				placement: "top-end",
 				middleware: [offset(6), flip(), shift({ padding: 8 })],
 			}).then(({ x, y }) => {
 				if (this.menuContainer?.firstElementChild !== el) return;
