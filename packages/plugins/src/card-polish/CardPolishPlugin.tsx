@@ -36,6 +36,7 @@ export class CardPolishPlugin {
 	private menuClickListener: ((e: PointerEvent) => void) | null = null;
 	private abortController: AbortController | null = null;
 	private recentCustomPrompts: string[] = [];
+	private registeredCommandIds: string[] = [];
 
 	constructor(private readonly ctx: PluginContext) {}
 
@@ -44,6 +45,7 @@ export class CardPolishPlugin {
 			this.syncMount();
 		});
 		this.syncMount();
+		this.registerHotkeys();
 	}
 
 	deactivate(): void {
@@ -54,7 +56,39 @@ export class CardPolishPlugin {
 		this.closeMenu();
 		this.abortController?.abort();
 		this.abortController = null;
+		this.unregisterHotkeys();
 		this.unmount();
+	}
+
+	private registerHotkeys(): void {
+		const presets = this.readSettings().presets;
+		for (const preset of presets) {
+			if (!preset.hotkey) continue;
+			const id = `card-polish-${preset.id}`;
+			this.ctx.obsidianPlugin.addCommand({
+				id,
+				name: `Polish: ${preset.name}`,
+				checkCallback: (checking: boolean) => {
+					const leaf = this.ctx.workspace.activeLeaf;
+					const viewType = leaf?.view?.getViewType?.() ?? "";
+					if (viewType !== VIEW_TYPE_REVIEW) return false;
+					// When the plugin is inactive (no mounted button), also return false.
+					if (!this.container) return false;
+					if (!checking) {
+						void this.runPreset(preset);
+					}
+					return true;
+				},
+			});
+			this.registeredCommandIds.push(id);
+		}
+	}
+
+	private unregisterHotkeys(): void {
+		// Obsidian does not expose a public removeCommand. Commands persist for the
+		// lifetime of TrueRecallPlugin. The checkCallback above already guards against
+		// running when this instance has been deactivated (this.container is null).
+		this.registeredCommandIds = [];
 	}
 
 	private syncMount(): void {
