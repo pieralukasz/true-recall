@@ -1,7 +1,6 @@
 import type { TFile } from "obsidian";
 
 import { StreamingGenerationService } from "@true-recall/core/ai/generation/streaming-generation.service";
-import type { ExistingCardContext } from "@true-recall/core/ai/prompts/existing-cards-block";
 import type { GenerationPreset } from "@true-recall/core/types/generation-preset.types";
 
 import { mutate } from "@true-recall/obsidian/data";
@@ -10,6 +9,7 @@ import { notify } from "@true-recall/obsidian/services/notification.service";
 
 import { ObsidianHttpClient } from "../adapters/ObsidianHttpClient";
 import type TrueRecallPlugin from "../main";
+import { fetchExistingCardsForFile } from "./existing-cards-fetcher";
 import { runPresetPostProcessing } from "./generation-post-processing";
 
 let streamingService: StreamingGenerationService | null = null;
@@ -201,34 +201,6 @@ function resolvePreset(
 	);
 }
 
-async function fetchExistingCardsForFile(
-	plugin: TrueRecallPlugin,
-	file: TFile,
-): Promise<ExistingCardContext[]> {
-	try {
-		const fmService = plugin.flashcardManager.getFrontmatterService();
-		const sourceUid = await fmService.getSourceNoteUid(file.path);
-		if (!sourceUid) return [];
-
-		const cards = plugin.cardStore.cards.getCardsBySourceUid(sourceUid);
-		const sorted = [...cards].sort(
-			(a, b) => (b.createdAt ?? 0) - (a.createdAt ?? 0),
-		);
-		return sorted
-			.filter((c) => c.question && c.answer)
-			.map((c) => ({
-				id: c.id,
-				question: c.question as string,
-				answer: c.answer as string,
-			}));
-	} catch (error) {
-		console.warn(
-			"[SelectionActions] Failed to fetch existing cards for note:",
-			error,
-		);
-		return [];
-	}
-}
 
 export async function generateWithPreset(
 	plugin: TrueRecallPlugin,
