@@ -11,6 +11,10 @@ import {
 	buildPresetPrompt,
 } from "../prompts/block-prompt-builder";
 import {
+	type ExistingCardContext,
+	renderExistingCardsBlock,
+} from "../prompts/existing-cards-block";
+import {
 	createThrottledPartialUpdater,
 	finishStreaming,
 	type ScheduleCallback,
@@ -53,6 +57,10 @@ export interface StreamingFlashcardManager extends CardEventFlashcardManager {
 	getNoteTypeById(id: string): NoteType | null;
 }
 
+export interface StreamingGenerationOptions {
+	existingCards?: ExistingCardContext[];
+}
+
 export class StreamingGenerationService {
 	constructor(
 		private getSettings: () => TrueRecallSettings,
@@ -65,6 +73,7 @@ export class StreamingGenerationService {
 		text: string,
 		sourceFile: StreamingSourceFile,
 		presetId: string,
+		options?: StreamingGenerationOptions,
 	): Promise<StreamingGenerationResult> {
 		const settings = this.getSettings();
 		const { preset, noteType } = resolveGenerationPresetAndNoteType(
@@ -95,6 +104,7 @@ export class StreamingGenerationService {
 				abortController,
 				preset,
 				noteType,
+				options,
 			);
 		} catch (error) {
 			if (abortController.signal.aborted) {
@@ -113,6 +123,7 @@ export class StreamingGenerationService {
 		abortController: AbortController,
 		preset: GenerationPreset,
 		noteType: NoteType,
+		options?: StreamingGenerationOptions,
 	): Promise<StreamingGenerationResult> {
 		const client = new StreamingOpenRouterClient(
 			aiConfig.apiKey,
@@ -125,9 +136,14 @@ export class StreamingGenerationService {
 		const parser = new IncrementalFlashcardParser(getNoteType);
 
 		const customSystemPrompt = preset.customPrompt?.trim();
-		const systemPrompt = customSystemPrompt
+		const rawSystemPrompt = customSystemPrompt
 			? customSystemPrompt
 			: buildPresetPrompt(preset, noteType);
+		const existingCardsBlock = renderExistingCardsBlock(options?.existingCards ?? []);
+		const systemPrompt = rawSystemPrompt.replace(
+			"{{EXISTING_CARDS}}",
+			existingCardsBlock,
+		);
 
 		const metadata = aiConfig.hasProTier
 			? {

@@ -322,3 +322,79 @@ describe("StreamingGenerationService.generate", () => {
 		await firstGeneration.catch(() => {});
 	});
 });
+
+describe("StreamingGenerationService.generate — existingCards injection", () => {
+	afterEach(() => {
+		finishStreaming();
+	});
+
+	it("substitutes {{EXISTING_CARDS}} with the rendered block on the Pro path", async () => {
+		const proPreset: GenerationPreset = {
+			...basicPreset,
+			customPrompt: "PROMPT\n[EXISTING CARDS]\n{{EXISTING_CARDS}}\n[END]",
+		};
+		const settings = makeProSettings({
+			generationPresets: [proPreset],
+			defaultGenerationPresetId: proPreset.id,
+		});
+		const { httpClient, capturedRequests } = makeCapturingHttpClient();
+		const svc = new StreamingGenerationService(
+			() => settings,
+			flashcardManager,
+			httpClient,
+		);
+
+		await svc.generate("Selected text", sourceFile, proPreset.id, {
+			existingCards: [
+				{ id: "c1", question: "What is X?", answer: "A thing" },
+			],
+		});
+
+		const body = capturedRequests[0] as any;
+		const systemContent = body.messages[0].content as string;
+		expect(systemContent).not.toContain("{{EXISTING_CARDS}}");
+		expect(systemContent).toContain("- Q: What is X? | A: A thing");
+	});
+
+	it("substitutes {{EXISTING_CARDS}} with the empty sentinel when no existingCards passed", async () => {
+		const proPreset: GenerationPreset = {
+			...basicPreset,
+			customPrompt: "PROMPT\n{{EXISTING_CARDS}}\nEND",
+		};
+		const settings = makeProSettings({
+			generationPresets: [proPreset],
+			defaultGenerationPresetId: proPreset.id,
+		});
+		const { httpClient, capturedRequests } = makeCapturingHttpClient();
+		const svc = new StreamingGenerationService(
+			() => settings,
+			flashcardManager,
+			httpClient,
+		);
+
+		await svc.generate("Selected text", sourceFile, proPreset.id);
+
+		const body = capturedRequests[0] as any;
+		const systemContent = body.messages[0].content as string;
+		expect(systemContent).not.toContain("{{EXISTING_CARDS}}");
+		expect(systemContent).toContain("No existing cards yet for this note.");
+	});
+
+	it("is a no-op on prompts without the placeholder (BYOK path)", async () => {
+		const { httpClient, capturedRequests } = makeCapturingHttpClient();
+		const svc = new StreamingGenerationService(
+			() => makeByokSettings(),
+			flashcardManager,
+			httpClient,
+		);
+
+		await svc.generate("text", sourceFile, basicPreset.id, {
+			existingCards: [{ id: "c1", question: "Q", answer: "A" }],
+		});
+
+		const body = capturedRequests[0] as any;
+		const systemContent = body.messages[0].content as string;
+		expect(systemContent).toBe(buildPresetPrompt(basicPreset, basicNoteType));
+		expect(systemContent).not.toContain("- Q: Q | A: A");
+	});
+});
