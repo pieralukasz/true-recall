@@ -60,6 +60,7 @@ export const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 export function buildOpenRouterHeaders(
 	apiKey: string,
 	userId?: string,
+	capability?: string,
 ): Record<string, string> {
 	const headers: Record<string, string> = {
 		"Content-Type": "application/json",
@@ -68,6 +69,7 @@ export function buildOpenRouterHeaders(
 		"X-Title": "True Recall",
 	};
 	if (userId) headers["X-User-Id"] = userId;
+	if (capability) headers["x-tr-capability"] = capability;
 	return headers;
 }
 
@@ -114,10 +116,15 @@ export class OpenRouterClient {
 		private httpClient: IHttpClient,
 		private baseUrl: string = OPENROUTER_URL,
 		private userId?: string,
+		private capability?: string,
 	) {}
 
 	async chat(request: ChatCompletionRequest): Promise<ChatCompletionResponse> {
-		const headers = buildOpenRouterHeaders(this.apiKey, this.userId);
+		const headers = buildOpenRouterHeaders(
+			this.apiKey,
+			this.userId,
+			this.capability,
+		);
 
 		const response = await this.httpClient.post(
 			this.baseUrl,

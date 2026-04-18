@@ -281,7 +281,14 @@ export class CardPolishPlugin {
 		}
 		const model = modelOverride ?? settings.aiModel;
 		const httpClient = new ObsidianHttpClient();
-		const client = new OpenRouterClient(key, model, httpClient);
+		const client = new OpenRouterClient(
+			key,
+			model,
+			httpClient,
+			undefined,
+			undefined,
+			"card-polish",
+		);
 		return new CardPolishService(client);
 	}
 
