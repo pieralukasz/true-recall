@@ -105,3 +105,38 @@
 	font-size: 11px;
 	padding: 2px 6px;
 }
+.tr-card-polish-settings {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+.tr-card-polish-setting-row {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+}
+.tr-card-polish-preset-editor {
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 8px;
+	padding: 12px;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+.tr-card-polish-preset-field {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+.tr-card-polish-preset-field > span {
+	font-size: 12px;
+	color: var(--text-muted);
+}
+.tr-card-polish-preset-field input[type="checkbox"] {
+	align-self: flex-start;
+}
+.tr-card-polish-preset-editor-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+}
