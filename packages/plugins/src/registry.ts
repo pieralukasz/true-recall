@@ -1,5 +1,6 @@
 import { aiGenerationManifest } from "./ai-generation";
 import { ankiImportExportManifest } from "./anki-import-export";
+import { cardPolishManifest } from "./card-polish";
 import { dashboardCodeblockManifest } from "./dashboard-codeblock";
 import { gamificationManifest } from "./gamification";
 import { healingFlashcardsManifest } from "./healing-flashcards";
@@ -23,6 +24,7 @@ export const PLUGIN_MANIFESTS: PluginManifest[] = [
 	statusBarWidgetManifest,
 	ankiImportExportManifest,
 	selectionToolbarManifest,
+	cardPolishManifest,
 ];
 
 export interface ButtonPluginInfo {

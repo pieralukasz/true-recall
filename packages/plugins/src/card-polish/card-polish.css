@@ -1,0 +1,18 @@
+.tr-card-polish-button {
+	position: absolute;
+	top: 8px;
+	right: 8px;
+	background: transparent;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	padding: 4px 6px;
+	cursor: pointer;
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	opacity: 0.7;
+}
+.tr-card-polish-button:hover {
+	opacity: 1;
+	background: var(--background-modifier-hover);
+}
