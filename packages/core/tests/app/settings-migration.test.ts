@@ -155,6 +155,45 @@ describe("migrateSettings — generation preset migration", () => {
 		).toBe(true);
 	});
 
+	it("self-heals stale defaultGenerationPresetId pointing to a missing preset", () => {
+		const proPreset = {
+			id: BUILTIN_BASIC_PRO_PRESET_ID,
+			name: "Basic Flashcards (Pro)",
+			noteTypeId: "builtin-basic",
+			fields: {},
+			tts: null,
+			isPinned: true,
+			isDefault: false,
+			isPro: true,
+			createdAt: 1,
+			updatedAt: 1,
+		};
+		const { settings, needsSave } = migrateSettings({
+			generationPresets: [proPreset],
+			defaultGenerationPresetId: "migrated-gen-1776345477398",
+		} as any);
+
+		expect(needsSave).toBe(true);
+		expect(settings.defaultGenerationPresetId).toBe(
+			BUILTIN_BASIC_PRO_PRESET_ID,
+		);
+		const pro = settings.generationPresets.find(
+			(p) => p.id === BUILTIN_BASIC_PRO_PRESET_ID,
+		);
+		expect(pro?.isDefault).toBe(true);
+	});
+
+	it("leaves defaultGenerationPresetId alone when it resolves to an existing preset", () => {
+		const { settings, needsSave } = migrateSettings({
+			generationPresets: [{ ...BUILTIN_BASIC_PRESET }],
+			defaultGenerationPresetId: BUILTIN_BASIC_PRESET.id,
+		} as any);
+
+		expect(settings.defaultGenerationPresetId).toBe(BUILTIN_BASIC_PRESET.id);
+		// needsSave may be true due to Pro preset backfill, but the pointer must not have changed
+		void needsSave;
+	});
+
 	it('strips legacy "vocab" toolbar button from persisted settings', () => {
 		const raw = {
 			generationPresets: [{ ...BUILTIN_BASIC_PRESET }],

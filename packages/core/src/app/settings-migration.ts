@@ -186,5 +186,31 @@ export function migrateSettings(raw: Partial<TrueRecallSettings> | null): {
 		}
 	}
 
+	// Self-heal stale defaultGenerationPresetId that points to a missing preset.
+	// Can happen via iCloud sync conflicts, external edits, or prior buggy deletes.
+	if (settings.generationPresets && settings.generationPresets.length > 0) {
+		const defaultExists = settings.generationPresets.some(
+			(p) => p.id === settings.defaultGenerationPresetId,
+		);
+		if (!defaultExists) {
+			const promoted =
+				settings.generationPresets.find((p) => p.isDefault) ??
+				settings.generationPresets.find(
+					(p) => p.id === BUILTIN_BASIC_PRO_PRESET_ID,
+				) ??
+				settings.generationPresets.find(
+					(p) => p.id === BUILTIN_BASIC_PRESET.id,
+				) ??
+				settings.generationPresets[0];
+			if (promoted) {
+				settings.defaultGenerationPresetId = promoted.id;
+				for (const preset of settings.generationPresets) {
+					preset.isDefault = preset.id === promoted.id;
+				}
+				needsSave = true;
+			}
+		}
+	}
+
 	return { settings, needsSave };
 }
