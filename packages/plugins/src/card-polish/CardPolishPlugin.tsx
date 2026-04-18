@@ -14,6 +14,8 @@ export class CardPolishPlugin {
 	private container: HTMLDivElement | null = null;
 	private menuContainer: HTMLDivElement | null = null;
 	private leafObserverRef: EventRef | null = null;
+	private menuKeyListener: ((e: KeyboardEvent) => void) | null = null;
+	private menuClickListener: ((e: PointerEvent) => void) | null = null;
 
 	constructor(private readonly ctx: PluginContext) {}
 
@@ -81,14 +83,53 @@ export class CardPolishPlugin {
 				placement: "bottom-end",
 				middleware: [offset(6), flip(), shift({ padding: 8 })],
 			}).then(({ x, y }) => {
+				if (this.menuContainer?.firstElementChild !== menuEl) return;
 				menuEl.style.left = `${x}px`;
 				menuEl.style.top = `${y}px`;
 				menuEl.style.position = "absolute";
 			});
 		}
+
+		this.menuKeyListener = (e: KeyboardEvent) => {
+			if (e.key === "Escape") this.closeMenu();
+		};
+		this.menuClickListener = (e: PointerEvent) => {
+			const target = e.target as Node | null;
+			if (!target) return;
+			if (this.menuContainer?.contains(target)) return;
+			if (anchor.contains(target)) return;
+			this.closeMenu();
+		};
+		// Schedule listener install after the current event loop tick so the
+		// click that opened the menu doesn't immediately close it.
+		window.setTimeout(() => {
+			if (!this.menuContainer) return;
+			if (this.menuKeyListener) {
+				document.addEventListener("keydown", this.menuKeyListener);
+			}
+			if (this.menuClickListener) {
+				document.addEventListener(
+					"pointerdown",
+					this.menuClickListener,
+					true,
+				);
+			}
+		}, 0);
 	}
 
 	private closeMenu(): void {
+		if (this.menuKeyListener) {
+			document.removeEventListener("keydown", this.menuKeyListener);
+			this.menuKeyListener = null;
+		}
+		if (this.menuClickListener) {
+			document.removeEventListener(
+				"pointerdown",
+				this.menuClickListener,
+				true,
+			);
+			this.menuClickListener = null;
+		}
 		if (!this.menuContainer) return;
 		render(null, this.menuContainer);
 		this.menuContainer.remove();
