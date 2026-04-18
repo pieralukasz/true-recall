@@ -80,3 +80,28 @@
 .tr-card-polish-preview-actions input[type="text"] {
 	flex: 1;
 }
+.tr-card-polish-custom {
+	position: absolute;
+	z-index: 50;
+	min-width: 320px;
+	background: var(--background-primary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 8px;
+	box-shadow: var(--shadow-m);
+	padding: 8px;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+.tr-card-polish-custom input[type="text"] {
+	width: 100%;
+}
+.tr-card-polish-custom-recent {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+}
+.tr-card-polish-custom-recent button {
+	font-size: 11px;
+	padding: 2px 6px;
+}

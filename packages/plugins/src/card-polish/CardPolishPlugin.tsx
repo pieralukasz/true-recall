@@ -18,6 +18,7 @@ import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpC
 import { UpdateCardCommand } from "@true-recall/obsidian/commands/commands/card-update.cmd";
 
 import type { PluginContext } from "../types";
+import { CustomPromptInput } from "./CustomPromptInput";
 import { DEFAULT_CARD_POLISH_SETTINGS } from "./default-presets";
 import { PolishButton } from "./PolishButton";
 import { PolishMenu } from "./PolishMenu";
@@ -34,6 +35,7 @@ export class CardPolishPlugin {
 	private menuKeyListener: ((e: KeyboardEvent) => void) | null = null;
 	private menuClickListener: ((e: PointerEvent) => void) | null = null;
 	private abortController: AbortController | null = null;
+	private recentCustomPrompts: string[] = [];
 
 	constructor(private readonly ctx: PluginContext) {}
 
@@ -338,8 +340,112 @@ export class CardPolishPlugin {
 		new Notice(`Polish failed: ${msg}`);
 	}
 
-	private openCustomPrompt(_anchor: HTMLElement): void {
-		// Task 9 implements this.
+	private openCustomPrompt(anchor: HTMLElement): void {
 		this.closeMenu();
+		this.menuContainer = document.createElement("div");
+		document.body.appendChild(this.menuContainer);
+
+		const submit = (instruction: string) => {
+			this.recentCustomPrompts = [
+				instruction,
+				...this.recentCustomPrompts.filter((x) => x !== instruction),
+			].slice(0, 5);
+			this.closeMenu();
+			void this.runCustomPrompt(instruction);
+		};
+
+		render(
+			<CustomPromptInput
+				recent={this.recentCustomPrompts}
+				onSubmit={submit}
+				onCancel={() => this.closeMenu()}
+			/>,
+			this.menuContainer,
+		);
+
+		const el = this.menuContainer.firstElementChild as HTMLElement | null;
+		if (el) {
+			void computePosition(anchor, el, {
+				placement: "bottom-end",
+				middleware: [offset(6), flip(), shift({ padding: 8 })],
+			}).then(({ x, y }) => {
+				if (this.menuContainer?.firstElementChild !== el) return;
+				el.style.left = `${x}px`;
+				el.style.top = `${y}px`;
+				el.style.position = "absolute";
+			});
+		}
+
+		// Reuse the same dismissal listeners the menu uses: Escape + outside-click.
+		this.menuKeyListener = (e: KeyboardEvent) => {
+			if (e.key === "Escape") this.closeMenu();
+		};
+		this.menuClickListener = (e: PointerEvent) => {
+			const target = e.target as Node | null;
+			if (!target) return;
+			if (this.menuContainer?.contains(target)) return;
+			if (anchor.contains(target)) return;
+			this.closeMenu();
+		};
+		window.setTimeout(() => {
+			if (!this.menuContainer) return;
+			if (this.menuKeyListener) {
+				document.addEventListener("keydown", this.menuKeyListener);
+			}
+			if (this.menuClickListener) {
+				document.addEventListener(
+					"pointerdown",
+					this.menuClickListener,
+					true,
+				);
+			}
+		}, 0);
+	}
+
+	private async runCustomPrompt(instruction: string): Promise<void> {
+		const card = this.getCurrentCard();
+		if (!card) return;
+		const service = this.buildService();
+		if (!service) return;
+
+		this.abortController?.abort();
+		const controller = new AbortController();
+		this.abortController = controller;
+
+		const notice = new Notice("Polishing…", 0);
+		try {
+			const result = await service.transform({
+				cardFront: card.question,
+				cardBack: card.answer,
+				prompt: instruction,
+				signal: controller.signal,
+			});
+
+			const autoApply = this.readSettings().customPromptAutoApply;
+			if (autoApply) {
+				this.applyPolishResult(card, { front: result.front, back: result.back });
+				new Notice("Card polished");
+			} else {
+				this.openPreview(
+					card,
+					{ front: result.front, back: result.back },
+					{
+						id: "__custom__",
+						name: "Custom",
+						prompt: instruction,
+						autoApply: false,
+						builtin: false,
+					},
+					service,
+				);
+			}
+		} catch (err) {
+			this.handlePolishError(err);
+		} finally {
+			notice.hide();
+			if (this.abortController === controller) {
+				this.abortController = null;
+			}
+		}
 	}
 }
