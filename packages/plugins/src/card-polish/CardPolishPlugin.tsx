@@ -1,5 +1,5 @@
 import type { EventRef } from "obsidian";
-import { h, render } from "preact";
+import { render } from "preact";
 
 import { VIEW_TYPE_REVIEW } from "@true-recall/core/constants";
 
@@ -43,9 +43,7 @@ export class CardPolishPlugin {
 			viewEl.appendChild(this.container);
 		}
 		render(
-			h(PolishButton, {
-				onClick: (anchor) => this.openMenu(anchor),
-			}),
+			<PolishButton onClick={(anchor) => this.openMenu(anchor)} />,
 			this.container,
 		);
 	}
