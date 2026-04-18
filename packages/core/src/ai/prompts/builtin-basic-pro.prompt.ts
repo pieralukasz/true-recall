@@ -34,7 +34,82 @@ R7 Quality over quantity. There is no target count. Skip trivial facts. If the s
 Do not reproduce, paraphrase, or merely re-word the cards above. If every atomic fact in the selected text is already covered, return [].
 
 [FEW-SHOT EXAMPLES]
-// Populated in the next commit.
+Example 1 — Meta-question (BANNED by R3).
+Selected text: "Trzy heurystyki wskazujące wejście w fazę 2: (a) ostatnie 20% nakładu dało <5% wyniku; (b) poprawa jednego wskaźnika zbiega się z pogorszeniem innego; (c) 'więcej' wymaga rosnących wysiłków kontrolnych."
+[BAD]
+[
+  {"Front": "Jaka jest jedna z heurystyk wskazujących na fazę 2?", "Back": "Jeśli ostatnie 20% nakładu dało <5% wyniku"}
+]
+[GOOD]
+[
+  {"Front": "Co zachodzi, gdy ostatnie 20% nakładu daje <5% wyniku?", "Back": "Jesteś blisko fazy 2"}
+]
+[WHY]
+Direction reversed per R4: CONDITION -> CATEGORY. The front is now uniquely identifiable — a learner can answer it without guessing "which of the three". "Jedna z heurystyk" collapses three distinct cards into indistinguishable fronts.
+
+Example 2 — Enumeration aggregate (R4 exception).
+Selected text: same three heuristics as Example 1.
+[BAD]
+[
+  {"Front": "Jaka jest pierwsza heurystyka wskazująca na fazę 2?", "Back": "..."},
+  {"Front": "Jaka jest druga heurystyka wskazująca na fazę 2?", "Back": "..."},
+  {"Front": "Jaka jest trzecia heurystyka wskazująca na fazę 2?", "Back": "..."}
+]
+[GOOD]
+[
+  {"Front": "Trzy heurystyki sygnalizujące wejście w fazę malejącej wartości marginalnej (wymień wszystkie)", "Back": "- Ostatnie 20% nakładu daje <5% wyniku\\n- Poprawa jednego wskaźnika zbiega się z pogorszeniem innego\\n- 'Więcej' wymaga rosnących wysiłków kontrolnych"}
+]
+[WHY]
+When the full bounded list is itself the concept, an aggregate card is allowed per R4 exception. The default for lists remains CONDITION -> CATEGORY; use aggregate only when the learner needs to recall the whole set as a unit.
+
+Example 3 — Interference (R5).
+Selected text: "Brak snu zwiększa poziom beta-amyloidu i białka tau, kluczowych dla choroby Alzheimera."
+[BAD]
+[
+  {"Front": "Poziom której proteiny kluczowej dla Alzheimera zwiększa brak snu?", "Back": "beta-amyloid"}
+]
+[GOOD]
+[
+  {"Front": "Poziom której proteiny kluczowej dla Alzheimera zwiększa brak snu? ᵗᵃᵘ", "Back": "beta-amyloid"},
+  {"Front": "Poziom której proteiny kluczowej dla Alzheimera zwiększa brak snu? ᵇᵉᵗᵃ⁻ᵃᵐʸˡᵒⁱᵈ", "Back": "tau"}
+]
+[WHY]
+Two correct answers violate R2. Split into two cards; each card names the OTHER answer in superscript as a disambiguator. The learner's memory path still has to produce the missing term, but interference between the two is eliminated.
+
+Example 4 — Positive baseline.
+Selected text: "Rosacea manifests as intense skin reddening."
+[GOOD]
+[
+  {"type": "basic", "Front": "What is rosacea?", "Back": "Intense skin reddening", "source": "Rosacea manifests as intense skin reddening."}
+]
+[WHY]
+Single atomic fact, unambiguous front, literal source phrase in the answer, one-sentence verbatim source.
+
+Example 5 — Cross-generation duplicate (R7 empty return).
+[EXISTING CARDS FOR THIS NOTE]
+- Q: Co zachodzi, gdy ostatnie 20% nakładu daje <5% wyniku? | A: Jesteś blisko fazy 2
+Selected text: "Gdy ostatnie 20% wysiłku przekłada się na zaledwie kilka procent rezultatu, zbliżasz się do fazy 2."
+[BAD]
+[
+  {"Front": "Jaka jest parafraza warunku dla fazy 2?", "Back": "Gdy ostatnie 20% wysiłku daje zaledwie kilka procent rezultatu"}
+]
+[GOOD]
+[]
+[WHY]
+R7: the atomic fact is already covered by an existing card. Paraphrasing creates a near-duplicate and accelerates deck rot. Return [].
+
+Example 6 — Hallucination prevention (R6).
+Selected text: "Jeśli 'więcej' wymaga coraz większych wysiłków kontrolnych żeby nie rozwalić systemu — faza 3."
+[BAD]
+[
+  {"Front": "Jaka zasada ekonomiczna opisuje fazę 3?", "Back": "Prawo malejących przychodów w systemach złożonych"}
+]
+[GOOD]
+[
+  {"Front": "Co zachodzi, gdy 'więcej' wymaga coraz większych wysiłków kontrolnych, by nie rozwalić systemu?", "Back": "Jesteś w fazie 3"}
+]
+[WHY]
+R6 is absolute. "Prawo malejących przychodów" is the model's world-knowledge label, not a term present in the source. Answers must be literal to the selected text.
 
 [OUTPUT FORMAT]
 Return a JSON array of objects with this shape:
