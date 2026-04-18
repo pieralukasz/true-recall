@@ -1,5 +1,5 @@
 import { computePosition, flip, offset, shift } from "@floating-ui/dom";
-import { Notice } from "obsidian";
+import { Modal, Notice } from "obsidian";
 import type { EventRef } from "obsidian";
 import { render } from "preact";
 
@@ -21,6 +21,7 @@ import type { PluginContext } from "../types";
 import { DEFAULT_CARD_POLISH_SETTINGS } from "./default-presets";
 import { PolishButton } from "./PolishButton";
 import { PolishMenu } from "./PolishMenu";
+import { PolishPreviewModal } from "./PolishPreviewModal";
 
 type PolishTargetCard = { id: string; question: string; answer: string };
 
@@ -253,11 +254,50 @@ export class CardPolishPlugin {
 	}
 
 	private openPreview(
-		_card: PolishTargetCard,
-		_result: { front: string; back: string },
-		_preset: CardPolishPreset,
+		card: PolishTargetCard,
+		initialResult: { front: string; back: string },
+		preset: CardPolishPreset,
 	): void {
-		// Implemented in Task 8 (PolishPreviewModal).
+		const service = this.buildService(preset.modelOverride);
+		if (!service) return;
+
+		const modal = new Modal(this.ctx.app);
+		modal.titleEl.setText("Polish preview");
+		let currentProposal = initialResult;
+
+		const mount = () => {
+			modal.contentEl.empty();
+			const host = modal.contentEl.createDiv();
+			render(
+				<PolishPreviewModal
+					original={{ front: card.question, back: card.answer }}
+					proposed={currentProposal}
+					onAccept={() => {
+						this.applyPolishResult(card, currentProposal);
+						new Notice("Card polished");
+						modal.close();
+					}}
+					onReject={() => modal.close()}
+					onRetry={async (extra: string) => {
+						try {
+							const next = await service.transform({
+								cardFront: card.question,
+								cardBack: card.answer,
+								prompt: `${preset.prompt}\n\nAdditional instruction: ${extra}`,
+							});
+							currentProposal = { front: next.front, back: next.back };
+							mount();
+						} catch (err) {
+							this.handlePolishError(err);
+						}
+					}}
+				/>,
+				host,
+			);
+		};
+		mount();
+		modal.onClose = () => render(null, modal.contentEl);
+		modal.open();
 	}
 
 	private handlePolishError(err: unknown): void {
