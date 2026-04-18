@@ -9,7 +9,7 @@ export const EXISTING_CARDS_MAX_TOKENS = 3000;
 const EMPTY_SENTINEL = "No existing cards yet for this note.";
 
 function escapePipes(value: string): string {
-	return value.replaceAll("|", "\\|");
+	return value.split("|").join("\\|");
 }
 
 function formatCard(card: ExistingCardContext): string {
@@ -25,9 +25,7 @@ function estimateTokens(text: string): number {
  * Caller is responsible for ordering (most-recent first is recommended so that
  * truncation drops the oldest).
  */
-export function renderExistingCardsBlock(
-	cards: ExistingCardContext[],
-): string {
+export function renderExistingCardsBlock(cards: ExistingCardContext[]): string {
 	if (cards.length === 0) {
 		return EMPTY_SENTINEL;
 	}
