@@ -55,6 +55,56 @@ function getSourceFileFromDOM(
 	return found;
 }
 
+function closestWithDataLine(node: Node): Element | null {
+	const el = node instanceof Element ? node : node.parentElement;
+	return el?.closest("[data-line]") ?? null;
+}
+
+async function resolveMarkdownFromRange(
+	plugin: TrueRecallPlugin,
+	range: Range,
+	fallback: string,
+): Promise<string> {
+	const container =
+		range.commonAncestorContainer instanceof Element
+			? range.commonAncestorContainer
+			: range.commonAncestorContainer.parentElement;
+	if (!container?.closest(".markdown-preview-view")) return fallback;
+
+	const sourceFile = getSourceFileFromDOM(plugin, range);
+	if (!sourceFile) return fallback;
+
+	const startEl = closestWithDataLine(range.startContainer);
+	const endEl = closestWithDataLine(range.endContainer);
+	if (!startEl || !endEl) return fallback;
+
+	const startLine = Number.parseInt(
+		startEl.getAttribute("data-line") ?? "",
+		10,
+	);
+	const endLineAttr =
+		endEl.getAttribute("data-line-end") ??
+		endEl.getAttribute("data-line") ??
+		"";
+	const endLine = Number.parseInt(endLineAttr, 10);
+	if (!Number.isFinite(startLine) || !Number.isFinite(endLine)) return fallback;
+
+	const from = Math.min(startLine, endLine);
+	const to = Math.max(startLine, endLine);
+
+	try {
+		const source = await plugin.app.vault.read(sourceFile);
+		const lines = source.split("\n");
+		const slice = lines
+			.slice(from, to + 1)
+			.join("\n")
+			.trim();
+		return slice || fallback;
+	} catch {
+		return fallback;
+	}
+}
+
 function handleImageOcclusion(
 	plugin: TrueRecallPlugin,
 	imagePath: string,
@@ -197,6 +247,8 @@ export const selectionToolbarManifest: PluginManifest = {
 			getPluginStates: () => plugin.settings.pluginStates ?? {},
 			getSourceFile: (range) => getSourceFileFromDOM(plugin, range),
 			getPresets: () => plugin.settings.generationPresets,
+			resolveMarkdown: (range, fallback) =>
+				resolveMarkdownFromRange(plugin, range, fallback),
 		});
 		globalToolbar.register();
 

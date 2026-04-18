@@ -19,6 +19,7 @@ export interface GlobalSelectionToolbarCallbacks {
 	getPluginStates: () => Record<string, boolean>;
 	getSourceFile: (range: Range) => TFile | null;
 	getPresets: () => GenerationPreset[];
+	resolveMarkdown?: (range: Range, fallback: string) => Promise<string>;
 }
 
 const MIN_SELECTION_LENGTH = 3;
@@ -118,17 +119,39 @@ export class GlobalSelectionToolbar {
 		}
 
 		const sourceFile = this.callbacks.getSourceFile(range);
+		const capturedRange = range.cloneRange();
+		const { resolveMarkdown } = this.callbacks;
+		const resolvedTextPromise: Promise<string> = resolveMarkdown
+			? resolveMarkdown(capturedRange, text).catch(() => text)
+			: Promise.resolve(text);
+
+		const actions = this.callbacks.actions;
 
 		render(
 			h(SelectionToolbar, {
 				selectedText: text,
 				buttons: this.callbacks.getButtons(),
 				actions: {
-					...this.callbacks.actions,
-					onPreset: (presetId: string, _t: string) =>
-						this.callbacks.actions.onPreset(presetId, text, sourceFile),
-					onQuickAdd: (_t: string) =>
-						this.callbacks.actions.onQuickAdd(text, sourceFile),
+					...actions,
+					onPreset: async (presetId: string) => {
+						const md = await resolvedTextPromise;
+						return actions.onPreset(presetId, md, sourceFile);
+					},
+					onQuickAdd: async () => {
+						const md = await resolvedTextPromise;
+						return actions.onQuickAdd(md, sourceFile);
+					},
+					onEdit: () => {
+						void resolvedTextPromise.then((md) => actions.onEdit(md));
+					},
+					onNewNote: async () => {
+						const md = await resolvedTextPromise;
+						return actions.onNewNote(md);
+					},
+					onAppend: async () => {
+						const md = await resolvedTextPromise;
+						return actions.onAppend(md);
+					},
 					onDismiss: () => this.removeToolbar(),
 				},
 				tier: this.callbacks.tier(),

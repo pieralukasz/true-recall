@@ -91,7 +91,7 @@ export function AIProviderSection() {
 	}, [settings.proKey]);
 
 	return (
-		<FormCard title="AI Provider">
+		<FormCard>
 			<div class="ep:text-ui-smaller ep:text-obs-muted ep:leading-relaxed ep:pb-2 ep:mb-2 ep:border-b ep:border-obs-modifier-border">
 				<p class="ep:font-medium ep:text-obs-normal">
 					Zero setup, optimized results

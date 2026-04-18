@@ -201,7 +201,7 @@ export function PluginsTab() {
 	return (
 		<div class="ep:flex ep:flex-col ep:gap-3">
 			<AIProviderSection />
-			<FormCard title="Plugins" description="">
+			<FormCard>
 				<div class="ep:flex ep:flex-col ep:gap-1.5">
 					{[...PLUGIN_MANIFESTS]
 						.sort(
