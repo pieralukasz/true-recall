@@ -4,13 +4,9 @@ import type { EventRef } from "obsidian";
 import { render } from "preact";
 
 import {
-	AIRequestError,
 	type CardPolishPreset,
 	CardPolishService,
 	OpenRouterClient,
-	PolishAbortedError,
-	PolishParseError,
-	PolishProviderError,
 } from "@true-recall/core";
 import { VIEW_TYPE_REVIEW } from "@true-recall/core/constants";
 
@@ -20,14 +16,13 @@ import { UpdateCardCommand } from "@true-recall/obsidian/commands/commands/card-
 import type { PluginContext } from "../types";
 import { CustomPromptInput } from "./CustomPromptInput";
 import { DEFAULT_CARD_POLISH_SETTINGS } from "./default-presets";
+import { handlePolishError } from "./polish-error-handler";
 import { PolishButton } from "./PolishButton";
 import { PolishMenu } from "./PolishMenu";
 import { PolishPreviewModal } from "./PolishPreviewModal";
 
 type PolishTargetCard = { id: string; question: string; answer: string };
 
-// If this file grows past ~300 lines, extract the error-handler branch in
-// handlePolishError into its own module.
 export class CardPolishPlugin {
 	private container: HTMLDivElement | null = null;
 	private menuContainer: HTMLDivElement | null = null;
@@ -196,48 +191,35 @@ export class CardPolishPlugin {
 		return this.ctx.settings.cardPolish ?? DEFAULT_CARD_POLISH_SETTINGS;
 	}
 
-	private async runPreset(preset: CardPolishPreset): Promise<void> {
-		this.closeMenu();
-		const card = this.getCurrentCard();
-		if (!card) return;
-
-		const service = this.buildService(preset.modelOverride);
-		if (!service) return; // buildService shows a Notice if AI is unconfigured.
-
+	private async executePolish(params: {
+		card: PolishTargetCard;
+		prompt: string;
+		service: CardPolishService;
+		onResult: (result: { front: string; back: string }) => void;
+	}): Promise<void> {
 		this.abortController?.abort();
 		const controller = new AbortController();
 		this.abortController = controller;
 
-		const notice = new Notice("Polishing…", 0);
 		const reviewLeaf = this.ctx.workspace.getLeavesOfType(VIEW_TYPE_REVIEW)[0];
 		const keyListener = (e: KeyboardEvent) => {
 			if (e.key === "Escape") controller.abort();
 		};
 		reviewLeaf?.view.containerEl.addEventListener("keydown", keyListener);
+
+		const notice = new Notice("Polishing…", 0);
 		try {
-			const result = await service.transform({
-				cardFront: card.question,
-				cardBack: card.answer,
-				prompt: preset.prompt,
+			const result = await params.service.transform({
+				cardFront: params.card.question,
+				cardBack: params.card.answer,
+				prompt: params.prompt,
 				signal: controller.signal,
 			});
-
-			if (preset.autoApply) {
-				this.applyPolishResult(card, {
-					front: result.front,
-					back: result.back,
-				});
-				new Notice("Card polished");
-			} else {
-				this.openPreview(
-					card,
-					{ front: result.front, back: result.back },
-					preset,
-					service,
-				);
-			}
+			params.onResult({ front: result.front, back: result.back });
 		} catch (err) {
-			this.handlePolishError(err);
+			handlePolishError(err, {
+				onRawFallback: (raw) => this.openRawFallback(raw),
+			});
 		} finally {
 			notice.hide();
 			reviewLeaf?.view.containerEl.removeEventListener("keydown", keyListener);
@@ -245,6 +227,27 @@ export class CardPolishPlugin {
 				this.abortController = null;
 			}
 		}
+	}
+
+	private async runPreset(preset: CardPolishPreset): Promise<void> {
+		this.closeMenu();
+		const card = this.getCurrentCard();
+		if (!card) return;
+		const service = this.buildService(preset.modelOverride);
+		if (!service) return;
+		await this.executePolish({
+			card,
+			prompt: preset.prompt,
+			service,
+			onResult: (result) => {
+				if (preset.autoApply) {
+					this.applyPolishResult(card, result);
+					new Notice("Card polished");
+				} else {
+					this.openPreview(card, result, preset, service);
+				}
+			},
+		});
 	}
 
 	private applyPolishResult(
@@ -342,7 +345,9 @@ export class CardPolishPlugin {
 							mount();
 						} catch (err) {
 							if (!isOpen) return;
-							this.handlePolishError(err);
+							handlePolishError(err, {
+								onRawFallback: (raw) => this.openRawFallback(raw),
+							});
 						} finally {
 							if (this.abortController === controller) {
 								this.abortController = null;
@@ -386,29 +391,6 @@ export class CardPolishPlugin {
 		);
 		modal.onClose = () => render(null, host);
 		modal.open();
-	}
-
-	private handlePolishError(err: unknown): void {
-		if (err instanceof PolishAbortedError) return;
-		if (err instanceof PolishParseError) {
-			this.openRawFallback(err.rawResponse);
-			return;
-		}
-		if (err instanceof PolishProviderError) {
-			const cause = err.cause;
-			if (cause instanceof AIRequestError && cause.isRateLimited) {
-				new Notice("Polish: rate limit hit — try again later.");
-				return;
-			}
-			if (cause instanceof AIRequestError && cause.isUnauthorized) {
-				new Notice("Polish: unauthorized — check your API key.");
-				return;
-			}
-			new Notice(`Polish failed: ${err.message}`);
-			return;
-		}
-		const msg = err instanceof Error ? err.message : String(err);
-		new Notice(`Polish failed: ${msg}`);
 	}
 
 	private openCustomPrompt(anchor: HTMLElement): void {
@@ -478,51 +460,30 @@ export class CardPolishPlugin {
 		if (!card) return;
 		const service = this.buildService();
 		if (!service) return;
-
-		this.abortController?.abort();
-		const controller = new AbortController();
-		this.abortController = controller;
-
-		const notice = new Notice("Polishing…", 0);
-		const reviewLeaf = this.ctx.workspace.getLeavesOfType(VIEW_TYPE_REVIEW)[0];
-		const keyListener = (e: KeyboardEvent) => {
-			if (e.key === "Escape") controller.abort();
-		};
-		reviewLeaf?.view.containerEl.addEventListener("keydown", keyListener);
-		try {
-			const result = await service.transform({
-				cardFront: card.question,
-				cardBack: card.answer,
-				prompt: instruction,
-				signal: controller.signal,
-			});
-
-			const autoApply = this.readSettings().customPromptAutoApply;
-			if (autoApply) {
-				this.applyPolishResult(card, { front: result.front, back: result.back });
-				new Notice("Card polished");
-			} else {
-				this.openPreview(
-					card,
-					{ front: result.front, back: result.back },
-					{
-						id: "__custom__",
-						name: "Custom",
-						prompt: instruction,
-						autoApply: false,
-						builtin: false,
-					},
-					service,
-				);
-			}
-		} catch (err) {
-			this.handlePolishError(err);
-		} finally {
-			notice.hide();
-			reviewLeaf?.view.containerEl.removeEventListener("keydown", keyListener);
-			if (this.abortController === controller) {
-				this.abortController = null;
-			}
-		}
+		const autoApply = this.readSettings().customPromptAutoApply;
+		await this.executePolish({
+			card,
+			prompt: instruction,
+			service,
+			onResult: (result) => {
+				if (autoApply) {
+					this.applyPolishResult(card, result);
+					new Notice("Card polished");
+				} else {
+					this.openPreview(
+						card,
+						result,
+						{
+							id: "__custom__",
+							name: "Custom",
+							prompt: instruction,
+							autoApply: false,
+							builtin: false,
+						},
+						service,
+					);
+				}
+			},
+		});
 	}
 }
