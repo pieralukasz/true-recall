@@ -150,6 +150,8 @@ export const PanelCard = memo(function PanelCard({
 			if ((e.target as HTMLElement).closest("a")) return;
 			if (isSelectionMode) {
 				selectionActions.handleToggleSelect(card.id);
+			} else if (e.metaKey || e.ctrlKey) {
+				selectionActions.handleEnterSelectionMode(card.id);
 			} else if (card.sourceText) {
 				cardActions.handleToggleExpand(card.id);
 				panelActions.handleJumpToSource(card);
