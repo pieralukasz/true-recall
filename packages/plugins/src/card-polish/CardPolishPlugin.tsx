@@ -7,6 +7,10 @@ import {
 	CardPolishService,
 	OpenRouterClient,
 } from "@true-recall/core";
+import {
+	type AIClientConfig,
+	resolveAIClientConfig,
+} from "@true-recall/core/ai/config/ai-client-config";
 import { VIEW_TYPE_REVIEW } from "@true-recall/core/constants";
 
 import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpClient";
