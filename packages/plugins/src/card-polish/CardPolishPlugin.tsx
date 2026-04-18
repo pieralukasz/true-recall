@@ -209,6 +209,11 @@ export class CardPolishPlugin {
 		this.abortController = controller;
 
 		const notice = new Notice("Polishing…", 0);
+		const reviewLeaf = this.ctx.workspace.getLeavesOfType(VIEW_TYPE_REVIEW)[0];
+		const keyListener = (e: KeyboardEvent) => {
+			if (e.key === "Escape") controller.abort();
+		};
+		reviewLeaf?.view.containerEl.addEventListener("keydown", keyListener);
 		try {
 			const result = await service.transform({
 				cardFront: card.question,
@@ -235,6 +240,7 @@ export class CardPolishPlugin {
 			this.handlePolishError(err);
 		} finally {
 			notice.hide();
+			reviewLeaf?.view.containerEl.removeEventListener("keydown", keyListener);
 			if (this.abortController === controller) {
 				this.abortController = null;
 			}
@@ -349,12 +355,36 @@ export class CardPolishPlugin {
 		modal.open();
 	}
 
+	private openRawFallback(rawResponse: string): void {
+		const card = this.getCurrentCard();
+		if (!card) {
+			new Notice("Polish: LLM returned invalid output.");
+			return;
+		}
+		const modal = new Modal(this.ctx.app);
+		modal.titleEl.setText("Polish — raw output");
+		const host = modal.contentEl.createDiv();
+		render(
+			<PolishPreviewModal
+				original={{ front: card.question, back: card.answer }}
+				proposed={null}
+				rawResponse={rawResponse}
+				onAccept={() => modal.close()}
+				onReject={() => modal.close()}
+				onRetry={async () => {
+					modal.close();
+				}}
+			/>,
+			host,
+		);
+		modal.onClose = () => render(null, host);
+		modal.open();
+	}
+
 	private handlePolishError(err: unknown): void {
 		if (err instanceof PolishAbortedError) return;
 		if (err instanceof PolishParseError) {
-			new Notice(
-				"Polish: LLM returned invalid output. Try a sharper instruction via Custom.",
-			);
+			this.openRawFallback(err.rawResponse);
 			return;
 		}
 		if (err instanceof PolishProviderError) {
@@ -447,6 +477,11 @@ export class CardPolishPlugin {
 		this.abortController = controller;
 
 		const notice = new Notice("Polishing…", 0);
+		const reviewLeaf = this.ctx.workspace.getLeavesOfType(VIEW_TYPE_REVIEW)[0];
+		const keyListener = (e: KeyboardEvent) => {
+			if (e.key === "Escape") controller.abort();
+		};
+		reviewLeaf?.view.containerEl.addEventListener("keydown", keyListener);
 		try {
 			const result = await service.transform({
 				cardFront: card.question,
@@ -477,6 +512,7 @@ export class CardPolishPlugin {
 			this.handlePolishError(err);
 		} finally {
 			notice.hide();
+			reviewLeaf?.view.containerEl.removeEventListener("keydown", keyListener);
 			if (this.abortController === controller) {
 				this.abortController = null;
 			}
