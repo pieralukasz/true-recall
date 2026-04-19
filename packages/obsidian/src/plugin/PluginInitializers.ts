@@ -10,6 +10,8 @@ import {
 	SAFETY_FLUSH_INTERVAL_MS,
 } from "@true-recall/core/persistence/sqlite/sqlite.types";
 
+const ALWAYS_VISIBLE_REFRESH_MS = 10 * 60 * 1000;
+
 import { ObsidianPersistence } from "@true-recall/obsidian/adapters/ObsidianPersistence";
 import { ObsidianUidPrompt } from "@true-recall/obsidian/adapters/ObsidianUidPrompt";
 import {
@@ -138,6 +140,28 @@ async function initializeCardStore(
 		});
 
 		plugin._disposeWireDataLayer = wireDataLayer(dl, plugin.coreApp.events);
+
+		// Time-dependent queries (GLOBAL_COUNTS, NOTE_STATUS, countByState) pin
+		// `new Date()` at execution time. Cards that become due overnight stay
+		// invisible until something invalidates. Primary trigger: visibilitychange
+		// (fires on sleep/wake, tab-switch). Fallback: sparse interval for the
+		// always-visible edge case (second monitor, screen never sleeps).
+		const refreshTimeSensitive = (): void => {
+			dl.invalidateGroups([
+				G.CARDS,
+				G.BROWSER,
+				G.DASHBOARD,
+				G.PANEL,
+				G.REVIEW,
+				G.STATS,
+			]);
+		};
+		plugin.registerDomEvent(document, "visibilitychange", () => {
+			if (document.visibilityState === "visible") refreshTimeSensitive();
+		});
+		plugin.registerInterval(
+			window.setInterval(refreshTimeSensitive, ALWAYS_VISIBLE_REFRESH_MS),
+		);
 
 		// Startup race fix: rebuildIndex() runs in an earlier onLayoutReady with
 		// silent=true, so no domain events fire and the DataLayer keeps stale
