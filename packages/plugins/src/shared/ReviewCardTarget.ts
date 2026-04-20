@@ -27,17 +27,18 @@ export class ReviewCardTarget implements CardAITarget {
 
 	apply(fields: CardFields): void {
 		const { card } = this.snapshot();
-		if (!card) return;
+		if (!card || !card.noteId) return;
 		this.plugin.flashcardManager.updateNoteFields(card.noteId, fields);
 	}
 
 	private snapshot() {
 		const card = this.plugin.store?.getState().review?.getCurrentCard() ?? null;
-		const noteType = card
-			? (this.plugin.cardStore?.noteTypes?.getById(card.noteTypeId) ?? null)
-			: null;
-		const note = card
-			? (this.plugin.cardStore?.notes?.getById(card.noteId) ?? null)
+		const note =
+			card && card.noteId
+				? (this.plugin.cardStore?.notes?.getById(card.noteId) ?? null)
+				: null;
+		const noteType = note
+			? (this.plugin.cardStore?.noteTypes?.getById(note.noteTypeId) ?? null)
 			: null;
 		return { card, noteType, note };
 	}

@@ -33,6 +33,7 @@ export function createObsidianContextCollector(
 			}> = [];
 			const cards = store.cards.getCardsBySourceUid(sourceUid) ?? [];
 			for (const c of cards) {
+				if (!c.noteTypeId || !c.noteId) continue;
 				const nt = store.noteTypes?.getById(c.noteTypeId);
 				if (!nt) continue;
 				const note = store.notes.getById(c.noteId);

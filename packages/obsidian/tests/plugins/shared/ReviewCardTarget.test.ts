@@ -7,19 +7,21 @@ function makePlugin(
 		card: {
 			id: string;
 			noteId: string;
-			noteTypeId: string;
 			sourceUid?: string;
 		} | null;
-		note: { fields: Record<string, string> };
+		note: { noteTypeId: string; fields: Record<string, string> };
 		noteType: { id: string; name: string; fields: string[] };
 		updateNoteFields: ReturnType<typeof vi.fn>;
 	}> = {},
 ) {
 	const card =
 		over.card === undefined
-			? { id: "c1", noteId: "n1", noteTypeId: "t1", sourceUid: "uid-1" }
+			? { id: "c1", noteId: "n1", sourceUid: "uid-1" }
 			: over.card;
-	const note = over.note ?? { fields: { Front: "q", Back: "a" } };
+	const note = over.note ?? {
+		noteTypeId: "t1",
+		fields: { Front: "q", Back: "a" },
+	};
 	const noteType = over.noteType ?? {
 		id: "t1",
 		name: "Basic",
@@ -47,7 +49,10 @@ describe("ReviewCardTarget", () => {
 	it("handles Cloze-style note types by field name", () => {
 		const t = new ReviewCardTarget(
 			makePlugin({
-				note: { fields: { Text: "{{c1::apple}}", Extra: "pome" } },
+				note: {
+					noteTypeId: "cz",
+					fields: { Text: "{{c1::apple}}", Extra: "pome" },
+				},
 				noteType: { id: "cz", name: "Cloze", fields: ["Text", "Extra"] },
 			}),
 		);

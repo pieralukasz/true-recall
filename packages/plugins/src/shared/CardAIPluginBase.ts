@@ -13,7 +13,7 @@ import {
 } from "@true-recall/core/ai/config/ai-client-config";
 
 import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpClient";
-import { TextInputModal } from "@true-recall/obsidian/modals/shared/TextInputModal";
+import { promptText } from "@true-recall/obsidian/modals/shared/TextInputModal";
 
 import type { PluginContext } from "../types";
 import { handleCardAIError } from "./card-ai-error-handler";
@@ -158,11 +158,11 @@ export abstract class CardAIPluginBase<TDetail extends CardAIBaseEventDetail> {
 	}
 
 	private async promptCustom(detail: TDetail): Promise<void> {
-		const modal = new TextInputModal(this.ctx.app, {
+		const instruction = await promptText(this.ctx.app, {
 			title: "Custom AI instruction",
+			label: "Instruction",
 			placeholder: "e.g. Polish formatting and fill empty fields",
 		});
-		const instruction = await modal.openAndWait();
 		if (!instruction) return;
 		const autoApply =
 			this.ctx.settings[this.config.bucketKey]?.customPromptAutoApply ?? false;
