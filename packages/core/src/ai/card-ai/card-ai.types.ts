@@ -48,7 +48,7 @@ export function makeCardAIResponseSchema(fieldNames: string[]) {
 		.transform((raw) => {
 			const out: CardFields = {};
 			for (const name of fieldNames)
-				out[name] = (raw as Record<string, string>)[name];
+				out[name] = (raw as Record<string, string>)[name] ?? "";
 			return out;
 		});
 }
