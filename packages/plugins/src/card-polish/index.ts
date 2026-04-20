@@ -22,7 +22,6 @@ export const cardPolishManifest: PluginManifest = {
 	settingsPanel: createCardAISettingsPanel({
 		bucketKey: "cardPolish",
 		builtins: CARD_POLISH_BUILTINS,
-		title: "Card Polish",
 		description:
 			"Polish presets work in review and in the Add Flashcard modal.",
 	}),

@@ -16,11 +16,9 @@ import type { PluginSettingsProps } from "../types";
 import { CardAIPresetEditor } from "./CardAIPresetEditor";
 
 export interface CardAIPanelConfig {
-	/** Which settings bucket stores user presets. */
 	bucketKey: "cardPolish" | "flashcardGeneration";
-	/** Built-in presets shipped with the plugin. Never written to settings. */
+	/** Never persisted — live in plugin code, not in settings. */
 	builtins: CardAIPreset[];
-	title: string;
 	description: string;
 }
 

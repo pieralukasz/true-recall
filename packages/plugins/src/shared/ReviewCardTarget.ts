@@ -21,14 +21,15 @@ export class ReviewCardTarget implements CardAITarget {
 		return this.snapshot().card?.sourceUid;
 	}
 
-	getCurrentCardId(): string | null {
-		return this.snapshot().card?.id ?? null;
+	getCurrentCardId(): string | undefined {
+		return this.snapshot().card?.id;
 	}
 
-	apply(fields: CardFields): void {
+	apply(fields: CardFields): boolean {
 		const { card } = this.snapshot();
-		if (!card || !card.noteId) return;
+		if (!card || !card.noteId) return false;
 		this.plugin.flashcardManager.updateNoteFields(card.noteId, fields);
+		return true;
 	}
 
 	private snapshot() {

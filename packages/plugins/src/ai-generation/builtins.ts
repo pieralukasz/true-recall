@@ -1,9 +1,8 @@
 import type { CardAIPreset } from "@true-recall/core";
 
-/**
- * Pro-gated built-in. The prompt body mirrors the ZimaBlade proxy expectation.
- * Lucas: paste the authoritative prompt from the proxy before release.
- */
+// TODO(pre-release): copy the authoritative prompt from the ZimaBlade proxy.
+// Shipping with prompt: "" is intentional — this plugin has no `activate` yet,
+// so the preset is never invoked. Fill the prompt before wiring activation.
 const PRO_GENERATE_FROM_NOTE: CardAIPreset = {
 	id: "builtin-pro-generate-from-note",
 	name: "Generate from note (Pro)",

@@ -39,16 +39,23 @@ export interface CardAIUserSettings {
 	customPromptAutoApply: boolean;
 }
 
-export function makeCardAIResponseSchema(fieldNames: string[]) {
+export function makeCardAIResponseSchema(fieldNames: readonly string[]) {
+	if (fieldNames.length === 0) {
+		throw new Error(
+			"makeCardAIResponseSchema requires at least one field name",
+		);
+	}
 	const shape: Record<string, z.ZodString> = {};
 	for (const name of fieldNames) shape[name] = z.string();
 	return z
 		.object(shape)
 		.passthrough()
 		.transform((raw) => {
+			// Zod.object validated all keys before this transform runs, so the
+			// cast is safe and every name is guaranteed to be present.
+			const src = raw as Record<string, string>;
 			const out: CardFields = {};
-			for (const name of fieldNames)
-				out[name] = (raw as Record<string, string>)[name] ?? "";
+			for (const name of fieldNames) out[name] = src[name] as string;
 			return out;
 		});
 }

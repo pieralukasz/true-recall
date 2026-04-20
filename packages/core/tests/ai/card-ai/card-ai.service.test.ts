@@ -4,8 +4,12 @@ import { CardAIService } from "../../../src/ai/card-ai/card-ai.service";
 import {
 	CardAIAbortedError,
 	CardAIParseError,
+	CardAIProviderError,
 } from "../../../src/ai/card-ai/card-ai.types";
-import type { OpenRouterClient } from "../../../src/ai/clients/openrouter-client";
+import {
+	AIRequestError,
+	type OpenRouterClient,
+} from "../../../src/ai/clients/openrouter-client";
 
 function client(content: string): OpenRouterClient {
 	return {
@@ -65,5 +69,57 @@ describe("CardAIService", () => {
 				signal: c.signal,
 			}),
 		).rejects.toBeInstanceOf(CardAIAbortedError);
+	});
+
+	it("wraps AIRequestError in CardAIProviderError with the cause preserved", async () => {
+		const cause = new AIRequestError(429, "rate limited");
+		const failingClient = {
+			chat: vi.fn().mockRejectedValue(cause),
+		} as unknown as OpenRouterClient;
+		const svc = new CardAIService(failingClient);
+		await expect(
+			svc.transform({ fields: { Front: "q", Back: "" }, prompt: "P" }),
+		).rejects.toMatchObject({
+			constructor: CardAIProviderError,
+			cause,
+		});
+	});
+
+	it("wraps a non-Error rejection in CardAIProviderError with fallback message", async () => {
+		const failingClient = {
+			chat: vi.fn().mockRejectedValue("unexpected string"),
+		} as unknown as OpenRouterClient;
+		const svc = new CardAIService(failingClient);
+		await expect(
+			svc.transform({ fields: { Front: "q", Back: "" }, prompt: "P" }),
+		).rejects.toMatchObject({
+			constructor: CardAIProviderError,
+			message: "Provider request failed",
+		});
+	});
+
+	it("converts a mid-request abort into CardAIAbortedError instead of provider error", async () => {
+		const c = new AbortController();
+		const abortingClient = {
+			chat: vi.fn().mockImplementation(async () => {
+				c.abort();
+				throw new Error("fetch aborted");
+			}),
+		} as unknown as OpenRouterClient;
+		const svc = new CardAIService(abortingClient);
+		await expect(
+			svc.transform({
+				fields: { Front: "q", Back: "" },
+				prompt: "P",
+				signal: c.signal,
+			}),
+		).rejects.toBeInstanceOf(CardAIAbortedError);
+	});
+
+	it("tolerates JSON embedded in prose via brace-span fallback", async () => {
+		const r = await new CardAIService(
+			client('Sure! Here you go: {"Front":"Q","Back":"A"} Let me know.'),
+		).transform({ fields: { Front: "q", Back: "" }, prompt: "P" });
+		expect(r.fields).toEqual({ Front: "Q", Back: "A" });
 	});
 });

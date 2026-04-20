@@ -1,7 +1,4 @@
-/**
- * Derives the wand button's disabled state + tooltip from settings and source-note availability.
- * Pure function — no Preact/Obsidian deps — trivially unit-testable.
- */
+/** Maps the two preconditions into the wand button's disabled state and tooltip. */
 export function deriveAIWandState(input: {
 	hasSourceNote: boolean;
 	cardPolishActive: boolean;

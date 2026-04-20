@@ -30,8 +30,23 @@ export interface CardAIPluginBaseConfig<TDetail extends CardAIBaseEventDetail> {
 	bucketKey: "cardPolish" | "flashcardGeneration";
 	builtins: CardAIPreset[];
 	capabilityTag: string;
-	/** Returns null to abort the menu (e.g. missing required state). */
+	/** Returns null to abort the menu (e.g. review has no active card). */
 	buildTarget: (detail: TDetail) => CardAITarget | null;
+}
+
+/**
+ * Merges plugin-shipped built-ins with user presets, filtering out Pro-gated
+ * built-ins when the user has no Pro key. Pure — no Obsidian/Preact deps.
+ */
+export function mergePresetsForUser(args: {
+	builtins: CardAIPreset[];
+	userPresets: CardAIPreset[];
+	isPro: boolean;
+}): CardAIPreset[] {
+	const visibleBuiltins = args.builtins.filter(
+		(p) => !p.requiresPro || args.isPro,
+	);
+	return [...visibleBuiltins, ...args.userPresets];
 }
 
 export abstract class CardAIPluginBase<TDetail extends CardAIBaseEventDetail> {
@@ -63,12 +78,11 @@ export abstract class CardAIPluginBase<TDetail extends CardAIBaseEventDetail> {
 
 	protected getPresets(): CardAIPreset[] {
 		const userBucket = this.ctx.settings[this.config.bucketKey];
-		const user = userBucket?.userPresets ?? [];
-		const isPro = !!this.ctx.settings.proKey;
-		const builtins = this.config.builtins.filter(
-			(p) => !p.requiresPro || isPro,
-		);
-		return [...builtins, ...user];
+		return mergePresetsForUser({
+			builtins: this.config.builtins,
+			userPresets: userBucket?.userPresets ?? [],
+			isPro: !!this.ctx.settings.proKey,
+		});
 	}
 
 	private openMenu(detail: TDetail): void {
@@ -104,7 +118,8 @@ export abstract class CardAIPluginBase<TDetail extends CardAIBaseEventDetail> {
 		let config: AIClientConfig;
 		try {
 			config = resolveAIClientConfig(this.ctx.settings);
-		} catch {
+		} catch (err) {
+			console.error("[CardAI] resolveAIClientConfig failed", err);
 			new Notice(
 				"AI: configure your Pro key or OpenRouter API key in Settings.",
 			);
@@ -149,7 +164,11 @@ export abstract class CardAIPluginBase<TDetail extends CardAIBaseEventDetail> {
 			const runner = new CardAIRunner(target, service, collector, presenter);
 			await runner.run(preset, controller.signal);
 		} catch (err) {
-			handleCardAIError(err, { onRawFallback: () => undefined });
+			console.error("[CardAI] run failed", err);
+			handleCardAIError(err, {
+				onRawFallback: () =>
+					new Notice("AI: could not parse response — see console for details."),
+			});
 		} finally {
 			notice.hide();
 			document.removeEventListener("keydown", esc, true);

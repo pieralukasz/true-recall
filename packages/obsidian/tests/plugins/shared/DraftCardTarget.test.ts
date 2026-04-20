@@ -14,12 +14,12 @@ describe("DraftCardTarget", () => {
 		expect(t.getFields()).toEqual({ Front: "q", Back: "" });
 		expect(t.getNoteType().fields).toEqual(["Front", "Back"]);
 		expect(t.getSourceUid()).toBe("uid-1");
-		expect(t.getCurrentCardId()).toBeNull();
+		expect(t.getCurrentCardId()).toBeUndefined();
 	});
 
-	it("filters apply() to keys present in the note type", () => {
+	it("filters apply() to keys present in the note type and returns true", () => {
 		const onApply = vi.fn();
-		new DraftCardTarget({
+		const result = new DraftCardTarget({
 			fields: { Front: "", Back: "" },
 			noteType: { id: "b", name: "Basic", fields: ["Front", "Back"] },
 			sourceUid: "u",
@@ -27,5 +27,6 @@ describe("DraftCardTarget", () => {
 			onApply,
 		}).apply({ Front: "Q", Back: "A", Stale: "drop me" });
 		expect(onApply).toHaveBeenCalledWith({ Front: "Q", Back: "A" });
+		expect(result).toBe(true);
 	});
 });

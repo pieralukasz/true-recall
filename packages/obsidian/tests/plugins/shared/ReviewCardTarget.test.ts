@@ -59,9 +59,9 @@ describe("ReviewCardTarget", () => {
 		expect(t.getFields()).toEqual({ Text: "{{c1::apple}}", Extra: "pome" });
 	});
 
-	it("calls flashcardManager.updateNoteFields on apply", () => {
+	it("calls flashcardManager.updateNoteFields on apply and returns true", () => {
 		const updateNoteFields = vi.fn();
-		new ReviewCardTarget(makePlugin({ updateNoteFields })).apply({
+		const ok = new ReviewCardTarget(makePlugin({ updateNoteFields })).apply({
 			Front: "Q",
 			Back: "A",
 		});
@@ -69,6 +69,16 @@ describe("ReviewCardTarget", () => {
 			Front: "Q",
 			Back: "A",
 		});
+		expect(ok).toBe(true);
+	});
+
+	it("returns false and does not call updateNoteFields when no card is in review", () => {
+		const updateNoteFields = vi.fn();
+		const ok = new ReviewCardTarget(
+			makePlugin({ card: null, updateNoteFields }),
+		).apply({ Front: "Q", Back: "A" });
+		expect(updateNoteFields).not.toHaveBeenCalled();
+		expect(ok).toBe(false);
 	});
 
 	it("exposes sourceUid and currentCardId", () => {
@@ -80,6 +90,6 @@ describe("ReviewCardTarget", () => {
 	it("returns empty fields when no card is in review", () => {
 		const t = new ReviewCardTarget(makePlugin({ card: null }));
 		expect(t.getFields()).toEqual({});
-		expect(t.getCurrentCardId()).toBeNull();
+		expect(t.getCurrentCardId()).toBeUndefined();
 	});
 });

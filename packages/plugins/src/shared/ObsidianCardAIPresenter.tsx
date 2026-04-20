@@ -26,7 +26,11 @@ export class ObsidianCardAIPresenter implements CardAIPresenter {
 		original: CardFields,
 		proposed: CardFields,
 	): void {
-		target.apply(proposed);
+		const applied = target.apply(proposed);
+		if (!applied) {
+			new Notice("AI: target unavailable — changes were not applied.");
+			return;
+		}
 		const notice = new Notice("AI changes applied.", 10_000);
 		const btn = document.createElement("button");
 		btn.textContent = "Undo";

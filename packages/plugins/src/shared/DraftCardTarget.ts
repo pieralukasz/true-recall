@@ -23,16 +23,17 @@ export class DraftCardTarget implements CardAITarget {
 		return this.detail.sourceUid;
 	}
 
-	getCurrentCardId(): string | null {
-		return this.detail.currentCardId;
+	getCurrentCardId(): string | undefined {
+		return this.detail.currentCardId ?? undefined;
 	}
 
-	apply(fields: CardFields): void {
+	apply(fields: CardFields): boolean {
 		const valid = new Set(this.detail.noteType.fields);
 		const filtered: CardFields = {};
 		for (const [k, v] of Object.entries(fields)) {
 			if (valid.has(k)) filtered[k] = v;
 		}
 		this.detail.onApply(filtered);
+		return true;
 	}
 }

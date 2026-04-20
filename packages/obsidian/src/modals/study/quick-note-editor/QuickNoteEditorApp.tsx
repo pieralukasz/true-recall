@@ -317,7 +317,8 @@ export function QuickNoteEditorApp({
 		return () => document.removeEventListener("keydown", onKeyDown, true);
 	}, []);
 
-	// ── AI wand (Card Polish draft flow) ──
+	// AI wand dispatches "true-recall:card-polish" (kind: "draft"). Only the
+	// Card Polish plugin listens today; no other plugin wires a draft hook.
 	const cardPolishActive =
 		plugin.settings?.pluginStates?.["card-polish"] ?? true;
 	const { disabled: aiDisabled, title: aiTitle } = deriveAIWandState({
@@ -329,28 +330,36 @@ export function QuickNoteEditorApp({
 		(anchor: HTMLElement) => {
 			if (aiDisabled) return;
 			if (!sourceNoteFile || !noteType) return;
-			void resolveSourceUid().then((uid) => {
-				if (!uid) return;
-				window.dispatchEvent(
-					new CustomEvent("true-recall:card-polish", {
-						detail: {
-							kind: "draft",
-							anchor,
-							fields,
-							noteType: {
-								id: noteType.id,
-								name: noteType.name,
-								fields: noteType.fields,
+			void resolveSourceUid()
+				.then((uid) => {
+					if (!uid) {
+						new Notice("AI: could not resolve source note UID.");
+						return;
+					}
+					window.dispatchEvent(
+						new CustomEvent("true-recall:card-polish", {
+							detail: {
+								kind: "draft",
+								anchor,
+								fields,
+								noteType: {
+									id: noteType.id,
+									name: noteType.name,
+									fields: noteType.fields,
+								},
+								sourceUid: uid,
+								currentCardId: isEdit ? (editMode?.noteId ?? null) : null,
+								onApply: (next: Record<string, string>) => {
+									setFields((prev) => ({ ...prev, ...next }));
+								},
 							},
-							sourceUid: uid,
-							currentCardId: isEdit ? (editMode?.noteId ?? null) : null,
-							onApply: (next: Record<string, string>) => {
-								setFields((prev) => ({ ...prev, ...next }));
-							},
-						},
-					}),
-				);
-			});
+						}),
+					);
+				})
+				.catch((err) => {
+					console.error("[CardAI] wand dispatch failed", err);
+					new Notice("AI: could not resolve source note.");
+				});
 		},
 		[
 			aiDisabled,

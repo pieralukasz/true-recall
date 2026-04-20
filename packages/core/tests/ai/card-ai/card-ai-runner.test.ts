@@ -2,8 +2,10 @@ import { describe, expect, it, vi } from "vitest";
 
 import type { CardAIService } from "../../../src/ai/card-ai/card-ai.service";
 import {
+	CardAIAbortedError,
 	CardAIParseError,
 	type CardAIPreset,
+	CardAIProviderError,
 } from "../../../src/ai/card-ai/card-ai.types";
 import type { CardAIContextCollector } from "../../../src/ai/card-ai/card-ai-context";
 import type { CardAIPresenter } from "../../../src/ai/card-ai/card-ai-presenter";
@@ -108,5 +110,48 @@ describe("CardAIRunner", () => {
 		expect(transform.mock.calls[1][0].prompt).toContain(
 			"Additional instruction: be terser",
 		);
+	});
+
+	it("propagates CardAIProviderError to the caller (not to the presenter)", async () => {
+		const err = new CardAIProviderError("boom", null);
+		const svc = {
+			transform: vi.fn().mockRejectedValue(err),
+		} as unknown as CardAIService;
+		const p: CardAIPresenter = {
+			present: vi.fn().mockResolvedValue(undefined),
+		};
+		await expect(
+			new CardAIRunner(target(), svc, collector(), p).run(preset),
+		).rejects.toBe(err);
+		expect(p.present).not.toHaveBeenCalled();
+	});
+
+	it("propagates CardAIAbortedError to the caller (not to the presenter)", async () => {
+		const err = new CardAIAbortedError();
+		const svc = {
+			transform: vi.fn().mockRejectedValue(err),
+		} as unknown as CardAIService;
+		const p: CardAIPresenter = {
+			present: vi.fn().mockResolvedValue(undefined),
+		};
+		await expect(
+			new CardAIRunner(target(), svc, collector(), p).run(preset),
+		).rejects.toBe(err);
+		expect(p.present).not.toHaveBeenCalled();
+	});
+
+	it("collects context exactly once across initial call plus retries", async () => {
+		const svc = service({ Front: "Q", Back: "A" });
+		const col = collector();
+		let captured: ((extra: string) => Promise<Record<string, string>>) | null =
+			null;
+		const p: CardAIPresenter = {
+			present: vi.fn().mockImplementation(async (args) => {
+				captured = args.retry;
+			}),
+		};
+		await new CardAIRunner(target(), svc, col, p).run(preset);
+		await captured?.("more");
+		expect(col.collect).toHaveBeenCalledTimes(1);
 	});
 });

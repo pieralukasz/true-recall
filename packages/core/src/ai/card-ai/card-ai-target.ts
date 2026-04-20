@@ -1,14 +1,17 @@
 import type { CardFields } from "./card-ai.types";
 
 /**
- * Abstracts "where does the card live?" for the AI pipeline.
- * Consumers (review, draft modal, future generate-from-note) implement this
- * and hand an instance to `CardAIRunner`.
+ * Abstracts "where does the card live?" for the AI pipeline — review, draft
+ * modal, and any future generator plug this interface into CardAIRunner.
  */
 export interface CardAITarget {
 	getFields(): CardFields;
 	getNoteType(): { id: string; name: string; fields: string[] };
 	getSourceUid(): string | undefined;
-	getCurrentCardId(): string | null;
-	apply(fields: CardFields): void;
+	getCurrentCardId(): string | undefined;
+	/**
+	 * Persist new values. Returns `true` on success, `false` when the target
+	 * can no longer accept writes (card advanced, note deleted, modal closed).
+	 */
+	apply(fields: CardFields): boolean;
 }

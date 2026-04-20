@@ -72,8 +72,11 @@ function tryJsonCandidates(raw: string): unknown {
 		if (!c) continue;
 		try {
 			return JSON.parse(c);
-		} catch {
-			// next
+		} catch (err) {
+			// Intentional fall-through: each candidate is a heuristic stripping of
+			// fences/preamble. Only the last parse failure matters for diagnostics,
+			// and the caller surfaces it via CardAIParseError with the raw response.
+			void err;
 		}
 	}
 	return undefined;

@@ -19,9 +19,7 @@ export const aiGenerationManifest: PluginManifest = {
 	settingsPanel: createCardAISettingsPanel({
 		bucketKey: "flashcardGeneration",
 		builtins: AI_GENERATION_BUILTINS,
-		title: "AI Flashcard Generation",
 		description:
 			"Generate new flashcards from a note. Pro users see the hosted built-in; custom presets run against Pro or your BYOK key.",
 	}),
-	// No `activate` yet — generate-from-note UI lands in a follow-up PR.
 };
