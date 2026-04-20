@@ -33,10 +33,9 @@ export class ReviewCardTarget implements CardAITarget {
 
 	private snapshot() {
 		const card = this.plugin.store?.getState().review?.getCurrentCard() ?? null;
-		const note =
-			card && card.noteId
-				? (this.plugin.cardStore?.notes?.getById(card.noteId) ?? null)
-				: null;
+		const note = card?.noteId
+			? (this.plugin.cardStore?.notes?.getById(card.noteId) ?? null)
+			: null;
 		const noteType = note
 			? (this.plugin.cardStore?.noteTypes?.getById(note.noteTypeId) ?? null)
 			: null;

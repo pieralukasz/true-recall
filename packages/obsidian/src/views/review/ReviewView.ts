@@ -825,8 +825,8 @@ export class ReviewView extends ItemView {
 
 	private openCardPolishMenu(e: MouseEvent): void {
 		window.dispatchEvent(
-			new CustomEvent("true-recall:card-polish-menu", {
-				detail: { anchor: e.currentTarget },
+			new CustomEvent("true-recall:card-polish", {
+				detail: { kind: "review", anchor: e.currentTarget },
 			}),
 		);
 	}

@@ -23,6 +23,7 @@ import {
 import { notify } from "@true-recall/obsidian/services/notification.service";
 
 import { ActionBar } from "./ActionBar";
+import { deriveAIWandState } from "./ai-wand-state";
 import { NoteFieldsForm } from "./NoteFieldsForm";
 import type { QuickNoteEditorMode, QuickNoteEditorResult } from "./types";
 
@@ -316,6 +317,52 @@ export function QuickNoteEditorApp({
 		return () => document.removeEventListener("keydown", onKeyDown, true);
 	}, []);
 
+	// ── AI wand (Card Polish draft flow) ──
+	const cardPolishActive =
+		plugin.settings?.pluginStates?.["card-polish"] ?? true;
+	const { disabled: aiDisabled, title: aiTitle } = deriveAIWandState({
+		hasSourceNote: !!sourceNoteFile,
+		cardPolishActive,
+	});
+
+	const openAI = useCallback(
+		(anchor: HTMLElement) => {
+			if (aiDisabled) return;
+			if (!sourceNoteFile || !noteType) return;
+			void resolveSourceUid().then((uid) => {
+				if (!uid) return;
+				window.dispatchEvent(
+					new CustomEvent("true-recall:card-polish", {
+						detail: {
+							kind: "draft",
+							anchor,
+							fields,
+							noteType: {
+								id: noteType.id,
+								name: noteType.name,
+								fields: noteType.fields,
+							},
+							sourceUid: uid,
+							currentCardId: isEdit ? (editMode?.noteId ?? null) : null,
+							onApply: (next: Record<string, string>) => {
+								setFields((prev) => ({ ...prev, ...next }));
+							},
+						},
+					}),
+				);
+			});
+		},
+		[
+			aiDisabled,
+			sourceNoteFile,
+			noteType,
+			fields,
+			isEdit,
+			editMode,
+			resolveSourceUid,
+		],
+	);
+
 	if (!noteType) {
 		return (
 			<div class="ep:text-obs-muted ep:text-center ep:py-8">
@@ -369,6 +416,9 @@ export function QuickNoteEditorApp({
 				onSave={() => void handleSave()}
 				onOpenFields={openFields}
 				onOpenCards={openCards}
+				onAI={openAI}
+				aiDisabled={aiDisabled}
+				aiTitle={aiTitle}
 			/>
 		</div>
 	);
@@ -386,6 +436,9 @@ interface FooterBarProps {
 	onSave: () => void;
 	onOpenFields: () => void;
 	onOpenCards: () => void;
+	onAI: (anchor: HTMLElement) => void;
+	aiDisabled: boolean;
+	aiTitle: string;
 }
 
 const ghostBtnCls =
@@ -401,12 +454,19 @@ function FooterBar({
 	onSave,
 	onOpenFields,
 	onOpenCards,
+	onAI,
+	aiDisabled,
+	aiTitle,
 }: FooterBarProps) {
 	const aiIconRef = useIcon("wand");
 
-	const openAI = useCallback(() => {
-		new Notice("AI generation coming soon");
-	}, []);
+	const handleAIClick = useCallback(
+		(e: MouseEvent) => {
+			const anchor = e.currentTarget;
+			if (anchor instanceof HTMLElement) onAI(anchor);
+		},
+		[onAI],
+	);
 
 	const openNote = useCallback(() => {
 		if (sourceNoteFile) {
@@ -432,9 +492,10 @@ function FooterBar({
 			</Clickable>
 			<Clickable
 				ref={aiIconRef}
-				title="Generate with AI (coming soon)"
+				title={aiTitle}
 				class={`${ghostBtnCls} ep:ml-auto [&>svg]:ep:w-4 [&>svg]:ep:h-4`}
-				onClick={openAI}
+				onClick={handleAIClick}
+				disabled={aiDisabled}
 			/>
 			<Clickable
 				class={ghostBtnCls}

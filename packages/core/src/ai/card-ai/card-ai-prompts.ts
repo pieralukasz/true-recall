@@ -28,7 +28,7 @@ function formatFields(fields: CardFields): string {
 function formatContext(ctx?: CardAIContext): string {
 	if (!ctx) return "";
 	const parts: string[] = [];
-	if (ctx.sourceNoteContent && ctx.sourceNoteContent.trim()) {
+	if (ctx.sourceNoteContent?.trim()) {
 		const path = ctx.sourceNotePath ? ` (${ctx.sourceNotePath})` : "";
 		const body = ctx.sourceNoteContent.slice(0, SOURCE_NOTE_CHAR_LIMIT);
 		const suffix =
