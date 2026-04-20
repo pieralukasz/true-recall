@@ -131,3 +131,4 @@ export type {
 	TypeInMode,
 } from "./settings.types";
 export { extractFSRSSettings } from "./settings.types";
+export { migrateCardPolishSettings } from "./settings-migration";

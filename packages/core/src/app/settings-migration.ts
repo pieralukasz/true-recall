@@ -6,6 +6,7 @@ import {
 } from "../constants";
 import type { GenerationPreset } from "../types/generation-preset.types";
 import type { TrueRecallSettings } from "../types/settings.types";
+import { migrateCardPolishSettings } from "../types/settings-migration";
 
 /**
  * Merge raw persisted data with defaults and run all migrations.
@@ -15,8 +16,20 @@ export function migrateSettings(raw: Partial<TrueRecallSettings> | null): {
 	settings: TrueRecallSettings;
 	needsSave: boolean;
 } {
-	const settings: TrueRecallSettings = { ...DEFAULT_SETTINGS, ...raw };
+	const migratedRaw = raw
+		? (migrateCardPolishSettings(
+				raw as Record<string, unknown>,
+			) as Partial<TrueRecallSettings>)
+		: raw;
+	const settings: TrueRecallSettings = { ...DEFAULT_SETTINGS, ...migratedRaw };
 	let needsSave = false;
+
+	// cardPolish bucket migration: drop legacy built-ins and rename presets → userPresets
+	const legacyPolish = (raw as { cardPolish?: { presets?: unknown } } | null)
+		?.cardPolish;
+	if (legacyPolish && "presets" in legacyPolish) {
+		needsSave = true;
+	}
 
 	// easyDays: array → object migration
 	if (Array.isArray(settings.easyDays)) {
