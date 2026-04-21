@@ -201,7 +201,6 @@ function resolvePreset(
 	);
 }
 
-
 export async function generateWithPreset(
 	plugin: TrueRecallPlugin,
 	presetId: string,

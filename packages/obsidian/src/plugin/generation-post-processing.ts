@@ -36,8 +36,7 @@ export function getImagePostProcessor(
 }
 
 export function isPresetProRequired(preset: GenerationPreset): boolean {
-	if (preset.tts?.field) return true;
-	return Object.values(preset.fields).some((f) => f.role === "image");
+	return preset.requiresPro || preset.tts !== null || preset.image !== null;
 }
 
 export function runPresetPostProcessing(
@@ -61,20 +60,15 @@ export function runPresetPostProcessing(
 			});
 	}
 
-	const imageFields = Object.entries(preset.fields)
-		.filter(([_, cfg]) => cfg.role === "image")
-		.map(([name, cfg]) => {
-			const imageCfg = cfg as { sourceField: string; style?: string };
-			return {
-				fieldName: name,
-				sourceField: imageCfg.sourceField,
-				style: imageCfg.style,
-			};
-		});
-
-	if (imageFields.length > 0) {
+	if (preset.image) {
 		void getImagePostProcessor(plugin)
-			.processCards(createdCardIds, imageFields)
+			.processCards(createdCardIds, [
+				{
+					fieldName: preset.image.targetField,
+					sourceField: preset.image.sourceField,
+					style: preset.image.style,
+				},
+			])
 			.catch((e) => {
 				console.warn("[ImagePostProcessor] processing failed", e);
 				notify().warning(

@@ -53,7 +53,10 @@ export function usePanelActions() {
 		);
 
 		try {
-			const existingCards = await fetchExistingCardsForFile(plugin, currentFile);
+			const existingCards = await fetchExistingCardsForFile(
+				plugin,
+				currentFile,
+			);
 			const result = await chunkedService.generateFromNote(
 				content,
 				currentFile,
