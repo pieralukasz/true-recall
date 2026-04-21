@@ -91,16 +91,13 @@ export const BUILTIN_BASIC_PRESET_ID = "builtin-basic-flashcards";
 export const BUILTIN_BASIC_PRESET: GenerationPreset = {
 	id: BUILTIN_BASIC_PRESET_ID,
 	name: "Basic Flashcards",
+	prompt:
+		"Generate atomic Q/A flashcards from the provided text. Each card has Front (a clear, specific question) and Back (a concise, accurate answer).",
 	noteTypeId: BUILTIN_BASIC_ID,
-	fields: {
-		Front: {
-			role: "ai-text",
-			instruction: "A clear, specific question about the key concept",
-		},
-		Back: { role: "ai-text", instruction: "A concise, accurate answer" },
-	},
 	tts: null,
-	isPinned: true,
+	image: null,
+	requiresPro: false,
+	builtin: true,
 	isDefault: true,
 	createdAt: 0,
 	updatedAt: 0,
@@ -111,19 +108,13 @@ export const BUILTIN_BASIC_PRO_PRESET_ID = "builtin-basic-pro-flashcards";
 export const BUILTIN_BASIC_PRO_PRESET: GenerationPreset = {
 	id: BUILTIN_BASIC_PRO_PRESET_ID,
 	name: "Basic Flashcards (Pro)",
+	prompt: BUILTIN_BASIC_PRO_PROMPT,
 	noteTypeId: BUILTIN_BASIC_ID,
-	fields: {
-		Front: {
-			role: "ai-text",
-			instruction: "A clear, specific question about the key concept",
-		},
-		Back: { role: "ai-text", instruction: "A concise, accurate answer" },
-	},
 	tts: null,
-	customPrompt: BUILTIN_BASIC_PRO_PROMPT,
-	isPinned: true,
+	image: null,
+	requiresPro: true,
+	builtin: true,
 	isDefault: false,
-	isPro: true,
 	createdAt: 0,
 	updatedAt: 0,
 };
