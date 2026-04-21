@@ -19,13 +19,12 @@ const basicNoteType: NoteType = {
 const basicPreset: GenerationPreset = {
 	id: "preset-basic",
 	name: "Basic",
+	prompt: "Make flashcards.",
 	noteTypeId: "nt-basic",
-	fields: {
-		Front: { role: "ai-text", instruction: "Question" },
-		Back: { role: "ai-text", instruction: "Answer" },
-	},
 	tts: null,
-	isPinned: true,
+	image: null,
+	requiresPro: false,
+	builtin: false,
 	isDefault: true,
 	createdAt: 0,
 	updatedAt: 0,
@@ -82,7 +81,7 @@ describe("resolveGenerationPresetAndNoteType", () => {
 		);
 	});
 
-	it("throws when tts.field does not match any preset field", () => {
+	it("throws when tts.field is not in note type fields", () => {
 		const settings = makeSettings({
 			generationPresets: [
 				{
@@ -97,8 +96,42 @@ describe("resolveGenerationPresetAndNoteType", () => {
 				managerWithBasic,
 				basicPreset.id,
 			),
-		).toThrow(
-			'Preset "preset-basic" has TTS configured for field "Missing" which is not in the preset\'s fields',
-		);
+		).toThrow(/TTS configured for field "Missing"/);
+	});
+
+	it("throws when image.targetField is not in note type fields", () => {
+		const settings = makeSettings({
+			generationPresets: [
+				{
+					...basicPreset,
+					image: { targetField: "Ghost", sourceField: "Front" },
+				},
+			],
+		});
+		expect(() =>
+			resolveGenerationPresetAndNoteType(
+				settings,
+				managerWithBasic,
+				basicPreset.id,
+			),
+		).toThrow(/image targetField "Ghost"/);
+	});
+
+	it("throws when image.sourceField is not in note type fields", () => {
+		const settings = makeSettings({
+			generationPresets: [
+				{
+					...basicPreset,
+					image: { targetField: "Front", sourceField: "Ghost" },
+				},
+			],
+		});
+		expect(() =>
+			resolveGenerationPresetAndNoteType(
+				settings,
+				managerWithBasic,
+				basicPreset.id,
+			),
+		).toThrow(/image sourceField "Ghost"/);
 	});
 });
