@@ -27,7 +27,7 @@ export interface CardAIBaseEventDetail {
 
 export interface CardAIPluginBaseConfig<TDetail extends CardAIBaseEventDetail> {
 	eventName: string;
-	bucketKey: "cardPolish" | "flashcardGeneration";
+	bucketKey: "cardPolish";
 	builtins: CardAIPreset[];
 	capabilityTag: string;
 	/** Returns null to abort the menu (e.g. review has no active card). */
