@@ -185,9 +185,6 @@ export interface TrueRecallSettings {
 	/** User-created Card Polish presets (built-ins live in the plugin, not here). */
 	cardPolish?: CardAIUserSettings;
 
-	/** User-created AI Flashcard Generation presets (built-ins live in the plugin, not here). */
-	flashcardGeneration?: CardAIUserSettings;
-
 	/** Target retention (0.7-0.99, default 0.9 = 90%) */
 	fsrsRequestRetention: number;
 	/** Maximum interval in days (default 36500 = 100 years) */
