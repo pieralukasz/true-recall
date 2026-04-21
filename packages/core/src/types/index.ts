@@ -64,8 +64,8 @@ export {
 	State,
 } from "./fsrs";
 export type {
-	FieldConfig,
 	GenerationPreset,
+	PresetImageConfig,
 	PresetTTSConfig,
 } from "./generation-preset.types";
 export type {
