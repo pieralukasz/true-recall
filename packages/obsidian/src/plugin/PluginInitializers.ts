@@ -26,6 +26,7 @@ import { createAppStore } from "@true-recall/obsidian/store";
 
 import type TrueRecallPlugin from "../main";
 import { BackupRecoveryManager } from "./BackupRecoveryManager";
+import { DayRolloverWatcher } from "./DayRolloverWatcher";
 import { registerDeletionHandler } from "./PluginEventHandlers";
 import { PluginLoader } from "./plugin-loader";
 
@@ -138,6 +139,8 @@ async function initializeCardStore(
 		});
 
 		plugin._disposeWireDataLayer = wireDataLayer(dl, plugin.coreApp.events);
+
+		new DayRolloverWatcher(plugin.dayBoundaryService, dl).register(plugin);
 
 		// Startup race fix: rebuildIndex() runs in an earlier onLayoutReady with
 		// silent=true, so no domain events fire and the DataLayer keeps stale

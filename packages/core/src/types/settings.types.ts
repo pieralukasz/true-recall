@@ -2,7 +2,7 @@
  * Plugin settings types
  */
 
-import type { CardPolishSettings } from "../ai/polish/card-polish.types";
+import type { CardAIUserSettings } from "../ai/card-ai/card-ai.types";
 import type { ReviewViewMode } from "./fsrs";
 import type { GenerationPreset } from "./generation-preset.types";
 
@@ -182,8 +182,11 @@ export interface TrueRecallSettings {
 	/** AI provider tier */
 	aiTier: AITier;
 
-	/** Card Polish plugin settings */
-	cardPolish?: CardPolishSettings;
+	/** User-created Card Polish presets (built-ins live in the plugin, not here). */
+	cardPolish?: CardAIUserSettings;
+
+	/** User-created AI Flashcard Generation presets (built-ins live in the plugin, not here). */
+	flashcardGeneration?: CardAIUserSettings;
 
 	/** Target retention (0.7-0.99, default 0.9 = 90%) */
 	fsrsRequestRetention: number;

@@ -1,16 +1,17 @@
 import { useState } from "preact/hooks";
 
-interface PolishPreviewModalProps {
-	original: { front: string; back: string };
-	proposed: { front: string; back: string } | null; // null => raw fallback
+import type { CardFields } from "@true-recall/core";
+
+interface CardAIPreviewModalProps {
+	original: CardFields;
+	proposed: CardFields | null;
 	rawResponse?: string;
 	onAccept: () => void;
 	onReject: () => void;
 	onRetry: (extraInstruction: string) => Promise<void>;
 }
 
-export function PolishPreviewModal(props: PolishPreviewModalProps) {
-	// Hooks must stay at the top level; the `proposed === null` branch renders a different UI but reuses the same hook state.
+export function CardAIPreviewModal(props: CardAIPreviewModalProps) {
 	const [extra, setExtra] = useState("");
 	const [retrying, setRetrying] = useState(false);
 
@@ -27,12 +28,12 @@ export function PolishPreviewModal(props: PolishPreviewModalProps) {
 
 	if (!props.proposed) {
 		return (
-			<div className="tr-card-polish-preview-root">
+			<div className="tr-card-ai-preview-root">
 				<h4>LLM returned an unparseable response</h4>
-				<pre className="tr-card-polish-preview-block">
+				<pre className="tr-card-ai-preview-block">
 					{props.rawResponse ?? ""}
 				</pre>
-				<div className="tr-card-polish-preview-actions">
+				<div className="tr-card-ai-preview-actions">
 					<input
 						type="text"
 						placeholder="Try a sharper instruction"
@@ -55,29 +56,34 @@ export function PolishPreviewModal(props: PolishPreviewModalProps) {
 		);
 	}
 
+	const fieldNames = Object.keys(props.original);
 	return (
-		<div className="tr-card-polish-preview-root">
-			<div className="tr-card-polish-preview-grid">
+		<div className="tr-card-ai-preview-root">
+			<div className="tr-card-ai-preview-grid">
 				<div>
 					<h4>Original</h4>
-					<div className="tr-card-polish-preview-block">
-						<strong>Front</strong>
-						<pre>{props.original.front}</pre>
-						<strong>Back</strong>
-						<pre>{props.original.back}</pre>
+					<div className="tr-card-ai-preview-block">
+						{fieldNames.map((name) => (
+							<div key={name}>
+								<strong>{name}</strong>
+								<pre>{props.original[name]}</pre>
+							</div>
+						))}
 					</div>
 				</div>
 				<div>
 					<h4>Proposed</h4>
-					<div className="tr-card-polish-preview-block">
-						<strong>Front</strong>
-						<pre>{props.proposed.front}</pre>
-						<strong>Back</strong>
-						<pre>{props.proposed.back}</pre>
+					<div className="tr-card-ai-preview-block">
+						{fieldNames.map((name) => (
+							<div key={name}>
+								<strong>{name}</strong>
+								<pre>{props.proposed?.[name] ?? ""}</pre>
+							</div>
+						))}
 					</div>
 				</div>
 			</div>
-			<div className="tr-card-polish-preview-actions">
+			<div className="tr-card-ai-preview-actions">
 				<input
 					type="text"
 					placeholder="Extra instruction for retry (optional)"

@@ -1,14 +1,14 @@
-.tr-card-polish-preview-root {
+.tr-card-ai-preview-root {
 	display: flex;
 	flex-direction: column;
 	gap: 12px;
 }
-.tr-card-polish-preview-grid {
+.tr-card-ai-preview-grid {
 	display: grid;
 	grid-template-columns: 1fr 1fr;
 	gap: 16px;
 }
-.tr-card-polish-preview-block pre {
+.tr-card-ai-preview-block pre {
 	white-space: pre-wrap;
 	word-break: break-word;
 	background: var(--background-secondary);
@@ -16,11 +16,11 @@
 	border-radius: 4px;
 	margin: 4px 0 10px 0;
 }
-.tr-card-polish-preview-actions {
+.tr-card-ai-preview-actions {
 	display: flex;
 	gap: 8px;
 	align-items: center;
 }
-.tr-card-polish-preview-actions input[type="text"] {
+.tr-card-ai-preview-actions input[type="text"] {
 	flex: 1;
 }
