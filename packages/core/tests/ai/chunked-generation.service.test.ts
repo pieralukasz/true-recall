@@ -5,6 +5,7 @@ import {
 	buildPresetFormatSpec,
 	buildPresetPrompt,
 } from "@true-recall/core/ai/prompts/block-prompt-builder";
+import { renderExistingCardsBlock } from "@true-recall/core/ai/prompts/existing-cards-block";
 import { finishStreaming } from "@true-recall/core/ai/state/streaming-state";
 import type { GenerationPreset } from "@true-recall/core/types/generation-preset.types";
 import type { NoteType } from "@true-recall/core/types/note.types";

@@ -15,6 +15,10 @@ import {
 	buildPresetPrompt,
 } from "../prompts/block-prompt-builder";
 import {
+	type ExistingCardContext,
+	renderExistingCardsBlock,
+} from "../prompts/existing-cards-block";
+import {
 	createThrottledPartialUpdater,
 	finishStreaming,
 	type ScheduleCallback,
@@ -63,6 +67,7 @@ export class ChunkedGenerationService {
 		content: string,
 		sourceFile: StreamingSourceFile,
 		presetId: string,
+		options?: { existingCards?: ExistingCardContext[] },
 		confirmLargeNote?: ConfirmLargeNote,
 	): Promise<ChunkedGenerationResult> {
 		const settings = this.getSettings();
@@ -87,6 +92,7 @@ export class ChunkedGenerationService {
 				firstChunk.content,
 				sourceFile,
 				presetId,
+				options,
 			);
 			return {
 				...result,
@@ -101,6 +107,7 @@ export class ChunkedGenerationService {
 			sourceFile,
 			preset,
 			noteType,
+			options,
 			confirmLargeNote,
 		);
 	}
@@ -110,6 +117,7 @@ export class ChunkedGenerationService {
 		sourceFile: StreamingSourceFile,
 		preset: GenerationPreset,
 		noteType: NoteType,
+		options?: { existingCards?: ExistingCardContext[] },
 		confirmLargeNote?: ConfirmLargeNote,
 	): Promise<ChunkedGenerationResult> {
 		const { chunks, totalWords, estimatedTokens } = chunkingResult;
@@ -138,9 +146,16 @@ export class ChunkedGenerationService {
 		const settings = this.getSettings();
 		const aiConfig = resolveAIClientConfig(settings);
 		const customSystemPrompt = preset.customPrompt?.trim();
-		const systemPrompt = customSystemPrompt
+		const rawSystemPrompt = customSystemPrompt
 			? customSystemPrompt
 			: buildPresetPrompt(preset, noteType);
+		const existingCardsBlock = renderExistingCardsBlock(
+			options?.existingCards ?? [],
+		);
+		const systemPrompt = rawSystemPrompt.replace(
+			"{{EXISTING_CARDS}}",
+			existingCardsBlock,
+		);
 
 		let totalCreated = 0;
 		let totalDuplicates = 0;

@@ -9,6 +9,7 @@ import { ForgetCommand } from "@true-recall/obsidian/commands/commands/card-forg
 import { getHighlightColor } from "@true-recall/obsidian/features/library/ui/panel/utils/card-status.utils";
 import { extractHighlights } from "@true-recall/obsidian/features/library/ui/panel/utils/highlight-extractor";
 import { cardsToBlockText } from "@true-recall/obsidian/features/library/ui/panel/utils/panel-helpers";
+import { fetchExistingCardsForFile } from "@true-recall/obsidian/plugin/existing-cards-fetcher";
 import { runPresetPostProcessing } from "@true-recall/obsidian/plugin/generation-post-processing";
 import { useApp, usePlugin } from "@true-recall/obsidian/preact";
 
@@ -52,10 +53,12 @@ export function usePanelActions() {
 		);
 
 		try {
+			const existingCards = await fetchExistingCardsForFile(plugin, currentFile);
 			const result = await chunkedService.generateFromNote(
 				content,
 				currentFile,
 				plugin.settings.defaultGenerationPresetId,
+				{ existingCards },
 			);
 
 			if (result.created === 0 && result.duplicates === 0) {
