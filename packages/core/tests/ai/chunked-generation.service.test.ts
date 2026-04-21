@@ -5,7 +5,6 @@ import {
 	buildPresetFormatSpec,
 	buildPresetPrompt,
 } from "@true-recall/core/ai/prompts/block-prompt-builder";
-import { renderExistingCardsBlock } from "@true-recall/core/ai/prompts/existing-cards-block";
 import { finishStreaming } from "@true-recall/core/ai/state/streaming-state";
 import type { GenerationPreset } from "@true-recall/core/types/generation-preset.types";
 import type { NoteType } from "@true-recall/core/types/note.types";
@@ -25,13 +24,12 @@ const basicNoteType: NoteType = {
 const basicPreset: GenerationPreset = {
 	id: "preset-basic",
 	name: "Basic",
+	prompt: "Generate Q/A cards.",
 	noteTypeId: "nt-basic",
-	fields: {
-		Front: { role: "ai-text", instruction: "Question" },
-		Back: { role: "ai-text", instruction: "Answer" },
-	},
 	tts: null,
-	isPinned: true,
+	image: null,
+	requiresPro: false,
+	builtin: false,
 	isDefault: true,
 	createdAt: 0,
 	updatedAt: 0,
@@ -186,10 +184,11 @@ describe("ChunkedGenerationService.generateFromNote", () => {
 		}
 	});
 
-	it("multi-chunk Pro: each chunk uses customPrompt as system, formatSpec prefixes user message", async () => {
+	it("multi-chunk Pro (raw prompt path): each chunk uses prompt verbatim, formatSpec prefixes user message", async () => {
 		const proPreset: GenerationPreset = {
 			...basicPreset,
-			customPrompt: "Pro custom prompt",
+			prompt: "Pro custom prompt {{EXISTING_CARDS}}",
+			requiresPro: true,
 		};
 		const settings = makeProSettings({
 			generationPresets: [proPreset],
@@ -217,8 +216,9 @@ describe("ChunkedGenerationService.generateFromNote", () => {
 			const body = req as any;
 			const messages: Array<{ role: string; content: string }> = body.messages;
 
-			// System must be the customPrompt.
-			expect(messages[0]?.content).toBe("Pro custom prompt");
+			// System must start with the prompt body, with {{EXISTING_CARDS}} substituted.
+			expect(messages[0]?.content).toContain("Pro custom prompt");
+			expect(messages[0]?.content).not.toContain("{{EXISTING_CARDS}}");
 
 			// User message must be prefixed with the format spec.
 			expect(messages[1]?.content).toContain(expectedFormatSpec);

@@ -86,7 +86,7 @@ export class StreamingGenerationService {
 			throw new Error("Generation already in progress");
 		}
 
-		if (preset.isPro && !settings.proKey) {
+		if (preset.requiresPro && !settings.proKey) {
 			throw new Error(
 				`Preset "${preset.name}" requires True Recall Pro. Upgrade or pick a different preset.`,
 			);
@@ -135,9 +135,14 @@ export class StreamingGenerationService {
 			this.flashcardManager.getNoteTypeBySlug?.(slug) ?? null;
 		const parser = new IncrementalFlashcardParser(getNoteType);
 
-		const customSystemPrompt = preset.customPrompt?.trim();
-		const rawSystemPrompt = customSystemPrompt
-			? customSystemPrompt
+		// Prompts containing the {{EXISTING_CARDS}} placeholder are authoritative
+		// full system prompts (e.g. built-in Pro preset) — use verbatim and send
+		// the format spec as the user message so format instructions still reach
+		// the model. Otherwise wrap the user's prompt in the format spec derived
+		// from the note type and send the raw text as the user message.
+		const useRawPrompt = preset.prompt.includes("{{EXISTING_CARDS}}");
+		const rawSystemPrompt = useRawPrompt
+			? preset.prompt
 			: buildPresetPrompt(preset, noteType);
 		const existingCardsBlock = renderExistingCardsBlock(
 			options?.existingCards ?? [],
@@ -155,7 +160,7 @@ export class StreamingGenerationService {
 				}
 			: undefined;
 
-		const userContent = customSystemPrompt
+		const userContent = useRawPrompt
 			? `${buildPresetFormatSpec(preset, noteType)}\n\n${text}`
 			: text;
 

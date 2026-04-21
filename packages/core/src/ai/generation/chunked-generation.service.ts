@@ -145,9 +145,14 @@ export class ChunkedGenerationService {
 
 		const settings = this.getSettings();
 		const aiConfig = resolveAIClientConfig(settings);
-		const customSystemPrompt = preset.customPrompt?.trim();
-		const rawSystemPrompt = customSystemPrompt
-			? customSystemPrompt
+		// Prompts containing the {{EXISTING_CARDS}} placeholder are authoritative
+		// full system prompts (e.g. built-in Pro preset) — use verbatim and send
+		// the format spec as the user message so format instructions still reach
+		// the model. Otherwise wrap the user's prompt in the format spec derived
+		// from the note type and send the raw text as the user message.
+		const useRawPrompt = preset.prompt.includes("{{EXISTING_CARDS}}");
+		const rawSystemPrompt = useRawPrompt
+			? preset.prompt
 			: buildPresetPrompt(preset, noteType);
 		const existingCardsBlock = renderExistingCardsBlock(
 			options?.existingCards ?? [],
@@ -169,7 +174,7 @@ export class ChunkedGenerationService {
 
 				updateChunkProgress(chunk.index, chunk.headingBreadcrumb || null);
 
-				const formatPrefix = customSystemPrompt
+				const formatPrefix = useRawPrompt
 					? `${buildPresetFormatSpec(preset, noteType)}\n\n`
 					: "";
 				const userMessage = chunk.headingBreadcrumb

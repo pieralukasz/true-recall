@@ -24,13 +24,12 @@ const basicNoteType: NoteType = {
 const basicPreset: GenerationPreset = {
 	id: "preset-basic",
 	name: "Basic",
+	prompt: "Generate Q/A cards.",
 	noteTypeId: "nt-basic",
-	fields: {
-		Front: { role: "ai-text", instruction: "Question" },
-		Back: { role: "ai-text", instruction: "Answer" },
-	},
 	tts: null,
-	isPinned: true,
+	image: null,
+	requiresPro: false,
+	builtin: false,
 	isDefault: true,
 	createdAt: 0,
 	updatedAt: 0,
@@ -166,10 +165,11 @@ describe("StreamingGenerationService.generate", () => {
 		expect(body.metadata).toBeUndefined();
 	});
 
-	it("Pro path: sends customPrompt as system, formatSpec+text as user", async () => {
+	it("Pro path: sends raw prompt as system, formatSpec+text as user when prompt carries {{EXISTING_CARDS}}", async () => {
 		const proPreset: GenerationPreset = {
 			...basicPreset,
-			customPrompt: "Custom pro prompt",
+			prompt: "Custom pro prompt {{EXISTING_CARDS}}",
+			requiresPro: true,
 		};
 		const settings = makeProSettings({
 			generationPresets: [proPreset],
@@ -189,7 +189,10 @@ describe("StreamingGenerationService.generate", () => {
 		const messages: Array<{ role: string; content: string }> = body.messages;
 
 		expect(messages[0]?.role).toBe("system");
-		expect(messages[0]?.content).toBe("Custom pro prompt");
+		// {{EXISTING_CARDS}} is substituted with the empty-sentinel when no
+		// existingCards option is passed; the rest of the prompt is passed verbatim.
+		expect(messages[0]?.content).toContain("Custom pro prompt");
+		expect(messages[0]?.content).not.toContain("{{EXISTING_CARDS}}");
 		expect(messages[1]?.content).toBe(
 			`${buildPresetFormatSpec(proPreset, basicNoteType)}\n\n${inputText}`,
 		);
@@ -198,7 +201,8 @@ describe("StreamingGenerationService.generate", () => {
 	it("Pro path: includes metadata with call_context, note_type, preset_id, omits temperature", async () => {
 		const proPreset: GenerationPreset = {
 			...basicPreset,
-			customPrompt: "Pro prompt",
+			prompt: "Pro prompt {{EXISTING_CARDS}}",
+			requiresPro: true,
 		};
 		const settings = makeProSettings({
 			generationPresets: [proPreset],
@@ -222,10 +226,10 @@ describe("StreamingGenerationService.generate", () => {
 		expect(body.temperature).toBeUndefined();
 	});
 
-	it("BYOK path honors customPrompt when set on a non-Pro preset", async () => {
+	it("BYOK path uses raw prompt verbatim when it carries {{EXISTING_CARDS}}", async () => {
 		const byokPreset: GenerationPreset = {
 			...basicPreset,
-			customPrompt: "My BYOK custom prompt",
+			prompt: "My BYOK custom prompt {{EXISTING_CARDS}}",
 		};
 		const settings = makeByokSettings({
 			generationPresets: [byokPreset],
@@ -242,15 +246,19 @@ describe("StreamingGenerationService.generate", () => {
 
 		const body = capturedRequests[0] as any;
 		const messages: Array<{ role: string; content: string }> = body.messages;
-		expect(messages[0]?.content).toBe("My BYOK custom prompt");
+		expect(messages[0]?.content).toContain("My BYOK custom prompt");
+		expect(messages[0]?.content).not.toContain("{{EXISTING_CARDS}}");
 		expect(messages[1]?.content).toBe(
 			`${buildPresetFormatSpec(byokPreset, basicNoteType)}\n\nstudy text`,
 		);
 		expect(body.metadata).toBeUndefined();
 	});
 
-	it("rejects Pro preset when user has no Pro key", async () => {
-		const proPreset: GenerationPreset = { ...basicPreset, isPro: true };
+	it("rejects preset requiring Pro when user has no Pro key", async () => {
+		const proPreset: GenerationPreset = {
+			...basicPreset,
+			requiresPro: true,
+		};
 		const settings = makeByokSettings({
 			generationPresets: [proPreset],
 			defaultGenerationPresetId: proPreset.id,
@@ -268,10 +276,11 @@ describe("StreamingGenerationService.generate", () => {
 		expect(capturedRequests).toHaveLength(0);
 	});
 
-	it("Pro path with empty customPrompt falls back to buildPresetPrompt", async () => {
+	it("Pro path with prompt lacking {{EXISTING_CARDS}} falls back to buildPresetPrompt wrapping", async () => {
 		const proPresetEmpty: GenerationPreset = {
 			...basicPreset,
-			customPrompt: "",
+			prompt: "",
+			requiresPro: true,
 		};
 		const settings = makeProSettings({
 			generationPresets: [proPresetEmpty],
@@ -331,7 +340,8 @@ describe("StreamingGenerationService.generate — existingCards injection", () =
 	it("substitutes {{EXISTING_CARDS}} with the rendered block on the Pro path", async () => {
 		const proPreset: GenerationPreset = {
 			...basicPreset,
-			customPrompt: "PROMPT\n[EXISTING CARDS]\n{{EXISTING_CARDS}}\n[END]",
+			prompt: "PROMPT\n[EXISTING CARDS]\n{{EXISTING_CARDS}}\n[END]",
+			requiresPro: true,
 		};
 		const settings = makeProSettings({
 			generationPresets: [proPreset],
@@ -357,7 +367,8 @@ describe("StreamingGenerationService.generate — existingCards injection", () =
 	it("substitutes {{EXISTING_CARDS}} with the empty sentinel when no existingCards passed", async () => {
 		const proPreset: GenerationPreset = {
 			...basicPreset,
-			customPrompt: "PROMPT\n{{EXISTING_CARDS}}\nEND",
+			prompt: "PROMPT\n{{EXISTING_CARDS}}\nEND",
+			requiresPro: true,
 		};
 		const settings = makeProSettings({
 			generationPresets: [proPreset],
