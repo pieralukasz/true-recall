@@ -146,10 +146,11 @@ describe("generation-presets handlers", () => {
 		await handleCreateGenerationPreset(
 			mockReq({
 				name: "X",
+				prompt: "Make cards.",
 				noteTypeId: "builtin-basic",
-				fields: { Front: { role: "ai-text", instruction: "Q" } },
 				tts: null,
-				isPinned: false,
+				image: null,
+				requiresPro: false,
 				isDefault: false,
 			}),
 			res as never,
