@@ -15,9 +15,10 @@ import type {
 import type { NoteType } from "../../../src/types/note.types";
 import type { TrueRecallSettings } from "../../../src/types/settings.types";
 
+/** User-owned (non-builtin) counterpart of the built-in Basic preset. */
 const BASE_PRESET: GenerationPreset = {
 	...BUILTIN_BASIC_PRESET,
-	isBuiltin: false,
+	builtin: false,
 };
 
 const BASIC_NOTE_TYPE: NoteType = {
@@ -30,6 +31,21 @@ const BASIC_NOTE_TYPE: NoteType = {
 	isBuiltin: true,
 	slug: "basic",
 };
+
+function makeInput(
+	overrides: Partial<CreateGenerationPresetInput> = {},
+): CreateGenerationPresetInput {
+	return {
+		name: "Test",
+		prompt: "Make cards.",
+		noteTypeId: "builtin-basic",
+		tts: null,
+		image: null,
+		requiresPro: false,
+		isDefault: false,
+		...overrides,
+	};
+}
 
 function makeService(
 	noteTypes: Record<string, NoteType> = {
@@ -76,14 +92,7 @@ function makeMutableService(
 
 describe("generation preset types", () => {
 	it("CreateGenerationPresetInput omits server fields", () => {
-		const input: CreateGenerationPresetInput = {
-			name: "Test",
-			noteTypeId: "builtin-basic",
-			fields: { Front: { role: "ai-text", instruction: "Q" } },
-			tts: null,
-			isPinned: false,
-			isDefault: false,
-		};
+		const input: CreateGenerationPresetInput = makeInput();
 		// @ts-expect-error id must not be assignable
 		const withId: CreateGenerationPresetInput = { ...input, id: "x" };
 		expect(input.name).toBe("Test");
@@ -98,160 +107,74 @@ describe("generation preset types", () => {
 
 describe("GenerationPresetService.validate", () => {
 	it("accepts a valid preset", () => {
-		const errors = makeService().validate({
-			name: "OK",
-			noteTypeId: "builtin-basic",
-			fields: { Front: { role: "ai-text", instruction: "Q" } },
-			tts: null,
-			isPinned: false,
-			isDefault: false,
-		});
+		const errors = makeService().validate(makeInput());
 		expect(errors).toEqual([]);
 	});
 
 	it("rejects empty name", () => {
-		const errors = makeService().validate({
-			name: "   ",
-			noteTypeId: "builtin-basic",
-			fields: { Front: { role: "ai-text", instruction: "Q" } },
-			tts: null,
-			isPinned: false,
-			isDefault: false,
-		});
+		const errors = makeService().validate(makeInput({ name: "   " }));
 		expect(errors).toContain("name must be non-empty");
 	});
 
+	it("rejects empty prompt", () => {
+		const errors = makeService().validate(makeInput({ prompt: "   " }));
+		expect(errors).toContain("prompt must be non-empty");
+	});
+
 	it("rejects unknown noteTypeId", () => {
-		const errors = makeService().validate({
-			name: "X",
-			noteTypeId: "does-not-exist",
-			fields: { Front: { role: "ai-text", instruction: "Q" } },
-			tts: null,
-			isPinned: false,
-			isDefault: false,
-		});
+		const errors = makeService().validate(
+			makeInput({ noteTypeId: "does-not-exist" }),
+		);
 		expect(errors).toContain("noteTypeId 'does-not-exist' not found");
 	});
 
-	it("rejects empty fields", () => {
-		const errors = makeService().validate({
-			name: "X",
-			noteTypeId: "builtin-basic",
-			fields: {},
-			tts: null,
-			isPinned: false,
-			isDefault: false,
-		});
-		expect(errors).toContain("fields must contain at least one field");
-	});
-
-	it("rejects field not in note type", () => {
-		const errors = makeService().validate({
-			name: "X",
-			noteTypeId: "builtin-basic",
-			fields: { Nonsense: { role: "ai-text", instruction: "Q" } },
-			tts: null,
-			isPinned: false,
-			isDefault: false,
-		});
-		expect(errors.some((e) => e.includes("'Nonsense' not in note type"))).toBe(
-			true,
+	it("rejects tts field not in note type", () => {
+		const errors = makeService().validate(
+			makeInput({
+				tts: { field: "NotThere", voice: "nova", autoplay: false },
+			}),
 		);
-	});
-
-	it("rejects ai-text with empty instruction", () => {
-		const errors = makeService().validate({
-			name: "X",
-			noteTypeId: "builtin-basic",
-			fields: { Front: { role: "ai-text", instruction: "  " } },
-			tts: null,
-			isPinned: false,
-			isDefault: false,
-		});
-		expect(errors.some((e) => e.includes("instruction"))).toBe(true);
-	});
-
-	it("rejects image sourceField that doesn't exist in fields", () => {
-		const errors = makeService().validate({
-			name: "X",
-			noteTypeId: "builtin-basic",
-			fields: {
-				Front: { role: "ai-text", instruction: "Q" },
-				Back: { role: "image", sourceField: "Nonexistent" },
-			},
-			tts: null,
-			isPinned: false,
-			isDefault: false,
-		});
-		expect(errors.some((e) => e.includes("sourceField 'Nonexistent'"))).toBe(
-			true,
-		);
-	});
-
-	it("rejects image sourceField that is not ai-text", () => {
-		const errors = makeService().validate({
-			name: "X",
-			noteTypeId: "builtin-basic",
-			fields: {
-				Front: { role: "manual" },
-				Back: { role: "image", sourceField: "Front" },
-			},
-			tts: null,
-			isPinned: false,
-			isDefault: false,
-		});
-		expect(errors.some((e) => e.includes("must have role 'ai-text'"))).toBe(
-			true,
-		);
-	});
-
-	it("rejects tts field not in preset.fields", () => {
-		const errors = makeService().validate({
-			name: "X",
-			noteTypeId: "builtin-basic",
-			fields: { Front: { role: "ai-text", instruction: "Q" } },
-			tts: { field: "NotThere", voice: "nova", autoplay: false },
-			isPinned: false,
-			isDefault: false,
-		});
 		expect(errors.some((e) => e.includes("TTS field 'NotThere'"))).toBe(true);
 	});
 
 	it("rejects tts voice not in TTS_VOICES", () => {
-		const errors = makeService().validate({
-			name: "X",
-			noteTypeId: "builtin-basic",
-			fields: { Front: { role: "ai-text", instruction: "Q" } },
-			tts: { field: "Front", voice: "robot", autoplay: false },
-			isPinned: false,
-			isDefault: false,
-		});
+		const errors = makeService().validate(
+			makeInput({
+				tts: { field: "Front", voice: "robot", autoplay: false },
+			}),
+		);
 		expect(errors.some((e) => e.includes("voice 'robot'"))).toBe(true);
 	});
 
-	it("rejects preset with no ai-text field", () => {
-		const errors = makeService().validate({
-			name: "X",
-			noteTypeId: "builtin-basic",
-			fields: { Front: { role: "manual" } },
-			tts: null,
-			isPinned: false,
-			isDefault: false,
-		});
-		expect(
-			errors.some((e) => e.includes("at least one AI-generated field")),
-		).toBe(true);
+	it("rejects image targetField not in note type", () => {
+		const errors = makeService().validate(
+			makeInput({ image: { targetField: "Ghost", sourceField: "Front" } }),
+		);
+		expect(errors.some((e) => e.includes("Image targetField 'Ghost'"))).toBe(
+			true,
+		);
+	});
+
+	it("rejects image sourceField not in note type", () => {
+		const errors = makeService().validate(
+			makeInput({ image: { targetField: "Front", sourceField: "Ghost" } }),
+		);
+		expect(errors.some((e) => e.includes("Image sourceField 'Ghost'"))).toBe(
+			true,
+		);
+	});
+
+	it("rejects image where target equals source", () => {
+		const errors = makeService().validate(
+			makeInput({ image: { targetField: "Front", sourceField: "Front" } }),
+		);
+		expect(errors).toContain("Image targetField must differ from sourceField");
 	});
 
 	it("collects all errors, does not bail on first", () => {
-		const errors = makeService().validate({
-			name: "",
-			noteTypeId: "does-not-exist",
-			fields: {},
-			tts: null,
-			isPinned: false,
-			isDefault: false,
-		});
+		const errors = makeService().validate(
+			makeInput({ name: "", prompt: "", noteTypeId: "does-not-exist" }),
+		);
 		expect(errors.length).toBeGreaterThanOrEqual(3);
 	});
 });
@@ -276,46 +199,25 @@ describe("GenerationPresetService.list/get", () => {
 describe("GenerationPresetService.create", () => {
 	it("generates id and timestamps", async () => {
 		const { service } = makeMutableService();
-		const input: CreateGenerationPresetInput = {
-			name: "Custom",
-			noteTypeId: "builtin-basic",
-			fields: { Front: { role: "ai-text", instruction: "Q" } },
-			tts: null,
-			isPinned: false,
-			isDefault: false,
-		};
-		const created = await service.create(input);
+		const created = await service.create(makeInput({ name: "Custom" }));
 		expect(created.id.length).toBeGreaterThan(0);
 		expect(created.createdAt).toBeGreaterThan(0);
 		expect(created.updatedAt).toBe(created.createdAt);
 		expect(created.name).toBe("Custom");
+		expect(created.builtin).toBe(false);
 	});
 
 	it("persists the new preset", async () => {
 		const { service, getSettings } = makeMutableService();
-		await service.create({
-			name: "Custom",
-			noteTypeId: "builtin-basic",
-			fields: { Front: { role: "ai-text", instruction: "Q" } },
-			tts: null,
-			isPinned: false,
-			isDefault: false,
-		});
+		await service.create(makeInput({ name: "Custom" }));
 		expect(getSettings().generationPresets).toHaveLength(1);
 	});
 
 	it("throws on validation failure", async () => {
 		const { service } = makeMutableService();
-		await expect(
-			service.create({
-				name: "",
-				noteTypeId: "builtin-basic",
-				fields: { Front: { role: "ai-text", instruction: "Q" } },
-				tts: null,
-				isPinned: false,
-				isDefault: false,
-			}),
-		).rejects.toThrow(/Preset validation failed/);
+		await expect(service.create(makeInput({ name: "" }))).rejects.toThrow(
+			/Preset validation failed/,
+		);
 	});
 
 	it("with isDefault:true unsets default on others", async () => {
@@ -324,14 +226,9 @@ describe("GenerationPresetService.create", () => {
 			isDefault: true,
 		};
 		const { service, getSettings } = makeMutableService([existing]);
-		const created = await service.create({
-			name: "New default",
-			noteTypeId: "builtin-basic",
-			fields: { Front: { role: "ai-text", instruction: "Q" } },
-			tts: null,
-			isPinned: false,
-			isDefault: true,
-		});
+		const created = await service.create(
+			makeInput({ name: "New default", isDefault: true }),
+		);
 		const presets = getSettings().generationPresets;
 		expect(presets.find((p) => p.id === existing.id)?.isDefault).toBe(false);
 		expect(presets.find((p) => p.id === created.id)?.isDefault).toBe(true);
@@ -347,26 +244,14 @@ describe("GenerationPresetService.update", () => {
 		const updated = await service.update("p1", { name: "New" });
 		expect(updated.name).toBe("New");
 		expect(getSettings().generationPresets[0]?.name).toBe("New");
-		expect(updated.updatedAt).toBeGreaterThanOrEqual(
-			BUILTIN_BASIC_PRESET.updatedAt,
-		);
 	});
 
-	it("atomically replaces fields sub-object", async () => {
+	it("patches the prompt", async () => {
 		const { service } = makeMutableService([
 			{ ...BASE_PRESET, id: "p1", isDefault: true },
 		]);
-		const updated = await service.update("p1", {
-			fields: {
-				Front: { role: "manual" },
-				Back: { role: "ai-text", instruction: "A" },
-			},
-		});
-		expect(updated.fields.Front).toEqual({ role: "manual" });
-		expect(updated.fields.Back).toEqual({
-			role: "ai-text",
-			instruction: "A",
-		});
+		const updated = await service.update("p1", { prompt: "New instruction." });
+		expect(updated.prompt).toBe("New instruction.");
 	});
 
 	it("returns 404-like error for unknown id", async () => {
@@ -387,11 +272,11 @@ describe("GenerationPresetService.update", () => {
 		).rejects.toThrow(/Unknown field/);
 	});
 
-	it("throws on validation failure (e.g. invalid fields)", async () => {
+	it("throws on validation failure (empty prompt)", async () => {
 		const { service } = makeMutableService([
 			{ ...BASE_PRESET, id: "p1", isDefault: true },
 		]);
-		await expect(service.update("p1", { fields: {} })).rejects.toThrow(
+		await expect(service.update("p1", { prompt: "   " })).rejects.toThrow(
 			/Preset validation failed/,
 		);
 	});
@@ -408,7 +293,7 @@ describe("GenerationPresetService.update", () => {
 		expect(getSettings().defaultGenerationPresetId).toBe("p2");
 	});
 
-	it("blocks update of Pro preset", async () => {
+	it("blocks update of built-in Pro preset", async () => {
 		const { service } = makeMutableService([
 			{
 				...BUILTIN_BASIC_PRO_PRESET,
@@ -419,24 +304,21 @@ describe("GenerationPresetService.update", () => {
 		]);
 		await expect(
 			service.update(BUILTIN_BASIC_PRO_PRESET_ID, { name: "Hacked" }),
-		).rejects.toThrow(/Cannot edit Pro/);
+		).rejects.toThrow(/Cannot edit built-in/);
 	});
 
-	it("allows update of non-Pro built-in preset", async () => {
-		const { service, getSettings } = makeMutableService([
-			{
-				...BUILTIN_BASIC_PRESET,
-				id: BUILTIN_BASIC_PRESET_ID,
-				isDefault: true,
-			},
+	it("blocks update of the free built-in Basic preset", async () => {
+		const { service } = makeMutableService([
+			{ ...BUILTIN_BASIC_PRESET, isDefault: true },
 		]);
-		await service.update(BUILTIN_BASIC_PRESET_ID, { name: "Renamed" });
-		expect(getSettings().generationPresets[0]?.name).toBe("Renamed");
+		await expect(
+			service.update(BUILTIN_BASIC_PRESET_ID, { name: "Renamed" }),
+		).rejects.toThrow(/Cannot edit built-in/);
 	});
 });
 
 describe("GenerationPresetService.delete", () => {
-	it("blocks deletion of Pro preset", async () => {
+	it("blocks deletion of built-in Pro preset", async () => {
 		const { service } = makeMutableService([
 			{
 				...BUILTIN_BASIC_PRO_PRESET,
@@ -446,21 +328,18 @@ describe("GenerationPresetService.delete", () => {
 			{ ...BASE_PRESET, id: "p2", isDefault: false },
 		]);
 		await expect(service.delete(BUILTIN_BASIC_PRO_PRESET_ID)).rejects.toThrow(
-			/Cannot delete Pro/,
+			/Cannot delete built-in/,
 		);
 	});
 
-	it("allows deletion of non-Pro built-in preset", async () => {
-		const { service, getSettings } = makeMutableService([
-			{
-				...BUILTIN_BASIC_PRESET,
-				id: BUILTIN_BASIC_PRESET_ID,
-				isDefault: true,
-			},
+	it("blocks deletion of the free built-in Basic preset", async () => {
+		const { service } = makeMutableService([
+			{ ...BUILTIN_BASIC_PRESET, isDefault: true },
 			{ ...BASE_PRESET, id: "p2", isDefault: false },
 		]);
-		await service.delete(BUILTIN_BASIC_PRESET_ID);
-		expect(getSettings().generationPresets.map((p) => p.id)).toEqual(["p2"]);
+		await expect(service.delete(BUILTIN_BASIC_PRESET_ID)).rejects.toThrow(
+			/Cannot delete built-in/,
+		);
 	});
 
 	it("blocks deletion of last remaining preset", async () => {

@@ -25,60 +25,19 @@ export class GenerationPresetService {
 			errors.push("name must be non-empty");
 		}
 
+		if (!preset.prompt || preset.prompt.trim().length === 0) {
+			errors.push("prompt must be non-empty");
+		}
+
 		const noteType = this.getNoteTypeById(preset.noteTypeId);
 		if (!noteType) {
 			errors.push(`noteTypeId '${preset.noteTypeId}' not found`);
 		}
 
-		const fieldNames = Object.keys(preset.fields);
-		if (fieldNames.length === 0) {
-			errors.push("fields must contain at least one field");
-		}
-
-		if (noteType) {
-			for (const name of fieldNames) {
-				if (!noteType.fields.includes(name)) {
-					errors.push(
-						`field '${name}' not in note type '${noteType.slug}' (valid: ${noteType.fields.join(", ")})`,
-					);
-				}
-			}
-		}
-
-		let hasAiText = false;
-		for (const [name, cfg] of Object.entries(preset.fields)) {
-			if (cfg.role === "ai-text") {
-				hasAiText = true;
-				if (!cfg.instruction || cfg.instruction.trim().length === 0) {
-					errors.push(`field '${name}': ai-text instruction must be non-empty`);
-				}
-			} else if (cfg.role === "image") {
-				const ref = preset.fields[cfg.sourceField];
-				if (!ref) {
-					errors.push(
-						`field '${name}': sourceField '${cfg.sourceField}' not in preset fields`,
-					);
-				} else if (ref.role !== "ai-text") {
-					errors.push(
-						`field '${name}': sourceField '${cfg.sourceField}' must have role 'ai-text' (got '${ref.role}')`,
-					);
-				}
-			}
-		}
-
-		if (fieldNames.length > 0 && !hasAiText) {
-			errors.push(
-				"preset must have at least one AI-generated field (role: ai-text)",
-			);
-		}
-
-		if (preset.tts) {
-			const ttsField = preset.fields[preset.tts.field];
-			if (!ttsField) {
-				errors.push(`TTS field '${preset.tts.field}' not in preset fields`);
-			} else if (ttsField.role !== "ai-text") {
+		if (noteType && preset.tts) {
+			if (!noteType.fields.includes(preset.tts.field)) {
 				errors.push(
-					`TTS field '${preset.tts.field}' must have role 'ai-text' (got '${ttsField.role}')`,
+					`TTS field '${preset.tts.field}' not in note type '${noteType.id}' (valid: ${noteType.fields.join(", ")})`,
 				);
 			}
 			if (
@@ -87,6 +46,22 @@ export class GenerationPresetService {
 				errors.push(
 					`TTS voice '${preset.tts.voice}' not supported (valid: ${TTS_VOICES.join(", ")})`,
 				);
+			}
+		}
+
+		if (noteType && preset.image) {
+			if (!noteType.fields.includes(preset.image.targetField)) {
+				errors.push(
+					`Image targetField '${preset.image.targetField}' not in note type '${noteType.id}'`,
+				);
+			}
+			if (!noteType.fields.includes(preset.image.sourceField)) {
+				errors.push(
+					`Image sourceField '${preset.image.sourceField}' not in note type '${noteType.id}'`,
+				);
+			}
+			if (preset.image.targetField === preset.image.sourceField) {
+				errors.push("Image targetField must differ from sourceField");
 			}
 		}
 
@@ -111,6 +86,7 @@ export class GenerationPresetService {
 		const preset: GenerationPreset = {
 			...input,
 			id: crypto.randomUUID(),
+			builtin: false,
 			createdAt: now,
 			updatedAt: now,
 		};
@@ -142,17 +118,17 @@ export class GenerationPresetService {
 			throw new Error(`Preset '${id}' not found`);
 		}
 
-		if (current.isPro) {
-			throw new Error("Cannot edit Pro preset");
+		if (current.builtin) {
+			throw new Error("Cannot edit built-in preset");
 		}
 
 		const allowedKeys: Array<keyof UpdateGenerationPresetPatch> = [
 			"name",
+			"prompt",
 			"noteTypeId",
-			"fields",
 			"tts",
-			"customPrompt",
-			"isPinned",
+			"image",
+			"requiresPro",
 			"isDefault",
 		];
 		for (const key of Object.keys(patch)) {
@@ -201,8 +177,8 @@ export class GenerationPresetService {
 			throw new Error(`Preset '${id}' not found`);
 		}
 
-		if (target.isPro) {
-			throw new Error("Cannot delete Pro preset");
+		if (target.builtin) {
+			throw new Error("Cannot delete built-in preset");
 		}
 
 		if (current.length === 1) {
