@@ -14,6 +14,48 @@ interface CardAIPresetEditorProps {
 	onDelete?: () => void;
 }
 
+function BadgeRow({ preset }: { preset: CardAIPreset }) {
+	return (
+		<>
+			{preset.requiresPro && (
+				<span class="ep:text-ui-smallest ep:font-semibold ep:px-1.5 ep:py-0.5 ep:rounded ep:bg-obs-accent ep:text-obs-on-accent ep:uppercase">
+					Pro
+				</span>
+			)}
+			{preset.builtin && (
+				<span class="ep:text-ui-smallest ep:font-semibold ep:px-1.5 ep:py-0.5 ep:rounded ep:bg-obs-border ep:text-obs-muted ep:uppercase">
+					Built-in
+				</span>
+			)}
+		</>
+	);
+}
+
+function CompactPresetRow({
+	preset,
+	onFork,
+}: {
+	preset: CardAIPreset;
+	onFork?: () => void;
+}) {
+	return (
+		<div class="ep:flex ep:items-center ep:gap-2 ep:p-2 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary">
+			<span class="ep:text-ui-small ep:font-semibold ep:text-obs-normal ep:flex-1 ep:truncate">
+				{preset.name}
+			</span>
+			<BadgeRow preset={preset} />
+			{onFork && (
+				<ActionButton
+					label="Fork to edit"
+					variant="outline"
+					size="sm"
+					onClick={onFork}
+				/>
+			)}
+		</div>
+	);
+}
+
 export function CardAIPresetEditor({
 	preset,
 	readOnly,
@@ -22,6 +64,11 @@ export function CardAIPresetEditor({
 	onDelete,
 }: CardAIPresetEditorProps) {
 	const isReadOnly = readOnly ?? preset.builtin;
+
+	if (isReadOnly) {
+		return <CompactPresetRow preset={preset} onFork={onFork} />;
+	}
+
 	const patch = (partial: Partial<CardAIPreset>) =>
 		onChange?.({ ...preset, ...partial });
 
@@ -35,27 +82,14 @@ export function CardAIPresetEditor({
 				<span class="ep:text-ui-small ep:font-semibold ep:text-obs-normal ep:flex-1 ep:truncate">
 					{preset.name}
 				</span>
-				{preset.requiresPro && (
-					<span class="ep:text-ui-smallest ep:font-semibold ep:px-1.5 ep:py-0.5 ep:rounded ep:bg-obs-accent ep:text-obs-on-accent ep:uppercase">
-						Pro
-					</span>
-				)}
-				{preset.builtin && (
-					<span class="ep:text-ui-smallest ep:font-semibold ep:px-1.5 ep:py-0.5 ep:rounded ep:bg-obs-border ep:text-obs-muted ep:uppercase">
-						Built-in
-					</span>
-				)}
+				<BadgeRow preset={preset} />
 			</div>
 
 			<div class="ep:flex ep:flex-col ep:gap-1">
 				<span class="ep:text-ui-smaller ep:text-obs-muted ep:font-medium">
 					Name
 				</span>
-				<TextInput
-					value={preset.name}
-					disabled={isReadOnly}
-					onChange={(v) => patch({ name: v })}
-				/>
+				<TextInput value={preset.name} onChange={(v) => patch({ name: v })} />
 			</div>
 
 			<div class="ep:flex ep:flex-col ep:gap-1">
@@ -64,36 +98,21 @@ export function CardAIPresetEditor({
 				</span>
 				<TextAreaInput
 					value={preset.prompt}
-					disabled={isReadOnly}
 					onChange={(v) => patch({ prompt: v })}
 					rows={4}
 					class="ep:font-mono ep:text-ui-smaller"
 				/>
 			</div>
 
-			<div class="ep:grid ep:grid-cols-1 sm:ep:grid-cols-2 ep:gap-3">
-				<div class="ep:flex ep:flex-col ep:gap-1 ep:min-w-0">
-					<span class="ep:text-ui-smaller ep:text-obs-muted ep:font-medium">
-						Hotkey
-					</span>
-					<TextInput
-						value={preset.hotkey ?? ""}
-						placeholder="Mod+Alt+F"
-						disabled={isReadOnly}
-						onChange={(v) => patch({ hotkey: v || undefined })}
-					/>
-				</div>
-				<div class="ep:flex ep:flex-col ep:gap-1 ep:min-w-0">
-					<span class="ep:text-ui-smaller ep:text-obs-muted ep:font-medium">
-						Model override
-					</span>
-					<TextInput
-						value={preset.modelOverride ?? ""}
-						placeholder="e.g. anthropic/claude-haiku-4-5"
-						disabled={isReadOnly}
-						onChange={(v) => patch({ modelOverride: v || undefined })}
-					/>
-				</div>
+			<div class="ep:flex ep:flex-col ep:gap-1 ep:min-w-0">
+				<span class="ep:text-ui-smaller ep:text-obs-muted ep:font-medium">
+					Hotkey
+				</span>
+				<TextInput
+					value={preset.hotkey ?? ""}
+					placeholder="Mod+Alt+F"
+					onChange={(v) => patch({ hotkey: v || undefined })}
+				/>
 			</div>
 
 			<div class="ep:flex ep:flex-col ep:gap-2 ep:p-2 ep:border ep:border-obs-border ep:rounded">
@@ -108,7 +127,6 @@ export function CardAIPresetEditor({
 						id={sourceNoteId}
 						type="checkbox"
 						checked={!!preset.includeSourceNote}
-						disabled={isReadOnly}
 						onChange={(e) =>
 							patch({
 								includeSourceNote: (e.target as HTMLInputElement).checked,
@@ -130,7 +148,6 @@ export function CardAIPresetEditor({
 						id={relatedCardsId}
 						type="checkbox"
 						checked={!!preset.includeRelatedCards}
-						disabled={isReadOnly}
 						onChange={(e) =>
 							patch({
 								includeRelatedCards: (e.target as HTMLInputElement).checked,
@@ -155,7 +172,6 @@ export function CardAIPresetEditor({
 						id={autoApplyId}
 						type="checkbox"
 						checked={preset.autoApply}
-						disabled={isReadOnly}
 						onChange={(e) =>
 							patch({ autoApply: (e.target as HTMLInputElement).checked })
 						}
@@ -163,23 +179,14 @@ export function CardAIPresetEditor({
 					<span>Auto-apply</span>
 				</label>
 				<div class="ep:flex ep:gap-2">
-					{isReadOnly
-						? onFork && (
-								<ActionButton
-									label="Fork to edit"
-									variant="outline"
-									size="sm"
-									onClick={onFork}
-								/>
-							)
-						: onDelete && (
-								<ActionButton
-									label="Delete"
-									variant="danger"
-									size="sm"
-									onClick={onDelete}
-								/>
-							)}
+					{onDelete && (
+						<ActionButton
+							label="Delete"
+							variant="danger"
+							size="sm"
+							onClick={onDelete}
+						/>
+					)}
 				</div>
 			</div>
 		</div>

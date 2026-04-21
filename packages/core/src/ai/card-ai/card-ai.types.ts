@@ -28,7 +28,6 @@ export interface CardAIPreset {
 	autoApply: boolean;
 	builtin: boolean;
 	hotkey?: string;
-	modelOverride?: string;
 	requiresPro?: boolean;
 	includeSourceNote?: boolean;
 	includeRelatedCards?: boolean;

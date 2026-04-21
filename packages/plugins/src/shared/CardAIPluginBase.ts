@@ -114,7 +114,7 @@ export abstract class CardAIPluginBase<TDetail extends CardAIBaseEventDetail> {
 		}
 	}
 
-	private buildService(modelOverride?: string): CardAIService | null {
+	private buildService(): CardAIService | null {
 		let config: AIClientConfig;
 		try {
 			config = resolveAIClientConfig(this.ctx.settings);
@@ -125,12 +125,10 @@ export abstract class CardAIPluginBase<TDetail extends CardAIBaseEventDetail> {
 			);
 			return null;
 		}
-		const model =
-			!config.hasProTier && modelOverride ? modelOverride : config.model;
 		const httpClient = new ObsidianHttpClient();
 		const client = new OpenRouterClient(
 			config.apiKey,
-			model,
+			config.model,
 			httpClient,
 			config.baseUrl,
 			undefined,
@@ -145,7 +143,7 @@ export abstract class CardAIPluginBase<TDetail extends CardAIBaseEventDetail> {
 	): Promise<void> {
 		const target = this.config.buildTarget(detail);
 		if (!target) return;
-		const service = this.buildService(preset.modelOverride);
+		const service = this.buildService();
 		if (!service) return;
 
 		this.abortController?.abort();
