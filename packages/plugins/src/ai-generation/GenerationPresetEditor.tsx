@@ -130,9 +130,24 @@ export function GenerationPresetEditor({
 				<select
 					class="dropdown"
 					value={preset.noteTypeId}
-					onChange={(e) =>
-						patch({ noteTypeId: (e.target as HTMLSelectElement).value })
-					}
+					onChange={(e) => {
+						const nextId = (e.target as HTMLSelectElement).value;
+						const nextNoteType = noteTypes.find((nt) => nt.id === nextId);
+						const nextFields = new Set(nextNoteType?.fields ?? []);
+						// Drop TTS/image configs that reference fields the new note
+						// type does not have — otherwise generation throws at runtime.
+						const nextTts =
+							preset.tts && nextFields.has(preset.tts.field)
+								? preset.tts
+								: null;
+						const nextImage =
+							preset.image &&
+							nextFields.has(preset.image.targetField) &&
+							nextFields.has(preset.image.sourceField)
+								? preset.image
+								: null;
+						patch({ noteTypeId: nextId, tts: nextTts, image: nextImage });
+					}}
 				>
 					{noteTypes.map((nt) => (
 						<option key={nt.id} value={nt.id}>

@@ -9,7 +9,3 @@
 .modal-container:has(.true-recall-card-preview-modal) {
 	animation: none !important;
 }
-
-.true-recall-card-preview-modal {
-	min-width: min(640px, 90vw);
-}

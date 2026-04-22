@@ -55,40 +55,43 @@ export function PreviewModalBody({
 
 	return (
 		<div
-			class="true-recall-card-preview-modal ep:flex ep:flex-col ep:gap-4"
+			class="true-recall-card-preview-modal"
 			style={{ viewTransitionName: VIEW_TRANSITION_NAME }}
 		>
-			<section>
-				<div class="ep:text-[10px] ep:uppercase ep:tracking-wider ep:text-obs-muted ep:mb-1.5">
-					Question
-				</div>
+			<div class="ep:w-full">
 				<PreviewCardBody card={card} side="question" sourcePath={sourcePath} />
-			</section>
 
-			{isAnswerRevealed && (
-				<section class="ep:border-t ep:border-obs-border ep:pt-3">
-					<div class="ep:text-[10px] ep:uppercase ep:tracking-wider ep:text-obs-muted ep:mb-1.5">
-						Answer
+				{isAnswerRevealed && (
+					<>
+						<div class="ep:flex ep:items-center ep:my-8">
+							<div class="ep:flex-1 ep:border-t ep:border-obs-border" />
+						</div>
+						<PreviewCardBody
+							card={card}
+							side="answer"
+							sourcePath={sourcePath}
+						/>
+					</>
+				)}
+			</div>
+
+			<div class="ep:flex ep:flex-col ep:gap-3 ep:border-t ep:border-obs-border ep:mt-6 ep:pt-4">
+				<ButtonBar
+					isAnswerRevealed={isAnswerRevealed}
+					preview={preview}
+					showNextReviewTime={plugin.settings.showNextReviewTime}
+					isRatingLocked={!isGradable}
+					compact
+					onShowAnswer={reveal}
+					onAnswer={grade}
+				/>
+
+				{isAnswerRevealed && !isGradable && (
+					<div class="ep:rounded-md ep:bg-obs-modifier-hover ep:px-3 ep:py-2 ep:text-center ep:text-ui-smaller ep:text-obs-muted">
+						Suspended or buried — grading disabled.
 					</div>
-					<PreviewCardBody card={card} side="answer" sourcePath={sourcePath} />
-				</section>
-			)}
-
-			<ButtonBar
-				isAnswerRevealed={isAnswerRevealed}
-				preview={preview}
-				showNextReviewTime={plugin.settings.showNextReviewTime}
-				isRatingLocked={!isGradable}
-				compact
-				onShowAnswer={reveal}
-				onAnswer={grade}
-			/>
-
-			{isAnswerRevealed && !isGradable && (
-				<div class="ep:text-ui-smaller ep:text-obs-muted ep:italic">
-					Suspended or buried — grading disabled.
-				</div>
-			)}
+				)}
+			</div>
 		</div>
 	);
 }

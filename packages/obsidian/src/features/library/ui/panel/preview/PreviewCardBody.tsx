@@ -10,6 +10,11 @@ interface PreviewCardBodyProps {
 	sourcePath: string;
 }
 
+const BODY_CLASSES: Record<"question" | "answer", string> = {
+	question: "true-recall-review-question ep:leading-relaxed ep:text-obs-normal",
+	answer: "true-recall-review-answer ep:leading-relaxed ep:text-obs-muted",
+};
+
 export function PreviewCardBody({
 	card,
 	side,
@@ -32,7 +37,7 @@ export function PreviewCardBody({
 
 	if (card.cardType === "note-review") {
 		return (
-			<div class="ep:text-obs-normal ep:text-ui-medium">
+			<div class={`${BODY_CLASSES[side]} ep:text-ui-medium`}>
 				{side === "question"
 					? (card.sourceNoteName ?? "Note Review")
 					: "Whole-note review — open source note to read."}
@@ -43,7 +48,9 @@ export function PreviewCardBody({
 	const content = side === "question" ? card.question : (card.answer ?? "");
 	if (!content.trim()) {
 		return (
-			<div class="ep:text-obs-muted ep:italic ep:text-ui-small">
+			<div
+				class={`${BODY_CLASSES[side]} ep:italic ep:text-obs-muted ep:text-ui-small`}
+			>
 				{side === "question" ? "No question" : "No answer"}
 			</div>
 		);
@@ -53,7 +60,7 @@ export function PreviewCardBody({
 		<MarkdownContent
 			markdown={content}
 			filePath={sourcePath}
-			class="true-recall-preview-body ep:text-obs-normal"
+			class={BODY_CLASSES[side]}
 		/>
 	);
 }
