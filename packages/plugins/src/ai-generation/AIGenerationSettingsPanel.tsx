@@ -1,4 +1,12 @@
-import type { GenerationPreset, TrueRecallSettings } from "@true-recall/core";
+import { useState } from "preact/hooks";
+
+import {
+	BUILTIN_BASIC_REVERSED_ID,
+	BUILTIN_CLOZE_ID,
+	BUILTIN_IMAGE_OCCLUSION_ID,
+	type GenerationPreset,
+	type TrueRecallSettings,
+} from "@true-recall/core";
 
 import { ActionButton } from "@true-recall/obsidian/components";
 import { usePlugin } from "@true-recall/obsidian/preact";
@@ -10,15 +18,35 @@ function makeId(): string {
 	return `preset-${Math.random().toString(36).slice(2, 10)}`;
 }
 
+// Note types whose cards are produced by dedicated flows (reversed templates,
+// cloze syntax, image occlusion) rather than plain AI field-fill generation.
+const AI_GEN_EXCLUDED_NOTE_TYPE_IDS = new Set<string>([
+	BUILTIN_BASIC_REVERSED_ID,
+	BUILTIN_CLOZE_ID,
+	BUILTIN_IMAGE_OCCLUSION_ID,
+]);
+
 export function AIGenerationSettingsPanel({
 	settings,
 	save,
 }: PluginSettingsProps) {
 	const plugin = usePlugin();
-	const noteTypes = plugin.cardStore?.noteTypes?.getAll() ?? [];
+	const noteTypes = (plugin.cardStore?.noteTypes?.getAll() ?? []).filter(
+		(nt) => !AI_GEN_EXCLUDED_NOTE_TYPE_IDS.has(nt.id),
+	);
 	const presets = settings.generationPresets ?? [];
 	const builtins = presets.filter((p) => p.builtin);
 	const userPresets = presets.filter((p) => !p.builtin);
+
+	const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
+	const toggleExpanded = (id: string) => {
+		setExpandedIds((prev) => {
+			const next = new Set(prev);
+			if (next.has(id)) next.delete(id);
+			else next.add(id);
+			return next;
+		});
+	};
 
 	const persist = (next: GenerationPreset[]) => {
 		const patch: Partial<TrueRecallSettings> = { generationPresets: next };
@@ -71,10 +99,20 @@ export function AIGenerationSettingsPanel({
 			updatedAt: Date.now(),
 		};
 		persist([...presets, fresh]);
+		setExpandedIds((prev) => new Set(prev).add(fresh.id));
 	};
 
 	return (
 		<>
+			<div class="ep:flex ep:gap-2 ep:items-start ep:mt-2 ep:p-2.5 ep:border-l-2 ep:border-obs-accent ep:bg-obs-accent/8 ep:rounded-r-md">
+				<span class="ep:text-ui-smaller ep:text-obs-normal ep:leading-relaxed">
+					Presets don't show up in the UI automatically. To use a preset, open
+					the <b>Selection Toolbar</b> plugin settings and add it as a button
+					(Editor toolbar or Global toolbar). Only then will it appear in the
+					action bar above selected text.
+				</span>
+			</div>
+
 			{builtins.length > 0 && (
 				<div class="ep:flex ep:flex-col ep:gap-3 ep:mt-4">
 					<div class="ep:flex ep:flex-col ep:gap-0.5">
@@ -119,6 +157,8 @@ export function AIGenerationSettingsPanel({
 						noteTypes={noteTypes}
 						onChange={updateUserPreset}
 						onDelete={() => removeUserPreset(p)}
+						expanded={expandedIds.has(p.id)}
+						onToggleExpanded={() => toggleExpanded(p.id)}
 					/>
 				))}
 				<div>

@@ -1,6 +1,5 @@
 import { LITELLM_URL } from "../../constants";
 import type { TrueRecallSettings } from "../../types/settings.types";
-import { OPENROUTER_URL } from "../clients/openrouter-client";
 import { getVoiceConfig } from "./tts-voice-map";
 
 export interface TTSRequest {
@@ -34,29 +33,23 @@ export function buildTTSRequest(
 	const voice = request.voice ?? settings.ttsVoice ?? voiceConfig.voice;
 	const speed = request.speed ?? voiceConfig.speed;
 
-	const isPro = !!settings.proKey;
-	const apiKey = isPro ? settings.proKey : settings.openRouterApiKey;
-	const baseUrl = isPro
-		? LITELLM_URL.replace("/chat/completions", "/audio/speech")
-		: OPENROUTER_URL.replace("/chat/completions", "/audio/speech");
-
-	if (!apiKey) {
+	if (!settings.proKey) {
 		throw new Error(
-			"No AI key configured. Add your Pro key or OpenRouter API key in settings.",
+			"TTS requires True Recall Pro. Add your Pro key in AI settings.",
 		);
 	}
 
 	return {
-		url: baseUrl,
+		url: LITELLM_URL.replace("/chat/completions", "/audio/speech"),
 		body: {
-			model: isPro ? "tts-1" : "openai/tts-1",
+			model: "tts-1",
 			input: request.text,
 			voice,
 			speed,
 			response_format: "mp3",
 		},
 		headers: {
-			Authorization: `Bearer ${apiKey}`,
+			Authorization: `Bearer ${settings.proKey}`,
 			"Content-Type": "application/json",
 			"HTTP-Referer": "obsidian://true-recall",
 			"X-Title": "True Recall",

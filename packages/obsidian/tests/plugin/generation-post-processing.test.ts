@@ -2,23 +2,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { GenerationPreset } from "@true-recall/core/types/generation-preset.types";
 
-const ttsProcessCards = vi.fn();
-const imageProcessCards = vi.fn();
-
-vi.mock("@true-recall/obsidian/services/tts-post-processor", () => ({
-	TTSPostProcessor: class {
-		processCards = ttsProcessCards;
-	},
-}));
-
-vi.mock("@true-recall/obsidian/services/image-post-processor", () => ({
-	ImagePostProcessor: class {
-		processCards = imageProcessCards;
-	},
-}));
+const notifyInfo = vi.fn();
 
 vi.mock("@true-recall/obsidian/services/notification.service", () => ({
 	notify: () => ({
+		info: notifyInfo,
 		warning: vi.fn(),
 	}),
 }));
@@ -44,15 +32,12 @@ const textOnlyPreset: GenerationPreset = {
 
 const plugin = {
 	app: {},
-	settings: {},
+	settings: { proKey: "test-pro-key" },
 	cardStore: {},
 } as unknown as import("@true-recall/obsidian/main").default;
 
 beforeEach(() => {
-	ttsProcessCards.mockReset();
-	imageProcessCards.mockReset();
-	ttsProcessCards.mockResolvedValue(undefined);
-	imageProcessCards.mockResolvedValue(undefined);
+	notifyInfo.mockReset();
 });
 
 describe("isPresetProRequired", () => {
@@ -86,45 +71,33 @@ describe("isPresetProRequired", () => {
 describe("runPresetPostProcessing", () => {
 	it("is a no-op when createdCardIds is empty", () => {
 		runPresetPostProcessing(plugin, textOnlyPreset, []);
-		expect(ttsProcessCards).not.toHaveBeenCalled();
-		expect(imageProcessCards).not.toHaveBeenCalled();
+		expect(notifyInfo).not.toHaveBeenCalled();
 	});
 
-	it("fires TTS when preset.tts.field is set", () => {
+	it("shows 'coming soon' notice when preset.tts is set", () => {
 		const preset: GenerationPreset = {
 			...textOnlyPreset,
 			tts: { field: "Front", voice: "en-US", autoplay: false },
 		};
 		runPresetPostProcessing(plugin, preset, ["card1"]);
-		expect(ttsProcessCards).toHaveBeenCalledWith(["card1"], {
-			ttsField: "Front",
-			languageCode: "en-US",
-		});
-	});
-
-	it("does not fire TTS when preset.tts is null", () => {
-		runPresetPostProcessing(plugin, textOnlyPreset, ["card1"]);
-		expect(ttsProcessCards).not.toHaveBeenCalled();
-	});
-
-	it("fires image post-processor when preset.image is set", () => {
-		const preset: GenerationPreset = {
-			...textOnlyPreset,
-			image: {
-				targetField: "Image",
-				sourceField: "Front",
-				style: "cartoon",
-			},
-		};
-		runPresetPostProcessing(plugin, preset, ["card1", "card2"]);
-		expect(imageProcessCards).toHaveBeenCalledWith(
-			["card1", "card2"],
-			[{ fieldName: "Image", sourceField: "Front", style: "cartoon" }],
+		expect(notifyInfo).toHaveBeenCalledWith(
+			"Audio and image generation — coming soon.",
 		);
 	});
 
-	it("does not fire image post-processor when preset.image is null", () => {
+	it("shows 'coming soon' notice when preset.image is set", () => {
+		const preset: GenerationPreset = {
+			...textOnlyPreset,
+			image: { targetField: "Image", sourceField: "Front" },
+		};
+		runPresetPostProcessing(plugin, preset, ["card1"]);
+		expect(notifyInfo).toHaveBeenCalledWith(
+			"Audio and image generation — coming soon.",
+		);
+	});
+
+	it("does not show any notice for a text-only preset", () => {
 		runPresetPostProcessing(plugin, textOnlyPreset, ["card1"]);
-		expect(imageProcessCards).not.toHaveBeenCalled();
+		expect(notifyInfo).not.toHaveBeenCalled();
 	});
 });

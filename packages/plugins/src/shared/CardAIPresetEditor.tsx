@@ -5,6 +5,8 @@ import {
 	TextAreaInput,
 	TextInput,
 } from "@true-recall/obsidian/components";
+import { useIcon } from "@true-recall/obsidian/preact/hooks";
+import { cn } from "@true-recall/obsidian/utils/cn";
 
 interface CardAIPresetEditorProps {
 	preset: CardAIPreset;
@@ -12,6 +14,21 @@ interface CardAIPresetEditorProps {
 	onChange?: (next: CardAIPreset) => void;
 	onFork?: () => void;
 	onDelete?: () => void;
+	expanded?: boolean;
+	onToggleExpanded?: () => void;
+}
+
+function ChevronIcon({ expanded }: { expanded: boolean }) {
+	const iconRef = useIcon("chevron-right");
+	return (
+		<span
+			ref={iconRef}
+			class={cn(
+				"ep:w-4 ep:h-4 ep:text-obs-muted ep:transition-transform ep:duration-200 ep:flex-shrink-0",
+				expanded && "ep:rotate-90",
+			)}
+		/>
+	);
 }
 
 function BadgeRow({ preset }: { preset: CardAIPreset }) {
@@ -56,17 +73,53 @@ function CompactPresetRow({
 	);
 }
 
+function presetSummary(preset: CardAIPreset): string {
+	const parts: string[] = [];
+	if (preset.autoApply) parts.push("auto");
+	if (preset.hotkey) parts.push(preset.hotkey);
+	if (preset.includeSourceNote) parts.push("+source");
+	if (preset.includeRelatedCards) parts.push("+related");
+	return parts.join(" • ");
+}
+
 export function CardAIPresetEditor({
 	preset,
 	readOnly,
 	onChange,
 	onFork,
 	onDelete,
+	expanded,
+	onToggleExpanded,
 }: CardAIPresetEditorProps) {
 	const isReadOnly = readOnly ?? preset.builtin;
 
 	if (isReadOnly) {
 		return <CompactPresetRow preset={preset} onFork={onFork} />;
+	}
+
+	const canCollapse = onToggleExpanded !== undefined;
+	const isExpanded = expanded ?? true;
+
+	if (canCollapse && !isExpanded) {
+		const summary = presetSummary(preset);
+		return (
+			<button
+				type="button"
+				onClick={onToggleExpanded}
+				class="ep:flex ep:items-center ep:gap-2 ep:p-2 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:w-full ep:text-left ep:cursor-pointer ep:hover:bg-obs-modifier-hover ep:transition-colors"
+			>
+				<ChevronIcon expanded={false} />
+				<span class="ep:text-ui-small ep:font-semibold ep:text-obs-normal ep:truncate">
+					{preset.name}
+				</span>
+				{summary && (
+					<span class="ep:text-ui-smaller ep:text-obs-muted ep:truncate ep:flex-1">
+						{summary}
+					</span>
+				)}
+				<BadgeRow preset={preset} />
+			</button>
+		);
 	}
 
 	const patch = (partial: Partial<CardAIPreset>) =>
@@ -79,6 +132,16 @@ export function CardAIPresetEditor({
 	return (
 		<div class="ep:flex ep:flex-col ep:gap-3 ep:p-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary">
 			<div class="ep:flex ep:items-center ep:gap-2">
+				{canCollapse && (
+					<button
+						type="button"
+						onClick={onToggleExpanded}
+						class="ep:flex ep:items-center ep:cursor-pointer ep:bg-transparent ep:border-0 ep:p-0"
+						aria-label="Collapse"
+					>
+						<ChevronIcon expanded={true} />
+					</button>
+				)}
 				<span class="ep:text-ui-small ep:font-semibold ep:text-obs-normal ep:flex-1 ep:truncate">
 					{preset.name}
 				</span>

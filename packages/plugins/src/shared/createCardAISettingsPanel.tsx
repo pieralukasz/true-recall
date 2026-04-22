@@ -1,4 +1,5 @@
 import type { ComponentType } from "preact";
+import { useState } from "preact/hooks";
 
 import type {
 	CardAIPreset,
@@ -42,6 +43,18 @@ export function createCardAISettingsPanel(
 			(b) => !b.requiresPro || isPro,
 		);
 
+		const [expandedIds, setExpandedIds] = useState<Set<string>>(
+			() => new Set(),
+		);
+		const toggleExpanded = (id: string) => {
+			setExpandedIds((prev) => {
+				const next = new Set(prev);
+				if (next.has(id)) next.delete(id);
+				else next.add(id);
+				return next;
+			});
+		};
+
 		const persist = (next: CardAIUserSettings) =>
 			save({ [config.bucketKey]: next } as Partial<TrueRecallSettings>);
 
@@ -63,6 +76,7 @@ export function createCardAISettingsPanel(
 				requiresPro: false,
 			};
 			persist({ ...bucket, userPresets: [...bucket.userPresets, forked] });
+			setExpandedIds((prev) => new Set(prev).add(forked.id));
 		};
 
 		const removeUserPreset = (p: CardAIPreset) => {
@@ -83,6 +97,7 @@ export function createCardAISettingsPanel(
 				builtin: false,
 			};
 			persist({ ...bucket, userPresets: [...bucket.userPresets, fresh] });
+			setExpandedIds((prev) => new Set(prev).add(fresh.id));
 		};
 
 		return (
@@ -138,6 +153,8 @@ export function createCardAISettingsPanel(
 							preset={p}
 							onChange={updateUserPreset}
 							onDelete={() => removeUserPreset(p)}
+							expanded={expandedIds.has(p.id)}
+							onToggleExpanded={() => toggleExpanded(p.id)}
 						/>
 					))}
 					<div>

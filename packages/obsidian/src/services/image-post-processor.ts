@@ -1,12 +1,17 @@
 import type { App } from "obsidian";
 import { requestUrl } from "obsidian";
 
+import { LITELLM_URL } from "@true-recall/core/constants";
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite/SqliteStoreService";
 import type { TrueRecallSettings } from "@true-recall/core/types/settings.types";
 
 import { mutate } from "@true-recall/obsidian/data";
 
 const IMAGE_DIR = ".true-recall/images";
+const IMAGE_API_URL = LITELLM_URL.replace(
+	"/chat/completions",
+	"/images/generations",
+);
 
 const ALLOWED_IMAGE_HOSTS = new Set([
 	"oaidalleapiprodscus.blob.core.windows.net", // OpenAI DALL-E
@@ -90,8 +95,11 @@ export class ImagePostProcessor {
 		if (note.fields[field.fieldName]) return false;
 
 		const settings = this.getSettings();
-		const apiKey = settings.openRouterApiKey;
-		if (!apiKey) return false;
+		if (!settings.proKey) {
+			throw new Error(
+				"Image generation requires True Recall Pro. Add your Pro key in AI settings.",
+			);
+		}
 
 		const prompt = field.style
 			? `${sourceText}. Style: ${field.style}. No text, no words, no letters.`
@@ -111,14 +119,16 @@ export class ImagePostProcessor {
 		}
 
 		const response = await requestUrl({
-			url: "https://openrouter.ai/api/v1/images/generations",
+			url: IMAGE_API_URL,
 			method: "POST",
 			headers: {
-				Authorization: `Bearer ${apiKey}`,
+				Authorization: `Bearer ${settings.proKey}`,
 				"Content-Type": "application/json",
+				"HTTP-Referer": "obsidian://true-recall",
+				"X-Title": "True Recall",
 			},
 			body: JSON.stringify({
-				model: "openai/dall-e-3",
+				model: "dall-e-3",
 				prompt,
 				n: 1,
 				size: "1024x1024",

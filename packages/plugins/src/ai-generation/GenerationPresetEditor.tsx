@@ -1,9 +1,4 @@
-import type {
-	GenerationPreset,
-	PresetImageConfig,
-	PresetTTSConfig,
-} from "@true-recall/core";
-import { TTS_VOICES } from "@true-recall/core/constants";
+import type { GenerationPreset } from "@true-recall/core";
 import type { NoteType } from "@true-recall/core/types/note.types";
 
 import {
@@ -11,6 +6,8 @@ import {
 	TextAreaInput,
 	TextInput,
 } from "@true-recall/obsidian/components";
+import { useIcon } from "@true-recall/obsidian/preact/hooks";
+import { cn } from "@true-recall/obsidian/utils/cn";
 
 interface GenerationPresetEditorProps {
 	preset: GenerationPreset;
@@ -19,6 +16,21 @@ interface GenerationPresetEditorProps {
 	onChange?: (next: GenerationPreset) => void;
 	onFork?: () => void;
 	onDelete?: () => void;
+	expanded?: boolean;
+	onToggleExpanded?: () => void;
+}
+
+function ChevronIcon({ expanded }: { expanded: boolean }) {
+	const iconRef = useIcon("chevron-right");
+	return (
+		<span
+			ref={iconRef}
+			class={cn(
+				"ep:w-4 ep:h-4 ep:text-obs-muted ep:transition-transform ep:duration-200 ep:flex-shrink-0",
+				expanded && "ep:rotate-90",
+			)}
+		/>
+	);
 }
 
 function BadgeRow({ preset }: { preset: GenerationPreset }) {
@@ -68,6 +80,17 @@ function CompactRow({
 	);
 }
 
+function presetSummary(
+	preset: GenerationPreset,
+	noteType: NoteType | undefined,
+): string {
+	const parts: string[] = [];
+	if (noteType) parts.push(noteType.name);
+	if (preset.tts) parts.push(`TTS: ${preset.tts.field}`);
+	if (preset.image) parts.push(`Image: ${preset.image.targetField}`);
+	return parts.join(" • ");
+}
+
 export function GenerationPresetEditor({
 	preset,
 	noteTypes,
@@ -75,41 +98,59 @@ export function GenerationPresetEditor({
 	onChange,
 	onFork,
 	onDelete,
+	expanded,
+	onToggleExpanded,
 }: GenerationPresetEditorProps) {
 	const isReadOnly = readOnly ?? preset.builtin;
 	if (isReadOnly) {
 		return <CompactRow preset={preset} onFork={onFork} />;
 	}
 
+	const canCollapse = onToggleExpanded !== undefined;
+	const isExpanded = expanded ?? true;
+
+	const noteType = noteTypes.find((nt) => nt.id === preset.noteTypeId);
+
+	if (canCollapse && !isExpanded) {
+		const summary = presetSummary(preset, noteType);
+		return (
+			<button
+				type="button"
+				onClick={onToggleExpanded}
+				class="ep:flex ep:items-center ep:gap-2 ep:p-2 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:w-full ep:text-left ep:cursor-pointer ep:hover:bg-obs-modifier-hover ep:transition-colors"
+			>
+				<ChevronIcon expanded={false} />
+				<span class="ep:text-ui-small ep:font-semibold ep:text-obs-normal ep:truncate">
+					{preset.name}
+				</span>
+				{summary && (
+					<span class="ep:text-ui-smaller ep:text-obs-muted ep:truncate ep:flex-1">
+						{summary}
+					</span>
+				)}
+				<BadgeRow preset={preset} />
+			</button>
+		);
+	}
+
 	const patch = (partial: Partial<GenerationPreset>) =>
 		onChange?.({ ...preset, ...partial, updatedAt: Date.now() });
 
-	const noteType = noteTypes.find((nt) => nt.id === preset.noteTypeId);
 	const fieldOptions = noteType?.fields ?? [];
-
-	const ttsEnabled = preset.tts !== null;
-	const imageEnabled = preset.image !== null;
-
-	const patchTTS = (partial: Partial<PresetTTSConfig>) => {
-		const current: PresetTTSConfig = preset.tts ?? {
-			field: fieldOptions[0] ?? "",
-			voice: TTS_VOICES[0],
-			autoplay: false,
-		};
-		patch({ tts: { ...current, ...partial } });
-	};
-
-	const patchImage = (partial: Partial<PresetImageConfig>) => {
-		const current: PresetImageConfig = preset.image ?? {
-			targetField: fieldOptions[1] ?? fieldOptions[0] ?? "",
-			sourceField: fieldOptions[0] ?? "",
-		};
-		patch({ image: { ...current, ...partial } });
-	};
 
 	return (
 		<div class="ep:flex ep:flex-col ep:gap-3 ep:p-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary">
 			<div class="ep:flex ep:items-center ep:gap-2">
+				{canCollapse && (
+					<button
+						type="button"
+						onClick={onToggleExpanded}
+						class="ep:flex ep:items-center ep:cursor-pointer ep:bg-transparent ep:border-0 ep:p-0"
+						aria-label="Collapse"
+					>
+						<ChevronIcon expanded={true} />
+					</button>
+				)}
 				<span class="ep:text-ui-small ep:font-semibold ep:text-obs-normal ep:flex-1 ep:truncate">
 					{preset.name}
 				</span>
@@ -178,140 +219,19 @@ export function GenerationPresetEditor({
 				</span>
 			</div>
 
-			<details class="ep:border ep:border-obs-border ep:rounded ep:p-2">
-				<summary class="ep:text-ui-smaller ep:text-obs-muted ep:font-medium ep:cursor-pointer">
-					Audio (TTS) {ttsEnabled && "— enabled"}
-				</summary>
-				<div class="ep:flex ep:flex-col ep:gap-2 ep:mt-2">
-					<label class="ep:flex ep:items-center ep:gap-2 ep:text-ui-small">
-						<input
-							type="checkbox"
-							checked={ttsEnabled}
-							onChange={(e) => {
-								const on = (e.target as HTMLInputElement).checked;
-								if (on) patchTTS({});
-								else patch({ tts: null });
-							}}
-						/>
-						<span>Generate audio for a field</span>
-					</label>
-					{ttsEnabled && preset.tts && (
-						<>
-							<label class="ep:flex ep:items-center ep:gap-2 ep:text-ui-small">
-								<span class="ep:w-16">Field</span>
-								<select
-									class="dropdown"
-									value={preset.tts.field}
-									onChange={(e) =>
-										patchTTS({ field: (e.target as HTMLSelectElement).value })
-									}
-								>
-									{fieldOptions.map((f) => (
-										<option key={f} value={f}>
-											{f}
-										</option>
-									))}
-								</select>
-							</label>
-							<label class="ep:flex ep:items-center ep:gap-2 ep:text-ui-small">
-								<span class="ep:w-16">Voice</span>
-								<select
-									class="dropdown"
-									value={preset.tts.voice}
-									onChange={(e) =>
-										patchTTS({ voice: (e.target as HTMLSelectElement).value })
-									}
-								>
-									{TTS_VOICES.map((v) => (
-										<option key={v} value={v}>
-											{v}
-										</option>
-									))}
-								</select>
-							</label>
-							<label class="ep:flex ep:items-center ep:gap-2 ep:text-ui-small">
-								<input
-									type="checkbox"
-									checked={preset.tts.autoplay}
-									onChange={(e) =>
-										patchTTS({
-											autoplay: (e.target as HTMLInputElement).checked,
-										})
-									}
-								/>
-								<span>Autoplay during review</span>
-							</label>
-						</>
-					)}
+			<div class="ep:flex ep:flex-col ep:gap-2 ep:p-2 ep:border ep:border-obs-border ep:rounded ep:bg-obs-secondary ep:opacity-70">
+				<div class="ep:flex ep:items-center ep:gap-2">
+					<span class="ep:text-ui-smaller ep:text-obs-muted ep:font-medium">
+						Audio (TTS) & Image
+					</span>
+					<span class="ep:text-ui-smallest ep:font-semibold ep:px-1.5 ep:py-0.5 ep:rounded ep:bg-obs-border ep:text-obs-muted ep:uppercase">
+						Soon
+					</span>
 				</div>
-			</details>
-
-			<details class="ep:border ep:border-obs-border ep:rounded ep:p-2">
-				<summary class="ep:text-ui-smaller ep:text-obs-muted ep:font-medium ep:cursor-pointer">
-					Image {imageEnabled && "— enabled"}
-				</summary>
-				<div class="ep:flex ep:flex-col ep:gap-2 ep:mt-2">
-					<label class="ep:flex ep:items-center ep:gap-2 ep:text-ui-small">
-						<input
-							type="checkbox"
-							checked={imageEnabled}
-							onChange={(e) => {
-								const on = (e.target as HTMLInputElement).checked;
-								if (on) patchImage({});
-								else patch({ image: null });
-							}}
-						/>
-						<span>Generate image for a field</span>
-					</label>
-					{imageEnabled && preset.image && (
-						<>
-							<label class="ep:flex ep:items-center ep:gap-2 ep:text-ui-small">
-								<span class="ep:w-28">Target field</span>
-								<select
-									class="dropdown"
-									value={preset.image.targetField}
-									onChange={(e) =>
-										patchImage({
-											targetField: (e.target as HTMLSelectElement).value,
-										})
-									}
-								>
-									{fieldOptions.map((f) => (
-										<option key={f} value={f}>
-											{f}
-										</option>
-									))}
-								</select>
-							</label>
-							<label class="ep:flex ep:items-center ep:gap-2 ep:text-ui-small">
-								<span class="ep:w-28">Source text</span>
-								<select
-									class="dropdown"
-									value={preset.image.sourceField}
-									onChange={(e) =>
-										patchImage({
-											sourceField: (e.target as HTMLSelectElement).value,
-										})
-									}
-								>
-									{fieldOptions.map((f) => (
-										<option key={f} value={f}>
-											{f}
-										</option>
-									))}
-								</select>
-							</label>
-							<div class="ep:flex ep:items-center ep:gap-2 ep:text-ui-small">
-								<span class="ep:w-28">Style (opt.)</span>
-								<TextInput
-									value={preset.image.style ?? ""}
-									onChange={(v) => patchImage({ style: v || undefined })}
-								/>
-							</div>
-						</>
-					)}
-				</div>
-			</details>
+				<span class="ep:text-ui-smaller ep:text-obs-muted ep:italic">
+					Per-preset audio and image generation is not available yet.
+				</span>
+			</div>
 
 			<div class="ep:flex ep:items-center ep:justify-between ep:gap-3 ep:pt-1">
 				<label class="ep:flex ep:items-center ep:gap-2 ep:text-ui-small">
