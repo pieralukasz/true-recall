@@ -14,7 +14,7 @@ export const knowledgeBaseManifest: PluginManifest = {
 			"Folder include/exclude filters",
 		],
 		icon: "library",
-		requiresPro: true,
+		tier: "pro",
 	},
 	settingsPanel: KnowledgeBaseSettingsPanel,
 };

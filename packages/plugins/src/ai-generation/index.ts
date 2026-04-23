@@ -14,7 +14,7 @@ export const aiGenerationManifest: PluginManifest = {
 			"Custom presets with source-note context",
 		],
 		icon: "sparkles",
-		requiresPro: false,
+		tier: "byok",
 	},
 	settingsPanel: AIGenerationSettingsPanel,
 };

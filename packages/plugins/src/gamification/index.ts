@@ -15,7 +15,7 @@ export const gamificationManifest: PluginManifest = {
 			"Rating distribution chart",
 		],
 		icon: "trophy",
-		requiresPro: true,
+		tier: "pro",
 	},
 	activate: (ctx) => {
 		const { obsidianPlugin: plugin } = ctx;

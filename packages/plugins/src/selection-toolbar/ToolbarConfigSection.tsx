@@ -155,7 +155,7 @@ export function ToolbarConfigSection({
 							) ?? false)
 						: true;
 					const isOrphan = isPreset && !presetExists;
-					const isProButton = pluginInfo?.requiresPro;
+					const isProButton = pluginInfo?.tier === "pro";
 					const isBasicPro = btn.id === BASIC_PRO_BUTTON_ID;
 					const isDisabled = isEditorOnly || isPluginDisabled || isOrphan;
 					const rawLabel = getLabel(btn.id);

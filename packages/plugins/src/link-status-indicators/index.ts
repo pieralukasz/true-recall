@@ -17,7 +17,7 @@ export const linkStatusIndicatorsManifest: PluginManifest = {
 			"Note stats tooltip on hover",
 		],
 		icon: "circle-dot",
-		requiresPro: false,
+		tier: "free",
 	},
 	activate: (ctx) => {
 		const { obsidianPlugin: plugin } = ctx;

@@ -14,7 +14,7 @@ export const typeInModeManifest: PluginManifest = {
 			"Works with all card types",
 		],
 		icon: "keyboard",
-		requiresPro: true,
+		tier: "pro",
 	},
 	settingsPanel: TypeInModeSettingsPanel,
 };

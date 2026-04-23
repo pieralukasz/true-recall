@@ -152,7 +152,7 @@ export const selectionToolbarManifest: PluginManifest = {
 			"Reading-mode and panel selection toolbar",
 		],
 		icon: "mouse-pointer-square-dashed",
-		requiresPro: false,
+		tier: "free",
 	},
 	settingsPanel: SelectionToolbarSettingsPanel,
 	activate: (ctx) => {

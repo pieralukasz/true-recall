@@ -1,5 +1,8 @@
 import { useState } from "preact/hooks";
 
+import { hasAIKey } from "@true-recall/core/ai/config/ai-client-config";
+import type { PluginTier } from "@true-recall/core/types";
+
 import {
 	Clickable,
 	FormCard,
@@ -12,6 +15,24 @@ import { useSettings } from "../hooks/useSettings";
 import { AIProviderSection } from "./AIProviderSection";
 import type { PluginManifest, PluginSettingsProps } from "@true-recall/plugins";
 import { PLUGIN_MANIFESTS } from "@true-recall/plugins";
+
+const TIER_LABEL: Record<PluginTier, string> = {
+	free: "FREE",
+	byok: "BYOK",
+	pro: "PRO",
+};
+
+const TIER_BADGE_CLASS: Record<PluginTier, string> = {
+	free: "ep:bg-green-500/15 ep:text-green-600",
+	byok: "ep:bg-blue-500/15 ep:text-blue-600",
+	pro: "ep:bg-obs-accent/10 ep:text-obs-accent",
+};
+
+const TIER_SORT_ORDER: Record<PluginTier, number> = {
+	free: 0,
+	byok: 1,
+	pro: 2,
+};
 
 function PluginIcon({ icon }: { icon: string }) {
 	const iconRef = useIcon(icon);
@@ -51,7 +72,7 @@ function DocsLink({ pluginId }: { pluginId: string }) {
 
 interface PluginAccordionProps {
 	manifest: PluginManifest;
-	isPro: boolean;
+	isActive: boolean;
 	isEnabled: boolean;
 	isExpanded: boolean;
 	onToggle: (enabled: boolean) => void;
@@ -62,7 +83,7 @@ interface PluginAccordionProps {
 
 function PluginAccordion({
 	manifest,
-	isPro,
+	isActive,
 	isEnabled,
 	isExpanded,
 	onToggle,
@@ -71,7 +92,6 @@ function PluginAccordion({
 	save,
 }: PluginAccordionProps) {
 	const { info } = manifest;
-	const isActive = isPro || !info.requiresPro;
 	const isOn = isActive && isEnabled;
 	const canExpand = isOn;
 
@@ -107,12 +127,10 @@ function PluginAccordion({
 						<span
 							class={cn(
 								"ep:text-ui-smaller ep:px-1.5 ep:py-0.5 ep:rounded ep:font-medium",
-								info.requiresPro
-									? "ep:bg-obs-accent/10 ep:text-obs-accent"
-									: "ep:bg-green-500/15 ep:text-green-600",
+								TIER_BADGE_CLASS[info.tier],
 							)}
 						>
-							{info.requiresPro ? "PRO" : "FREE"}
+							{TIER_LABEL[info.tier]}
 						</span>
 						{canExpand && <ChevronIcon expanded={isExpanded} />}
 					</div>
@@ -165,7 +183,14 @@ function PluginAccordion({
 export function PluginsTab() {
 	const { settings, save } = useSettings();
 	const isPro = !!settings.proKey;
+	const hasKey = hasAIKey(settings);
 	const pluginStates = settings.pluginStates ?? {};
+
+	const isTierActive = (tier: PluginTier): boolean => {
+		if (tier === "free") return true;
+		if (tier === "byok") return hasKey;
+		return isPro;
+	};
 	const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
 
 	const handleToggle = (pluginId: string, enabled: boolean) => {
@@ -205,13 +230,14 @@ export function PluginsTab() {
 				<div class="ep:flex ep:flex-col ep:gap-1.5">
 					{[...PLUGIN_MANIFESTS]
 						.sort(
-							(a, b) => Number(a.info.requiresPro) - Number(b.info.requiresPro),
+							(a, b) =>
+								TIER_SORT_ORDER[a.info.tier] - TIER_SORT_ORDER[b.info.tier],
 						)
 						.map((manifest) => (
 							<PluginAccordion
 								key={manifest.info.id}
 								manifest={manifest}
-								isPro={isPro}
+								isActive={isTierActive(manifest.info.tier)}
 								isEnabled={pluginStates[manifest.info.id] !== false}
 								isExpanded={expandedIds.has(manifest.info.id)}
 								onToggle={(enabled) => handleToggle(manifest.info.id, enabled)}

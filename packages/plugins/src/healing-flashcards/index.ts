@@ -12,6 +12,6 @@ export const healingFlashcardsManifest: PluginManifest = {
 			"Adapts to your learning patterns over time",
 		],
 		icon: "heart-pulse",
-		requiresPro: true,
+		tier: "pro",
 	},
 };

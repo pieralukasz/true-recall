@@ -14,7 +14,7 @@ export const dashboardCodeblockManifest: PluginManifest = {
 			"Per-note health and decay widgets",
 		],
 		icon: "layout-dashboard",
-		requiresPro: false,
+		tier: "free",
 	},
 	activate: (ctx) => {
 		const { obsidianPlugin: plugin } = ctx;

@@ -15,7 +15,7 @@ export const ankiImportExportManifest: PluginManifest = {
 			"Import .apkg files with scheduling data",
 		],
 		icon: "import",
-		requiresPro: true,
+		tier: "pro",
 	},
 	activate: (ctx) => {
 		const { obsidianPlugin: plugin } = ctx;

@@ -1,3 +1,5 @@
+import type { PluginTier } from "@true-recall/core/types";
+
 import { aiGenerationManifest } from "./ai-generation";
 import { ankiImportExportManifest } from "./anki-import-export";
 import { cardPolishManifest } from "./card-polish";
@@ -29,7 +31,7 @@ export const PLUGIN_MANIFESTS: PluginManifest[] = [
 
 export interface ButtonPluginInfo {
 	pluginId: string;
-	requiresPro: boolean;
+	tier: PluginTier;
 }
 
 export const BUTTON_PLUGIN_MAP = new Map<string, ButtonPluginInfo>();
@@ -37,7 +39,7 @@ for (const m of PLUGIN_MANIFESTS) {
 	for (const btnId of m.toolbarButtonIds ?? []) {
 		BUTTON_PLUGIN_MAP.set(btnId, {
 			pluginId: m.info.id,
-			requiresPro: m.info.requiresPro,
+			tier: m.info.tier,
 		});
 	}
 }

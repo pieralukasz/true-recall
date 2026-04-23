@@ -12,7 +12,7 @@ export const statusBarWidgetManifest: PluginManifest = {
 			"Click to open dashboard",
 		],
 		icon: "bar-chart-2",
-		requiresPro: false,
+		tier: "free",
 	},
 	activate: (ctx) => {
 		const { obsidianPlugin: plugin } = ctx;

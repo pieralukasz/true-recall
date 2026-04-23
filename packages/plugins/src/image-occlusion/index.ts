@@ -19,7 +19,7 @@ export const imageOcclusionManifest: PluginManifest = {
 			"Edit existing occlusion cards",
 		],
 		icon: "image",
-		requiresPro: true,
+		tier: "pro",
 	},
 	toolbarButtonIds: ["io"],
 	settingsPanel: ImageOcclusionSettingsPanel,
