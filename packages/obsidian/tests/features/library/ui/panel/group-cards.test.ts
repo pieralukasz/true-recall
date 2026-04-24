@@ -40,8 +40,8 @@ describe("groupCards (flat)", () => {
 		const cards = [basicCard("1"), basicCard("2"), basicCard("3")];
 		const result = groupCards(cards, emptyFsrsMap);
 		expect(result).toHaveLength(3);
-		expect(result[0]!.card.id).toBe("1");
-		expect(result[2]!.card.id).toBe("3");
+		expect(result[0]?.card.id).toBe("1");
+		expect(result[2]?.card.id).toBe("3");
 	});
 
 	it("does NOT group cloze cards — each is its own row", () => {
@@ -49,8 +49,8 @@ describe("groupCards (flat)", () => {
 		const cards = [clozeCard("c1", template, 1), clozeCard("c2", template, 2)];
 		const result = groupCards(cards, emptyFsrsMap);
 		expect(result).toHaveLength(2);
-		expect(result[0]!.card.id).toBe("c1");
-		expect(result[1]!.card.id).toBe("c2");
+		expect(result[0]?.card.id).toBe("c1");
+		expect(result[1]?.card.id).toBe("c2");
 	});
 
 	it("does NOT group reversed cards — each is its own row", () => {
@@ -58,8 +58,8 @@ describe("groupCards (flat)", () => {
 		const reversed = reversedCard("rev", "orig");
 		const result = groupCards([original, reversed], emptyFsrsMap);
 		expect(result).toHaveLength(2);
-		expect(result[0]!.card.id).toBe("orig");
-		expect(result[1]!.card.id).toBe("rev");
+		expect(result[0]?.card.id).toBe("orig");
+		expect(result[1]?.card.id).toBe("rev");
 	});
 
 	it("preserves card order", () => {

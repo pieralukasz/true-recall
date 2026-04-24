@@ -159,7 +159,6 @@ export async function handleGenerateWithPreset(
 
 	const service = new StreamingGenerationService(
 		() => ctx.plugin.settings,
-		// biome-ignore lint/suspicious/noExplicitAny: shared pattern with SelectionActions
 		ctx.plugin.flashcardManager as any,
 		new ObsidianHttpClient(),
 	);

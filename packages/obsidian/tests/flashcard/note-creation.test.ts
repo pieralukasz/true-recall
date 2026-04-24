@@ -117,7 +117,8 @@ describe("note-based card creation", () => {
 			const generated = generateCardsForNote(note, nt);
 			expect(generated).toHaveLength(1);
 
-			const template = nt.templates[0]!;
+			const template = nt.templates[0];
+			if (!template) throw new Error("expected note type to have a template");
 			const question = renderTemplate(template.qfmt, { fields: note.fields });
 			const answer = renderTemplate(template.afmt, {
 				fields: note.fields,
@@ -141,8 +142,8 @@ describe("note-based card creation", () => {
 			expect(generated).toHaveLength(2);
 
 			// Card 1: Front→Back
-			const q1 = renderTemplate(nt.templates[0]!.qfmt, { fields: note.fields });
-			const a1 = renderTemplate(nt.templates[0]!.afmt, {
+			const q1 = renderTemplate(nt.templates[0]?.qfmt, { fields: note.fields });
+			const a1 = renderTemplate(nt.templates[0]?.afmt, {
 				fields: note.fields,
 				frontSide: q1,
 			});
@@ -150,8 +151,8 @@ describe("note-based card creation", () => {
 			expect(a1).toBe("Kot");
 
 			// Card 2: Back→Front
-			const q2 = renderTemplate(nt.templates[1]!.qfmt, { fields: note.fields });
-			const a2 = renderTemplate(nt.templates[1]!.afmt, {
+			const q2 = renderTemplate(nt.templates[1]?.qfmt, { fields: note.fields });
+			const a2 = renderTemplate(nt.templates[1]?.afmt, {
 				fields: note.fields,
 				frontSide: q2,
 			});
@@ -173,8 +174,8 @@ describe("note-based card creation", () => {
 
 			const generated = generateCardsForNote(note, nt);
 			expect(generated).toHaveLength(2);
-			expect(generated[0]!.templateOrd).toBe(1);
-			expect(generated[1]!.templateOrd).toBe(2);
+			expect(generated[0]?.templateOrd).toBe(1);
+			expect(generated[1]?.templateOrd).toBe(2);
 		});
 
 		it("skip existing template ords", () => {
@@ -188,7 +189,7 @@ describe("note-based card creation", () => {
 
 			const generated = generateCardsForNote(note, nt, [0]);
 			expect(generated).toHaveLength(1);
-			expect(generated[0]!.templateOrd).toBe(1);
+			expect(generated[0]?.templateOrd).toBe(1);
 		});
 	});
 
@@ -206,8 +207,8 @@ describe("note-based card creation", () => {
 
 			const retrieved = ctx.notes.getById("test-n-1");
 			expect(retrieved).not.toBeNull();
-			expect(retrieved!.fields).toEqual({ Front: "Q1", Back: "A1" });
-			expect(retrieved!.noteTypeId).toBe("test-nt-1");
+			expect(retrieved?.fields).toEqual({ Front: "Q1", Back: "A1" });
+			expect(retrieved?.noteTypeId).toBe("test-nt-1");
 		});
 
 		it("updates note fields", () => {
@@ -226,7 +227,7 @@ describe("note-based card creation", () => {
 			});
 
 			const updated = ctx.notes.getById("test-n-2");
-			expect(updated!.fields).toEqual({ Front: "New Q", Back: "New A" });
+			expect(updated?.fields).toEqual({ Front: "New Q", Back: "New A" });
 		});
 
 		it("retrieves notes by note type ID", () => {
@@ -303,8 +304,8 @@ describe("note-based card creation", () => {
 			expect(generated).toHaveLength(2);
 
 			// Card 1: Word → Translation
-			const q1 = renderTemplate(nt.templates[0]!.qfmt, { fields: note.fields });
-			const a1 = renderTemplate(nt.templates[0]!.afmt, {
+			const q1 = renderTemplate(nt.templates[0]?.qfmt, { fields: note.fields });
+			const a1 = renderTemplate(nt.templates[0]?.afmt, {
 				fields: note.fields,
 				frontSide: q1,
 			});
@@ -312,8 +313,8 @@ describe("note-based card creation", () => {
 			expect(a1).toBe("House<br>Das Haus ist groß");
 
 			// Card 2: Translation → Word
-			const q2 = renderTemplate(nt.templates[1]!.qfmt, { fields: note.fields });
-			const a2 = renderTemplate(nt.templates[1]!.afmt, {
+			const q2 = renderTemplate(nt.templates[1]?.qfmt, { fields: note.fields });
+			const a2 = renderTemplate(nt.templates[1]?.afmt, {
 				fields: note.fields,
 				frontSide: q2,
 			});
@@ -413,8 +414,11 @@ describe("note-based card creation", () => {
 			});
 
 			const beforeCards = ctx.cards.getCardsByNoteId(created.note.id);
-			const cardOrd0 = beforeCards.find((card) => card.templateOrd === 0)!;
-			const cardOrd1 = beforeCards.find((card) => card.templateOrd === 1)!;
+			const cardOrd0 = beforeCards.find((card) => card.templateOrd === 0);
+			const cardOrd1 = beforeCards.find((card) => card.templateOrd === 1);
+			if (!cardOrd0 || !cardOrd1) {
+				throw new Error("expected cards for ord 0 and ord 1 before update");
+			}
 
 			const updated = manager.updateImageOcclusionNote(created.note.id, {
 				imagePath: "images/atlas.png",
@@ -448,7 +452,8 @@ describe("note-based card creation", () => {
 			expect(activeCards.map((card) => card.templateOrd).sort()).toEqual([
 				0, 2,
 			]);
-			const keptOrd0 = activeCards.find((card) => card.templateOrd === 0)!;
+			const keptOrd0 = activeCards.find((card) => card.templateOrd === 0);
+			if (!keptOrd0) throw new Error("expected card for ord 0 after update");
 			expect(keptOrd0.id).toBe(cardOrd0.id);
 			expect(updated.updatedCardIds).toContain(cardOrd0.id);
 			expect(updated.updatedCardIds).not.toContain(cardOrd1.id);

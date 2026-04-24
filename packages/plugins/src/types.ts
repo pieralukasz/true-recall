@@ -37,6 +37,7 @@ interface PluginManifest {
 	info: PluginInfo;
 	settingsPanel?: ComponentType<PluginSettingsProps>;
 	toolbarButtonIds?: string[];
+	// biome-ignore lint/suspicious/noConfusingVoidType: plugins may omit a cleanup function (useEffect-style signature)
 	activate?: (ctx: PluginContext) => Cleanup | void;
 	deactivate?: () => void;
 }

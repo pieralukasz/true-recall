@@ -34,7 +34,9 @@ describe("Bulk Operations", () => {
 				createTestCard({ id: "card-2", suspended: false }),
 				createTestCard({ id: "card-3", suspended: false }),
 			];
-			cards.forEach((c) => ctx.cards.set(c.id, c));
+			cards.forEach((c) => {
+				ctx.cards.set(c.id, c);
+			});
 
 			const affected = ctx.cards.bulkSuspend(["card-1", "card-2"]);
 
@@ -54,7 +56,9 @@ describe("Bulk Operations", () => {
 				createTestCard({ id: "card-1" }),
 				createTestCard({ id: "card-2" }),
 			];
-			cards.forEach((c) => ctx.cards.set(c.id, c));
+			cards.forEach((c) => {
+				ctx.cards.set(c.id, c);
+			});
 
 			const affected = ctx.cards.bulkSuspend(["card-1", "card-2"]);
 
@@ -82,7 +86,9 @@ describe("Bulk Operations", () => {
 				createTestCard({ id: "card-1", suspended: true }),
 				createTestCard({ id: "card-2", suspended: true }),
 			];
-			cards.forEach((c) => ctx.cards.set(c.id, c));
+			cards.forEach((c) => {
+				ctx.cards.set(c.id, c);
+			});
 
 			const affected = ctx.cards.bulkUnsuspend(["card-1", "card-2"]);
 
@@ -107,7 +113,9 @@ describe("Bulk Operations", () => {
 				createTestCard({ id: "card-1" }),
 				createTestCard({ id: "card-2" }),
 			];
-			cards.forEach((c) => ctx.cards.set(c.id, c));
+			cards.forEach((c) => {
+				ctx.cards.set(c.id, c);
+			});
 
 			const untilDate = "2026-02-15T00:00:00Z";
 			const affected = ctx.cards.bulkBury(["card-1", "card-2"], untilDate);
@@ -133,7 +141,9 @@ describe("Bulk Operations", () => {
 				createTestCard({ id: "card-1", buriedUntil: "2026-02-15T00:00:00Z" }),
 				createTestCard({ id: "card-2", buriedUntil: "2026-02-20T00:00:00Z" }),
 			];
-			cards.forEach((c) => ctx.cards.set(c.id, c));
+			cards.forEach((c) => {
+				ctx.cards.set(c.id, c);
+			});
 
 			const affected = ctx.cards.bulkUnbury(["card-1", "card-2"]);
 
@@ -158,7 +168,9 @@ describe("Bulk Operations", () => {
 				createTestCard({ id: "card-1" }),
 				createTestCard({ id: "card-2" }),
 			];
-			cards.forEach((c) => ctx.cards.set(c.id, c));
+			cards.forEach((c) => {
+				ctx.cards.set(c.id, c);
+			});
 
 			expect(ctx.cards.size()).toBe(2);
 
@@ -209,7 +221,9 @@ describe("Bulk Operations", () => {
 					reps: 3,
 				}),
 			];
-			cards.forEach((c) => ctx.cards.set(c.id, c));
+			cards.forEach((c) => {
+				ctx.cards.set(c.id, c);
+			});
 
 			const affected = ctx.cards.bulkReset(["card-1", "card-2"]);
 
@@ -247,7 +261,9 @@ describe("Bulk Operations", () => {
 				createTestCard({ id: "card-1", due: "2026-02-01T10:00:00Z" }),
 				createTestCard({ id: "card-2", due: "2026-02-05T10:00:00Z" }),
 			];
-			cards.forEach((c) => ctx.cards.set(c.id, c));
+			cards.forEach((c) => {
+				ctx.cards.set(c.id, c);
+			});
 
 			const newDue = "2026-03-01T00:00:00Z";
 			const affected = ctx.cards.bulkReschedule(["card-1", "card-2"], newDue);
@@ -274,7 +290,9 @@ describe("Bulk Operations", () => {
 			for (let i = 0; i < 100; i++) {
 				cards.push(createTestCard({ id: `card-${i}` }));
 			}
-			cards.forEach((c) => ctx.cards.set(c.id, c));
+			cards.forEach((c) => {
+				ctx.cards.set(c.id, c);
+			});
 
 			const cardIds = cards.map((c) => c.id);
 			const affected = ctx.cards.bulkSuspend(cardIds);
@@ -287,13 +305,16 @@ describe("Bulk Operations", () => {
 			ctx.cards.set(card.id, card);
 
 			const initialUpdatedAt = ctx.cards.getModifiedSince(0)[0]?.updatedAt;
+			if (initialUpdatedAt === undefined) {
+				throw new Error("expected seed card to have updatedAt");
+			}
 
 			vi.advanceTimersByTime(5000);
 
 			ctx.cards.bulkSuspend(["card-timestamp"]);
 
 			const afterCard = ctx.cards.getModifiedSince(0)[0];
-			expect(afterCard?.updatedAt).toBeGreaterThan(initialUpdatedAt!);
+			expect(afterCard?.updatedAt).toBeGreaterThan(initialUpdatedAt);
 		});
 
 		it("should handle mixed existing and non-existing IDs", async () => {
@@ -301,7 +322,9 @@ describe("Bulk Operations", () => {
 				createTestCard({ id: "exists-1" }),
 				createTestCard({ id: "exists-2" }),
 			];
-			cards.forEach((c) => ctx.cards.set(c.id, c));
+			cards.forEach((c) => {
+				ctx.cards.set(c.id, c);
+			});
 
 			const affected = ctx.cards.bulkSuspend([
 				"exists-1",

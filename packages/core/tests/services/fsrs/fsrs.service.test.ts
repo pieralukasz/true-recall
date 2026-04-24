@@ -87,8 +87,8 @@ describe("FSRSService", () => {
 			expect(card.lastReview).toBeNull();
 
 			const result = service.scheduleCard(card, Rating.Good);
-			expect(result.lastReview).not.toBeNull();
-			expect(new Date(result.lastReview!).getTime()).toBe(Date.now());
+			if (!result.lastReview) throw new Error("expected lastReview to be set");
+			expect(new Date(result.lastReview).getTime()).toBe(Date.now());
 		});
 
 		it("should handle custom review time", () => {
@@ -96,7 +96,8 @@ describe("FSRSService", () => {
 			const customTime = new Date("2024-01-20T15:00:00Z");
 
 			const result = service.scheduleCard(card, Rating.Good, customTime);
-			expect(new Date(result.lastReview!).getTime()).toBe(customTime.getTime());
+			if (!result.lastReview) throw new Error("expected lastReview to be set");
+			expect(new Date(result.lastReview).getTime()).toBe(customTime.getTime());
 		});
 
 		it("should handle Again rating on Review card (lapse)", () => {

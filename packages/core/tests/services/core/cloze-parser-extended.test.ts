@@ -151,16 +151,16 @@ describe("cloze parser — extended edge cases", () => {
 		it("non-sequential indices produce correct number of cards", () => {
 			const cards = parseClozeTemplate("{{c1::a}} {{c5::b}} {{c3::c}}");
 			expect(cards).toHaveLength(3);
-			expect(cards[0]!.clozeIndex).toBe(1);
-			expect(cards[1]!.clozeIndex).toBe(3);
-			expect(cards[2]!.clozeIndex).toBe(5);
+			expect(cards[0]?.clozeIndex).toBe(1);
+			expect(cards[1]?.clozeIndex).toBe(3);
+			expect(cards[2]?.clozeIndex).toBe(5);
 		});
 
 		it("duplicate index c1 used twice — 1 card, both blanked", () => {
 			const cards = parseClozeTemplate("{{c1::a}} middle {{c1::b}}");
 			expect(cards).toHaveLength(1);
-			expect(cards[0]!.question).toBe("[...] middle [...]");
-			expect(cards[0]!.answer).toBe("**a** middle **b**");
+			expect(cards[0]?.question).toBe("[...] middle [...]");
+			expect(cards[0]?.answer).toBe("**a** middle **b**");
 		});
 	});
 
@@ -186,7 +186,7 @@ describe("cloze parser — extended edge cases", () => {
 		it("parseClozeTemplate with empty content — still creates card", () => {
 			const cards = parseClozeTemplate("{{c1::}}");
 			expect(cards).toHaveLength(1);
-			expect(cards[0]!.clozeIndex).toBe(1);
+			expect(cards[0]?.clozeIndex).toBe(1);
 		});
 	});
 
@@ -224,8 +224,8 @@ describe("cloze parser — extended edge cases", () => {
 			const template = "Line 1: {{c1::first}}\nLine 2: {{c2::second}}";
 			const cards = parseClozeTemplate(template);
 			expect(cards).toHaveLength(2);
-			expect(cards[0]!.question).toBe("Line 1: [...]\nLine 2: second");
-			expect(cards[1]!.question).toBe("Line 1: first\nLine 2: [...]");
+			expect(cards[0]?.question).toBe("Line 1: [...]\nLine 2: second");
+			expect(cards[1]?.question).toBe("Line 1: first\nLine 2: [...]");
 		});
 	});
 

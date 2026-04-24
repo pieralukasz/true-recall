@@ -107,12 +107,12 @@ describe("cloze-parser.service", () => {
 				"{{c1::Tokyo}} is the capital of {{c2::Japan}}",
 			);
 			expect(cards).toHaveLength(2);
-			expect(cards[0]!.clozeIndex).toBe(1);
-			expect(cards[0]!.question).toBe("[...] is the capital of Japan");
-			expect(cards[0]!.answer).toBe("**Tokyo** is the capital of Japan");
-			expect(cards[1]!.clozeIndex).toBe(2);
-			expect(cards[1]!.question).toBe("Tokyo is the capital of [...]");
-			expect(cards[1]!.answer).toBe("Tokyo is the capital of **Japan**");
+			expect(cards[0]?.clozeIndex).toBe(1);
+			expect(cards[0]?.question).toBe("[...] is the capital of Japan");
+			expect(cards[0]?.answer).toBe("**Tokyo** is the capital of Japan");
+			expect(cards[1]?.clozeIndex).toBe(2);
+			expect(cards[1]?.question).toBe("Tokyo is the capital of [...]");
+			expect(cards[1]?.answer).toBe("Tokyo is the capital of **Japan**");
 		});
 
 		it("handles single cloze", () => {
@@ -120,8 +120,8 @@ describe("cloze-parser.service", () => {
 				"Mitochondria is the {{c1::powerhouse}} of the cell",
 			);
 			expect(cards).toHaveLength(1);
-			expect(cards[0]!.question).toBe("Mitochondria is the [...] of the cell");
-			expect(cards[0]!.answer).toBe(
+			expect(cards[0]?.question).toBe("Mitochondria is the [...] of the cell");
+			expect(cards[0]?.answer).toBe(
 				"Mitochondria is the **powerhouse** of the cell",
 			);
 		});
@@ -131,8 +131,8 @@ describe("cloze-parser.service", () => {
 				"{{c1::H2O}} is also known as {{c1::water}}",
 			);
 			expect(cards).toHaveLength(1);
-			expect(cards[0]!.question).toBe("[...] is also known as [...]");
-			expect(cards[0]!.answer).toBe("**H2O** is also known as **water**");
+			expect(cards[0]?.question).toBe("[...] is also known as [...]");
+			expect(cards[0]?.answer).toBe("**H2O** is also known as **water**");
 		});
 
 		it("handles cloze with hints", () => {
@@ -140,8 +140,8 @@ describe("cloze-parser.service", () => {
 				"{{c1::Tokyo::capital city}} is in {{c2::Japan::country}}",
 			);
 			expect(cards).toHaveLength(2);
-			expect(cards[0]!.question).toBe("[capital city] is in Japan");
-			expect(cards[1]!.question).toBe("Tokyo is in [country]");
+			expect(cards[0]?.question).toBe("[capital city] is in Japan");
+			expect(cards[1]?.question).toBe("Tokyo is in [country]");
 		});
 
 		it("returns empty for no cloze content", () => {
@@ -151,9 +151,9 @@ describe("cloze-parser.service", () => {
 		it("handles three indices", () => {
 			const cards = parseClozeTemplate("{{c1::A}} {{c2::B}} {{c3::C}}");
 			expect(cards).toHaveLength(3);
-			expect(cards[0]!.question).toBe("[...] B C");
-			expect(cards[1]!.question).toBe("A [...] C");
-			expect(cards[2]!.question).toBe("A B [...]");
+			expect(cards[0]?.question).toBe("[...] B C");
+			expect(cards[1]?.question).toBe("A [...] C");
+			expect(cards[2]?.question).toBe("A B [...]");
 		});
 	});
 });

@@ -114,7 +114,9 @@ describe("StatsActions — preset methods", () => {
 			addReview(ctx, "card-1", "Medical");
 
 			const ids = getReviewIds(ctx, "card-1");
-			softDeleteReview(ctx, ids[0]!);
+			const firstId = ids[0];
+			if (!firstId) throw new Error("expected at least one review id");
+			softDeleteReview(ctx, firstId);
 
 			expect(ctx.stats.getReviewCountForPreset("Medical")).toBe(1);
 		});
@@ -168,9 +170,11 @@ describe("StatsActions — preset methods", () => {
 
 			addReview(ctx, "card-1", "OldName");
 			const ids = getReviewIds(ctx, "card-1");
+			const firstId = ids[0];
+			if (!firstId) throw new Error("expected at least one review id");
 			const before = ctx.db.get<{ updated_at: number }>(
 				`SELECT updated_at FROM review_log WHERE id = ?`,
-				[ids[0]!],
+				[firstId],
 			);
 
 			// Advance time
@@ -180,10 +184,10 @@ describe("StatsActions — preset methods", () => {
 
 			const after = ctx.db.get<{ updated_at: number }>(
 				`SELECT updated_at FROM review_log WHERE id = ?`,
-				[ids[0]!],
+				[firstId],
 			);
 
-			expect(after!.updated_at).toBeGreaterThan(before!.updated_at);
+			expect(after?.updated_at).toBeGreaterThan(before?.updated_at);
 		});
 	});
 
@@ -236,7 +240,9 @@ describe("StatsActions — preset methods", () => {
 			addReview(ctx, card.id, "Medical", 2);
 
 			const ids = getReviewIds(ctx, card.id);
-			softDeleteReview(ctx, ids[0]!);
+			const firstId = ids[0];
+			if (!firstId) throw new Error("expected at least one review id");
+			softDeleteReview(ctx, firstId);
 
 			const rows = ctx.stats.getPresetProgressInRange(
 				"2026-03-01T04:00:00.000Z",

@@ -220,7 +220,8 @@ describe("ScheduleBreakService", () => {
 			// Check distribution is somewhat even
 			const distribution = new Map<string, number>();
 			for (const change of result.changes) {
-				const date = change.newDue.split("T")[0]!;
+				const [date] = change.newDue.split("T");
+				if (!date) continue;
 				distribution.set(date, (distribution.get(date) ?? 0) + 1);
 			}
 

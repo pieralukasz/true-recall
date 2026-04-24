@@ -111,7 +111,7 @@ describe("card generation from notes", () => {
 			const cards = generateCardsForNote(note, basicNoteType());
 
 			expect(cards).toHaveLength(1);
-			expect(cards[0]!.templateOrd).toBe(0);
+			expect(cards[0]?.templateOrd).toBe(0);
 		});
 
 		it("reversed note (2 templates) → 2 cards with template_ord=0,1", () => {
@@ -121,8 +121,8 @@ describe("card generation from notes", () => {
 			const cards = generateCardsForNote(note, reversedNoteType());
 
 			expect(cards).toHaveLength(2);
-			expect(cards[0]!.templateOrd).toBe(0);
-			expect(cards[1]!.templateOrd).toBe(1);
+			expect(cards[0]?.templateOrd).toBe(0);
+			expect(cards[1]?.templateOrd).toBe(1);
 		});
 
 		it("custom type with 3 templates → 3 cards", () => {
@@ -149,7 +149,7 @@ describe("card generation from notes", () => {
 			const note = makeNote({ noteTypeId: BUILTIN_BASIC_REVERSED_ID });
 			const cards = generateCardsForNote(note, reversedNoteType());
 
-			expect(cards[0]!.id).not.toBe(cards[1]!.id);
+			expect(cards[0]?.id).not.toBe(cards[1]?.id);
 		});
 
 		it("all cards share same note_id", () => {
@@ -166,7 +166,7 @@ describe("card generation from notes", () => {
 			const note = makeNote({ sourceUid: "uid-123" });
 			const cards = generateCardsForNote(note, basicNoteType());
 
-			expect(cards[0]!.sourceUid).toBe("uid-123");
+			expect(cards[0]?.sourceUid).toBe("uid-123");
 		});
 	});
 
@@ -181,7 +181,7 @@ describe("card generation from notes", () => {
 			const cards = generateCardsForNote(note, clozeNoteType());
 
 			expect(cards).toHaveLength(1);
-			expect(cards[0]!.templateOrd).toBe(1);
+			expect(cards[0]?.templateOrd).toBe(1);
 		});
 
 		it('"{{c1::a}} {{c2::b}}" → 2 cards, template_ord=1,2', () => {
@@ -192,8 +192,8 @@ describe("card generation from notes", () => {
 			const cards = generateCardsForNote(note, clozeNoteType());
 
 			expect(cards).toHaveLength(2);
-			expect(cards[0]!.templateOrd).toBe(1);
-			expect(cards[1]!.templateOrd).toBe(2);
+			expect(cards[0]?.templateOrd).toBe(1);
+			expect(cards[1]?.templateOrd).toBe(2);
 		});
 
 		it('"{{c1::a}} {{c1::b}}" → 1 card (same index = 1 card)', () => {
@@ -204,7 +204,7 @@ describe("card generation from notes", () => {
 			const cards = generateCardsForNote(note, clozeNoteType());
 
 			expect(cards).toHaveLength(1);
-			expect(cards[0]!.templateOrd).toBe(1);
+			expect(cards[0]?.templateOrd).toBe(1);
 		});
 
 		it("text with no cloze markers → 1 card (ensure_not_empty)", () => {
@@ -226,7 +226,7 @@ describe("card generation from notes", () => {
 			const cards = generateCardsForNote(note, clozeNoteType());
 
 			expect(cards).toHaveLength(1);
-			expect(cards[0]!.templateOrd).toBe(3);
+			expect(cards[0]?.templateOrd).toBe(3);
 		});
 
 		it('cloze with hint: "{{c1::answer::hint}}" → 1 card', () => {
@@ -237,7 +237,7 @@ describe("card generation from notes", () => {
 			const cards = generateCardsForNote(note, clozeNoteType());
 
 			expect(cards).toHaveLength(1);
-			expect(cards[0]!.templateOrd).toBe(1);
+			expect(cards[0]?.templateOrd).toBe(1);
 		});
 	});
 
@@ -270,8 +270,8 @@ describe("card generation from notes", () => {
 			});
 			const cards = generateCardsForNote(note, ioNoteType());
 
-			expect(cards[0]!.templateOrd).toBe(0);
-			expect(cards[1]!.templateOrd).toBe(1);
+			expect(cards[0]?.templateOrd).toBe(0);
+			expect(cards[1]?.templateOrd).toBe(1);
 		});
 
 		it("v1 definition with groupKey ords → ords follow group keys", () => {
@@ -306,8 +306,8 @@ describe("card generation from notes", () => {
 			const cards = generateCardsForNote(note, ioNoteType());
 
 			expect(cards).toHaveLength(2);
-			expect(cards[0]!.templateOrd).toBe(2);
-			expect(cards[1]!.templateOrd).toBe(5);
+			expect(cards[0]?.templateOrd).toBe(2);
+			expect(cards[1]?.templateOrd).toBe(5);
 		});
 	});
 
@@ -340,7 +340,7 @@ describe("card generation from notes", () => {
 			);
 
 			expect(cards).toHaveLength(1);
-			expect(cards[0]!.templateOrd).toBe(3);
+			expect(cards[0]?.templateOrd).toBe(3);
 		});
 	});
 
@@ -366,7 +366,7 @@ describe("card generation from notes", () => {
 
 			const empty = detectEmptyCards(note, noteType);
 			expect(empty).toHaveLength(1);
-			expect(empty[0]!.templateOrd).toBe(0);
+			expect(empty[0]?.templateOrd).toBe(0);
 		});
 
 		it("template referencing non-empty field → not detected as empty", () => {
@@ -421,7 +421,7 @@ describe("card generation from notes", () => {
 			const newCards = generateCardsForNote(note, clozeNoteType(), [1, 2]);
 
 			expect(newCards).toHaveLength(1);
-			expect(newCards[0]!.templateOrd).toBe(3);
+			expect(newCards[0]?.templateOrd).toBe(3);
 		});
 
 		it("edit on reversed note → both template_ords generated", () => {

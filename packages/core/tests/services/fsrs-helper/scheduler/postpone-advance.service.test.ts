@@ -117,7 +117,7 @@ describe("PostponeAdvanceService", () => {
 				action: "postpone",
 				days: 7,
 				scope: "selected",
-				cardIds: [cards[0]!.id, cards[1]!.id],
+				cardIds: [cards[0]?.id, cards[1]?.id],
 				dryRun: true,
 			});
 
@@ -162,7 +162,7 @@ describe("PostponeAdvanceService", () => {
 
 			// Only the review card should be affected
 			expect(result.affectedCount).toBe(1);
-			expect(result.changes[0]!.cardId).toBe("review");
+			expect(result.changes[0]?.cardId).toBe("review");
 		});
 	});
 
@@ -275,7 +275,7 @@ describe("PostponeAdvanceService", () => {
 				dryRun: true,
 			});
 
-			expect(result.changes[0]!.newDue).toContain("T14:30:45");
+			expect(result.changes[0]?.newDue).toContain("T14:30:45");
 		});
 	});
 

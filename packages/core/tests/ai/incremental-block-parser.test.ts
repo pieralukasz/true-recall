@@ -73,8 +73,8 @@ describe("IncrementalFlashcardParser (JSON format)", () => {
 
 		const completes = events.filter((e) => e.type === "card_complete");
 		expect(completes).toHaveLength(1);
-		expect(completes[0]!.block!.fields.Front).toBe("What is X?");
-		expect(completes[0]!.block!.fields.Back).toBe("Y");
+		expect(completes[0]?.block?.fields.Front).toBe("What is X?");
+		expect(completes[0]?.block?.fields.Back).toBe("Y");
 	});
 
 	it("should parse an object completed on finish()", () => {
@@ -84,7 +84,7 @@ describe("IncrementalFlashcardParser (JSON format)", () => {
 
 		const completes = events.filter((e) => e.type === "card_complete");
 		expect(completes).toHaveLength(1);
-		expect(completes[0]!.block!.noteTypeId).toBe(BUILTIN_BASIC_ID);
+		expect(completes[0]?.block?.noteTypeId).toBe(BUILTIN_BASIC_ID);
 	});
 
 	it("should parse multiple objects in a JSON array", () => {
@@ -97,8 +97,8 @@ describe("IncrementalFlashcardParser (JSON format)", () => {
 		const events = [...parser.feed(json), ...parser.finish()];
 		const completes = events.filter((e) => e.type === "card_complete");
 		expect(completes).toHaveLength(2);
-		expect(completes[0]!.block!.noteTypeSlug).toBe("basic");
-		expect(completes[1]!.block!.noteTypeSlug).toBe("cloze");
+		expect(completes[0]?.block?.noteTypeSlug).toBe("basic");
+		expect(completes[1]?.block?.noteTypeSlug).toBe("cloze");
 	});
 
 	it("should handle chunk-by-chunk streaming", () => {
@@ -113,7 +113,7 @@ describe("IncrementalFlashcardParser (JSON format)", () => {
 
 		const completes = allEvents.filter((e) => e.type === "card_complete");
 		expect(completes).toHaveLength(1);
-		expect(completes[0]!.block!.fields.Front).toBe("What is X?");
+		expect(completes[0]?.block?.fields.Front).toBe("What is X?");
 	});
 
 	it("should emit partial updates during streaming", () => {
@@ -126,7 +126,8 @@ describe("IncrementalFlashcardParser (JSON format)", () => {
 
 		const partials = events.filter((e) => e.type === "partial_update");
 		expect(partials.length).toBeGreaterThanOrEqual(1);
-		const last = partials[partials.length - 1]!;
+		const last = partials[partials.length - 1];
+		if (!last) throw new Error("expected at least one partial_update event");
 		expect(last.partialQuestion).toBe("Partial question");
 	});
 
@@ -138,7 +139,7 @@ describe("IncrementalFlashcardParser (JSON format)", () => {
 
 		const completes = events.filter((e) => e.type === "card_complete");
 		expect(completes).toHaveLength(1);
-		expect(completes[0]!.block!.noteTypeId).toBe(BUILTIN_BASIC_REVERSED_ID);
+		expect(completes[0]?.block?.noteTypeId).toBe(BUILTIN_BASIC_REVERSED_ID);
 	});
 
 	it("should skip unknown types", () => {
@@ -157,7 +158,7 @@ describe("IncrementalFlashcardParser (JSON format)", () => {
 
 		const completes = events.filter((e) => e.type === "card_complete");
 		expect(completes).toHaveLength(1);
-		expect(completes[0]!.block!.fields.Front).toBe('What is "DNA"?');
+		expect(completes[0]?.block?.fields.Front).toBe('What is "DNA"?');
 	});
 
 	it("should handle cloze braces inside JSON strings", () => {
@@ -173,7 +174,7 @@ describe("IncrementalFlashcardParser (JSON format)", () => {
 
 		const completes = events.filter((e) => e.type === "card_complete");
 		expect(completes).toHaveLength(1);
-		expect(completes[0]!.block!.fields.Text).toBe(
+		expect(completes[0]?.block?.fields.Text).toBe(
 			"The {{c1::mitochondria}} is the powerhouse",
 		);
 	});
@@ -199,7 +200,7 @@ describe("IncrementalFlashcardParser (JSON format)", () => {
 		const events = [...parser.feed(json), ...parser.finish()];
 		const completes = events.filter((e) => e.type === "card_complete");
 		expect(completes).toHaveLength(1);
-		expect(completes[0]!.block!.sourceText).toBe("X is defined as Y.");
+		expect(completes[0]?.block?.sourceText).toBe("X is defined as Y.");
 	});
 
 	it("should omit sourceText when source is missing", () => {
@@ -207,7 +208,7 @@ describe("IncrementalFlashcardParser (JSON format)", () => {
 		const json = '[{"type": "basic", "Front": "Q", "Back": "A"}]';
 		const events = [...parser.feed(json), ...parser.finish()];
 		const completes = events.filter((e) => e.type === "card_complete");
-		expect(completes[0]!.block!.sourceText).toBeUndefined();
+		expect(completes[0]?.block?.sourceText).toBeUndefined();
 	});
 });
 
@@ -219,8 +220,8 @@ describe("parseBlockResponse (non-streaming JSON)", () => {
 		]);
 		const blocks = parseBlockResponse(text, lookup);
 		expect(blocks).toHaveLength(2);
-		expect(blocks[0]!.fields.Front).toBe("Q1");
-		expect(blocks[1]!.fields.Front).toBe("Q2");
+		expect(blocks[0]?.fields.Front).toBe("Q1");
+		expect(blocks[1]?.fields.Front).toBe("Q2");
 	});
 
 	it("should handle markdown code fences around JSON", () => {
@@ -256,6 +257,6 @@ describe("parseBlockResponse (non-streaming JSON)", () => {
 		]);
 		const blocks = parseBlockResponse(text, lookup);
 		expect(blocks).toHaveLength(1);
-		expect(blocks[0]!.sourceText).toBe("Original sentence.");
+		expect(blocks[0]?.sourceText).toBe("Original sentence.");
 	});
 });

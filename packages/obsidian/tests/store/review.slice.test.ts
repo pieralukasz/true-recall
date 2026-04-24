@@ -258,7 +258,7 @@ describe("Review Slice", () => {
 			expect(countsBefore.due).toBe(1);
 
 			// Remove the New card which is before current index
-			store.getState().review.removeCardById(cards[0]!.id);
+			store.getState().review.removeCardById(cards[0]?.id);
 
 			// Count should stay the same (card was already passed)
 			const countsAfter = store.getState().review.getBadgeCounts();
@@ -279,7 +279,7 @@ describe("Review Slice", () => {
 			expect(countsBefore.due).toBe(2);
 
 			// Remove all review cards
-			store.getState().review.removeCardsByIds([cards[1]!.id, cards[2]!.id]);
+			store.getState().review.removeCardsByIds([cards[1]?.id, cards[2]?.id]);
 
 			const countsAfter = store.getState().review.getBadgeCounts();
 			expect(countsAfter.new).toBe(2);
@@ -929,8 +929,8 @@ describe("Review Slice", () => {
 
 			// The queue should have reviewCard2 at index 1 (current) and relearning at index 2
 			const state = store.getState().review;
-			expect(state.queue[1]!.fsrs.state).toBe(State.Review);
-			expect(state.queue[2]!.fsrs.state).toBe(State.Relearning);
+			expect(state.queue[1]?.fsrs.state).toBe(State.Review);
+			expect(state.queue[2]?.fsrs.state).toBe(State.Relearning);
 		});
 	});
 });

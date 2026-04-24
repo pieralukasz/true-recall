@@ -231,7 +231,7 @@ describe("Easy Days Service", () => {
 				});
 
 				// Time should be preserved (14:30)
-				expect(result.changes[0]!.newDue).toContain("T14:30:00");
+				expect(result.changes[0]?.newDue).toContain("T14:30:00");
 			});
 		});
 
@@ -258,8 +258,8 @@ describe("Easy Days Service", () => {
 				// 4 Sundays * 5 excess = 20 total
 				expect(result.totalMoved).toBe(20);
 				expect(result.byDay).toHaveLength(1);
-				expect(result.byDay[0]!.day).toBe("Sun");
-				expect(result.byDay[0]!.moved).toBe(20);
+				expect(result.byDay[0]?.day).toBe("Sun");
+				expect(result.byDay[0]?.moved).toBe(20);
 			});
 
 			it("groups by recurring day correctly", () => {
@@ -296,7 +296,7 @@ describe("Easy Days Service", () => {
 
 				expect(result.totalMoved).toBe(3); // 8 - 5
 				expect(result.byDay).toHaveLength(1);
-				expect(result.byDay[0]!.day).toBe("2026-02-15");
+				expect(result.byDay[0]?.day).toBe("2026-02-15");
 			});
 		});
 	});

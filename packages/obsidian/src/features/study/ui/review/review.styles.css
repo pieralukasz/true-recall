@@ -189,6 +189,7 @@
 .true-recall-review-question .cm-editor .cm-content,
 .true-recall-review-answer .cm-editor .cm-content {
 	text-align: center;
+	/* biome-ignore lint/complexity/noImportantStyles: must override CodeMirror's inline display rule */
 	display: flex !important;
 	flex-direction: column;
 	align-items: center;
