@@ -1,5 +1,52 @@
 # Changelog
 
+## 1.7.0 (2026-04-24)
+
+### Features
+
+- New **Plugin architecture** -- 12 built-in plugins with tier-based gating (free / BYOK / Pro), each independently toggleable from a new **Plugins** tab in settings: Image Occlusion, AI Flashcard Generation, Knowledge Base, Type-in Mode, Healing Flashcards, Link Status Indicators, Dashboard Codeblocks, Gamification Widgets, Status Bar Widget, AI Anki Import, Selection Toolbar, and Card Polish
+- **Card Polish plugin** -- transform cards mid-review or inside the Add Flashcard modal: fix formatting, simplify wording, or run custom instructions. Per-preset auto-apply or preview, per-preset review hotkeys, optional source-note and related-card context
+- **AI Flashcard Generation plugin** -- unified preset-driven generation from notes, selections, and highlights, with per-preset TTS and image post-processing, a Pro-hosted built-in preset, and custom presets with source-note context
+- **Generation presets system** -- full CRUD for AI generation templates via the new **AI Generation** settings panel, CLI, and MCP. Each preset binds to a note type, owns a single free-form `prompt`, and optionally configures TTS voice / autoplay and image generation targets
+- **Card Preview modal** -- click **Preview** on any Flashcard Panel card to see front and back with an interactive grading flow, smooth view-transition animations, and keyboard shortcuts
+- **Basic Pro prompt overhaul** -- rewritten Pro generation prompt with 7 core rules and 6 few-shot examples, plus automatic injection of existing same-note cards so new generations avoid duplicating what you already have
+- **CLI preset management** -- new commands `list_generation_presets`, `get_generation_preset`, `create_generation_preset`, `update_generation_preset`, `delete_generation_preset`, and `generate_flashcards_with_preset`
+- **MCP preset tools** -- matching MCP tools expose the same preset CRUD and preset-based generation to AI assistants
+
+### Improvements
+
+- **Selection Toolbar is now a plugin** -- the floating toolbar extracts into its own plugin with its own activate/deactivate, and its config moves under the plugin's panel. The legacy `selectionToolbarEnabled` global setting is gone; toggle the plugin instead
+- **Cmd/Ctrl-click a panel card to enter selection mode** -- quickly start bulk operations from the Flashcard Panel without the context menu
+- **Wand button in Add Flashcard modal** -- dispatches a `card-polish` event so your Card Polish presets run in the modal, not just in review
+- **Day rollover fixes UI immediately** -- at `dayStartHour` boundary, the status bar, dashboard, and panel now invalidate on window focus or tab visibility change, so due / new counts update without a manual refresh
+- **Settings UI is reactive** -- `useSettings` and `usePreset` hooks subscribe to `settings:changed` so UI updates two-way when settings change from any source
+- **Preview modal polish** -- compact button bar in preview mode, cleaner dividers, per-side body styling, and PRO badge pinned on the Basic Pro preset
+- **AI parse tolerance** -- Card Polish and generation flows tolerate JSON embedded in prose or code fences (```json ... ```), and surface user-visible notices on parse failures instead of failing silently
+- **Post-processing error surfacing** -- TTS and image post-processing errors invalidate the DataLayer and show a user-visible notice; audio playback errors are logged separately with context preserved
+- **Preview disabled plugins** -- the Plugins tab now lets you expand any plugin's accordion to read its description and settings panel before flipping the enable toggle, and each plugin description is now 2-3 sentences covering the core capabilities
+
+### Bug Fixes
+
+- Fixed **CommandSuggestModal** and **PresetSuggestModal** resolving `null` when an item was selected -- choices are now correctly captured via `queueMicrotask`
+- Fixed stale `defaultGenerationPresetId` after migration -- settings now self-heal when the referenced preset is gone
+- Fixed **pin / wand icons** not rendering in the Add Flashcard modal -- `Clickable` now forwards its ref so `useIcon` can mount correctly
+- Fixed Pro prompt not falling back when user custom prompt was empty
+- Fixed CardAI apply flows so **"AI changes applied"** notifies only on actual mutations (not on silent `ReviewCardTarget` advances)
+- Fixed **QuickNoteEditor** wand showing unhandled rejections -- `resolveSourceUid` now has a proper `.catch` with a user-visible notice
+- Fixed stale UI when CardAI invalidation fires (DataLayer invalidation on TTS/image errors)
+
+### Pro-gating Changes
+
+- **Per-plugin tiers** -- plugins declare `free`, `byok`, or `pro`; the **Plugins** tab shows a Pro badge on Pro-only plugins and gates activation accordingly
+
+### Breaking Changes & Migration
+
+- **Generation preset shape flattened** -- `GenerationPreset` drops `fields` (per-field config), `customPrompt` (renamed to `prompt`), and `isPinned`; adds `builtin` and `image`; renames `isPro` -> `requiresPro`. Settings migration lossy-merges legacy preset fields into the new flat `prompt` field
+- **`flashcardGeneration` settings bucket removed** -- the legacy bucket is dropped by migration; generation config now lives on each preset
+- **Built-in presets are now locked** -- you can't edit or delete built-in presets from the UI; copy one to customize
+- **`cardPolish.presets` renamed to `userPresets`** -- built-in polish presets are dropped and replaced by the shared Card Polish plugin defaults; migration happens automatically on first run
+- **`selectionToolbarEnabled` setting removed** -- toggle the **Selection Toolbar** plugin instead
+
 ## 1.6.2 (2026-04-09)
 
 ### Features

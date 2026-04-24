@@ -1,5 +1,5 @@
+import { spring } from "motion";
 import { animate } from "motion/mini";
-import { spring } from "motion-dom";
 import type { RefObject } from "preact";
 import { useEffect, useRef } from "preact/hooks";
 

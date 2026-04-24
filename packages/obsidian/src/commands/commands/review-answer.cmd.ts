@@ -8,11 +8,11 @@ import { mutateReviewGrade } from "@true-recall/obsidian/data";
 
 import type { Command, CommandContext } from "../command.types";
 
-export interface ReviewAnswerParams {
+interface ReviewAnswerParams {
 	card: FSRSFlashcardItem;
 	originalFsrs: FSRSCardData;
 	updatedFsrs: FSRSCardData;
-	previousIndex: number;
+	previousIndex: number | null;
 	wasNewCard: boolean;
 	rating: number;
 	previousState: number;

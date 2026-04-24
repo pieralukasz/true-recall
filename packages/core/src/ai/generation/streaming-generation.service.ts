@@ -1,4 +1,5 @@
 import type { IHttpClient } from "../../interfaces/http-client";
+import type { GenerationPreset } from "../../types/generation-preset.types";
 import type { NoteType } from "../../types/note.types";
 import type { TrueRecallSettings } from "../../types/settings.types";
 import { StreamingOpenRouterClient } from "../clients/streaming-openrouter-client";
@@ -6,9 +7,13 @@ import type { AIClientConfig } from "../config/ai-client-config";
 import { resolveAIClientConfig } from "../config/ai-client-config";
 import { IncrementalFlashcardParser } from "../parsing/incremental-flashcard-parser";
 import {
-	buildByokPrompt,
-	buildCardFormatSpec,
+	buildPresetFormatSpec,
+	buildPresetPrompt,
 } from "../prompts/block-prompt-builder";
+import {
+	type ExistingCardContext,
+	renderExistingCardsBlock,
+} from "../prompts/existing-cards-block";
 import {
 	createThrottledPartialUpdater,
 	finishStreaming,
@@ -16,6 +21,7 @@ import {
 	startStreaming,
 	streamingGeneration,
 } from "../state/streaming-state";
+import { resolveGenerationPresetAndNoteType } from "./preset-resolver";
 import {
 	type CardEventFlashcardManager,
 	processCardEvents,
@@ -33,21 +39,11 @@ export const FALLBACK_BASIC_NOTE_TYPE = {
 	slug: "basic",
 } as NoteType;
 
-export function buildGenerationPrompt(
-	settings: TrueRecallSettings,
-	noteType?: NoteType | null,
-): string {
-	return buildByokPrompt(
-		noteType ?? FALLBACK_BASIC_NOTE_TYPE,
-		settings.generationLanguage ?? "auto",
-		settings.aiGenerationPrompt,
-	);
-}
-
 export interface StreamingGenerationResult {
 	created: number;
 	duplicates: number;
 	createdCardIds: string[];
+	preset: GenerationPreset;
 }
 
 /** Minimal file reference for streaming generation (replaces Obsidian TFile). */
@@ -58,6 +54,11 @@ export interface StreamingSourceFile extends SourceFileRef {
 /** Minimal FlashcardManager interface for streaming generation. */
 export interface StreamingFlashcardManager extends CardEventFlashcardManager {
 	getNoteTypeBySlug?(slug: string): NoteType | null;
+	getNoteTypeById(id: string): NoteType | null;
+}
+
+export interface StreamingGenerationOptions {
+	existingCards?: ExistingCardContext[];
 }
 
 export class StreamingGenerationService {
@@ -68,28 +69,42 @@ export class StreamingGenerationService {
 		private schedule?: ScheduleCallback,
 	) {}
 
-	async generateStreaming(
+	async generate(
 		text: string,
 		sourceFile: StreamingSourceFile,
-		noteType?: NoteType | null,
+		presetId: string,
+		options?: StreamingGenerationOptions,
 	): Promise<StreamingGenerationResult> {
+		const settings = this.getSettings();
+		const { preset, noteType } = resolveGenerationPresetAndNoteType(
+			settings,
+			this.flashcardManager,
+			presetId,
+		);
+
 		if (streamingGeneration.value.isGenerating) {
 			throw new Error("Generation already in progress");
 		}
 
-		const settings = this.getSettings();
-		const aiConfig = resolveAIClientConfig(settings);
+		if (preset.requiresPro && !settings.proKey) {
+			throw new Error(
+				`Preset "${preset.name}" requires True Recall Pro. Upgrade or pick a different preset.`,
+			);
+		}
 
+		const aiConfig = resolveAIClientConfig(settings);
 		const abortController = new AbortController();
 		startStreaming(sourceFile.basename, sourceFile.path, abortController);
 
 		try {
-			return await this.runStreamingGeneration(
+			return await this.runPresetGeneration(
 				aiConfig,
 				text,
 				sourceFile,
 				abortController,
+				preset,
 				noteType,
+				options,
 			);
 		} catch (error) {
 			if (abortController.signal.aborted) {
@@ -101,12 +116,14 @@ export class StreamingGenerationService {
 		}
 	}
 
-	private async runStreamingGeneration(
+	private async runPresetGeneration(
 		aiConfig: AIClientConfig,
 		text: string,
 		sourceFile: StreamingSourceFile,
 		abortController: AbortController,
-		noteType?: NoteType | null,
+		preset: GenerationPreset,
+		noteType: NoteType,
+		options?: StreamingGenerationOptions,
 	): Promise<StreamingGenerationResult> {
 		const client = new StreamingOpenRouterClient(
 			aiConfig.apiKey,
@@ -118,18 +135,33 @@ export class StreamingGenerationService {
 			this.flashcardManager.getNoteTypeBySlug?.(slug) ?? null;
 		const parser = new IncrementalFlashcardParser(getNoteType);
 
-		const settings = this.getSettings();
-		const customPrompt = settings.aiGenerationPrompt?.trim() || "";
-		const systemPrompt = aiConfig.isPro
-			? customPrompt
-			: buildGenerationPrompt(settings, noteType);
+		// Prompts containing the {{EXISTING_CARDS}} placeholder are authoritative
+		// full system prompts (e.g. built-in Pro preset) — use verbatim and send
+		// the format spec as the user message so format instructions still reach
+		// the model. Otherwise wrap the user's prompt in the format spec derived
+		// from the note type and send the raw text as the user message.
+		const useRawPrompt = preset.prompt.includes("{{EXISTING_CARDS}}");
+		const rawSystemPrompt = useRawPrompt
+			? preset.prompt
+			: buildPresetPrompt(preset, noteType);
+		const existingCardsBlock = renderExistingCardsBlock(
+			options?.existingCards ?? [],
+		);
+		const systemPrompt = rawSystemPrompt.replace(
+			"{{EXISTING_CARDS}}",
+			existingCardsBlock,
+		);
 
-		const metadata = aiConfig.isPro
-			? { call_context: "generation", note_type: noteType?.slug ?? "basic" }
+		const metadata = aiConfig.hasProTier
+			? {
+					call_context: "generation",
+					note_type: noteType.slug ?? "basic",
+					preset_id: preset.id,
+				}
 			: undefined;
 
-		const userContent = aiConfig.isPro
-			? `${buildCardFormatSpec(noteType ?? FALLBACK_BASIC_NOTE_TYPE)}\n\n${text}`
+		const userContent = useRawPrompt
+			? `${buildPresetFormatSpec(preset, noteType)}\n\n${text}`
 			: text;
 
 		let createdCount = 0;
@@ -151,7 +183,7 @@ export class StreamingGenerationService {
 		const stream = client.chatStream(
 			{
 				messages,
-				...(aiConfig.isPro ? {} : { temperature: aiConfig.temperature }),
+				...(aiConfig.hasProTier ? {} : { temperature: aiConfig.temperature }),
 				metadata,
 			},
 			abortController.signal,
@@ -186,6 +218,7 @@ export class StreamingGenerationService {
 			created: createdCount,
 			duplicates: duplicateCount,
 			createdCardIds,
+			preset,
 		};
 	}
 }

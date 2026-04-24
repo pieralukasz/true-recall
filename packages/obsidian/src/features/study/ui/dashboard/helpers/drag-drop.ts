@@ -41,7 +41,7 @@ export type DropResult =
 			parentName: string;
 	  };
 
-export const DRAG_MIME = "application/x-true-recall-dnd";
+const DRAG_MIME = "application/x-true-recall-dnd";
 
 export interface DragState {
 	item: DragItem;
@@ -82,7 +82,7 @@ export function consumeDragState(
 	return ds;
 }
 
-export interface DropDeps {
+interface DropDeps {
 	app: App;
 	projectManagement: ProjectManagementService;
 	promptProjectName: (defaultName: string) => Promise<string | null>;

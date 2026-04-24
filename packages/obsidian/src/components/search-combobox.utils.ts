@@ -3,7 +3,7 @@ import type {
 	SuggestionCategory,
 } from "@true-recall/obsidian/helpers/search-suggestions.types";
 
-export const SEARCH_CATEGORY_LABELS: Record<SuggestionCategory, string> = {
+const SEARCH_CATEGORY_LABELS: Record<SuggestionCategory, string> = {
 	keyword: "Filters",
 	state: "States",
 	property: "Properties",

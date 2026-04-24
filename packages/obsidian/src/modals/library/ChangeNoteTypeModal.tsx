@@ -14,7 +14,7 @@ export interface ChangeNoteTypeResult {
 	fieldMapping?: Record<string, string>;
 }
 
-export interface ChangeNoteTypeModalOptions {
+interface ChangeNoteTypeModalOptions {
 	currentNoteType: NoteType;
 	availableNoteTypes: NoteType[];
 	noteCount: number;

@@ -1,7 +1,6 @@
 import { State } from "ts-fsrs";
 
 import { Clickable } from "@true-recall/obsidian/components";
-import { IOCardRenderer } from "@true-recall/obsidian/features/image-occlusion/IOCardRenderer";
 import { LivePreviewField } from "@true-recall/obsidian/features/study/ui/review/components/LivePreviewField";
 import {
 	FSRS_COLORS,
@@ -10,6 +9,7 @@ import {
 import { useApp } from "@true-recall/obsidian/preact/ObsidianContext";
 
 import type { BrowserCard } from "../types";
+import { IOCardRenderer } from "@true-recall/plugins/image-occlusion";
 
 const STATE_LABELS: Record<number, string> = {
 	[State.New]: "New",

@@ -1,6 +1,8 @@
 /* Flashcard panel
    FSRS state colors: canonical mapping in src/shared/ui/helpers/fsrs-colors.ts
    Highlight class suffixes (-green, -orange, -blue, -red) match FsrsColorName values. */
+@import "./preview/preview.styles.css";
+
 @layer components {
 	@keyframes true-recall-pulse-collect {
 		0%,

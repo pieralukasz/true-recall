@@ -5,7 +5,7 @@ import { Clickable } from "@true-recall/obsidian/components";
 import { NoteListItem } from "@true-recall/obsidian/components/NoteListItem";
 import { SearchInput } from "@true-recall/obsidian/components/SearchInput";
 
-export interface NotePickerProps {
+interface NotePickerProps {
 	notes: TFile[];
 	onSelect: (note: TFile) => void;
 	onCancel?: () => void;

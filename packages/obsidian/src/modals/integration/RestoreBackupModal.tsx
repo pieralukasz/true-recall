@@ -14,11 +14,11 @@ import {
 } from "@true-recall/obsidian/modals/shared/BasePromiseModal";
 import { confirm } from "@true-recall/obsidian/modals/shared/ConfirmModal";
 
-export interface RestoreBackupResult extends CancellableResult {
+interface RestoreBackupResult extends CancellableResult {
 	restoredPath?: string;
 }
 
-export interface RestoreBackupModalOptions {
+interface RestoreBackupModalOptions {
 	backups: BackupInfo[];
 	backupService: BackupService;
 	sessionStartBackupPath: string | null;

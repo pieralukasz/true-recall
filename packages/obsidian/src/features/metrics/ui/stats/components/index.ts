@@ -5,7 +5,6 @@ export { CollectionHealthBar } from "./CollectionHealthBar";
 export { CreatedVsReviewedChart } from "./CreatedVsReviewedChart";
 export { DistributionSection } from "./DistributionSection";
 export { FSRSStatusCard } from "./FSRSStatusCard";
-export { FutureDueChart } from "./FutureDueChart";
 export { PresetFilter } from "./PresetFilter";
 export { RangeSummary } from "./RangeSummary";
 export { RatingDistributionChart } from "./RatingDistributionChart";

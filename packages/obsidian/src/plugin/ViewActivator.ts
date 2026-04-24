@@ -1,6 +1,6 @@
 import { type App, Platform, type WorkspaceLeaf } from "obsidian";
 
-export interface ViewActivationOptions {
+interface ViewActivationOptions {
 	useMainArea?: boolean;
 	state?: Record<string, unknown>;
 	skipReveal?: boolean;
@@ -43,7 +43,7 @@ export async function activateView(
 	return leaf;
 }
 
-export async function activateMainAreaView(
+async function activateMainAreaView(
 	app: App,
 	viewType: string,
 	state?: Record<string, unknown>,
@@ -96,17 +96,6 @@ export async function activateReviewView(
 	}
 
 	return null;
-}
-
-export function closeAllViews(app: App, viewType: string): void {
-	const leaves = app.workspace.getLeavesOfType(viewType);
-	for (const leaf of leaves) {
-		leaf.detach();
-	}
-}
-
-export function viewExists(app: App, viewType: string): boolean {
-	return app.workspace.getLeavesOfType(viewType).length > 0;
 }
 
 export function getView(app: App, viewType: string): WorkspaceLeaf | null {

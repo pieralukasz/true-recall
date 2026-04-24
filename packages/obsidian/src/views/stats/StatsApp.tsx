@@ -17,7 +17,6 @@ import type {
 
 import { AppNavBar } from "@true-recall/obsidian/components";
 import { Q, useQuery } from "@true-recall/obsidian/data";
-import { HeatmapWidget } from "@true-recall/obsidian/editor/study/widgets/analytics/HeatmapWidget";
 import {
 	ArchivedToggle,
 	CardMaturitySection,
@@ -38,6 +37,8 @@ import {
 } from "@true-recall/obsidian/features/metrics/ui/stats/components";
 import { useStatsData } from "@true-recall/obsidian/features/metrics/ui/stats/hooks/use-stats-data";
 import { usePlugin } from "@true-recall/obsidian/preact";
+
+import { HeatmapWidget } from "@true-recall/plugins/dashboard-codeblock/analytics/HeatmapWidget";
 
 export function StatsApp() {
 	const plugin = usePlugin();

@@ -21,7 +21,7 @@ import type TrueRecallPlugin from "@true-recall/obsidian/main";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 import type { ReviewApi } from "@true-recall/obsidian/store";
 
-export interface AnswerHandlerDeps {
+interface AnswerHandlerDeps {
 	getReview: () => ReviewApi;
 	plugin: TrueRecallPlugin;
 	fsrsService: FSRSService;

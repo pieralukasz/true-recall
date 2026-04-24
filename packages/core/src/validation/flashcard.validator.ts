@@ -2,10 +2,6 @@ import { ValidationError } from "../errors";
 import type { FlashcardItem } from "../types";
 import { FlashcardItemSchema } from "./schemas/flashcard.schema";
 
-export type ValidationResult<T> =
-	| { success: true; data: T }
-	| { success: false; error: ValidationError };
-
 /** Default missing/falsy cardType to "basic" so the discriminated union can match. */
 function normalizeCardType(data: unknown): unknown {
 	if (

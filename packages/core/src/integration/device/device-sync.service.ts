@@ -6,7 +6,7 @@ import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite/Sq
 
 import type { DeviceDiscoveryService } from "./device-discovery.service";
 
-export interface SyncResult {
+interface SyncResult {
 	devicesFound: number;
 	cardsApplied: number;
 	reviewLogsApplied: number;

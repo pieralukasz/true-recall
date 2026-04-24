@@ -7,6 +7,7 @@ interface ObsidianCommand {
 
 export class CommandSuggestModal extends FuzzySuggestModal<ObsidianCommand> {
 	private resolve: ((cmd: ObsidianCommand | null) => void) | null = null;
+	private selected: ObsidianCommand | null = null;
 	private excludeIds: Set<string>;
 
 	constructor(app: App, excludeIds: string[] = []) {
@@ -23,8 +24,15 @@ export class CommandSuggestModal extends FuzzySuggestModal<ObsidianCommand> {
 	}
 
 	onClose(): void {
-		this.resolve?.(null);
+		// Obsidian's selectSuggestion internally calls close() BEFORE
+		// onChooseSuggestion/onChooseItem, so onClose fires first with
+		// selected still null. Defer the resolve via queueMicrotask so the
+		// synchronous onChooseItem that follows has a chance to set selected.
+		const capturedResolve = this.resolve;
 		this.resolve = null;
+		queueMicrotask(() => {
+			capturedResolve?.(this.selected);
+		});
 	}
 
 	getItems(): ObsidianCommand[] {
@@ -42,7 +50,6 @@ export class CommandSuggestModal extends FuzzySuggestModal<ObsidianCommand> {
 	}
 
 	onChooseItem(item: ObsidianCommand): void {
-		this.resolve?.(item);
-		this.resolve = null;
+		this.selected = item;
 	}
 }

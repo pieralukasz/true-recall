@@ -9,7 +9,7 @@ import { countByState } from "@true-recall/obsidian/features/library/ui/panel/ut
 import { FSRS_COLORS } from "@true-recall/obsidian/helpers/fsrs-colors";
 import { usePlugin } from "@true-recall/obsidian/preact";
 
-export interface NormalHeaderProps {
+interface NormalHeaderProps {
 	streamingNewCount: number;
 	onRefresh: () => void;
 }

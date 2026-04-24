@@ -15,7 +15,7 @@ interface HashTrigger {
 	startIndex: number;
 }
 
-export interface NoteSuggestionsState {
+interface NoteSuggestionsState {
 	isActive: boolean;
 	suggestions: TFile[];
 	highlightIndex: number;

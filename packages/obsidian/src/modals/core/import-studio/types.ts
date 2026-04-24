@@ -4,12 +4,12 @@
 
 import type { App } from "obsidian";
 
-export interface ImportStudioPrefs {
+interface ImportStudioPrefs {
 	lastNoteTypeId: string;
 	lastSourceNotePath: string;
 }
 
-export const IMPORT_STUDIO_PREFS_KEY = "true-recall:import-studio-prefs";
+const IMPORT_STUDIO_PREFS_KEY = "true-recall:import-studio-prefs";
 
 export function loadImportStudioPrefs(app: App): ImportStudioPrefs {
 	try {

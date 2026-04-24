@@ -1,7 +1,7 @@
 import { type ReadonlySignal, signal } from "@preact/signals";
 
 export type QueryKey = string;
-export type QueryGroup = string;
+type QueryGroup = string;
 
 interface QueryEntry<T = unknown> {
 	sig: { value: T };

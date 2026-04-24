@@ -10,7 +10,7 @@ import { UpdateCardCommand } from "@true-recall/obsidian/commands/commands/card-
 import { notify } from "@true-recall/obsidian/services/notification.service";
 import type { ReviewApi } from "@true-recall/obsidian/store";
 
-export interface EditHandlerDeps {
+interface EditHandlerDeps {
 	app: App;
 	getReview: () => ReviewApi;
 	flashcardManager: FlashcardManager;

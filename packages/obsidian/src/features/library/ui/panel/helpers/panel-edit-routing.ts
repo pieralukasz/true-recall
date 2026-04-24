@@ -4,7 +4,7 @@ import {
 	type NoteType,
 } from "@true-recall/core/types/note.types";
 
-import type { IOEditorMode } from "@true-recall/obsidian/features/image-occlusion/types";
+import type { IOEditorMode } from "@true-recall/plugins/image-occlusion";
 
 interface PanelEditRoutingParams {
 	note: Note;

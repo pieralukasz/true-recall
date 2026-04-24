@@ -12,6 +12,7 @@ interface DashboardTabsProps {
 	orphanedCount: number;
 	showArchived: boolean;
 	onToggleArchived: () => void;
+	onCreateProject?: () => void;
 }
 
 const BASE_TABS: { id: DashboardTab; label: string }[] = [
@@ -31,6 +32,7 @@ export function DashboardTabs({
 	orphanedCount,
 	showArchived,
 	onToggleArchived,
+	onCreateProject,
 }: DashboardTabsProps) {
 	const tabs =
 		orphanedCount > 0
@@ -81,16 +83,30 @@ export function DashboardTabs({
 					);
 				})}
 
-				<Clickable
-					class={cn(
-						"ep:ml-auto ep:mb-1 ep:px-2 ep:py-0.5 ep:rounded-full ep:text-[10px] ep:font-medium ep:transition-colors ep:duration-150",
-						showArchived ? CHIP_ACTIVE : CHIP_INACTIVE,
+				<div class="ep:ml-auto ep:flex ep:items-center ep:gap-1.5">
+					{activeTab === "projects" && onCreateProject && (
+						<Clickable
+							class={cn(
+								"ep:mb-1 ep:px-2 ep:py-0.5 ep:rounded-full ep:text-[10px] ep:font-medium ep:transition-colors ep:duration-150",
+								CHIP_INACTIVE,
+							)}
+							onClick={onCreateProject}
+							aria-label="Create project"
+						>
+							+ Project
+						</Clickable>
 					)}
-					onClick={onToggleArchived}
-					aria-label="Toggle archived items"
-				>
-					Archived
-				</Clickable>
+					<Clickable
+						class={cn(
+							"ep:mb-1 ep:px-2 ep:py-0.5 ep:rounded-full ep:text-[10px] ep:font-medium ep:transition-colors ep:duration-150",
+							showArchived ? CHIP_ACTIVE : CHIP_INACTIVE,
+						)}
+						onClick={onToggleArchived}
+						aria-label="Toggle archived items"
+					>
+						Archived
+					</Clickable>
+				</div>
 			</div>
 		</div>
 	);

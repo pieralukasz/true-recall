@@ -2,12 +2,20 @@ import type { ComponentChildren } from "preact";
 
 import { cn } from "@true-recall/obsidian/utils/cn";
 
-export interface InfoBlockProps {
+import { useFormVariant } from "./FormVariantContext";
+
+interface InfoBlockProps {
 	children: ComponentChildren;
 	class?: string;
 }
 
 export function InfoBlock({ children, class: cls }: InfoBlockProps) {
+	const variant = useFormVariant();
+
+	if (variant === "native") {
+		return <div class={cn("setting-item-description", cls)}>{children}</div>;
+	}
+
 	return (
 		<div
 			class={cn(

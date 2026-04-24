@@ -10,11 +10,6 @@ import type { FlashcardInfo, FlashcardItem } from "@true-recall/core/types";
 import type TrueRecallPlugin from "@true-recall/obsidian/main";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 
-interface DuplicateEntry {
-	flashcard: { question: string };
-	existingSourceUid?: string;
-}
-
 interface DuplicateErrorLike {
 	existingSourceUid?: string;
 }
@@ -32,19 +27,6 @@ export async function getSourceNoteNameFromFile(
 	} catch (error) {
 		console.error("[panel-helpers] Failed to read source note:", error);
 		return undefined;
-	}
-}
-
-export function showDuplicateNotifications(
-	plugin: TrueRecallPlugin,
-	duplicates: DuplicateEntry[],
-): void {
-	const sourceNoteService = plugin.flashcardManager.getSourceNoteService();
-	for (const dup of duplicates) {
-		const sourceInfo = dup.existingSourceUid
-			? sourceNoteService.resolveSourceNote(dup.existingSourceUid)
-			: {};
-		notify().duplicateFound(dup.flashcard.question, sourceInfo.noteName);
 	}
 }
 

@@ -9,7 +9,7 @@ import { BasePromiseModal } from "@true-recall/obsidian/modals/shared/BasePromis
 
 import type TrueRecallPlugin from "../../main";
 
-export interface CreateNoteFromSelectionResult {
+interface CreateNoteFromSelectionResult {
 	cancelled: boolean;
 	name: string;
 	folder: string;

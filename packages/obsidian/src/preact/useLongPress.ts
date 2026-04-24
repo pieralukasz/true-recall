@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useRef } from "preact/hooks";
 
-export interface UseLongPressOptions {
+interface UseLongPressOptions {
 	onLongPress: () => void;
 	delay?: number;
 }
 
-export interface UseLongPressResult {
+interface UseLongPressResult {
 	handlers: {
 		onPointerDown: (e: PointerEvent) => void;
 		onPointerUp: () => void;

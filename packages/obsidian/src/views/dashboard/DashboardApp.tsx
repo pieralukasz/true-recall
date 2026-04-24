@@ -5,7 +5,6 @@ import { aggregateDashboardData } from "@true-recall/core/helpers/note-aggregati
 import { computePriority } from "@true-recall/core/helpers/note-priority";
 import { estimateStudyMinutes } from "@true-recall/core/helpers/time-estimate";
 import { StatsCalculatorService } from "@true-recall/core/metrics/stats/stats-calculator.service";
-import type { HierarchyService } from "@true-recall/core/services/notes/hierarchy.service";
 import type {
 	CardSchedulingMeta,
 	TrueRecallSettings,
@@ -14,7 +13,6 @@ import type {
 import { AppNavBar } from "@true-recall/obsidian/components";
 import { SearchCombobox } from "@true-recall/obsidian/components/SearchCombobox";
 import { Q, useQuery } from "@true-recall/obsidian/data";
-import { HeatmapWidget } from "@true-recall/obsidian/editor/study/widgets/analytics/HeatmapWidget";
 import { computeActionableSessionSnapshot } from "@true-recall/obsidian/features/study/services/actionable-session-snapshot.service";
 import { BottomActionBar } from "@true-recall/obsidian/features/study/ui/dashboard/components/BottomActionBar";
 import { DashboardTabs } from "@true-recall/obsidian/features/study/ui/dashboard/components/DashboardTabs";
@@ -32,7 +30,10 @@ import type {
 } from "@true-recall/obsidian/features/study/ui/dashboard/types";
 import { filterActiveCards } from "@true-recall/obsidian/features/study/ui/review/helpers/session-helpers";
 import { PresetOptionsModal } from "@true-recall/obsidian/modals/shared/PresetOptionsModal";
+import { NamePromptModal } from "@true-recall/obsidian/modals/study/NamePromptModal";
 import { usePlugin } from "@true-recall/obsidian/preact";
+
+import { HeatmapWidget } from "@true-recall/plugins/dashboard-codeblock/analytics/HeatmapWidget";
 
 export function DashboardApp() {
 	const plugin = usePlugin();
@@ -116,7 +117,7 @@ export function DashboardApp() {
 
 		const actionableNotes = raw.notes.map((note) => {
 			const isArchived = note.path
-				? isNoteUnderArchivedHierarchy(note.path, plugin.hierarchyService)
+				? plugin.hierarchyService.isNoteArchived(note.path)
 				: false;
 			if (isArchived) return note;
 
@@ -174,7 +175,7 @@ export function DashboardApp() {
 
 		return data.notes.filter((note) => {
 			if (!note.path) return true;
-			return !isNoteUnderArchivedHierarchy(note.path, plugin.hierarchyService);
+			return !plugin.hierarchyService.isNoteArchived(note.path);
 		});
 	}, [data.notes, plugin, showArchived.value, allCards]);
 
@@ -273,6 +274,17 @@ export function DashboardApp() {
 		scrollTop.value = (e.currentTarget as HTMLDivElement).scrollTop;
 	}, []);
 
+	const handleCreateProject = useCallback(async () => {
+		const modal = new NamePromptModal(plugin.app, "New project");
+		const result = await modal.openAndWait();
+		if (result.cancelled || !result.name.trim()) return;
+		await plugin.projectManagement.createProjectWithChildren(
+			result.name.trim(),
+			"",
+			[],
+		);
+	}, [plugin]);
+
 	const handleTabChange = (tab: DashboardTab) => {
 		activeTab.value = tab;
 		scrollTop.value = 0;
@@ -327,6 +339,7 @@ export function DashboardApp() {
 						onToggleArchived={() => {
 							showArchived.value = !showArchived.value;
 						}}
+						onCreateProject={handleCreateProject}
 					/>
 
 					<div class="ep:flex ep:flex-col ep:flex-1">
@@ -366,28 +379,4 @@ export function DashboardApp() {
 			<BottomActionBar />
 		</div>
 	);
-}
-
-function isNoteUnderArchivedHierarchy(
-	notePath: string,
-	hierarchyService: HierarchyService,
-): boolean {
-	if (hierarchyService.isNoteArchived(notePath)) return true;
-
-	// Walk up through parent projects, including nested parents.
-	const stack = [...hierarchyService.getParentsForNote(notePath)];
-	const visited = new Set<string>();
-
-	while (stack.length > 0) {
-		const parentPath = stack.pop();
-		if (!parentPath || visited.has(parentPath)) continue;
-		visited.add(parentPath);
-
-		if (hierarchyService.isProjectArchived(parentPath)) return true;
-
-		const grandParents = hierarchyService.getParentsForNote(parentPath);
-		for (const gp of grandParents) stack.push(gp);
-	}
-
-	return false;
 }

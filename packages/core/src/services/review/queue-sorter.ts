@@ -7,7 +7,7 @@ import type {
 } from "../../types/settings.types";
 import type { FSRSService } from "../fsrs/fsrs.service";
 
-export function shuffle<T>(array: T[]): T[] {
+function shuffle<T>(array: T[]): T[] {
 	const result = [...array];
 	for (let i = result.length - 1; i > 0; i--) {
 		const j = Math.floor(Math.random() * (i + 1));
@@ -18,7 +18,7 @@ export function shuffle<T>(array: T[]): T[] {
 	return result;
 }
 
-export function interleave<T>(primary: T[], secondary: T[]): T[] {
+function interleave<T>(primary: T[], secondary: T[]): T[] {
 	if (secondary.length === 0) return [...primary];
 	if (primary.length === 0) return [...secondary];
 
@@ -49,9 +49,7 @@ export function interleave<T>(primary: T[], secondary: T[]): T[] {
 	return result;
 }
 
-export function sortByCreatedAt(
-	cards: CardSchedulingMeta[],
-): CardSchedulingMeta[] {
+function sortByCreatedAt(cards: CardSchedulingMeta[]): CardSchedulingMeta[] {
 	return [...cards].sort((a, b) => {
 		const aTime = a.fsrs.createdAt ?? 0;
 		const bTime = b.fsrs.createdAt ?? 0;
@@ -60,7 +58,7 @@ export function sortByCreatedAt(
 	});
 }
 
-export function sortByCreatedAtDesc(
+function sortByCreatedAtDesc(
 	cards: CardSchedulingMeta[],
 ): CardSchedulingMeta[] {
 	return [...cards].sort((a, b) => {
@@ -83,7 +81,7 @@ export function sortNewCards(
 		case "newest-first":
 			return sortByCreatedAtDesc(cards);
 		default: {
-			const _exhaustive: never = order;
+			order satisfies never;
 			return shuffle(cards);
 		}
 	}
@@ -137,7 +135,7 @@ export function sortReviewCards(
 		case "order-added":
 			return sortByCreatedAt(cards);
 		default: {
-			const _exhaustive: never = order;
+			order satisfies never;
 			return fsrsService.sortByDue(cards);
 		}
 	}

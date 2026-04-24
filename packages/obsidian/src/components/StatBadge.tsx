@@ -2,7 +2,7 @@ import type { ComponentChildren } from "preact";
 
 import { cn } from "@true-recall/obsidian/utils/cn";
 
-export interface StatBadgeProps {
+interface StatBadgeProps {
 	label: string;
 	count: number;
 	colorCls?: string;
@@ -22,7 +22,7 @@ export function StatBadge({ label, count, colorCls }: StatBadgeProps) {
 	);
 }
 
-export interface StatGridProps {
+interface StatGridProps {
 	children: ComponentChildren;
 	columns?: number;
 }

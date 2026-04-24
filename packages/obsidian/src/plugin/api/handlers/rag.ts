@@ -3,12 +3,16 @@ import { AIRequestError } from "@true-recall/core/ai/clients/openrouter-client";
 import type { ApiContext, ApiRequest, ApiResponseWriter } from "../api.types";
 import { parseJsonBody, readBody, sendError, sendOk } from "../api.types";
 
-function requirePro(ctx: ApiContext, res: ApiResponseWriter): boolean {
-	if (!ctx.plugin.settings.proKey) {
-		sendError(res, 403, "Pro subscription required for Knowledge Base");
+function requireKnowledgeBase(
+	ctx: ApiContext,
+	res: ApiResponseWriter,
+): boolean {
+	const s = ctx.plugin.settings;
+	if (!s.proKey && !s.openRouterApiKey) {
+		sendError(res, 403, "An AI key is required for Knowledge Base");
 		return false;
 	}
-	if (!ctx.plugin.settings.ragEnabled) {
+	if (!s.ragEnabled) {
 		sendError(res, 400, "Knowledge Base is not enabled in settings");
 		return false;
 	}
@@ -39,7 +43,7 @@ export async function handleRagSearch(
 	res: ApiResponseWriter,
 	ctx: ApiContext,
 ): Promise<void> {
-	if (!requirePro(ctx, res)) return;
+	if (!requireKnowledgeBase(ctx, res)) return;
 	if (!ctx.plugin.isStoreReady()) {
 		sendError(res, 503, "Database not ready");
 		return;
@@ -116,7 +120,7 @@ export async function handleRagIndex(
 	res: ApiResponseWriter,
 	ctx: ApiContext,
 ): Promise<void> {
-	if (!requirePro(ctx, res)) return;
+	if (!requireKnowledgeBase(ctx, res)) return;
 	if (!ctx.plugin.ragIndexer) {
 		sendError(res, 400, "RAG indexer not initialized");
 		return;
@@ -145,7 +149,7 @@ export function handleRagStatus(
 	res: ApiResponseWriter,
 	ctx: ApiContext,
 ): void {
-	if (!requirePro(ctx, res)) return;
+	if (!requireKnowledgeBase(ctx, res)) return;
 	if (!ctx.plugin.isStoreReady()) {
 		sendError(res, 503, "Database not ready");
 		return;

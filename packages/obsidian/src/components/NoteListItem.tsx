@@ -2,7 +2,7 @@ import type { TFile } from "obsidian";
 
 import { cn } from "@true-recall/obsidian/utils";
 
-export interface NoteListItemProps {
+interface NoteListItemProps {
 	note: TFile;
 	onSelect: () => void;
 	isSuggested?: boolean;

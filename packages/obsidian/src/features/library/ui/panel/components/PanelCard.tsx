@@ -1,3 +1,4 @@
+import { useComputed } from "@preact/signals";
 import { cva } from "class-variance-authority";
 import { memo } from "preact/compat";
 import { useCallback } from "preact/hooks";
@@ -10,6 +11,7 @@ import { MarkdownContent } from "@true-recall/obsidian/components/MarkdownConten
 import { useCardActions } from "@true-recall/obsidian/features/library/ui/panel/hooks/useCardActions";
 import { usePanelActions } from "@true-recall/obsidian/features/library/ui/panel/hooks/usePanelActions";
 import { useSelectionActions } from "@true-recall/obsidian/features/library/ui/panel/hooks/useSelectionActions";
+import { viewTransitionNameForCard } from "@true-recall/obsidian/features/library/ui/panel/preview/preview-signal";
 import {
 	getHighlightColor,
 	getStatusTitle,
@@ -44,7 +46,7 @@ const panelCardVariants = cva(
 
 // ── Types ──────────────────────────────────────────────────
 
-export interface PanelCardProps {
+interface PanelCardProps {
 	card: FlashcardItem;
 	fsrsCard?: FSRSFlashcardItem;
 	filePath: string;
@@ -148,6 +150,8 @@ export const PanelCard = memo(function PanelCard({
 			if ((e.target as HTMLElement).closest("a")) return;
 			if (isSelectionMode) {
 				selectionActions.handleToggleSelect(card.id);
+			} else if (e.metaKey || e.ctrlKey) {
+				selectionActions.handleEnterSelectionMode(card.id);
 			} else if (card.sourceText) {
 				cardActions.handleToggleExpand(card.id);
 				panelActions.handleJumpToSource(card);
@@ -166,6 +170,11 @@ export const PanelCard = memo(function PanelCard({
 	);
 
 	const handleMenuClick = useContextMenu([
+		{
+			title: "Preview",
+			icon: "eye",
+			onClick: () => cardActions.handlePreviewCard(card),
+		},
 		{
 			title: "Edit",
 			icon: "pencil",
@@ -253,6 +262,8 @@ export const PanelCard = memo(function PanelCard({
 		? panelActions.handleLeaveSource
 		: undefined;
 
+	const vtName = useComputed(() => viewTransitionNameForCard(card.id)).value;
+
 	return (
 		<Clickable
 			title={title}
@@ -261,7 +272,7 @@ export const PanelCard = memo(function PanelCard({
 				selectedCls,
 				enterClass,
 			)}
-			style={enterStyle}
+			style={{ ...enterStyle, viewTransitionName: vtName }}
 			onClick={handleRowClick}
 			onContextMenu={isSelectionMode ? undefined : handleMenuClick}
 			{...longPressHandlers}

@@ -6,7 +6,7 @@ import { stripBrTags } from "@true-recall/core/utils";
 
 import { useApp } from "@true-recall/obsidian/preact/ObsidianContext";
 
-export interface MarkdownContentProps {
+interface MarkdownContentProps {
 	markdown: string;
 	filePath?: string;
 	class?: string;

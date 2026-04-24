@@ -5,12 +5,12 @@ import type { TrueRecallSettings } from "../../types/settings.types";
 import { getTextContent, OpenRouterClient } from "../clients/openrouter-client";
 import { resolveAIClientConfig } from "../config/ai-client-config";
 import { parseBlockResponse } from "../parsing/incremental-flashcard-parser";
-import { buildCardFormatSpec } from "../prompts/block-prompt-builder";
-import { fixBlockSourceTexts } from "../utils/source-text-fixer";
 import {
-	buildGenerationPrompt,
-	FALLBACK_BASIC_NOTE_TYPE,
-} from "./streaming-generation.service";
+	buildByokPrompt,
+	buildCardFormatSpec,
+} from "../prompts/block-prompt-builder";
+import { fixBlockSourceTexts } from "../utils/source-text-fixer";
+import { FALLBACK_BASIC_NOTE_TYPE } from "./streaming-generation.service";
 
 export interface GenerationResult {
 	blocks: ParsedBlock[];
@@ -37,12 +37,15 @@ export class FlashcardGenerationService {
 			config.baseUrl,
 		);
 
-		const customPrompt = settings.aiGenerationPrompt?.trim() || "";
-		const systemPrompt = config.isPro
-			? customPrompt
-			: buildGenerationPrompt(settings, noteType);
+		const systemPrompt = config.hasProTier
+			? settings.aiGenerationPrompt?.trim() || ""
+			: buildByokPrompt(
+					noteType ?? FALLBACK_BASIC_NOTE_TYPE,
+					settings.generationLanguage ?? "auto",
+					settings.aiGenerationPrompt,
+				);
 
-		const userContent = config.isPro
+		const userContent = config.hasProTier
 			? `${buildCardFormatSpec(noteType ?? FALLBACK_BASIC_NOTE_TYPE)}\n\n${selectedText}`
 			: selectedText;
 
@@ -53,13 +56,13 @@ export class FlashcardGenerationService {
 				]
 			: [{ role: "user" as const, content: userContent }];
 
-		const metadata = config.isPro
+		const metadata = config.hasProTier
 			? { call_context: "generation", note_type: noteType?.slug ?? "basic" }
 			: undefined;
 
 		const request = {
 			messages,
-			...(config.isPro ? {} : { temperature: config.temperature }),
+			...(config.hasProTier ? {} : { temperature: config.temperature }),
 			metadata,
 		};
 

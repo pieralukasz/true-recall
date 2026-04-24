@@ -37,7 +37,7 @@ const NUM_INPUT_CLS =
 const PRESET_INPUT_CLS =
 	"ep:w-full ep:py-1.5 ep:px-2.5 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-ui-small ep:focus:outline-none ep:focus:border-obs-interactive ep:placeholder:text-obs-muted";
 
-export interface CustomStudyBodyProps {
+interface CustomStudyBodyProps {
 	scopeLabel?: string;
 	onResolve: (result: CustomStudyModalResult) => void;
 }

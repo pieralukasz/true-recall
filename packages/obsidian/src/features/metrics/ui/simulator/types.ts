@@ -25,26 +25,6 @@ export interface SequenceSimulation {
 /** Metric types for chart Y-axis */
 export type MetricType = "interval" | "stability" | "difficulty" | "cumulative";
 
-/** Simulator state */
-export interface SimulatorState {
-	// Input
-	sequences: string[];
-	parameters: number[]; // 21 FSRS v6 weights
-	desiredRetention: number;
-
-	// View options
-	metricType: MetricType;
-	useAnimation: boolean;
-	useLogarithmic: boolean;
-
-	// Undo/Redo
-	parameterHistory: number[][];
-	historyIndex: number;
-
-	// Results
-	simulations: SequenceSimulation[];
-}
-
 /** Slider configuration for parameter input */
 export interface SliderConfig {
 	index: number; // Index in weights array (-1 for retention)

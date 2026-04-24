@@ -25,13 +25,7 @@ import { ObsidianPersistence } from "@true-recall/obsidian/adapters/ObsidianPers
 import type { CommandService } from "@true-recall/obsidian/commands";
 import type { DataLayer } from "@true-recall/obsidian/data";
 import { G } from "@true-recall/obsidian/data";
-import type { StatusBarWidget } from "@true-recall/obsidian/editor/study/widgets/StatusBarWidget";
 import type { NoteStatusCache } from "@true-recall/obsidian/features/core/cache/note-status-cache.service";
-import { IOEditorModal } from "@true-recall/obsidian/features/image-occlusion/IOEditorModal";
-import type {
-	IOEditorMode,
-	IOEditorResult,
-} from "@true-recall/obsidian/features/image-occlusion/types";
 import {
 	filtersToViewState,
 	normalizeSessionFilters,
@@ -40,8 +34,6 @@ import {
 import { CardTypesEditorModal } from "@true-recall/obsidian/modals/core/card-types-editor/CardTypesEditorModal";
 import { NoteTypeSuggestModal } from "@true-recall/obsidian/modals/core/card-types-editor/NoteTypeSuggestModal";
 import { ImportStudioModal } from "@true-recall/obsidian/modals/core/import-studio/ImportStudioModal";
-import { AnkiExportModal } from "@true-recall/obsidian/modals/integration/AnkiExportModal";
-import { AnkiImportModal } from "@true-recall/obsidian/modals/integration/AnkiImportModal";
 import { CsvExportModal } from "@true-recall/obsidian/modals/integration/CsvExportModal";
 import { PresetInspectorModal } from "@true-recall/obsidian/modals/shared";
 import {
@@ -80,6 +72,14 @@ import {
 	activateView,
 	getView,
 } from "./plugin/ViewActivator";
+import { AnkiExportModal } from "@true-recall/plugins/anki-import-export/AnkiExportModal";
+import { AnkiImportModal } from "@true-recall/plugins/anki-import-export/AnkiImportModal";
+import {
+	IOEditorModal,
+	type IOEditorMode,
+	type IOEditorResult,
+} from "@true-recall/plugins/image-occlusion";
+import type { StatusBarWidget } from "@true-recall/plugins/status-bar-widget/StatusBarWidget";
 
 export default class TrueRecallPlugin extends Plugin {
 	coreApp!: TrueRecallApp;
@@ -131,6 +131,9 @@ export default class TrueRecallPlugin extends Plugin {
 	get presetService() {
 		return this.coreApp.presetService;
 	}
+	get generationPresetService() {
+		return this.coreApp.generationPresetService;
+	}
 	get noteTypeService() {
 		const v = this.coreApp.noteTypeService;
 		if (!v)
@@ -176,6 +179,7 @@ export default class TrueRecallPlugin extends Plugin {
 		| import("@true-recall/core/rag/retrieval/rag-search.service").RagSearchService
 		| null = null;
 	dataLayer: DataLayer | null = null;
+	pluginLoader: import("./plugin/plugin-loader").PluginLoader | null = null;
 	_disposeWireDataLayer: (() => void) | null = null;
 	adapters!: ObsidianAdapters;
 	private _unloaded = false;
@@ -183,7 +187,6 @@ export default class TrueRecallPlugin extends Plugin {
 	EmbeddableEditor:
 		| import("@true-recall/obsidian/editor/shared/embedded-editor").EmbeddableEditorClass
 		| null = null;
-	_globalSelectionToolbar: { destroy(): void } | null = null;
 
 	isStoreReady(): boolean {
 		return this.coreApp.isReady();
@@ -218,6 +221,25 @@ export default class TrueRecallPlugin extends Plugin {
 				"True Recall failed to initialize. Try reinstalling the plugin.",
 			);
 			return;
+		}
+
+		// Migrate ragEnabled → pluginStates["knowledge-base"]
+		try {
+			if (
+				this.settings.ragEnabled &&
+				this.settings.pluginStates?.["knowledge-base"] === undefined
+			) {
+				this.settings.pluginStates = {
+					...this.settings.pluginStates,
+					"knowledge-base": true,
+				};
+				await this.saveSettings();
+			}
+		} catch (error) {
+			console.warn(
+				"[True Recall] ragEnabled migration failed to persist, will retry next load:",
+				error,
+			);
 		}
 
 		// What's New check after layout ready
@@ -384,19 +406,26 @@ export default class TrueRecallPlugin extends Plugin {
 			ragSchema.createTables();
 			this.ragActions = new RagChunkActions(this.cardStore.getSqliteDb());
 
-			if (this.settings.ragEnabled && this.settings.proKey) {
+			const embeddingKey =
+				this.settings.proKey || this.settings.openRouterApiKey;
+			if (this.settings.ragEnabled && embeddingKey) {
 				const { RagEmbeddingServiceImpl } = await import(
 					"@true-recall/core/rag/retrieval/rag-embedding.service"
 				);
+				const { LITELLM_EMBEDDINGS_URL, OPENROUTER_EMBEDDINGS_URL } =
+					await import("@true-recall/core/constants");
 				const { RagIndexerService } = await import(
 					"@true-recall/obsidian/features/rag/services/rag-indexer.service"
 				);
 				const { RagSearchService } = await import(
 					"@true-recall/core/rag/retrieval/rag-search.service"
 				);
+				const isPro = !!this.settings.proKey;
 				const embedder = new RagEmbeddingServiceImpl(
 					new ObsidianHttpClient(),
-					this.settings.proKey,
+					embeddingKey,
+					isPro ? LITELLM_EMBEDDINGS_URL : OPENROUTER_EMBEDDINGS_URL,
+					isPro ? "embedding" : "baai/bge-m3",
 				);
 				this.ragSearch = new RagSearchService(this.ragActions, embedder);
 				this.ragIndexer = new RagIndexerService(
@@ -434,13 +463,13 @@ export default class TrueRecallPlugin extends Plugin {
 
 	onunload(): void {
 		this._unloaded = true;
+		this.pluginLoader?.deactivateAll();
 		this.deviceLock?.stopHeartbeat();
 		void this.deviceLock?.clearLock();
 		this.localApi?.stop();
 		this.commandService?.clear();
 		this.statusBarWidget?.dispose();
 		this.noteStatusCache?.dispose();
-		this._globalSelectionToolbar?.destroy();
 		this.dataLayer?.dispose();
 		this._disposeWireDataLayer?.();
 		void this.coreApp?.shutdown().catch((e) => {

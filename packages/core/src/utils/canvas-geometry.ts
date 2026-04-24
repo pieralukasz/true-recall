@@ -1,4 +1,4 @@
-export interface RectLike {
+interface RectLike {
 	left: number;
 	top: number;
 	width: number;

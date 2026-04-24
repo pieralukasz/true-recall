@@ -5,7 +5,7 @@ import type { ReviewOrder } from "@true-recall/core/types/settings.types";
 
 import type { CustomStudyModalResult } from "@true-recall/obsidian/modals/study/custom-study/types";
 
-export interface CustomStudyConfig {
+interface CustomStudyConfig {
 	stateFilter: "all" | "new" | "learning" | "due";
 	difficultyMin: number;
 	difficultyMax: number;

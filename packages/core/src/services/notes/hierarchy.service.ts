@@ -124,6 +124,39 @@ export class HierarchyService {
 		return children ? [...children] : [];
 	}
 
+	getDescendantPaths(nodePath: string): string[] {
+		const graph = this.ensureGraph();
+		const paths: string[] = [];
+		const visited = new Set<string>();
+
+		const collect = (path: string) => {
+			const children = graph.childMap.get(path);
+			if (!children) return;
+			for (const child of children) {
+				if (visited.has(child)) continue;
+				visited.add(child);
+				paths.push(child);
+				collect(child);
+			}
+		};
+
+		collect(nodePath);
+		return paths;
+	}
+
+	getPathsForCascade(projectPath: string, archive: boolean): string[] {
+		const descendants = this.getDescendantPaths(projectPath);
+		if (!archive) return descendants;
+
+		const subtreeSet = new Set([projectPath, ...descendants]);
+		return descendants.filter((path) => {
+			const parents = this.getParentsForNote(path);
+			return !parents.some(
+				(p) => !subtreeSet.has(p) && !this.isNoteArchived(p),
+			);
+		});
+	}
+
 	getArchivedSourceUids(): Set<string> {
 		const archivedPaths = this.frontmatterIndex.getFilesByValue(
 			"archive",
@@ -132,22 +165,8 @@ export class HierarchyService {
 		const uids = new Set<string>();
 
 		for (const filePath of archivedPaths) {
-			// Check if this archived note is a "project" (has children or project: true)
-			const graph = this.ensureGraph();
-			const isProject =
-				graph.childMap.has(filePath) || this.isExplicitProject(filePath);
-			if (isProject) {
-				// Archived project -> collect all descendant UIDs
-				const projectUids = this.getSourceUidsForProject(filePath, true);
-				for (const uid of projectUids) uids.add(uid);
-			} else {
-				// Archived regular note -> just its own UID
-				const [uid] = this.frontmatterIndex.getValues(
-					"flashcard_uid",
-					filePath,
-				);
-				if (uid) uids.add(uid);
-			}
+			const [uid] = this.frontmatterIndex.getValues("flashcard_uid", filePath);
+			if (uid) uids.add(uid);
 		}
 
 		return uids;

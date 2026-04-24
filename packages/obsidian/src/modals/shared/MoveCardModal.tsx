@@ -9,7 +9,7 @@ export interface MoveCardResult {
 	targetNotePath: string | null;
 }
 
-export interface MoveCardModalOptions {
+interface MoveCardModalOptions {
 	cardCount: number;
 	sourceNoteName?: string;
 	cardQuestion?: string;

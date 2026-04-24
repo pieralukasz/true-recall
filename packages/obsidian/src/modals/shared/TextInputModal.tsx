@@ -6,11 +6,11 @@ import { Clickable } from "@true-recall/obsidian/components";
 
 import { BasePromiseModal } from "./BasePromiseModal";
 
-export interface TextInputResult {
+interface TextInputResult {
 	value: string | null;
 }
 
-export interface TextInputModalOptions {
+interface TextInputModalOptions {
 	title?: string;
 	label: string;
 	placeholder?: string;
@@ -19,7 +19,7 @@ export interface TextInputModalOptions {
 	cancelLabel?: string;
 }
 
-export class TextInputModal extends BasePromiseModal<TextInputResult> {
+class TextInputModal extends BasePromiseModal<TextInputResult> {
 	private options: TextInputModalOptions;
 
 	constructor(app: App, options: TextInputModalOptions) {

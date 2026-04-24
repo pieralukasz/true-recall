@@ -1,0 +1,33 @@
+import { createCardAISettingsPanel } from "../shared/createCardAISettingsPanel";
+import type { PluginManifest } from "../types";
+import { CARD_POLISH_BUILTINS } from "./builtins";
+import { CardPolishPlugin } from "./CardPolishPlugin";
+
+export const cardPolishManifest: PluginManifest = {
+	info: {
+		id: "card-polish",
+		name: "Card Polish",
+		description:
+			"Transform flashcards mid-review or inside the Add Flashcard modal — fix formatting, simplify wording, or run your own custom instructions. Each preset can auto-apply or show a preview, and supports its own hotkey during review.",
+		features: [
+			"Polish cards mid-review",
+			"Polish + fill in the Add Flashcard modal",
+			"Per-preset auto-apply or preview",
+			"Hotkey support for each preset (review only)",
+			"Optional source-note and related-card context per preset",
+		],
+		icon: "wand-2",
+		tier: "pro",
+	},
+	settingsPanel: createCardAISettingsPanel({
+		bucketKey: "cardPolish",
+		builtins: CARD_POLISH_BUILTINS,
+		description:
+			"Polish presets work in review and in the Add Flashcard modal.",
+	}),
+	activate: (ctx) => {
+		const plugin = new CardPolishPlugin(ctx);
+		plugin.activate();
+		return () => plugin.deactivate();
+	},
+};

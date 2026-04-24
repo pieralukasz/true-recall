@@ -5,7 +5,7 @@ import { cn } from "@true-recall/obsidian/utils/cn";
 
 import { Clickable } from "./Clickable";
 
-export type ActionButtonVariant =
+type ActionButtonVariant =
 	| "primary"
 	| "secondary"
 	| "danger"
@@ -13,9 +13,9 @@ export type ActionButtonVariant =
 	| "outline"
 	| "seed";
 
-export type ActionButtonSize = "sm" | "md" | "lg";
+type ActionButtonSize = "sm" | "md" | "lg";
 
-export interface ActionButtonProps {
+interface ActionButtonProps {
 	label: string;
 	onClick?: () => void;
 	variant: ActionButtonVariant;

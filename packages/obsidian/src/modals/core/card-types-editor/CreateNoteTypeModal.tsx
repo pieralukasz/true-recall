@@ -7,7 +7,7 @@ import type { NoteType } from "@true-recall/core/types/note.types";
 import { Clickable } from "@true-recall/obsidian/components";
 import { BasePromiseModal } from "@true-recall/obsidian/modals/shared/BasePromiseModal";
 
-export interface CreateNoteTypeResult {
+interface CreateNoteTypeResult {
 	cancelled: boolean;
 	name: string;
 	cloneFromId: string | null;

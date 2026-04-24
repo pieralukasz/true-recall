@@ -27,7 +27,7 @@ import type {
 import { Q, useQuery } from "@true-recall/obsidian/data";
 import { usePlugin } from "@true-recall/obsidian/preact";
 
-export interface StatsData {
+interface StatsData {
 	today: TodaySummary;
 	streak: StreakInfo;
 	maturity: CardMaturityBreakdown;

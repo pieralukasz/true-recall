@@ -7,7 +7,7 @@ import type { FrontmatterIndexService } from "@true-recall/core/services/notes/f
 import type { FrontmatterService } from "../source/frontmatter.service";
 import type { ISessionPersistence } from "./deletion-handler.service";
 
-export interface UidGuardianDeps {
+interface UidGuardianDeps {
 	frontmatterIndex: FrontmatterIndexService;
 	store: SqliteStoreService;
 	sessionPersistence: ISessionPersistence;

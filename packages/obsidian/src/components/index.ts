@@ -1,138 +1,35 @@
 // ── Obsidian-specific components ─────────────────────────────
-export {
-	AppNavBar,
-	type AppNavBarProps,
-} from "@true-recall/obsidian/components/AppNavBar";
-export {
-	FolderPicker,
-	type FolderPickerProps,
-} from "@true-recall/obsidian/components/FolderPicker";
-export {
-	FolderSuggestInput,
-	type FolderSuggestInputProps,
-} from "@true-recall/obsidian/components/FolderSuggestInput";
-export {
-	MarkdownContent,
-	type MarkdownContentProps,
-} from "@true-recall/obsidian/components/MarkdownContent";
-export {
-	NoteListItem,
-	type NoteListItemProps,
-} from "@true-recall/obsidian/components/NoteListItem";
-export {
-	NotePicker,
-	type NotePickerProps,
-} from "@true-recall/obsidian/components/NotePicker";
-export {
-	SearchCombobox,
-	type SearchComboboxProps,
-} from "@true-recall/obsidian/components/SearchCombobox";
-export {
-	SearchInput,
-	type SearchInputProps,
-} from "@true-recall/obsidian/components/SearchInput";
-export {
-	TextInput,
-	type TextInputProps,
-} from "@true-recall/obsidian/components/TextInput";
+export { AppNavBar } from "@true-recall/obsidian/components/AppNavBar";
+export { FolderPicker } from "@true-recall/obsidian/components/FolderPicker";
+export { FolderSuggestInput } from "@true-recall/obsidian/components/FolderSuggestInput";
+export { MarkdownContent } from "@true-recall/obsidian/components/MarkdownContent";
+export { SearchInput } from "@true-recall/obsidian/components/SearchInput";
+export { TextInput } from "@true-recall/obsidian/components/TextInput";
 
 // ── Interactive ──────────────────────────────────────────────
-export {
-	ActionButton,
-	type ActionButtonProps,
-	type ActionButtonSize,
-	type ActionButtonVariant,
-} from "./ActionButton";
-export {
-	CardCountDisplay,
-	type CardCountDisplayProps,
-} from "./CardCountDisplay";
-export {
-	CheckboxListItem,
-	type CheckboxListItemProps,
-} from "./CheckboxListItem";
-export {
-	Clickable,
-	type ClickableProps,
-} from "./Clickable";
+export { ActionButton } from "./ActionButton";
+export { CardCountDisplay } from "./CardCountDisplay";
+export { CheckboxListItem } from "./CheckboxListItem";
+export { Clickable } from "./Clickable";
 export {
 	EmptyState,
 	EmptyStateMessages,
-	type EmptyStateProps,
 } from "./EmptyState";
-export {
-	ErrorBoundary,
-	type ErrorBoundaryProps,
-} from "./ErrorBoundary";
+export { ErrorBoundary } from "./ErrorBoundary";
 // ── Form ─────────────────────────────────────────────────────
-export {
-	FormCard,
-	type FormCardProps,
-} from "./FormCard";
-export {
-	FormField,
-	type FormFieldProps,
-} from "./FormField";
-export {
-	FormSection,
-	type FormSectionProps,
-} from "./FormSection";
-export {
-	IconButton,
-	type IconButtonProps,
-} from "./IconButton";
-export {
-	InfoBlock,
-	type InfoBlockProps,
-} from "./InfoBlock";
-export {
-	LoadingSpinner,
-	type LoadingSpinnerProps,
-} from "./LoadingSpinner";
-export {
-	ModalFooter,
-	type ModalFooterProps,
-} from "./ModalFooter";
-export {
-	OptionCheckbox,
-	type OptionCheckboxProps,
-} from "./OptionCheckbox";
+export { FormCard } from "./FormCard";
+export { FormField } from "./FormField";
+export { IconButton } from "./IconButton";
+export { InfoBlock } from "./InfoBlock";
+export { LoadingSpinner } from "./LoadingSpinner";
+export { ModalFooter } from "./ModalFooter";
+export { OptionCheckbox } from "./OptionCheckbox";
 // ── Layout ───────────────────────────────────────────────────
-export { Panel, type PanelProps } from "./Panel";
-export {
-	PasteDropZone,
-	type PasteDropZoneProps,
-} from "./PasteDropZone";
-export {
-	SelectInput,
-	type SelectInputOption,
-	type SelectInputProps,
-	type SelectOption,
-	type SelectOptionGroup,
-} from "./SelectInput";
-export {
-	SliderInput,
-	type SliderInputProps,
-} from "./SliderInput";
+export { Panel } from "./Panel";
+export { PasteDropZone } from "./PasteDropZone";
+export { SelectInput } from "./SelectInput";
+export { SliderInput } from "./SliderInput";
 // ── Data Display ─────────────────────────────────────────────
-export {
-	StatBadge,
-	type StatBadgeProps,
-	StatGrid,
-	type StatGridProps,
-} from "./StatBadge";
-export {
-	type CardStateType,
-	getCardStateType,
-	getStateConfig,
-	StateBadge,
-	type StateBadgeProps,
-} from "./StateBadge";
-export {
-	TextAreaInput,
-	type TextAreaInputProps,
-} from "./TextAreaInput";
-export {
-	ToggleInput,
-	type ToggleInputProps,
-} from "./ToggleInput";
+export { StatBadge, StatGrid } from "./StatBadge";
+export { TextAreaInput } from "./TextAreaInput";
+export { ToggleInput } from "./ToggleInput";

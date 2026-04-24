@@ -213,9 +213,3 @@ export interface AppState {
 	panel: PanelSliceState & PanelSliceActions;
 	simulator: SimulatorSliceState & SimulatorSliceActions;
 }
-
-export type SliceCreator<T> = (
-	set: (fn: (state: AppState) => Partial<AppState>) => void,
-	get: () => AppState,
-	deps: AppStoreDeps,
-) => T;

@@ -11,7 +11,7 @@ import {
 
 const AUTOSAVE_DELAY_MS = 1500;
 
-export interface LivePreviewFieldProps {
+interface LivePreviewFieldProps {
 	content: string;
 	field: "question" | "answer";
 	sourcePath: string;
