@@ -5,7 +5,7 @@ export const dashboardCodeblockManifest: PluginManifest = {
 		id: "dashboard-codeblock",
 		name: "Dashboard Codeblocks",
 		description:
-			"Embed dashboard, analytics, project, and FSRS widgets as codeblocks in your notes.",
+			"Embed True Recall dashboards directly in your notes as codeblocks. Includes global due/new/learning counts, analytics (streaks, heatmaps, workload), project overviews, FSRS forecasts, and per-note health widgets.",
 		features: [
 			"Global dashboard with due/new/learning counts",
 			"Analytics widgets (streak, health, heatmap, workload)",

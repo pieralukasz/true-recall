@@ -5,7 +5,7 @@ export const healingFlashcardsManifest: PluginManifest = {
 		id: "healing-flashcards",
 		name: "Healing Flashcards",
 		description:
-			"Automatically generate flashcards that target your weak spots, based on review mistakes and lapse patterns.",
+			"Automatically generate corrective flashcards that target your weak spots, based on recurring mistakes and lapse patterns in your review history. The plugin adapts to your learning curve and focuses new cards on the areas you keep forgetting.",
 		features: [
 			"Detects recurring mistakes from review history",
 			"Generates corrective cards for problem areas",

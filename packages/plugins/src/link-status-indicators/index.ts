@@ -10,7 +10,7 @@ export const linkStatusIndicatorsManifest: PluginManifest = {
 		id: "link-status-indicators",
 		name: "Link Status Indicators",
 		description:
-			"Show inline status donuts next to [[links]] indicating flashcard review state.",
+			"Show inline status donuts next to [[wikilinks]] that reveal flashcard review state at a glance. In reading mode you also get text count indicators, and hovering a link opens a tooltip with full note stats.",
 		features: [
 			"Donut charts next to wikilinks in editor",
 			"Text count indicators in preview mode",

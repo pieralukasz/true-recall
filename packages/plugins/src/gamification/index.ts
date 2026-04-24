@@ -5,7 +5,7 @@ export const gamificationManifest: PluginManifest = {
 		id: "gamification",
 		name: "Gamification Widgets",
 		description:
-			"Track your study progress with visual widgets: progress rings, achievements, streaks, and countdowns.",
+			"Turn your review habit into visible progress with codeblock widgets — daily progress rings, achievement badges, answer streaks, and exam countdowns with retention prediction. Drop them into daily notes or a dedicated dashboard to see momentum at a glance.",
 		features: [
 			"Daily progress rings (new + review)",
 			"Achievement badges based on study milestones",

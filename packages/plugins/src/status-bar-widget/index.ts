@@ -5,7 +5,7 @@ export const statusBarWidgetManifest: PluginManifest = {
 		id: "status-bar-widget",
 		name: "Status Bar Widget",
 		description:
-			"Show due, new, and learning card counts in Obsidian's status bar.",
+			"Show due, new, and learning card counts directly in Obsidian's status bar with color-coded indicators. Click the widget to jump straight into your dashboard without breaking flow.",
 		features: [
 			"Persistent count display in status bar",
 			"Color-coded new/learning/due indicators",

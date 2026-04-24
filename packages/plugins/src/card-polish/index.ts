@@ -8,7 +8,7 @@ export const cardPolishManifest: PluginManifest = {
 		id: "card-polish",
 		name: "Card Polish",
 		description:
-			"Transform flashcards during review or in the Add Flashcard modal — fix formatting, simplify, or run custom instructions.",
+			"Transform flashcards mid-review or inside the Add Flashcard modal — fix formatting, simplify wording, or run your own custom instructions. Each preset can auto-apply or show a preview, and supports its own hotkey during review.",
 		features: [
 			"Polish cards mid-review",
 			"Polish + fill in the Add Flashcard modal",

@@ -52,24 +52,6 @@ function ChevronIcon({ expanded }: { expanded: boolean }) {
 	);
 }
 
-const DOCS_BASE = "https://docs.truerecall.com/plugins";
-
-function DocsLink({ pluginId }: { pluginId: string }) {
-	const iconRef = useIcon("external-link");
-	return (
-		<a
-			href={`${DOCS_BASE}/${pluginId}`}
-			target="_blank"
-			rel="noopener noreferrer"
-			class="ep:inline-flex ep:items-center ep:gap-1 ep:text-[11px] ep:text-obs-accent ep:hover:underline"
-			onClick={(e) => e.stopPropagation()}
-		>
-			Documentation
-			<span ref={iconRef} class="ep:w-3 ep:h-3" />
-		</a>
-	);
-}
-
 interface PluginAccordionProps {
 	manifest: PluginManifest;
 	isActive: boolean;
@@ -93,7 +75,7 @@ function PluginAccordion({
 }: PluginAccordionProps) {
 	const { info } = manifest;
 	const isOn = isActive && isEnabled;
-	const canExpand = isOn;
+	const canExpand = isActive;
 
 	const SettingsPanel = manifest.settingsPanel;
 
@@ -163,11 +145,10 @@ function PluginAccordion({
 
 			{isExpanded && (
 				<div class="ep:border-t ep:border-obs-border ep:flex ep:flex-col">
-					<div class="ep:py-3 ep:px-6 ep:flex ep:flex-col ep:gap-1.5">
+					<div class="ep:py-3 ep:px-6">
 						<p class="ep:text-[12px] ep:text-obs-muted ep:leading-relaxed">
 							{info.description}
 						</p>
-						<DocsLink pluginId={info.id} />
 					</div>
 					{SettingsPanel && (
 						<div class="ep:px-4 ep:pb-2">
@@ -201,14 +182,6 @@ export function PluginsTab() {
 			patch.ragEnabled = enabled;
 		}
 		void save(patch);
-		if (!enabled) {
-			setExpandedIds((prev) => {
-				if (!prev.has(pluginId)) return prev;
-				const next = new Set(prev);
-				next.delete(pluginId);
-				return next;
-			});
-		}
 	};
 
 	const handleExpandToggle = (pluginId: string) => {

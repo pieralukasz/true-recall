@@ -145,7 +145,7 @@ export const selectionToolbarManifest: PluginManifest = {
 		id: "selection-toolbar",
 		name: "Selection Toolbar",
 		description:
-			"Floating toolbar above text and image selections for quick flashcard creation, AI generation, and other actions.",
+			"A floating toolbar that appears above selected text or clicked images, with quick actions for flashcard creation, AI generation, and image occlusion. Works in editor, reading mode, and side panels; the button set is fully configurable.",
 		features: [
 			"Editor selection toolbar with configurable buttons",
 			"Image click toolbar for image occlusion and quick capture",

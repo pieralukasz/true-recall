@@ -8,7 +8,7 @@ export const ankiImportExportManifest: PluginManifest = {
 		id: "anki-import-export",
 		name: "AI Anki Import",
 		description:
-			"AI-powered Anki import with automatic deck classification, field cleanup, and note type mapping.",
+			"Import .apkg decks with AI-assisted deck classification, field cleanup, and automatic note type mapping. Also exports your True Recall cards back to Anki while preserving FSRS scheduling data.",
 		features: [
 			"AI-assisted deck classification and field cleanup",
 			"Automatic note type mapping",
