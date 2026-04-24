@@ -40,7 +40,11 @@ jobs:
       - name: Extract release notes
         run: |
           tag="${GITHUB_REF#refs/tags/}"
-          awk "/^## ${tag} /,/^## [0-9]/" CHANGELOG.md | sed '1d;$d' > release-notes.md
+          awk -v tag="$tag" '
+            $0 ~ "^## " tag " " { flag=1; next }
+            /^## [0-9]/         { flag=0 }
+            flag
+          ' CHANGELOG.md > release-notes.md
           if [ ! -s release-notes.md ]; then
             echo "Release ${tag}" > release-notes.md
           fi
