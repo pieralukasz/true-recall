@@ -4,7 +4,7 @@ import { NoteReviewService } from "@true-recall/core/services/note-review/note-r
 
 import { useApp } from "@true-recall/obsidian/preact/ObsidianContext";
 
-export interface NoteReviewContent {
+interface NoteReviewContent {
 	content: string | null;
 	save: (edited: string) => void;
 }

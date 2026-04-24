@@ -26,7 +26,7 @@ export function ActionBar({
 	onSourceSelect,
 }: ActionBarProps) {
 	return (
-		<div class="ep:flex ep:items-center ep:gap-2">
+		<div class="true-recall-action-bar ep:flex ep:items-center ep:gap-2">
 			<NoteTypePicker
 				value={noteTypeId}
 				onChange={onNoteTypeChange}

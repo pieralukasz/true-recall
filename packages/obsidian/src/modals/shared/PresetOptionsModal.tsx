@@ -10,7 +10,7 @@ import { ObsidianProvider } from "@true-recall/obsidian/preact/ObsidianContext";
 
 import type TrueRecallPlugin from "../../main";
 
-export interface PresetOptionsModalOptions {
+interface PresetOptionsModalOptions {
 	initialPresetId?: string;
 	contextPath?: string;
 	contextName?: string;

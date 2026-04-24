@@ -8,7 +8,7 @@ import {
 	type HighlightColor,
 } from "@true-recall/obsidian/helpers/fsrs-colors";
 
-export interface StatusCounts {
+interface StatusCounts {
 	new: number;
 	learning: number;
 	review: number;

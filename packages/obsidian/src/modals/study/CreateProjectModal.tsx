@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "preact/hooks";
 import { FolderSuggestInput } from "@true-recall/obsidian/components/FolderSuggestInput";
 import { BasePromiseModal } from "@true-recall/obsidian/modals/shared/BasePromiseModal";
 
-export interface CreateProjectResult {
+interface CreateProjectResult {
 	cancelled: boolean;
 	name: string;
 	folder: string;

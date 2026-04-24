@@ -26,7 +26,7 @@ function DayButton({
 	);
 }
 
-export interface DayOfWeekSelectorProps {
+interface DayOfWeekSelectorProps {
 	selectedDays: Set<number>;
 	onToggleDay: (index: number) => void;
 }

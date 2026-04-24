@@ -65,7 +65,7 @@ function NoteItem({
 	);
 }
 
-export interface MoveCardBodyProps {
+interface MoveCardBodyProps {
 	allNotes: TFile[];
 	app: App;
 	cardQuestion?: string;

@@ -24,7 +24,7 @@ export { ReviewEmptyState } from "@true-recall/obsidian/features/study/ui/review
 
 // ─── Props ───────────────────────────────────────────────────────────────────
 
-export interface ReviewAppProps {
+interface ReviewAppProps {
 	onShowAnswer: () => void;
 	onAnswer: (rating: Grade) => void;
 	onTypedAnswerChange: (value: string) => void;
@@ -34,6 +34,7 @@ export interface ReviewAppProps {
 	onNextSession: () => void;
 	onEndSession: () => void;
 	onActionsMenu: (e: MouseEvent) => void;
+	onPolishMenu?: (e: MouseEvent) => void;
 	isCustomSession: boolean;
 	crammingMode: boolean;
 	showHeader: boolean;
@@ -58,6 +59,7 @@ export interface ReviewAppProps {
 	getPresetName?: (card: FSRSFlashcardItem) => string;
 	getPresetOptions?: () => PresetPickerOption[];
 	onPresetChange?: (presetName: string) => void;
+	resolveAudioPath?: (card: FSRSFlashcardItem) => string | undefined;
 }
 
 // ─── Main App ────────────────────────────────────────────────────────────────
@@ -122,6 +124,7 @@ function ActiveReview({
 	onOpenSourceNote,
 	onClose: _onClose,
 	onActionsMenu,
+	onPolishMenu,
 	crammingMode,
 	showHeader,
 	showHeaderStats,
@@ -131,12 +134,14 @@ function ActiveReview({
 	getPresetName,
 	getPresetOptions,
 	onPresetChange,
+	resolveAudioPath,
 }: ActiveReviewProps) {
 	const hasAnswer = !!card.answer?.trim();
 	const isAnswerRevealed = !hasAnswer || review.isAnswerRevealed;
 	const presetName = getPresetName?.(card);
 	const presetOptions = getPresetOptions?.();
 	const typeInState = getTypeInState(card, isAnswerRevealed);
+	const audioPath = resolveAudioPath?.(card);
 
 	useLayoutEffect(() => {
 		if (!hasAnswer && !review.isAnswerRevealed) {
@@ -162,6 +167,7 @@ function ActiveReview({
 				presetName={presetName}
 				presetOptions={presetOptions}
 				onPresetChange={onPresetChange}
+				audioPath={audioPath}
 				typeIn={{
 					enabled: typeInState.useTypeInMode,
 					aiEnabled: typeInState.aiEnabled,
@@ -185,6 +191,7 @@ function ActiveReview({
 				onAnswer={onAnswer}
 				onCycleTypeInMode={onCycleTypeInMode}
 				onActionsMenu={onActionsMenu}
+				onPolishMenu={onPolishMenu}
 			/>
 		</div>
 	);

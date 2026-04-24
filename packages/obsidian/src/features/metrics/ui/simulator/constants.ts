@@ -42,7 +42,7 @@ export const GRADE_NAMES: Record<number, string> = {
 };
 
 /** Desired retention slider config */
-export const RETENTION_SLIDER: SliderConfig = {
+const RETENTION_SLIDER: SliderConfig = {
 	index: -1,
 	name: "desired retention",
 	description: "Target probability of recall at review time",
@@ -53,7 +53,7 @@ export const RETENTION_SLIDER: SliderConfig = {
 };
 
 /** FSRS v6 parameter slider configurations */
-export const FSRS_WEIGHT_SLIDERS: SliderConfig[] = [
+const FSRS_WEIGHT_SLIDERS: SliderConfig[] = [
 	{
 		index: 0,
 		name: "0. initial stability (Again)",

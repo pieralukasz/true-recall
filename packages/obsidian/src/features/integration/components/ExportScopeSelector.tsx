@@ -4,7 +4,7 @@ import type { NoteEntry } from "../utils/export-helpers";
 
 export type ExportMode = "all" | "notes";
 
-export interface ExportScopeSelectorProps {
+interface ExportScopeSelectorProps {
 	exportMode: ExportMode;
 	onModeChange: (mode: ExportMode) => void;
 	totalCards: number;

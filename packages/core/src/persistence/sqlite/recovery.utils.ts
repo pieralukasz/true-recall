@@ -53,7 +53,7 @@ export function decodeBackupToSqliteBytes(
 	}
 }
 
-export function hasSqliteHeader(bytes: Uint8Array): boolean {
+function hasSqliteHeader(bytes: Uint8Array): boolean {
 	if (bytes.byteLength < 16) {
 		return false;
 	}

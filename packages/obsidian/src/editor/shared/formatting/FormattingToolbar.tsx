@@ -157,7 +157,7 @@ export function FormattingToolbar({
 		"ep:px-1.5 ep:py-1 ep:text-ui-smaller ep:text-obs-muted ep:hover:text-obs-normal ep:hover:bg-obs-tertiary ep:rounded ep:cursor-pointer ep:select-none ep:leading-tight";
 
 	return (
-		<div class="ep:flex ep:items-center ep:gap-0.5 ep:px-2 ep:py-1 ep:bg-obs-secondary ep:rounded-md ep:border ep:border-obs-border ep:w-full">
+		<div class="true-recall-formatting-toolbar ep:flex ep:items-center ep:gap-0.5 ep:px-2 ep:py-1 ep:bg-obs-secondary ep:rounded-md ep:border ep:border-obs-border ep:w-full">
 			<div
 				role="button"
 				tabIndex={0}

@@ -223,7 +223,3 @@ export const ALL_COLUMNS: ColumnDef[] = [
 export const DEFAULT_VISIBLE_KEYS = ALL_COLUMNS.filter(
 	(c) => c.defaultVisible,
 ).map((c) => c.key);
-
-export function getColumnByKey(key: string): ColumnDef | undefined {
-	return ALL_COLUMNS.find((c) => c.key === key);
-}

@@ -2,7 +2,7 @@ import { cva } from "class-variance-authority";
 
 import { FSRS_COLORS } from "@true-recall/obsidian/helpers/fsrs-colors";
 
-export interface CardCountDisplayProps {
+interface CardCountDisplayProps {
 	newCount: number;
 	learningCount: number;
 	dueCount: number;

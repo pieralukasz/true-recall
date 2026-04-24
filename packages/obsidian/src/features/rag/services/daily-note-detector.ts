@@ -2,8 +2,6 @@ import type { App, TFile } from "obsidian";
 
 import type { DailyNoteInfo } from "@true-recall/core/rag/ingestion/daily-note-preprocessor";
 
-export type { DailyNoteInfo } from "@true-recall/core/rag/ingestion/daily-note-preprocessor";
-
 const NOT_DAILY: DailyNoteInfo = {
 	isDailyNote: false,
 	date: null,

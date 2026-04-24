@@ -40,8 +40,9 @@ settings:
 @import "./modals/shared/modals.styles.css";
 @import "./features/library/ui/panel/panel.styles.css";
 @import "./features/metrics/ui/simulator/styles.css";
-@import "./editor/ai/selection-toolbar.css";
-@import "./features/image-occlusion/image-occlusion.styles.css";
+@import "../../../packages/plugins/src/selection-toolbar/selection-toolbar.css";
+@import "../../../packages/plugins/src/image-occlusion/styles/image-occlusion.styles.css";
+@import "../../../packages/plugins/src/shared/card-ai.css";
 
 /*
  * Obsidian Theme Variables - Runtime Inheritance

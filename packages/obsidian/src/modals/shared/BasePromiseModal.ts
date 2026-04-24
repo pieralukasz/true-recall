@@ -38,12 +38,3 @@ export abstract class BasePromiseModal<T> extends BaseModal {
 export interface CancellableResult {
 	cancelled: boolean;
 }
-
-export function createCancelledResult<T extends CancellableResult>(
-	additionalProps?: Partial<Omit<T, "cancelled">>,
-): T {
-	return {
-		cancelled: true,
-		...additionalProps,
-	} as T;
-}

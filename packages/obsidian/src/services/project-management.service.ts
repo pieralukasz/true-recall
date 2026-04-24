@@ -149,6 +149,24 @@ export class ProjectManagementService {
 		this.invalidate();
 	}
 
+	async cascadeArchive(projectPath: string, archived: boolean): Promise<void> {
+		const descendantPaths = this.hierarchyService.getPathsForCascade(
+			projectPath,
+			archived,
+		);
+		const allPaths = [projectPath, ...descendantPaths];
+
+		for (const path of allPaths) {
+			const file = this.app.vault.getAbstractFileByPath(path);
+			if (file instanceof TFile) {
+				await this.frontmatterService.setArchive(file.path, archived);
+				this.syncIndex(file.path, true);
+			}
+		}
+
+		this.invalidate();
+	}
+
 	async assignToProject(
 		notePaths: string[],
 		targetName: string,
@@ -220,13 +238,14 @@ export class ProjectManagementService {
 	 * Obsidian's metadataCache fires "changed" asynchronously after processFrontMatter,
 	 * so we read the cache directly and push it into the index before invalidating queries.
 	 */
-	private syncIndex(filePath: string): void {
+	private syncIndex(filePath: string, silent = false): void {
 		const file = this.app.vault.getAbstractFileByPath(filePath);
 		if (!file || !(file instanceof TFile)) return;
 		const cache = this.app.metadataCache.getFileCache(file);
 		this.frontmatterIndex.indexFile(
 			filePath,
 			cache?.frontmatter as Record<string, unknown> | undefined,
+			silent,
 		);
 	}
 

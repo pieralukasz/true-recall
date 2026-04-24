@@ -1,4 +1,4 @@
-export interface ClozePart {
+interface ClozePart {
 	text: string;
 	isCloze: boolean;
 	clozeIndex: number | null;

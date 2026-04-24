@@ -1,6 +1,9 @@
 import type { App } from "obsidian";
 import { Rating, State } from "ts-fsrs";
 
+import { hasAIKey } from "@true-recall/core/ai/config/ai-client-config";
+import { CardHealingService } from "@true-recall/core/ai/healing/card-healing.service";
+import type { HealCardInput } from "@true-recall/core/ai/healing/healing.types";
 import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite";
 import type { FSRSService } from "@true-recall/core/services/fsrs/fsrs.service";
@@ -8,6 +11,7 @@ import type { ReviewService } from "@true-recall/core/services/review/review.ser
 import type { TrueRecallSettings } from "@true-recall/core/types";
 import { BUILTIN_IMAGE_OCCLUSION_ID } from "@true-recall/core/types/note.types";
 
+import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpClient";
 import type { CommandService } from "@true-recall/obsidian/commands";
 import { BatchCreateCommand } from "@true-recall/obsidian/commands/commands/card-create.cmd";
 import { UpdateNoteFieldsCommand } from "@true-recall/obsidian/commands/commands/card-update.cmd";
@@ -18,6 +22,7 @@ import {
 } from "@true-recall/obsidian/commands/commands/review-actions.cmd";
 import type TrueRecallPlugin from "@true-recall/obsidian/main";
 import { MoveCardModal } from "@true-recall/obsidian/modals/shared";
+import { CardHealingModal } from "@true-recall/obsidian/modals/study/card-healing/CardHealingModal";
 import { QuickNoteEditorModal } from "@true-recall/obsidian/modals/study/quick-note-editor/QuickNoteEditorModal";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 import type { ReviewApi } from "@true-recall/obsidian/store";
@@ -25,7 +30,14 @@ import type { ReviewApi } from "@true-recall/obsidian/store";
 const FORGET_NON_NEW_WARNING =
 	"Forget is only available for cards that are not New.";
 
-export interface CardActionsHandlerDeps {
+const RATING_LABELS: Record<number, string> = {
+	1: "Again",
+	2: "Hard",
+	3: "Good",
+	4: "Easy",
+};
+
+interface CardActionsHandlerDeps {
 	app: App;
 	getReview: () => ReviewApi;
 	flashcardManager: FlashcardManager;
@@ -36,7 +48,7 @@ export interface CardActionsHandlerDeps {
 	plugin: TrueRecallPlugin;
 }
 
-export interface CardActionsCallbacks {
+interface CardActionsCallbacks {
 	onUpdateSchedulingPreview: () => void;
 }
 
@@ -60,6 +72,92 @@ export class CardActionsHandler {
 	canForgetCurrentCard(): boolean {
 		const card = this.deps.getReview().getCurrentCard();
 		return !!card && card.fsrs.state !== State.New;
+	}
+
+	canHealCard(): boolean {
+		return hasAIKey(this.deps.settings);
+	}
+
+	async handleHealCard(): Promise<void> {
+		const card = this.deps.getReview().getCurrentCard();
+		if (!card) return;
+
+		if (!card.noteId) {
+			notify().error("Cannot heal card: missing note link.");
+			return;
+		}
+
+		const note = this.deps.cardStore.notes.getById(card.noteId);
+		if (!note) {
+			notify().error("Note not found");
+			return;
+		}
+
+		const noteType = this.deps.cardStore.noteTypes.getById(note.noteTypeId);
+		if (!noteType) {
+			notify().error("Note type not found");
+			return;
+		}
+
+		const input: HealCardInput = {
+			question: card.question,
+			answer: card.answer ?? "",
+			lapses: card.fsrs.lapses,
+			stability: card.fsrs.stability,
+			difficulty: card.fsrs.difficulty,
+			reps: card.fsrs.reps,
+			ratingsPattern: this.formatRatingsPattern(card.fsrs.history),
+			sourceText: card.sourceText,
+		};
+
+		const service = new CardHealingService(
+			() => this.deps.settings,
+			new ObsidianHttpClient(),
+		);
+		const healPromise = service.heal(input);
+
+		const previousFields = { ...note.fields };
+
+		const modal = new CardHealingModal(
+			this.deps.app,
+			this.deps.plugin,
+			healPromise,
+			card.question,
+			card.answer ?? "",
+		);
+
+		const result = await modal.openAndWait();
+		if (result.cancelled) return;
+
+		const questionField = noteType.fields[0];
+		const answerField = noteType.fields[1];
+		if (!questionField || !answerField) {
+			notify().error("Note type has insufficient fields");
+			return;
+		}
+
+		const newFields: Record<string, string> = { ...note.fields };
+		if (result.appliedQuestion) {
+			newFields[questionField] = result.appliedQuestion;
+		}
+		if (result.appliedAnswer) {
+			newFields[answerField] = result.appliedAnswer;
+		}
+
+		this.deps.flashcardManager.updateNoteFields(card.noteId, newFields);
+		this.pushFieldEditUndo(note.id, previousFields, "Heal card");
+
+		const [updatedCard] = this.deps.cardStore.cards.getByIds([card.id]);
+		if (updatedCard) {
+			this.deps
+				.getReview()
+				.updateCurrentCardContent(
+					updatedCard.question ?? card.question,
+					updatedCard.answer ?? card.answer ?? "",
+				);
+		}
+
+		notify().success("Card healed");
 	}
 
 	handleSuspend(): void {
@@ -477,5 +575,13 @@ export class CardActionsHandler {
 		}
 		tomorrow.setHours(this.deps.settings.dayStartHour, 0, 0, 0);
 		return tomorrow;
+	}
+
+	private formatRatingsPattern(history?: Array<{ r: number }>): string {
+		if (!history || history.length === 0) return "";
+		const last5 = history.slice(-5);
+		return last5
+			.map((entry) => RATING_LABELS[entry.r] ?? String(entry.r))
+			.join(", ");
 	}
 }

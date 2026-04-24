@@ -42,7 +42,7 @@ interface InternalEditorBase {
 
 // ─── Public API ──────────────────────────────────────────────────────────────
 
-export interface EmbeddableEditorOptions {
+interface EmbeddableEditorOptions {
 	value?: string;
 	cls?: string;
 	onEscape?: (editor: EmbeddableEditorInstance) => void;

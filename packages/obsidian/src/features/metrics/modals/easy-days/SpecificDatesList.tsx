@@ -10,7 +10,7 @@ function formatDate(dateStr: string): string {
 	});
 }
 
-export interface SpecificDatesListProps {
+interface SpecificDatesListProps {
 	dates: Set<string>;
 	dateInputValue: string;
 	today: string;

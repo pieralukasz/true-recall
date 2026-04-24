@@ -4,7 +4,7 @@ import type { ReviewKeybindings } from "@true-recall/core/types";
 
 import type { ReviewApi } from "@true-recall/obsidian/store";
 
-export interface KeyboardActionCallbacks {
+interface KeyboardActionCallbacks {
 	onShowAnswer: () => void;
 	onAnswer: (rating: Rating) => void;
 	onUndo: () => Promise<void>;

@@ -16,9 +16,7 @@ import {
 import {
 	createTestContext,
 	createTestNote,
-	createTestNoteType,
 	insertNoteDirect,
-	insertNoteTypeDirect,
 	type TestContext,
 } from "../../persistence/sqlite/__setup__/test-database";
 

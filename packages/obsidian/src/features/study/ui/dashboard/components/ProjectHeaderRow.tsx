@@ -12,7 +12,7 @@ import { cn } from "@true-recall/obsidian/utils/cn";
 
 import type { DashboardProject } from "../types";
 
-export interface ProjectHeaderRowProps {
+interface ProjectHeaderRowProps {
 	project: DashboardProject;
 	depth: number;
 	isExpanded: boolean;

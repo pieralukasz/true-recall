@@ -17,12 +17,7 @@ export * from "./constants";
 // Errors
 export * from "./errors";
 // Events
-export {
-	type CardChangeListener,
-	type CardMutation,
-	notifyCardChange,
-	onCardChange,
-} from "./events";
+export { DomainEventBus } from "./events";
 // Interfaces (platform adapters)
 export type {
 	IFileSystem,

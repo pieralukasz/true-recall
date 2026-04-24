@@ -1,7 +1,7 @@
 import { effect } from "@preact/signals-core";
 import { type App, debounce, type Plugin, TFile } from "obsidian";
 
-import { RAG_CONFIG } from "@true-recall/core/constants";
+import { RAG_CONFIG, RAG_FREE_NOTE_LIMIT } from "@true-recall/core/constants";
 import type {
 	RagChunkActions,
 	RagSourceType,
@@ -33,7 +33,7 @@ function toUpsertChunks(
 	}));
 }
 
-export interface IndexResult {
+interface IndexResult {
 	indexed: number;
 	skipped: number;
 	errors: number;
@@ -43,6 +43,7 @@ export interface IndexResult {
 	embeddingRemaining: number;
 	flashcardsIndexed: number;
 	flashcardsSkipped: number;
+	noteLimitReached: boolean;
 }
 
 export interface IndexProgress {
@@ -65,6 +66,10 @@ export class RagIndexerService {
 		this.searchService = search;
 	}
 
+	private get noteLimit(): number | undefined {
+		return this.settings().proKey ? undefined : RAG_FREE_NOTE_LIMIT;
+	}
+
 	async fullReindex(
 		onProgress?: (progress: IndexProgress) => void,
 		options?: { force?: boolean },
@@ -84,12 +89,19 @@ export class RagIndexerService {
 			embeddingRemaining: 0,
 			flashcardsIndexed: 0,
 			flashcardsSkipped: 0,
+			noteLimitReached: false,
 		};
 		const s = this.settings();
 
-		const files = this.app.vault
+		const allEligible = this.app.vault
 			.getMarkdownFiles()
 			.filter((f) => this.shouldIndex(f));
+		const limit = this.noteLimit;
+		const files =
+			limit != null && allEligible.length > limit
+				? allEligible.slice(0, limit)
+				: allEligible;
+		result.noteLimitReached = limit != null && allEligible.length > limit;
 
 		const totalFiles = files.length;
 		for (let i = 0; i < files.length; i++) {
@@ -263,6 +275,14 @@ export class RagIndexerService {
 				if (!this.settings().ragEnabled || !this.settings().ragAutoIndex)
 					return;
 				if (!this.shouldIndex(file)) return;
+
+				// Enforce note limit for non-Pro users during auto-index
+				const limit = this.noteLimit;
+				if (limit != null) {
+					const stats = this.actions.getStats();
+					if (stats.noteCount >= limit) return;
+				}
+
 				try {
 					const wasIndexed = await this.indexFile(file);
 					if (wasIndexed) await this.embedPending();

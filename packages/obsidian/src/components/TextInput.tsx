@@ -3,7 +3,7 @@ import { useEffect, useRef } from "preact/hooks";
 
 import { cn } from "@true-recall/obsidian/utils";
 
-export interface TextInputProps {
+interface TextInputProps {
 	value: string;
 	onChange: (value: string) => void;
 	placeholder?: string;

@@ -2,23 +2,25 @@ import { useCallback } from "preact/hooks";
 
 import { cn } from "@true-recall/obsidian/utils/cn";
 
-const BASE_CLS =
+import { useFormVariant } from "./FormVariantContext";
+
+const CARD_CLS =
 	"ep:py-2 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-ui-small ep:focus:outline-none ep:focus:border-obs-interactive ep:transition-colors ep:disabled:opacity-50 ep:disabled:cursor-not-allowed";
 
-export interface SelectOption {
+interface SelectOption {
 	value: string;
 	label: string;
 	disabled?: boolean;
 }
 
-export interface SelectOptionGroup {
+interface SelectOptionGroup {
 	label: string;
 	options: SelectOption[];
 }
 
-export type SelectInputOption = SelectOption | SelectOptionGroup;
+type SelectInputOption = SelectOption | SelectOptionGroup;
 
-export interface SelectInputProps {
+interface SelectInputProps {
 	value: string;
 	onChange: (value: string) => void;
 	options: SelectInputOption[];
@@ -39,6 +41,7 @@ export function SelectInput({
 	class: cls,
 	ariaLabel,
 }: SelectInputProps) {
+	const variant = useFormVariant();
 	const handleChange = useCallback(
 		(e: Event) => {
 			onChange((e.target as HTMLSelectElement).value);
@@ -46,9 +49,11 @@ export function SelectInput({
 		[onChange],
 	);
 
+	const baseCls = variant === "native" ? "dropdown" : CARD_CLS;
+
 	return (
 		<select
-			class={cn(BASE_CLS, cls)}
+			class={cn(baseCls, cls)}
 			value={value}
 			onChange={handleChange}
 			disabled={disabled}

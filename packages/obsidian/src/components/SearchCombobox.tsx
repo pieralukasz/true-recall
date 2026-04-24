@@ -10,7 +10,7 @@ import type { SuggestionProvider } from "@true-recall/obsidian/helpers/search-su
 import { useApp } from "@true-recall/obsidian/preact/ObsidianContext";
 import { cn } from "@true-recall/obsidian/utils/cn";
 
-export interface SearchComboboxProps {
+interface SearchComboboxProps {
 	value: string;
 	placeholder: string;
 	onChange: (query: string) => void;

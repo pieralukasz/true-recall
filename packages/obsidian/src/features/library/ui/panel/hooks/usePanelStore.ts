@@ -32,7 +32,7 @@ interface PanelState {
 	activeViewContext: string | null;
 }
 
-export interface PanelStoreResult extends PanelState {
+interface PanelStoreResult extends PanelState {
 	cardsWithFsrs: FSRSFlashcardItem[];
 	panel: PanelApi;
 }

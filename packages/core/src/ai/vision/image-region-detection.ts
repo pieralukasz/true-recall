@@ -183,7 +183,7 @@ export async function detectRegionsFromImage(
 	];
 
 	const config = resolveAIClientConfig(settings);
-	const visionModel = config.isPro
+	const visionModel = config.hasProTier
 		? config.model
 		: resolveVisionModel(config.model);
 	const client = new OpenRouterClient(
@@ -193,11 +193,13 @@ export async function detectRegionsFromImage(
 		config.baseUrl,
 	);
 
-	const metadata = config.isPro ? { call_context: "generation" } : undefined;
+	const metadata = config.hasProTier
+		? { call_context: "generation" }
+		: undefined;
 
 	const response = await client.chat({
 		messages,
-		...(config.isPro ? {} : { temperature: 0.5 }),
+		...(config.hasProTier ? {} : { temperature: 0.5 }),
 		metadata,
 	});
 	const responseText = getTextContent(response.choices[0]?.message);

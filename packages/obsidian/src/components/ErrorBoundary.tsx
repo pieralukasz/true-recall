@@ -3,7 +3,7 @@ import { useErrorBoundary } from "preact/hooks";
 
 import { Clickable } from "./Clickable";
 
-export interface ErrorBoundaryProps {
+interface ErrorBoundaryProps {
 	children: ComponentChildren;
 	fallbackMessage?: string;
 }

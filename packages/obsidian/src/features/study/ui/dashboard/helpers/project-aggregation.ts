@@ -16,10 +16,6 @@ import type {
 import type { CardStore } from "@true-recall/core/types/fsrs/store.types";
 
 import {
-	computeProjectStats,
-	type ProjectStats,
-} from "@true-recall/obsidian/editor/study/widgets/project-stats";
-import {
 	type ActionableSessionSnapshot,
 	computeActionableSessionSnapshot,
 } from "@true-recall/obsidian/features/study/services/actionable-session-snapshot.service";
@@ -29,6 +25,10 @@ import type {
 	DashboardProject,
 	DashboardProjectAggregation,
 } from "../types";
+import {
+	computeProjectStats,
+	type ProjectStats,
+} from "@true-recall/plugins/dashboard-codeblock/project-stats";
 
 export { UNASSIGNED_PATH };
 

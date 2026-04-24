@@ -3,7 +3,7 @@ import type { ReviewApi } from "@true-recall/obsidian/store";
 import type { Command, CommandHook } from "../command.types";
 import type { ReviewAnswerCommand } from "../commands/review-answer.cmd";
 
-export interface ReviewUndoCallbacks {
+interface ReviewUndoCallbacks {
 	onUpdateSchedulingPreview: () => void;
 }
 
@@ -28,6 +28,9 @@ export class ReviewUndoHook implements CommandHook {
 
 	private undoAnswer(command: ReviewAnswerCommand): void {
 		const p = command.params;
+		// previousIndex === null ⇒ standalone grade (e.g. card preview modal); nothing to restore.
+		if (p.previousIndex === null) return;
+
 		const review = this.getReview();
 
 		// Restore buried siblings back into the queue

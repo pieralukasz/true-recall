@@ -9,7 +9,7 @@ export interface PresetPickerOption {
 	retention: number; // 0.0-1.0
 }
 
-export interface PresetPopoverProps {
+interface PresetPopoverProps {
 	value: string;
 	options: PresetPickerOption[];
 	onChange: (presetName: string) => void;

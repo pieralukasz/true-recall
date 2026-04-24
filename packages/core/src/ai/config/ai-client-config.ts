@@ -13,7 +13,7 @@ export interface AIClientConfig {
 	apiKey: string;
 	model: string;
 	baseUrl: string;
-	isPro: boolean;
+	hasProTier: boolean;
 	temperature: number;
 }
 
@@ -31,7 +31,7 @@ export function resolveAIClientConfig(
 			apiKey: settings.proKey,
 			model: PRO_MODEL,
 			baseUrl: LITELLM_URL,
-			isPro: true,
+			hasProTier: true,
 			temperature: 0.7,
 		};
 	}
@@ -45,7 +45,7 @@ export function resolveAIClientConfig(
 			apiKey: settings.openRouterApiKey,
 			model,
 			baseUrl: OPENROUTER_URL,
-			isPro: false,
+			hasProTier: false,
 			temperature: resolveByokTemperature(settings),
 		};
 	}

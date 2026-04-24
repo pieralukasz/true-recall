@@ -1,4 +1,5 @@
 import type { IHttpClient } from "../../interfaces/http-client";
+import type { GenerationPreset } from "../../types/generation-preset.types";
 import type { NoteType } from "../../types/note.types";
 import type { TrueRecallSettings } from "../../types/settings.types";
 import { StreamingOpenRouterClient } from "../clients/streaming-openrouter-client";
@@ -9,7 +10,14 @@ import {
 	type ChunkingResult,
 	chunkMarkdown,
 } from "../parsing/markdown-chunker";
-import { buildCardFormatSpec } from "../prompts/block-prompt-builder";
+import {
+	buildPresetFormatSpec,
+	buildPresetPrompt,
+} from "../prompts/block-prompt-builder";
+import {
+	type ExistingCardContext,
+	renderExistingCardsBlock,
+} from "../prompts/existing-cards-block";
 import {
 	createThrottledPartialUpdater,
 	finishStreaming,
@@ -17,10 +25,9 @@ import {
 	startStreaming,
 	updateChunkProgress,
 } from "../state/streaming-state";
+import { resolveGenerationPresetAndNoteType } from "./preset-resolver";
 import { processCardEvents } from "./process-card-events";
 import {
-	buildGenerationPrompt,
-	FALLBACK_BASIC_NOTE_TYPE,
 	type StreamingFlashcardManager,
 	type StreamingGenerationResult,
 	StreamingGenerationService,
@@ -59,9 +66,17 @@ export class ChunkedGenerationService {
 	async generateFromNote(
 		content: string,
 		sourceFile: StreamingSourceFile,
-		noteType?: NoteType | null,
+		presetId: string,
+		options?: { existingCards?: ExistingCardContext[] },
 		confirmLargeNote?: ConfirmLargeNote,
 	): Promise<ChunkedGenerationResult> {
+		const settings = this.getSettings();
+		const { preset, noteType } = resolveGenerationPresetAndNoteType(
+			settings,
+			this.flashcardManager,
+			presetId,
+		);
+
 		const chunkingResult = chunkMarkdown(content);
 
 		if (chunkingResult.strategy === "single") {
@@ -73,10 +88,11 @@ export class ChunkedGenerationService {
 				this.httpClient,
 				this.schedule,
 			);
-			const result = await streamingService.generateStreaming(
+			const result = await streamingService.generate(
 				firstChunk.content,
 				sourceFile,
-				noteType,
+				presetId,
+				options,
 			);
 			return {
 				...result,
@@ -89,7 +105,9 @@ export class ChunkedGenerationService {
 		return this.runChunkedGeneration(
 			chunkingResult,
 			sourceFile,
+			preset,
 			noteType,
+			options,
 			confirmLargeNote,
 		);
 	}
@@ -97,7 +115,9 @@ export class ChunkedGenerationService {
 	private async runChunkedGeneration(
 		chunkingResult: ChunkingResult,
 		sourceFile: StreamingSourceFile,
-		noteType?: NoteType | null,
+		preset: GenerationPreset,
+		noteType: NoteType,
+		options?: { existingCards?: ExistingCardContext[] },
 		confirmLargeNote?: ConfirmLargeNote,
 	): Promise<ChunkedGenerationResult> {
 		const { chunks, totalWords, estimatedTokens } = chunkingResult;
@@ -125,10 +145,22 @@ export class ChunkedGenerationService {
 
 		const settings = this.getSettings();
 		const aiConfig = resolveAIClientConfig(settings);
-		const customPrompt = settings.aiGenerationPrompt?.trim() || "";
-		const systemPrompt = aiConfig.isPro
-			? customPrompt
-			: buildGenerationPrompt(settings, noteType);
+		// Prompts containing the {{EXISTING_CARDS}} placeholder are authoritative
+		// full system prompts (e.g. built-in Pro preset) — use verbatim and send
+		// the format spec as the user message so format instructions still reach
+		// the model. Otherwise wrap the user's prompt in the format spec derived
+		// from the note type and send the raw text as the user message.
+		const useRawPrompt = preset.prompt.includes("{{EXISTING_CARDS}}");
+		const rawSystemPrompt = useRawPrompt
+			? preset.prompt
+			: buildPresetPrompt(preset, noteType);
+		const existingCardsBlock = renderExistingCardsBlock(
+			options?.existingCards ?? [],
+		);
+		const systemPrompt = rawSystemPrompt.replace(
+			"{{EXISTING_CARDS}}",
+			existingCardsBlock,
+		);
 
 		let totalCreated = 0;
 		let totalDuplicates = 0;
@@ -142,8 +174,8 @@ export class ChunkedGenerationService {
 
 				updateChunkProgress(chunk.index, chunk.headingBreadcrumb || null);
 
-				const formatPrefix = aiConfig.isPro
-					? `${buildCardFormatSpec(noteType ?? FALLBACK_BASIC_NOTE_TYPE)}\n\n`
+				const formatPrefix = useRawPrompt
+					? `${buildPresetFormatSpec(preset, noteType)}\n\n`
 					: "";
 				const userMessage = chunk.headingBreadcrumb
 					? `${formatPrefix}[Context: This section is from "${chunk.headingBreadcrumb}" in the note "${sourceFile.basename}"]\n\n${chunk.content}`
@@ -157,6 +189,7 @@ export class ChunkedGenerationService {
 						sourceFile,
 						abortController.signal,
 						noteType,
+						preset,
 						chunk.content,
 					);
 					totalCreated += result.created;
@@ -185,6 +218,7 @@ export class ChunkedGenerationService {
 			created: totalCreated,
 			duplicates: totalDuplicates,
 			createdCardIds: allCreatedCardIds,
+			preset,
 			failedChunks,
 			totalChunks: chunks.length,
 			errors,
@@ -197,7 +231,8 @@ export class ChunkedGenerationService {
 		userMessage: string,
 		sourceFile: StreamingSourceFile,
 		signal: AbortSignal,
-		noteType?: NoteType | null,
+		noteType: NoteType,
+		preset: GenerationPreset,
 		chunkContent?: string,
 	): Promise<StreamingGenerationResult> {
 		const client = new StreamingOpenRouterClient(
@@ -226,14 +261,14 @@ export class ChunkedGenerationService {
 				]
 			: [{ role: "user" as const, content: userMessage }];
 
-		const metadata = aiConfig.isPro
+		const metadata = aiConfig.hasProTier
 			? { call_context: "generation", note_type: noteType?.slug ?? "basic" }
 			: undefined;
 
 		const stream = client.chatStream(
 			{
 				messages,
-				...(aiConfig.isPro ? {} : { temperature: aiConfig.temperature }),
+				...(aiConfig.hasProTier ? {} : { temperature: aiConfig.temperature }),
 				metadata,
 			},
 			signal,
@@ -267,6 +302,7 @@ export class ChunkedGenerationService {
 			created: createdCount,
 			duplicates: duplicateCount,
 			createdCardIds,
+			preset,
 		};
 	}
 }

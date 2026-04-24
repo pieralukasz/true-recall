@@ -5,7 +5,7 @@ import { cn } from "@true-recall/obsidian/utils/cn";
 
 import { Clickable } from "./Clickable";
 
-export interface IconButtonProps {
+interface IconButtonProps {
 	icon: string;
 	ariaLabel: string;
 	onClick: (e: MouseEvent | KeyboardEvent) => void;

@@ -25,28 +25,32 @@ const typeInButtonVariants = cva(
 	},
 );
 
-export interface ButtonBarProps {
+interface ButtonBarProps {
 	isAnswerRevealed: boolean;
 	preview: SchedulingPreview | null;
 	showNextReviewTime: boolean;
-	typeInMode: TypeInMode;
-	isRatingLocked: boolean;
+	typeInMode?: TypeInMode;
+	isRatingLocked?: boolean;
+	compact?: boolean;
 	onShowAnswer: () => void;
 	onAnswer: (rating: Grade) => void;
-	onCycleTypeInMode: () => void;
-	onActionsMenu: (e: MouseEvent) => void;
+	onCycleTypeInMode?: () => void;
+	onActionsMenu?: (e: MouseEvent) => void;
+	onPolishMenu?: (e: MouseEvent) => void;
 }
 
 export function ButtonBar({
 	isAnswerRevealed,
 	preview,
 	showNextReviewTime,
-	typeInMode,
-	isRatingLocked,
+	typeInMode = "off",
+	isRatingLocked = false,
+	compact = false,
 	onShowAnswer,
 	onAnswer,
 	onCycleTypeInMode,
 	onActionsMenu,
+	onPolishMenu,
 }: ButtonBarProps) {
 	const menuIconRef = useIcon("more-vertical");
 	const typeInEnabled = typeInMode !== "off";
@@ -60,6 +64,9 @@ export function ButtonBar({
 		typeInMode === "ai" ? "AI" : typeInMode === "diff" ? "Diff" : "Off";
 
 	const mobile = isMobile();
+	const hasSecondary = Boolean(
+		onCycleTypeInMode || onActionsMenu || onPolishMenu,
+	);
 
 	const ratingButtons = !isAnswerRevealed ? (
 		<Clickable
@@ -106,33 +113,57 @@ export function ButtonBar({
 		</>
 	);
 
-	const secondaryButtons = (
+	const secondaryButtons = hasSecondary ? (
 		<div class="ep:flex ep:items-center ep:gap-2">
-			<Clickable
-				class={typeInButtonVariants({ mode: typeInMode })}
-				aria-label={`Cycle type in mode (current: ${typeInCurrent})`}
-				aria-pressed={typeInEnabled}
-				title={`Cycle type in mode (T) \u00B7 current: ${typeInCurrent}`}
-				onClick={onCycleTypeInMode}
-			>
-				{typeInLabel}
-			</Clickable>
+			{onPolishMenu && (
+				<Clickable
+					class="ep:flex ep:items-center ep:justify-center ep:w-10 ep:h-10 ep:p-0 ep:rounded-lg ep:bg-obs-modifier-hover ep:text-obs-muted ep:transition-colors ep:hover:bg-obs-border ep:hover:text-obs-normal ep:active:scale-95"
+					aria-label="Polish card (AI)"
+					title="Polish card (AI)"
+					onClick={onPolishMenu}
+				>
+					✨
+				</Clickable>
+			)}
 
-			<Clickable
-				class="ep:flex ep:items-center ep:justify-center ep:w-10 ep:h-10 ep:p-0 ep:rounded-lg ep:bg-obs-modifier-hover ep:text-obs-muted ep:transition-colors ep:hover:bg-obs-border ep:hover:text-obs-normal ep:active:scale-95"
-				aria-label="Card actions"
-				onClick={onActionsMenu}
-			>
-				<div ref={menuIconRef} />
-			</Clickable>
+			{onCycleTypeInMode && (
+				<Clickable
+					class={typeInButtonVariants({ mode: typeInMode })}
+					aria-label={`Cycle type in mode (current: ${typeInCurrent})`}
+					aria-pressed={typeInEnabled}
+					title={`Cycle type in mode (T) \u00B7 current: ${typeInCurrent}`}
+					onClick={onCycleTypeInMode}
+				>
+					{typeInLabel}
+				</Clickable>
+			)}
+
+			{onActionsMenu && (
+				<Clickable
+					class="ep:flex ep:items-center ep:justify-center ep:w-10 ep:h-10 ep:p-0 ep:rounded-lg ep:bg-obs-modifier-hover ep:text-obs-muted ep:transition-colors ep:hover:bg-obs-border ep:hover:text-obs-normal ep:active:scale-95"
+					aria-label="Card actions"
+					onClick={onActionsMenu}
+				>
+					<div ref={menuIconRef} />
+				</Clickable>
+			)}
 		</div>
-	);
+	) : null;
+
+	if (compact) {
+		const row = mobile
+			? "ep:flex ep:flex-wrap ep:justify-center ep:gap-2"
+			: "ep:flex ep:justify-center ep:gap-3 ep:flex-nowrap";
+		return <div class={row}>{ratingButtons}</div>;
+	}
 
 	if (mobile) {
 		return (
 			<div class="true-recall-review-buttons ep:flex ep:flex-col ep:gap-2 ep:border-t ep:border-obs-border ep:shrink-0 ep:px-3 ep:pt-2 ep:pb-3">
 				<div class="ep:flex ep:justify-center ep:gap-2">{ratingButtons}</div>
-				<div class="ep:flex ep:justify-center">{secondaryButtons}</div>
+				{secondaryButtons && (
+					<div class="ep:flex ep:justify-center">{secondaryButtons}</div>
+				)}
 			</div>
 		);
 	}
@@ -144,7 +175,9 @@ export function ButtonBar({
 					{ratingButtons}
 				</div>
 
-				<div class="ep:absolute ep:right-0">{secondaryButtons}</div>
+				{secondaryButtons && (
+					<div class="ep:absolute ep:right-0">{secondaryButtons}</div>
+				)}
 			</div>
 		</div>
 	);

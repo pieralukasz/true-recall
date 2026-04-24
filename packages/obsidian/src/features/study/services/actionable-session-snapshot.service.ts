@@ -1,9 +1,5 @@
 // Re-export core types
-export type {
-	ActionableSessionSnapshot,
-	ActionableSessionSnapshotOptions,
-	INoteResolver,
-} from "@true-recall/core/services/review/actionable-session-snapshot.service";
+export type { ActionableSessionSnapshot } from "@true-recall/core/services/review/actionable-session-snapshot.service";
 
 import type { MetadataCache } from "obsidian";
 
@@ -16,7 +12,7 @@ import {
 import type { SessionFilters } from "@true-recall/core/types/review-session.types";
 
 /** Obsidian-specific deps that accept MetadataCache directly */
-export type ActionableSessionSnapshotDeps = Omit<CoreDeps, "noteResolver"> & {
+type ActionableSessionSnapshotDeps = Omit<CoreDeps, "noteResolver"> & {
 	metadataCache?: MetadataCache;
 };
 

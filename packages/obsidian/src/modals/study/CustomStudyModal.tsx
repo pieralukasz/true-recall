@@ -9,7 +9,7 @@ import type {
 	CustomStudyModalScope,
 } from "@true-recall/obsidian/modals/study/custom-study/types";
 
-export type { CustomStudyModalResult, CustomStudyModalScope };
+export type { CustomStudyModalScope };
 
 export class CustomStudyModal extends BasePromiseModal<CustomStudyModalResult> {
 	private studyScope?: CustomStudyModalScope;

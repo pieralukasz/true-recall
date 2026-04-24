@@ -18,7 +18,7 @@ export interface DeviceSelectionResult extends CancellableResult {
 	sourcePath?: string;
 }
 
-export interface DeviceSelectionModalOptions {
+interface DeviceSelectionModalOptions {
 	databases: DeviceDatabaseInfo[];
 	hasLegacy: boolean;
 }
@@ -106,7 +106,6 @@ function DeviceSelectionBody({
 
 export class DeviceSelectionModal extends BasePromiseModal<DeviceSelectionResult> {
 	private databases: DeviceDatabaseInfo[];
-	private hasLegacy: boolean;
 
 	constructor(app: App, options: DeviceSelectionModalOptions) {
 		super(app, {
@@ -114,7 +113,6 @@ export class DeviceSelectionModal extends BasePromiseModal<DeviceSelectionResult
 			width: "480px",
 		});
 		this.databases = options.databases;
-		this.hasLegacy = options.hasLegacy;
 	}
 
 	protected getDefaultResult(): DeviceSelectionResult {

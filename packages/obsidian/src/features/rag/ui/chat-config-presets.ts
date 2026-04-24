@@ -1,6 +1,6 @@
 import type { ChatResponseLength } from "@true-recall/core/types/settings.types";
 
-export interface ChatPreset {
+interface ChatPreset {
 	id: string;
 	label: string;
 	description: string;

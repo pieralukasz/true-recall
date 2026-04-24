@@ -43,7 +43,11 @@ export class KnowledgeChatView extends ItemView {
 
 	onOpen(): Promise<void> {
 		const s = this.plugin.settings;
-		if (s.proKey && s.ragEnabled && this.plugin.ragActions) {
+		if (
+			(s.proKey || s.openRouterApiKey) &&
+			s.ragEnabled &&
+			this.plugin.ragActions
+		) {
 			const search = this.plugin.ragSearch;
 			if (search) {
 				const toolExecutor =

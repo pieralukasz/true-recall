@@ -1,4 +1,5 @@
 #!/usr/bin/env bun
+
 import { TrueRecallClient } from "./client.js";
 import { backupCommands } from "./commands/backup.js";
 import { cardActionCommands } from "./commands/card-actions.js";
@@ -11,6 +12,7 @@ import { fsrsAdvancedCommands } from "./commands/fsrs-advanced.js";
 import { generateCommands } from "./commands/generate.js";
 import { navigationCommands } from "./commands/navigation.js";
 import { noteCommands } from "./commands/notes.js";
+import { presetCommands } from "./commands/presets.js";
 import { queryCommands } from "./commands/query.js";
 import { ragCommands } from "./commands/rag.js";
 import { reviewCommands } from "./commands/review.js";
@@ -27,6 +29,7 @@ const allCommands: CommandDef[] = [
 	...reviewCommands,
 	...sessionCommands,
 	...generateCommands,
+	...presetCommands,
 	...dashboardCommands,
 	...fsrsCommands,
 	...fsrsAdvancedCommands,

@@ -3,6 +3,7 @@ import { defineConfig } from "vitest/config";
 
 const src = resolve(__dirname, "src");
 const coreSrc = resolve(__dirname, "../core/src");
+const pluginsSrc = resolve(__dirname, "../plugins/src");
 const mocks = resolve(__dirname, "tests/__mocks__");
 
 export default defineConfig({
@@ -15,6 +16,11 @@ export default defineConfig({
 			{ find: "@true-recall/obsidian", replacement: src },
 			{ find: /^@true-recall\/core\/(.+)$/, replacement: `${coreSrc}/$1` },
 			{ find: "@true-recall/core", replacement: coreSrc },
+			{
+				find: /^@true-recall\/plugins\/(.+)$/,
+				replacement: `${pluginsSrc}/$1`,
+			},
+			{ find: "@true-recall/plugins", replacement: pluginsSrc },
 			{ find: "obsidian", replacement: `${mocks}/obsidian.ts` },
 		],
 	},

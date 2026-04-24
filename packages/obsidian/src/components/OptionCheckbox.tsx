@@ -1,4 +1,4 @@
-export interface OptionCheckboxProps {
+interface OptionCheckboxProps {
 	label: string;
 	description: string;
 	checked: boolean;

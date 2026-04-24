@@ -16,6 +16,12 @@
 		"enabled": true,
 		"rules": {
 			"recommended": true,
+			"correctness": {
+				"noUnusedImports": "error",
+				"noUnusedVariables": "error",
+				"noUnusedFunctionParameters": "warn",
+				"noUnusedPrivateClassMembers": "error"
+			},
 			"style": {
 				"noNonNullAssertion": "warn",
 				"useImportType": "error",

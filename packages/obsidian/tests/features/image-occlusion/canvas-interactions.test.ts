@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
 
+import type {
+	IODefinition,
+	IORegion,
+} from "@true-recall/plugins/image-occlusion/types";
 import {
 	buildDraftRegion,
 	buildMoveUpdate,
@@ -8,11 +12,7 @@ import {
 	deleteRegion,
 	getRegionCorner,
 	updateRegion,
-} from "../../../src/features/image-occlusion/canvas-interactions";
-import type {
-	IODefinition,
-	IORegion,
-} from "../../../src/features/image-occlusion/types";
+} from "@true-recall/plugins/image-occlusion/utils/canvas-interactions";
 
 function makeRegion(overrides: Partial<IORegion> = {}): IORegion {
 	return {

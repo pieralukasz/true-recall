@@ -26,7 +26,7 @@ export type RouteHandler = (
 	params: Record<string, string>,
 ) => void | Promise<void>;
 
-export type ApiResponseBody<T = unknown> =
+type ApiResponseBody<T = unknown> =
 	| { ok: true; data: T }
 	| { ok: false; error: string };
 
@@ -36,7 +36,7 @@ const CORS_HEADERS = {
 	"Access-Control-Allow-Headers": "Content-Type",
 } as const;
 
-export function sendJson(
+function sendJson(
 	res: ApiResponseWriter,
 	status: number,
 	body: ApiResponseBody,

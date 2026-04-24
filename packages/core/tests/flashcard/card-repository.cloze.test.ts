@@ -3,7 +3,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { CardRepository } from "../../src/flashcard/data/card-repository.service";
 import type { SqliteStoreService } from "../../src/persistence/sqlite/SqliteStoreService";
 import {
-	createTestCard,
 	createTestContext,
 	type TestContext,
 } from "../persistence/sqlite/__setup__/test-database";

@@ -61,19 +61,21 @@ export function useNoteBulkActions({
 
 		const hierarchy = plugin.hierarchyService.buildHierarchy();
 		const allNodes = flattenNodes(hierarchy);
-		if (allNodes.length === 0) {
-			new Notice("No projects available. Create one first.");
-			return;
-		}
 
 		const modal = new ProjectSuggestModal(plugin.app, allNodes);
-		const target = await modal.openAndWait();
-		if (!target) return;
+		const choice = await modal.openAndWait();
+		if (!choice) return;
 
-		await service.assignToProject([...selectedPaths.value], target.name);
-		new Notice(
-			`Assigned ${selectedPaths.value.size} notes to "${target.name}"`,
-		);
+		let targetName: string;
+		if (choice.kind === "create") {
+			await service.createProjectWithChildren(choice.name, "", []);
+			targetName = choice.name;
+		} else {
+			targetName = choice.node.name;
+		}
+
+		await service.assignToProject([...selectedPaths.value], targetName);
+		new Notice(`Assigned ${selectedPaths.value.size} notes to "${targetName}"`);
 		exitSelection();
 	}, [plugin, service, selectedPaths, exitSelection]);
 
