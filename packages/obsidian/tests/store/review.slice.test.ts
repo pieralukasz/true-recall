@@ -51,6 +51,9 @@ describe("Review Slice", () => {
 			const cards = [createMockCard(), createMockCard()];
 			store.getState().review.startSession(cards);
 			store.getState().review.revealAnswer();
+			store
+				.getState()
+				.review.setSessionFilters({ projectPath: "Projects/A.md" });
 
 			store.getState().review.reset();
 
@@ -58,6 +61,7 @@ describe("Review Slice", () => {
 			expect(review.isActive).toBe(false);
 			expect(review.queue).toHaveLength(0);
 			expect(review.isAnswerRevealed).toBe(false);
+			expect(review.getSessionFilters()).toEqual({});
 		});
 	});
 
@@ -284,6 +288,33 @@ describe("Review Slice", () => {
 			const countsAfter = store.getState().review.getBadgeCounts();
 			expect(countsAfter.new).toBe(2);
 			expect(countsAfter.due).toBe(0);
+		});
+
+		it("should replace the active queue while keeping the same current card when possible", () => {
+			const cards = [
+				createMockCardWithState(State.New),
+				createMockCardWithState(State.Review),
+				createMockCardWithState(State.Learning),
+			];
+			store.getState().review.startSession(cards);
+			store.getState().review.nextCard();
+
+			const replacement = [
+				createMockCardWithState(State.New),
+				cards[1]!,
+				createMockCardWithState(State.Review),
+			];
+
+			store.getState().review.replaceQueue(replacement, cards[1]?.id ?? null);
+
+			const review = store.getState().review;
+			expect(review.getCurrentCard()?.id).toBe(cards[1]?.id);
+			expect(review.currentIndex).toBe(1);
+			expect(review.getBadgeCounts()).toEqual({
+				new: 0,
+				learning: 0,
+				due: 2,
+			});
 		});
 
 		it("should not count requeue if inserted before current index", () => {

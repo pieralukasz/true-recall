@@ -7,6 +7,7 @@ import type {
 	ReviewSessionStats,
 	SchedulingPreview,
 } from "@true-recall/core/types";
+import type { SessionFilters } from "@true-recall/core/types/review-session.types";
 
 import type {
 	AppState,
@@ -54,6 +55,7 @@ function createInitialState(): ReviewSliceState {
 		stats: createDefaultStats(),
 		cachedBadgeCounts: { new: 0, learning: 0, due: 0 },
 		editMode: { ...INITIAL_EDIT_MODE },
+		sessionFilters: {},
 	};
 }
 
@@ -167,6 +169,17 @@ export function createReviewSlice(
 				},
 			}));
 		},
+
+		setSessionFilters: (filters: SessionFilters) => {
+			set((s) => ({
+				review: {
+					...s.review,
+					sessionFilters: { ...filters },
+				},
+			}));
+		},
+
+		getSessionFilters: () => ({ ...get().review.sessionFilters }),
 
 		revealAnswer: () => {
 			const state = get().review;
@@ -535,6 +548,39 @@ export function createReviewSlice(
 					isAnswerRevealed: false,
 					questionShownTime: Date.now(),
 					cachedBadgeCounts: newCounts,
+				},
+			}));
+		},
+
+		replaceQueue: (
+			queue: FSRSFlashcardItem[],
+			currentCardId?: string | null,
+		) => {
+			const state = get().review;
+			if (!state.isActive) return;
+
+			const matchedIndex = currentCardId
+				? queue.findIndex((card) => card.id === currentCardId)
+				: -1;
+			const sameCardPreserved = matchedIndex >= 0;
+			const resolvedIndex = sameCardPreserved ? matchedIndex : 0;
+
+			if (!sameCardPreserved) {
+				schedulingPreview = null;
+			}
+
+			set((s) => ({
+				review: {
+					...s.review,
+					queue: [...queue],
+					currentIndex: resolvedIndex,
+					isAnswerRevealed: sameCardPreserved
+						? s.review.isAnswerRevealed
+						: false,
+					questionShownTime: sameCardPreserved
+						? s.review.questionShownTime
+						: Date.now(),
+					cachedBadgeCounts: computeBadgeCounts(queue, resolvedIndex),
 				},
 			}));
 		},

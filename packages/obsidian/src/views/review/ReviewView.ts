@@ -26,7 +26,7 @@ import {
 import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpClient";
 import { ReviewUndoHook } from "@true-recall/obsidian/commands";
 import { G, getDataLayer } from "@true-recall/obsidian/data";
-import { computeActionableSessionSnapshot } from "@true-recall/obsidian/features/study/services/actionable-session-snapshot.service";
+import type { ReviewSessionController } from "@true-recall/obsidian/features/study/services/ReviewSessionController";
 import type { PresetPickerOption } from "@true-recall/obsidian/features/study/ui/review/components";
 import {
 	AnswerHandler,
@@ -35,10 +35,8 @@ import {
 	KeyboardHandler,
 } from "@true-recall/obsidian/features/study/ui/review/handlers";
 import {
-	applyMutation,
 	assessTypedAnswer,
 	deriveTypeInMode,
-	filterActiveCards,
 	getEmptyQueueMessage,
 	getTypeInModeStorage,
 	isRatingLockedForTypeIn,
@@ -95,12 +93,12 @@ export class ReviewView extends ItemView {
 	private plugin: TrueRecallPlugin;
 	private fsrsService: FSRSService;
 	private reviewService: ReviewService;
+	private reviewController: ReviewSessionController;
 	private flashcardManager: FlashcardManager;
 	private sessionPersistence: SessionPersistenceService;
 	private semanticGradingService: SemanticAnswerGradingService;
 
 	private filters: SessionFilters = {};
-	private resolvedProjectUids: Set<string> | null = null;
 	private crammedCardIds = new Set<string>();
 	private isProcessingAnswer = false;
 	private presetCache = new Map<string, FSRSPreset>();
@@ -129,6 +127,7 @@ export class ReviewView extends ItemView {
 		this.plugin = plugin;
 		this.flashcardManager = plugin.flashcardManager;
 		this.reviewService = new ReviewService();
+		this.reviewController = plugin.reviewController;
 		this.sessionPersistence = plugin.sessionPersistence;
 		this.semanticGradingService = new SemanticAnswerGradingService(
 			() => this.plugin.settings,
@@ -151,6 +150,7 @@ export class ReviewView extends ItemView {
 			plugin: this.plugin,
 			fsrsService: this.fsrsService,
 			reviewService: this.reviewService,
+			reviewController: this.reviewController,
 			flashcardManager: this.flashcardManager,
 			sessionPersistence: this.sessionPersistence,
 			getFilters: () => this.filters,
@@ -683,13 +683,10 @@ export class ReviewView extends ItemView {
 			const fsrsSettings = extractFSRSSettings(this.plugin.settings);
 			this.fsrsService.updateSettings(fsrsSettings);
 
-			const allMetaMap =
-				this.plugin.dataLayer?.get<
-					Map<string, import("@true-recall/core/types").CardSchedulingMeta>
-				>("allMeta");
-			const allCards = allMetaMap ? [...allMetaMap.values()] : [];
+			const { queue } = this.reviewController.buildSession(this.filters);
+			const allCards = this.plugin.flashcardManager.getAllFSRSCards();
 
-			if (allCards.length === 0) {
+			if (queue.length === 0 && allCards.length === 0) {
 				this.mountEmptyState(
 					container,
 					"No flashcards found. Generate some flashcards first!",
@@ -697,14 +694,16 @@ export class ReviewView extends ItemView {
 				return;
 			}
 
-			const archivedSourceUids =
-				this.plugin.hierarchyService.getArchivedSourceUids();
-			const activeCards = filterActiveCards(allCards, {
-				stateFilter: this.filters.stateFilter,
-				archivedSourceUids,
-			});
+			const now = new Date();
+			const hasAnyActive = allCards.some(
+				(card) =>
+					!(
+						card.fsrs.suspended ||
+						(card.fsrs.buriedUntil && new Date(card.fsrs.buriedUntil) > now)
+					),
+			);
 
-			if (activeCards.length === 0) {
+			if (!hasAnyActive && queue.length === 0) {
 				const msg =
 					this.filters.stateFilter === "buried"
 						? "No buried cards found."
@@ -725,32 +724,9 @@ export class ReviewView extends ItemView {
 				return;
 			}
 
-			// Yield to let the browser paint before heavy queue building
+			// Yield once before mounting Preact so the loading state can paint.
 			await new Promise((r) => requestAnimationFrame(r));
 			if (!this.containerEl.isConnected) return;
-
-			const snapshot = computeActionableSessionSnapshot(
-				{
-					allCards,
-					archivedSourceUids,
-					settings: this.plugin.settings,
-					sessionPersistence: this.sessionPersistence,
-					presetService: this.plugin.presetService,
-					metadataCache: this.app.metadataCache,
-					hierarchyService: this.plugin.hierarchyService,
-					fsrsService: this.fsrsService,
-					reviewService: this.reviewService,
-				},
-				this.filters,
-				{ activeCards },
-			);
-			const queue = snapshot.queue;
-
-			this.resolvedProjectUids = this.filters.projectPath
-				? this.plugin.hierarchyService.getSourceUidsForProject(
-						this.filters.projectPath,
-					)
-				: null;
 
 			if (queue.length === 0) {
 				this.mountEmptyState(
@@ -760,7 +736,6 @@ export class ReviewView extends ItemView {
 				return;
 			}
 
-			// Pre-resolve presets for all cards (keyed by sourceUid for dedup)
 			this.presetCache.clear();
 			for (const card of queue) {
 				const uid = card.sourceUid ?? "";
@@ -774,12 +749,8 @@ export class ReviewView extends ItemView {
 				}
 			}
 
-			// Load full content (question/answer) only for the ~50 queue cards,
-			// not all 3000+ in the collection. Queue was built from lightweight
-			// CardSchedulingMeta; now we fetch rendered content for just these IDs.
-			const queueIds = queue.map((c) => c.id);
-			const fullQueue = this.flashcardManager.getCardsByIds(queueIds);
-			this.review.startSession(fullQueue);
+			this.review.setSessionFilters(this.filters);
+			this.review.startSession(queue);
 			this.resetTypeInState(this.review.getCurrentCard()?.id ?? null);
 			this.subscribeToSessionEvents();
 			this.answerHandler.updateSchedulingPreview();
@@ -805,13 +776,9 @@ export class ReviewView extends ItemView {
 			// Skip "reviewed" — the queue is already updated synchronously
 			// by recordAnswerAndNext() before persistence runs
 			if (m.type === "reviewed") return;
-			applyMutation(
-				m,
-				this.review,
-				this.flashcardManager,
-				this.plugin.cardStore,
+			this.reviewController.rebuildActiveSession(
 				this.filters,
-				this.resolvedProjectUids ?? undefined,
+				this.review.getCurrentCard()?.id ?? null,
 			);
 		});
 	}

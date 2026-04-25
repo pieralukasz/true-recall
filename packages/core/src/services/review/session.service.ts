@@ -1,10 +1,10 @@
-import { State } from "ts-fsrs";
-
-import { isLearningState } from "../../helpers/card-state";
-import type { CardSchedulingMeta } from "../../types";
 import type { SessionFilters } from "../../types/review-session.types";
 import type { SessionConfig } from "../../types/session-config.types";
-import { filterActiveCards } from "./session-helpers";
+import { getTodayBoundary } from "../../utils/date.utils";
+import {
+	ReviewSessionEngine,
+	type ReviewSessionEngineDeps,
+} from "./review-session.engine";
 
 export interface SessionValidation {
 	valid: boolean;
@@ -14,9 +14,14 @@ export interface SessionValidation {
 
 export interface SessionServiceSettings {
 	ignoreDailyLimitsForNoteStudy: boolean;
+	dayStartHour?: number;
 }
 
+export type SessionValidationDeps = ReviewSessionEngineDeps;
+
 export class SessionService {
+	private readonly engine = new ReviewSessionEngine();
+
 	resolveFilters(
 		config: SessionConfig,
 		settings: SessionServiceSettings,
@@ -24,6 +29,7 @@ export class SessionService {
 		const base: Partial<SessionFilters> = {
 			customReviewOrder: config.reviewOrder,
 			cardLimit: config.cardLimit,
+			dayStartHour: settings.dayStartHour,
 		};
 
 		switch (config.mode) {
@@ -80,14 +86,15 @@ export class SessionService {
 
 	validate(
 		config: SessionConfig,
-		allCards: CardSchedulingMeta[],
-		archivedSourceUids: ReadonlySet<string>,
+		deps: SessionValidationDeps,
 		settings: SessionServiceSettings,
 	): SessionValidation {
 		const filters = this.resolveFilters(config, settings);
-		const active = filterActiveCards(allCards, {
-			archivedSourceUids: new Set(archivedSourceUids),
-		});
+		const active = this.engine.getActiveCards(
+			deps.allCards,
+			filters,
+			deps.archivedSourceUids,
+		);
 
 		switch (config.mode) {
 			case "note": {
@@ -101,17 +108,11 @@ export class SessionService {
 						filters,
 					};
 				}
-				const now = new Date();
-				const anyDue = noteCards.some(
-					(c) =>
-						c.fsrs.state === State.New ||
-						isLearningState(c.fsrs.state) ||
-						new Date(c.fsrs.due) <= now,
-				);
-				if (!anyDue) {
+				const snapshot = this.engine.bootstrap(deps, filters);
+				if (snapshot.queueLength === 0) {
 					return {
 						valid: false,
-						message: `No cards due for this note. All ${noteCards.length} cards are scheduled for later.`,
+						message: `No cards available for review for this note right now (${noteCards.length} cards exist; all are scheduled or filtered out).`,
 						filters,
 					};
 				}
@@ -119,9 +120,7 @@ export class SessionService {
 			}
 
 			case "created_today": {
-				const today = new Date();
-				today.setHours(0, 0, 0, 0);
-				const todayMs = today.getTime();
+				const todayMs = getTodayBoundary(settings.dayStartHour ?? 4).getTime();
 				const todayCards = active.filter(
 					(c) => (c.fsrs.createdAt ?? 0) >= todayMs,
 				);

@@ -10,6 +10,7 @@ import type {
 	SchedulingPreview,
 	TrueRecallSettings,
 } from "@true-recall/core/types";
+import type { SessionFilters } from "@true-recall/core/types/review-session.types";
 
 import type {
 	MetricType,
@@ -50,6 +51,7 @@ export interface ReviewSliceState {
 	stats: ReviewSessionStats;
 	cachedBadgeCounts: BadgeCounts;
 	editMode: EditModeState;
+	sessionFilters: SessionFilters;
 }
 
 export interface ReviewSliceActions {
@@ -57,6 +59,8 @@ export interface ReviewSliceActions {
 	startSession: (queue: FSRSFlashcardItem[]) => void;
 	endSession: () => void;
 	reset: () => void;
+	setSessionFilters: (filters: SessionFilters) => void;
+	getSessionFilters: () => SessionFilters;
 
 	// Answer display
 	revealAnswer: () => void;
@@ -78,6 +82,10 @@ export interface ReviewSliceActions {
 	removeCardsByIds: (cardIds: string[]) => void;
 	addCardToQueue: (card: FSRSFlashcardItem) => void;
 	insertCardAtPosition: (card: FSRSFlashcardItem, position: number) => void;
+	replaceQueue: (
+		queue: FSRSFlashcardItem[],
+		currentCardId?: string | null,
+	) => void;
 
 	// Undo
 	undoLastAnswer: (

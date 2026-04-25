@@ -1,6 +1,6 @@
 import { type Grade, Rating, State } from "ts-fsrs";
 
-import { ReviewService } from "@true-recall/core/services/review/review.service";
+import { shouldTriggerLeech } from "@true-recall/core/helpers/leech-helpers";
 
 import type { ApiContext, ApiRequest, ApiResponseWriter } from "../api.types";
 import { parseJsonBody, readBody, sendError, sendOk } from "../api.types";
@@ -24,7 +24,6 @@ export function handleRevealAnswer(
 
 	const review = ctx.plugin.store.getState().review;
 	const card = review.getCurrentCard();
-
 	if (!card) {
 		sendError(res, 404, "No active review card");
 		return;
@@ -89,83 +88,42 @@ export async function handleGradeSessionCard(
 		4: Rating.Easy,
 	};
 
-	const rating = ratingMap[ratingValue] as Grade;
-	const responseTime = Date.now() - review.questionShownTime;
-	const isNewCard = card.fsrs.state === State.New;
-	const previousState = card.fsrs.state;
-
-	const preset = ctx.plugin.presetService.resolvePresetForCard(card);
-	const presetSettings = ctx.plugin.presetService.toFSRSSettings(preset);
-
-	const reviewService = new ReviewService();
-	const { updatedCard, result } = reviewService.processAnswer(
-		card,
-		rating,
-		ctx.plugin.fsrsService,
-		responseTime,
-		presetSettings,
+	const outcome = ctx.plugin.reviewController.gradeCurrentCard(
+		ratingMap[ratingValue] as Grade,
+		review.getSessionFilters(),
 	);
-
-	// Requeue logic for learning/relearning cards
-	let requeueData: { card: typeof updatedCard; position: number } | undefined;
-	if (reviewService.shouldRequeue(updatedCard)) {
-		const relativePosition = reviewService.getRequeuePosition(
-			review.queue,
-			review.currentIndex + 1,
-			updatedCard,
-			preset.reviewOrder ?? ctx.plugin.settings.reviewOrder,
-		);
-		requeueData = { card: updatedCard, position: relativePosition };
+	if (!outcome) {
+		sendError(res, 404, "No active review card");
+		return;
 	}
 
-	// Advance session state
-	const hasMore = review.recordAnswerAndNext(rating, updatedCard, requeueData);
-
-	// Persist FSRS update
-	ctx.plugin.flashcardManager.updateCardFSRS(card.id, updatedCard.fsrs);
-
-	// Record stats
-	try {
-		ctx.plugin.cardStore.stats.addReviewLog(
-			card.id,
-			ratingValue,
-			result.scheduledDays,
-			result.elapsedDays,
-			previousState,
-			responseTime,
-			preset.name,
-		);
-		const { formatLocalDate } = await import("@true-recall/core/utils");
-		const today = formatLocalDate(new Date());
-		ctx.plugin.cardStore.stats.updateDailyStats(today, {
-			reviewsCompleted: 1,
-			newCardsStudied: isNewCard ? 1 : 0,
-			totalTimeMs: responseTime,
-			[`${["", "again", "hard", "good", "easy"][ratingValue]}`]: 1,
-			...(previousState === State.New && { newCards: 1 }),
-			...(previousState === State.Learning && { learningCards: 1 }),
-			...(previousState === State.Review && { reviewCards: 1 }),
-		});
-		ctx.plugin.cardStore.stats.recordReviewedCard(today, card.id);
-	} catch {
-		// Stats recording is non-critical
-	}
-
-	// Build response with next card info
-	const nextCard = hasMore ? review.getCurrentCard() : null;
+	const nextCard = outcome.nextCard;
+	const leechThreshold = outcome.preset.leechThreshold ?? 8;
+	const leechAction = outcome.preset.leechAction ?? "tag-only";
+	const leechTriggered =
+		ratingValue === 1 &&
+		shouldTriggerLeech(outcome.updatedCard.fsrs.lapses, leechThreshold);
 
 	sendOk(res, {
 		graded: {
-			cardId: card.id,
+			cardId: outcome.card.id,
 			rating: ratingValue,
 			ratingLabel: ["", "Again", "Hard", "Good", "Easy"][ratingValue],
-			newState: updatedCard.fsrs.state,
-			newStateLabel: STATE_LABELS[updatedCard.fsrs.state] ?? "Unknown",
-			newDue: updatedCard.fsrs.due,
-			scheduledDays: result.scheduledDays,
+			newState: outcome.updatedCard.fsrs.state,
+			newStateLabel: STATE_LABELS[outcome.updatedCard.fsrs.state] ?? "Unknown",
+			newDue: outcome.updatedCard.fsrs.due,
+			scheduledDays: outcome.result.scheduledDays,
+			leech: leechTriggered
+				? {
+						suspended: outcome.leechSuspended,
+						action: leechAction,
+						lapses: outcome.updatedCard.fsrs.lapses,
+						threshold: leechThreshold,
+					}
+				: null,
 		},
 		session: {
-			hasMore,
+			hasMore: outcome.hasMore,
 			progress: review.getProgress(),
 			badgeCounts: review.getBadgeCounts(),
 		},

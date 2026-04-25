@@ -62,6 +62,13 @@ export {
 	ReviewService,
 } from "./review/review.service";
 export {
+	type ReviewAnswerTransition,
+	type ReviewAnswerTransitionOptions,
+	type ReviewSessionBootstrapResult,
+	ReviewSessionEngine,
+	type ReviewSessionEngineDeps,
+} from "./review/review-session.engine";
+export {
 	SessionService,
 	type SessionServiceSettings,
 	type SessionValidation,
