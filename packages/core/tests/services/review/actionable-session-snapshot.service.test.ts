@@ -219,6 +219,62 @@ describe("computeActionableSessionSnapshot", () => {
 		expect(snapshot.queueLength).toBe(0);
 	});
 
+	it("scoped snapshot uses per-preset progress, not the global counter", () => {
+		const codingPreset = createPreset("Coding", { newCardsPerDay: 20 });
+		const defaultPreset = createPreset("Default", { newCardsPerDay: 9999 });
+		const settings = createSettings(
+			[defaultPreset, codingPreset],
+			defaultPreset.id,
+		);
+
+		const cards = [
+			createMockFlashcard({
+				id: "coding-new-1",
+				sourceUid: "coding-uid",
+				fsrs: { state: State.New, due: "2024-01-01T00:00:00.000Z" },
+			}),
+		];
+
+		const presetService = {
+			getPresets: () => settings.fsrsPresets,
+			getDefaultPreset: () => defaultPreset,
+			resolvePresetForCard: () => codingPreset,
+			resolvePresetChain: () => ({ effective: { preset: codingPreset } }),
+		} as unknown as PresetService;
+
+		// Mirrors the user-reported scenario: 12 new studied today against
+		// the Coding preset's 20-card budget; the global counter is 20 because
+		// other presets contributed too. Pre-fix the per-project queue would
+		// see 20 - 20 = 0 and drop this card; post-fix it sees 12 → 8 left.
+		const sessionPersistence = {
+			getReviewedToday: () => new Set<string>(),
+			getNewCardsStudiedToday: () => 20,
+			getReviewCardsCompletedToday: () => 50,
+			getTodayProgressByPreset: () =>
+				new Map([
+					["Coding", { newStudied: 12, reviewsCompleted: 0 }],
+					["Default", { newStudied: 8, reviewsCompleted: 50 }],
+				]),
+		} as unknown as SessionPersistenceService;
+
+		const hierarchyService = {
+			getSourceUidsForProject: () => new Set(["coding-uid"]),
+		} as unknown as HierarchyService;
+
+		const snapshot = computeActionableSessionSnapshot(
+			createDeps({
+				allCards: cards,
+				settings,
+				presetService,
+				sessionPersistence,
+				hierarchyService,
+			}),
+			{ projectPath: "Projects/Coding.md" },
+		);
+
+		expect(snapshot.counts.new).toBe(1);
+	});
+
 	it("reuses provided fsrsService without forcing updateSettings", () => {
 		const cards = [
 			createMockFlashcard({

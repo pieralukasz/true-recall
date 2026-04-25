@@ -52,11 +52,17 @@ function makeSessionPersistence(
 		new Set<string>()) as Set<string>;
 	const newStudied = (overrides.newCardsStudiedToday ?? 0) as number;
 	const reviewsCompleted = (overrides.reviewCardsCompletedToday ?? 0) as number;
+	const presetProgress = (overrides.todayProgressByPreset ??
+		new Map<string, { newStudied: number; reviewsCompleted: number }>()) as Map<
+		string,
+		{ newStudied: number; reviewsCompleted: number }
+	>;
 
 	return {
 		getReviewedToday: vi.fn(() => reviewedToday),
 		getNewCardsStudiedToday: vi.fn(() => newStudied),
 		getReviewCardsCompletedToday: vi.fn(() => reviewsCompleted),
+		getTodayProgressByPreset: vi.fn(() => presetProgress),
 	} as unknown as SessionPersistenceService;
 }
 
@@ -149,6 +155,53 @@ describe("buildQueueOptions — preset overrides", () => {
 		expect(result.newCardOrder).toBe("oldest-first");
 		expect(result.reviewOrder).toBe("due-date");
 		expect(result.newReviewMix).toBe("mix-with-reviews");
+	});
+
+	it("uses per-preset progress today instead of the global counter", () => {
+		const preset = makePreset({ name: "Coding", newCardsPerDay: 20 });
+		const presetProgress = new Map([
+			["Coding", { newStudied: 12, reviewsCompleted: 4 }],
+			["Default", { newStudied: 8, reviewsCompleted: 30 }],
+		]);
+		const spWithProgress = makeSessionPersistence({
+			newCardsStudiedToday: 20,
+			reviewCardsCompletedToday: 34,
+			todayProgressByPreset: presetProgress,
+		});
+
+		const result = buildQueueOptions(
+			makeFilters(),
+			settings,
+			spWithProgress,
+			preset,
+		);
+
+		expect(result.newCardsStudiedToday).toBe(12);
+		expect(result.reviewsCompletedToday).toBe(4);
+		expect(spWithProgress.getNewCardsStudiedToday).not.toHaveBeenCalled();
+		expect(spWithProgress.getReviewCardsCompletedToday).not.toHaveBeenCalled();
+	});
+
+	it("treats missing preset progress as zero (preset hasn't been studied today)", () => {
+		const preset = makePreset({ name: "Brand-New" });
+		const presetProgress = new Map([
+			["Default", { newStudied: 8, reviewsCompleted: 30 }],
+		]);
+		const spWithProgress = makeSessionPersistence({
+			newCardsStudiedToday: 8,
+			reviewCardsCompletedToday: 30,
+			todayProgressByPreset: presetProgress,
+		});
+
+		const result = buildQueueOptions(
+			makeFilters(),
+			settings,
+			spWithProgress,
+			preset,
+		);
+
+		expect(result.newCardsStudiedToday).toBe(0);
+		expect(result.reviewsCompletedToday).toBe(0);
 	});
 });
 
