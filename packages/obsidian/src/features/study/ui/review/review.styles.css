@@ -224,6 +224,9 @@
 	.cm-editor
 	.cm-content {
 	text-align: left;
+	/* biome-ignore lint/complexity/noImportantStyles: undo the flex centering set above so cm-lines flow as block-level rows */
+	display: block !important;
+	align-items: stretch;
 }
 
 .true-recall-review-question .cm-line.HyperMD-codeblock,
