@@ -1,5 +1,5 @@
 import type { ComponentType } from "preact";
-import { useState } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 
 import type {
 	CardAIPreset,
@@ -28,6 +28,8 @@ const EMPTY_BUCKET: CardAIUserSettings = {
 	customPromptAutoApply: false,
 };
 
+const PERSIST_DEBOUNCE_MS = 400;
+
 function makeId(): string {
 	return `preset-${Math.random().toString(36).slice(2, 10)}`;
 }
@@ -36,8 +38,37 @@ export function createCardAISettingsPanel(
 	config: CardAIPanelConfig,
 ): ComponentType<PluginSettingsProps> {
 	return function CardAISettingsPanel({ settings, save }: PluginSettingsProps) {
-		const bucket: CardAIUserSettings =
-			settings[config.bucketKey] ?? EMPTY_BUCKET;
+		// Local working copy: keystrokes update this immediately, while writes to
+		// the underlying settings store are debounced. This avoids round-tripping
+		// every character through async persistence, which would re-render the
+		// panel mid-typing and clobber in-flight input values.
+		const [bucket, setBucket] = useState<CardAIUserSettings>(
+			() => settings[config.bucketKey] ?? EMPTY_BUCKET,
+		);
+		const bucketRef = useRef(bucket);
+		const saveRef = useRef(save);
+		const flushTimerRef = useRef<number | null>(null);
+
+		useEffect(() => {
+			bucketRef.current = bucket;
+		}, [bucket]);
+
+		useEffect(() => {
+			saveRef.current = save;
+		}, [save]);
+
+		const flushPending = () => {
+			if (flushTimerRef.current === null) return;
+			window.clearTimeout(flushTimerRef.current);
+			flushTimerRef.current = null;
+			void saveRef.current({
+				[config.bucketKey]: bucketRef.current,
+			} as Partial<TrueRecallSettings>);
+		};
+
+		// Flush any pending edits when the panel unmounts (tab switch, modal close)
+		useEffect(() => () => flushPending(), []);
+
 		const isPro = !!settings.proKey;
 		const visibleBuiltins = config.builtins.filter(
 			(b) => !b.requiresPro || isPro,
@@ -55,8 +86,19 @@ export function createCardAISettingsPanel(
 			});
 		};
 
-		const persist = (next: CardAIUserSettings) =>
-			save({ [config.bucketKey]: next } as Partial<TrueRecallSettings>);
+		const persist = (next: CardAIUserSettings) => {
+			setBucket(next);
+			bucketRef.current = next;
+			if (flushTimerRef.current !== null) {
+				window.clearTimeout(flushTimerRef.current);
+			}
+			flushTimerRef.current = window.setTimeout(() => {
+				flushTimerRef.current = null;
+				void saveRef.current({
+					[config.bucketKey]: next,
+				} as Partial<TrueRecallSettings>);
+			}, PERSIST_DEBOUNCE_MS);
+		};
 
 		const updateUserPreset = (p: CardAIPreset) => {
 			persist({

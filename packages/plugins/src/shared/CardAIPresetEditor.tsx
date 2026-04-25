@@ -76,7 +76,6 @@ function CompactPresetRow({
 function presetSummary(preset: CardAIPreset): string {
 	const parts: string[] = [];
 	if (preset.autoApply) parts.push("auto");
-	if (preset.hotkey) parts.push(preset.hotkey);
 	if (preset.includeSourceNote) parts.push("+source");
 	if (preset.includeRelatedCards) parts.push("+related");
 	return parts.join(" • ");
@@ -171,11 +170,10 @@ export function CardAIPresetEditor({
 				<span class="ep:text-ui-smaller ep:text-obs-muted ep:font-medium">
 					Hotkey
 				</span>
-				<TextInput
-					value={preset.hotkey ?? ""}
-					placeholder="Mod+Alt+F"
-					onChange={(v) => patch({ hotkey: v || undefined })}
-				/>
+				<span class="ep:text-ui-smaller ep:text-obs-muted">
+					Assign in Obsidian's Hotkeys settings — search for "Polish:{" "}
+					{preset.name}".
+				</span>
 			</div>
 
 			<div class="ep:flex ep:flex-col ep:gap-2 ep:p-2 ep:border ep:border-obs-border ep:rounded">

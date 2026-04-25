@@ -41,21 +41,27 @@ export class CardPolishPlugin extends CardAIPluginBase<CardPolishEventDetail> {
 
 	override activate(): void {
 		super.activate();
-		this.registerReviewHotkeys();
+		this.registerReviewCommands();
 	}
 
-	private registerReviewHotkeys(): void {
+	private registerReviewCommands(): void {
 		const userPresets = this.pluginCtx.settings.cardPolish?.userPresets ?? [];
-		for (const preset of [...CARD_POLISH_BUILTINS, ...userPresets]) {
-			if (!preset.hotkey) continue;
-			const id = `card-polish-${preset.id}`;
+		// Register one command per preset so each shows up in the command palette
+		// and can be bound to a hotkey via Obsidian's native Hotkeys settings.
+		// Looking the preset up by id at invocation time (rather than capturing
+		// the closure) keeps the command honoring live edits to the preset.
+		for (const declared of [...CARD_POLISH_BUILTINS, ...userPresets]) {
+			const id = `card-polish-${declared.id}`;
+			const presetId = declared.id;
 			this.pluginCtx.obsidianPlugin.addCommand({
 				id,
-				name: `Polish: ${preset.name}`,
+				name: `Polish: ${declared.name}`,
 				checkCallback: (checking) => {
 					const leaf = this.pluginCtx.workspace.activeLeaf;
 					const viewType = leaf?.view?.getViewType?.() ?? "";
 					if (viewType !== VIEW_TYPE_REVIEW) return false;
+					const preset = this.getPresets().find((p) => p.id === presetId);
+					if (!preset) return false;
 					if (!checking) {
 						const anchor =
 							(leaf?.view?.containerEl.querySelector(
@@ -64,11 +70,7 @@ export class CardPolishPlugin extends CardAIPluginBase<CardPolishEventDetail> {
 							leaf?.view?.containerEl ??
 							null;
 						if (!anchor) return false;
-						window.dispatchEvent(
-							new CustomEvent("true-recall:card-polish", {
-								detail: { kind: "review", anchor },
-							}),
-						);
+						void this.runPreset(preset, { kind: "review", anchor });
 					}
 					return true;
 				},

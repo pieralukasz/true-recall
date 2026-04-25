@@ -27,7 +27,6 @@ export interface CardAIPreset {
 	prompt: string;
 	autoApply: boolean;
 	builtin: boolean;
-	hotkey?: string;
 	requiresPro?: boolean;
 	includeSourceNote?: boolean;
 	includeRelatedCards?: boolean;
