@@ -11,6 +11,7 @@ import { ObsidianHttpClient } from "../adapters/ObsidianHttpClient";
 import type TrueRecallPlugin from "../main";
 import { fetchExistingCardsForFile } from "./existing-cards-fetcher";
 import { runPresetPostProcessing } from "./generation-post-processing";
+import { normalizeSelectionForFlashcard } from "./normalize-selection";
 
 let streamingService: StreamingGenerationService | null = null;
 
@@ -47,9 +48,10 @@ export function editSelectionAsFlashcard(
 	plugin: TrueRecallPlugin,
 	text: string,
 ): void {
+	const normalized = normalizeSelectionForFlashcard(text);
 	const modal = new QuickNoteEditorModal(plugin.app, plugin, {
 		mode: "add",
-		initialFields: { Front: text },
+		initialFields: { Front: normalized },
 	});
 	void modal.openAndWait();
 }
@@ -64,15 +66,16 @@ export async function quickAddFlashcardFromSelection(
 			notify().error("No active file");
 			return;
 		}
-		const parts = text.split(/\n\s*\n/);
-		const question = (parts[0] ?? text).trim();
+		const normalized = normalizeSelectionForFlashcard(text);
+		const parts = normalized.split(/\n\s*\n/);
+		const question = (parts[0] ?? normalized).trim();
 		const answer = parts.slice(1).join("\n\n").trim();
 		await plugin.flashcardManager.saveFlashcardsToSql(
 			file.path,
 			file.basename,
 			[{ id: crypto.randomUUID(), question, answer }],
 			undefined,
-			text,
+			normalized,
 		);
 		notify().cardsCreated(1, file.basename);
 	} catch (error) {
@@ -97,15 +100,16 @@ export async function quickAddFlashcardGlobal(
 	}
 
 	try {
-		const parts = text.split(/\n\s*\n/);
-		const question = (parts[0] ?? text).trim();
+		const normalized = normalizeSelectionForFlashcard(text);
+		const parts = normalized.split(/\n\s*\n/);
+		const question = (parts[0] ?? normalized).trim();
 		const answer = parts.slice(1).join("\n\n").trim();
 		await plugin.flashcardManager.saveFlashcardsToSql(
 			file.path,
 			file.basename,
 			[{ id: crypto.randomUUID(), question, answer }],
 			undefined,
-			text,
+			normalized,
 		);
 		notify().cardsCreated(1, file.basename);
 	} catch (error) {
