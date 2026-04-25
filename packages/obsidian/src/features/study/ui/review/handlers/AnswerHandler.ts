@@ -1,6 +1,7 @@
 import { type Grade, Rating } from "ts-fsrs";
 
 import type { SemanticAnswerGradingService } from "@true-recall/core/ai/grading/semantic-answer-grading.service";
+import type { TypeInGradingPromptRelatedCard } from "@true-recall/core/ai/prompts/type-in-grading-prompt";
 import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
 import { assessTypedAnswer } from "@true-recall/core/helpers/answer-assessment";
 import { shouldTriggerLeech } from "@true-recall/core/helpers/leech-helpers";
@@ -102,6 +103,8 @@ export class AnswerHandler {
 		options?: {
 			allowLocalFallback?: boolean;
 			sourceContext?: string;
+			sourceNotePath?: string;
+			relatedCards?: TypeInGradingPromptRelatedCard[];
 		},
 	): Promise<SemanticGradingResult | null> {
 		const result = await this.deps.semanticGradingService.gradeAnswer({
@@ -111,6 +114,8 @@ export class AnswerHandler {
 			passThreshold,
 			localFallbackScore,
 			sourceContext: options?.sourceContext,
+			sourceNotePath: options?.sourceNotePath,
+			relatedCards: options?.relatedCards,
 		});
 
 		if (

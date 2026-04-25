@@ -10,7 +10,10 @@ import {
 	type AIClientConfig,
 	resolveAIClientConfig,
 } from "../config/ai-client-config";
-import { buildTypeInGradingMessages } from "../prompts/type-in-grading-prompt";
+import {
+	buildTypeInGradingMessages,
+	type TypeInGradingPromptRelatedCard,
+} from "../prompts/type-in-grading-prompt";
 
 const DEFAULT_TIMEOUT_MS = 8000;
 const MAX_FEEDBACK_LENGTH = 280;
@@ -28,6 +31,8 @@ interface GradeAnswerInput {
 	localFallbackScore: number;
 	timeoutMs?: number;
 	sourceContext?: string;
+	sourceNotePath?: string;
+	relatedCards?: TypeInGradingPromptRelatedCard[];
 }
 
 type ClientFactory = (config: AIClientConfig) => {
@@ -119,6 +124,8 @@ export class SemanticAnswerGradingService {
 						userAnswer: input.userAnswer,
 						passThreshold: input.passThreshold,
 						sourceContext: input.sourceContext,
+						sourceNotePath: input.sourceNotePath,
+						relatedCards: input.relatedCards,
 					},
 					this.getSettings().aiTypeInGradingPrompt,
 				),

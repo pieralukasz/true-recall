@@ -307,6 +307,8 @@ export interface TrueRecallSettings {
 	editorToolbarButtons: ToolbarButtonConfig[];
 	/** Button configuration for the global (non-editor) selection toolbar */
 	globalToolbarButtons: ToolbarButtonConfig[];
+	/** Button configuration for the image-click toolbar */
+	imageToolbarButtons: ToolbarButtonConfig[];
 
 	/** Custom generation prompt — appended to both Pro and BYOK system prompts */
 	aiGenerationPrompt?: string;

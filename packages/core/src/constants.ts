@@ -235,6 +235,11 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 		{ id: "new-note", enabled: true },
 		{ id: "append", enabled: true },
 	],
+	imageToolbarButtons: [
+		{ id: "io", enabled: true },
+		{ id: "edit", enabled: true },
+		{ id: "quick-add", enabled: true },
+	],
 
 	enableLocalApi: false,
 	apiPort: 27182,

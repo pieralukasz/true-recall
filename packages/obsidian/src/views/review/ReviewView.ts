@@ -397,13 +397,13 @@ export class ReviewView extends ItemView {
 		let semanticResult: SemanticGradingResult | null = null;
 		let semanticMessage: string | null = null;
 		try {
-			const sourceContext = await this.resolveSourceContext(card);
+			const gradingContext = await this.resolveGradingContext(card);
 			semanticResult = await this.answerHandler.gradeTypedAnswerSemantically(
 				card,
 				typedAnswer,
 				localAssessment.score,
 				SEMANTIC_PASS_THRESHOLD,
-				{ allowLocalFallback: false, sourceContext },
+				{ allowLocalFallback: false, ...gradingContext },
 			);
 		} catch (error) {
 			semanticMessage =
@@ -914,24 +914,63 @@ export class ReviewView extends ItemView {
 		menu.showAtMouseEvent(event);
 	}
 
-	private async resolveSourceContext(
-		card: FSRSFlashcardItem,
-	): Promise<string | undefined> {
+	private async resolveGradingContext(card: FSRSFlashcardItem): Promise<{
+		sourceContext?: string;
+		sourceNotePath?: string;
+		relatedCards?: Array<{
+			fields: Record<string, string>;
+			noteType: string;
+		}>;
+	}> {
 		const MAX_CONTEXT_CHARS = 4000;
+		const MAX_RELATED_CARDS = 10;
 
-		if (card.sourceText) {
-			return card.sourceText.slice(0, MAX_CONTEXT_CHARS);
-		}
+		let sourceContext: string | undefined = card.sourceText
+			? card.sourceText.slice(0, MAX_CONTEXT_CHARS)
+			: undefined;
+		let sourceNotePath: string | undefined;
 
 		const file = this.resolveSourceFile(card);
-		if (!file) return undefined;
-
-		try {
-			const content = await this.app.vault.cachedRead(file);
-			return content.slice(0, MAX_CONTEXT_CHARS);
-		} catch {
-			return undefined;
+		if (file) {
+			sourceNotePath = file.path;
+			if (!sourceContext) {
+				try {
+					const content = await this.app.vault.cachedRead(file);
+					sourceContext = content.slice(0, MAX_CONTEXT_CHARS);
+				} catch {
+					// Source file unreadable — fall back to no context.
+				}
+			}
 		}
+
+		const store = this.plugin.cardStore;
+		let relatedCards:
+			| Array<{ fields: Record<string, string>; noteType: string }>
+			| undefined;
+		if (store && card.sourceUid) {
+			const siblings = store.cards.getCardsBySourceUid(card.sourceUid) ?? [];
+			const collected: Array<{
+				fields: Record<string, string>;
+				noteType: string;
+			}> = [];
+			for (const sibling of siblings) {
+				if (sibling.id === card.id) continue;
+				if (!sibling.noteTypeId || !sibling.noteId) continue;
+				const noteType = store.noteTypes?.getById(sibling.noteTypeId);
+				if (!noteType) continue;
+				const note = store.notes.getById(sibling.noteId);
+				if (!note) continue;
+				const fields: Record<string, string> = {};
+				for (const fieldName of noteType.fields) {
+					fields[fieldName] = note.fields?.[fieldName] ?? "";
+				}
+				collected.push({ fields, noteType: noteType.name });
+				if (collected.length >= MAX_RELATED_CARDS) break;
+			}
+			if (collected.length > 0) relatedCards = collected;
+		}
+
+		return { sourceContext, sourceNotePath, relatedCards };
 	}
 
 	// ─── Navigation ──────────────────────────────────────────────────────
