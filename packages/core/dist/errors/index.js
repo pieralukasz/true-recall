@@ -1,5 +1,6 @@
 export { APIError, InvalidResponseError, NetworkError, TimeoutError, } from "./api.error";
 export { AppError } from "./base.error";
+export { DatabaseError, DuplicateError, NotFoundError, NotInitializedError, } from "./domain.error";
 export { ConfigurationError, FileError, ValidationError, } from "./validation.error";
 export function isAppError(error) {
     return error instanceof Error && "code" in error && "isRecoverable" in error;

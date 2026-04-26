@@ -9,8 +9,47 @@ export class AnkiNoteTypeMapper {
     get noteTypesCreated() {
         return this.created;
     }
-    mapModels(models) {
+    suggestMappings(models, cardCountByModel) {
+        var _a, _b;
+        const suggestions = [];
         for (const [modelId, model] of models) {
+            const fields = [...model.flds]
+                .sort((a, b) => a.ord - b.ord)
+                .map((f) => f.name);
+            const builtinId = this.matchBuiltin(model);
+            let suggestedId = null;
+            let suggestedName = null;
+            if (builtinId) {
+                suggestedId = builtinId;
+                const nt = this.noteTypeStore.getAll().find((t) => t.id === builtinId);
+                suggestedName = (_a = nt === null || nt === void 0 ? void 0 : nt.name) !== null && _a !== void 0 ? _a : builtinId;
+            }
+            else {
+                const existing = this.findExistingMatch(model);
+                if (existing) {
+                    suggestedId = existing.id;
+                    suggestedName = existing.name;
+                }
+            }
+            suggestions.push({
+                ankiModelId: modelId,
+                ankiModelName: model.name,
+                ankiFields: fields,
+                ankiType: model.type === 1 ? 1 : 0,
+                cardCount: (_b = cardCountByModel === null || cardCountByModel === void 0 ? void 0 : cardCountByModel.get(modelId)) !== null && _b !== void 0 ? _b : 0,
+                suggestedNoteTypeId: suggestedId,
+                suggestedNoteTypeName: suggestedName,
+            });
+        }
+        return suggestions;
+    }
+    mapModels(models, overrides) {
+        for (const [modelId, model] of models) {
+            const override = overrides === null || overrides === void 0 ? void 0 : overrides.get(modelId);
+            if (override && override.noteTypeId !== "auto") {
+                this.modelToNoteType.set(modelId, override.noteTypeId);
+                continue;
+            }
             const noteTypeId = this.resolveNoteType(model);
             this.modelToNoteType.set(modelId, noteTypeId);
         }
@@ -18,19 +57,22 @@ export class AnkiNoteTypeMapper {
     getNoteTypeId(ankiModelId) {
         return this.modelToNoteType.get(ankiModelId);
     }
-    resolveNoteType(model) {
-        const builtinId = this.matchBuiltin(model);
-        if (builtinId)
-            return builtinId;
+    findExistingMatch(model) {
         const modelFields = [...model.flds]
             .sort((a, b) => a.ord - b.ord)
             .map((f) => f.name);
-        const existing = this.noteTypeStore
+        return this.noteTypeStore
             .getAll()
             .find((nt) => nt.name === model.name &&
             !nt.isBuiltin &&
             nt.fields.length === modelFields.length &&
             nt.fields.every((f, i) => f === modelFields[i]));
+    }
+    resolveNoteType(model) {
+        const builtinId = this.matchBuiltin(model);
+        if (builtinId)
+            return builtinId;
+        const existing = this.findExistingMatch(model);
         if (existing)
             return existing.id;
         return this.createFromAnkiModel(model);

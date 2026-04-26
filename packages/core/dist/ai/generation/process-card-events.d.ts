@@ -23,5 +23,5 @@ export interface CardEventFlashcardManager {
         cards: FlashcardItem[];
     };
 }
-export declare function processCardEvents(events: ParserEvents, sourceFile: SourceFileRef, flashcardManager: CardEventFlashcardManager, onPartial: (q: string | null, a: string | null) => void, onCount: (created: number, dups: number) => void, inputText?: string): Promise<void>;
+export declare function processCardEvents(events: ParserEvents, sourceFile: SourceFileRef, flashcardManager: CardEventFlashcardManager, onPartial: (q: string | null, a: string | null) => void, onCount: (created: number, dups: number) => void, inputText?: string): Promise<string[]>;
 export {};

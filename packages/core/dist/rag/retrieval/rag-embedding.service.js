@@ -1,6 +1,6 @@
 import { __awaiter } from "tslib";
 import { AIRequestError, buildOpenRouterHeaders, } from "@true-recall/core/ai/clients/openrouter-client";
-import { LITELLM_EMBEDDINGS_URL, RAG_CONFIG } from "@true-recall/core/constants";
+import { LITELLM_EMBEDDINGS_URL, RAG_CONFIG, } from "@true-recall/core/constants";
 export class RagEmbeddingServiceImpl {
     constructor(httpClient, apiKey, baseUrl = LITELLM_EMBEDDINGS_URL, model = "embedding") {
         this.httpClient = httpClient;

@@ -45,9 +45,14 @@ export interface ChatCompletionResponse {
         message: ChatMessage;
         finish_reason: string;
     }>;
+    usage?: {
+        prompt_tokens?: number;
+        completion_tokens?: number;
+        total_tokens?: number;
+    };
 }
 export declare const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-export declare function buildOpenRouterHeaders(apiKey: string, userId?: string): Record<string, string>;
+export declare function buildOpenRouterHeaders(apiKey: string, userId?: string, capability?: string): Record<string, string>;
 /** Extract text content from a ChatMessage response (handles both string and ContentPart[] content). */
 export declare function getTextContent(message: ChatMessage | undefined): string;
 export declare class AIRequestError extends Error {
@@ -66,7 +71,8 @@ export declare class OpenRouterClient {
     private httpClient;
     private baseUrl;
     private userId?;
-    constructor(apiKey: string, model: string, httpClient: IHttpClient, baseUrl?: string, userId?: string | undefined);
+    private capability?;
+    constructor(apiKey: string, model: string, httpClient: IHttpClient, baseUrl?: string, userId?: string | undefined, capability?: string | undefined);
     chat(request: ChatCompletionRequest): Promise<ChatCompletionResponse>;
 }
 export {};

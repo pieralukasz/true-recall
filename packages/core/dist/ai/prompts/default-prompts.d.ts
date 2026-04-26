@@ -89,4 +89,5 @@ export declare const GENERATION_LANGUAGES: readonly [{
     readonly value: "he";
     readonly label: "Hebrew";
 }];
+export declare function resolveLanguageName(code: string): string;
 export declare function buildLanguageSuffix(languageCode: string): string;

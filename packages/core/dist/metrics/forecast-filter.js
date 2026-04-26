@@ -1,4 +1,5 @@
 import { State } from "ts-fsrs";
+import { isLearningState } from "@true-recall/core/helpers/card-state";
 /**
  * Build forecast entries from a pre-filtered card list.
  * Mirrors WorkloadForecastCalculator.getForecast() logic
@@ -26,8 +27,7 @@ export function buildFilteredForecast(cards, days = 30) {
         if (card.state === State.Review) {
             bucket.review++;
         }
-        else if (card.state === State.Learning ||
-            card.state === State.Relearning) {
+        else if (isLearningState(card.state)) {
             bucket.learning++;
         }
     }

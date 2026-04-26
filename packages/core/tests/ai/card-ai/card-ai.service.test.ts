@@ -20,6 +20,11 @@ function client(content: string): OpenRouterClient {
 	} as unknown as OpenRouterClient;
 }
 
+const BASIC_NOTE_TYPE = {
+	name: "Basic",
+	fields: ["Front", "Back"] as const,
+};
+
 describe("CardAIService", () => {
 	beforeEach(() => vi.clearAllMocks());
 
@@ -28,6 +33,7 @@ describe("CardAIService", () => {
 			client(`[{"Front":"Q","Back":"A"}]`),
 		).transform({
 			fields: { Front: "q", Back: "" },
+			noteType: BASIC_NOTE_TYPE,
 			prompt: "P",
 		});
 		expect(r.cards).toEqual([{ Front: "Q", Back: "A" }]);
@@ -39,7 +45,11 @@ describe("CardAIService", () => {
 			client(
 				`[{"Front":"Q1","Back":"A1"},{"Front":"Q2","Back":"A2"},{"Front":"Q3","Back":"A3"}]`,
 			),
-		).transform({ fields: { Front: "q", Back: "" }, prompt: "P" });
+		).transform({
+			fields: { Front: "q", Back: "" },
+			noteType: BASIC_NOTE_TYPE,
+			prompt: "P",
+		});
 		expect(r.cards).toHaveLength(3);
 		expect(r.cards[0]).toEqual({ Front: "Q1", Back: "A1" });
 		expect(r.cards[2]).toEqual({ Front: "Q3", Back: "A3" });
@@ -48,7 +58,11 @@ describe("CardAIService", () => {
 	it("strips ```json fences around an array", async () => {
 		const r = await new CardAIService(
 			client('```json\n[{"Front":"Q","Back":"A"}]\n```'),
-		).transform({ fields: { Front: "q", Back: "" }, prompt: "P" });
+		).transform({
+			fields: { Front: "q", Back: "" },
+			noteType: BASIC_NOTE_TYPE,
+			prompt: "P",
+		});
 		expect(r.cards).toEqual([{ Front: "Q", Back: "A" }]);
 	});
 
@@ -56,6 +70,7 @@ describe("CardAIService", () => {
 		await expect(
 			new CardAIService(client("not json")).transform({
 				fields: { Front: "q", Back: "" },
+				noteType: BASIC_NOTE_TYPE,
 				prompt: "P",
 			}),
 		).rejects.toBeInstanceOf(CardAIParseError);
@@ -65,6 +80,7 @@ describe("CardAIService", () => {
 		await expect(
 			new CardAIService(client(`[{"Front":"Q"}]`)).transform({
 				fields: { Front: "q", Back: "" },
+				noteType: BASIC_NOTE_TYPE,
 				prompt: "P",
 			}),
 		).rejects.toBeInstanceOf(CardAIParseError);
@@ -74,6 +90,7 @@ describe("CardAIService", () => {
 		await expect(
 			new CardAIService(client(`{"Front":"Q","Back":"A"}`)).transform({
 				fields: { Front: "q", Back: "" },
+				noteType: BASIC_NOTE_TYPE,
 				prompt: "P",
 			}),
 		).rejects.toBeInstanceOf(CardAIParseError);
@@ -83,6 +100,7 @@ describe("CardAIService", () => {
 		const c = client(`[{"Front":"Q","Back":"A"}]`);
 		await new CardAIService(c).transform({
 			fields: { Front: "q", Back: "" },
+			noteType: BASIC_NOTE_TYPE,
 			prompt: "P",
 		});
 		const chat = c.chat as ReturnType<typeof vi.fn>;
@@ -97,6 +115,7 @@ describe("CardAIService", () => {
 		await expect(
 			new CardAIService(client(`[{"Front":"Q","Back":"A"}]`)).transform({
 				fields: { Front: "q", Back: "" },
+				noteType: BASIC_NOTE_TYPE,
 				prompt: "P",
 				signal: c.signal,
 			}),
@@ -110,7 +129,11 @@ describe("CardAIService", () => {
 		} as unknown as OpenRouterClient;
 		const svc = new CardAIService(failingClient);
 		await expect(
-			svc.transform({ fields: { Front: "q", Back: "" }, prompt: "P" }),
+			svc.transform({
+				fields: { Front: "q", Back: "" },
+				noteType: BASIC_NOTE_TYPE,
+				prompt: "P",
+			}),
 		).rejects.toMatchObject({
 			constructor: CardAIProviderError,
 			cause,
@@ -123,7 +146,11 @@ describe("CardAIService", () => {
 		} as unknown as OpenRouterClient;
 		const svc = new CardAIService(failingClient);
 		await expect(
-			svc.transform({ fields: { Front: "q", Back: "" }, prompt: "P" }),
+			svc.transform({
+				fields: { Front: "q", Back: "" },
+				noteType: BASIC_NOTE_TYPE,
+				prompt: "P",
+			}),
 		).rejects.toMatchObject({
 			constructor: CardAIProviderError,
 			message: "Provider request failed",
@@ -142,6 +169,7 @@ describe("CardAIService", () => {
 		await expect(
 			svc.transform({
 				fields: { Front: "q", Back: "" },
+				noteType: BASIC_NOTE_TYPE,
 				prompt: "P",
 				signal: c.signal,
 			}),
@@ -151,7 +179,11 @@ describe("CardAIService", () => {
 	it("tolerates a JSON array embedded in prose via array-span fallback", async () => {
 		const r = await new CardAIService(
 			client('Sure! Here you go: [{"Front":"Q","Back":"A"}] Let me know.'),
-		).transform({ fields: { Front: "q", Back: "" }, prompt: "P" });
+		).transform({
+			fields: { Front: "q", Back: "" },
+			noteType: BASIC_NOTE_TYPE,
+			prompt: "P",
+		});
 		expect(r.cards).toEqual([{ Front: "Q", Back: "A" }]);
 	});
 
@@ -159,6 +191,7 @@ describe("CardAIService", () => {
 		await expect(
 			new CardAIService(client("Here are cards: [1] one [2] two")).transform({
 				fields: { Front: "q", Back: "" },
+				noteType: BASIC_NOTE_TYPE,
 				prompt: "P",
 			}),
 		).rejects.toBeInstanceOf(CardAIParseError);

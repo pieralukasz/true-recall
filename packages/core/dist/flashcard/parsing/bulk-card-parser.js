@@ -9,9 +9,9 @@
  * - 2-field NoteTypes also support :: format as fallback
  * - Cloze auto-detection is restricted to noteType.type === 1
  */
-import { parseBlocks, } from "./block-parser.service";
-import { CLOZE_DETECT, INLINE_SEPARATOR_RE, } from "./parsing-patterns";
-import { BUILTIN_BASIC_ID, BUILTIN_CLOZE_ID } from "@true-recall/core/types/note.types";
+import { BUILTIN_BASIC_ID, BUILTIN_CLOZE_ID, } from "@true-recall/core/types/note.types";
+import { parseBlocks } from "./block-parser.service";
+import { CLOZE_DETECT, INLINE_SEPARATOR_RE } from "./parsing-patterns";
 // ── Main parser ───────────────────────────────────────────────
 export function parseBulkText(text, options) {
     const trimmed = text.trim();

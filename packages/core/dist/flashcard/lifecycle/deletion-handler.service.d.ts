@@ -1,3 +1,4 @@
+import type { DomainEventBus } from "@true-recall/core/events/event-bus";
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite/SqliteStoreService";
 import type { FrontmatterIndexService } from "@true-recall/core/services/notes/frontmatter-index.service";
 /**
@@ -11,6 +12,7 @@ export interface DeletionHandlerDeps {
     frontmatterIndex: FrontmatterIndexService;
     store: SqliteStoreService;
     sessionPersistence: ISessionPersistence;
+    bus: DomainEventBus;
     notification?: {
         cardsDeleted(count: number): void;
     };

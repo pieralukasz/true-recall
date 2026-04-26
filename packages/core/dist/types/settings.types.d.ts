@@ -1,8 +1,14 @@
 /**
  * Plugin settings types
  */
+import type { CardAIUserSettings } from "../ai/card-ai/card-ai.types";
 import type { ReviewViewMode } from "./fsrs";
+import type { GenerationPreset } from "./generation-preset.types";
 export type AITier = "pro" | "byok";
+export interface ToolbarButtonConfig {
+    id: string;
+    enabled: boolean;
+}
 /**
  * Optimization result metrics from FSRS parameter optimization
  */
@@ -106,10 +112,24 @@ export interface FSRSPreset {
     newReviewMix?: NewReviewMix;
     burySiblings?: boolean;
 }
+export interface ReviewKeybindings {
+    /** Key for reveal answer + Good rating (KeyboardEvent.key value) */
+    revealAndGood: string;
+    /** Key for Again rating */
+    again: string;
+    /** Key for Hard rating */
+    hard: string;
+    /** Key for Easy rating */
+    easy: string;
+}
 /**
  * True Recall plugin settings
  */
 export interface TrueRecallSettings {
+    /** Device ID backup — survives reinstall via iCloud sync */
+    deviceId?: string;
+    /** Enable cross-device sync on plugin startup */
+    enableDeviceSync: boolean;
     /** True Recall Pro key (LiteLLM) — takes priority over OpenRouter */
     proKey?: string;
     /** OpenRouter API key (BYOK tier) */
@@ -122,6 +142,8 @@ export interface TrueRecallSettings {
     aiTemperature?: number;
     /** AI provider tier */
     aiTier: AITier;
+    /** User-created Card Polish presets (built-ins live in the plugin, not here). */
+    cardPolish?: CardAIUserSettings;
     /** Target retention (0.7-0.99, default 0.9 = 90%) */
     fsrsRequestRetention: number;
     /** Maximum interval in days (default 36500 = 100 years) */
@@ -152,6 +174,8 @@ export interface TrueRecallSettings {
     continuousCustomReviews: boolean;
     /** Bypass daily limits when studying a specific note from the dashboard */
     ignoreDailyLimitsForNoteStudy: boolean;
+    /** Custom review keybindings */
+    reviewKeybindings: ReviewKeybindings;
     /** Remove flashcard content from markdown after collecting (default: false = keep content, only remove tag) */
     removeFlashcardContentAfterCollect: boolean;
     /** New cards display order */
@@ -214,19 +238,41 @@ export interface TrueRecallSettings {
     showStatusBarWidget: boolean;
     /** Default type-in mode at the start of each review session */
     defaultTypeInMode: TypeInMode;
-    /** Show floating toolbar above selected text for AI flashcard generation */
-    selectionToolbarEnabled: boolean;
+    /** Show YAML frontmatter in note review cards (default: false) */
+    noteReviewShowFrontmatter: boolean;
+    /** Button configuration for the editor (CodeMirror) selection toolbar */
+    editorToolbarButtons: ToolbarButtonConfig[];
+    /** Button configuration for the global (non-editor) selection toolbar */
+    globalToolbarButtons: ToolbarButtonConfig[];
+    /** Button configuration for the image-click toolbar */
+    imageToolbarButtons: ToolbarButtonConfig[];
     /** Custom generation prompt — appended to both Pro and BYOK system prompts */
     aiGenerationPrompt?: string;
     /** Language for AI-generated flashcards ("auto" = match source text) */
     generationLanguage?: string;
+    /** Note type used for AI generation (null = Basic) */
+    generationNoteTypeId: string | null;
     /** Custom system prompt for AI semantic grading in review type-in mode */
     aiTypeInGradingPrompt?: string;
     /** Custom user prompt for AI image occlusion region detection */
     aiIODetectionPrompt?: string;
+    /** Language learning: note type for vocab generation (null = use generationNoteTypeId) */
+    languageNoteTypeId: string | null;
+    /** Language learning: source language code (language being learned) */
+    languageSource: string;
+    /** Language learning: target language code (your native language) */
+    languageTarget: string;
+    /** Language learning: which note field to generate TTS for */
+    languageTtsField: string;
+    /** Language learning: enable TTS generation after vocab creation */
+    languageTtsEnabled: boolean;
+    /** TTS voice for audio generation (OpenAI voices: alloy, echo, fable, onyx, nova, shimmer) */
+    ttsVoice: string;
+    /** Auto-play TTS audio when card is shown in review */
+    ttsAutoplay: boolean;
     /** Last version the user has seen release notes for */
     lastSeenVersion?: string;
-    /** Enable local HTTP API for MCP/CLI integration */
+    /** Enable local HTTP API for CLI integration */
     enableLocalApi: boolean;
     /** Port for local HTTP API (default 27182) */
     apiPort: number;
@@ -250,6 +296,14 @@ export interface TrueRecallSettings {
     ragDailyNoteExcludeHeadings: string[];
     /** Chat persona and response style configuration */
     ragChatConfig: ChatConfig;
+    /** Per-plugin enabled/disabled state (plugin ID → boolean). All enabled by default. */
+    pluginStates?: Record<string, boolean>;
+    /** One-time migration: cascaded archive to descendants of archived projects */
+    archiveCascadeMigrated?: boolean;
+    /** Generation presets for AI flashcard creation */
+    generationPresets: GenerationPreset[];
+    /** ID of the default generation preset */
+    defaultGenerationPresetId: string;
 }
 export interface SessionPreset {
     id: string;

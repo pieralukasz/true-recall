@@ -1,7 +1,6 @@
 export class HierarchyService {
-    constructor(frontmatterIndex, fileSystem, resolveLinkPath) {
+    constructor(frontmatterIndex, _fileSystem, resolveLinkPath) {
         this.frontmatterIndex = frontmatterIndex;
-        this.fileSystem = fileSystem;
         this.resolveLinkPath = resolveLinkPath;
         this.graph = null;
     }
@@ -54,12 +53,16 @@ export class HierarchyService {
             if (path)
                 flashcardPaths.add(path);
         }
-        // A note is "assigned" if it has parents or is itself a parent (root project)
+        // A note is "assigned" if it has parents, is itself a parent (root project),
+        // or has an explicit project: true marker
         const assigned = new Set();
         for (const path of graph.parentMap.keys())
             assigned.add(path);
         for (const path of graph.childMap.keys())
             assigned.add(path);
+        for (const path of this.frontmatterIndex.getFilesByValue("project", "true")) {
+            assigned.add(path);
+        }
         return Array.from(flashcardPaths).filter((p) => !assigned.has(p));
     }
     getParentsForNote(notePath) {
@@ -72,24 +75,42 @@ export class HierarchyService {
         const children = graph.childMap.get(nodePath);
         return children ? [...children] : [];
     }
+    getDescendantPaths(nodePath) {
+        const graph = this.ensureGraph();
+        const paths = [];
+        const visited = new Set();
+        const collect = (path) => {
+            const children = graph.childMap.get(path);
+            if (!children)
+                return;
+            for (const child of children) {
+                if (visited.has(child))
+                    continue;
+                visited.add(child);
+                paths.push(child);
+                collect(child);
+            }
+        };
+        collect(nodePath);
+        return paths;
+    }
+    getPathsForCascade(projectPath, archive) {
+        const descendants = this.getDescendantPaths(projectPath);
+        if (!archive)
+            return descendants;
+        const subtreeSet = new Set([projectPath, ...descendants]);
+        return descendants.filter((path) => {
+            const parents = this.getParentsForNote(path);
+            return !parents.some((p) => !subtreeSet.has(p) && !this.isNoteArchived(p));
+        });
+    }
     getArchivedSourceUids() {
         const archivedPaths = this.frontmatterIndex.getFilesByValue("archive", "true");
         const uids = new Set();
         for (const filePath of archivedPaths) {
-            // Check if this archived note is a "project" (has children)
-            const graph = this.ensureGraph();
-            if (graph.childMap.has(filePath)) {
-                // Archived project -> collect all descendant UIDs
-                const projectUids = this.getSourceUidsForProject(filePath, true);
-                for (const uid of projectUids)
-                    uids.add(uid);
-            }
-            else {
-                // Archived regular note -> just its own UID
-                const [uid] = this.frontmatterIndex.getValues("flashcard_uid", filePath);
-                if (uid)
-                    uids.add(uid);
-            }
+            const [uid] = this.frontmatterIndex.getValues("flashcard_uid", filePath);
+            if (uid)
+                uids.add(uid);
         }
         return uids;
     }
@@ -99,6 +120,10 @@ export class HierarchyService {
     }
     isProjectArchived(projectPath) {
         return this.isNoteArchived(projectPath);
+    }
+    isExplicitProject(notePath) {
+        const [val] = this.frontmatterIndex.getValues("project", notePath);
+        return val === "true";
     }
     // ---- Internal ----
     ensureGraph() {
@@ -135,6 +160,13 @@ export class HierarchyService {
                     childMap.set(parentPath, children);
                 }
                 children.add(childPath);
+            }
+        }
+        // Include notes with explicit project: true marker
+        const projectPaths = this.frontmatterIndex.getFilesByValue("project", "true");
+        for (const path of projectPaths) {
+            if (!childMap.has(path)) {
+                childMap.set(path, new Set());
             }
         }
         // Detect and break cycles

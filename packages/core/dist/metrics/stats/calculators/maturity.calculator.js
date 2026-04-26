@@ -3,6 +3,7 @@
  * Calculates card maturity breakdown statistics
  */
 import { State } from "ts-fsrs";
+import { isLearningState } from "../../../helpers/card-state";
 /**
  * Calculator for card maturity statistics
  */
@@ -56,8 +57,7 @@ export class MaturityCalculator {
             if (c.fsrs.state === State.New) {
                 counts.new++;
             }
-            else if (c.fsrs.state === State.Learning ||
-                c.fsrs.state === State.Relearning) {
+            else if (isLearningState(c.fsrs.state)) {
                 counts.learning++;
             }
             else if (c.fsrs.state === State.Review) {
@@ -94,9 +94,7 @@ export class MaturityCalculator {
             case "new":
                 return allCards.filter((c) => isActive(c) && c.fsrs.state === State.New);
             case "learning":
-                return allCards.filter((c) => isActive(c) &&
-                    (c.fsrs.state === State.Learning ||
-                        c.fsrs.state === State.Relearning));
+                return allCards.filter((c) => isActive(c) && isLearningState(c.fsrs.state));
             case "young":
                 return allCards.filter((c) => isActive(c) &&
                     c.fsrs.state === State.Review &&

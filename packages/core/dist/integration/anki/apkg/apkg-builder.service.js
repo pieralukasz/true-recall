@@ -1,7 +1,7 @@
 import { __awaiter } from "tslib";
-import { loadDatabase, } from "@true-recall/core/persistence/sqlite/loader";
 import JSZip from "jszip";
 import { State } from "ts-fsrs";
+import { loadDatabase, } from "@true-recall/core/persistence/sqlite/loader";
 const FIELD_SEPARATOR = "\x1f";
 const ANKI_QUEUE_SUSPENDED = -1;
 const DIFFICULTY_INVERSION_CONSTANT = 11;
@@ -139,6 +139,8 @@ export class ApkgBuilderService {
         const reversePairs = new Map();
         const standalone = [];
         for (const card of cards) {
+            if (card.cardType === "note-review")
+                continue;
             if (card.cardType === "reversed" && card.reverseOf) {
                 reversePairs.set(card.reverseOf, card);
             }

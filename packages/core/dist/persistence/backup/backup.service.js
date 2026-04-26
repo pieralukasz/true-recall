@@ -3,9 +3,11 @@
  * Handles database backup creation, restoration, and management
  */
 import { __awaiter } from "tslib";
-import { DB_FOLDER, getDeviceDbFilename, toExactArrayBuffer, } from "@true-recall/core/persistence/sqlite";
-import { notify } from "@true-recall/core/persistence/notification";
 import pako from "pako";
+import { MS_PER_DAY } from "@true-recall/core/constants";
+import { DatabaseError } from "@true-recall/core/errors/domain.error";
+import { notify } from "@true-recall/core/persistence/notification";
+import { DB_FOLDER, getDeviceDbFilename, toExactArrayBuffer, } from "@true-recall/core/persistence/sqlite";
 const BACKUP_PREFIX = "true-recall-backup-";
 /**
  * Service for managing database backups
@@ -32,7 +34,7 @@ export class BackupService {
             yield this.sqliteStore.saveNow();
             const db = this.sqliteStore.getDatabase();
             if (!db) {
-                throw new Error("Database not available");
+                throw new DatabaseError("Database not available", "backup:create");
             }
             const data = db.export();
             const compressed = pako.gzip(data);
@@ -47,13 +49,13 @@ export class BackupService {
             // Verify: decompress and check SQLite header
             const written = yield this.persistence.readBinary(backupPath);
             if (!written) {
-                throw new Error("Backup verification failed — could not read back written file");
+                throw new DatabaseError("Backup verification failed — could not read back written file", "backup:verify");
             }
             const decompressed = pako.ungzip(new Uint8Array(written));
             const header = new TextDecoder().decode(decompressed.slice(0, 16));
             if (!header.startsWith("SQLite format 3")) {
                 yield this.persistence.remove(backupPath);
-                throw new Error("Backup verification failed — corrupt write detected");
+                throw new DatabaseError("Backup verification failed — corrupt write detected", "backup:verify");
             }
             return backupPath;
         });
@@ -116,7 +118,7 @@ export class BackupService {
                 // Read backup file, decompress if gzipped
                 const rawData = yield this.persistence.readBinary(backupPath);
                 if (!rawData) {
-                    throw new Error(`Backup file not found: ${backupPath}`);
+                    throw new DatabaseError(`Backup file not found: ${backupPath}`, "backup:restore");
                 }
                 const dbData = backupPath.endsWith(".gz")
                     ? toExactArrayBuffer(pako.ungzip(new Uint8Array(rawData)))
@@ -260,7 +262,7 @@ export class BackupService {
         if (count <= 0)
             return [];
         const dailyMap = new Map();
-        const cutoff = new Date(now.getTime() - count * 24 * 60 * 60 * 1000);
+        const cutoff = new Date(now.getTime() - count * MS_PER_DAY);
         for (const backup of backups) {
             if (backup.timestamp < cutoff)
                 continue;
@@ -281,7 +283,7 @@ export class BackupService {
         if (count <= 0)
             return [];
         const weeklyMap = new Map();
-        const cutoff = new Date(now.getTime() - count * 7 * 24 * 60 * 60 * 1000);
+        const cutoff = new Date(now.getTime() - count * 7 * MS_PER_DAY);
         for (const backup of backups) {
             if (backup.timestamp < cutoff)
                 continue;
@@ -322,7 +324,7 @@ export class BackupService {
         const dayNum = d.getUTCDay() || 7;
         d.setUTCDate(d.getUTCDate() + 4 - dayNum);
         const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-        return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+        return Math.ceil(((d.getTime() - yearStart.getTime()) / MS_PER_DAY + 1) / 7);
     }
     /**
      * Ensure the backup folder exists

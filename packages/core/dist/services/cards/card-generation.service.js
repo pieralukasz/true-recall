@@ -5,9 +5,9 @@
  * Handles standard (1 card per template), reversed (2 cards), cloze (1 per index),
  * and image-occlusion (1 per region) note types.
  */
-import { getIOGroupOrds, parseIODefinition, } from "../../utils/io-definition";
 import { extractClozeIndices } from "@true-recall/core/flashcard/parsing/cloze-parser.service";
 import { BUILTIN_IMAGE_OCCLUSION_ID } from "../../types/note.types";
+import { getIOGroupOrds, parseIODefinition } from "../../utils/io-definition";
 import { fieldIsEmpty, renderTemplate } from "./template-engine";
 /**
  * Generate cards for a note based on its note type.

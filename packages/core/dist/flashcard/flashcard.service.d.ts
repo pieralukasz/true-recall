@@ -6,10 +6,12 @@
  * Platform-agnostic version: uses IFileSystem, IFrontmatter, IMetadataIndex
  * instead of Obsidian's App.
  */
+import type { DomainEventBus } from "../events/event-bus";
 import type { IFileSystem } from "../interfaces/file-system";
 import type { IFrontmatter } from "../interfaces/frontmatter";
 import type { IMetadataIndex } from "../interfaces/metadata-index";
 import type { SqliteStoreService } from "../persistence/sqlite/SqliteStoreService";
+import { NoteReviewService } from "../services/note-review/note-review.service";
 import type { FrontmatterIndexService } from "../services/notes/frontmatter-index.service";
 import type { CardReviewLogEntry, CardType, FlashcardItem, FSRSCardData, FSRSFlashcardItem, TrueRecallSettings } from "../types";
 import type { IODefinition } from "../types/image-occlusion.types";
@@ -75,9 +77,13 @@ export declare class FlashcardManager {
     private sessionPersistence;
     private frontmatterService;
     private sourceNoteService;
+    private bus;
+    private busWarnLogged;
     private cardRepository;
     private cardQueryService;
+    private _noteReview;
     constructor(fileSystem: IFileSystem, frontmatter: IFrontmatter, _settings: TrueRecallSettings, metadataIndex?: IMetadataIndex, frontmatterIndex?: FrontmatterIndexService);
+    setEventBus(bus: DomainEventBus): void;
     setStore(store: SqliteStoreService): void;
     setSessionPersistence(sessionPersistence: ISessionPersistence): void;
     hasStore(): boolean;
@@ -86,8 +92,11 @@ export declare class FlashcardManager {
     setStoreData(cardId: string, fsrsData: FSRSCardData): boolean;
     updateSettings(_settings: TrueRecallSettings): void;
     getNoteTypeBySlug(slug: string): NoteType | null;
+    getNoteTypeById(id: string): NoteType | null;
     getFrontmatterService(): FrontmatterService;
     getSourceNoteService(): SourceNoteService;
+    getEventBus(): DomainEventBus | null;
+    private emitEvent;
     scanVault(): ScanResult;
     getFlashcardInfo(filePath: string): Promise<FlashcardInfo>;
     private getLatestCardTimestamp;
@@ -137,6 +146,10 @@ export declare class FlashcardManager {
         notes: Note[];
         cards: FSRSCardData[];
     };
+    get noteReview(): NoteReviewService;
+    enableNoteReview(sourceUid: string): CreateNoteResult;
+    disableNoteReview(sourceUid: string): boolean;
+    hasNoteReview(sourceUid: string): boolean;
     /**
      * Update a Note's fields and recompute Q/A for all its cards.
      * Returns the IDs of cards that were updated.

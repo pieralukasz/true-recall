@@ -1,5 +1,6 @@
 import { __awaiter } from "tslib";
 import { Rating, State } from "ts-fsrs";
+import { isLearningState } from "@true-recall/core/helpers/card-state";
 const STATS_FOLDER = ".true-recall";
 const STATS_FILE = "stats.json";
 export class SessionPersistenceService {
@@ -45,9 +46,7 @@ export class SessionPersistenceService {
             easy: rating === Rating.Easy ? 1 : 0,
             // Card type breakdown
             newCards: previousState === State.New ? 1 : 0,
-            learningCards: previousState === State.Learning || previousState === State.Relearning
-                ? 1
-                : 0,
+            learningCards: previousState != null && isLearningState(previousState) ? 1 : 0,
             reviewCards: previousState === State.Review ? 1 : 0,
         };
         this.store.stats.updateDailyStats(today, statsIncrement);
@@ -104,7 +103,7 @@ export class SessionPersistenceService {
     /**
      * Remove the last review (for undo functionality)
      */
-    removeLastReview(_cardId, wasNewCard, rating, previousState) {
+    removeLastReview(cardId, wasNewCard, rating, previousState) {
         const today = this.getTodayKey();
         // Build stats decrement
         const statsDecrement = {
@@ -117,15 +116,15 @@ export class SessionPersistenceService {
             easy: rating === Rating.Easy ? 1 : 0,
             // Card type breakdown
             newCards: previousState === State.New ? 1 : 0,
-            learningCards: previousState === State.Learning || previousState === State.Relearning
-                ? 1
-                : 0,
+            learningCards: previousState != null && isLearningState(previousState) ? 1 : 0,
             reviewCards: previousState === State.Review ? 1 : 0,
         };
         this.store.stats.decrementDailyStats(today, statsDecrement);
-        // Note: We don't remove cardId from daily_reviewed_cards because:
-        // 1. The card might have been reviewed multiple times
-        // 2. The undo is just for the rating, not for "unlearning" the card
+        // Remove from daily_reviewed_cards when reverting a first review so
+        // countByState doesn't hide the card from panel header counts.
+        if (previousState === State.New) {
+            this.store.stats.removeReviewedCard(today, cardId);
+        }
     }
     /**
      * Get all daily stats (includes card IDs - use for migrations/specific card lookups)

@@ -1,4 +1,5 @@
 import { State } from "ts-fsrs";
+import { MS_PER_DAY } from "@true-recall/core/constants";
 const VALID_EASE_MIN = 1;
 const VALID_EASE_MAX = 4;
 // Anki queue values for special states
@@ -49,9 +50,13 @@ export class AnkiSchedulingService {
             card.due = now.toISOString();
         }
         else if (state === State.Review && ankiCard.ivl > 0) {
-            // Without revlog we can't know the exact due date, use current time
-            // as a reasonable default — the card will appear in the next review session
+            // Anki stores `due` as day-number relative to collection creation.
+            // Without the collection creation date we can't recover the absolute due date,
+            // but we can use the interval to estimate: assume the last review was
+            // roughly `ivl` days ago, so the next review is roughly now.
+            // This is a lossy fallback — cards with revlog use replayScheduling instead.
             card.due = now.toISOString();
+            card.lastReview = new Date(now.getTime() - ankiCard.ivl * MS_PER_DAY).toISOString();
         }
         return this.applyStatus(card, ankiCard);
     }

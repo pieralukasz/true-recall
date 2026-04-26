@@ -1,7 +1,7 @@
 import { type Grade } from "ts-fsrs";
 import type { FlashcardManager } from "../../flashcard/flashcard.service";
 import type { CardSchedulingMeta, DailyStats, ReviewResult, ReviewSessionStats } from "../../types";
-import type { NewCardOrder, NewReviewMix, ReviewOrder } from "../../types/settings.types";
+import type { FSRSSettings, NewCardOrder, NewReviewMix, ReviewOrder } from "../../types/settings.types";
 import type { FSRSService } from "../fsrs/fsrs.service";
 export interface QueueBuildOptions {
     newCardsLimit: number;
@@ -66,28 +66,14 @@ export interface QueueBuildOptions {
     burySiblings?: boolean;
 }
 export declare class ReviewService {
-    private shuffle;
-    private interleave;
-    private sortByCreatedAt;
-    private sortByCreatedAtDesc;
-    private calculateBoundaries;
-    private filterCards;
-    private sortNewCards;
-    private sortReviewCards;
     /**
      * When burySiblings is off, spread IO/cloze siblings apart in the queue
      * so cards from the same note don't appear back-to-back.
      */
     spaceSiblings(queue: CardSchedulingMeta[]): CardSchedulingMeta[];
-    private getSiblingKey;
-    private mixQueues;
-    private usePerPresetLimits;
-    private applyPerPresetLimit;
-    private buildCustomStudyQueue;
-    private buildStandardQueue;
-    /** Order (Anki-like): Due Learning → Review → New → Pending Learning */
+    /** Order (Anki-like): Due Learning -> Review -> New -> Pending Learning */
     buildQueue(allCards: CardSchedulingMeta[], fsrsService: FSRSService, options: QueueBuildOptions): CardSchedulingMeta[];
-    processAnswer<T extends CardSchedulingMeta>(card: T, rating: Grade, fsrsService: FSRSService, responseTime: number, presetSettings?: import("../../types/settings.types").FSRSSettings): {
+    processAnswer<T extends CardSchedulingMeta>(card: T, rating: Grade, fsrsService: FSRSService, responseTime: number, presetSettings?: FSRSSettings): {
         updatedCard: T;
         result: ReviewResult;
     };

@@ -3,8 +3,9 @@
  *
  * Predicts future review workload based on current card scheduling.
  */
-import { formatLocalDate } from "../../../utils";
 import { State } from "ts-fsrs";
+import { isLearningState } from "../../../helpers/card-state";
+import { formatLocalDate } from "../../../utils";
 /**
  * Workload Forecast Calculator
  *
@@ -18,16 +19,20 @@ export class WorkloadForecastCalculator {
     /**
      * Get workload forecast for the next N days
      */
-    getForecast(days = 30) {
+    getForecast(days = 30, excludeSourceUids) {
         const today = new Date();
         const endDate = new Date(today);
         endDate.setDate(endDate.getDate() + days);
         const cards = this.cardStore
             .getCards()
-            .filter((c) => !c.suspended &&
-            (!c.buriedUntil || new Date(c.buriedUntil) <= today) &&
-            new Date(c.due) >= today &&
-            new Date(c.due) <= endDate);
+            .filter((c) => {
+            var _a;
+            return !c.suspended &&
+                (!c.buriedUntil || new Date(c.buriedUntil) <= today) &&
+                new Date(c.due) >= today &&
+                new Date(c.due) <= endDate &&
+                (!excludeSourceUids || !excludeSourceUids.has((_a = c.sourceUid) !== null && _a !== void 0 ? _a : ""));
+        });
         // Build forecast by date
         const forecast = new Map();
         const currentDate = new Date(today);
@@ -46,8 +51,7 @@ export class WorkloadForecastCalculator {
                 if (card.state === State.Review) {
                     existing.review++;
                 }
-                else if (card.state === State.Learning ||
-                    card.state === State.Relearning) {
+                else if (isLearningState(card.state)) {
                     existing.learning++;
                 }
             }
@@ -66,9 +70,9 @@ export class WorkloadForecastCalculator {
     /**
      * Get summary statistics for the forecast
      */
-    getSummary(targetPerDay, days = 30) {
+    getSummary(targetPerDay, days = 30, excludeSourceUids) {
         var _a, _b;
-        const forecast = this.getForecast(days);
+        const forecast = this.getForecast(days, excludeSourceUids);
         if (forecast.length === 0) {
             return {
                 avgDaily: 0,
@@ -133,9 +137,9 @@ export class WorkloadForecastCalculator {
     /**
      * Get workload by day of week
      */
-    getWorkloadByDayOfWeek(days = 30) {
+    getWorkloadByDayOfWeek(days = 30, excludeSourceUids) {
         var _a;
-        const forecast = this.getForecast(days);
+        const forecast = this.getForecast(days, excludeSourceUids);
         // Group by day of week
         const byDay = new Map();
         for (let i = 0; i < 7; i++) {

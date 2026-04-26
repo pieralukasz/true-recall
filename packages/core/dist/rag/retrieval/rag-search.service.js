@@ -6,39 +6,65 @@ export class RagSearchService {
         this.embedder = embedder;
         this.embeddingCache = null;
     }
-    search(query_1) {
-        return __awaiter(this, arguments, void 0, function* (query, topK = RAG_CONFIG.defaultTopK, sourceType, sourceIds) {
-            var _a, _b;
+    search(query, topKOrOpts, sourceType, sourceIds) {
+        return __awaiter(this, void 0, void 0, function* () {
+            var _a, _b, _c;
+            const opts = typeof topKOrOpts === "object"
+                ? topKOrOpts
+                : {
+                    topK: topKOrOpts,
+                    sourceType,
+                    sourceIds,
+                };
+            const topK = (_a = opts.topK) !== null && _a !== void 0 ? _a : RAG_CONFIG.defaultTopK;
+            const effSourceType = opts.sourceType;
+            const effSourceIds = opts.sourceIds;
+            const sinceMs = opts.sinceMs;
             // Over-fetch when filtering so we still get topK results after filtering
-            const isFiltered = (sourceType && sourceType !== "all") ||
-                (sourceIds && sourceIds.length > 0);
+            const isFiltered = (effSourceType && effSourceType !== "all") ||
+                (effSourceIds && effSourceIds.length > 0) ||
+                sinceMs !== undefined;
             const fetchMultiplier = isFiltered ? 4 : 2;
             const fetchSize = topK * fetchMultiplier;
             const ftsResults = this.actions.searchFts(query, fetchSize);
-            const queryEmbedding = yield this.embedder.embedSingle(query);
-            const vectorResults = this.cosineSearch(queryEmbedding, fetchSize);
-            // Track which chunks passed vector threshold — FTS-only results without
-            // sufficient cosine similarity are noise
+            let queryEmbedding = null;
+            try {
+                queryEmbedding = yield this.embedder.embedSingle(query);
+            }
+            catch (_d) {
+                // Embedding service unavailable — fall back to keyword search
+            }
+            let vectorResults = [];
+            if (queryEmbedding) {
+                vectorResults = this.cosineSearch(queryEmbedding, fetchSize);
+            }
             const vectorPassedIds = new Set(vectorResults.map((r) => r.id));
-            const merged = this.rrfMerge(ftsResults, vectorResults, fetchSize).filter((m) => vectorPassedIds.has(m.id));
-            const chunkIds = merged.map((m) => m.id);
+            const merged = this.rrfMerge(ftsResults, vectorResults, fetchSize);
+            // When vector search is available, filter out FTS-only noise
+            const filtered = queryEmbedding
+                ? merged.filter((m) => vectorPassedIds.has(m.id))
+                : merged;
+            const chunkIds = filtered.map((m) => m.id);
             const chunks = this.actions.getChunksByIds(chunkIds);
             const chunkMap = new Map(chunks.map((c) => [c.id, c]));
             const fsrsData = this.actions.getFsrsDataForChunks(chunkIds);
             const fsrsMap = new Map(fsrsData.map((f) => [f.card_id, f]));
             const mtimeMap = this.actions.getMtimeForChunks(chunkIds);
             const results = [];
-            for (const m of merged) {
+            for (const m of filtered) {
                 const chunk = chunkMap.get(m.id);
                 if (!chunk)
                     continue;
-                if (sourceType &&
-                    sourceType !== "all" &&
-                    chunk.source_type !== sourceType)
+                if (effSourceType &&
+                    effSourceType !== "all" &&
+                    chunk.source_type !== effSourceType)
                     continue;
-                if (sourceIds &&
-                    sourceIds.length > 0 &&
-                    !sourceIds.includes(chunk.source_id))
+                if (effSourceIds &&
+                    effSourceIds.length > 0 &&
+                    !effSourceIds.includes(chunk.source_id))
+                    continue;
+                const mtime = mtimeMap.get(chunk.id);
+                if (sinceMs !== undefined && (mtime === undefined || mtime < sinceMs))
                     continue;
                 const result = {
                     chunkId: chunk.id,
@@ -48,28 +74,78 @@ export class RagSearchService {
                     sourceId: chunk.source_id,
                     score: m.score,
                     tokenCount: chunk.token_count,
-                    modifiedAt: mtimeMap.get(chunk.id),
+                    modifiedAt: mtime,
                 };
                 if (chunk.source_type === "flashcard") {
                     const fsrs = fsrsMap.get(chunk.source_id);
                     if (fsrs) {
-                        result.sourceNoteUid = (_a = fsrs.source_uid) !== null && _a !== void 0 ? _a : undefined;
+                        result.sourceNoteUid = (_b = fsrs.source_uid) !== null && _b !== void 0 ? _b : undefined;
                         result.fsrs = {
                             state: fsrs.state,
                             stability: fsrs.stability,
                             difficulty: fsrs.difficulty,
                             lapses: fsrs.lapses,
                             reps: fsrs.reps,
-                            lastReview: (_b = fsrs.last_review) !== null && _b !== void 0 ? _b : undefined,
+                            lastReview: (_c = fsrs.last_review) !== null && _c !== void 0 ? _c : undefined,
                             due: fsrs.due,
                         };
                     }
                 }
                 results.push(result);
             }
-            const stats = this.computeStats(results);
-            return { results: results.slice(0, topK), stats };
+            const trimmed = results.slice(0, topK);
+            const stats = this.computeStats(trimmed);
+            const response = { results: trimmed, stats };
+            if (opts.groupBySource) {
+                response.grouped = this.groupBySource(trimmed);
+            }
+            return response;
         });
+    }
+    groupBySource(results) {
+        var _a;
+        const groups = new Map();
+        for (const r of results) {
+            // Group flashcards by their source note when available
+            const key = r.sourceType === "flashcard" && r.sourceNoteUid
+                ? `note:${r.sourceNoteUid}`
+                : `${r.sourceType}:${r.sourceId}`;
+            const existing = groups.get(key);
+            if (existing) {
+                existing.chunks.push(r);
+                if (r.headingBreadcrumb &&
+                    !existing.headings.includes(r.headingBreadcrumb)) {
+                    existing.headings.push(r.headingBreadcrumb);
+                }
+                if (r.score > existing.bestScore)
+                    existing.bestScore = r.score;
+                if (r.modifiedAt) {
+                    existing.modifiedAt = Math.max((_a = existing.modifiedAt) !== null && _a !== void 0 ? _a : 0, r.modifiedAt);
+                }
+            }
+            else {
+                groups.set(key, {
+                    sourceId: r.sourceId,
+                    sourceType: r.sourceType,
+                    displayName: this.makeGroupDisplayName(r),
+                    headings: r.headingBreadcrumb ? [r.headingBreadcrumb] : [],
+                    bestScore: r.score,
+                    modifiedAt: r.modifiedAt,
+                    chunks: [r],
+                });
+            }
+        }
+        return Array.from(groups.values()).sort((a, b) => b.bestScore - a.bestScore);
+    }
+    makeGroupDisplayName(r) {
+        var _a, _b;
+        if (r.sourceType === "note") {
+            const parts = r.sourceId.split("/");
+            const filename = (_a = parts[parts.length - 1]) !== null && _a !== void 0 ? _a : r.sourceId;
+            return filename.replace(/\.md$/, "");
+        }
+        const qMatch = r.content.match(/^Q:\s*([^\n]+)/);
+        return (((_b = qMatch === null || qMatch === void 0 ? void 0 : qMatch[1]) === null || _b === void 0 ? void 0 : _b.trim()) || r.content.slice(0, 50)).slice(0, 50);
     }
     cosineSearch(queryEmbedding, topK) {
         this.ensureEmbeddingCache();

@@ -1,7 +1,8 @@
+import { State } from "ts-fsrs";
+import { MS_PER_DAY } from "@true-recall/core/constants";
 import { escapeFts5Query } from "@true-recall/core/persistence/sqlite/modules/NoteActions";
 import { sqlPlaceholders } from "@true-recall/core/persistence/sqlite/sql-utils";
-import { BUILTIN_IMAGE_OCCLUSION_ID } from "@true-recall/core/types/note.types";
-import { State } from "ts-fsrs";
+import { BUILTIN_IMAGE_OCCLUSION_ID, BUILTIN_NOTE_REVIEW_ID, } from "@true-recall/core/types/note.types";
 const STATE_MAP = {
     new: State.New,
     learning: State.Learning,
@@ -119,6 +120,10 @@ export function buildBrowserQuery(filter, sort, limit, offset, options) {
                     typeConditions.push("(nt.id = ?)");
                     params.push(BUILTIN_IMAGE_OCCLUSION_ID);
                     break;
+                case "note-review":
+                    typeConditions.push("(nt.id = ?)");
+                    params.push(BUILTIN_NOTE_REVIEW_ID);
+                    break;
             }
         }
         if (typeConditions.length > 0) {
@@ -140,12 +145,12 @@ export function buildBrowserQuery(filter, sort, limit, offset, options) {
     }
     // ── Date filters ─────────────────────────────────────────
     if (filter.addedDaysAgo != null) {
-        const cutoff = Date.now() - filter.addedDaysAgo * 86400000;
+        const cutoff = Date.now() - filter.addedDaysAgo * MS_PER_DAY;
         conditions.push(`${col}created_at >= ?`);
         params.push(cutoff);
     }
     if (filter.reviewedDaysAgo != null) {
-        const cutoff = new Date(Date.now() - filter.reviewedDaysAgo * 86400000).toISOString();
+        const cutoff = new Date(Date.now() - filter.reviewedDaysAgo * MS_PER_DAY).toISOString();
         conditions.push(`${col}last_review >= ?`);
         params.push(cutoff);
     }

@@ -2,6 +2,7 @@
  * Implements Anki-style "Next day starts at" logic for day-based scheduling
  */
 import { State } from "ts-fsrs";
+import { isLearningState } from "../../helpers/card-state";
 import { formatLocalDate as formatLocalDateUtil, getTodayBoundary as getTodayBoundaryUtil, getTomorrowBoundary as getTomorrowBoundaryUtil, } from "../../utils";
 export class DayBoundaryService {
     constructor(dayStartHour = 4) {
@@ -25,8 +26,7 @@ export class DayBoundaryService {
         const currentTime = now !== null && now !== void 0 ? now : new Date();
         const dueDate = new Date(card.fsrs.due);
         // Learning cards use exact timestamp
-        if (card.fsrs.state === State.Learning ||
-            card.fsrs.state === State.Relearning) {
+        if (isLearningState(card.fsrs.state)) {
             return dueDate <= currentTime;
         }
         // Review cards use day-based scheduling

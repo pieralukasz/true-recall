@@ -25,6 +25,7 @@ export class CardAIService {
 		if (req.signal?.aborted) throw new CardAIAbortedError();
 		const messages = buildCardAIMessages({
 			fields: req.fields,
+			noteType: req.noteType,
 			prompt: req.prompt,
 			context: req.context,
 		});

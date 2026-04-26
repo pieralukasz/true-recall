@@ -4,8 +4,9 @@
  * Recalculates all card intervals based on current FSRS weights.
  * Useful after parameter optimization to apply new weights to existing cards.
  */
-import { DEFAULT_FSRS_WEIGHTS } from "../../../constants";
 import { FSRS, State } from "ts-fsrs";
+import { DEFAULT_FSRS_WEIGHTS, MS_PER_DAY } from "../../../constants";
+import { isLearningState } from "../../../helpers/card-state";
 export class RescheduleService {
     constructor(cardStore, fsrsSettings) {
         var _a;
@@ -29,9 +30,7 @@ export class RescheduleService {
         const afterDistribution = new Map();
         for (const card of cards) {
             // Skip New and Learning/Relearning cards — only Review cards use stability-based intervals
-            if (card.state === State.New ||
-                card.state === State.Learning ||
-                card.state === State.Relearning)
+            if (card.state === State.New || isLearningState(card.state))
                 continue;
             // Record before
             const beforeDateStr = this.formatDate(new Date(card.due));
@@ -39,7 +38,7 @@ export class RescheduleService {
             const lastReview = card.lastReview
                 ? new Date(card.lastReview)
                 : new Date();
-            const elapsedDays = Math.max(0, Math.floor((Date.now() - lastReview.getTime()) / 86400000));
+            const elapsedDays = Math.max(0, Math.floor((Date.now() - lastReview.getTime()) / MS_PER_DAY));
             // Delegate to ts-fsrs which uses the correct FSRS-6 power-law formula
             // (includes interval_modifier, clamping to [1, maximumInterval], no fuzz)
             const newInterval = this.fsrs.next_interval(card.stability, elapsedDays);
@@ -49,7 +48,7 @@ export class RescheduleService {
             afterDistribution.set(afterDateStr, ((_b = afterDistribution.get(afterDateStr)) !== null && _b !== void 0 ? _b : 0) + 1);
             const originalDueMs = new Date(card.due).getTime();
             const newDueMs = newDue.getTime();
-            if (Math.abs(originalDueMs - newDueMs) > 86400000) {
+            if (Math.abs(originalDueMs - newDueMs) > MS_PER_DAY) {
                 const change = {
                     cardId: card.id,
                     originalDue: card.due,

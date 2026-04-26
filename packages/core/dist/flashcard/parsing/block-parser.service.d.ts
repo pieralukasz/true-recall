@@ -12,7 +12,7 @@
  * Each block starts with #type/<slug>, contains FieldName: value pairs
  * (field names come from the NoteType), and ends at --- or EOF.
  */
-import type { NoteType } from "@true-recall/core/types/note.types";
+import { type NoteType } from "@true-recall/core/types/note.types";
 export interface ParsedBlock {
     noteTypeId: string;
     noteTypeSlug: string;

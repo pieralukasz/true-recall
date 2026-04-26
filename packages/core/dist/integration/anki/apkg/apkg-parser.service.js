@@ -1,7 +1,7 @@
 import { __awaiter } from "tslib";
-import { loadDatabase, } from "@true-recall/core/persistence/sqlite/loader";
 import { decompress } from "fzstd";
 import JSZip from "jszip";
+import { loadDatabase, } from "@true-recall/core/persistence/sqlite/loader";
 // ── Minimal protobuf decoder ─────────────────────────────────
 // Anki v18+ stores template formats and notetype CSS in protobuf config blobs.
 // Wire format: tag = (field_number << 3) | wire_type

@@ -1,5 +1,5 @@
-import type { FrontmatterIndexService } from "./frontmatter-index.service";
 import type { IFileSystem } from "../../interfaces/file-system";
+import type { FrontmatterIndexService } from "./frontmatter-index.service";
 export interface HierarchyTreeNode {
     path: string;
     name: string;
@@ -15,19 +15,21 @@ export type ProjectNode = HierarchyTreeNode;
 export type LinkResolver = (name: string) => string | null;
 export declare class HierarchyService {
     private frontmatterIndex;
-    private fileSystem;
     private resolveLinkPath?;
     private graph;
-    constructor(frontmatterIndex: FrontmatterIndexService, fileSystem: IFileSystem, resolveLinkPath?: LinkResolver | undefined);
+    constructor(frontmatterIndex: FrontmatterIndexService, _fileSystem: IFileSystem, resolveLinkPath?: LinkResolver | undefined);
     invalidateGraph(): void;
     buildHierarchy(): HierarchyTreeNode[];
     getSourceUidsForProject(nodePath: string, includeChildren?: boolean): Set<string>;
     getUnassignedPaths(): string[];
     getParentsForNote(notePath: string): string[];
     getChildPaths(nodePath: string): string[];
+    getDescendantPaths(nodePath: string): string[];
+    getPathsForCascade(projectPath: string, archive: boolean): string[];
     getArchivedSourceUids(): Set<string>;
     isNoteArchived(notePath: string): boolean;
     isProjectArchived(projectPath: string): boolean;
+    isExplicitProject(notePath: string): boolean;
     private ensureGraph;
     private buildGraph;
     private resolveNameToPath;

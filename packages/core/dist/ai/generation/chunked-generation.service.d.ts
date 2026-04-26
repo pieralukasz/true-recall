@@ -1,8 +1,8 @@
 import type { IHttpClient } from "../../interfaces/http-client";
-import type { NoteType } from "../../types/note.types";
 import type { TrueRecallSettings } from "../../types/settings.types";
+import { type ExistingCardContext } from "../prompts/existing-cards-block";
 import { type ScheduleCallback } from "../state/streaming-state";
-import { type StreamingGenerationResult, type StreamingFlashcardManager, type StreamingSourceFile } from "./streaming-generation.service";
+import { type StreamingFlashcardManager, type StreamingGenerationResult, type StreamingSourceFile } from "./streaming-generation.service";
 export interface ChunkedGenerationResult extends StreamingGenerationResult {
     failedChunks: number;
     totalChunks: number;
@@ -25,7 +25,9 @@ export declare class ChunkedGenerationService {
     private httpClient;
     private schedule?;
     constructor(getSettings: () => TrueRecallSettings, flashcardManager: StreamingFlashcardManager, httpClient: IHttpClient, schedule?: ScheduleCallback | undefined);
-    generateFromNote(content: string, sourceFile: StreamingSourceFile, noteType?: NoteType | null, confirmLargeNote?: ConfirmLargeNote): Promise<ChunkedGenerationResult>;
+    generateFromNote(content: string, sourceFile: StreamingSourceFile, presetId: string, options?: {
+        existingCards?: ExistingCardContext[];
+    }, confirmLargeNote?: ConfirmLargeNote): Promise<ChunkedGenerationResult>;
     private runChunkedGeneration;
     private generateSingleChunk;
 }

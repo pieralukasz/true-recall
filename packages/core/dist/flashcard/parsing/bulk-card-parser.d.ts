@@ -9,8 +9,8 @@
  * - 2-field NoteTypes also support :: format as fallback
  * - Cloze auto-detection is restricted to noteType.type === 1
  */
-import { type NoteTypeLookup } from "./block-parser.service";
 import type { NoteType } from "@true-recall/core/types/note.types";
+import { type NoteTypeLookup } from "./block-parser.service";
 export interface ParsedCard {
     noteTypeId: string;
     fields: Record<string, string>;

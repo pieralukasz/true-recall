@@ -2,8 +2,8 @@ import { __asyncDelegator, __asyncGenerator, __asyncValues, __await } from "tsli
 import { OpenRouterClient, } from "@true-recall/core/ai/clients/openrouter-client";
 import { StreamingOpenRouterClient } from "@true-recall/core/ai/clients/streaming-openrouter-client";
 import { LITELLM_URL } from "@true-recall/core/constants";
+import { RAG_CHAT_TOOLS, } from "@true-recall/core/rag/chat/rag-chat-tools";
 import { fileBasename, formatLocalDate } from "@true-recall/core/utils";
-import { RAG_CHAT_TOOLS } from "@true-recall/core/rag/chat/rag-chat-tools";
 function agenticPrompt() {
     const today = formatLocalDate(new Date());
     return `You are a friendly, knowledgeable study assistant with access to the user's notes, flashcards, and study data.

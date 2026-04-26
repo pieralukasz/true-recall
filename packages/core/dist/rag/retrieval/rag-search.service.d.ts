@@ -11,6 +11,8 @@ export interface SearchResult {
     sourceId: string;
     /** For flashcards: the source_uid linking to the originating note */
     sourceNoteUid?: string;
+    /** Resolved file path of the source note (enriched post-search) */
+    sourceNotePath?: string;
     score: number;
     tokenCount: number;
     /** Source file modification time (ms since epoch) from rag_index_meta */
@@ -24,6 +26,31 @@ export interface SearchResult {
         lastReview?: string;
         due: string;
     };
+}
+export interface SearchOptions {
+    topK?: number;
+    sourceType?: RagSourceType | "all";
+    sourceIds?: string[];
+    /** Only return results modified after this timestamp (ms since epoch) */
+    sinceMs?: number;
+    /** Group results by source note/flashcard origin */
+    groupBySource?: boolean;
+}
+export interface GroupedSearchResult {
+    sourceId: string;
+    sourceType: RagSourceType;
+    displayName: string;
+    /** Resolved note path (enriched post-search) */
+    sourceNotePath?: string;
+    headings: string[];
+    bestScore: number;
+    modifiedAt?: number;
+    chunks: SearchResult[];
+}
+export interface SearchResponse {
+    results: SearchResult[];
+    grouped?: GroupedSearchResult[];
+    stats: SearchStats;
 }
 export interface SearchStats {
     totalChunksSearched: number;
@@ -41,10 +68,9 @@ export declare class RagSearchService {
     private embedder;
     private embeddingCache;
     constructor(actions: RagChunkActions, embedder: RagEmbeddingService);
-    search(query: string, topK?: number, sourceType?: RagSourceType | "all", sourceIds?: string[]): Promise<{
-        results: SearchResult[];
-        stats: SearchStats;
-    }>;
+    search(query: string, topKOrOpts?: number | SearchOptions, sourceType?: RagSourceType | "all", sourceIds?: string[]): Promise<SearchResponse>;
+    private groupBySource;
+    private makeGroupDisplayName;
     private cosineSearch;
     private ensureEmbeddingCache;
     invalidateCache(): void;

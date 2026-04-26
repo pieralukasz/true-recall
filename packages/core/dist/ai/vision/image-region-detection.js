@@ -149,12 +149,14 @@ export function detectRegionsFromImage(options) {
             { role: "user", content: userContent },
         ];
         const config = resolveAIClientConfig(settings);
-        const visionModel = config.isPro
+        const visionModel = config.hasProTier
             ? config.model
             : resolveVisionModel(config.model);
         const client = new OpenRouterClient(config.apiKey, visionModel, httpClient, config.baseUrl);
-        const metadata = config.isPro ? { call_context: "generation" } : undefined;
-        const response = yield client.chat(Object.assign(Object.assign({ messages }, (config.isPro ? {} : { temperature: 0.5 })), { metadata }));
+        const metadata = config.hasProTier
+            ? { call_context: "generation" }
+            : undefined;
+        const response = yield client.chat(Object.assign(Object.assign({ messages }, (config.hasProTier ? {} : { temperature: 0.5 })), { metadata }));
         const responseText = getTextContent((_a = response.choices[0]) === null || _a === void 0 ? void 0 : _a.message);
         return parseAIRegions(responseText);
     });

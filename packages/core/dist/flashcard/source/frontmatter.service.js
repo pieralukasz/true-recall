@@ -112,6 +112,37 @@ export class FrontmatterService {
             }
         });
     }
+    dissolveProject(childPaths, parentName) {
+        return __awaiter(this, void 0, void 0, function* () {
+            let count = 0;
+            for (const childPath of childPaths) {
+                yield this.removeParent(childPath, parentName);
+                count++;
+            }
+            return count;
+        });
+    }
+    markAsProject(filePath) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.frontmatter.update(filePath, { project: true });
+        });
+    }
+    unmarkProject(filePath) {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield this.frontmatter.update(filePath, { project: undefined });
+        });
+    }
+    moveChildren(childPaths, fromParent, toParent) {
+        return __awaiter(this, void 0, void 0, function* () {
+            let count = 0;
+            for (const childPath of childPaths) {
+                yield this.removeParent(childPath, fromParent);
+                yield this.addParent(childPath, toParent);
+                count++;
+            }
+            return count;
+        });
+    }
     /**
      * Remove "# Flashcards for [[...]]" header from content
      * Used for migration of existing files

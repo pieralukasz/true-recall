@@ -1,5 +1,5 @@
-import type { EasyDaysConfig } from "../../../types";
 import type { State } from "ts-fsrs";
+import type { EasyDaysConfig } from "../../../types";
 export interface CardDueInfo {
     id: string;
     due: string;

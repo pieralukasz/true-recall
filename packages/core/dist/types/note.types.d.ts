@@ -44,4 +44,5 @@ export declare const BUILTIN_BASIC_ID = "builtin-basic";
 export declare const BUILTIN_BASIC_REVERSED_ID = "builtin-basic-reversed";
 export declare const BUILTIN_CLOZE_ID = "builtin-cloze";
 export declare const BUILTIN_IMAGE_OCCLUSION_ID = "builtin-image-occlusion";
+export declare const BUILTIN_NOTE_REVIEW_ID = "builtin-note-review";
 export declare const BUILTIN_SLUGS: Record<string, string>;

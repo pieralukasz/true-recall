@@ -13,7 +13,11 @@
 export declare class DeviceIdService {
     private deviceId;
     private deviceLabel;
-    constructor();
+    /**
+     * @param fallbackId - Device ID from settings (survives reinstall via iCloud sync)
+     * @param onDeviceIdCreated - Called when a new device ID is generated (save to settings)
+     */
+    constructor(fallbackId?: string, onDeviceIdCreated?: (id: string) => void);
     /**
      * Get the device ID for this device.
      * Creates a new ID if one doesn't exist.

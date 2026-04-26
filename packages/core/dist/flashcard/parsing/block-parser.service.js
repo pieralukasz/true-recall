@@ -12,6 +12,7 @@
  * Each block starts with #type/<slug>, contains FieldName: value pairs
  * (field names come from the NoteType), and ends at --- or EOF.
  */
+import { BUILTIN_NOTE_REVIEW_ID, } from "@true-recall/core/types/note.types";
 const TYPE_TAG_RE = /^#type\/([a-z0-9-]+)$/;
 const SOURCE_COMMENT_RE = /^<!--\s*source:\s*([\s\S]*?)\s*-->$/;
 const BLOCK_SEPARATOR_RE = /^---\s*$/;
@@ -65,7 +66,7 @@ export function parseBlocks(content, getNoteType) {
                 continue;
             const slug = matchedType;
             const noteType = getNoteType(slug);
-            if (noteType) {
+            if (noteType && noteType.id !== BUILTIN_NOTE_REVIEW_ID) {
                 const { fields, sourceText, alwaysTypeIn } = parseFieldValues(blockLines, noteType.fields);
                 const hasContent = Object.values(fields).some((v) => v.trim().length > 0);
                 if (hasContent) {

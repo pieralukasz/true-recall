@@ -1,3 +1,6 @@
+export function hasDisplayableContent(card) {
+    return Boolean(card.question) || card.cardType === "note-review";
+}
 export class CardQueryService {
     constructor(store, sourceNoteService) {
         this.store = store;
@@ -16,14 +19,16 @@ export class CardQueryService {
     }
     // ── Tier 2: Full content (with template rendering, per card) ─────
     getContent(cardId) {
-        var _a;
+        var _a, _b;
         const card = this.store.get(cardId);
-        if (!card || !card.question)
+        if (!card)
+            return null;
+        if (!hasDisplayableContent(card))
             return null;
         const item = {
             id: card.id,
-            question: card.question,
-            answer: (_a = card.answer) !== null && _a !== void 0 ? _a : "",
+            question: (_a = card.question) !== null && _a !== void 0 ? _a : "",
+            answer: (_b = card.answer) !== null && _b !== void 0 ? _b : "",
             fsrs: card,
             sourceUid: card.sourceUid,
             cardType: card.cardType,
@@ -54,19 +59,27 @@ export class CardQueryService {
             return [];
         const cards = this.store.getByIds(cardIds);
         const rawCards = this.filterAndMapCards(cards);
-        // Enrich with source note info from vault
-        return this.sourceNoteService.enrichCards(rawCards);
+        const enriched = this.sourceNoteService.enrichCards(rawCards);
+        // SQL IN() returns rows in arbitrary order — restore caller's order
+        const byId = new Map(enriched.map((c) => [c.id, c]));
+        const ordered = [];
+        for (const id of cardIds) {
+            const card = byId.get(id);
+            if (card)
+                ordered.push(card);
+        }
+        return ordered;
     }
     getBySourceUid(sourceUid) {
         const cards = this.store.getCardsBySourceUid(sourceUid);
         return cards
-            .filter((card) => Boolean(card.question))
+            .filter((card) => hasDisplayableContent(card))
             .map((card) => {
-            var _a;
+            var _a, _b;
             return ({
                 id: card.id,
-                question: card.question,
-                answer: (_a = card.answer) !== null && _a !== void 0 ? _a : "",
+                question: (_a = card.question) !== null && _a !== void 0 ? _a : "",
+                answer: (_b = card.answer) !== null && _b !== void 0 ? _b : "",
                 fsrs: card,
                 sourceUid: card.sourceUid,
                 cardType: card.cardType,
@@ -96,13 +109,13 @@ export class CardQueryService {
     }
     filterAndMapCards(cards) {
         return cards
-            .filter((card) => Boolean(card.question))
+            .filter((card) => hasDisplayableContent(card))
             .map((card) => {
-            var _a;
+            var _a, _b;
             return ({
                 id: card.id,
-                question: card.question,
-                answer: (_a = card.answer) !== null && _a !== void 0 ? _a : "",
+                question: (_a = card.question) !== null && _a !== void 0 ? _a : "",
+                answer: (_b = card.answer) !== null && _b !== void 0 ? _b : "",
                 fsrs: card,
                 sourceUid: card.sourceUid,
                 cardType: card.cardType,

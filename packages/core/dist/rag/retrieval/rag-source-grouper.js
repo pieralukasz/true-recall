@@ -36,7 +36,7 @@ function makeDisplayName(s) {
     return stripMarkdown(raw).slice(0, 50);
 }
 export function stripMarkdown(text) {
-    return (text
+    return text
         .replace(/^#{1,6}\s+/gm, "")
         .replace(/\*{1,3}([^*]+)\*{1,3}/g, "$1")
         .replace(/_{1,3}([^_]+)_{1,3}/g, "$1")
@@ -45,5 +45,5 @@ export function stripMarkdown(text) {
         .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
         .replace(/~~([^~]+)~~/g, "$1")
         .replace(/==([^=]+)==/g, "$1")
-        .trim());
+        .trim();
 }

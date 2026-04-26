@@ -107,14 +107,14 @@ export class FSRSHelperService {
     getTrueRetentionHistory(days = 30, presetNames) {
         return this.trueRetention.getRollingAverage(days, 7, presetNames);
     }
-    getWorkloadForecast(days = 30) {
-        return this.workloadForecast.getForecast(days);
+    getWorkloadForecast(days = 30, excludeSourceUids) {
+        return this.workloadForecast.getForecast(days, excludeSourceUids);
     }
-    getWorkloadForecastSummary(days = 30) {
-        return this.workloadForecast.getSummary(this.settings.loadBalanceTarget, days);
+    getWorkloadForecastSummary(days = 30, excludeSourceUids) {
+        return this.workloadForecast.getSummary(this.settings.loadBalanceTarget, days, excludeSourceUids);
     }
-    getWorkloadByDayOfWeek(days = 30) {
-        return this.workloadForecast.getWorkloadByDayOfWeek(days);
+    getWorkloadByDayOfWeek(days = 30, excludeSourceUids) {
+        return this.workloadForecast.getWorkloadByDayOfWeek(days, excludeSourceUids);
     }
     getDistributions() {
         return this.distribution.getAllDistributions();

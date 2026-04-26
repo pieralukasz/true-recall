@@ -1,8 +1,8 @@
+import { State } from "ts-fsrs";
+import type { IPersistence } from "@true-recall/core/interfaces/persistence";
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite";
 import type { DayBoundaryService } from "@true-recall/core/services/review/day-boundary.service";
 import type { ExtendedDailyStats, Grade } from "@true-recall/core/types";
-import type { IPersistence } from "@true-recall/core/interfaces/persistence";
-import { State } from "ts-fsrs";
 export interface PresetDailyProgress {
     newStudied: number;
     reviewsCompleted: number;
@@ -42,7 +42,7 @@ export declare class SessionPersistenceService {
     /**
      * Remove the last review (for undo functionality)
      */
-    removeLastReview(_cardId: string, wasNewCard: boolean, rating?: Grade, previousState?: State): void;
+    removeLastReview(cardId: string, wasNewCard: boolean, rating?: Grade, previousState?: State): void;
     /**
      * Get all daily stats (includes card IDs - use for migrations/specific card lookups)
      */

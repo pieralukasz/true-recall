@@ -1,6 +1,6 @@
 import { sqlPlaceholders } from "@true-recall/core/persistence/sqlite/sql-utils";
-import { fileBasename } from "@true-recall/core/utils";
 import { buildBrowserQuery } from "@true-recall/core/services/browser/browser-query-builder";
+import { fileBasename } from "@true-recall/core/utils";
 export class CardBrowserQueryService {
     constructor(cardStore, frontmatterIndex, hierarchyService) {
         this.cardStore = cardStore;

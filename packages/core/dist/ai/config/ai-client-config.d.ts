@@ -3,7 +3,7 @@ export interface AIClientConfig {
     apiKey: string;
     model: string;
     baseUrl: string;
-    isPro: boolean;
+    hasProTier: boolean;
     temperature: number;
 }
 export declare function resolveAIClientConfig(settings: TrueRecallSettings): AIClientConfig;

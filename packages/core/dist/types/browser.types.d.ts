@@ -1,5 +1,5 @@
-import type { CardType } from "@true-recall/core/types";
 import type { State } from "ts-fsrs";
+import type { CardType } from "@true-recall/core/types";
 /** Flattened card row optimized for table display */
 export interface BrowserCard {
     id: string;
@@ -58,26 +58,8 @@ export interface PropFilter {
     operator: ">" | "<" | ">=" | "<=";
     value: number;
 }
-export interface BrowserQuery {
-    filter: FilterState;
-    sort: SortConfig;
-    limit: number;
-    offset: number;
-}
 export interface BrowserResult {
     cards: BrowserCard[];
     totalCount: number;
-}
-export interface SidebarSection {
-    key: string;
-    label: string;
-    items: SidebarItem[];
-    collapsed: boolean;
-}
-export interface SidebarItem {
-    label: string;
-    count: number;
-    filterValue: string;
-    active: boolean;
 }
 export declare const EMPTY_FILTER: FilterState;

@@ -9,7 +9,7 @@
 import { __awaiter } from "tslib";
 import { blockToText } from "@true-recall/core/flashcard/parsing/block-parser.service";
 import { CLOZE_DETECT, INLINE_SEPARATOR_RE, } from "@true-recall/core/flashcard/parsing/parsing-patterns";
-import { BUILTIN_BASIC_ID, BUILTIN_CLOZE_ID } from "@true-recall/core/types/note.types";
+import { BUILTIN_BASIC_ID, BUILTIN_CLOZE_ID, } from "@true-recall/core/types/note.types";
 /**
  * Migrate a single note's content from :: format to block format.
  * Returns the transformed content, or null if no changes were needed.

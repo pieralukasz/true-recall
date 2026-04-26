@@ -6,12 +6,16 @@ import { __awaiter } from "tslib";
 import { FrontmatterService } from "./frontmatter.service";
 export class SourceNoteService {
     constructor(fileSystem, frontmatter, metadataIndex) {
+        this.frontmatterIndex = null;
         // Fallback cache for when IMetadataIndex is not available
         // Built lazily on first access, invalidated on vault changes
         this.fallbackUidCache = null;
         this.fallbackCacheBuilt = false;
         this.frontmatterService = new FrontmatterService(fileSystem, frontmatter);
         this.metadataIndex = metadataIndex !== null && metadataIndex !== void 0 ? metadataIndex : null;
+    }
+    setFrontmatterIndex(index) {
+        this.frontmatterIndex = index;
     }
     getOrCreateSourceUid(filePath) {
         return __awaiter(this, void 0, void 0, function* () {
@@ -64,7 +68,11 @@ export class SourceNoteService {
     }
     findPathByUidSync(uid) {
         var _a, _b;
-        // O(1) lookup via index (preferred)
+        // O(1) lookup via FrontmatterIndexService (fastest — indexed Map)
+        if (this.frontmatterIndex) {
+            return this.frontmatterIndex.getFileByValue("flashcard_uid", uid);
+        }
+        // Fallback: O(n) scan via IMetadataIndex
         if (this.metadataIndex) {
             return this.metadataIndex.getPathByFieldValue("flashcard_uid", uid);
         }

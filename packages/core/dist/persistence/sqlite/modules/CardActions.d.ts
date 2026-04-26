@@ -1,11 +1,18 @@
 import type { CardSchedulingMeta, FSRSCardData } from "../../../types";
 import type { SqliteDatabase } from "../SqliteDatabase";
+/**
+ * Facade over card persistence operations.
+ *
+ * Delegates to focused sub-modules:
+ * - CardQueryActions  — reads, lookups, content checks
+ * - CardWriteActions  — single-card writes, updates, sync
+ * - CardBulkActions   — bulk suspend/bury/delete/forget/reschedule
+ */
 export declare class CardActions {
-    private db;
-    private fts5Available;
+    private readonly queries;
+    private readonly writes;
+    private readonly bulk;
     constructor(db: SqliteDatabase);
-    private isFts5Available;
-    private noteMatchCondition;
     getAllSchedulingMeta(): CardSchedulingMeta[];
     getSchedulingMetaById(cardId: string): CardSchedulingMeta | null;
     get(cardId: string): FSRSCardData | undefined;
@@ -28,17 +35,9 @@ export declare class CardActions {
         noteId: string;
         noteTypeId: string;
     }>;
-    findClozeCard(sourceUid: string, _clozeTemplate: string, clozeIndex: number): string | undefined;
+    findClozeCard(sourceUid: string, clozeTemplate: string, clozeIndex: number): string | undefined;
     getIOChildren(parentId: string): FSRSCardData[];
-    softDeleteIOFamily(parentId: string): string[];
-    getClozeSiblings(sourceUid: string, _clozeTemplate: string): FSRSCardData[];
-    set(cardId: string, data: FSRSCardData): void;
-    updateCardContent(cardId: string, question: string, answer: string): void;
-    updateClozeCardContent(cardId: string, _question: string, _answer: string, clozeTemplate: string): void;
-    upsertFromRemote(data: FSRSCardData & {
-        updatedAt?: number;
-        deletedAt?: number | null;
-    }): void;
+    getClozeSiblings(sourceUid: string, clozeTemplate: string): FSRSCardData[];
     getCardIdByQuestion(question: string): string | undefined;
     getCardInfoByQuestion(question: string, excludeCardId?: string): {
         id: string;
@@ -51,6 +50,13 @@ export declare class CardActions {
     has(cardId: string): boolean;
     keys(): string[];
     size(): number;
+    set(cardId: string, data: FSRSCardData): void;
+    updateCardContent(cardId: string, question: string, answer: string): void;
+    updateClozeCardContent(cardId: string, question: string, answer: string, clozeTemplate: string): void;
+    upsertFromRemote(data: FSRSCardData & {
+        updatedAt?: number;
+        deletedAt?: number | null;
+    }): boolean;
     softDelete(cardId: string): void;
     /** @deprecated Use softDelete() instead for sync compatibility */
     delete(cardId: string): void;
@@ -75,4 +81,5 @@ export declare class CardActions {
     bulkReset(cardIds: string[]): number;
     bulkForget(cardIds: string[]): number;
     bulkReschedule(cardIds: string[], dueDate: string): number;
+    softDeleteIOFamily(parentId: string): string[];
 }

@@ -1,8 +1,8 @@
-import { BYOK_MODELS } from "../../constants";
 import { z } from "zod";
+import { BYOK_MODELS } from "../../constants";
 const modelIds = BYOK_MODELS.map((m) => m.id);
 export const AIModelSchema = z.enum(modelIds).or(z.string());
-export const AITierSchema = z.enum(["pro", "byok"]).default("byok");
+const AITierSchema = z.enum(["pro", "byok"]).default("byok");
 export const SettingsSchema = z.object({
     proKey: z.string().optional(),
     openRouterApiKey: z.string(),
@@ -10,7 +10,6 @@ export const SettingsSchema = z.object({
     customAiModel: z.string().optional(),
     aiTier: AITierSchema,
     autoSyncToAnki: z.boolean().default(false),
-    selectionToolbarEnabled: z.boolean().default(true),
     aiGenerationPrompt: z.string().optional(),
 });
 export const PartialSettingsSchema = SettingsSchema.partial();

@@ -31,11 +31,38 @@ export class AnkiMediaService {
             return pathMapping;
         });
     }
+    /**
+     * Build a single regex that matches all media wikilink embeds at once,
+     * replacing each with its vault path in one pass instead of N split/join calls.
+     */
+    buildContentReplacer(pathMapping) {
+        // Filter out identity mappings
+        const entries = [];
+        for (const [originalName, vaultPath] of pathMapping) {
+            if (originalName !== vaultPath) {
+                entries.push([originalName, vaultPath]);
+            }
+        }
+        if (entries.length === 0)
+            return (c) => c;
+        try {
+            const escaped = entries.map(([name]) => escapeRegex(name));
+            const pattern = new RegExp(`!\\[\\[(${escaped.join("|")})\\]\\]`, "g");
+            const lookup = new Map(entries);
+            return (content) => content.replace(pattern, (_match, name) => {
+                const vaultPath = lookup.get(name);
+                return vaultPath ? `![[${vaultPath}]]` : _match;
+            });
+        }
+        catch (_a) {
+            // Regex too large for this many media files — fall back to iterative
+            const mapCopy = new Map(entries);
+            return (content) => this.updateImportedContent(content, mapCopy);
+        }
+    }
     updateImportedContent(content, pathMapping) {
         let result = content;
         for (const [originalName, vaultPath] of pathMapping) {
-            // Only update if the vault path differs from the bare filename
-            // (i.e., media is stored in a subfolder)
             if (originalName === vaultPath)
                 continue;
             result = result.split(`![[${originalName}]]`).join(`![[${vaultPath}]]`);
@@ -145,6 +172,9 @@ export class AnkiMediaService {
         const ext = (_b = (_a = ref.split(".").pop()) === null || _a === void 0 ? void 0 : _a.toLowerCase()) !== null && _b !== void 0 ? _b : "";
         return IMAGE_EXTENSIONS.has(ext) || AUDIO_EXTENSIONS.has(ext);
     }
+}
+function escapeRegex(str) {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 const IMAGE_EXTENSIONS = new Set([
     "png",

@@ -3,8 +3,8 @@
  *
  * Manages reduced workload on specific days (recurring weekdays + specific dates).
  */
-import type { SchedulerCardStore, SchedulingResult } from "./scheduler.types";
 import type { EasyDaysConfig } from "../../../types";
+import type { SchedulerCardStore, SchedulingResult } from "./scheduler.types";
 export interface EasyDaysOptions {
     /** Easy days configuration (recurring weekdays + specific dates) */
     easyDays: EasyDaysConfig;

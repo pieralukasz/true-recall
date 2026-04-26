@@ -1,5 +1,6 @@
+import type { GenerationPreset } from "./types/generation-preset.types";
 import type { FSRSPreset, TrueRecallSettings } from "./types/settings.types";
-export declare const ENABLE_RAG = false;
+export declare const ENABLE_RAG = true;
 export declare const VIEW_TYPE_FLASHCARD_PANEL = "true-recall-flashcard-panel";
 export declare const VIEW_TYPE_REVIEW = "true-recall-review";
 export declare const VIEW_TYPE_SIMULATOR = "true-recall-simulator";
@@ -19,6 +20,12 @@ export declare const BYOK_MODELS: ByokModelConfig[];
 export declare const CUSTOM_MODEL_ID = "__custom__";
 export declare const DEFAULT_BYOK_MODEL = "google/gemini-2.5-flash";
 export declare const DEFAULT_FSRS_PRESET: FSRSPreset;
+export declare const BUILTIN_BASIC_PRESET_ID = "builtin-basic-flashcards";
+export declare const BUILTIN_BASIC_PRESET: GenerationPreset;
+export declare const BUILTIN_BASIC_PRO_PRESET_ID = "builtin-basic-pro-flashcards";
+export declare const BUILTIN_BASIC_PRO_PRESET: GenerationPreset;
+export declare const TTS_VOICES: readonly ["alloy", "echo", "fable", "onyx", "nova", "shimmer"];
+export type TTSVoice = (typeof TTS_VOICES)[number];
 export declare const DEFAULT_SETTINGS: TrueRecallSettings;
 export declare const DEFAULT_FSRS_WEIGHTS: readonly [0.212, 1.2931, 2.3065, 8.2956, 6.4133, 0.8334, 3.0194, 0.001, 1.8722, 0.1666, 0.796, 1.4835, 0.0614, 0.2629, 1.6483, 0.6014, 1.8729, 0.5425, 0.0912, 0.0658, 0.1542];
 export declare const UI_CONFIG: {
@@ -39,6 +46,7 @@ export declare const FSRS_CONFIG: {
     readonly minRetention: 0.7;
     readonly maxRetention: 0.99;
 };
+export declare const MS_PER_DAY = 86400000;
 export declare const WEAK_CARD_STABILITY_THRESHOLD = 7;
 export declare const REQUEUE_WINDOW_MS: number;
 export declare const RANDOM_QUEUE_INSERT_MAX_POS = 5;
@@ -46,14 +54,16 @@ export declare const CARD_HISTORY_LIMIT = 20;
 export declare const GITHUB_RELEASES_API = "https://api.github.com/repos/pieralukasz/true-recall/releases/latest";
 export declare const LITELLM_URL = "https://ai.truerecall.app/v1/chat/completions";
 export declare const LITELLM_EMBEDDINGS_URL = "https://ai.truerecall.app/v1/embeddings";
+export declare const OPENROUTER_EMBEDDINGS_URL = "https://openrouter.ai/api/v1/embeddings";
 export declare const VIEW_TYPE_KNOWLEDGE_CHAT = "true-recall-knowledge-chat";
+export declare const RAG_FREE_NOTE_LIMIT = 100;
 export declare const RAG_CONFIG: {
     readonly embeddingBatchSize: 64;
     readonly indexDebounceMs: 5000;
     readonly rrf_k: 60;
     readonly defaultTopK: 10;
     readonly embeddingDims: 1024;
-    readonly cosineThreshold: 0.5;
+    readonly cosineThreshold: 0.35;
 };
 export declare const TRUERECALL_WEB_URL = "https://truerecall.app";
 export declare const TRUERECALL_BMC_URL = "https://www.buymeacoffee.com/1Hzbip1K9Q";

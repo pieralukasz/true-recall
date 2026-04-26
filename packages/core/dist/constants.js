@@ -1,4 +1,6 @@
-export const ENABLE_RAG = false;
+import { BUILTIN_BASIC_PRO_PROMPT } from "./ai/prompts/builtin-basic-pro.prompt";
+import { BUILTIN_BASIC_ID } from "./types/note.types";
+export const ENABLE_RAG = true;
 export const VIEW_TYPE_FLASHCARD_PANEL = "true-recall-flashcard-panel";
 export const VIEW_TYPE_REVIEW = "true-recall-review";
 export const VIEW_TYPE_SIMULATOR = "true-recall-simulator";
@@ -66,11 +68,49 @@ export const DEFAULT_FSRS_PRESET = {
     reviewOrder: "due-date",
     newReviewMix: "mix-with-reviews",
 };
+export const BUILTIN_BASIC_PRESET_ID = "builtin-basic-flashcards";
+export const BUILTIN_BASIC_PRESET = {
+    id: BUILTIN_BASIC_PRESET_ID,
+    name: "Basic Flashcards",
+    prompt: "Generate atomic Q/A flashcards from the provided text. Each card has Front (a clear, specific question) and Back (a concise, accurate answer).",
+    noteTypeId: BUILTIN_BASIC_ID,
+    tts: null,
+    image: null,
+    requiresPro: false,
+    builtin: true,
+    isDefault: true,
+    createdAt: 0,
+    updatedAt: 0,
+};
+export const BUILTIN_BASIC_PRO_PRESET_ID = "builtin-basic-pro-flashcards";
+export const BUILTIN_BASIC_PRO_PRESET = {
+    id: BUILTIN_BASIC_PRO_PRESET_ID,
+    name: "Basic Flashcards (Pro)",
+    prompt: BUILTIN_BASIC_PRO_PROMPT,
+    noteTypeId: BUILTIN_BASIC_ID,
+    tts: null,
+    image: null,
+    requiresPro: true,
+    builtin: true,
+    isDefault: false,
+    createdAt: 0,
+    updatedAt: 0,
+};
+export const TTS_VOICES = [
+    "alloy",
+    "echo",
+    "fable",
+    "onyx",
+    "nova",
+    "shimmer",
+];
 export const DEFAULT_SETTINGS = {
+    enableDeviceSync: false,
     openRouterApiKey: "",
     aiModel: DEFAULT_BYOK_MODEL,
     aiTier: "byok",
     generationLanguage: "auto",
+    generationNoteTypeId: null,
     fsrsRequestRetention: 0.9,
     fsrsMaximumInterval: 36500, // 100 years
     newCardsPerDay: 20,
@@ -86,6 +126,12 @@ export const DEFAULT_SETTINGS = {
     showReviewHeaderStats: true,
     continuousCustomReviews: true,
     ignoreDailyLimitsForNoteStudy: true,
+    reviewKeybindings: {
+        revealAndGood: " ",
+        again: "1",
+        hard: "2",
+        easy: "4",
+    },
     removeFlashcardContentAfterCollect: false, // keep flashcard lines in note after collecting
     newCardOrder: "random",
     reviewOrder: "due-date",
@@ -124,7 +170,31 @@ export const DEFAULT_SETTINGS = {
     showDonutsInReview: true,
     showStatusBarWidget: true,
     defaultTypeInMode: "off",
-    selectionToolbarEnabled: true,
+    noteReviewShowFrontmatter: false,
+    editorToolbarButtons: [
+        { id: `preset:${BUILTIN_BASIC_PRESET_ID}`, enabled: true },
+        { id: `preset:${BUILTIN_BASIC_PRO_PRESET_ID}`, enabled: true },
+        { id: "io", enabled: true },
+        { id: "edit", enabled: true },
+        { id: "quick-add", enabled: true },
+        { id: "highlight", enabled: true },
+        { id: "copy", enabled: true },
+        { id: "new-note", enabled: true },
+    ],
+    globalToolbarButtons: [
+        { id: `preset:${BUILTIN_BASIC_PRESET_ID}`, enabled: true },
+        { id: `preset:${BUILTIN_BASIC_PRO_PRESET_ID}`, enabled: true },
+        { id: "edit", enabled: true },
+        { id: "quick-add", enabled: true },
+        { id: "copy", enabled: true },
+        { id: "new-note", enabled: true },
+        { id: "append", enabled: true },
+    ],
+    imageToolbarButtons: [
+        { id: "io", enabled: true },
+        { id: "edit", enabled: true },
+        { id: "quick-add", enabled: true },
+    ],
     enableLocalApi: false,
     apiPort: 27182,
     ragEnabled: false,
@@ -141,6 +211,15 @@ export const DEFAULT_SETTINGS = {
         customInstruction: "",
         responseLength: "medium",
     },
+    languageNoteTypeId: null,
+    languageSource: "",
+    languageTarget: "",
+    languageTtsField: "",
+    languageTtsEnabled: false,
+    ttsVoice: "nova",
+    ttsAutoplay: true,
+    generationPresets: [BUILTIN_BASIC_PRESET, BUILTIN_BASIC_PRO_PRESET],
+    defaultGenerationPresetId: BUILTIN_BASIC_PRESET_ID,
 };
 // FSRS v6 default weights (21 parameters)
 // See: https://github.com/open-spaced-repetition/fsrs4anki/wiki/The-Algorithm
@@ -186,6 +265,7 @@ export const FSRS_CONFIG = {
     minRetention: 0.7,
     maxRetention: 0.99,
 };
+export const MS_PER_DAY = 86400000;
 export const WEAK_CARD_STABILITY_THRESHOLD = 7; // days
 export const REQUEUE_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
 export const RANDOM_QUEUE_INSERT_MAX_POS = 5;
@@ -193,14 +273,16 @@ export const CARD_HISTORY_LIMIT = 20;
 export const GITHUB_RELEASES_API = "https://api.github.com/repos/pieralukasz/true-recall/releases/latest";
 export const LITELLM_URL = "https://ai.truerecall.app/v1/chat/completions";
 export const LITELLM_EMBEDDINGS_URL = "https://ai.truerecall.app/v1/embeddings";
+export const OPENROUTER_EMBEDDINGS_URL = "https://openrouter.ai/api/v1/embeddings";
 export const VIEW_TYPE_KNOWLEDGE_CHAT = "true-recall-knowledge-chat";
+export const RAG_FREE_NOTE_LIMIT = 100;
 export const RAG_CONFIG = {
     embeddingBatchSize: 64,
     indexDebounceMs: 5000,
     rrf_k: 60,
     defaultTopK: 10,
     embeddingDims: 1024,
-    cosineThreshold: 0.5,
+    cosineThreshold: 0.35,
 };
 export const TRUERECALL_WEB_URL = "https://truerecall.app";
 export const TRUERECALL_BMC_URL = "https://www.buymeacoffee.com/1Hzbip1K9Q";

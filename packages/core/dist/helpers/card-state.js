@@ -3,6 +3,29 @@
  * Shared utilities for filtering and counting cards by FSRS state
  */
 import { State } from "ts-fsrs";
+/** Learning or Relearning */
+export function isLearningState(state) {
+    return state === State.Learning || state === State.Relearning;
+}
+export function isNewState(state) {
+    return state === State.New;
+}
+export function isReviewState(state) {
+    return state === State.Review;
+}
+/**
+ * Check whether a card is active (not suspended, not currently buried).
+ * Works with any data shape — pass the individual fields.
+ */
+export function isCardActive(suspended, buriedUntil, now) {
+    if (suspended)
+        return false;
+    if (buriedUntil) {
+        if (new Date(buriedUntil) > (now !== null && now !== void 0 ? now : new Date()))
+            return false;
+    }
+    return true;
+}
 /**
  * Filter out suspended and buried cards
  * Returns only cards that are currently active (not suspended, not buried)
@@ -10,16 +33,7 @@ import { State } from "ts-fsrs";
 export function filterActiveCardsOnly(cards, options = {}) {
     var _a;
     const now = (_a = options.now) !== null && _a !== void 0 ? _a : new Date();
-    return cards.filter((card) => {
-        if (card.suspended)
-            return false;
-        if (card.buriedUntil) {
-            const buriedUntil = new Date(card.buriedUntil);
-            if (buriedUntil > now)
-                return false;
-        }
-        return true;
-    });
+    return cards.filter((card) => isCardActive(card.suspended, card.buriedUntil, now));
 }
 /**
  * Count cards by FSRS state (New, Learning, Review)
@@ -29,9 +43,7 @@ export function countCardsByState(cards) {
     const counts = { new: 0, learning: 0, review: 0 };
     const now = new Date();
     for (const card of cards) {
-        if (card.fsrs.suspended)
-            continue;
-        if (card.fsrs.buriedUntil && new Date(card.fsrs.buriedUntil) > now)
+        if (!isCardActive(card.fsrs.suspended, card.fsrs.buriedUntil, now))
             continue;
         switch (card.fsrs.state) {
             case State.New:
@@ -61,13 +73,8 @@ export function countCardsByStateWithDue(cards, tomorrowBoundary) {
     };
     const now = new Date();
     for (const card of cards) {
-        if (card.suspended)
+        if (!isCardActive(card.suspended, card.buriedUntil, now))
             continue;
-        if (card.buriedUntil) {
-            const buriedUntil = new Date(card.buriedUntil);
-            if (buriedUntil > now)
-                continue;
-        }
         const dueDate = new Date(card.due);
         switch (card.state) {
             case State.New:

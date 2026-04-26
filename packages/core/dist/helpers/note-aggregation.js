@@ -1,6 +1,7 @@
+import { State } from "ts-fsrs";
+import { MS_PER_DAY } from "@true-recall/core/constants";
 import { computePriority } from "@true-recall/core/helpers/note-priority";
 import { estimateStudyMinutes } from "@true-recall/core/helpers/time-estimate";
-import { State } from "ts-fsrs";
 export function aggregateDashboardData(deps) {
     var _a, _b;
     const { allCards, streakCurrent, todaySummary, newCardsCap, reviewsCap, archivedSourceUids, } = deps;
@@ -80,7 +81,7 @@ export function aggregateDashboardData(deps) {
                 const dueDate = new Date(fsrs.due);
                 if (dueDate <= now) {
                     entry.due++;
-                    const daysOverdue = Math.floor((now.getTime() - dueDate.getTime()) / 86400000);
+                    const daysOverdue = Math.floor((now.getTime() - dueDate.getTime()) / MS_PER_DAY);
                     if (daysOverdue > 0) {
                         entry.overdueCount++;
                         entry.overdueDays = Math.max(entry.overdueDays, daysOverdue);

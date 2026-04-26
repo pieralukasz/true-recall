@@ -1,5 +1,6 @@
 import { createEmptyCard, FSRS, Rating, State, } from "ts-fsrs";
 import { DEFAULT_FSRS_WEIGHTS } from "../../constants";
+import { isLearningState } from "../../helpers/card-state";
 import { formatInterval } from "../../types";
 import { getTomorrowBoundary } from "../../utils";
 export class FSRSService {
@@ -159,8 +160,7 @@ export class FSRSService {
         return limit !== undefined ? newCards.slice(0, limit) : newCards;
     }
     getLearningCards(cards) {
-        return cards.filter((card) => card.fsrs.state === State.Learning ||
-            card.fsrs.state === State.Relearning);
+        return cards.filter((card) => isLearningState(card.fsrs.state));
     }
     /**
      * Uses day-based scheduling like Anki: all review cards due "today" are available
@@ -238,8 +238,7 @@ export class FSRSService {
             }
             // Learning/Relearning: exact timestamp; Review: day-based boundary
             const dueTime = new Date(c.fsrs.due).getTime();
-            if (c.fsrs.state === State.Learning ||
-                c.fsrs.state === State.Relearning) {
+            if (isLearningState(c.fsrs.state)) {
                 if (dueTime <= nowTime)
                     stats.dueToday++;
             }

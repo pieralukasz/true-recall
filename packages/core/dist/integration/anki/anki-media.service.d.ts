@@ -16,6 +16,11 @@ export declare class AnkiMediaService {
     private fileReader?;
     constructor(persistence: IPersistence, fileReader?: IVaultFileReader | undefined);
     importMedia(media: Map<string, ArrayBuffer>, mediaMap: Record<string, string>, targetFolder: string): Promise<Map<string, string>>;
+    /**
+     * Build a single regex that matches all media wikilink embeds at once,
+     * replacing each with its vault path in one pass instead of N split/join calls.
+     */
+    buildContentReplacer(pathMapping: Map<string, string>): (content: string) => string;
     updateImportedContent(content: string, pathMapping: Map<string, string>): string;
     collectExportMedia(cards: {
         question: string;

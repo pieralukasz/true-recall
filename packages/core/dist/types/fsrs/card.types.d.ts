@@ -6,7 +6,7 @@ import { type Card, type Grade, Rating, State } from "ts-fsrs";
 export { State, Rating };
 export type { Grade };
 export type { Card as FSRSCard };
-export type CardType = "basic" | "cloze" | "reversed" | "image-occlusion";
+export type CardType = "basic" | "cloze" | "reversed" | "image-occlusion" | "note-review";
 /**
  * Single review log entry stored per-card for FSRS optimization
  * Compact format: ~50 bytes per entry

@@ -2,8 +2,12 @@
  * Card State Helpers
  * Shared utilities for filtering and counting cards by FSRS state
  */
-import type { FSRSFlashcardItem } from "@true-recall/core/types";
 import { State } from "ts-fsrs";
+import type { FSRSFlashcardItem } from "@true-recall/core/types";
+/** Learning or Relearning */
+export declare function isLearningState(state: State | number): boolean;
+export declare function isNewState(state: State | number): boolean;
+export declare function isReviewState(state: State | number): boolean;
 /**
  * Card state counts (FSRS states)
  */
@@ -18,6 +22,11 @@ export interface CardStateCounts {
 export interface CardStateCountsWithDue extends CardStateCounts {
     due: number;
 }
+/**
+ * Check whether a card is active (not suspended, not currently buried).
+ * Works with any data shape — pass the individual fields.
+ */
+export declare function isCardActive(suspended: boolean | undefined, buriedUntil: string | null | undefined, now?: Date): boolean;
 /**
  * Options for filtering active cards
  */

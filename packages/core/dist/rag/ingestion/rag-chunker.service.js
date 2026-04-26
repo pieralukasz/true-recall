@@ -1,5 +1,5 @@
 import { filterContent } from "@true-recall/core/ai/parsing/markdown-chunker";
-import { preprocessDailyNote } from "./daily-note-preprocessor";
+import { preprocessDailyNote, } from "./daily-note-preprocessor";
 const TARGET_TOKENS = 400;
 const OVERLAP_TOKENS = 50;
 const HEADING_RE = /^(#{1,6})\s+(.+)$/;
@@ -151,11 +151,16 @@ function chunkFiltered(text) {
     return chunks;
 }
 export function chunkNote(rawContent) {
-    return chunkFiltered(filterContent(rawContent));
+    const filtered = filterContent(rawContent);
+    if (!filtered)
+        return [];
+    return chunkFiltered(filtered);
 }
 export function chunkDailyNote(rawContent, dailyInfo, excludeHeadings) {
     const filtered = filterContent(rawContent);
     const preprocessed = preprocessDailyNote(filtered, dailyInfo, excludeHeadings);
+    if (!preprocessed)
+        return [];
     return chunkFiltered(preprocessed);
 }
 export function chunkFlashcard(fieldsJson, sourceText, tags) {
@@ -179,6 +184,8 @@ export function chunkFlashcard(fieldsJson, sourceText, tags) {
         console.warn("[True Recall RAG] Failed to parse flashcard fields, using raw JSON:", e);
         content = fieldsJson;
     }
+    if (!content)
+        return [];
     return [
         {
             content,

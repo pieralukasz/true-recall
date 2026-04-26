@@ -36,6 +36,10 @@ export declare class FrontmatterService {
     setFsrsPreset(filePath: string, presetName: string | null): Promise<void>;
     addParent(filePath: string, parentName: string): Promise<void>;
     removeParent(filePath: string, parentName: string): Promise<void>;
+    dissolveProject(childPaths: string[], parentName: string): Promise<number>;
+    markAsProject(filePath: string): Promise<void>;
+    unmarkProject(filePath: string): Promise<void>;
+    moveChildren(childPaths: string[], fromParent: string, toParent: string): Promise<number>;
     /**
      * Remove "# Flashcards for [[...]]" header from content
      * Used for migration of existing files

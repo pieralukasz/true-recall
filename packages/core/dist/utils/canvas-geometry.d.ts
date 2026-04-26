@@ -1,4 +1,4 @@
-export interface RectLike {
+interface RectLike {
     left: number;
     top: number;
     width: number;
@@ -9,3 +9,4 @@ export declare function normalizePointFromRect(clientX: number, clientY: number,
     x: number;
     y: number;
 } | null;
+export {};

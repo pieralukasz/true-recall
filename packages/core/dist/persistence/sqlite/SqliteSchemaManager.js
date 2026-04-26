@@ -1,5 +1,5 @@
-import { getBuiltinNoteTypes } from "./modules/NoteTypeActions";
 import { BUILTIN_SLUGS } from "../../types/note.types";
+import { getBuiltinNoteTypes } from "./modules/NoteTypeActions";
 export class SqliteSchemaManager {
     constructor(db) {
         this.db = db;

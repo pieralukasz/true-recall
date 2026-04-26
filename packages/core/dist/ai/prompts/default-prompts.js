@@ -30,6 +30,10 @@ export const GENERATION_LANGUAGES = [
     { value: "hu", label: "Hungarian" },
     { value: "he", label: "Hebrew" },
 ];
+export function resolveLanguageName(code) {
+    var _a, _b;
+    return (_b = (_a = GENERATION_LANGUAGES.find((l) => l.value === code)) === null || _a === void 0 ? void 0 : _a.label) !== null && _b !== void 0 ? _b : code;
+}
 export function buildLanguageSuffix(languageCode) {
     var _a, _b;
     if (languageCode === "auto")

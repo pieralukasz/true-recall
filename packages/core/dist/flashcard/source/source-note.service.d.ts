@@ -8,9 +8,13 @@ import type { IMetadataIndex } from "@true-recall/core/interfaces/metadata-index
 export declare class SourceNoteService {
     private frontmatterService;
     private metadataIndex;
+    private frontmatterIndex;
     private fallbackUidCache;
     private fallbackCacheBuilt;
     constructor(fileSystem: IFileSystem, frontmatter: IFrontmatter, metadataIndex?: IMetadataIndex);
+    setFrontmatterIndex(index: {
+        getFileByValue(field: string, value: string): string | null;
+    }): void;
     getOrCreateSourceUid(filePath: string): Promise<string>;
     getSourceUid(filePath: string): Promise<string | null>;
     setSourceUid(filePath: string, uid: string): Promise<void>;

@@ -10,6 +10,7 @@ export function processCardEvents(events, sourceFile, flashcardManager, onPartia
             sourceUid = frontmatterService.generateUid();
             yield frontmatterService.setSourceNoteUid(sourceFile, sourceUid);
         }
+        const createdIds = [];
         for (const event of events) {
             if (event.type === "card_complete" && event.block) {
                 try {
@@ -27,6 +28,7 @@ export function processCardEvents(events, sourceFile, flashcardManager, onPartia
                     if (result.cards.length > 0) {
                         onCount(result.cards.length, 0);
                         for (const card of result.cards) {
+                            createdIds.push(card.id);
                             addStreamedCard({
                                 id: card.id,
                                 question: (_a = card.question) !== null && _a !== void 0 ? _a : "",
@@ -42,13 +44,20 @@ export function processCardEvents(events, sourceFile, flashcardManager, onPartia
                         onCount(0, 1);
                     }
                 }
-                catch (_e) {
-                    onCount(0, 1);
+                catch (error) {
+                    if (error instanceof Error && error.name === "DuplicateQuestionError") {
+                        onCount(0, 1);
+                    }
+                    else {
+                        console.error("[processCardEvents] Card creation failed:", error);
+                        onCount(0, 1);
+                    }
                 }
             }
             else if (event.type === "partial_update") {
                 onPartial((_c = event.partialQuestion) !== null && _c !== void 0 ? _c : null, (_d = event.partialAnswer) !== null && _d !== void 0 ? _d : null);
             }
         }
+        return createdIds;
     });
 }

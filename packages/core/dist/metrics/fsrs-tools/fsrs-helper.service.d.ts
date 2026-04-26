@@ -1,11 +1,11 @@
 import type { SqliteStoreService } from "../../persistence/sqlite/SqliteStoreService";
+import type { TrueRecallSettings } from "../../types";
 import type { OptimizationOutput, OptimizerOptions } from "./optimizer/optimizer.types";
 import { type EasyDaysOptions } from "./scheduler/easy-days.service";
 import type { BreakScheduleOptions, DisperseOptions, FlattenOptions, LoadBalanceOptions, RescheduleOptions, SchedulingResult, ShiftOptions, WorkloadDistribution } from "./scheduler/scheduler.types";
 import { type DistributionStats, type HistogramBucket } from "./statistics/distribution.calculator";
 import { type TrueRetentionSnapshot, type TrueRetentionSummary } from "./statistics/true-retention.calculator";
 import { type WorkloadForecastEntry, type WorkloadForecastSummary } from "./statistics/workload-forecast.calculator";
-import type { TrueRecallSettings } from "../../types";
 export declare class FSRSHelperService {
     private cardStore;
     private settings;
@@ -60,9 +60,9 @@ export declare class FSRSHelperService {
         retention: number;
         reviewCount: number;
     }[];
-    getWorkloadForecast(days?: number): WorkloadForecastEntry[];
-    getWorkloadForecastSummary(days?: number): WorkloadForecastSummary;
-    getWorkloadByDayOfWeek(days?: number): {
+    getWorkloadForecast(days?: number, excludeSourceUids?: ReadonlySet<string>): WorkloadForecastEntry[];
+    getWorkloadForecastSummary(days?: number, excludeSourceUids?: ReadonlySet<string>): WorkloadForecastSummary;
+    getWorkloadByDayOfWeek(days?: number, excludeSourceUids?: ReadonlySet<string>): {
         day: number;
         dayName: string;
         avgCount: number;

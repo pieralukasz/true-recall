@@ -1,18 +1,32 @@
 import { CARD_HISTORY_LIMIT } from "@true-recall/core/constants";
-import { notifyCardChange } from "@true-recall/core/events";
+import { DuplicateError, NotFoundError, } from "@true-recall/core/errors/domain.error";
 import { parseClozeTemplate } from "@true-recall/core/flashcard/parsing/cloze-parser.service";
 import { createDefaultFSRSData } from "@true-recall/core/types";
-export class DuplicateQuestionError extends Error {
+export class DuplicateQuestionError extends DuplicateError {
     constructor(existingCardId, existingSourceUid) {
-        super("A card with this question already exists");
+        super("A card with this question already exists", existingCardId);
         this.existingCardId = existingCardId;
         this.existingSourceUid = existingSourceUid;
-        this.name = "DuplicateQuestionError";
     }
 }
 export class CardRepository {
     constructor(store) {
         this.store = store;
+        this.bus = null;
+        this.busWarnLogged = false;
+    }
+    setEventBus(bus) {
+        this.bus = bus;
+    }
+    emit(event, payload) {
+        if (!this.bus) {
+            if (!this.busWarnLogged) {
+                console.warn("[CardRepository] Event bus not wired — events will not propagate to UI");
+                this.busWarnLogged = true;
+            }
+            return;
+        }
+        this.bus.emit(event, payload);
     }
     /** @throws DuplicateQuestionError if card with same question already exists */
     create(question, answer, sourceUid, sourceNoteName, options) {
@@ -38,7 +52,7 @@ export class CardRepository {
             clozeIndex: options === null || options === void 0 ? void 0 : options.clozeIndex,
             reverseOf: options === null || options === void 0 ? void 0 : options.reverseOf,
         };
-        notifyCardChange({ type: "added", cardId, sourceNoteName });
+        this.emit("card:added", { cardId, sourceNoteName });
         return card;
     }
     createBatch(flashcards, sourceUid, sourceNoteName, createdVia, sourceText) {
@@ -111,8 +125,7 @@ export class CardRepository {
             createdCards.push(card);
         }
         if (createdCards.length > 0) {
-            notifyCardChange({
-                type: "bulk",
+            this.emit("cards:bulk", {
                 cardIds: createdCards.map((c) => c.id),
             });
         }
@@ -128,7 +141,7 @@ export class CardRepository {
     updateContent(cardId, newQuestion, newAnswer) {
         const existing = this.store.get(cardId);
         if (!existing) {
-            throw new Error(`Card ${cardId} not found`);
+            throw new NotFoundError("Card", cardId);
         }
         if (newQuestion !== existing.question) {
             const duplicateInfo = this.store.cards.getCardInfoByQuestion(newQuestion, cardId);
@@ -137,8 +150,7 @@ export class CardRepository {
             }
         }
         this.store.cards.updateCardContent(cardId, newQuestion, newAnswer);
-        notifyCardChange({
-            type: "updated",
+        this.emit("card:updated", {
             cardId,
             changes: { question: true, answer: true },
         });
@@ -227,7 +239,7 @@ export class CardRepository {
             changes.buried = true;
         }
         if (!(options === null || options === void 0 ? void 0 : options.skipNotification)) {
-            notifyCardChange({ type: "updated", cardId, changes });
+            this.emit("card:updated", { cardId, changes });
         }
         return true;
     }
@@ -237,7 +249,7 @@ export class CardRepository {
             return false;
         }
         this.store.cards.updateCardSourceUid(cardId, newSourceUid);
-        notifyCardChange({ type: "updated", cardId, changes: { sourceUid: true } });
+        this.emit("card:updated", { cardId, changes: { sourceUid: true } });
         return true;
     }
     updateClozeTemplate(sourceUid, oldTemplate, newTemplate, _sourceNoteName) {
@@ -269,7 +281,7 @@ export class CardRepository {
             }
         }
         if (affectedCardIds.length > 0) {
-            notifyCardChange({ type: "bulk", cardIds: affectedCardIds });
+            this.emit("cards:bulk", { cardIds: affectedCardIds });
         }
     }
     delete(cardId) {
@@ -289,7 +301,7 @@ export class CardRepository {
             .map((id) => this.store.get(id))
             .filter((c) => c != null);
         this.store.cards.bulkSoftDelete(removedIds);
-        notifyCardChange({ type: "removed", cardId, cardIds: removedIds });
+        this.emit("card:removed", { cardId, cardIds: removedIds });
         return { removedIds, cardsData };
     }
     deleteBatch(cardIds) {
@@ -314,7 +326,7 @@ export class CardRepository {
             .map((id) => this.store.get(id))
             .filter((c) => c != null);
         this.store.cards.bulkSoftDelete(removedIds);
-        notifyCardChange({ type: "bulk", cardIds: removedIds, action: "removed" });
+        this.emit("cards:bulk", { cardIds: removedIds, action: "removed" });
         return { removedIds, cardsData };
     }
     collectCascadeDeleteIds(cardId) {

@@ -2,6 +2,7 @@ import type { IHttpClient } from "../../interfaces/http-client";
 import type { SemanticGradingResult, TrueRecallSettings } from "../../types";
 import { type ChatCompletionResponse } from "../clients/openrouter-client";
 import { type AIClientConfig } from "../config/ai-client-config";
+import { type TypeInGradingPromptRelatedCard } from "../prompts/type-in-grading-prompt";
 interface GradeAnswerInput {
     question: string;
     correctAnswer: string;
@@ -10,6 +11,8 @@ interface GradeAnswerInput {
     localFallbackScore: number;
     timeoutMs?: number;
     sourceContext?: string;
+    sourceNotePath?: string;
+    relatedCards?: TypeInGradingPromptRelatedCard[];
 }
 type ClientFactory = (config: AIClientConfig) => {
     chat: (request: {
@@ -23,7 +26,6 @@ type ClientFactory = (config: AIClientConfig) => {
 };
 export declare class SemanticAnswerGradingService {
     private getSettings;
-    private httpClient;
     private createClient;
     constructor(getSettings: () => TrueRecallSettings, httpClient: IHttpClient, createClient?: ClientFactory);
     gradeAnswer(input: GradeAnswerInput): Promise<SemanticGradingResult>;

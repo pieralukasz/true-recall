@@ -1,7 +1,7 @@
 import { __awaiter } from "tslib";
 import { AIRequestError, getTextContent, OpenRouterClient, } from "../clients/openrouter-client";
 import { resolveAIClientConfig, } from "../config/ai-client-config";
-import { buildTypeInGradingMessages } from "../prompts/type-in-grading-prompt";
+import { buildTypeInGradingMessages, } from "../prompts/type-in-grading-prompt";
 const DEFAULT_TIMEOUT_MS = 8000;
 const MAX_FEEDBACK_LENGTH = 280;
 function clamp100(value) {
@@ -30,7 +30,6 @@ function extractJsonBlock(text) {
 export class SemanticAnswerGradingService {
     constructor(getSettings, httpClient, createClient = (config) => new OpenRouterClient(config.apiKey, config.model, httpClient, config.baseUrl)) {
         this.getSettings = getSettings;
-        this.httpClient = httpClient;
         this.createClient = createClient;
     }
     gradeAnswer(input) {
@@ -56,20 +55,24 @@ export class SemanticAnswerGradingService {
             var _a, _b;
             const client = this.createClient(config);
             const timeoutMs = (_a = input.timeoutMs) !== null && _a !== void 0 ? _a : DEFAULT_TIMEOUT_MS;
-            const metadata = config.isPro ? { call_context: "grading" } : undefined;
+            const metadata = config.hasProTier
+                ? { call_context: "grading" }
+                : undefined;
             const response = yield this.withTimeout(client.chat(Object.assign(Object.assign({ messages: buildTypeInGradingMessages({
                     question: input.question,
                     correctAnswer: input.correctAnswer,
                     userAnswer: input.userAnswer,
                     passThreshold: input.passThreshold,
                     sourceContext: input.sourceContext,
-                }, this.getSettings().aiTypeInGradingPrompt) }, (config.isPro ? {} : { temperature: 0 })), { metadata })), timeoutMs);
+                    sourceNotePath: input.sourceNotePath,
+                    relatedCards: input.relatedCards,
+                }, this.getSettings().aiTypeInGradingPrompt) }, (config.hasProTier ? {} : { temperature: 0 })), { metadata })), timeoutMs);
             const content = getTextContent((_b = response.choices[0]) === null || _b === void 0 ? void 0 : _b.message);
             const parsed = this.parsePayload(content);
             const score = clamp100(parsed.score);
             return {
                 score,
-                feedback: truncateFeedback(parsed.feedback),
+                feedback: config.hasProTier ? truncateFeedback(parsed.feedback) : "",
                 passed: score >= clamp100(input.passThreshold),
                 source: "ai",
             };

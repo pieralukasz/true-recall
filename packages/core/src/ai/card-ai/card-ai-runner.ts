@@ -20,10 +20,17 @@ export class CardAIRunner {
 
 	async run(preset: CardAIPreset, signal?: AbortSignal): Promise<void> {
 		const original = this.target.getFields();
+		const noteType = this.target.getNoteType();
 		const context = await this.collector.collect(preset, this.target);
 
 		const call = (prompt: string): Promise<CardAIResult> =>
-			this.service.transform({ fields: original, prompt, context, signal });
+			this.service.transform({
+				fields: original,
+				noteType: { name: noteType.name, fields: noteType.fields },
+				prompt,
+				context,
+				signal,
+			});
 
 		let result: CardAIResult | null = null;
 		let rawResponse: string | undefined;

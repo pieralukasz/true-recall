@@ -2,8 +2,8 @@
  * Note Actions Module
  * CRUD operations for notes table
  */
-import type { SqliteDatabase } from "../SqliteDatabase";
 import type { Note } from "../../../types/note.types";
+import type { SqliteDatabase } from "../SqliteDatabase";
 /** Escape user input for FTS5 MATCH — wraps in double quotes to treat as phrase */
 export declare function escapeFts5Query(input: string): string;
 export declare class NoteActions {

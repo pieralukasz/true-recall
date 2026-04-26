@@ -2,11 +2,13 @@ import { __asyncValues, __awaiter } from "tslib";
 import { StreamingOpenRouterClient } from "../clients/streaming-openrouter-client";
 import { resolveAIClientConfig } from "../config/ai-client-config";
 import { IncrementalFlashcardParser } from "../parsing/incremental-flashcard-parser";
-import { chunkMarkdown } from "../parsing/markdown-chunker";
-import { buildCardFormatSpec } from "../prompts/block-prompt-builder";
+import { chunkMarkdown, } from "../parsing/markdown-chunker";
+import { buildPresetFormatSpec, buildPresetPrompt, } from "../prompts/block-prompt-builder";
+import { renderExistingCardsBlock, } from "../prompts/existing-cards-block";
 import { createThrottledPartialUpdater, finishStreaming, startStreaming, updateChunkProgress, } from "../state/streaming-state";
+import { resolveGenerationPresetAndNoteType } from "./preset-resolver";
 import { processCardEvents } from "./process-card-events";
-import { buildGenerationPrompt, FALLBACK_BASIC_NOTE_TYPE, StreamingGenerationService, } from "./streaming-generation.service";
+import { StreamingGenerationService, } from "./streaming-generation.service";
 const COST_CONFIRM_WORD_THRESHOLD = 5000;
 const COST_PER_TOKEN = 0.15 / 1000000;
 export class ChunkedGenerationService {
@@ -16,21 +18,23 @@ export class ChunkedGenerationService {
         this.httpClient = httpClient;
         this.schedule = schedule;
     }
-    generateFromNote(content, sourceFile, noteType, confirmLargeNote) {
+    generateFromNote(content, sourceFile, presetId, options, confirmLargeNote) {
         return __awaiter(this, void 0, void 0, function* () {
+            const settings = this.getSettings();
+            const { preset, noteType } = resolveGenerationPresetAndNoteType(settings, this.flashcardManager, presetId);
             const chunkingResult = chunkMarkdown(content);
             if (chunkingResult.strategy === "single") {
                 const firstChunk = chunkingResult.chunks[0];
                 if (!firstChunk)
                     throw new Error("Expected at least one chunk");
                 const streamingService = new StreamingGenerationService(this.getSettings, this.flashcardManager, this.httpClient, this.schedule);
-                const result = yield streamingService.generateStreaming(firstChunk.content, sourceFile, noteType);
+                const result = yield streamingService.generate(firstChunk.content, sourceFile, presetId, options);
                 return Object.assign(Object.assign({}, result), { failedChunks: 0, totalChunks: 1, errors: [] });
             }
-            return this.runChunkedGeneration(chunkingResult, sourceFile, noteType, confirmLargeNote);
+            return this.runChunkedGeneration(chunkingResult, sourceFile, preset, noteType, options, confirmLargeNote);
         });
     }
-    runChunkedGeneration(chunkingResult, sourceFile, noteType, confirmLargeNote) {
+    runChunkedGeneration(chunkingResult, sourceFile, preset, noteType, options, confirmLargeNote) {
         return __awaiter(this, void 0, void 0, function* () {
             var _a;
             const { chunks, totalWords, estimatedTokens } = chunkingResult;
@@ -50,29 +54,38 @@ export class ChunkedGenerationService {
             startStreaming(sourceFile.basename, sourceFile.path, abortController, chunks.length);
             const settings = this.getSettings();
             const aiConfig = resolveAIClientConfig(settings);
-            const customPrompt = ((_a = settings.aiGenerationPrompt) === null || _a === void 0 ? void 0 : _a.trim()) || "";
-            const systemPrompt = aiConfig.isPro
-                ? customPrompt
-                : buildGenerationPrompt(settings, noteType);
+            // Prompts containing the {{EXISTING_CARDS}} placeholder are authoritative
+            // full system prompts (e.g. built-in Pro preset) — use verbatim and send
+            // the format spec as the user message so format instructions still reach
+            // the model. Otherwise wrap the user's prompt in the format spec derived
+            // from the note type and send the raw text as the user message.
+            const useRawPrompt = preset.prompt.includes("{{EXISTING_CARDS}}");
+            const rawSystemPrompt = useRawPrompt
+                ? preset.prompt
+                : buildPresetPrompt(preset, noteType);
+            const existingCardsBlock = renderExistingCardsBlock((_a = options === null || options === void 0 ? void 0 : options.existingCards) !== null && _a !== void 0 ? _a : []);
+            const systemPrompt = rawSystemPrompt.replace("{{EXISTING_CARDS}}", existingCardsBlock);
             let totalCreated = 0;
             let totalDuplicates = 0;
             let failedChunks = 0;
             const errors = [];
+            const allCreatedCardIds = [];
             try {
                 for (const chunk of chunks) {
                     if (abortController.signal.aborted)
                         break;
                     updateChunkProgress(chunk.index, chunk.headingBreadcrumb || null);
-                    const formatPrefix = aiConfig.isPro
-                        ? `${buildCardFormatSpec(noteType !== null && noteType !== void 0 ? noteType : FALLBACK_BASIC_NOTE_TYPE)}\n\n`
+                    const formatPrefix = useRawPrompt
+                        ? `${buildPresetFormatSpec(preset, noteType)}\n\n`
                         : "";
                     const userMessage = chunk.headingBreadcrumb
                         ? `${formatPrefix}[Context: This section is from "${chunk.headingBreadcrumb}" in the note "${sourceFile.basename}"]\n\n${chunk.content}`
                         : `${formatPrefix}${chunk.content}`;
                     try {
-                        const result = yield this.generateSingleChunk(aiConfig, systemPrompt, userMessage, sourceFile, abortController.signal, noteType, chunk.content);
+                        const result = yield this.generateSingleChunk(aiConfig, systemPrompt, userMessage, sourceFile, abortController.signal, noteType, preset, chunk.content);
                         totalCreated += result.created;
                         totalDuplicates += result.duplicates;
+                        allCreatedCardIds.push(...result.createdCardIds);
                     }
                     catch (error) {
                         if (error instanceof DOMException && error.name === "AbortError") {
@@ -91,13 +104,15 @@ export class ChunkedGenerationService {
             return {
                 created: totalCreated,
                 duplicates: totalDuplicates,
+                createdCardIds: allCreatedCardIds,
+                preset,
                 failedChunks,
                 totalChunks: chunks.length,
                 errors,
             };
         });
     }
-    generateSingleChunk(aiConfig, systemPrompt, userMessage, sourceFile, signal, noteType, chunkContent) {
+    generateSingleChunk(aiConfig, systemPrompt, userMessage, sourceFile, signal, noteType, preset, chunkContent) {
         return __awaiter(this, void 0, void 0, function* () {
             var _a, e_1, _b, _c;
             var _d;
@@ -106,6 +121,7 @@ export class ChunkedGenerationService {
             const parser = new IncrementalFlashcardParser(getNoteType);
             let createdCount = 0;
             let duplicateCount = 0;
+            const createdCardIds = [];
             const throttledUpdatePartial = createThrottledPartialUpdater(this.schedule);
             const onCount = (created, dups) => {
                 createdCount += created;
@@ -117,17 +133,18 @@ export class ChunkedGenerationService {
                     { role: "user", content: userMessage },
                 ]
                 : [{ role: "user", content: userMessage }];
-            const metadata = aiConfig.isPro
+            const metadata = aiConfig.hasProTier
                 ? { call_context: "generation", note_type: (_d = noteType === null || noteType === void 0 ? void 0 : noteType.slug) !== null && _d !== void 0 ? _d : "basic" }
                 : undefined;
-            const stream = client.chatStream(Object.assign(Object.assign({ messages }, (aiConfig.isPro ? {} : { temperature: aiConfig.temperature })), { metadata }), signal);
+            const stream = client.chatStream(Object.assign(Object.assign({ messages }, (aiConfig.hasProTier ? {} : { temperature: aiConfig.temperature })), { metadata }), signal);
             try {
                 for (var _e = true, stream_1 = __asyncValues(stream), stream_1_1; stream_1_1 = yield stream_1.next(), _a = stream_1_1.done, !_a; _e = true) {
                     _c = stream_1_1.value;
                     _e = false;
                     const chunk = _c;
                     const events = parser.feed(chunk.content);
-                    yield processCardEvents(events, sourceFile, this.flashcardManager, throttledUpdatePartial, onCount, chunkContent);
+                    const ids = yield processCardEvents(events, sourceFile, this.flashcardManager, throttledUpdatePartial, onCount, chunkContent);
+                    createdCardIds.push(...ids);
                 }
             }
             catch (e_1_1) { e_1 = { error: e_1_1 }; }
@@ -138,8 +155,14 @@ export class ChunkedGenerationService {
                 finally { if (e_1) throw e_1.error; }
             }
             const finalEvents = parser.finish();
-            yield processCardEvents(finalEvents, sourceFile, this.flashcardManager, throttledUpdatePartial, onCount, chunkContent);
-            return { created: createdCount, duplicates: duplicateCount };
+            const finalIds = yield processCardEvents(finalEvents, sourceFile, this.flashcardManager, throttledUpdatePartial, onCount, chunkContent);
+            createdCardIds.push(...finalIds);
+            return {
+                created: createdCount,
+                duplicates: duplicateCount,
+                createdCardIds,
+                preset,
+            };
         });
     }
 }

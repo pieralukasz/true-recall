@@ -1,5 +1,5 @@
-import { toExactArrayBuffer } from "./sqlite.types";
 import pako from "pako";
+import { toExactArrayBuffer } from "./sqlite.types";
 const BACKUP_NAME_REGEX = /^true-recall-backup-(\d{4})-(\d{2})-(\d{2})-(\d{2})(\d{2})(\d{2})\.db(?:\.gz)?$/;
 export function isSupportedBackupPath(path) {
     const name = path.split("/").pop() || "";
@@ -37,7 +37,7 @@ export function decodeBackupToSqliteBytes(path, rawData) {
         return null;
     }
 }
-export function hasSqliteHeader(bytes) {
+function hasSqliteHeader(bytes) {
     if (bytes.byteLength < 16) {
         return false;
     }

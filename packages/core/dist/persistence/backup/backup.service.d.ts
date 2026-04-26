@@ -2,9 +2,9 @@
  * Backup Service
  * Handles database backup creation, restoration, and management
  */
+import type { IPersistence } from "@true-recall/core/interfaces/persistence";
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite";
 import type { RetentionPolicy } from "@true-recall/core/types/settings.types";
-import type { IPersistence } from "@true-recall/core/interfaces/persistence";
 /**
  * Backup file information
  */

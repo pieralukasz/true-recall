@@ -2,8 +2,8 @@
  * NoteType Actions Module
  * CRUD operations for note_types table
  */
-import type { SqliteDatabase } from "../SqliteDatabase";
 import type { NoteType } from "../../../types/note.types";
+import type { SqliteDatabase } from "../SqliteDatabase";
 export declare class NoteTypeActions {
     private db;
     constructor(db: SqliteDatabase);

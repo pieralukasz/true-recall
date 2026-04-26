@@ -1,6 +1,7 @@
 import type { SourceNoteService } from "@true-recall/core/flashcard/source/source-note.service";
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite/SqliteStoreService";
 import type { CardSchedulingMeta, FSRSCardData, FSRSFlashcardItem } from "@true-recall/core/types";
+export declare function hasDisplayableContent(card: FSRSCardData): boolean;
 export declare class CardQueryService {
     private store;
     private sourceNoteService;

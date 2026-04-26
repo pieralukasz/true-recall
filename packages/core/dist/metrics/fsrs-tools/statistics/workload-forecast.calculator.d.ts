@@ -53,11 +53,11 @@ export declare class WorkloadForecastCalculator {
     /**
      * Get workload forecast for the next N days
      */
-    getForecast(days?: number): WorkloadForecastEntry[];
+    getForecast(days?: number, excludeSourceUids?: ReadonlySet<string>): WorkloadForecastEntry[];
     /**
      * Get summary statistics for the forecast
      */
-    getSummary(targetPerDay: number, days?: number): WorkloadForecastSummary;
+    getSummary(targetPerDay: number, days?: number, excludeSourceUids?: ReadonlySet<string>): WorkloadForecastSummary;
     /**
      * Get cumulative workload (total reviews needed by each date)
      */
@@ -68,7 +68,7 @@ export declare class WorkloadForecastCalculator {
     /**
      * Get workload by day of week
      */
-    getWorkloadByDayOfWeek(days?: number): {
+    getWorkloadByDayOfWeek(days?: number, excludeSourceUids?: ReadonlySet<string>): {
         day: number;
         dayName: string;
         avgCount: number;

@@ -1,3 +1,5 @@
+import { DuplicateError } from "@true-recall/core/errors/domain.error";
+import type { DomainEventBus } from "@true-recall/core/events/event-bus";
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite/SqliteStoreService";
 import type { CardReviewLogEntry, CardType, FSRSCardData, FSRSFlashcardItem } from "@true-recall/core/types";
 export interface DuplicateInfo {
@@ -10,7 +12,7 @@ export interface DuplicateInfo {
     existingCardId?: string;
     existingSourceUid?: string;
 }
-export declare class DuplicateQuestionError extends Error {
+export declare class DuplicateQuestionError extends DuplicateError {
     existingCardId: string;
     existingSourceUid?: string | undefined;
     constructor(existingCardId: string, existingSourceUid?: string | undefined);
@@ -21,7 +23,11 @@ export interface CreateBatchResult {
 }
 export declare class CardRepository {
     private store;
+    private bus;
+    private busWarnLogged;
     constructor(store: SqliteStoreService);
+    setEventBus(bus: DomainEventBus): void;
+    private emit;
     /** @throws DuplicateQuestionError if card with same question already exists */
     create(question: string, answer: string, sourceUid?: string, sourceNoteName?: string, options?: {
         cardType?: CardType;

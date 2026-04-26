@@ -1,7 +1,7 @@
+import type { ISourceUidResolver } from "@true-recall/core/integration/csv/csv-export.service";
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite/SqliteStoreService";
 import type { FSRSService } from "@true-recall/core/services/fsrs/fsrs.service";
 import type { AnkiExportOptions } from "@true-recall/core/types";
-import type { ISourceUidResolver } from "@true-recall/core/integration/csv/csv-export.service";
 /**
  * Reads binary file data from the vault by filename.
  * Obsidian: wraps app.vault.getFiles() + readBinary().

@@ -1,6 +1,6 @@
 import { __awaiter } from "tslib";
 export const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
-export function buildOpenRouterHeaders(apiKey, userId) {
+export function buildOpenRouterHeaders(apiKey, userId, capability) {
     const headers = {
         "Content-Type": "application/json",
         Authorization: `Bearer ${apiKey}`,
@@ -9,6 +9,8 @@ export function buildOpenRouterHeaders(apiKey, userId) {
     };
     if (userId)
         headers["X-User-Id"] = userId;
+    if (capability)
+        headers["x-tr-capability"] = capability;
     return headers;
 }
 /** Extract text content from a ChatMessage response (handles both string and ContentPart[] content). */
@@ -39,16 +41,17 @@ export class AIRequestError extends Error {
     }
 }
 export class OpenRouterClient {
-    constructor(apiKey, model, httpClient, baseUrl = OPENROUTER_URL, userId) {
+    constructor(apiKey, model, httpClient, baseUrl = OPENROUTER_URL, userId, capability) {
         this.apiKey = apiKey;
         this.model = model;
         this.httpClient = httpClient;
         this.baseUrl = baseUrl;
         this.userId = userId;
+        this.capability = capability;
     }
     chat(request) {
         return __awaiter(this, void 0, void 0, function* () {
-            const headers = buildOpenRouterHeaders(this.apiKey, this.userId);
+            const headers = buildOpenRouterHeaders(this.apiKey, this.userId, this.capability);
             const response = yield this.httpClient.post(this.baseUrl, Object.assign({ model: this.model }, request), headers);
             if (response.status !== 200) {
                 throw new AIRequestError(response.status, response.text);

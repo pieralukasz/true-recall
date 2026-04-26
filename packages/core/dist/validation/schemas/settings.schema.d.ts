@@ -2,10 +2,6 @@ import { z } from "zod";
 export declare const AIModelSchema: z.ZodUnion<[z.ZodEnum<{
     [x: string]: string;
 }>, z.ZodString]>;
-export declare const AITierSchema: z.ZodDefault<z.ZodEnum<{
-    pro: "pro";
-    byok: "byok";
-}>>;
 export declare const SettingsSchema: z.ZodObject<{
     proKey: z.ZodOptional<z.ZodString>;
     openRouterApiKey: z.ZodString;
@@ -18,7 +14,6 @@ export declare const SettingsSchema: z.ZodObject<{
         byok: "byok";
     }>>;
     autoSyncToAnki: z.ZodDefault<z.ZodBoolean>;
-    selectionToolbarEnabled: z.ZodDefault<z.ZodBoolean>;
     aiGenerationPrompt: z.ZodOptional<z.ZodString>;
 }, z.core.$strip>;
 export declare const PartialSettingsSchema: z.ZodObject<{
@@ -33,7 +28,6 @@ export declare const PartialSettingsSchema: z.ZodObject<{
         byok: "byok";
     }>>>;
     autoSyncToAnki: z.ZodOptional<z.ZodDefault<z.ZodBoolean>>;
-    selectionToolbarEnabled: z.ZodOptional<z.ZodDefault<z.ZodBoolean>>;
     aiGenerationPrompt: z.ZodOptional<z.ZodOptional<z.ZodString>>;
 }, z.core.$strip>;
 export declare const SettingsWithApiKeySchema: z.ZodObject<{
@@ -48,7 +42,6 @@ export declare const SettingsWithApiKeySchema: z.ZodObject<{
         byok: "byok";
     }>>;
     autoSyncToAnki: z.ZodDefault<z.ZodBoolean>;
-    selectionToolbarEnabled: z.ZodDefault<z.ZodBoolean>;
     aiGenerationPrompt: z.ZodOptional<z.ZodString>;
 }, z.core.$strip>;
 export type AIModel = z.infer<typeof AIModelSchema>;

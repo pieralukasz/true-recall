@@ -199,9 +199,10 @@ export class RagToolExecutor {
         }, null, 2);
     }
     getRetentionAnalytics(days) {
+        const archivedUids = this.hierarchy.getArchivedSourceUids();
         const snapshot = this.fsrsHelper.getTrueRetentionSnapshot(days);
-        const workload = this.fsrsHelper.getWorkloadForecastSummary(days);
-        const byDay = this.fsrsHelper.getWorkloadByDayOfWeek(days);
+        const workload = this.fsrsHelper.getWorkloadForecastSummary(days, archivedUids);
+        const byDay = this.fsrsHelper.getWorkloadByDayOfWeek(days, archivedUids);
         const distributions = this.fsrsHelper.getDistributions();
         return JSON.stringify({
             trueRetention: {

@@ -9,7 +9,7 @@
  * - {{^FieldName}}...{{/FieldName}} — inverse conditional (empty field)
  */
 import { renderClozeAnswer, renderClozeQuestion, } from "@true-recall/core/flashcard/parsing/cloze-parser.service";
-import { BUILTIN_IMAGE_OCCLUSION_ID, } from "../../types/note.types";
+import { BUILTIN_IMAGE_OCCLUSION_ID, BUILTIN_NOTE_REVIEW_ID, } from "../../types/note.types";
 const NESTED_CLOZE_PATTERN = /\{\{c\d+::.*\{\{c/;
 /**
  * Render an Anki-style template with the given context.
@@ -72,14 +72,14 @@ export function renderTemplate(template, context) {
     for (let i = 0; i < fieldPlaceholders.length; i++) {
         const placeholder = fieldPlaceholders[i];
         if (placeholder !== undefined) {
-            working = working.replace(`\x00FIELD_${i}\x00`, placeholder);
+            working = working.replace(`\x00FIELD_${i}\x00`, () => placeholder);
         }
     }
     // Restore HTML comments
     for (let i = 0; i < commentPlaceholders.length; i++) {
         const comment = commentPlaceholders[i];
         if (comment !== undefined) {
-            working = working.replace(`\x00COMMENT_${i}\x00`, comment);
+            working = working.replace(`\x00COMMENT_${i}\x00`, () => comment);
         }
     }
     return working;
@@ -227,6 +227,9 @@ function parseClozeAt(text, start) {
  * Derive CardType from note type metadata and template ordinal.
  */
 export function deriveCardType(noteType, templateOrd) {
+    if (noteType.id === BUILTIN_NOTE_REVIEW_ID) {
+        return "note-review";
+    }
     if (noteType.id === BUILTIN_IMAGE_OCCLUSION_ID) {
         return "image-occlusion";
     }

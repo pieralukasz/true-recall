@@ -1,16 +1,12 @@
 import { renderTemplate } from "@true-recall/core/services/cards/template-engine";
+import { htmlToMarkdown } from "./anki-html-converter";
 import { stripHtmlFromTemplate } from "./anki-note-type-mapper";
 const FIELD_SEPARATOR = "\x1f";
-const HTML_ENTITIES = {
-    "&amp;": "&",
-    "&lt;": "<",
-    "&gt;": ">",
-    "&nbsp;": " ",
-    "&quot;": '"',
-    "&#39;": "'",
-    "&apos;": "'",
-};
-const HTML_ENTITY_REGEX = new RegExp(Object.keys(HTML_ENTITIES).join("|"), "gi");
+/** Normalize Anki deck name to path: `::` (legacy) and `\x1f` (v18) → `/` */
+export function normalizeDeckName(name) {
+    // biome-ignore lint/suspicious/noControlCharactersInRegex: Anki v18 uses U+001F as deck hierarchy separator
+    return name.replace(/::|[\x1f]/g, "/");
+}
 export class AnkiConverterService {
     convert(data) {
         var _a;
@@ -24,14 +20,14 @@ export class AnkiConverterService {
             if (!model)
                 continue;
             const deck = data.decks.get(card.did);
-            const deckName = deck ? deck.name.replace(/::/g, "/") : "Default";
+            const deckName = deck ? normalizeDeckName(deck.name) : "Default";
             const tags = note.tags.trim().split(/\s+/).filter(Boolean);
             const rawFields = note.flds.split(FIELD_SEPARATOR);
             // Build named field values from model's field definitions
             const fieldValues = {};
             for (const fieldDef of model.flds) {
                 const rawValue = (_a = rawFields[fieldDef.ord]) !== null && _a !== void 0 ? _a : "";
-                fieldValues[fieldDef.name] = this.htmlToMarkdown(rawValue);
+                fieldValues[fieldDef.name] = htmlToMarkdown(rawValue);
             }
             const converted = this.convertCard(card, note, model, rawFields, fieldValues, deckName, tags);
             if (converted)
@@ -156,46 +152,6 @@ export class AnkiConverterService {
                 }
             }
         }
-    }
-    htmlToMarkdown(html) {
-        let text = html;
-        // Line breaks
-        text = text.replace(/<br\s*\/?>/gi, "\n");
-        // Pre-formatted blocks (before other tag stripping)
-        text = text.replace(/<pre[^>]*>([\s\S]*?)<\/pre>/gi, (_match, content) => {
-            const inner = this.stripTags(content);
-            return `\n\`\`\`\n${inner}\n\`\`\`\n`;
-        });
-        // Inline code
-        text = text.replace(/<code[^>]*>([\s\S]*?)<\/code>/gi, (_match, content) => {
-            const inner = this.stripTags(content);
-            return `\`${inner}\``;
-        });
-        // Bold
-        text = text.replace(/<(?:b|strong)>([\s\S]*?)<\/(?:b|strong)>/gi, "**$1**");
-        // Italic
-        text = text.replace(/<(?:i|em)>([\s\S]*?)<\/(?:i|em)>/gi, "*$1*");
-        // Images → Obsidian embeds
-        text = text.replace(/<img[^>]+src=["']([^"']+)["'][^>]*>/gi, "![[$1]]");
-        // Anki sound references → Obsidian embeds
-        text = text.replace(/\[sound:([^\]]+)\]/g, "![[$1]]");
-        // Strip remaining block-level tags, preserving content with newlines
-        text = text.replace(/<\/(?:div|p)>/gi, "\n");
-        text = text.replace(/<(?:div|p|span)[^>]*>/gi, "");
-        // Underline tags are kept (Obsidian renders them natively)
-        // Strip any remaining unknown HTML tags, preserving content
-        text = text.replace(/<\/?(?!u\b)[a-z][a-z0-9]*[^>]*>/gi, "");
-        // Decode HTML entities
-        text = text.replace(HTML_ENTITY_REGEX, (entity) => {
-            var _a;
-            return (_a = HTML_ENTITIES[entity.toLowerCase()]) !== null && _a !== void 0 ? _a : entity;
-        });
-        // Collapse excessive blank lines (3+ newlines → 2)
-        text = text.replace(/\n{3,}/g, "\n\n");
-        return text.trim();
-    }
-    stripTags(html) {
-        return html.replace(/<[^>]+>/g, "");
     }
     extractMediaFiles(content) {
         const files = new Set();

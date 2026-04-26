@@ -1,6 +1,7 @@
-import { WEAK_CARD_STABILITY_THRESHOLD } from "@true-recall/core/constants";
-import { getTodayBoundary } from "@true-recall/core/utils/date.utils";
 import { Rating, State } from "ts-fsrs";
+import { MS_PER_DAY, WEAK_CARD_STABILITY_THRESHOLD, } from "@true-recall/core/constants";
+import { isCardActive, isLearningState, } from "@true-recall/core/helpers/card-state";
+import { getTodayBoundary } from "@true-recall/core/utils/date.utils";
 /**
  * Returns active (non-suspended, non-buried, non-archived) cards, or specifically
  * buried cards if stateFilter is "buried"
@@ -10,25 +11,17 @@ export function filterActiveCards(cards, options = {}) {
     const { stateFilter, archivedSourceUids } = options;
     return cards.filter((card) => {
         var _a;
-        // Skip archived source notes always
         if (archivedSourceUids === null || archivedSourceUids === void 0 ? void 0 : archivedSourceUids.has((_a = card.sourceUid) !== null && _a !== void 0 ? _a : ""))
             return false;
-        // Skip suspended cards always
-        if (card.fsrs.suspended)
-            return false;
-        // If reviewing buried cards, ONLY include buried
+        // Buried-only mode: return only currently buried cards
         if (stateFilter === "buried") {
+            if (card.fsrs.suspended)
+                return false;
             if (!card.fsrs.buriedUntil)
                 return false;
             return new Date(card.fsrs.buriedUntil) > now;
         }
-        // Normal mode: exclude buried cards
-        if (card.fsrs.buriedUntil) {
-            const buriedUntil = new Date(card.fsrs.buriedUntil);
-            if (buriedUntil > now)
-                return false;
-        }
-        return true;
+        return isCardActive(card.fsrs.suspended, card.fsrs.buriedUntil, now);
     });
 }
 export function getEmptyQueueMessage(stateFilter) {
@@ -38,16 +31,29 @@ export function getEmptyQueueMessage(stateFilter) {
     return "Congratulations! No cards due for review.";
 }
 export function buildQueueOptions(filters, settings, sessionPersistence, preset) {
-    var _a, _b, _c, _d, _e, _f;
+    var _a, _b, _c, _d, _e, _f, _g, _h;
+    // When scoped to a single preset (per-project/per-note snapshots), match
+    // today's progress to that preset so its remaining budget isn't drained
+    // by reviews from other presets. Global sessions don't pass a preset and
+    // use the aggregate counters instead.
+    const presetProgress = preset
+        ? sessionPersistence.getTodayProgressByPreset().get(preset.name)
+        : undefined;
+    const newCardsStudiedToday = preset
+        ? ((_a = presetProgress === null || presetProgress === void 0 ? void 0 : presetProgress.newStudied) !== null && _a !== void 0 ? _a : 0)
+        : sessionPersistence.getNewCardsStudiedToday();
+    const reviewsCompletedToday = preset
+        ? ((_b = presetProgress === null || presetProgress === void 0 ? void 0 : presetProgress.reviewsCompleted) !== null && _b !== void 0 ? _b : 0)
+        : sessionPersistence.getReviewCardsCompletedToday();
     return {
-        newCardsLimit: (_a = preset === null || preset === void 0 ? void 0 : preset.newCardsPerDay) !== null && _a !== void 0 ? _a : settings.newCardsPerDay,
-        reviewsLimit: (_b = preset === null || preset === void 0 ? void 0 : preset.reviewsPerDay) !== null && _b !== void 0 ? _b : settings.reviewsPerDay,
+        newCardsLimit: (_c = preset === null || preset === void 0 ? void 0 : preset.newCardsPerDay) !== null && _c !== void 0 ? _c : settings.newCardsPerDay,
+        reviewsLimit: (_d = preset === null || preset === void 0 ? void 0 : preset.reviewsPerDay) !== null && _d !== void 0 ? _d : settings.reviewsPerDay,
         reviewedToday: sessionPersistence.getReviewedToday(),
-        newCardsStudiedToday: sessionPersistence.getNewCardsStudiedToday(),
-        reviewsCompletedToday: sessionPersistence.getReviewCardsCompletedToday(),
-        newCardOrder: (_c = preset === null || preset === void 0 ? void 0 : preset.newCardOrder) !== null && _c !== void 0 ? _c : settings.newCardOrder,
-        reviewOrder: (_e = (_d = filters.customReviewOrder) !== null && _d !== void 0 ? _d : preset === null || preset === void 0 ? void 0 : preset.reviewOrder) !== null && _e !== void 0 ? _e : settings.reviewOrder,
-        newReviewMix: (_f = preset === null || preset === void 0 ? void 0 : preset.newReviewMix) !== null && _f !== void 0 ? _f : settings.newReviewMix,
+        newCardsStudiedToday,
+        reviewsCompletedToday,
+        newCardOrder: (_e = preset === null || preset === void 0 ? void 0 : preset.newCardOrder) !== null && _e !== void 0 ? _e : settings.newCardOrder,
+        reviewOrder: (_g = (_f = filters.customReviewOrder) !== null && _f !== void 0 ? _f : preset === null || preset === void 0 ? void 0 : preset.reviewOrder) !== null && _g !== void 0 ? _g : settings.reviewOrder,
+        newReviewMix: (_h = preset === null || preset === void 0 ? void 0 : preset.newReviewMix) !== null && _h !== void 0 ? _h : settings.newReviewMix,
         dayStartHour: settings.dayStartHour,
         sourceUidFilter: filters.sourceUidFilter
             ? new Set([filters.sourceUidFilter])
@@ -149,7 +155,7 @@ export function matchesSessionFilters(card, filters) {
     const now = Date.now();
     const dayStartHour = (_a = filters.dayStartHour) !== null && _a !== void 0 ? _a : 4;
     const todayBoundary = getTodayBoundary(dayStartHour).getTime();
-    const weekAgoBoundary = todayBoundary - 7 * 86400000;
+    const weekAgoBoundary = todayBoundary - 7 * MS_PER_DAY;
     if (card.fsrs.suspended)
         return false;
     const buriedUntil = card.fsrs.buriedUntil
@@ -196,8 +202,7 @@ export function matchesSessionFilters(card, filters) {
                     return false;
                 break;
             case "learning":
-                if (card.fsrs.state !== State.Learning &&
-                    card.fsrs.state !== State.Relearning) {
+                if (!isLearningState(card.fsrs.state)) {
                     return false;
                 }
                 break;
@@ -240,7 +245,7 @@ export function matchesSessionFilters(card, filters) {
     }
     if (filters.studyAheadDays !== undefined && filters.studyAheadDays > 0) {
         if (card.fsrs.state === State.Review) {
-            const cutoff = now + filters.studyAheadDays * 86400000;
+            const cutoff = now + filters.studyAheadDays * MS_PER_DAY;
             if (new Date(card.fsrs.due).getTime() > cutoff)
                 return false;
         }

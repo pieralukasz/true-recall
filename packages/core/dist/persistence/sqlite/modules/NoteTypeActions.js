@@ -2,7 +2,7 @@
  * NoteType Actions Module
  * CRUD operations for note_types table
  */
-import { BUILTIN_BASIC_ID, BUILTIN_BASIC_REVERSED_ID, BUILTIN_CLOZE_ID, BUILTIN_IMAGE_OCCLUSION_ID, BUILTIN_SLUGS, } from "../../../types/note.types";
+import { BUILTIN_BASIC_ID, BUILTIN_BASIC_REVERSED_ID, BUILTIN_CLOZE_ID, BUILTIN_IMAGE_OCCLUSION_ID, BUILTIN_NOTE_REVIEW_ID, BUILTIN_SLUGS, } from "../../../types/note.types";
 function mapRowToNoteType(row) {
     var _a, _b, _c, _d;
     return {
@@ -197,6 +197,22 @@ export function getBuiltinNoteTypes() {
                     ordinal: 0,
                     qfmt: "{{Image}}",
                     afmt: "{{Image}}{{Regions}}",
+                },
+            ],
+            css: "",
+            isBuiltin: true,
+        },
+        {
+            id: BUILTIN_NOTE_REVIEW_ID,
+            name: "Note Review",
+            type: 0,
+            fields: ["Content"],
+            templates: [
+                {
+                    name: "Note Review",
+                    ordinal: 0,
+                    qfmt: "{{Content}}",
+                    afmt: "{{Content}}",
                 },
             ],
             css: "",

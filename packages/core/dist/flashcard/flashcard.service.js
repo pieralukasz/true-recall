@@ -8,11 +8,11 @@
  */
 import { __awaiter } from "tslib";
 import { FLASHCARD_CONFIG } from "../constants";
-import { notifyCardChange } from "../events";
 import { generateCardsForNote, } from "../services/cards/card-generation.service";
-import { deriveCardType, renderTemplate } from "../services/cards/template-engine";
+import { deriveCardType, renderTemplate, } from "../services/cards/template-engine";
+import { NoteReviewService } from "../services/note-review/note-review.service";
 import { createDefaultFSRSData } from "../types";
-import { BUILTIN_IMAGE_OCCLUSION_ID, } from "../types/note.types";
+import { BUILTIN_IMAGE_OCCLUSION_ID, BUILTIN_NOTE_REVIEW_ID, } from "../types/note.types";
 import { normalizeIOImagePath, serializeIODefinition, } from "../utils/io-definition";
 import { CardQueryService } from "./data/card-query.service";
 import { CardRepository, } from "./data/card-repository.service";
@@ -22,18 +22,28 @@ export class FlashcardManager {
     constructor(fileSystem, frontmatter, _settings, metadataIndex, frontmatterIndex) {
         this.store = null;
         this.sessionPersistence = null;
+        this.bus = null;
+        this.busWarnLogged = false;
         // Specialized services (initialized after setStore)
         this.cardRepository = null;
         this.cardQueryService = null;
+        this._noteReview = null;
         this.frontmatterService = new FrontmatterService(fileSystem, frontmatter);
         this.sourceNoteService = new SourceNoteService(fileSystem, frontmatter, metadataIndex);
-        // frontmatterIndex is stored for later use if needed
         void frontmatterIndex;
+    }
+    setEventBus(bus) {
+        var _a;
+        this.bus = bus;
+        (_a = this.cardRepository) === null || _a === void 0 ? void 0 : _a.setEventBus(bus);
     }
     setStore(store) {
         this.store = store;
         this.cardRepository = new CardRepository(store);
+        if (this.bus)
+            this.cardRepository.setEventBus(this.bus);
         this.cardQueryService = new CardQueryService(store, this.sourceNoteService);
+        this._noteReview = new NoteReviewService(store);
     }
     setSessionPersistence(sessionPersistence) {
         this.sessionPersistence = sessionPersistence;
@@ -62,11 +72,28 @@ export class FlashcardManager {
         var _a, _b;
         return (_b = (_a = this.store) === null || _a === void 0 ? void 0 : _a.noteTypes.getBySlug(slug)) !== null && _b !== void 0 ? _b : null;
     }
+    getNoteTypeById(id) {
+        var _a, _b;
+        return (_b = (_a = this.store) === null || _a === void 0 ? void 0 : _a.noteTypes.getById(id)) !== null && _b !== void 0 ? _b : null;
+    }
     getFrontmatterService() {
         return this.frontmatterService;
     }
     getSourceNoteService() {
         return this.sourceNoteService;
+    }
+    getEventBus() {
+        return this.bus;
+    }
+    emitEvent(event, payload) {
+        if (!this.bus) {
+            if (!this.busWarnLogged) {
+                console.warn("[FlashcardManager] Event bus not wired — events will not propagate to UI");
+                this.busWarnLogged = true;
+            }
+            return;
+        }
+        this.bus.emit(event, payload);
     }
     scanVault() {
         if (!this.store) {
@@ -324,9 +351,9 @@ export class FlashcardManager {
             cards.push(fsrsData);
         }
         if (cards.length > 0) {
-            notifyCardChange({
-                type: "bulk",
+            this.emitEvent("cards:bulk", {
                 cardIds: cards.map((c) => c.id),
+                action: "added",
             });
         }
         return { note, cards };
@@ -390,12 +417,51 @@ export class FlashcardManager {
             }
         }
         if (cards.length > 0) {
-            notifyCardChange({
-                type: "bulk",
+            this.emitEvent("cards:bulk", {
                 cardIds: cards.map((c) => c.id),
+                action: "added",
             });
         }
         return { notes, cards };
+    }
+    // ---- Note-level review ----
+    get noteReview() {
+        if (!this._noteReview)
+            throw new Error("Store not initialized");
+        return this._noteReview;
+    }
+    enableNoteReview(sourceUid) {
+        if (!this.store) {
+            throw new Error("Store not initialized");
+        }
+        const existing = this.noteReview.findNote(sourceUid);
+        if (existing) {
+            const cards = this.store.cards.getCardsByNoteId(existing.id);
+            return { note: existing, cards };
+        }
+        return this.createNote({
+            noteTypeId: BUILTIN_NOTE_REVIEW_ID,
+            fields: { Content: "" },
+            sourceUid,
+            createdVia: "manual",
+        });
+    }
+    disableNoteReview(sourceUid) {
+        if (!this.store) {
+            throw new Error("Store not initialized");
+        }
+        const existing = this.noteReview.findNote(sourceUid);
+        if (!existing)
+            return false;
+        const cards = this.store.cards.getCardsByNoteId(existing.id);
+        if (cards.length > 0) {
+            this.removeFlashcardsByIds(cards.map((c) => c.id));
+        }
+        this.store.notes.delete(existing.id);
+        return true;
+    }
+    hasNoteReview(sourceUid) {
+        return this.noteReview.has(sourceUid);
     }
     /**
      * Update a Note's fields and recompute Q/A for all its cards.
@@ -427,8 +493,7 @@ export class FlashcardManager {
             updatedCardIds.push(fsrsData.id);
         }
         if (updatedCardIds.length > 0) {
-            notifyCardChange({
-                type: "bulk",
+            this.emitEvent("cards:bulk", {
                 cardIds: updatedCardIds,
             });
         }
@@ -487,7 +552,7 @@ export class FlashcardManager {
             ...deletedCardIds,
         ];
         if (allAffectedIds.length > 0) {
-            notifyCardChange({ type: "bulk", cardIds: allAffectedIds });
+            this.emitEvent("cards:bulk", { cardIds: allAffectedIds });
         }
         return { keptCardIds, createdCardIds, deletedCardIds };
     }
@@ -512,8 +577,7 @@ export class FlashcardManager {
         if (removedCardIds.length > 0) {
             (_c = this.store) === null || _c === void 0 ? void 0 : _c.cards.bulkSoftDelete(removedCardIds);
             (_d = this.sessionPersistence) === null || _d === void 0 ? void 0 : _d.removeReviewedCards(removedCardIds);
-            notifyCardChange({
-                type: "bulk",
+            this.emitEvent("cards:bulk", {
                 cardIds: removedCardIds,
                 action: "removed",
             });
@@ -523,8 +587,7 @@ export class FlashcardManager {
             ...createdCards.map((card) => card.id),
         ];
         if (updatedCardIds.length > 0) {
-            notifyCardChange({
-                type: "bulk",
+            this.emitEvent("cards:bulk", {
                 cardIds: updatedCardIds,
             });
         }
