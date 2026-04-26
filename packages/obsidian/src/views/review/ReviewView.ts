@@ -35,6 +35,7 @@ import {
 	KeyboardHandler,
 } from "@true-recall/obsidian/features/study/ui/review/handlers";
 import {
+	applyMutation,
 	assessTypedAnswer,
 	deriveTypeInMode,
 	getEmptyQueueMessage,
@@ -775,11 +776,25 @@ export class ReviewView extends ItemView {
 			const m = lastMutation.value;
 			if (!m) return;
 			// Skip "reviewed" — the queue is already updated synchronously
-			// by recordAnswerAndNext() before persistence runs
+			// by recordAnswerAndNext() before persistence runs.
 			if (m.type === "reviewed") return;
-			this.reviewController.rebuildActiveSession(
+			// Targeted mutation handling instead of full session rebuild.
+			// rebuildActiveSession() recomputes cachedBadgeCounts from scratch,
+			// which can drift from the incremental counts maintained by
+			// recordAnswerAndNext() (e.g. New count appearing to increase
+			// when a Learning card is graded).
+			const resolvedProjectUids = this.filters.projectPath
+				? this.plugin.hierarchyService.getSourceUidsForProject(
+						this.filters.projectPath,
+					)
+				: undefined;
+			applyMutation(
+				m,
+				this.review,
+				this.flashcardManager,
+				this.plugin.cardStore,
 				this.filters,
-				this.review.getCurrentCard()?.id ?? null,
+				resolvedProjectUids,
 			);
 		});
 	}
