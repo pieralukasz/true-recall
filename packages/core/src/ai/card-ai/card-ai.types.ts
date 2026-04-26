@@ -19,7 +19,7 @@ export interface CardAIRequest {
 }
 
 export interface CardAIResult {
-	fields: CardFields;
+	cards: CardFields[];
 	rawResponse: string;
 	usage: { promptTokens: number; completionTokens: number };
 }
@@ -33,6 +33,7 @@ export interface CardAIPreset {
 	requiresPro?: boolean;
 	includeSourceNote?: boolean;
 	includeRelatedCards?: boolean;
+	autoApplyNewCards?: boolean;
 }
 
 export interface CardAIUserSettings {
@@ -40,25 +41,37 @@ export interface CardAIUserSettings {
 	customPromptAutoApply: boolean;
 }
 
-export function makeCardAIResponseSchema(fieldNames: readonly string[]) {
+export function makeCardAIArrayResponseSchema(fieldNames: readonly string[]) {
 	if (fieldNames.length === 0) {
 		throw new Error(
-			"makeCardAIResponseSchema requires at least one field name",
+			"makeCardAIArrayResponseSchema requires at least one field name",
 		);
 	}
 	const shape: Record<string, z.ZodString> = {};
 	for (const name of fieldNames) shape[name] = z.string();
 	return z
-		.object(shape)
-		.passthrough()
-		.transform((raw) => {
-			// Zod.object validated all keys before this transform runs, so the
-			// cast is safe and every name is guaranteed to be present.
-			const src = raw as Record<string, string>;
-			const out: CardFields = {};
-			for (const name of fieldNames) out[name] = src[name] as string;
-			return out;
-		});
+		.array(z.object(shape).passthrough())
+		.min(1)
+		.transform((arr) =>
+			arr.map((raw) => {
+				const src = raw as Record<string, string>;
+				const out: CardFields = {};
+				for (const name of fieldNames) out[name] = src[name] ?? "";
+				return out;
+			}),
+		);
+}
+
+// Compares two CardFields values after trimming whitespace per field.
+// Used to decide whether the model produced a meaningful edit to [0].
+// Trimming is intentional: trailing newlines or leading whitespace from the
+// model do not constitute a semantic change and should not trigger preview UI.
+export function deepEqualFields(a: CardFields, b: CardFields): boolean {
+	const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+	for (const k of keys) {
+		if ((a[k] ?? "").trim() !== (b[k] ?? "").trim()) return false;
+	}
+	return true;
 }
 
 export class CardAIParseError extends Error {

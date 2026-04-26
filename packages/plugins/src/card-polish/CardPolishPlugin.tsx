@@ -34,6 +34,7 @@ export class CardPolishPlugin extends CardAIPluginBase<CardPolishEventDetail> {
 					currentCardId: detail.currentCardId,
 					operation: detail.operation,
 					onApply: detail.onApply,
+					flashcardManager: detail.flashcardManager,
 				});
 			},
 		});

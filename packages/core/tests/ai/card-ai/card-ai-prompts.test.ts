@@ -66,7 +66,85 @@ describe("buildCardAIMessages", () => {
 			operation: "create",
 		});
 		expect(sys.content).toContain("drafting a NEW flashcard");
-		expect(sys.content).toContain("saved as a new flashcard");
 		expect(user.content).toContain("Current draft");
+	});
+
+	it("instructs the model to respond with a JSON array (not object)", () => {
+		const [sys] = buildCardAIMessages({
+			fields: { Front: "Q", Back: "" },
+			prompt: "Polish",
+			operation: "edit",
+		});
+		expect(sys.content).toContain("ONLY a JSON array");
+	});
+
+	it("contains the verbatim safety net rule", () => {
+		const [sys] = buildCardAIMessages({
+			fields: { Front: "Q", Back: "" },
+			prompt: "Polish",
+			operation: "edit",
+		});
+		expect(sys.content).toContain("When in doubt");
+		expect(sys.content).toContain("verbatim");
+	});
+
+	it("explicitly forbids modifying [0] when not requested", () => {
+		const [sys] = buildCardAIMessages({
+			fields: { Front: "Q", Back: "" },
+			prompt: "Polish",
+			operation: "edit",
+		});
+		expect(sys.content).toMatch(/Do NOT modify \[0\]/);
+	});
+
+	it("explicitly forbids inventing extra cards", () => {
+		const [sys] = buildCardAIMessages({
+			fields: { Front: "Q", Back: "" },
+			prompt: "Polish",
+			operation: "edit",
+		});
+		expect(sys.content).toMatch(/Do NOT invent cards/);
+	});
+
+	it("contains bilingual triggers for spawn intent (EN + PL)", () => {
+		const [sys] = buildCardAIMessages({
+			fields: { Front: "Q", Back: "" },
+			prompt: "Polish",
+			operation: "edit",
+		});
+		expect(sys.content).toContain("create a card about");
+		expect(sys.content).toContain("stwórz fiszkę");
+	});
+
+	it("does not bake a hard cap on the number of new cards", () => {
+		const [sys] = buildCardAIMessages({
+			fields: { Front: "Q", Back: "" },
+			prompt: "Polish",
+			operation: "edit",
+		});
+		expect(sys.content).not.toMatch(/\bmax\s+\d+\b/i);
+		expect(sys.content).not.toMatch(/\bup to\s+\d+\b/i);
+	});
+
+	it("does not instruct the model to fill empty fields on its own", () => {
+		const [sys] = buildCardAIMessages({
+			fields: { Front: "Q", Back: "" },
+			prompt: "Polish",
+			operation: "edit",
+		});
+		expect(sys.content).not.toMatch(/empty field.*write content/i);
+		expect(sys.content).not.toMatch(/best practices/i);
+		expect(sys.content).toMatch(/leave it unchanged/i);
+		expect(sys.content).toMatch(/Do not invent content for empty fields/i);
+	});
+
+	it("does not normalize wikilinks as a preserved feature", () => {
+		const [sys] = buildCardAIMessages({
+			fields: { Front: "Q", Back: "" },
+			prompt: "Polish",
+			operation: "edit",
+		});
+		expect(sys.content).not.toMatch(/\[\[\.\.\.\]\]/);
+		expect(sys.content).not.toMatch(/wikilinks?/i);
 	});
 });

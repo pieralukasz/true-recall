@@ -17,4 +17,17 @@ export interface CardAITarget {
 	 * can no longer accept writes (card advanced, note deleted, modal closed).
 	 */
 	apply(fields: CardFields): boolean;
+	/**
+	 * Create a new card alongside the current one, inheriting note type and
+	 * source. Returns the IDs of all created cards (cloze produces multiple),
+	 * or `null` if creation failed (target invalid). Optional — targets that
+	 * don't support spawning leave it undefined.
+	 */
+	createCard?(fields: CardFields): string[] | null;
+	/**
+	 * Remove a card by id, used to undo auto-applied spawns. Returns `true`
+	 * on success. Optional — targets that don't support removal leave it
+	 * undefined; presenter checks before calling.
+	 */
+	removeCard?(cardId: string): boolean;
 }

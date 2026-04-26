@@ -13,22 +13,33 @@ function systemPrompt(
 		operation === "create"
 			? "You are drafting a NEW flashcard. Use the user's instruction and context to fill the draft fields."
 			: "You are a flashcard editor. Apply the user's instruction to the given flashcard fields.";
-	const operationRules =
-		operation === "create"
-			? `- The result will be saved as a new flashcard, not applied to an existing related card.
-- Create exactly one flashcard draft in this response.`
-			: `- Edit only the current flashcard; do not create additional cards.`;
+	const elementZeroLabel =
+		operation === "create" ? "the draft fields" : "the current card";
 
 	return `${role}
 
-Respond with ONLY a single JSON object, with exactly these keys: { ${keys} } and nothing else.
+Respond with ONLY a JSON array (no prose, no code fences, no commentary). Each element is an object with exactly these keys: { ${keys} }.
 
-Rules:
-- No prose, no code fences, no commentary — just the JSON object.
-${operationRules}
-- Apply the instruction to every field.
-- For any empty field, write content that fits the instruction and stays consistent with the filled fields. Follow flashcard best practices: atomic (one fact per card), answerable without the question showing context from the answer, minimum information principle.
-- Preserve facts, numbers, proper nouns, wikilinks ([[...]]), Obsidian callouts (> [!note]), LaTeX, and code verbatim unless the instruction explicitly asks to change them.
+Element [0] is ALWAYS ${elementZeroLabel}.
+- If the user's instruction asks to modify ${elementZeroLabel} → apply changes to [0].
+- If the user's instruction does NOT ask to modify ${elementZeroLabel} → [0] is the original fields VERBATIM.
+
+Elements [1..N] are NEW cards (same field set). Include them ONLY when the user's instruction explicitly asks to create new cards (e.g. "create a card about X", "stwórz fiszkę dotyczącą Y", "add a flashcard for Z", "split this list into atomic cards", "dodaj kartę o W"). Otherwise omit [1..N] entirely — return a single-element array.
+
+Do NOT invent cards the user did not request. Do NOT modify [0] if the user did not request it.
+
+When in doubt, return [original_fields_verbatim] — one element, no changes.
+
+Rules for new cards (when present):
+- Atomic: one fact per card.
+- Answerable without seeing context that appears in the answer.
+- Preserve facts, numbers, proper nouns, Obsidian callouts (> [!note]), LaTeX, and code verbatim.
+- Use the same language as the non-empty fields of [0] unless the instruction asks otherwise.
+- Produce only the cards the user's instruction asks for — do not invent extras.
+
+Rules when modifying [0]:
+- Apply the instruction to every field that needs it. If the instruction does not address a field, leave it unchanged — including empty fields. Do not invent content for empty fields on your own.
+- Preserve facts, numbers, proper nouns, Obsidian callouts (> [!note]), LaTeX, and code verbatim unless the instruction explicitly asks to change them.
 - Respond in the same language as the non-empty fields unless the instruction asks otherwise.`;
 }
 

@@ -2,10 +2,12 @@ import type { CardAIService } from "./card-ai.service";
 import {
 	CardAIParseError,
 	type CardAIPreset,
+	type CardAIResult,
 	type CardFields,
+	deepEqualFields,
 } from "./card-ai.types";
 import type { CardAIContextCollector } from "./card-ai-context";
-import type { CardAIPresenter } from "./card-ai-presenter";
+import type { CardAIPresenter, CardAIRetryResult } from "./card-ai-presenter";
 import type { CardAITarget } from "./card-ai-target";
 
 export class CardAIRunner {
@@ -20,35 +22,45 @@ export class CardAIRunner {
 		const original = this.target.getFields();
 		const context = await this.collector.collect(preset, this.target);
 
-		const call = (prompt: string): Promise<CardFields> =>
-			this.service
-				.transform({
-					fields: original,
-					prompt,
-					operation: this.target.getOperation(),
-					context,
-					signal,
-				})
-				.then((r) => r.fields);
+		const call = (prompt: string): Promise<CardAIResult> =>
+			this.service.transform({
+				fields: original,
+				prompt,
+				operation: this.target.getOperation(),
+				context,
+				signal,
+			});
 
-		let proposed: CardFields | null = null;
+		let result: CardAIResult | null = null;
 		let rawResponse: string | undefined;
 		try {
-			proposed = await call(preset.prompt);
+			result = await call(preset.prompt);
 		} catch (err) {
 			if (err instanceof CardAIParseError) rawResponse = err.rawResponse;
 			else throw err;
 		}
 
-		const retry = (extra: string): Promise<CardFields> =>
-			call(`${preset.prompt}\n\nAdditional instruction: ${extra}`);
+		const cards: CardFields[] = result?.cards ?? [];
+		const head: CardFields | undefined = cards[0];
+		const rest: CardFields[] = cards.slice(1);
+		const editsHappened = head ? !deepEqualFields(head, original) : false;
+
+		const retry = async (extra: string): Promise<CardAIRetryResult> => {
+			const r = await call(
+				`${preset.prompt}\n\nAdditional instruction: ${extra}`,
+			);
+			const [h, ...t] = r.cards;
+			return { edits: h ?? original, newCards: t };
+		};
 
 		await this.presenter.present({
 			target: this.target,
 			original,
-			proposed,
+			proposed: editsHappened ? (head ?? null) : null,
+			proposedNewCards: rest,
 			rawResponse,
-			autoApply: preset.autoApply,
+			autoApplyEdits: preset.autoApply,
+			autoApplyNewCards: preset.autoApplyNewCards ?? false,
 			retry,
 		});
 	}

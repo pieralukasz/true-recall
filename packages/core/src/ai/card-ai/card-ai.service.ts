@@ -10,9 +10,13 @@ import {
 	type CardAIRequest,
 	type CardAIResult,
 	type CardFields,
-	makeCardAIResponseSchema,
+	makeCardAIArrayResponseSchema,
 } from "./card-ai.types";
 import { buildCardAIMessages } from "./card-ai-prompts";
+
+// Lucas-chosen value (matches "generation" capability default in proxy).
+// Located client-side so BYOK users (who bypass the proxy) get the same value.
+const CARD_POLISH_TEMPERATURE = 0.7;
 
 export class CardAIService {
 	constructor(private readonly client: OpenRouterClient) {}
@@ -28,7 +32,10 @@ export class CardAIService {
 
 		let response: Awaited<ReturnType<OpenRouterClient["chat"]>>;
 		try {
-			response = await this.client.chat({ messages });
+			response = await this.client.chat({
+				messages,
+				temperature: CARD_POLISH_TEMPERATURE,
+			});
 		} catch (err) {
 			if (req.signal?.aborted) throw new CardAIAbortedError();
 			if (err instanceof AIRequestError) {
@@ -43,7 +50,7 @@ export class CardAIService {
 		const raw = getTextContent(response.choices[0]?.message);
 		const parsed = parseFields(raw, Object.keys(req.fields));
 		return {
-			fields: parsed,
+			cards: parsed,
 			rawResponse: raw,
 			usage: {
 				promptTokens: response.usage?.prompt_tokens ?? 0,
@@ -53,11 +60,11 @@ export class CardAIService {
 	}
 }
 
-function parseFields(raw: string, fieldNames: string[]): CardFields {
+function parseFields(raw: string, fieldNames: string[]): CardFields[] {
 	const candidate = tryJsonCandidates(raw);
 	if (candidate === undefined)
 		throw new CardAIParseError(raw, "LLM did not return valid JSON");
-	const schema = makeCardAIResponseSchema(fieldNames);
+	const schema = makeCardAIArrayResponseSchema(fieldNames);
 	const result = schema.safeParse(candidate);
 	if (!result.success) {
 		throw new CardAIParseError(
@@ -69,7 +76,7 @@ function parseFields(raw: string, fieldNames: string[]): CardFields {
 }
 
 function tryJsonCandidates(raw: string): unknown {
-	for (const c of [raw, stripFence(raw), extractBraceSpan(raw)]) {
+	for (const c of [raw, stripFence(raw), extractArraySpan(raw)]) {
 		if (!c) continue;
 		try {
 			return JSON.parse(c);
@@ -88,9 +95,18 @@ function stripFence(text: string): string | null {
 	return m?.[1] ? m[1].trim() : null;
 }
 
-function extractBraceSpan(text: string): string | null {
-	const s = text.indexOf("{");
-	const e = text.lastIndexOf("}");
-	if (s === -1 || e <= s) return null;
-	return text.slice(s, e + 1);
+// Extract a JSON array from prose by anchoring on `[\s*{` (array-of-objects start)
+// and `}\s*]` (array-of-objects end). The leading `{` anchor rejects prose
+// patterns like "cards: [1] foo" where `[` is not followed by JSON.
+function extractArraySpan(text: string): string | null {
+	const startMatch = text.match(/\[\s*\{/);
+	if (!startMatch || startMatch.index === undefined) return null;
+	const start = startMatch.index;
+	const endMatches = text.slice(start).match(/\}\s*\]/g);
+	if (!endMatches?.length) return null;
+	const lastEnd = endMatches[endMatches.length - 1];
+	if (!lastEnd) return null;
+	const lastEndIdx = text.lastIndexOf(lastEnd);
+	if (lastEndIdx === -1) return null;
+	return text.slice(start, lastEndIdx + lastEnd.length);
 }
