@@ -518,6 +518,7 @@ export class ReviewView extends ItemView {
 				onOpenSourceNote: () => this.handleOpenSourceNote(),
 				onClose: () => this.handleClose(),
 				onNextSession: () => this.handleNextSession(),
+				onOpenDashboard: () => void this.handleOpenDashboard(),
 				onEndSession: () => this.handleNextSession(),
 				onActionsMenu: (e: MouseEvent) => this.showActionsMenu(e),
 				onPolishMenu: isPluginEnabled(this.plugin.settings, "card-polish")
@@ -1042,5 +1043,10 @@ export class ReviewView extends ItemView {
 			.catch((err) => {
 				console.error("[TR-debug] activateView failed:", err);
 			});
+	}
+
+	private async handleOpenDashboard(): Promise<void> {
+		this.leaf.detach();
+		await this.plugin.openDashboard();
 	}
 }
