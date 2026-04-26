@@ -258,6 +258,10 @@ function NoteListItem({
 		onStudy,
 		onCustomStudy,
 		onNavigate,
+		onSetPreset:
+			onPresetClick && note.path
+				? () => onPresetClick(note.path ?? null)
+				: undefined,
 		onArchive,
 		onUnarchive,
 		onEnterSelection,

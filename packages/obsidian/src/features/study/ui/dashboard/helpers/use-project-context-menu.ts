@@ -54,6 +54,15 @@ export function useProjectContextMenu({
 						onClick: () => onNavigate?.(),
 					},
 					{ title: "Rename", icon: "pencil", onClick: () => onRename?.() },
+					...(onPresetClick
+						? [
+								{
+									title: "Set FSRS preset",
+									icon: "settings",
+									onClick: onPresetClick,
+								},
+							]
+						: []),
 					project.archived
 						? {
 								title: "Unarchive",
@@ -90,11 +99,6 @@ export function useProjectContextMenu({
 								title: "Create sub-project",
 								icon: "folder-plus",
 								onClick: () => onCreateSubProject?.(),
-							},
-							{
-								title: "Set preset",
-								icon: "settings",
-								onClick: () => onPresetClick?.(),
 							},
 							{
 								title: "Move children to…",

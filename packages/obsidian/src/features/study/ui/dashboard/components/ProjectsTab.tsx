@@ -495,6 +495,8 @@ function NoteItem({
 		onCustomStudy: handleCustomStudy,
 		onNavigate: handleNavigate,
 		onRename: notePath ? () => void onRename(notePath) : undefined,
+		onSetPreset:
+			onPresetClick && notePath ? () => onPresetClick(notePath) : undefined,
 		onArchive: notePath ? () => onArchive(notePath, true) : undefined,
 		onUnarchive: notePath ? () => onArchive(notePath, false) : undefined,
 		onDetach: handleDetach,
