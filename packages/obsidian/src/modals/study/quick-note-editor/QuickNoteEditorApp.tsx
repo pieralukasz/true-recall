@@ -8,6 +8,8 @@ import {
 	useState,
 } from "preact/hooks";
 
+import { hasAIKey } from "@true-recall/core/ai/config/ai-client-config";
+
 import { Clickable } from "@true-recall/obsidian/components";
 import {
 	type FormattingTargetRef,
@@ -319,8 +321,14 @@ export function QuickNoteEditorApp({
 
 	// AI wand dispatches "true-recall:card-polish" (kind: "draft"). Only the
 	// Card Polish plugin listens today; no other plugin wires a draft hook.
-	const cardPolishActive =
+	// We check both the plugin enable state AND hasAIKey directly. The full
+	// `isPluginEnabled` helper (in plugin-utils) pulls @true-recall/plugins
+	// registry, which transitively loads sqlite-wasm via other plugin manifests
+	// and breaks Vitest module loading for unrelated tests. Inline-checking
+	// hasAIKey reproduces the tier:"byok" gate without the registry import.
+	const cardPolishEnabled =
 		plugin.settings?.pluginStates?.["card-polish"] ?? true;
+	const cardPolishActive = cardPolishEnabled && hasAIKey(plugin.settings);
 	const { disabled: aiDisabled, title: aiTitle } = deriveAIWandState({
 		hasSourceNote: !!sourceNoteFile,
 		cardPolishActive,
@@ -352,6 +360,7 @@ export function QuickNoteEditorApp({
 								onApply: (next: Record<string, string>) => {
 									setFields((prev) => ({ ...prev, ...next }));
 								},
+								flashcardManager: plugin.flashcardManager,
 							},
 						}),
 					);

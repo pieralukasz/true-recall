@@ -32,6 +32,22 @@ export class ReviewCardTarget implements CardAITarget {
 		return true;
 	}
 
+	createCard(fields: CardFields): string[] | null {
+		const { card, noteType } = this.snapshot();
+		if (!card || !noteType) return null;
+		const result = this.plugin.flashcardManager.createNote({
+			noteTypeId: noteType.id,
+			fields,
+			sourceUid: card.sourceUid,
+			createdVia: "ai_polish",
+		});
+		return result.cards.length > 0 ? result.cards.map((c) => c.id) : null;
+	}
+
+	removeCard(cardId: string): boolean {
+		return this.plugin.flashcardManager.removeFlashcardById(cardId);
+	}
+
 	private snapshot() {
 		const card = this.plugin.store?.getState().review?.getCurrentCard() ?? null;
 		const note = card?.noteId

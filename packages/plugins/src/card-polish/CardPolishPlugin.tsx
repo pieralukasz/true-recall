@@ -33,6 +33,7 @@ export class CardPolishPlugin extends CardAIPluginBase<CardPolishEventDetail> {
 					sourceUid: detail.sourceUid,
 					currentCardId: detail.currentCardId,
 					onApply: detail.onApply,
+					flashcardManager: detail.flashcardManager,
 				});
 			},
 		});

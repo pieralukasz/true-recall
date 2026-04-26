@@ -23,22 +23,33 @@ function client(content: string): OpenRouterClient {
 describe("CardAIService", () => {
 	beforeEach(() => vi.clearAllMocks());
 
-	it("parses a valid JSON response", async () => {
+	it("parses a single-element JSON array response", async () => {
 		const r = await new CardAIService(
-			client(`{"Front":"Q","Back":"A"}`),
+			client(`[{"Front":"Q","Back":"A"}]`),
 		).transform({
 			fields: { Front: "q", Back: "" },
 			prompt: "P",
 		});
-		expect(r.fields).toEqual({ Front: "Q", Back: "A" });
+		expect(r.cards).toEqual([{ Front: "Q", Back: "A" }]);
 		expect(r.usage).toEqual({ promptTokens: 10, completionTokens: 20 });
 	});
 
-	it("strips ```json fences", async () => {
+	it("parses a multi-element JSON array response", async () => {
 		const r = await new CardAIService(
-			client('```json\n{"Front":"Q","Back":"A"}\n```'),
+			client(
+				`[{"Front":"Q1","Back":"A1"},{"Front":"Q2","Back":"A2"},{"Front":"Q3","Back":"A3"}]`,
+			),
 		).transform({ fields: { Front: "q", Back: "" }, prompt: "P" });
-		expect(r.fields).toEqual({ Front: "Q", Back: "A" });
+		expect(r.cards).toHaveLength(3);
+		expect(r.cards[0]).toEqual({ Front: "Q1", Back: "A1" });
+		expect(r.cards[2]).toEqual({ Front: "Q3", Back: "A3" });
+	});
+
+	it("strips ```json fences around an array", async () => {
+		const r = await new CardAIService(
+			client('```json\n[{"Front":"Q","Back":"A"}]\n```'),
+		).transform({ fields: { Front: "q", Back: "" }, prompt: "P" });
+		expect(r.cards).toEqual([{ Front: "Q", Back: "A" }]);
 	});
 
 	it("throws CardAIParseError on garbage", async () => {
@@ -50,20 +61,41 @@ describe("CardAIService", () => {
 		).rejects.toBeInstanceOf(CardAIParseError);
 	});
 
-	it("throws CardAIParseError when a requested key is missing", async () => {
+	it("throws CardAIParseError when a requested key is missing in any element", async () => {
 		await expect(
-			new CardAIService(client(`{"Front":"Q"}`)).transform({
+			new CardAIService(client(`[{"Front":"Q"}]`)).transform({
 				fields: { Front: "q", Back: "" },
 				prompt: "P",
 			}),
 		).rejects.toBeInstanceOf(CardAIParseError);
 	});
 
+	it("throws CardAIParseError on legacy single-object response (regression)", async () => {
+		await expect(
+			new CardAIService(client(`{"Front":"Q","Back":"A"}`)).transform({
+				fields: { Front: "q", Back: "" },
+				prompt: "P",
+			}),
+		).rejects.toBeInstanceOf(CardAIParseError);
+	});
+
+	it("sends temperature 0.7 in the chat request", async () => {
+		const c = client(`[{"Front":"Q","Back":"A"}]`);
+		await new CardAIService(c).transform({
+			fields: { Front: "q", Back: "" },
+			prompt: "P",
+		});
+		const chat = c.chat as ReturnType<typeof vi.fn>;
+		expect(chat).toHaveBeenCalledWith(
+			expect.objectContaining({ temperature: 0.7 }),
+		);
+	});
+
 	it("throws CardAIAbortedError when signal is pre-aborted", async () => {
 		const c = new AbortController();
 		c.abort();
 		await expect(
-			new CardAIService(client(`{"Front":"Q","Back":"A"}`)).transform({
+			new CardAIService(client(`[{"Front":"Q","Back":"A"}]`)).transform({
 				fields: { Front: "q", Back: "" },
 				prompt: "P",
 				signal: c.signal,
@@ -116,10 +148,19 @@ describe("CardAIService", () => {
 		).rejects.toBeInstanceOf(CardAIAbortedError);
 	});
 
-	it("tolerates JSON embedded in prose via brace-span fallback", async () => {
+	it("tolerates a JSON array embedded in prose via array-span fallback", async () => {
 		const r = await new CardAIService(
-			client('Sure! Here you go: {"Front":"Q","Back":"A"} Let me know.'),
+			client('Sure! Here you go: [{"Front":"Q","Back":"A"}] Let me know.'),
 		).transform({ fields: { Front: "q", Back: "" }, prompt: "P" });
-		expect(r.fields).toEqual({ Front: "Q", Back: "A" });
+		expect(r.cards).toEqual([{ Front: "Q", Back: "A" }]);
+	});
+
+	it("rejects a bracketed-number prose pattern (e.g. 'cards: [1] foo') — anchor requires { after [", async () => {
+		await expect(
+			new CardAIService(client("Here are cards: [1] one [2] two")).transform({
+				fields: { Front: "q", Back: "" },
+				prompt: "P",
+			}),
+		).rejects.toBeInstanceOf(CardAIParseError);
 	});
 });
