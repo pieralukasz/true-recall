@@ -518,6 +518,7 @@ export class ReviewView extends ItemView {
 				onOpenSourceNote: () => this.handleOpenSourceNote(),
 				onClose: () => this.handleClose(),
 				onNextSession: () => this.handleNextSession(),
+				onOpenDashboard: () => void this.handleOpenDashboard(),
 				onEndSession: () => {
 					/* handled in Preact component */
 				},
@@ -1032,5 +1033,10 @@ export class ReviewView extends ItemView {
 	private handleNextSession(): void {
 		this.leaf.detach();
 		void this.plugin.activateView();
+	}
+
+	private async handleOpenDashboard(): Promise<void> {
+		this.leaf.detach();
+		await this.plugin.openDashboard();
 	}
 }
