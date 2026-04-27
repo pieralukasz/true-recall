@@ -19,8 +19,8 @@ import {
 	finishStreaming,
 	type ScheduleCallback,
 	startStreaming,
-	streamingGeneration,
 } from "../state/streaming-state";
+import { enqueueGeneration } from "./generation-queue";
 import { resolveGenerationPresetAndNoteType } from "./preset-resolver";
 import {
 	type CardEventFlashcardManager,
@@ -77,16 +77,23 @@ export class StreamingGenerationService {
 		presetId: string,
 		options?: StreamingGenerationOptions,
 	): Promise<StreamingGenerationResult> {
+		return enqueueGeneration(() =>
+			this.generateQueued(text, sourceFile, presetId, options),
+		);
+	}
+
+	private async generateQueued(
+		text: string,
+		sourceFile: StreamingSourceFile,
+		presetId: string,
+		options?: StreamingGenerationOptions,
+	): Promise<StreamingGenerationResult> {
 		const settings = this.getSettings();
 		const { preset, noteType } = resolveGenerationPresetAndNoteType(
 			settings,
 			this.flashcardManager,
 			presetId,
 		);
-
-		if (streamingGeneration.value.isGenerating) {
-			throw new Error("Generation already in progress");
-		}
 
 		if (preset.requiresPro && !settings.proKey) {
 			throw new Error(

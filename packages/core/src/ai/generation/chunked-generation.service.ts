@@ -25,6 +25,7 @@ import {
 	startStreaming,
 	updateChunkProgress,
 } from "../state/streaming-state";
+import { enqueueGeneration } from "./generation-queue";
 import { resolveGenerationPresetAndNoteType } from "./preset-resolver";
 import { processCardEvents } from "./process-card-events";
 import {
@@ -102,13 +103,15 @@ export class ChunkedGenerationService {
 			};
 		}
 
-		return this.runChunkedGeneration(
-			chunkingResult,
-			sourceFile,
-			preset,
-			noteType,
-			options,
-			confirmLargeNote,
+		return enqueueGeneration(() =>
+			this.runChunkedGeneration(
+				chunkingResult,
+				sourceFile,
+				preset,
+				noteType,
+				options,
+				confirmLargeNote,
+			),
 		);
 	}
 
