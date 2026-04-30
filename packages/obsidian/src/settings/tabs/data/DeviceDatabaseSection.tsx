@@ -1,3 +1,4 @@
+import { normalizePath } from "obsidian";
 import { useCallback } from "preact/hooks";
 
 import {
@@ -9,6 +10,7 @@ import {
 } from "@true-recall/obsidian/components";
 import { DeviceSelectionModal } from "@true-recall/obsidian/modals/integration/DeviceSelectionModal";
 import { notify } from "@true-recall/obsidian/services/notification.service";
+import { DB_FOLDER, getDeviceDbFilename } from "@true-recall/core/persistence/sqlite/sqlite.types";
 
 import { useSettings } from "../../hooks/useSettings";
 
@@ -56,10 +58,6 @@ export function DeviceDatabaseSection() {
 			await plugin.backupService?.createBackup();
 
 			const currentDeviceId = plugin.deviceIdService?.getDeviceId();
-			const { normalizePath } = await import("obsidian");
-			const { DB_FOLDER, getDeviceDbFilename } = await import(
-				"@true-recall/core/persistence/sqlite/sqlite.types"
-			);
 
 			const targetPath = normalizePath(
 				`${DB_FOLDER}/${getDeviceDbFilename(currentDeviceId)}`,
