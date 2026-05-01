@@ -10,7 +10,7 @@ import type {
 	PresetImageConfig,
 	PresetTTSConfig,
 } from "../types/generation-preset.types";
-import type { TrueRecallSettings } from "../types/settings.types";
+import type { AITier, TrueRecallSettings } from "../types/settings.types";
 import { migrateCardPolishSettings } from "../types/settings-migration";
 
 interface LegacyGenerationPreset {
@@ -111,6 +111,50 @@ export function migrateSettings(raw: Partial<TrueRecallSettings> | null): {
 		: raw;
 	const settings: TrueRecallSettings = { ...DEFAULT_SETTINGS, ...migratedRaw };
 	let needsSave = false;
+
+	// Derive providerType if not set or invalid
+	if (
+		settings.providerType !== "pro" &&
+		settings.providerType !== "openrouter" &&
+		settings.providerType !== "custom" &&
+		settings.providerType !== "lmstudio"
+	) {
+		if (settings.proKey) {
+			settings.providerType = "pro";
+		} else if (settings.openRouterApiKey) {
+			settings.providerType = "openrouter";
+		} else {
+			settings.providerType = "openrouter";
+		}
+		needsSave = true;
+	}
+
+	// Derive providerType from available keys when providerType was not in raw data
+	if (!raw?.providerType) {
+		if (settings.proKey && settings.providerType !== "pro") {
+			settings.providerType = "pro";
+			needsSave = true;
+		} else if (
+			settings.openRouterApiKey &&
+			settings.providerType === "openrouter"
+		) {
+			// openrouter is the default — if they have a key, keep it
+		}
+	}
+
+	// Sync aiTier with providerType
+	const derivedTier: AITier =
+		settings.providerType === "pro"
+			? "pro"
+			: settings.providerType === "custom"
+				? "custom"
+				: settings.providerType === "lmstudio"
+					? "lmstudio"
+					: "byok";
+	if (settings.aiTier !== derivedTier) {
+		(settings as { aiTier: AITier }).aiTier = derivedTier;
+		needsSave = true;
+	}
 
 	// cardPolish bucket migration: drop legacy built-ins and rename presets → userPresets
 	const legacyPolish = (raw as { cardPolish?: { presets?: unknown } } | null)

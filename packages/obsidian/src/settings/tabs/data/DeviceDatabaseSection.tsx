@@ -2,6 +2,11 @@ import { normalizePath } from "obsidian";
 import { useCallback } from "preact/hooks";
 
 import {
+	DB_FOLDER,
+	getDeviceDbFilename,
+} from "@true-recall/core/persistence/sqlite/sqlite.types";
+
+import {
 	ActionButton,
 	FormCard,
 	FormField,
@@ -10,7 +15,6 @@ import {
 } from "@true-recall/obsidian/components";
 import { DeviceSelectionModal } from "@true-recall/obsidian/modals/integration/DeviceSelectionModal";
 import { notify } from "@true-recall/obsidian/services/notification.service";
-import { DB_FOLDER, getDeviceDbFilename } from "@true-recall/core/persistence/sqlite/sqlite.types";
 
 import { useSettings } from "../../hooks/useSettings";
 

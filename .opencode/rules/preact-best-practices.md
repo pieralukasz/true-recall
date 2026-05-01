@@ -1,11 +1,6 @@
----
-description: "Preact performance optimization and best-practice guidelines. Use when writing, reviewing, or refactoring Preact components, signals, hooks, or TypeScript+JSX code. Triggers on @preact/signals-core, useRef, useEffect, useErrorBoundary, rendering performance, SVG animation, Set/Map data structures, or cva component variants. Apply 33 rules across 7 categories prioritized by impact."
-mode: subagent
----
+## Preact Best Practices
 
-# Preact Best Practices
-
-Comprehensive performance optimization and correctness guide for Preact applications. 33 rules across 7 categories, prioritized by impact. Detailed rule files live in `.opencode/agents/preact-best-practices/rules/`. Read individual rules with the Read tool when relevant; do not load all of them upfront.
+Comprehensive performance optimization and correctness guide for Preact applications. 33 rules across 7 categories, prioritized by impact. Detailed rule files live in `.opencode/rules/preact-best-practices/rules/`. Read individual rules with the Read tool when relevant; do not load all of them upfront.
 
 ## When to Apply
 
@@ -89,9 +84,9 @@ Reference these guidelines when:
 Read the individual rule file relevant to the task:
 
 ```
-.opencode/agents/preact-best-practices/rules/signal-jsx-direct.md
-.opencode/agents/preact-best-practices/rules/rerender-keys.md
-.opencode/agents/preact-best-practices/rules/hooks-errorboundary.md
+.opencode/rules/preact-best-practices/rules/signal-jsx-direct.md
+.opencode/rules/preact-best-practices/rules/rerender-keys.md
+.opencode/rules/preact-best-practices/rules/hooks-errorboundary.md
 ```
 
 Each rule file contains:

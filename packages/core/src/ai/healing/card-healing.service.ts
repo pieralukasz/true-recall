@@ -1,5 +1,6 @@
 import type { IHttpClient } from "../../interfaces/http-client";
 import type { TrueRecallSettings } from "../../types/settings.types";
+import { buildAIHeaders } from "../clients/openrouter-client";
 import { resolveAIClientConfig } from "../config/ai-client-config";
 import type { HealCardInput, HealingSuggestion } from "./healing.types";
 import {
@@ -33,12 +34,11 @@ export class CardHealingService {
 			body.metadata = { call_context: "card-healing" };
 		}
 
-		const response = await this.httpClient.post(config.baseUrl, body, {
-			Authorization: `Bearer ${config.apiKey}`,
-			"Content-Type": "application/json",
-			"HTTP-Referer": "obsidian://true-recall",
-			"X-Title": "True Recall",
-		});
+		const response = await this.httpClient.post(
+			config.baseUrl,
+			body,
+			buildAIHeaders(config.apiKey, { providerType: config.providerType }),
+		);
 
 		const data = response.json as {
 			choices?: Array<{ message?: { content?: string } }>;

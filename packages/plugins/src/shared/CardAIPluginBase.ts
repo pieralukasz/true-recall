@@ -133,6 +133,7 @@ export abstract class CardAIPluginBase<TDetail extends CardAIBaseEventDetail> {
 			config.baseUrl,
 			undefined,
 			this.config.capabilityTag,
+			{ providerType: config.providerType },
 		);
 		return new CardAIService(client);
 	}

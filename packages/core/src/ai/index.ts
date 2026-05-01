@@ -12,6 +12,7 @@ export * from "./card-ai";
 export {
 	type AIClientOptions,
 	AIRequestError,
+	buildAIHeaders,
 	buildOpenRouterHeaders,
 	type ChatCompletionResponse,
 	type ChatMessage,

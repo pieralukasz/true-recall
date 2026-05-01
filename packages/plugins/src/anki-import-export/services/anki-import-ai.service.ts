@@ -22,6 +22,9 @@ export class AnkiImportAIService {
 			config.model,
 			httpClient,
 			config.baseUrl,
+			undefined,
+			undefined,
+			{ providerType: config.providerType },
 		);
 	}
 

@@ -35,6 +35,9 @@ export class FlashcardGenerationService {
 			config.model,
 			this.httpClient,
 			config.baseUrl,
+			undefined,
+			undefined,
+			{ providerType: config.providerType },
 		);
 
 		const systemPrompt = config.hasProTier

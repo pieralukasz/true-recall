@@ -342,3 +342,51 @@ describe("migrateSettings — generation preset migration", () => {
 		);
 	});
 });
+
+describe("providerType migration", () => {
+	it("derives providerType='pro' when proKey is present", () => {
+		const result = migrateSettings({
+			proKey: "pk_test",
+		} as unknown as Parameters<typeof migrateSettings>[0]);
+		expect(result.settings.providerType).toBe("pro");
+		expect(result.settings.aiTier).toBe("pro");
+		expect(result.needsSave).toBe(true);
+	});
+
+	it("derives providerType='openrouter' when openRouterApiKey is present", () => {
+		const result = migrateSettings({
+			openRouterApiKey: "sk_test",
+		} as unknown as Parameters<typeof migrateSettings>[0]);
+		expect(result.settings.providerType).toBe("openrouter");
+		expect(result.settings.aiTier).toBe("byok");
+		expect(result.needsSave).toBe(true);
+	});
+
+	it("defaults to openrouter when no keys are present", () => {
+		const result = migrateSettings(
+			{} as unknown as Parameters<typeof migrateSettings>[0],
+		);
+		expect(result.settings.providerType).toBe("openrouter");
+		expect(result.settings.aiTier).toBe("byok");
+		expect(result.needsSave).toBe(true);
+	});
+
+	it("preserves explicit providerType='custom'", () => {
+		const result = migrateSettings({
+			providerType: "custom",
+			customModel: "llama3",
+		} as unknown as Parameters<typeof migrateSettings>[0]);
+		expect(result.settings.providerType).toBe("custom");
+		expect(result.settings.aiTier).toBe("custom");
+		expect(result.settings.customModel).toBe("llama3");
+	});
+
+	it("syncs aiTier when providerType changes from pro to custom", () => {
+		const result = migrateSettings({
+			providerType: "custom",
+			aiTier: "pro" as AITier,
+			customModel: "gemma2",
+		} as unknown as Parameters<typeof migrateSettings>[0]);
+		expect(result.settings.aiTier).toBe("custom");
+	});
+});

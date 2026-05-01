@@ -81,6 +81,9 @@ export class SemanticAnswerGradingService {
 				config.model,
 				httpClient,
 				config.baseUrl,
+				undefined,
+				undefined,
+				{ providerType: config.providerType },
 			),
 	) {}
 

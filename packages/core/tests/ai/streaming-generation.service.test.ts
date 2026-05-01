@@ -53,6 +53,7 @@ function makeProSettings(
 ): TrueRecallSettings {
 	return {
 		proKey: "pro-key-abc",
+		providerType: "pro",
 		generationPresets: [basicPreset],
 		defaultGenerationPresetId: basicPreset.id,
 		...overrides,

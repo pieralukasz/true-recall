@@ -240,6 +240,8 @@ export class ChunkedGenerationService {
 			aiConfig.model,
 			this.httpClient,
 			aiConfig.baseUrl,
+			undefined,
+			{ providerType: aiConfig.providerType },
 		);
 		const getNoteType = (slug: string) =>
 			this.flashcardManager.getNoteTypeBySlug?.(slug) ?? null;

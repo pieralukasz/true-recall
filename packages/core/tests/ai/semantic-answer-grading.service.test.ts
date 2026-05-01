@@ -56,7 +56,10 @@ describe("SemanticAnswerGradingService", () => {
 	});
 
 	it("returns full feedback for Pro users", async () => {
-		const settings = createSettings({ proKey: "sk-pro-key" });
+		const settings = createSettings({
+			proKey: "sk-pro-key",
+			providerType: "pro",
+		});
 		const service = new SemanticAnswerGradingService(
 			() => settings,
 			dummyHttpClient,

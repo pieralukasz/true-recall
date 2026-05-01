@@ -1,6 +1,6 @@
 import type { IHttpClient } from "../../interfaces/http-client";
 import {
-	buildOpenRouterHeaders,
+	buildAIHeaders,
 	type ChatMessage,
 	OPENROUTER_URL,
 } from "./openrouter-client";
@@ -17,19 +17,27 @@ export interface StreamChunk {
 }
 
 export class StreamingOpenRouterClient {
+	private providerType: "pro" | "openrouter" | "custom" | "lmstudio";
+
 	constructor(
 		private apiKey: string,
 		private model: string,
 		private httpClient: IHttpClient,
 		private baseUrl: string = OPENROUTER_URL,
 		private userId?: string,
-	) {}
+		options?: { providerType?: "pro" | "openrouter" | "custom" | "lmstudio" },
+	) {
+		this.providerType = options?.providerType ?? "openrouter";
+	}
 
 	async *chatStream(
 		request: StreamingChatRequest,
 		signal?: AbortSignal,
 	): AsyncGenerator<StreamChunk> {
-		const headers = buildOpenRouterHeaders(this.apiKey, this.userId);
+		const headers = buildAIHeaders(this.apiKey, {
+			providerType: this.providerType,
+			userId: this.userId,
+		});
 
 		const stream = this.httpClient.stream(
 			this.baseUrl,

@@ -4,8 +4,11 @@ import { useEffect, useState } from "preact/hooks";
 import {
 	BYOK_MODELS,
 	CUSTOM_MODEL_ID,
+	DEFAULT_CUSTOM_BASE_URL,
+	DEFAULT_LMSTUDIO_BASE_URL,
 	TRUERECALL_WEB_URL,
 } from "@true-recall/core/constants";
+import type { AIProviderType } from "@true-recall/core/types/settings.types";
 
 import {
 	Clickable,
@@ -18,6 +21,13 @@ import {
 } from "@true-recall/obsidian/components";
 
 import { useSettings } from "../hooks/useSettings";
+
+const PROVIDER_OPTIONS: Array<{ value: string; label: string }> = [
+	{ value: "pro", label: "True Recall Pro (Recommended)" },
+	{ value: "openrouter", label: "OpenRouter (BYOK)" },
+	{ value: "lmstudio", label: "LM Studio (Local)" },
+	{ value: "custom", label: "Custom Provider (Self-hosted)" },
+];
 
 const MODEL_OPTIONS = [
 	...BYOK_MODELS.map((m) => ({
@@ -49,6 +59,45 @@ async function verifyProKey(key: string): Promise<KeyStatus> {
 	}
 }
 
+function useLMStudioModels(baseUrl: string, enabled: boolean) {
+	const [models, setModels] = useState<string[]>([]);
+	const [status, setStatus] = useState<"idle" | "loading" | "ready" | "error">(
+		"idle",
+	);
+	const [refreshKey, setRefreshKey] = useState(0);
+
+	useEffect(() => {
+		if (!enabled) {
+			setModels([]);
+			setStatus("idle");
+			return;
+		}
+
+		let cancelled = false;
+		setStatus("loading");
+
+		requestUrl({ url: `${baseUrl}/models` })
+			.then((res) => {
+				if (cancelled) return;
+				const data = res.json;
+				const ids = (data.data ?? []).map((m: { id: string }) => m.id);
+				setModels(ids);
+				setStatus("ready");
+			})
+			.catch(() => {
+				if (cancelled) return;
+				setModels([]);
+				setStatus("error");
+			});
+
+		return () => {
+			cancelled = true;
+		};
+	}, [baseUrl, enabled, refreshKey]);
+
+	return { models, status, refetch: () => setRefreshKey((k) => k + 1) };
+}
+
 export function AIProviderSection() {
 	const { settings, save } = useSettings();
 
@@ -59,6 +108,11 @@ export function AIProviderSection() {
 	const currentModel = settings.aiModel || BYOK_MODELS[0]?.id || "";
 	const modelDefault = getModelDefault(currentModel);
 	const effectiveTemp = settings.aiTemperature ?? modelDefault;
+
+	const lmState = useLMStudioModels(
+		settings.lmStudioBaseUrl || DEFAULT_LMSTUDIO_BASE_URL,
+		settings.providerType === "lmstudio",
+	);
 
 	useEffect(() => {
 		if (!settings.proKey) {
@@ -92,69 +146,95 @@ export function AIProviderSection() {
 
 	return (
 		<FormCard>
-			<div class="ep:text-ui-smaller ep:text-obs-muted ep:leading-relaxed ep:pb-2 ep:mb-2 ep:border-b ep:border-obs-modifier-border">
-				<p class="ep:font-medium ep:text-obs-normal">
-					Zero setup, optimized results
-				</p>
-				<p class="ep:mt-1">
-					Optimized prompts and model selection managed server-side. AI budget
-					included with your subscription.
-				</p>
-			</div>
-
 			<FormField
-				name="Pro Key"
-				description={
-					<span>
-						Get your key at{" "}
-						<a
-							href={`${TRUERECALL_WEB_URL}/dashboard`}
-							class="ep:text-obs-accent"
-						>
-							truerecall.app/dashboard
-						</a>
-					</span>
-				}
+				name="AI Provider"
+				description="Choose where AI requests are routed"
 			>
-				<TextInput
-					value={settings.proKey ?? ""}
-					onChange={(v) =>
-						void save({ proKey: v.trim().length > 0 ? v.trim() : undefined })
-					}
-					type="password"
-					placeholder="Paste key from dashboard"
-					class="ep:w-[300px]"
+				<SelectInput
+					value={settings.providerType}
+					onChange={(v) => void save({ providerType: v as AIProviderType })}
+					options={PROVIDER_OPTIONS}
 				/>
 			</FormField>
-			{keyStatus === "checking" && <InfoBlock>Verifying key…</InfoBlock>}
-			{keyStatus === "valid" && (
-				<InfoBlock>Active — AI routed via True Recall servers.</InfoBlock>
-			)}
-			{keyStatus === "invalid" && (
-				<InfoBlock class="ep:text-obs-error">
-					Invalid key — check your key on the{" "}
-					<a
-						href={`${TRUERECALL_WEB_URL}/dashboard`}
-						class="ep:text-obs-accent"
+
+			{settings.providerType === "pro" && (
+				<>
+					<div class="ep:text-ui-smaller ep:text-obs-muted ep:leading-relaxed ep:pb-2 ep:mb-2 ep:border-b ep:border-obs-modifier-border">
+						<p class="ep:font-medium ep:text-obs-normal">
+							Zero setup, optimized results
+						</p>
+						<p class="ep:mt-1">
+							Optimized prompts and model selection managed server-side. AI
+							budget included with your subscription.
+						</p>
+					</div>
+
+					<FormField
+						name="Pro Key"
+						description={
+							<span>
+								Get your key at{" "}
+								<a
+									href={`${TRUERECALL_WEB_URL}/dashboard`}
+									class="ep:text-obs-accent"
+								>
+									truerecall.app/dashboard
+								</a>
+							</span>
+						}
 					>
-						dashboard
-					</a>
-					.
-				</InfoBlock>
+						<TextInput
+							value={settings.proKey ?? ""}
+							onChange={(v) =>
+								void save({
+									proKey: v.trim().length > 0 ? v.trim() : undefined,
+								})
+							}
+							type="password"
+							placeholder="Paste key from dashboard"
+							class="ep:w-[300px]"
+						/>
+					</FormField>
+					{keyStatus === "checking" && <InfoBlock>Verifying key…</InfoBlock>}
+					{keyStatus === "valid" && (
+						<InfoBlock>Active — AI routed via True Recall servers.</InfoBlock>
+					)}
+					{keyStatus === "invalid" && (
+						<InfoBlock class="ep:text-obs-error">
+							Invalid key — check your key on the{" "}
+							<a
+								href={`${TRUERECALL_WEB_URL}/dashboard`}
+								class="ep:text-obs-accent"
+							>
+								dashboard
+							</a>
+							.
+						</InfoBlock>
+					)}
+					{keyStatus === "error" && (
+						<InfoBlock>
+							Could not verify key — check your internet connection and try
+							again.
+						</InfoBlock>
+					)}
+				</>
 			)}
-			{keyStatus === "error" && (
-				<InfoBlock>
-					Could not verify key — check your internet connection and try again.
-				</InfoBlock>
-			)}
-			<details class="ep:mt-2">
-				<summary class="ep:cursor-pointer ep:text-ui-small ep:text-obs-muted ep:select-none ep:py-1">
-					Advanced
-				</summary>
-				<div class="ep:mt-1">
+
+			{settings.providerType === "openrouter" && (
+				<>
+					<div class="ep:text-ui-smaller ep:text-obs-muted ep:leading-relaxed ep:pb-2 ep:mb-2 ep:border-b ep:border-obs-modifier-border">
+						<p class="ep:font-medium ep:text-obs-normal">
+							Bring your own API key
+						</p>
+						<p class="ep:mt-1">
+							You pay OpenRouter directly per token. Full control over model
+							selection.
+						</p>
+					</div>
+
 					<FormField
 						name="OpenRouter API key"
-						description="Your own API key — you pay OpenRouter directly per token. Also used as fallback when Pro budget is exhausted."
+						description="Your own API key — you pay OpenRouter directly per token."
 					>
 						<TextInput
 							value={settings.openRouterApiKey}
@@ -220,8 +300,180 @@ export function AIProviderSection() {
 							formatTooltip={(v) => v.toFixed(1)}
 						/>
 					</FormField>
-				</div>
-			</details>
+				</>
+			)}
+
+			{settings.providerType === "lmstudio" && (
+				<>
+					<div class="ep:text-ui-smaller ep:text-obs-muted ep:leading-relaxed ep:pb-2 ep:mb-2 ep:border-b ep:border-obs-modifier-border">
+						<p class="ep:font-medium ep:text-obs-normal">
+							Run models locally with LM Studio
+						</p>
+						<p class="ep:mt-1">
+							Models are auto-discovered from your running LM Studio server.{" "}
+							<a href="https://lmstudio.ai" class="ep:text-obs-accent">
+								Download LM Studio
+							</a>
+						</p>
+					</div>
+
+					<FormField name="Base URL" description="LM Studio server endpoint">
+						<TextInput
+							value={settings.lmStudioBaseUrl || DEFAULT_LMSTUDIO_BASE_URL}
+							onChange={(v) => void save({ lmStudioBaseUrl: v })}
+							placeholder="http://localhost:1234/v1"
+							class="ep:w-[300px]"
+						/>
+					</FormField>
+
+					<FormField
+						name="Model"
+						description="Select from models loaded in LM Studio"
+					>
+						{lmState.status === "loading" && (
+							<InfoBlock>Discovering models…</InfoBlock>
+						)}
+						{lmState.status === "error" && (
+							<>
+								<InfoBlock class="ep:text-obs-error">
+									Can't connect to LM Studio — is the server running?
+								</InfoBlock>
+								<TextInput
+									value={settings.lmStudioModel}
+									onChange={(v) => void save({ lmStudioModel: v })}
+									placeholder="e.g. llama-3.2-3b-instruct"
+									class="ep:w-[300px] ep:mt-2"
+								/>
+							</>
+						)}
+						{lmState.status === "ready" && lmState.models.length > 0 && (
+							<>
+								<SelectInput
+									value={settings.lmStudioModel}
+									onChange={(v) => void save({ lmStudioModel: v })}
+									options={lmState.models.map((id) => ({
+										value: id,
+										label: id,
+									}))}
+								/>
+								<Clickable
+									class="ep:text-obs-accent ep:text-ui-smaller ep:mt-1"
+									onClick={lmState.refetch}
+								>
+									Refresh models
+								</Clickable>
+							</>
+						)}
+						{lmState.status === "ready" && lmState.models.length === 0 && (
+							<>
+								<InfoBlock>
+									No models found — load a model in LM Studio first.
+								</InfoBlock>
+								<TextInput
+									value={settings.lmStudioModel}
+									onChange={(v) => void save({ lmStudioModel: v })}
+									placeholder="e.g. llama-3.2-3b-instruct"
+									class="ep:w-[300px] ep:mt-2"
+								/>
+							</>
+						)}
+					</FormField>
+
+					<FormField
+						name="API Key"
+						description="Optional — only needed if you enabled authentication in LM Studio"
+					>
+						<TextInput
+							value={settings.lmStudioApiKey ?? ""}
+							onChange={(v) =>
+								void save({
+									lmStudioApiKey: v.trim().length > 0 ? v.trim() : undefined,
+								})
+							}
+							type="password"
+							placeholder="Leave empty if not required"
+							class="ep:w-[300px]"
+						/>
+					</FormField>
+
+					<FormField name="Temperature" description="Controls randomness (0–2)">
+						<SliderInput
+							value={settings.lmStudioTemperature ?? 0.7}
+							onChange={(v) => void save({ lmStudioTemperature: v })}
+							min={0}
+							max={2}
+							step={0.1}
+							formatTooltip={(v) => v.toFixed(1)}
+						/>
+					</FormField>
+				</>
+			)}
+
+			{settings.providerType === "custom" && (
+				<>
+					<div class="ep:text-ui-smaller ep:text-obs-muted ep:leading-relaxed ep:pb-2 ep:mb-2 ep:border-b ep:border-obs-modifier-border">
+						<p class="ep:font-medium ep:text-obs-normal">
+							Self-hosted / local models
+						</p>
+						<p class="ep:mt-1">
+							Connect to Ollama, LM Studio, vLLM, or any OpenAI-compatible
+							endpoint.
+						</p>
+					</div>
+
+					<FormField
+						name="Base URL"
+						description="OpenAI-compatible API endpoint"
+					>
+						<TextInput
+							value={settings.customBaseUrl || DEFAULT_CUSTOM_BASE_URL}
+							onChange={(v) => void save({ customBaseUrl: v })}
+							placeholder="http://localhost:11434/v1"
+							class="ep:w-[300px]"
+						/>
+					</FormField>
+
+					<FormField
+						name="Model Name"
+						description="The model identifier (e.g. llama3, mistral)"
+					>
+						<TextInput
+							value={settings.customModel}
+							onChange={(v) => void save({ customModel: v })}
+							placeholder="e.g. llama3"
+							class="ep:w-[300px]"
+						/>
+					</FormField>
+
+					<FormField
+						name="API Key"
+						description="Optional — many local setups don't need authentication"
+					>
+						<TextInput
+							value={settings.customApiKey ?? ""}
+							onChange={(v) =>
+								void save({
+									customApiKey: v.trim().length > 0 ? v.trim() : undefined,
+								})
+							}
+							type="password"
+							placeholder="Leave empty if not required"
+							class="ep:w-[300px]"
+						/>
+					</FormField>
+
+					<FormField name="Temperature" description="Controls randomness (0–2)">
+						<SliderInput
+							value={settings.customTemperature ?? 0.7}
+							onChange={(v) => void save({ customTemperature: v })}
+							min={0}
+							max={2}
+							step={0.1}
+							formatTooltip={(v) => v.toFixed(1)}
+						/>
+					</FormField>
+				</>
+			)}
 		</FormCard>
 	);
 }
