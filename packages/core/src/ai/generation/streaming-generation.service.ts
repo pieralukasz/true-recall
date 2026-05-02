@@ -59,6 +59,8 @@ export interface StreamingFlashcardManager extends CardEventFlashcardManager {
 
 export interface StreamingGenerationOptions {
 	existingCards?: ExistingCardContext[];
+	/** Pre-rendered context text (source note content + related cards) to inject into the system prompt. */
+	contextText?: string;
 }
 
 export class StreamingGenerationService {
@@ -149,10 +151,13 @@ export class StreamingGenerationService {
 		const existingCardsBlock = renderExistingCardsBlock(
 			options?.existingCards ?? [],
 		);
-		const systemPrompt = rawSystemPrompt.replace(
+		let systemPrompt = rawSystemPrompt.replace(
 			"{{EXISTING_CARDS}}",
 			existingCardsBlock,
 		);
+		if (options?.contextText?.trim()) {
+			systemPrompt = `${options.contextText.trim()}\n\n${systemPrompt}`;
+		}
 
 		const metadata = aiConfig.hasProTier
 			? {

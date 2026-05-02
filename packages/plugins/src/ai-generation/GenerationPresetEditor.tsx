@@ -88,6 +88,8 @@ function presetSummary(
 	if (noteType) parts.push(noteType.name);
 	if (preset.tts) parts.push(`TTS: ${preset.tts.field}`);
 	if (preset.image) parts.push(`Image: ${preset.image.targetField}`);
+	if (preset.includeSourceNote) parts.push("+source");
+	if (preset.includeRelatedCards) parts.push("+related");
 	return parts.join(" • ");
 }
 
@@ -137,6 +139,9 @@ export function GenerationPresetEditor({
 		onChange?.({ ...preset, ...partial, updatedAt: Date.now() });
 
 	const fieldOptions = noteType?.fields ?? [];
+
+	const sourceNoteId = `gen-source-note-${preset.id}`;
+	const relatedCardsId = `gen-related-cards-${preset.id}`;
 
 	return (
 		<div class="ep:flex ep:flex-col ep:gap-3 ep:p-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary">
@@ -217,6 +222,54 @@ export function GenerationPresetEditor({
 					Describe what cards to generate. The system appends "Fields to fill:{" "}
 					{fieldOptions.join(", ")}" and a JSON format spec.
 				</span>
+			</div>
+
+			<div class="ep:flex ep:flex-col ep:gap-2 ep:p-2 ep:border ep:border-obs-border ep:rounded">
+				<span class="ep:text-ui-smaller ep:text-obs-muted ep:font-medium">
+					Context (opt-in)
+				</span>
+				<label
+					for={sourceNoteId}
+					class="ep:flex ep:items-start ep:gap-2 ep:text-ui-small ep:cursor-pointer"
+				>
+					<input
+						id={sourceNoteId}
+						type="checkbox"
+						checked={!!preset.includeSourceNote}
+						onChange={(e) =>
+							patch({
+								includeSourceNote: (e.target as HTMLInputElement).checked,
+							})
+						}
+					/>
+					<span class="ep:flex ep:flex-col">
+						<span>Include source note content</span>
+						<span class="ep:text-ui-smaller ep:text-obs-muted">
+							Increases cost and latency — improves quality
+						</span>
+					</span>
+				</label>
+				<label
+					for={relatedCardsId}
+					class="ep:flex ep:items-start ep:gap-2 ep:text-ui-small ep:cursor-pointer"
+				>
+					<input
+						id={relatedCardsId}
+						type="checkbox"
+						checked={!!preset.includeRelatedCards}
+						onChange={(e) =>
+							patch({
+								includeRelatedCards: (e.target as HTMLInputElement).checked,
+							})
+						}
+					/>
+					<span class="ep:flex ep:flex-col">
+						<span>Include related flashcards from the same source</span>
+						<span class="ep:text-ui-smaller ep:text-obs-muted">
+							Increases cost and latency — improves quality
+						</span>
+					</span>
+				</label>
 			</div>
 
 			<div class="ep:flex ep:flex-col ep:gap-2 ep:p-2 ep:border ep:border-obs-border ep:rounded ep:bg-obs-secondary ep:opacity-70">

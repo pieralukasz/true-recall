@@ -130,6 +130,8 @@ export class GenerationPresetService {
 			"image",
 			"requiresPro",
 			"isDefault",
+			"includeSourceNote",
+			"includeRelatedCards",
 		];
 		for (const key of Object.keys(patch)) {
 			if (!allowedKeys.includes(key as keyof UpdateGenerationPresetPatch)) {

@@ -67,7 +67,7 @@ export class ChunkedGenerationService {
 		content: string,
 		sourceFile: StreamingSourceFile,
 		presetId: string,
-		options?: { existingCards?: ExistingCardContext[] },
+		options?: { existingCards?: ExistingCardContext[]; contextText?: string },
 		confirmLargeNote?: ConfirmLargeNote,
 	): Promise<ChunkedGenerationResult> {
 		const settings = this.getSettings();
@@ -117,7 +117,10 @@ export class ChunkedGenerationService {
 		sourceFile: StreamingSourceFile,
 		preset: GenerationPreset,
 		noteType: NoteType,
-		options?: { existingCards?: ExistingCardContext[] },
+		options?: {
+			existingCards?: ExistingCardContext[];
+			contextText?: string;
+		},
 		confirmLargeNote?: ConfirmLargeNote,
 	): Promise<ChunkedGenerationResult> {
 		const { chunks, totalWords, estimatedTokens } = chunkingResult;
@@ -157,10 +160,13 @@ export class ChunkedGenerationService {
 		const existingCardsBlock = renderExistingCardsBlock(
 			options?.existingCards ?? [],
 		);
-		const systemPrompt = rawSystemPrompt.replace(
+		let systemPrompt = rawSystemPrompt.replace(
 			"{{EXISTING_CARDS}}",
 			existingCardsBlock,
 		);
+		if (options?.contextText?.trim()) {
+			systemPrompt = `${options.contextText.trim()}\n\n${systemPrompt}`;
+		}
 
 		let totalCreated = 0;
 		let totalDuplicates = 0;

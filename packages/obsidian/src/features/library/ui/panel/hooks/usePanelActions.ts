@@ -9,6 +9,7 @@ import { ForgetCommand } from "@true-recall/obsidian/commands/commands/card-forg
 import { getHighlightColor } from "@true-recall/obsidian/features/library/ui/panel/utils/card-status.utils";
 import { extractHighlights } from "@true-recall/obsidian/features/library/ui/panel/utils/highlight-extractor";
 import { cardsToBlockText } from "@true-recall/obsidian/features/library/ui/panel/utils/panel-helpers";
+import { collectGenerationContext } from "@true-recall/obsidian/plugin/collect-generation-context";
 import { fetchExistingCardsForFile } from "@true-recall/obsidian/plugin/existing-cards-fetcher";
 import { runPresetPostProcessing } from "@true-recall/obsidian/plugin/generation-post-processing";
 import { useApp, usePlugin } from "@true-recall/obsidian/preact";
@@ -39,6 +40,13 @@ export function usePanelActions() {
 			return;
 		}
 
+		const preset = plugin.settings.generationPresets.find(
+			(p) => p.id === plugin.settings.defaultGenerationPresetId,
+		);
+		const contextText = preset
+			? await collectGenerationContext(plugin, preset, currentFile)
+			: undefined;
+
 		const { ChunkedGenerationService } = await import(
 			"@true-recall/core/ai/generation/chunked-generation.service"
 		);
@@ -61,7 +69,7 @@ export function usePanelActions() {
 				content,
 				currentFile,
 				plugin.settings.defaultGenerationPresetId,
-				{ existingCards },
+				{ existingCards, contextText },
 			);
 
 			if (result.created === 0 && result.duplicates === 0) {
@@ -142,6 +150,13 @@ export function usePanelActions() {
 
 		const joinedHighlights = newHighlights.join("\n\n");
 
+		const preset = plugin.settings.generationPresets.find(
+			(p) => p.id === plugin.settings.defaultGenerationPresetId,
+		);
+		const contextText = preset
+			? await collectGenerationContext(plugin, preset, currentFile)
+			: undefined;
+
 		const { StreamingGenerationService } = await import(
 			"@true-recall/core/ai/generation/streaming-generation.service"
 		);
@@ -160,6 +175,7 @@ export function usePanelActions() {
 				joinedHighlights,
 				currentFile,
 				plugin.settings.defaultGenerationPresetId,
+				{ contextText },
 			);
 
 			if (result.created === 0 && result.duplicates === 0) {

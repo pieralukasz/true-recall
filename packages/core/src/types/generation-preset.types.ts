@@ -23,6 +23,10 @@ export interface GenerationPreset {
 	/** Ships with the plugin; user cannot edit or delete. */
 	builtin: boolean;
 	isDefault: boolean;
+	/** Include the full source note content as context for the AI. */
+	includeSourceNote?: boolean;
+	/** Include sibling flashcards from the same source note as context. */
+	includeRelatedCards?: boolean;
 	createdAt: number;
 	updatedAt: number;
 }
@@ -42,5 +46,7 @@ export type UpdateGenerationPresetPatch = Partial<
 		| "image"
 		| "requiresPro"
 		| "isDefault"
+		| "includeSourceNote"
+		| "includeRelatedCards"
 	>
 >;

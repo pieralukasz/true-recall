@@ -9,6 +9,7 @@ import { notify } from "@true-recall/obsidian/services/notification.service";
 
 import { ObsidianHttpClient } from "../adapters/ObsidianHttpClient";
 import type TrueRecallPlugin from "../main";
+import { collectGenerationContext } from "./collect-generation-context";
 import { fetchExistingCardsForFile } from "./existing-cards-fetcher";
 import { runPresetPostProcessing } from "./generation-post-processing";
 import { normalizeSelectionForFlashcard } from "./normalize-selection";
@@ -226,8 +227,10 @@ export async function generateWithPreset(
 		await plugin.activateView();
 		const service = getStreamingService(plugin);
 		const existingCards = await fetchExistingCardsForFile(plugin, file);
+		const contextText = await collectGenerationContext(plugin, preset, file);
 		const result = await service.generate(text, file, preset.id, {
 			existingCards,
+			contextText,
 		});
 
 		runPresetPostProcessing(plugin, preset, result.createdCardIds);
@@ -276,8 +279,10 @@ export async function generateWithPresetGlobal(
 		await plugin.activateView();
 		const service = getStreamingService(plugin);
 		const existingCards = await fetchExistingCardsForFile(plugin, file);
+		const contextText = await collectGenerationContext(plugin, preset, file);
 		const result = await service.generate(text, file, preset.id, {
 			existingCards,
+			contextText,
 		});
 
 		runPresetPostProcessing(plugin, preset, result.createdCardIds);
