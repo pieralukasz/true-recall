@@ -202,6 +202,10 @@ export interface TrueRecallSettings {
 	lmStudioApiKey?: string;
 	/** LM Studio temperature override (0-2) */
 	lmStudioTemperature?: number;
+	/** Optional LM Studio model override for AI Flashcard Generation */
+	lmStudioGenerationModel: string;
+	/** Optional LM Studio model override for Card Polish */
+	lmStudioCardPolishModel: string;
 
 	/** User-created Card Polish presets (built-ins live in the plugin, not here). */
 	cardPolish?: CardAIUserSettings;

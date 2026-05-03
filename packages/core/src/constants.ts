@@ -140,6 +140,8 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 	lmStudioModel: "",
 	lmStudioApiKey: undefined,
 	lmStudioTemperature: undefined,
+	lmStudioGenerationModel: "",
+	lmStudioCardPolishModel: "",
 	openRouterApiKey: "",
 	aiModel: DEFAULT_BYOK_MODEL,
 	aiTier: "byok",

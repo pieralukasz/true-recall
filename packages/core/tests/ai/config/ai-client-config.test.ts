@@ -11,6 +11,89 @@ function s(overrides: Partial<TrueRecallSettings> = {}): TrueRecallSettings {
 	return { ...DEFAULT_SETTINGS, ...overrides };
 }
 
+describe("lmstudio scoped overrides", () => {
+	it("uses generation override for generation scope", () => {
+		const config = resolveAIClientConfig(
+			s({
+				providerType: "lmstudio",
+				lmStudioModel: "global-model",
+				lmStudioGenerationModel: "generation-model",
+				lmStudioCardPolishModel: "polish-model",
+			}),
+			"generation",
+		);
+
+		expect(config.model).toBe("generation-model");
+	});
+
+	it("uses card polish override for card-polish scope", () => {
+		const config = resolveAIClientConfig(
+			s({
+				providerType: "lmstudio",
+				lmStudioModel: "global-model",
+				lmStudioGenerationModel: "generation-model",
+				lmStudioCardPolishModel: "polish-model",
+			}),
+			"card-polish",
+		);
+
+		expect(config.model).toBe("polish-model");
+	});
+
+	it("falls back to global lmStudioModel when scoped override is empty", () => {
+		const config = resolveAIClientConfig(
+			s({
+				providerType: "lmstudio",
+				lmStudioModel: "global-model",
+				lmStudioGenerationModel: "",
+			}),
+			"generation",
+		);
+
+		expect(config.model).toBe("global-model");
+	});
+});
+
+describe("hasAIKey scoped overrides", () => {
+	it("returns true for generation scope when only generation override is set", () => {
+		expect(
+			hasAIKey(
+				s({
+					providerType: "lmstudio",
+					lmStudioModel: "",
+					lmStudioGenerationModel: "generation-model",
+				}),
+				"generation",
+			),
+		).toBe(true);
+	});
+
+	it("returns true for card-polish scope when only card polish override is set", () => {
+		expect(
+			hasAIKey(
+				s({
+					providerType: "lmstudio",
+					lmStudioModel: "",
+					lmStudioCardPolishModel: "polish-model",
+				}),
+				"card-polish",
+			),
+		).toBe(true);
+	});
+
+	it("keeps default scope on the global lmStudioModel only", () => {
+		expect(
+			hasAIKey(
+				s({
+					providerType: "lmstudio",
+					lmStudioModel: "",
+					lmStudioGenerationModel: "generation-model",
+				}),
+			),
+		).toBe(false);
+	});
+});
+
 describe("resolveAIClientConfig", () => {
 	describe("pro provider", () => {
 		it("returns pro config when proKey is set", () => {

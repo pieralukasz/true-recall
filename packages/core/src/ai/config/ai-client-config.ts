@@ -11,6 +11,8 @@ import { OPENROUTER_URL } from "../clients/openrouter-client";
 
 const PRO_MODEL = "auto";
 
+export type AIConfigScope = "default" | "generation" | "card-polish";
+
 export interface AIClientConfig {
 	apiKey: string;
 	model: string;
@@ -26,8 +28,28 @@ function resolveByokTemperature(settings: TrueRecallSettings): number {
 	return model?.defaultTemperature ?? 0.7;
 }
 
+function resolveLmStudioModel(
+	settings: TrueRecallSettings,
+	scope: AIConfigScope,
+): string {
+	if (scope === "generation") {
+		return (
+			settings.lmStudioGenerationModel.trim() || settings.lmStudioModel.trim()
+		);
+	}
+
+	if (scope === "card-polish") {
+		return (
+			settings.lmStudioCardPolishModel.trim() || settings.lmStudioModel.trim()
+		);
+	}
+
+	return settings.lmStudioModel.trim();
+}
+
 export function resolveAIClientConfig(
 	settings: TrueRecallSettings,
+	scope: AIConfigScope = "default",
 ): AIClientConfig {
 	switch (settings.providerType) {
 		case "pro": {
@@ -45,13 +67,15 @@ export function resolveAIClientConfig(
 		}
 
 		case "lmstudio": {
-			if (!settings.lmStudioModel) {
+			const lmStudioModel = resolveLmStudioModel(settings, scope);
+			if (!lmStudioModel) {
 				throw new Error("LM Studio model is not configured.");
 			}
+
 			const lmBaseUrl = settings.lmStudioBaseUrl || DEFAULT_LMSTUDIO_BASE_URL;
 			return {
 				apiKey: settings.lmStudioApiKey || "lm-studio",
-				model: settings.lmStudioModel,
+				model: lmStudioModel,
 				baseUrl: lmBaseUrl.endsWith("/chat/completions")
 					? lmBaseUrl
 					: `${lmBaseUrl.replace(/\/$/, "")}/chat/completions`,
@@ -97,12 +121,15 @@ export function resolveAIClientConfig(
 	}
 }
 
-export function hasAIKey(settings: TrueRecallSettings): boolean {
+export function hasAIKey(
+	settings: TrueRecallSettings,
+	scope: AIConfigScope = "default",
+): boolean {
 	switch (settings.providerType) {
+		case "lmstudio":
+			return resolveLmStudioModel(settings, scope).length > 0;
 		case "pro":
 			return !!settings.proKey?.trim();
-		case "lmstudio":
-			return !!settings.lmStudioModel?.trim();
 		case "custom":
 			return !!settings.customModel?.trim();
 		// biome-ignore lint/complexity/noUselessSwitchCase: openrouter is the documented default
@@ -111,7 +138,7 @@ export function hasAIKey(settings: TrueRecallSettings): boolean {
 			return !!(
 				settings.proKey?.trim() ||
 				settings.openRouterApiKey?.trim() ||
-				settings.lmStudioModel?.trim() ||
+				resolveLmStudioModel(settings, scope).trim().length > 0 ||
 				settings.customModel?.trim()
 			);
 	}
