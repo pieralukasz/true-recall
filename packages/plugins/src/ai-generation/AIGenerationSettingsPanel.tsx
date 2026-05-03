@@ -13,6 +13,7 @@ import { usePlugin } from "@true-recall/obsidian/preact";
 
 import type { PluginSettingsProps } from "../types";
 import { GenerationPresetEditor } from "./GenerationPresetEditor";
+import { LMStudioScopedModelField } from "../shared/LMStudioScopedModelField";
 
 function makeId(): string {
 	return `preset-${Math.random().toString(36).slice(2, 10)}`;
@@ -104,6 +105,14 @@ export function AIGenerationSettingsPanel({
 
 	return (
 		<>
+			<LMStudioScopedModelField
+				settings={settings}
+				save={save}
+				modelKey="lmStudioGenerationModel"
+				name="LM Studio model"
+				description="Used only by AI Flashcard Generation when LM Studio is the selected provider."
+			/>
+
 			<div class="ep:flex ep:gap-2 ep:items-start ep:mt-2 ep:p-2.5 ep:border-l-2 ep:border-obs-accent ep:bg-obs-accent/8 ep:rounded-r-md">
 				<span class="ep:text-ui-smaller ep:text-obs-normal ep:leading-relaxed">
 					Presets don't show up in the UI automatically. To use a preset, open

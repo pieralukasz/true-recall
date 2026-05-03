@@ -24,6 +24,12 @@ export const cardPolishManifest: PluginManifest = {
 		builtins: CARD_POLISH_BUILTINS,
 		description:
 			"Polish presets work in review and in the Add Flashcard modal.",
+		lmStudioField: {
+			modelKey: "lmStudioCardPolishModel",
+			name: "LM Studio model",
+			description:
+				"Used only by Card Polish when LM Studio is the selected provider.",
+		},
 	}),
 	activate: (ctx) => {
 		const plugin = new CardPolishPlugin(ctx);

@@ -15,12 +15,18 @@ import {
 
 import type { PluginSettingsProps } from "../types";
 import { CardAIPresetEditor } from "./CardAIPresetEditor";
+import { LMStudioScopedModelField } from "./LMStudioScopedModelField";
 
 export interface CardAIPanelConfig {
 	bucketKey: "cardPolish";
 	/** Never persisted — live in plugin code, not in settings. */
 	builtins: CardAIPreset[];
 	description: string;
+	lmStudioField?: {
+		modelKey: "lmStudioCardPolishModel";
+		name: string;
+		description: string;
+	};
 }
 
 const EMPTY_BUCKET: CardAIUserSettings = {
@@ -153,6 +159,16 @@ export function createCardAISettingsPanel(
 						onChange={(v) => persist({ ...bucket, customPromptAutoApply: v })}
 					/>
 				</FormField>
+
+				{config.lmStudioField && (
+					<LMStudioScopedModelField
+						settings={settings}
+						save={save}
+						modelKey={config.lmStudioField.modelKey}
+						name={config.lmStudioField.name}
+						description={config.lmStudioField.description}
+					/>
+				)}
 
 				{visibleBuiltins.length > 0 && (
 					<div class="ep:flex ep:flex-col ep:gap-3 ep:mt-4">
