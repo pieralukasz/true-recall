@@ -147,7 +147,7 @@ export class ChunkedGenerationService {
 		);
 
 		const settings = this.getSettings();
-		const aiConfig = resolveAIClientConfig(settings);
+		const aiConfig = resolveAIClientConfig(settings, "generation");
 		// Prompts containing the {{EXISTING_CARDS}} placeholder are authoritative
 		// full system prompts (e.g. built-in Pro preset) — use verbatim and send
 		// the format spec as the user message so format instructions still reach

@@ -117,12 +117,10 @@ export abstract class CardAIPluginBase<TDetail extends CardAIBaseEventDetail> {
 	private buildService(): CardAIService | null {
 		let config: AIClientConfig;
 		try {
-			config = resolveAIClientConfig(this.ctx.settings);
+			config = resolveAIClientConfig(this.ctx.settings, "card-polish");
 		} catch (err) {
 			console.error("[CardAI] resolveAIClientConfig failed", err);
-			new Notice(
-				"AI: configure your Pro key or OpenRouter API key in Settings.",
-			);
+			new Notice("AI: configure the selected provider and model in Settings.");
 			return null;
 		}
 		const httpClient = new ObsidianHttpClient();

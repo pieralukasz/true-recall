@@ -124,11 +124,11 @@ export async function handleGenerateWithPreset(
 		return;
 	}
 
-	if (!hasAIKey(ctx.plugin.settings)) {
+	if (!hasAIKey(ctx.plugin.settings, "generation")) {
 		sendError(
 			res,
 			400,
-			"No AI key configured. Add your Pro key or OpenRouter API key in plugin settings.",
+			"AI generation is not configured. Pick a provider and model in plugin settings.",
 		);
 		return;
 	}

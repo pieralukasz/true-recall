@@ -94,7 +94,7 @@ export class StreamingGenerationService {
 			);
 		}
 
-		const aiConfig = resolveAIClientConfig(settings);
+		const aiConfig = resolveAIClientConfig(settings, "generation");
 		const abortController = new AbortController();
 		startStreaming(sourceFile.basename, sourceFile.path, abortController);
 
