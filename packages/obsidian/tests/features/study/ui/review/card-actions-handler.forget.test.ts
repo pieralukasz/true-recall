@@ -126,6 +126,7 @@ describe("CardActionsHandler.handleForget", () => {
 
 		const review = {
 			currentIndex: 2,
+			queue: [currentCard],
 			getCurrentCard: () => currentCard,
 			removeCardById,
 			isComplete: () => false,
@@ -139,9 +140,16 @@ describe("CardActionsHandler.handleForget", () => {
 				bulkForget,
 				getCardByReverseOf: vi.fn(),
 			},
+			stats: {
+				getReviewedCardIds: vi.fn(() => []),
+				recordReviewedCard: vi.fn(),
+			},
 		} as never;
 
-		const sessionPersistence = { removeReviewedCards };
+		const sessionPersistence = {
+			getTodayKey: vi.fn(() => "2026-05-02"),
+			removeReviewedCards,
+		};
 
 		const commandService = createMockCommandService({
 			cardStore,

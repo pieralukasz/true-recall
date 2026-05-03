@@ -539,12 +539,23 @@ export function createReviewSlice(
 
 			const newQueue = [...state.queue];
 			newQueue.splice(clampedPosition, 0, card);
+
+			// Mirror removeCardById: when a card is inserted strictly before
+			// the current index, shift currentIndex by +1 so the user stays on
+			// the same card. Inserting at currentIndex puts the new card under
+			// the cursor (used by undo to restore the active card).
+			const newIndex =
+				clampedPosition < state.currentIndex
+					? state.currentIndex + 1
+					: state.currentIndex;
+
 			schedulingPreview = null;
 
 			set((s) => ({
 				review: {
 					...s.review,
 					queue: newQueue,
+					currentIndex: newIndex,
 					isAnswerRevealed: false,
 					questionShownTime: Date.now(),
 					cachedBadgeCounts: newCounts,

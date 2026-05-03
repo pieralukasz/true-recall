@@ -267,11 +267,6 @@ export class CardActionsHandler {
 		const currentIndex = this.deps.getReview().currentIndex;
 		const buriedUntil = this.getTomorrowDate().toISOString();
 
-		const additionalCards = siblingCards.slice(1).map((c) => ({
-			card: { ...c },
-			originalFsrs: { ...c.fsrs },
-		}));
-
 		const allIds = siblingCards.map((c) => c.id);
 
 		const cmd = new ReviewBuryCommand(
@@ -283,7 +278,6 @@ export class CardActionsHandler {
 				getReview: () => this.deps.getReview(),
 			},
 			buriedUntil,
-			additionalCards.length > 0 ? additionalCards : undefined,
 		);
 
 		void this.commandService?.execute(cmd);

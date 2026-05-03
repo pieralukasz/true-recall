@@ -713,6 +713,59 @@ describe("Review Slice", () => {
 			expect(store.getState().review.queue[1]?.id).toBe("new-card");
 		});
 
+		it("should shift currentIndex when inserting before it (mirrors removeCardById)", () => {
+			const cards = [
+				createMockCard({ id: "card-1" }),
+				createMockCard({ id: "card-2" }),
+				createMockCard({ id: "card-3" }),
+			];
+			store.getState().review.startSession(cards);
+			store.getState().review.nextCard();
+			store.getState().review.nextCard();
+			expect(store.getState().review.currentIndex).toBe(2);
+			expect(store.getState().review.getCurrentCard()?.id).toBe("card-3");
+
+			const inserted = createMockCard({ id: "inserted" });
+			store.getState().review.insertCardAtPosition(inserted, 1);
+
+			// currentIndex shifts +1 so user stays on card-3
+			expect(store.getState().review.currentIndex).toBe(3);
+			expect(store.getState().review.getCurrentCard()?.id).toBe("card-3");
+		});
+
+		it("should keep currentIndex when inserting after it", () => {
+			const cards = [
+				createMockCard({ id: "card-1" }),
+				createMockCard({ id: "card-2" }),
+			];
+			store.getState().review.startSession(cards);
+			expect(store.getState().review.currentIndex).toBe(0);
+
+			const inserted = createMockCard({ id: "inserted" });
+			store.getState().review.insertCardAtPosition(inserted, 2);
+
+			expect(store.getState().review.currentIndex).toBe(0);
+			expect(store.getState().review.getCurrentCard()?.id).toBe("card-1");
+		});
+
+		it("should put inserted card under cursor when position == currentIndex", () => {
+			const cards = [
+				createMockCard({ id: "card-1" }),
+				createMockCard({ id: "card-2" }),
+			];
+			store.getState().review.startSession(cards);
+			store.getState().review.nextCard();
+			expect(store.getState().review.currentIndex).toBe(1);
+
+			const inserted = createMockCard({ id: "inserted" });
+			store.getState().review.insertCardAtPosition(inserted, 1);
+
+			// When inserting at current position, the new card becomes current.
+			// Used by undo to restore the active card.
+			expect(store.getState().review.currentIndex).toBe(1);
+			expect(store.getState().review.getCurrentCard()?.id).toBe("inserted");
+		});
+
 		it("should requeue card at end by default", () => {
 			const card1 = createMockCard({ id: "card-1" });
 			store.getState().review.startSession([card1]);

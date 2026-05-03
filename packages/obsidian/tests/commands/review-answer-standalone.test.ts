@@ -97,6 +97,8 @@ describe("ReviewAnswerCommand — standalone (no queue)", () => {
 		expect(ctx.flashcardManager.updateCardFSRS).toHaveBeenLastCalledWith(
 			"card-1",
 			expect.objectContaining({ reps: 0 }),
+			undefined,
+			{ skipNotification: true },
 		);
 		expect(ctx.sessionPersistence.removeLastReview).toHaveBeenCalled();
 	});
