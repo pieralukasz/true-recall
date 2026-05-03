@@ -20,6 +20,7 @@ import {
 	TextInput,
 } from "@true-recall/obsidian/components";
 
+import { useLMStudioModels } from "../hooks/useLMStudioModels";
 import { useSettings } from "../hooks/useSettings";
 
 const PROVIDER_OPTIONS: Array<{ value: string; label: string }> = [
@@ -57,45 +58,6 @@ async function verifyProKey(key: string): Promise<KeyStatus> {
 		console.error("[True Recall] Pro key verification failed:", error);
 		return "error";
 	}
-}
-
-function useLMStudioModels(baseUrl: string, enabled: boolean) {
-	const [models, setModels] = useState<string[]>([]);
-	const [status, setStatus] = useState<"idle" | "loading" | "ready" | "error">(
-		"idle",
-	);
-	const [refreshKey, setRefreshKey] = useState(0);
-
-	useEffect(() => {
-		if (!enabled) {
-			setModels([]);
-			setStatus("idle");
-			return;
-		}
-
-		let cancelled = false;
-		setStatus("loading");
-
-		requestUrl({ url: `${baseUrl}/models` })
-			.then((res) => {
-				if (cancelled) return;
-				const data = res.json;
-				const ids = (data.data ?? []).map((m: { id: string }) => m.id);
-				setModels(ids);
-				setStatus("ready");
-			})
-			.catch(() => {
-				if (cancelled) return;
-				setModels([]);
-				setStatus("error");
-			});
-
-		return () => {
-			cancelled = true;
-		};
-	}, [baseUrl, enabled, refreshKey]);
-
-	return { models, status, refetch: () => setRefreshKey((k) => k + 1) };
 }
 
 export function AIProviderSection() {
@@ -327,8 +289,8 @@ export function AIProviderSection() {
 					</FormField>
 
 					<FormField
-						name="Model"
-						description="Select from models loaded in LM Studio"
+						name="Default Model"
+						description="Fallback model used when a plugin-specific LM Studio model is not set"
 					>
 						{lmState.status === "loading" && (
 							<InfoBlock>Discovering models…</InfoBlock>
