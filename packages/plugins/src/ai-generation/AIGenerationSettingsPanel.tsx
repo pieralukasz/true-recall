@@ -11,9 +11,9 @@ import {
 import { ActionButton } from "@true-recall/obsidian/components";
 import { usePlugin } from "@true-recall/obsidian/preact";
 
+import { LMStudioScopedModelField } from "../shared/LMStudioScopedModelField";
 import type { PluginSettingsProps } from "../types";
 import { GenerationPresetEditor } from "./GenerationPresetEditor";
-import { LMStudioScopedModelField } from "../shared/LMStudioScopedModelField";
 
 function makeId(): string {
 	return `preset-${Math.random().toString(36).slice(2, 10)}`;
