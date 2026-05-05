@@ -11,7 +11,7 @@ import { QuickNoteEditorApp } from "./QuickNoteEditorApp";
 import type { QuickNoteEditorMode, QuickNoteEditorResult } from "./types";
 
 export class QuickNoteEditorModal extends BasePromiseModal<QuickNoteEditorResult> {
-	private _hasContent = false;
+	private _isDirty = false;
 	private _closeConfirmed = false;
 
 	constructor(
@@ -30,7 +30,7 @@ export class QuickNoteEditorModal extends BasePromiseModal<QuickNoteEditorResult
 	}
 
 	close(): void {
-		if (this._hasContent && !this._closeConfirmed && !this.hasResolved) {
+		if (this._isDirty && !this._closeConfirmed && !this.hasResolved) {
 			void confirm(this.app, {
 				title: "Discard changes?",
 				message: "You have unsaved content that will be lost.",
@@ -54,8 +54,8 @@ export class QuickNoteEditorModal extends BasePromiseModal<QuickNoteEditorResult
 						mode={this.editorMode}
 						onDone={(result) => this.resolve(result)}
 						onRequestClose={() => this.close()}
-						onContentChange={(has) => {
-							this._hasContent = has;
+						onDirtyChange={(dirty) => {
+							this._isDirty = dirty;
 						}}
 					/>
 				</ErrorBoundary>

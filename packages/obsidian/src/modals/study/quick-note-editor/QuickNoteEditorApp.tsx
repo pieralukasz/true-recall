@@ -31,14 +31,14 @@ interface QuickNoteEditorAppProps {
 	mode: QuickNoteEditorMode;
 	onDone: (result: QuickNoteEditorResult) => void;
 	onRequestClose?: () => void;
-	onContentChange?: (hasContent: boolean) => void;
+	onDirtyChange?: (isDirty: boolean) => void;
 }
 
 export function QuickNoteEditorApp({
 	mode,
 	onDone,
 	onRequestClose,
-	onContentChange,
+	onDirtyChange,
 }: QuickNoteEditorAppProps) {
 	const app = useApp();
 	const plugin = usePlugin();
@@ -56,8 +56,14 @@ export function QuickNoteEditorApp({
 		return addMode?.defaultNoteTypeId ?? "builtin-basic";
 	});
 
+	const initialFieldsRef = useRef<Record<string, string> | null>(null);
+
 	const [fields, setFields] = useState<Record<string, string>>(() => {
-		if (isEdit) return { ...editMode?.note.fields };
+		if (isEdit) {
+			const f = { ...editMode?.note.fields };
+			initialFieldsRef.current = f;
+			return f;
+		}
 		if (addMode?.initialFields) return { ...addMode.initialFields };
 		return {};
 	});
@@ -89,10 +95,14 @@ export function QuickNoteEditorApp({
 		return plugin.cardStore?.noteTypes?.getById(noteTypeId) ?? null;
 	}, [isEdit, editMode, plugin.cardStore, noteTypeId, refreshCounter]);
 
-	const hasContent = useMemo(
-		() => Object.values(fields).some((v) => v.trim().length > 0),
-		[fields],
-	);
+	const isDirty = useMemo(() => {
+		if (isEdit && initialFieldsRef.current) {
+			return Object.keys(initialFieldsRef.current).some(
+				(k) => fields[k] !== initialFieldsRef.current![k],
+			);
+		}
+		return Object.values(fields).some((v) => v.trim().length > 0);
+	}, [isEdit, fields]);
 
 	const canSave = useMemo(() => {
 		const firstField = noteType?.fields[0];
@@ -117,8 +127,8 @@ export function QuickNoteEditorApp({
 	]);
 
 	useEffect(() => {
-		onContentChange?.(hasContent);
-	}, [hasContent, onContentChange]);
+		onDirtyChange?.(isDirty);
+	}, [isDirty, onDirtyChange]);
 
 	// Initialize empty fields when note type changes in add mode
 	useEffect(() => {
