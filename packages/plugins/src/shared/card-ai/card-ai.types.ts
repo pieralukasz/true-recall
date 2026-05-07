@@ -1,8 +1,17 @@
 import { z } from "zod";
 
+import type { CardFields } from "@true-recall/core/types/card-ai-preset.types";
+
 import type { CardAITargetOperation } from "./card-ai-target";
 
-export type CardFields = Record<string, string>;
+// Re-export the persisted data shapes so consumers can import everything
+// card-ai-related from this barrel without reaching into core's settings
+// types directly.
+export type {
+	CardAIPreset,
+	CardAIUserSettings,
+	CardFields,
+} from "@true-recall/core/types/card-ai-preset.types";
 
 export interface CardAIContext {
 	sourceNotePath?: string;
@@ -23,23 +32,6 @@ export interface CardAIResult {
 	cards: CardFields[];
 	rawResponse: string;
 	usage: { promptTokens: number; completionTokens: number };
-}
-
-export interface CardAIPreset {
-	id: string;
-	name: string;
-	prompt: string;
-	autoApply: boolean;
-	builtin: boolean;
-	requiresPro?: boolean;
-	includeSourceNote?: boolean;
-	includeRelatedCards?: boolean;
-	autoApplyNewCards?: boolean;
-}
-
-export interface CardAIUserSettings {
-	userPresets: CardAIPreset[];
-	customPromptAutoApply: boolean;
 }
 
 export function makeCardAIArrayResponseSchema(fieldNames: readonly string[]) {

@@ -6,8 +6,7 @@ import type {
 	CardAIPresenter,
 	CardAITarget,
 	CardFields,
-} from "@true-recall/core";
-
+} from "./card-ai";
 import { CardAIPreviewModal } from "./CardAIPreviewModal";
 import { handleCardAIError } from "./card-ai-error-handler";
 

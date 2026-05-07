@@ -1,14 +1,14 @@
 import { Notice } from "obsidian";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { AIRequestError } from "@true-recall/core";
+
+import { handleCardAIError } from "@true-recall/plugins/shared/card-ai-error-handler";
 import {
-	AIRequestError,
 	CardAIAbortedError,
 	CardAIParseError,
 	CardAIProviderError,
-} from "@true-recall/core";
-
-import { handleCardAIError } from "@true-recall/plugins/shared/card-ai-error-handler";
+} from "@true-recall/plugins/shared/card-ai";
 
 vi.mock("obsidian", () => ({
 	Notice: vi.fn(),

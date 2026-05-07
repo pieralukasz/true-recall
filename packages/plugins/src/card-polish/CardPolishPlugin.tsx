@@ -1,6 +1,6 @@
-import type { CardAITarget } from "@true-recall/core";
 import { VIEW_TYPE_REVIEW } from "@true-recall/core/constants";
 
+import type { CardAITarget } from "../shared/card-ai";
 import { CardAIPluginBase } from "../shared/CardAIPluginBase";
 import {
 	DraftCardTarget,

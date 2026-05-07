@@ -2,7 +2,7 @@ import {
 	AIRequestError,
 	getTextContent,
 	type OpenRouterClient,
-} from "../clients/openrouter-client";
+} from "@true-recall/core/ai/clients/openrouter-client";
 import {
 	CardAIAbortedError,
 	CardAIParseError,

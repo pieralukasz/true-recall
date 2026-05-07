@@ -2,7 +2,7 @@
  * Plugin settings types
  */
 
-import type { CardAIUserSettings } from "../ai/card-ai/card-ai.types";
+import type { CardAIUserSettings } from "./card-ai-preset.types";
 import type { ReviewViewMode } from "./fsrs";
 import type { GenerationPreset } from "./generation-preset.types";
 

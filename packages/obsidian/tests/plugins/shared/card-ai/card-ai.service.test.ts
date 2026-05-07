@@ -1,15 +1,16 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { CardAIService } from "../../../src/ai/card-ai/card-ai.service";
+import {
+	AIRequestError,
+	type OpenRouterClient,
+} from "@true-recall/core/ai/clients/openrouter-client";
+
 import {
 	CardAIAbortedError,
 	CardAIParseError,
 	CardAIProviderError,
-} from "../../../src/ai/card-ai/card-ai.types";
-import {
-	AIRequestError,
-	type OpenRouterClient,
-} from "../../../src/ai/clients/openrouter-client";
+	CardAIService,
+} from "@true-recall/plugins/shared/card-ai";
 
 function client(content: string): OpenRouterClient {
 	return {

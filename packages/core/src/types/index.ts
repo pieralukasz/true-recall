@@ -12,6 +12,11 @@ export type {
 	ModelMapping,
 	NoteTypeMapping,
 } from "./anki.types";
+export type {
+	CardAIPreset,
+	CardAIUserSettings,
+	CardFields,
+} from "./card-ai-preset.types";
 export type { SessionResult } from "./events.types";
 export type {
 	FlashcardInfo,

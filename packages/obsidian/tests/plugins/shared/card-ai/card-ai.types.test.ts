@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
 	deepEqualFields,
 	makeCardAIArrayResponseSchema,
-} from "../../../src/ai/card-ai/card-ai.types";
+} from "@true-recall/plugins/shared/card-ai";
 
 describe("makeCardAIArrayResponseSchema", () => {
 	it("accepts a single-element array with the requested keys", () => {

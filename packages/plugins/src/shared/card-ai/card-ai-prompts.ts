@@ -1,4 +1,4 @@
-import type { ChatMessage } from "../clients/openrouter-client";
+import type { ChatMessage } from "@true-recall/core/ai/clients/openrouter-client";
 import type { CardAIContext, CardFields } from "./card-ai.types";
 import type { CardAITargetOperation } from "./card-ai-target";
 

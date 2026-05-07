@@ -1,12 +1,6 @@
 import { Menu, Notice } from "obsidian";
 
-import {
-	type CardAIPreset,
-	CardAIRunner,
-	CardAIService,
-	type CardAITarget,
-	OpenRouterClient,
-} from "@true-recall/core";
+import { OpenRouterClient } from "@true-recall/core";
 import {
 	type AIClientConfig,
 	resolveAIClientConfig,
@@ -16,6 +10,12 @@ import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpC
 import { promptText } from "@true-recall/obsidian/modals/shared/TextInputModal";
 
 import type { PluginContext } from "../types";
+import {
+	type CardAIPreset,
+	CardAIRunner,
+	CardAIService,
+	type CardAITarget,
+} from "./card-ai";
 import { handleCardAIError } from "./card-ai-error-handler";
 import { createObsidianContextCollector } from "./createObsidianContextCollector";
 import { ObsidianCardAIPresenter } from "./ObsidianCardAIPresenter";

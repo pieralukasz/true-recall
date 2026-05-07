@@ -1,12 +1,12 @@
 import { TFile } from "obsidian";
 
+import type TrueRecallPlugin from "@true-recall/obsidian/main";
+
 import {
 	type CardAIContextCollector,
 	type CardFields,
 	SourceNoteContextCollector,
-} from "@true-recall/core";
-
-import type TrueRecallPlugin from "@true-recall/obsidian/main";
+} from "./card-ai";
 
 export function createObsidianContextCollector(
 	plugin: TrueRecallPlugin,

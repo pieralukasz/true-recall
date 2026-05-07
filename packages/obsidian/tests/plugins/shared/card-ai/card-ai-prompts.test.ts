@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildCardAIMessages } from "../../../src/ai/card-ai/card-ai-prompts";
+import { buildCardAIMessages } from "@true-recall/plugins/shared/card-ai/card-ai-prompts";
 
 const basic = { name: "Basic", fields: ["Front", "Back"] as const };
 

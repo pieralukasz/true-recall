@@ -6,8 +6,6 @@ export {
 	type QueryExecResult,
 	SqlQueryAdapter,
 } from "./adapters/sql-query.adapter";
-// Card AI (unified polish + draft/generate pipeline)
-export * from "./card-ai";
 // OpenRouter client (non-streaming)
 export {
 	type AIClientOptions,

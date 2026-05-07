@@ -1,20 +1,18 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { CardAIService } from "../../../src/ai/card-ai/card-ai.service";
 import {
 	CardAIAbortedError,
+	type CardAIContextCollector,
 	CardAIParseError,
+	type CardAIPresenter,
 	type CardAIPreset,
 	CardAIProviderError,
+	type CardAIRetryResult,
+	CardAIRunner,
+	type CardAIService,
+	type CardAITarget,
 	type CardFields,
-} from "../../../src/ai/card-ai/card-ai.types";
-import type { CardAIContextCollector } from "../../../src/ai/card-ai/card-ai-context";
-import type {
-	CardAIPresenter,
-	CardAIRetryResult,
-} from "../../../src/ai/card-ai/card-ai-presenter";
-import { CardAIRunner } from "../../../src/ai/card-ai/card-ai-runner";
-import type { CardAITarget } from "../../../src/ai/card-ai/card-ai-target";
+} from "@true-recall/plugins/shared/card-ai";
 
 const preset: CardAIPreset = {
 	id: "p",

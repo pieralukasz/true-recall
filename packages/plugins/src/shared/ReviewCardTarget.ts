@@ -1,10 +1,8 @@
-import type {
-	CardAITarget,
-	CardAITargetOperation,
-	CardFields,
-} from "@true-recall/core";
+import type { CardFields } from "@true-recall/core";
 
 import type TrueRecallPlugin from "@true-recall/obsidian/main";
+
+import type { CardAITarget, CardAITargetOperation } from "./card-ai";
 
 export class ReviewCardTarget implements CardAITarget {
 	constructor(private readonly plugin: TrueRecallPlugin) {}

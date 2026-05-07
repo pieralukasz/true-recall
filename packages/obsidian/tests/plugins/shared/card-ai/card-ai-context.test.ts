@@ -1,8 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 
-import type { CardAIPreset } from "../../../src/ai/card-ai/card-ai.types";
-import { SourceNoteContextCollector } from "../../../src/ai/card-ai/card-ai-context";
-import type { CardAITarget } from "../../../src/ai/card-ai/card-ai-target";
+import {
+	type CardAIPreset,
+	type CardAITarget,
+	SourceNoteContextCollector,
+} from "@true-recall/plugins/shared/card-ai";
 
 const target = (
 	over: Partial<{ sourceUid?: string; currentCardId: string | null }> = {},

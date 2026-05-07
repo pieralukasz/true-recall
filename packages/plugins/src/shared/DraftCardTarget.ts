@@ -1,8 +1,6 @@
-import type {
-	CardAITarget,
-	CardAITargetOperation,
-	CardFields,
-} from "@true-recall/core";
+import type { CardFields } from "@true-recall/core";
+
+import type { CardAITarget, CardAITargetOperation } from "./card-ai";
 
 // Minimal structural type instead of importing FlashcardManager from
 // `@true-recall/core/flashcard`. The deep import causes Vitest to eagerly
