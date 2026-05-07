@@ -1,5 +1,42 @@
 # Changelog
 
+## 1.8.0 (2026-05-07)
+
+### Features
+
+- **LM Studio as a first-class AI provider** — LM Studio joins Pro / OpenRouter / Custom in the **AI Provider** dropdown with auto-discovered models, configurable base URL, and an optional API key
+- **Per-plugin LM Studio model overrides** — AI Flashcard Generation and Card Polish each expose their own LM Studio model selector, with fallback to the global LM Studio model when no override is set
+- **Generation preset context options** — two new opt-in toggles per preset, **Include source note** and **Include related cards**, enrich the prompt with the host note's body and sibling cards from the same note
+- **Card Polish moved to BYOK** — Card Polish now activates with any AI key (OpenRouter BYOK, LM Studio, Custom, or Pro), not just Pro
+- **Card AI: SPLIT mode** — the system prompt now recognizes three explicit modes (`EDIT`, `SPAWN`, `SPLIT`); presets with "split / decompose / break apart" wording correctly decompose one card into N atomic cards instead of rewriting the source
+- **Card AI: inline-edit preview** — the preview modal now uses an embedded CodeMirror editor for every field. Tweak proposed edits and new cards before clicking Accept
+- **Card AI: "Delete after applying" toggle** — when an AI run produces multiple new cards (typically SPLIT), the source card is shown alongside an opt-in delete toggle
+- **Card AI: note-type aware prompts** — requests now ship the note type's name and field schema to the LLM, reducing field-name mistakes for custom note types
+- **Image-click toolbar configuration** — the image-click toolbar (open in IO editor, quick-add, etc.) now has its own button-configuration section in `Settings → True Recall → Plugins → Selection Toolbar`
+- **Type-in grading context** — the AI grader now sees the source note and related cards when scoring typed answers, reducing false negatives on context-dependent questions
+- **FSRS preset picker in dashboard** — "Set FSRS preset" is now exposed directly on the note context menu (previously only on projects)
+
+### Improvements
+
+- **Targeted review session updates** — mid-session card mutations no longer trigger a full session rebuild; the engine applies a targeted mutation that preserves card position and response timing
+- **Review session refactor** — review logic split into a platform-agnostic `ReviewSessionEngine` and an Obsidian-side `ReviewSessionController`. Visible side-effects: leech notifications respect Anki-style thresholds (8 / 12 / 16 lapses), and cramming sessions no longer show phantom "leech suspended" toasts
+- **Card AI runtime moved to plugins/shared** — card-ai service, runner, prompts, and context collection moved out of `@true-recall/core` so non-plugin code (CLI, MCP) no longer pulls in plugin-only logic
+
+### Bug Fixes
+
+- Fixed Card Polish auto-apply not preserving cursor position after a rewrite
+- Fixed selection toolbar URLs not normalizing in non-review mutation flows
+- Fixed code blocks in question content losing their block layout in the review view
+- Fixed scoped per-preset progress reporting on the dashboard / review snapshots and removed the stale project `healthPct` metric
+- Fixed CI release pipeline regression where the changelog extractor's awk range exited at the start heading
+
+### Breaking Changes & Migration
+
+- **TTS post-processing removed** — the entire text-to-speech pipeline (OpenAI voices, autoplay, per-note synthesis) is gone. Generation presets no longer carry `tts` config; existing entries are dropped during settings migration
+- **Card Healing plugin removed** — the "Healing Flashcards" plugin (auto-generate corrective cards from lapse patterns) is gone. Card AI's SPLIT mode covers most decomposition use-cases; for repair, use Card Polish presets
+- **Image post-processing removed from generation presets** — the per-preset image generation step is gone. Generation presets no longer carry an `image` config; existing entries are dropped during settings migration
+- **`providerType` is now the source of truth** — the AI provider is selected explicitly via a `providerType` field (`pro` / `openrouter` / `lmstudio` / `custom`). For users upgrading from 1.7, `providerType` is derived from your existing `proKey` / `openRouterApiKey`, and `aiTier` is kept in sync automatically
+
 ## 1.7.0 (2026-04-24)
 
 ### Features
