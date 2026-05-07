@@ -1,17 +1,23 @@
 import { type App, Modal, Notice } from "obsidian";
 import { render } from "preact";
 
+import type TrueRecallPlugin from "@true-recall/obsidian/main";
+import { ObsidianProvider } from "@true-recall/obsidian/preact/ObsidianContext";
+
+import { CardAIPreviewModal } from "./CardAIPreviewModal";
 import type {
 	CardAIPresentArgs,
 	CardAIPresenter,
 	CardAITarget,
 	CardFields,
 } from "./card-ai";
-import { CardAIPreviewModal } from "./CardAIPreviewModal";
 import { handleCardAIError } from "./card-ai-error-handler";
 
 export class ObsidianCardAIPresenter implements CardAIPresenter {
-	constructor(private readonly app: App) {}
+	constructor(
+		private readonly app: App,
+		private readonly plugin: TrueRecallPlugin,
+	) {}
 
 	async present(args: CardAIPresentArgs): Promise<void> {
 		const hasEdits = args.proposed !== null;
@@ -110,41 +116,54 @@ export class ObsidianCardAIPresenter implements CardAIPresenter {
 			let raw = args.rawResponse;
 			const host = modal.contentEl.createDiv();
 
+			const sourceCardId = args.target.getCurrentCardId();
+			const canDeleteSource =
+				typeof args.target.removeCard === "function" && !!sourceCardId;
+
 			const mount = () => {
 				render(
-					<CardAIPreviewModal
-						original={args.original}
-						proposed={proposal}
-						proposedNewCards={newCards}
-						rawResponse={raw}
-						onAccept={(selectedNewIndices) => {
-							if (proposal) args.target.apply(proposal);
-							for (const idx of selectedNewIndices) {
-								const card = newCards[idx];
-								if (card) args.target.createCard?.(card);
-							}
-							modal.close();
-						}}
-						onReject={() => modal.close()}
-						onRetry={async (extra) => {
-							try {
-								const result = await args.retry(extra);
-								proposal = result.edits;
-								newCards = result.newCards;
-								raw = undefined;
-								mount();
-							} catch (err) {
-								handleCardAIError(err, {
-									onRawFallback: (rawResponse) => {
-										proposal = null;
-										newCards = [];
-										raw = rawResponse;
-										mount();
-									},
-								});
-							}
-						}}
-					/>,
+					<ObsidianProvider value={{ app: this.app, plugin: this.plugin }}>
+						<CardAIPreviewModal
+							original={args.original}
+							proposed={proposal}
+							proposedNewCards={newCards}
+							rawResponse={raw}
+							canDeleteSource={canDeleteSource}
+							onAccept={(
+								editedProposed,
+								editedSelectedNewCards,
+								deleteSource,
+							) => {
+								if (editedProposed) args.target.apply(editedProposed);
+								for (const card of editedSelectedNewCards) {
+									args.target.createCard?.(card);
+								}
+								if (deleteSource && sourceCardId) {
+									args.target.removeCard?.(sourceCardId);
+								}
+								modal.close();
+							}}
+							onReject={() => modal.close()}
+							onRetry={async (extra) => {
+								try {
+									const result = await args.retry(extra);
+									proposal = result.edits;
+									newCards = result.newCards;
+									raw = undefined;
+									mount();
+								} catch (err) {
+									handleCardAIError(err, {
+										onRawFallback: (rawResponse) => {
+											proposal = null;
+											newCards = [];
+											raw = rawResponse;
+											mount();
+										},
+									});
+								}
+							}}
+						/>
+					</ObsidianProvider>,
 					host,
 				);
 			};

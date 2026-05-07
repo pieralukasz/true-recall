@@ -1,26 +1,271 @@
+/* ── AI Preview Modal — root layout ───────────────────────────────────── */
 .tr-card-ai-preview-root {
 	display: flex;
 	flex-direction: column;
-	gap: 12px;
+	gap: 18px;
+	font-size: var(--font-ui-medium);
 }
+
+.tr-card-ai-preview-section {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+.tr-card-ai-preview-section-title {
+	margin: 0;
+	font-size: var(--font-ui-medium);
+	font-weight: 600;
+	color: var(--text-normal);
+}
+
+/* ── Original / Proposed two-column grid ──────────────────────────────── */
 .tr-card-ai-preview-grid {
 	display: grid;
 	grid-template-columns: 1fr 1fr;
 	gap: 16px;
 }
-.tr-card-ai-preview-block pre {
+
+.tr-card-ai-preview-column {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	min-width: 0;
+}
+
+.tr-card-ai-preview-column-title {
+	margin: 0;
+	font-size: var(--font-ui-small);
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	color: var(--text-muted);
+}
+
+/* ── Field block (label + editor) ─────────────────────────────────────── */
+.tr-card-ai-preview-field {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	min-width: 0;
+}
+
+.tr-card-ai-preview-field.is-disabled {
+	opacity: 0.55;
+}
+
+.tr-card-ai-preview-field-label {
+	font-size: var(--font-ui-smaller);
+	font-weight: 500;
+	color: var(--text-muted);
+}
+
+.tr-card-ai-field-editor {
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	background: var(--background-primary);
+	padding: 6px 8px;
+	min-height: 2.4em;
+	transition: border-color 120ms ease;
+}
+
+.tr-card-ai-field-editor:focus-within {
+	border-color: var(--interactive-accent);
+}
+
+.tr-card-ai-field-editor.is-readonly {
+	background: var(--background-secondary);
+}
+
+/* Tame the inner CM6 view so it sits inside our framed field. */
+.tr-card-ai-field-editor .cm-editor {
+	background: transparent;
+	outline: none;
+}
+.tr-card-ai-field-editor .cm-scroller {
+	font-family: var(--font-text);
+}
+.tr-card-ai-field-editor .cm-content {
+	padding: 0;
+}
+.tr-card-ai-field-editor .cm-line {
+	padding: 0;
+}
+
+/* Fallbacks when EmbeddableEditor is unavailable. */
+.tr-card-ai-fallback-pre {
+	margin: 0;
+	padding: 6px 8px;
+	background: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
 	white-space: pre-wrap;
 	word-break: break-word;
-	background: var(--background-secondary);
-	padding: 6px 8px;
-	border-radius: 4px;
-	margin: 4px 0 10px 0;
+	font-family: var(--font-text);
 }
+
+.tr-card-ai-fallback-textarea {
+	width: 100%;
+	min-height: 3em;
+	padding: 6px 8px;
+	background: var(--background-primary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	font-family: var(--font-text);
+	resize: vertical;
+}
+
+/* ── Source card section (shown when AI returns new cards only) ──────── */
+.tr-card-ai-preview-source-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+}
+
+.tr-card-ai-preview-delete-toggle {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	font-size: var(--font-ui-smaller);
+	color: var(--text-muted);
+	cursor: pointer;
+	user-select: none;
+}
+
+.tr-card-ai-preview-delete-toggle input[type="checkbox"] {
+	margin: 0;
+}
+
+.tr-card-ai-preview-source-card {
+	display: flex;
+	flex-direction: column;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 8px;
+	background: var(--background-secondary);
+	overflow: hidden;
+	transition:
+		border-color 120ms ease,
+		opacity 120ms ease;
+}
+
+.tr-card-ai-preview-source-card.is-doomed {
+	border-color: var(--text-error, #cf6679);
+	opacity: 0.7;
+}
+
+.tr-card-ai-preview-source-card.is-doomed .tr-card-ai-preview-field-label,
+.tr-card-ai-preview-source-card.is-doomed .cm-content {
+	text-decoration: line-through;
+	text-decoration-color: var(--text-error, #cf6679);
+	text-decoration-thickness: 1px;
+}
+
+.tr-card-ai-preview-source-banner {
+	padding: 6px 12px;
+	font-size: var(--font-ui-smaller);
+	color: var(--text-on-accent, var(--text-normal));
+	background: var(--text-error, #cf6679);
+	font-weight: 500;
+}
+
+.tr-card-ai-preview-source-body {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	padding: 10px 12px 12px;
+}
+
+/* ── New cards section ────────────────────────────────────────────────── */
+.tr-card-ai-preview-new-list {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.tr-card-ai-preview-new-card {
+	display: flex;
+	flex-direction: column;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 8px;
+	background: var(--background-secondary);
+	overflow: hidden;
+	transition:
+		border-color 120ms ease,
+		opacity 120ms ease;
+}
+
+.tr-card-ai-preview-new-card:not(.is-selected) {
+	opacity: 0.6;
+}
+
+.tr-card-ai-preview-new-card.is-selected {
+	border-color: var(--interactive-accent);
+}
+
+.tr-card-ai-preview-new-card-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 8px 12px;
+	background: var(--background-modifier-form-field);
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.tr-card-ai-preview-new-card-index {
+	font-family: var(--font-monospace);
+	font-size: var(--font-ui-small);
+	color: var(--text-muted);
+	font-weight: 600;
+}
+
+.tr-card-ai-preview-new-card-toggle {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	font-size: var(--font-ui-smaller);
+	color: var(--text-muted);
+	cursor: pointer;
+	user-select: none;
+}
+
+.tr-card-ai-preview-new-card-toggle input[type="checkbox"] {
+	margin: 0;
+}
+
+.tr-card-ai-preview-new-card-body {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	padding: 10px 12px 12px;
+}
+
+/* ── Raw response fallback ────────────────────────────────────────────── */
+.tr-card-ai-preview-raw {
+	margin: 0;
+	padding: 10px 12px;
+	background: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	white-space: pre-wrap;
+	word-break: break-word;
+	max-height: 260px;
+	overflow: auto;
+	font-family: var(--font-monospace);
+	font-size: var(--font-ui-smaller);
+}
+
+/* ── Actions bar ──────────────────────────────────────────────────────── */
 .tr-card-ai-preview-actions {
 	display: flex;
 	gap: 8px;
 	align-items: center;
+	padding-top: 12px;
+	margin-top: 4px;
+	border-top: 1px solid var(--background-modifier-border);
 }
-.tr-card-ai-preview-actions input[type="text"] {
+
+.tr-card-ai-preview-extra-input {
 	flex: 1;
+	min-width: 0;
 }

@@ -157,7 +157,10 @@ export abstract class CardAIPluginBase<TDetail extends CardAIBaseEventDetail> {
 
 		try {
 			const collector = createObsidianContextCollector(this.ctx.obsidianPlugin);
-			const presenter = new ObsidianCardAIPresenter(this.ctx.app);
+			const presenter = new ObsidianCardAIPresenter(
+				this.ctx.app,
+				this.ctx.obsidianPlugin,
+			);
 			const runner = new CardAIRunner(target, service, collector, presenter);
 			await runner.run(preset, controller.signal);
 		} catch (err) {
