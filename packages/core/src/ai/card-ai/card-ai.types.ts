@@ -12,6 +12,7 @@ export interface CardAIContext {
 
 export interface CardAIRequest {
 	fields: CardFields;
+	noteType: { name: string; fields: readonly string[] };
 	prompt: string;
 	operation: CardAITargetOperation;
 	context?: CardAIContext;

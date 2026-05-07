@@ -20,8 +20,14 @@ function client(content: string): OpenRouterClient {
 	} as unknown as OpenRouterClient;
 }
 
+const BASIC_NOTE_TYPE = {
+	name: "Basic",
+	fields: ["Front", "Back"] as const,
+};
+
 const request = {
 	fields: { Front: "q", Back: "" },
+	noteType: BASIC_NOTE_TYPE,
 	prompt: "P",
 	operation: "edit" as const,
 };
