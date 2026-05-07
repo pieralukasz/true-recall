@@ -639,9 +639,10 @@ describe("Note CRUD Integration", () => {
 				],
 			});
 			const updatedNote = noteActions.getById(note.id);
+			if (!updatedNote) throw new Error("expected note to exist after update");
 
 			// Basic has only ord 0
-			const desiredCards = generateCardsForNote(updatedNote!, basicType);
+			const desiredCards = generateCardsForNote(updatedNote, basicType);
 			const desiredOrds = new Set(desiredCards.map((c) => c.templateOrd));
 			expect(desiredOrds).toEqual(new Set([0]));
 

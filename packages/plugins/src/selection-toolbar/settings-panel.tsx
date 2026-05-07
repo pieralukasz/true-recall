@@ -21,6 +21,13 @@ export function SelectionToolbarSettingsPanel({
 				onChange={(b) => void save({ globalToolbarButtons: b })}
 				context="global"
 			/>
+			<ToolbarConfigSection
+				title="Image toolbar"
+				description="Buttons shown when clicking an image in the editor"
+				buttons={settings.imageToolbarButtons}
+				onChange={(b) => void save({ imageToolbarButtons: b })}
+				context="image"
+			/>
 		</>
 	);
 }

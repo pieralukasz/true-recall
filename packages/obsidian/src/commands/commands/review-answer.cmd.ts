@@ -94,7 +94,17 @@ export class ReviewAnswerCommand implements Command {
 		const p = this.params;
 
 		if (!cancelled) {
-			ctx.flashcardManager.updateCardFSRS(p.card.id, p.originalFsrs);
+			// skipNotification matches execute() — without it, card:updated
+			// fires through the bus, sets lastMutation, and the ReviewView
+			// effect runs rebuildActiveSession against stale Q.ALL_META,
+			// clobbering the queue that ReviewUndoHook.undoAnswer just
+			// restored (manifested as "20 → good → 19 → undo → 21").
+			ctx.flashcardManager.updateCardFSRS(
+				p.card.id,
+				p.originalFsrs,
+				undefined,
+				{ skipNotification: true },
+			);
 			ctx.sessionPersistence.removeLastReview(
 				p.card.id,
 				p.wasNewCard,

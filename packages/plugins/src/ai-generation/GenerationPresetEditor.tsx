@@ -13,7 +13,7 @@ interface GenerationPresetEditorProps {
 	preset: GenerationPreset;
 	noteTypes: NoteType[];
 	readOnly?: boolean;
-	onChange?: (next: GenerationPreset) => void;
+	onChange?: (id: string, patch: Partial<GenerationPreset>) => void;
 	onFork?: () => void;
 	onDelete?: () => void;
 	expanded?: boolean;
@@ -86,8 +86,8 @@ function presetSummary(
 ): string {
 	const parts: string[] = [];
 	if (noteType) parts.push(noteType.name);
-	if (preset.tts) parts.push(`TTS: ${preset.tts.field}`);
-	if (preset.image) parts.push(`Image: ${preset.image.targetField}`);
+	if (preset.includeSourceNote) parts.push("+source");
+	if (preset.includeRelatedCards) parts.push("+related");
 	return parts.join(" • ");
 }
 
@@ -134,9 +134,12 @@ export function GenerationPresetEditor({
 	}
 
 	const patch = (partial: Partial<GenerationPreset>) =>
-		onChange?.({ ...preset, ...partial, updatedAt: Date.now() });
+		onChange?.(preset.id, partial);
 
 	const fieldOptions = noteType?.fields ?? [];
+
+	const sourceNoteId = `gen-source-note-${preset.id}`;
+	const relatedCardsId = `gen-related-cards-${preset.id}`;
 
 	return (
 		<div class="ep:flex ep:flex-col ep:gap-3 ep:p-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary">
@@ -173,21 +176,7 @@ export function GenerationPresetEditor({
 					value={preset.noteTypeId}
 					onChange={(e) => {
 						const nextId = (e.target as HTMLSelectElement).value;
-						const nextNoteType = noteTypes.find((nt) => nt.id === nextId);
-						const nextFields = new Set(nextNoteType?.fields ?? []);
-						// Drop TTS/image configs that reference fields the new note
-						// type does not have — otherwise generation throws at runtime.
-						const nextTts =
-							preset.tts && nextFields.has(preset.tts.field)
-								? preset.tts
-								: null;
-						const nextImage =
-							preset.image &&
-							nextFields.has(preset.image.targetField) &&
-							nextFields.has(preset.image.sourceField)
-								? preset.image
-								: null;
-						patch({ noteTypeId: nextId, tts: nextTts, image: nextImage });
+						patch({ noteTypeId: nextId });
 					}}
 				>
 					{noteTypes.map((nt) => (
@@ -219,18 +208,52 @@ export function GenerationPresetEditor({
 				</span>
 			</div>
 
-			<div class="ep:flex ep:flex-col ep:gap-2 ep:p-2 ep:border ep:border-obs-border ep:rounded ep:bg-obs-secondary ep:opacity-70">
-				<div class="ep:flex ep:items-center ep:gap-2">
-					<span class="ep:text-ui-smaller ep:text-obs-muted ep:font-medium">
-						Audio (TTS) & Image
-					</span>
-					<span class="ep:text-ui-smallest ep:font-semibold ep:px-1.5 ep:py-0.5 ep:rounded ep:bg-obs-border ep:text-obs-muted ep:uppercase">
-						Soon
-					</span>
-				</div>
-				<span class="ep:text-ui-smaller ep:text-obs-muted ep:italic">
-					Per-preset audio and image generation is not available yet.
+			<div class="ep:flex ep:flex-col ep:gap-2 ep:p-2 ep:border ep:border-obs-border ep:rounded">
+				<span class="ep:text-ui-smaller ep:text-obs-muted ep:font-medium">
+					Context (opt-in)
 				</span>
+				<label
+					for={sourceNoteId}
+					class="ep:flex ep:items-start ep:gap-2 ep:text-ui-small ep:cursor-pointer"
+				>
+					<input
+						id={sourceNoteId}
+						type="checkbox"
+						checked={!!preset.includeSourceNote}
+						onChange={(e) =>
+							patch({
+								includeSourceNote: (e.target as HTMLInputElement).checked,
+							})
+						}
+					/>
+					<span class="ep:flex ep:flex-col">
+						<span>Include source note content</span>
+						<span class="ep:text-ui-smaller ep:text-obs-muted">
+							Increases cost and latency — improves quality
+						</span>
+					</span>
+				</label>
+				<label
+					for={relatedCardsId}
+					class="ep:flex ep:items-start ep:gap-2 ep:text-ui-small ep:cursor-pointer"
+				>
+					<input
+						id={relatedCardsId}
+						type="checkbox"
+						checked={!!preset.includeRelatedCards}
+						onChange={(e) =>
+							patch({
+								includeRelatedCards: (e.target as HTMLInputElement).checked,
+							})
+						}
+					/>
+					<span class="ep:flex ep:flex-col">
+						<span>Include related flashcards from the same source</span>
+						<span class="ep:text-ui-smaller ep:text-obs-muted">
+							Increases cost and latency — improves quality
+						</span>
+					</span>
+				</label>
 			</div>
 
 			<div class="ep:flex ep:items-center ep:justify-between ep:gap-3 ep:pt-1">

@@ -11,7 +11,7 @@ import { cn } from "@true-recall/obsidian/utils/cn";
 interface CardAIPresetEditorProps {
 	preset: CardAIPreset;
 	readOnly?: boolean;
-	onChange?: (next: CardAIPreset) => void;
+	onChange?: (id: string, patch: Partial<CardAIPreset>) => void;
 	onFork?: () => void;
 	onDelete?: () => void;
 	expanded?: boolean;
@@ -75,8 +75,8 @@ function CompactPresetRow({
 
 function presetSummary(preset: CardAIPreset): string {
 	const parts: string[] = [];
-	if (preset.autoApply) parts.push("auto");
-	if (preset.hotkey) parts.push(preset.hotkey);
+	if (preset.autoApply) parts.push("auto-edits");
+	if (preset.autoApplyNewCards) parts.push("auto-spawn");
 	if (preset.includeSourceNote) parts.push("+source");
 	if (preset.includeRelatedCards) parts.push("+related");
 	return parts.join(" • ");
@@ -123,9 +123,10 @@ export function CardAIPresetEditor({
 	}
 
 	const patch = (partial: Partial<CardAIPreset>) =>
-		onChange?.({ ...preset, ...partial });
+		onChange?.(preset.id, partial);
 
 	const autoApplyId = `card-ai-auto-${preset.id}`;
+	const autoApplyNewId = `card-ai-auto-new-${preset.id}`;
 	const sourceNoteId = `card-ai-src-${preset.id}`;
 	const relatedCardsId = `card-ai-rel-${preset.id}`;
 
@@ -171,11 +172,10 @@ export function CardAIPresetEditor({
 				<span class="ep:text-ui-smaller ep:text-obs-muted ep:font-medium">
 					Hotkey
 				</span>
-				<TextInput
-					value={preset.hotkey ?? ""}
-					placeholder="Mod+Alt+F"
-					onChange={(v) => patch({ hotkey: v || undefined })}
-				/>
+				<span class="ep:text-ui-smaller ep:text-obs-muted">
+					Assign in Obsidian's Hotkeys settings — search for "Polish:{" "}
+					{preset.name}".
+				</span>
 			</div>
 
 			<div class="ep:flex ep:flex-col ep:gap-2 ep:p-2 ep:border ep:border-obs-border ep:rounded">
@@ -226,10 +226,13 @@ export function CardAIPresetEditor({
 				</label>
 			</div>
 
-			<div class="ep:flex ep:items-center ep:justify-between ep:gap-3 ep:pt-1">
+			<div class="ep:flex ep:flex-col ep:gap-2 ep:p-2 ep:border ep:border-obs-border ep:rounded">
+				<span class="ep:text-ui-smaller ep:text-obs-muted ep:font-medium">
+					Auto-apply
+				</span>
 				<label
 					for={autoApplyId}
-					class="ep:flex ep:items-center ep:gap-2 ep:text-ui-small ep:text-obs-normal ep:cursor-pointer"
+					class="ep:flex ep:items-start ep:gap-2 ep:text-ui-small ep:cursor-pointer"
 				>
 					<input
 						id={autoApplyId}
@@ -239,18 +242,45 @@ export function CardAIPresetEditor({
 							patch({ autoApply: (e.target as HTMLInputElement).checked })
 						}
 					/>
-					<span>Auto-apply</span>
+					<span class="ep:flex ep:flex-col">
+						<span>Auto-apply edits to current card</span>
+						<span class="ep:text-ui-smaller ep:text-obs-muted">
+							Skip preview when the model only modifies the current card
+						</span>
+					</span>
 				</label>
-				<div class="ep:flex ep:gap-2">
-					{onDelete && (
-						<ActionButton
-							label="Delete"
-							variant="danger"
-							size="sm"
-							onClick={onDelete}
-						/>
-					)}
-				</div>
+				<label
+					for={autoApplyNewId}
+					class="ep:flex ep:items-start ep:gap-2 ep:text-ui-small ep:cursor-pointer"
+				>
+					<input
+						id={autoApplyNewId}
+						type="checkbox"
+						checked={!!preset.autoApplyNewCards}
+						onChange={(e) =>
+							patch({
+								autoApplyNewCards: (e.target as HTMLInputElement).checked,
+							})
+						}
+					/>
+					<span class="ep:flex ep:flex-col">
+						<span>Auto-apply new cards spawned by AI</span>
+						<span class="ep:text-ui-smaller ep:text-obs-muted">
+							Tip: AI spawns new cards only when your prompt asks for them
+						</span>
+					</span>
+				</label>
+			</div>
+
+			<div class="ep:flex ep:items-center ep:justify-end ep:gap-2 ep:pt-1">
+				{onDelete && (
+					<ActionButton
+						label="Delete"
+						variant="danger"
+						size="sm"
+						onClick={onDelete}
+					/>
+				)}
 			</div>
 		</div>
 	);

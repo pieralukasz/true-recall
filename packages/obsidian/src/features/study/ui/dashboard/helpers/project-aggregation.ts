@@ -57,7 +57,6 @@ interface ProjectAggregationIndexes {
 		import("@true-recall/core/types/fsrs/card.types").FSRSCardData[]
 	>;
 	activeCardsBySourceUid: Map<string, CardSchedulingMeta[]>;
-	retrievabilityByCardId: Map<string, number>;
 	now: Date;
 }
 
@@ -148,24 +147,6 @@ function computeRawCounts(
 	return { newCount, learning, due };
 }
 
-function buildRetrievabilityCache(
-	cardsBySourceUid: ReadonlyMap<
-		string,
-		import("@true-recall/core/types/fsrs/card.types").FSRSCardData[]
-	>,
-	fsrsService: FSRSService,
-	now: Date,
-): Map<string, number> {
-	const cache = new Map<string, number>();
-	for (const cards of cardsBySourceUid.values()) {
-		for (const card of cards) {
-			if (card.state === State.New) continue;
-			cache.set(card.id, fsrsService.getRetrievability(card, now));
-		}
-	}
-	return cache;
-}
-
 export function aggregateProjectData(
 	deps: ProjectAggregationDeps,
 ): DashboardProjectAggregation {
@@ -184,15 +165,9 @@ export function aggregateProjectData(
 	const activeCardsBySourceUid = buildActiveCardsBySourceUid(
 		plugin.activeCards,
 	);
-	const retrievabilityByCardId = buildRetrievabilityCache(
-		allCardsBySourceUid,
-		plugin.fsrsService,
-		now,
-	);
 	const indexes: ProjectAggregationIndexes = {
 		allCardsBySourceUid,
 		activeCardsBySourceUid,
-		retrievabilityByCardId,
 		now,
 	};
 
@@ -291,8 +266,8 @@ function buildProjectFromNode(
 		{
 			sourceUids,
 			cardsBySourceUid: indexes.allCardsBySourceUid,
-			retrievabilityByCardId: indexes.retrievabilityByCardId,
 			now: indexes.now,
+			skipHealthPct: true,
 		},
 	);
 

@@ -53,7 +53,9 @@ describe("CardRepository.deleteBatch", () => {
 			createTestCard({ id: "card-2" }),
 			createTestCard({ id: "card-3" }),
 		];
-		cards.forEach((c) => ctx.cards.set(c.id, c));
+		cards.forEach((c) => {
+			ctx.cards.set(c.id, c);
+		});
 
 		repository.deleteBatch(["card-1", "card-2"]);
 
@@ -69,7 +71,9 @@ describe("CardRepository.deleteBatch", () => {
 			createTestCard({ id: "card-1" }),
 			createTestCard({ id: "card-2" }),
 		];
-		cards.forEach((c) => ctx.cards.set(c.id, c));
+		cards.forEach((c) => {
+			ctx.cards.set(c.id, c);
+		});
 
 		const count = repository.deleteBatch(["card-1", "card-2"]);
 
@@ -100,7 +104,9 @@ describe("CardRepository.deleteBatch", () => {
 			createTestCard({ id: "card-1" }),
 			createTestCard({ id: "card-2" }),
 		];
-		cards.forEach((c) => ctx.cards.set(c.id, c));
+		cards.forEach((c) => {
+			ctx.cards.set(c.id, c);
+		});
 
 		repository.deleteBatch(["card-1", "card-2"]);
 
@@ -159,7 +165,9 @@ describe("CardRepository.deleteBatch", () => {
 			clozeTemplate: "{{c1::A}} {{c2::B}} {{c3::C}}",
 			clozeIndex: 3,
 		};
-		[c1, c2, c3].forEach((c) => ctx.cards.set(c.id, c));
+		[c1, c2, c3].forEach((c) => {
+			ctx.cards.set(c.id, c);
+		});
 
 		const count = repository.deleteBatch(["cloze-1", "cloze-2"]);
 
@@ -206,7 +214,9 @@ describe("FlashcardManager.removeFlashcardsByIds", () => {
 			createTestCard({ id: "card-1" }),
 			createTestCard({ id: "card-2" }),
 		];
-		cards.forEach((c) => ctx.cards.set(c.id, c));
+		cards.forEach((c) => {
+			ctx.cards.set(c.id, c);
+		});
 
 		const count = manager.removeFlashcardsByIds(["card-1", "card-2"]);
 

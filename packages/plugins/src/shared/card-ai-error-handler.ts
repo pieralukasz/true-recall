@@ -1,11 +1,12 @@
 import { Notice } from "obsidian";
 
+import { AIRequestError } from "@true-recall/core";
+
 import {
-	AIRequestError,
 	CardAIAbortedError,
 	CardAIParseError,
 	CardAIProviderError,
-} from "@true-recall/core";
+} from "./card-ai";
 
 export interface CardAIErrorHooks {
 	onRawFallback: (rawResponse: string) => void;

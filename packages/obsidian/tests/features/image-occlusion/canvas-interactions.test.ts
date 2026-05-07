@@ -229,10 +229,10 @@ describe("commitDraftRegion", () => {
 
 		const result = commitDraftRegion(def, draft);
 		expect(result).not.toBeNull();
-		expect(result!.definition.regions).toHaveLength(1);
-		expect(result!.regionId).toBeTruthy();
-		expect(result!.definition.regions[0].id).toBe(result!.regionId);
-		expect(result!.definition.regions[0].groupKey).toBe("0");
+		expect(result?.definition.regions).toHaveLength(1);
+		expect(result?.regionId).toBeTruthy();
+		expect(result?.definition.regions[0].id).toBe(result?.regionId);
+		expect(result?.definition.regions[0].groupKey).toBe("0");
 	});
 
 	it("assigns sequential group keys", () => {
@@ -242,9 +242,9 @@ describe("commitDraftRegion", () => {
 
 		const result = commitDraftRegion(def, draft);
 		expect(result).not.toBeNull();
-		expect(result!.definition.regions).toHaveLength(2);
-		expect(result!.definition.regions[1].groupKey).toBe("1");
-		expect(result!.definition.regions[1].shape).toBe("ellipse");
+		expect(result?.definition.regions).toHaveLength(2);
+		expect(result?.definition.regions[1].groupKey).toBe("1");
+		expect(result?.definition.regions[1].shape).toBe("ellipse");
 	});
 
 	it("rejects undersized drafts", () => {
@@ -262,6 +262,6 @@ describe("commitDraftRegion", () => {
 
 		const result = commitDraftRegion(def, draft);
 		expect(result).not.toBeNull();
-		expect(result!.definition.regions[0].id).toBe("r1");
+		expect(result?.definition.regions[0].id).toBe("r1");
 	});
 });

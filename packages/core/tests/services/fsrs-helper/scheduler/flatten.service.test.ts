@@ -198,8 +198,8 @@ describe("FlattenService", () => {
 			const overloaded = service.findOverloadedDays(10, 7);
 
 			expect(overloaded).toHaveLength(1);
-			expect(overloaded[0]!.count).toBe(25);
-			expect(overloaded[0]!.excess).toBe(15);
+			expect(overloaded[0]?.count).toBe(25);
+			expect(overloaded[0]?.excess).toBe(15);
 		});
 
 		it("returns empty when no days overloaded", () => {
@@ -228,9 +228,9 @@ describe("FlattenService", () => {
 
 			const overloaded = service.findOverloadedDays(10, 7);
 
-			expect(overloaded[0]!.date).toBe("2026-02-01");
-			expect(overloaded[1]!.date).toBe("2026-02-03");
-			expect(overloaded[2]!.date).toBe("2026-02-05");
+			expect(overloaded[0]?.date).toBe("2026-02-01");
+			expect(overloaded[1]?.date).toBe("2026-02-03");
+			expect(overloaded[2]?.date).toBe("2026-02-05");
 		});
 	});
 });

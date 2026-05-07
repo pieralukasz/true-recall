@@ -57,20 +57,42 @@ export interface ChatCompletionResponse {
 
 export const OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions";
 
+export function buildAIHeaders(
+	apiKey: string,
+	options?: {
+		providerType?: "pro" | "openrouter" | "custom" | "lmstudio";
+		userId?: string;
+		capability?: string;
+	},
+): Record<string, string> {
+	const headers: Record<string, string> = {
+		"Content-Type": "application/json",
+		Authorization: `Bearer ${apiKey}`,
+	};
+
+	const isOpenRouter =
+		options?.providerType === "openrouter" || options?.providerType === "pro";
+	if (isOpenRouter) {
+		headers["HTTP-Referer"] = "obsidian://true-recall";
+		headers["X-Title"] = "True Recall";
+	}
+	if (isOpenRouter && options?.userId) headers["X-User-Id"] = options.userId;
+	if (isOpenRouter && options?.capability)
+		headers["x-tr-capability"] = options.capability;
+	return headers;
+}
+
+/** @deprecated Use buildAIHeaders with providerType option instead */
 export function buildOpenRouterHeaders(
 	apiKey: string,
 	userId?: string,
 	capability?: string,
 ): Record<string, string> {
-	const headers: Record<string, string> = {
-		"Content-Type": "application/json",
-		Authorization: `Bearer ${apiKey}`,
-		"HTTP-Referer": "obsidian://true-recall",
-		"X-Title": "True Recall",
-	};
-	if (userId) headers["X-User-Id"] = userId;
-	if (capability) headers["x-tr-capability"] = capability;
-	return headers;
+	return buildAIHeaders(apiKey, {
+		providerType: "openrouter",
+		userId,
+		capability,
+	});
 }
 
 /** Extract text content from a ChatMessage response (handles both string and ContentPart[] content). */
@@ -110,6 +132,8 @@ export interface AIClientOptions {
 }
 
 export class OpenRouterClient {
+	private providerType: "pro" | "openrouter" | "custom" | "lmstudio";
+
 	constructor(
 		private apiKey: string,
 		private model: string,
@@ -117,14 +141,17 @@ export class OpenRouterClient {
 		private baseUrl: string = OPENROUTER_URL,
 		private userId?: string,
 		private capability?: string,
-	) {}
+		options?: { providerType?: "pro" | "openrouter" | "custom" | "lmstudio" },
+	) {
+		this.providerType = options?.providerType ?? "openrouter";
+	}
 
 	async chat(request: ChatCompletionRequest): Promise<ChatCompletionResponse> {
-		const headers = buildOpenRouterHeaders(
-			this.apiKey,
-			this.userId,
-			this.capability,
-		);
+		const headers = buildAIHeaders(this.apiKey, {
+			providerType: this.providerType,
+			userId: this.userId,
+			capability: this.capability,
+		});
 
 		const response = await this.httpClient.post(
 			this.baseUrl,

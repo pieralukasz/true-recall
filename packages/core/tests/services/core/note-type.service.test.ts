@@ -51,33 +51,33 @@ describe("NoteTypeService", () => {
 
 			const basic = service.getById(BUILTIN_BASIC_ID);
 			expect(basic).not.toBeNull();
-			expect(basic!.fields).toEqual(["Front", "Back"]);
-			expect(basic!.templates).toHaveLength(1);
+			expect(basic?.fields).toEqual(["Front", "Back"]);
+			expect(basic?.templates).toHaveLength(1);
 		});
 
 		it("builtin-basic-reversed has fields ['Front','Back'] and 2 templates", () => {
 			service.initialize();
 
 			const reversed = service.getById(BUILTIN_BASIC_REVERSED_ID);
-			expect(reversed!.fields).toEqual(["Front", "Back"]);
-			expect(reversed!.templates).toHaveLength(2);
+			expect(reversed?.fields).toEqual(["Front", "Back"]);
+			expect(reversed?.templates).toHaveLength(2);
 		});
 
 		it("builtin-cloze has fields ['Text','Extra'] and 1 template, type=1", () => {
 			service.initialize();
 
 			const cloze = service.getById(BUILTIN_CLOZE_ID);
-			expect(cloze!.type).toBe(1);
-			expect(cloze!.fields).toEqual(["Text", "Extra"]);
-			expect(cloze!.templates).toHaveLength(1);
+			expect(cloze?.type).toBe(1);
+			expect(cloze?.fields).toEqual(["Text", "Extra"]);
+			expect(cloze?.templates).toHaveLength(1);
 		});
 
 		it("builtin-image-occlusion has fields ['Image','Regions']", () => {
 			service.initialize();
 
 			const io = service.getById(BUILTIN_IMAGE_OCCLUSION_ID);
-			expect(io!.fields).toContain("Image");
-			expect(io!.fields).toContain("Regions");
+			expect(io?.fields).toContain("Image");
+			expect(io?.fields).toContain("Regions");
 		});
 
 		it("all built-in types have isBuiltin=true", () => {
@@ -92,7 +92,7 @@ describe("NoteTypeService", () => {
 
 			for (const id of builtinIds) {
 				const nt = service.getById(id);
-				expect(nt!.isBuiltin).toBe(true);
+				expect(nt?.isBuiltin).toBe(true);
 			}
 		});
 
@@ -100,8 +100,8 @@ describe("NoteTypeService", () => {
 			service.initialize();
 
 			const basic = service.getById(BUILTIN_BASIC_ID);
-			expect(basic!.id).toBe(BUILTIN_BASIC_ID);
-			expect(basic!.name).toBe("Basic");
+			expect(basic?.id).toBe(BUILTIN_BASIC_ID);
+			expect(basic?.name).toBe("Basic");
 		});
 
 		it("getAll returns all 4 built-in types", () => {
@@ -200,8 +200,8 @@ describe("NoteTypeService", () => {
 			});
 
 			const updated = service.getById(created.id);
-			expect(updated!.name).toBe("Updated");
-			expect(updated!.fields).toEqual(["X", "Y", "Z"]);
+			expect(updated?.name).toBe("Updated");
+			expect(updated?.fields).toEqual(["X", "Y", "Z"]);
 		});
 
 		it("update: rejects updating built-in types", () => {
@@ -224,7 +224,7 @@ describe("NoteTypeService", () => {
 			service.update(created.id, { name: "TS Updated" });
 
 			const updated = service.getById(created.id);
-			expect(updated!.updatedAt).toBeGreaterThanOrEqual(beforeTs ?? 0);
+			expect(updated?.updatedAt).toBeGreaterThanOrEqual(beforeTs ?? 0);
 		});
 
 		it("delete: soft-deletes (sets deleted_at)", () => {
@@ -309,14 +309,14 @@ describe("NoteTypeService", () => {
 			service.addField(customId, "D");
 
 			const nt = service.getById(customId);
-			expect(nt!.fields).toEqual(["A", "B", "C", "D"]);
+			expect(nt?.fields).toEqual(["A", "B", "C", "D"]);
 		});
 
 		it("removeField: removes field from type", () => {
 			service.removeField(customId, "C");
 
 			const nt = service.getById(customId);
-			expect(nt!.fields).toEqual(["A", "B"]);
+			expect(nt?.fields).toEqual(["A", "B"]);
 		});
 
 		it("removeField: rejects removing last field", () => {
@@ -336,8 +336,8 @@ describe("NoteTypeService", () => {
 			service.renameField(customId, "A", "Alpha");
 
 			const nt = service.getById(customId);
-			expect(nt!.fields).toContain("Alpha");
-			expect(nt!.fields).not.toContain("A");
+			expect(nt?.fields).toContain("Alpha");
+			expect(nt?.fields).not.toContain("A");
 		});
 	});
 });

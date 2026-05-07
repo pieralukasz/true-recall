@@ -6,6 +6,7 @@ import type { Note, NoteType } from "@true-recall/core/types/note.types";
 export interface AddMode {
 	mode: "add";
 	sourceUid?: string;
+	excludeCardId?: string;
 	defaultNoteTypeId?: string;
 	initialFields?: Record<string, string>;
 }

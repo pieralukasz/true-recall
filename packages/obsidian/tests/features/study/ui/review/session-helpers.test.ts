@@ -370,6 +370,7 @@ describe("applyMutation", () => {
 		const review = {
 			queue: [createMockCard({ id: "c-1" }), createMockCard({ id: "c-2" })],
 			removeCardsByIds,
+			getCurrentCard: () => null,
 		} as unknown as ReviewApi;
 
 		applyMutation(
@@ -389,6 +390,7 @@ describe("applyMutation", () => {
 		const review = {
 			queue: [createMockCard({ id: "c-1" }), createMockCard({ id: "c-2" })],
 			removeCardsByIds,
+			getCurrentCard: () => null,
 		} as unknown as ReviewApi;
 
 		applyMutation(
@@ -410,6 +412,7 @@ describe("applyMutation", () => {
 			queue: [createMockCard({ id: "c-1", sourceUid: "uid-target" })],
 			removeCardsByIds,
 			addCardToQueue,
+			getCurrentCard: () => null,
 		} as unknown as ReviewApi;
 
 		const updatedExisting = createMockCard({
@@ -425,7 +428,7 @@ describe("applyMutation", () => {
 			{ type: "bulk", action: "update", cardIds: ["c-1", "c-3"] },
 			review,
 			flashcardManager,
-			{} as SqliteStoreService,
+			{ get: () => undefined } as unknown as SqliteStoreService,
 			{ sourceUidFilter: "uid-target" },
 		);
 
@@ -438,6 +441,7 @@ describe("applyMutation", () => {
 		const review = {
 			queue: [],
 			addCardToQueue,
+			getCurrentCard: () => null,
 		} as unknown as ReviewApi;
 
 		const added = createMockCard({ id: "c-added", sourceUid: "uid-target" });
@@ -449,7 +453,7 @@ describe("applyMutation", () => {
 			{ type: "bulk", action: "added", cardIds: ["c-added"] },
 			review,
 			flashcardManager,
-			{} as SqliteStoreService,
+			{ get: () => undefined } as unknown as SqliteStoreService,
 			{ sourceUidFilter: "uid-target" },
 		);
 
@@ -461,6 +465,7 @@ describe("applyMutation", () => {
 		const review = {
 			queue: [],
 			addCardToQueue,
+			getCurrentCard: () => null,
 		} as unknown as ReviewApi;
 
 		const updated = createMockCard({ id: "c-sync", sourceUid: "uid-target" });
@@ -472,11 +477,50 @@ describe("applyMutation", () => {
 			{ type: "bulk", cardIds: ["c-sync"] },
 			review,
 			flashcardManager,
-			{} as SqliteStoreService,
+			{ get: () => undefined } as unknown as SqliteStoreService,
 			{ sourceUidFilter: "uid-target" },
 		);
 
 		expect(addCardToQueue).toHaveBeenCalledWith(updated);
+	});
+
+	it("refreshes visible card content on bulk update when current card is in payload", () => {
+		const updateCurrentCardContent = vi.fn();
+		const currentCard = createMockCard({
+			id: "c-current",
+			sourceUid: "uid-target",
+			question: "old Q",
+			answer: "old A",
+		});
+		const review = {
+			queue: [currentCard],
+			addCardToQueue: vi.fn(),
+			removeCardsByIds: vi.fn(),
+			getCurrentCard: () => currentCard,
+			updateCurrentCardContent,
+		} as unknown as ReviewApi;
+
+		const flashcardManager = {
+			getCardsByIds: () => [currentCard],
+		} as unknown as FlashcardManager;
+
+		const cardStore = {
+			get: () => ({
+				id: "c-current",
+				question: "fresh Q",
+				answer: "fresh A",
+			}),
+		} as unknown as SqliteStoreService;
+
+		applyMutation(
+			{ type: "bulk", cardIds: ["c-current"] },
+			review,
+			flashcardManager,
+			cardStore,
+			{ sourceUidFilter: "uid-target" },
+		);
+
+		expect(updateCurrentCardContent).toHaveBeenCalledWith("fresh Q", "fresh A");
 	});
 
 	it("removes updated card from queue when it no longer matches filters", () => {

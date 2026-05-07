@@ -200,14 +200,14 @@ describe("buildStaticSuggestions", () => {
 		const ctx = getTokenContext({ token: "is:ne", start: 0, end: 5 });
 		const suggestions = buildStaticSuggestions(ctx);
 		expect(suggestions.length).toBe(1);
-		expect(suggestions[0]!.label).toBe("is:new");
+		expect(suggestions[0]?.label).toBe("is:new");
 	});
 
 	it("returns negated state suggestions", () => {
 		const ctx = getTokenContext({ token: "-is:sus", start: 0, end: 7 });
 		const suggestions = buildStaticSuggestions(ctx);
 		expect(suggestions.length).toBe(1);
-		expect(suggestions[0]!.label).toBe("-is:suspended");
+		expect(suggestions[0]?.label).toBe("-is:suspended");
 	});
 
 	it("returns property suggestions for prop: prefix", () => {
@@ -221,7 +221,7 @@ describe("buildStaticSuggestions", () => {
 		const ctx = getTokenContext({ token: "prop:la", start: 0, end: 7 });
 		const suggestions = buildStaticSuggestions(ctx);
 		expect(suggestions.length).toBe(1);
-		expect(suggestions[0]!.label).toBe("prop:lapses>");
+		expect(suggestions[0]?.label).toBe("prop:lapses>");
 	});
 
 	it("returns type suggestions for type: prefix", () => {

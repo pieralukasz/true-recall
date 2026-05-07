@@ -118,6 +118,47 @@ describe("computeProjectStats", () => {
 		expect(indexed.lastReviewed).toBe("2026-03-01T07:30:00.000Z");
 	});
 
+	it("skips retrievability computation when skipHealthPct is set", () => {
+		const now = new Date("2026-03-01T10:00:00.000Z");
+		const sourceUids = new Set(["uid-d"]);
+		const cards = [
+			makeCard({ id: "review-2", state: State.Review }),
+			makeCard({ id: "learning-2", state: State.Learning }),
+			makeCard({ id: "new-2", state: State.New, lastReview: null }),
+		];
+		const byUid = new Map<string, FSRSCardData[]>([["uid-d", cards]]);
+
+		const hierarchyService = {
+			getSourceUidsForProject: vi.fn(() => sourceUids),
+		};
+		const cardStore = { getCardsBySourceUid: vi.fn() };
+		const fsrsService = {
+			getRetrievability: vi.fn(() => 0.5),
+		};
+
+		const stats = computeProjectStats(
+			"Projects/Z",
+			"Z",
+			0,
+			hierarchyService as never,
+			cardStore as never,
+			fsrsService as never,
+			{
+				sourceUids,
+				cardsBySourceUid: byUid,
+				now,
+				skipHealthPct: true,
+			},
+		);
+
+		expect(fsrsService.getRetrievability).not.toHaveBeenCalled();
+		expect(stats.healthPct).toBe(0);
+		expect(stats.totalCards).toBe(3);
+		expect(stats.due).toBe(1);
+		expect(stats.learning).toBe(1);
+		expect(stats.newCount).toBe(1);
+	});
+
 	it("uses cached retrievability map instead of recomputing per card", () => {
 		const now = new Date("2026-03-01T10:00:00.000Z");
 		const sourceUids = new Set(["uid-c"]);

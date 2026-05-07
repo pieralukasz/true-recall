@@ -7,6 +7,7 @@ import { Clickable, FormCard } from "@true-recall/obsidian/components";
 import { useIcon, usePlugin } from "@true-recall/obsidian/preact";
 
 import { BUTTON_PLUGIN_MAP } from "../registry";
+import { IMAGE_TOOLBAR_BUTTONS } from "./ImageToolbar";
 import {
 	BUILTIN_BUTTONS,
 	extractPresetId,
@@ -22,7 +23,7 @@ interface ToolbarConfigListProps {
 	description: string;
 	buttons: ToolbarButtonConfig[];
 	onChange: (buttons: ToolbarButtonConfig[]) => void;
-	context: "editor" | "global";
+	context: "editor" | "global" | "image";
 }
 
 export function ToolbarConfigSection({
@@ -157,7 +158,13 @@ export function ToolbarConfigSection({
 					const isOrphan = isPreset && !presetExists;
 					const isProButton = pluginInfo?.tier === "pro";
 					const isBasicPro = btn.id === BASIC_PRO_BUTTON_ID;
-					const isDisabled = isEditorOnly || isPluginDisabled || isOrphan;
+					const isUnsupportedInImage =
+						context === "image" && !IMAGE_TOOLBAR_BUTTONS.has(btn.id);
+					const isDisabled =
+						isEditorOnly ||
+						isPluginDisabled ||
+						isOrphan ||
+						isUnsupportedInImage;
 					const rawLabel = getLabel(btn.id);
 					const label = isBasicPro
 						? rawLabel.replace(/\s*\(Pro\)\s*$/i, "")
@@ -179,7 +186,9 @@ export function ToolbarConfigSection({
 										? "Plugin disabled"
 										: isEditorOnly
 											? "Only available in editor"
-											: undefined
+											: isUnsupportedInImage
+												? "Not supported in image context"
+												: undefined
 							}
 							showProBadge={isProButton || isBasicPro}
 							onToggle={() => handleToggle(i)}

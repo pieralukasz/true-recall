@@ -32,6 +32,7 @@ interface ReviewAppProps {
 	onOpenSourceNote: () => void;
 	onClose: () => void;
 	onNextSession: () => void;
+	onOpenDashboard: () => void;
 	onEndSession: () => void;
 	onActionsMenu: (e: MouseEvent) => void;
 	onPolishMenu?: (e: MouseEvent) => void;
@@ -92,6 +93,7 @@ export function ReviewApp(props: ReviewAppProps) {
 					continuousCustomReviews={props.continuousCustomReviews}
 					onClose={props.onClose}
 					onNextSession={props.onNextSession}
+					onOpenDashboard={props.onOpenDashboard}
 				/>
 			);
 		case "waiting":

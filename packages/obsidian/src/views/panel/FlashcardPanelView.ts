@@ -20,6 +20,7 @@ import { cardsToBlockText } from "@true-recall/obsidian/features/library/ui/pane
 import { countCardsByState } from "@true-recall/obsidian/helpers";
 import { mountPreact } from "@true-recall/obsidian/preact/mount";
 import { notify } from "@true-recall/obsidian/services/notification.service";
+import { lastMutation } from "@true-recall/obsidian/services/signals";
 import type { PanelApi } from "@true-recall/obsidian/store";
 import {
 	FlashcardPanelApp,
@@ -295,12 +296,15 @@ export class FlashcardPanelView extends ItemView {
 		this.signalDisposer = effect(() => {
 			void allMetaSig?.value;
 			void settingsSig?.value;
+			const m = lastMutation.value;
 			this.invalidateCardsCache();
 			this.scheduleHeaderStatsUpdate();
-			// During review, only FSRS scheduling data changes — skip full reload.
-			// Card content (question/answer/template) doesn't change per answer.
-			// Full reload triggers when review ends via G.CARDS invalidation.
-			if (!this.isFollowingReview()) {
+			// Answering a card during review only changes FSRS scheduling data,
+			// so skip the full reload as an optimization. Other mutations (e.g.
+			// card polish) actually change question/answer content and need the
+			// reload even when the panel is following a review session.
+			const isReviewRating = m?.type === "reviewed";
+			if (!isReviewRating || !this.isFollowingReview()) {
 				this.scheduleFlashcardInfoReload();
 			}
 		});

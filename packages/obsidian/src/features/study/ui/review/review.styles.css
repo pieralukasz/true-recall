@@ -83,6 +83,22 @@
 		margin-right: auto;
 	}
 
+	/* Center tables — both rendered HTML <table> (live-preview widget)
+	   and CM6 source-mode rows (HyperMD-table-row) shrink to their content. */
+	.true-recall-review-question table,
+	.true-recall-review-answer table {
+		margin-left: auto;
+		margin-right: auto;
+		max-width: 100%;
+	}
+	.true-recall-review-question .cm-line.HyperMD-table-row,
+	.true-recall-review-answer .cm-line.HyperMD-table-row {
+		width: fit-content;
+		max-width: 100%;
+		margin-left: auto;
+		margin-right: auto;
+	}
+
 	/* Card markdown content styling */
 	.true-recall-card-markdown p {
 		margin: 0;
@@ -189,6 +205,7 @@
 .true-recall-review-question .cm-editor .cm-content,
 .true-recall-review-answer .cm-editor .cm-content {
 	text-align: center;
+	/* biome-ignore lint/complexity/noImportantStyles: must override CodeMirror's inline display rule */
 	display: flex !important;
 	flex-direction: column;
 	align-items: center;
@@ -223,6 +240,9 @@
 	.cm-editor
 	.cm-content {
 	text-align: left;
+	/* biome-ignore lint/complexity/noImportantStyles: undo the flex centering set above so cm-lines flow as block-level rows */
+	display: block !important;
+	align-items: stretch;
 }
 
 .true-recall-review-question .cm-line.HyperMD-codeblock,

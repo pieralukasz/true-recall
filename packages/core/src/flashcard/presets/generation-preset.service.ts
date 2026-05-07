@@ -1,4 +1,3 @@
-import { TTS_VOICES } from "../../constants";
 import type {
 	CreateGenerationPresetInput,
 	GenerationPreset,
@@ -32,37 +31,6 @@ export class GenerationPresetService {
 		const noteType = this.getNoteTypeById(preset.noteTypeId);
 		if (!noteType) {
 			errors.push(`noteTypeId '${preset.noteTypeId}' not found`);
-		}
-
-		if (noteType && preset.tts) {
-			if (!noteType.fields.includes(preset.tts.field)) {
-				errors.push(
-					`TTS field '${preset.tts.field}' not in note type '${noteType.id}' (valid: ${noteType.fields.join(", ")})`,
-				);
-			}
-			if (
-				!TTS_VOICES.includes(preset.tts.voice as (typeof TTS_VOICES)[number])
-			) {
-				errors.push(
-					`TTS voice '${preset.tts.voice}' not supported (valid: ${TTS_VOICES.join(", ")})`,
-				);
-			}
-		}
-
-		if (noteType && preset.image) {
-			if (!noteType.fields.includes(preset.image.targetField)) {
-				errors.push(
-					`Image targetField '${preset.image.targetField}' not in note type '${noteType.id}'`,
-				);
-			}
-			if (!noteType.fields.includes(preset.image.sourceField)) {
-				errors.push(
-					`Image sourceField '${preset.image.sourceField}' not in note type '${noteType.id}'`,
-				);
-			}
-			if (preset.image.targetField === preset.image.sourceField) {
-				errors.push("Image targetField must differ from sourceField");
-			}
 		}
 
 		return errors;
@@ -126,10 +94,10 @@ export class GenerationPresetService {
 			"name",
 			"prompt",
 			"noteTypeId",
-			"tts",
-			"image",
 			"requiresPro",
 			"isDefault",
+			"includeSourceNote",
+			"includeRelatedCards",
 		];
 		for (const key of Object.keys(patch)) {
 			if (!allowedKeys.includes(key as keyof UpdateGenerationPresetPatch)) {

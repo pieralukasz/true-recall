@@ -388,6 +388,9 @@ describe("Sync Operations", () => {
 
 			const initialModified = ctx.cards.getModifiedSince(0);
 			const initialTimestamp = initialModified[0]?.updatedAt;
+			if (initialTimestamp === undefined) {
+				throw new Error("expected seed card to have updatedAt");
+			}
 
 			// Wait and update
 			vi.advanceTimersByTime(5000);
@@ -397,7 +400,7 @@ describe("Sync Operations", () => {
 			const afterModified = ctx.cards.getModifiedSince(0);
 			const afterTimestamp = afterModified[0]?.updatedAt;
 
-			expect(afterTimestamp).toBeGreaterThan(initialTimestamp!);
+			expect(afterTimestamp).toBeGreaterThan(initialTimestamp);
 		});
 
 		it("should cascade soft delete to review_log", async () => {

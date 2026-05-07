@@ -1,6 +1,8 @@
-import type { CardAITarget, CardFields } from "@true-recall/core";
+import type { CardFields } from "@true-recall/core";
 
 import type TrueRecallPlugin from "@true-recall/obsidian/main";
+
+import type { CardAITarget, CardAITargetOperation } from "./card-ai";
 
 export class ReviewCardTarget implements CardAITarget {
 	constructor(private readonly plugin: TrueRecallPlugin) {}
@@ -25,11 +27,31 @@ export class ReviewCardTarget implements CardAITarget {
 		return this.snapshot().card?.id;
 	}
 
+	getOperation(): CardAITargetOperation {
+		return "edit";
+	}
+
 	apply(fields: CardFields): boolean {
 		const { card } = this.snapshot();
 		if (!card || !card.noteId) return false;
 		this.plugin.flashcardManager.updateNoteFields(card.noteId, fields);
 		return true;
+	}
+
+	createCard(fields: CardFields): string[] | null {
+		const { card, noteType } = this.snapshot();
+		if (!card || !noteType) return null;
+		const result = this.plugin.flashcardManager.createNote({
+			noteTypeId: noteType.id,
+			fields,
+			sourceUid: card.sourceUid,
+			createdVia: "ai_polish",
+		});
+		return result.cards.length > 0 ? result.cards.map((c) => c.id) : null;
+	}
+
+	removeCard(cardId: string): boolean {
+		return this.plugin.flashcardManager.removeFlashcardById(cardId);
 	}
 
 	private snapshot() {

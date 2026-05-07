@@ -7,5 +7,6 @@
 /* Suppress Obsidian's default modal fade so it does not double-animate with
    the shared-element morph. Scoped to our modal class only. */
 .modal-container:has(.true-recall-card-preview-modal) {
+	/* biome-ignore lint/complexity/noImportantStyles: must override Obsidian's built-in modal animation */
 	animation: none !important;
 }

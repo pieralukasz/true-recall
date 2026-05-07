@@ -1,3 +1,4 @@
+import { Transaction } from "@codemirror/state";
 import type { ViewUpdate } from "@codemirror/view";
 import { useCallback, useEffect, useLayoutEffect, useRef } from "preact/hooks";
 
@@ -142,15 +143,21 @@ export function LivePreviewField({
 	}, [app, plugin.EmbeddableEditor]);
 
 	// Update editor content when card changes (new card appears)
-	// useLayoutEffect ensures CM content updates before paint — no flash of old card
+	// useLayoutEffect ensures CM content updates before paint — no flash of old card.
+	// addToHistory.of(false) keeps card transitions out of CM6's undo stack so Cmd+Z
+	// inside the editor cannot rewind to the previous card's question/answer.
 	useLayoutEffect(() => {
 		const editor = editorRef.current;
 		if (!editor) return;
 
 		const normalizedContent = stripBrTags(content);
-		if (editor.value !== normalizedContent) {
-			editor.set(normalizedContent);
-		}
+		if (editor.value === normalizedContent) return;
+
+		const cm = editor.cm;
+		cm.dispatch({
+			changes: { from: 0, to: cm.state.doc.length, insert: normalizedContent },
+			annotations: Transaction.addToHistory.of(false),
+		});
 	}, [content]);
 
 	return (

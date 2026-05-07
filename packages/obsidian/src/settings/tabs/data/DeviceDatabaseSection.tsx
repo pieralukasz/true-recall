@@ -1,4 +1,10 @@
+import { normalizePath } from "obsidian";
 import { useCallback } from "preact/hooks";
+
+import {
+	DB_FOLDER,
+	getDeviceDbFilename,
+} from "@true-recall/core/persistence/sqlite/sqlite.types";
 
 import {
 	ActionButton,
@@ -56,10 +62,6 @@ export function DeviceDatabaseSection() {
 			await plugin.backupService?.createBackup();
 
 			const currentDeviceId = plugin.deviceIdService?.getDeviceId();
-			const { normalizePath } = await import("obsidian");
-			const { DB_FOLDER, getDeviceDbFilename } = await import(
-				"@true-recall/core/persistence/sqlite/sqlite.types"
-			);
 
 			const targetPath = normalizePath(
 				`${DB_FOLDER}/${getDeviceDbFilename(currentDeviceId)}`,

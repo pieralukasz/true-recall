@@ -84,12 +84,26 @@ export function buildQueueOptions(
 	sessionPersistence: SessionPersistenceService,
 	preset?: FSRSPreset,
 ): QueueBuildOptions {
+	// When scoped to a single preset (per-project/per-note snapshots), match
+	// today's progress to that preset so its remaining budget isn't drained
+	// by reviews from other presets. Global sessions don't pass a preset and
+	// use the aggregate counters instead.
+	const presetProgress = preset
+		? sessionPersistence.getTodayProgressByPreset().get(preset.name)
+		: undefined;
+	const newCardsStudiedToday = preset
+		? (presetProgress?.newStudied ?? 0)
+		: sessionPersistence.getNewCardsStudiedToday();
+	const reviewsCompletedToday = preset
+		? (presetProgress?.reviewsCompleted ?? 0)
+		: sessionPersistence.getReviewCardsCompletedToday();
+
 	return {
 		newCardsLimit: preset?.newCardsPerDay ?? settings.newCardsPerDay,
 		reviewsLimit: preset?.reviewsPerDay ?? settings.reviewsPerDay,
 		reviewedToday: sessionPersistence.getReviewedToday(),
-		newCardsStudiedToday: sessionPersistence.getNewCardsStudiedToday(),
-		reviewsCompletedToday: sessionPersistence.getReviewCardsCompletedToday(),
+		newCardsStudiedToday,
+		reviewsCompletedToday,
 		newCardOrder: preset?.newCardOrder ?? settings.newCardOrder,
 		reviewOrder:
 			filters.customReviewOrder ?? preset?.reviewOrder ?? settings.reviewOrder,

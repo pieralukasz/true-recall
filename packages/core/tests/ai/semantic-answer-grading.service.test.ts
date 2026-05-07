@@ -56,7 +56,10 @@ describe("SemanticAnswerGradingService", () => {
 	});
 
 	it("returns full feedback for Pro users", async () => {
-		const settings = createSettings({ proKey: "sk-pro-key" });
+		const settings = createSettings({
+			proKey: "sk-pro-key",
+			providerType: "pro",
+		});
 		const service = new SemanticAnswerGradingService(
 			() => settings,
 			dummyHttpClient,
@@ -259,6 +262,56 @@ describe("SemanticAnswerGradingService", () => {
 		expect(capturedUserMessage).toContain("adenosine triphosphate");
 		expect(capturedUserMessage).toContain("</context>");
 		expect(capturedUserMessage).toContain("Question: What is ATP?");
+	});
+
+	it("includes source note path and related cards when provided", async () => {
+		const settings = createSettings({ openRouterApiKey: "byok-key" });
+		let capturedUserMessage = "";
+
+		const service = new SemanticAnswerGradingService(
+			() => settings,
+			dummyHttpClient,
+			() => ({
+				chat: async (request) => {
+					capturedUserMessage = request.messages[1]?.content ?? "";
+					return {
+						id: "resp-related",
+						choices: [
+							{
+								message: {
+									role: "assistant",
+									content: '{"score": 88, "feedback": "OK."}',
+								},
+								finish_reason: "stop",
+							},
+						],
+					};
+				},
+			}),
+		);
+
+		await service.gradeAnswer({
+			question: "What is ATP?",
+			correctAnswer: "Adenosine triphosphate",
+			userAnswer: "Energy currency",
+			passThreshold: 85,
+			localFallbackScore: 10,
+			sourceContext: "ATP powers cellular work.",
+			sourceNotePath: "biology/atp.md",
+			relatedCards: [
+				{
+					noteType: "Basic",
+					fields: { Front: "Where is ATP made?", Back: "Mitochondria" },
+				},
+			],
+		});
+
+		expect(capturedUserMessage).toContain("biology/atp.md");
+		expect(capturedUserMessage).toContain(
+			"Related flashcards from the same source",
+		);
+		expect(capturedUserMessage).toContain("Mitochondria");
+		expect(capturedUserMessage).toContain("Where is ATP made?");
 	});
 
 	it("omits context block when sourceContext is not provided", async () => {

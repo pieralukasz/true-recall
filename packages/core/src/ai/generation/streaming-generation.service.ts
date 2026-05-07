@@ -19,8 +19,8 @@ import {
 	finishStreaming,
 	type ScheduleCallback,
 	startStreaming,
-	streamingGeneration,
 } from "../state/streaming-state";
+import { enqueueGeneration } from "./generation-queue";
 import { resolveGenerationPresetAndNoteType } from "./preset-resolver";
 import {
 	type CardEventFlashcardManager,
@@ -59,6 +59,8 @@ export interface StreamingFlashcardManager extends CardEventFlashcardManager {
 
 export interface StreamingGenerationOptions {
 	existingCards?: ExistingCardContext[];
+	/** Pre-rendered context text (source note content + related cards) to inject into the system prompt. */
+	contextText?: string;
 }
 
 export class StreamingGenerationService {
@@ -75,6 +77,17 @@ export class StreamingGenerationService {
 		presetId: string,
 		options?: StreamingGenerationOptions,
 	): Promise<StreamingGenerationResult> {
+		return enqueueGeneration(() =>
+			this.generateQueued(text, sourceFile, presetId, options),
+		);
+	}
+
+	private async generateQueued(
+		text: string,
+		sourceFile: StreamingSourceFile,
+		presetId: string,
+		options?: StreamingGenerationOptions,
+	): Promise<StreamingGenerationResult> {
 		const settings = this.getSettings();
 		const { preset, noteType } = resolveGenerationPresetAndNoteType(
 			settings,
@@ -82,17 +95,13 @@ export class StreamingGenerationService {
 			presetId,
 		);
 
-		if (streamingGeneration.value.isGenerating) {
-			throw new Error("Generation already in progress");
-		}
-
 		if (preset.requiresPro && !settings.proKey) {
 			throw new Error(
 				`Preset "${preset.name}" requires True Recall Pro. Upgrade or pick a different preset.`,
 			);
 		}
 
-		const aiConfig = resolveAIClientConfig(settings);
+		const aiConfig = resolveAIClientConfig(settings, "generation");
 		const abortController = new AbortController();
 		startStreaming(sourceFile.basename, sourceFile.path, abortController);
 
@@ -130,6 +139,8 @@ export class StreamingGenerationService {
 			aiConfig.model,
 			this.httpClient,
 			aiConfig.baseUrl,
+			undefined,
+			{ providerType: aiConfig.providerType },
 		);
 		const getNoteType = (slug: string) =>
 			this.flashcardManager.getNoteTypeBySlug?.(slug) ?? null;
@@ -147,10 +158,13 @@ export class StreamingGenerationService {
 		const existingCardsBlock = renderExistingCardsBlock(
 			options?.existingCards ?? [],
 		);
-		const systemPrompt = rawSystemPrompt.replace(
+		let systemPrompt = rawSystemPrompt.replace(
 			"{{EXISTING_CARDS}}",
 			existingCardsBlock,
 		);
+		if (options?.contextText?.trim()) {
+			systemPrompt = `${options.contextText.trim()}\n\n${systemPrompt}`;
+		}
 
 		const metadata = aiConfig.hasProTier
 			? {
@@ -161,7 +175,7 @@ export class StreamingGenerationService {
 			: undefined;
 
 		const userContent = useRawPrompt
-			? `${buildPresetFormatSpec(preset, noteType)}\n\n${text}`
+			? `${buildPresetFormatSpec(noteType)}\n\n${text}`
 			: text;
 
 		let createdCount = 0;

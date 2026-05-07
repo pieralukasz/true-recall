@@ -120,10 +120,10 @@ Back: Process of converting light to energy`;
 
 			const { blocks } = parseBlocks(content, lookup);
 			expect(blocks).toHaveLength(1);
-			expect(blocks[0]!.noteTypeId).toBe(BUILTIN_BASIC_ID);
-			expect(blocks[0]!.noteTypeSlug).toBe("basic");
-			expect(blocks[0]!.fields.Front).toBe("What is photosynthesis?");
-			expect(blocks[0]!.fields.Back).toBe(
+			expect(blocks[0]?.noteTypeId).toBe(BUILTIN_BASIC_ID);
+			expect(blocks[0]?.noteTypeSlug).toBe("basic");
+			expect(blocks[0]?.fields.Front).toBe("What is photosynthesis?");
+			expect(blocks[0]?.fields.Back).toBe(
 				"Process of converting light to energy",
 			);
 		});
@@ -139,8 +139,8 @@ Back: Answer 2`;
 
 			const { blocks } = parseBlocks(content, lookup);
 			expect(blocks).toHaveLength(2);
-			expect(blocks[0]!.fields.Front).toBe("Question 1");
-			expect(blocks[1]!.fields.Front).toBe("Question 2");
+			expect(blocks[0]?.fields.Front).toBe("Question 1");
+			expect(blocks[1]?.fields.Front).toBe("Question 2");
 		});
 
 		it("should parse cloze blocks", () => {
@@ -150,11 +150,11 @@ Extra: Geography fact`;
 
 			const { blocks } = parseBlocks(content, lookup);
 			expect(blocks).toHaveLength(1);
-			expect(blocks[0]!.noteTypeId).toBe(BUILTIN_CLOZE_ID);
-			expect(blocks[0]!.fields.Text).toBe(
+			expect(blocks[0]?.noteTypeId).toBe(BUILTIN_CLOZE_ID);
+			expect(blocks[0]?.fields.Text).toBe(
 				"{{c1::Tokio}} is the capital of {{c2::Japan}}",
 			);
-			expect(blocks[0]!.fields.Extra).toBe("Geography fact");
+			expect(blocks[0]?.fields.Extra).toBe("Geography fact");
 		});
 
 		it("should parse reversed blocks", () => {
@@ -164,7 +164,7 @@ Back: Paris`;
 
 			const { blocks } = parseBlocks(content, lookup);
 			expect(blocks).toHaveLength(1);
-			expect(blocks[0]!.noteTypeId).toBe(BUILTIN_BASIC_REVERSED_ID);
+			expect(blocks[0]?.noteTypeId).toBe(BUILTIN_BASIC_REVERSED_ID);
 		});
 
 		it("should parse custom NoteType blocks", () => {
@@ -175,10 +175,10 @@ Example: Kupiłem nowy zaparzacz do kawy.`;
 
 			const { blocks } = parseBlocks(content, lookup);
 			expect(blocks).toHaveLength(1);
-			expect(blocks[0]!.noteTypeId).toBe("custom-vocab");
-			expect(blocks[0]!.fields.Word).toBe("Zaparzacz");
-			expect(blocks[0]!.fields.Translation).toBe("French press");
-			expect(blocks[0]!.fields.Example).toBe("Kupiłem nowy zaparzacz do kawy.");
+			expect(blocks[0]?.noteTypeId).toBe("custom-vocab");
+			expect(blocks[0]?.fields.Word).toBe("Zaparzacz");
+			expect(blocks[0]?.fields.Translation).toBe("French press");
+			expect(blocks[0]?.fields.Example).toBe("Kupiłem nowy zaparzacz do kawy.");
 		});
 
 		it("should handle multi-line field values", () => {
@@ -191,7 +191,7 @@ Codziennie rano robię w nim arabikę.`;
 
 			const { blocks } = parseBlocks(content, lookup);
 			expect(blocks).toHaveLength(1);
-			expect(blocks[0]!.fields.Example).toBe(
+			expect(blocks[0]?.fields.Example).toBe(
 				"Kupiłem nowy zaparzacz do kawy.\nCodziennie rano robię w nim arabikę.",
 			);
 		});
@@ -204,7 +204,7 @@ Back: Process of converting light to energy
 
 			const { blocks } = parseBlocks(content, lookup);
 			expect(blocks).toHaveLength(1);
-			expect(blocks[0]!.sourceText).toBe(
+			expect(blocks[0]?.sourceText).toBe(
 				"Photosynthesis is the process by which plants convert light",
 			);
 		});
@@ -217,8 +217,8 @@ Back: A
 
 			const { blocks } = parseBlocks(content, lookup);
 			expect(blocks).toHaveLength(1);
-			expect(blocks[0]!.alwaysTypeIn).toBe(true);
-			expect(blocks[0]!.fields.Back).toBe("A");
+			expect(blocks[0]?.alwaysTypeIn).toBe(true);
+			expect(blocks[0]?.fields.Back).toBe("A");
 		});
 
 		it("should skip YAML frontmatter", () => {
@@ -232,7 +232,7 @@ Back: Energy conversion`;
 
 			const { blocks } = parseBlocks(content, lookup);
 			expect(blocks).toHaveLength(1);
-			expect(blocks[0]!.fields.Front).toBe("What is photosynthesis?");
+			expect(blocks[0]?.fields.Front).toBe("What is photosynthesis?");
 		});
 
 		it("should return non-block content in contentWithoutBlocks", () => {
@@ -280,7 +280,7 @@ Example: Used daily for making arabica.`;
 
 			const { blocks } = parseBlocks(content, lookup);
 			expect(blocks).toHaveLength(1);
-			expect(blocks[0]!.fields.Back).toBe(
+			expect(blocks[0]?.fields.Back).toBe(
 				"A coffee brewing device.\nExample: Used daily for making arabica.",
 			);
 		});
@@ -303,8 +303,8 @@ Extra: European capitals`;
 
 			const { blocks, contentWithoutBlocks } = parseBlocks(content, lookup);
 			expect(blocks).toHaveLength(2);
-			expect(blocks[0]!.noteTypeSlug).toBe("basic");
-			expect(blocks[1]!.noteTypeSlug).toBe("cloze");
+			expect(blocks[0]?.noteTypeSlug).toBe("basic");
+			expect(blocks[1]?.noteTypeSlug).toBe("cloze");
 			expect(contentWithoutBlocks).toContain("Some introduction text.");
 			expect(contentWithoutBlocks).toContain(
 				"Middle paragraph that is not a card.",
@@ -318,8 +318,8 @@ Back:`;
 
 			const { blocks } = parseBlocks(content, lookup);
 			expect(blocks).toHaveLength(1);
-			expect(blocks[0]!.fields.Front).toBe("Question");
-			expect(blocks[0]!.fields.Back).toBe("");
+			expect(blocks[0]?.fields.Front).toBe("Question");
+			expect(blocks[0]?.fields.Back).toBe("");
 		});
 
 		it("should preserve frontmatter in contentWithoutBlocks", () => {

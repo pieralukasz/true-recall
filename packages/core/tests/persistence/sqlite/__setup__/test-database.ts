@@ -209,8 +209,9 @@ export class TestSqliteDatabase {
 	query<T extends object>(sql: string, params: BindParams = []): T[] {
 		if (!this.db) throw new Error("Database not initialized");
 		const result = this.db.exec(sql, params);
-		if (result.length === 0) return [];
-		const { columns, values } = result[0]!;
+		const first = result[0];
+		if (!first) return [];
+		const { columns, values } = first;
 		return values.map((row) => {
 			const obj: Record<string, unknown> = {};
 			columns.forEach((col, i) => {

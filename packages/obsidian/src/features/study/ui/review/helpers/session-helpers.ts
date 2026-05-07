@@ -38,17 +38,8 @@ export function applyMutation(
 			break;
 		}
 		case "updated": {
-			const currentCard = review.getCurrentCard();
-			if (currentCard && m.cardId && currentCard.id === m.cardId) {
-				const updatedData = cardStore.get(m.cardId);
-				if (updatedData) {
-					review.updateCurrentCardContent(
-						updatedData.question ?? currentCard.question,
-						updatedData.answer ?? currentCard.answer,
-					);
-				}
-			}
 			if (m.cardId) {
+				refreshCurrentCardContent(review, cardStore, [m.cardId]);
 				syncQueueWithMutatedCards(
 					[m.cardId],
 					review,
@@ -73,6 +64,7 @@ export function applyMutation(
 				if (forceRequeue) {
 					removeCardsFromQueue(review, m.cardIds);
 				}
+				refreshCurrentCardContent(review, cardStore, m.cardIds);
 				syncQueueWithMutatedCards(
 					m.cardIds,
 					review,
@@ -97,6 +89,21 @@ export function applyMutation(
 			break;
 		}
 	}
+}
+
+function refreshCurrentCardContent(
+	review: ReviewApi,
+	cardStore: SqliteStoreService,
+	cardIds: string[],
+): void {
+	const currentCard = review.getCurrentCard();
+	if (!currentCard || !cardIds.includes(currentCard.id)) return;
+	const updatedData = cardStore.get(currentCard.id);
+	if (!updatedData) return;
+	review.updateCurrentCardContent(
+		updatedData.question ?? currentCard.question,
+		updatedData.answer ?? currentCard.answer,
+	);
 }
 
 function removeCardsFromQueue(

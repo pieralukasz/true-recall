@@ -24,6 +24,7 @@ interface ProjectStatsContext {
 	cardsBySourceUid?: ReadonlyMap<string, FSRSCardData[]>;
 	retrievabilityByCardId?: ReadonlyMap<string, number>;
 	now?: Date;
+	skipHealthPct?: boolean;
 }
 
 export function computeProjectStats(
@@ -40,6 +41,7 @@ export function computeProjectStats(
 		hierarchyService.getSourceUidsForProject(projectPath);
 
 	const now = context?.now ?? new Date();
+	const skipHealthPct = context?.skipHealthPct === true;
 	let totalCards = 0;
 	let due = 0;
 	let newCount = 0;
@@ -72,8 +74,9 @@ export function computeProjectStats(
 					break;
 			}
 
-			// Health: avg retrievability of non-new cards
-			if (card.state !== State.New) {
+			// Health: avg retrievability of non-new cards (skipped when caller
+			// doesn't render it — saves a per-card FSRS call per project row).
+			if (!skipHealthPct && card.state !== State.New) {
 				const cachedRetrievability = context?.retrievabilityByCardId?.get(
 					card.id,
 				);

@@ -8,6 +8,8 @@ import {
 	useState,
 } from "preact/hooks";
 
+import { hasAIKey } from "@true-recall/core/ai/config/ai-client-config";
+
 import { Clickable } from "@true-recall/obsidian/components";
 import {
 	type FormattingTargetRef,
@@ -31,14 +33,14 @@ interface QuickNoteEditorAppProps {
 	mode: QuickNoteEditorMode;
 	onDone: (result: QuickNoteEditorResult) => void;
 	onRequestClose?: () => void;
-	onContentChange?: (hasContent: boolean) => void;
+	onDirtyChange?: (isDirty: boolean) => void;
 }
 
 export function QuickNoteEditorApp({
 	mode,
 	onDone,
 	onRequestClose,
-	onContentChange,
+	onDirtyChange,
 }: QuickNoteEditorAppProps) {
 	const app = useApp();
 	const plugin = usePlugin();
@@ -56,8 +58,14 @@ export function QuickNoteEditorApp({
 		return addMode?.defaultNoteTypeId ?? "builtin-basic";
 	});
 
+	const initialFieldsRef = useRef<Record<string, string> | null>(null);
+
 	const [fields, setFields] = useState<Record<string, string>>(() => {
-		if (isEdit) return { ...editMode?.note.fields };
+		if (isEdit) {
+			const f = { ...editMode?.note.fields };
+			initialFieldsRef.current = f;
+			return f;
+		}
 		if (addMode?.initialFields) return { ...addMode.initialFields };
 		return {};
 	});
@@ -89,10 +97,14 @@ export function QuickNoteEditorApp({
 		return plugin.cardStore?.noteTypes?.getById(noteTypeId) ?? null;
 	}, [isEdit, editMode, plugin.cardStore, noteTypeId, refreshCounter]);
 
-	const hasContent = useMemo(
-		() => Object.values(fields).some((v) => v.trim().length > 0),
-		[fields],
-	);
+	const isDirty = useMemo(() => {
+		if (isEdit && initialFieldsRef.current) {
+			return Object.keys(initialFieldsRef.current).some(
+				(k) => fields[k] !== initialFieldsRef.current![k],
+			);
+		}
+		return Object.values(fields).some((v) => v.trim().length > 0);
+	}, [isEdit, fields]);
 
 	const canSave = useMemo(() => {
 		const firstField = noteType?.fields[0];
@@ -117,8 +129,8 @@ export function QuickNoteEditorApp({
 	]);
 
 	useEffect(() => {
-		onContentChange?.(hasContent);
-	}, [hasContent, onContentChange]);
+		onDirtyChange?.(isDirty);
+	}, [isDirty, onDirtyChange]);
 
 	// Initialize empty fields when note type changes in add mode
 	useEffect(() => {
@@ -319,8 +331,14 @@ export function QuickNoteEditorApp({
 
 	// AI wand dispatches "true-recall:card-polish" (kind: "draft"). Only the
 	// Card Polish plugin listens today; no other plugin wires a draft hook.
-	const cardPolishActive =
+	// We check both the plugin enable state AND hasAIKey directly. The full
+	// `isPluginEnabled` helper (in plugin-utils) pulls @true-recall/plugins
+	// registry, which transitively loads sqlite-wasm via other plugin manifests
+	// and breaks Vitest module loading for unrelated tests. Inline-checking
+	// hasAIKey reproduces the tier:"byok" gate without the registry import.
+	const cardPolishEnabled =
 		plugin.settings?.pluginStates?.["card-polish"] ?? true;
+	const cardPolishActive = cardPolishEnabled && hasAIKey(plugin.settings);
 	const { disabled: aiDisabled, title: aiTitle } = deriveAIWandState({
 		hasSourceNote: !!sourceNoteFile,
 		cardPolishActive,
@@ -348,10 +366,14 @@ export function QuickNoteEditorApp({
 									fields: noteType.fields,
 								},
 								sourceUid: uid,
-								currentCardId: isEdit ? (editMode?.noteId ?? null) : null,
+								currentCardId: isEdit
+									? (editMode?.cardId ?? null)
+									: (addMode?.excludeCardId ?? null),
+								operation: isEdit ? "edit" : "create",
 								onApply: (next: Record<string, string>) => {
 									setFields((prev) => ({ ...prev, ...next }));
 								},
+								flashcardManager: plugin.flashcardManager,
 							},
 						}),
 					);
@@ -368,6 +390,7 @@ export function QuickNoteEditorApp({
 			fields,
 			isEdit,
 			editMode,
+			addMode,
 			resolveSourceUid,
 		],
 	);

@@ -17,7 +17,7 @@ describe("BulkCardParser", () => {
 
 			expect(result.detectedFormat).toBe("double-colon");
 			expect(result.cards).toHaveLength(1);
-			expect(result.cards[0]!.fields).toEqual({
+			expect(result.cards[0]?.fields).toEqual({
 				Front: "What is ATP?",
 				Back: "Adenosine triphosphate",
 			});
@@ -40,8 +40,8 @@ describe("BulkCardParser", () => {
 
 			expect(result.detectedFormat).toBe("double-colon");
 			expect(result.cards).toHaveLength(1);
-			expect(result.cards[0]!.noteTypeId).toBe(BUILTIN_CLOZE_ID);
-			expect(result.cards[0]!.fields.Text).toBe(
+			expect(result.cards[0]?.noteTypeId).toBe(BUILTIN_CLOZE_ID);
+			expect(result.cards[0]?.fields.Text).toBe(
 				"{{c1::Paris}} is the capital of France",
 			);
 		});
@@ -49,7 +49,7 @@ describe("BulkCardParser", () => {
 		it("trims whitespace around separator", () => {
 			const result = parseBulkText("  Question  ::  Answer  ");
 
-			expect(result.cards[0]!.fields).toEqual({
+			expect(result.cards[0]?.fields).toEqual({
 				Front: "Question",
 				Back: "Answer",
 			});
@@ -80,10 +80,10 @@ describe("BulkCardParser", () => {
 				(c) => c.noteTypeId === BUILTIN_CLOZE_ID,
 			);
 			expect(clozeCard).toBeDefined();
-			expect(clozeCard!.fields.Text).toBe(
+			expect(clozeCard?.fields.Text).toBe(
 				"{{c1::Paris}} is the capital of France",
 			);
-			expect(clozeCard!.fields.Extra).toBe("");
+			expect(clozeCard?.fields.Extra).toBe("");
 		});
 
 		it("detects cloze in :: separated card (front side has cloze)", () => {
@@ -91,17 +91,17 @@ describe("BulkCardParser", () => {
 			const result = parseBulkText(input);
 
 			expect(result.cards).toHaveLength(1);
-			expect(result.cards[0]!.noteTypeId).toBe(BUILTIN_CLOZE_ID);
-			expect(result.cards[0]!.fields.Text).toBe(
+			expect(result.cards[0]?.noteTypeId).toBe(BUILTIN_CLOZE_ID);
+			expect(result.cards[0]?.fields.Text).toBe(
 				"{{c1::Mitochondria}} is the powerhouse",
 			);
-			expect(result.cards[0]!.fields.Extra).toBe("Extra info");
+			expect(result.cards[0]?.fields.Extra).toBe("Extra info");
 		});
 
 		it("detects cloze with hint syntax", () => {
 			const result = parseBulkText("{{c1::Tokyo::capital city}} is in Japan");
 
-			expect(result.cards[0]!.noteTypeId).toBe(BUILTIN_CLOZE_ID);
+			expect(result.cards[0]?.noteTypeId).toBe(BUILTIN_CLOZE_ID);
 		});
 
 		it("detects multiple cloze indices in one line", () => {
@@ -109,9 +109,9 @@ describe("BulkCardParser", () => {
 				"{{c1::Paris}} is the capital of {{c2::France}}",
 			);
 
-			expect(result.cards[0]!.noteTypeId).toBe(BUILTIN_CLOZE_ID);
-			expect(result.cards[0]!.fields.Text).toContain("{{c1::");
-			expect(result.cards[0]!.fields.Text).toContain("{{c2::");
+			expect(result.cards[0]?.noteTypeId).toBe(BUILTIN_CLOZE_ID);
+			expect(result.cards[0]?.fields.Text).toContain("{{c1::");
+			expect(result.cards[0]?.fields.Text).toContain("{{c2::");
 		});
 	});
 

@@ -76,7 +76,7 @@ describe("chunkMarkdown", () => {
 		const result = chunkMarkdown("Short note with a few words.");
 		expect(result.strategy).toBe("single");
 		expect(result.chunks).toHaveLength(1);
-		expect(result.chunks[0]!.content).toBe("Short note with a few words.");
+		expect(result.chunks[0]?.content).toBe("Short note with a few words.");
 	});
 
 	it("returns single strategy for content under 3000 words", () => {
@@ -147,7 +147,7 @@ describe("chunkMarkdown", () => {
 		// Intro (few words) + Main Content (3500 words) should be in ≤2 chunks, not 2 separate tiny chunks
 		expect(result.chunks.length).toBeLessThanOrEqual(2);
 		// First chunk should contain the intro text
-		expect(result.chunks[0]!.content).toContain("A few words only.");
+		expect(result.chunks[0]?.content).toContain("A few words only.");
 	});
 
 	it("splits by paragraphs when no headings exist", () => {
@@ -161,7 +161,7 @@ describe("chunkMarkdown", () => {
 		expect(result.chunks.length).toBeGreaterThanOrEqual(2);
 
 		// Should use "Part N" breadcrumbs
-		expect(result.chunks[0]!.headingBreadcrumb).toMatch(/^Part \d+$/);
+		expect(result.chunks[0]?.headingBreadcrumb).toMatch(/^Part \d+$/);
 	});
 
 	it("strips frontmatter before chunking", () => {

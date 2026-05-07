@@ -28,13 +28,16 @@ export class FlashcardGenerationService {
 		noteType?: NoteType | null,
 	): Promise<GenerationResult> {
 		const settings = this.getSettings();
-		const config = resolveAIClientConfig(settings);
+		const config = resolveAIClientConfig(settings, "generation");
 
 		const client = new OpenRouterClient(
 			config.apiKey,
 			config.model,
 			this.httpClient,
 			config.baseUrl,
+			undefined,
+			undefined,
+			{ providerType: config.providerType },
 		);
 
 		const systemPrompt = config.hasProTier

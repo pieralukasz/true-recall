@@ -36,14 +36,16 @@ describe("migrateContent", () => {
 
 	it("should preserve YAML frontmatter", () => {
 		const input = "---\ntitle: My Note\n---\nWhat is X? :: Y";
-		const result = migrateContent(input)!;
+		const result = migrateContent(input);
+		if (!result) throw new Error("expected migration to produce content");
 		expect(result).toMatch(/^---\ntitle: My Note\n---/);
 		expect(result).toContain("#type/basic");
 	});
 
 	it("should handle multiple lines", () => {
 		const input = "Some text\nQ1 :: A1\nMore text\nQ2 :: A2";
-		const result = migrateContent(input)!;
+		const result = migrateContent(input);
+		if (!result) throw new Error("expected migration to produce content");
 		expect(result).toContain("Front: Q1");
 		expect(result).toContain("Front: Q2");
 		expect(result).toContain("Some text");
@@ -57,7 +59,8 @@ describe("migrateContent", () => {
 
 	it("should handle mixed content: block + inline", () => {
 		const input = "#type/basic\nFront: Q1\nBack: A1\n---\nQ2 :: A2";
-		const result = migrateContent(input)!;
+		const result = migrateContent(input);
+		if (!result) throw new Error("expected migration to produce content");
 		expect(result).toContain("Front: Q1");
 		expect(result).toContain("Front: Q2");
 	});

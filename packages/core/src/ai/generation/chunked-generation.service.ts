@@ -25,6 +25,7 @@ import {
 	startStreaming,
 	updateChunkProgress,
 } from "../state/streaming-state";
+import { enqueueGeneration } from "./generation-queue";
 import { resolveGenerationPresetAndNoteType } from "./preset-resolver";
 import { processCardEvents } from "./process-card-events";
 import {
@@ -67,7 +68,7 @@ export class ChunkedGenerationService {
 		content: string,
 		sourceFile: StreamingSourceFile,
 		presetId: string,
-		options?: { existingCards?: ExistingCardContext[] },
+		options?: { existingCards?: ExistingCardContext[]; contextText?: string },
 		confirmLargeNote?: ConfirmLargeNote,
 	): Promise<ChunkedGenerationResult> {
 		const settings = this.getSettings();
@@ -102,13 +103,15 @@ export class ChunkedGenerationService {
 			};
 		}
 
-		return this.runChunkedGeneration(
-			chunkingResult,
-			sourceFile,
-			preset,
-			noteType,
-			options,
-			confirmLargeNote,
+		return enqueueGeneration(() =>
+			this.runChunkedGeneration(
+				chunkingResult,
+				sourceFile,
+				preset,
+				noteType,
+				options,
+				confirmLargeNote,
+			),
 		);
 	}
 
@@ -117,7 +120,10 @@ export class ChunkedGenerationService {
 		sourceFile: StreamingSourceFile,
 		preset: GenerationPreset,
 		noteType: NoteType,
-		options?: { existingCards?: ExistingCardContext[] },
+		options?: {
+			existingCards?: ExistingCardContext[];
+			contextText?: string;
+		},
 		confirmLargeNote?: ConfirmLargeNote,
 	): Promise<ChunkedGenerationResult> {
 		const { chunks, totalWords, estimatedTokens } = chunkingResult;
@@ -144,7 +150,7 @@ export class ChunkedGenerationService {
 		);
 
 		const settings = this.getSettings();
-		const aiConfig = resolveAIClientConfig(settings);
+		const aiConfig = resolveAIClientConfig(settings, "generation");
 		// Prompts containing the {{EXISTING_CARDS}} placeholder are authoritative
 		// full system prompts (e.g. built-in Pro preset) — use verbatim and send
 		// the format spec as the user message so format instructions still reach
@@ -157,10 +163,13 @@ export class ChunkedGenerationService {
 		const existingCardsBlock = renderExistingCardsBlock(
 			options?.existingCards ?? [],
 		);
-		const systemPrompt = rawSystemPrompt.replace(
+		let systemPrompt = rawSystemPrompt.replace(
 			"{{EXISTING_CARDS}}",
 			existingCardsBlock,
 		);
+		if (options?.contextText?.trim()) {
+			systemPrompt = `${options.contextText.trim()}\n\n${systemPrompt}`;
+		}
 
 		let totalCreated = 0;
 		let totalDuplicates = 0;
@@ -175,7 +184,7 @@ export class ChunkedGenerationService {
 				updateChunkProgress(chunk.index, chunk.headingBreadcrumb || null);
 
 				const formatPrefix = useRawPrompt
-					? `${buildPresetFormatSpec(preset, noteType)}\n\n`
+					? `${buildPresetFormatSpec(noteType)}\n\n`
 					: "";
 				const userMessage = chunk.headingBreadcrumb
 					? `${formatPrefix}[Context: This section is from "${chunk.headingBreadcrumb}" in the note "${sourceFile.basename}"]\n\n${chunk.content}`
@@ -240,6 +249,8 @@ export class ChunkedGenerationService {
 			aiConfig.model,
 			this.httpClient,
 			aiConfig.baseUrl,
+			undefined,
+			{ providerType: aiConfig.providerType },
 		);
 		const getNoteType = (slug: string) =>
 			this.flashcardManager.getNoteTypeBySlug?.(slug) ?? null;
