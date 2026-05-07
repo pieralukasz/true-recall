@@ -37,8 +37,6 @@ describe("migrateSettings — generation preset migration", () => {
 			name: "My Preset",
 			prompt: "My prompt.",
 			noteTypeId: "builtin-basic",
-			tts: null,
-			image: null,
 			requiresPro: false,
 			builtin: false,
 			isDefault: true,
@@ -74,7 +72,6 @@ describe("migrateSettings — generation preset migration", () => {
 						Back: { role: "ai-text", instruction: "Give an answer." },
 					},
 					customPrompt: "Focus on atomic facts.",
-					tts: null,
 					isPinned: false,
 					isDefault: true,
 					createdAt: 1000,
@@ -96,41 +93,6 @@ describe("migrateSettings — generation preset migration", () => {
 		expect(migrated).not.toHaveProperty("isPinned");
 		expect(migrated?.builtin).toBe(false);
 		expect(migrated?.requiresPro).toBe(false);
-		expect(migrated?.image).toBeNull();
-	});
-
-	it("promotes first legacy image field to flat image config", () => {
-		const { settings } = migrateSettings({
-			generationPresets: [
-				{
-					id: "legacy-img",
-					name: "Vocab",
-					noteTypeId: "custom",
-					fields: {
-						Word: { role: "ai-text", instruction: "The word." },
-						Img: {
-							role: "image",
-							sourceField: "Word",
-							style: "photo-realistic",
-						},
-					},
-					tts: null,
-					isPinned: false,
-					isDefault: false,
-					createdAt: 0,
-					updatedAt: 0,
-				},
-			],
-		} as unknown as Parameters<typeof migrateSettings>[0]);
-
-		const migrated = settings.generationPresets.find(
-			(p) => p.id === "legacy-img",
-		);
-		expect(migrated?.image).toEqual({
-			targetField: "Img",
-			sourceField: "Word",
-			style: "photo-realistic",
-		});
 	});
 
 	it("renames legacy isPro → requiresPro", () => {
@@ -141,7 +103,6 @@ describe("migrateSettings — generation preset migration", () => {
 					name: "Pro Preset",
 					noteTypeId: "basic",
 					fields: { Front: { role: "ai-text", instruction: "Q" } },
-					tts: null,
 					isPro: true,
 					isPinned: false,
 					isDefault: false,
@@ -163,8 +124,6 @@ describe("migrateSettings — generation preset migration", () => {
 			name: "Basic Flashcards (Pro)",
 			prompt: "pro prompt",
 			noteTypeId: "builtin-basic",
-			tts: null,
-			image: null,
 			requiresPro: false,
 			builtin: false,
 			isDefault: false,
@@ -283,8 +242,6 @@ describe("migrateSettings — generation preset migration", () => {
 			name: "Basic Flashcards (Pro)",
 			prompt: "pro prompt",
 			noteTypeId: "builtin-basic",
-			tts: null,
-			image: null,
 			requiresPro: true,
 			builtin: true,
 			isDefault: false,

@@ -175,7 +175,7 @@ export class StreamingGenerationService {
 			: undefined;
 
 		const userContent = useRawPrompt
-			? `${buildPresetFormatSpec(preset, noteType)}\n\n${text}`
+			? `${buildPresetFormatSpec(noteType)}\n\n${text}`
 			: text;
 
 		let createdCount = 0;

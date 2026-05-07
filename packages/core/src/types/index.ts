@@ -68,11 +68,7 @@ export {
 	Rating,
 	State,
 } from "./fsrs";
-export type {
-	GenerationPreset,
-	PresetImageConfig,
-	PresetTTSConfig,
-} from "./generation-preset.types";
+export type { GenerationPreset } from "./generation-preset.types";
 export type {
 	ImageExtension,
 	ImageInsertOptions,

@@ -152,8 +152,6 @@ export function AIGenerationSettingsPanel({
 					name: "New preset",
 					prompt: "",
 					noteTypeId: defaultNoteTypeId,
-					tts: null,
-					image: null,
 					requiresPro: false,
 					builtin: false,
 					isDefault: false,

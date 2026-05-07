@@ -94,8 +94,6 @@ export const BUILTIN_BASIC_PRESET: GenerationPreset = {
 	prompt:
 		"Generate atomic Q/A flashcards from the provided text. Each card has Front (a clear, specific question) and Back (a concise, accurate answer).",
 	noteTypeId: BUILTIN_BASIC_ID,
-	tts: null,
-	image: null,
 	requiresPro: false,
 	builtin: true,
 	isDefault: true,
@@ -110,24 +108,12 @@ export const BUILTIN_BASIC_PRO_PRESET: GenerationPreset = {
 	name: "Basic Flashcards (Pro)",
 	prompt: BUILTIN_BASIC_PRO_PROMPT,
 	noteTypeId: BUILTIN_BASIC_ID,
-	tts: null,
-	image: null,
 	requiresPro: true,
 	builtin: true,
 	isDefault: false,
 	createdAt: 0,
 	updatedAt: 0,
 };
-
-export const TTS_VOICES = [
-	"alloy",
-	"echo",
-	"fable",
-	"onyx",
-	"nova",
-	"shimmer",
-] as const;
-export type TTSVoice = (typeof TTS_VOICES)[number];
 
 export const DEFAULT_SETTINGS: TrueRecallSettings = {
 	enableDeviceSync: false,
@@ -274,10 +260,6 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 	languageNoteTypeId: null,
 	languageSource: "",
 	languageTarget: "",
-	languageTtsField: "",
-	languageTtsEnabled: false,
-	ttsVoice: "nova",
-	ttsAutoplay: true,
 
 	generationPresets: [BUILTIN_BASIC_PRESET, BUILTIN_BASIC_PRO_PRESET],
 	defaultGenerationPresetId: BUILTIN_BASIC_PRESET_ID,

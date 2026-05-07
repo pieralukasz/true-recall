@@ -39,8 +39,6 @@ function makeInput(
 		name: "Test",
 		prompt: "Make cards.",
 		noteTypeId: "builtin-basic",
-		tts: null,
-		image: null,
 		requiresPro: false,
 		isDefault: false,
 		...overrides,
@@ -126,49 +124,6 @@ describe("GenerationPresetService.validate", () => {
 			makeInput({ noteTypeId: "does-not-exist" }),
 		);
 		expect(errors).toContain("noteTypeId 'does-not-exist' not found");
-	});
-
-	it("rejects tts field not in note type", () => {
-		const errors = makeService().validate(
-			makeInput({
-				tts: { field: "NotThere", voice: "nova", autoplay: false },
-			}),
-		);
-		expect(errors.some((e) => e.includes("TTS field 'NotThere'"))).toBe(true);
-	});
-
-	it("rejects tts voice not in TTS_VOICES", () => {
-		const errors = makeService().validate(
-			makeInput({
-				tts: { field: "Front", voice: "robot", autoplay: false },
-			}),
-		);
-		expect(errors.some((e) => e.includes("voice 'robot'"))).toBe(true);
-	});
-
-	it("rejects image targetField not in note type", () => {
-		const errors = makeService().validate(
-			makeInput({ image: { targetField: "Ghost", sourceField: "Front" } }),
-		);
-		expect(errors.some((e) => e.includes("Image targetField 'Ghost'"))).toBe(
-			true,
-		);
-	});
-
-	it("rejects image sourceField not in note type", () => {
-		const errors = makeService().validate(
-			makeInput({ image: { targetField: "Front", sourceField: "Ghost" } }),
-		);
-		expect(errors.some((e) => e.includes("Image sourceField 'Ghost'"))).toBe(
-			true,
-		);
-	});
-
-	it("rejects image where target equals source", () => {
-		const errors = makeService().validate(
-			makeInput({ image: { targetField: "Front", sourceField: "Front" } }),
-		);
-		expect(errors).toContain("Image targetField must differ from sourceField");
 	});
 
 	it("collects all errors, does not bail on first", () => {

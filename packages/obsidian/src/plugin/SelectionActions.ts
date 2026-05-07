@@ -11,7 +11,6 @@ import { ObsidianHttpClient } from "../adapters/ObsidianHttpClient";
 import type TrueRecallPlugin from "../main";
 import { collectGenerationContext } from "./collect-generation-context";
 import { fetchExistingCardsForFile } from "./existing-cards-fetcher";
-import { runPresetPostProcessing } from "./generation-post-processing";
 import { normalizeSelectionForFlashcard } from "./normalize-selection";
 
 let streamingService: StreamingGenerationService | null = null;
@@ -233,8 +232,6 @@ export async function generateWithPreset(
 			contextText,
 		});
 
-		runPresetPostProcessing(plugin, preset, result.createdCardIds);
-
 		if (result.created === 0 && result.duplicates === 0) {
 			notify().warning("No flashcards found in AI response");
 		} else if (result.duplicates > 0) {
@@ -284,8 +281,6 @@ export async function generateWithPresetGlobal(
 			existingCards,
 			contextText,
 		});
-
-		runPresetPostProcessing(plugin, preset, result.createdCardIds);
 
 		if (result.created === 0 && result.duplicates === 0) {
 			notify().warning("No flashcards found in AI response");

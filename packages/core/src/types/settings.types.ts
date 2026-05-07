@@ -353,14 +353,6 @@ export interface TrueRecallSettings {
 	languageSource: string;
 	/** Language learning: target language code (your native language) */
 	languageTarget: string;
-	/** Language learning: which note field to generate TTS for */
-	languageTtsField: string;
-	/** Language learning: enable TTS generation after vocab creation */
-	languageTtsEnabled: boolean;
-	/** TTS voice for audio generation (OpenAI voices: alloy, echo, fable, onyx, nova, shimmer) */
-	ttsVoice: string;
-	/** Auto-play TTS audio when card is shown in review */
-	ttsAutoplay: boolean;
 
 	/** Last version the user has seen release notes for */
 	lastSeenVersion?: string;

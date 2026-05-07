@@ -26,8 +26,6 @@ const basicPreset: GenerationPreset = {
 	name: "Basic",
 	prompt: "Generate Q/A cards.",
 	noteTypeId: "nt-basic",
-	tts: null,
-	image: null,
 	requiresPro: false,
 	builtin: false,
 	isDefault: true,
@@ -195,7 +193,7 @@ describe("StreamingGenerationService.generate", () => {
 		expect(messages[0]?.content).toContain("Custom pro prompt");
 		expect(messages[0]?.content).not.toContain("{{EXISTING_CARDS}}");
 		expect(messages[1]?.content).toBe(
-			`${buildPresetFormatSpec(proPreset, basicNoteType)}\n\n${inputText}`,
+			`${buildPresetFormatSpec(basicNoteType)}\n\n${inputText}`,
 		);
 	});
 
@@ -250,7 +248,7 @@ describe("StreamingGenerationService.generate", () => {
 		expect(messages[0]?.content).toContain("My BYOK custom prompt");
 		expect(messages[0]?.content).not.toContain("{{EXISTING_CARDS}}");
 		expect(messages[1]?.content).toBe(
-			`${buildPresetFormatSpec(byokPreset, basicNoteType)}\n\nstudy text`,
+			`${buildPresetFormatSpec(basicNoteType)}\n\nstudy text`,
 		);
 		expect(body.metadata).toBeUndefined();
 	});

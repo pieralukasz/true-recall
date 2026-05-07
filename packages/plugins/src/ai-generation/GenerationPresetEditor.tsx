@@ -86,8 +86,6 @@ function presetSummary(
 ): string {
 	const parts: string[] = [];
 	if (noteType) parts.push(noteType.name);
-	if (preset.tts) parts.push(`TTS: ${preset.tts.field}`);
-	if (preset.image) parts.push(`Image: ${preset.image.targetField}`);
 	if (preset.includeSourceNote) parts.push("+source");
 	if (preset.includeRelatedCards) parts.push("+related");
 	return parts.join(" • ");
@@ -178,21 +176,7 @@ export function GenerationPresetEditor({
 					value={preset.noteTypeId}
 					onChange={(e) => {
 						const nextId = (e.target as HTMLSelectElement).value;
-						const nextNoteType = noteTypes.find((nt) => nt.id === nextId);
-						const nextFields = new Set(nextNoteType?.fields ?? []);
-						// Drop TTS/image configs that reference fields the new note
-						// type does not have — otherwise generation throws at runtime.
-						const nextTts =
-							preset.tts && nextFields.has(preset.tts.field)
-								? preset.tts
-								: null;
-						const nextImage =
-							preset.image &&
-							nextFields.has(preset.image.targetField) &&
-							nextFields.has(preset.image.sourceField)
-								? preset.image
-								: null;
-						patch({ noteTypeId: nextId, tts: nextTts, image: nextImage });
+						patch({ noteTypeId: nextId });
 					}}
 				>
 					{noteTypes.map((nt) => (
@@ -270,20 +254,6 @@ export function GenerationPresetEditor({
 						</span>
 					</span>
 				</label>
-			</div>
-
-			<div class="ep:flex ep:flex-col ep:gap-2 ep:p-2 ep:border ep:border-obs-border ep:rounded ep:bg-obs-secondary ep:opacity-70">
-				<div class="ep:flex ep:items-center ep:gap-2">
-					<span class="ep:text-ui-smaller ep:text-obs-muted ep:font-medium">
-						Audio (TTS) & Image
-					</span>
-					<span class="ep:text-ui-smallest ep:font-semibold ep:px-1.5 ep:py-0.5 ep:rounded ep:bg-obs-border ep:text-obs-muted ep:uppercase">
-						Soon
-					</span>
-				</div>
-				<span class="ep:text-ui-smaller ep:text-obs-muted ep:italic">
-					Per-preset audio and image generation is not available yet.
-				</span>
 			</div>
 
 			<div class="ep:flex ep:items-center ep:justify-between ep:gap-3 ep:pt-1">

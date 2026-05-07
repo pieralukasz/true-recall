@@ -5,7 +5,6 @@ import type { ToolbarButtonConfig } from "@true-recall/core/types";
 import type { GenerationPreset } from "@true-recall/core/types/generation-preset.types";
 
 import { Clickable } from "@true-recall/obsidian/components";
-import { isPresetProRequired } from "@true-recall/obsidian/plugin/generation-post-processing";
 
 import { BUTTON_PLUGIN_MAP } from "../registry";
 import {
@@ -268,7 +267,7 @@ function ToolbarButton({
 						>
 							<span>
 								{label}
-								{tier !== "pro" && isPresetProRequired(preset) && PRO_BADGE}
+								{tier !== "pro" && preset.requiresPro && PRO_BADGE}
 							</span>
 						</Clickable>
 					</>

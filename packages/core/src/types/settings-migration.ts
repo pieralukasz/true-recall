@@ -1,7 +1,4 @@
-import type {
-	CardAIPreset,
-	CardAIUserSettings,
-} from "./card-ai-preset.types";
+import type { CardAIPreset, CardAIUserSettings } from "./card-ai-preset.types";
 
 interface LegacyBucket {
 	presets?: CardAIPreset[];

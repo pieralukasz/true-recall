@@ -890,14 +890,6 @@ export class ReviewView extends ItemView {
 					.setIcon("pencil")
 					.onClick(() => void this.cardActionsHandler.handleEditCardModal()),
 			);
-			if (this.cardActionsHandler.canHealCard()) {
-				menu.addItem((item) =>
-					item
-						.setTitle("Heal card")
-						.setIcon("heart-pulse")
-						.onClick(() => void this.cardActionsHandler.handleHealCard()),
-				);
-			}
 			menu.addItem((item) =>
 				item
 					.setTitle("Change note type")

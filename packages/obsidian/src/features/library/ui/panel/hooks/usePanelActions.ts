@@ -11,7 +11,6 @@ import { extractHighlights } from "@true-recall/obsidian/features/library/ui/pan
 import { cardsToBlockText } from "@true-recall/obsidian/features/library/ui/panel/utils/panel-helpers";
 import { collectGenerationContext } from "@true-recall/obsidian/plugin/collect-generation-context";
 import { fetchExistingCardsForFile } from "@true-recall/obsidian/plugin/existing-cards-fetcher";
-import { runPresetPostProcessing } from "@true-recall/obsidian/plugin/generation-post-processing";
 import { useApp, usePlugin } from "@true-recall/obsidian/preact";
 
 import { usePanelStore } from "./usePanelStore";
@@ -94,7 +93,6 @@ export function usePanelActions() {
 			if (result.createdCardIds && result.createdCardIds.length > 0) {
 				const cmd = new BatchCreateCommand(result.createdCardIds);
 				await plugin.commandService?.execute(cmd);
-				runPresetPostProcessing(plugin, result.preset, result.createdCardIds);
 			}
 		} catch (error) {
 			if (error instanceof DOMException && error.name === "AbortError") return;
@@ -194,7 +192,6 @@ export function usePanelActions() {
 			if (result.createdCardIds && result.createdCardIds.length > 0) {
 				const cmd = new BatchCreateCommand(result.createdCardIds);
 				await plugin.commandService?.execute(cmd);
-				runPresetPostProcessing(plugin, result.preset, result.createdCardIds);
 			}
 		} catch (error) {
 			if (error instanceof DOMException && error.name === "AbortError") return;

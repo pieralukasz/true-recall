@@ -148,8 +148,6 @@ describe("generation-presets handlers", () => {
 				name: "X",
 				prompt: "Make cards.",
 				noteTypeId: "builtin-basic",
-				tts: null,
-				image: null,
 				requiresPro: false,
 				isDefault: false,
 			}),

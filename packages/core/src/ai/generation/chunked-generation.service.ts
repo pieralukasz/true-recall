@@ -184,7 +184,7 @@ export class ChunkedGenerationService {
 				updateChunkProgress(chunk.index, chunk.headingBreadcrumb || null);
 
 				const formatPrefix = useRawPrompt
-					? `${buildPresetFormatSpec(preset, noteType)}\n\n`
+					? `${buildPresetFormatSpec(noteType)}\n\n`
 					: "";
 				const userMessage = chunk.headingBreadcrumb
 					? `${formatPrefix}[Context: This section is from "${chunk.headingBreadcrumb}" in the note "${sourceFile.basename}"]\n\n${chunk.content}`

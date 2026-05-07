@@ -109,16 +109,6 @@ export {
 	updateChunkProgress,
 	updatePartial,
 } from "./state/streaming-state";
-// TTS (text-to-speech)
-export { AudioStorageService } from "./tts/audio-storage.service";
-export {
-	buildTTSRequest,
-	getTTSAudioFilename,
-	TTS_AUDIO_DIR,
-	type TTSRequest,
-	type TTSResult,
-} from "./tts/tts.service";
-export { getVoiceConfig } from "./tts/tts-voice-map";
 // Error handling
 export { formatAIError } from "./utils/ai-error-handler";
 // Source text fixer

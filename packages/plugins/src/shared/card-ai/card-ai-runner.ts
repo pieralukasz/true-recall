@@ -47,6 +47,16 @@ export class CardAIRunner {
 		const rest: CardFields[] = cards.slice(1);
 		const editsHappened = head ? !deepEqualFields(head, original) : false;
 
+		// TEMP DIAGNOSTIC — remove once split-mode behavior is validated.
+		// Helps distinguish "model returned 1 card" from "UI dropped [1..N]".
+		console.log("[CardAI] received", {
+			cardCount: cards.length,
+			editsHappened,
+			willPresentNewCards: rest.length,
+			rawResponseLength: result?.rawResponse?.length ?? 0,
+			rawResponse: result?.rawResponse,
+		});
+
 		const retry = async (extra: string): Promise<CardAIRetryResult> => {
 			const r = await call(
 				`${preset.prompt}\n\nAdditional instruction: ${extra}`,
