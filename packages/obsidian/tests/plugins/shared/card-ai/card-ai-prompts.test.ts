@@ -114,18 +114,20 @@ describe("buildCardAIMessages", () => {
 			prompt: "Polish",
 			operation: "edit",
 		});
-		expect(sys.content).toContain("When in doubt");
 		expect(sys.content).toContain("VERBATIM");
+		expect(sys.content).toMatch(/original_fields_verbatim/);
 	});
 
-	it("explicitly forbids modifying [0] when not requested", () => {
+	it("declares an explicit SPLIT mode that preserves [0] verbatim", () => {
 		const [sys] = buildCardAIMessages({
 			fields: { Front: "Q", Back: "" },
 			noteType: basic,
 			prompt: "Polish",
 			operation: "edit",
 		});
-		expect(sys.content).toMatch(/Do NOT modify \[0\]/);
+		expect(sys.content).toContain("SPLIT mode");
+		expect(sys.content).toMatch(/split|decompose|break apart/i);
+		expect(sys.content).toMatch(/rozbij|rozdziel/);
 	});
 
 	it("explicitly forbids inventing extra cards", () => {

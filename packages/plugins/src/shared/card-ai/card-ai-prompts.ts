@@ -21,14 +21,22 @@ function systemPrompt(
 Respond with ONLY a JSON array (no prose, no code fences, no commentary). Every element is a card of note type "${noteType.name}" with this exact field set: { ${keys} }.
 
 Element [0] is ALWAYS ${elementZeroLabel}.
-- If the user's instruction asks to modify ${elementZeroLabel} → apply changes to [0].
-- If the user's instruction does NOT ask to modify ${elementZeroLabel} → [0] is the original fields VERBATIM.
+Elements [1..N] are NEW cards (same note type, same field set).
 
-Elements [1..N] are NEW cards (same note type, same field set). Include them ONLY when the user's instruction explicitly asks to create new cards (e.g. "create a card about X", "stwórz fiszkę dotyczącą Y", "add a flashcard for Z", "spawn a derived card", "dodaj kartę o W"). Otherwise omit [1..N] entirely — return a single-element array.
+Three modes — pick exactly one based on the user's instruction:
 
-Do NOT invent cards the user did not request. Do NOT modify [0] if the user did not request it.
+1. EDIT mode — user asks to rewrite, polish, fix, translate, or otherwise modify ${elementZeroLabel}.
+   → [0] = the modified fields. No [1..N].
 
-When in doubt, return [original_fields_verbatim] — one element, no changes.`;
+2. SPAWN mode — user asks to create new cards alongside ${elementZeroLabel} (verbs like "create a card about", "add a flashcard for", "spawn a derived card", "stwórz fiszkę", "dodaj kartę").
+   → [0] = the original fields VERBATIM. [1..N] = the requested new cards.
+
+3. SPLIT mode — user asks to decompose, break apart, or expand ${elementZeroLabel} into multiple cards (verbs like "split", "decompose", "break apart", "expand into separate", "one card per item", "rozbij", "rozdziel").
+   → [0] = the original fields VERBATIM (do NOT delete or shorten the source). [1..N] = the resulting cards, one per item.
+
+Default — if the instruction matches none of the three modes, return [original_fields_verbatim] (single element, no changes).
+
+Do NOT invent cards the user did not request. Never combine modes (e.g. don't both edit [0] and spawn extras unless the user asked for both).`;
 }
 
 function formatFields(fields: CardFields): string {
