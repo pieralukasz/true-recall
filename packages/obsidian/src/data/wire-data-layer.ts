@@ -88,16 +88,18 @@ function domainEventToLastMutation(
 export function wireDataLayer(dl: DataLayer, bus: DomainEventBus): () => void {
 	const disposers: (() => void)[] = [];
 
-	// Typed domain events -> DataLayer invalidation + lastMutation
+	// Typed domain events -> DataLayer invalidation + lastMutation.
+	// Set lastMutation BEFORE invalidating groups so effects that read both
+	// observe a consistent mutation type when DataLayer signals fire.
 	disposers.push(
 		bus.onAny(
 			[...CARD_EVENTS, "hierarchy:changed", "settings:changed"],
 			(event, payload) => {
-				const groups = EVENT_TO_GROUPS[event];
-				if (groups) dl.invalidateGroups(groups);
-
 				const mutation = domainEventToLastMutation(event, payload);
 				if (mutation) setLastMutation(mutation);
+
+				const groups = EVENT_TO_GROUPS[event];
+				if (groups) dl.invalidateGroups(groups);
 			},
 		),
 	);

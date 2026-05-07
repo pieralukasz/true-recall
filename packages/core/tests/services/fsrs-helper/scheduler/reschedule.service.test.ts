@@ -78,7 +78,8 @@ describe("RescheduleService", () => {
 			// At retention=0.9 with default FSRS-6 weights, stability=20 → interval ~20 days
 			// Original due was 4 days after lastReview, new should be ~20, so change > 1 day
 			expect(result.affectedCount).toBe(1);
-			const change = result.changes[0]!;
+			const change = result.changes[0];
+			if (!change) throw new Error("expected one reschedule change");
 			const newDue = new Date(change.newDue);
 			const lastReview = new Date("2026-01-25T10:00:00.000Z");
 			const interval = Math.round(
@@ -110,7 +111,7 @@ describe("RescheduleService", () => {
 
 			// High stability with cap=30 must produce a change
 			expect(result.affectedCount).toBeGreaterThan(0);
-			const newDue = new Date(result.changes[0]!.newDue);
+			const newDue = new Date(result.changes[0]?.newDue);
 			const lastReview = new Date("2026-01-01T10:00:00.000Z");
 			const interval = Math.round(
 				(newDue.getTime() - lastReview.getTime()) / (1000 * 60 * 60 * 24),
@@ -306,8 +307,11 @@ describe("RescheduleService", () => {
 
 			// stability=50, retention=0.9 → interval ~50 days; old was 5 days → must change
 			expect(mockStore.updateCardScheduling).toHaveBeenCalled();
-			const [cardId, updateData] =
-				mockStore.updateCardScheduling.mock.calls[0]!;
+			const firstCall = mockStore.updateCardScheduling.mock.calls[0];
+			if (!firstCall) {
+				throw new Error("expected updateCardScheduling to be called");
+			}
+			const [cardId, updateData] = firstCall;
 			expect(cardId).toBe("update-test");
 			expect(updateData).toHaveProperty("due");
 			expect(updateData).toHaveProperty("scheduledDays");
@@ -364,7 +368,8 @@ describe("RescheduleService", () => {
 			});
 
 			expect(result.affectedCount).toBe(1);
-			const change = result.changes[0]!;
+			const change = result.changes[0];
+			if (!change) throw new Error("expected one reschedule change");
 			const newDue = new Date(change.newDue);
 			const lastReview = new Date("2026-01-25T10:00:00.000Z");
 			const interval = Math.round(

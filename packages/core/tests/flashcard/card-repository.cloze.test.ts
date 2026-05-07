@@ -58,9 +58,9 @@ describe("CardRepository - cloze operations", () => {
 
 			const stored = ctx.cards.get(card.id);
 			expect(stored).not.toBeUndefined();
-			expect(stored!.cardType).toBe("cloze");
-			expect(stored!.clozeTemplate).toBe("{{c1::France}} is in {{c2::Europe}}");
-			expect(stored!.clozeIndex).toBe(1);
+			expect(stored?.cardType).toBe("cloze");
+			expect(stored?.clozeTemplate).toBe("{{c1::France}} is in {{c2::Europe}}");
+			expect(stored?.clozeIndex).toBe(1);
 		});
 
 		it("returns card with cloze fields", () => {
@@ -86,9 +86,9 @@ describe("CardRepository - cloze operations", () => {
 
 			const stored = ctx.cards.get(card.id);
 			expect(stored).not.toBeUndefined();
-			expect(stored!.cardType).toBe("basic");
-			expect(stored!.clozeTemplate).toBeUndefined();
-			expect(stored!.clozeIndex).toBeUndefined();
+			expect(stored?.cardType).toBe("basic");
+			expect(stored?.clozeTemplate).toBeUndefined();
+			expect(stored?.clozeIndex).toBeUndefined();
 		});
 	});
 
@@ -122,15 +122,15 @@ describe("CardRepository - cloze operations", () => {
 			expect(result.created).toHaveLength(2);
 
 			const stored1 = ctx.cards.get("cloze-1");
-			expect(stored1!.cardType).toBe("cloze");
-			expect(stored1!.clozeTemplate).toBe(TEMPLATE);
-			expect(stored1!.clozeIndex).toBe(1);
-			expect(stored1!.sourceUid).toBe("source-uid-1");
+			expect(stored1?.cardType).toBe("cloze");
+			expect(stored1?.clozeTemplate).toBe(TEMPLATE);
+			expect(stored1?.clozeIndex).toBe(1);
+			expect(stored1?.sourceUid).toBe("source-uid-1");
 
 			const stored2 = ctx.cards.get("cloze-2");
-			expect(stored2!.cardType).toBe("cloze");
-			expect(stored2!.clozeTemplate).toBe(TEMPLATE);
-			expect(stored2!.clozeIndex).toBe(2);
+			expect(stored2?.cardType).toBe("cloze");
+			expect(stored2?.clozeTemplate).toBe(TEMPLATE);
+			expect(stored2?.clozeIndex).toBe(2);
 		});
 
 		it("detects cloze-specific duplicates by sourceUid + template + index", () => {
@@ -166,7 +166,7 @@ describe("CardRepository - cloze operations", () => {
 
 			expect(result.created).toHaveLength(0);
 			expect(result.duplicates).toHaveLength(1);
-			expect(result.duplicates[0]!.type).toBe("existing");
+			expect(result.duplicates[0]?.type).toBe("existing");
 		});
 
 		it("allows same cloze index from different source notes", () => {
@@ -216,8 +216,8 @@ describe("CardRepository - cloze operations", () => {
 
 			expect(result.created).toHaveLength(1);
 			const stored = ctx.cards.get("basic-1");
-			expect(stored!.cardType).toBe("basic");
-			expect(stored!.clozeTemplate).toBeUndefined();
+			expect(stored?.cardType).toBe("basic");
+			expect(stored?.clozeTemplate).toBeUndefined();
 		});
 
 		it("handles mixed cloze and basic cards in one batch", () => {
@@ -251,11 +251,11 @@ describe("CardRepository - cloze operations", () => {
 			expect(result.created).toHaveLength(3);
 
 			const storedBasic = ctx.cards.get("basic-1");
-			expect(storedBasic!.cardType).toBe("basic");
+			expect(storedBasic?.cardType).toBe("basic");
 
 			const storedCloze = ctx.cards.get("cloze-1");
-			expect(storedCloze!.cardType).toBe("cloze");
-			expect(storedCloze!.clozeTemplate).toBe(TEMPLATE);
+			expect(storedCloze?.cardType).toBe("cloze");
+			expect(storedCloze?.clozeTemplate).toBe(TEMPLATE);
 		});
 	});
 
@@ -283,15 +283,15 @@ describe("CardRepository - cloze operations", () => {
 
 			expect(result.created).toHaveLength(2);
 
-			const storedOrig = ctx.cards.get(result.created[0]!.id);
-			const storedRev = ctx.cards.get(result.created[1]!.id);
-			expect(storedRev!.cardType).toBe("reversed");
+			const storedOrig = ctx.cards.get(result.created[0]?.id);
+			const storedRev = ctx.cards.get(result.created[1]?.id);
+			expect(storedRev?.cardType).toBe("reversed");
 			// Both cards share the same note (v26 reversed architecture)
-			expect(storedRev!.noteId).toBe(storedOrig!.noteId);
+			expect(storedRev?.noteId).toBe(storedOrig?.noteId);
 			// The reverse card should be discoverable via getCardByReverseOf
-			const foundReverse = ctx.cards.getCardByReverseOf(result.created[0]!.id);
+			const foundReverse = ctx.cards.getCardByReverseOf(result.created[0]?.id);
 			expect(foundReverse).toBeDefined();
-			expect(foundReverse!.id).toBe(result.created[1]!.id);
+			expect(foundReverse?.id).toBe(result.created[1]?.id);
 		});
 	});
 
@@ -452,15 +452,15 @@ describe("CardRepository - cloze operations", () => {
 
 			const card1 = ctx.cards.get("c1");
 			expect(card1).toBeDefined();
-			expect(card1!.question).toBe("[...] is in Europe");
+			expect(card1?.question).toBe("[...] is in Europe");
 			// Answer includes <br>{{Extra}} from cloze afmt template
-			expect(card1!.answer).toBe("**Italy** is in Europe<br>");
-			expect(card1!.clozeTemplate).toBe(newTemplate);
+			expect(card1?.answer).toBe("**Italy** is in Europe<br>");
+			expect(card1?.clozeTemplate).toBe(newTemplate);
 
 			const card2 = ctx.cards.get("c2");
 			expect(card2).toBeDefined();
-			expect(card2!.question).toBe("Italy is in [...]");
-			expect(card2!.answer).toBe("Italy is in **Europe**<br>");
+			expect(card2?.question).toBe("Italy is in [...]");
+			expect(card2?.answer).toBe("Italy is in **Europe**<br>");
 		});
 
 		it("creates new card when cloze index is added", () => {
@@ -478,7 +478,7 @@ describe("CardRepository - cloze operations", () => {
 
 			const c3 = siblings.find((s) => s.clozeIndex === 3);
 			expect(c3).toBeDefined();
-			expect(c3!.question).toContain("[...]");
+			expect(c3?.question).toContain("[...]");
 		});
 
 		it("soft-deletes card when cloze index is removed", () => {
@@ -488,7 +488,7 @@ describe("CardRepository - cloze operations", () => {
 			// c1 should be updated
 			const card1 = ctx.cards.get("c1");
 			expect(card1).toBeDefined();
-			expect(card1!.clozeTemplate).toBe(newTemplate);
+			expect(card1?.clozeTemplate).toBe(newTemplate);
 
 			// c2 should be soft-deleted (cloze index 2 no longer exists)
 			const card2 = ctx.cards.get("c2");

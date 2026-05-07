@@ -94,8 +94,6 @@ export const BUILTIN_BASIC_PRESET: GenerationPreset = {
 	prompt:
 		"Generate atomic Q/A flashcards from the provided text. Each card has Front (a clear, specific question) and Back (a concise, accurate answer).",
 	noteTypeId: BUILTIN_BASIC_ID,
-	tts: null,
-	image: null,
 	requiresPro: false,
 	builtin: true,
 	isDefault: true,
@@ -110,8 +108,6 @@ export const BUILTIN_BASIC_PRO_PRESET: GenerationPreset = {
 	name: "Basic Flashcards (Pro)",
 	prompt: BUILTIN_BASIC_PRO_PROMPT,
 	noteTypeId: BUILTIN_BASIC_ID,
-	tts: null,
-	image: null,
 	requiresPro: true,
 	builtin: true,
 	isDefault: false,
@@ -119,18 +115,19 @@ export const BUILTIN_BASIC_PRO_PRESET: GenerationPreset = {
 	updatedAt: 0,
 };
 
-export const TTS_VOICES = [
-	"alloy",
-	"echo",
-	"fable",
-	"onyx",
-	"nova",
-	"shimmer",
-] as const;
-export type TTSVoice = (typeof TTS_VOICES)[number];
-
 export const DEFAULT_SETTINGS: TrueRecallSettings = {
 	enableDeviceSync: false,
+	providerType: "openrouter",
+	customBaseUrl: "http://localhost:11434/v1",
+	customModel: "",
+	customApiKey: undefined,
+	customTemperature: undefined,
+	lmStudioBaseUrl: "http://localhost:1234/v1",
+	lmStudioModel: "",
+	lmStudioApiKey: undefined,
+	lmStudioTemperature: undefined,
+	lmStudioGenerationModel: "",
+	lmStudioCardPolishModel: "",
 	openRouterApiKey: "",
 	aiModel: DEFAULT_BYOK_MODEL,
 	aiTier: "byok",
@@ -235,6 +232,11 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 		{ id: "new-note", enabled: true },
 		{ id: "append", enabled: true },
 	],
+	imageToolbarButtons: [
+		{ id: "io", enabled: true },
+		{ id: "edit", enabled: true },
+		{ id: "quick-add", enabled: true },
+	],
 
 	enableLocalApi: false,
 	apiPort: 27182,
@@ -258,10 +260,6 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 	languageNoteTypeId: null,
 	languageSource: "",
 	languageTarget: "",
-	languageTtsField: "",
-	languageTtsEnabled: false,
-	ttsVoice: "nova",
-	ttsAutoplay: true,
 
 	generationPresets: [BUILTIN_BASIC_PRESET, BUILTIN_BASIC_PRO_PRESET],
 	defaultGenerationPresetId: BUILTIN_BASIC_PRESET_ID,
@@ -330,6 +328,13 @@ export const GITHUB_RELEASES_API =
 	"https://api.github.com/repos/pieralukasz/true-recall/releases/latest";
 
 export const LITELLM_URL = "https://ai.truerecall.app/v1/chat/completions";
+
+/** Default base URL for custom (self-hosted) providers — matches Ollama's OpenAI-compatible endpoint */
+export const DEFAULT_CUSTOM_BASE_URL = "http://localhost:11434/v1";
+
+/** Default base URL for LM Studio's OpenAI-compatible endpoint */
+export const DEFAULT_LMSTUDIO_BASE_URL = "http://localhost:1234/v1";
+
 export const LITELLM_EMBEDDINGS_URL = "https://ai.truerecall.app/v1/embeddings";
 export const OPENROUTER_EMBEDDINGS_URL =
 	"https://openrouter.ai/api/v1/embeddings";

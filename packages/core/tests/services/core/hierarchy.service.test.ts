@@ -223,8 +223,8 @@ describe("HierarchyService", () => {
 			// Virtual parent created for unresolvable name
 			const hierarchy = service.buildHierarchy();
 			expect(hierarchy).toHaveLength(1);
-			expect(hierarchy[0]!.name).toBe("NonExistent");
-			expect(hierarchy[0]!.memberPaths).toContain("Note.md");
+			expect(hierarchy[0]?.name).toBe("NonExistent");
+			expect(hierarchy[0]?.memberPaths).toContain("Note.md");
 		});
 	});
 

@@ -3,12 +3,16 @@ import { type EditorView, ViewPlugin, type ViewUpdate } from "@codemirror/view";
 import { computePosition, flip, offset, shift } from "@floating-ui/dom";
 import { h, render } from "preact";
 
+import type { ToolbarButtonConfig } from "@true-recall/core/types";
+
 import { ImageToolbar } from "./ImageToolbar";
 
 export interface ImageToolbarCallbacks {
 	onQuickAddImage: (imagePath: string) => Promise<void>;
 	onEdit: (imagePath: string) => void;
 	onImageOcclusion: (imagePath: string) => void;
+	getButtons: () => ToolbarButtonConfig[];
+	getPluginStates: () => Record<string, boolean>;
 	isEnabled: () => boolean;
 }
 
@@ -108,13 +112,16 @@ export function createImageToolbarExtension(
 
 				render(
 					h(ImageToolbar, {
-						imagePath,
-						onQuickAdd: async () => {
-							await callbacks.onQuickAddImage(imagePath);
+						buttons: callbacks.getButtons(),
+						pluginStates: callbacks.getPluginStates(),
+						actions: {
+							onQuickAdd: async () => {
+								await callbacks.onQuickAddImage(imagePath);
+							},
+							onEdit: () => callbacks.onEdit(imagePath),
+							onImageOcclusion: () => callbacks.onImageOcclusion(imagePath),
+							onDismiss: () => this.removeToolbar(),
 						},
-						onEdit: () => callbacks.onEdit(imagePath),
-						onImageOcclusion: () => callbacks.onImageOcclusion(imagePath),
-						onDismiss: () => this.removeToolbar(),
 					}),
 					this.container,
 				);

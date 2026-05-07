@@ -3,25 +3,12 @@ import type { GenerationPreset } from "../../types/generation-preset.types";
 import type { NoteType } from "../../types/note.types";
 import { buildLanguageSuffix } from "./default-prompts";
 
-/**
- * Field list used in the JSON output spec. Image field (if configured) is
- * excluded from the AI's text response — it is filled by the image
- * post-processor after generation.
- */
-function listTextFields(
-	preset: GenerationPreset,
-	noteType: NoteType,
-): string[] {
-	const imageTarget = preset.image?.targetField;
-	return noteType.fields.filter((f) => f !== imageTarget);
-}
-
 export function buildPresetPrompt(
 	preset: GenerationPreset,
 	noteType: NoteType,
 ): string {
 	const slug = resolveSlug(noteType);
-	const textFields = listTextFields(preset, noteType);
+	const textFields = noteType.fields;
 	const entries = textFields.map((name) => `"${name}": "..."`).join(", ");
 	const userPrompt = preset.prompt.trim();
 
@@ -35,12 +22,9 @@ export function buildPresetPrompt(
 	);
 }
 
-export function buildPresetFormatSpec(
-	preset: GenerationPreset,
-	noteType: NoteType,
-): string {
+export function buildPresetFormatSpec(noteType: NoteType): string {
 	const slug = resolveSlug(noteType);
-	const textFields = listTextFields(preset, noteType);
+	const textFields = noteType.fields;
 	const entries = textFields.map((name) => `"${name}": "..."`).join(", ");
 
 	return (

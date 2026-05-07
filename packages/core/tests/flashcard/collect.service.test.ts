@@ -51,8 +51,8 @@ describe("CollectService", () => {
 
 			expect(result.collectedCount).toBe(1);
 			expect(result.parsedBlocks).toHaveLength(1);
-			expect(result.parsedBlocks[0]!.fields.Front).toBe("What is X?");
-			expect(result.parsedBlocks[0]!.fields.Back).toBe("Definition");
+			expect(result.parsedBlocks[0]?.fields.Front).toBe("What is X?");
+			expect(result.parsedBlocks[0]?.fields.Back).toBe("Definition");
 		});
 
 		it("collects multiple blocks separated by ---", () => {
@@ -100,8 +100,8 @@ describe("CollectService", () => {
 			const result = service.collect(content);
 
 			expect(result.collectedCount).toBe(1);
-			expect(result.parsedBlocks[0]!.noteTypeId).toBe(BUILTIN_CLOZE_ID);
-			expect(result.parsedBlocks[0]!.fields.Text).toBe(
+			expect(result.parsedBlocks[0]?.noteTypeId).toBe(BUILTIN_CLOZE_ID);
+			expect(result.parsedBlocks[0]?.fields.Text).toBe(
 				"{{c1::Tokyo}} is in {{c2::Japan}}",
 			);
 		});
@@ -137,7 +137,7 @@ describe("CollectService", () => {
 			].join("\n");
 			const result = service.collect(content);
 
-			expect(result.parsedBlocks[0]!.sourceText).toBe("The original text");
+			expect(result.parsedBlocks[0]?.sourceText).toBe("The original text");
 		});
 	});
 

@@ -30,12 +30,14 @@ export function SummaryScreen({
 	continuousCustomReviews,
 	onClose,
 	onNextSession,
+	onOpenDashboard,
 }: {
 	review: ReviewApi;
 	isCustomSession: boolean;
 	continuousCustomReviews: boolean;
 	onClose: () => void;
 	onNextSession: () => void;
+	onOpenDashboard: () => void;
 }) {
 	const stats = review.getStats();
 	const durationMin = Math.floor(stats.duration / 60000);
@@ -87,7 +89,7 @@ export function SummaryScreen({
 						/>
 					</div>
 
-					<div class="ep:flex ep:gap-3 ep:py-4 ep:justify-center">
+					<div class="ep:flex ep:flex-wrap ep:gap-3 ep:py-4 ep:justify-center">
 						{isCustomSession && continuousCustomReviews ? (
 							<>
 								<Clickable
@@ -100,19 +102,35 @@ export function SummaryScreen({
 								<Clickable
 									stopPropagation={false}
 									class="ep-btn ep-btn-outline"
+									onClick={onOpenDashboard}
+								>
+									Dashboard
+								</Clickable>
+								<Clickable
+									stopPropagation={false}
+									class="ep-btn ep-btn-outline"
 									onClick={onClose}
 								>
 									Finish
 								</Clickable>
 							</>
 						) : (
-							<Clickable
-								stopPropagation={false}
-								class="ep-btn mod-cta"
-								onClick={onClose}
-							>
-								Close
-							</Clickable>
+							<>
+								<Clickable
+									stopPropagation={false}
+									class="ep-btn mod-cta"
+									onClick={onOpenDashboard}
+								>
+									Dashboard
+								</Clickable>
+								<Clickable
+									stopPropagation={false}
+									class="ep-btn ep-btn-outline"
+									onClick={onClose}
+								>
+									Close
+								</Clickable>
+							</>
 						)}
 					</div>
 				</div>

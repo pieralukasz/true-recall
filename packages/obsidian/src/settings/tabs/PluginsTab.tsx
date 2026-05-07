@@ -1,6 +1,5 @@
 import { useState } from "preact/hooks";
 
-import { hasAIKey } from "@true-recall/core/ai/config/ai-client-config";
 import type { PluginTier } from "@true-recall/core/types";
 
 import {
@@ -13,6 +12,7 @@ import { cn } from "@true-recall/obsidian/utils/cn";
 
 import { useSettings } from "../hooks/useSettings";
 import { AIProviderSection } from "./AIProviderSection";
+import { isPluginActive } from "./plugin-availability";
 import type { PluginManifest, PluginSettingsProps } from "@true-recall/plugins";
 import { PLUGIN_MANIFESTS } from "@true-recall/plugins";
 
@@ -163,15 +163,8 @@ function PluginAccordion({
 
 export function PluginsTab() {
 	const { settings, save } = useSettings();
-	const isPro = !!settings.proKey;
-	const hasKey = hasAIKey(settings);
 	const pluginStates = settings.pluginStates ?? {};
 
-	const isTierActive = (tier: PluginTier): boolean => {
-		if (tier === "free") return true;
-		if (tier === "byok") return hasKey;
-		return isPro;
-	};
 	const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
 
 	const handleToggle = (pluginId: string, enabled: boolean) => {
@@ -210,7 +203,7 @@ export function PluginsTab() {
 							<PluginAccordion
 								key={manifest.info.id}
 								manifest={manifest}
-								isActive={isTierActive(manifest.info.tier)}
+								isActive={isPluginActive(manifest, settings)}
 								isEnabled={pluginStates[manifest.info.id] !== false}
 								isExpanded={expandedIds.has(manifest.info.id)}
 								onToggle={(enabled) => handleToggle(manifest.info.id, enabled)}

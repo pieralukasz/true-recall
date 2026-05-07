@@ -51,6 +51,9 @@ describe("Review Slice", () => {
 			const cards = [createMockCard(), createMockCard()];
 			store.getState().review.startSession(cards);
 			store.getState().review.revealAnswer();
+			store
+				.getState()
+				.review.setSessionFilters({ projectPath: "Projects/A.md" });
 
 			store.getState().review.reset();
 
@@ -58,6 +61,7 @@ describe("Review Slice", () => {
 			expect(review.isActive).toBe(false);
 			expect(review.queue).toHaveLength(0);
 			expect(review.isAnswerRevealed).toBe(false);
+			expect(review.getSessionFilters()).toEqual({});
 		});
 	});
 
@@ -258,7 +262,7 @@ describe("Review Slice", () => {
 			expect(countsBefore.due).toBe(1);
 
 			// Remove the New card which is before current index
-			store.getState().review.removeCardById(cards[0]!.id);
+			store.getState().review.removeCardById(cards[0]?.id);
 
 			// Count should stay the same (card was already passed)
 			const countsAfter = store.getState().review.getBadgeCounts();
@@ -279,11 +283,38 @@ describe("Review Slice", () => {
 			expect(countsBefore.due).toBe(2);
 
 			// Remove all review cards
-			store.getState().review.removeCardsByIds([cards[1]!.id, cards[2]!.id]);
+			store.getState().review.removeCardsByIds([cards[1]?.id, cards[2]?.id]);
 
 			const countsAfter = store.getState().review.getBadgeCounts();
 			expect(countsAfter.new).toBe(2);
 			expect(countsAfter.due).toBe(0);
+		});
+
+		it("should replace the active queue while keeping the same current card when possible", () => {
+			const cards = [
+				createMockCardWithState(State.New),
+				createMockCardWithState(State.Review),
+				createMockCardWithState(State.Learning),
+			];
+			store.getState().review.startSession(cards);
+			store.getState().review.nextCard();
+
+			const replacement = [
+				createMockCardWithState(State.New),
+				cards[1]!,
+				createMockCardWithState(State.Review),
+			];
+
+			store.getState().review.replaceQueue(replacement, cards[1]?.id ?? null);
+
+			const review = store.getState().review;
+			expect(review.getCurrentCard()?.id).toBe(cards[1]?.id);
+			expect(review.currentIndex).toBe(1);
+			expect(review.getBadgeCounts()).toEqual({
+				new: 0,
+				learning: 0,
+				due: 2,
+			});
 		});
 
 		it("should not count requeue if inserted before current index", () => {
@@ -682,6 +713,59 @@ describe("Review Slice", () => {
 			expect(store.getState().review.queue[1]?.id).toBe("new-card");
 		});
 
+		it("should shift currentIndex when inserting before it (mirrors removeCardById)", () => {
+			const cards = [
+				createMockCard({ id: "card-1" }),
+				createMockCard({ id: "card-2" }),
+				createMockCard({ id: "card-3" }),
+			];
+			store.getState().review.startSession(cards);
+			store.getState().review.nextCard();
+			store.getState().review.nextCard();
+			expect(store.getState().review.currentIndex).toBe(2);
+			expect(store.getState().review.getCurrentCard()?.id).toBe("card-3");
+
+			const inserted = createMockCard({ id: "inserted" });
+			store.getState().review.insertCardAtPosition(inserted, 1);
+
+			// currentIndex shifts +1 so user stays on card-3
+			expect(store.getState().review.currentIndex).toBe(3);
+			expect(store.getState().review.getCurrentCard()?.id).toBe("card-3");
+		});
+
+		it("should keep currentIndex when inserting after it", () => {
+			const cards = [
+				createMockCard({ id: "card-1" }),
+				createMockCard({ id: "card-2" }),
+			];
+			store.getState().review.startSession(cards);
+			expect(store.getState().review.currentIndex).toBe(0);
+
+			const inserted = createMockCard({ id: "inserted" });
+			store.getState().review.insertCardAtPosition(inserted, 2);
+
+			expect(store.getState().review.currentIndex).toBe(0);
+			expect(store.getState().review.getCurrentCard()?.id).toBe("card-1");
+		});
+
+		it("should put inserted card under cursor when position == currentIndex", () => {
+			const cards = [
+				createMockCard({ id: "card-1" }),
+				createMockCard({ id: "card-2" }),
+			];
+			store.getState().review.startSession(cards);
+			store.getState().review.nextCard();
+			expect(store.getState().review.currentIndex).toBe(1);
+
+			const inserted = createMockCard({ id: "inserted" });
+			store.getState().review.insertCardAtPosition(inserted, 1);
+
+			// When inserting at current position, the new card becomes current.
+			// Used by undo to restore the active card.
+			expect(store.getState().review.currentIndex).toBe(1);
+			expect(store.getState().review.getCurrentCard()?.id).toBe("inserted");
+		});
+
 		it("should requeue card at end by default", () => {
 			const card1 = createMockCard({ id: "card-1" });
 			store.getState().review.startSession([card1]);
@@ -929,8 +1013,8 @@ describe("Review Slice", () => {
 
 			// The queue should have reviewCard2 at index 1 (current) and relearning at index 2
 			const state = store.getState().review;
-			expect(state.queue[1]!.fsrs.state).toBe(State.Review);
-			expect(state.queue[2]!.fsrs.state).toBe(State.Relearning);
+			expect(state.queue[1]?.fsrs.state).toBe(State.Review);
+			expect(state.queue[2]?.fsrs.state).toBe(State.Relearning);
 		});
 	});
 });

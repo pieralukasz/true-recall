@@ -6,7 +6,7 @@ const C = "AI Generation";
 export const presetCommands: CommandDef[] = [
 	get(
 		"list_generation_presets",
-		"List all generation presets (id, name, noteTypeId, fields, isPinned, isDefault).",
+		"List all generation presets (id, name, noteTypeId, prompt, requiresPro, isDefault).",
 		C,
 		"/generation-presets",
 	),
@@ -35,7 +35,7 @@ export const presetCommands: CommandDef[] = [
 			preset: {
 				type: "json",
 				description:
-					"Full preset JSON: { name, noteTypeId, fields, tts, customPrompt?, isPinned, isDefault }",
+					"Full preset JSON: { name, prompt, noteTypeId, requiresPro, isDefault }",
 				required: true,
 			},
 		},
@@ -43,7 +43,7 @@ export const presetCommands: CommandDef[] = [
 
 	postTo(
 		"update_generation_preset",
-		"Update a generation preset (PATCH). Top-level keys are merged; if fields or tts are provided, they atomically replace the existing sub-object.",
+		"Update a generation preset (PATCH). Top-level keys are merged.",
 		C,
 		{
 			preset_id: {
@@ -54,7 +54,7 @@ export const presetCommands: CommandDef[] = [
 			patch: {
 				type: "json",
 				description:
-					"Partial preset JSON. Valid keys: name, noteTypeId, fields, tts, customPrompt, isPinned, isDefault.",
+					"Partial preset JSON. Valid keys: name, prompt, noteTypeId, requiresPro, isDefault.",
 				required: true,
 			},
 		},

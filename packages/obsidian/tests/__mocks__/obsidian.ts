@@ -30,7 +30,7 @@ export function normalizePath(path: string): string {
 
 export function debounce<T extends (...args: unknown[]) => unknown>(
 	fn: T,
-	delay: number,
+	_delay: number,
 ): T {
 	return fn;
 }

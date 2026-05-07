@@ -5,7 +5,6 @@ import { ankiImportExportManifest } from "./anki-import-export";
 import { cardPolishManifest } from "./card-polish";
 import { dashboardCodeblockManifest } from "./dashboard-codeblock";
 import { gamificationManifest } from "./gamification";
-import { healingFlashcardsManifest } from "./healing-flashcards";
 import { imageOcclusionManifest } from "./image-occlusion";
 import { knowledgeBaseManifest } from "./knowledge-base";
 import { linkStatusIndicatorsManifest } from "./link-status-indicators";
@@ -19,7 +18,6 @@ export const PLUGIN_MANIFESTS: PluginManifest[] = [
 	aiGenerationManifest,
 	knowledgeBaseManifest,
 	typeInModeManifest,
-	healingFlashcardsManifest,
 	linkStatusIndicatorsManifest,
 	dashboardCodeblockManifest,
 	gamificationManifest,

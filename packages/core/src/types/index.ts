@@ -12,6 +12,11 @@ export type {
 	ModelMapping,
 	NoteTypeMapping,
 } from "./anki.types";
+export type {
+	CardAIPreset,
+	CardAIUserSettings,
+	CardFields,
+} from "./card-ai-preset.types";
 export type { SessionResult } from "./events.types";
 export type {
 	FlashcardInfo,
@@ -63,11 +68,7 @@ export {
 	Rating,
 	State,
 } from "./fsrs";
-export type {
-	GenerationPreset,
-	PresetImageConfig,
-	PresetTTSConfig,
-} from "./generation-preset.types";
+export type { GenerationPreset } from "./generation-preset.types";
 export type {
 	ImageExtension,
 	ImageInsertOptions,

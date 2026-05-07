@@ -26,8 +26,6 @@ const basicPreset: GenerationPreset = {
 	name: "Basic",
 	prompt: "Generate Q/A cards.",
 	noteTypeId: "nt-basic",
-	tts: null,
-	image: null,
 	requiresPro: false,
 	builtin: false,
 	isDefault: true,
@@ -53,6 +51,7 @@ function makeProSettings(
 ): TrueRecallSettings {
 	return {
 		proKey: "pro-key-abc",
+		providerType: "pro",
 		generationPresets: [basicPreset],
 		defaultGenerationPresetId: basicPreset.id,
 		...overrides,
@@ -166,10 +165,7 @@ describe("ChunkedGenerationService.generateFromNote", () => {
 		expect(capturedRequests.length).toBeGreaterThan(1);
 
 		const expectedSystemPrompt = buildPresetPrompt(basicPreset, basicNoteType);
-		const expectedFormatSpec = buildPresetFormatSpec(
-			basicPreset,
-			basicNoteType,
-		);
+		const expectedFormatSpec = buildPresetFormatSpec(basicNoteType);
 
 		for (const req of capturedRequests) {
 			const body = req as any;
@@ -210,7 +206,7 @@ describe("ChunkedGenerationService.generateFromNote", () => {
 
 		expect(result.totalChunks).toBeGreaterThan(1);
 
-		const expectedFormatSpec = buildPresetFormatSpec(proPreset, basicNoteType);
+		const expectedFormatSpec = buildPresetFormatSpec(basicNoteType);
 
 		for (const req of capturedRequests) {
 			const body = req as any;

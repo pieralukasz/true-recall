@@ -21,11 +21,13 @@ import type { TrueRecallSettings } from "@true-recall/core/types";
 import type { SessionConfig } from "@true-recall/core/types/session-config.types";
 
 import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpClient";
+import { ObsidianNoteResolver } from "@true-recall/obsidian/adapters/ObsidianNoteResolver";
 import { ObsidianPersistence } from "@true-recall/obsidian/adapters/ObsidianPersistence";
 import type { CommandService } from "@true-recall/obsidian/commands";
 import type { DataLayer } from "@true-recall/obsidian/data";
 import { G } from "@true-recall/obsidian/data";
 import type { NoteStatusCache } from "@true-recall/obsidian/features/core/cache/note-status-cache.service";
+import { ReviewSessionController } from "@true-recall/obsidian/features/study/services/ReviewSessionController";
 import {
 	filtersToViewState,
 	normalizeSessionFilters,
@@ -184,6 +186,19 @@ export default class TrueRecallPlugin extends Plugin {
 	adapters!: ObsidianAdapters;
 	private _unloaded = false;
 	private sessionService = new SessionService();
+	private _reviewController: ReviewSessionController | null = null;
+
+	get reviewController(): ReviewSessionController {
+		if (!this._reviewController) {
+			this._reviewController = new ReviewSessionController(this, () => {
+				if (!this.store) {
+					throw new Error("Store not ready");
+				}
+				return this.store.getState().review;
+			});
+		}
+		return this._reviewController;
+	}
 	EmbeddableEditor:
 		| import("@true-recall/obsidian/editor/shared/embedded-editor").EmbeddableEditorClass
 		| null = null;
@@ -506,11 +521,20 @@ export default class TrueRecallPlugin extends Plugin {
 
 		const result = this.sessionService.validate(
 			config,
-			allCards,
-			archivedSourceUids,
+			{
+				allCards,
+				archivedSourceUids,
+				settings: this.settings,
+				sessionPersistence: this.sessionPersistence,
+				presetService: this.presetService,
+				noteResolver: new ObsidianNoteResolver(this.app),
+				hierarchyService: this.hierarchyService,
+				fsrsService: this.fsrsService,
+			},
 			{
 				ignoreDailyLimitsForNoteStudy:
 					this.settings.ignoreDailyLimitsForNoteStudy,
+				dayStartHour: this.settings.dayStartHour,
 			},
 		);
 

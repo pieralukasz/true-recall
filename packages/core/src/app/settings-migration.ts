@@ -5,12 +5,8 @@ import {
 	BUILTIN_BASIC_PRO_PRESET_ID,
 	DEFAULT_SETTINGS,
 } from "../constants";
-import type {
-	GenerationPreset,
-	PresetImageConfig,
-	PresetTTSConfig,
-} from "../types/generation-preset.types";
-import type { TrueRecallSettings } from "../types/settings.types";
+import type { GenerationPreset } from "../types/generation-preset.types";
+import type { AITier, TrueRecallSettings } from "../types/settings.types";
 import { migrateCardPolishSettings } from "../types/settings-migration";
 
 interface LegacyGenerationPreset {
@@ -25,8 +21,6 @@ interface LegacyGenerationPreset {
 	>;
 	prompt?: string;
 	customPrompt?: string;
-	tts?: { field: string; voice: string; autoplay?: boolean } | null;
-	image?: { targetField: string; sourceField: string; style?: string } | null;
 	isPinned?: boolean;
 	isDefault?: boolean;
 	isPro?: boolean;
@@ -57,34 +51,11 @@ function migrateLegacyPreset(p: LegacyGenerationPreset): GenerationPreset {
 			.join("\n\n") ||
 		"Generate flashcards from the provided text.";
 
-	const imageEntry = p.fields
-		? Object.entries(p.fields).find(([, cfg]) => cfg.role === "image")
-		: undefined;
-	const image: PresetImageConfig | null = p.image
-		? p.image
-		: imageEntry
-			? {
-					targetField: imageEntry[0],
-					sourceField: (imageEntry[1] as { sourceField: string }).sourceField,
-					style: (imageEntry[1] as { style?: string }).style,
-				}
-			: null;
-
-	const tts: PresetTTSConfig | null = p.tts
-		? {
-				field: p.tts.field,
-				voice: p.tts.voice,
-				autoplay: p.tts.autoplay ?? false,
-			}
-		: null;
-
 	return {
 		id: p.id,
 		name: p.name,
 		prompt,
 		noteTypeId: p.noteTypeId,
-		tts,
-		image,
 		requiresPro: p.requiresPro ?? p.isPro ?? false,
 		builtin:
 			p.builtin ??
@@ -111,6 +82,50 @@ export function migrateSettings(raw: Partial<TrueRecallSettings> | null): {
 		: raw;
 	const settings: TrueRecallSettings = { ...DEFAULT_SETTINGS, ...migratedRaw };
 	let needsSave = false;
+
+	// Derive providerType if not set or invalid
+	if (
+		settings.providerType !== "pro" &&
+		settings.providerType !== "openrouter" &&
+		settings.providerType !== "custom" &&
+		settings.providerType !== "lmstudio"
+	) {
+		if (settings.proKey) {
+			settings.providerType = "pro";
+		} else if (settings.openRouterApiKey) {
+			settings.providerType = "openrouter";
+		} else {
+			settings.providerType = "openrouter";
+		}
+		needsSave = true;
+	}
+
+	// Derive providerType from available keys when providerType was not in raw data
+	if (!raw?.providerType) {
+		if (settings.proKey && settings.providerType !== "pro") {
+			settings.providerType = "pro";
+			needsSave = true;
+		} else if (
+			settings.openRouterApiKey &&
+			settings.providerType === "openrouter"
+		) {
+			// openrouter is the default — if they have a key, keep it
+		}
+	}
+
+	// Sync aiTier with providerType
+	const derivedTier: AITier =
+		settings.providerType === "pro"
+			? "pro"
+			: settings.providerType === "custom"
+				? "custom"
+				: settings.providerType === "lmstudio"
+					? "lmstudio"
+					: "byok";
+	if (settings.aiTier !== derivedTier) {
+		(settings as { aiTier: AITier }).aiTier = derivedTier;
+		needsSave = true;
+	}
 
 	// cardPolish bucket migration: drop legacy built-ins and rename presets → userPresets
 	const legacyPolish = (raw as { cardPolish?: { presets?: unknown } } | null)
@@ -208,8 +223,6 @@ export function migrateSettings(raw: Partial<TrueRecallSettings> | null): {
 				id: string;
 				sourceLanguage?: string;
 				targetLanguage?: string;
-				ttsField?: string;
-				ttsEnabled?: boolean;
 			}>;
 		};
 		const presets = legacy.generationPresets ?? [];
@@ -219,8 +232,6 @@ export function migrateSettings(raw: Partial<TrueRecallSettings> | null): {
 		if (active) {
 			settings.languageSource = active.sourceLanguage ?? "";
 			settings.languageTarget = active.targetLanguage ?? "";
-			settings.languageTtsField = active.ttsField ?? "";
-			settings.languageTtsEnabled = active.ttsEnabled ?? false;
 		}
 		delete (settings as { generationPresets?: unknown }).generationPresets;
 		delete (settings as { activeGenerationPresetId?: unknown })
@@ -247,8 +258,6 @@ export function migrateSettings(raw: Partial<TrueRecallSettings> | null): {
 					legacyRaw?.aiGenerationPrompt ??
 					"Generate flashcards from the provided text.",
 				noteTypeId: genNoteTypeId,
-				tts: null,
-				image: null,
 				requiresPro: false,
 				builtin: false,
 				isDefault: true,

@@ -117,7 +117,9 @@ describe("FrontmatterIndexService", () => {
 			service.rebuildIndex();
 
 			// Simulate rename
-			fileData.set("new.md", fileData.get("old.md")!);
+			const oldData = fileData.get("old.md");
+			if (!oldData) throw new Error("expected seed entry for old.md");
+			fileData.set("new.md", oldData);
 			fileData.delete("old.md");
 			service.handleFileRenamed("new.md", "old.md");
 

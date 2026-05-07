@@ -69,7 +69,7 @@ describe("Source text linking", () => {
 
 			const rawNote = getRawNoteForCard(ctx.db, "card-src-1");
 			expect(rawNote).not.toBeNull();
-			expect(rawNote!.source_text).toBe(
+			expect(rawNote?.source_text).toBe(
 				"The mitochondria is the powerhouse of the cell",
 			);
 		});
@@ -84,7 +84,7 @@ describe("Source text linking", () => {
 
 			const retrieved = ctx.cards.get("card-src-2");
 			expect(retrieved).not.toBeNull();
-			expect(retrieved!.sourceText).toBe(
+			expect(retrieved?.sourceText).toBe(
 				"Photosynthesis converts light energy",
 			);
 		});
@@ -100,7 +100,7 @@ describe("Source text linking", () => {
 
 			const rawNote = getRawNoteForCard(ctx.db, "card-no-src");
 			expect(rawNote).not.toBeNull();
-			expect(rawNote!.source_text).toBeNull();
+			expect(rawNote?.source_text).toBeNull();
 		});
 
 		it("retrieves undefined when sourceText is null in DB", () => {
@@ -111,7 +111,7 @@ describe("Source text linking", () => {
 
 			const retrieved = ctx.cards.get("card-no-src-2");
 			expect(retrieved).not.toBeNull();
-			expect(retrieved!.sourceText).toBeUndefined();
+			expect(retrieved?.sourceText).toBeUndefined();
 		});
 	});
 
@@ -137,8 +137,8 @@ describe("Source text linking", () => {
 
 			const retrieved = ctx.cards.get("card-preserve");
 			expect(retrieved).not.toBeNull();
-			expect(retrieved!.sourceText).toBe("Original source text here");
-			expect(retrieved!.stability).toBe(5.0);
+			expect(retrieved?.sourceText).toBe("Original source text here");
+			expect(retrieved?.stability).toBe(5.0);
 		});
 	});
 
@@ -167,8 +167,8 @@ describe("Source text linking", () => {
 			expect(result.created).toHaveLength(2);
 			const noteA = getRawNoteForCard(ctx.db, "card-a");
 			const noteB = getRawNoteForCard(ctx.db, "card-b");
-			expect(noteA!.source_text).toBe("Source text for A.");
-			expect(noteB!.source_text).toBe("Source text for B.");
+			expect(noteA?.source_text).toBe("Source text for A.");
+			expect(noteB?.source_text).toBe("Source text for B.");
 		});
 
 		it("per-card sourceText overrides batch-level sourceText", () => {
@@ -189,7 +189,7 @@ describe("Source text linking", () => {
 
 			expect(result.created).toHaveLength(1);
 			const rawNote = getRawNoteForCard(ctx.db, "card-override");
-			expect(rawNote!.source_text).toBe("Per-card source.");
+			expect(rawNote?.source_text).toBe("Per-card source.");
 		});
 
 		it("falls back to batch-level sourceText when per-card is undefined", () => {
@@ -209,7 +209,7 @@ describe("Source text linking", () => {
 
 			expect(result.created).toHaveLength(1);
 			const rawNote = getRawNoteForCard(ctx.db, "card-fallback");
-			expect(rawNote!.source_text).toBe("Batch-level fallback");
+			expect(rawNote?.source_text).toBe("Batch-level fallback");
 		});
 
 		it("mixed batch — some cards with per-card source, some with batch fallback", () => {
@@ -236,8 +236,8 @@ describe("Source text linking", () => {
 			expect(result.created).toHaveLength(2);
 			const noteWith = getRawNoteForCard(ctx.db, "card-with");
 			const noteWithout = getRawNoteForCard(ctx.db, "card-without");
-			expect(noteWith!.source_text).toBe("Individual source.");
-			expect(noteWithout!.source_text).toBe("Batch fallback text");
+			expect(noteWith?.source_text).toBe("Individual source.");
+			expect(noteWithout?.source_text).toBe("Batch fallback text");
 		});
 	});
 
@@ -251,16 +251,16 @@ describe("Source text linking", () => {
 			requestSourceHighlight("notes/biology.md", "Cell division");
 			const req1 = highlightRequest.value;
 			expect(req1).not.toBeNull();
-			expect(req1!.sourceNotePath).toBe("notes/biology.md");
-			expect(req1!.sourceText).toBe("Cell division");
-			expect(req1!.requestId).toBeGreaterThan(0);
-			expect(req1!.mode).toBe("jump");
+			expect(req1?.sourceNotePath).toBe("notes/biology.md");
+			expect(req1?.sourceText).toBe("Cell division");
+			expect(req1?.requestId).toBeGreaterThan(0);
+			expect(req1?.mode).toBe("jump");
 
 			requestSourceHighlight("notes/physics.md", "Gravity", "hover");
 			const req2 = highlightRequest.value;
-			expect(req2!.requestId).toBeGreaterThan(req1!.requestId);
-			expect(req2!.sourceNotePath).toBe("notes/physics.md");
-			expect(req2!.mode).toBe("hover");
+			expect(req2?.requestId).toBeGreaterThan(req1?.requestId);
+			expect(req2?.sourceNotePath).toBe("notes/physics.md");
+			expect(req2?.mode).toBe("hover");
 		});
 
 		it("clearSourceHighlight sets signal to null", async () => {

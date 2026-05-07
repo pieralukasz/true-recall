@@ -512,7 +512,7 @@
 
     "estree-walker": ["estree-walker@3.0.3", "", { "dependencies": { "@types/estree": "^1.0.0" } }, "sha512-7RUKfXgSMMkzt6ZuXmqapOurLGPPfgj6l9uRZ7lRGolvk0y2yocc35LdcxKC5PQZdn2DMqioAQ2NoWcrTKmm6g=="],
 
-    "excalirender": ["excalirender@github:JonRC/excalirender#379c956", { "dependencies": { "canvas": "^3.2.1", "commander": "^14.0.2", "gifenc": "^1.0.3", "perfect-freehand": "^1.2.0", "points-on-curve": "^1.0.1", "roughjs": "^4.6.6" }, "bin": { "excalirender": "src/index.ts" } }, "JonRC-excalirender-379c956"],
+    "excalirender": ["excalirender@github:JonRC/excalirender#379c956", { "dependencies": { "canvas": "^3.2.1", "commander": "^14.0.2", "gifenc": "^1.0.3", "perfect-freehand": "^1.2.0", "points-on-curve": "^1.0.1", "roughjs": "^4.6.6" }, "bin": { "excalirender": "src/index.ts" } }, "JonRC-excalirender-379c956", "sha512-Xcur5zXNs4VYvL4uxNQBd+xp3B41YmrJVKJPt9ZPfzyEzvLo0LU+gI4zvd72izK1TzYCyCz4M9UGSDoQhRT4Ig=="],
 
     "execa": ["execa@8.0.1", "", { "dependencies": { "cross-spawn": "^7.0.3", "get-stream": "^8.0.1", "human-signals": "^5.0.0", "is-stream": "^3.0.0", "merge-stream": "^2.0.0", "npm-run-path": "^5.1.0", "onetime": "^6.0.0", "signal-exit": "^4.1.0", "strip-final-newline": "^3.0.0" } }, "sha512-VyhnebXciFV2DESc+p6B+y0LjSm0krU4OgJN44qFAhBY0TJ+1V61tYD2+wHusZ6F9n5K+vl8k0sTy7PEfV4qpg=="],
 

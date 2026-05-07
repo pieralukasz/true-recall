@@ -49,8 +49,8 @@ describe("SiblingDisperseService", () => {
 			const changes = result.changes.sort(
 				(a, b) => a.daysChanged - b.daysChanged,
 			);
-			expect(changes[0]!.daysChanged).toBe(3);
-			expect(changes[1]!.daysChanged).toBe(6);
+			expect(changes[0]?.daysChanged).toBe(3);
+			expect(changes[1]?.daysChanged).toBe(6);
 		});
 
 		it("only affects groups with 2+ cards", async () => {
@@ -89,7 +89,7 @@ describe("SiblingDisperseService", () => {
 
 			// Second card should move from Feb 2 to Feb 4 (3 days after Feb 1)
 			expect(result.affectedCount).toBe(1);
-			expect(result.changes[0]!.newDue).toContain("2026-02-04");
+			expect(result.changes[0]?.newDue).toContain("2026-02-04");
 		});
 
 		it("works for specific sourceUid", async () => {
@@ -111,7 +111,7 @@ describe("SiblingDisperseService", () => {
 
 			// Only note-1 siblings should be affected
 			expect(result.affectedCount).toBe(1);
-			expect(result.changes[0]!.cardId).toContain("note-1");
+			expect(result.changes[0]?.cardId).toContain("note-1");
 		});
 
 		it("works for all sources when no sourceUid provided", async () => {
@@ -219,10 +219,10 @@ describe("SiblingDisperseService", () => {
 			const sortedChanges = result.changes.sort(
 				(a, b) => a.daysChanged - b.daysChanged,
 			);
-			expect(sortedChanges[0]!.daysChanged).toBe(2);
-			expect(sortedChanges[1]!.daysChanged).toBe(4);
-			expect(sortedChanges[2]!.daysChanged).toBe(6);
-			expect(sortedChanges[3]!.daysChanged).toBe(8);
+			expect(sortedChanges[0]?.daysChanged).toBe(2);
+			expect(sortedChanges[1]?.daysChanged).toBe(4);
+			expect(sortedChanges[2]?.daysChanged).toBe(6);
+			expect(sortedChanges[3]?.daysChanged).toBe(8);
 		});
 	});
 
@@ -241,8 +241,8 @@ describe("SiblingDisperseService", () => {
 			const violations = service.findViolations(3);
 
 			expect(violations).toHaveLength(1);
-			expect(violations[0]!.sourceUid).toBe("note-1");
-			expect(violations[0]!.violations).toBe(1);
+			expect(violations[0]?.sourceUid).toBe("note-1");
+			expect(violations[0]?.violations).toBe(1);
 		});
 
 		it("returns sourceUid and violation count", () => {
@@ -260,8 +260,8 @@ describe("SiblingDisperseService", () => {
 
 			const violations = service.findViolations(3);
 
-			expect(violations[0]!.violations).toBe(2);
-			expect(violations[0]!.cardCount).toBe(3);
+			expect(violations[0]?.violations).toBe(2);
+			expect(violations[0]?.cardCount).toBe(3);
 		});
 
 		it("returns empty when no violations", () => {
@@ -298,7 +298,7 @@ describe("SiblingDisperseService", () => {
 
 			// Only note-1 has violations
 			expect(violations).toHaveLength(1);
-			expect(violations[0]!.sourceUid).toBe("note-1");
+			expect(violations[0]?.sourceUid).toBe("note-1");
 		});
 	});
 });

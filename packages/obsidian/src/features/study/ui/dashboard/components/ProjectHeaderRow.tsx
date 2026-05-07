@@ -84,7 +84,6 @@ export function ProjectHeaderRow({
 				<span class="ep:text-xs ep:text-obs-muted ep:shrink-0 ep:tabular-nums">
 					{project.totalMembers}
 					{project.totalMembers === 1 ? " note" : " notes"}
-					{project.healthPct > 0 && ` \u00B7 ${project.healthPct}%`}
 				</span>
 			</div>
 

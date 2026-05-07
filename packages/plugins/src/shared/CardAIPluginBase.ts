@@ -1,12 +1,6 @@
 import { Menu, Notice } from "obsidian";
 
-import {
-	type CardAIPreset,
-	CardAIRunner,
-	CardAIService,
-	type CardAITarget,
-	OpenRouterClient,
-} from "@true-recall/core";
+import { OpenRouterClient } from "@true-recall/core";
 import {
 	type AIClientConfig,
 	resolveAIClientConfig,
@@ -16,6 +10,12 @@ import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpC
 import { promptText } from "@true-recall/obsidian/modals/shared/TextInputModal";
 
 import type { PluginContext } from "../types";
+import {
+	type CardAIPreset,
+	CardAIRunner,
+	CardAIService,
+	type CardAITarget,
+} from "./card-ai";
 import { handleCardAIError } from "./card-ai-error-handler";
 import { createObsidianContextCollector } from "./createObsidianContextCollector";
 import { ObsidianCardAIPresenter } from "./ObsidianCardAIPresenter";
@@ -117,12 +117,10 @@ export abstract class CardAIPluginBase<TDetail extends CardAIBaseEventDetail> {
 	private buildService(): CardAIService | null {
 		let config: AIClientConfig;
 		try {
-			config = resolveAIClientConfig(this.ctx.settings);
+			config = resolveAIClientConfig(this.ctx.settings, "card-polish");
 		} catch (err) {
 			console.error("[CardAI] resolveAIClientConfig failed", err);
-			new Notice(
-				"AI: configure your Pro key or OpenRouter API key in Settings.",
-			);
+			new Notice("AI: configure the selected provider and model in Settings.");
 			return null;
 		}
 		const httpClient = new ObsidianHttpClient();
@@ -133,6 +131,7 @@ export abstract class CardAIPluginBase<TDetail extends CardAIBaseEventDetail> {
 			config.baseUrl,
 			undefined,
 			this.config.capabilityTag,
+			{ providerType: config.providerType },
 		);
 		return new CardAIService(client);
 	}
@@ -158,7 +157,10 @@ export abstract class CardAIPluginBase<TDetail extends CardAIBaseEventDetail> {
 
 		try {
 			const collector = createObsidianContextCollector(this.ctx.obsidianPlugin);
-			const presenter = new ObsidianCardAIPresenter(this.ctx.app);
+			const presenter = new ObsidianCardAIPresenter(
+				this.ctx.app,
+				this.ctx.obsidianPlugin,
+			);
 			const runner = new CardAIRunner(target, service, collector, presenter);
 			await runner.run(preset, controller.signal);
 		} catch (err) {

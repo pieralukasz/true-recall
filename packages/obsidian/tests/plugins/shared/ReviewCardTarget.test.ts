@@ -85,6 +85,7 @@ describe("ReviewCardTarget", () => {
 		const t = new ReviewCardTarget(makePlugin());
 		expect(t.getSourceUid()).toBe("uid-1");
 		expect(t.getCurrentCardId()).toBe("c1");
+		expect(t.getOperation()).toBe("edit");
 	});
 
 	it("returns empty fields when no card is in review", () => {

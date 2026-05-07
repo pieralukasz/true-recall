@@ -2,11 +2,14 @@
  * Plugin settings types
  */
 
-import type { CardAIUserSettings } from "../ai/card-ai/card-ai.types";
+import type { CardAIUserSettings } from "./card-ai-preset.types";
 import type { ReviewViewMode } from "./fsrs";
 import type { GenerationPreset } from "./generation-preset.types";
 
-export type AITier = "pro" | "byok";
+export type AITier = "pro" | "byok" | "custom" | "lmstudio";
+
+/** AI provider type — determines which endpoint and auth to use. */
+export type AIProviderType = "pro" | "openrouter" | "custom" | "lmstudio";
 
 export interface ToolbarButtonConfig {
 	id: string;
@@ -168,9 +171,11 @@ export interface TrueRecallSettings {
 	/** Enable cross-device sync on plugin startup */
 	enableDeviceSync: boolean;
 
-	/** True Recall Pro key (LiteLLM) — takes priority over OpenRouter */
+	/** Which AI provider to use */
+	providerType: AIProviderType;
+	/** True Recall Pro key (LiteLLM) — only when providerType = "pro" */
 	proKey?: string;
-	/** OpenRouter API key (BYOK tier) */
+	/** OpenRouter API key — only when providerType = "openrouter" */
 	openRouterApiKey: string;
 	/** Selected BYOK model ID (OpenRouter) */
 	aiModel: string;
@@ -178,9 +183,29 @@ export interface TrueRecallSettings {
 	customAiModel?: string;
 	/** Custom temperature override — when undefined, uses model's default */
 	aiTemperature?: number;
-
-	/** AI provider tier */
+	/** AI provider tier (derived from providerType) */
 	aiTier: AITier;
+	/** Custom provider base URL (default: http://localhost:11434/v1 for Ollama) */
+	customBaseUrl: string;
+	/** Custom provider API key (optional — many local setups don't need auth) */
+	customApiKey?: string;
+	/** Custom provider model name (free-text) */
+	customModel: string;
+	/** Custom provider temperature (0-2) */
+	customTemperature?: number;
+
+	/** LM Studio provider base URL (default: http://localhost:1234/v1) */
+	lmStudioBaseUrl: string;
+	/** LM Studio selected model ID (from auto-discovered dropdown) */
+	lmStudioModel: string;
+	/** LM Studio API key (optional — only needed if auth is enabled in LM Studio) */
+	lmStudioApiKey?: string;
+	/** LM Studio temperature override (0-2) */
+	lmStudioTemperature?: number;
+	/** Optional LM Studio model override for AI Flashcard Generation */
+	lmStudioGenerationModel: string;
+	/** Optional LM Studio model override for Card Polish */
+	lmStudioCardPolishModel: string;
 
 	/** User-created Card Polish presets (built-ins live in the plugin, not here). */
 	cardPolish?: CardAIUserSettings;
@@ -307,6 +332,8 @@ export interface TrueRecallSettings {
 	editorToolbarButtons: ToolbarButtonConfig[];
 	/** Button configuration for the global (non-editor) selection toolbar */
 	globalToolbarButtons: ToolbarButtonConfig[];
+	/** Button configuration for the image-click toolbar */
+	imageToolbarButtons: ToolbarButtonConfig[];
 
 	/** Custom generation prompt — appended to both Pro and BYOK system prompts */
 	aiGenerationPrompt?: string;
@@ -326,14 +353,6 @@ export interface TrueRecallSettings {
 	languageSource: string;
 	/** Language learning: target language code (your native language) */
 	languageTarget: string;
-	/** Language learning: which note field to generate TTS for */
-	languageTtsField: string;
-	/** Language learning: enable TTS generation after vocab creation */
-	languageTtsEnabled: boolean;
-	/** TTS voice for audio generation (OpenAI voices: alloy, echo, fable, onyx, nova, shimmer) */
-	ttsVoice: string;
-	/** Auto-play TTS audio when card is shown in review */
-	ttsAutoplay: boolean;
 
 	/** Last version the user has seen release notes for */
 	lastSeenVersion?: string;

@@ -18,16 +18,6 @@ const basicNoteType: NoteType = {
 	isBuiltin: true,
 };
 
-const vocabNoteType: NoteType = {
-	id: "custom-vocab",
-	name: "My Vocab",
-	type: 0,
-	fields: ["Word", "Translation", "Example", "Image"],
-	templates: [],
-	css: "",
-	isBuiltin: false,
-};
-
 function makePreset(
 	overrides: Partial<GenerationPreset> = {},
 ): GenerationPreset {
@@ -36,8 +26,6 @@ function makePreset(
 		name: "Test preset",
 		prompt: "Focus on definitions.",
 		noteTypeId: "builtin-basic",
-		tts: null,
-		image: null,
 		requiresPro: false,
 		builtin: false,
 		isDefault: true,
@@ -69,17 +57,6 @@ describe("buildPresetPrompt", () => {
 		expect(result).toContain('"Back": "..."');
 	});
 
-	it("omits the image target field from JSON spec and fields-to-fill", () => {
-		const preset = makePreset({
-			noteTypeId: "custom-vocab",
-			image: { targetField: "Image", sourceField: "Word" },
-		});
-		const result = buildPresetPrompt(preset, vocabNoteType);
-
-		expect(result).not.toContain('"Image": "..."');
-		expect(result).toContain("Fields to fill: Word, Translation, Example");
-	});
-
 	it("skips the empty-prompt block when prompt is blank", () => {
 		const result = buildPresetPrompt(makePreset({ prompt: "" }), basicNoteType);
 		expect(result).not.toContain("Focus on definitions.");
@@ -96,26 +73,17 @@ describe("buildPresetPrompt", () => {
 
 describe("buildPresetFormatSpec", () => {
 	it("uses note type slug in JSON spec", () => {
-		const result = buildPresetFormatSpec(makePreset(), basicNoteType);
+		const result = buildPresetFormatSpec(basicNoteType);
 		expect(result).toContain('"type": "basic"');
 	});
 
 	it("lists fields to fill", () => {
-		const result = buildPresetFormatSpec(makePreset(), basicNoteType);
+		const result = buildPresetFormatSpec(basicNoteType);
 		expect(result).toContain("Fields to fill: Front, Back");
 	});
 
-	it("omits the image target field", () => {
-		const preset = makePreset({
-			noteTypeId: "custom-vocab",
-			image: { targetField: "Image", sourceField: "Word" },
-		});
-		const result = buildPresetFormatSpec(preset, vocabNoteType);
-		expect(result).not.toContain('"Image": "..."');
-	});
-
 	it("includes source rule", () => {
-		const result = buildPresetFormatSpec(makePreset(), basicNoteType);
+		const result = buildPresetFormatSpec(basicNoteType);
 		expect(result).toContain('"source"');
 		expect(result).toContain("EXACT substring");
 	});

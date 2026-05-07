@@ -40,6 +40,12 @@ export interface TrueRecallAppConfig {
 	uidRemovalPrompt?: IUidRemovalPrompt;
 }
 
+function cloneSettingsForSave(
+	settings: TrueRecallSettings,
+): TrueRecallSettings {
+	return JSON.parse(JSON.stringify(settings)) as TrueRecallSettings;
+}
+
 export class TrueRecallApp {
 	readonly events = new DomainEventBus();
 
@@ -62,6 +68,7 @@ export class TrueRecallApp {
 
 	private readonly config: TrueRecallAppConfig;
 	private disposers: (() => void)[] = [];
+	private settingsSaveQueue: Promise<void> = Promise.resolve();
 
 	constructor(config: TrueRecallAppConfig) {
 		this.config = config;
@@ -209,9 +216,16 @@ export class TrueRecallApp {
 
 	async updateSettings(patch: Partial<TrueRecallSettings>): Promise<void> {
 		Object.assign(this.settings, patch);
+		const settingsSnapshot = cloneSettingsForSave(this.settings);
+
+		const savePromise = this.settingsSaveQueue.then(
+			() => this.config.settingsPersistence.save(settingsSnapshot),
+			() => this.config.settingsPersistence.save(settingsSnapshot),
+		);
+		this.settingsSaveQueue = savePromise.catch(() => {});
 
 		try {
-			await this.config.settingsPersistence.save(this.settings);
+			await savePromise;
 		} catch (e) {
 			console.error("[TrueRecallApp] Failed to persist settings:", e);
 		}

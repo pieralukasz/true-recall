@@ -64,13 +64,33 @@ export class CardWriteActions {
 				],
 			);
 		}
+		// Use UPSERT (INSERT … ON CONFLICT DO UPDATE) instead of INSERT OR REPLACE.
+		// REPLACE deletes the existing row before inserting the new one, which
+		// triggers ON DELETE CASCADE on review_log and wipes the card's review
+		// history on every scheduling update.
 		this.db.run(
-			`INSERT OR REPLACE INTO cards (
+			`INSERT INTO cards (
                     id, note_id, template_ord, due, stability, difficulty,
                     reps, lapses, state, last_review, scheduled_days,
                     learning_step, suspended, buried_until,
                     created_at, updated_at, source_uid
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(id) DO UPDATE SET
+                    note_id = excluded.note_id,
+                    template_ord = excluded.template_ord,
+                    due = excluded.due,
+                    stability = excluded.stability,
+                    difficulty = excluded.difficulty,
+                    reps = excluded.reps,
+                    lapses = excluded.lapses,
+                    state = excluded.state,
+                    last_review = excluded.last_review,
+                    scheduled_days = excluded.scheduled_days,
+                    learning_step = excluded.learning_step,
+                    suspended = excluded.suspended,
+                    buried_until = excluded.buried_until,
+                    updated_at = excluded.updated_at,
+                    source_uid = excluded.source_uid`,
 			[
 				cardId,
 				noteId,
@@ -188,13 +208,31 @@ export class CardWriteActions {
 				],
 			);
 		}
+		// Use UPSERT instead of INSERT OR REPLACE — see comment in set() for why.
 		this.db.run(
-			`INSERT OR REPLACE INTO cards (
+			`INSERT INTO cards (
                     id, note_id, template_ord, due, stability, difficulty,
                     reps, lapses, state, last_review, scheduled_days,
                     learning_step, suspended, buried_until,
                     created_at, updated_at, deleted_at, source_uid
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(id) DO UPDATE SET
+                    note_id = excluded.note_id,
+                    template_ord = excluded.template_ord,
+                    due = excluded.due,
+                    stability = excluded.stability,
+                    difficulty = excluded.difficulty,
+                    reps = excluded.reps,
+                    lapses = excluded.lapses,
+                    state = excluded.state,
+                    last_review = excluded.last_review,
+                    scheduled_days = excluded.scheduled_days,
+                    learning_step = excluded.learning_step,
+                    suspended = excluded.suspended,
+                    buried_until = excluded.buried_until,
+                    updated_at = excluded.updated_at,
+                    deleted_at = excluded.deleted_at,
+                    source_uid = excluded.source_uid`,
 			[
 				data.id,
 				noteId,

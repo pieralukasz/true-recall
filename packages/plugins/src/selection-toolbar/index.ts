@@ -2,6 +2,7 @@ import { TFile } from "obsidian";
 
 import type TrueRecallPlugin from "@true-recall/obsidian/main";
 import { QuickNoteEditorModal } from "@true-recall/obsidian/modals/study/quick-note-editor/QuickNoteEditorModal";
+import { buildImageEmbed } from "@true-recall/obsidian/plugin/build-image-embed";
 import {
 	appendToCurrentNote,
 	createNoteFromSelection,
@@ -194,7 +195,7 @@ export const selectionToolbarManifest: PluginManifest = {
 						notify().error("No active file");
 						return;
 					}
-					const imageEmbed = `![[${imagePath}]]`;
+					const imageEmbed = buildImageEmbed(imagePath);
 					await plugin.flashcardManager.saveFlashcardsToSql(
 						file.path,
 						file.basename,
@@ -218,12 +219,14 @@ export const selectionToolbarManifest: PluginManifest = {
 				const modal = new QuickNoteEditorModal(plugin.app, plugin, {
 					mode: "add",
 					initialFields: {
-						Front: `![[${imagePath}]]`,
+						Front: buildImageEmbed(imagePath),
 					},
 				});
 				void modal.openAndWait();
 			},
 			onImageOcclusion: (imagePath) => handleImageOcclusion(plugin, imagePath),
+			getButtons: () => plugin.settings.imageToolbarButtons,
+			getPluginStates: () => plugin.settings.pluginStates ?? {},
 			isEnabled: () => true,
 		});
 		plugin.registerEditorExtension([imageExtension]);

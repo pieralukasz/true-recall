@@ -1,28 +1,22 @@
-c# true-recall
+# true-recall
 
-This repository inherits the shared project baseline from `/Users/lukaszpiera/Projects/AGENTS.md`.
-
-## Scope
-
-- True Recall is an Obsidian plugin monorepo centered on spaced repetition and FSRS workflows.
-- Treat repository-local `CLAUDE.md` and `.claude/rules/` as the primary project-specific extension of the shared baseline.
-- Use subtree `CLAUDE.md` files for package-specific work in `packages/core`, `packages/obsidian`, `cli`, and `mcp-server`.
+Obsidian plugin monorepo for spaced-repetition / FSRS workflows.
 
 ## Tooling
 
-- Package manager: `bun`
-- Workspace layout: `packages/*`
-- Main commands:
-  - `bun run dev`
-  - `bun run build`
-  - `bun run test`
-  - `bun run test:coverage`
-  - `bun run biome`
-  - `bun run changelog`
-  - `bun run perf:benchmark`
+- Package manager: `bun` (never `npm test` or `npm run`; always `bun run <script>`)
+- Workspace layout: `packages/*` (`@true-recall/core`, `@true-recall/obsidian`), plus `cli/` and `mcp-server/`
+- Common scripts: `bun run dev`, `bun run build`, `bun run test`, `bun run biome`, `bun run changelog`
 
-## Working Style
+## Working style
 
-- Read `CLAUDE.md` first for current repo architecture, verification flow, release rules, and cross-cutting constraints.
-- Follow the repository scripts instead of falling back to generic Obsidian plugin sample commands.
-- Keep monorepo boundaries clear and prefer package-local changes over broad root-level edits unless the task truly spans packages.
+- Detailed project rules live in `.opencode/rules/*.md` and are auto-loaded via the `instructions` field in `opencode.json`.
+- Custom slash-commands live in `.opencode/commands/`; reviewer agents and skill-derived subagents in `.opencode/agents/`.
+- Lint and build run automatically via `.opencode/plugins/quality-hooks.ts` (`tool.execute.after` lints edited TS files; `session.idle` runs `bun run build`).
+- Keep this file short — durable knowledge belongs in `.opencode/rules/`.
+
+## Scope
+
+- Repository is an Obsidian plugin monorepo centered on True Recall.
+- Subtree concerns: `packages/core` (platform-agnostic domain), `packages/obsidian` (plugin shell + UI), `cli` (standalone binary), `mcp-server` (MCP tool surface).
+- Each rule file under `.opencode/rules/` covers one slice — read the relevant slice before changing code in that area.

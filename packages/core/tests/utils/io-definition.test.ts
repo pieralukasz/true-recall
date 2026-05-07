@@ -16,12 +16,12 @@ describe("image occlusion definition helpers", () => {
 
 		const parsed = parseIODefinition(raw);
 		expect(parsed).not.toBeNull();
-		expect(parsed!.version).toBe(1);
-		expect(parsed!.maskMode).toBe("solo");
-		expect(parsed!.regions).toHaveLength(2);
-		expect(parsed!.regions[0]!.groupKey).toBe("0");
-		expect(parsed!.regions[0]!.x).toBeCloseTo(0.1);
-		expect(parsed!.regions[1]!.shape).toBe("ellipse");
+		expect(parsed?.version).toBe(1);
+		expect(parsed?.maskMode).toBe("solo");
+		expect(parsed?.regions).toHaveLength(2);
+		expect(parsed?.regions[0]?.groupKey).toBe("0");
+		expect(parsed?.regions[0]?.x).toBeCloseTo(0.1);
+		expect(parsed?.regions[1]?.shape).toBe("ellipse");
 	});
 
 	it("parses v1 object and keeps maskMode", () => {
@@ -42,9 +42,9 @@ describe("image occlusion definition helpers", () => {
 		});
 
 		const parsed = parseIODefinition(raw);
-		expect(parsed).not.toBeNull();
-		expect(parsed!.maskMode).toBe("all");
-		expect(getIOGroupOrds(parsed!)).toEqual([4]);
+		if (!parsed) throw new Error("expected parseIODefinition to succeed");
+		expect(parsed.maskMode).toBe("all");
+		expect(getIOGroupOrds(parsed)).toEqual([4]);
 	});
 
 	it("falls back to region index when groupKey is invalid", () => {
@@ -74,8 +74,8 @@ describe("image occlusion definition helpers", () => {
 		});
 
 		const parsed = parseIODefinition(raw);
-		expect(parsed).not.toBeNull();
-		expect(getIOGroupOrds(parsed!)).toEqual([0, 2]);
+		if (!parsed) throw new Error("expected parseIODefinition to succeed");
+		expect(getIOGroupOrds(parsed)).toEqual([0, 2]);
 	});
 
 	it("serializes and parses definition roundtrip", () => {

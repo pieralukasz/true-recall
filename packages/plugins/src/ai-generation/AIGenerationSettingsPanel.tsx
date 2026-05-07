@@ -1,4 +1,4 @@
-import { useState } from "preact/hooks";
+import { useCallback, useState } from "preact/hooks";
 
 import {
 	BUILTIN_BASIC_REVERSED_ID,
@@ -11,11 +11,18 @@ import {
 import { ActionButton } from "@true-recall/obsidian/components";
 import { usePlugin } from "@true-recall/obsidian/preact";
 
+import { LMStudioScopedModelField } from "../shared/LMStudioScopedModelField";
+import { usePersistentSettingsSlice } from "../shared/usePersistentSettingsSlice";
 import type { PluginSettingsProps } from "../types";
 import { GenerationPresetEditor } from "./GenerationPresetEditor";
 
-function makeId(): string {
-	return `preset-${Math.random().toString(36).slice(2, 10)}`;
+function makeId(existing: readonly GenerationPreset[]): string {
+	const taken = new Set(existing.map((preset) => preset.id));
+	let id = "";
+	do {
+		id = `preset-${Math.random().toString(36).slice(2, 10)}`;
+	} while (taken.has(id));
+	return id;
 }
 
 // Note types whose cards are produced by dedicated flows (reversed templates,
@@ -26,6 +33,30 @@ const AI_GEN_EXCLUDED_NOTE_TYPE_IDS = new Set<string>([
 	BUILTIN_IMAGE_OCCLUSION_ID,
 ]);
 
+function normalizeGenerationPresets(
+	presets: readonly GenerationPreset[],
+): GenerationPreset[] {
+	const preferredDefault =
+		presets.find((preset) => preset.isDefault)?.id ?? presets[0]?.id ?? null;
+
+	return presets.map((preset) => ({
+		...preset,
+		isDefault: preferredDefault
+			? preset.id === preferredDefault
+			: !!preset.isDefault,
+	}));
+}
+
+function buildGenerationPresetPatch(
+	presets: GenerationPreset[],
+): Partial<TrueRecallSettings> {
+	return {
+		generationPresets: presets,
+		defaultGenerationPresetId:
+			presets.find((preset) => preset.isDefault)?.id ?? presets[0]?.id ?? "",
+	};
+}
+
 export function AIGenerationSettingsPanel({
 	settings,
 	save,
@@ -34,7 +65,14 @@ export function AIGenerationSettingsPanel({
 	const noteTypes = (plugin.cardStore?.noteTypes?.getAll() ?? []).filter(
 		(nt) => !AI_GEN_EXCLUDED_NOTE_TYPE_IDS.has(nt.id),
 	);
-	const presets = settings.generationPresets ?? [];
+	const [presets, persistPresets] = usePersistentSettingsSlice(
+		settings.generationPresets ?? [],
+		save,
+		{
+			normalize: normalizeGenerationPresets,
+			buildPatch: buildGenerationPresetPatch,
+		},
+	);
 	const builtins = presets.filter((p) => p.builtin);
 	const userPresets = presets.filter((p) => !p.builtin);
 
@@ -48,62 +86,98 @@ export function AIGenerationSettingsPanel({
 		});
 	};
 
-	const persist = (next: GenerationPreset[]) => {
-		const patch: Partial<TrueRecallSettings> = { generationPresets: next };
-		const newDefault = next.find((p) => p.isDefault);
-		if (newDefault) {
-			for (const p of next) p.isDefault = p.id === newDefault.id;
-			patch.defaultGenerationPresetId = newDefault.id;
-		} else if (next[0]) {
-			next[0].isDefault = true;
-			patch.defaultGenerationPresetId = next[0].id;
-		}
-		void save(patch);
-	};
-
-	const updateUserPreset = (p: GenerationPreset) => {
-		persist(presets.map((existing) => (existing.id === p.id ? p : existing)));
-	};
+	const updateUserPreset = useCallback(
+		(id: string, patch: Partial<GenerationPreset>) => {
+			persistPresets((current) =>
+				current.map((existing) =>
+					existing.id === id && !existing.builtin
+						? { ...existing, ...patch, updatedAt: Date.now() }
+						: existing,
+				),
+			);
+		},
+		[persistPresets],
+	);
 
 	const forkBuiltin = (p: GenerationPreset) => {
-		const forked: GenerationPreset = {
-			...p,
-			id: makeId(),
-			name: `${p.name} (fork)`,
-			builtin: false,
-			requiresPro: false,
-			isDefault: false,
-			createdAt: Date.now(),
-			updatedAt: Date.now(),
-		};
-		persist([...presets, forked]);
+		let forkedId: string | null = null;
+		persistPresets(
+			(current) => {
+				const id = makeId(current);
+				forkedId = id;
+				const now = Date.now();
+				const forked: GenerationPreset = {
+					...p,
+					id,
+					name: `${p.name} (fork)`,
+					builtin: false,
+					requiresPro: false,
+					isDefault: false,
+					createdAt: now,
+					updatedAt: now,
+				};
+				return [...current, forked];
+			},
+			{ flush: true },
+		);
+		if (forkedId) {
+			const id = forkedId;
+			setExpandedIds((prev) => new Set(prev).add(id));
+		}
 	};
 
 	const removeUserPreset = (p: GenerationPreset) => {
-		persist(presets.filter((existing) => existing.id !== p.id));
+		persistPresets(
+			(current) =>
+				current.filter((existing) => existing.id !== p.id || existing.builtin),
+			{ flush: true },
+		);
+		setExpandedIds((prev) => {
+			const next = new Set(prev);
+			next.delete(p.id);
+			return next;
+		});
 	};
 
 	const addNew = () => {
 		const defaultNoteTypeId = noteTypes[0]?.id ?? "builtin-basic";
-		const fresh: GenerationPreset = {
-			id: makeId(),
-			name: "New preset",
-			prompt: "",
-			noteTypeId: defaultNoteTypeId,
-			tts: null,
-			image: null,
-			requiresPro: false,
-			builtin: false,
-			isDefault: false,
-			createdAt: Date.now(),
-			updatedAt: Date.now(),
-		};
-		persist([...presets, fresh]);
-		setExpandedIds((prev) => new Set(prev).add(fresh.id));
+		let freshId: string | null = null;
+		persistPresets(
+			(current) => {
+				const id = makeId(current);
+				freshId = id;
+				const now = Date.now();
+				const fresh: GenerationPreset = {
+					id,
+					name: "New preset",
+					prompt: "",
+					noteTypeId: defaultNoteTypeId,
+					requiresPro: false,
+					builtin: false,
+					isDefault: false,
+					createdAt: now,
+					updatedAt: now,
+				};
+				return [...current, fresh];
+			},
+			{ flush: true },
+		);
+		if (freshId) {
+			const id = freshId;
+			setExpandedIds((prev) => new Set(prev).add(id));
+		}
 	};
 
 	return (
 		<>
+			<LMStudioScopedModelField
+				settings={settings}
+				save={save}
+				modelKey="lmStudioGenerationModel"
+				name="LM Studio model"
+				description="Used only by AI Flashcard Generation when LM Studio is the selected provider."
+			/>
+
 			<div class="ep:flex ep:gap-2 ep:items-start ep:mt-2 ep:p-2.5 ep:border-l-2 ep:border-obs-accent ep:bg-obs-accent/8 ep:rounded-r-md">
 				<span class="ep:text-ui-smaller ep:text-obs-normal ep:leading-relaxed">
 					Presets don't show up in the UI automatically. To use a preset, open

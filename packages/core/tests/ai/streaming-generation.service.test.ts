@@ -26,8 +26,6 @@ const basicPreset: GenerationPreset = {
 	name: "Basic",
 	prompt: "Generate Q/A cards.",
 	noteTypeId: "nt-basic",
-	tts: null,
-	image: null,
 	requiresPro: false,
 	builtin: false,
 	isDefault: true,
@@ -53,6 +51,7 @@ function makeProSettings(
 ): TrueRecallSettings {
 	return {
 		proKey: "pro-key-abc",
+		providerType: "pro",
 		generationPresets: [basicPreset],
 		defaultGenerationPresetId: basicPreset.id,
 		...overrides,
@@ -194,7 +193,7 @@ describe("StreamingGenerationService.generate", () => {
 		expect(messages[0]?.content).toContain("Custom pro prompt");
 		expect(messages[0]?.content).not.toContain("{{EXISTING_CARDS}}");
 		expect(messages[1]?.content).toBe(
-			`${buildPresetFormatSpec(proPreset, basicNoteType)}\n\n${inputText}`,
+			`${buildPresetFormatSpec(basicNoteType)}\n\n${inputText}`,
 		);
 	});
 
@@ -249,7 +248,7 @@ describe("StreamingGenerationService.generate", () => {
 		expect(messages[0]?.content).toContain("My BYOK custom prompt");
 		expect(messages[0]?.content).not.toContain("{{EXISTING_CARDS}}");
 		expect(messages[1]?.content).toBe(
-			`${buildPresetFormatSpec(byokPreset, basicNoteType)}\n\nstudy text`,
+			`${buildPresetFormatSpec(basicNoteType)}\n\nstudy text`,
 		);
 		expect(body.metadata).toBeUndefined();
 	});
@@ -302,15 +301,21 @@ describe("StreamingGenerationService.generate", () => {
 		);
 	});
 
-	it("concurrency guard throws when another generation is in-flight", async () => {
-		// Use a stream that never resolves to hold the first generation open.
-		let resolveNever!: () => void;
-		const neverStream = vi.fn(async function* () {
+	it("queues concurrent generations and runs them FIFO", async () => {
+		const releases: Array<() => void> = [];
+		const capturedRequests: unknown[] = [];
+		const queuedStream = vi.fn(async function* (
+			_url: string,
+			body: unknown,
+			_headers: unknown,
+		) {
+			capturedRequests.push(body);
 			await new Promise<void>((res) => {
-				resolveNever = res;
+				releases.push(res);
 			});
+			yield `data: {"choices":[{"delta":{"content":""},"finish_reason":null}]}\ndata: [DONE]\n`;
 		});
-		const httpClient = { fetch: vi.fn(), stream: neverStream } as any;
+		const httpClient = { fetch: vi.fn(), stream: queuedStream } as any;
 		const svc = new StreamingGenerationService(
 			() => makeByokSettings(),
 			flashcardManager,
@@ -318,17 +323,24 @@ describe("StreamingGenerationService.generate", () => {
 		);
 
 		const firstGeneration = svc.generate("text1", sourceFile, basicPreset.id);
+		const secondGeneration = svc.generate("text2", sourceFile, basicPreset.id);
 
-		// Wait a microtask so generate() reaches startStreaming()
-		await Promise.resolve();
+		await vi.waitFor(() => expect(releases).toHaveLength(1));
+		expect(capturedRequests).toHaveLength(1);
 
-		await expect(
-			svc.generate("text2", sourceFile, basicPreset.id),
-		).rejects.toThrow("Generation already in progress");
+		releases[0]?.();
+		await firstGeneration;
 
-		// Clean up — unblock the first stream so the test teardown is clean.
-		resolveNever();
-		await firstGeneration.catch(() => {});
+		await vi.waitFor(() => expect(releases).toHaveLength(2));
+		expect(capturedRequests).toHaveLength(2);
+
+		releases[1]?.();
+		await secondGeneration;
+
+		const firstBody = capturedRequests[0] as any;
+		const secondBody = capturedRequests[1] as any;
+		expect(firstBody.messages[1].content).toBe("text1");
+		expect(secondBody.messages[1].content).toBe("text2");
 	});
 });
 

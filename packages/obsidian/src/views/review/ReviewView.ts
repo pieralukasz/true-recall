@@ -26,7 +26,7 @@ import {
 import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpClient";
 import { ReviewUndoHook } from "@true-recall/obsidian/commands";
 import { G, getDataLayer } from "@true-recall/obsidian/data";
-import { computeActionableSessionSnapshot } from "@true-recall/obsidian/features/study/services/actionable-session-snapshot.service";
+import type { ReviewSessionController } from "@true-recall/obsidian/features/study/services/ReviewSessionController";
 import type { PresetPickerOption } from "@true-recall/obsidian/features/study/ui/review/components";
 import {
 	AnswerHandler,
@@ -38,7 +38,6 @@ import {
 	applyMutation,
 	assessTypedAnswer,
 	deriveTypeInMode,
-	filterActiveCards,
 	getEmptyQueueMessage,
 	getTypeInModeStorage,
 	isRatingLockedForTypeIn,
@@ -95,12 +94,12 @@ export class ReviewView extends ItemView {
 	private plugin: TrueRecallPlugin;
 	private fsrsService: FSRSService;
 	private reviewService: ReviewService;
+	private reviewController: ReviewSessionController;
 	private flashcardManager: FlashcardManager;
 	private sessionPersistence: SessionPersistenceService;
 	private semanticGradingService: SemanticAnswerGradingService;
 
 	private filters: SessionFilters = {};
-	private resolvedProjectUids: Set<string> | null = null;
 	private crammedCardIds = new Set<string>();
 	private isProcessingAnswer = false;
 	private presetCache = new Map<string, FSRSPreset>();
@@ -129,6 +128,7 @@ export class ReviewView extends ItemView {
 		this.plugin = plugin;
 		this.flashcardManager = plugin.flashcardManager;
 		this.reviewService = new ReviewService();
+		this.reviewController = plugin.reviewController;
 		this.sessionPersistence = plugin.sessionPersistence;
 		this.semanticGradingService = new SemanticAnswerGradingService(
 			() => this.plugin.settings,
@@ -151,6 +151,7 @@ export class ReviewView extends ItemView {
 			plugin: this.plugin,
 			fsrsService: this.fsrsService,
 			reviewService: this.reviewService,
+			reviewController: this.reviewController,
 			flashcardManager: this.flashcardManager,
 			sessionPersistence: this.sessionPersistence,
 			getFilters: () => this.filters,
@@ -397,13 +398,13 @@ export class ReviewView extends ItemView {
 		let semanticResult: SemanticGradingResult | null = null;
 		let semanticMessage: string | null = null;
 		try {
-			const sourceContext = await this.resolveSourceContext(card);
+			const gradingContext = await this.resolveGradingContext(card);
 			semanticResult = await this.answerHandler.gradeTypedAnswerSemantically(
 				card,
 				typedAnswer,
 				localAssessment.score,
 				SEMANTIC_PASS_THRESHOLD,
-				{ allowLocalFallback: false, sourceContext },
+				{ allowLocalFallback: false, ...gradingContext },
 			);
 		} catch (error) {
 			semanticMessage =
@@ -518,9 +519,8 @@ export class ReviewView extends ItemView {
 				onOpenSourceNote: () => this.handleOpenSourceNote(),
 				onClose: () => this.handleClose(),
 				onNextSession: () => this.handleNextSession(),
-				onEndSession: () => {
-					/* handled in Preact component */
-				},
+				onOpenDashboard: () => void this.handleOpenDashboard(),
+				onEndSession: () => this.handleNextSession(),
 				onActionsMenu: (e: MouseEvent) => this.showActionsMenu(e),
 				onPolishMenu: isPluginEnabled(this.plugin.settings, "card-polish")
 					? (e: MouseEvent) => this.openCardPolishMenu(e)
@@ -586,6 +586,7 @@ export class ReviewView extends ItemView {
 	}
 
 	async onClose(): Promise<void> {
+		console.log("[TR-debug] ReviewView.onClose called");
 		this.disposeReviewHook?.();
 		this.disposeReviewHook = null;
 		this.plugin.commandService?.clearByType(
@@ -683,13 +684,10 @@ export class ReviewView extends ItemView {
 			const fsrsSettings = extractFSRSSettings(this.plugin.settings);
 			this.fsrsService.updateSettings(fsrsSettings);
 
-			const allMetaMap =
-				this.plugin.dataLayer?.get<
-					Map<string, import("@true-recall/core/types").CardSchedulingMeta>
-				>("allMeta");
-			const allCards = allMetaMap ? [...allMetaMap.values()] : [];
+			const { queue } = this.reviewController.buildSession(this.filters);
+			const allCards = this.plugin.flashcardManager.getAllFSRSCards();
 
-			if (allCards.length === 0) {
+			if (queue.length === 0 && allCards.length === 0) {
 				this.mountEmptyState(
 					container,
 					"No flashcards found. Generate some flashcards first!",
@@ -697,14 +695,16 @@ export class ReviewView extends ItemView {
 				return;
 			}
 
-			const archivedSourceUids =
-				this.plugin.hierarchyService.getArchivedSourceUids();
-			const activeCards = filterActiveCards(allCards, {
-				stateFilter: this.filters.stateFilter,
-				archivedSourceUids,
-			});
+			const now = new Date();
+			const hasAnyActive = allCards.some(
+				(card) =>
+					!(
+						card.fsrs.suspended ||
+						(card.fsrs.buriedUntil && new Date(card.fsrs.buriedUntil) > now)
+					),
+			);
 
-			if (activeCards.length === 0) {
+			if (!hasAnyActive && queue.length === 0) {
 				const msg =
 					this.filters.stateFilter === "buried"
 						? "No buried cards found."
@@ -725,32 +725,9 @@ export class ReviewView extends ItemView {
 				return;
 			}
 
-			// Yield to let the browser paint before heavy queue building
+			// Yield once before mounting Preact so the loading state can paint.
 			await new Promise((r) => requestAnimationFrame(r));
 			if (!this.containerEl.isConnected) return;
-
-			const snapshot = computeActionableSessionSnapshot(
-				{
-					allCards,
-					archivedSourceUids,
-					settings: this.plugin.settings,
-					sessionPersistence: this.sessionPersistence,
-					presetService: this.plugin.presetService,
-					metadataCache: this.app.metadataCache,
-					hierarchyService: this.plugin.hierarchyService,
-					fsrsService: this.fsrsService,
-					reviewService: this.reviewService,
-				},
-				this.filters,
-				{ activeCards },
-			);
-			const queue = snapshot.queue;
-
-			this.resolvedProjectUids = this.filters.projectPath
-				? this.plugin.hierarchyService.getSourceUidsForProject(
-						this.filters.projectPath,
-					)
-				: null;
 
 			if (queue.length === 0) {
 				this.mountEmptyState(
@@ -760,7 +737,6 @@ export class ReviewView extends ItemView {
 				return;
 			}
 
-			// Pre-resolve presets for all cards (keyed by sourceUid for dedup)
 			this.presetCache.clear();
 			for (const card of queue) {
 				const uid = card.sourceUid ?? "";
@@ -774,12 +750,8 @@ export class ReviewView extends ItemView {
 				}
 			}
 
-			// Load full content (question/answer) only for the ~50 queue cards,
-			// not all 3000+ in the collection. Queue was built from lightweight
-			// CardSchedulingMeta; now we fetch rendered content for just these IDs.
-			const queueIds = queue.map((c) => c.id);
-			const fullQueue = this.flashcardManager.getCardsByIds(queueIds);
-			this.review.startSession(fullQueue);
+			this.review.setSessionFilters(this.filters);
+			this.review.startSession(queue);
 			this.resetTypeInState(this.review.getCurrentCard()?.id ?? null);
 			this.subscribeToSessionEvents();
 			this.answerHandler.updateSchedulingPreview();
@@ -803,15 +775,25 @@ export class ReviewView extends ItemView {
 			const m = lastMutation.value;
 			if (!m) return;
 			// Skip "reviewed" — the queue is already updated synchronously
-			// by recordAnswerAndNext() before persistence runs
+			// by recordAnswerAndNext() before persistence runs.
 			if (m.type === "reviewed") return;
+			// Targeted mutation handling instead of full session rebuild.
+			// rebuildActiveSession() recomputes cachedBadgeCounts from scratch,
+			// which can drift from the incremental counts maintained by
+			// recordAnswerAndNext() (e.g. New count appearing to increase
+			// when a Learning card is graded).
+			const resolvedProjectUids = this.filters.projectPath
+				? this.plugin.hierarchyService.getSourceUidsForProject(
+						this.filters.projectPath,
+					)
+				: undefined;
 			applyMutation(
 				m,
 				this.review,
 				this.flashcardManager,
 				this.plugin.cardStore,
 				this.filters,
-				this.resolvedProjectUids ?? undefined,
+				resolvedProjectUids,
 			);
 		});
 	}
@@ -908,14 +890,6 @@ export class ReviewView extends ItemView {
 					.setIcon("pencil")
 					.onClick(() => void this.cardActionsHandler.handleEditCardModal()),
 			);
-			if (this.cardActionsHandler.canHealCard()) {
-				menu.addItem((item) =>
-					item
-						.setTitle("Heal card")
-						.setIcon("heart-pulse")
-						.onClick(() => void this.cardActionsHandler.handleHealCard()),
-				);
-			}
 			menu.addItem((item) =>
 				item
 					.setTitle("Change note type")
@@ -947,24 +921,63 @@ export class ReviewView extends ItemView {
 		menu.showAtMouseEvent(event);
 	}
 
-	private async resolveSourceContext(
-		card: FSRSFlashcardItem,
-	): Promise<string | undefined> {
+	private async resolveGradingContext(card: FSRSFlashcardItem): Promise<{
+		sourceContext?: string;
+		sourceNotePath?: string;
+		relatedCards?: Array<{
+			fields: Record<string, string>;
+			noteType: string;
+		}>;
+	}> {
 		const MAX_CONTEXT_CHARS = 4000;
+		const MAX_RELATED_CARDS = 10;
 
-		if (card.sourceText) {
-			return card.sourceText.slice(0, MAX_CONTEXT_CHARS);
-		}
+		let sourceContext: string | undefined = card.sourceText
+			? card.sourceText.slice(0, MAX_CONTEXT_CHARS)
+			: undefined;
+		let sourceNotePath: string | undefined;
 
 		const file = this.resolveSourceFile(card);
-		if (!file) return undefined;
-
-		try {
-			const content = await this.app.vault.cachedRead(file);
-			return content.slice(0, MAX_CONTEXT_CHARS);
-		} catch {
-			return undefined;
+		if (file) {
+			sourceNotePath = file.path;
+			if (!sourceContext) {
+				try {
+					const content = await this.app.vault.cachedRead(file);
+					sourceContext = content.slice(0, MAX_CONTEXT_CHARS);
+				} catch {
+					// Source file unreadable — fall back to no context.
+				}
+			}
 		}
+
+		const store = this.plugin.cardStore;
+		let relatedCards:
+			| Array<{ fields: Record<string, string>; noteType: string }>
+			| undefined;
+		if (store && card.sourceUid) {
+			const siblings = store.cards.getCardsBySourceUid(card.sourceUid) ?? [];
+			const collected: Array<{
+				fields: Record<string, string>;
+				noteType: string;
+			}> = [];
+			for (const sibling of siblings) {
+				if (sibling.id === card.id) continue;
+				if (!sibling.noteTypeId || !sibling.noteId) continue;
+				const noteType = store.noteTypes?.getById(sibling.noteTypeId);
+				if (!noteType) continue;
+				const note = store.notes.getById(sibling.noteId);
+				if (!note) continue;
+				const fields: Record<string, string> = {};
+				for (const fieldName of noteType.fields) {
+					fields[fieldName] = note.fields?.[fieldName] ?? "";
+				}
+				collected.push({ fields, noteType: noteType.name });
+				if (collected.length >= MAX_RELATED_CARDS) break;
+			}
+			if (collected.length > 0) relatedCards = collected;
+		}
+
+		return { sourceContext, sourceNotePath, relatedCards };
 	}
 
 	// ─── Navigation ──────────────────────────────────────────────────────
@@ -1020,11 +1033,27 @@ export class ReviewView extends ItemView {
 	}
 
 	private handleClose(): void {
+		console.log("[TR-debug] handleClose called");
 		this.leaf.detach();
 	}
 
 	private handleNextSession(): void {
+		console.log("[TR-debug] handleNextSession called");
+		console.log("[TR-debug] leaf:", this.leaf);
 		this.leaf.detach();
-		void this.plugin.activateView();
+		console.log("[TR-debug] leaf detached OK, calling activateView");
+		void this.plugin
+			.activateView()
+			.then(() => {
+				console.log("[TR-debug] activateView resolved");
+			})
+			.catch((err) => {
+				console.error("[TR-debug] activateView failed:", err);
+			});
+	}
+
+	private async handleOpenDashboard(): Promise<void> {
+		this.leaf.detach();
+		await this.plugin.openDashboard();
 	}
 }

@@ -9,6 +9,7 @@ interface UseNoteContextMenuOptions {
 	onCustomStudy: () => void;
 	onNavigate: () => void;
 	onRename?: () => void;
+	onSetPreset?: () => void;
 	onArchive?: () => void;
 	onUnarchive?: () => void;
 	onDetach?: () => void;
@@ -24,6 +25,7 @@ export function useNoteContextMenu({
 	onCustomStudy,
 	onNavigate,
 	onRename,
+	onSetPreset,
 	onArchive,
 	onUnarchive,
 	onDetach,
@@ -41,6 +43,15 @@ export function useNoteContextMenu({
 		},
 		{ title: "Go to note", icon: "file-text", onClick: onNavigate },
 		{ title: "Rename", icon: "pencil", onClick: () => onRename?.() },
+		...(onSetPreset
+			? [
+					{
+						title: "Set FSRS preset",
+						icon: "settings",
+						onClick: onSetPreset,
+					},
+				]
+			: []),
 		note.archived
 			? {
 					title: "Unarchive",
