@@ -22,6 +22,7 @@ export class CardAIService {
 		const messages = buildCardAIMessages({
 			fields: req.fields,
 			prompt: req.prompt,
+			operation: req.operation,
 			context: req.context,
 		});
 

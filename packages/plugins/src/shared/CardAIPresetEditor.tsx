@@ -11,7 +11,7 @@ import { cn } from "@true-recall/obsidian/utils/cn";
 interface CardAIPresetEditorProps {
 	preset: CardAIPreset;
 	readOnly?: boolean;
-	onChange?: (next: CardAIPreset) => void;
+	onChange?: (id: string, patch: Partial<CardAIPreset>) => void;
 	onFork?: () => void;
 	onDelete?: () => void;
 	expanded?: boolean;
@@ -122,7 +122,7 @@ export function CardAIPresetEditor({
 	}
 
 	const patch = (partial: Partial<CardAIPreset>) =>
-		onChange?.({ ...preset, ...partial });
+		onChange?.(preset.id, partial);
 
 	const autoApplyId = `card-ai-auto-${preset.id}`;
 	const sourceNoteId = `card-ai-src-${preset.id}`;

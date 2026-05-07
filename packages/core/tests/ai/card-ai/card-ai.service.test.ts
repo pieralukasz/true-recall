@@ -20,16 +20,19 @@ function client(content: string): OpenRouterClient {
 	} as unknown as OpenRouterClient;
 }
 
+const request = {
+	fields: { Front: "q", Back: "" },
+	prompt: "P",
+	operation: "edit" as const,
+};
+
 describe("CardAIService", () => {
 	beforeEach(() => vi.clearAllMocks());
 
 	it("parses a valid JSON response", async () => {
 		const r = await new CardAIService(
 			client(`{"Front":"Q","Back":"A"}`),
-		).transform({
-			fields: { Front: "q", Back: "" },
-			prompt: "P",
-		});
+		).transform(request);
 		expect(r.fields).toEqual({ Front: "Q", Back: "A" });
 		expect(r.usage).toEqual({ promptTokens: 10, completionTokens: 20 });
 	});
@@ -37,15 +40,14 @@ describe("CardAIService", () => {
 	it("strips ```json fences", async () => {
 		const r = await new CardAIService(
 			client('```json\n{"Front":"Q","Back":"A"}\n```'),
-		).transform({ fields: { Front: "q", Back: "" }, prompt: "P" });
+		).transform(request);
 		expect(r.fields).toEqual({ Front: "Q", Back: "A" });
 	});
 
 	it("throws CardAIParseError on garbage", async () => {
 		await expect(
 			new CardAIService(client("not json")).transform({
-				fields: { Front: "q", Back: "" },
-				prompt: "P",
+				...request,
 			}),
 		).rejects.toBeInstanceOf(CardAIParseError);
 	});
@@ -53,8 +55,7 @@ describe("CardAIService", () => {
 	it("throws CardAIParseError when a requested key is missing", async () => {
 		await expect(
 			new CardAIService(client(`{"Front":"Q"}`)).transform({
-				fields: { Front: "q", Back: "" },
-				prompt: "P",
+				...request,
 			}),
 		).rejects.toBeInstanceOf(CardAIParseError);
 	});
@@ -64,8 +65,7 @@ describe("CardAIService", () => {
 		c.abort();
 		await expect(
 			new CardAIService(client(`{"Front":"Q","Back":"A"}`)).transform({
-				fields: { Front: "q", Back: "" },
-				prompt: "P",
+				...request,
 				signal: c.signal,
 			}),
 		).rejects.toBeInstanceOf(CardAIAbortedError);
@@ -77,9 +77,7 @@ describe("CardAIService", () => {
 			chat: vi.fn().mockRejectedValue(cause),
 		} as unknown as OpenRouterClient;
 		const svc = new CardAIService(failingClient);
-		await expect(
-			svc.transform({ fields: { Front: "q", Back: "" }, prompt: "P" }),
-		).rejects.toMatchObject({
+		await expect(svc.transform(request)).rejects.toMatchObject({
 			constructor: CardAIProviderError,
 			cause,
 		});
@@ -90,9 +88,7 @@ describe("CardAIService", () => {
 			chat: vi.fn().mockRejectedValue("unexpected string"),
 		} as unknown as OpenRouterClient;
 		const svc = new CardAIService(failingClient);
-		await expect(
-			svc.transform({ fields: { Front: "q", Back: "" }, prompt: "P" }),
-		).rejects.toMatchObject({
+		await expect(svc.transform(request)).rejects.toMatchObject({
 			constructor: CardAIProviderError,
 			message: "Provider request failed",
 		});
@@ -109,8 +105,7 @@ describe("CardAIService", () => {
 		const svc = new CardAIService(abortingClient);
 		await expect(
 			svc.transform({
-				fields: { Front: "q", Back: "" },
-				prompt: "P",
+				...request,
 				signal: c.signal,
 			}),
 		).rejects.toBeInstanceOf(CardAIAbortedError);
@@ -119,7 +114,7 @@ describe("CardAIService", () => {
 	it("tolerates JSON embedded in prose via brace-span fallback", async () => {
 		const r = await new CardAIService(
 			client('Sure! Here you go: {"Front":"Q","Back":"A"} Let me know.'),
-		).transform({ fields: { Front: "q", Back: "" }, prompt: "P" });
+		).transform(request);
 		expect(r.fields).toEqual({ Front: "Q", Back: "A" });
 	});
 });

@@ -1,10 +1,15 @@
-import type { CardAITarget, CardFields } from "@true-recall/core";
+import type {
+	CardAITarget,
+	CardAITargetOperation,
+	CardFields,
+} from "@true-recall/core";
 
 export interface DraftCardTargetDetail {
 	fields: CardFields;
 	noteType: { id: string; name: string; fields: string[] };
 	sourceUid: string;
 	currentCardId: string | null;
+	operation: CardAITargetOperation;
 	onApply: (fields: CardFields) => void;
 }
 
@@ -25,6 +30,10 @@ export class DraftCardTarget implements CardAITarget {
 
 	getCurrentCardId(): string | undefined {
 		return this.detail.currentCardId ?? undefined;
+	}
+
+	getOperation(): CardAITargetOperation {
+		return this.detail.operation;
 	}
 
 	apply(fields: CardFields): boolean {

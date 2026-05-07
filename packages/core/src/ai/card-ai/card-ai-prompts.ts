@@ -1,16 +1,31 @@
 import type { ChatMessage } from "../clients/openrouter-client";
 import type { CardAIContext, CardFields } from "./card-ai.types";
+import type { CardAITargetOperation } from "./card-ai-target";
 
 const SOURCE_NOTE_CHAR_LIMIT = 4000;
 
-function systemPrompt(fieldNames: string[]): string {
+function systemPrompt(
+	fieldNames: string[],
+	operation: CardAITargetOperation,
+): string {
 	const keys = fieldNames.map((n) => `"${n}"`).join(", ");
-	return `You are a flashcard editor. Apply the user's instruction to the given flashcard fields.
+	const role =
+		operation === "create"
+			? "You are drafting a NEW flashcard. Use the user's instruction and context to fill the draft fields."
+			: "You are a flashcard editor. Apply the user's instruction to the given flashcard fields.";
+	const operationRules =
+		operation === "create"
+			? `- The result will be saved as a new flashcard, not applied to an existing related card.
+- Create exactly one flashcard draft in this response.`
+			: `- Edit only the current flashcard; do not create additional cards.`;
+
+	return `${role}
 
 Respond with ONLY a single JSON object, with exactly these keys: { ${keys} } and nothing else.
 
 Rules:
 - No prose, no code fences, no commentary — just the JSON object.
+${operationRules}
 - Apply the instruction to every field.
 - For any empty field, write content that fits the instruction and stays consistent with the filled fields. Follow flashcard best practices: atomic (one fact per card), answerable without the question showing context from the answer, minimum information principle.
 - Preserve facts, numbers, proper nouns, wikilinks ([[...]]), Obsidian callouts (> [!note]), LaTeX, and code verbatim unless the instruction explicitly asks to change them.
@@ -54,11 +69,17 @@ function formatContext(ctx?: CardAIContext): string {
 export function buildCardAIMessages(input: {
 	fields: CardFields;
 	prompt: string;
+	operation: CardAITargetOperation;
 	context?: CardAIContext;
 }): ChatMessage[] {
-	const user = `Instruction:\n${input.prompt.trim()}\n\nCurrent card:\n${formatFields(input.fields)}${formatContext(input.context)}`;
+	const fieldLabel =
+		input.operation === "create" ? "Current draft" : "Current card";
+	const user = `Instruction:\n${input.prompt.trim()}\n\n${fieldLabel}:\n${formatFields(input.fields)}${formatContext(input.context)}`;
 	return [
-		{ role: "system", content: systemPrompt(Object.keys(input.fields)) },
+		{
+			role: "system",
+			content: systemPrompt(Object.keys(input.fields), input.operation),
+		},
 		{ role: "user", content: user },
 	];
 }

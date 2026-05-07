@@ -1,4 +1,8 @@
-import type { CardAITarget, CardFields } from "@true-recall/core";
+import type {
+	CardAITarget,
+	CardAITargetOperation,
+	CardFields,
+} from "@true-recall/core";
 
 import type TrueRecallPlugin from "@true-recall/obsidian/main";
 
@@ -23,6 +27,10 @@ export class ReviewCardTarget implements CardAITarget {
 
 	getCurrentCardId(): string | undefined {
 		return this.snapshot().card?.id;
+	}
+
+	getOperation(): CardAITargetOperation {
+		return "edit";
 	}
 
 	apply(fields: CardFields): boolean {

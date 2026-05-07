@@ -7,6 +7,7 @@ describe("buildCardAIMessages", () => {
 		const [sys] = buildCardAIMessages({
 			fields: { Front: "Q", Back: "" },
 			prompt: "Polish",
+			operation: "edit",
 		});
 		expect(sys.content).toContain(`"Front"`);
 		expect(sys.content).toContain(`"Back"`);
@@ -16,6 +17,7 @@ describe("buildCardAIMessages", () => {
 		const [, user] = buildCardAIMessages({
 			fields: { Front: "Q", Back: "" },
 			prompt: "Polish",
+			operation: "edit",
 		});
 		expect(user.content).toContain("Back: (empty)");
 	});
@@ -24,6 +26,7 @@ describe("buildCardAIMessages", () => {
 		const [, user] = buildCardAIMessages({
 			fields: { Front: "Q", Back: "" },
 			prompt: "Polish",
+			operation: "edit",
 			context: { sourceNotePath: "n.md", sourceNoteContent: "body" },
 		});
 		expect(user.content).toContain("Source note");
@@ -35,6 +38,7 @@ describe("buildCardAIMessages", () => {
 		const [, user] = buildCardAIMessages({
 			fields: { Front: "Q", Back: "" },
 			prompt: "Polish",
+			operation: "edit",
 			context: {
 				relatedCards: [
 					{ noteType: "Basic", fields: { Front: "P", Back: "A" } },
@@ -49,8 +53,20 @@ describe("buildCardAIMessages", () => {
 		const [, user] = buildCardAIMessages({
 			fields: { Front: "Q", Back: "" },
 			prompt: "Polish",
+			operation: "edit",
 		});
 		expect(user.content).not.toContain("Source note");
 		expect(user.content).not.toContain("Related flashcards");
+	});
+
+	it("uses create-mode copy for new draft flashcards", () => {
+		const [sys, user] = buildCardAIMessages({
+			fields: { Front: "", Back: "" },
+			prompt: "Create a new card",
+			operation: "create",
+		});
+		expect(sys.content).toContain("drafting a NEW flashcard");
+		expect(sys.content).toContain("saved as a new flashcard");
+		expect(user.content).toContain("Current draft");
 	});
 });

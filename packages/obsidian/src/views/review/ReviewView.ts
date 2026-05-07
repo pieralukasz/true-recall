@@ -518,9 +518,7 @@ export class ReviewView extends ItemView {
 				onOpenSourceNote: () => this.handleOpenSourceNote(),
 				onClose: () => this.handleClose(),
 				onNextSession: () => this.handleNextSession(),
-				onEndSession: () => {
-					/* handled in Preact component */
-				},
+				onEndSession: () => this.handleNextSession(),
 				onActionsMenu: (e: MouseEvent) => this.showActionsMenu(e),
 				onPolishMenu: isPluginEnabled(this.plugin.settings, "card-polish")
 					? (e: MouseEvent) => this.openCardPolishMenu(e)
@@ -586,6 +584,7 @@ export class ReviewView extends ItemView {
 	}
 
 	async onClose(): Promise<void> {
+		console.log("[TR-debug] ReviewView.onClose called");
 		this.disposeReviewHook?.();
 		this.disposeReviewHook = null;
 		this.plugin.commandService?.clearByType(
@@ -1026,11 +1025,22 @@ export class ReviewView extends ItemView {
 	}
 
 	private handleClose(): void {
+		console.log("[TR-debug] handleClose called");
 		this.leaf.detach();
 	}
 
 	private handleNextSession(): void {
+		console.log("[TR-debug] handleNextSession called");
+		console.log("[TR-debug] leaf:", this.leaf);
 		this.leaf.detach();
-		void this.plugin.activateView();
+		console.log("[TR-debug] leaf detached OK, calling activateView");
+		void this.plugin
+			.activateView()
+			.then(() => {
+				console.log("[TR-debug] activateView resolved");
+			})
+			.catch((err) => {
+				console.error("[TR-debug] activateView failed:", err);
+			});
 	}
 }

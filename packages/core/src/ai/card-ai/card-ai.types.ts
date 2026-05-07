@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import type { CardAITargetOperation } from "./card-ai-target";
+
 export type CardFields = Record<string, string>;
 
 export interface CardAIContext {
@@ -11,6 +13,7 @@ export interface CardAIContext {
 export interface CardAIRequest {
 	fields: CardFields;
 	prompt: string;
+	operation: CardAITargetOperation;
 	context?: CardAIContext;
 	signal?: AbortSignal;
 }

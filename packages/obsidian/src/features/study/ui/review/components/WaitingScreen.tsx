@@ -72,8 +72,13 @@ export function WaitingScreen({
 							stopPropagation={false}
 							class="ep-btn ep-btn-outline"
 							onClick={() => {
-								review.endSession();
+								console.log("[TR-debug] WaitingScreen End session clicked");
+								console.log(
+									"[TR-debug] onEndSession type:",
+									typeof onEndSession,
+								);
 								onEndSession();
+								console.log("[TR-debug] onEndSession called OK");
 							}}
 						>
 							End session

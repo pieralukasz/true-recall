@@ -336,6 +336,7 @@ export class CardActionsHandler {
 		const modal = new QuickNoteEditorModal(this.deps.app, this.deps.plugin, {
 			mode: "add",
 			sourceUid: card.sourceUid,
+			excludeCardId: card.id,
 			defaultNoteTypeId:
 				card.fsrs.noteTypeId === BUILTIN_IMAGE_OCCLUSION_ID
 					? "builtin-basic"

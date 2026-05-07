@@ -22,7 +22,13 @@ export class CardAIRunner {
 
 		const call = (prompt: string): Promise<CardFields> =>
 			this.service
-				.transform({ fields: original, prompt, context, signal })
+				.transform({
+					fields: original,
+					prompt,
+					operation: this.target.getOperation(),
+					context,
+					signal,
+				})
 				.then((r) => r.fields);
 
 		let proposed: CardFields | null = null;

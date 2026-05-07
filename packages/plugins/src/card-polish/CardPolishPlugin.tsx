@@ -32,6 +32,7 @@ export class CardPolishPlugin extends CardAIPluginBase<CardPolishEventDetail> {
 					noteType: detail.noteType,
 					sourceUid: detail.sourceUid,
 					currentCardId: detail.currentCardId,
+					operation: detail.operation,
 					onApply: detail.onApply,
 				});
 			},

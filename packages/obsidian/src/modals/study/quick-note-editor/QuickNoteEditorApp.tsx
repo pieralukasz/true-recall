@@ -358,7 +358,10 @@ export function QuickNoteEditorApp({
 									fields: noteType.fields,
 								},
 								sourceUid: uid,
-								currentCardId: isEdit ? (editMode?.noteId ?? null) : null,
+								currentCardId: isEdit
+									? (editMode?.cardId ?? null)
+									: (addMode?.excludeCardId ?? null),
+								operation: isEdit ? "edit" : "create",
 								onApply: (next: Record<string, string>) => {
 									setFields((prev) => ({ ...prev, ...next }));
 								},
@@ -378,6 +381,7 @@ export function QuickNoteEditorApp({
 			fields,
 			isEdit,
 			editMode,
+			addMode,
 			resolveSourceUid,
 		],
 	);

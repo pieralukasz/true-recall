@@ -25,6 +25,7 @@ const target = (): CardAITarget => ({
 	getNoteType: () => ({ id: "b", name: "Basic", fields: ["Front", "Back"] }),
 	getSourceUid: () => "uid-1",
 	getCurrentCardId: () => null,
+	getOperation: () => "edit",
 	apply: vi.fn(),
 });
 
@@ -52,6 +53,7 @@ describe("CardAIRunner", () => {
 			expect.objectContaining({
 				fields: { Front: "q", Back: "" },
 				prompt: "Polish",
+				operation: "edit",
 			}),
 		);
 	});

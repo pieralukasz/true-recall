@@ -13,7 +13,7 @@ interface GenerationPresetEditorProps {
 	preset: GenerationPreset;
 	noteTypes: NoteType[];
 	readOnly?: boolean;
-	onChange?: (next: GenerationPreset) => void;
+	onChange?: (id: string, patch: Partial<GenerationPreset>) => void;
 	onFork?: () => void;
 	onDelete?: () => void;
 	expanded?: boolean;
@@ -136,7 +136,7 @@ export function GenerationPresetEditor({
 	}
 
 	const patch = (partial: Partial<GenerationPreset>) =>
-		onChange?.({ ...preset, ...partial, updatedAt: Date.now() });
+		onChange?.(preset.id, partial);
 
 	const fieldOptions = noteType?.fields ?? [];
 

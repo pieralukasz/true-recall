@@ -11,6 +11,7 @@ const target = (
 	getNoteType: () => ({ id: "b", name: "Basic", fields: ["Front", "Back"] }),
 	getSourceUid: () => ("sourceUid" in over ? over.sourceUid : "uid-1"),
 	getCurrentCardId: () => over.currentCardId ?? null,
+	getOperation: () => "edit",
 	apply: vi.fn(),
 });
 
