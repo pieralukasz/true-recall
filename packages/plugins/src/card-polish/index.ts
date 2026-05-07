@@ -17,7 +17,7 @@ export const cardPolishManifest: PluginManifest = {
 			"Optional source-note and related-card context per preset",
 		],
 		icon: "wand-2",
-		tier: "pro",
+		tier: "byok",
 	},
 	settingsPanel: createCardAISettingsPanel({
 		bucketKey: "cardPolish",
