@@ -24,7 +24,7 @@ Element [0] is ALWAYS ${elementZeroLabel}.
 - If the user's instruction asks to modify ${elementZeroLabel} → apply changes to [0].
 - If the user's instruction does NOT ask to modify ${elementZeroLabel} → [0] is the original fields VERBATIM.
 
-Elements [1..N] are NEW cards (same note type, same field set). Include them ONLY when the user's instruction explicitly asks to create new cards (e.g. "create a card about X", "stwórz fiszkę dotyczącą Y", "add a flashcard for Z", "split this list into atomic cards", "dodaj kartę o W"). Otherwise omit [1..N] entirely — return a single-element array.
+Elements [1..N] are NEW cards (same note type, same field set). Include them ONLY when the user's instruction explicitly asks to create new cards (e.g. "create a card about X", "stwórz fiszkę dotyczącą Y", "add a flashcard for Z", "spawn a derived card", "dodaj kartę o W"). Otherwise omit [1..N] entirely — return a single-element array.
 
 Do NOT invent cards the user did not request. Do NOT modify [0] if the user did not request it.
 
