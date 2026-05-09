@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.8.1 (2026-05-09)
+
+### Bug Fixes
+
+- **ui:** toggle switches don't respond to clicks
+
 ## 1.8.0 (2026-05-07)
 
 ### Features
