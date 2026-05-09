@@ -617,3 +617,64 @@ settings:
 .u-text-accent {
 	color: var(--text-accent);
 }
+
+/* ── ToggleInput: own class namespace to avoid colliding with Obsidian's
+   .checkbox-container styles (which Tailwind preflight partially resets and
+   themes redefine inconsistently). Self-contained so the switch renders
+   identically regardless of theme. */
+
+.tr-toggle {
+	position: relative;
+	display: inline-block;
+	width: 32px;
+	height: 18px;
+	flex-shrink: 0;
+	border-radius: 999px;
+	background-color: var(--background-modifier-border-hover);
+	cursor: pointer;
+	vertical-align: middle;
+	transition: background-color 0.15s ease-in-out;
+}
+
+.tr-toggle--on {
+	background-color: var(--interactive-accent);
+}
+
+.tr-toggle--disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+.tr-toggle__input {
+	position: absolute;
+	inset: 0;
+	width: 100%;
+	height: 100%;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	outline: 0;
+	background: transparent;
+	opacity: 0;
+	cursor: inherit;
+	appearance: none;
+	-webkit-appearance: none;
+	z-index: 1;
+}
+
+.tr-toggle__thumb {
+	position: absolute;
+	top: 2px;
+	left: 2px;
+	width: 14px;
+	height: 14px;
+	border-radius: 50%;
+	background-color: var(--background-primary);
+	box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+	transition: transform 0.15s ease-in-out;
+	pointer-events: none;
+}
+
+.tr-toggle--on .tr-toggle__thumb {
+	transform: translateX(14px);
+}
