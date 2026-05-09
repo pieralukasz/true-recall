@@ -1,3 +1,4 @@
+import type { JSX } from "preact";
 import { useCallback } from "preact/hooks";
 
 import { cn } from "@true-recall/obsidian/utils/cn";
@@ -15,33 +16,30 @@ export function ToggleInput({
 	disabled,
 	ariaLabel,
 }: ToggleInputProps) {
-	const handleClick = useCallback(() => {
-		if (!disabled) onChange(!value);
-	}, [value, onChange, disabled]);
-
-	const handleKeyDown = useCallback(
-		(e: KeyboardEvent) => {
-			if (!disabled && (e.key === "Enter" || e.key === " ")) {
-				e.preventDefault();
-				onChange(!value);
-			}
+	const handleChange = useCallback(
+		(e: JSX.TargetedEvent<HTMLInputElement>) => {
+			if (!disabled) onChange(e.currentTarget.checked);
 		},
-		[value, onChange, disabled],
+		[onChange, disabled],
 	);
 
 	return (
-		<div
+		<label
 			class={cn(
-				"checkbox-container",
-				value && "is-enabled",
-				disabled && "ep:opacity-50 ep:cursor-not-allowed",
+				"tr-toggle",
+				value && "tr-toggle--on",
+				disabled && "tr-toggle--disabled",
 			)}
-			role="switch"
-			tabIndex={0}
-			aria-checked={value}
-			aria-label={ariaLabel}
-			onClick={handleClick}
-			onKeyDown={handleKeyDown}
-		/>
+		>
+			<input
+				type="checkbox"
+				class="tr-toggle__input"
+				checked={value}
+				disabled={disabled}
+				aria-label={ariaLabel}
+				onChange={handleChange}
+			/>
+			<span class="tr-toggle__thumb" />
+		</label>
 	);
 }
