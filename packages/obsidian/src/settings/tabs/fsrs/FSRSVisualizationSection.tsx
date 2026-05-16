@@ -39,6 +39,7 @@ export function FSRSVisualizationSection({
 				<ActionButton
 					label="Open Simulator"
 					variant="secondary"
+					class="ep:whitespace-nowrap"
 					onClick={() => void plugin.openSimulator()}
 				/>
 			</FormField>
