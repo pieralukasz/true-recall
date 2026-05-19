@@ -26,7 +26,7 @@
 		"knip": "bunx knip"
 	},
 	"keywords": [],
-	"license": "SEE LICENSE IN LICENSE",
+	"license": "LicenseRef-True-Recall-Source-Available-1.0",
 	"devDependencies": {
 		"@biomejs/biome": "2.4.2",
 		"@tailwindcss/cli": "^4.2.0",
@@ -54,8 +54,8 @@
 		"chart.js": "^4.5.1",
 		"class-variance-authority": "^0.7.1",
 		"clsx": "^2.1.1",
+		"fflate": "^0.8.3",
 		"fzstd": "^0.1.1",
-		"jszip": "^3.10.1",
 		"monkey-around": "^3.0.0",
 		"motion": "12.35.0",
 		"obsidian": "latest",

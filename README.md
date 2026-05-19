@@ -4,7 +4,7 @@
 
 Create flashcards inside your notes, review them with FSRS v6 scheduling, and track progress with comprehensive analytics — all without leaving Obsidian.
 
-[Documentation](https://www.truerecall.app/) · [Buy Me a Coffee](https://www.buymeacoffee.com/1Hzbip1K9Q)
+[Documentation](https://www.truerecall.app/) · [Pricing](https://www.truerecall.app/pricing/)
 
 ---
 
@@ -73,4 +73,12 @@ For a complete walkthrough, see the [documentation](https://www.truerecall.app/)
 
 ## License
 
-[True Recall Source-Available License 1.0](LICENSE)
+Source-available under the [True Recall Source-Available License 1.0](LICENSE)
+(SPDX: `LicenseRef-True-Recall-Source-Available-1.0`).
+
+Permitted: personal, non-commercial use; reading and studying the source;
+local modifications for your own use; submitting contributions upstream.
+
+Not permitted without prior written permission: redistribution, commercial use,
+hosting as a service, or building a competing product. For commercial licensing,
+contact `pieralukasz@gmail.com`.
