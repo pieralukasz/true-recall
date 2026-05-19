@@ -1,4 +1,4 @@
-import JSZip from "jszip";
+import { zipSync } from "fflate";
 import { State } from "ts-fsrs";
 
 import {
@@ -634,9 +634,9 @@ export class ApkgBuilderService {
 		dbBytes: Uint8Array,
 		media: Map<string, ArrayBuffer>,
 	): Promise<ArrayBuffer> {
-		const zip = new JSZip();
-
-		zip.file("collection.anki21", dbBytes);
+		const files: Record<string, Uint8Array> = {
+			"collection.anki21": dbBytes,
+		};
 
 		// Build media mapping: numeric index -> original filename
 		const mediaMapping: Record<string, string> = {};
@@ -644,13 +644,17 @@ export class ApkgBuilderService {
 		for (const [filename, data] of media) {
 			const key = String(mediaIndex);
 			mediaMapping[key] = filename;
-			zip.file(key, data);
+			files[key] = new Uint8Array(data);
 			mediaIndex++;
 		}
 
-		zip.file("media", JSON.stringify(mediaMapping));
+		files.media = new TextEncoder().encode(JSON.stringify(mediaMapping));
 
-		return zip.generateAsync({ type: "arraybuffer" });
+		const zipped = zipSync(files);
+		return zipped.buffer.slice(
+			zipped.byteOffset,
+			zipped.byteOffset + zipped.byteLength,
+		) as ArrayBuffer;
 	}
 }
 

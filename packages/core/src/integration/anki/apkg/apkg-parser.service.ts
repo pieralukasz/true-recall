@@ -1,5 +1,5 @@
+import { unzipSync } from "fflate";
 import { decompress } from "fzstd";
-import JSZip from "jszip";
 
 import {
 	type DatabaseLike,
@@ -14,6 +14,8 @@ import type {
 	AnkiRevlogEntry,
 	ApkgData,
 } from "@true-recall/core/types";
+
+type ZipEntries = Record<string, Uint8Array>;
 
 // Legacy format: models/decks stored as JSON in the `col` table
 interface RawAnkiModel {
@@ -143,20 +145,20 @@ const DB_FILENAME_COMPRESSED = "collection.anki21b";
 const DB_FILENAME_LEGACY = "collection.anki2";
 
 interface DbFileResult {
-	file: JSZip.JSZipObject;
+	data: Uint8Array;
 	compressed: boolean;
 }
 
 export class ApkgParserService {
 	async parseApkg(fileData: ArrayBuffer): Promise<ApkgData> {
-		const zip = await JSZip.loadAsync(fileData);
+		const entries = unzipSync(new Uint8Array(fileData));
 
-		const dbResult = this.findDatabaseFile(zip);
+		const dbResult = this.findDatabaseFile(entries);
 		if (!dbResult) {
 			throw new Error("No Anki collection database found in .apkg file");
 		}
 
-		let dbData = await dbResult.file.async("uint8array");
+		let dbData = dbResult.data;
 
 		if (dbResult.compressed) {
 			dbData = decompress(dbData);
@@ -172,7 +174,7 @@ export class ApkgParserService {
 			const { models, decks } = this.isSchemaV18(db)
 				? this.readCollectionV18(db)
 				: this.readCollectionLegacy(db);
-			const { media, mediaMap } = await this.readMedia(zip);
+			const { media, mediaMap } = this.readMedia(entries);
 
 			return { notes, cards, revlog, models, decks, media, mediaMap };
 		} finally {
@@ -180,20 +182,20 @@ export class ApkgParserService {
 		}
 	}
 
-	private findDatabaseFile(zip: JSZip): DbFileResult | null {
+	private findDatabaseFile(entries: ZipEntries): DbFileResult | null {
 		// 1. Uncompressed anki21 (legacy export or "Support older versions" enabled)
 		for (const name of DB_FILENAMES_UNCOMPRESSED) {
-			const file = zip.file(name);
-			if (file) return { file, compressed: false };
+			const file = entries[name];
+			if (file) return { data: file, compressed: false };
 		}
 
 		// 2. Zstd-compressed anki21b (modern Anki 2.1.50+ default)
-		const compressed = zip.file(DB_FILENAME_COMPRESSED);
-		if (compressed) return { file: compressed, compressed: true };
+		const compressed = entries[DB_FILENAME_COMPRESSED];
+		if (compressed) return { data: compressed, compressed: true };
 
 		// 3. Legacy anki2 (oldest format; also present as dummy in modern exports, hence last)
-		const legacy = zip.file(DB_FILENAME_LEGACY);
-		if (legacy) return { file: legacy, compressed: false };
+		const legacy = entries[DB_FILENAME_LEGACY];
+		if (legacy) return { data: legacy, compressed: false };
 
 		return null;
 	}
@@ -399,19 +401,19 @@ export class ApkgParserService {
 		return decks;
 	}
 
-	private async readMedia(zip: JSZip): Promise<{
+	private readMedia(entries: ZipEntries): {
 		media: Map<string, ArrayBuffer>;
 		mediaMap: Record<string, string>;
-	}> {
+	} {
 		const media = new Map<string, ArrayBuffer>();
 		let mediaMap: Record<string, string> = {};
 
-		const mediaFile = zip.file("media");
+		const mediaFile = entries.media;
 		if (!mediaFile) {
 			return { media, mediaMap };
 		}
 
-		let rawBytes = await mediaFile.async("uint8array");
+		let rawBytes: Uint8Array = mediaFile;
 
 		// Modern Anki (2.1.50+) may zstd-compress the media file
 		if (this.isZstdCompressed(rawBytes)) {
@@ -427,31 +429,20 @@ export class ApkgParserService {
 			mediaMap = this.parseMediaProtobuf(rawBytes);
 		}
 
-		const extractionPromises: Promise<void>[] = [];
 		for (const [numericKey, originalName] of Object.entries(mediaMap)) {
-			const mediaEntry = zip.file(numericKey);
+			const mediaEntry = entries[numericKey];
 			if (!mediaEntry) continue;
 
-			extractionPromises.push(
-				mediaEntry.async("arraybuffer").then((data) => {
-					const raw = new Uint8Array(data);
-					if (this.isZstdCompressed(raw)) {
-						const out = decompress(raw);
-						media.set(
-							originalName,
-							out.buffer.slice(
-								out.byteOffset,
-								out.byteOffset + out.byteLength,
-							) as ArrayBuffer,
-						);
-					} else {
-						media.set(originalName, data);
-					}
-				}),
-			);
-		}
+			const raw = this.isZstdCompressed(mediaEntry)
+				? decompress(mediaEntry)
+				: mediaEntry;
 
-		await Promise.all(extractionPromises);
+			const buffer = raw.buffer.slice(
+				raw.byteOffset,
+				raw.byteOffset + raw.byteLength,
+			) as ArrayBuffer;
+			media.set(originalName, buffer);
+		}
 
 		return { media, mediaMap };
 	}
