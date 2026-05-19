@@ -51,7 +51,7 @@ export function LMStudioScopedModelField({
 							void save({ [modelKey]: v } as Partial<TrueRecallSettings>)
 						}
 						placeholder="e.g. llama-3.2-3b-instruct"
-						class="ep:w-[300px] ep:mt-2"
+						class="ep:w-75 ep:mt-2"
 					/>
 				</>
 			)}
@@ -83,7 +83,7 @@ export function LMStudioScopedModelField({
 							void save({ [modelKey]: v } as Partial<TrueRecallSettings>)
 						}
 						placeholder="e.g. llama-3.2-3b-instruct"
-						class="ep:w-[300px] ep:mt-2"
+						class="ep:w-75 ep:mt-2"
 					/>
 				</>
 			)}

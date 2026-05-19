@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.9.0 (2026-05-16)
+
+### Improvements
+
+- **Selection Toolbar promoted to first plugin** in the Plugins tab so the most-used entry point sits at the top of the list
+- **"Open Simulator" button no longer wraps** in the FSRS visualization settings section
+- **README documents periodic timers and on-demand network calls** so anyone auditing the plugin can see at a glance what runs in the background and when (all timers are local-only file writes; network calls are limited to a one-time release-notes fetch and opt-in AI features)
+
+### Bug Fixes
+
+- **`fundingUrl` repointed to GitHub Sponsors** — the previous Buy Me a Coffee URL was returning HTTP 404 in the Obsidian Community Portal automated review
+- **`sqlite3.wasm` no longer uploaded as a release asset** — the SQLite WebAssembly module is statically embedded into `main.js` by esbuild; shipping the standalone file in the release archive was redundant and tripped the portal's "unexpected files" check
+
+### Breaking Changes & Migration
+
+- **Gamification Widgets plugin removed** — the six widgets (Achievements, Answer Streak, Countdown, Maturity, Progress, Ratings) and their codeblock processors are gone. Replace any `{achievements}`, `{progress}`, `{streak}`, `{countdown}`, `{maturity}`, or `{ratings}` codeblocks with equivalents from the Dashboard Codeblocks or Status Bar Widget plugins
+
 ## 1.8.1 (2026-05-09)
 
 ### Bug Fixes

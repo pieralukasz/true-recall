@@ -8,6 +8,7 @@ import {
 	BulkOperationsSection,
 	DailyLimitsSection,
 	EasyDaysSection,
+	FSRSVisualizationSection,
 	LoadBalanceSection,
 	ParametersSection,
 	PresetSection,
@@ -69,6 +70,8 @@ export function FSRSTab({ selectedPresetId, onPresetChange }: FSRSTabProps) {
 
 	return (
 		<div class="ep:flex ep:flex-col ep:gap-3">
+			<FSRSVisualizationSection plugin={plugin} />
+
 			<PresetSection
 				presets={presets}
 				preset={preset}
