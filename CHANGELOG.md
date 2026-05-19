@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.9.2 (2026-05-19)
+
+### Improvements
+
+- **License switched to PolyForm Strict 1.0.0** — replaced the custom source-available license with the canonical [PolyForm Strict 1.0.0](https://polyformproject.org/licenses/strict/1.0.0/) text so GitHub's license detector can recognize the repository. The restrictions are equivalent (noncommercial use only, no redistribution, no modifications, no competing products). Commercial licensing remains available — see the `## License` section in the README.
+
 ## 1.9.1 (2026-05-19)
 
 ### Bug Fixes
