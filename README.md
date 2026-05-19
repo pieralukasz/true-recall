@@ -92,12 +92,17 @@ True Recall is local-first. No telemetry, analytics, or background data transmis
 
 ## License
 
-Source-available under the [True Recall Source-Available License 1.0](LICENSE)
-(SPDX: `LicenseRef-True-Recall-Source-Available-1.0`).
+Source-available under the [PolyForm Strict License 1.0.0](LICENSE)
+(SPDX: `PolyForm-Strict-1.0.0`).
 
-Permitted: personal, non-commercial use; reading and studying the source;
-local modifications for your own use; submitting contributions upstream.
+Permitted: noncommercial use, including personal study, research, hobby
+projects, and use by charitable / educational / public-research / government
+organizations. Fair-use rights are preserved.
 
-Not permitted without prior written permission: redistribution, commercial use,
-hosting as a service, or building a competing product. For commercial licensing,
-contact `pieralukasz@gmail.com`.
+Not permitted under this license: redistribution, modification and derivative
+works, commercial use, hosting as a service, or building a competing product.
+
+**Commercial licensing.** A separate commercial license is required for any
+use beyond what PolyForm Strict allows — including production deployments
+inside a business, paid services built on True Recall, or distributing
+derivative works. Contact `pieralukasz@gmail.com` to discuss terms.

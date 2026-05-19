@@ -1,6 +1,6 @@
 {
 	"name": "true-recall",
-	"version": "1.9.1",
+	"version": "1.9.2",
 	"private": true,
 	"description": "Spaced repetition with FSRS algorithm",
 	"main": "main.js",
@@ -26,7 +26,7 @@
 		"knip": "bunx knip"
 	},
 	"keywords": [],
-	"license": "LicenseRef-True-Recall-Source-Available-1.0",
+	"license": "PolyForm-Strict-1.0.0",
 	"devDependencies": {
 		"@biomejs/biome": "2.4.2",
 		"@tailwindcss/cli": "^4.2.0",
