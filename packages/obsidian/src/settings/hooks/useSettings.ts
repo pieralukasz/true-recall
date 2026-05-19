@@ -29,9 +29,12 @@ export function useSettings() {
 		[plugin],
 	);
 
-	void version;
+	const settings = useMemo(
+		() => ({ ...plugin.settings }),
+		[plugin, version],
+	);
 
-	return { settings: plugin.settings, save, plugin } as const;
+	return { settings, save, plugin } as const;
 }
 
 export function usePreset(selectedPresetId: string) {

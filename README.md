@@ -4,7 +4,7 @@
 
 Create flashcards inside your notes, review them with FSRS v6 scheduling, and track progress with comprehensive analytics — all without leaving Obsidian.
 
-[Documentation](https://www.truerecall.app/) · [Buy Me a Coffee](https://www.buymeacoffee.com/1Hzbip1K9Q)
+[Documentation](https://www.truerecall.app/) · [Pricing](https://www.truerecall.app/pricing/) · [Sponsor on GitHub](https://github.com/sponsors/pieralukasz)
 
 ---
 
@@ -71,6 +71,33 @@ For a complete walkthrough, see the [documentation](https://www.truerecall.app/)
 
 ---
 
+## Privacy & Background Activity
+
+True Recall is local-first. No telemetry, analytics, or background data transmission.
+
+**Periodic timers (`setInterval`) — all local, no network:**
+- Database safety-flush — writes pending changes to the local SQLite file in your vault.
+- Optional background backup — writes a backup file inside your vault when enabled in settings.
+- Device-lock heartbeat — updates a small lock file inside your vault to prevent two Obsidian Sync clients from corrupting the database when both are open. Local file write only.
+- UI status polling — reads in-memory state to refresh diagnostics/backup panels.
+
+**Network requests — only on explicit user action or one-time per release:**
+- Update check — when the plugin version differs from the last seen version, a single `requestUrl` call is made to the GitHub Releases API to fetch release notes. Runs once per version, not on a timer.
+- AI / RAG features (opt-in) — flashcard generation, semantic grading, and RAG are disabled by default. When enabled, requests go only to the LLM provider you configure (OpenRouter, your local Ollama, etc.). No third-party server is involved.
+- Local API server (desktop, opt-in) — binds to `127.0.0.1` only, used by the optional companion CLI. Never reaches the public network and is disabled by default.
+
+**Storage:** All flashcards and review data live in `.true-recall/true-recall.db` inside your vault. Backups and lock files live in the same `.true-recall/` folder. Nothing is uploaded anywhere.
+
+---
+
 ## License
 
-[True Recall Source-Available License 1.0](LICENSE)
+Source-available under the [True Recall Source-Available License 1.0](LICENSE)
+(SPDX: `LicenseRef-True-Recall-Source-Available-1.0`).
+
+Permitted: personal, non-commercial use; reading and studying the source;
+local modifications for your own use; submitting contributions upstream.
+
+Not permitted without prior written permission: redistribution, commercial use,
+hosting as a service, or building a competing product. For commercial licensing,
+contact `pieralukasz@gmail.com`.

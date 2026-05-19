@@ -18,6 +18,7 @@ interface FsrsHelperOpConfig {
 
 export function useFsrsHelperOp(config: FsrsHelperOpConfig) {
 	const [running, setRunning] = useState(false);
+	const [lastAffectedCount, setLastAffectedCount] = useState(0);
 
 	const execute = useCallback(
 		(helperCall: () => SchedulingResult | undefined) => {
@@ -35,6 +36,7 @@ export function useFsrsHelperOp(config: FsrsHelperOpConfig) {
 					);
 					void config.plugin.commandService?.execute(cmd);
 					notify().success(config.successMessage(result.affectedCount));
+					setLastAffectedCount(result.affectedCount);
 				} else if (result) {
 					notify().info(config.emptyMessage);
 				}
@@ -54,5 +56,10 @@ export function useFsrsHelperOp(config: FsrsHelperOpConfig) {
 		],
 	);
 
-	return { running, execute };
+	const undoLast = useCallback(async () => {
+		const ok = await config.plugin.commandService?.undo();
+		if (ok) setLastAffectedCount(0);
+	}, [config.plugin]);
+
+	return { running, execute, lastAffectedCount, undoLast };
 }

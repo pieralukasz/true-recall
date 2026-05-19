@@ -4,7 +4,6 @@ import { aiGenerationManifest } from "./ai-generation";
 import { ankiImportExportManifest } from "./anki-import-export";
 import { cardPolishManifest } from "./card-polish";
 import { dashboardCodeblockManifest } from "./dashboard-codeblock";
-import { gamificationManifest } from "./gamification";
 import { imageOcclusionManifest } from "./image-occlusion";
 import { knowledgeBaseManifest } from "./knowledge-base";
 import { linkStatusIndicatorsManifest } from "./link-status-indicators";
@@ -14,17 +13,16 @@ import { typeInModeManifest } from "./type-in-mode";
 import type { PluginManifest } from "./types";
 
 export const PLUGIN_MANIFESTS: PluginManifest[] = [
-	imageOcclusionManifest,
-	aiGenerationManifest,
-	knowledgeBaseManifest,
-	typeInModeManifest,
+	selectionToolbarManifest,
 	linkStatusIndicatorsManifest,
 	dashboardCodeblockManifest,
-	gamificationManifest,
 	statusBarWidgetManifest,
-	ankiImportExportManifest,
-	selectionToolbarManifest,
+	aiGenerationManifest,
 	cardPolishManifest,
+	imageOcclusionManifest,
+	knowledgeBaseManifest,
+	typeInModeManifest,
+	ankiImportExportManifest,
 ];
 
 export interface ButtonPluginInfo {

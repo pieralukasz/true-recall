@@ -1,4 +1,4 @@
-import { useMemo } from "preact/hooks";
+import { useMemo, useState } from "preact/hooks";
 
 import type { TrueRecallSettings } from "@true-recall/core/types";
 
@@ -10,6 +10,7 @@ import {
 	TextInput,
 	ToggleInput,
 } from "@true-recall/obsidian/components";
+import { WorkloadForecastSection } from "@true-recall/obsidian/features/metrics/ui/stats/components/WorkloadForecastSection";
 
 import type { FsrsPluginHost } from "../../../types/plugin-host.types";
 import { useFsrsHelperOp } from "./useFsrsHelperOp";
@@ -19,6 +20,8 @@ interface LoadBalanceSectionProps {
 	save: (patch: Partial<TrueRecallSettings>) => Promise<void>;
 	plugin: FsrsPluginHost;
 }
+
+const FORECAST_DAYS = 30;
 
 export function LoadBalanceSection({
 	settings,
@@ -37,7 +40,39 @@ export function LoadBalanceSection({
 		[plugin],
 	);
 
-	const { running: balancing, execute } = useFsrsHelperOp(opConfig);
+	const {
+		running: balancing,
+		execute,
+		lastAffectedCount,
+		undoLast,
+	} = useFsrsHelperOp(opConfig);
+
+	const [forecastVersion, setForecastVersion] = useState(0);
+
+	const forecastData = useMemo(() => {
+		const helper = plugin.fsrsHelper;
+		if (!helper) return null;
+		void forecastVersion;
+		return {
+			forecast: helper.getWorkloadForecast(FORECAST_DAYS),
+			summary: helper.getWorkloadForecastSummary(FORECAST_DAYS),
+			dayOfWeek: helper.getWorkloadByDayOfWeek(FORECAST_DAYS),
+		};
+	}, [
+		plugin.fsrsHelper,
+		forecastVersion,
+		settings.loadBalanceTarget,
+	]);
+
+	const handleBalance = () => {
+		execute(() => plugin.fsrsHelper?.balanceWorkload({ dryRun: false }));
+		setForecastVersion((v) => v + 1);
+	};
+
+	const handleUndo = async () => {
+		await undoLast();
+		setForecastVersion((v) => v + 1);
+	};
 
 	return (
 		<FormCard title="Load balance">
@@ -83,17 +118,33 @@ export function LoadBalanceSection({
 				name="Balance workload now"
 				description="Redistribute reviews for the next 30 days"
 			>
-				<ActionButton
-					label={balancing ? "Balancing..." : "Balance now"}
-					variant="secondary"
-					disabled={balancing}
-					onClick={() =>
-						void execute(() =>
-							plugin.fsrsHelper?.balanceWorkload({ dryRun: false }),
-						)
-					}
-				/>
+				<div class="ep:flex ep:items-center ep:gap-2">
+					<ActionButton
+						label={balancing ? "Balancing..." : "Balance now"}
+						variant="secondary"
+						disabled={balancing}
+						onClick={handleBalance}
+					/>
+					{lastAffectedCount > 0 && (
+						<ActionButton
+							label={`Undo (${lastAffectedCount})`}
+							variant="secondary"
+							disabled={balancing}
+							onClick={() => void handleUndo()}
+						/>
+					)}
+				</div>
 			</FormField>
+
+			{forecastData && (
+				<div class="ep:mt-3">
+					<WorkloadForecastSection
+						forecast={forecastData.forecast}
+						summary={forecastData.summary}
+						dayOfWeek={forecastData.dayOfWeek}
+					/>
+				</div>
+			)}
 		</FormCard>
 	);
 }

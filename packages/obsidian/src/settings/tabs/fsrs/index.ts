@@ -2,6 +2,7 @@ export { AlgorithmSection } from "./AlgorithmSection";
 export { BulkOperationsSection } from "./BulkOperationsSection";
 export { DailyLimitsSection } from "./DailyLimitsSection";
 export { EasyDaysSection } from "./EasyDaysSection";
+export { FSRSVisualizationSection } from "./FSRSVisualizationSection";
 export { LoadBalanceSection } from "./LoadBalanceSection";
 export { ParametersSection } from "./ParametersSection";
 export { PresetSection } from "./PresetSection";
