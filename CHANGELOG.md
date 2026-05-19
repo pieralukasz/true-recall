@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.9.1 (2026-05-19)
+
+### Bug Fixes
+
+- **No more dynamic `<script>` tags during Anki import/export** — replaced `jszip` with `fflate` in the `.apkg` builder and parser, eliminating the four dynamic script-element creations the Obsidian reviewer flagged (root cause was jszip's bundled `immediate` polyfill)
+
+### Improvements
+
+- **Signed release artifacts** — the GitHub Actions release workflow now generates build provenance attestations for `main.js` and `styles.css` via `actions/attest-build-provenance@v2`, so downloads can be verified against the upstream build
+- **Explicit source-available license** — added the SPDX identifier `LicenseRef-True-Recall-Source-Available-1.0` to the `LICENSE` header and `package.json`, and expanded the License section in `README.md` to clarify the terms
+
 ## 1.9.0 (2026-05-16)
 
 ### Improvements
