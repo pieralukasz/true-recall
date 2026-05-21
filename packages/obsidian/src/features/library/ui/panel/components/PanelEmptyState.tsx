@@ -1,6 +1,7 @@
 import { useState } from "preact/hooks";
 
 import { hasAIKey } from "@true-recall/core/ai/config/ai-client-config";
+
 import { Clickable, LoadingSpinner } from "@true-recall/obsidian/components";
 import { usePanelActions } from "@true-recall/obsidian/features/library/ui/panel/hooks/usePanelActions";
 import { usePanelStore } from "@true-recall/obsidian/features/library/ui/panel/hooks/usePanelStore";
