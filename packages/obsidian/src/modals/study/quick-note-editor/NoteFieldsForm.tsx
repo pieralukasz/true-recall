@@ -268,7 +268,7 @@ function CMField({
 	// Fallback: render plain textarea until EmbeddableEditor is available or if creation failed
 	if (!plugin.EmbeddableEditor || editorFailed) {
 		return (
-			<div class="ep:border ep:border-obs-border ep:rounded-md ep:overflow-hidden">
+			<div class="true-recall-add-field-row ep:border ep:border-obs-border ep:rounded-md ep:overflow-hidden">
 				{header}
 				{!isCollapsed && (
 					<textarea

@@ -13,6 +13,8 @@ export interface GenerationPreset {
 	includeSourceNote?: boolean;
 	/** Include sibling flashcards from the same source note as context. */
 	includeRelatedCards?: boolean;
+	/** Output language for generated cards. ISO code or "auto" / undefined = match source text. */
+	languageOverride?: string;
 	createdAt: number;
 	updatedAt: number;
 }
@@ -32,5 +34,6 @@ export type UpdateGenerationPresetPatch = Partial<
 		| "isDefault"
 		| "includeSourceNote"
 		| "includeRelatedCards"
+		| "languageOverride"
 	>
 >;

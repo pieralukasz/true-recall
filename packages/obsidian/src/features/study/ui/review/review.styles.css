@@ -26,32 +26,12 @@
 		text-align: center;
 	}
 
-	/* Switch to left-align when content has block elements.
-	   CM6 live-preview uses HyperMD classes instead of <pre>/<ul>/<ol>/<table>/<blockquote>. */
-	.true-recall-review-question:has(
-			pre,
-			ul,
-			ol,
-			table,
-			blockquote,
-			.math-block,
-			.HyperMD-codeblock-begin,
-			.HyperMD-list-line,
-			.HyperMD-table-row,
-			.HyperMD-quote
-		),
-	.true-recall-review-answer:has(
-			pre,
-			ul,
-			ol,
-			table,
-			blockquote,
-			.math-block,
-			.HyperMD-codeblock-begin,
-			.HyperMD-list-line,
-			.HyperMD-table-row,
-			.HyperMD-quote
-		) {
+	/* Switch to left-align when content has block elements. The
+	   `is-block-content` class is set by LivePreviewField / PreviewCardBody
+	   when hasBlockMarkdown() detects fenced code, lists, tables, blockquote,
+	   display math, or headings. */
+	.true-recall-review-question.is-block-content,
+	.true-recall-review-answer.is-block-content {
 		text-align: left;
 	}
 
@@ -141,7 +121,9 @@
 		padding-bottom: env(safe-area-inset-bottom, 0.5rem);
 	}
 
-	/* Preview panel (320px) — prevent overflow from images, code, tables, LaTeX */
+	/* Preview panel (320px) — prevent overflow from images, code, tables, LaTeX.
+	   `mjx-container` is the MathJax custom element; matched via attribute
+	   selector to avoid the "unknown type selector" lint warning. */
 	.true-recall-card-preview-markdown img {
 		max-width: 100%;
 		height: auto;
@@ -154,7 +136,7 @@
 		display: block;
 		overflow-x: auto;
 	}
-	.true-recall-card-preview-markdown mjx-container {
+	.true-recall-card-preview-markdown [class*="mjx-container"] {
 		overflow-x: auto;
 		max-width: 100%;
 	}
@@ -211,34 +193,11 @@
 	align-items: center;
 }
 
-.true-recall-review-question:has(
-		pre,
-		ul,
-		ol,
-		table,
-		blockquote,
-		.math-block,
-		.HyperMD-codeblock-begin,
-		.HyperMD-list-line,
-		.HyperMD-table-row,
-		.HyperMD-quote
-	)
-	.cm-editor
-	.cm-content,
-.true-recall-review-answer:has(
-		pre,
-		ul,
-		ol,
-		table,
-		blockquote,
-		.math-block,
-		.HyperMD-codeblock-begin,
-		.HyperMD-list-line,
-		.HyperMD-table-row,
-		.HyperMD-quote
-	)
-	.cm-editor
-	.cm-content {
+/* Block-content variant: undo the flex centering so cm-lines flow as
+   block-level rows. Driven by the `is-block-content` class set in JS
+   (see hasBlockMarkdown helper). */
+.true-recall-review-question.is-block-content .cm-editor .cm-content,
+.true-recall-review-answer.is-block-content .cm-editor .cm-content {
 	text-align: left;
 	/* biome-ignore lint/complexity/noImportantStyles: undo the flex centering set above so cm-lines flow as block-level rows */
 	display: block !important;

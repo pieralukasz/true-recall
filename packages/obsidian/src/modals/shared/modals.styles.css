@@ -1,8 +1,12 @@
 /*
  * Modal Styles — Sprout-inspired design
  *
- * Uses :has() selectors to style Obsidian's modal chrome from the inside out.
- * .true-recall-modal is added to contentEl by BaseModal.onOpen().
+ * Targets Obsidian's modal chrome via host classes added by BaseModal.onOpen():
+ *   - modalEl       → .tr-modal-host        (+ optional .tr-modal-<modifier>)
+ *   - containerEl   → .tr-modal-container-host (+ .tr-modal-<modifier>-container)
+ *
+ * Host classes are used instead of attribute-based parent selectors for
+ * cheaper selector invalidation.
  *
  * IMPORTANT: Sizing/layout rules are UNLAYERED so they override Obsidian's
  * unlayered .modal defaults. @layer components has lower cascade priority
@@ -13,7 +17,7 @@
    MODAL PANEL — shadow, sizing, border, shape, flex layout
    (unlayered — must override Obsidian's unlayered .modal defaults)
    ================================================================ */
-.modal:has(.true-recall-modal) {
+.modal.tr-modal-host {
 	max-width: min(700px, 92vw);
 	max-height: min(80vh, 720px);
 	height: auto;
@@ -30,14 +34,14 @@
 }
 
 /* Per-modal width still honored via --ep-modal-width, capped by max-width */
-.modal.ep-modal-width:has(.true-recall-modal) {
+.modal.tr-modal-host.ep-modal-width {
 	width: var(--ep-modal-width, fit-content);
 }
 
 /* ================================================================
    CONTENT — padding, flex layout (unlayered for same reason)
    ================================================================ */
-.modal:has(.true-recall-modal) .modal-content {
+.modal.tr-modal-host .modal-content {
 	padding: 16px 20px 20px;
 	background: transparent;
 	border: none;
@@ -52,7 +56,7 @@
 	scrollbar-gutter: stable;
 }
 
-.modal:has(.true-recall-modal) .true-recall-modal {
+.modal.tr-modal-host .true-recall-modal {
 	flex: 1;
 	display: flex;
 	flex-direction: column;
@@ -61,7 +65,7 @@
 /* ================================================================
    SPECIAL MODAL OVERRIDES — wider modals (unlayered)
    ================================================================ */
-.modal:has(.true-recall-io-editor-modal) {
+.modal.tr-modal-io-editor {
 	max-width: min(1180px, 98vw);
 	max-height: 92vh;
 }
@@ -69,7 +73,7 @@
 /* ================================================================
    MOBILE — full-screen modals (unlayered)
    ================================================================ */
-.is-mobile .modal:has(.true-recall-modal) {
+.is-mobile .modal.tr-modal-host {
 	position: fixed;
 	top: 0;
 	left: 0;
@@ -85,7 +89,7 @@
 	box-shadow: none;
 }
 
-.is-mobile .modal:has(.true-recall-modal) .modal-content {
+.is-mobile .modal.tr-modal-host .modal-content {
 	height: 100%;
 	max-height: 100%;
 	overflow-y: auto;
@@ -129,7 +133,7 @@
    ================================================================ */
 
 /* Tighter content padding */
-.is-mobile .modal:has(.true-recall-quick-editor) .modal-content {
+.is-mobile .modal.tr-modal-quick-editor .modal-content {
 	padding: 12px 12px 0;
 	padding-bottom: env(safe-area-inset-bottom, 12px);
 }
@@ -179,9 +183,10 @@
 	justify-content: center;
 }
 
-/* ── Field headers: adequate touch targets ── */
+/* ── Field headers: adequate touch targets ──
+   Scoped to the add-field row inside QuickNoteEditor. */
 .is-mobile .true-recall-quick-editor
-	div:has(> .true-recall-add-field)
+	.true-recall-add-field-row
 	> [role="button"]:first-child {
 	padding-top: 0.625rem;
 	padding-bottom: 0.625rem;
@@ -217,7 +222,7 @@
 	/* ================================================================
 	   BACKDROP — no blur, subtle semi-transparent overlay
 	   ================================================================ */
-	.modal-container:has(.true-recall-modal) .modal-bg {
+	.modal-container.tr-modal-container-host .modal-bg {
 		-webkit-backdrop-filter: none;
 		backdrop-filter: none;
 		opacity: 1;
@@ -227,7 +232,7 @@
 	/* ================================================================
 	   TITLE — direct child of .modal (Obsidian has no .modal-header)
 	   ================================================================ */
-	.modal:has(.true-recall-modal) > .modal-title {
+	.modal.tr-modal-host > .modal-title {
 		padding: 12px 20px 0;
 		font-size: var(--font-ui-medium);
 		font-weight: 600;
@@ -237,7 +242,7 @@
 	}
 
 	/* Also handle .modal-header in case some Obsidian versions use it */
-	.modal:has(.true-recall-modal) .modal-header {
+	.modal.tr-modal-host .modal-header {
 		padding: 12px 20px 0;
 		border-bottom: none;
 		background: var(--background-primary);
@@ -246,12 +251,12 @@
 		justify-content: space-between;
 	}
 
-	.modal:has(.true-recall-modal) .modal-content,
-	.modal:has(.true-recall-modal) .modal-content p,
-	.modal:has(.true-recall-modal) .modal-content h1,
-	.modal:has(.true-recall-modal) .modal-content h2,
-	.modal:has(.true-recall-modal) .modal-content h3,
-	.modal:has(.true-recall-modal) .modal-content h4 {
+	.modal.tr-modal-host .modal-content,
+	.modal.tr-modal-host .modal-content p,
+	.modal.tr-modal-host .modal-content h1,
+	.modal.tr-modal-host .modal-content h2,
+	.modal.tr-modal-host .modal-content h3,
+	.modal.tr-modal-host .modal-content h4 {
 		text-align: left;
 	}
 
@@ -259,7 +264,7 @@
 	   CLOSE BUTTON — positioned absolutely in top-right
 	   (direct child of .modal, not inside a header)
 	   ================================================================ */
-	.modal:has(.true-recall-modal) > .modal-close-button {
+	.modal.tr-modal-host > .modal-close-button {
 		position: absolute;
 		top: 12px;
 		right: 12px;
@@ -279,7 +284,7 @@
 			border-color 0.15s;
 	}
 
-	.modal:has(.true-recall-modal) > .modal-close-button:hover {
+	.modal.tr-modal-host > .modal-close-button:hover {
 		background: color-mix(in srgb, var(--text-normal) 6%, transparent);
 		border-color: color-mix(in srgb, var(--text-normal) 8%, transparent);
 	}
@@ -287,26 +292,26 @@
 	/* ================================================================
 	   INPUT FOCUS — accent border
 	   ================================================================ */
-	.modal:has(.true-recall-modal) textarea:focus,
-	.modal:has(.true-recall-modal) select:focus {
+	.modal.tr-modal-host textarea:focus,
+	.modal.tr-modal-host select:focus {
 		border: 1.5px solid var(--interactive-accent);
 		box-shadow: none;
 		outline: none;
 	}
 
-	.modal:has(.true-recall-modal) input[type="text"],
-	.modal:has(.true-recall-modal) input[type="number"],
-	.modal:has(.true-recall-modal) select {
+	.modal.tr-modal-host input[type="text"],
+	.modal.tr-modal-host input[type="number"],
+	.modal.tr-modal-host select {
 		min-height: 28px;
 	}
 
 	/* ================================================================
 	   TRANSITIONS — smooth interactive elements
 	   ================================================================ */
-	.modal:has(.true-recall-modal) [role="button"],
-	.modal:has(.true-recall-modal) input,
-	.modal:has(.true-recall-modal) select,
-	.modal:has(.true-recall-modal) textarea {
+	.modal.tr-modal-host [role="button"],
+	.modal.tr-modal-host input,
+	.modal.tr-modal-host select,
+	.modal.tr-modal-host textarea {
 		transition:
 			background 0.15s ease,
 			color 0.15s ease,

@@ -1,10 +1,17 @@
 import { Transaction } from "@codemirror/state";
 import type { ViewUpdate } from "@codemirror/view";
-import { useCallback, useEffect, useLayoutEffect, useRef } from "preact/hooks";
+import {
+	useCallback,
+	useEffect,
+	useLayoutEffect,
+	useMemo,
+	useRef,
+} from "preact/hooks";
 
 import { stripBrTags } from "@true-recall/core/utils";
 
 import type { EmbeddableEditorInstance } from "@true-recall/obsidian/editor/shared/embedded-editor";
+import { hasBlockMarkdown } from "@true-recall/obsidian/features/study/ui/review/helpers";
 import {
 	useApp,
 	usePlugin,
@@ -160,10 +167,15 @@ export function LivePreviewField({
 		});
 	}, [content]);
 
+	const wrapperClass = useMemo(
+		() => (hasBlockMarkdown(content) ? `${cls} is-block-content` : cls),
+		[cls, content],
+	);
+
 	return (
 		<div
 			ref={containerRef}
-			class={cls}
+			class={wrapperClass}
 			data-field={field}
 			data-source-path={sourcePath}
 		/>

@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.9.3 (2026-05-21)
+
+### Features
+
+- **Per-preset output language** — every generation preset (including the built-in ones) now exposes an **Output language** dropdown. Pick a target language once and the suffix is appended to the system prompt for both streaming and chunked generation, so you no longer need to bake "Reply in Polish" into every prompt or fork a built-in just to switch languages.
+
+### Improvements
+
+- **LM Studio and Custom keys unlock Selection Toolbar generation** — the panel empty-state and selection actions used to check only Pro / OpenRouter keys, silently locking out LM Studio and Custom-provider users. Both now route through the shared `hasAIKey` helper.
+- **Obsidian reviewer CSS warnings eliminated** — removed remaining `:has()`, `mjx-container`, and `text-decoration` warnings and shipped a fresh `styles.css`.
+
+### Bug Fixes
+
+- **Plugin correctly declares itself desktop-only** — `manifest.json` now sets `isDesktopOnly: true` to match actual runtime requirements (SQLite WASM, filesystem-backed backups, native fetch streaming). Mobile was never validated; users no longer get a misleading install on iOS/Android.
+
 ## 1.9.2 (2026-05-19)
 
 ### Improvements
