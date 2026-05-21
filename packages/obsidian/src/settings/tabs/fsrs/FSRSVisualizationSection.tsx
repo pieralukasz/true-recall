@@ -1,11 +1,10 @@
-import type TrueRecallPlugin from "@true-recall/obsidian/main";
-
 import {
 	ActionButton,
 	FormCard,
 	FormField,
 	InfoBlock,
 } from "@true-recall/obsidian/components";
+import type TrueRecallPlugin from "@true-recall/obsidian/main";
 
 interface FSRSVisualizationSectionProps {
 	plugin: TrueRecallPlugin;

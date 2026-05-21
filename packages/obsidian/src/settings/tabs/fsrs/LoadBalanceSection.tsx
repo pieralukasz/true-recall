@@ -58,11 +58,7 @@ export function LoadBalanceSection({
 			summary: helper.getWorkloadForecastSummary(FORECAST_DAYS),
 			dayOfWeek: helper.getWorkloadByDayOfWeek(FORECAST_DAYS),
 		};
-	}, [
-		plugin.fsrsHelper,
-		forecastVersion,
-		settings.loadBalanceTarget,
-	]);
+	}, [plugin.fsrsHelper, forecastVersion, settings.loadBalanceTarget]);
 
 	const handleBalance = () => {
 		execute(() => plugin.fsrsHelper?.balanceWorkload({ dryRun: false }));

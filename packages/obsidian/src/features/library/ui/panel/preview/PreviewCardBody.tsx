@@ -1,6 +1,7 @@
 import type { FSRSFlashcardItem } from "@true-recall/core/types/fsrs/card.types";
 
 import { MarkdownContent } from "@true-recall/obsidian/components/MarkdownContent";
+import { hasBlockMarkdown } from "@true-recall/obsidian/features/study/ui/review/helpers";
 
 import { IOCardRenderer } from "@true-recall/plugins/image-occlusion";
 
@@ -56,11 +57,15 @@ export function PreviewCardBody({
 		);
 	}
 
+	const wrapperClass = hasBlockMarkdown(content)
+		? `${BODY_CLASSES[side]} is-block-content`
+		: BODY_CLASSES[side];
+
 	return (
 		<MarkdownContent
 			markdown={content}
 			filePath={sourcePath}
-			class={BODY_CLASSES[side]}
+			class={wrapperClass}
 		/>
 	);
 }

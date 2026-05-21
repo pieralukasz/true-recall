@@ -22,6 +22,7 @@ export class QuickNoteEditorModal extends BasePromiseModal<QuickNoteEditorResult
 		super(app, {
 			title: editorMode.mode === "add" ? "Add Flashcard" : "Edit Flashcard",
 			width: "660px",
+			modifierClass: "tr-modal-quick-editor",
 		});
 	}
 

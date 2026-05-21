@@ -99,6 +99,23 @@ export function AIGenerationSettingsPanel({
 		[persistPresets],
 	);
 
+	const updateBuiltinLanguage = useCallback(
+		(id: string, language: string) => {
+			persistPresets((current) =>
+				current.map((existing) =>
+					existing.id === id && existing.builtin
+						? {
+								...existing,
+								languageOverride: language,
+								updatedAt: Date.now(),
+							}
+						: existing,
+				),
+			);
+		},
+		[persistPresets],
+	);
+
 	const forkBuiltin = (p: GenerationPreset) => {
 		let forkedId: string | null = null;
 		persistPresets(
@@ -204,6 +221,7 @@ export function AIGenerationSettingsPanel({
 							noteTypes={noteTypes}
 							readOnly
 							onFork={() => forkBuiltin(p)}
+							onLanguageChange={updateBuiltinLanguage}
 						/>
 					))}
 				</div>

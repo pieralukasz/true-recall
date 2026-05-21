@@ -20,6 +20,7 @@ export class IOEditorModal extends BasePromiseModal<IOEditorResult> {
 					? "Edit image occlusion"
 					: "Create image occlusion",
 			width: "1120px",
+			modifierClass: "tr-modal-io-editor",
 		});
 	}
 

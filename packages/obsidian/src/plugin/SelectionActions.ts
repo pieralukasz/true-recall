@@ -1,5 +1,6 @@
 import type { TFile } from "obsidian";
 
+import { hasAIKey } from "@true-recall/core/ai/config/ai-client-config";
 import { StreamingGenerationService } from "@true-recall/core/ai/generation/streaming-generation.service";
 import type { GenerationPreset } from "@true-recall/core/types/generation-preset.types";
 
@@ -41,7 +42,7 @@ function findMostRecentMarkdownFile(plugin: TrueRecallPlugin): TFile | null {
 }
 
 export function hasApiKey(plugin: TrueRecallPlugin): boolean {
-	return !!(plugin.settings.proKey || plugin.settings.openRouterApiKey);
+	return hasAIKey(plugin.settings);
 }
 
 export function editSelectionAsFlashcard(

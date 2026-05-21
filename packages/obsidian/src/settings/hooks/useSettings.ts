@@ -29,10 +29,7 @@ export function useSettings() {
 		[plugin],
 	);
 
-	const settings = useMemo(
-		() => ({ ...plugin.settings }),
-		[plugin, version],
-	);
+	const settings = useMemo(() => ({ ...plugin.settings }), [plugin, version]);
 
 	return { settings, save, plugin } as const;
 }

@@ -10,6 +10,7 @@ import {
 	buildPresetFormatSpec,
 	buildPresetPrompt,
 } from "../prompts/block-prompt-builder";
+import { buildLanguageSuffix } from "../prompts/default-prompts";
 import {
 	type ExistingCardContext,
 	renderExistingCardsBlock,
@@ -164,6 +165,10 @@ export class StreamingGenerationService {
 		);
 		if (options?.contextText?.trim()) {
 			systemPrompt = `${options.contextText.trim()}\n\n${systemPrompt}`;
+		}
+		const langSuffix = buildLanguageSuffix(preset.languageOverride ?? "auto");
+		if (langSuffix) {
+			systemPrompt = `${systemPrompt}${langSuffix}`;
 		}
 
 		const metadata = aiConfig.hasProTier

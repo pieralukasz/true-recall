@@ -157,8 +157,6 @@
 .tr-card-ai-preview-source-card.is-doomed .tr-card-ai-preview-field-label,
 .tr-card-ai-preview-source-card.is-doomed .cm-content {
 	text-decoration: line-through;
-	text-decoration-color: var(--text-error, #cf6679);
-	text-decoration-thickness: 1px;
 }
 
 .tr-card-ai-preview-source-banner {
