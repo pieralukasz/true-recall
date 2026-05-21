@@ -86,10 +86,6 @@ export class GenerationPresetService {
 			throw new Error(`Preset '${id}' not found`);
 		}
 
-		if (current.builtin) {
-			throw new Error("Cannot edit built-in preset");
-		}
-
 		const allowedKeys: Array<keyof UpdateGenerationPresetPatch> = [
 			"name",
 			"prompt",
@@ -98,7 +94,24 @@ export class GenerationPresetService {
 			"isDefault",
 			"includeSourceNote",
 			"includeRelatedCards",
+			"languageOverride",
 		];
+
+		if (current.builtin) {
+			const builtinAllowed: Array<keyof UpdateGenerationPresetPatch> = [
+				"isDefault",
+				"languageOverride",
+			];
+			for (const key of Object.keys(patch)) {
+				if (
+					!builtinAllowed.includes(key as keyof UpdateGenerationPresetPatch)
+				) {
+					throw new Error(
+						"Cannot edit built-in preset (only isDefault and languageOverride are mutable)",
+					);
+				}
+			}
+		}
 		for (const key of Object.keys(patch)) {
 			if (!allowedKeys.includes(key as keyof UpdateGenerationPresetPatch)) {
 				throw new Error(`Unknown field in patch: ${key}`);

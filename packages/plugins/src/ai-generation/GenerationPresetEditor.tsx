@@ -1,4 +1,4 @@
-import type { GenerationPreset } from "@true-recall/core";
+import { GENERATION_LANGUAGES, type GenerationPreset } from "@true-recall/core";
 import type { NoteType } from "@true-recall/core/types/note.types";
 
 import {
@@ -14,10 +14,37 @@ interface GenerationPresetEditorProps {
 	noteTypes: NoteType[];
 	readOnly?: boolean;
 	onChange?: (id: string, patch: Partial<GenerationPreset>) => void;
+	onLanguageChange?: (id: string, language: string) => void;
 	onFork?: () => void;
 	onDelete?: () => void;
 	expanded?: boolean;
 	onToggleExpanded?: () => void;
+}
+
+function LanguageDropdown({
+	value,
+	onChange,
+	compact = false,
+}: {
+	value: string;
+	onChange: (next: string) => void;
+	compact?: boolean;
+}) {
+	return (
+		<select
+			class={cn("dropdown", compact && "ep:text-ui-smaller ep:py-0.5")}
+			value={value}
+			onChange={(e) => onChange((e.target as HTMLSelectElement).value)}
+			onClick={(e) => e.stopPropagation()}
+			aria-label="Output language"
+		>
+			{GENERATION_LANGUAGES.map((lang) => (
+				<option key={lang.value} value={lang.value}>
+					{lang.label}
+				</option>
+			))}
+		</select>
+	);
 }
 
 function ChevronIcon({ expanded }: { expanded: boolean }) {
@@ -58,23 +85,39 @@ function BadgeRow({ preset }: { preset: GenerationPreset }) {
 function CompactRow({
 	preset,
 	onFork,
+	onLanguageChange,
 }: {
 	preset: GenerationPreset;
 	onFork?: () => void;
+	onLanguageChange?: (id: string, language: string) => void;
 }) {
 	return (
-		<div class="ep:flex ep:items-center ep:gap-2 ep:p-2 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary">
-			<span class="ep:text-ui-small ep:font-semibold ep:text-obs-normal ep:flex-1 ep:truncate">
-				{preset.name}
-			</span>
-			<BadgeRow preset={preset} />
-			{onFork && (
-				<ActionButton
-					label="Fork to edit"
-					variant="outline"
-					size="sm"
-					onClick={onFork}
-				/>
+		<div class="ep:flex ep:flex-col ep:gap-2 ep:p-2 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary">
+			<div class="ep:flex ep:items-center ep:gap-2">
+				<span class="ep:text-ui-small ep:font-semibold ep:text-obs-normal ep:flex-1 ep:truncate">
+					{preset.name}
+				</span>
+				<BadgeRow preset={preset} />
+				{onFork && (
+					<ActionButton
+						label="Fork to edit"
+						variant="outline"
+						size="sm"
+						onClick={onFork}
+					/>
+				)}
+			</div>
+			{onLanguageChange && (
+				<div class="ep:flex ep:items-center ep:gap-2">
+					<span class="ep:text-ui-smaller ep:text-obs-muted">
+						Output language
+					</span>
+					<LanguageDropdown
+						value={preset.languageOverride ?? "auto"}
+						onChange={(next) => onLanguageChange(preset.id, next)}
+						compact
+					/>
+				</div>
 			)}
 		</div>
 	);
@@ -86,6 +129,12 @@ function presetSummary(
 ): string {
 	const parts: string[] = [];
 	if (noteType) parts.push(noteType.name);
+	const lang = preset.languageOverride;
+	if (lang && lang !== "auto") {
+		const label =
+			GENERATION_LANGUAGES.find((l) => l.value === lang)?.label ?? lang;
+		parts.push(label);
+	}
 	if (preset.includeSourceNote) parts.push("+source");
 	if (preset.includeRelatedCards) parts.push("+related");
 	return parts.join(" • ");
@@ -96,6 +145,7 @@ export function GenerationPresetEditor({
 	noteTypes,
 	readOnly,
 	onChange,
+	onLanguageChange,
 	onFork,
 	onDelete,
 	expanded,
@@ -103,7 +153,13 @@ export function GenerationPresetEditor({
 }: GenerationPresetEditorProps) {
 	const isReadOnly = readOnly ?? preset.builtin;
 	if (isReadOnly) {
-		return <CompactRow preset={preset} onFork={onFork} />;
+		return (
+			<CompactRow
+				preset={preset}
+				onFork={onFork}
+				onLanguageChange={onLanguageChange}
+			/>
+		);
 	}
 
 	const canCollapse = onToggleExpanded !== undefined;
@@ -190,6 +246,19 @@ export function GenerationPresetEditor({
 						Fields: {noteType.fields.join(", ")}
 					</span>
 				)}
+			</div>
+
+			<div class="ep:flex ep:flex-col ep:gap-1">
+				<span class="ep:text-ui-smaller ep:text-obs-muted ep:font-medium">
+					Output language
+				</span>
+				<LanguageDropdown
+					value={preset.languageOverride ?? "auto"}
+					onChange={(next) => patch({ languageOverride: next })}
+				/>
+				<span class="ep:text-ui-smaller ep:text-obs-muted">
+					Overrides any language instruction in the prompt.
+				</span>
 			</div>
 
 			<div class="ep:flex ep:flex-col ep:gap-1">
