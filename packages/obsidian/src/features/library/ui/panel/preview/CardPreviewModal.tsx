@@ -103,7 +103,11 @@ class CardPreviewModal extends BaseModal {
 		private readonly card: FSRSFlashcardItem,
 		private readonly sourcePath: string,
 	) {
-		super(app, { title: "Preview", width: "640px" });
+		super(app, {
+			title: "Preview",
+			width: "640px",
+			modifierClass: "tr-modal-card-preview",
+		});
 	}
 
 	protected renderBody(container: HTMLElement): void {
