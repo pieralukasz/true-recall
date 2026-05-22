@@ -39,8 +39,7 @@
 }
 
 .true-recall-st-btn:focus-visible {
-	outline: 2px solid
-		color-mix(in srgb, var(--interactive-accent) 50%, transparent);
+	outline: 2px solid rgb(from var(--interactive-accent) r g b / 0.5);
 	outline-offset: 1px;
 }
 

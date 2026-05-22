@@ -31,8 +31,14 @@ settings:
     format: rem
 */
 
-/* Tailwind CSS v4 entry point with Obsidian theme integration */
-@import "tailwindcss" prefix(ep);
+/* Tailwind CSS v4 entry point with Obsidian theme integration.
+   Preflight (Tailwind's CSS reset) is intentionally skipped — Obsidian
+   provides its own reset, and Tailwind's preflight is the source of the
+   plugin reviewer warnings for short hex (#fff/#000), browser-feature
+   partial support (extended-system-fonts, text-decoration, multicolumn,
+   text-indent), and duplicate ::file-selector-button selectors. */
+@import "tailwindcss/theme" prefix(ep);
+@import "tailwindcss/utilities" prefix(ep);
 
 /* Domain-specific CSS (complex selectors, SVG, animations that can't be Tailwind utilities) */
 @import "./editor/study/editor.styles.css";
@@ -112,7 +118,7 @@ settings:
 	--ep-transition-spring: 300ms cubic-bezier(0.22, 1, 0.36, 1);
 
 	/* ── Design System: Backdrop ── */
-	--ep-backdrop: color-mix(in srgb, var(--background-primary) 30%, transparent);
+	--ep-backdrop: rgb(from var(--background-primary) r g b / 0.3);
 }
 
 /* Dark themes: pure black shadows for stronger depth contrast */
@@ -379,11 +385,10 @@ settings:
 
 @keyframes ep-completion-glow {
 	0% {
-		box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-green) 40%, transparent);
+		box-shadow: 0 0 0 0 rgb(from var(--color-green) r g b / 0.4);
 	}
 	50% {
-		box-shadow: 0 0 12px 2px
-			color-mix(in srgb, var(--color-green) 20%, transparent);
+		box-shadow: 0 0 12px 2px rgb(from var(--color-green) r g b / 0.2);
 	}
 	100% {
 		box-shadow: none;
@@ -544,7 +549,7 @@ settings:
 
 .ep-chat-markdown blockquote {
 	padding-left: 0.75rem;
-	border-left: 2px solid color-mix(in srgb, var(--text-accent) 30%, transparent);
+	border-left: 2px solid rgb(from var(--text-accent) r g b / 0.3);
 	margin: 0.75rem 0;
 	color: var(--text-muted);
 }
@@ -572,12 +577,12 @@ settings:
 
 .ep-drop-target {
 	box-shadow: inset 3px 0 0 var(--interactive-accent);
-	background: color-mix(in srgb, var(--interactive-accent) 8%, transparent);
+	background: rgb(from var(--interactive-accent) r g b / 0.08);
 }
 
 .ep-drop-root-zone {
 	border-color: var(--interactive-accent);
-	background: color-mix(in srgb, var(--interactive-accent) 6%, transparent);
+	background: rgb(from var(--interactive-accent) r g b / 0.06);
 }
 
 /* Reduced motion: remove spatial motion, keep opacity fades */
