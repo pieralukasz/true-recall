@@ -136,6 +136,11 @@ settings:
  * are overridden by the .theme-dark/.theme-light block above at runtime.
  */
 @theme {
+	/* Override Tailwind defaults emitted as 3-digit hex.
+	   6-digit form silences plugin reviewer's short-hex warnings. */
+	--color-black: #000000;
+	--color-white: #ffffff;
+
 	/* === Base colors (mono scale) === */
 	--color-obs-base-00: var(--color-base-00);
 	--color-obs-base-05: var(--color-base-05);
