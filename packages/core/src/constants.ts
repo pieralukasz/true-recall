@@ -71,6 +71,7 @@ export const DEFAULT_FSRS_PRESET: FSRSPreset = {
 	requestRetention: 0.9,
 	maximumInterval: 36500,
 	weights: null,
+	enableFuzz: true,
 	learningSteps: [1, 10],
 	relearningSteps: [10],
 	newCardsPerDay: 20,

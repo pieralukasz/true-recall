@@ -7,6 +7,7 @@ import {
 	SelectInput,
 	SliderInput,
 	TextInput,
+	ToggleInput,
 } from "@true-recall/obsidian/components";
 
 interface SchedulingSectionProps {
@@ -58,6 +59,16 @@ export function SchedulingSection({
 						});
 					}}
 					placeholder="36500"
+				/>
+			</FormField>
+
+			<FormField
+				name="Fuzz review intervals"
+				description="Randomize review intervals slightly to prevent cards from bunching on the same day"
+			>
+				<ToggleInput
+					value={preset.enableFuzz !== false}
+					onChange={(v) => void updatePreset({ enableFuzz: v })}
 				/>
 			</FormField>
 

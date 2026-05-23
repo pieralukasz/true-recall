@@ -62,6 +62,7 @@ export async function handleCreatePreset(
 		requestRetention: body.request_retention ?? defaults.requestRetention,
 		maximumInterval: defaults.maximumInterval,
 		weights: null,
+		enableFuzz: defaults.enableFuzz !== false,
 		learningSteps: body.learning_steps ?? defaults.learningSteps,
 		relearningSteps: body.relearning_steps ?? defaults.relearningSteps,
 		newCardsPerDay: body.new_cards_per_day ?? defaults.newCardsPerDay,

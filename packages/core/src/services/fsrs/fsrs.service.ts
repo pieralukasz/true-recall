@@ -2,10 +2,12 @@ import {
 	type Card,
 	createEmptyCard,
 	FSRS,
+	GenSeedStrategyWithCardId,
 	type Grade,
 	Rating,
 	type RecordLogItem,
 	State,
+	StrategyMode,
 } from "ts-fsrs";
 
 import { DEFAULT_FSRS_WEIGHTS } from "../../constants";
@@ -37,15 +39,17 @@ export class FSRSService {
 			(m) => `${m}m` as const,
 		);
 
-		return new FSRS({
+		const fsrs = new FSRS({
 			request_retention: settings.requestRetention,
 			maximum_interval: settings.maximumInterval,
 			w: settings.weights ?? DEFAULT_FSRS_WEIGHTS,
 			enable_short_term: settings.enableShortTerm,
 			learning_steps: learningSteps,
 			relearning_steps: relearningSteps,
-			enable_fuzz: true, // Randomize intervals ±2.5% to prevent review bunching
+			enable_fuzz: settings.enableFuzz,
 		});
+		fsrs.useStrategy(StrategyMode.SEED, GenSeedStrategyWithCardId("cid"));
+		return fsrs;
 	}
 
 	private getSettingsKey(settings: FSRSSettings): string {
@@ -56,6 +60,7 @@ export class FSRSService {
 			settings.requestRetention,
 			settings.maximumInterval,
 			weights,
+			settings.enableFuzz ? 1 : 0,
 			learning,
 			relearning,
 			settings.enableShortTerm ? 1 : 0,
@@ -108,6 +113,7 @@ export class FSRSService {
 
 	private toCard(data: FSRSCardData): Card {
 		return {
+			cid: data.id,
 			due: new Date(data.due),
 			stability: data.stability,
 			difficulty: data.difficulty,
@@ -118,7 +124,7 @@ export class FSRSService {
 			state: data.state,
 			last_review: data.lastReview ? new Date(data.lastReview) : undefined,
 			learning_steps: data.learningStep,
-		};
+		} as Card;
 	}
 
 	private fromCard(card: Card, id: string): FSRSCardData {

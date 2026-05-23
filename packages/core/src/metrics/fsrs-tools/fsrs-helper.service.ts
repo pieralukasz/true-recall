@@ -263,6 +263,7 @@ export class FSRSHelperService {
 			requestRetention: this.settings.fsrsRequestRetention,
 			maximumInterval: this.settings.fsrsMaximumInterval,
 			weights: this.settings.fsrsWeights,
+			enableFuzz: true,
 			learningSteps: this.settings.learningSteps,
 			relearningSteps: this.settings.relearningSteps,
 			enableShortTerm: true,

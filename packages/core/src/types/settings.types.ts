@@ -132,6 +132,7 @@ export interface FSRSPreset {
 	requestRetention: number;
 	maximumInterval: number;
 	weights: number[] | null;
+	enableFuzz?: boolean;
 	learningSteps: number[];
 	relearningSteps: number[];
 	newCardsPerDay: number;
@@ -426,6 +427,7 @@ export interface FSRSSettings {
 	requestRetention: number;
 	maximumInterval: number;
 	weights: number[] | null;
+	enableFuzz: boolean;
 	learningSteps: number[];
 	relearningSteps: number[];
 	enableShortTerm: boolean;
@@ -448,6 +450,7 @@ export function extractFSRSSettings(
 		requestRetention: settings.fsrsRequestRetention,
 		maximumInterval: settings.fsrsMaximumInterval,
 		weights: settings.fsrsWeights,
+		enableFuzz: true,
 		learningSteps: settings.learningSteps,
 		relearningSteps: settings.relearningSteps,
 		enableShortTerm: true,
@@ -461,6 +464,7 @@ export function extractFSRSSettingsFromPreset(
 		requestRetention: preset.requestRetention,
 		maximumInterval: preset.maximumInterval,
 		weights: preset.weights,
+		enableFuzz: preset.enableFuzz !== false,
 		learningSteps: preset.learningSteps,
 		relearningSteps: preset.relearningSteps,
 		enableShortTerm: true,
