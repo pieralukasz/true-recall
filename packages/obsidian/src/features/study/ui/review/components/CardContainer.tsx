@@ -311,6 +311,7 @@ export function CardContainer({
 								answerPhase === "hidden" && "ep:hidden",
 							)}
 							aria-hidden={answerPhase !== "visible"}
+							inert={answerPhase !== "visible"}
 						>
 							<LivePreviewField
 								content={card.answer}

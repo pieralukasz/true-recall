@@ -174,8 +174,18 @@ function CMField({
 				onBlur: handleBlur,
 				onEscape: () => onEscape?.(),
 				onModEnter: handleModEnter,
-				onTab: onTab ? () => onTab() : undefined,
-				onShiftTab: onShiftTab ? () => onShiftTab() : undefined,
+				onTab: onTab
+					? () => {
+							onTab();
+							return true;
+						}
+					: undefined,
+				onShiftTab: onShiftTab
+					? () => {
+							onShiftTab();
+							return true;
+						}
+					: undefined,
 			});
 		} catch (err) {
 			console.error("[CMField] Failed to create editor:", err);
