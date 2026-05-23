@@ -116,33 +116,6 @@ export function AIGenerationSettingsPanel({
 		[persistPresets],
 	);
 
-	const forkBuiltin = (p: GenerationPreset) => {
-		let forkedId: string | null = null;
-		persistPresets(
-			(current) => {
-				const id = makeId(current);
-				forkedId = id;
-				const now = Date.now();
-				const forked: GenerationPreset = {
-					...p,
-					id,
-					name: `${p.name} (fork)`,
-					builtin: false,
-					requiresPro: false,
-					isDefault: false,
-					createdAt: now,
-					updatedAt: now,
-				};
-				return [...current, forked];
-			},
-			{ flush: true },
-		);
-		if (forkedId) {
-			const id = forkedId;
-			setExpandedIds((prev) => new Set(prev).add(id));
-		}
-	};
-
 	const removeUserPreset = (p: GenerationPreset) => {
 		persistPresets(
 			(current) =>
@@ -211,7 +184,7 @@ export function AIGenerationSettingsPanel({
 							Built-in presets
 						</h3>
 						<span class="ep:text-ui-smaller ep:text-obs-muted">
-							Ship with the plugin — fork to customize
+							Ship with the plugin — pick an output language to localize them.
 						</span>
 					</div>
 					{builtins.map((p) => (
@@ -220,7 +193,6 @@ export function AIGenerationSettingsPanel({
 							preset={p}
 							noteTypes={noteTypes}
 							readOnly
-							onFork={() => forkBuiltin(p)}
 							onLanguageChange={updateBuiltinLanguage}
 						/>
 					))}

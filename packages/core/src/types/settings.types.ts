@@ -81,6 +81,11 @@ export interface EasyDaysConfig {
 export type NewCardOrder = "random" | "oldest-first" | "newest-first";
 
 /**
+ * Maximum content width preset for the review session.
+ */
+export type ReviewContentWidth = "narrow" | "default" | "wide" | "full";
+
+/**
  * Display order for review cards
  */
 export type ReviewOrder =
@@ -230,6 +235,8 @@ export interface TrueRecallSettings {
 
 	/** Review View display mode */
 	reviewMode: ReviewViewMode;
+	/** Maximum content width preset for the review session (desktop only) */
+	reviewContentWidth: ReviewContentWidth;
 	/** Show predicted time on answer buttons */
 	showNextReviewTime: boolean;
 	/** Auto-advance to next card after answer */

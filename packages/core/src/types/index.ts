@@ -124,6 +124,7 @@ export type {
 	NewCardOrder,
 	NewReviewMix,
 	OptimizationMetrics,
+	ReviewContentWidth,
 	ReviewKeybindings,
 	ReviewOrder,
 	ScheduledBreak,

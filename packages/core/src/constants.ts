@@ -145,6 +145,7 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 	lastOptimization: null,
 
 	reviewMode: "fullscreen",
+	reviewContentWidth: "default",
 	showNextReviewTime: true,
 	autoAdvance: false,
 	showReviewHeader: true,
