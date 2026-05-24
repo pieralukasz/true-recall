@@ -51,9 +51,66 @@ describe("FSRSHelperService", () => {
 		expect(summary.needsBalancing).toBe(true);
 		expect(store.updateCardDue).not.toHaveBeenCalled();
 	});
+
+	it("uses the same balanced due date for preview and scheduled review", () => {
+		const balanceCards = createCardsOnDate("existing", 12, State.Review, {
+			due: "2026-02-05T12:00:00.000Z",
+		});
+		const store = createStore({
+			allCards: balanceCards,
+			balanceCards,
+		});
+		const helper = new FSRSHelperService(store as never, {
+			...DEFAULT_SETTINGS,
+			loadBalanceEnabled: true,
+			loadBalanceTarget: 10,
+			loadBalanceMaxDeviation: 20,
+			loadBalanceMaxShiftDays: 3,
+		});
+		const fsrs = {
+			id: "current",
+			due: "2026-02-05T12:00:00.000Z",
+			state: State.Review,
+			scheduledDays: 4,
+			stability: 10,
+			difficulty: 5,
+			reps: 3,
+			lapses: 0,
+			lastReview: "2026-02-01T10:00:00.000Z",
+			learningStep: 0,
+		};
+
+		const scheduled = helper.balanceScheduledReview("current", fsrs);
+		const preview = helper.balanceSchedulingPreview("current", {
+			again: { due: new Date("2026-02-01T10:05:00.000Z"), interval: "5m" },
+			hard: { due: new Date("2026-02-05T12:00:00.000Z"), interval: "4d" },
+			good: { due: new Date("2026-02-05T12:00:00.000Z"), interval: "4d" },
+			easy: { due: new Date("2026-02-08T12:00:00.000Z"), interval: "7d" },
+		});
+
+		expect(scheduled.due).toBe(preview.good.due.toISOString());
+		expect(preview.good.originalDue?.toISOString()).toBe(
+			"2026-02-05T12:00:00.000Z",
+		);
+		expect(preview.good.daysChanged).not.toBe(0);
+	});
 });
 
-function createCards(idPrefix: string, count: number, state: State) {
+interface TestCard {
+	id: string;
+	due: string;
+	state: State;
+	suspended: boolean;
+	buriedUntil: string | undefined;
+	scheduledDays: number;
+}
+
+function createCards(
+	idPrefix: string,
+	count: number,
+	state: State,
+	overrides: Partial<TestCard> = {},
+): TestCard[] {
 	return Array.from({ length: count }, (_, index) => ({
 		id: `${idPrefix}-${index}`,
 		due: "2026-02-01T12:00:00.000Z",
@@ -61,7 +118,17 @@ function createCards(idPrefix: string, count: number, state: State) {
 		suspended: false,
 		buriedUntil: undefined,
 		scheduledDays: 7,
+		...overrides,
 	}));
+}
+
+function createCardsOnDate(
+	idPrefix: string,
+	count: number,
+	state: State,
+	overrides: Partial<TestCard>,
+) {
+	return createCards(idPrefix, count, state, overrides);
 }
 
 function createStore({

@@ -66,10 +66,15 @@ export class AnswerHandler {
 			const preset = this.resolvePreset(card);
 			const presetSettings =
 				this.deps.plugin.presetService.toFSRSSettings(preset);
-			const preview = this.deps.fsrsService.getSchedulingPreview(
+			const rawPreview = this.deps.fsrsService.getSchedulingPreview(
 				card.fsrs,
 				presetSettings,
 			);
+			const preview =
+				this.deps.plugin.fsrsHelper?.balanceSchedulingPreview(
+					card.id,
+					rawPreview,
+				) ?? rawPreview;
 			this.deps.getReview().setSchedulingPreview(preview);
 			this.deps.getReview().notifyChange();
 		}

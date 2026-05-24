@@ -57,6 +57,7 @@ export type {
 	ReviewSessionStats,
 	ReviewViewMode,
 	SchedulingPreview,
+	SchedulingPreviewEntry,
 	SemanticGradingResult,
 	StatsTimeRange,
 	StreakInfo,

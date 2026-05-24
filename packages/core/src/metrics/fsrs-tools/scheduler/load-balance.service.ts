@@ -6,6 +6,8 @@
 
 import { isEasyDay } from "./easy-days.service";
 import type {
+	BalanceDueOptions,
+	BalanceDueResult,
 	CardDueInfo,
 	CardScheduleChange,
 	LoadBalanceOptions,
@@ -137,6 +139,126 @@ export class LoadBalanceService {
 		};
 	}
 
+	balanceDue(options: BalanceDueOptions): BalanceDueResult {
+		const {
+			cardId,
+			originalDue,
+			targetPerDay,
+			maxDeviation,
+			maxShiftDays,
+			easyDays = { recurringDays: [], specificDates: [] },
+			easyDaysMultiplier = 0.5,
+		} = options;
+
+		if (maxShiftDays <= 0) {
+			return {
+				originalDue,
+				newDue: originalDue,
+				daysChanged: 0,
+				balanced: false,
+			};
+		}
+
+		const originalDate = new Date(originalDue);
+		const today = new Date();
+		const tomorrow = new Date(today);
+		tomorrow.setDate(tomorrow.getDate() + 1);
+
+		const startDate = new Date(originalDate);
+		startDate.setDate(startDate.getDate() - maxShiftDays);
+		if (startDate < tomorrow) startDate.setTime(tomorrow.getTime());
+
+		const endDate = new Date(originalDate);
+		endDate.setDate(endDate.getDate() + maxShiftDays);
+
+		if (startDate > endDate) {
+			return {
+				originalDue,
+				newDue: originalDue,
+				daysChanged: 0,
+				balanced: false,
+			};
+		}
+
+		const distribution = this.getDistributionMap(
+			this.formatDate(startDate),
+			this.formatDate(endDate),
+			cardId,
+		);
+		const maxDev = targetPerDay * (maxDeviation / 100);
+		const originalDateStr = this.formatDate(originalDate);
+
+		if (
+			this.hasRoom(
+				originalDateStr,
+				distribution,
+				targetPerDay,
+				maxDev,
+				easyDays,
+				easyDaysMultiplier,
+			)
+		) {
+			return {
+				originalDue,
+				newDue: originalDue,
+				daysChanged: 0,
+				balanced: false,
+			};
+		}
+
+		let bestDate: string | null = null;
+		let bestScore = Infinity;
+
+		const cursor = new Date(startDate);
+		while (cursor <= endDate) {
+			const dateStr = this.formatDate(cursor);
+			const daysChanged = this.daysDiff(originalDateStr, dateStr);
+			if (
+				daysChanged !== 0 &&
+				this.hasRoom(
+					dateStr,
+					distribution,
+					targetPerDay,
+					maxDev,
+					easyDays,
+					easyDaysMultiplier,
+				)
+			) {
+				const target = this.getTargetForDate(
+					cursor,
+					targetPerDay,
+					easyDays,
+					easyDaysMultiplier,
+				);
+				const count = distribution.get(dateStr) ?? 0;
+				const fillRatio = target > 0 ? count / target : count;
+				const score = Math.abs(daysChanged) * 4 + fillRatio;
+				if (score < bestScore) {
+					bestScore = score;
+					bestDate = dateStr;
+				}
+			}
+			cursor.setDate(cursor.getDate() + 1);
+		}
+
+		if (!bestDate) {
+			return {
+				originalDue,
+				newDue: originalDue,
+				daysChanged: 0,
+				balanced: false,
+			};
+		}
+
+		const newDue = this.withDate(originalDue, bestDate);
+		return {
+			originalDue,
+			newDue,
+			daysChanged: this.daysDiff(originalDateStr, bestDate),
+			balanced: true,
+		};
+	}
+
 	private findBestDay(
 		fromDate: string,
 		distribution: Map<string, CardDueInfo[]>,
@@ -176,6 +298,55 @@ export class LoadBalanceService {
 
 	private formatDate(date: Date): string {
 		return date.toISOString().split("T")[0] ?? "";
+	}
+
+	private withDate(originalDue: string, dateStr: string): string {
+		return `${dateStr}T${originalDue.split("T")[1] ?? "00:00:00.000Z"}`;
+	}
+
+	private getDistributionMap(
+		startDate: string,
+		endDate: string,
+		excludeCardId?: string,
+	): Map<string, number> {
+		const cards = this.cardStore
+			.getDueCardsByDateRange(startDate, endDate)
+			.filter((card) => card.id !== excludeCardId);
+		const distribution = new Map<string, number>();
+		for (const card of cards) {
+			const dateStr = this.formatDate(new Date(card.due));
+			distribution.set(dateStr, (distribution.get(dateStr) ?? 0) + 1);
+		}
+		return distribution;
+	}
+
+	private getTargetForDate(
+		date: Date,
+		targetPerDay: number,
+		easyDays: NonNullable<LoadBalanceOptions["easyDays"]>,
+		easyDaysMultiplier: number,
+	): number {
+		return isEasyDay(date, easyDays)
+			? Math.round(targetPerDay * easyDaysMultiplier)
+			: targetPerDay;
+	}
+
+	private hasRoom(
+		dateStr: string,
+		distribution: Map<string, number>,
+		targetPerDay: number,
+		maxDev: number,
+		easyDays: NonNullable<LoadBalanceOptions["easyDays"]>,
+		easyDaysMultiplier: number,
+	): boolean {
+		const target = this.getTargetForDate(
+			new Date(dateStr),
+			targetPerDay,
+			easyDays,
+			easyDaysMultiplier,
+		);
+		const threshold = target + maxDev;
+		return (distribution.get(dateStr) ?? 0) < threshold;
 	}
 
 	private daysDiff(from: string, to: string): number {

@@ -292,6 +292,10 @@ export interface TrueRecallSettings {
 	loadBalanceTarget: number;
 	/** Maximum deviation from target (percentage 0-100) */
 	loadBalanceMaxDeviation: number;
+	/** Maximum day shift when balancing a newly scheduled review */
+	loadBalanceMaxShiftDays: number;
+	/** Day range for manual Balance now operations (0 = all future) */
+	loadBalanceBulkDays: number;
 
 	/** Easy days configuration (recurring weekdays + specific dates) */
 	easyDays: EasyDaysConfig;

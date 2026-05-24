@@ -1,5 +1,14 @@
+import { State } from "ts-fsrs";
+
 import type { SqliteStoreService } from "../../persistence/sqlite/SqliteStoreService";
-import type { FSRSSettings, TrueRecallSettings } from "../../types";
+import type {
+	FSRSCardData,
+	FSRSSettings,
+	SchedulingPreview,
+	SchedulingPreviewEntry,
+	TrueRecallSettings,
+} from "../../types";
+import { formatInterval } from "../../types/fsrs/fsrs.utils";
 import type {
 	OptimizationInput,
 	OptimizationOutput,
@@ -107,16 +116,59 @@ export class FSRSHelperService {
 	}
 
 	balanceWorkload(options?: Partial<LoadBalanceOptions>): SchedulingResult {
+		const days = options?.days ?? this.settings.loadBalanceBulkDays;
 		return this.loadBalancer.balance({
 			targetPerDay: options?.targetPerDay ?? this.settings.loadBalanceTarget,
 			maxDeviation:
 				options?.maxDeviation ?? this.settings.loadBalanceMaxDeviation,
-			days: options?.days ?? 30,
+			days: days === 0 ? 36500 : days,
 			easyDays: options?.easyDays ?? this.settings.easyDays,
 			easyDaysMultiplier:
 				options?.easyDaysMultiplier ?? this.settings.easyDaysMultiplier,
 			dryRun: options?.dryRun ?? true,
 		});
+	}
+
+	balanceScheduledReview(cardId: string, fsrs: FSRSCardData): FSRSCardData {
+		if (!this.settings.loadBalanceEnabled || fsrs.state !== State.Review) {
+			return fsrs;
+		}
+		if (fsrs.scheduledDays < 1) return fsrs;
+		if ((new Date(fsrs.due).getTime() - Date.now()) / (1000 * 60) < 60 * 24) {
+			return fsrs;
+		}
+
+		const result = this.loadBalancer.balanceDue({
+			cardId,
+			originalDue: fsrs.due,
+			targetPerDay: this.settings.loadBalanceTarget,
+			maxDeviation: this.settings.loadBalanceMaxDeviation,
+			maxShiftDays: this.settings.loadBalanceMaxShiftDays,
+			easyDays: this.settings.easyDays,
+			easyDaysMultiplier: this.settings.easyDaysMultiplier,
+		});
+
+		if (!result.balanced) return fsrs;
+
+		return {
+			...fsrs,
+			due: result.newDue,
+			scheduledDays: Math.max(1, fsrs.scheduledDays + result.daysChanged),
+		};
+	}
+
+	balanceSchedulingPreview(
+		cardId: string,
+		preview: SchedulingPreview,
+	): SchedulingPreview {
+		if (!this.settings.loadBalanceEnabled) return preview;
+
+		return {
+			again: this.balancePreviewEntry(cardId, preview.again),
+			hard: this.balancePreviewEntry(cardId, preview.hard),
+			good: this.balancePreviewEntry(cardId, preview.good),
+			easy: this.balancePreviewEntry(cardId, preview.easy),
+		};
 	}
 
 	getWorkloadDistribution(days: number = 30): WorkloadDistribution[] {
@@ -268,6 +320,57 @@ export class FSRSHelperService {
 		difficulty: { histogram: HistogramBucket[]; stats: DistributionStats };
 	} {
 		return this.distribution.getAllDistributions();
+	}
+
+	private balancePreviewEntry(
+		cardId: string,
+		entry: SchedulingPreviewEntry,
+	): SchedulingPreviewEntry {
+		const minutesUntilDue = (entry.due.getTime() - Date.now()) / (1000 * 60);
+		if (minutesUntilDue < 60 * 24) {
+			return {
+				...entry,
+				originalDue: entry.due,
+				originalInterval: entry.interval,
+				daysChanged: 0,
+				loadBalanceNote:
+					"Skipped: load balancing only adjusts review intervals of at least 1 day.",
+			};
+		}
+
+		const result = this.loadBalancer.balanceDue({
+			cardId,
+			originalDue: entry.due.toISOString(),
+			targetPerDay: this.settings.loadBalanceTarget,
+			maxDeviation: this.settings.loadBalanceMaxDeviation,
+			maxShiftDays: this.settings.loadBalanceMaxShiftDays,
+			easyDays: this.settings.easyDays,
+			easyDaysMultiplier: this.settings.easyDaysMultiplier,
+		});
+
+		if (!result.balanced) {
+			return {
+				...entry,
+				originalDue: entry.due,
+				originalInterval: entry.interval,
+				daysChanged: 0,
+				loadBalanceNote:
+					"No change: the FSRS target day is within the workload limit, or no better nearby day is available.",
+			};
+		}
+
+		const balancedDue = new Date(result.newDue);
+		const balancedMinutes = (balancedDue.getTime() - Date.now()) / (1000 * 60);
+		return {
+			...entry,
+			due: balancedDue,
+			interval: formatInterval(balancedMinutes),
+			originalDue: entry.due,
+			balancedDue,
+			originalInterval: entry.interval,
+			daysChanged: result.daysChanged,
+			loadBalanceNote: "Adjusted to a nearby day with more review capacity.",
+		};
 	}
 
 	private extractFSRSSettings(): FSRSSettings {

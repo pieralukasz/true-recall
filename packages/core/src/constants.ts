@@ -187,6 +187,8 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 	loadBalanceEnabled: false,
 	loadBalanceTarget: 100,
 	loadBalanceMaxDeviation: 20,
+	loadBalanceMaxShiftDays: 3,
+	loadBalanceBulkDays: 30,
 
 	easyDays: {
 		recurringDays: [],
