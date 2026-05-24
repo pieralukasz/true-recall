@@ -120,6 +120,7 @@ export class WorkloadForecastCalculator {
 		targetPerDay: number,
 		days: number = 30,
 		excludeSourceUids?: ReadonlySet<string>,
+		maxDeviation: number = 20,
 	): WorkloadForecastSummary {
 		const forecast = this.getForecast(days, excludeSourceUids);
 
@@ -163,11 +164,8 @@ export class WorkloadForecastCalculator {
 
 		const avgDaily = total / forecast.length;
 
-		// Determine if balancing is recommended
-		// (if peak is more than 50% above average, or more than 20% of days exceed target)
-		const needsBalancing =
-			peakDay.dueCount > avgDaily * 1.5 ||
-			daysAboveTarget > forecast.length * 0.2;
+		const threshold = targetPerDay * (1 + maxDeviation / 100);
+		const needsBalancing = peakDay.dueCount > threshold;
 
 		return {
 			avgDaily: Math.round(avgDaily),

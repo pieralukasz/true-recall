@@ -38,7 +38,7 @@ describe("buildForecastSummary", () => {
 		expect(result.avgDaily).toBe(10);
 		// No day exceeds target (> not >=), so daysAboveTarget=0
 		expect(result.daysAboveTarget).toBe(0);
-		// peak == avg, so peak > avg*1.5 is false; 0 > 3*0.2 is false
+		// peak is not above the default 20% deviation threshold
 		expect(result.needsBalancing).toBe(false);
 	});
 
@@ -53,12 +53,27 @@ describe("buildForecastSummary", () => {
 
 		const result = buildForecastSummary(forecast, 10);
 
-		// avg = 70/5 = 14
 		expect(result.avgDaily).toBe(14);
 		expect(result.peakDay).toEqual({ date: "2026-04-03", count: 50 });
 		expect(result.minDay).toEqual({ date: "2026-04-01", count: 5 });
-		// 50 > 14*1.5 = 21 → needsBalancing
+		// 50 > target 10 + 20% deviation
 		expect(result.needsBalancing).toBe(true);
+	});
+
+	it("does not recommend balancing when peak is within allowed deviation", () => {
+		const forecast = [
+			makeEntry("2026-04-01", 12),
+			makeEntry("2026-04-02", 0),
+			makeEntry("2026-04-03", 0),
+			makeEntry("2026-04-04", 0),
+			makeEntry("2026-04-05", 0),
+		];
+
+		const result = buildForecastSummary(forecast, 10, 20);
+
+		expect(result.avgDaily).toBe(2);
+		expect(result.daysAboveTarget).toBe(1);
+		expect(result.needsBalancing).toBe(false);
 	});
 
 	it("counts all days above target when all exceed it", () => {

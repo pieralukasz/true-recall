@@ -236,12 +236,18 @@ export function StatsApp() {
 		if (renderStage < 2) return null;
 		const forecast = buildFilteredForecast(filteredCardFsrs, 30);
 		const target = settings.loadBalanceTarget ?? 50;
+		const maxDeviation = settings.loadBalanceMaxDeviation ?? 20;
 		return {
 			forecast,
-			summary: buildForecastSummary(forecast, target),
+			summary: buildForecastSummary(forecast, target, maxDeviation),
 			dayOfWeek: buildDayOfWeekStats(forecast),
 		};
-	}, [renderStage, filteredCardFsrs, settings.loadBalanceTarget]);
+	}, [
+		renderStage,
+		filteredCardFsrs,
+		settings.loadBalanceTarget,
+		settings.loadBalanceMaxDeviation,
+	]);
 
 	// FSRS distributions — filtered by preset via card filtering
 	const distributions = useMemo(() => {

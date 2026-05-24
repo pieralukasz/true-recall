@@ -233,11 +233,23 @@ export class FSRSHelperService {
 		days: number = 30,
 		excludeSourceUids?: ReadonlySet<string>,
 	): WorkloadForecastSummary {
-		return this.workloadForecast.getSummary(
+		const summary = this.workloadForecast.getSummary(
 			this.settings.loadBalanceTarget,
 			days,
 			excludeSourceUids,
+			this.settings.loadBalanceMaxDeviation,
 		);
+
+		if (excludeSourceUids && excludeSourceUids.size > 0) return summary;
+
+		return {
+			...summary,
+			needsBalancing:
+				this.balanceWorkload({
+					days,
+					dryRun: true,
+				}).affectedCount > 0,
+		};
 	}
 
 	getWorkloadByDayOfWeek(

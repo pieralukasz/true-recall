@@ -63,6 +63,7 @@ export function buildFilteredForecast(
 export function buildForecastSummary(
 	forecast: WorkloadForecastEntry[],
 	targetPerDay: number,
+	maxDeviation: number = 20,
 ): WorkloadForecastSummary {
 	if (forecast.length === 0) {
 		return {
@@ -96,9 +97,8 @@ export function buildForecastSummary(
 	}
 
 	const avgDaily = total / forecast.length;
-	const needsBalancing =
-		peakDay.dueCount > avgDaily * 1.5 ||
-		daysAboveTarget > forecast.length * 0.2;
+	const threshold = targetPerDay * (1 + maxDeviation / 100);
+	const needsBalancing = peakDay.dueCount > threshold;
 
 	return {
 		avgDaily: Math.round(avgDaily),
