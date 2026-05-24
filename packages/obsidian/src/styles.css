@@ -44,6 +44,7 @@ settings:
 @import "./editor/study/editor.styles.css";
 @import "./features/study/ui/review/review.styles.css";
 @import "./modals/shared/modals.styles.css";
+@import "./views/modal-window/modal-window.styles.css";
 @import "./features/library/ui/panel/panel.styles.css";
 @import "./features/metrics/ui/simulator/styles.css";
 @import "../../../packages/plugins/src/selection-toolbar/selection-toolbar.css";

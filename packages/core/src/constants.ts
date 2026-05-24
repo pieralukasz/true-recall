@@ -11,6 +11,7 @@ export const VIEW_TYPE_SIMULATOR = "true-recall-simulator";
 export const VIEW_TYPE_DASHBOARD = "true-recall-dashboard-view";
 export const VIEW_TYPE_CARD_BROWSER = "true-recall-card-browser";
 export const VIEW_TYPE_STATS = "true-recall-stats";
+export const VIEW_TYPE_QUICK_NOTE_EDITOR = "true-recall-quick-note-editor";
 export const UNASSIGNED_PATH = "__unassigned__";
 
 export interface ByokModelConfig {

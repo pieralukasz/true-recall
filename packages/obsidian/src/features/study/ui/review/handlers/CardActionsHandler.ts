@@ -18,9 +18,9 @@ import {
 } from "@true-recall/obsidian/commands/commands/review-actions.cmd";
 import type TrueRecallPlugin from "@true-recall/obsidian/main";
 import { MoveCardModal } from "@true-recall/obsidian/modals/shared";
-import { QuickNoteEditorModal } from "@true-recall/obsidian/modals/study/quick-note-editor/QuickNoteEditorModal";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 import type { ReviewApi } from "@true-recall/obsidian/store";
+import { openQuickNoteEditor } from "@true-recall/obsidian/views/modal-window/open-quick-note-editor";
 
 const FORGET_NON_NEW_WARNING =
 	"Forget is only available for cards that are not New.";
@@ -235,7 +235,7 @@ export class CardActionsHandler {
 		const card = this.deps.getReview().getCurrentCard();
 		if (!card) return;
 
-		const modal = new QuickNoteEditorModal(this.deps.app, this.deps.plugin, {
+		const result = await openQuickNoteEditor(this.deps.plugin, {
 			mode: "add",
 			sourceUid: card.sourceUid,
 			excludeCardId: card.id,
@@ -244,8 +244,6 @@ export class CardActionsHandler {
 					? "builtin-basic"
 					: (card.fsrs.noteTypeId ?? "builtin-basic"),
 		});
-
-		const result = await modal.openAndWait();
 		if (!result.cancelled) {
 			this.pushBatchCreateUndo(card, result.createdCards);
 		}
@@ -309,15 +307,13 @@ export class CardActionsHandler {
 			return;
 		}
 
-		const modal = new QuickNoteEditorModal(this.deps.app, this.deps.plugin, {
+		const result = await openQuickNoteEditor(this.deps.plugin, {
 			mode: "edit",
 			cardId: card.id,
 			noteId: note.id,
 			note,
 			noteType,
 		});
-
-		const result = await modal.openAndWait();
 		if (result.cancelled) return;
 
 		this.pushFieldEditUndo(note.id, previousFields, "Edit card");

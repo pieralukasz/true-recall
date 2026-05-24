@@ -317,7 +317,14 @@ export function QuickNoteEditorApp({
 	const handleSaveRef = useRef(handleSave);
 	handleSaveRef.current = handleSave;
 
+	const rootRef = useRef<HTMLDivElement>(null);
+
 	useEffect(() => {
+		// Bind to the owning document so the shortcut works inside a popout
+		// window (containerEl.win !== window). Falling back to `document`
+		// covers the modal context where the listener attaches before the
+		// element is in the DOM.
+		const doc = rootRef.current?.ownerDocument ?? document;
 		const onKeyDown = (e: KeyboardEvent) => {
 			if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
 				e.preventDefault();
@@ -325,8 +332,8 @@ export function QuickNoteEditorApp({
 				void handleSaveRef.current();
 			}
 		};
-		document.addEventListener("keydown", onKeyDown, true);
-		return () => document.removeEventListener("keydown", onKeyDown, true);
+		doc.addEventListener("keydown", onKeyDown, true);
+		return () => doc.removeEventListener("keydown", onKeyDown, true);
 	}, []);
 
 	// AI wand dispatches "true-recall:card-polish" (kind: "draft"). Only the
@@ -404,7 +411,10 @@ export function QuickNoteEditorApp({
 	}
 
 	return (
-		<div class="true-recall-quick-editor ep:flex ep:flex-col ep:gap-3">
+		<div
+			ref={rootRef}
+			class="true-recall-quick-editor ep:flex ep:flex-col ep:gap-3"
+		>
 			{/* Action bar: Note type, Source note, AI */}
 			<ActionBar
 				app={app}

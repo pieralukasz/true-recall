@@ -7,6 +7,7 @@ import {
 	VIEW_TYPE_DASHBOARD,
 	VIEW_TYPE_FLASHCARD_PANEL,
 	VIEW_TYPE_KNOWLEDGE_CHAT,
+	VIEW_TYPE_QUICK_NOTE_EDITOR,
 	VIEW_TYPE_REVIEW,
 	VIEW_TYPE_SIMULATOR,
 	VIEW_TYPE_STATS,
@@ -42,7 +43,6 @@ import {
 	CustomStudyModal,
 	type CustomStudyModalScope,
 } from "@true-recall/obsidian/modals/study/CustomStudyModal";
-import { QuickNoteEditorModal } from "@true-recall/obsidian/modals/study/quick-note-editor/QuickNoteEditorModal";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 import { ProjectManagementService } from "@true-recall/obsidian/services/project-management.service";
 import { TrueRecallSettingTab } from "@true-recall/obsidian/settings";
@@ -55,6 +55,8 @@ import {
 import { CardBrowserView } from "@true-recall/obsidian/views/browser/CardBrowserView";
 import { KnowledgeChatView } from "@true-recall/obsidian/views/chat/KnowledgeChatView";
 import { DashboardView } from "@true-recall/obsidian/views/dashboard/DashboardView";
+import { openQuickNoteEditor } from "@true-recall/obsidian/views/modal-window/open-quick-note-editor";
+import { QuickNoteEditorView } from "@true-recall/obsidian/views/modal-window/QuickNoteEditorView";
 import { FlashcardPanelView } from "@true-recall/obsidian/views/panel/FlashcardPanelView";
 import { ReviewView } from "@true-recall/obsidian/views/review/ReviewView";
 import { SimulatorView } from "@true-recall/obsidian/views/simulator/SimulatorView";
@@ -390,6 +392,11 @@ export default class TrueRecallPlugin extends Plugin {
 
 		registerIfAllowed(VIEW_TYPE_STATS, (leaf) => new StatsView(leaf, this));
 
+		registerIfAllowed(
+			VIEW_TYPE_QUICK_NOTE_EDITOR,
+			(leaf) => new QuickNoteEditorView(leaf, this),
+		);
+
 		if (ENABLE_RAG) {
 			registerIfAllowed(
 				VIEW_TYPE_KNOWLEDGE_CHAT,
@@ -647,10 +654,10 @@ export default class TrueRecallPlugin extends Plugin {
 	}
 
 	openQuickNoteEditor(defaultNoteTypeId?: string): void {
-		new QuickNoteEditorModal(this.app, this, {
+		void openQuickNoteEditor(this, {
 			mode: "add",
 			defaultNoteTypeId,
-		}).open();
+		});
 	}
 
 	async openImageOcclusionEditor(
