@@ -177,8 +177,31 @@ export class QuickNoteEditorView extends ItemView {
 			),
 		);
 
+		// Center immediately on mount, before any measurement, so the window
+		// never visibly flashes in its default (top-left) Electron position.
+		this.centerWindowOnScreen();
 		this.startContentSizeTracking();
 		this.installBeforeUnloadGuard();
+	}
+
+	private centerWindowOnScreen(): void {
+		const win = this.getPopoutWindow();
+		if (!win) return;
+		const screen = win.screen;
+		if (!screen) return;
+		const extScreen = screen as Screen & {
+			availLeft?: number;
+			availTop?: number;
+		};
+		const availLeft = extScreen.availLeft ?? 0;
+		const availTop = extScreen.availTop ?? 0;
+		const availWidth = screen.availWidth ?? win.outerWidth;
+		const availHeight = screen.availHeight ?? win.outerHeight;
+		const w = win.outerWidth;
+		const h = win.outerHeight;
+		const left = availLeft + Math.max(0, Math.round((availWidth - w) / 2));
+		const top = availTop + Math.max(0, Math.round((availHeight - h) / 2));
+		win.moveTo(left, top);
 	}
 
 	private startContentSizeTracking(): void {
@@ -290,18 +313,7 @@ export class QuickNoteEditorView extends ItemView {
 		// Recenter only on first fit, so subsequent content growth doesn't
 		// teleport the window around while the user is typing.
 		if (!this.session.hasInitialFitted) {
-			// availLeft/availTop are non-standard (multi-monitor offsets) and
-			// missing from lib.dom typings, but supported in Chromium/Electron.
-			const extScreen = screen as
-				| (Screen & { availLeft?: number; availTop?: number })
-				| undefined;
-			const availLeft = extScreen?.availLeft ?? 0;
-			const availTop = extScreen?.availTop ?? 0;
-			const availWidth = screen?.availWidth ?? newW;
-			const availHeight = screen?.availHeight ?? newH;
-			const left = availLeft + Math.round((availWidth - newW) / 2);
-			const top = availTop + Math.round((availHeight - newH) / 2);
-			win.moveTo(left, top);
+			this.centerWindowOnScreen();
 			this.session.hasInitialFitted = true;
 		}
 	}
