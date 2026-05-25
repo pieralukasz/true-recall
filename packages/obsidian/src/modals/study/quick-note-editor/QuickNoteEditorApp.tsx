@@ -15,14 +15,14 @@ import {
 	type FormattingTargetRef,
 	FormattingToolbar,
 } from "@true-recall/obsidian/editor/shared/formatting";
-import { CardTypesEditorModal } from "@true-recall/obsidian/modals/core/card-types-editor/CardTypesEditorModal";
-import { NoteTypeManagerModal } from "@true-recall/obsidian/modals/core/NoteTypeManagerModal";
 import { useIcon } from "@true-recall/obsidian/preact/hooks";
 import {
 	useApp,
 	usePlugin,
 } from "@true-recall/obsidian/preact/ObsidianContext";
 import { notify } from "@true-recall/obsidian/services/notification.service";
+import { openCardTypesEditor } from "@true-recall/obsidian/views/modal-window/open-card-types-editor";
+import { openNoteTypeManager } from "@true-recall/obsidian/views/modal-window/open-note-type-manager";
 
 import { ActionBar } from "./ActionBar";
 import { deriveAIWandState } from "./ai-wand-state";
@@ -201,24 +201,14 @@ export function QuickNoteEditorApp({
 	}, []);
 
 	const openFields = useCallback(() => {
-		const modal = new NoteTypeManagerModal(app, plugin);
-		const origClose = modal.onClose.bind(modal);
-		modal.onClose = () => {
-			origClose();
-			handleNoteTypeRefresh();
-		};
-		modal.open();
-	}, [app, plugin, handleNoteTypeRefresh]);
+		openNoteTypeManager(plugin, { onClose: handleNoteTypeRefresh });
+	}, [plugin, handleNoteTypeRefresh]);
 
 	const openCards = useCallback(() => {
-		const modal = new CardTypesEditorModal(app, plugin, noteTypeId);
-		const origClose = modal.onClose.bind(modal);
-		modal.onClose = () => {
-			origClose();
-			handleNoteTypeRefresh();
-		};
-		modal.open();
-	}, [app, plugin, noteTypeId, handleNoteTypeRefresh]);
+		openCardTypesEditor(plugin, noteTypeId, {
+			onClose: handleNoteTypeRefresh,
+		});
+	}, [plugin, noteTypeId, handleNoteTypeRefresh]);
 
 	const resolveSourceUid = useCallback(async (): Promise<
 		string | undefined

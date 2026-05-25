@@ -1,15 +1,20 @@
 /*
- * Quick Note Editor — Popout Window Styles
+ * Popout Window Styles
  *
- * The Add/Edit Flashcard editor opens as a detached Obsidian popout window
- * via workspace.openPopoutLeaf(). Obsidian's popout windows are frameless
- * on macOS when the user has the native title bar hidden, so this stylesheet
+ * Shared by every True Recall view that opens as a detached Obsidian popout
+ * via workspace.openPopoutLeaf() — Quick Note Editor, Note Type Manager,
+ * and Card Types Editor. Obsidian's popout windows are frameless on macOS
+ * when the user has the native title bar hidden, so this stylesheet
  * provides:
  *   - a custom draggable header strip at the top of the view content
  *     (via -webkit-app-region: drag), with a left spacer for the macOS
  *     traffic-light controls so they don't overlap the title or inputs.
  *   - an explicit opt-out (no-drag) for every interactive element nested
  *     inside the view, so clicks on inputs/buttons still register normally.
+ *
+ * The Quick Note Editor-specific selectors come first; shared rules for
+ * `.tr-popout-view` (Note Type Manager + Card Types Editor) live further
+ * down in this file.
  */
 
 .workspace-leaf-content[data-type="true-recall-quick-note-editor"]
@@ -142,4 +147,93 @@
 	display: flex;
 	justify-content: flex-end;
 	gap: 8px;
+}
+
+/* ── Generic popout view container (NoteTypeManager, CardTypesEditor) ───
+   Shares drag-bar look with QuickNoteEditor but uses a fixed window size
+   instead of dynamic resize-to-content. */
+
+.workspace-leaf-content[data-type="true-recall-note-type-manager"]
+.view-content,
+.workspace-leaf-content[data-type="true-recall-card-types-editor"]
+	.view-content {
+	padding: 0;
+	overflow: hidden;
+	display: flex;
+	flex-direction: column;
+}
+
+.tr-popout-view {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+	overflow: hidden;
+	position: relative;
+}
+
+.tr-popout-view__inner {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+}
+
+.tr-popout-view__drag-bar {
+	-webkit-app-region: drag;
+	display: flex;
+	align-items: center;
+	min-height: 38px;
+	padding: 0 16px;
+	border-bottom: 1px solid var(--background-modifier-border);
+	background: var(--background-secondary);
+	user-select: none;
+	flex-shrink: 0;
+}
+
+.tr-popout-view.is-mac .tr-popout-view__drag-bar {
+	padding-left: 84px;
+}
+
+.tr-popout-view__title {
+	font-size: var(--font-ui-medium);
+	font-weight: 600;
+	color: var(--text-normal);
+}
+
+.tr-popout-view__drag-bar input,
+.tr-popout-view__drag-bar button,
+.tr-popout-view__drag-bar [role="button"] {
+	-webkit-app-region: no-drag;
+}
+
+.tr-popout-view__body {
+	-webkit-app-region: no-drag;
+	flex: 1;
+	min-height: 0;
+	overflow: hidden;
+	padding: 16px 20px 20px;
+	display: flex;
+	flex-direction: column;
+}
+
+/* The Apps (NoteTypeManagerApp, CardTypesEditorApp) wrap their content in a
+   div using Tailwind `h-[65vh]`, which targets 65% of the viewport — meant
+   for modal context where modal sits on top of the main app. In a popout
+   the viewport IS the popout window, so 65vh would leave dead space. Force
+   the App's direct root to fill the body instead. */
+.tr-popout-view__body > div {
+	flex: 1;
+	min-height: 0;
+	height: 100%;
+}
+
+.tr-popout-view__fallback {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 100%;
+	padding: 24px;
+	color: var(--text-muted);
+	text-align: center;
 }

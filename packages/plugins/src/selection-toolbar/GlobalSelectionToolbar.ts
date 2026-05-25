@@ -106,7 +106,7 @@ export class GlobalSelectionToolbar {
 	private isInsideExcludedContainer(node: Node): boolean {
 		const el = node instanceof Element ? node : node.parentElement;
 		return !!el?.closest(
-			".true-recall-review-card-container, .ep-card-browser, .true-recall-selection-toolbar-container",
+			".true-recall-review-card-container, .ep-card-browser, .true-recall-selection-toolbar-container, .tr-quick-editor-view, .tr-modal-quick-editor, .tr-popout-view",
 		);
 	}
 
