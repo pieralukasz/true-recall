@@ -20,6 +20,7 @@ export { ErrorBoundary } from "./ErrorBoundary";
 export { FormCard } from "./FormCard";
 export { FormField } from "./FormField";
 export { IconButton } from "./IconButton";
+export { PlayIcon } from "./icons/PlayIcon";
 export { InfoBlock } from "./InfoBlock";
 export { LoadingSpinner } from "./LoadingSpinner";
 export { ModalFooter } from "./ModalFooter";

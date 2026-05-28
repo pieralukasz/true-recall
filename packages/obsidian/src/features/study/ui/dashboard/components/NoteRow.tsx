@@ -4,6 +4,7 @@ import {
 	CardCountDisplay,
 	Clickable,
 	IconButton,
+	PlayIcon,
 } from "@true-recall/obsidian/components";
 import { cn } from "@true-recall/obsidian/utils/cn";
 import { isMobile } from "@true-recall/obsidian/utils/platform";
@@ -136,6 +137,7 @@ export function NoteRow({
 				<div class="ep:flex ep:items-center">
 					<IconButton
 						icon="play"
+						customIcon={<PlayIcon />}
 						ariaLabel={`Study ${note.name}`}
 						onClick={onStudy}
 						size="small"
