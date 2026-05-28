@@ -1,9 +1,11 @@
 import { State } from "ts-fsrs";
 
 import { isLearningState } from "@true-recall/core/helpers/card-state";
-import type {
-	WorkloadForecastEntry,
-	WorkloadForecastSummary,
+import {
+	MATURE_INTERVAL_DAYS,
+	toEntries,
+	type WorkloadForecastEntry,
+	type WorkloadForecastSummary,
 } from "@true-recall/core/metrics/fsrs-tools/statistics/workload-forecast.calculator";
 import type { FSRSCardData } from "@true-recall/core/types";
 
@@ -28,11 +30,14 @@ export function buildFilteredForecast(
 			new Date(c.due) <= endDate,
 	);
 
-	const forecast = new Map<string, { review: number; learning: number }>();
+	const forecast = new Map<
+		string,
+		{ young: number; mature: number; learning: number }
+	>();
 
 	const current = new Date(today);
 	while (current <= endDate) {
-		forecast.set(formatDate(current), { review: 0, learning: 0 });
+		forecast.set(formatDate(current), { young: 0, mature: 0, learning: 0 });
 		current.setDate(current.getDate() + 1);
 	}
 
@@ -42,22 +47,14 @@ export function buildFilteredForecast(
 		if (!bucket) continue;
 
 		if (card.state === State.Review) {
-			bucket.review++;
+			if (card.scheduledDays < MATURE_INTERVAL_DAYS) bucket.young++;
+			else bucket.mature++;
 		} else if (isLearningState(card.state)) {
 			bucket.learning++;
 		}
 	}
 
-	const entries: WorkloadForecastEntry[] = [];
-	for (const [date, breakdown] of forecast) {
-		entries.push({
-			date,
-			dueCount: breakdown.review + breakdown.learning,
-			breakdown,
-		});
-	}
-
-	return entries.sort((a, b) => a.date.localeCompare(b.date));
+	return toEntries(forecast);
 }
 
 export function buildForecastSummary(
@@ -144,4 +141,41 @@ export function buildDayOfWeekStats(
 
 function formatDate(date: Date): string {
 	return date.toISOString().split("T")[0] ?? "";
+}
+
+/** Selectable forecast horizon, mirroring Anki's Future Due ranges. */
+export type ForecastRange = "1m" | "3m" | "1y" | "all";
+
+const MS_PER_DAY = 86_400_000;
+/** Cap "all" so a far-future outlier card can't produce thousands of bars. */
+const MAX_FORECAST_DAYS = 365 * 5;
+
+/**
+ * Resolve a forecast range to a day horizon. For "all", scan the card set for
+ * the furthest due date (capped) so the chart spans the whole backlog.
+ */
+export function forecastRangeToDays(
+	range: ForecastRange,
+	cards: FSRSCardData[],
+): number {
+	switch (range) {
+		case "1m":
+			return 30;
+		case "3m":
+			return 90;
+		case "1y":
+			return 365;
+		case "all": {
+			const today = Date.now();
+			let maxDays = 30;
+			for (const c of cards) {
+				if (c.suspended) continue;
+				const diff = Math.ceil(
+					(new Date(c.due).getTime() - today) / MS_PER_DAY,
+				);
+				if (diff > maxDays) maxDays = diff;
+			}
+			return Math.min(maxDays, MAX_FORECAST_DAYS);
+		}
+	}
 }

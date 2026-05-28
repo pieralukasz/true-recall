@@ -21,10 +21,6 @@ import { AudioPlayButton } from "./AudioPlayButton";
 import { NoteReviewRenderer } from "./NoteReviewRenderer";
 import { IOCardRenderer } from "@true-recall/plugins/image-occlusion";
 
-// Pre-renders the answer DOM one frame after the question paints,
-// but keeps it invisible (opacity:0, height:0). Without this,
-// revealing the answer causes a visible layout reflow as the
-// browser measures and paints the answer content for the first time.
 function useAnswerWarmup(
 	isRevealed: boolean,
 	cardId: string,
@@ -33,7 +29,6 @@ function useAnswerWarmup(
 	const prevCardRef = useRef(cardId);
 	const [, tick] = useState(0);
 
-	// Reset synchronously on card change (before render output)
 	if (prevCardRef.current !== cardId) {
 		prevCardRef.current = cardId;
 		warmRef.current = false;
@@ -42,7 +37,6 @@ function useAnswerWarmup(
 	useEffect(() => {
 		if (isRevealed || warmRef.current) return;
 
-		// Wait one frame for the question to paint, then start warm-up
 		const rafId = requestAnimationFrame(() => {
 			warmRef.current = true;
 			tick((t) => t + 1);
