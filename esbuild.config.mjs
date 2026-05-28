@@ -55,6 +55,9 @@ function buildCSS() {
 			`bunx @tailwindcss/cli -i packages/obsidian/src/styles.css -o styles.css${minifyFlag}`,
 			{ stdio: "pipe" },
 		);
+		execSync("bun scripts/css-postprocess.mjs styles.css", {
+			stdio: "inherit",
+		});
 		console.log(`\u2713 CSS built${prod ? " (minified)" : ""}`);
 	} catch (err) {
 		console.error("CSS build failed:", err.message);

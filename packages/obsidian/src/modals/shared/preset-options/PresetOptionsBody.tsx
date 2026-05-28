@@ -92,6 +92,7 @@ export function PresetOptionsBody({
 			requestRetention: preset.requestRetention,
 			maximumInterval: preset.maximumInterval,
 			weights: preset.weights ? [...preset.weights] : null,
+			enableFuzz: preset.enableFuzz !== false,
 			learningSteps: [...preset.learningSteps],
 			relearningSteps: [...preset.relearningSteps],
 			newCardsPerDay: preset.newCardsPerDay,

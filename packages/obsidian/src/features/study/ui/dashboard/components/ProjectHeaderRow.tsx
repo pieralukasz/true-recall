@@ -7,6 +7,7 @@ import {
 	CardCountDisplay,
 	Clickable,
 	IconButton,
+	PlayIcon,
 } from "@true-recall/obsidian/components";
 import { cn } from "@true-recall/obsidian/utils/cn";
 
@@ -95,6 +96,7 @@ export function ProjectHeaderRow({
 
 			<IconButton
 				icon="play"
+				customIcon={<PlayIcon />}
 				ariaLabel={`Study ${project.name}`}
 				onClick={onStudyProject}
 				size="small"

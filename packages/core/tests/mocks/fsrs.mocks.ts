@@ -146,6 +146,7 @@ export function createDefaultFSRSSettings(): FSRSSettings {
 		requestRetention: 0.9,
 		maximumInterval: 36500,
 		weights: undefined, // Use defaults from ts-fsrs
+		enableFuzz: true,
 		enableShortTerm: true,
 		learningSteps: [1, 10],
 		relearningSteps: [10],

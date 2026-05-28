@@ -63,8 +63,9 @@ export function buildStandaloneReviewCommand(args: {
 	fsrsService: FSRSService;
 	preset: FSRSPreset;
 	settings: FSRSSettings;
+	balanceFsrs?: (fsrs: FSRSFlashcardItem["fsrs"]) => FSRSFlashcardItem["fsrs"];
 }): ReviewAnswerCommand {
-	const { card, rating, fsrsService, preset, settings } = args;
+	const { card, rating, fsrsService, preset, settings, balanceFsrs } = args;
 	const { updatedCard, result } = reviewService.processAnswer(
 		card,
 		rating,
@@ -75,7 +76,7 @@ export function buildStandaloneReviewCommand(args: {
 	return new ReviewAnswerCommand({
 		card: { ...card },
 		originalFsrs: { ...card.fsrs },
-		updatedFsrs: updatedCard.fsrs,
+		updatedFsrs: balanceFsrs?.(updatedCard.fsrs) ?? updatedCard.fsrs,
 		previousIndex: null,
 		wasNewCard: card.fsrs.state === State.New,
 		rating,
@@ -104,7 +105,14 @@ export function useCardPreview({
 		if (!isGradable) return;
 		const preset = plugin.presetService.resolvePresetForCard(card, {});
 		const settings = plugin.presetService.toFSRSSettings(preset);
-		setPreview(plugin.fsrsService.getSchedulingPreview(card.fsrs, settings));
+		const rawPreview = plugin.fsrsService.getSchedulingPreview(
+			card.fsrs,
+			settings,
+		);
+		setPreview(
+			plugin.fsrsHelper?.balanceSchedulingPreview(card.id, rawPreview) ??
+				rawPreview,
+		);
 	}, [card, plugin, isGradable]);
 
 	const grade = useCallback(
@@ -118,6 +126,8 @@ export function useCardPreview({
 				fsrsService: plugin.fsrsService,
 				preset,
 				settings,
+				balanceFsrs: (fsrs) =>
+					plugin.fsrsHelper?.balanceScheduledReview(card.id, fsrs) ?? fsrs,
 			});
 			void plugin.commandService?.execute(cmd);
 			notify().success(`Reviewed (${Rating[rating]})`);

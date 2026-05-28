@@ -26,6 +26,7 @@ export type {
 	OptimizationOptions,
 	OptimizationResult,
 	SchedulingPreview,
+	SchedulingPreviewEntry,
 } from "./scheduling.types";
 // Session types
 export type {

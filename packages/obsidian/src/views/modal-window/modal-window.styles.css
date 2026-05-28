@@ -1,0 +1,239 @@
+/*
+ * Popout Window Styles
+ *
+ * Shared by every True Recall view that opens as a detached Obsidian popout
+ * via workspace.openPopoutLeaf() — Quick Note Editor, Note Type Manager,
+ * and Card Types Editor. Obsidian's popout windows are frameless on macOS
+ * when the user has the native title bar hidden, so this stylesheet
+ * provides:
+ *   - a custom draggable header strip at the top of the view content
+ *     (via -webkit-app-region: drag), with a left spacer for the macOS
+ *     traffic-light controls so they don't overlap the title or inputs.
+ *   - an explicit opt-out (no-drag) for every interactive element nested
+ *     inside the view, so clicks on inputs/buttons still register normally.
+ *
+ * The Quick Note Editor-specific selectors come first; shared rules for
+ * `.tr-popout-view` (Note Type Manager + Card Types Editor) live further
+ * down in this file.
+ */
+
+.workspace-leaf-content[data-type="true-recall-quick-note-editor"]
+.view-content {
+	padding: 0;
+	overflow: hidden;
+	display: flex;
+	flex-direction: column;
+}
+
+.tr-quick-editor-view {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+	overflow: hidden;
+	position: relative;
+}
+
+.tr-quick-editor-view__inner {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+}
+
+/* ── Draggable title bar ─────────────────────────────────────────── */
+
+.tr-quick-editor-view__drag-bar {
+	-webkit-app-region: drag;
+	display: flex;
+	align-items: center;
+	min-height: 38px;
+	padding: 0 16px;
+	border-bottom: 1px solid var(--background-modifier-border);
+	background: var(--background-secondary);
+	user-select: none;
+	flex-shrink: 0;
+}
+
+/* macOS traffic-light cluster occupies roughly the leftmost ~78px of a
+   frameless window (empirical, not an Apple-published constant — may drift
+   across macOS releases). Reserve 84px to keep the title clear of the
+   buttons with a small visual gap. */
+.tr-quick-editor-view.is-mac .tr-quick-editor-view__drag-bar {
+	padding-left: 84px;
+}
+
+.tr-quick-editor-view__title {
+	font-size: var(--font-ui-medium);
+	font-weight: 600;
+	color: var(--text-normal);
+}
+
+/* Any interactive child must opt out of drag so clicks register. */
+.tr-quick-editor-view__drag-bar input,
+.tr-quick-editor-view__drag-bar button,
+.tr-quick-editor-view__drag-bar [role="button"] {
+	-webkit-app-region: no-drag;
+}
+
+/* The whole body region (forms, buttons, CM editors) is interactive — opt
+   out so the drag region is strictly the title strip. The body sizes to
+   its content so the popout window can resize to fit exactly; if content
+   overflows (e.g. many fields, long source picker results) it scrolls. */
+.tr-quick-editor-view__body {
+	-webkit-app-region: no-drag;
+	flex: 1;
+	min-height: 0;
+	overflow-y: auto;
+	padding: 16px 20px 20px;
+	scrollbar-gutter: stable;
+	display: flex;
+	flex-direction: column;
+}
+
+.tr-quick-editor-view__fallback {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 100%;
+	padding: 24px;
+	color: var(--text-muted);
+	text-align: center;
+}
+
+/* ── Discard confirm overlay (popout-local; main-window Modal cannot
+   render inside a detached popout) ─────────────────────────────────── */
+
+.tr-quick-editor-view__overlay {
+	position: absolute;
+	inset: 0;
+	z-index: 100;
+}
+
+.tr-quick-editor-view__overlay-backdrop {
+	position: absolute;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.45);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	-webkit-app-region: no-drag;
+}
+
+.tr-quick-editor-view__overlay-dialog {
+	background: var(--background-primary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m, 8px);
+	padding: 20px 24px;
+	min-width: 320px;
+	max-width: 420px;
+	box-shadow: var(--shadow-l, 0 8px 24px rgba(0, 0, 0, 0.3));
+}
+
+.tr-quick-editor-view__overlay-title {
+	font-size: var(--font-ui-medium);
+	font-weight: 600;
+	color: var(--text-normal);
+	margin-bottom: 8px;
+}
+
+.tr-quick-editor-view__overlay-message {
+	color: var(--text-muted);
+	margin-bottom: 16px;
+	line-height: 1.4;
+}
+
+.tr-quick-editor-view__overlay-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+}
+
+/* ── Generic popout view container (NoteTypeManager, CardTypesEditor) ───
+   Shares drag-bar look with QuickNoteEditor but uses a fixed window size
+   instead of dynamic resize-to-content. */
+
+.workspace-leaf-content[data-type="true-recall-note-type-manager"]
+.view-content,
+.workspace-leaf-content[data-type="true-recall-card-types-editor"]
+	.view-content {
+	padding: 0;
+	overflow: hidden;
+	display: flex;
+	flex-direction: column;
+}
+
+.tr-popout-view {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+	overflow: hidden;
+	position: relative;
+}
+
+.tr-popout-view__inner {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+}
+
+.tr-popout-view__drag-bar {
+	-webkit-app-region: drag;
+	display: flex;
+	align-items: center;
+	min-height: 38px;
+	padding: 0 16px;
+	border-bottom: 1px solid var(--background-modifier-border);
+	background: var(--background-secondary);
+	user-select: none;
+	flex-shrink: 0;
+}
+
+.tr-popout-view.is-mac .tr-popout-view__drag-bar {
+	padding-left: 84px;
+}
+
+.tr-popout-view__title {
+	font-size: var(--font-ui-medium);
+	font-weight: 600;
+	color: var(--text-normal);
+}
+
+.tr-popout-view__drag-bar input,
+.tr-popout-view__drag-bar button,
+.tr-popout-view__drag-bar [role="button"] {
+	-webkit-app-region: no-drag;
+}
+
+.tr-popout-view__body {
+	-webkit-app-region: no-drag;
+	flex: 1;
+	min-height: 0;
+	overflow: hidden;
+	padding: 16px 20px 20px;
+	display: flex;
+	flex-direction: column;
+}
+
+/* The Apps (NoteTypeManagerApp, CardTypesEditorApp) wrap their content in a
+   div using Tailwind `h-[65vh]`, which targets 65% of the viewport — meant
+   for modal context where modal sits on top of the main app. In a popout
+   the viewport IS the popout window, so 65vh would leave dead space. Force
+   the App's direct root to fill the body instead. */
+.tr-popout-view__body > div {
+	flex: 1;
+	min-height: 0;
+	height: 100%;
+}
+
+.tr-popout-view__fallback {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	height: 100%;
+	padding: 24px;
+	color: var(--text-muted);
+	text-align: center;
+}

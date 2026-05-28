@@ -21,11 +21,17 @@ export interface EditMode {
 
 export type QuickNoteEditorMode = AddMode | EditMode;
 
-// ── Result ──
+// ── Result: discriminated union on `cancelled` ──
 
-export interface QuickNoteEditorResult {
-	cancelled: boolean;
+interface CancelledResult {
+	cancelled: true;
+}
+
+interface CompletedResult {
+	cancelled: false;
 	createdNote?: Note;
 	createdCards?: FSRSCardData[];
 	updatedCardIds?: string[];
 }
+
+export type QuickNoteEditorResult = CancelledResult | CompletedResult;

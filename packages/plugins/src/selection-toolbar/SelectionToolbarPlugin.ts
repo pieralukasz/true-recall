@@ -74,7 +74,7 @@ export function createSelectionToolbarExtension(
 
 				if (
 					this.view.dom.closest(
-						".true-recall-review-card-container, .ep-card-browser",
+						".true-recall-review-card-container, .ep-card-browser, .tr-quick-editor-view, .tr-modal-quick-editor, .tr-popout-view",
 					)
 				) {
 					this.removeToolbar();

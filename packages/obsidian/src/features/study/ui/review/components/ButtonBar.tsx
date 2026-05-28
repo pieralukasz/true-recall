@@ -82,6 +82,9 @@ export function ButtonBar({
 				label="Again"
 				rating={Rating.Again}
 				interval={preview?.again.interval}
+				originalInterval={preview?.again.originalInterval}
+				daysChanged={preview?.again.daysChanged}
+				loadBalanceNote={preview?.again.loadBalanceNote}
 				showInterval={showNextReviewTime && !mobile}
 				onAnswer={onAnswer}
 				disabled={isRatingLocked}
@@ -90,6 +93,9 @@ export function ButtonBar({
 				label="Hard"
 				rating={Rating.Hard}
 				interval={preview?.hard.interval}
+				originalInterval={preview?.hard.originalInterval}
+				daysChanged={preview?.hard.daysChanged}
+				loadBalanceNote={preview?.hard.loadBalanceNote}
 				showInterval={showNextReviewTime && !mobile}
 				onAnswer={onAnswer}
 				disabled={isRatingLocked}
@@ -98,6 +104,9 @@ export function ButtonBar({
 				label="Good"
 				rating={Rating.Good}
 				interval={preview?.good.interval}
+				originalInterval={preview?.good.originalInterval}
+				daysChanged={preview?.good.daysChanged}
+				loadBalanceNote={preview?.good.loadBalanceNote}
 				showInterval={showNextReviewTime && !mobile}
 				onAnswer={onAnswer}
 				disabled={isRatingLocked}
@@ -106,6 +115,9 @@ export function ButtonBar({
 				label="Easy"
 				rating={Rating.Easy}
 				interval={preview?.easy.interval}
+				originalInterval={preview?.easy.originalInterval}
+				daysChanged={preview?.easy.daysChanged}
+				loadBalanceNote={preview?.easy.loadBalanceNote}
 				showInterval={showNextReviewTime && !mobile}
 				onAnswer={onAnswer}
 				disabled={isRatingLocked}

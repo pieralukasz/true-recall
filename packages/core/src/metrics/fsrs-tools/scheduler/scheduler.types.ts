@@ -56,6 +56,23 @@ export interface LoadBalanceOptions {
 	dryRun?: boolean;
 }
 
+export interface BalanceDueOptions {
+	cardId: string;
+	originalDue: string;
+	targetPerDay: number;
+	maxDeviation: number;
+	maxShiftDays: number;
+	easyDays?: EasyDaysConfig;
+	easyDaysMultiplier?: number;
+}
+
+export interface BalanceDueResult {
+	originalDue: string;
+	newDue: string;
+	daysChanged: number;
+	balanced: boolean;
+}
+
 export interface ShiftOptions {
 	action: "postpone" | "advance";
 	days: number;

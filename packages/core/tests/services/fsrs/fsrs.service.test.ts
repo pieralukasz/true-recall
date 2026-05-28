@@ -178,6 +178,20 @@ describe("FSRSService", () => {
 			// default settings engine + one cached preset engine
 			expect(cache.size).toBe(2);
 		});
+
+		it("uses the same fuzzed interval in preview and scheduling", () => {
+			const card = createReviewCard("stable-fuzz-card");
+			const preview = service.getSchedulingPreview(card);
+			const previewDays = Math.round(
+				(preview.good.due.getTime() - Date.now()) / (24 * 60 * 60 * 1000),
+			);
+
+			vi.setSystemTime(new Date(Date.now() + 90_000));
+			const result = service.scheduleCard(card, Rating.Good);
+
+			expect(result.scheduledDays).toBe(previewDays);
+			expect(preview.good.interval).toBe(`${result.scheduledDays}d`);
+		});
 	});
 
 	describe("isDue", () => {

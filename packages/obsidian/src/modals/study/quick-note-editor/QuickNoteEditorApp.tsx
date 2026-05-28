@@ -15,14 +15,14 @@ import {
 	type FormattingTargetRef,
 	FormattingToolbar,
 } from "@true-recall/obsidian/editor/shared/formatting";
-import { CardTypesEditorModal } from "@true-recall/obsidian/modals/core/card-types-editor/CardTypesEditorModal";
-import { NoteTypeManagerModal } from "@true-recall/obsidian/modals/core/NoteTypeManagerModal";
 import { useIcon } from "@true-recall/obsidian/preact/hooks";
 import {
 	useApp,
 	usePlugin,
 } from "@true-recall/obsidian/preact/ObsidianContext";
 import { notify } from "@true-recall/obsidian/services/notification.service";
+import { openCardTypesEditor } from "@true-recall/obsidian/views/modal-window/open-card-types-editor";
+import { openNoteTypeManager } from "@true-recall/obsidian/views/modal-window/open-note-type-manager";
 
 import { ActionBar } from "./ActionBar";
 import { deriveAIWandState } from "./ai-wand-state";
@@ -201,24 +201,14 @@ export function QuickNoteEditorApp({
 	}, []);
 
 	const openFields = useCallback(() => {
-		const modal = new NoteTypeManagerModal(app, plugin);
-		const origClose = modal.onClose.bind(modal);
-		modal.onClose = () => {
-			origClose();
-			handleNoteTypeRefresh();
-		};
-		modal.open();
-	}, [app, plugin, handleNoteTypeRefresh]);
+		openNoteTypeManager(plugin, { onClose: handleNoteTypeRefresh });
+	}, [plugin, handleNoteTypeRefresh]);
 
 	const openCards = useCallback(() => {
-		const modal = new CardTypesEditorModal(app, plugin, noteTypeId);
-		const origClose = modal.onClose.bind(modal);
-		modal.onClose = () => {
-			origClose();
-			handleNoteTypeRefresh();
-		};
-		modal.open();
-	}, [app, plugin, noteTypeId, handleNoteTypeRefresh]);
+		openCardTypesEditor(plugin, noteTypeId, {
+			onClose: handleNoteTypeRefresh,
+		});
+	}, [plugin, noteTypeId, handleNoteTypeRefresh]);
 
 	const resolveSourceUid = useCallback(async (): Promise<
 		string | undefined
@@ -317,7 +307,14 @@ export function QuickNoteEditorApp({
 	const handleSaveRef = useRef(handleSave);
 	handleSaveRef.current = handleSave;
 
+	const rootRef = useRef<HTMLDivElement>(null);
+
 	useEffect(() => {
+		// Bind to the owning document so the shortcut works inside a popout
+		// window (containerEl.win !== window). Falling back to `document`
+		// covers the modal context where the listener attaches before the
+		// element is in the DOM.
+		const doc = rootRef.current?.ownerDocument ?? document;
 		const onKeyDown = (e: KeyboardEvent) => {
 			if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
 				e.preventDefault();
@@ -325,8 +322,8 @@ export function QuickNoteEditorApp({
 				void handleSaveRef.current();
 			}
 		};
-		document.addEventListener("keydown", onKeyDown, true);
-		return () => document.removeEventListener("keydown", onKeyDown, true);
+		doc.addEventListener("keydown", onKeyDown, true);
+		return () => doc.removeEventListener("keydown", onKeyDown, true);
 	}, []);
 
 	// AI wand dispatches "true-recall:card-polish" (kind: "draft"). Only the
@@ -404,7 +401,10 @@ export function QuickNoteEditorApp({
 	}
 
 	return (
-		<div class="true-recall-quick-editor ep:flex ep:flex-col ep:gap-3">
+		<div
+			ref={rootRef}
+			class="true-recall-quick-editor ep:flex ep:flex-col ep:gap-3"
+		>
 			{/* Action bar: Note type, Source note, AI */}
 			<ActionBar
 				app={app}

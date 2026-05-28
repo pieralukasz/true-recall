@@ -81,6 +81,11 @@ export interface EasyDaysConfig {
 export type NewCardOrder = "random" | "oldest-first" | "newest-first";
 
 /**
+ * Maximum content width preset for the review session.
+ */
+export type ReviewContentWidth = "narrow" | "default" | "wide" | "full";
+
+/**
  * Display order for review cards
  */
 export type ReviewOrder =
@@ -127,6 +132,7 @@ export interface FSRSPreset {
 	requestRetention: number;
 	maximumInterval: number;
 	weights: number[] | null;
+	enableFuzz?: boolean;
 	learningSteps: number[];
 	relearningSteps: number[];
 	newCardsPerDay: number;
@@ -230,6 +236,8 @@ export interface TrueRecallSettings {
 
 	/** Review View display mode */
 	reviewMode: ReviewViewMode;
+	/** Maximum content width preset for the review session (desktop only) */
+	reviewContentWidth: ReviewContentWidth;
 	/** Show predicted time on answer buttons */
 	showNextReviewTime: boolean;
 	/** Auto-advance to next card after answer */
@@ -284,6 +292,10 @@ export interface TrueRecallSettings {
 	loadBalanceTarget: number;
 	/** Maximum deviation from target (percentage 0-100) */
 	loadBalanceMaxDeviation: number;
+	/** Maximum day shift when balancing a newly scheduled review */
+	loadBalanceMaxShiftDays: number;
+	/** Day range for manual Balance now operations (0 = all future) */
+	loadBalanceBulkDays: number;
 
 	/** Easy days configuration (recurring weekdays + specific dates) */
 	easyDays: EasyDaysConfig;
@@ -419,6 +431,7 @@ export interface FSRSSettings {
 	requestRetention: number;
 	maximumInterval: number;
 	weights: number[] | null;
+	enableFuzz: boolean;
 	learningSteps: number[];
 	relearningSteps: number[];
 	enableShortTerm: boolean;
@@ -441,6 +454,7 @@ export function extractFSRSSettings(
 		requestRetention: settings.fsrsRequestRetention,
 		maximumInterval: settings.fsrsMaximumInterval,
 		weights: settings.fsrsWeights,
+		enableFuzz: true,
 		learningSteps: settings.learningSteps,
 		relearningSteps: settings.relearningSteps,
 		enableShortTerm: true,
@@ -454,6 +468,7 @@ export function extractFSRSSettingsFromPreset(
 		requestRetention: preset.requestRetention,
 		maximumInterval: preset.maximumInterval,
 		weights: preset.weights,
+		enableFuzz: preset.enableFuzz !== false,
 		learningSteps: preset.learningSteps,
 		relearningSteps: preset.relearningSteps,
 		enableShortTerm: true,

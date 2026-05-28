@@ -14,13 +14,16 @@
 		gap: 1rem;
 	}
 
-	/* Enable text selection + max-width for readability */
+	/* Enable text selection + max-width for readability.
+	   max-width reads --tr-review-max-width set on the outer container
+	   (driven by the `reviewContentWidth` setting), so the inner field
+	   tracks the same constraint as the wrapper. */
 	.true-recall-review-question,
 	.true-recall-review-answer {
 		user-select: text;
 		-webkit-user-select: text;
 		white-space: pre-line;
-		max-width: 60rem;
+		max-width: var(--tr-review-max-width, 60rem);
 		margin-left: auto;
 		margin-right: auto;
 		text-align: center;
@@ -104,10 +107,16 @@
 		padding-bottom: 0;
 	}
 
-	/* Reduce horizontal padding on mobile */
+	/* Reduce horizontal padding on mobile and ignore desktop max-width setting.
+	   Override both the outer max-width and the --tr-review-max-width var
+	   (inherited by inner fields), so mobile always fills the viewport. */
 	.is-mobile .true-recall-review-card-container {
 		padding-left: 0.75rem;
 		padding-right: 0.75rem;
+		/* biome-ignore lint/complexity/noImportantStyles: override inline style set by JS for desktop */
+		--tr-review-max-width: 100% !important;
+		/* biome-ignore lint/complexity/noImportantStyles: override inline style set by JS for desktop */
+		max-width: 100% !important;
 	}
 
 	/* Smaller rating buttons on mobile */

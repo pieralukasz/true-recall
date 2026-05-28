@@ -6,6 +6,7 @@ import {
 	ActionButton,
 	FormCard,
 	FormField,
+	SelectInput,
 	SliderInput,
 	TextInput,
 	ToggleInput,
@@ -22,6 +23,18 @@ interface LoadBalanceSectionProps {
 }
 
 const FORECAST_DAYS = 30;
+const BALANCE_RANGE_OPTIONS = [
+	{ value: "30", label: "Next 30 days" },
+	{ value: "60", label: "Next 60 days" },
+	{ value: "90", label: "Next 90 days" },
+	{ value: "0", label: "All future reviews" },
+];
+const MAX_SHIFT_OPTIONS = [
+	{ value: "1", label: "1 day" },
+	{ value: "3", label: "3 days" },
+	{ value: "7", label: "7 days" },
+	{ value: "14", label: "14 days" },
+];
 
 export function LoadBalanceSection({
 	settings,
@@ -58,10 +71,20 @@ export function LoadBalanceSection({
 			summary: helper.getWorkloadForecastSummary(FORECAST_DAYS),
 			dayOfWeek: helper.getWorkloadByDayOfWeek(FORECAST_DAYS),
 		};
-	}, [plugin.fsrsHelper, forecastVersion, settings.loadBalanceTarget]);
+	}, [
+		plugin.fsrsHelper,
+		forecastVersion,
+		settings.loadBalanceTarget,
+		settings.loadBalanceMaxDeviation,
+	]);
 
 	const handleBalance = () => {
-		execute(() => plugin.fsrsHelper?.balanceWorkload({ dryRun: false }));
+		execute(() =>
+			plugin.fsrsHelper?.balanceWorkload({
+				days: settings.loadBalanceBulkDays,
+				dryRun: false,
+			}),
+		);
 		setForecastVersion((v) => v + 1);
 	};
 
@@ -74,7 +97,7 @@ export function LoadBalanceSection({
 		<FormCard title="Load balance">
 			<FormField
 				name="Enable load balancing"
-				description="Automatically distribute reviews to prevent workload spikes"
+				description="Use load balancing rules when scheduling future reviews"
 			>
 				<ToggleInput
 					value={settings.loadBalanceEnabled}
@@ -111,8 +134,32 @@ export function LoadBalanceSection({
 			</FormField>
 
 			<FormField
+				name="Maximum schedule shift"
+				description="Largest day shift allowed when scheduling a newly reviewed card"
+			>
+				<SelectInput
+					value={String(settings.loadBalanceMaxShiftDays)}
+					options={MAX_SHIFT_OPTIONS}
+					onChange={(v) =>
+						void save({ loadBalanceMaxShiftDays: parseInt(v, 10) })
+					}
+				/>
+			</FormField>
+
+			<FormField
+				name="Balance now range"
+				description="Range used only by the manual Balance now action"
+			>
+				<SelectInput
+					value={String(settings.loadBalanceBulkDays)}
+					options={BALANCE_RANGE_OPTIONS}
+					onChange={(v) => void save({ loadBalanceBulkDays: parseInt(v, 10) })}
+				/>
+			</FormField>
+
+			<FormField
 				name="Balance workload now"
-				description="Redistribute reviews for the next 30 days"
+				description="Apply load balancing immediately to existing scheduled reviews"
 			>
 				<div class="ep:flex ep:items-center ep:gap-2">
 					<ActionButton

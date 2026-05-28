@@ -24,9 +24,9 @@ import {
 	cardToBlockText,
 	getSourceNoteNameFromFile,
 } from "@true-recall/obsidian/features/library/ui/panel/utils/panel-helpers";
-import { QuickNoteEditorModal } from "@true-recall/obsidian/modals/study/quick-note-editor/QuickNoteEditorModal";
 import { useApp, usePlugin } from "@true-recall/obsidian/preact";
 import { notify } from "@true-recall/obsidian/services/notification.service";
+import { openQuickNoteEditor } from "@true-recall/obsidian/views/modal-window/open-quick-note-editor";
 
 import { usePanelScroll } from "./PanelScrollContext";
 import { usePanelStore } from "./usePanelStore";
@@ -68,29 +68,27 @@ export function useCardActions() {
 				openImageOcclusionEditor: (mode) =>
 					plugin.openImageOcclusionEditor(mode),
 				openQuickEditor: async () => {
-					const modal = new QuickNoteEditorModal(app, plugin, {
+					await openQuickNoteEditor(plugin, {
 						mode: "edit",
 						cardId: card.id,
 						noteId: note.id,
 						note,
 						noteType,
 					});
-					await modal.openAndWait();
 				},
 			});
 			restoreScroll();
 		},
-		[app, plugin, cardsWithFsrs],
+		[plugin, cardsWithFsrs],
 	);
 
 	const handleAddFlashcard = useCallback(async () => {
 		const sourceUid = flashcardInfo?.sourceUid;
-		const modal = new QuickNoteEditorModal(app, plugin, {
+		await openQuickNoteEditor(plugin, {
 			mode: "add",
 			sourceUid,
 		});
-		await modal.openAndWait();
-	}, [app, plugin, flashcardInfo]);
+	}, [plugin, flashcardInfo]);
 
 	const handleEditButton = useCallback(
 		async (card: FlashcardItem) => {

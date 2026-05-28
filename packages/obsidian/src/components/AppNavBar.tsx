@@ -1,10 +1,10 @@
 import { useCallback, useMemo, useState } from "preact/hooks";
 
 import { Clickable } from "@true-recall/obsidian/components";
-import { QuickNoteEditorModal } from "@true-recall/obsidian/modals/study/quick-note-editor/QuickNoteEditorModal";
-import { useApp, useIcon, usePlugin } from "@true-recall/obsidian/preact";
+import { useIcon, usePlugin } from "@true-recall/obsidian/preact";
 import { cn } from "@true-recall/obsidian/utils";
 import { isMobile } from "@true-recall/obsidian/utils/platform";
+import { openQuickNoteEditor } from "@true-recall/obsidian/views/modal-window/open-quick-note-editor";
 
 type NavItemId = "dashboard" | "add" | "stats" | "browse";
 
@@ -30,7 +30,6 @@ const MOBILE_ALLOWED_NAV: Set<NavItemId> = new Set(["dashboard", "add"]);
 
 export function AppNavBar({ activeItem, collapsible = false }: AppNavBarProps) {
 	const plugin = usePlugin();
-	const app = useApp();
 	const [collapsed, setCollapsed] = useState(false);
 	const chevronRef = useIcon(collapsed ? "chevron-down" : "chevron-up");
 	const items = useMemo(
@@ -48,11 +47,9 @@ export function AppNavBar({ activeItem, collapsible = false }: AppNavBarProps) {
 				case "dashboard":
 					await plugin.openDashboard();
 					break;
-				case "add": {
-					const modal = new QuickNoteEditorModal(app, plugin, { mode: "add" });
-					await modal.openAndWait();
+				case "add":
+					await openQuickNoteEditor(plugin, { mode: "add" });
 					break;
-				}
 				case "stats":
 					await plugin.openStats();
 					break;
@@ -61,7 +58,7 @@ export function AppNavBar({ activeItem, collapsible = false }: AppNavBarProps) {
 					break;
 			}
 		},
-		[app, plugin, activeItem],
+		[plugin, activeItem],
 	);
 
 	return (
@@ -132,7 +129,10 @@ function NavBarItem({
 			)}
 			onClick={onClick}
 		>
-			<span ref={iconRef} class="[&_svg]:ep:w-4 [&_svg]:ep:h-4" />
+			<span
+				ref={iconRef}
+				class="ep:inline-flex ep:shrink-0 ep:items-center ep:justify-center ep:leading-none [&_svg]:ep:block [&_svg]:ep:w-4 [&_svg]:ep:h-4"
+			/>
 			<span>{item.label}</span>
 		</Clickable>
 	);

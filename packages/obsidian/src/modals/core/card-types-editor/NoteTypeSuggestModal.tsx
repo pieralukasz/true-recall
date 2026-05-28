@@ -2,8 +2,9 @@ import { type App, Notice, SuggestModal } from "obsidian";
 
 import type { NoteType } from "@true-recall/core/types/note.types";
 
+import { openCardTypesEditor } from "@true-recall/obsidian/views/modal-window/open-card-types-editor";
+
 import type TrueRecallPlugin from "../../../main";
-import { CardTypesEditorModal } from "./CardTypesEditorModal";
 import { CreateNoteTypeModal } from "./CreateNoteTypeModal";
 
 type SuggestItem = NoteType | "create";
@@ -42,7 +43,7 @@ export class NoteTypeSuggestModal extends SuggestModal<SuggestItem> {
 			void this.handleCreate();
 			return;
 		}
-		new CardTypesEditorModal(this.app, this.plugin, item.id).open();
+		openCardTypesEditor(this.plugin, item.id);
 	}
 
 	private async handleCreate(): Promise<void> {
@@ -75,7 +76,7 @@ export class NoteTypeSuggestModal extends SuggestModal<SuggestItem> {
 				templates,
 				css,
 			});
-			new CardTypesEditorModal(this.app, this.plugin, created.id).open();
+			openCardTypesEditor(this.plugin, created.id);
 		} catch (e) {
 			new Notice((e as Error).message);
 		}

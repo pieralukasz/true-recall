@@ -155,11 +155,30 @@ export function migrateSettings(raw: Partial<TrueRecallSettings> | null): {
 	// Backfill new preset fields for existing presets
 	if (settings.fsrsPresets) {
 		for (const preset of settings.fsrsPresets) {
-			preset.leechThreshold ??= 8;
-			preset.leechAction ??= "tag-only";
-			preset.newCardOrder ??= settings.newCardOrder;
-			preset.reviewOrder ??= settings.reviewOrder;
-			preset.newReviewMix ??= settings.newReviewMix;
+			if (preset.leechThreshold === undefined) {
+				preset.leechThreshold = 8;
+				needsSave = true;
+			}
+			if (preset.leechAction === undefined) {
+				preset.leechAction = "tag-only";
+				needsSave = true;
+			}
+			if (preset.enableFuzz === undefined) {
+				preset.enableFuzz = true;
+				needsSave = true;
+			}
+			if (preset.newCardOrder === undefined) {
+				preset.newCardOrder = settings.newCardOrder;
+				needsSave = true;
+			}
+			if (preset.reviewOrder === undefined) {
+				preset.reviewOrder = settings.reviewOrder;
+				needsSave = true;
+			}
+			if (preset.newReviewMix === undefined) {
+				preset.newReviewMix = settings.newReviewMix;
+				needsSave = true;
+			}
 		}
 	}
 
@@ -172,6 +191,7 @@ export function migrateSettings(raw: Partial<TrueRecallSettings> | null): {
 				requestRetention: settings.fsrsRequestRetention,
 				maximumInterval: settings.fsrsMaximumInterval,
 				weights: settings.fsrsWeights,
+				enableFuzz: true,
 				learningSteps: settings.learningSteps,
 				relearningSteps: settings.relearningSteps,
 				newCardsPerDay: settings.newCardsPerDay,

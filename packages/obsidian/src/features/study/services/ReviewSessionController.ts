@@ -138,6 +138,14 @@ export class ReviewSessionController {
 			},
 			this.reviewService,
 		);
+		transition.updatedCard = {
+			...transition.updatedCard,
+			fsrs:
+				this.plugin.fsrsHelper?.balanceScheduledReview(
+					card.id,
+					transition.updatedCard.fsrs,
+				) ?? transition.updatedCard.fsrs,
+		};
 
 		if (filters.crammingMode) {
 			const hasMore = review.recordAnswerAndNext(

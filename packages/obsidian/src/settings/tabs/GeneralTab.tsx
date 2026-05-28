@@ -8,6 +8,7 @@ import {
 	TRUERECALL_WEB_URL,
 } from "@true-recall/core/constants";
 import type {
+	ReviewContentWidth,
 	ReviewKeybindings,
 	ReviewViewMode,
 } from "@true-recall/core/types";
@@ -84,6 +85,24 @@ export function GeneralTab() {
 					<ToggleInput
 						value={settings.continuousCustomReviews}
 						onChange={(v) => void save({ continuousCustomReviews: v })}
+					/>
+				</FormField>
+
+				<FormField
+					name="Card content width"
+					description="Maximum width of card text in review (desktop only)"
+				>
+					<SelectInput
+						value={settings.reviewContentWidth}
+						onChange={(v) =>
+							void save({ reviewContentWidth: v as ReviewContentWidth })
+						}
+						options={[
+							{ value: "narrow", label: "Narrow (40rem / ~640px)" },
+							{ value: "default", label: "Default (48rem / ~768px)" },
+							{ value: "wide", label: "Wide (64rem / ~1024px)" },
+							{ value: "full", label: "Full width" },
+						]}
 					/>
 				</FormField>
 

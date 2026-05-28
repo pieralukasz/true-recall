@@ -6,13 +6,19 @@
 			"@true-recall/core": ["packages/core/src"],
 			"@true-recall/core/*": ["packages/core/src/*"],
 			"@true-recall/obsidian": ["packages/obsidian/src"],
-			"@true-recall/obsidian/*": ["packages/obsidian/src/*"]
+			"@true-recall/obsidian/*": ["packages/obsidian/src/*"],
+			"@true-recall/plugins": ["packages/plugins/src"],
+			"@true-recall/plugins/*": ["packages/plugins/src/*"]
 		},
 		"outDir": "dist",
-		"rootDir": "src",
 		"jsx": "react-jsx",
 		"jsxImportSource": "preact"
 	},
-	"include": ["src/**/*.ts", "src/**/*.tsx"],
+	"include": [
+		"src/**/*.ts",
+		"src/**/*.tsx",
+		"../plugins/src/**/*.ts",
+		"../plugins/src/**/*.tsx"
+	],
 	"references": [{ "path": "../core" }]
 }
