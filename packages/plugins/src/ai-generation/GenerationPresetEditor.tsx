@@ -15,7 +15,6 @@ interface GenerationPresetEditorProps {
 	readOnly?: boolean;
 	onChange?: (id: string, patch: Partial<GenerationPreset>) => void;
 	onLanguageChange?: (id: string, language: string) => void;
-	onFork?: () => void;
 	onDelete?: () => void;
 	expanded?: boolean;
 	onToggleExpanded?: () => void;
@@ -84,11 +83,9 @@ function BadgeRow({ preset }: { preset: GenerationPreset }) {
 
 function CompactRow({
 	preset,
-	onFork,
 	onLanguageChange,
 }: {
 	preset: GenerationPreset;
-	onFork?: () => void;
 	onLanguageChange?: (id: string, language: string) => void;
 }) {
 	return (
@@ -98,14 +95,6 @@ function CompactRow({
 					{preset.name}
 				</span>
 				<BadgeRow preset={preset} />
-				{onFork && (
-					<ActionButton
-						label="Fork to edit"
-						variant="outline"
-						size="sm"
-						onClick={onFork}
-					/>
-				)}
 			</div>
 			{onLanguageChange && (
 				<div class="ep:flex ep:items-center ep:gap-2">
@@ -146,20 +135,13 @@ export function GenerationPresetEditor({
 	readOnly,
 	onChange,
 	onLanguageChange,
-	onFork,
 	onDelete,
 	expanded,
 	onToggleExpanded,
 }: GenerationPresetEditorProps) {
 	const isReadOnly = readOnly ?? preset.builtin;
 	if (isReadOnly) {
-		return (
-			<CompactRow
-				preset={preset}
-				onFork={onFork}
-				onLanguageChange={onLanguageChange}
-			/>
-		);
+		return <CompactRow preset={preset} onLanguageChange={onLanguageChange} />;
 	}
 
 	const canCollapse = onToggleExpanded !== undefined;

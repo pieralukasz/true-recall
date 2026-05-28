@@ -21,6 +21,7 @@ export { FormCard } from "./FormCard";
 export { FormField } from "./FormField";
 export { IconButton } from "./IconButton";
 export { InfoBlock } from "./InfoBlock";
+export { PlayIcon } from "./icons/PlayIcon";
 export { LoadingSpinner } from "./LoadingSpinner";
 export { ModalFooter } from "./ModalFooter";
 export { OptionCheckbox } from "./OptionCheckbox";

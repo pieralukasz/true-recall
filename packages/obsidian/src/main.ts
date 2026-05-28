@@ -4,9 +4,12 @@ import { TrueRecallApp } from "@true-recall/core/app";
 import {
 	ENABLE_RAG,
 	VIEW_TYPE_CARD_BROWSER,
+	VIEW_TYPE_CARD_TYPES_EDITOR,
 	VIEW_TYPE_DASHBOARD,
 	VIEW_TYPE_FLASHCARD_PANEL,
 	VIEW_TYPE_KNOWLEDGE_CHAT,
+	VIEW_TYPE_NOTE_TYPE_MANAGER,
+	VIEW_TYPE_QUICK_NOTE_EDITOR,
 	VIEW_TYPE_REVIEW,
 	VIEW_TYPE_SIMULATOR,
 	VIEW_TYPE_STATS,
@@ -33,7 +36,6 @@ import {
 	normalizeSessionFilters,
 	type SessionFilters,
 } from "@true-recall/obsidian/features/study/ui/review/review.types";
-import { CardTypesEditorModal } from "@true-recall/obsidian/modals/core/card-types-editor/CardTypesEditorModal";
 import { NoteTypeSuggestModal } from "@true-recall/obsidian/modals/core/card-types-editor/NoteTypeSuggestModal";
 import { ImportStudioModal } from "@true-recall/obsidian/modals/core/import-studio/ImportStudioModal";
 import { CsvExportModal } from "@true-recall/obsidian/modals/integration/CsvExportModal";
@@ -42,7 +44,6 @@ import {
 	CustomStudyModal,
 	type CustomStudyModalScope,
 } from "@true-recall/obsidian/modals/study/CustomStudyModal";
-import { QuickNoteEditorModal } from "@true-recall/obsidian/modals/study/quick-note-editor/QuickNoteEditorModal";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 import { ProjectManagementService } from "@true-recall/obsidian/services/project-management.service";
 import { TrueRecallSettingTab } from "@true-recall/obsidian/settings";
@@ -55,6 +56,13 @@ import {
 import { CardBrowserView } from "@true-recall/obsidian/views/browser/CardBrowserView";
 import { KnowledgeChatView } from "@true-recall/obsidian/views/chat/KnowledgeChatView";
 import { DashboardView } from "@true-recall/obsidian/views/dashboard/DashboardView";
+import { CardTypesEditorView } from "@true-recall/obsidian/views/modal-window/CardTypesEditorView";
+import { drainCardTypesEditorRequests } from "@true-recall/obsidian/views/modal-window/card-types-editor-registry";
+import { NoteTypeManagerView } from "@true-recall/obsidian/views/modal-window/NoteTypeManagerView";
+import { drainNoteTypeManagerRequests } from "@true-recall/obsidian/views/modal-window/note-type-manager-registry";
+import { openCardTypesEditor as openCardTypesEditorPopout } from "@true-recall/obsidian/views/modal-window/open-card-types-editor";
+import { openQuickNoteEditor } from "@true-recall/obsidian/views/modal-window/open-quick-note-editor";
+import { QuickNoteEditorView } from "@true-recall/obsidian/views/modal-window/QuickNoteEditorView";
 import { FlashcardPanelView } from "@true-recall/obsidian/views/panel/FlashcardPanelView";
 import { ReviewView } from "@true-recall/obsidian/views/review/ReviewView";
 import { SimulatorView } from "@true-recall/obsidian/views/simulator/SimulatorView";
@@ -390,6 +398,21 @@ export default class TrueRecallPlugin extends Plugin {
 
 		registerIfAllowed(VIEW_TYPE_STATS, (leaf) => new StatsView(leaf, this));
 
+		registerIfAllowed(
+			VIEW_TYPE_QUICK_NOTE_EDITOR,
+			(leaf) => new QuickNoteEditorView(leaf, this),
+		);
+
+		registerIfAllowed(
+			VIEW_TYPE_NOTE_TYPE_MANAGER,
+			(leaf) => new NoteTypeManagerView(leaf, this),
+		);
+
+		registerIfAllowed(
+			VIEW_TYPE_CARD_TYPES_EDITOR,
+			(leaf) => new CardTypesEditorView(leaf, this),
+		);
+
 		if (ENABLE_RAG) {
 			registerIfAllowed(
 				VIEW_TYPE_KNOWLEDGE_CHAT,
@@ -487,6 +510,10 @@ export default class TrueRecallPlugin extends Plugin {
 		this.noteStatusCache?.dispose();
 		this.dataLayer?.dispose();
 		this._disposeWireDataLayer?.();
+		// Fire pending onClose callbacks for popout views so callers aren't
+		// left hanging when the plugin reloads with windows still open.
+		drainCardTypesEditorRequests();
+		drainNoteTypeManagerRequests();
 		void this.coreApp?.shutdown().catch((e) => {
 			console.error(
 				"[True Recall] Shutdown failed — data may not be saved:",
@@ -636,7 +663,7 @@ export default class TrueRecallPlugin extends Plugin {
 
 	openCardTypesEditor(noteTypeId?: string): void {
 		if (noteTypeId) {
-			new CardTypesEditorModal(this.app, this, noteTypeId).open();
+			openCardTypesEditorPopout(this, noteTypeId);
 			return;
 		}
 		new NoteTypeSuggestModal(this.app, this).open();
@@ -647,10 +674,10 @@ export default class TrueRecallPlugin extends Plugin {
 	}
 
 	openQuickNoteEditor(defaultNoteTypeId?: string): void {
-		new QuickNoteEditorModal(this.app, this, {
+		void openQuickNoteEditor(this, {
 			mode: "add",
 			defaultNoteTypeId,
-		}).open();
+		});
 	}
 
 	async openImageOcclusionEditor(

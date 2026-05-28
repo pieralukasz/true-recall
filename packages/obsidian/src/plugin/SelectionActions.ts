@@ -5,8 +5,8 @@ import { StreamingGenerationService } from "@true-recall/core/ai/generation/stre
 import type { GenerationPreset } from "@true-recall/core/types/generation-preset.types";
 
 import { mutate } from "@true-recall/obsidian/data";
-import { QuickNoteEditorModal } from "@true-recall/obsidian/modals/study/quick-note-editor/QuickNoteEditorModal";
 import { notify } from "@true-recall/obsidian/services/notification.service";
+import { openQuickNoteEditor } from "@true-recall/obsidian/views/modal-window/open-quick-note-editor";
 
 import { ObsidianHttpClient } from "../adapters/ObsidianHttpClient";
 import type TrueRecallPlugin from "../main";
@@ -50,11 +50,10 @@ export function editSelectionAsFlashcard(
 	text: string,
 ): void {
 	const normalized = normalizeSelectionForFlashcard(text);
-	const modal = new QuickNoteEditorModal(plugin.app, plugin, {
+	void openQuickNoteEditor(plugin, {
 		mode: "add",
 		initialFields: { Front: normalized },
 	});
-	void modal.openAndWait();
 }
 
 export async function quickAddFlashcardFromSelection(

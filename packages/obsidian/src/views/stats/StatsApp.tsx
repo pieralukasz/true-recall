@@ -6,6 +6,8 @@ import {
 	buildDayOfWeekStats,
 	buildFilteredForecast,
 	buildForecastSummary,
+	type ForecastRange,
+	forecastRangeToDays,
 } from "@true-recall/core/metrics/forecast-filter";
 import { buildSourceUidToPresetMap } from "@true-recall/core/metrics/stats/stats-filter.helpers";
 import type { StatsFilterContext } from "@true-recall/core/metrics/stats/stats-filter.types";
@@ -48,6 +50,7 @@ export function StatsApp() {
 		Q.ARCHIVED_UIDS,
 	);
 	const timeRange = useSignal<StatsTimeRange>("1m");
+	const forecastRange = useSignal<ForecastRange>("1m");
 	const showArchived = useSignal(false);
 	const settings = settingsSignal.value;
 	const archivedUids = archivedSourceUidsSignal.value;
@@ -234,14 +237,22 @@ export function StatsApp() {
 	// FSRS workload forecast — filtered by preset via card filtering
 	const workloadData = useMemo(() => {
 		if (renderStage < 2) return null;
-		const forecast = buildFilteredForecast(filteredCardFsrs, 30);
+		const days = forecastRangeToDays(forecastRange.value, filteredCardFsrs);
+		const forecast = buildFilteredForecast(filteredCardFsrs, days);
 		const target = settings.loadBalanceTarget ?? 50;
+		const maxDeviation = settings.loadBalanceMaxDeviation ?? 20;
 		return {
 			forecast,
-			summary: buildForecastSummary(forecast, target),
+			summary: buildForecastSummary(forecast, target, maxDeviation),
 			dayOfWeek: buildDayOfWeekStats(forecast),
 		};
-	}, [renderStage, filteredCardFsrs, settings.loadBalanceTarget]);
+	}, [
+		renderStage,
+		filteredCardFsrs,
+		forecastRange.value,
+		settings.loadBalanceTarget,
+		settings.loadBalanceMaxDeviation,
+	]);
 
 	// FSRS distributions — filtered by preset via card filtering
 	const distributions = useMemo(() => {
@@ -314,6 +325,7 @@ export function StatsApp() {
 											forecast={workloadData.forecast}
 											summary={workloadData.summary}
 											dayOfWeek={workloadData.dayOfWeek}
+											range={forecastRange}
 										/>
 									)}
 								</>

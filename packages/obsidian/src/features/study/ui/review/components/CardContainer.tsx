@@ -13,16 +13,14 @@ import {
 } from "@true-recall/obsidian/features/study/ui/review/components";
 import { LivePreviewField } from "@true-recall/obsidian/features/study/ui/review/components/LivePreviewField";
 import { TypeInCMEditor } from "@true-recall/obsidian/features/study/ui/review/components/TypeInCMEditor";
+import { getReviewMaxWidth } from "@true-recall/obsidian/features/study/ui/review/helpers";
+import { usePlugin } from "@true-recall/obsidian/preact/ObsidianContext";
 import { cn } from "@true-recall/obsidian/utils/cn";
 
 import { AudioPlayButton } from "./AudioPlayButton";
 import { NoteReviewRenderer } from "./NoteReviewRenderer";
 import { IOCardRenderer } from "@true-recall/plugins/image-occlusion";
 
-// Pre-renders the answer DOM one frame after the question paints,
-// but keeps it invisible (opacity:0, height:0). Without this,
-// revealing the answer causes a visible layout reflow as the
-// browser measures and paints the answer content for the first time.
 function useAnswerWarmup(
 	isRevealed: boolean,
 	cardId: string,
@@ -31,7 +29,6 @@ function useAnswerWarmup(
 	const prevCardRef = useRef(cardId);
 	const [, tick] = useState(0);
 
-	// Reset synchronously on card change (before render output)
 	if (prevCardRef.current !== cardId) {
 		prevCardRef.current = cardId;
 		warmRef.current = false;
@@ -40,7 +37,6 @@ function useAnswerWarmup(
 	useEffect(() => {
 		if (isRevealed || warmRef.current) return;
 
-		// Wait one frame for the question to paint, then start warm-up
 		const rafId = requestAnimationFrame(() => {
 			warmRef.current = true;
 			tick((t) => t + 1);
@@ -185,6 +181,9 @@ export function CardContainer({
 	} = typeIn;
 	const answerPhase = useAnswerWarmup(isAnswerRevealed, card.id);
 	const sourcePath = card.sourceNotePath || "";
+	const { reviewContentWidth } = usePlugin().settings;
+	const maxWidth = getReviewMaxWidth(reviewContentWidth);
+	const maxWidthStyle = `--tr-review-max-width: ${maxWidth}; max-width: ${maxWidth};`;
 
 	const questionContent = card.question;
 	const isCloze = card.cardType === "cloze";
@@ -215,7 +214,10 @@ export function CardContainer({
 
 	if (isImageOcclusion) {
 		return (
-			<div class="true-recall-review-card-container ep:flex-1 ep:min-h-0 ep:flex ep:items-start ep:justify-center ep:pt-8 ep:px-6 ep:pb-2 ep:overflow-y-auto ep:w-full ep:max-w-3xl ep:mx-auto">
+			<div
+				class="true-recall-review-card-container ep:flex-1 ep:min-h-0 ep:flex ep:items-start ep:justify-center ep:pt-8 ep:px-6 ep:pb-2 ep:overflow-y-auto ep:w-full ep:mx-auto"
+				style={maxWidthStyle}
+			>
 				<div class="ep:w-full">
 					<IOCardRenderer
 						key={card.id}
@@ -241,7 +243,10 @@ export function CardContainer({
 	}
 
 	return (
-		<div class="true-recall-review-card-container ep:flex-1 ep:min-h-0 ep:flex ep:items-start ep:justify-center ep:pt-8 ep:px-6 ep:pb-2 ep:overflow-y-auto ep:w-full ep:max-w-3xl ep:mx-auto">
+		<div
+			class="true-recall-review-card-container ep:flex-1 ep:min-h-0 ep:flex ep:items-start ep:justify-center ep:pt-8 ep:px-6 ep:pb-2 ep:overflow-y-auto ep:w-full ep:mx-auto"
+			style={maxWidthStyle}
+		>
 			<div class="ep:w-full ep:relative">
 				{card.cardType === "cloze" && card.clozeIndex !== undefined && (
 					<div class="ep:text-xs ep:text-obs-faint ep:mb-2 ep:uppercase ep:tracking-wider">
@@ -300,6 +305,7 @@ export function CardContainer({
 								answerPhase === "hidden" && "ep:hidden",
 							)}
 							aria-hidden={answerPhase !== "visible"}
+							inert={answerPhase !== "visible"}
 						>
 							<LivePreviewField
 								content={card.answer}

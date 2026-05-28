@@ -3,7 +3,10 @@ import { useMemo } from "preact/hooks";
 
 import { WorkloadForecastCalculator } from "@true-recall/core/metrics/fsrs-tools/statistics/workload-forecast.calculator";
 import { StatsCalculatorService } from "@true-recall/core/metrics/stats/stats-calculator.service";
-import type { CardSchedulingMeta } from "@true-recall/core/types";
+import type {
+	CardSchedulingMeta,
+	TrueRecallSettings,
+} from "@true-recall/core/types";
 
 import { Clickable } from "@true-recall/obsidian/components";
 import { Q, useQuery } from "@true-recall/obsidian/data";
@@ -33,20 +36,29 @@ interface WorkloadData {
 export function WorkloadWidget({ source }: { source: string }) {
 	const plugin = usePlugin();
 	const allMeta = useQuery<Map<string, CardSchedulingMeta>>(Q.ALL_META);
+	const settingsSignal = useQuery<TrueRecallSettings>(Q.SETTINGS);
 
 	const config = useMemo(() => parseCodeblockConfig(source), [source]);
 
 	const data = useComputed((): WorkloadData | null => {
 		void allMeta.value;
+		const settings = settingsSignal.value;
 		if (!plugin.cardStore || !plugin.sessionPersistence) return null;
 
 		const forecastDays = configValue(config, "days", 14) as number;
 		const heavyThreshold = configValue(config, "heavyThreshold", 1.5) as number;
 		const overrideMinPerCard = config.minutesPerCard;
+		const balanceTarget = settings.loadBalanceTarget ?? 30;
+		const maxDeviation = settings.loadBalanceMaxDeviation ?? 20;
 
 		const forecast = new WorkloadForecastCalculator(plugin.cardStore);
 		const entries = forecast.getForecast(forecastDays);
-		const summary = forecast.getSummary(30, forecastDays);
+		const summary = forecast.getSummary(
+			balanceTarget,
+			forecastDays,
+			undefined,
+			maxDeviation,
+		);
 
 		// Calculate time per card from recent stats
 		const statsCalc = new StatsCalculatorService(

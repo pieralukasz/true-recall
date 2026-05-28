@@ -1,4 +1,5 @@
 import { cva } from "class-variance-authority";
+import type { ComponentChildren } from "preact";
 
 import { useIcon } from "@true-recall/obsidian/preact/hooks";
 import { cn } from "@true-recall/obsidian/utils/cn";
@@ -14,6 +15,8 @@ interface IconButtonProps {
 	danger?: boolean;
 	disabled?: boolean;
 	class?: string;
+	/** Override the Lucide icon with custom SVG content (or any node). */
+	customIcon?: ComponentChildren;
 }
 
 const iconButtonVariants = cva(
@@ -47,8 +50,9 @@ export function IconButton({
 	danger = false,
 	disabled = false,
 	class: cls,
+	customIcon,
 }: IconButtonProps) {
-	const iconRef = useIcon(icon);
+	const iconRef = useIcon(customIcon ? "" : icon);
 
 	return (
 		<Clickable
@@ -65,7 +69,11 @@ export function IconButton({
 			disabled={disabled}
 			onClick={(e) => onClick(e)}
 		>
-			<span ref={iconRef} />
+			{customIcon ? (
+				<span class="ep:inline-flex">{customIcon}</span>
+			) : (
+				<span ref={iconRef} />
+			)}
 			{label && <span class="ep:text-ui-small">{label}</span>}
 		</Clickable>
 	);

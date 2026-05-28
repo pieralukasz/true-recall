@@ -87,25 +87,21 @@ export function AudioPlayButton({
 				width="16"
 				height="16"
 				viewBox="0 0 24 24"
-				fill="none"
+				fill="currentColor"
 				stroke="currentColor"
-				stroke-width="2"
+				stroke-width="1.5"
 				stroke-linecap="round"
 				stroke-linejoin="round"
 				role="img"
-				aria-label="Play audio"
+				aria-label={isPlaying ? "Pause audio" : "Play audio"}
 			>
 				{isPlaying ? (
 					<>
-						<path d="M11 5L6 9H2v6h4l5 4V5z" />
-						<path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
-						<path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+						<rect x="6" y="5" width="4" height="14" rx="1" />
+						<rect x="14" y="5" width="4" height="14" rx="1" />
 					</>
 				) : (
-					<>
-						<path d="M11 5L6 9H2v6h4l5 4V5z" />
-						<path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
-					</>
+					<path d="M8 5.14v13.72a1 1 0 0 0 1.54.84l10.29-6.86a1 1 0 0 0 0-1.68L9.54 4.3A1 1 0 0 0 8 5.14z" />
 				)}
 			</svg>
 		</button>

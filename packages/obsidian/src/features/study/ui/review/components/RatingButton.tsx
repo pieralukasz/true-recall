@@ -22,6 +22,9 @@ export function RatingButton({
 	label,
 	rating,
 	interval,
+	originalInterval,
+	daysChanged,
+	loadBalanceNote,
 	showInterval,
 	onAnswer,
 	disabled = false,
@@ -29,20 +32,68 @@ export function RatingButton({
 	label: string;
 	rating: Grade;
 	interval?: string;
+	originalInterval?: string;
+	daysChanged?: number;
+	loadBalanceNote?: string;
 	showInterval: boolean;
 	onAnswer: (rating: Grade) => void;
 	disabled?: boolean;
 }) {
+	const shiftLabel =
+		typeof daysChanged === "number" && daysChanged !== 0
+			? `${daysChanged > 0 ? "+" : ""}${daysChanged}`
+			: null;
+	const title = buildTitle({
+		interval,
+		originalInterval,
+		shiftLabel,
+		loadBalanceNote,
+	});
+
 	return (
 		<Clickable
 			class={ratingButtonVariants({ rating })}
 			onClick={() => onAnswer(rating)}
 			disabled={disabled}
+			title={title}
 		>
 			<div class="ep:font-semibold">{label}</div>
 			{interval && showInterval && (
-				<div class="ep:text-ui-smaller ep:text-obs-muted">{interval}</div>
+				<div class="ep:text-ui-smaller ep:text-obs-muted">
+					{interval}
+					{shiftLabel && (
+						<span class="ep:text-obs-orange"> ({shiftLabel})</span>
+					)}
+				</div>
+			)}
+			{showInterval && originalInterval && shiftLabel && (
+				<div class="ep:text-[10px] ep:leading-none ep:text-obs-muted">
+					FSRS {originalInterval}
+				</div>
 			)}
 		</Clickable>
 	);
+}
+
+function buildTitle({
+	interval,
+	originalInterval,
+	shiftLabel,
+	loadBalanceNote,
+}: {
+	interval?: string;
+	originalInterval?: string;
+	shiftLabel: string | null;
+	loadBalanceNote?: string;
+}): string | undefined {
+	if (!interval && !loadBalanceNote) return undefined;
+	const lines = [`Due: ${interval ?? "unknown"}`];
+	if (originalInterval && shiftLabel) {
+		lines.push(`FSRS: ${originalInterval}`);
+		lines.push(`Load balance: ${interval} (${shiftLabel})`);
+	} else if (loadBalanceNote) {
+		lines.push("Load balance: no change");
+	}
+	if (loadBalanceNote) lines.push(loadBalanceNote);
+	return lines.join("\n");
 }

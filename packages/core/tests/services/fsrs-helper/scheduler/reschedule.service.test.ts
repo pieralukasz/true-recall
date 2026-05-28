@@ -43,6 +43,7 @@ describe("RescheduleService", () => {
 		maximumInterval: 365,
 		learningSteps: [1, 10],
 		relearningSteps: [10],
+		enableFuzz: true,
 		enableShortTerm: true,
 	};
 

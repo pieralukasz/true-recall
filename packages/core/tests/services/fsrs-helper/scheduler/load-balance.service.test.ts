@@ -226,6 +226,49 @@ describe("LoadBalanceService", () => {
 		});
 	});
 
+	describe("balanceDue", () => {
+		it("keeps original due date when target day has room", () => {
+			const cards = createCardsOnDate("2026-02-05", 5);
+			mockStore = createMockCardStore(cards);
+			mockStore.getDueCardsByDateRange.mockReturnValue(cards);
+			service = new LoadBalanceService(mockStore);
+
+			const result = service.balanceDue({
+				cardId: "current-card",
+				originalDue: "2026-02-05T10:00:00.000Z",
+				targetPerDay: 10,
+				maxDeviation: 20,
+				maxShiftDays: 3,
+			});
+
+			expect(result.balanced).toBe(false);
+			expect(result.newDue).toBe("2026-02-05T10:00:00.000Z");
+		});
+
+		it("moves a newly scheduled due date within max shift when target day is full", () => {
+			const cards = [
+				...createCardsOnDate("2026-02-05", 12),
+				...createCardsOnDate("2026-02-06", 1),
+			];
+			mockStore = createMockCardStore(cards);
+			mockStore.getDueCardsByDateRange.mockReturnValue(cards);
+			service = new LoadBalanceService(mockStore);
+
+			const result = service.balanceDue({
+				cardId: "current-card",
+				originalDue: "2026-02-05T10:00:00.000Z",
+				targetPerDay: 10,
+				maxDeviation: 20,
+				maxShiftDays: 3,
+			});
+
+			expect(result.balanced).toBe(true);
+			expect(Math.abs(result.daysChanged)).toBeLessThanOrEqual(3);
+			expect(result.newDue).not.toBe("2026-02-05T10:00:00.000Z");
+			expect(result.newDue.endsWith("T10:00:00.000Z")).toBe(true);
+		});
+	});
+
 	describe("getDistribution", () => {
 		it("returns correct card counts per day", () => {
 			const cards = [

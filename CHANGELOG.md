@@ -1,5 +1,26 @@
 # Changelog
 
+## 1.9.4 (2026-05-28)
+
+### Features
+
+- **obsidian:** use filled play triangle on dashboard study buttons
+- **metrics:** add young/mature split and range picker to workload forecast
+- **obsidian:** migrate note type + card types editors to popout views
+- update
+- **obsidian:** open quick note editor in popout window
+- **fsrs:** balance newly scheduled reviews
+- add width settings
+
+### Improvements
+
+- **fsrs:** use deviation threshold for load balance recommendation
+
+### Bug Fixes
+
+- **plugin-review:** strip Tailwind @supports color-mix wrappers in post-build
+- **plugin-review:** replace color-mix with relative-color and drop Tailwind preflight
+
 ## 1.9.3 (2026-05-21)
 
 ### Features

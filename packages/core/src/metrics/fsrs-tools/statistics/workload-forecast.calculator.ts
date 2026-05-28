@@ -11,6 +11,28 @@ import type { SqliteStoreService } from "../../../persistence/sqlite/SqliteStore
 import { formatLocalDate } from "../../../utils";
 
 /**
+ * Sort a date→breakdown map into forecast entries, computing dueCount
+ * and a running cumulative total in chronological order.
+ */
+export function toEntries(
+	byDate: Map<string, { young: number; mature: number; learning: number }>,
+): WorkloadForecastEntry[] {
+	const sorted = Array.from(byDate.entries()).sort((a, b) =>
+		a[0].localeCompare(b[0]),
+	);
+
+	let cumulative = 0;
+	return sorted.map(([date, breakdown]) => {
+		const dueCount = breakdown.young + breakdown.mature + breakdown.learning;
+		cumulative += dueCount;
+		return { date, dueCount, cumulative, breakdown };
+	});
+}
+
+/** Review-card maturity threshold in days (matches MaturityCalculator). */
+export const MATURE_INTERVAL_DAYS = 21;
+
+/**
  * Daily workload forecast entry
  */
 export interface WorkloadForecastEntry {
@@ -18,10 +40,14 @@ export interface WorkloadForecastEntry {
 	date: string;
 	/** Number of reviews due */
 	dueCount: number;
-	/** Breakdown by card state */
+	/** Running total of dueCount up to and including this date */
+	cumulative: number;
+	/** Breakdown by card maturity */
 	breakdown: {
-		/** Cards in Review state */
-		review: number;
+		/** Review cards with interval < 21 days */
+		young: number;
+		/** Review cards with interval >= 21 days */
+		mature: number;
 		/** Cards in Learning/Relearning state */
 		learning: number;
 	};
@@ -75,42 +101,40 @@ export class WorkloadForecastCalculator {
 			);
 
 		// Build forecast by date
-		const forecast = new Map<string, { review: number; learning: number }>();
+		const forecast = new Map<
+			string,
+			{ young: number; mature: number; learning: number }
+		>();
 
 		const currentDate = new Date(today);
 		while (currentDate <= endDate) {
-			forecast.set(formatLocalDate(currentDate), { review: 0, learning: 0 });
+			forecast.set(formatLocalDate(currentDate), {
+				young: 0,
+				mature: 0,
+				learning: 0,
+			});
 			currentDate.setDate(currentDate.getDate() + 1);
 		}
 
-		// Count cards by date and state
+		// Count cards by date and maturity
 		for (const card of cards) {
 			const dateStr = formatLocalDate(new Date(card.due));
 			const existing = forecast.get(dateStr);
 
 			if (existing) {
 				// State.New = 0 (not counted in forecast)
+				// State.Review = 2 → split young/mature by interval
 				// State.Learning = 1, State.Relearning = 3
-				// State.Review = 2
 				if (card.state === State.Review) {
-					existing.review++;
+					if (card.scheduledDays < MATURE_INTERVAL_DAYS) existing.young++;
+					else existing.mature++;
 				} else if (isLearningState(card.state)) {
 					existing.learning++;
 				}
 			}
 		}
 
-		// Convert to entries
-		const entries: WorkloadForecastEntry[] = [];
-		for (const [date, breakdown] of forecast) {
-			entries.push({
-				date,
-				dueCount: breakdown.review + breakdown.learning,
-				breakdown,
-			});
-		}
-
-		return entries.sort((a, b) => a.date.localeCompare(b.date));
+		return toEntries(forecast);
 	}
 
 	/**
@@ -120,6 +144,7 @@ export class WorkloadForecastCalculator {
 		targetPerDay: number,
 		days: number = 30,
 		excludeSourceUids?: ReadonlySet<string>,
+		maxDeviation: number = 20,
 	): WorkloadForecastSummary {
 		const forecast = this.getForecast(days, excludeSourceUids);
 
@@ -135,16 +160,14 @@ export class WorkloadForecastCalculator {
 
 		// Calculate statistics
 		let total = 0;
-		let peakDay = forecast[0] ?? {
+		const empty: WorkloadForecastEntry = {
 			date: "",
 			dueCount: 0,
-			breakdown: { review: 0, learning: 0 },
+			cumulative: 0,
+			breakdown: { young: 0, mature: 0, learning: 0 },
 		};
-		let minDay = forecast[0] ?? {
-			date: "",
-			dueCount: 0,
-			breakdown: { review: 0, learning: 0 },
-		};
+		let peakDay = forecast[0] ?? empty;
+		let minDay = forecast[0] ?? empty;
 		let daysAboveTarget = 0;
 
 		for (const entry of forecast) {
@@ -163,11 +186,8 @@ export class WorkloadForecastCalculator {
 
 		const avgDaily = total / forecast.length;
 
-		// Determine if balancing is recommended
-		// (if peak is more than 50% above average, or more than 20% of days exceed target)
-		const needsBalancing =
-			peakDay.dueCount > avgDaily * 1.5 ||
-			daysAboveTarget > forecast.length * 0.2;
+		const threshold = targetPerDay * (1 + maxDeviation / 100);
+		const needsBalancing = peakDay.dueCount > threshold;
 
 		return {
 			avgDaily: Math.round(avgDaily),
@@ -184,16 +204,10 @@ export class WorkloadForecastCalculator {
 	getCumulativeForecast(
 		days: number = 30,
 	): { date: string; cumulative: number }[] {
-		const forecast = this.getForecast(days);
-
-		let cumulative = 0;
-		return forecast.map((entry) => {
-			cumulative += entry.dueCount;
-			return {
-				date: entry.date,
-				cumulative,
-			};
-		});
+		return this.getForecast(days).map((entry) => ({
+			date: entry.date,
+			cumulative: entry.cumulative,
+		}));
 	}
 
 	/**

@@ -1,25 +1,40 @@
-import type { ChartConfiguration } from "chart.js";
+import type { Signal } from "@preact/signals";
+import type { ChartConfiguration, ChartDataset } from "chart.js";
 import { useRef } from "preact/hooks";
 
+import type { ForecastRange } from "@true-recall/core/metrics/forecast-filter";
 import type {
 	WorkloadForecastEntry,
 	WorkloadForecastSummary,
 } from "@true-recall/core/metrics/fsrs-tools/statistics/workload-forecast.calculator";
 
+import { Clickable } from "@true-recall/obsidian/components";
+import { cn } from "@true-recall/obsidian/utils/cn";
+
 import { CHART_COLORS, withAlpha } from "../helpers/chart-theme";
 import { useChart } from "../helpers/use-chart";
 import { ChartCard } from "./ChartCard";
+
+const FORECAST_RANGES: { value: ForecastRange; label: string }[] = [
+	{ value: "1m", label: "1M" },
+	{ value: "3m", label: "3M" },
+	{ value: "1y", label: "1Y" },
+	{ value: "all", label: "All" },
+];
 
 interface WorkloadForecastSectionProps {
 	forecast: WorkloadForecastEntry[];
 	summary: WorkloadForecastSummary;
 	dayOfWeek: { day: number; dayName: string; avgCount: number }[];
+	/** When provided, renders a 1M/3M/1Y/All range picker bound to this signal. */
+	range?: Signal<ForecastRange>;
 }
 
 export function WorkloadForecastSection({
 	forecast,
 	summary,
 	dayOfWeek,
+	range,
 }: WorkloadForecastSectionProps) {
 	const canvasRef = useRef<HTMLCanvasElement>(null);
 	const dowCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -27,28 +42,60 @@ export function WorkloadForecastSection({
 	useChart(canvasRef, (): ChartConfiguration<"bar"> | null => {
 		if (forecast.length === 0) return null;
 		const labels = forecast.map((d) => formatLabel(d.date));
+		const green = CHART_COLORS.green();
+		const lineColor = CHART_COLORS.blue();
+
+		const cumulativeLine: ChartDataset<"line"> = {
+			type: "line",
+			label: "Cumulative",
+			data: forecast.map((d) => d.cumulative),
+			borderColor: lineColor,
+			backgroundColor: lineColor,
+			borderWidth: 1.5,
+			pointRadius: 0,
+			tension: 0.3,
+			yAxisID: "y1",
+			order: 0,
+		};
+
 		return {
 			type: "bar",
 			data: {
 				labels,
 				datasets: [
 					{
-						label: "Review",
-						data: forecast.map((d) => d.breakdown.review),
-						backgroundColor: withAlpha(CHART_COLORS.blue(), 0.7),
+						label: "Young",
+						data: forecast.map((d) => d.breakdown.young),
+						backgroundColor: withAlpha(green, 0.4),
 						borderRadius: 2,
+						stack: "due",
+						order: 1,
+					},
+					{
+						label: "Mature",
+						data: forecast.map((d) => d.breakdown.mature),
+						backgroundColor: withAlpha(green, 0.85),
+						borderRadius: 2,
+						stack: "due",
+						order: 1,
 					},
 					{
 						label: "Learning",
 						data: forecast.map((d) => d.breakdown.learning),
 						backgroundColor: withAlpha(CHART_COLORS.orange(), 0.7),
 						borderRadius: 2,
+						stack: "due",
+						order: 1,
 					},
+					// Mixed chart: line dataset on the secondary axis. Chart.js
+					// supports per-dataset `type` at runtime; cast past the bar typing.
+					cumulativeLine as unknown as ChartDataset<"bar">,
 				],
 			},
 			options: {
 				responsive: true,
 				maintainAspectRatio: false,
+				interaction: { mode: "index", intersect: false },
 				plugins: {
 					legend: {
 						display: true,
@@ -64,9 +111,8 @@ export function WorkloadForecastSection({
 						callbacks: {
 							title: (items) => forecast[items[0]?.dataIndex ?? 0]?.date ?? "",
 							footer: (items) => {
-								const idx = items[0]?.dataIndex ?? 0;
-								const entry = forecast[idx];
-								return entry ? `Total: ${String(entry.dueCount)}` : "";
+								const entry = forecast[items[0]?.dataIndex ?? 0];
+								return entry ? `Due that day: ${String(entry.dueCount)}` : "";
 							},
 						},
 					},
@@ -85,8 +131,15 @@ export function WorkloadForecastSection({
 					y: {
 						stacked: true,
 						beginAtZero: true,
+						position: "left",
 						grid: { color: withAlpha(CHART_COLORS.border(), 0.5) },
 						ticks: { color: CHART_COLORS.muted() },
+					},
+					y1: {
+						beginAtZero: true,
+						position: "right",
+						grid: { drawOnChartArea: false },
+						ticks: { color: withAlpha(CHART_COLORS.blue(), 0.9) },
 					},
 				},
 			},
@@ -130,11 +183,35 @@ export function WorkloadForecastSection({
 		};
 	}, [dayOfWeek]);
 
+	const rangePicker = range ? (
+		<div class="ep:flex ep:gap-1 ep:bg-obs-secondary ep:rounded-lg ep:p-0.5">
+			{FORECAST_RANGES.map((r) => (
+				<Clickable
+					key={r.value}
+					role="tab"
+					aria-selected={range.value === r.value}
+					class={cn(
+						"ep:px-2.5 ep:py-0.5 ep:text-xs ep:font-medium ep:rounded-md ep:transition-colors",
+						range.value === r.value
+							? "ep:bg-obs-interactive/15 ep:text-obs-interactive"
+							: "ep:text-obs-muted ep:hover:text-obs-normal",
+					)}
+					onClick={() => {
+						range.value = r.value;
+					}}
+				>
+					{r.label}
+				</Clickable>
+			))}
+		</div>
+	) : undefined;
+
 	if (forecast.length === 0) {
 		return (
 			<ChartCard
 				title="Workload Forecast"
-				subtitle="Predicted daily reviews (next 30 days)"
+				subtitle="Predicted daily reviews"
+				action={rangePicker}
 			>
 				<p class="ep:text-xs ep:text-obs-muted ep:py-8 ep:text-center">
 					No cards scheduled
@@ -146,7 +223,8 @@ export function WorkloadForecastSection({
 	return (
 		<ChartCard
 			title="Workload Forecast"
-			subtitle="Predicted daily reviews (next 30 days)"
+			subtitle="Predicted daily reviews"
+			action={rangePicker}
 		>
 			<div class="ep:h-48">
 				<canvas ref={canvasRef} />

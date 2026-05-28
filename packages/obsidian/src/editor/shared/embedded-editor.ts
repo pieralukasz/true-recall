@@ -50,8 +50,8 @@ interface EmbeddableEditorOptions {
 	onPaste?: (e: ClipboardEvent, editor: EmbeddableEditorInstance) => void;
 	onChange?: (update: ViewUpdate) => void;
 	onModEnter?: (editor: EmbeddableEditorInstance) => void;
-	onTab?: (editor: EmbeddableEditorInstance) => void;
-	onShiftTab?: (editor: EmbeddableEditorInstance) => void;
+	onTab?: (editor: EmbeddableEditorInstance) => boolean | undefined;
+	onShiftTab?: (editor: EmbeddableEditorInstance) => boolean | undefined;
 	extraExtensions?: Extension[];
 }
 
@@ -127,8 +127,8 @@ const defaultOptions: Required<EmbeddableEditorOptions> = {
 	onPaste: () => {},
 	onChange: () => {},
 	onModEnter: () => {},
-	onTab: () => {},
-	onShiftTab: () => {},
+	onTab: () => undefined,
+	onShiftTab: () => undefined,
 	extraExtensions: [],
 };
 
@@ -165,7 +165,13 @@ export function createEmbeddableEditorClass(app: App) {
 				getMode: () => "source",
 			});
 
-			this.options = { ...defaultOptions, ...options };
+			// Strip explicit `undefined` overrides so they don't replace default
+			// function references — several branches below rely on reference
+			// equality with `defaultOptions.*` to detect consumer overrides.
+			const definedOverrides = Object.fromEntries(
+				Object.entries(options).filter(([, v]) => v !== undefined),
+			) as Partial<EmbeddableEditorOptions>;
+			this.options = { ...defaultOptions, ...definedOverrides };
 			this.scope = new Scope(editorApp.scope);
 
 			// Override Mod+Enter — fires onModEnter callback, prevents "Open link in new leaf"
@@ -179,6 +185,12 @@ export function createEmbeddableEditorClass(app: App) {
 			this.owner.editor = this.editor;
 
 			this.set(this.options.value);
+			if (
+				this.options.onTab === defaultOptions.onTab &&
+				this.options.onShiftTab === defaultOptions.onShiftTab
+			) {
+				this.editor.cm.setTabFocusMode(true);
+			}
 
 			// Prevent workspace from stealing focus when the editor is active
 			this.register(
@@ -252,27 +264,23 @@ export function createEmbeddableEditorClass(app: App) {
 							},
 							preventDefault: true,
 						},
-						...(this.options.onTab
+						...(this.options.onTab !== defaultOptions.onTab
 							? [
 									{
 										key: "Tab",
 										run: () => {
-											this.options.onTab?.(this);
-											return true;
+											return this.options.onTab(this) !== false;
 										},
-										preventDefault: true,
 									},
 								]
 							: []),
-						...(this.options.onShiftTab
+						...(this.options.onShiftTab !== defaultOptions.onShiftTab
 							? [
 									{
 										key: "Shift-Tab",
 										run: () => {
-											this.options.onShiftTab?.(this);
-											return true;
+											return this.options.onShiftTab(this) !== false;
 										},
-										preventDefault: true,
 									},
 								]
 							: []),

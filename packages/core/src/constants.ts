@@ -11,6 +11,9 @@ export const VIEW_TYPE_SIMULATOR = "true-recall-simulator";
 export const VIEW_TYPE_DASHBOARD = "true-recall-dashboard-view";
 export const VIEW_TYPE_CARD_BROWSER = "true-recall-card-browser";
 export const VIEW_TYPE_STATS = "true-recall-stats";
+export const VIEW_TYPE_QUICK_NOTE_EDITOR = "true-recall-quick-note-editor";
+export const VIEW_TYPE_NOTE_TYPE_MANAGER = "true-recall-note-type-manager";
+export const VIEW_TYPE_CARD_TYPES_EDITOR = "true-recall-card-types-editor";
 export const UNASSIGNED_PATH = "__unassigned__";
 
 export interface ByokModelConfig {
@@ -71,6 +74,7 @@ export const DEFAULT_FSRS_PRESET: FSRSPreset = {
 	requestRetention: 0.9,
 	maximumInterval: 36500,
 	weights: null,
+	enableFuzz: true,
 	learningSteps: [1, 10],
 	relearningSteps: [10],
 	newCardsPerDay: 20,
@@ -145,6 +149,7 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 	lastOptimization: null,
 
 	reviewMode: "fullscreen",
+	reviewContentWidth: "default",
 	showNextReviewTime: true,
 	autoAdvance: false,
 	showReviewHeader: true,
@@ -185,6 +190,8 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 	loadBalanceEnabled: false,
 	loadBalanceTarget: 100,
 	loadBalanceMaxDeviation: 20,
+	loadBalanceMaxShiftDays: 3,
+	loadBalanceBulkDays: 30,
 
 	easyDays: {
 		recurringDays: [],

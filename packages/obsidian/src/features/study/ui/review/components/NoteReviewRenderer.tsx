@@ -3,6 +3,7 @@ import type { FSRSFlashcardItem } from "@true-recall/core/types";
 import { Clickable } from "@true-recall/obsidian/components";
 import { usePlugin } from "@true-recall/obsidian/preact/ObsidianContext";
 
+import { getReviewMaxWidth } from "../helpers/review-width";
 import { useNoteReviewContent } from "../hooks/useNoteReviewContent";
 import { LivePreviewField } from "./LivePreviewField";
 import { type PresetPickerOption, PresetPopover } from "./PresetPopover";
@@ -22,15 +23,21 @@ export function NoteReviewRenderer({
 	onPresetChange,
 	onOpenSourceNote,
 }: NoteReviewRendererProps) {
-	const { noteReviewShowFrontmatter } = usePlugin().settings;
+	const { noteReviewShowFrontmatter, reviewContentWidth } =
+		usePlugin().settings;
 	const { content, save } = useNoteReviewContent(
 		card.sourceNotePath,
 		card.id,
 		noteReviewShowFrontmatter,
 	);
 
+	const maxWidth = getReviewMaxWidth(reviewContentWidth);
+
 	return (
-		<div class="true-recall-review-card-container ep:flex-1 ep:min-h-0 ep:flex ep:items-start ep:justify-center ep:pt-8 ep:px-6 ep:pb-2 ep:overflow-y-auto ep:w-full ep:max-w-3xl ep:mx-auto">
+		<div
+			class="true-recall-review-card-container ep:flex-1 ep:min-h-0 ep:flex ep:items-start ep:justify-center ep:pt-8 ep:px-6 ep:pb-2 ep:overflow-y-auto ep:w-full ep:mx-auto"
+			style={`--tr-review-max-width: ${maxWidth}; max-width: ${maxWidth};`}
+		>
 			<div class="ep:w-full">
 				<div class="ep:text-xs ep:text-obs-faint ep:mb-2 ep:uppercase ep:tracking-wider">
 					Note Review
