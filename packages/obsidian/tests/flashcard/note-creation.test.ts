@@ -465,4 +465,86 @@ describe("note-based card creation", () => {
 			expect(deletedRow?.deleted_at).not.toBeNull();
 		});
 	});
+
+	describe("cloze note update reconciliation", () => {
+		it("removes the ord-0 placeholder once real cloze markers are added", () => {
+			const manager = new FlashcardManager({} as App, {} as never, {} as never);
+			manager.setStore(createMockStore(ctx));
+
+			// Cloze field with no {{cN::}} markers → ensure_not_empty yields one ord-0
+			// placeholder card (renders the whole field as a fully-revealed "c0").
+			const created = manager.createNote({
+				noteTypeId: BUILTIN_CLOZE_ID,
+				fields: { Text: "Paris is the capital of France", Extra: "" },
+			});
+
+			const before = ctx.cards.getCardsByNoteId(created.note.id);
+			expect(before.map((c) => c.templateOrd)).toEqual([0]);
+			const placeholderId = before[0]?.id;
+			if (!placeholderId) throw new Error("expected an ord-0 placeholder card");
+
+			manager.updateNoteFields(created.note.id, {
+				Text: "{{c1::Paris}} is the capital of {{c2::France}}",
+				Extra: "",
+			});
+
+			const active = ctx.cards.getCardsByNoteId(created.note.id);
+			expect(active.map((c) => c.templateOrd).sort()).toEqual([1, 2]);
+			expect(ctx.cards.get(placeholderId)).toBeUndefined();
+
+			const deletedRow = ctx.db.get<{ deleted_at: number | null }>(
+				`SELECT deleted_at FROM cards WHERE id = ?`,
+				[placeholderId],
+			);
+			expect(deletedRow?.deleted_at).not.toBeNull();
+		});
+
+		it("soft-deletes a card when its cloze index is edited away", () => {
+			const manager = new FlashcardManager({} as App, {} as never, {} as never);
+			manager.setStore(createMockStore(ctx));
+
+			const created = manager.createNote({
+				noteTypeId: BUILTIN_CLOZE_ID,
+				fields: {
+					Text: "{{c1::A}}, {{c2::B}} and {{c3::C}}",
+					Extra: "",
+				},
+			});
+
+			const before = ctx.cards.getCardsByNoteId(created.note.id);
+			expect(before.map((c) => c.templateOrd).sort()).toEqual([1, 2, 3]);
+			const c3 = before.find((c) => c.templateOrd === 3);
+			if (!c3) throw new Error("expected a c3 card");
+
+			manager.updateNoteFields(created.note.id, {
+				Text: "{{c1::A}} and {{c2::B}}",
+				Extra: "",
+			});
+
+			const active = ctx.cards.getCardsByNoteId(created.note.id);
+			expect(active.map((c) => c.templateOrd).sort()).toEqual([1, 2]);
+			expect(ctx.cards.get(c3.id)).toBeUndefined();
+		});
+
+		it("keeps existing cards stable when fields change without ord changes", () => {
+			const manager = new FlashcardManager({} as App, {} as never, {} as never);
+			manager.setStore(createMockStore(ctx));
+
+			const created = manager.createNote({
+				noteTypeId: BUILTIN_CLOZE_ID,
+				fields: { Text: "{{c1::Paris}} is in {{c2::France}}", Extra: "" },
+			});
+
+			const before = ctx.cards.getCardsByNoteId(created.note.id);
+			const idsBefore = before.map((c) => c.id).sort();
+
+			manager.updateNoteFields(created.note.id, {
+				Text: "{{c1::Lyon}} is in {{c2::France}}",
+				Extra: "",
+			});
+
+			const after = ctx.cards.getCardsByNoteId(created.note.id);
+			expect(after.map((c) => c.id).sort()).toEqual(idsBefore);
+		});
+	});
 });

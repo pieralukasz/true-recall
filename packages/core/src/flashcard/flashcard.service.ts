@@ -739,16 +739,35 @@ export class FlashcardManager {
 		const updatedNote: Note = { ...note, fields };
 
 		const existingCards = this.store.cards.getCardsByNoteId(noteId);
-		const existingOrds = existingCards.map((c) => c.templateOrd ?? 0);
-		const newGenerated = generateCardsForNote(
-			updatedNote,
-			noteType,
-			existingOrds,
-		);
+		const existingOrds = new Set(existingCards.map((c) => c.templateOrd ?? 0));
 
-		const updatedCardIds = existingCards.map((c) => c.id);
+		// Reconcile against the full desired card set so editing the fields can
+		// remove cards whose template ord no longer exists — e.g. a cloze index
+		// that was edited away, or the ord-0 placeholder card once real cloze
+		// markers are added. Without this, those orphans linger and render the
+		// whole field as a fully-revealed "c0" card.
+		const desiredGenerated = generateCardsForNote(updatedNote, noteType);
+		const desiredOrds = new Set(desiredGenerated.map((g) => g.templateOrd));
 
-		for (const gen of newGenerated) {
+		const deletedCardIds = existingCards
+			.filter((c) => !desiredOrds.has(c.templateOrd ?? 0))
+			.map((c) => c.id);
+
+		if (deletedCardIds.length > 0) {
+			this.store.cards.bulkSoftDelete(deletedCardIds);
+			this.sessionPersistence?.removeReviewedCards(deletedCardIds);
+			this.emitEvent("cards:bulk", {
+				cardIds: deletedCardIds,
+				action: "removed",
+			});
+		}
+
+		const updatedCardIds = existingCards
+			.filter((c) => desiredOrds.has(c.templateOrd ?? 0))
+			.map((c) => c.id);
+
+		for (const gen of desiredGenerated) {
+			if (existingOrds.has(gen.templateOrd)) continue;
 			const fsrsData = this.createCardFromGenerated(gen, updatedNote, noteType);
 			updatedCardIds.push(fsrsData.id);
 		}

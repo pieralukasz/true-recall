@@ -181,7 +181,10 @@ export function CardContainer({
 	} = typeIn;
 	const answerPhase = useAnswerWarmup(isAnswerRevealed, card.id);
 	const sourcePath = card.sourceNotePath || "";
-	const { reviewContentWidth } = usePlugin().settings;
+	const { reviewContentWidth, providerType } = usePlugin().settings;
+	// Detailed grading feedback is stripped for non-Pro tiers in
+	// SemanticAnswerGradingService — surface that instead of silently hiding it.
+	const isProTier = providerType === "pro";
 	const maxWidth = getReviewMaxWidth(reviewContentWidth);
 	const maxWidthStyle = `--tr-review-max-width: ${maxWidth}; max-width: ${maxWidth};`;
 
@@ -376,6 +379,16 @@ export function CardContainer({
 									{semanticResult.feedback}
 								</div>
 							)}
+							{semanticResult?.source === "ai" &&
+								!semanticResult.feedback &&
+								!isProTier && (
+									<div class="ep:text-ui-smaller ep:text-obs-faint ep:flex ep:items-center ep:gap-1.5">
+										<span class="ep:text-[9px] ep:px-1 ep:rounded ep:font-semibold ep:bg-obs-accent/15 ep:text-obs-accent ep:leading-none">
+											PRO
+										</span>
+										<span>Detailed feedback is a True Recall Pro feature</span>
+									</div>
+								)}
 							{semanticMessage && (
 								<div class="ep:text-ui-smaller ep:text-obs-muted">
 									{semanticMessage}
