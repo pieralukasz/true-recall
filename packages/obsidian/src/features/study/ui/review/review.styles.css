@@ -14,6 +14,11 @@
 		gap: 1rem;
 	}
 
+	.true-recall-rating-button {
+		padding-top: 0.5rem;
+		padding-bottom: 0.5rem;
+	}
+
 	/* Enable text selection + max-width for readability.
 	   max-width reads --tr-review-max-width set on the outer container
 	   (driven by the `reviewContentWidth` setting), so the inner field

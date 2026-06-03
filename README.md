@@ -55,7 +55,7 @@ cp main.js styles.css manifest.json <your-vault>/.obsidian/plugins/true-recall/
 ### Requirements
 
 - Obsidian 1.7.2+
-- Desktop (Windows, macOS, Linux) and Mobile (iOS, Android)
+- Desktop (Windows, macOS, Linux). True Recall is marked desktop-only in `manifest.json`.
 
 ---
 
@@ -73,7 +73,7 @@ For a complete walkthrough, see the [documentation](https://www.truerecall.app/)
 
 ## Privacy & Background Activity
 
-True Recall is local-first. No telemetry, analytics, or background data transmission.
+True Recall is local-first. It does not send telemetry or analytics. Network access is limited to the explicit feature paths below.
 
 **Periodic timers (`setInterval`) — all local, no network:**
 - Database safety-flush — writes pending changes to the local SQLite file in your vault.
@@ -83,10 +83,20 @@ True Recall is local-first. No telemetry, analytics, or background data transmis
 
 **Network requests — only on explicit user action or one-time per release:**
 - Update check — when the plugin version differs from the last seen version, a single `requestUrl` call is made to the GitHub Releases API to fetch release notes. Runs once per version, not on a timer.
-- AI / RAG features (opt-in) — flashcard generation, semantic grading, and RAG are disabled by default. When enabled, requests go only to the LLM provider you configure (OpenRouter, your local Ollama, etc.). No third-party server is involved.
-- Local API server (desktop, opt-in) — binds to `127.0.0.1` only, used by the optional companion CLI. Never reaches the public network and is disabled by default.
+- AI / RAG features (opt-in) — flashcard generation, semantic grading, image-occlusion detection, and knowledge-base chat require a configured AI provider. Depending on settings, requests can go to OpenRouter, `ai.truerecall.app` for True Recall Pro, a local LM Studio/Ollama endpoint, or a custom OpenAI-compatible endpoint you enter.
+- Local API server (desktop, opt-in) — binds to `127.0.0.1` only, used by the optional companion CLI and MCP server. It is disabled by default and does not expose a public network listener.
+- External links — documentation, pricing, sponsorship, Discord, and Anki shared-deck links are opened only when you click UI links.
 
-**Storage:** All flashcards and review data live in `.true-recall/true-recall.db` inside your vault. Backups and lock files live in the same `.true-recall/` folder. Nothing is uploaded anywhere.
+**Storage:** All flashcards and review data live in `.true-recall/true-recall.db` inside your vault. Backups and lock files live in the same `.true-recall/` folder. Device identity and optional device labels use `localStorage` so multiple synced devices can avoid database conflicts.
+
+**Vault and clipboard access:**
+- Vault reads/writes are core to the plugin: True Recall reads selected/current notes, creates or updates notes for projects/imports, and stores its SQLite database and backups inside the vault.
+- Vault enumeration is used for note pickers, project discovery, media lookup, export/import, and optional RAG indexing.
+- Clipboard writes happen only from explicit copy actions. Clipboard paste/drop handlers are used only in image/media workflows initiated by the user.
+
+**Bundled runtime components:**
+- The plugin embeds `@sqlite.org/sqlite-wasm` so SQLite works locally in Obsidian. This is the expected `.wasm` module in the bundle.
+- Base64 encoding is used to pass selected vault images to configured AI vision providers for image-occlusion region detection. It is not used to hide network destinations or source strings.
 
 ---
 

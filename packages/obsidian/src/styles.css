@@ -264,52 +264,45 @@ settings:
    Semantic text styles as Tailwind utilities. Usage: ep:ep-text-heading-md
    Eliminates repeating 4-5 class combos for the same visual result. */
 
-@utility ep-text-heading-lg {
-	font-size: 1.5rem;
-	font-weight: 600;
-	color: var(--text-normal);
-	letter-spacing: -0.025em;
-	line-height: 1.3;
-}
-
-@utility ep-text-heading-md {
-	font-size: var(--font-ui-medium);
-	font-weight: 600;
-	color: var(--text-normal);
-	letter-spacing: -0.025em;
-}
-
-@utility ep-text-heading-sm {
-	font-size: var(--font-ui-small);
-	font-weight: 600;
-	color: var(--text-normal);
-	text-transform: uppercase;
-	letter-spacing: 0.05em;
-}
-
-@utility ep-text-body {
-	font-size: var(--font-ui-small);
-	color: var(--text-normal);
-}
-
-@utility ep-text-body-muted {
-	font-size: var(--font-ui-small);
-	color: var(--text-muted);
-}
-
-@utility ep-text-caption {
-	font-size: var(--font-ui-smaller);
-	color: var(--text-muted);
-}
-
-@utility ep-text-overline {
-	font-size: 0.75rem;
-	color: var(--text-faint);
-	text-transform: uppercase;
-	letter-spacing: 0.05em;
-}
-
 @layer utilities {
+	.ep\:ep-text-heading-lg {
+		font-size: 1.5rem;
+		font-weight: 600;
+		color: var(--text-normal);
+		letter-spacing: -0.025em;
+		line-height: 1.3;
+	}
+	.ep\:ep-text-heading-md {
+		font-size: var(--font-ui-medium);
+		font-weight: 600;
+		color: var(--text-normal);
+		letter-spacing: -0.025em;
+	}
+	.ep\:ep-text-heading-sm {
+		font-size: var(--font-ui-small);
+		font-weight: 600;
+		color: var(--text-normal);
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+	}
+	.ep\:ep-text-body {
+		font-size: var(--font-ui-small);
+		color: var(--text-normal);
+	}
+	.ep\:ep-text-body-muted {
+		font-size: var(--font-ui-small);
+		color: var(--text-muted);
+	}
+	.ep\:ep-text-caption {
+		font-size: var(--font-ui-smaller);
+		color: var(--text-muted);
+	}
+	.ep\:ep-text-overline {
+		font-size: 0.75rem;
+		color: var(--text-faint);
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+	}
 	.ep-dynamic-bg {
 		background-color: var(--ep-dynamic-color);
 	}
@@ -555,7 +548,7 @@ settings:
 
 .ep-chat-markdown blockquote {
 	padding-left: 0.75rem;
-	border-left: 2px solid rgb(from var(--text-accent) r g b / 0.3);
+	border-left: 2px solid var(--text-accent);
 	margin: 0.75rem 0;
 	color: var(--text-muted);
 }
@@ -583,12 +576,12 @@ settings:
 
 .ep-drop-target {
 	box-shadow: inset 3px 0 0 var(--interactive-accent);
-	background: rgb(from var(--interactive-accent) r g b / 0.08);
+	background: var(--background-modifier-hover);
 }
 
 .ep-drop-root-zone {
 	border-color: var(--interactive-accent);
-	background: rgb(from var(--interactive-accent) r g b / 0.06);
+	background: var(--background-modifier-hover);
 }
 
 /* Reduced motion: remove spatial motion, keep opacity fades */
