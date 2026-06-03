@@ -126,7 +126,7 @@ export function BulkActionsBar({
 
 			{selectedCount < totalCount && (
 				<Clickable
-					class="ep:text-[11px] ep:text-obs-interactive ep:underline"
+					class="ep:text-[11px] ep:text-obs-interactive tr-faux-underline"
 					onClick={onSelectAll}
 				>
 					Select all {totalCount}

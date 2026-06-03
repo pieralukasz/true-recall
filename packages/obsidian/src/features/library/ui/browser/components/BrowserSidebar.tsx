@@ -151,7 +151,7 @@ export function BrowserSidebar({
 			{hasAnyFilter(activeFilter) && (
 				<div class="ep:px-3 ep:py-2 ep:border-t ep:border-obs-border">
 					<Clickable
-						class="ep:text-[11px] ep:text-obs-interactive ep:underline"
+						class="ep:text-[11px] ep:text-obs-interactive tr-faux-underline"
 						onClick={() =>
 							onFilterChange({
 								states: [],

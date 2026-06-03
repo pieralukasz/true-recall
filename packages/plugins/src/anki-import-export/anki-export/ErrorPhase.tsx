@@ -8,7 +8,7 @@ interface ErrorPhaseProps {
 export function ErrorPhase({ message, onClose }: ErrorPhaseProps) {
 	return (
 		<>
-			<div class="ep:text-ui-small ep:text-red-500 ep:py-4 ep:text-center">
+			<div class="ep:text-ui-small ep:text-obs-error ep:py-4 ep:text-center">
 				Export failed: {message}
 			</div>
 			<div class="ep-modal-footer ep:flex ep:justify-end ep:gap-2">

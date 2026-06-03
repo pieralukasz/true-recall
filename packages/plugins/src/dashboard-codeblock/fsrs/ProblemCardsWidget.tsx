@@ -89,7 +89,7 @@ export function ProblemCardsWidget({ source }: { source: string }) {
 								class="ep:shrink-0 ep:px-1.5 ep:py-0.5 ep:rounded ep:text-[10px] ep:font-medium"
 								style={{
 									color: badge.color,
-									backgroundColor: `color-mix(in srgb, ${badge.color} 12%, transparent)`,
+									backgroundColor: "var(--background-modifier-hover)",
 								}}
 							>
 								{badge.label}

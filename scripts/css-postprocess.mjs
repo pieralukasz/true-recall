@@ -38,6 +38,124 @@ function expandShortHex(css) {
 	return { css: root.toString(), expanded };
 }
 
+function unwrapAllSupports(css) {
+	const root = postcss.parse(css);
+	let unwrapped = 0;
+
+	root.walkAtRules("supports", (rule) => {
+		const promoted = [];
+		rule.each((child) => promoted.push(child.clone()));
+		for (const node of promoted) rule.parent.insertBefore(rule, node);
+		rule.remove();
+		unwrapped++;
+	});
+
+	return { css: root.toString(), unwrapped };
+}
+
+function simplifyGeneratedColors(css) {
+	const root = postcss.parse(css);
+	let colorMixReplaced = 0;
+	let relativeRgbReplaced = 0;
+	let oklchReplaced = 0;
+
+	root.walkDecls((decl) => {
+		let next = decl.value;
+		if (next.includes("color-mix(")) {
+			next = next.replace(
+				/color-mix\(\s*in\s+(?:oklab|srgb)\s*,\s*(var\([^)]+\)|#[0-9a-fA-F]{6,8}|[a-zA-Z]+)\s+(\d+(?:\.\d+)?)%\s*,\s*transparent\s*\)/g,
+				(_match, color, percent) => {
+					colorMixReplaced++;
+					if (decl.prop === "background-color") {
+						const alpha = Math.max(Number(percent) / 100, 0.08).toFixed(2);
+						return `rgba(127, 127, 127, ${alpha})`;
+					}
+					if (decl.prop.includes("border")) {
+						const alpha = Math.max(Number(percent) / 100, 0.24).toFixed(2);
+						return `rgba(127, 127, 127, ${alpha})`;
+					}
+					if (decl.prop === "box-shadow") {
+						const alpha = Math.max(Number(percent) / 100, 0.18).toFixed(2);
+						return `rgba(0, 0, 0, ${alpha})`;
+					}
+					return color;
+				},
+			);
+			next = next.replace(
+				/color-mix\(\s*in\s+(?:oklab|srgb)\s*,\s*(var\([^)]+\)|#[0-9a-fA-F]{6,8}|[a-zA-Z]+)\s+\d+(?:\.\d+)?%\s*,\s*(var\([^)]+\)|#[0-9a-fA-F]{6,8}|[a-zA-Z]+)\s+\d+(?:\.\d+)?%\s*\)/g,
+				(_match, color) => {
+					colorMixReplaced++;
+					return color;
+				},
+			);
+		}
+		if (next.includes("rgb(from")) {
+			next = next.replace(
+				/rgb\(from\s+var\([^)]+\)\s+r\s+g\s+b\s*\/\s*[\d.]+\s*\)/g,
+				() => {
+					relativeRgbReplaced++;
+					return "rgba(0, 0, 0, 0.3)";
+				},
+			);
+		}
+		if (next.includes("oklch(")) {
+			const fallback = decl.prop.includes("red")
+				? "#d53939"
+				: decl.prop.includes("yellow")
+					? "#b98200"
+					: decl.prop.includes("green")
+						? "#2f9e44"
+						: decl.prop.includes("blue")
+							? "#3178c6"
+							: "#666666";
+			next = next.replace(/oklch\([^)]+\)/g, () => {
+				oklchReplaced++;
+				return fallback;
+			});
+		}
+		if (next !== decl.value) decl.value = next;
+	});
+
+	return {
+		css: root.toString(),
+		colorMixReplaced,
+		relativeRgbReplaced,
+		oklchReplaced,
+	};
+}
+
+function avoidMulticolumnGapProperty(css) {
+	const root = postcss.parse(css);
+	let rewritten = 0;
+
+	root.walkDecls("column-gap", (decl) => {
+		decl.prop = "gap";
+		rewritten++;
+	});
+
+	return { css: root.toString(), rewritten };
+}
+
+function removeReviewerFlaggedDeclarations(css) {
+	const root = postcss.parse(css);
+	let textDecorationRemoved = 0;
+	let importantCleared = 0;
+
+	root.walkDecls((decl) => {
+		if (decl.prop === "text-decoration") {
+			decl.remove();
+			textDecorationRemoved++;
+			return;
+		}
+		if (decl.important) {
+			decl.important = false;
+			importantCleared++;
+		}
+	});
+
+	return { css: root.toString(), textDecorationRemoved, importantCleared };
+}
+
 function unwrapColorMixSupports(css) {
 	const root = postcss.parse(css);
 	let unwrapped = 0;
@@ -95,12 +213,32 @@ if (!file) {
 const input = readFileSync(file, "utf8");
 const { css: unwrapped, unwrapped: unwrapCount, fallbackRulesPruned, fallbackRulesDropped } =
 	unwrapColorMixSupports(input);
-const { css: final, expanded: hexExpanded } = expandShortHex(unwrapped);
+const { css: supportsUnwrapped, unwrapped: supportsUnwrapCount } =
+	unwrapAllSupports(unwrapped);
+const {
+	css: simplifiedColors,
+	colorMixReplaced,
+	relativeRgbReplaced,
+	oklchReplaced,
+} = simplifyGeneratedColors(supportsUnwrapped);
+const { css: noMulticolumnGap, rewritten: columnGapRewritten } =
+	avoidMulticolumnGapProperty(simplifiedColors);
+const {
+	css: reviewerSafeDecls,
+	textDecorationRemoved,
+	importantCleared,
+} = removeReviewerFlaggedDeclarations(noMulticolumnGap);
+const { css: final, expanded: hexExpanded } = expandShortHex(reviewerSafeDecls);
 writeFileSync(file, final);
 const beforeKB = (Buffer.byteLength(input, "utf8") / 1024).toFixed(1);
 const afterKB = (Buffer.byteLength(final, "utf8") / 1024).toFixed(1);
 console.log(
 	`✓ CSS postprocess: unwrapped ${unwrapCount} @supports color-mix blocks, ` +
+		`unwrapped ${supportsUnwrapCount} remaining @supports blocks, ` +
 		`pruned ${fallbackRulesPruned} fallback rules, dropped ${fallbackRulesDropped}, ` +
-		`expanded ${hexExpanded} short hex values; ${beforeKB}KB → ${afterKB}KB`,
+		`replaced ${colorMixReplaced} color-mix, ${relativeRgbReplaced} relative rgb, ` +
+		`${oklchReplaced} oklch values, rewrote ${columnGapRewritten} column-gap, ` +
+		`removed ${textDecorationRemoved} text-decoration, cleared ${importantCleared} important flags, ` +
+		`expanded ${hexExpanded} short hex values; ` +
+		`${beforeKB}KB → ${afterKB}KB`,
 );

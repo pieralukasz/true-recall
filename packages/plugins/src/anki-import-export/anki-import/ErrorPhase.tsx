@@ -15,7 +15,7 @@ export function ErrorPhase({
 }: ErrorPhaseProps) {
 	return (
 		<>
-			<div class="ep:text-ui-small ep:text-red-500 ep:py-4 ep:text-center">
+			<div class="ep:text-ui-small ep:text-obs-error ep:py-4 ep:text-center">
 				{canRetry ? "Failed to parse file: " : "Import failed: "}
 				{message}
 			</div>

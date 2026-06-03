@@ -31,7 +31,7 @@ export function ResultPhase({ result, onClose }: ResultPhaseProps) {
 
 				{result.errors.length > 0 && (
 					<div class="ep:mb-3">
-						<div class="ep:text-ui-small ep:font-medium ep:mb-1 ep:text-red-500">
+						<div class="ep:text-ui-small ep:font-medium ep:mb-1 ep:text-obs-error">
 							Errors:
 						</div>
 						<div class="ep:border ep:border-obs-border ep:rounded-md ep:max-h-[100px] ep:overflow-y-auto ep:p-2">

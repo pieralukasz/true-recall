@@ -71,7 +71,7 @@ function CsvExportBody({
 		return (
 			<>
 				<div class="ep:text-center ep:py-6">
-					<div class="ep:text-ui-small ep:font-medium ep:text-green-500">
+					<div class="ep:text-ui-small ep:font-medium ep:text-obs-green">
 						Exported as {phase.filename}
 					</div>
 				</div>
@@ -85,7 +85,7 @@ function CsvExportBody({
 	if (phase.type === "error") {
 		return (
 			<>
-				<div class="ep:text-ui-small ep:text-red-500 ep:py-4 ep:text-center">
+				<div class="ep:text-ui-small ep:text-obs-error ep:py-4 ep:text-center">
 					Export failed: {phase.message}
 				</div>
 				<div class="ep-modal-footer ep:flex ep:justify-end ep:gap-2">

@@ -285,8 +285,8 @@
 	}
 
 	.modal.tr-modal-host > .modal-close-button:hover {
-		background: rgb(from var(--text-normal) r g b / 0.06);
-		border-color: rgb(from var(--text-normal) r g b / 0.08);
+		background: var(--background-modifier-hover);
+		border-color: var(--background-modifier-border-hover);
 	}
 
 	/* ================================================================
@@ -327,7 +327,7 @@
 	}
 
 	/* ================================================================
-	   BUTTON VARIANTS — !important to override Obsidian defaults
+	   BUTTON VARIANTS — scoped selectors override Obsidian defaults
 	   ================================================================ */
 	.ep-btn {
 		display: inline-flex;
