@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.9.6 (2026-06-03)
+
+### Bug Fixes
+
+- fixed contrast of tinted UI elements (buttons, badges, highlights) so they stay readable across light and dark themes
+- cleaned up plugin stylesheets to resolve Obsidian plugin reviewer warnings — no visual changes expected
+
 ## 1.9.5 (2026-06-03)
 
 ### Features

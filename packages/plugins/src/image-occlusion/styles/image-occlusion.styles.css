@@ -16,7 +16,7 @@
 		border: 1px solid var(--background-modifier-border);
 		border-radius: var(--radius-m);
 		padding: 12px 12px 10px;
-		background: rgb(from var(--background-secondary) r g b / 0.65);
+		background: var(--background-secondary);
 		display: flex;
 		flex-direction: column;
 		gap: 0;
@@ -29,8 +29,7 @@
 		flex-direction: column;
 		gap: 8px;
 		padding: 10px 0;
-		border-bottom: 1px solid
-			rgb(from var(--background-modifier-border) r g b / 0.85);
+		border-bottom: 1px solid var(--background-modifier-border);
 	}
 
 	.true-recall-io-side-section:first-child {
@@ -71,8 +70,8 @@
 	}
 
 	.true-recall-io-region-item.is-selected {
-		border-color: rgb(from var(--interactive-accent) r g b / 0.55);
-		background: rgb(from var(--interactive-accent) r g b / 0.13);
+		border-color: var(--interactive-accent);
+		background: var(--background-modifier-hover);
 	}
 
 	.true-recall-io-region-main {
@@ -89,7 +88,7 @@
 		width: 30px;
 		height: 30px;
 		border: 1px solid var(--background-modifier-border);
-		background: rgb(from var(--background-primary) r g b / 0.88);
+		background: var(--background-primary);
 		color: var(--text-muted);
 		border-radius: var(--radius-s);
 		display: inline-flex;
@@ -105,20 +104,20 @@
 
 	.true-recall-io-icon-btn:hover:not([aria-disabled="true"]) {
 		color: var(--text-normal);
-		border-color: rgb(from var(--background-modifier-border) r g b / 0.5);
+		border-color: var(--background-modifier-border-hover);
 		background: var(--background-modifier-hover);
 	}
 
 	.true-recall-io-icon-btn.is-active {
 		color: var(--text-accent);
-		background: rgb(from var(--interactive-accent) r g b / 0.16);
-		border-color: rgb(from var(--interactive-accent) r g b / 0.45);
+		background: var(--background-modifier-hover);
+		border-color: var(--interactive-accent);
 	}
 
 	.true-recall-io-icon-btn.is-danger:hover:not([aria-disabled="true"]) {
 		color: var(--text-error);
-		background: rgb(from var(--color-red) r g b / 0.14);
-		border-color: rgb(from var(--color-red) r g b / 0.48);
+		background: var(--background-modifier-error);
+		border-color: var(--text-error);
 	}
 
 	.true-recall-io-icon-btn[aria-disabled="true"] {
@@ -139,7 +138,7 @@
 
 	.true-recall-io-inline-link:hover {
 		color: var(--text-normal);
-		text-decoration: underline;
+		border-bottom: 1px solid currentColor;
 	}
 
 	.true-recall-io-hint-text {
@@ -184,7 +183,7 @@
 		background:
 			radial-gradient(
 				circle at 1px 1px,
-				rgb(from var(--text-faint) r g b / 0.25) 1px,
+				var(--background-modifier-border) 1px,
 				transparent 0
 			)
 			0 0 / 22px 22px,
@@ -215,9 +214,9 @@
 		align-items: center;
 		gap: 4px;
 		padding: 4px;
-		border: 1px solid rgb(from var(--background-modifier-border) r g b / 0.75);
+		border: 1px solid var(--background-modifier-border);
 		border-radius: 999px;
-		background: rgb(from var(--background-primary) r g b / 0.84);
+		background: var(--background-primary);
 		backdrop-filter: blur(5px);
 	}
 
@@ -258,7 +257,7 @@
 		padding: 3px 8px;
 		font-size: var(--font-ui-smaller);
 		color: var(--text-muted);
-		background: rgb(from var(--background-primary) r g b / 0.78);
+		background: var(--background-primary);
 		border-radius: 999px;
 		pointer-events: none;
 	}
@@ -266,10 +265,10 @@
 	.true-recall-io-canvas-shortcuts kbd {
 		font-family: var(--font-interface);
 		font-size: calc(var(--font-ui-smaller) - 1px);
-		border: 1px solid rgb(from var(--background-modifier-border) r g b / 0.6);
+		border: 1px solid var(--background-modifier-border);
 		border-radius: 5px;
 		padding: 1px 4px;
-		background: rgb(from var(--background-secondary) r g b / 0.65);
+		background: var(--background-secondary);
 	}
 
 	.true-recall-io-canvas-transform {
@@ -305,48 +304,26 @@
 	}
 
 	.true-recall-io-canvas-region {
-		fill: color-mix(
-			in srgb,
-			var(--background-primary) 62%,
-			var(--interactive-accent) 38%
-		);
+		fill: var(--interactive-accent);
 		fill-opacity: 1;
-		stroke: color-mix(
-			in srgb,
-			var(--interactive-accent) 88%,
-			var(--background-primary) 12%
-		);
+		stroke: var(--interactive-accent);
 		stroke-width: 0.0045;
 		cursor: move;
 	}
 
 	.true-recall-io-canvas-region.is-draft {
-		fill: color-mix(
-			in srgb,
-			var(--background-primary) 72%,
-			var(--interactive-accent) 28%
-		);
+		fill: var(--background-modifier-hover);
 		fill-opacity: 1;
-		stroke: color-mix(
-			in srgb,
-			var(--interactive-accent) 72%,
-			var(--background-primary) 28%
-		);
+		stroke: var(--interactive-accent);
 		stroke-dasharray: 0.018 0.01;
 	}
 
 	.true-recall-io-canvas-region.is-selected {
-		fill: color-mix(
-			in srgb,
-			var(--background-primary) 48%,
-			var(--interactive-accent) 52%
-		);
+		fill: var(--interactive-accent);
 		fill-opacity: 1;
 		stroke: var(--interactive-accent);
 		stroke-width: 0.007;
-		filter: drop-shadow(
-			0 0 5px rgb(from var(--interactive-accent) r g b / 0.48)
-		);
+		filter: drop-shadow(0 0 5px rgba(0, 0, 0, 0.35));
 	}
 
 	.true-recall-io-canvas-handle {
@@ -376,11 +353,11 @@
 
 	.true-recall-io-render-frame {
 		position: relative;
-		border: 1px solid rgb(from var(--background-modifier-border) r g b / 0.8);
+		border: 1px solid var(--background-modifier-border);
 		border-radius: var(--radius-l);
 		background: var(--background-secondary);
 		overflow: hidden;
-		box-shadow: 0 8px 24px rgb(from var(--background-primary) r g b / 0.5);
+		box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
 		max-height: min(58vh, 620px);
 		margin-inline: auto;
 		opacity: 0;
@@ -413,61 +390,45 @@
 	}
 
 	.true-recall-io-shape.is-mask-active {
-		fill: color-mix(
-			in srgb,
-			var(--background-primary) 32%,
-			var(--interactive-accent) 68%
-		);
+		fill: var(--interactive-accent);
 		fill-opacity: 1;
 	}
 
 	.true-recall-io-shape.is-mask-passive {
-		fill: color-mix(
-			in srgb,
-			var(--background-primary) 46%,
-			var(--interactive-accent) 54%
-		);
+		fill: var(--background-modifier-hover);
 		fill-opacity: 1;
 	}
 
 	/* Review-only override for unrevealed IO cards in ALL mode: active stays accent, others are gray. */
 	.true-recall-review-card-container .true-recall-io-render:not(.is-revealed)
 		.true-recall-io-shape.is-mask-active {
-		fill: color-mix(
-			in srgb,
-			var(--background-primary) 24%,
-			var(--interactive-accent) 76%
-		);
+		fill: var(--interactive-accent);
 		fill-opacity: 1;
 	}
 
 	.true-recall-review-card-container
 		.true-recall-io-render:not(.is-revealed)
 		.true-recall-io-shape.is-mask-passive {
-		fill: color-mix(
-			in srgb,
-			var(--background-primary) 70%,
-			var(--text-muted) 30%
-		);
+		fill: var(--background-modifier-hover);
 		fill-opacity: 1;
 	}
 
 	.true-recall-io-shape.is-outline-passive {
 		fill: transparent;
-		stroke: rgb(from var(--text-muted) r g b / 0.65);
+		stroke: var(--text-muted);
 		stroke-width: 0.002;
 		opacity: 0.85;
 	}
 
 	.true-recall-io-shape.is-revealed-passive {
 		fill: transparent;
-		stroke: rgb(from var(--text-faint) r g b / 0.8);
+		stroke: var(--text-faint);
 		stroke-width: 0.002;
 		opacity: 0.7;
 	}
 
 	.true-recall-io-shape.is-revealed-active {
-		fill: rgb(from var(--color-green) r g b / 0.25);
+		fill: var(--background-modifier-success);
 		animation: true-recall-io-pulse 820ms ease-out 1;
 	}
 
@@ -490,8 +451,7 @@
 	.true-recall-io-footer {
 		margin-top: 2px;
 		padding-top: 10px;
-		border-top: 1px solid
-			rgb(from var(--background-modifier-border) r g b / 0.85);
+		border-top: 1px solid var(--background-modifier-border);
 	}
 
 	/* ── Expand / zoom controls ──────────────────────────────────── */
@@ -503,9 +463,9 @@
 		z-index: 10;
 		width: 32px;
 		height: 32px;
-		border: 1px solid rgb(from var(--background-modifier-border) r g b / 0.6);
+		border: 1px solid var(--background-modifier-border);
 		border-radius: var(--radius-s);
-		background: rgb(from var(--background-primary) r g b / 0.82);
+		background: var(--background-primary);
 		backdrop-filter: blur(4px);
 		color: var(--text-muted);
 		display: inline-flex;
@@ -539,7 +499,7 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		background: rgb(from var(--background-primary) r g b / 0.88);
+		background: var(--background-primary);
 		backdrop-filter: blur(8px);
 		padding: 24px;
 	}
@@ -563,7 +523,7 @@
 		z-index: 10;
 		padding: 2px 8px;
 		border-radius: 999px;
-		background: rgb(from var(--background-primary) r g b / 0.78);
+		background: var(--background-primary);
 		backdrop-filter: blur(4px);
 		font-size: var(--font-ui-smaller);
 		color: var(--text-muted);
@@ -573,15 +533,15 @@
 
 	@keyframes true-recall-io-pulse {
 		0% {
-			fill: rgb(from var(--color-green) r g b / 0.25);
-			filter: drop-shadow(0 0 0 rgb(from var(--color-green) r g b / 0.7));
+			fill: var(--background-modifier-success);
+			filter: drop-shadow(0 0 0 rgba(0, 128, 0, 0.7));
 		}
 		55% {
-			fill: rgb(from var(--color-green) r g b / 0.4);
-			filter: drop-shadow(0 0 8px rgb(from var(--color-green) r g b / 0.7));
+			fill: var(--background-modifier-success);
+			filter: drop-shadow(0 0 8px rgba(0, 128, 0, 0.7));
 		}
 		100% {
-			fill: rgb(from var(--color-green) r g b / 0.25);
+			fill: var(--background-modifier-success);
 			filter: drop-shadow(0 0 0 transparent);
 		}
 	}

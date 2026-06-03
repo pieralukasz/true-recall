@@ -13,9 +13,11 @@ import {
 // Mock ApkgParserService so importApkg does not try to unzip real files
 const mockParseApkg = vi.fn();
 vi.mock("../../../src/integration/anki/apkg/apkg-parser.service", () => ({
-	ApkgParserService: vi.fn().mockImplementation(() => ({
-		parseApkg: mockParseApkg,
-	})),
+	ApkgParserService: vi.fn(function ApkgParserServiceMock() {
+		return {
+			parseApkg: mockParseApkg,
+		};
+	}),
 }));
 
 // Mock generateUUID to produce deterministic, unique IDs

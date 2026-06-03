@@ -194,7 +194,7 @@ export function CardPreview({
 						<div class="ep:flex ep:justify-between ep:items-center">
 							<span class="ep:text-obs-muted">Source</span>
 							<Clickable
-								class="ep:text-obs-accent ep:truncate ep:max-w-[180px] hover:ep:underline"
+								class="ep:text-obs-accent ep:truncate ep:max-w-[180px] tr-hover-faux-underline"
 								onClick={() =>
 									void app.workspace.openLinkText(
 										card.sourceNotePath ?? card.sourceNoteName ?? "",

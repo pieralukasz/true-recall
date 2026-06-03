@@ -196,7 +196,7 @@ export function FormattingToolbar({
 				role="button"
 				tabIndex={0}
 				title="Underline (Ctrl+U)"
-				class={`${btnCls} ep:underline`}
+				class={`${btnCls} tr-faux-underline`}
 				onMouseDown={(e: MouseEvent) => {
 					prevent(e);
 					const v = getEditorView();

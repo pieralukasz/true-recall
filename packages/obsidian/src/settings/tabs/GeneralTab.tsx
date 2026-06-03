@@ -349,7 +349,7 @@ function ReviewKeybindingsSection({
 				</FormField>
 			))}
 			{error && (
-				<div class="ep:text-ui-smallest ep:text-red-500 ep:mt-1">{error}</div>
+				<div class="ep:text-ui-smallest ep:text-obs-error ep:mt-1">{error}</div>
 			)}
 		</>
 	);

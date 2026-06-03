@@ -43,25 +43,25 @@
 		animation: true-recall-source-highlight-fade 2s ease-out forwards;
 	}
 	.true-recall-source-highlight-green {
-		--tr-highlight-color: rgb(from var(--color-green) r g b / 0.25);
+		--tr-highlight-color: var(--background-modifier-success);
 		background-color: var(--tr-highlight-color);
 		border-radius: 2px;
 		animation: true-recall-source-highlight-fade 2s ease-out forwards;
 	}
 	.true-recall-source-highlight-orange {
-		--tr-highlight-color: rgb(from var(--color-orange) r g b / 0.25);
+		--tr-highlight-color: var(--background-modifier-message);
 		background-color: var(--tr-highlight-color);
 		border-radius: 2px;
 		animation: true-recall-source-highlight-fade 2s ease-out forwards;
 	}
 	.true-recall-source-highlight-blue {
-		--tr-highlight-color: rgb(from var(--color-blue) r g b / 0.25);
+		--tr-highlight-color: var(--background-modifier-hover);
 		background-color: var(--tr-highlight-color);
 		border-radius: 2px;
 		animation: true-recall-source-highlight-fade 2s ease-out forwards;
 	}
 	.true-recall-source-highlight-red {
-		--tr-highlight-color: rgb(from var(--color-red) r g b / 0.25);
+		--tr-highlight-color: var(--background-modifier-error);
 		background-color: var(--tr-highlight-color);
 		border-radius: 2px;
 		animation: true-recall-source-highlight-fade 2s ease-out forwards;
@@ -80,22 +80,22 @@
 		animation: true-recall-highlight-fade-in 300ms ease-out;
 	}
 	.true-recall-source-highlight-hover-green {
-		background-color: rgb(from var(--color-green) r g b / 0.25);
+		background-color: var(--background-modifier-success);
 		border-radius: 2px;
 		animation: true-recall-highlight-fade-in 300ms ease-out;
 	}
 	.true-recall-source-highlight-hover-orange {
-		background-color: rgb(from var(--color-orange) r g b / 0.25);
+		background-color: var(--background-modifier-message);
 		border-radius: 2px;
 		animation: true-recall-highlight-fade-in 300ms ease-out;
 	}
 	.true-recall-source-highlight-hover-blue {
-		background-color: rgb(from var(--color-blue) r g b / 0.25);
+		background-color: var(--background-modifier-hover);
 		border-radius: 2px;
 		animation: true-recall-highlight-fade-in 300ms ease-out;
 	}
 	.true-recall-source-highlight-hover-red {
-		background-color: rgb(from var(--color-red) r g b / 0.25);
+		background-color: var(--background-modifier-error);
 		border-radius: 2px;
 		animation: true-recall-highlight-fade-in 300ms ease-out;
 	}
