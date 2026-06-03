@@ -63,9 +63,21 @@ function simplifyGeneratedColors(css) {
 		let next = decl.value;
 		if (next.includes("color-mix(")) {
 			next = next.replace(
-				/color-mix\(\s*in\s+(?:oklab|srgb)\s*,\s*(var\([^)]+\)|#[0-9a-fA-F]{6,8}|[a-zA-Z]+)\s+\d+(?:\.\d+)?%\s*,\s*transparent\s*\)/g,
-				(_match, color) => {
+				/color-mix\(\s*in\s+(?:oklab|srgb)\s*,\s*(var\([^)]+\)|#[0-9a-fA-F]{6,8}|[a-zA-Z]+)\s+(\d+(?:\.\d+)?)%\s*,\s*transparent\s*\)/g,
+				(_match, color, percent) => {
 					colorMixReplaced++;
+					if (decl.prop === "background-color") {
+						const alpha = Math.max(Number(percent) / 100, 0.08).toFixed(2);
+						return `rgba(127, 127, 127, ${alpha})`;
+					}
+					if (decl.prop.includes("border")) {
+						const alpha = Math.max(Number(percent) / 100, 0.24).toFixed(2);
+						return `rgba(127, 127, 127, ${alpha})`;
+					}
+					if (decl.prop === "box-shadow") {
+						const alpha = Math.max(Number(percent) / 100, 0.18).toFixed(2);
+						return `rgba(0, 0, 0, ${alpha})`;
+					}
 					return color;
 				},
 			);
