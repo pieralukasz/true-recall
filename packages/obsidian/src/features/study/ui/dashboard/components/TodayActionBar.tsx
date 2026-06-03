@@ -5,6 +5,7 @@ import { FSRS_COLORS } from "@true-recall/obsidian/helpers/fsrs-colors";
 import { usePlugin } from "@true-recall/obsidian/preact";
 import { isMobile } from "@true-recall/obsidian/utils/platform";
 
+import { computeTodayProgressSegments } from "../helpers/today-progress-segments";
 import type { TodayProgress } from "../types";
 
 interface TodayActionBarProps {
@@ -30,12 +31,11 @@ export function TodayActionBar({
 		void plugin.startReview({ mode: "all_due" });
 	};
 
-	const { studied, minutes, newCards, newCardsCap, reviewCards, reviewsCap } =
-		progress;
-	const totalCap = newCardsCap + reviewsCap;
-	const newPct = totalCap > 0 ? Math.min(newCards / totalCap, 1) : 0;
-	const reviewPct = totalCap > 0 ? Math.min(reviewCards / totalCap, 1) : 0;
-	const progressPct = totalCap > 0 ? Math.min(studied / totalCap, 1) : 0;
+	const { studied, minutes } = progress;
+	const { newPct, reviewPct, learningPct } = computeTodayProgressSegments(
+		progress,
+		totalActionable,
+	);
 
 	const reviewLabel =
 		totalActionable > 0
@@ -122,11 +122,11 @@ export function TodayActionBar({
 							}}
 						/>
 					)}
-					{progressPct > newPct + reviewPct && (
+					{learningPct > 0 && (
 						<div
 							class="ep:h-full ep:transition-all ep:duration-300"
 							style={{
-								width: `${(progressPct - newPct - reviewPct) * 100}%`,
+								width: `${learningPct * 100}%`,
 								backgroundColor: `var(${FSRS_COLORS.learning.cssVar})`,
 							}}
 						/>

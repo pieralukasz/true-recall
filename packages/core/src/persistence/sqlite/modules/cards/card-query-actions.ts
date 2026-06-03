@@ -196,16 +196,19 @@ export class CardQueryActions {
 
 	findClozeCard(
 		sourceUid: string,
-		_clozeTemplate: string,
+		clozeTemplate: string,
 		clozeIndex: number,
 	): string | undefined {
-		return this.db.get<{ id: string }>(
-			`SELECT c.id FROM cards c
-                 JOIN notes n ON c.note_id = n.id
-                 WHERE n.source_uid = ? AND c.template_ord = ? AND c.deleted_at IS NULL
-                 LIMIT 1`,
+		// template_ord (the cloze index) is only unique within a single cloze
+		// block. Two blocks in the same note can both have a c1, so we must also
+		// match the cloze template text to avoid false duplicates.
+		const rows = this.db.query<CardRow>(
+			`SELECT ${CARD_SELECT} ${CARD_FROM}
+                 WHERE n.source_uid = ? AND c.template_ord = ? AND c.deleted_at IS NULL`,
 			[sourceUid, clozeIndex],
-		)?.id;
+		);
+		return rows.map(mapRow).find((card) => card.clozeTemplate === clozeTemplate)
+			?.id;
 	}
 
 	getIOChildren(parentId: string): FSRSCardData[] {
@@ -223,14 +226,20 @@ export class CardQueryActions {
 		return rows.map(mapRow);
 	}
 
-	getClozeSiblings(sourceUid: string, _clozeTemplate: string): FSRSCardData[] {
+	getClozeSiblings(sourceUid: string, clozeTemplate: string): FSRSCardData[] {
 		const rows = this.db.query<CardRow>(
 			`SELECT ${CARD_SELECT} ${CARD_FROM}
                  WHERE n.source_uid = ? AND c.deleted_at IS NULL
                  ORDER BY c.template_ord ASC`,
 			[sourceUid],
 		);
-		return rows.map(mapRow);
+		// A source note can hold several independent cloze blocks (and even
+		// non-cloze cards). Siblings are only the cards that share the same cloze
+		// template text — scoping by source_uid alone would treat every cloze
+		// block in the note as one group.
+		return rows
+			.map(mapRow)
+			.filter((card) => card.clozeTemplate === clozeTemplate);
 	}
 
 	// ── Lookup methods ────────────────────────────────────────
