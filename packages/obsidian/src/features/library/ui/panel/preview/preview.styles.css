@@ -8,6 +8,5 @@
    the shared-element morph. Scoped via the modifier class added in
    CardPreviewModal.constructor → BaseModal options → `tr-modal-card-preview`. */
 .modal-container.tr-modal-card-preview-container {
-	/* biome-ignore lint/complexity/noImportantStyles: must override Obsidian's built-in modal animation */
-	animation: none !important;
+	animation: none;
 }

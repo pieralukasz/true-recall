@@ -23,8 +23,8 @@ const TIER_LABEL: Record<PluginTier, string> = {
 };
 
 const TIER_BADGE_CLASS: Record<PluginTier, string> = {
-	free: "ep:bg-green-500/15 ep:text-green-600",
-	byok: "ep:bg-blue-500/15 ep:text-blue-600",
+	free: "ep:bg-obs-green/15 ep:text-obs-green",
+	byok: "ep:bg-obs-blue/15 ep:text-obs-blue",
 	pro: "ep:bg-obs-accent/10 ep:text-obs-accent",
 };
 

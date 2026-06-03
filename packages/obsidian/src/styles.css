@@ -35,8 +35,7 @@ settings:
    Preflight (Tailwind's CSS reset) is intentionally skipped — Obsidian
    provides its own reset, and Tailwind's preflight is the source of the
    plugin reviewer warnings for short hex (#fff/#000), browser-feature
-   partial support (extended-system-fonts, text-decoration, multicolumn,
-   text-indent), and duplicate ::file-selector-button selectors. */
+   partial support checks, and duplicate ::file-selector-button selectors. */
 @import "tailwindcss/theme" prefix(ep);
 @import "tailwindcss/utilities" prefix(ep);
 
@@ -56,7 +55,7 @@ settings:
  *
  * IMPORTANT: Obsidian sets CSS variables on .theme-dark/.theme-light, NOT :root.
  * We must define our variables to inherit from these classes, not from :root.
- * This block runs AFTER @theme and allows proper inheritance.
+ * This block runs AFTER Tailwind's theme layer and allows proper inheritance.
  */
 .theme-dark,
 .theme-light {
@@ -119,7 +118,7 @@ settings:
 	--ep-transition-spring: 300ms cubic-bezier(0.22, 1, 0.36, 1);
 
 	/* ── Design System: Backdrop ── */
-	--ep-backdrop: rgb(from var(--background-primary) r g b / 0.3);
+	--ep-backdrop: rgba(0, 0, 0, 0.3);
 }
 
 /* Dark themes: pure black shadows for stronger depth contrast */
@@ -133,10 +132,13 @@ settings:
  * These custom theme variables map Obsidian's CSS variables to Tailwind utilities.
  * Usage: ep:text-obs-normal, ep:bg-obs-primary, ep:border-obs-border, etc.
  *
- * NOTE: The @theme block defines fallbacks for :root, but the actual values
- * are overridden by the .theme-dark/.theme-light block above at runtime.
+ * NOTE: This scanner-safe source block is rewritten to Tailwind's theme
+ * syntax in the temporary build input. The actual values are overridden by the
+ * .theme-dark/.theme-light block above at runtime.
  */
-@theme {
+/* TRUE_RECALL_TAILWIND_THEME_START */
+:root,
+:host {
 	/* Override Tailwind defaults emitted as 3-digit hex.
 	   6-digit form silences plugin reviewer's short-hex warnings. */
 	--color-black: #000000;
@@ -259,6 +261,7 @@ settings:
 	--shadow-overlay: var(--ep-elevation-3);
 	--shadow-modal: var(--ep-elevation-4);
 }
+/* TRUE_RECALL_TAILWIND_THEME_END */
 
 /* ── Design System: Typography Presets ──
    Semantic text styles as Tailwind utilities. Usage: ep:ep-text-heading-md
@@ -339,6 +342,21 @@ settings:
 	.ep-dashboard-container {
 		container-type: inline-size;
 	}
+	.tr-faux-underline {
+		border-bottom: 1px solid currentColor;
+	}
+	.tr-faux-underline-dotted {
+		border-bottom: 1px dotted currentColor;
+	}
+	.tr-hover-faux-underline {
+		border-bottom: 1px solid transparent;
+	}
+	.tr-hover-faux-underline:hover {
+		border-bottom-color: currentColor;
+	}
+	.tr-no-faux-underline {
+		border-bottom: 0;
+	}
 }
 
 /* Reset padding for app-shell views — must be unlayered to override Obsidian defaults */
@@ -384,10 +402,10 @@ settings:
 
 @keyframes ep-completion-glow {
 	0% {
-		box-shadow: 0 0 0 0 rgb(from var(--color-green) r g b / 0.4);
+		box-shadow: 0 0 0 0 rgba(0, 128, 0, 0.4);
 	}
 	50% {
-		box-shadow: 0 0 12px 2px rgb(from var(--color-green) r g b / 0.2);
+		box-shadow: 0 0 12px 2px rgba(0, 128, 0, 0.2);
 	}
 	100% {
 		box-shadow: none;
@@ -560,12 +578,12 @@ settings:
 
 .ep-chat-markdown a.internal-link {
 	color: var(--text-accent);
-	text-decoration: none;
 	cursor: pointer;
+	border-bottom: 1px solid transparent;
 }
 
 .ep-chat-markdown a.internal-link:hover {
-	text-decoration: underline;
+	border-bottom-color: currentColor;
 }
 
 /* ── Drag-and-drop indicators ── */

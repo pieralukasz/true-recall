@@ -153,7 +153,7 @@ function PresetStatusEntry({
 				{status.weights.length > 0 && (
 					<div class="ep:text-xs ep:text-obs-faint">
 						<span
-							class="ep:cursor-pointer ep:underline ep:decoration-dotted"
+							class="ep:cursor-pointer tr-faux-underline-dotted"
 							onClick={() => {
 								expanded.value = !expanded.value;
 							}}

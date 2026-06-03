@@ -16,6 +16,7 @@ import { TypeInCMEditor } from "@true-recall/obsidian/features/study/ui/review/c
 import { getReviewMaxWidth } from "@true-recall/obsidian/features/study/ui/review/helpers";
 import { usePlugin } from "@true-recall/obsidian/preact/ObsidianContext";
 import { cn } from "@true-recall/obsidian/utils/cn";
+import { isMobile } from "@true-recall/obsidian/utils/platform";
 
 import { AudioPlayButton } from "./AudioPlayButton";
 import { NoteReviewRenderer } from "./NoteReviewRenderer";
@@ -71,7 +72,7 @@ function CardFooter({
 		<div class="ep:flex ep:flex-col ep:items-center ep:gap-4 ep:pt-8">
 			{card.sourceNoteName && onOpenSourceNote && (
 				<Clickable
-					class="ep:text-obs-faint ep:text-ui-smaller ep:no-underline ep:hover:text-obs-accent ep:hover:underline ep:transition-colors ep:p-0"
+					class="ep:text-obs-faint ep:text-ui-smaller tr-no-faux-underline ep:hover:text-obs-accent tr-hover-faux-underline ep:transition-colors ep:p-0"
 					onClick={onOpenSourceNote}
 				>
 					Source: {card.sourceNoteName}
@@ -185,7 +186,7 @@ export function CardContainer({
 	// Detailed grading feedback is stripped for non-Pro tiers in
 	// SemanticAnswerGradingService — surface that instead of silently hiding it.
 	const isProTier = providerType === "pro";
-	const maxWidth = getReviewMaxWidth(reviewContentWidth);
+	const maxWidth = isMobile() ? "100%" : getReviewMaxWidth(reviewContentWidth);
 	const maxWidthStyle = `--tr-review-max-width: ${maxWidth}; max-width: ${maxWidth};`;
 
 	const questionContent = card.question;

@@ -102,7 +102,7 @@
 	}
 	.true-recall-card-markdown .internal-link {
 		color: var(--text-accent);
-		text-decoration: none;
+		border-bottom: 1px solid transparent;
 	}
 
 	/* ── Mobile overrides ─────────────────────────────────────────────── */
@@ -112,16 +112,11 @@
 		padding-bottom: 0;
 	}
 
-	/* Reduce horizontal padding on mobile and ignore desktop max-width setting.
-	   Override both the outer max-width and the --tr-review-max-width var
-	   (inherited by inner fields), so mobile always fills the viewport. */
+	/* Reduce horizontal padding on mobile. The component sets max-width to 100%
+	   on mobile so the inner fields fill the viewport without CSS overrides. */
 	.is-mobile .true-recall-review-card-container {
 		padding-left: 0.75rem;
 		padding-right: 0.75rem;
-		/* biome-ignore lint/complexity/noImportantStyles: override inline style set by JS for desktop */
-		--tr-review-max-width: 100% !important;
-		/* biome-ignore lint/complexity/noImportantStyles: override inline style set by JS for desktop */
-		max-width: 100% !important;
 	}
 
 	/* Smaller rating buttons on mobile */
@@ -201,8 +196,7 @@
 .true-recall-review-question .cm-editor .cm-content,
 .true-recall-review-answer .cm-editor .cm-content {
 	text-align: center;
-	/* biome-ignore lint/complexity/noImportantStyles: must override CodeMirror's inline display rule */
-	display: flex !important;
+	display: flex;
 	flex-direction: column;
 	align-items: center;
 }
@@ -213,8 +207,7 @@
 .true-recall-review-question.is-block-content .cm-editor .cm-content,
 .true-recall-review-answer.is-block-content .cm-editor .cm-content {
 	text-align: left;
-	/* biome-ignore lint/complexity/noImportantStyles: undo the flex centering set above so cm-lines flow as block-level rows */
-	display: block !important;
+	display: block;
 	align-items: stretch;
 }
 

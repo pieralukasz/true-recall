@@ -327,7 +327,7 @@
 	}
 
 	/* ================================================================
-	   BUTTON VARIANTS — !important to override Obsidian defaults
+	   BUTTON VARIANTS — scoped selectors override Obsidian defaults
 	   ================================================================ */
 	.ep-btn {
 		display: inline-flex;

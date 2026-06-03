@@ -2,6 +2,7 @@ import type { FSRSFlashcardItem } from "@true-recall/core/types";
 
 import { Clickable } from "@true-recall/obsidian/components";
 import { usePlugin } from "@true-recall/obsidian/preact/ObsidianContext";
+import { isMobile } from "@true-recall/obsidian/utils/platform";
 
 import { getReviewMaxWidth } from "../helpers/review-width";
 import { useNoteReviewContent } from "../hooks/useNoteReviewContent";
@@ -31,7 +32,7 @@ export function NoteReviewRenderer({
 		noteReviewShowFrontmatter,
 	);
 
-	const maxWidth = getReviewMaxWidth(reviewContentWidth);
+	const maxWidth = isMobile() ? "100%" : getReviewMaxWidth(reviewContentWidth);
 
 	return (
 		<div
@@ -90,7 +91,7 @@ function NoteReviewFooter({
 		<div class="ep:flex ep:flex-col ep:items-center ep:gap-4 ep:pt-8">
 			{card.sourceNoteName && onOpenSourceNote && (
 				<Clickable
-					class="ep:text-obs-faint ep:text-ui-smaller ep:no-underline ep:hover:text-obs-accent ep:hover:underline ep:transition-colors ep:p-0"
+					class="ep:text-obs-faint ep:text-ui-smaller tr-no-faux-underline ep:hover:text-obs-accent tr-hover-faux-underline ep:transition-colors ep:p-0"
 					onClick={onOpenSourceNote}
 				>
 					Source: {card.sourceNoteName}

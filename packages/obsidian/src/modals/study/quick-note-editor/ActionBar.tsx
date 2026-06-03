@@ -34,7 +34,7 @@ export function ActionBar({
 			/>
 			{isEdit && onChangeType && (
 				<Clickable
-					class="ep:text-ui-smaller ep:text-obs-accent hover:ep:underline"
+					class="ep:text-ui-smaller ep:text-obs-accent tr-hover-faux-underline"
 					onClick={onChangeType}
 				>
 					Change
