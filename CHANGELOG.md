@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.9.5 (2026-06-03)
+
+### Features
+
+- **settings:** new "Learn how to learn" newsletter — subscribe from Settings → General to get learning essays and release updates
+
+### Improvements
+
+- **dashboard:** extracted today progress segment calculation (more accurate progress bar split)
+
+### Bug Fixes
+
+- escape key handling in editors
+- cloze sibling scoping
+- selection toolbar AI gating
+
 ## 1.9.4 (2026-05-28)
 
 ### Features
