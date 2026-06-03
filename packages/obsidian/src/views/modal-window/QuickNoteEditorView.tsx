@@ -1,6 +1,7 @@
 import {
 	ItemView,
 	Platform,
+	Scope,
 	type ViewStateResult,
 	type WorkspaceLeaf,
 } from "obsidian";
@@ -48,10 +49,29 @@ export class QuickNoteEditorView extends ItemView {
 	private unregisterWindowMigrated: (() => void) | null = null;
 	private beforeUnloadHandler: ((e: BeforeUnloadEvent) => void) | null = null;
 	private boundWindow: Window | null = null;
+	private isConfirmingDiscard = false;
 
 	constructor(leaf: WorkspaceLeaf, plugin: TrueRecallPlugin) {
 		super(leaf);
 		this.plugin = plugin;
+
+		// Escape closes the editor window. A view scope is consulted by the
+		// keymap while this leaf is active and wins over Obsidian's app-scope
+		// Escape handler, which would otherwise re-activate the last
+		// `navigation` leaf in the main window (hiding the review tab)
+		// instead of closing this popout. When focus is inside a text input
+		// (e.g. the note picker), only consume the event so the component's
+		// own Escape handling (closing its dropdown) still applies.
+		this.scope = new Scope(this.app.scope);
+		this.scope.register([], "Escape", () => {
+			const active = this.containerEl.doc.activeElement;
+			const isTextInput =
+				active?.instanceOf(HTMLInputElement) ||
+				active?.instanceOf(HTMLTextAreaElement) ||
+				(active?.instanceOf(HTMLElement) && active.isContentEditable);
+			if (!isTextInput) void this.handleRequestClose();
+			return false;
+		});
 	}
 
 	getViewType(): string {
@@ -389,10 +409,16 @@ export class QuickNoteEditorView extends ItemView {
 
 	private async handleRequestClose(): Promise<void> {
 		if (!this.session) return;
+		if (this.isConfirmingDiscard) return;
 		if (this.session.isDirty && !this.session.closeConfirmed) {
-			const confirmed = await this.confirmDiscardInPopout();
-			if (!confirmed) return;
-			this.session.closeConfirmed = true;
+			this.isConfirmingDiscard = true;
+			try {
+				const confirmed = await this.confirmDiscardInPopout();
+				if (!confirmed) return;
+				this.session.closeConfirmed = true;
+			} finally {
+				this.isConfirmingDiscard = false;
+			}
 		}
 		this.handleDone({ cancelled: true });
 	}

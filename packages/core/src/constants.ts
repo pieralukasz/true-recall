@@ -360,6 +360,7 @@ export const RAG_CONFIG = {
 } as const;
 
 export const TRUERECALL_WEB_URL = "https://truerecall.app";
+export const TRUERECALL_NEWSLETTER_URL = "https://truerecall.app/#newsletter";
 export const TRUERECALL_BMC_URL = "https://www.buymeacoffee.com/1Hzbip1K9Q";
 export const TRUERECALL_GITHUB_URL =
 	"https://github.com/pieralukasz/true-recall";

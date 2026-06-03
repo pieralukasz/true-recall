@@ -381,6 +381,57 @@ describe("CardRepository - cloze operations", () => {
 			expect(ctx.cards.get("basic-2")).toBeDefined();
 		});
 
+		it("does not cascade to a different cloze block in the same source note", () => {
+			const TEMPLATE_A = "{{c1::Tokyo}} is in {{c2::Japan}}";
+			const TEMPLATE_B = "{{c1::Berlin}} is in {{c2::Germany}}";
+
+			repository.createBatch(
+				[
+					{
+						id: "a1",
+						question: "[...] is in Japan",
+						answer: "**Tokyo** is in Japan",
+						cardType: "cloze",
+						clozeTemplate: TEMPLATE_A,
+						clozeIndex: 1,
+					},
+					{
+						id: "a2",
+						question: "Tokyo is in [...]",
+						answer: "Tokyo is in **Japan**",
+						cardType: "cloze",
+						clozeTemplate: TEMPLATE_A,
+						clozeIndex: 2,
+					},
+					{
+						id: "b1",
+						question: "[...] is in Germany",
+						answer: "**Berlin** is in Germany",
+						cardType: "cloze",
+						clozeTemplate: TEMPLATE_B,
+						clozeIndex: 1,
+					},
+					{
+						id: "b2",
+						question: "Berlin is in [...]",
+						answer: "Berlin is in **Germany**",
+						cardType: "cloze",
+						clozeTemplate: TEMPLATE_B,
+						clozeIndex: 2,
+					},
+				],
+				"source-shared",
+			);
+
+			// Deleting a card from block A must only cascade within block A.
+			repository.delete("a1");
+
+			expect(ctx.cards.get("a1")).toBeUndefined();
+			expect(ctx.cards.get("a2")).toBeUndefined();
+			expect(ctx.cards.get("b1")).toBeDefined();
+			expect(ctx.cards.get("b2")).toBeDefined();
+		});
+
 		it("does not cascade to cloze cards from different source", () => {
 			repository.createBatch(
 				[

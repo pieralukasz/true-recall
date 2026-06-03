@@ -180,6 +180,16 @@ export function createEmbeddableEditorClass(app: App) {
 				return true;
 			});
 
+			// Escape lives on the keymap scope, NOT the CM keymap: Obsidian's
+			// keymap listens on window in the capture phase, so its app-scope
+			// Escape handler (which re-activates the last `navigation` leaf,
+			// hiding e.g. the review tab) would fire before any CM handler.
+			// Returning false consumes the event and blocks that handler.
+			this.scope.register([], "Escape", () => {
+				this.options.onEscape(this);
+				return false;
+			});
+
 			// Mock editMode/editor so Obsidian commands work on this editor
 			this.owner.editMode = this;
 			this.owner.editor = this.editor;
@@ -204,13 +214,13 @@ export function createEmbeddableEditorClass(app: App) {
 				} as Parameters<typeof around>[1]),
 			);
 
-			// Blur handler — auto-save trigger
-			if (this.options.onBlur !== defaultOptions.onBlur) {
-				this.editor.cm.contentDOM.addEventListener("blur", () => {
-					editorApp.keymap.popScope(this.scope);
-					if (this._loaded) this.options.onBlur(this);
-				});
-			}
+			// Blur handler — pops the scope (must mirror the unconditional
+			// focusin push below, or stale scopes keep consuming Escape) and
+			// triggers auto-save when the consumer provided onBlur.
+			this.editor.cm.contentDOM.addEventListener("blur", () => {
+				editorApp.keymap.popScope(this.scope);
+				if (this._loaded) this.options.onBlur(this);
+			});
 
 			// Focus handler — make commands work on this editor
 			this.editor.cm.contentDOM.addEventListener("focusin", () => {
@@ -252,18 +262,12 @@ export function createEmbeddableEditorClass(app: App) {
 				}),
 			);
 
-			// Keyboard shortcuts — highest precedence
+			// Keyboard shortcuts — highest precedence.
+			// Escape is intentionally NOT bound here; see the scope
+			// registration in the constructor.
 			extensions.push(
 				Prec.highest(
 					keymap.of([
-						{
-							key: "Escape",
-							run: () => {
-								this.options.onEscape(this);
-								return true;
-							},
-							preventDefault: true,
-						},
 						...(this.options.onTab !== defaultOptions.onTab
 							? [
 									{

@@ -4,6 +4,7 @@ import { h, render } from "preact";
 
 import type { ToolbarButtonConfig } from "@true-recall/core/types";
 import type { GenerationPreset } from "@true-recall/core/types/generation-preset.types";
+import type { AIProviderType } from "@true-recall/core/types/settings.types";
 
 import {
 	SelectionToolbar,
@@ -15,6 +16,7 @@ export interface GlobalSelectionToolbarCallbacks {
 	actions: ToolbarActions;
 	getButtons: () => ToolbarButtonConfig[];
 	tier: () => ToolbarTier;
+	getProviderType: () => AIProviderType;
 	isEnabled: () => boolean;
 	getPluginStates: () => Record<string, boolean>;
 	getSourceFile: (range: Range) => TFile | null;
@@ -155,6 +157,7 @@ export class GlobalSelectionToolbar {
 					onDismiss: () => this.removeToolbar(),
 				},
 				tier: this.callbacks.tier(),
+				providerType: this.callbacks.getProviderType(),
 				presets: this.callbacks.getPresets(),
 				pluginStates: this.callbacks.getPluginStates(),
 			}),

@@ -42,7 +42,11 @@ function findMostRecentMarkdownFile(plugin: TrueRecallPlugin): TFile | null {
 }
 
 export function hasApiKey(plugin: TrueRecallPlugin): boolean {
-	return hasAIKey(plugin.settings);
+	// Preset generation always runs at the "generation" scope
+	// (StreamingGenerationService → resolveAIClientConfig(settings, "generation")),
+	// so the toolbar gate must check that same scope. Checking the default scope
+	// greyed out the button when only a generation-scoped LM Studio model was set.
+	return hasAIKey(plugin.settings, "generation");
 }
 
 export function editSelectionAsFlashcard(

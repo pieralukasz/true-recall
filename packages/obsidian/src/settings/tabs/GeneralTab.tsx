@@ -5,6 +5,7 @@ import {
 	TRUERECALL_BMC_URL,
 	TRUERECALL_DISCORD_URL,
 	TRUERECALL_GITHUB_URL,
+	TRUERECALL_NEWSLETTER_URL,
 	TRUERECALL_WEB_URL,
 } from "@true-recall/core/constants";
 import type {
@@ -33,6 +34,8 @@ export function GeneralTab() {
 
 	return (
 		<div class="ep:flex ep:flex-col ep:gap-3">
+			<NewsletterCard />
+
 			<FormCard title="Review interface">
 				<FormField
 					name="Review mode"
@@ -241,6 +244,27 @@ export function GeneralTab() {
 
 			<SupportCard />
 		</div>
+	);
+}
+
+function NewsletterCard() {
+	const mailRef = useIcon("mail");
+
+	return (
+		<FormCard title="Newsletter — Learn how to learn">
+			<FormField
+				name="Personal newsletter about learning"
+				description="Spaced repetition, memory, and how we should actually study — plus every True Recall release"
+			>
+				<Clickable
+					class="ep-btn ep-btn-outline ep:inline-flex ep:items-center ep:gap-1.5"
+					onClick={() => window.open(TRUERECALL_NEWSLETTER_URL, "_blank")}
+				>
+					<div ref={mailRef} class="ep:w-4 ep:h-4" />
+					Subscribe
+				</Clickable>
+			</FormField>
+		</FormCard>
 	);
 }
 

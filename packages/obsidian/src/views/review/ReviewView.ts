@@ -2,6 +2,7 @@ import { effect } from "@preact/signals";
 import {
 	ItemView,
 	Menu,
+	Scope,
 	TFile,
 	type ViewStateResult,
 	type WorkspaceLeaf,
@@ -126,6 +127,13 @@ export class ReviewView extends ItemView {
 	constructor(leaf: WorkspaceLeaf, plugin: TrueRecallPlugin) {
 		super(leaf);
 		this.plugin = plugin;
+
+		// Consume Escape while this view is active. Without this, Obsidian's
+		// app-scope Escape handler re-activates the last `navigation` leaf
+		// (this view has `navigation: false`), swapping the review tab out
+		// for the most recent note tab.
+		this.scope = new Scope(this.app.scope);
+		this.scope.register([], "Escape", () => false);
 		this.flashcardManager = plugin.flashcardManager;
 		this.reviewService = new ReviewService();
 		this.reviewController = plugin.reviewController;

@@ -3,6 +3,7 @@ import { useCallback, useState } from "preact/hooks";
 
 import type { ToolbarButtonConfig } from "@true-recall/core/types";
 import type { GenerationPreset } from "@true-recall/core/types/generation-preset.types";
+import type { AIProviderType } from "@true-recall/core/types/settings.types";
 
 import { Clickable } from "@true-recall/obsidian/components";
 
@@ -36,9 +37,17 @@ interface SelectionToolbarProps {
 	buttons: ToolbarButtonConfig[];
 	actions: ToolbarActions;
 	tier: ToolbarTier;
+	providerType?: AIProviderType;
 	presets?: GenerationPreset[];
 	detectedImagePath?: string | null;
 	pluginStates?: Record<string, boolean>;
+}
+
+/** Local providers need a model selected, not an API key. */
+function gateMessage(providerType?: AIProviderType): string {
+	return providerType === "lmstudio" || providerType === "custom"
+		? "Select a model in settings"
+		: "Add API key in settings";
 }
 
 const PRO_BADGE = (
@@ -52,6 +61,7 @@ export function SelectionToolbar({
 	buttons,
 	actions,
 	tier,
+	providerType,
 	presets,
 	detectedImagePath,
 	pluginStates = {},
@@ -85,6 +95,7 @@ export function SelectionToolbar({
 					actions={actions}
 					selectedText={selectedText}
 					tier={tier}
+					providerType={providerType}
 					presets={presets}
 					detectedImagePath={detectedImagePath}
 					copied={copied}
@@ -101,6 +112,7 @@ interface ToolbarButtonProps {
 	actions: ToolbarActions;
 	selectedText: string;
 	tier: ToolbarTier;
+	providerType?: AIProviderType;
 	presets?: GenerationPreset[];
 	detectedImagePath?: string | null;
 	copied: boolean;
@@ -113,6 +125,7 @@ function ToolbarButton({
 	actions,
 	selectedText,
 	tier,
+	providerType,
 	presets,
 	detectedImagePath,
 	copied,
@@ -262,7 +275,7 @@ function ToolbarButton({
 							title={
 								tier !== "none"
 									? `Generate: ${preset.name}`
-									: "Add API key in settings"
+									: gateMessage(providerType)
 							}
 						>
 							<span>
