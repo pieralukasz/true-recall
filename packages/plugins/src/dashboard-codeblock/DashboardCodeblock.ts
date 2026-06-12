@@ -48,192 +48,143 @@ function registerCleanup(el: HTMLElement, unmount: () => void): void {
 
 // ── Core dashboard codeblocks ──────────────────────────────
 
+type CodeBlockHandler = Parameters<
+	TrueRecallPlugin["registerMarkdownCodeBlockProcessor"]
+>[1];
+
 export function registerCoreDashboardCodeblocks(
 	plugin: TrueRecallPlugin,
+	isEnabled: () => boolean,
 ): void {
-	plugin.registerMarkdownCodeBlockProcessor(
-		"true-recall-dashboard",
-		(_source, el, _ctx) => {
-			el.addClass("true-recall-codeblock-dashboard");
-			const unmount = mountPreact(el, plugin, h(DashboardWidget, null));
-			registerCleanup(el, unmount);
-		},
-	);
+	// Codeblock processors can't be unregistered mid-session, so each handler
+	// is gated live — disabling the plugin leaves the codeblocks unrendered.
+	const register = (language: string, handler: CodeBlockHandler) => {
+		plugin.registerMarkdownCodeBlockProcessor(language, (source, el, ctx) => {
+			if (!isEnabled()) return;
+			return handler(source, el, ctx);
+		});
+	};
 
-	plugin.registerMarkdownCodeBlockProcessor(
-		"true-recall-note-stats",
-		(_source, el, ctx) => {
-			el.addClass("true-recall-codeblock-note-stats");
-			const sourceUid = resolveSourceUid(plugin, ctx.sourcePath);
-			const unmount = mountPreact(
-				el,
-				plugin,
-				h(NoteStatsWidget, { sourceUid }),
-			);
-			registerCleanup(el, unmount);
-		},
-	);
+	register("true-recall-dashboard", (_source, el, _ctx) => {
+		el.addClass("true-recall-codeblock-dashboard");
+		const unmount = mountPreact(el, plugin, h(DashboardWidget, null));
+		registerCleanup(el, unmount);
+	});
 
-	plugin.registerMarkdownCodeBlockProcessor(
-		"true-recall-streak",
-		(source, el, _ctx) => {
-			el.addClass("true-recall-codeblock-streak");
-			const unmount = mountPreact(el, plugin, h(StreakWidget, { source }));
-			registerCleanup(el, unmount);
-		},
-	);
+	register("true-recall-note-stats", (_source, el, ctx) => {
+		el.addClass("true-recall-codeblock-note-stats");
+		const sourceUid = resolveSourceUid(plugin, ctx.sourcePath);
+		const unmount = mountPreact(el, plugin, h(NoteStatsWidget, { sourceUid }));
+		registerCleanup(el, unmount);
+	});
 
-	plugin.registerMarkdownCodeBlockProcessor(
-		"true-recall-health",
-		(source, el, _ctx) => {
-			el.addClass("true-recall-codeblock-health");
-			const unmount = mountPreact(el, plugin, h(HealthWidget, { source }));
-			registerCleanup(el, unmount);
-		},
-	);
+	register("true-recall-streak", (source, el, _ctx) => {
+		el.addClass("true-recall-codeblock-streak");
+		const unmount = mountPreact(el, plugin, h(StreakWidget, { source }));
+		registerCleanup(el, unmount);
+	});
 
-	plugin.registerMarkdownCodeBlockProcessor(
-		"true-recall-leaderboard",
-		(source, el, _ctx) => {
-			el.addClass("true-recall-codeblock-leaderboard");
-			const unmount = mountPreact(el, plugin, h(LeaderboardWidget, { source }));
-			registerCleanup(el, unmount);
-		},
-	);
+	register("true-recall-health", (source, el, _ctx) => {
+		el.addClass("true-recall-codeblock-health");
+		const unmount = mountPreact(el, plugin, h(HealthWidget, { source }));
+		registerCleanup(el, unmount);
+	});
 
-	plugin.registerMarkdownCodeBlockProcessor(
-		"true-recall-heatmap",
-		(source, el, _ctx) => {
-			el.addClass("true-recall-codeblock-heatmap");
-			const unmount = mountPreact(el, plugin, h(HeatmapWidget, { source }));
-			registerCleanup(el, unmount);
-		},
-	);
+	register("true-recall-leaderboard", (source, el, _ctx) => {
+		el.addClass("true-recall-codeblock-leaderboard");
+		const unmount = mountPreact(el, plugin, h(LeaderboardWidget, { source }));
+		registerCleanup(el, unmount);
+	});
 
-	plugin.registerMarkdownCodeBlockProcessor(
-		"true-recall-comparison",
-		(source, el, _ctx) => {
-			el.addClass("true-recall-codeblock-comparison");
-			const unmount = mountPreact(el, plugin, h(ComparisonWidget, { source }));
-			registerCleanup(el, unmount);
-		},
-	);
+	register("true-recall-heatmap", (source, el, _ctx) => {
+		el.addClass("true-recall-codeblock-heatmap");
+		const unmount = mountPreact(el, plugin, h(HeatmapWidget, { source }));
+		registerCleanup(el, unmount);
+	});
 
-	plugin.registerMarkdownCodeBlockProcessor(
-		"true-recall-workload",
-		(source, el, _ctx) => {
-			el.addClass("true-recall-codeblock-workload");
-			const unmount = mountPreact(el, plugin, h(WorkloadWidget, { source }));
-			registerCleanup(el, unmount);
-		},
-	);
+	register("true-recall-comparison", (source, el, _ctx) => {
+		el.addClass("true-recall-codeblock-comparison");
+		const unmount = mountPreact(el, plugin, h(ComparisonWidget, { source }));
+		registerCleanup(el, unmount);
+	});
+
+	register("true-recall-workload", (source, el, _ctx) => {
+		el.addClass("true-recall-codeblock-workload");
+		const unmount = mountPreact(el, plugin, h(WorkloadWidget, { source }));
+		registerCleanup(el, unmount);
+	});
 
 	// ── Project widgets ─────────────────────────────────────────
 
-	plugin.registerMarkdownCodeBlockProcessor(
-		"true-recall-project",
-		(source, el, ctx) => {
-			el.addClass("true-recall-codeblock-project");
-			const unmount = mountPreact(
-				el,
-				plugin,
-				h(ProjectWidget, { source, sourcePath: ctx.sourcePath }),
-			);
-			registerCleanup(el, unmount);
-		},
-	);
+	register("true-recall-project", (source, el, ctx) => {
+		el.addClass("true-recall-codeblock-project");
+		const unmount = mountPreact(
+			el,
+			plugin,
+			h(ProjectWidget, { source, sourcePath: ctx.sourcePath }),
+		);
+		registerCleanup(el, unmount);
+	});
 
-	plugin.registerMarkdownCodeBlockProcessor(
-		"true-recall-unassigned",
-		(_source, el, _ctx) => {
-			el.addClass("true-recall-codeblock-unassigned");
-			const unmount = mountPreact(el, plugin, h(UnassignedNotesWidget, null));
-			registerCleanup(el, unmount);
-		},
-	);
+	register("true-recall-unassigned", (_source, el, _ctx) => {
+		el.addClass("true-recall-codeblock-unassigned");
+		const unmount = mountPreact(el, plugin, h(UnassignedNotesWidget, null));
+		registerCleanup(el, unmount);
+	});
 
-	plugin.registerMarkdownCodeBlockProcessor(
-		"true-recall-project-hub",
-		(_source, el, _ctx) => {
-			el.addClass("true-recall-codeblock-project-hub");
-			const unmount = mountPreact(el, plugin, h(ProjectHubWidget, null));
-			registerCleanup(el, unmount);
-		},
-	);
+	register("true-recall-project-hub", (_source, el, _ctx) => {
+		el.addClass("true-recall-codeblock-project-hub");
+		const unmount = mountPreact(el, plugin, h(ProjectHubWidget, null));
+		registerCleanup(el, unmount);
+	});
 
 	// ── FSRS management widgets ────────────────────────────────
 
-	plugin.registerMarkdownCodeBlockProcessor(
-		"true-recall-true-retention",
-		(source, el, _ctx) => {
-			el.addClass("true-recall-codeblock-true-retention");
-			const unmount = mountPreact(
-				el,
-				plugin,
-				h(TrueRetentionWidget, { source }),
-			);
-			registerCleanup(el, unmount);
-		},
-	);
+	register("true-recall-true-retention", (source, el, _ctx) => {
+		el.addClass("true-recall-codeblock-true-retention");
+		const unmount = mountPreact(el, plugin, h(TrueRetentionWidget, { source }));
+		registerCleanup(el, unmount);
+	});
 
-	plugin.registerMarkdownCodeBlockProcessor(
-		"true-recall-preset-info",
-		(source, el, _ctx) => {
-			el.addClass("true-recall-codeblock-preset-info");
-			const unmount = mountPreact(el, plugin, h(PresetInfoWidget, { source }));
-			registerCleanup(el, unmount);
-		},
-	);
+	register("true-recall-preset-info", (source, el, _ctx) => {
+		el.addClass("true-recall-codeblock-preset-info");
+		const unmount = mountPreact(el, plugin, h(PresetInfoWidget, { source }));
+		registerCleanup(el, unmount);
+	});
 
-	plugin.registerMarkdownCodeBlockProcessor(
-		"true-recall-problem-cards",
-		(source, el, _ctx) => {
-			el.addClass("true-recall-codeblock-problem-cards");
-			const unmount = mountPreact(
-				el,
-				plugin,
-				h(ProblemCardsWidget, { source }),
-			);
-			registerCleanup(el, unmount);
-		},
-	);
+	register("true-recall-problem-cards", (source, el, _ctx) => {
+		el.addClass("true-recall-codeblock-problem-cards");
+		const unmount = mountPreact(el, plugin, h(ProblemCardsWidget, { source }));
+		registerCleanup(el, unmount);
+	});
 
-	plugin.registerMarkdownCodeBlockProcessor(
-		"true-recall-forecast",
-		(source, el, _ctx) => {
-			el.addClass("true-recall-codeblock-forecast");
-			const unmount = mountPreact(el, plugin, h(ForecastWidget, { source }));
-			registerCleanup(el, unmount);
-		},
-	);
+	register("true-recall-forecast", (source, el, _ctx) => {
+		el.addClass("true-recall-codeblock-forecast");
+		const unmount = mountPreact(el, plugin, h(ForecastWidget, { source }));
+		registerCleanup(el, unmount);
+	});
 
 	// ── Per-note widgets ────────────────────────────────────────
 
-	plugin.registerMarkdownCodeBlockProcessor(
-		"true-recall-note-health",
-		(source, el, ctx) => {
-			el.addClass("true-recall-codeblock-note-health");
-			const sourceUid = resolveSourceUid(plugin, ctx.sourcePath);
-			const unmount = mountPreact(
-				el,
-				plugin,
-				h(NoteHealthWidget, { sourceUid, source }),
-			);
-			registerCleanup(el, unmount);
-		},
-	);
+	register("true-recall-note-health", (source, el, ctx) => {
+		el.addClass("true-recall-codeblock-note-health");
+		const sourceUid = resolveSourceUid(plugin, ctx.sourcePath);
+		const unmount = mountPreact(
+			el,
+			plugin,
+			h(NoteHealthWidget, { sourceUid, source }),
+		);
+		registerCleanup(el, unmount);
+	});
 
-	plugin.registerMarkdownCodeBlockProcessor(
-		"true-recall-decay",
-		(source, el, ctx) => {
-			el.addClass("true-recall-codeblock-decay");
-			const sourceUid = resolveSourceUid(plugin, ctx.sourcePath);
-			const unmount = mountPreact(
-				el,
-				plugin,
-				h(DecayWidget, { sourceUid, source }),
-			);
-			registerCleanup(el, unmount);
-		},
-	);
+	register("true-recall-decay", (source, el, ctx) => {
+		el.addClass("true-recall-codeblock-decay");
+		const sourceUid = resolveSourceUid(plugin, ctx.sourcePath);
+		const unmount = mountPreact(
+			el,
+			plugin,
+			h(DecayWidget, { sourceUid, source }),
+		);
+		registerCleanup(el, unmount);
+	});
 }

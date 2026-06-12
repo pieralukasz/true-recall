@@ -5,7 +5,9 @@
  */
 
 import type {
+	CardDueInfo,
 	CardScheduleChange,
+	FlattenFutureOptions,
 	FlattenOptions,
 	SchedulerCardStore,
 	SchedulingResult,
@@ -25,13 +27,17 @@ export class FlattenService {
 	 * Flatten a specific date by moving excess cards
 	 */
 	flatten(options: FlattenOptions): SchedulingResult {
-		const { date, maxCards, dryRun = true } = options;
+		const { date, maxCards, cardIds, dryRun = true } = options;
 
 		const nextDate = new Date(date);
 		nextDate.setDate(nextDate.getDate() + 1);
 		const nextDateStr = this.formatDate(nextDate);
 
-		const cards = this.cardStore.getDueCardsByDateRange(date, nextDateStr);
+		let cards = this.cardStore.getDueCardsByDateRange(date, nextDateStr);
+		if (cardIds) {
+			const allowed = new Set(cardIds);
+			cards = cards.filter((c) => allowed.has(c.id));
+		}
 
 		const changes: CardScheduleChange[] = [];
 		const beforeDistribution = new Map<string, number>();
@@ -93,6 +99,116 @@ export class FlattenService {
 		}
 
 		// Apply changes if not dry run
+		if (!dryRun) {
+			for (const change of changes) {
+				this.cardStore.updateCardDue(change.cardId, change.newDue);
+			}
+		}
+
+		return {
+			affectedCount: changes.length,
+			beforeDistribution: this.mapToDistribution(beforeDistribution),
+			afterDistribution: this.mapToDistribution(afterDistribution),
+			changes,
+		};
+	}
+
+	/**
+	 * Flatten all future days to a maximum number of reviews per day.
+	 *
+	 * Walks days chronologically; excess cards on each day (shortest
+	 * intervals first, matching `flatten`) cascade to following days
+	 * until every day is at or under the limit.
+	 */
+	flattenFuture(options: FlattenFutureOptions): SchedulingResult {
+		const { maxCards, days = 365, cardIds, dryRun = true } = options;
+
+		// maxCards < 1 would carry every card forward forever
+		if (maxCards < 1) {
+			return {
+				affectedCount: 0,
+				beforeDistribution: [],
+				afterDistribution: [],
+				changes: [],
+			};
+		}
+
+		const today = new Date();
+		const endDate = new Date(today);
+		endDate.setDate(endDate.getDate() + days);
+
+		let cards = this.cardStore.getDueCardsByDateRange(
+			this.formatDate(today),
+			this.formatDate(endDate),
+		);
+		if (cardIds) {
+			const allowed = new Set(cardIds);
+			cards = cards.filter((c) => allowed.has(c.id));
+		}
+
+		const byDate = new Map<string, CardDueInfo[]>();
+		const beforeDistribution = new Map<string, number>();
+		for (const card of cards) {
+			const dateStr = this.formatDate(new Date(card.due));
+			const bucket = byDate.get(dateStr);
+			if (bucket) bucket.push(card);
+			else byDate.set(dateStr, [card]);
+			beforeDistribution.set(
+				dateStr,
+				(beforeDistribution.get(dateStr) ?? 0) + 1,
+			);
+		}
+
+		const changes: CardScheduleChange[] = [];
+		const afterDistribution = new Map<string, number>();
+		const dates = [...byDate.keys()].sort();
+		const firstDate = dates[0];
+		const lastDate = dates[dates.length - 1];
+
+		if (firstDate && lastDate) {
+			const dayMs = 24 * 60 * 60 * 1000;
+			const firstMs = Date.parse(firstDate);
+			let carried: CardDueInfo[] = [];
+
+			// Cascade can extend past lastDate; carried shrinks by at least
+			// one card per day once source days are exhausted, so it ends.
+			for (let offset = 0; ; offset++) {
+				const cursor = new Date(firstMs + offset * dayMs);
+				const dateStr = this.formatDate(cursor);
+				const dayCards = byDate.get(dateStr) ?? [];
+				if (dayCards.length === 0 && carried.length === 0) {
+					if (dateStr > lastDate) break;
+					continue;
+				}
+
+				// Keep longest intervals on their day, cascade shortest
+				const pool = [...dayCards, ...carried].sort(
+					(a, b) => b.scheduledDays - a.scheduledDays,
+				);
+				const keep = pool.slice(0, maxCards);
+				carried = pool.slice(maxCards);
+				afterDistribution.set(dateStr, keep.length);
+
+				for (const card of keep) {
+					const originalDateStr = this.formatDate(new Date(card.due));
+					if (originalDateStr === dateStr) continue;
+
+					const newDue = new Date(card.due);
+					newDue.setFullYear(cursor.getFullYear());
+					newDue.setMonth(cursor.getMonth());
+					newDue.setDate(cursor.getDate());
+					changes.push({
+						cardId: card.id,
+						originalDue: card.due,
+						newDue: newDue.toISOString(),
+						daysChanged: Math.round(
+							(Date.parse(dateStr) - Date.parse(originalDateStr)) / dayMs,
+						),
+					});
+				}
+			}
+		}
+
 		if (!dryRun) {
 			for (const change of changes) {
 				this.cardStore.updateCardDue(change.cardId, change.newDue);

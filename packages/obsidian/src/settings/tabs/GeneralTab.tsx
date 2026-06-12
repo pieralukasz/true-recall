@@ -36,6 +36,18 @@ export function GeneralTab() {
 		<div class="ep:flex ep:flex-col ep:gap-3">
 			<NewsletterCard />
 
+			<FormCard title="Dashboard">
+				<FormField
+					name="Show dashboard header"
+					description="Show today's review summary and recently studied notes at the top of the dashboard"
+				>
+					<ToggleInput
+						value={settings.showDashboardHeader}
+						onChange={(v) => void save({ showDashboardHeader: v })}
+					/>
+				</FormField>
+			</FormCard>
+
 			<FormCard title="Review interface">
 				<FormField
 					name="Review mode"

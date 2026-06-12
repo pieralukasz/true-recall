@@ -27,6 +27,7 @@ import { ScheduleBreakService } from "./scheduler/schedule-break.service";
 import type {
 	BreakScheduleOptions,
 	DisperseOptions,
+	FlattenFutureOptions,
 	FlattenOptions,
 	LoadBalanceOptions,
 	RescheduleOptions,
@@ -204,6 +205,10 @@ export class FSRSHelperService {
 		return this.flatten.flatten(options);
 	}
 
+	flattenFutureDueCards(options: FlattenFutureOptions): SchedulingResult {
+		return this.flatten.flattenFuture(options);
+	}
+
 	findOverloadedDays(
 		maxCards: number,
 		days: number = 30,
@@ -236,8 +241,9 @@ export class FSRSHelperService {
 	previewBreak(
 		startDate: string,
 		endDate: string,
+		cardIds?: string[],
 	): { cardsAffected: number; breakDays: number } {
-		return this.scheduleBreak.previewBreak(startDate, endDate);
+		return this.scheduleBreak.previewBreak(startDate, endDate, cardIds);
 	}
 
 	rescheduleCards(options: RescheduleOptions): SchedulingResult {

@@ -69,7 +69,7 @@ function injectCitationHandlers(
 					const span = document.createElement("span");
 					span.textContent = String(num);
 					span.className =
-						"ep:text-obs-accent ep:font-semibold ep:cursor-pointer ep:hover:underline";
+						"ep:text-obs-accent ep:font-semibold ep:cursor-pointer tr-hover-faux-underline";
 					span.addEventListener("click", (e) => {
 						e.preventDefault();
 						e.stopPropagation();
@@ -130,7 +130,7 @@ function injectFlashcardUidLinks(
 			const span = document.createElement("span");
 			span.textContent = uid;
 			span.className =
-				"ep:text-obs-accent ep:font-mono ep:text-[11px] ep:cursor-pointer ep:hover:underline";
+				"ep:text-obs-accent ep:font-mono ep:text-[11px] ep:cursor-pointer tr-hover-faux-underline";
 			span.addEventListener("click", (e) => {
 				e.preventDefault();
 				e.stopPropagation();
@@ -227,7 +227,7 @@ function SourcePill({
 
 	return (
 		<Clickable
-			class="ep:inline-flex ep:items-center ep:gap-1 ep:text-[11px] ep:pl-1.5 ep:pr-2 ep:py-0.5 ep:rounded-md ep:bg-obs-modifier-hover ep:text-obs-muted ep:hover:text-obs-accent ep:hover:underline ep:transition-colors ep:max-w-[200px]"
+			class="ep:inline-flex ep:items-center ep:gap-1 ep:text-[11px] ep:pl-1.5 ep:pr-2 ep:py-0.5 ep:rounded-md ep:bg-obs-modifier-hover ep:text-obs-muted ep:hover:text-obs-accent tr-hover-faux-underline ep:transition-colors ep:max-w-[200px]"
 			onClick={() => {
 				if (!navigation) return;
 				if (group.sourceType === "note") {

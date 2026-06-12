@@ -20,16 +20,32 @@ export const ankiImportExportManifest: PluginManifest = {
 	activate: (ctx) => {
 		const { obsidianPlugin: plugin } = ctx;
 
+		// Commands stay registered after a mid-session disable, so gate them
+		// live on plugin state and Pro tier.
+		const isEnabled = () =>
+			plugin.settings.pluginStates?.["anki-import-export"] !== false &&
+			!!plugin.settings.proKey;
+
 		plugin.addCommand({
 			id: "import-anki",
 			name: "Import Anki deck (.apkg)",
-			callback: () => void plugin.importAnki(),
+			checkCallback: (checking) => {
+				if (!isEnabled()) return false;
+				if (checking) return true;
+				void plugin.importAnki();
+				return true;
+			},
 		});
 
 		plugin.addCommand({
 			id: "export-anki",
 			name: "Export to Anki (.apkg)",
-			callback: () => void plugin.exportAnki(),
+			checkCallback: (checking) => {
+				if (!isEnabled()) return false;
+				if (checking) return true;
+				void plugin.exportAnki();
+				return true;
+			},
 		});
 	},
 };

@@ -44,6 +44,18 @@ export function StreamingSection({
 		if (sentinelRef.current) {
 			scrollerRef.current = findScrollParent(sentinelRef.current);
 		}
+		// Mount = generation just started for this note. Jump to the bottom so
+		// streamed cards are visible, then re-pin once the virtualizer has
+		// measured real row heights (estimates can shift scrollHeight).
+		const scroller = scrollerRef.current;
+		if (!scroller) return;
+		const scrollToEnd = () => {
+			scroller.scrollTop = scroller.scrollHeight - scroller.clientHeight;
+		};
+		scrollToEnd();
+		wasNearBottomRef.current = true;
+		const raf = requestAnimationFrame(scrollToEnd);
+		return () => cancelAnimationFrame(raf);
 	}, []);
 
 	useEffect(() => {

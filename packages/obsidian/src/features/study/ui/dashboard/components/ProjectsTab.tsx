@@ -19,6 +19,7 @@ import { useNoteSelection } from "../helpers/use-note-selection";
 import { useProjectActions } from "../helpers/use-project-actions";
 import { useProjectContextMenu } from "../helpers/use-project-context-menu";
 import { useProjectDragDrop } from "../helpers/use-project-drag-drop";
+import { useProjectScheduling } from "../helpers/use-project-scheduling";
 import {
 	ROW_HEIGHT,
 	useExternalVirtualList,
@@ -62,6 +63,14 @@ export function ProjectsTab({
 		handleRemoveProjectStatus,
 		handleAssignNoteToProject,
 	} = useProjectActions();
+	const {
+		handlePostpone,
+		handleAdvance,
+		handleReschedule,
+		handleRescheduleRecent,
+		handleScheduleBreak,
+		handleFlatten,
+	} = useProjectScheduling();
 	const {
 		dragState,
 		handleDragStart,
@@ -186,6 +195,12 @@ export function ProjectsTab({
 								onExportAnki={handleExportAnki}
 								onExportCsv={handleExportCsv}
 								onCreateSubProject={handleCreateSubProject}
+								onPostpone={handlePostpone}
+								onAdvance={handleAdvance}
+								onReschedule={handleReschedule}
+								onRescheduleRecent={handleRescheduleRecent}
+								onScheduleBreak={handleScheduleBreak}
+								onFlatten={handleFlatten}
 								onDragStart={handleDragStart}
 								onDragEnd={handleDragEnd}
 								onDragOver={handleDragOver}
@@ -286,6 +301,12 @@ interface ProjectHeaderItemProps {
 	onExportAnki: (path: string) => Promise<void>;
 	onExportCsv: (path: string) => Promise<void>;
 	onCreateSubProject: (path: string) => Promise<void>;
+	onPostpone: (path: string, name: string) => Promise<void>;
+	onAdvance: (path: string, name: string) => Promise<void>;
+	onReschedule: (path: string, name: string) => Promise<void>;
+	onRescheduleRecent: (path: string, name: string) => Promise<void>;
+	onScheduleBreak: (path: string, name: string) => Promise<void>;
+	onFlatten: (path: string, name: string) => Promise<void>;
 	onDragStart: (e: DragEvent, item: FlatProjectItem) => void;
 	onDragEnd: () => void;
 	onDragOver: (e: DragEvent, item: FlatProjectItem) => void;
@@ -307,6 +328,12 @@ function ProjectHeaderItem({
 	onExportAnki,
 	onExportCsv,
 	onCreateSubProject,
+	onPostpone,
+	onAdvance,
+	onReschedule,
+	onRescheduleRecent,
+	onScheduleBreak,
+	onFlatten,
 	onDragStart,
 	onDragEnd,
 	onDragOver,
@@ -364,6 +391,24 @@ function ProjectHeaderItem({
 		onCreateSubProject: isVirtual
 			? undefined
 			: () => void onCreateSubProject(item.project.path),
+		onPostpone: isVirtual
+			? undefined
+			: () => void onPostpone(item.project.path, item.project.name),
+		onAdvance: isVirtual
+			? undefined
+			: () => void onAdvance(item.project.path, item.project.name),
+		onReschedule: isVirtual
+			? undefined
+			: () => void onReschedule(item.project.path, item.project.name),
+		onRescheduleRecent: isVirtual
+			? undefined
+			: () => void onRescheduleRecent(item.project.path, item.project.name),
+		onScheduleBreak: isVirtual
+			? undefined
+			: () => void onScheduleBreak(item.project.path, item.project.name),
+		onFlatten: isVirtual
+			? undefined
+			: () => void onFlatten(item.project.path, item.project.name),
 	});
 
 	return (

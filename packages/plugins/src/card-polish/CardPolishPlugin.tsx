@@ -59,6 +59,9 @@ export class CardPolishPlugin extends CardAIPluginBase<CardPolishEventDetail> {
 				id,
 				name: `Polish: ${declared.name}`,
 				checkCallback: (checking) => {
+					// Commands stay registered after a mid-session disable — gate live.
+					if (this.pluginCtx.settings.pluginStates?.["card-polish"] === false)
+						return false;
 					const leaf = this.pluginCtx.workspace.activeLeaf;
 					const viewType = leaf?.view?.getViewType?.() ?? "";
 					if (viewType !== VIEW_TYPE_REVIEW) return false;
