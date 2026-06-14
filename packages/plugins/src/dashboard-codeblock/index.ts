@@ -1,5 +1,7 @@
 import type { PluginManifest } from "../types";
 
+let registered = false;
+
 export const dashboardCodeblockManifest: PluginManifest = {
 	info: {
 		id: "dashboard-codeblock",
@@ -19,9 +21,17 @@ export const dashboardCodeblockManifest: PluginManifest = {
 	activate: (ctx) => {
 		const { obsidianPlugin: plugin } = ctx;
 
+		// Codeblock processors can't be unregistered mid-session — register once
+		// and gate rendering and commands live via `isEnabled`.
+		if (registered) return;
+		registered = true;
+
+		const isEnabled = () =>
+			plugin.settings.pluginStates?.["dashboard-codeblock"] !== false;
+
 		void import("./DashboardCodeblock").then(
 			({ registerCoreDashboardCodeblocks }) => {
-				registerCoreDashboardCodeblocks(plugin);
+				registerCoreDashboardCodeblocks(plugin, isEnabled);
 			},
 		);
 
@@ -29,6 +39,7 @@ export const dashboardCodeblockManifest: PluginManifest = {
 			id: "insert-project-dashboard",
 			name: "Insert project dashboard",
 			editorCheckCallback: (checking, editor) => {
+				if (!isEnabled()) return false;
 				if (checking) return true;
 				editor.replaceSelection("```true-recall-project\n```\n");
 				return true;
@@ -38,7 +49,12 @@ export const dashboardCodeblockManifest: PluginManifest = {
 		plugin.addCommand({
 			id: "create-master-dashboard",
 			name: "Create master dashboard note",
-			callback: () => void plugin.createMasterDashboard(),
+			checkCallback: (checking) => {
+				if (!isEnabled()) return false;
+				if (checking) return true;
+				void plugin.createMasterDashboard();
+				return true;
+			},
 		});
 	},
 };

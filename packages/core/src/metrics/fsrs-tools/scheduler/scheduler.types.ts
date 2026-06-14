@@ -84,6 +84,17 @@ export interface ShiftOptions {
 export interface FlattenOptions {
 	date: string;
 	maxCards: number;
+	/** Restrict to these cards (e.g. one project); omit for all cards */
+	cardIds?: string[];
+	dryRun?: boolean;
+}
+
+export interface FlattenFutureOptions {
+	maxCards: number;
+	/** How many days ahead to flatten (default 365) */
+	days?: number;
+	/** Restrict to these cards (e.g. one project); omit for all cards */
+	cardIds?: string[];
 	dryRun?: boolean;
 }
 
@@ -105,5 +116,7 @@ export interface BreakScheduleOptions {
 	endDate: string;
 	redistributeBefore?: boolean;
 	redistributeAfter?: boolean;
+	/** Restrict to these cards (e.g. one project); omit for all cards */
+	cardIds?: string[];
 	dryRun?: boolean;
 }

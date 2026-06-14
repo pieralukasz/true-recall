@@ -19,6 +19,11 @@ export const LEGACY_DB_FILE = "true-recall.db";
 export const SAVE_DEBOUNCE_MS = 5000; // 5 seconds - better durability on app shutdown
 export const SAFETY_FLUSH_INTERVAL_MS = 15000; // hard safety flush every 15 seconds
 
+// VACUUM on load only when both thresholds are exceeded — small databases
+// and modest churn aren't worth the full-DB rewrite.
+export const VACUUM_MIN_FREE_BYTES = 5 * 1024 * 1024;
+export const VACUUM_MIN_FREE_RATIO = 0.25;
+
 /**
  * Get the database filename for a specific device.
  * @param deviceId - 8-character alphanumeric device identifier

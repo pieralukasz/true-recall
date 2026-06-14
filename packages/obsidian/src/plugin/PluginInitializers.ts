@@ -30,6 +30,8 @@ import { DayRolloverWatcher } from "./DayRolloverWatcher";
 import { registerDeletionHandler } from "./PluginEventHandlers";
 import { PluginLoader } from "./plugin-loader";
 
+const AUTO_BACKUP_STARTUP_DELAY_MS = 10_000;
+
 export async function initializeDeviceAndStore(
 	plugin: TrueRecallPlugin,
 ): Promise<void> {
@@ -153,8 +155,16 @@ async function initializeCardStore(
 		const sCards = performance.now();
 
 		if (plugin.settings.autoBackupOnLoad) {
-			plugin.backupRecovery.runAutoBackup().catch((e) => {
-				console.warn("[True Recall] Auto-backup failed:", e);
+			// Defer past layout-ready: the snapshot exports + gzips the whole DB,
+			// which would otherwise compete with vault indexing and view restore.
+			plugin.app.workspace.onLayoutReady(() => {
+				plugin.registerInterval(
+					window.setTimeout(() => {
+						plugin.backupRecovery?.runAutoBackup().catch((e) => {
+							console.warn("[True Recall] Auto-backup failed:", e);
+						});
+					}, AUTO_BACKUP_STARTUP_DELAY_MS),
+				);
 			});
 		}
 

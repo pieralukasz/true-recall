@@ -19,6 +19,12 @@ interface UseProjectContextMenuOptions {
 	onExportAnki?: () => void;
 	onExportCsv?: () => void;
 	onCreateSubProject?: () => void;
+	onPostpone?: () => void;
+	onAdvance?: () => void;
+	onReschedule?: () => void;
+	onRescheduleRecent?: () => void;
+	onScheduleBreak?: () => void;
+	onFlatten?: () => void;
 }
 
 export function useProjectContextMenu({
@@ -37,6 +43,12 @@ export function useProjectContextMenu({
 	onExportAnki,
 	onExportCsv,
 	onCreateSubProject,
+	onPostpone,
+	onAdvance,
+	onReschedule,
+	onRescheduleRecent,
+	onScheduleBreak,
+	onFlatten,
 }: UseProjectContextMenuOptions) {
 	const menuItems: MenuItem[] = [
 		{ title: "Study", icon: "play", onClick: onStudyProject },
@@ -74,6 +86,43 @@ export function useProjectContextMenu({
 								icon: "archive",
 								onClick: () => onArchive?.(),
 							},
+					{
+						title: "Scheduling",
+						icon: "calendar-clock",
+						children: [
+							{
+								title: "Reschedule all cards",
+								icon: "refresh-cw",
+								onClick: () => onReschedule?.(),
+							},
+							{
+								title: "Reschedule cards reviewed in the last 7 days",
+								icon: "history",
+								onClick: () => onRescheduleRecent?.(),
+							},
+							{
+								title: "Schedule a break…",
+								icon: "palmtree",
+								onClick: () => onScheduleBreak?.(),
+							},
+							"separator" as const,
+							{
+								title: "Postpone cards…",
+								icon: "calendar-plus",
+								onClick: () => onPostpone?.(),
+							},
+							{
+								title: "Advance cards…",
+								icon: "calendar-minus",
+								onClick: () => onAdvance?.(),
+							},
+							{
+								title: "Flatten future due cards…",
+								icon: "bar-chart-2",
+								onClick: () => onFlatten?.(),
+							},
+						],
+					},
 					{
 						title: "Export",
 						icon: "download",

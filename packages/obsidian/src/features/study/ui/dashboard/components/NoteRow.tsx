@@ -88,7 +88,7 @@ export function NoteRow({
 				<span
 					class={cn(
 						"ep:text-sm ep:text-obs-normal ep:truncate",
-						note.archived && "ep:line-through",
+						note.archived && "tr-faux-strike",
 					)}
 					title={note.name}
 				>

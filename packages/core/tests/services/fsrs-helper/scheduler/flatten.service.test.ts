@@ -169,6 +169,137 @@ describe("FlattenService", () => {
 			);
 			expect(after?.count).toBe(5);
 		});
+
+		it("only considers cards in cardIds when provided", async () => {
+			const cards = createCardsOnDate("2026-02-01", 10);
+			mockStore = createMockCardStore(cards);
+			mockStore.getDueCardsByDateRange.mockReturnValue(cards);
+			service = new FlattenService(mockStore);
+
+			const allowed = cards.slice(0, 4).map((c) => c.id);
+			const result = await service.flatten({
+				date: "2026-02-01",
+				maxCards: 5,
+				cardIds: allowed,
+				dryRun: true,
+			});
+
+			// Only 4 cards in scope, under the limit of 5
+			expect(result.affectedCount).toBe(0);
+		});
+	});
+
+	describe("flattenFuture", () => {
+		it("cascades overflow across consecutive days", () => {
+			const cards = createCardsOnDate("2026-02-01", 12);
+			mockStore = createMockCardStore(cards);
+			mockStore.getDueCardsByDateRange.mockReturnValue(cards);
+			service = new FlattenService(mockStore);
+
+			const result = service.flattenFuture({ maxCards: 5, dryRun: true });
+
+			// 12 cards, 5/day: 5 stay, 5 -> Feb 2, 2 -> Feb 3
+			expect(result.affectedCount).toBe(7);
+			const after = new Map(
+				result.afterDistribution.map((d) => [d.date, d.count]),
+			);
+			expect(after.get("2026-02-01")).toBe(5);
+			expect(after.get("2026-02-02")).toBe(5);
+			expect(after.get("2026-02-03")).toBe(2);
+		});
+
+		it("keeps longest intervals on their original day", () => {
+			const cards = createCardsOnDate("2026-02-01", 6); // scheduledDays 7..12
+			mockStore = createMockCardStore(cards);
+			mockStore.getDueCardsByDateRange.mockReturnValue(cards);
+			service = new FlattenService(mockStore);
+
+			const result = service.flattenFuture({ maxCards: 4, dryRun: true });
+
+			// Two shortest intervals (indices 0 and 1) move
+			const movedIds = result.changes.map((c) => c.cardId);
+			expect(movedIds).toContain("card-2026-02-01-0");
+			expect(movedIds).toContain("card-2026-02-01-1");
+			expect(movedIds).toHaveLength(2);
+		});
+
+		it("accounts for existing load on following days", () => {
+			const cards = [
+				...createCardsOnDate("2026-02-01", 8),
+				...createCardsOnDate("2026-02-02", 4),
+			];
+			mockStore = createMockCardStore(cards);
+			mockStore.getDueCardsByDateRange.mockReturnValue(cards);
+			service = new FlattenService(mockStore);
+
+			const result = service.flattenFuture({ maxCards: 5, dryRun: true });
+
+			const after = new Map(
+				result.afterDistribution.map((d) => [d.date, d.count]),
+			);
+			for (const count of after.values()) {
+				expect(count).toBeLessThanOrEqual(5);
+			}
+			// 12 cards total: 5 + 5 + 2
+			expect(after.get("2026-02-01")).toBe(5);
+			expect(after.get("2026-02-02")).toBe(5);
+			expect(after.get("2026-02-03")).toBe(2);
+		});
+
+		it("returns empty when all days under limit", () => {
+			const cards = [
+				...createCardsOnDate("2026-02-01", 3),
+				...createCardsOnDate("2026-02-02", 4),
+			];
+			mockStore = createMockCardStore(cards);
+			mockStore.getDueCardsByDateRange.mockReturnValue(cards);
+			service = new FlattenService(mockStore);
+
+			const result = service.flattenFuture({ maxCards: 5, dryRun: true });
+
+			expect(result.affectedCount).toBe(0);
+		});
+
+		it("returns empty for maxCards below 1", () => {
+			const cards = createCardsOnDate("2026-02-01", 5);
+			mockStore = createMockCardStore(cards);
+			mockStore.getDueCardsByDateRange.mockReturnValue(cards);
+			service = new FlattenService(mockStore);
+
+			const result = service.flattenFuture({ maxCards: 0, dryRun: true });
+
+			expect(result.affectedCount).toBe(0);
+		});
+
+		it("only considers cards in cardIds when provided", () => {
+			const cards = createCardsOnDate("2026-02-01", 10);
+			mockStore = createMockCardStore(cards);
+			mockStore.getDueCardsByDateRange.mockReturnValue(cards);
+			service = new FlattenService(mockStore);
+
+			const allowed = cards.slice(0, 6).map((c) => c.id);
+			const result = service.flattenFuture({
+				maxCards: 5,
+				cardIds: allowed,
+				dryRun: true,
+			});
+
+			// 6 cards in scope: 5 stay, 1 moves
+			expect(result.affectedCount).toBe(1);
+			expect(allowed).toContain(result.changes[0]?.cardId);
+		});
+
+		it("applies changes when dryRun is false", () => {
+			const cards = createCardsOnDate("2026-02-01", 7);
+			mockStore = createMockCardStore(cards);
+			mockStore.getDueCardsByDateRange.mockReturnValue(cards);
+			service = new FlattenService(mockStore);
+
+			const result = service.flattenFuture({ maxCards: 5, dryRun: false });
+
+			expect(result.affectedCount).toBe(2);
+			expect(mockStore.updateCardDue).toHaveBeenCalledTimes(2);
+		});
 	});
 
 	describe("findOverloadedDays", () => {

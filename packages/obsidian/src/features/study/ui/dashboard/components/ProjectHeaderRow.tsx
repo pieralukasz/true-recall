@@ -67,7 +67,7 @@ export function ProjectHeaderRow({
 					class={cn(
 						"ep:text-sm ep:truncate ep:min-w-0 ep:font-medium",
 						isVirtual ? "ep:text-obs-muted ep:italic" : "ep:text-obs-normal",
-						project.archived && "ep:line-through",
+						project.archived && "tr-faux-strike",
 					)}
 				>
 					{project.name}

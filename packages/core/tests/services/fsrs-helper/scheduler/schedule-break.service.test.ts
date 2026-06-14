@@ -265,5 +265,39 @@ describe("ScheduleBreakService", () => {
 
 			expect(preview.breakDays).toBe(1);
 		});
+
+		it("only counts cards in cardIds when provided", () => {
+			const cards = createCardsOnDate("2026-02-10", 10);
+			mockStore = createMockCardStore(cards);
+			mockStore.getDueCardsByDateRange.mockReturnValue(cards);
+			service = new ScheduleBreakService(mockStore);
+
+			const allowed = cards.slice(0, 3).map((c) => c.id);
+			const preview = service.previewBreak("2026-02-10", "2026-02-14", allowed);
+
+			expect(preview.cardsAffected).toBe(3);
+		});
+	});
+
+	describe("cardIds scoping", () => {
+		it("only redistributes cards in cardIds", async () => {
+			const cards = createCardsOnDate("2026-02-10", 10);
+			mockStore = createMockCardStore(cards);
+			mockStore.getDueCardsByDateRange.mockReturnValue(cards);
+			service = new ScheduleBreakService(mockStore);
+
+			const allowed = cards.slice(0, 4).map((c) => c.id);
+			const result = await service.scheduleBreak({
+				startDate: "2026-02-10",
+				endDate: "2026-02-14",
+				cardIds: allowed,
+				dryRun: true,
+			});
+
+			expect(result.affectedCount).toBe(4);
+			for (const change of result.changes) {
+				expect(allowed).toContain(change.cardId);
+			}
+		});
 	});
 });

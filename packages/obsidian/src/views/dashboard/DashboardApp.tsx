@@ -308,16 +308,20 @@ export function DashboardApp() {
 				onScroll={onScroll}
 			>
 				<div class="ep:p-3 ep:mx-auto ep:max-w-5xl ep:flex ep:flex-col ep:gap-3 ep:min-h-full">
-					<TodayActionBar
-						totalDue={data.totalDue}
-						totalNew={data.totalNew}
-						totalLearning={data.totalLearning}
-						estimatedMinutes={data.estimatedTotalMinutes}
-						progress={data.todayProgress}
-					/>
+					{_settings.showDashboardHeader && (
+						<>
+							<TodayActionBar
+								totalDue={data.totalDue}
+								totalNew={data.totalNew}
+								totalLearning={data.totalLearning}
+								estimatedMinutes={data.estimatedTotalMinutes}
+								progress={data.todayProgress}
+							/>
 
-					{projectData.recentlyStudied.length > 0 && (
-						<RecentlyStudiedBar notes={projectData.recentlyStudied} />
+							{projectData.recentlyStudied.length > 0 && (
+								<RecentlyStudiedBar notes={projectData.recentlyStudied} />
+							)}
+						</>
 					)}
 
 					<SearchCombobox
