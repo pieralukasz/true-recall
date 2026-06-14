@@ -88,12 +88,7 @@ export function FSRSTab({ selectedPresetId, onPresetChange }: FSRSTabProps) {
 
 			<DailyLimitsSection preset={preset} updatePreset={updatePreset} />
 
-			<SchedulingSection
-				preset={preset}
-				updatePreset={updatePreset}
-				settings={settings}
-				save={save}
-			/>
+			<SchedulingSection preset={preset} updatePreset={updatePreset} />
 
 			<ParametersSection
 				preset={preset}

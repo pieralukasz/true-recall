@@ -9,22 +9,12 @@ import {
 	TextInput,
 	ToggleInput,
 } from "@true-recall/obsidian/components";
+import { REVIEW_ORDER_OPTIONS } from "@true-recall/obsidian/helpers";
 
 interface SchedulingSectionProps {
 	preset: FSRSPreset;
 	updatePreset: (c: Partial<FSRSPreset>) => Promise<void>;
 }
-
-const REVIEW_ORDER_OPTIONS = [
-	{ value: "due-date", label: "Due date" },
-	{ value: "due-date-random", label: "Due date + random" },
-	{ value: "random", label: "Random" },
-	{ value: "by-retrievability", label: "By retrievability" },
-	{ value: "relative-overdueness", label: "Relative overdueness" },
-	{ value: "most-lapses", label: "Most lapses first" },
-	{ value: "lowest-stability", label: "Lowest stability" },
-	{ value: "order-added", label: "Order added" },
-];
 
 export function SchedulingSection({
 	preset,
