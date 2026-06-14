@@ -3,8 +3,6 @@
  * Handles database backup creation, restoration, and management
  */
 
-import pako from "pako";
-
 import { MS_PER_DAY } from "@true-recall/core/constants";
 import { DatabaseError } from "@true-recall/core/errors/domain.error";
 import type { IPersistence } from "@true-recall/core/interfaces/persistence";
@@ -16,6 +14,8 @@ import {
 	toExactArrayBuffer,
 } from "@true-recall/core/persistence/sqlite";
 import type { RetentionPolicy } from "@true-recall/core/types/settings.types";
+
+import { gzipCompress, gzipDecompress } from "./gzip.utils";
 
 const BACKUP_PREFIX = "true-recall-backup-";
 
@@ -85,7 +85,7 @@ export class BackupService {
 		}
 
 		const data = db.export();
-		const compressed = pako.gzip(data);
+		const compressed = await gzipCompress(data);
 
 		// Ensure backup folder exists
 		await this.ensureBackupFolder();
@@ -109,7 +109,7 @@ export class BackupService {
 				"backup:verify",
 			);
 		}
-		const decompressed = pako.ungzip(new Uint8Array(written));
+		const decompressed = await gzipDecompress(new Uint8Array(written));
 		const header = new TextDecoder().decode(decompressed.slice(0, 16));
 		if (!header.startsWith("SQLite format 3")) {
 			await this.persistence.remove(backupPath);
@@ -195,7 +195,7 @@ export class BackupService {
 				);
 			}
 			const dbData = backupPath.endsWith(".gz")
-				? toExactArrayBuffer(pako.ungzip(new Uint8Array(rawData)))
+				? toExactArrayBuffer(await gzipDecompress(new Uint8Array(rawData)))
 				: toExactArrayBuffer(rawData);
 
 			// Write to main database file

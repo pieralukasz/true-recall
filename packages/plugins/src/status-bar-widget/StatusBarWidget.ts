@@ -271,5 +271,8 @@ export class StatusBarWidget {
 	dispose(): void {
 		this.disposer?.();
 		this.el.removeEventListener("click", this.onClickDue);
+		// Remove the status bar item so re-activation (plugin toggled off and
+		// on again without a restart) doesn't leave a duplicate behind.
+		this.el.remove();
 	}
 }

@@ -250,6 +250,8 @@ export interface TrueRecallSettings {
 	continuousCustomReviews: boolean;
 	/** Bypass daily limits when studying a specific note from the dashboard */
 	ignoreDailyLimitsForNoteStudy: boolean;
+	/** Show today's summary and recently studied notes at the top of the dashboard */
+	showDashboardHeader: boolean;
 
 	/** Custom review keybindings */
 	reviewKeybindings: ReviewKeybindings;

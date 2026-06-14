@@ -120,6 +120,7 @@ function PluginAccordion({
 					{isActive ? (
 						<Clickable
 							stopPropagation
+							preventDefault={false}
 							class="ep:cursor-default"
 							onClick={() => {}}
 						>

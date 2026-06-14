@@ -525,6 +525,8 @@ export default class TrueRecallPlugin extends Plugin {
 	async saveSettings(): Promise<void> {
 		await this.coreApp.updateSettings(this.settings);
 		this.noteStatusCache?.bumpVersion();
+		// Apply plugin enable/disable toggles (and tier unlocks) without restart
+		this.pluginLoader?.sync();
 	}
 
 	async activateView(): Promise<void> {

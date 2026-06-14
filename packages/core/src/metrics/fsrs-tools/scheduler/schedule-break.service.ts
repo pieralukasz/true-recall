@@ -31,16 +31,21 @@ export class ScheduleBreakService {
 			endDate,
 			redistributeBefore = true,
 			redistributeAfter = true,
+			cardIds,
 			dryRun = true,
 		} = options;
 
 		const breakStart = new Date(startDate);
 		const breakEnd = new Date(endDate);
 
-		const cardsInBreak = this.cardStore.getDueCardsByDateRange(
+		let cardsInBreak = this.cardStore.getDueCardsByDateRange(
 			startDate,
 			endDate,
 		);
+		if (cardIds) {
+			const allowed = new Set(cardIds);
+			cardsInBreak = cardsInBreak.filter((c) => allowed.has(c.id));
+		}
 
 		const changes: CardScheduleChange[] = [];
 		const beforeDistribution = new Map<string, number>();
@@ -171,8 +176,13 @@ export class ScheduleBreakService {
 	previewBreak(
 		startDate: string,
 		endDate: string,
+		cardIds?: string[],
 	): { cardsAffected: number; breakDays: number } {
-		const cards = this.cardStore.getDueCardsByDateRange(startDate, endDate);
+		let cards = this.cardStore.getDueCardsByDateRange(startDate, endDate);
+		if (cardIds) {
+			const allowed = new Set(cardIds);
+			cards = cards.filter((c) => allowed.has(c.id));
+		}
 		const breakDays =
 			this.daysBetween(new Date(startDate), new Date(endDate)) + 1;
 

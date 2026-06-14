@@ -357,6 +357,13 @@ settings:
 	.tr-no-faux-underline {
 		border-bottom: 0;
 	}
+	/* line-through without text-decoration (CSS scorecard compat) */
+	.tr-faux-strike {
+		background-image: linear-gradient(currentColor, currentColor);
+		background-size: 100% 1px;
+		background-position: 0 50%;
+		background-repeat: no-repeat;
+	}
 }
 
 /* Reset padding for app-shell views — must be unlayered to override Obsidian defaults */

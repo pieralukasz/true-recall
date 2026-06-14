@@ -10,23 +10,15 @@ import {
 	SelectInput,
 	TextInput,
 } from "@true-recall/obsidian/components";
+import {
+	NEW_CARD_ORDER_OPTIONS,
+	NEW_REVIEW_MIX_OPTIONS,
+} from "@true-recall/obsidian/helpers";
 
 interface NewCardsSectionProps {
 	preset: FSRSPreset;
 	updatePreset: (c: Partial<FSRSPreset>) => Promise<void>;
 }
-
-const ORDER_OPTIONS = [
-	{ value: "random", label: "Random" },
-	{ value: "oldest-first", label: "Oldest first" },
-	{ value: "newest-first", label: "Newest first" },
-];
-
-const MIX_OPTIONS = [
-	{ value: "mix-with-reviews", label: "Mix with reviews" },
-	{ value: "show-after-reviews", label: "Show after reviews" },
-	{ value: "show-before-reviews", label: "Show before reviews" },
-];
 
 export function NewCardsSection({
 	preset,
@@ -62,7 +54,7 @@ export function NewCardsSection({
 					onChange={(v) =>
 						void updatePreset({ newCardOrder: v as NewCardOrder })
 					}
-					options={ORDER_OPTIONS}
+					options={NEW_CARD_ORDER_OPTIONS}
 				/>
 			</FormField>
 
@@ -75,7 +67,7 @@ export function NewCardsSection({
 					onChange={(v) =>
 						void updatePreset({ newReviewMix: v as NewReviewMix })
 					}
-					options={MIX_OPTIONS}
+					options={NEW_REVIEW_MIX_OPTIONS}
 				/>
 			</FormField>
 		</FormCard>

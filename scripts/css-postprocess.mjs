@@ -147,6 +147,19 @@ function removeReviewerFlaggedDeclarations(css) {
 			textDecorationRemoved++;
 			return;
 		}
+		// Scrub text-decoration-color from transition lists (Tailwind transition-colors)
+		// so the reviewer's text-decoration feature check has nothing to match.
+		if (
+			decl.prop === "transition-property" &&
+			decl.value.includes("text-decoration-color")
+		) {
+			decl.value = decl.value
+				.split(",")
+				.filter((part) => part.trim() !== "text-decoration-color")
+				.join(",");
+			textDecorationRemoved++;
+			return;
+		}
 		if (decl.important) {
 			decl.important = false;
 			importantCleared++;

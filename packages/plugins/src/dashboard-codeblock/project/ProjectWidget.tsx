@@ -124,7 +124,7 @@ export function ProjectCard({
 			<div class="ep:flex ep:items-center ep:justify-between ep:gap-2">
 				{onClickName ? (
 					<Clickable
-						class="ep:text-sm ep:font-semibold ep:text-obs-normal ep:hover:underline"
+						class="ep:text-sm ep:font-semibold ep:text-obs-normal tr-hover-faux-underline"
 						onClick={onClickName}
 					>
 						{stats.name}

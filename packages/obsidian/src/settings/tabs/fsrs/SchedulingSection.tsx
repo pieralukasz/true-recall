@@ -3,7 +3,6 @@ import type {
 	NewCardOrder,
 	NewReviewMix,
 	ReviewOrder,
-	TrueRecallSettings,
 } from "@true-recall/core/types";
 
 import {
@@ -13,19 +12,20 @@ import {
 	TextInput,
 	ToggleInput,
 } from "@true-recall/obsidian/components";
+import {
+	NEW_CARD_ORDER_OPTIONS,
+	NEW_REVIEW_MIX_OPTIONS,
+	REVIEW_ORDER_OPTIONS,
+} from "@true-recall/obsidian/helpers";
 
 interface SchedulingSectionProps {
 	preset: FSRSPreset;
 	updatePreset: (c: Partial<FSRSPreset>) => Promise<void>;
-	settings: TrueRecallSettings;
-	save: (patch: Partial<TrueRecallSettings>) => Promise<void>;
 }
 
 export function SchedulingSection({
 	preset,
 	updatePreset,
-	settings,
-	save,
 }: SchedulingSectionProps) {
 	return (
 		<>
@@ -75,19 +75,11 @@ export function SchedulingSection({
 					description="How to order new cards in the review queue"
 				>
 					<SelectInput
-						value={settings.newCardOrder}
-						onChange={(v) => void save({ newCardOrder: v as NewCardOrder })}
-						options={[
-							{ value: "random", label: "Random" },
-							{
-								value: "oldest-first",
-								label: "Oldest first (by position in file)",
-							},
-							{
-								value: "newest-first",
-								label: "Newest first (by position in file)",
-							},
-						]}
+						value={preset.newCardOrder ?? "random"}
+						onChange={(v) =>
+							void updatePreset({ newCardOrder: v as NewCardOrder })
+						}
+						options={NEW_CARD_ORDER_OPTIONS}
 					/>
 				</FormField>
 
@@ -96,17 +88,11 @@ export function SchedulingSection({
 					description="How to order cards due for review"
 				>
 					<SelectInput
-						value={settings.reviewOrder}
-						onChange={(v) => void save({ reviewOrder: v as ReviewOrder })}
-						options={[
-							{ value: "due-date", label: "By due date" },
-							{ value: "random", label: "Random" },
-							{ value: "due-date-random", label: "Due date, then random" },
-							{
-								value: "by-retrievability",
-								label: "By retrievability (lowest R first)",
-							},
-						]}
+						value={preset.reviewOrder ?? "due-date"}
+						onChange={(v) =>
+							void updatePreset({ reviewOrder: v as ReviewOrder })
+						}
+						options={REVIEW_ORDER_OPTIONS}
 					/>
 				</FormField>
 
@@ -115,13 +101,11 @@ export function SchedulingSection({
 					description="When to show new cards relative to reviews"
 				>
 					<SelectInput
-						value={settings.newReviewMix}
-						onChange={(v) => void save({ newReviewMix: v as NewReviewMix })}
-						options={[
-							{ value: "mix-with-reviews", label: "Mix with reviews" },
-							{ value: "show-after-reviews", label: "Show after reviews" },
-							{ value: "show-before-reviews", label: "Show before reviews" },
-						]}
+						value={preset.newReviewMix ?? "mix-with-reviews"}
+						onChange={(v) =>
+							void updatePreset({ newReviewMix: v as NewReviewMix })
+						}
+						options={NEW_REVIEW_MIX_OPTIONS}
 					/>
 				</FormField>
 			</FormCard>

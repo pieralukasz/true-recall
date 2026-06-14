@@ -5,6 +5,8 @@ import { createLinkStatusViewPlugin } from "./LinkStatusViewPlugin";
 export { createLinkStatusPostProcessor } from "./LinkStatusPostProcessor";
 export { createLinkStatusViewPlugin } from "./LinkStatusViewPlugin";
 
+let extensionsRegistered = false;
+
 export const linkStatusIndicatorsManifest: PluginManifest = {
 	info: {
 		id: "link-status-indicators",
@@ -29,6 +31,16 @@ export const linkStatusIndicatorsManifest: PluginManifest = {
 		)
 			return;
 
+		// CM6 extensions and markdown post-processors can't be unregistered
+		// mid-session — register once and gate visibility live so the settings
+		// toggle works without a restart.
+		if (extensionsRegistered) return;
+		extensionsRegistered = true;
+
+		const isEnabled = () =>
+			plugin.settings.pluginStates?.["link-status-indicators"] !== false &&
+			plugin.settings.showLinkStatusIndicators;
+
 		const { notify } =
 			require("@true-recall/obsidian/services/notification.service") as typeof import("@true-recall/obsidian/services/notification.service");
 
@@ -50,7 +62,7 @@ export const linkStatusIndicatorsManifest: PluginManifest = {
 			plugin.app,
 			noteStatusCache,
 			plugin.frontmatterIndex,
-			() => plugin.settings.showLinkStatusIndicators,
+			isEnabled,
 			() => plugin.settings.showDonutsInReview,
 			onReviewNote,
 			onReviewNotes,
@@ -62,7 +74,7 @@ export const linkStatusIndicatorsManifest: PluginManifest = {
 			plugin.app,
 			noteStatusCache,
 			plugin.frontmatterIndex,
-			() => plugin.settings.showLinkStatusIndicators,
+			isEnabled,
 			() => plugin.settings.showDonutsInPanel,
 			onReviewNote,
 			onReviewNotes,

@@ -141,6 +141,8 @@ function handleImageOcclusion(
 	}
 }
 
+let editorExtensionsRegistered = false;
+
 export const selectionToolbarManifest: PluginManifest = {
 	info: {
 		id: "selection-toolbar",
@@ -165,6 +167,10 @@ export const selectionToolbarManifest: PluginManifest = {
 			return "none";
 		};
 
+		// Live gate so the settings toggle takes effect without a restart.
+		const isEnabled = () =>
+			plugin.settings.pluginStates?.["selection-toolbar"] !== false;
+
 		const editorExtension = createSelectionToolbarExtension({
 			actions: {
 				onPreset: (presetId, text) =>
@@ -182,11 +188,10 @@ export const selectionToolbarManifest: PluginManifest = {
 			getButtons: () => plugin.settings.editorToolbarButtons,
 			tier,
 			getProviderType: () => plugin.settings.providerType,
-			isEnabled: () => true,
+			isEnabled,
 			getPluginStates: () => plugin.settings.pluginStates ?? {},
 			getPresets: () => plugin.settings.generationPresets,
 		});
-		plugin.registerEditorExtension([editorExtension]);
 
 		const imageExtension = createImageToolbarExtension({
 			onQuickAddImage: async (imagePath) => {
@@ -228,9 +233,17 @@ export const selectionToolbarManifest: PluginManifest = {
 			onImageOcclusion: (imagePath) => handleImageOcclusion(plugin, imagePath),
 			getButtons: () => plugin.settings.imageToolbarButtons,
 			getPluginStates: () => plugin.settings.pluginStates ?? {},
-			isEnabled: () => true,
+			isEnabled,
 		});
-		plugin.registerEditorExtension([imageExtension]);
+
+		// CM6 extensions can't be unregistered mid-session, so register them
+		// once per session and rely on the live `isEnabled` gate. Re-activation
+		// after a settings toggle must not register duplicates.
+		if (!editorExtensionsRegistered) {
+			plugin.registerEditorExtension([editorExtension]);
+			plugin.registerEditorExtension([imageExtension]);
+			editorExtensionsRegistered = true;
+		}
 
 		const globalToolbar = new GlobalSelectionToolbar({
 			actions: {
@@ -248,7 +261,7 @@ export const selectionToolbarManifest: PluginManifest = {
 			getButtons: () => plugin.settings.globalToolbarButtons,
 			tier,
 			getProviderType: () => plugin.settings.providerType,
-			isEnabled: () => true,
+			isEnabled,
 			getPluginStates: () => plugin.settings.pluginStates ?? {},
 			getSourceFile: (range) => getSourceFileFromDOM(plugin, range),
 			getPresets: () => plugin.settings.generationPresets,

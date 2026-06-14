@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.9.7 (2026-06-14)
+
+### Features
+
+- **dashboard:** per-project study scheduling actions, with a header toggle to show or hide them
+
+### Improvements
+
+- backing up large libraries no longer freezes Obsidian for a few seconds
+- the database file no longer grows without bound — it reclaims space after you delete a lot of cards
+- smoother startup: the automatic backup now runs shortly after launch instead of during load
+
+### Bug Fixes
+
+- the card order set in an FSRS preset now actually applies (it was using the global setting); all ordering options are now offered the same way in settings and in the preset dialog
+
 ## 1.9.6 (2026-06-03)
 
 ### Bug Fixes

@@ -156,6 +156,7 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 	showReviewHeaderStats: true,
 	continuousCustomReviews: true,
 	ignoreDailyLimitsForNoteStudy: true,
+	showDashboardHeader: true,
 
 	reviewKeybindings: {
 		revealAndGood: " ",
