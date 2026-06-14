@@ -20,6 +20,8 @@ import {
 	getDeviceDbFilename,
 	SAVE_DEBOUNCE_MS,
 	toExactArrayBuffer,
+	VACUUM_MIN_FREE_BYTES,
+	VACUUM_MIN_FREE_RATIO,
 } from "./sqlite.types";
 
 export class SqliteStoreService {
@@ -97,13 +99,54 @@ export class SqliteStoreService {
 			this.isDirty = true;
 		}
 
-		this.db.run("DELETE FROM meta WHERE key = 'integrity_checked'");
 		this.integrity.checkAndRepairOnce();
 
 		// Keep builtin note type templates in sync with code (idempotent, fixes stale DBs)
 		this.noteTypes.refreshBuiltins();
 
+		this.vacuumIfBloated();
+
 		this.isLoaded = true;
+	}
+
+	/**
+	 * Reclaim free pages left behind by bulk deletions. Saves export the
+	 * in-memory DB verbatim — including free pages — so without VACUUM the
+	 * file never shrinks and every load/save/backup pays for dead weight.
+	 */
+	private vacuumIfBloated(): void {
+		try {
+			const pageCount = this.pragmaNumber("page_count");
+			const freeCount = this.pragmaNumber("freelist_count");
+			const pageSize = this.pragmaNumber("page_size");
+			if (pageCount <= 0 || pageSize <= 0) return;
+
+			const freeBytes = freeCount * pageSize;
+			if (
+				freeBytes < VACUUM_MIN_FREE_BYTES ||
+				freeCount / pageCount < VACUUM_MIN_FREE_RATIO
+			) {
+				return;
+			}
+
+			// run() marks the store dirty, so the shrunken DB persists on next flush
+			this.db.run("VACUUM");
+
+			const afterBytes = this.pragmaNumber("page_count") * pageSize;
+			console.debug(
+				`[True Recall] VACUUM reclaimed ${Math.round(
+					(pageCount * pageSize - afterBytes) / 1024 / 1024,
+				)}MB (${Math.round((pageCount * pageSize) / 1024 / 1024)}MB → ${Math.round(afterBytes / 1024 / 1024)}MB)`,
+			);
+		} catch (e) {
+			console.warn("[True Recall] VACUUM failed:", e);
+		}
+	}
+
+	private pragmaNumber(name: string): number {
+		const row = this.db.query<Record<string, number>>(`PRAGMA ${name}`)[0];
+		if (!row) return 0;
+		return Number(Object.values(row)[0] ?? 0);
 	}
 
 	private cleanupStaleReferences(): void {
