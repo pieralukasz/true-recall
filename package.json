@@ -26,7 +26,8 @@
 		"changelog:preview": "bun scripts/generate-changelog.ts --preview",
 		"perf:benchmark": "bun scripts/perf-benchmark.ts",
 		"cli:build": "cd cli && bun build --compile --minify index.ts --outfile true-recall",
-		"knip": "bunx knip"
+		"knip": "bunx knip",
+		"lint:obsidian": "eslint ."
 	},
 	"keywords": [],
 	"license": "PolyForm-Strict-1.0.0",
@@ -36,8 +37,11 @@
 		"@types/bun": "^1.3.9",
 		"@types/node": "^20.0.0",
 		"@types/pako": "^2.0.4",
+		"@typescript-eslint/parser": "^8.61.1",
 		"@vitest/coverage-v8": "^4.1.8",
 		"esbuild": "^0.28.0",
+		"eslint": "^9",
+		"eslint-plugin-obsidianmd": "^0.3.0",
 		"excalirender": "github:JonRC/excalirender",
 		"knip": "^6.15.0",
 		"postcss": "^8.5.15",
