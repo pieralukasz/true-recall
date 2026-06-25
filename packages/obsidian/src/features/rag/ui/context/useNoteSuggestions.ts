@@ -38,7 +38,7 @@ export function useNoteSuggestions(): NoteSuggestionsState {
 
 	const allNotes = useMemo(
 		() => app.vault.getMarkdownFiles(),
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- refetch the note list whenever the query changes
 		[app, trigger.query],
 	);
 

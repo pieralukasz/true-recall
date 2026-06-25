@@ -117,9 +117,7 @@ export class StatusBarWidget {
 		private services?: StatusBarServices,
 	) {
 		this.el.addClass("true-recall-status-bar");
-		// eslint-disable-next-line @obsidianmd/no-direct-style-mutation -- Obsidian status bar element requires imperative styling
-		this.el.style.cursor = "pointer";
-		this.el.style.order = "999";
+		this.el.setCssStyles({ cursor: "pointer", order: "999" });
 		this.el.addEventListener("click", this.onClickDue);
 	}
 

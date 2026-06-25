@@ -98,7 +98,7 @@ export class ObsidianCardAIPresenter implements CardAIPresenter {
 		const btn = document.createElement("button");
 		btn.textContent = "Undo";
 		btn.className = "mod-cta";
-		btn.style.marginLeft = "8px";
+		btn.setCssStyles({ marginLeft: "8px" });
 		btn.onclick = () => {
 			if (editsApplied) target.apply(original);
 			for (const id of createdIds) target.removeCard?.(id);
