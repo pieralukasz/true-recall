@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.9.9 (2026-06-25)
+
+### Maintenance
+
+- pass the Obsidian automated plugin review: use `setCssStyles()` instead of direct style assignment, load the desktop API server's Node `http` module lazily behind a `Platform.isDesktop` guard, and describe the remaining ESLint disable directives (no user-facing changes)
+- raise `minAppVersion` to 1.8.7 to match the Obsidian APIs the plugin already uses (`Notice.messageEl`, `App.loadLocalStorage`/`saveLocalStorage`)
+
 ## 1.9.8 (2026-06-25)
 
 ### Maintenance
