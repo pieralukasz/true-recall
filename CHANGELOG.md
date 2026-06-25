@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.9.8 (2026-06-25)
+
+### Maintenance
+
+- internal tooling: scope the ESLint configuration so the automated plugin review completes without aborting (no user-facing changes)
+
 ## 1.9.7 (2026-06-14)
 
 ### Features
