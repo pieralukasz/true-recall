@@ -58,8 +58,7 @@ export function CardAIFieldEditor({
 			editorRef.current = null;
 			editor.destroy();
 		};
-		// Editor recreates only when host swaps; value/readOnly handled separately.
-		// eslint-disable-next-line react-hooks/exhaustive-deps
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- editor recreates only when host swaps; value/readOnly handled separately
 	}, [app, plugin.EmbeddableEditor, readOnly]);
 
 	useEffect(() => {

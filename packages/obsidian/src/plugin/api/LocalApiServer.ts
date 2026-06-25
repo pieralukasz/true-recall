@@ -1,7 +1,4 @@
-// eslint-disable-next-line import/no-nodejs-modules -- CLI API server requires Node.js HTTP server on localhost
-// biome-ignore lint/style/useNodejsImportProtocol: esbuild can't resolve node: prefix in Obsidian/Electron bundle
-import { createServer, type Server } from "http";
-import { Notice } from "obsidian";
+import { Notice, Platform } from "obsidian";
 
 import type TrueRecallPlugin from "../../main";
 import { dispatch } from "./routes";
@@ -10,7 +7,7 @@ const DEFAULT_PORT = 27182;
 const MAX_PORT_RETRIES = 5;
 
 export class LocalApiServer {
-	private server: Server | null = null;
+	private server: import("http").Server | null = null;
 	private port: number;
 	private portRetryCount = 0;
 
@@ -22,7 +19,14 @@ export class LocalApiServer {
 	}
 
 	start(): void {
+		if (!Platform.isDesktop) return;
 		if (this.server) return;
+
+		// Desktop-only: load Node's http server lazily via Electron's window.require so the
+		// bundler and the linter never see a static Node import (unavailable on mobile).
+		const { createServer } = (
+			window as unknown as { require: (id: string) => unknown }
+		).require("http") as typeof import("http");
 
 		this.server = createServer((req, res) => {
 			dispatch(req, res, { plugin: this.plugin }).catch((error) => {
