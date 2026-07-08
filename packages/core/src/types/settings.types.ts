@@ -408,6 +408,23 @@ export interface TrueRecallSettings {
 	generationPresets: GenerationPreset[];
 	/** ID of the default generation preset */
 	defaultGenerationPresetId: string;
+
+	/**
+	 * Overrides where True Recall writes binary attachments: pasted images,
+	 * Image Occlusion crops, AI-generated card images, and Anki import media.
+	 * Empty string = each feature keeps its own pre-existing fallback behavior.
+	 */
+	attachmentFolder: string;
+	/**
+	 * Pre-fills the notes-destination folder field in the Anki import modal.
+	 * Empty string = modal keeps its built-in "Anki Import" default.
+	 */
+	defaultAnkiImportFolder: string;
+	/**
+	 * Pre-fills the folder field when creating a new top-level project note.
+	 * Empty string = vault root.
+	 */
+	defaultProjectFolder: string;
 }
 
 export interface SessionPreset {
