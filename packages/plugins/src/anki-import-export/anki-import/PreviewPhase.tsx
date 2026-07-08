@@ -18,6 +18,7 @@ interface PreviewPhaseProps {
 	useAI: boolean;
 	hasAIKey: boolean;
 	importFolder: string;
+	attachmentFolderOverride: string;
 	onSchedulingChange: (val: boolean) => void;
 	onMediaChange: (val: boolean) => void;
 	onUseAIChange: (val: boolean) => void;
@@ -34,6 +35,7 @@ export function PreviewPhase({
 	useAI: _useAI,
 	hasAIKey: _hasAIKey,
 	importFolder,
+	attachmentFolderOverride,
 	onSchedulingChange,
 	onMediaChange,
 	onUseAIChange: _onUseAIChange,
@@ -76,7 +78,9 @@ export function PreviewPhase({
 				/>
 				<OptionCheckbox
 					label="Import media files"
-					description={`${preview.mediaCount} files will be saved to Attachments/${importFolder}`}
+					description={`${preview.mediaCount} files will be saved to ${
+						attachmentFolderOverride || `Attachments/${importFolder}`
+					}`}
 					checked={importMedia}
 					onChange={onMediaChange}
 				/>

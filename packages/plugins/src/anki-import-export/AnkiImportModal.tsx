@@ -26,6 +26,7 @@ import { ObsidianPersistence } from "@true-recall/obsidian/adapters/ObsidianPers
 import { ObsidianVaultFileReader } from "@true-recall/obsidian/adapters/ObsidianVaultFileReader";
 import { mutate } from "@true-recall/obsidian/data";
 import { BaseModal } from "@true-recall/obsidian/modals/shared/BaseModal";
+import { resolveAttachmentFolder } from "@true-recall/obsidian/utils/attachment-folder";
 
 import {
 	ErrorPhase,
@@ -46,6 +47,8 @@ const DEFAULT_IMPORT_FOLDER = "Anki Import";
 
 function AnkiImportBody({
 	app,
+	initialImportFolder,
+	attachmentFolderOverride,
 	onFileSelected,
 	onShowMapping,
 	onImport,
@@ -55,6 +58,8 @@ function AnkiImportBody({
 	aiKeyAvailable,
 }: {
 	app: App;
+	initialImportFolder: string;
+	attachmentFolderOverride: string;
 	onFileSelected: (file: File) => Promise<ImportPhase>;
 	onShowMapping: (preview: ImportPreview) => ImportPhase;
 	onImport: (opts: {
@@ -74,7 +79,7 @@ function AnkiImportBody({
 	const [importScheduling, setImportScheduling] = useState(true);
 	const [importMedia, setImportMedia] = useState(true);
 	const [useAI, setUseAI] = useState(false);
-	const [importFolder, setImportFolder] = useState(DEFAULT_IMPORT_FOLDER);
+	const [importFolder, setImportFolder] = useState(initialImportFolder);
 
 	const handleFile = useCallback(
 		async (file: File) => {
@@ -154,6 +159,7 @@ function AnkiImportBody({
 					useAI={useAI}
 					hasAIKey={aiKeyAvailable}
 					importFolder={importFolder}
+					attachmentFolderOverride={attachmentFolderOverride}
 					onSchedulingChange={setImportScheduling}
 					onMediaChange={setImportMedia}
 					onUseAIChange={setUseAI}
@@ -201,11 +207,16 @@ export class AnkiImportModal extends BaseModal {
 
 	protected renderBody(container: HTMLElement): void {
 		const existingNoteTypes = this.store.noteTypes.getAll();
-		const aiKeyAvailable = hasAIKey(this.getSettings());
+		const settings = this.getSettings();
+		const aiKeyAvailable = hasAIKey(settings);
 
 		render(
 			<AnkiImportBody
 				app={this.app}
+				initialImportFolder={
+					settings.defaultAnkiImportFolder || DEFAULT_IMPORT_FOLDER
+				}
+				attachmentFolderOverride={settings.attachmentFolder}
 				onFileSelected={(file) => this.handleFileSelected(file)}
 				onShowMapping={(preview) => this.buildMappingPhase(preview)}
 				onImport={(opts) => this.startImport(opts)}
@@ -307,7 +318,10 @@ export class AnkiImportModal extends BaseModal {
 			)
 				.replace(/[\\/:*?"<>|]/g, "-")
 				.trim();
-			const mediaFolder = `Attachments/${opts.importFolder}/${topDeck}`;
+			const mediaFolder = resolveAttachmentFolder(
+				this.getSettings().attachmentFolder,
+				`Attachments/${opts.importFolder}/${topDeck}`,
+			);
 
 			const result = await importService.importCards(
 				this.apkgData,
