@@ -1,12 +1,12 @@
 import { type App, normalizePath, TFile } from "obsidian";
 
-import type { TrueRecallSettings } from "@true-recall/core/types/settings.types";
 import {
 	isImageExtension,
 	isVideoExtension,
 	MAX_IMAGE_SIZE_BYTES,
 	MAX_VIDEO_SIZE_BYTES,
 } from "@true-recall/core/types";
+import type { TrueRecallSettings } from "@true-recall/core/types/settings.types";
 
 import { resolveAttachmentFolder } from "@true-recall/obsidian/utils/attachment-folder";
 

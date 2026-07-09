@@ -4,9 +4,9 @@ import { resolveAttachmentFolder } from "@true-recall/obsidian/utils/attachment-
 
 describe("resolveAttachmentFolder", () => {
 	it("returns the override when it is set", () => {
-		expect(resolveAttachmentFolder("Flashcards/Attachments", "Attachments")).toBe(
-			"Flashcards/Attachments",
-		);
+		expect(
+			resolveAttachmentFolder("Flashcards/Attachments", "Attachments"),
+		).toBe("Flashcards/Attachments");
 	});
 
 	it("falls back when the override is an empty string", () => {
