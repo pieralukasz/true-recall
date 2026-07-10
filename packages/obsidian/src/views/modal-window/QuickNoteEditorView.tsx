@@ -79,8 +79,8 @@ export class QuickNoteEditorView extends ItemView {
 	}
 
 	getDisplayText(): string {
-		if (this.session?.mode.mode === "edit") return "Edit Flashcard";
-		return "Add Flashcard";
+		if (this.session?.mode.mode === "edit") return "Edit flashcard";
+		return "Add flashcard";
 	}
 
 	getIcon(): string {
@@ -153,22 +153,8 @@ export class QuickNoteEditorView extends ItemView {
 		container.addClass("tr-quick-editor-view");
 		container.toggleClass("is-mac", Platform.isMacOS);
 
-		const winAtMount = this.getPopoutWindow();
-		if (winAtMount) {
-			console.log("[QNE diag] mountContent — initial popout dims", {
-				outerW: winAtMount.outerWidth,
-				outerH: winAtMount.outerHeight,
-				innerW: winAtMount.innerWidth,
-				innerH: winAtMount.innerHeight,
-				chrome: winAtMount.outerHeight - winAtMount.innerHeight,
-				screenAvailH: winAtMount.screen?.availHeight,
-				devicePixelRatio: winAtMount.devicePixelRatio,
-				ts: performance.now(),
-			});
-		}
-
 		const title =
-			this.session.mode.mode === "edit" ? "Edit Flashcard" : "Add Flashcard";
+			this.session.mode.mode === "edit" ? "Edit flashcard" : "Add flashcard";
 
 		this.unmountPreact?.();
 		this.unmountPreact = mountPreact(
@@ -304,20 +290,6 @@ export class QuickNoteEditorView extends ItemView {
 		const max = screen?.availHeight ?? 1200;
 		const clamped = Math.max(MIN_WINDOW_HEIGHT, Math.min(max, target));
 		if (!Number.isFinite(clamped)) return;
-
-		console.log("[QNE diag] resizeWindowToContent", {
-			outerH: win.outerHeight,
-			innerH: win.innerHeight,
-			chrome,
-			dragBarH: dragBar.offsetHeight,
-			contentH: content.offsetHeight,
-			bodyPadding,
-			natural,
-			target,
-			clamped,
-			fitted: this.session.hasInitialFitted,
-			ts: performance.now(),
-		});
 
 		if (
 			Math.abs(clamped - win.outerHeight) < 4 &&

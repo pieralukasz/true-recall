@@ -1,6 +1,10 @@
 import tsparser from "@typescript-eslint/parser";
 import obsidianmd from "eslint-plugin-obsidianmd";
 import reactHooks from "eslint-plugin-react-hooks";
+// Not part of the package's public API, but there's no supported way to
+// extend (rather than replace) its default acronym/brand lists otherwise.
+import { DEFAULT_ACRONYMS } from "eslint-plugin-obsidianmd/dist/lib/rules/ui/acronyms.js";
+import { DEFAULT_BRANDS } from "eslint-plugin-obsidianmd/dist/lib/rules/ui/brands.js";
 
 // Obsidian's automated plugin review runs `eslint-plugin-obsidianmd`'s recommended
 // config, which applies @typescript-eslint type-aware rules. Type-aware rules crash
@@ -77,6 +81,17 @@ export default [
 			// type references (preact.X, moment.X) that it isn't aware of.
 			// typescript-eslint's own docs recommend disabling it for this reason.
 			"no-undef": "off",
+			// The rule's defaults don't know this plugin's own name or its core
+			// algorithm's acronym, so its own suggestions would mangle both
+			// ("True recall", "Fsrs simulator") if taken literally.
+			"obsidianmd/ui/sentence-case": [
+				"error",
+				{
+					enforceCamelCaseLower: true,
+					brands: [...DEFAULT_BRANDS, "True Recall"],
+					acronyms: [...DEFAULT_ACRONYMS, "FSRS", "TSV", "UID"],
+				},
+			],
 		},
 	},
 	{

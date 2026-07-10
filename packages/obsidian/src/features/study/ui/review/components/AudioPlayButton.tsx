@@ -54,10 +54,12 @@ export function AudioPlayButton({
 			await audio.play();
 		} catch (error) {
 			setIsPlaying(false);
-			if (error instanceof DOMException && error.name === "NotAllowedError") {
-				// Autoplay blocked by browser — this is expected on first interaction
-				console.info("[Audio] Autoplay blocked; user interaction required");
-			} else {
+			// NotAllowedError (autoplay blocked pre-interaction) is expected and
+			// silently retried on the next click; anything else is worth surfacing
+			// for diagnosing real playback failures.
+			if (
+				!(error instanceof DOMException && error.name === "NotAllowedError")
+			) {
 				console.warn("[Audio] Playback failed", error);
 			}
 		}

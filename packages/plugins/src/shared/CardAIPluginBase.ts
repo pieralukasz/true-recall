@@ -120,7 +120,7 @@ export abstract class CardAIPluginBase<TDetail extends CardAIBaseEventDetail> {
 			config = resolveAIClientConfig(this.ctx.settings, "card-polish");
 		} catch (err) {
 			console.error("[CardAI] resolveAIClientConfig failed", err);
-			new Notice("AI: configure the selected provider and model in Settings.");
+			new Notice("AI: configure the selected provider and model in settings.");
 			return null;
 		}
 		const httpClient = new ObsidianHttpClient();
@@ -153,7 +153,7 @@ export abstract class CardAIPluginBase<TDetail extends CardAIBaseEventDetail> {
 			if (e.key === "Escape") controller.abort();
 		};
 		activeDocument.addEventListener("keydown", esc, true);
-		const notice = new Notice("Generating… (Esc to cancel)", 0);
+		const notice = new Notice("Generating… (esc to cancel)", 0);
 
 		try {
 			const collector = createObsidianContextCollector(this.ctx.obsidianPlugin);
