@@ -91,7 +91,10 @@ export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
 	const [aiPromptVisible, setAiPromptVisible] = useState(false);
 	const [aiCustomHint, setAiCustomHint] = useState("");
 
-	const imageService = useMemo(() => new ImageService(app), [app]);
+	const imageService = useMemo(
+		() => new ImageService(app, () => plugin.settings),
+		[app, plugin],
+	);
 	const isEdit = mode.mode === "edit";
 	const showSourcePicker = mode.mode === "add" && !mode.sourceUid;
 	const hasRegions = definition.regions.length > 0;

@@ -271,6 +271,10 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 
 	generationPresets: [BUILTIN_BASIC_PRESET, BUILTIN_BASIC_PRO_PRESET],
 	defaultGenerationPresetId: BUILTIN_BASIC_PRESET_ID,
+
+	attachmentFolder: "",
+	defaultAnkiImportFolder: "",
+	defaultProjectFolder: "",
 };
 
 // FSRS v6 default weights (21 parameters)

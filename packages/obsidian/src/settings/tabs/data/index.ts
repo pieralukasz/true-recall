@@ -7,3 +7,4 @@ export { IntegrityCheckSection } from "./IntegrityCheckSection";
 export { ManualBackupSection } from "./ManualBackupSection";
 export { SmartRetentionSection } from "./SmartRetentionSection";
 export { StorageDiagnosticsSection } from "./StorageDiagnosticsSection";
+export { StorageLocationsSection } from "./StorageLocationsSection";

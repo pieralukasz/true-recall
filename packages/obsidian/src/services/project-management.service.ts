@@ -60,7 +60,10 @@ export class ProjectManagementService {
 	async createSubProject(name: string, parentPath: string): Promise<void> {
 		const parentName =
 			parentPath.split("/").pop()?.replace(/\.md$/, "") ?? parentPath;
-		const projectPath = normalizePath(`${name}.md`);
+		const parentFolder = folderFromPath(parentPath);
+		const projectPath = normalizePath(
+			parentFolder ? `${parentFolder}/${name}.md` : `${name}.md`,
+		);
 
 		if (this.app.vault.getAbstractFileByPath(projectPath)) {
 			new Notice(`A note already exists at "${projectPath}".`);
@@ -272,4 +275,9 @@ export class ProjectManagementService {
 
 function nameFromPath(path: string): string {
 	return path.split("/").pop()?.replace(/\.md$/, "") ?? path;
+}
+
+export function folderFromPath(path: string): string {
+	const lastSlash = path.lastIndexOf("/");
+	return lastSlash >= 0 ? path.slice(0, lastSlash) : "";
 }

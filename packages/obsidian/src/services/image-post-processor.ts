@@ -6,6 +6,7 @@ import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite/Sq
 import type { TrueRecallSettings } from "@true-recall/core/types/settings.types";
 
 import { mutate } from "@true-recall/obsidian/data";
+import { resolveAttachmentFolder } from "@true-recall/obsidian/utils/attachment-folder";
 
 const IMAGE_DIR = ".true-recall/images";
 const IMAGE_API_URL = LITELLM_URL.replace(
@@ -53,16 +54,26 @@ export class ImagePostProcessor {
 	): Promise<void> {
 		if (fields.length === 0) return;
 
+		const imageDir = resolveAttachmentFolder(
+			this.getSettings().attachmentFolder,
+			IMAGE_DIR,
+		);
+
 		const adapter = this.app.vault.adapter;
-		if (!(await adapter.exists(IMAGE_DIR))) {
-			await adapter.mkdir(IMAGE_DIR);
+		if (!(await adapter.exists(imageDir))) {
+			await adapter.mkdir(imageDir);
 		}
 
 		let updated = false;
 		for (const cardId of cardIds) {
 			for (const field of fields) {
 				try {
-					const didUpdate = await this.processCardField(cardId, field, adapter);
+					const didUpdate = await this.processCardField(
+						cardId,
+						field,
+						adapter,
+						imageDir,
+					);
 					if (didUpdate) updated = true;
 				} catch (e) {
 					console.warn(
@@ -82,6 +93,7 @@ export class ImagePostProcessor {
 		cardId: string,
 		field: ImageFieldConfig,
 		adapter: VaultAdapter,
+		imageDir: string,
 	): Promise<boolean> {
 		const card = this.cardStore.cards.get(cardId);
 		if (!card?.noteId) return false;
@@ -106,7 +118,7 @@ export class ImagePostProcessor {
 			: `${sourceText}. Simple, clear illustration. No text, no words, no letters.`;
 
 		const hash = this.hashText(`${sourceText}:${field.style ?? ""}`);
-		const imagePath = `${IMAGE_DIR}/${hash}.png`;
+		const imagePath = `${imageDir}/${hash}.png`;
 
 		if (await adapter.exists(imagePath)) {
 			this.updateNoteField(
