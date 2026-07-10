@@ -100,12 +100,12 @@ function resolveEditorPrototype(
 
 	// Intentionally passing null — we only need the editor prototype, not an actual file
 	const nullFile: TFile | null = null;
-	// eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- embedRegistry returns untyped Obsidian internal; cast is required
+
 	const widgetEditorView = embedRegistry.embedByExtension.md(
 		{ app, containerEl: document.createElement("div") },
 		nullFile,
 		"",
-	) as WidgetEditorView;
+	);
 
 	widgetEditorView.editable = true;
 	widgetEditorView.showEditor();
@@ -211,7 +211,7 @@ export function createEmbeddableEditorClass(app: App) {
 							if (!this.activeCM?.hasFocus)
 								oldMethod.apply(editorApp.workspace, args);
 						},
-				} as Parameters<typeof around>[1]),
+				}),
 			);
 
 			// Blur handler — pops the scope (must mirror the unconditional

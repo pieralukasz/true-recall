@@ -734,7 +734,7 @@ export class ReviewView extends ItemView {
 			}
 
 			// Yield once before mounting Preact so the loading state can paint.
-			await new Promise((r) => requestAnimationFrame(r));
+			await new Promise((r) => window.requestAnimationFrame(r));
 			if (!this.containerEl.isConnected) return;
 
 			if (queue.length === 0) {

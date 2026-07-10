@@ -26,7 +26,7 @@ function extractImagePathFromClick(
 		if (src) return src;
 	}
 
-	if (target instanceof HTMLImageElement) {
+	if (target.instanceOf(HTMLImageElement)) {
 		const pos = view.posAtDOM(target);
 		if (pos != null) {
 			const line = view.state.doc.lineAt(pos);
@@ -79,10 +79,9 @@ export function createImageToolbarExtension(
 					return;
 				}
 
-				const imgEl =
-					target instanceof HTMLImageElement
-						? target
-						: target.querySelector("img");
+				const imgEl = target.instanceOf(HTMLImageElement)
+					? target
+					: target.querySelector("img");
 
 				if (!imgEl) {
 					this.removeToolbar();
@@ -159,7 +158,7 @@ export function createImageToolbarExtension(
 					this.removeToolbar();
 				};
 
-				setTimeout(() => {
+				window.setTimeout(() => {
 					if (this.outsideClickHandler) {
 						document.addEventListener("mousedown", this.outsideClickHandler);
 					}

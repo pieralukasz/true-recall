@@ -37,7 +37,7 @@ function pessimisticLock(): DeviceLock {
 }
 
 export class DeviceLockService {
-	private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
+	private heartbeatTimer: number | null = null;
 	private consecutiveHeartbeatFailures = 0;
 
 	constructor(
@@ -108,14 +108,14 @@ export class DeviceLockService {
 	startHeartbeat(): void {
 		this.stopHeartbeat();
 		this.consecutiveHeartbeatFailures = 0;
-		this.heartbeatTimer = setInterval(() => {
+		this.heartbeatTimer = window.setInterval(() => {
 			void this.updateHeartbeat();
 		}, HEARTBEAT_INTERVAL_MS);
 	}
 
 	stopHeartbeat(): void {
 		if (this.heartbeatTimer) {
-			clearInterval(this.heartbeatTimer);
+			window.clearInterval(this.heartbeatTimer);
 			this.heartbeatTimer = null;
 		}
 	}

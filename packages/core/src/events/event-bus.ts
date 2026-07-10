@@ -14,10 +14,10 @@ export class DomainEventBus {
 			set = new Set();
 			this.handlers.set(event, set);
 		}
-		set.add(handler as EventHandler<unknown>);
+		set.add(handler);
 		const captured = set;
 		return () => {
-			captured.delete(handler as EventHandler<unknown>);
+			captured.delete(handler);
 		};
 	}
 
@@ -37,11 +37,7 @@ export class DomainEventBus {
 		events: DomainEventType[],
 		handler: (event: DomainEventType, payload: unknown) => void,
 	): () => void {
-		const unsubs = events.map((e) =>
-			this.on(e, ((p: unknown) => handler(e, p)) as EventHandler<
-				DomainEventMap[typeof e]
-			>),
-		);
+		const unsubs = events.map((e) => this.on(e, (p: unknown) => handler(e, p)));
 		return () => {
 			for (const u of unsubs) u();
 		};

@@ -62,13 +62,13 @@ export function PanelContent() {
 	);
 
 	const [debouncedSearch, setDebouncedSearch] = useState(searchQuery);
-	const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+	const debounceRef = useRef<number>();
 	useEffect(() => {
-		debounceRef.current = setTimeout(
+		debounceRef.current = window.setTimeout(
 			() => setDebouncedSearch(searchQuery),
 			150,
 		);
-		return () => clearTimeout(debounceRef.current);
+		return () => window.clearTimeout(debounceRef.current);
 	}, [searchQuery]);
 
 	const filteredItems = useMemo(() => {
@@ -89,8 +89,8 @@ export function PanelContent() {
 
 	useEffect(() => {
 		if (!streaming.isGenerating && recentCardIds.size > 0) {
-			const timer = setTimeout(() => clearRecentCards(), 1000);
-			return () => clearTimeout(timer);
+			const timer = window.setTimeout(() => clearRecentCards(), 1000);
+			return () => window.clearTimeout(timer);
 		}
 		return undefined;
 	}, [streaming.isGenerating, recentCardIds.size]);

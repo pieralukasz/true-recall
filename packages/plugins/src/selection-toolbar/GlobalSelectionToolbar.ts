@@ -49,12 +49,12 @@ export class GlobalSelectionToolbar {
 
 	private onSelectionChange = (): void => {
 		cancelAnimationFrame(this.rafId);
-		this.rafId = requestAnimationFrame(() => this.checkSelection());
+		this.rafId = window.requestAnimationFrame(() => this.checkSelection());
 	};
 
 	private onMouseUp = (): void => {
 		cancelAnimationFrame(this.rafId);
-		this.rafId = requestAnimationFrame(() => this.checkSelection());
+		this.rafId = window.requestAnimationFrame(() => this.checkSelection());
 	};
 
 	private onKeyDown = (e: KeyboardEvent): void => {
@@ -101,12 +101,12 @@ export class GlobalSelectionToolbar {
 	}
 
 	private isInsideCmEditor(node: Node): boolean {
-		const el = node instanceof Element ? node : node.parentElement;
+		const el = node.instanceOf(Element) ? node : node.parentElement;
 		return !!el?.closest(".cm-editor");
 	}
 
 	private isInsideExcludedContainer(node: Node): boolean {
-		const el = node instanceof Element ? node : node.parentElement;
+		const el = node.instanceOf(Element) ? node : node.parentElement;
 		return !!el?.closest(
 			".true-recall-review-card-container, .ep-card-browser, .true-recall-selection-toolbar-container, .tr-quick-editor-view, .tr-modal-quick-editor, .tr-popout-view",
 		);

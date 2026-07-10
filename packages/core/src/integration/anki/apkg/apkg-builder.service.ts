@@ -654,7 +654,7 @@ export class ApkgBuilderService {
 		return zipped.buffer.slice(
 			zipped.byteOffset,
 			zipped.byteOffset + zipped.byteLength,
-		) as ArrayBuffer;
+		);
 	}
 }
 

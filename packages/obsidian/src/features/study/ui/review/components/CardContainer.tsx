@@ -38,7 +38,7 @@ function useAnswerWarmup(
 	useEffect(() => {
 		if (isRevealed || warmRef.current) return;
 
-		const rafId = requestAnimationFrame(() => {
+		const rafId = window.requestAnimationFrame(() => {
 			warmRef.current = true;
 			tick((t) => t + 1);
 		});

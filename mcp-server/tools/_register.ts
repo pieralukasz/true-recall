@@ -6,7 +6,7 @@ import type { TrueRecallClient } from "../client.js";
 // Types
 // ---------------------------------------------------------------------------
 
-type Params = Record<string, any>;
+type Params = Record<string, unknown>;
 type Schema = Record<string, ZodTypeAny>;
 
 type ToolResult = {

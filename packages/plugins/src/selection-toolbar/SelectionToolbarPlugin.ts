@@ -55,7 +55,7 @@ export function createSelectionToolbarExtension(
 
 			private scheduleCheck(): void {
 				cancelAnimationFrame(this.rafId);
-				this.rafId = requestAnimationFrame(() => this.checkSelection());
+				this.rafId = window.requestAnimationFrame(() => this.checkSelection());
 			}
 
 			destroy(): void {

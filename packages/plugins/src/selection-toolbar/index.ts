@@ -33,10 +33,9 @@ function getSourceFileFromDOM(
 	plugin: TrueRecallPlugin,
 	range: Range,
 ): TFile | null {
-	const el =
-		range.commonAncestorContainer instanceof Element
-			? range.commonAncestorContainer
-			: range.commonAncestorContainer.parentElement;
+	const el = range.commonAncestorContainer.instanceOf(Element)
+		? range.commonAncestorContainer
+		: range.commonAncestorContainer.parentElement;
 
 	const leafContent = el?.closest(".workspace-leaf-content");
 	if (!leafContent) return null;
@@ -49,7 +48,7 @@ function getSourceFileFromDOM(
 		if (containerEl?.contains(leafContent)) {
 			const view = leaf.view;
 			if (view && "file" in view && view.file instanceof TFile) {
-				found = view.file as TFile;
+				found = view.file;
 			}
 		}
 	});
@@ -57,7 +56,7 @@ function getSourceFileFromDOM(
 }
 
 function closestWithDataLine(node: Node): Element | null {
-	const el = node instanceof Element ? node : node.parentElement;
+	const el = node.instanceOf(Element) ? node : node.parentElement;
 	return el?.closest("[data-line]") ?? null;
 }
 
@@ -66,10 +65,9 @@ async function resolveMarkdownFromRange(
 	range: Range,
 	fallback: string,
 ): Promise<string> {
-	const container =
-		range.commonAncestorContainer instanceof Element
-			? range.commonAncestorContainer
-			: range.commonAncestorContainer.parentElement;
+	const container = range.commonAncestorContainer.instanceOf(Element)
+		? range.commonAncestorContainer
+		: range.commonAncestorContainer.parentElement;
 	if (!container?.closest(".markdown-preview-view")) return fallback;
 
 	const sourceFile = getSourceFileFromDOM(plugin, range);

@@ -144,7 +144,7 @@ export function SearchCombobox({
 					searchComponent.setValue(text);
 					syncingRef.current = false;
 					onChangeRef.current(text);
-					requestAnimationFrame(() => {
+					window.requestAnimationFrame(() => {
 						const nextInput = searchRef.current?.inputEl;
 						if (!nextInput) return;
 						nextInput.focus();
@@ -206,8 +206,8 @@ export function SearchCombobox({
 
 	useEffect(() => {
 		if (!autoFocus) return;
-		const id = setTimeout(() => searchRef.current?.inputEl.focus(), 50);
-		return () => clearTimeout(id);
+		const id = window.setTimeout(() => searchRef.current?.inputEl.focus(), 50);
+		return () => window.clearTimeout(id);
 	}, [autoFocus]);
 
 	return <div ref={hostRef} class={cn("ep:w-full", cls)} />;

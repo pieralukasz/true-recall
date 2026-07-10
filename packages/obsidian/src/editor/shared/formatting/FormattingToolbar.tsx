@@ -74,7 +74,7 @@ class MediaFilePicker extends SuggestModal<TFile> {
 	}
 
 	onClose(): void {
-		setTimeout(() => this.resolve?.(null), 0);
+		window.setTimeout(() => this.resolve?.(null), 0);
 	}
 
 	pick(): Promise<TFile | null> {
@@ -140,7 +140,7 @@ export function FormattingToolbar({
 		if (!text) return;
 		void navigator.clipboard.writeText(text).then(() => {
 			setCopied(true);
-			setTimeout(() => setCopied(false), 1500);
+			window.setTimeout(() => setCopied(false), 1500);
 		});
 	}, [getEditorView]);
 

@@ -25,8 +25,8 @@ function CreateNoteTypeBody({
 	const inputRef = useRef<HTMLInputElement>(null);
 
 	useEffect(() => {
-		const id = setTimeout(() => inputRef.current?.focus(), 50);
-		return () => clearTimeout(id);
+		const id = window.setTimeout(() => inputRef.current?.focus(), 50);
+		return () => window.clearTimeout(id);
 	}, []);
 
 	const trimmed = name.trim();

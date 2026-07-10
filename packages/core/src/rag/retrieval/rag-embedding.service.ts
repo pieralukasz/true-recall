@@ -76,7 +76,7 @@ export class RagEmbeddingServiceImpl {
 					attempt < retries - 1
 				) {
 					const delay = 1000 * 2 ** attempt;
-					await new Promise((r) => setTimeout(r, delay));
+					await new Promise((r) => window.setTimeout(r, delay));
 					continue;
 				}
 				throw e;

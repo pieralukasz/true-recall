@@ -127,7 +127,7 @@ export class PostponeAdvanceService {
 			default: {
 				const allCards = this.cardStore.getCards();
 				return allCards
-					.filter((c) => !c.suspended && (c.state as unknown as number) !== 0) // Exclude new and suspended
+					.filter((c) => !c.suspended && c.state !== 0) // Exclude new and suspended
 					.map((c) => ({ id: c.id, due: c.due }));
 			}
 		}

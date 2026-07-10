@@ -1,6 +1,7 @@
 import type { TFile } from "obsidian";
 
 import { hasAIKey } from "@true-recall/core/ai/config/ai-client-config";
+import type { StreamingFlashcardManager } from "@true-recall/core/ai/generation/streaming-generation.service";
 import { StreamingGenerationService } from "@true-recall/core/ai/generation/streaming-generation.service";
 import type { GenerationPreset } from "@true-recall/core/types/generation-preset.types";
 
@@ -22,7 +23,7 @@ function getStreamingService(
 	if (!streamingService) {
 		streamingService = new StreamingGenerationService(
 			() => plugin.settings,
-			plugin.flashcardManager as any,
+			plugin.flashcardManager as unknown as StreamingFlashcardManager,
 			new ObsidianHttpClient(),
 		);
 	}

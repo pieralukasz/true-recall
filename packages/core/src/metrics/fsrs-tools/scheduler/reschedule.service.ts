@@ -47,8 +47,7 @@ export class RescheduleService {
 
 		for (const card of cards) {
 			// Skip New and Learning/Relearning cards — only Review cards use stability-based intervals
-			if (card.state === (State.New as number) || isLearningState(card.state))
-				continue;
+			if (card.state === State.New || isLearningState(card.state)) continue;
 
 			// Record before
 			const beforeDateStr = this.formatDate(new Date(card.due));

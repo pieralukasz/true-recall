@@ -3,8 +3,6 @@
  * Helper functions for FSRS operations
  */
 
-import type { State } from "ts-fsrs";
-
 import type { FSRSCardData } from "./card.types";
 
 /**
@@ -23,7 +21,7 @@ export function createDefaultFSRSData(id: string): FSRSCardData {
 		difficulty: 0,
 		reps: 0,
 		lapses: 0,
-		state: 0 as State, // State.New
+		state: 0, // State.New
 		lastReview: null,
 		scheduledDays: 0,
 		learningStep: 0,

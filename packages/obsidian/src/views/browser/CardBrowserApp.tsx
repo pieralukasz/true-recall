@@ -275,7 +275,7 @@ export function CardBrowserApp({
 	}, []);
 
 	const handleSidebarFilter = useCallback((partial: Partial<FilterState>) => {
-		sidebarFilter.value = { ...sidebarFilter.value, ...partial } as FilterState;
+		sidebarFilter.value = { ...sidebarFilter.value, ...partial };
 	}, []);
 
 	const handleToggleColumn = useCallback((key: string) => {

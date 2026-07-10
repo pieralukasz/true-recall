@@ -336,7 +336,7 @@ export class AnkiImportModal extends BaseModal {
 			);
 
 			if (result.imported > 0) {
-				setTimeout(() => mutate("hierarchy:changed", () => {}), 2000);
+				window.setTimeout(() => mutate("hierarchy:changed", () => {}), 2000);
 			}
 
 			return { type: "result", result };

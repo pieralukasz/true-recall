@@ -126,7 +126,7 @@ export function KnowledgeChatApp({ view }: Props) {
 	);
 
 	const scrollToBottom = useCallback(() => {
-		requestAnimationFrame(() => {
+		window.requestAnimationFrame(() => {
 			scrollRef.current?.scrollTo(0, scrollRef.current.scrollHeight);
 		});
 	}, []);

@@ -245,11 +245,7 @@ export class ProjectManagementService {
 		const file = this.app.vault.getAbstractFileByPath(filePath);
 		if (!file || !(file instanceof TFile)) return;
 		const cache = this.app.metadataCache.getFileCache(file);
-		this.frontmatterIndex.indexFile(
-			filePath,
-			cache?.frontmatter as Record<string, unknown> | undefined,
-			silent,
-		);
+		this.frontmatterIndex.indexFile(filePath, cache?.frontmatter, silent);
 	}
 
 	private invalidate(): void {

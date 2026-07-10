@@ -195,10 +195,10 @@ export function StatsApp() {
 		let cancelled = false;
 		let rafId: number | null = null;
 		let idleId: number | null = null;
-		let timeoutId: ReturnType<typeof setTimeout> | null = null;
+		let timeoutId: number | null = null;
 
 		setRenderStage(1);
-		rafId = requestAnimationFrame(() => {
+		rafId = window.requestAnimationFrame(() => {
 			if (cancelled) return;
 			setRenderStage(2);
 
@@ -212,9 +212,9 @@ export function StatsApp() {
 			if ("requestIdleCallback" in window) {
 				idleId = window.requestIdleCallback(flushFinalStage, {
 					timeout: 250,
-				}) as unknown as number;
+				});
 			} else {
-				timeoutId = setTimeout(flushFinalStage, 0);
+				timeoutId = (window as Window).setTimeout(flushFinalStage, 0);
 			}
 		});
 
@@ -224,7 +224,7 @@ export function StatsApp() {
 			if (idleId !== null && "cancelIdleCallback" in window) {
 				window.cancelIdleCallback(idleId);
 			}
-			if (timeoutId !== null) clearTimeout(timeoutId);
+			if (timeoutId !== null) window.clearTimeout(timeoutId);
 		};
 	}, [data, timeRange.value, filterContext.value]);
 

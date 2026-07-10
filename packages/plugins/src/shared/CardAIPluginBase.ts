@@ -108,7 +108,7 @@ export abstract class CardAIPluginBase<TDetail extends CardAIBaseEventDetail> {
 		menu.showAtPosition({ x: rect.left, y: rect.top });
 		const menuEl = (menu as unknown as { dom?: HTMLElement }).dom;
 		if (menuEl) {
-			requestAnimationFrame(() => {
+			window.requestAnimationFrame(() => {
 				menuEl.style.top = `${Math.max(8, rect.top - menuEl.offsetHeight - 6)}px`;
 			});
 		}

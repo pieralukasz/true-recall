@@ -36,10 +36,11 @@ export class CommandSuggestModal extends FuzzySuggestModal<ObsidianCommand> {
 	}
 
 	getItems(): ObsidianCommand[] {
-		const commands = (this.app as any).commands.commands as Record<
-			string,
-			ObsidianCommand
-		>;
+		const commands = (
+			this.app as unknown as {
+				commands: { commands: Record<string, ObsidianCommand> };
+			}
+		).commands.commands;
 		return Object.values(commands).filter(
 			(cmd) => !this.excludeIds.has(cmd.id),
 		);

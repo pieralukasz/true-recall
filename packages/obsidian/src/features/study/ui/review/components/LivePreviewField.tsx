@@ -41,7 +41,7 @@ export function LivePreviewField({
 	const contentRef = useRef(content);
 
 	// Refs so stale closures (editor callbacks captured at construction) always access latest values
-	const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const saveTimerRef = useRef<number | null>(null);
 	const onContentChangeRef = useRef(onContentChange);
 	const fieldRef = useRef(field);
 
@@ -62,7 +62,7 @@ export function LivePreviewField({
 
 	const flushPendingSave = useCallback(() => {
 		if (saveTimerRef.current !== null) {
-			clearTimeout(saveTimerRef.current);
+			window.clearTimeout(saveTimerRef.current);
 			saveTimerRef.current = null;
 		}
 		performSave();
@@ -70,9 +70,9 @@ export function LivePreviewField({
 
 	const scheduleSave = useCallback(() => {
 		if (saveTimerRef.current !== null) {
-			clearTimeout(saveTimerRef.current);
+			window.clearTimeout(saveTimerRef.current);
 		}
-		saveTimerRef.current = setTimeout(() => {
+		saveTimerRef.current = window.setTimeout(() => {
 			saveTimerRef.current = null;
 			performSave();
 		}, AUTOSAVE_DELAY_MS);

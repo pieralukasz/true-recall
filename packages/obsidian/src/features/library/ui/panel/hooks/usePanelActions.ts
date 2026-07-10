@@ -1,5 +1,6 @@
 import { useCallback } from "preact/hooks";
 
+import type { StreamingFlashcardManager } from "@true-recall/core/ai/generation/streaming-generation.service";
 import type { FlashcardItem } from "@true-recall/core/types";
 import type { FSRSFlashcardItem } from "@true-recall/core/types/fsrs/card.types";
 
@@ -55,7 +56,7 @@ export function usePanelActions() {
 		);
 		const chunkedService = new ChunkedGenerationService(
 			() => plugin.settings,
-			plugin.flashcardManager as any,
+			plugin.flashcardManager as unknown as StreamingFlashcardManager,
 			new ObsidianHttpClient(),
 		);
 
@@ -164,7 +165,7 @@ export function usePanelActions() {
 		);
 		const streamingService = new StreamingGenerationService(
 			() => plugin.settings,
-			plugin.flashcardManager as any,
+			plugin.flashcardManager as unknown as StreamingFlashcardManager,
 			new HttpClient(),
 		);
 

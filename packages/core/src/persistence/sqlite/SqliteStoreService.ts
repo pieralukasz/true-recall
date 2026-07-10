@@ -32,7 +32,7 @@ export class SqliteStoreService {
 	private db: SqliteDatabase;
 	private isLoaded = false;
 	private isDirty = false;
-	private saveTimer: ReturnType<typeof setTimeout> | null = null;
+	private saveTimer: number | null = null;
 	private flushPromise: Promise<boolean> | null = null;
 	private suppressRetryScheduling = false;
 	private lastFlushStartedAt: number | null = null;
@@ -329,19 +329,19 @@ export class SqliteStoreService {
 
 	private scheduleSave(): void {
 		if (this.saveTimer) {
-			clearTimeout(this.saveTimer);
+			window.clearTimeout(this.saveTimer);
 		}
 
-		this.saveTimer = setTimeout(() => {
+		this.saveTimer = window.setTimeout(() => {
 			void this.doFlush();
 		}, SAVE_DEBOUNCE_MS);
 	}
 
 	private scheduleFollowUpFlush(): void {
 		if (this.saveTimer) {
-			clearTimeout(this.saveTimer);
+			window.clearTimeout(this.saveTimer);
 		}
-		this.saveTimer = setTimeout(() => {
+		this.saveTimer = window.setTimeout(() => {
 			void this.doFlush();
 		}, SqliteStoreService.FOLLOW_UP_FLUSH_MS);
 	}
@@ -391,7 +391,7 @@ export class SqliteStoreService {
 					if (attempt < MAX_RETRIES) {
 						// Exponential backoff: 100ms, 200ms, 400ms...
 						const delay = BASE_DELAY_MS * 2 ** (attempt - 1);
-						await new Promise((resolve) => setTimeout(resolve, delay));
+						await new Promise((resolve) => window.setTimeout(resolve, delay));
 					} else {
 						// Final failure - notify user, keep isDirty=true for retry
 						notify().error(
@@ -428,7 +428,7 @@ export class SqliteStoreService {
 
 	async saveNow(options?: { bestEffort?: boolean }): Promise<boolean> {
 		if (this.saveTimer) {
-			clearTimeout(this.saveTimer);
+			window.clearTimeout(this.saveTimer);
 			this.saveTimer = null;
 		}
 

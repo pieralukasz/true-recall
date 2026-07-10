@@ -78,7 +78,7 @@ export function getQueryResult(
 	}
 	return {
 		columns: firstResult.columns,
-		values: firstResult.values as SqlRow[],
+		values: firstResult.values,
 	};
 }
 

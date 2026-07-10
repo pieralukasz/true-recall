@@ -47,7 +47,7 @@ export function makeCardAIArrayResponseSchema(fieldNames: readonly string[]) {
 		.min(1)
 		.transform((arr) =>
 			arr.map((raw) => {
-				const src = raw as Record<string, string>;
+				const src = raw;
 				const out: CardFields = {};
 				for (const name of fieldNames) out[name] = src[name] ?? "";
 				return out;

@@ -119,7 +119,7 @@ export class RagIndexerService {
 			onProgress?.({ phase: "notes", current: i + 1, total: totalFiles });
 
 			// Yield every 20 files to not block the event loop
-			if (i % 20 === 0) await new Promise((r) => setTimeout(r, 0));
+			if (i % 20 === 0) await new Promise((r) => window.setTimeout(r, 0));
 		}
 
 		// Clean up orphaned note sources (deleted from vault but still in index)

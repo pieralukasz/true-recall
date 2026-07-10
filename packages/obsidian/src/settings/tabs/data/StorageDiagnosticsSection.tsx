@@ -18,8 +18,11 @@ export function StorageDiagnosticsSection() {
 
 	useEffect(() => {
 		setDiag(plugin.getStorageDiagnostics());
-		const id = setInterval(() => setDiag(plugin.getStorageDiagnostics()), 5000);
-		return () => clearInterval(id);
+		const id = window.setInterval(
+			() => setDiag(plugin.getStorageDiagnostics()),
+			5000,
+		);
+		return () => window.clearInterval(id);
 	}, [plugin]);
 
 	return (
