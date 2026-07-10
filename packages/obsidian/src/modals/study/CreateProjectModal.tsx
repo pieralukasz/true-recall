@@ -13,13 +13,15 @@ interface CreateProjectResult {
 
 function CreateProjectBody({
 	app,
+	initialFolder,
 	onResolve,
 }: {
 	app: App;
+	initialFolder: string;
 	onResolve: (result: CreateProjectResult) => void;
 }) {
 	const [name, setName] = useState("");
-	const [folder, setFolder] = useState("");
+	const [folder, setFolder] = useState(initialFolder);
 	const nameRef = useRef<HTMLInputElement>(null);
 
 	useEffect(() => {
@@ -78,11 +80,14 @@ function CreateProjectBody({
 }
 
 export class CreateProjectModal extends BasePromiseModal<CreateProjectResult> {
-	constructor(app: App) {
+	private initialFolder: string;
+
+	constructor(app: App, initialFolder = "") {
 		super(app, {
 			title: "Create new project",
 			width: "450px",
 		});
+		this.initialFolder = initialFolder;
 	}
 
 	protected getDefaultResult(): CreateProjectResult {
@@ -93,6 +98,7 @@ export class CreateProjectModal extends BasePromiseModal<CreateProjectResult> {
 		render(
 			<CreateProjectBody
 				app={this.app}
+				initialFolder={this.initialFolder}
 				onResolve={(result) => this.resolve(result)}
 			/>,
 			container,
