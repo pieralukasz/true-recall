@@ -152,7 +152,7 @@ export abstract class CardAIPluginBase<TDetail extends CardAIBaseEventDetail> {
 		const esc = (e: KeyboardEvent) => {
 			if (e.key === "Escape") controller.abort();
 		};
-		document.addEventListener("keydown", esc, true);
+		activeDocument.addEventListener("keydown", esc, true);
 		const notice = new Notice("Generating… (Esc to cancel)", 0);
 
 		try {
@@ -171,7 +171,7 @@ export abstract class CardAIPluginBase<TDetail extends CardAIBaseEventDetail> {
 			});
 		} finally {
 			notice.hide();
-			document.removeEventListener("keydown", esc, true);
+			activeDocument.removeEventListener("keydown", esc, true);
 			if (this.abortController === controller) this.abortController = null;
 		}
 	}

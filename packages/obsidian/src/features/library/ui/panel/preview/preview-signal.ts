@@ -19,7 +19,7 @@ export function viewTransitionNameForCard(cardId: string): string | undefined {
 }
 
 export function withViewTransition(fn: () => void): void {
-	const doc = document as Document & {
+	const doc = activeDocument as Document & {
 		startViewTransition?: (cb: () => void) => { finished: Promise<void> };
 	};
 	if (typeof doc.startViewTransition === "function") {

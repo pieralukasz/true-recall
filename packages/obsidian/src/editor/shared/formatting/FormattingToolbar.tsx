@@ -101,8 +101,8 @@ export function FormattingToolbar({
 				setShowColors(false);
 			}
 		};
-		document.addEventListener("mousedown", handleClick);
-		return () => document.removeEventListener("mousedown", handleClick);
+		activeDocument.addEventListener("mousedown", handleClick);
+		return () => activeDocument.removeEventListener("mousedown", handleClick);
 	}, [showColors]);
 
 	const handleMedia = useCallback(async () => {

@@ -503,10 +503,10 @@ export class ReviewView extends ItemView {
 				}),
 			) ?? null;
 
-		this.registerDomEvent(document, "keydown", (e: KeyboardEvent) => {
+		this.registerDomEvent(activeDocument, "keydown", (e: KeyboardEvent) => {
 			const activeView = this.app.workspace.getActiveViewOfType(ReviewView);
 			if (activeView !== this) return;
-			if (document.querySelector(".modal-container")) return;
+			if (activeDocument.querySelector(".modal-container")) return;
 			this.keyboardHandler.handleKeyDown(e);
 		});
 		return Promise.resolve();

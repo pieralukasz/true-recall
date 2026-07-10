@@ -6,7 +6,9 @@ export function getThemeColor(cssVar: string): string {
 	const raw = cssVar.startsWith("--")
 		? cssVar
 		: cssVar.replace("var(", "").replace(")", "");
-	const value = getComputedStyle(document.body).getPropertyValue(raw).trim();
+	const value = getComputedStyle(activeDocument.body)
+		.getPropertyValue(raw)
+		.trim();
 	return value || "#888888";
 }
 

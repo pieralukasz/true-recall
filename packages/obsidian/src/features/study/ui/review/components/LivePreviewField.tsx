@@ -139,11 +139,11 @@ export function LivePreviewField({
 				flushPendingSave();
 			}
 		};
-		document.addEventListener("mousedown", handleOutsideMouseDown);
+		activeDocument.addEventListener("mousedown", handleOutsideMouseDown);
 
 		return () => {
 			flushPendingSave();
-			document.removeEventListener("mousedown", handleOutsideMouseDown);
+			activeDocument.removeEventListener("mousedown", handleOutsideMouseDown);
 			editorRef.current = null;
 			editor.destroy();
 		};

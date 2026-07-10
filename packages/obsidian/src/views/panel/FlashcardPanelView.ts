@@ -490,7 +490,7 @@ export class FlashcardPanelView extends ItemView {
 			titleEl.addClass("ep:hidden");
 		}
 
-		this.mobileStatusEl = document.createElement("div");
+		this.mobileStatusEl = activeDocument.createElement("div");
 		this.mobileStatusEl.addClass(
 			"ep:flex",
 			"ep:gap-1",
@@ -612,12 +612,12 @@ export class FlashcardPanelView extends ItemView {
 
 		const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
 		const url = URL.createObjectURL(blob);
-		const link = document.createElement("a");
+		const link = activeDocument.createElement("a");
 		link.href = url;
 		link.download = filename;
-		document.body.appendChild(link);
+		activeDocument.body.appendChild(link);
 		link.click();
-		document.body.removeChild(link);
+		activeDocument.body.removeChild(link);
 		URL.revokeObjectURL(url);
 
 		notify().success(

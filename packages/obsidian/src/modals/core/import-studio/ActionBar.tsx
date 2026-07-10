@@ -58,8 +58,9 @@ function FormatHelpPopover({ onClose }: { onClose: () => void }) {
 	);
 
 	useEffect(() => {
-		document.addEventListener("mousedown", handleOutsideClick);
-		return () => document.removeEventListener("mousedown", handleOutsideClick);
+		activeDocument.addEventListener("mousedown", handleOutsideClick);
+		return () =>
+			activeDocument.removeEventListener("mousedown", handleOutsideClick);
 	}, [handleOutsideClick]);
 
 	return (

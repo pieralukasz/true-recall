@@ -299,12 +299,12 @@ export function usePanelActions() {
 			type: "text/csv;charset=utf-8;",
 		});
 		const url = URL.createObjectURL(blob);
-		const link = document.createElement("a");
+		const link = activeDocument.createElement("a");
 		link.href = url;
 		link.download = filename;
-		document.body.appendChild(link);
+		activeDocument.body.appendChild(link);
 		link.click();
-		document.body.removeChild(link);
+		activeDocument.body.removeChild(link);
 		URL.revokeObjectURL(url);
 
 		notify().success(

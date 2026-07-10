@@ -107,7 +107,7 @@ describe("DayRolloverWatcher", () => {
 			expect.any(Function),
 		);
 		expect(registerDomEvent).toHaveBeenCalledWith(
-			document,
+			activeDocument,
 			"visibilitychange",
 			expect.any(Function),
 		);
@@ -127,11 +127,11 @@ describe("DayRolloverWatcher", () => {
 
 		vi.setSystemTime(new Date("2026-04-22T05:00:00"));
 
-		vi.stubGlobal("document", { visibilityState: "hidden" });
+		vi.stubGlobal("activeDocument", { visibilityState: "hidden" });
 		visibilityHandler();
 		expect(dl.invalidateGroups).not.toHaveBeenCalled();
 
-		vi.stubGlobal("document", { visibilityState: "visible" });
+		vi.stubGlobal("activeDocument", { visibilityState: "visible" });
 		visibilityHandler();
 		expect(dl.invalidateGroups).toHaveBeenCalledOnce();
 	});

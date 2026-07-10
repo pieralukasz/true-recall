@@ -103,9 +103,9 @@ export function createImageToolbarExtension(
 
 			private showToolbar(imagePath: string, imgEl: HTMLElement): void {
 				if (!this.container) {
-					this.container = document.createElement("div");
+					this.container = activeDocument.createElement("div");
 					this.container.className = "true-recall-image-toolbar-container";
-					document.body.appendChild(this.container);
+					activeDocument.body.appendChild(this.container);
 					this.registerOutsideClick();
 				}
 
@@ -160,14 +160,20 @@ export function createImageToolbarExtension(
 
 				window.setTimeout(() => {
 					if (this.outsideClickHandler) {
-						document.addEventListener("mousedown", this.outsideClickHandler);
+						activeDocument.addEventListener(
+							"mousedown",
+							this.outsideClickHandler,
+						);
 					}
 				}, 0);
 			}
 
 			private removeToolbar(): void {
 				if (this.outsideClickHandler) {
-					document.removeEventListener("mousedown", this.outsideClickHandler);
+					activeDocument.removeEventListener(
+						"mousedown",
+						this.outsideClickHandler,
+					);
 					this.outsideClickHandler = null;
 				}
 

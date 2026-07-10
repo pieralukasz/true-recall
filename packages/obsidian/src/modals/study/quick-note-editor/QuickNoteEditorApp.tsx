@@ -314,7 +314,7 @@ export function QuickNoteEditorApp({
 		// window (containerEl.win !== window). Falling back to `document`
 		// covers the modal context where the listener attaches before the
 		// element is in the DOM.
-		const doc = rootRef.current?.ownerDocument ?? document;
+		const doc = rootRef.current?.ownerDocument ?? activeDocument;
 		const onKeyDown = (e: KeyboardEvent) => {
 			if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
 				e.preventDefault();

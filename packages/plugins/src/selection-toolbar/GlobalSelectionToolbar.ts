@@ -34,15 +34,18 @@ export class GlobalSelectionToolbar {
 	constructor(private callbacks: GlobalSelectionToolbarCallbacks) {}
 
 	register(): void {
-		document.addEventListener("selectionchange", this.onSelectionChange);
-		document.addEventListener("mouseup", this.onMouseUp);
-		document.addEventListener("keydown", this.onKeyDown);
+		activeDocument.addEventListener("selectionchange", this.onSelectionChange);
+		activeDocument.addEventListener("mouseup", this.onMouseUp);
+		activeDocument.addEventListener("keydown", this.onKeyDown);
 	}
 
 	destroy(): void {
-		document.removeEventListener("selectionchange", this.onSelectionChange);
-		document.removeEventListener("mouseup", this.onMouseUp);
-		document.removeEventListener("keydown", this.onKeyDown);
+		activeDocument.removeEventListener(
+			"selectionchange",
+			this.onSelectionChange,
+		);
+		activeDocument.removeEventListener("mouseup", this.onMouseUp);
+		activeDocument.removeEventListener("keydown", this.onKeyDown);
 		cancelAnimationFrame(this.rafId);
 		this.removeToolbar();
 	}
@@ -114,9 +117,9 @@ export class GlobalSelectionToolbar {
 
 	private showToolbar(text: string, range: Range): void {
 		if (!this.container) {
-			this.container = document.createElement("div");
+			this.container = activeDocument.createElement("div");
 			this.container.className = "true-recall-selection-toolbar-container";
-			document.body.appendChild(this.container);
+			activeDocument.body.appendChild(this.container);
 			this.container.addEventListener("mousedown", (e) => e.stopPropagation());
 		}
 
