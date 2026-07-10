@@ -1,5 +1,6 @@
 import tsparser from "@typescript-eslint/parser";
 import obsidianmd from "eslint-plugin-obsidianmd";
+import reactHooks from "eslint-plugin-react-hooks";
 
 // Obsidian's automated plugin review runs `eslint-plugin-obsidianmd`'s recommended
 // config, which applies @typescript-eslint type-aware rules. Type-aware rules crash
@@ -47,6 +48,7 @@ export default [
 	},
 	...obsidianmd.configs.recommended,
 	{
+		plugins: { "react-hooks": reactHooks },
 		rules: {
 			// Shared frontend dependencies (preact, chart.js, etc.) are declared once
 			// at the workspace root and hoisted — each package's own package.json only
@@ -64,6 +66,17 @@ export default [
 					],
 				},
 			],
+			// The recommended config references this rule (several files already
+			// have justified `eslint-disable-next-line react-hooks/exhaustive-deps`
+			// comments) but doesn't bundle the plugin that implements it. Register
+			// only this one rule — the rest of eslint-plugin-react-hooks v7 targets
+			// the React Compiler and doesn't apply to this Preact codebase.
+			"react-hooks/exhaustive-deps": "warn",
+			// no-undef duplicates what tsc already checks, and produces false
+			// positives on TS global types (AsyncGenerator) and namespace-style
+			// type references (preact.X, moment.X) that it isn't aware of.
+			// typescript-eslint's own docs recommend disabling it for this reason.
+			"no-undef": "off",
 		},
 	},
 	{
