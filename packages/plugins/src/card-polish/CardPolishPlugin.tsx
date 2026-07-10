@@ -1,3 +1,5 @@
+import { ItemView } from "obsidian";
+
 import { VIEW_TYPE_REVIEW } from "@true-recall/core/constants";
 
 import { CardAIPluginBase } from "../shared/CardAIPluginBase";
@@ -62,17 +64,18 @@ export class CardPolishPlugin extends CardAIPluginBase<CardPolishEventDetail> {
 					// Commands stay registered after a mid-session disable — gate live.
 					if (this.pluginCtx.settings.pluginStates?.["card-polish"] === false)
 						return false;
-					const leaf = this.pluginCtx.workspace.activeLeaf;
-					const viewType = leaf?.view?.getViewType?.() ?? "";
+					const activeView =
+						this.pluginCtx.workspace.getActiveViewOfType(ItemView);
+					const viewType = activeView?.getViewType() ?? "";
 					if (viewType !== VIEW_TYPE_REVIEW) return false;
 					const preset = this.getPresets().find((p) => p.id === presetId);
 					if (!preset) return false;
 					if (!checking) {
 						const anchor =
-							(leaf?.view?.containerEl.querySelector(
+							(activeView?.containerEl.querySelector(
 								"[data-card-polish-anchor]",
 							) as HTMLElement | null) ??
-							leaf?.view?.containerEl ??
+							activeView?.containerEl ??
 							null;
 						if (!anchor) return false;
 						void this.runPreset(preset, { kind: "review", anchor });

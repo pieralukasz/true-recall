@@ -104,7 +104,7 @@ export class ObsidianCardAIPresenter implements CardAIPresenter {
 			for (const id of createdIds) target.removeCard?.(id);
 			notice.hide();
 		};
-		notice.noticeEl.appendChild(btn);
+		notice.messageEl.appendChild(btn);
 	}
 
 	private openPreview(args: CardAIPresentArgs): Promise<void> {

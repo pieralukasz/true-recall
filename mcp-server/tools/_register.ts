@@ -1,5 +1,5 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { ZodTypeAny } from "zod";
+import type { z } from "zod";
 import type { TrueRecallClient } from "../client.js";
 
 // ---------------------------------------------------------------------------
@@ -7,7 +7,7 @@ import type { TrueRecallClient } from "../client.js";
 // ---------------------------------------------------------------------------
 
 type Params = Record<string, unknown>;
-type Schema = Record<string, ZodTypeAny>;
+type Schema = Record<string, z.ZodType>;
 
 type ToolResult = {
 	content: Array<{ type: "text"; text: string }>;

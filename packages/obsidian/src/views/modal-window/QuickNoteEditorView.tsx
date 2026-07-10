@@ -332,8 +332,8 @@ export class QuickNoteEditorView extends ItemView {
 			if (this.session.closeConfirmed) return;
 			// Triggers Electron's native confirm dialog when the user closes
 			// the popout window via the OS X-button with unsaved content.
+			// (returnValue is no longer needed — preventDefault() alone triggers it.)
 			e.preventDefault();
-			e.returnValue = "";
 		};
 		win.addEventListener("beforeunload", handler);
 		this.beforeUnloadHandler = handler;

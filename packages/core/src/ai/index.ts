@@ -11,6 +11,8 @@ export {
 	type AIClientOptions,
 	AIRequestError,
 	buildAIHeaders,
+	// Re-exporting a deprecated function IS the backward-compat surface it's kept for.
+	// eslint-disable-next-line @typescript-eslint/no-deprecated
 	buildOpenRouterHeaders,
 	type ChatCompletionResponse,
 	type ChatMessage,

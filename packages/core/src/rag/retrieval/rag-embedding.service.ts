@@ -1,6 +1,6 @@
 import {
 	AIRequestError,
-	buildOpenRouterHeaders,
+	buildAIHeaders,
 } from "@true-recall/core/ai/clients/openrouter-client";
 import {
 	LITELLM_EMBEDDINGS_URL,
@@ -46,7 +46,7 @@ export class RagEmbeddingServiceImpl {
 						model: this.model,
 						input: texts,
 					},
-					buildOpenRouterHeaders(this.apiKey),
+					buildAIHeaders(this.apiKey, { providerType: "openrouter" }),
 				);
 
 				if (response.status !== 200) {

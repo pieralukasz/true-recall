@@ -43,7 +43,7 @@ export function makeCardAIArrayResponseSchema(fieldNames: readonly string[]) {
 	const shape: Record<string, z.ZodString> = {};
 	for (const name of fieldNames) shape[name] = z.string();
 	return z
-		.array(z.object(shape).passthrough())
+		.array(z.object(shape).loose())
 		.min(1)
 		.transform((arr) =>
 			arr.map((raw) => {
