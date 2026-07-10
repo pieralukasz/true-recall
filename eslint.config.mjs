@@ -34,7 +34,6 @@ export default [
 			"**/*.jsx",
 			// Auxiliary interfaces compiled with their own tsconfigs.
 			"cli/**",
-			"mcp-server/**",
 			"scripts/**",
 			// Tests and root tooling configs are excluded from the root tsconfig.
 			"packages/*/tests/**",
@@ -48,6 +47,26 @@ export default [
 	},
 	...obsidianmd.configs.recommended,
 	{
+		rules: {
+			// Shared frontend dependencies (preact, chart.js, etc.) are declared once
+			// at the workspace root and hoisted — each package's own package.json only
+			// lists what's unique to it. Point the rule at every manifest in the
+			// monorepo instead of just the nearest one.
+			"import/no-extraneous-dependencies": [
+				"error",
+				{
+					packageDir: [
+						import.meta.dirname,
+						`${import.meta.dirname}/packages/core`,
+						`${import.meta.dirname}/packages/obsidian`,
+						`${import.meta.dirname}/packages/plugins`,
+						`${import.meta.dirname}/mcp-server`,
+					],
+				},
+			],
+		},
+	},
+	{
 		files: [
 			"packages/core/src/**/*.ts",
 			"packages/core/src/**/*.tsx",
@@ -60,6 +79,16 @@ export default [
 			parser: tsparser,
 			parserOptions: {
 				project: "./tsconfig.json",
+				tsconfigRootDir: import.meta.dirname,
+			},
+		},
+	},
+	{
+		files: ["mcp-server/**/*.ts"],
+		languageOptions: {
+			parser: tsparser,
+			parserOptions: {
+				project: "./mcp-server/tsconfig.json",
 				tsconfigRootDir: import.meta.dirname,
 			},
 		},
