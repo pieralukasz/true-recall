@@ -23,7 +23,10 @@ export function useNoteBulkActions({
 	const handleCreateProjectFromSelected = useCallback(async () => {
 		if (selectedPaths.value.size === 0) return;
 
-		const modal = new CreateProjectModal(plugin.app);
+		const modal = new CreateProjectModal(
+			plugin.app,
+			plugin.settings.defaultProjectFolder,
+		);
 		const result = await modal.openAndWait();
 		if (result.cancelled) return;
 

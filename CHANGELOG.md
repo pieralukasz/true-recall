@@ -1,5 +1,15 @@
 # Changelog
 
+## 1.9.10 (2026-07-10)
+
+### Features
+
+- Added configurable storage locations — set a custom attachment folder (pasted images, Image Occlusion, AI-generated images, and Anki import media), plus defaults for the Anki import and new-project folders
+
+### Bug Fixes
+
+- Fixed sub-projects always being created at vault root instead of alongside their parent project
+
 ## 1.9.9 (2026-06-25)
 
 ### Maintenance
