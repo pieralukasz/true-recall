@@ -207,7 +207,7 @@ function tryHandleIncrementalEvent(
 	if (event === "card:removed") {
 		const p = payload as Record<string, unknown>;
 		const cardId = typeof p.cardId === "string" ? p.cardId : undefined;
-		const cardIds = Array.isArray(p.cardIds) ? p.cardIds : [];
+		const cardIds: unknown[] = Array.isArray(p.cardIds) ? p.cardIds : [];
 		const ids = [cardId, ...cardIds].filter(
 			(id): id is string => typeof id === "string",
 		);
