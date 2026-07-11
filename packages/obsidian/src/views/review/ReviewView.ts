@@ -27,7 +27,7 @@ import {
 
 import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpClient";
 import { ReviewUndoHook } from "@true-recall/obsidian/commands";
-import { G, Q, getDataLayer } from "@true-recall/obsidian/data";
+import { G, getDataLayer, Q } from "@true-recall/obsidian/data";
 import type { ReviewSessionController } from "@true-recall/obsidian/features/study/services/ReviewSessionController";
 import type { PresetPickerOption } from "@true-recall/obsidian/features/study/ui/review/components";
 import {

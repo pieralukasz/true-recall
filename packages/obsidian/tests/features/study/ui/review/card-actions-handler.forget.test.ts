@@ -119,7 +119,7 @@ describe("CardActionsHandler.handleForget", () => {
 			reverseOf: "new-sibling",
 			fsrs: { state: State.Review },
 		});
-		const removeCardById = vi.fn();
+		const removeCardsByIds = vi.fn();
 		const bulkForget = vi.fn(() => 1);
 		const removeReviewedCards = vi.fn();
 		const onUpdateSchedulingPreview = vi.fn();
@@ -128,7 +128,7 @@ describe("CardActionsHandler.handleForget", () => {
 			currentIndex: 2,
 			queue: [currentCard],
 			getCurrentCard: () => currentCard,
-			removeCardById,
+			removeCardsByIds,
 			isComplete: () => false,
 		} as unknown as ReviewApi;
 
@@ -175,9 +175,9 @@ describe("CardActionsHandler.handleForget", () => {
 
 		handler.handleForget();
 
-		// Command is executed, which calls removeCardById for the card
-		expect(removeCardById).toHaveBeenCalledTimes(1);
-		expect(removeCardById).toHaveBeenCalledWith("review-current");
+		// Command is executed, which calls removeCardsByIds for the card
+		expect(removeCardsByIds).toHaveBeenCalledTimes(1);
+		expect(removeCardsByIds).toHaveBeenCalledWith(["review-current"]);
 		expect(onUpdateSchedulingPreview).toHaveBeenCalledTimes(1);
 		expect(notificationSpies.cardForgotten).toHaveBeenCalledTimes(1);
 		expect(notificationSpies.warning).not.toHaveBeenCalled();

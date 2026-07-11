@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { DomainEventBus } from "@true-recall/core/events/event-bus";
 import type { CardSchedulingMeta } from "@true-recall/core/types";
+
 import {
 	DataLayer,
 	G,
@@ -63,9 +64,7 @@ function registerRemovalQueries(
 	dl.register<Map<string, NoteStatusInfo>>(
 		Q.NOTE_STATUS,
 		() =>
-			new Map([
-				["source-1", { new: 1, learning: 1, dueToday: 0, total: 2 }],
-			]),
+			new Map([["source-1", { new: 1, learning: 1, dueToday: 0, total: 2 }]]),
 		[G.CARDS],
 	);
 	dl.register<Map<string, CardSchedulingMeta[]>>(
@@ -104,15 +103,15 @@ describe("wireDataLayer", () => {
 		expect(
 			dl.get<Map<string, NoteStatusInfo>>(Q.NOTE_STATUS)?.get("source-1"),
 		).toEqual({
-				new: 1,
-				learning: 0,
-				dueToday: 0,
-				total: 1,
-			});
+			new: 1,
+			learning: 0,
+			dueToday: 0,
+			total: 1,
+		});
 		expect(
-			dl.get<Map<string, CardSchedulingMeta[]>>(Q.CARDS_BY_SOURCE)?.get(
-				"source-1",
-			),
+			dl
+				.get<Map<string, CardSchedulingMeta[]>>(Q.CARDS_BY_SOURCE)
+				?.get("source-1"),
 		).toEqual([kept]);
 	});
 
