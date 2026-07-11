@@ -3,6 +3,7 @@ import type { Command, CommandContext } from "../command.types";
 export class BatchCreateCommand implements Command {
 	readonly type = "card:create";
 	readonly mutationType = "card:created" as const;
+	readonly skipExecuteMutation = true;
 	readonly description: string;
 
 	constructor(private cardIds: string[]) {

@@ -27,7 +27,9 @@ export class ForgetCommand implements Command {
 
 	undo(ctx: CommandContext): void {
 		for (const { id, fsrs } of this.originalFsrsSnapshots) {
-			ctx.flashcardManager.updateCardFSRS(id, fsrs);
+			ctx.flashcardManager.updateCardFSRS(id, fsrs, undefined, {
+				skipNotification: true,
+			});
 		}
 	}
 }

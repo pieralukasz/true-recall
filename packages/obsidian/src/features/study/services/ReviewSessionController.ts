@@ -226,8 +226,8 @@ export class ReviewSessionController {
 			}
 		}
 
-		for (const sibling of siblings) {
-			review.removeCardById(sibling.id);
+		if (siblings.length > 0) {
+			review.removeCardsByIds(siblings.map((sibling) => sibling.id));
 		}
 
 		return siblings;

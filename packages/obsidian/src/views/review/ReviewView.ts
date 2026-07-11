@@ -17,6 +17,7 @@ import type { SessionPersistenceService } from "@true-recall/core/persistence/se
 import { FSRSService } from "@true-recall/core/services/fsrs/fsrs.service";
 import { ReviewService } from "@true-recall/core/services/review/review.service";
 import {
+	type CardSchedulingMeta,
 	extractFSRSSettings,
 	type FSRSFlashcardItem,
 	type FSRSPreset,
@@ -26,7 +27,7 @@ import {
 
 import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpClient";
 import { ReviewUndoHook } from "@true-recall/obsidian/commands";
-import { G, getDataLayer } from "@true-recall/obsidian/data";
+import { G, Q, getDataLayer } from "@true-recall/obsidian/data";
 import type { ReviewSessionController } from "@true-recall/obsidian/features/study/services/ReviewSessionController";
 import type { PresetPickerOption } from "@true-recall/obsidian/features/study/ui/review/components";
 import {
@@ -693,7 +694,12 @@ export class ReviewView extends ItemView {
 			this.fsrsService.updateSettings(fsrsSettings);
 
 			const { queue } = this.reviewController.buildSession(this.filters);
-			const allCards = this.plugin.flashcardManager.getAllFSRSCards();
+			const allMetaMap = this.plugin.dataLayer?.get<
+				Map<string, CardSchedulingMeta>
+			>(Q.ALL_META);
+			const allCards = allMetaMap
+				? [...allMetaMap.values()]
+				: this.plugin.cardStore.getAllSchedulingMeta();
 
 			if (queue.length === 0 && allCards.length === 0) {
 				this.mountEmptyState(

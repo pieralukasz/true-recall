@@ -42,14 +42,19 @@ abstract class BaseReviewActionCommand implements Command {
 	execute(ctx: CommandContext): void {
 		const review = this.params.getReview();
 		const queue = review.queue;
+		const queueIndexById = new Map<string, number>();
+		for (let i = 0; i < queue.length; i++) {
+			const card = queue[i];
+			if (card) queueIndexById.set(card.id, i);
+		}
 
 		// Snapshot sibling cards (excluding the primary) that are actually in
 		// the queue, so undo can restore both their FSRS and their queue slot.
 		this.capturedSiblings = [];
 		for (const id of this.params.siblingIds) {
 			if (id === this.params.card.id) continue;
-			const idx = queue.findIndex((c) => c.id === id);
-			if (idx === -1) continue;
+			const idx = queueIndexById.get(id);
+			if (idx === undefined) continue;
 			const found = queue[idx];
 			if (!found) continue;
 			this.capturedSiblings.push({
@@ -59,9 +64,7 @@ abstract class BaseReviewActionCommand implements Command {
 			});
 		}
 
-		for (const id of this.params.siblingIds) {
-			review.removeCardById(id);
-		}
+		review.removeCardsByIds(this.params.siblingIds);
 
 		this.pendingTimeoutId = setTimeout(() => {
 			this.writeExecuted = true;
