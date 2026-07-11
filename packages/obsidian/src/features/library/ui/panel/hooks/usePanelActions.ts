@@ -432,7 +432,7 @@ export function usePanelActions() {
 		const cmd = new ForgetCommand(cardIds);
 		await plugin.commandService?.execute(cmd);
 		notify().cardsForgotten(count);
-	}, [flashcardInfo, plugin]);
+	}, [flashcardInfo, plugin, app]);
 
 	const handleDeleteAll = useCallback(async () => {
 		const { notify } = await import(
@@ -455,7 +455,7 @@ export function usePanelActions() {
 		notify().cardsDeletedWithUndo(cmd.deletedCount, () => {
 			void plugin.commandService?.undo();
 		});
-	}, [flashcardInfo, plugin]);
+	}, [flashcardInfo, plugin, app]);
 
 	const handleDeleteNoteAndCards = useCallback(async () => {
 		const { notify } = await import(

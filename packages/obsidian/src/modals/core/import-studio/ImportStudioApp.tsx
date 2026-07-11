@@ -170,7 +170,13 @@ export function ImportStudioApp({
 		} finally {
 			setSaving(false);
 		}
-	}, [parseResult.cards, plugin.flashcardManager, resolveSourceUid, saving]);
+	}, [
+		parseResult.cards,
+		plugin.flashcardManager,
+		resolveSourceUid,
+		saving,
+		selectedSourceNote,
+	]);
 
 	const handleEditorReady = useCallback(
 		(editor: EmbeddableEditorInstance | null) => {

@@ -38,14 +38,13 @@ export function PanelContent() {
 		[cardsWithFsrs],
 	);
 
-	const flashcards = flashcardInfo?.exists ? flashcardInfo.flashcards : [];
-
 	const streaming = useStreamingCardState();
 	const isStreamingForFile =
 		streaming.isGenerating && streaming.notePath === currentFile?.path;
 	const { recentCardIds } = streaming;
 
 	const allFlashcards = useMemo(() => {
+		const flashcards = flashcardInfo?.exists ? flashcardInfo.flashcards : [];
 		if (!isStreamingForFile || streaming.completedCards.length === 0)
 			return flashcards;
 		const existingIds = new Set(flashcards.map((c) => c.id));
@@ -54,7 +53,7 @@ export function PanelContent() {
 		);
 		if (newCards.length === 0) return flashcards;
 		return [...flashcards, ...newCards];
-	}, [flashcards, isStreamingForFile, streaming.completedCards]);
+	}, [flashcardInfo, isStreamingForFile, streaming.completedCards]);
 
 	const items = useMemo(
 		() => groupCards(allFlashcards, fsrsMap),

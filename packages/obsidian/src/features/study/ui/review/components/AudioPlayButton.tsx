@@ -65,9 +65,16 @@ export function AudioPlayButton({
 		}
 	}, [audioPath, isPlaying]);
 
+	// Ref mirror so the autoplay effect can call the latest `play` without
+	// depending on it directly — `play`'s identity changes with `isPlaying`,
+	// and re-running this effect on every play/pause would re-trigger autoplay
+	// in a loop once each playback ends.
+	const playRef = useRef(play);
+	playRef.current = play;
+
 	useEffect(() => {
 		if (autoplay) {
-			void play();
+			void playRef.current();
 		}
 	}, [autoplay, audioPath]);
 

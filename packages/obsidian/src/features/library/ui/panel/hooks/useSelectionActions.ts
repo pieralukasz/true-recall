@@ -130,7 +130,7 @@ export function useSelectionActions() {
 		notify().cardsDeletedWithUndo(cmd.deletedCount, () => {
 			void plugin.commandService?.undo();
 		});
-	}, [flashcardInfo, currentFile, selectedCardIds, plugin, panel]);
+	}, [flashcardInfo, currentFile, selectedCardIds, plugin, panel, app]);
 
 	const handleChangeNoteType = useCallback(async () => {
 		if (!flashcardInfo || selectedCardIds.size === 0) return;

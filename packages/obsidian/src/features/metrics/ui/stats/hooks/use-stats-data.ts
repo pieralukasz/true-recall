@@ -162,6 +162,9 @@ export function useStatsData(
 		filter?.value,
 		statsCalc,
 		plugin.fsrsHelper,
+		data,
+		error,
+		loading,
 	]);
 
 	return {

@@ -29,9 +29,10 @@ export function useLongPress({
 	});
 
 	useEffect(() => {
+		const node = ref.current;
 		return () => {
-			if (ref.current.timer) {
-				window.clearTimeout(ref.current.timer);
+			if (node.timer) {
+				window.clearTimeout(node.timer);
 			}
 		};
 	}, []);

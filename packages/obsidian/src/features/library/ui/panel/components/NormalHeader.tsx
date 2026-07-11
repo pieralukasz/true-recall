@@ -41,7 +41,7 @@ export function NormalHeader({
 		const sourceUid = flashcardInfo?.sourceUid;
 		if (!sourceUid) return false;
 		return plugin.flashcardManager.hasNoteReview(sourceUid);
-	}, [flashcardInfo?.sourceUid, flashcardInfo?.cardCount, plugin]);
+	}, [flashcardInfo?.sourceUid, plugin]);
 
 	const handleMoreMenu = useCallback(
 		(e: MouseEvent) => {

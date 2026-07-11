@@ -111,7 +111,11 @@ export function LivePreviewField({
 		const el = containerRef.current;
 		if (!el || !plugin.EmbeddableEditor) return;
 
-		const normalizedContent = stripBrTags(content);
+		// Use contentRef (kept in sync every render) rather than `content` directly —
+		// this effect only builds the editor once (on mount / EmbeddableEditor change);
+		// subsequent content updates are handled by the useLayoutEffect below via CM6
+		// transactions, so `content` must not be a reactive dependency here.
+		const normalizedContent = stripBrTags(contentRef.current);
 
 		let editor: import("@true-recall/obsidian/editor/shared/embedded-editor").EmbeddableEditorInstance;
 		try {
@@ -147,7 +151,14 @@ export function LivePreviewField({
 			editorRef.current = null;
 			editor.destroy();
 		};
-	}, [app, plugin.EmbeddableEditor]);
+	}, [
+		app,
+		plugin.EmbeddableEditor,
+		handleBlur,
+		handleEscape,
+		handleChange,
+		flushPendingSave,
+	]);
 
 	// Update editor content when card changes (new card appears)
 	// useLayoutEffect ensures CM content updates before paint — no flash of old card.

@@ -84,7 +84,7 @@ export function ProjectsTab({
 	useEffect(() => {
 		if (!searchQuery) return;
 		expandedPaths.value = collectMatchingPaths(projects, searchQuery);
-	}, [searchQuery, projects]);
+	}, [searchQuery, projects, expandedPaths]);
 
 	const flatItems = useMemo(
 		() => flattenProjectTree(projects, expandedPaths.value, searchQuery),

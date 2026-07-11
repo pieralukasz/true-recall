@@ -25,13 +25,18 @@ export function useStreamingNewCount(
 		if (!streamingNotePath || streamingNotePath !== currentFilePath) return 0;
 		const dbIds = new Set(cardsWithFsrs.map((c) => c.id));
 		const streaming = streamingGeneration.value;
+		// streamingCompletedCount is read only to force recomputation on every
+		// completed card. completedCards is mutated on the live signal directly,
+		// so without this the count would go stale between a card completing and
+		// cardsWithFsrs eventually updating once the DB write lands.
+		void streamingCompletedCount;
 		return streaming.completedCards.filter(
 			(c: { id: string }) => !dbIds.has(c.id),
 		).length;
 	}, [
-		streamingCompletedCount,
 		streamingNotePath,
 		currentFilePath,
 		cardsWithFsrs,
+		streamingCompletedCount,
 	]);
 }

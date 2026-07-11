@@ -37,9 +37,12 @@ export function useCardActions() {
 	const app = useApp();
 	const { currentFile, flashcardInfo, cardsWithFsrs, panel } = usePanelStore();
 
-	const findFsrsCard = (cardId: string): FSRSFlashcardItem | undefined => {
-		return cardsWithFsrs.find((c) => c.id === cardId);
-	};
+	const findFsrsCard = useCallback(
+		(cardId: string): FSRSFlashcardItem | undefined => {
+			return cardsWithFsrs.find((c) => c.id === cardId);
+		},
+		[cardsWithFsrs],
+	);
 
 	const openEditModal = useCallback(
 		async (card: FlashcardItem, restoreScroll: () => void) => {
@@ -79,7 +82,7 @@ export function useCardActions() {
 			});
 			restoreScroll();
 		},
-		[plugin, cardsWithFsrs],
+		[plugin, findFsrsCard],
 	);
 
 	const handleAddFlashcard = useCallback(async () => {
@@ -211,7 +214,7 @@ export function useCardActions() {
 			await plugin.commandService?.execute(cmd);
 			notify().success("Note type changed");
 		},
-		[app, plugin, cardsWithFsrs],
+		[app, plugin, findFsrsCard],
 	);
 
 	const handleToggleReversed = useCallback(
@@ -253,7 +256,7 @@ export function useCardActions() {
 				notify().success("Reversed card removed");
 			}
 		},
-		[plugin, cardsWithFsrs],
+		[plugin, findFsrsCard],
 	);
 
 	const handleForgetCard = useCallback(
@@ -303,7 +306,7 @@ export function useCardActions() {
 			if (!fsrsCard) return;
 			openCardPreviewModal(app, plugin, fsrsCard, currentFile?.path ?? "");
 		},
-		[app, plugin, cardsWithFsrs, currentFile],
+		[app, plugin, currentFile, findFsrsCard],
 	);
 
 	return {

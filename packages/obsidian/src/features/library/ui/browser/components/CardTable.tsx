@@ -114,7 +114,7 @@ export function CardTable({
 				onReachEnd();
 			}
 		},
-		[cards.length, hasMore, onReachEnd],
+		[cards.length, hasMore, onReachEnd, scrollTop],
 	);
 
 	if (cards.length === 0) {

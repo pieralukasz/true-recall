@@ -95,6 +95,7 @@ export function QuickNoteEditorApp({
 	const noteType = useMemo(() => {
 		if (isEdit) return editMode?.noteType;
 		return plugin.cardStore?.noteTypes?.getById(noteTypeId) ?? null;
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- refreshCounter forces re-fetch after external edits via the note type manager / card types editor
 	}, [isEdit, editMode, plugin.cardStore, noteTypeId, refreshCounter]);
 
 	const isDirty = useMemo(() => {
@@ -126,6 +127,7 @@ export function QuickNoteEditorApp({
 		addMode,
 		editMode,
 		plugin.frontmatterIndex,
+		app.vault,
 	]);
 
 	useEffect(() => {
@@ -389,6 +391,7 @@ export function QuickNoteEditorApp({
 			editMode,
 			addMode,
 			resolveSourceUid,
+			plugin.flashcardManager,
 		],
 	);
 

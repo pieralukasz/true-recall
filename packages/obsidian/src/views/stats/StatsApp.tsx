@@ -67,6 +67,7 @@ export function StatsApp() {
 
 	const presetNames = settings.fsrsPresets.map((preset) => preset.name);
 	const selectedPresets = useSignal<Set<string>>(new Set(presetNames));
+	const presetNamesKey = presetNames.join("|");
 
 	useEffect(() => {
 		const current = selectedPresets.value;
@@ -91,7 +92,8 @@ export function StatsApp() {
 		if (valid.size !== current.size) {
 			selectedPresets.value = valid;
 		}
-	}, [presetNames.join("|")]);
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- presetNames is a new array every render; presetNamesKey is the stable content-based proxy that actually gates re-runs
+	}, [presetNamesKey, selectedPresets]);
 
 	const presetSourceUidIndex = useMemo(() => {
 		const index = new Map<string, Set<string>>();
@@ -112,7 +114,7 @@ export function StatsApp() {
 		}
 
 		return index;
-	}, [plugin.presetService, allCards, settings]);
+	}, [plugin.presetService, allCards]);
 
 	// Build preset→sourceUid map and compute filter context
 	const filterContext = useComputed((): StatsFilterContext => {

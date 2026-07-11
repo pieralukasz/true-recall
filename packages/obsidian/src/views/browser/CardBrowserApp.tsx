@@ -4,10 +4,7 @@ import { useCallback, useEffect, useMemo, useRef } from "preact/hooks";
 import { DuplicateQuestionError } from "@true-recall/core/flashcard/data/card-repository.service";
 import { parseSearchQuery } from "@true-recall/core/helpers/search-parser";
 import { CardBrowserQueryService } from "@true-recall/core/services/browser/card-browser-query.service";
-import type {
-	FSRSFlashcardItem,
-	TrueRecallSettings,
-} from "@true-recall/core/types";
+import type { FSRSFlashcardItem } from "@true-recall/core/types";
 
 import { DeleteCardCommand } from "@true-recall/obsidian/commands/commands/card-delete.cmd";
 import { MoveCardCommand } from "@true-recall/obsidian/commands/commands/card-move.cmd";
@@ -50,7 +47,6 @@ export function CardBrowserApp({
 	filterOrphaned,
 }: CardBrowserAppProps) {
 	const plugin = usePlugin();
-	const settingsSignal = useQuery<TrueRecallSettings>(Q.SETTINGS);
 	const app = useApp();
 
 	const searchText = useSignal("");
@@ -73,7 +69,7 @@ export function CardBrowserApp({
 
 		sidebarFilter.value = { ...EMPTY_FILTER, sourceUids: [uid] };
 		filterSourceUid.value = null;
-	}, [filterSourceUid?.value]);
+	}, [filterSourceUid, filterSourceUid?.value, sidebarFilter]);
 
 	useEffect(() => {
 		if (!filterOrphaned) return;
@@ -81,7 +77,7 @@ export function CardBrowserApp({
 
 		sidebarFilter.value = { ...EMPTY_FILTER, orphanedOnly: true };
 		filterOrphaned.value = false;
-	}, [filterOrphaned?.value]);
+	}, [filterOrphaned, filterOrphaned?.value, sidebarFilter]);
 
 	const queryService = useMemo(
 		() =>
@@ -96,7 +92,6 @@ export function CardBrowserApp({
 	// Signal reads — subscribe component to reactive data changes
 	const allCardsSignal = useQuery<Map<string, FSRSFlashcardItem>>(Q.ALL_META);
 	const allCards = allCardsSignal.value;
-	const _settings = settingsSignal.value;
 	const searchTextVal = searchText.value;
 	const stateFiltersVal = stateFilters.value;
 	const sidebarFilterVal = sidebarFilter.value;
@@ -127,14 +122,8 @@ export function CardBrowserApp({
 
 	const result = useMemo((): BrowserResult => {
 		return queryService.query(combinedFilter, sortVal, loadedLimitVal, 0);
-	}, [
-		allCards,
-		_settings,
-		queryService,
-		combinedFilter,
-		sortVal,
-		loadedLimitVal,
-	]);
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- allCards triggers recompute on card mutations; queryService.query() reads cardStore live
+	}, [allCards, queryService, combinedFilter, sortVal, loadedLimitVal]);
 
 	const queryResetKey = useMemo(
 		() => getBrowserQueryResetKey(combinedFilter, sortVal),
@@ -143,11 +132,13 @@ export function CardBrowserApp({
 
 	const facetCounts = useMemo(
 		() => queryService.getFacetCounts(showArchivedVal),
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- allCards triggers recompute on card mutations; getFacetCounts() reads cardStore live
 		[allCards, queryService, showArchivedVal],
 	);
 
 	const orphanedCardIds = useMemo(
 		() => queryService.getOrphanedCardIds(),
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- allCards triggers recompute on card mutations; getOrphanedCardIds() reads cardStore live
 		[allCards, queryService],
 	);
 
@@ -164,15 +155,18 @@ export function CardBrowserApp({
 		});
 	}, [plugin, facetCounts.sourceNotes]);
 
-	const handleSort = useCallback((column: string) => {
-		sort.value =
-			sort.value.column === column
-				? {
-						column,
-						direction: sort.value.direction === "asc" ? "desc" : "asc",
-					}
-				: { column, direction: "asc" };
-	}, []);
+	const handleSort = useCallback(
+		(column: string) => {
+			sort.value =
+				sort.value.column === column
+					? {
+							column,
+							direction: sort.value.direction === "asc" ? "desc" : "asc",
+						}
+					: { column, direction: "asc" };
+		},
+		[sort],
+	);
 
 	const handleSelect = useCallback(
 		(
@@ -208,12 +202,15 @@ export function CardBrowserApp({
 			}
 			selectedIds.value = next;
 		},
-		[result.cards],
+		[result.cards, selectedIds],
 	);
 
-	const handlePreview = useCallback((card: BrowserCard) => {
-		previewCard.value = previewCard.value?.id === card.id ? null : card;
-	}, []);
+	const handlePreview = useCallback(
+		(card: BrowserCard) => {
+			previewCard.value = previewCard.value?.id === card.id ? null : card;
+		},
+		[previewCard],
+	);
 
 	const handleContentChange = useCallback(
 		(value: string, field: "question" | "answer") => {
@@ -248,7 +245,7 @@ export function CardBrowserApp({
 				}
 			}
 		},
-		[plugin],
+		[plugin, previewCard],
 	);
 
 	const handleSelectAll = useCallback(() => {
@@ -257,44 +254,56 @@ export function CardBrowserApp({
 		} else {
 			selectedIds.value = new Set(result.cards.map((c) => c.id));
 		}
-	}, [result.cards]);
+	}, [result.cards, selectedIds]);
 
 	const handleClearSelection = useCallback(() => {
 		selectedIds.value = new Set();
-	}, []);
+	}, [selectedIds]);
 
-	const handleToggleStateFilter = useCallback((state: StateFilterValue) => {
-		const current = stateFilters.value;
-		stateFilters.value = current.includes(state)
-			? current.filter((s) => s !== state)
-			: [...current, state];
-	}, []);
+	const handleToggleStateFilter = useCallback(
+		(state: StateFilterValue) => {
+			const current = stateFilters.value;
+			stateFilters.value = current.includes(state)
+				? current.filter((s) => s !== state)
+				: [...current, state];
+		},
+		[stateFilters],
+	);
 
-	const handleRemoveStateFilter = useCallback((state: StateFilterValue) => {
-		stateFilters.value = stateFilters.value.filter((s) => s !== state);
-	}, []);
+	const handleRemoveStateFilter = useCallback(
+		(state: StateFilterValue) => {
+			stateFilters.value = stateFilters.value.filter((s) => s !== state);
+		},
+		[stateFilters],
+	);
 
-	const handleSidebarFilter = useCallback((partial: Partial<FilterState>) => {
-		sidebarFilter.value = { ...sidebarFilter.value, ...partial };
-	}, []);
+	const handleSidebarFilter = useCallback(
+		(partial: Partial<FilterState>) => {
+			sidebarFilter.value = { ...sidebarFilter.value, ...partial };
+		},
+		[sidebarFilter],
+	);
 
-	const handleToggleColumn = useCallback((key: string) => {
-		const current = visibleColumns.value;
-		visibleColumns.value = current.includes(key)
-			? current.filter((k) => k !== key)
-			: [...current, key];
-	}, []);
+	const handleToggleColumn = useCallback(
+		(key: string) => {
+			const current = visibleColumns.value;
+			visibleColumns.value = current.includes(key)
+				? current.filter((k) => k !== key)
+				: [...current, key];
+		},
+		[visibleColumns],
+	);
 
 	const handleToggleShowArchived = useCallback(() => {
 		showArchived.value = !showArchived.value;
-	}, []);
+	}, [showArchived]);
 
 	const hasMore = result.cards.length < result.totalCount;
 
 	const loadMore = useCallback(() => {
 		if (!hasMore) return;
 		loadedLimit.value += PAGE_SIZE;
-	}, [hasMore]);
+	}, [hasMore, loadedLimit]);
 
 	const handleRemoveOrphanedCards = useCallback(async () => {
 		const orphanedIds = queryService.getOrphanedCardIds();
@@ -322,7 +331,7 @@ export function CardBrowserApp({
 		if (previewCard.value && deletedSet.has(previewCard.value.id)) {
 			previewCard.value = null;
 		}
-	}, [app, plugin, queryService]);
+	}, [app, plugin, queryService, previewCard, selectedIds]);
 
 	const handleMoveCard = useCallback(async () => {
 		const card = previewCard.value;
@@ -359,7 +368,7 @@ export function CardBrowserApp({
 	useEffect(() => {
 		loadedLimit.value = PAGE_SIZE;
 		scrollContainerRef.current?.scrollTo({ top: 0 });
-	}, [queryResetKey]);
+	}, [queryResetKey, loadedLimit]);
 
 	useKeyboardNav({
 		cards: result.cards,
