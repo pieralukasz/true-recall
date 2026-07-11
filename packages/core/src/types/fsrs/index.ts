@@ -59,6 +59,3 @@ export type {
 	StreakInfo,
 	TodaySummary,
 } from "./stats.types";
-// Store types — re-exporting a deprecated type IS the backward-compat surface it's kept for.
-// eslint-disable-next-line @typescript-eslint/no-deprecated
-export type { CardStore } from "./store.types";

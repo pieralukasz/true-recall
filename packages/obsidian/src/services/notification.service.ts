@@ -233,11 +233,7 @@ class NotificationService {
 
 	operationFailed(operation: string, error?: unknown): void {
 		if (error) {
-			// Fallback for non-Error objects is intentional -- String() on an
-			// arbitrary thrown value (even a plain object) is the safe, standard
-			// "best-effort" stringification for an error path; it's fine if a
-			// non-Error, non-toString-overriding throw renders as [object Object].
-			// eslint-disable-next-line @typescript-eslint/no-base-to-string
+			// eslint-disable-next-line @typescript-eslint/no-base-to-string -- fallback for non-Error objects is intentional: String() on an arbitrary thrown value is the safe, standard "best-effort" stringification for an error path
 			const msg = error instanceof Error ? error.message : String(error);
 			this.error(`Failed to ${operation}: ${msg}`);
 		} else {

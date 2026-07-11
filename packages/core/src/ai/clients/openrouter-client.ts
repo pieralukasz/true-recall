@@ -82,19 +82,6 @@ export function buildAIHeaders(
 	return headers;
 }
 
-/** @deprecated Use buildAIHeaders with providerType option instead */
-export function buildOpenRouterHeaders(
-	apiKey: string,
-	userId?: string,
-	capability?: string,
-): Record<string, string> {
-	return buildAIHeaders(apiKey, {
-		providerType: "openrouter",
-		userId,
-		capability,
-	});
-}
-
 /** Extract text content from a ChatMessage response (handles both string and ContentPart[] content). */
 export function getTextContent(message: ChatMessage | undefined): string {
 	if (!message) return "";

@@ -28,9 +28,6 @@ export type {
 	CardMaturityBreakdown,
 	CardReviewLogEntry,
 	CardSchedulingMeta,
-	// Re-exporting a deprecated type IS the backward-compat surface it's kept for.
-	// eslint-disable-next-line @typescript-eslint/no-deprecated
-	CardStore,
 	CardsCreatedEntry,
 	CardsCreatedVsReviewedEntry,
 	CardType,

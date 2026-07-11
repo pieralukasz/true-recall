@@ -203,58 +203,6 @@ describe("Bulk Operations", () => {
 		});
 	});
 
-	describe("bulkReset", () => {
-		it("should reset cards to New state", async () => {
-			const cards = [
-				createTestCard({
-					id: "card-1",
-					state: State.Review,
-					reps: 10,
-					lapses: 2,
-					stability: 15,
-					difficulty: 7,
-					scheduledDays: 14,
-				}),
-				createTestCard({
-					id: "card-2",
-					state: State.Learning,
-					reps: 3,
-				}),
-			];
-			cards.forEach((c) => {
-				ctx.cards.set(c.id, c);
-			});
-
-			const affected = ctx.cards.bulkReset(["card-1", "card-2"]);
-
-			expect(affected).toBe(2);
-
-			const card1 = ctx.cards.get("card-1");
-			const card2 = ctx.cards.get("card-2");
-
-			// Card 1 should be reset
-			expect(card1?.state).toBe(State.New);
-			expect(card1?.reps).toBe(0);
-			expect(card1?.lapses).toBe(0);
-			expect(card1?.stability).toBe(0);
-			expect(card1?.difficulty).toBe(0);
-			expect(card1?.scheduledDays).toBe(0);
-			expect(card1?.learningStep).toBe(0);
-			expect(card1?.lastReview).toBeNull();
-			expect(card1?.suspended).toBe(false);
-			expect(card1?.buriedUntil).toBeUndefined();
-
-			// Card 2 should be reset
-			expect(card2?.state).toBe(State.New);
-			expect(card2?.reps).toBe(0);
-		});
-
-		it("should return 0 for empty array", async () => {
-			const affected = ctx.cards.bulkReset([]);
-			expect(affected).toBe(0);
-		});
-	});
-
 	describe("bulkReschedule", () => {
 		it("should reschedule cards to specific date", async () => {
 			const cards = [

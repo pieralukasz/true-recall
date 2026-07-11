@@ -30,9 +30,7 @@ export function validateFlashcardItem(data: unknown): FlashcardItem {
 		);
 	}
 
-	// Load-bearing: the schema's inferred output type doesn't structurally
-	// match the hand-written FlashcardItem discriminated union exactly.
-	// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+	// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion -- load-bearing: the schema's inferred output type doesn't structurally match the hand-written FlashcardItem discriminated union exactly
 	return result.data as FlashcardItem;
 }
 
@@ -40,8 +38,7 @@ export function validateFlashcardItems(data: unknown[]): FlashcardItem[] {
 	return data
 		.map((item) => {
 			const result = FlashcardItemSchema.safeParse(normalizeCardType(item));
-			// Same schema/type mismatch as validateFlashcardItem() above.
-			// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+			// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion -- same schema/type mismatch as validateFlashcardItem() above
 			return result.success ? (result.data as FlashcardItem) : null;
 		})
 		.filter((item): item is FlashcardItem => item !== null);

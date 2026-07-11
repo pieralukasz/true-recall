@@ -136,11 +136,9 @@ export function migrateSettings(raw: Partial<TrueRecallSettings> | null): {
 
 	// flashcardGeneration bucket is deprecated — presets now live in
 	// settings.generationPresets. Drop the bucket so stale data does not
-	// persist across saves. The cast is load-bearing: raw's static type
-	// (Partial<TrueRecallSettings>) no longer has this property at all, since
-	// it's only ever present in stale on-disk data written by old versions.
+	// persist across saves.
 	if (
-		// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+		// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion -- load-bearing: raw's static type (Partial<TrueRecallSettings>) no longer has this property at all, since it's only ever present in stale on-disk data written by old versions
 		(raw as Record<string, unknown> | null)?.flashcardGeneration !== undefined
 	) {
 		delete (settings as { flashcardGeneration?: unknown }).flashcardGeneration;
@@ -150,10 +148,7 @@ export function migrateSettings(raw: Partial<TrueRecallSettings> | null): {
 	// easyDays: array → object migration
 	if (Array.isArray(settings.easyDays)) {
 		settings.easyDays = {
-			// Also load-bearing: settings.easyDays is narrowed to `unknown[]` by
-			// the Array.isArray check above, and TS won't let one assertion
-			// bridge unknown[] -> number[] without the unknown hop.
-			// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
+			// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion -- load-bearing: settings.easyDays is narrowed to `unknown[]` by the Array.isArray check above, and TS won't let one assertion bridge unknown[] -> number[] without the unknown hop
 			recurringDays: settings.easyDays as unknown as number[],
 			specificDates: [],
 		};

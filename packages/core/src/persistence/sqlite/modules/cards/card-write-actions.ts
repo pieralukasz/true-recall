@@ -265,11 +265,6 @@ export class CardWriteActions {
 		);
 	}
 
-	/** @deprecated Use softDelete() instead for sync compatibility */
-	delete(cardId: string): void {
-		this.db.run(`DELETE FROM cards WHERE id = ?`, [cardId]);
-	}
-
 	updateCardSourceUid(cardId: string, sourceUid: string): void {
 		this.db.run(
 			`UPDATE cards SET source_uid = ?, updated_at = ? WHERE id = ?`,
