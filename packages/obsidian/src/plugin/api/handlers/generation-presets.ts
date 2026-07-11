@@ -1,4 +1,5 @@
 import { hasAIKey } from "@true-recall/core/ai/config/ai-client-config";
+import type { StreamingFlashcardManager } from "@true-recall/core/ai/generation/streaming-generation.service";
 import type {
 	CreateGenerationPresetInput,
 	UpdateGenerationPresetPatch,
@@ -159,7 +160,7 @@ export async function handleGenerateWithPreset(
 
 	const service = new StreamingGenerationService(
 		() => ctx.plugin.settings,
-		ctx.plugin.flashcardManager as any,
+		ctx.plugin.flashcardManager as unknown as StreamingFlashcardManager,
 		new ObsidianHttpClient(),
 	);
 

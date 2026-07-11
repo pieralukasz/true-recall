@@ -74,14 +74,14 @@ function NoteStatsTooltipContent({ stats }: TooltipProps) {
 // ── Tooltip DOM management ──────────────────────────────────
 
 let activeTooltip: HTMLElement | null = null;
-let hoverTimeout: ReturnType<typeof setTimeout> | null = null;
+let hoverTimeout: number | null = null;
 
 export function attachTooltipListeners(
 	element: HTMLElement,
 	getStats: () => Promise<NoteDetailStats | null>,
 ): void {
 	element.addEventListener("mouseenter", () => {
-		hoverTimeout = setTimeout(() => {
+		hoverTimeout = window.setTimeout(() => {
 			void getStats().then((stats) => {
 				if (!stats) return;
 				showTooltip(element, stats);
@@ -91,7 +91,7 @@ export function attachTooltipListeners(
 
 	element.addEventListener("mouseleave", () => {
 		if (hoverTimeout) {
-			clearTimeout(hoverTimeout);
+			window.clearTimeout(hoverTimeout);
 			hoverTimeout = null;
 		}
 		hideTooltip();
@@ -101,7 +101,7 @@ export function attachTooltipListeners(
 function showTooltip(anchor: HTMLElement, stats: NoteDetailStats): void {
 	hideTooltip();
 
-	const tooltip = document.createElement("div");
+	const tooltip = activeDocument.createElement("div");
 	tooltip.className = "true-recall-note-tooltip";
 	tooltip.style.cssText = `
 		position: fixed;
@@ -116,7 +116,7 @@ function showTooltip(anchor: HTMLElement, stats: NoteDetailStats): void {
 
 	render(h(NoteStatsTooltipContent, { stats }), tooltip);
 
-	document.body.appendChild(tooltip);
+	activeDocument.body.appendChild(tooltip);
 	activeTooltip = tooltip;
 
 	// Position above anchor

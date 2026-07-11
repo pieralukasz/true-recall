@@ -16,7 +16,7 @@ export function SimulatorSliderRow({
 }: SliderRowProps) {
 	const rangeRef = useRef<HTMLInputElement>(null);
 	const numberRef = useRef<HTMLInputElement>(null);
-	const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const debounceRef = useRef<number | null>(null);
 
 	// Sync inputs when value changes externally (undo/redo/reset)
 	useEffect(() => {
@@ -27,14 +27,14 @@ export function SimulatorSliderRow({
 
 	useEffect(() => {
 		return () => {
-			if (debounceRef.current) clearTimeout(debounceRef.current);
+			if (debounceRef.current) window.clearTimeout(debounceRef.current);
 		};
 	}, []);
 
 	const debouncedUpdate = useCallback(
 		(newValue: number) => {
-			if (debounceRef.current) clearTimeout(debounceRef.current);
-			debounceRef.current = setTimeout(() => {
+			if (debounceRef.current) window.clearTimeout(debounceRef.current);
+			debounceRef.current = window.setTimeout(() => {
 				onValueChange(config.index, newValue);
 				debounceRef.current = null;
 			}, 150);

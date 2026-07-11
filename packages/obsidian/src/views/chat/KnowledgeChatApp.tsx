@@ -126,7 +126,7 @@ export function KnowledgeChatApp({ view }: Props) {
 	);
 
 	const scrollToBottom = useCallback(() => {
-		requestAnimationFrame(() => {
+		window.requestAnimationFrame(() => {
 			scrollRef.current?.scrollTo(0, scrollRef.current.scrollHeight);
 		});
 	}, []);
@@ -272,7 +272,7 @@ export function KnowledgeChatApp({ view }: Props) {
 								<Clickable
 									key={q}
 									class="ep:text-sm ep:text-obs-muted ep:text-left ep:px-4 ep:py-2.5 ep:rounded-xl ep:border ep:border-obs-border ep:hover:border-obs-interactive ep:hover:text-obs-normal ep:transition-colors ep:leading-snug"
-									onClick={() => handleSend(q)}
+									onClick={() => void handleSend(q)}
 								>
 									{q}
 								</Clickable>
@@ -300,7 +300,7 @@ export function KnowledgeChatApp({ view }: Props) {
 			</div>
 
 			<ChatInput
-				onSend={handleSend}
+				onSend={(text) => void handleSend(text)}
 				disabled={streaming}
 				contextItems={allContext}
 				onDismissContext={handleDismissContext}

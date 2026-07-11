@@ -38,14 +38,13 @@ export function PanelContent() {
 		[cardsWithFsrs],
 	);
 
-	const flashcards = flashcardInfo?.exists ? flashcardInfo.flashcards : [];
-
 	const streaming = useStreamingCardState();
 	const isStreamingForFile =
 		streaming.isGenerating && streaming.notePath === currentFile?.path;
 	const { recentCardIds } = streaming;
 
 	const allFlashcards = useMemo(() => {
+		const flashcards = flashcardInfo?.exists ? flashcardInfo.flashcards : [];
 		if (!isStreamingForFile || streaming.completedCards.length === 0)
 			return flashcards;
 		const existingIds = new Set(flashcards.map((c) => c.id));
@@ -54,7 +53,7 @@ export function PanelContent() {
 		);
 		if (newCards.length === 0) return flashcards;
 		return [...flashcards, ...newCards];
-	}, [flashcards, isStreamingForFile, streaming.completedCards]);
+	}, [flashcardInfo, isStreamingForFile, streaming.completedCards]);
 
 	const items = useMemo(
 		() => groupCards(allFlashcards, fsrsMap),
@@ -62,13 +61,13 @@ export function PanelContent() {
 	);
 
 	const [debouncedSearch, setDebouncedSearch] = useState(searchQuery);
-	const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+	const debounceRef = useRef<number>();
 	useEffect(() => {
-		debounceRef.current = setTimeout(
+		debounceRef.current = window.setTimeout(
 			() => setDebouncedSearch(searchQuery),
 			150,
 		);
-		return () => clearTimeout(debounceRef.current);
+		return () => window.clearTimeout(debounceRef.current);
 	}, [searchQuery]);
 
 	const filteredItems = useMemo(() => {
@@ -89,8 +88,8 @@ export function PanelContent() {
 
 	useEffect(() => {
 		if (!streaming.isGenerating && recentCardIds.size > 0) {
-			const timer = setTimeout(() => clearRecentCards(), 1000);
-			return () => clearTimeout(timer);
+			const timer = window.setTimeout(() => clearRecentCards(), 1000);
+			return () => window.clearTimeout(timer);
 		}
 		return undefined;
 	}, [streaming.isGenerating, recentCardIds.size]);

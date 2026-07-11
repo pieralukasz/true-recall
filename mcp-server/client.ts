@@ -76,7 +76,7 @@ export class TrueRecallClient {
 			return true;
 		} catch (error) {
 			console.error(
-				`[TrueRecallClient] Health check failed: ${error instanceof Error ? error.message : error}`,
+				`[TrueRecallClient] Health check failed: ${error instanceof Error ? error.message : String(error)}`,
 			);
 			return false;
 		}

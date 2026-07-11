@@ -40,7 +40,7 @@ function registerCleanup(el: HTMLElement, unmount: () => void): void {
 			observer.disconnect();
 		}
 	});
-	observer.observe(el.parentElement ?? document.body, {
+	observer.observe(el.parentElement ?? activeDocument.body, {
 		childList: true,
 		subtree: true,
 	});

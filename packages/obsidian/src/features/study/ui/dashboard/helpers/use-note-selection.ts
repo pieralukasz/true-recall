@@ -28,8 +28,8 @@ export function useNoteSelection({
 		const handler = (e: KeyboardEvent) => {
 			if (e.key === "Escape") exitSelection();
 		};
-		document.addEventListener("keydown", handler);
-		return () => document.removeEventListener("keydown", handler);
+		activeDocument.addEventListener("keydown", handler);
+		return () => activeDocument.removeEventListener("keydown", handler);
 	}, [selectionMode.value, exitSelection]);
 
 	const toggleSelect = useCallback(

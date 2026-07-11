@@ -65,7 +65,14 @@ export function LoadBalanceSection({
 	const forecastData = useMemo(() => {
 		const helper = plugin.fsrsHelper;
 		if (!helper) return null;
+		// forecastVersion, loadBalanceTarget, and loadBalanceMaxDeviation are read
+		// here only to force recomputation — helper.getWorkloadForecast() etc.
+		// read live settings internally, so nothing here references them directly.
+		// Without this, the forecast would go stale after editing the target or
+		// deviation sliders below (they only call `save`, not setForecastVersion).
 		void forecastVersion;
+		void settings.loadBalanceTarget;
+		void settings.loadBalanceMaxDeviation;
 		return {
 			forecast: helper.getWorkloadForecast(FORECAST_DAYS),
 			summary: helper.getWorkloadForecastSummary(FORECAST_DAYS),

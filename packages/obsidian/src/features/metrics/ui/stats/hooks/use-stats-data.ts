@@ -94,7 +94,7 @@ export function useStatsData(
 		statsCalc.setFilter(f ?? EMPTY_FILTER);
 
 		// Yield to renderer, then compute everything in one batch
-		const timeoutId = setTimeout(() => {
+		const timeoutId = window.setTimeout(() => {
 			if (cancelled) return;
 
 			try {
@@ -153,7 +153,7 @@ export function useStatsData(
 
 		return () => {
 			cancelled = true;
-			clearTimeout(timeoutId);
+			window.clearTimeout(timeoutId);
 		};
 	}, [
 		cardSnapshot,
@@ -162,6 +162,9 @@ export function useStatsData(
 		filter?.value,
 		statsCalc,
 		plugin.fsrsHelper,
+		data,
+		error,
+		loading,
 	]);
 
 	return {

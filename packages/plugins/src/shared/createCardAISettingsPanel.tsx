@@ -1,11 +1,7 @@
 import type { ComponentType } from "preact";
 import { useCallback, useState } from "preact/hooks";
 
-import type {
-	CardAIPreset,
-	CardAIUserSettings,
-	TrueRecallSettings,
-} from "@true-recall/core";
+import type { CardAIPreset, CardAIUserSettings } from "@true-recall/core";
 
 import {
 	ActionButton,
@@ -60,8 +56,7 @@ export function createCardAISettingsPanel(
 			save,
 			{
 				normalize: normalizeBucket,
-				buildPatch: (next) =>
-					({ [config.bucketKey]: next }) as Partial<TrueRecallSettings>,
+				buildPatch: (next) => ({ [config.bucketKey]: next }),
 			},
 		);
 

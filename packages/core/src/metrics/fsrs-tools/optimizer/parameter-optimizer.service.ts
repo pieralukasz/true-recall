@@ -2,7 +2,7 @@
  * FSRS Parameter Optimizer Service
  */
 
-import { forgetting_curve, type Rating, type State } from "ts-fsrs";
+import { forgetting_curve, Rating, type State } from "ts-fsrs";
 
 import { DEFAULT_FSRS_WEIGHTS } from "../../../constants";
 import type {
@@ -138,9 +138,9 @@ export class ParameterOptimizerService {
 						elapsedDays: curr.elapsedDays,
 						stability: prev.stability,
 						difficulty: prev.difficulty,
-						state: prev.state as unknown as State,
-						rating: curr.rating as unknown as Rating,
-						wasRecalled: (curr.rating as number) >= 3,
+						state: prev.state,
+						rating: curr.rating,
+						wasRecalled: curr.rating >= Rating.Good,
 					});
 				}
 			}

@@ -84,7 +84,7 @@ export function ProjectsTab({
 	useEffect(() => {
 		if (!searchQuery) return;
 		expandedPaths.value = collectMatchingPaths(projects, searchQuery);
-	}, [searchQuery, projects]);
+	}, [searchQuery, projects, expandedPaths]);
 
 	const flatItems = useMemo(
 		() => flattenProjectTree(projects, expandedPaths.value, searchQuery),
@@ -187,7 +187,9 @@ export function ProjectsTab({
 								plugin={plugin}
 								onPresetClick={onPresetClick}
 								onToggleExpand={toggleExpand}
-								onArchive={handleArchive}
+								onArchive={(path, archived) =>
+									void handleArchive(path, archived)
+								}
 								onRename={handleRename}
 								onDissolve={handleDissolve}
 								onMoveChildren={handleMoveChildren}
@@ -225,7 +227,9 @@ export function ProjectsTab({
 								plugin={plugin}
 								onStudyNote={onStudyNote}
 								onPresetClick={onPresetClick}
-								onArchive={handleArchive}
+								onArchive={(path, archived) =>
+									void handleArchive(path, archived)
+								}
 								onRename={handleRename}
 								onCreateProject={handleConvertToProject}
 								onRemoveProjectStatus={handleRemoveProjectStatus}

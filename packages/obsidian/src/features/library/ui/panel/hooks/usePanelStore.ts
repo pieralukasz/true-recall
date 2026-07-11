@@ -41,7 +41,7 @@ const DEFAULT_STATE: PanelState = {
 	currentFile: null,
 	flashcardInfo: null,
 	status: "idle" as ProcessingStatus,
-	viewMode: "list" as ViewMode,
+	viewMode: "list",
 	uncollectedCount: 0,
 	isFollowingReview: false,
 	isAddCardExpanded: false,

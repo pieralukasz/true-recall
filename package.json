@@ -42,6 +42,7 @@
 		"esbuild": "^0.28.0",
 		"eslint": "^9",
 		"eslint-plugin-obsidianmd": "^0.3.0",
+		"eslint-plugin-react-hooks": "^7.1.1",
 		"excalirender": "github:JonRC/excalirender",
 		"knip": "^6.15.0",
 		"postcss": "^8.5.15",

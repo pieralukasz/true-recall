@@ -41,7 +41,7 @@ export function NormalHeader({
 		const sourceUid = flashcardInfo?.sourceUid;
 		if (!sourceUid) return false;
 		return plugin.flashcardManager.hasNoteReview(sourceUid);
-	}, [flashcardInfo?.sourceUid, flashcardInfo?.cardCount, plugin]);
+	}, [flashcardInfo?.sourceUid, plugin]);
 
 	const handleMoreMenu = useCallback(
 		(e: MouseEvent) => {
@@ -200,7 +200,7 @@ export function NormalHeader({
 					<IconButton
 						icon="plus"
 						ariaLabel="Add flashcard"
-						onClick={cardActions.handleAddFlashcard}
+						onClick={() => void cardActions.handleAddFlashcard()}
 						size="small"
 					/>
 

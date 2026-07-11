@@ -21,11 +21,11 @@ function NamePromptBody({
 	const inputRef = useRef<HTMLInputElement>(null);
 
 	useEffect(() => {
-		const id = setTimeout(() => {
+		const id = window.setTimeout(() => {
 			inputRef.current?.focus();
 			inputRef.current?.select();
 		}, 50);
-		return () => clearTimeout(id);
+		return () => window.clearTimeout(id);
 	}, []);
 
 	const trimmed = name.trim();

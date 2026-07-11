@@ -41,6 +41,11 @@ export interface ImageFieldConfig {
 	style?: string;
 }
 
+/** Minimal shape of an OpenAI-style image generation API response. */
+interface ImageGenerationResponse {
+	data?: Array<{ url?: string }>;
+}
+
 export class ImagePostProcessor {
 	constructor(
 		private app: App,
@@ -151,7 +156,7 @@ export class ImagePostProcessor {
 			throw new Error(`Image API returned ${response.status}`);
 		}
 
-		const data = response.json;
+		const data = response.json as ImageGenerationResponse | null | undefined;
 		const imageUrl = data?.data?.[0]?.url;
 		if (!imageUrl) throw new Error("No image URL in response");
 		if (!isAllowedImageUrl(imageUrl)) {

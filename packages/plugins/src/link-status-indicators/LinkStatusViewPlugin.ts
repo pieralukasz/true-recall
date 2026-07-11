@@ -19,7 +19,6 @@ import {
 	createLinkStatusElement,
 	createLinkTextCountElement,
 	infoEqual,
-	type LinkStatusOptions,
 } from "./LinkStatusWidget";
 
 type VariantType = "link" | "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
@@ -41,8 +40,7 @@ class LinkStatusWidget extends WidgetType {
 			onPlay: this.onPlay,
 			variant: this.variant,
 			sourceUid: this.sourceUid,
-			getTooltipStats: this
-				.getTooltipStats as LinkStatusOptions["getTooltipStats"],
+			getTooltipStats: this.getTooltipStats,
 		});
 	}
 
@@ -72,8 +70,7 @@ class LinkTextCountWidget extends WidgetType {
 			onPlay: this.onPlay,
 			variant: this.variant,
 			sourceUid: this.sourceUid,
-			getTooltipStats: this
-				.getTooltipStats as LinkStatusOptions["getTooltipStats"],
+			getTooltipStats: this.getTooltipStats,
 		});
 	}
 

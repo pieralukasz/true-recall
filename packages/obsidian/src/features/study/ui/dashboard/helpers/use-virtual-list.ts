@@ -57,7 +57,14 @@ export function useExternalVirtualList<T>({
 			result.push({ item, index: i, offsetTop: i * rowHeight });
 		}
 		return result;
-	}, [items, scrollTop.value, totalHeight, rowHeight]);
+	}, [
+		items,
+		scrollTop.value,
+		totalHeight,
+		rowHeight,
+		contentOffsetRef,
+		scrollContainerRef,
+	]);
 
 	return { totalHeight, virtualItems };
 }

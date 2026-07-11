@@ -3,9 +3,13 @@ import { State } from "ts-fsrs";
 import type { FSRSService } from "@true-recall/core/services/fsrs/fsrs.service";
 import type { HierarchyService } from "@true-recall/core/services/notes/hierarchy.service";
 import type { FSRSCardData } from "@true-recall/core/types/fsrs/card.types";
-import type { CardStore } from "@true-recall/core/types/fsrs/store.types";
 
 import { FSRS_COLORS } from "@true-recall/obsidian/helpers/fsrs-colors";
+
+/** The only CardStore capability computeProjectStats actually needs. */
+export interface ProjectCardStore {
+	getCardsBySourceUid?(sourceUid: string): FSRSCardData[];
+}
 
 export interface ProjectStats {
 	name: string;
@@ -32,7 +36,7 @@ export function computeProjectStats(
 	projectName: string,
 	childCount: number,
 	hierarchyService: HierarchyService,
-	cardStore: CardStore,
+	cardStore: ProjectCardStore,
 	fsrsService: FSRSService,
 	context?: ProjectStatsContext,
 ): ProjectStats {

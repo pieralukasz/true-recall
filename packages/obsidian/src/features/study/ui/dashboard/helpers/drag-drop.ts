@@ -67,7 +67,7 @@ export function initDragTransfer(
 ): void {
 	e.dataTransfer?.setData(DRAG_MIME, JSON.stringify(item));
 	if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
-	requestAnimationFrame(() => {
+	window.requestAnimationFrame(() => {
 		dragState.value = { item, dropTargetPath: null, isValid: false };
 	});
 }

@@ -54,7 +54,7 @@ export function TypeInCMEditor({
 		editorRef.current = editor;
 
 		// Auto-focus after the browser paints so the user can type immediately
-		const rafId = requestAnimationFrame(() => editor.cm.focus());
+		const rafId = window.requestAnimationFrame(() => editor.cm.focus());
 
 		return () => {
 			cancelAnimationFrame(rafId);

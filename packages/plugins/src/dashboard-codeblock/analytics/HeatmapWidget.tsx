@@ -236,9 +236,7 @@ export function HeatmapWidget({ source }: { source: string }) {
 							rx={2}
 							fill={LEVEL_COLORS[cell.level]}
 							opacity={LEVEL_OPACITIES[cell.level]}
-							onMouseEnter={(e) =>
-								handleCellHover(cell, e as unknown as MouseEvent)
-							}
+							onMouseEnter={(e) => handleCellHover(cell, e)}
 							onMouseLeave={handleCellLeave}
 							style={{ cursor: "pointer" }}
 						/>

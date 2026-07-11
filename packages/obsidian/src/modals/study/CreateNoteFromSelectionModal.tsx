@@ -49,11 +49,11 @@ function Body({
 	const nameRef = useRef<HTMLInputElement>(null);
 
 	useEffect(() => {
-		const id = setTimeout(() => {
+		const id = window.setTimeout(() => {
 			nameRef.current?.focus();
 			nameRef.current?.select();
 		}, 50);
-		return () => clearTimeout(id);
+		return () => window.clearTimeout(id);
 	}, []);
 
 	const filteredFolders = useMemo(() => {

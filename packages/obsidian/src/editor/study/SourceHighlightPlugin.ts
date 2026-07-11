@@ -48,7 +48,7 @@ export function createSourceHighlightExtension(
 	const plugin = ViewPlugin.fromClass(
 		class {
 			private lastRequestId = -1;
-			private clearTimer: ReturnType<typeof setTimeout> | null = null;
+			private clearTimer: number | null = null;
 			private dispose: (() => void) | null = null;
 
 			constructor(private view: EditorView) {
@@ -64,7 +64,7 @@ export function createSourceHighlightExtension(
 
 			private clearHighlightNow(): void {
 				if (this.clearTimer) {
-					clearTimeout(this.clearTimer);
+					window.clearTimeout(this.clearTimer);
 					this.clearTimer = null;
 				}
 				this.view.dispatch({
@@ -84,7 +84,7 @@ export function createSourceHighlightExtension(
 				if (idx === -1) return;
 
 				if (this.clearTimer) {
-					clearTimeout(this.clearTimer);
+					window.clearTimeout(this.clearTimer);
 					this.clearTimer = null;
 				}
 
@@ -113,7 +113,7 @@ export function createSourceHighlightExtension(
 
 				// Auto-clear only for jump mode
 				if (req.mode === "jump") {
-					this.clearTimer = setTimeout(() => {
+					this.clearTimer = window.setTimeout(() => {
 						this.view.dispatch({
 							effects: clearHighlight.of(undefined),
 						});
@@ -126,7 +126,7 @@ export function createSourceHighlightExtension(
 
 			destroy(): void {
 				this.dispose?.();
-				if (this.clearTimer) clearTimeout(this.clearTimer);
+				if (this.clearTimer) window.clearTimeout(this.clearTimer);
 			}
 		},
 	);

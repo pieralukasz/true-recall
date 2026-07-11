@@ -74,7 +74,7 @@ class MediaFilePicker extends SuggestModal<TFile> {
 	}
 
 	onClose(): void {
-		setTimeout(() => this.resolve?.(null), 0);
+		window.setTimeout(() => this.resolve?.(null), 0);
 	}
 
 	pick(): Promise<TFile | null> {
@@ -101,8 +101,8 @@ export function FormattingToolbar({
 				setShowColors(false);
 			}
 		};
-		document.addEventListener("mousedown", handleClick);
-		return () => document.removeEventListener("mousedown", handleClick);
+		activeDocument.addEventListener("mousedown", handleClick);
+		return () => activeDocument.removeEventListener("mousedown", handleClick);
 	}, [showColors]);
 
 	const handleMedia = useCallback(async () => {
@@ -140,7 +140,7 @@ export function FormattingToolbar({
 		if (!text) return;
 		void navigator.clipboard.writeText(text).then(() => {
 			setCopied(true);
-			setTimeout(() => setCopied(false), 1500);
+			window.setTimeout(() => setCopied(false), 1500);
 		});
 	}, [getEditorView]);
 

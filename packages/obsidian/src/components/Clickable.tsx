@@ -1,16 +1,16 @@
-import type { JSX } from "preact";
+import type { HTMLAttributes } from "preact";
 import { forwardRef } from "preact/compat";
 
 import { cn } from "@true-recall/obsidian/utils/cn";
 
 interface ClickableProps
 	extends Omit<
-		JSX.HTMLAttributes<HTMLDivElement>,
+		HTMLAttributes<HTMLDivElement>,
 		"role" | "tabIndex" | "onClick"
 	> {
 	onClick: (e: MouseEvent | KeyboardEvent) => void;
 	disabled?: boolean;
-	role?: JSX.HTMLAttributes<HTMLDivElement>["role"];
+	role?: HTMLAttributes<HTMLDivElement>["role"];
 	stopPropagation?: boolean;
 	preventDefault?: boolean;
 }

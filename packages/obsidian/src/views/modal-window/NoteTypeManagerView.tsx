@@ -52,7 +52,7 @@ export class NoteTypeManagerView extends ItemView {
 	}
 
 	getDisplayText(): string {
-		return "Manage Note Types";
+		return "Manage note types";
 	}
 
 	getIcon(): string {

@@ -82,7 +82,7 @@ export function ImportStudioApp({
 	);
 
 	useEffect(() => {
-		const timer = setTimeout(() => {
+		const timer = window.setTimeout(() => {
 			const raw = parseBulkText(
 				text,
 				noteType ? { noteType, getNoteType } : { getNoteType },
@@ -102,7 +102,7 @@ export function ImportStudioApp({
 				duplicateCount: raw.cards.length - unique.length,
 			});
 		}, 150);
-		return () => clearTimeout(timer);
+		return () => window.clearTimeout(timer);
 	}, [text, noteType, getNoteType]);
 
 	// Handlers
@@ -170,7 +170,13 @@ export function ImportStudioApp({
 		} finally {
 			setSaving(false);
 		}
-	}, [parseResult.cards, plugin.flashcardManager, resolveSourceUid, saving]);
+	}, [
+		parseResult.cards,
+		plugin.flashcardManager,
+		resolveSourceUid,
+		saving,
+		selectedSourceNote,
+	]);
 
 	const handleEditorReady = useCallback(
 		(editor: EmbeddableEditorInstance | null) => {

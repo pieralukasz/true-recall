@@ -198,6 +198,11 @@ export class CardActions {
 
 	/** @deprecated Use softDelete() instead for sync compatibility */
 	delete(cardId: string): void {
+		// Preserves this method's own documented (hard-delete) behavior for
+		// any remaining caller of the deprecated API — not a candidate for
+		// migrating to softDelete() itself, which would silently change what
+		// this call does under its old name.
+		// eslint-disable-next-line @typescript-eslint/no-deprecated
 		this.writes.delete(cardId);
 	}
 
@@ -258,11 +263,15 @@ export class CardActions {
 
 	/** @deprecated Use bulkSoftDelete() instead for sync compatibility */
 	bulkDelete(cardIds: string[]): number {
+		// Same rationale as delete() above — preserves this method's own
+		// documented behavior under its deprecated name.
+		// eslint-disable-next-line @typescript-eslint/no-deprecated
 		return this.bulk.bulkDelete(cardIds);
 	}
 
 	/** @deprecated Use bulkForget() instead — it also clears review history */
 	bulkReset(cardIds: string[]): number {
+		// eslint-disable-next-line @typescript-eslint/no-deprecated -- same rationale as delete() above
 		return this.bulk.bulkReset(cardIds);
 	}
 

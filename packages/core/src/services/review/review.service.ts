@@ -187,7 +187,7 @@ export class ReviewService {
 			if (persisted) {
 				flashcardManager.getEventBus()?.emit("card:reviewed", {
 					cardId: card.id,
-					rating: rating as number,
+					rating: rating,
 					newState: updatedCard.fsrs.state,
 				});
 			}

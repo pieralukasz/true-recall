@@ -166,7 +166,9 @@ export class StatsCalculatorService {
 		if (cached) return cached;
 
 		if (this.dailyStatsCache.size >= 20) {
-			const oldest = this.dailyStatsCache.keys().next().value;
+			const oldest = this.dailyStatsCache.keys().next().value as
+				| string
+				| undefined;
 			if (oldest !== undefined) this.dailyStatsCache.delete(oldest);
 		}
 
@@ -206,7 +208,9 @@ export class StatsCalculatorService {
 		if (cached) return cached;
 
 		if (this.dailyStatsRangeCache.size >= 20) {
-			const oldest = this.dailyStatsRangeCache.keys().next().value;
+			const oldest = this.dailyStatsRangeCache.keys().next().value as
+				| string
+				| undefined;
 			if (oldest !== undefined) this.dailyStatsRangeCache.delete(oldest);
 		}
 

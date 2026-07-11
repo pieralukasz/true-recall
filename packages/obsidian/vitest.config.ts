@@ -29,6 +29,7 @@ export default defineConfig({
 		root: resolve(__dirname),
 		globals: true,
 		environment: "node",
+		setupFiles: ["./tests/setup.ts"],
 		include: ["tests/**/*.test.ts"],
 		coverage: {
 			provider: "v8",

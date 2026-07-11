@@ -25,7 +25,7 @@ export function parseBlockResponse(
 	const end = json.lastIndexOf("]");
 	if (start === -1 || end <= start) return [];
 
-	let parsed: unknown[];
+	let parsed: unknown;
 	try {
 		parsed = JSON.parse(json.slice(start, end + 1));
 	} catch {
@@ -157,7 +157,7 @@ export class IncrementalFlashcardParser {
 
 	private tryParseObject(text: string): ParsedBlock | null {
 		try {
-			const obj = JSON.parse(text);
+			const obj: unknown = JSON.parse(text);
 			return parseCardObject(obj, this.getNoteType);
 		} catch {
 			return null;

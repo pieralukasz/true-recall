@@ -83,7 +83,7 @@ export function useChart<T extends keyof ChartTypeRegistry>(
 			}
 		});
 
-		observer.observe(document.body, {
+		observer.observe(activeDocument.body, {
 			attributes: true,
 			attributeFilter: ["class"],
 		});

@@ -117,7 +117,7 @@ export class ProjectManagementService {
 
 		for (const path of [...allPaths].reverse()) {
 			const file = this.app.vault.getAbstractFileByPath(path);
-			if (file) await this.app.vault.trash(file, true);
+			if (file) await this.app.fileManager.trashFile(file);
 		}
 
 		// Trash empty ancestor folders
@@ -245,11 +245,7 @@ export class ProjectManagementService {
 		const file = this.app.vault.getAbstractFileByPath(filePath);
 		if (!file || !(file instanceof TFile)) return;
 		const cache = this.app.metadataCache.getFileCache(file);
-		this.frontmatterIndex.indexFile(
-			filePath,
-			cache?.frontmatter as Record<string, unknown> | undefined,
-			silent,
-		);
+		this.frontmatterIndex.indexFile(filePath, cache?.frontmatter, silent);
 	}
 
 	private invalidate(): void {
@@ -262,7 +258,7 @@ export class ProjectManagementService {
 		while (ancestorPath && ancestorPath !== projectPath) {
 			const folder = this.app.vault.getAbstractFileByPath(ancestorPath);
 			if (folder instanceof TFolder && folder.children.length === 0) {
-				void this.app.vault.trash(folder, true);
+				void this.app.fileManager.trashFile(folder);
 				const next = ancestorPath.replace(/\/[^/]+$/, "");
 				if (next === ancestorPath) break;
 				ancestorPath = next;

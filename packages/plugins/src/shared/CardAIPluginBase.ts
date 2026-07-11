@@ -108,7 +108,7 @@ export abstract class CardAIPluginBase<TDetail extends CardAIBaseEventDetail> {
 		menu.showAtPosition({ x: rect.left, y: rect.top });
 		const menuEl = (menu as unknown as { dom?: HTMLElement }).dom;
 		if (menuEl) {
-			requestAnimationFrame(() => {
+			window.requestAnimationFrame(() => {
 				menuEl.style.top = `${Math.max(8, rect.top - menuEl.offsetHeight - 6)}px`;
 			});
 		}
@@ -120,7 +120,7 @@ export abstract class CardAIPluginBase<TDetail extends CardAIBaseEventDetail> {
 			config = resolveAIClientConfig(this.ctx.settings, "card-polish");
 		} catch (err) {
 			console.error("[CardAI] resolveAIClientConfig failed", err);
-			new Notice("AI: configure the selected provider and model in Settings.");
+			new Notice("AI: configure the selected provider and model in settings.");
 			return null;
 		}
 		const httpClient = new ObsidianHttpClient();
@@ -152,8 +152,8 @@ export abstract class CardAIPluginBase<TDetail extends CardAIBaseEventDetail> {
 		const esc = (e: KeyboardEvent) => {
 			if (e.key === "Escape") controller.abort();
 		};
-		document.addEventListener("keydown", esc, true);
-		const notice = new Notice("Generating… (Esc to cancel)", 0);
+		activeDocument.addEventListener("keydown", esc, true);
+		const notice = new Notice("Generating… (esc to cancel)", 0);
 
 		try {
 			const collector = createObsidianContextCollector(this.ctx.obsidianPlugin);
@@ -171,7 +171,7 @@ export abstract class CardAIPluginBase<TDetail extends CardAIBaseEventDetail> {
 			});
 		} finally {
 			notice.hide();
-			document.removeEventListener("keydown", esc, true);
+			activeDocument.removeEventListener("keydown", esc, true);
 			if (this.abortController === controller) this.abortController = null;
 		}
 	}

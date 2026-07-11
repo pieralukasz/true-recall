@@ -29,7 +29,12 @@ export function useSettings() {
 		[plugin],
 	);
 
-	const settings = useMemo(() => ({ ...plugin.settings }), [plugin, version]);
+	const settings = useMemo(() => {
+		// version is read only to force recompute when settings mutate in place
+		// (see useSettingsVersion / usePreset's identical `void version` pattern)
+		void version;
+		return { ...plugin.settings };
+	}, [plugin, version]);
 
 	return { settings, save, plugin } as const;
 }

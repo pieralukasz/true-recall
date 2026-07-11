@@ -156,7 +156,7 @@ function CMField({
 	// so hasContent / Save button react without waiting for blur.
 	// Added via StateEffect.appendConfig (after construction) because
 	// EmbeddableEditor.onChange has a timing bug in buildLocalExtensions.
-	const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+	const debounceRef = useRef<number>();
 	const onFieldChangeRef = useRef(onFieldChange);
 	onFieldChangeRef.current = onFieldChange;
 
@@ -200,8 +200,8 @@ function CMField({
 			effects: StateEffect.appendConfig.of(
 				EditorView.updateListener.of((update) => {
 					if (update.docChanged) {
-						clearTimeout(debounceRef.current);
-						debounceRef.current = setTimeout(() => {
+						window.clearTimeout(debounceRef.current);
+						debounceRef.current = window.setTimeout(() => {
 							onFieldChangeRef.current(fieldName, update.state.doc.toString());
 						}, 150);
 					}
@@ -222,7 +222,7 @@ function CMField({
 		}
 
 		return () => {
-			clearTimeout(debounceRef.current);
+			window.clearTimeout(debounceRef.current);
 			registerEditor?.(fieldName, null);
 			editorRef.current = null;
 			editor.destroy();

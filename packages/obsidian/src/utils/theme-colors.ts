@@ -6,5 +6,5 @@
  */
 
 export function getThemeColor(cssVar: string): string {
-	return getComputedStyle(document.body).getPropertyValue(cssVar).trim();
+	return getComputedStyle(activeDocument.body).getPropertyValue(cssVar).trim();
 }

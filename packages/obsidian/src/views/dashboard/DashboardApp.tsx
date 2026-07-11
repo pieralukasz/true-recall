@@ -59,7 +59,7 @@ export function DashboardApp() {
 	const showArchived = useSignal(false);
 
 	// Signal reads — subscribe component to reactive data changes
-	const allCards = [...allMeta.value.values()];
+	const allCards = useMemo(() => [...allMeta.value.values()], [allMeta.value]);
 	const _settings = settingsSignal.value;
 	const archived = archivedSourceUidsSignal.value;
 
@@ -162,7 +162,6 @@ export function DashboardApp() {
 		};
 	}, [
 		allCards,
-		_settings,
 		archived,
 		cachedActiveCards,
 		statsCalculator,
@@ -177,7 +176,7 @@ export function DashboardApp() {
 			if (!note.path) return true;
 			return !plugin.hierarchyService.isNoteArchived(note.path);
 		});
-	}, [data.notes, plugin, showArchived.value, allCards]);
+	}, [data.notes, plugin, showArchived.value]);
 
 	const projectData = useMemo(() => {
 		return aggregateProjectData({
@@ -196,7 +195,14 @@ export function DashboardApp() {
 				metadataCache: plugin.app.metadataCache,
 			},
 		});
-	}, [plugin, visibleNotes, showArchived.value]);
+	}, [
+		plugin,
+		visibleNotes,
+		showArchived.value,
+		allCards,
+		archived,
+		cachedActiveCards,
+	]);
 
 	const enrichedNotes = useMemo(() => {
 		return visibleNotes.map((note) => {
@@ -217,7 +223,7 @@ export function DashboardApp() {
 				archived,
 			};
 		});
-	}, [visibleNotes, projectData.noteProjectMap, plugin, showArchived.value]);
+	}, [visibleNotes, projectData.noteProjectMap, plugin]);
 
 	const filteredCounts = useMemo(() => {
 		const orphaned = data.orphanedCards.total;
@@ -270,9 +276,12 @@ export function DashboardApp() {
 	const scrollTop = useSignal(0);
 	useDragAutoScroll(scrollContainerRef);
 
-	const onScroll = useCallback((e: Event) => {
-		scrollTop.value = (e.currentTarget as HTMLDivElement).scrollTop;
-	}, []);
+	const onScroll = useCallback(
+		(e: Event) => {
+			scrollTop.value = (e.currentTarget as HTMLDivElement).scrollTop;
+		},
+		[scrollTop],
+	);
 
 	const handleCreateProject = useCallback(async () => {
 		const modal = new NamePromptModal(plugin.app, "New project");
@@ -297,7 +306,7 @@ export function DashboardApp() {
 		if (activeTab.value === "orphaned" && data.orphanedCards.total === 0) {
 			activeTab.value = "projects";
 		}
-	}, [data.orphanedCards.total]);
+	}, [data.orphanedCards.total, activeTab]);
 
 	return (
 		<div class="ep-dashboard-container ep:flex ep:flex-col ep:h-full">
@@ -343,7 +352,7 @@ export function DashboardApp() {
 						onToggleArchived={() => {
 							showArchived.value = !showArchived.value;
 						}}
-						onCreateProject={handleCreateProject}
+						onCreateProject={() => void handleCreateProject()}
 					/>
 
 					<div class="ep:flex ep:flex-col ep:flex-1">

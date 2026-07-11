@@ -47,9 +47,7 @@ export function LMStudioScopedModelField({
 					</InfoBlock>
 					<TextInput
 						value={value}
-						onChange={(v) =>
-							void save({ [modelKey]: v } as Partial<TrueRecallSettings>)
-						}
+						onChange={(v) => void save({ [modelKey]: v })}
 						placeholder="e.g. llama-3.2-3b-instruct"
 						class="ep:w-75 ep:mt-2"
 					/>
@@ -59,9 +57,7 @@ export function LMStudioScopedModelField({
 				<>
 					<SelectInput
 						value={value}
-						onChange={(v) =>
-							void save({ [modelKey]: v } as Partial<TrueRecallSettings>)
-						}
+						onChange={(v) => void save({ [modelKey]: v })}
 						options={lmState.models.map((id) => ({ value: id, label: id }))}
 					/>
 					<Clickable
@@ -79,9 +75,7 @@ export function LMStudioScopedModelField({
 					</InfoBlock>
 					<TextInput
 						value={value}
-						onChange={(v) =>
-							void save({ [modelKey]: v } as Partial<TrueRecallSettings>)
-						}
+						onChange={(v) => void save({ [modelKey]: v })}
 						placeholder="e.g. llama-3.2-3b-instruct"
 						class="ep:w-75 ep:mt-2"
 					/>

@@ -27,7 +27,7 @@ abstract class BaseReviewActionCommand implements Command {
 	readonly deferred = true;
 
 	protected writeExecuted = false;
-	protected pendingTimeoutId: ReturnType<typeof setTimeout> | null = null;
+	protected pendingTimeoutId: number | null = null;
 	protected params: ReviewActionParams;
 
 	private capturedSiblings: CapturedSibling[] = [];
@@ -66,7 +66,7 @@ abstract class BaseReviewActionCommand implements Command {
 
 		review.removeCardsByIds(this.params.siblingIds);
 
-		this.pendingTimeoutId = setTimeout(() => {
+		this.pendingTimeoutId = window.setTimeout(() => {
 			this.writeExecuted = true;
 			this.pendingTimeoutId = null;
 			try {
@@ -87,7 +87,7 @@ abstract class BaseReviewActionCommand implements Command {
 
 	cancelPendingWrite(): boolean {
 		if (!this.writeExecuted && this.pendingTimeoutId !== null) {
-			clearTimeout(this.pendingTimeoutId);
+			window.clearTimeout(this.pendingTimeoutId);
 			this.pendingTimeoutId = null;
 			return true;
 		}

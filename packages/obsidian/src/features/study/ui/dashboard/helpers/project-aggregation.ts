@@ -13,7 +13,6 @@ import type {
 	CardSchedulingMeta,
 	TrueRecallSettings,
 } from "@true-recall/core/types";
-import type { CardStore } from "@true-recall/core/types/fsrs/store.types";
 
 import {
 	type ActionableSessionSnapshot,
@@ -27,6 +26,7 @@ import type {
 } from "../types";
 import {
 	computeProjectStats,
+	type ProjectCardStore,
 	type ProjectStats,
 } from "@true-recall/plugins/dashboard-codeblock/project-stats";
 
@@ -37,7 +37,7 @@ interface ProjectAggregationDeps {
 	showArchived?: boolean;
 	plugin: {
 		hierarchyService: HierarchyService;
-		cardStore: CardStore;
+		cardStore: ProjectCardStore;
 		fsrsService: FSRSService;
 		presetService: PresetService;
 		sessionPersistence: SessionPersistenceService;

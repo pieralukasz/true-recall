@@ -71,7 +71,7 @@ export function SelectionToolbar({
 	const handleCopy = useCallback(() => {
 		void navigator.clipboard.writeText(selectedText).then(() => {
 			setCopied(true);
-			setTimeout(() => setCopied(false), 1500);
+			window.setTimeout(() => setCopied(false), 1500);
 		});
 	}, [selectedText]);
 

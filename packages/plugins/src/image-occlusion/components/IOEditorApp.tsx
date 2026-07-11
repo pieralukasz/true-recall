@@ -111,9 +111,9 @@ export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
 			.filter((file) => isImageExtension(file.extension))
 			.sort((a, b) => b.stat.mtime - a.stat.mtime);
 		setVaultImages(files);
-		if (!selectedVaultPath && files[0]) {
-			setSelectedVaultPath(files[0].path);
-		}
+		setSelectedVaultPath((current) =>
+			current ? current : (files[0]?.path ?? current),
+		);
 	}, [app]);
 
 	const imageUrl = useMemo(() => {

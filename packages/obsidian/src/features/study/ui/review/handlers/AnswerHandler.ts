@@ -54,7 +54,7 @@ export class AnswerHandler {
 		if (this.pendingPreviewRafId !== null) {
 			cancelAnimationFrame(this.pendingPreviewRafId);
 		}
-		this.pendingPreviewRafId = requestAnimationFrame(() => {
+		this.pendingPreviewRafId = window.requestAnimationFrame(() => {
 			this.pendingPreviewRafId = null;
 			this.updateSchedulingPreview();
 		});

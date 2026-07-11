@@ -109,7 +109,7 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 
 	plugin.addCommand({
 		id: "add-flashcard-uid",
-		name: "Add flashcard uid to current note",
+		name: "Add flashcard UID to current note",
 		checkCallback: (checking) => {
 			const file = plugin.app.workspace.getActiveFile();
 			if (file && file.extension === "md") {

@@ -106,7 +106,7 @@ export function createLinkStatusPostProcessor(
 			});
 			heading.prepend(donutEl);
 
-			const summaryEl = document.createElement("span");
+			const summaryEl = activeDocument.createElement("span");
 			summaryEl.className =
 				"ep-heading-summary ep:inline-flex ep:items-center ep:gap-1 ep:float-right";
 			summaryEl.appendChild(

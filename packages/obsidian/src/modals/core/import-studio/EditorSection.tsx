@@ -119,7 +119,7 @@ export function EditorSection({
 						const prefix = pos > 0 && !before.endsWith("\n") ? "\n" : "";
 						const insert = prefix + BLANK_CARD_TEMPLATE;
 						onTextChange(before + insert + after);
-						requestAnimationFrame(() => {
+						window.requestAnimationFrame(() => {
 							const cursor = pos + prefix.length + CURSOR_OFFSET_AFTER_FRONT;
 							ta.setSelectionRange(cursor, cursor);
 						});

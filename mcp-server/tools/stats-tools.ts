@@ -1,5 +1,12 @@
 import { z } from "zod";
-import { custom, get, getWith, jsonResult, type ToolDef } from "./_register.js";
+import {
+	custom,
+	get,
+	getWith,
+	jsonResult,
+	requireStringParam,
+	type ToolDef,
+} from "./_register.js";
 
 export const statsTools: ToolDef[] = [
 	get(
@@ -15,7 +22,8 @@ export const statsTools: ToolDef[] = [
 			start_date: z.string().describe("Start date in YYYY-MM-DD format"),
 			end_date: z.string().describe("End date in YYYY-MM-DD format"),
 		},
-		(p) => `/stats/daily?start=${p.start_date}&end=${p.end_date}`,
+		(p) =>
+			`/stats/daily?start=${requireStringParam(p, "start_date")}&end=${requireStringParam(p, "end_date")}`,
 	),
 
 	get(
@@ -34,7 +42,7 @@ export const statsTools: ToolDef[] = [
 				.default(20)
 				.describe("Max number of problem cards to return"),
 		},
-		(p) => `/cards/problems?limit=${p.limit}`,
+		(p) => `/cards/problems?limit=${String(p.limit)}`,
 	),
 
 	get(

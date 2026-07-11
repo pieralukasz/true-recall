@@ -86,7 +86,7 @@ export class FSRSSimulatorService {
 			const gradeNum = parseInt(char, 10);
 			if (gradeNum < 1 || gradeNum > 4) continue; // Skip invalid grades
 
-			const grade = gradeNum as Grade;
+			const grade = gradeNum;
 			const result = fsrs.next(card, currentDate, grade);
 
 			card = result.card;

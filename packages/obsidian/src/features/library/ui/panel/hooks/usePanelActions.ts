@@ -1,5 +1,6 @@
 import { useCallback } from "preact/hooks";
 
+import type { StreamingFlashcardManager } from "@true-recall/core/ai/generation/streaming-generation.service";
 import type { FlashcardItem } from "@true-recall/core/types";
 import type { FSRSFlashcardItem } from "@true-recall/core/types/fsrs/card.types";
 
@@ -55,7 +56,7 @@ export function usePanelActions() {
 		);
 		const chunkedService = new ChunkedGenerationService(
 			() => plugin.settings,
-			plugin.flashcardManager as any,
+			plugin.flashcardManager as unknown as StreamingFlashcardManager,
 			new ObsidianHttpClient(),
 		);
 
@@ -164,7 +165,7 @@ export function usePanelActions() {
 		);
 		const streamingService = new StreamingGenerationService(
 			() => plugin.settings,
-			plugin.flashcardManager as any,
+			plugin.flashcardManager as unknown as StreamingFlashcardManager,
 			new HttpClient(),
 		);
 
@@ -298,12 +299,12 @@ export function usePanelActions() {
 			type: "text/csv;charset=utf-8;",
 		});
 		const url = URL.createObjectURL(blob);
-		const link = document.createElement("a");
+		const link = activeDocument.createElement("a");
 		link.href = url;
 		link.download = filename;
-		document.body.appendChild(link);
+		activeDocument.body.appendChild(link);
 		link.click();
-		document.body.removeChild(link);
+		activeDocument.body.removeChild(link);
 		URL.revokeObjectURL(url);
 
 		notify().success(
@@ -431,7 +432,7 @@ export function usePanelActions() {
 		const cmd = new ForgetCommand(cardIds);
 		await plugin.commandService?.execute(cmd);
 		notify().cardsForgotten(count);
-	}, [flashcardInfo, plugin]);
+	}, [flashcardInfo, plugin, app]);
 
 	const handleDeleteAll = useCallback(async () => {
 		const { notify } = await import(
@@ -454,7 +455,7 @@ export function usePanelActions() {
 		notify().cardsDeletedWithUndo(cmd.deletedCount, () => {
 			void plugin.commandService?.undo();
 		});
-	}, [flashcardInfo, plugin]);
+	}, [flashcardInfo, plugin, app]);
 
 	const handleDeleteNoteAndCards = useCallback(async () => {
 		const { notify } = await import(
@@ -477,7 +478,7 @@ export function usePanelActions() {
 				plugin.flashcardManager.removeFlashcardsByIdsWithDetails(cardIds);
 			}
 
-			await app.vault.trash(currentFile, true);
+			await app.fileManager.trashFile(currentFile);
 			notify().success(`Deleted note and ${count} flashcard(s)`);
 			await plugin.openDashboard();
 		} catch (error) {

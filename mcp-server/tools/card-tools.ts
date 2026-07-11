@@ -4,6 +4,7 @@ import {
 	getWith,
 	jsonResult,
 	postParams,
+	requireStringParam,
 	type ToolDef,
 } from "./_register.js";
 
@@ -31,10 +32,12 @@ export const cardTools: ToolDef[] = [
 		},
 		async (params, client) => {
 			const sp = new URLSearchParams();
-			if (params.query) sp.set("q", params.query);
-			if (params.state) sp.set("state", params.state);
-			if (params.source_uid) sp.set("source_uid", params.source_uid);
-			if (params.limit) sp.set("limit", String(params.limit));
+			if (typeof params.query === "string") sp.set("q", params.query);
+			if (typeof params.state === "string") sp.set("state", params.state);
+			if (typeof params.source_uid === "string")
+				sp.set("source_uid", params.source_uid);
+			if (typeof params.limit === "number")
+				sp.set("limit", String(params.limit));
 			const qs = sp.toString();
 			return jsonResult(await client.get(`/cards${qs ? `?${qs}` : ""}`));
 		},
@@ -46,21 +49,21 @@ export const cardTools: ToolDef[] = [
 		{
 			card_id: z.string().describe("The card's UUID"),
 		},
-		(p) => `/cards/${p.card_id}`,
+		(p) => `/cards/${requireStringParam(p, "card_id")}`,
 	),
 
 	getWith(
 		"get_card_context",
 		"Get deep context for a flashcard: the card with full FSRS data, its complete review history, the full markdown content of the source note, and all sibling cards from the same note. Use this to understand a card's topic in depth — for explaining, tutoring, or diagnosing why a card is difficult.",
 		{ card_id: z.string().describe("The card's UUID") },
-		(p) => `/cards/${p.card_id}/context`,
+		(p) => `/cards/${requireStringParam(p, "card_id")}/context`,
 	),
 
 	getWith(
 		"get_card_relations",
 		"Get all related cards for a flashcard: sibling cards from the same note, reverse card pairs, and cloze siblings (same template, different deletions). Use this to understand how a card fits within its note and find related content.",
 		{ card_id: z.string().describe("The card's UUID") },
-		(p) => `/cards/${p.card_id}/relations`,
+		(p) => `/cards/${requireStringParam(p, "card_id")}/relations`,
 	),
 
 	postParams(

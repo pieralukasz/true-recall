@@ -18,7 +18,7 @@ export class BatchCreateCommand implements Command {
 
 	async undo(ctx: CommandContext): Promise<void> {
 		for (const cardId of this.cardIds) {
-			await ctx.flashcardManager.removeFlashcardById(cardId);
+			ctx.flashcardManager.removeFlashcardById(cardId);
 		}
 	}
 }

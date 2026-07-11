@@ -202,7 +202,7 @@ export class CardActionsHandler {
 		if (result.cancelled || !result.targetNotePath) return;
 
 		try {
-			const { persisted } = await this.deps.reviewService.gradeCard(
+			const { persisted } = this.deps.reviewService.gradeCard(
 				card,
 				Rating.Good,
 				this.deps.fsrsService,

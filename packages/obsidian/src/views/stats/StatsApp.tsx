@@ -67,6 +67,7 @@ export function StatsApp() {
 
 	const presetNames = settings.fsrsPresets.map((preset) => preset.name);
 	const selectedPresets = useSignal<Set<string>>(new Set(presetNames));
+	const presetNamesKey = presetNames.join("|");
 
 	useEffect(() => {
 		const current = selectedPresets.value;
@@ -91,7 +92,8 @@ export function StatsApp() {
 		if (valid.size !== current.size) {
 			selectedPresets.value = valid;
 		}
-	}, [presetNames.join("|")]);
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- presetNames is a new array every render; presetNamesKey is the stable content-based proxy that actually gates re-runs
+	}, [presetNamesKey, selectedPresets]);
 
 	const presetSourceUidIndex = useMemo(() => {
 		const index = new Map<string, Set<string>>();
@@ -112,7 +114,7 @@ export function StatsApp() {
 		}
 
 		return index;
-	}, [plugin.presetService, allCards, settings]);
+	}, [plugin.presetService, allCards]);
 
 	// Build preset→sourceUid map and compute filter context
 	const filterContext = useComputed((): StatsFilterContext => {
@@ -195,10 +197,10 @@ export function StatsApp() {
 		let cancelled = false;
 		let rafId: number | null = null;
 		let idleId: number | null = null;
-		let timeoutId: ReturnType<typeof setTimeout> | null = null;
+		let timeoutId: number | null = null;
 
 		setRenderStage(1);
-		rafId = requestAnimationFrame(() => {
+		rafId = window.requestAnimationFrame(() => {
 			if (cancelled) return;
 			setRenderStage(2);
 
@@ -212,9 +214,9 @@ export function StatsApp() {
 			if ("requestIdleCallback" in window) {
 				idleId = window.requestIdleCallback(flushFinalStage, {
 					timeout: 250,
-				}) as unknown as number;
+				});
 			} else {
-				timeoutId = setTimeout(flushFinalStage, 0);
+				timeoutId = (window as Window).setTimeout(flushFinalStage, 0);
 			}
 		});
 
@@ -224,7 +226,7 @@ export function StatsApp() {
 			if (idleId !== null && "cancelIdleCallback" in window) {
 				window.cancelIdleCallback(idleId);
 			}
-			if (timeoutId !== null) clearTimeout(timeoutId);
+			if (timeoutId !== null) window.clearTimeout(timeoutId);
 		};
 	}, [data, timeRange.value, filterContext.value]);
 

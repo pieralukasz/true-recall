@@ -92,7 +92,7 @@ export function KnowledgeBaseSettingsPanel({
 			>
 				<ToggleInput
 					value={settings.ragAutoIndex}
-					onChange={(v) => save({ ragAutoIndex: v })}
+					onChange={(v) => void save({ ragAutoIndex: v })}
 				/>
 			</FormField>
 
@@ -102,7 +102,7 @@ export function KnowledgeBaseSettingsPanel({
 			>
 				<ToggleInput
 					value={settings.ragIndexFlashcards}
-					onChange={(v) => save({ ragIndexFlashcards: v })}
+					onChange={(v) => void save({ ragIndexFlashcards: v })}
 				/>
 			</FormField>
 
@@ -112,7 +112,7 @@ export function KnowledgeBaseSettingsPanel({
 			>
 				<FolderPicker
 					value={settings.ragIncludeFolders}
-					onChange={(v) => save({ ragIncludeFolders: v })}
+					onChange={(v) => void save({ ragIncludeFolders: v })}
 					placeholder="Search folders to include..."
 				/>
 			</FormField>
@@ -123,7 +123,7 @@ export function KnowledgeBaseSettingsPanel({
 			>
 				<FolderPicker
 					value={settings.ragExcludeFolders}
-					onChange={(v) => save({ ragExcludeFolders: v })}
+					onChange={(v) => void save({ ragExcludeFolders: v })}
 					placeholder="Search folders to exclude..."
 				/>
 			</FormField>
@@ -136,7 +136,7 @@ export function KnowledgeBaseSettingsPanel({
 					value={
 						settings.ragDailyNotesFolder ? [settings.ragDailyNotesFolder] : []
 					}
-					onChange={(v) => save({ ragDailyNotesFolder: v[0] ?? "" })}
+					onChange={(v) => void save({ ragDailyNotesFolder: v[0] ?? "" })}
 					placeholder="Select daily notes folder..."
 				/>
 			</FormField>
@@ -148,7 +148,7 @@ export function KnowledgeBaseSettingsPanel({
 				<TextAreaInput
 					value={settings.ragDailyNoteExcludeHeadings.join("\n")}
 					onChange={(v) =>
-						save({
+						void save({
 							ragDailyNoteExcludeHeadings: v
 								.split("\n")
 								.map((s) => s.trim())
@@ -167,7 +167,7 @@ export function KnowledgeBaseSettingsPanel({
 				<ActionButton
 					label={reindexing ? "Reindexing..." : "Reindex now"}
 					variant="primary"
-					onClick={handleReindex}
+					onClick={() => void handleReindex()}
 					disabled={reindexing}
 				/>
 			</FormField>

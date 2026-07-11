@@ -21,7 +21,7 @@ export function useLongPress({
 	delay = DEFAULT_DELAY,
 }: UseLongPressOptions): UseLongPressResult {
 	const ref = useRef<{
-		timer: ReturnType<typeof setTimeout> | null;
+		timer: number | null;
 		wasLongPress: boolean;
 	}>({
 		timer: null,
@@ -29,9 +29,10 @@ export function useLongPress({
 	});
 
 	useEffect(() => {
+		const node = ref.current;
 		return () => {
-			if (ref.current.timer) {
-				clearTimeout(ref.current.timer);
+			if (node.timer) {
+				window.clearTimeout(node.timer);
 			}
 		};
 	}, []);
@@ -41,7 +42,7 @@ export function useLongPress({
 			if (e.button !== 0) return;
 			const lp = ref.current;
 			lp.wasLongPress = false;
-			lp.timer = setTimeout(() => {
+			lp.timer = window.setTimeout(() => {
 				lp.wasLongPress = true;
 				lp.timer = null;
 				onLongPress();
@@ -53,7 +54,7 @@ export function useLongPress({
 	const onPointerUp = useCallback(() => {
 		const lp = ref.current;
 		if (lp.timer) {
-			clearTimeout(lp.timer);
+			window.clearTimeout(lp.timer);
 			lp.timer = null;
 		}
 	}, []);

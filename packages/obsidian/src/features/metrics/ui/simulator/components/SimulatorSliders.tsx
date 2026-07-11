@@ -17,6 +17,11 @@ export function SimulatorSliders({
 	onParameterChange,
 	version,
 }: SimulatorSlidersProps) {
+	// version isn't read directly -- it exists only so the parent's bump forces
+	// this component to re-render after undo/redo/reset; getSliderValue() is
+	// called inline during render below, so it always reads simulator live.
+	void version;
+
 	const handleValueChange = useCallback(
 		(index: number, value: number) => {
 			if (index === -1) {
@@ -29,13 +34,12 @@ export function SimulatorSliders({
 		[simulator, onParameterChange],
 	);
 
-	// Read current values, keyed off version to react to undo/redo/reset
 	const getSliderValue = useCallback(
 		(index: number): number => {
 			if (index === -1) return simulator.getDesiredRetention();
 			return simulator.getParameters()[index] ?? 0;
 		},
-		[simulator, version],
+		[simulator],
 	);
 
 	return (

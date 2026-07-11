@@ -13,8 +13,8 @@ export function BackupStatusSection() {
 	useEffect(() => {
 		if (!manager) return;
 		setStatus(manager.getStatus());
-		const id = setInterval(() => setStatus(manager.getStatus()), 10_000);
-		return () => clearInterval(id);
+		const id = window.setInterval(() => setStatus(manager.getStatus()), 10_000);
+		return () => window.clearInterval(id);
 	}, [manager]);
 
 	if (!manager || !status) return null;

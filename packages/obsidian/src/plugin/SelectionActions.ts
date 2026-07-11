@@ -1,6 +1,7 @@
-import type { TFile } from "obsidian";
+import { TFile } from "obsidian";
 
 import { hasAIKey } from "@true-recall/core/ai/config/ai-client-config";
+import type { StreamingFlashcardManager } from "@true-recall/core/ai/generation/streaming-generation.service";
 import { StreamingGenerationService } from "@true-recall/core/ai/generation/streaming-generation.service";
 import type { GenerationPreset } from "@true-recall/core/types/generation-preset.types";
 
@@ -22,7 +23,7 @@ function getStreamingService(
 	if (!streamingService) {
 		streamingService = new StreamingGenerationService(
 			() => plugin.settings,
-			plugin.flashcardManager as any,
+			plugin.flashcardManager as unknown as StreamingFlashcardManager,
 			new ObsidianHttpClient(),
 		);
 	}
@@ -34,9 +35,7 @@ function findMostRecentMarkdownFile(plugin: TrueRecallPlugin): TFile | null {
 	for (const path of recentPaths) {
 		if (!path.endsWith(".md")) continue;
 		const file = plugin.app.vault.getAbstractFileByPath(path);
-		if (file instanceof (plugin.app.vault.adapter.constructor as any)) continue;
-		// Use type narrowing via duck-typing since TFile is not importable as value
-		if (file && "basename" in file) return file as TFile;
+		if (file instanceof TFile) return file;
 	}
 	return null;
 }
