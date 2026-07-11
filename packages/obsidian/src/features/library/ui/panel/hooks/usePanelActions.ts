@@ -478,7 +478,7 @@ export function usePanelActions() {
 				plugin.flashcardManager.removeFlashcardsByIdsWithDetails(cardIds);
 			}
 
-			await app.vault.trash(currentFile, true);
+			await app.fileManager.trashFile(currentFile);
 			notify().success(`Deleted note and ${count} flashcard(s)`);
 			await plugin.openDashboard();
 		} catch (error) {

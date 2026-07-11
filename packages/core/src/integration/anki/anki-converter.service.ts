@@ -14,6 +14,7 @@ const FIELD_SEPARATOR = "\x1f";
 
 /** Normalize Anki deck name to path: `::` (legacy) and `\x1f` (v18) → `/` */
 export function normalizeDeckName(name: string): string {
+	// eslint-disable-next-line no-control-regex -- Anki v18 uses U+001F as deck hierarchy separator
 	// biome-ignore lint/suspicious/noControlCharactersInRegex: Anki v18 uses U+001F as deck hierarchy separator
 	return name.replace(/::|[\x1f]/g, "/");
 }

@@ -18,7 +18,10 @@ export type ToolDef = {
 	name: string;
 	description: string;
 	inputSchema?: Schema;
-	handle(params: Params, client: TrueRecallClient): Promise<ToolResult>;
+	// Property syntax (not method shorthand) so destructuring `handle` out of
+	// a ToolDef and calling it elsewhere isn't treated as an unbound method
+	// reference — it's a plain function value, never uses `this`.
+	handle: (params: Params, client: TrueRecallClient) => Promise<ToolResult>;
 };
 
 // ---------------------------------------------------------------------------
@@ -28,6 +31,20 @@ export type ToolDef = {
 export const jsonResult = (data: unknown): ToolResult => ({
 	content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }],
 });
+
+/**
+ * Params are validated against a tool's inputSchema by the MCP SDK before
+ * `handle`/`pathFn` runs, but that validation isn't reflected in Params'
+ * static type. Use this instead of casting when a pathFn needs a param as
+ * a string — it fails loudly rather than risking a "[object Object]" URL.
+ */
+export function requireStringParam(params: Params, key: string): string {
+	const value = params[key];
+	if (typeof value !== "string") {
+		throw new Error(`Expected param "${key}" to be a string`);
+	}
+	return value;
+}
 
 export const errorResult = (message: string): ToolResult => ({
 	content: [{ type: "text" as const, text: message }],

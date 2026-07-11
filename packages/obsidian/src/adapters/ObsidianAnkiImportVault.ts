@@ -1,4 +1,4 @@
-import { type App, normalizePath, type TFile } from "obsidian";
+import { type App, normalizePath, TFile } from "obsidian";
 
 import type { IAnkiImportVault } from "@true-recall/core/integration/anki/anki-import.service";
 
@@ -34,8 +34,8 @@ export class ObsidianAnkiImportVault implements IAnkiImportVault {
 	async readFile(path: string): Promise<string> {
 		const normalized = normalizePath(path);
 		const file = this.app.vault.getAbstractFileByPath(normalized);
-		if (!file) throw new Error(`File not found: ${path}`);
-		return await this.app.vault.read(file as TFile);
+		if (!(file instanceof TFile)) throw new Error(`File not found: ${path}`);
+		return await this.app.vault.read(file);
 	}
 
 	async appendToFile(path: string, content: string): Promise<void> {

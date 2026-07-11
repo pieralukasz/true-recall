@@ -1,3 +1,5 @@
+import { notify } from "@true-recall/obsidian/services/notification.service";
+
 import type { PluginManifest } from "../types";
 import { createLinkStatusPostProcessor } from "./LinkStatusPostProcessor";
 import { createLinkStatusViewPlugin } from "./LinkStatusViewPlugin";
@@ -40,9 +42,6 @@ export const linkStatusIndicatorsManifest: PluginManifest = {
 		const isEnabled = () =>
 			plugin.settings.pluginStates?.["link-status-indicators"] !== false &&
 			plugin.settings.showLinkStatusIndicators;
-
-		const { notify } =
-			require("@true-recall/obsidian/services/notification.service") as typeof import("@true-recall/obsidian/services/notification.service");
 
 		const onReviewNote = (file: import("obsidian").TFile) => {
 			plugin.reviewNoteFlashcards(file).catch((error: unknown) => {

@@ -1,3 +1,5 @@
+import { Rating } from "ts-fsrs";
+
 import type {
 	CardSchedulingMeta,
 	FSRSCardData,
@@ -37,7 +39,6 @@ export class ReviewAnswerCommand implements Command {
 	private pendingTimeoutId: number | null = null;
 
 	constructor(params: ReviewAnswerParams) {
-		const { Rating } = require("ts-fsrs") as typeof import("ts-fsrs");
 		this.description = `Review (${Rating[params.rating]})`;
 		this.params = params;
 	}

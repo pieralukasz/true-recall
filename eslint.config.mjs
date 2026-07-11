@@ -120,5 +120,12 @@ export default [
 				tsconfigRootDir: import.meta.dirname,
 			},
 		},
+		rules: {
+			// mcp-server is a standalone Node/Bun process that talks to the running
+			// Obsidian plugin over localhost HTTP — it has no `app` global, no
+			// `requestUrl`, and isn't a plugin with its own local-storage API.
+			// This rule's restrictions are all Obsidian-runtime-specific.
+			"no-restricted-globals": "off",
+		},
 	},
 ];
