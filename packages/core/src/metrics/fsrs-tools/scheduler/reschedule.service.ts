@@ -126,7 +126,7 @@ export class RescheduleService {
 	): {
 		id: string;
 		due: string;
-		state: number;
+		state: State;
 		stability: number;
 		lastReview: string | null;
 	}[] {
@@ -155,7 +155,7 @@ export class RescheduleService {
 						): c is {
 							id: string;
 							due: string;
-							state: number;
+							state: State;
 							stability: number;
 							lastReview: string | null;
 						} => c !== null,

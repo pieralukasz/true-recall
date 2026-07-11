@@ -40,7 +40,7 @@ export function BulkOperationsSection({ plugin }: BulkOperationsSectionProps) {
 	const handleReschedule = useCallback(async () => {
 		setRescheduling(true);
 		try {
-			const previewResult = await plugin.fsrsHelper?.rescheduleCards({
+			const previewResult = plugin.fsrsHelper?.rescheduleCards({
 				scope: "all",
 				dryRun: true,
 			});
@@ -51,7 +51,7 @@ export function BulkOperationsSection({ plugin }: BulkOperationsSectionProps) {
 					confirmLabel: "Reschedule",
 				});
 				if (confirmed) {
-					const result = await plugin.fsrsHelper?.rescheduleCards({
+					const result = plugin.fsrsHelper?.rescheduleCards({
 						scope: "all",
 						dryRun: false,
 					});

@@ -200,7 +200,7 @@ export function NormalHeader({
 					<IconButton
 						icon="plus"
 						ariaLabel="Add flashcard"
-						onClick={cardActions.handleAddFlashcard}
+						onClick={() => void cardActions.handleAddFlashcard()}
 						size="small"
 					/>
 

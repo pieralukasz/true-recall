@@ -423,7 +423,7 @@ export function CardBrowserApp({
 						activeFilter={sidebarFilter.value}
 						onFilterChange={handleSidebarFilter}
 						orphanedCount={orphanedCardIds.length}
-						onRemoveOrphanedCards={handleRemoveOrphanedCards}
+						onRemoveOrphanedCards={() => void handleRemoveOrphanedCards()}
 					/>
 				)}
 
@@ -450,7 +450,7 @@ export function CardBrowserApp({
 							previewCard.value = null;
 						}}
 						onContentChange={handleContentChange}
-						onMove={handleMoveCard}
+						onMove={() => void handleMoveCard()}
 					/>
 				)}
 			</div>

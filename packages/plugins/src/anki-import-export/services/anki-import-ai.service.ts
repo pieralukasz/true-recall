@@ -146,7 +146,7 @@ function parseJsonArray<T>(text: string): T[] {
 	if (start === -1 || end === -1 || end <= start) return [];
 
 	try {
-		return JSON.parse(cleaned.slice(start, end + 1));
+		return JSON.parse(cleaned.slice(start, end + 1)) as T[];
 	} catch {
 		return [];
 	}

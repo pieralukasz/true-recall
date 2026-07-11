@@ -352,7 +352,7 @@ export function DashboardApp() {
 						onToggleArchived={() => {
 							showArchived.value = !showArchived.value;
 						}}
-						onCreateProject={handleCreateProject}
+						onCreateProject={() => void handleCreateProject()}
 					/>
 
 					<div class="ep:flex ep:flex-col ep:flex-1">

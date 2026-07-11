@@ -32,10 +32,12 @@ export const cardTools: ToolDef[] = [
 		},
 		async (params, client) => {
 			const sp = new URLSearchParams();
-			if (params.query) sp.set("q", params.query);
-			if (params.state) sp.set("state", params.state);
-			if (params.source_uid) sp.set("source_uid", params.source_uid);
-			if (typeof params.limit === "number") sp.set("limit", String(params.limit));
+			if (typeof params.query === "string") sp.set("q", params.query);
+			if (typeof params.state === "string") sp.set("state", params.state);
+			if (typeof params.source_uid === "string")
+				sp.set("source_uid", params.source_uid);
+			if (typeof params.limit === "number")
+				sp.set("limit", String(params.limit));
 			const qs = sp.toString();
 			return jsonResult(await client.get(`/cards${qs ? `?${qs}` : ""}`));
 		},

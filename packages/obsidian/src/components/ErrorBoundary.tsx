@@ -14,7 +14,7 @@ export function ErrorBoundary({
 }: ErrorBoundaryProps) {
 	const [error, resetError] = useErrorBoundary((err) =>
 		console.error("[True Recall] Render error:", err),
-	);
+	) as [unknown, () => void];
 
 	if (error) {
 		return (
@@ -23,7 +23,11 @@ export function ErrorBoundary({
 					{fallbackMessage}
 				</div>
 				<div class="ep:text-ui-smaller ep:text-obs-muted ep:max-w-[300px]">
-					{error instanceof Error ? error.message : String(error)}
+					{error instanceof Error
+						? error.message
+						: typeof error === "string"
+							? error
+							: JSON.stringify(error)}
 				</div>
 				<Clickable
 					class="ep:py-2 ep:px-4 ep:rounded-md ep:bg-obs-interactive ep:text-obs-on-accent ep:border-none ep:text-ui-small ep:font-medium"

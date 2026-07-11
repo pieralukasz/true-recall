@@ -73,7 +73,7 @@ export function IndexStatus({ view: _view }: Props) {
 			<IconButton
 				icon="refresh-cw"
 				ariaLabel="Reindex knowledge base"
-				onClick={handleReindex}
+				onClick={() => void handleReindex()}
 				disabled={reindexing}
 				size="small"
 			/>

@@ -55,6 +55,6 @@ export const fsrsTools: ToolDef[] = [
 				.default(30)
 				.describe("Analysis period in days (default 30)"),
 		},
-		(p) => `/fsrs/stats?days=${p.days}`,
+		(p) => `/fsrs/stats?days=${String(p.days)}`,
 	),
 ];

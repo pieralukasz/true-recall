@@ -16,6 +16,19 @@ export interface StreamChunk {
 	finishReason: string | null;
 }
 
+interface StreamChoiceDelta {
+	content?: string;
+}
+
+interface StreamChoice {
+	delta?: StreamChoiceDelta;
+	finish_reason?: string | null;
+}
+
+interface StreamChunkPayload {
+	choices?: StreamChoice[];
+}
+
 export class StreamingOpenRouterClient {
 	private providerType: "pro" | "openrouter" | "custom" | "lmstudio";
 
@@ -68,13 +81,13 @@ export class StreamingOpenRouterClient {
 				if (!trimmed.startsWith("data: ")) continue;
 
 				try {
-					const json = JSON.parse(trimmed.slice(6));
+					const json = JSON.parse(trimmed.slice(6)) as StreamChunkPayload;
 					const choice = json.choices?.[0];
 					const content = choice?.delta?.content;
 					if (content) {
 						yield {
 							content,
-							finishReason: choice.finish_reason ?? null,
+							finishReason: choice?.finish_reason ?? null,
 						};
 					}
 				} catch {

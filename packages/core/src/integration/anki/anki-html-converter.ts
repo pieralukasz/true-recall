@@ -82,7 +82,7 @@ function extractProtectedRegions(text: string): {
 		regex: RegExp,
 		toMarkdown: (match: RegExpExecArray) => string,
 	): void {
-		result = result.replace(regex, (...args) => {
+		result = result.replace(regex, (...args: unknown[]) => {
 			// Reconstruct the match array for the callback
 			const fullMatch = args[0];
 			const groups = args.slice(1, -2); // capture groups (exclude offset and input)

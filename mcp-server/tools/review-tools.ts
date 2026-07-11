@@ -5,6 +5,7 @@ import {
 	post,
 	postParams,
 	postTo,
+	requireStringParam,
 	type ToolDef,
 } from "./_register.js";
 
@@ -61,7 +62,7 @@ export const reviewTools: ToolDef[] = [
 				.max(4)
 				.describe("Rating: 1=Again (forgot), 2=Hard, 3=Good, 4=Easy"),
 		},
-		(p) => `/cards/${p.card_id}/review`,
+		(p) => `/cards/${requireStringParam(p, "card_id")}/review`,
 		({ rating }) => ({ rating }),
 	),
 ];

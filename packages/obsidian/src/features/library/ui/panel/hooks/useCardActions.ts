@@ -1,4 +1,5 @@
 import { useCallback } from "preact/hooks";
+import { State } from "ts-fsrs";
 
 import {
 	BUILTIN_BASIC_ID,
@@ -262,7 +263,7 @@ export function useCardActions() {
 	const handleForgetCard = useCallback(
 		(card: FlashcardItem) => {
 			const data = plugin.cardStore.get(card.id);
-			if (!data || data.state === 0) {
+			if (!data || data.state === State.New) {
 				notify().warning("Forget is only available for non-New cards");
 				return;
 			}

@@ -110,13 +110,16 @@ function resolveEditorPrototype(
 	widgetEditorView.editable = true;
 	widgetEditorView.showEditor();
 
-	const MarkdownEditor = Object.getPrototypeOf(
-		Object.getPrototypeOf(widgetEditorView.editMode),
+	const editModePrototype: unknown = Object.getPrototypeOf(
+		widgetEditorView.editMode,
 	);
+	const markdownEditorPrototype = Object.getPrototypeOf(editModePrototype) as {
+		constructor: new (...args: unknown[]) => InternalEditorBase;
+	};
 
 	widgetEditorView.unload();
 
-	return MarkdownEditor.constructor;
+	return markdownEditorPrototype.constructor;
 }
 
 const defaultOptions: Required<EmbeddableEditorOptions> = {

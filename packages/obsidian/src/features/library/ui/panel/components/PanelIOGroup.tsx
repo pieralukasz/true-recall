@@ -86,19 +86,20 @@ export const PanelIOGroup = memo(function PanelIOGroup({
 		{
 			title: "Edit",
 			icon: "pencil",
-			onClick: () => firstCard && cardActions.handleEditButton(firstCard),
+			onClick: () =>
+				void (firstCard && cardActions.handleEditButton(firstCard)),
 		},
 		{
 			title: "Move",
 			icon: "folder-input",
-			onClick: () => firstCard && cardActions.handleMoveCard(firstCard),
+			onClick: () => void (firstCard && cardActions.handleMoveCard(firstCard)),
 		},
 		"separator",
 		{
 			title: "Delete all",
 			icon: "trash-2",
 			onClick: () => {
-				for (const c of cards) cardActions.handleDeleteCard(c);
+				for (const c of cards) void cardActions.handleDeleteCard(c);
 			},
 		},
 		...(!isSelectionMode

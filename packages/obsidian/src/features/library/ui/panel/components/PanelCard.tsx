@@ -154,7 +154,7 @@ export const PanelCard = memo(function PanelCard({
 				selectionActions.handleEnterSelectionMode(card.id);
 			} else if (card.sourceText) {
 				cardActions.handleToggleExpand(card.id);
-				panelActions.handleJumpToSource(card);
+				void panelActions.handleJumpToSource(card);
 			} else {
 				cardActions.handleToggleExpand(card.id);
 			}
@@ -178,22 +178,22 @@ export const PanelCard = memo(function PanelCard({
 		{
 			title: "Edit",
 			icon: "pencil",
-			onClick: () => cardActions.handleEditButton(card),
+			onClick: () => void cardActions.handleEditButton(card),
 		},
 		{
 			title: "Copy",
 			icon: "copy",
-			onClick: () => cardActions.handleCopyCard(card),
+			onClick: () => void cardActions.handleCopyCard(card),
 		},
 		{
 			title: "Move",
 			icon: "folder-input",
-			onClick: () => cardActions.handleMoveCard(card),
+			onClick: () => void cardActions.handleMoveCard(card),
 		},
 		{
 			title: "Change type",
 			icon: "replace",
-			onClick: () => cardActions.handleChangeType(card),
+			onClick: () => void cardActions.handleChangeType(card),
 		},
 		...(card.cardType !== "cloze" &&
 		card.cardType !== "image-occlusion" &&
@@ -205,7 +205,7 @@ export const PanelCard = memo(function PanelCard({
 								? "Remove reversed"
 								: "Make reversed",
 						icon: "arrow-left-right",
-						onClick: () => cardActions.handleToggleReversed(card),
+						onClick: () => void cardActions.handleToggleReversed(card),
 					},
 				] as MenuItem[])
 			: []),
@@ -229,7 +229,7 @@ export const PanelCard = memo(function PanelCard({
 		{
 			title: "Delete",
 			icon: "trash-2",
-			onClick: () => cardActions.handleDeleteCard(card),
+			onClick: () => void cardActions.handleDeleteCard(card),
 		},
 		...(!isSelectionMode
 			? ([

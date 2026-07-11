@@ -105,7 +105,7 @@ export function CardAIPreviewModal(props: CardAIPreviewModalProps) {
 					extra={extra}
 					setExtra={setExtra}
 					retrying={retrying}
-					onRetry={handleRetry}
+					onRetry={() => void handleRetry()}
 					onReject={props.onReject}
 					showAccept={false}
 					acceptDisabled
@@ -242,7 +242,7 @@ export function CardAIPreviewModal(props: CardAIPreviewModalProps) {
 				extra={extra}
 				setExtra={setExtra}
 				retrying={retrying}
-				onRetry={handleRetry}
+				onRetry={() => void handleRetry()}
 				onReject={props.onReject}
 				showAccept
 				acceptDisabled={acceptDisabled}

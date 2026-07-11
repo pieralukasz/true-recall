@@ -6,6 +6,7 @@ import {
 } from "@true-recall/core/services";
 import { ReviewService } from "@true-recall/core/services/review/review.service";
 import type {
+	CardSchedulingMeta,
 	FSRSFlashcardItem,
 	FSRSPreset,
 	Grade,
@@ -48,11 +49,10 @@ export class ReviewSessionController {
 		this.noteResolver = new ObsidianNoteResolver(plugin.app);
 	}
 
-	private getAllCards() {
+	private getAllCards(): CardSchedulingMeta[] {
 		const allMetaMap =
-			this.plugin.dataLayer?.get<
-				Map<string, import("@true-recall/core/types").CardSchedulingMeta>
-			>(Q.ALL_META) ?? new Map();
+			this.plugin.dataLayer?.get<Map<string, CardSchedulingMeta>>(Q.ALL_META) ??
+			new Map<string, CardSchedulingMeta>();
 		return [...allMetaMap.values()];
 	}
 
