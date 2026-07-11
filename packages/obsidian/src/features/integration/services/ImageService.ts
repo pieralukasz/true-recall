@@ -6,12 +6,17 @@ import {
 	MAX_IMAGE_SIZE_BYTES,
 	MAX_VIDEO_SIZE_BYTES,
 } from "@true-recall/core/types";
+import type { TrueRecallSettings } from "@true-recall/core/types/settings.types";
+
+import { resolveAttachmentFolder } from "@true-recall/obsidian/utils/attachment-folder";
 
 export class ImageService {
 	private app: App;
+	private getSettings: () => TrueRecallSettings;
 
-	constructor(app: App) {
+	constructor(app: App, getSettings: () => TrueRecallSettings) {
 		this.app = app;
+		this.getSettings = getSettings;
 	}
 
 	async saveImageFromClipboard(blob: Blob): Promise<string> {
@@ -35,6 +40,13 @@ export class ImageService {
 	}
 
 	getAttachmentFolder(): string {
+		return resolveAttachmentFolder(
+			this.getSettings().attachmentFolder,
+			this.getObsidianDefaultAttachmentFolder(),
+		);
+	}
+
+	private getObsidianDefaultAttachmentFolder(): string {
 		const attachmentFolderPath = (
 			this.app.vault as unknown as { getConfig: (key: string) => string }
 		).getConfig("attachmentFolderPath");
