@@ -1,13 +1,37 @@
 import { Notice, Platform } from "obsidian";
 
 import type TrueRecallPlugin from "../../main";
+import type { ApiRequest, ApiResponseWriter } from "./api.types";
 import { dispatch } from "./routes";
 
 const DEFAULT_PORT = 27182;
 const MAX_PORT_RETRIES = 5;
 
+/**
+ * Minimal structural views of Node's `http` module, which is loaded lazily at
+ * runtime via Electron's `require`. Declared locally so this file does not
+ * depend on `@types/node` (unavailable to Obsidian's review scanner).
+ */
+interface HttpServerError {
+	code?: string;
+	message: string;
+}
+
+interface HttpServerLike {
+	listening: boolean;
+	listen(port: number, host: string, onListening: () => void): void;
+	close(): void;
+	on(event: "error", listener: (error: HttpServerError) => void): void;
+}
+
+interface HttpModuleLike {
+	createServer: (
+		handler: (req: ApiRequest, res: ApiResponseWriter) => void,
+	) => HttpServerLike;
+}
+
 export class LocalApiServer {
-	private server: import("http").Server | null = null;
+	private server: HttpServerLike | null = null;
 	private port: number;
 	private portRetryCount = 0;
 
@@ -26,7 +50,7 @@ export class LocalApiServer {
 		// bundler and the linter never see a static Node import (unavailable on mobile).
 		const { createServer } = (
 			window as unknown as { require: (id: string) => unknown }
-		).require("http") as typeof import("http");
+		).require("http") as HttpModuleLike;
 
 		this.server = createServer((req, res) => {
 			dispatch(req, res, { plugin: this.plugin }).catch((error) => {
@@ -38,7 +62,7 @@ export class LocalApiServer {
 			});
 		});
 
-		this.server.on("error", (error: NodeJS.ErrnoException) => {
+		this.server.on("error", (error) => {
 			if (error.code === "EADDRINUSE") {
 				if (this.portRetryCount >= MAX_PORT_RETRIES) {
 					console.error(

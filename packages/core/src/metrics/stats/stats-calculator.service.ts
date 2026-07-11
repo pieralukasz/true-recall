@@ -166,10 +166,10 @@ export class StatsCalculatorService {
 		if (cached) return cached;
 
 		if (this.dailyStatsCache.size >= 20) {
-			const oldest = this.dailyStatsCache.keys().next().value as
-				| string
-				| undefined;
-			if (oldest !== undefined) this.dailyStatsCache.delete(oldest);
+			for (const oldest of this.dailyStatsCache.keys()) {
+				this.dailyStatsCache.delete(oldest);
+				break;
+			}
 		}
 
 		let result: Record<string, ExtendedDailyStats>;
@@ -208,10 +208,10 @@ export class StatsCalculatorService {
 		if (cached) return cached;
 
 		if (this.dailyStatsRangeCache.size >= 20) {
-			const oldest = this.dailyStatsRangeCache.keys().next().value as
-				| string
-				| undefined;
-			if (oldest !== undefined) this.dailyStatsRangeCache.delete(oldest);
+			for (const oldest of this.dailyStatsRangeCache.keys()) {
+				this.dailyStatsRangeCache.delete(oldest);
+				break;
+			}
 		}
 
 		let result: ExtendedDailyStats[];
