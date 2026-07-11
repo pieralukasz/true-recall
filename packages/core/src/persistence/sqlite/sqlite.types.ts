@@ -47,13 +47,16 @@ export function extractDeviceIdFromFilename(filename: string): string | null {
  * Convert Uint8Array to exact-size ArrayBuffer (respecting byteOffset/byteLength).
  */
 export function toExactArrayBuffer(bytes: Uint8Array): ArrayBuffer {
-	if (bytes.byteOffset === 0 && bytes.byteLength === bytes.buffer.byteLength) {
-		return bytes.buffer as ArrayBuffer;
+	if (
+		bytes.byteOffset === 0 &&
+		bytes.byteLength === bytes.buffer.byteLength &&
+		bytes.buffer instanceof ArrayBuffer
+	) {
+		return bytes.buffer;
 	}
-	return bytes.buffer.slice(
-		bytes.byteOffset,
-		bytes.byteOffset + bytes.byteLength,
-	) as ArrayBuffer;
+	const copy = new ArrayBuffer(bytes.byteLength);
+	new Uint8Array(copy).set(bytes);
+	return copy;
 }
 
 // Type for SQL row values from sql.js

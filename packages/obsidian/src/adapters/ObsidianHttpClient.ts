@@ -30,9 +30,9 @@ export class ObsidianHttpClient implements IHttpClient {
 		headers?: Record<string, string>,
 	): AsyncIterable<string> {
 		// requestUrl does not support streaming responses; native fetch is
-		// required here to get a readable stream reader (unavoidable warning —
-		// Obsidian's review policy does not allow suppressing this rule).
-		const response = await fetch(url, {
+		// required here to get a readable stream reader. Called via activeWindow
+		// so the request originates from the window the user is working in.
+		const response = await activeWindow.fetch(url, {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",

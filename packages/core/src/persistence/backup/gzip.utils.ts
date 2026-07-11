@@ -16,9 +16,9 @@ async function pipeThrough(
 }
 
 /** Detach a copy on SharedArrayBuffer-typed views so Blob accepts them. */
-function toBlobPart(data: Uint8Array): Uint8Array<ArrayBuffer> {
+function toBlobPart(data: Uint8Array): BlobPart {
 	return data.buffer instanceof ArrayBuffer
-		? (data as Uint8Array<ArrayBuffer>)
+		? new Uint8Array(data.buffer, data.byteOffset, data.byteLength)
 		: new Uint8Array(data);
 }
 

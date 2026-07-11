@@ -78,7 +78,7 @@ export class SessionService {
 				};
 
 			case "custom": {
-				// eslint-disable-next-line @typescript-eslint/no-unused-vars -- destructuring to exclude these keys from ...rest
+				// Destructuring to exclude these keys from ...rest.
 				const { mode: _, reviewOrder: __, cardLimit: ___, ...rest } = config;
 				return { ...base, ...rest };
 			}

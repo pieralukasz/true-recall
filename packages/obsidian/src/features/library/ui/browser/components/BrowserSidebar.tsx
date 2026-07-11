@@ -1,4 +1,5 @@
 import { useSignal } from "@preact/signals";
+import type { ComponentChildren } from "preact";
 import { useMemo } from "preact/hooks";
 
 import { Clickable, SearchInput } from "@true-recall/obsidian/components";
@@ -311,7 +312,7 @@ function SidebarSection({
 }: {
 	title: string;
 	defaultOpen?: boolean;
-	children: preact.ComponentChildren;
+	children: ComponentChildren;
 }) {
 	const open = useSignal(defaultOpen);
 

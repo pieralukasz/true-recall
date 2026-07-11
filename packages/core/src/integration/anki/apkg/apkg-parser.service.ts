@@ -6,6 +6,7 @@ import {
 	loadDatabase,
 	type QueryExecResult,
 } from "@true-recall/core/persistence/sqlite/loader";
+import { toExactArrayBuffer } from "@true-recall/core/persistence/sqlite/sqlite.types";
 import type {
 	AnkiCard,
 	AnkiDeck,
@@ -437,11 +438,7 @@ export class ApkgParserService {
 				? decompress(mediaEntry)
 				: mediaEntry;
 
-			const buffer = raw.buffer.slice(
-				raw.byteOffset,
-				raw.byteOffset + raw.byteLength,
-			) as ArrayBuffer;
-			media.set(originalName, buffer);
+			media.set(originalName, toExactArrayBuffer(raw));
 		}
 
 		return { media, mediaMap };

@@ -24,7 +24,9 @@ export class TrueRecallClient {
 	): Promise<T> {
 		let res: Response;
 		try {
-			res = await fetch(`${this.baseUrl}${path}`, {
+			// Bun/Node runtime fetch — this process is not an Obsidian plugin, so
+			// Obsidian's requestUrl is not available and `window` does not exist.
+			res = await globalThis.fetch(`${this.baseUrl}${path}`, {
 				...init,
 				signal: AbortSignal.timeout(timeoutMs),
 			});
