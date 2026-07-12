@@ -1,6 +1,17 @@
 import type { AssistantPreset } from "@true-recall/core/types/settings.types";
 
+import {
+	ActionButton,
+	FormField,
+	SliderInput,
+	TextAreaInput,
+	TextInput,
+	ToggleInput,
+} from "@true-recall/obsidian/components";
+
 import type { PluginSettingsProps } from "../types";
+
+let chipCounter = 0;
 
 export function AssistantSettingsPanel({
 	settings,
@@ -16,110 +27,126 @@ export function AssistantSettingsPanel({
 		});
 	};
 
+	const removePreset = (id: string) => {
+		void save({ assistantPresets: presets.filter((p) => p.id !== id) });
+	};
+
+	const addPreset = () => {
+		chipCounter += 1;
+		void save({
+			assistantPresets: [
+				...presets,
+				{
+					id: `assistant-chip-${Date.now()}-${chipCounter}`,
+					name: "New action",
+					instruction: "",
+				},
+			],
+		});
+	};
+
 	return (
-		<div class="tr-assistant-settings">
-			<label>
-				Assistant model (empty = default model)
-				<input
-					type="text"
+		<>
+			<FormField
+				name="Assistant model"
+				description="Model used for research tasks. Leave empty to use your default AI model."
+			>
+				<TextInput
 					value={settings.assistantModel}
+					onChange={(v) => void save({ assistantModel: v })}
 					placeholder="e.g. anthropic/claude-sonnet-4"
-					onChange={(e) =>
-						void save({ assistantModel: (e.target as HTMLInputElement).value })
-					}
 				/>
-			</label>
-			<label>
-				<input
-					type="checkbox"
-					checked={settings.assistantWebSearch}
-					onChange={(e) =>
-						void save({
-							assistantWebSearch: (e.target as HTMLInputElement).checked,
-						})
-					}
+			</FormField>
+
+			<FormField
+				name="Web search"
+				description="Let the model search the web via OpenRouter (extra cost per search)."
+			>
+				<ToggleInput
+					value={settings.assistantWebSearch}
+					onChange={(v) => void save({ assistantWebSearch: v })}
 				/>
-				Enable web search (OpenRouter, extra cost per search)
-			</label>
-			<label>
-				Global instructions
-				<textarea
-					rows={4}
+			</FormField>
+
+			<FormField
+				name="Global instructions"
+				description="Appended to every task's prompt — your style, language and tone."
+			>
+				<TextAreaInput
 					value={settings.assistantInstructions}
-					onChange={(e) =>
-						void save({
-							assistantInstructions: (e.target as HTMLTextAreaElement).value,
-						})
-					}
+					onChange={(v) => void save({ assistantInstructions: v })}
+					rows={4}
+					placeholder="e.g. Always answer in Polish. Keep answers to 1-3 words."
 				/>
-			</label>
-			<label>
-				Max agent iterations
-				<input
-					type="number"
+			</FormField>
+
+			<FormField
+				name="Max agent iterations"
+				description="Upper bound on tool-calling rounds per task."
+			>
+				<SliderInput
+					value={settings.assistantMaxIterations}
+					onChange={(v) => void save({ assistantMaxIterations: v })}
 					min={1}
 					max={25}
-					value={settings.assistantMaxIterations}
-					onChange={(e) =>
-						void save({
-							assistantMaxIterations: Math.max(
-								1,
-								Number.parseInt((e.target as HTMLInputElement).value, 10) || 10,
-							),
-						})
-					}
+					step={1}
+					formatTooltip={(v) => `${v}`}
 				/>
-			</label>
-			<h4>Quick actions (chips)</h4>
-			{presets.map((preset) => (
-				<div key={preset.id} class="tr-assistant-preset">
-					<input
-						type="text"
-						value={preset.name}
-						onChange={(e) =>
-							updatePreset(preset.id, {
-								name: (e.target as HTMLInputElement).value,
-							})
-						}
-					/>
-					<textarea
-						rows={2}
-						value={preset.instruction}
-						onChange={(e) =>
-							updatePreset(preset.id, {
-								instruction: (e.target as HTMLTextAreaElement).value,
-							})
-						}
-					/>
-					<button
-						type="button"
-						onClick={() =>
-							void save({
-								assistantPresets: presets.filter((p) => p.id !== preset.id),
-							})
-						}
-					>
-						Delete
-					</button>
+			</FormField>
+
+			<div class="ep:flex ep:flex-col ep:gap-3 ep:mt-6">
+				<div class="ep:flex ep:flex-col ep:gap-0.5">
+					<h3 class="ep:text-ui-small ep:font-semibold ep:text-obs-normal ep:m-0">
+						Quick actions
+					</h3>
+					<span class="ep:text-ui-smaller ep:text-obs-muted">
+						One-tap chips shown in the Ask AI prompt. Each also becomes a
+						hotkey-bindable command in review.
+					</span>
 				</div>
-			))}
-			<button
-				type="button"
-				onClick={() =>
-					void save({
-						assistantPresets: [
-							...presets,
-							{
-								id: `assistant-${Date.now()}`,
-								name: "New action",
-								instruction: "",
-							},
-						],
-					})
-				}
-			>
-				Add quick action
-			</button>
-		</div>
+
+				{presets.length === 0 && (
+					<span class="ep:text-ui-smaller ep:text-obs-muted ep:italic">
+						No quick actions yet.
+					</span>
+				)}
+
+				{presets.map((preset) => (
+					<div
+						key={preset.id}
+						class="ep:flex ep:flex-col ep:gap-2 ep:p-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-secondary"
+					>
+						<div class="ep:flex ep:items-center ep:gap-2">
+							<div class="ep:flex-1">
+								<TextInput
+									value={preset.name}
+									onChange={(v) => updatePreset(preset.id, { name: v })}
+									placeholder="Action name"
+								/>
+							</div>
+							<ActionButton
+								label="Delete"
+								variant="danger"
+								onClick={() => removePreset(preset.id)}
+							/>
+						</div>
+						<TextAreaInput
+							value={preset.instruction}
+							onChange={(v) => updatePreset(preset.id, { instruction: v })}
+							rows={2}
+							placeholder="What should the AI do when this chip is tapped?"
+						/>
+					</div>
+				))}
+
+				<div>
+					<ActionButton
+						label="Add quick action"
+						variant="secondary"
+						onClick={addPreset}
+					/>
+				</div>
+			</div>
+		</>
 	);
 }
