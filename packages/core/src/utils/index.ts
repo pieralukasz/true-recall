@@ -6,6 +6,7 @@ export {
 	isTimestampToday,
 } from "./date.utils";
 export { getErrorMessage } from "./error.utils";
+export { formatFileSize } from "./format.utils";
 export {
 	type CleanupFn,
 	createEventRegistry,

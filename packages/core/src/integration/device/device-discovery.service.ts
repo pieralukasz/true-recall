@@ -5,6 +5,7 @@
 
 import type { IPersistence } from "@true-recall/core/interfaces/persistence";
 import { loadDatabase } from "@true-recall/core/persistence/sqlite/loader";
+import { formatFileSize } from "@true-recall/core/utils/format.utils";
 import {
 	DB_FOLDER,
 	extractDeviceIdFromFilename,
@@ -123,7 +124,7 @@ export class DeviceDiscoveryService {
 				filename,
 				lastModified: new Date(stat.mtime),
 				sizeBytes: stat.size,
-				formattedSize: this.formatFileSize(stat.size),
+				formattedSize: formatFileSize(stat.size),
 				cardCount,
 				lastReviewDate,
 				isCurrentDevice: deviceId === this.currentDeviceId,
@@ -186,16 +187,4 @@ export class DeviceDiscoveryService {
 		}
 	}
 
-	/**
-	 * Format file size to human-readable string.
-	 */
-	private formatFileSize(bytes: number): string {
-		if (bytes < 1024) {
-			return `${bytes} B`;
-		} else if (bytes < 1024 * 1024) {
-			return `${(bytes / 1024).toFixed(1)} KB`;
-		} else {
-			return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-		}
-	}
 }

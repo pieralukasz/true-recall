@@ -14,6 +14,7 @@ import {
 	toExactArrayBuffer,
 } from "@true-recall/core/persistence/sqlite";
 import type { RetentionPolicy } from "@true-recall/core/types/settings.types";
+import { formatFileSize } from "@true-recall/core/utils/format.utils";
 
 import { gzipCompress, gzipDecompress } from "./gzip.utils";
 
@@ -163,7 +164,7 @@ export class BackupService {
 					timestamp,
 					sizeBytes: stat.size,
 					formattedDate: this.formatDateDisplay(timestamp),
-					formattedSize: this.formatFileSize(stat.size),
+					formattedSize: formatFileSize(stat.size),
 				});
 			}
 
@@ -519,14 +520,5 @@ export class BackupService {
 		const seconds = String(date.getSeconds()).padStart(2, "0");
 
 		return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-	}
-
-	/**
-	 * Format file size for display
-	 */
-	private formatFileSize(bytes: number): string {
-		if (bytes < 1024) return `${bytes} B`;
-		if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-		return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 	}
 }
