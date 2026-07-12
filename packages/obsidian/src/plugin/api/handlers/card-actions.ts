@@ -297,9 +297,18 @@ export async function handleBulkBury(
 
 	let untilDate: string;
 	if (body.until) {
-		untilDate = new Date(body.until).toISOString();
+		const until = new Date(body.until);
+		if (Number.isNaN(until.getTime())) {
+			sendError(res, 400, `Invalid 'until' date: ${body.until}`);
+			return;
+		}
+		untilDate = until.toISOString();
 	} else {
 		const days = body.days ?? 1;
+		if (!Number.isFinite(days) || days <= 0) {
+			sendError(res, 400, "'days' must be a positive number");
+			return;
+		}
 		const d = new Date();
 		d.setDate(d.getDate() + days);
 		d.setHours(4, 0, 0, 0);

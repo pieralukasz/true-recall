@@ -33,19 +33,30 @@ interface HttpModuleLike {
 export class LocalApiServer {
 	private server: HttpServerLike | null = null;
 	private port: number;
+	private configuredPort: number;
 	private portRetryCount = 0;
+	private stopped = false;
 
 	constructor(
 		private plugin: TrueRecallPlugin,
 		port?: number,
 	) {
 		this.port = port ?? DEFAULT_PORT;
+		this.configuredPort = this.port;
 	}
 
+	/** Fresh start: resets retry state left over from a previous run. */
 	start(): void {
 		if (!Platform.isDesktop) return;
 		if (this.server) return;
+		this.stopped = false;
+		this.portRetryCount = 0;
+		this.port = this.configuredPort;
+		this.listen();
+	}
 
+	/** Bind the server on the current port; retried on EADDRINUSE. */
+	private listen(): void {
 		// Desktop-only: load Node's http server lazily via Electron's window.require so the
 		// bundler and the linter never see a static Node import (unavailable on mobile).
 		const { createServer } = (
@@ -63,6 +74,10 @@ export class LocalApiServer {
 		});
 
 		this.server.on("error", (error) => {
+			// The error event fires asynchronously after a failed listen(); if
+			// stop() ran in that window (plugin unload), retrying would bind a
+			// new server owned by an unloaded plugin.
+			if (this.stopped) return;
 			if (error.code === "EADDRINUSE") {
 				if (this.portRetryCount >= MAX_PORT_RETRIES) {
 					console.error(
@@ -83,7 +98,7 @@ export class LocalApiServer {
 				this.port = nextPort;
 				this.server?.close();
 				this.server = null;
-				this.start();
+				this.listen();
 			} else {
 				console.error("[True Recall API] Server error:", error);
 				new Notice(`True Recall API error: ${error.message}`);
@@ -101,6 +116,7 @@ export class LocalApiServer {
 	}
 
 	stop(): void {
+		this.stopped = true;
 		if (!this.server) return;
 		this.server.close();
 		this.server = null;
