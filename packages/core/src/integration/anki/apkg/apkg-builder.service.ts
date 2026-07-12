@@ -38,8 +38,16 @@ interface BuildOptions {
 }
 
 export class ApkgBuilderService {
+	// Deterministic ids come from a 32-bit hash, which collides at realistic
+	// collection sizes — and a duplicate PRIMARY KEY aborts the whole export.
+	// Ids are therefore allocated once per build with collision probing, and
+	// notes/cards/revlog all read from the same maps.
+	private noteIds = new Map<string, number>();
+	private cardIds = new Map<string, number>();
+
 	async build(options: BuildOptions): Promise<ArrayBuffer> {
 		const { db } = await loadDatabase(null);
+		this.allocateIds(options.cards);
 
 		try {
 			this.createAnkiSchema(db);
@@ -53,6 +61,24 @@ export class ApkgBuilderService {
 			return this.packageAsZip(dbBytes, options.media);
 		} finally {
 			db.close();
+		}
+	}
+
+	private allocateIds(cards: FSRSCardData[]): void {
+		this.noteIds = new Map();
+		this.cardIds = new Map();
+		const usedNoteIds = new Set<number>();
+		const usedCardIds = new Set<number>();
+		for (const card of cards) {
+			let noteId = deterministicId(card.id, "note");
+			while (usedNoteIds.has(noteId)) noteId++;
+			usedNoteIds.add(noteId);
+			this.noteIds.set(card.id, noteId);
+
+			let cardId = deterministicId(card.id, "card");
+			while (usedCardIds.has(cardId)) cardId++;
+			usedCardIds.add(cardId);
+			this.cardIds.set(card.id, cardId);
 		}
 	}
 
@@ -187,8 +213,8 @@ export class ApkgBuilderService {
 		let newCardPosition = 0;
 
 		for (const card of standalone) {
-			const noteId = deterministicId(card.id, "note");
-			const cardId = deterministicId(card.id, "card");
+			const noteId = this.noteIds.get(card.id) ?? 0;
+			const cardId = this.cardIds.get(card.id) ?? 0;
 			const question = card.question ?? "";
 			const answer = card.answer ?? "";
 
@@ -276,7 +302,7 @@ export class ApkgBuilderService {
 			// Handle reversed pair: second card (ord=1) on the same note
 			const reversed = reversePairs.get(card.id);
 			if (reversed) {
-				const reversedCardId = deterministicId(reversed.id, "card");
+				const reversedCardId = this.cardIds.get(reversed.id) ?? 0;
 				const reversedDeckId = this.resolveDeckId(reversed, deckMap);
 
 				if (includeScheduling) {
@@ -343,13 +369,10 @@ export class ApkgBuilderService {
 	}
 
 	private insertRevlog(db: DatabaseLike, options: BuildOptions): void {
-		const { reviewLogs, cards } = options;
+		const { reviewLogs } = options;
 
-		// Build a lookup from True Recall card ID -> Anki card ID
-		const cardIdMap = new Map<string, number>();
-		for (const card of cards) {
-			cardIdMap.set(card.id, deterministicId(card.id, "card"));
-		}
+		// Anki card ids shared with insertNotesAndCards via the per-build maps
+		const cardIdMap = this.cardIds;
 
 		// Track previous interval per card for lastIvl
 		const prevIntervalMap = new Map<number, number>();
@@ -360,6 +383,11 @@ export class ApkgBuilderService {
 				new Date(a.reviewedAt).getTime() - new Date(b.reviewedAt).getTime(),
 		);
 
+		// revlog.id is the review time in ms AND the primary key — two reviews
+		// in the same millisecond would abort the export, so bump duplicates
+		// forward (Anki does the same).
+		let lastRevlogId = 0;
+
 		for (const log of sorted) {
 			if (log.deletedAt !== null) continue;
 
@@ -367,18 +395,19 @@ export class ApkgBuilderService {
 			if (ankiCardId === undefined) continue;
 
 			const reviewTimeMs = new Date(log.reviewedAt).getTime();
+			const revlogId = Math.max(reviewTimeMs, lastRevlogId + 1);
+			lastRevlogId = revlogId;
 			const ease = Math.max(1, Math.min(4, log.rating));
 			const ivl = log.scheduledDays;
 			const lastIvl = prevIntervalMap.get(ankiCardId) ?? 0;
 			const factor = FACTOR_DEFAULT;
 			const time = log.timeSpentMs;
-			// Anki revlog type matches FSRS state for the review context
-			const type = Math.max(0, Math.min(3, log.state));
+			const type = fsrsStateToRevlogType(log.state);
 
 			db.run(
 				`INSERT INTO revlog (id, cid, usn, ease, ivl, lastIvl, factor, time, type)
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-				[reviewTimeMs, ankiCardId, -1, ease, ivl, lastIvl, factor, time, type],
+				[revlogId, ankiCardId, -1, ease, ivl, lastIvl, factor, time, type],
 			);
 
 			prevIntervalMap.set(ankiCardId, ivl);
@@ -393,7 +422,10 @@ export class ApkgBuilderService {
 		const state = card.state;
 
 		const type = Math.max(0, Math.min(3, state));
-		let queue = type;
+		// Queue mostly mirrors type, but queue 3 (day-learn) interprets `due`
+		// as days-since-collection while we write epoch seconds for learning
+		// states — so Relearning goes to queue 1 (intraday learn) instead.
+		let queue = state === State.Relearning ? 1 : type;
 		if (card.suspended) {
 			queue = ANKI_QUEUE_SUSPENDED;
 		}
@@ -655,6 +687,23 @@ export class ApkgBuilderService {
 			zipped.byteOffset,
 			zipped.byteOffset + zipped.byteLength,
 		);
+	}
+}
+
+/**
+ * Map the FSRS state a card was in before a review to Anki's revlog type
+ * (0=learn, 1=review, 2=relearn). The enums are NOT aligned: FSRS Review=2
+ * would otherwise export as Anki "relearn".
+ */
+function fsrsStateToRevlogType(state: number): number {
+	switch (state) {
+		case State.Review:
+			return 1;
+		case State.Relearning:
+			return 2;
+		default:
+			// New / Learning — Anki "learn"
+			return 0;
 	}
 }
 

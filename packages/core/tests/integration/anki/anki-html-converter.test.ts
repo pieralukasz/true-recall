@@ -303,3 +303,26 @@ describe("decodeHtmlEntities", () => {
 		expect(decodeHtmlEntities("&unknown;")).toBe("&unknown;");
 	});
 });
+
+describe("regression: nested protected regions", () => {
+	it("restores code nested inside a math region without leaking placeholders", () => {
+		const result = htmlToMarkdown("[$$]a <code>x</code> b[/$$]");
+		expect(result).not.toContain("\u0000");
+		expect(result).toContain("`x`");
+	});
+});
+
+describe("regression: single-pass entity decoding", () => {
+	it("decodes escaped numeric entities exactly one level", () => {
+		// Literal "&#65;" written as &amp;#65; must stay "&#65;", not become "A"
+		expect(decodeHtmlEntities("&amp;#65;")).toBe("&#65;");
+	});
+
+	it("decodes escaped named entities exactly one level", () => {
+		expect(decodeHtmlEntities("&#38;quot;")).toBe("&quot;");
+	});
+
+	it("still decodes plain entities", () => {
+		expect(decodeHtmlEntities("&amp; &#65; &#x41;")).toBe("& A A");
+	});
+});
