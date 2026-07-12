@@ -226,7 +226,9 @@ export class WorkloadForecastCalculator {
 		}
 
 		for (const entry of forecast) {
-			const dayOfWeek = new Date(entry.date).getDay();
+			// entry.date is a date-only string parsed as UTC midnight, so the
+			// weekday must be read in UTC — getDay() shifts it west of UTC.
+			const dayOfWeek = new Date(entry.date).getUTCDay();
 			byDay.get(dayOfWeek)?.push(entry.dueCount);
 		}
 

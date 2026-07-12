@@ -1,6 +1,7 @@
 import { State } from "ts-fsrs";
 
 import { isLearningState } from "@true-recall/core/helpers/card-state";
+import { formatLocalDate } from "@true-recall/core/utils/date.utils";
 import {
 	MATURE_INTERVAL_DAYS,
 	toEntries,
@@ -113,7 +114,9 @@ export function buildDayOfWeekStats(
 	for (let i = 0; i < 7; i++) byDay.set(i, []);
 
 	for (const entry of forecast) {
-		const dow = new Date(entry.date).getDay();
+		// entry.date is a date-only string parsed as UTC midnight, so the
+		// weekday must be read in UTC — getDay() shifts it west of UTC.
+		const dow = new Date(entry.date).getUTCDay();
 		byDay.get(dow)?.push(entry.dueCount);
 	}
 
@@ -139,8 +142,11 @@ export function buildDayOfWeekStats(
 		.sort((a, b) => a.day - b.day);
 }
 
+// Key days by the user's local calendar date, matching
+// WorkloadForecastCalculator.getForecast(); toISOString() would shift
+// evening/night due times into the neighboring UTC day.
 function formatDate(date: Date): string {
-	return date.toISOString().split("T")[0] ?? "";
+	return formatLocalDate(date);
 }
 
 /** Selectable forecast horizon, mirroring Anki's Future Due ranges. */
