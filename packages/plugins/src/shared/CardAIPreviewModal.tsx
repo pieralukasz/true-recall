@@ -2,7 +2,7 @@ import { useEffect, useState } from "preact/hooks";
 
 import type { CardFields } from "@true-recall/core";
 
-import { CardAIFieldEditor } from "./CardAIFieldEditor";
+import { CardAIField } from "./CardAIField";
 
 interface CardAIPreviewModalProps {
 	original: CardFields;
@@ -130,7 +130,7 @@ export function CardAIPreviewModal(props: CardAIPreviewModalProps) {
 						<div class="tr-card-ai-preview-column">
 							<h5 class="tr-card-ai-preview-column-title">Original</h5>
 							{fieldNames.map((name) => (
-								<FieldBlock
+								<CardAIField
 									key={`orig-${name}`}
 									label={name}
 									value={props.original[name] ?? ""}
@@ -141,7 +141,7 @@ export function CardAIPreviewModal(props: CardAIPreviewModalProps) {
 						<div class="tr-card-ai-preview-column">
 							<h5 class="tr-card-ai-preview-column-title">Proposed</h5>
 							{fieldNames.map((name) => (
-								<FieldBlock
+								<CardAIField
 									key={`prop-${name}`}
 									label={name}
 									value={editedProposed?.[name] ?? ""}
@@ -180,7 +180,7 @@ export function CardAIPreviewModal(props: CardAIPreviewModalProps) {
 						)}
 						<div class="tr-card-ai-preview-source-body">
 							{fieldNames.map((name) => (
-								<FieldBlock
+								<CardAIField
 									key={`source-${name}`}
 									label={name}
 									value={props.original[name] ?? ""}
@@ -222,7 +222,7 @@ export function CardAIPreviewModal(props: CardAIPreviewModalProps) {
 									</header>
 									<div class="tr-card-ai-preview-new-card-body">
 										{fieldNames.map((name) => (
-											<FieldBlock
+											<CardAIField
 												key={`new-${idx}-${name}`}
 												label={name}
 												value={card[name] ?? ""}
@@ -248,35 +248,6 @@ export function CardAIPreviewModal(props: CardAIPreviewModalProps) {
 				acceptDisabled={acceptDisabled}
 				onAccept={handleAccept}
 				rejectLabel="Reject"
-			/>
-		</div>
-	);
-}
-
-interface FieldBlockProps {
-	label: string;
-	value: string;
-	onChange?: (next: string) => void;
-	readOnly?: boolean;
-	disabled?: boolean;
-}
-
-function FieldBlock({
-	label,
-	value,
-	onChange,
-	readOnly = false,
-	disabled = false,
-}: FieldBlockProps) {
-	const isReadOnly = readOnly || disabled;
-	return (
-		<div class={`tr-card-ai-preview-field${disabled ? " is-disabled" : ""}`}>
-			<div class="tr-card-ai-preview-field-label">{label}</div>
-			<CardAIFieldEditor
-				value={value}
-				onChange={isReadOnly ? undefined : onChange}
-				readOnly={isReadOnly}
-				ariaLabel={label}
 			/>
 		</div>
 	);

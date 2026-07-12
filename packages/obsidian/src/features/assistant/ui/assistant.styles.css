@@ -86,13 +86,26 @@
 	display: flex;
 	justify-content: space-between;
 	gap: 8px;
-	cursor: pointer;
 	font-weight: var(--font-medium);
+}
+
+button.tr-inbox-task-head--clickable {
+	width: 100%;
+	background: none;
+	border: none;
+	box-shadow: none;
+	padding: 0;
+	text-align: left;
+	color: inherit;
+	font: inherit;
+	cursor: pointer;
 }
 
 .tr-inbox-status {
 	color: var(--text-muted);
 	font-size: var(--font-ui-smaller);
+	font-weight: var(--font-normal);
+	white-space: nowrap;
 }
 
 .tr-inbox-error {
@@ -107,75 +120,29 @@
 }
 
 .tr-inbox-detail {
-	display: flex;
-	flex-direction: column;
-	gap: 10px;
-	margin-top: 10px;
+	margin-top: 12px;
 }
 
 .tr-inbox-citations {
 	display: flex;
 	flex-wrap: wrap;
-	gap: 8px;
+	gap: 8px 12px;
 	font-size: var(--font-ui-smaller);
 }
 
 .tr-inbox-final {
 	color: var(--text-muted);
 	font-style: italic;
+	margin: 0;
 }
 
-.tr-inbox-proposal {
-	border: 1px solid var(--background-modifier-border);
-	border-radius: 6px;
-	padding: 8px;
-}
-
-.tr-inbox-proposal.is-applied {
+/* Draft cards reuse the Card Polish preview card styling; only state tints are local. */
+.tr-card-ai-preview-new-card.is-applied {
 	opacity: 0.55;
 }
 
-.tr-inbox-proposal.is-rejected {
+.tr-card-ai-preview-new-card.is-rejected {
 	opacity: 0.4;
-	text-decoration: line-through;
-}
-
-.tr-inbox-proposal-head {
-	display: flex;
-	justify-content: space-between;
-	gap: 8px;
-	margin-bottom: 6px;
-}
-
-.tr-inbox-fields {
-	display: flex;
-	flex-direction: column;
-	gap: 6px;
-}
-
-.tr-inbox-field {
-	display: flex;
-	flex-direction: column;
-	gap: 2px;
-}
-
-.tr-inbox-field-name {
-	font-size: var(--font-ui-smaller);
-	color: var(--text-muted);
-}
-
-.tr-inbox-field textarea {
-	width: 100%;
-	resize: vertical;
-	font-family: inherit;
-}
-
-.tr-inbox-raw {
-	white-space: pre-wrap;
-	background: var(--background-secondary);
-	padding: 8px;
-	border-radius: 6px;
-	overflow-x: auto;
 }
 
 .tr-inbox-images {
@@ -199,14 +166,19 @@
 	border-radius: 4px;
 }
 
-.tr-inbox-proposal-actions,
-.tr-inbox-bulk,
 .tr-inbox-retry {
 	display: flex;
+	align-items: center;
 	gap: 8px;
-	margin-top: 6px;
+	margin-top: 12px;
 }
 
-.tr-inbox-retry input {
+.tr-inbox-retry > :first-child {
 	flex: 1;
+}
+
+.tr-inbox-empty {
+	color: var(--text-muted);
+	text-align: center;
+	padding: 24px 0;
 }

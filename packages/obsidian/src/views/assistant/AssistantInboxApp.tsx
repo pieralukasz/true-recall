@@ -3,17 +3,17 @@ import { useState } from "preact/hooks";
 import type {
 	AssistantProposal,
 	AssistantTask,
-	ImageCandidate,
 } from "@true-recall/core/ai/assistant";
 
-import { Clickable } from "@true-recall/obsidian/components";
+import { ActionButton, TextInput } from "@true-recall/obsidian/components";
 import { Q, useQuery } from "@true-recall/obsidian/data";
 import { usePlugin } from "@true-recall/obsidian/preact/ObsidianContext";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 
 import { AssistantApplyService } from "../../services/assistant/assistant-apply.service";
+import { CardAIField } from "@true-recall/plugins/shared/CardAIField";
 
-function proposalSummary(p: AssistantProposal): string {
+function proposalTitle(p: AssistantProposal): string {
 	switch (p.type) {
 		case "create_card":
 			return "New card";
@@ -26,71 +26,153 @@ function proposalSummary(p: AssistantProposal): string {
 		case "insert_diagram":
 			return `Diagram (${p.format})`;
 		case "attach_images":
-			return `Images (${p.candidates.length} candidates)`;
+			return `Images (${p.candidates.length} found)`;
 	}
 }
 
-function ProposalEditor({
+/** Editable text content for the non-card proposal types (null = not applicable). */
+function contentField(
+	p: AssistantProposal,
+): { label: string; value: string } | null {
+	switch (p.type) {
+		case "append_to_note":
+		case "create_note":
+			return { label: "Content", value: p.markdown };
+		case "insert_diagram":
+			return { label: `Diagram (${p.format})`, value: p.code };
+		default:
+			return null;
+	}
+}
+
+function ProposalCard({
+	task,
 	proposal,
-	onChangeFields,
-	onToggleImage,
+	apply,
+	persist,
 }: {
+	task: AssistantTask;
 	proposal: AssistantProposal;
-	onChangeFields: (fields: Record<string, string>) => void;
-	onToggleImage: (index: number) => void;
+	apply: AssistantApplyService;
+	persist: () => void;
 }) {
-	if (proposal.type === "create_card" || proposal.type === "update_card") {
-		return (
-			<div class="tr-inbox-fields">
-				{Object.entries(proposal.fields).map(([name, value]) => (
-					<label key={name} class="tr-inbox-field">
-						<span class="tr-inbox-field-name">{name}</span>
-						<textarea
-							rows={3}
-							value={value}
-							onInput={(e) =>
-								onChangeFields({
-									...proposal.fields,
-									[name]: (e.target as HTMLTextAreaElement).value,
-								})
-							}
+	const isCard =
+		proposal.type === "create_card" || proposal.type === "update_card";
+	const content = contentField(proposal);
+
+	const [fields, setFields] = useState<Record<string, string>>(() =>
+		isCard ? { ...proposal.fields } : {},
+	);
+	const [text, setText] = useState(() => content?.value ?? "");
+	const [imageSel, setImageSel] = useState<Set<number>>(() => new Set());
+
+	const runApply = async (force = false) => {
+		// Sync local edits onto the proposal before applying.
+		if (isCard) proposal.fields = fields;
+		if (proposal.type === "append_to_note" || proposal.type === "create_note") {
+			proposal.markdown = text;
+		}
+		if (proposal.type === "insert_diagram") proposal.code = text;
+		if (proposal.type === "attach_images") {
+			proposal.candidates.forEach((c, i) => {
+				c.selected = imageSel.has(i);
+			});
+		}
+
+		const result = await apply.apply(task, proposal, {
+			fields: isCard ? fields : undefined,
+			force,
+		});
+		if (result.ok) {
+			proposal.status = "applied";
+			persist();
+			notify().success("Applied");
+		} else if (result.conflictFields) {
+			const confirmed = activeWindow.confirm(
+				`Fields changed since the AI saw them: ${result.conflictFields.join(", ")}. Apply anyway?`,
+			);
+			if (confirmed) await runApply(true);
+		} else if (result.error) {
+			notify().error(result.error);
+		}
+	};
+
+	const reject = () => {
+		proposal.status = "rejected";
+		persist();
+	};
+
+	return (
+		<article class={`tr-card-ai-preview-new-card is-${proposal.status}`}>
+			<header class="tr-card-ai-preview-new-card-header">
+				<span class="tr-card-ai-preview-new-card-index">
+					{proposalTitle(proposal)}
+				</span>
+				<span class="tr-inbox-status">{proposal.status}</span>
+			</header>
+
+			{proposal.status === "proposed" && (
+				<div class="tr-card-ai-preview-new-card-body">
+					{isCard &&
+						Object.keys(proposal.fields).map((name) => (
+							<CardAIField
+								key={name}
+								label={name}
+								value={fields[name] ?? ""}
+								onChange={(v) => setFields((prev) => ({ ...prev, [name]: v }))}
+							/>
+						))}
+
+					{content && (
+						<CardAIField
+							label={content.label}
+							value={text}
+							onChange={setText}
 						/>
-					</label>
-				))}
-			</div>
-		);
-	}
-	if (proposal.type === "attach_images") {
-		return (
-			<div class="tr-inbox-images">
-				{proposal.candidates.map((c: ImageCandidate, i: number) => (
-					<label key={c.url} class="tr-inbox-image">
-						<input
-							type="checkbox"
-							checked={c.selected === true}
-							onChange={() => onToggleImage(i)}
+					)}
+
+					{proposal.type === "attach_images" && (
+						<div class="tr-inbox-images">
+							{proposal.candidates.map((c, i) => (
+								<label key={c.url} class="tr-inbox-image">
+									<input
+										type="checkbox"
+										checked={imageSel.has(i)}
+										onChange={() =>
+											setImageSel((prev) => {
+												const next = new Set(prev);
+												if (next.has(i)) next.delete(i);
+												else next.add(i);
+												return next;
+											})
+										}
+									/>
+									{/* biome-ignore lint/a11y/useAltText: candidate title may be absent */}
+									<img
+										src={c.thumbnailUrl ?? c.url}
+										alt={c.title ?? ""}
+										loading="lazy"
+									/>
+									<span>
+										{c.title ?? c.url} {c.license ? `(${c.license})` : ""}
+									</span>
+								</label>
+							))}
+						</div>
+					)}
+
+					<div class="tr-card-ai-preview-actions">
+						<ActionButton
+							label="Apply"
+							variant="primary"
+							onClick={() => void runApply()}
 						/>
-						{/* biome-ignore lint/a11y/useAltText: candidate title may be absent */}
-						<img
-							src={c.thumbnailUrl ?? c.url}
-							alt={c.title ?? ""}
-							loading="lazy"
-						/>
-						<span>
-							{c.title ?? c.url} {c.license ? `(${c.license})` : ""}
-						</span>
-					</label>
-				))}
-			</div>
-		);
-	}
-	const text =
-		proposal.type === "insert_diagram"
-			? proposal.code
-			: proposal.type === "append_to_note" || proposal.type === "create_note"
-				? proposal.markdown
-				: "";
-	return <pre class="tr-inbox-raw">{text}</pre>;
+						<ActionButton label="Reject" variant="ghost" onClick={reject} />
+					</div>
+				</div>
+			)}
+		</article>
+	);
 }
 
 function TaskDetail({ task }: { task: AssistantTask }) {
@@ -106,122 +188,49 @@ function TaskDetail({ task }: { task: AssistantTask }) {
 		forceRender((n) => n + 1);
 	};
 
-	const applyOne = async (proposal: AssistantProposal, force = false) => {
-		const result = await apply.apply(task, proposal, { force });
-		if (result.ok) {
-			proposal.status = "applied";
-			persist();
-			notify().success("Applied");
-		} else if (result.conflictFields) {
-			const confirmed = activeWindow.confirm(
-				`Fields changed since the AI saw them: ${result.conflictFields.join(", ")}. Apply anyway?`,
-			);
-			if (confirmed) await applyOne(proposal, true);
-		} else if (result.error) {
-			notify().error(result.error);
-		}
-	};
-
-	const pending = manifest.proposals.filter((p) => p.status === "proposed");
-
 	return (
-		<div class="tr-inbox-detail">
+		<div class="tr-card-ai-preview-root tr-inbox-detail">
 			{manifest.citations.length > 0 && (
-				<div class="tr-inbox-citations">
-					<strong>Sources:</strong>
-					{manifest.citations.map((c) => (
-						<a key={c.url} href={c.url} rel="noopener">
-							{c.title ?? c.url}
-						</a>
-					))}
-				</div>
-			)}
-			{manifest.finalText && <p class="tr-inbox-final">{manifest.finalText}</p>}
-			{manifest.proposals.map((proposal) => (
-				<div
-					key={proposal.id}
-					class={`tr-inbox-proposal is-${proposal.status}`}
-				>
-					<div class="tr-inbox-proposal-head">
-						<span>{proposalSummary(proposal)}</span>
-						<span class="tr-inbox-status">{proposal.status}</span>
+				<section class="tr-card-ai-preview-section">
+					<h5 class="tr-card-ai-preview-column-title">Sources</h5>
+					<div class="tr-inbox-citations">
+						{manifest.citations.map((c) => (
+							<a key={c.url} href={c.url} rel="noopener">
+								{c.title ?? c.url}
+							</a>
+						))}
 					</div>
-					{proposal.status === "proposed" && (
-						<>
-							<ProposalEditor
-								proposal={proposal}
-								onChangeFields={(fields) => {
-									if (
-										proposal.type === "create_card" ||
-										proposal.type === "update_card"
-									) {
-										proposal.fields = fields;
-										persist();
-									}
-								}}
-								onToggleImage={(i) => {
-									if (proposal.type === "attach_images") {
-										const c = proposal.candidates[i];
-										if (c) c.selected = !c.selected;
-										persist();
-									}
-								}}
-							/>
-							<div class="tr-inbox-proposal-actions">
-								<Clickable
-									class="mod-cta"
-									onClick={() => void applyOne(proposal)}
-								>
-									Apply
-								</Clickable>
-								<Clickable
-									onClick={() => {
-										proposal.status = "rejected";
-										persist();
-									}}
-								>
-									Reject
-								</Clickable>
-							</div>
-						</>
-					)}
-				</div>
-			))}
-			{pending.length > 1 && (
-				<div class="tr-inbox-bulk">
-					<Clickable
-						class="mod-cta"
-						onClick={async () => {
-							for (const p of [...pending]) await applyOne(p);
-						}}
-					>
-						Apply all
-					</Clickable>
-					<Clickable
-						onClick={() => {
-							for (const p of pending) p.status = "rejected";
-							persist();
-						}}
-					>
-						Reject all
-					</Clickable>
-				</div>
+				</section>
 			)}
+
+			{manifest.finalText && <p class="tr-inbox-final">{manifest.finalText}</p>}
+
+			<div class="tr-card-ai-preview-new-list">
+				{manifest.proposals.map((proposal) => (
+					<ProposalCard
+						key={proposal.id}
+						task={task}
+						proposal={proposal}
+						apply={apply}
+						persist={persist}
+					/>
+				))}
+			</div>
+
 			<div class="tr-inbox-retry">
-				<input
-					type="text"
-					placeholder="Feedback for retry (optional)…"
+				<TextInput
 					value={feedback}
-					onInput={(e) => setFeedback((e.target as HTMLInputElement).value)}
+					onChange={setFeedback}
+					placeholder="Feedback for retry (optional)…"
 				/>
-				<Clickable
+				<ActionButton
+					label="Retry"
+					variant="secondary"
 					onClick={() => {
 						plugin.assistantService?.retryWithFeedback(task, feedback);
 						setFeedback("");
 					}}
-				>
-					Retry
-				</Clickable>
+				/>
 			</div>
 		</div>
 	);
@@ -243,6 +252,7 @@ export function AssistantInboxApp() {
 	return (
 		<div class="tr-inbox">
 			<h3>AI Inbox</h3>
+
 			{running.map((task) => (
 				<div key={task.id} class="tr-inbox-task is-running">
 					<div class="tr-inbox-task-head">
@@ -255,45 +265,60 @@ export function AssistantInboxApp() {
 								{line}
 							</div>
 						))}
-					<Clickable onClick={() => plugin.assistantService?.cancel(task.id)}>
-						Cancel
-					</Clickable>
+					<ActionButton
+						label="Cancel"
+						variant="ghost"
+						onClick={() => plugin.assistantService?.cancel(task.id)}
+					/>
 				</div>
 			))}
-			{ready.map((task) => (
-				<div key={task.id} class="tr-inbox-task is-ready">
-					<Clickable
-						class="tr-inbox-task-head"
-						onClick={() => setOpenId(openId === task.id ? null : task.id)}
-					>
-						<span>{task.instruction}</span>
-						<span class="tr-inbox-status">
-							{task.manifest?.proposals.filter((p) => p.status === "proposed")
-								.length ?? 0}{" "}
-							pending
-						</span>
-					</Clickable>
-					{openId === task.id && <TaskDetail task={task} />}
-				</div>
-			))}
+
+			{ready.map((task) => {
+				const pending =
+					task.manifest?.proposals.filter((p) => p.status === "proposed")
+						.length ?? 0;
+				return (
+					<div key={task.id} class="tr-inbox-task is-ready">
+						<button
+							type="button"
+							class="tr-inbox-task-head tr-inbox-task-head--clickable"
+							onClick={() => setOpenId(openId === task.id ? null : task.id)}
+						>
+							<span>{task.instruction}</span>
+							<span class="tr-inbox-status">{pending} pending</span>
+						</button>
+						{openId === task.id && <TaskDetail task={task} />}
+					</div>
+				);
+			})}
+
 			{failed.map((task) => (
 				<div key={task.id} class="tr-inbox-task is-failed">
 					<div class="tr-inbox-task-head">
 						<span>{task.instruction}</span>
 						<span class="tr-inbox-error">{task.error}</span>
 					</div>
-					<Clickable
-						onClick={() => plugin.assistantService?.retryWithFeedback(task, "")}
-					>
-						Retry
-					</Clickable>
-					<Clickable onClick={() => plugin.assistantService?.delete(task.id)}>
-						Delete
-					</Clickable>
+					<div class="tr-inbox-retry">
+						<ActionButton
+							label="Retry"
+							variant="secondary"
+							onClick={() =>
+								plugin.assistantService?.retryWithFeedback(task, "")
+							}
+						/>
+						<ActionButton
+							label="Delete"
+							variant="ghost"
+							onClick={() => plugin.assistantService?.delete(task.id)}
+						/>
+					</div>
 				</div>
 			))}
+
 			{tasks.length === 0 && (
-				<p>No AI tasks yet. Select text during review and hit “Ask AI”.</p>
+				<p class="tr-inbox-empty">
+					No AI tasks yet. Select text during review and hit “Ask AI”.
+				</p>
 			)}
 		</div>
 	);
