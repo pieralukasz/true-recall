@@ -136,4 +136,49 @@ describe("wireDataLayer", () => {
 			G.STATS,
 		]);
 	});
+
+	it("skips CARDS/DASHBOARD groups for content-only card updates", () => {
+		const dl = new DataLayer();
+		registerRemovalQueries(dl, [makeMeta("edited", State.New)]);
+		const invalidateSpy = vi.spyOn(dl, "invalidateGroups");
+		const bus = new DomainEventBus();
+
+		wireDataLayer(dl, bus);
+		bus.emit("card:updated", {
+			cardId: "edited",
+			changes: { question: true, answer: true },
+		});
+
+		expect(invalidateSpy).toHaveBeenCalledWith([G.BROWSER, G.PANEL]);
+	});
+
+	it("keeps full invalidation for scheduling-affecting card updates", () => {
+		const dl = new DataLayer();
+		registerRemovalQueries(dl, [makeMeta("graded", State.New)]);
+		const invalidateSpy = vi.spyOn(dl, "invalidateGroups");
+		const bus = new DomainEventBus();
+
+		wireDataLayer(dl, bus);
+		bus.emit("card:updated", {
+			cardId: "graded",
+			changes: { fsrs: true },
+		});
+		bus.emit("card:updated", {
+			cardId: "graded",
+			changes: {},
+		});
+
+		expect(invalidateSpy).toHaveBeenNthCalledWith(1, [
+			G.CARDS,
+			G.BROWSER,
+			G.DASHBOARD,
+			G.PANEL,
+		]);
+		expect(invalidateSpy).toHaveBeenNthCalledWith(2, [
+			G.CARDS,
+			G.BROWSER,
+			G.DASHBOARD,
+			G.PANEL,
+		]);
+	});
 });

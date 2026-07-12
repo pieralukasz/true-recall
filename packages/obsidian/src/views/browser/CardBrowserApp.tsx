@@ -1,4 +1,4 @@
-import { type Signal, useSignal } from "@preact/signals";
+import { type ReadonlySignal, type Signal, useSignal } from "@preact/signals";
 import { useCallback, useEffect, useMemo, useRef } from "preact/hooks";
 
 import { DuplicateQuestionError } from "@true-recall/core/flashcard/data/card-repository.service";
@@ -32,19 +32,29 @@ import {
 } from "@true-recall/obsidian/features/library/ui/browser/types";
 import { notifyDuplicateError } from "@true-recall/obsidian/features/library/ui/panel/utils/panel-helpers";
 import { MoveCardModal } from "@true-recall/obsidian/modals/shared/MoveCardModal";
-import { useApp, usePlugin } from "@true-recall/obsidian/preact";
+import {
+	useApp,
+	useGatedComputed,
+	usePlugin,
+} from "@true-recall/obsidian/preact";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 
 const PAGE_SIZE = BROWSER_PAGE_SIZE;
 
+// While the browser is visible, card-data changes rerun the SQL query at most
+// this often; while hidden, not at all.
+const RECOMPUTE_THROTTLE_MS = 2000;
+
 interface CardBrowserAppProps {
 	filterSourceUid?: Signal<string | null>;
 	filterOrphaned?: Signal<boolean>;
+	isViewVisible: ReadonlySignal<boolean>;
 }
 
 export function CardBrowserApp({
 	filterSourceUid,
 	filterOrphaned,
+	isViewVisible,
 }: CardBrowserAppProps) {
 	const plugin = usePlugin();
 	const app = useApp();
@@ -89,9 +99,9 @@ export function CardBrowserApp({
 		[plugin],
 	);
 
-	// Signal reads — subscribe component to reactive data changes
+	// Q.ALL_META is read only inside gated deps getters below, so a hidden
+	// browser tab neither subscribes to nor requeries on card-data changes.
 	const allCardsSignal = useQuery<Map<string, FSRSFlashcardItem>>(Q.ALL_META);
-	const allCards = allCardsSignal.value;
 	const searchTextVal = searchText.value;
 	const stateFiltersVal = stateFilters.value;
 	const sidebarFilterVal = sidebarFilter.value;
@@ -120,26 +130,36 @@ export function CardBrowserApp({
 		};
 	}, [searchTextVal, stateFiltersVal, sidebarFilterVal, showArchivedVal]);
 
-	const result = useMemo((): BrowserResult => {
-		return queryService.query(combinedFilter, sortVal, loadedLimitVal, 0);
-		// eslint-disable-next-line react-hooks/exhaustive-deps -- allCards triggers recompute on card mutations; queryService.query() reads cardStore live
-	}, [allCards, queryService, combinedFilter, sortVal, loadedLimitVal]);
+	// allCardsSignal.value in the deps getters triggers recompute on card
+	// mutations; the query service itself reads cardStore live.
+	const result = useGatedComputed(
+		(): BrowserResult =>
+			queryService.query(combinedFilter, sortVal, loadedLimitVal, 0),
+		() => [
+			allCardsSignal.value,
+			queryService,
+			combinedFilter,
+			sortVal,
+			loadedLimitVal,
+		],
+		{ isVisible: isViewVisible, throttleMs: RECOMPUTE_THROTTLE_MS },
+	);
 
 	const queryResetKey = useMemo(
 		() => getBrowserQueryResetKey(combinedFilter, sortVal),
 		[combinedFilter, sortVal],
 	);
 
-	const facetCounts = useMemo(
+	const facetCounts = useGatedComputed(
 		() => queryService.getFacetCounts(showArchivedVal),
-		// eslint-disable-next-line react-hooks/exhaustive-deps -- allCards triggers recompute on card mutations; getFacetCounts() reads cardStore live
-		[allCards, queryService, showArchivedVal],
+		() => [allCardsSignal.value, queryService, showArchivedVal],
+		{ isVisible: isViewVisible, throttleMs: RECOMPUTE_THROTTLE_MS },
 	);
 
-	const orphanedCardIds = useMemo(
+	const orphanedCardIds = useGatedComputed(
 		() => queryService.getOrphanedCardIds(),
-		// eslint-disable-next-line react-hooks/exhaustive-deps -- allCards triggers recompute on card mutations; getOrphanedCardIds() reads cardStore live
-		[allCards, queryService],
+		() => [allCardsSignal.value, queryService],
+		{ isVisible: isViewVisible, throttleMs: RECOMPUTE_THROTTLE_MS },
 	);
 
 	const getSuggestions = useMemo(() => {

@@ -560,15 +560,21 @@ describe("CardRepository - cloze operations", () => {
 			expect(card2).toBeUndefined();
 		});
 
-		it("notifies bulk change after updating siblings", () => {
+		it("notifies content-only updates when cloze indices are unchanged", () => {
 			const newTemplate = "{{c1::Italy}} is in {{c2::Europe}}";
 			repository.updateClozeTemplate(SOURCE_UID, OLD_TEMPLATE, newTemplate);
 
+			// Same card set — consumers can take the cheap content-only
+			// invalidation path instead of a full bulk reload.
 			expect(mockBusEmit).toHaveBeenCalledWith(
-				"cards:bulk",
+				"card:updated",
 				expect.objectContaining({
-					cardIds: expect.any(Array),
+					changes: { question: true, answer: true },
 				}),
+			);
+			expect(mockBusEmit).not.toHaveBeenCalledWith(
+				"cards:bulk",
+				expect.anything(),
 			);
 		});
 

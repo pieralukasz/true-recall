@@ -1,4 +1,4 @@
-import { useComputed, useSignal } from "@preact/signals";
+import { type ReadonlySignal, useComputed, useSignal } from "@preact/signals";
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 
 import { getFilteredDistributions } from "@true-recall/core/metrics/distribution-filter";
@@ -38,11 +38,19 @@ import {
 	WorkloadForecastSection,
 } from "@true-recall/obsidian/features/metrics/ui/stats/components";
 import { useStatsData } from "@true-recall/obsidian/features/metrics/ui/stats/hooks/use-stats-data";
-import { usePlugin } from "@true-recall/obsidian/preact";
+import { useGatedComputed, usePlugin } from "@true-recall/obsidian/preact";
 
 import { HeatmapWidget } from "@true-recall/plugins/dashboard-codeblock/analytics/HeatmapWidget";
 
-export function StatsApp() {
+// While the stats view is visible, Q.ALL_META changes (every review grade)
+// refresh the card snapshot at most this often; while hidden, not at all.
+const RECOMPUTE_THROTTLE_MS = 2000;
+
+interface StatsAppProps {
+	isViewVisible: ReadonlySignal<boolean>;
+}
+
+export function StatsApp({ isViewVisible }: StatsAppProps) {
 	const plugin = usePlugin();
 	const allMeta = useQuery<Map<string, CardSchedulingMeta>>(Q.ALL_META);
 	const settingsSignal = useQuery<TrueRecallSettings>(Q.SETTINGS);
@@ -53,15 +61,20 @@ export function StatsApp() {
 	const forecastRange = useSignal<ForecastRange>("1m");
 	const showArchived = useSignal(false);
 	const settings = settingsSignal.value;
-	const archivedUids = archivedSourceUidsSignal.value;
-	const allCards = useMemo(() => {
-		const archived = archivedUids;
-		if (showArchived.value || !archived || archived.size === 0)
-			return [...allMeta.value.values()];
-		return [...allMeta.value.values()].filter(
-			(card) => !archived.has(card.sourceUid ?? ""),
-		);
-	}, [allMeta.value, archivedUids, showArchived.value]);
+	// Gated snapshot: hidden stats tabs neither subscribe to nor recompute on
+	// card-data changes; everything below derives from this frozen reference.
+	const allCards = useGatedComputed(
+		() => {
+			const archived = archivedSourceUidsSignal.value;
+			if (showArchived.value || !archived || archived.size === 0)
+				return [...allMeta.value.values()];
+			return [...allMeta.value.values()].filter(
+				(card) => !archived.has(card.sourceUid ?? ""),
+			);
+		},
+		() => [allMeta.value, archivedSourceUidsSignal.value, showArchived.value],
+		{ isVisible: isViewVisible, throttleMs: RECOMPUTE_THROTTLE_MS },
+	);
 	const [renderStage, setRenderStage] = useState(0);
 	const initialStagingDone = useRef(false);
 
@@ -174,7 +187,11 @@ export function StatsApp() {
 		[filteredCards],
 	);
 
-	const { data, loading, error } = useStatsData(timeRange, filterContext);
+	const { data, loading, error } = useStatsData(
+		timeRange,
+		filterContext,
+		isViewVisible,
+	);
 
 	// Staged chart rendering to avoid blocking the main thread.
 	// Charts are expensive to mount (Chart.js, D3 heatmap), so we paint them
@@ -312,7 +329,10 @@ export function StatsApp() {
 							{renderStage >= 2 && (
 								<>
 									<ChartCard title="Activity" subtitle="Review heatmap">
-										<HeatmapWidget source="months: 12" />
+										<HeatmapWidget
+											source="months: 12"
+											isViewVisible={isViewVisible}
+										/>
 									</ChartCard>
 
 									{trueRetention && (

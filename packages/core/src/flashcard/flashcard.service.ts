@@ -796,16 +796,28 @@ export class FlashcardManager {
 			.filter((c) => desiredOrds.has(c.templateOrd ?? 0))
 			.map((c) => c.id);
 
+		let createdCount = 0;
 		for (const gen of desiredGenerated) {
 			if (existingOrds.has(gen.templateOrd)) continue;
 			const fsrsData = this.createCardFromGenerated(gen, updatedNote, noteType);
 			updatedCardIds.push(fsrsData.id);
+			createdCount++;
 		}
 
-		if (updatedCardIds.length > 0) {
+		if (createdCount > 0) {
 			this.emitEvent("cards:bulk", {
 				cardIds: updatedCardIds,
 			});
+		} else {
+			// Pure field edit: only rendered Q/A changed, scheduling meta is
+			// untouched — per-card content-only events let consumers take the
+			// narrow invalidation path instead of a full bulk reload.
+			for (const cardId of updatedCardIds) {
+				this.emitEvent("card:updated", {
+					cardId,
+					changes: { question: true, answer: true },
+				});
+			}
 		}
 
 		return { updatedCardIds };

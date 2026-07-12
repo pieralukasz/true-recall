@@ -5,3 +5,4 @@ export {
 	useApp,
 	usePlugin,
 } from "@true-recall/obsidian/preact/ObsidianContext";
+export { useGatedComputed } from "@true-recall/obsidian/preact/useGatedComputed";

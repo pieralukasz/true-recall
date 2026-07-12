@@ -1,4 +1,4 @@
-import type { Signal } from "@preact/signals";
+import type { ReadonlySignal, Signal } from "@preact/signals";
 import { useSignal } from "@preact/signals";
 import { useEffect, useMemo } from "preact/hooks";
 
@@ -25,7 +25,12 @@ import type {
 } from "@true-recall/core/types";
 
 import { Q, useQuery } from "@true-recall/obsidian/data";
-import { usePlugin } from "@true-recall/obsidian/preact";
+import { useGatedComputed, usePlugin } from "@true-recall/obsidian/preact";
+
+// Trailing delay before rerunning the full stats pipeline after a card-data
+// change. Rapid review grading resets the timer, so at most one ~1s compute
+// runs per pause instead of one per grade. The initial load stays immediate.
+const RECOMPUTE_DEBOUNCE_MS = 300;
 
 interface StatsData {
 	today: TodaySummary;
@@ -53,7 +58,8 @@ interface StatsData {
 
 export function useStatsData(
 	timeRange: Signal<StatsTimeRange>,
-	filter?: Signal<StatsFilterContext | null>,
+	filter: Signal<StatsFilterContext | null> | undefined,
+	isViewVisible: ReadonlySignal<boolean>,
 ): {
 	data: StatsData | null;
 	loading: boolean;
@@ -77,9 +83,13 @@ export function useStatsData(
 		return calc;
 	}, [plugin]);
 
-	const cardSnapshot = useMemo(
+	// Gated snapshot: while the stats view is hidden, card-data changes are
+	// neither subscribed nor recomputed, so the effect below (the expensive
+	// pipeline) does not rerun. On reveal the fresh snapshot reruns it once.
+	const cardSnapshot = useGatedComputed(
 		() => [...allMeta.value.values()],
-		[allMeta.value],
+		() => [allMeta.value],
+		{ isVisible: isViewVisible },
 	);
 
 	// Single unified async pipeline — stale-while-revalidate
@@ -93,7 +103,9 @@ export function useStatsData(
 		statsCalc.setCardSnapshot(cardSnapshot);
 		statsCalc.setFilter(f ?? EMPTY_FILTER);
 
-		// Yield to renderer, then compute everything in one batch
+		// Yield to renderer, then compute everything in one batch. After the
+		// initial load, debounce so a burst of changes runs the pipeline once.
+		const delayMs = data.peek() === null ? 0 : RECOMPUTE_DEBOUNCE_MS;
 		const timeoutId = window.setTimeout(() => {
 			if (cancelled) return;
 
@@ -149,7 +161,7 @@ export function useStatsData(
 			} finally {
 				if (!cancelled) loading.value = false;
 			}
-		}, 0);
+		}, delayMs);
 
 		return () => {
 			cancelled = true;

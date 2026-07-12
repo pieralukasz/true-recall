@@ -44,6 +44,11 @@ export function LivePreviewField({
 	const saveTimerRef = useRef<number | null>(null);
 	const onContentChangeRef = useRef(onContentChange);
 	const fieldRef = useRef(field);
+	// Save only after an actual user edit. Obsidian's internal CM6 extensions
+	// can rewrite the document on their own (e.g. $$ math -> widget markers);
+	// saving on a bare value mismatch would persist that corrupted content and
+	// fire a full save/invalidation cascade on every blur or outside click.
+	const hasUserEditRef = useRef(false);
 
 	contentRef.current = content;
 	onContentChangeRef.current = onContentChange;
@@ -51,7 +56,8 @@ export function LivePreviewField({
 
 	const performSave = useCallback(() => {
 		const editor = editorRef.current;
-		if (!editor) return;
+		if (!editor || !hasUserEditRef.current) return;
+		hasUserEditRef.current = false;
 		const currentValue = editor.value;
 		const normalizedOriginal = stripBrTags(contentRef.current);
 		if (currentValue !== normalizedOriginal && onContentChangeRef.current) {
@@ -101,6 +107,7 @@ export function LivePreviewField({
 					tr.isUserEvent("move"),
 			);
 			if (isUserEdit) {
+				hasUserEditRef.current = true;
 				scheduleSave();
 			}
 		},
@@ -171,6 +178,10 @@ export function LivePreviewField({
 		const normalizedContent = stripBrTags(content);
 		if (editor.value === normalizedContent) return;
 
+		// The old card's doc is replaced below; a pending user-edit flag must
+		// not survive into the new card, or the next blur would save the new
+		// card's untouched content as an "edit".
+		hasUserEditRef.current = false;
 		const cm = editor.cm;
 		cm.dispatch({
 			changes: { from: 0, to: cm.state.doc.length, insert: normalizedContent },

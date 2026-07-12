@@ -27,6 +27,25 @@ const EVENT_TO_GROUPS: Record<string, string[]> = {
 	],
 };
 
+// Question/answer-only edits don't touch scheduling meta, so the expensive
+// CARDS group (Q.ALL_META reload) and dashboard aggregations can be skipped;
+// browser and panel render card text, so they still reload.
+const CONTENT_ONLY_UPDATE_GROUPS = [G.BROWSER, G.PANEL];
+
+function isContentOnlyUpdate(
+	event: DomainEventType,
+	payload: unknown,
+): boolean {
+	if (event !== "card:updated") return false;
+	const changes = (payload as { changes?: Record<string, boolean> }).changes;
+	if (!changes) return false;
+	const changedKeys = Object.keys(changes).filter((key) => changes[key]);
+	return (
+		changedKeys.length > 0 &&
+		changedKeys.every((key) => key === "question" || key === "answer")
+	);
+}
+
 const CARD_EVENTS: DomainEventType[] = [
 	"card:added",
 	"card:updated",
@@ -239,7 +258,9 @@ export function wireDataLayer(dl: DataLayer, bus: DomainEventBus): () => void {
 				if (mutation) setLastMutation(mutation);
 				if (tryHandleIncrementalEvent(dl, event, payload, mutation)) return;
 
-				const groups = EVENT_TO_GROUPS[event];
+				const groups = isContentOnlyUpdate(event, payload)
+					? CONTENT_ONLY_UPDATE_GROUPS
+					: EVENT_TO_GROUPS[event];
 				if (groups) dl.invalidateGroups(groups);
 			},
 		),

@@ -1,4 +1,4 @@
-import { useSignal } from "@preact/signals";
+import { type ReadonlySignal, useSignal } from "@preact/signals";
 import { useCallback, useEffect, useMemo, useRef } from "preact/hooks";
 
 import { aggregateDashboardData } from "@true-recall/core/helpers/note-aggregation";
@@ -31,11 +31,19 @@ import type {
 import { filterActiveCards } from "@true-recall/obsidian/features/study/ui/review/helpers/session-helpers";
 import { PresetOptionsModal } from "@true-recall/obsidian/modals/shared/PresetOptionsModal";
 import { NamePromptModal } from "@true-recall/obsidian/modals/study/NamePromptModal";
-import { usePlugin } from "@true-recall/obsidian/preact";
+import { useGatedComputed, usePlugin } from "@true-recall/obsidian/preact";
 
 import { HeatmapWidget } from "@true-recall/plugins/dashboard-codeblock/analytics/HeatmapWidget";
 
-export function DashboardApp() {
+// While the dashboard is visible, Q.ALL_META changes (every review grade)
+// recompute the aggregation at most this often; while hidden, not at all.
+const RECOMPUTE_THROTTLE_MS = 2000;
+
+interface DashboardAppProps {
+	isViewVisible: ReadonlySignal<boolean>;
+}
+
+export function DashboardApp({ isViewVisible }: DashboardAppProps) {
 	const plugin = usePlugin();
 	const allMeta = useQuery<Map<string, CardSchedulingMeta>>(Q.ALL_META);
 	const settingsSignal = useQuery<TrueRecallSettings>(Q.SETTINGS);
@@ -58,10 +66,20 @@ export function DashboardApp() {
 
 	const showArchived = useSignal(false);
 
-	// Signal reads — subscribe component to reactive data changes
-	const allCards = useMemo(() => [...allMeta.value.values()], [allMeta.value]);
 	const _settings = settingsSignal.value;
-	const archived = archivedSourceUidsSignal.value;
+
+	// One gated snapshot for all card-derived data: while this leaf is hidden
+	// the hot signals are not even subscribed, so grading in the review view
+	// no longer re-renders or recomputes the dashboard aggregation. Downstream
+	// useMemos stay stable because both references are frozen together.
+	const { allCards, archived } = useGatedComputed(
+		() => ({
+			allCards: [...allMeta.value.values()],
+			archived: archivedSourceUidsSignal.value,
+		}),
+		() => [allMeta.value, archivedSourceUidsSignal.value],
+		{ isVisible: isViewVisible, throttleMs: RECOMPUTE_THROTTLE_MS },
+	);
 
 	const cachedActiveCards = useMemo(
 		() =>
@@ -384,7 +402,7 @@ export function DashboardApp() {
 						</div>
 
 						<div class="ep:mt-3">
-							<HeatmapWidget source="months: 0" />
+							<HeatmapWidget source="months: 0" isViewVisible={isViewVisible} />
 						</div>
 					</div>
 				</div>
