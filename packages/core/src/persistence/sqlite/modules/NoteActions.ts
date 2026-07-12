@@ -61,6 +61,62 @@ export class NoteActions {
 		return row ? mapRowToNote(row) : null;
 	}
 
+	// ── Device sync (raw rows, LWW by updated_at) ─────────────
+
+	getRawRowsModifiedSince(timestamp: number): NoteRow[] {
+		return this.db.query<NoteRow>(
+			`SELECT * FROM notes WHERE updated_at > ?`,
+			[timestamp],
+		);
+	}
+
+	getRawRowsByIds(ids: string[]): NoteRow[] {
+		if (ids.length === 0) return [];
+		const placeholders = ids.map(() => "?").join(",");
+		return this.db.query<NoteRow>(
+			`SELECT * FROM notes WHERE id IN (${placeholders})`,
+			ids,
+		);
+	}
+
+	hasRow(id: string): boolean {
+		return (
+			this.db.get<{ id: string }>(`SELECT id FROM notes WHERE id = ?`, [id]) !==
+			undefined
+		);
+	}
+
+	/** Last-writer-wins upsert of a remote device's note row. */
+	upsertRowFromRemote(row: NoteRow): boolean {
+		this.db.run(
+			`INSERT INTO notes (id, note_type_id, fields_json, tags, source_uid, source_text, created_via, created_at, updated_at, deleted_at)
+			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			 ON CONFLICT(id) DO UPDATE SET
+				note_type_id = excluded.note_type_id,
+				fields_json = excluded.fields_json,
+				tags = excluded.tags,
+				source_uid = excluded.source_uid,
+				source_text = excluded.source_text,
+				created_via = excluded.created_via,
+				updated_at = excluded.updated_at,
+				deleted_at = excluded.deleted_at
+			 WHERE COALESCE(excluded.updated_at, 0) > COALESCE(notes.updated_at, 0)`,
+			[
+				row.id,
+				row.note_type_id,
+				row.fields_json,
+				row.tags,
+				row.source_uid,
+				row.source_text,
+				row.created_via,
+				row.created_at,
+				row.updated_at,
+				row.deleted_at,
+			],
+		);
+		return this.db.getRowsModified() > 0;
+	}
+
 	getBySourceUid(sourceUid: string): Note[] {
 		const rows = this.db.query<NoteRow>(
 			`SELECT * FROM notes WHERE source_uid = ? AND deleted_at IS NULL`,

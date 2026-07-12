@@ -1,5 +1,7 @@
 import type { IPersistence } from "@true-recall/core/interfaces/persistence";
 import { CardActions } from "@true-recall/core/persistence/sqlite/modules/CardActions";
+import { NoteActions } from "@true-recall/core/persistence/sqlite/modules/NoteActions";
+import { NoteTypeActions } from "@true-recall/core/persistence/sqlite/modules/NoteTypeActions";
 import { StatsActions } from "@true-recall/core/persistence/sqlite/modules/StatsActions";
 import { SqliteDatabase } from "@true-recall/core/persistence/sqlite/SqliteDatabase";
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite/SqliteStoreService";
@@ -88,31 +90,88 @@ export class DeviceSyncService {
 		try {
 			const remoteCards = new CardActions(remoteDb);
 			const remoteStats = new StatsActions(remoteDb);
+			const remoteNotes = new NoteActions(remoteDb);
+			const remoteNoteTypes = new NoteTypeActions(remoteDb);
 
 			const syncKey = `sync:${remoteDeviceId}`;
 			const lastSyncStr = this.localStore.cards.getSyncMetadata(syncKey);
 			const lastSync = lastSyncStr ? Number(lastSyncStr) : 0;
 
+			const modifiedNoteTypes = remoteNoteTypes.getRawRowsModifiedSince(lastSync);
+			const modifiedNotes = remoteNotes.getRawRowsModifiedSince(lastSync);
 			const modifiedCards = remoteCards.getModifiedSince(lastSync);
 			const modifiedLogs = remoteStats.getModifiedReviewLogSince(lastSync);
 
+			// Cards FK-reference notes and notes FK-reference note types; a
+			// referenced row can predate the watermark on the remote while
+			// still being unknown locally — fetch those regardless of time.
+			const knownNoteIds = new Set(modifiedNotes.map((n) => n.id));
+			const missingNoteIds = [
+				...new Set(
+					modifiedCards
+						.map((c) => c.noteId)
+						.filter(
+							(id): id is string =>
+								!!id &&
+								!knownNoteIds.has(id) &&
+								!this.localStore.notes.hasRow(id),
+						),
+				),
+			];
+			const backfillNotes = remoteNotes.getRawRowsByIds(missingNoteIds);
+
+			const allNotes = [...modifiedNotes, ...backfillNotes];
+			const knownTypeIds = new Set(modifiedNoteTypes.map((t) => t.id));
+			const missingTypeIds = [
+				...new Set(
+					allNotes
+						.map((n) => n.note_type_id)
+						.filter(
+							(id) =>
+								!knownTypeIds.has(id) && !this.localStore.noteTypes.hasRow(id),
+						),
+				),
+			];
+			const backfillTypes = remoteNoteTypes.getRawRowsByIds(missingTypeIds);
+
+			// The sync watermark must reflect the remote rows actually seen,
+			// not the local wall clock — file sync (iCloud/git) delivers
+			// remote DBs late, and a Date.now() watermark skipped those rows
+			// forever on the next pass.
+			let maxObserved = lastSync;
+			const observe = (ts: number | null | undefined) => {
+				if (typeof ts === "number" && ts > maxObserved) maxObserved = ts;
+			};
+
 			let cardsApplied = 0;
-			const localCards = this.localStore.cards;
-			for (const card of modifiedCards) {
-				if (localCards.upsertFromRemote(card)) {
-					cardsApplied++;
-				}
-			}
-
 			let reviewLogsApplied = 0;
-			const localStats = this.localStore.stats;
-			for (const log of modifiedLogs) {
-				if (localStats.upsertReviewLogFromRemote(log)) {
-					reviewLogsApplied++;
-				}
-			}
 
-			localCards.setSyncMetadata(syncKey, String(Date.now()));
+			// One transaction: a failure mid-merge must not leave cards
+			// without their notes (FK) or advance the watermark.
+			this.localStore.transaction(() => {
+				for (const row of [...modifiedNoteTypes, ...backfillTypes]) {
+					this.localStore.noteTypes.upsertRowFromRemote(row);
+					observe(row.updated_at);
+				}
+				for (const row of allNotes) {
+					this.localStore.notes.upsertRowFromRemote(row);
+					observe(row.updated_at);
+				}
+				for (const card of modifiedCards) {
+					if (this.localStore.cards.upsertFromRemote(card)) {
+						cardsApplied++;
+					}
+					observe(card.updatedAt);
+				}
+				for (const log of modifiedLogs) {
+					if (this.localStore.stats.upsertReviewLogFromRemote(log)) {
+						reviewLogsApplied++;
+					}
+					observe(log.updatedAt);
+				}
+
+				this.localStore.cards.setSyncMetadata(syncKey, String(maxObserved));
+			});
 
 			if (cardsApplied > 0 || reviewLogsApplied > 0) {
 				console.debug(
