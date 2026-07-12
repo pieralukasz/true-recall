@@ -75,6 +75,8 @@ export interface CreateNoteParams {
 	sourceText?: string;
 	createdVia?: string;
 	createdAt?: number;
+	/** Silently drop cards whose rendered question already exists (AI path). */
+	skipDuplicates?: boolean;
 }
 
 export interface CreateNoteResult {
@@ -554,9 +556,37 @@ export class FlashcardManager {
 			createdVia: params.createdVia ?? "manual",
 		};
 
+		let generated = generateCardsForNote(note, noteType);
+
+		// AI generation re-runs over the same source note routinely; with
+		// skipDuplicates the cards whose rendered question already exists are
+		// dropped instead of duplicated (manual paths keep erroring instead).
+		if (params.skipDuplicates) {
+			const renderQuestionFor = (ord: number): string => {
+				const template =
+					noteType.type === 1
+						? noteType.templates[0]
+						: noteType.templates.find((t) => t.ordinal === ord);
+				if (!template) return "";
+				return renderTemplate(template.qfmt, {
+					fields: params.fields,
+					clozeIndex: ord,
+				});
+			};
+			generated = generated.filter((gen) => {
+				const question = renderQuestionFor(gen.templateOrd);
+				return (
+					question.length === 0 ||
+					!this.store?.cards.getCardIdByQuestion(question)
+				);
+			});
+			if (generated.length === 0) {
+				return { note, cards: [] };
+			}
+		}
+
 		this.store.notes.create(note);
 
-		const generated = generateCardsForNote(note, noteType);
 		const cards: FSRSCardData[] = [];
 
 		for (const gen of generated) {

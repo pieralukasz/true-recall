@@ -24,6 +24,7 @@ export interface CardEventFlashcardManager {
 		sourceUid: string;
 		sourceText?: string;
 		createdVia: string;
+		skipDuplicates?: boolean;
 	}): { cards: FlashcardItem[] };
 }
 
@@ -58,6 +59,9 @@ export async function processCardEvents(
 					sourceUid,
 					sourceText,
 					createdVia: "ai",
+					// Re-running generation on the same note must not create
+					// duplicate cards; empty result counts as a duplicate below.
+					skipDuplicates: true,
 				});
 
 				if (result.cards.length > 0) {
