@@ -1,7 +1,6 @@
 import { State } from "ts-fsrs";
 
 import { isLearningState } from "@true-recall/core/helpers/card-state";
-import { formatLocalDate } from "@true-recall/core/utils/date.utils";
 import {
 	MATURE_INTERVAL_DAYS,
 	toEntries,
@@ -9,6 +8,7 @@ import {
 	type WorkloadForecastSummary,
 } from "@true-recall/core/metrics/fsrs-tools/statistics/workload-forecast.calculator";
 import type { FSRSCardData } from "@true-recall/core/types";
+import { formatLocalDate } from "@true-recall/core/utils/date.utils";
 
 /**
  * Build forecast entries from a pre-filtered card list.

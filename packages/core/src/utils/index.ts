@@ -6,7 +6,6 @@ export {
 	isTimestampToday,
 } from "./date.utils";
 export { getErrorMessage } from "./error.utils";
-export { formatFileSize } from "./format.utils";
 export {
 	type CleanupFn,
 	createEventRegistry,
@@ -14,6 +13,7 @@ export {
 	EventRegistry,
 	throttle,
 } from "./event.utils";
+export { formatFileSize } from "./format.utils";
 export {
 	createEmptyIODefinition,
 	getIOGroupOrds,

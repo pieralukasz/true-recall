@@ -5,12 +5,12 @@
 
 import type { IPersistence } from "@true-recall/core/interfaces/persistence";
 import { loadDatabase } from "@true-recall/core/persistence/sqlite/loader";
-import { formatFileSize } from "@true-recall/core/utils/format.utils";
 import {
 	DB_FOLDER,
 	extractDeviceIdFromFilename,
 	LEGACY_DB_FILE,
 } from "@true-recall/core/persistence/sqlite/sqlite.types";
+import { formatFileSize } from "@true-recall/core/utils/format.utils";
 
 /**
  * Information about a discovered device database.
@@ -186,5 +186,4 @@ export class DeviceDiscoveryService {
 			db.close();
 		}
 	}
-
 }

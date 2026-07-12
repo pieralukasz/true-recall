@@ -108,10 +108,7 @@ describe("Duplicate Prevention", () => {
 			// Regression: fields_json stores JSON-escaped text, so a raw LIKE
 			// never matched questions containing quotes.
 			const question = 'He said "hello" to the class';
-			ctx.cards.set(
-				"card-q",
-				createTestCard({ id: "card-q", question }),
-			);
+			ctx.cards.set("card-q", createTestCard({ id: "card-q", question }));
 
 			expect(ctx.cards.getCardIdByQuestion(question)).toBe("card-q");
 		});

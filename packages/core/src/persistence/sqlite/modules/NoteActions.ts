@@ -64,10 +64,9 @@ export class NoteActions {
 	// ── Device sync (raw rows, LWW by updated_at) ─────────────
 
 	getRawRowsModifiedSince(timestamp: number): NoteRow[] {
-		return this.db.query<NoteRow>(
-			`SELECT * FROM notes WHERE updated_at > ?`,
-			[timestamp],
-		);
+		return this.db.query<NoteRow>(`SELECT * FROM notes WHERE updated_at > ?`, [
+			timestamp,
+		]);
 	}
 
 	getRawRowsByIds(ids: string[]): NoteRow[] {

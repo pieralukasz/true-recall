@@ -97,7 +97,8 @@ export class DeviceSyncService {
 			const lastSyncStr = this.localStore.cards.getSyncMetadata(syncKey);
 			const lastSync = lastSyncStr ? Number(lastSyncStr) : 0;
 
-			const modifiedNoteTypes = remoteNoteTypes.getRawRowsModifiedSince(lastSync);
+			const modifiedNoteTypes =
+				remoteNoteTypes.getRawRowsModifiedSince(lastSync);
 			const modifiedNotes = remoteNotes.getRawRowsModifiedSince(lastSync);
 			const modifiedCards = remoteCards.getModifiedSince(lastSync);
 			const modifiedLogs = remoteStats.getModifiedReviewLogSince(lastSync);

@@ -372,9 +372,7 @@ describe("undo restores siblings that were NOT in the queue", () => {
 		expect(restoredIds).toContain(primary.id);
 		expect(restoredIds).toContain(offQueueSibling.id);
 
-		const siblingRestore = undoCalls.find(
-			(c) => c[0] === offQueueSibling.id,
-		);
+		const siblingRestore = undoCalls.find((c) => c[0] === offQueueSibling.id);
 		expect(siblingRestore?.[1]).toEqual(originalSiblingFsrs);
 	});
 });

@@ -401,7 +401,11 @@ export class ReviewService {
 		for (let i = 1; i < sortedDays.length; i++) {
 			const prev = sortedDays[i - 1];
 			const curr = sortedDays[i];
-			if (prev !== undefined && curr !== undefined && Math.round((prev - curr) / DAY_MS) === 1) {
+			if (
+				prev !== undefined &&
+				curr !== undefined &&
+				Math.round((prev - curr) / DAY_MS) === 1
+			) {
 				currentStreak++;
 			} else {
 				if (currentStreak > longestStreak) longestStreak = currentStreak;
@@ -431,7 +435,11 @@ export class ReviewService {
 		for (let i = 1; i < sortedDays.length; i++) {
 			const prev = sortedDays[i - 1];
 			const curr = sortedDays[i];
-			if (prev !== undefined && curr !== undefined && Math.round((prev - curr) / DAY_MS) === 1) {
+			if (
+				prev !== undefined &&
+				curr !== undefined &&
+				Math.round((prev - curr) / DAY_MS) === 1
+			) {
 				streak++;
 			} else {
 				break;
