@@ -411,7 +411,7 @@ export interface TrueRecallSettings {
 
 	/**
 	 * Overrides where True Recall writes binary attachments: pasted images,
-	 * Image Occlusion crops, AI-generated card images, and Anki import media.
+	 * Image Occlusion crops, and Anki import media.
 	 * Empty string = each feature keeps its own pre-existing fallback behavior.
 	 */
 	attachmentFolder: string;

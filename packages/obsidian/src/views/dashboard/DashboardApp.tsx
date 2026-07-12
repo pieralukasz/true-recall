@@ -30,7 +30,7 @@ import type {
 } from "@true-recall/obsidian/features/study/ui/dashboard/types";
 import { filterActiveCards } from "@true-recall/obsidian/features/study/ui/review/helpers/session-helpers";
 import { PresetOptionsModal } from "@true-recall/obsidian/modals/shared/PresetOptionsModal";
-import { NamePromptModal } from "@true-recall/obsidian/modals/study/NamePromptModal";
+import { CreateProjectModal } from "@true-recall/obsidian/modals/study/CreateProjectModal";
 import { useGatedComputed, usePlugin } from "@true-recall/obsidian/preact";
 
 import { HeatmapWidget } from "@true-recall/plugins/dashboard-codeblock/analytics/HeatmapWidget";
@@ -302,12 +302,15 @@ export function DashboardApp({ isViewVisible }: DashboardAppProps) {
 	);
 
 	const handleCreateProject = useCallback(async () => {
-		const modal = new NamePromptModal(plugin.app, "New project");
+		const modal = new CreateProjectModal(
+			plugin.app,
+			plugin.settings.defaultProjectFolder,
+		);
 		const result = await modal.openAndWait();
-		if (result.cancelled || !result.name.trim()) return;
+		if (result.cancelled) return;
 		await plugin.projectManagement.createProjectWithChildren(
-			result.name.trim(),
-			"",
+			result.name,
+			result.folder,
 			[],
 		);
 	}, [plugin]);

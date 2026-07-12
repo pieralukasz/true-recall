@@ -26,7 +26,6 @@ import { ObsidianPersistence } from "@true-recall/obsidian/adapters/ObsidianPers
 import { ObsidianVaultFileReader } from "@true-recall/obsidian/adapters/ObsidianVaultFileReader";
 import { mutate } from "@true-recall/obsidian/data";
 import { BaseModal } from "@true-recall/obsidian/modals/shared/BaseModal";
-import { resolveAttachmentFolder } from "@true-recall/obsidian/utils/attachment-folder";
 
 import {
 	ErrorPhase,
@@ -37,6 +36,7 @@ import {
 	PreviewPhase,
 	ProgressPhase,
 	ResultPhase,
+	resolveAnkiMediaFolder,
 } from "./anki-import";
 import {
 	AnkiImportAIService,
@@ -313,14 +313,10 @@ export class AnkiImportModal extends BaseModal {
 				() => mutate("cards:imported", () => {}),
 			);
 
-			const topDeck = (
-				(this.deckNames[0] ?? "import").split("/").at(0) ?? "import"
-			)
-				.replace(/[\\/:*?"<>|]/g, "-")
-				.trim();
-			const mediaFolder = resolveAttachmentFolder(
+			const mediaFolder = resolveAnkiMediaFolder(
 				this.getSettings().attachmentFolder,
-				`Attachments/${opts.importFolder}/${topDeck}`,
+				opts.importFolder,
+				this.deckNames,
 			);
 
 			const result = await importService.importCards(

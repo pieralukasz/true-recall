@@ -41,6 +41,9 @@ export class ProjectManagementService {
 			return;
 		}
 
+		if (folder) {
+			await this.ensureFolderExists(folder);
+		}
 		await this.app.vault.create(projectPath, "");
 		await this.frontmatterService.markAsProject(projectPath);
 		this.syncIndex(projectPath);
@@ -251,6 +254,22 @@ export class ProjectManagementService {
 	private invalidate(): void {
 		this.hierarchyService.invalidateGraph();
 		mutate("hierarchy:changed", () => {});
+	}
+
+	/**
+	 * vault.create throws when the target folder is missing, and the
+	 * default-project-folder setting accepts paths that don't exist yet.
+	 */
+	private async ensureFolderExists(folderPath: string): Promise<void> {
+		const parts = folderPath.split("/");
+		let current = "";
+		for (const part of parts) {
+			current = current ? `${current}/${part}` : part;
+			const normalized = normalizePath(current);
+			if (!this.app.vault.getAbstractFileByPath(normalized)) {
+				await this.app.vault.createFolder(normalized);
+			}
+		}
 	}
 
 	private trashEmptyAncestors(projectPath: string): void {
