@@ -116,6 +116,20 @@ export class SqliteSchemaManager {
                 PRIMARY KEY (date, card_id)
             );
 
+            CREATE TABLE IF NOT EXISTS assistant_tasks (
+                id TEXT PRIMARY KEY NOT NULL,
+                instruction TEXT NOT NULL,
+                preset_id TEXT,
+                context_json TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'pending',
+                result_manifest_json TEXT,
+                error TEXT,
+                created_at INTEGER NOT NULL,
+                finished_at INTEGER
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_assistant_tasks_status ON assistant_tasks(status);
+
             CREATE TABLE IF NOT EXISTS meta (
                 key TEXT PRIMARY KEY NOT NULL,
                 value TEXT

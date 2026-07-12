@@ -163,11 +163,24 @@ export class TestSqliteDatabase {
 				PRIMARY KEY (date, card_id)
 			);
 
+			CREATE TABLE IF NOT EXISTS assistant_tasks (
+				id TEXT PRIMARY KEY NOT NULL,
+				instruction TEXT NOT NULL,
+				preset_id TEXT,
+				context_json TEXT NOT NULL,
+				status TEXT NOT NULL DEFAULT 'pending',
+				result_manifest_json TEXT,
+				error TEXT,
+				created_at INTEGER NOT NULL,
+				finished_at INTEGER
+			);
+
 			CREATE TABLE IF NOT EXISTS meta (
 				key TEXT PRIMARY KEY NOT NULL,
 				value TEXT
 			);
 
+			CREATE INDEX IF NOT EXISTS idx_assistant_tasks_status ON assistant_tasks(status);
 			CREATE INDEX IF NOT EXISTS idx_notes_note_type ON notes(note_type_id);
 			CREATE INDEX IF NOT EXISTS idx_notes_source_uid ON notes(source_uid);
 			CREATE INDEX IF NOT EXISTS idx_notes_deleted ON notes(deleted_at);
