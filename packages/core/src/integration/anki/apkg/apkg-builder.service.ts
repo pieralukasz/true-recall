@@ -12,6 +12,11 @@ const FIELD_SEPARATOR = "\x1f";
 
 const ANKI_QUEUE_SUSPENDED = -1;
 
+// Note model ids in the exported collection
+const MODEL_BASIC_REVERSED = 1;
+const MODEL_CLOZE = 2;
+const MODEL_BASIC = 3;
+
 const DIFFICULTY_INVERSION_CONSTANT = 11;
 const FACTOR_SCALE = 250;
 const FACTOR_MIN = 1300;
@@ -226,7 +231,14 @@ export class ApkgBuilderService {
 			const answer = card.answer ?? "";
 
 			const isCloze = card.cardType === "cloze";
-			const modelId = isCloze ? 2 : 1;
+			// One-way cards get the single-template Basic model — under the
+			// two-template model Anki's next card-generation pass would
+			// materialize an unwanted reverse card for every note.
+			const modelId = isCloze
+				? MODEL_CLOZE
+				: reversePairs.has(card.id)
+					? MODEL_BASIC_REVERSED
+					: MODEL_BASIC;
 
 			const flds = isCloze
 				? (card.clozeTemplate ?? question) + FIELD_SEPARATOR + answer
@@ -478,7 +490,7 @@ export class ApkgBuilderService {
 
 	private buildModelsJson(): string {
 		const basicModel = {
-			id: 1,
+			id: MODEL_BASIC_REVERSED,
 			name: "Basic (and reversed card)",
 			type: 0,
 			mod: 0,
@@ -534,7 +546,7 @@ export class ApkgBuilderService {
 		};
 
 		const clozeModel = {
-			id: 2,
+			id: MODEL_CLOZE,
 			name: "Cloze",
 			type: 1,
 			mod: 0,
@@ -578,9 +590,20 @@ export class ApkgBuilderService {
 			req: [[0, "any", [0]]],
 		};
 
+		// Single-template variant for one-way cards; only ord-0 card rows are
+		// written for them, and Anki fills in missing cards per template.
+		const singleBasicModel = {
+			...basicModel,
+			id: MODEL_BASIC,
+			name: "Basic",
+			tmpls: [basicModel.tmpls[0]],
+			req: [[0, "any", [0]]],
+		};
+
 		const models: Record<string, unknown> = {
-			"1": basicModel,
-			"2": clozeModel,
+			[String(MODEL_BASIC_REVERSED)]: basicModel,
+			[String(MODEL_CLOZE)]: clozeModel,
+			[String(MODEL_BASIC)]: singleBasicModel,
 		};
 
 		return JSON.stringify(models);
