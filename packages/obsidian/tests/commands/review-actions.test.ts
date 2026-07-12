@@ -329,3 +329,52 @@ describe("ReviewForgetCommand — undo restores all siblings + daily stats", () 
 		expect(recordedIds).not.toContain(sibling.id);
 	});
 });
+
+describe("undo restores siblings that were NOT in the queue", () => {
+	// doWrite touches every id in siblingIds, including siblings that are
+	// not currently queued (e.g. cloze siblings not due today) — undo must
+	// restore those from their pre-write DB state, not leave them suspended.
+	it("ReviewSuspendCommand.undo restores an out-of-queue sibling", async () => {
+		const store = createTestStore();
+		const primary = createMockCard({ id: "primary" });
+		const offQueueSibling = createMockCard({ id: "off-queue" });
+		// Session contains ONLY the primary card.
+		store.getState().review.startSession([primary]);
+
+		const ctx = makeCtx();
+		const originalSiblingFsrs = { ...offQueueSibling.fsrs, suspended: false };
+		(ctx.cardStore.get as ReturnType<typeof vi.fn>).mockImplementation(
+			(id: string) =>
+				id === primary.id
+					? primary.fsrs
+					: id === offQueueSibling.id
+						? originalSiblingFsrs
+						: undefined,
+		);
+
+		const cmd = new ReviewSuspendCommand({
+			card: { ...primary },
+			originalFsrs: { ...primary.fsrs },
+			previousIndex: 0,
+			siblingIds: [primary.id, offQueueSibling.id],
+			getReview: () => store.getState().review,
+		});
+
+		cmd.execute(ctx);
+		await new Promise((r) => setTimeout(r, 5));
+
+		cmd.undo(ctx);
+
+		const undoCalls = (
+			ctx.flashcardManager.updateCardFSRS as ReturnType<typeof vi.fn>
+		).mock.calls.slice(2); // first two calls are doWrite's
+		const restoredIds = undoCalls.map((c) => c[0] as string);
+		expect(restoredIds).toContain(primary.id);
+		expect(restoredIds).toContain(offQueueSibling.id);
+
+		const siblingRestore = undoCalls.find(
+			(c) => c[0] === offQueueSibling.id,
+		);
+		expect(siblingRestore?.[1]).toEqual(originalSiblingFsrs);
+	});
+});

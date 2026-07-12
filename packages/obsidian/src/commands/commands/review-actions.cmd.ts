@@ -31,6 +31,9 @@ abstract class BaseReviewActionCommand implements Command {
 	protected params: ReviewActionParams;
 
 	private capturedSiblings: CapturedSibling[] = [];
+	/** Pre-write DB state of every sibling doWrite touches (also the ones
+	 * not currently in the queue — undo must restore those too). */
+	private dbSnapshots = new Map<string, FSRSCardData>();
 
 	constructor(params: ReviewActionParams, description: string) {
 		this.params = params;
@@ -62,6 +65,16 @@ abstract class BaseReviewActionCommand implements Command {
 				originalFsrs: { ...found.fsrs },
 				position: idx,
 			});
+		}
+
+		// Snapshot the DB state of EVERY sibling doWrite will touch — sibling
+		// ids outside the queue were previously written but never restored,
+		// leaving them suspended/buried/forgotten after undo.
+		this.dbSnapshots = new Map();
+		for (const id of this.params.siblingIds) {
+			if (id === this.params.card.id) continue;
+			const data = ctx.cardStore.get(id);
+			if (data) this.dbSnapshots.set(id, { ...data });
 		}
 
 		review.removeCardsByIds(this.params.siblingIds);
@@ -136,13 +149,10 @@ abstract class BaseReviewActionCommand implements Command {
 				undefined,
 				{ skipNotification: true },
 			);
-			for (const sibling of this.capturedSiblings) {
-				ctx.flashcardManager.updateCardFSRS(
-					sibling.card.id,
-					sibling.originalFsrs,
-					undefined,
-					{ skipNotification: true },
-				);
+			for (const [id, fsrs] of this.dbSnapshots) {
+				ctx.flashcardManager.updateCardFSRS(id, fsrs, undefined, {
+					skipNotification: true,
+				});
 			}
 			mutate(this.mutationType, () => {});
 		}
