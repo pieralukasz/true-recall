@@ -237,7 +237,11 @@ export class StatsCalculatorService {
 
 	getCardMaturityBreakdown(): CardMaturityBreakdown {
 		const cards = this.getFilteredCards();
-		return this.maturityCalculator.calculate(cards);
+		// The SQL fast path counts the whole collection; with a filter active
+		// the (already filtered) card list must be aggregated in memory.
+		return this.isFilterActive
+			? this.maturityCalculator.calculateFromCards(cards)
+			: this.maturityCalculator.calculate(cards);
 	}
 
 	getFutureDueStats(range: StatsTimeRange): FutureDueEntry[] {
@@ -253,8 +257,10 @@ export class StatsCalculatorService {
 		const endDate = new Date();
 		const startDate = this.calculateStartDate(endDate, range);
 
-		const startKey = startDate.toISOString().split("T")[0] ?? "";
-		const endKey = endDate.toISOString().split("T")[0] ?? "";
+		// Daily stats rows are keyed by the local Anki-day; UTC keys excluded
+		// today's row for east-of-UTC users right after the day boundary.
+		const startKey = formatLocalDate(startDate);
+		const endKey = formatLocalDate(getTodayBoundary(this.dayStartHour));
 
 		return this.getFilteredDailyStatsInRange(startKey, endKey);
 	}
@@ -507,6 +513,9 @@ export class StatsCalculatorService {
 		return this.chartDataCalculator.getCardsCreatedHistoryFilledSync(
 			cards,
 			range,
+			// The SQL fast path counts the whole collection; skip it when a
+			// filter is active so the (filtered) card list is what's counted.
+			!this.isFilterActive,
 		);
 	}
 
