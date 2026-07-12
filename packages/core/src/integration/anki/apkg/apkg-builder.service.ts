@@ -200,12 +200,19 @@ export class ApkgBuilderService {
 		// Group reversed cards with their originals so they share one note
 		const reversePairs = new Map<string, FSRSCardData>();
 		const standalone: FSRSCardData[] = [];
+		const exportedIds = new Set(cards.map((c) => c.id));
 
 		for (const card of cards) {
 			if (card.cardType === "note-review") continue;
-			if (card.cardType === "reversed" && card.reverseOf) {
+			if (
+				card.cardType === "reversed" &&
+				card.reverseOf &&
+				exportedIds.has(card.reverseOf)
+			) {
 				reversePairs.set(card.reverseOf, card);
 			} else {
+				// Includes reversed cards whose original is not in the export
+				// set — previously they were silently dropped from the .apkg.
 				standalone.push(card);
 			}
 		}
