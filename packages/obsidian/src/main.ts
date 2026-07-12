@@ -3,6 +3,7 @@ import { Plugin, type TFile } from "obsidian";
 import { TrueRecallApp } from "@true-recall/core/app";
 import {
 	ENABLE_RAG,
+	VIEW_TYPE_ASSISTANT_INBOX,
 	VIEW_TYPE_CARD_BROWSER,
 	VIEW_TYPE_CARD_TYPES_EDITOR,
 	VIEW_TYPE_DASHBOARD,
@@ -663,6 +664,17 @@ export default class TrueRecallPlugin extends Plugin {
 		}
 		await activateView(this.app, VIEW_TYPE_KNOWLEDGE_CHAT, {
 			useMainArea: false,
+		});
+	}
+
+	async openAssistantInbox(): Promise<void> {
+		const existingLeaf = getView(this.app, VIEW_TYPE_ASSISTANT_INBOX);
+		if (existingLeaf) {
+			void this.app.workspace.revealLeaf(existingLeaf);
+			return;
+		}
+		await activateView(this.app, VIEW_TYPE_ASSISTANT_INBOX, {
+			useMainArea: true,
 		});
 	}
 

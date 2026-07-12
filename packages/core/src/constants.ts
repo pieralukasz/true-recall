@@ -384,6 +384,8 @@ export const OPENROUTER_EMBEDDINGS_URL =
 
 export const VIEW_TYPE_KNOWLEDGE_CHAT = "true-recall-knowledge-chat";
 
+export const VIEW_TYPE_ASSISTANT_INBOX = "true-recall-assistant-inbox";
+
 export const RAG_FREE_NOTE_LIMIT = 100;
 
 export const RAG_CONFIG = {

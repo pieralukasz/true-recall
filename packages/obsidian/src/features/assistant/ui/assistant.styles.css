@@ -1,0 +1,212 @@
+/* AI Assistant — prompt popover/modal + inbox view */
+
+.tr-ask-ai-popover {
+	max-width: 380px;
+	padding: 10px;
+	background: var(--background-primary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 8px;
+	box-shadow: var(--shadow-s);
+}
+
+.tr-ask-ai-prompt {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.tr-ask-ai-chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.tr-ask-ai-chip {
+	padding: 3px 10px;
+	font-size: var(--font-ui-smaller);
+	background: var(--background-modifier-hover);
+	border-radius: 999px;
+	cursor: pointer;
+}
+
+.tr-ask-ai-chip:hover {
+	background: var(--background-modifier-active-hover);
+}
+
+.tr-ask-ai-input {
+	width: 100%;
+	resize: vertical;
+	font-family: inherit;
+}
+
+.tr-ask-ai-actions {
+	display: flex;
+	justify-content: flex-end;
+	gap: 8px;
+}
+
+.tr-ask-ai-btn {
+	padding: 4px 12px;
+	border-radius: 6px;
+	cursor: pointer;
+}
+
+/* Review selection bubble */
+.tr-review-ask-bubble {
+	padding: 2px;
+	background: var(--background-primary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	box-shadow: var(--shadow-s);
+}
+
+.tr-review-ask-bubble button {
+	cursor: pointer;
+}
+
+/* Inbox view */
+.tr-inbox {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	padding: 16px;
+}
+
+.tr-inbox-task {
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 8px;
+	padding: 10px;
+}
+
+.tr-inbox-task.is-failed {
+	border-color: var(--text-error);
+}
+
+.tr-inbox-task-head {
+	display: flex;
+	justify-content: space-between;
+	gap: 8px;
+	cursor: pointer;
+	font-weight: var(--font-medium);
+}
+
+.tr-inbox-status {
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+}
+
+.tr-inbox-error {
+	color: var(--text-error);
+	font-size: var(--font-ui-smaller);
+}
+
+.tr-inbox-progress {
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	margin-top: 4px;
+}
+
+.tr-inbox-detail {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	margin-top: 10px;
+}
+
+.tr-inbox-citations {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	font-size: var(--font-ui-smaller);
+}
+
+.tr-inbox-final {
+	color: var(--text-muted);
+	font-style: italic;
+}
+
+.tr-inbox-proposal {
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 6px;
+	padding: 8px;
+}
+
+.tr-inbox-proposal.is-applied {
+	opacity: 0.55;
+}
+
+.tr-inbox-proposal.is-rejected {
+	opacity: 0.4;
+	text-decoration: line-through;
+}
+
+.tr-inbox-proposal-head {
+	display: flex;
+	justify-content: space-between;
+	gap: 8px;
+	margin-bottom: 6px;
+}
+
+.tr-inbox-fields {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.tr-inbox-field {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.tr-inbox-field-name {
+	font-size: var(--font-ui-smaller);
+	color: var(--text-muted);
+}
+
+.tr-inbox-field textarea {
+	width: 100%;
+	resize: vertical;
+	font-family: inherit;
+}
+
+.tr-inbox-raw {
+	white-space: pre-wrap;
+	background: var(--background-secondary);
+	padding: 8px;
+	border-radius: 6px;
+	overflow-x: auto;
+}
+
+.tr-inbox-images {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+	gap: 8px;
+}
+
+.tr-inbox-image {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	font-size: var(--font-ui-smaller);
+	cursor: pointer;
+}
+
+.tr-inbox-image img {
+	width: 100%;
+	max-height: 120px;
+	object-fit: cover;
+	border-radius: 4px;
+}
+
+.tr-inbox-proposal-actions,
+.tr-inbox-bulk,
+.tr-inbox-retry {
+	display: flex;
+	gap: 8px;
+	margin-top: 6px;
+}
+
+.tr-inbox-retry input {
+	flex: 1;
+}
