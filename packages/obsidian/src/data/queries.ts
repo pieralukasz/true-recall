@@ -1,5 +1,6 @@
 import { State } from "ts-fsrs";
 
+import type { AssistantTask } from "@true-recall/core/ai/assistant";
 import type { CardQueryService } from "@true-recall/core/flashcard/data/card-query.service";
 import type { HierarchyService } from "@true-recall/core/services/notes/hierarchy.service";
 import type {
@@ -19,6 +20,7 @@ export const G = {
 	STATS: "stats",
 	PANEL: "panel",
 	SETTINGS: "settings",
+	ASSISTANT: "assistant",
 } as const;
 
 // ── Keys ────────────────────────────────────────────────────
@@ -30,6 +32,7 @@ export const Q = {
 	NOTE_STATUS: "noteStatus",
 	ARCHIVED_UIDS: "archivedUids",
 	SETTINGS: "settings",
+	ASSISTANT_TASKS: "assistantTasks",
 } as const;
 
 // ── Mutation → groups mapping ───────────────────────────────
@@ -82,6 +85,7 @@ interface RegisterQueryDeps {
 	cardQuery: CardQueryService;
 	hierarchy: HierarchyService;
 	getSettings: () => TrueRecallSettings;
+	getAssistantTasks?: () => AssistantTask[];
 }
 
 export function registerQueries(dl: DataLayer, deps: RegisterQueryDeps): void {
@@ -199,4 +203,10 @@ export function registerQueries(dl: DataLayer, deps: RegisterQueryDeps): void {
 	dl.register<TrueRecallSettings>(Q.SETTINGS, () => deps.getSettings(), [
 		G.SETTINGS,
 	]);
+
+	dl.register<AssistantTask[]>(
+		Q.ASSISTANT_TASKS,
+		() => deps.getAssistantTasks?.() ?? [],
+		[G.ASSISTANT],
+	);
 }

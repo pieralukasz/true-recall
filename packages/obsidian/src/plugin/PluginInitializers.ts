@@ -138,6 +138,7 @@ async function initializeCardStore(
 			cardQuery: plugin.flashcardManager.getCardQueryService(),
 			hierarchy: plugin.hierarchyService,
 			getSettings: () => plugin.settings,
+			getAssistantTasks: () => plugin.cardStore?.assistantTasks.list(100) ?? [],
 		});
 
 		plugin._disposeWireDataLayer = wireDataLayer(dl, plugin.coreApp.events);
