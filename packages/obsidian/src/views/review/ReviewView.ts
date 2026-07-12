@@ -25,10 +25,14 @@ import {
 	type SemanticGradingResult,
 } from "@true-recall/core/types";
 
+import type { AssistantContext } from "@true-recall/core/ai/assistant";
 import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpClient";
 import { ReviewUndoHook } from "@true-recall/obsidian/commands";
 import { G, getDataLayer, Q } from "@true-recall/obsidian/data";
+import { openAskAiModal } from "@true-recall/obsidian/features/assistant/ui/AskAiModal";
+import { openAskAiPopover } from "@true-recall/obsidian/features/assistant/ui/openAskAiPopover";
 import type { ReviewSessionController } from "@true-recall/obsidian/features/study/services/ReviewSessionController";
+import { ReviewSelectionBubble } from "@true-recall/obsidian/features/study/ui/review/ReviewSelectionBubble";
 import type { PresetPickerOption } from "@true-recall/obsidian/features/study/ui/review/components";
 import {
 	AnswerHandler,
@@ -115,6 +119,7 @@ export class ReviewView extends ItemView {
 	private unsubscribe: (() => void) | null = null;
 	private sessionSignalDisposer: (() => void) | null = null;
 	private disposeReviewHook: (() => void) | null = null;
+	private askBubble: ReviewSelectionBubble | null = null;
 	private typeInState: TypeInAssessmentState = createEmptyTypeInState();
 	private sessionTypeInModeEnabled = false;
 	private aiEnabledForTypeIn = false;
@@ -514,8 +519,69 @@ export class ReviewView extends ItemView {
 			if (activeDocument.querySelector(".modal-container")) return;
 			this.keyboardHandler.handleKeyDown(e);
 		});
+
+		this.askBubble = new ReviewSelectionBubble({
+			isEnabled: () => isPluginEnabled(this.plugin.settings, "ai-assistant"),
+			getContext: (text) => this.buildAssistantContext(text),
+			onAsk: (rect, context) => openAskAiPopover(this.plugin, rect, context),
+		});
+		this.askBubble.register();
+
+		window.addEventListener(
+			"true-recall:assistant-card-updated",
+			this.onAssistantCardUpdated,
+		);
+		window.addEventListener(
+			"true-recall:ask-ai-preset",
+			this.onAskAiPreset,
+		);
+		this.register(() => {
+			window.removeEventListener(
+				"true-recall:assistant-card-updated",
+				this.onAssistantCardUpdated,
+			);
+			window.removeEventListener("true-recall:ask-ai-preset", this.onAskAiPreset);
+		});
 		return Promise.resolve();
 	}
+
+	private buildAssistantContext(selectedText?: string): AssistantContext {
+		const card = this.review.getCurrentCard();
+		const context: AssistantContext = {};
+		if (selectedText) context.selectedText = selectedText;
+		if (card) {
+			context.card = {
+				cardId: card.id,
+				noteId: card.noteId,
+				noteTypeId: card.fsrs.noteTypeId,
+				question: card.question,
+				answer: card.answer,
+				sourceUid: card.sourceUid,
+				sourceNotePath: card.sourceNotePath,
+			};
+			context.activeNotePath = card.sourceNotePath;
+		}
+		return context;
+	}
+
+	private onAssistantCardUpdated = (e: Event): void => {
+		const cardId = (e as CustomEvent<{ cardId: string }>).detail?.cardId;
+		if (!cardId) return;
+		if (this.review.getCurrentCard()?.id !== cardId) return;
+		this.cardActionsHandler.refreshCurrentCard();
+	};
+
+	private onAskAiPreset = (e: Event): void => {
+		const detail = (
+			e as CustomEvent<{ instruction: string; presetId: string }>
+		).detail;
+		if (!detail) return;
+		this.plugin.assistantService?.enqueue({
+			instruction: detail.instruction,
+			presetId: detail.presetId,
+			context: this.buildAssistantContext(),
+		});
+	};
 
 	private mountApp(container: HTMLElement): void {
 		this.unmountPreact?.();
@@ -611,6 +677,9 @@ export class ReviewView extends ItemView {
 		if (this.plugin.cardStore) {
 			await this.plugin.cardStore.flush();
 		}
+
+		this.askBubble?.unregister();
+		this.askBubble = null;
 
 		this.unsubscribe?.();
 		this.unsubscribeFromSessionEvents();
@@ -856,6 +925,18 @@ export class ReviewView extends ItemView {
 				.onClick(() => this.cycleTypeInMode()),
 		);
 		menu.addSeparator();
+
+		if (isPluginEnabled(this.plugin.settings, "ai-assistant")) {
+			menu.addItem((item) =>
+				item
+					.setTitle("Ask AI about this card")
+					.setIcon("sparkles")
+					.onClick(() =>
+						openAskAiModal(this.plugin, this.buildAssistantContext()),
+					),
+			);
+			menu.addSeparator();
+		}
 
 		if (this.cardActionsHandler.canUndo()) {
 			menu.addItem((item) =>
