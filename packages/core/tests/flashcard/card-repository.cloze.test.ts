@@ -532,6 +532,20 @@ describe("CardRepository - cloze operations", () => {
 			expect(c3?.question).toContain("[...]");
 		});
 
+		it("attaches a new cloze sibling to the siblings' shared note", () => {
+			const newTemplate =
+				"{{c1::France}} is in {{c2::Europe}}, specifically {{c3::Western Europe}}";
+			repository.updateClozeTemplate(SOURCE_UID, OLD_TEMPLATE, newTemplate);
+
+			// Regression: the new card used to get its own brand-new note,
+			// fragmenting the cloze note and losing its Extra field.
+			const siblings = ctx.cards.getClozeSiblings(SOURCE_UID, newTemplate);
+			const c1 = siblings.find((s) => s.clozeIndex === 1);
+			const c3 = siblings.find((s) => s.clozeIndex === 3);
+			expect(c1?.noteId).toBeDefined();
+			expect(c3?.noteId).toBe(c1?.noteId);
+		});
+
 		it("soft-deletes card when cloze index is removed", () => {
 			const newTemplate = "{{c1::France}} is a country";
 			repository.updateClozeTemplate(SOURCE_UID, OLD_TEMPLATE, newTemplate);

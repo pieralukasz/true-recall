@@ -391,6 +391,10 @@ export class CardRepository {
 		const newClozeCards = parseClozeTemplate(newTemplate);
 		const newIndices = new Set(newClozeCards.map((c) => c.clozeIndex));
 		const affectedCardIds: string[] = [];
+		// New sibling cards must attach to the siblings' shared note —
+		// omitting noteId made store.set() create a separate note per added
+		// cloze index, fragmenting the note and losing its Extra field.
+		const sharedNoteId = siblings.find((s) => s.noteId)?.noteId;
 
 		for (const cloze of newClozeCards) {
 			const existing = siblingsByIndex.get(cloze.clozeIndex);
@@ -413,6 +417,7 @@ export class CardRepository {
 					cardType: "cloze",
 					clozeTemplate: newTemplate,
 					clozeIndex: cloze.clozeIndex,
+					noteId: sharedNoteId,
 				};
 				this.store.set(cardId, extendedData);
 				affectedCardIds.push(cardId);

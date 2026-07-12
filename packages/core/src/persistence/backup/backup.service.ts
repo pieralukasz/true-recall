@@ -199,6 +199,22 @@ export class BackupService {
 				? toExactArrayBuffer(await gzipDecompress(new Uint8Array(rawData)))
 				: toExactArrayBuffer(rawData);
 
+			// Refuse to overwrite the live DB with bytes that are not a
+			// SQLite database (truncated/corrupted backup) — the failure
+			// would otherwise only surface on the next plugin load.
+			const header = new TextDecoder().decode(dbData.slice(0, 15));
+			if (!header.startsWith("SQLite format 3")) {
+				throw new DatabaseError(
+					"Backup file is not a valid SQLite database",
+					"backup:restore",
+				);
+			}
+
+			// From this point the in-memory store must never flush again —
+			// its debounced save would export the pre-restore state over the
+			// file we are about to write.
+			this.sqliteStore.haltPersistence();
+
 			// Write to main database file
 			const deviceId = this.sqliteStore.getDeviceId();
 			const dbPath = `${DB_FOLDER}/${getDeviceDbFilename(deviceId)}`;

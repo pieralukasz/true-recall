@@ -32,6 +32,7 @@ export class SqliteStoreService {
 	private db: SqliteDatabase;
 	private isLoaded = false;
 	private isDirty = false;
+	private persistenceHalted = false;
 	private saveTimer: number | null = null;
 	private flushPromise: Promise<boolean> | null = null;
 	private suppressRetryScheduling = false;
@@ -346,9 +347,23 @@ export class SqliteStoreService {
 		}, SqliteStoreService.FOLLOW_UP_FLUSH_MS);
 	}
 
+	/**
+	 * Permanently stop writing the in-memory database to disk (until reload).
+	 * Used after restore-from-backup: without this, the next debounced flush
+	 * would export the pre-restore in-memory DB over the restored file.
+	 */
+	haltPersistence(): void {
+		this.persistenceHalted = true;
+		if (this.saveTimer) {
+			window.clearTimeout(this.saveTimer);
+			this.saveTimer = null;
+		}
+	}
+
 	private async runFlushPass(
 		scheduleRetryOnFailure: boolean,
 	): Promise<boolean> {
+		if (this.persistenceHalted) return true; // Restore pending — never write
 		if (!this.db.isReady() || !this.isDirty) return true; // Nothing to save = success
 
 		const MAX_RETRIES = 3;
