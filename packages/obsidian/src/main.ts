@@ -189,6 +189,9 @@ export default class TrueRecallPlugin extends Plugin {
 		| import("@true-recall/core/rag/retrieval/rag-search.service").RagSearchService
 		| null = null;
 	dataLayer: DataLayer | null = null;
+	assistantService:
+		| import("./services/assistant/assistant.service").AssistantService
+		| null = null;
 	pluginLoader: import("./plugin/plugin-loader").PluginLoader | null = null;
 	_disposeWireDataLayer: (() => void) | null = null;
 	adapters!: ObsidianAdapters;

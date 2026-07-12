@@ -24,8 +24,10 @@ import type { DeviceSelectionResult } from "@true-recall/obsidian/modals/integra
 import { notify } from "@true-recall/obsidian/services/notification.service";
 import { createAppStore } from "@true-recall/obsidian/store";
 
+import { AssistantService } from "../services/assistant/assistant.service";
 import type TrueRecallPlugin from "../main";
 import { BackupRecoveryManager } from "./BackupRecoveryManager";
+import { isPluginEnabled } from "./plugin-utils";
 import { DayRolloverWatcher } from "./DayRolloverWatcher";
 import { registerDeletionHandler } from "./PluginEventHandlers";
 import { PluginLoader } from "./plugin-loader";
@@ -142,6 +144,11 @@ async function initializeCardStore(
 		});
 
 		plugin._disposeWireDataLayer = wireDataLayer(dl, plugin.coreApp.events);
+
+		plugin.assistantService = new AssistantService(plugin);
+		if (isPluginEnabled(plugin.settings, "ai-assistant")) {
+			plugin.assistantService.start();
+		}
 
 		new DayRolloverWatcher(plugin.dayBoundaryService, dl).register(plugin);
 
