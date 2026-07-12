@@ -69,6 +69,20 @@ export function AssistantSettingsPanel({
 			</FormField>
 
 			<FormField
+				name="Max sources"
+				description="Maximum web sources/citations the assistant may collect per task. Set to 0 to disable source fetching."
+			>
+				<SliderInput
+					value={settings.assistantMaxSources}
+					onChange={(v) => void save({ assistantMaxSources: v })}
+					min={0}
+					max={20}
+					step={1}
+					formatTooltip={(v) => `${v}`}
+				/>
+			</FormField>
+
+			<FormField
 				name="Global instructions"
 				description="Appended to every task's prompt — your style, language and tone."
 			>

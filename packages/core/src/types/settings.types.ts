@@ -366,6 +366,8 @@ export interface TrueRecallSettings {
 	assistantPresets: AssistantPreset[];
 	/** AI Assistant: max agent loop iterations per task */
 	assistantMaxIterations: number;
+	/** AI Assistant: max web sources/citations to collect per task */
+	assistantMaxSources: number;
 
 	/** Custom generation prompt — appended to both Pro and BYOK system prompts */
 	aiGenerationPrompt?: string;

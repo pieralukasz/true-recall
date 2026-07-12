@@ -22,6 +22,7 @@ export interface AssistantChatClient {
 
 export interface AssistantAgentOptions {
 	maxIterations?: number;
+	maxSources?: number;
 	webSearch?: boolean;
 	userInstructions?: string;
 	onProgress?: (event: AssistantProgressEvent) => void;
@@ -60,6 +61,8 @@ export class AssistantAgent {
 	): Promise<AssistantManifest> {
 		const manifest: AssistantManifest = { proposals: [], citations: [] };
 		const maxIterations = this.options.maxIterations ?? 10;
+		const maxSources = Math.max(0, Math.floor(this.options.maxSources ?? 5));
+		const webSearchEnabled = this.options.webSearch === true && maxSources > 0;
 
 		const messages: ChatMessage[] = [
 			{
@@ -67,7 +70,7 @@ export class AssistantAgent {
 				content: buildAssistantSystemPrompt({
 					userInstructions: this.options.userInstructions ?? "",
 					noteTypes: host.listNoteTypes(),
-					webSearchEnabled: this.options.webSearch === true,
+					webSearchEnabled,
 				}),
 			},
 			{
@@ -84,12 +87,14 @@ export class AssistantAgent {
 				messages,
 				tools: ASSISTANT_TOOLS,
 				tool_choice: "auto",
-				...(this.options.webSearch ? { plugins: [{ id: "web" }] } : {}),
+				...(webSearchEnabled
+					? { plugins: [{ id: "web", max_results: maxSources }] }
+					: {}),
 			});
 
 			const message = response.choices[0]?.message;
 			if (!message) break;
-			this.collectCitations(message, manifest);
+			this.collectCitations(message, manifest, maxSources);
 
 			const toolCalls = message.tool_calls;
 			if (!toolCalls?.length) {
@@ -117,8 +122,11 @@ export class AssistantAgent {
 	private collectCitations(
 		message: ChatMessage,
 		manifest: AssistantManifest,
+		maxSources: number,
 	): void {
+		if (maxSources <= 0) return;
 		for (const annotation of message.annotations ?? []) {
+			if (manifest.citations.length >= maxSources) return;
 			const url = annotation.url_citation?.url;
 			if (!url) continue;
 			if (manifest.citations.some((c) => c.url === url)) continue;

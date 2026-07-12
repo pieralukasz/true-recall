@@ -21,7 +21,10 @@ export function openAskAiPopover(
 	container.style.zIndex = "var(--layer-menu)";
 
 	let unmount: (() => void) | null = null;
+	let disposed = false;
 	const dispose = () => {
+		if (disposed) return;
+		disposed = true;
 		unmount?.();
 		container.remove();
 		activeDocument.removeEventListener("pointerdown", onPointerDown);
@@ -36,6 +39,7 @@ export function openAskAiPopover(
 		plugin,
 		h(AskAiPrompt, {
 			context,
+			autoFocus: false,
 			onSubmitted: (_taskId, showNow) => {
 				dispose();
 				if (showNow) void plugin.openAssistantInbox();

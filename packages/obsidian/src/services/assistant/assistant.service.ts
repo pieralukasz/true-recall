@@ -144,6 +144,7 @@ export class AssistantService {
 				);
 				const agent = new AssistantAgent(client, {
 					maxIterations: settings.assistantMaxIterations,
+					maxSources: settings.assistantMaxSources,
 					webSearch,
 					userInstructions: settings.assistantInstructions,
 					onProgress,

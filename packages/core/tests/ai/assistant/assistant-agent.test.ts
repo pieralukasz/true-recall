@@ -142,10 +142,66 @@ describe("AssistantAgent", () => {
 			{ url: "https://src.example", title: "Src" },
 		]);
 		expect(manifest.finalText).toBe("Proposed 1 card and 1 fill.");
-		expect(requests[0]?.plugins).toEqual([{ id: "web" }]);
+		expect(requests[0]?.plugins).toEqual([{ id: "web", max_results: 5 }]);
 		const toolMessages =
 			requests[1]?.messages.filter((m) => m.role === "tool") ?? [];
 		expect(toolMessages).toHaveLength(2);
+	});
+
+	it("passes and enforces maxSources for web citations", async () => {
+		const { client, requests } = makeScriptedClient([
+			{
+				id: "r",
+				choices: [
+					{
+						message: {
+							role: "assistant",
+							content: "done",
+							annotations: [
+								{
+									type: "url_citation",
+									url_citation: { url: "https://src-1.example" },
+								},
+								{
+									type: "url_citation",
+									url_citation: { url: "https://src-2.example" },
+								},
+								{
+									type: "url_citation",
+									url_citation: { url: "https://src-3.example" },
+								},
+							],
+						},
+						finish_reason: "stop",
+					},
+				],
+			},
+		]);
+		const agent = new AssistantAgent(client, {
+			maxSources: 2,
+			webSearch: true,
+		});
+
+		const manifest = await agent.run("research", CONTEXT, HOST);
+
+		expect(requests[0]?.plugins).toEqual([{ id: "web", max_results: 2 }]);
+		expect(manifest.citations).toEqual([
+			{ url: "https://src-1.example" },
+			{ url: "https://src-2.example" },
+		]);
+	});
+
+	it("does not enable web plugin when maxSources is 0", async () => {
+		const { client, requests } = makeScriptedClient([textResponse("done")]);
+		const agent = new AssistantAgent(client, {
+			maxSources: 0,
+			webSearch: true,
+		});
+
+		const manifest = await agent.run("research", CONTEXT, HOST);
+
+		expect(requests[0]?.plugins).toBeUndefined();
+		expect(manifest.citations).toEqual([]);
 	});
 
 	it("returns an error string to the model for unknown cards", async () => {

@@ -1,4 +1,4 @@
-import { useRef, useState } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 
 import type { AssistantContext } from "@true-recall/core/ai/assistant";
 
@@ -9,17 +9,25 @@ interface AskAiPromptProps {
 	context: AssistantContext;
 	onSubmitted: (taskId: string, showNow: boolean) => void;
 	onDismiss: () => void;
+	autoFocus?: boolean;
 }
 
 export function AskAiPrompt({
 	context,
 	onSubmitted,
 	onDismiss,
+	autoFocus = true,
 }: AskAiPromptProps) {
 	const plugin = usePlugin();
 	const [text, setText] = useState("");
 	const inputRef = useRef<HTMLTextAreaElement>(null);
 	const presets = plugin.settings.assistantPresets ?? [];
+	const selectedText = context.selectedText?.trim();
+
+	useEffect(() => {
+		if (!autoFocus) return;
+		inputRef.current?.focus();
+	}, [autoFocus]);
 
 	const submit = (
 		instruction: string,
@@ -50,6 +58,12 @@ export function AskAiPrompt({
 					</Clickable>
 				))}
 			</div>
+			{selectedText && (
+				<div class="tr-ask-ai-selected">
+					<div class="tr-ask-ai-selected-label">Selected text</div>
+					<div class="tr-ask-ai-selected-text">{selectedText}</div>
+				</div>
+			)}
 			<textarea
 				ref={inputRef}
 				class="tr-ask-ai-input"

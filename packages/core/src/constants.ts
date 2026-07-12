@@ -278,6 +278,7 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 		},
 	],
 	assistantMaxIterations: 10,
+	assistantMaxSources: 5,
 
 	enableLocalApi: false,
 	apiPort: 27182,
