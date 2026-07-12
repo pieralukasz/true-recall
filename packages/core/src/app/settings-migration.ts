@@ -384,5 +384,14 @@ export function migrateSettings(raw: Partial<TrueRecallSettings> | null): {
 		}
 	}
 
+	// Backfill the ask-ai toolbar button for users with saved button arrays
+	for (const key of ["editorToolbarButtons", "globalToolbarButtons"] as const) {
+		const buttons = settings[key];
+		if (Array.isArray(buttons) && !buttons.some((b) => b.id === "ask-ai")) {
+			buttons.push({ id: "ask-ai", enabled: true });
+			needsSave = true;
+		}
+	}
+
 	return { settings, needsSave };
 }
