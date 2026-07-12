@@ -48,6 +48,12 @@ export const BUILTIN_BUTTONS: ToolbarButtonDef[] = [
 		title: "Append selection to current note",
 		editorOnly: false,
 	},
+	{
+		id: "ask-ai",
+		label: "Ask AI",
+		title: "Ask AI about selection",
+		editorOnly: false,
+	},
 ];
 
 export function getButtonLabel(id: string): string {

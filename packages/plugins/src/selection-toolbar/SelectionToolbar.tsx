@@ -25,6 +25,7 @@ export interface ToolbarActions {
 	onHighlight: () => void;
 	onNewNote: (text: string) => Promise<void>;
 	onAppend: (text: string) => Promise<void>;
+	onAskAI?: (text: string, sourceFile?: TFile | null) => void;
 	onImageOcclusion?: (path: string) => void;
 	onCommand?: (commandId: string) => void;
 	onDismiss: () => void;
@@ -248,6 +249,24 @@ function ToolbarButton({
 						title="Append selection to current note"
 					>
 						<span>Append</span>
+					</Clickable>
+				</>
+			);
+
+		case "ask-ai":
+			if (!actions.onAskAI) return null;
+			return (
+				<>
+					{showDivider && <span class="true-recall-st-divider" />}
+					<Clickable
+						class="true-recall-st-btn"
+						onClick={() => {
+							actions.onDismiss();
+							actions.onAskAI?.(selectedText);
+						}}
+						title="Ask AI about selection"
+					>
+						<span>✨ Ask AI</span>
 					</Clickable>
 				</>
 			);

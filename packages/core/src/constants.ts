@@ -230,6 +230,7 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 		{ id: "highlight", enabled: true },
 		{ id: "copy", enabled: true },
 		{ id: "new-note", enabled: true },
+		{ id: "ask-ai", enabled: true },
 	],
 	globalToolbarButtons: [
 		{ id: `preset:${BUILTIN_BASIC_PRESET_ID}`, enabled: true },
@@ -239,6 +240,7 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 		{ id: "copy", enabled: true },
 		{ id: "new-note", enabled: true },
 		{ id: "append", enabled: true },
+		{ id: "ask-ai", enabled: true },
 	],
 	imageToolbarButtons: [
 		{ id: "io", enabled: true },
