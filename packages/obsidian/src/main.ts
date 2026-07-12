@@ -55,6 +55,7 @@ import {
 	isViewAllowedOnCurrentPlatform,
 } from "@true-recall/obsidian/utils/platform";
 import { CardBrowserView } from "@true-recall/obsidian/views/browser/CardBrowserView";
+import { AssistantInboxView } from "@true-recall/obsidian/views/assistant/AssistantInboxView";
 import { KnowledgeChatView } from "@true-recall/obsidian/views/chat/KnowledgeChatView";
 import { DashboardView } from "@true-recall/obsidian/views/dashboard/DashboardView";
 import { CardTypesEditorView } from "@true-recall/obsidian/views/modal-window/CardTypesEditorView";
@@ -423,6 +424,11 @@ export default class TrueRecallPlugin extends Plugin {
 				(leaf) => new KnowledgeChatView(leaf, this),
 			);
 		}
+
+		registerIfAllowed(
+			VIEW_TYPE_ASSISTANT_INBOX,
+			(leaf) => new AssistantInboxView(leaf, this),
+		);
 
 		registerCommands(this);
 		this.addSettingTab(new TrueRecallSettingTab(this.app, this));
