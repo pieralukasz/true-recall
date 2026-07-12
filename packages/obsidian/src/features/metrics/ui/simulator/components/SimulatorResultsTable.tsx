@@ -33,7 +33,7 @@ export function SimulatorResultsTable({
 					{simulations.map((sim) => (
 						<tr
 							key={sim.sequence}
-							class="ep:border-b ep:border-obs-border last:ep:border-b-0"
+							class="ep:border-b ep:border-obs-border ep:last:border-b-0"
 						>
 							<td class={bodyCellCls}>
 								<div class="ep:flex ep:items-center ep:gap-2">

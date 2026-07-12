@@ -150,7 +150,7 @@ export function BulkActionsBar({
 			</div>
 
 			<Clickable
-				class="ep:p-1 ep:rounded hover:ep:bg-obs-modifier-hover ep:text-obs-muted"
+				class="ep:p-1 ep:rounded ep:hover:bg-obs-modifier-hover ep:text-obs-muted"
 				onClick={onClearSelection}
 			>
 				<svg
@@ -181,9 +181,9 @@ function ActionButton({
 }) {
 	return (
 		<Clickable
-			class={`ep:px-2.5 ep:py-1 ep:rounded ep:text-[11px] ep:font-medium ep:border ep:border-obs-border hover:ep:bg-obs-modifier-hover ${
+			class={`ep:px-2.5 ep:py-1 ep:rounded ep:text-[11px] ep:font-medium ep:border ep:border-obs-border ep:hover:bg-obs-modifier-hover ${
 				danger
-					? "ep:text-obs-error hover:ep:border-obs-error/30"
+					? "ep:text-obs-error ep:hover:border-obs-error/30"
 					: "ep:text-obs-normal"
 			}`}
 			onClick={onClick}

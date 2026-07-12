@@ -112,7 +112,7 @@ function PresetStatusEntry({
 		<div
 			class={
 				showName
-					? "ep:border-b ep:border-obs-modifier-border-hover ep:pb-3 last:ep:border-0 last:ep:pb-0"
+					? "ep:border-b ep:border-obs-modifier-border-hover ep:pb-3 ep:last:border-0 ep:last:pb-0"
 					: ""
 			}
 		>

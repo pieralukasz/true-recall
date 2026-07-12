@@ -71,7 +71,7 @@ export function CardPreview({
 				<div class="ep:flex ep:items-center ep:gap-1">
 					{onMove && (
 						<Clickable
-							class="ep:p-1 ep:rounded hover:ep:bg-obs-modifier-hover ep:text-obs-muted"
+							class="ep:p-1 ep:rounded ep:hover:bg-obs-modifier-hover ep:text-obs-muted"
 							onClick={onMove}
 							aria-label="Move card"
 						>
@@ -93,7 +93,7 @@ export function CardPreview({
 						</Clickable>
 					)}
 					<Clickable
-						class="ep:p-1 ep:rounded hover:ep:bg-obs-modifier-hover ep:text-obs-muted"
+						class="ep:p-1 ep:rounded ep:hover:bg-obs-modifier-hover ep:text-obs-muted"
 						onClick={onClose}
 					>
 						<svg

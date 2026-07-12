@@ -77,7 +77,7 @@ export function ProblemCardsWidget({ source }: { source: string }) {
 				return (
 					<Clickable
 						key={card.id}
-						class="ep:flex ep:items-center ep:gap-2 ep:rounded ep:px-1.5 ep:py-1 hover:ep:bg-obs-modifier-hover"
+						class="ep:flex ep:items-center ep:gap-2 ep:rounded ep:px-1.5 ep:py-1 ep:hover:bg-obs-modifier-hover"
 						onClick={handleReview}
 						title={card.question}
 					>

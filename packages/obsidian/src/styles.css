@@ -39,6 +39,12 @@ settings:
 @import "tailwindcss/theme" prefix(ep);
 @import "tailwindcss/utilities" prefix(ep);
 
+/* Explicit content sources — without these Tailwind v4 relies on cwd-based
+   auto-detection, which silently drops classes if the build runs from a
+   different directory or a source dir gets gitignored. */
+@source "./";
+@source "../../plugins/src/";
+
 /* Domain-specific CSS (complex selectors, SVG, animations that can't be Tailwind utilities) */
 @import "./editor/study/editor.styles.css";
 @import "./features/study/ui/review/review.styles.css";

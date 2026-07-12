@@ -44,7 +44,7 @@ export function SimulatorSliders({
 
 	return (
 		<div class="ep:bg-obs-secondary ep:rounded-lg ep:p-4 ep:mb-4">
-			<div class="ep:grid ep:grid-cols-1 md:ep:grid-cols-2 lg:ep:grid-cols-3 ep:gap-3">
+			<div class="ep:grid ep:grid-cols-1 ep:md:grid-cols-2 ep:lg:grid-cols-3 ep:gap-3">
 				{ALL_SLIDERS.map((config) => (
 					<SimulatorSliderRow
 						key={config.index}

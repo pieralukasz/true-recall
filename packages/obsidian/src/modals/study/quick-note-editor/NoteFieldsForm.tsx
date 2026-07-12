@@ -261,7 +261,7 @@ function CMField({
 							? "Unpin field (content kept on Save & Add)"
 							: "Pin field (keep content on Save & Add)"
 					}
-					class={`ep:w-4 ep:h-4 ep:cursor-pointer ep:transition-colors [&>svg]:ep:w-3.5 [&>svg]:ep:h-3.5 ${
+					class={`ep:w-4 ep:h-4 ep:cursor-pointer ep:transition-colors ep:[&>svg]:w-3.5 ep:[&>svg]:h-3.5 ${
 						isPinned
 							? "ep:text-obs-accent"
 							: "ep:text-obs-faint ep:opacity-50 ep:hover:opacity-100"

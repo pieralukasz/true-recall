@@ -243,7 +243,7 @@ function SourcePill({
 		>
 			<span
 				ref={iconRef}
-				class="ep:shrink-0 ep:flex ep:items-center [&_svg]:ep:w-3 [&_svg]:ep:h-3"
+				class="ep:shrink-0 ep:flex ep:items-center ep:[&_svg]:w-3 ep:[&_svg]:h-3"
 			/>
 			<span class="ep:truncate">
 				{label}

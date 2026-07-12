@@ -82,7 +82,7 @@ export function AudioPlayButton({
 		<button
 			class={cn(
 				"ep:inline-flex ep:items-center ep:justify-center ep:p-1 ep:rounded ep:border-0",
-				"ep:bg-transparent ep:cursor-pointer ep:text-obs-muted hover:ep:text-obs-accent",
+				"ep:bg-transparent ep:cursor-pointer ep:text-obs-muted ep:hover:text-obs-accent",
 				"ep:transition-colors ep:duration-150",
 				isPlaying && "ep:text-obs-accent",
 				className,

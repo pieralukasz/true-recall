@@ -32,7 +32,7 @@ export function ActionBar({
 					ref={helpIconRef}
 					role="button"
 					tabIndex={0}
-					class="ep:flex ep:items-center ep:text-obs-faint ep:hover:text-obs-muted ep:cursor-pointer [&>svg]:ep:w-4 [&>svg]:ep:h-4"
+					class="ep:flex ep:items-center ep:text-obs-faint ep:hover:text-obs-muted ep:cursor-pointer ep:[&>svg]:w-4 ep:[&>svg]:h-4"
 					onClick={() => setShowHelp((v) => !v)}
 					onKeyDown={(e) => {
 						if (e.key === "Enter" || e.key === " ") {

@@ -17,7 +17,7 @@ export function TodayHero({
 	totalCards,
 }: TodayHeroProps) {
 	return (
-		<div class="ep:grid ep:grid-cols-2 sm:ep:grid-cols-3 lg:ep:grid-cols-6 ep:gap-2">
+		<div class="ep:grid ep:grid-cols-2 ep:sm:grid-cols-3 ep:lg:grid-cols-6 ep:gap-2">
 			<StatCard label="Studied today" value={today.studied} icon="book-open" />
 			<StatCard label="Minutes" value={today.minutes} icon="clock" />
 			<StatCard
@@ -68,7 +68,7 @@ function StatCard({
 	return (
 		<div class="ep:rounded-lg ep:border ep:border-obs-modifier-border ep:bg-obs-primary ep:p-3 ep:flex ep:flex-col ep:gap-1">
 			<div class="ep:flex ep:items-center ep:gap-1.5 ep:text-obs-muted">
-				<span ref={iconRef} class="[&_svg]:ep:w-3.5 [&_svg]:ep:h-3.5" />
+				<span ref={iconRef} class="ep:[&_svg]:w-3.5 ep:[&_svg]:h-3.5" />
 				<span class="ep:text-xs">{label}</span>
 			</div>
 			<span class={`ep:text-xl ep:font-bold ${colorCls}`}>{value}</span>

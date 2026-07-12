@@ -184,7 +184,7 @@ function TableHeader({
 
 	return (
 		<Clickable
-			class={`ep:px-1.5 ep:truncate ep:flex ep:items-center ep:gap-0.5 ep:cursor-pointer hover:ep:text-obs-normal ${
+			class={`ep:px-1.5 ep:truncate ep:flex ep:items-center ep:gap-0.5 ep:cursor-pointer ep:hover:text-obs-normal ${
 				isActive ? "ep:text-obs-normal" : ""
 			}`}
 			style={{

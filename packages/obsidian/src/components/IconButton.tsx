@@ -24,7 +24,7 @@ const iconButtonVariants = cva(
 	{
 		variants: {
 			size: {
-				small: "ep:w-6 ep:h-6 [&_svg]:ep:w-3.5 [&_svg]:ep:h-3.5",
+				small: "ep:w-6 ep:h-6 ep:[&_svg]:w-3.5 ep:[&_svg]:h-3.5",
 				medium: "",
 			},
 			danger: {

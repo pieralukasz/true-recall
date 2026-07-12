@@ -418,7 +418,7 @@ function IconButton({
 			role="button"
 			tabIndex={0}
 			title={title}
-			class="ep:px-1.5 ep:py-1 ep:text-obs-muted ep:hover:text-obs-normal ep:hover:bg-obs-tertiary ep:rounded ep:cursor-pointer ep:select-none [&>svg]:ep:w-3.5 [&>svg]:ep:h-3.5"
+			class="ep:px-1.5 ep:py-1 ep:text-obs-muted ep:hover:text-obs-normal ep:hover:bg-obs-tertiary ep:rounded ep:cursor-pointer ep:select-none ep:[&>svg]:w-3.5 ep:[&>svg]:h-3.5"
 			onMouseDown={onMouseDown}
 			onKeyDown={handleKeyDown}
 		/>

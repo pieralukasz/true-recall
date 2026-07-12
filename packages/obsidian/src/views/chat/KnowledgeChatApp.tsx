@@ -215,7 +215,7 @@ export function KnowledgeChatApp({ view }: Props) {
 				<div class="ep:flex ep:items-center ep:gap-2">
 					<span
 						ref={headerIconRef}
-						class="ep:shrink-0 ep:flex ep:items-center ep:text-obs-muted [&_svg]:ep:w-4 [&_svg]:ep:h-4"
+						class="ep:shrink-0 ep:flex ep:items-center ep:text-obs-muted ep:[&_svg]:w-4 ep:[&_svg]:h-4"
 					/>
 					<span class="ep:text-ui-small ep:font-semibold ep:text-obs-normal">
 						Chat
@@ -256,7 +256,7 @@ export function KnowledgeChatApp({ view }: Props) {
 						<div class="ep:flex ep:flex-col ep:items-center ep:gap-1">
 							<span
 								ref={sparklesRef}
-								class="ep:flex ep:items-center ep:justify-center ep:text-obs-accent ep:opacity-70 [&_svg]:ep:w-10 [&_svg]:ep:h-10"
+								class="ep:flex ep:items-center ep:justify-center ep:text-obs-accent ep:opacity-70 ep:[&_svg]:w-10 ep:[&_svg]:h-10"
 							/>
 							<div class="ep:text-center">
 								<div class="ep:text-ui-medium ep:font-semibold ep:text-obs-normal ep:mb-1">

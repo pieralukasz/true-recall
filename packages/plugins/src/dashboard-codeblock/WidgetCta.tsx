@@ -8,9 +8,9 @@ const widgetCtaVariants = cva(
 		variants: {
 			variant: {
 				primary:
-					"ep:bg-obs-interactive-accent ep:text-obs-on-accent hover:ep:opacity-90",
+					"ep:bg-obs-interactive-accent ep:text-obs-on-accent ep:hover:opacity-90",
 				secondary:
-					"ep:border ep:border-obs-modifier-border hover:ep:bg-obs-modifier-hover",
+					"ep:border ep:border-obs-modifier-border ep:hover:bg-obs-modifier-hover",
 			},
 		},
 		defaultVariants: { variant: "primary" },

@@ -31,11 +31,11 @@ export function ContextChip({ item, onDismiss }: Props) {
 		>
 			<span
 				ref={iconRef}
-				class="ep:shrink-0 ep:flex ep:items-center [&_svg]:ep:w-3 [&_svg]:ep:h-3"
+				class="ep:shrink-0 ep:flex ep:items-center ep:[&_svg]:w-3 ep:[&_svg]:h-3"
 			/>
 			<span class="ep:truncate ep:leading-none">{label}</span>
 			<Clickable
-				class="ep:w-5 ep:h-5 ep:shrink-0 ep:flex ep:items-center ep:justify-center ep:rounded-sm ep:text-obs-faint ep:hover:text-obs-normal ep:hover:bg-obs-modifier-hover ep:transition-colors [&_svg]:ep:w-3 [&_svg]:ep:h-3"
+				class="ep:w-5 ep:h-5 ep:shrink-0 ep:flex ep:items-center ep:justify-center ep:rounded-sm ep:text-obs-faint ep:hover:text-obs-normal ep:hover:bg-obs-modifier-hover ep:transition-colors ep:[&_svg]:w-3 ep:[&_svg]:h-3"
 				onClick={(e: MouseEvent) => {
 					e.stopPropagation();
 					onDismiss();

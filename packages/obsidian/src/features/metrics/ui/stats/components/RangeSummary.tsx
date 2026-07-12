@@ -16,7 +16,7 @@ export function RangeSummary({ data }: RangeSummaryProps) {
 			<h3 class="ep:text-sm ep:font-semibold ep:text-obs-normal ep:mb-3">
 				Period Summary
 			</h3>
-			<div class="ep:grid ep:grid-cols-2 sm:ep:grid-cols-4 ep:gap-3 ep:text-xs">
+			<div class="ep:grid ep:grid-cols-2 ep:sm:grid-cols-4 ep:gap-3 ep:text-xs">
 				<SummaryStat
 					label="Days studied"
 					value={`${data.daysStudied}/${data.totalDays}`}

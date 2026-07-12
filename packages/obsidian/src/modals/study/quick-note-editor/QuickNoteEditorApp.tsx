@@ -99,9 +99,10 @@ export function QuickNoteEditorApp({
 	}, [isEdit, editMode, plugin.cardStore, noteTypeId, refreshCounter]);
 
 	const isDirty = useMemo(() => {
-		if (isEdit && initialFieldsRef.current) {
-			return Object.keys(initialFieldsRef.current).some(
-				(k) => fields[k] !== initialFieldsRef.current![k],
+		const initialFields = initialFieldsRef.current;
+		if (isEdit && initialFields) {
+			return Object.keys(initialFields).some(
+				(k) => fields[k] !== initialFields[k],
 			);
 		}
 		return Object.values(fields).some((v) => v.trim().length > 0);
@@ -528,7 +529,7 @@ function FooterBar({
 			<Clickable
 				ref={aiIconRef}
 				title={aiTitle}
-				class={`${ghostBtnCls} ep:ml-auto [&>svg]:ep:w-4 [&>svg]:ep:h-4`}
+				class={`${ghostBtnCls} ep:ml-auto ep:[&>svg]:w-4 ep:[&>svg]:h-4`}
 				onClick={handleAIClick}
 				disabled={aiDisabled}
 			/>

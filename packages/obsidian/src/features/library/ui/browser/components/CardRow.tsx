@@ -45,7 +45,7 @@ export function CardRow({
 }: CardRowProps) {
 	const rowCls = [
 		"ep:grid ep:items-center ep:px-3 ep:h-9 ep:text-ui-small ep:cursor-pointer ep:border-b ep:border-obs-border/50",
-		"hover:ep:bg-obs-modifier-hover ep:transition-colors",
+		"ep:hover:bg-obs-modifier-hover ep:transition-colors",
 		selected
 			? "ep:bg-obs-interactive/10"
 			: previewing
