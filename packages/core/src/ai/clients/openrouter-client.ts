@@ -17,6 +17,23 @@ export interface ChatMessage {
 	content: string | ContentPart[] | null;
 	tool_calls?: ToolCall[];
 	tool_call_id?: string;
+	annotations?: UrlCitationAnnotation[];
+}
+
+/** OpenRouter message annotation for web-search citations (defensively typed). */
+export interface UrlCitationAnnotation {
+	type: string;
+	url_citation?: {
+		url: string;
+		title?: string;
+		content?: string;
+	};
+}
+
+/** OpenRouter request plugin (e.g. { id: "web" } enables web search). */
+export interface RequestPlugin {
+	id: string;
+	max_results?: number;
 }
 
 export interface ToolCall {
@@ -34,12 +51,13 @@ export interface ToolDefinition {
 	};
 }
 
-interface ChatCompletionRequest {
+export interface ChatCompletionRequest {
 	messages: ChatMessage[];
 	temperature?: number;
 	tools?: ToolDefinition[];
 	tool_choice?: "auto" | "none";
 	metadata?: Record<string, unknown>;
+	plugins?: RequestPlugin[];
 }
 
 export interface ChatCompletionResponse {
