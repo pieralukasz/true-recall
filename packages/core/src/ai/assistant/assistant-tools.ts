@@ -18,9 +18,11 @@ export interface AssistantRelatedCard {
  */
 export interface AssistantToolHost {
 	listNoteTypes(): AssistantNoteTypeInfo[];
-	getCardFields(
-		cardId: string,
-	): { noteId: string; noteTypeId: string; fields: Record<string, string> } | null;
+	getCardFields(cardId: string): {
+		noteId: string;
+		noteTypeId: string;
+		fields: Record<string, string>;
+	} | null;
 	getRelatedCards(sourceUid: string): AssistantRelatedCard[];
 	readNote(path: string): Promise<string | null>;
 	searchImages(query: string, count: number): Promise<ImageCandidate[]>;

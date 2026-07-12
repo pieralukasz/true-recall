@@ -9,6 +9,7 @@ import {
 	insertAtCursor,
 	toggleAsymmetricMarker,
 	toggleMarker,
+	wrapCloze,
 } from "./cm6-formatting";
 import type { GetFormattingEditorView } from "./types";
 
@@ -17,6 +18,8 @@ interface FormattingToolbarProps {
 	getEditorView: GetFormattingEditorView;
 	typeInEnabled?: boolean;
 	onTypeInToggle?: (enabled: boolean) => void;
+	/** Show the cloze-wrap button (cloze note types only). */
+	showCloze?: boolean;
 }
 
 const COLOR_SWATCHES = [
@@ -90,6 +93,7 @@ export function FormattingToolbar({
 	getEditorView,
 	typeInEnabled = false,
 	onTypeInToggle,
+	showCloze = false,
 }: FormattingToolbarProps) {
 	const [showColors, setShowColors] = useState(false);
 	const colorRef = useRef<HTMLDivElement>(null);
@@ -252,6 +256,25 @@ export function FormattingToolbar({
 					if (v) toggleMarker(v, "==");
 				}}
 			/>
+			{showCloze && (
+				<div
+					role="button"
+					tabIndex={0}
+					title="Cloze deletion (Ctrl+Shift+C)"
+					class={`${btnCls} ep:font-mono`}
+					onMouseDown={(e: MouseEvent) => {
+						prevent(e);
+						const v = getEditorView();
+						if (v) wrapCloze(v);
+					}}
+					onKeyDown={handleKeyDown(() => {
+						const v = getEditorView();
+						if (v) wrapCloze(v);
+					})}
+				>
+					{"[…]"}
+				</div>
+			)}
 
 			<Separator />
 

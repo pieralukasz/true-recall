@@ -1,4 +1,5 @@
 import { signal } from "@preact/signals";
+
 import {
 	AssistantAgent,
 	type AssistantContext,
@@ -8,8 +9,10 @@ import {
 } from "@true-recall/core/ai/assistant";
 import { OpenRouterClient } from "@true-recall/core/ai/clients/openrouter-client";
 import { resolveAIClientConfig } from "@true-recall/core/ai/config/ai-client-config";
-import { notify } from "@true-recall/obsidian/services/notification.service";
+
 import type TrueRecallPlugin from "@true-recall/obsidian/main";
+import { notify } from "@true-recall/obsidian/services/notification.service";
+
 import { ObsidianHttpClient } from "../../adapters/ObsidianHttpClient";
 import { G } from "../../data/queries";
 import { ObsidianAssistantHost } from "./assistant-host";
@@ -128,7 +131,8 @@ export class AssistantService {
 				const config = resolveAIClientConfig(settings, "assistant");
 				const webSearch =
 					settings.assistantWebSearch &&
-					(config.providerType === "openrouter" || config.providerType === "pro");
+					(config.providerType === "openrouter" ||
+						config.providerType === "pro");
 				const client = new OpenRouterClient(
 					config.apiKey,
 					config.model,

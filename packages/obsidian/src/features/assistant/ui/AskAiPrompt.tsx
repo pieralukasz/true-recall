@@ -1,7 +1,9 @@
+import { useRef, useState } from "preact/hooks";
+
 import type { AssistantContext } from "@true-recall/core/ai/assistant";
+
 import { Clickable } from "@true-recall/obsidian/components";
 import { usePlugin } from "@true-recall/obsidian/preact/ObsidianContext";
-import { useRef, useState } from "preact/hooks";
 
 interface AskAiPromptProps {
 	context: AssistantContext;

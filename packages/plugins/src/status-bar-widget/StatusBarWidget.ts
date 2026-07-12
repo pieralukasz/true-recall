@@ -1,6 +1,7 @@
 import { effect } from "@preact/signals";
 import { State } from "ts-fsrs";
 
+import type { AssistantTask } from "@true-recall/core/ai/assistant";
 import { DEFAULT_SETTINGS } from "@true-recall/core/constants";
 import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
 import type {
@@ -126,10 +127,12 @@ export class StatusBarWidget {
 		const allMetaSig = dl.signal(Q.ALL_META);
 		const settingsSig = dl.signal(Q.SETTINGS);
 		const archivedSig = dl.signal(Q.ARCHIVED_UIDS);
+		const assistantSig = dl.signal(Q.ASSISTANT_TASKS);
 		this.disposer = effect(() => {
 			void allMetaSig?.value;
 			void settingsSig?.value;
 			void archivedSig?.value;
+			void assistantSig?.value;
 			this.render();
 		});
 	}
@@ -167,6 +170,11 @@ export class StatusBarWidget {
 			});
 		}
 
+		const readyCount = this.countReadyAssistantTasks();
+		if (readyCount > 0) {
+			parts.push({ text: `${readyCount} AI`, cssVar: "--color-accent" });
+		}
+
 		this.el.empty();
 
 		if (parts.length === 0) {
@@ -187,6 +195,15 @@ export class StatusBarWidget {
 			const span = this.el.createSpan({ text: part.text });
 			span.style.setProperty("color", `var(${part.cssVar})`);
 		});
+	}
+
+	private countReadyAssistantTasks(): number {
+		const tasks = getDataLayer().get<AssistantTask[]>(Q.ASSISTANT_TASKS) ?? [];
+		return tasks.filter(
+			(t) =>
+				t.status === "done" &&
+				(t.manifest?.proposals.some((p) => p.status === "proposed") ?? false),
+		).length;
 	}
 
 	private aggregateGlobal(): {

@@ -5,8 +5,6 @@ import type {
 	ToolCall,
 } from "../clients/openrouter-client";
 import { getTextContent } from "../clients/openrouter-client";
-import { buildAssistantSystemPrompt } from "./assistant-prompts";
-import { ASSISTANT_TOOLS, type AssistantToolHost } from "./assistant-tools";
 import type {
 	AssistantContext,
 	AssistantManifest,
@@ -15,6 +13,8 @@ import type {
 	Citation,
 	ProposalTarget,
 } from "./assistant.types";
+import { buildAssistantSystemPrompt } from "./assistant-prompts";
+import { ASSISTANT_TOOLS, type AssistantToolHost } from "./assistant-tools";
 
 export interface AssistantChatClient {
 	chat(request: ChatCompletionRequest): Promise<ChatCompletionResponse>;
@@ -35,13 +35,15 @@ function nextProposalId(): string {
 
 function renderContext(context: AssistantContext): string {
 	const parts: string[] = [];
-	if (context.selectedText) parts.push(`SELECTED TEXT:\n${context.selectedText}`);
+	if (context.selectedText)
+		parts.push(`SELECTED TEXT:\n${context.selectedText}`);
 	if (context.card) {
 		parts.push(
 			`CURRENT CARD (cardId: ${context.card.cardId}):\nQ: ${context.card.question}\nA: ${context.card.answer || "(empty)"}`,
 		);
 	}
-	if (context.activeNotePath) parts.push(`ACTIVE NOTE: ${context.activeNotePath}`);
+	if (context.activeNotePath)
+		parts.push(`ACTIVE NOTE: ${context.activeNotePath}`);
 	return parts.join("\n\n");
 }
 
@@ -152,9 +154,7 @@ export class AssistantAgent {
 		switch (call.function.name) {
 			case "create_cards": {
 				const noteTypeId = String(args.noteTypeId ?? "");
-				const known = host
-					.listNoteTypes()
-					.some((nt) => nt.id === noteTypeId);
+				const known = host.listNoteTypes().some((nt) => nt.id === noteTypeId);
 				if (!known) {
 					return `Note type "${noteTypeId}" not found. Use one of the listed note type ids.`;
 				}

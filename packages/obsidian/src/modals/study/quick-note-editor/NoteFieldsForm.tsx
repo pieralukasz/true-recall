@@ -1,5 +1,5 @@
-import { StateEffect } from "@codemirror/state";
-import { EditorView } from "@codemirror/view";
+import { Prec, StateEffect } from "@codemirror/state";
+import { EditorView, keymap } from "@codemirror/view";
 import {
 	useCallback,
 	useEffect,
@@ -12,6 +12,7 @@ import type { NoteType } from "@true-recall/core/types/note.types";
 
 import { Clickable } from "@true-recall/obsidian/components";
 import type { EmbeddableEditorInstance } from "@true-recall/obsidian/editor/shared/embedded-editor";
+import { wrapCloze } from "@true-recall/obsidian/editor/shared/formatting/cm6-formatting";
 import { useIcon } from "@true-recall/obsidian/preact/hooks";
 import {
 	useApp,
@@ -197,7 +198,7 @@ function CMField({
 
 		// CM6 updateListener — catches all doc changes (type, delete, paste, undo)
 		editor.cm.dispatch({
-			effects: StateEffect.appendConfig.of(
+			effects: StateEffect.appendConfig.of([
 				EditorView.updateListener.of((update) => {
 					if (update.docChanged) {
 						window.clearTimeout(debounceRef.current);
@@ -206,7 +207,19 @@ function CMField({
 						}, 150);
 					}
 				}),
-			),
+				// Anki-style cloze wrap; harmless no-op text for non-cloze types.
+				Prec.highest(
+					keymap.of([
+						{
+							key: "Mod-Shift-c",
+							run: (view) => {
+								wrapCloze(view);
+								return true;
+							},
+						},
+					]),
+				),
+			]),
 		});
 
 		// Report focus to parent for shared toolbar

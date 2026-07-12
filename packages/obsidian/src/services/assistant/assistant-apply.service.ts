@@ -1,10 +1,13 @@
+import { normalizePath, requestUrl, TFile } from "obsidian";
+
 import type {
 	AssistantProposal,
 	AssistantTask,
 	ProposalTarget,
 } from "@true-recall/core/ai/assistant";
+
 import type TrueRecallPlugin from "@true-recall/obsidian/main";
-import { normalizePath, requestUrl, TFile } from "obsidian";
+
 import {
 	NoteAppendCommand,
 	NoteCreateCommand,
@@ -91,14 +94,24 @@ export class AssistantApplyService {
 		const note = store?.notes.getById(proposal.noteId);
 		if (!note) return { ok: false, error: "Card no longer exists" };
 		const currentFields = note.fields ?? {};
-		const conflict = detectFieldConflict(proposal.previousFields, currentFields);
+		const conflict = detectFieldConflict(
+			proposal.previousFields,
+			currentFields,
+		);
 		if (conflict && !overrides?.force) {
 			return { ok: false, conflictFields: conflict };
 		}
-		const merged = { ...currentFields, ...(overrides?.fields ?? proposal.fields) };
+		const merged = {
+			...currentFields,
+			...(overrides?.fields ?? proposal.fields),
+		};
 		this.plugin.flashcardManager.updateNoteFields(proposal.noteId, merged);
 		void this.plugin.commandService?.execute(
-			new UpdateNoteFieldsCommand(proposal.noteId, currentFields, "AI assistant edit"),
+			new UpdateNoteFieldsCommand(
+				proposal.noteId,
+				currentFields,
+				"AI assistant edit",
+			),
 		);
 		this.emitCardUpdated(proposal.cardId);
 		return { ok: true };
@@ -123,7 +136,8 @@ export class AssistantApplyService {
 		proposal: Extract<AssistantProposal, { type: "attach_images" }>,
 	): Promise<ApplyResult> {
 		const selected = proposal.candidates.filter((c) => c.selected);
-		if (selected.length === 0) return { ok: false, error: "No images selected" };
+		if (selected.length === 0)
+			return { ok: false, error: "No images selected" };
 		const embeds: string[] = [];
 		for (const candidate of selected) {
 			const path = await this.downloadImage(candidate.url);
@@ -166,7 +180,11 @@ export class AssistantApplyService {
 		};
 		this.plugin.flashcardManager.updateNoteFields(target.noteId, merged);
 		void this.plugin.commandService?.execute(
-			new UpdateNoteFieldsCommand(target.noteId, currentFields, "AI assistant attach"),
+			new UpdateNoteFieldsCommand(
+				target.noteId,
+				currentFields,
+				"AI assistant attach",
+			),
 		);
 		this.emitCardUpdated(target.cardId);
 		return { ok: true };

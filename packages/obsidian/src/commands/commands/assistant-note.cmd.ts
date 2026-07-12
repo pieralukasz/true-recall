@@ -1,4 +1,5 @@
 import type { App, TFile } from "obsidian";
+
 import type { Command, CommandContext } from "../command.types";
 
 /** Undo-able note append. The append is done by the caller; undo restores prior content. */

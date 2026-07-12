@@ -1,13 +1,16 @@
+import { useState } from "preact/hooks";
+
 import type {
 	AssistantProposal,
 	AssistantTask,
 	ImageCandidate,
 } from "@true-recall/core/ai/assistant";
+
 import { Clickable } from "@true-recall/obsidian/components";
 import { Q, useQuery } from "@true-recall/obsidian/data";
 import { usePlugin } from "@true-recall/obsidian/preact/ObsidianContext";
 import { notify } from "@true-recall/obsidian/services/notification.service";
-import { useState } from "preact/hooks";
+
 import { AssistantApplyService } from "../../services/assistant/assistant-apply.service";
 
 function proposalSummary(p: AssistantProposal): string {
@@ -68,7 +71,11 @@ function ProposalEditor({
 							onChange={() => onToggleImage(i)}
 						/>
 						{/* biome-ignore lint/a11y/useAltText: candidate title may be absent */}
-						<img src={c.thumbnailUrl ?? c.url} alt={c.title ?? ""} loading="lazy" />
+						<img
+							src={c.thumbnailUrl ?? c.url}
+							alt={c.title ?? ""}
+							loading="lazy"
+						/>
 						<span>
 							{c.title ?? c.url} {c.license ? `(${c.license})` : ""}
 						</span>
@@ -131,7 +138,10 @@ function TaskDetail({ task }: { task: AssistantTask }) {
 			)}
 			{manifest.finalText && <p class="tr-inbox-final">{manifest.finalText}</p>}
 			{manifest.proposals.map((proposal) => (
-				<div key={proposal.id} class={`tr-inbox-proposal is-${proposal.status}`}>
+				<div
+					key={proposal.id}
+					class={`tr-inbox-proposal is-${proposal.status}`}
+				>
 					<div class="tr-inbox-proposal-head">
 						<span>{proposalSummary(proposal)}</span>
 						<span class="tr-inbox-status">{proposal.status}</span>
@@ -240,13 +250,11 @@ export function AssistantInboxApp() {
 						<span class="tr-inbox-status">{task.status}</span>
 					</div>
 					{progress?.taskId === task.id &&
-						progress.lines
-							.slice(-3)
-							.map((line, i) => (
-								<div key={`${task.id}-line-${i}`} class="tr-inbox-progress">
-									{line}
-								</div>
-							))}
+						progress.lines.slice(-3).map((line, i) => (
+							<div key={`${task.id}-line-${i}`} class="tr-inbox-progress">
+								{line}
+							</div>
+						))}
 					<Clickable onClick={() => plugin.assistantService?.cancel(task.id)}>
 						Cancel
 					</Clickable>

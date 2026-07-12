@@ -1,11 +1,14 @@
+import { requestUrl, TFile } from "obsidian";
+
 import type {
 	AssistantNoteTypeInfo,
 	AssistantRelatedCard,
 	AssistantToolHost,
 	ImageCandidate,
 } from "@true-recall/core/ai/assistant";
+
 import type TrueRecallPlugin from "@true-recall/obsidian/main";
-import { requestUrl, TFile } from "obsidian";
+
 import { mapOpenverseResults, OPENVERSE_URL } from "./openverse";
 
 const MAX_RELATED_CARDS = 10;

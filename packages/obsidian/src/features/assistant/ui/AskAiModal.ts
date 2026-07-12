@@ -1,8 +1,11 @@
-import type { AssistantContext } from "@true-recall/core/ai/assistant";
-import type TrueRecallPlugin from "@true-recall/obsidian/main";
-import { mountPreact } from "@true-recall/obsidian/preact/mount";
 import { Modal } from "obsidian";
 import { h } from "preact";
+
+import type { AssistantContext } from "@true-recall/core/ai/assistant";
+
+import type TrueRecallPlugin from "@true-recall/obsidian/main";
+import { mountPreact } from "@true-recall/obsidian/preact/mount";
+
 import { AskAiPrompt } from "./AskAiPrompt";
 
 /** Opens the Ask AI prompt in a modal (used outside review / from commands). */

@@ -1,4 +1,5 @@
 import { computePosition, flip, offset, shift } from "@floating-ui/dom";
+
 import type { AssistantContext } from "@true-recall/core/ai/assistant";
 
 interface ReviewSelectionBubbleDeps {
@@ -47,7 +48,8 @@ export class ReviewSelectionBubble {
 	private maybeShow(): void {
 		if (!this.deps.isEnabled()) return;
 		const selection = activeWindow.getSelection();
-		if (!selection || selection.isCollapsed || selection.rangeCount === 0) return;
+		if (!selection || selection.isCollapsed || selection.rangeCount === 0)
+			return;
 		const text = selection.toString().trim();
 		if (text.length < MIN_CHARS) return;
 

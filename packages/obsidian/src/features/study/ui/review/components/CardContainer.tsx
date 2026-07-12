@@ -269,7 +269,14 @@ export function CardContainer({
 				)}
 
 				<LivePreviewField
-					content={questionContent}
+					content={
+						// Anki-style cloze reveal: the answer replaces the sentence in
+						// place (gap filled + Extra below) instead of rendering as a
+						// separate basic-card answer block.
+						isCloze && isAnswerRevealed
+							? (card.answer ?? questionContent)
+							: questionContent
+					}
 					field="question"
 					sourcePath={sourcePath}
 					cls="true-recall-review-question ep:leading-relaxed ep:text-obs-normal ep:mb-6"
@@ -291,7 +298,7 @@ export function CardContainer({
 					</div>
 				)}
 
-				{hasTextAnswer && (
+				{hasTextAnswer && !isCloze && (
 					<>
 						<div
 							class={cn(

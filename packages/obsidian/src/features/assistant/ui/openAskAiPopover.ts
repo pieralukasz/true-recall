@@ -1,8 +1,11 @@
 import { computePosition, flip, offset, shift } from "@floating-ui/dom";
+import { h } from "preact";
+
 import type { AssistantContext } from "@true-recall/core/ai/assistant";
+
 import type TrueRecallPlugin from "@true-recall/obsidian/main";
 import { mountPreact } from "@true-recall/obsidian/preact/mount";
-import { h } from "preact";
+
 import { AskAiPrompt } from "./AskAiPrompt";
 
 /** Opens the Ask AI prompt anchored to a rect (e.g. a selection). Returns a dispose fn. */

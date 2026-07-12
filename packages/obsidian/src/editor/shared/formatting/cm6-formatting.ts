@@ -142,6 +142,46 @@ export function toggleAsymmetricMarker(
 	view.focus();
 }
 
+const CLOZE_MARKER_REGEX = /\{\{c(\d+)::/g;
+
+/**
+ * Wrap the selection as an Anki-style cloze deletion `{{cN::text}}`, where N
+ * is one greater than the highest existing cloze index in the document
+ * (Anki's Ctrl+Shift+C). With an empty selection, inserts `{{cN::}}` and
+ * places the cursor inside. Unwraps when the selection is already a cloze.
+ */
+export function wrapCloze(view: EditorView): void {
+	const { from, to } = view.state.selection.main;
+	const selected = view.state.sliceDoc(from, to);
+
+	const existingWrap = selected.match(/^\{\{c\d+::([\s\S]*)\}\}$/);
+	if (existingWrap?.[1] !== undefined) {
+		view.dispatch({
+			changes: { from, to, insert: existingWrap[1] },
+			selection: { anchor: from, head: from + existingWrap[1].length },
+		});
+		view.focus();
+		return;
+	}
+
+	let maxIndex = 0;
+	const doc = view.state.doc.toString();
+	for (const match of doc.matchAll(CLOZE_MARKER_REGEX)) {
+		const index = Number(match[1]);
+		if (index > maxIndex) maxIndex = index;
+	}
+	const before = `{{c${maxIndex + 1}::`;
+
+	view.dispatch({
+		changes: { from, to, insert: `${before}${selected}}}` },
+		selection:
+			from === to
+				? { anchor: from + before.length }
+				: { anchor: from + before.length, head: to + before.length },
+	});
+	view.focus();
+}
+
 export function insertAtCursor(view: EditorView, text: string): void {
 	const { from, to } = view.state.selection.main;
 	view.dispatch({

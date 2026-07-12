@@ -84,10 +84,16 @@ export function QuickNoteEditorApp({
 		[],
 	);
 
-	// Source note picker — only shown in add mode without pre-set sourceUid
+	// Source note picker — only shown in add mode without pre-set sourceUid.
+	// Default to the note the user was just working in: cards created from a
+	// text selection or the "+" entry points should link there by default.
 	const showSourcePicker = !isEdit && !addMode?.sourceUid;
 	const [selectedSourceNote, setSelectedSourceNote] = useState<TFile | null>(
-		null,
+		() => {
+			if (!showSourcePicker) return null;
+			const active = app.workspace.getActiveFile();
+			return active?.extension === "md" ? active : null;
+		},
 	);
 
 	// ── Derived ──
@@ -142,6 +148,14 @@ export function QuickNoteEditorApp({
 			const next: Record<string, string> = {};
 			for (const fieldName of noteType.fields) {
 				next[fieldName] = prev[fieldName] ?? "";
+			}
+			// Field names rarely match across types (Front/Back vs Text/Extra),
+			// which used to drop the entered text on e.g. Basic -> Cloze. Carry
+			// the first previous value into the new primary field instead.
+			const primaryField = noteType.fields[0];
+			if (primaryField && !next[primaryField]) {
+				const carried = Object.values(prev).find((v) => v.trim().length > 0);
+				if (carried) next[primaryField] = carried;
 			}
 			return next;
 		});
@@ -427,6 +441,7 @@ export function QuickNoteEditorApp({
 				getEditorView={() => focusedFieldRef.current?.editorView ?? null}
 				typeInEnabled={alwaysTypeIn}
 				onTypeInToggle={!isEdit ? setAlwaysTypeIn : undefined}
+				showCloze={noteType.type === 1}
 			/>
 
 			{/* Dynamic fields */}
