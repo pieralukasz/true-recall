@@ -11,7 +11,7 @@ import { OPENROUTER_URL } from "../clients/openrouter-client";
 
 const PRO_MODEL = "auto";
 
-export type AIConfigScope = "default" | "generation" | "card-polish";
+export type AIConfigScope = "default" | "generation" | "card-polish" | "assistant";
 
 export interface AIClientConfig {
 	apiKey: string;
@@ -105,10 +105,14 @@ export function resolveAIClientConfig(
 			if (!settings.openRouterApiKey) {
 				throw new Error("OpenRouter API key is not configured.");
 			}
-			const model =
+			const defaultModel =
 				settings.aiModel === CUSTOM_MODEL_ID
 					? settings.customAiModel || DEFAULT_BYOK_MODEL
 					: settings.aiModel || DEFAULT_BYOK_MODEL;
+			const model =
+				scope === "assistant" && settings.assistantModel.trim() !== ""
+					? settings.assistantModel.trim()
+					: defaultModel;
 			return {
 				apiKey: settings.openRouterApiKey,
 				model,

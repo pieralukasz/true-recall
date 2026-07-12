@@ -246,6 +246,37 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 		{ id: "quick-add", enabled: true },
 	],
 
+	assistantModel: "",
+	assistantWebSearch: true,
+	assistantInstructions: "",
+	assistantPresets: [
+		{
+			id: "assistant-cards",
+			name: "Create cards",
+			instruction:
+				"Research the marked concept and create a small set of flashcards about it.",
+		},
+		{
+			id: "assistant-fill",
+			name: "Fill the answer",
+			instruction:
+				"Research the card's question and fill the empty answer field. Keep the answer ultra-concise (1-3 words when possible).",
+		},
+		{
+			id: "assistant-diagram",
+			name: "Add a diagram",
+			instruction:
+				"Create a Mermaid diagram that explains the marked concept and attach it to the card.",
+		},
+		{
+			id: "assistant-append",
+			name: "Append to note",
+			instruction:
+				"Research the marked concept and append a short, well-structured section about it to the current note.",
+		},
+	],
+	assistantMaxIterations: 10,
+
 	enableLocalApi: false,
 	apiPort: 27182,
 
