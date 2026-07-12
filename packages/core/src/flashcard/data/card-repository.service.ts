@@ -268,45 +268,16 @@ export class CardRepository {
 			}
 		}
 
+		// Both cards of a reversed pair share one note, and updateCardContent
+		// writes in note orientation based on template_ord — the paired card is
+		// updated by the same note write, so no extra sync is needed (a second
+		// swapped write used to flip the pair).
 		this.store.cards.updateCardContent(cardId, newQuestion, newAnswer);
 
 		this.emit("card:updated", {
 			cardId,
 			changes: { question: true, answer: true },
 		});
-
-		// Sync reversed pair: update the paired card with swapped Q/A
-		this.syncReversePair(cardId, existing, newQuestion, newAnswer);
-	}
-
-	private syncReversePair(
-		cardId: string,
-		cardData: FSRSCardData,
-		newQuestion: string,
-		newAnswer: string,
-	): void {
-		// Case 1: This card IS a reverse - update the original
-		if (cardData.reverseOf) {
-			const original = this.store.get(cardData.reverseOf);
-			if (original) {
-				this.store.cards.updateCardContent(
-					cardData.reverseOf,
-					newAnswer,
-					newQuestion,
-				);
-			}
-		}
-
-		// Case 2: This card HAS a reverse - update the reverse
-		const reverseCard = this.store.cards.getCardByReverseOf(cardId);
-		if (reverseCard) {
-			this.store.cards.updateCardContent(
-				reverseCard.id,
-				newAnswer,
-				newQuestion,
-			);
-		}
-		// No notification — the caller (updateContent) already calls notifyCardChange
 	}
 
 	updateFSRS(

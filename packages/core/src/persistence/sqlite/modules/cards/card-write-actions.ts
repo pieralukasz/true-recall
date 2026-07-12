@@ -114,8 +114,12 @@ export class CardWriteActions {
 	}
 
 	updateCardContent(cardId: string, question: string, answer: string): void {
-		const card = this.db.get<{ note_id: string; note_type_id: string }>(
-			`SELECT c.note_id, n.note_type_id
+		const card = this.db.get<{
+			note_id: string;
+			note_type_id: string;
+			template_ord: number;
+		}>(
+			`SELECT c.note_id, n.note_type_id, c.template_ord
 			 FROM cards c
 			 JOIN notes n ON c.note_id = n.id
 			 WHERE c.id = ?`,
@@ -127,13 +131,14 @@ export class CardWriteActions {
 				"Image occlusion cards must be edited in the image occlusion editor.",
 			);
 		}
+		// A reversed sibling (template_ord 1) renders question=Back and
+		// answer=Front, so its edits must be written back in note orientation —
+		// both cards of a reversed pair share this one note.
+		const [front, back] =
+			card.template_ord === 1 ? [answer, question] : [question, answer];
 		this.db.run(
 			`UPDATE notes SET fields_json = ?, updated_at = ? WHERE id = ?`,
-			[
-				JSON.stringify({ Front: question, Back: answer }),
-				Date.now(),
-				card.note_id,
-			],
+			[JSON.stringify({ Front: front, Back: back }), Date.now(), card.note_id],
 		);
 	}
 
