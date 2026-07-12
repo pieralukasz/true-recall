@@ -401,7 +401,7 @@ export class ReviewService {
 		for (let i = 1; i < sortedDays.length; i++) {
 			const prev = sortedDays[i - 1];
 			const curr = sortedDays[i];
-			if (prev !== undefined && curr !== undefined && prev - curr === DAY_MS) {
+			if (prev !== undefined && curr !== undefined && Math.round((prev - curr) / DAY_MS) === 1) {
 				currentStreak++;
 			} else {
 				if (currentStreak > longestStreak) longestStreak = currentStreak;
@@ -410,15 +410,20 @@ export class ReviewService {
 		}
 		if (currentStreak > longestStreak) longestStreak = currentStreak;
 
-		// Current streak: count consecutive days ending at today or yesterday
+		// Current streak: count consecutive days ending at today or yesterday.
+		// Compare via rounded day diff — local midnights are 23/25h apart
+		// across DST transitions, so exact DAY_MS equality splits streaks.
 		const now = new Date();
 		now.setHours(now.getHours() - dayStartHour);
 		now.setHours(0, 0, 0, 0);
 		const todayMs = now.getTime();
-		const yesterdayMs = todayMs - DAY_MS;
 
 		const newest = sortedDays[0];
-		if (newest !== todayMs && newest !== yesterdayMs) {
+		const daysSinceNewest =
+			newest !== undefined
+				? Math.round((todayMs - newest) / DAY_MS)
+				: Number.NaN;
+		if (daysSinceNewest !== 0 && daysSinceNewest !== 1) {
 			return { currentStreak: 0, longestStreak };
 		}
 
@@ -426,7 +431,7 @@ export class ReviewService {
 		for (let i = 1; i < sortedDays.length; i++) {
 			const prev = sortedDays[i - 1];
 			const curr = sortedDays[i];
-			if (prev !== undefined && curr !== undefined && prev - curr === DAY_MS) {
+			if (prev !== undefined && curr !== undefined && Math.round((prev - curr) / DAY_MS) === 1) {
 				streak++;
 			} else {
 				break;

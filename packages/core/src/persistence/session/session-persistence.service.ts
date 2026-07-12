@@ -274,8 +274,15 @@ export class SessionPersistenceService {
 				}
 			}
 
-			// Flush to ensure data is persisted
-			await this.store.saveNow();
+			// Only delete the source file once the migrated data is actually
+			// on disk — a failed flush + crash would otherwise lose history.
+			const flushed = await this.store.saveNow();
+			if (!flushed) {
+				console.warn(
+					"[True Recall] Stats migration flush failed; keeping stats.json for retry",
+				);
+				return;
+			}
 
 			await this.persistence.remove(statsPath);
 		} catch (error) {

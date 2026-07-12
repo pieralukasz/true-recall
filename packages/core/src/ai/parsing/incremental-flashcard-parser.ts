@@ -147,8 +147,9 @@ export class IncrementalFlashcardParser {
 		this.state = "idle";
 		this.objectBuffer = "";
 
-		// Try closing strategies: just "}", then "\"}", then "\"}"
-		for (const suffix of ["}", '"}', '"}']) {
+		// Try closing strategies: "}", then closing an open string ('"}'),
+		// then closing an open string inside a nested object ('"}}').
+		for (const suffix of ["}", '"}', '"}}']) {
 			const block = this.tryParseObject(buf + suffix);
 			if (block) return [{ type: "card_complete", block }];
 		}
