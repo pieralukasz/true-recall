@@ -36,6 +36,7 @@ export class ReviewAnswerCommand implements Command {
 
 	readonly params: ReviewAnswerParams;
 	private writeExecuted = false;
+	private writePersisted = false;
 	private pendingTimeoutId: number | null = null;
 
 	constructor(params: ReviewAnswerParams) {
@@ -57,6 +58,7 @@ export class ReviewAnswerCommand implements Command {
 			);
 
 			if (!persisted) return;
+			this.writePersisted = true;
 
 			try {
 				ctx.sessionPersistence.recordReview(
@@ -94,7 +96,10 @@ export class ReviewAnswerCommand implements Command {
 		const cancelled = this.cancelPendingWrite();
 		const p = this.params;
 
-		if (!cancelled) {
+		// A fired-but-failed write (card deleted between answer and the
+		// deferred write) recorded nothing — undoing it would decrement
+		// today's stats for a review that never landed.
+		if (!cancelled && this.writePersisted) {
 			// skipNotification matches execute() — without it, card:updated
 			// fires through the bus, sets lastMutation, and the ReviewView
 			// effect runs rebuildActiveSession against stale Q.ALL_META,

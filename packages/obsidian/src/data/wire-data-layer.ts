@@ -16,7 +16,7 @@ const EVENT_TO_GROUPS: Record<string, string[]> = {
 	"card:removed": [G.CARDS, G.BROWSER, G.DASHBOARD, G.PANEL, G.STATS],
 	"card:reviewed": [G.CARDS, G.DASHBOARD, G.STATS, G.PANEL],
 	"cards:bulk": [G.CARDS, G.BROWSER, G.DASHBOARD, G.PANEL, G.REVIEW, G.STATS],
-	"hierarchy:changed": [G.CARDS, G.DASHBOARD, G.REVIEW],
+	"hierarchy:changed": [G.CARDS, G.BROWSER, G.DASHBOARD, G.PANEL, G.REVIEW],
 	"settings:changed": [
 		G.CARDS,
 		G.BROWSER,

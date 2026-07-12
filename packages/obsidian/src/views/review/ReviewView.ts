@@ -435,6 +435,10 @@ export class ReviewView extends ItemView {
 	private handleAnswer(rating: Grade): void {
 		if (this.isProcessingAnswer) return;
 		if (this.isRatingLocked()) return;
+		// Click path: the queue advances synchronously but the re-render that
+		// hides the rating bar is async, so a fast double-click would grade
+		// the next card sight-unseen (keyboard path already checks this).
+		if (!this.review.isAnswerRevealed) return;
 		this.isProcessingAnswer = true;
 		try {
 			this.answerHandler.handleAnswer(rating);
@@ -784,8 +788,17 @@ export class ReviewView extends ItemView {
 	private subscribeToSessionEvents(): void {
 		this.unsubscribeFromSessionEvents();
 
+		// preact-signals runs the effect callback immediately on creation, and
+		// lastMutation is never cleared — without this guard every new session
+		// would re-apply the last pre-session mutation to the fresh queue
+		// (e.g. force-adding a card past the daily new limit).
+		let isSubscribing = true;
 		this.sessionSignalDisposer = effect(() => {
 			const m = lastMutation.value;
+			if (isSubscribing) {
+				isSubscribing = false;
+				return;
+			}
 			if (!m) return;
 			// Skip "reviewed" — the queue is already updated synchronously
 			// by recordAnswerAndNext() before persistence runs.

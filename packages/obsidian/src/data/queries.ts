@@ -46,7 +46,7 @@ export const MUTATION_GROUPS = {
 	"cards:bulk": [G.CARDS, G.BROWSER, G.DASHBOARD, G.PANEL, G.REVIEW, G.STATS],
 	"cards:imported": [G.CARDS, G.BROWSER, G.DASHBOARD, G.PANEL, G.STATS],
 	"note:changed": [G.CARDS, G.BROWSER, G.DASHBOARD, G.PANEL],
-	"hierarchy:changed": [G.CARDS, G.DASHBOARD, G.REVIEW],
+	"hierarchy:changed": [G.CARDS, G.BROWSER, G.DASHBOARD, G.PANEL, G.REVIEW],
 	"settings:changed": [
 		G.CARDS,
 		G.BROWSER,

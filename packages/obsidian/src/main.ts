@@ -996,7 +996,7 @@ export default class TrueRecallPlugin extends Plugin {
 				notify().success("Note review enabled");
 			}
 
-			this.dataLayer?.invalidateGroups(["cards", "dashboard", "review"]);
+			this.dataLayer?.invalidateGroups([G.CARDS, G.DASHBOARD, G.REVIEW]);
 		} catch (error) {
 			notify().operationFailed("toggle note review", error);
 		}

@@ -173,6 +173,15 @@ export class ReviewSessionController {
 		const buriedSiblings =
 			preset.burySiblings !== false ? this.burySiblingCards(card, review) : [];
 
+		// Burying removes siblings from the queue, which shifts the requeued
+		// "Again" copy left of its captured position — undo would then splice
+		// out an unrelated card. Resolve the copy's actual index by id.
+		let requeuedAtIndex = transition.requeueData?.position;
+		if (requeuedAtIndex !== undefined && buriedSiblings.length > 0) {
+			const idx = this.getReview().queue.findIndex((c) => c.id === card.id);
+			if (idx >= 0) requeuedAtIndex = idx;
+		}
+
 		const cmd = new ReviewAnswerCommand({
 			card: { ...card },
 			originalFsrs: { ...card.fsrs },
@@ -185,7 +194,7 @@ export class ReviewSessionController {
 			elapsedDays: transition.result.elapsedDays,
 			responseTime,
 			presetName: preset.name,
-			requeuedAtIndex: transition.requeueData?.position,
+			requeuedAtIndex,
 			buriedSiblingIds:
 				buriedSiblings.length > 0 ? buriedSiblings.map((s) => s.id) : undefined,
 			buriedSiblings: buriedSiblings.length > 0 ? buriedSiblings : undefined,

@@ -376,6 +376,16 @@ async function migrateArchiveCascade(plugin: TrueRecallPlugin): Promise<void> {
 			}
 		}
 		hierarchy.invalidateGraph();
+		// Pair the graph invalidation with a DataLayer refresh (rule: every
+		// invalidateGraph needs one) — otherwise archived-derived counts stay
+		// stale until the async frontmatter events trickle in.
+		plugin.dataLayer?.invalidateGroups([
+			G.CARDS,
+			G.BROWSER,
+			G.DASHBOARD,
+			G.PANEL,
+			G.REVIEW,
+		]);
 	}
 
 	plugin.settings.archiveCascadeMigrated = true;
