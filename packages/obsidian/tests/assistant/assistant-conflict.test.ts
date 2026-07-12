@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { detectFieldConflict } from "../../src/services/assistant/assistant-conflict";
 
 describe("detectFieldConflict", () => {

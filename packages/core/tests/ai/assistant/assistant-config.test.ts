@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
+
 import { resolveAIClientConfig } from "../../../src/ai/config/ai-client-config";
 import { DEFAULT_SETTINGS } from "../../../src/constants";
 import type { TrueRecallSettings } from "../../../src/types/settings.types";
 
-function byokSettings(patch: Partial<TrueRecallSettings> = {}): TrueRecallSettings {
+function byokSettings(
+	patch: Partial<TrueRecallSettings> = {},
+): TrueRecallSettings {
 	return {
 		...DEFAULT_SETTINGS,
 		providerType: "openrouter",

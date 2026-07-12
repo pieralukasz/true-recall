@@ -11,7 +11,11 @@ import { OPENROUTER_URL } from "../clients/openrouter-client";
 
 const PRO_MODEL = "auto";
 
-export type AIConfigScope = "default" | "generation" | "card-polish" | "assistant";
+export type AIConfigScope =
+	| "default"
+	| "generation"
+	| "card-polish"
+	| "assistant";
 
 export interface AIClientConfig {
 	apiKey: string;

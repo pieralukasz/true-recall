@@ -54,8 +54,8 @@ import {
 	isMobile,
 	isViewAllowedOnCurrentPlatform,
 } from "@true-recall/obsidian/utils/platform";
-import { CardBrowserView } from "@true-recall/obsidian/views/browser/CardBrowserView";
 import { AssistantInboxView } from "@true-recall/obsidian/views/assistant/AssistantInboxView";
+import { CardBrowserView } from "@true-recall/obsidian/views/browser/CardBrowserView";
 import { KnowledgeChatView } from "@true-recall/obsidian/views/chat/KnowledgeChatView";
 import { DashboardView } from "@true-recall/obsidian/views/dashboard/DashboardView";
 import { CardTypesEditorView } from "@true-recall/obsidian/views/modal-window/CardTypesEditorView";

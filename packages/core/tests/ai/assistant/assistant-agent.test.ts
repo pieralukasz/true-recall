@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
+
+import type { AssistantContext } from "../../../src/ai/assistant/assistant.types";
 import { AssistantAgent } from "../../../src/ai/assistant/assistant-agent";
 import type { AssistantToolHost } from "../../../src/ai/assistant/assistant-tools";
-import type { AssistantContext } from "../../../src/ai/assistant/assistant.types";
 import type {
 	ChatCompletionRequest,
 	ChatCompletionResponse,
@@ -19,7 +20,9 @@ const HOST: AssistantToolHost = {
 					fields: { Front: "Q?", Back: "" },
 				}
 			: null,
-	getRelatedCards: () => [{ noteType: "Basic", fields: { Front: "R?", Back: "A" } }],
+	getRelatedCards: () => [
+		{ noteType: "Basic", fields: { Front: "R?", Back: "A" } },
+	],
 	readNote: async (path) => (path === "Topic.md" ? "# Topic" : null),
 	searchImages: async () => [{ url: "https://img/1.jpg", title: "one" }],
 };
@@ -103,7 +106,9 @@ describe("AssistantAgent", () => {
 					name: "create_cards",
 					args: {
 						noteTypeId: "builtin-basic",
-						cards: [{ Front: "Czym jest **[[odbiornik]]**?", Back: "urządzenie" }],
+						cards: [
+							{ Front: "Czym jest **[[odbiornik]]**?", Back: "urządzenie" },
+						],
 					},
 				},
 				{
@@ -114,7 +119,10 @@ describe("AssistantAgent", () => {
 			]),
 			textResponse("Proposed 1 card and 1 fill."),
 		]);
-		const agent = new AssistantAgent(client, { maxIterations: 5, webSearch: true });
+		const agent = new AssistantAgent(client, {
+			maxIterations: 5,
+			webSearch: true,
+		});
 		const manifest = await agent.run("uzupełnij", CONTEXT, HOST);
 
 		expect(manifest.proposals).toHaveLength(2);

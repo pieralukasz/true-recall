@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { buildAssistantSystemPrompt } from "../../../src/ai/assistant/assistant-prompts";
 
 const NOTE_TYPES = [

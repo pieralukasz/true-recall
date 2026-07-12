@@ -24,13 +24,13 @@ import type { DeviceSelectionResult } from "@true-recall/obsidian/modals/integra
 import { notify } from "@true-recall/obsidian/services/notification.service";
 import { createAppStore } from "@true-recall/obsidian/store";
 
-import { AssistantService } from "../services/assistant/assistant.service";
 import type TrueRecallPlugin from "../main";
+import { AssistantService } from "../services/assistant/assistant.service";
 import { BackupRecoveryManager } from "./BackupRecoveryManager";
-import { isPluginEnabled } from "./plugin-utils";
 import { DayRolloverWatcher } from "./DayRolloverWatcher";
 import { registerDeletionHandler } from "./PluginEventHandlers";
 import { PluginLoader } from "./plugin-loader";
+import { isPluginEnabled } from "./plugin-utils";
 
 const AUTO_BACKUP_STARTUP_DELAY_MS = 10_000;
 

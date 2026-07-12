@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import { mapOpenverseResults } from "../../src/services/assistant/openverse";
 
 describe("mapOpenverseResults", () => {
@@ -27,7 +28,9 @@ describe("mapOpenverseResults", () => {
 
 	it("caps at count", () => {
 		const json = {
-			results: Array.from({ length: 9 }, (_, i) => ({ url: `https://img/${i}` })),
+			results: Array.from({ length: 9 }, (_, i) => ({
+				url: `https://img/${i}`,
+			})),
 		};
 		expect(mapOpenverseResults(json, 3)).toHaveLength(3);
 	});

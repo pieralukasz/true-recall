@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+
 import {
 	type ChatCompletionRequest,
 	OpenRouterClient,
@@ -44,18 +45,28 @@ function makeCapturingHttpClient() {
 describe("OpenRouterClient extensions", () => {
 	it("passes the plugins field through to the request body", async () => {
 		const { httpClient, captured } = makeCapturingHttpClient();
-		const client = new OpenRouterClient("key", "google/gemini-2.5-flash", httpClient);
+		const client = new OpenRouterClient(
+			"key",
+			"google/gemini-2.5-flash",
+			httpClient,
+		);
 		const request: ChatCompletionRequest = {
 			messages: [{ role: "user", content: "hello" }],
 			plugins: [{ id: "web" }],
 		};
 		await client.chat(request);
-		expect((captured[0] as { plugins?: unknown }).plugins).toEqual([{ id: "web" }]);
+		expect((captured[0] as { plugins?: unknown }).plugins).toEqual([
+			{ id: "web" },
+		]);
 	});
 
 	it("exposes url_citation annotations on the response message", async () => {
 		const { httpClient } = makeCapturingHttpClient();
-		const client = new OpenRouterClient("key", "google/gemini-2.5-flash", httpClient);
+		const client = new OpenRouterClient(
+			"key",
+			"google/gemini-2.5-flash",
+			httpClient,
+		);
 		const response = await client.chat({
 			messages: [{ role: "user", content: "hi" }],
 		});

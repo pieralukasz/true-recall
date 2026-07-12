@@ -80,9 +80,10 @@ export class AssistantTaskActions {
 				`${SELECT} WHERE status = 'pending' ORDER BY created_at ASC LIMIT 1`,
 			);
 			if (!row) return null;
-			this.db.run(`UPDATE assistant_tasks SET status = 'running' WHERE id = ?`, [
-				row.id,
-			]);
+			this.db.run(
+				`UPDATE assistant_tasks SET status = 'running' WHERE id = ?`,
+				[row.id],
+			);
 			return mapRow({ ...row, status: "running" });
 		});
 	}
@@ -102,10 +103,10 @@ export class AssistantTaskActions {
 	}
 
 	updateManifest(id: string, manifest: AssistantManifest): void {
-		this.db.run(`UPDATE assistant_tasks SET result_manifest_json = ? WHERE id = ?`, [
-			JSON.stringify(manifest),
-			id,
-		]);
+		this.db.run(
+			`UPDATE assistant_tasks SET result_manifest_json = ? WHERE id = ?`,
+			[JSON.stringify(manifest), id],
+		);
 	}
 
 	cancel(id: string, finishedAt: number): void {

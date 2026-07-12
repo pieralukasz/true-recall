@@ -10,6 +10,7 @@ import {
 import { h } from "preact";
 import type { Grade } from "ts-fsrs";
 
+import type { AssistantContext } from "@true-recall/core/ai/assistant";
 import { SemanticAnswerGradingService } from "@true-recall/core/ai/grading/semantic-answer-grading.service";
 import { VIEW_TYPE_REVIEW } from "@true-recall/core/constants";
 import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
@@ -25,14 +26,12 @@ import {
 	type SemanticGradingResult,
 } from "@true-recall/core/types";
 
-import type { AssistantContext } from "@true-recall/core/ai/assistant";
 import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpClient";
 import { ReviewUndoHook } from "@true-recall/obsidian/commands";
 import { G, getDataLayer, Q } from "@true-recall/obsidian/data";
 import { openAskAiModal } from "@true-recall/obsidian/features/assistant/ui/AskAiModal";
 import { openAskAiPopover } from "@true-recall/obsidian/features/assistant/ui/openAskAiPopover";
 import type { ReviewSessionController } from "@true-recall/obsidian/features/study/services/ReviewSessionController";
-import { ReviewSelectionBubble } from "@true-recall/obsidian/features/study/ui/review/ReviewSelectionBubble";
 import type { PresetPickerOption } from "@true-recall/obsidian/features/study/ui/review/components";
 import {
 	AnswerHandler,
@@ -54,6 +53,7 @@ import {
 	shouldRunAIGradingOnReveal,
 	type TypeInMode,
 } from "@true-recall/obsidian/features/study/ui/review/helpers";
+import { ReviewSelectionBubble } from "@true-recall/obsidian/features/study/ui/review/ReviewSelectionBubble";
 import {
 	filtersFromViewState,
 	filtersToViewState,
@@ -531,16 +531,16 @@ export class ReviewView extends ItemView {
 			"true-recall:assistant-card-updated",
 			this.onAssistantCardUpdated,
 		);
-		window.addEventListener(
-			"true-recall:ask-ai-preset",
-			this.onAskAiPreset,
-		);
+		window.addEventListener("true-recall:ask-ai-preset", this.onAskAiPreset);
 		this.register(() => {
 			window.removeEventListener(
 				"true-recall:assistant-card-updated",
 				this.onAssistantCardUpdated,
 			);
-			window.removeEventListener("true-recall:ask-ai-preset", this.onAskAiPreset);
+			window.removeEventListener(
+				"true-recall:ask-ai-preset",
+				this.onAskAiPreset,
+			);
 		});
 		return Promise.resolve();
 	}
@@ -572,9 +572,8 @@ export class ReviewView extends ItemView {
 	};
 
 	private onAskAiPreset = (e: Event): void => {
-		const detail = (
-			e as CustomEvent<{ instruction: string; presetId: string }>
-		).detail;
+		const detail = (e as CustomEvent<{ instruction: string; presetId: string }>)
+			.detail;
 		if (!detail) return;
 		this.plugin.assistantService?.enqueue({
 			instruction: detail.instruction,

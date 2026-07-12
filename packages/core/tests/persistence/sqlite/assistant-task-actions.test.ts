@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
+
 import { AssistantTaskActions } from "../../../src/persistence/sqlite/modules/AssistantTaskActions";
 import { createTestContext, type TestContext } from "./__setup__/test-database";
 
@@ -42,7 +43,11 @@ describe("AssistantTaskActions", () => {
 	it("completes a task with a manifest", () => {
 		insertOne();
 		tasks.claimNextPending();
-		tasks.complete("task-1", { proposals: [], citations: [], finalText: "ok" }, 2000);
+		tasks.complete(
+			"task-1",
+			{ proposals: [], citations: [], finalText: "ok" },
+			2000,
+		);
 		const task = tasks.getById("task-1");
 		expect(task?.status).toBe("done");
 		expect(task?.manifest?.finalText).toBe("ok");
@@ -64,9 +69,19 @@ describe("AssistantTaskActions", () => {
 
 	it("updates the manifest in place and lists newest first", () => {
 		insertOne("task-1");
-		tasks.insert({ id: "task-2", instruction: "x", context: {}, createdAt: 5000 });
-		tasks.updateManifest("task-1", { proposals: [], citations: [{ url: "https://a" }] });
-		expect(tasks.getById("task-1")?.manifest?.citations[0]?.url).toBe("https://a");
+		tasks.insert({
+			id: "task-2",
+			instruction: "x",
+			context: {},
+			createdAt: 5000,
+		});
+		tasks.updateManifest("task-1", {
+			proposals: [],
+			citations: [{ url: "https://a" }],
+		});
+		expect(tasks.getById("task-1")?.manifest?.citations[0]?.url).toBe(
+			"https://a",
+		);
 		expect(tasks.list().map((t) => t.id)).toEqual(["task-2", "task-1"]);
 	});
 });
