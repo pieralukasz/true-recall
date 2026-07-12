@@ -291,9 +291,10 @@ describe("Review Slice", () => {
 		});
 
 		it("should replace the active queue while keeping the same current card when possible", () => {
+			const keptCard = createMockCardWithState(State.Review);
 			const cards = [
 				createMockCardWithState(State.New),
-				createMockCardWithState(State.Review),
+				keptCard,
 				createMockCardWithState(State.Learning),
 			];
 			store.getState().review.startSession(cards);
@@ -301,14 +302,14 @@ describe("Review Slice", () => {
 
 			const replacement = [
 				createMockCardWithState(State.New),
-				cards[1]!,
+				keptCard,
 				createMockCardWithState(State.Review),
 			];
 
-			store.getState().review.replaceQueue(replacement, cards[1]?.id ?? null);
+			store.getState().review.replaceQueue(replacement, keptCard.id);
 
 			const review = store.getState().review;
-			expect(review.getCurrentCard()?.id).toBe(cards[1]?.id);
+			expect(review.getCurrentCard()?.id).toBe(keptCard.id);
 			expect(review.currentIndex).toBe(1);
 			expect(review.getBadgeCounts()).toEqual({
 				new: 0,
