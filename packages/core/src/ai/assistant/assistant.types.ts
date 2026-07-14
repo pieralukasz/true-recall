@@ -82,11 +82,20 @@ export type AssistantProposal =
 			candidates: ImageCandidate[];
 	  });
 
+/** Cumulative token counts reported by the provider across a task's requests. */
+export interface TokenUsage {
+	promptTokens: number;
+	completionTokens: number;
+	totalTokens: number;
+}
+
 export interface AssistantManifest {
 	proposals: AssistantProposal[];
 	citations: Citation[];
 	/** The model's final plain-text answer (shown when no proposals were made). */
 	finalText?: string;
+	/** Token usage summed over all agent iterations, when the provider reports it. */
+	usage?: TokenUsage;
 }
 
 export interface AssistantTask {
@@ -104,4 +113,5 @@ export interface AssistantTask {
 export type AssistantProgressEvent =
 	| { kind: "iteration"; index: number }
 	| { kind: "tool"; name: string }
+	| { kind: "usage"; usage: TokenUsage }
 	| { kind: "done" };

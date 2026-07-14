@@ -277,7 +277,7 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 				"Research the marked concept and append a short, well-structured section about it to the current note.",
 		},
 	],
-	assistantMaxIterations: 10,
+	assistantMaxIterations: 5,
 	assistantMaxSources: 5,
 
 	enableLocalApi: false,

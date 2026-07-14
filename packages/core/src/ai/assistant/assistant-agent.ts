@@ -12,9 +12,18 @@ import type {
 	AssistantProposal,
 	Citation,
 	ProposalTarget,
+	TokenUsage,
 } from "./assistant.types";
 import { buildAssistantSystemPrompt } from "./assistant-prompts";
 import { ASSISTANT_TOOLS, type AssistantToolHost } from "./assistant-tools";
+
+/** Default agent loop cap when the caller does not supply one. */
+const DEFAULT_MAX_ITERATIONS = 5;
+/**
+ * Hard cap on the model's output per turn. Tool-call JSON for a batch of cards
+ * plus a diagram fits comfortably under this; it only stops runaway prose.
+ */
+const MAX_OUTPUT_TOKENS = 4096;
 
 export interface AssistantChatClient {
 	chat(request: ChatCompletionRequest): Promise<ChatCompletionResponse>;
@@ -60,7 +69,13 @@ export class AssistantAgent {
 		host: AssistantToolHost,
 	): Promise<AssistantManifest> {
 		const manifest: AssistantManifest = { proposals: [], citations: [] };
-		const maxIterations = this.options.maxIterations ?? 10;
+		const maxIterations = this.options.maxIterations ?? DEFAULT_MAX_ITERATIONS;
+		const usage: TokenUsage = {
+			promptTokens: 0,
+			completionTokens: 0,
+			totalTokens: 0,
+		};
+		let sawUsage = false;
 		const maxSources = Math.max(0, Math.floor(this.options.maxSources ?? 5));
 		const webSearchEnabled = this.options.webSearch === true && maxSources > 0;
 
@@ -85,12 +100,22 @@ export class AssistantAgent {
 
 			const response = await this.client.chat({
 				messages,
+				max_tokens: MAX_OUTPUT_TOKENS,
+				cache_control: { type: "ephemeral" },
 				tools: ASSISTANT_TOOLS,
 				tool_choice: "auto",
 				...(webSearchEnabled
 					? { plugins: [{ id: "web", max_results: maxSources }] }
 					: {}),
 			});
+
+			if (response.usage) {
+				sawUsage = true;
+				usage.promptTokens += response.usage.prompt_tokens ?? 0;
+				usage.completionTokens += response.usage.completion_tokens ?? 0;
+				usage.totalTokens += response.usage.total_tokens ?? 0;
+				this.options.onProgress?.({ kind: "usage", usage: { ...usage } });
+			}
 
 			const message = response.choices[0]?.message;
 			if (!message) break;
@@ -115,6 +140,7 @@ export class AssistantAgent {
 			}
 		}
 
+		if (sawUsage) manifest.usage = usage;
 		this.options.onProgress?.({ kind: "done" });
 		return manifest;
 	}

@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import type { AssistantContext } from "../../../src/ai/assistant/assistant.types";
+import type {
+	AssistantContext,
+	AssistantProgressEvent,
+} from "../../../src/ai/assistant/assistant.types";
 import { AssistantAgent } from "../../../src/ai/assistant/assistant-agent";
 import type { AssistantToolHost } from "../../../src/ai/assistant/assistant-tools";
 import type {
@@ -143,6 +146,9 @@ describe("AssistantAgent", () => {
 		]);
 		expect(manifest.finalText).toBe("Proposed 1 card and 1 fill.");
 		expect(requests[0]?.plugins).toEqual([{ id: "web", max_results: 5 }]);
+		expect(requests[0]?.cache_control).toEqual({ type: "ephemeral" });
+		expect(typeof requests[0]?.max_tokens).toBe("number");
+		expect(requests[0]?.max_tokens ?? 0).toBeGreaterThan(0);
 		const toolMessages =
 			requests[1]?.messages.filter((m) => m.role === "tool") ?? [];
 		expect(toolMessages).toHaveLength(2);
@@ -223,6 +229,60 @@ describe("AssistantAgent", () => {
 		expect(manifest.proposals).toHaveLength(0);
 		const toolMsg = requests[1]?.messages.find((m) => m.role === "tool");
 		expect(String(toolMsg?.content)).toContain("not found");
+	});
+
+	it("accumulates token usage across iterations into the manifest", async () => {
+		const events: AssistantProgressEvent[] = [];
+		const r1 = {
+			...toolCallResponse([
+				{
+					id: "t1",
+					name: "create_cards",
+					args: {
+						noteTypeId: "builtin-basic",
+						cards: [{ Front: "A?", Back: "B" }],
+					},
+				},
+			]),
+			usage: { prompt_tokens: 100, completion_tokens: 20, total_tokens: 120 },
+		};
+		const r2: ChatCompletionResponse = {
+			id: "r",
+			choices: [
+				{
+					message: { role: "assistant", content: "done" },
+					finish_reason: "stop",
+				},
+			],
+			usage: { prompt_tokens: 130, completion_tokens: 10, total_tokens: 140 },
+		};
+		const { client } = makeScriptedClient([r1, r2]);
+		const agent = new AssistantAgent(client, {
+			maxIterations: 5,
+			webSearch: false,
+			onProgress: (event) => events.push(event),
+		});
+
+		const manifest = await agent.run("x", CONTEXT, HOST);
+
+		expect(manifest.usage).toEqual({
+			promptTokens: 230,
+			completionTokens: 30,
+			totalTokens: 260,
+		});
+		expect(events.filter((e) => e.kind === "usage")).toHaveLength(2);
+	});
+
+	it("omits usage from the manifest when the provider reports none", async () => {
+		const { client } = makeScriptedClient([textResponse("done")]);
+		const agent = new AssistantAgent(client, {
+			maxSources: 0,
+			webSearch: false,
+		});
+
+		const manifest = await agent.run("x", CONTEXT, HOST);
+
+		expect(manifest.usage).toBeUndefined();
 	});
 
 	it("stops at maxIterations and keeps collected proposals", async () => {

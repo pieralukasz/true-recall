@@ -118,12 +118,24 @@ export class AssistantService {
 			this.invalidate();
 
 			const lines: string[] = [];
+			// Live token counter is kept as a single trailing line, updated in
+			// place each iteration rather than appended, so it does not spam.
+			let usageLine: string | null = null;
+			const render = () => {
+				this.progress.value = {
+					taskId: task.id,
+					lines: usageLine ? [...lines, usageLine] : [...lines],
+				};
+			};
 			const onProgress = (event: AssistantProgressEvent) => {
 				if (event.kind === "iteration") {
 					lines.push(`Thinking (round ${event.index + 1})…`);
 				}
 				if (event.kind === "tool") lines.push(`Using tool: ${event.name}`);
-				this.progress.value = { taskId: task.id, lines: [...lines] };
+				if (event.kind === "usage") {
+					usageLine = `~${event.usage.totalTokens.toLocaleString()} tokens used`;
+				}
+				render();
 			};
 
 			try {

@@ -42,7 +42,7 @@ describe("assistant AI config scope", () => {
 		expect(DEFAULT_SETTINGS.assistantModel).toBe("");
 		expect(DEFAULT_SETTINGS.assistantWebSearch).toBe(true);
 		expect(DEFAULT_SETTINGS.assistantInstructions).toBe("");
-		expect(DEFAULT_SETTINGS.assistantMaxIterations).toBe(10);
+		expect(DEFAULT_SETTINGS.assistantMaxIterations).toBe(5);
 		expect(DEFAULT_SETTINGS.assistantMaxSources).toBe(5);
 		expect(DEFAULT_SETTINGS.assistantPresets.length).toBeGreaterThan(0);
 	});
