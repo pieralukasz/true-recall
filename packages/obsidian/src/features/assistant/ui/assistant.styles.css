@@ -1,24 +1,63 @@
 /* AI Assistant — prompt popover/modal + inbox view */
 
 .tr-ask-ai-popover {
-	width: min(420px, calc(100vw - 24px));
-	padding: 10px;
-	background: var(--background-primary);
-	border: 1px solid var(--background-modifier-border);
-	border-radius: 8px;
-	box-shadow: var(--shadow-s);
+	width: min(440px, calc(100vw - 24px));
 }
 
-.tr-ask-ai-prompt {
+/* Single rounded prompt surface (PromptInputBox-style). Reused by both the
+   selection popover and the Ask AI modal, so all chrome lives here. */
+.tr-ask-ai-box {
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
+	width: 100%;
+	padding: 10px 10px 8px;
+	background: var(--background-primary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 14px;
+	box-shadow: var(--shadow-s);
+	transition:
+		border-color 120ms ease,
+		box-shadow 120ms ease;
 }
 
-.tr-ask-ai-chips {
+.tr-ask-ai-box:focus-within {
+	border-color: var(--interactive-accent);
+	box-shadow: 0 0 0 2px
+		color-mix(in srgb, var(--interactive-accent) 25%, transparent);
+}
+
+.tr-ask-ai-field {
+	width: 100%;
+	min-height: 40px;
+	max-height: 200px;
+	padding: 2px 4px;
+	background: transparent;
+	border: none;
+	outline: none;
+	resize: none;
+	color: var(--text-normal);
+	font-family: inherit;
+	font-size: var(--font-ui-small);
+	line-height: 1.45;
+}
+
+.tr-ask-ai-field::placeholder {
+	color: var(--text-muted);
+}
+
+.tr-ask-ai-toolbar {
 	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.tr-ask-ai-presets {
+	display: flex;
+	flex: 1;
 	flex-wrap: wrap;
 	gap: 6px;
+	min-width: 0;
 }
 
 .tr-ask-ai-chip {
@@ -31,13 +70,6 @@
 
 .tr-ask-ai-chip:hover {
 	background: var(--background-modifier-active-hover);
-}
-
-.tr-ask-ai-input {
-	width: 100%;
-	min-height: 72px;
-	resize: vertical;
-	font-family: inherit;
 }
 
 .tr-ask-ai-selected {
@@ -68,16 +100,53 @@
 	word-break: break-word;
 }
 
-.tr-ask-ai-actions {
+.tr-ask-ai-send-group {
 	display: flex;
-	justify-content: flex-end;
+	flex-shrink: 0;
+	align-items: center;
 	gap: 8px;
+	margin-left: auto;
 }
 
-.tr-ask-ai-btn {
-	padding: 4px 12px;
+.tr-ask-ai-run {
+	padding: 3px 8px;
 	border-radius: 6px;
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
 	cursor: pointer;
+}
+
+.tr-ask-ai-run:hover {
+	color: var(--text-normal);
+	background: var(--background-modifier-hover);
+}
+
+.tr-ask-ai-run.is-disabled {
+	opacity: 0.5;
+}
+
+.tr-ask-ai-send-btn {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 32px;
+	height: 32px;
+	border-radius: 999px;
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+	transition:
+		background-color 120ms ease,
+		opacity 120ms ease;
+}
+
+.tr-ask-ai-send-btn:hover {
+	background: var(--interactive-accent-hover);
+}
+
+.tr-ask-ai-send-btn[aria-disabled="true"] {
+	background: var(--background-modifier-border);
+	color: var(--text-muted);
+	opacity: 0.45;
 }
 
 /* Inbox view */
