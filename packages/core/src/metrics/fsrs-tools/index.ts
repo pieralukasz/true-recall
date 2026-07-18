@@ -12,13 +12,6 @@ export {
 	FSRSHelperService,
 	type WorkloadDecision,
 } from "./fsrs-helper.service";
-export {
-	type CatchUpProjection,
-	MIN_ACTIVE_DAYS,
-	PACE_LOOKBACK_DAYS,
-	type PaceStats,
-	projectCatchUp,
-} from "./scheduler/target-suggestion";
 export type {
 	OptimizationInput,
 	OptimizationOutput,
@@ -51,6 +44,13 @@ export type {
 	WorkloadDistribution,
 } from "./scheduler/scheduler.types";
 export { SiblingDisperseService } from "./scheduler/sibling-disperse.service";
+export {
+	type CatchUpProjection,
+	MIN_ACTIVE_DAYS,
+	PACE_LOOKBACK_DAYS,
+	type PaceStats,
+	projectCatchUp,
+} from "./scheduler/target-suggestion";
 export {
 	DistributionCalculator,
 	type DistributionStats,

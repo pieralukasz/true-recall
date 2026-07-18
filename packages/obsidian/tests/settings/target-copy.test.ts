@@ -1,5 +1,6 @@
-import type { WorkloadDecision } from "@true-recall/core/metrics/fsrs-tools";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import type { WorkloadDecision } from "@true-recall/core/metrics/fsrs-tools";
 
 import {
 	buildTargetReferences,
@@ -95,9 +96,9 @@ describe("describeDrift", () => {
 	});
 
 	it("stays quiet without trustworthy pace history", () => {
-		expect(
-			describeDrift(createDecision({ usedPaceFallback: true }), 250),
-		).toBe(null);
+		expect(describeDrift(createDecision({ usedPaceFallback: true }), 250)).toBe(
+			null,
+		);
 	});
 });
 
