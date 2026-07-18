@@ -38,6 +38,8 @@ import {
 	handleCreatePreset,
 	handleGetFsrsStats,
 	handleGetPresets,
+	handleUpdateLoadBalanceSettings,
+	handleUpdatePreset,
 } from "./handlers/fsrs";
 import {
 	handleGetRetrievability,
@@ -172,6 +174,8 @@ const routes: Route[] = [
 	// FSRS
 	route("GET", "/presets", handleGetPresets),
 	route("POST", "/presets", handleCreatePreset),
+	route("POST", "/presets/:id", handleUpdatePreset),
+	route("POST", "/settings/load-balance", handleUpdateLoadBalanceSettings),
 	route("GET", "/fsrs/stats", handleGetFsrsStats),
 
 	// Navigation

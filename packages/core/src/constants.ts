@@ -189,6 +189,7 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 	copilotAutoContext: false,
 
 	loadBalanceEnabled: false,
+	loadBalanceTargetMode: "auto",
 	loadBalanceTarget: 100,
 	loadBalanceMaxDeviation: 20,
 	loadBalanceMaxShiftDays: 3,

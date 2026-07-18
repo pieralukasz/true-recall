@@ -23,6 +23,10 @@ interface LoadBalanceSectionProps {
 }
 
 const FORECAST_DAYS = 30;
+const TARGET_MODE_OPTIONS = [
+	{ value: "auto", label: "Automatic (forecast average)" },
+	{ value: "manual", label: "Manual" },
+];
 const BALANCE_RANGE_OPTIONS = [
 	{ value: "30", label: "Next 30 days" },
 	{ value: "60", label: "Next 60 days" },
@@ -72,16 +76,19 @@ export function LoadBalanceSection({
 		// deviation sliders below (they only call `save`, not setForecastVersion).
 		void forecastVersion;
 		void settings.loadBalanceTarget;
+		void settings.loadBalanceTargetMode;
 		void settings.loadBalanceMaxDeviation;
 		return {
 			forecast: helper.getWorkloadForecast(FORECAST_DAYS),
 			summary: helper.getWorkloadForecastSummary(FORECAST_DAYS),
 			dayOfWeek: helper.getWorkloadByDayOfWeek(FORECAST_DAYS),
+			effectiveTarget: helper.getEffectiveLoadBalanceTarget(),
 		};
 	}, [
 		plugin.fsrsHelper,
 		forecastVersion,
 		settings.loadBalanceTarget,
+		settings.loadBalanceTargetMode,
 		settings.loadBalanceMaxDeviation,
 	]);
 
@@ -113,18 +120,39 @@ export function LoadBalanceSection({
 			</FormField>
 
 			<FormField
-				name="Target daily reviews"
-				description="Target number of reviews per day for balancing"
+				name="Daily target"
+				description={
+					settings.loadBalanceTargetMode === "auto" && forecastData
+						? `Automatic: ~${forecastData.effectiveTarget} reviews/day, the average of your upcoming workload (backlog included)`
+						: "How the daily review target is determined"
+				}
 			>
-				<TextInput
-					value={String(settings.loadBalanceTarget)}
-					onChange={(v) => {
-						const num = parseInt(v, 10) || 100;
-						void save({ loadBalanceTarget: Math.max(1, num) });
-					}}
-					placeholder="100"
+				<SelectInput
+					value={settings.loadBalanceTargetMode}
+					options={TARGET_MODE_OPTIONS}
+					onChange={(v) =>
+						void save({
+							loadBalanceTargetMode: v === "manual" ? "manual" : "auto",
+						})
+					}
 				/>
 			</FormField>
+
+			{settings.loadBalanceTargetMode === "manual" && (
+				<FormField
+					name="Target daily reviews"
+					description="Target number of reviews per day for balancing"
+				>
+					<TextInput
+						value={String(settings.loadBalanceTarget)}
+						onChange={(v) => {
+							const num = parseInt(v, 10) || 100;
+							void save({ loadBalanceTarget: Math.max(1, num) });
+						}}
+						placeholder="100"
+					/>
+				</FormField>
+			)}
 
 			<FormField
 				name="Maximum deviation (%)"
@@ -166,7 +194,7 @@ export function LoadBalanceSection({
 
 			<FormField
 				name="Balance workload now"
-				description="Apply load balancing immediately to existing scheduled reviews"
+				description="Apply load balancing immediately to scheduled reviews, spreading any overdue backlog from today forward"
 			>
 				<div class="ep:flex ep:items-center ep:gap-2">
 					<ActionButton

@@ -41,7 +41,7 @@ export function ParametersSection({
 	const handleOptimize = useCallback(async () => {
 		setOptimizing(true);
 		try {
-			const result = plugin.fsrsHelper?.optimizeParameters(
+			const result = await plugin.fsrsHelper?.optimizeParameters(
 				undefined,
 				preset.name,
 				preset.weights,

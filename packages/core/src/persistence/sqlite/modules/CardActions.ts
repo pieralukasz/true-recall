@@ -73,6 +73,18 @@ export class CardActions {
 		return this.queries.getDueCardsByDateRange(startDate, endDate);
 	}
 
+	getDueCountsByDateRange(
+		startDate: string,
+		endDate: string,
+		excludeCardId?: string,
+	): { day: string; count: number }[] {
+		return this.queries.getDueCountsByDateRange(
+			startDate,
+			endDate,
+			excludeCardId,
+		);
+	}
+
 	browserQuery(
 		where: string,
 		params: (string | number)[],

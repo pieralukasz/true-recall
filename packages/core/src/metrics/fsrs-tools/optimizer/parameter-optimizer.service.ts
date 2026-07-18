@@ -1,10 +1,26 @@
 /**
  * FSRS Parameter Optimizer Service
+ *
+ * Replay-based training: every candidate weight vector re-simulates each
+ * card's full review history through ts-fsrs state equations, then scores
+ * the predicted recall probability against the actual outcome. This makes
+ * all 21 parameters observable in the loss — unlike scoring against the
+ * stability stored in the logs, which was produced by the old weights and
+ * leaves every parameter except the forgetting-curve decay with a zero
+ * gradient.
+ *
+ * FSRS convention: Hard is a successful recall; only Again is a lapse.
  */
 
-import { forgetting_curve, Rating, type State } from "ts-fsrs";
+import {
+	clipParameters,
+	default_w,
+	FSRSAlgorithm,
+	generatorParameters,
+	Rating,
+} from "ts-fsrs";
 
-import { DEFAULT_FSRS_WEIGHTS } from "../../../constants";
+import type { Grade } from "../../../types";
 import type {
 	OptimizationInput,
 	OptimizationOutput,
@@ -13,29 +29,46 @@ import type {
 } from "./optimizer.types";
 
 const MIN_REVIEWS_FOR_OPTIMIZATION = 400;
-const MAX_ITERATIONS = 1000;
-const LEARNING_RATE = 0.01;
-const CONVERGENCE_THRESHOLD = 1e-6;
+const MAX_ITERATIONS = 150;
+/** Stop when the loss improves less than this (relative) for PATIENCE iterations */
+const CONVERGENCE_THRESHOLD = 1e-5;
+const PATIENCE = 8;
 
-interface TrainingDataPoint {
+const ADAM_LEARNING_RATE = 0.04;
+const ADAM_BETA1 = 0.9;
+const ADAM_BETA2 = 0.999;
+const ADAM_EPSILON = 1e-8;
+
+/** Clamp for predicted recall inside the log-loss */
+const MIN_PREDICTION = 0.001;
+const MAX_PREDICTION = 0.999;
+
+interface ReviewStep {
 	elapsedDays: number;
-	stability: number;
-	difficulty: number;
-	state: State;
-	rating: number;
-	wasRecalled: boolean;
+	rating: Grade;
+}
+
+interface ReplayMetrics {
+	avgLoss: number;
+	rmse: number;
+	predictionCount: number;
+}
+
+/** FSRS training label: Hard/Good/Easy are successful recalls, Again is not */
+export function isRecalled(rating: Grade): boolean {
+	return rating > Rating.Again;
 }
 
 export class ParameterOptimizerService {
-	optimize(
+	async optimize(
 		input: OptimizationInput,
 		options?: OptimizerOptions,
-	): OptimizationOutput {
+	): Promise<OptimizationOutput> {
 		const minReviews = input.minReviews ?? MIN_REVIEWS_FOR_OPTIMIZATION;
 
 		if (input.reviews.length < minReviews) {
 			return {
-				weights: input.currentWeights ?? [...DEFAULT_FSRS_WEIGHTS],
+				weights: input.currentWeights ?? [...default_w],
 				metrics: {
 					rmse: 0,
 					logLoss: 0,
@@ -45,66 +78,84 @@ export class ParameterOptimizerService {
 			};
 		}
 
-		const trainingData = this.prepareTrainingData(input.reviews);
+		const sequences = this.prepareSequences(input.reviews);
+		const startWeights = clipParameters(
+			[...(input.currentWeights ?? default_w)],
+			0,
+		);
 
-		let weights = input.currentWeights
-			? [...input.currentWeights]
-			: [...DEFAULT_FSRS_WEIGHTS];
+		let weights = [...startWeights];
+		let bestWeights = [...weights];
+		let bestLoss = this.evaluate(weights, sequences).avgLoss;
 
-		let previousLoss = Infinity;
+		const m = new Array<number>(weights.length).fill(0);
+		const v = new Array<number>(weights.length).fill(0);
+		let previousLoss = bestLoss;
+		let stagnantIterations = 0;
 		let convergenceStatus: OptimizationOutput["metrics"]["convergenceStatus"] =
 			"max_iterations";
 
-		for (let iteration = 0; iteration < MAX_ITERATIONS; iteration++) {
-			if (options?.abortSignal?.aborted) {
-				break;
-			}
+		for (let iteration = 1; iteration <= MAX_ITERATIONS; iteration++) {
+			if (options?.abortSignal?.aborted) break;
 
-			const { loss, gradients } = this.calculateLossAndGradients(
-				weights,
-				trainingData,
-			);
+			const base = this.evaluate(weights, sequences);
+			if (base.avgLoss < bestLoss) {
+				bestLoss = base.avgLoss;
+				bestWeights = [...weights];
+			}
 
 			options?.onProgress?.({
 				iteration,
 				totalIterations: MAX_ITERATIONS,
-				currentLoss: loss,
+				currentLoss: base.avgLoss,
 			});
 
-			if (Math.abs(previousLoss - loss) < CONVERGENCE_THRESHOLD) {
+			const relativeChange =
+				Math.abs(previousLoss - base.avgLoss) / Math.max(previousLoss, 1e-9);
+			stagnantIterations =
+				relativeChange < CONVERGENCE_THRESHOLD ? stagnantIterations + 1 : 0;
+			if (stagnantIterations >= PATIENCE) {
 				convergenceStatus = "converged";
 				break;
 			}
+			previousLoss = base.avgLoss;
 
-			weights = weights.map((w, i) => {
+			const gradients = this.numericGradients(weights, sequences, base.avgLoss);
+
+			for (let i = 0; i < weights.length; i++) {
 				const grad = gradients[i] ?? 0;
-				const newW = w - LEARNING_RATE * grad;
-				return this.clipWeight(newW, i);
-			});
+				m[i] = ADAM_BETA1 * (m[i] ?? 0) + (1 - ADAM_BETA1) * grad;
+				v[i] = ADAM_BETA2 * (v[i] ?? 0) + (1 - ADAM_BETA2) * grad * grad;
+				const mHat = (m[i] ?? 0) / (1 - ADAM_BETA1 ** iteration);
+				const vHat = (v[i] ?? 0) / (1 - ADAM_BETA2 ** iteration);
+				weights[i] =
+					(weights[i] ?? 0) -
+					(ADAM_LEARNING_RATE * mHat) / (Math.sqrt(vHat) + ADAM_EPSILON);
+			}
+			weights = clipParameters(weights, 0);
 
-			previousLoss = loss;
+			// Keep the UI responsive — this runs on the plugin's main thread
+			await new Promise<void>((resolve) => setTimeout(resolve, 0));
 		}
 
-		const finalMetrics = this.calculateMetrics(weights, trainingData);
+		const finalMetrics = this.evaluate(bestWeights, sequences);
 
 		let improvement: number | undefined;
 		if (input.currentWeights) {
-			const currentMetrics = this.calculateMetrics(
-				input.currentWeights,
-				trainingData,
-			);
-			if (currentMetrics.logLoss > 0) {
+			const currentMetrics = this.evaluate(startWeights, sequences);
+			if (currentMetrics.avgLoss > 0) {
 				improvement =
-					((currentMetrics.logLoss - finalMetrics.logLoss) /
-						currentMetrics.logLoss) *
+					((currentMetrics.avgLoss - finalMetrics.avgLoss) /
+						currentMetrics.avgLoss) *
 					100;
 			}
 		}
 
 		return {
-			weights,
+			weights: bestWeights,
 			metrics: {
-				...finalMetrics,
+				logLoss: finalMetrics.avgLoss,
+				rmse: finalMetrics.rmse,
 				reviewCount: input.reviews.length,
 				convergenceStatus,
 			},
@@ -112,154 +163,115 @@ export class ParameterOptimizerService {
 		};
 	}
 
-	private prepareTrainingData(
-		reviews: OptimizationReviewEntry[],
-	): TrainingDataPoint[] {
-		const dataPoints: TrainingDataPoint[] = [];
-
-		const cardReviews = new Map<string, OptimizationReviewEntry[]>();
+	/**
+	 * Group reviews into per-card chronological sequences. The first review
+	 * of a card initializes its memory state; later ones both score the
+	 * prediction (when at least a day elapsed) and advance the state.
+	 */
+	private prepareSequences(reviews: OptimizationReviewEntry[]): ReviewStep[][] {
+		const byCard = new Map<string, OptimizationReviewEntry[]>();
 		for (const review of reviews) {
-			const existing = cardReviews.get(review.cardId) ?? [];
+			const existing = byCard.get(review.cardId) ?? [];
 			existing.push(review);
-			cardReviews.set(review.cardId, existing);
+			byCard.set(review.cardId, existing);
 		}
 
-		for (const cardRevs of cardReviews.values()) {
-			cardRevs.sort((a, b) => a.reviewedAt - b.reviewedAt);
-
-			for (let i = 1; i < cardRevs.length; i++) {
-				const prev = cardRevs[i - 1];
-				const curr = cardRevs[i];
-
-				if (!prev || !curr) continue;
-
-				if (curr.elapsedDays > 0) {
-					dataPoints.push({
-						elapsedDays: curr.elapsedDays,
-						stability: prev.stability,
-						difficulty: prev.difficulty,
-						state: prev.state,
-						rating: curr.rating,
-						wasRecalled: curr.rating >= Rating.Good,
-					});
-				}
-			}
-		}
-
-		return dataPoints;
-	}
-
-	private calculateLossAndGradients(
-		weights: number[],
-		data: TrainingDataPoint[],
-	): { loss: number; gradients: number[] } {
-		const avgLoss = this.calculateLoss(weights, data);
-
-		const gradients = new Array<number>(weights.length).fill(0);
-		const epsilon = 1e-4;
-
-		for (let i = 0; i < weights.length; i++) {
-			const weightsPlus = [...weights];
-			const weightsMinus = [...weights];
-			weightsPlus[i] = (weightsPlus[i] ?? 0) + epsilon;
-			weightsMinus[i] = (weightsMinus[i] ?? 0) - epsilon;
-
-			const lossPlus = this.calculateLoss(weightsPlus, data);
-			const lossMinus = this.calculateLoss(weightsMinus, data);
-
-			gradients[i] = (lossPlus - lossMinus) / (2 * epsilon);
-		}
-
-		return { loss: avgLoss, gradients };
-	}
-
-	private calculateLoss(weights: number[], data: TrainingDataPoint[]): number {
-		let totalLoss = 0;
-
-		for (const point of data) {
-			const retrievability = forgetting_curve(
-				weights,
-				point.elapsedDays,
-				Math.max(point.stability, 0.1),
+		const sequences: ReviewStep[][] = [];
+		for (const cardReviews of byCard.values()) {
+			cardReviews.sort((a, b) => a.reviewedAt - b.reviewedAt);
+			sequences.push(
+				cardReviews.map((review) => ({
+					elapsedDays: Math.max(0, review.elapsedDays),
+					rating: review.rating,
+				})),
 			);
-			const clippedR = Math.max(0.001, Math.min(0.999, retrievability));
-
-			if (point.wasRecalled) {
-				totalLoss -= Math.log(clippedR);
-			} else {
-				totalLoss -= Math.log(1 - clippedR);
-			}
 		}
-
-		return totalLoss / Math.max(data.length, 1);
+		return sequences;
 	}
 
-	private calculateMetrics(
-		weights: number[],
-		data: TrainingDataPoint[],
-	): { rmse: number; logLoss: number } {
+	/** Replay all sequences with the given weights and score the predictions */
+	private evaluate(weights: number[], sequences: ReviewStep[][]): ReplayMetrics {
+		const algorithm = new FSRSAlgorithm(
+			generatorParameters({ w: weights, enable_short_term: true }),
+		);
+
 		let totalLoss = 0;
 		let totalSquaredError = 0;
+		let predictionCount = 0;
 
-		for (const point of data) {
-			const retrievability = forgetting_curve(
-				weights,
-				point.elapsedDays,
-				Math.max(point.stability, 0.1),
-			);
-			const clippedR = Math.max(0.001, Math.min(0.999, retrievability));
+		for (const sequence of sequences) {
+			let state: { stability: number; difficulty: number } | null = null;
+			for (const step of sequence) {
+				if (state && step.elapsedDays > 0) {
+					const retrievability = algorithm.forgetting_curve(
+						step.elapsedDays,
+						state.stability,
+					);
+					const clipped = Math.max(
+						MIN_PREDICTION,
+						Math.min(MAX_PREDICTION, retrievability),
+					);
+					const wasRecalled = isRecalled(step.rating);
 
-			if (point.wasRecalled) {
-				totalLoss -= Math.log(clippedR);
-			} else {
-				totalLoss -= Math.log(1 - clippedR);
+					totalLoss -= wasRecalled ? Math.log(clipped) : Math.log(1 - clipped);
+					totalSquaredError += (retrievability - (wasRecalled ? 1 : 0)) ** 2;
+					predictionCount++;
+				}
+				state = algorithm.next_state(state, step.elapsedDays, step.rating);
 			}
-
-			const actual = point.wasRecalled ? 1 : 0;
-			totalSquaredError += (retrievability - actual) ** 2;
 		}
 
-		const n = Math.max(data.length, 1);
+		const n = Math.max(predictionCount, 1);
 		return {
-			logLoss: totalLoss / n,
+			avgLoss: totalLoss / n,
 			rmse: Math.sqrt(totalSquaredError / n),
+			predictionCount,
 		};
 	}
 
-	private clipWeight(value: number, index: number): number {
-		const ranges: [number, number][] = [
-			[0.01, 1.0],
-			[0.5, 5.0],
-			[1.0, 10.0],
-			[2.0, 20.0],
-			[1.0, 15.0],
-			[0.1, 2.0],
-			[0.5, 5.0],
-			[0.0001, 0.1],
-			[1.0, 5.0],
-			[0.01, 0.5],
-			[0.3, 2.0],
-			[0.5, 3.0],
-			[0.01, 0.3],
-			[0.1, 0.5],
-			[0.5, 3.0],
-			[0.3, 1.0],
-			[1.0, 3.0],
-			[0.1, 1.0],
-			[0.01, 0.3],
-			[0.01, 0.2],
-			[0.05, 0.5],
-		];
+	/**
+	 * Forward-difference gradients against the already-computed base loss.
+	 * When a parameter sits at its upper clip bound the probe flips backward
+	 * so the perturbed vector stays inside the valid region.
+	 */
+	private numericGradients(
+		weights: number[],
+		sequences: ReviewStep[][],
+		baseLoss: number,
+	): number[] {
+		const gradients = new Array<number>(weights.length).fill(0);
 
-		const range = ranges[index] ?? [0.001, 10.0];
-		return Math.max(range[0], Math.min(range[1], value));
+		for (let i = 0; i < weights.length; i++) {
+			const value = weights[i] ?? 0;
+			const epsilon = Math.max(1e-4, Math.abs(value) * 1e-3);
+
+			const probe = [...weights];
+			probe[i] = value + epsilon;
+			const clippedForward = clipParameters([...probe], 0);
+			if ((clippedForward[i] ?? 0) > value) {
+				probe[i] = clippedForward[i] ?? value;
+				const lossPlus = this.evaluate(probe, sequences).avgLoss;
+				gradients[i] = (lossPlus - baseLoss) / ((probe[i] ?? 0) - value);
+				continue;
+			}
+
+			probe[i] = value - epsilon;
+			const clippedBackward = clipParameters([...probe], 0);
+			if ((clippedBackward[i] ?? 0) < value) {
+				probe[i] = clippedBackward[i] ?? value;
+				const lossMinus = this.evaluate(probe, sequences).avgLoss;
+				gradients[i] = (baseLoss - lossMinus) / (value - (probe[i] ?? 0));
+			}
+		}
+
+		return gradients;
 	}
 
 	validateWeights(weights: number[]): boolean {
 		if (!Array.isArray(weights)) return false;
 		if (weights.length !== 21) return false;
 		return weights.every(
-			(w) => typeof w === "number" && Number.isFinite(w) && w > 0,
+			(w) => typeof w === "number" && Number.isFinite(w) && w >= 0,
 		);
 	}
 }

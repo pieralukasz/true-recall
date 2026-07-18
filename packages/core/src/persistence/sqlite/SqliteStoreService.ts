@@ -528,6 +528,18 @@ export class SqliteStoreService {
 		return this.cards.getDueCardsByDateRange(startDate, endDate);
 	}
 
+	getDueCountsByDateRange(
+		startDate: string,
+		endDate: string,
+		excludeCardId?: string,
+	): { day: string; count: number }[] {
+		return this.cards.getDueCountsByDateRange(
+			startDate,
+			endDate,
+			excludeCardId,
+		);
+	}
+
 	updateCardDue(cardId: string, newDue: string): void {
 		this.cards.updateCardDue(cardId, newDue);
 	}
