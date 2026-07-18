@@ -8,6 +8,7 @@ import { mountPreact } from "@true-recall/obsidian/preact/mount";
 
 import { AskAiPrompt } from "./AskAiPrompt";
 import { AssistantInlineTask } from "./AssistantInlineTask";
+import { handoffUnfinishedThread } from "./thread-handoff";
 
 /** Opens the Ask AI prompt in a modal (used outside review / from commands). */
 export function openAskAiModal(
@@ -72,19 +73,4 @@ export function openAssistantThreadModal(
 		unmount();
 	};
 	modal.open();
-}
-
-function handoffUnfinishedThread(
-	plugin: TrueRecallPlugin,
-	threadId: string,
-): void {
-	const thread = plugin.assistantService?.getThread(threadId);
-	if (!thread || thread.state !== "active") return;
-	const hasPending =
-		thread.activeTaskId ||
-		thread.manifest?.proposals.some(
-			(proposal) => proposal.status === "proposed",
-		);
-	if (hasPending) plugin.assistantService?.deferThread(threadId);
-	else plugin.assistantService?.archiveThread(threadId);
 }

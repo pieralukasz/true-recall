@@ -14,6 +14,7 @@ import { mountPreact } from "@true-recall/obsidian/preact/mount";
 
 import { AskAiPrompt } from "./AskAiPrompt";
 import { AssistantInlineTask } from "./AssistantInlineTask";
+import { handoffUnfinishedThread } from "./thread-handoff";
 
 /** Opens the Ask AI prompt anchored to a rect (e.g. a selection). Returns a dispose fn. */
 export function openAskAiPopover(
@@ -40,18 +41,7 @@ export function openAskAiPopover(
 		activeDocument.removeEventListener("pointerdown", onPointerDown);
 	};
 	const closeSurface = () => {
-		if (currentThreadId) {
-			const thread = plugin.assistantService?.getThread(currentThreadId);
-			if (thread?.state === "active") {
-				const hasPending =
-					thread.activeTaskId ||
-					thread.manifest?.proposals.some(
-						(proposal) => proposal.status === "proposed",
-					);
-				if (hasPending) plugin.assistantService?.deferThread(currentThreadId);
-				else plugin.assistantService?.archiveThread(currentThreadId);
-			}
-		}
+		if (currentThreadId) handoffUnfinishedThread(plugin, currentThreadId);
 		dispose();
 	};
 	const onPointerDown = (e: PointerEvent) => {
