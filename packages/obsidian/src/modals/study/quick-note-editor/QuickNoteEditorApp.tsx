@@ -12,15 +12,15 @@ import type { AssistantContext } from "@true-recall/core/ai/assistant";
 import { hasAIKey } from "@true-recall/core/ai/config/ai-client-config";
 
 import { Clickable } from "@true-recall/obsidian/components";
+import {
+	type FormattingTargetRef,
+	FormattingToolbar,
+} from "@true-recall/obsidian/editor/shared/formatting";
 import { AssistantEditorPanel } from "@true-recall/obsidian/features/assistant/ui/AssistantEditorPanel";
 import {
 	type FlyoutPlacement,
 	resolveFlyoutPlacement,
 } from "@true-recall/obsidian/features/assistant/ui/flyout-placement";
-import {
-	type FormattingTargetRef,
-	FormattingToolbar,
-} from "@true-recall/obsidian/editor/shared/formatting";
 import { useIcon } from "@true-recall/obsidian/preact/hooks";
 import {
 	useApp,

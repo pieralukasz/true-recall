@@ -13,8 +13,6 @@ import { AssistantApplyService } from "@true-recall/obsidian/services/assistant/
 import { notify } from "@true-recall/obsidian/services/notification.service";
 import { cn } from "@true-recall/obsidian/utils/cn";
 
-import { CardAIField } from "@true-recall/plugins/shared/CardAIField";
-
 import { AiComposer } from "./AiComposer";
 import {
 	contentField,
@@ -25,6 +23,7 @@ import {
 	statusTone,
 	threadTask,
 } from "./thread-utils";
+import { CardAIField } from "@true-recall/plugins/shared/CardAIField";
 
 const VISIBLE_MESSAGES = 6;
 

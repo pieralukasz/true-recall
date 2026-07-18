@@ -51,6 +51,7 @@ export function openAskAiPopover(
 
 	const showThread = (threadId: string) => {
 		currentThreadId = threadId;
+		container.addClass("has-thread");
 		unmount?.();
 		unmount = mountPreact(
 			container,
