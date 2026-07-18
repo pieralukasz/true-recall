@@ -73,6 +73,13 @@ export class LoadBalanceService {
 		return Math.max(1, Math.round(totalCards / Math.max(1, weightedDays)));
 	}
 
+	/** Overdue Review cards: due strictly before today's UTC day key */
+	getBacklogSize(): number {
+		return this.cardStore
+			.getDueCountsByDateRange(OVERDUE_RANGE_START, this.dateFromToday(-1))
+			.reduce((sum, entry) => sum + entry.count, 0);
+	}
+
 	balance(options: LoadBalanceOptions): SchedulingResult {
 		const {
 			maxDeviation,
