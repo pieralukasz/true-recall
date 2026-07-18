@@ -84,6 +84,7 @@ export class WorkloadForecastCalculator {
 	getForecast(
 		days: number = 30,
 		excludeSourceUids?: ReadonlySet<string>,
+		includeSourceUids?: ReadonlySet<string>,
 	): WorkloadForecastEntry[] {
 		const today = new Date();
 		const endDate = new Date(today);
@@ -97,7 +98,8 @@ export class WorkloadForecastCalculator {
 					(!c.buriedUntil || new Date(c.buriedUntil) <= today) &&
 					new Date(c.due) >= today &&
 					new Date(c.due) <= endDate &&
-					(!excludeSourceUids || !excludeSourceUids.has(c.sourceUid ?? "")),
+					(!excludeSourceUids || !excludeSourceUids.has(c.sourceUid ?? "")) &&
+					(!includeSourceUids || includeSourceUids.has(c.sourceUid ?? "")),
 			);
 
 		// Build forecast by date
@@ -145,8 +147,9 @@ export class WorkloadForecastCalculator {
 		days: number = 30,
 		excludeSourceUids?: ReadonlySet<string>,
 		maxDeviation: number = 20,
+		includeSourceUids?: ReadonlySet<string>,
 	): WorkloadForecastSummary {
-		const forecast = this.getForecast(days, excludeSourceUids);
+		const forecast = this.getForecast(days, excludeSourceUids, includeSourceUids);
 
 		if (forecast.length === 0) {
 			return {
@@ -216,8 +219,9 @@ export class WorkloadForecastCalculator {
 	getWorkloadByDayOfWeek(
 		days: number = 30,
 		excludeSourceUids?: ReadonlySet<string>,
+		includeSourceUids?: ReadonlySet<string>,
 	): { day: number; dayName: string; avgCount: number }[] {
-		const forecast = this.getForecast(days, excludeSourceUids);
+		const forecast = this.getForecast(days, excludeSourceUids, includeSourceUids);
 
 		// Group by day of week
 		const byDay = new Map<number, number[]>();

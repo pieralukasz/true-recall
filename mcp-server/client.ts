@@ -56,8 +56,8 @@ export class TrueRecallClient {
 		return body.data;
 	}
 
-	async get<T>(path: string): Promise<T> {
-		return this.request<T>(path);
+	async get<T>(path: string, timeoutMs?: number): Promise<T> {
+		return this.request<T>(path, undefined, timeoutMs);
 	}
 
 	async post<T>(path: string, data?: unknown): Promise<T> {

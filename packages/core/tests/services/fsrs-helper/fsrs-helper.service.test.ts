@@ -22,6 +22,7 @@ describe("FSRSHelperService", () => {
 		});
 		const helper = new FSRSHelperService(store as never, {
 			...DEFAULT_SETTINGS,
+			loadBalanceTargetMode: "manual",
 			loadBalanceTarget: 10,
 			loadBalanceMaxDeviation: 20,
 		});
@@ -41,6 +42,7 @@ describe("FSRSHelperService", () => {
 		});
 		const helper = new FSRSHelperService(store as never, {
 			...DEFAULT_SETTINGS,
+			loadBalanceTargetMode: "manual",
 			loadBalanceTarget: 10,
 			loadBalanceMaxDeviation: 20,
 		});
@@ -141,6 +143,21 @@ function createStore({
 	return {
 		getCards: vi.fn(() => allCards),
 		getDueCardsByDateRange: vi.fn(() => balanceCards),
+		getDueCountsByDateRange: vi.fn(
+			(startDate: string, endDate: string, excludeCardId?: string) => {
+				const counts = new Map<string, number>();
+				for (const card of balanceCards) {
+					if (card.state === State.New || card.id === excludeCardId) continue;
+					const day = card.due.split("T")[0] ?? "";
+					if (day < startDate || day > endDate) continue;
+					counts.set(day, (counts.get(day) ?? 0) + 1);
+				}
+				return Array.from(counts.entries())
+					.map(([day, count]) => ({ day, count }))
+					.sort((a, b) => a.day.localeCompare(b.day));
+			},
+		),
 		updateCardDue: vi.fn(),
+		stats: { getDailyStats: vi.fn(() => null) },
 	};
 }

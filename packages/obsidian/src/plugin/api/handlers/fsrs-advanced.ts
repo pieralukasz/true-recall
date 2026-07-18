@@ -3,11 +3,11 @@ import { FSRSSimulatorService } from "@true-recall/core/services/fsrs/fsrs-simul
 import type { ApiContext, ApiRequest, ApiResponseWriter } from "../api.types";
 import { parseJsonBody, readBody, sendError, sendOk } from "../api.types";
 
-export function handleOptimizeParameters(
+export async function handleOptimizeParameters(
 	req: ApiRequest,
 	res: ApiResponseWriter,
 	ctx: ApiContext,
-): void {
+): Promise<void> {
 	if (!ctx.plugin.isStoreReady()) {
 		sendError(res, 503, "Database not ready");
 		return;
@@ -28,7 +28,7 @@ export function handleOptimizeParameters(
 	const currentWeights = preset?.weights ?? ctx.plugin.settings.fsrsWeights;
 
 	try {
-		const result = ctx.plugin.fsrsHelper.optimizeParameters(
+		const result = await ctx.plugin.fsrsHelper.optimizeParameters(
 			{},
 			presetName,
 			currentWeights,
@@ -93,15 +93,29 @@ export function handleGetWorkloadForecast(
 
 	const url = new URL(req.url ?? "/", "http://localhost");
 	const days = Number(url.searchParams.get("days")) || 30;
+	const project = url.searchParams.get("project");
+
+	let includeUids: ReadonlySet<string> | undefined;
+	if (project) {
+		const sourceUids =
+			ctx.plugin.hierarchyService.getSourceUidsForProject(project);
+		if (sourceUids.size === 0) {
+			sendError(res, 404, `Project "${project}" not found or has no notes`);
+			return;
+		}
+		includeUids = sourceUids;
+	}
 
 	const archivedUids = ctx.plugin.hierarchyService.getArchivedSourceUids();
 	const forecast = ctx.plugin.fsrsHelper.getWorkloadForecast(
 		days,
 		archivedUids,
+		includeUids,
 	);
 	const byDay = ctx.plugin.fsrsHelper.getWorkloadByDayOfWeek(
 		days,
 		archivedUids,
+		includeUids,
 	);
 
 	sendOk(res, { forecast, byDayOfWeek: byDay });

@@ -134,6 +134,37 @@ export class CardQueryActions {
 		return rows.map(mapRow);
 	}
 
+	/**
+	 * Count of active Review-state cards per UTC due day within
+	 * [startDate, endDate]. New cards are excluded: they enter the schedule
+	 * via the daily new-card limit, not due-date scheduling. Aggregates in
+	 * SQL (no notes JOIN, no row materialization) so it is cheap enough for
+	 * per-review load-balancing paths.
+	 */
+	getDueCountsByDateRange(
+		startDate: string,
+		endDate: string,
+		excludeCardId?: string,
+	): { day: string; count: number }[] {
+		const excludeClause = excludeCardId ? "AND c.id != ?" : "";
+		const params = excludeCardId
+			? [startDate, endDate, excludeCardId]
+			: [startDate, endDate];
+		return this.db.query<{ day: string; count: number }>(
+			`SELECT date(c.due) AS day, COUNT(*) AS count
+                 FROM cards c
+                 WHERE c.deleted_at IS NULL
+                   AND c.suspended = 0
+                   AND (c.buried_until IS NULL OR c.buried_until <= datetime('now'))
+                   AND c.state = 2
+                   AND date(c.due) BETWEEN ? AND ?
+                   ${excludeClause}
+                 GROUP BY day
+                 ORDER BY day ASC`,
+			params,
+		);
+	}
+
 	browserQuery(
 		where: string,
 		params: (string | number)[],
