@@ -70,6 +70,8 @@ export function ProjectsTab({
 		handleRescheduleRecent,
 		handleScheduleBreak,
 		handleFlatten,
+		handleBalance,
+		handleForecast,
 	} = useProjectScheduling();
 	const {
 		dragState,
@@ -203,6 +205,8 @@ export function ProjectsTab({
 								onRescheduleRecent={handleRescheduleRecent}
 								onScheduleBreak={handleScheduleBreak}
 								onFlatten={handleFlatten}
+								onBalance={handleBalance}
+								onForecast={handleForecast}
 								onDragStart={handleDragStart}
 								onDragEnd={handleDragEnd}
 								onDragOver={handleDragOver}
@@ -311,6 +315,8 @@ interface ProjectHeaderItemProps {
 	onRescheduleRecent: (path: string, name: string) => Promise<void>;
 	onScheduleBreak: (path: string, name: string) => Promise<void>;
 	onFlatten: (path: string, name: string) => Promise<void>;
+	onBalance: (path: string, name: string) => Promise<void>;
+	onForecast: (path: string, name: string) => Promise<void>;
 	onDragStart: (e: DragEvent, item: FlatProjectItem) => void;
 	onDragEnd: () => void;
 	onDragOver: (e: DragEvent, item: FlatProjectItem) => void;
@@ -338,6 +344,8 @@ function ProjectHeaderItem({
 	onRescheduleRecent,
 	onScheduleBreak,
 	onFlatten,
+	onBalance,
+	onForecast,
 	onDragStart,
 	onDragEnd,
 	onDragOver,
@@ -413,6 +421,12 @@ function ProjectHeaderItem({
 		onFlatten: isVirtual
 			? undefined
 			: () => void onFlatten(item.project.path, item.project.name),
+		onBalance: isVirtual
+			? undefined
+			: () => void onBalance(item.project.path, item.project.name),
+		onForecast: isVirtual
+			? undefined
+			: () => void onForecast(item.project.path, item.project.name),
 	});
 
 	return (

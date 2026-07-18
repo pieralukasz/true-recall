@@ -1,6 +1,7 @@
 import { State } from "ts-fsrs";
 
 import type { SqliteStoreService } from "../../persistence/sqlite/SqliteStoreService";
+import { formatLocalDate, getTodayBoundary } from "../../utils";
 import type {
 	FSRSCardData,
 	FSRSSettings,
@@ -96,11 +97,11 @@ export class FSRSHelperService {
 		);
 	}
 
-	optimizeParameters(
+	async optimizeParameters(
 		options?: OptimizerOptions,
 		presetName?: string,
 		currentWeights?: number[] | null,
-	): OptimizationOutput {
+	): Promise<OptimizationOutput> {
 		const reviews = this.cardStore.getReviewDataForOptimization(presetName);
 
 		const input: OptimizationInput = {
@@ -116,18 +117,47 @@ export class FSRSHelperService {
 		return this.optimizer.validateWeights(weights);
 	}
 
+	/** Manual target when configured, undefined in auto mode (core derives it) */
+	private resolveLoadBalanceTarget(): number | undefined {
+		return this.settings.loadBalanceTargetMode === "manual"
+			? this.settings.loadBalanceTarget
+			: undefined;
+	}
+
+	/** The daily target actually in effect: manual value or forecast average */
+	getEffectiveLoadBalanceTarget(): number {
+		return (
+			this.resolveLoadBalanceTarget() ??
+			this.loadBalancer.computeAutoTarget(
+				this.settings.easyDays,
+				this.settings.easyDaysMultiplier,
+			)
+		);
+	}
+
 	balanceWorkload(options?: Partial<LoadBalanceOptions>): SchedulingResult {
 		const days = options?.days ?? this.settings.loadBalanceBulkDays;
 		return this.loadBalancer.balance({
-			targetPerDay: options?.targetPerDay ?? this.settings.loadBalanceTarget,
+			targetPerDay: options?.targetPerDay ?? this.resolveLoadBalanceTarget(),
 			maxDeviation:
 				options?.maxDeviation ?? this.settings.loadBalanceMaxDeviation,
 			days: days === 0 ? 36500 : days,
 			easyDays: options?.easyDays ?? this.settings.easyDays,
 			easyDaysMultiplier:
 				options?.easyDaysMultiplier ?? this.settings.easyDaysMultiplier,
+			includeOverdue: options?.includeOverdue,
+			cardIds: options?.cardIds,
+			completedToday: options?.completedToday ?? this.getCompletedTodayCount(),
 			dryRun: options?.dryRun ?? true,
 		});
+	}
+
+	/** Reviews already answered today, respecting the day-start-hour boundary */
+	private getCompletedTodayCount(): number {
+		const todayKey = formatLocalDate(
+			getTodayBoundary(this.settings.dayStartHour ?? 4),
+		);
+		return this.cardStore.stats.getDailyStats(todayKey)?.reviewsCompleted ?? 0;
 	}
 
 	balanceScheduledReview(cardId: string, fsrs: FSRSCardData): FSRSCardData {
@@ -142,8 +172,6 @@ export class FSRSHelperService {
 		const result = this.loadBalancer.balanceDue({
 			cardId,
 			originalDue: fsrs.due,
-			targetPerDay: this.settings.loadBalanceTarget,
-			maxDeviation: this.settings.loadBalanceMaxDeviation,
 			maxShiftDays: this.settings.loadBalanceMaxShiftDays,
 			easyDays: this.settings.easyDays,
 			easyDaysMultiplier: this.settings.easyDaysMultiplier,
@@ -180,7 +208,8 @@ export class FSRSHelperService {
 		return this.easyDays.applyEasyDays({
 			easyDays: options?.easyDays ?? this.settings.easyDays,
 			multiplier: options?.multiplier ?? this.settings.easyDaysMultiplier,
-			targetPerDay: options?.targetPerDay ?? this.settings.loadBalanceTarget,
+			targetPerDay:
+				options?.targetPerDay ?? this.getEffectiveLoadBalanceTarget(),
 			days: options?.days ?? 30,
 			dryRun: options?.dryRun ?? true,
 		});
@@ -193,7 +222,7 @@ export class FSRSHelperService {
 		return this.easyDays.previewImpact(
 			this.settings.easyDays,
 			this.settings.easyDaysMultiplier,
-			this.settings.loadBalanceTarget,
+			this.getEffectiveLoadBalanceTarget(),
 		);
 	}
 
@@ -283,22 +312,33 @@ export class FSRSHelperService {
 	getWorkloadForecast(
 		days: number = 30,
 		excludeSourceUids?: ReadonlySet<string>,
+		includeSourceUids?: ReadonlySet<string>,
 	): WorkloadForecastEntry[] {
-		return this.workloadForecast.getForecast(days, excludeSourceUids);
+		return this.workloadForecast.getForecast(
+			days,
+			excludeSourceUids,
+			includeSourceUids,
+		);
 	}
 
 	getWorkloadForecastSummary(
 		days: number = 30,
 		excludeSourceUids?: ReadonlySet<string>,
+		includeSourceUids?: ReadonlySet<string>,
+		targetPerDay?: number,
 	): WorkloadForecastSummary {
 		const summary = this.workloadForecast.getSummary(
-			this.settings.loadBalanceTarget,
+			targetPerDay ?? this.getEffectiveLoadBalanceTarget(),
 			days,
 			excludeSourceUids,
 			this.settings.loadBalanceMaxDeviation,
+			includeSourceUids,
 		);
 
-		if (excludeSourceUids && excludeSourceUids.size > 0) return summary;
+		const isScoped =
+			(excludeSourceUids && excludeSourceUids.size > 0) ||
+			(includeSourceUids && includeSourceUids.size > 0);
+		if (isScoped) return summary;
 
 		return {
 			...summary,
@@ -313,10 +353,12 @@ export class FSRSHelperService {
 	getWorkloadByDayOfWeek(
 		days: number = 30,
 		excludeSourceUids?: ReadonlySet<string>,
+		includeSourceUids?: ReadonlySet<string>,
 	): { day: number; dayName: string; avgCount: number }[] {
 		return this.workloadForecast.getWorkloadByDayOfWeek(
 			days,
 			excludeSourceUids,
+			includeSourceUids,
 		);
 	}
 
@@ -347,8 +389,6 @@ export class FSRSHelperService {
 		const result = this.loadBalancer.balanceDue({
 			cardId,
 			originalDue: entry.due.toISOString(),
-			targetPerDay: this.settings.loadBalanceTarget,
-			maxDeviation: this.settings.loadBalanceMaxDeviation,
 			maxShiftDays: this.settings.loadBalanceMaxShiftDays,
 			easyDays: this.settings.easyDays,
 			easyDaysMultiplier: this.settings.easyDaysMultiplier,
@@ -361,7 +401,7 @@ export class FSRSHelperService {
 				originalInterval: entry.interval,
 				daysChanged: 0,
 				loadBalanceNote:
-					"No change: the FSRS target day is within the workload limit, or no better nearby day is available.",
+					"No change: the FSRS day is already a good fit within the fuzz range.",
 			};
 		}
 
@@ -375,15 +415,27 @@ export class FSRSHelperService {
 			balancedDue,
 			originalInterval: entry.interval,
 			daysChanged: result.daysChanged,
-			loadBalanceNote: "Adjusted to a nearby day with more review capacity.",
+			loadBalanceNote:
+				"Adjusted within the fuzz range to a less loaded day (Anki-style).",
 		};
 	}
 
+	/**
+	 * Scheduling parameters for rescheduling. Presets are the source of
+	 * truth since optimization writes there; the flat fsrsWeights /
+	 * fsrsRequestRetention fields are a stale legacy mirror kept as
+	 * fallback for pre-preset settings files.
+	 */
 	private extractFSRSSettings(): FSRSSettings {
+		const defaultPreset = this.settings.fsrsPresets?.find(
+			(preset) => preset.id === this.settings.defaultPresetId,
+		);
 		return {
-			requestRetention: this.settings.fsrsRequestRetention,
-			maximumInterval: this.settings.fsrsMaximumInterval,
-			weights: this.settings.fsrsWeights,
+			requestRetention:
+				defaultPreset?.requestRetention ?? this.settings.fsrsRequestRetention,
+			maximumInterval:
+				defaultPreset?.maximumInterval ?? this.settings.fsrsMaximumInterval,
+			weights: defaultPreset?.weights ?? this.settings.fsrsWeights,
 			enableFuzz: true,
 			learningSteps: this.settings.learningSteps,
 			relearningSteps: this.settings.relearningSteps,

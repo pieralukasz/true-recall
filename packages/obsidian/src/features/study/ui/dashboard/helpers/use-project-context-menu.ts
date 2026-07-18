@@ -25,6 +25,8 @@ interface UseProjectContextMenuOptions {
 	onRescheduleRecent?: () => void;
 	onScheduleBreak?: () => void;
 	onFlatten?: () => void;
+	onBalance?: () => void;
+	onForecast?: () => void;
 }
 
 export function useProjectContextMenu({
@@ -49,6 +51,8 @@ export function useProjectContextMenu({
 	onRescheduleRecent,
 	onScheduleBreak,
 	onFlatten,
+	onBalance,
+	onForecast,
 }: UseProjectContextMenuOptions) {
 	const menuItems: MenuItem[] = [
 		{ title: "Study", icon: "play", onClick: onStudyProject },
@@ -91,6 +95,12 @@ export function useProjectContextMenu({
 						icon: "calendar-clock",
 						children: [
 							{
+								title: "Workload forecast…",
+								icon: "line-chart",
+								onClick: () => onForecast?.(),
+							},
+							"separator" as const,
+							{
 								title: "Reschedule all cards",
 								icon: "refresh-cw",
 								onClick: () => onReschedule?.(),
@@ -120,6 +130,11 @@ export function useProjectContextMenu({
 								title: "Flatten future due cards…",
 								icon: "bar-chart-2",
 								onClick: () => onFlatten?.(),
+							},
+							{
+								title: "Balance workload…",
+								icon: "scale",
+								onClick: () => onBalance?.(),
 							},
 						],
 					},

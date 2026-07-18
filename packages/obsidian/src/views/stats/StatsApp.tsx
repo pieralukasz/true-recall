@@ -258,7 +258,17 @@ export function StatsApp({ isViewVisible }: StatsAppProps) {
 		if (renderStage < 2) return null;
 		const days = forecastRangeToDays(forecastRange.value, filteredCardFsrs);
 		const forecast = buildFilteredForecast(filteredCardFsrs, days);
-		const target = settings.loadBalanceTarget ?? 50;
+		// Auto mode mirrors the balancer: target = average of the shown forecast
+		const target =
+			settings.loadBalanceTargetMode === "manual"
+				? (settings.loadBalanceTarget ?? 50)
+				: Math.max(
+						1,
+						Math.round(
+							forecast.reduce((sum, entry) => sum + entry.dueCount, 0) /
+								Math.max(1, forecast.length),
+						),
+					);
 		const maxDeviation = settings.loadBalanceMaxDeviation ?? 20;
 		return {
 			forecast,
@@ -270,6 +280,7 @@ export function StatsApp({ isViewVisible }: StatsAppProps) {
 		filteredCardFsrs,
 		forecastRange.value,
 		settings.loadBalanceTarget,
+		settings.loadBalanceTargetMode,
 		settings.loadBalanceMaxDeviation,
 	]);
 

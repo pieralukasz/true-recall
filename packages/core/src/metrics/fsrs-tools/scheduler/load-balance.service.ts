@@ -4,7 +4,16 @@
  * Distributes reviews evenly across days to prevent workload spikes.
  */
 
+import { State } from "ts-fsrs";
+
 import { isEasyDay } from "./easy-days.service";
+import {
+	constrainedFuzzBounds,
+	hashString,
+	mulberry32,
+	selectWeightedDay,
+	type WeightedDay,
+} from "./fuzz";
 import type {
 	BalanceDueOptions,
 	BalanceDueResult,
@@ -16,35 +25,87 @@ import type {
 	WorkloadDistribution,
 } from "./scheduler.types";
 
+/** Range start that captures every overdue card regardless of age */
+const OVERDUE_RANGE_START = "1970-01-01";
+
+/** Horizon used to derive the automatic daily target from the real workload */
+const AUTO_TARGET_WINDOW_DAYS = 30;
+
+/** Anki: intervals beyond this are not worth balancing */
+const MAX_LOAD_BALANCE_INTERVAL = 90;
+
+/** Anki: near-zero weight that avoids zero-related corner cases */
+const EASY_DAYS_MINIMUM_LOAD = 0.0001;
+
 export class LoadBalanceService {
 	constructor(private cardStore: SchedulerCardStore) {}
 
+	/**
+	 * Average daily workload over the next AUTO_TARGET_WINDOW_DAYS, backlog
+	 * included, weighted so easy days count as a fraction of a normal day.
+	 * Used as the target when no manual target is configured.
+	 */
+	computeAutoTarget(
+		easyDays: NonNullable<LoadBalanceOptions["easyDays"]> = {
+			recurringDays: [],
+			specificDates: [],
+		},
+		easyDaysMultiplier = 0.5,
+		includeOverdue = true,
+	): number {
+		const today = new Date();
+		const endDate = new Date(today);
+		endDate.setDate(endDate.getDate() + AUTO_TARGET_WINDOW_DAYS);
+
+		const todayStr = this.formatDate(today);
+		const startDateStr = includeOverdue ? OVERDUE_RANGE_START : todayStr;
+		const totalCards = this.cardStore
+			.getDueCountsByDateRange(startDateStr, this.formatDate(endDate))
+			.reduce((sum, entry) => sum + entry.count, 0);
+
+		let weightedDays = 0;
+		const cursor = new Date(today);
+		while (cursor <= endDate) {
+			weightedDays += isEasyDay(cursor, easyDays) ? easyDaysMultiplier : 1;
+			cursor.setDate(cursor.getDate() + 1);
+		}
+
+		return Math.max(1, Math.round(totalCards / Math.max(1, weightedDays)));
+	}
+
 	balance(options: LoadBalanceOptions): SchedulingResult {
 		const {
-			targetPerDay,
 			maxDeviation,
 			days = 30,
 			easyDays = { recurringDays: [], specificDates: [] },
 			easyDaysMultiplier = 0.5,
+			includeOverdue = true,
+			cardIds,
+			completedToday = 0,
 			dryRun = true,
 		} = options;
+		const targetPerDay =
+			options.targetPerDay ??
+			this.computeAutoTarget(easyDays, easyDaysMultiplier, includeOverdue);
+		const movable = cardIds ? new Set(cardIds) : null;
 
 		const today = new Date();
 		const endDate = new Date(today);
 		endDate.setDate(endDate.getDate() + days);
 
-		const startDateStr = this.formatDate(today);
+		const todayStr = this.formatDate(today);
+		const startDateStr = includeOverdue ? OVERDUE_RANGE_START : todayStr;
 		const endDateStr = this.formatDate(endDate);
 
-		const dueCards = this.cardStore.getDueCardsByDateRange(
-			startDateStr,
-			endDateStr,
-		);
+		const dueCards = this.getReviewCards(startDateStr, endDateStr);
 
-		// Build distribution map
+		// Build distribution map. Overdue cards cannot be reviewed earlier than
+		// today, so they count toward today's bucket — an accumulated backlog
+		// becomes an overloaded "today" and is spread forward like any spike.
 		const distribution = new Map<string, CardDueInfo[]>();
 		for (const card of dueCards) {
-			const dateStr = this.formatDate(new Date(card.due));
+			const dueDateStr = this.formatDate(new Date(card.due));
+			const dateStr = dueDateStr < todayStr ? todayStr : dueDateStr;
 			const existing = distribution.get(dateStr) ?? [];
 			existing.push(card);
 			distribution.set(dateStr, existing);
@@ -56,9 +117,14 @@ export class LoadBalanceService {
 		while (currentDate <= endDate) {
 			const dateStr = this.formatDate(currentDate);
 			const isEasy = isEasyDay(currentDate, easyDays);
-			const target = isEasy
+			let target = isEasy
 				? Math.round(targetPerDay * easyDaysMultiplier)
 				: targetPerDay;
+			// Reviews already done today count toward today's workload — only
+			// the remaining capacity is available for the backlog spread.
+			if (dateStr === todayStr) {
+				target = Math.max(0, target - completedToday);
+			}
 			dailyTargets.set(dateStr, target);
 			currentDate.setDate(currentDate.getDate() + 1);
 		}
@@ -80,8 +146,24 @@ export class LoadBalanceService {
 			const threshold = target + maxDev;
 
 			if (cards.length > threshold) {
-				// This day is overloaded - move excess cards
-				const excess = cards.slice(Math.floor(threshold));
+				// Move the cards that tolerate a shift best: longest scheduled
+				// interval first, so short-interval (fragile) cards keep their day.
+				const byInterval = [...cards].sort(
+					(a, b) => a.scheduledDays - b.scheduledDays,
+				);
+				// Hysteresis: act only above threshold (target + deviation) but
+				// trim down to the target itself, so the deviation band stays
+				// free as slack — a day packed right at the ceiling would flag
+				// "needs balancing" again as soon as the average drifts down.
+				// With a movable subset, day capacity still counts every card but
+				// only subset cards may leave — move at most the day's excess.
+				const excessCount = cards.length - Math.floor(target);
+				const candidates = movable
+					? byInterval.filter((card) => movable.has(card.id))
+					: byInterval;
+				const excess = candidates.slice(
+					Math.max(0, candidates.length - excessCount),
+				);
 
 				for (const card of excess) {
 					// Find best day to move to
@@ -89,7 +171,7 @@ export class LoadBalanceService {
 						date,
 						distribution,
 						dailyTargets,
-						maxDev,
+						targetPerDay,
 						days,
 					);
 
@@ -139,131 +221,164 @@ export class LoadBalanceService {
 		};
 	}
 
+	/**
+	 * Per-review balancing, ported from Anki's load_balancer.rs: pick a day
+	 * within the interval's fuzz range by weighted random, preferring days
+	 * with fewer due cards and slightly earlier days, avoiding siblings and
+	 * respecting easy days. Deterministic per (card, target day) so the
+	 * rating-button preview matches the actual grade.
+	 */
 	balanceDue(options: BalanceDueOptions): BalanceDueResult {
 		const {
 			cardId,
 			originalDue,
-			targetPerDay,
-			maxDeviation,
 			maxShiftDays,
 			easyDays = { recurringDays: [], specificDates: [] },
 			easyDaysMultiplier = 0.5,
 		} = options;
 
-		if (maxShiftDays <= 0) {
-			return {
-				originalDue,
-				newDue: originalDue,
-				daysChanged: 0,
-				balanced: false,
-			};
+		const unbalanced: BalanceDueResult = {
+			originalDue,
+			newDue: originalDue,
+			daysChanged: 0,
+			balanced: false,
+		};
+		if (maxShiftDays <= 0) return unbalanced;
+
+		const todayStr = this.formatDate(new Date());
+		const originalDayStr = this.formatDate(new Date(originalDue));
+		const interval = this.daysDiff(todayStr, originalDayStr);
+
+		// Anki: intervals under 2.5 days get no fuzz, far-out ones no balancing
+		if (interval < 2.5 || interval > MAX_LOAD_BALANCE_INTERVAL) {
+			return unbalanced;
 		}
 
-		const originalDate = new Date(originalDue);
-		const today = new Date();
-		const tomorrow = new Date(today);
-		tomorrow.setDate(tomorrow.getDate() + 1);
-
-		const startDate = new Date(originalDate);
-		startDate.setDate(startDate.getDate() - maxShiftDays);
-		if (startDate < tomorrow) startDate.setTime(tomorrow.getTime());
-
-		const endDate = new Date(originalDate);
-		endDate.setDate(endDate.getDate() + maxShiftDays);
-
-		if (startDate > endDate) {
-			return {
-				originalDue,
-				newDue: originalDue,
-				daysChanged: 0,
-				balanced: false,
-			};
-		}
-
-		const distribution = this.getDistributionMap(
-			this.formatDate(startDate),
-			this.formatDate(endDate),
-			cardId,
+		const [fuzzLower, fuzzUpper] = constrainedFuzzBounds(
+			interval,
+			1,
+			interval + maxShiftDays,
 		);
-		const maxDev = targetPerDay * (maxDeviation / 100);
-		const originalDateStr = this.formatDate(originalDate);
+		const lower = Math.max(fuzzLower, interval - maxShiftDays, 1);
+		const upper = fuzzUpper;
+		if (upper <= lower) return unbalanced;
 
-		if (
-			this.hasRoom(
-				originalDateStr,
-				distribution,
-				targetPerDay,
-				maxDev,
-				easyDays,
-				easyDaysMultiplier,
-			)
-		) {
-			return {
-				originalDue,
-				newDue: originalDue,
-				daysChanged: 0,
-				balanced: false,
-			};
-		}
+		const countsByOffset = this.collectWindowCounts(
+			cardId,
+			todayStr,
+			lower,
+			upper,
+		);
 
-		let bestDate: string | null = null;
-		let bestScore = Infinity;
+		const offsets: number[] = [];
+		for (let offset = lower; offset <= upper; offset++) offsets.push(offset);
+		const counts = offsets.map((offset) => countsByOffset.get(offset) ?? 0);
+		const easyModifiers = this.calculateEasyDaysModifiers(
+			offsets,
+			counts,
+			easyDays,
+			easyDaysMultiplier,
+		);
 
-		const cursor = new Date(startDate);
-		while (cursor <= endDate) {
-			const dateStr = this.formatDate(cursor);
-			const daysChanged = this.daysDiff(originalDateStr, dateStr);
-			if (
-				daysChanged !== 0 &&
-				this.hasRoom(
-					dateStr,
-					distribution,
-					targetPerDay,
-					maxDev,
-					easyDays,
-					easyDaysMultiplier,
-				)
-			) {
-				const target = this.getTargetForDate(
-					cursor,
-					targetPerDay,
-					easyDays,
-					easyDaysMultiplier,
-				);
-				const count = distribution.get(dateStr) ?? 0;
-				const fillRatio = target > 0 ? count / target : count;
-				const score = Math.abs(daysChanged) * 4 + fillRatio;
-				if (score < bestScore) {
-					bestScore = score;
-					bestDate = dateStr;
-				}
-			}
-			cursor.setDate(cursor.getDate() + 1);
-		}
+		const weightedDays: WeightedDay[] = offsets.map((offset, i) => {
+			const count = counts[i] ?? 0;
+			// Anki: an empty day gets full weight, bypassing all modifiers
+			if (count === 0) return { day: offset, weight: 1.0 };
 
-		if (!bestDate) {
-			return {
-				originalDue,
-				newDue: originalDue,
-				daysChanged: 0,
-				balanced: false,
-			};
-		}
+			const countWeight = (1 / count) ** 2.15;
+			const intervalWeight = (1 / offset) ** 3;
+			const weight =
+				countWeight * intervalWeight * (easyModifiers[i] ?? 1.0);
+			return { day: offset, weight };
+		});
 
-		const newDue = this.withDate(originalDue, bestDate);
+		const random = mulberry32(hashString(`${cardId}:${originalDayStr}`));
+		const selected = selectWeightedDay(weightedDays, random);
+		if (selected === null || selected === interval) return unbalanced;
+
+		const newDue = this.withDate(originalDue, this.dateFromToday(selected));
 		return {
 			originalDue,
 			newDue,
-			daysChanged: this.daysDiff(originalDateStr, bestDate),
+			daysChanged: selected - interval,
 			balanced: true,
 		};
+	}
+
+	/**
+	 * Due counts per day-offset for the candidate window, via the aggregate
+	 * query (no row materialization) so grading stays fast on large vaults.
+	 */
+	private collectWindowCounts(
+		cardId: string,
+		todayStr: string,
+		lower: number,
+		upper: number,
+	): Map<number, number> {
+		const counts = this.cardStore.getDueCountsByDateRange(
+			this.dateFromToday(lower),
+			this.dateFromToday(upper),
+			cardId,
+		);
+		const countsByOffset = new Map<number, number>();
+		for (const { day, count } of counts) {
+			countsByOffset.set(this.daysDiff(todayStr, day), count);
+		}
+		return countsByOffset;
+	}
+
+	/**
+	 * Anki's easy-days gate generalized to a single multiplier m: normal days
+	 * stay on (1.0); easy days turn off (near-zero) when m is 0, or when the
+	 * day's m-normalized count exceeds its proportional share of the window.
+	 */
+	private calculateEasyDaysModifiers(
+		offsets: number[],
+		counts: number[],
+		easyDays: NonNullable<LoadBalanceOptions["easyDays"]>,
+		multiplier: number,
+	): number[] {
+		const isEasy = offsets.map((offset) =>
+			isEasyDay(new Date(this.dateFromToday(offset)), easyDays),
+		);
+		if (!isEasy.some(Boolean) || multiplier >= 1) {
+			return offsets.map(() => 1.0);
+		}
+
+		const totalCount = counts.reduce((sum, c) => sum + c, 0);
+		const totalPercents = isEasy.reduce(
+			(sum, easy) => sum + (easy ? multiplier : 1),
+			0,
+		);
+
+		return offsets.map((_offset, i) => {
+			if (!isEasy[i]) return 1.0;
+			if (multiplier <= EASY_DAYS_MINIMUM_LOAD) return EASY_DAYS_MINIMUM_LOAD;
+
+			const count = counts[i] ?? 0;
+			const otherDaysTotal = totalCount - count;
+			const otherPercents = totalPercents - multiplier;
+			if (otherPercents <= 0) return 1.0;
+
+			const normalizedCount = count / multiplier;
+			const reducedDayThreshold = otherDaysTotal / otherPercents;
+			return normalizedCount > reducedDayThreshold
+				? EASY_DAYS_MINIMUM_LOAD
+				: 1.0;
+		});
+	}
+
+	private dateFromToday(offset: number): string {
+		const date = new Date();
+		date.setDate(date.getDate() + offset);
+		return this.formatDate(date);
 	}
 
 	private findBestDay(
 		fromDate: string,
 		distribution: Map<string, CardDueInfo[]>,
 		targets: Map<string, number>,
-		maxDev: number,
+		defaultTarget: number,
 		maxDays: number,
 	): string | null {
 		let bestDate: string | null = null;
@@ -278,10 +393,11 @@ export class LoadBalanceService {
 			const dateStr = this.formatDate(candidateDate);
 
 			const currentCount = distribution.get(dateStr)?.length ?? 0;
-			const target = targets.get(dateStr) ?? 100;
-			const threshold = target + maxDev;
+			const target = targets.get(dateStr) ?? defaultTarget;
 
-			if (currentCount < threshold) {
+			// Destinations fill only up to the target — the deviation band is
+			// tolerance for future drift, not extra capacity to pack into.
+			if (currentCount < target) {
 				// Calculate score (prefer closer dates and emptier days)
 				const fillRatio = currentCount / target;
 				const score = offset * 0.5 + fillRatio * 10;
@@ -291,6 +407,10 @@ export class LoadBalanceService {
 					bestDate = dateStr;
 				}
 			}
+
+			// Distance alone puts every later day above the current best —
+			// no candidate past this offset can win, so stop scanning.
+			if (bestScore <= (offset + 1) * 0.5) break;
 		}
 
 		return bestDate;
@@ -304,49 +424,15 @@ export class LoadBalanceService {
 		return `${dateStr}T${originalDue.split("T")[1] ?? "00:00:00.000Z"}`;
 	}
 
-	private getDistributionMap(
-		startDate: string,
-		endDate: string,
-		excludeCardId?: string,
-	): Map<string, number> {
-		const cards = this.cardStore
+	/**
+	 * Due cards in range, minus New-state cards: new cards are introduced by
+	 * the daily new-card limit, not by due-date scheduling, so counting or
+	 * moving them would distort the balance.
+	 */
+	private getReviewCards(startDate: string, endDate: string): CardDueInfo[] {
+		return this.cardStore
 			.getDueCardsByDateRange(startDate, endDate)
-			.filter((card) => card.id !== excludeCardId);
-		const distribution = new Map<string, number>();
-		for (const card of cards) {
-			const dateStr = this.formatDate(new Date(card.due));
-			distribution.set(dateStr, (distribution.get(dateStr) ?? 0) + 1);
-		}
-		return distribution;
-	}
-
-	private getTargetForDate(
-		date: Date,
-		targetPerDay: number,
-		easyDays: NonNullable<LoadBalanceOptions["easyDays"]>,
-		easyDaysMultiplier: number,
-	): number {
-		return isEasyDay(date, easyDays)
-			? Math.round(targetPerDay * easyDaysMultiplier)
-			: targetPerDay;
-	}
-
-	private hasRoom(
-		dateStr: string,
-		distribution: Map<string, number>,
-		targetPerDay: number,
-		maxDev: number,
-		easyDays: NonNullable<LoadBalanceOptions["easyDays"]>,
-		easyDaysMultiplier: number,
-	): boolean {
-		const target = this.getTargetForDate(
-			new Date(dateStr),
-			targetPerDay,
-			easyDays,
-			easyDaysMultiplier,
-		);
-		const threshold = target + maxDev;
-		return (distribution.get(dateStr) ?? 0) < threshold;
+			.filter((card) => card.state !== State.New);
 	}
 
 	private daysDiff(from: string, to: string): number {
