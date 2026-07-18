@@ -65,6 +65,7 @@ export function openAskAiPopover(
 		h(AskAiPrompt, {
 			context,
 			autoFocus: false,
+			class: "ep:shadow-lg",
 			onSubmitted: (threadId, mode) => {
 				if (mode === "inbox") {
 					dispose();
