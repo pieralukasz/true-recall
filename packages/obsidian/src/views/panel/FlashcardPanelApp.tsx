@@ -4,6 +4,7 @@ import { useMemo } from "preact/hooks";
 import { Panel } from "@true-recall/obsidian/components";
 import {
 	NormalHeader,
+	PanelAiStrip,
 	PanelContent,
 	SelectionToolbar,
 } from "@true-recall/obsidian/features/library/ui/panel/components";
@@ -50,6 +51,8 @@ export function FlashcardPanelApp({
 							)}
 						</div>
 					)}
+
+					<PanelAiStrip />
 
 					<div ref={contentRef} class="ep:flex-1 ep:overflow-y-auto ep:min-h-0">
 						<PanelContent />
