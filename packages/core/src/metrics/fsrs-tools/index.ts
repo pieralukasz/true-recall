@@ -8,7 +8,17 @@
  */
 
 // Main service
-export { FSRSHelperService } from "./fsrs-helper.service";
+export {
+	FSRSHelperService,
+	type WorkloadDecision,
+} from "./fsrs-helper.service";
+export {
+	type CatchUpProjection,
+	MIN_ACTIVE_DAYS,
+	PACE_LOOKBACK_DAYS,
+	type PaceStats,
+	projectCatchUp,
+} from "./scheduler/target-suggestion";
 export type {
 	OptimizationInput,
 	OptimizationOutput,
