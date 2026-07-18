@@ -7,6 +7,7 @@ import type TrueRecallPlugin from "@true-recall/obsidian/main";
 import { mountPreact } from "@true-recall/obsidian/preact/mount";
 
 import { AskAiPrompt } from "./AskAiPrompt";
+import { AssistantInlineTask } from "./AssistantInlineTask";
 
 /** Opens the Ask AI prompt in a modal (used outside review / from commands). */
 export function openAskAiModal(
@@ -16,18 +17,74 @@ export function openAskAiModal(
 	const modal = new Modal(plugin.app);
 	modal.titleEl.setText("Ask AI");
 	const host = modal.contentEl.createDiv();
-	const unmount = mountPreact(
+	let unmount: (() => void) | null = null;
+	let currentThreadId: string | null = null;
+	const showThread = (threadId: string) => {
+		currentThreadId = threadId;
+		unmount?.();
+		unmount = mountPreact(
+			host,
+			plugin,
+			h(AssistantInlineTask, { threadId, onClose: () => modal.close() }),
+		);
+	};
+	unmount = mountPreact(
 		host,
 		plugin,
 		h(AskAiPrompt, {
 			context,
-			onSubmitted: (_taskId, showNow) => {
-				modal.close();
-				if (showNow) void plugin.openAssistantInbox();
+			onSubmitted: (threadId, mode) => {
+				if (mode === "inbox") {
+					modal.close();
+					void plugin.openAssistantInbox();
+					return;
+				}
+				if (mode === "background") {
+					modal.close();
+					return;
+				}
+				showThread(threadId);
 			},
 			onDismiss: () => modal.close(),
 		}),
 	);
-	modal.onClose = () => unmount();
+	modal.onClose = () => {
+		if (currentThreadId) handoffUnfinishedThread(plugin, currentThreadId);
+		unmount?.();
+	};
 	modal.open();
+}
+
+export function openAssistantThreadModal(
+	plugin: TrueRecallPlugin,
+	threadId: string,
+): void {
+	const modal = new Modal(plugin.app);
+	modal.titleEl.setText("AI Draft Studio");
+	const host = modal.contentEl.createDiv();
+	const unmount = mountPreact(
+		host,
+		plugin,
+		h(AssistantInlineTask, { threadId, onClose: () => modal.close() }),
+	);
+	modal.onClose = () => {
+		handoffUnfinishedThread(plugin, threadId);
+		unmount();
+	};
+	modal.open();
+}
+
+function handoffUnfinishedThread(
+	plugin: TrueRecallPlugin,
+	threadId: string,
+): void {
+	const thread = plugin.assistantService?.getThread(threadId);
+	if (!thread || thread.state !== "active") return;
+	const hasPending =
+		thread.activeTaskId ||
+		thread.manifest?.proposals.some(
+			(proposal) => proposal.status === "proposed",
+		);
+	if (hasPending) plugin.assistantService?.deferThread(threadId);
+	else plugin.assistantService?.archiveThread(threadId);
 }

@@ -1,3 +1,4 @@
+import type { KnowledgeEvidence } from "../../rag/retrieval/knowledge-retriever";
 import type { ToolDefinition } from "../clients/openrouter-client";
 import type { ImageCandidate } from "./assistant.types";
 
@@ -26,6 +27,7 @@ export interface AssistantToolHost {
 	getRelatedCards(sourceUid: string): AssistantRelatedCard[];
 	readNote(path: string): Promise<string | null>;
 	searchImages(query: string, count: number): Promise<ImageCandidate[]>;
+	searchKnowledge?(query: string, count: number): Promise<KnowledgeEvidence[]>;
 }
 
 const FIELDS_SCHEMA = {
@@ -75,6 +77,38 @@ export const ASSISTANT_TOOLS: ToolDefinition[] = [
 	{
 		type: "function",
 		function: {
+			name: "update_proposal",
+			description:
+				"Update fields of an existing card draft from CURRENT DRAFT WORKSPACE. Pass only changed fields and preserve its proposal id.",
+			parameters: {
+				type: "object",
+				properties: {
+					proposalId: { type: "string" },
+					fields: {
+						type: "object",
+						additionalProperties: { type: "string" },
+					},
+				},
+				required: ["proposalId", "fields"],
+			},
+		},
+	},
+	{
+		type: "function",
+		function: {
+			name: "remove_proposal",
+			description:
+				"Remove an unaccepted draft from CURRENT DRAFT WORKSPACE by proposal id.",
+			parameters: {
+				type: "object",
+				properties: { proposalId: { type: "string" } },
+				required: ["proposalId"],
+			},
+		},
+	},
+	{
+		type: "function",
+		function: {
 			name: "update_card",
 			description:
 				"Propose changes to an existing card's fields (e.g. fill an empty answer). Pass only the fields you change.",
@@ -85,6 +119,19 @@ export const ASSISTANT_TOOLS: ToolDefinition[] = [
 					fields: FIELDS_SCHEMA,
 				},
 				required: ["cardId", "fields"],
+			},
+		},
+	},
+	{
+		type: "function",
+		function: {
+			name: "update_draft",
+			description:
+				"Propose changes to the draft card currently open in the flashcard editor. Pass only fields you change. Use this instead of update_card when CURRENT DRAFT is present.",
+			parameters: {
+				type: "object",
+				properties: { fields: FIELDS_SCHEMA },
+				required: ["fields"],
 			},
 		},
 	},
@@ -156,6 +203,25 @@ export const ASSISTANT_TOOLS: ToolDefinition[] = [
 					target: TARGET_SCHEMA,
 				},
 				required: ["query", "target"],
+			},
+		},
+	},
+	{
+		type: "function",
+		function: {
+			name: "search_knowledge",
+			description:
+				"Search the user's indexed notes and flashcards for evidence. Use when asked to ground, expand, compare, or verify drafts against the vault.",
+			parameters: {
+				type: "object",
+				properties: {
+					query: { type: "string" },
+					count: {
+						type: "number",
+						description: "Maximum evidence items, default 6",
+					},
+				},
+				required: ["query"],
 			},
 		},
 	},

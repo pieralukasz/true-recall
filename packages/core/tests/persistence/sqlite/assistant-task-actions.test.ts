@@ -67,6 +67,24 @@ describe("AssistantTaskActions", () => {
 		expect(tasks.getById("task-2")?.status).toBe("pending");
 	});
 
+	it("does not resurrect a cancelled running task when its request finishes", () => {
+		insertOne();
+		tasks.claimNextPending();
+		tasks.cancel("task-1", 1500);
+		tasks.complete(
+			"task-1",
+			{ proposals: [], citations: [], finalText: "late result" },
+			2000,
+		);
+		tasks.fail("task-1", "late error", 2000);
+
+		const task = tasks.getById("task-1");
+		expect(task?.status).toBe("cancelled");
+		expect(task?.manifest).toBeUndefined();
+		expect(task?.error).toBeUndefined();
+		expect(task?.finishedAt).toBe(1500);
+	});
+
 	it("updates the manifest in place and lists newest first", () => {
 		insertOne("task-1");
 		tasks.insert({

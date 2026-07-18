@@ -47,6 +47,11 @@ export function AssistantSettingsPanel({
 
 	return (
 		<>
+			<div class="ep:text-ui-smaller ep:text-obs-muted ep:p-3 ep:mb-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-secondary">
+				Generation presets and Card Polish presets remain stored in their
+				existing settings and are automatically exposed as Assistant actions in
+				matching contexts.
+			</div>
 			<FormField
 				name="Assistant model"
 				description="Model used for research tasks. Leave empty to use your default AI model."

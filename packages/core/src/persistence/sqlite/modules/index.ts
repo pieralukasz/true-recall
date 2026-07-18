@@ -6,6 +6,7 @@
  */
 
 export { AssistantTaskActions } from "./AssistantTaskActions";
+export { AssistantThreadActions } from "./AssistantThreadActions";
 export { CardActions } from "./CardActions";
 export { NoteActions } from "./NoteActions";
 export { NoteTypeActions } from "./NoteTypeActions";

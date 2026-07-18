@@ -8,6 +8,7 @@ import type { SqliteDatabase } from "../SqliteDatabase";
 
 interface AssistantTaskRow {
 	id: string;
+	thread_id: string | null;
 	instruction: string;
 	preset_id: string | null;
 	context_json: string;
@@ -26,6 +27,7 @@ function mapRow(row: AssistantTaskRow): AssistantTask {
 		status: row.status as AssistantTaskStatus,
 		createdAt: row.created_at,
 	};
+	if (row.thread_id) task.threadId = row.thread_id;
 	if (row.preset_id) task.presetId = row.preset_id;
 	if (row.result_manifest_json) {
 		task.manifest = JSON.parse(row.result_manifest_json) as AssistantManifest;
@@ -35,7 +37,7 @@ function mapRow(row: AssistantTaskRow): AssistantTask {
 	return task;
 }
 
-const SELECT = `SELECT id, instruction, preset_id, context_json, status,
+const SELECT = `SELECT id, thread_id, instruction, preset_id, context_json, status,
 	result_manifest_json, error, created_at, finished_at FROM assistant_tasks`;
 
 export class AssistantTaskActions {
@@ -43,16 +45,18 @@ export class AssistantTaskActions {
 
 	insert(params: {
 		id: string;
+		threadId?: string;
 		instruction: string;
 		presetId?: string;
 		context: AssistantContext;
 		createdAt: number;
 	}): void {
 		this.db.run(
-			`INSERT INTO assistant_tasks (id, instruction, preset_id, context_json, status, created_at)
-			 VALUES (?, ?, ?, ?, 'pending', ?)`,
+			`INSERT INTO assistant_tasks (id, thread_id, instruction, preset_id, context_json, status, created_at)
+			 VALUES (?, ?, ?, ?, ?, 'pending', ?)`,
 			[
 				params.id,
+				params.threadId ?? null,
 				params.instruction,
 				params.presetId ?? null,
 				JSON.stringify(params.context),
@@ -90,14 +94,14 @@ export class AssistantTaskActions {
 
 	complete(id: string, manifest: AssistantManifest, finishedAt: number): void {
 		this.db.run(
-			`UPDATE assistant_tasks SET status = 'done', result_manifest_json = ?, finished_at = ? WHERE id = ?`,
+			`UPDATE assistant_tasks SET status = 'done', result_manifest_json = ?, finished_at = ? WHERE id = ? AND status = 'running'`,
 			[JSON.stringify(manifest), finishedAt, id],
 		);
 	}
 
 	fail(id: string, error: string, finishedAt: number): void {
 		this.db.run(
-			`UPDATE assistant_tasks SET status = 'failed', error = ?, finished_at = ? WHERE id = ?`,
+			`UPDATE assistant_tasks SET status = 'failed', error = ?, finished_at = ? WHERE id = ? AND status = 'running'`,
 			[error, finishedAt, id],
 		);
 	}

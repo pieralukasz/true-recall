@@ -1,6 +1,7 @@
 import { ItemView } from "obsidian";
 
 import type { AssistantContext } from "@true-recall/core/ai/assistant";
+import { assistantWorkflowId } from "@true-recall/core/ai/workflows/ai-workflow";
 import { VIEW_TYPE_REVIEW } from "@true-recall/core/constants";
 
 import { openAskAiModal } from "@true-recall/obsidian/features/assistant/ui/AskAiModal";
@@ -55,7 +56,7 @@ export class AiAssistantPlugin {
 							new CustomEvent("true-recall:ask-ai-preset", {
 								detail: {
 									instruction: preset.instruction,
-									presetId: preset.id,
+									presetId: assistantWorkflowId(preset.id),
 								},
 							}),
 						);

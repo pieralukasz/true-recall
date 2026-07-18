@@ -1,34 +1,15 @@
 import { TFile } from "obsidian";
 
 import { hasAIKey } from "@true-recall/core/ai/config/ai-client-config";
-import type { StreamingFlashcardManager } from "@true-recall/core/ai/generation/streaming-generation.service";
-import { StreamingGenerationService } from "@true-recall/core/ai/generation/streaming-generation.service";
+import { generationWorkflowId } from "@true-recall/core/ai/workflows/ai-workflow";
 import type { GenerationPreset } from "@true-recall/core/types/generation-preset.types";
 
 import { mutate } from "@true-recall/obsidian/data";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 import { openQuickNoteEditor } from "@true-recall/obsidian/views/modal-window/open-quick-note-editor";
 
-import { ObsidianHttpClient } from "../adapters/ObsidianHttpClient";
 import type TrueRecallPlugin from "../main";
-import { collectGenerationContext } from "./collect-generation-context";
-import { fetchExistingCardsForFile } from "./existing-cards-fetcher";
 import { normalizeSelectionForFlashcard } from "./normalize-selection";
-
-let streamingService: StreamingGenerationService | null = null;
-
-function getStreamingService(
-	plugin: TrueRecallPlugin,
-): StreamingGenerationService {
-	if (!streamingService) {
-		streamingService = new StreamingGenerationService(
-			() => plugin.settings,
-			plugin.flashcardManager as unknown as StreamingFlashcardManager,
-			new ObsidianHttpClient(),
-		);
-	}
-	return streamingService;
-}
 
 function findMostRecentMarkdownFile(plugin: TrueRecallPlugin): TFile | null {
 	const recentPaths = plugin.app.workspace.getLastOpenFiles();
@@ -225,32 +206,7 @@ export async function generateWithPreset(
 		return;
 	}
 
-	try {
-		await plugin.activateView();
-		const service = getStreamingService(plugin);
-		const existingCards = await fetchExistingCardsForFile(plugin, file);
-		const contextText = await collectGenerationContext(plugin, preset, file);
-		const result = await service.generate(text, file, preset.id, {
-			existingCards,
-			contextText,
-		});
-
-		if (result.created === 0 && result.duplicates === 0) {
-			notify().warning("No flashcards found in AI response");
-		} else if (result.duplicates > 0) {
-			notify().cardsCreatedWithDuplicates(
-				result.created,
-				result.duplicates,
-				file.basename,
-			);
-		} else {
-			notify().cardsCreated(result.created, file.basename);
-		}
-	} catch (error) {
-		if (error instanceof DOMException && error.name === "AbortError") return;
-		const msg = error instanceof Error ? error.message : String(error);
-		notify().error(`Generation failed: ${msg}`);
-	}
+	enqueueGenerationDraft(plugin, preset, text, file);
 }
 
 export async function generateWithPresetGlobal(
@@ -275,30 +231,30 @@ export async function generateWithPresetGlobal(
 		return;
 	}
 
-	try {
-		await plugin.activateView();
-		const service = getStreamingService(plugin);
-		const existingCards = await fetchExistingCardsForFile(plugin, file);
-		const contextText = await collectGenerationContext(plugin, preset, file);
-		const result = await service.generate(text, file, preset.id, {
-			existingCards,
-			contextText,
-		});
+	enqueueGenerationDraft(plugin, preset, text, file);
+}
 
-		if (result.created === 0 && result.duplicates === 0) {
-			notify().warning("No flashcards found in AI response");
-		} else if (result.duplicates > 0) {
-			notify().cardsCreatedWithDuplicates(
-				result.created,
-				result.duplicates,
-				file.basename,
-			);
-		} else {
-			notify().cardsCreated(result.created, file.basename);
-		}
-	} catch (error) {
-		if (error instanceof DOMException && error.name === "AbortError") return;
-		const msg = error instanceof Error ? error.message : String(error);
-		notify().error(`Generation failed: ${msg}`);
+/** Deprecated AI Generation entry points now delegate to the Assistant queue. */
+function enqueueGenerationDraft(
+	plugin: TrueRecallPlugin,
+	preset: GenerationPreset,
+	text: string,
+	file: TFile,
+): void {
+	if (!plugin.assistantService) {
+		notify().error("AI Assistant is not ready");
+		return;
 	}
+	plugin.assistantService.startThread({
+		instruction: preset.prompt,
+		presetId: generationWorkflowId(preset.id),
+		context: {
+			selectedText: text,
+			activeNotePath: file.path,
+			source: { path: file.path, text },
+		},
+		state: "inbox",
+		displayMessage: `Generate with ${preset.name}`,
+	});
+	notify().info(`Generating with ${preset.name} in the background…`);
 }

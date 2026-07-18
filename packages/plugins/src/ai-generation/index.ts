@@ -14,6 +14,11 @@ export const aiGenerationManifest: PluginManifest = {
 		],
 		icon: "sparkles",
 		tier: "byok",
+		deprecated: {
+			replacementId: "ai-assistant",
+			message:
+				"Kept for existing workflows. Its generation presets are now also available directly in AI Assistant.",
+		},
 	},
 	settingsPanel: AIGenerationSettingsPanel,
 };

@@ -7,12 +7,12 @@ export const aiAssistantManifest: PluginManifest = {
 		id: "ai-assistant",
 		name: "AI Assistant",
 		description:
-			"Mark a knowledge gap during review and let AI research it — new cards, filled answers, note sections, diagrams and images arrive as drafts in the AI Inbox.",
+			"Create and modify flashcards from selections, review, and the flashcard editor through one draft-and-approve workflow.",
 		features: [
-			"Ask AI from a selection bubble in review",
+			"Create cards from selected text with existing generation presets",
+			"Modify saved cards and open drafts with Card Polish presets",
 			"Async task queue — review is never blocked",
-			"Draft proposals approved in the AI Inbox",
-			"Web-grounded research with source citations",
+			"Review proposals inline or later in the AI Inbox",
 		],
 		icon: "sparkles",
 		tier: "byok",

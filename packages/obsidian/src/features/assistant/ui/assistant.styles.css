@@ -475,6 +475,103 @@
 	padding: 24px 0;
 }
 
+.tr-assistant-inline-task {
+	width: min(560px, calc(100vw - 24px));
+	max-height: min(680px, calc(100vh - 24px));
+	overflow: auto;
+}
+
+.tr-assistant-inline-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	margin-bottom: 8px;
+}
+
+.tr-assistant-thread-workspace {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.tr-assistant-thread-title {
+	max-width: 420px;
+	overflow: hidden;
+	color: var(--text-normal);
+	font-size: var(--font-ui-small);
+	font-weight: var(--font-semibold);
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.tr-assistant-thread-messages {
+	display: flex;
+	max-height: 180px;
+	flex-direction: column;
+	gap: 6px;
+	overflow: auto;
+}
+
+.tr-assistant-thread-evidence {
+	display: grid;
+	gap: var(--size-2-2);
+}
+
+.tr-assistant-thread-evidence-item {
+	padding: var(--size-2-2) var(--size-2-3);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-s);
+	background: var(--background-secondary);
+}
+
+.tr-assistant-thread-evidence-item strong {
+	display: block;
+	font-size: var(--font-ui-smaller);
+}
+
+.tr-assistant-thread-evidence-item p {
+	margin: var(--size-2-1) 0 0;
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+}
+
+.tr-assistant-thread-message {
+	display: grid;
+	grid-template-columns: 28px minmax(0, 1fr);
+	gap: 8px;
+	font-size: var(--font-ui-smaller);
+}
+
+.tr-assistant-thread-message > span {
+	color: var(--text-faint);
+	font-weight: var(--font-semibold);
+}
+
+.tr-assistant-thread-message > p {
+	margin: 0;
+	color: var(--text-muted);
+	white-space: pre-wrap;
+}
+
+.tr-assistant-thread-message.is-user > p {
+	color: var(--text-normal);
+}
+
+.tr-assistant-thread-compose {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	align-items: center;
+	gap: 8px;
+	padding-top: 10px;
+	border-top: 1px solid var(--background-modifier-border);
+}
+
+.tr-assistant-thread-workspace .tr-card-ai-preview-new-list.is-busy {
+	opacity: 0.65;
+	pointer-events: none;
+}
+
 @media (max-width: 520px) {
 	.tr-inbox {
 		padding: 0 2px 8px;

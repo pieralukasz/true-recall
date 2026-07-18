@@ -17,6 +17,7 @@ import { UpdateNoteFieldsCommand } from "../../commands/commands/card-update.cmd
 import { resolveAttachmentFolder } from "../../utils/attachment-folder";
 import { notify } from "../notification.service";
 import { detectFieldConflict } from "./assistant-conflict";
+import { getAssistantDraftTarget } from "./assistant-draft-target-registry";
 
 export interface ApplyResult {
 	ok: boolean;
@@ -47,6 +48,8 @@ export class AssistantApplyService {
 					return this.applyCreateCard(task, proposal, overrides?.fields);
 				case "update_card":
 					return this.applyUpdateCard(proposal, overrides);
+				case "update_draft":
+					return this.applyUpdateDraft(proposal, overrides);
 				case "append_to_note":
 					return this.appendMarkdown(proposal.path, proposal.markdown);
 				case "create_note":
@@ -68,21 +71,83 @@ export class AssistantApplyService {
 		}
 	}
 
-	private applyCreateCard(
+	private async applyCreateCard(
 		task: AssistantTask,
 		proposal: Extract<AssistantProposal, { type: "create_card" }>,
 		editedFields?: Record<string, string>,
-	): ApplyResult {
+	): Promise<ApplyResult> {
+		const noteType = this.plugin.cardStore?.noteTypes.getById(
+			proposal.noteTypeId,
+		);
+		if (!noteType) return { ok: false, error: "Note type no longer exists" };
+		const requestedFields = editedFields ?? proposal.fields;
+		const fields = Object.fromEntries(
+			noteType.fields.map((name) => [name, requestedFields[name] ?? ""]),
+		);
+
+		let sourceUid =
+			proposal.sourceUid ??
+			task.context.source?.uid ??
+			task.context.card?.sourceUid;
+		const sourcePath =
+			proposal.sourcePath ??
+			task.context.source?.path ??
+			task.context.card?.sourceNotePath ??
+			task.context.activeNotePath;
+		if (!sourceUid && sourcePath) {
+			const file = this.plugin.app.vault.getAbstractFileByPath(sourcePath);
+			if (file instanceof TFile) {
+				const frontmatter =
+					this.plugin.flashcardManager.getFrontmatterService();
+				sourceUid =
+					(await frontmatter.getSourceNoteUid(file.path)) ?? undefined;
+				if (!sourceUid) {
+					sourceUid = frontmatter.generateUid();
+					await frontmatter.setSourceNoteUid(file.path, sourceUid);
+				}
+			}
+		}
+
 		const result = this.plugin.flashcardManager.createNote({
 			noteTypeId: proposal.noteTypeId,
-			fields: editedFields ?? proposal.fields,
-			sourceUid: task.context.card?.sourceUid,
+			fields,
+			sourceUid,
+			sourceText:
+				proposal.sourceText ??
+				task.context.source?.text ??
+				task.context.selectedText,
 			createdVia: "ai-assistant",
 			skipDuplicates: true,
 		});
 		void this.plugin.commandService?.execute(
 			new BatchCreateCommand(result.cards.map((c) => c.id)),
 		);
+		return { ok: true };
+	}
+
+	private applyUpdateDraft(
+		proposal: Extract<AssistantProposal, { type: "update_draft" }>,
+		overrides?: { fields?: Record<string, string>; force?: boolean },
+	): ApplyResult {
+		const target = getAssistantDraftTarget(proposal.sessionId);
+		if (!target) {
+			return {
+				ok: false,
+				error: "The flashcard draft editor is no longer open",
+			};
+		}
+		const currentFields = target.getFields();
+		const conflict = detectFieldConflict(
+			proposal.previousFields,
+			currentFields,
+		);
+		if (conflict && !overrides?.force) {
+			return { ok: false, conflictFields: conflict };
+		}
+		target.applyFields({
+			...currentFields,
+			...(overrides?.fields ?? proposal.fields),
+		});
 		return { ok: true };
 	}
 

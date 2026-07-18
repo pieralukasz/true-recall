@@ -18,6 +18,11 @@ export const cardPolishManifest: PluginManifest = {
 		],
 		icon: "wand-2",
 		tier: "byok",
+		deprecated: {
+			replacementId: "ai-assistant",
+			message:
+				"Kept for existing workflows. Its custom presets are now also available directly in AI Assistant.",
+		},
 	},
 	settingsPanel: createCardAISettingsPanel({
 		bucketKey: "cardPolish",

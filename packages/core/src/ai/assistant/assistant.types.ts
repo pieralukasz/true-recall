@@ -1,3 +1,5 @@
+import type { KnowledgeEvidence } from "../../rag/retrieval/knowledge-retriever";
+
 export type AssistantTaskStatus =
 	| "pending"
 	| "running"
@@ -18,10 +20,43 @@ export interface AssistantCardContext {
 	sourceNotePath?: string;
 }
 
+/** Serializable snapshot of a card form that has not necessarily been saved. */
+export interface AssistantDraftCardContext {
+	sessionId: string;
+	fields: Record<string, string>;
+	noteType: { id: string; name: string; fields: string[] };
+	sourceUid?: string;
+	sourceNotePath?: string;
+	operation: "create" | "edit";
+}
+
+/** Provenance captured at invocation time for newly created content. */
+export interface AssistantSourceContext {
+	path?: string;
+	uid?: string;
+	text?: string;
+}
+
+/** Current materialized drafts supplied to a follow-up conversation turn. */
+export interface AssistantDraftWorkspaceContext {
+	revision: number;
+	manifest: AssistantManifest;
+}
+
+/** Recent turns supplied to the model so follow-ups can refer to prior requests. */
+export interface AssistantConversationTurn {
+	role: "user" | "assistant";
+	content: string;
+}
+
 /** Context snapshot captured when the task is enqueued. */
 export interface AssistantContext {
 	selectedText?: string;
 	card?: AssistantCardContext;
+	draftCard?: AssistantDraftCardContext;
+	draftWorkspace?: AssistantDraftWorkspaceContext;
+	conversation?: AssistantConversationTurn[];
+	source?: AssistantSourceContext;
 	activeNotePath?: string;
 }
 
@@ -53,6 +88,10 @@ export type AssistantProposal =
 			type: "create_card";
 			noteTypeId: string;
 			fields: Record<string, string>;
+			sourceUid?: string;
+			sourcePath?: string;
+			sourceText?: string;
+			generationPresetId?: string;
 	  })
 	| (ProposalBase & {
 			type: "update_card";
@@ -61,6 +100,12 @@ export type AssistantProposal =
 			/** Only the changed fields. */
 			fields: Record<string, string>;
 			/** Full field snapshot at proposal time, for conflict detection + undo. */
+			previousFields: Record<string, string>;
+	  })
+	| (ProposalBase & {
+			type: "update_draft";
+			sessionId: string;
+			fields: Record<string, string>;
 			previousFields: Record<string, string>;
 	  })
 	| (ProposalBase & { type: "append_to_note"; path: string; markdown: string })
@@ -92,6 +137,8 @@ export interface TokenUsage {
 export interface AssistantManifest {
 	proposals: AssistantProposal[];
 	citations: Citation[];
+	/** Vault evidence used during this thread, kept with the working draft. */
+	evidence?: KnowledgeEvidence[];
 	/** The model's final plain-text answer (shown when no proposals were made). */
 	finalText?: string;
 	/** Token usage summed over all agent iterations, when the provider reports it. */
@@ -100,6 +147,7 @@ export interface AssistantManifest {
 
 export interface AssistantTask {
 	id: string;
+	threadId?: string;
 	instruction: string;
 	presetId?: string;
 	context: AssistantContext;
@@ -108,6 +156,36 @@ export interface AssistantTask {
 	error?: string;
 	createdAt: number;
 	finishedAt?: number;
+}
+
+export type AssistantThreadState = "active" | "inbox" | "archived";
+
+export interface AssistantThreadMessage {
+	id: string;
+	role: "user" | "assistant";
+	content: string;
+	createdAt: number;
+}
+
+export interface AssistantThreadRevision {
+	revision: number;
+	manifest: AssistantManifest;
+	messagesLength: number;
+}
+
+/** Persistent conversation whose materialized result is a working draft set. */
+export interface AssistantThread {
+	id: string;
+	title: string;
+	context: AssistantContext;
+	state: AssistantThreadState;
+	messages: AssistantThreadMessage[];
+	manifest?: AssistantManifest;
+	revisions: AssistantThreadRevision[];
+	revision: number;
+	activeTaskId?: string;
+	createdAt: number;
+	updatedAt: number;
 }
 
 export type AssistantProgressEvent =

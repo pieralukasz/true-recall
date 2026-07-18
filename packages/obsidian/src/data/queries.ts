@@ -1,6 +1,9 @@
 import { State } from "ts-fsrs";
 
-import type { AssistantTask } from "@true-recall/core/ai/assistant";
+import type {
+	AssistantTask,
+	AssistantThread,
+} from "@true-recall/core/ai/assistant";
 import type { CardQueryService } from "@true-recall/core/flashcard/data/card-query.service";
 import type { HierarchyService } from "@true-recall/core/services/notes/hierarchy.service";
 import type {
@@ -33,6 +36,8 @@ export const Q = {
 	ARCHIVED_UIDS: "archivedUids",
 	SETTINGS: "settings",
 	ASSISTANT_TASKS: "assistantTasks",
+	ASSISTANT_THREADS: "assistantThreads",
+	ASSISTANT_INBOX: "assistantInbox",
 } as const;
 
 // ── Mutation → groups mapping ───────────────────────────────
@@ -86,6 +91,8 @@ interface RegisterQueryDeps {
 	hierarchy: HierarchyService;
 	getSettings: () => TrueRecallSettings;
 	getAssistantTasks?: () => AssistantTask[];
+	getAssistantThreads?: () => AssistantThread[];
+	getAssistantInbox?: () => AssistantThread[];
 }
 
 export function registerQueries(dl: DataLayer, deps: RegisterQueryDeps): void {
@@ -207,6 +214,18 @@ export function registerQueries(dl: DataLayer, deps: RegisterQueryDeps): void {
 	dl.register<AssistantTask[]>(
 		Q.ASSISTANT_TASKS,
 		() => deps.getAssistantTasks?.() ?? [],
+		[G.ASSISTANT],
+	);
+
+	dl.register<AssistantThread[]>(
+		Q.ASSISTANT_THREADS,
+		() => deps.getAssistantThreads?.() ?? [],
+		[G.ASSISTANT],
+	);
+
+	dl.register<AssistantThread[]>(
+		Q.ASSISTANT_INBOX,
+		() => deps.getAssistantInbox?.() ?? [],
 		[G.ASSISTANT],
 	);
 }

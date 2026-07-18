@@ -52,8 +52,45 @@ function renderContext(context: AssistantContext): string {
 			`CURRENT CARD (cardId: ${context.card.cardId}):\nQ: ${context.card.question}\nA: ${context.card.answer || "(empty)"}`,
 		);
 	}
+	if (context.draftCard) {
+		parts.push(
+			`CURRENT DRAFT (sessionId: ${context.draftCard.sessionId}, note type: ${context.draftCard.noteType.name}):\n${Object.entries(
+				context.draftCard.fields,
+			)
+				.map(([name, value]) => `${name}: ${value || "(empty)"}`)
+				.join("\n")}`,
+		);
+	}
 	if (context.activeNotePath)
 		parts.push(`ACTIVE NOTE: ${context.activeNotePath}`);
+	if (context.conversation?.length) {
+		parts.push(
+			`RECENT CONVERSATION:\n${context.conversation
+				.map(
+					(turn) =>
+						`${turn.role === "user" ? "USER" : "ASSISTANT"}: ${turn.content}`,
+				)
+				.join("\n")}`,
+		);
+	}
+	if (context.draftWorkspace) {
+		const drafts = context.draftWorkspace.manifest.proposals
+			.filter((proposal) => proposal.status === "proposed")
+			.map((proposal, index) => {
+				if (
+					proposal.type === "create_card" ||
+					proposal.type === "update_card" ||
+					proposal.type === "update_draft"
+				) {
+					return `Draft ${index + 1}, id ${proposal.id} (${proposal.type}): ${JSON.stringify(proposal.fields)}`;
+				}
+				return `Draft ${index + 1}, id ${proposal.id} (${proposal.type})`;
+			})
+			.join("\n");
+		parts.push(
+			`CURRENT DRAFT WORKSPACE (revision ${context.draftWorkspace.revision}):\n${drafts || "(no pending drafts)"}`,
+		);
+	}
 	return parts.join("\n\n");
 }
 
@@ -68,7 +105,9 @@ export class AssistantAgent {
 		context: AssistantContext,
 		host: AssistantToolHost,
 	): Promise<AssistantManifest> {
-		const manifest: AssistantManifest = { proposals: [], citations: [] };
+		const manifest: AssistantManifest = context.draftWorkspace
+			? structuredClone(context.draftWorkspace.manifest)
+			: { proposals: [], citations: [] };
 		const maxIterations = this.options.maxIterations ?? DEFAULT_MAX_ITERATIONS;
 		const usage: TokenUsage = {
 			promptTokens: 0,
@@ -188,21 +227,32 @@ export class AssistantAgent {
 		switch (call.function.name) {
 			case "create_cards": {
 				const noteTypeId = String(args.noteTypeId ?? "");
-				const known = host.listNoteTypes().some((nt) => nt.id === noteTypeId);
-				if (!known) {
+				const noteType = host
+					.listNoteTypes()
+					.find((candidate) => candidate.id === noteTypeId);
+				if (!noteType) {
 					return `Note type "${noteTypeId}" not found. Use one of the listed note type ids.`;
 				}
 				const cards = Array.isArray(args.cards)
 					? (args.cards as Record<string, string>[])
 					: [];
 				if (cards.length === 0) return "No cards given.";
-				for (const fields of cards) {
+				for (const rawFields of cards) {
+					const fields = Object.fromEntries(
+						noteType.fields.map((name) => [name, rawFields[name] ?? ""]),
+					);
 					manifest.proposals.push({
 						id: nextProposalId(),
 						status: "proposed",
 						type: "create_card",
 						noteTypeId,
 						fields,
+						sourceUid: context.source?.uid ?? context.card?.sourceUid,
+						sourcePath:
+							context.source?.path ??
+							context.card?.sourceNotePath ??
+							context.activeNotePath,
+						sourceText: context.source?.text ?? context.selectedText,
 					});
 				}
 				return `Recorded ${cards.length} card proposal(s).`;
@@ -220,6 +270,62 @@ export class AssistantAgent {
 					fields: (args.fields ?? {}) as Record<string, string>,
 					previousFields: current.fields,
 				});
+			}
+			case "update_draft": {
+				const draft = context.draftCard;
+				if (!draft) return "No draft card is active in this task.";
+				const requested = (args.fields ?? {}) as Record<string, string>;
+				const fields = Object.fromEntries(
+					Object.entries(requested).filter(([name]) =>
+						draft.noteType.fields.includes(name),
+					),
+				);
+				if (Object.keys(fields).length === 0) {
+					return "No valid draft fields were provided.";
+				}
+				return record({
+					id: nextProposalId(),
+					status: "proposed",
+					type: "update_draft",
+					sessionId: draft.sessionId,
+					fields,
+					previousFields: draft.fields,
+				});
+			}
+			case "update_proposal": {
+				const proposalId = String(args.proposalId ?? "");
+				const proposal = manifest.proposals.find(
+					(candidate) => candidate.id === proposalId,
+				);
+				if (!proposal || proposal.status !== "proposed") {
+					return `Draft proposal "${proposalId}" not found.`;
+				}
+				if (
+					proposal.type !== "create_card" &&
+					proposal.type !== "update_card" &&
+					proposal.type !== "update_draft"
+				) {
+					return `Proposal "${proposalId}" is not an editable card draft.`;
+				}
+				const requested = (args.fields ?? {}) as Record<string, string>;
+				const fields = Object.fromEntries(
+					Object.entries(requested).filter(([name]) => name in proposal.fields),
+				);
+				if (Object.keys(fields).length === 0) {
+					return `No valid fields supplied for proposal "${proposalId}".`;
+				}
+				proposal.fields = { ...proposal.fields, ...fields };
+				return `Updated draft proposal ${proposalId}.`;
+			}
+			case "remove_proposal": {
+				const proposalId = String(args.proposalId ?? "");
+				const index = manifest.proposals.findIndex(
+					(candidate) =>
+						candidate.id === proposalId && candidate.status === "proposed",
+				);
+				if (index < 0) return `Draft proposal "${proposalId}" not found.`;
+				manifest.proposals.splice(index, 1);
+				return `Removed draft proposal ${proposalId}.`;
 			}
 			case "append_to_note":
 				return record({
@@ -263,6 +369,27 @@ export class AssistantAgent {
 				return `Found ${candidates.length} candidates: ${candidates
 					.map((c) => c.title ?? c.url)
 					.join("; ")}. The user will pick which to attach.`;
+			}
+			case "search_knowledge": {
+				if (!host.searchKnowledge) {
+					return "Vault knowledge search is not available.";
+				}
+				const query = String(args.query ?? "").trim();
+				if (!query) return "Knowledge search query is required.";
+				const count = Math.min(Math.max(Number(args.count ?? 6), 1), 12);
+				const evidence = await host.searchKnowledge(query, count);
+				if (evidence.length > 0) {
+					const existingIds = new Set(
+						(manifest.evidence ?? []).map((item) => item.id),
+					);
+					manifest.evidence = [
+						...(manifest.evidence ?? []),
+						...evidence.filter((item) => !existingIds.has(item.id)),
+					];
+				}
+				return evidence.length > 0
+					? JSON.stringify(evidence)
+					: "No matching vault evidence found.";
 			}
 			case "read_note": {
 				const content = await host.readNote(String(args.path ?? ""));

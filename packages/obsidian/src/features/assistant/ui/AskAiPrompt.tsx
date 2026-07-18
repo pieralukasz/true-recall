@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from "preact/hooks";
 
 import type { AssistantContext } from "@true-recall/core/ai/assistant";
+import { listAIWorkflows } from "@true-recall/core/ai/workflows/ai-workflow";
 
 import { Clickable } from "@true-recall/obsidian/components";
 import { usePlugin } from "@true-recall/obsidian/preact/ObsidianContext";
+import { notify } from "@true-recall/obsidian/services/notification.service";
 import { cn } from "@true-recall/obsidian/utils/cn";
 
 /** Cap the auto-growing textarea so a long draft scrolls instead of shoving the toolbar off-screen. */
@@ -11,7 +13,10 @@ const MAX_INPUT_HEIGHT = 200;
 
 interface AskAiPromptProps {
 	context: AssistantContext;
-	onSubmitted: (taskId: string, showNow: boolean) => void;
+	onSubmitted: (
+		threadId: string,
+		mode: "inline" | "inbox" | "background",
+	) => void;
 	onDismiss: () => void;
 	autoFocus?: boolean;
 }
@@ -25,7 +30,11 @@ export function AskAiPrompt({
 	const plugin = usePlugin();
 	const [text, setText] = useState("");
 	const inputRef = useRef<HTMLTextAreaElement>(null);
-	const presets = plugin.settings.assistantPresets ?? [];
+	const workflows = listAIWorkflows(plugin.settings, {
+		hasSelection: !!context.selectedText?.trim(),
+		hasCard: !!context.card,
+		hasDraftCard: !!context.draftCard,
+	});
 	const selectedText = context.selectedText?.trim();
 	const canSend = text.trim() !== "";
 
@@ -44,16 +53,24 @@ export function AskAiPrompt({
 	const submit = (
 		instruction: string,
 		presetId: string | undefined,
-		showNow: boolean,
+		mode: "inline" | "inbox" | "background",
+		displayMessage?: string,
 	) => {
 		const trimmed = instruction.trim();
 		if (trimmed === "" || !plugin.assistantService) return;
-		const taskId = plugin.assistantService.enqueue({
+		const { threadId } = plugin.assistantService.startThread({
 			instruction: trimmed,
 			presetId,
 			context,
+			state: mode === "inline" ? "active" : "inbox",
+			displayMessage,
 		});
-		onSubmitted(taskId, showNow);
+		if (mode === "background") {
+			notify().info(
+				`Generating with ${displayMessage ?? "preset"} in the background…`,
+			);
+		}
+		onSubmitted(threadId, mode);
 	};
 
 	return (
@@ -67,7 +84,7 @@ export function AskAiPrompt({
 			<textarea
 				ref={inputRef}
 				class="tr-ask-ai-field"
-				placeholder="Ask AI about this… (Enter = queue, Shift+Enter = newline)"
+				placeholder="Ask AI about this… (Enter = run here, Shift+Enter = newline)"
 				rows={1}
 				value={text}
 				onInput={(e) => {
@@ -77,21 +94,28 @@ export function AskAiPrompt({
 				onKeyDown={(e) => {
 					if (e.key === "Enter" && !e.shiftKey) {
 						e.preventDefault();
-						submit(text, undefined, false);
+						submit(text, undefined, "inline");
 					}
 					if (e.key === "Escape") onDismiss();
 				}}
 			/>
 			<div class="tr-ask-ai-toolbar">
 				<div class="tr-ask-ai-presets">
-					{presets.map((preset) => (
+					{workflows.map((workflow) => (
 						<Clickable
-							key={preset.id}
+							key={workflow.id}
 							class="tr-ask-ai-chip"
-							title={preset.instruction}
-							onClick={() => submit(preset.instruction, preset.id, false)}
+							title={workflow.instruction}
+							onClick={() =>
+								submit(
+									workflow.instruction,
+									workflow.id,
+									workflow.kind === "generate-cards" ? "background" : "inline",
+									workflow.name,
+								)
+							}
 						>
-							{preset.name}
+							{workflow.name}
 						</Clickable>
 					))}
 				</div>
@@ -99,17 +123,17 @@ export function AskAiPrompt({
 					<Clickable
 						class={cn("tr-ask-ai-run", !canSend && "is-disabled")}
 						disabled={!canSend}
-						title="Queue and open the AI inbox"
-						onClick={() => submit(text, undefined, true)}
+						title="Run and open the AI inbox"
+						onClick={() => submit(text, undefined, "inbox")}
 					>
 						Run &amp; show
 					</Clickable>
 					<Clickable
 						class="tr-ask-ai-send-btn"
 						disabled={!canSend}
-						aria-label="Queue"
-						title="Queue (Enter)"
-						onClick={() => submit(text, undefined, false)}
+						aria-label="Run here"
+						title="Run here (Enter)"
+						onClick={() => submit(text, undefined, "inline")}
 					>
 						<svg
 							xmlns="http://www.w3.org/2000/svg"

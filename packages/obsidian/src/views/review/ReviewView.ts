@@ -29,7 +29,10 @@ import {
 import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpClient";
 import { ReviewUndoHook } from "@true-recall/obsidian/commands";
 import { G, getDataLayer, Q } from "@true-recall/obsidian/data";
-import { openAskAiModal } from "@true-recall/obsidian/features/assistant/ui/AskAiModal";
+import {
+	openAskAiModal,
+	openAssistantThreadModal,
+} from "@true-recall/obsidian/features/assistant/ui/AskAiModal";
 import { openAskAiPopover } from "@true-recall/obsidian/features/assistant/ui/openAskAiPopover";
 import type { ReviewSessionController } from "@true-recall/obsidian/features/study/services/ReviewSessionController";
 import type { PresetPickerOption } from "@true-recall/obsidian/features/study/ui/review/components";
@@ -575,11 +578,12 @@ export class ReviewView extends ItemView {
 		const detail = (e as CustomEvent<{ instruction: string; presetId: string }>)
 			.detail;
 		if (!detail) return;
-		this.plugin.assistantService?.enqueue({
+		const result = this.plugin.assistantService?.startThread({
 			instruction: detail.instruction,
 			presetId: detail.presetId,
 			context: this.buildAssistantContext(),
 		});
+		if (result) openAssistantThreadModal(this.plugin, result.threadId);
 	};
 
 	private mountApp(container: HTMLElement): void {

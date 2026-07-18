@@ -141,6 +141,10 @@ async function initializeCardStore(
 			hierarchy: plugin.hierarchyService,
 			getSettings: () => plugin.settings,
 			getAssistantTasks: () => plugin.cardStore?.assistantTasks.list(100) ?? [],
+			getAssistantThreads: () =>
+				plugin.cardStore?.assistantThreads.list(undefined, 100) ?? [],
+			getAssistantInbox: () =>
+				plugin.cardStore?.assistantThreads.list("inbox", 100) ?? [],
 		});
 
 		plugin._disposeWireDataLayer = wireDataLayer(dl, plugin.coreApp.events);

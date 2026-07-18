@@ -28,6 +28,16 @@ const HOST: AssistantToolHost = {
 	],
 	readNote: async (path) => (path === "Topic.md" ? "# Topic" : null),
 	searchImages: async () => [{ url: "https://img/1.jpg", title: "one" }],
+	searchKnowledge: async () => [
+		{
+			id: "rag:note:Topic.md:1",
+			sourceType: "note",
+			sourceId: "Topic.md",
+			excerpt: "Grounded fact",
+			score: 1,
+			tokenCount: 3,
+		},
+	],
 };
 
 const CONTEXT: AssistantContext = {
@@ -229,6 +239,146 @@ describe("AssistantAgent", () => {
 		expect(manifest.proposals).toHaveLength(0);
 		const toolMsg = requests[1]?.messages.find((m) => m.role === "tool");
 		expect(String(toolMsg?.content)).toContain("not found");
+	});
+
+	it("can retrieve normalized vault evidence before editing drafts", async () => {
+		const { client, requests } = makeScriptedClient([
+			toolCallResponse([
+				{
+					id: "t1",
+					name: "search_knowledge",
+					args: { query: "topic", count: 4 },
+				},
+			]),
+			textResponse("Found evidence."),
+		]);
+		const manifest = await new AssistantAgent(client, {
+			maxIterations: 2,
+			webSearch: false,
+		}).run("Check my vault", CONTEXT, HOST);
+
+		const toolMessage = requests[1]?.messages.find(
+			(message) => message.role === "tool",
+		);
+		expect(toolMessage?.content).toContain("Grounded fact");
+		expect(toolMessage?.content).toContain("rag:note:Topic.md:1");
+		expect(manifest.evidence).toEqual([
+			expect.objectContaining({
+				id: "rag:note:Topic.md:1",
+				excerpt: "Grounded fact",
+			}),
+		]);
+	});
+
+	it("includes recent thread turns in a follow-up request", async () => {
+		const { client, requests } = makeScriptedClient([textResponse("done")]);
+		await new AssistantAgent(client, { webSearch: false }).run(
+			"Make it shorter",
+			{
+				conversation: [
+					{ role: "user", content: "Create two cards about TCP" },
+					{ role: "assistant", content: "Created 2 card drafts." },
+				],
+			},
+			HOST,
+		);
+
+		const prompt = String(requests[0]?.messages[1]?.content);
+		expect(prompt).toContain("RECENT CONVERSATION");
+		expect(prompt).toContain("Create two cards about TCP");
+		expect(prompt).toContain("INSTRUCTION:\nMake it shorter");
+	});
+
+	it("proposes validated changes to an open draft without storing callbacks", async () => {
+		const draftContext: AssistantContext = {
+			draftCard: {
+				sessionId: "draft-1",
+				fields: { Front: "Long question", Back: "Long answer" },
+				noteType: {
+					id: "builtin-basic",
+					name: "Basic",
+					fields: ["Front", "Back"],
+				},
+				operation: "edit",
+			},
+		};
+		const { client } = makeScriptedClient([
+			toolCallResponse([
+				{
+					id: "t1",
+					name: "update_draft",
+					args: { fields: { Back: "Short", Unknown: "drop me" } },
+				},
+			]),
+			textResponse("done"),
+		]);
+		const agent = new AssistantAgent(client, {
+			maxIterations: 2,
+			webSearch: false,
+		});
+
+		const manifest = await agent.run("shorten", draftContext, HOST);
+
+		expect(manifest.proposals[0]).toEqual({
+			id: expect.any(String),
+			status: "proposed",
+			type: "update_draft",
+			sessionId: "draft-1",
+			fields: { Back: "Short" },
+			previousFields: { Front: "Long question", Back: "Long answer" },
+		});
+	});
+
+	it("refines an existing draft workspace by stable proposal id", async () => {
+		const context: AssistantContext = {
+			draftWorkspace: {
+				revision: 1,
+				manifest: {
+					proposals: [
+						{
+							id: "keep",
+							status: "proposed",
+							type: "create_card",
+							noteTypeId: "builtin-basic",
+							fields: { Front: "Q", Back: "Long answer" },
+						},
+						{
+							id: "remove",
+							status: "proposed",
+							type: "create_card",
+							noteTypeId: "builtin-basic",
+							fields: { Front: "Duplicate", Back: "A" },
+						},
+					],
+					citations: [],
+				},
+			},
+		};
+		const { client } = makeScriptedClient([
+			toolCallResponse([
+				{
+					id: "t1",
+					name: "update_proposal",
+					args: { proposalId: "keep", fields: { Back: "Short" } },
+				},
+				{
+					id: "t2",
+					name: "remove_proposal",
+					args: { proposalId: "remove" },
+				},
+			]),
+			textResponse("Updated drafts."),
+		]);
+		const manifest = await new AssistantAgent(client, {
+			maxIterations: 2,
+			webSearch: false,
+		}).run("Shorten the first and remove the second", context, HOST);
+
+		expect(manifest.proposals).toHaveLength(1);
+		expect(manifest.proposals[0]).toMatchObject({
+			id: "keep",
+			fields: { Front: "Q", Back: "Short" },
+		});
 	});
 
 	it("accumulates token usage across iterations into the manifest", async () => {

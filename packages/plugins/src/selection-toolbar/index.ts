@@ -38,13 +38,15 @@ function dispatchAskAi(
 	text: string,
 	sourceFile?: TFile | null,
 ): void {
+	const sourcePath =
+		sourceFile?.path ?? plugin.app.workspace.getActiveFile()?.path;
 	window.dispatchEvent(
 		new CustomEvent("true-recall:ask-ai", {
 			detail: {
 				context: {
 					selectedText: text,
-					activeNotePath:
-						sourceFile?.path ?? plugin.app.workspace.getActiveFile()?.path,
+					activeNotePath: sourcePath,
+					source: { path: sourcePath, text },
 				},
 			},
 		}),
