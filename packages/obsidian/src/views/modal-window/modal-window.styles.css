@@ -248,7 +248,10 @@
 	position: relative;
 	display: flex;
 	flex-direction: column;
-	min-height: 0;
+	/* No min-height: 0 here — QuickNoteEditorView.resizeWindowToContent()
+	   measures this element's offsetHeight to grow the popout window to fit.
+	   min-height: 0 would let it collapse to the (small) window height and
+	   deadlock the grow-to-fit loop at the opening size. */
 }
 
 .tr-quick-editor-layout.has-ai-right {
