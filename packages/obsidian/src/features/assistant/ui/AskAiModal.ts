@@ -10,13 +10,16 @@ import { AskAiPrompt } from "./AskAiPrompt";
 import { AssistantInlineTask } from "./AssistantInlineTask";
 import { handoffUnfinishedThread } from "./thread-handoff";
 
-/** Opens the Ask AI prompt in a modal (used outside review / from commands). */
+/** Opens the Ask AI prompt in a neutral modal (anchor-less invocations:
+ * whole-card action in review, selection toolbar event). The composer is the
+ * modal content directly — no inner framed box, one scroll container. */
 export function openAskAiModal(
 	plugin: TrueRecallPlugin,
 	context: AssistantContext,
 ): void {
 	const modal = new Modal(plugin.app);
 	modal.titleEl.setText("Ask AI");
+	modal.modalEl.addClass("tr-assistant-modal");
 	const host = modal.contentEl.createDiv();
 	let unmount: (() => void) | null = null;
 	let currentThreadId: string | null = null;
@@ -26,7 +29,11 @@ export function openAskAiModal(
 		unmount = mountPreact(
 			host,
 			plugin,
-			h(AssistantInlineTask, { threadId, onClose: () => modal.close() }),
+			h(AssistantInlineTask, {
+				threadId,
+				framed: false,
+				onClose: () => modal.close(),
+			}),
 		);
 	};
 	unmount = mountPreact(
@@ -62,11 +69,16 @@ export function openAssistantThreadModal(
 ): void {
 	const modal = new Modal(plugin.app);
 	modal.titleEl.setText("AI Draft Studio");
+	modal.modalEl.addClass("tr-assistant-modal");
 	const host = modal.contentEl.createDiv();
 	const unmount = mountPreact(
 		host,
 		plugin,
-		h(AssistantInlineTask, { threadId, onClose: () => modal.close() }),
+		h(AssistantInlineTask, {
+			threadId,
+			framed: false,
+			onClose: () => modal.close(),
+		}),
 	);
 	modal.onClose = () => {
 		handoffUnfinishedThread(plugin, threadId);

@@ -10,6 +10,11 @@ import { h, render } from "preact";
 import { VIEW_TYPE_QUICK_NOTE_EDITOR } from "@true-recall/core/constants";
 
 import { Clickable } from "@true-recall/obsidian/components";
+import {
+	AI_PANEL_GAP,
+	AI_PANEL_WIDTH,
+	type FlyoutPlacement,
+} from "@true-recall/obsidian/features/assistant/ui/flyout-placement";
 import { QuickNoteEditorApp } from "@true-recall/obsidian/modals/study/quick-note-editor/QuickNoteEditorApp";
 import type {
 	QuickNoteEditorMode,
@@ -50,6 +55,7 @@ export class QuickNoteEditorView extends ItemView {
 	private beforeUnloadHandler: ((e: BeforeUnloadEvent) => void) | null = null;
 	private boundWindow: Window | null = null;
 	private isConfirmingDiscard = false;
+	private aiPanelWidth = 0;
 
 	constructor(leaf: WorkspaceLeaf, plugin: TrueRecallPlugin) {
 		super(leaf);
@@ -178,6 +184,7 @@ export class QuickNoteEditorView extends ItemView {
 						onDirtyChange: (dirty) => {
 							if (this.session) this.session.isDirty = dirty;
 						},
+						onAiPanelChange: (state) => this.handleAiPanelChange(state),
 					}),
 				),
 			),
@@ -188,6 +195,21 @@ export class QuickNoteEditorView extends ItemView {
 		this.centerWindowOnScreen();
 		this.startContentSizeTracking();
 		this.installBeforeUnloadGuard();
+	}
+
+	private handleAiPanelChange(state: {
+		open: boolean;
+		placement: FlyoutPlacement;
+	}): void {
+		const win = this.getPopoutWindow();
+		if (!win) return;
+		const wanted =
+			state.open && state.placement === "right"
+				? AI_PANEL_WIDTH + AI_PANEL_GAP
+				: 0;
+		const delta = wanted - this.aiPanelWidth;
+		if (delta !== 0) win.resizeTo(win.outerWidth + delta, win.outerHeight);
+		this.aiPanelWidth = wanted;
 	}
 
 	private centerWindowOnScreen(): void {

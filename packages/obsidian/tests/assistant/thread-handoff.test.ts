@@ -20,9 +20,7 @@ describe("resolveThreadHandoff", () => {
 	});
 
 	it("defers when a task is still running", () => {
-		expect(resolveThreadHandoff({ ...base, activeTaskId: "t1" })).toBe(
-			"defer",
-		);
+		expect(resolveThreadHandoff({ ...base, activeTaskId: "t1" })).toBe("defer");
 	});
 
 	it("defers when proposals await review", () => {
