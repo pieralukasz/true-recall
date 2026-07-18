@@ -190,7 +190,10 @@ export class ParameterOptimizerService {
 	}
 
 	/** Replay all sequences with the given weights and score the predictions */
-	private evaluate(weights: number[], sequences: ReviewStep[][]): ReplayMetrics {
+	private evaluate(
+		weights: number[],
+		sequences: ReviewStep[][],
+	): ReplayMetrics {
 		const algorithm = new FSRSAlgorithm(
 			generatorParameters({ w: weights, enable_short_term: true }),
 		);

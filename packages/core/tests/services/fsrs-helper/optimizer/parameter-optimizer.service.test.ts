@@ -7,20 +7,20 @@
  * was a loss in which only the decay parameter (w20) had a gradient.
  */
 import {
+	clipParameters,
 	default_w,
 	FSRSAlgorithm,
-	clipParameters,
 	generatorParameters,
 	Rating,
 	State,
 } from "ts-fsrs";
 import { describe, expect, it } from "vitest";
 
+import type { OptimizationReviewEntry } from "../../../../src/metrics/fsrs-tools/optimizer/optimizer.types";
 import {
 	isRecalled,
 	ParameterOptimizerService,
 } from "../../../../src/metrics/fsrs-tools/optimizer/parameter-optimizer.service";
-import type { OptimizationReviewEntry } from "../../../../src/metrics/fsrs-tools/optimizer/optimizer.types";
 import {
 	hashString,
 	mulberry32,
