@@ -11,6 +11,7 @@ import {
 import { stripBrTags } from "@true-recall/core/utils";
 
 import type { EmbeddableEditorInstance } from "@true-recall/obsidian/editor/shared/embedded-editor";
+import { getInkEmbeddableEditorExtensions } from "@true-recall/obsidian/editor/shared/ink-embeddable-editor";
 import { hasBlockMarkdown } from "@true-recall/obsidian/features/study/ui/review/helpers";
 import {
 	useApp,
@@ -131,6 +132,7 @@ export function LivePreviewField({
 				onBlur: handleBlur,
 				onEscape: handleEscape,
 				onChange: handleChange,
+				extraExtensions: getInkEmbeddableEditorExtensions(app, sourcePath),
 			});
 			editorRef.current = editor;
 		} catch (error) {
@@ -165,6 +167,7 @@ export function LivePreviewField({
 		handleEscape,
 		handleChange,
 		flushPendingSave,
+		sourcePath,
 	]);
 
 	// Update editor content when card changes (new card appears)
