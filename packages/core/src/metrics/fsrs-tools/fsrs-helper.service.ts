@@ -1,7 +1,6 @@
 import { State } from "ts-fsrs";
 
 import type { SqliteStoreService } from "../../persistence/sqlite/SqliteStoreService";
-import { formatLocalDate, getTodayBoundary } from "../../utils";
 import type {
 	FSRSCardData,
 	FSRSSettings,
@@ -10,6 +9,7 @@ import type {
 	TrueRecallSettings,
 } from "../../types";
 import { formatInterval } from "../../types/fsrs/fsrs.utils";
+import { formatLocalDate, getTodayBoundary } from "../../utils";
 import type {
 	OptimizationInput,
 	OptimizationOutput,

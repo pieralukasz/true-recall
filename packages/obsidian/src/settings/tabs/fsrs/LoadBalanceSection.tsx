@@ -12,10 +12,9 @@ import {
 } from "@true-recall/obsidian/components";
 import { WorkloadForecastSection } from "@true-recall/obsidian/features/metrics/ui/stats/components/WorkloadForecastSection";
 
-import { describeSuggestion, sliderMax } from "./target-copy";
-import { TargetInsights } from "./TargetInsights";
-
 import type { FsrsPluginHost } from "../../../types/plugin-host.types";
+import { TargetInsights } from "./TargetInsights";
+import { describeSuggestion, sliderMax } from "./target-copy";
 import { useFsrsHelperOp } from "./useFsrsHelperOp";
 
 interface LoadBalanceSectionProps {

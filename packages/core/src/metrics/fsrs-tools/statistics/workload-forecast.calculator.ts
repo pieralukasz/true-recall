@@ -149,7 +149,11 @@ export class WorkloadForecastCalculator {
 		maxDeviation: number = 20,
 		includeSourceUids?: ReadonlySet<string>,
 	): WorkloadForecastSummary {
-		const forecast = this.getForecast(days, excludeSourceUids, includeSourceUids);
+		const forecast = this.getForecast(
+			days,
+			excludeSourceUids,
+			includeSourceUids,
+		);
 
 		if (forecast.length === 0) {
 			return {
@@ -221,7 +225,11 @@ export class WorkloadForecastCalculator {
 		excludeSourceUids?: ReadonlySet<string>,
 		includeSourceUids?: ReadonlySet<string>,
 	): { day: number; dayName: string; avgCount: number }[] {
-		const forecast = this.getForecast(days, excludeSourceUids, includeSourceUids);
+		const forecast = this.getForecast(
+			days,
+			excludeSourceUids,
+			includeSourceUids,
+		);
 
 		// Group by day of week
 		const byDay = new Map<number, number[]>();
