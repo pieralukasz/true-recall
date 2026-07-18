@@ -347,3 +347,34 @@ describe("providerType migration", () => {
 		expect(result.settings.aiTier).toBe("custom");
 	});
 });
+
+describe("migrateSettings — ask-ai toolbar button backfill", () => {
+	it("appends ask-ai to saved editor and global toolbar arrays", () => {
+		const raw = {
+			editorToolbarButtons: [{ id: "quick-add", enabled: true }],
+			globalToolbarButtons: [{ id: "copy", enabled: false }],
+		} as unknown as Parameters<typeof migrateSettings>[0];
+		const { settings, needsSave } = migrateSettings(raw);
+		expect(needsSave).toBe(true);
+		expect(
+			settings.editorToolbarButtons.some((b) => b.id === "ask-ai" && b.enabled),
+		).toBe(true);
+		expect(
+			settings.globalToolbarButtons.some((b) => b.id === "ask-ai" && b.enabled),
+		).toBe(true);
+	});
+
+	it("is idempotent when ask-ai is already present and preserves the user's choice", () => {
+		const raw = {
+			editorToolbarButtons: [{ id: "ask-ai", enabled: false }],
+			globalToolbarButtons: [{ id: "ask-ai", enabled: true }],
+		} as unknown as Parameters<typeof migrateSettings>[0];
+		const { settings } = migrateSettings(raw);
+		expect(
+			settings.editorToolbarButtons.filter((b) => b.id === "ask-ai"),
+		).toHaveLength(1);
+		expect(
+			settings.editorToolbarButtons.find((b) => b.id === "ask-ai")?.enabled,
+		).toBe(false);
+	});
+});

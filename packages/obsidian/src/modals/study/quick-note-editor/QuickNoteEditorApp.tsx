@@ -20,6 +20,7 @@ import {
 	useApp,
 	usePlugin,
 } from "@true-recall/obsidian/preact/ObsidianContext";
+import { registerAssistantDraftTarget } from "@true-recall/obsidian/services/assistant/assistant-draft-target-registry";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 import { openCardTypesEditor } from "@true-recall/obsidian/views/modal-window/open-card-types-editor";
 import { openNoteTypeManager } from "@true-recall/obsidian/views/modal-window/open-note-type-manager";
@@ -69,6 +70,19 @@ export function QuickNoteEditorApp({
 		if (addMode?.initialFields) return { ...addMode.initialFields };
 		return {};
 	});
+	const fieldsRef = useRef(fields);
+	fieldsRef.current = fields;
+	const assistantDraftSessionIdRef = useRef(`qne-${crypto.randomUUID()}`);
+
+	useEffect(
+		() =>
+			registerAssistantDraftTarget(assistantDraftSessionIdRef.current, {
+				getFields: () => fieldsRef.current,
+				applyFields: (next) =>
+					setFields((current) => ({ ...current, ...next })),
+			}),
+		[],
+	);
 
 	const [saving, setSaving] = useState(false);
 	const [pinnedFields, setPinnedFields] = useState<Set<string>>(new Set());
@@ -84,10 +98,16 @@ export function QuickNoteEditorApp({
 		[],
 	);
 
-	// Source note picker — only shown in add mode without pre-set sourceUid
+	// Source note picker — only shown in add mode without pre-set sourceUid.
+	// Default to the note the user was just working in: cards created from a
+	// text selection or the "+" entry points should link there by default.
 	const showSourcePicker = !isEdit && !addMode?.sourceUid;
 	const [selectedSourceNote, setSelectedSourceNote] = useState<TFile | null>(
-		null,
+		() => {
+			if (!showSourcePicker) return null;
+			const active = app.workspace.getActiveFile();
+			return active?.extension === "md" ? active : null;
+		},
 	);
 
 	// ── Derived ──
@@ -142,6 +162,14 @@ export function QuickNoteEditorApp({
 			const next: Record<string, string> = {};
 			for (const fieldName of noteType.fields) {
 				next[fieldName] = prev[fieldName] ?? "";
+			}
+			// Field names rarely match across types (Front/Back vs Text/Extra),
+			// which used to drop the entered text on e.g. Basic -> Cloze. Carry
+			// the first previous value into the new primary field instead.
+			const primaryField = noteType.fields[0];
+			if (primaryField && !next[primaryField]) {
+				const carried = Object.values(prev).find((v) => v.trim().length > 0);
+				if (carried) next[primaryField] = carried;
 			}
 			return next;
 		});
@@ -329,19 +357,21 @@ export function QuickNoteEditorApp({
 		return () => doc.removeEventListener("keydown", onKeyDown, true);
 	}, []);
 
-	// AI wand dispatches "true-recall:card-polish" (kind: "draft"). Only the
-	// Card Polish plugin listens today; no other plugin wires a draft hook.
+	// The editor registers itself as a temporary Assistant target. The task only
+	// stores a serializable session id, while applying the accepted proposal
+	// updates this still-open draft through the registry above.
 	// We check both the plugin enable state AND hasAIKey directly. The full
 	// `isPluginEnabled` helper (in plugin-utils) pulls @true-recall/plugins
 	// registry, which transitively loads sqlite-wasm via other plugin manifests
 	// and breaks Vitest module loading for unrelated tests. Inline-checking
 	// hasAIKey reproduces the tier:"byok" gate without the registry import.
-	const cardPolishEnabled =
-		plugin.settings?.pluginStates?.["card-polish"] ?? true;
-	const cardPolishActive = cardPolishEnabled && hasAIKey(plugin.settings);
+	const assistantEnabled =
+		plugin.settings?.pluginStates?.["ai-assistant"] ?? true;
+	const assistantActive =
+		assistantEnabled && hasAIKey(plugin.settings, "assistant");
 	const { disabled: aiDisabled, title: aiTitle } = deriveAIWandState({
 		hasSourceNote: !!sourceNoteFile,
-		cardPolishActive,
+		assistantActive,
 	});
 
 	const openAI = useCallback(
@@ -355,31 +385,31 @@ export function QuickNoteEditorApp({
 						return;
 					}
 					window.dispatchEvent(
-						new CustomEvent("true-recall:card-polish", {
+						new CustomEvent("true-recall:ask-ai", {
 							detail: {
-								kind: "draft",
 								anchor,
-								fields,
-								noteType: {
-									id: noteType.id,
-									name: noteType.name,
-									fields: noteType.fields,
+								context: {
+									activeNotePath: sourceNoteFile.path,
+									source: { path: sourceNoteFile.path, uid },
+									draftCard: {
+										sessionId: assistantDraftSessionIdRef.current,
+										fields,
+										noteType: {
+											id: noteType.id,
+											name: noteType.name,
+											fields: noteType.fields,
+										},
+										sourceUid: uid,
+										sourceNotePath: sourceNoteFile.path,
+										operation: isEdit ? "edit" : "create",
+									},
 								},
-								sourceUid: uid,
-								currentCardId: isEdit
-									? (editMode?.cardId ?? null)
-									: (addMode?.excludeCardId ?? null),
-								operation: isEdit ? "edit" : "create",
-								onApply: (next: Record<string, string>) => {
-									setFields((prev) => ({ ...prev, ...next }));
-								},
-								flashcardManager: plugin.flashcardManager,
 							},
 						}),
 					);
 				})
 				.catch((err) => {
-					console.error("[CardAI] wand dispatch failed", err);
+					console.error("[Assistant] wand dispatch failed", err);
 					new Notice("AI: could not resolve source note.");
 				});
 		},
@@ -390,9 +420,7 @@ export function QuickNoteEditorApp({
 			fields,
 			isEdit,
 			editMode,
-			addMode,
 			resolveSourceUid,
-			plugin.flashcardManager,
 		],
 	);
 
@@ -427,12 +455,14 @@ export function QuickNoteEditorApp({
 				getEditorView={() => focusedFieldRef.current?.editorView ?? null}
 				typeInEnabled={alwaysTypeIn}
 				onTypeInToggle={!isEdit ? setAlwaysTypeIn : undefined}
+				showCloze={noteType.type === 1}
 			/>
 
 			{/* Dynamic fields */}
 			<NoteFieldsForm
 				noteType={noteType}
 				fields={fields}
+				sourcePath={sourceNoteFile?.path ?? ""}
 				onFieldChange={handleFieldChange}
 				onFieldFocus={handleFieldFocus}
 				onModEnter={() => void handleSave()}

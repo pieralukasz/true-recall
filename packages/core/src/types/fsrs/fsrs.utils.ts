@@ -32,8 +32,10 @@ export function createDefaultFSRSData(id: string): FSRSCardData {
 
 /**
  * Format interval to readable form
+ * Intervals of a day or more always show exact days (e.g., "92d", "730d"),
+ * never months or years, so the user sees precisely when the card returns.
  * @param minutes Number of minutes
- * @returns Formatted string (e.g., "<1m", "10m", "1d", "2mo")
+ * @returns Formatted string (e.g., "<1m", "10m", "3h", "92d")
  */
 export function formatInterval(minutes: number): string {
 	if (minutes < 1) {
@@ -46,14 +48,6 @@ export function formatInterval(minutes: number): string {
 		const hours = Math.round(minutes / 60);
 		return `${hours}h`;
 	}
-	if (minutes < 60 * 24 * 30) {
-		const days = Math.round(minutes / (60 * 24));
-		return `${days}d`;
-	}
-	if (minutes < 60 * 24 * 365) {
-		const months = Math.round(minutes / (60 * 24 * 30));
-		return `${months}mo`;
-	}
-	const years = Math.round(minutes / (60 * 24 * 365));
-	return `${years}y`;
+	const days = Math.round(minutes / (60 * 24));
+	return `${days}d`;
 }

@@ -19,4 +19,9 @@ export interface PluginInfo {
 	features: string[];
 	icon: string;
 	tier: PluginTier;
+	/** Compatibility-only feature kept available while users move to its replacement. */
+	deprecated?: {
+		replacementId: string;
+		message: string;
+	};
 }

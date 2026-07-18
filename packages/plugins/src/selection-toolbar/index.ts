@@ -29,6 +29,30 @@ function executeCommand(plugin: TrueRecallPlugin, commandId: string): void {
 	).commands.executeCommandById(commandId);
 }
 
+/**
+ * Opens the AI assistant prompt via a window event (mirrors the card-polish
+ * dispatch) so the toolbar stays decoupled from the assistant UI.
+ */
+function dispatchAskAi(
+	plugin: TrueRecallPlugin,
+	text: string,
+	sourceFile?: TFile | null,
+): void {
+	const sourcePath =
+		sourceFile?.path ?? plugin.app.workspace.getActiveFile()?.path;
+	window.dispatchEvent(
+		new CustomEvent("true-recall:ask-ai", {
+			detail: {
+				context: {
+					selectedText: text,
+					activeNotePath: sourcePath,
+					source: { path: sourcePath, text },
+				},
+			},
+		}),
+	);
+}
+
 function getSourceFileFromDOM(
 	plugin: TrueRecallPlugin,
 	range: Range,
@@ -180,6 +204,7 @@ export const selectionToolbarManifest: PluginManifest = {
 				onHighlight: () => {},
 				onNewNote: (text) => createNoteFromSelection(plugin, text),
 				onAppend: (text) => appendToCurrentNote(plugin, text),
+				onAskAI: (text) => dispatchAskAi(plugin, text),
 				onCommand: (id) => executeCommand(plugin, id),
 				onDismiss: () => {},
 			},
@@ -253,6 +278,7 @@ export const selectionToolbarManifest: PluginManifest = {
 				onHighlight: () => {},
 				onNewNote: (text) => createNoteFromSelection(plugin, text),
 				onAppend: (text) => appendToCurrentNote(plugin, text),
+				onAskAI: (text, sourceFile) => dispatchAskAi(plugin, text, sourceFile),
 				onCommand: (id) => executeCommand(plugin, id),
 				onDismiss: () => {},
 			},

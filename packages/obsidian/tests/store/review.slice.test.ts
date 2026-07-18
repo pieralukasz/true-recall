@@ -942,6 +942,116 @@ describe("Review Slice", () => {
 		});
 	});
 
+	describe("Actionable Card Promotion", () => {
+		// Regression: suspending/burying/removing a card slid a not-yet-due
+		// learning card under the cursor, showing the waiting screen while
+		// actionable cards were still queued behind it.
+
+		function startSessionWithPendingLearningNext() {
+			const current = createMockCardWithState(State.Review);
+			const pendingLearning = createMockCardWithState(State.Learning, 5); // due in 5 min
+			const actionable = createMockCardWithState(State.New);
+			store
+				.getState()
+				.review.startSession([current, pendingLearning, actionable]);
+			return { current, pendingLearning, actionable };
+		}
+
+		it("should stay active after removeCardsByIds when actionable cards remain", () => {
+			const { current, actionable } = startSessionWithPendingLearningNext();
+
+			store.getState().review.removeCardsByIds([current.id]);
+
+			expect(store.getState().review.getPhase().type).toBe("active");
+			expect(store.getState().review.getCurrentCard()?.id).toBe(actionable.id);
+		});
+
+		it("should stay active after removeCardById when actionable cards remain", () => {
+			const { current, actionable } = startSessionWithPendingLearningNext();
+
+			store.getState().review.removeCardById(current.id);
+
+			expect(store.getState().review.getPhase().type).toBe("active");
+			expect(store.getState().review.getCurrentCard()?.id).toBe(actionable.id);
+		});
+
+		it("should stay active after removeCurrentCard when actionable cards remain", () => {
+			const { actionable } = startSessionWithPendingLearningNext();
+
+			store.getState().review.removeCurrentCard();
+
+			expect(store.getState().review.getPhase().type).toBe("active");
+			expect(store.getState().review.getCurrentCard()?.id).toBe(actionable.id);
+		});
+
+		it("should keep badge counts matching a full recount after promotion", () => {
+			const { current } = startSessionWithPendingLearningNext();
+
+			store.getState().review.removeCardsByIds([current.id]);
+
+			const review = store.getState().review;
+			expect(review.getBadgeCounts()).toEqual(
+				countRemainingCards(review.queue, review.currentIndex),
+			);
+		});
+
+		it("should wait after removal only when no actionable cards remain", () => {
+			const current = createMockCardWithState(State.Review);
+			const pendingLearning = createMockCardWithState(State.Learning, 5);
+			store.getState().review.startSession([current, pendingLearning]);
+
+			store.getState().review.removeCardsByIds([current.id]);
+
+			expect(store.getState().review.getPhase().type).toBe("waiting");
+		});
+
+		it("should complete when removeCardsByIds removes the last remaining card", () => {
+			const card1 = createMockCard({ id: "card-1" });
+			const card2 = createMockCard({ id: "card-2" });
+			store.getState().review.startSession([card1, card2]);
+			store.getState().review.nextCard(); // card-1 already passed
+
+			store.getState().review.removeCardsByIds(["card-2"]);
+
+			// Must not point the cursor back at the already-reviewed card-1.
+			expect(store.getState().review.getPhase().type).toBe("complete");
+		});
+
+		it("should complete when removeCardById removes the last remaining card", () => {
+			const card1 = createMockCard({ id: "card-1" });
+			const card2 = createMockCard({ id: "card-2" });
+			store.getState().review.startSession([card1, card2]);
+			store.getState().review.nextCard();
+
+			store.getState().review.removeCardById("card-2");
+
+			expect(store.getState().review.getPhase().type).toBe("complete");
+		});
+
+		it("should start the session on the first actionable card", () => {
+			const pendingLearning = createMockCardWithState(State.Learning, 10);
+			const actionable = createMockCardWithState(State.Review);
+			store.getState().review.startSession([pendingLearning, actionable]);
+
+			expect(store.getState().review.getPhase().type).toBe("active");
+			expect(store.getState().review.getCurrentCard()?.id).toBe(actionable.id);
+		});
+
+		it("should land on an actionable card when replaceQueue cannot preserve the current card", () => {
+			const initial = createMockCardWithState(State.Review);
+			store.getState().review.startSession([initial]);
+
+			const pendingLearning = createMockCardWithState(State.Learning, 10);
+			const actionable = createMockCardWithState(State.New);
+			store
+				.getState()
+				.review.replaceQueue([pendingLearning, actionable], "missing-id");
+
+			expect(store.getState().review.getPhase().type).toBe("active");
+			expect(store.getState().review.getCurrentCard()?.id).toBe(actionable.id);
+		});
+	});
+
 	describe("Pending Learning Card Skip", () => {
 		it("should swap pending learning card at nextIndex with first actionable card", () => {
 			const reviewCard1 = createMockCardWithState(State.Review);

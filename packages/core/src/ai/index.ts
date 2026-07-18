@@ -51,6 +51,10 @@ export {
 	FlashcardGenerationService,
 	type GenerationResult,
 } from "./generation/flashcard-generation.service";
+export {
+	type DraftGenerationOptions,
+	DraftGenerationService,
+} from "./generation/draft-generation.service";
 // Card event processing
 export {
 	type CardEventFlashcardManager,
@@ -112,6 +116,17 @@ export {
 export { formatAIError } from "./utils/ai-error-handler";
 // Source text fixer
 export { fixBlockSourceTexts, fixSourceText } from "./utils/source-text-fixer";
+// Unified create/modify workflow facade
+export {
+	assistantWorkflowId,
+	type AIWorkflow,
+	type AIWorkflowContext,
+	type AIWorkflowKind,
+	cardPolishWorkflowId,
+	generationWorkflowId,
+	listAIWorkflows,
+	resolveAIWorkflow,
+} from "./workflows/ai-workflow";
 // Image region detection (image occlusion AI)
 export {
 	type DetectRegionsOptions,

@@ -404,6 +404,22 @@ export class CardActionsHandler {
 		}
 	}
 
+	/** Reload the on-screen card content after an external mutation (AI assistant apply). */
+	refreshCurrentCard(): void {
+		const card = this.deps.getReview().getCurrentCard();
+		if (!card) return;
+		const [updated] = this.deps.cardStore.cards.getByIds([card.id]);
+		if (updated) {
+			this.deps
+				.getReview()
+				.updateCurrentCardContent(
+					updated.question ?? card.question,
+					updated.answer ?? card.answer ?? "",
+				);
+		}
+		this.refreshIfActive();
+	}
+
 	private pushBatchCreateUndo(
 		card: { sourceNotePath?: string },
 		createdCards?: Array<{ id: string }>,

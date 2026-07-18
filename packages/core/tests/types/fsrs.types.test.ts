@@ -125,39 +125,21 @@ describe("fsrs.types utilities", () => {
 				expect(formatInterval(14 * 24 * 60)).toBe("14d");
 			});
 
-			it("should return days up to 29d", () => {
-				expect(formatInterval(29 * 24 * 60)).toBe("29d");
-			});
-		});
-
-		describe("month intervals", () => {
-			it("should convert 30 days to 1mo", () => {
-				expect(formatInterval(30 * 24 * 60)).toBe("1mo");
+			it("should return exact days past 30 days instead of months", () => {
+				expect(formatInterval(30 * 24 * 60)).toBe("30d");
+				expect(formatInterval(90 * 24 * 60)).toBe("90d");
+				expect(formatInterval(92 * 24 * 60)).toBe("92d");
+				expect(formatInterval(330 * 24 * 60)).toBe("330d");
 			});
 
-			it("should handle multiple months", () => {
-				expect(formatInterval(60 * 24 * 60)).toBe("2mo");
-				expect(formatInterval(90 * 24 * 60)).toBe("3mo");
-				expect(formatInterval(180 * 24 * 60)).toBe("6mo");
+			it("should return exact days past a year instead of years", () => {
+				expect(formatInterval(365 * 24 * 60)).toBe("365d");
+				expect(formatInterval(730 * 24 * 60)).toBe("730d");
+				expect(formatInterval(10 * 365 * 24 * 60)).toBe("3650d");
 			});
 
-			it("should return months up to 11mo", () => {
-				expect(formatInterval(330 * 24 * 60)).toBe("11mo");
-			});
-		});
-
-		describe("year intervals", () => {
-			it("should convert 365 days to 1y", () => {
-				expect(formatInterval(365 * 24 * 60)).toBe("1y");
-			});
-
-			it("should handle multiple years", () => {
-				expect(formatInterval(730 * 24 * 60)).toBe("2y");
-				expect(formatInterval(1095 * 24 * 60)).toBe("3y");
-			});
-
-			it("should handle large intervals", () => {
-				expect(formatInterval(10 * 365 * 24 * 60)).toBe("10y");
+			it("should round fractional days", () => {
+				expect(formatInterval(36 * 60)).toBe("2d"); // 1.5 days rounds to 2
 			});
 		});
 	});

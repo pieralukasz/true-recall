@@ -17,6 +17,23 @@ export interface ChatMessage {
 	content: string | ContentPart[] | null;
 	tool_calls?: ToolCall[];
 	tool_call_id?: string;
+	annotations?: UrlCitationAnnotation[];
+}
+
+/** OpenRouter message annotation for web-search citations (defensively typed). */
+export interface UrlCitationAnnotation {
+	type: string;
+	url_citation?: {
+		url: string;
+		title?: string;
+		content?: string;
+	};
+}
+
+/** OpenRouter request plugin (e.g. { id: "web" } enables web search). */
+export interface RequestPlugin {
+	id: string;
+	max_results?: number;
 }
 
 export interface ToolCall {
@@ -34,12 +51,27 @@ export interface ToolDefinition {
 	};
 }
 
-interface ChatCompletionRequest {
+/**
+ * OpenRouter prompt-caching breakpoint. Sent at the top level of the request;
+ * OpenRouter applies it to the last cacheable block and advances it forward as
+ * the conversation grows, so the static prefix (system prompt + tools) and
+ * settled history are billed as cache reads instead of full input.
+ */
+export interface CacheControl {
+	type: "ephemeral";
+}
+
+export interface ChatCompletionRequest {
 	messages: ChatMessage[];
 	temperature?: number;
+	/** Hard cap on generated tokens. Prevents runaway output. */
+	max_tokens?: number;
 	tools?: ToolDefinition[];
 	tool_choice?: "auto" | "none";
 	metadata?: Record<string, unknown>;
+	plugins?: RequestPlugin[];
+	/** Prompt caching. Only forwarded to OpenRouter/Pro providers (see chat). */
+	cache_control?: CacheControl;
 }
 
 export interface ChatCompletionResponse {
@@ -140,14 +172,17 @@ export class OpenRouterClient {
 			capability: this.capability,
 		});
 
-		const response = await this.httpClient.post(
-			this.baseUrl,
-			{
-				model: this.model,
-				...request,
-			},
-			headers,
-		);
+		// Prompt caching is an OpenRouter feature; local/custom OpenAI-compatible
+		// endpoints may reject the unknown field, so only forward it there.
+		const { cache_control, ...rest } = request;
+		const body: Record<string, unknown> = { model: this.model, ...rest };
+		const supportsCaching =
+			this.providerType === "openrouter" || this.providerType === "pro";
+		if (cache_control && supportsCaching) {
+			body.cache_control = cache_control;
+		}
+
+		const response = await this.httpClient.post(this.baseUrl, body, headers);
 
 		if (response.status !== 200) {
 			throw new AIRequestError(response.status, response.text);

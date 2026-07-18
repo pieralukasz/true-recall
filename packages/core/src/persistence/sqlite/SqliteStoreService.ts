@@ -8,6 +8,8 @@ import { IntegrityCheckService } from "../../services/maintenance/integrity-chec
 import type { CardSchedulingMeta, FSRSCardData } from "../../types";
 import { NOTIFICATION_DURATION, notify } from "../notification";
 import {
+	AssistantTaskActions,
+	AssistantThreadActions,
 	CardActions,
 	NoteActions,
 	NoteTypeActions,
@@ -47,6 +49,8 @@ export class SqliteStoreService {
 	public readonly notes: NoteActions;
 	public readonly noteTypes: NoteTypeActions;
 	public readonly integrity: IntegrityCheckService;
+	public readonly assistantTasks: AssistantTaskActions;
+	public readonly assistantThreads: AssistantThreadActions;
 
 	constructor(persistence: IPersistence, deviceId: string) {
 		this.persistence = persistence;
@@ -58,6 +62,8 @@ export class SqliteStoreService {
 		this.notes = new NoteActions(this.db);
 		this.noteTypes = new NoteTypeActions(this.db);
 		this.integrity = new IntegrityCheckService(this.db);
+		this.assistantTasks = new AssistantTaskActions(this.db);
+		this.assistantThreads = new AssistantThreadActions(this.db);
 	}
 
 	getSqliteDb(): SqliteDatabase {

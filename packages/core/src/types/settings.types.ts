@@ -16,6 +16,13 @@ export interface ToolbarButtonConfig {
 	enabled: boolean;
 }
 
+/** A saved quick instruction ("chip") for the AI assistant prompt. */
+export interface AssistantPreset {
+	id: string;
+	name: string;
+	instruction: string;
+}
+
 /**
  * Optimization result metrics from FSRS parameter optimization
  */
@@ -350,6 +357,19 @@ export interface TrueRecallSettings {
 	globalToolbarButtons: ToolbarButtonConfig[];
 	/** Button configuration for the image-click toolbar */
 	imageToolbarButtons: ToolbarButtonConfig[];
+
+	/** AI Assistant: model override for the assistant scope ("" = inherit aiModel) */
+	assistantModel: string;
+	/** AI Assistant: enable OpenRouter web search on assistant requests */
+	assistantWebSearch: boolean;
+	/** AI Assistant: global instructions appended to every task's system prompt */
+	assistantInstructions: string;
+	/** AI Assistant: saved quick-instruction chips */
+	assistantPresets: AssistantPreset[];
+	/** AI Assistant: max agent loop iterations per task */
+	assistantMaxIterations: number;
+	/** AI Assistant: max web sources/citations to collect per task */
+	assistantMaxSources: number;
 
 	/** Custom generation prompt — appended to both Pro and BYOK system prompts */
 	aiGenerationPrompt?: string;
