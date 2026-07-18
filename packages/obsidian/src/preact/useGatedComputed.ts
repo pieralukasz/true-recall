@@ -21,6 +21,7 @@ function areDepsEqual(a: readonly unknown[], b: readonly unknown[]): boolean {
 export type GateAction =
 	| { kind: "keep" }
 	| { kind: "recompute" }
+	| { kind: "defer-reveal" }
 	| { kind: "trailing"; delayMs: number };
 
 interface GateActionInput {
@@ -29,12 +30,15 @@ interface GateActionInput {
 	depsChanged: boolean;
 	msSinceLastCompute: number;
 	throttleMs: number;
+	/** True when a defer-reveal was issued and its refresh tick is running. */
+	hasPendingReveal: boolean;
 }
 
 /**
  * Decides what a visible gated computation should do with its cached state.
- * A reveal recomputes immediately — the cached value may be arbitrarily old
- * (the view was unsubscribed while hidden), so throttling it would show
+ * A reveal with stale deps paints the cached frame first ("defer-reveal") and
+ * recomputes on the very next tick, bypassing the throttle — recomputing
+ * synchronously would block the tab switch, while throttling would show
  * stale data for up to `throttleMs` right when the user looks at it.
  */
 export function resolveGateAction({
@@ -42,9 +46,11 @@ export function resolveGateAction({
 	depsChanged,
 	msSinceLastCompute,
 	throttleMs,
+	hasPendingReveal,
 }: GateActionInput): GateAction {
 	if (!depsChanged) return { kind: "keep" };
-	if (becameVisible || msSinceLastCompute >= throttleMs) {
+	if (becameVisible) return { kind: "defer-reveal" };
+	if (hasPendingReveal || msSinceLastCompute >= throttleMs) {
 		return { kind: "recompute" };
 	}
 	return { kind: "trailing", delayMs: throttleMs - msSinceLastCompute };
@@ -57,8 +63,8 @@ export function resolveGateAction({
  * - While the hosting view is hidden, `getDeps` is never called, so signals
  *   read inside it are not subscribed at all — the component neither
  *   re-renders nor recomputes on data changes. The visibility flip back to
- *   true re-renders and recomputes with fresh deps immediately, bypassing
- *   the throttle.
+ *   true paints the cached value first, then recomputes with fresh deps on
+ *   the next tick (bypassing the throttle) so the reveal stays responsive.
  * - While visible, recomputes at most once per `throttleMs`; a throttled
  *   change schedules a trailing refresh so the final state is never dropped.
  *
@@ -74,6 +80,14 @@ export function useGatedComputed<T>(
 	const stateRef = useRef<GatedComputedState<T> | null>(null);
 	const trailingTimerRef = useRef<number | null>(null);
 	const wasVisibleRef = useRef(false);
+	const pendingRevealRef = useRef(false);
+
+	const clearTrailingTimer = () => {
+		if (trailingTimerRef.current !== null) {
+			window.clearTimeout(trailingTimerRef.current);
+			trailingTimerRef.current = null;
+		}
+	};
 
 	const scheduleTrailingRefresh = (delayMs: number) => {
 		if (trailingTimerRef.current !== null) return;
@@ -84,10 +98,7 @@ export function useGatedComputed<T>(
 	};
 
 	const recompute = (deps: readonly unknown[]): GatedComputedState<T> => {
-		if (trailingTimerRef.current !== null) {
-			window.clearTimeout(trailingTimerRef.current);
-			trailingTimerRef.current = null;
-		}
+		clearTrailingTimer();
 		const next: GatedComputedState<T> = {
 			value: compute(),
 			deps,
@@ -111,11 +122,21 @@ export function useGatedComputed<T>(
 			depsChanged: !areDepsEqual(state.deps, deps),
 			msSinceLastCompute: performance.now() - state.computedAt,
 			throttleMs,
+			hasPendingReveal: pendingRevealRef.current,
 		});
 		if (action.kind === "recompute") {
+			pendingRevealRef.current = false;
 			state = recompute(deps);
+		} else if (action.kind === "defer-reveal") {
+			// A pre-hide trailing timer may still be pending with a long delay;
+			// replace it so the reveal refresh lands on the very next tick.
+			pendingRevealRef.current = true;
+			clearTrailingTimer();
+			scheduleTrailingRefresh(0);
 		} else if (action.kind === "trailing") {
 			scheduleTrailingRefresh(action.delayMs);
+		} else {
+			pendingRevealRef.current = false;
 		}
 	}
 
