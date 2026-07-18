@@ -96,6 +96,87 @@ describe("FSRSHelperService", () => {
 		);
 		expect(preview.good.daysChanged).not.toBe(0);
 	});
+
+	describe("getWorkloadDecision", () => {
+		it("suggests the median pace in auto mode when history is rich", () => {
+			const store = createStore({
+				allCards: [],
+				balanceCards: [],
+				dailyReviews: Array.from({ length: 10 }, () => 120),
+			});
+			const helper = new FSRSHelperService(store as never, {
+				...DEFAULT_SETTINGS,
+				loadBalanceTargetMode: "auto",
+			});
+
+			const decision = helper.getWorkloadDecision();
+
+			expect(decision.suggestedTarget).toBe(120);
+			expect(decision.usedPaceFallback).toBe(false);
+			expect(helper.getEffectiveLoadBalanceTarget()).toBe(120);
+		});
+
+		it("falls back to the forecast average when pace history is thin", () => {
+			const cards = createCards("review", 62, State.Review, {
+				due: "2026-02-10T12:00:00.000Z",
+			});
+			const store = createStore({
+				allCards: cards,
+				balanceCards: cards,
+				dailyReviews: [100, 100],
+			});
+			const helper = new FSRSHelperService(store as never, {
+				...DEFAULT_SETTINGS,
+				loadBalanceTargetMode: "auto",
+			});
+
+			const decision = helper.getWorkloadDecision();
+
+			expect(decision.usedPaceFallback).toBe(true);
+			expect(decision.suggestedTarget).toBe(2);
+		});
+
+		it("keeps the manual target as the effective target", () => {
+			const store = createStore({
+				allCards: [],
+				balanceCards: [],
+				dailyReviews: Array.from({ length: 10 }, () => 120),
+			});
+			const helper = new FSRSHelperService(store as never, {
+				...DEFAULT_SETTINGS,
+				loadBalanceTargetMode: "manual",
+				loadBalanceTarget: 80,
+			});
+
+			const decision = helper.getWorkloadDecision();
+
+			expect(decision.effectiveTarget).toBe(80);
+			expect(decision.suggestedTarget).toBe(120);
+		});
+
+		it("projects backlog catch-up at the effective target", () => {
+			const overdue = createCards("overdue", 100, State.Review, {
+				due: "2026-01-15T12:00:00.000Z",
+			});
+			const store = createStore({
+				allCards: overdue,
+				balanceCards: overdue,
+				dailyReviews: Array.from({ length: 14 }, () => 50),
+			});
+			const helper = new FSRSHelperService(store as never, {
+				...DEFAULT_SETTINGS,
+				loadBalanceTargetMode: "auto",
+			});
+
+			const decision = helper.getWorkloadDecision();
+
+			// steady state bottoms out at 1 (computeAutoTarget's Math.max(1, ...))
+			expect(decision.backlogSize).toBe(100);
+			expect(decision.targetFloor).toBe(2);
+			expect(decision.suggestedTarget).toBe(50);
+			expect(decision.catchUp.days).toBe(Math.ceil(100 / 49));
+		});
+	});
 });
 
 interface TestCard {
@@ -136,9 +217,11 @@ function createCardsOnDate(
 function createStore({
 	allCards,
 	balanceCards,
+	dailyReviews = [],
 }: {
 	allCards: ReturnType<typeof createCards>;
 	balanceCards: ReturnType<typeof createCards>;
+	dailyReviews?: number[];
 }) {
 	return {
 		getCards: vi.fn(() => allCards),
@@ -158,6 +241,14 @@ function createStore({
 			},
 		),
 		updateCardDue: vi.fn(),
-		stats: { getDailyStats: vi.fn(() => null) },
+		stats: {
+			getDailyStats: vi.fn(() => null),
+			getDailyStatsFromReviewLog: vi.fn(() =>
+				dailyReviews.map((reviewsCompleted, index) => ({
+					date: `2025-12-${String(index + 1).padStart(2, "0")}`,
+					reviewsCompleted,
+				})),
+			),
+		},
 	};
 }
