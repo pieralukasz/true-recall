@@ -32,5 +32,6 @@ export { SelectInput } from "./SelectInput";
 export { SliderInput } from "./SliderInput";
 // ── Data Display ─────────────────────────────────────────────
 export { StatBadge, StatGrid } from "./StatBadge";
+export { StatusPill } from "./StatusPill";
 export { TextAreaInput } from "./TextAreaInput";
 export { ToggleInput } from "./ToggleInput";
