@@ -8,10 +8,12 @@ import {
 	FormField,
 	SelectInput,
 	SliderInput,
-	TextInput,
 	ToggleInput,
 } from "@true-recall/obsidian/components";
 import { WorkloadForecastSection } from "@true-recall/obsidian/features/metrics/ui/stats/components/WorkloadForecastSection";
+
+import { describeSuggestion, sliderMax } from "./target-copy";
+import { TargetInsights } from "./TargetInsights";
 
 import type { FsrsPluginHost } from "../../../types/plugin-host.types";
 import { useFsrsHelperOp } from "./useFsrsHelperOp";
@@ -24,7 +26,7 @@ interface LoadBalanceSectionProps {
 
 const FORECAST_DAYS = 30;
 const TARGET_MODE_OPTIONS = [
-	{ value: "auto", label: "Automatic (forecast average)" },
+	{ value: "auto", label: "Automatic (suggested from your pace)" },
 	{ value: "manual", label: "Manual" },
 ];
 const BALANCE_RANGE_OPTIONS = [
@@ -82,7 +84,7 @@ export function LoadBalanceSection({
 			forecast: helper.getWorkloadForecast(FORECAST_DAYS),
 			summary: helper.getWorkloadForecastSummary(FORECAST_DAYS),
 			dayOfWeek: helper.getWorkloadByDayOfWeek(FORECAST_DAYS),
-			effectiveTarget: helper.getEffectiveLoadBalanceTarget(),
+			decision: helper.getWorkloadDecision(),
 		};
 	}, [
 		plugin.fsrsHelper,
@@ -123,7 +125,7 @@ export function LoadBalanceSection({
 				name="Daily target"
 				description={
 					settings.loadBalanceTargetMode === "auto" && forecastData
-						? `Automatic: ~${forecastData.effectiveTarget} reviews/day, the average of your upcoming workload (backlog included)`
+						? describeSuggestion(forecastData.decision)
 						: "How the daily review target is determined"
 				}
 			>
@@ -138,21 +140,28 @@ export function LoadBalanceSection({
 				/>
 			</FormField>
 
-			{settings.loadBalanceTargetMode === "manual" && (
+			{settings.loadBalanceTargetMode === "manual" && forecastData ? (
 				<FormField
 					name="Target daily reviews"
-					description="Target number of reviews per day for balancing"
+					description="Pick your number — the line below shows what it commits you to"
 				>
-					<TextInput
-						value={String(settings.loadBalanceTarget)}
-						onChange={(v) => {
-							const num = parseInt(v, 10) || 100;
-							void save({ loadBalanceTarget: Math.max(1, num) });
-						}}
-						placeholder="100"
+					<SliderInput
+						value={settings.loadBalanceTarget}
+						onChange={(v) => void save({ loadBalanceTarget: Math.max(1, v) })}
+						min={1}
+						max={sliderMax(forecastData.decision, settings.loadBalanceTarget)}
+						step={1}
+						formatTooltip={(v) => `${v}/day`}
 					/>
 				</FormField>
-			)}
+			) : null}
+
+			{forecastData ? (
+				<TargetInsights
+					decision={forecastData.decision}
+					target={forecastData.decision.effectiveTarget}
+				/>
+			) : null}
 
 			<FormField
 				name="Maximum deviation (%)"
