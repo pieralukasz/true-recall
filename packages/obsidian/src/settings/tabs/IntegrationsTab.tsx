@@ -10,12 +10,15 @@ import {
 } from "@true-recall/obsidian/components";
 
 import { useSettings } from "../hooks/useSettings";
+import { InkIntegrationSection } from "./integrations/InkIntegrationSection";
 
 export function IntegrationsTab() {
 	const { settings, save, plugin } = useSettings();
 
 	return (
 		<div class="ep:flex ep:flex-col ep:gap-3">
+			<InkIntegrationSection />
+
 			<FormCard title="Local API">
 				<InfoBlock>
 					Expose a local HTTP API for the True Recall CLI. Binds to 127.0.0.1

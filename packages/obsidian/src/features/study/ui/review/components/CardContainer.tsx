@@ -22,6 +22,13 @@ import { AudioPlayButton } from "./AudioPlayButton";
 import { NoteReviewRenderer } from "./NoteReviewRenderer";
 import { IOCardRenderer } from "@true-recall/plugins/image-occlusion";
 
+const INK_EMBED_PATTERN =
+	/(?:!\[Ink(?:Drawing|Writing)\]|[?&]type=ink(?:Drawing|Writing)\b)/i;
+
+function hasInkEmbed(content: string | undefined): boolean {
+	return !!content && INK_EMBED_PATTERN.test(content);
+}
+
 function useAnswerWarmup(
 	isRevealed: boolean,
 	cardId: string,
@@ -186,7 +193,12 @@ export function CardContainer({
 	// Detailed grading feedback is stripped for non-Pro tiers in
 	// SemanticAnswerGradingService — surface that instead of silently hiding it.
 	const isProTier = providerType === "pro";
-	const maxWidth = isMobile() ? "100%" : getReviewMaxWidth(reviewContentWidth);
+	const containsInkEmbed =
+		hasInkEmbed(card.question) || hasInkEmbed(card.answer);
+	const maxWidth =
+		isMobile() || containsInkEmbed
+			? "100%"
+			: getReviewMaxWidth(reviewContentWidth);
 	const maxWidthStyle = `--tr-review-max-width: ${maxWidth}; max-width: ${maxWidth};`;
 
 	const questionContent = card.question;
