@@ -1,7 +1,6 @@
 import { State } from "ts-fsrs";
 
 import type { SqliteStoreService } from "../../persistence/sqlite/SqliteStoreService";
-import { formatLocalDate, getTodayBoundary } from "../../utils";
 import type {
 	FSRSCardData,
 	FSRSSettings,
@@ -10,6 +9,7 @@ import type {
 	TrueRecallSettings,
 } from "../../types";
 import { formatInterval } from "../../types/fsrs/fsrs.utils";
+import { formatLocalDate, getTodayBoundary } from "../../utils";
 import type {
 	OptimizationInput,
 	OptimizationOutput,
@@ -38,6 +38,14 @@ import type {
 } from "./scheduler/scheduler.types";
 import { SiblingDisperseService } from "./scheduler/sibling-disperse.service";
 import {
+	type CatchUpProjection,
+	computePaceStats,
+	computeSuggestedTarget,
+	computeTargetFloor,
+	PACE_LOOKBACK_DAYS,
+	projectCatchUp,
+} from "./scheduler/target-suggestion";
+import {
 	DistributionCalculator,
 	type DistributionStats,
 	type HistogramBucket,
@@ -52,6 +60,27 @@ import {
 	type WorkloadForecastEntry,
 	type WorkloadForecastSummary,
 } from "./statistics/workload-forecast.calculator";
+
+/** Everything the daily-target picker needs to render a conscious choice */
+export interface WorkloadDecision {
+	/** Average upcoming dues per weighted day, backlog excluded */
+	steadyStatePerDay: number;
+	/** Overdue Review cards (due before today) */
+	backlogSize: number;
+	/** Pace below which the backlog grows */
+	targetFloor: number;
+	medianPace: number;
+	p75Pace: number;
+	activeDays: number;
+	/** Median pace floored at the water line; forecast average when history is thin */
+	suggestedTarget: number;
+	/** True when the legacy forecast average filled in for thin pace history */
+	usedPaceFallback: boolean;
+	/** Catch-up projection at the effective target */
+	catchUp: CatchUpProjection;
+	/** Manual target when configured, otherwise suggestedTarget */
+	effectiveTarget: number;
+}
 
 export class FSRSHelperService {
 	private optimizer: ParameterOptimizerService;
@@ -117,28 +146,73 @@ export class FSRSHelperService {
 		return this.optimizer.validateWeights(weights);
 	}
 
-	/** Manual target when configured, undefined in auto mode (core derives it) */
+	/** Manual target when configured, undefined in auto mode (suggestion derives it) */
 	private resolveLoadBalanceTarget(): number | undefined {
 		return this.settings.loadBalanceTargetMode === "manual"
 			? this.settings.loadBalanceTarget
 			: undefined;
 	}
 
-	/** The daily target actually in effect: manual value or forecast average */
+	/** The daily target actually in effect: manual value or the suggested target */
 	getEffectiveLoadBalanceTarget(): number {
-		return (
-			this.resolveLoadBalanceTarget() ??
+		return this.getWorkloadDecision().effectiveTarget;
+	}
+
+	/** Everything the daily-target picker needs to render a conscious choice */
+	getWorkloadDecision(): WorkloadDecision {
+		const steadyStatePerDay = this.loadBalancer.computeAutoTarget(
+			this.settings.easyDays,
+			this.settings.easyDaysMultiplier,
+			false,
+		);
+		const backlogSize = this.loadBalancer.getBacklogSize();
+		const pace = computePaceStats(this.getRecentDailyReviewCounts());
+		const paceTarget = computeSuggestedTarget(
+			pace,
+			steadyStatePerDay,
+			backlogSize,
+		);
+		const suggestedTarget =
+			paceTarget ??
 			this.loadBalancer.computeAutoTarget(
 				this.settings.easyDays,
 				this.settings.easyDaysMultiplier,
-			)
-		);
+			);
+		const effectiveTarget = this.resolveLoadBalanceTarget() ?? suggestedTarget;
+		return {
+			steadyStatePerDay,
+			backlogSize,
+			targetFloor: computeTargetFloor(steadyStatePerDay, backlogSize),
+			medianPace: pace.medianPace,
+			p75Pace: pace.p75Pace,
+			activeDays: pace.activeDays,
+			suggestedTarget,
+			usedPaceFallback: paceTarget === null,
+			catchUp: projectCatchUp(
+				effectiveTarget,
+				steadyStatePerDay,
+				backlogSize,
+				new Date(),
+			),
+			effectiveTarget,
+		};
+	}
+
+	/** Reviews completed per active day over the pace lookback window */
+	private getRecentDailyReviewCounts(): number[] {
+		const end = new Date();
+		const start = new Date(end);
+		start.setDate(start.getDate() - PACE_LOOKBACK_DAYS);
+		return this.cardStore.stats
+			.getDailyStatsFromReviewLog(formatLocalDate(start), formatLocalDate(end))
+			.map((day) => day.reviewsCompleted);
 	}
 
 	balanceWorkload(options?: Partial<LoadBalanceOptions>): SchedulingResult {
 		const days = options?.days ?? this.settings.loadBalanceBulkDays;
 		return this.loadBalancer.balance({
-			targetPerDay: options?.targetPerDay ?? this.resolveLoadBalanceTarget(),
+			targetPerDay:
+				options?.targetPerDay ?? this.getEffectiveLoadBalanceTarget(),
 			maxDeviation:
 				options?.maxDeviation ?? this.settings.loadBalanceMaxDeviation,
 			days: days === 0 ? 36500 : days,

@@ -640,4 +640,26 @@ describe("LoadBalanceService", () => {
 			});
 		});
 	});
+
+	describe("getBacklogSize", () => {
+		it("counts only cards due strictly before today", () => {
+			const cards = [
+				...createCardsOnDate("2026-01-20", 3),
+				...createCardsOnDate("2026-01-31", 2),
+				...createCardsOnDate("2026-02-01", 5),
+				...createCardsOnDate("2026-02-03", 4),
+			];
+			mockStore = createMockCardStore(cards);
+			service = new LoadBalanceService(mockStore);
+
+			expect(service.getBacklogSize()).toBe(5);
+		});
+
+		it("is zero without overdue cards", () => {
+			mockStore = createMockCardStore(createCardsOnDate("2026-02-02", 5));
+			service = new LoadBalanceService(mockStore);
+
+			expect(service.getBacklogSize()).toBe(0);
+		});
+	});
 });

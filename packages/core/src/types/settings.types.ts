@@ -297,7 +297,7 @@ export interface TrueRecallSettings {
 
 	/** Enable automatic load balancing when scheduling */
 	loadBalanceEnabled: boolean;
-	/** How the daily target is determined: computed from the forecast average or set manually */
+	/** How the daily target is determined: suggested from recent pace or set manually */
 	loadBalanceTargetMode: "auto" | "manual";
 	/** Target daily review count for load balancing (manual mode only) */
 	loadBalanceTarget: number;
