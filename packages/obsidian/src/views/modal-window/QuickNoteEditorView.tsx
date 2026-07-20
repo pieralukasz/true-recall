@@ -210,6 +210,9 @@ export class QuickNoteEditorView extends ItemView {
 		const delta = wanted - this.aiPanelWidth;
 		if (delta !== 0) win.resizeTo(win.outerWidth + delta, win.outerHeight);
 		this.aiPanelWidth = wanted;
+		// The right-hand panel is absolutely positioned, so opening or closing it
+		// does not resize the observed editor column by itself.
+		this.scheduleResizeToContent();
 	}
 
 	private centerWindowOnScreen(): void {
@@ -247,14 +250,31 @@ export class QuickNoteEditorView extends ItemView {
 			(win as Window & { ResizeObserver?: typeof ResizeObserver })
 				.ResizeObserver ?? ResizeObserver;
 		const observer = new RO(() => {
+			this.observeContentSizeTargets();
 			this.scheduleResizeToContent();
 		});
 		this.resizeObserver = observer;
-		const target = body.firstElementChild;
-		if (target instanceof HTMLElement) {
-			observer.observe(target);
-		} else {
-			observer.observe(body);
+		this.observeContentSizeTargets();
+	}
+
+	private observeContentSizeTargets(): void {
+		const observer = this.resizeObserver;
+		if (!observer) return;
+		const body = this.contentEl.querySelector<HTMLElement>(
+			".tr-quick-editor-view__body",
+		);
+		if (!body) return;
+
+		const targets = [
+			body.firstElementChild,
+			body.querySelector(".true-recall-quick-editor"),
+			body.querySelector(".tr-quick-editor-ai-col"),
+			body.querySelector(".tr-quick-editor-ai-col > *"),
+			body.querySelector(".tr-quick-editor-ai-drawer"),
+			body.querySelector(".tr-quick-editor-ai-drawer > *"),
+		];
+		for (const target of targets) {
+			if (target instanceof HTMLElement) observer.observe(target);
 		}
 	}
 
@@ -297,12 +317,27 @@ export class QuickNoteEditorView extends ItemView {
 		);
 		const content = body?.firstElementChild;
 		if (!dragBar || !body || !(content instanceof HTMLElement)) return;
+		this.observeContentSizeTargets();
 
 		const bodyStyle = win.getComputedStyle(body);
 		const paddingTop = parseFloat(bodyStyle.paddingTop) || 0;
 		const paddingBottom = parseFloat(bodyStyle.paddingBottom) || 0;
 		const bodyPadding = paddingTop + paddingBottom;
-		const natural = dragBar.offsetHeight + content.offsetHeight + bodyPadding;
+		const editor = content.querySelector<HTMLElement>(
+			".true-recall-quick-editor",
+		);
+		const aiPanel = content.querySelector<HTMLElement>(
+			".tr-quick-editor-ai-col",
+		);
+		const contentHeight = Math.max(
+			content.offsetHeight,
+			content.scrollHeight,
+			editor?.offsetHeight ?? 0,
+			editor?.scrollHeight ?? 0,
+			aiPanel?.offsetHeight ?? 0,
+			aiPanel?.scrollHeight ?? 0,
+		);
+		const natural = dragBar.offsetHeight + contentHeight + bodyPadding;
 		if (!Number.isFinite(natural)) return;
 
 		const chrome = Math.max(0, win.outerHeight - win.innerHeight);
