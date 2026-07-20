@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
 	normalizedSelectedText,
 	selectedTextPreview,
+	sortByInboxAdditionOrder,
 	statusTone,
 } from "../../src/features/assistant/ui/thread-utils";
 
@@ -44,5 +45,39 @@ describe("selectedTextPreview", () => {
 		const preview = selectedTextPreview("x".repeat(200));
 		expect(preview).toHaveLength(140);
 		expect(preview?.endsWith("...")).toBe(true);
+	});
+});
+
+describe("sortByInboxAdditionOrder", () => {
+	it("sorts oldest inbox additions first without mutating display order", () => {
+		const displayOrder = [
+			{ id: "newest", createdAt: 300, updatedAt: 3000 },
+			{ id: "middle", createdAt: 200, updatedAt: 2000 },
+			{ id: "oldest", createdAt: 100, updatedAt: 1000 },
+		];
+
+		const approvalOrder = sortByInboxAdditionOrder(displayOrder);
+
+		expect(approvalOrder.map((thread) => thread.id)).toEqual([
+			"oldest",
+			"middle",
+			"newest",
+		]);
+		expect(displayOrder.map((thread) => thread.id)).toEqual([
+			"newest",
+			"middle",
+			"oldest",
+		]);
+	});
+
+	it("uses creation order when inbox timestamps match", () => {
+		const threads = [
+			{ id: "second", createdAt: 200, updatedAt: 1000 },
+			{ id: "first", createdAt: 100, updatedAt: 1000 },
+		];
+
+		expect(
+			sortByInboxAdditionOrder(threads).map((thread) => thread.id),
+		).toEqual(["first", "second"]);
 	});
 });

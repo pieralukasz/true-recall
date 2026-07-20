@@ -110,6 +110,16 @@ export function hasPendingProposals(thread: AssistantThread): boolean {
 	);
 }
 
+export function sortByInboxAdditionOrder<
+	T extends Pick<AssistantThread, "createdAt" | "updatedAt">,
+>(threads: readonly T[]): T[] {
+	// updatedAt is set when a conversation enters the inbox; manifest reviews
+	// preserve it, so ascending order matches the user's inbox addition order.
+	return [...threads].sort(
+		(a, b) => a.updatedAt - b.updatedAt || a.createdAt - b.createdAt,
+	);
+}
+
 export function statusTone(status: string): StatusPillTone {
 	switch (status) {
 		case "pending":

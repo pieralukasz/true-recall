@@ -14,6 +14,7 @@ import { notify } from "@true-recall/obsidian/services/notification.service";
 import { cn } from "@true-recall/obsidian/utils/cn";
 
 import { AiComposer } from "./AiComposer";
+import { applyPendingProposals } from "./apply-pending-proposals";
 import {
 	contentField,
 	hasPendingProposals,
@@ -342,38 +343,17 @@ export function ThreadWorkspace({
 
 	const applyAll = async () => {
 		if (!manifest || isBusy) return;
-		let appliedCount = 0;
-		let conflicted = 0;
-		let failed = false;
-		for (const proposal of manifest.proposals) {
-			if (proposal.status !== "proposed") continue;
-			const result = await apply.apply(task, proposal, {
-				fields:
-					proposal.type === "create_card" ||
-					proposal.type === "update_card" ||
-					proposal.type === "update_draft"
-						? proposal.fields
-						: undefined,
-			});
-			if (result.conflictFields) {
-				conflicted++;
-				continue;
-			}
-			if (!result.ok) {
-				notify().error(result.error ?? "Could not apply all drafts");
-				failed = true;
-				break;
-			}
-			proposal.status = "applied";
-			appliedCount++;
-		}
+		const result = await applyPendingProposals(task, manifest, apply);
 		persist();
-		if (conflicted > 0) {
+		if (result.conflictedCount > 0) {
 			notify().info(
-				`${conflicted} draft${conflicted === 1 ? "" : "s"} changed since the AI saw them — apply them individually`,
+				`${result.conflictedCount} draft${result.conflictedCount === 1 ? "" : "s"} changed since the AI saw them — apply them individually`,
 			);
 		}
-		if (!failed && appliedCount > 0) notify().success("Applied AI drafts");
+		if (result.error) notify().error(result.error);
+		if (!result.error && result.appliedCount > 0) {
+			notify().success("Applied AI drafts");
+		}
 	};
 
 	const send = () => {

@@ -14,6 +14,7 @@ import {
 	StatusPill,
 } from "@true-recall/obsidian/components";
 import { Q, useQuery } from "@true-recall/obsidian/data";
+import { applyPendingProposals } from "@true-recall/obsidian/features/assistant/ui/apply-pending-proposals";
 import {
 	TaskDetail,
 	ThreadWorkspace,
@@ -22,14 +23,54 @@ import {
 	formatTaskTime,
 	isReviewedTask,
 	selectedTextPreview,
+	sortByInboxAdditionOrder,
 	statusTone,
 	taskStatusLabel,
+	threadTask,
 } from "@true-recall/obsidian/features/assistant/ui/thread-utils";
 import { usePlugin } from "@true-recall/obsidian/preact/ObsidianContext";
+import { AssistantApplyService } from "@true-recall/obsidian/services/assistant/assistant-apply.service";
+import { notify } from "@true-recall/obsidian/services/notification.service";
 import { cn } from "@true-recall/obsidian/utils/cn";
 
 const rowCls =
 	"ep:grid ep:grid-cols-[minmax(0,1fr)_auto] ep:items-start ep:gap-2 ep:min-w-0";
+
+interface ThreadApprovalResult {
+	appliedCount: number;
+	conflictedCount: number;
+	error?: string;
+}
+
+async function approveThreadProposals(
+	plugin: ReturnType<typeof usePlugin>,
+	thread: AssistantThread,
+): Promise<ThreadApprovalResult | null> {
+	const manifest = thread.manifest;
+	if (!manifest || thread.activeTaskId) return null;
+	const result = await applyPendingProposals(
+		threadTask(thread),
+		manifest,
+		new AssistantApplyService(plugin),
+	);
+	plugin.assistantService?.updateThreadManifest(thread.id, manifest);
+	if (!manifest.proposals.some((proposal) => proposal.status === "proposed")) {
+		plugin.assistantService?.archiveThread(thread.id);
+	}
+	return result;
+}
+
+function notifyThreadApproval(result: ThreadApprovalResult): void {
+	if (result.conflictedCount > 0) {
+		notify().info(
+			`${result.conflictedCount} draft${result.conflictedCount === 1 ? "" : "s"} changed since the AI saw them — apply them individually`,
+		);
+	}
+	if (result.error) notify().error(result.error);
+	if (!result.error && result.appliedCount > 0) {
+		notify().success("Applied AI drafts");
+	}
+}
 
 function TaskRowShell({
 	statusClass,
@@ -180,11 +221,15 @@ function AssistantTaskItem({
 function AssistantThreadItem({
 	thread,
 	isOpen,
+	isApproving,
 	onToggle,
+	onApprove,
 }: {
 	thread: AssistantThread;
 	isOpen: boolean;
+	isApproving: boolean;
 	onToggle: () => void;
+	onApprove: () => void;
 }) {
 	const plugin = usePlugin();
 	const pending =
@@ -224,13 +269,24 @@ function AssistantThreadItem({
 							tone={statusTone(thread.activeTaskId ? "working" : status)}
 						/>
 					</Clickable>
-					<IconButton
-						icon="trash-2"
-						ariaLabel="Delete AI conversation"
-						size="small"
-						danger
-						onClick={() => plugin.assistantService?.deleteThread(thread.id)}
-					/>
+					<div class="ep:flex ep:items-center ep:gap-1">
+						{pending > 0 && !thread.activeTaskId ? (
+							<ActionButton
+								label={isApproving ? "Approving…" : "Approve all"}
+								variant="primary"
+								size="sm"
+								disabled={isApproving}
+								onClick={onApprove}
+							/>
+						) : null}
+						<IconButton
+							icon="trash-2"
+							ariaLabel="Delete AI conversation"
+							size="small"
+							danger
+							onClick={() => plugin.assistantService?.deleteThread(thread.id)}
+						/>
+					</div>
 				</div>
 			</header>
 			{isOpen ? (
@@ -249,6 +305,82 @@ export function AssistantInboxApp() {
 	const threadsSignal = useQuery<AssistantThread[]>(Q.ASSISTANT_INBOX);
 	const threads = threadsSignal.value ?? [];
 	const [openId, setOpenId] = useState<string | null>(null);
+	const [approvingIds, setApprovingIds] = useState<Set<string>>(
+		() => new Set(),
+	);
+	const [isApprovingInbox, setIsApprovingInbox] = useState(false);
+	const reviewableThreads = threads.filter(
+		(thread) =>
+			!thread.activeTaskId &&
+			thread.manifest?.proposals.some(
+				(proposal) => proposal.status === "proposed",
+			),
+	);
+	const pendingProposalCount = reviewableThreads.reduce(
+		(total, thread) =>
+			total +
+			(thread.manifest?.proposals.filter(
+				(proposal) => proposal.status === "proposed",
+			).length ?? 0),
+		0,
+	);
+
+	const markApproving = (threadId: string, isApproving: boolean) => {
+		setApprovingIds((current) => {
+			const next = new Set(current);
+			if (isApproving) next.add(threadId);
+			else next.delete(threadId);
+			return next;
+		});
+	};
+
+	const approveOneThread = async (thread: AssistantThread) => {
+		if (approvingIds.has(thread.id) || isApprovingInbox) return;
+		markApproving(thread.id, true);
+		try {
+			const result = await approveThreadProposals(plugin, thread);
+			if (result) notifyThreadApproval(result);
+		} finally {
+			markApproving(thread.id, false);
+		}
+	};
+
+	const approveInbox = async () => {
+		if (isApprovingInbox || reviewableThreads.length === 0) return;
+		setIsApprovingInbox(true);
+		let appliedCount = 0;
+		let conflictedCount = 0;
+		let failedThreadCount = 0;
+		try {
+			for (const thread of sortByInboxAdditionOrder(reviewableThreads)) {
+				markApproving(thread.id, true);
+				try {
+					const result = await approveThreadProposals(plugin, thread);
+					if (!result) continue;
+					appliedCount += result.appliedCount;
+					conflictedCount += result.conflictedCount;
+					if (result.error) failedThreadCount++;
+				} finally {
+					markApproving(thread.id, false);
+				}
+			}
+		} finally {
+			setIsApprovingInbox(false);
+		}
+		if (appliedCount > 0) {
+			notify().success(`Approved ${appliedCount} AI drafts`);
+		}
+		if (conflictedCount > 0) {
+			notify().info(
+				`${conflictedCount} draft${conflictedCount === 1 ? "" : "s"} need individual review`,
+			);
+		}
+		if (failedThreadCount > 0) {
+			notify().error(
+				`Could not finish ${failedThreadCount} conversation${failedThreadCount === 1 ? "" : "s"}`,
+			);
+		}
+	};
 
 	useEffect(() => {
 		const onFocusThread = (e: Event) => {
@@ -290,6 +422,13 @@ export function AssistantInboxApp() {
 					<div class="ep:text-ui-small ep:font-bold">AI Inbox</div>
 					<StatusPill label={String(count)} />
 				</div>
+				<ActionButton
+					label={isApprovingInbox ? "Approving…" : "Approve all"}
+					variant="primary"
+					size="sm"
+					disabled={pendingProposalCount === 0 || isApprovingInbox}
+					onClick={() => void approveInbox()}
+				/>
 			</div>
 
 			{threads.map((thread) => (
@@ -297,7 +436,9 @@ export function AssistantInboxApp() {
 					key={thread.id}
 					thread={thread}
 					isOpen={openId === thread.id}
+					isApproving={approvingIds.has(thread.id) || isApprovingInbox}
 					onToggle={() => setOpenId(openId === thread.id ? null : thread.id)}
+					onApprove={() => void approveOneThread(thread)}
 				/>
 			))}
 

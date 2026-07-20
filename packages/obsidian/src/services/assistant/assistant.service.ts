@@ -183,13 +183,13 @@ export class AssistantService {
 		this.actions().updateManifest(taskId, manifest);
 		const task = this.actions().getById(taskId);
 		if (task?.threadId) {
-			this.threadActions().updateManifest(task.threadId, manifest, Date.now());
+			this.threadActions().updateManifest(task.threadId, manifest);
 		}
 		this.invalidate();
 	}
 
 	updateThreadManifest(threadId: string, manifest: AssistantManifest): void {
-		this.threadActions().updateManifest(threadId, manifest, Date.now());
+		this.threadActions().updateManifest(threadId, manifest);
 		this.invalidate();
 	}
 
@@ -380,7 +380,7 @@ export class AssistantService {
 			applied += 1;
 		}
 		this.actions().updateManifest(task.id, manifest);
-		this.threadActions().updateManifest(threadId, manifest, Date.now());
+		this.threadActions().updateManifest(threadId, manifest);
 		const stillPending = manifest.proposals.some(
 			(proposal) => proposal.status === "proposed",
 		);

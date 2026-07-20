@@ -103,4 +103,33 @@ describe("AssistantThreadActions", () => {
 
 		expect(threads.list("inbox").map((thread) => thread.id)).toEqual(["later"]);
 	});
+
+	it("keeps inbox ordering stable when proposal review updates the manifest", () => {
+		for (const [id, createdAt] of [
+			["older", 1000],
+			["newer", 2000],
+		] as const) {
+			threads.insert({
+				id,
+				title: id,
+				context: {},
+				state: "inbox",
+				message: { id: `m-${id}`, role: "user", content: id, createdAt },
+				activeTaskId: `t-${id}`,
+				createdAt,
+			});
+		}
+
+		const reviewed = structuredClone(INITIAL);
+		const proposal = reviewed.proposals[0];
+		if (proposal) proposal.status = "applied";
+		threads.updateManifest("older", reviewed);
+
+		expect(threads.getById("older")?.manifest).toEqual(reviewed);
+		expect(threads.getById("older")?.updatedAt).toBe(1000);
+		expect(threads.list("inbox").map((thread) => thread.id)).toEqual([
+			"newer",
+			"older",
+		]);
+	});
 });
