@@ -673,15 +673,25 @@ export default class TrueRecallPlugin extends Plugin {
 		});
 	}
 
-	async openAssistantInbox(): Promise<void> {
+	async openAssistantInbox(focusThreadId?: string): Promise<void> {
 		const existingLeaf = getView(this.app, VIEW_TYPE_ASSISTANT_INBOX);
 		if (existingLeaf) {
 			void this.app.workspace.revealLeaf(existingLeaf);
-			return;
+		} else {
+			await activateView(this.app, VIEW_TYPE_ASSISTANT_INBOX, {
+				useMainArea: true,
+			});
 		}
-		await activateView(this.app, VIEW_TYPE_ASSISTANT_INBOX, {
-			useMainArea: true,
-		});
+		if (focusThreadId) {
+			// Give a freshly-mounted inbox one tick to register its listener.
+			window.setTimeout(() => {
+				window.dispatchEvent(
+					new CustomEvent("true-recall:assistant-focus-thread", {
+						detail: { threadId: focusThreadId },
+					}),
+				);
+			}, 50);
+		}
 	}
 
 	openCardTypesEditor(noteTypeId?: string): void {

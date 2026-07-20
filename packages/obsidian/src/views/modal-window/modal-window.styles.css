@@ -237,3 +237,46 @@
 	color: var(--text-muted);
 	text-align: center;
 }
+
+/* ── Quick note editor AI panel (satellite flyout / drawer) ─────────
+   The editor column never moves: in "right" placement the popout window
+   grows rightward and the panel occupies the reserved lane; in "drawer"
+   placement the panel docks under the footer with its own scroll. Both
+   panel variants are the single scroll container for the thread. */
+
+.tr-quick-editor-layout {
+	position: relative;
+	display: flex;
+	flex-direction: column;
+	/* No min-height: 0 here — QuickNoteEditorView.resizeWindowToContent()
+	   measures this element's offsetHeight to grow the popout window to fit.
+	   min-height: 0 would let it collapse to the (small) window height and
+	   deadlock the grow-to-fit loop at the opening size. */
+}
+
+.tr-quick-editor-layout.has-ai-right {
+	/* AI_PANEL_WIDTH (400) + AI_PANEL_GAP (12) */
+	padding-right: 412px;
+}
+
+.tr-quick-editor-ai-col {
+	position: absolute;
+	top: 0;
+	right: 0;
+	bottom: 0;
+	width: 400px;
+	overflow-y: auto;
+	padding: 12px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 12px;
+	background: var(--background-primary);
+	box-shadow: var(--shadow-s);
+}
+
+.tr-quick-editor-ai-drawer {
+	margin-top: 4px;
+	padding-top: 12px;
+	border-top: 1px solid var(--background-modifier-border);
+	max-height: 40vh;
+	overflow-y: auto;
+}

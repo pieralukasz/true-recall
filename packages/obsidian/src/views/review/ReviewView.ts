@@ -67,6 +67,7 @@ import { mountPreact } from "@true-recall/obsidian/preact";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 import { lastMutation } from "@true-recall/obsidian/services/signals";
 import type { ReviewApi } from "@true-recall/obsidian/store";
+import { runWhenLayoutReady } from "@true-recall/obsidian/views/layout-ready";
 import {
 	ReviewApp,
 	ReviewEmptyState,
@@ -471,7 +472,14 @@ export class ReviewView extends ItemView {
 		this.resetTypeInState();
 
 		await super.setState(state, result);
-		await this.startSession();
+		// During startup restore, enrichment (frontmatter index, hierarchy
+		// graph) is only populated at layout-ready — a queue built earlier is
+		// silently empty for note-/project-scoped filters and shows a false
+		// "Congratulations" empty state that never retries.
+		await runWhenLayoutReady(this.app.workspace, {
+			isAttached: () => this.containerEl.isConnected,
+			run: () => this.startSession(),
+		});
 	}
 
 	getState() {

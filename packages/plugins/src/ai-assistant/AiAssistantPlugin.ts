@@ -14,6 +14,9 @@ export class AiAssistantPlugin {
 	constructor(private ctx: PluginContext) {}
 
 	activate(): void {
+		// Anchor-less invocations (selection toolbar, whole-card actions) still
+		// arrive via this event and open the neutral Ask AI modal. The quick
+		// note editor no longer dispatches it — it hosts its own AI panel.
 		this.listener = (e: Event) => {
 			const detail = (e as CustomEvent<{ context: AssistantContext }>).detail;
 			if (!detail) return;

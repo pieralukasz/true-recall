@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "preact/hooks";
+import { useState } from "preact/hooks";
 
 import type { AssistantContext } from "@true-recall/core/ai/assistant";
 import { listAIWorkflows } from "@true-recall/core/ai/workflows/ai-workflow";
@@ -8,8 +8,7 @@ import { usePlugin } from "@true-recall/obsidian/preact/ObsidianContext";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 import { cn } from "@true-recall/obsidian/utils/cn";
 
-/** Cap the auto-growing textarea so a long draft scrolls instead of shoving the toolbar off-screen. */
-const MAX_INPUT_HEIGHT = 200;
+import { AiComposer } from "./AiComposer";
 
 interface AskAiPromptProps {
 	context: AssistantContext;
@@ -19,6 +18,7 @@ interface AskAiPromptProps {
 	) => void;
 	onDismiss: () => void;
 	autoFocus?: boolean;
+	class?: string;
 }
 
 export function AskAiPrompt({
@@ -26,10 +26,10 @@ export function AskAiPrompt({
 	onSubmitted,
 	onDismiss,
 	autoFocus = true,
+	class: cls,
 }: AskAiPromptProps) {
 	const plugin = usePlugin();
 	const [text, setText] = useState("");
-	const inputRef = useRef<HTMLTextAreaElement>(null);
 	const workflows = listAIWorkflows(plugin.settings, {
 		hasSelection: !!context.selectedText?.trim(),
 		hasCard: !!context.card,
@@ -37,18 +37,6 @@ export function AskAiPrompt({
 	});
 	const selectedText = context.selectedText?.trim();
 	const canSend = text.trim() !== "";
-
-	const adjustHeight = () => {
-		const el = inputRef.current;
-		if (!el) return;
-		el.style.height = "auto";
-		el.style.height = `${Math.min(el.scrollHeight, MAX_INPUT_HEIGHT)}px`;
-	};
-
-	useEffect(() => {
-		adjustHeight();
-		if (autoFocus) inputRef.current?.focus();
-	}, [autoFocus]);
 
 	const submit = (
 		instruction: string,
@@ -74,86 +62,56 @@ export function AskAiPrompt({
 	};
 
 	return (
-		<div class="tr-ask-ai-box">
-			{selectedText && (
-				<div class="tr-ask-ai-selected">
-					<div class="tr-ask-ai-selected-label">Selected text</div>
-					<div class="tr-ask-ai-selected-text">{selectedText}</div>
-				</div>
-			)}
-			<textarea
-				ref={inputRef}
-				class="tr-ask-ai-field"
-				placeholder="Ask AI about this… (Enter = run here, Shift+Enter = newline)"
-				rows={1}
-				value={text}
-				onInput={(e) => {
-					setText((e.target as HTMLTextAreaElement).value);
-					adjustHeight();
-				}}
-				onKeyDown={(e) => {
-					if (e.key === "Enter" && !e.shiftKey) {
-						e.preventDefault();
-						submit(text, undefined, "inline");
+		<AiComposer
+			class={cls}
+			value={text}
+			onChange={setText}
+			onSubmit={() => submit(text, undefined, "inline")}
+			onDismiss={onDismiss}
+			autoFocus={autoFocus}
+			placeholder="Ask AI about this… (Enter = run here, Shift+Enter = newline)"
+			header={
+				selectedText ? (
+					<div class="ep:flex ep:flex-col ep:gap-1 ep:p-2 ep:border ep:border-obs-border ep:rounded-md ep:bg-surface-raised">
+						<div class="ep:text-ui-smaller ep:font-semibold ep:uppercase ep:tracking-wide ep:text-obs-muted">
+							Selected text
+						</div>
+						<div class="ep:text-ui-small ep:whitespace-pre-wrap ep:break-words ep:text-obs-normal">
+							{selectedText}
+						</div>
+					</div>
+				) : undefined
+			}
+			chips={workflows.map((workflow) => (
+				<Clickable
+					key={workflow.id}
+					class="ep:px-2.5 ep:py-0.5 ep:text-ui-smaller ep:bg-obs-modifier-hover ep:hover:bg-obs-border ep:rounded-full"
+					title={workflow.instruction}
+					onClick={() =>
+						submit(
+							workflow.instruction,
+							workflow.id,
+							workflow.kind === "generate-cards" ? "background" : "inline",
+							workflow.name,
+						)
 					}
-					if (e.key === "Escape") onDismiss();
-				}}
-			/>
-			<div class="tr-ask-ai-toolbar">
-				<div class="tr-ask-ai-presets">
-					{workflows.map((workflow) => (
-						<Clickable
-							key={workflow.id}
-							class="tr-ask-ai-chip"
-							title={workflow.instruction}
-							onClick={() =>
-								submit(
-									workflow.instruction,
-									workflow.id,
-									workflow.kind === "generate-cards" ? "background" : "inline",
-									workflow.name,
-								)
-							}
-						>
-							{workflow.name}
-						</Clickable>
-					))}
-				</div>
-				<div class="tr-ask-ai-send-group">
-					<Clickable
-						class={cn("tr-ask-ai-run", !canSend && "is-disabled")}
-						disabled={!canSend}
-						title="Run and open the AI inbox"
-						onClick={() => submit(text, undefined, "inbox")}
-					>
-						Run &amp; show
-					</Clickable>
-					<Clickable
-						class="tr-ask-ai-send-btn"
-						disabled={!canSend}
-						aria-label="Run here"
-						title="Run here (Enter)"
-						onClick={() => submit(text, undefined, "inline")}
-					>
-						<svg
-							xmlns="http://www.w3.org/2000/svg"
-							width="16"
-							height="16"
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="2.4"
-							stroke-linecap="round"
-							stroke-linejoin="round"
-							role="img"
-							aria-hidden="true"
-						>
-							<path d="M12 19V5" />
-							<path d="m5 12 7-7 7 7" />
-						</svg>
-					</Clickable>
-				</div>
-			</div>
-		</div>
+				>
+					{workflow.name}
+				</Clickable>
+			))}
+			trailing={
+				<Clickable
+					class={cn(
+						"ep:px-2 ep:py-0.5 ep:rounded-md ep:text-ui-smaller ep:text-obs-muted ep:hover:text-obs-normal ep:hover:bg-obs-modifier-hover",
+						!canSend && "ep:opacity-50",
+					)}
+					disabled={!canSend}
+					title="Run and open the AI inbox"
+					onClick={() => submit(text, undefined, "inbox")}
+				>
+					Run &amp; show
+				</Clickable>
+			}
+		/>
 	);
 }

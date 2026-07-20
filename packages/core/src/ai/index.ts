@@ -46,15 +46,15 @@ export {
 	ChunkedGenerationService,
 	type ConfirmLargeNote,
 } from "./generation/chunked-generation.service";
+export {
+	type DraftGenerationOptions,
+	DraftGenerationService,
+} from "./generation/draft-generation.service";
 // Flashcard generation (non-streaming)
 export {
 	FlashcardGenerationService,
 	type GenerationResult,
 } from "./generation/flashcard-generation.service";
-export {
-	type DraftGenerationOptions,
-	DraftGenerationService,
-} from "./generation/draft-generation.service";
 // Card event processing
 export {
 	type CardEventFlashcardManager,
@@ -116,17 +116,6 @@ export {
 export { formatAIError } from "./utils/ai-error-handler";
 // Source text fixer
 export { fixBlockSourceTexts, fixSourceText } from "./utils/source-text-fixer";
-// Unified create/modify workflow facade
-export {
-	assistantWorkflowId,
-	type AIWorkflow,
-	type AIWorkflowContext,
-	type AIWorkflowKind,
-	cardPolishWorkflowId,
-	generationWorkflowId,
-	listAIWorkflows,
-	resolveAIWorkflow,
-} from "./workflows/ai-workflow";
 // Image region detection (image occlusion AI)
 export {
 	type DetectRegionsOptions,
@@ -134,3 +123,14 @@ export {
 	getMimeType,
 	parseAIRegions,
 } from "./vision/image-region-detection";
+// Unified create/modify workflow facade
+export {
+	type AIWorkflow,
+	type AIWorkflowContext,
+	type AIWorkflowKind,
+	assistantWorkflowId,
+	cardPolishWorkflowId,
+	generationWorkflowId,
+	listAIWorkflows,
+	resolveAIWorkflow,
+} from "./workflows/ai-workflow";

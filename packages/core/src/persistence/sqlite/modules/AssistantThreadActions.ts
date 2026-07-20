@@ -169,15 +169,13 @@ export class AssistantThreadActions {
 		);
 	}
 
-	updateManifest(
-		id: string,
-		manifest: AssistantManifest,
-		updatedAt: number,
-	): void {
-		this.db.run(
-			`UPDATE assistant_threads SET manifest_json = ?, updated_at = ? WHERE id = ?`,
-			[JSON.stringify(manifest), updatedAt, id],
-		);
+	updateManifest(id: string, manifest: AssistantManifest): void {
+		// Reviewing a proposal is not new conversation activity. Preserve the
+		// timestamp so an expanded thread does not jump within the sorted inbox.
+		this.db.run(`UPDATE assistant_threads SET manifest_json = ? WHERE id = ?`, [
+			JSON.stringify(manifest),
+			id,
+		]);
 	}
 
 	setState(id: string, state: AssistantThreadState, updatedAt: number): void {

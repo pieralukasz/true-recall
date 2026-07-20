@@ -20,19 +20,53 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Verify tag is on release branch
+      - name: Resolve release channel
+        id: channel
         run: |
-          tag="${GITHUB_REF#refs/tags/}"
-          tag_sha=$(git rev-list -n 1 "$tag")
-          if ! git branch -r --contains "$tag_sha" | grep -q 'origin/release'; then
-            echo "::error::Tag '$tag' is not on the 'release' branch."
-            echo "Release flow: main -> PR -> pre-release -> PR -> release -> tag"
+          tag="${GITHUB_REF_NAME}"
+
+          if [[ "$tag" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            required_branch="release"
+            prerelease="false"
+          elif [[ "$tag" =~ ^[0-9]+\.[0-9]+\.[0-9]+-beta\.[0-9]+$ ]]; then
+            required_branch="pre-release"
+            prerelease="true"
+          else
+            echo "::error::Unsupported release tag '$tag'."
+            echo "Use X.Y.Z for stable releases or X.Y.Z-beta.N for BRAT betas."
             exit 1
           fi
-          echo "Tag '$tag' verified on release branch."
+
+          tag_sha=$(git rev-list -n 1 "$tag")
+          if ! git branch -r --contains "$tag_sha" | sed 's/^[* ]*//' | grep -Fxq "origin/${required_branch}"; then
+            echo "::error::Tag '$tag' is not on the '$required_branch' branch."
+            echo "Stable tags belong on release; beta tags belong on pre-release."
+            exit 1
+          fi
+
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "prerelease=$prerelease" >> "$GITHUB_OUTPUT"
+          echo "Tag '$tag' verified on $required_branch ($([[ $prerelease == true ]] && echo beta || echo stable))."
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
+
+      - name: Prepare release manifest
+        env:
+          RELEASE_TAG: ${{ steps.channel.outputs.tag }}
+          IS_PRERELEASE: ${{ steps.channel.outputs.prerelease }}
+        run: |
+          bun -e '
+            const manifest = await Bun.file("manifest.json").json();
+            const tag = process.env.RELEASE_TAG;
+            if (!tag) throw new Error("Missing RELEASE_TAG");
+            if (process.env.IS_PRERELEASE === "true") {
+              manifest.version = tag;
+              await Bun.write("manifest.json", `${JSON.stringify(manifest, null, "\t")}\n`);
+            } else if (manifest.version !== tag) {
+              throw new Error(`Stable tag ${tag} does not match manifest version ${manifest.version}`);
+            }
+          '
 
       - name: Build plugin
         run: |
@@ -41,7 +75,7 @@ jobs:
 
       - name: Extract release notes
         run: |
-          tag="${GITHUB_REF#refs/tags/}"
+          tag="${{ steps.channel.outputs.tag }}"
           awk -v tag="$tag" '
             $0 ~ "^## " tag " " { flag=1; next }
             /^## [0-9]/         { flag=0 }
@@ -56,15 +90,23 @@ jobs:
         with:
           subject-path: |
             main.js
+            manifest.json
             styles.css
 
       - name: Create release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ steps.channel.outputs.tag }}
+          IS_PRERELEASE: ${{ steps.channel.outputs.prerelease }}
         run: |
-          tag="${GITHUB_REF#refs/tags/}"
+          release_flags=()
+          if [[ "$IS_PRERELEASE" == "true" ]]; then
+            release_flags+=(--prerelease)
+          fi
 
-          gh release create "$tag" \
-            --title="$tag" \
+          gh release create "$RELEASE_TAG" \
+            --verify-tag \
+            --title="$RELEASE_TAG" \
             --notes-file release-notes.md \
+            "${release_flags[@]}" \
             main.js manifest.json styles.css

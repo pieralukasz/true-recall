@@ -1,7 +1,7 @@
+import type { ComponentChildren } from "preact";
 import { useEffect, useState } from "preact/hooks";
 
 import type {
-	AssistantProposal,
 	AssistantTask,
 	AssistantThread,
 } from "@true-recall/core/ai/assistant";
@@ -9,578 +9,85 @@ import type {
 import {
 	ActionButton,
 	Clickable,
+	EmptyState,
 	IconButton,
-	TextInput,
+	StatusPill,
 } from "@true-recall/obsidian/components";
 import { Q, useQuery } from "@true-recall/obsidian/data";
+import { applyPendingProposals } from "@true-recall/obsidian/features/assistant/ui/apply-pending-proposals";
+import {
+	TaskDetail,
+	ThreadWorkspace,
+} from "@true-recall/obsidian/features/assistant/ui/ThreadWorkspace";
+import {
+	formatTaskTime,
+	isReviewedTask,
+	selectedTextPreview,
+	sortByInboxAdditionOrder,
+	statusTone,
+	taskStatusLabel,
+	threadTask,
+} from "@true-recall/obsidian/features/assistant/ui/thread-utils";
 import { usePlugin } from "@true-recall/obsidian/preact/ObsidianContext";
+import { AssistantApplyService } from "@true-recall/obsidian/services/assistant/assistant-apply.service";
 import { notify } from "@true-recall/obsidian/services/notification.service";
+import { cn } from "@true-recall/obsidian/utils/cn";
 
-import { AssistantApplyService } from "../../services/assistant/assistant-apply.service";
-import { CardAIField } from "@true-recall/plugins/shared/CardAIField";
+const rowCls =
+	"ep:grid ep:grid-cols-[minmax(0,1fr)_auto] ep:items-start ep:gap-2 ep:min-w-0";
 
-function proposalTitle(p: AssistantProposal): string {
-	switch (p.type) {
-		case "create_card":
-			return "New card";
-		case "update_card":
-			return "Card edit";
-		case "update_draft":
-			return "Draft card edit";
-		case "append_to_note":
-			return `Append to ${p.path}`;
-		case "create_note":
-			return `New note: ${p.title}`;
-		case "insert_diagram":
-			return `Diagram (${p.format})`;
-		case "attach_images":
-			return `Images (${p.candidates.length} found)`;
-	}
+interface ThreadApprovalResult {
+	appliedCount: number;
+	conflictedCount: number;
+	error?: string;
 }
 
-function formatTaskTime(task: AssistantTask): string {
-	const timestamp = task.finishedAt ?? task.createdAt;
-	return new Date(timestamp).toLocaleString(undefined, {
-		month: "short",
-		day: "numeric",
-		hour: "2-digit",
-		minute: "2-digit",
-	});
-}
-
-function taskStatusLabel(task: AssistantTask): string {
-	if (task.status !== "done") return task.status;
-	const proposals = task.manifest?.proposals ?? [];
-	if (proposals.length === 0) return "no proposals";
-	const pending = proposals.filter((p) => p.status === "proposed").length;
-	if (pending === 0) return "reviewed";
-	return `${pending} to review`;
-}
-
-function isReviewedTask(task: AssistantTask): boolean {
-	const proposals = task.manifest?.proposals ?? [];
-	return (
-		task.status === "done" &&
-		proposals.length > 0 &&
-		proposals.every((p) => p.status !== "proposed")
-	);
-}
-
-function normalizedSelectedText(text: string | undefined): string | null {
-	const trimmed = text?.replace(/\s+/g, " ").trim();
-	if (!trimmed) return null;
-	return trimmed;
-}
-
-function selectedTextPreview(text: string | undefined): string | null {
-	const normalized = normalizedSelectedText(text);
-	if (!normalized) return null;
-	return normalized.length > 140
-		? `${normalized.slice(0, 137)}...`
-		: normalized;
-}
-
-/** Editable text content for the non-card proposal types (null = not applicable). */
-function contentField(
-	p: AssistantProposal,
-): { label: string; value: string } | null {
-	switch (p.type) {
-		case "append_to_note":
-		case "create_note":
-			return { label: "Content", value: p.markdown };
-		case "insert_diagram":
-			return { label: `Diagram (${p.format})`, value: p.code };
-		default:
-			return null;
-	}
-}
-
-function ProposalCard({
-	task,
-	proposal,
-	apply,
-	persist,
-	persistDraft,
-	index,
-}: {
-	task: AssistantTask;
-	proposal: AssistantProposal;
-	apply: AssistantApplyService;
-	persist: () => void;
-	persistDraft?: () => void;
-	index?: number;
-}) {
-	const isCard =
-		proposal.type === "create_card" ||
-		proposal.type === "update_card" ||
-		proposal.type === "update_draft";
-	const content = contentField(proposal);
-
-	const [fields, setFields] = useState<Record<string, string>>(() =>
-		isCard ? { ...proposal.fields } : {},
-	);
-	const [text, setText] = useState(() => content?.value ?? "");
-	const [imageSel, setImageSel] = useState<Set<number>>(() => new Set());
-
-	const runApply = async (force = false) => {
-		// Sync local edits onto the proposal before applying.
-		if (isCard) proposal.fields = fields;
-		if (proposal.type === "append_to_note" || proposal.type === "create_note") {
-			proposal.markdown = text;
-		}
-		if (proposal.type === "insert_diagram") proposal.code = text;
-		if (proposal.type === "attach_images") {
-			proposal.candidates.forEach((c, i) => {
-				c.selected = imageSel.has(i);
-			});
-		}
-
-		const result = await apply.apply(task, proposal, {
-			fields: isCard ? fields : undefined,
-			force,
-		});
-		if (result.ok) {
-			proposal.status = "applied";
-			persist();
-			notify().success("Applied");
-		} else if (result.conflictFields) {
-			const confirmed = activeWindow.confirm(
-				`Fields changed since the AI saw them: ${result.conflictFields.join(", ")}. Apply anyway?`,
-			);
-			if (confirmed) await runApply(true);
-		} else if (result.error) {
-			notify().error(result.error);
-		}
-	};
-
-	const reject = () => {
-		proposal.status = "rejected";
-		persist();
-	};
-	const stateClass =
-		proposal.status === "proposed"
-			? "is-proposed is-selected"
-			: `is-${proposal.status}`;
-
-	return (
-		<article class={`tr-card-ai-preview-new-card ${stateClass}`}>
-			<header class="tr-card-ai-preview-new-card-header">
-				<span class="tr-card-ai-preview-new-card-index">
-					{proposalTitle(proposal)}
-					{index ? ` #${index}` : ""}
-				</span>
-				<span class="tr-inbox-status">{proposal.status}</span>
-			</header>
-
-			{proposal.status === "proposed" && (
-				<div class="tr-card-ai-preview-new-card-body">
-					{isCard &&
-						Object.keys(proposal.fields).map((name) => (
-							<CardAIField
-								key={name}
-								label={name}
-								value={fields[name] ?? ""}
-								onChange={(v) => {
-									const next = { ...fields, [name]: v };
-									setFields(next);
-									proposal.fields = next;
-									persistDraft?.();
-								}}
-							/>
-						))}
-
-					{content && (
-						<CardAIField
-							label={content.label}
-							value={text}
-							onChange={setText}
-						/>
-					)}
-
-					{proposal.type === "attach_images" && (
-						<div class="tr-inbox-images">
-							{proposal.candidates.map((c, i) => (
-								<label key={c.url} class="tr-inbox-image">
-									<input
-										type="checkbox"
-										checked={imageSel.has(i)}
-										onChange={() =>
-											setImageSel((prev) => {
-												const next = new Set(prev);
-												if (next.has(i)) next.delete(i);
-												else next.add(i);
-												return next;
-											})
-										}
-									/>
-									<img
-										src={c.thumbnailUrl ?? c.url}
-										alt={c.title ?? ""}
-										loading="lazy"
-									/>
-									<span>
-										{c.title ?? c.url} {c.license ? `(${c.license})` : ""}
-									</span>
-								</label>
-							))}
-						</div>
-					)}
-
-					<div class="tr-card-ai-preview-actions">
-						<ActionButton
-							label="Apply"
-							variant="primary"
-							onClick={() => void runApply()}
-						/>
-						<ActionButton label="Reject" variant="ghost" onClick={reject} />
-					</div>
-				</div>
-			)}
-		</article>
-	);
-}
-
-export function TaskDetail({
-	task,
-	onReviewed,
-}: {
-	task: AssistantTask;
-	onReviewed?: () => void;
-}) {
-	const plugin = usePlugin();
-	const [feedback, setFeedback] = useState("");
-	const [, forceRender] = useState(0);
-	const manifest = task.manifest;
-	if (!manifest) return null;
-	const apply = new AssistantApplyService(plugin);
-
-	const persist = () => {
-		plugin.assistantService?.updateManifest(task.id, manifest);
-		if (isReviewedTask(task)) {
-			plugin.assistantService?.delete(task.id);
-			onReviewed?.();
-			return;
-		}
-		forceRender((n) => n + 1);
-	};
-	const selectedText = normalizedSelectedText(task.context.selectedText);
-
-	return (
-		<div class="tr-card-ai-preview-root tr-inbox-detail">
-			{selectedText && (
-				<section class="tr-inbox-selected">
-					<div class="tr-inbox-selected-label">Selected text</div>
-					<div class="tr-inbox-selected-text">{selectedText}</div>
-				</section>
-			)}
-
-			{manifest.citations.length > 0 && (
-				<section class="tr-card-ai-preview-section">
-					<h5 class="tr-card-ai-preview-column-title">Sources</h5>
-					<div class="tr-inbox-citations">
-						{manifest.citations.map((c) => (
-							<a key={c.url} href={c.url} rel="noopener">
-								{c.title ?? c.url}
-							</a>
-						))}
-					</div>
-				</section>
-			)}
-
-			{manifest.finalText && <p class="tr-inbox-final">{manifest.finalText}</p>}
-
-			<div class="tr-card-ai-preview-new-list">
-				{manifest.proposals.map((proposal) => (
-					<ProposalCard
-						key={proposal.id}
-						task={task}
-						proposal={proposal}
-						apply={apply}
-						persist={persist}
-					/>
-				))}
-			</div>
-
-			<div class="tr-inbox-retry">
-				<span class="tr-inbox-retry-label">Retry with feedback</span>
-				<TextInput
-					value={feedback}
-					onChange={setFeedback}
-					placeholder="Feedback for retry (optional)…"
-				/>
-				<ActionButton
-					label="Retry"
-					variant="secondary"
-					onClick={() => {
-						plugin.assistantService?.retryWithFeedback(task, feedback);
-						setFeedback("");
-					}}
-				/>
-			</div>
-		</div>
-	);
-}
-
-function threadTask(
+async function approveThreadProposals(
+	plugin: ReturnType<typeof usePlugin>,
 	thread: AssistantThread,
-	activeTask?: AssistantTask,
-): AssistantTask {
-	return (
-		activeTask ?? {
-			id: thread.id,
-			threadId: thread.id,
-			instruction: thread.title,
-			context: thread.context,
-			status: "done",
-			manifest: thread.manifest,
-			createdAt: thread.createdAt,
-			finishedAt: thread.updatedAt,
-		}
-	);
-}
-
-function hasPendingProposals(thread: AssistantThread): boolean {
-	return (
-		thread.manifest?.proposals.some(
-			(proposal) => proposal.status === "proposed",
-		) ?? false
-	);
-}
-
-export function ThreadWorkspace({
-	thread,
-	onClose,
-	inline = false,
-}: {
-	thread: AssistantThread;
-	onClose?: () => void;
-	inline?: boolean;
-}) {
-	const plugin = usePlugin();
-	const tasks = useQuery<AssistantTask[]>(Q.ASSISTANT_TASKS).value ?? [];
-	const activeTask = thread.activeTaskId
-		? tasks.find((task) => task.id === thread.activeTaskId)
-		: undefined;
-	const task = threadTask(thread, activeTask);
-	const progress = plugin.assistantService?.progress.value;
+): Promise<ThreadApprovalResult | null> {
 	const manifest = thread.manifest;
-	const [message, setMessage] = useState("");
-	const [, forceRender] = useState(0);
-	const apply = new AssistantApplyService(plugin);
-	const isBusy = !!thread.activeTaskId;
+	if (!manifest || thread.activeTaskId) return null;
+	const result = await applyPendingProposals(
+		threadTask(thread),
+		manifest,
+		new AssistantApplyService(plugin),
+	);
+	plugin.assistantService?.updateThreadManifest(thread.id, manifest);
+	if (!manifest.proposals.some((proposal) => proposal.status === "proposed")) {
+		plugin.assistantService?.archiveThread(thread.id);
+	}
+	return result;
+}
 
-	const persist = () => {
-		if (!manifest) return;
-		plugin.assistantService?.updateThreadManifest(thread.id, manifest);
-		if (!hasPendingProposals({ ...thread, manifest })) {
-			plugin.assistantService?.archiveThread(thread.id);
-			onClose?.();
-			return;
-		}
-		forceRender((value) => value + 1);
-	};
+function notifyThreadApproval(result: ThreadApprovalResult): void {
+	if (result.conflictedCount > 0) {
+		notify().info(
+			`${result.conflictedCount} draft${result.conflictedCount === 1 ? "" : "s"} changed since the AI saw them — apply them individually`,
+		);
+	}
+	if (result.error) notify().error(result.error);
+	if (!result.error && result.appliedCount > 0) {
+		notify().success("Applied AI drafts");
+	}
+}
 
-	const applyAll = async () => {
-		if (!manifest || isBusy) return;
-		let appliedCount = 0;
-		let failed = false;
-		for (const proposal of manifest.proposals) {
-			if (proposal.status !== "proposed") continue;
-			let result = await apply.apply(task, proposal, {
-				fields:
-					proposal.type === "create_card" ||
-					proposal.type === "update_card" ||
-					proposal.type === "update_draft"
-						? proposal.fields
-						: undefined,
-			});
-			if (result.conflictFields) {
-				const confirmed = activeWindow.confirm(
-					`Fields changed since AI saw them: ${result.conflictFields.join(", ")}. Apply anyway?`,
-				);
-				if (confirmed)
-					result = await apply.apply(task, proposal, { force: true });
-			}
-			if (!result.ok) {
-				notify().error(result.error ?? "Could not apply all drafts");
-				failed = true;
-				break;
-			}
-			proposal.status = "applied";
-			appliedCount++;
-		}
-		persist();
-		if (!failed && appliedCount > 0) notify().success("Applied AI drafts");
-	};
-
-	const send = () => {
-		if (!message.trim() || isBusy) return;
-		const taskId = plugin.assistantService?.continueThread(thread.id, message);
-		if (taskId) setMessage("");
-	};
-
-	const discard = () => {
-		if (
-			hasPendingProposals(thread) &&
-			!activeWindow.confirm("Discard this AI draft conversation?")
-		) {
-			return;
-		}
-		plugin.assistantService?.deleteThread(thread.id);
-		onClose?.();
-	};
-
+function TaskRowShell({
+	statusClass,
+	children,
+}: {
+	statusClass?: string;
+	children: ComponentChildren;
+}) {
 	return (
-		<div
-			class={`tr-ask-ai-box tr-assistant-thread-workspace${inline ? " tr-assistant-inline-task" : ""}`}
+		<article
+			class={cn(
+				"ep:min-w-0 ep:overflow-hidden ep:rounded-lg ep:border ep:border-obs-border ep:bg-surface-raised ep:transition-colors",
+				statusClass,
+			)}
 		>
-			<header class="tr-assistant-inline-header">
-				<div>
-					<div class="tr-assistant-thread-title">{thread.title}</div>
-					<span
-						class={`tr-inbox-status is-${activeTask?.status ?? thread.state}`}
-					>
-						{activeTask?.status ?? (isBusy ? "pending" : "draft")}
-					</span>
-				</div>
-				<div class="tr-inbox-inline-actions">
-					{thread.revisions.length > 0 && !isBusy ? (
-						<ActionButton
-							label="Undo AI"
-							variant="ghost"
-							size="sm"
-							onClick={() => plugin.assistantService?.undoThread(thread.id)}
-						/>
-					) : null}
-					{thread.state !== "inbox" ? (
-						<ActionButton
-							label="Later"
-							variant="ghost"
-							size="sm"
-							onClick={() => {
-								plugin.assistantService?.deferThread(thread.id);
-								onClose?.();
-							}}
-						/>
-					) : null}
-					<ActionButton
-						label="Discard"
-						variant="ghost"
-						size="sm"
-						onClick={discard}
-					/>
-					{onClose ? (
-						<ActionButton
-							label="Close"
-							variant="ghost"
-							size="sm"
-							onClick={onClose}
-						/>
-					) : null}
-				</div>
-			</header>
-
-			<div class="tr-assistant-thread-messages">
-				{thread.messages.slice(-6).map((turn) => (
-					<div
-						key={turn.id}
-						class={`tr-assistant-thread-message is-${turn.role}`}
-					>
-						<span>{turn.role === "user" ? "You" : "AI"}</span>
-						<p>{turn.content}</p>
-					</div>
-				))}
-			</div>
-
-			{isBusy ? (
-				<div class="tr-inbox-progress-list">
-					{progress &&
-					progress.taskId === thread.activeTaskId &&
-					progress.lines.length > 0 ? (
-						progress.lines.slice(-3).map((line, index) => (
-							<div key={`${thread.id}-${index}`} class="tr-inbox-progress">
-								{line}
-							</div>
-						))
-					) : (
-						<div class="tr-inbox-progress">Waiting for AI…</div>
-					)}
-				</div>
-			) : null}
-
-			{manifest ? (
-				<>
-					{manifest.evidence && manifest.evidence.length > 0 ? (
-						<section class="tr-card-ai-preview-section">
-							<h5 class="tr-card-ai-preview-column-title">Vault evidence</h5>
-							<div class="tr-assistant-thread-evidence">
-								{manifest.evidence.map((item) => (
-									<div key={item.id} class="tr-assistant-thread-evidence-item">
-										<strong>
-											{item.sourcePath ?? item.sourceId}
-											{item.heading ? ` · ${item.heading}` : ""}
-										</strong>
-										<p>{item.excerpt}</p>
-									</div>
-								))}
-							</div>
-						</section>
-					) : null}
-					{manifest.citations.length > 0 ? (
-						<section class="tr-card-ai-preview-section">
-							<h5 class="tr-card-ai-preview-column-title">Sources</h5>
-							<div class="tr-inbox-citations">
-								{manifest.citations.map((citation) => (
-									<a key={citation.url} href={citation.url} rel="noopener">
-										{citation.title ?? citation.url}
-									</a>
-								))}
-							</div>
-						</section>
-					) : null}
-					<div class={`tr-card-ai-preview-new-list${isBusy ? " is-busy" : ""}`}>
-						{manifest.proposals.map((proposal, index) => (
-							<ProposalCard
-								key={`${proposal.id}:${thread.revision}`}
-								index={index + 1}
-								task={task}
-								proposal={proposal}
-								apply={apply}
-								persist={persist}
-								persistDraft={() =>
-									plugin.assistantService?.updateThreadManifest(
-										thread.id,
-										manifest,
-									)
-								}
-							/>
-						))}
-					</div>
-					{hasPendingProposals(thread) ? (
-						<ActionButton
-							label="Apply all"
-							variant="primary"
-							onClick={() => void applyAll()}
-							disabled={isBusy}
-						/>
-					) : null}
-				</>
-			) : null}
-
-			<div class="tr-assistant-thread-compose">
-				<TextInput
-					value={message}
-					onChange={setMessage}
-					placeholder="Tell AI what to change or add…"
-				/>
-				<ActionButton
-					label="Send"
-					variant="secondary"
-					onClick={send}
-					disabled={!message.trim() || isBusy}
-				/>
-			</div>
-		</div>
+			{children}
+		</article>
 	);
 }
 
@@ -588,7 +95,7 @@ function FailedTaskActions({ task }: { task: AssistantTask }) {
 	const plugin = usePlugin();
 
 	return (
-		<div class="tr-inbox-inline-actions">
+		<div class="ep:flex ep:justify-end ep:gap-2 ep:p-2">
 			<ActionButton
 				label="Retry"
 				variant="secondary"
@@ -623,40 +130,50 @@ function AssistantTaskItem({
 	};
 
 	return (
-		<article class={`tr-inbox-task is-${task.status}`}>
-			<header class="tr-inbox-task-row">
+		<TaskRowShell
+			statusClass={cn(
+				(task.status === "running" || task.status === "pending") &&
+					"ep:border-obs-interactive",
+				task.status === "failed" && "ep:border-obs-red",
+				task.status === "cancelled" && "ep:opacity-70",
+			)}
+		>
+			<header class={rowCls}>
 				<Clickable
-					class={`tr-inbox-task-main${canExpand ? "" : " is-static"}`}
+					class="ep:block ep:min-w-0 ep:py-2.5 ep:pl-3 ep:text-left"
 					role={canExpand ? "button" : "group"}
 					aria-expanded={canExpand ? isOpen : undefined}
 					onClick={() => {
 						if (canExpand) onToggle();
 					}}
 				>
-					<span class="tr-inbox-task-copy">
-						<span class="tr-inbox-task-title">{task.instruction}</span>
+					<span class="ep:flex ep:flex-col ep:gap-0.5 ep:min-w-0">
+						<span class="ep:truncate ep:text-ui-small ep:font-semibold ep:text-obs-normal">
+							{task.instruction}
+						</span>
 						{selectedText && (
-							<span class="tr-inbox-task-selection">{selectedText}</span>
+							<span class="ep:truncate ep:text-ui-smaller ep:text-obs-muted">
+								{selectedText}
+							</span>
 						)}
-						<span class="tr-inbox-task-meta">{formatTaskTime(task)}</span>
+						<span class="ep:text-ui-smaller ep:text-obs-muted">
+							{formatTaskTime(task)}
+						</span>
 					</span>
 				</Clickable>
 
-				<div class="tr-inbox-task-rail">
+				<div class="ep:flex ep:flex-col ep:items-end ep:gap-2 ep:py-2 ep:pr-2">
 					<Clickable
-						class={`tr-inbox-task-state${canExpand ? "" : " is-static"}`}
 						role={canExpand ? "button" : "group"}
 						aria-expanded={canExpand ? isOpen : undefined}
 						onClick={() => {
 							if (canExpand) onToggle();
 						}}
 					>
-						<span class={`tr-inbox-status is-${task.status}`}>
-							{statusLabel}
-						</span>
+						<StatusPill label={statusLabel} tone={statusTone(task.status)} />
 					</Clickable>
 
-					<div class="tr-inbox-task-actions">
+					<div class="ep:flex ep:items-center ep:gap-0.5">
 						{(task.status === "pending" || task.status === "running") && (
 							<IconButton
 								icon="x"
@@ -676,12 +193,19 @@ function AssistantTaskItem({
 				</div>
 			</header>
 
-			{task.error && <p class="tr-inbox-error">{task.error}</p>}
+			{task.error && (
+				<p class="ep:text-obs-red ep:text-ui-smaller ep:break-words ep:m-0 ep:px-3 ep:pb-2">
+					{task.error}
+				</p>
+			)}
 
 			{progress?.taskId === task.id && (
-				<div class="tr-inbox-progress-list">
+				<div class="ep:flex ep:flex-col ep:gap-1 ep:mx-3 ep:mb-2.5 ep:pt-2 ep:border-t ep:border-obs-border">
 					{progress.lines.slice(-3).map((line, i) => (
-						<div key={`${task.id}-line-${i}`} class="tr-inbox-progress">
+						<div
+							key={`${task.id}-line-${i}`}
+							class="ep:text-ui-smaller ep:text-obs-muted ep:leading-snug"
+						>
 							{line}
 						</div>
 					))}
@@ -690,18 +214,22 @@ function AssistantTaskItem({
 
 			{task.status === "failed" && <FailedTaskActions task={task} />}
 			{canExpand && isOpen && <TaskDetail task={task} />}
-		</article>
+		</TaskRowShell>
 	);
 }
 
 function AssistantThreadItem({
 	thread,
 	isOpen,
+	isApproving,
 	onToggle,
+	onApprove,
 }: {
 	thread: AssistantThread;
 	isOpen: boolean;
+	isApproving: boolean;
 	onToggle: () => void;
+	onApprove: () => void;
 }) {
 	const plugin = usePlugin();
 	const pending =
@@ -715,36 +243,58 @@ function AssistantThreadItem({
 			: "conversation";
 
 	return (
-		<article class="tr-inbox-task is-thread">
-			<header class="tr-inbox-task-row">
+		<TaskRowShell
+			statusClass={cn(thread.activeTaskId && "ep:border-obs-interactive")}
+		>
+			<header class={rowCls}>
 				<Clickable
-					class="tr-inbox-task-main"
+					class="ep:block ep:min-w-0 ep:py-2.5 ep:pl-3 ep:text-left"
 					role="button"
 					aria-expanded={isOpen}
 					onClick={onToggle}
 				>
-					<span class="tr-inbox-task-copy">
-						<span class="tr-inbox-task-title">{thread.title}</span>
-						<span class="tr-inbox-task-meta">
+					<span class="ep:flex ep:flex-col ep:gap-0.5 ep:min-w-0">
+						<span class="ep:truncate ep:text-ui-small ep:font-semibold ep:text-obs-normal">
+							{thread.title}
+						</span>
+						<span class="ep:text-ui-smaller ep:text-obs-muted">
 							{new Date(thread.updatedAt).toLocaleString()}
 						</span>
 					</span>
 				</Clickable>
-				<div class="tr-inbox-task-rail">
-					<Clickable class="tr-inbox-task-state" onClick={onToggle}>
-						<span class="tr-inbox-status">{status}</span>
+				<div class="ep:flex ep:flex-col ep:items-end ep:gap-2 ep:py-2 ep:pr-2">
+					<Clickable onClick={onToggle}>
+						<StatusPill
+							label={status}
+							tone={statusTone(thread.activeTaskId ? "working" : status)}
+						/>
 					</Clickable>
-					<IconButton
-						icon="trash-2"
-						ariaLabel="Delete AI conversation"
-						size="small"
-						danger
-						onClick={() => plugin.assistantService?.deleteThread(thread.id)}
-					/>
+					<div class="ep:flex ep:items-center ep:gap-1">
+						{pending > 0 && !thread.activeTaskId ? (
+							<ActionButton
+								label={isApproving ? "Approving…" : "Approve all"}
+								variant="primary"
+								size="sm"
+								disabled={isApproving}
+								onClick={onApprove}
+							/>
+						) : null}
+						<IconButton
+							icon="trash-2"
+							ariaLabel="Delete AI conversation"
+							size="small"
+							danger
+							onClick={() => plugin.assistantService?.deleteThread(thread.id)}
+						/>
+					</div>
 				</div>
 			</header>
-			{isOpen ? <ThreadWorkspace thread={thread} /> : null}
-		</article>
+			{isOpen ? (
+				<div class="ep:border-t ep:border-obs-border ep:p-3">
+					<ThreadWorkspace thread={thread} />
+				</div>
+			) : null}
+		</TaskRowShell>
 	);
 }
 
@@ -755,6 +305,99 @@ export function AssistantInboxApp() {
 	const threadsSignal = useQuery<AssistantThread[]>(Q.ASSISTANT_INBOX);
 	const threads = threadsSignal.value ?? [];
 	const [openId, setOpenId] = useState<string | null>(null);
+	const [approvingIds, setApprovingIds] = useState<Set<string>>(
+		() => new Set(),
+	);
+	const [isApprovingInbox, setIsApprovingInbox] = useState(false);
+	const reviewableThreads = threads.filter(
+		(thread) =>
+			!thread.activeTaskId &&
+			thread.manifest?.proposals.some(
+				(proposal) => proposal.status === "proposed",
+			),
+	);
+	const pendingProposalCount = reviewableThreads.reduce(
+		(total, thread) =>
+			total +
+			(thread.manifest?.proposals.filter(
+				(proposal) => proposal.status === "proposed",
+			).length ?? 0),
+		0,
+	);
+
+	const markApproving = (threadId: string, isApproving: boolean) => {
+		setApprovingIds((current) => {
+			const next = new Set(current);
+			if (isApproving) next.add(threadId);
+			else next.delete(threadId);
+			return next;
+		});
+	};
+
+	const approveOneThread = async (thread: AssistantThread) => {
+		if (approvingIds.has(thread.id) || isApprovingInbox) return;
+		markApproving(thread.id, true);
+		try {
+			const result = await approveThreadProposals(plugin, thread);
+			if (result) notifyThreadApproval(result);
+		} finally {
+			markApproving(thread.id, false);
+		}
+	};
+
+	const approveInbox = async () => {
+		if (isApprovingInbox || reviewableThreads.length === 0) return;
+		setIsApprovingInbox(true);
+		let appliedCount = 0;
+		let conflictedCount = 0;
+		let failedThreadCount = 0;
+		try {
+			for (const thread of sortByInboxAdditionOrder(reviewableThreads)) {
+				markApproving(thread.id, true);
+				try {
+					const result = await approveThreadProposals(plugin, thread);
+					if (!result) continue;
+					appliedCount += result.appliedCount;
+					conflictedCount += result.conflictedCount;
+					if (result.error) failedThreadCount++;
+				} finally {
+					markApproving(thread.id, false);
+				}
+			}
+		} finally {
+			setIsApprovingInbox(false);
+		}
+		if (appliedCount > 0) {
+			notify().success(`Approved ${appliedCount} AI drafts`);
+		}
+		if (conflictedCount > 0) {
+			notify().info(
+				`${conflictedCount} draft${conflictedCount === 1 ? "" : "s"} need individual review`,
+			);
+		}
+		if (failedThreadCount > 0) {
+			notify().error(
+				`Could not finish ${failedThreadCount} conversation${failedThreadCount === 1 ? "" : "s"}`,
+			);
+		}
+	};
+
+	useEffect(() => {
+		const onFocusThread = (e: Event) => {
+			const threadId = (e as CustomEvent<{ threadId: string }>).detail
+				?.threadId;
+			if (threadId) setOpenId(threadId);
+		};
+		window.addEventListener(
+			"true-recall:assistant-focus-thread",
+			onFocusThread,
+		);
+		return () =>
+			window.removeEventListener(
+				"true-recall:assistant-focus-thread",
+				onFocusThread,
+			);
+	}, []);
 
 	useEffect(() => {
 		for (const task of tasks) {
@@ -773,12 +416,19 @@ export function AssistantInboxApp() {
 	const count = threads.length + tasks.length;
 
 	return (
-		<div class="tr-inbox">
-			<div class="tr-inbox-header">
-				<div class="tr-inbox-title-group">
-					<div class="tr-inbox-title">AI Inbox</div>
-					<div class="tr-inbox-count">{count}</div>
+		<div class="ep:flex ep:flex-col ep:gap-2 ep:px-1 ep:pb-2 ep:min-w-0 ep:text-obs-normal">
+			<div class="ep:flex ep:items-center ep:justify-between ep:gap-3">
+				<div class="ep:flex ep:items-center ep:gap-2.5">
+					<div class="ep:text-ui-small ep:font-bold">AI Inbox</div>
+					<StatusPill label={String(count)} />
 				</div>
+				<ActionButton
+					label={isApprovingInbox ? "Approving…" : "Approve all"}
+					variant="primary"
+					size="sm"
+					disabled={pendingProposalCount === 0 || isApprovingInbox}
+					onClick={() => void approveInbox()}
+				/>
 			</div>
 
 			{threads.map((thread) => (
@@ -786,7 +436,9 @@ export function AssistantInboxApp() {
 					key={thread.id}
 					thread={thread}
 					isOpen={openId === thread.id}
+					isApproving={approvingIds.has(thread.id) || isApprovingInbox}
 					onToggle={() => setOpenId(openId === thread.id ? null : thread.id)}
+					onApprove={() => void approveOneThread(thread)}
 				/>
 			))}
 
@@ -800,10 +452,10 @@ export function AssistantInboxApp() {
 			))}
 
 			{count === 0 && (
-				<p class="tr-inbox-empty">
-					Nothing needs attention. Active AI drafts stay where you started them
-					until you choose Later.
-				</p>
+				<EmptyState
+					icon="✨"
+					message="Nothing needs attention. Active AI drafts stay where you started them until you choose Later."
+				/>
 			)}
 		</div>
 	);
