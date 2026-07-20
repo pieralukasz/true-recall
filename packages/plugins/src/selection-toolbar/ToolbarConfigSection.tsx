@@ -128,10 +128,11 @@ export function ToolbarConfigSection({
 				);
 				return preset?.name ?? "Deleted preset";
 			}
-			const commands = (plugin.app as any).commands.commands as Record<
-				string,
-				{ name: string }
-			>;
+			const commands = (
+				plugin.app as unknown as {
+					commands: { commands: Record<string, { name: string }> };
+				}
+			).commands.commands;
 			return commands[id]?.name ?? id;
 		},
 		[plugin.app, plugin.settings.generationPresets],

@@ -7,7 +7,8 @@
 	"type": "module",
 	"workspaces": [
 		"packages/*",
-		"packages/plugins"
+		"packages/plugins",
+		"mcp-server"
 	],
 	"overrides": {
 		"picomatch": "4.0.4"
@@ -24,6 +25,7 @@
 		"render:excalidraw": "bunx --bun excalirender",
 		"changelog": "bun scripts/generate-changelog.ts",
 		"changelog:preview": "bun scripts/generate-changelog.ts --preview",
+		"release:beta": "bun scripts/release-beta.ts",
 		"perf:benchmark": "bun scripts/perf-benchmark.ts",
 		"cli:build": "cd cli && bun build --compile --minify index.ts --outfile true-recall",
 		"knip": "bunx knip",
@@ -41,7 +43,8 @@
 		"@vitest/coverage-v8": "^4.1.8",
 		"esbuild": "^0.28.0",
 		"eslint": "^9",
-		"eslint-plugin-obsidianmd": "^0.3.0",
+		"eslint-plugin-obsidianmd": "0.4.1",
+		"eslint-plugin-react-hooks": "^7.1.1",
 		"excalirender": "github:JonRC/excalirender",
 		"knip": "^6.15.0",
 		"postcss": "^8.5.15",

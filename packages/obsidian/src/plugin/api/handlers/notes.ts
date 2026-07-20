@@ -99,7 +99,10 @@ export async function handleSetParent(
 		parent_name: string;
 		action: "add" | "remove";
 	}>(raw);
-	if (!body?.parent_name || !body.action) {
+	if (
+		!body?.parent_name ||
+		(body.action !== "add" && body.action !== "remove")
+	) {
 		sendError(
 			res,
 			400,

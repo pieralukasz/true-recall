@@ -5,6 +5,7 @@ import type { Command, CommandContext } from "../command.types";
 export class DeleteCardCommand implements Command {
 	readonly type = "card:delete";
 	readonly mutationType = "card:deleted" as const;
+	readonly skipExecuteMutation = true;
 	readonly description: string;
 
 	deletedCount = 0;

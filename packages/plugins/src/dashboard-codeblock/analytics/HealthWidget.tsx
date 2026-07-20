@@ -114,7 +114,7 @@ export function HealthWidget({ source }: { source: string }) {
 					{data.distribution.map((bucket, idx) => (
 						<Clickable
 							key={bucket.label}
-							class="ep:flex ep:flex-col ep:items-center ep:gap-1 hover:ep:opacity-80 ep:flex-1"
+							class="ep:flex ep:flex-col ep:items-center ep:gap-1 ep:hover:opacity-80 ep:flex-1"
 							onClick={() => handleBucketClick(idx)}
 							title={`Review ${bucket.label} cards`}
 						>

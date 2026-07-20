@@ -72,7 +72,7 @@ export async function handleGradeSessionCard(
 	}
 
 	const ratingValue = body.rating;
-	if (ratingValue < 1 || ratingValue > 4) {
+	if (!Number.isInteger(ratingValue) || ratingValue < 1 || ratingValue > 4) {
 		sendError(
 			res,
 			400,
@@ -87,9 +87,14 @@ export async function handleGradeSessionCard(
 		3: Rating.Good,
 		4: Rating.Easy,
 	};
+	const grade = ratingMap[ratingValue];
+	if (!grade) {
+		sendError(res, 400, `Unsupported rating: ${ratingValue}`);
+		return;
+	}
 
 	const outcome = ctx.plugin.reviewController.gradeCurrentCard(
-		ratingMap[ratingValue] as Grade,
+		grade,
 		review.getSessionFilters(),
 	);
 	if (!outcome) {

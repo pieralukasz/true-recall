@@ -3,6 +3,7 @@ import { Plugin, type TFile } from "obsidian";
 import { TrueRecallApp } from "@true-recall/core/app";
 import {
 	ENABLE_RAG,
+	VIEW_TYPE_ASSISTANT_INBOX,
 	VIEW_TYPE_CARD_BROWSER,
 	VIEW_TYPE_CARD_TYPES_EDITOR,
 	VIEW_TYPE_DASHBOARD,
@@ -53,6 +54,7 @@ import {
 	isMobile,
 	isViewAllowedOnCurrentPlatform,
 } from "@true-recall/obsidian/utils/platform";
+import { AssistantInboxView } from "@true-recall/obsidian/views/assistant/AssistantInboxView";
 import { CardBrowserView } from "@true-recall/obsidian/views/browser/CardBrowserView";
 import { KnowledgeChatView } from "@true-recall/obsidian/views/chat/KnowledgeChatView";
 import { DashboardView } from "@true-recall/obsidian/views/dashboard/DashboardView";
@@ -189,6 +191,9 @@ export default class TrueRecallPlugin extends Plugin {
 		| import("@true-recall/core/rag/retrieval/rag-search.service").RagSearchService
 		| null = null;
 	dataLayer: DataLayer | null = null;
+	assistantService:
+		| import("./services/assistant/assistant.service").AssistantService
+		| null = null;
 	pluginLoader: import("./plugin/plugin-loader").PluginLoader | null = null;
 	_disposeWireDataLayer: (() => void) | null = null;
 	adapters!: ObsidianAdapters;
@@ -419,6 +424,11 @@ export default class TrueRecallPlugin extends Plugin {
 				(leaf) => new KnowledgeChatView(leaf, this),
 			);
 		}
+
+		registerIfAllowed(
+			VIEW_TYPE_ASSISTANT_INBOX,
+			(leaf) => new AssistantInboxView(leaf, this),
+		);
 
 		registerCommands(this);
 		this.addSettingTab(new TrueRecallSettingTab(this.app, this));
@@ -661,6 +671,27 @@ export default class TrueRecallPlugin extends Plugin {
 		await activateView(this.app, VIEW_TYPE_KNOWLEDGE_CHAT, {
 			useMainArea: false,
 		});
+	}
+
+	async openAssistantInbox(focusThreadId?: string): Promise<void> {
+		const existingLeaf = getView(this.app, VIEW_TYPE_ASSISTANT_INBOX);
+		if (existingLeaf) {
+			void this.app.workspace.revealLeaf(existingLeaf);
+		} else {
+			await activateView(this.app, VIEW_TYPE_ASSISTANT_INBOX, {
+				useMainArea: true,
+			});
+		}
+		if (focusThreadId) {
+			// Give a freshly-mounted inbox one tick to register its listener.
+			window.setTimeout(() => {
+				window.dispatchEvent(
+					new CustomEvent("true-recall:assistant-focus-thread", {
+						detail: { threadId: focusThreadId },
+					}),
+				);
+			}, 50);
+		}
 	}
 
 	openCardTypesEditor(noteTypeId?: string): void {
@@ -996,7 +1027,7 @@ export default class TrueRecallPlugin extends Plugin {
 				notify().success("Note review enabled");
 			}
 
-			this.dataLayer?.invalidateGroups(["cards", "dashboard", "review"]);
+			this.dataLayer?.invalidateGroups([G.CARDS, G.DASHBOARD, G.REVIEW]);
 		} catch (error) {
 			notify().operationFailed("toggle note review", error);
 		}

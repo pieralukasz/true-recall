@@ -9,6 +9,7 @@ import {
 	insertAtCursor,
 	toggleAsymmetricMarker,
 	toggleMarker,
+	wrapCloze,
 } from "./cm6-formatting";
 import type { GetFormattingEditorView } from "./types";
 
@@ -17,6 +18,8 @@ interface FormattingToolbarProps {
 	getEditorView: GetFormattingEditorView;
 	typeInEnabled?: boolean;
 	onTypeInToggle?: (enabled: boolean) => void;
+	/** Show the cloze-wrap button (cloze note types only). */
+	showCloze?: boolean;
 }
 
 const COLOR_SWATCHES = [
@@ -74,7 +77,7 @@ class MediaFilePicker extends SuggestModal<TFile> {
 	}
 
 	onClose(): void {
-		setTimeout(() => this.resolve?.(null), 0);
+		window.setTimeout(() => this.resolve?.(null), 0);
 	}
 
 	pick(): Promise<TFile | null> {
@@ -90,6 +93,7 @@ export function FormattingToolbar({
 	getEditorView,
 	typeInEnabled = false,
 	onTypeInToggle,
+	showCloze = false,
 }: FormattingToolbarProps) {
 	const [showColors, setShowColors] = useState(false);
 	const colorRef = useRef<HTMLDivElement>(null);
@@ -101,8 +105,8 @@ export function FormattingToolbar({
 				setShowColors(false);
 			}
 		};
-		document.addEventListener("mousedown", handleClick);
-		return () => document.removeEventListener("mousedown", handleClick);
+		activeDocument.addEventListener("mousedown", handleClick);
+		return () => activeDocument.removeEventListener("mousedown", handleClick);
 	}, [showColors]);
 
 	const handleMedia = useCallback(async () => {
@@ -140,7 +144,7 @@ export function FormattingToolbar({
 		if (!text) return;
 		void navigator.clipboard.writeText(text).then(() => {
 			setCopied(true);
-			setTimeout(() => setCopied(false), 1500);
+			window.setTimeout(() => setCopied(false), 1500);
 		});
 	}, [getEditorView]);
 
@@ -252,6 +256,25 @@ export function FormattingToolbar({
 					if (v) toggleMarker(v, "==");
 				}}
 			/>
+			{showCloze && (
+				<div
+					role="button"
+					tabIndex={0}
+					title="Cloze deletion (Ctrl+Shift+C)"
+					class={`${btnCls} ep:font-mono`}
+					onMouseDown={(e: MouseEvent) => {
+						prevent(e);
+						const v = getEditorView();
+						if (v) wrapCloze(v);
+					}}
+					onKeyDown={handleKeyDown(() => {
+						const v = getEditorView();
+						if (v) wrapCloze(v);
+					})}
+				>
+					{"[…]"}
+				</div>
+			)}
 
 			<Separator />
 
@@ -418,7 +441,7 @@ function IconButton({
 			role="button"
 			tabIndex={0}
 			title={title}
-			class="ep:px-1.5 ep:py-1 ep:text-obs-muted ep:hover:text-obs-normal ep:hover:bg-obs-tertiary ep:rounded ep:cursor-pointer ep:select-none [&>svg]:ep:w-3.5 [&>svg]:ep:h-3.5"
+			class="ep:px-1.5 ep:py-1 ep:text-obs-muted ep:hover:text-obs-normal ep:hover:bg-obs-tertiary ep:rounded ep:cursor-pointer ep:select-none ep:[&>svg]:w-3.5 ep:[&>svg]:h-3.5"
 			onMouseDown={onMouseDown}
 			onKeyDown={handleKeyDown}
 		/>

@@ -80,18 +80,26 @@ describe("chunkNote", () => {
 });
 
 describe("chunkFlashcard", () => {
-	it("parses valid JSON with front/back fields", () => {
-		const json = JSON.stringify({ front: "What is X?", back: "Y" });
+	it("parses production-shaped JSON with Front/Back fields", () => {
+		// Stored fields_json uses capitalized names (resolveNoteMapping).
+		const json = JSON.stringify({ Front: "What is X?", Back: "Y" });
 		const chunks = chunkFlashcard(json);
 		expect(chunks).toHaveLength(1);
 		expect(chunks[0]?.content).toContain("Q: What is X?");
 		expect(chunks[0]?.content).toContain("A: Y");
 	});
 
-	it("parses JSON with text field", () => {
-		const json = JSON.stringify({ text: "Some text content" });
+	it("parses JSON with Text field", () => {
+		const json = JSON.stringify({ Text: "Some text content" });
 		const chunks = chunkFlashcard(json);
 		expect(chunks[0]?.content).toContain("Text: Some text content");
+	});
+
+	it("indexes custom note-type fields by their own names", () => {
+		const json = JSON.stringify({ Term: "mitochondrion", Definition: "..." });
+		const chunks = chunkFlashcard(json);
+		expect(chunks[0]?.content).toContain("Term: mitochondrion");
+		expect(chunks[0]?.content).toContain("Definition: ...");
 	});
 
 	it("appends source text and tags when provided", () => {

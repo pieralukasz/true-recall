@@ -25,8 +25,8 @@ function CreateProjectBody({
 	const nameRef = useRef<HTMLInputElement>(null);
 
 	useEffect(() => {
-		const id = setTimeout(() => nameRef.current?.focus(), 50);
-		return () => clearTimeout(id);
+		const id = window.setTimeout(() => nameRef.current?.focus(), 50);
+		return () => window.clearTimeout(id);
 	}, []);
 
 	const trimmed = name.trim();

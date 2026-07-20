@@ -108,7 +108,11 @@ export function useProjectActions() {
 
 			let targetName: string;
 			if (choice.kind === "create") {
-				await service.createProjectWithChildren(choice.name, "", []);
+				await service.createProjectWithChildren(
+					choice.name,
+					plugin.settings.defaultProjectFolder,
+					[],
+				);
 				targetName = choice.name;
 			} else {
 				targetName = choice.node.name;
@@ -273,7 +277,11 @@ export function useProjectActions() {
 
 			let targetName: string;
 			if (choice.kind === "create") {
-				await service.createProjectWithChildren(choice.name, "", []);
+				await service.createProjectWithChildren(
+					choice.name,
+					plugin.settings.defaultProjectFolder,
+					[],
+				);
 				targetName = choice.name;
 			} else {
 				targetName = choice.node.name;

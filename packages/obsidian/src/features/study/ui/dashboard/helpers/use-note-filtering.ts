@@ -77,13 +77,19 @@ export function useNoteFiltering({
 		return [...result].sort(prioritySortComparator);
 	}, [projectFiltered, searchQuery, activeFilter.value]);
 
-	const handleFilterChange = useCallback((f: NoteFilterMode) => {
-		activeFilter.value = f;
-	}, []);
+	const handleFilterChange = useCallback(
+		(f: NoteFilterMode) => {
+			activeFilter.value = f;
+		},
+		[activeFilter],
+	);
 
-	const handleProjectFilterChange = useCallback((pf: ProjectFilter) => {
-		projectFilter.value = pf;
-	}, []);
+	const handleProjectFilterChange = useCallback(
+		(pf: ProjectFilter) => {
+			projectFilter.value = pf;
+		},
+		[projectFilter],
+	);
 
 	return {
 		activeFilter,

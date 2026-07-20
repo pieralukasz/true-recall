@@ -6,7 +6,7 @@ export function useScrollPreservation() {
 	const preserveScroll = useCallback((action: () => void): void => {
 		const pos = contentRef.current?.scrollTop ?? 0;
 		action();
-		requestAnimationFrame(() => {
+		window.requestAnimationFrame(() => {
 			if (contentRef.current) contentRef.current.scrollTop = pos;
 		});
 	}, []);
@@ -14,7 +14,7 @@ export function useScrollPreservation() {
 	const captureScroll = useCallback((): (() => void) => {
 		const pos = contentRef.current?.scrollTop ?? 0;
 		return () => {
-			requestAnimationFrame(() => {
+			window.requestAnimationFrame(() => {
 				if (contentRef.current) contentRef.current.scrollTop = pos;
 			});
 		};

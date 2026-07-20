@@ -10,6 +10,11 @@ import { h, render } from "preact";
 import { VIEW_TYPE_QUICK_NOTE_EDITOR } from "@true-recall/core/constants";
 
 import { Clickable } from "@true-recall/obsidian/components";
+import {
+	AI_PANEL_GAP,
+	AI_PANEL_WIDTH,
+	type FlyoutPlacement,
+} from "@true-recall/obsidian/features/assistant/ui/flyout-placement";
 import { QuickNoteEditorApp } from "@true-recall/obsidian/modals/study/quick-note-editor/QuickNoteEditorApp";
 import type {
 	QuickNoteEditorMode,
@@ -50,6 +55,7 @@ export class QuickNoteEditorView extends ItemView {
 	private beforeUnloadHandler: ((e: BeforeUnloadEvent) => void) | null = null;
 	private boundWindow: Window | null = null;
 	private isConfirmingDiscard = false;
+	private aiPanelWidth = 0;
 
 	constructor(leaf: WorkspaceLeaf, plugin: TrueRecallPlugin) {
 		super(leaf);
@@ -79,8 +85,8 @@ export class QuickNoteEditorView extends ItemView {
 	}
 
 	getDisplayText(): string {
-		if (this.session?.mode.mode === "edit") return "Edit Flashcard";
-		return "Add Flashcard";
+		if (this.session?.mode.mode === "edit") return "Edit flashcard";
+		return "Add flashcard";
 	}
 
 	getIcon(): string {
@@ -153,22 +159,8 @@ export class QuickNoteEditorView extends ItemView {
 		container.addClass("tr-quick-editor-view");
 		container.toggleClass("is-mac", Platform.isMacOS);
 
-		const winAtMount = this.getPopoutWindow();
-		if (winAtMount) {
-			console.log("[QNE diag] mountContent — initial popout dims", {
-				outerW: winAtMount.outerWidth,
-				outerH: winAtMount.outerHeight,
-				innerW: winAtMount.innerWidth,
-				innerH: winAtMount.innerHeight,
-				chrome: winAtMount.outerHeight - winAtMount.innerHeight,
-				screenAvailH: winAtMount.screen?.availHeight,
-				devicePixelRatio: winAtMount.devicePixelRatio,
-				ts: performance.now(),
-			});
-		}
-
 		const title =
-			this.session.mode.mode === "edit" ? "Edit Flashcard" : "Add Flashcard";
+			this.session.mode.mode === "edit" ? "Edit flashcard" : "Add flashcard";
 
 		this.unmountPreact?.();
 		this.unmountPreact = mountPreact(
@@ -192,6 +184,7 @@ export class QuickNoteEditorView extends ItemView {
 						onDirtyChange: (dirty) => {
 							if (this.session) this.session.isDirty = dirty;
 						},
+						onAiPanelChange: (state) => this.handleAiPanelChange(state),
 					}),
 				),
 			),
@@ -202,6 +195,24 @@ export class QuickNoteEditorView extends ItemView {
 		this.centerWindowOnScreen();
 		this.startContentSizeTracking();
 		this.installBeforeUnloadGuard();
+	}
+
+	private handleAiPanelChange(state: {
+		open: boolean;
+		placement: FlyoutPlacement;
+	}): void {
+		const win = this.getPopoutWindow();
+		if (!win) return;
+		const wanted =
+			state.open && state.placement === "right"
+				? AI_PANEL_WIDTH + AI_PANEL_GAP
+				: 0;
+		const delta = wanted - this.aiPanelWidth;
+		if (delta !== 0) win.resizeTo(win.outerWidth + delta, win.outerHeight);
+		this.aiPanelWidth = wanted;
+		// The right-hand panel is absolutely positioned, so opening or closing it
+		// does not resize the observed editor column by itself.
+		this.scheduleResizeToContent();
 	}
 
 	private centerWindowOnScreen(): void {
@@ -239,14 +250,31 @@ export class QuickNoteEditorView extends ItemView {
 			(win as Window & { ResizeObserver?: typeof ResizeObserver })
 				.ResizeObserver ?? ResizeObserver;
 		const observer = new RO(() => {
+			this.observeContentSizeTargets();
 			this.scheduleResizeToContent();
 		});
 		this.resizeObserver = observer;
-		const target = body.firstElementChild;
-		if (target instanceof HTMLElement) {
-			observer.observe(target);
-		} else {
-			observer.observe(body);
+		this.observeContentSizeTargets();
+	}
+
+	private observeContentSizeTargets(): void {
+		const observer = this.resizeObserver;
+		if (!observer) return;
+		const body = this.contentEl.querySelector<HTMLElement>(
+			".tr-quick-editor-view__body",
+		);
+		if (!body) return;
+
+		const targets = [
+			body.firstElementChild,
+			body.querySelector(".true-recall-quick-editor"),
+			body.querySelector(".tr-quick-editor-ai-col"),
+			body.querySelector(".tr-quick-editor-ai-col > *"),
+			body.querySelector(".tr-quick-editor-ai-drawer"),
+			body.querySelector(".tr-quick-editor-ai-drawer > *"),
+		];
+		for (const target of targets) {
+			if (target instanceof HTMLElement) observer.observe(target);
 		}
 	}
 
@@ -289,12 +317,27 @@ export class QuickNoteEditorView extends ItemView {
 		);
 		const content = body?.firstElementChild;
 		if (!dragBar || !body || !(content instanceof HTMLElement)) return;
+		this.observeContentSizeTargets();
 
 		const bodyStyle = win.getComputedStyle(body);
 		const paddingTop = parseFloat(bodyStyle.paddingTop) || 0;
 		const paddingBottom = parseFloat(bodyStyle.paddingBottom) || 0;
 		const bodyPadding = paddingTop + paddingBottom;
-		const natural = dragBar.offsetHeight + content.offsetHeight + bodyPadding;
+		const editor = content.querySelector<HTMLElement>(
+			".true-recall-quick-editor",
+		);
+		const aiPanel = content.querySelector<HTMLElement>(
+			".tr-quick-editor-ai-col",
+		);
+		const contentHeight = Math.max(
+			content.offsetHeight,
+			content.scrollHeight,
+			editor?.offsetHeight ?? 0,
+			editor?.scrollHeight ?? 0,
+			aiPanel?.offsetHeight ?? 0,
+			aiPanel?.scrollHeight ?? 0,
+		);
+		const natural = dragBar.offsetHeight + contentHeight + bodyPadding;
 		if (!Number.isFinite(natural)) return;
 
 		const chrome = Math.max(0, win.outerHeight - win.innerHeight);
@@ -304,20 +347,6 @@ export class QuickNoteEditorView extends ItemView {
 		const max = screen?.availHeight ?? 1200;
 		const clamped = Math.max(MIN_WINDOW_HEIGHT, Math.min(max, target));
 		if (!Number.isFinite(clamped)) return;
-
-		console.log("[QNE diag] resizeWindowToContent", {
-			outerH: win.outerHeight,
-			innerH: win.innerHeight,
-			chrome,
-			dragBarH: dragBar.offsetHeight,
-			contentH: content.offsetHeight,
-			bodyPadding,
-			natural,
-			target,
-			clamped,
-			fitted: this.session.hasInitialFitted,
-			ts: performance.now(),
-		});
 
 		if (
 			Math.abs(clamped - win.outerHeight) < 4 &&
@@ -360,8 +389,8 @@ export class QuickNoteEditorView extends ItemView {
 			if (this.session.closeConfirmed) return;
 			// Triggers Electron's native confirm dialog when the user closes
 			// the popout window via the OS X-button with unsaved content.
+			// (returnValue is no longer needed — preventDefault() alone triggers it.)
 			e.preventDefault();
-			e.returnValue = "";
 		};
 		win.addEventListener("beforeunload", handler);
 		this.beforeUnloadHandler = handler;

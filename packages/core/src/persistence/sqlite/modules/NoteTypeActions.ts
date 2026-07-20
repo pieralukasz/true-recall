@@ -54,6 +54,66 @@ export class NoteTypeActions {
 		return row ? mapRowToNoteType(row) : null;
 	}
 
+	// ── Device sync (raw rows, LWW by updated_at) ─────────────
+
+	/** Non-builtin note types modified since the watermark (builtins are
+	 * seeded identically on every device). */
+	getRawRowsModifiedSince(timestamp: number): NoteTypeRow[] {
+		return this.db.query<NoteTypeRow>(
+			`SELECT * FROM note_types WHERE updated_at > ? AND is_builtin = 0`,
+			[timestamp],
+		);
+	}
+
+	getRawRowsByIds(ids: string[]): NoteTypeRow[] {
+		if (ids.length === 0) return [];
+		const placeholders = ids.map(() => "?").join(",");
+		return this.db.query<NoteTypeRow>(
+			`SELECT * FROM note_types WHERE id IN (${placeholders})`,
+			ids,
+		);
+	}
+
+	hasRow(id: string): boolean {
+		return (
+			this.db.get<{ id: string }>(`SELECT id FROM note_types WHERE id = ?`, [
+				id,
+			]) !== undefined
+		);
+	}
+
+	/** Last-writer-wins upsert of a remote device's note type row. */
+	upsertRowFromRemote(row: NoteTypeRow): boolean {
+		this.db.run(
+			`INSERT INTO note_types (id, name, type, fields_json, templates_json, css, is_builtin, slug, created_at, updated_at, deleted_at)
+			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			 ON CONFLICT(id) DO UPDATE SET
+				name = excluded.name,
+				type = excluded.type,
+				fields_json = excluded.fields_json,
+				templates_json = excluded.templates_json,
+				css = excluded.css,
+				slug = excluded.slug,
+				updated_at = excluded.updated_at,
+				deleted_at = excluded.deleted_at
+			 WHERE COALESCE(excluded.updated_at, 0) > COALESCE(note_types.updated_at, 0)`,
+			[
+				row.id,
+				row.name,
+				row.type,
+				row.fields_json,
+				row.templates_json,
+				row.css,
+				row.is_builtin,
+				row.slug,
+				row.created_at,
+				row.updated_at,
+				row.deleted_at,
+			],
+		);
+		return this.db.getRowsModified() > 0;
+	}
+
 	getBySlug(slug: string): NoteType | null {
 		const row = this.db.get<NoteTypeRow>(
 			`SELECT * FROM note_types WHERE slug = ? AND deleted_at IS NULL`,

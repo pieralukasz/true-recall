@@ -48,14 +48,14 @@ export class ObsidianMetadataIndex implements IMetadataIndex {
 		const files = this.app.vault.getMarkdownFiles();
 		for (const file of files) {
 			const cache = this.app.metadataCache.getFileCache(file);
-			const value = cache?.frontmatter?.[field];
+			const value: unknown = cache?.frontmatter?.[field];
 			if (value !== undefined) {
 				tracked.set(file.path, value);
 			}
 		}
 
 		const ref = this.app.metadataCache.on("changed", (file, _data, cache) => {
-			const newValue = cache.frontmatter?.[field];
+			const newValue: unknown = cache.frontmatter?.[field];
 			const oldValue = tracked.get(file.path);
 
 			if (oldValue !== newValue) {

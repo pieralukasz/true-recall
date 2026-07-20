@@ -1,0 +1,44 @@
+/* AI Assistant — host shells. Component-level styling lives in the shared
+   components (AiComposer, ThreadWorkspace, StatusPill) via ep: utilities. */
+
+/* Selection popover container (floating-ui positions it). */
+.tr-ask-ai-popover {
+	width: min(440px, calc(100vw - 24px));
+}
+
+.tr-ask-ai-popover.has-thread {
+	width: min(560px, calc(100vw - 24px));
+}
+
+/* Floating thread surface — the single scroll container for popover hosts. */
+.tr-assistant-surface {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+	padding: 12px;
+	background: var(--background-primary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 14px;
+	box-shadow: var(--shadow-s);
+	max-height: min(680px, calc(100vh - 24px));
+	overflow-y: auto;
+}
+
+/* Ask AI / AI Draft Studio modal — the modal content is the single scroll
+   container. */
+.tr-assistant-modal {
+	width: min(640px, calc(100vw - 32px));
+}
+
+.tr-assistant-modal .modal-content {
+	overflow-y: auto;
+}
+
+/* Draft cards reuse the Card Polish preview card styling; only state tints are local. */
+.tr-card-ai-preview-new-card.is-applied {
+	opacity: 0.55;
+}
+
+.tr-card-ai-preview-new-card.is-rejected {
+	opacity: 0.4;
+}

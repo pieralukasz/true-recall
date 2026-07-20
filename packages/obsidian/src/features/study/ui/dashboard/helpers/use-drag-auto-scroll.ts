@@ -20,7 +20,7 @@ export function useDragAutoScroll(
 			const el = scrollContainerRef.current;
 			if (!el || scrollDir.current === 0) return;
 			el.scrollTop += scrollDir.current * scrollSpeed.current;
-			rafId.current = requestAnimationFrame(tick);
+			rafId.current = window.requestAnimationFrame(tick);
 		}
 
 		function startScroll(dir: -1 | 1, speed: number) {
@@ -28,7 +28,7 @@ export function useDragAutoScroll(
 			scrollDir.current = dir;
 			scrollSpeed.current = speed;
 			if (!rafId.current) {
-				rafId.current = requestAnimationFrame(tick);
+				rafId.current = window.requestAnimationFrame(tick);
 			}
 		}
 

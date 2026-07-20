@@ -45,7 +45,7 @@ export function CardTypesEditorApp({
 		if (noteType) {
 			onTitleChange(`Card Types for "${noteType.name}"`);
 		}
-	}, [noteType?.name, onTitleChange]);
+	}, [noteType, onTitleChange]);
 
 	const refresh = useCallback(() => setVersion((v) => v + 1), []);
 

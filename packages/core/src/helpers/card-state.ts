@@ -8,15 +8,15 @@ import { State } from "ts-fsrs";
 import type { FSRSFlashcardItem } from "@true-recall/core/types";
 
 /** Learning or Relearning */
-export function isLearningState(state: State | number): boolean {
+export function isLearningState(state: State): boolean {
 	return state === State.Learning || state === State.Relearning;
 }
 
-export function isNewState(state: State | number): boolean {
+export function isNewState(state: State): boolean {
 	return state === State.New;
 }
 
-export function isReviewState(state: State | number): boolean {
+export function isReviewState(state: State): boolean {
 	return state === State.Review;
 }
 

@@ -41,7 +41,7 @@ function SuggestionItem({
 		>
 			<span
 				ref={iconRef}
-				class="ep:shrink-0 ep:flex ep:items-center [&_svg]:ep:w-3.5 [&_svg]:ep:h-3.5"
+				class="ep:shrink-0 ep:flex ep:items-center ep:[&_svg]:w-3.5 ep:[&_svg]:h-3.5"
 			/>
 			<span class="ep:font-medium ep:truncate ep:min-w-0">{note.basename}</span>
 			{folderPath && folderPath !== "/" && (

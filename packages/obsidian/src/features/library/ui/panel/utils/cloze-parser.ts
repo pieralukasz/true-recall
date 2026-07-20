@@ -6,10 +6,13 @@ interface ClozePart {
 }
 
 const CLOZE_PATTERN = /\{\{c(\d+)::/g;
+// Detection uses a non-global copy: `.test()` on a /g regex advances its
+// `lastIndex`, making repeated calls alternate between true and false.
+const CLOZE_DETECT = /\{\{c\d+::/;
 
 export function hasClozeSyntax(text: string | null): boolean {
 	if (!text) return false;
-	return CLOZE_PATTERN.test(text);
+	return CLOZE_DETECT.test(text);
 }
 
 export function parseClozeText(text: string): ClozePart[] {

@@ -152,7 +152,7 @@ export function ChatInput({
 					rows={1}
 				/>
 				<Clickable
-					class={`ep:flex ep:items-center ep:justify-center ep:shrink-0 ep:transition-colors [&_svg]:ep:w-4 [&_svg]:ep:h-4 ${
+					class={`ep:flex ep:items-center ep:justify-center ep:shrink-0 ep:transition-colors ep:[&_svg]:w-4 ep:[&_svg]:h-4 ${
 						canSend
 							? "ep:text-obs-interactive ep:hover:text-obs-interactive-hover"
 							: "ep:text-obs-muted ep:opacity-50"

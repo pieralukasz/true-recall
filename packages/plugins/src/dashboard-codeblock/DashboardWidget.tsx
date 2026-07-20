@@ -38,7 +38,9 @@ export function DashboardWidget() {
 	const allMeta = useQuery<Map<string, CardSchedulingMeta>>(Q.ALL_META);
 
 	// Subscribe to reactive data changes
-	const _cards = allMeta.value;
+	// Reading .value subscribes this component; counts already re-triggers the
+	// memo below on the same card-change invalidation.
+	void allMeta.value;
 	const counts = globalCountsSignal.value;
 
 	// Cache service instances — avoid re-creating on every render
@@ -83,7 +85,7 @@ export function DashboardWidget() {
 		};
 
 		return { today, forecastDays, global };
-	}, [_cards, counts, plugin, statsCalc, forecast]);
+	}, [counts, plugin, statsCalc, forecast]);
 
 	if (!data) {
 		return <div class="ep:text-obs-muted ep:text-xs ep:p-3">Loading...</div>;
@@ -168,7 +170,9 @@ export function NoteStatsWidget({ sourceUid }: { sourceUid: string | null }) {
 		Q.CARDS_BY_SOURCE,
 	);
 	// Subscribe to reactive data changes
-	const _cards = allMeta.value;
+	// Reading .value subscribes this component; bySourceUid already re-triggers
+	// the memo below on the same card-change invalidation.
+	void allMeta.value;
 	const bySourceUid = cardsBySource.value;
 
 	const data = useMemo(() => {
@@ -243,7 +247,7 @@ export function NoteStatsWidget({ sourceUid }: { sourceUid: string | null }) {
 				: null,
 			forecastDays,
 		};
-	}, [_cards, bySourceUid, sourceUid]);
+	}, [bySourceUid, sourceUid]);
 
 	if (!data) {
 		return (

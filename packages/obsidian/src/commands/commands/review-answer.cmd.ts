@@ -1,3 +1,5 @@
+import { Rating } from "ts-fsrs";
+
 import type {
 	CardSchedulingMeta,
 	FSRSCardData,
@@ -34,16 +36,16 @@ export class ReviewAnswerCommand implements Command {
 
 	readonly params: ReviewAnswerParams;
 	private writeExecuted = false;
-	private pendingTimeoutId: ReturnType<typeof setTimeout> | null = null;
+	private writePersisted = false;
+	private pendingTimeoutId: number | null = null;
 
 	constructor(params: ReviewAnswerParams) {
-		const { Rating } = require("ts-fsrs") as typeof import("ts-fsrs");
 		this.description = `Review (${Rating[params.rating]})`;
 		this.params = params;
 	}
 
 	execute(ctx: CommandContext): void {
-		this.pendingTimeoutId = setTimeout(() => {
+		this.pendingTimeoutId = window.setTimeout(() => {
 			this.writeExecuted = true;
 			this.pendingTimeoutId = null;
 
@@ -56,6 +58,7 @@ export class ReviewAnswerCommand implements Command {
 			);
 
 			if (!persisted) return;
+			this.writePersisted = true;
 
 			try {
 				ctx.sessionPersistence.recordReview(
@@ -82,7 +85,7 @@ export class ReviewAnswerCommand implements Command {
 
 	cancelPendingWrite(): boolean {
 		if (!this.writeExecuted && this.pendingTimeoutId !== null) {
-			clearTimeout(this.pendingTimeoutId);
+			window.clearTimeout(this.pendingTimeoutId);
 			this.pendingTimeoutId = null;
 			return true;
 		}
@@ -93,7 +96,10 @@ export class ReviewAnswerCommand implements Command {
 		const cancelled = this.cancelPendingWrite();
 		const p = this.params;
 
-		if (!cancelled) {
+		// A fired-but-failed write (card deleted between answer and the
+		// deferred write) recorded nothing — undoing it would decrement
+		// today's stats for a review that never landed.
+		if (!cancelled && this.writePersisted) {
 			// skipNotification matches execute() — without it, card:updated
 			// fires through the bus, sets lastMutation, and the ReviewView
 			// effect runs rebuildActiveSession against stale Q.ALL_META,

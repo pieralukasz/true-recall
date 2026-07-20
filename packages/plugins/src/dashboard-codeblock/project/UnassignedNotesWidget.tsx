@@ -145,7 +145,7 @@ export function UnassignedNotesWidget() {
 				{notes.map((note) => (
 					<Clickable
 						key={note.path}
-						class="ep:flex ep:items-center ep:justify-between ep:px-2 ep:py-1 ep:rounded ep:bg-obs-secondary hover:ep:bg-obs-tertiary ep:transition-colors"
+						class="ep:flex ep:items-center ep:justify-between ep:px-2 ep:py-1 ep:rounded ep:bg-obs-secondary ep:hover:bg-obs-tertiary ep:transition-colors"
 						onClick={() => handleOpenNote(note.path)}
 					>
 						<span class="ep:truncate ep:flex-1 ep:text-obs-normal ep:text-xs">

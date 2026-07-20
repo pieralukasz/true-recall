@@ -2,6 +2,9 @@ import type { App, TFile } from "obsidian";
 
 import type { DailyNoteInfo } from "@true-recall/core/rag/ingestion/daily-note-preprocessor";
 
+/** Moment instance type derived from Obsidian's bundled moment global. */
+type Moment = ReturnType<NonNullable<typeof window.moment>>;
+
 const NOT_DAILY: DailyNoteInfo = {
 	isDailyNote: false,
 	date: null,
@@ -22,7 +25,7 @@ const COMMON_DATE_FORMATS = [
 	"DD MMM YYYY",
 ];
 
-function buildResult(m: moment.Moment): DailyNoteInfo {
+function buildResult(m: Moment): DailyNoteInfo {
 	return {
 		isDailyNote: true,
 		date: m.format("YYYY-MM-DD"),
@@ -57,7 +60,7 @@ function getDailyNotesPluginConfig(app: App): {
 	return null;
 }
 
-function tryParseDate(basename: string, format?: string): moment.Moment | null {
+function tryParseDate(basename: string, format?: string): Moment | null {
 	const m = window.moment;
 	if (!m) return null;
 

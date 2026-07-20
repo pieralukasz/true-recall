@@ -1,11 +1,11 @@
-import { useComputed } from "@preact/signals";
+import { type ReadonlySignal, signal } from "@preact/signals";
 import { useMemo, useRef, useState } from "preact/hooks";
 
 import { StatsCalculatorService } from "@true-recall/core/metrics/stats/stats-calculator.service";
 import type { CardSchedulingMeta } from "@true-recall/core/types";
 
 import { Q, useQuery } from "@true-recall/obsidian/data";
-import { usePlugin } from "@true-recall/obsidian/preact";
+import { useGatedComputed, usePlugin } from "@true-recall/obsidian/preact";
 
 import { configValue, parseCodeblockConfig } from "../config-parser";
 
@@ -52,7 +52,19 @@ const LEVEL_COLORS = [
 ];
 const LEVEL_OPACITIES = [1, 0.3, 0.5, 0.7, 1];
 
-export function HeatmapWidget({ source }: { source: string }) {
+// Rebuild the heatmap (full daily-stats scan + hundreds of SVG cells) at most
+// this often while visible; hidden hosts skip rebuilding entirely.
+const RECOMPUTE_THROTTLE_MS = 2000;
+
+// Codeblock hosts render inside notes and have no view-visibility signal.
+const ALWAYS_VISIBLE = signal(true);
+
+interface HeatmapWidgetProps {
+	source: string;
+	isViewVisible?: ReadonlySignal<boolean>;
+}
+
+export function HeatmapWidget({ source, isViewVisible }: HeatmapWidgetProps) {
 	const plugin = usePlugin();
 	const allMeta = useQuery<Map<string, CardSchedulingMeta>>(Q.ALL_META);
 	const [tooltip, setTooltip] = useState<{
@@ -64,105 +76,118 @@ export function HeatmapWidget({ source }: { source: string }) {
 
 	const config = useMemo(() => parseCodeblockConfig(source), [source]);
 
-	const data = useComputed((): HeatmapData | null => {
-		void allMeta.value;
-		if (!plugin.sessionPersistence) return null;
+	const data = useGatedComputed(
+		(): HeatmapData | null => {
+			void allMeta.value;
+			if (!plugin.sessionPersistence) return null;
 
-		const statsCalculator = new StatsCalculatorService(
-			plugin.fsrsService,
-			plugin.flashcardManager,
-			plugin.sessionPersistence,
-		);
+			const statsCalculator = new StatsCalculatorService(
+				plugin.fsrsService,
+				plugin.flashcardManager,
+				plugin.sessionPersistence,
+			);
 
-		const months = configValue(config, "months", 12) as number;
-		const allStats = statsCalculator.getAllDailyStats();
+			const months = configValue(config, "months", 12) as number;
+			const allStats = statsCalculator.getAllDailyStats();
 
-		const today = new Date();
-		const startDate = new Date(today);
-		if (months <= 0) {
-			const dateKeys = Object.keys(allStats).sort();
-			if (dateKeys.length > 0) {
-				const firstKey = dateKeys[0];
-				if (firstKey) startDate.setTime(new Date(firstKey).getTime());
+			const today = new Date();
+			const startDate = new Date(today);
+			if (months <= 0) {
+				const dateKeys = Object.keys(allStats).sort();
+				if (dateKeys.length > 0) {
+					const firstKey = dateKeys[0];
+					if (firstKey) startDate.setTime(new Date(firstKey).getTime());
+				}
+			} else {
+				startDate.setMonth(startDate.getMonth() - months);
 			}
-		} else {
-			startDate.setMonth(startDate.getMonth() - months);
-		}
-		// Align to Monday
-		const startDay = startDate.getDay();
-		const startMonday = startDay === 0 ? 6 : startDay - 1;
-		startDate.setDate(startDate.getDate() - startMonday);
+			// Align to Monday
+			const startDay = startDate.getDay();
+			const startMonday = startDay === 0 ? 6 : startDay - 1;
+			startDate.setDate(startDate.getDate() - startMonday);
 
-		const cells: HeatmapCell[] = [];
-		let daysActive = 0;
-		let totalReviews = 0;
-		const counts: number[] = [];
+			const cells: HeatmapCell[] = [];
+			let daysActive = 0;
+			let totalReviews = 0;
+			const counts: number[] = [];
 
-		const cursor = new Date(startDate);
-		while (cursor <= today) {
-			const key = cursor.toISOString().split("T")[0] ?? "";
-			const stats = allStats[key];
-			const count = stats?.reviewsCompleted ?? 0;
-			counts.push(count);
-			if (count > 0) daysActive++;
-			totalReviews += count;
-			cursor.setDate(cursor.getDate() + 1);
-		}
-
-		// Calculate intensity levels using percentiles
-		const nonZeroCounts = counts.filter((c) => c > 0).sort((a, b) => a - b);
-		const p25 = nonZeroCounts[Math.floor(nonZeroCounts.length * 0.25)] ?? 1;
-		const p50 = nonZeroCounts[Math.floor(nonZeroCounts.length * 0.5)] ?? 2;
-		const p75 = nonZeroCounts[Math.floor(nonZeroCounts.length * 0.75)] ?? 5;
-
-		function getLevel(count: number): 0 | 1 | 2 | 3 | 4 {
-			if (count === 0) return 0;
-			if (count <= p25) return 1;
-			if (count <= p50) return 2;
-			if (count <= p75) return 3;
-			return 4;
-		}
-
-		// Build cells
-		const resetCursor = new Date(startDate);
-		let col = 0;
-		const monthLabels: { label: string; col: number }[] = [];
-		let lastMonth = -1;
-
-		while (resetCursor <= today) {
-			const key = resetCursor.toISOString().split("T")[0] ?? "";
-			const dayOfWeek = resetCursor.getDay();
-			const row = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Mon=0 ... Sun=6
-			const stats = allStats[key];
-			const count = stats?.reviewsCompleted ?? 0;
-
-			// Track month labels
-			const month = resetCursor.getMonth();
-			if (month !== lastMonth && row === 0) {
-				monthLabels.push({ label: MONTH_NAMES[month] ?? "", col });
-				lastMonth = month;
+			const cursor = new Date(startDate);
+			while (cursor <= today) {
+				const key = cursor.toISOString().split("T")[0] ?? "";
+				const stats = allStats[key];
+				const count = stats?.reviewsCompleted ?? 0;
+				counts.push(count);
+				if (count > 0) daysActive++;
+				totalReviews += count;
+				cursor.setDate(cursor.getDate() + 1);
 			}
 
-			cells.push({ date: key, count, level: getLevel(count), row, col });
+			// Calculate intensity levels using percentiles
+			const nonZeroCounts = counts.filter((c) => c > 0).sort((a, b) => a - b);
+			const p25 = nonZeroCounts[Math.floor(nonZeroCounts.length * 0.25)] ?? 1;
+			const p50 = nonZeroCounts[Math.floor(nonZeroCounts.length * 0.5)] ?? 2;
+			const p75 = nonZeroCounts[Math.floor(nonZeroCounts.length * 0.75)] ?? 5;
 
-			// Advance to next day; increment col on Mondays
-			resetCursor.setDate(resetCursor.getDate() + 1);
-			if (
-				resetCursor.getDay() === 1 ||
-				(resetCursor.getDay() === 0 && row === 6)
-			) {
-				// Moved from Sunday to Monday -> new week
+			function getLevel(count: number): 0 | 1 | 2 | 3 | 4 {
+				if (count === 0) return 0;
+				if (count <= p25) return 1;
+				if (count <= p50) return 2;
+				if (count <= p75) return 3;
+				return 4;
 			}
-			// Recalculate col from next day
-			const nextDow = resetCursor.getDay();
-			const nextRow = nextDow === 0 ? 6 : nextDow - 1;
-			if (nextRow === 0 && resetCursor <= today) {
-				col++;
-			}
-		}
 
-		return { cells, monthLabels, daysActive, totalReviews, maxWeeks: col + 1 };
-	}).value;
+			// Build cells
+			const resetCursor = new Date(startDate);
+			let col = 0;
+			const monthLabels: { label: string; col: number }[] = [];
+			let lastMonth = -1;
+
+			while (resetCursor <= today) {
+				const key = resetCursor.toISOString().split("T")[0] ?? "";
+				const dayOfWeek = resetCursor.getDay();
+				const row = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // Mon=0 ... Sun=6
+				const stats = allStats[key];
+				const count = stats?.reviewsCompleted ?? 0;
+
+				// Track month labels
+				const month = resetCursor.getMonth();
+				if (month !== lastMonth && row === 0) {
+					monthLabels.push({ label: MONTH_NAMES[month] ?? "", col });
+					lastMonth = month;
+				}
+
+				cells.push({ date: key, count, level: getLevel(count), row, col });
+
+				// Advance to next day; increment col on Mondays
+				resetCursor.setDate(resetCursor.getDate() + 1);
+				if (
+					resetCursor.getDay() === 1 ||
+					(resetCursor.getDay() === 0 && row === 6)
+				) {
+					// Moved from Sunday to Monday -> new week
+				}
+				// Recalculate col from next day
+				const nextDow = resetCursor.getDay();
+				const nextRow = nextDow === 0 ? 6 : nextDow - 1;
+				if (nextRow === 0 && resetCursor <= today) {
+					col++;
+				}
+			}
+
+			return {
+				cells,
+				monthLabels,
+				daysActive,
+				totalReviews,
+				maxWeeks: col + 1,
+			};
+		},
+		() => [allMeta.value, config],
+		{
+			isVisible: isViewVisible ?? ALWAYS_VISIBLE,
+			throttleMs: RECOMPUTE_THROTTLE_MS,
+		},
+	);
 
 	if (!data) {
 		return <div class="ep:text-obs-muted ep:text-xs ep:p-3">Loading...</div>;
@@ -236,9 +261,7 @@ export function HeatmapWidget({ source }: { source: string }) {
 							rx={2}
 							fill={LEVEL_COLORS[cell.level]}
 							opacity={LEVEL_OPACITIES[cell.level]}
-							onMouseEnter={(e) =>
-								handleCellHover(cell, e as unknown as MouseEvent)
-							}
+							onMouseEnter={(e) => handleCellHover(cell, e)}
 							onMouseLeave={handleCellLeave}
 							style={{ cursor: "pointer" }}
 						/>

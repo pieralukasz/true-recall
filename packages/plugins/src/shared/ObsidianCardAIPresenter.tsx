@@ -95,7 +95,7 @@ export class ObsidianCardAIPresenter implements CardAIPresenter {
 		}
 
 		const notice = new Notice(`AI applied: ${parts.join(" + ")}`, 10_000);
-		const btn = document.createElement("button");
+		const btn = activeDocument.createElement("button");
 		btn.textContent = "Undo";
 		btn.className = "mod-cta";
 		btn.setCssStyles({ marginLeft: "8px" });
@@ -104,7 +104,7 @@ export class ObsidianCardAIPresenter implements CardAIPresenter {
 			for (const id of createdIds) target.removeCard?.(id);
 			notice.hide();
 		};
-		notice.noticeEl.appendChild(btn);
+		notice.messageEl.appendChild(btn);
 	}
 
 	private openPreview(args: CardAIPresentArgs): Promise<void> {

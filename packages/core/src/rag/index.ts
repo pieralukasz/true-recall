@@ -35,6 +35,13 @@ export {
 	chunkFlashcard,
 	chunkNote,
 } from "./ingestion/rag-chunker.service";
+export {
+	type KnowledgeEvidence,
+	type KnowledgeRetrievalRequest,
+	type KnowledgeRetriever,
+	type KnowledgeSourceType,
+	RagKnowledgeRetriever,
+} from "./retrieval/knowledge-retriever";
 // Chat services
 export { RagEmbeddingServiceImpl } from "./retrieval/rag-embedding.service";
 export type {

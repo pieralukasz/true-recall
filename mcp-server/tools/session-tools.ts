@@ -1,5 +1,11 @@
 import { z } from "zod";
-import { del, postParams, postTo, type ToolDef } from "./_register.js";
+import {
+	del,
+	postParams,
+	postTo,
+	requireStringParam,
+	type ToolDef,
+} from "./_register.js";
 
 export const sessionTools: ToolDef[] = [
 	postParams(
@@ -55,7 +61,7 @@ export const sessionTools: ToolDef[] = [
 			card_id: z.string().describe("The card's UUID"),
 			suspended: z.boolean().describe("true to suspend, false to unsuspend"),
 		},
-		(p) => `/cards/${p.card_id}/suspend`,
+		(p) => `/cards/${requireStringParam(p, "card_id")}/suspend`,
 		({ suspended }) => ({ suspended }),
 	),
 
@@ -67,7 +73,7 @@ export const sessionTools: ToolDef[] = [
 			question: z.string().optional().describe("New question/front text"),
 			answer: z.string().optional().describe("New answer/back text"),
 		},
-		(p) => `/cards/${p.card_id}/update`,
+		(p) => `/cards/${requireStringParam(p, "card_id")}/update`,
 		({ question, answer }) => ({ question, answer }),
 	),
 
@@ -75,7 +81,7 @@ export const sessionTools: ToolDef[] = [
 		"delete_card",
 		"Permanently delete a flashcard. This soft-deletes the card — it won't appear in reviews or searches.",
 		{ card_id: z.string().describe("The card's UUID") },
-		(p) => `/cards/${p.card_id}`,
+		(p) => `/cards/${requireStringParam(p, "card_id")}`,
 	),
 
 	postParams(

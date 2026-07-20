@@ -1,5 +1,6 @@
 import type { PluginTier } from "@true-recall/core/types";
 
+import { aiAssistantManifest } from "./ai-assistant";
 import { aiGenerationManifest } from "./ai-generation";
 import { ankiImportExportManifest } from "./anki-import-export";
 import { cardPolishManifest } from "./card-polish";
@@ -19,6 +20,7 @@ export const PLUGIN_MANIFESTS: PluginManifest[] = [
 	statusBarWidgetManifest,
 	aiGenerationManifest,
 	cardPolishManifest,
+	aiAssistantManifest,
 	imageOcclusionManifest,
 	knowledgeBaseManifest,
 	typeInModeManifest,

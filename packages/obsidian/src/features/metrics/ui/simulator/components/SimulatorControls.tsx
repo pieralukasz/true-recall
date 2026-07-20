@@ -60,7 +60,7 @@ export function SimulatorControls({
 					"ep:bg-obs-primary ep:text-obs-normal",
 					"ep:border ep:border-obs-border ep:rounded-lg",
 					"ep:text-ui-small",
-					"hover:ep:bg-obs-modifier-hover",
+					"ep:hover:bg-obs-modifier-hover",
 				].join(" ")}
 				onClick={handleReset}
 			>

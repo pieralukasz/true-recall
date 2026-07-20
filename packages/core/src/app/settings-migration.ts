@@ -138,6 +138,7 @@ export function migrateSettings(raw: Partial<TrueRecallSettings> | null): {
 	// settings.generationPresets. Drop the bucket so stale data does not
 	// persist across saves.
 	if (
+		// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion -- load-bearing: raw's static type (Partial<TrueRecallSettings>) no longer has this property at all, since it's only ever present in stale on-disk data written by old versions
 		(raw as Record<string, unknown> | null)?.flashcardGeneration !== undefined
 	) {
 		delete (settings as { flashcardGeneration?: unknown }).flashcardGeneration;
@@ -147,6 +148,7 @@ export function migrateSettings(raw: Partial<TrueRecallSettings> | null): {
 	// easyDays: array → object migration
 	if (Array.isArray(settings.easyDays)) {
 		settings.easyDays = {
+			// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion -- load-bearing: settings.easyDays is narrowed to `unknown[]` by the Array.isArray check above, and TS won't let one assertion bridge unknown[] -> number[] without the unknown hop
 			recurringDays: settings.easyDays as unknown as number[],
 			specificDates: [],
 		};
@@ -379,6 +381,15 @@ export function migrateSettings(raw: Partial<TrueRecallSettings> | null): {
 				}
 				needsSave = true;
 			}
+		}
+	}
+
+	// Backfill the ask-ai toolbar button for users with saved button arrays
+	for (const key of ["editorToolbarButtons", "globalToolbarButtons"] as const) {
+		const buttons = settings[key];
+		if (Array.isArray(buttons) && !buttons.some((b) => b.id === "ask-ai")) {
+			buttons.push({ id: "ask-ai", enabled: true });
+			needsSave = true;
 		}
 	}
 

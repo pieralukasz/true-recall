@@ -49,8 +49,8 @@ export function PreviewModalBody({
 			else if (action.type === "reveal") reveal();
 			else if (action.type === "grade") grade(action.rating);
 		}
-		document.addEventListener("keydown", onKey);
-		return () => document.removeEventListener("keydown", onKey);
+		activeDocument.addEventListener("keydown", onKey);
+		return () => activeDocument.removeEventListener("keydown", onKey);
 	}, [isAnswerRevealed, isGradable, reveal, grade, onClose]);
 
 	return (

@@ -126,7 +126,7 @@ export function KnowledgeChatApp({ view }: Props) {
 	);
 
 	const scrollToBottom = useCallback(() => {
-		requestAnimationFrame(() => {
+		window.requestAnimationFrame(() => {
 			scrollRef.current?.scrollTo(0, scrollRef.current.scrollHeight);
 		});
 	}, []);
@@ -215,7 +215,7 @@ export function KnowledgeChatApp({ view }: Props) {
 				<div class="ep:flex ep:items-center ep:gap-2">
 					<span
 						ref={headerIconRef}
-						class="ep:shrink-0 ep:flex ep:items-center ep:text-obs-muted [&_svg]:ep:w-4 [&_svg]:ep:h-4"
+						class="ep:shrink-0 ep:flex ep:items-center ep:text-obs-muted ep:[&_svg]:w-4 ep:[&_svg]:h-4"
 					/>
 					<span class="ep:text-ui-small ep:font-semibold ep:text-obs-normal">
 						Chat
@@ -256,7 +256,7 @@ export function KnowledgeChatApp({ view }: Props) {
 						<div class="ep:flex ep:flex-col ep:items-center ep:gap-1">
 							<span
 								ref={sparklesRef}
-								class="ep:flex ep:items-center ep:justify-center ep:text-obs-accent ep:opacity-70 [&_svg]:ep:w-10 [&_svg]:ep:h-10"
+								class="ep:flex ep:items-center ep:justify-center ep:text-obs-accent ep:opacity-70 ep:[&_svg]:w-10 ep:[&_svg]:h-10"
 							/>
 							<div class="ep:text-center">
 								<div class="ep:text-ui-medium ep:font-semibold ep:text-obs-normal ep:mb-1">
@@ -272,7 +272,7 @@ export function KnowledgeChatApp({ view }: Props) {
 								<Clickable
 									key={q}
 									class="ep:text-sm ep:text-obs-muted ep:text-left ep:px-4 ep:py-2.5 ep:rounded-xl ep:border ep:border-obs-border ep:hover:border-obs-interactive ep:hover:text-obs-normal ep:transition-colors ep:leading-snug"
-									onClick={() => handleSend(q)}
+									onClick={() => void handleSend(q)}
 								>
 									{q}
 								</Clickable>
@@ -300,7 +300,7 @@ export function KnowledgeChatApp({ view }: Props) {
 			</div>
 
 			<ChatInput
-				onSend={handleSend}
+				onSend={(text) => void handleSend(text)}
 				disabled={streaming}
 				contextItems={allContext}
 				onDismissContext={handleDismissContext}

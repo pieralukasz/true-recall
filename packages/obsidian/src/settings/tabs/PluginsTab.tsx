@@ -114,6 +114,11 @@ function PluginAccordion({
 						>
 							{TIER_LABEL[info.tier]}
 						</span>
+						{info.deprecated && (
+							<span class="ep:text-ui-smaller ep:px-1.5 ep:py-0.5 ep:rounded ep:font-medium ep:bg-obs-orange/15 ep:text-obs-orange">
+								DEPRECATED
+							</span>
+						)}
 						{canExpand && <ChevronIcon expanded={isExpanded} />}
 					</div>
 
@@ -150,6 +155,11 @@ function PluginAccordion({
 						<p class="ep:text-[12px] ep:text-obs-muted ep:leading-relaxed">
 							{info.description}
 						</p>
+						{info.deprecated && (
+							<p class="ep:text-[12px] ep:text-obs-orange ep:leading-relaxed ep:mt-2">
+								{info.deprecated.message}
+							</p>
+						)}
 					</div>
 					{SettingsPanel && (
 						<div class="ep:px-4 ep:pb-2">

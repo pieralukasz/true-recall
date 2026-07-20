@@ -22,6 +22,13 @@ import { AudioPlayButton } from "./AudioPlayButton";
 import { NoteReviewRenderer } from "./NoteReviewRenderer";
 import { IOCardRenderer } from "@true-recall/plugins/image-occlusion";
 
+const INK_EMBED_PATTERN =
+	/(?:!\[Ink(?:Drawing|Writing)\]|[?&]type=ink(?:Drawing|Writing)\b)/i;
+
+function hasInkEmbed(content: string | undefined): boolean {
+	return !!content && INK_EMBED_PATTERN.test(content);
+}
+
 function useAnswerWarmup(
 	isRevealed: boolean,
 	cardId: string,
@@ -38,7 +45,7 @@ function useAnswerWarmup(
 	useEffect(() => {
 		if (isRevealed || warmRef.current) return;
 
-		const rafId = requestAnimationFrame(() => {
+		const rafId = window.requestAnimationFrame(() => {
 			warmRef.current = true;
 			tick((t) => t + 1);
 		});
@@ -186,7 +193,12 @@ export function CardContainer({
 	// Detailed grading feedback is stripped for non-Pro tiers in
 	// SemanticAnswerGradingService — surface that instead of silently hiding it.
 	const isProTier = providerType === "pro";
-	const maxWidth = isMobile() ? "100%" : getReviewMaxWidth(reviewContentWidth);
+	const containsInkEmbed =
+		hasInkEmbed(card.question) || hasInkEmbed(card.answer);
+	const maxWidth =
+		isMobile() || containsInkEmbed
+			? "100%"
+			: getReviewMaxWidth(reviewContentWidth);
 	const maxWidthStyle = `--tr-review-max-width: ${maxWidth}; max-width: ${maxWidth};`;
 
 	const questionContent = card.question;
@@ -269,7 +281,14 @@ export function CardContainer({
 				)}
 
 				<LivePreviewField
-					content={questionContent}
+					content={
+						// Anki-style cloze reveal: the answer replaces the sentence in
+						// place (gap filled + Extra below) instead of rendering as a
+						// separate basic-card answer block.
+						isCloze && isAnswerRevealed
+							? (card.answer ?? questionContent)
+							: questionContent
+					}
 					field="question"
 					sourcePath={sourcePath}
 					cls="true-recall-review-question ep:leading-relaxed ep:text-obs-normal ep:mb-6"
@@ -291,7 +310,7 @@ export function CardContainer({
 					</div>
 				)}
 
-				{hasTextAnswer && (
+				{hasTextAnswer && !isCloze && (
 					<>
 						<div
 							class={cn(

@@ -68,7 +68,6 @@ export interface ReviewSliceActions {
 
 	// Card navigation
 	nextCard: () => boolean;
-	recordAnswer: (rating: Grade, updatedCard: FSRSFlashcardItem) => boolean;
 	recordAnswerAndNext: (
 		rating: Grade,
 		updatedCard: FSRSFlashcardItem,

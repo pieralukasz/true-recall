@@ -45,5 +45,5 @@ export const BUTTON_CLS = [
 	"ep:bg-obs-secondary ep:text-obs-normal",
 	"ep:border ep:border-obs-border ep:rounded-md",
 	"ep:cursor-pointer ep:text-ui-smaller",
-	"hover:ep:bg-obs-modifier-hover",
+	"ep:hover:bg-obs-modifier-hover",
 ].join(" ");

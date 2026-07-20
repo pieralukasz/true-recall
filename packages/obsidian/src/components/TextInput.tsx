@@ -165,8 +165,11 @@ export function TextInput({
 
 	useEffect(() => {
 		if (!autoFocus) return;
-		const id = setTimeout(() => componentRef.current?.inputEl.focus(), 50);
-		return () => clearTimeout(id);
+		const id = window.setTimeout(
+			() => componentRef.current?.inputEl.focus(),
+			50,
+		);
+		return () => window.clearTimeout(id);
 	}, [autoFocus]);
 
 	return <div ref={hostRef} class={cn("ep:w-full", cls)} />;

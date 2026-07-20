@@ -8,6 +8,7 @@ import {
 	StatGrid,
 } from "@true-recall/obsidian/components";
 
+import { resolveAnkiMediaFolder } from "./media-folder";
 import type { ImportPreview } from "./types";
 
 interface PreviewPhaseProps {
@@ -78,9 +79,11 @@ export function PreviewPhase({
 				/>
 				<OptionCheckbox
 					label="Import media files"
-					description={`${preview.mediaCount} files will be saved to ${
-						attachmentFolderOverride || `Attachments/${importFolder}`
-					}`}
+					description={`${preview.mediaCount} files will be saved to ${resolveAnkiMediaFolder(
+						attachmentFolderOverride,
+						importFolder,
+						preview.decks,
+					)}`}
 					checked={importMedia}
 					onChange={onMediaChange}
 				/>

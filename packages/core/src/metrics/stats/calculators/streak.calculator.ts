@@ -3,7 +3,9 @@
  * Calculates current and longest study streaks
  */
 import type { ExtendedDailyStats } from "../../../types";
-import { getTodayBoundary } from "../../../utils";
+import { formatLocalDate, getTodayBoundary } from "../../../utils";
+
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 export interface StreakInfo {
 	current: number;
@@ -55,9 +57,12 @@ export class StreakCalculator {
 		const lastStudyDate = reviewDates[0];
 		if (!lastStudyDate) return 0;
 
-		const lastStudy = new Date(lastStudyDate);
-		const daysSinceLastStudy = Math.floor(
-			(today.getTime() - lastStudy.getTime()) / (1000 * 60 * 60 * 24),
+		// Compare day KEYS (both parsed as UTC midnight) instead of mixing a
+		// UTC-parsed key with the local day boundary — that mix reported a
+		// broken streak as current for timezone offsets above dayStartHour.
+		const todayKey = formatLocalDate(today);
+		const daysSinceLastStudy = Math.round(
+			(Date.parse(todayKey) - Date.parse(lastStudyDate)) / MS_PER_DAY,
 		);
 
 		// If last study was more than 1 day ago, current streak is 0
@@ -90,18 +95,17 @@ export class StreakCalculator {
 	private calculateLongestStreak(reviewDates: string[]): number {
 		let longestStreak = 0;
 		let tempStreak = 0;
-		let prevDate: Date | null = null;
+		let prevDate: number | null = null;
 
 		for (const dateStr of [...reviewDates].sort()) {
-			const currentDate = new Date(dateStr);
-			currentDate.setHours(0, 0, 0, 0);
+			// Day keys parse as UTC midnight; keeping the math in UTC avoids
+			// DST days (23/25h) splitting a genuine streak.
+			const currentDate = Date.parse(dateStr);
 
 			if (prevDate === null) {
 				tempStreak = 1;
 			} else {
-				const dayDiff = Math.floor(
-					(currentDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24),
-				);
+				const dayDiff = Math.round((currentDate - prevDate) / MS_PER_DAY);
 				if (dayDiff === 1) {
 					tempStreak++;
 				} else {

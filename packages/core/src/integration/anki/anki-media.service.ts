@@ -137,15 +137,7 @@ export class AnkiMediaService {
 
 	// Convert Obsidian ![[path/to/file.png]] embeds back to Anki <img src="file.png">
 	convertContentForExport(content: string): string {
-		return content.replace(WIKILINK_EMBED_REGEX, (_match, ref: string) => {
-			const filename = this.basenameOf(ref);
-			const ext = filename.split(".").pop()?.toLowerCase() ?? "";
-
-			if (AUDIO_EXTENSIONS.has(ext)) {
-				return `[sound:${filename}]`;
-			}
-			return `<img src="${filename}">`;
-		});
+		return convertContentForExport(content);
 	}
 
 	private extractMediaRefs(content: string): string[] {
@@ -207,8 +199,7 @@ export class AnkiMediaService {
 	}
 
 	private basenameOf(path: string): string {
-		const parts = path.split("/");
-		return parts[parts.length - 1] ?? path;
+		return mediaBasename(path);
 	}
 
 	private isMediaFile(ref: string): boolean {
@@ -219,6 +210,29 @@ export class AnkiMediaService {
 
 function escapeRegex(str: string): string {
 	return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/** Last path segment of a vault path or wikilink ref. */
+export function mediaBasename(path: string): string {
+	const parts = path.split("/");
+	return parts[parts.length - 1] ?? path;
+}
+
+/**
+ * Convert Obsidian `![[path/to/file.png|300]]` embeds to Anki references
+ * (`<img src="file.png">` / `[sound:file.mp3]`). Anki media names are flat
+ * basenames, so paths and aliases are stripped.
+ */
+export function convertContentForExport(content: string): string {
+	return content.replace(WIKILINK_EMBED_REGEX, (_match, ref: string) => {
+		const filename = mediaBasename(ref.trim());
+		const ext = filename.split(".").pop()?.toLowerCase() ?? "";
+
+		if (AUDIO_EXTENSIONS.has(ext)) {
+			return `[sound:${filename}]`;
+		}
+		return `<img src="${filename}">`;
+	});
 }
 
 const IMAGE_EXTENSIONS = new Set([

@@ -73,6 +73,18 @@ export class CardActions {
 		return this.queries.getDueCardsByDateRange(startDate, endDate);
 	}
 
+	getDueCountsByDateRange(
+		startDate: string,
+		endDate: string,
+		excludeCardId?: string,
+	): { day: string; count: number }[] {
+		return this.queries.getDueCountsByDateRange(
+			startDate,
+			endDate,
+			excludeCardId,
+		);
+	}
+
 	browserQuery(
 		where: string,
 		params: (string | number)[],
@@ -196,11 +208,6 @@ export class CardActions {
 		this.writes.softDelete(cardId);
 	}
 
-	/** @deprecated Use softDelete() instead for sync compatibility */
-	delete(cardId: string): void {
-		this.writes.delete(cardId);
-	}
-
 	updateCardSourceUid(cardId: string, sourceUid: string): void {
 		this.writes.updateCardSourceUid(cardId, sourceUid);
 	}
@@ -254,16 +261,6 @@ export class CardActions {
 
 	bulkSoftDelete(cardIds: string[]): number {
 		return this.bulk.bulkSoftDelete(cardIds);
-	}
-
-	/** @deprecated Use bulkSoftDelete() instead for sync compatibility */
-	bulkDelete(cardIds: string[]): number {
-		return this.bulk.bulkDelete(cardIds);
-	}
-
-	/** @deprecated Use bulkForget() instead — it also clears review history */
-	bulkReset(cardIds: string[]): number {
-		return this.bulk.bulkReset(cardIds);
 	}
 
 	bulkForget(cardIds: string[]): number {

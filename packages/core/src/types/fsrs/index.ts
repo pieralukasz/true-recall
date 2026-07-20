@@ -59,5 +59,3 @@ export type {
 	StreakInfo,
 	TodaySummary,
 } from "./stats.types";
-// Store types
-export type { CardStore } from "./store.types";

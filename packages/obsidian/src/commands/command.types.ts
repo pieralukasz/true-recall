@@ -19,6 +19,8 @@ export interface Command {
 	undo(ctx: CommandContext): void | Promise<void>;
 
 	readonly deferred?: boolean;
+	readonly skipExecuteMutation?: boolean;
+	readonly skipUndoMutation?: boolean;
 	cancelPendingWrite?(): boolean;
 }
 

@@ -15,7 +15,7 @@ export function StorageLocationsSection() {
 		<FormCard title="Storage locations">
 			<FormField
 				name="Attachment folder"
-				description="Where pasted images, Image Occlusion crops, AI-generated card images, and Anki import media are saved. Leave empty to keep each feature's current default location."
+				description="Where pasted images, Image Occlusion crops, and Anki import media are saved. Leave empty to keep each feature's current default location."
 			>
 				<FolderSuggestInput
 					app={app}

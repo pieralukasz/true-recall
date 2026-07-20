@@ -86,6 +86,33 @@ describe("Duplicate Prevention", () => {
 			expect(ctx.cards.getCardIdByQuestion("WHAT IS X?")).toBe("card-1");
 		});
 
+		it("does not report a question contained in another card's answer as duplicate", async () => {
+			// Regression: containment-based FTS/LIKE matching flagged a NEW
+			// question as duplicate when it merely appeared inside another
+			// card's answer text.
+			ctx.cards.set(
+				"card-1",
+				createTestCard({
+					id: "card-1",
+					question: "Describe photosynthesis",
+					answer: "Plants convert light. What is chlorophyll? It is a pigment.",
+				}),
+			);
+
+			expect(
+				ctx.cards.getCardIdByQuestion("What is chlorophyll?"),
+			).toBeUndefined();
+		});
+
+		it("finds duplicates for questions containing quotes", async () => {
+			// Regression: fields_json stores JSON-escaped text, so a raw LIKE
+			// never matched questions containing quotes.
+			const question = 'He said "hello" to the class';
+			ctx.cards.set("card-q", createTestCard({ id: "card-q", question }));
+
+			expect(ctx.cards.getCardIdByQuestion(question)).toBe("card-q");
+		});
+
 		it("should match exact whitespace in questions", async () => {
 			const card = createTestCard({
 				id: "card-1",

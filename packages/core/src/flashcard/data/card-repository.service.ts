@@ -268,45 +268,16 @@ export class CardRepository {
 			}
 		}
 
+		// Both cards of a reversed pair share one note, and updateCardContent
+		// writes in note orientation based on template_ord — the paired card is
+		// updated by the same note write, so no extra sync is needed (a second
+		// swapped write used to flip the pair).
 		this.store.cards.updateCardContent(cardId, newQuestion, newAnswer);
 
 		this.emit("card:updated", {
 			cardId,
 			changes: { question: true, answer: true },
 		});
-
-		// Sync reversed pair: update the paired card with swapped Q/A
-		this.syncReversePair(cardId, existing, newQuestion, newAnswer);
-	}
-
-	private syncReversePair(
-		cardId: string,
-		cardData: FSRSCardData,
-		newQuestion: string,
-		newAnswer: string,
-	): void {
-		// Case 1: This card IS a reverse - update the original
-		if (cardData.reverseOf) {
-			const original = this.store.get(cardData.reverseOf);
-			if (original) {
-				this.store.cards.updateCardContent(
-					cardData.reverseOf,
-					newAnswer,
-					newQuestion,
-				);
-			}
-		}
-
-		// Case 2: This card HAS a reverse - update the reverse
-		const reverseCard = this.store.cards.getCardByReverseOf(cardId);
-		if (reverseCard) {
-			this.store.cards.updateCardContent(
-				reverseCard.id,
-				newAnswer,
-				newQuestion,
-			);
-		}
-		// No notification — the caller (updateContent) already calls notifyCardChange
 	}
 
 	updateFSRS(
@@ -420,6 +391,12 @@ export class CardRepository {
 		const newClozeCards = parseClozeTemplate(newTemplate);
 		const newIndices = new Set(newClozeCards.map((c) => c.clozeIndex));
 		const affectedCardIds: string[] = [];
+		const updatedCardIds: string[] = [];
+		let cardSetChanged = false;
+		// New sibling cards must attach to the siblings' shared note —
+		// omitting noteId made store.set() create a separate note per added
+		// cloze index, fragmenting the note and losing its Extra field.
+		const sharedNoteId = siblings.find((s) => s.noteId)?.noteId;
 
 		for (const cloze of newClozeCards) {
 			const existing = siblingsByIndex.get(cloze.clozeIndex);
@@ -431,6 +408,7 @@ export class CardRepository {
 					newTemplate,
 				);
 				affectedCardIds.push(existing.id);
+				updatedCardIds.push(existing.id);
 			} else {
 				const cardId = crypto.randomUUID();
 				const fsrsData = createDefaultFSRSData(cardId);
@@ -442,9 +420,11 @@ export class CardRepository {
 					cardType: "cloze",
 					clozeTemplate: newTemplate,
 					clozeIndex: cloze.clozeIndex,
+					noteId: sharedNoteId,
 				};
 				this.store.set(cardId, extendedData);
 				affectedCardIds.push(cardId);
+				cardSetChanged = true;
 			}
 		}
 
@@ -452,11 +432,24 @@ export class CardRepository {
 			if (!newIndices.has(index)) {
 				this.store.cards.softDeleteWithCascade(sibling.id);
 				affectedCardIds.push(sibling.id);
+				cardSetChanged = true;
 			}
 		}
 
-		if (affectedCardIds.length > 0) {
-			this.emit("cards:bulk", { cardIds: affectedCardIds });
+		if (cardSetChanged) {
+			if (affectedCardIds.length > 0) {
+				this.emit("cards:bulk", { cardIds: affectedCardIds });
+			}
+		} else {
+			// Pure template text edit: same cloze indices, so only rendered Q/A
+			// changed — per-card content-only events let consumers skip the
+			// expensive full-bulk invalidation.
+			for (const cardId of updatedCardIds) {
+				this.emit("card:updated", {
+					cardId,
+					changes: { question: true, answer: true },
+				});
+			}
 		}
 	}
 

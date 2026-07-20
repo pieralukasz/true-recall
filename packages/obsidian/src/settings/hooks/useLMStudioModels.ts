@@ -1,6 +1,11 @@
 import { requestUrl } from "obsidian";
 import { useEffect, useState } from "preact/hooks";
 
+/** Minimal shape of LM Studio's local `/v1/models` API response. */
+interface LMStudioModelsResponse {
+	data?: Array<{ id: string }>;
+}
+
 export function useLMStudioModels(baseUrl: string, enabled: boolean) {
 	const [models, setModels] = useState<string[]>([]);
 	const [status, setStatus] = useState<"idle" | "loading" | "ready" | "error">(
@@ -21,8 +26,8 @@ export function useLMStudioModels(baseUrl: string, enabled: boolean) {
 		requestUrl({ url: `${baseUrl}/models` })
 			.then((res) => {
 				if (cancelled) return;
-				const data = res.json;
-				const ids = (data.data ?? []).map((m: { id: string }) => m.id);
+				const data = res.json as LMStudioModelsResponse;
+				const ids = (data.data ?? []).map((m) => m.id);
 				setModels(ids);
 				setStatus("ready");
 			})

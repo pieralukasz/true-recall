@@ -54,18 +54,27 @@ export function AudioPlayButton({
 			await audio.play();
 		} catch (error) {
 			setIsPlaying(false);
-			if (error instanceof DOMException && error.name === "NotAllowedError") {
-				// Autoplay blocked by browser — this is expected on first interaction
-				console.info("[Audio] Autoplay blocked; user interaction required");
-			} else {
+			// NotAllowedError (autoplay blocked pre-interaction) is expected and
+			// silently retried on the next click; anything else is worth surfacing
+			// for diagnosing real playback failures.
+			if (
+				!(error instanceof DOMException && error.name === "NotAllowedError")
+			) {
 				console.warn("[Audio] Playback failed", error);
 			}
 		}
 	}, [audioPath, isPlaying]);
 
+	// Ref mirror so the autoplay effect can call the latest `play` without
+	// depending on it directly — `play`'s identity changes with `isPlaying`,
+	// and re-running this effect on every play/pause would re-trigger autoplay
+	// in a loop once each playback ends.
+	const playRef = useRef(play);
+	playRef.current = play;
+
 	useEffect(() => {
 		if (autoplay) {
-			void play();
+			void playRef.current();
 		}
 	}, [autoplay, audioPath]);
 
@@ -73,7 +82,7 @@ export function AudioPlayButton({
 		<button
 			class={cn(
 				"ep:inline-flex ep:items-center ep:justify-center ep:p-1 ep:rounded ep:border-0",
-				"ep:bg-transparent ep:cursor-pointer ep:text-obs-muted hover:ep:text-obs-accent",
+				"ep:bg-transparent ep:cursor-pointer ep:text-obs-muted ep:hover:text-obs-accent",
 				"ep:transition-colors ep:duration-150",
 				isPlaying && "ep:text-obs-accent",
 				className,

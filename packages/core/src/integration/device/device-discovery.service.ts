@@ -10,6 +10,7 @@ import {
 	extractDeviceIdFromFilename,
 	LEGACY_DB_FILE,
 } from "@true-recall/core/persistence/sqlite/sqlite.types";
+import { formatFileSize } from "@true-recall/core/utils/format.utils";
 
 /**
  * Information about a discovered device database.
@@ -123,7 +124,7 @@ export class DeviceDiscoveryService {
 				filename,
 				lastModified: new Date(stat.mtime),
 				sizeBytes: stat.size,
-				formattedSize: this.formatFileSize(stat.size),
+				formattedSize: formatFileSize(stat.size),
 				cardCount,
 				lastReviewDate,
 				isCurrentDevice: deviceId === this.currentDeviceId,
@@ -183,19 +184,6 @@ export class DeviceDiscoveryService {
 			return { cardCount, lastReviewDate };
 		} finally {
 			db.close();
-		}
-	}
-
-	/**
-	 * Format file size to human-readable string.
-	 */
-	private formatFileSize(bytes: number): string {
-		if (bytes < 1024) {
-			return `${bytes} B`;
-		} else if (bytes < 1024 * 1024) {
-			return `${(bytes / 1024).toFixed(1)} KB`;
-		} else {
-			return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 		}
 	}
 }

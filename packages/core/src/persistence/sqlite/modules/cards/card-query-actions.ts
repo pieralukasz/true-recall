@@ -134,6 +134,37 @@ export class CardQueryActions {
 		return rows.map(mapRow);
 	}
 
+	/**
+	 * Count of active Review-state cards per UTC due day within
+	 * [startDate, endDate]. New cards are excluded: they enter the schedule
+	 * via the daily new-card limit, not due-date scheduling. Aggregates in
+	 * SQL (no notes JOIN, no row materialization) so it is cheap enough for
+	 * per-review load-balancing paths.
+	 */
+	getDueCountsByDateRange(
+		startDate: string,
+		endDate: string,
+		excludeCardId?: string,
+	): { day: string; count: number }[] {
+		const excludeClause = excludeCardId ? "AND c.id != ?" : "";
+		const params = excludeCardId
+			? [startDate, endDate, excludeCardId]
+			: [startDate, endDate];
+		return this.db.query<{ day: string; count: number }>(
+			`SELECT date(c.due) AS day, COUNT(*) AS count
+                 FROM cards c
+                 WHERE c.deleted_at IS NULL
+                   AND c.suspended = 0
+                   AND (c.buried_until IS NULL OR c.buried_until <= datetime('now'))
+                   AND c.state = 2
+                   AND date(c.due) BETWEEN ? AND ?
+                   ${excludeClause}
+                 GROUP BY day
+                 ORDER BY day ASC`,
+			params,
+		);
+	}
+
 	browserQuery(
 		where: string,
 		params: (string | number)[],
@@ -243,51 +274,72 @@ export class CardQueryActions {
 	}
 
 	// ── Lookup methods ────────────────────────────────────────
+	//
+	// FTS/LIKE only pre-filters candidates: a phrase/substring match against
+	// the whole fields_json also hits questions embedded in OTHER cards'
+	// answers, which used to produce false duplicates (blocking creation and
+	// silently dropping imports). The final verdict is exact equality of the
+	// rendered question.
+
+	private findExactQuestionMatch(
+		question: string,
+		opts: { excludeCardId?: string; clozeIndex?: number } = {},
+	): FSRSCardData | undefined {
+		const conditions = ["c.deleted_at IS NULL"];
+		const baseParams: (string | number)[] = [];
+		if (opts.excludeCardId) {
+			conditions.push("c.id != ?");
+			baseParams.push(opts.excludeCardId);
+		}
+		if (opts.clozeIndex !== undefined) {
+			conditions.push("c.template_ord = ?");
+			baseParams.push(opts.clozeIndex);
+		}
+
+		// fields_json stores JSON-escaped text, so a raw LIKE misses questions
+		// containing quotes/backslashes/newlines — try the escaped form too.
+		const jsonEscaped = JSON.stringify(question).slice(1, -1);
+		const candidateParams =
+			jsonEscaped === question ? [question] : [question, jsonEscaped];
+
+		// Case-insensitive whole-question equality (established behavior —
+		// LIKE/FTS candidates are case-insensitive too).
+		const wanted = question.toLowerCase();
+
+		for (const candidate of candidateParams) {
+			const match = this.noteMatchCondition(candidate);
+			const rows = this.db.query<CardRow>(
+				`SELECT ${CARD_SELECT} ${CARD_FROM}
+                     WHERE ${match.sql} AND ${conditions.join(" AND ")}
+                     LIMIT 50`,
+				[match.param, ...baseParams],
+			);
+			const exact = rows
+				.map(mapRow)
+				.find((c) => (c.question ?? "").toLowerCase() === wanted);
+			if (exact) return exact;
+		}
+		return undefined;
+	}
 
 	getCardIdByQuestion(question: string): string | undefined {
-		const match = this.noteMatchCondition(question);
-		return this.db.get<{ id: string }>(
-			`SELECT c.id FROM cards c
-                 JOIN notes n ON c.note_id = n.id
-                 WHERE ${match.sql} AND c.deleted_at IS NULL
-                 LIMIT 1`,
-			[match.param],
-		)?.id;
+		return this.findExactQuestionMatch(question)?.id;
 	}
 
 	getCardInfoByQuestion(
 		question: string,
 		excludeCardId?: string,
 	): { id: string; sourceUid?: string } | undefined {
-		const match = this.noteMatchCondition(question);
-		const sql = excludeCardId
-			? `SELECT c.id, c.source_uid AS sourceUid FROM cards c
-                   JOIN notes n ON c.note_id = n.id
-                   WHERE ${match.sql} AND c.id != ? AND c.deleted_at IS NULL LIMIT 1`
-			: `SELECT c.id, c.source_uid AS sourceUid FROM cards c
-                   JOIN notes n ON c.note_id = n.id
-                   WHERE ${match.sql} AND c.deleted_at IS NULL LIMIT 1`;
-		const params = excludeCardId ? [match.param, excludeCardId] : [match.param];
-		const row = this.db.get<{
-			id: string;
-			sourceUid: string | null;
-		}>(sql, params);
-		if (!row) return undefined;
-		return { id: row.id, sourceUid: row.sourceUid ?? undefined };
+		const exact = this.findExactQuestionMatch(question, { excludeCardId });
+		if (!exact) return undefined;
+		return { id: exact.id, sourceUid: exact.sourceUid ?? undefined };
 	}
 
 	getCardIdByQuestionAndClozeIndex(
 		question: string,
 		clozeIndex: number,
 	): string | undefined {
-		const match = this.noteMatchCondition(question);
-		return this.db.get<{ id: string }>(
-			`SELECT c.id FROM cards c
-                 JOIN notes n ON c.note_id = n.id
-                 WHERE ${match.sql} AND c.template_ord = ? AND c.deleted_at IS NULL
-                 LIMIT 1`,
-			[match.param, clozeIndex],
-		)?.id;
+		return this.findExactQuestionMatch(question, { clozeIndex })?.id;
 	}
 
 	// ── Content checks ────────────────────────────────────────

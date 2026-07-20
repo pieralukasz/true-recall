@@ -82,6 +82,7 @@ export function SimulatorChart({
 			chartRef.current?.destroy();
 			chartRef.current = null;
 		};
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- chart is created once on mount; the effect below syncs simulations/metricType/useLogarithmic/useAnimation via chart.update()
 	}, []);
 
 	useEffect(() => {

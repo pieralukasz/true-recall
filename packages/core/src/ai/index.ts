@@ -11,7 +11,6 @@ export {
 	type AIClientOptions,
 	AIRequestError,
 	buildAIHeaders,
-	buildOpenRouterHeaders,
 	type ChatCompletionResponse,
 	type ChatMessage,
 	type ContentPart,
@@ -47,6 +46,10 @@ export {
 	ChunkedGenerationService,
 	type ConfirmLargeNote,
 } from "./generation/chunked-generation.service";
+export {
+	type DraftGenerationOptions,
+	DraftGenerationService,
+} from "./generation/draft-generation.service";
 // Flashcard generation (non-streaming)
 export {
 	FlashcardGenerationService,
@@ -120,3 +123,14 @@ export {
 	getMimeType,
 	parseAIRegions,
 } from "./vision/image-region-detection";
+// Unified create/modify workflow facade
+export {
+	type AIWorkflow,
+	type AIWorkflowContext,
+	type AIWorkflowKind,
+	assistantWorkflowId,
+	cardPolishWorkflowId,
+	generationWorkflowId,
+	listAIWorkflows,
+	resolveAIWorkflow,
+} from "./workflows/ai-workflow";

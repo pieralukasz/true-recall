@@ -29,8 +29,8 @@ export class DayRolloverWatcher {
 
 	register(plugin: Plugin): void {
 		plugin.registerDomEvent(window, "focus", () => this.check());
-		plugin.registerDomEvent(document, "visibilitychange", () => {
-			if (document.visibilityState === "visible") this.check();
+		plugin.registerDomEvent(activeDocument, "visibilitychange", () => {
+			if (activeDocument.visibilityState === "visible") this.check();
 		});
 	}
 

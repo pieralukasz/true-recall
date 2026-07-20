@@ -1,4 +1,5 @@
 import { useSignal } from "@preact/signals";
+import type { ComponentChildren } from "preact";
 import { useMemo } from "preact/hooks";
 
 import { Clickable, SearchInput } from "@true-recall/obsidian/components";
@@ -222,7 +223,7 @@ function SourceNotesSection({
 	return (
 		<div class="ep:border-b ep:border-obs-border/50">
 			<Clickable
-				class="ep:flex ep:items-center ep:justify-between ep:px-3 ep:py-2 hover:ep:bg-obs-modifier-hover ep:w-full"
+				class="ep:flex ep:items-center ep:justify-between ep:px-3 ep:py-2 ep:hover:bg-obs-modifier-hover ep:w-full"
 				onClick={() => {
 					open.value = !open.value;
 				}}
@@ -252,7 +253,7 @@ function SourceNotesSection({
 					{orphanedCount > 0 && (
 						<div class="ep:px-2 ep:pb-1.5">
 							<Clickable
-								class="ep:w-full ep:px-2 ep:py-1 ep:text-[11px] ep:rounded ep:border ep:border-obs-error/30 ep:text-obs-error hover:ep:bg-obs-error/10"
+								class="ep:w-full ep:px-2 ep:py-1 ep:text-[11px] ep:rounded ep:border ep:border-obs-error/30 ep:text-obs-error ep:hover:bg-obs-error/10"
 								onClick={onRemoveOrphanedCards}
 							>
 								Remove orphaned cards ({orphanedCount})
@@ -290,7 +291,7 @@ function SourceNotesSection({
 							{/* Show more button */}
 							{hasMore && (
 								<Clickable
-									class="ep:w-full ep:px-3 ep:py-1.5 ep:text-[11px] ep:text-obs-interactive ep:text-center hover:ep:bg-obs-modifier-hover"
+									class="ep:w-full ep:px-3 ep:py-1.5 ep:text-[11px] ep:text-obs-interactive ep:text-center ep:hover:bg-obs-modifier-hover"
 									onClick={handleShowMore}
 								>
 									Show more ({remainingCount})
@@ -311,14 +312,14 @@ function SidebarSection({
 }: {
 	title: string;
 	defaultOpen?: boolean;
-	children: preact.ComponentChildren;
+	children: ComponentChildren;
 }) {
 	const open = useSignal(defaultOpen);
 
 	return (
 		<div class="ep:border-b ep:border-obs-border/50">
 			<Clickable
-				class="ep:flex ep:items-center ep:justify-between ep:px-3 ep:py-2 hover:ep:bg-obs-modifier-hover ep:w-full"
+				class="ep:flex ep:items-center ep:justify-between ep:px-3 ep:py-2 ep:hover:bg-obs-modifier-hover ep:w-full"
 				onClick={() => {
 					open.value = !open.value;
 				}}
@@ -350,7 +351,7 @@ function SidebarRow({
 }) {
 	return (
 		<Clickable
-			class={`ep:flex ep:items-center ep:gap-2 ep:px-3 ep:py-1 ep:cursor-pointer hover:ep:bg-obs-modifier-hover ep:w-full ${
+			class={`ep:flex ep:items-center ep:gap-2 ep:px-3 ep:py-1 ep:cursor-pointer ep:hover:bg-obs-modifier-hover ep:w-full ${
 				active ? "ep:bg-obs-interactive/10" : ""
 			}`}
 			onClick={onClick}

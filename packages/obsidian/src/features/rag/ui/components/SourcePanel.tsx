@@ -43,7 +43,7 @@ export function SourcePanel({ sources, navigation }: Props) {
 			>
 				<span
 					ref={chevronRef}
-					class="ep:shrink-0 ep:flex ep:items-center [&_svg]:ep:w-3 [&_svg]:ep:h-3"
+					class="ep:shrink-0 ep:flex ep:items-center ep:[&_svg]:w-3 ep:[&_svg]:h-3"
 				/>
 				<span>Sources ({grouped.length})</span>
 			</Clickable>
@@ -94,7 +94,7 @@ function SourceRow({ group, navigation }: SourceRowProps) {
 		>
 			<span
 				ref={iconRef}
-				class="ep:shrink-0 ep:flex ep:items-center ep:mt-px ep:text-obs-muted [&_svg]:ep:w-3.5 [&_svg]:ep:h-3.5"
+				class="ep:shrink-0 ep:flex ep:items-center ep:mt-px ep:text-obs-muted ep:[&_svg]:w-3.5 ep:[&_svg]:h-3.5"
 			/>
 			<div class="ep:flex ep:flex-col ep:min-w-0">
 				<div class="ep:flex ep:items-center ep:gap-1 ep:min-w-0">

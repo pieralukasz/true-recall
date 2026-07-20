@@ -89,13 +89,13 @@ export function debounce<T extends (...args: unknown[]) => void>(
 	fn: T,
 	delay: number,
 ): (...args: Parameters<T>) => void {
-	let timeoutId: ReturnType<typeof setTimeout> | null = null;
+	let timeoutId: number | null = null;
 
 	return (...args: Parameters<T>) => {
 		if (timeoutId) {
-			clearTimeout(timeoutId);
+			window.clearTimeout(timeoutId);
 		}
-		timeoutId = setTimeout(() => {
+		timeoutId = window.setTimeout(() => {
 			fn(...args);
 			timeoutId = null;
 		}, delay);
@@ -117,7 +117,7 @@ export function throttle<T extends (...args: unknown[]) => void>(
 		if (!inThrottle) {
 			fn(...args);
 			inThrottle = true;
-			setTimeout(() => {
+			window.setTimeout(() => {
 				inThrottle = false;
 			}, limit);
 		}

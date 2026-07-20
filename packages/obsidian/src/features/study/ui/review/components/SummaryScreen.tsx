@@ -43,12 +43,15 @@ export function SummaryScreen({
 	const durationMin = Math.floor(stats.duration / 60000);
 	const durationSec = Math.floor((stats.duration % 60000) / 1000);
 
-	// End session to capture final stats (once on mount)
+	// End session to capture final stats. `review`'s object reference changes on
+	// most store updates, but `endSession` is idempotent (guarded by `isActive`,
+	// which cannot flip back to true without this component fully remounting),
+	// so re-running this effect on those reference changes is a safe no-op.
 	useEffect(() => {
 		if (review.isActive) {
 			review.endSession();
 		}
-	}, []); // intentionally fire once on mount
+	}, [review]);
 
 	return (
 		<div class="true-recall-review ep:flex ep:flex-col ep:h-full ep:p-0">

@@ -3,6 +3,7 @@ import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite/Sq
 import type { FSRSService } from "@true-recall/core/services/fsrs/fsrs.service";
 import type { AnkiExportOptions, FSRSCardData } from "@true-recall/core/types";
 
+import { convertContentForExport, mediaBasename } from "./anki-media.service";
 import { ApkgBuilderService } from "./apkg/apkg-builder.service";
 
 /**
@@ -43,16 +44,27 @@ export class AnkiExportService {
 			? this.getReviewLogsForCards(cards)
 			: [];
 
+		// Media must be collected from the original wikilink content, BEFORE
+		// the card text is converted to Anki's <img>/[sound:] references.
 		const media = options.includeMedia
 			? await this.collectMedia(cards)
 			: new Map<string, ArrayBuffer>();
 
-		const deckMap = this.buildDeckMap(cards);
-		const collectionCreatedAt = this.getCollectionCreatedAt(cards);
+		const exportCards = cards.map((card) => ({
+			...card,
+			question: convertContentForExport(card.question ?? ""),
+			answer: convertContentForExport(card.answer ?? ""),
+			clozeTemplate: card.clozeTemplate
+				? convertContentForExport(card.clozeTemplate)
+				: card.clozeTemplate,
+		}));
+
+		const deckMap = this.buildDeckMap(exportCards);
+		const collectionCreatedAt = this.getCollectionCreatedAt(exportCards);
 
 		const builder = new ApkgBuilderService();
 		const data = await builder.build({
-			cards,
+			cards: exportCards,
 			reviewLogs,
 			deckMap,
 			collectionCreatedAt,
@@ -118,9 +130,10 @@ export class AnkiExportService {
 		const media = new Map<string, ArrayBuffer>();
 		if (!this.mediaReader) return media;
 
-		const filenames = new Set<string>();
-
-		const mediaRegex = /!\[\[([^\]]+)\]\]/g;
+		// Capture the ref without the |alias/|size suffix — readers can't
+		// resolve "img.png|300" and Anki media names must be flat basenames.
+		const refs = new Set<string>();
+		const mediaRegex = /!\[\[([^\]|]+)(?:\|[^\]]+)?\]\]/g;
 		for (const card of cards) {
 			const content = (card.question ?? "") + (card.answer ?? "");
 			for (
@@ -128,18 +141,23 @@ export class AnkiExportService {
 				match !== null;
 				match = mediaRegex.exec(content)
 			) {
-				if (match[1]) filenames.add(match[1]);
+				const ref = match[1]?.trim();
+				if (ref) refs.add(ref);
 			}
 		}
 
-		for (const filename of filenames) {
+		for (const ref of refs) {
 			try {
-				const data = await this.mediaReader.readBinaryByName(filename);
+				const data =
+					(await this.mediaReader.readBinaryByName(ref)) ??
+					(await this.mediaReader.readBinaryByName(mediaBasename(ref)));
 				if (data) {
-					media.set(filename, data);
+					// Keyed by basename: this is the name the converted
+					// <img src>/[sound:] references and the .apkg media map use.
+					media.set(mediaBasename(ref), data);
 				}
 			} catch {
-				console.error(`[True Recall] Could not read media file: ${filename}`);
+				console.error(`[True Recall] Could not read media file: ${ref}`);
 			}
 		}
 

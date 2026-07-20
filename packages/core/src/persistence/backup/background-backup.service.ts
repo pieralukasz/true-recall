@@ -35,7 +35,7 @@ export class BackgroundBackupManager {
 	private config: BackgroundBackupConfig;
 
 	// State tracking
-	private intervalTimer: ReturnType<typeof setInterval> | null = null;
+	private intervalTimer: number | null = null;
 	private lastBackupTime: number | null = null;
 	private reviewsSinceLastBackup = 0;
 	private isBackupInProgress = false;
@@ -146,14 +146,14 @@ export class BackgroundBackupManager {
 
 		const intervalMs = this.config.backupIntervalMinutes * 60 * 1000;
 
-		this.intervalTimer = setInterval(() => {
+		this.intervalTimer = window.setInterval(() => {
 			void this.performPeriodicBackup();
 		}, intervalMs);
 	}
 
 	private stopPeriodicBackups(): void {
 		if (this.intervalTimer) {
-			clearInterval(this.intervalTimer);
+			window.clearInterval(this.intervalTimer);
 			this.intervalTimer = null;
 		}
 	}

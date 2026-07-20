@@ -133,7 +133,7 @@ export function LeaderboardWidget({ source }: { source: string }) {
 				return (
 					<Clickable
 						key={entry.sourceUid}
-						class="ep:flex ep:items-center ep:text-xs ep:gap-2 hover:ep:bg-obs-modifier-hover ep:rounded ep:px-1 ep:py-0.5"
+						class="ep:flex ep:items-center ep:text-xs ep:gap-2 ep:hover:bg-obs-modifier-hover ep:rounded ep:px-1 ep:py-0.5"
 						onClick={() => handleNoteClick(entry.resolvedName)}
 						title={`Review ${entry.resolvedName}`}
 					>

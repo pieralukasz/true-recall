@@ -70,6 +70,8 @@ export function ProjectsTab({
 		handleRescheduleRecent,
 		handleScheduleBreak,
 		handleFlatten,
+		handleBalance,
+		handleForecast,
 	} = useProjectScheduling();
 	const {
 		dragState,
@@ -84,7 +86,7 @@ export function ProjectsTab({
 	useEffect(() => {
 		if (!searchQuery) return;
 		expandedPaths.value = collectMatchingPaths(projects, searchQuery);
-	}, [searchQuery, projects]);
+	}, [searchQuery, projects, expandedPaths]);
 
 	const flatItems = useMemo(
 		() => flattenProjectTree(projects, expandedPaths.value, searchQuery),
@@ -187,7 +189,9 @@ export function ProjectsTab({
 								plugin={plugin}
 								onPresetClick={onPresetClick}
 								onToggleExpand={toggleExpand}
-								onArchive={handleArchive}
+								onArchive={(path, archived) =>
+									void handleArchive(path, archived)
+								}
 								onRename={handleRename}
 								onDissolve={handleDissolve}
 								onMoveChildren={handleMoveChildren}
@@ -201,6 +205,8 @@ export function ProjectsTab({
 								onRescheduleRecent={handleRescheduleRecent}
 								onScheduleBreak={handleScheduleBreak}
 								onFlatten={handleFlatten}
+								onBalance={handleBalance}
+								onForecast={handleForecast}
 								onDragStart={handleDragStart}
 								onDragEnd={handleDragEnd}
 								onDragOver={handleDragOver}
@@ -225,7 +231,9 @@ export function ProjectsTab({
 								plugin={plugin}
 								onStudyNote={onStudyNote}
 								onPresetClick={onPresetClick}
-								onArchive={handleArchive}
+								onArchive={(path, archived) =>
+									void handleArchive(path, archived)
+								}
 								onRename={handleRename}
 								onCreateProject={handleConvertToProject}
 								onRemoveProjectStatus={handleRemoveProjectStatus}
@@ -307,6 +315,8 @@ interface ProjectHeaderItemProps {
 	onRescheduleRecent: (path: string, name: string) => Promise<void>;
 	onScheduleBreak: (path: string, name: string) => Promise<void>;
 	onFlatten: (path: string, name: string) => Promise<void>;
+	onBalance: (path: string, name: string) => Promise<void>;
+	onForecast: (path: string, name: string) => Promise<void>;
 	onDragStart: (e: DragEvent, item: FlatProjectItem) => void;
 	onDragEnd: () => void;
 	onDragOver: (e: DragEvent, item: FlatProjectItem) => void;
@@ -334,6 +344,8 @@ function ProjectHeaderItem({
 	onRescheduleRecent,
 	onScheduleBreak,
 	onFlatten,
+	onBalance,
+	onForecast,
 	onDragStart,
 	onDragEnd,
 	onDragOver,
@@ -409,6 +421,12 @@ function ProjectHeaderItem({
 		onFlatten: isVirtual
 			? undefined
 			: () => void onFlatten(item.project.path, item.project.name),
+		onBalance: isVirtual
+			? undefined
+			: () => void onBalance(item.project.path, item.project.name),
+		onForecast: isVirtual
+			? undefined
+			: () => void onForecast(item.project.path, item.project.name),
 	});
 
 	return (

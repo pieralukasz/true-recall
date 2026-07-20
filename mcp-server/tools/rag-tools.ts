@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { get, post, postParams, type ToolDef } from "./_register.js";
+import { get, postParams, type ToolDef } from "./_register.js";
 
 export const ragTools: ToolDef[] = [
 	postParams(

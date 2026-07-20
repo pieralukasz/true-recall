@@ -1,5 +1,8 @@
 import type { IPersistence } from "@true-recall/core/interfaces/persistence";
-import { DB_FOLDER } from "@true-recall/core/persistence/sqlite/sqlite.types";
+import {
+	DB_FOLDER,
+	toExactArrayBuffer,
+} from "@true-recall/core/persistence/sqlite/sqlite.types";
 
 const LOCK_FILE = `${DB_FOLDER}/device-lock.json`;
 const HEARTBEAT_INTERVAL_MS = 60_000;
@@ -37,7 +40,7 @@ function pessimisticLock(): DeviceLock {
 }
 
 export class DeviceLockService {
-	private heartbeatTimer: ReturnType<typeof setInterval> | null = null;
+	private heartbeatTimer: number | null = null;
 	private consecutiveHeartbeatFailures = 0;
 
 	constructor(
@@ -108,14 +111,14 @@ export class DeviceLockService {
 	startHeartbeat(): void {
 		this.stopHeartbeat();
 		this.consecutiveHeartbeatFailures = 0;
-		this.heartbeatTimer = setInterval(() => {
+		this.heartbeatTimer = window.setInterval(() => {
 			void this.updateHeartbeat();
 		}, HEARTBEAT_INTERVAL_MS);
 	}
 
 	stopHeartbeat(): void {
 		if (this.heartbeatTimer) {
-			clearInterval(this.heartbeatTimer);
+			window.clearInterval(this.heartbeatTimer);
 			this.heartbeatTimer = null;
 		}
 	}
@@ -143,9 +146,6 @@ export class DeviceLockService {
 	private async writeLockFile(lock: DeviceLock): Promise<void> {
 		const json = JSON.stringify(lock, null, "\t");
 		const encoded = new TextEncoder().encode(json);
-		await this.persistence.writeBinary(
-			LOCK_FILE,
-			encoded.buffer as ArrayBuffer,
-		);
+		await this.persistence.writeBinary(LOCK_FILE, toExactArrayBuffer(encoded));
 	}
 }

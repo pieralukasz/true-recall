@@ -1,12 +1,15 @@
 import type { CommandDef } from "../registry.js";
-import { getWith, postParams } from "../registry.js";
+import { custom, getWith, postParams } from "../registry.js";
 
 const C = "FSRS Advanced";
 
+/** Replay-based training over the full review history takes minutes, not seconds */
+const OPTIMIZE_TIMEOUT_MS = 600_000;
+
 export const fsrsAdvancedCommands: CommandDef[] = [
-	getWith(
+	custom(
 		"optimize_parameters",
-		"Optimize FSRS weights from review history. Needs 400+ reviews.",
+		"Optimize FSRS weights from review history (replay-based training). Needs 400+ reviews; can take a few minutes.",
 		C,
 		{
 			preset_name: {
@@ -14,8 +17,11 @@ export const fsrsAdvancedCommands: CommandDef[] = [
 				description: "Scope to a specific preset (default: all)",
 			},
 		},
-		(p) =>
-			`/fsrs/optimize${p.preset_name ? `?preset_name=${encodeURIComponent(String(p.preset_name))}` : ""}`,
+		(p, client) =>
+			client.get(
+				`/fsrs/optimize${p.preset_name ? `?preset_name=${encodeURIComponent(String(p.preset_name))}` : ""}`,
+				OPTIMIZE_TIMEOUT_MS,
+			),
 	),
 
 	postParams(
@@ -43,7 +49,7 @@ export const fsrsAdvancedCommands: CommandDef[] = [
 
 	getWith(
 		"get_workload_forecast",
-		"Detailed daily workload forecast: predicted reviews per day + day-of-week breakdown",
+		"Detailed daily workload forecast: predicted reviews per day + day-of-week breakdown. Optionally scoped to one project.",
 		C,
 		{
 			days: {
@@ -51,8 +57,13 @@ export const fsrsAdvancedCommands: CommandDef[] = [
 				description: "Forecast period in days (default 30)",
 				default: 30,
 			},
+			project: {
+				type: "string",
+				description: "Project note path to scope the forecast to (optional)",
+			},
 		},
-		(p) => `/fsrs/forecast?days=${p.days}`,
+		(p) =>
+			`/fsrs/forecast?days=${p.days}${p.project ? `&project=${encodeURIComponent(String(p.project))}` : ""}`,
 	),
 
 	getWith(

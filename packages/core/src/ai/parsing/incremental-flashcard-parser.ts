@@ -25,7 +25,7 @@ export function parseBlockResponse(
 	const end = json.lastIndexOf("]");
 	if (start === -1 || end <= start) return [];
 
-	let parsed: unknown[];
+	let parsed: unknown;
 	try {
 		parsed = JSON.parse(json.slice(start, end + 1));
 	} catch {
@@ -147,8 +147,9 @@ export class IncrementalFlashcardParser {
 		this.state = "idle";
 		this.objectBuffer = "";
 
-		// Try closing strategies: just "}", then "\"}", then "\"}"
-		for (const suffix of ["}", '"}', '"}']) {
+		// Try closing strategies: "}", then closing an open string ('"}'),
+		// then closing an open string inside a nested object ('"}}').
+		for (const suffix of ["}", '"}', '"}}']) {
 			const block = this.tryParseObject(buf + suffix);
 			if (block) return [{ type: "card_complete", block }];
 		}
@@ -157,7 +158,7 @@ export class IncrementalFlashcardParser {
 
 	private tryParseObject(text: string): ParsedBlock | null {
 		try {
-			const obj = JSON.parse(text);
+			const obj: unknown = JSON.parse(text);
 			return parseCardObject(obj, this.getNoteType);
 		} catch {
 			return null;

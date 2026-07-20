@@ -236,9 +236,14 @@ export function chunkFlashcard(
 	try {
 		const fields = JSON.parse(fieldsJson) as Record<string, string>;
 		const parts: string[] = [];
-		if (fields.front) parts.push(`Q: ${fields.front}`);
-		if (fields.back) parts.push(`A: ${fields.back}`);
-		if (fields.text) parts.push(`Text: ${fields.text}`);
+		// Stored field names are capitalized (Front/Back/Text/…) and custom
+		// note types use arbitrary names — index every non-empty field.
+		const labels: Record<string, string> = { front: "Q", back: "A" };
+		for (const [name, value] of Object.entries(fields)) {
+			if (typeof value === "string" && value.trim()) {
+				parts.push(`${labels[name.toLowerCase()] ?? name}: ${value}`);
+			}
+		}
 		if (sourceText) parts.push(`Source: ${sourceText}`);
 		if (tags) parts.push(`Tags: ${tags}`);
 		content = parts.join("\n");

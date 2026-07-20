@@ -32,7 +32,7 @@ function injectCitationHandlers(
 	sources: SearchResult[],
 	navigation: SourceNavigationHandlers,
 ) {
-	const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+	const walker = activeDocument.createTreeWalker(el, NodeFilter.SHOW_TEXT);
 	const textNodes: Text[] = [];
 	for (;;) {
 		const node = walker.nextNode() as Text | null;
@@ -45,13 +45,15 @@ function injectCitationHandlers(
 
 	for (const textNode of textNodes) {
 		const text = textNode.textContent ?? "";
-		const frag = document.createDocumentFragment();
+		const frag = activeDocument.createDocumentFragment();
 		let lastIdx = 0;
 
 		for (const match of text.matchAll(CITE_RE)) {
 			const idx = match.index;
 			if (idx > lastIdx) {
-				frag.appendChild(document.createTextNode(text.slice(lastIdx, idx)));
+				frag.appendChild(
+					activeDocument.createTextNode(text.slice(lastIdx, idx)),
+				);
 			}
 
 			const nums = (match[1] ?? "")
@@ -59,14 +61,14 @@ function injectCitationHandlers(
 				.map((s) => Number.parseInt(s.trim(), 10))
 				.filter((n) => !Number.isNaN(n));
 
-			frag.appendChild(document.createTextNode("["));
+			frag.appendChild(activeDocument.createTextNode("["));
 			for (let i = 0; i < nums.length; i++) {
-				if (i > 0) frag.appendChild(document.createTextNode(", "));
+				if (i > 0) frag.appendChild(activeDocument.createTextNode(", "));
 				const num = nums[i] ?? 0;
 				const source =
 					num > 0 && num <= sources.length ? sources[num - 1] : null;
 				if (source) {
-					const span = document.createElement("span");
+					const span = activeDocument.createElement("span");
 					span.textContent = String(num);
 					span.className =
 						"ep:text-obs-accent ep:font-semibold ep:cursor-pointer tr-hover-faux-underline";
@@ -84,16 +86,16 @@ function injectCitationHandlers(
 					});
 					frag.appendChild(span);
 				} else {
-					frag.appendChild(document.createTextNode(String(num)));
+					frag.appendChild(activeDocument.createTextNode(String(num)));
 				}
 			}
-			frag.appendChild(document.createTextNode("]"));
+			frag.appendChild(activeDocument.createTextNode("]"));
 
 			lastIdx = idx + match[0].length;
 		}
 
 		if (lastIdx < text.length) {
-			frag.appendChild(document.createTextNode(text.slice(lastIdx)));
+			frag.appendChild(activeDocument.createTextNode(text.slice(lastIdx)));
 		}
 
 		textNode.parentNode?.replaceChild(frag, textNode);
@@ -104,7 +106,7 @@ function injectFlashcardUidLinks(
 	el: HTMLElement,
 	navigation: SourceNavigationHandlers,
 ) {
-	const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+	const walker = activeDocument.createTreeWalker(el, NodeFilter.SHOW_TEXT);
 	const textNodes: Text[] = [];
 	for (;;) {
 		const node = walker.nextNode() as Text | null;
@@ -117,17 +119,19 @@ function injectFlashcardUidLinks(
 
 	for (const textNode of textNodes) {
 		const text = textNode.textContent ?? "";
-		const frag = document.createDocumentFragment();
+		const frag = activeDocument.createDocumentFragment();
 		let lastIdx = 0;
 
 		for (const match of text.matchAll(FLASHCARD_UID_RE)) {
 			const idx = match.index;
 			if (idx > lastIdx) {
-				frag.appendChild(document.createTextNode(text.slice(lastIdx, idx)));
+				frag.appendChild(
+					activeDocument.createTextNode(text.slice(lastIdx, idx)),
+				);
 			}
 
 			const uid = match[1] ?? "";
-			const span = document.createElement("span");
+			const span = activeDocument.createElement("span");
 			span.textContent = uid;
 			span.className =
 				"ep:text-obs-accent ep:font-mono ep:text-[11px] ep:cursor-pointer tr-hover-faux-underline";
@@ -142,7 +146,7 @@ function injectFlashcardUidLinks(
 		}
 
 		if (lastIdx < text.length) {
-			frag.appendChild(document.createTextNode(text.slice(lastIdx)));
+			frag.appendChild(activeDocument.createTextNode(text.slice(lastIdx)));
 		}
 
 		textNode.parentNode?.replaceChild(frag, textNode);
@@ -192,7 +196,7 @@ function AssistantMessage({
 		el.addEventListener("click", onInternalLink, true);
 
 		if (isStreaming) {
-			const cursor = document.createElement("span");
+			const cursor = activeDocument.createElement("span");
 			cursor.className = "ep-streaming-cursor";
 			el.appendChild(cursor);
 		}
@@ -239,7 +243,7 @@ function SourcePill({
 		>
 			<span
 				ref={iconRef}
-				class="ep:shrink-0 ep:flex ep:items-center [&_svg]:ep:w-3 [&_svg]:ep:h-3"
+				class="ep:shrink-0 ep:flex ep:items-center ep:[&_svg]:w-3 ep:[&_svg]:h-3"
 			/>
 			<span class="ep:truncate">
 				{label}

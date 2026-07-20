@@ -14,6 +14,7 @@ import {
 	toExactArrayBuffer,
 } from "@true-recall/core/persistence/sqlite";
 import type { RetentionPolicy } from "@true-recall/core/types/settings.types";
+import { formatFileSize } from "@true-recall/core/utils/format.utils";
 
 import { gzipCompress, gzipDecompress } from "./gzip.utils";
 
@@ -163,7 +164,7 @@ export class BackupService {
 					timestamp,
 					sizeBytes: stat.size,
 					formattedDate: this.formatDateDisplay(timestamp),
-					formattedSize: this.formatFileSize(stat.size),
+					formattedSize: formatFileSize(stat.size),
 				});
 			}
 
@@ -197,6 +198,22 @@ export class BackupService {
 			const dbData = backupPath.endsWith(".gz")
 				? toExactArrayBuffer(await gzipDecompress(new Uint8Array(rawData)))
 				: toExactArrayBuffer(rawData);
+
+			// Refuse to overwrite the live DB with bytes that are not a
+			// SQLite database (truncated/corrupted backup) — the failure
+			// would otherwise only surface on the next plugin load.
+			const header = new TextDecoder().decode(dbData.slice(0, 15));
+			if (!header.startsWith("SQLite format 3")) {
+				throw new DatabaseError(
+					"Backup file is not a valid SQLite database",
+					"backup:restore",
+				);
+			}
+
+			// From this point the in-memory store must never flush again —
+			// its debounced save would export the pre-restore state over the
+			// file we are about to write.
+			this.sqliteStore.haltPersistence();
 
 			// Write to main database file
 			const deviceId = this.sqliteStore.getDeviceId();
@@ -519,14 +536,5 @@ export class BackupService {
 		const seconds = String(date.getSeconds()).padStart(2, "0");
 
 		return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-	}
-
-	/**
-	 * Format file size for display
-	 */
-	private formatFileSize(bytes: number): string {
-		if (bytes < 1024) return `${bytes} B`;
-		if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-		return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 	}
 }

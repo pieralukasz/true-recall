@@ -6,6 +6,7 @@ import {
 } from "@true-recall/core/services";
 import { ReviewService } from "@true-recall/core/services/review/review.service";
 import type {
+	CardSchedulingMeta,
 	FSRSFlashcardItem,
 	FSRSPreset,
 	Grade,
@@ -48,11 +49,10 @@ export class ReviewSessionController {
 		this.noteResolver = new ObsidianNoteResolver(plugin.app);
 	}
 
-	private getAllCards() {
+	private getAllCards(): CardSchedulingMeta[] {
 		const allMetaMap =
-			this.plugin.dataLayer?.get<
-				Map<string, import("@true-recall/core/types").CardSchedulingMeta>
-			>(Q.ALL_META) ?? new Map();
+			this.plugin.dataLayer?.get<Map<string, CardSchedulingMeta>>(Q.ALL_META) ??
+			new Map<string, CardSchedulingMeta>();
 		return [...allMetaMap.values()];
 	}
 
@@ -173,6 +173,15 @@ export class ReviewSessionController {
 		const buriedSiblings =
 			preset.burySiblings !== false ? this.burySiblingCards(card, review) : [];
 
+		// Burying removes siblings from the queue, which shifts the requeued
+		// "Again" copy left of its captured position — undo would then splice
+		// out an unrelated card. Resolve the copy's actual index by id.
+		let requeuedAtIndex = transition.requeueData?.position;
+		if (requeuedAtIndex !== undefined && buriedSiblings.length > 0) {
+			const idx = this.getReview().queue.findIndex((c) => c.id === card.id);
+			if (idx >= 0) requeuedAtIndex = idx;
+		}
+
 		const cmd = new ReviewAnswerCommand({
 			card: { ...card },
 			originalFsrs: { ...card.fsrs },
@@ -185,7 +194,7 @@ export class ReviewSessionController {
 			elapsedDays: transition.result.elapsedDays,
 			responseTime,
 			presetName: preset.name,
-			requeuedAtIndex: transition.requeueData?.position,
+			requeuedAtIndex,
 			buriedSiblingIds:
 				buriedSiblings.length > 0 ? buriedSiblings.map((s) => s.id) : undefined,
 			buriedSiblings: buriedSiblings.length > 0 ? buriedSiblings : undefined,
@@ -226,8 +235,8 @@ export class ReviewSessionController {
 			}
 		}
 
-		for (const sibling of siblings) {
-			review.removeCardById(sibling.id);
+		if (siblings.length > 0) {
+			review.removeCardsByIds(siblings.map((sibling) => sibling.id));
 		}
 
 		return siblings;

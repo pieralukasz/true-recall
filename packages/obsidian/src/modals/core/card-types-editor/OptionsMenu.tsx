@@ -31,8 +31,8 @@ export function OptionsMenu({
 				setRenaming(false);
 			}
 		};
-		document.addEventListener("click", handleClick, true);
-		return () => document.removeEventListener("click", handleClick, true);
+		activeDocument.addEventListener("click", handleClick, true);
+		return () => activeDocument.removeEventListener("click", handleClick, true);
 	}, [open]);
 
 	const handleRenameStart = useCallback(() => {

@@ -15,7 +15,7 @@ export class CommandService {
 	}
 
 	async execute(command: Command): Promise<void> {
-		if (command.deferred) {
+		if (command.deferred || command.skipExecuteMutation) {
 			await command.execute(this.ctx);
 		} else {
 			await mutate(command.mutationType, () => command.execute(this.ctx));
@@ -46,7 +46,7 @@ export class CommandService {
 				hook.beforeUndo?.(command);
 			}
 
-			if (command.deferred) {
+			if (command.deferred || command.skipUndoMutation) {
 				await command.undo(this.ctx);
 			} else {
 				await mutate(command.mutationType, () => command.undo(this.ctx));
@@ -82,7 +82,11 @@ export class CommandService {
 				hook.beforeRedo?.(command);
 			}
 
-			await mutate(command.mutationType, () => command.execute(this.ctx));
+			if (command.skipExecuteMutation) {
+				await command.execute(this.ctx);
+			} else {
+				await mutate(command.mutationType, () => command.execute(this.ctx));
+			}
 
 			for (const hook of this.hooks) {
 				hook.afterRedo?.(command);

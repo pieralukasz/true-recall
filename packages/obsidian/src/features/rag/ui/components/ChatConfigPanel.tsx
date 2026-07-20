@@ -21,13 +21,13 @@ interface Props {
 export function ChatConfigPanel({ config, onConfigChange }: Props) {
 	const plugin = usePlugin();
 	const [local, setLocal] = useState(config);
-	const saveTimer = useRef<ReturnType<typeof setTimeout>>();
+	const saveTimer = useRef<number>();
 
 	const persist = useCallback(
 		(next: ChatConfig) => {
 			setLocal(next);
-			clearTimeout(saveTimer.current);
-			saveTimer.current = setTimeout(() => {
+			window.clearTimeout(saveTimer.current);
+			saveTimer.current = window.setTimeout(() => {
 				Object.assign(plugin.settings, { ragChatConfig: next });
 				void plugin.saveSettings();
 				onConfigChange(next);

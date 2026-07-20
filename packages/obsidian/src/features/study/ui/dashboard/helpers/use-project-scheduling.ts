@@ -7,10 +7,13 @@ import type { FSRSCardData } from "@true-recall/core/types";
 import { FSRSHelperCommand } from "@true-recall/obsidian/commands/commands/fsrs-helper.cmd";
 import { confirm } from "@true-recall/obsidian/modals/shared/ConfirmModal";
 import { promptText } from "@true-recall/obsidian/modals/shared/TextInputModal";
+import { ProjectForecastModal } from "@true-recall/obsidian/modals/study/ProjectForecastModal";
 import { usePlugin } from "@true-recall/obsidian/preact";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 
 type ShiftAction = "postpone" | "advance";
+
+const PROJECT_FORECAST_DAYS = 30;
 
 export function useProjectScheduling() {
 	const plugin = usePlugin();
@@ -270,6 +273,119 @@ export function useProjectScheduling() {
 		[plugin, getProjectCards, applyChanges],
 	);
 
+	const handleBalance = useCallback(
+		async (projectPath: string, projectName: string) => {
+			const cardIds = getProjectCards(projectPath)
+				.filter((c) => c.state !== State.New && !c.suspended)
+				.map((c) => c.id);
+			if (cardIds.length === 0) {
+				notify().info("No reviewed cards in this project.");
+				return;
+			}
+
+			try {
+				const preview = plugin.fsrsHelper?.balanceWorkload({
+					cardIds,
+					dryRun: true,
+				});
+				if (!preview || preview.affectedCount === 0) {
+					notify().info("This project is already balanced.");
+					return;
+				}
+
+				const confirmed = await confirm(plugin.app, {
+					title: "Balance project",
+					message: `Move ${preview.affectedCount} cards in "${projectName}" to less loaded days? Cards from other projects stay untouched.`,
+					confirmLabel: "Balance",
+				});
+				if (!confirmed) return;
+
+				const result = plugin.fsrsHelper?.balanceWorkload({
+					cardIds,
+					dryRun: false,
+				});
+				if (result && result.affectedCount > 0) {
+					applyChanges(
+						result,
+						`Balance "${projectName}" (${result.affectedCount} cards)`,
+					);
+					notify().success(
+						`Balanced ${result.affectedCount} cards (Ctrl+Z to undo)`,
+					);
+				} else {
+					notify().info("No cards needed balancing.");
+				}
+			} catch (err) {
+				notify().error(`Balance failed: ${String(err)}`);
+			}
+		},
+		[plugin, getProjectCards, applyChanges],
+	);
+
+	const handleForecast = useCallback(
+		async (projectPath: string, projectName: string) => {
+			const helper = plugin.fsrsHelper;
+			if (!helper) return;
+
+			const include: ReadonlySet<string> =
+				plugin.hierarchyService.getSourceUidsForProject(projectPath);
+			if (include.size === 0) {
+				notify().info("No notes in this project.");
+				return;
+			}
+
+			const forecast = helper.getWorkloadForecast(
+				PROJECT_FORECAST_DAYS,
+				undefined,
+				include,
+			);
+			const total = forecast.reduce((sum, entry) => sum + entry.dueCount, 0);
+			if (total === 0) {
+				notify().info("No reviews scheduled in this project's next 30 days.");
+				return;
+			}
+
+			// The reference target is the project's own average, so the summary
+			// describes how even this project is — not its share of the global goal
+			const projectTarget = Math.max(
+				1,
+				Math.round(total / Math.max(1, forecast.length)),
+			);
+			const summary = helper.getWorkloadForecastSummary(
+				PROJECT_FORECAST_DAYS,
+				undefined,
+				include,
+				projectTarget,
+			);
+			const dayOfWeek = helper.getWorkloadByDayOfWeek(
+				PROJECT_FORECAST_DAYS,
+				undefined,
+				include,
+			);
+
+			const movableIds = getProjectCards(projectPath)
+				.filter((c) => c.state !== State.New && !c.suspended)
+				.map((c) => c.id);
+			const dryRun =
+				movableIds.length > 0
+					? helper.balanceWorkload({ cardIds: movableIds, dryRun: true })
+					: null;
+			const canBalance = (dryRun?.affectedCount ?? 0) > 0;
+
+			const modal = new ProjectForecastModal(plugin.app, projectName, {
+				forecast,
+				summary: { ...summary, needsBalancing: canBalance },
+				dayOfWeek,
+				canBalance,
+			});
+			const action = await modal.openAndWait();
+			if (action === "balance") {
+				await handleBalance(projectPath, projectName);
+			}
+		},
+		[plugin, getProjectCards, handleBalance],
+	);
+
 	const handleFlatten = useCallback(
 		async (projectPath: string, projectName: string) => {
 			const cardIds = getProjectCards(projectPath)
@@ -341,5 +457,7 @@ export function useProjectScheduling() {
 		handleRescheduleRecent,
 		handleScheduleBreak,
 		handleFlatten,
+		handleBalance,
+		handleForecast,
 	};
 }

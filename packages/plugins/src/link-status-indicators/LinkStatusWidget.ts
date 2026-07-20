@@ -16,7 +16,7 @@ export interface LinkStatusOptions {
 export function createLinkStatusElement(
 	options: LinkStatusOptions,
 ): HTMLSpanElement {
-	const container = document.createElement("div");
+	const container = activeDocument.createElement("div");
 	render(
 		h(DonutChart, {
 			info: options.info,
@@ -43,7 +43,7 @@ export function createLinkStatusElement(
 export function createLinkTextCountElement(
 	options: LinkStatusOptions,
 ): HTMLSpanElement {
-	const container = document.createElement("div");
+	const container = activeDocument.createElement("div");
 	render(
 		h(LinkTextCount, {
 			info: options.info,

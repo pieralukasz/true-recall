@@ -202,7 +202,7 @@ export class CardActionsHandler {
 		if (result.cancelled || !result.targetNotePath) return;
 
 		try {
-			const { persisted } = await this.deps.reviewService.gradeCard(
+			const { persisted } = this.deps.reviewService.gradeCard(
 				card,
 				Rating.Good,
 				this.deps.fsrsService,
@@ -402,6 +402,22 @@ export class CardActionsHandler {
 		if (!this.deps.getReview().isComplete()) {
 			this.callbacks.onUpdateSchedulingPreview();
 		}
+	}
+
+	/** Reload the on-screen card content after an external mutation (AI assistant apply). */
+	refreshCurrentCard(): void {
+		const card = this.deps.getReview().getCurrentCard();
+		if (!card) return;
+		const [updated] = this.deps.cardStore.cards.getByIds([card.id]);
+		if (updated) {
+			this.deps
+				.getReview()
+				.updateCurrentCardContent(
+					updated.question ?? card.question,
+					updated.answer ?? card.answer ?? "",
+				);
+		}
+		this.refreshIfActive();
 	}
 
 	private pushBatchCreateUndo(

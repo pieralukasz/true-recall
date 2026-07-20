@@ -78,8 +78,15 @@ export class SessionService {
 				};
 
 			case "custom": {
-				const { mode: _, reviewOrder: __, cardLimit: ___, ...rest } = config;
-				return { ...base, ...rest };
+				// `mode`, `reviewOrder` and `cardLimit` are already consumed by
+				// `base`; everything else in the custom config is a filter flag.
+				const filters: Partial<Extract<SessionConfig, { mode: "custom" }>> = {
+					...config,
+				};
+				delete filters.mode;
+				delete filters.reviewOrder;
+				delete filters.cardLimit;
+				return { ...base, ...filters };
 			}
 		}
 	}

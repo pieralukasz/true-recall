@@ -5,6 +5,7 @@ import type {
 	NewReviewMix,
 	ReviewOrder,
 } from "../../types/settings.types";
+import { formatLocalDate } from "../../utils/date.utils";
 import type { FSRSService } from "../fsrs/fsrs.service";
 
 function shuffle<T>(array: T[]): T[] {
@@ -101,8 +102,9 @@ export function sortReviewCards(
 			const sorted = fsrsService.sortByDue(cards);
 			const groupedByDue = new Map<string, CardSchedulingMeta[]>();
 			for (const card of sorted) {
-				const dueDay =
-					new Date(card.fsrs.due).toISOString().split("T")[0] ?? "";
+				// Bucket by the user's local calendar day — UTC keys split one
+				// local day into two shuffle groups away from UTC.
+				const dueDay = formatLocalDate(new Date(card.fsrs.due));
 				if (!groupedByDue.has(dueDay)) {
 					groupedByDue.set(dueDay, []);
 				}

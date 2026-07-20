@@ -75,6 +75,8 @@ export interface CreateNoteParams {
 	sourceText?: string;
 	createdVia?: string;
 	createdAt?: number;
+	/** Silently drop cards whose rendered question already exists (AI path). */
+	skipDuplicates?: boolean;
 }
 
 export interface CreateNoteResult {
@@ -554,9 +556,37 @@ export class FlashcardManager {
 			createdVia: params.createdVia ?? "manual",
 		};
 
+		let generated = generateCardsForNote(note, noteType);
+
+		// AI generation re-runs over the same source note routinely; with
+		// skipDuplicates the cards whose rendered question already exists are
+		// dropped instead of duplicated (manual paths keep erroring instead).
+		if (params.skipDuplicates) {
+			const renderQuestionFor = (ord: number): string => {
+				const template =
+					noteType.type === 1
+						? noteType.templates[0]
+						: noteType.templates.find((t) => t.ordinal === ord);
+				if (!template) return "";
+				return renderTemplate(template.qfmt, {
+					fields: params.fields,
+					clozeIndex: ord,
+				});
+			};
+			generated = generated.filter((gen) => {
+				const question = renderQuestionFor(gen.templateOrd);
+				return (
+					question.length === 0 ||
+					!this.store?.cards.getCardIdByQuestion(question)
+				);
+			});
+			if (generated.length === 0) {
+				return { note, cards: [] };
+			}
+		}
+
 		this.store.notes.create(note);
 
-		const generated = generateCardsForNote(note, noteType);
 		const cards: FSRSCardData[] = [];
 
 		for (const gen of generated) {
@@ -766,16 +796,28 @@ export class FlashcardManager {
 			.filter((c) => desiredOrds.has(c.templateOrd ?? 0))
 			.map((c) => c.id);
 
+		let createdCount = 0;
 		for (const gen of desiredGenerated) {
 			if (existingOrds.has(gen.templateOrd)) continue;
 			const fsrsData = this.createCardFromGenerated(gen, updatedNote, noteType);
 			updatedCardIds.push(fsrsData.id);
+			createdCount++;
 		}
 
-		if (updatedCardIds.length > 0) {
+		if (createdCount > 0) {
 			this.emitEvent("cards:bulk", {
 				cardIds: updatedCardIds,
 			});
+		} else {
+			// Pure field edit: only rendered Q/A changed, scheduling meta is
+			// untouched — per-card content-only events let consumers take the
+			// narrow invalidation path instead of a full bulk reload.
+			for (const cardId of updatedCardIds) {
+				this.emitEvent("card:updated", {
+					cardId,
+					changes: { question: true, answer: true },
+				});
+			}
 		}
 
 		return { updatedCardIds };

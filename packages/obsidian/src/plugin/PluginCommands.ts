@@ -109,7 +109,7 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 
 	plugin.addCommand({
 		id: "add-flashcard-uid",
-		name: "Add flashcard uid to current note",
+		name: "Add flashcard UID to current note",
 		checkCallback: (checking) => {
 			const file = plugin.app.workspace.getActiveFile();
 			if (file && file.extension === "md") {
@@ -225,6 +225,17 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 			if (!isDesktop()) return false;
 			if (!isPluginEnabled(plugin.settings, "knowledge-base")) return false;
 			if (!checking) void plugin.openKnowledgeChat();
+			return true;
+		},
+	});
+
+	plugin.addCommand({
+		id: "open-assistant-inbox",
+		name: "Open AI assistant inbox",
+		checkCallback: (checking) => {
+			if (!isDesktop()) return false;
+			if (!isPluginEnabled(plugin.settings, "ai-assistant")) return false;
+			if (!checking) void plugin.openAssistantInbox();
 			return true;
 		},
 	});

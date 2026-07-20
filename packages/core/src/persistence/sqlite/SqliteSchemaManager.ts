@@ -116,6 +116,38 @@ export class SqliteSchemaManager {
                 PRIMARY KEY (date, card_id)
             );
 
+            CREATE TABLE IF NOT EXISTS assistant_tasks (
+                id TEXT PRIMARY KEY NOT NULL,
+                thread_id TEXT,
+                instruction TEXT NOT NULL,
+                preset_id TEXT,
+                context_json TEXT NOT NULL,
+                status TEXT NOT NULL DEFAULT 'pending',
+                result_manifest_json TEXT,
+                error TEXT,
+                created_at INTEGER NOT NULL,
+                finished_at INTEGER
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_assistant_tasks_status ON assistant_tasks(status);
+
+			CREATE TABLE IF NOT EXISTS assistant_threads (
+				id TEXT PRIMARY KEY NOT NULL,
+				title TEXT NOT NULL,
+				context_json TEXT NOT NULL,
+				state TEXT NOT NULL DEFAULT 'active',
+				messages_json TEXT NOT NULL DEFAULT '[]',
+				manifest_json TEXT,
+				revisions_json TEXT NOT NULL DEFAULT '[]',
+				revision INTEGER NOT NULL DEFAULT 0,
+				active_task_id TEXT,
+				created_at INTEGER NOT NULL,
+				updated_at INTEGER NOT NULL
+			);
+
+			CREATE INDEX IF NOT EXISTS idx_assistant_threads_state_updated
+			ON assistant_threads(state, updated_at DESC);
+
             CREATE TABLE IF NOT EXISTS meta (
                 key TEXT PRIMARY KEY NOT NULL,
                 value TEXT
@@ -131,6 +163,14 @@ export class SqliteSchemaManager {
 		} catch {
 			// Column already exists — expected for new installs
 		}
+		try {
+			this.db.run(`ALTER TABLE assistant_tasks ADD COLUMN thread_id TEXT`);
+		} catch {
+			// Column already exists — expected for new installs
+		}
+		this.db.run(
+			`CREATE INDEX IF NOT EXISTS idx_assistant_tasks_thread ON assistant_tasks(thread_id)`,
+		);
 
 		// Seed built-in note types for fresh installs
 		const builtins = getBuiltinNoteTypes();

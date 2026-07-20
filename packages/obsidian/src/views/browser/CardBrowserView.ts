@@ -5,6 +5,7 @@ import { h } from "preact";
 import { VIEW_TYPE_CARD_BROWSER } from "@true-recall/core/constants";
 
 import { mountPreact } from "@true-recall/obsidian/preact";
+import { createViewVisibility } from "@true-recall/obsidian/views/view-visibility";
 
 import type TrueRecallPlugin from "../../main";
 import { CardBrowserApp } from "./CardBrowserApp";
@@ -43,6 +44,7 @@ export class CardBrowserView extends ItemView {
 				h(CardBrowserApp, {
 					filterSourceUid: this.filterSourceUid,
 					filterOrphaned: this.filterOrphaned,
+					isViewVisible: createViewVisibility(this),
 				}),
 			);
 		}

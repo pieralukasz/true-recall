@@ -150,7 +150,9 @@ export class KeyboardHandler {
 		return map;
 	}
 
-	static formatKeyName(key: string): string {
+	// this: void tells TS this static method never needs a `this` context,
+	// so extracting it into a plain function reference below is safe.
+	static formatKeyName(this: void, key: string): string {
 		if (key === " ") return "Space";
 		if (key.length === 1) return key.toUpperCase();
 		return key;

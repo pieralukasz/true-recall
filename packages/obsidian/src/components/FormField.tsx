@@ -36,7 +36,7 @@ export function FormField({
 	return (
 		<div
 			class={cn(
-				"ep:flex ep:items-center ep:justify-between ep:gap-4 ep:py-3 ep:border-b ep:border-obs-border last:ep:border-b-0",
+				"ep:flex ep:items-center ep:justify-between ep:gap-4 ep:py-3 ep:border-b ep:border-obs-border ep:last:border-b-0",
 				cls,
 			)}
 		>

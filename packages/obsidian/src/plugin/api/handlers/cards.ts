@@ -251,8 +251,27 @@ export async function handleCreateCards(
 		inputs = [body];
 		batchSourceUid = undefined;
 	} else {
+		if (!Array.isArray(body.cards) || body.cards.length === 0) {
+			sendError(res, 400, "Body must contain a non-empty 'cards' array");
+			return;
+		}
 		inputs = body.cards;
 		batchSourceUid = body.source_uid;
+	}
+
+	const invalid = inputs.some(
+		(input) =>
+			typeof input?.question !== "string" ||
+			input.question.trim().length === 0 ||
+			typeof input.answer !== "string",
+	);
+	if (invalid) {
+		sendError(
+			res,
+			400,
+			"Every card must have a non-empty 'question' and an 'answer' string",
+		);
+		return;
 	}
 
 	const noteParams = inputs.map((input) => {

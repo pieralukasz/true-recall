@@ -29,14 +29,37 @@ function executeCommand(plugin: TrueRecallPlugin, commandId: string): void {
 	).commands.executeCommandById(commandId);
 }
 
+/**
+ * Opens the AI assistant prompt via a window event (mirrors the card-polish
+ * dispatch) so the toolbar stays decoupled from the assistant UI.
+ */
+function dispatchAskAi(
+	plugin: TrueRecallPlugin,
+	text: string,
+	sourceFile?: TFile | null,
+): void {
+	const sourcePath =
+		sourceFile?.path ?? plugin.app.workspace.getActiveFile()?.path;
+	window.dispatchEvent(
+		new CustomEvent("true-recall:ask-ai", {
+			detail: {
+				context: {
+					selectedText: text,
+					activeNotePath: sourcePath,
+					source: { path: sourcePath, text },
+				},
+			},
+		}),
+	);
+}
+
 function getSourceFileFromDOM(
 	plugin: TrueRecallPlugin,
 	range: Range,
 ): TFile | null {
-	const el =
-		range.commonAncestorContainer instanceof Element
-			? range.commonAncestorContainer
-			: range.commonAncestorContainer.parentElement;
+	const el = range.commonAncestorContainer.instanceOf(Element)
+		? range.commonAncestorContainer
+		: range.commonAncestorContainer.parentElement;
 
 	const leafContent = el?.closest(".workspace-leaf-content");
 	if (!leafContent) return null;
@@ -49,7 +72,7 @@ function getSourceFileFromDOM(
 		if (containerEl?.contains(leafContent)) {
 			const view = leaf.view;
 			if (view && "file" in view && view.file instanceof TFile) {
-				found = view.file as TFile;
+				found = view.file;
 			}
 		}
 	});
@@ -57,7 +80,7 @@ function getSourceFileFromDOM(
 }
 
 function closestWithDataLine(node: Node): Element | null {
-	const el = node instanceof Element ? node : node.parentElement;
+	const el = node.instanceOf(Element) ? node : node.parentElement;
 	return el?.closest("[data-line]") ?? null;
 }
 
@@ -66,10 +89,9 @@ async function resolveMarkdownFromRange(
 	range: Range,
 	fallback: string,
 ): Promise<string> {
-	const container =
-		range.commonAncestorContainer instanceof Element
-			? range.commonAncestorContainer
-			: range.commonAncestorContainer.parentElement;
+	const container = range.commonAncestorContainer.instanceOf(Element)
+		? range.commonAncestorContainer
+		: range.commonAncestorContainer.parentElement;
 	if (!container?.closest(".markdown-preview-view")) return fallback;
 
 	const sourceFile = getSourceFileFromDOM(plugin, range);
@@ -182,6 +204,7 @@ export const selectionToolbarManifest: PluginManifest = {
 				onHighlight: () => {},
 				onNewNote: (text) => createNoteFromSelection(plugin, text),
 				onAppend: (text) => appendToCurrentNote(plugin, text),
+				onAskAI: (text) => dispatchAskAi(plugin, text),
 				onCommand: (id) => executeCommand(plugin, id),
 				onDismiss: () => {},
 			},
@@ -255,6 +278,7 @@ export const selectionToolbarManifest: PluginManifest = {
 				onHighlight: () => {},
 				onNewNote: (text) => createNoteFromSelection(plugin, text),
 				onAppend: (text) => appendToCurrentNote(plugin, text),
+				onAskAI: (text, sourceFile) => dispatchAskAi(plugin, text, sourceFile),
 				onCommand: (id) => executeCommand(plugin, id),
 				onDismiss: () => {},
 			},

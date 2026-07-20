@@ -28,7 +28,7 @@ function FolderTag({ path, onRemove }: { path: string; onRemove: () => void }) {
 				{path}
 			</span>
 			<Clickable
-				class="ep:flex ep:items-center ep:shrink-0 ep:opacity-60 hover:ep:opacity-100"
+				class="ep:flex ep:items-center ep:shrink-0 ep:opacity-60 ep:hover:opacity-100"
 				onClick={onRemove}
 				aria-label={`Remove ${path}`}
 			>

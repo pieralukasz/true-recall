@@ -55,7 +55,7 @@ export function createSelectionToolbarExtension(
 
 			private scheduleCheck(): void {
 				cancelAnimationFrame(this.rafId);
-				this.rafId = requestAnimationFrame(() => this.checkSelection());
+				this.rafId = window.requestAnimationFrame(() => this.checkSelection());
 			}
 
 			destroy(): void {
@@ -112,9 +112,9 @@ export function createSelectionToolbarExtension(
 
 			private showToolbar(text: string, pos: number): void {
 				if (!this.container) {
-					this.container = document.createElement("div");
+					this.container = activeDocument.createElement("div");
 					this.container.className = "true-recall-selection-toolbar-container";
-					document.body.appendChild(this.container);
+					activeDocument.body.appendChild(this.container);
 				}
 
 				const detectedImagePath = extractFirstImagePath(text);

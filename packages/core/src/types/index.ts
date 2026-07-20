@@ -28,7 +28,6 @@ export type {
 	CardMaturityBreakdown,
 	CardReviewLogEntry,
 	CardSchedulingMeta,
-	CardStore,
 	CardsCreatedEntry,
 	CardsCreatedVsReviewedEntry,
 	CardType,

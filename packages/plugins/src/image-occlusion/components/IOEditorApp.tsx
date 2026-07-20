@@ -2,6 +2,7 @@ import { Notice, TFile } from "obsidian";
 import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
 
 import { isImageExtension } from "@true-recall/core/types";
+import { formatFileSize } from "@true-recall/core/utils/format.utils";
 import {
 	createEmptyIODefinition,
 	getNextIOGroupKey,
@@ -111,9 +112,9 @@ export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
 			.filter((file) => isImageExtension(file.extension))
 			.sort((a, b) => b.stat.mtime - a.stat.mtime);
 		setVaultImages(files);
-		if (!selectedVaultPath && files[0]) {
-			setSelectedVaultPath(files[0].path);
-		}
+		setSelectedVaultPath((current) =>
+			current ? current : (files[0]?.path ?? current),
+		);
 	}, [app]);
 
 	const imageUrl = useMemo(() => {
@@ -131,7 +132,7 @@ export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
 			}
 			if (imageService.isBlobTooLarge(blob)) {
 				new Notice(
-					`Image too large (max 5MB, got ${imageService.formatFileSize(blob.size)})`,
+					`Image too large (max 5MB, got ${formatFileSize(blob.size)})`,
 				);
 				return;
 			}

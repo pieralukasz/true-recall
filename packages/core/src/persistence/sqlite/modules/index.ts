@@ -5,6 +5,8 @@
  * Each module groups related functionality for cleaner organization.
  */
 
+export { AssistantTaskActions } from "./AssistantTaskActions";
+export { AssistantThreadActions } from "./AssistantThreadActions";
 export { CardActions } from "./CardActions";
 export { NoteActions } from "./NoteActions";
 export { NoteTypeActions } from "./NoteTypeActions";

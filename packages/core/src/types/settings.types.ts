@@ -16,6 +16,13 @@ export interface ToolbarButtonConfig {
 	enabled: boolean;
 }
 
+/** A saved quick instruction ("chip") for the AI assistant prompt. */
+export interface AssistantPreset {
+	id: string;
+	name: string;
+	instruction: string;
+}
+
 /**
  * Optimization result metrics from FSRS parameter optimization
  */
@@ -290,7 +297,9 @@ export interface TrueRecallSettings {
 
 	/** Enable automatic load balancing when scheduling */
 	loadBalanceEnabled: boolean;
-	/** Target daily review count for load balancing */
+	/** How the daily target is determined: suggested from recent pace or set manually */
+	loadBalanceTargetMode: "auto" | "manual";
+	/** Target daily review count for load balancing (manual mode only) */
 	loadBalanceTarget: number;
 	/** Maximum deviation from target (percentage 0-100) */
 	loadBalanceMaxDeviation: number;
@@ -348,6 +357,19 @@ export interface TrueRecallSettings {
 	globalToolbarButtons: ToolbarButtonConfig[];
 	/** Button configuration for the image-click toolbar */
 	imageToolbarButtons: ToolbarButtonConfig[];
+
+	/** AI Assistant: model override for the assistant scope ("" = inherit aiModel) */
+	assistantModel: string;
+	/** AI Assistant: enable OpenRouter web search on assistant requests */
+	assistantWebSearch: boolean;
+	/** AI Assistant: global instructions appended to every task's system prompt */
+	assistantInstructions: string;
+	/** AI Assistant: saved quick-instruction chips */
+	assistantPresets: AssistantPreset[];
+	/** AI Assistant: max agent loop iterations per task */
+	assistantMaxIterations: number;
+	/** AI Assistant: max web sources/citations to collect per task */
+	assistantMaxSources: number;
 
 	/** Custom generation prompt — appended to both Pro and BYOK system prompts */
 	aiGenerationPrompt?: string;
@@ -411,7 +433,7 @@ export interface TrueRecallSettings {
 
 	/**
 	 * Overrides where True Recall writes binary attachments: pasted images,
-	 * Image Occlusion crops, AI-generated card images, and Anki import media.
+	 * Image Occlusion crops, and Anki import media.
 	 * Empty string = each feature keeps its own pre-existing fallback behavior.
 	 */
 	attachmentFolder: string;

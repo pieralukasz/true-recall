@@ -49,14 +49,13 @@ export class EditHandler {
 		const newQuestion = field === "question" ? newContent : card.question;
 		const newAnswer = field === "answer" ? newContent : card.answer;
 
-		this.pushEditUndo(card, field);
-
 		try {
 			this.deps.flashcardManager.updateCardContent(
 				cardIdBeforeSave,
 				newQuestion,
 				newAnswer,
 			);
+			this.pushEditUndo(card, field);
 
 			const currentCard = review.getCurrentCard();
 			if (currentCard?.id === cardIdBeforeSave) {
@@ -94,12 +93,12 @@ export class EditHandler {
 					review.updateCurrentCardContent(thisCard.question, thisCard.answer);
 				}
 			} else {
-				this.pushEditUndo(card, "question");
 				this.deps.flashcardManager.updateCardContent(
 					card.id,
 					newContent,
 					card.answer,
 				);
+				this.pushEditUndo(card, "question");
 				review.updateCurrentCardContent(newContent, card.answer);
 			}
 		} catch (error) {

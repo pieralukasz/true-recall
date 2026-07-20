@@ -341,7 +341,7 @@ export class AnkiImportService {
 					rating: Math.max(1, Math.min(4, entry.ease)),
 					scheduledDays: Math.max(0, entry.ivl),
 					elapsedDays: Math.max(0, entry.lastIvl),
-					state: Math.max(0, Math.min(3, entry.type)),
+					state: revlogTypeToFsrsState(entry.type),
 					timeSpentMs: Math.max(0, entry.time),
 					updatedAt: Date.now(),
 					deletedAt: null,
@@ -483,4 +483,23 @@ function sanitize(name: string): string {
 			.replace(/\s+/g, " ")
 			.trim() || "Default"
 	);
+}
+
+/**
+ * Inverse of the export-side FSRS→revlog-type mapping. Anki revlog types:
+ * 0=learn, 1=review, 2=relearn, 3=filtered, 4=manual — NOT aligned with
+ * FSRS states (identity mapping stored every Anki "review" as Learning).
+ */
+function revlogTypeToFsrsState(type: number): number {
+	switch (type) {
+		case 1:
+		case 3:
+			// review / filtered-deck review
+			return 2;
+		case 2:
+			return 3;
+		default:
+			// learn / manual / unknown
+			return 1;
+	}
 }

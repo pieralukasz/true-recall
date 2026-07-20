@@ -27,10 +27,13 @@ abstract class BaseReviewActionCommand implements Command {
 	readonly deferred = true;
 
 	protected writeExecuted = false;
-	protected pendingTimeoutId: ReturnType<typeof setTimeout> | null = null;
+	protected pendingTimeoutId: number | null = null;
 	protected params: ReviewActionParams;
 
 	private capturedSiblings: CapturedSibling[] = [];
+	/** Pre-write DB state of every sibling doWrite touches (also the ones
+	 * not currently in the queue — undo must restore those too). */
+	private dbSnapshots = new Map<string, FSRSCardData>();
 
 	constructor(params: ReviewActionParams, description: string) {
 		this.params = params;
@@ -42,14 +45,19 @@ abstract class BaseReviewActionCommand implements Command {
 	execute(ctx: CommandContext): void {
 		const review = this.params.getReview();
 		const queue = review.queue;
+		const queueIndexById = new Map<string, number>();
+		for (let i = 0; i < queue.length; i++) {
+			const card = queue[i];
+			if (card) queueIndexById.set(card.id, i);
+		}
 
 		// Snapshot sibling cards (excluding the primary) that are actually in
 		// the queue, so undo can restore both their FSRS and their queue slot.
 		this.capturedSiblings = [];
 		for (const id of this.params.siblingIds) {
 			if (id === this.params.card.id) continue;
-			const idx = queue.findIndex((c) => c.id === id);
-			if (idx === -1) continue;
+			const idx = queueIndexById.get(id);
+			if (idx === undefined) continue;
 			const found = queue[idx];
 			if (!found) continue;
 			this.capturedSiblings.push({
@@ -59,11 +67,19 @@ abstract class BaseReviewActionCommand implements Command {
 			});
 		}
 
+		// Snapshot the DB state of EVERY sibling doWrite will touch — sibling
+		// ids outside the queue were previously written but never restored,
+		// leaving them suspended/buried/forgotten after undo.
+		this.dbSnapshots = new Map();
 		for (const id of this.params.siblingIds) {
-			review.removeCardById(id);
+			if (id === this.params.card.id) continue;
+			const data = ctx.cardStore.get(id);
+			if (data) this.dbSnapshots.set(id, { ...data });
 		}
 
-		this.pendingTimeoutId = setTimeout(() => {
+		review.removeCardsByIds(this.params.siblingIds);
+
+		this.pendingTimeoutId = window.setTimeout(() => {
 			this.writeExecuted = true;
 			this.pendingTimeoutId = null;
 			try {
@@ -84,7 +100,7 @@ abstract class BaseReviewActionCommand implements Command {
 
 	cancelPendingWrite(): boolean {
 		if (!this.writeExecuted && this.pendingTimeoutId !== null) {
-			clearTimeout(this.pendingTimeoutId);
+			window.clearTimeout(this.pendingTimeoutId);
 			this.pendingTimeoutId = null;
 			return true;
 		}
@@ -133,13 +149,10 @@ abstract class BaseReviewActionCommand implements Command {
 				undefined,
 				{ skipNotification: true },
 			);
-			for (const sibling of this.capturedSiblings) {
-				ctx.flashcardManager.updateCardFSRS(
-					sibling.card.id,
-					sibling.originalFsrs,
-					undefined,
-					{ skipNotification: true },
-				);
+			for (const [id, fsrs] of this.dbSnapshots) {
+				ctx.flashcardManager.updateCardFSRS(id, fsrs, undefined, {
+					skipNotification: true,
+				});
 			}
 			mutate(this.mutationType, () => {});
 		}

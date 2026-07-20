@@ -177,17 +177,17 @@ export class SemanticAnswerGradingService {
 
 	private withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
 		return new Promise((resolve, reject) => {
-			const timeoutId = setTimeout(() => {
+			const timeoutId = window.setTimeout(() => {
 				reject(new Error("AI grading timeout"));
 			}, timeoutMs);
 
 			promise
 				.then((result) => {
-					clearTimeout(timeoutId);
+					window.clearTimeout(timeoutId);
 					resolve(result);
 				})
 				.catch((error: unknown) => {
-					clearTimeout(timeoutId);
+					window.clearTimeout(timeoutId);
 					reject(error instanceof Error ? error : new Error(String(error)));
 				});
 		});

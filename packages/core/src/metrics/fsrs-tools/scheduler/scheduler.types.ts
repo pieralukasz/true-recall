@@ -7,6 +7,7 @@ export interface CardDueInfo {
 	due: string;
 	scheduledDays: number;
 	sourceUid?: string;
+	state?: State;
 }
 
 export interface SchedulerCardData extends CardDueInfo {
@@ -17,10 +18,26 @@ export interface SchedulerCardData extends CardDueInfo {
 	buriedUntil?: string;
 }
 
+/** Count of Review-state due cards on one UTC day (YYYY-MM-DD) */
+export interface DueDayCount {
+	day: string;
+	count: number;
+}
+
 export interface SchedulerCardStore {
 	get(cardId: string): SchedulerCardData | undefined;
 	getCards(): SchedulerCardData[];
 	getDueCardsByDateRange(startDate: string, endDate: string): CardDueInfo[];
+	/**
+	 * Aggregate variant of getDueCardsByDateRange for workload histograms:
+	 * counts Review-state cards per UTC due day without materializing rows,
+	 * so per-review hot paths can afford it.
+	 */
+	getDueCountsByDateRange(
+		startDate: string,
+		endDate: string,
+		excludeCardId?: string,
+	): DueDayCount[];
 	updateCardDue(cardId: string, newDue: string): void;
 	updateCardScheduling(
 		cardId: string,
@@ -48,19 +65,25 @@ export interface CardScheduleChange {
 }
 
 export interface LoadBalanceOptions {
-	targetPerDay: number;
+	/** Daily review target; omit to derive it from the forecast average */
+	targetPerDay?: number;
 	maxDeviation: number;
 	days?: number;
 	easyDays?: EasyDaysConfig;
 	easyDaysMultiplier?: number;
+	/** Treat overdue cards as due today and spread the backlog forward (default true) */
+	includeOverdue?: boolean;
+	/** Restrict which cards may be moved (e.g. one project); day capacity still counts all cards */
+	cardIds?: string[];
+	/** Reviews already done today — subtracted from today's remaining capacity */
+	completedToday?: number;
 	dryRun?: boolean;
 }
 
 export interface BalanceDueOptions {
 	cardId: string;
 	originalDue: string;
-	targetPerDay: number;
-	maxDeviation: number;
+	/** Hard cap on the day shift; 0 disables per-review balancing */
 	maxShiftDays: number;
 	easyDays?: EasyDaysConfig;
 	easyDaysMultiplier?: number;
