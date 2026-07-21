@@ -52,10 +52,11 @@ settings:
 @import "./views/modal-window/modal-window.styles.css";
 @import "./features/library/ui/panel/panel.styles.css";
 @import "./features/metrics/ui/simulator/styles.css";
-@import "./features/assistant/ui/assistant.styles.css";
 @import "../../../packages/plugins/src/selection-toolbar/selection-toolbar.css";
 @import "../../../packages/plugins/src/image-occlusion/styles/image-occlusion.styles.css";
 @import "../../../packages/plugins/src/shared/card-ai-preview.css";
+@import "../../../packages/plugins/src/shared/card-ai-preset-menu.css";
+@import "./features/assistant/ui/assistant.styles.css";
 
 /*
  * Obsidian Theme Variables - Runtime Inheritance

@@ -48,9 +48,8 @@ export function AssistantSettingsPanel({
 	return (
 		<>
 			<div class="ep:text-ui-smaller ep:text-obs-muted ep:p-3 ep:mb-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-secondary">
-				Generation presets and Card Polish presets remain stored in their
-				existing settings and are automatically exposed as Assistant actions in
-				matching contexts.
+				Assistant, Flashcard Generator, and Card Polish share one workspace and
+				one Inbox. Each tool keeps its own presets and model configuration.
 			</div>
 			<FormField
 				name="Assistant model"
@@ -119,8 +118,8 @@ export function AssistantSettingsPanel({
 						Quick actions
 					</h3>
 					<span class="ep:text-ui-smaller ep:text-obs-muted">
-						One-tap chips shown in the Ask AI prompt. Each also becomes a
-						hotkey-bindable command in review.
+						One-tap actions shown in the Assistant workspace. Each also becomes
+						a hotkey-bindable command in review.
 					</span>
 				</div>
 
@@ -153,7 +152,7 @@ export function AssistantSettingsPanel({
 							value={preset.instruction}
 							onChange={(v) => updatePreset(preset.id, { instruction: v })}
 							rows={2}
-							placeholder="What should the AI do when this chip is tapped?"
+							placeholder="What should the Assistant do when this action is selected?"
 						/>
 					</div>
 				))}

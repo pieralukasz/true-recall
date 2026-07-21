@@ -1,4 +1,4 @@
-import { Menu, Notice } from "obsidian";
+import { Notice } from "obsidian";
 
 import { OpenRouterClient } from "@true-recall/core";
 import {
@@ -7,9 +7,9 @@ import {
 } from "@true-recall/core/ai/config/ai-client-config";
 
 import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpClient";
-import { promptText } from "@true-recall/obsidian/modals/shared/TextInputModal";
 
 import type { PluginContext } from "../types";
+import { openCardAIPresetMenu } from "./CardAIPresetMenu";
 import {
 	type CardAIPreset,
 	CardAIRunner,
@@ -52,6 +52,7 @@ export function mergePresetsForUser(args: {
 export abstract class CardAIPluginBase<TDetail extends CardAIBaseEventDetail> {
 	private listener: ((e: Event) => void) | null = null;
 	private abortController: AbortController | null = null;
+	private disposeMenu: (() => void) | null = null;
 
 	constructor(
 		protected readonly ctx: PluginContext,
@@ -74,6 +75,8 @@ export abstract class CardAIPluginBase<TDetail extends CardAIBaseEventDetail> {
 		}
 		this.abortController?.abort();
 		this.abortController = null;
+		this.disposeMenu?.();
+		this.disposeMenu = null;
 	}
 
 	protected getPresets(): CardAIPreset[] {
@@ -87,31 +90,19 @@ export abstract class CardAIPluginBase<TDetail extends CardAIBaseEventDetail> {
 
 	private openMenu(detail: TDetail): void {
 		const presets = this.getPresets();
-		const menu = new Menu();
-		for (const preset of presets) {
-			menu.addItem((item) =>
-				item
-					.setTitle(preset.name)
-					.setIcon(preset.autoApply ? "zap" : "eye")
-					.onClick(() => void this.runPreset(preset, detail)),
-			);
-		}
-		if (presets.length > 0) menu.addSeparator();
-		menu.addItem((item) =>
-			item
-				.setTitle("Custom…")
-				.setIcon("pencil")
-				.onClick(() => void this.promptCustom(detail)),
-		);
-
-		const rect = detail.anchor.getBoundingClientRect();
-		menu.showAtPosition({ x: rect.left, y: rect.top });
-		const menuEl = (menu as unknown as { dom?: HTMLElement }).dom;
-		if (menuEl) {
-			window.requestAnimationFrame(() => {
-				menuEl.style.top = `${Math.max(8, rect.top - menuEl.offsetHeight - 6)}px`;
-			});
-		}
+		this.disposeMenu?.();
+		this.disposeMenu = openCardAIPresetMenu({
+			anchor: detail.anchor,
+			presets,
+			onSelect: (preset) => {
+				this.disposeMenu = null;
+				void this.runPreset(preset, detail);
+			},
+			onCustom: (instruction) => {
+				this.disposeMenu = null;
+				void this.runCustom(instruction, detail);
+			},
+		});
 	}
 
 	private buildService(): CardAIService | null {
@@ -176,13 +167,7 @@ export abstract class CardAIPluginBase<TDetail extends CardAIBaseEventDetail> {
 		}
 	}
 
-	private async promptCustom(detail: TDetail): Promise<void> {
-		const instruction = await promptText(this.ctx.app, {
-			title: "Custom AI instruction",
-			label: "Instruction",
-			placeholder: "e.g. Polish formatting and fill empty fields",
-		});
-		if (!instruction) return;
+	private async runCustom(instruction: string, detail: TDetail): Promise<void> {
 		const autoApply =
 			this.ctx.settings[this.config.bucketKey]?.customPromptAutoApply ?? false;
 		await this.runPreset(

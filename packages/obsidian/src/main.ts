@@ -3,6 +3,7 @@ import { Plugin, type TFile } from "obsidian";
 import { TrueRecallApp } from "@true-recall/core/app";
 import {
 	ENABLE_RAG,
+	VIEW_TYPE_ASSISTANT_EDITOR,
 	VIEW_TYPE_ASSISTANT_INBOX,
 	VIEW_TYPE_CARD_BROWSER,
 	VIEW_TYPE_CARD_TYPES_EDITOR,
@@ -58,6 +59,8 @@ import { AssistantInboxView } from "@true-recall/obsidian/views/assistant/Assist
 import { CardBrowserView } from "@true-recall/obsidian/views/browser/CardBrowserView";
 import { KnowledgeChatView } from "@true-recall/obsidian/views/chat/KnowledgeChatView";
 import { DashboardView } from "@true-recall/obsidian/views/dashboard/DashboardView";
+import { AssistantEditorView } from "@true-recall/obsidian/views/modal-window/AssistantEditorView";
+import { drainAssistantEditorRequests } from "@true-recall/obsidian/views/modal-window/assistant-editor-registry";
 import { CardTypesEditorView } from "@true-recall/obsidian/views/modal-window/CardTypesEditorView";
 import { drainCardTypesEditorRequests } from "@true-recall/obsidian/views/modal-window/card-types-editor-registry";
 import { NoteTypeManagerView } from "@true-recall/obsidian/views/modal-window/NoteTypeManagerView";
@@ -409,6 +412,11 @@ export default class TrueRecallPlugin extends Plugin {
 		);
 
 		registerIfAllowed(
+			VIEW_TYPE_ASSISTANT_EDITOR,
+			(leaf) => new AssistantEditorView(leaf, this),
+		);
+
+		registerIfAllowed(
 			VIEW_TYPE_NOTE_TYPE_MANAGER,
 			(leaf) => new NoteTypeManagerView(leaf, this),
 		);
@@ -524,6 +532,7 @@ export default class TrueRecallPlugin extends Plugin {
 		// left hanging when the plugin reloads with windows still open.
 		drainCardTypesEditorRequests();
 		drainNoteTypeManagerRequests();
+		drainAssistantEditorRequests();
 		void this.coreApp?.shutdown().catch((e) => {
 			console.error(
 				"[True Recall] Shutdown failed — data may not be saved:",

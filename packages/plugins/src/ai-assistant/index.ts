@@ -5,14 +5,14 @@ import { AssistantSettingsPanel } from "./AssistantSettingsPanel";
 export const aiAssistantManifest: PluginManifest = {
 	info: {
 		id: "ai-assistant",
-		name: "AI Assistant",
+		name: "Assistant",
 		description:
-			"Create and modify flashcards from selections, review, and the flashcard editor through one draft-and-approve workflow.",
+			"Ask questions, research concepts, and coordinate AI work across your notes and flashcards.",
 		features: [
-			"Create cards from selected text with existing generation presets",
-			"Modify saved cards and open drafts with Card Polish presets",
+			"Free-form questions and research",
+			"Context from the current note, selection, or flashcard",
 			"Async task queue — review is never blocked",
-			"Review proposals inline or later in the AI Inbox",
+			"Shared AI Inbox with Generator and Card Polish",
 		],
 		icon: "sparkles",
 		tier: "byok",

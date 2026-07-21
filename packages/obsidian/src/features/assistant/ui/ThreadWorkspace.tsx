@@ -536,9 +536,17 @@ export function ThreadWorkspace({
 			) : null}
 
 			<AiComposer
+				variant="workspace"
 				value={message}
 				onChange={setMessage}
 				placeholder="Tell AI what to change or add…"
+				submitLabel="Send"
+				hint={
+					<span>
+						<kbd>Enter</kbd> send <span aria-hidden="true">·</span>{" "}
+						<kbd>Shift Enter</kbd> new line
+					</span>
+				}
 				busy={isBusy}
 				onStop={() => {
 					if (thread.activeTaskId)

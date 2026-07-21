@@ -8,6 +8,7 @@ import { mountPreact } from "@true-recall/obsidian/preact/mount";
 
 import { AskAiPrompt } from "./AskAiPrompt";
 import { AssistantInlineTask } from "./AssistantInlineTask";
+import type { AIWorkspaceMode } from "./ai-workspace-modes";
 import { handoffUnfinishedThread } from "./thread-handoff";
 
 /** Opens the Ask AI prompt in a neutral modal (anchor-less invocations:
@@ -16,7 +17,9 @@ import { handoffUnfinishedThread } from "./thread-handoff";
 export function openAskAiModal(
 	plugin: TrueRecallPlugin,
 	context: AssistantContext,
-): void {
+	onClose?: () => void,
+	initialMode: AIWorkspaceMode = "assistant",
+): () => void {
 	const modal = new Modal(plugin.app);
 	modal.titleEl.setText("Ask AI");
 	modal.modalEl.addClass("tr-assistant-modal");
@@ -41,6 +44,8 @@ export function openAskAiModal(
 		plugin,
 		h(AskAiPrompt, {
 			context,
+			presentation: "workspace",
+			initialMode,
 			onSubmitted: (threadId, mode) => {
 				if (mode === "inbox") {
 					modal.close();
@@ -59,8 +64,10 @@ export function openAskAiModal(
 	modal.onClose = () => {
 		if (currentThreadId) handoffUnfinishedThread(plugin, currentThreadId);
 		unmount?.();
+		onClose?.();
 	};
 	modal.open();
+	return () => modal.close();
 }
 
 export function openAssistantThreadModal(

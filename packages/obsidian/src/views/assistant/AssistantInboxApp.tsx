@@ -34,7 +34,13 @@ import { notify } from "@true-recall/obsidian/services/notification.service";
 import { cn } from "@true-recall/obsidian/utils/cn";
 
 const rowCls =
-	"ep:grid ep:grid-cols-[minmax(0,1fr)_auto] ep:items-start ep:gap-2 ep:min-w-0";
+	"tr-ai-inbox-item__header ep:grid ep:grid-cols-[minmax(0,1fr)_auto] ep:items-center ep:gap-2 ep:min-w-0";
+
+function aiToolLabel(presetId: string | undefined): string {
+	if (presetId?.startsWith("generation:")) return "Generator";
+	if (presetId?.startsWith("card-polish:")) return "Card Polish";
+	return "Assistant";
+}
 
 interface ThreadApprovalResult {
 	appliedCount: number;
@@ -60,18 +66,6 @@ async function approveThreadProposals(
 	return result;
 }
 
-function notifyThreadApproval(result: ThreadApprovalResult): void {
-	if (result.conflictedCount > 0) {
-		notify().info(
-			`${result.conflictedCount} draft${result.conflictedCount === 1 ? "" : "s"} changed since the AI saw them — apply them individually`,
-		);
-	}
-	if (result.error) notify().error(result.error);
-	if (!result.error && result.appliedCount > 0) {
-		notify().success("Applied AI drafts");
-	}
-}
-
 function TaskRowShell({
 	statusClass,
 	children,
@@ -82,7 +76,7 @@ function TaskRowShell({
 	return (
 		<article
 			class={cn(
-				"ep:min-w-0 ep:overflow-hidden ep:rounded-lg ep:border ep:border-obs-border ep:bg-surface-raised ep:transition-colors",
+				"tr-ai-inbox-item ep:min-w-0 ep:overflow-hidden ep:transition-colors",
 				statusClass,
 			)}
 		>
@@ -140,29 +134,26 @@ function AssistantTaskItem({
 		>
 			<header class={rowCls}>
 				<Clickable
-					class="ep:block ep:min-w-0 ep:py-2.5 ep:pl-3 ep:text-left"
+					class="tr-ai-inbox-item__summary ep:block ep:min-w-0 ep:text-left"
 					role={canExpand ? "button" : "group"}
 					aria-expanded={canExpand ? isOpen : undefined}
 					onClick={() => {
 						if (canExpand) onToggle();
 					}}
 				>
-					<span class="ep:flex ep:flex-col ep:gap-0.5 ep:min-w-0">
-						<span class="ep:truncate ep:text-ui-small ep:font-semibold ep:text-obs-normal">
-							{task.instruction}
+					<span class="tr-ai-inbox-item__copy">
+						<span class="tr-ai-inbox-item__tool">
+							{aiToolLabel(task.presetId)}
 						</span>
+						<span class="tr-ai-inbox-item__title">{task.instruction}</span>
 						{selectedText && (
-							<span class="ep:truncate ep:text-ui-smaller ep:text-obs-muted">
-								{selectedText}
-							</span>
+							<span class="tr-ai-inbox-item__preview">{selectedText}</span>
 						)}
-						<span class="ep:text-ui-smaller ep:text-obs-muted">
-							{formatTaskTime(task)}
-						</span>
+						<span class="tr-ai-inbox-item__time">{formatTaskTime(task)}</span>
 					</span>
 				</Clickable>
 
-				<div class="ep:flex ep:flex-col ep:items-end ep:gap-2 ep:py-2 ep:pr-2">
+				<div class="tr-ai-inbox-item__actions">
 					<Clickable
 						role={canExpand ? "button" : "group"}
 						aria-expanded={canExpand ? isOpen : undefined}
@@ -173,23 +164,21 @@ function AssistantTaskItem({
 						<StatusPill label={statusLabel} tone={statusTone(task.status)} />
 					</Clickable>
 
-					<div class="ep:flex ep:items-center ep:gap-0.5">
-						{(task.status === "pending" || task.status === "running") && (
-							<IconButton
-								icon="x"
-								ariaLabel="Cancel AI task"
-								size="small"
-								onClick={() => plugin.assistantService?.cancel(task.id)}
-							/>
-						)}
+					{(task.status === "pending" || task.status === "running") && (
 						<IconButton
-							icon="trash-2"
-							ariaLabel="Delete AI task"
+							icon="x"
+							ariaLabel="Cancel AI task"
 							size="small"
-							danger
-							onClick={deleteTask}
+							onClick={() => plugin.assistantService?.cancel(task.id)}
 						/>
-					</div>
+					)}
+					<IconButton
+						icon="trash-2"
+						ariaLabel="Delete AI task"
+						size="small"
+						danger
+						onClick={deleteTask}
+					/>
 				</div>
 			</header>
 
@@ -221,15 +210,11 @@ function AssistantTaskItem({
 function AssistantThreadItem({
 	thread,
 	isOpen,
-	isApproving,
 	onToggle,
-	onApprove,
 }: {
 	thread: AssistantThread;
 	isOpen: boolean;
-	isApproving: boolean;
 	onToggle: () => void;
-	onApprove: () => void;
 }) {
 	const plugin = usePlugin();
 	const pending =
@@ -241,59 +226,53 @@ function AssistantThreadItem({
 		: pending > 0
 			? `${pending} to review`
 			: "conversation";
+	const statusClass = cn(thread.activeTaskId && "ep:border-obs-interactive");
+
+	if (isOpen) {
+		return (
+			<TaskRowShell statusClass={statusClass}>
+				<div class="tr-ai-inbox-item__workspace">
+					<ThreadWorkspace thread={thread} onClose={onToggle} />
+				</div>
+			</TaskRowShell>
+		);
+	}
 
 	return (
-		<TaskRowShell
-			statusClass={cn(thread.activeTaskId && "ep:border-obs-interactive")}
-		>
+		<TaskRowShell statusClass={statusClass}>
 			<header class={rowCls}>
 				<Clickable
-					class="ep:block ep:min-w-0 ep:py-2.5 ep:pl-3 ep:text-left"
+					class="tr-ai-inbox-item__summary ep:block ep:min-w-0 ep:text-left"
 					role="button"
-					aria-expanded={isOpen}
+					aria-expanded={false}
 					onClick={onToggle}
 				>
-					<span class="ep:flex ep:flex-col ep:gap-0.5 ep:min-w-0">
-						<span class="ep:truncate ep:text-ui-small ep:font-semibold ep:text-obs-normal">
-							{thread.title}
+					<span class="tr-ai-inbox-item__copy">
+						<span class="tr-ai-inbox-item__tool">
+							{aiToolLabel(threadTask(thread).presetId)}
 						</span>
-						<span class="ep:text-ui-smaller ep:text-obs-muted">
+						<span class="tr-ai-inbox-item__title">{thread.title}</span>
+						<span class="tr-ai-inbox-item__time">
 							{new Date(thread.updatedAt).toLocaleString()}
 						</span>
 					</span>
 				</Clickable>
-				<div class="ep:flex ep:flex-col ep:items-end ep:gap-2 ep:py-2 ep:pr-2">
+				<div class="tr-ai-inbox-item__actions">
 					<Clickable onClick={onToggle}>
 						<StatusPill
 							label={status}
 							tone={statusTone(thread.activeTaskId ? "working" : status)}
 						/>
 					</Clickable>
-					<div class="ep:flex ep:items-center ep:gap-1">
-						{pending > 0 && !thread.activeTaskId ? (
-							<ActionButton
-								label={isApproving ? "Approving…" : "Approve all"}
-								variant="primary"
-								size="sm"
-								disabled={isApproving}
-								onClick={onApprove}
-							/>
-						) : null}
-						<IconButton
-							icon="trash-2"
-							ariaLabel="Delete AI conversation"
-							size="small"
-							danger
-							onClick={() => plugin.assistantService?.deleteThread(thread.id)}
-						/>
-					</div>
+					<IconButton
+						icon="trash-2"
+						ariaLabel="Delete AI conversation"
+						size="small"
+						danger
+						onClick={() => plugin.assistantService?.deleteThread(thread.id)}
+					/>
 				</div>
 			</header>
-			{isOpen ? (
-				<div class="ep:border-t ep:border-obs-border ep:p-3">
-					<ThreadWorkspace thread={thread} />
-				</div>
-			) : null}
 		</TaskRowShell>
 	);
 }
@@ -305,9 +284,6 @@ export function AssistantInboxApp() {
 	const threadsSignal = useQuery<AssistantThread[]>(Q.ASSISTANT_INBOX);
 	const threads = threadsSignal.value ?? [];
 	const [openId, setOpenId] = useState<string | null>(null);
-	const [approvingIds, setApprovingIds] = useState<Set<string>>(
-		() => new Set(),
-	);
 	const [isApprovingInbox, setIsApprovingInbox] = useState(false);
 	const reviewableThreads = threads.filter(
 		(thread) =>
@@ -325,26 +301,6 @@ export function AssistantInboxApp() {
 		0,
 	);
 
-	const markApproving = (threadId: string, isApproving: boolean) => {
-		setApprovingIds((current) => {
-			const next = new Set(current);
-			if (isApproving) next.add(threadId);
-			else next.delete(threadId);
-			return next;
-		});
-	};
-
-	const approveOneThread = async (thread: AssistantThread) => {
-		if (approvingIds.has(thread.id) || isApprovingInbox) return;
-		markApproving(thread.id, true);
-		try {
-			const result = await approveThreadProposals(plugin, thread);
-			if (result) notifyThreadApproval(result);
-		} finally {
-			markApproving(thread.id, false);
-		}
-	};
-
 	const approveInbox = async () => {
 		if (isApprovingInbox || reviewableThreads.length === 0) return;
 		setIsApprovingInbox(true);
@@ -353,22 +309,17 @@ export function AssistantInboxApp() {
 		let failedThreadCount = 0;
 		try {
 			for (const thread of sortByInboxAdditionOrder(reviewableThreads)) {
-				markApproving(thread.id, true);
-				try {
-					const result = await approveThreadProposals(plugin, thread);
-					if (!result) continue;
-					appliedCount += result.appliedCount;
-					conflictedCount += result.conflictedCount;
-					if (result.error) failedThreadCount++;
-				} finally {
-					markApproving(thread.id, false);
-				}
+				const result = await approveThreadProposals(plugin, thread);
+				if (!result) continue;
+				appliedCount += result.appliedCount;
+				conflictedCount += result.conflictedCount;
+				if (result.error) failedThreadCount++;
 			}
 		} finally {
 			setIsApprovingInbox(false);
 		}
 		if (appliedCount > 0) {
-			notify().success(`Approved ${appliedCount} AI drafts`);
+			notify().success(`Applied ${appliedCount} AI drafts`);
 		}
 		if (conflictedCount > 0) {
 			notify().info(
@@ -416,47 +367,64 @@ export function AssistantInboxApp() {
 	const count = threads.length + tasks.length;
 
 	return (
-		<div class="ep:flex ep:flex-col ep:gap-2 ep:px-1 ep:pb-2 ep:min-w-0 ep:text-obs-normal">
-			<div class="ep:flex ep:items-center ep:justify-between ep:gap-3">
-				<div class="ep:flex ep:items-center ep:gap-2.5">
-					<div class="ep:text-ui-small ep:font-bold">AI Inbox</div>
-					<StatusPill label={String(count)} />
+		<div class="tr-ai-inbox ep:text-obs-normal">
+			<section class="tr-ai-inbox__queue">
+				<header class="tr-ai-inbox__queue-header">
+					<div>
+						<div class="tr-ai-inbox__eyebrow">AI Inbox</div>
+						<h1>Review queue</h1>
+						<p>
+							{count === 0
+								? "Nothing needs your attention"
+								: `${count} active ${count === 1 ? "item" : "items"}`}
+						</p>
+					</div>
+					<div class="tr-ai-inbox__queue-actions">
+						<div class="tr-ai-inbox__summary">
+							<strong>{pendingProposalCount}</strong>
+							<span>to review</span>
+						</div>
+						<ActionButton
+							label={isApprovingInbox ? "Applying…" : "Apply all"}
+							variant="primary"
+							size="sm"
+							disabled={pendingProposalCount === 0 || isApprovingInbox}
+							onClick={() => void approveInbox()}
+						/>
+					</div>
+				</header>
+
+				<div class="tr-ai-inbox__items">
+					{threads.map((thread) => (
+						<AssistantThreadItem
+							key={thread.id}
+							thread={thread}
+							isOpen={openId === thread.id}
+							onToggle={() =>
+								setOpenId(openId === thread.id ? null : thread.id)
+							}
+						/>
+					))}
+
+					{tasks.map((task) => (
+						<AssistantTaskItem
+							key={task.id}
+							task={task}
+							isOpen={openId === task.id}
+							onToggle={() => setOpenId(openId === task.id ? null : task.id)}
+						/>
+					))}
+
+					{count === 0 ? (
+						<div class="tr-ai-inbox__empty">
+							<EmptyState
+								icon="✨"
+								message="Nothing needs attention. New AI tasks will appear here when they are ready for review."
+							/>
+						</div>
+					) : null}
 				</div>
-				<ActionButton
-					label={isApprovingInbox ? "Approving…" : "Approve all"}
-					variant="primary"
-					size="sm"
-					disabled={pendingProposalCount === 0 || isApprovingInbox}
-					onClick={() => void approveInbox()}
-				/>
-			</div>
-
-			{threads.map((thread) => (
-				<AssistantThreadItem
-					key={thread.id}
-					thread={thread}
-					isOpen={openId === thread.id}
-					isApproving={approvingIds.has(thread.id) || isApprovingInbox}
-					onToggle={() => setOpenId(openId === thread.id ? null : thread.id)}
-					onApprove={() => void approveOneThread(thread)}
-				/>
-			))}
-
-			{tasks.map((task) => (
-				<AssistantTaskItem
-					key={task.id}
-					task={task}
-					isOpen={openId === task.id}
-					onToggle={() => setOpenId(openId === task.id ? null : task.id)}
-				/>
-			))}
-
-			{count === 0 && (
-				<EmptyState
-					icon="✨"
-					message="Nothing needs attention. Active AI drafts stay where you started them until you choose Later."
-				/>
-			)}
+			</section>
 		</div>
 	);
 }

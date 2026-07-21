@@ -58,6 +58,19 @@ describe("AI workflow facade", () => {
 		});
 	});
 
+	it("exposes generation workflows for a loaded source note", () => {
+		const workflows = listAIWorkflows(settings, {
+			hasSelection: false,
+			hasSourceText: true,
+			hasCard: false,
+			hasDraftCard: false,
+		});
+
+		expect(workflows.map((workflow) => workflow.id)).toContain(
+			generationWorkflowId("basic"),
+		);
+	});
+
 	it("exposes Card Polish presets for existing and draft cards", () => {
 		const workflows = listAIWorkflows(settings, {
 			hasSelection: false,

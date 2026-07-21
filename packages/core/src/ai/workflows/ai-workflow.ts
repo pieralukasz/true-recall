@@ -12,6 +12,7 @@ export interface AIWorkflow {
 
 export interface AIWorkflowContext {
 	hasSelection: boolean;
+	hasSourceText?: boolean;
 	hasCard: boolean;
 	hasDraftCard: boolean;
 }
@@ -51,7 +52,7 @@ export function listAIWorkflows(
 		}),
 	);
 
-	if (context.hasSelection) {
+	if (context.hasSelection || context.hasSourceText) {
 		for (const preset of settings.generationPresets ?? []) {
 			workflows.push({
 				id: generationWorkflowId(preset.id),
