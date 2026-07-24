@@ -1,4 +1,21 @@
-import type { KnowledgeEvidence } from "../../rag/retrieval/knowledge-retriever";
+export type KnowledgeSourceType = "note" | "card";
+
+/**
+ * A single piece of vault evidence attached to an assistant thread.
+ * Retained on the manifest for backward compatibility with persisted threads;
+ * no longer populated at runtime (the old RAG search tool was removed).
+ */
+export interface KnowledgeEvidence {
+	id: string;
+	sourceType: KnowledgeSourceType;
+	sourceId: string;
+	sourcePath?: string;
+	heading?: string;
+	excerpt: string;
+	score: number;
+	tokenCount: number;
+	modifiedAt?: number;
+}
 
 export type AssistantTaskStatus =
 	| "pending"

@@ -2,14 +2,12 @@ import { Plugin, type TFile } from "obsidian";
 
 import { TrueRecallApp } from "@true-recall/core/app";
 import {
-	ENABLE_RAG,
 	VIEW_TYPE_ASSISTANT_EDITOR,
 	VIEW_TYPE_ASSISTANT_INBOX,
 	VIEW_TYPE_CARD_BROWSER,
 	VIEW_TYPE_CARD_TYPES_EDITOR,
 	VIEW_TYPE_DASHBOARD,
 	VIEW_TYPE_FLASHCARD_PANEL,
-	VIEW_TYPE_KNOWLEDGE_CHAT,
 	VIEW_TYPE_NOTE_TYPE_MANAGER,
 	VIEW_TYPE_QUICK_NOTE_EDITOR,
 	VIEW_TYPE_REVIEW,
@@ -30,7 +28,6 @@ import type {
 } from "@true-recall/core/types";
 import type { SessionConfig } from "@true-recall/core/types/session-config.types";
 
-import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpClient";
 import { ObsidianNoteResolver } from "@true-recall/obsidian/adapters/ObsidianNoteResolver";
 import { ObsidianPersistence } from "@true-recall/obsidian/adapters/ObsidianPersistence";
 import type { CommandService } from "@true-recall/obsidian/commands";
@@ -63,7 +60,6 @@ import {
 } from "@true-recall/obsidian/utils/platform";
 import { AssistantInboxView } from "@true-recall/obsidian/views/assistant/AssistantInboxView";
 import { CardBrowserView } from "@true-recall/obsidian/views/browser/CardBrowserView";
-import { KnowledgeChatView } from "@true-recall/obsidian/views/chat/KnowledgeChatView";
 import { DashboardView } from "@true-recall/obsidian/views/dashboard/DashboardView";
 import { AssistantEditorView } from "@true-recall/obsidian/views/modal-window/AssistantEditorView";
 import { drainAssistantEditorRequests } from "@true-recall/obsidian/views/modal-window/assistant-editor-registry";
@@ -190,15 +186,6 @@ export default class TrueRecallPlugin extends Plugin {
 	statusBarWidget: StatusBarWidget | null = null;
 	backupRecovery: BackupRecoveryManager | null = null;
 	localApi: LocalApiServer | null = null;
-	ragActions:
-		| import("@true-recall/core/rag/indexing/rag-chunk-actions").RagChunkActions
-		| null = null;
-	ragIndexer:
-		| import("@true-recall/obsidian/features/rag/services/rag-indexer.service").RagIndexerService
-		| null = null;
-	ragSearch:
-		| import("@true-recall/core/rag/retrieval/rag-search.service").RagSearchService
-		| null = null;
 	dataLayer: DataLayer | null = null;
 	assistantService:
 		| import("./services/assistant/assistant.service").AssistantService
@@ -258,25 +245,6 @@ export default class TrueRecallPlugin extends Plugin {
 				"True Recall failed to initialize. Try reinstalling the plugin.",
 			);
 			return;
-		}
-
-		// Migrate ragEnabled → pluginStates["knowledge-base"]
-		try {
-			if (
-				this.settings.ragEnabled &&
-				this.settings.pluginStates?.["knowledge-base"] === undefined
-			) {
-				this.settings.pluginStates = {
-					...this.settings.pluginStates,
-					"knowledge-base": true,
-				};
-				await this.saveSettings();
-			}
-		} catch (error) {
-			console.warn(
-				"[True Recall] ragEnabled migration failed to persist, will retry next load:",
-				error,
-			);
 		}
 
 		// What's New check after layout ready
@@ -432,13 +400,6 @@ export default class TrueRecallPlugin extends Plugin {
 			(leaf) => new CardTypesEditorView(leaf, this),
 		);
 
-		if (ENABLE_RAG) {
-			registerIfAllowed(
-				VIEW_TYPE_KNOWLEDGE_CHAT,
-				(leaf) => new KnowledgeChatView(leaf, this),
-			);
-		}
-
 		registerIfAllowed(
 			VIEW_TYPE_ASSISTANT_INBOX,
 			(leaf) => new AssistantInboxView(leaf, this),
@@ -447,6 +408,7 @@ export default class TrueRecallPlugin extends Plugin {
 		registerCommands(this);
 		this.addSettingTab(new TrueRecallSettingTab(this.app, this));
 		registerEventHandlers(this);
+		this.applyTabBarVisibility();
 
 		const { CommandService: CmdService } = await import(
 			"@true-recall/obsidian/commands"
@@ -456,51 +418,6 @@ export default class TrueRecallPlugin extends Plugin {
 			cardStore: this.cardStore,
 			sessionPersistence: this.sessionPersistence,
 		});
-
-		if (ENABLE_RAG && this.cardStore) {
-			const { RagChunkActions } = await import(
-				"@true-recall/core/rag/indexing/rag-chunk-actions"
-			);
-			const { RagSchemaManager } = await import(
-				"@true-recall/core/rag/indexing/rag-schema"
-			);
-			const ragSchema = new RagSchemaManager(this.cardStore.getDatabase());
-			ragSchema.createTables();
-			this.ragActions = new RagChunkActions(this.cardStore.getSqliteDb());
-
-			const embeddingKey =
-				this.settings.proKey || this.settings.openRouterApiKey;
-			if (this.settings.ragEnabled && embeddingKey) {
-				const { RagEmbeddingServiceImpl } = await import(
-					"@true-recall/core/rag/retrieval/rag-embedding.service"
-				);
-				const { LITELLM_EMBEDDINGS_URL, OPENROUTER_EMBEDDINGS_URL } =
-					await import("@true-recall/core/constants");
-				const { RagIndexerService } = await import(
-					"@true-recall/obsidian/features/rag/services/rag-indexer.service"
-				);
-				const { RagSearchService } = await import(
-					"@true-recall/core/rag/retrieval/rag-search.service"
-				);
-				const isPro = !!this.settings.proKey;
-				const embedder = new RagEmbeddingServiceImpl(
-					new ObsidianHttpClient(),
-					embeddingKey,
-					isPro ? LITELLM_EMBEDDINGS_URL : OPENROUTER_EMBEDDINGS_URL,
-					isPro ? "embedding" : "baai/bge-m3",
-				);
-				this.ragSearch = new RagSearchService(this.ragActions, embedder);
-				this.ragIndexer = new RagIndexerService(
-					this.app,
-					this.ragActions,
-					embedder,
-					() => this.settings,
-				);
-				this.ragIndexer.setSearchService(this.ragSearch);
-				this.ragIndexer.registerVaultEvents(this);
-				this.ragIndexer.registerCardSignals(this);
-			}
-		}
 
 		if (this.settings.enableLocalApi) {
 			void import("./plugin/api/LocalApiServer")
@@ -525,6 +442,7 @@ export default class TrueRecallPlugin extends Plugin {
 
 	onunload(): void {
 		this._unloaded = true;
+		document.body.classList.remove("tr-hide-tab-bar");
 		this.pluginLoader?.deactivateAll();
 		this.deviceLock?.stopHeartbeat();
 		void this.deviceLock?.clearLock();
@@ -545,6 +463,18 @@ export default class TrueRecallPlugin extends Plugin {
 				e,
 			);
 		});
+	}
+
+	/** Reflect the `hideTabBar` setting onto the document body class. */
+	applyTabBarVisibility(): void {
+		document.body.classList.toggle("tr-hide-tab-bar", this.settings.hideTabBar);
+	}
+
+	/** Flip the tab-bar visibility, persist it, and apply immediately. */
+	async toggleTabBar(): Promise<void> {
+		this.settings.hideTabBar = !this.settings.hideTabBar;
+		this.applyTabBarVisibility();
+		await this.saveSettings();
 	}
 
 	async saveSettings(): Promise<void> {
@@ -835,17 +765,6 @@ export default class TrueRecallPlugin extends Plugin {
 			return;
 		}
 		await activateView(this.app, VIEW_TYPE_STATS, { useMainArea: true });
-	}
-
-	async openKnowledgeChat(): Promise<void> {
-		const existingLeaf = getView(this.app, VIEW_TYPE_KNOWLEDGE_CHAT);
-		if (existingLeaf) {
-			void this.app.workspace.revealLeaf(existingLeaf);
-			return;
-		}
-		await activateView(this.app, VIEW_TYPE_KNOWLEDGE_CHAT, {
-			useMainArea: false,
-		});
 	}
 
 	async openAssistantInbox(focusThreadId?: string): Promise<void> {

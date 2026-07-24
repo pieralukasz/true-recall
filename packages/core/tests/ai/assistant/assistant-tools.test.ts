@@ -15,7 +15,6 @@ describe("ASSISTANT_TOOLS", () => {
 			"create_note",
 			"insert_diagram",
 			"search_images",
-			"search_knowledge",
 			"read_note",
 			"get_related_cards",
 		]);

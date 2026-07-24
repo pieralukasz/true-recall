@@ -72,11 +72,6 @@ import {
 	handleToggleNoteReview,
 } from "./handlers/notes";
 import { handleGetSchema, handleQuerySql } from "./handlers/query";
-import {
-	handleRagIndex,
-	handleRagSearch,
-	handleRagStatus,
-} from "./handlers/rag";
 import { handleGradeCard } from "./handlers/review";
 import {
 	handleGradeSessionCard,
@@ -202,11 +197,6 @@ const routes: Route[] = [
 	// Query
 	route("POST", "/query", handleQuerySql),
 	route("GET", "/schema", handleGetSchema),
-
-	// RAG / Knowledge Base
-	route("POST", "/rag/search", handleRagSearch),
-	route("POST", "/rag/index", handleRagIndex),
-	route("GET", "/rag/status", handleRagStatus),
 
 	// Export
 	route("POST", "/export/csv", handleExportCsv),

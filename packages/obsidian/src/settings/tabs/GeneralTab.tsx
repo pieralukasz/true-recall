@@ -36,6 +36,22 @@ export function GeneralTab() {
 		<div class="ep:flex ep:flex-col ep:gap-3">
 			<NewsletterCard />
 
+			<FormCard title="Appearance">
+				<FormField
+					name="Hide tab bar"
+					description="Hide the tab container at the top of the main window. Bind the 'Toggle tab bar' command to a hotkey to toggle it quickly."
+				>
+					<ToggleInput
+						value={settings.hideTabBar}
+						onChange={(v) =>
+							void save({ hideTabBar: v }).then(() =>
+								plugin.applyTabBarVisibility(),
+							)
+						}
+					/>
+				</FormField>
+			</FormCard>
+
 			<FormCard title="Dashboard">
 				<FormField
 					name="Show dashboard header"

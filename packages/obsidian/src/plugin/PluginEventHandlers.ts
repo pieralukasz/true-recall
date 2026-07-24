@@ -4,7 +4,6 @@ import {
 	VIEW_TYPE_CARD_BROWSER,
 	VIEW_TYPE_DASHBOARD,
 	VIEW_TYPE_FLASHCARD_PANEL,
-	VIEW_TYPE_KNOWLEDGE_CHAT,
 	VIEW_TYPE_REVIEW,
 	VIEW_TYPE_SIMULATOR,
 	VIEW_TYPE_STATS,
@@ -142,7 +141,6 @@ const VIEW_CONTEXT_MAP: Record<string, string> = {
 	[VIEW_TYPE_STATS]: "Statistics",
 	[VIEW_TYPE_REVIEW]: "Review",
 	[VIEW_TYPE_SIMULATOR]: "Simulator",
-	[VIEW_TYPE_KNOWLEDGE_CHAT]: "Knowledge Chat",
 };
 
 /** Respects review follow mode and panel interactions */

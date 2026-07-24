@@ -6,10 +6,6 @@ import type {
 	AssistantToolHost,
 	ImageCandidate,
 } from "@true-recall/core/ai/assistant";
-import {
-	type KnowledgeEvidence,
-	RagKnowledgeRetriever,
-} from "@true-recall/core/rag";
 
 import type TrueRecallPlugin from "@true-recall/obsidian/main";
 
@@ -80,18 +76,5 @@ export class ObsidianAssistantHost implements AssistantToolHost {
 			console.warn("[True Recall] Openverse search failed:", error);
 			return [];
 		}
-	}
-
-	async searchKnowledge(
-		query: string,
-		count: number,
-	): Promise<KnowledgeEvidence[]> {
-		if (!this.plugin.ragSearch) return [];
-		return new RagKnowledgeRetriever(this.plugin.ragSearch).retrieve({
-			query,
-			maxResults: count,
-			tokenBudget: 3000,
-			diversifyBySource: true,
-		});
 	}
 }

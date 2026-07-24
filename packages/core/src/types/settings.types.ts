@@ -116,14 +116,6 @@ export type NewReviewMix =
 
 export type TypeInMode = "off" | "ai" | "diff";
 
-export type ChatResponseLength = "short" | "medium" | "detailed";
-
-export interface ChatConfig {
-	presetId: string;
-	customInstruction: string;
-	responseLength: ChatResponseLength;
-}
-
 /**
  * Named group of FSRS scheduling parameters (like Anki's "Deck Options").
  * Each preset defines retention target, weights, learning steps, and daily limits.
@@ -260,6 +252,9 @@ export interface TrueRecallSettings {
 	ignoreDailyLimitsForNoteStudy: boolean;
 	/** Show today's summary and recently studied notes at the top of the dashboard */
 	showDashboardHeader: boolean;
+
+	/** Hide the main-window tab bar (toggled by the `toggle-tab-bar` command) */
+	hideTabBar: boolean;
 
 	/** Custom review keybindings */
 	reviewKeybindings: ReviewKeybindings;
@@ -400,28 +395,6 @@ export interface TrueRecallSettings {
 	enableLocalApi: boolean;
 	/** Port for local HTTP API (default 27182) */
 	apiPort: number;
-
-	/** Enable RAG knowledge base indexing (Pro only) */
-	ragEnabled: boolean;
-	/** Embedding model for RAG (reserved — not yet wired to embedding service) */
-	ragEmbeddingModel: string;
-	/** Only index notes in these folders (empty = all) */
-	ragIncludeFolders: string[];
-	/** Skip notes in these folders */
-	ragExcludeFolders: string[];
-	/** Also index flashcard content */
-	ragIndexFlashcards: boolean;
-	/** Re-index automatically when files change */
-	ragAutoIndex: boolean;
-	/** Target tokens per chunk (reserved — chunker uses hardcoded 400) */
-	ragChunkMaxTokens: number;
-	/** Explicit daily notes folder override (empty = auto-detect from Obsidian plugin) */
-	ragDailyNotesFolder: string;
-	/** Heading names to exclude from daily note indexing (case-insensitive substring match) */
-	ragDailyNoteExcludeHeadings: string[];
-
-	/** Chat persona and response style configuration */
-	ragChatConfig: ChatConfig;
 
 	/** Per-plugin enabled/disabled state (plugin ID → boolean). All enabled by default. */
 	pluginStates?: Record<string, boolean>;
