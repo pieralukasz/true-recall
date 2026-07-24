@@ -762,3 +762,14 @@ settings:
 .tr-toggle--on .tr-toggle__thumb {
 	transform: translateX(14px);
 }
+
+/* Hide tab bar — hides the main-window tab header container (like the Hider
+   plugin's "Hide tab bar"). Scoped to .mod-root so sidebar tabs stay visible.
+   Toggled by the `toggle-tab-bar` command / the setting; class lives on body. */
+.tr-hide-tab-bar .mod-root .workspace-tabs .workspace-tab-header-container {
+	display: none;
+}
+
+.tr-hide-tab-bar .mod-top-left-space .view-header {
+	padding-left: var(--frame-left-space);
+}

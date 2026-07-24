@@ -218,21 +218,23 @@ export function migrateSettings(raw: Partial<TrueRecallSettings> | null): {
 		}
 	}
 
-	// Inject built-in Basic Pro preset toolbar button for existing users
+	// Collapse the builtin basic/Pro toolbar button pair into a single button.
+	// Earlier migrations injected the Pro twin next to the basic one; the
+	// toolbar now shows one "Basic Flashcards" action and resolves the Pro
+	// prompt at click time for Pro users.
 	const basicPresetButtonId = `preset:${BUILTIN_BASIC_PRESET_ID}`;
 	const basicProButtonId = `preset:${BUILTIN_BASIC_PRO_PRESET_ID}`;
 	for (const key of ["editorToolbarButtons", "globalToolbarButtons"] as const) {
-		if (raw?.[key] && !settings[key].some((b) => b.id === basicProButtonId)) {
-			const basicIdx = settings[key].findIndex(
-				(b) => b.id === basicPresetButtonId,
-			);
-			const insertIdx = basicIdx >= 0 ? basicIdx + 1 : 0;
-			settings[key].splice(insertIdx, 0, {
-				id: basicProButtonId,
-				enabled: true,
-			});
-			needsSave = true;
-		}
+		if (!settings[key].some((b) => b.id === basicProButtonId)) continue;
+		const hasBasic = settings[key].some((b) => b.id === basicPresetButtonId);
+		settings[key] = hasBasic
+			? settings[key].filter((b) => b.id !== basicProButtonId)
+			: settings[key].map((b) =>
+					b.id === basicProButtonId
+						? { id: basicPresetButtonId, enabled: b.enabled }
+						: b,
+				);
+		needsSave = true;
 	}
 
 	// Migrate old activeGenerationPresetId → flat language settings
@@ -343,6 +345,10 @@ export function migrateSettings(raw: Partial<TrueRecallSettings> | null): {
 
 	// Retrofit builtin/requiresPro flags on seeded built-ins from pre-migration installs
 	if (settings.generationPresets) {
+		const builtinPrompts: Record<string, string> = {
+			[BUILTIN_BASIC_PRESET_ID]: BUILTIN_BASIC_PRESET.prompt,
+			[BUILTIN_BASIC_PRO_PRESET_ID]: BUILTIN_BASIC_PRO_PRESET.prompt,
+		};
 		for (const preset of settings.generationPresets) {
 			if (
 				(preset.id === BUILTIN_BASIC_PRO_PRESET_ID ||
@@ -354,6 +360,14 @@ export function migrateSettings(raw: Partial<TrueRecallSettings> | null): {
 			}
 			if (preset.id === BUILTIN_BASIC_PRO_PRESET_ID && !preset.requiresPro) {
 				preset.requiresPro = true;
+				needsSave = true;
+			}
+			// Builtin prompts are not user-editable, so persisted copies are safe
+			// to refresh — otherwise installs keep whatever text they were first
+			// seeded with and never receive prompt improvements.
+			const currentPrompt = builtinPrompts[preset.id];
+			if (currentPrompt !== undefined && preset.prompt !== currentPrompt) {
+				preset.prompt = currentPrompt;
 				needsSave = true;
 			}
 		}

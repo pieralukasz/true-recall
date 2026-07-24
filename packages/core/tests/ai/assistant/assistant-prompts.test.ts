@@ -19,6 +19,17 @@ describe("buildAssistantSystemPrompt", () => {
 		expect(prompt).toContain("same language");
 	});
 
+	it("mandates the split procedure for card-splitting instructions", () => {
+		const prompt = buildAssistantSystemPrompt({
+			userInstructions: "",
+			noteTypes: NOTE_TYPES,
+			webSearchEnabled: true,
+		});
+		expect(prompt).toContain("SPLIT PROCEDURE");
+		expect(prompt).toContain("create_cards");
+		expect(prompt).toContain("never leave the original unchanged");
+	});
+
 	it("appends user instructions when present", () => {
 		const prompt = buildAssistantSystemPrompt({
 			userInstructions: "Always answer in Polish.",

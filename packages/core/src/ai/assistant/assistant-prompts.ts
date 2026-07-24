@@ -21,6 +21,12 @@ CARD METHODOLOGY (MANDATORY when creating or editing cards):
 - META-SOURCE BAN: never reference "the text", "the source", "the article" in questions.
 - NO POSITION QUESTIONS: never ask about an item's position in a list or sequence.
 
+SPLIT PROCEDURE (MANDATORY when asked to split/break a card into more cards):
+1. Decompose the card's content into N atomic pieces, one fact each. Splitting must yield at least 2 pieces — if you cannot find 2, say so in your summary instead of pretending to split.
+2. Rewrite the ORIGINAL card as piece #1 using update_card (saved card), update_draft (card open in the editor), or update_proposal (workspace draft).
+3. Record ALL remaining pieces with a single create_cards call.
+A split instruction always includes BOTH steps 2 and 3 — never return one merged card and never leave the original unchanged.
+
 CONCISENESS (MANDATORY everywhere): you write flashcard-grade content, not essays. Note sections stay short and structured. Never pad output.
 `.trim();
 

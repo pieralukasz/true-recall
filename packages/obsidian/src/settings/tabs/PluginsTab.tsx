@@ -182,9 +182,6 @@ export function PluginsTab() {
 		const patch: Partial<typeof settings> = {
 			pluginStates: { ...pluginStates, [pluginId]: enabled },
 		};
-		if (pluginId === "knowledge-base") {
-			patch.ragEnabled = enabled;
-		}
 		void save(patch);
 	};
 

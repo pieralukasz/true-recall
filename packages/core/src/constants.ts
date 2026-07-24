@@ -3,8 +3,6 @@ import type { GenerationPreset } from "./types/generation-preset.types";
 import { BUILTIN_BASIC_ID } from "./types/note.types";
 import type { FSRSPreset, TrueRecallSettings } from "./types/settings.types";
 
-export const ENABLE_RAG = true;
-
 export const VIEW_TYPE_FLASHCARD_PANEL = "true-recall-flashcard-panel";
 export const VIEW_TYPE_REVIEW = "true-recall-review";
 export const VIEW_TYPE_SIMULATOR = "true-recall-simulator";
@@ -158,6 +156,7 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 	continuousCustomReviews: true,
 	ignoreDailyLimitsForNoteStudy: true,
 	showDashboardHeader: true,
+	hideTabBar: false,
 
 	reviewKeybindings: {
 		revealAndGood: " ",
@@ -225,7 +224,6 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 
 	editorToolbarButtons: [
 		{ id: `preset:${BUILTIN_BASIC_PRESET_ID}`, enabled: true },
-		{ id: `preset:${BUILTIN_BASIC_PRO_PRESET_ID}`, enabled: true },
 		{ id: "io", enabled: true },
 		{ id: "edit", enabled: true },
 		{ id: "quick-add", enabled: true },
@@ -236,7 +234,6 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 	],
 	globalToolbarButtons: [
 		{ id: `preset:${BUILTIN_BASIC_PRESET_ID}`, enabled: true },
-		{ id: `preset:${BUILTIN_BASIC_PRO_PRESET_ID}`, enabled: true },
 		{ id: "edit", enabled: true },
 		{ id: "quick-add", enabled: true },
 		{ id: "copy", enabled: true },
@@ -284,22 +281,6 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 
 	enableLocalApi: false,
 	apiPort: 27182,
-
-	ragEnabled: false,
-	ragEmbeddingModel: "baai/bge-m3",
-	ragIncludeFolders: [],
-	ragExcludeFolders: [".true-recall", "templates"],
-	ragIndexFlashcards: true,
-	ragAutoIndex: true,
-	ragChunkMaxTokens: 400,
-	ragDailyNotesFolder: "",
-	ragDailyNoteExcludeHeadings: ["Thoughts", "Journal", "Reflections", "Random"],
-
-	ragChatConfig: {
-		presetId: "default",
-		customInstruction: "",
-		responseLength: "medium",
-	},
 
 	languageNoteTypeId: null,
 	languageSource: "",
@@ -383,24 +364,7 @@ export const DEFAULT_CUSTOM_BASE_URL = "http://localhost:11434/v1";
 /** Default base URL for LM Studio's OpenAI-compatible endpoint */
 export const DEFAULT_LMSTUDIO_BASE_URL = "http://localhost:1234/v1";
 
-export const LITELLM_EMBEDDINGS_URL = "https://ai.truerecall.app/v1/embeddings";
-export const OPENROUTER_EMBEDDINGS_URL =
-	"https://openrouter.ai/api/v1/embeddings";
-
-export const VIEW_TYPE_KNOWLEDGE_CHAT = "true-recall-knowledge-chat";
-
 export const VIEW_TYPE_ASSISTANT_INBOX = "true-recall-assistant-inbox";
-
-export const RAG_FREE_NOTE_LIMIT = 100;
-
-export const RAG_CONFIG = {
-	embeddingBatchSize: 64,
-	indexDebounceMs: 5000,
-	rrf_k: 60,
-	defaultTopK: 10,
-	embeddingDims: 1024,
-	cosineThreshold: 0.35,
-} as const;
 
 export const TRUERECALL_WEB_URL = "https://truerecall.app";
 export const TRUERECALL_NEWSLETTER_URL = "https://truerecall.app/#newsletter";

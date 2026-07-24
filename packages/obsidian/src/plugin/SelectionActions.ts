@@ -2,10 +2,12 @@ import { TFile } from "obsidian";
 
 import { hasAIKey } from "@true-recall/core/ai/config/ai-client-config";
 import { generationWorkflowId } from "@true-recall/core/ai/workflows/ai-workflow";
+import { resolveGenerationPresetForTier } from "@true-recall/core/flashcard/presets/resolve-preset-for-tier";
 import type { GenerationPreset } from "@true-recall/core/types/generation-preset.types";
 
 import { mutate } from "@true-recall/obsidian/data";
 import { notify } from "@true-recall/obsidian/services/notification.service";
+import { ensureFolderExists } from "@true-recall/obsidian/utils/ensure-folder";
 import { openQuickNoteEditor } from "@true-recall/obsidian/views/modal-window/open-quick-note-editor";
 
 import type TrueRecallPlugin from "../main";
@@ -137,6 +139,9 @@ export async function createNoteFromSelection(
 			return;
 		}
 
+		if (result.folder) {
+			await ensureFolderExists(plugin.app.vault, result.folder);
+		}
 		const file = await plugin.app.vault.create(path, text);
 
 		const fmService = plugin.flashcardManager.getFrontmatterService();
@@ -184,8 +189,11 @@ function resolvePreset(
 	plugin: TrueRecallPlugin,
 	presetId: string,
 ): GenerationPreset | null {
-	return (
-		plugin.settings.generationPresets.find((p) => p.id === presetId) ?? null
+	// Same Pro condition as DraftGenerationService's requiresPro gate.
+	return resolveGenerationPresetForTier(
+		plugin.settings.generationPresets,
+		presetId,
+		!!plugin.settings.proKey,
 	);
 }
 

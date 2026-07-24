@@ -14,7 +14,6 @@ import { navigationCommands } from "./commands/navigation.js";
 import { noteCommands } from "./commands/notes.js";
 import { presetCommands } from "./commands/presets.js";
 import { queryCommands } from "./commands/query.js";
-import { ragCommands } from "./commands/rag.js";
 import { reviewCommands } from "./commands/review.js";
 import { sessionCommands } from "./commands/sessions.js";
 import { statsCommands } from "./commands/stats.js";
@@ -39,7 +38,6 @@ const allCommands: CommandDef[] = [
 	...backupCommands,
 	...statsCommands,
 	...queryCommands,
-	...ragCommands,
 ];
 
 const commandMap = new Map(allCommands.map((c) => [c.name, c]));

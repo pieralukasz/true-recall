@@ -83,7 +83,7 @@ True Recall is local-first. It does not send telemetry or analytics. Network acc
 
 **Network requests — only on explicit user action or one-time per release:**
 - Update check — when the plugin version differs from the last seen version, a single `requestUrl` call is made to the GitHub Releases API to fetch release notes. Runs once per version, not on a timer.
-- AI / RAG features (opt-in) — flashcard generation, semantic grading, image-occlusion detection, and knowledge-base chat require a configured AI provider. Depending on settings, requests can go to OpenRouter, `ai.truerecall.app` for True Recall Pro, a local LM Studio/Ollama endpoint, or a custom OpenAI-compatible endpoint you enter.
+- AI features (opt-in) — flashcard generation, semantic grading, and image-occlusion detection require a configured AI provider. Depending on settings, requests can go to OpenRouter, `ai.truerecall.app` for True Recall Pro, a local LM Studio/Ollama endpoint, or a custom OpenAI-compatible endpoint you enter.
 - Local API server (desktop, opt-in) — binds to `127.0.0.1` only, used by the optional companion CLI and MCP server. It is disabled by default and does not expose a public network listener.
 - External links — documentation, pricing, sponsorship, Discord, and Anki shared-deck links are opened only when you click UI links.
 
@@ -91,7 +91,7 @@ True Recall is local-first. It does not send telemetry or analytics. Network acc
 
 **Vault and clipboard access:**
 - Vault reads/writes are core to the plugin: True Recall reads selected/current notes, creates or updates notes for projects/imports, and stores its SQLite database and backups inside the vault.
-- Vault enumeration is used for note pickers, project discovery, media lookup, export/import, and optional RAG indexing.
+- Vault enumeration is used for note pickers, project discovery, media lookup, and export/import.
 - Clipboard writes happen only from explicit copy actions. Clipboard paste/drop handlers are used only in image/media workflows initiated by the user.
 
 **Bundled runtime components:**

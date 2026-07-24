@@ -28,7 +28,6 @@ import type TrueRecallPlugin from "../main";
 import { AssistantService } from "../services/assistant/assistant.service";
 import { BackupRecoveryManager } from "./BackupRecoveryManager";
 import { DayRolloverWatcher } from "./DayRolloverWatcher";
-import { registerDeletionHandler } from "./PluginEventHandlers";
 import { PluginLoader } from "./plugin-loader";
 import { isPluginEnabled } from "./plugin-utils";
 
@@ -214,9 +213,15 @@ function initializeDeletionHandler(plugin: TrueRecallPlugin): void {
 		store: plugin.coreApp.cardStore,
 		sessionPersistence: plugin.coreApp.sessionPersistence,
 		bus: plugin.coreApp.events,
+		notification: notify(),
 	});
 
-	registerDeletionHandler(plugin, plugin.deletionHandler);
+	// Must run before the frontmatter index drops the deleted file's UID —
+	// a plain vault "delete" listener would fire after the core app's index
+	// cleanup and orphan the note's cards.
+	plugin.coreApp.registerFileDeletionHook((path) =>
+		plugin.deletionHandler?.handleFileDeletion(path),
+	);
 
 	plugin.registerEvent(
 		plugin.app.vault.on("delete", (file) => {

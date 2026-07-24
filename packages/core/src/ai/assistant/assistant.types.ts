@@ -1,5 +1,3 @@
-import type { KnowledgeEvidence } from "../../rag/retrieval/knowledge-retriever";
-
 export type AssistantTaskStatus =
 	| "pending"
 	| "running"
@@ -139,8 +137,6 @@ export interface TokenUsage {
 export interface AssistantManifest {
 	proposals: AssistantProposal[];
 	citations: Citation[];
-	/** Vault evidence used during this thread, kept with the working draft. */
-	evidence?: KnowledgeEvidence[];
 	/** The model's final plain-text answer (shown when no proposals were made). */
 	finalText?: string;
 	/** Token usage summed over all agent iterations, when the provider reports it. */

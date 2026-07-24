@@ -1,4 +1,3 @@
-import type { KnowledgeEvidence } from "../../rag/retrieval/knowledge-retriever";
 import type { ToolDefinition } from "../clients/openrouter-client";
 import type { ImageCandidate } from "./assistant.types";
 
@@ -27,7 +26,6 @@ export interface AssistantToolHost {
 	getRelatedCards(sourceUid: string): AssistantRelatedCard[];
 	readNote(path: string): Promise<string | null>;
 	searchImages(query: string, count: number): Promise<ImageCandidate[]>;
-	searchKnowledge?(query: string, count: number): Promise<KnowledgeEvidence[]>;
 }
 
 const FIELDS_SCHEMA = {
@@ -203,25 +201,6 @@ export const ASSISTANT_TOOLS: ToolDefinition[] = [
 					target: TARGET_SCHEMA,
 				},
 				required: ["query", "target"],
-			},
-		},
-	},
-	{
-		type: "function",
-		function: {
-			name: "search_knowledge",
-			description:
-				"Search the user's indexed notes and flashcards for evidence. Use when asked to ground, expand, compare, or verify drafts against the vault.",
-			parameters: {
-				type: "object",
-				properties: {
-					query: { type: "string" },
-					count: {
-						type: "number",
-						description: "Maximum evidence items, default 6",
-					},
-				},
-				required: ["query"],
 			},
 		},
 	},

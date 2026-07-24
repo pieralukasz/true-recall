@@ -15,6 +15,7 @@ import {
 import { BatchCreateCommand } from "../../commands/commands/card-create.cmd";
 import { UpdateNoteFieldsCommand } from "../../commands/commands/card-update.cmd";
 import { resolveAttachmentFolder } from "../../utils/attachment-folder";
+import { ensureFolderExists } from "../../utils/ensure-folder";
 import { notify } from "../notification.service";
 import { detectFieldConflict } from "./assistant-conflict";
 import { getAssistantDraftTarget } from "./assistant-draft-target-registry";
@@ -188,6 +189,7 @@ export class AssistantApplyService {
 		const folder = this.plugin.settings.defaultProjectFolder?.trim() || "";
 		const base = proposal.title.replace(/[\\/:*?"<>|]/g, "-");
 		const path = normalizePath(folder ? `${folder}/${base}.md` : `${base}.md`);
+		if (folder) await ensureFolderExists(this.plugin.app.vault, folder);
 		const file = await this.plugin.app.vault.create(path, proposal.markdown);
 		const fmService = this.plugin.flashcardManager.getFrontmatterService();
 		await fmService.setSourceNoteUid(file.path, fmService.generateUid());

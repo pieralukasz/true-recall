@@ -9,6 +9,8 @@ import type { AssistantApplyService } from "@true-recall/obsidian/services/assis
 export interface ApplyPendingProposalsResult {
 	appliedCount: number;
 	conflictedCount: number;
+	/** Conflicting field names per proposal id, for the per-card conflict UI. */
+	conflicts: Record<string, string[]>;
 	error?: string;
 }
 
@@ -32,6 +34,7 @@ export async function applyPendingProposals(
 ): Promise<ApplyPendingProposalsResult> {
 	let appliedCount = 0;
 	let conflictedCount = 0;
+	const conflicts: Record<string, string[]> = {};
 
 	for (const proposal of manifest.proposals) {
 		if (proposal.status !== "proposed") continue;
@@ -40,12 +43,14 @@ export async function applyPendingProposals(
 		});
 		if (result.conflictFields) {
 			conflictedCount++;
+			conflicts[proposal.id] = result.conflictFields;
 			continue;
 		}
 		if (!result.ok) {
 			return {
 				appliedCount,
 				conflictedCount,
+				conflicts,
 				error: result.error ?? "Could not apply all drafts",
 			};
 		}
@@ -53,5 +58,5 @@ export async function applyPendingProposals(
 		appliedCount++;
 	}
 
-	return { appliedCount, conflictedCount };
+	return { appliedCount, conflictedCount, conflicts };
 }

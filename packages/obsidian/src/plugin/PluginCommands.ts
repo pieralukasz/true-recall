@@ -50,6 +50,16 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 	});
 
 	plugin.addCommand({
+		id: "toggle-tab-bar",
+		name: "Toggle tab bar",
+		checkCallback: (checking) => {
+			if (!isDesktop()) return false;
+			if (!checking) void plugin.toggleTabBar();
+			return true;
+		},
+	});
+
+	plugin.addCommand({
 		id: "open-card-browser",
 		name: "Open card browser",
 		checkCallback: (checking) => {
@@ -215,17 +225,6 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 				return true;
 			}
 			return false;
-		},
-	});
-
-	plugin.addCommand({
-		id: "open-knowledge-chat",
-		name: "Chat with knowledge base",
-		checkCallback: (checking) => {
-			if (!isDesktop()) return false;
-			if (!isPluginEnabled(plugin.settings, "knowledge-base")) return false;
-			if (!checking) void plugin.openKnowledgeChat();
-			return true;
 		},
 	});
 
