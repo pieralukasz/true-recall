@@ -95,7 +95,7 @@ export class ObsidianCardAIPresenter implements CardAIPresenter {
 		}
 
 		const notice = new Notice(`AI applied: ${parts.join(" + ")}`, 10_000);
-		const btn = activeDocument.createElement("button");
+		const btn = createEl("button");
 		btn.textContent = "Undo";
 		btn.className = "mod-cta";
 		btn.setCssStyles({ marginLeft: "8px" });

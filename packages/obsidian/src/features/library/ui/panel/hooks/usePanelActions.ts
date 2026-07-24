@@ -299,7 +299,7 @@ export function usePanelActions() {
 			type: "text/csv;charset=utf-8;",
 		});
 		const url = URL.createObjectURL(blob);
-		const link = activeDocument.createElement("a");
+		const link = createEl("a");
 		link.href = url;
 		link.download = filename;
 		activeDocument.body.appendChild(link);

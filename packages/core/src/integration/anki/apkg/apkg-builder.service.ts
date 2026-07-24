@@ -725,16 +725,15 @@ export class ApkgBuilderService {
  * (0=learn, 1=review, 2=relearn). The enums are NOT aligned: FSRS Review=2
  * would otherwise export as Anki "relearn".
  */
+// Anki revlog types: 0=learn, 1=review, 2=relearn. FSRS New/Learning map to
+// "learn" (the default); only Review and Relearning differ.
+const ANKI_REVLOG_TYPE_BY_FSRS_STATE: Record<number, number> = {
+	[State.Review]: 1,
+	[State.Relearning]: 2,
+};
+
 function fsrsStateToRevlogType(state: number): number {
-	switch (state) {
-		case State.Review:
-			return 1;
-		case State.Relearning:
-			return 2;
-		default:
-			// New / Learning — Anki "learn"
-			return 0;
-	}
+	return ANKI_REVLOG_TYPE_BY_FSRS_STATE[state] ?? 0;
 }
 
 function deterministicId(cardId: string, salt: string): number {

@@ -101,7 +101,7 @@ export function attachTooltipListeners(
 function showTooltip(anchor: HTMLElement, stats: NoteDetailStats): void {
 	hideTooltip();
 
-	const tooltip = activeDocument.createElement("div");
+	const tooltip = createDiv();
 	tooltip.className = "true-recall-note-tooltip";
 	tooltip.style.cssText = `
 		position: fixed;

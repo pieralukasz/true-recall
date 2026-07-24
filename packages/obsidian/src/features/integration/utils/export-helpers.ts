@@ -29,7 +29,7 @@ export function downloadBlob(
 ): void {
 	const blob = new Blob([data], { type: mimeType });
 	const url = URL.createObjectURL(blob);
-	const a = activeDocument.createElement("a");
+	const a = createEl("a");
 	a.href = url;
 	a.download = filename;
 	activeDocument.body.appendChild(a);

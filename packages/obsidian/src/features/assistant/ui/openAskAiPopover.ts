@@ -25,8 +25,7 @@ export function openAskAiPopover(
 	const container = activeDocument.body.createDiv({
 		cls: "tr-ask-ai-popover true-recall-selection-toolbar-container",
 	});
-	container.style.position = "absolute";
-	container.style.zIndex = "var(--layer-menu)";
+	container.setCssStyles({ position: "absolute", zIndex: "var(--layer-menu)" });
 
 	let unmount: (() => void) | null = null;
 	let stopPositioning: (() => void) | null = null;
@@ -84,14 +83,14 @@ export function openAskAiPopover(
 	);
 
 	const virtualEl = { getBoundingClientRect: () => anchorRect };
-	const updatePosition = () =>
-		computePosition(virtualEl, container, {
+	const updatePosition = () => {
+		void computePosition(virtualEl, container, {
 			placement: "bottom-start",
 			middleware: [offset(6), flip(), shift({ padding: 8 })],
 		}).then(({ x, y }) => {
-			container.style.left = `${x}px`;
-			container.style.top = `${y}px`;
+			container.setCssStyles({ left: `${x}px`, top: `${y}px` });
 		});
+	};
 	stopPositioning = autoUpdate(virtualEl, container, updatePosition);
 
 	return dispose;

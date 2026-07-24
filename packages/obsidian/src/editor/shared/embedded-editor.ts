@@ -102,7 +102,7 @@ function resolveEditorPrototype(
 	const nullFile: TFile | null = null;
 
 	const widgetEditorView = embedRegistry.embedByExtension.md(
-		{ app, containerEl: activeDocument.createElement("div") },
+		{ app, containerEl: createDiv() },
 		nullFile,
 		"",
 	);

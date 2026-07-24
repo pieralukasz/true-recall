@@ -117,7 +117,7 @@ export class GlobalSelectionToolbar {
 
 	private showToolbar(text: string, range: Range): void {
 		if (!this.container) {
-			this.container = activeDocument.createElement("div");
+			this.container = createDiv();
 			this.container.className = "true-recall-selection-toolbar-container";
 			activeDocument.body.appendChild(this.container);
 			this.container.addEventListener("mousedown", (e) => e.stopPropagation());

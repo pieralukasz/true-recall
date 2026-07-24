@@ -45,7 +45,7 @@ function injectCitationHandlers(
 
 	for (const textNode of textNodes) {
 		const text = textNode.textContent ?? "";
-		const frag = activeDocument.createDocumentFragment();
+		const frag = createFragment();
 		let lastIdx = 0;
 
 		for (const match of text.matchAll(CITE_RE)) {
@@ -68,7 +68,7 @@ function injectCitationHandlers(
 				const source =
 					num > 0 && num <= sources.length ? sources[num - 1] : null;
 				if (source) {
-					const span = activeDocument.createElement("span");
+					const span = createSpan();
 					span.textContent = String(num);
 					span.className =
 						"ep:text-obs-accent ep:font-semibold ep:cursor-pointer tr-hover-faux-underline";
@@ -119,7 +119,7 @@ function injectFlashcardUidLinks(
 
 	for (const textNode of textNodes) {
 		const text = textNode.textContent ?? "";
-		const frag = activeDocument.createDocumentFragment();
+		const frag = createFragment();
 		let lastIdx = 0;
 
 		for (const match of text.matchAll(FLASHCARD_UID_RE)) {
@@ -131,7 +131,7 @@ function injectFlashcardUidLinks(
 			}
 
 			const uid = match[1] ?? "";
-			const span = activeDocument.createElement("span");
+			const span = createSpan();
 			span.textContent = uid;
 			span.className =
 				"ep:text-obs-accent ep:font-mono ep:text-[11px] ep:cursor-pointer tr-hover-faux-underline";
@@ -196,7 +196,7 @@ function AssistantMessage({
 		el.addEventListener("click", onInternalLink, true);
 
 		if (isStreaming) {
-			const cursor = activeDocument.createElement("span");
+			const cursor = createSpan();
 			cursor.className = "ep-streaming-cursor";
 			el.appendChild(cursor);
 		}
