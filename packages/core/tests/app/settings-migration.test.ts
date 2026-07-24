@@ -397,6 +397,49 @@ describe("migrateSettings — builtin Basic Pro toolbar button removal", () => {
 	});
 });
 
+describe("migrateSettings — builtin preset prompt refresh", () => {
+	it("refreshes a stale builtin prompt to the current constant", () => {
+		const stale = {
+			...BUILTIN_BASIC_PRESET,
+			prompt: "old one-liner prompt",
+			languageOverride: "pl",
+		};
+		const { settings, needsSave } = migrateSettings({
+			generationPresets: [stale],
+			defaultGenerationPresetId: stale.id,
+		} as unknown as Parameters<typeof migrateSettings>[0]);
+
+		const basic = settings.generationPresets.find(
+			(p) => p.id === BUILTIN_BASIC_PRESET.id,
+		);
+		expect(basic?.prompt).toBe(BUILTIN_BASIC_PRESET.prompt);
+		expect(basic?.languageOverride).toBe("pl");
+		expect(needsSave).toBe(true);
+	});
+
+	it("leaves user preset prompts untouched", () => {
+		const userPreset = {
+			id: "user-1",
+			name: "Mine",
+			prompt: "my very own prompt",
+			noteTypeId: "builtin-basic",
+			requiresPro: false,
+			builtin: false,
+			isDefault: true,
+			createdAt: 1,
+			updatedAt: 1,
+		};
+		const { settings } = migrateSettings({
+			generationPresets: [userPreset],
+			defaultGenerationPresetId: userPreset.id,
+		} as unknown as Parameters<typeof migrateSettings>[0]);
+
+		expect(
+			settings.generationPresets.find((p) => p.id === "user-1")?.prompt,
+		).toBe("my very own prompt");
+	});
+});
+
 describe("providerType migration", () => {
 	it("derives providerType='pro' when proKey is present", () => {
 		const result = migrateSettings({

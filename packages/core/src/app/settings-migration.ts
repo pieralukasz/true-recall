@@ -345,6 +345,10 @@ export function migrateSettings(raw: Partial<TrueRecallSettings> | null): {
 
 	// Retrofit builtin/requiresPro flags on seeded built-ins from pre-migration installs
 	if (settings.generationPresets) {
+		const builtinPrompts: Record<string, string> = {
+			[BUILTIN_BASIC_PRESET_ID]: BUILTIN_BASIC_PRESET.prompt,
+			[BUILTIN_BASIC_PRO_PRESET_ID]: BUILTIN_BASIC_PRO_PRESET.prompt,
+		};
 		for (const preset of settings.generationPresets) {
 			if (
 				(preset.id === BUILTIN_BASIC_PRO_PRESET_ID ||
@@ -356,6 +360,14 @@ export function migrateSettings(raw: Partial<TrueRecallSettings> | null): {
 			}
 			if (preset.id === BUILTIN_BASIC_PRO_PRESET_ID && !preset.requiresPro) {
 				preset.requiresPro = true;
+				needsSave = true;
+			}
+			// Builtin prompts are not user-editable, so persisted copies are safe
+			// to refresh — otherwise installs keep whatever text they were first
+			// seeded with and never receive prompt improvements.
+			const currentPrompt = builtinPrompts[preset.id];
+			if (currentPrompt !== undefined && preset.prompt !== currentPrompt) {
+				preset.prompt = currentPrompt;
 				needsSave = true;
 			}
 		}

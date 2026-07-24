@@ -69,6 +69,17 @@ describe("buildPresetPrompt", () => {
 			"Return ONLY the raw JSON array. No markdown fences, no explanation.",
 		);
 	});
+
+	it("injects the card quality rules before the preset prompt", () => {
+		const result = buildPresetPrompt(makePreset(), basicNoteType);
+		expect(result).toContain("Card quality rules");
+		expect(result).toContain("SELF-CONTAINED");
+		expect(result).toContain("SINGLE ANSWER");
+		expect(result).toContain("CONCISE ANSWERS");
+		expect(result.indexOf("Card quality rules")).toBeLessThan(
+			result.indexOf("Focus on definitions."),
+		);
+	});
 });
 
 describe("buildPresetFormatSpec", () => {
@@ -96,5 +107,13 @@ describe("buildByokPrompt", () => {
 		expect(result).toContain("my custom prompt");
 		expect(result).toContain('"type": "basic"');
 		expect(result).toContain("source");
+	});
+
+	it("injects the card quality rules before the custom prompt", () => {
+		const result = buildByokPrompt(basicNoteType, "auto", "my custom prompt");
+		expect(result).toContain("Card quality rules");
+		expect(result.indexOf("Card quality rules")).toBeLessThan(
+			result.indexOf("my custom prompt"),
+		);
 	});
 });
