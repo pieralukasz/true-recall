@@ -224,7 +224,6 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 
 	editorToolbarButtons: [
 		{ id: `preset:${BUILTIN_BASIC_PRESET_ID}`, enabled: true },
-		{ id: `preset:${BUILTIN_BASIC_PRO_PRESET_ID}`, enabled: true },
 		{ id: "io", enabled: true },
 		{ id: "edit", enabled: true },
 		{ id: "quick-add", enabled: true },
@@ -235,7 +234,6 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 	],
 	globalToolbarButtons: [
 		{ id: `preset:${BUILTIN_BASIC_PRESET_ID}`, enabled: true },
-		{ id: `preset:${BUILTIN_BASIC_PRO_PRESET_ID}`, enabled: true },
 		{ id: "edit", enabled: true },
 		{ id: "quick-add", enabled: true },
 		{ id: "copy", enabled: true },

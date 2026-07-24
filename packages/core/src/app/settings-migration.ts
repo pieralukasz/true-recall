@@ -218,21 +218,23 @@ export function migrateSettings(raw: Partial<TrueRecallSettings> | null): {
 		}
 	}
 
-	// Inject built-in Basic Pro preset toolbar button for existing users
+	// Collapse the builtin basic/Pro toolbar button pair into a single button.
+	// Earlier migrations injected the Pro twin next to the basic one; the
+	// toolbar now shows one "Basic Flashcards" action and resolves the Pro
+	// prompt at click time for Pro users.
 	const basicPresetButtonId = `preset:${BUILTIN_BASIC_PRESET_ID}`;
 	const basicProButtonId = `preset:${BUILTIN_BASIC_PRO_PRESET_ID}`;
 	for (const key of ["editorToolbarButtons", "globalToolbarButtons"] as const) {
-		if (raw?.[key] && !settings[key].some((b) => b.id === basicProButtonId)) {
-			const basicIdx = settings[key].findIndex(
-				(b) => b.id === basicPresetButtonId,
-			);
-			const insertIdx = basicIdx >= 0 ? basicIdx + 1 : 0;
-			settings[key].splice(insertIdx, 0, {
-				id: basicProButtonId,
-				enabled: true,
-			});
-			needsSave = true;
-		}
+		if (!settings[key].some((b) => b.id === basicProButtonId)) continue;
+		const hasBasic = settings[key].some((b) => b.id === basicPresetButtonId);
+		settings[key] = hasBasic
+			? settings[key].filter((b) => b.id !== basicProButtonId)
+			: settings[key].map((b) =>
+					b.id === basicProButtonId
+						? { id: basicPresetButtonId, enabled: b.enabled }
+						: b,
+				);
+		needsSave = true;
 	}
 
 	// Migrate old activeGenerationPresetId → flat language settings

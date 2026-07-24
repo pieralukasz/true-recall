@@ -300,6 +300,103 @@ describe("migrateSettings — generation preset migration", () => {
 	});
 });
 
+describe("migrateSettings — builtin Basic Pro toolbar button removal", () => {
+	const basicButtonId = `preset:${BUILTIN_BASIC_PRESET.id}`;
+	const proButtonId = `preset:${BUILTIN_BASIC_PRO_PRESET_ID}`;
+
+	it("does not seed the Pro toolbar button on fresh install", () => {
+		const { settings } = migrateSettings(null);
+		expect(
+			settings.editorToolbarButtons.some((b) => b.id === proButtonId),
+		).toBe(false);
+		expect(
+			settings.globalToolbarButtons.some((b) => b.id === proButtonId),
+		).toBe(false);
+		expect(
+			settings.editorToolbarButtons.some((b) => b.id === basicButtonId),
+		).toBe(true);
+	});
+
+	it("strips the Pro toolbar button from persisted settings", () => {
+		const raw = {
+			generationPresets: [{ ...BUILTIN_BASIC_PRESET }],
+			defaultGenerationPresetId: BUILTIN_BASIC_PRESET.id,
+			editorToolbarButtons: [
+				{ id: basicButtonId, enabled: true },
+				{ id: proButtonId, enabled: true },
+				{ id: "copy", enabled: true },
+			],
+			globalToolbarButtons: [
+				{ id: basicButtonId, enabled: true },
+				{ id: proButtonId, enabled: true },
+			],
+		} as unknown as Parameters<typeof migrateSettings>[0];
+
+		const { settings, needsSave } = migrateSettings(raw);
+
+		expect(needsSave).toBe(true);
+		expect(
+			settings.editorToolbarButtons.some((b) => b.id === proButtonId),
+		).toBe(false);
+		expect(
+			settings.globalToolbarButtons.some((b) => b.id === proButtonId),
+		).toBe(false);
+		expect(
+			settings.editorToolbarButtons.some((b) => b.id === basicButtonId),
+		).toBe(true);
+		expect(settings.editorToolbarButtons.some((b) => b.id === "copy")).toBe(
+			true,
+		);
+	});
+
+	it("replaces a lone Pro toolbar button with the basic one, keeping position and enabled state", () => {
+		const raw = {
+			generationPresets: [{ ...BUILTIN_BASIC_PRESET }],
+			defaultGenerationPresetId: BUILTIN_BASIC_PRESET.id,
+			editorToolbarButtons: [
+				{ id: "copy", enabled: true },
+				{ id: proButtonId, enabled: false },
+			],
+			globalToolbarButtons: [{ id: proButtonId, enabled: true }],
+		} as unknown as Parameters<typeof migrateSettings>[0];
+
+		const { settings } = migrateSettings(raw);
+
+		expect(settings.editorToolbarButtons[1]).toMatchObject({
+			id: basicButtonId,
+			enabled: false,
+		});
+		expect(
+			settings.editorToolbarButtons.some((b) => b.id === proButtonId),
+		).toBe(false);
+		expect(settings.globalToolbarButtons[0]).toMatchObject({
+			id: basicButtonId,
+			enabled: true,
+		});
+	});
+
+	it("does not duplicate the basic button when both were present", () => {
+		const raw = {
+			generationPresets: [{ ...BUILTIN_BASIC_PRESET }],
+			defaultGenerationPresetId: BUILTIN_BASIC_PRESET.id,
+			editorToolbarButtons: [
+				{ id: basicButtonId, enabled: true },
+				{ id: proButtonId, enabled: true },
+			],
+			globalToolbarButtons: [{ id: basicButtonId, enabled: true }],
+		} as unknown as Parameters<typeof migrateSettings>[0];
+
+		const { settings } = migrateSettings(raw);
+
+		expect(
+			settings.editorToolbarButtons.filter((b) => b.id === basicButtonId),
+		).toHaveLength(1);
+		expect(
+			settings.globalToolbarButtons.filter((b) => b.id === basicButtonId),
+		).toHaveLength(1);
+	});
+});
+
 describe("providerType migration", () => {
 	it("derives providerType='pro' when proKey is present", () => {
 		const result = migrateSettings({
