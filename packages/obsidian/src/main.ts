@@ -84,6 +84,7 @@ import {
 	checkForWhatsNew,
 	initializeDeviceAndStore,
 } from "./plugin/PluginInitializers";
+import { applyTabBarClass, HIDE_TAB_BAR_CLASS } from "./plugin/tab-bar";
 import {
 	activateReviewView,
 	activateView,
@@ -442,7 +443,7 @@ export default class TrueRecallPlugin extends Plugin {
 
 	onunload(): void {
 		this._unloaded = true;
-		document.body.classList.remove("tr-hide-tab-bar");
+		document.body.classList.remove(HIDE_TAB_BAR_CLASS);
 		this.pluginLoader?.deactivateAll();
 		this.deviceLock?.stopHeartbeat();
 		void this.deviceLock?.clearLock();
@@ -467,7 +468,7 @@ export default class TrueRecallPlugin extends Plugin {
 
 	/** Reflect the `hideTabBar` setting onto the document body class. */
 	applyTabBarVisibility(): void {
-		document.body.classList.toggle("tr-hide-tab-bar", this.settings.hideTabBar);
+		applyTabBarClass(document.body, this.settings.hideTabBar);
 	}
 
 	/** Flip the tab-bar visibility, persist it, and apply immediately. */

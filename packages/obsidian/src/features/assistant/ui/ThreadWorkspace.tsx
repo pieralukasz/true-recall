@@ -477,27 +477,6 @@ export function ThreadWorkspace({
 
 			{manifest ? (
 				<>
-					{manifest.evidence && manifest.evidence.length > 0 ? (
-						<section class="tr-card-ai-preview-section">
-							<h5 class="tr-card-ai-preview-column-title">Vault evidence</h5>
-							<div class="ep:grid ep:gap-1.5">
-								{manifest.evidence.map((item) => (
-									<div
-										key={item.id}
-										class="ep:py-1.5 ep:px-2 ep:border ep:border-obs-border ep:rounded-md ep:bg-surface-raised"
-									>
-										<strong class="ep:block ep:text-ui-smaller">
-											{item.sourcePath ?? item.sourceId}
-											{item.heading ? ` · ${item.heading}` : ""}
-										</strong>
-										<p class="ep:mt-0.5 ep:mb-0 ep:text-obs-muted ep:text-ui-smaller">
-											{item.excerpt}
-										</p>
-									</div>
-								))}
-							</div>
-						</section>
-					) : null}
 					{manifest.citations.length > 0 ? (
 						<CitationsBlock citations={manifest.citations} />
 					) : null}

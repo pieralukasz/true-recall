@@ -1,22 +1,3 @@
-export type KnowledgeSourceType = "note" | "card";
-
-/**
- * A single piece of vault evidence attached to an assistant thread.
- * Retained on the manifest for backward compatibility with persisted threads;
- * no longer populated at runtime (the old RAG search tool was removed).
- */
-export interface KnowledgeEvidence {
-	id: string;
-	sourceType: KnowledgeSourceType;
-	sourceId: string;
-	sourcePath?: string;
-	heading?: string;
-	excerpt: string;
-	score: number;
-	tokenCount: number;
-	modifiedAt?: number;
-}
-
 export type AssistantTaskStatus =
 	| "pending"
 	| "running"
@@ -156,8 +137,6 @@ export interface TokenUsage {
 export interface AssistantManifest {
 	proposals: AssistantProposal[];
 	citations: Citation[];
-	/** Vault evidence used during this thread, kept with the working draft. */
-	evidence?: KnowledgeEvidence[];
 	/** The model's final plain-text answer (shown when no proposals were made). */
 	finalText?: string;
 	/** Token usage summed over all agent iterations, when the provider reports it. */

@@ -43,11 +43,12 @@ export function GeneralTab() {
 				>
 					<ToggleInput
 						value={settings.hideTabBar}
-						onChange={(v) =>
-							void save({ hideTabBar: v }).then(() =>
-								plugin.applyTabBarVisibility(),
-							)
-						}
+						onChange={(v) => {
+							// Apply the DOM change immediately (mirrors the command path);
+							// save() mutates settings synchronously before persisting.
+							void save({ hideTabBar: v });
+							plugin.applyTabBarVisibility();
+						}}
 					/>
 				</FormField>
 			</FormCard>
