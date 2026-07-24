@@ -1,6 +1,40 @@
 import { UNASSIGNED_PATH } from "@true-recall/core/constants";
 import type { ReviewOrder } from "@true-recall/core/types/settings.types";
 
+export type CustomStudyCardState = "new" | "due" | "review" | "all";
+
+export type CustomStudyRequest =
+	| { kind: "increase-new"; amount: number }
+	| { kind: "increase-review"; amount: number }
+	| { kind: "forgotten"; days: number }
+	| { kind: "review-ahead"; days: number }
+	| { kind: "preview-new"; days: number }
+	| {
+			kind: "state-or-tag";
+			cardState: CustomStudyCardState;
+			cardLimit: number;
+			tagsToInclude: string[];
+			tagsToExclude: string[];
+	  };
+
+/**
+ * A persisted, materialized Custom Study queue.
+ *
+ * Like Anki's filtered deck, the query is retained for Rebuild while cardIds
+ * is the exact queue snapshot currently "inside" the temporary deck.
+ */
+export interface TemporaryCustomStudyDeck {
+	id: string;
+	name: string;
+	customStudy: CustomStudyRequest;
+	cardIds: string[];
+	sourceNoteFilters?: string[];
+	projectPath?: string;
+	scopeLabel?: string;
+	createdAt: number;
+	rebuiltAt: number;
+}
+
 export interface ReviewViewState extends Record<string, unknown> {
 	/** Project note path — scopes review to project members */
 	projectPath?: string;
@@ -26,6 +60,11 @@ export interface ReviewViewState extends Record<string, unknown> {
 	studyAheadDays?: number;
 	reviewOrder?: ReviewOrder;
 	crammingMode?: boolean;
+	customStudy?: CustomStudyRequest;
+	/** Exact ordered queue captured when a temporary filtered deck was built. */
+	materializedCardIds?: string[];
+	/** Identifies the persisted temporary deck owning this review session. */
+	temporaryDeckId?: string;
 }
 
 export interface SessionFilters {
@@ -49,6 +88,9 @@ export interface SessionFilters {
 	studyAheadDays?: number;
 	customReviewOrder?: ReviewOrder;
 	crammingMode?: boolean;
+	customStudy?: CustomStudyRequest;
+	materializedCardIds?: string[];
+	temporaryDeckId?: string;
 	dayStartHour?: number;
 }
 
@@ -77,6 +119,9 @@ export function filtersFromViewState(
 		studyAheadDays: state.studyAheadDays,
 		customReviewOrder: state.reviewOrder,
 		crammingMode: state.crammingMode,
+		customStudy: state.customStudy,
+		materializedCardIds: state.materializedCardIds,
+		temporaryDeckId: state.temporaryDeckId,
 	};
 }
 
@@ -102,6 +147,9 @@ export function filtersToViewState(filters: SessionFilters): ReviewViewState {
 		studyAheadDays: filters.studyAheadDays,
 		reviewOrder: filters.customReviewOrder,
 		crammingMode: filters.crammingMode,
+		customStudy: filters.customStudy,
+		materializedCardIds: filters.materializedCardIds,
+		temporaryDeckId: filters.temporaryDeckId,
 	};
 }
 
@@ -145,6 +193,19 @@ export function isCustomSession(filters: SessionFilters): boolean {
 		filters.stabilityRange ||
 		filters.overdueOnly ||
 		filters.recentlyFailed ||
-		filters.studyAheadDays
+		filters.studyAheadDays ||
+		filters.customStudy ||
+		filters.temporaryDeckId
+	);
+}
+
+export function isPreviewCustomStudy(filters: SessionFilters): boolean {
+	const request = filters.customStudy;
+	if (!request) return filters.crammingMode === true;
+
+	return (
+		request.kind === "forgotten" ||
+		request.kind === "preview-new" ||
+		(request.kind === "state-or-tag" && request.cardState === "all")
 	);
 }

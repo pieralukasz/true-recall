@@ -89,6 +89,24 @@ export class ReviewLogActions {
 		}));
 	}
 
+	getCardIdsRatedInRange(
+		rating: number,
+		startIso: string,
+		endIso: string,
+	): string[] {
+		return this.db
+			.query<{ cardId: string }>(
+				`SELECT DISTINCT card_id AS cardId
+				 FROM review_log
+				 WHERE deleted_at IS NULL
+				   AND rating = ?
+				   AND reviewed_at >= ?
+				   AND reviewed_at < ?`,
+				[rating, startIso, endIso],
+			)
+			.map((row) => row.cardId);
+	}
+
 	getTotalReviewCount(): number {
 		return (
 			this.db.get<{ count: number }>(

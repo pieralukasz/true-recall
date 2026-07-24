@@ -133,4 +133,37 @@ describe("SessionService", () => {
 
 		expect(result.valid).toBe(true);
 	});
+
+	it.each([
+		["forgotten", { kind: "forgotten", days: 1 } as const],
+		["preview-new", { kind: "preview-new", days: 2 } as const],
+		[
+			"all cards",
+			{
+				kind: "state-or-tag",
+				cardState: "all",
+				cardLimit: 100,
+				tagsToInclude: [],
+				tagsToExclude: [],
+			} as const,
+		],
+	])("marks %s custom study as a non-rescheduling preview", (_, customStudy) => {
+		const filters = service.resolveFilters(
+			{ mode: "custom", customStudy },
+			{ ignoreDailyLimitsForNoteStudy: false, dayStartHour: 4 },
+		);
+
+		expect(filters.ignoreDailyLimits).toBe(true);
+		expect(filters.bypassScheduling).toBe(true);
+		expect(filters.crammingMode).toBe(true);
+	});
+
+	it("keeps review-ahead custom study rescheduling enabled", () => {
+		const filters = service.resolveFilters(
+			{ mode: "custom", customStudy: { kind: "review-ahead", days: 3 } },
+			{ ignoreDailyLimitsForNoteStudy: false, dayStartHour: 4 },
+		);
+
+		expect(filters.crammingMode).toBe(false);
+	});
 });

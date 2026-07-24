@@ -30,6 +30,9 @@ export function TodayActionBar({
 	const handleStartReview = () => {
 		void plugin.startReview({ mode: "all_due" });
 	};
+	const handleCustomStudy = () => {
+		void plugin.openCustomStudyModal();
+	};
 
 	const { studied, minutes } = progress;
 	const { newPct, reviewPct, learningPct } = computeTodayProgressSegments(
@@ -74,7 +77,7 @@ export function TodayActionBar({
 						: "ep:flex ep:items-center ep:justify-between ep:gap-3"
 				}
 			>
-				<div class="ep:flex ep:items-center ep:gap-2">
+				<div class="ep:flex ep:flex-wrap ep:items-center ep:gap-2">
 					{counts.map((c) => (
 						<div
 							key={c.label}
@@ -93,12 +96,19 @@ export function TodayActionBar({
 					)}
 				</div>
 
-				<ActionButton
-					label={reviewLabel}
-					variant="primary"
-					onClick={handleStartReview}
-					disabled={totalActionable === 0}
-				/>
+				<div class="ep:flex ep:items-center ep:gap-2">
+					<ActionButton
+						label="Custom study"
+						variant="secondary"
+						onClick={handleCustomStudy}
+					/>
+					<ActionButton
+						label={reviewLabel}
+						variant="primary"
+						onClick={handleStartReview}
+						disabled={totalActionable === 0}
+					/>
+				</div>
 			</div>
 
 			{/* Progress bar */}

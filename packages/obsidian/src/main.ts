@@ -22,7 +22,12 @@ import type { DeviceIdService } from "@true-recall/core/integration/device/devic
 import { DeviceLockService } from "@true-recall/core/integration/device/device-lock.service";
 import { DeviceSyncService } from "@true-recall/core/integration/device/device-sync.service";
 import { SessionService } from "@true-recall/core/services/review/session.service";
-import type { TrueRecallSettings } from "@true-recall/core/types";
+import type {
+	CardSchedulingMeta,
+	SessionResult,
+	TemporaryCustomStudyDeck,
+	TrueRecallSettings,
+} from "@true-recall/core/types";
 import type { SessionConfig } from "@true-recall/core/types/session-config.types";
 
 import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpClient";
@@ -31,6 +36,7 @@ import { ObsidianPersistence } from "@true-recall/obsidian/adapters/ObsidianPers
 import type { CommandService } from "@true-recall/obsidian/commands";
 import type { DataLayer } from "@true-recall/obsidian/data";
 import { G } from "@true-recall/obsidian/data";
+import { Q } from "@true-recall/obsidian/data/queries";
 import type { NoteStatusCache } from "@true-recall/obsidian/features/core/cache/note-status-cache.service";
 import { ReviewSessionController } from "@true-recall/obsidian/features/study/services/ReviewSessionController";
 import {
@@ -594,18 +600,12 @@ export default class TrueRecallPlugin extends Plugin {
 		await this.openReviewViewWithFilters(result.filters);
 	}
 
-	private async handleSessionResult(
-		result: import("@true-recall/core/types/events.types").SessionResult,
-	): Promise<void> {
-		if (result.cancelled) return;
-
-		if (result.useDefaultDeck) {
-			await this.startReview({ mode: "all_due" });
-			return;
-		}
-
-		await this.startReview({
+	private getCustomStudySessionConfig(
+		result: SessionResult,
+	): Extract<SessionConfig, { mode: "custom" }> {
+		return {
 			mode: "custom",
+			projectPath: result.projectPath,
 			sourceNoteFilter: result.sourceNoteFilter,
 			sourceNoteFilters: result.sourceNoteFilters,
 			filePathFilter: result.filePathFilter,
@@ -622,7 +622,173 @@ export default class TrueRecallPlugin extends Plugin {
 			studyAheadDays: result.studyAheadDays,
 			reviewOrder: result.reviewOrder,
 			crammingMode: result.crammingMode,
+			customStudy: result.customStudy,
+			temporaryDeckId: "custom-study-session",
+		};
+	}
+
+	private resolveLegacyCustomStudyProjectPath(
+		deck: TemporaryCustomStudyDeck,
+	): string | undefined {
+		if (deck.projectPath) return deck.projectPath;
+		if (!deck.scopeLabel || (deck.sourceNoteFilters?.length ?? 0) <= 1) {
+			return undefined;
+		}
+
+		const file = this.app.metadataCache.getFirstLinkpathDest(
+			deck.scopeLabel,
+			"",
+		);
+		if (!file) return undefined;
+		const isProject =
+			this.hierarchyService.isExplicitProject(file.path) ||
+			this.hierarchyService.getDescendantPaths(file.path).length > 0;
+		return isProject ? file.path : undefined;
+	}
+
+	private getSessionValidationDeps() {
+		return {
+			allCards: this.flashcardManager.getAllFSRSCards(),
+			archivedSourceUids: this.hierarchyService.getArchivedSourceUids(),
+			settings: this.settings,
+			sessionPersistence: this.sessionPersistence,
+			presetService: this.presetService,
+			noteResolver: new ObsidianNoteResolver(this.app),
+			hierarchyService: this.hierarchyService,
+			fsrsService: this.fsrsService,
+		};
+	}
+
+	private async materializeTemporaryCustomStudyDeck(
+		result: SessionResult,
+		options: { scopeLabel?: string; preserveCreatedAt?: number } = {},
+	): Promise<void> {
+		if (!result.customStudy) return;
+		if (!this.isStoreReady()) {
+			notify().error(
+				"Database not ready. Please wait for plugin to fully load.",
+			);
+			return;
+		}
+
+		const validation = this.sessionService.validate(
+			this.getCustomStudySessionConfig(result),
+			this.getSessionValidationDeps(),
+			{
+				ignoreDailyLimitsForNoteStudy:
+					this.settings.ignoreDailyLimitsForNoteStudy,
+				dayStartHour: this.settings.dayStartHour,
+			},
+		);
+		const now = Date.now();
+		const { queue } = this.reviewController.buildSession(validation.filters);
+		const deck: TemporaryCustomStudyDeck = {
+			id: "custom-study-session",
+			name: "Custom Study Session",
+			customStudy: result.customStudy,
+			cardIds: queue.map((card) => card.id),
+			sourceNoteFilters: result.sourceNoteFilters,
+			projectPath: result.projectPath,
+			scopeLabel: options.scopeLabel,
+			createdAt: options.preserveCreatedAt ?? now,
+			rebuiltAt: now,
+		};
+
+		this.settings = {
+			...this.settings,
+			temporaryCustomStudyDeck: deck,
+		};
+		await this.saveSettings();
+		await this.openDashboard();
+
+		if (deck.cardIds.length === 0) {
+			notify().info("Custom Study Session created, but no cards matched.");
+		} else {
+			notify().success(
+				`Custom Study Session created with ${deck.cardIds.length} card${deck.cardIds.length === 1 ? "" : "s"}.`,
+			);
+		}
+	}
+
+	async startTemporaryCustomStudyDeck(): Promise<void> {
+		const deck = this.settings.temporaryCustomStudyDeck;
+		if (!deck) return;
+		if (deck.cardIds.length === 0) {
+			notify().info("This Custom Study Session is empty. Rebuild it first.");
+			return;
+		}
+
+		await this.startReview({
+			mode: "custom",
+			projectPath: deck.projectPath,
+			sourceNoteFilters: deck.sourceNoteFilters,
+			customStudy: deck.customStudy,
+			materializedCardIds: [...deck.cardIds],
+			temporaryDeckId: deck.id,
 		});
+	}
+
+	async rebuildTemporaryCustomStudyDeck(): Promise<void> {
+		const deck = this.settings.temporaryCustomStudyDeck;
+		if (!deck) return;
+		const projectPath = this.resolveLegacyCustomStudyProjectPath(deck);
+
+		await this.materializeTemporaryCustomStudyDeck(
+			{
+				cancelled: false,
+				sessionType: "custom-study",
+				ignoreDailyLimits: true,
+				sourceNoteFilters: projectPath ? undefined : deck.sourceNoteFilters,
+				projectPath,
+				customStudy: deck.customStudy,
+			},
+			{
+				scopeLabel: deck.scopeLabel,
+				preserveCreatedAt: deck.createdAt,
+			},
+		);
+	}
+
+	async emptyTemporaryCustomStudyDeck(): Promise<void> {
+		const deck = this.settings.temporaryCustomStudyDeck;
+		if (!deck || deck.cardIds.length === 0) return;
+
+		this.settings = {
+			...this.settings,
+			temporaryCustomStudyDeck: {
+				...deck,
+				cardIds: [],
+			},
+		};
+		await this.saveSettings();
+		notify().success("Custom Study Session emptied.");
+	}
+
+	async deleteTemporaryCustomStudyDeck(): Promise<void> {
+		if (!this.settings.temporaryCustomStudyDeck) return;
+		const { temporaryCustomStudyDeck: _, ...settings } = this.settings;
+		this.settings = settings;
+		await this.saveSettings();
+		notify().success("Custom Study Session deleted.");
+	}
+
+	removeCardsFromTemporaryDeck(
+		deckId: string | undefined,
+		cardIds: readonly string[],
+	): void {
+		const deck = this.settings.temporaryCustomStudyDeck;
+		if (!deckId || !deck || deck.id !== deckId) return;
+		const removedIds = new Set(cardIds);
+		if (!deck.cardIds.some((id) => removedIds.has(id))) return;
+
+		this.settings = {
+			...this.settings,
+			temporaryCustomStudyDeck: {
+				...deck,
+				cardIds: deck.cardIds.filter((id) => !removedIds.has(id)),
+			},
+		};
+		void this.saveSettings();
 	}
 
 	async openCardBrowser(opts?: {
@@ -760,6 +926,28 @@ export default class TrueRecallPlugin extends Plugin {
 	}
 
 	async openCustomStudyModal(scope?: CustomStudyModalScope): Promise<void> {
+		const scopedNoteNames = scope?.sourceNoteFilters
+			? new Set(scope.sourceNoteFilters)
+			: null;
+		const scopedProjectSourceUids = scope?.projectPath
+			? this.hierarchyService.getSourceUidsForProject(scope.projectPath)
+			: null;
+		const allMeta = this.dataLayer?.get<Map<string, CardSchedulingMeta>>(
+			Q.ALL_META,
+		);
+		const availableTags = [
+			...new Set(
+				[...(allMeta?.values() ?? [])]
+					.filter(
+						(card) =>
+							(!scopedNoteNames ||
+								scopedNoteNames.has(card.sourceNoteName ?? "")) &&
+							(!scopedProjectSourceUids ||
+								scopedProjectSourceUids.has(card.sourceUid ?? "")),
+					)
+					.flatMap((card) => card.tags ?? []),
+			),
+		].sort((a, b) => a.localeCompare(b));
 		const modal = new CustomStudyModal(
 			this.app,
 			{
@@ -768,34 +956,14 @@ export default class TrueRecallPlugin extends Plugin {
 					: "Custom study",
 				width: "480px",
 			},
-			scope,
+			{ ...scope, availableTags },
 		);
 		const result = await modal.openAndWait();
 		if (result.cancelled || !result.sessionResult) return;
 
-		if (result.saveAsPreset && result.presetName) {
-			const preset: import("@true-recall/core/types/settings.types").SessionPreset =
-				{
-					id: crypto.randomUUID(),
-					name: result.presetName,
-					createdAt: Date.now(),
-					stateFilter: result.sessionResult.stateFilter,
-					difficultyRange: result.sessionResult.difficultyRange,
-					lapsesRange: result.sessionResult.lapsesRange,
-					stabilityRange: result.sessionResult.stabilityRange,
-					overdueOnly: result.sessionResult.overdueOnly,
-					recentlyFailed: result.sessionResult.recentlyFailed,
-					reviewOrder: result.sessionResult.reviewOrder,
-					cardLimit: result.sessionResult.cardLimit,
-					studyAheadDays: result.sessionResult.studyAheadDays,
-					crammingMode: result.sessionResult.crammingMode,
-				};
-			this.settings.sessionPresets = [...this.settings.sessionPresets, preset];
-			await this.saveSettings();
-			notify().success(`Preset "${result.presetName}" saved`);
-		}
-
-		await this.handleSessionResult(result.sessionResult);
+		await this.materializeTemporaryCustomStudyDeck(result.sessionResult, {
+			scopeLabel: scope?.scopeLabel,
+		});
 	}
 
 	async reviewCurrentNote(): Promise<void> {

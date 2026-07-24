@@ -135,6 +135,8 @@ export function createMockFlashcard(
 		sourceNoteName: overrides.sourceNoteName,
 		sourceUid: overrides.sourceUid,
 		sourceNotePath: overrides.sourceNotePath,
+		tags: overrides.tags,
+		previewDue: overrides.previewDue,
 	};
 }
 

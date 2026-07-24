@@ -43,6 +43,15 @@ describe("review-queue.engine", () => {
 				false,
 			);
 		});
+
+		it("requires the exact due time for a preview repeat", () => {
+			const card = createMockCardWithState(State.Review);
+			card.previewDue = new Date(NOW.getTime() + 60_000).toISOString();
+
+			expect(isCardDueNow(card, NOW)).toBe(false);
+			expect(isCardDueNow(card, new Date(NOW.getTime() + 60_000))).toBe(true);
+			expect(isPendingLearning(card, NOW)).toBe(true);
+		});
 	});
 
 	describe("isPendingLearning", () => {

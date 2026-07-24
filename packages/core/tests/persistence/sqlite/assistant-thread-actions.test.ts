@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import type { AssistantManifest } from "../../../src/ai/assistant";
+import { AssistantTaskActions } from "../../../src/persistence/sqlite/modules/AssistantTaskActions";
 import { AssistantThreadActions } from "../../../src/persistence/sqlite/modules/AssistantThreadActions";
 import { createTestContext, type TestContext } from "./__setup__/test-database";
 
@@ -131,5 +132,85 @@ describe("AssistantThreadActions", () => {
 			"newer",
 			"older",
 		]);
+	});
+
+	describe("archival task cleanup", () => {
+		let tasks: AssistantTaskActions;
+
+		beforeEach(() => {
+			tasks = new AssistantTaskActions(ctx.db as never);
+		});
+
+		function insertThread(id: string, state: "inbox" | "active" | "archived") {
+			threads.insert({
+				id,
+				title: id,
+				context: {},
+				state,
+				message: { id: `m-${id}`, role: "user", content: id, createdAt: 1 },
+				activeTaskId: `active-${id}`,
+				createdAt: 1,
+			});
+		}
+
+		function seedDoneTask(id: string, threadId: string | undefined) {
+			tasks.insert({
+				id,
+				threadId,
+				instruction: "generate",
+				context: {},
+				createdAt: 1,
+			});
+			tasks.claimNextPending();
+			tasks.complete(id, INITIAL, 2);
+		}
+
+		it("deletes the thread's terminal tasks when it is archived", () => {
+			insertThread("t1", "inbox");
+			seedDoneTask("task-1", "t1");
+			expect(tasks.getById("task-1")).not.toBeNull();
+
+			threads.setState("t1", "archived", 3);
+
+			expect(tasks.getById("task-1")).toBeNull();
+		});
+
+		it("keeps tasks when a thread moves to a non-archived state", () => {
+			insertThread("t1", "active");
+			seedDoneTask("task-1", "t1");
+
+			threads.setState("t1", "inbox", 3);
+
+			expect(tasks.getById("task-1")).not.toBeNull();
+		});
+
+		it("only deletes tasks of the archived thread, not siblings", () => {
+			insertThread("t1", "inbox");
+			insertThread("t2", "inbox");
+			seedDoneTask("task-1", "t1");
+			seedDoneTask("task-2", "t2");
+
+			threads.setState("t1", "archived", 3);
+
+			expect(tasks.getById("task-1")).toBeNull();
+			expect(tasks.getById("task-2")).not.toBeNull();
+		});
+
+		it("sweeps orphaned tasks (archived or missing thread), keeps inbox and standalone", () => {
+			insertThread("t-inbox", "inbox");
+			insertThread("t-arch", "archived");
+			seedDoneTask("task-inbox", "t-inbox");
+			seedDoneTask("task-arch", "t-arch");
+			seedDoneTask("task-missing", "ghost-thread");
+			seedDoneTask("task-standalone", undefined);
+
+			const removed = threads.deleteOrphanedTasks();
+
+			expect(removed).toBe(2);
+			expect(tasks.getById("task-inbox")).not.toBeNull();
+			expect(tasks.getById("task-standalone")).not.toBeNull();
+			expect(tasks.getById("task-arch")).toBeNull();
+			expect(tasks.getById("task-missing")).toBeNull();
+		});
 	});
 });

@@ -73,6 +73,9 @@ function buildScopeCacheKey(filters: SessionFilters): string {
 		studyAheadDays: filters.studyAheadDays ?? null,
 		customReviewOrder: filters.customReviewOrder ?? null,
 		crammingMode: Boolean(filters.crammingMode),
+		customStudy: filters.customStudy ?? null,
+		materializedCardIds: filters.materializedCardIds ?? null,
+		temporaryDeckId: filters.temporaryDeckId ?? null,
 	});
 }
 

@@ -112,6 +112,11 @@ export {
 	BUILTIN_IMAGE_OCCLUSION_ID,
 } from "./note.types";
 export type { PluginInfo, PluginTier } from "./plugin.types";
+export type {
+	CustomStudyCardState,
+	CustomStudyRequest,
+	TemporaryCustomStudyDeck,
+} from "./review-session.types";
 export type { SessionConfig } from "./session-config.types";
 export type {
 	BackupInterval,

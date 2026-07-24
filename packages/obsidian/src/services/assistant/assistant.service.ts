@@ -53,7 +53,8 @@ export class AssistantService {
 		if (this.started) return;
 		this.started = true;
 		const reset = this.actions().resetRunningToPending();
-		if (reset > 0) this.invalidate();
+		const swept = this.threadActions().deleteOrphanedTasks();
+		if (reset > 0 || swept > 0) this.invalidate();
 		this.pump();
 	}
 

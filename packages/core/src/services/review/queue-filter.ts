@@ -6,6 +6,65 @@ import type { CardSchedulingMeta } from "../../types";
 import { getTodayBoundary } from "../../utils";
 import type { QueueBuildOptions } from "./review.service";
 
+function matchesCustomStudy(
+	card: CardSchedulingMeta,
+	options: QueueBuildOptions,
+	todayBoundary: Date,
+): boolean {
+	const request = options.customStudy;
+	if (!request) return true;
+
+	const now = Date.now();
+	switch (request.kind) {
+		case "increase-new":
+			return card.fsrs.state === State.New;
+		case "increase-review":
+			return (
+				card.fsrs.state === State.Review &&
+				new Date(card.fsrs.due).getTime() <= now
+			);
+		case "forgotten":
+			return options.forgottenCardIds?.has(card.id) === true;
+		case "review-ahead":
+			return (
+				card.fsrs.state !== State.New &&
+				new Date(card.fsrs.due).getTime() <= now + request.days * MS_PER_DAY
+			);
+		case "preview-new": {
+			const cutoff =
+				todayBoundary.getTime() - (Math.max(1, request.days) - 1) * MS_PER_DAY;
+			return (
+				card.fsrs.state === State.New && (card.fsrs.createdAt ?? 0) >= cutoff
+			);
+		}
+		case "state-or-tag": {
+			const dueAt = new Date(card.fsrs.due).getTime();
+			const matchesState = (() => {
+				switch (request.cardState) {
+					case "new":
+						return card.fsrs.state === State.New;
+					case "due":
+						return card.fsrs.state !== State.New && dueAt <= now;
+					case "review":
+						return card.fsrs.state !== State.New;
+					case "all":
+						return true;
+				}
+			})();
+			if (!matchesState) return false;
+
+			const tags = new Set(card.tags ?? []);
+			if (
+				request.tagsToInclude.length > 0 &&
+				!request.tagsToInclude.some((tag) => tags.has(tag))
+			) {
+				return false;
+			}
+			return !request.tagsToExclude.some((tag) => tags.has(tag));
+		}
+	}
+}
+
 export function calculateBoundaries(dayStartHour: number = 4): {
 	now: Date;
 	todayBoundary: Date;
@@ -30,12 +89,26 @@ export function filterCards(
 	const noteSet = options.sourceNoteFilters?.length
 		? new Set(options.sourceNoteFilters)
 		: null;
+	const materializedSet = options.materializedCardIds
+		? new Set(options.materializedCardIds)
+		: null;
 
 	return cards.filter((card) => {
+		if (options.temporaryDeckCardIds?.has(card.id)) return false;
+		if (materializedSet && !materializedSet.has(card.id)) return false;
+
 		// Exclude already reviewed (but keep learning cards)
-		if (reviewedToday?.size) {
+		const respectsReviewedToday =
+			!options.customStudy ||
+			options.customStudy.kind === "increase-new" ||
+			options.customStudy.kind === "increase-review";
+		if (!materializedSet && respectsReviewedToday && reviewedToday?.size) {
 			if (!isLearningState(card.fsrs.state) && reviewedToday.has(card.id))
 				return false;
+		}
+
+		if (!materializedSet && !matchesCustomStudy(card, options, todayBoundary)) {
+			return false;
 		}
 		// Source UID filter (used for project-scoped review)
 		if (options.sourceUidFilter) {

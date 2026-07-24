@@ -179,10 +179,48 @@ export class AssistantThreadActions {
 	}
 
 	setState(id: string, state: AssistantThreadState, updatedAt: number): void {
+		// "archived" is the terminal, resolved state (drafts applied or dismissed).
+		// A thread's per-turn task rows are stale duplicates of its manifest —
+		// threadTask() synthesizes the display task from the thread, so nothing
+		// reads them afterwards. Drop them like deleteById does; otherwise
+		// done+proposed task rows linger invisibly (inbox is thread-aware) yet
+		// still get counted by the status-bar "AI" badge, which reads raw rows.
+		if (state === "archived") {
+			this.db.transaction(() => {
+				this.db.run(
+					`DELETE FROM assistant_tasks WHERE thread_id = ? AND status NOT IN ('pending','running')`,
+					[id],
+				);
+				this.db.run(
+					`UPDATE assistant_threads SET state = ?, updated_at = ? WHERE id = ?`,
+					[state, updatedAt, id],
+				);
+			});
+			return;
+		}
 		this.db.run(
 			`UPDATE assistant_threads SET state = ?, updated_at = ? WHERE id = ?`,
 			[state, updatedAt, id],
 		);
+	}
+
+	/**
+	 * Startup sweep for tasks orphaned before archival cascaded task deletion:
+	 * terminal task rows whose thread is archived or no longer exists. They are
+	 * invisible in the (thread-aware) inbox but were still counted by the raw
+	 * task-row status-bar badge. Idempotent — a no-op once the DB is clean.
+	 */
+	deleteOrphanedTasks(): number {
+		this.db.run(
+			`DELETE FROM assistant_tasks
+			 WHERE thread_id IS NOT NULL
+			   AND status NOT IN ('pending','running')
+			   AND (
+			     thread_id NOT IN (SELECT id FROM assistant_threads)
+			     OR thread_id IN (SELECT id FROM assistant_threads WHERE state = 'archived')
+			   )`,
+		);
+		return this.db.raw.getRowsModified();
 	}
 
 	undoLastTurn(id: string, updatedAt: number): AssistantThread | null {

@@ -106,6 +106,39 @@ export class SessionPersistenceService {
 		}
 	}
 
+	/** Record a filtered-deck preview answer without changing daily limits. */
+	recordPreviewReview(
+		cardId: string,
+		durationMs: number,
+		rating: Grade,
+		previousState: State,
+		presetName?: string,
+	): void {
+		this.store.stats.addReviewLog(
+			cardId,
+			rating,
+			0,
+			0,
+			previousState,
+			durationMs,
+			presetName,
+		);
+	}
+
+	getCardsRatedAgainWithinDays(days: number): Set<string> {
+		const safeDays = Math.max(1, Math.floor(days));
+		const start = this.dayBoundaryService.getTodayBoundary();
+		start.setDate(start.getDate() - (safeDays - 1));
+		const end = this.dayBoundaryService.getTomorrowBoundary();
+		return new Set(
+			this.store.stats.getCardIdsRatedInRange(
+				Rating.Again,
+				start.toISOString(),
+				end.toISOString(),
+			),
+		);
+	}
+
 	removeReviewedCards(cardIds: string[]): void {
 		const today = this.getTodayKey();
 		for (const cardId of cardIds) {

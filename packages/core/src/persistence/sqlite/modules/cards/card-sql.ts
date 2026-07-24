@@ -182,6 +182,7 @@ export function mapMetaRow(row: MetaRow): CardSchedulingMeta {
 		templateOrd: row.templateOrd,
 		noteTypeName: row.noteTypeName,
 		alwaysTypeIn: noteTags.includes(FLASHCARD_CONFIG.alwaysTypeInTag),
+		tags: noteTags,
 	};
 }
 
@@ -295,6 +296,7 @@ export function mapRow(row: CardRow): FSRSCardData {
 		ioGroupKey:
 			cardType === "image-occlusion" ? String(row.templateOrd) : undefined,
 		alwaysTypeIn: noteTags.includes(FLASHCARD_CONFIG.alwaysTypeInTag),
+		tags: noteTags,
 	};
 }
 

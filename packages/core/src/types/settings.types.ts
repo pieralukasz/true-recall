@@ -5,6 +5,7 @@
 import type { CardAIUserSettings } from "./card-ai-preset.types";
 import type { ReviewViewMode } from "./fsrs";
 import type { GenerationPreset } from "./generation-preset.types";
+import type { TemporaryCustomStudyDeck } from "./review-session.types";
 
 export type AITier = "pro" | "byok" | "custom" | "lmstudio";
 
@@ -328,6 +329,8 @@ export interface TrueRecallSettings {
 
 	/** Saved custom study session presets */
 	sessionPresets: SessionPreset[];
+	/** Anki-style filtered deck created by Custom Study. */
+	temporaryCustomStudyDeck?: TemporaryCustomStudyDeck;
 
 	/** FSRS scheduling presets (always contains at least one "Default") */
 	fsrsPresets: FSRSPreset[];

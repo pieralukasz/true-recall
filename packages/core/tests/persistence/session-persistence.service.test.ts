@@ -20,6 +20,7 @@ describe("SessionPersistenceService", () => {
 		getDailyStats: ReturnType<typeof vi.fn>;
 		getReviewedCardIds: ReturnType<typeof vi.fn>;
 		getPresetProgressInRange: ReturnType<typeof vi.fn>;
+		getCardIdsRatedInRange: ReturnType<typeof vi.fn>;
 	};
 	let mockStore: {
 		stats: typeof mockStats;
@@ -41,6 +42,9 @@ describe("SessionPersistenceService", () => {
 				typeof vi.fn
 			>,
 			getPresetProgressInRange: vi.fn().mockReturnValue([]) as ReturnType<
+				typeof vi.fn
+			>,
+			getCardIdsRatedInRange: vi.fn().mockReturnValue([]) as ReturnType<
 				typeof vi.fn
 			>,
 		};
@@ -220,6 +224,43 @@ describe("SessionPersistenceService", () => {
 			const result = service.getTodayProgressByPreset();
 
 			expect(result.size).toBe(0);
+		});
+	});
+
+	describe("custom-study review history", () => {
+		it("records preview answers without changing daily progress", () => {
+			service.recordPreviewReview(
+				"card-1",
+				2500,
+				Rating.Again,
+				State.Review,
+				"Default",
+			);
+
+			expect(mockStats.addReviewLog).toHaveBeenCalledWith(
+				"card-1",
+				Rating.Again,
+				0,
+				0,
+				State.Review,
+				2500,
+				"Default",
+			);
+			expect(mockStats.recordReviewedCard).not.toHaveBeenCalled();
+			expect(mockStats.updateDailyStats).not.toHaveBeenCalled();
+		});
+
+		it("queries Again answers using rollover-aware day boundaries", () => {
+			mockStats.getCardIdsRatedInRange.mockReturnValue(["card-1", "card-2"]);
+
+			const result = service.getCardsRatedAgainWithinDays(3);
+
+			expect(mockStats.getCardIdsRatedInRange).toHaveBeenCalledWith(
+				Rating.Again,
+				"2024-01-13T04:00:00.000Z",
+				"2024-01-16T04:00:00.000Z",
+			);
+			expect(result).toEqual(new Set(["card-1", "card-2"]));
 		});
 	});
 });

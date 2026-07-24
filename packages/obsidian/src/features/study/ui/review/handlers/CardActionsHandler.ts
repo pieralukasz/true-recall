@@ -78,6 +78,7 @@ export class CardActionsHandler {
 		});
 
 		void this.commandService?.execute(cmd);
+		this.removeFromTemporaryDeck(siblingIds);
 		this.refreshIfActive();
 		notify().cardSuspended();
 	}
@@ -102,6 +103,7 @@ export class CardActionsHandler {
 		);
 
 		void this.commandService?.execute(cmd);
+		this.removeFromTemporaryDeck(siblingIds);
 		this.refreshIfActive();
 		notify().cardBuried();
 	}
@@ -136,6 +138,7 @@ export class CardActionsHandler {
 		});
 
 		void this.commandService?.execute(cmd);
+		this.removeFromTemporaryDeck(forgettableIds);
 		this.refreshIfActive();
 
 		if (forgettableIds.length === 1) {
@@ -183,6 +186,7 @@ export class CardActionsHandler {
 		);
 
 		void this.commandService?.execute(cmd);
+		this.removeFromTemporaryDeck(allIds);
 		this.refreshIfActive();
 		notify().cardsBuried(siblingCards.length);
 	}
@@ -222,6 +226,7 @@ export class CardActionsHandler {
 
 			if (success) {
 				this.deps.getReview().removeCurrentCard();
+				this.removeFromTemporaryDeck([card.id]);
 				this.refreshIfActive();
 				notify().cardGradedAndMoved();
 			}
@@ -376,6 +381,10 @@ export class CardActionsHandler {
 		if (!r.keptCardIds.includes(card.id)) {
 			this.deps.getReview().removeCardById(card.id);
 		}
+		this.removeFromTemporaryDeck([
+			...r.deletedCardIds,
+			...(r.keptCardIds.includes(card.id) ? [] : [card.id]),
+		]);
 
 		this.refreshIfActive();
 
@@ -402,6 +411,18 @@ export class CardActionsHandler {
 		if (!this.deps.getReview().isComplete()) {
 			this.callbacks.onUpdateSchedulingPreview();
 		}
+	}
+
+	private removeFromTemporaryDeck(cardIds: readonly string[]): void {
+		if (typeof this.deps.plugin.removeCardsFromTemporaryDeck !== "function") {
+			return;
+		}
+		const review = this.deps.getReview();
+		const deckId =
+			typeof review.getSessionFilters === "function"
+				? review.getSessionFilters().temporaryDeckId
+				: review.sessionFilters?.temporaryDeckId;
+		this.deps.plugin.removeCardsFromTemporaryDeck(deckId, cardIds);
 	}
 
 	/** Reload the on-screen card content after an external mutation (AI assistant apply). */

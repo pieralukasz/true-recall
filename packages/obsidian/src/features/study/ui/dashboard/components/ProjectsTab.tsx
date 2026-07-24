@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useRef } from "preact/hooks";
 
 import { usePlugin } from "@true-recall/obsidian/preact";
 
+import { buildProjectCustomStudyScope } from "../helpers/custom-study-scope";
 import { getDragClass } from "../helpers/drag-drop";
 import { UNASSIGNED_PATH } from "../helpers/project-aggregation";
 import type { FlatProjectItem } from "../helpers/project-tree-flatten";
@@ -356,10 +357,9 @@ function ProjectHeaderItem({
 
 	const handleStudyProject = () => {
 		if (isVirtual) {
-			void plugin.openCustomStudyModal({
-				sourceNoteFilters: item.project.memberNotes.map((m) => m.name),
-				scopeLabel: "Unassigned",
-			});
+			void plugin.openCustomStudyModal(
+				buildProjectCustomStudyScope(item.project),
+			);
 		} else {
 			void plugin.startReview({
 				mode: "project",
@@ -369,10 +369,9 @@ function ProjectHeaderItem({
 	};
 
 	const handleCustomStudy = () => {
-		void plugin.openCustomStudyModal({
-			sourceNoteFilters: item.project.memberNotes.map((m) => m.name),
-			scopeLabel: item.project.name,
-		});
+		void plugin.openCustomStudyModal(
+			buildProjectCustomStudyScope(item.project),
+		);
 	};
 
 	const handleContextMenu = useProjectContextMenu({
