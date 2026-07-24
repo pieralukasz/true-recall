@@ -8,7 +8,6 @@ import {
 	VIEW_TYPE_SIMULATOR,
 	VIEW_TYPE_STATS,
 } from "@true-recall/core/constants";
-import type { DeletionHandlerService } from "@true-recall/core/flashcard/lifecycle/deletion-handler.service";
 
 import { FlashcardPanelView } from "@true-recall/obsidian/views/panel/FlashcardPanelView";
 
@@ -204,21 +203,4 @@ function updatePanelView(plugin: TrueRecallPlugin, file: TFile | null): void {
 			void view.handleFileChange(file);
 		}
 	});
-}
-
-/**
- * Called BEFORE FrontmatterIndexService updates its index,
- * so we can still retrieve the flashcard_uid from the deleted file
- */
-export function registerDeletionHandler(
-	plugin: TrueRecallPlugin,
-	deletionHandler: DeletionHandlerService,
-): void {
-	plugin.registerEvent(
-		plugin.app.vault.on("delete", (file) => {
-			if (file instanceof TFile && file.extension === "md") {
-				void deletionHandler.handleFileDeletion(file.path);
-			}
-		}),
-	);
 }

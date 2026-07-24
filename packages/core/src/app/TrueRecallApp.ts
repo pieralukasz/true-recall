@@ -69,6 +69,7 @@ export class TrueRecallApp {
 	private readonly config: TrueRecallAppConfig;
 	private disposers: (() => void)[] = [];
 	private settingsSaveQueue: Promise<void> = Promise.resolve();
+	private fileDeletionHooks: Array<(path: string) => void> = [];
 
 	constructor(config: TrueRecallAppConfig) {
 		this.config = config;
@@ -298,6 +299,16 @@ export class TrueRecallApp {
 		});
 	}
 
+	/**
+	 * Registers a hook that runs on file deletion BEFORE the frontmatter index
+	 * drops the file's entries, so the hook can still resolve UIDs for the
+	 * path. Registering a separate vault "delete" listener instead would race
+	 * against the index cleanup (listeners fire in registration order).
+	 */
+	registerFileDeletionHook(hook: (path: string) => void): void {
+		this.fileDeletionHooks.push(hook);
+	}
+
 	private wireVaultEvents(): void {
 		const ve = this.config.vaultEvents;
 
@@ -309,6 +320,13 @@ export class TrueRecallApp {
 
 		this.disposers.push(
 			ve.onFileDeleted((path) => {
+				for (const hook of this.fileDeletionHooks) {
+					try {
+						hook(path);
+					} catch (error) {
+						console.error("[TrueRecallApp] File deletion hook failed:", error);
+					}
+				}
 				this.frontmatterIndex.handleFileDeleted(path);
 			}),
 		);
