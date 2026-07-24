@@ -44,7 +44,11 @@ describe("applyPendingProposals", () => {
 
 		const result = await applyPendingProposals(task, manifest, { apply });
 
-		expect(result).toEqual({ appliedCount: 2, conflictedCount: 0 });
+		expect(result).toEqual({
+			appliedCount: 2,
+			conflictedCount: 0,
+			conflicts: {},
+		});
 		expect(manifest.proposals.map((proposal) => proposal.status)).toEqual([
 			"applied",
 			"applied",
@@ -61,7 +65,11 @@ describe("applyPendingProposals", () => {
 
 		const result = await applyPendingProposals(task, manifest, { apply });
 
-		expect(result).toEqual({ appliedCount: 1, conflictedCount: 1 });
+		expect(result).toEqual({
+			appliedCount: 1,
+			conflictedCount: 1,
+			conflicts: { "proposal-1": ["Front"] },
+		});
 		expect(manifest.proposals.map((proposal) => proposal.status)).toEqual([
 			"proposed",
 			"applied",

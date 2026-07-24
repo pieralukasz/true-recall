@@ -35,6 +35,7 @@ export function ProposalCard({
 	persist,
 	persistDraft,
 	index,
+	applyAllConflictFields,
 }: {
 	task: AssistantTask;
 	proposal: AssistantProposal;
@@ -42,6 +43,8 @@ export function ProposalCard({
 	persist: () => void;
 	persistDraft?: () => void;
 	index?: number;
+	/** Conflict reported for this proposal by the last "Apply all" run. */
+	applyAllConflictFields?: string[];
 }) {
 	const isCard =
 		proposal.type === "create_card" ||
@@ -54,7 +57,15 @@ export function ProposalCard({
 	);
 	const [text, setText] = useState(() => content?.value ?? "");
 	const [imageSel, setImageSel] = useState<Set<number>>(() => new Set());
-	const [conflictFields, setConflictFields] = useState<string[] | null>(null);
+	// undefined = no local result yet → fall back to the Apply-all conflict;
+	// null = resolved or dismissed locally.
+	const [conflictFields, setConflictFields] = useState<
+		string[] | null | undefined
+	>(undefined);
+	const shownConflictFields =
+		conflictFields === undefined
+			? (applyAllConflictFields ?? null)
+			: conflictFields;
 
 	const runApply = async (force = false) => {
 		// Sync local edits onto the proposal before applying.
@@ -165,11 +176,11 @@ export function ProposalCard({
 						</div>
 					)}
 
-					{conflictFields && (
+					{shownConflictFields && (
 						<div class="ep:flex ep:flex-wrap ep:items-center ep:gap-2 ep:p-2 ep:rounded-md ep:border ep:border-obs-border ep:bg-surface-raised ep:text-ui-smaller ep:text-obs-muted">
 							<span>
 								Fields changed since the AI saw them:{" "}
-								{conflictFields.join(", ")}.
+								{shownConflictFields.join(", ")}.
 							</span>
 							<div class="ep:flex ep:gap-1.5 ep:ml-auto">
 								<ActionButton
@@ -189,11 +200,6 @@ export function ProposalCard({
 					)}
 
 					<div class="tr-card-ai-preview-actions">
-						<ActionButton
-							label="Apply"
-							variant="primary"
-							onClick={() => void runApply()}
-						/>
 						<ActionButton label="Reject" variant="ghost" onClick={reject} />
 					</div>
 				</div>
@@ -211,6 +217,9 @@ export function TaskDetail({
 }) {
 	const plugin = usePlugin();
 	const [feedback, setFeedback] = useState("");
+	const [applyConflicts, setApplyConflicts] = useState<
+		Record<string, string[]>
+	>({});
 	const [, forceRender] = useState(0);
 	const manifest = task.manifest;
 	if (!manifest) return null;
@@ -224,6 +233,23 @@ export function TaskDetail({
 			return;
 		}
 		forceRender((n) => n + 1);
+	};
+	const pendingCount = manifest.proposals.filter(
+		(proposal) => proposal.status === "proposed",
+	).length;
+	const applyAll = async () => {
+		const result = await applyPendingProposals(task, manifest, apply);
+		setApplyConflicts(result.conflicts);
+		persist();
+		if (result.conflictedCount > 0) {
+			notify().info(
+				`${result.conflictedCount} draft${result.conflictedCount === 1 ? "" : "s"} changed since the AI saw them — review the conflicts below`,
+			);
+		}
+		if (result.error) notify().error(result.error);
+		if (!result.error && result.appliedCount > 0) {
+			notify().success("Applied AI drafts");
+		}
 	};
 	const selectedText = normalizedSelectedText(task.context.selectedText);
 
@@ -249,9 +275,18 @@ export function TaskDetail({
 						proposal={proposal}
 						apply={apply}
 						persist={persist}
+						applyAllConflictFields={applyConflicts[proposal.id]}
 					/>
 				))}
 			</div>
+
+			{pendingCount > 0 ? (
+				<ActionButton
+					label={pendingCount === 1 ? "Apply" : `Apply all (${pendingCount})`}
+					variant="primary"
+					onClick={() => void applyAll()}
+				/>
+			) : null}
 
 			<div class="ep:flex ep:items-center ep:gap-2 ep:pt-3 ep:border-t ep:border-obs-border">
 				<span class="ep:text-ui-smaller ep:text-obs-muted ep:whitespace-nowrap">
@@ -325,10 +360,16 @@ export function ThreadWorkspace({
 	const manifest = thread.manifest;
 	const [message, setMessage] = useState("");
 	const [showAllMessages, setShowAllMessages] = useState(false);
+	const [applyConflicts, setApplyConflicts] = useState<
+		Record<string, string[]>
+	>({});
 	const [, forceRender] = useState(0);
 	const apply = new AssistantApplyService(plugin);
 	const isBusy = !!thread.activeTaskId;
 	const statusLabel = activeTask?.status ?? (isBusy ? "pending" : "draft");
+	const pendingCount =
+		manifest?.proposals.filter((proposal) => proposal.status === "proposed")
+			.length ?? 0;
 
 	const persist = () => {
 		if (!manifest) return;
@@ -344,6 +385,7 @@ export function ThreadWorkspace({
 	const applyAll = async () => {
 		if (!manifest || isBusy) return;
 		const result = await applyPendingProposals(task, manifest, apply);
+		setApplyConflicts(result.conflicts);
 		persist();
 		if (result.conflictedCount > 0) {
 			notify().info(
@@ -500,12 +542,15 @@ export function ThreadWorkspace({
 										manifest,
 									)
 								}
+								applyAllConflictFields={applyConflicts[proposal.id]}
 							/>
 						))}
 					</div>
-					{hasPendingProposals(thread) ? (
+					{pendingCount > 0 ? (
 						<ActionButton
-							label="Apply all"
+							label={
+								pendingCount === 1 ? "Apply" : `Apply all (${pendingCount})`
+							}
 							variant="primary"
 							onClick={() => void applyAll()}
 							disabled={isBusy}
