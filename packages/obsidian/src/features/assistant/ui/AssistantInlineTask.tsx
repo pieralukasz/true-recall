@@ -9,7 +9,7 @@ import { ThreadWorkspace } from "./ThreadWorkspace";
 interface AssistantInlineTaskProps {
 	threadId: string;
 	onClose: () => void;
-	/** Wrap in the floating surface (popover). Flyout/modal hosts provide
+	/** Wrap in the floating surface (popover). Popout/modal hosts provide
 	 * their own chrome and pass false. */
 	framed?: boolean;
 }

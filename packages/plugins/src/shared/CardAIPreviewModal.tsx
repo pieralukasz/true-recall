@@ -2,6 +2,9 @@ import { useEffect, useState } from "preact/hooks";
 
 import type { CardFields } from "@true-recall/core";
 
+import { ActionButton, StatusPill } from "@true-recall/obsidian/components";
+import { AiComposer } from "@true-recall/obsidian/features/assistant/ui/AiComposer";
+
 import { CardAIField } from "./CardAIField";
 
 interface CardAIPreviewModalProps {
@@ -94,11 +97,13 @@ export function CardAIPreviewModal(props: CardAIPreviewModalProps) {
 
 	if (!hasEdits && !hasNew && props.rawResponse !== undefined) {
 		return (
-			<div class="tr-card-ai-preview-root">
+			<div class="tr-card-ai-preview-root tr-card-ai-preview-dialog">
 				<section class="tr-card-ai-preview-section">
-					<h4 class="tr-card-ai-preview-section-title">
-						LLM returned an unparseable response
-					</h4>
+					<SectionHeading
+						title="AI response needs attention"
+						description="The response could not be converted into flashcards. Refine the instruction or inspect the raw output."
+						badge="Raw response"
+					/>
 					<pre class="tr-card-ai-preview-raw">{props.rawResponse}</pre>
 				</section>
 				<ActionsBar
@@ -118,16 +123,23 @@ export function CardAIPreviewModal(props: CardAIPreviewModalProps) {
 
 	const fieldNames = Object.keys(props.original);
 	const acceptDisabled = !hasEdits && selectedNew.size === 0;
+	const acceptLabel = hasEdits
+		? hasNew
+			? "Apply changes"
+			: "Apply edit"
+		: "Add selected cards";
 
 	return (
-		<div class="tr-card-ai-preview-root">
+		<div class="tr-card-ai-preview-root tr-card-ai-preview-dialog">
 			{hasEdits && (
 				<section class="tr-card-ai-preview-section">
-					<h4 class="tr-card-ai-preview-section-title">
-						Edits to current card
-					</h4>
+					<SectionHeading
+						title="Current card"
+						description="Compare the original with the AI proposal. You can edit the proposed fields before applying."
+						badge="1 edit"
+					/>
 					<div class="tr-card-ai-preview-grid">
-						<div class="tr-card-ai-preview-column">
+						<div class="tr-card-ai-preview-column is-original">
 							<h5 class="tr-card-ai-preview-column-title">Original</h5>
 							{fieldNames.map((name) => (
 								<CardAIField
@@ -138,7 +150,7 @@ export function CardAIPreviewModal(props: CardAIPreviewModalProps) {
 								/>
 							))}
 						</div>
-						<div class="tr-card-ai-preview-column">
+						<div class="tr-card-ai-preview-column is-proposed">
 							<h5 class="tr-card-ai-preview-column-title">Proposed</h5>
 							{fieldNames.map((name) => (
 								<CardAIField
@@ -156,7 +168,10 @@ export function CardAIPreviewModal(props: CardAIPreviewModalProps) {
 			{hasNew && !hasEdits && (
 				<section class="tr-card-ai-preview-section">
 					<div class="tr-card-ai-preview-source-header">
-						<h4 class="tr-card-ai-preview-section-title">Source card</h4>
+						<SectionHeading
+							title="Source card"
+							description="The card used as context for these suggestions."
+						/>
 						{props.canDeleteSource && (
 							<label class="tr-card-ai-preview-delete-toggle">
 								<input
@@ -194,9 +209,11 @@ export function CardAIPreviewModal(props: CardAIPreviewModalProps) {
 
 			{hasNew && (
 				<section class="tr-card-ai-preview-section">
-					<h4 class="tr-card-ai-preview-section-title">
-						New cards ({editedNewCards.length})
-					</h4>
+					<SectionHeading
+						title="New cards"
+						description="Select the suggestions you want to add. Every field remains editable."
+						badge={`${selectedNew.size} of ${editedNewCards.length} selected`}
+					/>
 					<div class="tr-card-ai-preview-new-list">
 						{editedNewCards.map((card, idx) => {
 							const isSelected = selectedNew.has(idx);
@@ -247,9 +264,30 @@ export function CardAIPreviewModal(props: CardAIPreviewModalProps) {
 				showAccept
 				acceptDisabled={acceptDisabled}
 				onAccept={handleAccept}
+				acceptLabel={acceptLabel}
 				rejectLabel="Reject"
 			/>
 		</div>
+	);
+}
+
+function SectionHeading({
+	title,
+	description,
+	badge,
+}: {
+	title: string;
+	description: string;
+	badge?: string;
+}) {
+	return (
+		<header class="tr-card-ai-preview-section-heading">
+			<div>
+				<h4 class="tr-card-ai-preview-section-title">{title}</h4>
+				<p>{description}</p>
+			</div>
+			{badge ? <StatusPill label={badge} /> : null}
+		</header>
 	);
 }
 
@@ -262,40 +300,52 @@ interface ActionsBarProps {
 	showAccept: boolean;
 	acceptDisabled: boolean;
 	onAccept: () => void;
+	acceptLabel?: string;
 	rejectLabel: string;
 }
 
 function ActionsBar(props: ActionsBarProps) {
 	return (
 		<div class="tr-card-ai-preview-actions">
-			<input
-				type="text"
-				class="tr-card-ai-preview-extra-input"
-				placeholder="Extra instruction for retry (optional)"
-				value={props.extra}
-				onInput={(e) => props.setExtra((e.target as HTMLInputElement).value)}
-				disabled={props.retrying}
-			/>
-			<button
-				type="button"
-				onClick={props.onRetry}
-				disabled={props.retrying || !props.extra.trim()}
-			>
-				Retry
-			</button>
-			<button type="button" onClick={props.onReject}>
-				{props.rejectLabel}
-			</button>
-			{props.showAccept && (
-				<button
-					type="button"
-					class="mod-cta"
-					onClick={props.onAccept}
-					disabled={props.acceptDisabled}
-				>
-					Accept
-				</button>
-			)}
+			<div class="tr-card-ai-preview-refine">
+				<label for="tr-card-ai-preview-refine-input">Refine result</label>
+				<AiComposer
+					variant="workspace"
+					class="tr-card-ai-preview-refine-composer"
+					inputId="tr-card-ai-preview-refine-input"
+					value={props.extra}
+					onChange={props.setExtra}
+					onSubmit={props.onRetry}
+					placeholder="Tell AI what to change…"
+					busy={props.retrying}
+					submitLabel={props.retrying ? "Retrying…" : "Retry"}
+					hint={
+						<span>
+							<kbd>Enter</kbd> retry <span aria-hidden="true">·</span>{" "}
+							<kbd>Shift Enter</kbd> new line
+						</span>
+					}
+					afterSubmit={
+						<>
+							<ActionButton
+								label={props.rejectLabel}
+								variant="ghost"
+								size="sm"
+								onClick={props.onReject}
+							/>
+							{props.showAccept ? (
+								<ActionButton
+									label={props.acceptLabel ?? "Apply"}
+									variant="primary"
+									size="sm"
+									disabled={props.acceptDisabled || props.retrying}
+									onClick={props.onAccept}
+								/>
+							) : null}
+						</>
+					}
+				/>
+			</div>
 		</div>
 	);
 }

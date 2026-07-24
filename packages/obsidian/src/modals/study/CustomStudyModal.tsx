@@ -31,11 +31,13 @@ export class CustomStudyModal extends BasePromiseModal<CustomStudyModalResult> {
 		render(
 			<CustomStudyBody
 				scopeLabel={this.studyScope?.scopeLabel}
+				availableTags={this.studyScope?.availableTags}
 				onResolve={(result) => {
 					// Attach scope filters from the class-level studyScope
 					if (result.sessionResult && this.studyScope) {
 						result.sessionResult.sourceNoteFilters =
 							this.studyScope.sourceNoteFilters;
+						result.sessionResult.projectPath = this.studyScope.projectPath;
 					}
 					this.resolve(result);
 				}}

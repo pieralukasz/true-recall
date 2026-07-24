@@ -52,10 +52,58 @@ settings:
 @import "./views/modal-window/modal-window.styles.css";
 @import "./features/library/ui/panel/panel.styles.css";
 @import "./features/metrics/ui/simulator/styles.css";
-@import "./features/assistant/ui/assistant.styles.css";
 @import "../../../packages/plugins/src/selection-toolbar/selection-toolbar.css";
 @import "../../../packages/plugins/src/image-occlusion/styles/image-occlusion.styles.css";
 @import "../../../packages/plugins/src/shared/card-ai-preview.css";
+@import "../../../packages/plugins/src/shared/card-ai-preset-menu.css";
+@import "./features/assistant/ui/assistant.styles.css";
+
+/* Custom Study is rendered inside resizable Obsidian panes, so viewport media
+   queries are not enough. Container queries keep its actions from crushing the
+   deck title when the pane is narrow or the UI is zoomed. */
+.tr-custom-study-deck {
+	container-type: inline-size;
+}
+
+.tr-custom-study-deck__layout {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 1rem;
+}
+
+.tr-custom-study-deck__summary {
+	flex: 1 1 auto;
+}
+
+.tr-custom-study-deck__actions {
+	flex: 0 0 auto;
+}
+
+@container (max-width: 52rem) {
+	.tr-custom-study-deck__layout {
+		align-items: stretch;
+		flex-direction: column;
+	}
+
+	.tr-custom-study-deck__actions {
+		align-self: flex-start;
+		margin-left: 3rem;
+	}
+}
+
+@container (max-width: 32rem) {
+	.tr-custom-study-deck__actions {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		margin-left: 0;
+		width: 100%;
+	}
+
+	.tr-custom-study-deck__actions > * {
+		width: 100%;
+	}
+}
 
 /*
  * Obsidian Theme Variables - Runtime Inheritance

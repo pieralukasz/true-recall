@@ -14,6 +14,7 @@ import type {
 	LocalAnswerAssessment,
 	SemanticGradingResult,
 } from "@true-recall/core/types";
+import { isPreviewCustomStudy } from "@true-recall/core/types/review-session.types";
 
 import type { ReviewSessionController } from "@true-recall/obsidian/features/study/services/ReviewSessionController";
 import type { SessionFilters } from "@true-recall/obsidian/features/study/ui/review/review.types";
@@ -63,6 +64,17 @@ export class AnswerHandler {
 	updateSchedulingPreview(): void {
 		const card = this.deps.getReview().getCurrentCard();
 		if (card) {
+			if (isPreviewCustomStudy(this.deps.getFilters())) {
+				const now = Date.now();
+				this.deps.getReview().setSchedulingPreview({
+					again: { due: new Date(now + 60_000), interval: "1m" },
+					hard: { due: new Date(now + 600_000), interval: "10m" },
+					good: { due: new Date(now), interval: "End" },
+					easy: { due: new Date(now), interval: "End" },
+				});
+				this.deps.getReview().notifyChange();
+				return;
+			}
 			const preset = this.resolvePreset(card);
 			const presetSettings =
 				this.deps.plugin.presetService.toFSRSSettings(preset);
@@ -148,7 +160,10 @@ export class AnswerHandler {
 			this.deferSchedulingPreview();
 		}
 
-		if (rating === Rating.Again) {
+		if (
+			rating === Rating.Again &&
+			!isPreviewCustomStudy(this.deps.getFilters())
+		) {
 			const lapses = outcome.updatedCard.fsrs.lapses;
 			const threshold = outcome.preset.leechThreshold ?? 8;
 			if (shouldTriggerLeech(lapses, threshold)) {

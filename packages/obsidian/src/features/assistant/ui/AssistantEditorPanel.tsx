@@ -2,24 +2,26 @@ import { useEffect, useRef, useState } from "preact/hooks";
 
 import type { AssistantContext } from "@true-recall/core/ai/assistant";
 
-import { IconButton } from "@true-recall/obsidian/components";
 import { usePlugin } from "@true-recall/obsidian/preact/ObsidianContext";
 
 import { AskAiPrompt } from "./AskAiPrompt";
 import { AssistantInlineTask } from "./AssistantInlineTask";
+import type { AIWorkspaceMode } from "./ai-workspace-modes";
 import { handoffUnfinishedThread } from "./thread-handoff";
 
 interface AssistantEditorPanelProps {
 	context: AssistantContext;
 	onClose: () => void;
+	initialMode?: AIWorkspaceMode;
 }
 
-/** Prompt → thread lifecycle for the quick note editor's AI panel. On unmount
- * (panel toggled off or editor closed) an unfinished thread is handed off to
- * the AI Inbox instead of being lost. */
+/** Prompt → thread lifecycle for the contextual AI workspace. On unmount
+ * (window closed or editor session ended) an unfinished thread is handed off
+ * to the AI Inbox instead of being lost. */
 export function AssistantEditorPanel({
 	context,
 	onClose,
+	initialMode = "assistant",
 }: AssistantEditorPanelProps) {
 	const plugin = usePlugin();
 	const [threadId, setThreadId] = useState<string | null>(null);
@@ -34,27 +36,20 @@ export function AssistantEditorPanel({
 	}, [plugin]);
 
 	return (
-		<div class="ep:flex ep:flex-col ep:gap-2 ep:min-w-0">
-			<div class="ep:flex ep:items-center ep:gap-2">
-				<span class="ep:flex-1 ep:text-ui-small ep:font-semibold ep:text-obs-normal">
-					Ask AI
-				</span>
-				<IconButton
-					icon="x"
-					ariaLabel="Close AI panel"
-					size="small"
-					onClick={onClose}
-				/>
-			</div>
+		<div class="tr-assistant-editor-panel ep:flex ep:flex-col ep:min-w-0">
 			{threadId ? (
-				<AssistantInlineTask
-					threadId={threadId}
-					onClose={onClose}
-					framed={false}
-				/>
+				<div class="tr-assistant-editor-thread">
+					<AssistantInlineTask
+						threadId={threadId}
+						onClose={onClose}
+						framed={false}
+					/>
+				</div>
 			) : (
 				<AskAiPrompt
 					context={context}
+					presentation="workspace"
+					initialMode={initialMode}
 					onSubmitted={(id, mode) => {
 						if (mode === "inbox") {
 							void plugin.openAssistantInbox();

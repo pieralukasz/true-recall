@@ -110,7 +110,8 @@ export class ObsidianCardAIPresenter implements CardAIPresenter {
 	private openPreview(args: CardAIPresentArgs): Promise<void> {
 		return new Promise((resolve) => {
 			const modal = new Modal(this.app);
-			modal.titleEl.setText("AI preview");
+			modal.modalEl.addClass("tr-card-ai-preview-modal");
+			modal.titleEl.setText("Card Polish preview");
 			let proposal = args.proposed;
 			let newCards = args.proposedNewCards;
 			let raw = args.rawResponse;

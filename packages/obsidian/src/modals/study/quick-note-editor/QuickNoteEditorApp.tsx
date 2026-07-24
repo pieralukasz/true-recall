@@ -16,11 +16,6 @@ import {
 	type FormattingTargetRef,
 	FormattingToolbar,
 } from "@true-recall/obsidian/editor/shared/formatting";
-import { AssistantEditorPanel } from "@true-recall/obsidian/features/assistant/ui/AssistantEditorPanel";
-import {
-	type FlyoutPlacement,
-	resolveFlyoutPlacement,
-} from "@true-recall/obsidian/features/assistant/ui/flyout-placement";
 import { useIcon } from "@true-recall/obsidian/preact/hooks";
 import {
 	useApp,
@@ -28,7 +23,7 @@ import {
 } from "@true-recall/obsidian/preact/ObsidianContext";
 import { registerAssistantDraftTarget } from "@true-recall/obsidian/services/assistant/assistant-draft-target-registry";
 import { notify } from "@true-recall/obsidian/services/notification.service";
-import { cn } from "@true-recall/obsidian/utils/cn";
+import { openAssistantEditorWindow } from "@true-recall/obsidian/views/modal-window/open-assistant-editor-window";
 import { openCardTypesEditor } from "@true-recall/obsidian/views/modal-window/open-card-types-editor";
 import { openNoteTypeManager } from "@true-recall/obsidian/views/modal-window/open-note-type-manager";
 
@@ -42,12 +37,6 @@ interface QuickNoteEditorAppProps {
 	onDone: (result: QuickNoteEditorResult) => void;
 	onRequestClose?: () => void;
 	onDirtyChange?: (isDirty: boolean) => void;
-	/** Host callback: the popout view grows/shrinks the window for the
-	 * right-hand AI panel. */
-	onAiPanelChange?: (state: {
-		open: boolean;
-		placement: FlyoutPlacement;
-	}) => void;
 }
 
 export function QuickNoteEditorApp({
@@ -55,7 +44,6 @@ export function QuickNoteEditorApp({
 	onDone,
 	onRequestClose,
 	onDirtyChange,
-	onAiPanelChange,
 }: QuickNoteEditorAppProps) {
 	const app = useApp();
 	const plugin = usePlugin();
@@ -87,6 +75,7 @@ export function QuickNoteEditorApp({
 	const fieldsRef = useRef(fields);
 	fieldsRef.current = fields;
 	const assistantDraftSessionIdRef = useRef(`qne-${crypto.randomUUID()}`);
+	const closeAssistantWindowRef = useRef<(() => void) | null>(null);
 
 	useEffect(
 		() =>
@@ -98,8 +87,14 @@ export function QuickNoteEditorApp({
 		[],
 	);
 
-	const [aiContext, setAiContext] = useState<AssistantContext | null>(null);
-	const [aiPlacement, setAiPlacement] = useState<FlyoutPlacement>("drawer");
+	useEffect(
+		() => () => {
+			const close = closeAssistantWindowRef.current;
+			closeAssistantWindowRef.current = null;
+			close?.();
+		},
+		[],
+	);
 
 	const [saving, setSaving] = useState(false);
 	const [pinnedFields, setPinnedFields] = useState<Set<string>>(new Set());
@@ -391,36 +386,24 @@ export function QuickNoteEditorApp({
 		assistantActive,
 	});
 
-	const closeAI = useCallback(() => {
-		setAiContext(null);
-		onAiPanelChange?.({ open: false, placement: aiPlacement });
-	}, [onAiPanelChange, aiPlacement]);
-
 	const openAI = useCallback(() => {
 		if (aiDisabled) return;
-		if (aiContext) {
-			closeAI();
+		if (closeAssistantWindowRef.current) {
+			const close = closeAssistantWindowRef.current;
+			closeAssistantWindowRef.current = null;
+			close();
 			return;
 		}
 		if (!sourceNoteFile || !noteType) return;
-		void resolveSourceUid()
-			.then((uid) => {
+		void Promise.all([resolveSourceUid(), app.vault.cachedRead(sourceNoteFile)])
+			.then(([uid, sourceText]) => {
 				if (!uid) {
 					new Notice("AI: could not resolve source note UID.");
 					return;
 				}
-				const win = rootRef.current?.ownerDocument.defaultView ?? window;
-				const isPopout = win !== window;
-				const screen = win.screen as Screen & { availLeft?: number };
-				const spaceRightPx =
-					(screen.availLeft ?? 0) +
-					screen.availWidth -
-					(win.screenX + win.outerWidth);
-				const placement = resolveFlyoutPlacement({ isPopout, spaceRightPx });
-				setAiPlacement(placement);
-				setAiContext({
+				const context: AssistantContext = {
 					activeNotePath: sourceNoteFile.path,
-					source: { path: sourceNoteFile.path, uid },
+					source: { path: sourceNoteFile.path, uid, text: sourceText },
 					draftCard: {
 						sessionId: assistantDraftSessionIdRef.current,
 						fields,
@@ -433,23 +416,33 @@ export function QuickNoteEditorApp({
 						sourceNotePath: sourceNoteFile.path,
 						operation: isEdit ? "edit" : "create",
 					},
+				};
+				const sourceWindow =
+					rootRef.current?.ownerDocument.defaultView ?? window;
+				let closeWindow: (() => void) | null = null;
+				closeWindow = openAssistantEditorWindow(plugin, context, {
+					sourceWindow,
+					onClose: () => {
+						if (closeAssistantWindowRef.current === closeWindow) {
+							closeAssistantWindowRef.current = null;
+						}
+					},
 				});
-				onAiPanelChange?.({ open: true, placement });
+				closeAssistantWindowRef.current = closeWindow;
 			})
 			.catch((err) => {
-				console.error("[Assistant] AI panel open failed", err);
+				console.error("[Assistant] AI window open failed", err);
 				new Notice("AI: could not resolve source note.");
 			});
 	}, [
 		aiDisabled,
-		aiContext,
-		closeAI,
 		sourceNoteFile,
 		noteType,
 		fields,
 		isEdit,
 		resolveSourceUid,
-		onAiPanelChange,
+		plugin,
+		app.vault,
 	]);
 
 	if (!noteType) {
@@ -462,77 +455,58 @@ export function QuickNoteEditorApp({
 
 	return (
 		<div
-			class={cn(
-				"tr-quick-editor-layout",
-				aiContext && aiPlacement === "right" && "has-ai-right",
-			)}
+			ref={rootRef}
+			class="true-recall-quick-editor ep:flex ep:flex-col ep:gap-3"
 		>
-			<div
-				ref={rootRef}
-				class="true-recall-quick-editor ep:flex ep:flex-col ep:gap-3"
-			>
-				{/* Action bar: Note type, Source note, AI */}
-				<ActionBar
-					app={app}
-					noteTypeId={noteTypeId}
-					onNoteTypeChange={handleNoteTypeChange}
-					isEdit={isEdit}
-					onChangeType={isEdit ? () => void handleChangeType() : undefined}
-					showSourcePicker={showSourcePicker}
-					selectedSourceNote={selectedSourceNote}
-					onSourceSelect={setSelectedSourceNote}
-				/>
+			{/* Action bar: Note type, Source note, AI */}
+			<ActionBar
+				app={app}
+				noteTypeId={noteTypeId}
+				onNoteTypeChange={handleNoteTypeChange}
+				isEdit={isEdit}
+				onChangeType={isEdit ? () => void handleChangeType() : undefined}
+				showSourcePicker={showSourcePicker}
+				selectedSourceNote={selectedSourceNote}
+				onSourceSelect={setSelectedSourceNote}
+			/>
 
-				{/* Shared formatting toolbar */}
-				<FormattingToolbar
-					app={app}
-					getEditorView={() => focusedFieldRef.current?.editorView ?? null}
-					typeInEnabled={alwaysTypeIn}
-					onTypeInToggle={!isEdit ? setAlwaysTypeIn : undefined}
-					showCloze={noteType.type === 1}
-				/>
+			{/* Shared formatting toolbar */}
+			<FormattingToolbar
+				app={app}
+				getEditorView={() => focusedFieldRef.current?.editorView ?? null}
+				typeInEnabled={alwaysTypeIn}
+				onTypeInToggle={!isEdit ? setAlwaysTypeIn : undefined}
+				showCloze={noteType.type === 1}
+			/>
 
-				{/* Dynamic fields */}
-				<NoteFieldsForm
-					noteType={noteType}
-					fields={fields}
-					sourcePath={sourceNoteFile?.path ?? ""}
-					onFieldChange={handleFieldChange}
-					onFieldFocus={handleFieldFocus}
-					onModEnter={() => void handleSave()}
-					onEscape={onRequestClose}
-					pinnedFields={pinnedFields}
-					onTogglePin={togglePin}
-				/>
+			{/* Dynamic fields */}
+			<NoteFieldsForm
+				noteType={noteType}
+				fields={fields}
+				sourcePath={sourceNoteFile?.path ?? ""}
+				onFieldChange={handleFieldChange}
+				onFieldFocus={handleFieldFocus}
+				onModEnter={() => void handleSave()}
+				onEscape={onRequestClose}
+				pinnedFields={pinnedFields}
+				onTogglePin={togglePin}
+			/>
 
-				{/* Footer */}
-				<FooterBar
-					app={app}
-					isEdit={isEdit}
-					canSave={canSave}
-					saving={saving}
-					requiresSourceNote={showSourcePicker && !selectedSourceNote}
-					sourceNoteFile={sourceNoteFile}
-					onSave={() => void handleSave()}
-					onOpenFields={openFields}
-					onOpenCards={openCards}
-					onAI={openAI}
-					aiDisabled={aiDisabled}
-					aiTitle={aiTitle}
-				/>
-
-				{aiContext && aiPlacement === "drawer" && (
-					<div class="tr-quick-editor-ai-drawer">
-						<AssistantEditorPanel context={aiContext} onClose={closeAI} />
-					</div>
-				)}
-			</div>
-
-			{aiContext && aiPlacement === "right" && (
-				<aside class="tr-quick-editor-ai-col">
-					<AssistantEditorPanel context={aiContext} onClose={closeAI} />
-				</aside>
-			)}
+			{/* Footer */}
+			<FooterBar
+				app={app}
+				isEdit={isEdit}
+				canSave={canSave}
+				saving={saving}
+				requiresSourceNote={showSourcePicker && !selectedSourceNote}
+				sourceNoteFile={sourceNoteFile}
+				onSave={() => void handleSave()}
+				onOpenFields={openFields}
+				onOpenCards={openCards}
+				onAI={openAI}
+				aiDisabled={aiDisabled}
+				aiTitle={aiTitle}
+			/>
 		</div>
 	);
 }

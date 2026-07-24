@@ -267,3 +267,166 @@
 	flex: 1;
 	min-width: 0;
 }
+
+/* ── Card Polish preview dialog ───────────────────────────────────────── */
+.tr-card-ai-preview-modal {
+	width: min(880px, calc(100vw - 32px));
+	max-width: 880px;
+}
+
+.tr-card-ai-preview-modal .modal-title {
+	font-size: 22px;
+	font-weight: 680;
+	letter-spacing: -0.02em;
+}
+
+.tr-card-ai-preview-modal .modal-content {
+	max-height: calc(100vh - 110px);
+	overflow-y: auto;
+	overscroll-behavior: contain;
+}
+
+.tr-card-ai-preview-dialog {
+	gap: 20px;
+	padding-bottom: 2px;
+}
+
+.tr-card-ai-preview-dialog .tr-card-ai-preview-section {
+	gap: 12px;
+}
+
+.tr-card-ai-preview-section-heading {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 16px;
+}
+
+.tr-card-ai-preview-section-heading > div {
+	min-width: 0;
+}
+
+.tr-card-ai-preview-section-heading p {
+	max-width: 580px;
+	margin: 3px 0 0;
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	line-height: 1.4;
+}
+
+.tr-card-ai-preview-dialog .tr-card-ai-preview-section-title {
+	font-size: var(--font-ui-large);
+	font-weight: 650;
+	letter-spacing: -0.01em;
+}
+
+.tr-card-ai-preview-dialog .tr-card-ai-preview-grid {
+	gap: 10px;
+}
+
+.tr-card-ai-preview-dialog .tr-card-ai-preview-column {
+	gap: 10px;
+	padding: 12px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 11px;
+	background: var(--background-secondary);
+}
+
+.tr-card-ai-preview-dialog .tr-card-ai-preview-column.is-original {
+	color: var(--text-muted);
+}
+
+.tr-card-ai-preview-dialog .tr-card-ai-preview-column.is-proposed {
+	border-color: var(--background-modifier-border-hover);
+	background: var(--background-primary);
+	box-shadow: var(--ep-elevation-1);
+}
+
+.tr-card-ai-preview-dialog .tr-card-ai-preview-column-title {
+	font-size: 10px;
+	font-weight: 650;
+	letter-spacing: 0.075em;
+}
+
+.tr-card-ai-preview-dialog .tr-card-ai-field-editor,
+.tr-card-ai-preview-dialog .tr-card-ai-fallback-pre,
+.tr-card-ai-preview-dialog .tr-card-ai-fallback-textarea {
+	padding: 8px 10px;
+	border-radius: 8px;
+}
+
+.tr-card-ai-preview-dialog .tr-card-ai-field-editor.is-readonly {
+	background: var(--background-primary-alt);
+}
+
+.tr-card-ai-preview-dialog .tr-card-ai-preview-new-list {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+	gap: 10px;
+}
+
+.tr-card-ai-preview-dialog .tr-card-ai-preview-new-card {
+	border-radius: 11px;
+	background: var(--background-primary);
+	box-shadow: var(--ep-elevation-1);
+}
+
+.tr-card-ai-preview-dialog .tr-card-ai-preview-new-card-header {
+	min-height: 42px;
+	padding: 7px 11px;
+}
+
+.tr-card-ai-preview-dialog .tr-card-ai-preview-new-card-body {
+	gap: 9px;
+	padding: 10px 11px 11px;
+}
+
+.tr-card-ai-preview-dialog .tr-card-ai-preview-source-card {
+	border-radius: 11px;
+}
+
+.tr-card-ai-preview-dialog .tr-card-ai-preview-raw {
+	max-height: 340px;
+	padding: 12px 14px;
+	border-radius: 9px;
+}
+
+.tr-card-ai-preview-dialog .tr-card-ai-preview-actions {
+	position: sticky;
+	bottom: -1px;
+	z-index: 2;
+	display: block;
+	margin-top: 0;
+	padding: 14px 0 2px;
+	border-top: 1px solid var(--background-modifier-border);
+	background: var(--background-primary);
+	box-shadow: 0 -12px 24px var(--background-primary);
+}
+
+.tr-card-ai-preview-refine {
+	display: flex;
+	min-width: 0;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.tr-card-ai-preview-refine > label {
+	padding-left: 2px;
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	font-weight: 600;
+}
+
+@media (max-width: 680px) {
+	.tr-card-ai-preview-modal {
+		width: min(640px, calc(100vw - 16px));
+	}
+
+	.tr-card-ai-preview-dialog .tr-card-ai-preview-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.tr-card-ai-preview-dialog .tr-card-ai-preview-new-list {
+		grid-template-columns: 1fr;
+	}
+}

@@ -62,6 +62,7 @@ export {
 	ReviewService,
 } from "./review/review.service";
 export {
+	preparePreviewAnswer,
 	type ReviewAnswerTransition,
 	type ReviewAnswerTransitionOptions,
 	type ReviewSessionBootstrapResult,

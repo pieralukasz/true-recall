@@ -62,6 +62,14 @@ export class StatsActions {
 		return this.reviewLog.getCardReviewHistory(cardId, limit);
 	}
 
+	getCardIdsRatedInRange(
+		rating: number,
+		startIso: string,
+		endIso: string,
+	): string[] {
+		return this.reviewLog.getCardIdsRatedInRange(rating, startIso, endIso);
+	}
+
 	getTotalReviewCount(): number {
 		return this.reviewLog.getTotalReviewCount();
 	}

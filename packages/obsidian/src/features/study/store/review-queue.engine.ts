@@ -39,6 +39,9 @@ export function isCardDueNow(
 	card: FSRSFlashcardItem,
 	now: Date = new Date(),
 ): boolean {
+	if (card.previewDue) {
+		return new Date(card.previewDue) <= now;
+	}
 	const dueDate = new Date(card.fsrs.due);
 	if (isLearningCard(card)) {
 		return dueDate <= now;
@@ -54,7 +57,10 @@ export function isPendingLearning(
 	card: FSRSFlashcardItem,
 	now: Date = new Date(),
 ): boolean {
-	return isLearningCard(card) && !isCardDueNow(card, now);
+	return (
+		(Boolean(card.previewDue) || isLearningCard(card)) &&
+		!isCardDueNow(card, now)
+	);
 }
 
 export function countBadges(

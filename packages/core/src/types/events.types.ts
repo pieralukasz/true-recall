@@ -10,6 +10,7 @@ export interface SessionResult {
 		| null;
 	sourceNoteFilter?: string;
 	sourceNoteFilters?: string[];
+	projectPath?: string;
 	filePathFilter?: string;
 	createdTodayOnly?: boolean;
 	ignoreDailyLimits: boolean;
@@ -26,4 +27,5 @@ export interface SessionResult {
 	studyAheadDays?: number;
 	reviewOrder?: import("./settings.types").ReviewOrder;
 	crammingMode?: boolean;
+	customStudy?: import("./review-session.types").CustomStudyRequest;
 }

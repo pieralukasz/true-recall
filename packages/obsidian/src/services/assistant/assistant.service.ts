@@ -53,7 +53,8 @@ export class AssistantService {
 		if (this.started) return;
 		this.started = true;
 		const reset = this.actions().resetRunningToPending();
-		if (reset > 0) this.invalidate();
+		const swept = this.threadActions().deleteOrphanedTasks();
+		if (reset > 0 || swept > 0) this.invalidate();
 		this.pump();
 	}
 
@@ -290,7 +291,7 @@ export class AssistantService {
 						updatedAt: Date.now(),
 					});
 				}
-				this.notifyTaskCompleted(task, manifest);
+				await this.notifyTaskCompleted(task, manifest);
 			} catch (error) {
 				if (this.actions().getById(task.id)?.status !== "running") continue;
 				this.actions().fail(
@@ -307,6 +308,13 @@ export class AssistantService {
 						message: this.assistantMessage(`Error: ${message}`, Date.now()),
 						updatedAt: Date.now(),
 					});
+					if (task.context.applyGeneratedCardsImmediately) {
+						this.threadActions().setState(
+							task.threadId,
+							"archived",
+							Date.now(),
+						);
+					}
 				}
 				notify().error("AI task failed", error);
 			} finally {
@@ -316,12 +324,13 @@ export class AssistantService {
 		}
 	}
 
-	private notifyTaskCompleted(
+	private async notifyTaskCompleted(
 		task: AssistantTask,
 		manifest: AssistantManifest,
-	): void {
+	): Promise<void> {
 		const workflow = resolveAIWorkflow(this.plugin.settings, task.presetId, {
 			hasSelection: !!task.context.selectedText?.trim(),
+			hasSourceText: !!task.context.source?.text?.trim(),
 			hasCard: !!task.context.card,
 			hasDraftCard: !!task.context.draftCard,
 		});
@@ -331,7 +340,15 @@ export class AssistantService {
 		if (workflow?.kind === "generate-cards" && task.threadId) {
 			if (pending === 0) {
 				this.threadActions().setState(task.threadId, "archived", Date.now());
-				notify().warning("AI generation finished without flashcard drafts");
+				notify().warning(
+					task.context.applyGeneratedCardsImmediately
+						? "AI generation finished without flashcards"
+						: "AI generation finished without flashcard drafts",
+				);
+				return;
+			}
+			if (task.context.applyGeneratedCardsImmediately) {
+				await this.applyGeneratedCardsImmediately(task, task.threadId);
 				return;
 			}
 			this.threadActions().setState(task.threadId, "inbox", Date.now());
@@ -349,6 +366,50 @@ export class AssistantService {
 				? `AI task ready: ${n} proposal${n === 1 ? "" : "s"}`
 				: "AI task finished (no proposals)",
 		);
+	}
+
+	private async applyGeneratedCardsImmediately(
+		task: AssistantTask,
+		threadId: string,
+	): Promise<void> {
+		const thread = this.threadActions().getById(threadId);
+		const manifest = thread?.manifest;
+		if (!thread || !manifest || thread.activeTaskId) return;
+
+		const apply = new AssistantApplyService(this.plugin);
+		let applied = 0;
+		let firstError: string | undefined;
+		for (const proposal of manifest.proposals) {
+			if (proposal.status !== "proposed") continue;
+			const result = await apply.apply(task, proposal, {
+				fields:
+					proposal.type === "create_card" ||
+					proposal.type === "update_card" ||
+					proposal.type === "update_draft"
+						? proposal.fields
+						: undefined,
+			});
+			if (result.ok) {
+				proposal.status = "applied";
+				applied += 1;
+			} else {
+				proposal.status = "rejected";
+				firstError ??= result.error ?? "Could not add generated flashcard";
+			}
+		}
+
+		this.actions().updateManifest(task.id, manifest);
+		this.threadActions().updateManifest(threadId, manifest);
+		this.threadActions().setState(threadId, "archived", Date.now());
+		this.invalidate();
+
+		if (applied > 0) {
+			notify().cardsCreated(
+				applied,
+				this.resolveSourceFile(task.context)?.basename,
+			);
+		}
+		if (firstError) notify().error(firstError);
 	}
 
 	private async applyGeneratedDrafts(
@@ -419,6 +480,7 @@ export class AssistantService {
 		const settings = this.plugin.settings;
 		const workflow = resolveAIWorkflow(settings, task.presetId, {
 			hasSelection: !!task.context.selectedText?.trim(),
+			hasSourceText: !!task.context.source?.text?.trim(),
 			hasCard: !!task.context.card,
 			hasDraftCard: !!task.context.draftCard,
 		});

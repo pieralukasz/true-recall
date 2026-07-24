@@ -58,6 +58,32 @@ export interface ReviewAnswerTransitionOptions {
 	skipLeechSuspend?: boolean;
 }
 
+export function preparePreviewAnswer<T extends CardSchedulingMeta>(
+	card: T,
+	rating: Grade,
+	requeuePosition: number,
+	now: Date = new Date(),
+): {
+	answeredCard: T;
+	requeueData?: { card: T; position: number };
+} {
+	const delaySeconds =
+		rating === Rating.Again ? 60 : rating === Rating.Hard ? 600 : 0;
+	const answeredCard = { ...card, previewDue: undefined } as T;
+	if (delaySeconds === 0) return { answeredCard };
+
+	return {
+		answeredCard,
+		requeueData: {
+			card: {
+				...answeredCard,
+				previewDue: new Date(now.getTime() + delaySeconds * 1000).toISOString(),
+			} as T,
+			position: requeuePosition,
+		},
+	};
+}
+
 export class ReviewSessionEngine {
 	getActiveCards(
 		allCards: CardSchedulingMeta[],

@@ -547,3 +547,154 @@ describe("Queue Building - Advanced", () => {
 		});
 	});
 });
+
+describe("Anki-style custom study queues", () => {
+	let reviewService: ReviewService;
+	let fsrsService: FSRSService;
+	const baseOptions: QueueBuildOptions = {
+		newCardsLimit: 20,
+		reviewsLimit: 200,
+		reviewedToday: new Set(),
+	};
+
+	beforeEach(() => {
+		vi.useFakeTimers();
+		vi.setSystemTime(new Date("2024-06-15T10:00:00Z"));
+		reviewService = new ReviewService();
+		fsrsService = new FSRSService(createDefaultFSRSSettings());
+	});
+
+	afterEach(() => {
+		vi.useRealTimers();
+	});
+
+	it("builds forgotten cards from Again review-log matches, including cards reviewed today", () => {
+		const forgotten = createMockFlashcard({
+			id: "forgotten",
+			fsrs: { state: State.Review },
+		});
+		const other = createMockFlashcard({
+			id: "other",
+			fsrs: { state: State.Review },
+		});
+
+		const queue = reviewService.buildQueue([forgotten, other], fsrsService, {
+			...baseOptions,
+			reviewedToday: new Set(["forgotten"]),
+			customStudy: { kind: "forgotten", days: 1 },
+			forgottenCardIds: new Set(["forgotten"]),
+		});
+
+		expect(queue.map((card) => card.id)).toEqual(["forgotten"]);
+	});
+
+	it("includes only non-new cards inside the review-ahead window", () => {
+		const cards = [
+			createCardWithDue("tomorrow", State.Review, 24 * 60),
+			createCardWithDue("next-week", State.Review, 7 * 24 * 60),
+			createCardWithDue("new", State.New, 0),
+		];
+
+		const queue = reviewService.buildQueue(cards, fsrsService, {
+			...baseOptions,
+			customStudy: { kind: "review-ahead", days: 2 },
+		});
+
+		expect(queue.map((card) => card.id)).toEqual(["tomorrow"]);
+	});
+
+	it("previews only new cards added inside the selected day window", () => {
+		const recent = createMockFlashcard({
+			id: "recent",
+			fsrs: {
+				state: State.New,
+				createdAt: new Date("2024-06-14T12:00:00Z").getTime(),
+			},
+		});
+		const old = createMockFlashcard({
+			id: "old",
+			fsrs: {
+				state: State.New,
+				createdAt: new Date("2024-06-12T12:00:00Z").getTime(),
+			},
+		});
+
+		const queue = reviewService.buildQueue([recent, old], fsrsService, {
+			...baseOptions,
+			dayStartHour: 4,
+			customStudy: { kind: "preview-new", days: 2 },
+		});
+
+		expect(queue.map((card) => card.id)).toEqual(["recent"]);
+	});
+
+	it("applies include and exclude tags before the state-or-tag limit", () => {
+		const cards = [
+			createMockFlashcard({ id: "keep", tags: ["biology"] }),
+			createMockFlashcard({ id: "exclude", tags: ["biology", "skip"] }),
+			createMockFlashcard({ id: "other", tags: ["history"] }),
+		];
+
+		const queue = reviewService.buildQueue(cards, fsrsService, {
+			...baseOptions,
+			customStudy: {
+				kind: "state-or-tag",
+				cardState: "all",
+				cardLimit: 10,
+				tagsToInclude: ["biology"],
+				tagsToExclude: ["skip"],
+			},
+		});
+
+		expect(queue.map((card) => card.id)).toEqual(["keep"]);
+	});
+
+	it("replays a materialized filtered deck in its captured order", () => {
+		const cards = [
+			createMockFlashcard({ id: "first", tags: ["old-filter"] }),
+			createMockFlashcard({ id: "second", tags: ["old-filter"] }),
+			createMockFlashcard({ id: "outside", tags: ["new-filter"] }),
+		];
+
+		const queue = reviewService.buildQueue(cards, fsrsService, {
+			...baseOptions,
+			reviewedToday: new Set(["first", "second"]),
+			customStudy: {
+				kind: "state-or-tag",
+				cardState: "all",
+				cardLimit: 100,
+				tagsToInclude: ["new-filter"],
+				tagsToExclude: [],
+			},
+			materializedCardIds: ["second", "first"],
+		});
+
+		expect(queue.map((card) => card.id)).toEqual(["second", "first"]);
+	});
+
+	it("omits cards removed after a filtered deck was materialized", () => {
+		const remaining = createMockFlashcard({ id: "remaining" });
+
+		const queue = reviewService.buildQueue([remaining], fsrsService, {
+			...baseOptions,
+			customStudy: { kind: "forgotten", days: 1 },
+			materializedCardIds: ["deleted", "remaining"],
+		});
+
+		expect(queue.map((card) => card.id)).toEqual(["remaining"]);
+	});
+
+	it("keeps filtered-deck cards out of a regular review queue", () => {
+		const cards = [
+			createCardWithDue("in-filtered-deck", State.Review, -60),
+			createCardWithDue("regular", State.Review, -30),
+		];
+
+		const queue = reviewService.buildQueue(cards, fsrsService, {
+			...baseOptions,
+			temporaryDeckCardIds: new Set(["in-filtered-deck"]),
+		});
+
+		expect(queue.map((card) => card.id)).toEqual(["regular"]);
+	});
+});

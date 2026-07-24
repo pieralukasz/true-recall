@@ -58,6 +58,8 @@ export interface AssistantContext {
 	conversation?: AssistantConversationTurn[];
 	source?: AssistantSourceContext;
 	activeNotePath?: string;
+	/** Apply generated cards directly when invoked from a source-note action. */
+	applyGeneratedCardsImmediately?: boolean;
 }
 
 export interface Citation {

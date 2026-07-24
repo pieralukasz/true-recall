@@ -86,7 +86,21 @@ export class SessionService {
 				delete filters.mode;
 				delete filters.reviewOrder;
 				delete filters.cardLimit;
-				return { ...base, ...filters };
+				const resolved = { ...base, ...filters };
+				if (!config.customStudy) return resolved;
+
+				const preview =
+					config.customStudy.kind === "forgotten" ||
+					config.customStudy.kind === "preview-new" ||
+					(config.customStudy.kind === "state-or-tag" &&
+						config.customStudy.cardState === "all");
+
+				return {
+					...resolved,
+					ignoreDailyLimits: true,
+					bypassScheduling: true,
+					crammingMode: preview,
+				};
 			}
 		}
 	}

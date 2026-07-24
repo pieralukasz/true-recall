@@ -13,6 +13,7 @@ import type {
 	ReviewResult,
 	ReviewSessionStats,
 } from "../../types";
+import type { CustomStudyRequest } from "../../types/review-session.types";
 import type {
 	FSRSSettings,
 	NewCardOrder,
@@ -68,6 +69,14 @@ export interface QueueBuildOptions {
 	cardLimit?: number;
 	/** Include cards due within the next N days (study ahead) */
 	studyAheadDays?: number;
+	/** Anki-style custom-study mode for this queue. */
+	customStudy?: CustomStudyRequest;
+	/** Cards with an Again answer inside the selected custom-study window. */
+	forgottenCardIds?: ReadonlySet<string>;
+	/** Exact ordered card ids captured in a materialized filtered deck. */
+	materializedCardIds?: readonly string[];
+	/** Cards currently owned by a different temporary filtered deck. */
+	temporaryDeckCardIds?: ReadonlySet<string>;
 	/** Optional per-card preset assignment (global mode) */
 	cardPresetById?: Map<string, string>;
 	/** Optional daily limits per preset (global mode) */

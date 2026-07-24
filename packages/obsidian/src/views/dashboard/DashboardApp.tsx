@@ -20,6 +20,7 @@ import { NoteList } from "@true-recall/obsidian/features/study/ui/dashboard/comp
 import { OrphanedTab } from "@true-recall/obsidian/features/study/ui/dashboard/components/OrphanedTab";
 import { ProjectsTab } from "@true-recall/obsidian/features/study/ui/dashboard/components/ProjectsTab";
 import { RecentlyStudiedBar } from "@true-recall/obsidian/features/study/ui/dashboard/components/RecentlyStudiedBar";
+import { TemporaryCustomStudyDeckCard } from "@true-recall/obsidian/features/study/ui/dashboard/components/TemporaryCustomStudyDeckCard";
 import { TodayActionBar } from "@true-recall/obsidian/features/study/ui/dashboard/components/TodayActionBar";
 import { aggregateProjectData } from "@true-recall/obsidian/features/study/ui/dashboard/helpers/project-aggregation";
 import { projectMatchesSearch } from "@true-recall/obsidian/features/study/ui/dashboard/helpers/project-tree-flatten";
@@ -352,6 +353,12 @@ export function DashboardApp({ isViewVisible }: DashboardAppProps) {
 								<RecentlyStudiedBar notes={projectData.recentlyStudied} />
 							)}
 						</>
+					)}
+
+					{_settings.temporaryCustomStudyDeck && (
+						<TemporaryCustomStudyDeckCard
+							deck={_settings.temporaryCustomStudyDeck}
+						/>
 					)}
 
 					<SearchCombobox

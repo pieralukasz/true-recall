@@ -12,6 +12,7 @@ export const VIEW_TYPE_DASHBOARD = "true-recall-dashboard-view";
 export const VIEW_TYPE_CARD_BROWSER = "true-recall-card-browser";
 export const VIEW_TYPE_STATS = "true-recall-stats";
 export const VIEW_TYPE_QUICK_NOTE_EDITOR = "true-recall-quick-note-editor";
+export const VIEW_TYPE_ASSISTANT_EDITOR = "true-recall-assistant-editor";
 export const VIEW_TYPE_NOTE_TYPE_MANAGER = "true-recall-note-type-manager";
 export const VIEW_TYPE_CARD_TYPES_EDITOR = "true-recall-card-types-editor";
 export const UNASSIGNED_PATH = "__unassigned__";

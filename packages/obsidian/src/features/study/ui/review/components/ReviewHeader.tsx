@@ -58,7 +58,7 @@ export function ReviewHeader({
 					<>
 						<Dot />
 						<span class="ep:flex ep:items-center ep:justify-center ep:h-5 ep:px-1.5 ep:rounded-full ep:text-ui-smaller ep:font-semibold ep:bg-obs-orange/20 ep:text-obs-orange">
-							Cram
+							Preview
 						</span>
 					</>
 				)}

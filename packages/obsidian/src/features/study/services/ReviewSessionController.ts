@@ -2,6 +2,7 @@ import { State } from "ts-fsrs";
 
 import {
 	type INoteResolver,
+	preparePreviewAnswer,
 	ReviewSessionEngine,
 } from "@true-recall/core/services";
 import { ReviewService } from "@true-recall/core/services/review/review.service";
@@ -13,9 +14,11 @@ import type {
 	ReviewResult,
 } from "@true-recall/core/types";
 import type { SessionFilters } from "@true-recall/core/types/review-session.types";
+import { isPreviewCustomStudy } from "@true-recall/core/types/review-session.types";
 
 import { ObsidianNoteResolver } from "@true-recall/obsidian/adapters/ObsidianNoteResolver";
 import { ReviewAnswerCommand } from "@true-recall/obsidian/commands/commands/review-answer.cmd";
+import { G } from "@true-recall/obsidian/data";
 import { Q } from "@true-recall/obsidian/data/queries";
 import type { ReviewApi } from "@true-recall/obsidian/store";
 
@@ -122,6 +125,61 @@ export class ReviewSessionController {
 		const isNewCard = card.fsrs.state === State.New;
 		const previousState = card.fsrs.state;
 
+		if (isPreviewCustomStudy(filters)) {
+			const { answeredCard, requeueData } = preparePreviewAnswer(
+				card,
+				rating,
+				review.queue.length,
+			);
+			const hasMore = review.recordAnswerAndNext(
+				rating,
+				answeredCard,
+				requeueData,
+			);
+			if (!requeueData) {
+				this.plugin.removeCardsFromTemporaryDeck(filters.temporaryDeckId, [
+					card.id,
+				]);
+			}
+			this.plugin.sessionPersistence.recordPreviewReview(
+				card.id,
+				responseTime,
+				rating,
+				previousState,
+				preset.name,
+			);
+			this.plugin.dataLayer?.invalidateGroups([G.STATS]);
+
+			const result: ReviewResult = {
+				cardId: card.id,
+				rating,
+				timestamp: Date.now(),
+				responseTime,
+				previousState,
+				scheduledDays: 0,
+				elapsedDays: card.fsrs.lastReview
+					? Math.max(
+							0,
+							Math.floor(
+								(Date.now() - new Date(card.fsrs.lastReview).getTime()) /
+									(24 * 60 * 60 * 1000),
+							),
+						)
+					: 0,
+			};
+
+			return {
+				card,
+				updatedCard: answeredCard,
+				result,
+				hasMore,
+				nextCard: hasMore ? review.getCurrentCard() : null,
+				preset,
+				leechSuspended: false,
+				buriedSiblings: [],
+			};
+		}
+
 		const transition = this.engine.prepareAnswer(
 			card,
 			rating,
@@ -172,6 +230,16 @@ export class ReviewSessionController {
 		);
 		const buriedSiblings =
 			preset.burySiblings !== false ? this.burySiblingCards(card, review) : [];
+		const returnedCardIds = buriedSiblings.map((sibling) => sibling.id);
+		if (!transition.requeueData) {
+			returnedCardIds.push(card.id);
+		}
+		if (returnedCardIds.length > 0) {
+			this.plugin.removeCardsFromTemporaryDeck(
+				filters.temporaryDeckId,
+				returnedCardIds,
+			);
+		}
 
 		// Burying removes siblings from the queue, which shifts the requeued
 		// "Again" copy left of its captured position — undo would then splice

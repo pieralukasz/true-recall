@@ -206,7 +206,7 @@ export async function generateWithPreset(
 		return;
 	}
 
-	enqueueGenerationDraft(plugin, preset, text, file);
+	enqueueGeneration(plugin, preset, text, file);
 }
 
 export async function generateWithPresetGlobal(
@@ -231,11 +231,11 @@ export async function generateWithPresetGlobal(
 		return;
 	}
 
-	enqueueGenerationDraft(plugin, preset, text, file);
+	enqueueGeneration(plugin, preset, text, file);
 }
 
 /** Deprecated AI Generation entry points now delegate to the Assistant queue. */
-function enqueueGenerationDraft(
+function enqueueGeneration(
 	plugin: TrueRecallPlugin,
 	preset: GenerationPreset,
 	text: string,
@@ -252,8 +252,9 @@ function enqueueGenerationDraft(
 			selectedText: text,
 			activeNotePath: file.path,
 			source: { path: file.path, text },
+			applyGeneratedCardsImmediately: true,
 		},
-		state: "inbox",
+		state: "active",
 		displayMessage: `Generate with ${preset.name}`,
 	});
 	notify().info(`Generating with ${preset.name} in the background…`);

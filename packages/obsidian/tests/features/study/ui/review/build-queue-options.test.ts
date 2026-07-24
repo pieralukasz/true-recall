@@ -63,6 +63,11 @@ function makeSessionPersistence(
 		getNewCardsStudiedToday: vi.fn(() => newStudied),
 		getReviewCardsCompletedToday: vi.fn(() => reviewsCompleted),
 		getTodayProgressByPreset: vi.fn(() => presetProgress),
+		getCardsRatedAgainWithinDays: vi.fn(
+			() =>
+				(overrides.cardsRatedAgainWithinDays ??
+					new Set<string>()) as Set<string>,
+		),
 	} as unknown as SessionPersistenceService;
 }
 
@@ -314,5 +319,21 @@ describe("buildQueueOptions — filter passthrough", () => {
 		expect(result.difficultyRange).toEqual({ min: 0.3, max: 0.8 });
 		expect(result.lapsesRange).toEqual({ min: 1, max: 5 });
 		expect(result.stabilityRange).toEqual({ min: 2, max: 30 });
+	});
+
+	it("resolves forgotten cards from the review log window", () => {
+		const forgotten = new Set(["card-1", "card-2"]);
+		const persistence = makeSessionPersistence({
+			cardsRatedAgainWithinDays: forgotten,
+		});
+		const filters = makeFilters({
+			customStudy: { kind: "forgotten", days: 7 },
+		});
+
+		const result = buildQueueOptions(filters, settings, persistence);
+
+		expect(result.customStudy).toEqual({ kind: "forgotten", days: 7 });
+		expect(result.forgottenCardIds).toBe(forgotten);
+		expect(persistence.getCardsRatedAgainWithinDays).toHaveBeenCalledWith(7);
 	});
 });
