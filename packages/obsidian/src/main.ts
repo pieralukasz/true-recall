@@ -4,6 +4,7 @@ import { TrueRecallApp } from "@true-recall/core/app";
 import {
 	VIEW_TYPE_ASSISTANT_EDITOR,
 	VIEW_TYPE_ASSISTANT_INBOX,
+	VIEW_TYPE_ASSISTANT_WORKSPACE,
 	VIEW_TYPE_CARD_BROWSER,
 	VIEW_TYPE_CARD_TYPES_EDITOR,
 	VIEW_TYPE_DASHBOARD,
@@ -34,6 +35,7 @@ import type { CommandService } from "@true-recall/obsidian/commands";
 import type { DataLayer } from "@true-recall/obsidian/data";
 import { G } from "@true-recall/obsidian/data";
 import { Q } from "@true-recall/obsidian/data/queries";
+import type { AIWorkspaceMode } from "@true-recall/obsidian/features/assistant/ui/ai-workspace-modes";
 import type { NoteStatusCache } from "@true-recall/obsidian/features/core/cache/note-status-cache.service";
 import { ReviewSessionController } from "@true-recall/obsidian/features/study/services/ReviewSessionController";
 import {
@@ -59,6 +61,7 @@ import {
 	isViewAllowedOnCurrentPlatform,
 } from "@true-recall/obsidian/utils/platform";
 import { AssistantInboxView } from "@true-recall/obsidian/views/assistant/AssistantInboxView";
+import { AssistantWorkspaceView } from "@true-recall/obsidian/views/assistant/AssistantWorkspaceView";
 import { CardBrowserView } from "@true-recall/obsidian/views/browser/CardBrowserView";
 import { DashboardView } from "@true-recall/obsidian/views/dashboard/DashboardView";
 import { AssistantEditorView } from "@true-recall/obsidian/views/modal-window/AssistantEditorView";
@@ -404,6 +407,11 @@ export default class TrueRecallPlugin extends Plugin {
 		registerIfAllowed(
 			VIEW_TYPE_ASSISTANT_INBOX,
 			(leaf) => new AssistantInboxView(leaf, this),
+		);
+
+		registerIfAllowed(
+			VIEW_TYPE_ASSISTANT_WORKSPACE,
+			(leaf) => new AssistantWorkspaceView(leaf, this),
 		);
 
 		registerCommands(this);
@@ -787,6 +795,25 @@ export default class TrueRecallPlugin extends Plugin {
 				);
 			}, 50);
 		}
+	}
+
+	/** Reveals the docked AI workspace, normally in the right sidebar so it can
+	 * sit next to a review. */
+	async openAssistantWorkspace(mode?: AIWorkspaceMode): Promise<void> {
+		const existingLeaf = getView(this.app, VIEW_TYPE_ASSISTANT_WORKSPACE);
+		if (existingLeaf) {
+			if (mode)
+				await existingLeaf.setViewState({
+					type: VIEW_TYPE_ASSISTANT_WORKSPACE,
+					active: true,
+					state: { mode },
+				});
+			void this.app.workspace.revealLeaf(existingLeaf);
+			return;
+		}
+		await activateView(this.app, VIEW_TYPE_ASSISTANT_WORKSPACE, {
+			state: mode ? { mode } : undefined,
+		});
 	}
 
 	openCardTypesEditor(noteTypeId?: string): void {

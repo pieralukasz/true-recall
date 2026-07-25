@@ -29,11 +29,9 @@ import {
 import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpClient";
 import { ReviewUndoHook } from "@true-recall/obsidian/commands";
 import { G, getDataLayer, Q } from "@true-recall/obsidian/data";
-import {
-	openAskAiModal,
-	openAssistantThreadModal,
-} from "@true-recall/obsidian/features/assistant/ui/AskAiModal";
-import { openAskAiPopover } from "@true-recall/obsidian/features/assistant/ui/openAskAiPopover";
+import { openAssistantThreadModal } from "@true-recall/obsidian/features/assistant/ui/AskAiModal";
+import { assistantContextFromCard } from "@true-recall/obsidian/features/assistant/ui/ai-context-source";
+import { openAiWorkspace } from "@true-recall/obsidian/features/assistant/ui/open-ai-workspace";
 import type { ReviewSessionController } from "@true-recall/obsidian/features/study/services/ReviewSessionController";
 import type { PresetPickerOption } from "@true-recall/obsidian/features/study/ui/review/components";
 import {
@@ -534,7 +532,13 @@ export class ReviewView extends ItemView {
 		this.askBubble = new ReviewSelectionBubble({
 			isEnabled: () => isPluginEnabled(this.plugin.settings, "ai-assistant"),
 			getContext: (text) => this.buildAssistantContext(text),
-			onAsk: (rect, context) => openAskAiPopover(this.plugin, rect, context),
+			onAsk: (rect, context) =>
+				openAiWorkspace(this.plugin, {
+					intent: "selection",
+					anchor: rect,
+					context,
+					// The bubble only closes surfaces it owns; the docked panel stays.
+				}) ?? (() => {}),
 		});
 		this.askBubble.register();
 
@@ -558,21 +562,8 @@ export class ReviewView extends ItemView {
 
 	private buildAssistantContext(selectedText?: string): AssistantContext {
 		const card = this.review.getCurrentCard();
-		const context: AssistantContext = {};
-		if (selectedText) context.selectedText = selectedText;
-		if (card) {
-			context.card = {
-				cardId: card.id,
-				noteId: card.noteId,
-				noteTypeId: card.fsrs.noteTypeId,
-				question: card.question,
-				answer: card.answer,
-				sourceUid: card.sourceUid,
-				sourceNotePath: card.sourceNotePath,
-			};
-			context.activeNotePath = card.sourceNotePath;
-		}
-		return context;
+		if (card) return assistantContextFromCard(card, selectedText);
+		return selectedText ? { selectedText } : {};
 	}
 
 	private onAssistantCardUpdated = (e: Event): void => {
@@ -942,9 +933,12 @@ export class ReviewView extends ItemView {
 				item
 					.setTitle("Ask AI about this card")
 					.setIcon("sparkles")
-					.onClick(() =>
-						openAskAiModal(this.plugin, this.buildAssistantContext()),
-					),
+					.onClick(() => {
+						openAiWorkspace(this.plugin, {
+							intent: "compose",
+							context: this.buildAssistantContext(),
+						});
+					}),
 			);
 			menu.addSeparator();
 		}

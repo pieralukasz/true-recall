@@ -32,6 +32,9 @@ interface AskAiPromptProps {
 	class?: string;
 	presentation?: "compact" | "workspace";
 	initialMode?: AIWorkspaceMode;
+	/** Fires when the composer gains or loses draft text. Long-lived surfaces use
+	 * it to hold the subject still while the user is mid-sentence. */
+	onDraftChange?: (hasDraft: boolean) => void;
 }
 
 const WORKFLOW_ICONS: Record<AIWorkflow["kind"], string> = {
@@ -81,9 +84,14 @@ export function AskAiPrompt({
 	class: cls,
 	presentation = "compact",
 	initialMode = "assistant",
+	onDraftChange,
 }: AskAiPromptProps) {
 	const plugin = usePlugin();
 	const [text, setText] = useState("");
+	const handleTextChange = (value: string) => {
+		setText(value);
+		onDraftChange?.(value.trim() !== "");
+	};
 	const [showAllWorkflows, setShowAllWorkflows] = useState(false);
 	const [activeMode, setActiveMode] = useState<AIWorkspaceMode>(() =>
 		isAIWorkspaceModeAvailable(initialMode, context)
@@ -128,6 +136,8 @@ export function AskAiPrompt({
 				`Generating with ${displayMessage ?? "preset"} in the background…`,
 			);
 		}
+		// The subject may follow the review queue again once nothing is pending.
+		onDraftChange?.(false);
 		onSubmitted(threadId, mode);
 	};
 
@@ -166,7 +176,7 @@ export function AskAiPrompt({
 						variant="workspace"
 						class="tr-assistant-selection-prompt__composer"
 						value={text}
-						onChange={setText}
+						onChange={handleTextChange}
 						onSubmit={() => submit(text, undefined, "inline")}
 						onDismiss={onDismiss}
 						autoFocus={autoFocus}
@@ -269,7 +279,7 @@ export function AskAiPrompt({
 				<AiComposer
 					variant="workspace"
 					value={text}
-					onChange={setText}
+					onChange={handleTextChange}
 					onSubmit={() => submit(text, undefined, "inline")}
 					onDismiss={onDismiss}
 					autoFocus={autoFocus}

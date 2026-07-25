@@ -1,5 +1,3 @@
-import { useEffect, useRef, useState } from "preact/hooks";
-
 import type { AssistantContext } from "@true-recall/core/ai/assistant";
 
 import { usePlugin } from "@true-recall/obsidian/preact/ObsidianContext";
@@ -7,7 +5,7 @@ import { usePlugin } from "@true-recall/obsidian/preact/ObsidianContext";
 import { AskAiPrompt } from "./AskAiPrompt";
 import { AssistantInlineTask } from "./AssistantInlineTask";
 import type { AIWorkspaceMode } from "./ai-workspace-modes";
-import { handoffUnfinishedThread } from "./thread-handoff";
+import { useAssistantThread } from "./useAssistantThread";
 
 interface AssistantEditorPanelProps {
 	context: AssistantContext;
@@ -15,25 +13,15 @@ interface AssistantEditorPanelProps {
 	initialMode?: AIWorkspaceMode;
 }
 
-/** Prompt → thread lifecycle for the contextual AI workspace. On unmount
- * (window closed or editor session ended) an unfinished thread is handed off
- * to the AI Inbox instead of being lost. */
+/** The contextual AI workspace as hosted by a popout window: the surface goes
+ * away when the thread is done, because the window has nothing else to show. */
 export function AssistantEditorPanel({
 	context,
 	onClose,
 	initialMode = "assistant",
 }: AssistantEditorPanelProps) {
 	const plugin = usePlugin();
-	const [threadId, setThreadId] = useState<string | null>(null);
-	const threadIdRef = useRef<string | null>(null);
-	threadIdRef.current = threadId;
-
-	useEffect(() => {
-		return () => {
-			if (threadIdRef.current)
-				handoffUnfinishedThread(plugin, threadIdRef.current);
-		};
-	}, [plugin]);
+	const { threadId, showThread } = useAssistantThread();
 
 	return (
 		<div class="tr-assistant-editor-panel ep:flex ep:flex-col ep:min-w-0">
@@ -60,7 +48,7 @@ export function AssistantEditorPanel({
 							onClose();
 							return;
 						}
-						setThreadId(id);
+						showThread(id);
 					}}
 					onDismiss={onClose}
 				/>

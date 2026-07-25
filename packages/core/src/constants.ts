@@ -365,6 +365,7 @@ export const DEFAULT_CUSTOM_BASE_URL = "http://localhost:11434/v1";
 export const DEFAULT_LMSTUDIO_BASE_URL = "http://localhost:1234/v1";
 
 export const VIEW_TYPE_ASSISTANT_INBOX = "true-recall-assistant-inbox";
+export const VIEW_TYPE_ASSISTANT_WORKSPACE = "true-recall-assistant-workspace";
 
 export const TRUERECALL_WEB_URL = "https://truerecall.app";
 export const TRUERECALL_NEWSLETTER_URL = "https://truerecall.app/#newsletter";
