@@ -585,9 +585,13 @@ export class ReviewView extends ItemView {
 				onOpenDashboard: () => void this.handleOpenDashboard(),
 				onEndSession: () => this.handleNextSession(),
 				onActionsMenu: (e: MouseEvent) => this.showActionsMenu(e),
-				onPolishMenu: isPluginEnabled(this.plugin.settings, "card-polish")
-					? (e: MouseEvent) => this.openCardPolishMenu(e)
-					: undefined,
+				// Polish presets now run in the shared AI workspace, so the action
+				// needs both the preset family and the surface to be enabled.
+				onPolishMenu:
+					isPluginEnabled(this.plugin.settings, "card-polish") &&
+					isPluginEnabled(this.plugin.settings, "ai-assistant")
+						? (e: MouseEvent) => this.openCardPolishMenu(e)
+						: undefined,
 				isCustomSession: isCustomSession(this.filters),
 				crammingMode: this.filters.crammingMode ?? false,
 				showHeader: this.plugin.settings.showReviewHeader,

@@ -8,10 +8,10 @@ export const cardPolishManifest: PluginManifest = {
 		id: "card-polish",
 		name: "Card Polish",
 		description:
-			"Transform flashcards mid-review or inside the Add Flashcard modal — fix formatting, simplify wording, or run your own custom instructions. Each preset can auto-apply or show a preview, and supports its own hotkey during review.",
+			"Presets that transform an existing flashcard — fix formatting, simplify wording, split a card. They run in the AI workspace (✨ during review, or the Card Polish tab), so the Assistant feature has to be on too.",
 		features: [
-			"Polish cards mid-review",
-			"Polish + fill in the Add Flashcard modal",
+			"Polish cards mid-review from the ✨ action",
+			"Polish + fill while editing a flashcard",
 			"Per-preset auto-apply or preview",
 			"Hotkey support for each preset (review only)",
 			"Optional source-note and related-card context per preset",

@@ -7,9 +7,10 @@ export const aiAssistantManifest: PluginManifest = {
 		id: "ai-assistant",
 		name: "Assistant",
 		description:
-			"Ask questions, research concepts, and coordinate AI work across your notes and flashcards.",
+			"The AI workspace itself: ask questions, research concepts, and run any saved preset. Generator and Card Polish presets appear inside it, so turning this off hides every AI surface.",
 		features: [
-			"Free-form questions and research",
+			"Docked Ask AI panel that follows the card you are reviewing",
+			"Anchored preset list for one-click saved instructions",
 			"Context from the current note, selection, or flashcard",
 			"Async task queue — review is never blocked",
 			"Shared AI Inbox with Generator and Card Polish",

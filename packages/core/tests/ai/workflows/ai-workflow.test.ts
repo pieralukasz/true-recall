@@ -84,6 +84,60 @@ describe("AI workflow facade", () => {
 		]);
 	});
 
+	it("hides a preset family whose feature is switched off", () => {
+		const workflows = listAIWorkflows(settings, {
+			hasSelection: true,
+			hasCard: true,
+			hasDraftCard: false,
+			isFamilyEnabled: (kind) => kind !== "modify-card",
+		});
+
+		expect(workflows.map((workflow) => workflow.id)).toEqual([
+			assistantWorkflowId("explain"),
+			generationWorkflowId("basic"),
+		]);
+	});
+
+	it("lists nothing when every family is switched off", () => {
+		expect(
+			listAIWorkflows(settings, {
+				hasSelection: true,
+				hasCard: true,
+				hasDraftCard: true,
+				isFamilyEnabled: () => false,
+			}),
+		).toEqual([]);
+	});
+
+	it("keeps resolution lenient so a family disabled mid-flight still runs", () => {
+		expect(
+			resolveAIWorkflow(settings, cardPolishWorkflowId("shorten"), {
+				hasSelection: false,
+				hasCard: true,
+				hasDraftCard: false,
+			}),
+		).toMatchObject({ kind: "modify-card", sourcePresetId: "shorten" });
+	});
+
+	it("surfaces autoApply so the UI can show apply-vs-preview before running", () => {
+		const workflows = listAIWorkflows(
+			{
+				...settings,
+				cardPolish: {
+					...settings.cardPolish,
+					userPresets: [
+						{ ...settings.cardPolish.userPresets[0], autoApply: true },
+					],
+				},
+			},
+			{ hasSelection: false, hasCard: true, hasDraftCard: false },
+		);
+
+		expect(
+			workflows.find((workflow) => workflow.kind === "modify-card")?.autoApply,
+		).toBe(true);
+	});
+
 	it("resolves raw Assistant preset ids from tasks created before namespacing", () => {
 		expect(
 			resolveAIWorkflow(settings, "explain", {

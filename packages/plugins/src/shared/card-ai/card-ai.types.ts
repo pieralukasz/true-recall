@@ -2,8 +2,6 @@ import { z } from "zod";
 
 import type { CardFields } from "@true-recall/core/types/card-ai-preset.types";
 
-import type { CardAITargetOperation } from "./card-ai-target";
-
 // Re-export the persisted data shapes so consumers can import everything
 // card-ai-related from this barrel without reaching into core's settings
 // types directly.
@@ -12,6 +10,9 @@ export type {
 	CardAIUserSettings,
 	CardFields,
 } from "@true-recall/core/types/card-ai-preset.types";
+
+/** Whether a transform rewrites an existing card or drafts a new one. */
+export type CardAIOperation = "edit" | "create";
 
 export interface CardAIContext {
 	sourceNotePath?: string;
@@ -23,7 +24,7 @@ export interface CardAIRequest {
 	fields: CardFields;
 	noteType: { name: string; fields: readonly string[] };
 	prompt: string;
-	operation: CardAITargetOperation;
+	operation: CardAIOperation;
 	context?: CardAIContext;
 	signal?: AbortSignal;
 }

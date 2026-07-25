@@ -19,6 +19,10 @@ export interface AIWorkflowContext {
 	hasSourceText?: boolean;
 	hasCard: boolean;
 	hasDraftCard: boolean;
+	/** Hides a whole preset family whose feature the user turned off. Omit to
+	 * list everything — task resolution must stay lenient so a family disabled
+	 * mid-flight cannot orphan a queued task. */
+	isFamilyEnabled?: (kind: AIWorkflowKind) => boolean;
 }
 
 const AGENT_PREFIX = "agent:";
@@ -46,17 +50,23 @@ export function listAIWorkflows(
 	settings: TrueRecallSettings,
 	context: AIWorkflowContext,
 ): AIWorkflow[] {
-	const workflows: AIWorkflow[] = (settings.assistantPresets ?? []).map(
-		(preset) => ({
-			id: assistantWorkflowId(preset.id),
-			name: preset.name,
-			kind: "agent",
-			instruction: preset.instruction,
-			sourcePresetId: preset.id,
-		}),
-	);
+	const isEnabled = (kind: AIWorkflowKind): boolean =>
+		context.isFamilyEnabled?.(kind) ?? true;
 
-	if (context.hasSelection || context.hasSourceText) {
+	const workflows: AIWorkflow[] = isEnabled("agent")
+		? (settings.assistantPresets ?? []).map((preset) => ({
+				id: assistantWorkflowId(preset.id),
+				name: preset.name,
+				kind: "agent",
+				instruction: preset.instruction,
+				sourcePresetId: preset.id,
+			}))
+		: [];
+
+	if (
+		isEnabled("generate-cards") &&
+		(context.hasSelection || context.hasSourceText)
+	) {
 		for (const preset of settings.generationPresets ?? []) {
 			workflows.push({
 				id: generationWorkflowId(preset.id),
@@ -68,7 +78,7 @@ export function listAIWorkflows(
 		}
 	}
 
-	if (context.hasCard || context.hasDraftCard) {
+	if (isEnabled("modify-card") && (context.hasCard || context.hasDraftCard)) {
 		for (const preset of settings.cardPolish?.userPresets ?? []) {
 			workflows.push({
 				id: cardPolishWorkflowId(preset.id),

@@ -21,6 +21,7 @@ import {
 	isAIWorkspaceModeAvailable,
 	workflowMatchesMode,
 } from "./ai-workspace-modes";
+import { isWorkflowFamilyEnabled } from "./workflow-family-gate";
 
 /** Which half of the surface the user lands on. `presets` is the fast path — a
  * one-click list of saved instructions; `compose` is the roomy workspace with
@@ -114,7 +115,14 @@ export function AskAiPrompt({
 		hasSourceText: !!context.source?.text?.trim(),
 		hasCard: !!context.card,
 		hasDraftCard: !!context.draftCard,
+		isFamilyEnabled: (kind) => isWorkflowFamilyEnabled(plugin.settings, kind),
 	});
+	const isModeAvailable = (mode: AIWorkspaceMode): boolean =>
+		isAIWorkspaceModeAvailable(mode, context) &&
+		isWorkflowFamilyEnabled(
+			plugin.settings,
+			getAIWorkspaceMode(mode).workflowKind,
+		);
 	const selectedText = context.selectedText?.trim();
 	const canSend = text.trim() !== "";
 	const modeDefinition = getAIWorkspaceMode(activeMode);
@@ -204,7 +212,7 @@ export function AskAiPrompt({
 		<div class={cn("tr-assistant-prompt", cls)}>
 			<AIWorkspaceNav
 				activeMode={activeMode}
-				isAvailable={(mode) => isAIWorkspaceModeAvailable(mode, context)}
+				isAvailable={isModeAvailable}
 				onChange={(mode) => {
 					setActiveMode(mode);
 					setShowAllWorkflows(false);
