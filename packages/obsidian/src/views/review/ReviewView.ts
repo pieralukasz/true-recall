@@ -885,11 +885,13 @@ export class ReviewView extends ItemView {
 	// ─── Actions menu ────────────────────────────────────────────────────
 
 	private openCardPolishMenu(e: MouseEvent): void {
-		window.dispatchEvent(
-			new CustomEvent("true-recall:card-polish", {
-				detail: { kind: "review", anchor: e.currentTarget },
-			}),
-		);
+		const anchor = e.currentTarget;
+		openAiWorkspace(this.plugin, {
+			intent: "preset",
+			anchor: anchor instanceof HTMLElement ? anchor : undefined,
+			mode: "card-polish",
+			context: this.buildAssistantContext(),
+		});
 	}
 
 	private showActionsMenu(event: MouseEvent): void {
