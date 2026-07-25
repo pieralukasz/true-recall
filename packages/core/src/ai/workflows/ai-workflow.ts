@@ -8,6 +8,10 @@ export interface AIWorkflow {
 	kind: AIWorkflowKind;
 	instruction: string;
 	sourcePresetId: string;
+	/** Card Polish presets may apply their result without a confirmation step.
+	 * Surfaced so the user can see, before running, whether a preset previews or
+	 * applies. */
+	autoApply?: boolean;
 }
 
 export interface AIWorkflowContext {
@@ -72,6 +76,7 @@ export function listAIWorkflows(
 				kind: "modify-card",
 				instruction: preset.prompt,
 				sourcePresetId: preset.id,
+				autoApply: preset.autoApply,
 			});
 		}
 	}

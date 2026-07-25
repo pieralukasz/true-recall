@@ -8,6 +8,7 @@ import { openAskAiModal } from "./AskAiModal";
 import {
 	type AiSurfaceIntent,
 	type AiSurfaceKind,
+	entryForSurface,
 	resolveAiSurface,
 } from "./ai-surface";
 import type { AIWorkspaceMode } from "./ai-workspace-modes";
@@ -58,7 +59,12 @@ export function openAiWorkspace(
 	}
 
 	if (surface === "popover" && options.anchor !== undefined) {
-		return openAskAiPopover(plugin, toRect(options.anchor), context);
+		return openAskAiPopover(
+			plugin,
+			toRect(options.anchor),
+			context,
+			options.mode,
+		);
 	}
 
 	if (surface === "popout") {
@@ -69,5 +75,10 @@ export function openAiWorkspace(
 		});
 	}
 
-	return openAskAiModal(plugin, context, options.onClose, options.mode);
+	return openAskAiModal(plugin, {
+		context,
+		entry: entryForSurface(surface, options.intent),
+		initialMode: options.mode,
+		onClose: options.onClose,
+	});
 }

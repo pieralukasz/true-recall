@@ -36,7 +36,7 @@ export function AssistantEditorPanel({
 			) : (
 				<AskAiPrompt
 					context={context}
-					presentation="workspace"
+					entry="compose"
 					initialMode={initialMode}
 					onSubmitted={(id, mode) => {
 						if (mode === "inbox") {

@@ -6,19 +6,30 @@ import type { AssistantContext } from "@true-recall/core/ai/assistant";
 import type TrueRecallPlugin from "@true-recall/obsidian/main";
 import { mountPreact } from "@true-recall/obsidian/preact/mount";
 
-import { AskAiPrompt } from "./AskAiPrompt";
+import { type AskAiEntry, AskAiPrompt } from "./AskAiPrompt";
 import { AssistantInlineTask } from "./AssistantInlineTask";
 import type { AIWorkspaceMode } from "./ai-workspace-modes";
 import { handoffUnfinishedThread } from "./thread-handoff";
 
-/** Opens the Ask AI prompt in a neutral modal (anchor-less invocations:
- * whole-card action in review, selection toolbar event). The composer is the
- * modal content directly — no inner framed box, one scroll container. */
+export interface AskAiModalOptions {
+	context: AssistantContext;
+	/** Fast paths land on the preset list; roomy ones on the composer. */
+	entry?: AskAiEntry;
+	initialMode?: AIWorkspaceMode;
+	onClose?: () => void;
+}
+
+/** Opens the Ask AI prompt in a neutral modal. This is the mobile surface and
+ * the desktop fallback when there is nowhere to dock or anchor. The composer is
+ * the modal content directly — no inner framed box, one scroll container. */
 export function openAskAiModal(
 	plugin: TrueRecallPlugin,
-	context: AssistantContext,
-	onClose?: () => void,
-	initialMode: AIWorkspaceMode = "assistant",
+	{
+		context,
+		entry = "compose",
+		initialMode = "assistant",
+		onClose,
+	}: AskAiModalOptions,
 ): () => void {
 	const modal = new Modal(plugin.app);
 	modal.titleEl.setText("Ask AI");
@@ -44,7 +55,7 @@ export function openAskAiModal(
 		plugin,
 		h(AskAiPrompt, {
 			context,
-			presentation: "workspace",
+			entry,
 			initialMode,
 			onSubmitted: (threadId, mode) => {
 				if (mode === "inbox") {

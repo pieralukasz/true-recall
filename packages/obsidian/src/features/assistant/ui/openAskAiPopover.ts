@@ -14,13 +14,17 @@ import { mountPreact } from "@true-recall/obsidian/preact/mount";
 
 import { AskAiPrompt } from "./AskAiPrompt";
 import { AssistantInlineTask } from "./AssistantInlineTask";
+import type { AIWorkspaceMode } from "./ai-workspace-modes";
 import { handoffUnfinishedThread } from "./thread-handoff";
 
-/** Opens the Ask AI prompt anchored to a rect (e.g. a selection). Returns a dispose fn. */
+/** Opens the Ask AI prompt anchored to a rect (e.g. a selection or a toolbar
+ * button). This is the fast surface: it lands on the preset list, one click from
+ * running a saved instruction. Returns a dispose fn. */
 export function openAskAiPopover(
 	plugin: TrueRecallPlugin,
 	anchorRect: DOMRect,
 	context: AssistantContext,
+	initialMode: AIWorkspaceMode = "assistant",
 ): () => void {
 	const container = activeDocument.body.createDiv({
 		cls: "tr-ask-ai-popover true-recall-selection-toolbar-container",
@@ -65,6 +69,8 @@ export function openAskAiPopover(
 		plugin,
 		h(AskAiPrompt, {
 			context,
+			entry: "presets",
+			initialMode,
 			autoFocus: false,
 			class: "ep:shadow-lg",
 			onSubmitted: (threadId, mode) => {

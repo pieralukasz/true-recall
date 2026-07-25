@@ -1,41 +1,28 @@
 import { ItemView } from "obsidian";
 
-import type { AssistantContext } from "@true-recall/core/ai/assistant";
 import { assistantWorkflowId } from "@true-recall/core/ai/workflows/ai-workflow";
 import { VIEW_TYPE_REVIEW } from "@true-recall/core/constants";
 
-import { openAskAiModal } from "@true-recall/obsidian/features/assistant/ui/AskAiModal";
+import { openAssistantThreadModal } from "@true-recall/obsidian/features/assistant/ui/AskAiModal";
+import { readLiveAssistantContext } from "@true-recall/obsidian/features/assistant/ui/useLiveAssistantContext";
 
 import type { PluginContext } from "../types";
 
 export class AiAssistantPlugin {
-	private listener: ((e: Event) => void) | null = null;
-
 	constructor(private ctx: PluginContext) {}
 
 	activate(): void {
-		// Anchor-less invocations (selection toolbar, whole-card actions) still
-		// arrive via this event and open the neutral Ask AI modal. The quick
-		// note editor no longer dispatches it — it hosts its own AI panel.
-		this.listener = (e: Event) => {
-			const detail = (e as CustomEvent<{ context: AssistantContext }>).detail;
-			if (!detail) return;
-			openAskAiModal(this.ctx.obsidianPlugin, detail.context);
-		};
-		window.addEventListener("true-recall:ask-ai", this.listener);
-
 		this.ctx.obsidianPlugin.assistantService?.start();
 		this.registerPresetCommands();
 	}
 
 	deactivate(): void {
-		if (this.listener) {
-			window.removeEventListener("true-recall:ask-ai", this.listener);
-		}
-		this.listener = null;
+		// Nothing to unbind: surfaces are opened through openAiWorkspace, which
+		// owns its own lifecycle, and the commands below gate on live settings.
 	}
 
-	/** One hotkey-bindable command per chip, active in the review view. */
+	/** One hotkey-bindable command per chip, active in the review view. The
+	 * command ids are part of the user's hotkey config — never rename them. */
 	private registerPresetCommands(): void {
 		for (const declared of this.ctx.settings.assistantPresets ?? []) {
 			const presetId = declared.id;
@@ -54,19 +41,22 @@ export class AiAssistantPlugin {
 						(p) => p.id === presetId,
 					);
 					if (!preset) return false;
-					if (!checking) {
-						window.dispatchEvent(
-							new CustomEvent("true-recall:ask-ai-preset", {
-								detail: {
-									instruction: preset.instruction,
-									presetId: assistantWorkflowId(preset.id),
-								},
-							}),
-						);
-					}
+					if (!checking) this.runPreset(preset.instruction, preset.id);
 					return true;
 				},
 			});
 		}
+	}
+
+	/** Runs straight away — a named preset needs no surface to pick from — and
+	 * shows the resulting thread. */
+	private runPreset(instruction: string, presetId: string): void {
+		const plugin = this.ctx.obsidianPlugin;
+		const result = plugin.assistantService?.startThread({
+			instruction,
+			presetId: assistantWorkflowId(presetId),
+			context: readLiveAssistantContext(plugin),
+		});
+		if (result) openAssistantThreadModal(plugin, result.threadId);
 	}
 }

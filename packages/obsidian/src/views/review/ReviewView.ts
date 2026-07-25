@@ -29,7 +29,6 @@ import {
 import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpClient";
 import { ReviewUndoHook } from "@true-recall/obsidian/commands";
 import { G, getDataLayer, Q } from "@true-recall/obsidian/data";
-import { openAssistantThreadModal } from "@true-recall/obsidian/features/assistant/ui/AskAiModal";
 import { assistantContextFromCard } from "@true-recall/obsidian/features/assistant/ui/ai-context-source";
 import { openAiWorkspace } from "@true-recall/obsidian/features/assistant/ui/open-ai-workspace";
 import type { ReviewSessionController } from "@true-recall/obsidian/features/study/services/ReviewSessionController";
@@ -546,15 +545,10 @@ export class ReviewView extends ItemView {
 			"true-recall:assistant-card-updated",
 			this.onAssistantCardUpdated,
 		);
-		window.addEventListener("true-recall:ask-ai-preset", this.onAskAiPreset);
 		this.register(() => {
 			window.removeEventListener(
 				"true-recall:assistant-card-updated",
 				this.onAssistantCardUpdated,
-			);
-			window.removeEventListener(
-				"true-recall:ask-ai-preset",
-				this.onAskAiPreset,
 			);
 		});
 		return Promise.resolve();
@@ -571,18 +565,6 @@ export class ReviewView extends ItemView {
 		if (!cardId) return;
 		if (this.review.getCurrentCard()?.id !== cardId) return;
 		this.cardActionsHandler.refreshCurrentCard();
-	};
-
-	private onAskAiPreset = (e: Event): void => {
-		const detail = (e as CustomEvent<{ instruction: string; presetId: string }>)
-			.detail;
-		if (!detail) return;
-		const result = this.plugin.assistantService?.startThread({
-			instruction: detail.instruction,
-			presetId: detail.presetId,
-			context: this.buildAssistantContext(),
-		});
-		if (result) openAssistantThreadModal(this.plugin, result.threadId);
 	};
 
 	private mountApp(container: HTMLElement): void {

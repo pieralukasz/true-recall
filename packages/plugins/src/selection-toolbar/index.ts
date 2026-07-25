@@ -1,5 +1,6 @@
 import { TFile } from "obsidian";
 
+import { openAiWorkspace } from "@true-recall/obsidian/features/assistant/ui/open-ai-workspace";
 import type TrueRecallPlugin from "@true-recall/obsidian/main";
 import { QuickNoteEditorModal } from "@true-recall/obsidian/modals/study/quick-note-editor/QuickNoteEditorModal";
 import { buildImageEmbed } from "@true-recall/obsidian/plugin/build-image-embed";
@@ -29,28 +30,33 @@ function executeCommand(plugin: TrueRecallPlugin, commandId: string): void {
 	).commands.executeCommandById(commandId);
 }
 
-/**
- * Opens the AI assistant prompt via a window event (mirrors the card-polish
- * dispatch) so the toolbar stays decoupled from the assistant UI.
- */
-function dispatchAskAi(
+/** Rect of the live selection, so the AI surface can float next to the text it
+ * is about. Null when the selection is already gone — the caller then lands in
+ * the docked panel instead. */
+function getSelectionRect(): DOMRect | undefined {
+	const selection = window.getSelection();
+	if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
+		return undefined;
+	}
+	return selection.getRangeAt(0).getBoundingClientRect();
+}
+
+function askAiAboutSelection(
 	plugin: TrueRecallPlugin,
 	text: string,
 	sourceFile?: TFile | null,
 ): void {
 	const sourcePath =
 		sourceFile?.path ?? plugin.app.workspace.getActiveFile()?.path;
-	window.dispatchEvent(
-		new CustomEvent("true-recall:ask-ai", {
-			detail: {
-				context: {
-					selectedText: text,
-					activeNotePath: sourcePath,
-					source: { path: sourcePath, text },
-				},
-			},
-		}),
-	);
+	openAiWorkspace(plugin, {
+		intent: "selection",
+		anchor: getSelectionRect(),
+		context: {
+			selectedText: text,
+			activeNotePath: sourcePath,
+			source: sourcePath ? { path: sourcePath, text } : undefined,
+		},
+	});
 }
 
 function getSourceFileFromDOM(
@@ -204,7 +210,7 @@ export const selectionToolbarManifest: PluginManifest = {
 				onHighlight: () => {},
 				onNewNote: (text) => createNoteFromSelection(plugin, text),
 				onAppend: (text) => appendToCurrentNote(plugin, text),
-				onAskAI: (text) => dispatchAskAi(plugin, text),
+				onAskAI: (text) => askAiAboutSelection(plugin, text),
 				onCommand: (id) => executeCommand(plugin, id),
 				onDismiss: () => {},
 			},
@@ -278,7 +284,8 @@ export const selectionToolbarManifest: PluginManifest = {
 				onHighlight: () => {},
 				onNewNote: (text) => createNoteFromSelection(plugin, text),
 				onAppend: (text) => appendToCurrentNote(plugin, text),
-				onAskAI: (text, sourceFile) => dispatchAskAi(plugin, text, sourceFile),
+				onAskAI: (text, sourceFile) =>
+					askAiAboutSelection(plugin, text, sourceFile),
 				onCommand: (id) => executeCommand(plugin, id),
 				onDismiss: () => {},
 			},

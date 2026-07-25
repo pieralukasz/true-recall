@@ -37,7 +37,7 @@ export function AssistantWorkspaceApp({
 				) : (
 					<AskAiPrompt
 						context={context}
-						presentation="workspace"
+						entry="compose"
 						initialMode={initialMode}
 						autoFocus={false}
 						onDraftChange={setHasDraft}
