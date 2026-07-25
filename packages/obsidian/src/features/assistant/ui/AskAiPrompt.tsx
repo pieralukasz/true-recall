@@ -13,8 +13,8 @@ import { notify } from "@true-recall/obsidian/services/notification.service";
 import { cn } from "@true-recall/obsidian/utils/cn";
 
 import { AIWorkspaceNav } from "./AIWorkspaceNav";
-import { AiComposer } from "./AiComposer";
 import { AiPresetList } from "./AiPresetList";
+import { AiPromptComposer } from "./AiPromptComposer";
 import {
 	type AIWorkspaceMode,
 	getAIWorkspaceMode,
@@ -98,7 +98,6 @@ export function AskAiPrompt({
 	const plugin = usePlugin();
 	const [text, setText] = useState("");
 	const [showAllWorkflows, setShowAllWorkflows] = useState(false);
-	const [isComposerOpen, setIsComposerOpen] = useState(false);
 	const [activeMode, setActiveMode] = useState<AIWorkspaceMode>(() =>
 		isAIWorkspaceModeAvailable(initialMode, context)
 			? initialMode
@@ -124,7 +123,6 @@ export function AskAiPrompt({
 			getAIWorkspaceMode(mode).workflowKind,
 		);
 	const selectedText = context.selectedText?.trim();
-	const canSend = text.trim() !== "";
 	const modeDefinition = getAIWorkspaceMode(activeMode);
 	const modeWorkflows = workflows.filter((workflow) =>
 		workflowMatchesMode(workflow, activeMode),
@@ -164,6 +162,19 @@ export function AskAiPrompt({
 		);
 	};
 
+	/** The preset list keeps keyboard focus, so the fast surface never steals it. */
+	const renderComposer = (shouldAutoFocus: boolean) => (
+		<AiPromptComposer
+			value={text}
+			onChange={handleTextChange}
+			onRun={() => submit(text, undefined, "inline")}
+			onRunInInbox={() => submit(text, undefined, "inbox")}
+			onDismiss={onDismiss}
+			placeholder={modeDefinition.placeholder}
+			autoFocus={shouldAutoFocus}
+		/>
+	);
+
 	if (entry === "presets") {
 		return (
 			<div class={cn("tr-assistant-fast-prompt", cls)}>
@@ -178,25 +189,9 @@ export function AskAiPrompt({
 					onRun={runWorkflow}
 					emptyLabel={`No ${modeDefinition.label} presets yet`}
 					footer={
-						isComposerOpen ? (
-							<AiComposer
-								class="tr-assistant-fast-prompt__composer"
-								value={text}
-								onChange={handleTextChange}
-								onSubmit={() => submit(text, undefined, "inline")}
-								onDismiss={onDismiss}
-								autoFocus
-								placeholder="Describe a change…"
-								submitLabel="Run"
-							/>
-						) : (
-							<Clickable
-								class="tr-assistant-fast-prompt__ask"
-								onClick={() => setIsComposerOpen(true)}
-							>
-								Ask instead…
-							</Clickable>
-						)
+						<div class="tr-assistant-fast-prompt__composer">
+							{renderComposer(false)}
+						</div>
 					}
 				/>
 			</div>
@@ -234,37 +229,7 @@ export function AskAiPrompt({
 				</section>
 			) : null}
 
-			{activeMode === "assistant" ? (
-				<AiComposer
-					variant="workspace"
-					value={text}
-					onChange={handleTextChange}
-					onSubmit={() => submit(text, undefined, "inline")}
-					onDismiss={onDismiss}
-					autoFocus={autoFocus}
-					placeholder="Ask, research, or describe a change…"
-					submitLabel="Run"
-					hint={
-						<span>
-							<kbd>Enter</kbd> run <span aria-hidden="true">·</span>{" "}
-							<kbd>Shift Enter</kbd> new line
-						</span>
-					}
-					trailing={
-						<Clickable
-							class={cn(
-								"tr-ai-composer__inbox-action",
-								!canSend && "is-disabled",
-							)}
-							disabled={!canSend}
-							title="Run and open the AI inbox"
-							onClick={() => submit(text, undefined, "inbox")}
-						>
-							Run in inbox
-						</Clickable>
-					}
-				/>
-			) : null}
+			{activeMode === "assistant" ? renderComposer(autoFocus) : null}
 
 			{modeWorkflows.length > 0 ? (
 				<section class="tr-assistant-prompt__workflows">

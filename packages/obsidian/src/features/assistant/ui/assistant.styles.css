@@ -753,8 +753,8 @@
 
 .tr-assistant-fast-prompt {
 	display: flex;
-	min-width: 260px;
-	max-width: 420px;
+	min-width: 320px;
+	max-width: 460px;
 	flex-direction: column;
 	gap: 8px;
 	padding: 10px;
@@ -859,15 +859,24 @@
 	letter-spacing: 0.04em;
 }
 
-.tr-assistant-fast-prompt__ask {
-	padding: 6px 8px;
-	border-radius: 8px;
-	color: var(--text-muted);
-	font-size: var(--font-ui-smaller);
-	text-align: left;
+/* Same field as the panel, only shorter: the anchored surface must stay a menu,
+   not grow into a full workspace. */
+.tr-assistant-fast-prompt__composer {
+	min-width: 0;
+	padding-top: 2px;
 }
 
-.tr-assistant-fast-prompt__ask:hover {
-	background: var(--background-modifier-hover);
-	color: var(--text-normal);
+.tr-assistant-fast-prompt__composer .tr-ai-composer--workspace {
+	box-shadow: none;
+}
+
+.tr-assistant-fast-prompt__composer .tr-ai-composer__input {
+	min-height: 68px;
+	padding: 10px 12px;
+	font-size: var(--font-ui-small);
+}
+
+.tr-assistant-fast-prompt__composer .tr-ai-composer__footer {
+	min-height: 40px;
+	padding: 6px 8px 6px 10px;
 }

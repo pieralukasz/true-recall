@@ -11,6 +11,8 @@ export interface AIWorkspaceModeDefinition {
 	label: string;
 	title: string;
 	description: string;
+	/** Prompt for the free-text field while this mode is active. */
+	placeholder: string;
 	icon: string;
 	workflowKind: AIWorkflowKind;
 }
@@ -25,6 +27,7 @@ const AI_WORKSPACE_MODE_MAP: Record<
 		title: "How can AI help?",
 		description:
 			"Ask a question, research a topic, or describe a custom change in your own words.",
+		placeholder: "Ask, research, or describe a change…",
 		icon: "sparkles",
 		workflowKind: "agent",
 	},
@@ -34,6 +37,7 @@ const AI_WORKSPACE_MODE_MAP: Record<
 		title: "Generate flashcards",
 		description:
 			"Turn the current note or selection into new cards with a generation preset.",
+		placeholder: "Describe the cards to generate…",
 		icon: "layers",
 		workflowKind: "generate-cards",
 	},
@@ -43,6 +47,7 @@ const AI_WORKSPACE_MODE_MAP: Record<
 		title: "Polish this flashcard",
 		description:
 			"Rewrite, complete, or restructure the current card with a Card Polish preset.",
+		placeholder: "Describe a change to this card…",
 		icon: "wand",
 		workflowKind: "modify-card",
 	},
