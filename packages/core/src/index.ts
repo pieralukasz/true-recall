@@ -4,7 +4,6 @@
 //   @true-recall/core/flashcard
 //   @true-recall/core/services
 //   @true-recall/core/persistence
-//   @true-recall/core/rag
 //   @true-recall/core/integration
 //   @true-recall/core/validation
 //   @true-recall/core/utils

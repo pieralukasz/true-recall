@@ -112,7 +112,7 @@ export function createSelectionToolbarExtension(
 
 			private showToolbar(text: string, pos: number): void {
 				if (!this.container) {
-					this.container = activeDocument.createElement("div");
+					this.container = createDiv();
 					this.container.className = "true-recall-selection-toolbar-container";
 					activeDocument.body.appendChild(this.container);
 				}

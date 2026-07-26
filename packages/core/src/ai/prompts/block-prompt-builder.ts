@@ -1,7 +1,7 @@
 import { resolveSlug } from "../../flashcard/note-types/note-type-slug";
 import type { GenerationPreset } from "../../types/generation-preset.types";
 import type { NoteType } from "../../types/note.types";
-import { buildLanguageSuffix } from "./default-prompts";
+import { buildLanguageSuffix, CARD_QUALITY_RULES } from "./default-prompts";
 
 export function buildPresetPrompt(
 	preset: GenerationPreset,
@@ -14,6 +14,7 @@ export function buildPresetPrompt(
 
 	return (
 		"Generate flashcards from the provided text.\n\n" +
+		`${CARD_QUALITY_RULES}\n\n` +
 		(userPrompt ? `${userPrompt}\n\n` : "") +
 		`Fields to fill: ${textFields.join(", ")}\n\n` +
 		`Output a JSON array. Each element:\n{"type": "${slug}", ${entries}, "source": "..."}\n\n` +
@@ -57,6 +58,7 @@ export function buildByokPrompt(
 
 	return (
 		"Generate flashcards from the provided text.\n\n" +
+		`${CARD_QUALITY_RULES}\n\n` +
 		(custom ? `${custom}\n\n` : "") +
 		`Output a JSON array. Each element:\n{"type": "${slug}", ${entries}, "source": "..."}\n\n` +
 		'"source" = copy-paste one sentence from the input that proves this fact. Must be an EXACT substring of the input (character-perfect) — any mismatch breaks highlighting. Preserve ALL markdown formatting (**, *, ~~, ==, `, #, -, etc.). Copy raw markdown, not rendered text. Never paraphrase.\n' +

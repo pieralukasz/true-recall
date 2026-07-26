@@ -1,4 +1,4 @@
-import type { App, TFile } from "obsidian";
+import { type App, TFile } from "obsidian";
 
 import type { Command, CommandContext } from "../command.types";
 
@@ -24,8 +24,8 @@ export class NoteAppendCommand implements Command {
 
 	async undo(_ctx: CommandContext): Promise<void> {
 		const file = this.app.vault.getAbstractFileByPath(this.path);
-		if (!file) return;
-		await this.app.vault.modify(file as TFile, this.previousContent);
+		if (!(file instanceof TFile)) return;
+		await this.app.vault.modify(file, this.previousContent);
 	}
 }
 
@@ -51,6 +51,6 @@ export class NoteCreateCommand implements Command {
 	async undo(_ctx: CommandContext): Promise<void> {
 		const file = this.app.vault.getAbstractFileByPath(this.path);
 		if (!file) return;
-		await this.app.vault.trash(file, true);
+		await this.app.fileManager.trashFile(file);
 	}
 }

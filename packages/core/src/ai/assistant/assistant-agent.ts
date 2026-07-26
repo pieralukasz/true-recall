@@ -370,27 +370,6 @@ export class AssistantAgent {
 					.map((c) => c.title ?? c.url)
 					.join("; ")}. The user will pick which to attach.`;
 			}
-			case "search_knowledge": {
-				if (!host.searchKnowledge) {
-					return "Vault knowledge search is not available.";
-				}
-				const query = String(args.query ?? "").trim();
-				if (!query) return "Knowledge search query is required.";
-				const count = Math.min(Math.max(Number(args.count ?? 6), 1), 12);
-				const evidence = await host.searchKnowledge(query, count);
-				if (evidence.length > 0) {
-					const existingIds = new Set(
-						(manifest.evidence ?? []).map((item) => item.id),
-					);
-					manifest.evidence = [
-						...(manifest.evidence ?? []),
-						...evidence.filter((item) => !existingIds.has(item.id)),
-					];
-				}
-				return evidence.length > 0
-					? JSON.stringify(evidence)
-					: "No matching vault evidence found.";
-			}
 			case "read_note": {
 				const content = await host.readNote(String(args.path ?? ""));
 				return content ?? "Note not found.";

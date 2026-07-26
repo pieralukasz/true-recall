@@ -29,11 +29,8 @@ import {
 import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpClient";
 import { ReviewUndoHook } from "@true-recall/obsidian/commands";
 import { G, getDataLayer, Q } from "@true-recall/obsidian/data";
-import {
-	openAskAiModal,
-	openAssistantThreadModal,
-} from "@true-recall/obsidian/features/assistant/ui/AskAiModal";
-import { openAskAiPopover } from "@true-recall/obsidian/features/assistant/ui/openAskAiPopover";
+import { assistantContextFromCard } from "@true-recall/obsidian/features/assistant/ui/ai-context-source";
+import { openAiWorkspace } from "@true-recall/obsidian/features/assistant/ui/open-ai-workspace";
 import type { ReviewSessionController } from "@true-recall/obsidian/features/study/services/ReviewSessionController";
 import type { PresetPickerOption } from "@true-recall/obsidian/features/study/ui/review/components";
 import {
@@ -534,7 +531,13 @@ export class ReviewView extends ItemView {
 		this.askBubble = new ReviewSelectionBubble({
 			isEnabled: () => isPluginEnabled(this.plugin.settings, "ai-assistant"),
 			getContext: (text) => this.buildAssistantContext(text),
-			onAsk: (rect, context) => openAskAiPopover(this.plugin, rect, context),
+			onAsk: (rect, context) =>
+				openAiWorkspace(this.plugin, {
+					intent: "selection",
+					anchor: rect,
+					context,
+					// The bubble only closes surfaces it owns; the docked panel stays.
+				}) ?? (() => {}),
 		});
 		this.askBubble.register();
 
@@ -542,15 +545,10 @@ export class ReviewView extends ItemView {
 			"true-recall:assistant-card-updated",
 			this.onAssistantCardUpdated,
 		);
-		window.addEventListener("true-recall:ask-ai-preset", this.onAskAiPreset);
 		this.register(() => {
 			window.removeEventListener(
 				"true-recall:assistant-card-updated",
 				this.onAssistantCardUpdated,
-			);
-			window.removeEventListener(
-				"true-recall:ask-ai-preset",
-				this.onAskAiPreset,
 			);
 		});
 		return Promise.resolve();
@@ -558,21 +556,8 @@ export class ReviewView extends ItemView {
 
 	private buildAssistantContext(selectedText?: string): AssistantContext {
 		const card = this.review.getCurrentCard();
-		const context: AssistantContext = {};
-		if (selectedText) context.selectedText = selectedText;
-		if (card) {
-			context.card = {
-				cardId: card.id,
-				noteId: card.noteId,
-				noteTypeId: card.fsrs.noteTypeId,
-				question: card.question,
-				answer: card.answer,
-				sourceUid: card.sourceUid,
-				sourceNotePath: card.sourceNotePath,
-			};
-			context.activeNotePath = card.sourceNotePath;
-		}
-		return context;
+		if (card) return assistantContextFromCard(card, selectedText);
+		return selectedText ? { selectedText } : {};
 	}
 
 	private onAssistantCardUpdated = (e: Event): void => {
@@ -580,18 +565,6 @@ export class ReviewView extends ItemView {
 		if (!cardId) return;
 		if (this.review.getCurrentCard()?.id !== cardId) return;
 		this.cardActionsHandler.refreshCurrentCard();
-	};
-
-	private onAskAiPreset = (e: Event): void => {
-		const detail = (e as CustomEvent<{ instruction: string; presetId: string }>)
-			.detail;
-		if (!detail) return;
-		const result = this.plugin.assistantService?.startThread({
-			instruction: detail.instruction,
-			presetId: detail.presetId,
-			context: this.buildAssistantContext(),
-		});
-		if (result) openAssistantThreadModal(this.plugin, result.threadId);
 	};
 
 	private mountApp(container: HTMLElement): void {
@@ -612,9 +585,13 @@ export class ReviewView extends ItemView {
 				onOpenDashboard: () => void this.handleOpenDashboard(),
 				onEndSession: () => this.handleNextSession(),
 				onActionsMenu: (e: MouseEvent) => this.showActionsMenu(e),
-				onPolishMenu: isPluginEnabled(this.plugin.settings, "card-polish")
-					? (e: MouseEvent) => this.openCardPolishMenu(e)
-					: undefined,
+				// Polish presets now run in the shared AI workspace, so the action
+				// needs both the preset family and the surface to be enabled.
+				onPolishMenu:
+					isPluginEnabled(this.plugin.settings, "card-polish") &&
+					isPluginEnabled(this.plugin.settings, "ai-assistant")
+						? (e: MouseEvent) => this.openCardPolishMenu(e)
+						: undefined,
 				isCustomSession: isCustomSession(this.filters),
 				crammingMode: this.filters.crammingMode ?? false,
 				showHeader: this.plugin.settings.showReviewHeader,
@@ -912,11 +889,13 @@ export class ReviewView extends ItemView {
 	// ─── Actions menu ────────────────────────────────────────────────────
 
 	private openCardPolishMenu(e: MouseEvent): void {
-		window.dispatchEvent(
-			new CustomEvent("true-recall:card-polish", {
-				detail: { kind: "review", anchor: e.currentTarget },
-			}),
-		);
+		const anchor = e.currentTarget;
+		openAiWorkspace(this.plugin, {
+			intent: "preset",
+			anchor: anchor instanceof HTMLElement ? anchor : undefined,
+			mode: "card-polish",
+			context: this.buildAssistantContext(),
+		});
 	}
 
 	private showActionsMenu(event: MouseEvent): void {
@@ -942,9 +921,12 @@ export class ReviewView extends ItemView {
 				item
 					.setTitle("Ask AI about this card")
 					.setIcon("sparkles")
-					.onClick(() =>
-						openAskAiModal(this.plugin, this.buildAssistantContext()),
-					),
+					.onClick(() => {
+						openAiWorkspace(this.plugin, {
+							intent: "compose",
+							context: this.buildAssistantContext(),
+						});
+					}),
 			);
 			menu.addSeparator();
 		}

@@ -13,13 +13,20 @@ import { notify } from "@true-recall/obsidian/services/notification.service";
 import { cn } from "@true-recall/obsidian/utils/cn";
 
 import { AIWorkspaceNav } from "./AIWorkspaceNav";
-import { AiComposer } from "./AiComposer";
+import { AiPresetList } from "./AiPresetList";
+import { AiPromptComposer } from "./AiPromptComposer";
 import {
 	type AIWorkspaceMode,
 	getAIWorkspaceMode,
 	isAIWorkspaceModeAvailable,
 	workflowMatchesMode,
 } from "./ai-workspace-modes";
+import { isWorkflowFamilyEnabled } from "./workflow-family-gate";
+
+/** Which half of the surface the user lands on. `presets` is the fast path — a
+ * one-click list of saved instructions; `compose` is the roomy workspace with
+ * mode nav and a focused composer. */
+export type AskAiEntry = "presets" | "compose";
 
 interface AskAiPromptProps {
 	context: AssistantContext;
@@ -30,8 +37,11 @@ interface AskAiPromptProps {
 	onDismiss: () => void;
 	autoFocus?: boolean;
 	class?: string;
-	presentation?: "compact" | "workspace";
+	entry?: AskAiEntry;
 	initialMode?: AIWorkspaceMode;
+	/** Fires when the composer gains or loses draft text. Long-lived surfaces use
+	 * it to hold the subject still while the user is mid-sentence. */
+	onDraftChange?: (hasDraft: boolean) => void;
 }
 
 const WORKFLOW_ICONS: Record<AIWorkflow["kind"], string> = {
@@ -39,6 +49,8 @@ const WORKFLOW_ICONS: Record<AIWorkflow["kind"], string> = {
 	"generate-cards": "layers",
 	"modify-card": "wand",
 };
+
+const COMPOSE_WORKFLOW_LIMIT = 8;
 
 function WorkflowAction({
 	workflow,
@@ -79,8 +91,9 @@ export function AskAiPrompt({
 	onDismiss,
 	autoFocus = true,
 	class: cls,
-	presentation = "compact",
+	entry = "compose",
 	initialMode = "assistant",
+	onDraftChange,
 }: AskAiPromptProps) {
 	const plugin = usePlugin();
 	const [text, setText] = useState("");
@@ -90,23 +103,30 @@ export function AskAiPrompt({
 			? initialMode
 			: "assistant",
 	);
+
+	const handleTextChange = (value: string) => {
+		setText(value);
+		onDraftChange?.(value.trim() !== "");
+	};
+
 	const workflows = listAIWorkflows(plugin.settings, {
 		hasSelection: !!context.selectedText?.trim(),
 		hasSourceText: !!context.source?.text?.trim(),
 		hasCard: !!context.card,
 		hasDraftCard: !!context.draftCard,
+		isFamilyEnabled: (kind) => isWorkflowFamilyEnabled(plugin.settings, kind),
 	});
+	const isModeAvailable = (mode: AIWorkspaceMode): boolean =>
+		isAIWorkspaceModeAvailable(mode, context) &&
+		isWorkflowFamilyEnabled(
+			plugin.settings,
+			getAIWorkspaceMode(mode).workflowKind,
+		);
 	const selectedText = context.selectedText?.trim();
-	const canSend = text.trim() !== "";
 	const modeDefinition = getAIWorkspaceMode(activeMode);
 	const modeWorkflows = workflows.filter((workflow) =>
 		workflowMatchesMode(workflow, activeMode),
 	);
-	const workflowLimit = presentation === "compact" ? 4 : 8;
-	const visibleWorkflows = showAllWorkflows
-		? modeWorkflows
-		: modeWorkflows.slice(0, workflowLimit);
-	const hiddenWorkflowCount = modeWorkflows.length - visibleWorkflows.length;
 
 	const submit = (
 		instruction: string,
@@ -128,6 +148,8 @@ export function AskAiPrompt({
 				`Generating with ${displayMessage ?? "preset"} in the background…`,
 			);
 		}
+		// The subject may follow the review queue again once nothing is pending.
+		onDraftChange?.(false);
 		onSubmitted(threadId, mode);
 	};
 
@@ -140,110 +162,52 @@ export function AskAiPrompt({
 		);
 	};
 
-	if (presentation === "compact") {
+	/** The preset list keeps keyboard focus, so the fast surface never steals it. */
+	const renderComposer = (shouldAutoFocus: boolean) => (
+		<AiPromptComposer
+			value={text}
+			onChange={handleTextChange}
+			onRun={() => submit(text, undefined, "inline")}
+			onRunInInbox={() => submit(text, undefined, "inbox")}
+			onDismiss={onDismiss}
+			placeholder={modeDefinition.placeholder}
+			autoFocus={shouldAutoFocus}
+		/>
+	);
+
+	if (entry === "presets") {
 		return (
-			<div class={cn("tr-assistant-selection-prompt", cls)}>
+			<div class={cn("tr-assistant-fast-prompt", cls)}>
 				{selectedText ? (
-					<section class="tr-assistant-selection-prompt__context">
-						<div class="tr-assistant-prompt__section-label">Selected text</div>
-						<div class="tr-assistant-selection-prompt__selection">
-							{selectedText}
-						</div>
-					</section>
-				) : null}
-
-				<AIWorkspaceNav
-					activeMode={activeMode}
-					isAvailable={(mode) => isAIWorkspaceModeAvailable(mode, context)}
-					onChange={(mode) => {
-						setActiveMode(mode);
-						setShowAllWorkflows(false);
-					}}
-				/>
-
-				{activeMode === "assistant" ? (
-					<AiComposer
-						variant="workspace"
-						class="tr-assistant-selection-prompt__composer"
-						value={text}
-						onChange={setText}
-						onSubmit={() => submit(text, undefined, "inline")}
-						onDismiss={onDismiss}
-						autoFocus={autoFocus}
-						placeholder="Ask about the selection…"
-						submitLabel="Run"
-						hint={
-							<span>
-								<kbd>Enter</kbd> run <span aria-hidden="true">·</span>{" "}
-								<kbd>Shift Enter</kbd> new line
-							</span>
-						}
-						trailing={
-							<Clickable
-								class={cn(
-									"tr-ai-composer__inbox-action",
-									!canSend && "is-disabled",
-								)}
-								disabled={!canSend}
-								title="Run and open the AI inbox"
-								onClick={() => submit(text, undefined, "inbox")}
-							>
-								Run in inbox
-							</Clickable>
-						}
-					/>
-				) : null}
-
-				{modeWorkflows.length > 0 ? (
-					<section class="tr-assistant-prompt__workflows">
-						<div class="tr-assistant-prompt__section-heading">
-							<div>
-								<h3>
-									{activeMode === "assistant" ? "Quick actions" : "Presets"}
-								</h3>
-								<p>{modeDefinition.description}</p>
-							</div>
-						</div>
-						<div class="tr-assistant-workflow-grid">
-							{visibleWorkflows.map((workflow) => (
-								<WorkflowAction
-									key={workflow.id}
-									workflow={workflow}
-									onSelect={runWorkflow}
-								/>
-							))}
-						</div>
-						{hiddenWorkflowCount > 0 ? (
-							<Clickable
-								class="tr-assistant-prompt__show-all"
-								onClick={() => setShowAllWorkflows(true)}
-							>
-								Show {hiddenWorkflowCount} more
-							</Clickable>
-						) : modeWorkflows.length > workflowLimit ? (
-							<Clickable
-								class="tr-assistant-prompt__show-all"
-								onClick={() => setShowAllWorkflows(false)}
-							>
-								Show fewer
-							</Clickable>
-						) : null}
-					</section>
-				) : activeMode !== "assistant" ? (
-					<div class="tr-assistant-prompt__empty-mode">
-						<strong>No {modeDefinition.label} presets yet</strong>
-						<span>Add a preset in True Recall settings.</span>
+					<div class="tr-assistant-fast-prompt__selection" title={selectedText}>
+						{selectedText}
 					</div>
 				) : null}
+
+				<AiPresetList
+					workflows={modeWorkflows}
+					onRun={runWorkflow}
+					emptyLabel={`No ${modeDefinition.label} presets yet`}
+					footer={
+						<div class="tr-assistant-fast-prompt__composer">
+							{renderComposer(false)}
+						</div>
+					}
+				/>
 			</div>
 		);
 	}
+
+	const visibleWorkflows = showAllWorkflows
+		? modeWorkflows
+		: modeWorkflows.slice(0, COMPOSE_WORKFLOW_LIMIT);
+	const hiddenWorkflowCount = modeWorkflows.length - visibleWorkflows.length;
 
 	return (
 		<div class={cn("tr-assistant-prompt", cls)}>
 			<AIWorkspaceNav
 				activeMode={activeMode}
-				isAvailable={(mode) => isAIWorkspaceModeAvailable(mode, context)}
+				isAvailable={isModeAvailable}
 				onChange={(mode) => {
 					setActiveMode(mode);
 					setShowAllWorkflows(false);
@@ -265,37 +229,7 @@ export function AskAiPrompt({
 				</section>
 			) : null}
 
-			{activeMode === "assistant" ? (
-				<AiComposer
-					variant="workspace"
-					value={text}
-					onChange={setText}
-					onSubmit={() => submit(text, undefined, "inline")}
-					onDismiss={onDismiss}
-					autoFocus={autoFocus}
-					placeholder="Ask, research, or describe a change…"
-					submitLabel="Run"
-					hint={
-						<span>
-							<kbd>Enter</kbd> run <span aria-hidden="true">·</span>{" "}
-							<kbd>Shift Enter</kbd> new line
-						</span>
-					}
-					trailing={
-						<Clickable
-							class={cn(
-								"tr-ai-composer__inbox-action",
-								!canSend && "is-disabled",
-							)}
-							disabled={!canSend}
-							title="Run and open the AI inbox"
-							onClick={() => submit(text, undefined, "inbox")}
-						>
-							Run in inbox
-						</Clickable>
-					}
-				/>
-			) : null}
+			{activeMode === "assistant" ? renderComposer(autoFocus) : null}
 
 			{modeWorkflows.length > 0 ? (
 				<section class="tr-assistant-prompt__workflows">
@@ -327,7 +261,7 @@ export function AskAiPrompt({
 						>
 							Show {hiddenWorkflowCount} more actions
 						</Clickable>
-					) : modeWorkflows.length > workflowLimit ? (
+					) : modeWorkflows.length > COMPOSE_WORKFLOW_LIMIT ? (
 						<Clickable
 							class="tr-assistant-prompt__show-all"
 							onClick={() => setShowAllWorkflows(false)}

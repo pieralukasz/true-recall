@@ -16,6 +16,7 @@ import { resolveAIClientConfig } from "@true-recall/core/ai/config/ai-client-con
 import { DraftGenerationService } from "@true-recall/core/ai/generation/draft-generation.service";
 import { resolveAIWorkflow } from "@true-recall/core/ai/workflows/ai-workflow";
 
+import { applyPendingProposals } from "@true-recall/obsidian/features/assistant/ui/apply-pending-proposals";
 import type TrueRecallPlugin from "@true-recall/obsidian/main";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 
@@ -360,11 +361,60 @@ export class AssistantService {
 			);
 			return;
 		}
+		// A preset marked auto-apply is a shortcut the user configured: run it and
+		// land the change, no confirmation step. The thread still records what
+		// happened, so the inbox remains the single history of AI edits.
+		if (
+			workflow?.kind === "modify-card" &&
+			workflow.autoApply === true &&
+			task.threadId &&
+			pending > 0
+		) {
+			await this.applyPolishImmediately(task, task.threadId);
+			return;
+		}
+
 		const n = manifest.proposals.length;
 		notify().success(
 			n > 0
 				? `AI task ready: ${n} proposal${n === 1 ? "" : "s"}`
 				: "AI task finished (no proposals)",
+		);
+	}
+
+	private async applyPolishImmediately(
+		task: AssistantTask,
+		threadId: string,
+	): Promise<void> {
+		const thread = this.threadActions().getById(threadId);
+		const manifest = thread?.manifest;
+		if (!thread || !manifest || thread.activeTaskId) return;
+
+		const result = await applyPendingProposals(
+			task,
+			manifest,
+			new AssistantApplyService(this.plugin),
+		);
+
+		this.actions().updateManifest(task.id, manifest);
+		this.threadActions().updateManifest(threadId, manifest);
+		this.invalidate();
+
+		if (result.conflictedCount > 0 || result.error) {
+			// Anything the auto-apply could not land stays reviewable in the inbox
+			// instead of being silently dropped.
+			this.threadActions().setState(threadId, "inbox", Date.now());
+			notify().warning(
+				result.error ?? "Card Polish changed a card that moved — review it",
+			);
+			return;
+		}
+
+		this.threadActions().setState(threadId, "archived", Date.now());
+		notify().success(
+			result.appliedCount === 1
+				? "Card Polish applied"
+				: `Card Polish applied ${result.appliedCount} changes`,
 		);
 	}
 

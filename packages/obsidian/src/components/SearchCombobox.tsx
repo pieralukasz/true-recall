@@ -54,22 +54,16 @@ class SearchComboboxSuggest extends AbstractInputSuggest<SectionedSuggestion> {
 		el.textContent = "";
 
 		if (value.showSectionLabel) {
-			const sectionEl = el.ownerDocument.createElement("div");
-			sectionEl.className = "true-recall-search-suggest-section";
-			sectionEl.textContent = value.sectionLabel;
-			el.appendChild(sectionEl);
+			el.createDiv({
+				cls: "true-recall-search-suggest-section",
+				text: value.sectionLabel,
+			});
 		}
 
-		const titleEl = el.ownerDocument.createElement("div");
-		titleEl.className = "suggestion-title";
-		titleEl.textContent = value.label;
-		el.appendChild(titleEl);
+		el.createDiv({ cls: "suggestion-title", text: value.label });
 
 		if (value.description) {
-			const noteEl = el.ownerDocument.createElement("div");
-			noteEl.className = "suggestion-note";
-			noteEl.textContent = value.description;
-			el.appendChild(noteEl);
+			el.createDiv({ cls: "suggestion-note", text: value.description });
 		}
 	}
 

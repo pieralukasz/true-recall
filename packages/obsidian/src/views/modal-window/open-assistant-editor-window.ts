@@ -42,12 +42,11 @@ export function openAssistantEditorWindow(
 	options: OpenAssistantEditorWindowOptions = {},
 ): (() => void) | null {
 	if (isMobile()) {
-		return openAskAiModal(
-			plugin,
+		return openAskAiModal(plugin, {
 			context,
-			options.onClose,
-			options.initialMode,
-		);
+			initialMode: options.initialMode,
+			onClose: options.onClose,
+		});
 	}
 
 	const requestId = newAssistantEditorRequestId();

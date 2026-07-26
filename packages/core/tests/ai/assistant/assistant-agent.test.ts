@@ -28,16 +28,6 @@ const HOST: AssistantToolHost = {
 	],
 	readNote: async (path) => (path === "Topic.md" ? "# Topic" : null),
 	searchImages: async () => [{ url: "https://img/1.jpg", title: "one" }],
-	searchKnowledge: async () => [
-		{
-			id: "rag:note:Topic.md:1",
-			sourceType: "note",
-			sourceId: "Topic.md",
-			excerpt: "Grounded fact",
-			score: 1,
-			tokenCount: 3,
-		},
-	],
 };
 
 const CONTEXT: AssistantContext = {
@@ -239,35 +229,6 @@ describe("AssistantAgent", () => {
 		expect(manifest.proposals).toHaveLength(0);
 		const toolMsg = requests[1]?.messages.find((m) => m.role === "tool");
 		expect(String(toolMsg?.content)).toContain("not found");
-	});
-
-	it("can retrieve normalized vault evidence before editing drafts", async () => {
-		const { client, requests } = makeScriptedClient([
-			toolCallResponse([
-				{
-					id: "t1",
-					name: "search_knowledge",
-					args: { query: "topic", count: 4 },
-				},
-			]),
-			textResponse("Found evidence."),
-		]);
-		const manifest = await new AssistantAgent(client, {
-			maxIterations: 2,
-			webSearch: false,
-		}).run("Check my vault", CONTEXT, HOST);
-
-		const toolMessage = requests[1]?.messages.find(
-			(message) => message.role === "tool",
-		);
-		expect(toolMessage?.content).toContain("Grounded fact");
-		expect(toolMessage?.content).toContain("rag:note:Topic.md:1");
-		expect(manifest.evidence).toEqual([
-			expect.objectContaining({
-				id: "rag:note:Topic.md:1",
-				excerpt: "Grounded fact",
-			}),
-		]);
 	});
 
 	it("includes recent thread turns in a follow-up request", async () => {

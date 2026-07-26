@@ -1,88 +1,63 @@
 import { ItemView } from "obsidian";
 
+import { cardPolishWorkflowId } from "@true-recall/core/ai/workflows/ai-workflow";
 import { VIEW_TYPE_REVIEW } from "@true-recall/core/constants";
 
-import { CardAIPluginBase } from "../shared/CardAIPluginBase";
-import type { CardAITarget } from "../shared/card-ai";
-import {
-	DraftCardTarget,
-	type DraftCardTargetDetail,
-} from "../shared/DraftCardTarget";
-import { ReviewCardTarget } from "../shared/ReviewCardTarget";
+import { readLiveAssistantContext } from "@true-recall/obsidian/features/assistant/ui/useLiveAssistantContext";
+
 import type { PluginContext } from "../types";
-import { CARD_POLISH_BUILTINS } from "./builtins";
 
-export type CardPolishEventDetail =
-	| { kind: "review"; anchor: HTMLElement }
-	| ({ kind: "draft"; anchor: HTMLElement } & DraftCardTargetDetail);
+/**
+ * Card Polish is a preset family, not a surface. The ✨ action in review opens
+ * the shared AI workspace in card-polish mode; this plugin only registers the
+ * hotkey-bindable command per preset. Everything runs through the assistant task
+ * service, so polish results are threads and proposals like every other AI edit.
+ */
+export class CardPolishPlugin {
+	constructor(private readonly ctx: PluginContext) {}
 
-export class CardPolishPlugin extends CardAIPluginBase<CardPolishEventDetail> {
-	private readonly pluginCtx: PluginContext;
-
-	constructor(ctx: PluginContext) {
-		super(ctx, {
-			eventName: "true-recall:card-polish",
-			bucketKey: "cardPolish",
-			builtins: CARD_POLISH_BUILTINS,
-			capabilityTag: "card-polish",
-			buildTarget: (detail): CardAITarget | null => {
-				if (detail.kind === "review") {
-					return new ReviewCardTarget(ctx.obsidianPlugin);
-				}
-				return new DraftCardTarget({
-					fields: detail.fields,
-					noteType: detail.noteType,
-					sourceUid: detail.sourceUid,
-					currentCardId: detail.currentCardId,
-					operation: detail.operation,
-					onApply: detail.onApply,
-					flashcardManager: detail.flashcardManager,
-				});
-			},
-		});
-		this.pluginCtx = ctx;
-	}
-
-	override activate(): void {
-		super.activate();
+	activate(): void {
 		this.registerReviewCommands();
 	}
 
+	deactivate(): void {
+		// Commands gate on live settings; there is nothing else to unbind.
+	}
+
 	private registerReviewCommands(): void {
-		const userPresets = this.pluginCtx.settings.cardPolish?.userPresets ?? [];
-		// Register one command per preset so each shows up in the command palette
-		// and can be bound to a hotkey via Obsidian's native Hotkeys settings.
-		// Looking the preset up by id at invocation time (rather than capturing
-		// the closure) keeps the command honoring live edits to the preset.
-		for (const declared of [...CARD_POLISH_BUILTINS, ...userPresets]) {
-			const id = `card-polish-${declared.id}`;
+		// One command per preset so each can take a hotkey in Obsidian's native
+		// settings. The preset is looked up at invocation time so live edits apply,
+		// and the command ids are part of the user's hotkey config — never rename.
+		for (const declared of this.ctx.settings.cardPolish?.userPresets ?? []) {
 			const presetId = declared.id;
-			this.pluginCtx.obsidianPlugin.addCommand({
-				id,
+			this.ctx.obsidianPlugin.addCommand({
+				id: `card-polish-${presetId}`,
 				name: `Polish: ${declared.name}`,
 				checkCallback: (checking) => {
-					// Commands stay registered after a mid-session disable — gate live.
-					if (this.pluginCtx.settings.pluginStates?.["card-polish"] === false)
+					if (this.ctx.settings.pluginStates?.["card-polish"] === false) {
 						return false;
-					const activeView =
-						this.pluginCtx.workspace.getActiveViewOfType(ItemView);
-					const viewType = activeView?.getViewType() ?? "";
-					if (viewType !== VIEW_TYPE_REVIEW) return false;
-					const preset = this.getPresets().find((p) => p.id === presetId);
-					if (!preset) return false;
-					if (!checking) {
-						const anchor =
-							(activeView?.containerEl.querySelector(
-								"[data-card-polish-anchor]",
-							) as HTMLElement | null) ??
-							activeView?.containerEl ??
-							null;
-						if (!anchor) return false;
-						void this.runPreset(preset, { kind: "review", anchor });
 					}
+					const activeView = this.ctx.workspace.getActiveViewOfType(ItemView);
+					if ((activeView?.getViewType() ?? "") !== VIEW_TYPE_REVIEW) {
+						return false;
+					}
+					const preset = (this.ctx.settings.cardPolish?.userPresets ?? []).find(
+						(candidate) => candidate.id === presetId,
+					);
+					if (!preset) return false;
+					if (!checking) this.runPreset(preset.prompt, preset.id);
 					return true;
 				},
 			});
 		}
+	}
+
+	private runPreset(prompt: string, presetId: string): void {
+		const plugin = this.ctx.obsidianPlugin;
+		plugin.assistantService?.startThread({
+			instruction: prompt,
+			presetId: cardPolishWorkflowId(presetId),
+			context: readLiveAssistantContext(plugin),
+		});
 	}
 }

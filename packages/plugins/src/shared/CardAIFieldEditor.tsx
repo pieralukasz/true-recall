@@ -1,12 +1,18 @@
 import { EditorState } from "@codemirror/state";
 import { EditorView } from "@codemirror/view";
-import { useEffect, useRef, useState } from "preact/hooks";
+import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 
 import type { EmbeddableEditorInstance } from "@true-recall/obsidian/editor/shared/embedded-editor";
 import {
 	useApp,
 	usePlugin,
 } from "@true-recall/obsidian/preact/ObsidianContext";
+
+import { createDebouncedCommit } from "./debounced-commit";
+
+/** Matches the card editor's own fields. Consumers of this editor persist on
+ * change, so reporting every keystroke made typing unusable. */
+const CHANGE_DEBOUNCE_MS = 150;
 
 interface CardAIFieldEditorProps {
 	value: string;
@@ -30,6 +36,17 @@ export function CardAIFieldEditor({
 	const onChangeRef = useRef(onChange);
 	onChangeRef.current = onChange;
 
+	const changes = useMemo(
+		() =>
+			createDebouncedCommit<string>(
+				(next) => onChangeRef.current?.(next),
+				CHANGE_DEBOUNCE_MS,
+			),
+		[],
+	);
+
+	useEffect(() => () => changes.flush(), [changes]);
+
 	useEffect(() => {
 		const el = containerRef.current;
 		if (!el || !plugin.EmbeddableEditor) return;
@@ -44,7 +61,8 @@ export function CardAIFieldEditor({
 				value,
 				onChange: readOnly
 					? undefined
-					: (update) => onChangeRef.current?.(update.state.doc.toString()),
+					: (update) => changes.push(update.state.doc.toString()),
+				onBlur: readOnly ? undefined : () => changes.flush(),
 				extraExtensions: extras,
 			});
 		} catch (err) {
@@ -55,6 +73,7 @@ export function CardAIFieldEditor({
 		editorRef.current = editor;
 
 		return () => {
+			changes.flush();
 			editorRef.current = null;
 			editor.destroy();
 		};
@@ -64,8 +83,11 @@ export function CardAIFieldEditor({
 	useEffect(() => {
 		const editor = editorRef.current;
 		if (!editor || editor.value === value) return;
+		// A debounced keystroke has not reached the host yet, so `value` is one
+		// edit behind the document — pushing it back would undo what was typed.
+		if (changes.hasPending()) return;
 		editor.set(value);
-	}, [value]);
+	}, [value, changes]);
 
 	if (!plugin.EmbeddableEditor || editorFailed) {
 		if (readOnly) {
@@ -80,7 +102,8 @@ export function CardAIFieldEditor({
 				class="tr-card-ai-fallback-textarea"
 				value={value}
 				aria-label={ariaLabel}
-				onInput={(e) => onChange?.((e.target as HTMLTextAreaElement).value)}
+				onInput={(e) => changes.push((e.target as HTMLTextAreaElement).value)}
+				onBlur={() => changes.flush()}
 			/>
 		);
 	}

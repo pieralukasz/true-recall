@@ -45,7 +45,7 @@ export class ReviewSelectionBubble {
 			return;
 		}
 		// Defer so the selection is final after mouseup.
-		activeWindow.setTimeout(() => this.maybeShow(), 0);
+		window.setTimeout(() => this.maybeShow(), 0);
 	};
 
 	private maybeShow(): void {

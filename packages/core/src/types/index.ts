@@ -120,8 +120,6 @@ export type {
 export type { SessionConfig } from "./session-config.types";
 export type {
 	BackupInterval,
-	ChatConfig,
-	ChatResponseLength,
 	EasyDaysConfig,
 	FSRSPreset,
 	FSRSSettings,
