@@ -90,9 +90,11 @@ if (typeof manifest.version !== "string") {
 	fail("manifest.json does not contain a string version");
 }
 const stableParts = parseVersion(manifest.version, "Manifest version");
-if (compareVersions(baseParts, stableParts) <= 0) {
+// The manifest carries the version currently being prepared, so a beta for that
+// same version is expected; only an older base is a mistake.
+if (compareVersions(baseParts, stableParts) < 0) {
 	fail(
-		`beta base ${baseVersion} must be newer than stable manifest ${manifest.version}`,
+		`beta base ${baseVersion} is older than manifest version ${manifest.version}`,
 	);
 }
 
