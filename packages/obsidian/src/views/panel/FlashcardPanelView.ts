@@ -46,10 +46,10 @@ export class FlashcardPanelView extends ItemView {
 	private signalDisposer: (() => void) | null = null;
 
 	// Editor change timer for real-time #flashcard tag detection
-	private editorChangeTimer: ReturnType<typeof setTimeout> | null = null;
+	private editorChangeTimer: number | null = null;
 
 	// Flashcard info reload timer
-	private flashcardInfoTimer: ReturnType<typeof setTimeout> | null = null;
+	private flashcardInfoTimer: number | null = null;
 
 	// Header actions (Obsidian native view actions)
 	private reviewAction: HTMLElement | null = null;
@@ -63,7 +63,7 @@ export class FlashcardPanelView extends ItemView {
 	private mobileStatusEl: HTMLElement | null = null;
 
 	// Header stats update timer for debouncing
-	private headerStatsTimer: ReturnType<typeof setTimeout> | null = null;
+	private headerStatsTimer: number | null = null;
 
 	// Cache for getCardsWithFsrs() on mobile
 	private cachedCardsWithFsrs: FSRSFlashcardItem[] | null = null;
@@ -255,17 +255,17 @@ export class FlashcardPanelView extends ItemView {
 		this.headerActionsUnsub?.();
 
 		if (this.editorChangeTimer) {
-			clearTimeout(this.editorChangeTimer);
+			window.clearTimeout(this.editorChangeTimer);
 			this.editorChangeTimer = null;
 		}
 
 		if (this.flashcardInfoTimer) {
-			clearTimeout(this.flashcardInfoTimer);
+			window.clearTimeout(this.flashcardInfoTimer);
 			this.flashcardInfoTimer = null;
 		}
 
 		if (this.headerStatsTimer) {
-			clearTimeout(this.headerStatsTimer);
+			window.clearTimeout(this.headerStatsTimer);
 			this.headerStatsTimer = null;
 		}
 
@@ -311,8 +311,8 @@ export class FlashcardPanelView extends ItemView {
 	}
 
 	private scheduleFlashcardInfoReload(): void {
-		if (this.flashcardInfoTimer) clearTimeout(this.flashcardInfoTimer);
-		this.flashcardInfoTimer = setTimeout(() => {
+		if (this.flashcardInfoTimer) window.clearTimeout(this.flashcardInfoTimer);
+		this.flashcardInfoTimer = window.setTimeout(() => {
 			this.flashcardInfoTimer = null;
 			void this.loadFlashcardInfo();
 		}, 100);
@@ -448,9 +448,9 @@ export class FlashcardPanelView extends ItemView {
 	private scheduleHeaderStatsUpdate(): void {
 		if (!Platform.isMobile) return;
 		if (this.headerStatsTimer) {
-			clearTimeout(this.headerStatsTimer);
+			window.clearTimeout(this.headerStatsTimer);
 		}
-		this.headerStatsTimer = setTimeout(() => {
+		this.headerStatsTimer = window.setTimeout(() => {
 			this.updateMobileHeaderStatus();
 			this.headerStatsTimer = null;
 		}, 100);
@@ -490,7 +490,7 @@ export class FlashcardPanelView extends ItemView {
 			titleEl.addClass("ep:hidden");
 		}
 
-		this.mobileStatusEl = document.createElement("div");
+		this.mobileStatusEl = createDiv();
 		this.mobileStatusEl.addClass(
 			"ep:flex",
 			"ep:gap-1",
@@ -612,12 +612,12 @@ export class FlashcardPanelView extends ItemView {
 
 		const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
 		const url = URL.createObjectURL(blob);
-		const link = document.createElement("a");
+		const link = createEl("a");
 		link.href = url;
 		link.download = filename;
-		document.body.appendChild(link);
+		activeDocument.body.appendChild(link);
 		link.click();
-		document.body.removeChild(link);
+		activeDocument.body.removeChild(link);
 		URL.revokeObjectURL(url);
 
 		notify().success(
@@ -629,10 +629,10 @@ export class FlashcardPanelView extends ItemView {
 		this.registerEvent(
 			this.app.workspace.on("editor-change", () => {
 				if (this.editorChangeTimer) {
-					clearTimeout(this.editorChangeTimer);
+					window.clearTimeout(this.editorChangeTimer);
 				}
 
-				this.editorChangeTimer = setTimeout(() => {
+				this.editorChangeTimer = window.setTimeout(() => {
 					void this.checkUncollectedFlashcards();
 				}, 500);
 			}),

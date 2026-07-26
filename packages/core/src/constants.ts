@@ -3,8 +3,6 @@ import type { GenerationPreset } from "./types/generation-preset.types";
 import { BUILTIN_BASIC_ID } from "./types/note.types";
 import type { FSRSPreset, TrueRecallSettings } from "./types/settings.types";
 
-export const ENABLE_RAG = true;
-
 export const VIEW_TYPE_FLASHCARD_PANEL = "true-recall-flashcard-panel";
 export const VIEW_TYPE_REVIEW = "true-recall-review";
 export const VIEW_TYPE_SIMULATOR = "true-recall-simulator";
@@ -12,6 +10,7 @@ export const VIEW_TYPE_DASHBOARD = "true-recall-dashboard-view";
 export const VIEW_TYPE_CARD_BROWSER = "true-recall-card-browser";
 export const VIEW_TYPE_STATS = "true-recall-stats";
 export const VIEW_TYPE_QUICK_NOTE_EDITOR = "true-recall-quick-note-editor";
+export const VIEW_TYPE_ASSISTANT_EDITOR = "true-recall-assistant-editor";
 export const VIEW_TYPE_NOTE_TYPE_MANAGER = "true-recall-note-type-manager";
 export const VIEW_TYPE_CARD_TYPES_EDITOR = "true-recall-card-types-editor";
 export const UNASSIGNED_PATH = "__unassigned__";
@@ -157,6 +156,7 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 	continuousCustomReviews: true,
 	ignoreDailyLimitsForNoteStudy: true,
 	showDashboardHeader: true,
+	hideTabBar: false,
 
 	reviewKeybindings: {
 		revealAndGood: " ",
@@ -189,6 +189,7 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 	copilotAutoContext: false,
 
 	loadBalanceEnabled: false,
+	loadBalanceTargetMode: "auto",
 	loadBalanceTarget: 100,
 	loadBalanceMaxDeviation: 20,
 	loadBalanceMaxShiftDays: 3,
@@ -223,22 +224,22 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 
 	editorToolbarButtons: [
 		{ id: `preset:${BUILTIN_BASIC_PRESET_ID}`, enabled: true },
-		{ id: `preset:${BUILTIN_BASIC_PRO_PRESET_ID}`, enabled: true },
 		{ id: "io", enabled: true },
 		{ id: "edit", enabled: true },
 		{ id: "quick-add", enabled: true },
 		{ id: "highlight", enabled: true },
 		{ id: "copy", enabled: true },
 		{ id: "new-note", enabled: true },
+		{ id: "ask-ai", enabled: true },
 	],
 	globalToolbarButtons: [
 		{ id: `preset:${BUILTIN_BASIC_PRESET_ID}`, enabled: true },
-		{ id: `preset:${BUILTIN_BASIC_PRO_PRESET_ID}`, enabled: true },
 		{ id: "edit", enabled: true },
 		{ id: "quick-add", enabled: true },
 		{ id: "copy", enabled: true },
 		{ id: "new-note", enabled: true },
 		{ id: "append", enabled: true },
+		{ id: "ask-ai", enabled: true },
 	],
 	imageToolbarButtons: [
 		{ id: "io", enabled: true },
@@ -246,24 +247,40 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 		{ id: "quick-add", enabled: true },
 	],
 
+	assistantModel: "",
+	assistantWebSearch: true,
+	assistantInstructions: "",
+	assistantPresets: [
+		{
+			id: "assistant-cards",
+			name: "Create cards",
+			instruction:
+				"Research the marked concept and create a small set of flashcards about it.",
+		},
+		{
+			id: "assistant-fill",
+			name: "Fill the answer",
+			instruction:
+				"Research the card's question and fill the empty answer field. Keep the answer ultra-concise (1-3 words when possible).",
+		},
+		{
+			id: "assistant-diagram",
+			name: "Add a diagram",
+			instruction:
+				"Create a Mermaid diagram that explains the marked concept and attach it to the card.",
+		},
+		{
+			id: "assistant-append",
+			name: "Append to note",
+			instruction:
+				"Research the marked concept and append a short, well-structured section about it to the current note.",
+		},
+	],
+	assistantMaxIterations: 5,
+	assistantMaxSources: 5,
+
 	enableLocalApi: false,
 	apiPort: 27182,
-
-	ragEnabled: false,
-	ragEmbeddingModel: "baai/bge-m3",
-	ragIncludeFolders: [],
-	ragExcludeFolders: [".true-recall", "templates"],
-	ragIndexFlashcards: true,
-	ragAutoIndex: true,
-	ragChunkMaxTokens: 400,
-	ragDailyNotesFolder: "",
-	ragDailyNoteExcludeHeadings: ["Thoughts", "Journal", "Reflections", "Random"],
-
-	ragChatConfig: {
-		presetId: "default",
-		customInstruction: "",
-		responseLength: "medium",
-	},
 
 	languageNoteTypeId: null,
 	languageSource: "",
@@ -347,22 +364,8 @@ export const DEFAULT_CUSTOM_BASE_URL = "http://localhost:11434/v1";
 /** Default base URL for LM Studio's OpenAI-compatible endpoint */
 export const DEFAULT_LMSTUDIO_BASE_URL = "http://localhost:1234/v1";
 
-export const LITELLM_EMBEDDINGS_URL = "https://ai.truerecall.app/v1/embeddings";
-export const OPENROUTER_EMBEDDINGS_URL =
-	"https://openrouter.ai/api/v1/embeddings";
-
-export const VIEW_TYPE_KNOWLEDGE_CHAT = "true-recall-knowledge-chat";
-
-export const RAG_FREE_NOTE_LIMIT = 100;
-
-export const RAG_CONFIG = {
-	embeddingBatchSize: 64,
-	indexDebounceMs: 5000,
-	rrf_k: 60,
-	defaultTopK: 10,
-	embeddingDims: 1024,
-	cosineThreshold: 0.35,
-} as const;
+export const VIEW_TYPE_ASSISTANT_INBOX = "true-recall-assistant-inbox";
+export const VIEW_TYPE_ASSISTANT_WORKSPACE = "true-recall-assistant-workspace";
 
 export const TRUERECALL_WEB_URL = "https://truerecall.app";
 export const TRUERECALL_NEWSLETTER_URL = "https://truerecall.app/#newsletter";

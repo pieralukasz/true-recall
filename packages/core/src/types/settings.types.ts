@@ -5,6 +5,7 @@
 import type { CardAIUserSettings } from "./card-ai-preset.types";
 import type { ReviewViewMode } from "./fsrs";
 import type { GenerationPreset } from "./generation-preset.types";
+import type { TemporaryCustomStudyDeck } from "./review-session.types";
 
 export type AITier = "pro" | "byok" | "custom" | "lmstudio";
 
@@ -14,6 +15,13 @@ export type AIProviderType = "pro" | "openrouter" | "custom" | "lmstudio";
 export interface ToolbarButtonConfig {
 	id: string;
 	enabled: boolean;
+}
+
+/** A saved quick instruction ("chip") for the AI assistant prompt. */
+export interface AssistantPreset {
+	id: string;
+	name: string;
+	instruction: string;
 }
 
 /**
@@ -107,14 +115,6 @@ export type NewReviewMix =
 	| "show-before-reviews";
 
 export type TypeInMode = "off" | "ai" | "diff";
-
-export type ChatResponseLength = "short" | "medium" | "detailed";
-
-export interface ChatConfig {
-	presetId: string;
-	customInstruction: string;
-	responseLength: ChatResponseLength;
-}
 
 /**
  * Named group of FSRS scheduling parameters (like Anki's "Deck Options").
@@ -253,6 +253,9 @@ export interface TrueRecallSettings {
 	/** Show today's summary and recently studied notes at the top of the dashboard */
 	showDashboardHeader: boolean;
 
+	/** Hide the main-window tab bar (toggled by the `toggle-tab-bar` command) */
+	hideTabBar: boolean;
+
 	/** Custom review keybindings */
 	reviewKeybindings: ReviewKeybindings;
 
@@ -290,7 +293,9 @@ export interface TrueRecallSettings {
 
 	/** Enable automatic load balancing when scheduling */
 	loadBalanceEnabled: boolean;
-	/** Target daily review count for load balancing */
+	/** How the daily target is determined: suggested from recent pace or set manually */
+	loadBalanceTargetMode: "auto" | "manual";
+	/** Target daily review count for load balancing (manual mode only) */
 	loadBalanceTarget: number;
 	/** Maximum deviation from target (percentage 0-100) */
 	loadBalanceMaxDeviation: number;
@@ -319,6 +324,8 @@ export interface TrueRecallSettings {
 
 	/** Saved custom study session presets */
 	sessionPresets: SessionPreset[];
+	/** Anki-style filtered deck created by Custom Study. */
+	temporaryCustomStudyDeck?: TemporaryCustomStudyDeck;
 
 	/** FSRS scheduling presets (always contains at least one "Default") */
 	fsrsPresets: FSRSPreset[];
@@ -349,6 +356,19 @@ export interface TrueRecallSettings {
 	/** Button configuration for the image-click toolbar */
 	imageToolbarButtons: ToolbarButtonConfig[];
 
+	/** AI Assistant: model override for the assistant scope ("" = inherit aiModel) */
+	assistantModel: string;
+	/** AI Assistant: enable OpenRouter web search on assistant requests */
+	assistantWebSearch: boolean;
+	/** AI Assistant: global instructions appended to every task's system prompt */
+	assistantInstructions: string;
+	/** AI Assistant: saved quick-instruction chips */
+	assistantPresets: AssistantPreset[];
+	/** AI Assistant: max agent loop iterations per task */
+	assistantMaxIterations: number;
+	/** AI Assistant: max web sources/citations to collect per task */
+	assistantMaxSources: number;
+
 	/** Custom generation prompt — appended to both Pro and BYOK system prompts */
 	aiGenerationPrompt?: string;
 
@@ -376,28 +396,6 @@ export interface TrueRecallSettings {
 	/** Port for local HTTP API (default 27182) */
 	apiPort: number;
 
-	/** Enable RAG knowledge base indexing (Pro only) */
-	ragEnabled: boolean;
-	/** Embedding model for RAG (reserved — not yet wired to embedding service) */
-	ragEmbeddingModel: string;
-	/** Only index notes in these folders (empty = all) */
-	ragIncludeFolders: string[];
-	/** Skip notes in these folders */
-	ragExcludeFolders: string[];
-	/** Also index flashcard content */
-	ragIndexFlashcards: boolean;
-	/** Re-index automatically when files change */
-	ragAutoIndex: boolean;
-	/** Target tokens per chunk (reserved — chunker uses hardcoded 400) */
-	ragChunkMaxTokens: number;
-	/** Explicit daily notes folder override (empty = auto-detect from Obsidian plugin) */
-	ragDailyNotesFolder: string;
-	/** Heading names to exclude from daily note indexing (case-insensitive substring match) */
-	ragDailyNoteExcludeHeadings: string[];
-
-	/** Chat persona and response style configuration */
-	ragChatConfig: ChatConfig;
-
 	/** Per-plugin enabled/disabled state (plugin ID → boolean). All enabled by default. */
 	pluginStates?: Record<string, boolean>;
 
@@ -411,7 +409,7 @@ export interface TrueRecallSettings {
 
 	/**
 	 * Overrides where True Recall writes binary attachments: pasted images,
-	 * Image Occlusion crops, AI-generated card images, and Anki import media.
+	 * Image Occlusion crops, and Anki import media.
 	 * Empty string = each feature keeps its own pre-existing fallback behavior.
 	 */
 	attachmentFolder: string;

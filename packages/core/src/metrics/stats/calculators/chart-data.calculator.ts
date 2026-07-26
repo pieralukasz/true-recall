@@ -128,6 +128,7 @@ export class ChartDataCalculator {
 	getCardsCreatedHistoryFilledSync(
 		allCards: CardSchedulingMeta[],
 		range: StatsTimeRange,
+		useSqlFastPath = true,
 	): CardsCreatedEntry[] {
 		if (range === "backlog") {
 			return [];
@@ -150,7 +151,9 @@ export class ChartDataCalculator {
 			currentDate.setDate(currentDate.getDate() + 1);
 		}
 
-		if (this.sqliteStore) {
+		// The SQL fast path counts the whole collection — callers pass
+		// useSqlFastPath=false when a stats filter is active.
+		if (this.sqliteStore && useSqlFastPath) {
 			const rawData = this.sqliteStore.stats.getCardsCreatedByDate(
 				startDateStr,
 				endDateStr,

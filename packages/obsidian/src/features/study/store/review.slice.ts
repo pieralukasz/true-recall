@@ -1,6 +1,5 @@
 import { type Grade, Rating, State } from "ts-fsrs";
 
-import { LEARN_AHEAD_LIMIT_MINUTES } from "@true-recall/core/constants";
 import type {
 	FSRSFlashcardItem,
 	ReviewResult,
@@ -12,12 +11,23 @@ import type { SessionFilters } from "@true-recall/core/types/review-session.type
 import type {
 	AppState,
 	AppStoreDeps,
-	BadgeCounts,
 	EditModeState,
 	ReviewSliceActions,
 	ReviewSliceState,
 	SessionPhase,
 } from "@true-recall/obsidian/store/types";
+
+import {
+	advanceAfterAnswer,
+	countBadges,
+	insertAt,
+	isCardDueNow,
+	isPendingLearning,
+	promoteActionableCard,
+	type QueueSnapshot,
+	removeAt,
+	removeByIds,
+} from "./review-queue.engine";
 
 type ReviewSlice = ReviewSliceState & ReviewSliceActions;
 
@@ -59,26 +69,25 @@ function createInitialState(): ReviewSliceState {
 	};
 }
 
-function getBadgeTypeForState(cardState: State): keyof BadgeCounts {
-	if (cardState === State.New) return "new";
-	if (cardState === State.Learning || cardState === State.Relearning)
-		return "learning";
-	return "due";
-}
-
-function computeBadgeCounts(
-	queue: FSRSFlashcardItem[],
-	startIndex: number,
-): BadgeCounts {
-	const counts: BadgeCounts = { new: 0, learning: 0, due: 0 };
-	for (let i = startIndex; i < queue.length; i++) {
-		const card = queue[i];
-		if (card) {
-			const badgeType = getBadgeTypeForState(card.fsrs.state);
-			counts[badgeType]++;
-		}
-	}
-	return counts;
+function buildReviewResult(
+	card: FSRSFlashcardItem,
+	rating: Grade,
+	responseTime: number,
+): ReviewResult {
+	return {
+		cardId: card.id,
+		rating,
+		timestamp: Date.now(),
+		responseTime,
+		previousState: card.fsrs.state,
+		scheduledDays: card.fsrs.scheduledDays,
+		elapsedDays: card.fsrs.lastReview
+			? Math.floor(
+					(Date.now() - new Date(card.fsrs.lastReview).getTime()) /
+						(1000 * 60 * 60 * 24),
+				)
+			: 0,
+	};
 }
 
 export function createReviewSlice(
@@ -89,22 +98,28 @@ export function createReviewSlice(
 	// Scheduling preview (ephemeral)
 	let schedulingPreview: SchedulingPreview | null = null;
 
-	// Helper to check if card is due
-	const isCardDueNowInternal = (card: FSRSFlashcardItem): boolean => {
-		const dueDate = new Date(card.fsrs.due);
-		const now = new Date();
+	/**
+	 * Commit a queue transition: badge counts are always recomputed from the
+	 * snapshot (never patched incrementally), the ephemeral scheduling
+	 * preview is dropped, and the cursor card is presented fresh.
+	 */
+	const commitQueue = (snapshot: QueueSnapshot) => {
+		schedulingPreview = null;
+		set((s) => ({
+			review: {
+				...s.review,
+				queue: snapshot.queue,
+				currentIndex: snapshot.currentIndex,
+				isAnswerRevealed: false,
+				questionShownTime: Date.now(),
+				cachedBadgeCounts: countBadges(snapshot.queue, snapshot.currentIndex),
+			},
+		}));
+	};
 
-		const isLearning =
-			card.fsrs.state === State.Learning ||
-			card.fsrs.state === State.Relearning;
-		if (isLearning) {
-			return dueDate <= now;
-		}
-
-		const learnAheadTime = new Date(
-			now.getTime() + LEARN_AHEAD_LIMIT_MINUTES * 60 * 1000,
-		);
-		return dueDate <= learnAheadTime;
+	const getSnapshot = (): QueueSnapshot => {
+		const state = get().review;
+		return { queue: state.queue, currentIndex: state.currentIndex };
 	};
 
 	const initial = createInitialState();
@@ -114,32 +129,27 @@ export function createReviewSlice(
 		...initial,
 
 		startSession: (queue: FSRSFlashcardItem[]) => {
-			const cachedBadgeCounts = computeBadgeCounts(queue, 0);
+			const promoted = promoteActionableCard({
+				queue: [...queue],
+				currentIndex: 0,
+			});
 			schedulingPreview = null;
 
 			set((s) => ({
 				review: {
 					...s.review,
 					isActive: true,
-					queue: [...queue],
+					queue: promoted.queue,
 					currentIndex: 0,
 					isAnswerRevealed: false,
 					results: [],
 					startTime: Date.now(),
 					questionShownTime: Date.now(),
 					stats: {
+						...createDefaultStats(),
 						total: queue.length,
-						reviewed: 0,
-						again: 0,
-						hard: 0,
-						good: 0,
-						easy: 0,
-						newCards: 0,
-						learningCards: 0,
-						reviewCards: 0,
-						duration: 0,
 					},
-					cachedBadgeCounts,
+					cachedBadgeCounts: countBadges(promoted.queue, 0),
 				},
 			}));
 		},
@@ -200,65 +210,10 @@ export function createReviewSlice(
 			const state = get().review;
 			if (!state.isActive) return false;
 
-			// Update badge counts incrementally - O(1)
-			const currentCard = state.queue[state.currentIndex];
-			const newCounts = { ...state.cachedBadgeCounts };
-			if (currentCard) {
-				const badgeType = getBadgeTypeForState(currentCard.fsrs.state);
-				newCounts[badgeType]--;
-			}
-
 			const nextIndex = state.currentIndex + 1;
-			schedulingPreview = null;
-
-			set((s) => ({
-				review: {
-					...s.review,
-					currentIndex: nextIndex,
-					isAnswerRevealed: false,
-					questionShownTime: Date.now(),
-					cachedBadgeCounts: newCounts,
-				},
-			}));
+			commitQueue({ queue: state.queue, currentIndex: nextIndex });
 
 			return nextIndex < state.queue.length;
-		},
-
-		recordAnswer: (rating: Grade, updatedCard: FSRSFlashcardItem) => {
-			const state = get().review;
-			if (!state.isActive) return false;
-
-			const currentCard = state.queue[state.currentIndex];
-			if (!currentCard) return false;
-
-			const responseTime = Date.now() - state.questionShownTime;
-			const result: ReviewResult = {
-				cardId: currentCard.id,
-				rating,
-				timestamp: Date.now(),
-				responseTime,
-				previousState: currentCard.fsrs.state,
-				scheduledDays: currentCard.fsrs.scheduledDays,
-				elapsedDays: currentCard.fsrs.lastReview
-					? Math.floor(
-							(Date.now() - new Date(currentCard.fsrs.lastReview).getTime()) /
-								(1000 * 60 * 60 * 24),
-						)
-					: 0,
-			};
-
-			const newQueue = [...state.queue];
-			newQueue[state.currentIndex] = updatedCard;
-
-			set((s) => ({
-				review: {
-					...s.review,
-					queue: newQueue,
-					results: [...s.review.results, result],
-				},
-			}));
-
-			return true;
 		},
 
 		recordAnswerAndNext: (
@@ -272,119 +227,49 @@ export function createReviewSlice(
 			const currentCard = state.queue[state.currentIndex];
 			if (!currentCard) return false;
 
-			// Update badge counts incrementally - O(1)
-			const newBadgeCounts = { ...state.cachedBadgeCounts };
-			const oldBadgeType = getBadgeTypeForState(currentCard.fsrs.state);
-			newBadgeCounts[oldBadgeType]--;
-
-			if (requeueData) {
-				const newBadgeType = getBadgeTypeForState(requeueData.card.fsrs.state);
-				newBadgeCounts[newBadgeType]++;
-			}
-
-			// Record answer
-			const responseTime = Date.now() - state.questionShownTime;
-			const result: ReviewResult = {
-				cardId: currentCard.id,
+			const result = buildReviewResult(
+				currentCard,
 				rating,
-				timestamp: Date.now(),
-				responseTime,
-				previousState: currentCard.fsrs.state,
-				scheduledDays: currentCard.fsrs.scheduledDays,
-				elapsedDays: currentCard.fsrs.lastReview
-					? Math.floor(
-							(Date.now() - new Date(currentCard.fsrs.lastReview).getTime()) /
-								(1000 * 60 * 60 * 24),
-						)
-					: 0,
-			};
+				Date.now() - state.questionShownTime,
+			);
 
-			const newQueue = [...state.queue];
-			newQueue[state.currentIndex] = updatedCard;
+			const advanced = advanceAfterAnswer(
+				getSnapshot(),
+				updatedCard,
+				requeueData,
+			);
 
-			if (requeueData) {
-				newQueue.splice(requeueData.position, 0, requeueData.card);
+			// ReviewSessionController reads requeueData.position after this call
+			// to record where the requeued copy actually landed (undo splices it
+			// back out by index), so the caller's object must reflect promotion.
+			if (requeueData && advanced.requeuePosition !== undefined) {
+				requeueData.position = advanced.requeuePosition;
 			}
-
-			const nextIndex = state.currentIndex + 1;
-
-			// If the next card is a pending learning card, swap it with
-			// the first actionable card further in the queue so due cards
-			// are shown before the waiting screen.
-			if (nextIndex < newQueue.length) {
-				const nextCard = newQueue[nextIndex];
-				if (nextCard) {
-					const nextIsLearning =
-						nextCard.fsrs.state === State.Learning ||
-						nextCard.fsrs.state === State.Relearning;
-					if (nextIsLearning && !isCardDueNowInternal(nextCard)) {
-						for (let i = nextIndex + 1; i < newQueue.length; i++) {
-							const candidate = newQueue[i];
-							if (!candidate) continue;
-							const candidateIsLearning =
-								candidate.fsrs.state === State.Learning ||
-								candidate.fsrs.state === State.Relearning;
-							if (!candidateIsLearning || isCardDueNowInternal(candidate)) {
-								const a = newQueue[nextIndex];
-								const b = newQueue[i];
-								if (a && b) {
-									newQueue[nextIndex] = b;
-									newQueue[i] = a;
-								}
-								if (requeueData) {
-									if (requeueData.position === nextIndex) {
-										requeueData.position = i;
-									} else if (requeueData.position === i) {
-										requeueData.position = nextIndex;
-									}
-								}
-								break;
-							}
-						}
-					}
-				}
-			}
-
-			schedulingPreview = null;
 
 			set((s) => ({
-				review: {
-					...s.review,
-					queue: newQueue,
-					results: [...s.review.results, result],
-					currentIndex: nextIndex,
-					isAnswerRevealed: false,
-					questionShownTime: Date.now(),
-					cachedBadgeCounts: newBadgeCounts,
-				},
+				review: { ...s.review, results: [...s.review.results, result] },
 			}));
+			commitQueue(advanced);
 
-			return nextIndex < newQueue.length;
+			return advanced.currentIndex < advanced.queue.length;
 		},
 
 		requeueCard: (card: FSRSFlashcardItem, position?: number) => {
 			const state = get().review;
-			const newQueue = [...state.queue];
+			const inserted = insertAt(
+				getSnapshot(),
+				card,
+				position !== undefined ? position : state.queue.length,
+			);
 
-			const insertPosition =
-				position !== undefined ? position : newQueue.length;
-			if (position !== undefined) {
-				newQueue.splice(position, 0, card);
-			} else {
-				newQueue.push(card);
-			}
-
-			const newCounts = { ...state.cachedBadgeCounts };
-			if (insertPosition >= state.currentIndex) {
-				const badgeType = getBadgeTypeForState(card.fsrs.state);
-				newCounts[badgeType]++;
-			}
-
+			// No commitQueue: requeueing must not hide a revealed answer or
+			// reset the response timer of the card being viewed.
 			set((s) => ({
 				review: {
 					...s.review,
-					queue: newQueue,
-					cachedBadgeCounts: newCounts,
+					queue: inserted.queue,
+					currentIndex: inserted.currentIndex,
+					cachedBadgeCounts: countBadges(inserted.queue, inserted.currentIndex),
 				},
 			}));
 		},
@@ -393,26 +278,7 @@ export function createReviewSlice(
 			const state = get().review;
 			if (!state.isActive) return;
 
-			const currentCard = state.queue[state.currentIndex];
-			const newCounts = { ...state.cachedBadgeCounts };
-			if (currentCard) {
-				const badgeType = getBadgeTypeForState(currentCard.fsrs.state);
-				newCounts[badgeType]--;
-			}
-
-			const newQueue = [...state.queue];
-			newQueue.splice(state.currentIndex, 1);
-			schedulingPreview = null;
-
-			set((s) => ({
-				review: {
-					...s.review,
-					queue: newQueue,
-					isAnswerRevealed: false,
-					questionShownTime: Date.now(),
-					cachedBadgeCounts: newCounts,
-				},
-			}));
+			commitQueue(removeAt(getSnapshot(), state.currentIndex));
 		},
 
 		removeCardById: (cardId: string) => {
@@ -422,86 +288,14 @@ export function createReviewSlice(
 			const cardIndex = state.queue.findIndex((c) => c.id === cardId);
 			if (cardIndex === -1) return;
 
-			const newCounts = { ...state.cachedBadgeCounts };
-			if (cardIndex >= state.currentIndex) {
-				const card = state.queue[cardIndex];
-				if (card) {
-					const badgeType = getBadgeTypeForState(card.fsrs.state);
-					newCounts[badgeType]--;
-				}
-			}
-
-			const newQueue = [...state.queue];
-			newQueue.splice(cardIndex, 1);
-
-			// Adjust currentIndex if needed
-			let newIndex = state.currentIndex;
-			if (cardIndex < state.currentIndex) {
-				newIndex = Math.max(0, newIndex - 1);
-			} else if (
-				cardIndex === state.currentIndex &&
-				newIndex >= newQueue.length
-			) {
-				newIndex = Math.max(0, newQueue.length - 1);
-			}
-
-			schedulingPreview = null;
-
-			set((s) => ({
-				review: {
-					...s.review,
-					queue: newQueue,
-					currentIndex: newIndex,
-					isAnswerRevealed: false,
-					questionShownTime: Date.now(),
-					cachedBadgeCounts: newCounts,
-				},
-			}));
+			commitQueue(removeAt(getSnapshot(), cardIndex));
 		},
 
 		removeCardsByIds: (cardIds: string[]) => {
 			const state = get().review;
 			if (!state.isActive || cardIds.length === 0) return;
 
-			const idsToRemove = new Set(cardIds);
-			let newIndex = state.currentIndex;
-			let removedBeforeCurrent = 0;
-
-			for (let i = 0; i < state.currentIndex; i++) {
-				const card = state.queue[i];
-				if (card && idsToRemove.has(card.id)) {
-					removedBeforeCurrent++;
-				}
-			}
-
-			const newCounts = { ...state.cachedBadgeCounts };
-			for (let i = state.currentIndex; i < state.queue.length; i++) {
-				const card = state.queue[i];
-				if (card && idsToRemove.has(card.id)) {
-					const badgeType = getBadgeTypeForState(card.fsrs.state);
-					newCounts[badgeType]--;
-				}
-			}
-
-			const newQueue = state.queue.filter((c) => !idsToRemove.has(c.id));
-
-			newIndex = Math.max(0, newIndex - removedBeforeCurrent);
-			if (newIndex >= newQueue.length && newQueue.length > 0) {
-				newIndex = newQueue.length - 1;
-			}
-
-			schedulingPreview = null;
-
-			set((s) => ({
-				review: {
-					...s.review,
-					queue: newQueue,
-					currentIndex: newIndex,
-					isAnswerRevealed: false,
-					questionShownTime: Date.now(),
-					cachedBadgeCounts: newCounts,
-				},
-			}));
+			commitQueue(removeByIds(getSnapshot(), cardIds));
 		},
 
 		addCardToQueue: (card: FSRSFlashcardItem) => {
@@ -509,15 +303,13 @@ export function createReviewSlice(
 			if (!state.isActive) return;
 			if (state.queue.some((c) => c.id === card.id)) return;
 
-			const badgeType = getBadgeTypeForState(card.fsrs.state);
-			const newCounts = { ...state.cachedBadgeCounts };
-			newCounts[badgeType]++;
-
+			// No commitQueue: appending must not disturb the card being viewed.
+			const queue = [...state.queue, card];
 			set((s) => ({
 				review: {
 					...s.review,
-					queue: [...s.review.queue, card],
-					cachedBadgeCounts: newCounts,
+					queue,
+					cachedBadgeCounts: countBadges(queue, s.review.currentIndex),
 				},
 			}));
 		},
@@ -526,41 +318,10 @@ export function createReviewSlice(
 			const state = get().review;
 			if (!state.isActive) return;
 
-			const clampedPosition = Math.max(
-				0,
-				Math.min(position, state.queue.length),
-			);
-
-			const newCounts = { ...state.cachedBadgeCounts };
-			if (clampedPosition >= state.currentIndex) {
-				const badgeType = getBadgeTypeForState(card.fsrs.state);
-				newCounts[badgeType]++;
-			}
-
-			const newQueue = [...state.queue];
-			newQueue.splice(clampedPosition, 0, card);
-
-			// Mirror removeCardById: when a card is inserted strictly before
-			// the current index, shift currentIndex by +1 so the user stays on
-			// the same card. Inserting at currentIndex puts the new card under
-			// the cursor (used by undo to restore the active card).
-			const newIndex =
-				clampedPosition < state.currentIndex
-					? state.currentIndex + 1
-					: state.currentIndex;
-
-			schedulingPreview = null;
-
-			set((s) => ({
-				review: {
-					...s.review,
-					queue: newQueue,
-					currentIndex: newIndex,
-					isAnswerRevealed: false,
-					questionShownTime: Date.now(),
-					cachedBadgeCounts: newCounts,
-				},
-			}));
+			// Inserting at the cursor puts the new card under it (used by undo
+			// to restore the active card); inserting before it shifts the cursor
+			// so the user stays on the same card. Both handled by the engine.
+			commitQueue(insertAt(getSnapshot(), card, position));
 		},
 
 		replaceQueue: (
@@ -574,26 +335,23 @@ export function createReviewSlice(
 				? queue.findIndex((card) => card.id === currentCardId)
 				: -1;
 			const sameCardPreserved = matchedIndex >= 0;
-			const resolvedIndex = sameCardPreserved ? matchedIndex : 0;
 
-			if (!sameCardPreserved) {
-				schedulingPreview = null;
+			if (sameCardPreserved) {
+				// Keep the card the user is looking at: no reveal/timer reset.
+				set((s) => ({
+					review: {
+						...s.review,
+						queue: [...queue],
+						currentIndex: matchedIndex,
+						cachedBadgeCounts: countBadges(queue, matchedIndex),
+					},
+				}));
+				return;
 			}
 
-			set((s) => ({
-				review: {
-					...s.review,
-					queue: [...queue],
-					currentIndex: resolvedIndex,
-					isAnswerRevealed: sameCardPreserved
-						? s.review.isAnswerRevealed
-						: false,
-					questionShownTime: sameCardPreserved
-						? s.review.questionShownTime
-						: Date.now(),
-					cachedBadgeCounts: computeBadgeCounts(queue, resolvedIndex),
-				},
-			}));
+			commitQueue(
+				promoteActionableCard({ queue: [...queue], currentIndex: 0 }),
+			);
 		},
 
 		undoLastAnswer: (
@@ -604,23 +362,6 @@ export function createReviewSlice(
 			const state = get().review;
 			if (!state.isActive) return;
 
-			const newCounts = { ...state.cachedBadgeCounts };
-			const restoredBadgeType = getBadgeTypeForState(restoredCard.fsrs.state);
-			newCounts[restoredBadgeType]++;
-
-			if (
-				requeuedAtIndex !== undefined &&
-				requeuedAtIndex < state.queue.length
-			) {
-				const requeuedCard = state.queue[requeuedAtIndex];
-				if (requeuedCard) {
-					const requeuedBadgeType = getBadgeTypeForState(
-						requeuedCard.fsrs.state,
-					);
-					newCounts[requeuedBadgeType]--;
-				}
-			}
-
 			const newQueue = [...state.queue];
 			newQueue[previousIndex] = restoredCard;
 
@@ -628,20 +369,16 @@ export function createReviewSlice(
 				newQueue.splice(requeuedAtIndex, 1);
 			}
 
-			const newResults = state.results.slice(0, -1);
-			schedulingPreview = null;
-
 			set((s) => ({
 				review: {
 					...s.review,
-					queue: newQueue,
-					currentIndex: previousIndex,
-					isAnswerRevealed: false,
-					questionShownTime: Date.now(),
-					results: newResults,
-					cachedBadgeCounts: newCounts,
+					results: s.review.results.slice(0, -1),
 				},
 			}));
+			// The restored card goes under the cursor deliberately — undo must
+			// show the exact card the user just answered, even if it is a
+			// pending learning card, so no promotion here.
+			commitQueue({ queue: newQueue, currentIndex: previousIndex });
 		},
 
 		getEditState: () => ({ ...get().review.editMode }),
@@ -726,10 +463,9 @@ export function createReviewSlice(
 
 			const currentCard = state.queue[state.currentIndex];
 			if (currentCard) {
-				const isLearning =
-					currentCard.fsrs.state === State.Learning ||
-					currentCard.fsrs.state === State.Relearning;
-				if (isLearning && !isCardDueNowInternal(currentCard)) {
+				// Every queue mutation promotes an actionable card to the cursor,
+				// so a pending card here means nothing is reviewable right now.
+				if (isPendingLearning(currentCard)) {
 					return {
 						type: "waiting",
 						timeUntilDue: get().review.getTimeUntilNextDue(),
@@ -780,17 +516,13 @@ export function createReviewSlice(
 			return Math.max(0, state.queue.length - state.currentIndex);
 		},
 
-		isCardDueNow: isCardDueNowInternal,
+		isCardDueNow: (card: FSRSFlashcardItem) => isCardDueNow(card),
 
 		getPendingLearningCards: () => {
 			const state = get().review;
-			const remaining = state.queue.slice(state.currentIndex);
-			return remaining.filter((card) => {
-				const isLearning =
-					card.fsrs.state === State.Learning ||
-					card.fsrs.state === State.Relearning;
-				return isLearning && !isCardDueNowInternal(card);
-			});
+			return state.queue
+				.slice(state.currentIndex)
+				.filter((card) => isPendingLearning(card));
 		},
 
 		getTimeUntilNextDue: () => {
@@ -817,13 +549,7 @@ export function createReviewSlice(
 
 			const currentCard = state.queue[state.currentIndex];
 			if (!currentCard) return false;
-
-			const isLearning =
-				currentCard.fsrs.state === State.Learning ||
-				currentCard.fsrs.state === State.Relearning;
-			if (!isLearning) return false;
-
-			if (isCardDueNowInternal(currentCard)) return false;
+			if (!isPendingLearning(currentCard)) return false;
 
 			const MAX_WAIT_MS = 60 * 60 * 1000;
 			const timeUntilDue = get().review.getTimeUntilNextDue();

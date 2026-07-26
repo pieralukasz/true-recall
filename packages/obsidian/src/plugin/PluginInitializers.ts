@@ -25,10 +25,11 @@ import { notify } from "@true-recall/obsidian/services/notification.service";
 import { createAppStore } from "@true-recall/obsidian/store";
 
 import type TrueRecallPlugin from "../main";
+import { AssistantService } from "../services/assistant/assistant.service";
 import { BackupRecoveryManager } from "./BackupRecoveryManager";
 import { DayRolloverWatcher } from "./DayRolloverWatcher";
-import { registerDeletionHandler } from "./PluginEventHandlers";
 import { PluginLoader } from "./plugin-loader";
+import { isPluginEnabled } from "./plugin-utils";
 
 const AUTO_BACKUP_STARTUP_DELAY_MS = 10_000;
 
@@ -138,9 +139,19 @@ async function initializeCardStore(
 			cardQuery: plugin.flashcardManager.getCardQueryService(),
 			hierarchy: plugin.hierarchyService,
 			getSettings: () => plugin.settings,
+			getAssistantTasks: () => plugin.cardStore?.assistantTasks.list(100) ?? [],
+			getAssistantThreads: () =>
+				plugin.cardStore?.assistantThreads.list(undefined, 100) ?? [],
+			getAssistantInbox: () =>
+				plugin.cardStore?.assistantThreads.list("inbox", 100) ?? [],
 		});
 
 		plugin._disposeWireDataLayer = wireDataLayer(dl, plugin.coreApp.events);
+
+		plugin.assistantService = new AssistantService(plugin);
+		if (isPluginEnabled(plugin.settings, "ai-assistant")) {
+			plugin.assistantService.start();
+		}
 
 		new DayRolloverWatcher(plugin.dayBoundaryService, dl).register(plugin);
 
@@ -202,9 +213,15 @@ function initializeDeletionHandler(plugin: TrueRecallPlugin): void {
 		store: plugin.coreApp.cardStore,
 		sessionPersistence: plugin.coreApp.sessionPersistence,
 		bus: plugin.coreApp.events,
+		notification: notify(),
 	});
 
-	registerDeletionHandler(plugin, plugin.deletionHandler);
+	// Must run before the frontmatter index drops the deleted file's UID —
+	// a plain vault "delete" listener would fire after the core app's index
+	// cleanup and orphan the note's cards.
+	plugin.coreApp.registerFileDeletionHook((path) =>
+		plugin.deletionHandler?.handleFileDeletion(path),
+	);
 
 	plugin.registerEvent(
 		plugin.app.vault.on("delete", (file) => {
@@ -376,6 +393,16 @@ async function migrateArchiveCascade(plugin: TrueRecallPlugin): Promise<void> {
 			}
 		}
 		hierarchy.invalidateGraph();
+		// Pair the graph invalidation with a DataLayer refresh (rule: every
+		// invalidateGraph needs one) — otherwise archived-derived counts stay
+		// stale until the async frontmatter events trickle in.
+		plugin.dataLayer?.invalidateGroups([
+			G.CARDS,
+			G.BROWSER,
+			G.DASHBOARD,
+			G.PANEL,
+			G.REVIEW,
+		]);
 	}
 
 	plugin.settings.archiveCascadeMigrated = true;

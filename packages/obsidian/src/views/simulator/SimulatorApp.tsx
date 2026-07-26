@@ -52,10 +52,10 @@ export function SimulatorApp() {
 		canRedoSig,
 	]);
 
-	const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const timerRef = useRef<number | null>(null);
 	const scheduleUpdate = useCallback(() => {
-		if (timerRef.current) clearTimeout(timerRef.current);
-		timerRef.current = setTimeout(() => {
+		if (timerRef.current) window.clearTimeout(timerRef.current);
+		timerRef.current = window.setTimeout(() => {
 			runSimulation();
 			timerRef.current = null;
 		}, 100);
@@ -63,7 +63,7 @@ export function SimulatorApp() {
 
 	useEffect(() => {
 		return () => {
-			if (timerRef.current) clearTimeout(timerRef.current);
+			if (timerRef.current) window.clearTimeout(timerRef.current);
 		};
 	}, []);
 

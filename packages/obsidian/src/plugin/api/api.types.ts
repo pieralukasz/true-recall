@@ -3,7 +3,9 @@ import type TrueRecallPlugin from "../../main";
 export interface ApiRequest {
 	url?: string;
 	method?: string;
-	on(event: "data", listener: (chunk: Buffer) => void): void;
+	// Node emits Buffer chunks; Buffer is a Uint8Array subclass, so typing the
+	// contract structurally avoids depending on `@types/node`.
+	on(event: "data", listener: (chunk: Uint8Array) => void): void;
 	on(event: "end", listener: () => void): void;
 	on(event: "error", listener: (err: Error) => void): void;
 	destroy(): void;
@@ -66,18 +68,21 @@ const MAX_BODY_SIZE = 2 * 1024 * 1024; // 2 MB
 
 export async function readBody(req: ApiRequest): Promise<string> {
 	return new Promise((resolve, reject) => {
+		// Streaming decode so multibyte UTF-8 sequences split across chunk
+		// boundaries are reassembled correctly.
+		const decoder = new TextDecoder();
 		let body = "";
 		let size = 0;
-		req.on("data", (chunk: Buffer) => {
+		req.on("data", (chunk) => {
 			size += chunk.length;
 			if (size > MAX_BODY_SIZE) {
 				req.destroy();
 				reject(new Error("Request body too large"));
 				return;
 			}
-			body += chunk.toString();
+			body += decoder.decode(chunk, { stream: true });
 		});
-		req.on("end", () => resolve(body));
+		req.on("end", () => resolve(body + decoder.decode()));
 		req.on("error", reject);
 	});
 }

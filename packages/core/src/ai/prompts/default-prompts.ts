@@ -31,9 +31,19 @@ export const GENERATION_LANGUAGES = [
 	{ value: "he", label: "Hebrew" },
 ] as const;
 
-export function resolveLanguageName(code: string): string {
-	return GENERATION_LANGUAGES.find((l) => l.value === code)?.label ?? code;
-}
+/**
+ * Baseline quality rules injected into every wrapped generation prompt
+ * (basic builtin, user presets, BYOK). The Pro builtin carries its own
+ * richer ruleset (builtin-basic-pro.prompt.ts) and bypasses this wrapper.
+ */
+export const CARD_QUALITY_RULES = `
+Card quality rules (apply unless the preset instructions below explicitly say otherwise):
+- ATOMIC: one card = one fact. When an answer would contain two independent facts, output two cards instead.
+- SELF-CONTAINED: every question must make sense on its own years later, without the source note. Never reference the text's structure or order — no "first/second/next rule", "one of the...", "according to the text", and no questions about an item's position in a list.
+- SINGLE ANSWER: exactly one correct answer per question given the source. Ask condition → concept; never "which of the N...".
+- CONCISE ANSWERS: a short phrase (1-3 words when possible, at most one sentence for definitions). Never a wall of text and never a list in an answer — split into more cards.
+- SOURCE FIDELITY: never invent terms, labels, or facts that are not in the provided text.
+`.trim();
 
 export function buildLanguageSuffix(languageCode: string): string {
 	if (languageCode === "auto") return "";

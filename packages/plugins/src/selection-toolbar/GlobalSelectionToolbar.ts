@@ -34,27 +34,30 @@ export class GlobalSelectionToolbar {
 	constructor(private callbacks: GlobalSelectionToolbarCallbacks) {}
 
 	register(): void {
-		document.addEventListener("selectionchange", this.onSelectionChange);
-		document.addEventListener("mouseup", this.onMouseUp);
-		document.addEventListener("keydown", this.onKeyDown);
+		activeDocument.addEventListener("selectionchange", this.onSelectionChange);
+		activeDocument.addEventListener("mouseup", this.onMouseUp);
+		activeDocument.addEventListener("keydown", this.onKeyDown);
 	}
 
 	destroy(): void {
-		document.removeEventListener("selectionchange", this.onSelectionChange);
-		document.removeEventListener("mouseup", this.onMouseUp);
-		document.removeEventListener("keydown", this.onKeyDown);
+		activeDocument.removeEventListener(
+			"selectionchange",
+			this.onSelectionChange,
+		);
+		activeDocument.removeEventListener("mouseup", this.onMouseUp);
+		activeDocument.removeEventListener("keydown", this.onKeyDown);
 		cancelAnimationFrame(this.rafId);
 		this.removeToolbar();
 	}
 
 	private onSelectionChange = (): void => {
 		cancelAnimationFrame(this.rafId);
-		this.rafId = requestAnimationFrame(() => this.checkSelection());
+		this.rafId = window.requestAnimationFrame(() => this.checkSelection());
 	};
 
 	private onMouseUp = (): void => {
 		cancelAnimationFrame(this.rafId);
-		this.rafId = requestAnimationFrame(() => this.checkSelection());
+		this.rafId = window.requestAnimationFrame(() => this.checkSelection());
 	};
 
 	private onKeyDown = (e: KeyboardEvent): void => {
@@ -101,12 +104,12 @@ export class GlobalSelectionToolbar {
 	}
 
 	private isInsideCmEditor(node: Node): boolean {
-		const el = node instanceof Element ? node : node.parentElement;
+		const el = node.instanceOf(Element) ? node : node.parentElement;
 		return !!el?.closest(".cm-editor");
 	}
 
 	private isInsideExcludedContainer(node: Node): boolean {
-		const el = node instanceof Element ? node : node.parentElement;
+		const el = node.instanceOf(Element) ? node : node.parentElement;
 		return !!el?.closest(
 			".true-recall-review-card-container, .ep-card-browser, .true-recall-selection-toolbar-container, .tr-quick-editor-view, .tr-modal-quick-editor, .tr-popout-view",
 		);
@@ -114,9 +117,9 @@ export class GlobalSelectionToolbar {
 
 	private showToolbar(text: string, range: Range): void {
 		if (!this.container) {
-			this.container = document.createElement("div");
+			this.container = createDiv();
 			this.container.className = "true-recall-selection-toolbar-container";
-			document.body.appendChild(this.container);
+			activeDocument.body.appendChild(this.container);
 			this.container.addEventListener("mousedown", (e) => e.stopPropagation());
 		}
 

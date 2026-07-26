@@ -29,11 +29,11 @@ export function downloadBlob(
 ): void {
 	const blob = new Blob([data], { type: mimeType });
 	const url = URL.createObjectURL(blob);
-	const a = document.createElement("a");
+	const a = createEl("a");
 	a.href = url;
 	a.download = filename;
-	document.body.appendChild(a);
+	activeDocument.body.appendChild(a);
 	a.click();
-	document.body.removeChild(a);
+	activeDocument.body.removeChild(a);
 	URL.revokeObjectURL(url);
 }

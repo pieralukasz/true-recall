@@ -1,5 +1,6 @@
 import { TFile } from "obsidian";
 
+import { openAiWorkspace } from "@true-recall/obsidian/features/assistant/ui/open-ai-workspace";
 import type TrueRecallPlugin from "@true-recall/obsidian/main";
 import { QuickNoteEditorModal } from "@true-recall/obsidian/modals/study/quick-note-editor/QuickNoteEditorModal";
 import { buildImageEmbed } from "@true-recall/obsidian/plugin/build-image-embed";
@@ -29,14 +30,42 @@ function executeCommand(plugin: TrueRecallPlugin, commandId: string): void {
 	).commands.executeCommandById(commandId);
 }
 
+/** Rect of the live selection, so the AI surface can float next to the text it
+ * is about. Null when the selection is already gone — the caller then lands in
+ * the docked panel instead. */
+function getSelectionRect(): DOMRect | undefined {
+	const selection = window.getSelection();
+	if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
+		return undefined;
+	}
+	return selection.getRangeAt(0).getBoundingClientRect();
+}
+
+function askAiAboutSelection(
+	plugin: TrueRecallPlugin,
+	text: string,
+	sourceFile?: TFile | null,
+): void {
+	const sourcePath =
+		sourceFile?.path ?? plugin.app.workspace.getActiveFile()?.path;
+	openAiWorkspace(plugin, {
+		intent: "selection",
+		anchor: getSelectionRect(),
+		context: {
+			selectedText: text,
+			activeNotePath: sourcePath,
+			source: sourcePath ? { path: sourcePath, text } : undefined,
+		},
+	});
+}
+
 function getSourceFileFromDOM(
 	plugin: TrueRecallPlugin,
 	range: Range,
 ): TFile | null {
-	const el =
-		range.commonAncestorContainer instanceof Element
-			? range.commonAncestorContainer
-			: range.commonAncestorContainer.parentElement;
+	const el = range.commonAncestorContainer.instanceOf(Element)
+		? range.commonAncestorContainer
+		: range.commonAncestorContainer.parentElement;
 
 	const leafContent = el?.closest(".workspace-leaf-content");
 	if (!leafContent) return null;
@@ -49,7 +78,7 @@ function getSourceFileFromDOM(
 		if (containerEl?.contains(leafContent)) {
 			const view = leaf.view;
 			if (view && "file" in view && view.file instanceof TFile) {
-				found = view.file as TFile;
+				found = view.file;
 			}
 		}
 	});
@@ -57,7 +86,7 @@ function getSourceFileFromDOM(
 }
 
 function closestWithDataLine(node: Node): Element | null {
-	const el = node instanceof Element ? node : node.parentElement;
+	const el = node.instanceOf(Element) ? node : node.parentElement;
 	return el?.closest("[data-line]") ?? null;
 }
 
@@ -66,10 +95,9 @@ async function resolveMarkdownFromRange(
 	range: Range,
 	fallback: string,
 ): Promise<string> {
-	const container =
-		range.commonAncestorContainer instanceof Element
-			? range.commonAncestorContainer
-			: range.commonAncestorContainer.parentElement;
+	const container = range.commonAncestorContainer.instanceOf(Element)
+		? range.commonAncestorContainer
+		: range.commonAncestorContainer.parentElement;
 	if (!container?.closest(".markdown-preview-view")) return fallback;
 
 	const sourceFile = getSourceFileFromDOM(plugin, range);
@@ -182,6 +210,7 @@ export const selectionToolbarManifest: PluginManifest = {
 				onHighlight: () => {},
 				onNewNote: (text) => createNoteFromSelection(plugin, text),
 				onAppend: (text) => appendToCurrentNote(plugin, text),
+				onAskAI: (text) => askAiAboutSelection(plugin, text),
 				onCommand: (id) => executeCommand(plugin, id),
 				onDismiss: () => {},
 			},
@@ -255,6 +284,8 @@ export const selectionToolbarManifest: PluginManifest = {
 				onHighlight: () => {},
 				onNewNote: (text) => createNoteFromSelection(plugin, text),
 				onAppend: (text) => appendToCurrentNote(plugin, text),
+				onAskAI: (text, sourceFile) =>
+					askAiAboutSelection(plugin, text, sourceFile),
 				onCommand: (id) => executeCommand(plugin, id),
 				onDismiss: () => {},
 			},

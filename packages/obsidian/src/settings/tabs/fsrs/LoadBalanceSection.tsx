@@ -8,12 +8,13 @@ import {
 	FormField,
 	SelectInput,
 	SliderInput,
-	TextInput,
 	ToggleInput,
 } from "@true-recall/obsidian/components";
 import { WorkloadForecastSection } from "@true-recall/obsidian/features/metrics/ui/stats/components/WorkloadForecastSection";
 
 import type { FsrsPluginHost } from "../../../types/plugin-host.types";
+import { TargetInsights } from "./TargetInsights";
+import { describeSuggestion, sliderMax } from "./target-copy";
 import { useFsrsHelperOp } from "./useFsrsHelperOp";
 
 interface LoadBalanceSectionProps {
@@ -23,6 +24,10 @@ interface LoadBalanceSectionProps {
 }
 
 const FORECAST_DAYS = 30;
+const TARGET_MODE_OPTIONS = [
+	{ value: "auto", label: "Automatic (suggested from your pace)" },
+	{ value: "manual", label: "Manual" },
+];
 const BALANCE_RANGE_OPTIONS = [
 	{ value: "30", label: "Next 30 days" },
 	{ value: "60", label: "Next 60 days" },
@@ -65,16 +70,26 @@ export function LoadBalanceSection({
 	const forecastData = useMemo(() => {
 		const helper = plugin.fsrsHelper;
 		if (!helper) return null;
+		// forecastVersion, loadBalanceTarget, and loadBalanceMaxDeviation are read
+		// here only to force recomputation — helper.getWorkloadForecast() etc.
+		// read live settings internally, so nothing here references them directly.
+		// Without this, the forecast would go stale after editing the target or
+		// deviation sliders below (they only call `save`, not setForecastVersion).
 		void forecastVersion;
+		void settings.loadBalanceTarget;
+		void settings.loadBalanceTargetMode;
+		void settings.loadBalanceMaxDeviation;
 		return {
 			forecast: helper.getWorkloadForecast(FORECAST_DAYS),
 			summary: helper.getWorkloadForecastSummary(FORECAST_DAYS),
 			dayOfWeek: helper.getWorkloadByDayOfWeek(FORECAST_DAYS),
+			decision: helper.getWorkloadDecision(),
 		};
 	}, [
 		plugin.fsrsHelper,
 		forecastVersion,
 		settings.loadBalanceTarget,
+		settings.loadBalanceTargetMode,
 		settings.loadBalanceMaxDeviation,
 	]);
 
@@ -106,18 +121,46 @@ export function LoadBalanceSection({
 			</FormField>
 
 			<FormField
-				name="Target daily reviews"
-				description="Target number of reviews per day for balancing"
+				name="Daily target"
+				description={
+					settings.loadBalanceTargetMode === "auto" && forecastData
+						? describeSuggestion(forecastData.decision)
+						: "How the daily review target is determined"
+				}
 			>
-				<TextInput
-					value={String(settings.loadBalanceTarget)}
-					onChange={(v) => {
-						const num = parseInt(v, 10) || 100;
-						void save({ loadBalanceTarget: Math.max(1, num) });
-					}}
-					placeholder="100"
+				<SelectInput
+					value={settings.loadBalanceTargetMode}
+					options={TARGET_MODE_OPTIONS}
+					onChange={(v) =>
+						void save({
+							loadBalanceTargetMode: v === "manual" ? "manual" : "auto",
+						})
+					}
 				/>
 			</FormField>
+
+			{settings.loadBalanceTargetMode === "manual" && forecastData ? (
+				<FormField
+					name="Target daily reviews"
+					description="Pick your number — the line below shows what it commits you to"
+				>
+					<SliderInput
+						value={settings.loadBalanceTarget}
+						onChange={(v) => void save({ loadBalanceTarget: Math.max(1, v) })}
+						min={1}
+						max={sliderMax(forecastData.decision, settings.loadBalanceTarget)}
+						step={1}
+						formatTooltip={(v) => `${v}/day`}
+					/>
+				</FormField>
+			) : null}
+
+			{forecastData ? (
+				<TargetInsights
+					decision={forecastData.decision}
+					target={forecastData.decision.effectiveTarget}
+				/>
+			) : null}
 
 			<FormField
 				name="Maximum deviation (%)"
@@ -159,7 +202,7 @@ export function LoadBalanceSection({
 
 			<FormField
 				name="Balance workload now"
-				description="Apply load balancing immediately to existing scheduled reviews"
+				description="Apply load balancing immediately to scheduled reviews, spreading any overdue backlog from today forward"
 			>
 				<div class="ep:flex ep:items-center ep:gap-2">
 					<ActionButton

@@ -3,6 +3,8 @@ import { formatLocalDate } from "@true-recall/core/utils";
 import type { ApiContext, ApiRequest, ApiResponseWriter } from "../api.types";
 import { sendError, sendOk } from "../api.types";
 
+const MAX_DAILY_STATS_RANGE_DAYS = 366;
+
 export function handleGetSummary(
 	_req: ApiRequest,
 	res: ApiResponseWriter,
@@ -68,6 +70,27 @@ export function handleGetDailyStats(
 
 	if (!start || !end) {
 		sendError(res, 400, "Query params start and end (YYYY-MM-DD) required");
+		return;
+	}
+
+	const startTime = new Date(start).getTime();
+	const endTime = new Date(end).getTime();
+	if (Number.isNaN(startTime) || Number.isNaN(endTime)) {
+		sendError(res, 400, "start and end must be valid YYYY-MM-DD dates");
+		return;
+	}
+	if (startTime > endTime) {
+		sendError(res, 400, "start must not be after end");
+		return;
+	}
+	// Each day is a synchronous SQL query on the main thread — cap the range.
+	const rangeDays = (endTime - startTime) / 86_400_000;
+	if (rangeDays > MAX_DAILY_STATS_RANGE_DAYS) {
+		sendError(
+			res,
+			400,
+			`Date range too large (max ${MAX_DAILY_STATS_RANGE_DAYS} days)`,
+		);
 		return;
 	}
 

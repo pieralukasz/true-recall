@@ -1,4 +1,5 @@
 import { cva, type VariantProps } from "class-variance-authority";
+import type { JSX } from "preact";
 
 import type { NoteStatusInfo } from "@true-recall/obsidian/data";
 import { FSRS_COLORS } from "@true-recall/obsidian/helpers/fsrs-colors";
@@ -44,7 +45,7 @@ export function LinkTextCount({ info, variant }: LinkTextCountProps) {
 		parts.push({ count: info.dueToday, label: "due", cls: COUNT_CLS.due });
 
 	const countElements = parts.flatMap((part, i) => {
-		const els: preact.JSX.Element[] = [];
+		const els: JSX.Element[] = [];
 		if (i > 0) {
 			els.push(
 				<span key={`sep-${i}`} class={COUNT_CLS.sep}>

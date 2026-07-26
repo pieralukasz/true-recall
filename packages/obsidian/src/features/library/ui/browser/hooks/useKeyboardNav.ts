@@ -90,8 +90,8 @@ export function useKeyboardNav({
 			}
 		}
 
-		document.addEventListener("keydown", handleKeyDown);
-		return () => document.removeEventListener("keydown", handleKeyDown);
+		activeDocument.addEventListener("keydown", handleKeyDown);
+		return () => activeDocument.removeEventListener("keydown", handleKeyDown);
 	}, [
 		cards,
 		selectedIds,

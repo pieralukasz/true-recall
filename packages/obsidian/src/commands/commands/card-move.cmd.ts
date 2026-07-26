@@ -3,6 +3,7 @@ import type { Command, CommandContext } from "../command.types";
 export class MoveCardCommand implements Command {
 	readonly type = "card:move";
 	readonly mutationType = "card:updated" as const;
+	readonly skipExecuteMutation = true;
 	readonly description: string;
 
 	private originalSourceUid: string | undefined;

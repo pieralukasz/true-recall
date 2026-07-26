@@ -14,7 +14,6 @@ import { navigationTools } from "./tools/navigation-tools.js";
 import { noteTools } from "./tools/note-tools.js";
 import { presetTools } from "./tools/preset-tools.js";
 import { queryTools } from "./tools/query-tools.js";
-import { ragTools } from "./tools/rag-tools.js";
 import { reviewTools } from "./tools/review-tools.js";
 import { sessionTools } from "./tools/session-tools.js";
 import { statsTools } from "./tools/stats-tools.js";
@@ -56,16 +55,8 @@ const server = new McpServer(
 			"TOOL TIPS: Only call get_active_note when you need the full markdown content of the note.",
 			"get_due_cards and list_cards can return 100k+ characters — prefer live context for counts.",
 			"",
-			"KNOWLEDGE BASE (Pro only): search_knowledge provides semantic search + FSRS mastery data.",
-			"Use it FIRST for conceptual/topic questions ('co wiem o X', 'explain Y', 'find notes about Z').",
-			"Use sourceIds param to scope search to specific notes (pass file paths from activeNote.path).",
-			"Results include FSRS data per flashcard — low stability + high lapses = struggling, high stability = mastered.",
-			"Results include modifiedAt timestamps for recency-aware answers.",
-			"If search_knowledge returns 'Pro subscription required', the user is on the free/BYOK tier.",
-			"",
 			"COOPERATING WITH OBSIDIAN TOOLS: True Recall and Obsidian MCP tools complement each other.",
 			"Use Obsidian search_notes for: exact text matches, tag queries, frontmatter filters, date-based lookups.",
-			"Use Obsidian read_note after search_knowledge to get the full content of a found note (search returns chunks, not full notes).",
 			"Use Obsidian list_directory to browse vault structure (Johnny.Decimal folders).",
 			"Use Obsidian write_note/patch_note for all note creation and editing.",
 		].join("\n"),
@@ -86,7 +77,6 @@ registerTools(server, client, [
 	...backupTools,
 	...statsTools,
 	...queryTools,
-	...ragTools,
 ]);
 
 const transport = new StdioServerTransport();

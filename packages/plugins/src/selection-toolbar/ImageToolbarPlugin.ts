@@ -26,7 +26,7 @@ function extractImagePathFromClick(
 		if (src) return src;
 	}
 
-	if (target instanceof HTMLImageElement) {
+	if (target.instanceOf(HTMLImageElement)) {
 		const pos = view.posAtDOM(target);
 		if (pos != null) {
 			const line = view.state.doc.lineAt(pos);
@@ -79,10 +79,9 @@ export function createImageToolbarExtension(
 					return;
 				}
 
-				const imgEl =
-					target instanceof HTMLImageElement
-						? target
-						: target.querySelector("img");
+				const imgEl = target.instanceOf(HTMLImageElement)
+					? target
+					: target.querySelector("img");
 
 				if (!imgEl) {
 					this.removeToolbar();
@@ -104,9 +103,9 @@ export function createImageToolbarExtension(
 
 			private showToolbar(imagePath: string, imgEl: HTMLElement): void {
 				if (!this.container) {
-					this.container = document.createElement("div");
+					this.container = createDiv();
 					this.container.className = "true-recall-image-toolbar-container";
-					document.body.appendChild(this.container);
+					activeDocument.body.appendChild(this.container);
 					this.registerOutsideClick();
 				}
 
@@ -159,16 +158,22 @@ export function createImageToolbarExtension(
 					this.removeToolbar();
 				};
 
-				setTimeout(() => {
+				window.setTimeout(() => {
 					if (this.outsideClickHandler) {
-						document.addEventListener("mousedown", this.outsideClickHandler);
+						activeDocument.addEventListener(
+							"mousedown",
+							this.outsideClickHandler,
+						);
 					}
 				}, 0);
 			}
 
 			private removeToolbar(): void {
 				if (this.outsideClickHandler) {
-					document.removeEventListener("mousedown", this.outsideClickHandler);
+					activeDocument.removeEventListener(
+						"mousedown",
+						this.outsideClickHandler,
+					);
 					this.outsideClickHandler = null;
 				}
 

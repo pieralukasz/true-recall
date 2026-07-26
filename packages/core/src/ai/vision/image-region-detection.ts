@@ -143,7 +143,7 @@ export function parseAIRegions(responseText: string): IORegion[] {
 	return parsed
 		.map((item: unknown) => {
 			if (typeof item !== "object" || item === null) return null;
-			return parseBox(item as RawBox);
+			return parseBox(item);
 		})
 		.filter((r): r is IORegion => r !== null);
 }

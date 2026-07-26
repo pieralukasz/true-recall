@@ -50,6 +50,16 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 	});
 
 	plugin.addCommand({
+		id: "toggle-tab-bar",
+		name: "Toggle tab bar",
+		checkCallback: (checking) => {
+			if (!isDesktop()) return false;
+			if (!checking) void plugin.toggleTabBar();
+			return true;
+		},
+	});
+
+	plugin.addCommand({
 		id: "open-card-browser",
 		name: "Open card browser",
 		checkCallback: (checking) => {
@@ -109,7 +119,7 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 
 	plugin.addCommand({
 		id: "add-flashcard-uid",
-		name: "Add flashcard uid to current note",
+		name: "Add flashcard UID to current note",
 		checkCallback: (checking) => {
 			const file = plugin.app.workspace.getActiveFile();
 			if (file && file.extension === "md") {
@@ -219,12 +229,23 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 	});
 
 	plugin.addCommand({
-		id: "open-knowledge-chat",
-		name: "Chat with knowledge base",
+		id: "open-assistant-workspace",
+		name: "Open Ask AI panel",
 		checkCallback: (checking) => {
 			if (!isDesktop()) return false;
-			if (!isPluginEnabled(plugin.settings, "knowledge-base")) return false;
-			if (!checking) void plugin.openKnowledgeChat();
+			if (!isPluginEnabled(plugin.settings, "ai-assistant")) return false;
+			if (!checking) void plugin.openAssistantWorkspace();
+			return true;
+		},
+	});
+
+	plugin.addCommand({
+		id: "open-assistant-inbox",
+		name: "Open AI assistant inbox",
+		checkCallback: (checking) => {
+			if (!isDesktop()) return false;
+			if (!isPluginEnabled(plugin.settings, "ai-assistant")) return false;
+			if (!checking) void plugin.openAssistantInbox();
 			return true;
 		},
 	});

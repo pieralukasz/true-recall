@@ -10,6 +10,15 @@ export interface ReleaseInfo {
 	htmlUrl: string;
 }
 
+/** Minimal shape of a GitHub Releases API response we actually read. */
+interface GitHubReleaseResponse {
+	tag_name: string;
+	name?: string | null;
+	body?: string | null;
+	published_at: string;
+	html_url: string;
+}
+
 export async function fetchLatestRelease(): Promise<ReleaseInfo | null> {
 	try {
 		const response = await requestUrl({
@@ -19,9 +28,9 @@ export async function fetchLatestRelease(): Promise<ReleaseInfo | null> {
 		});
 		if (response.status !== 200) return null;
 
-		const data = response.json;
+		const data = response.json as GitHubReleaseResponse;
 		return {
-			version: (data.tag_name as string).replace(/^v/, ""),
+			version: data.tag_name.replace(/^v/, ""),
 			name: data.name ?? data.tag_name,
 			body: data.body ?? "",
 			publishedAt: data.published_at,

@@ -8,6 +8,8 @@ import { IntegrityCheckService } from "../../services/maintenance/integrity-chec
 import type { CardSchedulingMeta, FSRSCardData } from "../../types";
 import { NOTIFICATION_DURATION, notify } from "../notification";
 import {
+	AssistantTaskActions,
+	AssistantThreadActions,
 	CardActions,
 	NoteActions,
 	NoteTypeActions,
@@ -32,7 +34,8 @@ export class SqliteStoreService {
 	private db: SqliteDatabase;
 	private isLoaded = false;
 	private isDirty = false;
-	private saveTimer: ReturnType<typeof setTimeout> | null = null;
+	private persistenceHalted = false;
+	private saveTimer: number | null = null;
 	private flushPromise: Promise<boolean> | null = null;
 	private suppressRetryScheduling = false;
 	private lastFlushStartedAt: number | null = null;
@@ -46,6 +49,8 @@ export class SqliteStoreService {
 	public readonly notes: NoteActions;
 	public readonly noteTypes: NoteTypeActions;
 	public readonly integrity: IntegrityCheckService;
+	public readonly assistantTasks: AssistantTaskActions;
+	public readonly assistantThreads: AssistantThreadActions;
 
 	constructor(persistence: IPersistence, deviceId: string) {
 		this.persistence = persistence;
@@ -57,6 +62,8 @@ export class SqliteStoreService {
 		this.notes = new NoteActions(this.db);
 		this.noteTypes = new NoteTypeActions(this.db);
 		this.integrity = new IntegrityCheckService(this.db);
+		this.assistantTasks = new AssistantTaskActions(this.db);
+		this.assistantThreads = new AssistantThreadActions(this.db);
 	}
 
 	getSqliteDb(): SqliteDatabase {
@@ -329,26 +336,40 @@ export class SqliteStoreService {
 
 	private scheduleSave(): void {
 		if (this.saveTimer) {
-			clearTimeout(this.saveTimer);
+			window.clearTimeout(this.saveTimer);
 		}
 
-		this.saveTimer = setTimeout(() => {
+		this.saveTimer = window.setTimeout(() => {
 			void this.doFlush();
 		}, SAVE_DEBOUNCE_MS);
 	}
 
 	private scheduleFollowUpFlush(): void {
 		if (this.saveTimer) {
-			clearTimeout(this.saveTimer);
+			window.clearTimeout(this.saveTimer);
 		}
-		this.saveTimer = setTimeout(() => {
+		this.saveTimer = window.setTimeout(() => {
 			void this.doFlush();
 		}, SqliteStoreService.FOLLOW_UP_FLUSH_MS);
+	}
+
+	/**
+	 * Permanently stop writing the in-memory database to disk (until reload).
+	 * Used after restore-from-backup: without this, the next debounced flush
+	 * would export the pre-restore in-memory DB over the restored file.
+	 */
+	haltPersistence(): void {
+		this.persistenceHalted = true;
+		if (this.saveTimer) {
+			window.clearTimeout(this.saveTimer);
+			this.saveTimer = null;
+		}
 	}
 
 	private async runFlushPass(
 		scheduleRetryOnFailure: boolean,
 	): Promise<boolean> {
+		if (this.persistenceHalted) return true; // Restore pending — never write
 		if (!this.db.isReady() || !this.isDirty) return true; // Nothing to save = success
 
 		const MAX_RETRIES = 3;
@@ -391,7 +412,7 @@ export class SqliteStoreService {
 					if (attempt < MAX_RETRIES) {
 						// Exponential backoff: 100ms, 200ms, 400ms...
 						const delay = BASE_DELAY_MS * 2 ** (attempt - 1);
-						await new Promise((resolve) => setTimeout(resolve, delay));
+						await new Promise((resolve) => window.setTimeout(resolve, delay));
 					} else {
 						// Final failure - notify user, keep isDirty=true for retry
 						notify().error(
@@ -428,7 +449,7 @@ export class SqliteStoreService {
 
 	async saveNow(options?: { bestEffort?: boolean }): Promise<boolean> {
 		if (this.saveTimer) {
-			clearTimeout(this.saveTimer);
+			window.clearTimeout(this.saveTimer);
 			this.saveTimer = null;
 		}
 
@@ -505,6 +526,18 @@ export class SqliteStoreService {
 
 	getDueCardsByDateRange(startDate: string, endDate: string): FSRSCardData[] {
 		return this.cards.getDueCardsByDateRange(startDate, endDate);
+	}
+
+	getDueCountsByDateRange(
+		startDate: string,
+		endDate: string,
+		excludeCardId?: string,
+	): { day: string; count: number }[] {
+		return this.cards.getDueCountsByDateRange(
+			startDate,
+			endDate,
+			excludeCardId,
+		);
 	}
 
 	updateCardDue(cardId: string, newDue: string): void {

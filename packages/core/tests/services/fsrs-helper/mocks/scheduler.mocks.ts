@@ -1,10 +1,12 @@
 /**
  * Mock factories for FSRS Helper scheduler service tests
  */
+import { State } from "ts-fsrs";
 import { type Mock, vi } from "vitest";
 
 import type {
 	CardDueInfo,
+	DueDayCount,
 	SchedulerCardData,
 	SchedulerCardStore,
 	WorkloadDistribution,
@@ -22,6 +24,10 @@ export interface MockSchedulerCardStore extends SchedulerCardStore {
 		[startDate: string, endDate: string],
 		CardDueInfo[]
 	>;
+	getDueCountsByDateRange: Mock<
+		[startDate: string, endDate: string, excludeCardId?: string],
+		DueDayCount[]
+	>;
 	updateCardDue: Mock<[cardId: string, newDue: string], Promise<void>>;
 	updateCardScheduling: Mock<
 		[cardId: string, data: { due: string; scheduledDays: number }],
@@ -32,14 +38,40 @@ export interface MockSchedulerCardStore extends SchedulerCardStore {
 /**
  * Create a mock SchedulerCardStore for scheduler tests.
  * Returns a properly typed mock that satisfies the SchedulerCardStore interface.
+ *
+ * getDueCountsByDateRange derives its counts from whatever
+ * getDueCardsByDateRange returns, mirroring the production SQL semantics
+ * (Review cards only, range-filtered by UTC due day, optional exclusion).
+ * Tests that stub getDueCardsByDateRange get matching counts for free.
  */
 export function createMockCardStore(
 	cards: CardDueInfo[] = [],
 ): MockSchedulerCardStore {
+	const getDueCardsByDateRange = vi
+		.fn<[string, string], CardDueInfo[]>()
+		.mockReturnValue(cards);
+
+	const getDueCountsByDateRange = vi
+		.fn<[string, string, string?], DueDayCount[]>()
+		.mockImplementation(
+			(startDate: string, endDate: string, excludeCardId?: string) => {
+				const counts = new Map<string, number>();
+				for (const card of getDueCardsByDateRange(startDate, endDate)) {
+					if (card.state === State.New) continue;
+					if (card.id === excludeCardId) continue;
+					const day = card.due.split("T")[0] ?? "";
+					if (day < startDate || day > endDate) continue;
+					counts.set(day, (counts.get(day) ?? 0) + 1);
+				}
+				return Array.from(counts.entries())
+					.map(([day, count]) => ({ day, count }))
+					.sort((a, b) => a.day.localeCompare(b.day));
+			},
+		);
+
 	return {
-		getDueCardsByDateRange: vi
-			.fn<[string, string], CardDueInfo[]>()
-			.mockReturnValue(cards),
+		getDueCardsByDateRange,
+		getDueCountsByDateRange,
 		updateCardDue: vi
 			.fn<[string, string], Promise<void>>()
 			.mockResolvedValue(undefined),

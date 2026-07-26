@@ -33,14 +33,14 @@ export function BulkActionsBar({
 		mutate("card:suspended", () => {});
 		notify().success(`Suspended ${count} cards`);
 		onClearSelection();
-	}, [ids, plugin]);
+	}, [ids, plugin, onClearSelection]);
 
 	const handleUnsuspend = useCallback(() => {
 		const count = plugin.cardStore.cards.bulkUnsuspend(ids);
 		mutate("card:unsuspended", () => {});
 		notify().success(`Unsuspended ${count} cards`);
 		onClearSelection();
-	}, [ids, plugin]);
+	}, [ids, plugin, onClearSelection]);
 
 	const handleForget = useCallback(() => {
 		const count = plugin.cardStore.cards.bulkForget(ids);
@@ -52,7 +52,7 @@ export function BulkActionsBar({
 		mutate("card:reset", () => {});
 		notify().cardsForgotten(count);
 		onClearSelection();
-	}, [ids, plugin]);
+	}, [ids, plugin, onClearSelection]);
 
 	const handleChangeType = useCallback(async () => {
 		const noteInfos = plugin.cardStore.cards.getNoteInfoForCardIds(ids);
@@ -102,7 +102,7 @@ export function BulkActionsBar({
 		if (totalDeleted > 0) parts.push(`${totalDeleted} cards removed`);
 		notify().success(parts.join(", "));
 		onClearSelection();
-	}, [ids, plugin, app]);
+	}, [ids, plugin, app, onClearSelection]);
 
 	const handleDelete = useCallback(async () => {
 		const { confirm } = await import(
@@ -116,7 +116,7 @@ export function BulkActionsBar({
 			void plugin.commandService?.undo();
 		});
 		onClearSelection();
-	}, [ids, plugin, app]);
+	}, [ids, plugin, app, onClearSelection]);
 
 	return (
 		<div class="ep:shrink-0 ep:flex ep:items-center ep:gap-2 ep:px-3 ep:py-2 ep:bg-obs-interactive/5 ep:border-b ep:border-obs-interactive/20">
@@ -150,7 +150,7 @@ export function BulkActionsBar({
 			</div>
 
 			<Clickable
-				class="ep:p-1 ep:rounded hover:ep:bg-obs-modifier-hover ep:text-obs-muted"
+				class="ep:p-1 ep:rounded ep:hover:bg-obs-modifier-hover ep:text-obs-muted"
 				onClick={onClearSelection}
 			>
 				<svg
@@ -181,9 +181,9 @@ function ActionButton({
 }) {
 	return (
 		<Clickable
-			class={`ep:px-2.5 ep:py-1 ep:rounded ep:text-[11px] ep:font-medium ep:border ep:border-obs-border hover:ep:bg-obs-modifier-hover ${
+			class={`ep:px-2.5 ep:py-1 ep:rounded ep:text-[11px] ep:font-medium ep:border ep:border-obs-border ep:hover:bg-obs-modifier-hover ${
 				danger
-					? "ep:text-obs-error hover:ep:border-obs-error/30"
+					? "ep:text-obs-error ep:hover:border-obs-error/30"
 					: "ep:text-obs-normal"
 			}`}
 			onClick={onClick}

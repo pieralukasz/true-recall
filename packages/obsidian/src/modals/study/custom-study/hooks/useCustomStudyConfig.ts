@@ -1,87 +1,91 @@
 import { useCallback, useState } from "preact/hooks";
 
-import type { SessionResult } from "@true-recall/core/types/events.types";
-import type { ReviewOrder } from "@true-recall/core/types/settings.types";
+import type {
+	CustomStudyCardState,
+	CustomStudyRequest,
+} from "@true-recall/core/types/review-session.types";
 
 import type { CustomStudyModalResult } from "@true-recall/obsidian/modals/study/custom-study/types";
 
-interface CustomStudyConfig {
-	stateFilter: "all" | "new" | "learning" | "due";
-	difficultyMin: number;
-	difficultyMax: number;
-	lapsesMin: number;
-	reviewOrder: ReviewOrder;
+export type CustomStudyMode = CustomStudyRequest["kind"];
+
+export interface CustomStudyConfig {
+	mode: CustomStudyMode;
+	amount: number;
+	days: number;
+	cardState: CustomStudyCardState;
 	cardLimit: number;
-	studyAheadDays: number;
-	crammingMode: boolean;
+	includeTags: string;
+	excludeTags: string;
 }
 
 const DEFAULT_CONFIG: CustomStudyConfig = {
-	stateFilter: "all",
-	difficultyMin: 1,
-	difficultyMax: 10,
-	lapsesMin: 0,
-	reviewOrder: "due-date",
-	cardLimit: 0,
-	studyAheadDays: 0,
-	crammingMode: false,
+	mode: "increase-new",
+	amount: 1,
+	days: 1,
+	cardState: "new",
+	cardLimit: 100,
+	includeTags: "",
+	excludeTags: "",
 };
 
+function parseTags(value: string): string[] {
+	return [
+		...new Set(
+			value
+				.split(",")
+				.map((tag) => tag.trim())
+				.filter(Boolean),
+		),
+	];
+}
+
+function buildRequest(config: CustomStudyConfig): CustomStudyRequest {
+	switch (config.mode) {
+		case "increase-new":
+		case "increase-review":
+			return { kind: config.mode, amount: config.amount };
+		case "forgotten":
+		case "review-ahead":
+		case "preview-new":
+			return { kind: config.mode, days: config.days };
+		case "state-or-tag":
+			return {
+				kind: "state-or-tag",
+				cardState: config.cardState,
+				cardLimit: config.cardLimit,
+				tagsToInclude: parseTags(config.includeTags),
+				tagsToExclude: parseTags(config.excludeTags),
+			};
+	}
+}
+
 export function useCustomStudyConfig() {
-	const [config, setConfig] = useState<CustomStudyConfig>({
+	const [config, setConfig] = useState<CustomStudyConfig>(() => ({
 		...DEFAULT_CONFIG,
-	});
+	}));
 
 	const updateConfig = useCallback(
 		<K extends keyof CustomStudyConfig>(
 			key: K,
 			value: CustomStudyConfig[K],
 		) => {
-			setConfig((prev) => ({ ...prev, [key]: value }));
+			setConfig((current) => ({ ...current, [key]: value }));
 		},
 		[],
 	);
 
-	const buildResult = useCallback(
-		(presetName?: string): CustomStudyModalResult => {
-			const hasDifficultyFilter =
-				config.difficultyMin > 1 || config.difficultyMax < 10;
-			const hasLapsesFilter = config.lapsesMin > 0;
-
-			const sessionResult: SessionResult = {
+	const buildResult = useCallback((): CustomStudyModalResult => {
+		return {
+			cancelled: false,
+			sessionResult: {
 				cancelled: false,
 				sessionType: "custom-study",
 				ignoreDailyLimits: true,
-				bypassScheduling: true,
-				reviewOrder: config.reviewOrder,
-				stateFilter:
-					config.stateFilter === "all" ? undefined : config.stateFilter,
-				difficultyRange: hasDifficultyFilter
-					? { min: config.difficultyMin, max: config.difficultyMax }
-					: undefined,
-				lapsesRange: hasLapsesFilter
-					? { min: config.lapsesMin, max: Infinity }
-					: undefined,
-				cardLimit: config.cardLimit > 0 ? config.cardLimit : undefined,
-				studyAheadDays:
-					config.studyAheadDays > 0 ? config.studyAheadDays : undefined,
-				crammingMode: config.crammingMode || undefined,
-			};
-
-			const result: CustomStudyModalResult = {
-				cancelled: false,
-				sessionResult,
-			};
-
-			if (presetName) {
-				result.saveAsPreset = true;
-				result.presetName = presetName;
-			}
-
-			return result;
-		},
-		[config],
-	);
+				customStudy: buildRequest(config),
+			},
+		};
+	}, [config]);
 
 	return { config, updateConfig, buildResult };
 }

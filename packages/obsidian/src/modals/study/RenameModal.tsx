@@ -23,14 +23,14 @@ function RenameBody({
 	const inputRef = useRef<HTMLInputElement>(null);
 
 	useEffect(() => {
-		const id = setTimeout(() => inputRef.current?.focus(), 50);
-		return () => clearTimeout(id);
+		const id = window.setTimeout(() => inputRef.current?.focus(), 50);
+		return () => window.clearTimeout(id);
 	}, []);
 
 	// Select all text on focus
 	useEffect(() => {
-		const id = setTimeout(() => inputRef.current?.select(), 60);
-		return () => clearTimeout(id);
+		const id = window.setTimeout(() => inputRef.current?.select(), 60);
+		return () => window.clearTimeout(id);
 	}, []);
 
 	const trimmed = name.trim();

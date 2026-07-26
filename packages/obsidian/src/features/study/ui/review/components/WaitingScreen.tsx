@@ -23,14 +23,14 @@ export function WaitingScreen({
 	);
 
 	useEffect(() => {
-		const id = setInterval(() => {
+		const id = window.setInterval(() => {
 			const newRemaining = getTimeUntilNextDue();
 			if (newRemaining <= 0) {
-				clearInterval(id);
+				window.clearInterval(id);
 			}
 			setRemaining(newRemaining);
 		}, UI_CONFIG.timerInterval);
-		return () => clearInterval(id);
+		return () => window.clearInterval(id);
 	}, [getTimeUntilNextDue]);
 
 	const formatCountdown = (ms: number): string => {
@@ -72,13 +72,7 @@ export function WaitingScreen({
 							stopPropagation={false}
 							class="ep-btn ep-btn-outline"
 							onClick={() => {
-								console.log("[TR-debug] WaitingScreen End session clicked");
-								console.log(
-									"[TR-debug] onEndSession type:",
-									typeof onEndSession,
-								);
 								onEndSession();
-								console.log("[TR-debug] onEndSession called OK");
 							}}
 						>
 							End session

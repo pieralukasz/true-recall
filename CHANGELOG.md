@@ -1,5 +1,68 @@
 # Changelog
 
+## 2.0.0 (2026-07-26)
+
+The AI side of True Recall was a collection of separate surfaces — Card Polish had its own preset menu and preview modal, generation had another, the Knowledge Chat a third. 2.0 replaces all of them with one assistant that keeps its work in threads you can review later. Alongside that: Anki-style Custom Study, a daily target that follows your actual pace, and FSRS load balancing that spreads an overdue backlog instead of dumping it on one day.
+
+### Breaking changes
+
+- **RAG / Knowledge Base removed.** The Knowledge Chat view, the knowledge-base plugin, the `/rag/*` API routes, the assistant's `search_knowledge` tool and every `rag*` setting are gone — the subsystem will be rebuilt from scratch later. Existing RAG tables are left in place (nothing is dropped), and evidence already attached to saved assistant threads still renders
+- **The legacy Card Polish UI is retired.** Its anchored preset menu, preview modal and presenter are deleted; the review ✨ action now opens the shared AI workspace in card-polish mode. Preset ids, command ids and hotkeys are unchanged, so saved presets and keybindings keep working
+- **✨ now requires both the Card Polish and AI Assistant plugins enabled.** A disabled AI family no longer offers its presets inside the workspace, and the mode navigation hides it
+
+### Features
+
+- **AI assistant with threads and an inbox** — every AI request becomes a thread you can apply, reject or retry from a dedicated inbox view, instead of a modal that loses its result when you close it. Reviewed conversations stay in place and pending drafts survive
+- **Dockable Ask AI panel** — a sidebar home for the AI workspace that outlives a single question. Its subject follows what you are studying (the card under review, otherwise the open note) and holds still while you have draft text in the composer, so grading mid-sentence cannot swap the subject out from under you
+- **Fast preset surface** — running a saved instruction is now one click: a keyboard-navigable preset list with Apply/Preview badges and a custom-instruction field directly underneath. A preset marked auto-apply lands its change immediately and keeps the thread as history; anything that conflicts falls back to the inbox rather than being dropped
+- **Generated-card draft review** — approve AI-generated cards per thread or inbox-wide, with the assistant available alongside the quick note editor
+- **Custom Study (Anki-style)** — six modes: increase today's new-card limit, increase today's review limit, review forgotten cards, review ahead, preview new cards, and study by card state or tag (with tag include/exclude). Builds a temporary filtered deck that shows up as its own card on the dashboard
+- **Conscious daily target** — a daily-target picker with pace chips and a catch-up preview, with the suggested target anchored to the pace you actually sustain rather than a fixed number
+- **FSRS load balancing overhaul** — auto or manual load-balance target, overdue backlog spread across upcoming days instead of piling onto today, per-review Anki-style fuzz balancing, a replay-based parameter optimizer, and per-project balance plus workload forecast
+- **Ink embeds render in review and note editors** — handwritten drawing and writing embeds from the Ink plugin now display on cards
+- **Hide tab bar** — a `Hide tab bar` toggle under Appearance plus a bindable "Toggle tab bar" command. Scoped to the main window, so sidebar tabs stay visible
+- **Baseline card quality rules for every non-Pro prompt** — the Pro prompt already banned ordinal/meta questions, multi-answer cards and long answers; those rules now apply to the basic builtin preset and to BYOK/user presets too, and preset instructions can explicitly override them. Settings migration also refreshes persisted builtin prompts, so older installs finally receive prompt improvements instead of keeping whatever text they were first seeded with
+- **BRAT beta channel** — opt into beta builds via `X.Y.Z-beta.N` tags cut from `pre-release`, without prereleases leaking into normal Obsidian updates
+- **FSRS preset and load-balance control from the API, CLI and MCP server** — read and update scheduling presets, set the load-balance target, and query per-project balance and forecast from outside Obsidian
+
+### Improvements
+
+- **toolbar:** the builtin basic and Pro generation buttons are collapsed into a single button
+- **assistant:** one Apply action that always dismisses the workspace, instead of several that behaved differently
+- **assistant:** the split-card procedure is now spelled out explicitly in the system prompt, so decomposition produces atomic cards more reliably
+- **performance:** review grading batches its data-layer patches and handles card removal incrementally instead of rebuilding the whole session
+- **performance:** hidden views no longer recompute, and content-only edits skip full cache invalidation
+- **the plugin registry shows deprecation badges** for plugins superseded by the assistant
+- removed dead code and consolidated duplicated helpers across core services
+
+### Bug Fixes
+
+- **assistant:** typing in an AI proposal field froze Obsidian — every keystroke rewrote the whole thread into SQLite and re-rendered every embedded editor. Edits are now debounced and flushed on blur, unmount and Apply, so nothing is lost
+- **anki:** `.apkg` export actually converts content and media filenames now
+- **anki:** one-way basic cards export under a single-template model instead of generating a phantom reverse card
+- **anki:** corrected scheduling and export mappings plus several converter edge cases
+- **cards:** editing the original of a reversed pair no longer flips it
+- **cards:** duplicate detection compares whole questions, and AI dedupe is real rather than approximate
+- **persistence:** restore-from-backup is protected, and cloze notes no longer fragment
+- **persistence:** five verified correctness fixes from a full persistence audit
+- **review:** closed four undo/race gaps found in the data-layer audit
+- **commands:** undo restores every card the command actually wrote, not just the primary one
+- **sync:** note and note-type rows are merged, with the watermark taken from observed rows
+- **stats:** timezone-safe streak math, correct weekday and day bucketing in workload forecasts, and filter-aware fast paths
+- **storage:** the default project folder is honored in every creation flow, and the Anki media preview path is aligned
+- **notes:** the target folder is created before a note is written into it
+- **deletion:** card cleanup runs before the frontmatter index clears, so deletes no longer leave orphans
+- **panel:** cloze-syntax detection stopped alternating results on repeated calls
+- **api:** hardened the local API server lifecycle and input validation
+- **ui:** fixed Tailwind variant class ordering in popout windows
+
+### Maintenance
+
+- resolved the Obsidian automated plugin review findings at their root: `setCssStyles()` instead of direct style assignment, `createDiv`/`createEl` helpers instead of `createElement`, `FileManager.trashFile()` (which respects the user's deletion preference) instead of `Vault.trash()`, `activeDocument` instead of `document` for popout compatibility, and `@floating-ui/dom` declared where it is used
+- cleared the full ESLint type-safety cluster (`no-unsafe-*`, `no-misused-promises`, enum comparisons, `await-thenable`), all 67 `react-hooks/exhaustive-deps` findings, all 17 `no-deprecated` findings, and sentence-case UI text
+- decoupled scanner-visible code from ambient Node types, and fixed monorepo dependency resolution so the MCP server is linted too
+- removed dead deprecated APIs instead of suppressing the lint that flagged them
+
 ## 1.9.10 (2026-07-10)
 
 ### Features

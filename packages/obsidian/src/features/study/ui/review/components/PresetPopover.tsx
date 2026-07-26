@@ -39,11 +39,11 @@ export function PresetPopover({
 			if (e.key === "Escape") setIsOpen(false);
 		};
 
-		document.addEventListener("pointerdown", handlePointerDown);
-		document.addEventListener("keydown", handleKeyDown);
+		activeDocument.addEventListener("pointerdown", handlePointerDown);
+		activeDocument.addEventListener("keydown", handleKeyDown);
 		return () => {
-			document.removeEventListener("pointerdown", handlePointerDown);
-			document.removeEventListener("keydown", handleKeyDown);
+			activeDocument.removeEventListener("pointerdown", handlePointerDown);
+			activeDocument.removeEventListener("keydown", handleKeyDown);
 		};
 	}, [isOpen]);
 

@@ -5,6 +5,7 @@ import type { Command, CommandContext } from "../command.types";
 export class ChangeNoteTypeCommand implements Command {
 	readonly type = "card:change-note-type";
 	readonly mutationType = "cards:bulk" as const;
+	readonly skipExecuteMutation = true;
 	readonly description = "Change note type";
 
 	private previousNoteTypeId: string | undefined;
@@ -64,6 +65,7 @@ export class ChangeNoteTypeCommand implements Command {
 export class ToggleReversedCommand implements Command {
 	readonly type = "card:toggle-reversed";
 	readonly mutationType = "cards:bulk" as const;
+	readonly skipExecuteMutation = true;
 	readonly description: string;
 
 	private previousNoteTypeId: string | undefined;

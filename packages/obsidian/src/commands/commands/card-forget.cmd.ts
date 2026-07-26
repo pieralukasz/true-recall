@@ -8,6 +8,8 @@ export class ForgetCommand implements Command {
 	readonly description: string;
 
 	private originalFsrsSnapshots: Array<{ id: string; fsrs: FSRSCardData }> = [];
+	private reviewedTodayIds: string[] = [];
+	private reviewedTodayDate: string | null = null;
 
 	constructor(private cardIds: string[]) {
 		const n = cardIds.length;
@@ -21,13 +23,31 @@ export class ForgetCommand implements Command {
 				this.originalFsrsSnapshots.push({ id, fsrs: { ...data } });
 			}
 		}
+
+		// Capture which ids were marked reviewed today BEFORE the wipe, so
+		// undo restores exactly that set (mirrors ReviewForgetCommand) —
+		// otherwise panel header counts double-count the daily budget.
+		const today = ctx.sessionPersistence.getTodayKey();
+		const reviewedToday = new Set(
+			ctx.cardStore.stats.getReviewedCardIds(today),
+		);
+		this.reviewedTodayDate = today;
+		this.reviewedTodayIds = this.cardIds.filter((id) => reviewedToday.has(id));
+
 		ctx.cardStore.cards.bulkForget(this.cardIds);
 		ctx.sessionPersistence.removeReviewedCards(this.cardIds);
 	}
 
 	undo(ctx: CommandContext): void {
 		for (const { id, fsrs } of this.originalFsrsSnapshots) {
-			ctx.flashcardManager.updateCardFSRS(id, fsrs);
+			ctx.flashcardManager.updateCardFSRS(id, fsrs, undefined, {
+				skipNotification: true,
+			});
+		}
+		if (this.reviewedTodayDate) {
+			for (const id of this.reviewedTodayIds) {
+				ctx.cardStore.stats.recordReviewedCard(this.reviewedTodayDate, id);
+			}
 		}
 	}
 }

@@ -1,13 +1,10 @@
-import { type Signal, useSignal } from "@preact/signals";
+import { type ReadonlySignal, type Signal, useSignal } from "@preact/signals";
 import { useCallback, useEffect, useMemo, useRef } from "preact/hooks";
 
 import { DuplicateQuestionError } from "@true-recall/core/flashcard/data/card-repository.service";
 import { parseSearchQuery } from "@true-recall/core/helpers/search-parser";
 import { CardBrowserQueryService } from "@true-recall/core/services/browser/card-browser-query.service";
-import type {
-	FSRSFlashcardItem,
-	TrueRecallSettings,
-} from "@true-recall/core/types";
+import type { FSRSFlashcardItem } from "@true-recall/core/types";
 
 import { DeleteCardCommand } from "@true-recall/obsidian/commands/commands/card-delete.cmd";
 import { MoveCardCommand } from "@true-recall/obsidian/commands/commands/card-move.cmd";
@@ -35,22 +32,31 @@ import {
 } from "@true-recall/obsidian/features/library/ui/browser/types";
 import { notifyDuplicateError } from "@true-recall/obsidian/features/library/ui/panel/utils/panel-helpers";
 import { MoveCardModal } from "@true-recall/obsidian/modals/shared/MoveCardModal";
-import { useApp, usePlugin } from "@true-recall/obsidian/preact";
+import {
+	useApp,
+	useGatedComputed,
+	usePlugin,
+} from "@true-recall/obsidian/preact";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 
 const PAGE_SIZE = BROWSER_PAGE_SIZE;
 
+// While the browser is visible, card-data changes rerun the SQL query at most
+// this often; while hidden, not at all.
+const RECOMPUTE_THROTTLE_MS = 2000;
+
 interface CardBrowserAppProps {
 	filterSourceUid?: Signal<string | null>;
 	filterOrphaned?: Signal<boolean>;
+	isViewVisible: ReadonlySignal<boolean>;
 }
 
 export function CardBrowserApp({
 	filterSourceUid,
 	filterOrphaned,
+	isViewVisible,
 }: CardBrowserAppProps) {
 	const plugin = usePlugin();
-	const settingsSignal = useQuery<TrueRecallSettings>(Q.SETTINGS);
 	const app = useApp();
 
 	const searchText = useSignal("");
@@ -73,7 +79,7 @@ export function CardBrowserApp({
 
 		sidebarFilter.value = { ...EMPTY_FILTER, sourceUids: [uid] };
 		filterSourceUid.value = null;
-	}, [filterSourceUid?.value]);
+	}, [filterSourceUid, filterSourceUid?.value, sidebarFilter]);
 
 	useEffect(() => {
 		if (!filterOrphaned) return;
@@ -81,7 +87,7 @@ export function CardBrowserApp({
 
 		sidebarFilter.value = { ...EMPTY_FILTER, orphanedOnly: true };
 		filterOrphaned.value = false;
-	}, [filterOrphaned?.value]);
+	}, [filterOrphaned, filterOrphaned?.value, sidebarFilter]);
 
 	const queryService = useMemo(
 		() =>
@@ -93,10 +99,9 @@ export function CardBrowserApp({
 		[plugin],
 	);
 
-	// Signal reads — subscribe component to reactive data changes
+	// Q.ALL_META is read only inside gated deps getters below, so a hidden
+	// browser tab neither subscribes to nor requeries on card-data changes.
 	const allCardsSignal = useQuery<Map<string, FSRSFlashcardItem>>(Q.ALL_META);
-	const allCards = allCardsSignal.value;
-	const _settings = settingsSignal.value;
 	const searchTextVal = searchText.value;
 	const stateFiltersVal = stateFilters.value;
 	const sidebarFilterVal = sidebarFilter.value;
@@ -125,30 +130,36 @@ export function CardBrowserApp({
 		};
 	}, [searchTextVal, stateFiltersVal, sidebarFilterVal, showArchivedVal]);
 
-	const result = useMemo((): BrowserResult => {
-		return queryService.query(combinedFilter, sortVal, loadedLimitVal, 0);
-	}, [
-		allCards,
-		_settings,
-		queryService,
-		combinedFilter,
-		sortVal,
-		loadedLimitVal,
-	]);
+	// allCardsSignal.value in the deps getters triggers recompute on card
+	// mutations; the query service itself reads cardStore live.
+	const result = useGatedComputed(
+		(): BrowserResult =>
+			queryService.query(combinedFilter, sortVal, loadedLimitVal, 0),
+		() => [
+			allCardsSignal.value,
+			queryService,
+			combinedFilter,
+			sortVal,
+			loadedLimitVal,
+		],
+		{ isVisible: isViewVisible, throttleMs: RECOMPUTE_THROTTLE_MS },
+	);
 
 	const queryResetKey = useMemo(
 		() => getBrowserQueryResetKey(combinedFilter, sortVal),
 		[combinedFilter, sortVal],
 	);
 
-	const facetCounts = useMemo(
+	const facetCounts = useGatedComputed(
 		() => queryService.getFacetCounts(showArchivedVal),
-		[allCards, queryService, showArchivedVal],
+		() => [allCardsSignal.value, queryService, showArchivedVal],
+		{ isVisible: isViewVisible, throttleMs: RECOMPUTE_THROTTLE_MS },
 	);
 
-	const orphanedCardIds = useMemo(
+	const orphanedCardIds = useGatedComputed(
 		() => queryService.getOrphanedCardIds(),
-		[allCards, queryService],
+		() => [allCardsSignal.value, queryService],
+		{ isVisible: isViewVisible, throttleMs: RECOMPUTE_THROTTLE_MS },
 	);
 
 	const getSuggestions = useMemo(() => {
@@ -164,15 +175,18 @@ export function CardBrowserApp({
 		});
 	}, [plugin, facetCounts.sourceNotes]);
 
-	const handleSort = useCallback((column: string) => {
-		sort.value =
-			sort.value.column === column
-				? {
-						column,
-						direction: sort.value.direction === "asc" ? "desc" : "asc",
-					}
-				: { column, direction: "asc" };
-	}, []);
+	const handleSort = useCallback(
+		(column: string) => {
+			sort.value =
+				sort.value.column === column
+					? {
+							column,
+							direction: sort.value.direction === "asc" ? "desc" : "asc",
+						}
+					: { column, direction: "asc" };
+		},
+		[sort],
+	);
 
 	const handleSelect = useCallback(
 		(
@@ -208,12 +222,15 @@ export function CardBrowserApp({
 			}
 			selectedIds.value = next;
 		},
-		[result.cards],
+		[result.cards, selectedIds],
 	);
 
-	const handlePreview = useCallback((card: BrowserCard) => {
-		previewCard.value = previewCard.value?.id === card.id ? null : card;
-	}, []);
+	const handlePreview = useCallback(
+		(card: BrowserCard) => {
+			previewCard.value = previewCard.value?.id === card.id ? null : card;
+		},
+		[previewCard],
+	);
 
 	const handleContentChange = useCallback(
 		(value: string, field: "question" | "answer") => {
@@ -248,7 +265,7 @@ export function CardBrowserApp({
 				}
 			}
 		},
-		[plugin],
+		[plugin, previewCard],
 	);
 
 	const handleSelectAll = useCallback(() => {
@@ -257,44 +274,56 @@ export function CardBrowserApp({
 		} else {
 			selectedIds.value = new Set(result.cards.map((c) => c.id));
 		}
-	}, [result.cards]);
+	}, [result.cards, selectedIds]);
 
 	const handleClearSelection = useCallback(() => {
 		selectedIds.value = new Set();
-	}, []);
+	}, [selectedIds]);
 
-	const handleToggleStateFilter = useCallback((state: StateFilterValue) => {
-		const current = stateFilters.value;
-		stateFilters.value = current.includes(state)
-			? current.filter((s) => s !== state)
-			: [...current, state];
-	}, []);
+	const handleToggleStateFilter = useCallback(
+		(state: StateFilterValue) => {
+			const current = stateFilters.value;
+			stateFilters.value = current.includes(state)
+				? current.filter((s) => s !== state)
+				: [...current, state];
+		},
+		[stateFilters],
+	);
 
-	const handleRemoveStateFilter = useCallback((state: StateFilterValue) => {
-		stateFilters.value = stateFilters.value.filter((s) => s !== state);
-	}, []);
+	const handleRemoveStateFilter = useCallback(
+		(state: StateFilterValue) => {
+			stateFilters.value = stateFilters.value.filter((s) => s !== state);
+		},
+		[stateFilters],
+	);
 
-	const handleSidebarFilter = useCallback((partial: Partial<FilterState>) => {
-		sidebarFilter.value = { ...sidebarFilter.value, ...partial } as FilterState;
-	}, []);
+	const handleSidebarFilter = useCallback(
+		(partial: Partial<FilterState>) => {
+			sidebarFilter.value = { ...sidebarFilter.value, ...partial };
+		},
+		[sidebarFilter],
+	);
 
-	const handleToggleColumn = useCallback((key: string) => {
-		const current = visibleColumns.value;
-		visibleColumns.value = current.includes(key)
-			? current.filter((k) => k !== key)
-			: [...current, key];
-	}, []);
+	const handleToggleColumn = useCallback(
+		(key: string) => {
+			const current = visibleColumns.value;
+			visibleColumns.value = current.includes(key)
+				? current.filter((k) => k !== key)
+				: [...current, key];
+		},
+		[visibleColumns],
+	);
 
 	const handleToggleShowArchived = useCallback(() => {
 		showArchived.value = !showArchived.value;
-	}, []);
+	}, [showArchived]);
 
 	const hasMore = result.cards.length < result.totalCount;
 
 	const loadMore = useCallback(() => {
 		if (!hasMore) return;
 		loadedLimit.value += PAGE_SIZE;
-	}, [hasMore]);
+	}, [hasMore, loadedLimit]);
 
 	const handleRemoveOrphanedCards = useCallback(async () => {
 		const orphanedIds = queryService.getOrphanedCardIds();
@@ -322,7 +351,7 @@ export function CardBrowserApp({
 		if (previewCard.value && deletedSet.has(previewCard.value.id)) {
 			previewCard.value = null;
 		}
-	}, [app, plugin, queryService]);
+	}, [app, plugin, queryService, previewCard, selectedIds]);
 
 	const handleMoveCard = useCallback(async () => {
 		const card = previewCard.value;
@@ -359,7 +388,7 @@ export function CardBrowserApp({
 	useEffect(() => {
 		loadedLimit.value = PAGE_SIZE;
 		scrollContainerRef.current?.scrollTo({ top: 0 });
-	}, [queryResetKey]);
+	}, [queryResetKey, loadedLimit]);
 
 	useKeyboardNav({
 		cards: result.cards,
@@ -414,7 +443,7 @@ export function CardBrowserApp({
 						activeFilter={sidebarFilter.value}
 						onFilterChange={handleSidebarFilter}
 						orphanedCount={orphanedCardIds.length}
-						onRemoveOrphanedCards={handleRemoveOrphanedCards}
+						onRemoveOrphanedCards={() => void handleRemoveOrphanedCards()}
 					/>
 				)}
 
@@ -441,7 +470,7 @@ export function CardBrowserApp({
 							previewCard.value = null;
 						}}
 						onContentChange={handleContentChange}
-						onMove={handleMoveCard}
+						onMove={() => void handleMoveCard()}
 					/>
 				)}
 			</div>

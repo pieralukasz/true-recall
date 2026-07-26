@@ -8,6 +8,7 @@ import {
 	useState,
 } from "preact/hooks";
 
+import type { AssistantContext } from "@true-recall/core/ai/assistant";
 import { hasAIKey } from "@true-recall/core/ai/config/ai-client-config";
 
 import { Clickable } from "@true-recall/obsidian/components";
@@ -20,7 +21,9 @@ import {
 	useApp,
 	usePlugin,
 } from "@true-recall/obsidian/preact/ObsidianContext";
+import { registerAssistantDraftTarget } from "@true-recall/obsidian/services/assistant/assistant-draft-target-registry";
 import { notify } from "@true-recall/obsidian/services/notification.service";
+import { openAssistantEditorWindow } from "@true-recall/obsidian/views/modal-window/open-assistant-editor-window";
 import { openCardTypesEditor } from "@true-recall/obsidian/views/modal-window/open-card-types-editor";
 import { openNoteTypeManager } from "@true-recall/obsidian/views/modal-window/open-note-type-manager";
 
@@ -69,6 +72,29 @@ export function QuickNoteEditorApp({
 		if (addMode?.initialFields) return { ...addMode.initialFields };
 		return {};
 	});
+	const fieldsRef = useRef(fields);
+	fieldsRef.current = fields;
+	const assistantDraftSessionIdRef = useRef(`qne-${crypto.randomUUID()}`);
+	const closeAssistantWindowRef = useRef<(() => void) | null>(null);
+
+	useEffect(
+		() =>
+			registerAssistantDraftTarget(assistantDraftSessionIdRef.current, {
+				getFields: () => fieldsRef.current,
+				applyFields: (next) =>
+					setFields((current) => ({ ...current, ...next })),
+			}),
+		[],
+	);
+
+	useEffect(
+		() => () => {
+			const close = closeAssistantWindowRef.current;
+			closeAssistantWindowRef.current = null;
+			close?.();
+		},
+		[],
+	);
 
 	const [saving, setSaving] = useState(false);
 	const [pinnedFields, setPinnedFields] = useState<Set<string>>(new Set());
@@ -84,10 +110,16 @@ export function QuickNoteEditorApp({
 		[],
 	);
 
-	// Source note picker — only shown in add mode without pre-set sourceUid
+	// Source note picker — only shown in add mode without pre-set sourceUid.
+	// Default to the note the user was just working in: cards created from a
+	// text selection or the "+" entry points should link there by default.
 	const showSourcePicker = !isEdit && !addMode?.sourceUid;
 	const [selectedSourceNote, setSelectedSourceNote] = useState<TFile | null>(
-		null,
+		() => {
+			if (!showSourcePicker) return null;
+			const active = app.workspace.getActiveFile();
+			return active?.extension === "md" ? active : null;
+		},
 	);
 
 	// ── Derived ──
@@ -95,12 +127,14 @@ export function QuickNoteEditorApp({
 	const noteType = useMemo(() => {
 		if (isEdit) return editMode?.noteType;
 		return plugin.cardStore?.noteTypes?.getById(noteTypeId) ?? null;
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- refreshCounter forces re-fetch after external edits via the note type manager / card types editor
 	}, [isEdit, editMode, plugin.cardStore, noteTypeId, refreshCounter]);
 
 	const isDirty = useMemo(() => {
-		if (isEdit && initialFieldsRef.current) {
-			return Object.keys(initialFieldsRef.current).some(
-				(k) => fields[k] !== initialFieldsRef.current![k],
+		const initialFields = initialFieldsRef.current;
+		if (isEdit && initialFields) {
+			return Object.keys(initialFields).some(
+				(k) => fields[k] !== initialFields[k],
 			);
 		}
 		return Object.values(fields).some((v) => v.trim().length > 0);
@@ -126,6 +160,7 @@ export function QuickNoteEditorApp({
 		addMode,
 		editMode,
 		plugin.frontmatterIndex,
+		app.vault,
 	]);
 
 	useEffect(() => {
@@ -139,6 +174,14 @@ export function QuickNoteEditorApp({
 			const next: Record<string, string> = {};
 			for (const fieldName of noteType.fields) {
 				next[fieldName] = prev[fieldName] ?? "";
+			}
+			// Field names rarely match across types (Front/Back vs Text/Extra),
+			// which used to drop the entered text on e.g. Basic -> Cloze. Carry
+			// the first previous value into the new primary field instead.
+			const primaryField = noteType.fields[0];
+			if (primaryField && !next[primaryField]) {
+				const carried = Object.values(prev).find((v) => v.trim().length > 0);
+				if (carried) next[primaryField] = carried;
 			}
 			return next;
 		});
@@ -314,7 +357,7 @@ export function QuickNoteEditorApp({
 		// window (containerEl.win !== window). Falling back to `document`
 		// covers the modal context where the listener attaches before the
 		// element is in the DOM.
-		const doc = rootRef.current?.ownerDocument ?? document;
+		const doc = rootRef.current?.ownerDocument ?? activeDocument;
 		const onKeyDown = (e: KeyboardEvent) => {
 			if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
 				e.preventDefault();
@@ -326,71 +369,81 @@ export function QuickNoteEditorApp({
 		return () => doc.removeEventListener("keydown", onKeyDown, true);
 	}, []);
 
-	// AI wand dispatches "true-recall:card-polish" (kind: "draft"). Only the
-	// Card Polish plugin listens today; no other plugin wires a draft hook.
+	// The editor registers itself as a temporary Assistant target. The task only
+	// stores a serializable session id, while applying the accepted proposal
+	// updates this still-open draft through the registry above.
 	// We check both the plugin enable state AND hasAIKey directly. The full
 	// `isPluginEnabled` helper (in plugin-utils) pulls @true-recall/plugins
 	// registry, which transitively loads sqlite-wasm via other plugin manifests
 	// and breaks Vitest module loading for unrelated tests. Inline-checking
 	// hasAIKey reproduces the tier:"byok" gate without the registry import.
-	const cardPolishEnabled =
-		plugin.settings?.pluginStates?.["card-polish"] ?? true;
-	const cardPolishActive = cardPolishEnabled && hasAIKey(plugin.settings);
+	const assistantEnabled =
+		plugin.settings?.pluginStates?.["ai-assistant"] ?? true;
+	const assistantActive =
+		assistantEnabled && hasAIKey(plugin.settings, "assistant");
 	const { disabled: aiDisabled, title: aiTitle } = deriveAIWandState({
 		hasSourceNote: !!sourceNoteFile,
-		cardPolishActive,
+		assistantActive,
 	});
 
-	const openAI = useCallback(
-		(anchor: HTMLElement) => {
-			if (aiDisabled) return;
-			if (!sourceNoteFile || !noteType) return;
-			void resolveSourceUid()
-				.then((uid) => {
-					if (!uid) {
-						new Notice("AI: could not resolve source note UID.");
-						return;
-					}
-					window.dispatchEvent(
-						new CustomEvent("true-recall:card-polish", {
-							detail: {
-								kind: "draft",
-								anchor,
-								fields,
-								noteType: {
-									id: noteType.id,
-									name: noteType.name,
-									fields: noteType.fields,
-								},
-								sourceUid: uid,
-								currentCardId: isEdit
-									? (editMode?.cardId ?? null)
-									: (addMode?.excludeCardId ?? null),
-								operation: isEdit ? "edit" : "create",
-								onApply: (next: Record<string, string>) => {
-									setFields((prev) => ({ ...prev, ...next }));
-								},
-								flashcardManager: plugin.flashcardManager,
-							},
-						}),
-					);
-				})
-				.catch((err) => {
-					console.error("[CardAI] wand dispatch failed", err);
-					new Notice("AI: could not resolve source note.");
+	const openAI = useCallback(() => {
+		if (aiDisabled) return;
+		if (closeAssistantWindowRef.current) {
+			const close = closeAssistantWindowRef.current;
+			closeAssistantWindowRef.current = null;
+			close();
+			return;
+		}
+		if (!sourceNoteFile || !noteType) return;
+		void Promise.all([resolveSourceUid(), app.vault.cachedRead(sourceNoteFile)])
+			.then(([uid, sourceText]) => {
+				if (!uid) {
+					new Notice("AI: could not resolve source note UID.");
+					return;
+				}
+				const context: AssistantContext = {
+					activeNotePath: sourceNoteFile.path,
+					source: { path: sourceNoteFile.path, uid, text: sourceText },
+					draftCard: {
+						sessionId: assistantDraftSessionIdRef.current,
+						fields,
+						noteType: {
+							id: noteType.id,
+							name: noteType.name,
+							fields: noteType.fields,
+						},
+						sourceUid: uid,
+						sourceNotePath: sourceNoteFile.path,
+						operation: isEdit ? "edit" : "create",
+					},
+				};
+				const sourceWindow =
+					rootRef.current?.ownerDocument.defaultView ?? window;
+				let closeWindow: (() => void) | null = null;
+				closeWindow = openAssistantEditorWindow(plugin, context, {
+					sourceWindow,
+					onClose: () => {
+						if (closeAssistantWindowRef.current === closeWindow) {
+							closeAssistantWindowRef.current = null;
+						}
+					},
 				});
-		},
-		[
-			aiDisabled,
-			sourceNoteFile,
-			noteType,
-			fields,
-			isEdit,
-			editMode,
-			addMode,
-			resolveSourceUid,
-		],
-	);
+				closeAssistantWindowRef.current = closeWindow;
+			})
+			.catch((err) => {
+				console.error("[Assistant] AI window open failed", err);
+				new Notice("AI: could not resolve source note.");
+			});
+	}, [
+		aiDisabled,
+		sourceNoteFile,
+		noteType,
+		fields,
+		isEdit,
+		resolveSourceUid,
+		plugin,
+		app.vault,
+	]);
 
 	if (!noteType) {
 		return (
@@ -423,12 +476,14 @@ export function QuickNoteEditorApp({
 				getEditorView={() => focusedFieldRef.current?.editorView ?? null}
 				typeInEnabled={alwaysTypeIn}
 				onTypeInToggle={!isEdit ? setAlwaysTypeIn : undefined}
+				showCloze={noteType.type === 1}
 			/>
 
 			{/* Dynamic fields */}
 			<NoteFieldsForm
 				noteType={noteType}
 				fields={fields}
+				sourcePath={sourceNoteFile?.path ?? ""}
 				onFieldChange={handleFieldChange}
 				onFieldFocus={handleFieldFocus}
 				onModEnter={() => void handleSave()}
@@ -468,7 +523,7 @@ interface FooterBarProps {
 	onSave: () => void;
 	onOpenFields: () => void;
 	onOpenCards: () => void;
-	onAI: (anchor: HTMLElement) => void;
+	onAI: () => void;
 	aiDisabled: boolean;
 	aiTitle: string;
 }
@@ -491,14 +546,6 @@ function FooterBar({
 	aiTitle,
 }: FooterBarProps) {
 	const aiIconRef = useIcon("wand");
-
-	const handleAIClick = useCallback(
-		(e: MouseEvent) => {
-			const anchor = e.currentTarget;
-			if (anchor instanceof HTMLElement) onAI(anchor);
-		},
-		[onAI],
-	);
 
 	const openNote = useCallback(() => {
 		if (sourceNoteFile) {
@@ -525,8 +572,8 @@ function FooterBar({
 			<Clickable
 				ref={aiIconRef}
 				title={aiTitle}
-				class={`${ghostBtnCls} ep:ml-auto [&>svg]:ep:w-4 [&>svg]:ep:h-4`}
-				onClick={handleAIClick}
+				class={`${ghostBtnCls} ep:ml-auto ep:[&>svg]:w-4 ep:[&>svg]:h-4`}
+				onClick={() => onAI()}
 				disabled={aiDisabled}
 			/>
 			<Clickable

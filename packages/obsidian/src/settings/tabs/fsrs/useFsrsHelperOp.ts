@@ -46,14 +46,7 @@ export function useFsrsHelperOp(config: FsrsHelperOpConfig) {
 				setRunning(false);
 			}
 		},
-		[
-			config.plugin,
-			config.operationName,
-			config.undoDescription,
-			config.successMessage,
-			config.emptyMessage,
-			config.errorPrefix,
-		],
+		[config],
 	);
 
 	const undoLast = useCallback(async () => {

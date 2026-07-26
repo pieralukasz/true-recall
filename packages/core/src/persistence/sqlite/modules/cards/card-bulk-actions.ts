@@ -70,42 +70,6 @@ export class CardBulkActions {
 		return cardIds.length;
 	}
 
-	/** @deprecated Use bulkSoftDelete() instead for sync compatibility */
-	bulkDelete(cardIds: string[]): number {
-		if (cardIds.length === 0) return 0;
-		const placeholders = sqlPlaceholders(cardIds.length);
-		this.db.transaction(() => {
-			this.db.run(
-				`DELETE FROM review_log WHERE card_id IN (${placeholders})`,
-				cardIds,
-			);
-			this.db.run(`DELETE FROM cards WHERE id IN (${placeholders})`, cardIds);
-		});
-		return cardIds.length;
-	}
-
-	/** @deprecated Use bulkForget() instead — it also clears review history */
-	bulkReset(cardIds: string[]): number {
-		if (cardIds.length === 0) return 0;
-		const placeholders = sqlPlaceholders(cardIds.length);
-		const now = new Date().toISOString();
-		const params = [now, Date.now(), ...cardIds] as [
-			string,
-			number,
-			...string[],
-		];
-		this.db.run(
-			`UPDATE cards SET
-                state = 0, reps = 0, lapses = 0,
-                stability = 0, difficulty = 0, scheduled_days = 0,
-                learning_step = 0, due = ?, last_review = NULL,
-                suspended = 0, buried_until = NULL, updated_at = ?
-            WHERE id IN (${placeholders})`,
-			params,
-		);
-		return this.db.getRowsModified();
-	}
-
 	bulkForget(cardIds: string[]): number {
 		if (cardIds.length === 0) return 0;
 		const placeholders = sqlPlaceholders(cardIds.length);

@@ -1,4 +1,4 @@
-import type { JSX } from "preact";
+import type { TargetedEvent } from "preact";
 import { useCallback } from "preact/hooks";
 
 import { cn } from "@true-recall/obsidian/utils/cn";
@@ -17,7 +17,7 @@ export function ToggleInput({
 	ariaLabel,
 }: ToggleInputProps) {
 	const handleChange = useCallback(
-		(e: JSX.TargetedEvent<HTMLInputElement>) => {
+		(e: TargetedEvent<HTMLInputElement>) => {
 			if (!disabled) onChange(e.currentTarget.checked);
 		},
 		[onChange, disabled],

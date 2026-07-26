@@ -17,6 +17,11 @@ export function SimulatorSliders({
 	onParameterChange,
 	version,
 }: SimulatorSlidersProps) {
+	// version isn't read directly -- it exists only so the parent's bump forces
+	// this component to re-render after undo/redo/reset; getSliderValue() is
+	// called inline during render below, so it always reads simulator live.
+	void version;
+
 	const handleValueChange = useCallback(
 		(index: number, value: number) => {
 			if (index === -1) {
@@ -29,18 +34,17 @@ export function SimulatorSliders({
 		[simulator, onParameterChange],
 	);
 
-	// Read current values, keyed off version to react to undo/redo/reset
 	const getSliderValue = useCallback(
 		(index: number): number => {
 			if (index === -1) return simulator.getDesiredRetention();
 			return simulator.getParameters()[index] ?? 0;
 		},
-		[simulator, version],
+		[simulator],
 	);
 
 	return (
 		<div class="ep:bg-obs-secondary ep:rounded-lg ep:p-4 ep:mb-4">
-			<div class="ep:grid ep:grid-cols-1 md:ep:grid-cols-2 lg:ep:grid-cols-3 ep:gap-3">
+			<div class="ep:grid ep:grid-cols-1 ep:md:grid-cols-2 ep:lg:grid-cols-3 ep:gap-3">
 				{ALL_SLIDERS.map((config) => (
 					<SimulatorSliderRow
 						key={config.index}

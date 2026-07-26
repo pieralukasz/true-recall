@@ -9,6 +9,7 @@ import type {
 	TrueRecallSettings,
 } from "../../types";
 import { formatInterval } from "../../types/fsrs/fsrs.utils";
+import { formatLocalDate, getTodayBoundary } from "../../utils";
 import type {
 	OptimizationInput,
 	OptimizationOutput,
@@ -37,6 +38,14 @@ import type {
 } from "./scheduler/scheduler.types";
 import { SiblingDisperseService } from "./scheduler/sibling-disperse.service";
 import {
+	type CatchUpProjection,
+	computePaceStats,
+	computeSuggestedTarget,
+	computeTargetFloor,
+	PACE_LOOKBACK_DAYS,
+	projectCatchUp,
+} from "./scheduler/target-suggestion";
+import {
 	DistributionCalculator,
 	type DistributionStats,
 	type HistogramBucket,
@@ -51,6 +60,27 @@ import {
 	type WorkloadForecastEntry,
 	type WorkloadForecastSummary,
 } from "./statistics/workload-forecast.calculator";
+
+/** Everything the daily-target picker needs to render a conscious choice */
+export interface WorkloadDecision {
+	/** Average upcoming dues per weighted day, backlog excluded */
+	steadyStatePerDay: number;
+	/** Overdue Review cards (due before today) */
+	backlogSize: number;
+	/** Pace below which the backlog grows */
+	targetFloor: number;
+	medianPace: number;
+	p75Pace: number;
+	activeDays: number;
+	/** Median pace floored at the water line; forecast average when history is thin */
+	suggestedTarget: number;
+	/** True when the legacy forecast average filled in for thin pace history */
+	usedPaceFallback: boolean;
+	/** Catch-up projection at the effective target */
+	catchUp: CatchUpProjection;
+	/** Manual target when configured, otherwise suggestedTarget */
+	effectiveTarget: number;
+}
 
 export class FSRSHelperService {
 	private optimizer: ParameterOptimizerService;
@@ -96,11 +126,11 @@ export class FSRSHelperService {
 		);
 	}
 
-	optimizeParameters(
+	async optimizeParameters(
 		options?: OptimizerOptions,
 		presetName?: string,
 		currentWeights?: number[] | null,
-	): OptimizationOutput {
+	): Promise<OptimizationOutput> {
 		const reviews = this.cardStore.getReviewDataForOptimization(presetName);
 
 		const input: OptimizationInput = {
@@ -116,18 +146,92 @@ export class FSRSHelperService {
 		return this.optimizer.validateWeights(weights);
 	}
 
+	/** Manual target when configured, undefined in auto mode (suggestion derives it) */
+	private resolveLoadBalanceTarget(): number | undefined {
+		return this.settings.loadBalanceTargetMode === "manual"
+			? this.settings.loadBalanceTarget
+			: undefined;
+	}
+
+	/** The daily target actually in effect: manual value or the suggested target */
+	getEffectiveLoadBalanceTarget(): number {
+		return this.getWorkloadDecision().effectiveTarget;
+	}
+
+	/** Everything the daily-target picker needs to render a conscious choice */
+	getWorkloadDecision(): WorkloadDecision {
+		const steadyStatePerDay = this.loadBalancer.computeAutoTarget(
+			this.settings.easyDays,
+			this.settings.easyDaysMultiplier,
+			false,
+		);
+		const backlogSize = this.loadBalancer.getBacklogSize();
+		const pace = computePaceStats(this.getRecentDailyReviewCounts());
+		const paceTarget = computeSuggestedTarget(
+			pace,
+			steadyStatePerDay,
+			backlogSize,
+		);
+		const suggestedTarget =
+			paceTarget ??
+			this.loadBalancer.computeAutoTarget(
+				this.settings.easyDays,
+				this.settings.easyDaysMultiplier,
+			);
+		const effectiveTarget = this.resolveLoadBalanceTarget() ?? suggestedTarget;
+		return {
+			steadyStatePerDay,
+			backlogSize,
+			targetFloor: computeTargetFloor(steadyStatePerDay, backlogSize),
+			medianPace: pace.medianPace,
+			p75Pace: pace.p75Pace,
+			activeDays: pace.activeDays,
+			suggestedTarget,
+			usedPaceFallback: paceTarget === null,
+			catchUp: projectCatchUp(
+				effectiveTarget,
+				steadyStatePerDay,
+				backlogSize,
+				new Date(),
+			),
+			effectiveTarget,
+		};
+	}
+
+	/** Reviews completed per active day over the pace lookback window */
+	private getRecentDailyReviewCounts(): number[] {
+		const end = new Date();
+		const start = new Date(end);
+		start.setDate(start.getDate() - PACE_LOOKBACK_DAYS);
+		return this.cardStore.stats
+			.getDailyStatsFromReviewLog(formatLocalDate(start), formatLocalDate(end))
+			.map((day) => day.reviewsCompleted);
+	}
+
 	balanceWorkload(options?: Partial<LoadBalanceOptions>): SchedulingResult {
 		const days = options?.days ?? this.settings.loadBalanceBulkDays;
 		return this.loadBalancer.balance({
-			targetPerDay: options?.targetPerDay ?? this.settings.loadBalanceTarget,
+			targetPerDay:
+				options?.targetPerDay ?? this.getEffectiveLoadBalanceTarget(),
 			maxDeviation:
 				options?.maxDeviation ?? this.settings.loadBalanceMaxDeviation,
 			days: days === 0 ? 36500 : days,
 			easyDays: options?.easyDays ?? this.settings.easyDays,
 			easyDaysMultiplier:
 				options?.easyDaysMultiplier ?? this.settings.easyDaysMultiplier,
+			includeOverdue: options?.includeOverdue,
+			cardIds: options?.cardIds,
+			completedToday: options?.completedToday ?? this.getCompletedTodayCount(),
 			dryRun: options?.dryRun ?? true,
 		});
+	}
+
+	/** Reviews already answered today, respecting the day-start-hour boundary */
+	private getCompletedTodayCount(): number {
+		const todayKey = formatLocalDate(
+			getTodayBoundary(this.settings.dayStartHour ?? 4),
+		);
+		return this.cardStore.stats.getDailyStats(todayKey)?.reviewsCompleted ?? 0;
 	}
 
 	balanceScheduledReview(cardId: string, fsrs: FSRSCardData): FSRSCardData {
@@ -142,8 +246,6 @@ export class FSRSHelperService {
 		const result = this.loadBalancer.balanceDue({
 			cardId,
 			originalDue: fsrs.due,
-			targetPerDay: this.settings.loadBalanceTarget,
-			maxDeviation: this.settings.loadBalanceMaxDeviation,
 			maxShiftDays: this.settings.loadBalanceMaxShiftDays,
 			easyDays: this.settings.easyDays,
 			easyDaysMultiplier: this.settings.easyDaysMultiplier,
@@ -180,7 +282,8 @@ export class FSRSHelperService {
 		return this.easyDays.applyEasyDays({
 			easyDays: options?.easyDays ?? this.settings.easyDays,
 			multiplier: options?.multiplier ?? this.settings.easyDaysMultiplier,
-			targetPerDay: options?.targetPerDay ?? this.settings.loadBalanceTarget,
+			targetPerDay:
+				options?.targetPerDay ?? this.getEffectiveLoadBalanceTarget(),
 			days: options?.days ?? 30,
 			dryRun: options?.dryRun ?? true,
 		});
@@ -193,7 +296,7 @@ export class FSRSHelperService {
 		return this.easyDays.previewImpact(
 			this.settings.easyDays,
 			this.settings.easyDaysMultiplier,
-			this.settings.loadBalanceTarget,
+			this.getEffectiveLoadBalanceTarget(),
 		);
 	}
 
@@ -283,22 +386,33 @@ export class FSRSHelperService {
 	getWorkloadForecast(
 		days: number = 30,
 		excludeSourceUids?: ReadonlySet<string>,
+		includeSourceUids?: ReadonlySet<string>,
 	): WorkloadForecastEntry[] {
-		return this.workloadForecast.getForecast(days, excludeSourceUids);
+		return this.workloadForecast.getForecast(
+			days,
+			excludeSourceUids,
+			includeSourceUids,
+		);
 	}
 
 	getWorkloadForecastSummary(
 		days: number = 30,
 		excludeSourceUids?: ReadonlySet<string>,
+		includeSourceUids?: ReadonlySet<string>,
+		targetPerDay?: number,
 	): WorkloadForecastSummary {
 		const summary = this.workloadForecast.getSummary(
-			this.settings.loadBalanceTarget,
+			targetPerDay ?? this.getEffectiveLoadBalanceTarget(),
 			days,
 			excludeSourceUids,
 			this.settings.loadBalanceMaxDeviation,
+			includeSourceUids,
 		);
 
-		if (excludeSourceUids && excludeSourceUids.size > 0) return summary;
+		const isScoped =
+			(excludeSourceUids && excludeSourceUids.size > 0) ||
+			(includeSourceUids && includeSourceUids.size > 0);
+		if (isScoped) return summary;
 
 		return {
 			...summary,
@@ -313,10 +427,12 @@ export class FSRSHelperService {
 	getWorkloadByDayOfWeek(
 		days: number = 30,
 		excludeSourceUids?: ReadonlySet<string>,
+		includeSourceUids?: ReadonlySet<string>,
 	): { day: number; dayName: string; avgCount: number }[] {
 		return this.workloadForecast.getWorkloadByDayOfWeek(
 			days,
 			excludeSourceUids,
+			includeSourceUids,
 		);
 	}
 
@@ -347,8 +463,6 @@ export class FSRSHelperService {
 		const result = this.loadBalancer.balanceDue({
 			cardId,
 			originalDue: entry.due.toISOString(),
-			targetPerDay: this.settings.loadBalanceTarget,
-			maxDeviation: this.settings.loadBalanceMaxDeviation,
 			maxShiftDays: this.settings.loadBalanceMaxShiftDays,
 			easyDays: this.settings.easyDays,
 			easyDaysMultiplier: this.settings.easyDaysMultiplier,
@@ -361,7 +475,7 @@ export class FSRSHelperService {
 				originalInterval: entry.interval,
 				daysChanged: 0,
 				loadBalanceNote:
-					"No change: the FSRS target day is within the workload limit, or no better nearby day is available.",
+					"No change: the FSRS day is already a good fit within the fuzz range.",
 			};
 		}
 
@@ -375,15 +489,27 @@ export class FSRSHelperService {
 			balancedDue,
 			originalInterval: entry.interval,
 			daysChanged: result.daysChanged,
-			loadBalanceNote: "Adjusted to a nearby day with more review capacity.",
+			loadBalanceNote:
+				"Adjusted within the fuzz range to a less loaded day (Anki-style).",
 		};
 	}
 
+	/**
+	 * Scheduling parameters for rescheduling. Presets are the source of
+	 * truth since optimization writes there; the flat fsrsWeights /
+	 * fsrsRequestRetention fields are a stale legacy mirror kept as
+	 * fallback for pre-preset settings files.
+	 */
 	private extractFSRSSettings(): FSRSSettings {
+		const defaultPreset = this.settings.fsrsPresets?.find(
+			(preset) => preset.id === this.settings.defaultPresetId,
+		);
 		return {
-			requestRetention: this.settings.fsrsRequestRetention,
-			maximumInterval: this.settings.fsrsMaximumInterval,
-			weights: this.settings.fsrsWeights,
+			requestRetention:
+				defaultPreset?.requestRetention ?? this.settings.fsrsRequestRetention,
+			maximumInterval:
+				defaultPreset?.maximumInterval ?? this.settings.fsrsMaximumInterval,
+			weights: defaultPreset?.weights ?? this.settings.fsrsWeights,
 			enableFuzz: true,
 			learningSteps: this.settings.learningSteps,
 			relearningSteps: this.settings.relearningSteps,

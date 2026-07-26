@@ -1,4 +1,4 @@
-import { useSignal } from "@preact/signals";
+import { type ReadonlySignal, useSignal } from "@preact/signals";
 import { useCallback, useEffect, useMemo, useRef } from "preact/hooks";
 
 import { aggregateDashboardData } from "@true-recall/core/helpers/note-aggregation";
@@ -20,6 +20,7 @@ import { NoteList } from "@true-recall/obsidian/features/study/ui/dashboard/comp
 import { OrphanedTab } from "@true-recall/obsidian/features/study/ui/dashboard/components/OrphanedTab";
 import { ProjectsTab } from "@true-recall/obsidian/features/study/ui/dashboard/components/ProjectsTab";
 import { RecentlyStudiedBar } from "@true-recall/obsidian/features/study/ui/dashboard/components/RecentlyStudiedBar";
+import { TemporaryCustomStudyDeckCard } from "@true-recall/obsidian/features/study/ui/dashboard/components/TemporaryCustomStudyDeckCard";
 import { TodayActionBar } from "@true-recall/obsidian/features/study/ui/dashboard/components/TodayActionBar";
 import { aggregateProjectData } from "@true-recall/obsidian/features/study/ui/dashboard/helpers/project-aggregation";
 import { projectMatchesSearch } from "@true-recall/obsidian/features/study/ui/dashboard/helpers/project-tree-flatten";
@@ -30,12 +31,20 @@ import type {
 } from "@true-recall/obsidian/features/study/ui/dashboard/types";
 import { filterActiveCards } from "@true-recall/obsidian/features/study/ui/review/helpers/session-helpers";
 import { PresetOptionsModal } from "@true-recall/obsidian/modals/shared/PresetOptionsModal";
-import { NamePromptModal } from "@true-recall/obsidian/modals/study/NamePromptModal";
-import { usePlugin } from "@true-recall/obsidian/preact";
+import { CreateProjectModal } from "@true-recall/obsidian/modals/study/CreateProjectModal";
+import { useGatedComputed, usePlugin } from "@true-recall/obsidian/preact";
 
 import { HeatmapWidget } from "@true-recall/plugins/dashboard-codeblock/analytics/HeatmapWidget";
 
-export function DashboardApp() {
+// While the dashboard is visible, Q.ALL_META changes (every review grade)
+// recompute the aggregation at most this often; while hidden, not at all.
+const RECOMPUTE_THROTTLE_MS = 2000;
+
+interface DashboardAppProps {
+	isViewVisible: ReadonlySignal<boolean>;
+}
+
+export function DashboardApp({ isViewVisible }: DashboardAppProps) {
 	const plugin = usePlugin();
 	const allMeta = useQuery<Map<string, CardSchedulingMeta>>(Q.ALL_META);
 	const settingsSignal = useQuery<TrueRecallSettings>(Q.SETTINGS);
@@ -58,10 +67,20 @@ export function DashboardApp() {
 
 	const showArchived = useSignal(false);
 
-	// Signal reads — subscribe component to reactive data changes
-	const allCards = [...allMeta.value.values()];
 	const _settings = settingsSignal.value;
-	const archived = archivedSourceUidsSignal.value;
+
+	// One gated snapshot for all card-derived data: while this leaf is hidden
+	// the hot signals are not even subscribed, so grading in the review view
+	// no longer re-renders or recomputes the dashboard aggregation. Downstream
+	// useMemos stay stable because both references are frozen together.
+	const { allCards, archived } = useGatedComputed(
+		() => ({
+			allCards: [...allMeta.value.values()],
+			archived: archivedSourceUidsSignal.value,
+		}),
+		() => [allMeta.value, archivedSourceUidsSignal.value],
+		{ isVisible: isViewVisible, throttleMs: RECOMPUTE_THROTTLE_MS },
+	);
 
 	const cachedActiveCards = useMemo(
 		() =>
@@ -162,7 +181,6 @@ export function DashboardApp() {
 		};
 	}, [
 		allCards,
-		_settings,
 		archived,
 		cachedActiveCards,
 		statsCalculator,
@@ -177,7 +195,7 @@ export function DashboardApp() {
 			if (!note.path) return true;
 			return !plugin.hierarchyService.isNoteArchived(note.path);
 		});
-	}, [data.notes, plugin, showArchived.value, allCards]);
+	}, [data.notes, plugin, showArchived.value]);
 
 	const projectData = useMemo(() => {
 		return aggregateProjectData({
@@ -196,7 +214,14 @@ export function DashboardApp() {
 				metadataCache: plugin.app.metadataCache,
 			},
 		});
-	}, [plugin, visibleNotes, showArchived.value]);
+	}, [
+		plugin,
+		visibleNotes,
+		showArchived.value,
+		allCards,
+		archived,
+		cachedActiveCards,
+	]);
 
 	const enrichedNotes = useMemo(() => {
 		return visibleNotes.map((note) => {
@@ -217,7 +242,7 @@ export function DashboardApp() {
 				archived,
 			};
 		});
-	}, [visibleNotes, projectData.noteProjectMap, plugin, showArchived.value]);
+	}, [visibleNotes, projectData.noteProjectMap, plugin]);
 
 	const filteredCounts = useMemo(() => {
 		const orphaned = data.orphanedCards.total;
@@ -270,17 +295,23 @@ export function DashboardApp() {
 	const scrollTop = useSignal(0);
 	useDragAutoScroll(scrollContainerRef);
 
-	const onScroll = useCallback((e: Event) => {
-		scrollTop.value = (e.currentTarget as HTMLDivElement).scrollTop;
-	}, []);
+	const onScroll = useCallback(
+		(e: Event) => {
+			scrollTop.value = (e.currentTarget as HTMLDivElement).scrollTop;
+		},
+		[scrollTop],
+	);
 
 	const handleCreateProject = useCallback(async () => {
-		const modal = new NamePromptModal(plugin.app, "New project");
+		const modal = new CreateProjectModal(
+			plugin.app,
+			plugin.settings.defaultProjectFolder,
+		);
 		const result = await modal.openAndWait();
-		if (result.cancelled || !result.name.trim()) return;
+		if (result.cancelled) return;
 		await plugin.projectManagement.createProjectWithChildren(
-			result.name.trim(),
-			"",
+			result.name,
+			result.folder,
 			[],
 		);
 	}, [plugin]);
@@ -297,7 +328,7 @@ export function DashboardApp() {
 		if (activeTab.value === "orphaned" && data.orphanedCards.total === 0) {
 			activeTab.value = "projects";
 		}
-	}, [data.orphanedCards.total]);
+	}, [data.orphanedCards.total, activeTab]);
 
 	return (
 		<div class="ep-dashboard-container ep:flex ep:flex-col ep:h-full">
@@ -324,6 +355,12 @@ export function DashboardApp() {
 						</>
 					)}
 
+					{_settings.temporaryCustomStudyDeck && (
+						<TemporaryCustomStudyDeckCard
+							deck={_settings.temporaryCustomStudyDeck}
+						/>
+					)}
+
 					<SearchCombobox
 						value={searchQuery.value}
 						placeholder="Search notes or projects..."
@@ -343,7 +380,7 @@ export function DashboardApp() {
 						onToggleArchived={() => {
 							showArchived.value = !showArchived.value;
 						}}
-						onCreateProject={handleCreateProject}
+						onCreateProject={() => void handleCreateProject()}
 					/>
 
 					<div class="ep:flex ep:flex-col ep:flex-1">
@@ -375,7 +412,7 @@ export function DashboardApp() {
 						</div>
 
 						<div class="ep:mt-3">
-							<HeatmapWidget source="months: 0" />
+							<HeatmapWidget source="months: 0" isViewVisible={isViewVisible} />
 						</div>
 					</div>
 				</div>

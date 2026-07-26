@@ -300,6 +300,146 @@ describe("migrateSettings — generation preset migration", () => {
 	});
 });
 
+describe("migrateSettings — builtin Basic Pro toolbar button removal", () => {
+	const basicButtonId = `preset:${BUILTIN_BASIC_PRESET.id}`;
+	const proButtonId = `preset:${BUILTIN_BASIC_PRO_PRESET_ID}`;
+
+	it("does not seed the Pro toolbar button on fresh install", () => {
+		const { settings } = migrateSettings(null);
+		expect(
+			settings.editorToolbarButtons.some((b) => b.id === proButtonId),
+		).toBe(false);
+		expect(
+			settings.globalToolbarButtons.some((b) => b.id === proButtonId),
+		).toBe(false);
+		expect(
+			settings.editorToolbarButtons.some((b) => b.id === basicButtonId),
+		).toBe(true);
+	});
+
+	it("strips the Pro toolbar button from persisted settings", () => {
+		const raw = {
+			generationPresets: [{ ...BUILTIN_BASIC_PRESET }],
+			defaultGenerationPresetId: BUILTIN_BASIC_PRESET.id,
+			editorToolbarButtons: [
+				{ id: basicButtonId, enabled: true },
+				{ id: proButtonId, enabled: true },
+				{ id: "copy", enabled: true },
+			],
+			globalToolbarButtons: [
+				{ id: basicButtonId, enabled: true },
+				{ id: proButtonId, enabled: true },
+			],
+		} as unknown as Parameters<typeof migrateSettings>[0];
+
+		const { settings, needsSave } = migrateSettings(raw);
+
+		expect(needsSave).toBe(true);
+		expect(
+			settings.editorToolbarButtons.some((b) => b.id === proButtonId),
+		).toBe(false);
+		expect(
+			settings.globalToolbarButtons.some((b) => b.id === proButtonId),
+		).toBe(false);
+		expect(
+			settings.editorToolbarButtons.some((b) => b.id === basicButtonId),
+		).toBe(true);
+		expect(settings.editorToolbarButtons.some((b) => b.id === "copy")).toBe(
+			true,
+		);
+	});
+
+	it("replaces a lone Pro toolbar button with the basic one, keeping position and enabled state", () => {
+		const raw = {
+			generationPresets: [{ ...BUILTIN_BASIC_PRESET }],
+			defaultGenerationPresetId: BUILTIN_BASIC_PRESET.id,
+			editorToolbarButtons: [
+				{ id: "copy", enabled: true },
+				{ id: proButtonId, enabled: false },
+			],
+			globalToolbarButtons: [{ id: proButtonId, enabled: true }],
+		} as unknown as Parameters<typeof migrateSettings>[0];
+
+		const { settings } = migrateSettings(raw);
+
+		expect(settings.editorToolbarButtons[1]).toMatchObject({
+			id: basicButtonId,
+			enabled: false,
+		});
+		expect(
+			settings.editorToolbarButtons.some((b) => b.id === proButtonId),
+		).toBe(false);
+		expect(settings.globalToolbarButtons[0]).toMatchObject({
+			id: basicButtonId,
+			enabled: true,
+		});
+	});
+
+	it("does not duplicate the basic button when both were present", () => {
+		const raw = {
+			generationPresets: [{ ...BUILTIN_BASIC_PRESET }],
+			defaultGenerationPresetId: BUILTIN_BASIC_PRESET.id,
+			editorToolbarButtons: [
+				{ id: basicButtonId, enabled: true },
+				{ id: proButtonId, enabled: true },
+			],
+			globalToolbarButtons: [{ id: basicButtonId, enabled: true }],
+		} as unknown as Parameters<typeof migrateSettings>[0];
+
+		const { settings } = migrateSettings(raw);
+
+		expect(
+			settings.editorToolbarButtons.filter((b) => b.id === basicButtonId),
+		).toHaveLength(1);
+		expect(
+			settings.globalToolbarButtons.filter((b) => b.id === basicButtonId),
+		).toHaveLength(1);
+	});
+});
+
+describe("migrateSettings — builtin preset prompt refresh", () => {
+	it("refreshes a stale builtin prompt to the current constant", () => {
+		const stale = {
+			...BUILTIN_BASIC_PRESET,
+			prompt: "old one-liner prompt",
+			languageOverride: "pl",
+		};
+		const { settings, needsSave } = migrateSettings({
+			generationPresets: [stale],
+			defaultGenerationPresetId: stale.id,
+		} as unknown as Parameters<typeof migrateSettings>[0]);
+
+		const basic = settings.generationPresets.find(
+			(p) => p.id === BUILTIN_BASIC_PRESET.id,
+		);
+		expect(basic?.prompt).toBe(BUILTIN_BASIC_PRESET.prompt);
+		expect(basic?.languageOverride).toBe("pl");
+		expect(needsSave).toBe(true);
+	});
+
+	it("leaves user preset prompts untouched", () => {
+		const userPreset = {
+			id: "user-1",
+			name: "Mine",
+			prompt: "my very own prompt",
+			noteTypeId: "builtin-basic",
+			requiresPro: false,
+			builtin: false,
+			isDefault: true,
+			createdAt: 1,
+			updatedAt: 1,
+		};
+		const { settings } = migrateSettings({
+			generationPresets: [userPreset],
+			defaultGenerationPresetId: userPreset.id,
+		} as unknown as Parameters<typeof migrateSettings>[0]);
+
+		expect(
+			settings.generationPresets.find((p) => p.id === "user-1")?.prompt,
+		).toBe("my very own prompt");
+	});
+});
+
 describe("providerType migration", () => {
 	it("derives providerType='pro' when proKey is present", () => {
 		const result = migrateSettings({
@@ -345,5 +485,36 @@ describe("providerType migration", () => {
 			customModel: "gemma2",
 		} as unknown as Parameters<typeof migrateSettings>[0]);
 		expect(result.settings.aiTier).toBe("custom");
+	});
+});
+
+describe("migrateSettings — ask-ai toolbar button backfill", () => {
+	it("appends ask-ai to saved editor and global toolbar arrays", () => {
+		const raw = {
+			editorToolbarButtons: [{ id: "quick-add", enabled: true }],
+			globalToolbarButtons: [{ id: "copy", enabled: false }],
+		} as unknown as Parameters<typeof migrateSettings>[0];
+		const { settings, needsSave } = migrateSettings(raw);
+		expect(needsSave).toBe(true);
+		expect(
+			settings.editorToolbarButtons.some((b) => b.id === "ask-ai" && b.enabled),
+		).toBe(true);
+		expect(
+			settings.globalToolbarButtons.some((b) => b.id === "ask-ai" && b.enabled),
+		).toBe(true);
+	});
+
+	it("is idempotent when ask-ai is already present and preserves the user's choice", () => {
+		const raw = {
+			editorToolbarButtons: [{ id: "ask-ai", enabled: false }],
+			globalToolbarButtons: [{ id: "ask-ai", enabled: true }],
+		} as unknown as Parameters<typeof migrateSettings>[0];
+		const { settings } = migrateSettings(raw);
+		expect(
+			settings.editorToolbarButtons.filter((b) => b.id === "ask-ai"),
+		).toHaveLength(1);
+		expect(
+			settings.editorToolbarButtons.find((b) => b.id === "ask-ai")?.enabled,
+		).toBe(false);
 	});
 });

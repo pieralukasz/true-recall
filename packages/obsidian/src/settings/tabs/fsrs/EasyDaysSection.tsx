@@ -77,7 +77,7 @@ export function EasyDaysSection({
 					dryRun: false,
 				});
 				if (applyResult && applyResult.affectedCount > 0) {
-					pushUndo(applyResult.affectedCount, applyResult.changes);
+					void pushUndo(applyResult.affectedCount, applyResult.changes);
 					notify().success(
 						`Applied easy days: ${applyResult.affectedCount} cards moved (Ctrl+Z to undo)`,
 					);
@@ -90,11 +90,11 @@ export function EasyDaysSection({
 	}, [app, settings, save, plugin, pushUndo, onRefresh]);
 
 	const handleApplyNow = useCallback(async () => {
-		const applyResult = await plugin.fsrsHelper?.applyEasyDays({
+		const applyResult = plugin.fsrsHelper?.applyEasyDays({
 			dryRun: false,
 		});
 		if (applyResult && applyResult.affectedCount > 0) {
-			pushUndo(applyResult.affectedCount, applyResult.changes);
+			void pushUndo(applyResult.affectedCount, applyResult.changes);
 			notify().success(
 				`Applied easy days: ${applyResult.affectedCount} cards moved (Ctrl+Z to undo)`,
 			);

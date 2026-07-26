@@ -1,13 +1,16 @@
 import type { ChatMessage } from "@true-recall/core/ai/clients/openrouter-client";
 
-import type { CardAIContext, CardFields } from "./card-ai.types";
-import type { CardAITargetOperation } from "./card-ai-target";
+import type {
+	CardAIContext,
+	CardAIOperation,
+	CardFields,
+} from "./card-ai.types";
 
 const SOURCE_NOTE_CHAR_LIMIT = 4000;
 
 function systemPrompt(
 	noteType: { name: string; fields: readonly string[] },
-	operation: CardAITargetOperation,
+	operation: CardAIOperation,
 ): string {
 	const keys = noteType.fields.map((n) => `"${n}"`).join(", ");
 	const role =
@@ -78,7 +81,7 @@ export function buildCardAIMessages(input: {
 	fields: CardFields;
 	noteType: { name: string; fields: readonly string[] };
 	prompt: string;
-	operation: CardAITargetOperation;
+	operation: CardAIOperation;
 	context?: CardAIContext;
 }): ChatMessage[] {
 	const fieldLabel =

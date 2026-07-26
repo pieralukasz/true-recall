@@ -141,6 +141,59 @@ function buildCustomStudyQueue(
 	return [...fsrsService.sortByDue(dueLearningCards), ...spacedQueue];
 }
 
+function buildAnkiCustomStudyQueue(
+	availableCards: CardSchedulingMeta[],
+	fsrsService: FSRSService,
+	options: QueueBuildOptions,
+): CardSchedulingMeta[] {
+	const request = options.customStudy;
+	if (!request) return availableCards;
+
+	let queue: CardSchedulingMeta[];
+	let limit: number | undefined;
+
+	switch (request.kind) {
+		case "increase-new":
+			queue = sortNewCards(availableCards, "oldest-first");
+			limit =
+				Math.max(
+					0,
+					options.newCardsLimit - (options.newCardsStudiedToday ?? 0),
+				) + request.amount;
+			break;
+		case "increase-review":
+		case "review-ahead":
+			queue = sortReviewCards(availableCards, "due-date", fsrsService);
+			if (request.kind === "increase-review") {
+				limit =
+					Math.max(
+						0,
+						options.reviewsLimit - (options.reviewsCompletedToday ?? 0),
+					) + request.amount;
+			}
+			break;
+		case "forgotten":
+			queue = sortReviewCards(availableCards, "random", fsrsService);
+			break;
+		case "preview-new":
+			queue = sortNewCards(availableCards, "oldest-first");
+			break;
+		case "state-or-tag":
+			queue =
+				request.cardState === "new"
+					? sortNewCards(availableCards, "oldest-first")
+					: sortReviewCards(
+							availableCards,
+							request.cardState === "due" ? "due-date" : "random",
+							fsrsService,
+						);
+			limit = request.cardLimit;
+			break;
+	}
+
+	return limit && limit > 0 ? queue.slice(0, limit) : queue;
+}
+
 function buildStandardQueue(
 	availableCards: CardSchedulingMeta[],
 	fsrsService: FSRSService,
@@ -250,7 +303,15 @@ export function buildQueue(
 
 	let queue: CardSchedulingMeta[];
 
-	if (options.bypassScheduling) {
+	if (options.materializedCardIds) {
+		const cardById = new Map(availableCards.map((card) => [card.id, card]));
+		queue = options.materializedCardIds.flatMap((id) => {
+			const card = cardById.get(id);
+			return card ? [card] : [];
+		});
+	} else if (options.customStudy) {
+		queue = buildAnkiCustomStudyQueue(availableCards, fsrsService, options);
+	} else if (options.bypassScheduling) {
 		queue = buildCustomStudyQueue(availableCards, fsrsService, options);
 	} else {
 		queue = buildStandardQueue(availableCards, fsrsService, options, now);

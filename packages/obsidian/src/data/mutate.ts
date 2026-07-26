@@ -1,3 +1,4 @@
+import { batch } from "@preact/signals";
 import { State } from "ts-fsrs";
 
 import type { CardSchedulingMeta } from "@true-recall/core/types";
@@ -35,26 +36,26 @@ export function mutateReviewGrade(
 
 	const updated = getUpdatedMeta();
 	if (!updated) {
-		dl.invalidateGroups([G.DASHBOARD, G.STATS]);
+		dl.invalidateGroups([G.CARDS]);
 		return;
 	}
 
 	try {
-		dl.patch<Map<string, CardSchedulingMeta>>(Q.ALL_META, (map) => {
-			const next = new Map(map);
-			next.set(cardId, updated);
-			return next;
-		});
+		batch(() => {
+			dl.patch<Map<string, CardSchedulingMeta>>(Q.ALL_META, (map) => {
+				const next = new Map(map);
+				next.set(cardId, updated);
+				return next;
+			});
 
-		patchGlobalCounts(dl, oldMeta, updated, archived, now);
-		patchNoteStatus(dl, oldMeta, updated, now);
-		patchCardsBySource(dl, oldMeta, updated);
+			patchGlobalCounts(dl, oldMeta, updated, archived, now);
+			patchNoteStatus(dl, oldMeta, updated, now);
+			patchCardsBySource(dl, oldMeta, updated);
+		});
 	} catch (e) {
 		console.error("[mutateReviewGrade] patch failed, falling back:", e);
 		dl.invalidateGroups([G.CARDS]);
 	}
-
-	dl.invalidateGroups([G.DASHBOARD, G.STATS]);
 }
 
 // ── Incremental patch helpers ──────────────────────────────

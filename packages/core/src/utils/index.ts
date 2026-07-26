@@ -13,6 +13,7 @@ export {
 	EventRegistry,
 	throttle,
 } from "./event.utils";
+export { formatFileSize } from "./format.utils";
 export {
 	createEmptyIODefinition,
 	getIOGroupOrds,

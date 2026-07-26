@@ -124,7 +124,7 @@ function MappingRow({
 	const showFieldMapping = selectedId !== AUTO_CREATE && selectedType;
 
 	return (
-		<div class="ep:p-3 ep:border-b ep:border-obs-border last:ep:border-b-0">
+		<div class="ep:p-3 ep:border-b ep:border-obs-border ep:last:border-b-0">
 			<div class="ep:flex ep:items-center ep:justify-between ep:mb-1">
 				<div class="ep:text-ui-small ep:font-medium">
 					{suggestion.ankiModelName}

@@ -98,6 +98,15 @@ export function buildQueueOptions(
 		? (presetProgress?.reviewsCompleted ?? 0)
 		: sessionPersistence.getReviewCardsCompletedToday();
 
+	const customStudy = filters.customStudy;
+	const forgottenCardIds =
+		customStudy?.kind === "forgotten"
+			? sessionPersistence.getCardsRatedAgainWithinDays(customStudy.days)
+			: undefined;
+	const temporaryDeckCardIds = filters.temporaryDeckId
+		? undefined
+		: new Set(settings.temporaryCustomStudyDeck?.cardIds ?? []);
+
 	return {
 		newCardsLimit: preset?.newCardsPerDay ?? settings.newCardsPerDay,
 		reviewsLimit: preset?.reviewsPerDay ?? settings.reviewsPerDay,
@@ -129,6 +138,10 @@ export function buildQueueOptions(
 		cardLimit: filters.cardLimit,
 		studyAheadDays: filters.studyAheadDays,
 		burySiblings: preset?.burySiblings,
+		customStudy,
+		forgottenCardIds,
+		materializedCardIds: filters.materializedCardIds,
+		temporaryDeckCardIds,
 	};
 }
 
@@ -153,7 +166,10 @@ export function isGlobalReviewSession(filters: SessionFilters): boolean {
 		filters.cardLimit ||
 		filters.studyAheadDays ||
 		filters.customReviewOrder ||
-		filters.crammingMode
+		filters.crammingMode ||
+		filters.customStudy ||
+		filters.materializedCardIds ||
+		filters.temporaryDeckId
 	);
 }
 

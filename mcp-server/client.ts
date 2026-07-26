@@ -24,7 +24,9 @@ export class TrueRecallClient {
 	): Promise<T> {
 		let res: Response;
 		try {
-			res = await fetch(`${this.baseUrl}${path}`, {
+			// This process runs under Bun (see package.json "start"), not inside
+			// Obsidian — requestUrl is unavailable and `window` does not exist.
+			res = await Bun.fetch(`${this.baseUrl}${path}`, {
 				...init,
 				signal: AbortSignal.timeout(timeoutMs),
 			});
@@ -54,8 +56,8 @@ export class TrueRecallClient {
 		return body.data;
 	}
 
-	async get<T>(path: string): Promise<T> {
-		return this.request<T>(path);
+	async get<T>(path: string, timeoutMs?: number): Promise<T> {
+		return this.request<T>(path, undefined, timeoutMs);
 	}
 
 	async post<T>(path: string, data?: unknown): Promise<T> {
@@ -76,7 +78,7 @@ export class TrueRecallClient {
 			return true;
 		} catch (error) {
 			console.error(
-				`[TrueRecallClient] Health check failed: ${error instanceof Error ? error.message : error}`,
+				`[TrueRecallClient] Health check failed: ${error instanceof Error ? error.message : String(error)}`,
 			);
 			return false;
 		}

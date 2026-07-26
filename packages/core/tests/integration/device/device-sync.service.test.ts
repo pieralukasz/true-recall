@@ -152,6 +152,7 @@ function buildLocalStore(ctx: TestContext) {
 		stats: ctx.stats,
 		notes: ctx.notes,
 		noteTypes: ctx.noteTypes,
+		transaction: <T>(fn: () => T): T => ctx.db.transaction(fn),
 	};
 }
 
@@ -243,17 +244,42 @@ describe("DeviceSyncService", () => {
 		expect(result.cardsApplied).toBe(1);
 		expect(result.errors).toHaveLength(0);
 
-		// upsertFromRemote preserves the remote noteId but does not copy the
-		// note row, so the JOIN-based get() returns undefined.
-		// Verify the card row exists directly.
+		// The note row is merged along with the card, so the JOIN-based
+		// get() must return a fully hydrated card (an FK-enforced production
+		// DB would otherwise reject the card entirely).
 		expect(localCtx.cards.has("remote-card-1")).toBe(true);
 
-		const raw = localCtx.db.get<{ id: string; stability: number }>(
-			"SELECT id, stability FROM cards WHERE id = ?",
-			["remote-card-1"],
-		);
-		expect(raw).toBeDefined();
-		expect(raw?.id).toBe("remote-card-1");
+		const synced = localCtx.cards.get("remote-card-1");
+		expect(synced).toBeDefined();
+		expect(synced?.question).toBe("Remote Q");
+		expect(synced?.answer).toBe("Remote A");
+	});
+
+	it("advances the sync watermark to the max remote updated_at, not the local clock", async () => {
+		const remotePath = ".true-recall/true-recall-remote01.db";
+		const remoteUpdatedAt = Date.now() - 60_000;
+		const remoteCard = createTestCard({ id: "remote-card-wm" });
+
+		const remoteBinary = await createRemoteDbBinary((ctx) => {
+			ctx.cards.set(remoteCard.id, remoteCard);
+			ctx.db.run(`UPDATE cards SET updated_at = ?`, [remoteUpdatedAt]);
+			ctx.db.run(`UPDATE notes SET updated_at = ?`, [remoteUpdatedAt]);
+		});
+		persistence.seedBinary(remotePath, remoteBinary);
+
+		vi.mocked(discoveryMock.discoverDeviceDatabases).mockResolvedValue([
+			makeDeviceInfo({
+				deviceId: "remote01",
+				path: remotePath,
+				isCurrentDevice: false,
+			}),
+		]);
+
+		await service.syncOnStartup();
+
+		// A Date.now() watermark would skip rows delivered late by file sync.
+		const watermark = Number(localCtx.cards.getSyncMetadata("sync:remote01"));
+		expect(watermark).toBe(remoteUpdatedAt);
 	});
 
 	it("syncOnStartup handles empty remote DB gracefully", async () => {

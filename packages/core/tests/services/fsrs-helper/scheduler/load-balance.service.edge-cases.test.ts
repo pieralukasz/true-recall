@@ -46,7 +46,7 @@ describe("LoadBalanceService - Edge Cases", () => {
 		});
 
 		it("should move cards when count is threshold + 1", async () => {
-			// 13 cards on threshold of 12 = 1 card to move
+			// 13 cards exceed threshold 12 → the day trims to target 10 = 3 moves
 			const cards = createCardsOnDate("2026-02-01", 13);
 			mockStore = createMockCardStore(cards);
 			mockStore.getDueCardsByDateRange.mockReturnValue(cards);
@@ -58,7 +58,7 @@ describe("LoadBalanceService - Edge Cases", () => {
 				dryRun: true,
 			});
 
-			expect(result.affectedCount).toBe(1);
+			expect(result.affectedCount).toBe(3);
 		});
 
 		it("should handle small target with deviation rounding", async () => {
@@ -75,7 +75,7 @@ describe("LoadBalanceService - Edge Cases", () => {
 				dryRun: true,
 			});
 
-			// threshold = 2 + (2 * 0.1) = 2.2, so 3 > 2.2 = 1 card moves
+			// threshold = 2.2 triggers, day trims to target 2 → 1 card moves
 			expect(result.affectedCount).toBe(1);
 		});
 
@@ -115,10 +115,10 @@ describe("LoadBalanceService - Edge Cases", () => {
 				dryRun: true,
 			});
 
-			// Day 1: 15 - 12 = 3 excess
-			// Day 3: 18 - 12 = 6 excess
-			// Total = 9 cards to move
-			expect(result.affectedCount).toBe(9);
+			// Day 1: 15 - 10 = 5 excess (trimmed to target)
+			// Day 3: 18 - 10 = 8 excess
+			// Total = 13 cards to move
+			expect(result.affectedCount).toBe(13);
 		});
 
 		it("should handle consecutive overloaded days", async () => {
@@ -138,8 +138,8 @@ describe("LoadBalanceService - Edge Cases", () => {
 				dryRun: true,
 			});
 
-			// Each overloaded day has 3 excess = 9 total
-			expect(result.affectedCount).toBe(9);
+			// Each overloaded day trims from 15 to target 10 = 15 total
+			expect(result.affectedCount).toBe(15);
 		});
 
 		it("should not create infinite loop when redistribution fills target day", async () => {
@@ -160,9 +160,9 @@ describe("LoadBalanceService - Edge Cases", () => {
 				dryRun: true,
 			});
 
-			// Day 1 has 13, threshold is 12, only 1 to move
-			// Should move to days that have room under 12
-			expect(result.affectedCount).toBe(1);
+			// Day 1 has 13 > threshold 12 → trims to target 10 (3 moves);
+			// days 2-3 sit at 11, inside the deviation band → untouched
+			expect(result.affectedCount).toBe(3);
 		});
 	});
 

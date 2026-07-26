@@ -43,16 +43,10 @@ class FolderSuggest extends AbstractInputSuggest<string> {
 		const name = lastSlash >= 0 ? folder.slice(lastSlash + 1) : folder;
 		const parent = lastSlash >= 0 ? folder.slice(0, lastSlash) : null;
 
-		const titleEl = el.ownerDocument.createElement("div");
-		titleEl.className = "suggestion-title";
-		titleEl.textContent = name;
-		el.appendChild(titleEl);
+		el.createDiv({ cls: "suggestion-title", text: name });
 
 		if (parent) {
-			const noteEl = el.ownerDocument.createElement("div");
-			noteEl.className = "suggestion-note";
-			noteEl.textContent = parent;
-			el.appendChild(noteEl);
+			el.createDiv({ cls: "suggestion-note", text: parent });
 		}
 	}
 

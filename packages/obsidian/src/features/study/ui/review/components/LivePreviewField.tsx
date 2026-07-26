@@ -11,6 +11,7 @@ import {
 import { stripBrTags } from "@true-recall/core/utils";
 
 import type { EmbeddableEditorInstance } from "@true-recall/obsidian/editor/shared/embedded-editor";
+import { getInkEmbeddableEditorExtensions } from "@true-recall/obsidian/editor/shared/ink-embeddable-editor";
 import { hasBlockMarkdown } from "@true-recall/obsidian/features/study/ui/review/helpers";
 import {
 	useApp,
@@ -41,9 +42,14 @@ export function LivePreviewField({
 	const contentRef = useRef(content);
 
 	// Refs so stale closures (editor callbacks captured at construction) always access latest values
-	const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+	const saveTimerRef = useRef<number | null>(null);
 	const onContentChangeRef = useRef(onContentChange);
 	const fieldRef = useRef(field);
+	// Save only after an actual user edit. Obsidian's internal CM6 extensions
+	// can rewrite the document on their own (e.g. $$ math -> widget markers);
+	// saving on a bare value mismatch would persist that corrupted content and
+	// fire a full save/invalidation cascade on every blur or outside click.
+	const hasUserEditRef = useRef(false);
 
 	contentRef.current = content;
 	onContentChangeRef.current = onContentChange;
@@ -51,7 +57,8 @@ export function LivePreviewField({
 
 	const performSave = useCallback(() => {
 		const editor = editorRef.current;
-		if (!editor) return;
+		if (!editor || !hasUserEditRef.current) return;
+		hasUserEditRef.current = false;
 		const currentValue = editor.value;
 		const normalizedOriginal = stripBrTags(contentRef.current);
 		if (currentValue !== normalizedOriginal && onContentChangeRef.current) {
@@ -62,7 +69,7 @@ export function LivePreviewField({
 
 	const flushPendingSave = useCallback(() => {
 		if (saveTimerRef.current !== null) {
-			clearTimeout(saveTimerRef.current);
+			window.clearTimeout(saveTimerRef.current);
 			saveTimerRef.current = null;
 		}
 		performSave();
@@ -70,9 +77,9 @@ export function LivePreviewField({
 
 	const scheduleSave = useCallback(() => {
 		if (saveTimerRef.current !== null) {
-			clearTimeout(saveTimerRef.current);
+			window.clearTimeout(saveTimerRef.current);
 		}
-		saveTimerRef.current = setTimeout(() => {
+		saveTimerRef.current = window.setTimeout(() => {
 			saveTimerRef.current = null;
 			performSave();
 		}, AUTOSAVE_DELAY_MS);
@@ -101,6 +108,7 @@ export function LivePreviewField({
 					tr.isUserEvent("move"),
 			);
 			if (isUserEdit) {
+				hasUserEditRef.current = true;
 				scheduleSave();
 			}
 		},
@@ -111,7 +119,11 @@ export function LivePreviewField({
 		const el = containerRef.current;
 		if (!el || !plugin.EmbeddableEditor) return;
 
-		const normalizedContent = stripBrTags(content);
+		// Use contentRef (kept in sync every render) rather than `content` directly —
+		// this effect only builds the editor once (on mount / EmbeddableEditor change);
+		// subsequent content updates are handled by the useLayoutEffect below via CM6
+		// transactions, so `content` must not be a reactive dependency here.
+		const normalizedContent = stripBrTags(contentRef.current);
 
 		let editor: import("@true-recall/obsidian/editor/shared/embedded-editor").EmbeddableEditorInstance;
 		try {
@@ -120,6 +132,7 @@ export function LivePreviewField({
 				onBlur: handleBlur,
 				onEscape: handleEscape,
 				onChange: handleChange,
+				extraExtensions: getInkEmbeddableEditorExtensions(app, sourcePath),
 			});
 			editorRef.current = editor;
 		} catch (error) {
@@ -139,15 +152,23 @@ export function LivePreviewField({
 				flushPendingSave();
 			}
 		};
-		document.addEventListener("mousedown", handleOutsideMouseDown);
+		activeDocument.addEventListener("mousedown", handleOutsideMouseDown);
 
 		return () => {
 			flushPendingSave();
-			document.removeEventListener("mousedown", handleOutsideMouseDown);
+			activeDocument.removeEventListener("mousedown", handleOutsideMouseDown);
 			editorRef.current = null;
 			editor.destroy();
 		};
-	}, [app, plugin.EmbeddableEditor]);
+	}, [
+		app,
+		plugin.EmbeddableEditor,
+		handleBlur,
+		handleEscape,
+		handleChange,
+		flushPendingSave,
+		sourcePath,
+	]);
 
 	// Update editor content when card changes (new card appears)
 	// useLayoutEffect ensures CM content updates before paint — no flash of old card.
@@ -160,6 +181,10 @@ export function LivePreviewField({
 		const normalizedContent = stripBrTags(content);
 		if (editor.value === normalizedContent) return;
 
+		// The old card's doc is replaced below; a pending user-edit flag must
+		// not survive into the new card, or the next blur would save the new
+		// card's untouched content as an "edit".
+		hasUserEditRef.current = false;
 		const cm = editor.cm;
 		cm.dispatch({
 			changes: { from: 0, to: cm.state.doc.length, insert: normalizedContent },

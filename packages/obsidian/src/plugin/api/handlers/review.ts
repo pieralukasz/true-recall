@@ -64,7 +64,7 @@ export async function handleGradeCard(
 	}
 
 	const reviewService = new ReviewService();
-	const { updatedCard, result, persisted } = await reviewService.gradeCard(
+	const { updatedCard, result, persisted } = reviewService.gradeCard(
 		card,
 		grade,
 		ctx.plugin.fsrsService,

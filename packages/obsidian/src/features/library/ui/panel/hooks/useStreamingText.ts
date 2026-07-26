@@ -99,10 +99,10 @@ export function useStreamingText(fullText: string): {
 				triggerRender((n) => n + 1);
 			}
 
-			frameRef.current = requestAnimationFrame(loop);
+			frameRef.current = window.requestAnimationFrame(loop);
 		};
 
-		frameRef.current = requestAnimationFrame(loop);
+		frameRef.current = window.requestAnimationFrame(loop);
 		return () => {
 			if (frameRef.current) cancelAnimationFrame(frameRef.current);
 		};

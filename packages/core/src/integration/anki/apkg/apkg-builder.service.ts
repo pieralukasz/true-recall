@@ -12,6 +12,11 @@ const FIELD_SEPARATOR = "\x1f";
 
 const ANKI_QUEUE_SUSPENDED = -1;
 
+// Note model ids in the exported collection
+const MODEL_BASIC_REVERSED = 1;
+const MODEL_CLOZE = 2;
+const MODEL_BASIC = 3;
+
 const DIFFICULTY_INVERSION_CONSTANT = 11;
 const FACTOR_SCALE = 250;
 const FACTOR_MIN = 1300;
@@ -38,8 +43,16 @@ interface BuildOptions {
 }
 
 export class ApkgBuilderService {
+	// Deterministic ids come from a 32-bit hash, which collides at realistic
+	// collection sizes — and a duplicate PRIMARY KEY aborts the whole export.
+	// Ids are therefore allocated once per build with collision probing, and
+	// notes/cards/revlog all read from the same maps.
+	private noteIds = new Map<string, number>();
+	private cardIds = new Map<string, number>();
+
 	async build(options: BuildOptions): Promise<ArrayBuffer> {
 		const { db } = await loadDatabase(null);
+		this.allocateIds(options.cards);
 
 		try {
 			this.createAnkiSchema(db);
@@ -53,6 +66,24 @@ export class ApkgBuilderService {
 			return this.packageAsZip(dbBytes, options.media);
 		} finally {
 			db.close();
+		}
+	}
+
+	private allocateIds(cards: FSRSCardData[]): void {
+		this.noteIds = new Map();
+		this.cardIds = new Map();
+		const usedNoteIds = new Set<number>();
+		const usedCardIds = new Set<number>();
+		for (const card of cards) {
+			let noteId = deterministicId(card.id, "note");
+			while (usedNoteIds.has(noteId)) noteId++;
+			usedNoteIds.add(noteId);
+			this.noteIds.set(card.id, noteId);
+
+			let cardId = deterministicId(card.id, "card");
+			while (usedCardIds.has(cardId)) cardId++;
+			usedCardIds.add(cardId);
+			this.cardIds.set(card.id, cardId);
 		}
 	}
 
@@ -174,12 +205,19 @@ export class ApkgBuilderService {
 		// Group reversed cards with their originals so they share one note
 		const reversePairs = new Map<string, FSRSCardData>();
 		const standalone: FSRSCardData[] = [];
+		const exportedIds = new Set(cards.map((c) => c.id));
 
 		for (const card of cards) {
 			if (card.cardType === "note-review") continue;
-			if (card.cardType === "reversed" && card.reverseOf) {
+			if (
+				card.cardType === "reversed" &&
+				card.reverseOf &&
+				exportedIds.has(card.reverseOf)
+			) {
 				reversePairs.set(card.reverseOf, card);
 			} else {
+				// Includes reversed cards whose original is not in the export
+				// set — previously they were silently dropped from the .apkg.
 				standalone.push(card);
 			}
 		}
@@ -187,13 +225,20 @@ export class ApkgBuilderService {
 		let newCardPosition = 0;
 
 		for (const card of standalone) {
-			const noteId = deterministicId(card.id, "note");
-			const cardId = deterministicId(card.id, "card");
+			const noteId = this.noteIds.get(card.id) ?? 0;
+			const cardId = this.cardIds.get(card.id) ?? 0;
 			const question = card.question ?? "";
 			const answer = card.answer ?? "";
 
 			const isCloze = card.cardType === "cloze";
-			const modelId = isCloze ? 2 : 1;
+			// One-way cards get the single-template Basic model — under the
+			// two-template model Anki's next card-generation pass would
+			// materialize an unwanted reverse card for every note.
+			const modelId = isCloze
+				? MODEL_CLOZE
+				: reversePairs.has(card.id)
+					? MODEL_BASIC_REVERSED
+					: MODEL_BASIC;
 
 			const flds = isCloze
 				? (card.clozeTemplate ?? question) + FIELD_SEPARATOR + answer
@@ -276,7 +321,7 @@ export class ApkgBuilderService {
 			// Handle reversed pair: second card (ord=1) on the same note
 			const reversed = reversePairs.get(card.id);
 			if (reversed) {
-				const reversedCardId = deterministicId(reversed.id, "card");
+				const reversedCardId = this.cardIds.get(reversed.id) ?? 0;
 				const reversedDeckId = this.resolveDeckId(reversed, deckMap);
 
 				if (includeScheduling) {
@@ -343,13 +388,10 @@ export class ApkgBuilderService {
 	}
 
 	private insertRevlog(db: DatabaseLike, options: BuildOptions): void {
-		const { reviewLogs, cards } = options;
+		const { reviewLogs } = options;
 
-		// Build a lookup from True Recall card ID -> Anki card ID
-		const cardIdMap = new Map<string, number>();
-		for (const card of cards) {
-			cardIdMap.set(card.id, deterministicId(card.id, "card"));
-		}
+		// Anki card ids shared with insertNotesAndCards via the per-build maps
+		const cardIdMap = this.cardIds;
 
 		// Track previous interval per card for lastIvl
 		const prevIntervalMap = new Map<number, number>();
@@ -360,6 +402,11 @@ export class ApkgBuilderService {
 				new Date(a.reviewedAt).getTime() - new Date(b.reviewedAt).getTime(),
 		);
 
+		// revlog.id is the review time in ms AND the primary key — two reviews
+		// in the same millisecond would abort the export, so bump duplicates
+		// forward (Anki does the same).
+		let lastRevlogId = 0;
+
 		for (const log of sorted) {
 			if (log.deletedAt !== null) continue;
 
@@ -367,18 +414,19 @@ export class ApkgBuilderService {
 			if (ankiCardId === undefined) continue;
 
 			const reviewTimeMs = new Date(log.reviewedAt).getTime();
+			const revlogId = Math.max(reviewTimeMs, lastRevlogId + 1);
+			lastRevlogId = revlogId;
 			const ease = Math.max(1, Math.min(4, log.rating));
 			const ivl = log.scheduledDays;
 			const lastIvl = prevIntervalMap.get(ankiCardId) ?? 0;
 			const factor = FACTOR_DEFAULT;
 			const time = log.timeSpentMs;
-			// Anki revlog type matches FSRS state for the review context
-			const type = Math.max(0, Math.min(3, log.state));
+			const type = fsrsStateToRevlogType(log.state);
 
 			db.run(
 				`INSERT INTO revlog (id, cid, usn, ease, ivl, lastIvl, factor, time, type)
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-				[reviewTimeMs, ankiCardId, -1, ease, ivl, lastIvl, factor, time, type],
+				[revlogId, ankiCardId, -1, ease, ivl, lastIvl, factor, time, type],
 			);
 
 			prevIntervalMap.set(ankiCardId, ivl);
@@ -393,7 +441,10 @@ export class ApkgBuilderService {
 		const state = card.state;
 
 		const type = Math.max(0, Math.min(3, state));
-		let queue = type;
+		// Queue mostly mirrors type, but queue 3 (day-learn) interprets `due`
+		// as days-since-collection while we write epoch seconds for learning
+		// states — so Relearning goes to queue 1 (intraday learn) instead.
+		let queue = state === State.Relearning ? 1 : type;
 		if (card.suspended) {
 			queue = ANKI_QUEUE_SUSPENDED;
 		}
@@ -439,7 +490,7 @@ export class ApkgBuilderService {
 
 	private buildModelsJson(): string {
 		const basicModel = {
-			id: 1,
+			id: MODEL_BASIC_REVERSED,
 			name: "Basic (and reversed card)",
 			type: 0,
 			mod: 0,
@@ -495,7 +546,7 @@ export class ApkgBuilderService {
 		};
 
 		const clozeModel = {
-			id: 2,
+			id: MODEL_CLOZE,
 			name: "Cloze",
 			type: 1,
 			mod: 0,
@@ -539,9 +590,20 @@ export class ApkgBuilderService {
 			req: [[0, "any", [0]]],
 		};
 
+		// Single-template variant for one-way cards; only ord-0 card rows are
+		// written for them, and Anki fills in missing cards per template.
+		const singleBasicModel = {
+			...basicModel,
+			id: MODEL_BASIC,
+			name: "Basic",
+			tmpls: [basicModel.tmpls[0]],
+			req: [[0, "any", [0]]],
+		};
+
 		const models: Record<string, unknown> = {
-			"1": basicModel,
-			"2": clozeModel,
+			[String(MODEL_BASIC_REVERSED)]: basicModel,
+			[String(MODEL_CLOZE)]: clozeModel,
+			[String(MODEL_BASIC)]: singleBasicModel,
 		};
 
 		return JSON.stringify(models);
@@ -654,8 +716,24 @@ export class ApkgBuilderService {
 		return zipped.buffer.slice(
 			zipped.byteOffset,
 			zipped.byteOffset + zipped.byteLength,
-		) as ArrayBuffer;
+		);
 	}
+}
+
+/**
+ * Map the FSRS state a card was in before a review to Anki's revlog type
+ * (0=learn, 1=review, 2=relearn). The enums are NOT aligned: FSRS Review=2
+ * would otherwise export as Anki "relearn".
+ */
+// Anki revlog types: 0=learn, 1=review, 2=relearn. FSRS New/Learning map to
+// "learn" (the default); only Review and Relearning differ.
+const ANKI_REVLOG_TYPE_BY_FSRS_STATE: Record<number, number> = {
+	[State.Review]: 1,
+	[State.Relearning]: 2,
+};
+
+function fsrsStateToRevlogType(state: number): number {
+	return ANKI_REVLOG_TYPE_BY_FSRS_STATE[state] ?? 0;
 }
 
 function deterministicId(cardId: string, salt: string): number {

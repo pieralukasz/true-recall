@@ -22,17 +22,24 @@ export class BuryCommand implements Command {
 			const data = ctx.cardStore.get(id);
 			if (data) {
 				this.originalFsrsSnapshots.push({ id, fsrs: { ...data } });
-				ctx.flashcardManager.updateCardFSRS(id, {
-					...data,
-					buriedUntil: this.buriedUntil,
-				});
+				ctx.flashcardManager.updateCardFSRS(
+					id,
+					{
+						...data,
+						buriedUntil: this.buriedUntil,
+					},
+					undefined,
+					{ skipNotification: true },
+				);
 			}
 		}
 	}
 
 	undo(ctx: CommandContext): void {
 		for (const { id, fsrs } of this.originalFsrsSnapshots) {
-			ctx.flashcardManager.updateCardFSRS(id, fsrs);
+			ctx.flashcardManager.updateCardFSRS(id, fsrs, undefined, {
+				skipNotification: true,
+			});
 		}
 	}
 }

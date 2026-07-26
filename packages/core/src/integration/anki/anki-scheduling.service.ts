@@ -103,13 +103,13 @@ export class AnkiSchedulingService {
 	}
 
 	private clampEase(ease: number): Grade {
-		return Math.max(VALID_EASE_MIN, Math.min(VALID_EASE_MAX, ease)) as Grade;
+		return Math.max(VALID_EASE_MIN, Math.min(VALID_EASE_MAX, ease));
 	}
 
 	private mapAnkiTypeToState(ankiType: number): State {
 		// Anki type: 0=New, 1=Learning, 2=Review, 3=Relearning — same as FSRS
 		if (ankiType >= 0 && ankiType <= 3) {
-			return ankiType as State;
+			return ankiType;
 		}
 		return State.New;
 	}

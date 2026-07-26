@@ -2,12 +2,13 @@ import { Plugin, type TFile } from "obsidian";
 
 import { TrueRecallApp } from "@true-recall/core/app";
 import {
-	ENABLE_RAG,
+	VIEW_TYPE_ASSISTANT_EDITOR,
+	VIEW_TYPE_ASSISTANT_INBOX,
+	VIEW_TYPE_ASSISTANT_WORKSPACE,
 	VIEW_TYPE_CARD_BROWSER,
 	VIEW_TYPE_CARD_TYPES_EDITOR,
 	VIEW_TYPE_DASHBOARD,
 	VIEW_TYPE_FLASHCARD_PANEL,
-	VIEW_TYPE_KNOWLEDGE_CHAT,
 	VIEW_TYPE_NOTE_TYPE_MANAGER,
 	VIEW_TYPE_QUICK_NOTE_EDITOR,
 	VIEW_TYPE_REVIEW,
@@ -20,15 +21,21 @@ import type { DeviceIdService } from "@true-recall/core/integration/device/devic
 import { DeviceLockService } from "@true-recall/core/integration/device/device-lock.service";
 import { DeviceSyncService } from "@true-recall/core/integration/device/device-sync.service";
 import { SessionService } from "@true-recall/core/services/review/session.service";
-import type { TrueRecallSettings } from "@true-recall/core/types";
+import type {
+	CardSchedulingMeta,
+	SessionResult,
+	TemporaryCustomStudyDeck,
+	TrueRecallSettings,
+} from "@true-recall/core/types";
 import type { SessionConfig } from "@true-recall/core/types/session-config.types";
 
-import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpClient";
 import { ObsidianNoteResolver } from "@true-recall/obsidian/adapters/ObsidianNoteResolver";
 import { ObsidianPersistence } from "@true-recall/obsidian/adapters/ObsidianPersistence";
 import type { CommandService } from "@true-recall/obsidian/commands";
 import type { DataLayer } from "@true-recall/obsidian/data";
 import { G } from "@true-recall/obsidian/data";
+import { Q } from "@true-recall/obsidian/data/queries";
+import type { AIWorkspaceMode } from "@true-recall/obsidian/features/assistant/ui/ai-workspace-modes";
 import type { NoteStatusCache } from "@true-recall/obsidian/features/core/cache/note-status-cache.service";
 import { ReviewSessionController } from "@true-recall/obsidian/features/study/services/ReviewSessionController";
 import {
@@ -53,9 +60,12 @@ import {
 	isMobile,
 	isViewAllowedOnCurrentPlatform,
 } from "@true-recall/obsidian/utils/platform";
+import { AssistantInboxView } from "@true-recall/obsidian/views/assistant/AssistantInboxView";
+import { AssistantWorkspaceView } from "@true-recall/obsidian/views/assistant/AssistantWorkspaceView";
 import { CardBrowserView } from "@true-recall/obsidian/views/browser/CardBrowserView";
-import { KnowledgeChatView } from "@true-recall/obsidian/views/chat/KnowledgeChatView";
 import { DashboardView } from "@true-recall/obsidian/views/dashboard/DashboardView";
+import { AssistantEditorView } from "@true-recall/obsidian/views/modal-window/AssistantEditorView";
+import { drainAssistantEditorRequests } from "@true-recall/obsidian/views/modal-window/assistant-editor-registry";
 import { CardTypesEditorView } from "@true-recall/obsidian/views/modal-window/CardTypesEditorView";
 import { drainCardTypesEditorRequests } from "@true-recall/obsidian/views/modal-window/card-types-editor-registry";
 import { NoteTypeManagerView } from "@true-recall/obsidian/views/modal-window/NoteTypeManagerView";
@@ -77,6 +87,7 @@ import {
 	checkForWhatsNew,
 	initializeDeviceAndStore,
 } from "./plugin/PluginInitializers";
+import { applyTabBarClass, HIDE_TAB_BAR_CLASS } from "./plugin/tab-bar";
 import {
 	activateReviewView,
 	activateView,
@@ -179,16 +190,10 @@ export default class TrueRecallPlugin extends Plugin {
 	statusBarWidget: StatusBarWidget | null = null;
 	backupRecovery: BackupRecoveryManager | null = null;
 	localApi: LocalApiServer | null = null;
-	ragActions:
-		| import("@true-recall/core/rag/indexing/rag-chunk-actions").RagChunkActions
-		| null = null;
-	ragIndexer:
-		| import("@true-recall/obsidian/features/rag/services/rag-indexer.service").RagIndexerService
-		| null = null;
-	ragSearch:
-		| import("@true-recall/core/rag/retrieval/rag-search.service").RagSearchService
-		| null = null;
 	dataLayer: DataLayer | null = null;
+	assistantService:
+		| import("./services/assistant/assistant.service").AssistantService
+		| null = null;
 	pluginLoader: import("./plugin/plugin-loader").PluginLoader | null = null;
 	_disposeWireDataLayer: (() => void) | null = null;
 	adapters!: ObsidianAdapters;
@@ -244,25 +249,6 @@ export default class TrueRecallPlugin extends Plugin {
 				"True Recall failed to initialize. Try reinstalling the plugin.",
 			);
 			return;
-		}
-
-		// Migrate ragEnabled → pluginStates["knowledge-base"]
-		try {
-			if (
-				this.settings.ragEnabled &&
-				this.settings.pluginStates?.["knowledge-base"] === undefined
-			) {
-				this.settings.pluginStates = {
-					...this.settings.pluginStates,
-					"knowledge-base": true,
-				};
-				await this.saveSettings();
-			}
-		} catch (error) {
-			console.warn(
-				"[True Recall] ragEnabled migration failed to persist, will retry next load:",
-				error,
-			);
 		}
 
 		// What's New check after layout ready
@@ -404,6 +390,11 @@ export default class TrueRecallPlugin extends Plugin {
 		);
 
 		registerIfAllowed(
+			VIEW_TYPE_ASSISTANT_EDITOR,
+			(leaf) => new AssistantEditorView(leaf, this),
+		);
+
+		registerIfAllowed(
 			VIEW_TYPE_NOTE_TYPE_MANAGER,
 			(leaf) => new NoteTypeManagerView(leaf, this),
 		);
@@ -413,16 +404,20 @@ export default class TrueRecallPlugin extends Plugin {
 			(leaf) => new CardTypesEditorView(leaf, this),
 		);
 
-		if (ENABLE_RAG) {
-			registerIfAllowed(
-				VIEW_TYPE_KNOWLEDGE_CHAT,
-				(leaf) => new KnowledgeChatView(leaf, this),
-			);
-		}
+		registerIfAllowed(
+			VIEW_TYPE_ASSISTANT_INBOX,
+			(leaf) => new AssistantInboxView(leaf, this),
+		);
+
+		registerIfAllowed(
+			VIEW_TYPE_ASSISTANT_WORKSPACE,
+			(leaf) => new AssistantWorkspaceView(leaf, this),
+		);
 
 		registerCommands(this);
 		this.addSettingTab(new TrueRecallSettingTab(this.app, this));
 		registerEventHandlers(this);
+		this.applyTabBarVisibility();
 
 		const { CommandService: CmdService } = await import(
 			"@true-recall/obsidian/commands"
@@ -432,51 +427,6 @@ export default class TrueRecallPlugin extends Plugin {
 			cardStore: this.cardStore,
 			sessionPersistence: this.sessionPersistence,
 		});
-
-		if (ENABLE_RAG && this.cardStore) {
-			const { RagChunkActions } = await import(
-				"@true-recall/core/rag/indexing/rag-chunk-actions"
-			);
-			const { RagSchemaManager } = await import(
-				"@true-recall/core/rag/indexing/rag-schema"
-			);
-			const ragSchema = new RagSchemaManager(this.cardStore.getDatabase());
-			ragSchema.createTables();
-			this.ragActions = new RagChunkActions(this.cardStore.getSqliteDb());
-
-			const embeddingKey =
-				this.settings.proKey || this.settings.openRouterApiKey;
-			if (this.settings.ragEnabled && embeddingKey) {
-				const { RagEmbeddingServiceImpl } = await import(
-					"@true-recall/core/rag/retrieval/rag-embedding.service"
-				);
-				const { LITELLM_EMBEDDINGS_URL, OPENROUTER_EMBEDDINGS_URL } =
-					await import("@true-recall/core/constants");
-				const { RagIndexerService } = await import(
-					"@true-recall/obsidian/features/rag/services/rag-indexer.service"
-				);
-				const { RagSearchService } = await import(
-					"@true-recall/core/rag/retrieval/rag-search.service"
-				);
-				const isPro = !!this.settings.proKey;
-				const embedder = new RagEmbeddingServiceImpl(
-					new ObsidianHttpClient(),
-					embeddingKey,
-					isPro ? LITELLM_EMBEDDINGS_URL : OPENROUTER_EMBEDDINGS_URL,
-					isPro ? "embedding" : "baai/bge-m3",
-				);
-				this.ragSearch = new RagSearchService(this.ragActions, embedder);
-				this.ragIndexer = new RagIndexerService(
-					this.app,
-					this.ragActions,
-					embedder,
-					() => this.settings,
-				);
-				this.ragIndexer.setSearchService(this.ragSearch);
-				this.ragIndexer.registerVaultEvents(this);
-				this.ragIndexer.registerCardSignals(this);
-			}
-		}
 
 		if (this.settings.enableLocalApi) {
 			void import("./plugin/api/LocalApiServer")
@@ -501,6 +451,7 @@ export default class TrueRecallPlugin extends Plugin {
 
 	onunload(): void {
 		this._unloaded = true;
+		document.body.classList.remove(HIDE_TAB_BAR_CLASS);
 		this.pluginLoader?.deactivateAll();
 		this.deviceLock?.stopHeartbeat();
 		void this.deviceLock?.clearLock();
@@ -514,12 +465,25 @@ export default class TrueRecallPlugin extends Plugin {
 		// left hanging when the plugin reloads with windows still open.
 		drainCardTypesEditorRequests();
 		drainNoteTypeManagerRequests();
+		drainAssistantEditorRequests();
 		void this.coreApp?.shutdown().catch((e) => {
 			console.error(
 				"[True Recall] Shutdown failed — data may not be saved:",
 				e,
 			);
 		});
+	}
+
+	/** Reflect the `hideTabBar` setting onto the document body class. */
+	applyTabBarVisibility(): void {
+		applyTabBarClass(document.body, this.settings.hideTabBar);
+	}
+
+	/** Flip the tab-bar visibility, persist it, and apply immediately. */
+	async toggleTabBar(): Promise<void> {
+		this.settings.hideTabBar = !this.settings.hideTabBar;
+		this.applyTabBarVisibility();
+		await this.saveSettings();
 	}
 
 	async saveSettings(): Promise<void> {
@@ -575,18 +539,12 @@ export default class TrueRecallPlugin extends Plugin {
 		await this.openReviewViewWithFilters(result.filters);
 	}
 
-	private async handleSessionResult(
-		result: import("@true-recall/core/types/events.types").SessionResult,
-	): Promise<void> {
-		if (result.cancelled) return;
-
-		if (result.useDefaultDeck) {
-			await this.startReview({ mode: "all_due" });
-			return;
-		}
-
-		await this.startReview({
+	private getCustomStudySessionConfig(
+		result: SessionResult,
+	): Extract<SessionConfig, { mode: "custom" }> {
+		return {
 			mode: "custom",
+			projectPath: result.projectPath,
 			sourceNoteFilter: result.sourceNoteFilter,
 			sourceNoteFilters: result.sourceNoteFilters,
 			filePathFilter: result.filePathFilter,
@@ -603,7 +561,173 @@ export default class TrueRecallPlugin extends Plugin {
 			studyAheadDays: result.studyAheadDays,
 			reviewOrder: result.reviewOrder,
 			crammingMode: result.crammingMode,
+			customStudy: result.customStudy,
+			temporaryDeckId: "custom-study-session",
+		};
+	}
+
+	private resolveLegacyCustomStudyProjectPath(
+		deck: TemporaryCustomStudyDeck,
+	): string | undefined {
+		if (deck.projectPath) return deck.projectPath;
+		if (!deck.scopeLabel || (deck.sourceNoteFilters?.length ?? 0) <= 1) {
+			return undefined;
+		}
+
+		const file = this.app.metadataCache.getFirstLinkpathDest(
+			deck.scopeLabel,
+			"",
+		);
+		if (!file) return undefined;
+		const isProject =
+			this.hierarchyService.isExplicitProject(file.path) ||
+			this.hierarchyService.getDescendantPaths(file.path).length > 0;
+		return isProject ? file.path : undefined;
+	}
+
+	private getSessionValidationDeps() {
+		return {
+			allCards: this.flashcardManager.getAllFSRSCards(),
+			archivedSourceUids: this.hierarchyService.getArchivedSourceUids(),
+			settings: this.settings,
+			sessionPersistence: this.sessionPersistence,
+			presetService: this.presetService,
+			noteResolver: new ObsidianNoteResolver(this.app),
+			hierarchyService: this.hierarchyService,
+			fsrsService: this.fsrsService,
+		};
+	}
+
+	private async materializeTemporaryCustomStudyDeck(
+		result: SessionResult,
+		options: { scopeLabel?: string; preserveCreatedAt?: number } = {},
+	): Promise<void> {
+		if (!result.customStudy) return;
+		if (!this.isStoreReady()) {
+			notify().error(
+				"Database not ready. Please wait for plugin to fully load.",
+			);
+			return;
+		}
+
+		const validation = this.sessionService.validate(
+			this.getCustomStudySessionConfig(result),
+			this.getSessionValidationDeps(),
+			{
+				ignoreDailyLimitsForNoteStudy:
+					this.settings.ignoreDailyLimitsForNoteStudy,
+				dayStartHour: this.settings.dayStartHour,
+			},
+		);
+		const now = Date.now();
+		const { queue } = this.reviewController.buildSession(validation.filters);
+		const deck: TemporaryCustomStudyDeck = {
+			id: "custom-study-session",
+			name: "Custom Study Session",
+			customStudy: result.customStudy,
+			cardIds: queue.map((card) => card.id),
+			sourceNoteFilters: result.sourceNoteFilters,
+			projectPath: result.projectPath,
+			scopeLabel: options.scopeLabel,
+			createdAt: options.preserveCreatedAt ?? now,
+			rebuiltAt: now,
+		};
+
+		this.settings = {
+			...this.settings,
+			temporaryCustomStudyDeck: deck,
+		};
+		await this.saveSettings();
+		await this.openDashboard();
+
+		if (deck.cardIds.length === 0) {
+			notify().info("Custom Study Session created, but no cards matched.");
+		} else {
+			notify().success(
+				`Custom Study Session created with ${deck.cardIds.length} card${deck.cardIds.length === 1 ? "" : "s"}.`,
+			);
+		}
+	}
+
+	async startTemporaryCustomStudyDeck(): Promise<void> {
+		const deck = this.settings.temporaryCustomStudyDeck;
+		if (!deck) return;
+		if (deck.cardIds.length === 0) {
+			notify().info("This Custom Study Session is empty. Rebuild it first.");
+			return;
+		}
+
+		await this.startReview({
+			mode: "custom",
+			projectPath: deck.projectPath,
+			sourceNoteFilters: deck.sourceNoteFilters,
+			customStudy: deck.customStudy,
+			materializedCardIds: [...deck.cardIds],
+			temporaryDeckId: deck.id,
 		});
+	}
+
+	async rebuildTemporaryCustomStudyDeck(): Promise<void> {
+		const deck = this.settings.temporaryCustomStudyDeck;
+		if (!deck) return;
+		const projectPath = this.resolveLegacyCustomStudyProjectPath(deck);
+
+		await this.materializeTemporaryCustomStudyDeck(
+			{
+				cancelled: false,
+				sessionType: "custom-study",
+				ignoreDailyLimits: true,
+				sourceNoteFilters: projectPath ? undefined : deck.sourceNoteFilters,
+				projectPath,
+				customStudy: deck.customStudy,
+			},
+			{
+				scopeLabel: deck.scopeLabel,
+				preserveCreatedAt: deck.createdAt,
+			},
+		);
+	}
+
+	async emptyTemporaryCustomStudyDeck(): Promise<void> {
+		const deck = this.settings.temporaryCustomStudyDeck;
+		if (!deck || deck.cardIds.length === 0) return;
+
+		this.settings = {
+			...this.settings,
+			temporaryCustomStudyDeck: {
+				...deck,
+				cardIds: [],
+			},
+		};
+		await this.saveSettings();
+		notify().success("Custom Study Session emptied.");
+	}
+
+	async deleteTemporaryCustomStudyDeck(): Promise<void> {
+		if (!this.settings.temporaryCustomStudyDeck) return;
+		const { temporaryCustomStudyDeck: _, ...settings } = this.settings;
+		this.settings = settings;
+		await this.saveSettings();
+		notify().success("Custom Study Session deleted.");
+	}
+
+	removeCardsFromTemporaryDeck(
+		deckId: string | undefined,
+		cardIds: readonly string[],
+	): void {
+		const deck = this.settings.temporaryCustomStudyDeck;
+		if (!deckId || !deck || deck.id !== deckId) return;
+		const removedIds = new Set(cardIds);
+		if (!deck.cardIds.some((id) => removedIds.has(id))) return;
+
+		this.settings = {
+			...this.settings,
+			temporaryCustomStudyDeck: {
+				...deck,
+				cardIds: deck.cardIds.filter((id) => !removedIds.has(id)),
+			},
+		};
+		void this.saveSettings();
 	}
 
 	async openCardBrowser(opts?: {
@@ -652,14 +776,43 @@ export default class TrueRecallPlugin extends Plugin {
 		await activateView(this.app, VIEW_TYPE_STATS, { useMainArea: true });
 	}
 
-	async openKnowledgeChat(): Promise<void> {
-		const existingLeaf = getView(this.app, VIEW_TYPE_KNOWLEDGE_CHAT);
+	async openAssistantInbox(focusThreadId?: string): Promise<void> {
+		const existingLeaf = getView(this.app, VIEW_TYPE_ASSISTANT_INBOX);
 		if (existingLeaf) {
+			void this.app.workspace.revealLeaf(existingLeaf);
+		} else {
+			await activateView(this.app, VIEW_TYPE_ASSISTANT_INBOX, {
+				useMainArea: true,
+			});
+		}
+		if (focusThreadId) {
+			// Give a freshly-mounted inbox one tick to register its listener.
+			window.setTimeout(() => {
+				window.dispatchEvent(
+					new CustomEvent("true-recall:assistant-focus-thread", {
+						detail: { threadId: focusThreadId },
+					}),
+				);
+			}, 50);
+		}
+	}
+
+	/** Reveals the docked AI workspace, normally in the right sidebar so it can
+	 * sit next to a review. */
+	async openAssistantWorkspace(mode?: AIWorkspaceMode): Promise<void> {
+		const existingLeaf = getView(this.app, VIEW_TYPE_ASSISTANT_WORKSPACE);
+		if (existingLeaf) {
+			if (mode)
+				await existingLeaf.setViewState({
+					type: VIEW_TYPE_ASSISTANT_WORKSPACE,
+					active: true,
+					state: { mode },
+				});
 			void this.app.workspace.revealLeaf(existingLeaf);
 			return;
 		}
-		await activateView(this.app, VIEW_TYPE_KNOWLEDGE_CHAT, {
-			useMainArea: false,
+		await activateView(this.app, VIEW_TYPE_ASSISTANT_WORKSPACE, {
+			state: mode ? { mode } : undefined,
 		});
 	}
 
@@ -720,6 +873,28 @@ export default class TrueRecallPlugin extends Plugin {
 	}
 
 	async openCustomStudyModal(scope?: CustomStudyModalScope): Promise<void> {
+		const scopedNoteNames = scope?.sourceNoteFilters
+			? new Set(scope.sourceNoteFilters)
+			: null;
+		const scopedProjectSourceUids = scope?.projectPath
+			? this.hierarchyService.getSourceUidsForProject(scope.projectPath)
+			: null;
+		const allMeta = this.dataLayer?.get<Map<string, CardSchedulingMeta>>(
+			Q.ALL_META,
+		);
+		const availableTags = [
+			...new Set(
+				[...(allMeta?.values() ?? [])]
+					.filter(
+						(card) =>
+							(!scopedNoteNames ||
+								scopedNoteNames.has(card.sourceNoteName ?? "")) &&
+							(!scopedProjectSourceUids ||
+								scopedProjectSourceUids.has(card.sourceUid ?? "")),
+					)
+					.flatMap((card) => card.tags ?? []),
+			),
+		].sort((a, b) => a.localeCompare(b));
 		const modal = new CustomStudyModal(
 			this.app,
 			{
@@ -728,34 +903,14 @@ export default class TrueRecallPlugin extends Plugin {
 					: "Custom study",
 				width: "480px",
 			},
-			scope,
+			{ ...scope, availableTags },
 		);
 		const result = await modal.openAndWait();
 		if (result.cancelled || !result.sessionResult) return;
 
-		if (result.saveAsPreset && result.presetName) {
-			const preset: import("@true-recall/core/types/settings.types").SessionPreset =
-				{
-					id: crypto.randomUUID(),
-					name: result.presetName,
-					createdAt: Date.now(),
-					stateFilter: result.sessionResult.stateFilter,
-					difficultyRange: result.sessionResult.difficultyRange,
-					lapsesRange: result.sessionResult.lapsesRange,
-					stabilityRange: result.sessionResult.stabilityRange,
-					overdueOnly: result.sessionResult.overdueOnly,
-					recentlyFailed: result.sessionResult.recentlyFailed,
-					reviewOrder: result.sessionResult.reviewOrder,
-					cardLimit: result.sessionResult.cardLimit,
-					studyAheadDays: result.sessionResult.studyAheadDays,
-					crammingMode: result.sessionResult.crammingMode,
-				};
-			this.settings.sessionPresets = [...this.settings.sessionPresets, preset];
-			await this.saveSettings();
-			notify().success(`Preset "${result.presetName}" saved`);
-		}
-
-		await this.handleSessionResult(result.sessionResult);
+		await this.materializeTemporaryCustomStudyDeck(result.sessionResult, {
+			scopeLabel: scope?.scopeLabel,
+		});
 	}
 
 	async reviewCurrentNote(): Promise<void> {
@@ -996,7 +1151,7 @@ export default class TrueRecallPlugin extends Plugin {
 				notify().success("Note review enabled");
 			}
 
-			this.dataLayer?.invalidateGroups(["cards", "dashboard", "review"]);
+			this.dataLayer?.invalidateGroups([G.CARDS, G.DASHBOARD, G.REVIEW]);
 		} catch (error) {
 			notify().operationFailed("toggle note review", error);
 		}

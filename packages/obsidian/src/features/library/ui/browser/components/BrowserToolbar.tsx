@@ -78,7 +78,7 @@ export function BrowserToolbar({
 			{/* Row 1: Search + actions */}
 			<div class="ep:flex ep:items-center ep:gap-2">
 				<Clickable
-					class="ep:p-1.5 ep:rounded ep:text-obs-muted hover:ep:text-obs-normal hover:ep:bg-obs-modifier-hover"
+					class="ep:p-1.5 ep:rounded ep:text-obs-muted ep:hover:text-obs-normal ep:hover:bg-obs-modifier-hover"
 					onClick={onToggleSidebar}
 				>
 					<svg
@@ -115,7 +115,7 @@ export function BrowserToolbar({
 
 				<div class="ep:relative" ref={columnBtnRef}>
 					<Clickable
-						class="ep:p-1.5 ep:rounded ep:text-obs-muted hover:ep:text-obs-normal hover:ep:bg-obs-modifier-hover"
+						class="ep:p-1.5 ep:rounded ep:text-obs-muted ep:hover:text-obs-normal ep:hover:bg-obs-modifier-hover"
 						onClick={() => {
 							showColumnMenu.value = !showColumnMenu.value;
 						}}
@@ -141,7 +141,7 @@ export function BrowserToolbar({
 							{ALL_COLUMNS.map((col) => (
 								<Clickable
 									key={col.key}
-									class="ep:flex ep:items-center ep:gap-2 ep:px-3 ep:py-1.5 ep:text-ui-small hover:ep:bg-obs-modifier-hover ep:w-full"
+									class="ep:flex ep:items-center ep:gap-2 ep:px-3 ep:py-1.5 ep:text-ui-small ep:hover:bg-obs-modifier-hover ep:w-full"
 									onClick={() => onToggleColumn(col.key)}
 								>
 									<span
@@ -171,7 +171,7 @@ export function BrowserToolbar({
 							class={`ep:px-2 ep:py-0.5 ep:rounded-full ep:text-[11px] ep:font-medium ep:transition-opacity ${
 								active
 									? chip.cls
-									: "ep:bg-obs-modifier-hover ep:text-obs-muted ep:opacity-60 hover:ep:opacity-100"
+									: "ep:bg-obs-modifier-hover ep:text-obs-muted ep:opacity-60 ep:hover:opacity-100"
 							}`}
 							onClick={() => onToggleStateFilter(chip.value)}
 						>
@@ -184,7 +184,7 @@ export function BrowserToolbar({
 					class={`ep:ml-auto ep:px-2 ep:py-0.5 ep:rounded-full ep:text-[11px] ep:font-medium ep:transition-opacity ${
 						showArchived
 							? "ep:bg-obs-interactive/15 ep:text-obs-interactive"
-							: "ep:bg-obs-modifier-hover ep:text-obs-muted ep:opacity-70 hover:ep:opacity-100"
+							: "ep:bg-obs-modifier-hover ep:text-obs-muted ep:opacity-70 ep:hover:opacity-100"
 					}`}
 					onClick={onToggleShowArchived}
 				>

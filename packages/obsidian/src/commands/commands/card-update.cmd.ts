@@ -3,6 +3,7 @@ import type { Command, CommandContext } from "../command.types";
 export class UpdateCardCommand implements Command {
 	readonly type = "card:update";
 	readonly mutationType = "card:updated" as const;
+	readonly skipExecuteMutation = true;
 	readonly description: string;
 
 	constructor(
@@ -31,6 +32,8 @@ export class UpdateCardCommand implements Command {
 export class UpdateNoteFieldsCommand implements Command {
 	readonly type = "card:update-note-fields";
 	readonly mutationType = "card:updated" as const;
+	readonly skipExecuteMutation = true;
+	readonly skipUndoMutation = true;
 	readonly description: string;
 
 	constructor(

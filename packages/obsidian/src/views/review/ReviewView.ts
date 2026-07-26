@@ -10,6 +10,7 @@ import {
 import { h } from "preact";
 import type { Grade } from "ts-fsrs";
 
+import type { AssistantContext } from "@true-recall/core/ai/assistant";
 import { SemanticAnswerGradingService } from "@true-recall/core/ai/grading/semantic-answer-grading.service";
 import { VIEW_TYPE_REVIEW } from "@true-recall/core/constants";
 import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
@@ -17,6 +18,7 @@ import type { SessionPersistenceService } from "@true-recall/core/persistence/se
 import { FSRSService } from "@true-recall/core/services/fsrs/fsrs.service";
 import { ReviewService } from "@true-recall/core/services/review/review.service";
 import {
+	type CardSchedulingMeta,
 	extractFSRSSettings,
 	type FSRSFlashcardItem,
 	type FSRSPreset,
@@ -26,7 +28,9 @@ import {
 
 import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpClient";
 import { ReviewUndoHook } from "@true-recall/obsidian/commands";
-import { G, getDataLayer } from "@true-recall/obsidian/data";
+import { G, getDataLayer, Q } from "@true-recall/obsidian/data";
+import { assistantContextFromCard } from "@true-recall/obsidian/features/assistant/ui/ai-context-source";
+import { openAiWorkspace } from "@true-recall/obsidian/features/assistant/ui/open-ai-workspace";
 import type { ReviewSessionController } from "@true-recall/obsidian/features/study/services/ReviewSessionController";
 import type { PresetPickerOption } from "@true-recall/obsidian/features/study/ui/review/components";
 import {
@@ -49,6 +53,7 @@ import {
 	shouldRunAIGradingOnReveal,
 	type TypeInMode,
 } from "@true-recall/obsidian/features/study/ui/review/helpers";
+import { ReviewSelectionBubble } from "@true-recall/obsidian/features/study/ui/review/ReviewSelectionBubble";
 import {
 	filtersFromViewState,
 	filtersToViewState,
@@ -59,6 +64,7 @@ import { mountPreact } from "@true-recall/obsidian/preact";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 import { lastMutation } from "@true-recall/obsidian/services/signals";
 import type { ReviewApi } from "@true-recall/obsidian/store";
+import { runWhenLayoutReady } from "@true-recall/obsidian/views/layout-ready";
 import {
 	ReviewApp,
 	ReviewEmptyState,
@@ -114,6 +120,7 @@ export class ReviewView extends ItemView {
 	private unsubscribe: (() => void) | null = null;
 	private sessionSignalDisposer: (() => void) | null = null;
 	private disposeReviewHook: (() => void) | null = null;
+	private askBubble: ReviewSelectionBubble | null = null;
 	private typeInState: TypeInAssessmentState = createEmptyTypeInState();
 	private sessionTypeInModeEnabled = false;
 	private aiEnabledForTypeIn = false;
@@ -434,6 +441,10 @@ export class ReviewView extends ItemView {
 	private handleAnswer(rating: Grade): void {
 		if (this.isProcessingAnswer) return;
 		if (this.isRatingLocked()) return;
+		// Click path: the queue advances synchronously but the re-render that
+		// hides the rating bar is async, so a fast double-click would grade
+		// the next card sight-unseen (keyboard path already checks this).
+		if (!this.review.isAnswerRevealed) return;
 		this.isProcessingAnswer = true;
 		try {
 			this.answerHandler.handleAnswer(rating);
@@ -458,7 +469,14 @@ export class ReviewView extends ItemView {
 		this.resetTypeInState();
 
 		await super.setState(state, result);
-		await this.startSession();
+		// During startup restore, enrichment (frontmatter index, hierarchy
+		// graph) is only populated at layout-ready — a queue built earlier is
+		// silently empty for note-/project-scoped filters and shows a false
+		// "Congratulations" empty state that never retries.
+		await runWhenLayoutReady(this.app.workspace, {
+			isAttached: () => this.containerEl.isConnected,
+			run: () => this.startSession(),
+		});
 	}
 
 	getState() {
@@ -503,14 +521,51 @@ export class ReviewView extends ItemView {
 				}),
 			) ?? null;
 
-		this.registerDomEvent(document, "keydown", (e: KeyboardEvent) => {
+		this.registerDomEvent(activeDocument, "keydown", (e: KeyboardEvent) => {
 			const activeView = this.app.workspace.getActiveViewOfType(ReviewView);
 			if (activeView !== this) return;
-			if (document.querySelector(".modal-container")) return;
+			if (activeDocument.querySelector(".modal-container")) return;
 			this.keyboardHandler.handleKeyDown(e);
+		});
+
+		this.askBubble = new ReviewSelectionBubble({
+			isEnabled: () => isPluginEnabled(this.plugin.settings, "ai-assistant"),
+			getContext: (text) => this.buildAssistantContext(text),
+			onAsk: (rect, context) =>
+				openAiWorkspace(this.plugin, {
+					intent: "selection",
+					anchor: rect,
+					context,
+					// The bubble only closes surfaces it owns; the docked panel stays.
+				}) ?? (() => {}),
+		});
+		this.askBubble.register();
+
+		window.addEventListener(
+			"true-recall:assistant-card-updated",
+			this.onAssistantCardUpdated,
+		);
+		this.register(() => {
+			window.removeEventListener(
+				"true-recall:assistant-card-updated",
+				this.onAssistantCardUpdated,
+			);
 		});
 		return Promise.resolve();
 	}
+
+	private buildAssistantContext(selectedText?: string): AssistantContext {
+		const card = this.review.getCurrentCard();
+		if (card) return assistantContextFromCard(card, selectedText);
+		return selectedText ? { selectedText } : {};
+	}
+
+	private onAssistantCardUpdated = (e: Event): void => {
+		const cardId = (e as CustomEvent<{ cardId: string }>).detail?.cardId;
+		if (!cardId) return;
+		if (this.review.getCurrentCard()?.id !== cardId) return;
+		this.cardActionsHandler.refreshCurrentCard();
+	};
 
 	private mountApp(container: HTMLElement): void {
 		this.unmountPreact?.();
@@ -530,9 +585,13 @@ export class ReviewView extends ItemView {
 				onOpenDashboard: () => void this.handleOpenDashboard(),
 				onEndSession: () => this.handleNextSession(),
 				onActionsMenu: (e: MouseEvent) => this.showActionsMenu(e),
-				onPolishMenu: isPluginEnabled(this.plugin.settings, "card-polish")
-					? (e: MouseEvent) => this.openCardPolishMenu(e)
-					: undefined,
+				// Polish presets now run in the shared AI workspace, so the action
+				// needs both the preset family and the surface to be enabled.
+				onPolishMenu:
+					isPluginEnabled(this.plugin.settings, "card-polish") &&
+					isPluginEnabled(this.plugin.settings, "ai-assistant")
+						? (e: MouseEvent) => this.openCardPolishMenu(e)
+						: undefined,
 				isCustomSession: isCustomSession(this.filters),
 				crammingMode: this.filters.crammingMode ?? false,
 				showHeader: this.plugin.settings.showReviewHeader,
@@ -594,7 +653,6 @@ export class ReviewView extends ItemView {
 	}
 
 	async onClose(): Promise<void> {
-		console.log("[TR-debug] ReviewView.onClose called");
 		this.disposeReviewHook?.();
 		this.disposeReviewHook = null;
 		this.plugin.commandService?.clearByType(
@@ -607,6 +665,9 @@ export class ReviewView extends ItemView {
 		if (this.plugin.cardStore) {
 			await this.plugin.cardStore.flush();
 		}
+
+		this.askBubble?.unregister();
+		this.askBubble = null;
 
 		this.unsubscribe?.();
 		this.unsubscribeFromSessionEvents();
@@ -693,7 +754,12 @@ export class ReviewView extends ItemView {
 			this.fsrsService.updateSettings(fsrsSettings);
 
 			const { queue } = this.reviewController.buildSession(this.filters);
-			const allCards = this.plugin.flashcardManager.getAllFSRSCards();
+			const allMetaMap = this.plugin.dataLayer?.get<
+				Map<string, CardSchedulingMeta>
+			>(Q.ALL_META);
+			const allCards = allMetaMap
+				? [...allMetaMap.values()]
+				: this.plugin.cardStore.getAllSchedulingMeta();
 
 			if (queue.length === 0 && allCards.length === 0) {
 				this.mountEmptyState(
@@ -734,7 +800,7 @@ export class ReviewView extends ItemView {
 			}
 
 			// Yield once before mounting Preact so the loading state can paint.
-			await new Promise((r) => requestAnimationFrame(r));
+			await new Promise((r) => window.requestAnimationFrame(r));
 			if (!this.containerEl.isConnected) return;
 
 			if (queue.length === 0) {
@@ -779,8 +845,17 @@ export class ReviewView extends ItemView {
 	private subscribeToSessionEvents(): void {
 		this.unsubscribeFromSessionEvents();
 
+		// preact-signals runs the effect callback immediately on creation, and
+		// lastMutation is never cleared — without this guard every new session
+		// would re-apply the last pre-session mutation to the fresh queue
+		// (e.g. force-adding a card past the daily new limit).
+		let isSubscribing = true;
 		this.sessionSignalDisposer = effect(() => {
 			const m = lastMutation.value;
+			if (isSubscribing) {
+				isSubscribing = false;
+				return;
+			}
 			if (!m) return;
 			// Skip "reviewed" — the queue is already updated synchronously
 			// by recordAnswerAndNext() before persistence runs.
@@ -814,11 +889,13 @@ export class ReviewView extends ItemView {
 	// ─── Actions menu ────────────────────────────────────────────────────
 
 	private openCardPolishMenu(e: MouseEvent): void {
-		window.dispatchEvent(
-			new CustomEvent("true-recall:card-polish", {
-				detail: { kind: "review", anchor: e.currentTarget },
-			}),
-		);
+		const anchor = e.currentTarget;
+		openAiWorkspace(this.plugin, {
+			intent: "preset",
+			anchor: anchor instanceof HTMLElement ? anchor : undefined,
+			mode: "card-polish",
+			context: this.buildAssistantContext(),
+		});
 	}
 
 	private showActionsMenu(event: MouseEvent): void {
@@ -838,6 +915,21 @@ export class ReviewView extends ItemView {
 				.onClick(() => this.cycleTypeInMode()),
 		);
 		menu.addSeparator();
+
+		if (isPluginEnabled(this.plugin.settings, "ai-assistant")) {
+			menu.addItem((item) =>
+				item
+					.setTitle("Ask AI about this card")
+					.setIcon("sparkles")
+					.onClick(() => {
+						openAiWorkspace(this.plugin, {
+							intent: "compose",
+							context: this.buildAssistantContext(),
+						});
+					}),
+			);
+			menu.addSeparator();
+		}
 
 		if (this.cardActionsHandler.canUndo()) {
 			menu.addItem((item) =>
@@ -1041,23 +1133,14 @@ export class ReviewView extends ItemView {
 	}
 
 	private handleClose(): void {
-		console.log("[TR-debug] handleClose called");
 		this.leaf.detach();
 	}
 
 	private handleNextSession(): void {
-		console.log("[TR-debug] handleNextSession called");
-		console.log("[TR-debug] leaf:", this.leaf);
 		this.leaf.detach();
-		console.log("[TR-debug] leaf detached OK, calling activateView");
-		void this.plugin
-			.activateView()
-			.then(() => {
-				console.log("[TR-debug] activateView resolved");
-			})
-			.catch((err) => {
-				console.error("[TR-debug] activateView failed:", err);
-			});
+		void this.plugin.activateView().catch((err) => {
+			notify().error("Could not open the next review session", err);
+		});
 	}
 
 	private async handleOpenDashboard(): Promise<void> {

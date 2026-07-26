@@ -25,7 +25,7 @@ function SetPresetBody({
 				style="max-height: 240px"
 			>
 				<Clickable
-					class="ep:bg-transparent ep:border-none ep:p-0 ep:font-inherit ep:text-left ep:w-full ep:flex ep:items-center ep:gap-2 ep:px-3 ep:py-2 ep:rounded-md hover:ep:bg-interactive-hover"
+					class="ep:w-full ep:flex ep:items-center ep:gap-2 ep:px-3 ep:py-2 ep:rounded-md ep:hover:bg-obs-modifier-hover"
 					onClick={() => onResolve({ cancelled: false, presetName: null })}
 					stopPropagation={false}
 				>
@@ -39,7 +39,7 @@ function SetPresetBody({
 					.map((name) => (
 						<Clickable
 							key={name}
-							class="ep:bg-transparent ep:border-none ep:p-0 ep:font-inherit ep:text-left ep:w-full ep:flex ep:items-center ep:gap-2 ep:px-3 ep:py-2 ep:rounded-md hover:ep:bg-interactive-hover"
+							class="ep:w-full ep:flex ep:items-center ep:gap-2 ep:px-3 ep:py-2 ep:rounded-md ep:hover:bg-obs-modifier-hover"
 							onClick={() =>
 								onResolve({
 									cancelled: false,

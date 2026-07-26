@@ -37,7 +37,7 @@ export function StreamingSection({
 	const sentinelRef = useRef<HTMLDivElement>(null);
 	const scrollerRef = useRef<HTMLElement | null>(null);
 	const lastScrollRef = useRef(0);
-	const scrollTimerRef = useRef<ReturnType<typeof setTimeout>>();
+	const scrollTimerRef = useRef<number>();
 	const wasNearBottomRef = useRef(true);
 
 	useEffect(() => {
@@ -54,7 +54,7 @@ export function StreamingSection({
 		};
 		scrollToEnd();
 		wasNearBottomRef.current = true;
-		const raf = requestAnimationFrame(scrollToEnd);
+		const raf = window.requestAnimationFrame(scrollToEnd);
 		return () => cancelAnimationFrame(raf);
 	}, []);
 
@@ -82,14 +82,14 @@ export function StreamingSection({
 		if (elapsed >= SCROLL_THROTTLE_MS) {
 			scrollToEnd();
 		} else {
-			clearTimeout(scrollTimerRef.current);
-			scrollTimerRef.current = setTimeout(
+			window.clearTimeout(scrollTimerRef.current);
+			scrollTimerRef.current = window.setTimeout(
 				scrollToEnd,
 				SCROLL_THROTTLE_MS - elapsed,
 			);
 		}
 
-		return () => clearTimeout(scrollTimerRef.current);
+		return () => window.clearTimeout(scrollTimerRef.current);
 	});
 
 	if (!isActive) return null;

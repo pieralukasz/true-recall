@@ -78,8 +78,29 @@ export class SessionService {
 				};
 
 			case "custom": {
-				const { mode: _, reviewOrder: __, cardLimit: ___, ...rest } = config;
-				return { ...base, ...rest };
+				// `mode`, `reviewOrder` and `cardLimit` are already consumed by
+				// `base`; everything else in the custom config is a filter flag.
+				const filters: Partial<Extract<SessionConfig, { mode: "custom" }>> = {
+					...config,
+				};
+				delete filters.mode;
+				delete filters.reviewOrder;
+				delete filters.cardLimit;
+				const resolved = { ...base, ...filters };
+				if (!config.customStudy) return resolved;
+
+				const preview =
+					config.customStudy.kind === "forgotten" ||
+					config.customStudy.kind === "preview-new" ||
+					(config.customStudy.kind === "state-or-tag" &&
+						config.customStudy.cardState === "all");
+
+				return {
+					...resolved,
+					ignoreDailyLimits: true,
+					bypassScheduling: true,
+					crammingMode: preview,
+				};
 			}
 		}
 	}

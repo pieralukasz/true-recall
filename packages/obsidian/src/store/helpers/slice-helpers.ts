@@ -22,12 +22,9 @@ export function toggleSetItem<K extends keyof AppState>(
 		} else {
 			newSet.add(item);
 		}
-		set(
-			(s) =>
-				({
-					[sliceKey]: { ...s[sliceKey], [setField]: newSet },
-				}) as Partial<AppState>,
-		);
+		set((s) => ({
+			[sliceKey]: { ...s[sliceKey], [setField]: newSet },
+		}));
 	};
 }
 
@@ -52,29 +49,23 @@ export function createSelectionActions<K extends keyof AppState>(
 		enterSelectionMode: (initialId?: string) => {
 			const selected = new Set<string>();
 			if (initialId) selected.add(initialId);
-			set(
-				(s) =>
-					({
-						[sliceKey]: {
-							...s[sliceKey],
-							[modeField]: "selecting",
-							[selectedField]: selected,
-						},
-					}) as Partial<AppState>,
-			);
+			set((s) => ({
+				[sliceKey]: {
+					...s[sliceKey],
+					[modeField]: "selecting",
+					[selectedField]: selected,
+				},
+			}));
 		},
 
 		exitSelectionMode: () => {
-			set(
-				(s) =>
-					({
-						[sliceKey]: {
-							...s[sliceKey],
-							[modeField]: "normal",
-							[selectedField]: new Set<string>(),
-						},
-					}) as Partial<AppState>,
-			);
+			set((s) => ({
+				[sliceKey]: {
+					...s[sliceKey],
+					[modeField]: "normal",
+					[selectedField]: new Set<string>(),
+				},
+			}));
 		},
 
 		toggleSelection: toggleSetItem(set, get, sliceKey, selectedField),

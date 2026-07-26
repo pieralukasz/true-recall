@@ -27,6 +27,13 @@ const config: KnipConfig = {
 				"obsidian", // types-only peer dependency, externalized in build
 			],
 		},
+		"packages/plugins": {
+			entry: ["src/index.ts", "src/**/index.ts"],
+			project: ["src/**/*.{ts,tsx}"],
+			ignoreDependencies: [
+				"obsidian", // types-only peer dependency, externalized in build
+			],
+		},
 	},
 	ignore: ["**/dist/**", "**/coverage/**", "cli/**", "mcp-server/**"],
 	ignoreDependencies: ["tslib"],

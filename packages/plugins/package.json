@@ -5,7 +5,15 @@
 	"type": "module",
 	"main": "src/index.ts",
 	"dependencies": {
-		"@true-recall/core": "workspace:*"
+		"@true-recall/core": "workspace:*",
+		"@codemirror/state": "6.5.0",
+		"@codemirror/view": "^6.35.0",
+		"@floating-ui/dom": "^1.7.5",
+		"@preact/signals": "^2.8.1",
+		"class-variance-authority": "^0.7.1",
+		"preact": "^10.28.4",
+		"ts-fsrs": "^5.2.3",
+		"zod": "^4.3.5"
 	},
 	"peerDependencies": {
 		"@true-recall/obsidian": "*",

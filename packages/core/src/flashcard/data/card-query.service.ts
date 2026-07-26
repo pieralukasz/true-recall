@@ -27,6 +27,7 @@ interface RawFlashcardItem {
 	ioParentId?: string;
 	noteTypeName?: string;
 	alwaysTypeIn?: boolean;
+	tags?: string[];
 }
 
 export class CardQueryService {
@@ -73,6 +74,7 @@ export class CardQueryService {
 			ioGroupKey: card.ioGroupKey,
 			ioParentId: card.ioParentId,
 			alwaysTypeIn: card.alwaysTypeIn,
+			tags: card.tags,
 		};
 		return this.sourceNoteService.enrichCard(item);
 	}
@@ -129,6 +131,7 @@ export class CardQueryService {
 				ioGroupKey: card.ioGroupKey,
 				ioParentId: card.ioParentId,
 				alwaysTypeIn: card.alwaysTypeIn,
+				tags: card.tags,
 			}));
 	}
 
@@ -165,6 +168,7 @@ export class CardQueryService {
 				ioGroupKey: card.ioGroupKey,
 				ioParentId: card.ioParentId,
 				alwaysTypeIn: card.alwaysTypeIn,
+				tags: card.tags,
 			}));
 	}
 }

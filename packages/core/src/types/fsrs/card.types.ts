@@ -124,6 +124,8 @@ export interface FSRSCardData {
 	noteTypeName?: string;
 	/** Force type-in mode for this card regardless of session default */
 	alwaysTypeIn?: boolean;
+	/** Tags inherited from the backing note. */
+	tags?: string[];
 
 	// === Import fields (transient, not stored directly) ===
 
@@ -160,6 +162,10 @@ export interface CardSchedulingMeta {
 	noteTypeName?: string;
 	/** Force type-in mode for this card regardless of session default */
 	alwaysTypeIn?: boolean;
+	/** Note tags used by custom-study filtering. */
+	tags?: string[];
+	/** Transient due time used by non-rescheduling preview sessions. */
+	previewDue?: string;
 }
 
 /**

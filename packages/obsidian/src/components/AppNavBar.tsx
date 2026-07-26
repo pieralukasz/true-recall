@@ -96,7 +96,7 @@ export function AppNavBar({ activeItem, collapsible = false }: AppNavBarProps) {
 					<span
 						ref={chevronRef}
 						class={cn(
-							"[&_svg]:ep:w-3.5 [&_svg]:ep:h-3.5",
+							"ep:[&_svg]:w-3.5 ep:[&_svg]:h-3.5",
 							"ep:transition-transform ep:duration-300",
 						)}
 					/>
@@ -131,7 +131,7 @@ function NavBarItem({
 		>
 			<span
 				ref={iconRef}
-				class="ep:inline-flex ep:shrink-0 ep:items-center ep:justify-center ep:leading-none [&_svg]:ep:block [&_svg]:ep:w-4 [&_svg]:ep:h-4"
+				class="ep:inline-flex ep:shrink-0 ep:items-center ep:justify-center ep:leading-none ep:[&_svg]:block ep:[&_svg]:w-4 ep:[&_svg]:h-4"
 			/>
 			<span>{item.label}</span>
 		</Clickable>

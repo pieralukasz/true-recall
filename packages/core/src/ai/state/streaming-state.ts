@@ -155,8 +155,8 @@ export type ScheduleCallback = (cb: () => void) => void;
  */
 const defaultSchedule: ScheduleCallback =
 	typeof requestAnimationFrame !== "undefined"
-		? (cb) => requestAnimationFrame(cb)
-		: (cb) => setTimeout(cb, 16);
+		? (cb) => window.requestAnimationFrame(cb)
+		: (cb) => window.setTimeout(cb, 16);
 
 export function createThrottledPartialUpdater(
 	schedule: ScheduleCallback = defaultSchedule,

@@ -1,11 +1,11 @@
 import type { PluginTier } from "@true-recall/core/types";
 
+import { aiAssistantManifest } from "./ai-assistant";
 import { aiGenerationManifest } from "./ai-generation";
 import { ankiImportExportManifest } from "./anki-import-export";
 import { cardPolishManifest } from "./card-polish";
 import { dashboardCodeblockManifest } from "./dashboard-codeblock";
 import { imageOcclusionManifest } from "./image-occlusion";
-import { knowledgeBaseManifest } from "./knowledge-base";
 import { linkStatusIndicatorsManifest } from "./link-status-indicators";
 import { selectionToolbarManifest } from "./selection-toolbar";
 import { statusBarWidgetManifest } from "./status-bar-widget";
@@ -17,10 +17,10 @@ export const PLUGIN_MANIFESTS: PluginManifest[] = [
 	linkStatusIndicatorsManifest,
 	dashboardCodeblockManifest,
 	statusBarWidgetManifest,
+	aiAssistantManifest,
 	aiGenerationManifest,
 	cardPolishManifest,
 	imageOcclusionManifest,
-	knowledgeBaseManifest,
 	typeInModeManifest,
 	ankiImportExportManifest,
 ];

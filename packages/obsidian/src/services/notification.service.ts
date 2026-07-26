@@ -141,6 +141,37 @@ class NotificationService {
 		});
 	}
 
+	aiDraftsReady(
+		count: number,
+		onApplyAll: () => void,
+		onReview: () => void,
+	): void {
+		const noun = count === 1 ? "flashcard draft" : "flashcard drafts";
+		const fragment = new DocumentFragment();
+		fragment.appendText(`${count} AI ${noun} ready. `);
+		const apply = fragment.createEl("a", { text: "Add all" });
+		fragment.appendText(" · ");
+		const review = fragment.createEl("a", { text: "Review" });
+		for (const link of [apply, review]) {
+			link.setCssStyles({
+				cursor: "pointer",
+				textDecoration: "underline",
+				fontWeight: "600",
+			});
+		}
+		const notice = new Notice(fragment, NOTIFICATION_DURATION.LONG);
+		let handled = false;
+		const run = (action: () => void) => (event: MouseEvent) => {
+			event.preventDefault();
+			if (handled) return;
+			handled = true;
+			notice.hide();
+			action();
+		};
+		apply.addEventListener("click", run(onApplyAll));
+		review.addEventListener("click", run(onReview));
+	}
+
 	cardsMoved(count: number, targetNote: string): void {
 		const msg =
 			count === 1
@@ -233,7 +264,7 @@ class NotificationService {
 
 	operationFailed(operation: string, error?: unknown): void {
 		if (error) {
-			// Fallback for non-Error objects is intentional
+			// eslint-disable-next-line @typescript-eslint/no-base-to-string -- fallback for non-Error objects is intentional: String() on an arbitrary thrown value is the safe, standard "best-effort" stringification for an error path
 			const msg = error instanceof Error ? error.message : String(error);
 			this.error(`Failed to ${operation}: ${msg}`);
 		} else {

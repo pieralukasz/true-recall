@@ -41,6 +41,9 @@ export class ProjectManagementService {
 			return;
 		}
 
+		if (folder) {
+			await this.ensureFolderExists(folder);
+		}
 		await this.app.vault.create(projectPath, "");
 		await this.frontmatterService.markAsProject(projectPath);
 		this.syncIndex(projectPath);
@@ -117,7 +120,7 @@ export class ProjectManagementService {
 
 		for (const path of [...allPaths].reverse()) {
 			const file = this.app.vault.getAbstractFileByPath(path);
-			if (file) await this.app.vault.trash(file, true);
+			if (file) await this.app.fileManager.trashFile(file);
 		}
 
 		// Trash empty ancestor folders
@@ -245,11 +248,7 @@ export class ProjectManagementService {
 		const file = this.app.vault.getAbstractFileByPath(filePath);
 		if (!file || !(file instanceof TFile)) return;
 		const cache = this.app.metadataCache.getFileCache(file);
-		this.frontmatterIndex.indexFile(
-			filePath,
-			cache?.frontmatter as Record<string, unknown> | undefined,
-			silent,
-		);
+		this.frontmatterIndex.indexFile(filePath, cache?.frontmatter, silent);
 	}
 
 	private invalidate(): void {
@@ -257,12 +256,28 @@ export class ProjectManagementService {
 		mutate("hierarchy:changed", () => {});
 	}
 
+	/**
+	 * vault.create throws when the target folder is missing, and the
+	 * default-project-folder setting accepts paths that don't exist yet.
+	 */
+	private async ensureFolderExists(folderPath: string): Promise<void> {
+		const parts = folderPath.split("/");
+		let current = "";
+		for (const part of parts) {
+			current = current ? `${current}/${part}` : part;
+			const normalized = normalizePath(current);
+			if (!this.app.vault.getAbstractFileByPath(normalized)) {
+				await this.app.vault.createFolder(normalized);
+			}
+		}
+	}
+
 	private trashEmptyAncestors(projectPath: string): void {
 		let ancestorPath = projectPath.replace(/\/[^/]+$/, "");
 		while (ancestorPath && ancestorPath !== projectPath) {
 			const folder = this.app.vault.getAbstractFileByPath(ancestorPath);
 			if (folder instanceof TFolder && folder.children.length === 0) {
-				void this.app.vault.trash(folder, true);
+				void this.app.fileManager.trashFile(folder);
 				const next = ancestorPath.replace(/\/[^/]+$/, "");
 				if (next === ancestorPath) break;
 				ancestorPath = next;

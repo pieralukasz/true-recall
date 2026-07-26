@@ -5,6 +5,7 @@ import { VIEW_TYPE_STATS } from "@true-recall/core/constants";
 
 import { mountPreact } from "@true-recall/obsidian/preact";
 import { StatsApp } from "@true-recall/obsidian/views/stats/StatsApp";
+import { createViewVisibility } from "@true-recall/obsidian/views/view-visibility";
 
 import type TrueRecallPlugin from "../../main";
 
@@ -37,7 +38,7 @@ export class StatsView extends ItemView {
 			this.unmountPreact = mountPreact(
 				container,
 				this.plugin,
-				h(StatsApp, null),
+				h(StatsApp, { isViewVisible: createViewVisibility(this) }),
 			);
 		}
 		return Promise.resolve();

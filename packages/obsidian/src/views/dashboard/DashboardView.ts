@@ -5,6 +5,7 @@ import { VIEW_TYPE_DASHBOARD } from "@true-recall/core/constants";
 
 import { mountPreact } from "@true-recall/obsidian/preact";
 import { DashboardApp } from "@true-recall/obsidian/views/dashboard/DashboardApp";
+import { createViewVisibility } from "@true-recall/obsidian/views/view-visibility";
 
 import type TrueRecallPlugin from "../../main";
 
@@ -37,7 +38,7 @@ export class DashboardView extends ItemView {
 			this.unmountPreact = mountPreact(
 				container,
 				this.plugin,
-				h(DashboardApp, null),
+				h(DashboardApp, { isViewVisible: createViewVisibility(this) }),
 			);
 		}
 		return Promise.resolve();

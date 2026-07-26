@@ -1,0 +1,882 @@
+/* AI Assistant — host shells. Component-level styling lives in the shared
+   components (AiComposer, ThreadWorkspace, StatusPill) via ep: utilities. */
+
+/* Selection popover container (floating-ui positions it). */
+.tr-ask-ai-popover {
+	width: min(520px, calc(100vw - 24px));
+}
+
+.tr-ask-ai-popover.has-thread {
+	width: min(560px, calc(100vw - 24px));
+}
+
+/* Floating thread surface — the single scroll container for popover hosts. */
+.tr-assistant-surface {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+	padding: 12px;
+	background: var(--background-primary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 14px;
+	box-shadow: var(--shadow-s);
+	max-height: min(680px, calc(100vh - 24px));
+	overflow-y: auto;
+}
+
+/* Ask AI / AI Draft Studio modal — the modal content is the single scroll
+   container. */
+.tr-assistant-modal {
+	width: min(640px, calc(100vw - 32px));
+}
+
+.tr-assistant-modal .modal-content {
+	overflow-y: auto;
+}
+
+/* Selection AI prompt --------------------------------------------------- */
+
+.tr-assistant-selection-prompt {
+	display: flex;
+	max-height: min(680px, calc(100vh - 24px));
+	overflow-y: auto;
+	flex-direction: column;
+	gap: 12px;
+	padding: 12px;
+	border: 1px solid var(--background-modifier-border-hover);
+	border-radius: 14px;
+	background: var(--background-primary);
+	box-shadow: var(--ep-elevation-3);
+}
+
+.tr-assistant-selection-prompt__context {
+	display: flex;
+	min-width: 0;
+	flex-direction: column;
+	gap: 4px;
+	padding: 9px 11px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 9px;
+	background: var(--background-secondary);
+}
+
+.tr-assistant-selection-prompt__selection {
+	display: -webkit-box;
+	overflow: hidden;
+	color: var(--text-normal);
+	font-size: var(--font-ui-small);
+	line-height: 1.4;
+	white-space: pre-wrap;
+	word-break: break-word;
+	-webkit-box-orient: vertical;
+	-webkit-line-clamp: 3;
+}
+
+.tr-assistant-selection-prompt .tr-ai-workspace-nav {
+	gap: 6px;
+}
+
+.tr-assistant-selection-prompt .tr-ai-workspace-nav__item {
+	min-height: 42px;
+	gap: 7px;
+	padding: 6px 8px;
+}
+
+.tr-assistant-selection-prompt .tr-ai-workspace-nav__icon {
+	width: 25px;
+	height: 25px;
+	flex-basis: 25px;
+}
+
+.tr-assistant-selection-prompt .tr-ai-workspace-nav__icon svg {
+	width: 14px;
+	height: 14px;
+}
+
+.tr-assistant-selection-prompt .tr-ai-workspace-nav__copy strong {
+	font-size: var(--font-ui-smaller);
+}
+
+.tr-assistant-selection-prompt .tr-ai-workspace-nav__copy small {
+	display: none;
+}
+
+.tr-assistant-selection-prompt__composer.tr-ai-composer--workspace
+	.tr-ai-composer__input {
+	min-height: 72px;
+	padding: 11px 12px;
+	font-size: var(--font-ui-small);
+}
+
+.tr-assistant-selection-prompt__composer.tr-ai-composer--workspace
+	.tr-ai-composer__footer {
+	min-height: 42px;
+	padding: 6px 8px 6px 10px;
+}
+
+.tr-assistant-selection-prompt .tr-assistant-prompt__workflows {
+	gap: 8px;
+}
+
+.tr-assistant-selection-prompt .tr-assistant-prompt__section-heading h3 {
+	font-size: var(--font-ui-small);
+}
+
+.tr-assistant-selection-prompt .tr-assistant-prompt__section-heading p {
+	max-width: 420px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.tr-assistant-selection-prompt .tr-assistant-workflow-grid {
+	gap: 6px;
+}
+
+.tr-assistant-selection-prompt .tr-assistant-workflow {
+	min-height: 38px;
+	padding: 6px 8px;
+}
+
+.tr-assistant-selection-prompt .tr-assistant-workflow__icon {
+	width: 23px;
+	height: 23px;
+	flex-basis: 23px;
+}
+
+.tr-assistant-selection-prompt .tr-assistant-workflow__label {
+	font-size: var(--font-ui-smaller);
+}
+
+/* Contextual AI workspace ------------------------------------------------ */
+
+.tr-ai-workspace-nav {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 8px;
+}
+
+.tr-ai-workspace-nav__item {
+	display: flex;
+	align-items: center;
+	gap: 9px;
+	min-width: 0;
+	min-height: 52px;
+	padding: 8px 10px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 9px;
+	background: var(--background-primary);
+	color: var(--text-muted);
+	transition:
+		border-color var(--ep-transition-fast),
+		background var(--ep-transition-fast),
+		color var(--ep-transition-fast);
+}
+
+.tr-ai-workspace-nav__item:hover:not(.is-disabled) {
+	border-color: var(--background-modifier-border-hover);
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+.tr-ai-workspace-nav__item.is-active {
+	border-color: var(--interactive-accent);
+	background: var(--background-primary-alt);
+	color: var(--text-normal);
+	box-shadow: inset 0 0 0 1px var(--interactive-accent);
+}
+
+.tr-ai-workspace-nav__item.is-disabled {
+	opacity: 0.42;
+}
+
+.tr-ai-workspace-nav__icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 28px;
+	height: 28px;
+	flex: 0 0 28px;
+	border-radius: 7px;
+	background: var(--background-secondary);
+	color: var(--text-accent);
+}
+
+.tr-ai-workspace-nav__icon svg {
+	width: 15px;
+	height: 15px;
+}
+
+.tr-ai-workspace-nav__copy {
+	display: flex;
+	min-width: 0;
+	flex-direction: column;
+	gap: 1px;
+}
+
+.tr-ai-workspace-nav__copy strong,
+.tr-ai-workspace-nav__copy small {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.tr-ai-workspace-nav__copy strong {
+	font-size: var(--font-ui-small);
+	font-weight: 650;
+}
+
+.tr-ai-workspace-nav__copy small {
+	color: var(--text-faint);
+	font-size: var(--font-ui-smaller);
+}
+
+.tr-assistant-editor-panel {
+	min-height: 100%;
+}
+
+.tr-assistant-editor-thread {
+	padding: 20px 22px 24px;
+}
+
+.tr-assistant-prompt {
+	display: flex;
+	flex-direction: column;
+	gap: 20px;
+	width: 100%;
+	max-width: 760px;
+	margin: 0 auto;
+	padding: 24px 26px 28px;
+}
+
+.tr-assistant-prompt__intro h2,
+.tr-assistant-prompt__intro p,
+.tr-assistant-prompt__section-heading h3,
+.tr-assistant-prompt__section-heading p {
+	margin: 0;
+}
+
+.tr-assistant-prompt__intro h2 {
+	margin-top: 4px;
+	color: var(--text-normal);
+	font-size: 22px;
+	font-weight: 650;
+	letter-spacing: -0.02em;
+	line-height: 1.2;
+}
+
+.tr-assistant-prompt__intro p {
+	max-width: 560px;
+	margin-top: 7px;
+	color: var(--text-muted);
+	font-size: var(--font-ui-small);
+	line-height: 1.5;
+}
+
+.tr-assistant-prompt__eyebrow,
+.tr-assistant-prompt__section-label {
+	color: var(--text-accent);
+	font-size: var(--font-ui-smaller);
+	font-weight: 650;
+	letter-spacing: 0.08em;
+	line-height: 1.2;
+	text-transform: uppercase;
+}
+
+.tr-assistant-prompt__context {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	padding: 12px 14px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 10px;
+	background: var(--background-secondary);
+}
+
+.tr-ai-composer.tr-ai-composer--workspace {
+	gap: 0;
+	padding: 0;
+	overflow: hidden;
+	border-color: var(--background-modifier-border-hover);
+	border-radius: 12px;
+	background: var(--background-primary);
+	box-shadow: var(--ep-elevation-1);
+}
+
+.tr-ai-composer.tr-ai-composer--workspace:focus-within {
+	border-color: var(--background-modifier-border-focus);
+	box-shadow:
+		var(--ep-elevation-1),
+		0 0 0 1px var(--background-modifier-border-focus);
+}
+
+.tr-ai-composer--workspace .tr-ai-composer__input {
+	min-height: 112px;
+	padding: 15px 16px;
+	font-size: var(--font-ui-medium);
+	line-height: 1.5;
+	box-shadow: none;
+}
+
+.tr-ai-composer--workspace .tr-ai-composer__input:focus {
+	border: 0;
+	box-shadow: none;
+}
+
+.tr-ai-composer--workspace .tr-ai-composer__footer {
+	min-height: 48px;
+	padding: 8px 10px 8px 14px;
+	border-top: 1px solid var(--background-modifier-border);
+	background: var(--background-secondary);
+}
+
+.tr-ai-composer__hint {
+	overflow: hidden;
+	color: var(--text-faint);
+	font-size: var(--font-ui-smaller);
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.tr-ai-composer__hint kbd {
+	padding: 1px 4px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 4px;
+	background: var(--background-primary);
+	box-shadow: none;
+	color: var(--text-muted);
+	font-family: var(--font-interface);
+	font-size: 0.9em;
+}
+
+.tr-ai-composer__inbox-action {
+	padding: 6px 8px;
+	border-radius: 6px;
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	font-weight: 500;
+	transition:
+		background var(--ep-transition-fast),
+		color var(--ep-transition-fast);
+}
+
+.tr-ai-composer__inbox-action:hover {
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+.tr-ai-composer__inbox-action.is-disabled {
+	opacity: 0.45;
+}
+
+.tr-ai-composer__submit,
+.tr-ai-composer__stop {
+	min-height: 32px;
+	font-size: var(--font-ui-small);
+}
+
+.tr-ai-composer__submit:hover {
+	background: var(--interactive-accent-hover);
+}
+
+.tr-assistant-prompt__workflows {
+	display: flex;
+	flex-direction: column;
+	gap: 11px;
+}
+
+.tr-assistant-prompt__section-heading {
+	display: flex;
+	align-items: end;
+	justify-content: space-between;
+	gap: 12px;
+}
+
+.tr-assistant-prompt__section-heading h3 {
+	color: var(--text-normal);
+	font-size: var(--font-ui-medium);
+	font-weight: 650;
+	line-height: 1.25;
+}
+
+.tr-assistant-prompt__section-heading p {
+	margin-top: 2px;
+	color: var(--text-faint);
+	font-size: var(--font-ui-smaller);
+	line-height: 1.35;
+}
+
+.tr-assistant-workflow-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 8px;
+}
+
+.tr-assistant-workflow {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	min-width: 0;
+	min-height: 42px;
+	padding: 8px 10px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 8px;
+	background: var(--background-primary);
+	color: var(--text-normal);
+	transition:
+		border-color var(--ep-transition-fast),
+		background var(--ep-transition-fast),
+		transform var(--ep-transition-fast);
+}
+
+.tr-assistant-workflow:hover,
+.tr-assistant-workflow:focus-visible {
+	border-color: var(--background-modifier-border-hover);
+	background: var(--background-modifier-hover);
+	transform: translateY(-1px);
+}
+
+.tr-assistant-workflow__icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 25px;
+	height: 25px;
+	flex: 0 0 25px;
+	border-radius: 6px;
+	background: var(--background-secondary);
+	color: var(--text-accent);
+}
+
+.tr-assistant-workflow__icon svg {
+	width: 14px;
+	height: 14px;
+}
+
+.tr-assistant-workflow__label {
+	overflow: hidden;
+	flex: 1;
+	font-size: var(--font-ui-small);
+	font-weight: 500;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.tr-assistant-workflow__arrow {
+	width: 14px;
+	height: 14px;
+	flex: 0 0 14px;
+	color: var(--text-faint);
+	opacity: 0;
+	transform: translateX(-3px);
+	transition:
+		opacity var(--ep-transition-fast),
+		transform var(--ep-transition-fast);
+}
+
+.tr-assistant-workflow:hover .tr-assistant-workflow__arrow,
+.tr-assistant-workflow:focus-visible .tr-assistant-workflow__arrow {
+	opacity: 1;
+	transform: translateX(0);
+}
+
+.tr-assistant-prompt__show-all {
+	align-self: flex-start;
+	padding: 3px 0;
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	font-weight: 500;
+}
+
+.tr-assistant-prompt__show-all:hover,
+.tr-assistant-prompt__show-all:focus-visible {
+	color: var(--text-accent);
+}
+
+.tr-assistant-prompt__empty-mode {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	padding: 18px;
+	border: 1px dashed var(--background-modifier-border);
+	border-radius: 10px;
+	background: var(--background-secondary);
+	text-align: center;
+}
+
+.tr-assistant-prompt__empty-mode strong {
+	color: var(--text-normal);
+	font-size: var(--font-ui-small);
+}
+
+.tr-assistant-prompt__empty-mode span {
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+}
+
+/* AI Inbox -------------------------------------------------------------- */
+
+.workspace-leaf-content[data-type="true-recall-assistant-inbox"] .view-content {
+	padding: 0;
+}
+
+.tr-ai-inbox {
+	display: flex;
+	flex-direction: column;
+	width: min(780px, 100%);
+	min-width: 0;
+	margin: 0 auto;
+	padding: 16px 18px 28px;
+}
+
+.tr-ai-inbox__eyebrow {
+	margin-bottom: 3px;
+	color: var(--text-accent);
+	font-size: var(--font-ui-smaller);
+	font-weight: 650;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+}
+
+.tr-ai-inbox__queue-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	padding: 4px 2px 10px;
+	border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.tr-ai-inbox__queue h1,
+.tr-ai-inbox__queue p {
+	margin: 0;
+}
+
+.tr-ai-inbox__queue h1 {
+	color: var(--text-normal);
+	font-size: 24px;
+	font-weight: 680;
+	letter-spacing: -0.025em;
+	line-height: 1.2;
+}
+
+.tr-ai-inbox__queue p {
+	margin-top: 2px;
+	color: var(--text-faint);
+	font-size: var(--font-ui-smaller);
+}
+
+.tr-ai-inbox__summary {
+	display: flex;
+	align-items: baseline;
+	gap: 5px;
+	padding: 6px 9px;
+	border-radius: 7px;
+	background: var(--background-secondary);
+	white-space: nowrap;
+}
+
+.tr-ai-inbox__summary strong {
+	color: var(--text-normal);
+	font-size: var(--font-ui-medium);
+	font-weight: 650;
+}
+
+.tr-ai-inbox__summary span {
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+}
+
+.tr-ai-inbox__queue {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.tr-ai-inbox__queue-actions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+.tr-ai-inbox__items {
+	display: flex;
+	flex-direction: column;
+	gap: 7px;
+}
+
+.tr-ai-inbox-item {
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 10px;
+	background: var(--background-secondary);
+	transition:
+		border-color var(--ep-transition-fast),
+		background var(--ep-transition-fast);
+}
+
+.tr-ai-inbox-item:hover {
+	border-color: var(--background-modifier-border-hover);
+}
+
+.tr-ai-inbox-item__header {
+	min-height: 58px;
+}
+
+.tr-ai-inbox-item__summary {
+	padding: 9px 0 9px 12px;
+}
+
+.tr-ai-inbox-item__copy {
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr);
+	gap: 1px 8px;
+	min-width: 0;
+}
+
+.tr-ai-inbox-item__tool {
+	align-self: center;
+	color: var(--text-accent);
+	font-size: 10px;
+	font-weight: 650;
+	letter-spacing: 0.055em;
+	line-height: 1.2;
+	text-transform: uppercase;
+}
+
+.tr-ai-inbox-item__title {
+	overflow: hidden;
+	color: var(--text-normal);
+	font-size: var(--font-ui-small);
+	font-weight: 650;
+	line-height: 1.25;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.tr-ai-inbox-item__preview {
+	grid-column: 1 / -1;
+	overflow: hidden;
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.tr-ai-inbox-item__time {
+	grid-column: 1 / -1;
+	color: var(--text-faint);
+	font-size: var(--font-ui-smaller);
+	line-height: 1.25;
+}
+
+.tr-ai-inbox-item__actions {
+	display: flex;
+	align-items: center;
+	gap: 3px;
+	padding: 7px 7px 7px 0;
+}
+
+.tr-ai-inbox-item__workspace {
+	padding: 13px;
+	background: var(--background-primary);
+}
+
+.tr-ai-inbox__empty {
+	padding: 18px;
+	border: 1px dashed var(--background-modifier-border);
+	border-radius: 10px;
+	background: var(--background-secondary);
+}
+
+/* Proposal cards use a quiet surface with a narrow state accent instead of
+   outlining the entire card in saturated blue. */
+.tr-card-ai-preview-new-card.is-selected {
+	border-color: var(--background-modifier-border-hover);
+	border-left: 3px solid var(--interactive-accent);
+	box-shadow: var(--ep-elevation-1);
+}
+
+.tr-card-ai-preview-new-card-header {
+	background: var(--background-primary-alt);
+}
+
+@media (max-width: 520px) {
+	.tr-assistant-prompt {
+		padding: 20px 18px 24px;
+	}
+
+	.tr-assistant-workflow-grid {
+		grid-template-columns: 1fr;
+	}
+
+	.tr-ai-composer__hint {
+		display: none;
+	}
+
+	.tr-ai-workspace-nav {
+		grid-template-columns: 1fr;
+	}
+
+	.tr-ai-inbox {
+		padding: 12px 12px 22px;
+	}
+
+	.tr-ai-inbox__queue-header {
+		gap: 10px;
+	}
+
+	.tr-ai-inbox__queue h1 {
+		font-size: 21px;
+	}
+
+	.tr-ai-inbox__summary {
+		display: none;
+	}
+
+	.tr-ai-inbox-item__actions {
+		gap: 1px;
+	}
+}
+
+/* Draft cards reuse the Card Polish preview card styling; only state tints are local. */
+.tr-card-ai-preview-new-card.is-applied {
+	opacity: 0.55;
+}
+
+.tr-card-ai-preview-new-card.is-rejected {
+	opacity: 0.4;
+}
+
+/* ── Fast preset surface ──────────────────────────────────────────────────────
+   The one-click density the anchored Card Polish menu had: rows, no workspace
+   chrome, free text tucked into the footer. */
+
+.tr-assistant-fast-prompt {
+	display: flex;
+	min-width: 320px;
+	max-width: 460px;
+	flex-direction: column;
+	gap: 8px;
+	padding: 10px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: 12px;
+	background: var(--background-primary);
+}
+
+.tr-assistant-fast-prompt__selection {
+	overflow: hidden;
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.tr-ai-preset-list {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+}
+
+.tr-ai-preset-list__rows {
+	display: flex;
+	max-height: 320px;
+	flex-direction: column;
+	gap: 2px;
+	overflow-y: auto;
+}
+
+.tr-ai-preset-row {
+	display: grid;
+	min-height: 50px;
+	align-items: center;
+	gap: 10px;
+	grid-template-columns: auto minmax(0, 1fr) auto;
+	padding: 7px 8px;
+	border: 1px solid transparent;
+	border-radius: 9px;
+	outline: none;
+	transition:
+		border-color var(--ep-transition-fast),
+		background var(--ep-transition-fast);
+}
+
+.tr-ai-preset-row:hover,
+.tr-ai-preset-row:focus-visible {
+	border-color: var(--background-modifier-border);
+	background: var(--background-modifier-hover);
+}
+
+.tr-ai-preset-row:focus-visible {
+	box-shadow: inset 0 0 0 1px var(--background-modifier-border-focus);
+}
+
+.tr-ai-preset-row__icon {
+	display: inline-flex;
+	width: 30px;
+	height: 30px;
+	flex: 0 0 30px;
+	align-items: center;
+	justify-content: center;
+	border-radius: 8px;
+	background: var(--background-secondary);
+	color: var(--text-accent);
+}
+
+.tr-ai-preset-row__icon svg {
+	width: 15px;
+	height: 15px;
+}
+
+.tr-ai-preset-row__copy {
+	display: flex;
+	min-width: 0;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.tr-ai-preset-row__copy strong,
+.tr-ai-preset-row__copy small {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.tr-ai-preset-row__copy strong {
+	font-size: var(--font-ui-small);
+	font-weight: 620;
+	line-height: 1.25;
+}
+
+.tr-ai-preset-row__copy small {
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+}
+
+.tr-ai-preset-row__mode {
+	color: var(--text-faint);
+	font-size: var(--font-ui-smaller);
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+}
+
+/* Same field as the panel, only shorter: the anchored surface must stay a menu,
+   not grow into a full workspace. */
+.tr-assistant-fast-prompt__composer {
+	min-width: 0;
+	padding-top: 2px;
+}
+
+.tr-assistant-fast-prompt__composer .tr-ai-composer--workspace {
+	box-shadow: none;
+}
+
+.tr-assistant-fast-prompt__composer .tr-ai-composer__input {
+	min-height: 68px;
+	padding: 10px 12px;
+	font-size: var(--font-ui-small);
+}
+
+.tr-assistant-fast-prompt__composer .tr-ai-composer__footer {
+	min-height: 40px;
+	padding: 6px 8px 6px 10px;
+}

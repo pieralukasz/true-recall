@@ -1,3 +1,4 @@
+import type { CustomStudyRequest } from "./review-session.types";
 import type { ReviewOrder } from "./settings.types";
 
 interface SessionConfigBase {
@@ -42,4 +43,7 @@ export type SessionConfig =
 			recentlyFailed?: boolean;
 			studyAheadDays?: number;
 			crammingMode?: boolean;
+			customStudy?: CustomStudyRequest;
+			materializedCardIds?: string[];
+			temporaryDeckId?: string;
 	  });

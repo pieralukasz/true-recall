@@ -43,11 +43,6 @@ const HTML_ENTITIES: Record<string, string> = {
 	"&frac34;": "\u00BE",
 };
 
-const NAMED_ENTITY_REGEX = new RegExp(
-	Object.keys(HTML_ENTITIES).join("|"),
-	"gi",
-);
-
 // ─── Main entry point ────────────────────────────────────────────────────────
 
 export function htmlToMarkdown(html: string): string {
@@ -82,9 +77,9 @@ function extractProtectedRegions(text: string): {
 		regex: RegExp,
 		toMarkdown: (match: RegExpExecArray) => string,
 	): void {
-		result = result.replace(regex, (...args) => {
+		result = result.replace(regex, (...args: unknown[]) => {
 			// Reconstruct the match array for the callback
-			const fullMatch = args[0] as string;
+			const fullMatch = args[0];
 			const groups = args.slice(1, -2); // capture groups (exclude offset and input)
 			const matchArray = [fullMatch, ...groups] as unknown as RegExpExecArray;
 
@@ -202,7 +197,12 @@ function restoreProtectedRegions(
 	regions: ProtectedRegion[],
 ): string {
 	let result = text;
-	for (const region of regions) {
+	// Restore in reverse: a later region (e.g. $$math$$) can contain the
+	// placeholder of an earlier one (e.g. <code> extracted before math), so
+	// later regions must be inserted first for the earlier pass to find it.
+	for (let i = regions.length - 1; i >= 0; i--) {
+		const region = regions[i];
+		if (!region) continue;
 		// Use a function replacer to avoid $$ being interpreted as escape for $
 		result = result.replace(region.placeholder, () => region.markdown);
 	}
@@ -211,25 +211,28 @@ function restoreProtectedRegions(
 
 // ─── Phase 4: Entity decoding ────────────────────────────────────────────────
 
+const ENTITY_REGEX = /&(?:#x[0-9a-f]+|#\d+|[a-z]+);/gi;
+const MAX_CODE_POINT = 0x10ffff;
+
 export function decodeHtmlEntities(text: string): string {
-	// Named entities
-	let result = text.replace(NAMED_ENTITY_REGEX, (entity) => {
+	// Single left-to-right pass: decoded output is never re-scanned, so
+	// sequences like "&amp;#65;" decode exactly one level ("&#65;") instead
+	// of collapsing to "A" across passes.
+	return text.replace(ENTITY_REGEX, (entity) => {
+		if (entity.startsWith("&#x") || entity.startsWith("&#X")) {
+			const code = parseInt(entity.slice(3, -1), 16);
+			return code > 0 && code <= MAX_CODE_POINT
+				? String.fromCodePoint(code)
+				: entity;
+		}
+		if (entity.startsWith("&#")) {
+			const code = parseInt(entity.slice(2, -1), 10);
+			return code > 0 && code <= MAX_CODE_POINT
+				? String.fromCodePoint(code)
+				: entity;
+		}
 		return HTML_ENTITIES[entity.toLowerCase()] ?? entity;
 	});
-
-	// Numeric decimal entities: &#123;
-	result = result.replace(/&#(\d+);/g, (_match, digits: string) => {
-		const code = parseInt(digits, 10);
-		return code > 0 ? String.fromCodePoint(code) : _match;
-	});
-
-	// Numeric hex entities: &#x1F600;
-	result = result.replace(/&#x([0-9a-f]+);/gi, (_match, hex: string) => {
-		const code = parseInt(hex, 16);
-		return code > 0 ? String.fromCodePoint(code) : _match;
-	});
-
-	return result;
 }
 
 // ─── Table conversion ────────────────────────────────────────────────────────

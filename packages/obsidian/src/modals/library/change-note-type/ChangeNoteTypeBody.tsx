@@ -156,7 +156,7 @@ export function ChangeNoteTypeBody({
 
 			<div class="ep:flex ep:justify-end ep:gap-2 ep:pt-2">
 				<Clickable
-					class="ep:px-3 ep:py-1.5 ep:text-ui-small ep:rounded ep:border ep:border-obs-border ep:text-obs-muted hover:ep:bg-obs-modifier-hover"
+					class="ep:px-3 ep:py-1.5 ep:text-ui-small ep:rounded ep:border ep:border-obs-border ep:text-obs-muted ep:hover:bg-obs-modifier-hover"
 					onClick={handleCancel}
 					stopPropagation={false}
 				>

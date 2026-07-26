@@ -1,4 +1,12 @@
 /**
+ * `Error.captureStackTrace` is a V8-only extension. Type it locally so this
+ * platform-agnostic package does not rely on `@types/node` being present.
+ */
+const v8Error = Error as ErrorConstructor & {
+	captureStackTrace?: (target: object, constructorOpt?: unknown) => void;
+};
+
+/**
  * Base application error class
  */
 export class AppError extends Error {
@@ -9,10 +17,7 @@ export class AppError extends Error {
 	) {
 		super(message);
 		this.name = this.constructor.name;
-
-		if (Error.captureStackTrace) {
-			Error.captureStackTrace(this, this.constructor);
-		}
+		v8Error.captureStackTrace?.(this, this.constructor);
 	}
 
 	toUserMessage(): string {
