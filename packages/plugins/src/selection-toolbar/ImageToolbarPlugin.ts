@@ -103,7 +103,7 @@ export function createImageToolbarExtension(
 
 			private showToolbar(imagePath: string, imgEl: HTMLElement): void {
 				if (!this.container) {
-					this.container = activeDocument.createElement("div");
+					this.container = createDiv();
 					this.container.className = "true-recall-image-toolbar-container";
 					activeDocument.body.appendChild(this.container);
 					this.registerOutsideClick();

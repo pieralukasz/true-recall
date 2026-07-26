@@ -61,8 +61,10 @@ export function AiComposer({
 	const adjustHeight = () => {
 		const el = inputRef.current;
 		if (!el) return;
-		el.style.height = "auto";
-		el.style.height = `${Math.min(el.scrollHeight, MAX_INPUT_HEIGHT)}px`;
+		el.setCssStyles({ height: "auto" });
+		el.setCssStyles({
+			height: `${Math.min(el.scrollHeight, MAX_INPUT_HEIGHT)}px`,
+		});
 	};
 
 	useEffect(() => {
