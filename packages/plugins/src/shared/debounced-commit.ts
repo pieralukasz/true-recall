@@ -20,11 +20,11 @@ export function createDebouncedCommit<T>(
 	commit: (value: T) => void,
 	delayMs: number,
 ): DebouncedCommit<T> {
-	let timer: ReturnType<typeof setTimeout> | null = null;
+	let timer: number | null = null;
 	let pending: { value: T } | null = null;
 
 	const clearTimer = () => {
-		if (timer !== null) clearTimeout(timer);
+		if (timer !== null) window.clearTimeout(timer);
 		timer = null;
 	};
 
@@ -39,7 +39,7 @@ export function createDebouncedCommit<T>(
 		push(value: T) {
 			pending = { value };
 			clearTimer();
-			timer = setTimeout(flush, delayMs);
+			timer = window.setTimeout(flush, delayMs);
 		},
 		hasPending: () => pending !== null,
 		flush,

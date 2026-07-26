@@ -230,7 +230,7 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 
 	plugin.addCommand({
 		id: "open-assistant-workspace",
-		name: "Open Ask AI panel",
+		name: "Open ask AI panel",
 		checkCallback: (checking) => {
 			if (!isDesktop()) return false;
 			if (!isPluginEnabled(plugin.settings, "ai-assistant")) return false;

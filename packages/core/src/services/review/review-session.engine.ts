@@ -78,7 +78,7 @@ export function preparePreviewAnswer<T extends CardSchedulingMeta>(
 			card: {
 				...answeredCard,
 				previewDue: new Date(now.getTime() + delaySeconds * 1000).toISOString(),
-			} as T,
+			},
 			position: requeuePosition,
 		},
 	};

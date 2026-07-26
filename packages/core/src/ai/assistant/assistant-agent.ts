@@ -11,11 +11,17 @@ import type {
 	AssistantProgressEvent,
 	AssistantProposal,
 	Citation,
-	ProposalTarget,
 	TokenUsage,
 } from "./assistant.types";
 import { buildAssistantSystemPrompt } from "./assistant-prompts";
 import { ASSISTANT_TOOLS, type AssistantToolHost } from "./assistant-tools";
+import {
+	readNumber,
+	readProposalTarget,
+	readString,
+	readStringRecord,
+	readStringRecordArray,
+} from "./tool-args";
 
 /** Default agent loop cap when the caller does not supply one. */
 const DEFAULT_MAX_ITERATIONS = 5;
@@ -24,6 +30,14 @@ const DEFAULT_MAX_ITERATIONS = 5;
  * plus a diagram fits comfortably under this; it only stops runaway prose.
  */
 const MAX_OUTPUT_TOKENS = 4096;
+/** How many image candidates to fetch when the model does not ask for a count. */
+const DEFAULT_IMAGE_CANDIDATES = 6;
+/**
+ * Returned to the model rather than recording a proposal that points nowhere,
+ * so it can retry with a target the tool schema actually describes.
+ */
+const MISSING_TARGET_MESSAGE =
+	'Missing or malformed "target". Supply {"kind":"note","path":"..."} or {"kind":"card-field","cardId":"...","noteId":"...","field":"..."}.';
 
 export interface AssistantChatClient {
 	chat(request: ChatCompletionRequest): Promise<ChatCompletionResponse>;
@@ -226,16 +240,14 @@ export class AssistantAgent {
 
 		switch (call.function.name) {
 			case "create_cards": {
-				const noteTypeId = String(args.noteTypeId ?? "");
+				const noteTypeId = readString(args, "noteTypeId");
 				const noteType = host
 					.listNoteTypes()
 					.find((candidate) => candidate.id === noteTypeId);
 				if (!noteType) {
 					return `Note type "${noteTypeId}" not found. Use one of the listed note type ids.`;
 				}
-				const cards = Array.isArray(args.cards)
-					? (args.cards as Record<string, string>[])
-					: [];
+				const cards = readStringRecordArray(args.cards);
 				if (cards.length === 0) return "No cards given.";
 				for (const rawFields of cards) {
 					const fields = Object.fromEntries(
@@ -258,7 +270,7 @@ export class AssistantAgent {
 				return `Recorded ${cards.length} card proposal(s).`;
 			}
 			case "update_card": {
-				const cardId = String(args.cardId ?? "");
+				const cardId = readString(args, "cardId");
 				const current = host.getCardFields(cardId);
 				if (!current) return `Card "${cardId}" not found.`;
 				return record({
@@ -267,14 +279,14 @@ export class AssistantAgent {
 					type: "update_card",
 					cardId,
 					noteId: current.noteId,
-					fields: (args.fields ?? {}) as Record<string, string>,
+					fields: readStringRecord(args.fields),
 					previousFields: current.fields,
 				});
 			}
 			case "update_draft": {
 				const draft = context.draftCard;
 				if (!draft) return "No draft card is active in this task.";
-				const requested = (args.fields ?? {}) as Record<string, string>;
+				const requested = readStringRecord(args.fields);
 				const fields = Object.fromEntries(
 					Object.entries(requested).filter(([name]) =>
 						draft.noteType.fields.includes(name),
@@ -293,7 +305,7 @@ export class AssistantAgent {
 				});
 			}
 			case "update_proposal": {
-				const proposalId = String(args.proposalId ?? "");
+				const proposalId = readString(args, "proposalId");
 				const proposal = manifest.proposals.find(
 					(candidate) => candidate.id === proposalId,
 				);
@@ -307,7 +319,7 @@ export class AssistantAgent {
 				) {
 					return `Proposal "${proposalId}" is not an editable card draft.`;
 				}
-				const requested = (args.fields ?? {}) as Record<string, string>;
+				const requested = readStringRecord(args.fields);
 				const fields = Object.fromEntries(
 					Object.entries(requested).filter(([name]) => name in proposal.fields),
 				);
@@ -318,7 +330,7 @@ export class AssistantAgent {
 				return `Updated draft proposal ${proposalId}.`;
 			}
 			case "remove_proposal": {
-				const proposalId = String(args.proposalId ?? "");
+				const proposalId = readString(args, "proposalId");
 				const index = manifest.proposals.findIndex(
 					(candidate) =>
 						candidate.id === proposalId && candidate.status === "proposed",
@@ -332,38 +344,42 @@ export class AssistantAgent {
 					id: nextProposalId(),
 					status: "proposed",
 					type: "append_to_note",
-					path: String(args.path ?? ""),
-					markdown: String(args.markdown ?? ""),
+					path: readString(args, "path"),
+					markdown: readString(args, "markdown"),
 				});
 			case "create_note":
 				return record({
 					id: nextProposalId(),
 					status: "proposed",
 					type: "create_note",
-					title: String(args.title ?? "Untitled"),
-					markdown: String(args.markdown ?? ""),
+					title: readString(args, "title", "Untitled"),
+					markdown: readString(args, "markdown"),
 				});
 			case "insert_diagram": {
+				const target = readProposalTarget(args.target);
+				if (!target) return MISSING_TARGET_MESSAGE;
 				const format = args.format === "svg" ? "svg" : "mermaid";
 				return record({
 					id: nextProposalId(),
 					status: "proposed",
 					type: "insert_diagram",
-					target: args.target as ProposalTarget,
+					target,
 					format,
-					code: String(args.code ?? ""),
+					code: readString(args, "code"),
 				});
 			}
 			case "search_images": {
-				const query = String(args.query ?? "");
-				const count = typeof args.count === "number" ? args.count : 6;
+				const target = readProposalTarget(args.target);
+				if (!target) return MISSING_TARGET_MESSAGE;
+				const query = readString(args, "query");
+				const count = readNumber(args, "count", DEFAULT_IMAGE_CANDIDATES);
 				const candidates = await host.searchImages(query, count);
 				if (candidates.length === 0) return `No images found for "${query}".`;
 				record({
 					id: nextProposalId(),
 					status: "proposed",
 					type: "attach_images",
-					target: args.target as ProposalTarget,
+					target,
 					candidates,
 				});
 				return `Found ${candidates.length} candidates: ${candidates
@@ -371,7 +387,7 @@ export class AssistantAgent {
 					.join("; ")}. The user will pick which to attach.`;
 			}
 			case "read_note": {
-				const content = await host.readNote(String(args.path ?? ""));
+				const content = await host.readNote(readString(args, "path"));
 				return content ?? "Note not found.";
 			}
 			case "get_related_cards": {

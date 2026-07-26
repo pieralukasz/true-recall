@@ -1,5 +1,5 @@
 import type { ComponentChildren } from "preact";
-import { useEffect, useState } from "preact/hooks";
+import { useEffect, useMemo, useState } from "preact/hooks";
 
 import type {
 	AssistantTask,
@@ -280,9 +280,17 @@ function AssistantThreadItem({
 export function AssistantInboxApp() {
 	const plugin = usePlugin();
 	const tasksSignal = useQuery<AssistantTask[]>(Q.ASSISTANT_TASKS);
-	const tasks = (tasksSignal.value ?? []).filter((task) => !task.threadId);
 	const threadsSignal = useQuery<AssistantThread[]>(Q.ASSISTANT_INBOX);
-	const threads = threadsSignal.value ?? [];
+	// Both feed the cleanup effect below. Rebuilding either array on every render
+	// would re-run that effect on every render, and it deletes reviewed tasks.
+	const tasks = useMemo(
+		() => (tasksSignal.value ?? []).filter((task) => !task.threadId),
+		[tasksSignal.value],
+	);
+	const threads = useMemo(
+		() => threadsSignal.value ?? [],
+		[threadsSignal.value],
+	);
 	const [openId, setOpenId] = useState<string | null>(null);
 	const [isApprovingInbox, setIsApprovingInbox] = useState(false);
 	const reviewableThreads = threads.filter(
@@ -371,7 +379,7 @@ export function AssistantInboxApp() {
 			<section class="tr-ai-inbox__queue">
 				<header class="tr-ai-inbox__queue-header">
 					<div>
-						<div class="tr-ai-inbox__eyebrow">AI Inbox</div>
+						<div class="tr-ai-inbox__eyebrow">AI inbox</div>
 						<h1>Review queue</h1>
 						<p>
 							{count === 0
