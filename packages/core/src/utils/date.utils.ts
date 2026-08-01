@@ -19,6 +19,21 @@ export function formatLocalDate(date: Date): string {
 }
 
 /**
+ * Midnight of the local calendar day containing `date`
+ *
+ * Pairs with formatLocalDate: both use the local calendar day, not UTC and not
+ * the Anki-style dayStartHour boundary.
+ *
+ * @example
+ * startOfLocalDay(new Date('2024-01-15T23:00:00')) // 2024-01-15T00:00:00 local
+ */
+export function startOfLocalDay(date: Date): Date {
+	const start = new Date(date);
+	start.setHours(0, 0, 0, 0);
+	return start;
+}
+
+/**
  * Get today's date boundary based on dayStartHour (Anki-style)
  * If current hour < dayStartHour, we're still in "yesterday"
  *

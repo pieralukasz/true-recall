@@ -4,6 +4,7 @@ export {
 	getTodayKey,
 	getTomorrowBoundary,
 	isTimestampToday,
+	startOfLocalDay,
 } from "./date.utils";
 export { getErrorMessage } from "./error.utils";
 export {
