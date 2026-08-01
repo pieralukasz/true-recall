@@ -6,15 +6,8 @@ import { StreamingOpenRouterClient } from "../clients/streaming-openrouter-clien
 import type { AIClientConfig } from "../config/ai-client-config";
 import { resolveAIClientConfig } from "../config/ai-client-config";
 import { IncrementalFlashcardParser } from "../parsing/incremental-flashcard-parser";
-import {
-	buildPresetFormatSpec,
-	buildPresetPrompt,
-} from "../prompts/block-prompt-builder";
-import { buildLanguageSuffix } from "../prompts/default-prompts";
-import {
-	type ExistingCardContext,
-	renderExistingCardsBlock,
-} from "../prompts/existing-cards-block";
+import type { ExistingCardContext } from "../prompts/existing-cards-block";
+import { buildGenerationPrompt } from "../prompts/generation-request";
 import {
 	createThrottledPartialUpdater,
 	finishStreaming,
@@ -22,7 +15,7 @@ import {
 	startStreaming,
 } from "../state/streaming-state";
 import { enqueueGeneration } from "./generation-queue";
-import { resolveGenerationPresetAndNoteType } from "./preset-resolver";
+import { resolveGenerationTarget } from "./preset-resolver";
 import {
 	type CardEventFlashcardManager,
 	processCardEvents,
@@ -90,17 +83,11 @@ export class StreamingGenerationService {
 		options?: StreamingGenerationOptions,
 	): Promise<StreamingGenerationResult> {
 		const settings = this.getSettings();
-		const { preset, noteType } = resolveGenerationPresetAndNoteType(
+		const { preset, noteType } = resolveGenerationTarget(
 			settings,
 			this.flashcardManager,
 			presetId,
 		);
-
-		if (preset.requiresPro && !settings.proKey) {
-			throw new Error(
-				`Preset "${preset.name}" requires True Recall Pro. Upgrade or pick a different preset.`,
-			);
-		}
 
 		const aiConfig = resolveAIClientConfig(settings, "generation");
 		const abortController = new AbortController();
@@ -147,41 +134,14 @@ export class StreamingGenerationService {
 			this.flashcardManager.getNoteTypeBySlug?.(slug) ?? null;
 		const parser = new IncrementalFlashcardParser(getNoteType);
 
-		// Prompts containing the {{EXISTING_CARDS}} placeholder are authoritative
-		// full system prompts (e.g. built-in Pro preset) — use verbatim and send
-		// the format spec as the user message so format instructions still reach
-		// the model. Otherwise wrap the user's prompt in the format spec derived
-		// from the note type and send the raw text as the user message.
-		const useRawPrompt = preset.prompt.includes("{{EXISTING_CARDS}}");
-		const rawSystemPrompt = useRawPrompt
-			? preset.prompt
-			: buildPresetPrompt(preset, noteType);
-		const existingCardsBlock = renderExistingCardsBlock(
-			options?.existingCards ?? [],
-		);
-		let systemPrompt = rawSystemPrompt.replace(
-			"{{EXISTING_CARDS}}",
-			existingCardsBlock,
-		);
-		if (options?.contextText?.trim()) {
-			systemPrompt = `${options.contextText.trim()}\n\n${systemPrompt}`;
-		}
-		const langSuffix = buildLanguageSuffix(preset.languageOverride ?? "auto");
-		if (langSuffix) {
-			systemPrompt = `${systemPrompt}${langSuffix}`;
-		}
-
-		const metadata = aiConfig.hasProTier
-			? {
-					call_context: "generation",
-					note_type: noteType.slug ?? "basic",
-					preset_id: preset.id,
-				}
-			: undefined;
-
-		const userContent = useRawPrompt
-			? `${buildPresetFormatSpec(noteType)}\n\n${text}`
-			: text;
+		const { systemPrompt, userContent, metadata } = buildGenerationPrompt({
+			preset,
+			noteType,
+			text,
+			existingCards: options?.existingCards,
+			contextText: options?.contextText,
+			hasProTier: aiConfig.hasProTier,
+		});
 
 		let createdCount = 0;
 		let duplicateCount = 0;

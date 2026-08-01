@@ -151,14 +151,14 @@ export async function handleGenerateWithPreset(
 		return;
 	}
 
-	const { StreamingGenerationService } = await import(
-		"@true-recall/core/ai/generation/streaming-generation.service"
+	const { ChunkedGenerationService } = await import(
+		"@true-recall/core/ai/generation/chunked-generation.service"
 	);
 	const { ObsidianHttpClient } = await import(
 		"@true-recall/obsidian/adapters/ObsidianHttpClient"
 	);
 
-	const service = new StreamingGenerationService(
+	const service = new ChunkedGenerationService(
 		() => ctx.plugin.settings,
 		ctx.plugin.flashcardManager as unknown as StreamingFlashcardManager,
 		new ObsidianHttpClient(),
@@ -186,10 +186,19 @@ export async function handleGenerateWithPreset(
 	}
 
 	try {
-		const result = await service.generate(
+		const [{ collectGenerationContext }, { fetchExistingCardsForFile }] =
+			await Promise.all([
+				import("@true-recall/obsidian/plugin/collect-generation-context"),
+				import("@true-recall/obsidian/plugin/existing-cards-fetcher"),
+			]);
+		const result = await service.generateFromNote(
 			body.text,
 			{ basename: file.basename, path: file.path },
 			body.preset_id,
+			{
+				existingCards: await fetchExistingCardsForFile(ctx.plugin, file),
+				contextText: await collectGenerationContext(ctx.plugin, preset, file),
+			},
 		);
 		sendOk(res, {
 			created: result.created,
