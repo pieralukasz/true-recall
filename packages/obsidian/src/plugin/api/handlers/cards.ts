@@ -1,5 +1,7 @@
 import { State } from "ts-fsrs";
 
+import { SuspendCommand } from "@true-recall/obsidian/commands/commands/card-suspend.cmd";
+
 import {
 	BUILTIN_BASIC_ID,
 	BUILTIN_CLOZE_ID,
@@ -79,6 +81,8 @@ export function handleListCards(
 		sourceUid: c.sourceUid,
 		createdAt: c.createdAt,
 		noteTypeName: c.noteTypeName,
+		suspended: c.suspended ?? false,
+		buriedUntil: c.buriedUntil,
 	}));
 
 	sendOk(res, { total: allCards.length, count: cards.length, cards });
@@ -219,12 +223,22 @@ interface CreateCardInput {
 	source_text?: string;
 	card_type?: "basic" | "cloze";
 	tags?: string;
+	/**
+	 * Create the card already suspended, so it never enters the review queue
+	 * until it is finished. Used for capturing a question mid-study without
+	 * paying review slots for a card that has no answer yet.
+	 *
+	 * Applies to every card in a batch — a cloze note expands to several cards,
+	 * so per-card mapping back to inputs is not reliable.
+	 */
+	suspended?: boolean;
 }
 
 interface CreateBatchInput {
 	cards: CreateCardInput[];
 	source_uid?: string;
 	tags?: string;
+	suspended?: boolean;
 }
 
 export async function handleCreateCards(
@@ -291,9 +305,16 @@ export async function handleCreateCards(
 	});
 
 	const result = ctx.plugin.flashcardManager.createNoteBatch(noteParams);
+	const cardIds = result.cards.map((c) => c.id);
+
+	const suspended = body.suspended === true;
+	if (suspended && cardIds.length > 0) {
+		await ctx.plugin.commandService?.execute(new SuspendCommand(cardIds));
+	}
 
 	sendOk(res, {
-		created: result.cards.length,
-		cardIds: result.cards.map((c) => c.id),
+		created: cardIds.length,
+		cardIds,
+		suspended,
 	});
 }
