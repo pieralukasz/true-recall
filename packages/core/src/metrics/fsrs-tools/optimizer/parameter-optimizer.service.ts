@@ -135,7 +135,7 @@ export class ParameterOptimizerService {
 			weights = clipParameters(weights, 0);
 
 			// Keep the UI responsive — this runs on the plugin's main thread
-			await new Promise<void>((resolve) => setTimeout(resolve, 0));
+			await new Promise<void>((resolve) => window.setTimeout(resolve, 0));
 		}
 
 		const finalMetrics = this.evaluate(bestWeights, sequences);

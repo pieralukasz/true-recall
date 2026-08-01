@@ -242,13 +242,21 @@ export async function generateWithPresetGlobal(
 	enqueueGeneration(plugin, preset, text, file);
 }
 
-/** Deprecated AI Generation entry points now delegate to the Assistant queue. */
+/**
+ * The single funnel for "generate flashcards from this text". The panel, the
+ * selection toolbar, and the commands all land here so one queue, one preset
+ * resolution, and one prompt pipeline serve every entry point.
+ */
 function enqueueGeneration(
 	plugin: TrueRecallPlugin,
 	preset: GenerationPreset,
 	text: string,
 	file: TFile,
 ): void {
+	if (!hasApiKey(plugin)) {
+		notify().aiNotConfigured();
+		return;
+	}
 	if (!plugin.assistantService) {
 		notify().error("AI Assistant is not ready");
 		return;

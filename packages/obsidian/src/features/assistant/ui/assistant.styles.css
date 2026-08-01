@@ -249,6 +249,14 @@
 	padding: 24px 26px 28px;
 }
 
+/* The docked panel is narrow and already sits inside Obsidian's sidebar chrome,
+   so it uses the flashcard panel's tight gutters instead of the modal's roomy
+   ones — and lines the content up with the subject strip above it. */
+.tr-assistant-workspace-view .tr-assistant-prompt {
+	gap: 14px;
+	padding: 12px 8px 16px;
+}
+
 .tr-assistant-prompt__intro h2,
 .tr-assistant-prompt__intro p,
 .tr-assistant-prompt__section-heading h3,

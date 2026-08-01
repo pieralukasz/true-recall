@@ -134,9 +134,26 @@ export interface TokenUsage {
 	totalTokens: number;
 }
 
+/**
+ * Result of a generation that wrote its cards as it streamed them, so there was
+ * never a proposal to apply. Its presence tells the completion handler that an
+ * empty `proposals` list means "already landed", not "the model returned
+ * nothing".
+ */
+export interface DirectGenerationSummary {
+	created: number;
+	duplicates: number;
+	failedChunks: number;
+	totalChunks: number;
+	errors: string[];
+	sourceName?: string;
+}
+
 export interface AssistantManifest {
 	proposals: AssistantProposal[];
 	citations: Citation[];
+	/** Set only when the generation engine persisted the cards itself. */
+	directGeneration?: DirectGenerationSummary;
 	/** The model's final plain-text answer (shown when no proposals were made). */
 	finalText?: string;
 	/** Token usage summed over all agent iterations, when the provider reports it. */

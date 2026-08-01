@@ -10,17 +10,24 @@ import {
 	type AssistantTask,
 	type AssistantThread,
 	type AssistantThreadState,
+	type DirectGenerationSummary,
 } from "@true-recall/core/ai/assistant";
 import { OpenRouterClient } from "@true-recall/core/ai/clients/openrouter-client";
 import { resolveAIClientConfig } from "@true-recall/core/ai/config/ai-client-config";
+import { ChunkedGenerationService } from "@true-recall/core/ai/generation/chunked-generation.service";
 import { DraftGenerationService } from "@true-recall/core/ai/generation/draft-generation.service";
+import { resolveGenerationTarget } from "@true-recall/core/ai/generation/preset-resolver";
+import type { StreamingFlashcardManager } from "@true-recall/core/ai/generation/streaming-generation.service";
+import type { ExistingCardContext } from "@true-recall/core/ai/prompts/existing-cards-block";
 import { resolveAIWorkflow } from "@true-recall/core/ai/workflows/ai-workflow";
 
 import { applyPendingProposals } from "@true-recall/obsidian/features/assistant/ui/apply-pending-proposals";
 import type TrueRecallPlugin from "@true-recall/obsidian/main";
+import { confirm } from "@true-recall/obsidian/modals/shared/ConfirmModal";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 
 import { ObsidianHttpClient } from "../../adapters/ObsidianHttpClient";
+import { BatchCreateCommand } from "../../commands/commands/card-create.cmd";
 import { G } from "../../data/queries";
 import { collectGenerationContext } from "../../plugin/collect-generation-context";
 import { fetchExistingCardsForFile } from "../../plugin/existing-cards-fetcher";
@@ -295,6 +302,25 @@ export class AssistantService {
 				await this.notifyTaskCompleted(task, manifest);
 			} catch (error) {
 				if (this.actions().getById(task.id)?.status !== "running") continue;
+				// Declining the large-note prompt or hitting stop mid-stream aborts
+				// the run; that is a user decision, not a failure to report.
+				if (error instanceof DOMException && error.name === "AbortError") {
+					this.actions().cancel(task.id, Date.now());
+					if (task.threadId) {
+						this.threadActions().failTurn({
+							id: task.threadId,
+							taskId: task.id,
+							message: this.assistantMessage("Cancelled", Date.now()),
+							updatedAt: Date.now(),
+						});
+						this.threadActions().setState(
+							task.threadId,
+							"archived",
+							Date.now(),
+						);
+					}
+					continue;
+				}
 				this.actions().fail(
 					task.id,
 					error instanceof Error ? error.message : String(error),
@@ -339,6 +365,12 @@ export class AssistantService {
 			(proposal) => proposal.status === "proposed",
 		).length;
 		if (workflow?.kind === "generate-cards" && task.threadId) {
+			// The streaming engine already wrote its cards, so there is nothing to
+			// apply and `pending` is legitimately zero.
+			if (manifest.directGeneration) {
+				this.reportDirectGeneration(manifest.directGeneration, task.threadId);
+				return;
+			}
 			if (pending === 0) {
 				this.threadActions().setState(task.threadId, "archived", Date.now());
 				notify().warning(
@@ -380,6 +412,36 @@ export class AssistantService {
 				? `AI task ready: ${n} proposal${n === 1 ? "" : "s"}`
 				: "AI task finished (no proposals)",
 		);
+	}
+
+	/**
+	 * Reports what the streaming engine actually persisted. Duplicates are
+	 * counted separately by the engine, so a run that produced only duplicates
+	 * says so instead of claiming cards were created.
+	 */
+	private reportDirectGeneration(
+		summary: DirectGenerationSummary,
+		threadId: string,
+	): void {
+		this.threadActions().setState(threadId, "archived", Date.now());
+
+		if (summary.created === 0 && summary.duplicates === 0) {
+			notify().warning("AI generation finished without flashcards");
+		} else if (summary.duplicates > 0) {
+			notify().cardsCreatedWithDuplicates(
+				summary.created,
+				summary.duplicates,
+				summary.sourceName,
+			);
+		} else {
+			notify().cardsCreated(summary.created, summary.sourceName);
+		}
+
+		if (summary.failedChunks > 0) {
+			notify().warning(
+				`${summary.failedChunks} of ${summary.totalChunks} sections failed: ${summary.errors.join("; ")}`,
+			);
+		}
 	}
 
 	private async applyPolishImmediately(
@@ -427,7 +489,8 @@ export class AssistantService {
 		if (!thread || !manifest || thread.activeTaskId) return;
 
 		const apply = new AssistantApplyService(this.plugin);
-		let applied = 0;
+		let created = 0;
+		let duplicates = 0;
 		let firstError: string | undefined;
 		for (const proposal of manifest.proposals) {
 			if (proposal.status !== "proposed") continue;
@@ -441,7 +504,11 @@ export class AssistantService {
 			});
 			if (result.ok) {
 				proposal.status = "applied";
-				applied += 1;
+				// A create that wrote nothing was skipped as a duplicate; counting it
+				// as created is what produced "N flashcards created" over an empty
+				// deck on a re-run.
+				if (result.createdCount === 0) duplicates += 1;
+				else created += 1;
 			} else {
 				proposal.status = "rejected";
 				firstError ??= result.error ?? "Could not add generated flashcard";
@@ -453,11 +520,11 @@ export class AssistantService {
 		this.threadActions().setState(threadId, "archived", Date.now());
 		this.invalidate();
 
-		if (applied > 0) {
-			notify().cardsCreated(
-				applied,
-				this.resolveSourceFile(task.context)?.basename,
-			);
+		const noteName = this.resolveSourceFile(task.context)?.basename;
+		if (duplicates > 0) {
+			notify().cardsCreatedWithDuplicates(created, duplicates, noteName);
+		} else if (created > 0) {
+			notify().cardsCreated(created, noteName);
 		}
 		if (firstError) notify().error(firstError);
 	}
@@ -470,7 +537,8 @@ export class AssistantService {
 		const manifest = thread?.manifest;
 		if (!thread || !manifest || thread.activeTaskId) return;
 		const apply = new AssistantApplyService(this.plugin);
-		let applied = 0;
+		let created = 0;
+		let duplicates = 0;
 		for (const proposal of manifest.proposals) {
 			if (proposal.status !== "proposed") continue;
 			const result = await apply.apply(task, proposal, {
@@ -488,7 +556,8 @@ export class AssistantService {
 				break;
 			}
 			proposal.status = "applied";
-			applied += 1;
+			if (result.createdCount === 0) duplicates += 1;
+			else created += 1;
 		}
 		this.actions().updateManifest(task.id, manifest);
 		this.threadActions().updateManifest(threadId, manifest);
@@ -499,7 +568,11 @@ export class AssistantService {
 			this.threadActions().setState(threadId, "archived", Date.now());
 		}
 		this.invalidate();
-		if (applied > 0) notify().cardsCreated(applied);
+		if (duplicates > 0) {
+			notify().cardsCreatedWithDuplicates(created, duplicates);
+		} else if (created > 0) {
+			notify().cardsCreated(created);
+		}
 	}
 
 	private async openGeneratedDrafts(threadId: string): Promise<void> {
@@ -578,16 +651,14 @@ export class AssistantService {
 		presetId: string,
 		onProgress: (event: AssistantProgressEvent) => void,
 	): Promise<AssistantManifest> {
-		const preset = this.plugin.settings.generationPresets.find(
-			(candidate) => candidate.id === presetId,
+		const { preset, noteType } = resolveGenerationTarget(
+			this.plugin.settings,
+			{
+				getNoteTypeById: (id) =>
+					this.plugin.cardStore?.noteTypes.getById(id) ?? null,
+			},
+			presetId,
 		);
-		if (!preset) throw new Error(`Generation preset "${presetId}" not found`);
-		const noteType = this.plugin.cardStore?.noteTypes.getById(
-			preset.noteTypeId,
-		);
-		if (!noteType) {
-			throw new Error(`Note type "${preset.noteTypeId}" no longer exists`);
-		}
 		const text =
 			task.context.source?.text ?? task.context.selectedText?.trim() ?? "";
 		if (!text) throw new Error("Card generation requires selected source text");
@@ -600,6 +671,19 @@ export class AssistantService {
 		const contextText = sourceFile
 			? await collectGenerationContext(this.plugin, preset, sourceFile)
 			: undefined;
+
+		// Card-writing generation runs on the streaming engine so the note panel
+		// fills in live and long notes get chunked. The draft engine below is for
+		// proposals the user reviews in the inbox — and for the degenerate case of
+		// a generation with no resolvable source note, which the engine cannot
+		// anchor cards to.
+		if (task.context.applyGeneratedCardsImmediately && sourceFile) {
+			return this.runStreamingGeneration(preset.id, sourceFile, text, {
+				existingCards,
+				contextText,
+			});
+		}
+
 		const generator = new DraftGenerationService(
 			() => this.plugin.settings,
 			(slug) => this.plugin.flashcardManager.getNoteTypeBySlug(slug),
@@ -625,6 +709,69 @@ export class AssistantService {
 		}));
 		onProgress({ kind: "done" });
 		return { proposals, citations: [] };
+	}
+
+	/**
+	 * Runs the shared streaming engine, which persists each card the moment it
+	 * finishes parsing. The manifest it returns is a record of what already
+	 * landed, not a set of pending proposals.
+	 */
+	private async runStreamingGeneration(
+		presetId: string,
+		sourceFile: TFile,
+		text: string,
+		options: {
+			existingCards: ExistingCardContext[];
+			contextText: string | undefined;
+		},
+	): Promise<AssistantManifest> {
+		const service = new ChunkedGenerationService(
+			() => this.plugin.settings,
+			this.plugin.flashcardManager as unknown as StreamingFlashcardManager,
+			new ObsidianHttpClient(),
+		);
+
+		const result = await service.generateFromNote(
+			text,
+			sourceFile,
+			presetId,
+			options,
+			(params) => confirm(this.plugin.app, params),
+		);
+
+		const proposals: AssistantProposal[] = [];
+		for (const cardId of result.createdCardIds) {
+			const stored = this.host.getCardFields(cardId);
+			if (!stored) continue;
+			proposals.push({
+				id: crypto.randomUUID(),
+				status: "applied",
+				type: "create_card",
+				noteTypeId: stored.noteTypeId,
+				fields: stored.fields,
+				sourcePath: sourceFile.path,
+				generationPresetId: result.preset.id,
+			});
+		}
+
+		if (result.createdCardIds.length > 0) {
+			await this.plugin.commandService?.execute(
+				new BatchCreateCommand(result.createdCardIds),
+			);
+		}
+
+		return {
+			proposals,
+			citations: [],
+			directGeneration: {
+				created: result.created,
+				duplicates: result.duplicates,
+				failedChunks: result.failedChunks,
+				totalChunks: result.totalChunks,
+				errors: result.errors,
+				sourceName: sourceFile.basename,
+			},
+		};
 	}
 
 	private async runCardPolishWorkflow(

@@ -1,5 +1,29 @@
 # Changelog
 
+## 2.1.0 (2026-08-01)
+
+The workload forecast was quietly lying. Cards that were already due — every learning card sitting on a sub-day step, and anything overdue — were filtered out before the chart was drawn, so the busiest part of the day was the part you could not see. That is fixed, and the forecast now also projects the relearning volume your retention target implies, instead of pretending lapses are free. Alongside that: easy days are reachable from outside the settings tab, and a question can be captured mid-study without an answer without costing you a review slot.
+
+### Features
+
+- **Easy days from outside the settings tab** — mark recurring weekdays or a specific date as reduced-load from the API, the CLI (`get_easy_days`, `set_easy_days`, `add_easy_day`, `apply_easy_days`) or the new **Easy day: today** command. `add_easy_day` with no arguments is the "today disappeared" button: it records today and redistributes straight away. Easy days move reviews out of a day *before* it arrives, which is the difference between a lighter day and an overdue pile-up the morning after
+- **Capture a question without an answer** — `create_flashcard --suspended` creates a card outside the review queue. A question that occurs to you mid-study can be recorded and finished later without burning review slots on a card that has nothing to recall. Unsuspend once it has a real answer
+- **Card state in `list_cards`** — the response now carries `suspended` and `buriedUntil`. `get_card` always reported them, so the list endpoint was the odd one out, and asking "which of my cards are suspended" previously meant dropping down to SQL
+- **Lift a bury** — `bury_cards --unbury` returns cards to their normal schedule. Burying was previously one-way from outside the app
+
+### Improvements
+
+- **ai:** the chunked, draft and streaming generation services each assembled their own system prompt, format spec and user content, which is why the same preset could produce different prompts depending on which path ran it. Prompt assembly now lives in one place, and a preset id resolves to a runnable preset through a single function that folds together the Pro tier swap, the note-type lookup and the entitlement check
+- **assistant:** generation could be started from the panel, the selection toolbar or a command, each with its own copy of the queueing logic. Every entry point now funnels through one queue, and a missing API key is reported up front rather than after the request fails
+- **assistant:** when the streaming engine persists cards as it parses them there is nothing left to apply, and an empty proposal list looked identical to "the model returned nothing". Completed runs now report what actually landed, counting duplicates separately, so a run that produced only duplicates says so instead of claiming cards were created
+
+### Bug Fixes
+
+- **fsrs:** the workload forecast dropped every card that was already due. It filtered on the current timestamp rather than the start of the day, and learning cards use sub-day steps, so they are almost always slightly past due — they vanished from the chart entirely, along with any overdue reviews. Overdue work now buckets into today, where it belongs
+- **fsrs:** the per-preset filtered forecast carried a second copy of that logic and the same bug. Both paths now share one implementation, so they cannot drift apart again
+- **fsrs:** the forecast under-reported daily load by roughly the lapse rate, because the reviews your lapses will generate were not counted anywhere. Each day now includes a projected relearning estimate derived from the review cards due that day and the preset's retention target, and it feeds the average and the load-balance check
+- **cli:** `generate_flashcards_with_preset` ran straight into its own description in `--help`, with no space between them — the name is longer than the fixed column width. Column widths are now derived from the longest name, so the next long command will not break it either
+
 ## 2.0.0 (2026-07-26)
 
 The AI side of True Recall was a collection of separate surfaces — Card Polish had its own preset menu and preview modal, generation had another, the Knowledge Chat a third. 2.0 replaces all of them with one assistant that keeps its work in threads you can review later. Alongside that: Anki-style Custom Study, a daily target that follows your actual pace, and FSRS load balancing that spreads an overdue backlog instead of dumping it on one day.

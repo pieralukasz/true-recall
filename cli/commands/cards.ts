@@ -141,6 +141,11 @@ export const cardCommands: CommandDef[] = [
 				enum: ["basic", "cloze"],
 				default: "basic",
 			},
+			suspended: {
+				type: "boolean",
+				description:
+					"Create the card suspended so it stays out of the review queue until finished",
+			},
 		},
 	),
 
@@ -160,6 +165,11 @@ export const cardCommands: CommandDef[] = [
 				type: "string",
 				description:
 					"Source note UID to link all cards to (flashcard_uid from note frontmatter, e.g. 'b5a5a6d6')",
+			},
+			suspended: {
+				type: "boolean",
+				description:
+					"Create every card in the batch suspended, keeping them out of the review queue",
 			},
 		},
 	),

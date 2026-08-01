@@ -8,6 +8,7 @@ import type {
 const mocks = vi.hoisted(() => ({
 	apply: vi.fn(),
 	cardsCreated: vi.fn(),
+	cardsCreatedWithDuplicates: vi.fn(),
 	error: vi.fn(),
 	aiDraftsReady: vi.fn(),
 	warning: vi.fn(),
@@ -23,6 +24,7 @@ vi.mock("../../../src/services/assistant/assistant-apply.service", () => ({
 vi.mock("../../../src/services/notification.service", () => ({
 	notify: () => ({
 		cardsCreated: mocks.cardsCreated,
+		cardsCreatedWithDuplicates: mocks.cardsCreatedWithDuplicates,
 		error: mocks.error,
 		aiDraftsReady: mocks.aiDraftsReady,
 		warning: mocks.warning,
@@ -116,7 +118,7 @@ async function notifyCompleted(
 describe("AssistantService direct generation apply", () => {
 	beforeEach(() => {
 		vi.clearAllMocks();
-		mocks.apply.mockResolvedValue({ ok: true });
+		mocks.apply.mockResolvedValue({ ok: true, createdCount: 1 });
 	});
 
 	it("applies and archives note-triggered generation without creating an inbox draft", async () => {
@@ -161,6 +163,78 @@ describe("AssistantService direct generation apply", () => {
 			expect.any(Number),
 		);
 		expect(mocks.aiDraftsReady).toHaveBeenCalledTimes(1);
+	});
+
+	it("reports a skipped duplicate as a duplicate, not as a created card", async () => {
+		mocks.apply.mockResolvedValue({ ok: true, createdCount: 0 });
+		const manifest = createManifest();
+		const task = createTask(true);
+		const { service } = createService(manifest);
+
+		await notifyCompleted(service, task, manifest);
+
+		expect(mocks.cardsCreated).not.toHaveBeenCalled();
+		expect(mocks.cardsCreatedWithDuplicates).toHaveBeenCalledWith(
+			0,
+			1,
+			undefined,
+		);
+	});
+
+	it("reports the streaming engine's own counts without re-applying anything", async () => {
+		const manifest: AssistantManifest = {
+			proposals: [],
+			citations: [],
+			directGeneration: {
+				created: 3,
+				duplicates: 2,
+				failedChunks: 0,
+				totalChunks: 1,
+				errors: [],
+				sourceName: "My Note",
+			},
+		};
+		const task = createTask(true);
+		const { service, threadActions } = createService(manifest);
+
+		await notifyCompleted(service, task, manifest);
+
+		expect(mocks.apply).not.toHaveBeenCalled();
+		expect(mocks.warning).not.toHaveBeenCalled();
+		expect(mocks.cardsCreatedWithDuplicates).toHaveBeenCalledWith(
+			3,
+			2,
+			"My Note",
+		);
+		expect(threadActions.setState).toHaveBeenCalledWith(
+			task.threadId,
+			"archived",
+			expect.any(Number),
+		);
+	});
+
+	it("warns when the streaming engine produced nothing at all", async () => {
+		const manifest: AssistantManifest = {
+			proposals: [],
+			citations: [],
+			directGeneration: {
+				created: 0,
+				duplicates: 0,
+				failedChunks: 0,
+				totalChunks: 1,
+				errors: [],
+				sourceName: "My Note",
+			},
+		};
+		const task = createTask(true);
+		const { service } = createService(manifest);
+
+		await notifyCompleted(service, task, manifest);
+
+		expect(mocks.warning).toHaveBeenCalledWith(
+			"AI generation finished without flashcards",
+		);
+		expect(mocks.cardsCreated).not.toHaveBeenCalled();
 	});
 
 	it("archives a failed direct apply instead of leaving a draft in the inbox", async () => {

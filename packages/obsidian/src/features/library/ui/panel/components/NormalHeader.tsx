@@ -63,7 +63,9 @@ export function NormalHeader({
 					item
 						.setTitle("Generate from highlights")
 						.setIcon("highlighter")
-						.onClick(panelActions.handleGenerateFromHighlights),
+						// Wrapped: the menu passes a MouseEvent, which would land in the
+						// optional preset-id parameter.
+						.onClick(() => void panelActions.handleGenerateFromHighlights()),
 				);
 			}
 

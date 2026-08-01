@@ -285,18 +285,23 @@ export async function handleBulkBury(
 		card_ids: string[];
 		until?: string;
 		days?: number;
+		unbury?: boolean;
 	}>(raw);
 	if (!body?.card_ids?.length) {
 		sendError(
 			res,
 			400,
-			"Body must contain { card_ids: string[], until?: string, days?: number }",
+			"Body must contain { card_ids: string[], until?: string, days?: number, unbury?: boolean }",
 		);
 		return;
 	}
 
 	let untilDate: string;
-	if (body.until) {
+	if (body.unbury) {
+		// An already-elapsed date reads as "not buried" everywhere, and keeps the
+		// operation undoable through the same command as burying.
+		untilDate = new Date().toISOString();
+	} else if (body.until) {
 		const until = new Date(body.until);
 		if (Number.isNaN(until.getTime())) {
 			sendError(res, 400, `Invalid 'until' date: ${body.until}`);
@@ -319,7 +324,8 @@ export async function handleBulkBury(
 	await ctx.plugin.commandService?.execute(cmd);
 
 	sendOk(res, {
-		buried: body.card_ids.length,
+		buried: body.unbury ? 0 : body.card_ids.length,
+		unburied: body.unbury ? body.card_ids.length : 0,
 		untilDate,
 		cardIds: body.card_ids,
 	});

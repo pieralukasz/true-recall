@@ -23,7 +23,7 @@ export class AssistantInboxView extends ItemView {
 	}
 
 	getDisplayText(): string {
-		return "AI Inbox";
+		return "AI inbox";
 	}
 
 	getIcon(): string {

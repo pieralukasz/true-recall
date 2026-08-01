@@ -49,7 +49,9 @@ describe("FSRSHelperService", () => {
 
 		const summary = helper.getWorkloadForecastSummary(30);
 
-		expect(summary.peakDay.count).toBe(13);
+		// 13 scheduled review cards plus one projected relapse
+		// (default retention 0.9 → round(13 * 0.1) = 1).
+		expect(summary.peakDay.count).toBe(14);
 		expect(summary.needsBalancing).toBe(true);
 		expect(store.updateCardDue).not.toHaveBeenCalled();
 	});
