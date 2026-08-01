@@ -42,6 +42,12 @@ import {
 	handleUpdatePreset,
 } from "./handlers/fsrs";
 import {
+	handleAddEasyDay,
+	handleApplyEasyDays,
+	handleGetEasyDays,
+	handleUpdateEasyDays,
+} from "./handlers/easy-days";
+import {
 	handleGetRetrievability,
 	handleGetSchedulingPreview,
 	handleGetWorkloadForecast,
@@ -172,6 +178,10 @@ const routes: Route[] = [
 	route("POST", "/presets/:id", handleUpdatePreset),
 	route("POST", "/settings/load-balance", handleUpdateLoadBalanceSettings),
 	route("GET", "/fsrs/stats", handleGetFsrsStats),
+	route("GET", "/settings/easy-days", handleGetEasyDays),
+	route("POST", "/settings/easy-days", handleUpdateEasyDays),
+	route("POST", "/settings/easy-days/add", handleAddEasyDay),
+	route("POST", "/fsrs/easy-days/apply", handleApplyEasyDays),
 
 	// Navigation
 	route("POST", "/open-view", handleOpenView),
