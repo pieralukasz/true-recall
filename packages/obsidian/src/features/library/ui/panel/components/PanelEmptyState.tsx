@@ -1,3 +1,4 @@
+import { Menu } from "obsidian";
 import { useState } from "preact/hooks";
 
 import { hasAIKey } from "@true-recall/core/ai/config/ai-client-config";
@@ -14,6 +15,11 @@ const CALLOUT_CLS =
 const BTN_BASE_CLS =
 	"ep:px-4 ep:py-1.5 ep:rounded-md ep:text-ui-small ep:font-medium ep:w-full ep:inline-flex ep:items-center ep:justify-center ep:gap-1.5";
 
+// Borderless on purpose: this picks a setting for the two buttons below it, so
+// it must not read as a third action.
+const PRESET_ROW_CLS =
+	"ep:w-full ep:flex ep:items-center ep:gap-2 ep:px-3 ep:py-1 ep:rounded-md ep:text-ui-smaller ep:text-obs-muted ep:hover:bg-obs-bg-secondary";
+
 export function PanelEmptyState() {
 	const plugin = usePlugin();
 	const { uncollectedCount, hasHighlights } = usePanelStore();
@@ -24,6 +30,36 @@ export function PanelEmptyState() {
 	const hasPresets = (plugin.settings.generationPresets?.length ?? 0) > 0;
 	const canGenerate = aiGenerationEnabled && hasPresets;
 
+	const presets = plugin.settings.generationPresets ?? [];
+	const [presetId, setPresetId] = useState(
+		() =>
+			presets.find((p) => p.id === plugin.settings.defaultGenerationPresetId)
+				?.id ??
+			presets[0]?.id ??
+			"",
+	);
+	const activePreset = presets.find((p) => p.id === presetId);
+
+	const openPresetMenu = (event: MouseEvent | KeyboardEvent) => {
+		const menu = new Menu();
+		for (const preset of presets) {
+			menu.addItem((item) =>
+				item
+					.setTitle(preset.name)
+					.setChecked(preset.id === presetId)
+					.onClick(() => setPresetId(preset.id)),
+			);
+		}
+		// Enter/Space on the row hands us a KeyboardEvent, which has no pointer
+		// coordinates — anchor the menu under the row instead.
+		if (event instanceof MouseEvent) {
+			menu.showAtMouseEvent(event);
+			return;
+		}
+		const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+		menu.showAtPosition({ x: rect.left, y: rect.bottom });
+	};
+
 	const [generating, setGenerating] = useState(false);
 	const [generatingSource, setGeneratingSource] = useState<
 		"note" | "highlights" | null
@@ -32,15 +68,16 @@ export function PanelEmptyState() {
 	const sparklesRef = useIcon("sparkles");
 	const highlighterRef = useIcon("highlighter");
 	const fileTextRef = useIcon("file-text");
+	const chevronRef = useIcon("chevron-down");
 
 	const runGenerate = async (
 		source: "note" | "highlights",
-		fn: () => Promise<void>,
+		fn: (presetId?: string) => Promise<void>,
 	) => {
 		setGenerating(true);
 		setGeneratingSource(source);
 		try {
-			await fn();
+			await fn(presetId || undefined);
 		} finally {
 			setGenerating(false);
 			setGeneratingSource(null);
@@ -146,6 +183,24 @@ export function PanelEmptyState() {
 					Select text for focused cards, or generate from the whole note below.
 				</div>
 			</div>
+
+			{presets.length > 1 && (
+				<Clickable
+					class={PRESET_ROW_CLS}
+					onClick={openPresetMenu}
+					aria-label="Generation preset"
+				>
+					<span class="ep:text-obs-faint ep:shrink-0">Preset</span>
+					<span class="ep:truncate ep:ml-auto">
+						{activePreset?.name ?? "Pick one"}
+					</span>
+					<span
+						ref={chevronRef}
+						class="ep:shrink-0 ep:text-obs-faint ep:inline-flex"
+						style={{ "--icon-size": "14px" }}
+					/>
+				</Clickable>
+			)}
 
 			<Clickable
 				class={generateBtnCls}

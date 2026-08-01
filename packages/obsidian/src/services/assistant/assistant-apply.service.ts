@@ -25,6 +25,12 @@ export interface ApplyResult {
 	/** Non-empty when the target changed since the snapshot; UI shows a warning. */
 	conflictFields?: string[];
 	error?: string;
+	/**
+	 * Cards actually written. Zero on a successful `create_card` means the
+	 * question already existed and was skipped as a duplicate — callers that
+	 * report counts must not treat `ok` alone as "a card was created".
+	 */
+	createdCount?: number;
 }
 
 const IMAGE_EXT = /^(png|jpe?g|gif|webp|svg)$/;
@@ -120,10 +126,11 @@ export class AssistantApplyService {
 			createdVia: "ai-assistant",
 			skipDuplicates: true,
 		});
+		if (result.cards.length === 0) return { ok: true, createdCount: 0 };
 		void this.plugin.commandService?.execute(
 			new BatchCreateCommand(result.cards.map((c) => c.id)),
 		);
-		return { ok: true };
+		return { ok: true, createdCount: result.cards.length };
 	}
 
 	private applyUpdateDraft(
