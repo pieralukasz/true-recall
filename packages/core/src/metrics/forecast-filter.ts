@@ -1,61 +1,23 @@
-import { State } from "ts-fsrs";
-
-import { isLearningState } from "@true-recall/core/helpers/card-state";
 import {
-	MATURE_INTERVAL_DAYS,
-	toEntries,
+	buildForecastEntries,
 	type WorkloadForecastEntry,
 	type WorkloadForecastSummary,
 } from "@true-recall/core/metrics/fsrs-tools/statistics/workload-forecast.calculator";
 import type { FSRSCardData } from "@true-recall/core/types";
-import { formatLocalDate } from "@true-recall/core/utils/date.utils";
 
 /**
- * Build forecast entries from a pre-filtered card list.
- * Mirrors WorkloadForecastCalculator.getForecast() logic
- * but works on any card subset (e.g. filtered by preset).
+ * Build forecast entries from a pre-filtered card list
+ * (e.g. filtered by preset).
+ *
+ * Delegates to the shared builder so bucketing rules stay identical to
+ * WorkloadForecastCalculator.getForecast().
  */
 export function buildFilteredForecast(
 	cards: FSRSCardData[],
 	days: number = 30,
+	requestRetention?: number,
 ): WorkloadForecastEntry[] {
-	const today = new Date();
-	const endDate = new Date(today);
-	endDate.setDate(endDate.getDate() + days);
-
-	const eligible = cards.filter(
-		(c) =>
-			!c.suspended &&
-			(!c.buriedUntil || new Date(c.buriedUntil) <= today) &&
-			new Date(c.due) >= today &&
-			new Date(c.due) <= endDate,
-	);
-
-	const forecast = new Map<
-		string,
-		{ young: number; mature: number; learning: number }
-	>();
-
-	const current = new Date(today);
-	while (current <= endDate) {
-		forecast.set(formatDate(current), { young: 0, mature: 0, learning: 0 });
-		current.setDate(current.getDate() + 1);
-	}
-
-	for (const card of eligible) {
-		const dateStr = formatDate(new Date(card.due));
-		const bucket = forecast.get(dateStr);
-		if (!bucket) continue;
-
-		if (card.state === State.Review) {
-			if (card.scheduledDays < MATURE_INTERVAL_DAYS) bucket.young++;
-			else bucket.mature++;
-		} else if (isLearningState(card.state)) {
-			bucket.learning++;
-		}
-	}
-
-	return toEntries(forecast);
+	return buildForecastEntries(cards, days, requestRetention);
 }
 
 export function buildForecastSummary(
@@ -140,13 +102,6 @@ export function buildDayOfWeekStats(
 					: 0,
 		}))
 		.sort((a, b) => a.day - b.day);
-}
-
-// Key days by the user's local calendar date, matching
-// WorkloadForecastCalculator.getForecast(); toISOString() would shift
-// evening/night due times into the neighboring UTC day.
-function formatDate(date: Date): string {
-	return formatLocalDate(date);
 }
 
 /** Selectable forecast horizon, mirroring Anki's Future Due ranges. */

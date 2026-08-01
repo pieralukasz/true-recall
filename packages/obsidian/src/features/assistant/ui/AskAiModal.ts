@@ -86,7 +86,7 @@ export function openAssistantThreadModal(
 	threadId: string,
 ): void {
 	const modal = new Modal(plugin.app);
-	modal.titleEl.setText("AI Draft Studio");
+	modal.titleEl.setText("AI draft studio");
 	modal.modalEl.addClass("tr-assistant-modal");
 	const host = modal.contentEl.createDiv();
 	const unmount = mountPreact(

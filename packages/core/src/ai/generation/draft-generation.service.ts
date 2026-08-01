@@ -6,15 +6,8 @@ import type { TrueRecallSettings } from "../../types/settings.types";
 import { getTextContent, OpenRouterClient } from "../clients/openrouter-client";
 import { resolveAIClientConfig } from "../config/ai-client-config";
 import { parseBlockResponse } from "../parsing/incremental-flashcard-parser";
-import {
-	buildPresetFormatSpec,
-	buildPresetPrompt,
-} from "../prompts/block-prompt-builder";
-import { buildLanguageSuffix } from "../prompts/default-prompts";
-import {
-	type ExistingCardContext,
-	renderExistingCardsBlock,
-} from "../prompts/existing-cards-block";
+import type { ExistingCardContext } from "../prompts/existing-cards-block";
+import { buildGenerationPrompt } from "../prompts/generation-request";
 import { fixBlockSourceTexts } from "../utils/source-text-fixer";
 
 export interface DraftGenerationOptions {
@@ -57,40 +50,21 @@ export class DraftGenerationService {
 			{ providerType: config.providerType },
 		);
 
-		const useRawPrompt = preset.prompt.includes("{{EXISTING_CARDS}}");
-		const basePrompt = useRawPrompt
-			? preset.prompt
-			: buildPresetPrompt(preset, noteType);
-		const existingCards = renderExistingCardsBlock(
-			options?.existingCards ?? [],
-		);
-		let systemPrompt = basePrompt.replace("{{EXISTING_CARDS}}", existingCards);
-		if (options?.contextText?.trim()) {
-			systemPrompt = `${options.contextText.trim()}\n\n${systemPrompt}`;
-		}
-		const languageSuffix = buildLanguageSuffix(
-			preset.languageOverride ?? "auto",
-		);
-		if (languageSuffix) systemPrompt += languageSuffix;
-
-		const userContent = useRawPrompt
-			? `${buildPresetFormatSpec(noteType)}\n\n${text}`
-			: text;
+		const { systemPrompt, userContent, metadata } = buildGenerationPrompt({
+			preset,
+			noteType,
+			text,
+			existingCards: options?.existingCards,
+			contextText: options?.contextText,
+			hasProTier: config.hasProTier,
+		});
 		const response = await client.chat({
 			messages: [
 				{ role: "system", content: systemPrompt },
 				{ role: "user", content: userContent },
 			],
 			...(config.hasProTier ? {} : { temperature: config.temperature }),
-			...(config.hasProTier
-				? {
-						metadata: {
-							call_context: "generation",
-							note_type: noteType.slug ?? "basic",
-							preset_id: preset.id,
-						},
-					}
-				: {}),
+			...(metadata ? { metadata } : {}),
 		});
 
 		const raw = getTextContent(response.choices[0]?.message);

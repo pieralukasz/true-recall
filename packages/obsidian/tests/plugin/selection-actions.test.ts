@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
 	createNoteFromSelection,
 	generateWithPreset,
+	generateWithPresetGlobal,
 } from "@true-recall/obsidian/plugin/SelectionActions";
 
 vi.mock(
@@ -29,11 +30,21 @@ function createPlugin() {
 	return {
 		plugin: {
 			settings: {
+				providerType: "openrouter",
+				openRouterApiKey: "test-key",
+				lmStudioModel: "",
+				lmStudioGenerationModel: "",
+				lmStudioCardPolishModel: "",
 				generationPresets: [
 					{
 						id: "basic",
 						name: "Basic",
 						prompt: "Generate cards",
+					},
+					{
+						id: "custom",
+						name: "My Flashcards",
+						prompt: "Custom instruction",
 					},
 				],
 			},
@@ -107,5 +118,45 @@ describe("generateWithPreset", () => {
 			state: "active",
 			displayMessage: "Generate with Basic",
 		});
+	});
+});
+
+describe("generateWithPresetGlobal", () => {
+	it("runs the caller's preset rather than the default — the panel's picker path", async () => {
+		const { plugin, startThread } = createPlugin();
+		const file = { path: "Notes/source.md", basename: "source" };
+
+		await generateWithPresetGlobal(
+			plugin as never,
+			"custom",
+			"Whole note body",
+			file as never,
+		);
+
+		expect(startThread).toHaveBeenCalledWith(
+			expect.objectContaining({
+				instruction: "Custom instruction",
+				presetId: "generation:custom",
+				displayMessage: "Generate with My Flashcards",
+				context: expect.objectContaining({
+					source: { path: "Notes/source.md", text: "Whole note body" },
+					applyGeneratedCardsImmediately: true,
+				}),
+			}),
+		);
+	});
+
+	it("refuses to enqueue when no AI provider is configured", async () => {
+		const { plugin, startThread } = createPlugin();
+		plugin.settings.openRouterApiKey = "";
+
+		await generateWithPresetGlobal(
+			plugin as never,
+			"custom",
+			"Whole note body",
+			{ path: "Notes/source.md", basename: "source" } as never,
+		);
+
+		expect(startThread).not.toHaveBeenCalled();
 	});
 });

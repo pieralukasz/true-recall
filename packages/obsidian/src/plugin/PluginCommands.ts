@@ -1,4 +1,7 @@
+import { notify } from "@true-recall/obsidian/services/notification.service";
 import { isDesktop } from "@true-recall/obsidian/utils/platform";
+
+import { formatLocalDate } from "@true-recall/core/utils/date.utils";
 
 import type TrueRecallPlugin from "../main";
 import { isPluginEnabled } from "./plugin-utils";
@@ -230,7 +233,7 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 
 	plugin.addCommand({
 		id: "open-assistant-workspace",
-		name: "Open Ask AI panel",
+		name: "Open ask AI panel",
 		checkCallback: (checking) => {
 			if (!isDesktop()) return false;
 			if (!isPluginEnabled(plugin.settings, "ai-assistant")) return false;
@@ -333,4 +336,43 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 			return true;
 		},
 	});
+
+	plugin.addCommand({
+		id: "easy-day-today",
+		name: "Easy day: today",
+		callback: () => {
+			void markTodayAsEasyDay(plugin);
+		},
+	});
+}
+
+/**
+ * Append today to the easy-days list and redistribute immediately, so an
+ * unexpectedly busy day can be cleared without opening settings.
+ */
+async function markTodayAsEasyDay(plugin: TrueRecallPlugin): Promise<void> {
+	const today = formatLocalDate(new Date());
+	const current = plugin.settings.easyDays ?? {
+		recurringDays: [],
+		specificDates: [],
+	};
+
+	if (current.specificDates.includes(today)) {
+		notify().info(`${today} is already an easy day`);
+		return;
+	}
+
+	plugin.settings.easyDays = {
+		recurringDays: current.recurringDays,
+		specificDates: [...current.specificDates, today].sort(),
+	};
+	await plugin.saveSettings();
+
+	const result = plugin.fsrsHelper?.applyEasyDays({ dryRun: false });
+	const moved = result?.affectedCount ?? 0;
+	if (moved > 0) {
+		notify().success(`Easy day set for ${today}: ${moved} cards moved`);
+	} else {
+		notify().info(`Easy day set for ${today}, no cards needed moving`);
+	}
 }

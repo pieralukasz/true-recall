@@ -392,6 +392,7 @@ export class FSRSHelperService {
 			days,
 			excludeSourceUids,
 			includeSourceUids,
+			this.extractFSRSSettings().requestRetention,
 		);
 	}
 
@@ -407,6 +408,7 @@ export class FSRSHelperService {
 			excludeSourceUids,
 			this.settings.loadBalanceMaxDeviation,
 			includeSourceUids,
+			this.extractFSRSSettings().requestRetention,
 		);
 
 		const isScoped =

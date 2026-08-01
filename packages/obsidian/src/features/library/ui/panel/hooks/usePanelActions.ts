@@ -1,6 +1,5 @@
 import { useCallback } from "preact/hooks";
 
-import type { StreamingFlashcardManager } from "@true-recall/core/ai/generation/streaming-generation.service";
 import type { FlashcardItem } from "@true-recall/core/types";
 import type { FSRSFlashcardItem } from "@true-recall/core/types/fsrs/card.types";
 
@@ -10,8 +9,7 @@ import { ForgetCommand } from "@true-recall/obsidian/commands/commands/card-forg
 import { getHighlightColor } from "@true-recall/obsidian/features/library/ui/panel/utils/card-status.utils";
 import { extractHighlights } from "@true-recall/obsidian/features/library/ui/panel/utils/highlight-extractor";
 import { cardsToBlockText } from "@true-recall/obsidian/features/library/ui/panel/utils/panel-helpers";
-import { collectGenerationContext } from "@true-recall/obsidian/plugin/collect-generation-context";
-import { fetchExistingCardsForFile } from "@true-recall/obsidian/plugin/existing-cards-fetcher";
+import { generateWithPresetGlobal } from "@true-recall/obsidian/plugin/SelectionActions";
 import { useApp, usePlugin } from "@true-recall/obsidian/preact";
 
 import { usePanelStore } from "./usePanelStore";
@@ -23,183 +21,80 @@ export function usePanelActions() {
 
 	// ── AI generation ──
 
-	const handleGenerateFromNote = useCallback(async () => {
-		if (!currentFile) return;
-		const { notify } = await import(
-			"@true-recall/obsidian/services/notification.service"
-		);
-
-		if (!plugin.settings.proKey && !plugin.settings.openRouterApiKey) {
-			notify().aiNotConfigured();
-			return;
-		}
-
-		const content = await app.vault.read(currentFile);
-		if (!content.trim()) {
-			notify().warning("Note is empty");
-			return;
-		}
-
-		const preset = plugin.settings.generationPresets.find(
-			(p) => p.id === plugin.settings.defaultGenerationPresetId,
-		);
-		const contextText = preset
-			? await collectGenerationContext(plugin, preset, currentFile)
-			: undefined;
-
-		const { ChunkedGenerationService } = await import(
-			"@true-recall/core/ai/generation/chunked-generation.service"
-		);
-
-		const { ObsidianHttpClient } = await import(
-			"@true-recall/obsidian/adapters/ObsidianHttpClient"
-		);
-		const chunkedService = new ChunkedGenerationService(
-			() => plugin.settings,
-			plugin.flashcardManager as unknown as StreamingFlashcardManager,
-			new ObsidianHttpClient(),
-		);
-
-		try {
-			const existingCards = await fetchExistingCardsForFile(
-				plugin,
-				currentFile,
+	const handleGenerateFromNote = useCallback(
+		async (presetId?: string) => {
+			if (!currentFile) return;
+			const { notify } = await import(
+				"@true-recall/obsidian/services/notification.service"
 			);
-			const result = await chunkedService.generateFromNote(
+
+			const content = await app.vault.read(currentFile);
+			if (!content.trim()) {
+				notify().warning("Note is empty");
+				return;
+			}
+
+			await generateWithPresetGlobal(
+				plugin,
+				presetId ?? plugin.settings.defaultGenerationPresetId,
 				content,
 				currentFile,
-				plugin.settings.defaultGenerationPresetId,
-				{ existingCards, contextText },
+			);
+		},
+		[currentFile, app, plugin],
+	);
+
+	const handleGenerateFromHighlights = useCallback(
+		async (presetId?: string) => {
+			if (!currentFile) return;
+			const { notify } = await import(
+				"@true-recall/obsidian/services/notification.service"
 			);
 
-			if (result.created === 0 && result.duplicates === 0) {
-				notify().warning("No flashcards generated from this note");
-			} else if (result.duplicates > 0) {
-				notify().cardsCreatedWithDuplicates(
-					result.created,
-					result.duplicates,
-					currentFile.basename,
-				);
-			} else {
-				notify().cardsCreated(result.created, currentFile.basename);
+			const content = await app.vault.read(currentFile);
+			const highlights = extractHighlights(content);
+
+			if (highlights.length === 0) {
+				notify().warning("No highlights found in note");
+				return;
 			}
 
-			if (result.failedChunks > 0) {
-				notify().warning(
-					`${result.failedChunks} of ${result.totalChunks} sections failed: ${result.errors.join("; ")}`,
-				);
+			const frontmatterService =
+				plugin.flashcardManager.getFrontmatterService();
+			const sourceUid = await frontmatterService.getSourceNoteUid(
+				currentFile.path,
+			);
+
+			const existingSourceTexts = sourceUid
+				? ((plugin.cardStore?.getCardsBySourceUid(sourceUid) ?? [])
+						.map((c) => c.sourceText?.trim().toLowerCase())
+						.filter(Boolean) as string[])
+				: [];
+
+			const newHighlights =
+				existingSourceTexts.length > 0
+					? highlights.filter((h) => {
+							const normalized = h.trim().toLowerCase();
+							return !existingSourceTexts.some(
+								(st) => st.includes(normalized) || normalized.includes(st),
+							);
+						})
+					: highlights;
+
+			if (newHighlights.length === 0) {
+				notify().warning("All highlights already have flashcards");
+				return;
 			}
 
-			// Register undo for created cards
-			if (result.createdCardIds && result.createdCardIds.length > 0) {
-				const cmd = new BatchCreateCommand(result.createdCardIds);
-				await plugin.commandService?.execute(cmd);
-			}
-		} catch (error) {
-			if (error instanceof DOMException && error.name === "AbortError") return;
-			const msg = error instanceof Error ? error.message : String(error);
-			notify().error(`Flashcard generation failed: ${msg}`);
-		}
-	}, [currentFile, app, plugin]);
-
-	const handleGenerateFromHighlights = useCallback(async () => {
-		if (!currentFile) return;
-		const { notify } = await import(
-			"@true-recall/obsidian/services/notification.service"
-		);
-
-		if (!plugin.settings.proKey && !plugin.settings.openRouterApiKey) {
-			notify().aiNotConfigured();
-			return;
-		}
-
-		const content = await app.vault.read(currentFile);
-		const highlights = extractHighlights(content);
-
-		if (highlights.length === 0) {
-			notify().warning("No highlights found in note");
-			return;
-		}
-
-		const frontmatterService = plugin.flashcardManager.getFrontmatterService();
-		const sourceUid = await frontmatterService.getSourceNoteUid(
-			currentFile.path,
-		);
-
-		const existingSourceTexts = sourceUid
-			? ((plugin.cardStore?.getCardsBySourceUid(sourceUid) ?? [])
-					.map((c) => c.sourceText?.trim().toLowerCase())
-					.filter(Boolean) as string[])
-			: [];
-
-		const newHighlights =
-			existingSourceTexts.length > 0
-				? highlights.filter((h) => {
-						const normalized = h.trim().toLowerCase();
-						return !existingSourceTexts.some(
-							(st) => st.includes(normalized) || normalized.includes(st),
-						);
-					})
-				: highlights;
-
-		if (newHighlights.length === 0) {
-			notify().warning("All highlights already have flashcards");
-			return;
-		}
-
-		const joinedHighlights = newHighlights.join("\n\n");
-
-		const preset = plugin.settings.generationPresets.find(
-			(p) => p.id === plugin.settings.defaultGenerationPresetId,
-		);
-		const contextText = preset
-			? await collectGenerationContext(plugin, preset, currentFile)
-			: undefined;
-
-		const { StreamingGenerationService } = await import(
-			"@true-recall/core/ai/generation/streaming-generation.service"
-		);
-
-		const { ObsidianHttpClient: HttpClient } = await import(
-			"@true-recall/obsidian/adapters/ObsidianHttpClient"
-		);
-		const streamingService = new StreamingGenerationService(
-			() => plugin.settings,
-			plugin.flashcardManager as unknown as StreamingFlashcardManager,
-			new HttpClient(),
-		);
-
-		try {
-			const result = await streamingService.generate(
-				joinedHighlights,
+			await generateWithPresetGlobal(
+				plugin,
+				presetId ?? plugin.settings.defaultGenerationPresetId,
+				newHighlights.join("\n\n"),
 				currentFile,
-				plugin.settings.defaultGenerationPresetId,
-				{ contextText },
 			);
-
-			if (result.created === 0 && result.duplicates === 0) {
-				notify().warning("No flashcards generated from highlights");
-			} else if (result.duplicates > 0) {
-				notify().cardsCreatedWithDuplicates(
-					result.created,
-					result.duplicates,
-					currentFile.basename,
-				);
-			} else {
-				notify().cardsCreated(result.created, currentFile.basename);
-			}
-
-			// Register undo for created cards
-			if (result.createdCardIds && result.createdCardIds.length > 0) {
-				const cmd = new BatchCreateCommand(result.createdCardIds);
-				await plugin.commandService?.execute(cmd);
-			}
-		} catch (error) {
-			if (error instanceof DOMException && error.name === "AbortError") return;
-			const msg = error instanceof Error ? error.message : String(error);
-			notify().error(`Flashcard generation failed: ${msg}`);
-		}
-	}, [currentFile, app, plugin]);
+		},
+		[currentFile, app, plugin],
+	);
 
 	// ── Collection ──
 

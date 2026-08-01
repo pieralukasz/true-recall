@@ -108,7 +108,7 @@ export const cardActionCommands: CommandDef[] = [
 
 	postParams(
 		"bury_cards",
-		"Temporarily hide cards until a specific date or for N days",
+		"Temporarily hide cards until a date or for N days, or lift the bury with --unbury",
 		C,
 		"/cards/bulk-bury",
 		{
@@ -124,6 +124,11 @@ export const cardActionCommands: CommandDef[] = [
 			until: {
 				type: "string",
 				description: "Bury until this ISO date (e.g. '2026-04-01')",
+			},
+			unbury: {
+				type: "boolean",
+				description:
+					"Lift the bury immediately, returning the cards to their normal schedule",
 			},
 		},
 	),
