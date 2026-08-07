@@ -25,7 +25,7 @@ interface NoteFieldProps {
 	autoFocus?: boolean;
 	onFieldChange: (fieldName: string, value: string) => void;
 	onFieldFocus?: (fieldName: string, editorView: EditorView) => void;
-	onModEnter?: () => void;
+	onModEnter?: (fieldName: string, value: string) => void;
 	onEscape?: () => void;
 	isPinned: boolean;
 	onTogglePin?: (fieldName: string) => void;
@@ -69,7 +69,10 @@ export function NoteField({
 		[fieldName, onFieldChange],
 	);
 
-	const handleModEnter = useCallback(() => onModEnter?.(), [onModEnter]);
+	const handleModEnter = useCallback(
+		(editor: EmbeddableEditorInstance) => onModEnter?.(fieldName, editor.value),
+		[fieldName, onModEnter],
+	);
 
 	const debounceRef = useRef<number>();
 	const onFieldChangeRef = useRef(onFieldChange);
@@ -211,6 +214,13 @@ export function NoteField({
 								(event.target as HTMLTextAreaElement).value,
 							)
 						}
+						onKeyDown={(event) => {
+							if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+								event.preventDefault();
+								event.stopPropagation();
+								onModEnter?.(fieldName, event.currentTarget.value);
+							}
+						}}
 					/>
 				)}
 			</div>

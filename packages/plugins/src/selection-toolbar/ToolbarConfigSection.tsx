@@ -2,6 +2,7 @@ import { useCallback, useRef, useState } from "preact/hooks";
 
 import { BUILTIN_BASIC_PRO_PRESET_ID } from "@true-recall/core/constants";
 import type { ToolbarButtonConfig } from "@true-recall/core/types";
+import { moveItem } from "@true-recall/core/utils";
 
 import { Clickable, FormCard } from "@true-recall/obsidian/components";
 import { useIcon, usePlugin } from "@true-recall/obsidian/preact";
@@ -77,11 +78,7 @@ export function ToolbarConfigSection({
 		(e: DragEvent, dropIndex: number) => {
 			e.preventDefault();
 			if (dragIndex === null || dragIndex === dropIndex) return;
-			const moved = buttons[dragIndex];
-			if (!moved) return;
-			const next = buttons.filter((_, i) => i !== dragIndex);
-			next.splice(dropIndex, 0, moved);
-			onChange(next);
+			onChange(moveItem(buttons, dragIndex, dropIndex));
 			setDragIndex(null);
 			setDragOverIndex(null);
 		},

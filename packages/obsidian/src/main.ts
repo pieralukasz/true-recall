@@ -541,6 +541,7 @@ export default class TrueRecallPlugin extends Plugin {
 
 	private getCustomStudySessionConfig(
 		result: SessionResult,
+		temporaryDeckId?: string,
 	): Extract<SessionConfig, { mode: "custom" }> {
 		return {
 			mode: "custom",
@@ -562,8 +563,34 @@ export default class TrueRecallPlugin extends Plugin {
 			reviewOrder: result.reviewOrder,
 			crammingMode: result.crammingMode,
 			customStudy: result.customStudy,
-			temporaryDeckId: "custom-study-session",
+			temporaryDeckId,
 		};
+	}
+
+	private getCustomStudyDeckName(
+		deck: Pick<TemporaryCustomStudyDeck, "customStudy">,
+		scopeLabel?: string,
+	): string {
+		const requestName = (() => {
+			switch (deck.customStudy.kind) {
+				case "increase-new":
+					return "Extra new cards";
+				case "increase-review":
+					return "Extra review cards";
+				case "forgotten":
+					return "Forgotten cards";
+				case "actual-learning":
+					return "Actual Learning";
+				case "review-ahead":
+					return "Review ahead";
+				case "preview-new":
+					return "Preview new cards";
+				case "state-or-tag":
+					return "Cards by state or tag";
+			}
+		})();
+
+		return scopeLabel ? `${requestName} — ${scopeLabel}` : requestName;
 	}
 
 	private resolveLegacyCustomStudyProjectPath(
@@ -600,7 +627,12 @@ export default class TrueRecallPlugin extends Plugin {
 
 	private async materializeTemporaryCustomStudyDeck(
 		result: SessionResult,
-		options: { scopeLabel?: string; preserveCreatedAt?: number } = {},
+		options: {
+			scopeLabel?: string;
+			deckId?: string;
+			deckName?: string;
+			preserveCreatedAt?: number;
+		} = {},
 	): Promise<void> {
 		if (!result.customStudy) return;
 		if (!this.isStoreReady()) {
@@ -611,7 +643,7 @@ export default class TrueRecallPlugin extends Plugin {
 		}
 
 		const validation = this.sessionService.validate(
-			this.getCustomStudySessionConfig(result),
+			this.getCustomStudySessionConfig(result, options.deckId),
 			this.getSessionValidationDeps(),
 			{
 				ignoreDailyLimitsForNoteStudy:
@@ -622,8 +654,13 @@ export default class TrueRecallPlugin extends Plugin {
 		const now = Date.now();
 		const { queue } = this.reviewController.buildSession(validation.filters);
 		const deck: TemporaryCustomStudyDeck = {
-			id: "custom-study-session",
-			name: "Custom Study Session",
+			id: options.deckId ?? crypto.randomUUID(),
+			name:
+				options.deckName ??
+				this.getCustomStudyDeckName(
+					{ customStudy: result.customStudy },
+					options.scopeLabel,
+				),
 			customStudy: result.customStudy,
 			cardIds: queue.map((card) => card.id),
 			sourceNoteFilters: result.sourceNoteFilters,
@@ -633,24 +670,33 @@ export default class TrueRecallPlugin extends Plugin {
 			rebuiltAt: now,
 		};
 
+		const existingDecks = this.settings.temporaryCustomStudyDecks;
+		const nextDecks = options.deckId
+			? existingDecks.map((existing) =>
+					existing.id === options.deckId ? deck : existing,
+				)
+			: [...existingDecks, deck];
 		this.settings = {
 			...this.settings,
-			temporaryCustomStudyDeck: deck,
+			temporaryCustomStudyDecks: nextDecks,
 		};
 		await this.saveSettings();
 		await this.openDashboard();
 
+		const action = options.deckId ? "rebuilt" : "created";
 		if (deck.cardIds.length === 0) {
-			notify().info("Custom Study Session created, but no cards matched.");
+			notify().info(`Custom Study Session ${action}, but no cards matched.`);
 		} else {
 			notify().success(
-				`Custom Study Session created with ${deck.cardIds.length} card${deck.cardIds.length === 1 ? "" : "s"}.`,
+				`Custom Study Session ${action} with ${deck.cardIds.length} card${deck.cardIds.length === 1 ? "" : "s"}.`,
 			);
 		}
 	}
 
-	async startTemporaryCustomStudyDeck(): Promise<void> {
-		const deck = this.settings.temporaryCustomStudyDeck;
+	async startTemporaryCustomStudyDeck(deckId: string): Promise<void> {
+		const deck = this.settings.temporaryCustomStudyDecks.find(
+			(candidate) => candidate.id === deckId,
+		);
 		if (!deck) return;
 		if (deck.cardIds.length === 0) {
 			notify().info("This Custom Study Session is empty. Rebuild it first.");
@@ -667,8 +713,10 @@ export default class TrueRecallPlugin extends Plugin {
 		});
 	}
 
-	async rebuildTemporaryCustomStudyDeck(): Promise<void> {
-		const deck = this.settings.temporaryCustomStudyDeck;
+	async rebuildTemporaryCustomStudyDeck(deckId: string): Promise<void> {
+		const deck = this.settings.temporaryCustomStudyDecks.find(
+			(candidate) => candidate.id === deckId,
+		);
 		if (!deck) return;
 		const projectPath = this.resolveLegacyCustomStudyProjectPath(deck);
 
@@ -683,30 +731,44 @@ export default class TrueRecallPlugin extends Plugin {
 			},
 			{
 				scopeLabel: deck.scopeLabel,
+				deckId: deck.id,
+				deckName: deck.name,
 				preserveCreatedAt: deck.createdAt,
 			},
 		);
 	}
 
-	async emptyTemporaryCustomStudyDeck(): Promise<void> {
-		const deck = this.settings.temporaryCustomStudyDeck;
+	async emptyTemporaryCustomStudyDeck(deckId: string): Promise<void> {
+		const deck = this.settings.temporaryCustomStudyDecks.find(
+			(candidate) => candidate.id === deckId,
+		);
 		if (!deck || deck.cardIds.length === 0) return;
 
 		this.settings = {
 			...this.settings,
-			temporaryCustomStudyDeck: {
-				...deck,
-				cardIds: [],
-			},
+			temporaryCustomStudyDecks: this.settings.temporaryCustomStudyDecks.map(
+				(candidate) =>
+					candidate.id === deckId ? { ...candidate, cardIds: [] } : candidate,
+			),
 		};
 		await this.saveSettings();
 		notify().success("Custom Study Session emptied.");
 	}
 
-	async deleteTemporaryCustomStudyDeck(): Promise<void> {
-		if (!this.settings.temporaryCustomStudyDeck) return;
-		const { temporaryCustomStudyDeck: _, ...settings } = this.settings;
-		this.settings = settings;
+	async deleteTemporaryCustomStudyDeck(deckId: string): Promise<void> {
+		if (
+			!this.settings.temporaryCustomStudyDecks.some(
+				(candidate) => candidate.id === deckId,
+			)
+		) {
+			return;
+		}
+		this.settings = {
+			...this.settings,
+			temporaryCustomStudyDecks: this.settings.temporaryCustomStudyDecks.filter(
+				(candidate) => candidate.id !== deckId,
+			),
+		};
 		await this.saveSettings();
 		notify().success("Custom Study Session deleted.");
 	}
@@ -715,17 +777,25 @@ export default class TrueRecallPlugin extends Plugin {
 		deckId: string | undefined,
 		cardIds: readonly string[],
 	): void {
-		const deck = this.settings.temporaryCustomStudyDeck;
-		if (!deckId || !deck || deck.id !== deckId) return;
+		if (!deckId) return;
+		const deck = this.settings.temporaryCustomStudyDecks.find(
+			(candidate) => candidate.id === deckId,
+		);
+		if (!deck) return;
 		const removedIds = new Set(cardIds);
 		if (!deck.cardIds.some((id) => removedIds.has(id))) return;
 
 		this.settings = {
 			...this.settings,
-			temporaryCustomStudyDeck: {
-				...deck,
-				cardIds: deck.cardIds.filter((id) => !removedIds.has(id)),
-			},
+			temporaryCustomStudyDecks: this.settings.temporaryCustomStudyDecks.map(
+				(candidate) =>
+					candidate.id === deckId
+						? {
+								...candidate,
+								cardIds: candidate.cardIds.filter((id) => !removedIds.has(id)),
+							}
+						: candidate,
+			),
 		};
 		void this.saveSettings();
 	}

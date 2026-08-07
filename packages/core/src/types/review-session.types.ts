@@ -7,6 +7,7 @@ export type CustomStudyRequest =
 	| { kind: "increase-new"; amount: number }
 	| { kind: "increase-review"; amount: number }
 	| { kind: "forgotten"; days: number }
+	| { kind: "actual-learning" }
 	| { kind: "review-ahead"; days: number }
 	| { kind: "preview-new"; days: number }
 	| {

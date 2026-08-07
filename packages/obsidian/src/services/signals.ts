@@ -105,6 +105,22 @@ export function setLastMutation(mutation: CardMutation): void {
 	_lastMutation.value = mutation;
 }
 
+export interface ReviewSessionCardGraded {
+	cardId: string;
+	sourceSessionId: string;
+}
+
+const _reviewSessionCardGraded = signal<ReviewSessionCardGraded | null>(null);
+export const reviewSessionCardGraded: ReadonlySignal<ReviewSessionCardGraded | null> =
+	_reviewSessionCardGraded;
+
+export function notifyReviewSessionCardGraded(
+	cardId: string,
+	sourceSessionId: string,
+): void {
+	_reviewSessionCardGraded.value = { cardId, sourceSessionId };
+}
+
 // ── Source text highlight (Card → Text jump) ────────────────
 
 export type { HighlightColor } from "@true-recall/obsidian/helpers/fsrs-colors";

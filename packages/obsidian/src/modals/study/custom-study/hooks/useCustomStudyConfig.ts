@@ -49,6 +49,8 @@ function buildRequest(config: CustomStudyConfig): CustomStudyRequest {
 		case "review-ahead":
 		case "preview-new":
 			return { kind: config.mode, days: config.days };
+		case "actual-learning":
+			return { kind: "actual-learning" };
 		case "state-or-tag":
 			return {
 				kind: "state-or-tag",

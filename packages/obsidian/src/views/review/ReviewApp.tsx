@@ -16,8 +16,7 @@ import {
 	WaitingScreen,
 } from "@true-recall/obsidian/features/study/ui/review/components";
 import type { TypeInMode } from "@true-recall/obsidian/features/study/ui/review/helpers/type-in-flow";
-import { usePlugin } from "@true-recall/obsidian/preact/ObsidianContext";
-import type { ReviewApi } from "@true-recall/obsidian/store";
+import type { AppStore, ReviewApi } from "@true-recall/obsidian/store";
 
 // Re-export for consumers that import from this file
 export { ReviewEmptyState } from "@true-recall/obsidian/features/study/ui/review/components";
@@ -25,6 +24,7 @@ export { ReviewEmptyState } from "@true-recall/obsidian/features/study/ui/review
 // ─── Props ───────────────────────────────────────────────────────────────────
 
 interface ReviewAppProps {
+	store: AppStore;
 	onShowAnswer: () => void;
 	onAnswer: (rating: Grade) => void;
 	onTypedAnswerChange: (value: string) => void;
@@ -66,19 +66,15 @@ interface ReviewAppProps {
 // ─── Main App ────────────────────────────────────────────────────────────────
 
 export function ReviewApp(props: ReviewAppProps) {
-	const plugin = usePlugin();
-	const review = plugin.store?.getState().review;
+	const review = props.store.getState().review;
 
 	const [, setTick] = useState(0);
 	useEffect(() => {
-		if (!plugin.store) return;
-		return plugin.store.subscribe(
+		return props.store.subscribe(
 			(state) => state.review,
 			() => setTick((t) => t + 1),
 		);
-	}, [plugin]);
-
-	if (!review) return null;
+	}, [props.store]);
 
 	const phase = review.getPhase();
 

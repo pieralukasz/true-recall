@@ -103,9 +103,11 @@ export function buildQueueOptions(
 		customStudy?.kind === "forgotten"
 			? sessionPersistence.getCardsRatedAgainWithinDays(customStudy.days)
 			: undefined;
-	const temporaryDeckCardIds = filters.temporaryDeckId
-		? undefined
-		: new Set(settings.temporaryCustomStudyDeck?.cardIds ?? []);
+	const temporaryDeckCardIds = new Set(
+		(settings.temporaryCustomStudyDecks ?? [])
+			.filter((deck) => deck.id !== filters.temporaryDeckId)
+			.flatMap((deck) => deck.cardIds),
+	);
 
 	return {
 		newCardsLimit: preset?.newCardsPerDay ?? settings.newCardsPerDay,

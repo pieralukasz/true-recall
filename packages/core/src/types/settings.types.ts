@@ -324,7 +324,9 @@ export interface TrueRecallSettings {
 
 	/** Saved custom study session presets */
 	sessionPresets: SessionPreset[];
-	/** Anki-style filtered deck created by Custom Study. */
+	/** Anki-style filtered decks created by Custom Study. */
+	temporaryCustomStudyDecks: TemporaryCustomStudyDeck[];
+	/** @deprecated Migrated to temporaryCustomStudyDecks on load. */
 	temporaryCustomStudyDeck?: TemporaryCustomStudyDeck;
 
 	/** FSRS scheduling presets (always contains at least one "Default") */

@@ -19,12 +19,12 @@ import {
 	ChangeNoteTypeCommand,
 	ToggleReversedCommand,
 } from "@true-recall/obsidian/commands/commands/note-type.cmd";
-import { openPanelCardEditor } from "@true-recall/obsidian/features/library/ui/panel/helpers/panel-edit-routing";
 import { openCardPreviewModal } from "@true-recall/obsidian/features/library/ui/panel/preview/CardPreviewModal";
 import {
 	cardToBlockText,
 	getSourceNoteNameFromFile,
 } from "@true-recall/obsidian/features/library/ui/panel/utils/panel-helpers";
+import { openCardEditor } from "@true-recall/obsidian/features/library/ui/shared/card-edit-routing";
 import { useApp, usePlugin } from "@true-recall/obsidian/preact";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 import { openQuickNoteEditor } from "@true-recall/obsidian/views/modal-window/open-quick-note-editor";
@@ -66,7 +66,7 @@ export function useCardActions() {
 				return;
 			}
 
-			await openPanelCardEditor({
+			await openCardEditor({
 				note,
 				noteType,
 				openImageOcclusionEditor: (mode) =>

@@ -10,6 +10,7 @@ import {
 	countCardsByState,
 	countCardsByStateWithDue,
 	filterActiveCardsOnly,
+	isCardBuried,
 } from "../../src/helpers/card-state";
 import type { FSRSFlashcardItem } from "../../src/types";
 
@@ -102,6 +103,19 @@ describe("filterActiveCardsOnly", () => {
 		const result = filterActiveCardsOnly(cards, { now });
 
 		expect(result).toHaveLength(1);
+	});
+});
+
+describe("isCardBuried", () => {
+	const now = new Date("2026-01-15T10:00:00Z");
+
+	it.each([
+		["no bury boundary", undefined, false],
+		["null bury boundary", null, false],
+		["elapsed bury boundary", "2026-01-14T10:00:00Z", false],
+		["future bury boundary", "2026-01-16T10:00:00Z", true],
+	])("returns %s => %s", (_label, buriedUntil, expected) => {
+		expect(isCardBuried(buriedUntil, now)).toBe(expected);
 	});
 });
 

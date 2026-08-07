@@ -9,15 +9,18 @@ interface DashboardTabsProps {
 	onTabChange: (tab: DashboardTab) => void;
 	projectCount: number;
 	notesCount: number;
+	customCount: number;
 	orphanedCount: number;
 	showArchived: boolean;
 	onToggleArchived: () => void;
 	onCreateProject?: () => void;
+	onCreateCustomSession?: () => void;
 }
 
 const BASE_TABS: { id: DashboardTab; label: string }[] = [
 	{ id: "projects", label: "Projects" },
 	{ id: "notes", label: "Notes" },
+	{ id: "custom", label: "Custom" },
 ];
 
 const CHIP_ACTIVE = "ep:bg-obs-interactive/15 ep:text-obs-interactive";
@@ -29,10 +32,12 @@ export function DashboardTabs({
 	onTabChange,
 	projectCount,
 	notesCount,
+	customCount,
 	orphanedCount,
 	showArchived,
 	onToggleArchived,
 	onCreateProject,
+	onCreateCustomSession,
 }: DashboardTabsProps) {
 	const tabs =
 		orphanedCount > 0
@@ -42,8 +47,10 @@ export function DashboardTabs({
 	const counts: Record<DashboardTab, number> = {
 		projects: projectCount,
 		notes: notesCount,
+		custom: customCount,
 		orphaned: orphanedCount,
 	};
+	const showArchivedControl = activeTab === "projects" || activeTab === "notes";
 
 	return (
 		<div class="ep:border-b ep:border-obs-border">
@@ -73,7 +80,7 @@ export function DashboardTabs({
 							{label}
 							{count > 0 && (
 								<span class="ep:ml-1.5 ep:text-obs-faint ep:tabular-nums ep:font-normal">
-									{count}
+									{id === "custom" ? `(${count})` : count}
 								</span>
 							)}
 							{isActive && (
@@ -96,16 +103,30 @@ export function DashboardTabs({
 							+ Project
 						</Clickable>
 					)}
-					<Clickable
-						class={cn(
-							"ep:mb-1 ep:px-2 ep:py-0.5 ep:rounded-full ep:text-[10px] ep:font-medium ep:transition-colors ep:duration-150",
-							showArchived ? CHIP_ACTIVE : CHIP_INACTIVE,
-						)}
-						onClick={onToggleArchived}
-						aria-label="Toggle archived items"
-					>
-						Archived
-					</Clickable>
+					{activeTab === "custom" && onCreateCustomSession ? (
+						<Clickable
+							class={cn(
+								"ep:mb-1 ep:px-2 ep:py-0.5 ep:rounded-full ep:text-[10px] ep:font-medium ep:transition-colors ep:duration-150",
+								CHIP_INACTIVE,
+							)}
+							onClick={onCreateCustomSession}
+							aria-label="Create custom study session"
+						>
+							+ Session
+						</Clickable>
+					) : null}
+					{showArchivedControl && (
+						<Clickable
+							class={cn(
+								"ep:mb-1 ep:px-2 ep:py-0.5 ep:rounded-full ep:text-[10px] ep:font-medium ep:transition-colors ep:duration-150",
+								showArchived ? CHIP_ACTIVE : CHIP_INACTIVE,
+							)}
+							onClick={onToggleArchived}
+							aria-label="Toggle archived items"
+						>
+							Archived
+						</Clickable>
+					)}
 				</div>
 			</div>
 		</div>

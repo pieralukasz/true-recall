@@ -25,13 +25,14 @@ import {
 	type LocalAnswerAssessment,
 	type SemanticGradingResult,
 } from "@true-recall/core/types";
+import { isPreviewCustomStudy } from "@true-recall/core/types/review-session.types";
 
 import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpClient";
-import { ReviewUndoHook } from "@true-recall/obsidian/commands";
+import { CommandService, ReviewUndoHook } from "@true-recall/obsidian/commands";
 import { G, getDataLayer, Q } from "@true-recall/obsidian/data";
 import { assistantContextFromCard } from "@true-recall/obsidian/features/assistant/ui/ai-context-source";
 import { openAiWorkspace } from "@true-recall/obsidian/features/assistant/ui/open-ai-workspace";
-import type { ReviewSessionController } from "@true-recall/obsidian/features/study/services/ReviewSessionController";
+import { ReviewSessionController } from "@true-recall/obsidian/features/study/services/ReviewSessionController";
 import type { PresetPickerOption } from "@true-recall/obsidian/features/study/ui/review/components";
 import {
 	AnswerHandler,
@@ -62,8 +63,16 @@ import {
 } from "@true-recall/obsidian/features/study/ui/review/review.types";
 import { mountPreact } from "@true-recall/obsidian/preact";
 import { notify } from "@true-recall/obsidian/services/notification.service";
-import { lastMutation } from "@true-recall/obsidian/services/signals";
-import type { ReviewApi } from "@true-recall/obsidian/store";
+import {
+	lastMutation,
+	notifyReviewSessionCardGraded,
+	reviewSessionCardGraded,
+} from "@true-recall/obsidian/services/signals";
+import {
+	type AppStore,
+	createAppStore,
+	type ReviewApi,
+} from "@true-recall/obsidian/store";
 import { runWhenLayoutReady } from "@true-recall/obsidian/views/layout-ready";
 import {
 	ReviewApp,
@@ -102,11 +111,14 @@ export class ReviewView extends ItemView {
 	private fsrsService: FSRSService;
 	private reviewService: ReviewService;
 	private reviewController: ReviewSessionController;
+	private sessionStore: AppStore;
+	private sessionCommandService: CommandService;
 	private flashcardManager: FlashcardManager;
 	private sessionPersistence: SessionPersistenceService;
 	private semanticGradingService: SemanticAnswerGradingService;
 
 	private filters: SessionFilters = {};
+	private readonly sessionId = crypto.randomUUID();
 	private crammedCardIds = new Set<string>();
 	private isProcessingAnswer = false;
 	private presetCache = new Map<string, FSRSPreset>();
@@ -119,6 +131,7 @@ export class ReviewView extends ItemView {
 	private openNoteAction: HTMLElement | null = null;
 	private unsubscribe: (() => void) | null = null;
 	private sessionSignalDisposer: (() => void) | null = null;
+	private reviewSyncDisposer: (() => void) | null = null;
 	private disposeReviewHook: (() => void) | null = null;
 	private askBubble: ReviewSelectionBubble | null = null;
 	private typeInState: TypeInAssessmentState = createEmptyTypeInState();
@@ -126,14 +139,20 @@ export class ReviewView extends ItemView {
 	private aiEnabledForTypeIn = false;
 
 	private get review(): ReviewApi {
-		const store = this.plugin.store;
-		if (!store) throw new Error("Store not initialized");
-		return store.getState().review;
+		return this.sessionStore.getState().review;
 	}
 
 	constructor(leaf: WorkspaceLeaf, plugin: TrueRecallPlugin) {
 		super(leaf);
 		this.plugin = plugin;
+		this.sessionStore = createAppStore({
+			getSettings: () => this.plugin.settings,
+		});
+		this.sessionCommandService = new CommandService({
+			flashcardManager: plugin.flashcardManager,
+			cardStore: plugin.cardStore,
+			sessionPersistence: plugin.sessionPersistence,
+		});
 
 		// Consume Escape while this view is active. Without this, Obsidian's
 		// app-scope Escape handler re-activates the last `navigation` leaf
@@ -143,7 +162,11 @@ export class ReviewView extends ItemView {
 		this.scope.register([], "Escape", () => false);
 		this.flashcardManager = plugin.flashcardManager;
 		this.reviewService = new ReviewService();
-		this.reviewController = plugin.reviewController;
+		this.reviewController = new ReviewSessionController(
+			plugin,
+			() => this.review,
+			this.sessionCommandService,
+		);
 		this.sessionPersistence = plugin.sessionPersistence;
 		this.semanticGradingService = new SemanticAnswerGradingService(
 			() => this.plugin.settings,
@@ -158,7 +181,7 @@ export class ReviewView extends ItemView {
 			app: this.app,
 			getReview: () => this.review,
 			flashcardManager: this.flashcardManager,
-			commandService: plugin.commandService ?? undefined,
+			commandService: this.sessionCommandService,
 		});
 
 		this.answerHandler = new AnswerHandler({
@@ -185,6 +208,7 @@ export class ReviewView extends ItemView {
 				cardStore: this.plugin.cardStore,
 				settings: this.plugin.settings,
 				plugin: this.plugin,
+				commandService: this.sessionCommandService,
 			},
 			{
 				onUpdateSchedulingPreview: () =>
@@ -447,7 +471,14 @@ export class ReviewView extends ItemView {
 		if (!this.review.isAnswerRevealed) return;
 		this.isProcessingAnswer = true;
 		try {
-			this.answerHandler.handleAnswer(rating);
+			const outcome = this.answerHandler.handleAnswer(rating);
+			if (
+				outcome &&
+				!this.filters.crammingMode &&
+				!isPreviewCustomStudy(this.filters)
+			) {
+				this.notifyOtherSessionsCardReviewed(outcome.card.id);
+			}
 			const nextCardId = this.review.getCurrentCard()?.id ?? null;
 			this.resetTypeInState(nextCardId);
 		} finally {
@@ -499,27 +530,52 @@ export class ReviewView extends ItemView {
 		return this.review.getCurrentCard();
 	}
 
+	canUndoSessionAction(): boolean {
+		return this.sessionCommandService.canUndo();
+	}
+
+	undoSessionAction(): Promise<boolean> {
+		return this.sessionCommandService.undo();
+	}
+
+	canRedoSessionAction(): boolean {
+		return this.sessionCommandService.canRedo();
+	}
+
+	redoSessionAction(): Promise<boolean> {
+		return this.sessionCommandService.redo();
+	}
+
+	notifyOtherSessionsCardReviewed(cardId: string): void {
+		notifyReviewSessionCardGraded(cardId, this.sessionId);
+	}
+
 	onOpen(): Promise<void> {
 		const container = this.containerEl.children[1];
 		if (!(container instanceof HTMLElement)) return Promise.resolve();
 		container.empty();
 		this.applyDefaultTypeInMode();
 
-		if (!this.plugin.store) return Promise.resolve();
-		this.unsubscribe = this.plugin.store.subscribe(
+		this.unsubscribe = this.sessionStore.subscribe(
 			(state) => state.review,
 			() => {
 				this.updateHeaderActions();
+				this.syncSharedReviewState();
 			},
 		);
+		this.registerEvent(
+			this.app.workspace.on("active-leaf-change", () => {
+				this.syncSharedReviewState();
+			}),
+		);
+		this.syncSharedReviewState();
 
-		this.disposeReviewHook =
-			this.plugin.commandService?.registerHook(
-				new ReviewUndoHook(() => this.review, {
-					onUpdateSchedulingPreview: () =>
-						this.answerHandler.updateSchedulingPreview(),
-				}),
-			) ?? null;
+		this.disposeReviewHook = this.sessionCommandService.registerHook(
+			new ReviewUndoHook(() => this.review, {
+				onUpdateSchedulingPreview: () =>
+					this.answerHandler.updateSchedulingPreview(),
+			}),
+		);
 
 		this.registerDomEvent(activeDocument, "keydown", (e: KeyboardEvent) => {
 			const activeView = this.app.workspace.getActiveViewOfType(ReviewView);
@@ -573,6 +629,7 @@ export class ReviewView extends ItemView {
 			container,
 			this.plugin,
 			h(ReviewApp, {
+				store: this.sessionStore,
 				onShowAnswer: () => void this.handleReveal(),
 				onTypedAnswerChange: (value: string) =>
 					this.handleTypedAnswerChange(value),
@@ -653,9 +710,10 @@ export class ReviewView extends ItemView {
 	}
 
 	async onClose(): Promise<void> {
+		const sharedReviewAtClose = this.review;
 		this.disposeReviewHook?.();
 		this.disposeReviewHook = null;
-		this.plugin.commandService?.clearByType(
+		this.sessionCommandService.clearByType(
 			"review:answer",
 			"review:bury",
 			"review:suspend",
@@ -681,9 +739,20 @@ export class ReviewView extends ItemView {
 			this.openNoteAction = null;
 		}
 
+		const sharedStoreStillOwnsSession =
+			this.plugin.store?.getState().review === sharedReviewAtClose;
 		this.review.reset();
+		if (sharedStoreStillOwnsSession) {
+			this.plugin.store?.setState({ review: this.review });
+		}
 		this.aiEnabledForTypeIn = false;
 		this.resetTypeInState();
+	}
+
+	private syncSharedReviewState(): void {
+		const activeView = this.app.workspace.getActiveViewOfType(ReviewView);
+		if (activeView !== this) return;
+		this.plugin.store?.setState({ review: this.review });
 	}
 
 	// ─── Header actions (Obsidian native) ────────────────────────────────
@@ -857,9 +926,6 @@ export class ReviewView extends ItemView {
 				return;
 			}
 			if (!m) return;
-			// Skip "reviewed" — the queue is already updated synchronously
-			// by recordAnswerAndNext() before persistence runs.
-			if (m.type === "reviewed") return;
 			// Targeted mutation handling instead of full session rebuild.
 			// rebuildActiveSession() recomputes cachedBadgeCounts from scratch,
 			// which can drift from the incremental counts maintained by
@@ -879,11 +945,24 @@ export class ReviewView extends ItemView {
 				resolvedProjectUids,
 			);
 		});
+
+		let isReviewSyncSubscribing = true;
+		this.reviewSyncDisposer = effect(() => {
+			const event = reviewSessionCardGraded.value;
+			if (isReviewSyncSubscribing) {
+				isReviewSyncSubscribing = false;
+				return;
+			}
+			if (!event || event.sourceSessionId === this.sessionId) return;
+			this.review.removeCardsByIds([event.cardId]);
+		});
 	}
 
 	private unsubscribeFromSessionEvents(): void {
 		this.sessionSignalDisposer?.();
 		this.sessionSignalDisposer = null;
+		this.reviewSyncDisposer?.();
+		this.reviewSyncDisposer = null;
 	}
 
 	// ─── Actions menu ────────────────────────────────────────────────────

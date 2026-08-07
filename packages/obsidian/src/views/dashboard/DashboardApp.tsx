@@ -15,12 +15,12 @@ import { SearchCombobox } from "@true-recall/obsidian/components/SearchCombobox"
 import { Q, useQuery } from "@true-recall/obsidian/data";
 import { computeActionableSessionSnapshot } from "@true-recall/obsidian/features/study/services/actionable-session-snapshot.service";
 import { BottomActionBar } from "@true-recall/obsidian/features/study/ui/dashboard/components/BottomActionBar";
+import { CustomStudyTab } from "@true-recall/obsidian/features/study/ui/dashboard/components/CustomStudyTab";
 import { DashboardTabs } from "@true-recall/obsidian/features/study/ui/dashboard/components/DashboardTabs";
 import { NoteList } from "@true-recall/obsidian/features/study/ui/dashboard/components/NoteList";
 import { OrphanedTab } from "@true-recall/obsidian/features/study/ui/dashboard/components/OrphanedTab";
 import { ProjectsTab } from "@true-recall/obsidian/features/study/ui/dashboard/components/ProjectsTab";
 import { RecentlyStudiedBar } from "@true-recall/obsidian/features/study/ui/dashboard/components/RecentlyStudiedBar";
-import { TemporaryCustomStudyDeckCard } from "@true-recall/obsidian/features/study/ui/dashboard/components/TemporaryCustomStudyDeckCard";
 import { TodayActionBar } from "@true-recall/obsidian/features/study/ui/dashboard/components/TodayActionBar";
 import { aggregateProjectData } from "@true-recall/obsidian/features/study/ui/dashboard/helpers/project-aggregation";
 import { projectMatchesSearch } from "@true-recall/obsidian/features/study/ui/dashboard/helpers/project-tree-flatten";
@@ -355,32 +355,30 @@ export function DashboardApp({ isViewVisible }: DashboardAppProps) {
 						</>
 					)}
 
-					{_settings.temporaryCustomStudyDeck && (
-						<TemporaryCustomStudyDeckCard
-							deck={_settings.temporaryCustomStudyDeck}
+					{(activeTab.value === "projects" || activeTab.value === "notes") && (
+						<SearchCombobox
+							value={searchQuery.value}
+							placeholder="Search notes or projects..."
+							ariaLabel="Search notes or projects"
+							onChange={(q) => {
+								searchQuery.value = q;
+							}}
 						/>
 					)}
-
-					<SearchCombobox
-						value={searchQuery.value}
-						placeholder="Search notes or projects..."
-						ariaLabel="Search notes or projects"
-						onChange={(q) => {
-							searchQuery.value = q;
-						}}
-					/>
 
 					<DashboardTabs
 						activeTab={activeTab.value}
 						onTabChange={handleTabChange}
 						projectCount={filteredCounts.projects}
 						notesCount={filteredCounts.notes}
+						customCount={_settings.temporaryCustomStudyDecks.length}
 						orphanedCount={filteredCounts.orphaned}
 						showArchived={showArchived.value}
 						onToggleArchived={() => {
 							showArchived.value = !showArchived.value;
 						}}
 						onCreateProject={() => void handleCreateProject()}
+						onCreateCustomSession={() => void plugin.openCustomStudyModal()}
 					/>
 
 					<div class="ep:flex ep:flex-col ep:flex-1">
@@ -404,6 +402,10 @@ export function DashboardApp({ isViewVisible }: DashboardAppProps) {
 									scrollTop={scrollTop}
 									onPresetClick={handlePresetClick}
 								/>
+							)}
+
+							{activeTab.value === "custom" && (
+								<CustomStudyTab decks={_settings.temporaryCustomStudyDecks} />
 							)}
 
 							{activeTab.value === "orphaned" && (

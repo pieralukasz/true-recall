@@ -175,6 +175,9 @@ function buildAnkiCustomStudyQueue(
 		case "forgotten":
 			queue = sortReviewCards(availableCards, "random", fsrsService);
 			break;
+		case "actual-learning":
+			queue = fsrsService.sortByDue(availableCards);
+			break;
 		case "preview-new":
 			queue = sortNewCards(availableCards, "oldest-first");
 			break;

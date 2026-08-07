@@ -2,6 +2,8 @@ import { type Grade, Rating, State } from "ts-fsrs";
 
 import { shouldTriggerLeech } from "@true-recall/core/helpers/leech-helpers";
 
+import { ReviewView } from "@true-recall/obsidian/views/review/ReviewView";
+
 import type { ApiContext, ApiRequest, ApiResponseWriter } from "../api.types";
 import { parseJsonBody, readBody, sendError, sendOk } from "../api.types";
 
@@ -101,6 +103,9 @@ export async function handleGradeSessionCard(
 		sendError(res, 404, "No active review card");
 		return;
 	}
+	ctx.plugin.app.workspace
+		.getActiveViewOfType(ReviewView)
+		?.notifyOtherSessionsCardReviewed(outcome.card.id);
 
 	const nextCard = outcome.nextCard;
 	const leechThreshold = outcome.preset.leechThreshold ?? 8;

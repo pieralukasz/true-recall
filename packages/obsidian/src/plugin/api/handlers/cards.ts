@@ -1,7 +1,9 @@
 import { State } from "ts-fsrs";
 
-import { SuspendCommand } from "@true-recall/obsidian/commands/commands/card-suspend.cmd";
-
+import {
+	isCardActive,
+	isLearningState,
+} from "@true-recall/core/helpers/card-state";
 import {
 	BUILTIN_BASIC_ID,
 	BUILTIN_CLOZE_ID,
@@ -46,15 +48,19 @@ export function handleListCards(
 	}
 
 	if (stateParam !== null) {
-		const stateMap: Record<string, State> = {
-			new: State.New,
-			learning: State.Learning,
-			review: State.Review,
-			relearning: State.Relearning,
-		};
-		const stateValue = stateMap[stateParam];
-		if (stateValue !== undefined) {
-			allCards = allCards.filter((c) => c.state === stateValue);
+		if (stateParam === "actual-learning") {
+			allCards = allCards.filter((card) => isLearningState(card.state));
+		} else {
+			const stateMap: Record<string, State> = {
+				new: State.New,
+				learning: State.Learning,
+				review: State.Review,
+				relearning: State.Relearning,
+			};
+			const stateValue = stateMap[stateParam];
+			if (stateValue !== undefined) {
+				allCards = allCards.filter((card) => card.state === stateValue);
+			}
 		}
 	}
 
@@ -81,11 +87,59 @@ export function handleListCards(
 		sourceUid: c.sourceUid,
 		createdAt: c.createdAt,
 		noteTypeName: c.noteTypeName,
-		suspended: c.suspended ?? false,
-		buriedUntil: c.buriedUntil,
 	}));
 
 	sendOk(res, { total: allCards.length, count: cards.length, cards });
+}
+
+export function handleGetActualLearningCards(
+	req: ApiRequest,
+	res: ApiResponseWriter,
+	ctx: ApiContext,
+): void {
+	if (!ctx.plugin.isStoreReady()) {
+		sendError(res, 503, "Database not ready");
+		return;
+	}
+
+	const url = new URL(req.url ?? "/", "http://localhost");
+	const requestedLimit = Number(url.searchParams.get("limit")) || 50;
+	const limit = Math.min(Math.max(1, requestedLimit), 200);
+	const archivedUids = ctx.plugin.hierarchyService.getArchivedSourceUids();
+
+	const matchingCards = ctx.plugin.flashcardManager
+		.getAllFSRSCards()
+		.filter((card) => {
+			if (card.sourceUid && archivedUids.has(card.sourceUid)) return false;
+			return (
+				isLearningState(card.fsrs.state) &&
+				isCardActive(card.fsrs.suspended, card.fsrs.buriedUntil)
+			);
+		})
+		.sort(
+			(left, right) =>
+				new Date(left.fsrs.due).getTime() - new Date(right.fsrs.due).getTime(),
+		);
+	const cards = matchingCards.slice(0, limit).map((card) => ({
+		id: card.id,
+		question: card.question,
+		answer: card.answer,
+		state: card.fsrs.state,
+		due: card.fsrs.due,
+		stability: card.fsrs.stability,
+		difficulty: card.fsrs.difficulty,
+		reps: card.fsrs.reps,
+		lapses: card.fsrs.lapses,
+		cardType: card.cardType ?? "basic",
+		sourceUid: card.sourceUid,
+		sourceNoteName: card.sourceNoteName,
+	}));
+
+	sendOk(res, {
+		actualLearningCount: matchingCards.length,
+		showing: cards.length,
+		cards,
+	});
 }
 
 export function handleGetCard(
@@ -223,22 +277,12 @@ interface CreateCardInput {
 	source_text?: string;
 	card_type?: "basic" | "cloze";
 	tags?: string;
-	/**
-	 * Create the card already suspended, so it never enters the review queue
-	 * until it is finished. Used for capturing a question mid-study without
-	 * paying review slots for a card that has no answer yet.
-	 *
-	 * Applies to every card in a batch — a cloze note expands to several cards,
-	 * so per-card mapping back to inputs is not reliable.
-	 */
-	suspended?: boolean;
 }
 
 interface CreateBatchInput {
 	cards: CreateCardInput[];
 	source_uid?: string;
 	tags?: string;
-	suspended?: boolean;
 }
 
 export async function handleCreateCards(
@@ -305,16 +349,9 @@ export async function handleCreateCards(
 	});
 
 	const result = ctx.plugin.flashcardManager.createNoteBatch(noteParams);
-	const cardIds = result.cards.map((c) => c.id);
-
-	const suspended = body.suspended === true;
-	if (suspended && cardIds.length > 0) {
-		await ctx.plugin.commandService?.execute(new SuspendCommand(cardIds));
-	}
 
 	sendOk(res, {
-		created: cardIds.length,
-		cardIds,
-		suspended,
+		created: result.cards.length,
+		cardIds: result.cards.map((c) => c.id),
 	});
 }

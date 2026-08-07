@@ -23,6 +23,7 @@ import { handleGetCardContext } from "./handlers/card-context";
 import { handleGetCardRelations } from "./handlers/card-relations";
 import {
 	handleCreateCards,
+	handleGetActualLearningCards,
 	handleGetCard,
 	handleGetDueCards,
 	handleGetProblemCards,
@@ -41,12 +42,6 @@ import {
 	handleUpdateLoadBalanceSettings,
 	handleUpdatePreset,
 } from "./handlers/fsrs";
-import {
-	handleAddEasyDay,
-	handleApplyEasyDays,
-	handleGetEasyDays,
-	handleUpdateEasyDays,
-} from "./handlers/easy-days";
 import {
 	handleGetRetrievability,
 	handleGetSchedulingPreview,
@@ -125,6 +120,7 @@ const routes: Route[] = [
 
 	// Cards — reads
 	route("GET", "/cards/due", handleGetDueCards),
+	route("GET", "/cards/actual-learning", handleGetActualLearningCards),
 	route("GET", "/cards/problems", handleGetProblemCards),
 	route("GET", "/cards/:id/context", handleGetCardContext),
 	route("GET", "/cards/:id/relations", handleGetCardRelations),
@@ -178,10 +174,6 @@ const routes: Route[] = [
 	route("POST", "/presets/:id", handleUpdatePreset),
 	route("POST", "/settings/load-balance", handleUpdateLoadBalanceSettings),
 	route("GET", "/fsrs/stats", handleGetFsrsStats),
-	route("GET", "/settings/easy-days", handleGetEasyDays),
-	route("POST", "/settings/easy-days", handleUpdateEasyDays),
-	route("POST", "/settings/easy-days/add", handleAddEasyDay),
-	route("POST", "/fsrs/easy-days/apply", handleApplyEasyDays),
 
 	// Navigation
 	route("POST", "/open-view", handleOpenView),

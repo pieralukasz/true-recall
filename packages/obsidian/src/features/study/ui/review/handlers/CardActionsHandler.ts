@@ -34,6 +34,7 @@ interface CardActionsHandlerDeps {
 	cardStore: SqliteStoreService;
 	settings: TrueRecallSettings;
 	plugin: TrueRecallPlugin;
+	commandService?: CommandService | null;
 }
 
 interface CardActionsCallbacks {
@@ -50,11 +51,11 @@ export class CardActionsHandler {
 	}
 
 	private get commandService(): CommandService | null {
-		return this.deps.plugin.commandService ?? null;
+		return this.deps.commandService ?? this.deps.plugin.commandService ?? null;
 	}
 
 	canUndo(): boolean {
-		return this.deps.plugin.commandService?.canUndo() ?? false;
+		return this.commandService?.canUndo() ?? false;
 	}
 
 	canForgetCurrentCard(): boolean {

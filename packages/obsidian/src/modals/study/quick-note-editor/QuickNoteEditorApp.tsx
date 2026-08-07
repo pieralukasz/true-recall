@@ -74,6 +74,7 @@ export function QuickNoteEditorApp({
 	});
 	const fieldsRef = useRef(fields);
 	fieldsRef.current = fields;
+	const savingRef = useRef(false);
 	const assistantDraftSessionIdRef = useRef(`qne-${crypto.randomUUID()}`);
 	const closeAssistantWindowRef = useRef<(() => void) | null>(null);
 
@@ -196,7 +197,9 @@ export function QuickNoteEditorApp({
 	// ── Handlers ──
 
 	const handleFieldChange = useCallback((fieldName: string, value: string) => {
-		setFields((prev) => ({ ...prev, [fieldName]: value }));
+		const nextFields = { ...fieldsRef.current, [fieldName]: value };
+		fieldsRef.current = nextFields;
+		setFields(nextFields);
 	}, []);
 
 	const handleNoteTypeChange = useCallback((id: string) => {
@@ -274,28 +277,36 @@ export function QuickNoteEditorApp({
 	}, [isEdit, editMode, addMode, selectedSourceNote, plugin.flashcardManager]);
 
 	const handleSave = useCallback(async () => {
-		if (!noteType || !canSave || saving) return;
+		if (!noteType || savingRef.current) return;
+
+		const currentFields = fieldsRef.current;
+		const primaryField = noteType.fields[0];
+		if (!primaryField || !(currentFields[primaryField] ?? "").trim()) return;
+
 		if (!plugin.flashcardManager?.hasStore()) {
 			new Notice("Database not initialized");
 			return;
 		}
 
+		if (
+			editMode &&
+			noteType.fields.every(
+				(fieldName) =>
+					currentFields[fieldName] === editMode.note.fields[fieldName],
+			)
+		) {
+			onDone({ cancelled: true });
+			return;
+		}
+
+		savingRef.current = true;
 		setSaving(true);
 
 		try {
-			if (isEdit) {
-				const unchanged = noteType.fields.every(
-					(f) => fields[f] === editMode?.note.fields[f],
-				);
-				if (unchanged) {
-					onDone({ cancelled: true });
-					return;
-				}
-
-				if (!editMode) return;
+			if (editMode) {
 				const result = plugin.flashcardManager.updateNoteFields(
 					editMode.noteId,
-					fields,
+					currentFields,
 				);
 
 				onDone({
@@ -307,7 +318,7 @@ export function QuickNoteEditorApp({
 
 				const result = plugin.flashcardManager.createNote({
 					noteTypeId,
-					fields,
+					fields: currentFields,
 					alwaysTypeIn,
 					sourceUid,
 					createdVia: "manual",
@@ -319,23 +330,24 @@ export function QuickNoteEditorApp({
 				// Clear unpinned fields, keep pinned — modal stays open
 				const next: Record<string, string> = {};
 				for (const field of noteType.fields) {
-					next[field] = pinnedFields.has(field) ? (fields[field] ?? "") : "";
+					next[field] = pinnedFields.has(field)
+						? (currentFields[field] ?? "")
+						: "";
 				}
+				fieldsRef.current = next;
 				setFields(next);
+				savingRef.current = false;
 				setSaving(false);
 			}
 		} catch (error) {
 			const msg = error instanceof Error ? error.message : String(error);
 			new Notice(`Error: ${msg}`);
+			savingRef.current = false;
 			setSaving(false);
 		}
 	}, [
 		noteType,
-		canSave,
-		saving,
-		isEdit,
 		editMode,
-		fields,
 		noteTypeId,
 		resolveSourceUid,
 		alwaysTypeIn,
@@ -346,7 +358,8 @@ export function QuickNoteEditorApp({
 	]);
 
 	// Cmd/Ctrl+Enter saves from anywhere in the modal (not just CM fields).
-	// CM fields also handle it via EmbeddableEditor's Scope — the `saving` guard prevents double-fire.
+	// CodeMirror and textarea fields commit their live value before saving, so
+	// the editor's debounced change callback cannot submit stale content.
 	const handleSaveRef = useRef(handleSave);
 	handleSaveRef.current = handleSave;
 
@@ -360,6 +373,14 @@ export function QuickNoteEditorApp({
 		const doc = rootRef.current?.ownerDocument ?? activeDocument;
 		const onKeyDown = (e: KeyboardEvent) => {
 			if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+				const target = e.target as HTMLElement | null;
+				if (
+					target?.closest?.(
+						".true-recall-add-field, .true-recall-add-field-row textarea",
+					)
+				) {
+					return;
+				}
 				e.preventDefault();
 				e.stopPropagation();
 				void handleSaveRef.current();
@@ -486,7 +507,10 @@ export function QuickNoteEditorApp({
 				sourcePath={sourceNoteFile?.path ?? ""}
 				onFieldChange={handleFieldChange}
 				onFieldFocus={handleFieldFocus}
-				onModEnter={() => void handleSave()}
+				onModEnter={(fieldName, value) => {
+					handleFieldChange(fieldName, value);
+					void handleSave();
+				}}
 				onEscape={onRequestClose}
 				pinnedFields={pinnedFields}
 				onTogglePin={togglePin}
@@ -585,13 +609,13 @@ function FooterBar({
 				Open note
 			</Clickable>
 			<Clickable
-				class="mod-cta ep-btn"
+				class="mod-cta ep-btn ep:text-ui-smaller ep:px-3 ep:py-1 ep:min-h-[28px] ep:max-h-[28px] ep:rounded-md"
 				onClick={onSave}
 				disabled={!canSave || saving || requiresSourceNote}
 				title={requiresSourceNote ? "Select a source note to save" : undefined}
 				stopPropagation={false}
 			>
-				{isEdit ? "Save Changes" : "Save"}
+				{saving ? "Saving..." : isEdit ? "Save Changes" : "Save"}
 			</Clickable>
 		</div>
 	);

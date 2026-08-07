@@ -7,6 +7,43 @@ import {
 } from "../../src/constants";
 import type { GenerationPreset } from "../../src/types/generation-preset.types";
 
+describe("migrateSettings — custom study sessions", () => {
+	const legacyDeck = {
+		id: "legacy-custom-study",
+		name: "Custom Study Session",
+		customStudy: { kind: "review-ahead" as const, days: 3 },
+		cardIds: ["card-1", "card-2"],
+		createdAt: 1,
+		rebuiltAt: 2,
+	};
+
+	it("preserves the legacy single session in the sessions array", () => {
+		const { settings, needsSave } = migrateSettings({
+			temporaryCustomStudyDeck: legacyDeck,
+		} as unknown as Parameters<typeof migrateSettings>[0]);
+
+		expect(settings.temporaryCustomStudyDecks).toEqual([legacyDeck]);
+		expect(settings.temporaryCustomStudyDeck).toBeUndefined();
+		expect(needsSave).toBe(true);
+	});
+
+	it("preserves an already migrated sessions array", () => {
+		const secondDeck = {
+			...legacyDeck,
+			id: "second-custom-study",
+			cardIds: ["card-3"],
+		};
+		const { settings } = migrateSettings({
+			temporaryCustomStudyDecks: [legacyDeck, secondDeck],
+		} as unknown as Parameters<typeof migrateSettings>[0]);
+
+		expect(settings.temporaryCustomStudyDecks).toEqual([
+			legacyDeck,
+			secondDeck,
+		]);
+	});
+});
+
 describe("migrateSettings — generation preset migration", () => {
 	it("creates default preset for fresh install", () => {
 		const { settings, needsSave } = migrateSettings(null);

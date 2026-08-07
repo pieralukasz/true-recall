@@ -210,6 +210,7 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 	scheduledBreaks: [],
 
 	sessionPresets: [],
+	temporaryCustomStudyDecks: [],
 
 	fsrsPresets: [DEFAULT_FSRS_PRESET],
 	defaultPresetId: "default",

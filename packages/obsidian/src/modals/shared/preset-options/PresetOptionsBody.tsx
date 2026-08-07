@@ -105,6 +105,7 @@ export function PresetOptionsBody({
 			newCardOrder: preset.newCardOrder,
 			reviewOrder: preset.reviewOrder,
 			newReviewMix: preset.newReviewMix,
+			burySiblings: preset.burySiblings,
 		});
 		setSelectedPresetId(newPreset.id);
 		refresh();
@@ -154,7 +155,7 @@ export function PresetOptionsBody({
 
 	return (
 		<div class="ep:flex ep:flex-col ep:flex-1 ep:min-h-0">
-			<div class="ep:flex-1 ep:overflow-y-auto ep:min-h-0">
+			<div class="ep:flex-1 ep:overflow-y-auto ep:min-h-0 ep:flex ep:flex-col ep:gap-3">
 				<PresetSelector
 					presets={presets}
 					preset={preset}
