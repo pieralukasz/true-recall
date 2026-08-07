@@ -61,7 +61,7 @@ export class AnalyticsCardActions {
 		}));
 	}
 
-	getProblemCards(limit = 20): ProblemCard[] {
+	getProblemCards(limit = 50): ProblemCard[] {
 		const rows = this.db.query<{
 			id: string;
 			fieldsJson: string;

@@ -119,7 +119,7 @@ export const cardCommands: CommandDef[] = [
 			limit: {
 				type: "number",
 				description: "Max number of problem cards to return",
-				default: 20,
+				default: 50,
 			},
 		},
 		(p) => `/cards/problems?limit=${p.limit}`,

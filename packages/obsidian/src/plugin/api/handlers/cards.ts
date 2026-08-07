@@ -264,7 +264,7 @@ export function handleGetProblemCards(
 	}
 
 	const url = new URL(req.url ?? "/", "http://localhost");
-	const limit = Number(url.searchParams.get("limit")) || 20;
+	const limit = Number(url.searchParams.get("limit")) || 50;
 
 	const problems = ctx.plugin.cardStore.stats.getProblemCards(limit);
 	sendOk(res, { count: problems.length, cards: problems });
