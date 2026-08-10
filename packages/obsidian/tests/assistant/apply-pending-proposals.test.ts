@@ -75,4 +75,35 @@ describe("applyPendingProposals", () => {
 			"applied",
 		]);
 	});
+
+	it("applies only proposal kinds allowed by the caller", async () => {
+		const manifest = createManifest();
+		manifest.proposals.unshift({
+			id: "proposal-edit",
+			status: "proposed",
+			type: "update_card",
+			cardId: "card-1",
+			noteId: "note-1",
+			fields: { Front: "Edited", Back: "A" },
+			previousFields: { Front: "Original", Back: "A" },
+		});
+		const apply = vi.fn().mockResolvedValue({ ok: true });
+
+		const result = await applyPendingProposals(
+			task,
+			manifest,
+			{ apply },
+			{
+				shouldApply: (proposal) => proposal.type !== "create_card",
+			},
+		);
+
+		expect(result.appliedCount).toBe(1);
+		expect(manifest.proposals.map((proposal) => proposal.status)).toEqual([
+			"applied",
+			"proposed",
+			"proposed",
+		]);
+		expect(apply).toHaveBeenCalledOnce();
+	});
 });

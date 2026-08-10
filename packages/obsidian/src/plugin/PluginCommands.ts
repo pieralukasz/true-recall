@@ -45,6 +45,12 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 	});
 
 	plugin.addCommand({
+		id: "toggle-r-mode",
+		name: "Toggle R-Mode (retrievability sessions)",
+		callback: () => void plugin.toggleRMode(),
+	});
+
+	plugin.addCommand({
 		id: "open-dashboard",
 		name: "Open dashboard",
 		callback: () => void plugin.openDashboard(),

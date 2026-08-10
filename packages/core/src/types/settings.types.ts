@@ -170,6 +170,28 @@ export interface ReviewKeybindings {
 /**
  * True Recall plugin settings
  */
+/**
+ * R-Mode builds sessions from continuous retrievability instead of due dates,
+ * so nothing is ever overdue and the user states the session size.
+ *
+ * Fully reversible: the due queue and the load balancer keep running
+ * underneath, so switching modes changes no card data.
+ */
+export interface RModeSettings {
+	enabled: boolean;
+	/** Session size pre-filled in the picker. */
+	defaultSessionSize: number;
+	/** Share of the session drawn from well-remembered cards. Clamped to 0–0.5. */
+	comfortMix: number;
+	/**
+	 * Added to requestRetention to get the saturation ceiling. Above it a review
+	 * buys almost no stability, so the card is not offered at all.
+	 */
+	ceilingOffset: number;
+	/** Below this R a card is never displaced by the comfort quota. */
+	urgentBelow: number;
+}
+
 export interface TrueRecallSettings {
 	/** Device ID backup — survives reinstall via iCloud sync */
 	deviceId?: string;
@@ -233,6 +255,9 @@ export interface TrueRecallSettings {
 	fsrsWeights: number[] | null;
 	/** Last optimization date (ISO string or null) */
 	lastOptimization: string | null;
+
+	/** Continuous-retrievability sessions (experimental) */
+	rMode: RModeSettings;
 
 	/** Review View display mode */
 	reviewMode: ReviewViewMode;

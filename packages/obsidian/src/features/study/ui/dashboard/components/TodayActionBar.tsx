@@ -10,6 +10,8 @@ import type { TodayProgress } from "../types";
 
 interface TodayActionBarProps {
 	totalDue: number;
+	/** Cards worth reviewing now. Set only in R-Mode. */
+	totalPool?: number;
 	totalNew: number;
 	totalLearning: number;
 	estimatedMinutes: number;
@@ -18,17 +20,25 @@ interface TodayActionBarProps {
 
 export function TodayActionBar({
 	totalDue,
+	totalPool,
 	totalNew,
 	totalLearning,
 	estimatedMinutes,
 	progress,
 }: TodayActionBarProps) {
 	const plugin = usePlugin();
+	const rModeEnabled = plugin.settings.rMode.enabled;
 
-	const totalActionable = totalDue + totalNew + totalLearning;
+	const reviewable = rModeEnabled ? (totalPool ?? 0) : totalDue;
+	const totalActionable = reviewable + totalNew + totalLearning;
 
 	const handleStartReview = () => {
-		void plugin.startReview({ mode: "all_due" });
+		void plugin.startReview({
+			mode: "all_due",
+			rModeTargetCount: rModeEnabled
+				? plugin.settings.rMode.defaultSessionSize
+				: undefined,
+		});
 	};
 	const handleCustomStudy = () => {
 		void plugin.openCustomStudyModal();
@@ -46,10 +56,11 @@ export function TodayActionBar({
 			: "All caught up!";
 
 	const counts: { value: number; label: string; colorCls: string }[] = [];
-	if (totalDue > 0)
+	// In R-Mode nothing is "due"; the equivalent tile is the drawable pool.
+	if (reviewable > 0)
 		counts.push({
-			value: totalDue,
-			label: "due",
+			value: reviewable,
+			label: rModeEnabled ? "worth it" : "due",
 			colorCls: FSRS_COLORS.review.textCls,
 		});
 	if (totalNew > 0)

@@ -163,7 +163,11 @@ export class StatusBarWidget {
 				cssVar: FSRS_COLORS.learning.cssVar,
 			});
 		}
-		if (global.dueToday > 0) {
+		// R-Mode has no due date, so a persistent "N due" in the status bar would
+		// reintroduce the exact counter the mode exists to remove.
+		const settings =
+			getDataLayer().get<TrueRecallSettings>(Q.SETTINGS) ?? DEFAULT_SETTINGS;
+		if (global.dueToday > 0 && !settings.rMode?.enabled) {
 			parts.push({
 				text: `${global.dueToday} due`,
 				cssVar: FSRS_COLORS.review.cssVar,

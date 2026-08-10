@@ -2,6 +2,7 @@ import type { MetadataCache } from "obsidian";
 import { State } from "ts-fsrs";
 
 import { UNASSIGNED_PATH } from "@true-recall/core/constants";
+import { mergeRetrievability } from "@true-recall/core/helpers/note-aggregation";
 import type { SessionPersistenceService } from "@true-recall/core/persistence/session/session-persistence.service";
 import type { FSRSService } from "@true-recall/core/services/fsrs/fsrs.service";
 import type {
@@ -235,6 +236,9 @@ export function aggregateProjectData(
 			totalMembers: unassignedNotes.length,
 			memberNotes: unassignedNotes,
 			children: [],
+			retrievability: mergeRetrievability(
+				unassignedNotes.map((n) => n.retrievability),
+			),
 		});
 	}
 
@@ -345,10 +349,20 @@ function buildProjectFromNode(
 		.preset;
 	const presetName = preset.name;
 
+	const retrievability = mergeRetrievability([
+		...memberNotes.map((note) => note.retrievability),
+		...children.map((child) => child.retrievability),
+	]);
+
 	return {
 		name: stats.name,
 		path: stats.path,
-		healthPct: stats.healthPct,
+		// In R-Mode health is mean retrievability; the due-based figure describes
+		// a schedule that no longer drives anything.
+		healthPct:
+			retrievability && retrievability.total > 0
+				? Math.round((retrievability.sumR / retrievability.total) * 100)
+				: stats.healthPct,
 		newCount: counts.new,
 		learning: counts.learning,
 		due: counts.due,
@@ -360,6 +374,7 @@ function buildProjectFromNode(
 		memberNotes,
 		children,
 		presetName,
+		retrievability,
 	};
 }
 

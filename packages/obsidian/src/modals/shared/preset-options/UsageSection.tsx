@@ -27,15 +27,26 @@ export function UsageSection({ preset }: UsageSectionProps) {
 
 	return (
 		<FormCard title="Usage">
-			<div class="ep:py-2 ep:text-ui-small ep:text-obs-muted">
-				<p>
+			<div class="ep:flex ep:flex-col ep:gap-1.5">
+				<span class="ep:text-ui-small ep:text-obs-normal">
 					{usage.count} {usage.count === 1 ? "note" : "notes"} using this preset
-				</p>
+				</span>
 				{usage.names.length > 0 && (
-					<p class="ep:mt-1 ep:text-ui-smaller ep:opacity-70">
-						{usage.names.join(", ")}
-						{usage.count > 10 && ` and ${usage.count - 10} more`}
-					</p>
+					<div class="ep:flex ep:flex-wrap ep:gap-1.5">
+						{usage.names.map((name) => (
+							<span
+								key={name}
+								class="ep:max-w-full ep:truncate ep:py-0.5 ep:px-2 ep:rounded-md ep:bg-obs-modifier-hover ep:text-ui-smaller ep:text-obs-muted"
+							>
+								{name}
+							</span>
+						))}
+						{usage.count > usage.names.length && (
+							<span class="ep:py-0.5 ep:text-ui-smaller ep:text-obs-faint">
+								+{usage.count - usage.names.length} more
+							</span>
+						)}
+					</div>
 				)}
 			</div>
 		</FormCard>

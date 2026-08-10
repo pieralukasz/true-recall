@@ -107,48 +107,53 @@ describe("buildCardAIMessages", () => {
 		expect(sys.content).toContain("ONLY a JSON array");
 	});
 
-	it("contains the verbatim safety net rule", () => {
+	it("locks the source card in explicit spawn mode", () => {
 		const [sys] = buildCardAIMessages({
 			fields: { Front: "Q", Back: "" },
 			noteType: basic,
 			prompt: "Polish",
 			operation: "edit",
+			mode: "spawn",
+			fieldScope: "all",
 		});
-		expect(sys.content).toContain("VERBATIM");
-		expect(sys.content).toMatch(/original_fields_verbatim/);
+		expect(sys.content).toContain("SPAWN");
+		expect(sys.content).toContain("verbatim");
 	});
 
-	it("declares an explicit SPLIT mode that preserves [0] verbatim", () => {
+	it("declares a fixed SPLIT mode that replaces the source with item one", () => {
 		const [sys] = buildCardAIMessages({
 			fields: { Front: "Q", Back: "" },
 			noteType: basic,
 			prompt: "Polish",
 			operation: "edit",
+			mode: "split",
+			fieldScope: "all",
 		});
-		expect(sys.content).toContain("SPLIT mode");
-		expect(sys.content).toMatch(/split|decompose|break apart/i);
-		expect(sys.content).toMatch(/rozbij|rozdziel/);
+		expect(sys.content).toContain("SPLIT:");
+		expect(sys.content).toContain("first atomic card in element [0]");
+		expect(sys.content).toContain("Do not keep the unsplit source card");
+		expect(sys.content).toContain("cannot be split meaningfully");
 	});
 
-	it("explicitly forbids inventing extra cards", () => {
+	it("forbids extra cards in fixed edit mode", () => {
 		const [sys] = buildCardAIMessages({
 			fields: { Front: "Q", Back: "" },
 			noteType: basic,
 			prompt: "Polish",
 			operation: "edit",
 		});
-		expect(sys.content).toMatch(/Do NOT invent cards/);
+		expect(sys.content).toContain("Never create additional cards");
 	});
 
-	it("contains bilingual triggers for spawn intent (EN + PL)", () => {
+	it("does not ask the model to infer mode from trigger words", () => {
 		const [sys] = buildCardAIMessages({
 			fields: { Front: "Q", Back: "" },
 			noteType: basic,
 			prompt: "Polish",
 			operation: "edit",
 		});
-		expect(sys.content).toContain("create a card about");
-		expect(sys.content).toContain("stwórz fiszkę");
+		expect(sys.content).toContain("operation mode is fixed");
+		expect(sys.content).not.toContain("pick exactly one");
 	});
 
 	it("does not bake a hard cap on the number of new cards", () => {
@@ -162,21 +167,30 @@ describe("buildCardAIMessages", () => {
 		expect(sys.content).not.toMatch(/\bup to\s+\d+\b/i);
 	});
 
-	it("does not bake editorial rules into the system prompt", () => {
+	it("bakes invariant safety rules into the system prompt", () => {
 		const [sys] = buildCardAIMessages({
 			fields: { Front: "Q", Back: "" },
 			noteType: basic,
 			prompt: "Polish",
 			operation: "edit",
 		});
-		// Editorial rules (atomicity, verbatim preservation, language matching,
-		// empty-field policy) live in user-authored presets, not the system
-		// prompt. Adding them here fights presets that intentionally relax them.
-		expect(sys.content).not.toMatch(/atomic/i);
-		expect(sys.content).not.toMatch(/best practices/i);
-		expect(sys.content).not.toMatch(/preserve facts/i);
-		expect(sys.content).not.toMatch(/same language/i);
-		expect(sys.content).not.toMatch(/empty fields?/i);
-		expect(sys.content).not.toMatch(/wikilinks?/i);
+		expect(sys.content).toContain("Preserve empty fields");
+		expect(sys.content).toContain("Preserve the card's factual meaning");
+		expect(sys.content).toContain('labels such as "Q:"/"A:"');
+	});
+
+	it("locks the answer for a question-only edit", () => {
+		const [sys] = buildCardAIMessages({
+			fields: { Front: "Q", Back: "A" },
+			noteType: basic,
+			prompt: "Remove ambiguity",
+			operation: "edit",
+			mode: "edit",
+			fieldScope: "question",
+		});
+		expect(sys.content).toContain('may change ONLY: "Front"');
+		expect(sys.content).toContain(
+			'locked fields character-for-character: "Back"',
+		);
 	});
 });

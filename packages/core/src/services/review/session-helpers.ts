@@ -12,6 +12,7 @@ import type {
 	PresetDailyProgress,
 	SessionPersistenceService,
 } from "@true-recall/core/persistence/session/session-persistence.service";
+import { resolveRModeOptions } from "@true-recall/core/services/review/retrievability-queue";
 import type { QueueBuildOptions } from "@true-recall/core/services/review/review.service";
 import type { CardSchedulingMeta } from "@true-recall/core/types";
 import type { SessionFilters } from "@true-recall/core/types/review-session.types";
@@ -144,6 +145,11 @@ export function buildQueueOptions(
 		forgottenCardIds,
 		materializedCardIds: filters.materializedCardIds,
 		temporaryDeckCardIds,
+		rMode: resolveRModeOptions(
+			settings.rMode,
+			preset?.requestRetention ?? settings.fsrsRequestRetention,
+			filters.rModeTargetCount,
+		),
 	};
 }
 

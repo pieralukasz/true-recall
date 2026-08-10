@@ -6,6 +6,7 @@ import {
 	NormalHeader,
 	PanelAiStrip,
 	PanelContent,
+	RModePanel,
 	SelectionToolbar,
 } from "@true-recall/obsidian/features/library/ui/panel/components";
 import {
@@ -14,12 +15,14 @@ import {
 	useScrollPreservation,
 } from "@true-recall/obsidian/features/library/ui/panel/hooks";
 import { useStreamingNewCount } from "@true-recall/obsidian/features/library/ui/panel/hooks/useStreamingNewCount";
+import { usePlugin } from "@true-recall/obsidian/preact";
 
 export function FlashcardPanelApp({
 	onActions,
 }: {
 	onActions?: (actions: PanelAppActions) => void;
 }) {
+	const plugin = usePlugin();
 	const store = usePanelStore();
 	const { contentRef, preserveScroll, captureScroll } = useScrollPreservation();
 
@@ -51,6 +54,13 @@ export function FlashcardPanelApp({
 							)}
 						</div>
 					)}
+
+					{plugin.settings.rMode.enabled &&
+						store.selectionMode !== "selecting" && (
+							<div class="ep:shrink-0">
+								<RModePanel />
+							</div>
+						)}
 
 					<PanelAiStrip />
 

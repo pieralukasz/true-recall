@@ -30,6 +30,7 @@ export class SessionService {
 			customReviewOrder: config.reviewOrder,
 			cardLimit: config.cardLimit,
 			dayStartHour: settings.dayStartHour,
+			rModeTargetCount: config.rModeTargetCount,
 		};
 
 		switch (config.mode) {
@@ -78,14 +79,15 @@ export class SessionService {
 				};
 
 			case "custom": {
-				// `mode`, `reviewOrder` and `cardLimit` are already consumed by
-				// `base`; everything else in the custom config is a filter flag.
+				// `mode`, `reviewOrder`, `cardLimit` and `rModeTargetCount` are already
+				// consumed by `base`; everything else in the custom config is a filter.
 				const filters: Partial<Extract<SessionConfig, { mode: "custom" }>> = {
 					...config,
 				};
 				delete filters.mode;
 				delete filters.reviewOrder;
 				delete filters.cardLimit;
+				delete filters.rModeTargetCount;
 				const resolved = { ...base, ...filters };
 				if (!config.customStudy) return resolved;
 

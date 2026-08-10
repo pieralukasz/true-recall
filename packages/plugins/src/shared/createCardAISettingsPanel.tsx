@@ -157,7 +157,11 @@ export function createCardAISettingsPanel(
 						name: "New preset",
 						prompt: "",
 						autoApply: false,
+						autoApplyNewCards: false,
 						builtin: false,
+						mode: "edit",
+						fieldScope: "all",
+						executor: "ai",
 					};
 					return { ...current, userPresets: [...current.userPresets, fresh] };
 				},

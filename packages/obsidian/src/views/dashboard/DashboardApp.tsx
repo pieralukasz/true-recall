@@ -119,6 +119,9 @@ export function DashboardApp({ isViewVisible }: DashboardAppProps) {
 			ReturnType<typeof computeActionableSessionSnapshot>
 		>();
 
+		const rMode = plugin.settings.rMode;
+		const retention = plugin.settings.fsrsRequestRetention;
+
 		const raw = aggregateDashboardData({
 			allCards,
 			streakCurrent: streakInfo.current,
@@ -126,6 +129,15 @@ export function DashboardApp({ isViewVisible }: DashboardAppProps) {
 			newCardsCap: plugin.settings.newCardsPerDay,
 			reviewsCap: plugin.settings.reviewsPerDay,
 			archivedSourceUids: showArchived.value ? undefined : archived,
+			retrievability: rMode.enabled
+				? {
+						getRetrievability: (card) =>
+							plugin.fsrsService.getRetrievability(card.fsrs),
+						ceiling: Math.min(0.999, retention + rMode.ceilingOffset),
+						comfortFloor: retention,
+						urgentBelow: rMode.urgentBelow,
+					}
+				: undefined,
 		});
 
 		const globalSnapshot = computeActionableSessionSnapshot(
@@ -268,11 +280,16 @@ export function DashboardApp({ isViewVisible }: DashboardAppProps) {
 		data.orphanedCards.total,
 	]);
 
-	const handleStudyNote = (noteName: string, projectPath?: string) => {
+	const handleStudyNote = (
+		noteName: string,
+		projectPath?: string,
+		rModeTargetCount?: number,
+	) => {
 		void plugin.startReview({
 			mode: "notes",
 			noteNames: [noteName],
 			projectPath,
+			rModeTargetCount,
 		});
 	};
 
@@ -343,6 +360,7 @@ export function DashboardApp({ isViewVisible }: DashboardAppProps) {
 						<>
 							<TodayActionBar
 								totalDue={data.totalDue}
+								totalPool={data.totalPool}
 								totalNew={data.totalNew}
 								totalLearning={data.totalLearning}
 								estimatedMinutes={data.estimatedTotalMinutes}

@@ -366,7 +366,9 @@ export function ThreadWorkspace({
 	const [, forceRender] = useState(0);
 	const apply = new AssistantApplyService(plugin);
 	const isBusy = !!thread.activeTaskId;
-	const statusLabel = activeTask?.status ?? (isBusy ? "pending" : "draft");
+	const statusLabel =
+		activeTask?.status ??
+		(isBusy ? "pending" : thread.state === "archived" ? "applied" : "draft");
 	const pendingCount =
 		manifest?.proposals.filter((proposal) => proposal.status === "proposed")
 			.length ?? 0;
@@ -437,7 +439,7 @@ export function ThreadWorkspace({
 							onClick={() => plugin.assistantService?.undoThread(thread.id)}
 						/>
 					) : null}
-					{thread.state !== "inbox" ? (
+					{thread.state === "active" ? (
 						<ActionButton
 							label="Later"
 							variant="ghost"

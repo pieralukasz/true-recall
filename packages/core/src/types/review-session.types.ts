@@ -66,6 +66,8 @@ export interface ReviewViewState extends Record<string, unknown> {
 	materializedCardIds?: string[];
 	/** Identifies the persisted temporary deck owning this review session. */
 	temporaryDeckId?: string;
+	/** Session size for an R-Mode session. Absent means the due-date queue. */
+	rModeTargetCount?: number;
 }
 
 export interface SessionFilters {
@@ -93,6 +95,8 @@ export interface SessionFilters {
 	materializedCardIds?: string[];
 	temporaryDeckId?: string;
 	dayStartHour?: number;
+	/** Session size for an R-Mode session. Absent means the due-date queue. */
+	rModeTargetCount?: number;
 }
 
 export function filtersFromViewState(
@@ -123,6 +127,7 @@ export function filtersFromViewState(
 		customStudy: state.customStudy,
 		materializedCardIds: state.materializedCardIds,
 		temporaryDeckId: state.temporaryDeckId,
+		rModeTargetCount: state.rModeTargetCount,
 	};
 }
 
@@ -151,6 +156,7 @@ export function filtersToViewState(filters: SessionFilters): ReviewViewState {
 		customStudy: filters.customStudy,
 		materializedCardIds: filters.materializedCardIds,
 		temporaryDeckId: filters.temporaryDeckId,
+		rModeTargetCount: filters.rModeTargetCount,
 	};
 }
 

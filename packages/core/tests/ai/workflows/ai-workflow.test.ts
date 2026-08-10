@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
 	assistantWorkflowId,
 	cardPolishWorkflowId,
+	customCardPolishWorkflowId,
 	generationWorkflowId,
 	listAIWorkflows,
 	resolveAIWorkflow,
@@ -136,6 +137,53 @@ describe("AI workflow facade", () => {
 		expect(
 			workflows.find((workflow) => workflow.kind === "modify-card")?.autoApply,
 		).toBe(true);
+	});
+
+	it("keeps auto-apply of edits separate from newly created cards", () => {
+		const workflows = listAIWorkflows(
+			{
+				...settings,
+				cardPolish: {
+					...settings.cardPolish,
+					userPresets: [
+						{
+							...settings.cardPolish.userPresets[0],
+							autoApply: true,
+							autoApplyNewCards: false,
+						},
+					],
+				},
+			},
+			{ hasSelection: false, hasCard: true, hasDraftCard: false },
+		);
+
+		expect(
+			workflows.find((workflow) => workflow.kind === "modify-card"),
+		).toMatchObject({
+			autoApply: true,
+			autoApplyNewCards: false,
+		});
+	});
+
+	it("resolves freeform Card Polish as a real workflow", () => {
+		expect(
+			resolveAIWorkflow(
+				{
+					...settings,
+					cardPolish: {
+						...settings.cardPolish,
+						customPromptAutoApply: true,
+					},
+				},
+				customCardPolishWorkflowId(),
+				{ hasSelection: false, hasCard: true, hasDraftCard: false },
+			),
+		).toMatchObject({
+			kind: "modify-card",
+			sourcePresetId: "$custom",
+			autoApply: true,
+			autoApplyNewCards: false,
+		});
 	});
 
 	it("resolves raw Assistant preset ids from tasks created before namespacing", () => {

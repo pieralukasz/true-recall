@@ -33,6 +33,7 @@ export function NormalHeader({
 
 	const reviewedToday = plugin.sessionPersistence?.getReviewedToday();
 	const dayStartHour = plugin.settings.dayStartHour;
+	const rModeEnabled = plugin.settings.rMode.enabled;
 	const hasUncollectedFlashcards = uncollectedCount > 0;
 	const totalCount =
 		(flashcardInfo?.flashcards.length ?? 0) + streamingNewCount;
@@ -148,9 +149,12 @@ export function NormalHeader({
 							<div class={`${badgeCls} ${FSRS_COLORS.learning.badgeCls}`}>
 								{counts.learning}
 							</div>
-							<div class={`${badgeCls} ${FSRS_COLORS.review.badgeCls}`}>
-								{counts.review}
-							</div>
+							{/* The due count is the debt counter R-Mode exists to remove. */}
+							{!rModeEnabled && (
+								<div class={`${badgeCls} ${FSRS_COLORS.review.badgeCls}`}>
+									{counts.review}
+								</div>
+							)}
 						</div>
 					)}
 				</div>
@@ -189,7 +193,8 @@ export function NormalHeader({
 						/>
 					)}
 
-					{!isFollowingReview && (
+					{/* R-Mode owns the review entry point via its own panel. */}
+					{!isFollowingReview && !rModeEnabled && (
 						<IconButton
 							icon="brain"
 							ariaLabel="Start review"

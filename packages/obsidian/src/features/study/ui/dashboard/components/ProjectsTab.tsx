@@ -35,7 +35,11 @@ interface ProjectsTabProps {
 	searchQuery: string;
 	scrollContainerRef: RefObject<HTMLDivElement>;
 	scrollTop: Signal<number>;
-	onStudyNote: (noteName: string, projectPath?: string) => void;
+	onStudyNote: (
+		noteName: string,
+		projectPath?: string,
+		cardCount?: number,
+	) => void;
 	onPresetClick?: (path: string | null) => void;
 }
 
@@ -355,7 +359,7 @@ function ProjectHeaderItem({
 	const isVirtual = item.project.path === UNASSIGNED_PATH;
 	const dragCls = getDragClass(dragState.value, item.project.path);
 
-	const handleStudyProject = () => {
+	const handleStudyProject = (rModeTargetCount?: number) => {
 		if (isVirtual) {
 			void plugin.openCustomStudyModal(
 				buildProjectCustomStudyScope(item.project),
@@ -364,6 +368,7 @@ function ProjectHeaderItem({
 			void plugin.startReview({
 				mode: "project",
 				projectPath: item.project.path,
+				rModeTargetCount,
 			});
 		}
 	};
@@ -483,7 +488,11 @@ interface NoteItemProps {
 	isSelecting: boolean;
 	isSelected: boolean;
 	plugin: ReturnType<typeof usePlugin>;
-	onStudyNote: (noteName: string, projectPath?: string) => void;
+	onStudyNote: (
+		noteName: string,
+		projectPath?: string,
+		cardCount?: number,
+	) => void;
 	onPresetClick?: (path: string | null) => void;
 	onArchive: (path: string, archived: boolean) => void;
 	onRename: (path: string) => Promise<void>;
@@ -524,7 +533,8 @@ function NoteItem({
 	const handleNavigate = () =>
 		void plugin.app.workspace.openLinkText(item.note.name, "");
 
-	const handleStudy = () => onStudyNote(item.note.name, item.projectPath);
+	const handleStudy = (cardCount?: number) =>
+		onStudyNote(item.note.name, item.projectPath, cardCount);
 
 	const handleCustomStudy = () => {
 		void plugin.openCustomStudyModal({

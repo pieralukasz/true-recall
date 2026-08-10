@@ -17,6 +17,7 @@ const FILTER_PREDICATES: Record<
 	new: (n) => n.newCount > 0,
 	learning: (n) => n.learning > 0,
 	overdue: (n) => n.overdueCount > 0,
+	pool: (n) => (n.retrievability?.pool ?? 0) > 0,
 };
 
 export function useNoteFiltering({
@@ -50,12 +51,14 @@ export function useNoteFiltering({
 			new: 0,
 			learning: 0,
 			overdue: 0,
+			pool: 0,
 		};
 		for (const n of projectFiltered) {
 			if (n.due > 0) c.due++;
 			if (n.newCount > 0) c.new++;
 			if (n.learning > 0) c.learning++;
 			if (n.overdueCount > 0) c.overdue++;
+			if ((n.retrievability?.pool ?? 0) > 0) c.pool++;
 		}
 		return c;
 	}, [projectFiltered]);

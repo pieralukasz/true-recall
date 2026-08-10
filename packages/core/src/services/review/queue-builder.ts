@@ -6,6 +6,7 @@ import { getTomorrowBoundary } from "../../utils";
 import type { FSRSService } from "../fsrs/fsrs.service";
 import { calculateBoundaries, filterCards } from "./queue-filter";
 import { mixQueues, sortNewCards, sortReviewCards } from "./queue-sorter";
+import { buildRetrievabilityQueue } from "./retrievability-queue";
 import type { QueueBuildOptions } from "./review.service";
 import { spaceSiblings } from "./sibling-spacer";
 
@@ -112,22 +113,10 @@ function buildCustomStudyQueue(
 					),
 				);
 
-	// New cards
-	const sortedNewCards = sortNewCards(
+	const newCards = selectNewCards(
 		fsrsService.getNewCards(availableCards),
-		options.newCardOrder ?? "random",
+		options,
 	);
-	const newCards = options.ignoreDailyLimits
-		? sortedNewCards
-		: usePerPresetLimits(options)
-			? applyPerPresetLimit(sortedNewCards, options, "new")
-			: sortedNewCards.slice(
-					0,
-					Math.max(
-						0,
-						options.newCardsLimit - (options.newCardsStudiedToday ?? 0),
-					),
-				);
 
 	const mainQueue = mixQueues(
 		limitedReviewCards,
@@ -197,6 +186,85 @@ function buildAnkiCustomStudyQueue(
 	return limit && limit > 0 ? queue.slice(0, limit) : queue;
 }
 
+function selectNewCards(
+	rawNewCards: CardSchedulingMeta[],
+	options: QueueBuildOptions,
+): CardSchedulingMeta[] {
+	const sorted = sortNewCards(rawNewCards, options.newCardOrder ?? "random");
+	if (options.ignoreDailyLimits) return sorted;
+	if (usePerPresetLimits(options)) {
+		return applyPerPresetLimit(sorted, options, "new");
+	}
+	return sorted.slice(
+		0,
+		Math.max(0, options.newCardsLimit - (options.newCardsStudiedToday ?? 0)),
+	);
+}
+
+/**
+ * R-Mode: review cards are ranked by current retrievability with no due-date
+ * boundary and no daily review limit. The user states the session size; the
+ * pool decides when there is nothing left worth doing.
+ *
+ * New cards keep their normal path — they are a chosen input, not an inherited
+ * obligation, so R-Mode does not touch them.
+ */
+function buildRModeQueue(
+	availableCards: CardSchedulingMeta[],
+	fsrsService: FSRSService,
+	options: QueueBuildOptions,
+	now: Date,
+): CardSchedulingMeta[] {
+	const rMode = options.rMode;
+	if (!rMode) return availableCards;
+
+	const dueLearningCards: CardSchedulingMeta[] = [];
+	const pendingLearningCards: CardSchedulingMeta[] = [];
+	const rawNewCards: CardSchedulingMeta[] = [];
+	const rawReviewCards: CardSchedulingMeta[] = [];
+
+	for (const card of availableCards) {
+		switch (card.fsrs.state) {
+			case State.Learning:
+			case State.Relearning:
+				if (new Date(card.fsrs.due) <= now) {
+					dueLearningCards.push(card);
+				} else {
+					pendingLearningCards.push(card);
+				}
+				break;
+			case State.New:
+				rawNewCards.push(card);
+				break;
+			case State.Review:
+				// No due filter: R decides, not the calendar.
+				rawReviewCards.push(card);
+				break;
+		}
+	}
+
+	const { cards: reviewCards } = buildRetrievabilityQueue(
+		rawReviewCards,
+		fsrsService,
+		rMode,
+		now,
+	);
+
+	const mainQueue = mixQueues(
+		reviewCards,
+		selectNewCards(rawNewCards, options),
+		options.newReviewMix ?? "mix-with-reviews",
+	);
+	const spacedQueue =
+		options.burySiblings === false ? spaceSiblings(mainQueue) : mainQueue;
+
+	return [
+		...fsrsService.sortByDue(dueLearningCards),
+		...spacedQueue,
+		...fsrsService.sortByDue(pendingLearningCards),
+	];
+}
+
 function buildStandardQueue(
 	availableCards: CardSchedulingMeta[],
 	fsrsService: FSRSService,
@@ -251,22 +319,7 @@ function buildStandardQueue(
 					),
 				);
 
-	// New cards
-	const sortedNewCards = sortNewCards(
-		rawNewCards,
-		options.newCardOrder ?? "random",
-	);
-	const newCards = options.ignoreDailyLimits
-		? sortedNewCards
-		: usePerPresetLimits(options)
-			? applyPerPresetLimit(sortedNewCards, options, "new")
-			: sortedNewCards.slice(
-					0,
-					Math.max(
-						0,
-						options.newCardsLimit - (options.newCardsStudiedToday ?? 0),
-					),
-				);
+	const newCards = selectNewCards(rawNewCards, options);
 
 	const mainQueue = mixQueues(
 		limitedReviewCards,
@@ -314,6 +367,8 @@ export function buildQueue(
 		});
 	} else if (options.customStudy) {
 		queue = buildAnkiCustomStudyQueue(availableCards, fsrsService, options);
+	} else if (options.rMode) {
+		queue = buildRModeQueue(availableCards, fsrsService, options, now);
 	} else if (options.bypassScheduling) {
 		queue = buildCustomStudyQueue(availableCards, fsrsService, options);
 	} else {

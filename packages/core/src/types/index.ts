@@ -13,7 +13,10 @@ export type {
 	NoteTypeMapping,
 } from "./anki.types";
 export type {
+	CardAIExecutor,
+	CardAIFieldScope,
 	CardAIPreset,
+	CardAIPresetMode,
 	CardAIUserSettings,
 	CardFields,
 } from "./card-ai-preset.types";

@@ -6,9 +6,21 @@ import { estimateStudyMinutes } from "@true-recall/core/helpers/time-estimate";
 import type {
 	DashboardAggregation,
 	DashboardNoteEntry,
+	NoteRetrievability,
 } from "@true-recall/core/types/dashboard.types";
 import type { CardSchedulingMeta } from "@true-recall/core/types/fsrs/card.types";
 import type { TodaySummary } from "@true-recall/core/types/fsrs/stats.types";
+
+/**
+ * Supplied only when R-Mode is on. Without it the aggregation stays exactly as
+ * it was, which is what keeps the due-date dashboard untouched.
+ */
+export interface RetrievabilityAggregationDeps {
+	getRetrievability: (card: CardSchedulingMeta) => number;
+	ceiling: number;
+	comfortFloor: number;
+	urgentBelow: number;
+}
 
 interface AggregationDeps {
 	allCards: CardSchedulingMeta[];
@@ -17,6 +29,56 @@ interface AggregationDeps {
 	newCardsCap: number;
 	reviewsCap: number;
 	archivedSourceUids?: ReadonlySet<string>;
+	retrievability?: RetrievabilityAggregationDeps;
+}
+
+export function emptyRetrievability(): NoteRetrievability {
+	return {
+		urgent: 0,
+		losing: 0,
+		known: 0,
+		fresh: 0,
+		pool: 0,
+		total: 0,
+		sumR: 0,
+	};
+}
+
+function tallyRetrievability(
+	target: NoteRetrievability,
+	r: number,
+	deps: RetrievabilityAggregationDeps,
+): void {
+	target.total++;
+	target.sumR += r;
+	if (r > deps.ceiling) {
+		target.fresh++;
+		return;
+	}
+	target.pool++;
+	if (r >= deps.comfortFloor) target.known++;
+	else if (r >= deps.urgentBelow) target.losing++;
+	else target.urgent++;
+}
+
+/** Combine children into a parent without averaging averages. */
+export function mergeRetrievability(
+	parts: ReadonlyArray<NoteRetrievability | undefined>,
+): NoteRetrievability | undefined {
+	const present = parts.filter((part): part is NoteRetrievability => !!part);
+	if (present.length === 0) return undefined;
+
+	const merged = emptyRetrievability();
+	for (const part of present) {
+		merged.urgent += part.urgent;
+		merged.losing += part.losing;
+		merged.known += part.known;
+		merged.fresh += part.fresh;
+		merged.pool += part.pool;
+		merged.total += part.total;
+		merged.sumR += part.sumR;
+	}
+	return merged;
 }
 
 export function aggregateDashboardData(
@@ -29,6 +91,7 @@ export function aggregateDashboardData(
 		newCardsCap,
 		reviewsCap,
 		archivedSourceUids,
+		retrievability,
 	} = deps;
 	const now = new Date();
 
@@ -100,6 +163,7 @@ export function aggregateDashboardData(
 				overdueDays: 0,
 				overdueCount: 0,
 				projects: [],
+				retrievability: retrievability ? emptyRetrievability() : undefined,
 			};
 			noteMap.set(noteName, entry);
 		}
@@ -114,6 +178,13 @@ export function aggregateDashboardData(
 				entry.learning++;
 				break;
 			case State.Review: {
+				if (retrievability && entry.retrievability) {
+					tallyRetrievability(
+						entry.retrievability,
+						retrievability.getRetrievability(card),
+						retrievability,
+					);
+				}
 				const dueDate = new Date(fsrs.due);
 				if (dueDate <= now) {
 					entry.due++;
@@ -140,8 +211,9 @@ export function aggregateDashboardData(
 
 	const notes: DashboardNoteEntry[] = Array.from(noteMap.values()).map(
 		(partial) => {
+			// In R-Mode the pool is the reviewable work; the due count is not.
 			const estimatedMinutes = estimateStudyMinutes(
-				partial.due,
+				partial.retrievability?.pool ?? partial.due,
 				partial.newCount,
 				partial.learning,
 			);
@@ -150,8 +222,12 @@ export function aggregateDashboardData(
 		},
 	);
 
+	const totalPool = retrievability
+		? notes.reduce((sum, note) => sum + (note.retrievability?.pool ?? 0), 0)
+		: undefined;
+
 	const estimatedTotalMinutes = estimateStudyMinutes(
-		totalDue,
+		totalPool ?? totalDue,
 		totalNew,
 		totalLearning,
 	);
@@ -159,6 +235,7 @@ export function aggregateDashboardData(
 	return {
 		notes,
 		totalDue,
+		totalPool,
 		totalNew,
 		totalLearning,
 		totalOverdue,

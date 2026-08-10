@@ -486,6 +486,24 @@ export default class TrueRecallPlugin extends Plugin {
 		await this.saveSettings();
 	}
 
+	/**
+	 * Switch between the due-date queue and R-Mode. Card data is untouched
+	 * either way — both modes read the same scheduling state — so this is
+	 * reversible at any point.
+	 */
+	async toggleRMode(): Promise<void> {
+		this.settings.rMode = {
+			...this.settings.rMode,
+			enabled: !this.settings.rMode.enabled,
+		};
+		await this.saveSettings();
+		notify().info(
+			this.settings.rMode.enabled
+				? "R-Mode on — sessions are picked by retrievability"
+				: "R-Mode off — back to the due queue",
+		);
+	}
+
 	async saveSettings(): Promise<void> {
 		await this.coreApp.updateSettings(this.settings);
 		this.noteStatusCache?.bumpVersion();
@@ -998,7 +1016,10 @@ export default class TrueRecallPlugin extends Plugin {
 		await this.reviewNoteFlashcards(file);
 	}
 
-	async reviewNoteFlashcards(file: TFile): Promise<void> {
+	async reviewNoteFlashcards(
+		file: TFile,
+		rModeTargetCount?: number,
+	): Promise<void> {
 		const sourceUid = await this.flashcardManager
 			.getFrontmatterService()
 			.getSourceNoteUid(file.path);
@@ -1006,7 +1027,7 @@ export default class TrueRecallPlugin extends Plugin {
 			notify().info(`No flashcards found for "${file.basename}"`);
 			return;
 		}
-		await this.startReview({ mode: "note", sourceUid });
+		await this.startReview({ mode: "note", sourceUid, rModeTargetCount });
 	}
 
 	async reviewTodaysCards(): Promise<void> {

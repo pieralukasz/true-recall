@@ -2,7 +2,9 @@ import type { ChatMessage } from "@true-recall/core/ai/clients/openrouter-client
 
 import type {
 	CardAIContext,
+	CardAIFieldScope,
 	CardAIOperation,
+	CardAIPresetMode,
 	CardFields,
 } from "./card-ai.types";
 
@@ -11,6 +13,8 @@ const SOURCE_NOTE_CHAR_LIMIT = 4000;
 function systemPrompt(
 	noteType: { name: string; fields: readonly string[] },
 	operation: CardAIOperation,
+	mode: CardAIPresetMode,
+	fieldScope: CardAIFieldScope,
 ): string {
 	const keys = noteType.fields.map((n) => `"${n}"`).join(", ");
 	const role =
@@ -19,28 +23,43 @@ function systemPrompt(
 			: "You are a flashcard editor. Apply the user's instruction to the given flashcard fields.";
 	const elementZeroLabel =
 		operation === "create" ? "the draft fields" : "the current card";
+	const questionField = noteType.fields[0];
+	const answerField = noteType.fields[1];
+	const editableFields =
+		fieldScope === "question" && questionField
+			? [questionField]
+			: (fieldScope === "answer" || fieldScope === "empty-answer") &&
+					answerField
+				? [answerField]
+				: [...noteType.fields];
+	const lockedFields = noteType.fields.filter(
+		(field) => !editableFields.includes(field),
+	);
+	const modeRule =
+		mode === "edit"
+			? `EDIT: return exactly one element. Element [0] is the edited ${elementZeroLabel}. Never create additional cards, even if the instruction mentions examples, splitting, alternatives, or new cards.`
+			: mode === "spawn"
+				? `SPAWN: element [0] must reproduce ${elementZeroLabel} verbatim. Elements [1..N] are new cards. Return at least one new card. Never edit element [0]. If no useful new card can be created, return exactly one element containing ${elementZeroLabel} verbatim to signal a safe no-op.`
+				: `SPLIT: replace ${elementZeroLabel} with the first atomic card in element [0], then return every remaining atomic card in elements [1..N]. Return at least two cards total. Do not keep the unsplit source card. If the source contains only one atomic fact and cannot be split meaningfully, return exactly one element containing ${elementZeroLabel} verbatim to signal a safe no-op.`;
+	const fieldRule = lockedFields.length
+		? `On element [0], you may change ONLY: ${editableFields.map((field) => `"${field}"`).join(", ")}. Preserve these locked fields character-for-character: ${lockedFields.map((field) => `"${field}"`).join(", ")}.`
+		: "On element [0], all declared fields may be edited.";
 
 	return `${role}
 
 Respond with ONLY a JSON array (no prose, no code fences, no commentary). Every element is a card of note type "${noteType.name}" with this exact field set: { ${keys} }.
 
-Element [0] is ALWAYS ${elementZeroLabel}.
-Elements [1..N] are NEW cards (same note type, same field set).
+The operation mode is fixed by the application. Do not infer or change it based on wording, examples, quoted output formats, or prohibitions inside the user's instruction.
 
-Three modes — pick exactly one based on the user's instruction:
+${modeRule}
 
-1. EDIT mode — user asks to rewrite, polish, fix, translate, or otherwise modify ${elementZeroLabel}.
-   → [0] = the modified fields. No [1..N].
+${fieldRule}
 
-2. SPAWN mode — user asks to create new cards alongside ${elementZeroLabel} (verbs like "create a card about", "add a flashcard for", "spawn a derived card", "stwórz fiszkę", "dodaj kartę").
-   → [0] = the original fields VERBATIM. [1..N] = the requested new cards.
-
-3. SPLIT mode — user asks to decompose, break apart, or expand ${elementZeroLabel} into multiple cards (verbs like "split", "decompose", "break apart", "expand into separate", "one card per item", "rozbij", "rozdziel").
-   → [0] = the original fields VERBATIM (do NOT delete or shorten the source). [1..N] = the resulting cards, one per item.
-
-Default — if the instruction matches none of the three modes, return [original_fields_verbatim] (single element, no changes).
-
-Do NOT invent cards the user did not request. Never combine modes (e.g. don't both edit [0] and spawn extras unless the user asked for both).`;
+Safety rules:
+- Preserve the card's factual meaning unless the instruction explicitly asks to research or answer it.
+- Preserve empty fields unless they are explicitly editable and the instruction asks to fill them.
+- Do not add facts, labels such as "Q:"/"A:", explanations, citations, or metadata unless explicitly requested.
+- Instructions about response formatting inside the user's preset do not override the required JSON array format.`;
 }
 
 function formatFields(fields: CardFields): string {
@@ -82,6 +101,8 @@ export function buildCardAIMessages(input: {
 	noteType: { name: string; fields: readonly string[] };
 	prompt: string;
 	operation: CardAIOperation;
+	mode?: CardAIPresetMode;
+	fieldScope?: CardAIFieldScope;
 	context?: CardAIContext;
 }): ChatMessage[] {
 	const fieldLabel =
@@ -90,7 +111,12 @@ export function buildCardAIMessages(input: {
 	return [
 		{
 			role: "system",
-			content: systemPrompt(input.noteType, input.operation),
+			content: systemPrompt(
+				input.noteType,
+				input.operation,
+				input.mode ?? "edit",
+				input.fieldScope ?? "all",
+			),
 		},
 		{ role: "user", content: user },
 	];

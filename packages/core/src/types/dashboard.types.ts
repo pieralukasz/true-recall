@@ -1,3 +1,26 @@
+/**
+ * Retrievability spread for a note or project, used by R-Mode surfaces.
+ *
+ * `sumR` is kept rather than a mean so parents can combine children without
+ * averaging averages, which would over-weight small notes.
+ */
+export interface NoteRetrievability {
+	/** R below the urgent threshold — actively being lost. */
+	urgent: number;
+	/** Between urgent and the retention target — slipping. */
+	losing: number;
+	/** Between the retention target and the ceiling — known. */
+	known: number;
+	/** Above the ceiling — a review would buy nothing. */
+	fresh: number;
+	/** urgent + losing + known: everything a session could draw from. */
+	pool: number;
+	/** Review-state cards counted. */
+	total: number;
+	/** Sum of R across those cards. */
+	sumR: number;
+}
+
 export interface DashboardNoteEntry {
 	name: string;
 	path: string | null;
@@ -13,11 +36,20 @@ export interface DashboardNoteEntry {
 	projects: string[];
 	presetName?: string;
 	archived?: boolean;
+	/** Present only when R-Mode is on; absent means the due-date view. */
+	retrievability?: NoteRetrievability;
 }
 
 export type NotePriority = "overdue" | "hot" | "due" | "light" | "done";
 
-export type NoteFilterMode = "all" | "due" | "new" | "learning" | "overdue";
+export type NoteFilterMode =
+	| "all"
+	| "due"
+	| "new"
+	| "learning"
+	| "overdue"
+	/** R-Mode replacement for "due": notes with cards worth reviewing now. */
+	| "pool";
 
 export type DashboardTab = "projects" | "notes" | "custom" | "orphaned";
 
@@ -36,6 +68,8 @@ export interface DashboardProject {
 	children: DashboardProject[];
 	presetName?: string;
 	archived?: boolean;
+	/** Present only when R-Mode is on; absent means the due-date view. */
+	retrievability?: NoteRetrievability;
 }
 
 export type ProjectFilter =
@@ -68,6 +102,8 @@ export interface OrphanedCardStats {
 export interface DashboardAggregation {
 	notes: DashboardNoteEntry[];
 	totalDue: number;
+	/** Cards worth reviewing now. Present only when R-Mode is on. */
+	totalPool?: number;
 	totalNew: number;
 	totalLearning: number;
 	totalOverdue: number;
