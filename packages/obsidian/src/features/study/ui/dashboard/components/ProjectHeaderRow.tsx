@@ -2,7 +2,6 @@ import { useState } from "preact/hooks";
 
 import {
 	computePriority,
-	describeRetrievability,
 	PRIORITY_DOT,
 } from "@true-recall/core/helpers/note-priority";
 
@@ -18,6 +17,7 @@ import { usePlugin } from "@true-recall/obsidian/preact";
 import { cn } from "@true-recall/obsidian/utils/cn";
 
 import type { DashboardProject } from "../types";
+import { RetrievabilityBar } from "./RetrievabilityBar";
 
 interface ProjectHeaderRowProps {
 	project: DashboardProject;
@@ -62,11 +62,11 @@ export function ProjectHeaderRow({
 	// New and learning cards are outside R-Mode's selection, so a session is
 	// still worth starting when only they are available. Dimming the action
 	// says "nothing here" without adding another number to the row.
-	const hasWork =
-		!rModeEnabled ||
-		(wantsReviews && (project.retrievability?.pool ?? 0) > 0) ||
-		project.newCount > 0 ||
-		project.learning > 0;
+	const hasWork = rModeEnabled
+		? (wantsReviews && (project.retrievability?.pool ?? 0) > 0) ||
+			project.newCount > 0 ||
+			project.learning > 0
+		: project.due > 0 || project.newCount > 0 || project.learning > 0;
 
 	const startSession = () => {
 		if (!hasWork) return;
@@ -82,7 +82,8 @@ export function ProjectHeaderRow({
 	});
 
 	return (
-		<Clickable
+		<div
+			role="group"
 			class={cn(
 				"ep:flex ep:items-center ep:gap-2 ep:px-3 ep:h-9 ep:rounded-lg ep:transition-colors ep:duration-150 ep:hover:bg-obs-modifier-hover",
 				project.archived && "ep:opacity-50",
@@ -91,23 +92,18 @@ export function ProjectHeaderRow({
 			)}
 			style={{ paddingLeft: `${12 + depth * 20}px` }}
 			onContextMenu={onContextMenu}
-			onClick={onToggle}
-			stopPropagation={false}
 		>
-			<div class="ep:flex ep:items-center ep:gap-2 ep:flex-1 ep:min-w-0">
-				{/* Padded wrapper: a 6px dot is too small a hover target for the
-				    tooltip it now carries. */}
+			<Clickable
+				class="ep:flex ep:items-center ep:gap-2 ep:flex-1 ep:min-w-0 ep:h-full"
+				onClick={onToggle}
+				stopPropagation={false}
+			>
 				<span
-					class="ep:flex ep:items-center ep:shrink-0 ep:p-1 ep:-m-1"
-					title={describeRetrievability(project.retrievability) ?? undefined}
-				>
-					<span
-						class={cn(
-							"ep:inline-block ep:w-1.5 ep:h-1.5 ep:rounded-full",
-							PRIORITY_DOT[priority],
-						)}
-					/>
-				</span>
+					class={cn(
+						"ep:inline-block ep:w-1.5 ep:h-1.5 ep:rounded-full ep:shrink-0",
+						PRIORITY_DOT[priority],
+					)}
+				/>
 				<span
 					class={cn(
 						"ep:text-sm ep:truncate ep:min-w-0 ep:font-medium",
@@ -131,12 +127,15 @@ export function ProjectHeaderRow({
 					{project.totalMembers}
 					{project.totalMembers === 1 ? " note" : " notes"}
 				</span>
-			</div>
+			</Clickable>
+
+			{rModeEnabled && <RetrievabilityBar spread={project.retrievability} />}
 
 			{rModeEnabled ? (
 				<RetentionDisplay
 					newCount={project.newCount}
 					learningCount={project.learning}
+					learningPending={project.learningPending}
 				/>
 			) : (
 				<CardCountDisplay
@@ -151,7 +150,8 @@ export function ProjectHeaderRow({
 					value={size}
 					onChange={setSize}
 					onSubmit={startSession}
-					ariaLabel={`Cards to study from ${project.name}`}
+					ariaLabel={`Review cards from ${project.name}`}
+					available={project.retrievability?.pool ?? 0}
 				/>
 			)}
 
@@ -163,7 +163,7 @@ export function ProjectHeaderRow({
 				onClick={startSession}
 				size="small"
 			/>
-		</Clickable>
+		</div>
 	);
 }
 

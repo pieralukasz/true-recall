@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from "preact/hooks";
+import { State } from "ts-fsrs";
 
 import { ActionButton } from "@true-recall/obsidian/components";
 import { RetentionBands } from "@true-recall/obsidian/features/library/ui/panel/components/RetentionBands";
@@ -31,28 +32,41 @@ export function RModePanel() {
 		String(plugin.settings.rMode.defaultSessionSize),
 	);
 
-	const counts = useMemo(
-		() =>
-			cardsWithFsrs.length > 0
-				? countByState(
-						cardsWithFsrs,
-						plugin.sessionPersistence?.getReviewedToday(),
-						plugin.settings.dayStartHour,
-					)
-				: null,
-		[cardsWithFsrs, plugin],
-	);
+	const counts = useMemo(() => {
+		if (cardsWithFsrs.length === 0) return null;
+		const stateCounts = countByState(
+			cardsWithFsrs,
+			plugin.sessionPersistence?.getReviewedToday(),
+			plugin.settings.dayStartHour,
+		);
+		const now = new Date();
+		stateCounts.learning = cardsWithFsrs.filter((card) => {
+			const isLearning =
+				card.fsrs.state === State.Learning ||
+				card.fsrs.state === State.Relearning;
+			return (
+				isLearning &&
+				!card.fsrs.suspended &&
+				(!card.fsrs.buriedUntil || new Date(card.fsrs.buriedUntil) <= now) &&
+				new Date(card.fsrs.due) <= now
+			);
+		}).length;
+		return stateCounts;
+	}, [cardsWithFsrs, plugin, summary]);
 
 	const parsedSize = Number.parseInt(size, 10);
-	const requestedSize =
-		Number.isFinite(parsedSize) && parsedSize > 0 ? parsedSize : 0;
+	const requestedSize = Number.isFinite(parsedSize)
+		? Math.max(0, parsedSize)
+		: 0;
+	const hasSupplemental = Boolean(counts?.new || counts?.learning);
+	const canStart = (requestedSize > 0 && summary.pool > 0) || hasSupplemental;
 
 	const handleStudy = useCallback(() => {
-		if (!currentFile || requestedSize === 0) return;
+		if (!currentFile || !canStart) return;
 		void plugin.reviewNoteFlashcards(currentFile, requestedSize);
-	}, [currentFile, plugin, requestedSize]);
+	}, [currentFile, plugin, requestedSize, canStart]);
 
-	if (summary.total === 0 && !counts?.new) return null;
+	if (summary.total === 0 && !counts?.new && !counts?.learning) return null;
 
 	const hasPool = summary.pool > 0;
 
@@ -73,18 +87,29 @@ export function RModePanel() {
 
 			<RetentionBands summary={summary} />
 
-			{hasPool ? (
+			{hasPool || hasSupplemental ? (
 				<>
-					<div class="ep:text-ui-smaller ep:text-obs-muted">
-						{summary.pool} worth reviewing
-					</div>
+					{hasPool && (
+						<div class="ep:text-ui-smaller ep:text-obs-muted">
+							{summary.pool} review cards available
+						</div>
+					)}
 
 					<div class="ep:flex ep:items-center ep:gap-2">
 						<input
 							type="number"
-							min={1}
+							min={0}
+							step={1}
+							inputMode="numeric"
+							autoComplete="off"
+							name="review-card-count"
 							value={size}
-							aria-label="Cards this session"
+							aria-label="Review cards this session"
+							title={
+								requestedSize > summary.pool
+									? `${summary.pool} review cards are currently available.`
+									: "Review cards this session"
+							}
 							class="ep:w-16 ep:shrink-0 ep:rounded-md ep:border ep:border-solid ep:border-obs-border ep:bg-obs-primary ep:px-2 ep:py-1 ep:text-center ep:text-ui-small ep:text-obs-normal"
 							onInput={(event) =>
 								setSize((event.target as HTMLInputElement).value)
@@ -99,30 +124,32 @@ export function RModePanel() {
 							variant="primary"
 							size="sm"
 							fullWidth
-							disabled={requestedSize === 0}
+							disabled={!canStart}
 							onClick={handleStudy}
 						/>
 					</div>
 
-					<div class="ep:flex ep:items-center ep:gap-2 ep:text-ui-smaller ep:text-obs-faint">
-						{QUICK_SIZES.map((quick) => (
+					{hasPool && (
+						<div class="ep:flex ep:items-center ep:gap-2 ep:text-ui-smaller ep:text-obs-faint">
+							{QUICK_SIZES.map((quick) => (
+								<button
+									key={quick}
+									type="button"
+									class="ep:cursor-pointer ep:border-none ep:bg-transparent ep:p-0 ep:text-obs-faint ep:hover:text-obs-accent"
+									onClick={() => setSize(String(quick))}
+								>
+									{quick}
+								</button>
+							))}
 							<button
-								key={quick}
 								type="button"
 								class="ep:cursor-pointer ep:border-none ep:bg-transparent ep:p-0 ep:text-obs-faint ep:hover:text-obs-accent"
-								onClick={() => setSize(String(quick))}
+								onClick={() => setSize(String(summary.pool))}
 							>
-								{quick}
+								all {summary.pool}
 							</button>
-						))}
-						<button
-							type="button"
-							class="ep:cursor-pointer ep:border-none ep:bg-transparent ep:p-0 ep:text-obs-faint ep:hover:text-obs-accent"
-							onClick={() => setSize(String(summary.pool))}
-						>
-							all {summary.pool}
-						</button>
-					</div>
+						</div>
+					)}
 				</>
 			) : (
 				<div class="ep:text-ui-smaller ep:text-obs-muted">

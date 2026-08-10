@@ -38,6 +38,7 @@ interface ReviewAppProps {
 	onPolishMenu?: (e: MouseEvent) => void;
 	isCustomSession: boolean;
 	crammingMode: boolean;
+	rModeActive: boolean;
 	showHeader: boolean;
 	showHeaderStats: boolean;
 	showNextReviewTime: boolean;
@@ -127,6 +128,7 @@ function ActiveReview({
 	showHeader,
 	showHeaderStats,
 	showNextReviewTime,
+	rModeActive,
 	onCycleTypeInMode,
 	getTypeInState,
 	getPresetName,
@@ -183,6 +185,7 @@ function ActiveReview({
 				isAnswerRevealed={isAnswerRevealed}
 				preview={review.getSchedulingPreview()}
 				showNextReviewTime={showNextReviewTime}
+				rModeActive={rModeActive}
 				typeInMode={typeInState.typeInMode}
 				isRatingLocked={typeInState.isRatingLocked}
 				onShowAnswer={onShowAnswer}

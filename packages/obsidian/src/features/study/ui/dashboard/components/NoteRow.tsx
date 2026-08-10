@@ -1,9 +1,6 @@
 import { useState } from "preact/hooks";
 
-import {
-	describeRetrievability,
-	PRIORITY_DOT,
-} from "@true-recall/core/helpers/note-priority";
+import { PRIORITY_DOT } from "@true-recall/core/helpers/note-priority";
 
 import {
 	CardCountDisplay,
@@ -18,6 +15,7 @@ import { cn } from "@true-recall/obsidian/utils/cn";
 import { isMobile } from "@true-recall/obsidian/utils/platform";
 
 import type { DashboardNoteEntry } from "../types";
+import { RetrievabilityBar } from "./RetrievabilityBar";
 
 interface NoteRowProps {
 	note: DashboardNoteEntry;
@@ -72,11 +70,11 @@ export function NoteRow({
 	// New and learning cards are outside R-Mode's selection, so a session is
 	// still worth starting when only they are available. Dimming the action
 	// says "nothing here" without adding another number to the row.
-	const hasWork =
-		!rModeEnabled ||
-		(wantsReviews && (note.retrievability?.pool ?? 0) > 0) ||
-		note.newCount > 0 ||
-		note.learning > 0;
+	const hasWork = rModeEnabled
+		? (wantsReviews && (note.retrievability?.pool ?? 0) > 0) ||
+			note.newCount > 0 ||
+			note.learning > 0
+		: note.due > 0 || note.newCount > 0 || note.learning > 0;
 
 	const handleClick = (e: MouseEvent | KeyboardEvent) => {
 		const isModifier = "metaKey" in e && (e.metaKey || e.ctrlKey);
@@ -93,7 +91,8 @@ export function NoteRow({
 	};
 
 	return (
-		<Clickable
+		<div
+			role="group"
 			class={cn(
 				"ep:flex ep:items-center ep:gap-3 ep:px-3 ep:h-9 ep:overflow-hidden ep:rounded-lg ep:transition-colors ep:duration-150 ep:hover:bg-obs-modifier-hover",
 				note.archived && "ep:opacity-50",
@@ -102,13 +101,13 @@ export function NoteRow({
 				isSelected && "ep:bg-obs-modifier-hover",
 			)}
 			onContextMenu={isSelectionMode ? undefined : onContextMenu}
-			onClick={handleClick}
-			stopPropagation={false}
 		>
 			{isSelectionMode && (
 				<input
 					type="checkbox"
 					checked={isSelected}
+					aria-label={`Select ${note.name}`}
+					name={`select-${note.name}`}
 					class="ep:shrink-0"
 					onClick={(e) => {
 						e.stopPropagation();
@@ -117,20 +116,17 @@ export function NoteRow({
 				/>
 			)}
 
-			<div class="ep:flex ep:items-center ep:gap-2 ep:flex-1 ep:min-w-0 ep:hover:text-obs-interactive ep:transition-colors">
-				{/* Padded wrapper: a 6px dot is too small a hover target for the
-				    tooltip it now carries. */}
+			<Clickable
+				class="ep:flex ep:items-center ep:gap-2 ep:flex-1 ep:min-w-0 ep:h-full ep:hover:text-obs-interactive ep:transition-colors"
+				onClick={handleClick}
+				stopPropagation={false}
+			>
 				<span
-					class="ep:flex ep:items-center ep:shrink-0 ep:p-1 ep:-m-1"
-					title={describeRetrievability(note.retrievability) ?? undefined}
-				>
-					<span
-						class={cn(
-							"ep:inline-block ep:w-1.5 ep:h-1.5 ep:rounded-full",
-							PRIORITY_DOT[note.priority],
-						)}
-					/>
-				</span>
+					class={cn(
+						"ep:inline-block ep:w-1.5 ep:h-1.5 ep:rounded-full ep:shrink-0",
+						PRIORITY_DOT[note.priority],
+					)}
+				/>
 				<span
 					class={cn(
 						"ep:text-sm ep:text-obs-normal ep:truncate",
@@ -140,16 +136,16 @@ export function NoteRow({
 				>
 					{note.name}
 				</span>
-				{!isMobile() && note.presetName && (
-					<Clickable
-						class="ep:text-[10px] ep:px-1.5 ep:py-0.5 ep:rounded-full ep:bg-obs-modifier-hover ep:text-obs-muted ep:hover:text-obs-normal ep:hover:bg-obs-modifier-active-hover ep:transition-colors ep:shrink-0"
-						title={`FSRS preset: ${note.presetName}`}
-						onClick={() => onPresetClick?.(note.path)}
-					>
-						{note.presetName}
-					</Clickable>
-				)}
-			</div>
+			</Clickable>
+			{!isMobile() && note.presetName && (
+				<Clickable
+					class="ep:text-[10px] ep:px-1.5 ep:py-0.5 ep:rounded-full ep:bg-obs-modifier-hover ep:text-obs-muted ep:hover:text-obs-normal ep:hover:bg-obs-modifier-active-hover ep:transition-colors ep:shrink-0"
+					title={`FSRS preset: ${note.presetName}`}
+					onClick={() => onPresetClick?.(note.path)}
+				>
+					{note.presetName}
+				</Clickable>
+			)}
 
 			{!isMobile() && note.projects.length > 0 && (
 				<div
@@ -173,10 +169,13 @@ export function NoteRow({
 				</div>
 			)}
 
+			{rModeEnabled && <RetrievabilityBar spread={note.retrievability} />}
+
 			{rModeEnabled ? (
 				<RetentionDisplay
 					newCount={note.newCount}
 					learningCount={note.learning}
+					learningPending={note.learningPending}
 				/>
 			) : (
 				<CardCountDisplay
@@ -193,7 +192,8 @@ export function NoteRow({
 							value={size}
 							onChange={setSize}
 							onSubmit={startSession}
-							ariaLabel={`Cards to study from ${note.name}`}
+							ariaLabel={`Review cards from ${note.name}`}
+							available={note.retrievability?.pool ?? 0}
 						/>
 					)}
 					<IconButton
@@ -206,6 +206,6 @@ export function NoteRow({
 					/>
 				</div>
 			)}
-		</Clickable>
+		</div>
 	);
 }

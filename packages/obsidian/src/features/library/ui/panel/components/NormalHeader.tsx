@@ -222,7 +222,7 @@ export function NormalHeader({
 
 			<SearchInput
 				value={searchQuery}
-				placeholder="Search flashcards..."
+				placeholder="Search flashcards…"
 				ariaLabel="Search flashcards"
 				onChange={panelActions.handleSearchChange}
 				disabled={totalCount === 0}

@@ -5,7 +5,6 @@ import { Rating } from "ts-fsrs";
 import type { SchedulingPreview } from "@true-recall/core";
 
 import { Clickable } from "@true-recall/obsidian/components";
-import { usePlugin } from "@true-recall/obsidian/preact";
 import { useIcon } from "@true-recall/obsidian/preact/hooks";
 import { isMobile } from "@true-recall/obsidian/utils/platform";
 
@@ -30,6 +29,7 @@ interface ButtonBarProps {
 	isAnswerRevealed: boolean;
 	preview: SchedulingPreview | null;
 	showNextReviewTime: boolean;
+	rModeActive?: boolean;
 	typeInMode?: TypeInMode;
 	isRatingLocked?: boolean;
 	compact?: boolean;
@@ -44,6 +44,7 @@ export function ButtonBar({
 	isAnswerRevealed,
 	preview,
 	showNextReviewTime,
+	rModeActive = false,
 	typeInMode = "off",
 	isRatingLocked = false,
 	compact = false,
@@ -53,8 +54,6 @@ export function ButtonBar({
 	onActionsMenu,
 	onPolishMenu,
 }: ButtonBarProps) {
-	const plugin = usePlugin();
-	const rModeEnabled = plugin.settings.rMode.enabled;
 	const menuIconRef = useIcon("more-vertical");
 	const typeInEnabled = typeInMode !== "off";
 	const typeInLabel =
@@ -89,7 +88,7 @@ export function ButtonBar({
 				daysChanged={preview?.again.daysChanged}
 				loadBalanceNote={preview?.again.loadBalanceNote}
 				showInterval={showNextReviewTime && !mobile}
-				rModeEnabled={rModeEnabled}
+				rModeEnabled={rModeActive}
 				onAnswer={onAnswer}
 				disabled={isRatingLocked}
 			/>
@@ -101,7 +100,7 @@ export function ButtonBar({
 				daysChanged={preview?.hard.daysChanged}
 				loadBalanceNote={preview?.hard.loadBalanceNote}
 				showInterval={showNextReviewTime && !mobile}
-				rModeEnabled={rModeEnabled}
+				rModeEnabled={rModeActive}
 				onAnswer={onAnswer}
 				disabled={isRatingLocked}
 			/>
@@ -113,7 +112,7 @@ export function ButtonBar({
 				daysChanged={preview?.good.daysChanged}
 				loadBalanceNote={preview?.good.loadBalanceNote}
 				showInterval={showNextReviewTime && !mobile}
-				rModeEnabled={rModeEnabled}
+				rModeEnabled={rModeActive}
 				onAnswer={onAnswer}
 				disabled={isRatingLocked}
 			/>
@@ -125,7 +124,7 @@ export function ButtonBar({
 				daysChanged={preview?.easy.daysChanged}
 				loadBalanceNote={preview?.easy.loadBalanceNote}
 				showInterval={showNextReviewTime && !mobile}
-				rModeEnabled={rModeEnabled}
+				rModeEnabled={rModeActive}
 				onAnswer={onAnswer}
 				disabled={isRatingLocked}
 			/>

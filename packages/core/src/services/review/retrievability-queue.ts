@@ -1,5 +1,5 @@
 import type { CardSchedulingMeta } from "../../types";
-import type { RModeSettings } from "../../types/settings.types";
+import type { FSRSSettings, RModeSettings } from "../../types/settings.types";
 import type { FSRSService } from "../fsrs/fsrs.service";
 
 /**
@@ -10,7 +10,7 @@ import type { FSRSService } from "../fsrs/fsrs.service";
  * right now or it is not.
  */
 export interface RModeQueueOptions {
-	/** Session size requested by the user. Counts review cards only. */
+	/** Number of Review-state cards requested by the user. */
 	targetCount: number;
 	/** Share of the session filled from the comfort band. Clamped to 0–0.5. */
 	comfortMix: number;
@@ -20,6 +20,21 @@ export interface RModeQueueOptions {
 	comfortFloor: number;
 	/** Below this R a card can never be displaced by the comfort quota. */
 	urgentBelow: number;
+	/**
+	 * Optional per-card preset policy. A project or global session can contain
+	 * cards governed by different FSRS weights and retention targets.
+	 */
+	resolveCardOptions?: (card: CardSchedulingMeta) => RModeCardOptions;
+}
+
+export interface RModeCardOptions {
+	ceiling: number;
+	comfortFloor: number;
+	presetSettings?: FSRSSettings;
+}
+
+export interface RModeCardScore extends RModeCardOptions {
+	r: number;
 }
 
 export interface RModeQueueResult {
@@ -33,6 +48,7 @@ export interface RModeQueueResult {
 interface ScoredCard {
 	card: CardSchedulingMeta;
 	r: number;
+	comfortFloor: number;
 }
 
 const MAX_COMFORT_MIX = 0.5;
@@ -46,6 +62,25 @@ function clamp(value: number, min: number, max: number): number {
 function byRetrievabilityAsc(a: ScoredCard, b: ScoredCard): number {
 	if (a.r !== b.r) return a.r - b.r;
 	return a.card.id.localeCompare(b.card.id);
+}
+
+export function scoreRModeCard(
+	card: CardSchedulingMeta,
+	fsrsService: FSRSService,
+	options: Pick<
+		RModeQueueOptions,
+		"ceiling" | "comfortFloor" | "resolveCardOptions"
+	>,
+	now: Date = new Date(),
+): RModeCardScore {
+	const resolved = options.resolveCardOptions?.(card) ?? {
+		ceiling: options.ceiling,
+		comfortFloor: options.comfortFloor,
+	};
+	return {
+		...resolved,
+		r: fsrsService.getRetrievability(card.fsrs, now, resolved.presetSettings),
+	};
 }
 
 /**
@@ -104,9 +139,8 @@ function arrange(hard: ScoredCard[], comfort: ScoredCard[]): ScoredCard[] {
 /**
  * Build a session from continuous retrievability instead of due dates.
  *
- * Only review-state cards belong here. New cards keep their existing path and
- * learning cards rank themselves — low stability means fast-decaying R, so they
- * surface at the top of the ranking without a special case.
+ * Only review-state cards belong here. New cards keep their existing path;
+ * learning and relearning steps remain ordered by their short due times.
  */
 export function buildRetrievabilityQueue(
 	reviewCards: CardSchedulingMeta[],
@@ -116,8 +150,10 @@ export function buildRetrievabilityQueue(
 ): RModeQueueResult {
 	const pool: ScoredCard[] = [];
 	for (const card of reviewCards) {
-		const r = fsrsService.getRetrievability(card.fsrs, now);
-		if (r <= options.ceiling) pool.push({ card, r });
+		const score = scoreRModeCard(card, fsrsService, options, now);
+		if (score.r <= score.ceiling) {
+			pool.push({ card, r: score.r, comfortFloor: score.comfortFloor });
+		}
 	}
 
 	if (pool.length === 0) {
@@ -133,7 +169,7 @@ export function buildRetrievabilityQueue(
 	const comfort: ScoredCard[] = [];
 	let urgentCount = 0;
 	for (const entry of pool) {
-		if (entry.r < options.comfortFloor) {
+		if (entry.r < entry.comfortFloor) {
 			hard.push(entry);
 			if (entry.r < options.urgentBelow) urgentCount++;
 		} else {
@@ -163,10 +199,15 @@ export function buildRetrievabilityQueue(
 		for (const entry of [...hard, ...comfort]) {
 			if (pickedHard.length + pickedComfort.length >= target) break;
 			if (usedIds.has(entry.card.id)) continue;
-			(entry.r < options.comfortFloor ? pickedHard : pickedComfort).push(entry);
+			(entry.r < entry.comfortFloor ? pickedHard : pickedComfort).push(entry);
 			usedIds.add(entry.card.id);
 		}
 	}
+	// Top-ups append from the low edge and can disturb the sampled order. Keep
+	// both bands sorted so `arrange` can reliably take the strongest warm-up
+	// cards from the end of the comfort band.
+	pickedHard.sort(byRetrievabilityAsc);
+	pickedComfort.sort(byRetrievabilityAsc);
 
 	return {
 		cards: arrange(pickedHard, pickedComfort).map((entry) => entry.card),
@@ -241,12 +282,17 @@ export interface RetrievabilitySummary {
 	pool: number;
 	/** Mean R across review-state cards, or null when there are none. */
 	averageR: number | null;
+	/** Sum retained so parent scopes can aggregate without averaging averages. */
+	sumR: number;
 }
 
 export function summarizeRetrievability(
 	reviewCards: CardSchedulingMeta[],
 	fsrsService: FSRSService,
-	options: Pick<RModeQueueOptions, "ceiling" | "comfortFloor" | "urgentBelow">,
+	options: Pick<
+		RModeQueueOptions,
+		"ceiling" | "comfortFloor" | "urgentBelow" | "resolveCardOptions"
+	>,
 	now: Date = new Date(),
 ): RetrievabilitySummary {
 	let urgent = 0;
@@ -256,10 +302,11 @@ export function summarizeRetrievability(
 	let sum = 0;
 
 	for (const card of reviewCards) {
-		const r = fsrsService.getRetrievability(card.fsrs, now);
+		const score = scoreRModeCard(card, fsrsService, options, now);
+		const { r } = score;
 		sum += r;
-		if (r > options.ceiling) fresh++;
-		else if (r >= options.comfortFloor) known++;
+		if (r > score.ceiling) fresh++;
+		else if (r >= score.comfortFloor) known++;
 		else if (r >= options.urgentBelow) losing++;
 		else urgent++;
 	}
@@ -273,5 +320,6 @@ export function summarizeRetrievability(
 		total,
 		pool: urgent + losing + known,
 		averageR: total > 0 ? sum / total : null,
+		sumR: sum,
 	};
 }

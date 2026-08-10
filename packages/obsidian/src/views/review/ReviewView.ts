@@ -651,6 +651,7 @@ export class ReviewView extends ItemView {
 						: undefined,
 				isCustomSession: isCustomSession(this.filters),
 				crammingMode: this.filters.crammingMode ?? false,
+				rModeActive: this.filters.schedulingMode === "retrievability",
 				showHeader: this.plugin.settings.showReviewHeader,
 				showHeaderStats: this.plugin.settings.showReviewHeaderStats,
 				showNextReviewTime: this.plugin.settings.showNextReviewTime,
@@ -875,7 +876,10 @@ export class ReviewView extends ItemView {
 			if (queue.length === 0) {
 				this.mountEmptyState(
 					container,
-					getEmptyQueueMessage(this.filters.stateFilter),
+					getEmptyQueueMessage(
+						this.filters.stateFilter,
+						this.filters.schedulingMode === "retrievability",
+					),
 				);
 				return;
 			}

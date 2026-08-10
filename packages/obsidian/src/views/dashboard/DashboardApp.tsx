@@ -5,6 +5,7 @@ import { aggregateDashboardData } from "@true-recall/core/helpers/note-aggregati
 import { computePriority } from "@true-recall/core/helpers/note-priority";
 import { estimateStudyMinutes } from "@true-recall/core/helpers/time-estimate";
 import { StatsCalculatorService } from "@true-recall/core/metrics/stats/stats-calculator.service";
+import { scoreRModeCard } from "@true-recall/core/services/review/retrievability-queue";
 import type {
 	CardSchedulingMeta,
 	TrueRecallSettings,
@@ -39,6 +40,7 @@ import { HeatmapWidget } from "@true-recall/plugins/dashboard-codeblock/analytic
 // While the dashboard is visible, Q.ALL_META changes (every review grade)
 // recompute the aggregation at most this often; while hidden, not at all.
 const RECOMPUTE_THROTTLE_MS = 2000;
+const MINUTE_MS = 60_000;
 
 interface DashboardAppProps {
 	isViewVisible: ReadonlySignal<boolean>;
@@ -53,6 +55,24 @@ export function DashboardApp({ isViewVisible }: DashboardAppProps) {
 	);
 	const activeTab = useSignal<DashboardTab>("projects");
 	const searchQuery = useSignal("");
+	const minuteBucket = useSignal(Math.floor(Date.now() / MINUTE_MS));
+	const isVisible = isViewVisible.value;
+
+	// Retrievability changes with time even when no card metadata changes. Keep
+	// the dashboard honest without waking a hidden view every minute.
+	useEffect(() => {
+		if (!isVisible) return;
+		minuteBucket.value = Math.floor(Date.now() / MINUTE_MS);
+		const timer = window.setInterval(() => {
+			minuteBucket.value = Math.floor(Date.now() / MINUTE_MS);
+		}, MINUTE_MS);
+		return () => window.clearInterval(timer);
+	}, [isVisible, minuteBucket]);
+
+	const now = useMemo(
+		() => new Date(minuteBucket.value * MINUTE_MS),
+		[minuteBucket.value],
+	);
 
 	const statsCalculator = useMemo(() => {
 		const calc = new StatsCalculatorService(
@@ -121,6 +141,30 @@ export function DashboardApp({ isViewVisible }: DashboardAppProps) {
 
 		const rMode = plugin.settings.rMode;
 		const retention = plugin.settings.fsrsRequestRetention;
+		const presetCache = new Map<
+			string,
+			ReturnType<typeof plugin.presetService.getDefaultPreset>
+		>();
+		const rModeCardOptions = {
+			ceiling: Math.min(0.999, retention + rMode.ceilingOffset),
+			comfortFloor: retention,
+			resolveCardOptions: (card: CardSchedulingMeta) => {
+				const key = card.sourceUid ?? card.id;
+				let preset = presetCache.get(key);
+				if (!preset) {
+					preset = plugin.presetService.resolvePresetForCard(card);
+					presetCache.set(key, preset);
+				}
+				return {
+					comfortFloor: preset.requestRetention,
+					ceiling: Math.min(
+						0.999,
+						preset.requestRetention + rMode.ceilingOffset,
+					),
+					presetSettings: plugin.presetService.toFSRSSettings(preset),
+				};
+			},
+		};
 
 		const raw = aggregateDashboardData({
 			allCards,
@@ -131,18 +175,17 @@ export function DashboardApp({ isViewVisible }: DashboardAppProps) {
 			archivedSourceUids: showArchived.value ? undefined : archived,
 			retrievability: rMode.enabled
 				? {
-						getRetrievability: (card) =>
-							plugin.fsrsService.getRetrievability(card.fsrs),
-						ceiling: Math.min(0.999, retention + rMode.ceilingOffset),
-						comfortFloor: retention,
+						getScore: (card) =>
+							scoreRModeCard(card, plugin.fsrsService, rModeCardOptions, now),
 						urgentBelow: rMode.urgentBelow,
 					}
 				: undefined,
+			now,
 		});
 
 		const globalSnapshot = computeActionableSessionSnapshot(
 			snapshotDeps,
-			{},
+			{ schedulingMode: rMode.enabled ? "retrievability" : "due" },
 			{ cache: snapshotCache, activeCards: cachedActiveCards },
 		);
 
@@ -158,6 +201,7 @@ export function DashboardApp({ isViewVisible }: DashboardAppProps) {
 				{
 					sourceNoteFilter: note.name,
 					ignoreDailyLimits: plugin.settings.ignoreDailyLimitsForNoteStudy,
+					schedulingMode: rMode.enabled ? "retrievability" : "due",
 				},
 				{ cache: snapshotCache, activeCards: scopedActiveCards },
 			);
@@ -185,6 +229,7 @@ export function DashboardApp({ isViewVisible }: DashboardAppProps) {
 			totalDue: globalSnapshot.counts.due,
 			totalNew: globalSnapshot.counts.new,
 			totalLearning: globalSnapshot.counts.learning,
+			totalLearningPending: globalSnapshot.counts.learningPending,
 			estimatedTotalMinutes: estimateStudyMinutes(
 				globalSnapshot.counts.due,
 				globalSnapshot.counts.new,
@@ -198,6 +243,7 @@ export function DashboardApp({ isViewVisible }: DashboardAppProps) {
 		statsCalculator,
 		plugin,
 		showArchived.value,
+		now,
 	]);
 
 	const visibleNotes = useMemo(() => {
@@ -225,6 +271,7 @@ export function DashboardApp({ isViewVisible }: DashboardAppProps) {
 				activeCards: cachedActiveCards,
 				metadataCache: plugin.app.metadataCache,
 			},
+			now,
 		});
 	}, [
 		plugin,
@@ -233,6 +280,7 @@ export function DashboardApp({ isViewVisible }: DashboardAppProps) {
 		allCards,
 		archived,
 		cachedActiveCards,
+		now,
 	]);
 
 	const enrichedNotes = useMemo(() => {
@@ -376,7 +424,7 @@ export function DashboardApp({ isViewVisible }: DashboardAppProps) {
 					{(activeTab.value === "projects" || activeTab.value === "notes") && (
 						<SearchCombobox
 							value={searchQuery.value}
-							placeholder="Search notes or projects..."
+							placeholder="Search notes or projects…"
 							ariaLabel="Search notes or projects"
 							onChange={(q) => {
 								searchQuery.value = q;

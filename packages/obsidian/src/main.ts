@@ -546,6 +546,7 @@ export default class TrueRecallPlugin extends Plugin {
 				ignoreDailyLimitsForNoteStudy:
 					this.settings.ignoreDailyLimitsForNoteStudy,
 				dayStartHour: this.settings.dayStartHour,
+				rModeEnabled: this.settings.rMode.enabled,
 			},
 		);
 
@@ -667,6 +668,7 @@ export default class TrueRecallPlugin extends Plugin {
 				ignoreDailyLimitsForNoteStudy:
 					this.settings.ignoreDailyLimitsForNoteStudy,
 				dayStartHour: this.settings.dayStartHour,
+				rModeEnabled: this.settings.rMode.enabled,
 			},
 		);
 		const now = Date.now();

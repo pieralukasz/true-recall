@@ -46,7 +46,11 @@ export function NoteList({
 		unassignedCount,
 		handleFilterChange,
 		handleProjectFilterChange,
-	} = useNoteFiltering({ notes, searchQuery });
+	} = useNoteFiltering({
+		notes,
+		searchQuery,
+		rModeEnabled: plugin.settings.rMode.enabled,
+	});
 
 	const {
 		selectedPaths,

@@ -74,6 +74,7 @@ function makeSessionPersistence(): SessionPersistenceService {
 
 const sp = makeSessionPersistence();
 const filters = (overrides: Partial<SessionFilters> = {}): SessionFilters => ({
+	schedulingMode: "retrievability",
 	...overrides,
 });
 
@@ -142,6 +143,16 @@ describe("buildQueueOptions — R-Mode on", () => {
 			);
 			expect(result.rMode, `size ${String(size)}`).toBeDefined();
 		}
+	});
+
+	it("keeps an explicitly due-driven session out of R-Mode", () => {
+		const result = buildQueueOptions(
+			filters({ schedulingMode: "due", rModeTargetCount: 10 }),
+			settings,
+			sp,
+		);
+
+		expect(result.rMode).toBeUndefined();
 	});
 
 	it("derives the bands from the global retention target", () => {

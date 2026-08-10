@@ -29,7 +29,10 @@ export function TodayActionBar({
 	const plugin = usePlugin();
 	const rModeEnabled = plugin.settings.rMode.enabled;
 
-	const reviewable = rModeEnabled ? (totalPool ?? 0) : totalDue;
+	// In R-Mode `totalDue` is the selected review plan; `totalPool` is only the
+	// larger set the algorithm can draw from. Do not advertise the whole pool as
+	// the size of the session.
+	const reviewable = totalDue;
 	const totalActionable = reviewable + totalNew + totalLearning;
 
 	const handleStartReview = () => {
@@ -55,13 +58,21 @@ export function TodayActionBar({
 			? `Review: ${totalActionable} (~${formatEstimatedTime(estimatedMinutes)})`
 			: "All caught up!";
 
-	const counts: { value: number; label: string; colorCls: string }[] = [];
-	// In R-Mode nothing is "due"; the equivalent tile is the drawable pool.
+	const counts: {
+		value: number;
+		label: string;
+		colorCls: string;
+		title?: string;
+	}[] = [];
 	if (reviewable > 0)
 		counts.push({
 			value: reviewable,
-			label: rModeEnabled ? "worth it" : "due",
+			label: rModeEnabled ? "review" : "due",
 			colorCls: FSRS_COLORS.review.textCls,
+			title:
+				rModeEnabled && totalPool !== undefined
+					? `${reviewable} selected from ${totalPool} currently available review cards`
+					: undefined,
 		});
 	if (totalNew > 0)
 		counts.push({
@@ -92,6 +103,7 @@ export function TodayActionBar({
 					{counts.map((c) => (
 						<div
 							key={c.label}
+							title={c.title}
 							class="ep:flex ep:flex-col ep:items-center ep:rounded-md ep:bg-obs-secondary/50 ep:px-3 ep:py-1.5"
 						>
 							<span class={`ep:text-lg ep:font-semibold ${c.colorCls}`}>

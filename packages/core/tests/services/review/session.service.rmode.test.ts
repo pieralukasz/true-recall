@@ -58,15 +58,49 @@ describe("SessionService.resolveFilters — R-Mode size", () => {
 		expect(filters.overdueOnly).toBe(true);
 		expect("mode" in filters).toBe(false);
 	});
+
+	it.each([
+		"all_due",
+		"note",
+		"notes",
+		"project",
+	] as const)("marks a normal %s session as retrievability-driven", (mode) => {
+		const configs: Record<typeof mode, SessionConfig> = {
+			all_due: { mode: "all_due" },
+			note: { mode: "note", sourceUid: "uid-1" },
+			notes: { mode: "notes", noteNames: ["A"] },
+			project: { mode: "project", projectPath: "P" },
+		};
+		const filters = service.resolveFilters(configs[mode], {
+			...SETTINGS,
+			rModeEnabled: true,
+		});
+
+		expect(filters.schedulingMode).toBe("retrievability");
+	});
+
+	it("keeps specialized sessions due-driven even when R-Mode is enabled", () => {
+		const filters = service.resolveFilters(
+			{ mode: "overdue", rModeTargetCount: 25 },
+			{ ...SETTINGS, rModeEnabled: true },
+		);
+
+		expect(filters.schedulingMode).toBe("due");
+	});
 });
 
 describe("view-state round trip", () => {
 	it("survives filters -> view state -> filters", () => {
-		const original = { sourceUidFilter: "uid-1", rModeTargetCount: 42 };
+		const original = {
+			sourceUidFilter: "uid-1",
+			rModeTargetCount: 42,
+			schedulingMode: "retrievability" as const,
+		};
 
 		const restored = filtersFromViewState(filtersToViewState(original));
 
 		expect(restored.rModeTargetCount).toBe(42);
+		expect(restored.schedulingMode).toBe("retrievability");
 	});
 
 	it("stays absent when it was never set", () => {

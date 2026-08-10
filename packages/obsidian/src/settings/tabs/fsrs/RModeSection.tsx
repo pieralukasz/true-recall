@@ -26,9 +26,9 @@ function describeMix(mix: number, sessionSize: number): string {
 	const comfort = Math.round(sessionSize * mix);
 	const hard = sessionSize - comfort;
 	if (comfort === 0) {
-		return `A ${sessionSize}-card session is all cards you are losing. Fastest recovery, hardest session.`;
+		return `With ${sessionSize} review cards, all are cards you are losing. Fastest recovery, hardest session.`;
 	}
-	return `A ${sessionSize}-card session: ${hard} at the edge of forgetting, ${comfort} you still know.`;
+	return `With ${sessionSize} review cards: ${hard} at the edge of forgetting, ${comfort} you still know.`;
 }
 
 export function RModeSection({ settings, save }: RModeSectionProps) {
@@ -41,7 +41,7 @@ export function RModeSection({ settings, save }: RModeSectionProps) {
 		<FormCard title="R-Mode (experimental)">
 			<FormField
 				name="Enable R-Mode"
-				description="Build sessions from current retrievability instead of due dates. Nothing is ever overdue; you choose the session size. Due dates and load balancing keep running underneath, so you can switch back at any time without changing any card."
+				description="Build sessions from current retrievability instead of due dates. Nothing is ever overdue; you choose how many review cards to include. New and learning cards remain separate."
 			>
 				<ToggleInput
 					value={rMode.enabled}
@@ -51,8 +51,8 @@ export function RModeSection({ settings, save }: RModeSectionProps) {
 			</FormField>
 
 			<FormField
-				name="Default session size"
-				description="Pre-filled in the panel. You can always type a different number."
+				name="Default review count"
+				description="Review cards pre-filled on the dashboard and in the panel. You can always type a different number."
 			>
 				<TextInput
 					value={String(rMode.defaultSessionSize)}
@@ -81,7 +81,7 @@ export function RModeSection({ settings, save }: RModeSectionProps) {
 
 			<FormField
 				name="Saturation margin"
-				description={`Cards above ${Math.round((settings.fsrsRequestRetention + rMode.ceilingOffset) * 100)}% retrievability are not offered — a review there buys almost no stability. A smaller margin wastes less effort but empties the pool sooner.`}
+				description="Cards above their preset's retention target plus this margin are not offered. A smaller margin wastes less effort but empties the pool sooner."
 			>
 				<SliderInput
 					value={rMode.ceilingOffset}

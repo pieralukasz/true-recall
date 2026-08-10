@@ -21,11 +21,8 @@ const PRIORITY_ORDER: Record<NotePriority, number> = {
 };
 
 /**
- * Breakdown shown on the priority dot.
- *
- * The dot is the row's only presence signal, so it carries the detail behind
- * it. Returns null when there is nothing to explain — the caller then omits
- * the tooltip rather than showing a row of zeroes.
+ * Breakdown exposed by the compact memory bar. Returns null when there is
+ * nothing to explain, avoiding a tooltip made entirely of zeroes.
  */
 export function describeRetrievability(
 	spread: NoteRetrievability | undefined,

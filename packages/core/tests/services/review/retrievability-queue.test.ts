@@ -185,6 +185,46 @@ describe("R-Mode queue", () => {
 		});
 	});
 
+	describe("per-card preset policy", () => {
+		it("uses each card's ceiling and FSRS settings", () => {
+			const strict = createReviewCard("strict", 10, 10);
+			const relaxed = createReviewCard("relaxed", 10, 10);
+			const strictSettings = createDefaultFSRSSettings();
+			const relaxedSettings = createDefaultFSRSSettings();
+			const seenSettings: unknown[] = [];
+			const service = {
+				getRetrievability: (_fsrs: unknown, _now: Date, settings: unknown) => {
+					seenSettings.push(settings);
+					return 0.93;
+				},
+			} as unknown as FSRSService;
+
+			const result = buildRetrievabilityQueue(
+				[strict, relaxed],
+				service,
+				{
+					...options,
+					resolveCardOptions: (card) =>
+						card.id === "strict"
+							? {
+									comfortFloor: 0.9,
+									ceiling: 0.92,
+									presetSettings: strictSettings,
+								}
+							: {
+									comfortFloor: 0.9,
+									ceiling: 0.94,
+									presetSettings: relaxedSettings,
+								},
+				},
+				NOW,
+			);
+
+			expect(result.cards.map((card) => card.id)).toEqual(["relaxed"]);
+			expect(seenSettings).toEqual([strictSettings, relaxedSettings]);
+		});
+	});
+
 	describe("ordering", () => {
 		it("never runs more than three hard cards back to back while comfort cards remain", () => {
 			const hard = Array.from({ length: 20 }, (_, i) =>

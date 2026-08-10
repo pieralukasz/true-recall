@@ -3,6 +3,7 @@ import { FSRS_COLORS } from "@true-recall/obsidian/helpers/fsrs-colors";
 interface RetentionDisplayProps {
 	newCount: number;
 	learningCount: number;
+	learningPending?: number;
 }
 
 /**
@@ -21,13 +22,19 @@ interface RetentionDisplayProps {
 export function RetentionDisplay({
 	newCount,
 	learningCount,
+	learningPending = 0,
 }: RetentionDisplayProps) {
 	return (
 		<span class="ep:flex ep:items-center ep:gap-2 ep:text-ui-smaller ep:font-medium ep:shrink-0 ep:tabular-nums">
 			<span class="ep:w-8 ep:text-right" title="New cards">
 				<span class={FSRS_COLORS.new.textCls}>{newCount}</span>
 			</span>
-			<span class="ep:w-6 ep:text-right" title="Learning cards">
+			<span
+				class="ep:w-6 ep:text-right"
+				title={`${learningCount} learning cards due now${
+					learningPending > 0 ? ` · ${learningPending} scheduled later` : ""
+				}`}
+			>
 				<span class={FSRS_COLORS.learning.textCls}>{learningCount}</span>
 			</span>
 		</span>

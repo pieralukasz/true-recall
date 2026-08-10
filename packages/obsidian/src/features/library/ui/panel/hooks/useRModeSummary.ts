@@ -1,4 +1,4 @@
-import { useMemo } from "preact/hooks";
+import { useEffect, useMemo, useState } from "preact/hooks";
 import { State } from "ts-fsrs";
 
 import {
@@ -26,14 +26,30 @@ export function useRModeSummary(): {
 	bands: RModeBands;
 } {
 	const plugin = usePlugin();
-	const { cardsWithFsrs } = usePanelStore();
+	const { cardsWithFsrs, currentFile } = usePanelStore();
 
-	const { rMode, fsrsRequestRetention } = plugin.settings;
+	const { rMode } = plugin.settings;
+
+	const [minute, setMinute] = useState(() => Math.floor(Date.now() / 60_000));
+	useEffect(() => {
+		const timer = window.setInterval(
+			() => setMinute(Math.floor(Date.now() / 60_000)),
+			60_000,
+		);
+		return () => window.clearInterval(timer);
+	}, []);
 
 	return useMemo(() => {
+		const effectivePreset = currentFile
+			? plugin.presetService.resolvePresetChain(currentFile.path).effective
+					.preset
+			: plugin.presetService.getDefaultPreset();
 		const bands: RModeBands = {
-			ceiling: Math.min(0.999, fsrsRequestRetention + rMode.ceilingOffset),
-			comfortFloor: fsrsRequestRetention,
+			ceiling: Math.min(
+				0.999,
+				effectivePreset.requestRetention + rMode.ceilingOffset,
+			),
+			comfortFloor: effectivePreset.requestRetention,
 			urgentBelow: rMode.urgentBelow,
 		};
 
@@ -41,15 +57,41 @@ export function useRModeSummary(): {
 			(card) => card.fsrs.state === State.Review,
 		);
 
+		const presetCache = new Map<string, typeof effectivePreset>();
 		return {
-			summary: summarizeRetrievability(reviewCards, plugin.fsrsService, bands),
+			summary: summarizeRetrievability(
+				reviewCards,
+				plugin.fsrsService,
+				{
+					...bands,
+					resolveCardOptions: (card) => {
+						const key = card.sourceUid ?? card.id;
+						let preset = presetCache.get(key);
+						if (!preset) {
+							preset = plugin.presetService.resolvePresetForCard(card);
+							presetCache.set(key, preset);
+						}
+						return {
+							comfortFloor: preset.requestRetention,
+							ceiling: Math.min(
+								0.999,
+								preset.requestRetention + rMode.ceilingOffset,
+							),
+							presetSettings: plugin.presetService.toFSRSSettings(preset),
+						};
+					},
+				},
+				new Date(minute * 60_000),
+			),
 			bands,
 		};
 	}, [
 		cardsWithFsrs,
 		plugin.fsrsService,
-		fsrsRequestRetention,
+		plugin.presetService,
+		currentFile?.path,
 		rMode.ceilingOffset,
 		rMode.urgentBelow,
+		minute,
 	]);
 }

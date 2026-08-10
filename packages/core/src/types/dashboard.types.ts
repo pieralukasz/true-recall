@@ -26,7 +26,10 @@ export interface DashboardNoteEntry {
 	path: string | null;
 	due: number;
 	newCount: number;
+	/** Learning/Relearning cards whose next step is due now. */
 	learning: number;
+	/** Learning/Relearning cards waiting for a later step. */
+	learningPending?: number;
 	total: number;
 	lastReview: string | null;
 	overdueDays: number;
@@ -58,7 +61,10 @@ export interface DashboardProject {
 	path: string;
 	healthPct: number;
 	newCount: number;
+	/** Learning/Relearning cards whose next step is due now. */
 	learning: number;
+	/** Learning/Relearning cards waiting for a later step. */
+	learningPending?: number;
 	due: number;
 	totalCards: number;
 	childCount: number;
@@ -106,6 +112,7 @@ export interface DashboardAggregation {
 	totalPool?: number;
 	totalNew: number;
 	totalLearning: number;
+	totalLearningPending?: number;
 	totalOverdue: number;
 	totalCards: number;
 	streak: number;

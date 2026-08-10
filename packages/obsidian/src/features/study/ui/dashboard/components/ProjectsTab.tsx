@@ -155,6 +155,21 @@ export function ProjectsTab({
 
 	return (
 		<div>
+			{plugin.settings.rMode.enabled && !isSelecting && (
+				<div
+					aria-hidden="true"
+					class="ep:flex ep:items-center ep:gap-2 ep:px-3 ep:h-6 ep:text-[9px] ep:uppercase ep:tracking-wide ep:text-obs-faint"
+				>
+					<span class="ep:flex-1" />
+					<span class="ep:w-20 ep:text-center">Memory</span>
+					<span class="ep:flex ep:gap-2 ep:shrink-0">
+						<span class="ep:w-8 ep:text-right">New</span>
+						<span class="ep:w-6 ep:text-right">Learn</span>
+					</span>
+					<span class="ep:w-11 ep:text-center">Reviews</span>
+					<span class="ep:w-6" />
+				</div>
+			)}
 			{isSelecting && (
 				<SelectionBar
 					selectedCount={selectedCount}

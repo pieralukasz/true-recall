@@ -59,9 +59,11 @@ function aggregate(
 		reviewsCap: 200,
 		retrievability: rValues
 			? {
-					getRetrievability: (card) => rValues[card.id] ?? 1,
-					ceiling: 0.95,
-					comfortFloor: 0.9,
+					getScore: (card) => ({
+						r: rValues[card.id] ?? 1,
+						ceiling: 0.95,
+						comfortFloor: 0.9,
+					}),
 					urgentBelow: 0.5,
 				}
 			: undefined,
@@ -117,6 +119,17 @@ describe("dashboard aggregation — retrievability", () => {
 		expect(aggregate(cards, { a: 0.6, b: 0.99 }).totalPool).toBe(1);
 	});
 
+	it("includes orphan review cards in the global pool", () => {
+		const orphan = reviewCard("orphan", "Temporary", 5);
+		orphan.sourceNoteName = undefined;
+		orphan.sourceNotePath = undefined;
+
+		const result = aggregate([orphan], { orphan: 0.6 });
+
+		expect(result.totalPool).toBe(1);
+		expect(result.notes).toHaveLength(0);
+	});
+
 	it("drives priority from the bands rather than from lateness", () => {
 		// Not due for another 5 days, but already below the urgent threshold.
 		const result = aggregate([reviewCard("a", "Note", 5)], { a: 0.3 });
@@ -133,6 +146,22 @@ describe("dashboard aggregation — retrievability", () => {
 
 		expect(dueMode.notes[0]?.estimatedMinutes).toBe(0);
 		expect(rMode.notes[0]?.estimatedMinutes).toBeGreaterThan(0);
+	});
+
+	it("separates learning due now from learning scheduled later", () => {
+		const due = reviewCard("due-learning", "Note", 0);
+		due.fsrs.state = State.Learning;
+		due.fsrs.due = new Date(Date.now() - 60_000).toISOString();
+		const pending = reviewCard("pending-learning", "Note", 0);
+		pending.fsrs.state = State.Relearning;
+		pending.fsrs.due = new Date(Date.now() + 60_000).toISOString();
+
+		const result = aggregate([due, pending]);
+
+		expect(result.totalLearning).toBe(1);
+		expect(result.totalLearningPending).toBe(1);
+		expect(result.notes[0]?.learning).toBe(1);
+		expect(result.notes[0]?.learningPending).toBe(1);
 	});
 });
 

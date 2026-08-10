@@ -9,6 +9,7 @@ import {
 	type ActionableSessionSnapshotDeps,
 	computeActionableSessionSnapshot,
 } from "../../../src/services/review/actionable-session-snapshot.service";
+import type { RModeCardOptions } from "../../../src/services/review/retrievability-queue";
 import type {
 	FSRSPreset,
 	TrueRecallSettings,
@@ -61,6 +62,7 @@ function createDeps(
 		getDefaultPreset: () => defaultPreset,
 		resolvePresetForCard: () => defaultPreset,
 		resolvePresetChain: () => ({ effective: { preset: defaultPreset } }),
+		toFSRSSettings: () => ({}),
 	} as unknown as PresetService;
 	const sessionPersistence = {
 		getReviewedToday: () => new Set<string>(),
@@ -305,5 +307,111 @@ describe("computeActionableSessionSnapshot", () => {
 		expect(reviewService.buildQueue).toHaveBeenCalled();
 		expect(updateSettings).not.toHaveBeenCalled();
 		expect(snapshot.queueLength).toBe(1);
+	});
+
+	it("keeps target count and scheduling mode in the snapshot cache key", () => {
+		const cache = new Map();
+		const buildQueue = vi.fn(() => []);
+		const reviewService = {
+			buildQueue,
+		} as unknown as import("../../../src/services/review/review.service").ReviewService;
+		const deps = createDeps({ reviewService });
+
+		computeActionableSessionSnapshot(
+			deps,
+			{ rModeTargetCount: 10, schedulingMode: "due" },
+			{ cache },
+		);
+		computeActionableSessionSnapshot(
+			deps,
+			{ rModeTargetCount: 20, schedulingMode: "due" },
+			{ cache },
+		);
+		computeActionableSessionSnapshot(
+			deps,
+			{ rModeTargetCount: 20, schedulingMode: "retrievability" },
+			{ cache },
+		);
+
+		expect(buildQueue).toHaveBeenCalledTimes(3);
+	});
+
+	it("counts only learning steps due now as actionable", () => {
+		const cards = [
+			createMockFlashcard({
+				id: "learning-now",
+				fsrs: {
+					state: State.Learning,
+					due: new Date(Date.now() - 60_000).toISOString(),
+				},
+			}),
+			createMockFlashcard({
+				id: "learning-later",
+				fsrs: {
+					state: State.Relearning,
+					due: new Date(Date.now() + 60_000).toISOString(),
+				},
+			}),
+		];
+		const reviewService = {
+			buildQueue: vi.fn(() => cards),
+		} as unknown as import("../../../src/services/review/review.service").ReviewService;
+
+		const snapshot = computeActionableSessionSnapshot(
+			createDeps({ allCards: cards, reviewService }),
+			{},
+		);
+
+		expect(snapshot.counts.learning).toBe(1);
+		expect(snapshot.counts.learningPending).toBe(1);
+	});
+
+	it("resolves R-Mode thresholds and FSRS settings per card preset", () => {
+		const defaultPreset = createPreset("Default", { requestRetention: 0.85 });
+		const strictPreset = createPreset("Strict", { requestRetention: 0.95 });
+		const settings = {
+			...createSettings([defaultPreset, strictPreset], defaultPreset.id),
+			rMode: { ...DEFAULT_SETTINGS.rMode, enabled: true, ceilingOffset: 0.03 },
+		};
+		const card = createMockFlashcard({
+			id: "strict-card",
+			sourceUid: "strict-source",
+			fsrs: { state: State.Review },
+		});
+		const strictSettings = { requestRetention: 0.95 };
+		const toFSRSSettings = vi.fn((preset: FSRSPreset) =>
+			preset === strictPreset ? strictSettings : {},
+		);
+		const presetService = {
+			getPresets: () => settings.fsrsPresets,
+			getDefaultPreset: () => defaultPreset,
+			resolvePresetForCard: () => strictPreset,
+			resolvePresetChain: () => ({ effective: { preset: defaultPreset } }),
+			toFSRSSettings,
+		} as unknown as PresetService;
+		let resolved: RModeCardOptions | undefined;
+		const reviewService = {
+			buildQueue: vi.fn((cards, _fsrs, options) => {
+				resolved = options.rMode?.resolveCardOptions?.(cards[0]);
+				return [];
+			}),
+		} as unknown as import("../../../src/services/review/review.service").ReviewService;
+
+		computeActionableSessionSnapshot(
+			createDeps({
+				allCards: [card],
+				settings,
+				presetService,
+				reviewService,
+			}),
+			{ schedulingMode: "retrievability" },
+		);
+
+		expect(resolved).toEqual({
+			comfortFloor: 0.95,
+			ceiling: 0.98,
+			presetSettings: strictSettings,
+		});
+		expect(toFSRSSettings).toHaveBeenCalledWith(strictPreset);
 	});
 });

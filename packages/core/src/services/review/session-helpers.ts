@@ -71,10 +71,14 @@ export function filterActiveCards(
 	});
 }
 
-export function getEmptyQueueMessage(stateFilter?: string): string {
+export function getEmptyQueueMessage(
+	stateFilter?: string,
+	rModeActive = false,
+): string {
 	if (stateFilter === "buried") {
 		return "No buried cards found.";
 	}
+	if (rModeActive) return "Nothing worth reviewing right now.";
 
 	return "Congratulations! No cards due for review.";
 }
@@ -146,7 +150,7 @@ export function buildQueueOptions(
 		materializedCardIds: filters.materializedCardIds,
 		temporaryDeckCardIds,
 		rMode: resolveRModeOptions(
-			settings.rMode,
+			filters.schedulingMode === "retrievability" ? settings.rMode : undefined,
 			preset?.requestRetention ?? settings.fsrsRequestRetention,
 			filters.rModeTargetCount,
 		),

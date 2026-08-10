@@ -3,6 +3,7 @@ interface InlineCardCountProps {
 	onChange: (value: string) => void;
 	onSubmit: () => void;
 	ariaLabel: string;
+	available?: number;
 }
 
 /**
@@ -38,16 +39,30 @@ export function InlineCardCount({
 	onChange,
 	onSubmit,
 	ariaLabel,
+	available,
 }: InlineCardCountProps) {
+	const parsed = Number.parseInt(value, 10);
+	const exceedsPool =
+		available !== undefined && !Number.isNaN(parsed) && parsed > available;
+	const title = exceedsPool
+		? `${ariaLabel}. ${available} review cards are currently available.`
+		: ariaLabel;
+
 	return (
 		<input
 			type="number"
-			min={1}
+			min={0}
+			step={1}
+			inputMode="numeric"
+			autoComplete="off"
+			name="review-card-count"
 			value={value}
 			aria-label={ariaLabel}
-			title={ariaLabel}
+			title={title}
 			draggable={false}
-			class="ep:w-11 ep:shrink-0 ep:rounded-md ep:border ep:border-solid ep:border-obs-border ep:bg-obs-primary ep:px-1 ep:py-0.5 ep:text-center ep:text-ui-smaller ep:font-medium ep:tabular-nums"
+			class={`ep:w-11 ep:shrink-0 ep:rounded-md ep:border ep:border-solid ep:bg-obs-primary ep:px-1 ep:py-0.5 ep:text-center ep:text-ui-smaller ep:font-medium ep:tabular-nums ${
+				exceedsPool ? "ep:border-obs-orange" : "ep:border-obs-border"
+			}`}
 			// Obsidian styles `input[type=number]` directly, which outranks a
 			// single-class utility — the colour has to come from an inline style.
 			style={{ color: "var(--color-blue)" }}
