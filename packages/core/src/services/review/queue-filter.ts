@@ -67,12 +67,15 @@ function matchesCustomStudy(
 	}
 }
 
-export function calculateBoundaries(dayStartHour: number = 4): {
+export function calculateBoundaries(
+	dayStartHour: number = 4,
+	referenceNow?: Date,
+): {
 	now: Date;
 	todayBoundary: Date;
 	weekAgoBoundary: Date;
 } {
-	const now = new Date();
+	const now = referenceNow ? new Date(referenceNow) : new Date();
 	const todayBoundary = getTodayBoundary(dayStartHour, now);
 
 	const weekAgoBoundary = new Date(todayBoundary);

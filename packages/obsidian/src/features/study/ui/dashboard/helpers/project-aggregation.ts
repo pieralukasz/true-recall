@@ -11,6 +11,10 @@ import type {
 } from "@true-recall/core/services/notes/hierarchy.service";
 import type { PresetService } from "@true-recall/core/services/notes/preset.service";
 import { summarizeRetrievability } from "@true-recall/core/services/review/retrievability-queue";
+import {
+	captureSessionProgress,
+	type SessionProgressSnapshot,
+} from "@true-recall/core/services/review/session-helpers";
 import type {
 	CardSchedulingMeta,
 	TrueRecallSettings,
@@ -170,6 +174,7 @@ export function aggregateProjectData(
 
 	const hierarchy = plugin.hierarchyService.buildHierarchy();
 	const snapshotCache = new Map<string, ActionableSessionSnapshot>();
+	const sessionProgress = captureSessionProgress(plugin.sessionPersistence);
 	const now = deps.now ?? new Date();
 	const allCardsBySourceUid = buildCardsBySourceUid(plugin.allCards);
 	const activeCardsBySourceUid = buildActiveCardsBySourceUid(
@@ -187,6 +192,7 @@ export function aggregateProjectData(
 			noteByPath,
 			plugin,
 			snapshotCache,
+			sessionProgress,
 			indexes,
 			showArchived,
 		),
@@ -262,6 +268,7 @@ function buildProjectFromNode(
 	noteByPath: Map<string, DashboardNoteEntry>,
 	plugin: ProjectAggregationDeps["plugin"],
 	snapshotCache: Map<string, ActionableSessionSnapshot>,
+	sessionProgress: SessionProgressSnapshot,
 	indexes: ProjectAggregationIndexes,
 	showArchived?: boolean,
 ): DashboardProject {
@@ -313,6 +320,7 @@ function buildProjectFromNode(
 			noteByPath,
 			plugin,
 			snapshotCache,
+			sessionProgress,
 			indexes,
 			showArchived,
 		),
@@ -361,7 +369,12 @@ function buildProjectFromNode(
 					? "retrievability"
 					: "due",
 			},
-			{ cache: snapshotCache, activeCards: scopedActiveCards },
+			{
+				cache: snapshotCache,
+				activeCards: scopedActiveCards,
+				sessionProgress,
+				now: indexes.now,
+			},
 		);
 		counts = snapshot.counts;
 	}

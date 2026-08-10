@@ -345,6 +345,7 @@ export function buildQueue(
 ): CardSchedulingMeta[] {
 	const { now, todayBoundary, weekAgoBoundary } = calculateBoundaries(
 		options.dayStartHour,
+		options.now,
 	);
 	const reviewedToday = options.reviewedToday ?? new Set<string>();
 

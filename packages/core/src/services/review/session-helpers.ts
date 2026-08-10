@@ -47,6 +47,25 @@ export interface GlobalPresetQueueContext {
 }
 
 /**
+ * Persistence-backed values shared by every queue built in one UI
+ * aggregation. Dashboard note/project snapshots are computed synchronously;
+ * capturing these once prevents an identical SQL query per scope.
+ */
+export interface SessionProgressSnapshot {
+	reviewedToday: Set<string>;
+	presetProgressToday: Map<string, PresetDailyProgress>;
+}
+
+export function captureSessionProgress(
+	sessionPersistence: SessionPersistenceService,
+): SessionProgressSnapshot {
+	return {
+		reviewedToday: sessionPersistence.getReviewedToday(),
+		presetProgressToday: sessionPersistence.getTodayProgressByPreset(),
+	};
+}
+
+/**
  * Returns active (non-suspended, non-buried, non-archived) cards, or specifically
  * buried cards if stateFilter is "buried"
  */
@@ -88,13 +107,17 @@ export function buildQueueOptions(
 	settings: TrueRecallSettings,
 	sessionPersistence: SessionPersistenceService,
 	preset?: FSRSPreset,
+	sessionProgress?: SessionProgressSnapshot,
 ): QueueBuildOptions {
 	// When scoped to a single preset (per-project/per-note snapshots), match
 	// today's progress to that preset so its remaining budget isn't drained
 	// by reviews from other presets. Global sessions don't pass a preset and
 	// use the aggregate counters instead.
 	const presetProgress = preset
-		? sessionPersistence.getTodayProgressByPreset().get(preset.name)
+		? (
+				sessionProgress?.presetProgressToday ??
+				sessionPersistence.getTodayProgressByPreset()
+			).get(preset.name)
 		: undefined;
 	const newCardsStudiedToday = preset
 		? (presetProgress?.newStudied ?? 0)
@@ -117,7 +140,8 @@ export function buildQueueOptions(
 	return {
 		newCardsLimit: preset?.newCardsPerDay ?? settings.newCardsPerDay,
 		reviewsLimit: preset?.reviewsPerDay ?? settings.reviewsPerDay,
-		reviewedToday: sessionPersistence.getReviewedToday(),
+		reviewedToday:
+			sessionProgress?.reviewedToday ?? sessionPersistence.getReviewedToday(),
 		newCardsStudiedToday,
 		reviewsCompletedToday,
 		newCardOrder: preset?.newCardOrder ?? settings.newCardOrder,
@@ -189,6 +213,7 @@ export function buildGlobalPresetQueueContext(
 	cards: CardSchedulingMeta[],
 	presetService: PresetServiceLike,
 	sessionPersistence: SessionPersistenceService,
+	sessionProgress?: SessionProgressSnapshot,
 ): GlobalPresetQueueContext {
 	const defaultPreset = presetService.getDefaultPreset();
 	const presetDailyLimits = new Map<
@@ -234,7 +259,8 @@ export function buildGlobalPresetQueueContext(
 	}
 
 	const presetProgressToday = new Map(
-		sessionPersistence.getTodayProgressByPreset(),
+		sessionProgress?.presetProgressToday ??
+			sessionPersistence.getTodayProgressByPreset(),
 	);
 	if (
 		defaultPreset.name !== "Default" &&

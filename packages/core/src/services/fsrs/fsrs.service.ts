@@ -21,11 +21,32 @@ import { formatInterval } from "../../types";
 import type { FSRSSettings } from "../../types/settings.types";
 import { getTomorrowBoundary } from "../../utils";
 
+interface RetrievabilityCacheEntry {
+	settingsKey: string;
+	calculatedAt: number;
+	due: string;
+	stability: number;
+	difficulty: number;
+	reps: number;
+	lapses: number;
+	state: State;
+	lastReview: string | null;
+	scheduledDays: number;
+	learningStep: number;
+	value: number;
+}
+
 export class FSRSService {
 	private fsrs: FSRS;
 	private readonly fsrsCache = new Map<string, FSRS>();
+	private readonly settingsKeyCache = new WeakMap<FSRSSettings, string>();
+	private readonly retrievabilityCache = new WeakMap<
+		FSRSCardData,
+		RetrievabilityCacheEntry[]
+	>();
 	private defaultSettingsKey: string;
 	private static readonly MAX_CACHE_SIZE = 64;
+	private static readonly MAX_RETRIEVABILITY_POLICIES_PER_CARD = 8;
 
 	constructor(settings: FSRSSettings) {
 		this.defaultSettingsKey = this.getSettingsKey(settings);
@@ -53,10 +74,15 @@ export class FSRSService {
 	}
 
 	private getSettingsKey(settings: FSRSSettings): string {
+		const cached = Object.isFrozen(settings)
+			? this.settingsKeyCache.get(settings)
+			: undefined;
+		if (cached) return cached;
+
 		const weights = settings.weights ? settings.weights.join(",") : "default";
 		const learning = settings.learningSteps.join(",");
 		const relearning = settings.relearningSteps.join(",");
-		return [
+		const key = [
 			settings.requestRetention,
 			settings.maximumInterval,
 			weights,
@@ -65,6 +91,8 @@ export class FSRSService {
 			relearning,
 			settings.enableShortTerm ? 1 : 0,
 		].join("|");
+		if (Object.isFrozen(settings)) this.settingsKeyCache.set(settings, key);
+		return key;
 	}
 
 	private getOrCreateFSRS(settings: FSRSSettings): FSRS {
@@ -86,6 +114,67 @@ export class FSRSService {
 	private resolveFSRS(presetSettings?: FSRSSettings): FSRS {
 		if (!presetSettings) return this.fsrs;
 		return this.getOrCreateFSRS(presetSettings);
+	}
+
+	private isRetrievabilityCacheHit(
+		entry: RetrievabilityCacheEntry,
+		card: FSRSCardData,
+		settingsKey: string,
+		calculatedAt: number,
+	): boolean {
+		return (
+			entry.settingsKey === settingsKey &&
+			entry.calculatedAt === calculatedAt &&
+			entry.due === card.due &&
+			entry.stability === card.stability &&
+			entry.difficulty === card.difficulty &&
+			entry.reps === card.reps &&
+			entry.lapses === card.lapses &&
+			entry.state === card.state &&
+			entry.lastReview === card.lastReview &&
+			entry.scheduledDays === card.scheduledDays &&
+			entry.learningStep === card.learningStep
+		);
+	}
+
+	private cacheRetrievability(
+		card: FSRSCardData,
+		settingsKey: string,
+		calculatedAt: number,
+		value: number,
+	): void {
+		let entries = this.retrievabilityCache.get(card);
+		if (!entries) {
+			entries = [];
+			this.retrievabilityCache.set(card, entries);
+		}
+
+		const next: RetrievabilityCacheEntry = {
+			settingsKey,
+			calculatedAt,
+			due: card.due,
+			stability: card.stability,
+			difficulty: card.difficulty,
+			reps: card.reps,
+			lapses: card.lapses,
+			state: card.state,
+			lastReview: card.lastReview,
+			scheduledDays: card.scheduledDays,
+			learningStep: card.learningStep,
+			value,
+		};
+		const existingIndex = entries.findIndex(
+			(entry) => entry.settingsKey === settingsKey,
+		);
+		if (existingIndex >= 0) {
+			entries[existingIndex] = next;
+			return;
+		}
+
+		entries.push(next);
+		if (entries.length > FSRSService.MAX_RETRIEVABILITY_POLICIES_PER_CARD) {
+			entries.shift();
+		}
 	}
 
 	updateSettings(settings: FSRSSettings): void {
@@ -277,10 +366,28 @@ export class FSRSService {
 			return 0;
 		}
 
-		const card = this.toCard(cardData);
 		const currentTime = now ?? new Date();
+		const calculatedAt = currentTime.getTime();
+		const settingsKey = presetSettings
+			? this.getSettingsKey(presetSettings)
+			: this.defaultSettingsKey;
+		const cached = this.retrievabilityCache
+			.get(cardData)
+			?.find((entry) =>
+				this.isRetrievabilityCacheHit(
+					entry,
+					cardData,
+					settingsKey,
+					calculatedAt,
+				),
+			);
+		if (cached) return cached.value;
+
+		const card = this.toCard(cardData);
 		const fsrs = this.resolveFSRS(presetSettings);
-		return fsrs.get_retrievability(card, currentTime, false) ?? 0;
+		const value = fsrs.get_retrievability(card, currentTime, false) ?? 0;
+		this.cacheRetrievability(cardData, settingsKey, calculatedAt, value);
+		return value;
 	}
 
 	getStats(
