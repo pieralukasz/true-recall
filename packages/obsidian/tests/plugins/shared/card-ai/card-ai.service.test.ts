@@ -31,6 +31,8 @@ const request = {
 	noteType: BASIC_NOTE_TYPE,
 	prompt: "P",
 	operation: "edit" as const,
+	mode: "edit" as const,
+	fieldScope: "all" as const,
 };
 
 describe("CardAIService", () => {
@@ -49,10 +51,74 @@ describe("CardAIService", () => {
 			client(
 				`[{"Front":"Q1","Back":"A1"},{"Front":"Q2","Back":"A2"},{"Front":"Q3","Back":"A3"}]`,
 			),
-		).transform(request);
+		).transform({ ...request, mode: "split" });
 		expect(r.cards).toHaveLength(3);
 		expect(r.cards[0]).toEqual({ Front: "Q1", Back: "A1" });
 		expect(r.cards[2]).toEqual({ Front: "Q3", Back: "A3" });
+	});
+
+	it("accepts an unchanged singleton as a safe split no-op", async () => {
+		const c = client(`[{"Front":"q","Back":""}]`);
+		const result = await new CardAIService(c).transform({
+			...request,
+			mode: "split",
+		});
+
+		expect(result.cards).toEqual([request.fields]);
+		expect(c.chat).toHaveBeenCalledOnce();
+	});
+
+	it("repairs a split response with the wrong number of cards", async () => {
+		const c = {
+			chat: vi
+				.fn()
+				.mockResolvedValueOnce({
+					choices: [
+						{
+							message: {
+								role: "assistant",
+								content: `[{"Front":"Changed","Back":"A"}]`,
+							},
+						},
+					],
+					usage: { prompt_tokens: 10, completion_tokens: 20 },
+				})
+				.mockResolvedValueOnce({
+					choices: [
+						{
+							message: {
+								role: "assistant",
+								content: `[{"Front":"Q1","Back":"A1"},{"Front":"Q2","Back":"A2"}]`,
+							},
+						},
+					],
+					usage: { prompt_tokens: 12, completion_tokens: 22 },
+				}),
+		} as unknown as OpenRouterClient;
+
+		const result = await new CardAIService(c).transform({
+			...request,
+			mode: "split",
+		});
+
+		expect(result.cards).toHaveLength(2);
+		expect(result.usage).toEqual({ promptTokens: 22, completionTokens: 42 });
+		expect(c.chat).toHaveBeenCalledTimes(2);
+		expect(
+			(c.chat as ReturnType<typeof vi.fn>).mock.calls[1]?.[0].messages.at(-1)
+				.content,
+		).toContain("Correct it now");
+	});
+
+	it("falls back to an unchanged card when split repair still fails", async () => {
+		const c = client(`[{"Front":"Still one card","Back":"A"}]`);
+		const result = await new CardAIService(c).transform({
+			...request,
+			mode: "split",
+		});
+
+		expect(result.cards).toEqual([request.fields]);
+		expect(c.chat).toHaveBeenCalledTimes(2);
 	});
 
 	it("strips ```json fences around an array", async () => {
@@ -80,13 +146,37 @@ describe("CardAIService", () => {
 		).rejects.toBeInstanceOf(CardAIParseError);
 	});
 
-	it("sends temperature 0.7 in the chat request", async () => {
+	it("uses a low deterministic temperature and output cap", async () => {
 		const c = client(`[{"Front":"Q","Back":"A"}]`);
 		await new CardAIService(c).transform(request);
 		const chat = c.chat as ReturnType<typeof vi.fn>;
 		expect(chat).toHaveBeenCalledWith(
-			expect.objectContaining({ temperature: 0.7 }),
+			expect.objectContaining({ temperature: 0.2, max_tokens: 4096 }),
 		);
+	});
+
+	it("rejects extra cards in edit mode", async () => {
+		await expect(
+			new CardAIService(
+				client(`[{"Front":"Q1","Back":"A1"},{"Front":"Q2","Back":"A2"}]`),
+			).transform(request),
+		).rejects.toBeInstanceOf(CardAIParseError);
+	});
+
+	it("preserves fields outside the configured edit scope", async () => {
+		const result = await new CardAIService(
+			client(`[{"Front":"Clear question","Back":"Invented answer"}]`),
+		).transform({ ...request, fieldScope: "question" });
+
+		expect(result.cards).toEqual([{ Front: "Clear question", Back: "" }]);
+	});
+
+	it("rejects a spawn response that edits the source card", async () => {
+		await expect(
+			new CardAIService(
+				client(`[{"Front":"Changed","Back":""},{"Front":"New","Back":"A"}]`),
+			).transform({ ...request, mode: "spawn" }),
+		).rejects.toBeInstanceOf(CardAIParseError);
 	});
 
 	it("throws CardAIAbortedError when signal is pre-aborted", async () => {

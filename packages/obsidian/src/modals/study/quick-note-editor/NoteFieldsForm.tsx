@@ -13,7 +13,7 @@ interface NoteFieldsFormProps {
 	sourcePath: string;
 	onFieldChange: (fieldName: string, value: string) => void;
 	onFieldFocus?: (fieldName: string, editorView: EditorView) => void;
-	onModEnter?: () => void;
+	onModEnter?: (fieldName: string, value: string) => void;
 	onEscape?: () => void;
 	autoFocusFirst?: boolean;
 	pinnedFields?: Set<string>;

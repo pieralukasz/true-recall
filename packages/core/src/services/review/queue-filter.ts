@@ -25,6 +25,8 @@ function matchesCustomStudy(
 			);
 		case "forgotten":
 			return options.forgottenCardIds?.has(card.id) === true;
+		case "actual-learning":
+			return isLearningState(card.fsrs.state);
 		case "review-ahead":
 			return (
 				card.fsrs.state !== State.New &&

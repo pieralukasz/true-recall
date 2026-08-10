@@ -7,6 +7,7 @@ export type CustomStudyRequest =
 	| { kind: "increase-new"; amount: number }
 	| { kind: "increase-review"; amount: number }
 	| { kind: "forgotten"; days: number }
+	| { kind: "actual-learning" }
 	| { kind: "review-ahead"; days: number }
 	| { kind: "preview-new"; days: number }
 	| {
@@ -65,6 +66,10 @@ export interface ReviewViewState extends Record<string, unknown> {
 	materializedCardIds?: string[];
 	/** Identifies the persisted temporary deck owning this review session. */
 	temporaryDeckId?: string;
+	/** Requested Review-state card count when schedulingMode is retrievability. */
+	rModeTargetCount?: number;
+	/** Scheduling semantics captured when the session starts. */
+	schedulingMode?: "due" | "retrievability";
 }
 
 export interface SessionFilters {
@@ -92,6 +97,10 @@ export interface SessionFilters {
 	materializedCardIds?: string[];
 	temporaryDeckId?: string;
 	dayStartHour?: number;
+	/** Requested Review-state card count when schedulingMode is retrievability. */
+	rModeTargetCount?: number;
+	/** Scheduling semantics captured when the session starts. */
+	schedulingMode?: "due" | "retrievability";
 }
 
 export function filtersFromViewState(
@@ -122,6 +131,8 @@ export function filtersFromViewState(
 		customStudy: state.customStudy,
 		materializedCardIds: state.materializedCardIds,
 		temporaryDeckId: state.temporaryDeckId,
+		rModeTargetCount: state.rModeTargetCount,
+		schedulingMode: state.schedulingMode,
 	};
 }
 
@@ -150,6 +161,8 @@ export function filtersToViewState(filters: SessionFilters): ReviewViewState {
 		customStudy: filters.customStudy,
 		materializedCardIds: filters.materializedCardIds,
 		temporaryDeckId: filters.temporaryDeckId,
+		rModeTargetCount: filters.rModeTargetCount,
+		schedulingMode: filters.schedulingMode,
 	};
 }
 

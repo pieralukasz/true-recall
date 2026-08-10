@@ -318,6 +318,24 @@ describe("buildGlobalPresetQueueContext", () => {
 });
 
 describe("applyMutation", () => {
+	it("removes a card reviewed in another open session", () => {
+		const removeCardsByIds = vi.fn();
+		const review = {
+			queue: [createMockCard({ id: "c-reviewed" })],
+			removeCardsByIds,
+		} as unknown as ReviewApi;
+
+		applyMutation(
+			{ type: "reviewed", cardId: "c-reviewed", rating: 3 },
+			review,
+			{} as FlashcardManager,
+			{} as SqliteStoreService,
+			{},
+		);
+
+		expect(removeCardsByIds).toHaveBeenCalledWith(["c-reviewed"]);
+	});
+
 	it("does not enqueue added card when sourceUidFilter does not match", () => {
 		const addCardToQueue = vi.fn();
 		const review = {

@@ -2,10 +2,16 @@ import { useCallback } from "preact/hooks";
 
 import { cn } from "@true-recall/obsidian/utils/cn";
 
-import { useFormVariant } from "./FormVariantContext";
-
-const CARD_CLS =
-	"ep:py-2 ep:px-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-ui-small ep:focus:outline-none ep:focus:border-obs-interactive ep:transition-colors ep:disabled:opacity-50 ep:disabled:cursor-not-allowed";
+/**
+ * Obsidian styles bare `select` elements unlayered (`height`, `padding`,
+ * `border`, `background`, `line-height`), which outranks anything in Tailwind's
+ * `@layer utilities` no matter the specificity. Utility-based box styling
+ * therefore never applied here — it only fought the fixed `height` and got the
+ * value text clipped. Reusing `.dropdown` keeps Obsidian's own metrics and adds
+ * the chevron, so card selects match the ones in the settings tab.
+ */
+const BASE_CLS =
+	"dropdown ep:disabled:opacity-50 ep:disabled:cursor-not-allowed";
 
 interface SelectOption {
 	value: string;
@@ -41,7 +47,6 @@ export function SelectInput({
 	class: cls,
 	ariaLabel,
 }: SelectInputProps) {
-	const variant = useFormVariant();
 	const handleChange = useCallback(
 		(e: Event) => {
 			onChange((e.target as HTMLSelectElement).value);
@@ -49,11 +54,9 @@ export function SelectInput({
 		[onChange],
 	);
 
-	const baseCls = variant === "native" ? "dropdown" : CARD_CLS;
-
 	return (
 		<select
-			class={cn(baseCls, cls)}
+			class={cn(BASE_CLS, cls)}
 			value={value}
 			onChange={handleChange}
 			disabled={disabled}

@@ -33,6 +33,10 @@ export function applyMutation(
 		: undefined;
 
 	switch (m.type) {
+		case "reviewed": {
+			removeCardsFromQueue(review, [m.cardId]);
+			break;
+		}
 		case "removed": {
 			removeCardsFromQueue(review, [m.cardId, ...(m.cardIds ?? [])]);
 			break;

@@ -1,5 +1,8 @@
 import { useCallback } from "preact/hooks";
 
+import { isCardBuried } from "@true-recall/core/helpers/card-state";
+
+import { UnburyCommand } from "@true-recall/obsidian/commands/commands/card-bury.cmd";
 import { DeleteCardCommand } from "@true-recall/obsidian/commands/commands/card-delete.cmd";
 import { Clickable } from "@true-recall/obsidian/components";
 import { mutate } from "@true-recall/obsidian/data";
@@ -39,6 +42,20 @@ export function BulkActionsBar({
 		const count = plugin.cardStore.cards.bulkUnsuspend(ids);
 		mutate("card:unsuspended", () => {});
 		notify().success(`Unsuspended ${count} cards`);
+		onClearSelection();
+	}, [ids, plugin, onClearSelection]);
+
+	const handleUnbury = useCallback(async () => {
+		const buriedIds = ids.filter((id) =>
+			isCardBuried(plugin.cardStore.get(id)?.buriedUntil),
+		);
+		if (buriedIds.length === 0) {
+			notify().warning("No buried cards in selection");
+			return;
+		}
+		const cmd = new UnburyCommand(buriedIds);
+		await plugin.commandService?.execute(cmd);
+		notify().success(`Unburied ${buriedIds.length} cards`);
 		onClearSelection();
 	}, [ids, plugin, onClearSelection]);
 
@@ -136,6 +153,7 @@ export function BulkActionsBar({
 			<div class="ep:ml-auto ep:flex ep:items-center ep:gap-1.5">
 				<ActionButton label="Suspend" onClick={handleSuspend} />
 				<ActionButton label="Unsuspend" onClick={handleUnsuspend} />
+				<ActionButton label="Unbury" onClick={() => void handleUnbury()} />
 				<ActionButton label="Forget" onClick={handleForget} />
 				<ActionButton
 					label="Change type"

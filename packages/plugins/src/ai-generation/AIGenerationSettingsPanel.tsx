@@ -7,11 +7,13 @@ import {
 	type GenerationPreset,
 	type TrueRecallSettings,
 } from "@true-recall/core";
+import { moveItemAmong } from "@true-recall/core/utils";
 
 import { ActionButton } from "@true-recall/obsidian/components";
 import { usePlugin } from "@true-recall/obsidian/preact";
 
 import { LMStudioScopedModelField } from "../shared/LMStudioScopedModelField";
+import { ReorderableList } from "../shared/ReorderableList";
 import { usePersistentSettingsSlice } from "../shared/usePersistentSettingsSlice";
 import type { PluginSettingsProps } from "../types";
 import { GenerationPresetEditor } from "./GenerationPresetEditor";
@@ -116,6 +118,17 @@ export function AIGenerationSettingsPanel({
 		[persistPresets],
 	);
 
+	const reorderUserPresets = useCallback(
+		(from: number, to: number) => {
+			persistPresets(
+				(current) =>
+					moveItemAmong(current, (preset) => !preset.builtin, from, to),
+				{ flush: true },
+			);
+		},
+		[persistPresets],
+	);
+
 	const removeUserPreset = (p: GenerationPreset) => {
 		persistPresets(
 			(current) =>
@@ -214,17 +227,22 @@ export function AIGenerationSettingsPanel({
 						No custom presets yet. Add one to craft your own instruction.
 					</span>
 				)}
-				{userPresets.map((p) => (
-					<GenerationPresetEditor
-						key={p.id}
-						preset={p}
-						noteTypes={noteTypes}
-						onChange={updateUserPreset}
-						onDelete={() => removeUserPreset(p)}
-						expanded={expandedIds.has(p.id)}
-						onToggleExpanded={() => toggleExpanded(p.id)}
-					/>
-				))}
+				<ReorderableList
+					items={userPresets}
+					getKey={(p) => p.id}
+					onReorder={reorderUserPresets}
+					getMoveLabel={(p) => `Reorder ${p.name}`}
+					renderItem={(p) => (
+						<GenerationPresetEditor
+							preset={p}
+							noteTypes={noteTypes}
+							onChange={updateUserPreset}
+							onDelete={() => removeUserPreset(p)}
+							expanded={expandedIds.has(p.id)}
+							onToggleExpanded={() => toggleExpanded(p.id)}
+						/>
+					)}
+				/>
 				<div>
 					<ActionButton
 						label="+ New preset"

@@ -12,6 +12,7 @@ import type {
 	PresetDailyProgress,
 	SessionPersistenceService,
 } from "@true-recall/core/persistence/session/session-persistence.service";
+import { resolveRModeOptions } from "@true-recall/core/services/review/retrievability-queue";
 import type { QueueBuildOptions } from "@true-recall/core/services/review/review.service";
 import type { CardSchedulingMeta } from "@true-recall/core/types";
 import type { SessionFilters } from "@true-recall/core/types/review-session.types";
@@ -70,10 +71,14 @@ export function filterActiveCards(
 	});
 }
 
-export function getEmptyQueueMessage(stateFilter?: string): string {
+export function getEmptyQueueMessage(
+	stateFilter?: string,
+	rModeActive = false,
+): string {
 	if (stateFilter === "buried") {
 		return "No buried cards found.";
 	}
+	if (rModeActive) return "Nothing worth reviewing right now.";
 
 	return "Congratulations! No cards due for review.";
 }
@@ -103,9 +108,11 @@ export function buildQueueOptions(
 		customStudy?.kind === "forgotten"
 			? sessionPersistence.getCardsRatedAgainWithinDays(customStudy.days)
 			: undefined;
-	const temporaryDeckCardIds = filters.temporaryDeckId
-		? undefined
-		: new Set(settings.temporaryCustomStudyDeck?.cardIds ?? []);
+	const temporaryDeckCardIds = new Set(
+		(settings.temporaryCustomStudyDecks ?? [])
+			.filter((deck) => deck.id !== filters.temporaryDeckId)
+			.flatMap((deck) => deck.cardIds),
+	);
 
 	return {
 		newCardsLimit: preset?.newCardsPerDay ?? settings.newCardsPerDay,
@@ -142,6 +149,11 @@ export function buildQueueOptions(
 		forgottenCardIds,
 		materializedCardIds: filters.materializedCardIds,
 		temporaryDeckCardIds,
+		rMode: resolveRModeOptions(
+			filters.schedulingMode === "retrievability" ? settings.rMode : undefined,
+			preset?.requestRetention ?? settings.fsrsRequestRetention,
+			filters.rModeTargetCount,
+		),
 	};
 }
 

@@ -53,6 +53,18 @@ export function isCardActive(
 }
 
 /**
+ * Check whether a card is currently buried, i.e. it has a bury boundary that
+ * has not elapsed yet. An elapsed `buriedUntil` reads as "not buried".
+ */
+export function isCardBuried(
+	buriedUntil: string | null | undefined,
+	now?: Date,
+): boolean {
+	if (!buriedUntil) return false;
+	return new Date(buriedUntil) > (now ?? new Date());
+}
+
+/**
  * Options for filtering active cards
  */
 export interface ActiveCardFilterOptions {

@@ -16,7 +16,10 @@ import type {
 } from "@true-recall/core/types";
 import { isPreviewCustomStudy } from "@true-recall/core/types/review-session.types";
 
-import type { ReviewSessionController } from "@true-recall/obsidian/features/study/services/ReviewSessionController";
+import type {
+	ReviewGradeOutcome,
+	ReviewSessionController,
+} from "@true-recall/obsidian/features/study/services/ReviewSessionController";
 import type { SessionFilters } from "@true-recall/obsidian/features/study/ui/review/review.types";
 import type TrueRecallPlugin from "@true-recall/obsidian/main";
 import { notify } from "@true-recall/obsidian/services/notification.service";
@@ -145,12 +148,12 @@ export class AnswerHandler {
 		return result;
 	}
 
-	handleAnswer(rating: Grade): void {
+	handleAnswer(rating: Grade): ReviewGradeOutcome | null {
 		const outcome = this.deps.reviewController.gradeCurrentCard(
 			rating,
 			this.deps.getFilters(),
 		);
-		if (!outcome) return;
+		if (!outcome) return null;
 
 		if (this.deps.getFilters().crammingMode) {
 			this.deps.getCrammedCardIds().add(outcome.card.id);
@@ -175,5 +178,7 @@ export class AnswerHandler {
 				}
 			}
 		}
+
+		return outcome;
 	}
 }

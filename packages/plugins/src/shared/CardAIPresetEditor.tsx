@@ -1,12 +1,42 @@
-import type { CardAIPreset } from "@true-recall/core";
+import type {
+	CardAIExecutor,
+	CardAIFieldScope,
+	CardAIPreset,
+	CardAIPresetMode,
+} from "@true-recall/core";
 
 import {
 	ActionButton,
+	SelectInput,
 	TextAreaInput,
 	TextInput,
 } from "@true-recall/obsidian/components";
 import { useIcon } from "@true-recall/obsidian/preact/hooks";
 import { cn } from "@true-recall/obsidian/utils/cn";
+
+import { resolveCardAIPolicy } from "./card-ai/card-ai-policy";
+
+const MODE_OPTIONS = [
+	{ value: "edit", label: "Edit current card only" },
+	{ value: "split", label: "Replace current card and split" },
+	{ value: "spawn", label: "Keep current card and add new cards" },
+];
+
+const FIELD_SCOPE_OPTIONS = [
+	{ value: "all", label: "All fields" },
+	{ value: "question", label: "Question only" },
+	{ value: "answer", label: "Answer only" },
+	{ value: "empty-answer", label: "Empty answer only" },
+];
+
+const EXECUTOR_OPTIONS = [
+	{ value: "ai", label: "AI" },
+	{ value: "remove-backlinks", label: "Remove backlinks locally" },
+	{
+		value: "shorten-attachment-paths",
+		label: "Shorten attachment paths locally",
+	},
+];
 
 interface CardAIPresetEditorProps {
 	preset: CardAIPreset;
@@ -124,6 +154,7 @@ export function CardAIPresetEditor({
 
 	const patch = (partial: Partial<CardAIPreset>) =>
 		onChange?.(preset.id, partial);
+	const policy = resolveCardAIPolicy(preset);
 
 	const autoApplyId = `card-ai-auto-${preset.id}`;
 	const autoApplyNewId = `card-ai-auto-new-${preset.id}`;
@@ -154,6 +185,50 @@ export function CardAIPresetEditor({
 					Name
 				</span>
 				<TextInput value={preset.name} onChange={(v) => patch({ name: v })} />
+			</div>
+
+			<div class="ep:grid ep:grid-cols-1 ep:gap-2 ep:sm:grid-cols-3">
+				<div class="ep:flex ep:flex-col ep:gap-1">
+					<span class="ep:text-ui-smaller ep:text-obs-muted ep:font-medium">
+						Operation
+					</span>
+					<SelectInput
+						value={policy.mode}
+						onChange={(value) => patch({ mode: value as CardAIPresetMode })}
+						options={MODE_OPTIONS}
+						disabled={policy.executor !== "ai"}
+						ariaLabel="Card Polish operation"
+					/>
+				</div>
+				<div class="ep:flex ep:flex-col ep:gap-1">
+					<span class="ep:text-ui-smaller ep:text-obs-muted ep:font-medium">
+						Editable fields
+					</span>
+					<SelectInput
+						value={policy.fieldScope}
+						onChange={(value) =>
+							patch({ fieldScope: value as CardAIFieldScope })
+						}
+						options={FIELD_SCOPE_OPTIONS}
+						ariaLabel="Card Polish editable fields"
+					/>
+				</div>
+				<div class="ep:flex ep:flex-col ep:gap-1">
+					<span class="ep:text-ui-smaller ep:text-obs-muted ep:font-medium">
+						Executor
+					</span>
+					<SelectInput
+						value={policy.executor}
+						onChange={(value) =>
+							patch({
+								executor: value as CardAIExecutor,
+								...(value === "ai" ? {} : { mode: "edit" }),
+							})
+						}
+						options={EXECUTOR_OPTIONS}
+						ariaLabel="Card Polish executor"
+					/>
+				</div>
 			</div>
 
 			<div class="ep:flex ep:flex-col ep:gap-1">

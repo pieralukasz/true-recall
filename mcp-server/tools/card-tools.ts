@@ -1,4 +1,5 @@
 import { z } from "zod";
+
 import {
 	custom,
 	getWith,
@@ -15,9 +16,11 @@ export const cardTools: ToolDef[] = [
 		{
 			query: z.string().optional().describe("Text search in question/answer"),
 			state: z
-				.enum(["new", "learning", "review", "relearning"])
+				.enum(["new", "learning", "review", "relearning", "actual-learning"])
 				.optional()
-				.describe("Filter by card state"),
+				.describe(
+					"Filter by card state; actual-learning combines Learning and Relearning",
+				),
 			source_uid: z
 				.string()
 				.optional()
@@ -41,6 +44,22 @@ export const cardTools: ToolDef[] = [
 			const qs = sp.toString();
 			return jsonResult(await client.get(`/cards${qs ? `?${qs}` : ""}`));
 		},
+	),
+
+	getWith(
+		"get_actual_learning_cards",
+		"Get active cards currently in Learning or Relearning, ordered by due date. Excludes suspended, buried, and archived cards.",
+		{
+			limit: z
+				.number()
+				.int()
+				.min(1)
+				.max(200)
+				.optional()
+				.default(50)
+				.describe("Max cards to return (1-200)"),
+		},
+		(p) => `/cards/actual-learning?limit=${String(p.limit)}`,
 	),
 
 	getWith(

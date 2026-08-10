@@ -18,6 +18,8 @@ export function CustomStudyDetails({
 	availableTags,
 	onChange,
 }: CustomStudyDetailsProps) {
+	if (config.mode === "actual-learning") return null;
+
 	const simpleField = {
 		"increase-new": {
 			id: "cs-new-limit",

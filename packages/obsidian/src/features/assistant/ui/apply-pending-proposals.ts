@@ -31,6 +31,7 @@ export async function applyPendingProposals(
 	task: AssistantTask,
 	manifest: AssistantManifest,
 	apply: Pick<AssistantApplyService, "apply">,
+	options?: { shouldApply?: (proposal: AssistantProposal) => boolean },
 ): Promise<ApplyPendingProposalsResult> {
 	let appliedCount = 0;
 	let conflictedCount = 0;
@@ -38,6 +39,7 @@ export async function applyPendingProposals(
 
 	for (const proposal of manifest.proposals) {
 		if (proposal.status !== "proposed") continue;
+		if (options?.shouldApply && !options.shouldApply(proposal)) continue;
 		const result = await apply.apply(task, proposal, {
 			fields: proposalFields(proposal),
 		});

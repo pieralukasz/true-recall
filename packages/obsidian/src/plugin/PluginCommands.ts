@@ -1,7 +1,5 @@
-import { notify } from "@true-recall/obsidian/services/notification.service";
 import { isDesktop } from "@true-recall/obsidian/utils/platform";
-
-import { formatLocalDate } from "@true-recall/core/utils/date.utils";
+import { ReviewView } from "@true-recall/obsidian/views/review/ReviewView";
 
 import type TrueRecallPlugin from "../main";
 import { isPluginEnabled } from "./plugin-utils";
@@ -44,6 +42,12 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 		id: "review-todays-cards",
 		name: "Review today's new cards",
 		callback: () => void plugin.reviewTodaysCards(),
+	});
+
+	plugin.addCommand({
+		id: "toggle-r-mode",
+		name: "Toggle R-Mode (retrievability sessions)",
+		callback: () => void plugin.toggleRMode(),
 	});
 
 	plugin.addCommand({
@@ -154,6 +158,12 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 		id: "undo-flashcard-action",
 		name: "Undo last flashcard action",
 		checkCallback: (checking) => {
+			const reviewView = plugin.app.workspace.getActiveViewOfType(ReviewView);
+			if (reviewView) {
+				if (!reviewView.canUndoSessionAction()) return false;
+				if (!checking) void reviewView.undoSessionAction();
+				return true;
+			}
 			if (!plugin.commandService?.canUndo()) return false;
 			if (!checking) {
 				void plugin.commandService.undo();
@@ -166,6 +176,12 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 		id: "redo-flashcard-action",
 		name: "Redo last undone action",
 		checkCallback: (checking) => {
+			const reviewView = plugin.app.workspace.getActiveViewOfType(ReviewView);
+			if (reviewView) {
+				if (!reviewView.canRedoSessionAction()) return false;
+				if (!checking) void reviewView.redoSessionAction();
+				return true;
+			}
 			if (!plugin.commandService?.canRedo()) return false;
 			if (!checking) {
 				void plugin.commandService.redo();
@@ -336,43 +352,4 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 			return true;
 		},
 	});
-
-	plugin.addCommand({
-		id: "easy-day-today",
-		name: "Easy day: today",
-		callback: () => {
-			void markTodayAsEasyDay(plugin);
-		},
-	});
-}
-
-/**
- * Append today to the easy-days list and redistribute immediately, so an
- * unexpectedly busy day can be cleared without opening settings.
- */
-async function markTodayAsEasyDay(plugin: TrueRecallPlugin): Promise<void> {
-	const today = formatLocalDate(new Date());
-	const current = plugin.settings.easyDays ?? {
-		recurringDays: [],
-		specificDates: [],
-	};
-
-	if (current.specificDates.includes(today)) {
-		notify().info(`${today} is already an easy day`);
-		return;
-	}
-
-	plugin.settings.easyDays = {
-		recurringDays: current.recurringDays,
-		specificDates: [...current.specificDates, today].sort(),
-	};
-	await plugin.saveSettings();
-
-	const result = plugin.fsrsHelper?.applyEasyDays({ dryRun: false });
-	const moved = result?.affectedCount ?? 0;
-	if (moved > 0) {
-		notify().success(`Easy day set for ${today}: ${moved} cards moved`);
-	} else {
-		notify().info(`Easy day set for ${today}, no cards needed moving`);
-	}
 }

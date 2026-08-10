@@ -1,3 +1,5 @@
+import { useEffect } from "preact/hooks";
+
 import type { AssistantThread } from "@true-recall/core/ai/assistant";
 
 import { StatusPill } from "@true-recall/obsidian/components";
@@ -5,6 +7,7 @@ import { Q, useQuery } from "@true-recall/obsidian/data";
 import { cn } from "@true-recall/obsidian/utils/cn";
 
 import { ThreadWorkspace } from "./ThreadWorkspace";
+import { hasPendingProposals } from "./thread-utils";
 
 interface AssistantInlineTaskProps {
 	threadId: string;
@@ -22,6 +25,16 @@ export function AssistantInlineTask({
 }: AssistantInlineTaskProps) {
 	const threads = useQuery<AssistantThread[]>(Q.ASSISTANT_THREADS).value ?? [];
 	const thread = threads.find((candidate) => candidate.id === threadId);
+
+	useEffect(() => {
+		if (
+			thread?.state === "archived" &&
+			!thread.activeTaskId &&
+			!hasPendingProposals(thread)
+		) {
+			onClose();
+		}
+	}, [onClose, thread]);
 
 	return (
 		<div class={cn(framed && "tr-assistant-surface")}>

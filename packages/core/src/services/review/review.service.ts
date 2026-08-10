@@ -27,6 +27,7 @@ import {
 } from "../../utils";
 import type { FSRSService } from "../fsrs/fsrs.service";
 import { buildQueue as buildQueueImpl } from "./queue-builder";
+import type { RModeQueueOptions } from "./retrievability-queue";
 import { spaceSiblings as spaceSiblingsImpl } from "./sibling-spacer";
 
 export interface QueueBuildOptions {
@@ -99,6 +100,12 @@ export interface QueueBuildOptions {
 	defaultPresetName?: string;
 	/** When false, apply queue spacing instead of runtime sibling burying */
 	burySiblings?: boolean;
+	/**
+	 * Continuous-retrievability session. When present, review cards are selected
+	 * by current R instead of by due date, and daily review limits do not apply —
+	 * the user asks for a card count directly.
+	 */
+	rMode?: RModeQueueOptions;
 }
 
 export class ReviewService {

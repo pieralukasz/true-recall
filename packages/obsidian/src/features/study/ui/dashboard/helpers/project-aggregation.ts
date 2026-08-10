@@ -2,6 +2,7 @@ import type { MetadataCache } from "obsidian";
 import { State } from "ts-fsrs";
 
 import { UNASSIGNED_PATH } from "@true-recall/core/constants";
+import { mergeRetrievability } from "@true-recall/core/helpers/note-aggregation";
 import type { SessionPersistenceService } from "@true-recall/core/persistence/session/session-persistence.service";
 import type { FSRSService } from "@true-recall/core/services/fsrs/fsrs.service";
 import type {
@@ -9,6 +10,7 @@ import type {
 	HierarchyTreeNode,
 } from "@true-recall/core/services/notes/hierarchy.service";
 import type { PresetService } from "@true-recall/core/services/notes/preset.service";
+import { summarizeRetrievability } from "@true-recall/core/services/review/retrievability-queue";
 import type {
 	CardSchedulingMeta,
 	TrueRecallSettings,
@@ -35,6 +37,7 @@ export { UNASSIGNED_PATH };
 interface ProjectAggregationDeps {
 	notes: DashboardNoteEntry[];
 	showArchived?: boolean;
+	now?: Date;
 	plugin: {
 		hierarchyService: HierarchyService;
 		cardStore: ProjectCardStore;
@@ -120,9 +123,15 @@ function computeRawCounts(
 	sourceUids: ReadonlySet<string>,
 	allCardsBySourceUid: ProjectAggregationIndexes["allCardsBySourceUid"],
 	now: Date,
-): { newCount: number; learning: number; due: number } {
+): {
+	newCount: number;
+	learning: number;
+	learningPending: number;
+	due: number;
+} {
 	let newCount = 0;
 	let learning = 0;
+	let learningPending = 0;
 	let due = 0;
 	for (const uid of sourceUids) {
 		const cards = allCardsBySourceUid.get(uid);
@@ -136,7 +145,8 @@ function computeRawCounts(
 					break;
 				case State.Learning:
 				case State.Relearning:
-					learning++;
+					if (new Date(card.due) <= now) learning++;
+					else learningPending++;
 					break;
 				case State.Review:
 					if (new Date(card.due) <= now) due++;
@@ -144,7 +154,7 @@ function computeRawCounts(
 			}
 		}
 	}
-	return { newCount, learning, due };
+	return { newCount, learning, learningPending, due };
 }
 
 export function aggregateProjectData(
@@ -160,7 +170,7 @@ export function aggregateProjectData(
 
 	const hierarchy = plugin.hierarchyService.buildHierarchy();
 	const snapshotCache = new Map<string, ActionableSessionSnapshot>();
-	const now = new Date();
+	const now = deps.now ?? new Date();
 	const allCardsBySourceUid = buildCardsBySourceUid(plugin.allCards);
 	const activeCardsBySourceUid = buildActiveCardsBySourceUid(
 		plugin.activeCards,
@@ -195,13 +205,6 @@ export function aggregateProjectData(
 		);
 	}
 
-	// Sort: most active (due + new + learning) first
-	projects.sort((a, b) => {
-		const aActive = a.due + a.newCount + a.learning;
-		const bActive = b.due + b.newCount + b.learning;
-		return bActive - aActive;
-	});
-
 	// Build reverse map: note name → project names
 	const noteProjectMap = buildNoteProjectMap(projects);
 
@@ -228,6 +231,10 @@ export function aggregateProjectData(
 			healthPct: 0,
 			newCount: unassignedNotes.reduce((s, n) => s + n.newCount, 0),
 			learning: unassignedNotes.reduce((s, n) => s + n.learning, 0),
+			learningPending: unassignedNotes.reduce(
+				(s, n) => s + (n.learningPending ?? 0),
+				0,
+			),
 			due: unassignedNotes.reduce((s, n) => s + n.due, 0),
 			totalCards: unassignedNotes.reduce((s, n) => s + n.total, 0),
 			childCount: 0,
@@ -235,6 +242,9 @@ export function aggregateProjectData(
 			totalMembers: unassignedNotes.length,
 			memberNotes: unassignedNotes,
 			children: [],
+			retrievability: mergeRetrievability(
+				unassignedNotes.map((n) => n.retrievability),
+			),
 		});
 	}
 
@@ -310,20 +320,30 @@ function buildProjectFromNode(
 
 	const isArchived =
 		showArchived && plugin.hierarchyService.isProjectArchived(node.path);
+	const scopedActiveCards = collectActiveCardsForSources(
+		sourceUids,
+		indexes.activeCardsBySourceUid,
+	);
 
-	let counts: { new: number; learning: number; due: number };
+	let counts: {
+		new: number;
+		learning: number;
+		learningPending: number;
+		due: number;
+	};
 	if (isArchived) {
 		const raw = computeRawCounts(
 			sourceUids,
 			indexes.allCardsBySourceUid,
 			indexes.now,
 		);
-		counts = { new: raw.newCount, learning: raw.learning, due: raw.due };
+		counts = {
+			new: raw.newCount,
+			learning: raw.learning,
+			learningPending: raw.learningPending,
+			due: raw.due,
+		};
 	} else {
-		const scopedActiveCards = collectActiveCardsForSources(
-			sourceUids,
-			indexes.activeCardsBySourceUid,
-		);
 		const snapshot = computeActionableSessionSnapshot(
 			{
 				allCards: plugin.allCards,
@@ -335,7 +355,12 @@ function buildProjectFromNode(
 				hierarchyService: plugin.hierarchyService,
 				fsrsService: plugin.fsrsService,
 			},
-			{ projectPath: node.path },
+			{
+				projectPath: node.path,
+				schedulingMode: plugin.settings.rMode.enabled
+					? "retrievability"
+					: "due",
+			},
 			{ cache: snapshotCache, activeCards: scopedActiveCards },
 		);
 		counts = snapshot.counts;
@@ -345,12 +370,72 @@ function buildProjectFromNode(
 		.preset;
 	const presetName = preset.name;
 
+	const rMode = plugin.settings.rMode;
+	const reviewCards = scopedActiveCards.filter(
+		(card) => card.fsrs.state === State.Review,
+	);
+	const presetCache = new Map<string, typeof preset>();
+	const summary =
+		rMode.enabled && !isArchived
+			? summarizeRetrievability(
+					reviewCards,
+					plugin.fsrsService,
+					{
+						ceiling: Math.min(
+							0.999,
+							preset.requestRetention + rMode.ceilingOffset,
+						),
+						comfortFloor: preset.requestRetention,
+						urgentBelow: rMode.urgentBelow,
+						resolveCardOptions: (card) => {
+							const key = card.sourceUid ?? card.id;
+							let cardPreset = presetCache.get(key);
+							if (!cardPreset) {
+								cardPreset = plugin.presetService.resolvePresetForCard(card, {
+									projectPath: node.path,
+								});
+								presetCache.set(key, cardPreset);
+							}
+							return {
+								comfortFloor: cardPreset.requestRetention,
+								ceiling: Math.min(
+									0.999,
+									cardPreset.requestRetention + rMode.ceilingOffset,
+								),
+								presetSettings: plugin.presetService.toFSRSSettings(cardPreset),
+							};
+						},
+					},
+					indexes.now,
+				)
+			: null;
+	const retrievability = summary
+		? {
+				urgent: summary.urgent,
+				losing: summary.losing,
+				known: summary.known,
+				fresh: summary.fresh,
+				pool: summary.pool,
+				total: summary.total,
+				sumR: summary.sumR,
+			}
+		: mergeRetrievability([
+				...memberNotes.map((note) => note.retrievability),
+				...children.map((child) => child.retrievability),
+			]);
+
 	return {
 		name: stats.name,
 		path: stats.path,
-		healthPct: stats.healthPct,
+		// In R-Mode health is mean retrievability; the due-based figure describes
+		// a schedule that no longer drives anything.
+		healthPct:
+			retrievability && retrievability.total > 0
+				? Math.round((retrievability.sumR / retrievability.total) * 100)
+				: stats.healthPct,
 		newCount: counts.new,
 		learning: counts.learning,
+		learningPending: counts.learningPending,
 		due: counts.due,
 		totalCards: stats.totalCards,
 		childCount: stats.childCount,
@@ -360,6 +445,7 @@ function buildProjectFromNode(
 		memberNotes,
 		children,
 		presetName,
+		retrievability,
 	};
 }
 

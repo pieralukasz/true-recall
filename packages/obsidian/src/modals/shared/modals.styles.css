@@ -63,6 +63,21 @@
 }
 
 /* ================================================================
+   FILL-HEIGHT BODY — opt-in via BaseModal({ fillHeight: true })
+   The body container is a plain div, so without this it sizes to its
+   content and `.modal-content` becomes the scroller — which scrolls a
+   pinned footer out of view. `flex-basis: auto` keeps short modals
+   content-sized; `min-height: 0` lets tall ones shrink so the body's own
+   scroll region takes over. (unlayered — same reason as the block above)
+   ================================================================ */
+.modal.tr-modal-host.tr-modal-fill .tr-modal-body {
+	flex: 1 1 auto;
+	min-height: 0;
+	display: flex;
+	flex-direction: column;
+}
+
+/* ================================================================
    SPECIAL MODAL OVERRIDES — wider modals (unlayered)
    ================================================================ */
 .modal.tr-modal-io-editor {

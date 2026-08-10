@@ -17,6 +17,25 @@ describe("Review Slice", () => {
 	});
 
 	describe("Session Lifecycle", () => {
+		it("keeps concurrently open session stores isolated", () => {
+			const otherStore = createTestStore();
+			const firstCard = createMockCard({ id: "first-session" });
+			const secondCard = createMockCard({ id: "second-session" });
+
+			store.getState().review.startSession([firstCard]);
+			otherStore.getState().review.startSession([secondCard]);
+			store.getState().review.revealAnswer();
+
+			expect(store.getState().review.getCurrentCard()?.id).toBe(
+				"first-session",
+			);
+			expect(store.getState().review.isAnswerRevealed).toBe(true);
+			expect(otherStore.getState().review.getCurrentCard()?.id).toBe(
+				"second-session",
+			);
+			expect(otherStore.getState().review.isAnswerRevealed).toBe(false);
+		});
+
 		it("should start with idle state", () => {
 			const review = store.getState().review;
 			expect(review.isActive).toBe(false);

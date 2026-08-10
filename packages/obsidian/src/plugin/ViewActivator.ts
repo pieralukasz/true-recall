@@ -69,22 +69,12 @@ export async function activateReviewView(
 ): Promise<WorkspaceLeaf | null> {
 	const { workspace } = app;
 
-	const existingLeaf = workspace.getLeavesOfType(viewType)[0];
-	if (existingLeaf) {
-		await existingLeaf.setViewState({
-			type: viewType,
-			active: true,
-			state,
-		});
-		void workspace.revealLeaf(existingLeaf);
-		return existingLeaf;
-	}
-
 	if (Platform.isMobile || reviewMode === "fullscreen") {
 		return activateMainAreaView(app, viewType, state);
 	}
 
-	const rightLeaf = workspace.getRightLeaf(false);
+	const hasOpenReview = workspace.getLeavesOfType(viewType).length > 0;
+	const rightLeaf = workspace.getRightLeaf(hasOpenReview);
 	if (rightLeaf) {
 		await rightLeaf.setViewState({
 			type: viewType,

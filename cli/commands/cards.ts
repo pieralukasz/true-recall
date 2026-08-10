@@ -12,8 +12,9 @@ export const cardCommands: CommandDef[] = [
 			query: { type: "string", description: "Text search in question/answer" },
 			state: {
 				type: "string",
-				description: "Filter by card state",
-				enum: ["new", "learning", "review", "relearning"],
+				description:
+					"Filter by card state; actual-learning combines Learning and Relearning",
+				enum: ["new", "learning", "review", "relearning", "actual-learning"],
 			},
 			source_uid: {
 				type: "string",
@@ -45,6 +46,20 @@ export const cardCommands: CommandDef[] = [
 			const qs = sp.toString();
 			return client.get(`/cards${qs ? `?${qs}` : ""}`);
 		},
+	),
+
+	getWith(
+		"get_actual_learning_cards",
+		"Get active cards currently in Learning or Relearning, ordered by due date",
+		C,
+		{
+			limit: {
+				type: "number",
+				description: "Max cards to return (1-200)",
+				default: 50,
+			},
+		},
+		(p) => `/cards/actual-learning?limit=${p.limit}`,
 	),
 
 	getWith(
@@ -104,7 +119,7 @@ export const cardCommands: CommandDef[] = [
 			limit: {
 				type: "number",
 				description: "Max number of problem cards to return",
-				default: 20,
+				default: 50,
 			},
 		},
 		(p) => `/cards/problems?limit=${p.limit}`,
@@ -141,11 +156,6 @@ export const cardCommands: CommandDef[] = [
 				enum: ["basic", "cloze"],
 				default: "basic",
 			},
-			suspended: {
-				type: "boolean",
-				description:
-					"Create the card suspended so it stays out of the review queue until finished",
-			},
 		},
 	),
 
@@ -165,11 +175,6 @@ export const cardCommands: CommandDef[] = [
 				type: "string",
 				description:
 					"Source note UID to link all cards to (flashcard_uid from note frontmatter, e.g. 'b5a5a6d6')",
-			},
-			suspended: {
-				type: "boolean",
-				description:
-					"Create every card in the batch suspended, keeping them out of the review queue",
 			},
 		},
 	),

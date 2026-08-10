@@ -19,6 +19,7 @@ function makeSettings(
 		reviewOrder: "due-date" as const,
 		newReviewMix: "mix-with-reviews" as const,
 		dayStartHour: 4,
+		temporaryCustomStudyDecks: [],
 		...overrides,
 	} as TrueRecallSettings;
 }
@@ -335,5 +336,65 @@ describe("buildQueueOptions — filter passthrough", () => {
 		expect(result.customStudy).toEqual({ kind: "forgotten", days: 7 });
 		expect(result.forgottenCardIds).toBe(forgotten);
 		expect(persistence.getCardsRatedAgainWithinDays).toHaveBeenCalledWith(7);
+	});
+
+	it("excludes cards reserved by all custom study sessions", () => {
+		const settingsWithDecks = makeSettings({
+			temporaryCustomStudyDecks: [
+				{
+					id: "deck-a",
+					name: "A",
+					customStudy: { kind: "review-ahead", days: 2 },
+					cardIds: ["card-1", "card-2"],
+					createdAt: 1,
+					rebuiltAt: 1,
+				},
+				{
+					id: "deck-b",
+					name: "B",
+					customStudy: { kind: "forgotten", days: 7 },
+					cardIds: ["card-3"],
+					createdAt: 2,
+					rebuiltAt: 2,
+				},
+			],
+		});
+
+		const result = buildQueueOptions(makeFilters(), settingsWithDecks, sp);
+
+		expect(result.temporaryDeckCardIds).toEqual(
+			new Set(["card-1", "card-2", "card-3"]),
+		);
+	});
+
+	it("allows the current custom session cards while excluding other sessions", () => {
+		const settingsWithDecks = makeSettings({
+			temporaryCustomStudyDecks: [
+				{
+					id: "deck-a",
+					name: "A",
+					customStudy: { kind: "review-ahead", days: 2 },
+					cardIds: ["card-1"],
+					createdAt: 1,
+					rebuiltAt: 1,
+				},
+				{
+					id: "deck-b",
+					name: "B",
+					customStudy: { kind: "forgotten", days: 7 },
+					cardIds: ["card-2"],
+					createdAt: 2,
+					rebuiltAt: 2,
+				},
+			],
+		});
+
+		const result = buildQueueOptions(
+			makeFilters({ temporaryDeckId: "deck-a" }),
+			settingsWithDecks,
+			sp,
+		);
+
+		expect(result.temporaryDeckCardIds).toEqual(new Set(["card-2"]));
 	});
 });

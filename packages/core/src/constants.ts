@@ -1,7 +1,11 @@
 import { BUILTIN_BASIC_PRO_PROMPT } from "./ai/prompts/builtin-basic-pro.prompt";
 import type { GenerationPreset } from "./types/generation-preset.types";
 import { BUILTIN_BASIC_ID } from "./types/note.types";
-import type { FSRSPreset, TrueRecallSettings } from "./types/settings.types";
+import type {
+	FSRSPreset,
+	RModeSettings,
+	TrueRecallSettings,
+} from "./types/settings.types";
 
 export const VIEW_TYPE_FLASHCARD_PANEL = "true-recall-flashcard-panel";
 export const VIEW_TYPE_REVIEW = "true-recall-review";
@@ -118,6 +122,14 @@ export const BUILTIN_BASIC_PRO_PRESET: GenerationPreset = {
 	updatedAt: 0,
 };
 
+export const DEFAULT_R_MODE_SETTINGS: RModeSettings = {
+	enabled: false,
+	defaultSessionSize: 30,
+	comfortMix: 0.3,
+	ceilingOffset: 0.05,
+	urgentBelow: 0.5,
+};
+
 export const DEFAULT_SETTINGS: TrueRecallSettings = {
 	enableDeviceSync: false,
 	providerType: "openrouter",
@@ -146,6 +158,8 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 
 	fsrsWeights: null, // null = use ts-fsrs defaults
 	lastOptimization: null,
+
+	rMode: DEFAULT_R_MODE_SETTINGS,
 
 	reviewMode: "fullscreen",
 	reviewContentWidth: "default",
@@ -210,6 +224,7 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 	scheduledBreaks: [],
 
 	sessionPresets: [],
+	temporaryCustomStudyDecks: [],
 
 	fsrsPresets: [DEFAULT_FSRS_PRESET],
 	defaultPresetId: "default",

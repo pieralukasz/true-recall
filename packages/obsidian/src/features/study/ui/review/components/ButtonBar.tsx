@@ -29,6 +29,7 @@ interface ButtonBarProps {
 	isAnswerRevealed: boolean;
 	preview: SchedulingPreview | null;
 	showNextReviewTime: boolean;
+	rModeActive?: boolean;
 	typeInMode?: TypeInMode;
 	isRatingLocked?: boolean;
 	compact?: boolean;
@@ -43,6 +44,7 @@ export function ButtonBar({
 	isAnswerRevealed,
 	preview,
 	showNextReviewTime,
+	rModeActive = false,
 	typeInMode = "off",
 	isRatingLocked = false,
 	compact = false,
@@ -86,6 +88,7 @@ export function ButtonBar({
 				daysChanged={preview?.again.daysChanged}
 				loadBalanceNote={preview?.again.loadBalanceNote}
 				showInterval={showNextReviewTime && !mobile}
+				rModeEnabled={rModeActive}
 				onAnswer={onAnswer}
 				disabled={isRatingLocked}
 			/>
@@ -97,6 +100,7 @@ export function ButtonBar({
 				daysChanged={preview?.hard.daysChanged}
 				loadBalanceNote={preview?.hard.loadBalanceNote}
 				showInterval={showNextReviewTime && !mobile}
+				rModeEnabled={rModeActive}
 				onAnswer={onAnswer}
 				disabled={isRatingLocked}
 			/>
@@ -108,6 +112,7 @@ export function ButtonBar({
 				daysChanged={preview?.good.daysChanged}
 				loadBalanceNote={preview?.good.loadBalanceNote}
 				showInterval={showNextReviewTime && !mobile}
+				rModeEnabled={rModeActive}
 				onAnswer={onAnswer}
 				disabled={isRatingLocked}
 			/>
@@ -119,6 +124,7 @@ export function ButtonBar({
 				daysChanged={preview?.easy.daysChanged}
 				loadBalanceNote={preview?.easy.loadBalanceNote}
 				showInterval={showNextReviewTime && !mobile}
+				rModeEnabled={rModeActive}
 				onAnswer={onAnswer}
 				disabled={isRatingLocked}
 			/>

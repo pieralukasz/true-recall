@@ -158,9 +158,12 @@ describe("SessionService", () => {
 		expect(filters.crammingMode).toBe(true);
 	});
 
-	it("keeps review-ahead custom study rescheduling enabled", () => {
+	it.each([
+		["review-ahead", { kind: "review-ahead", days: 3 } as const],
+		["actual-learning", { kind: "actual-learning" } as const],
+	])("keeps %s custom study rescheduling enabled", (_, customStudy) => {
 		const filters = service.resolveFilters(
-			{ mode: "custom", customStudy: { kind: "review-ahead", days: 3 } },
+			{ mode: "custom", customStudy },
 			{ ignoreDailyLimitsForNoteStudy: false, dayStartHour: 4 },
 		);
 

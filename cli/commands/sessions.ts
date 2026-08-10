@@ -6,7 +6,7 @@ const C = "Sessions";
 export const sessionCommands: CommandDef[] = [
 	postParams(
 		"start_review_session",
-		"Open a review session in Obsidian. Modes: all_due, current_note, weak_cards, created_today, overdue, custom",
+		"Open a review session in Obsidian. Modes: all_due, current_note, weak_cards, created_today, overdue, actual_learning, custom",
 		C,
 		"/sessions/start",
 		{
@@ -19,6 +19,7 @@ export const sessionCommands: CommandDef[] = [
 					"weak_cards",
 					"created_today",
 					"overdue",
+					"actual_learning",
 					"custom",
 				],
 				default: "all_due",

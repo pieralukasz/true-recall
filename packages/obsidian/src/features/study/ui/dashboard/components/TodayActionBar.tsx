@@ -10,6 +10,8 @@ import type { TodayProgress } from "../types";
 
 interface TodayActionBarProps {
 	totalDue: number;
+	/** Cards worth reviewing now. Set only in R-Mode. */
+	totalPool?: number;
 	totalNew: number;
 	totalLearning: number;
 	estimatedMinutes: number;
@@ -18,17 +20,28 @@ interface TodayActionBarProps {
 
 export function TodayActionBar({
 	totalDue,
+	totalPool,
 	totalNew,
 	totalLearning,
 	estimatedMinutes,
 	progress,
 }: TodayActionBarProps) {
 	const plugin = usePlugin();
+	const rModeEnabled = plugin.settings.rMode.enabled;
 
-	const totalActionable = totalDue + totalNew + totalLearning;
+	// In R-Mode `totalDue` is the selected review plan; `totalPool` is only the
+	// larger set the algorithm can draw from. Do not advertise the whole pool as
+	// the size of the session.
+	const reviewable = totalDue;
+	const totalActionable = reviewable + totalNew + totalLearning;
 
 	const handleStartReview = () => {
-		void plugin.startReview({ mode: "all_due" });
+		void plugin.startReview({
+			mode: "all_due",
+			rModeTargetCount: rModeEnabled
+				? plugin.settings.rMode.defaultSessionSize
+				: undefined,
+		});
 	};
 	const handleCustomStudy = () => {
 		void plugin.openCustomStudyModal();
@@ -45,12 +58,21 @@ export function TodayActionBar({
 			? `Review: ${totalActionable} (~${formatEstimatedTime(estimatedMinutes)})`
 			: "All caught up!";
 
-	const counts: { value: number; label: string; colorCls: string }[] = [];
-	if (totalDue > 0)
+	const counts: {
+		value: number;
+		label: string;
+		colorCls: string;
+		title?: string;
+	}[] = [];
+	if (reviewable > 0)
 		counts.push({
-			value: totalDue,
-			label: "due",
+			value: reviewable,
+			label: rModeEnabled ? "review" : "due",
 			colorCls: FSRS_COLORS.review.textCls,
+			title:
+				rModeEnabled && totalPool !== undefined
+					? `${reviewable} selected from ${totalPool} currently available review cards`
+					: undefined,
 		});
 	if (totalNew > 0)
 		counts.push({
@@ -81,6 +103,7 @@ export function TodayActionBar({
 					{counts.map((c) => (
 						<div
 							key={c.label}
+							title={c.title}
 							class="ep:flex ep:flex-col ep:items-center ep:rounded-md ep:bg-obs-secondary/50 ep:px-3 ep:py-1.5"
 						>
 							<span class={`ep:text-lg ep:font-semibold ${c.colorCls}`}>

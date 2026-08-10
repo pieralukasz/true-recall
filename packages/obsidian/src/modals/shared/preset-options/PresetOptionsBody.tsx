@@ -1,9 +1,11 @@
-import { useCallback, useMemo, useState } from "preact/hooks";
+import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
 
 import type { FSRSPreset } from "@true-recall/core/types";
 
-import { Clickable } from "@true-recall/obsidian/components";
+import { ActionButton } from "@true-recall/obsidian/components";
+import { confirm } from "@true-recall/obsidian/modals/shared/ConfirmModal";
 import { usePlugin } from "@true-recall/obsidian/preact";
+import { notify } from "@true-recall/obsidian/services/notification.service";
 
 import { DailyLimitsSection } from "./DailyLimitsSection";
 import { LapsesSection } from "./LapsesSection";
@@ -37,7 +39,37 @@ export function PresetOptionsBody({
 	);
 	const [version, setVersion] = useState(0);
 	const [applyToChildren, setApplyToChildren] = useState(false);
-	const [isApplying, setIsApplying] = useState(false);
+	const [isSaving, setIsSaving] = useState(false);
+	// Bumped to remount the selector when a preset switch is called off, so the
+	// native <select> snaps back to the preset that is actually being edited.
+	const [selectorNonce, setSelectorNonce] = useState(0);
+
+	// Re-read persisted state on version bump
+	void version;
+	const presets = settings.fsrsPresets;
+	const savedPreset =
+		presets.find((p) => p.id === selectedPresetId) ?? presets[0];
+
+	// Edits are staged here and only written on Save.
+	const [draft, setDraft] = useState<FSRSPreset | null>(savedPreset ?? null);
+
+	useEffect(() => {
+		const next =
+			plugin.settings.fsrsPresets.find((p) => p.id === selectedPresetId) ??
+			plugin.settings.fsrsPresets[0];
+		setDraft(next ? { ...next } : null);
+	}, [plugin, selectedPresetId, version]);
+
+	const isDirty = useMemo(() => {
+		if (!draft || !savedPreset) return false;
+		return JSON.stringify(draft) !== JSON.stringify(savedPreset);
+	}, [draft, savedPreset]);
+
+	const stageChanges = useCallback(async (changes: Partial<FSRSPreset>) => {
+		setDraft((current) => (current ? { ...current, ...changes } : current));
+	}, []);
+
+	const refresh = useCallback(() => setVersion((v) => v + 1), []);
 
 	const hasChildren = useMemo(() => {
 		if (!context?.contextPath) return false;
@@ -68,123 +100,166 @@ export function PresetOptionsBody({
 		[plugin],
 	);
 
-	// Re-read on version bump
-	void version;
-	const presets = settings.fsrsPresets;
-	const preset = presets.find((p) => p.id === selectedPresetId) ?? presets[0];
-	if (!preset) return null;
+	const confirmDiscard = useCallback(async () => {
+		if (!isDirty || !savedPreset) return true;
+		return confirm(plugin.app, {
+			title: "Unsaved changes",
+			message: `"${savedPreset.name}" has unsaved changes that will be lost.`,
+			confirmLabel: "Discard",
+			cancelLabel: "Keep editing",
+		});
+	}, [isDirty, plugin.app, savedPreset]);
 
-	const isDefault = preset.id === settings.defaultPresetId;
-
-	const updatePreset = useCallback(
-		async (changes: Partial<FSRSPreset>) => {
-			await plugin.presetService.updatePreset(preset.id, changes);
-			setVersion((v) => v + 1);
+	const handlePresetChange = useCallback(
+		async (id: string) => {
+			if (id === selectedPresetId) return;
+			if (!(await confirmDiscard())) {
+				setSelectorNonce((n) => n + 1);
+				return;
+			}
+			setSelectedPresetId(id);
 		},
-		[plugin, preset.id],
+		[selectedPresetId, confirmDiscard],
 	);
 
-	const refresh = useCallback(() => setVersion((v) => v + 1), []);
-
 	const handleCreate = useCallback(async () => {
+		if (!savedPreset) return;
+		if (!(await confirmDiscard())) return;
+
+		const { id: _id, createdAt: _createdAt, ...source } = savedPreset;
 		const newPreset = await plugin.presetService.createPreset({
-			name: `${preset.name} (copy)`,
-			requestRetention: preset.requestRetention,
-			maximumInterval: preset.maximumInterval,
-			weights: preset.weights ? [...preset.weights] : null,
-			enableFuzz: preset.enableFuzz !== false,
-			learningSteps: [...preset.learningSteps],
-			relearningSteps: [...preset.relearningSteps],
-			newCardsPerDay: preset.newCardsPerDay,
-			reviewsPerDay: preset.reviewsPerDay,
+			...source,
+			name: `${savedPreset.name} (copy)`,
+			weights: savedPreset.weights ? [...savedPreset.weights] : null,
+			learningSteps: [...savedPreset.learningSteps],
+			relearningSteps: [...savedPreset.relearningSteps],
 			lastOptimization: null,
 			lastOptimizationReviewCount: null,
 			lastOptimizationMetrics: null,
-			leechThreshold: preset.leechThreshold,
-			leechAction: preset.leechAction,
-			newCardOrder: preset.newCardOrder,
-			reviewOrder: preset.reviewOrder,
-			newReviewMix: preset.newReviewMix,
 		});
 		setSelectedPresetId(newPreset.id);
 		refresh();
-	}, [plugin, preset, refresh]);
+	}, [plugin, savedPreset, confirmDiscard, refresh]);
 
 	const handleDelete = useCallback(async () => {
-		await plugin.presetService.deletePreset(preset.id);
+		if (!savedPreset) return;
+		const confirmed = await confirm(plugin.app, {
+			title: "Delete preset",
+			message: `Delete "${savedPreset.name}"? Notes assigned to it fall back to the default preset.`,
+			confirmLabel: "Delete",
+		});
+		if (!confirmed) return;
+
+		await plugin.presetService.deletePreset(savedPreset.id);
 		setSelectedPresetId(settings.defaultPresetId);
 		refresh();
-	}, [plugin, preset.id, settings.defaultPresetId, refresh]);
+	}, [plugin, savedPreset, settings.defaultPresetId, refresh]);
 
-	const handleDone = useCallback(async () => {
-		const frontmatterService = plugin.flashcardManager?.getFrontmatterService();
-		if (context?.contextPath && frontmatterService) {
-			const file = plugin.app.vault.getFileByPath(context.contextPath);
-			if (file) {
-				await frontmatterService.setFsrsPreset(file.path, preset.name);
+	const handleSave = useCallback(async () => {
+		if (!draft || !savedPreset) return;
+		setIsSaving(true);
+		try {
+			const name = draft.name.trim();
+			if (isDirty) {
+				const { id: _id, createdAt: _createdAt, ...changes } = draft;
+				await plugin.presetService.updatePreset(savedPreset.id, {
+					...changes,
+					name,
+				});
 			}
 
-			if (applyToChildren) {
-				const descendantPaths = getDescendantProjectPaths(context.contextPath);
-				setIsApplying(true);
-				try {
+			const frontmatterService =
+				plugin.flashcardManager?.getFrontmatterService();
+			if (context?.contextPath && frontmatterService) {
+				const file = plugin.app.vault.getFileByPath(context.contextPath);
+				if (file) {
+					await frontmatterService.setFsrsPreset(file.path, name);
+				}
+
+				if (applyToChildren) {
+					const descendantPaths = getDescendantProjectPaths(
+						context.contextPath,
+					);
 					await Promise.all(
 						descendantPaths.map((path) => {
 							const f = plugin.app.vault.getFileByPath(path);
 							return f
-								? frontmatterService.setFsrsPreset(f.path, preset.name)
+								? frontmatterService.setFsrsPreset(f.path, name)
 								: Promise.resolve();
 						}),
 					);
-				} finally {
-					onClose();
 				}
-				return;
 			}
+			onClose();
+		} catch (err) {
+			notify().error(`Could not save preset: ${String(err)}`);
+		} finally {
+			setIsSaving(false);
 		}
-		onClose();
 	}, [
 		plugin,
+		draft,
+		savedPreset,
+		isDirty,
 		context,
-		preset.name,
-		onClose,
 		applyToChildren,
 		getDescendantProjectPaths,
+		onClose,
 	]);
+
+	const handleCancel = useCallback(async () => {
+		if (!(await confirmDiscard())) return;
+		onClose();
+	}, [confirmDiscard, onClose]);
+
+	if (!draft || !savedPreset) return null;
+
+	const isDefault = draft.id === settings.defaultPresetId;
+	const trimmedName = draft.name.trim();
+	// Presets are referenced by name from note frontmatter, so an empty or
+	// duplicated name would silently detach or merge assignments.
+	const nameError = !trimmedName
+		? "Preset name cannot be empty"
+		: presets.some((p) => p.id !== draft.id && p.name.trim() === trimmedName)
+			? "Another preset already uses this name"
+			: null;
+	const canSave =
+		(isDirty || Boolean(context?.contextPath)) && nameError === null;
 
 	return (
 		<div class="ep:flex ep:flex-col ep:flex-1 ep:min-h-0">
-			<div class="ep:flex-1 ep:overflow-y-auto ep:min-h-0">
+			<div class="ep:flex-1 ep:overflow-y-auto ep:min-h-0 ep:flex ep:flex-col ep:gap-3">
 				<PresetSelector
+					key={`${selectedPresetId}-${selectorNonce}`}
 					presets={presets}
-					preset={preset}
+					preset={draft}
 					isDefault={isDefault}
-					onPresetChange={setSelectedPresetId}
+					onPresetChange={(id) => void handlePresetChange(id)}
 					onCreate={() => void handleCreate()}
 					onDelete={() => void handleDelete()}
-					onRename={(name) => void updatePreset({ name })}
+					onRename={(name) => void stageChanges({ name })}
 				/>
 
-				<DailyLimitsSection preset={preset} updatePreset={updatePreset} />
-				<NewCardsSection preset={preset} updatePreset={updatePreset} />
-				<LapsesSection preset={preset} updatePreset={updatePreset} />
-				<SchedulingSection preset={preset} updatePreset={updatePreset} />
+				<DailyLimitsSection preset={draft} updatePreset={stageChanges} />
+				<NewCardsSection preset={draft} updatePreset={stageChanges} />
+				<LapsesSection preset={draft} updatePreset={stageChanges} />
+				<SchedulingSection preset={draft} updatePreset={stageChanges} />
 				<ParametersSection
-					preset={preset}
-					updatePreset={updatePreset}
+					preset={draft}
+					reviewPresetName={savedPreset.name}
+					updatePreset={stageChanges}
 					plugin={plugin}
-					onRefresh={refresh}
 				/>
-				<UsageSection preset={preset} />
+				<UsageSection preset={savedPreset} />
 			</div>
 
-			<div class="ep-modal-footer ep:flex ep:items-center ep:justify-between ep:gap-2 ep:pt-3 ep:mt-2 ep:border-t ep:border-obs-border">
+			<div class="ep-modal-footer ep:shrink-0 ep:flex ep:items-center ep:justify-between ep:gap-2 ep:pt-3 ep:mt-2 ep:border-t ep:border-obs-border ep:bg-obs-primary">
 				{hasChildren && context?.contextPath ? (
 					<label class="ep:flex ep:items-center ep:gap-2 ep:cursor-pointer ep:text-ui-small ep:text-obs-muted">
 						<input
 							type="checkbox"
 							checked={applyToChildren}
-							disabled={isApplying}
+							disabled={isSaving}
 							onChange={(e) =>
 								setApplyToChildren((e.target as HTMLInputElement).checked)
 							}
@@ -194,14 +269,29 @@ export function PresetOptionsBody({
 				) : (
 					<div />
 				)}
-				<Clickable
-					class="ep-btn mod-cta ep:text-ui-small"
-					onClick={() => void handleDone()}
-					stopPropagation={false}
-					disabled={isApplying}
-				>
-					{isApplying ? "Applying..." : "Done"}
-				</Clickable>
+				<div class="ep:flex ep:items-center ep:gap-2">
+					{nameError ? (
+						<span class="ep:text-ui-smaller ep:text-obs-red">{nameError}</span>
+					) : (
+						isDirty && (
+							<span class="ep:text-ui-smaller ep:text-obs-muted">
+								Unsaved changes
+							</span>
+						)
+					)}
+					<ActionButton
+						label="Cancel"
+						variant="outline"
+						disabled={isSaving}
+						onClick={() => void handleCancel()}
+					/>
+					<ActionButton
+						label={isSaving ? "Saving..." : "Save"}
+						variant="primary"
+						disabled={isSaving || !canSave}
+						onClick={() => void handleSave()}
+					/>
+				</div>
 			</div>
 		</div>
 	);

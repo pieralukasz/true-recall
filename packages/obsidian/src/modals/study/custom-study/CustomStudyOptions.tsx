@@ -4,6 +4,7 @@ const OPTIONS: { value: CustomStudyMode; label: string }[] = [
 	{ value: "increase-new", label: "Increase today's new card limit" },
 	{ value: "increase-review", label: "Increase today's review card limit" },
 	{ value: "forgotten", label: "Review forgotten cards" },
+	{ value: "actual-learning", label: "Review actual learning" },
 	{ value: "review-ahead", label: "Review ahead" },
 	{ value: "preview-new", label: "Preview new cards" },
 	{ value: "state-or-tag", label: "Study by card state or tag" },
