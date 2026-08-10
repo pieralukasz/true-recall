@@ -1,4 +1,5 @@
 import { type ReadonlySignal, useSignal } from "@preact/signals";
+import { effect } from "@preact/signals-core";
 import { useCallback, useEffect, useMemo, useRef } from "preact/hooks";
 
 import { aggregateDashboardData } from "@true-recall/core/helpers/note-aggregation";
@@ -6,6 +7,7 @@ import { computePriority } from "@true-recall/core/helpers/note-priority";
 import { estimateStudyMinutes } from "@true-recall/core/helpers/time-estimate";
 import { StatsCalculatorService } from "@true-recall/core/metrics/stats/stats-calculator.service";
 import { scoreRModeCard } from "@true-recall/core/services/review/retrievability-queue";
+import { captureSessionProgress } from "@true-recall/core/services/review/session-helpers";
 import type {
 	CardSchedulingMeta,
 	TrueRecallSettings,
@@ -56,23 +58,19 @@ export function DashboardApp({ isViewVisible }: DashboardAppProps) {
 	const activeTab = useSignal<DashboardTab>("projects");
 	const searchQuery = useSignal("");
 	const minuteBucket = useSignal(Math.floor(Date.now() / MINUTE_MS));
-	const isVisible = isViewVisible.value;
 
 	// Retrievability changes with time even when no card metadata changes. Keep
 	// the dashboard honest without waking a hidden view every minute.
 	useEffect(() => {
-		if (!isVisible) return;
-		minuteBucket.value = Math.floor(Date.now() / MINUTE_MS);
-		const timer = window.setInterval(() => {
+		return effect(() => {
+			if (!isViewVisible.value) return;
 			minuteBucket.value = Math.floor(Date.now() / MINUTE_MS);
-		}, MINUTE_MS);
-		return () => window.clearInterval(timer);
-	}, [isVisible, minuteBucket]);
-
-	const now = useMemo(
-		() => new Date(minuteBucket.value * MINUTE_MS),
-		[minuteBucket.value],
-	);
+			const timer = window.setInterval(() => {
+				minuteBucket.value = Math.floor(Date.now() / MINUTE_MS);
+			}, MINUTE_MS);
+			return () => window.clearInterval(timer);
+		});
+	}, [isViewVisible, minuteBucket]);
 
 	const statsCalculator = useMemo(() => {
 		const calc = new StatsCalculatorService(
@@ -93,12 +91,22 @@ export function DashboardApp({ isViewVisible }: DashboardAppProps) {
 	// the hot signals are not even subscribed, so grading in the review view
 	// no longer re-renders or recomputes the dashboard aggregation. Downstream
 	// useMemos stay stable because both references are frozen together.
-	const { allCards, archived } = useGatedComputed(
+	const { allCards, archived, now } = useGatedComputed(
 		() => ({
 			allCards: [...allMeta.value.values()],
 			archived: archivedSourceUidsSignal.value,
+			now: new Date(Math.floor(Date.now() / MINUTE_MS) * MINUTE_MS),
 		}),
-		() => [allMeta.value, archivedSourceUidsSignal.value],
+		() => {
+			// Subscribe to the timer without making its catch-up write on reveal a
+			// separate dependency from the current wall-clock minute.
+			void minuteBucket.value;
+			return [
+				allMeta.value,
+				archivedSourceUidsSignal.value,
+				Math.floor(Date.now() / MINUTE_MS),
+			];
+		},
 		{ isVisible: isViewVisible, throttleMs: RECOMPUTE_THROTTLE_MS },
 	);
 
@@ -138,6 +146,7 @@ export function DashboardApp({ isViewVisible }: DashboardAppProps) {
 			string,
 			ReturnType<typeof computeActionableSessionSnapshot>
 		>();
+		const sessionProgress = captureSessionProgress(plugin.sessionPersistence);
 
 		const rMode = plugin.settings.rMode;
 		const retention = plugin.settings.fsrsRequestRetention;
@@ -186,7 +195,12 @@ export function DashboardApp({ isViewVisible }: DashboardAppProps) {
 		const globalSnapshot = computeActionableSessionSnapshot(
 			snapshotDeps,
 			{ schedulingMode: rMode.enabled ? "retrievability" : "due" },
-			{ cache: snapshotCache, activeCards: cachedActiveCards },
+			{
+				cache: snapshotCache,
+				activeCards: cachedActiveCards,
+				sessionProgress,
+				now,
+			},
 		);
 
 		const actionableNotes = raw.notes.map((note) => {
@@ -203,7 +217,12 @@ export function DashboardApp({ isViewVisible }: DashboardAppProps) {
 					ignoreDailyLimits: plugin.settings.ignoreDailyLimitsForNoteStudy,
 					schedulingMode: rMode.enabled ? "retrievability" : "due",
 				},
-				{ cache: snapshotCache, activeCards: scopedActiveCards },
+				{
+					cache: snapshotCache,
+					activeCards: scopedActiveCards,
+					sessionProgress,
+					now,
+				},
 			);
 			const due = noteSnapshot.counts.due;
 			const newCount = noteSnapshot.counts.new;

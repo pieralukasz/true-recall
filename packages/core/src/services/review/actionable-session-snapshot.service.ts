@@ -10,6 +10,7 @@ import {
 	buildQueueOptions,
 	filterActiveCards,
 	isGlobalReviewSession,
+	type SessionProgressSnapshot,
 } from "@true-recall/core/services/review/session-helpers";
 import {
 	type CardSchedulingMeta,
@@ -52,6 +53,10 @@ export interface ActionableSessionSnapshotDeps {
 export interface ActionableSessionSnapshotOptions {
 	cache?: Map<string, ActionableSessionSnapshot>;
 	activeCards?: CardSchedulingMeta[];
+	/** Shared persistence state for a synchronous batch of scoped snapshots. */
+	sessionProgress?: SessionProgressSnapshot;
+	/** Shared wall-clock time for consistent, cacheable FSRS calculations. */
+	now?: Date;
 }
 
 function buildScopeCacheKey(filters: SessionFilters): string {
@@ -158,7 +163,9 @@ export function computeActionableSessionSnapshot(
 		deps.settings,
 		deps.sessionPersistence,
 		sessionPreset,
+		options.sessionProgress,
 	);
+	queueOptions.now = options.now;
 	if (queueOptions.rMode) {
 		const ceilingOffset = deps.settings.rMode.ceilingOffset;
 		const presetCache = new Map<string, FSRSPreset>();
@@ -188,6 +195,7 @@ export function computeActionableSessionSnapshot(
 			activeCards,
 			deps.presetService,
 			deps.sessionPersistence,
+			options.sessionProgress,
 		);
 		queueOptions.cardPresetById = presetContext.cardPresetById;
 		queueOptions.presetDailyLimits = presetContext.presetDailyLimits;

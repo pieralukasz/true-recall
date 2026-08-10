@@ -163,6 +163,44 @@ describe("computeActionableSessionSnapshot", () => {
 		expect(snapshot.queue.map((c) => c.id)).toEqual(["r1"]);
 	});
 
+	it("uses shared session progress without repeating persistence queries", () => {
+		const getReviewedToday = vi.fn(() => new Set<string>());
+		const getTodayProgressByPreset = vi.fn(() => new Map());
+		const sessionPersistence = {
+			getReviewedToday,
+			getNewCardsStudiedToday: () => 0,
+			getReviewCardsCompletedToday: () => 0,
+			getTodayProgressByPreset,
+		} as unknown as SessionPersistenceService;
+		const cards = [
+			createMockFlashcard({
+				id: "already-reviewed",
+				sourceUid: "uid-1",
+				fsrs: { state: State.Review, due: "2024-01-01T00:00:00.000Z" },
+			}),
+			createMockFlashcard({
+				id: "still-due",
+				sourceUid: "uid-2",
+				fsrs: { state: State.Review, due: "2024-01-01T00:00:00.000Z" },
+			}),
+		];
+
+		const snapshot = computeActionableSessionSnapshot(
+			createDeps({ allCards: cards, sessionPersistence }),
+			{},
+			{
+				sessionProgress: {
+					reviewedToday: new Set(["already-reviewed"]),
+					presetProgressToday: new Map(),
+				},
+			},
+		);
+
+		expect(snapshot.queue.map((card) => card.id)).toEqual(["still-due"]);
+		expect(getReviewedToday).not.toHaveBeenCalled();
+		expect(getTodayProgressByPreset).not.toHaveBeenCalled();
+	});
+
 	it("applies project scope via sourceUidFilter", () => {
 		const cards = [
 			createMockFlashcard({
@@ -307,6 +345,26 @@ describe("computeActionableSessionSnapshot", () => {
 		expect(reviewService.buildQueue).toHaveBeenCalled();
 		expect(updateSettings).not.toHaveBeenCalled();
 		expect(snapshot.queueLength).toBe(1);
+	});
+
+	it("passes a shared calculation time to the queue builder", () => {
+		const now = new Date("2026-08-10T10:00:00.000Z");
+		const buildQueue = vi.fn(() => []);
+		const reviewService = {
+			buildQueue,
+		} as unknown as import("../../../src/services/review/review.service").ReviewService;
+
+		computeActionableSessionSnapshot(
+			createDeps({ reviewService }),
+			{},
+			{ now },
+		);
+
+		expect(buildQueue).toHaveBeenCalledWith(
+			expect.any(Array),
+			expect.anything(),
+			expect.objectContaining({ now }),
+		);
 	});
 
 	it("keeps target count and scheduling mode in the snapshot cache key", () => {

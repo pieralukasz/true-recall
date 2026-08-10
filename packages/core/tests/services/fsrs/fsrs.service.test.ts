@@ -2,7 +2,7 @@
  * Tests for FSRSService - core FSRS scheduling logic
  */
 
-import { Rating, State } from "ts-fsrs";
+import { FSRS, Rating, State } from "ts-fsrs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { FSRSService } from "../../../src/services/fsrs/fsrs.service";
@@ -26,6 +26,7 @@ describe("FSRSService", () => {
 	});
 
 	afterEach(() => {
+		vi.restoreAllMocks();
 		vi.useRealTimers();
 	});
 
@@ -525,6 +526,42 @@ describe("FSRSService", () => {
 
 			// Learning cards should have some retrievability
 			expect(typeof retrievability).toBe("number");
+		});
+
+		it("should reuse the result for the same card, time, and settings", () => {
+			const card = createReviewCard("cached-card");
+			const now = new Date();
+			const spy = vi.spyOn(FSRS.prototype, "get_retrievability");
+
+			const first = service.getRetrievability(card, now);
+			const second = service.getRetrievability(card, now);
+
+			expect(second).toBe(first);
+			expect(spy).toHaveBeenCalledTimes(1);
+		});
+
+		it("should recompute when the same card object changes", () => {
+			const card = createReviewCard("updated-card");
+			const now = new Date();
+			const spy = vi.spyOn(FSRS.prototype, "get_retrievability");
+
+			service.getRetrievability(card, now);
+			card.stability += 1;
+			service.getRetrievability(card, now);
+
+			expect(spy).toHaveBeenCalledTimes(2);
+		});
+
+		it("should recompute for a different calculation time", () => {
+			const card = createReviewCard("later-card");
+			const now = new Date();
+			const later = new Date(now.getTime() + 60_000);
+			const spy = vi.spyOn(FSRS.prototype, "get_retrievability");
+
+			service.getRetrievability(card, now);
+			service.getRetrievability(card, later);
+
+			expect(spy).toHaveBeenCalledTimes(2);
 		});
 	});
 

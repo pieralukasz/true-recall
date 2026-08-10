@@ -31,6 +31,8 @@ import type { RModeQueueOptions } from "./retrievability-queue";
 import { spaceSiblings as spaceSiblingsImpl } from "./sibling-spacer";
 
 export interface QueueBuildOptions {
+	/** Shared calculation time for a batch of queue snapshots. */
+	now?: Date;
 	newCardsLimit: number;
 	reviewsLimit: number;
 	reviewedToday?: Set<string>;
