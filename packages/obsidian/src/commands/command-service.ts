@@ -114,6 +114,10 @@ export class CommandService {
 		return this.stack.length > 0;
 	}
 
+	isNextUndo(command: Command): boolean {
+		return this.stack[this.stack.length - 1] === command;
+	}
+
 	canRedo(): boolean {
 		return this.redoStack.length > 0;
 	}
