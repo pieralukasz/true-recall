@@ -1,4 +1,4 @@
-import { Prec, StateEffect } from "@codemirror/state";
+import { Prec, StateEffect, Transaction } from "@codemirror/state";
 import { EditorView, keymap } from "@codemirror/view";
 import {
 	useCallback,
@@ -26,6 +26,8 @@ interface NoteFieldProps {
 	onFieldChange: (fieldName: string, value: string) => void;
 	onFieldFocus?: (fieldName: string, editorView: EditorView) => void;
 	onModEnter?: (fieldName: string, value: string) => void;
+	onModUndo?: () => boolean;
+	onUserEdit?: () => void;
 	onEscape?: () => void;
 	isPinned: boolean;
 	onTogglePin?: (fieldName: string) => void;
@@ -45,6 +47,8 @@ export function NoteField({
 	onFieldChange,
 	onFieldFocus,
 	onModEnter,
+	onModUndo,
+	onUserEdit,
 	onEscape,
 	isPinned,
 	onTogglePin,
@@ -77,6 +81,10 @@ export function NoteField({
 	const debounceRef = useRef<number>();
 	const onFieldChangeRef = useRef(onFieldChange);
 	onFieldChangeRef.current = onFieldChange;
+	const onModUndoRef = useRef(onModUndo);
+	onModUndoRef.current = onModUndo;
+	const onUserEditRef = useRef(onUserEdit);
+	onUserEditRef.current = onUserEdit;
 
 	const [editorFailed, setEditorFailed] = useState(false);
 
@@ -91,6 +99,7 @@ export function NoteField({
 				onBlur: handleBlur,
 				onEscape: () => onEscape?.(),
 				onModEnter: handleModEnter,
+				onModUndo: () => onModUndoRef.current?.() ?? false,
 				onTab: onTab
 					? () => {
 							onTab();
@@ -117,6 +126,14 @@ export function NoteField({
 			effects: StateEffect.appendConfig.of([
 				EditorView.updateListener.of((update) => {
 					if (update.docChanged) {
+						if (
+							update.transactions.some(
+								(transaction) =>
+									transaction.annotation(Transaction.userEvent) !== undefined,
+							)
+						) {
+							onUserEditRef.current?.();
+						}
 						window.clearTimeout(debounceRef.current);
 						debounceRef.current = window.setTimeout(() => {
 							onFieldChangeRef.current(fieldName, update.state.doc.toString());
@@ -215,12 +232,23 @@ export function NoteField({
 							)
 						}
 						onKeyDown={(event) => {
+							if (
+								!event.shiftKey &&
+								(event.metaKey || event.ctrlKey) &&
+								event.key.toLowerCase() === "z" &&
+								onModUndo?.()
+							) {
+								event.preventDefault();
+								event.stopPropagation();
+								return;
+							}
 							if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
 								event.preventDefault();
 								event.stopPropagation();
 								onModEnter?.(fieldName, event.currentTarget.value);
 							}
 						}}
+						onBeforeInput={() => onUserEdit?.()}
 					/>
 				)}
 			</div>

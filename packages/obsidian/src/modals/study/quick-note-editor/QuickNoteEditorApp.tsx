@@ -232,6 +232,10 @@ export function QuickNoteEditorApp({
 		setAlwaysTypeIn(enabled);
 	}, []);
 
+	const invalidatePendingCreateUndo = useCallback(() => {
+		pendingCreateUndoRef.current = null;
+	}, []);
+
 	const handleChangeType = useCallback(async () => {
 		if (!noteType || !editMode?.noteId) return;
 
@@ -402,29 +406,23 @@ export function QuickNoteEditorApp({
 	const handleSaveRef = useRef(handleSave);
 	handleSaveRef.current = handleSave;
 
-	const handleUndoLastCreate = useCallback(
-		(e: KeyboardEvent): boolean => {
-			if (isEdit || savingRef.current) return false;
+	const handleUndoLastCreate = useCallback((): boolean => {
+		if (isEdit || savingRef.current) return false;
 
-			const pending = pendingCreateUndoRef.current;
-			const commandService = plugin.commandService;
-			if (!pending || !commandService?.isNextUndo(pending.command))
-				return false;
+		const pending = pendingCreateUndoRef.current;
+		const commandService = plugin.commandService;
+		if (!pending || !commandService?.isNextUndo(pending.command)) return false;
 
-			e.preventDefault();
-			e.stopPropagation();
-			pendingCreateUndoRef.current = null;
+		pendingCreateUndoRef.current = null;
 
-			void commandService.undo().then((undone) => {
-				if (!undone) return;
-				const restoredFields = { ...pending.fields };
-				fieldsRef.current = restoredFields;
-				setFields(restoredFields);
-			});
-			return true;
-		},
-		[isEdit, plugin.commandService],
-	);
+		void commandService.undo().then((undone) => {
+			if (!undone) return;
+			const restoredFields = { ...pending.fields };
+			fieldsRef.current = restoredFields;
+			setFields(restoredFields);
+		});
+		return true;
+	}, [isEdit, plugin.commandService]);
 	const handleUndoLastCreateRef = useRef(handleUndoLastCreate);
 	handleUndoLastCreateRef.current = handleUndoLastCreate;
 
@@ -441,8 +439,10 @@ export function QuickNoteEditorApp({
 				!e.shiftKey &&
 				(e.metaKey || e.ctrlKey) &&
 				e.key.toLowerCase() === "z" &&
-				handleUndoLastCreateRef.current(e)
+				handleUndoLastCreateRef.current()
 			) {
+				e.preventDefault();
+				e.stopPropagation();
 				return;
 			}
 			if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
@@ -459,14 +459,9 @@ export function QuickNoteEditorApp({
 				void handleSaveRef.current();
 			}
 		};
-		const onBeforeInput = () => {
-			pendingCreateUndoRef.current = null;
-		};
 		doc.addEventListener("keydown", onKeyDown, true);
-		doc.addEventListener("beforeinput", onBeforeInput, true);
 		return () => {
 			doc.removeEventListener("keydown", onKeyDown, true);
-			doc.removeEventListener("beforeinput", onBeforeInput, true);
 		};
 	}, []);
 
@@ -591,6 +586,8 @@ export function QuickNoteEditorApp({
 					handleFieldChange(fieldName, value);
 					void handleSave();
 				}}
+				onModUndo={handleUndoLastCreate}
+				onUserEdit={invalidatePendingCreateUndo}
 				onEscape={onRequestClose}
 				pinnedFields={pinnedFields}
 				onTogglePin={togglePin}

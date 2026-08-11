@@ -14,6 +14,8 @@ interface NoteFieldsFormProps {
 	onFieldChange: (fieldName: string, value: string) => void;
 	onFieldFocus?: (fieldName: string, editorView: EditorView) => void;
 	onModEnter?: (fieldName: string, value: string) => void;
+	onModUndo?: () => boolean;
+	onUserEdit?: () => void;
 	onEscape?: () => void;
 	autoFocusFirst?: boolean;
 	pinnedFields?: Set<string>;
@@ -27,6 +29,8 @@ export function NoteFieldsForm({
 	onFieldChange,
 	onFieldFocus,
 	onModEnter,
+	onModUndo,
+	onUserEdit,
 	onEscape,
 	autoFocusFirst = true,
 	pinnedFields,
@@ -63,6 +67,8 @@ export function NoteFieldsForm({
 					onFieldChange={onFieldChange}
 					onFieldFocus={onFieldFocus}
 					onModEnter={onModEnter}
+					onModUndo={onModUndo}
+					onUserEdit={onUserEdit}
 					onEscape={onEscape}
 					isPinned={pinnedFields?.has(fieldName) ?? false}
 					onTogglePin={onTogglePin}
