@@ -11,6 +11,7 @@ import {
 import type { AssistantContext } from "@true-recall/core/ai/assistant";
 import { hasAIKey } from "@true-recall/core/ai/config/ai-client-config";
 
+import { BatchCreateCommand } from "@true-recall/obsidian/commands/commands/card-create.cmd";
 import { Clickable } from "@true-recall/obsidian/components";
 import {
 	type FormattingTargetRef,
@@ -37,6 +38,11 @@ interface QuickNoteEditorAppProps {
 	onDone: (result: QuickNoteEditorResult) => void;
 	onRequestClose?: () => void;
 	onDirtyChange?: (isDirty: boolean) => void;
+}
+
+interface PendingCreateUndo {
+	command: BatchCreateCommand;
+	fields: Record<string, string>;
 }
 
 export function QuickNoteEditorApp({
@@ -74,6 +80,7 @@ export function QuickNoteEditorApp({
 	});
 	const fieldsRef = useRef(fields);
 	fieldsRef.current = fields;
+	const pendingCreateUndoRef = useRef<PendingCreateUndo | null>(null);
 	const savingRef = useRef(false);
 	const assistantDraftSessionIdRef = useRef(`qne-${crypto.randomUUID()}`);
 	const closeAssistantWindowRef = useRef<(() => void) | null>(null);
@@ -82,8 +89,14 @@ export function QuickNoteEditorApp({
 		() =>
 			registerAssistantDraftTarget(assistantDraftSessionIdRef.current, {
 				getFields: () => fieldsRef.current,
-				applyFields: (next) =>
-					setFields((current) => ({ ...current, ...next })),
+				applyFields: (next) => {
+					pendingCreateUndoRef.current = null;
+					setFields((current) => {
+						const merged = { ...current, ...next };
+						fieldsRef.current = merged;
+						return merged;
+					});
+				},
 			}),
 		[],
 	);
@@ -197,13 +210,26 @@ export function QuickNoteEditorApp({
 	// ── Handlers ──
 
 	const handleFieldChange = useCallback((fieldName: string, value: string) => {
+		if (fieldsRef.current[fieldName] === value) return;
+		pendingCreateUndoRef.current = null;
 		const nextFields = { ...fieldsRef.current, [fieldName]: value };
 		fieldsRef.current = nextFields;
 		setFields(nextFields);
 	}, []);
 
 	const handleNoteTypeChange = useCallback((id: string) => {
+		pendingCreateUndoRef.current = null;
 		setNoteTypeId(id);
+	}, []);
+
+	const handleSourceSelect = useCallback((file: TFile | null) => {
+		pendingCreateUndoRef.current = null;
+		setSelectedSourceNote(file);
+	}, []);
+
+	const handleTypeInToggle = useCallback((enabled: boolean) => {
+		pendingCreateUndoRef.current = null;
+		setAlwaysTypeIn(enabled);
 	}, []);
 
 	const handleChangeType = useCallback(async () => {
@@ -315,6 +341,7 @@ export function QuickNoteEditorApp({
 				});
 			} else {
 				const sourceUid = await resolveSourceUid();
+				const savedFields = { ...currentFields };
 
 				const result = plugin.flashcardManager.createNote({
 					noteTypeId,
@@ -326,6 +353,18 @@ export function QuickNoteEditorApp({
 
 				const totalCards = result.cards.length;
 				notify().cardsCreated(totalCards, sourceNoteFile?.basename);
+
+				const commandService = plugin.commandService;
+				if (commandService && result.cards.length > 0) {
+					const command = new BatchCreateCommand(
+						result.cards.map((card) => card.id),
+					);
+					await commandService.execute(command);
+					pendingCreateUndoRef.current = {
+						command,
+						fields: savedFields,
+					};
+				}
 
 				// Clear unpinned fields, keep pinned — modal stays open
 				const next: Record<string, string> = {};
@@ -363,6 +402,32 @@ export function QuickNoteEditorApp({
 	const handleSaveRef = useRef(handleSave);
 	handleSaveRef.current = handleSave;
 
+	const handleUndoLastCreate = useCallback(
+		(e: KeyboardEvent): boolean => {
+			if (isEdit || savingRef.current) return false;
+
+			const pending = pendingCreateUndoRef.current;
+			const commandService = plugin.commandService;
+			if (!pending || !commandService?.isNextUndo(pending.command))
+				return false;
+
+			e.preventDefault();
+			e.stopPropagation();
+			pendingCreateUndoRef.current = null;
+
+			void commandService.undo().then((undone) => {
+				if (!undone) return;
+				const restoredFields = { ...pending.fields };
+				fieldsRef.current = restoredFields;
+				setFields(restoredFields);
+			});
+			return true;
+		},
+		[isEdit, plugin.commandService],
+	);
+	const handleUndoLastCreateRef = useRef(handleUndoLastCreate);
+	handleUndoLastCreateRef.current = handleUndoLastCreate;
+
 	const rootRef = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
@@ -372,6 +437,14 @@ export function QuickNoteEditorApp({
 		// element is in the DOM.
 		const doc = rootRef.current?.ownerDocument ?? activeDocument;
 		const onKeyDown = (e: KeyboardEvent) => {
+			if (
+				!e.shiftKey &&
+				(e.metaKey || e.ctrlKey) &&
+				e.key.toLowerCase() === "z" &&
+				handleUndoLastCreateRef.current(e)
+			) {
+				return;
+			}
 			if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
 				const target = e.target as HTMLElement | null;
 				if (
@@ -386,8 +459,15 @@ export function QuickNoteEditorApp({
 				void handleSaveRef.current();
 			}
 		};
+		const onBeforeInput = () => {
+			pendingCreateUndoRef.current = null;
+		};
 		doc.addEventListener("keydown", onKeyDown, true);
-		return () => doc.removeEventListener("keydown", onKeyDown, true);
+		doc.addEventListener("beforeinput", onBeforeInput, true);
+		return () => {
+			doc.removeEventListener("keydown", onKeyDown, true);
+			doc.removeEventListener("beforeinput", onBeforeInput, true);
+		};
 	}, []);
 
 	// The editor registers itself as a temporary Assistant target. The task only
@@ -488,7 +568,7 @@ export function QuickNoteEditorApp({
 				onChangeType={isEdit ? () => void handleChangeType() : undefined}
 				showSourcePicker={showSourcePicker}
 				selectedSourceNote={selectedSourceNote}
-				onSourceSelect={setSelectedSourceNote}
+				onSourceSelect={handleSourceSelect}
 			/>
 
 			{/* Shared formatting toolbar */}
@@ -496,7 +576,7 @@ export function QuickNoteEditorApp({
 				app={app}
 				getEditorView={() => focusedFieldRef.current?.editorView ?? null}
 				typeInEnabled={alwaysTypeIn}
-				onTypeInToggle={!isEdit ? setAlwaysTypeIn : undefined}
+				onTypeInToggle={!isEdit ? handleTypeInToggle : undefined}
 				showCloze={noteType.type === 1}
 			/>
 
