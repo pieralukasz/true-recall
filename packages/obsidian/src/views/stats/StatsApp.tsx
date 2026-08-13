@@ -58,7 +58,7 @@ export function StatsApp({ isViewVisible }: StatsAppProps) {
 		Q.ARCHIVED_UIDS,
 	);
 	const timeRange = useSignal<StatsTimeRange>("1m");
-	const forecastRange = useSignal<ForecastRange>("1m");
+	const forecastRange = useSignal<ForecastRange>("3m");
 	const showArchived = useSignal(false);
 	const settings = settingsSignal.value;
 	// Gated snapshot: hidden stats tabs neither subscribe to nor recompute on

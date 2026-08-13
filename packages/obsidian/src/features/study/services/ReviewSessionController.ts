@@ -13,7 +13,11 @@ import type {
 	Grade,
 	ReviewResult,
 } from "@true-recall/core/types";
-import type { SessionFilters } from "@true-recall/core/types/review-session.types";
+import type {
+	ReviewSessionTopUp,
+	ReviewSessionTopUpAvailability,
+	SessionFilters,
+} from "@true-recall/core/types/review-session.types";
 import { isPreviewCustomStudy } from "@true-recall/core/types/review-session.types";
 
 import { ObsidianNoteResolver } from "@true-recall/obsidian/adapters/ObsidianNoteResolver";
@@ -89,6 +93,26 @@ export class ReviewSessionController {
 		return {
 			queue,
 			resolvedProjectUids,
+		};
+	}
+
+	buildTopUpSession(
+		filters: SessionFilters,
+		topUp: ReviewSessionTopUp,
+	): BuiltReviewSession {
+		return this.buildSession({ ...filters, topUp });
+	}
+
+	getTopUpAvailability(
+		filters: SessionFilters,
+	): ReviewSessionTopUpAvailability {
+		const count = Number.MAX_SAFE_INTEGER;
+		return {
+			review: this.buildTopUpSession(filters, {
+				kind: "review",
+				count,
+			}).queue.length,
+			new: this.buildTopUpSession(filters, { kind: "new", count }).queue.length,
 		};
 	}
 

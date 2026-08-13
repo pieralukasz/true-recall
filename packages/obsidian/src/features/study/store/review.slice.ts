@@ -429,6 +429,19 @@ export function createReviewSlice(
 			}));
 		},
 
+		updateCurrentCardComment: (userComment: string | undefined) => {
+			const state = get().review;
+			const card = state.queue[state.currentIndex];
+			if (!card) return;
+
+			const newQueue = [...state.queue];
+			newQueue[state.currentIndex] = { ...card, userComment };
+
+			set((s) => ({
+				review: { ...s.review, queue: newQueue },
+			}));
+		},
+
 		getSchedulingPreview: () => schedulingPreview,
 
 		setSchedulingPreview: (preview: SchedulingPreview | null) => {

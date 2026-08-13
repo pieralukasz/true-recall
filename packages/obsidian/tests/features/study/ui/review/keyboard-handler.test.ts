@@ -45,6 +45,7 @@ function createEvent(
 		shiftKey: false,
 		target: null,
 		preventDefault: vi.fn(),
+		stopPropagation: vi.fn(),
 		...overrides,
 	} as KeyboardEvent & { preventDefault: ReturnType<typeof vi.fn> };
 }
@@ -60,12 +61,31 @@ function defaultCallbacks(overrides = {}) {
 		onMoveCard: vi.fn(async () => {}),
 		onAddCard: vi.fn(async () => {}),
 		onEditCard: vi.fn(async () => {}),
+		onEditComment: vi.fn(async () => {}),
 		onCycleTypeInMode: vi.fn(),
 		...overrides,
 	};
 }
 
 describe("KeyboardHandler", () => {
+	it("opens the note editor on Cmd/Ctrl+K even from editable card content", () => {
+		const onEditComment = vi.fn(async () => {});
+		const target = new HTMLElement();
+		target.isContentEditable = true;
+		const handler = new KeyboardHandler(
+			() => createReviewState(),
+			defaultCallbacks({ onEditComment }),
+			DEFAULT_KEYBINDINGS,
+		);
+
+		const event = createEvent({ key: "k", metaKey: true, target });
+		handler.handleKeyDown(event);
+
+		expect(event.preventDefault).toHaveBeenCalledOnce();
+		expect(event.stopPropagation).toHaveBeenCalledOnce();
+		expect(onEditComment).toHaveBeenCalledOnce();
+	});
+
 	it("triggers plain reveal on Space before answer is revealed", () => {
 		const onShowAnswer = vi.fn();
 		const handler = new KeyboardHandler(

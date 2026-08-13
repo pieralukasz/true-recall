@@ -95,12 +95,14 @@ describe("view-state round trip", () => {
 			sourceUidFilter: "uid-1",
 			rModeTargetCount: 42,
 			schedulingMode: "retrievability" as const,
+			topUp: { kind: "review" as const, count: 5 },
 		};
 
 		const restored = filtersFromViewState(filtersToViewState(original));
 
 		expect(restored.rModeTargetCount).toBe(42);
 		expect(restored.schedulingMode).toBe("retrievability");
+		expect(restored.topUp).toEqual({ kind: "review", count: 5 });
 	});
 
 	it("stays absent when it was never set", () => {
@@ -114,10 +116,12 @@ describe("view-state round trip", () => {
 	it("is preserved by filter normalisation", () => {
 		const normalized = normalizeSessionFilters({
 			rModeTargetCount: 12,
+			topUp: { kind: "new", count: 3 },
 			sourceNoteFilter: "",
 		});
 
 		expect(normalized.rModeTargetCount).toBe(12);
+		expect(normalized.topUp).toEqual({ kind: "new", count: 3 });
 		expect(normalized.sourceNoteFilter).toBeUndefined();
 	});
 });

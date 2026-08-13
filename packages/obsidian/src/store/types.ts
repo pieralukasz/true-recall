@@ -98,6 +98,7 @@ export interface ReviewSliceActions {
 	cancelEdit: () => void;
 	isEditing: () => boolean;
 	updateCurrentCardContent: (question: string, answer: string) => void;
+	updateCurrentCardComment: (userComment: string | undefined) => void;
 
 	// Scheduling preview (ephemeral)
 	getSchedulingPreview: () => SchedulingPreview | null;

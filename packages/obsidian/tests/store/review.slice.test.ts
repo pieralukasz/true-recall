@@ -874,6 +874,23 @@ describe("Review Slice", () => {
 			expect(currentCard?.question).toBe("New Q");
 			expect(currentCard?.answer).toBe("New A");
 		});
+
+		it("should update and clear the current card user comment", () => {
+			const card = createMockCard({ userComment: "Old note" });
+			store.getState().review.startSession([card]);
+
+			store
+				.getState()
+				.review.updateCurrentCardComment("Check the source wording");
+			expect(store.getState().review.getCurrentCard()?.userComment).toBe(
+				"Check the source wording",
+			);
+
+			store.getState().review.updateCurrentCardComment(undefined);
+			expect(
+				store.getState().review.getCurrentCard()?.userComment,
+			).toBeUndefined();
+		});
 	});
 
 	describe("Progress and Stats", () => {

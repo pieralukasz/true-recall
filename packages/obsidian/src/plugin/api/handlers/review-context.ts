@@ -79,6 +79,7 @@ export async function handleGetReviewContext(
 			sourceNoteName: card.sourceNoteName ?? "",
 			sourceNotePath: card.sourceNotePath ?? "",
 			sourceUid: card.sourceUid ?? "",
+			userComment: card.userComment,
 			...(card.sourceText && { sourceText: card.sourceText }),
 			...(card.noteTypeName && { noteTypeName: card.noteTypeName }),
 			...(card.cardType === "cloze" && {

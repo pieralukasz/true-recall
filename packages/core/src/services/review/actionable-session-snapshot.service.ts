@@ -86,6 +86,7 @@ function buildScopeCacheKey(filters: SessionFilters): string {
 		temporaryDeckId: filters.temporaryDeckId ?? null,
 		rModeTargetCount: filters.rModeTargetCount ?? null,
 		schedulingMode: filters.schedulingMode ?? null,
+		topUp: filters.topUp ?? null,
 	});
 }
 

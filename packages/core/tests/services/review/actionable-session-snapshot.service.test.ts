@@ -390,8 +390,26 @@ describe("computeActionableSessionSnapshot", () => {
 			{ rModeTargetCount: 20, schedulingMode: "retrievability" },
 			{ cache },
 		);
+		computeActionableSessionSnapshot(
+			deps,
+			{
+				rModeTargetCount: 20,
+				schedulingMode: "retrievability",
+				topUp: { kind: "review", count: 5 },
+			},
+			{ cache },
+		);
+		computeActionableSessionSnapshot(
+			deps,
+			{
+				rModeTargetCount: 20,
+				schedulingMode: "retrievability",
+				topUp: { kind: "new", count: 5 },
+			},
+			{ cache },
+		);
 
-		expect(buildQueue).toHaveBeenCalledTimes(3);
+		expect(buildQueue).toHaveBeenCalledTimes(5);
 	});
 
 	it("counts only learning steps due now as actionable", () => {

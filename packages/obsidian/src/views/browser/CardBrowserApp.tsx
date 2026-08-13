@@ -274,12 +274,14 @@ export function CardBrowserApp({
 	);
 
 	const handleSelectAll = useCallback(() => {
-		if (selectedIds.value.size === result.cards.length) {
+		if (selectedIds.value.size === result.totalCount) {
 			selectedIds.value = new Set();
 		} else {
-			selectedIds.value = new Set(result.cards.map((c) => c.id));
+			selectedIds.value = new Set(
+				queryService.getMatchingCardIds(combinedFilter),
+			);
 		}
-	}, [result.cards, selectedIds]);
+	}, [combinedFilter, queryService, result.totalCount, selectedIds]);
 
 	const handleClearSelection = useCallback(() => {
 		selectedIds.value = new Set();

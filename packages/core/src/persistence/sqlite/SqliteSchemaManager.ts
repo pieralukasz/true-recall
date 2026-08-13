@@ -30,6 +30,7 @@ export class SqliteSchemaManager {
                 tags TEXT DEFAULT '',
                 source_uid TEXT,
                 source_text TEXT,
+				user_comment TEXT,
                 created_via TEXT DEFAULT 'manual',
                 created_at INTEGER,
                 updated_at INTEGER,
@@ -165,6 +166,11 @@ export class SqliteSchemaManager {
 		}
 		try {
 			this.db.run(`ALTER TABLE assistant_tasks ADD COLUMN thread_id TEXT`);
+		} catch {
+			// Column already exists — expected for new installs
+		}
+		try {
+			this.db.run(`ALTER TABLE notes ADD COLUMN user_comment TEXT`);
 		} catch {
 			// Column already exists — expected for new installs
 		}

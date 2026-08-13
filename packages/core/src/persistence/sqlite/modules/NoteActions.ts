@@ -13,6 +13,7 @@ interface NoteRow {
 	tags: string | null;
 	source_uid: string | null;
 	source_text: string | null;
+	user_comment: string | null;
 	created_via: string | null;
 	created_at: number | null;
 	updated_at: number | null;
@@ -27,6 +28,7 @@ function mapRowToNote(row: NoteRow): Note {
 		tags: row.tags ? row.tags.split(" ").filter(Boolean) : [],
 		sourceUid: row.source_uid ?? undefined,
 		sourceText: row.source_text ?? undefined,
+		userComment: row.user_comment ?? undefined,
 		createdVia: row.created_via ?? undefined,
 		createdAt: row.created_at ?? undefined,
 		updatedAt: row.updated_at ?? undefined,
@@ -88,14 +90,15 @@ export class NoteActions {
 	/** Last-writer-wins upsert of a remote device's note row. */
 	upsertRowFromRemote(row: NoteRow): boolean {
 		this.db.run(
-			`INSERT INTO notes (id, note_type_id, fields_json, tags, source_uid, source_text, created_via, created_at, updated_at, deleted_at)
-			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			`INSERT INTO notes (id, note_type_id, fields_json, tags, source_uid, source_text, user_comment, created_via, created_at, updated_at, deleted_at)
+			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 			 ON CONFLICT(id) DO UPDATE SET
 				note_type_id = excluded.note_type_id,
 				fields_json = excluded.fields_json,
 				tags = excluded.tags,
 				source_uid = excluded.source_uid,
 				source_text = excluded.source_text,
+				user_comment = excluded.user_comment,
 				created_via = excluded.created_via,
 				updated_at = excluded.updated_at,
 				deleted_at = excluded.deleted_at
@@ -107,6 +110,7 @@ export class NoteActions {
 				row.tags,
 				row.source_uid,
 				row.source_text,
+				row.user_comment,
 				row.created_via,
 				row.created_at,
 				row.updated_at,
@@ -135,8 +139,8 @@ export class NoteActions {
 	create(note: Note): void {
 		const now = Date.now();
 		this.db.run(
-			`INSERT INTO notes (id, note_type_id, fields_json, tags, source_uid, source_text, created_via, created_at, updated_at)
-			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			`INSERT INTO notes (id, note_type_id, fields_json, tags, source_uid, source_text, user_comment, created_via, created_at, updated_at)
+			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 			[
 				note.id,
 				note.noteTypeId,
@@ -144,6 +148,7 @@ export class NoteActions {
 				note.tags.join(" "),
 				note.sourceUid ?? null,
 				note.sourceText ?? null,
+				note.userComment ?? null,
 				note.createdVia ?? "manual",
 				note.createdAt ?? now,
 				note.updatedAt ?? now,
@@ -175,6 +180,10 @@ export class NoteActions {
 		if (updates.sourceText !== undefined) {
 			sets.push("source_text = ?");
 			params.push(updates.sourceText);
+		}
+		if (updates.userComment !== undefined) {
+			sets.push("user_comment = ?");
+			params.push(updates.userComment || null);
 		}
 		if (updates.createdVia !== undefined) {
 			sets.push("created_via = ?");

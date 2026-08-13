@@ -41,6 +41,27 @@ export const cardActionCommands: CommandDef[] = [
 		({ question, answer }) => ({ question, answer }),
 	),
 
+	postTo(
+		"move_card",
+		"Move a flashcard to another Obsidian note",
+		C,
+		{
+			card_id: {
+				type: "string",
+				description: "The card's UUID",
+				required: true,
+			},
+			target_path: {
+				type: "string",
+				description:
+					"Vault path to the target Markdown note (e.g. 'Folder/Note.md')",
+				required: true,
+			},
+		},
+		(p) => `/cards/${p.card_id}/move`,
+		({ target_path }) => ({ target_path }),
+	),
+
 	del(
 		"delete_card",
 		"Permanently delete a flashcard",

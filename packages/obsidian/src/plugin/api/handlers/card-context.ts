@@ -54,6 +54,7 @@ export async function handleGetCardContext(
 			sourceNoteName: card.sourceNoteName ?? "",
 			sourceNotePath: card.sourceNotePath ?? "",
 			noteTypeName: card.noteTypeName,
+			userComment: card.userComment,
 			...(card.sourceText && { sourceText: card.sourceText }),
 			...(card.cardType === "cloze" && {
 				clozeTemplate: card.clozeTemplate,
@@ -99,6 +100,7 @@ export async function handleGetCardContext(
 				difficulty: c.difficulty,
 				reps: c.reps,
 				lapses: c.lapses,
+				userComment: c.userComment,
 			}));
 
 		result.siblings = { count: siblings.length, cards: siblings };

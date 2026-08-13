@@ -73,6 +73,7 @@ export interface CreateNoteParams {
 	alwaysTypeIn?: boolean;
 	sourceUid?: string;
 	sourceText?: string;
+	userComment?: string;
 	createdVia?: string;
 	createdAt?: number;
 	/** Silently drop cards whose rendered question already exists (AI path). */
@@ -553,6 +554,7 @@ export class FlashcardManager {
 			tags: params.alwaysTypeIn ? [FLASHCARD_CONFIG.alwaysTypeInTag] : [],
 			sourceUid: params.sourceUid,
 			sourceText: params.sourceText,
+			userComment: params.userComment?.trim() || undefined,
 			createdVia: params.createdVia ?? "manual",
 		};
 
@@ -670,6 +672,7 @@ export class FlashcardManager {
 				tags: params.alwaysTypeIn ? [FLASHCARD_CONFIG.alwaysTypeInTag] : [],
 				sourceUid: params.sourceUid,
 				sourceText: params.sourceText,
+				userComment: params.userComment?.trim() || undefined,
 				createdVia: params.createdVia ?? "manual",
 			};
 
@@ -821,6 +824,32 @@ export class FlashcardManager {
 		}
 
 		return { updatedCardIds };
+	}
+
+	updateNoteComment(noteId: string, userComment: string): string[] {
+		if (!this.store) {
+			throw new Error("Store not initialized");
+		}
+
+		const note = this.store.notes.getById(noteId);
+		if (!note) {
+			throw new Error(`Note "${noteId}" not found`);
+		}
+
+		const normalizedComment = userComment.trim();
+		this.store.notes.update(noteId, { userComment: normalizedComment });
+		const cardIds = this.store.cards
+			.getCardsByNoteId(noteId)
+			.map((card) => card.id);
+
+		for (const cardId of cardIds) {
+			this.emitEvent("card:updated", {
+				cardId,
+				changes: { userComment: true },
+			});
+		}
+
+		return cardIds;
 	}
 
 	changeNoteType(

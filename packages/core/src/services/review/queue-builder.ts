@@ -265,6 +265,37 @@ function buildRModeQueue(
 	];
 }
 
+function buildTopUpQueue(
+	availableCards: CardSchedulingMeta[],
+	fsrsService: FSRSService,
+	options: QueueBuildOptions,
+	now: Date,
+): CardSchedulingMeta[] {
+	const topUp = options.topUp;
+	if (!topUp) return [];
+
+	const count = Math.max(0, Math.floor(topUp.count));
+	if (count === 0) return [];
+
+	let queue: CardSchedulingMeta[];
+	if (topUp.kind === "review") {
+		if (!options.rMode) return [];
+		queue = buildRetrievabilityQueue(
+			availableCards.filter((card) => card.fsrs.state === State.Review),
+			fsrsService,
+			{ ...options.rMode, targetCount: count },
+			now,
+		).cards;
+	} else {
+		queue = sortNewCards(
+			availableCards.filter((card) => card.fsrs.state === State.New),
+			options.newCardOrder ?? "random",
+		).slice(0, count);
+	}
+
+	return options.burySiblings === false ? spaceSiblings(queue) : queue;
+}
+
 function buildStandardQueue(
 	availableCards: CardSchedulingMeta[],
 	fsrsService: FSRSService,
@@ -360,7 +391,9 @@ export function buildQueue(
 
 	let queue: CardSchedulingMeta[];
 
-	if (options.materializedCardIds) {
+	if (options.topUp) {
+		queue = buildTopUpQueue(availableCards, fsrsService, options, now);
+	} else if (options.materializedCardIds) {
 		const cardById = new Map(availableCards.map((card) => [card.id, card]));
 		queue = options.materializedCardIds.flatMap((id) => {
 			const card = cardById.get(id);
@@ -377,6 +410,7 @@ export function buildQueue(
 	}
 
 	if (
+		!options.topUp &&
 		options.cardLimit &&
 		options.cardLimit > 0 &&
 		queue.length > options.cardLimit

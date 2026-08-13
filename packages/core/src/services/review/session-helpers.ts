@@ -178,6 +178,7 @@ export function buildQueueOptions(
 			preset?.requestRetention ?? settings.fsrsRequestRetention,
 			filters.rModeTargetCount,
 		),
+		topUp: filters.topUp,
 	};
 }
 

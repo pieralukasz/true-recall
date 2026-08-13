@@ -87,6 +87,7 @@ export function handleListCards(
 		sourceUid: c.sourceUid,
 		createdAt: c.createdAt,
 		noteTypeName: c.noteTypeName,
+		userComment: c.userComment,
 	}));
 
 	sendOk(res, { total: allCards.length, count: cards.length, cards });
@@ -133,6 +134,7 @@ export function handleGetActualLearningCards(
 		cardType: card.cardType ?? "basic",
 		sourceUid: card.sourceUid,
 		sourceNoteName: card.sourceNoteName,
+		userComment: card.userComment,
 	}));
 
 	sendOk(res, {
@@ -185,6 +187,7 @@ export function handleGetCard(
 		sourceText: card.sourceText,
 		createdAt: card.createdAt,
 		noteTypeName: card.noteTypeName,
+		userComment: card.userComment,
 		reviewHistory: history,
 	});
 }
@@ -243,6 +246,7 @@ export function handleGetDueCards(
 		cardType: c.cardType ?? "basic",
 		sourceUid: c.sourceUid,
 		sourceNoteName: c.sourceNoteName,
+		userComment: c.userComment,
 	}));
 
 	sendOk(res, {

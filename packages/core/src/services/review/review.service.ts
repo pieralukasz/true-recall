@@ -13,7 +13,10 @@ import type {
 	ReviewResult,
 	ReviewSessionStats,
 } from "../../types";
-import type { CustomStudyRequest } from "../../types/review-session.types";
+import type {
+	CustomStudyRequest,
+	ReviewSessionTopUp,
+} from "../../types/review-session.types";
 import type {
 	FSRSSettings,
 	NewCardOrder,
@@ -108,6 +111,8 @@ export interface QueueBuildOptions {
 	 * the user asks for a card count directly.
 	 */
 	rMode?: RModeQueueOptions;
+	/** One-off R-Mode continuation restricted to Review or New cards. */
+	topUp?: ReviewSessionTopUp;
 }
 
 export class ReviewService {

@@ -30,6 +30,8 @@ interface GateActionInput {
 	depsChanged: boolean;
 	msSinceLastCompute: number;
 	throttleMs: number;
+	/** Render changes are user-facing inputs and must not wait for the throttle. */
+	trigger?: "reactive" | "render";
 }
 
 /**
@@ -42,9 +44,14 @@ export function resolveGateAction({
 	depsChanged,
 	msSinceLastCompute,
 	throttleMs,
+	trigger = "reactive",
 }: GateActionInput): GateAction {
 	if (!depsChanged) return { kind: "keep" };
-	if (becameVisible || msSinceLastCompute >= throttleMs) {
+	if (
+		trigger === "render" ||
+		becameVisible ||
+		msSinceLastCompute >= throttleMs
+	) {
 		return { kind: "recompute" };
 	}
 	return { kind: "trailing", delayMs: throttleMs - msSinceLastCompute };
@@ -60,6 +67,9 @@ export function resolveGateAction({
  *   true refreshes the cached value before scheduling a single render.
  * - While visible, recomputes at most once per `throttleMs`; a throttled
  *   change schedules a trailing refresh so the final state is never dropped.
+ * - Dependencies derived from props or local component state are also checked
+ *   during visible renders and recomputed immediately. They are not observable
+ *   by the signal effect and usually represent direct user input.
  *
  * `getDeps` must read every signal the computation depends on (deps identity
  * is compared with Object.is, like useMemo).
@@ -118,6 +128,18 @@ export function useGatedComputed<T>(
 	let state = stateRef.current;
 	if (state === null) {
 		state = recompute(untracked(() => getDepsRef.current()));
+	} else if (isVisible.peek()) {
+		const deps = untracked(() => getDepsRef.current());
+		const action = resolveGateAction({
+			becameVisible: false,
+			depsChanged: !areDepsEqual(state.deps, deps),
+			msSinceLastCompute: performance.now() - state.computedAt,
+			throttleMs: throttleMsRef.current,
+			trigger: "render",
+		});
+		if (action.kind === "recompute") {
+			state = recompute(deps);
+		}
 	}
 
 	useEffect(() => {

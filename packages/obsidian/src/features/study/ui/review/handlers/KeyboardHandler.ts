@@ -15,6 +15,7 @@ interface KeyboardActionCallbacks {
 	onMoveCard: () => Promise<void>;
 	onAddCard: () => Promise<void>;
 	onEditCard: () => Promise<void>;
+	onEditComment: () => Promise<void>;
 	onCycleTypeInMode: () => void;
 	canRateShortcuts?: () => boolean;
 	isTypeInActive?: () => boolean;
@@ -37,6 +38,13 @@ export class KeyboardHandler {
 	}
 
 	handleKeyDown = (e: KeyboardEvent): void => {
+		if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+			e.preventDefault();
+			e.stopPropagation();
+			void this.callbacks.onEditComment();
+			return;
+		}
+
 		if (this.isInputFocused(e.target)) return;
 
 		if ((e.metaKey || e.ctrlKey) && e.key === "z") {
@@ -177,6 +185,7 @@ export class KeyboardHandler {
 			{ key: "M", description: "Move card to another note" },
 			{ key: "A", description: "Add new flashcard" },
 			{ key: "E", description: "Edit card" },
+			{ key: "Cmd/Ctrl+K", description: "Add or edit my note" },
 			{ key: "T", description: "Cycle type-in mode" },
 		];
 	}
