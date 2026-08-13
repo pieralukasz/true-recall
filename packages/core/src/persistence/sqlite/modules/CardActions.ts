@@ -95,6 +95,10 @@ export class CardActions {
 		return this.queries.browserQuery(where, params, orderBy, limit, offset);
 	}
 
+	browserQueryIds(where: string, params: (string | number)[]): string[] {
+		return this.queries.browserQueryIds(where, params);
+	}
+
 	browserCount(where: string, params: (string | number)[]): number {
 		return this.queries.browserCount(where, params);
 	}

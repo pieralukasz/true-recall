@@ -23,6 +23,8 @@ import {
 	type FSRSFlashcardItem,
 	type FSRSPreset,
 	type LocalAnswerAssessment,
+	type ReviewSessionTopUp,
+	type ReviewSessionTopUpAvailability,
 	type SemanticGradingResult,
 } from "@true-recall/core/types";
 import { isPreviewCustomStudy } from "@true-recall/core/types/review-session.types";
@@ -118,6 +120,8 @@ export class ReviewView extends ItemView {
 	private semanticGradingService: SemanticAnswerGradingService;
 
 	private filters: SessionFilters = {};
+	private sessionKey?: string;
+	private sessionLabel?: string;
 	private readonly sessionId = crypto.randomUUID();
 	private crammedCardIds = new Set<string>();
 	private isProcessingAnswer = false;
@@ -231,6 +235,7 @@ export class ReviewView extends ItemView {
 				onMoveCard: () => this.cardActionsHandler.handleMoveCard(),
 				onAddCard: () => this.cardActionsHandler.handleAddNewFlashcard(),
 				onEditCard: () => this.cardActionsHandler.handleEditCardModal(),
+				onEditComment: () => this.cardActionsHandler.handleEditComment(),
 				onCycleTypeInMode: () => this.cycleTypeInMode(),
 				canRateShortcuts: () => !this.isRatingLocked(),
 				isTypeInActive: () => this.isTypeInRequiredForCurrentCard(),
@@ -489,10 +494,12 @@ export class ReviewView extends ItemView {
 	// ─── Obsidian lifecycle ──────────────────────────────────────────────
 
 	async setState(state: unknown, result: ViewStateResult): Promise<void> {
-		this.filters = filtersFromViewState(
+		const viewState =
 			(state as import("@true-recall/obsidian/features/study/ui/review/review.types").ReviewViewState) ??
-				null,
-		);
+			null;
+		this.sessionKey = viewState?.sessionKey;
+		this.sessionLabel = viewState?.sessionLabel;
+		this.filters = filtersFromViewState(viewState);
 		this.filters.dayStartHour = this.plugin.settings.dayStartHour;
 		this.crammedCardIds.clear();
 		this.isProcessingAnswer = false;
@@ -511,7 +518,11 @@ export class ReviewView extends ItemView {
 	}
 
 	getState() {
-		return filtersToViewState(this.filters);
+		return {
+			...filtersToViewState(this.filters),
+			sessionKey: this.sessionKey,
+			sessionLabel: this.sessionLabel,
+		};
 	}
 
 	getViewType(): string {
@@ -519,7 +530,9 @@ export class ReviewView extends ItemView {
 	}
 
 	getDisplayText(): string {
-		return "Review session";
+		return this.sessionLabel
+			? `Review · ${this.sessionLabel}`
+			: "Review session";
 	}
 
 	getIcon(): string {
@@ -577,11 +590,15 @@ export class ReviewView extends ItemView {
 			}),
 		);
 
-		this.registerDomEvent(activeDocument, "keydown", (e: KeyboardEvent) => {
+		const onReviewKeyDown = (e: KeyboardEvent): void => {
 			const activeView = this.app.workspace.getActiveViewOfType(ReviewView);
 			if (activeView !== this) return;
 			if (activeDocument.querySelector(".modal-container")) return;
 			this.keyboardHandler.handleKeyDown(e);
+		};
+		activeDocument.addEventListener("keydown", onReviewKeyDown, true);
+		this.register(() => {
+			activeDocument.removeEventListener("keydown", onReviewKeyDown, true);
 		});
 
 		this.askBubble = new ReviewSelectionBubble({
@@ -637,9 +654,13 @@ export class ReviewView extends ItemView {
 				onContentChange: (value: string, field: "question" | "answer") =>
 					void this.editHandler.saveContent(value, field),
 				onOpenSourceNote: () => this.handleOpenSourceNote(),
+				onEditComment: () => void this.cardActionsHandler.handleEditComment(),
+				onRemoveComment: () => this.cardActionsHandler.handleRemoveComment(),
 				onClose: () => this.handleClose(),
 				onNextSession: () => this.handleNextSession(),
 				onOpenDashboard: () => void this.handleOpenDashboard(),
+				getTopUpAvailability: () => this.getTopUpAvailability(),
+				onTopUp: (topUp: ReviewSessionTopUp) => this.handleTopUp(topUp),
 				onEndSession: () => this.handleNextSession(),
 				onActionsMenu: (e: MouseEvent) => this.showActionsMenu(e),
 				// Polish presets now run in the shared AI workspace, so the action
@@ -781,6 +802,20 @@ export class ReviewView extends ItemView {
 		}));
 	}
 
+	private cachePresetsForQueue(queue: FSRSFlashcardItem[]): void {
+		this.presetCache.clear();
+		for (const card of queue) {
+			const uid = card.sourceUid ?? "";
+			if (this.presetCache.has(uid)) continue;
+			this.presetCache.set(
+				uid,
+				this.plugin.presetService.resolvePresetForCard(card, {
+					projectPath: this.filters.projectPath,
+				}),
+			);
+		}
+	}
+
 	private handlePresetChange(newPresetName: string): void {
 		const card = this.review.getCurrentCard();
 		if (!card) return;
@@ -884,18 +919,7 @@ export class ReviewView extends ItemView {
 				return;
 			}
 
-			this.presetCache.clear();
-			for (const card of queue) {
-				const uid = card.sourceUid ?? "";
-				if (!this.presetCache.has(uid)) {
-					this.presetCache.set(
-						uid,
-						this.plugin.presetService.resolvePresetForCard(card, {
-							projectPath: this.filters.projectPath,
-						}),
-					);
-				}
-			}
+			this.cachePresetsForQueue(queue);
 
 			this.review.setSessionFilters(this.filters);
 			this.review.startSession(queue);
@@ -1217,6 +1241,48 @@ export class ReviewView extends ItemView {
 
 	private handleClose(): void {
 		this.leaf.detach();
+	}
+
+	private getTopUpAvailability(): ReviewSessionTopUpAvailability {
+		if (this.filters.schedulingMode !== "retrievability") {
+			return { review: 0, new: 0 };
+		}
+		return this.reviewController.getTopUpAvailability(this.filters);
+	}
+
+	private async handleTopUp(topUp: ReviewSessionTopUp): Promise<boolean> {
+		if (this.filters.schedulingMode !== "retrievability") return false;
+
+		const normalizedTopUp: ReviewSessionTopUp = {
+			...topUp,
+			count: Math.max(0, Math.floor(topUp.count)),
+		};
+		if (normalizedTopUp.count === 0) return false;
+
+		const { queue } = this.reviewController.buildTopUpSession(
+			this.filters,
+			normalizedTopUp,
+		);
+		if (queue.length === 0) {
+			notify().info(
+				`No ${normalizedTopUp.kind} cards are available for Top Up.`,
+			);
+			return false;
+		}
+
+		this.sessionCommandService.clearByType(
+			"review:answer",
+			"review:bury",
+			"review:suspend",
+			"review:forget",
+		);
+		this.filters = { ...this.filters, topUp: normalizedTopUp };
+		this.cachePresetsForQueue(queue);
+		this.review.setSessionFilters(this.filters);
+		this.review.startSession(queue);
+		this.resetTypeInState(this.review.getCurrentCard()?.id ?? null);
+		this.answerHandler.updateSchedulingPreview();
+		return true;
 	}
 
 	private handleNextSession(): void {

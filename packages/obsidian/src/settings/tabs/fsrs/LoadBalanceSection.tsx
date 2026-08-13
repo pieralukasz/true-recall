@@ -1,5 +1,10 @@
+import { useSignal } from "@preact/signals";
 import { useMemo, useState } from "preact/hooks";
 
+import {
+	type ForecastRange,
+	forecastRangeToDays,
+} from "@true-recall/core/metrics/forecast-filter";
 import type { TrueRecallSettings } from "@true-recall/core/types";
 
 import {
@@ -23,7 +28,6 @@ interface LoadBalanceSectionProps {
 	plugin: FsrsPluginHost;
 }
 
-const FORECAST_DAYS = 30;
 const TARGET_MODE_OPTIONS = [
 	{ value: "auto", label: "Automatic (suggested from your pace)" },
 	{ value: "manual", label: "Manual" },
@@ -66,10 +70,15 @@ export function LoadBalanceSection({
 	} = useFsrsHelperOp(opConfig);
 
 	const [forecastVersion, setForecastVersion] = useState(0);
+	const forecastRange = useSignal<ForecastRange>("3m");
 
 	const forecastData = useMemo(() => {
 		const helper = plugin.fsrsHelper;
 		if (!helper) return null;
+		const forecastDays = forecastRangeToDays(
+			forecastRange.value,
+			plugin.cardStore.getCards(),
+		);
 		// forecastVersion, loadBalanceTarget, and loadBalanceMaxDeviation are read
 		// here only to force recomputation — helper.getWorkloadForecast() etc.
 		// read live settings internally, so nothing here references them directly.
@@ -80,14 +89,16 @@ export function LoadBalanceSection({
 		void settings.loadBalanceTargetMode;
 		void settings.loadBalanceMaxDeviation;
 		return {
-			forecast: helper.getWorkloadForecast(FORECAST_DAYS),
-			summary: helper.getWorkloadForecastSummary(FORECAST_DAYS),
-			dayOfWeek: helper.getWorkloadByDayOfWeek(FORECAST_DAYS),
+			forecast: helper.getWorkloadForecast(forecastDays),
+			summary: helper.getWorkloadForecastSummary(forecastDays),
+			dayOfWeek: helper.getWorkloadByDayOfWeek(forecastDays),
 			decision: helper.getWorkloadDecision(),
 		};
 	}, [
 		plugin.fsrsHelper,
+		plugin.cardStore,
 		forecastVersion,
+		forecastRange.value,
 		settings.loadBalanceTarget,
 		settings.loadBalanceTargetMode,
 		settings.loadBalanceMaxDeviation,
@@ -228,6 +239,7 @@ export function LoadBalanceSection({
 						forecast={forecastData.forecast}
 						summary={forecastData.summary}
 						dayOfWeek={forecastData.dayOfWeek}
+						range={forecastRange}
 					/>
 				</div>
 			)}

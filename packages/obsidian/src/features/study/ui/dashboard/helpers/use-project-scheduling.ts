@@ -13,7 +13,7 @@ import { notify } from "@true-recall/obsidian/services/notification.service";
 
 type ShiftAction = "postpone" | "advance";
 
-const PROJECT_FORECAST_DAYS = 30;
+const PROJECT_FORECAST_DAYS = 90;
 
 export function useProjectScheduling() {
 	const plugin = usePlugin();
@@ -341,7 +341,7 @@ export function useProjectScheduling() {
 			);
 			const total = forecast.reduce((sum, entry) => sum + entry.dueCount, 0);
 			if (total === 0) {
-				notify().info("No reviews scheduled in this project's next 30 days.");
+				notify().info("No reviews scheduled in this project's next 90 days.");
 				return;
 			}
 

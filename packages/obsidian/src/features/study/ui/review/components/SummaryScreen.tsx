@@ -1,7 +1,14 @@
-import { useEffect } from "preact/hooks";
+import { useEffect, useState } from "preact/hooks";
+
+import type {
+	ReviewSessionTopUp,
+	ReviewSessionTopUpAvailability,
+} from "@true-recall/core/types";
 
 import { Clickable } from "@true-recall/obsidian/components";
 import type { ReviewApi } from "@true-recall/obsidian/store";
+
+import { SessionTopUp } from "./SessionTopUp";
 
 function StatItem({
 	label,
@@ -31,6 +38,9 @@ export function SummaryScreen({
 	onClose,
 	onNextSession,
 	onOpenDashboard,
+	rModeActive,
+	getTopUpAvailability,
+	onTopUp,
 }: {
 	review: ReviewApi;
 	isCustomSession: boolean;
@@ -38,7 +48,12 @@ export function SummaryScreen({
 	onClose: () => void;
 	onNextSession: () => void;
 	onOpenDashboard: () => void;
+	rModeActive: boolean;
+	getTopUpAvailability: () => ReviewSessionTopUpAvailability;
+	onTopUp: (topUp: ReviewSessionTopUp) => Promise<boolean>;
 }) {
+	const [topUpAvailability, setTopUpAvailability] =
+		useState<ReviewSessionTopUpAvailability | null>(null);
 	const stats = review.getStats();
 	const durationMin = Math.floor(stats.duration / 60000);
 	const durationSec = Math.floor((stats.duration % 60000) / 1000);
@@ -51,7 +66,13 @@ export function SummaryScreen({
 		if (review.isActive) {
 			review.endSession();
 		}
-	}, [review]);
+		if (!rModeActive) return;
+
+		const timeoutId = window.setTimeout(() => {
+			setTopUpAvailability(getTopUpAvailability());
+		}, 0);
+		return () => window.clearTimeout(timeoutId);
+	}, [review.isActive, rModeActive, getTopUpAvailability, review.endSession]);
 
 	return (
 		<div class="true-recall-review ep:flex ep:flex-col ep:h-full ep:p-0">
@@ -91,6 +112,21 @@ export function SummaryScreen({
 							value={`${durationMin}m ${durationSec}s`}
 						/>
 					</div>
+
+					{rModeActive ? (
+						<div class="ep:mb-4">
+							{topUpAvailability ? (
+								<SessionTopUp
+									availability={topUpAvailability}
+									onTopUp={onTopUp}
+								/>
+							) : (
+								<div class="ep:p-4 ep:text-ui-small ep:text-obs-muted">
+									Checking available cards…
+								</div>
+							)}
+						</div>
+					) : null}
 
 					<div class="ep:flex ep:flex-wrap ep:gap-3 ep:py-4 ep:justify-center">
 						{isCustomSession && continuousCustomReviews ? (

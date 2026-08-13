@@ -417,6 +417,72 @@ describe("R-Mode via buildQueue", () => {
 		).toHaveLength(8);
 	});
 
+	it("tops up only the requested number of Review cards", () => {
+		const reviewCards = Array.from({ length: 10 }, (_, i) =>
+			createReviewCard(`review-${i}`, 10, 15 + i),
+		);
+		const newCards = Array.from({ length: 4 }, (_, i) =>
+			createMockFlashcard({
+				id: `new-${i}`,
+				fsrs: { state: State.New },
+			}),
+		);
+
+		const queue = reviewService.buildQueue(
+			[...reviewCards, ...newCards],
+			fsrsService,
+			{
+				...baseOptions,
+				topUp: { kind: "review", count: 3 },
+			},
+		);
+
+		expect(queue).toHaveLength(3);
+		expect(queue.every((card) => card.fsrs.state === State.Review)).toBe(true);
+	});
+
+	it("does not return a Review card already completed today in a Top Up", () => {
+		const cards = [
+			createReviewCard("reviewed", 10, 30),
+			createReviewCard("available", 10, 30),
+		];
+
+		const queue = reviewService.buildQueue(cards, fsrsService, {
+			...baseOptions,
+			reviewedToday: new Set(["reviewed"]),
+			topUp: { kind: "review", count: 5 },
+		});
+
+		expect(queue.map((card) => card.id)).toEqual(["available"]);
+	});
+
+	it("tops up New cards beyond the daily limit without adding Review cards", () => {
+		const cards = [
+			...Array.from({ length: 6 }, (_, i) =>
+				createMockFlashcard({
+					id: `new-${i}`,
+					fsrs: { state: State.New, createdAt: i },
+				}),
+			),
+			createReviewCard("review", 10, 30),
+		];
+
+		const queue = reviewService.buildQueue(cards, fsrsService, {
+			...baseOptions,
+			newCardsLimit: 0,
+			newCardsStudiedToday: 100,
+			newCardOrder: "oldest-first",
+			topUp: { kind: "new", count: 4 },
+		});
+
+		expect(queue.map((card) => card.id)).toEqual([
+			"new-0",
+			"new-1",
+			"new-2",
+			"new-3",
+		]);
+	});
+
 	it("leaves the due queue untouched when rMode is absent", () => {
 		const notDue = createReviewCard("not-due", 60, 40);
 		const { rMode: _rMode, ...withoutRMode } = baseOptions;

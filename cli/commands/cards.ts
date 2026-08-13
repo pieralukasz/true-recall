@@ -64,7 +64,7 @@ export const cardCommands: CommandDef[] = [
 
 	getWith(
 		"get_card",
-		"Get a single flashcard with full details and review history",
+		"Get a single flashcard with full details, the user's userComment, and review history",
 		C,
 		{
 			card_id: {
@@ -78,7 +78,7 @@ export const cardCommands: CommandDef[] = [
 
 	getWith(
 		"get_card_context",
-		"Get deep context for a flashcard: card with FSRS data, review history, source note content, sibling cards",
+		"Get deep context for a flashcard: card with userComment, FSRS data, review history, source note content, sibling cards",
 		C,
 		{
 			card_id: {

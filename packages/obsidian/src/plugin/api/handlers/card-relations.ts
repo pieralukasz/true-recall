@@ -26,6 +26,7 @@ function mapCard(c: {
 	reverseOf?: string;
 	clozeIndex?: number;
 	noteTypeName?: string;
+	userComment?: string;
 }) {
 	return {
 		id: c.id,
@@ -41,6 +42,7 @@ function mapCard(c: {
 		due: c.due,
 		sourceUid: c.sourceUid,
 		sourceNoteName: c.sourceNoteName ?? "",
+		userComment: c.userComment,
 		...(c.reverseOf && { reverseOf: c.reverseOf }),
 		...(c.clozeIndex !== undefined && { clozeIndex: c.clozeIndex }),
 		...(c.noteTypeName && { noteTypeName: c.noteTypeName }),

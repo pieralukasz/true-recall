@@ -333,7 +333,46 @@ export class CardActionsHandler {
 						updatedCard.question ?? card.question,
 						updatedCard.answer ?? card.answer ?? "",
 					);
+				this.deps.getReview().updateCurrentCardComment(updatedCard.userComment);
 			}
+		}
+	}
+
+	async handleEditComment(): Promise<void> {
+		const card = this.deps.getReview().getCurrentCard();
+		if (!card?.noteId) {
+			notify().error("Cannot add a note: this card has no backing note.");
+			return;
+		}
+
+		const { promptCardComment } = await import(
+			"@true-recall/obsidian/modals/study/CardCommentModal"
+		);
+		const value = await promptCardComment(
+			this.deps.app,
+			card.userComment ?? "",
+		);
+		if (value === null || value === (card.userComment ?? "")) return;
+
+		try {
+			this.deps.flashcardManager.updateNoteComment(card.noteId, value);
+			this.deps.getReview().updateCurrentCardComment(value || undefined);
+			notify().success(value ? "Note saved" : "Note removed");
+		} catch (error) {
+			notify().operationFailed("save note", error);
+		}
+	}
+
+	handleRemoveComment(): void {
+		const card = this.deps.getReview().getCurrentCard();
+		if (!card?.noteId || !card.userComment) return;
+
+		try {
+			this.deps.flashcardManager.updateNoteComment(card.noteId, "");
+			this.deps.getReview().updateCurrentCardComment(undefined);
+			notify().success("Note removed");
+		} catch (error) {
+			notify().operationFailed("remove note", error);
 		}
 	}
 
@@ -438,6 +477,7 @@ export class CardActionsHandler {
 					updated.question ?? card.question,
 					updated.answer ?? card.answer ?? "",
 				);
+			this.deps.getReview().updateCurrentCardComment(updated.userComment);
 		}
 		this.refreshIfActive();
 	}

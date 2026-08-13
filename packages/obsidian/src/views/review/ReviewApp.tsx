@@ -4,6 +4,8 @@ import type { Grade } from "ts-fsrs";
 import type {
 	FSRSFlashcardItem,
 	LocalAnswerAssessment,
+	ReviewSessionTopUp,
+	ReviewSessionTopUpAvailability,
 	SemanticGradingResult,
 } from "@true-recall/core/types";
 
@@ -12,6 +14,7 @@ import {
 	ButtonBar,
 	CardContainer,
 	ReviewHeader,
+	ReviewUserComment,
 	SummaryScreen,
 	WaitingScreen,
 } from "@true-recall/obsidian/features/study/ui/review/components";
@@ -30,9 +33,13 @@ interface ReviewAppProps {
 	onTypedAnswerChange: (value: string) => void;
 	onContentChange: (value: string, field: "question" | "answer") => void;
 	onOpenSourceNote: () => void;
+	onEditComment: () => void;
+	onRemoveComment: () => void;
 	onClose: () => void;
 	onNextSession: () => void;
 	onOpenDashboard: () => void;
+	getTopUpAvailability: () => ReviewSessionTopUpAvailability;
+	onTopUp: (topUp: ReviewSessionTopUp) => Promise<boolean>;
 	onEndSession: () => void;
 	onActionsMenu: (e: MouseEvent) => void;
 	onPolishMenu?: (e: MouseEvent) => void;
@@ -91,6 +98,9 @@ export function ReviewApp(props: ReviewAppProps) {
 					onClose={props.onClose}
 					onNextSession={props.onNextSession}
 					onOpenDashboard={props.onOpenDashboard}
+					rModeActive={props.rModeActive}
+					getTopUpAvailability={props.getTopUpAvailability}
+					onTopUp={props.onTopUp}
 				/>
 			);
 		case "waiting":
@@ -121,6 +131,8 @@ function ActiveReview({
 	onTypedAnswerChange,
 	onContentChange,
 	onOpenSourceNote,
+	onEditComment,
+	onRemoveComment,
 	onClose: _onClose,
 	onActionsMenu,
 	onPolishMenu,
@@ -179,6 +191,12 @@ function ActiveReview({
 					semanticResult: typeInState.semanticResult,
 					semanticMessage: typeInState.semanticMessage,
 				}}
+			/>
+
+			<ReviewUserComment
+				comment={card.userComment}
+				onEdit={onEditComment}
+				onRemove={onRemoveComment}
 			/>
 
 			<ButtonBar

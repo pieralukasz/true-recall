@@ -79,6 +79,21 @@ export const sessionTools: ToolDef[] = [
 		({ question, answer }) => ({ question, answer }),
 	),
 
+	postTo(
+		"move_card",
+		"Move a flashcard to another Obsidian note. The target note receives a flashcard_uid in frontmatter automatically if it does not have one.",
+		{
+			card_id: z.string().describe("The card's UUID"),
+			target_path: z
+				.string()
+				.describe(
+					"Vault path to the target Markdown note (e.g. 'Folder/Note.md')",
+				),
+		},
+		(p) => `/cards/${requireStringParam(p, "card_id")}/move`,
+		({ target_path }) => ({ target_path }),
+	),
+
 	del(
 		"delete_card",
 		"Permanently delete a flashcard. This soft-deletes the card — it won't appear in reviews or searches.",

@@ -47,6 +47,18 @@ describe("resolveGateAction", () => {
 		).toEqual({ kind: "trailing", delayMs: 500 });
 	});
 
+	it("recomputes render-driven deps immediately within the throttle window", () => {
+		expect(
+			resolveGateAction({
+				becameVisible: false,
+				depsChanged: true,
+				msSinceLastCompute: 100,
+				throttleMs: 2000,
+				trigger: "render",
+			}),
+		).toEqual({ kind: "recompute" });
+	});
+
 	it("recomputes a reveal with changed deps before the next render", () => {
 		expect(
 			resolveGateAction({

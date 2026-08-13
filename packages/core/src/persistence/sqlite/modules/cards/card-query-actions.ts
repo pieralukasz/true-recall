@@ -177,6 +177,11 @@ export class CardQueryActions {
 		return rows.map(mapRow);
 	}
 
+	browserQueryIds(where: string, params: (string | number)[]): string[] {
+		const sql = `SELECT c.id AS id ${CARD_FROM} WHERE ${where}`;
+		return this.db.query<{ id: string }>(sql, params).map((row) => row.id);
+	}
+
 	browserCount(where: string, params: (string | number)[]): number {
 		const sql = `SELECT COUNT(*) as count ${CARD_FROM} WHERE ${where}`;
 		return this.db.get<{ count: number }>(sql, params)?.count ?? 0;

@@ -64,6 +64,15 @@ function createService({
 				);
 			},
 		),
+		browserQueryIds: vi.fn((_where: string, params: (string | number)[]) => {
+			const excludesArchived = params.some(
+				(p) => typeof p === "string" && archivedUids.has(p),
+			);
+			const cards = excludesArchived
+				? queryCards.filter((card) => !archivedUids.has(card.sourceUid ?? ""))
+				: queryCards;
+			return cards.map((card) => card.id);
+		}),
 		browserCount: vi.fn((_where: string, params: (string | number)[]) => {
 			const excludesArchived = params.some(
 				(p) => typeof p === "string" && archivedUids.has(p),
@@ -163,6 +172,42 @@ describe("CardBrowserQueryService.getOrphanedCardIds", () => {
 			"flashcard_uid",
 			"uid-orphan",
 		);
+	});
+});
+
+describe("CardBrowserQueryService.getMatchingCardIds", () => {
+	it("returns every matching ID without the browser page limit", () => {
+		const queryCards = Array.from({ length: 407 }, (_, index) =>
+			makeCard(`card-${index + 1}`),
+		);
+		const { service, cardsMock } = createService({ queryCards });
+
+		const ids = service.getMatchingCardIds(EMPTY_FILTER);
+
+		expect(ids).toHaveLength(407);
+		expect(ids[0]).toBe("card-1");
+		expect(ids[406]).toBe("card-407");
+		expect(cardsMock.browserQueryIds).toHaveBeenCalledTimes(1);
+		expect(cardsMock.browserQuery).not.toHaveBeenCalled();
+	});
+
+	it("uses the same archived-card filter as the paginated query", () => {
+		const queryCards = [
+			makeCard("live-1", "uid-live"),
+			makeCard("archived-1", "uid-archived"),
+		];
+		const { service } = createService({
+			queryCards,
+			existingUids: new Set(["uid-live", "uid-archived"]),
+			archivedUids: new Set(["uid-archived"]),
+		});
+
+		const ids = service.getMatchingCardIds({
+			...EMPTY_FILTER,
+			showArchived: false,
+		});
+
+		expect(ids).toEqual(["live-1"]);
 	});
 });
 

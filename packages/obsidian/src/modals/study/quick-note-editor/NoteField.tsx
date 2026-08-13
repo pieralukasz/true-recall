@@ -1,4 +1,4 @@
-import { Prec, StateEffect, Transaction } from "@codemirror/state";
+import { Prec, StateEffect } from "@codemirror/state";
 import { EditorView, keymap } from "@codemirror/view";
 import {
 	useCallback,
@@ -26,8 +26,6 @@ interface NoteFieldProps {
 	onFieldChange: (fieldName: string, value: string) => void;
 	onFieldFocus?: (fieldName: string, editorView: EditorView) => void;
 	onModEnter?: (fieldName: string, value: string) => void;
-	onModUndo?: () => boolean;
-	onUserEdit?: () => void;
 	onEscape?: () => void;
 	isPinned: boolean;
 	onTogglePin?: (fieldName: string) => void;
@@ -37,6 +35,7 @@ interface NoteFieldProps {
 	) => void;
 	onTab?: () => void;
 	onShiftTab?: () => void;
+	focusRequest?: number;
 }
 
 export function NoteField({
@@ -47,18 +46,18 @@ export function NoteField({
 	onFieldChange,
 	onFieldFocus,
 	onModEnter,
-	onModUndo,
-	onUserEdit,
 	onEscape,
 	isPinned,
 	onTogglePin,
 	registerEditor,
 	onTab,
 	onShiftTab,
+	focusRequest = 0,
 }: NoteFieldProps) {
 	const app = useApp();
 	const plugin = usePlugin();
 	const containerRef = useRef<HTMLDivElement>(null);
+	const textareaRef = useRef<HTMLTextAreaElement>(null);
 	const editorRef = useRef<EmbeddableEditorInstance | null>(null);
 	const [isCollapsed, setIsCollapsed] = useState(false);
 	const shouldFocusRef = useRef(false);
@@ -81,10 +80,6 @@ export function NoteField({
 	const debounceRef = useRef<number>();
 	const onFieldChangeRef = useRef(onFieldChange);
 	onFieldChangeRef.current = onFieldChange;
-	const onModUndoRef = useRef(onModUndo);
-	onModUndoRef.current = onModUndo;
-	const onUserEditRef = useRef(onUserEdit);
-	onUserEditRef.current = onUserEdit;
 
 	const [editorFailed, setEditorFailed] = useState(false);
 
@@ -99,7 +94,6 @@ export function NoteField({
 				onBlur: handleBlur,
 				onEscape: () => onEscape?.(),
 				onModEnter: handleModEnter,
-				onModUndo: () => onModUndoRef.current?.() ?? false,
 				onTab: onTab
 					? () => {
 							onTab();
@@ -126,14 +120,6 @@ export function NoteField({
 			effects: StateEffect.appendConfig.of([
 				EditorView.updateListener.of((update) => {
 					if (update.docChanged) {
-						if (
-							update.transactions.some(
-								(transaction) =>
-									transaction.annotation(Transaction.userEvent) !== undefined,
-							)
-						) {
-							onUserEditRef.current?.();
-						}
 						window.clearTimeout(debounceRef.current);
 						debounceRef.current = window.setTimeout(() => {
 							onFieldChangeRef.current(fieldName, update.state.doc.toString());
@@ -179,6 +165,18 @@ export function NoteField({
 		editor.set(content);
 	}, [content]);
 
+	useEffect(() => {
+		if (focusRequest === 0) return;
+
+		const editor = editorRef.current;
+		if (editor) {
+			editor.cm.focus();
+			return;
+		}
+
+		textareaRef.current?.focus();
+	}, [focusRequest]);
+
 	const header = (
 		<Clickable
 			class="ep:flex ep:items-center ep:gap-2 ep:px-3 ep:py-2 ep:bg-obs-secondary ep:cursor-pointer ep:select-none ep:group"
@@ -223,6 +221,7 @@ export function NoteField({
 				{header}
 				{!isCollapsed && (
 					<textarea
+						ref={textareaRef}
 						class="ep:w-full ep:px-3 ep:py-2 ep:text-ui-small ep:bg-obs-primary ep:min-h-[2.25rem] ep:resize-y"
 						value={content}
 						onInput={(event) =>
@@ -232,23 +231,12 @@ export function NoteField({
 							)
 						}
 						onKeyDown={(event) => {
-							if (
-								!event.shiftKey &&
-								(event.metaKey || event.ctrlKey) &&
-								event.key.toLowerCase() === "z" &&
-								onModUndo?.()
-							) {
-								event.preventDefault();
-								event.stopPropagation();
-								return;
-							}
 							if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
 								event.preventDefault();
 								event.stopPropagation();
 								onModEnter?.(fieldName, event.currentTarget.value);
 							}
 						}}
-						onBeforeInput={() => onUserEdit?.()}
 					/>
 				)}
 			</div>

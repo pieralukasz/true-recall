@@ -99,6 +99,7 @@ export class TestSqliteDatabase {
 				tags TEXT DEFAULT '',
 				source_uid TEXT,
 				source_text TEXT,
+				user_comment TEXT,
 				created_via TEXT DEFAULT 'manual',
 				created_at INTEGER,
 				updated_at INTEGER,
@@ -439,6 +440,7 @@ export function createTestNote(overrides: Partial<Note> = {}): Note {
 		tags: overrides.tags ?? [],
 		sourceUid: overrides.sourceUid,
 		sourceText: overrides.sourceText,
+		userComment: overrides.userComment,
 		createdVia: overrides.createdVia ?? "manual",
 		createdAt: overrides.createdAt ?? Date.now(),
 		updatedAt: overrides.updatedAt ?? Date.now(),
@@ -471,8 +473,8 @@ export function insertNoteTypeDirect(
 
 export function insertNoteDirect(db: TestSqliteDatabase, note: Note): void {
 	db.run(
-		`INSERT INTO notes (id, note_type_id, fields_json, tags, source_uid, source_text, created_via, created_at, updated_at)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		`INSERT INTO notes (id, note_type_id, fields_json, tags, source_uid, source_text, user_comment, created_via, created_at, updated_at)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		[
 			note.id,
 			note.noteTypeId,
@@ -480,6 +482,7 @@ export function insertNoteDirect(db: TestSqliteDatabase, note: Note): void {
 			note.tags.join(" "),
 			note.sourceUid ?? null,
 			note.sourceText ?? null,
+			note.userComment ?? null,
 			note.createdVia ?? "manual",
 			note.createdAt ?? null,
 			note.updatedAt ?? null,

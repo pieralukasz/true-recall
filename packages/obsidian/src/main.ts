@@ -39,6 +39,10 @@ import type { AIWorkspaceMode } from "@true-recall/obsidian/features/assistant/u
 import type { NoteStatusCache } from "@true-recall/obsidian/features/core/cache/note-status-cache.service";
 import { ReviewSessionController } from "@true-recall/obsidian/features/study/services/ReviewSessionController";
 import {
+	createReviewSessionKey,
+	createReviewSessionLabel,
+} from "@true-recall/obsidian/features/study/services/review-session-key";
+import {
 	filtersToViewState,
 	normalizeSessionFilters,
 	type SessionFilters,
@@ -92,6 +96,7 @@ import {
 	activateReviewView,
 	activateView,
 	getView,
+	revealReviewView,
 } from "./plugin/ViewActivator";
 import { AnkiExportModal } from "@true-recall/plugins/anki-import-export/AnkiExportModal";
 import { AnkiImportModal } from "@true-recall/plugins/anki-import-export/AnkiImportModal";
@@ -529,6 +534,31 @@ export default class TrueRecallPlugin extends Plugin {
 
 		const allCards = this.flashcardManager.getAllFSRSCards();
 		const archivedSourceUids = this.hierarchyService.getArchivedSourceUids();
+		const sessionKey = createReviewSessionKey(config, allCards);
+		const customDeckName =
+			config.mode === "custom" && config.temporaryDeckId
+				? this.settings.temporaryCustomStudyDecks.find(
+						(deck) => deck.id === config.temporaryDeckId,
+					)?.name
+				: undefined;
+		const sessionLabel = createReviewSessionLabel(config, allCards, {
+			customDeckName,
+		});
+		const sessionSettings = {
+			ignoreDailyLimitsForNoteStudy:
+				this.settings.ignoreDailyLimitsForNoteStudy,
+			dayStartHour: this.settings.dayStartHour,
+			rModeEnabled: this.settings.rMode.enabled,
+		};
+		const requestedFilters = normalizeSessionFilters(
+			this.sessionService.resolveFilters(config, sessionSettings),
+		);
+		const existingLeaf = revealReviewView(this.app, VIEW_TYPE_REVIEW, {
+			...filtersToViewState(requestedFilters),
+			sessionKey,
+			sessionLabel,
+		});
+		if (existingLeaf) return;
 
 		const result = this.sessionService.validate(
 			config,
@@ -542,12 +572,7 @@ export default class TrueRecallPlugin extends Plugin {
 				hierarchyService: this.hierarchyService,
 				fsrsService: this.fsrsService,
 			},
-			{
-				ignoreDailyLimitsForNoteStudy:
-					this.settings.ignoreDailyLimitsForNoteStudy,
-				dayStartHour: this.settings.dayStartHour,
-				rModeEnabled: this.settings.rMode.enabled,
-			},
+			sessionSettings,
 		);
 
 		if (!result.valid) {
@@ -555,7 +580,10 @@ export default class TrueRecallPlugin extends Plugin {
 			return;
 		}
 
-		await this.openReviewViewWithFilters(result.filters);
+		await this.openReviewViewWithFilters(result.filters, {
+			sessionKey,
+			sessionLabel,
+		});
 	}
 
 	private getCustomStudySessionConfig(
@@ -1036,9 +1064,12 @@ export default class TrueRecallPlugin extends Plugin {
 		await this.startReview({ mode: "created_today" });
 	}
 
-	async openReviewViewWithFilters(rawFilters: SessionFilters): Promise<void> {
+	async openReviewViewWithFilters(
+		rawFilters: SessionFilters,
+		session: { sessionKey?: string; sessionLabel?: string } = {},
+	): Promise<void> {
 		const filters = normalizeSessionFilters(rawFilters);
-		const state = filtersToViewState(filters);
+		const state = { ...filtersToViewState(filters), ...session };
 
 		await activateReviewView(
 			this.app,

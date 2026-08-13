@@ -41,6 +41,7 @@ describe("NoteActions", () => {
 				tags: ["biology", "energy"],
 				sourceUid: "uid-123",
 				sourceText: "# ATP\n#flashcard",
+				userComment: "Check whether this wording is precise.",
 				createdVia: "parser",
 			});
 
@@ -51,6 +52,7 @@ describe("NoteActions", () => {
 			expect(raw?.note_type_id).toBe(BUILTIN_BASIC_ID);
 			expect(raw?.source_uid).toBe("uid-123");
 			expect(raw?.source_text).toBe("# ATP\n#flashcard");
+			expect(raw?.user_comment).toBe("Check whether this wording is precise.");
 			expect(raw?.created_via).toBe("parser");
 		});
 
@@ -184,6 +186,22 @@ describe("NoteActions", () => {
 
 			const result = ctx.notes.getById("update-tags");
 			expect(result?.tags).toEqual(["new", "tags"]);
+		});
+
+		it("update: changes and clears the user comment", () => {
+			const note = createTestNote({
+				id: "update-comment",
+				userComment: "Original thought",
+			});
+			insertNoteDirect(ctx.db, note);
+
+			ctx.notes.update("update-comment", { userComment: "Revised thought" });
+			expect(ctx.notes.getById("update-comment")?.userComment).toBe(
+				"Revised thought",
+			);
+
+			ctx.notes.update("update-comment", { userComment: "" });
+			expect(ctx.notes.getById("update-comment")?.userComment).toBeUndefined();
 		});
 
 		it("update: updates updated_at timestamp", () => {
