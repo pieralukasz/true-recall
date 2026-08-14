@@ -228,6 +228,7 @@ export class ReviewView extends ItemView {
 				onUndo: async () => {
 					await this.cardActionsHandler.handleUndo();
 				},
+				onDelete: () => this.cardActionsHandler.handleDelete(),
 				onSuspend: () => this.cardActionsHandler.handleSuspend(),
 				onForget: () => this.cardActionsHandler.handleForget(),
 				onBuryCard: () => this.cardActionsHandler.handleBuryCard(),
@@ -1056,7 +1057,13 @@ export class ReviewView extends ItemView {
 		);
 		menu.addItem((item) =>
 			item
-				.setTitle("Suspend card")
+				.setTitle("Delete card (shift+1)")
+				.setIcon("trash-2")
+				.onClick(() => this.cardActionsHandler.handleDelete()),
+		);
+		menu.addItem((item) =>
+			item
+				.setTitle("Suspend card (shift+2)")
 				.setIcon("pause")
 				.onClick(() => this.cardActionsHandler.handleSuspend()),
 		);

@@ -210,6 +210,58 @@ export class ReviewBuryCommand extends BaseReviewActionCommand {
 	}
 }
 
+export class ReviewDeleteCommand extends BaseReviewActionCommand {
+	readonly type = "review:delete";
+	readonly mutationType = "card:deleted" as const;
+
+	private deletedCardsData: FSRSCardData[] = [];
+	private reviewedTodayIds: string[] = [];
+	private reviewedTodayDate: string | null = null;
+
+	constructor(params: ReviewActionParams) {
+		const n = params.siblingIds.length;
+		super(params, n > 1 ? `Delete ${n} cards` : "Delete card");
+	}
+
+	protected doWrite(ctx: CommandContext): void {
+		// Capture which ids were marked reviewed today *before* the delete wipes
+		// them, so undo restores exactly that set and daily counts stay honest.
+		const today = ctx.sessionPersistence.getTodayKey();
+		const reviewedToday = new Set(
+			ctx.cardStore.stats.getReviewedCardIds(today),
+		);
+		this.reviewedTodayDate = today;
+		this.reviewedTodayIds = this.params.siblingIds.filter((id) =>
+			reviewedToday.has(id),
+		);
+
+		// Pass only the primary id: the repository re-derives the same cascade
+		// set the caller used to size the queue removal.
+		const result = ctx.flashcardManager.removeFlashcardsByIdsWithDetails([
+			this.params.card.id,
+		]);
+		this.deletedCardsData = result.deletedCardsData;
+	}
+
+	override undo(ctx: CommandContext): void {
+		// Rows must exist again before the base class restores queue slots and
+		// replays FSRS onto them, otherwise every one of those writes targets a
+		// deleted row. cardStore.set is a plain write with no domain event, so
+		// doing it first cannot race the ReviewView rebuild the base guards for.
+		for (const cardData of this.deletedCardsData) {
+			ctx.cardStore.set(cardData.id, cardData);
+		}
+
+		super.undo(ctx);
+
+		if (this.reviewedTodayDate) {
+			for (const id of this.reviewedTodayIds) {
+				ctx.cardStore.stats.recordReviewedCard(this.reviewedTodayDate, id);
+			}
+		}
+	}
+}
+
 export class ReviewForgetCommand extends BaseReviewActionCommand {
 	readonly type = "review:forget";
 	readonly mutationType = "card:reset" as const;

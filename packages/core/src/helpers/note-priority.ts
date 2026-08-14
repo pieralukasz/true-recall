@@ -29,10 +29,13 @@ export function describeRetrievability(
 ): string | null {
 	if (!spread || spread.total === 0) return null;
 
+	// The pool reads as a debt unless the part that is actually below target is
+	// named next to it — most of it is usually cards a session may draw from,
+	// not work that is owed.
 	return [
 		`${spread.urgent} at risk · ${spread.losing} slipping`,
 		`${spread.known} known · ${spread.fresh} fresh`,
-		`${spread.pool} worth reviewing now`,
+		`${spread.urgent + spread.losing} below target · ${spread.pool} can be drawn`,
 		`Mean retrievability ${Math.round((spread.sumR / spread.total) * 100)}%`,
 	].join("\n");
 }

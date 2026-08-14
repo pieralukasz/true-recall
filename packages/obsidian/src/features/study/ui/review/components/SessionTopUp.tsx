@@ -1,4 +1,4 @@
-import { useState } from "preact/hooks";
+import { useRef, useState } from "preact/hooks";
 
 import type {
 	ReviewSessionTopUp,
@@ -56,8 +56,12 @@ export function SessionTopUp({ availability, onTopUp }: SessionTopUpProps) {
 	);
 	const [count, setCount] = useState("5");
 	const [isStarting, setIsStarting] = useState(false);
+	const [couldNotStart, setCouldNotStart] = useState(false);
+	const startingRef = useRef(false);
 	const requestedCount = Number.parseInt(count, 10);
-	const available = availability[kind];
+	const selectedKind =
+		availability[kind] > 0 ? kind : availability.review > 0 ? "review" : "new";
+	const available = availability[selectedKind];
 	const canStart =
 		!isStarting &&
 		available > 0 &&
@@ -65,14 +69,24 @@ export function SessionTopUp({ availability, onTopUp }: SessionTopUpProps) {
 		requestedCount > 0;
 
 	const handleTopUp = async () => {
-		if (!canStart) return;
+		if (!canStart || startingRef.current) return;
+		startingRef.current = true;
 		setIsStarting(true);
+		setCouldNotStart(false);
 		try {
-			const started = await onTopUp({ kind, count: requestedCount });
-			if (!started) setIsStarting(false);
-		} catch (error) {
+			const started = await onTopUp({
+				kind: selectedKind,
+				count: requestedCount,
+			});
+			if (!started) {
+				startingRef.current = false;
+				setCouldNotStart(true);
+				setIsStarting(false);
+			}
+		} catch {
+			startingRef.current = false;
+			setCouldNotStart(true);
 			setIsStarting(false);
-			throw error;
 		}
 	};
 
@@ -98,8 +112,11 @@ export function SessionTopUp({ availability, onTopUp }: SessionTopUpProps) {
 			</div>
 			<div class="ep:flex ep:flex-wrap ep:items-center ep:gap-2">
 				<SelectInput
-					value={kind}
-					onChange={(value) => setKind(value as ReviewSessionTopUp["kind"])}
+					value={selectedKind}
+					onChange={(value) => {
+						setKind(value as ReviewSessionTopUp["kind"]);
+						setCouldNotStart(false);
+					}}
 					options={TOP_UP_OPTIONS.map((option) => ({
 						...option,
 						disabled: availability[option.value] === 0,
@@ -116,9 +133,10 @@ export function SessionTopUp({ availability, onTopUp }: SessionTopUpProps) {
 					value={count}
 					aria-label="Top Up card count"
 					class="ep:w-16 ep:shrink-0 ep:rounded-md ep:border ep:border-solid ep:border-obs-border ep:bg-obs-primary ep:px-2 ep:py-1 ep:text-center ep:text-ui-small ep:text-obs-normal"
-					onInput={(event) =>
-						setCount((event.target as HTMLInputElement).value)
-					}
+					onInput={(event) => {
+						setCount((event.target as HTMLInputElement).value);
+						setCouldNotStart(false);
+					}}
 					onKeyDown={(event) => {
 						if (event.key === "Enter") void handleTopUp();
 					}}
@@ -136,6 +154,11 @@ export function SessionTopUp({ availability, onTopUp }: SessionTopUpProps) {
 			{requestedCount > available && available > 0 ? (
 				<div class="ep:mt-2 ep:text-center ep:text-ui-smaller ep:text-obs-muted">
 					Only {available} cards are available; all of them will be added.
+				</div>
+			) : null}
+			{couldNotStart ? (
+				<div class="ep:mt-2 ep:text-center ep:text-ui-smaller ep:text-obs-red">
+					Top Up could not be started. Availability has been refreshed.
 				</div>
 			) : null}
 		</div>

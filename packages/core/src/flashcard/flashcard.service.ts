@@ -395,6 +395,12 @@ export class FlashcardManager {
 		return result.affectedCount;
 	}
 
+	/** Ids {@link removeFlashcardsByIdsWithDetails} would delete for this card. */
+	getCascadeDeleteIds(cardId: string): string[] {
+		if (!this.cardRepository) return [];
+		return this.cardRepository.getCascadeDeleteIds(cardId);
+	}
+
 	removeFlashcardsByIdsWithDetails(cardIds: string[]): DeleteFlashcardsResult {
 		if (!this.cardRepository) {
 			return {

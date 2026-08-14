@@ -177,7 +177,7 @@ describe("describeRetrievability — the dot's tooltip", () => {
 			[
 				"2 at risk · 8 slipping",
 				"30 known · 60 fresh",
-				"40 worth reviewing now",
+				"10 below target · 40 can be drawn",
 				"Mean retrievability 91%",
 			].join("\n"),
 		);

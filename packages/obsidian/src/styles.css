@@ -380,7 +380,7 @@ settings:
 	padding: 0;
 }
 [data-type="true-recall-flashcard-panel"] .view-content {
-	padding-bottom: 12px;
+	padding: 0;
 }
 
 /* ── Streaming flashcard generation animations ── */

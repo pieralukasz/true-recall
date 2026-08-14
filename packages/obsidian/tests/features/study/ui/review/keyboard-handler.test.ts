@@ -55,6 +55,7 @@ function defaultCallbacks(overrides = {}) {
 		onShowAnswer: vi.fn(),
 		onAnswer: vi.fn(async () => {}),
 		onUndo: vi.fn(async () => {}),
+		onDelete: vi.fn(),
 		onSuspend: vi.fn(async () => {}),
 		onBuryCard: vi.fn(async () => {}),
 		onBuryNote: vi.fn(async () => {}),
@@ -114,6 +115,71 @@ describe("KeyboardHandler", () => {
 
 		expect(event.preventDefault).toHaveBeenCalledOnce();
 		expect(onShowAnswer).toHaveBeenCalledOnce();
+	});
+
+	it("deletes the current card on Shift+1", () => {
+		const onDelete = vi.fn();
+		const onSuspend = vi.fn();
+		const handler = new KeyboardHandler(
+			() => createReviewState(),
+			defaultCallbacks({ onDelete, onSuspend }),
+			DEFAULT_KEYBINDINGS,
+		);
+
+		const event = createEvent({ key: "!", shiftKey: true });
+		handler.handleKeyDown(event);
+
+		expect(event.preventDefault).toHaveBeenCalledOnce();
+		expect(onDelete).toHaveBeenCalledOnce();
+		expect(onSuspend).not.toHaveBeenCalled();
+	});
+
+	it("suspends the current card on Shift+2", () => {
+		const onDelete = vi.fn();
+		const onSuspend = vi.fn();
+		const handler = new KeyboardHandler(
+			() => createReviewState(),
+			defaultCallbacks({ onDelete, onSuspend }),
+			DEFAULT_KEYBINDINGS,
+		);
+
+		const event = createEvent({ key: "@", shiftKey: true });
+		handler.handleKeyDown(event);
+
+		expect(event.preventDefault).toHaveBeenCalledOnce();
+		expect(onSuspend).toHaveBeenCalledOnce();
+		expect(onDelete).not.toHaveBeenCalled();
+	});
+
+	it("ignores the delete shortcut while an input is focused", () => {
+		const onDelete = vi.fn();
+		const target = new HTMLElement();
+		target.isContentEditable = true;
+		const handler = new KeyboardHandler(
+			() => createReviewState(),
+			defaultCallbacks({ onDelete }),
+			DEFAULT_KEYBINDINGS,
+		);
+
+		const event = createEvent({ key: "!", shiftKey: true, target });
+		handler.handleKeyDown(event);
+
+		expect(onDelete).not.toHaveBeenCalled();
+		expect(event.preventDefault).not.toHaveBeenCalled();
+	});
+
+	it("does not delete on a bare 1 keypress", () => {
+		const onDelete = vi.fn();
+		const handler = new KeyboardHandler(
+			() => createReviewState({ isAnswerRevealed: true }),
+			defaultCallbacks({ onDelete }),
+			DEFAULT_KEYBINDINGS,
+		);
+
+		const event = createEvent({ key: "1" });
+		handler.handleKeyDown(event);
+
+		expect(onDelete).not.toHaveBeenCalled();
 	});
 
 	it("cycles type-in mode with T", () => {

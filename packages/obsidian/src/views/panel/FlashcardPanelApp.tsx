@@ -1,83 +1,118 @@
-import { Platform } from "obsidian";
-import { useMemo } from "preact/hooks";
-
 import { Panel } from "@true-recall/obsidian/components";
 import {
 	NormalHeader,
 	PanelAiStrip,
 	PanelContent,
-	RModePanel,
+	SelectionActionsBar,
 	SelectionToolbar,
 } from "@true-recall/obsidian/features/library/ui/panel/components";
-import {
-	PanelScrollProvider,
-	usePanelStore,
-	useScrollPreservation,
-} from "@true-recall/obsidian/features/library/ui/panel/hooks";
-import { useStreamingNewCount } from "@true-recall/obsidian/features/library/ui/panel/hooks/useStreamingNewCount";
-import { usePlugin } from "@true-recall/obsidian/preact";
+import { PanelCardDetail } from "@true-recall/obsidian/features/library/ui/panel/components/PanelCardDetail";
+import { PanelScrollProvider } from "@true-recall/obsidian/features/library/ui/panel/hooks";
+import { useFlashcardPanel } from "@true-recall/obsidian/features/library/ui/panel/hooks/useFlashcardPanel";
 
 export function FlashcardPanelApp({
 	onActions,
 }: {
 	onActions?: (actions: PanelAppActions) => void;
 }) {
-	const plugin = usePlugin();
-	const store = usePanelStore();
-	const { contentRef, preserveScroll, captureScroll } = useScrollPreservation();
-
-	const scrollApi = useMemo(
-		() => ({ preserveScroll, captureScroll, scrollRef: contentRef }),
-		[preserveScroll, captureScroll, contentRef],
+	return (
+		<PanelScrollProvider>
+			<FlashcardPanelContent onActions={onActions} />
+		</PanelScrollProvider>
 	);
+}
 
-	const streamingNewCount = useStreamingNewCount(
-		store.cardsWithFsrs,
-		store.currentFile?.path,
-	);
-
-	const showHeader = !Platform.isMobile;
+function FlashcardPanelContent({
+	onActions,
+}: {
+	onActions?: (actions: PanelAppActions) => void;
+}) {
+	const panel = useFlashcardPanel();
 
 	return (
-		<PanelScrollProvider value={scrollApi}>
-			<Panel disableScroll>
-				<div class="ep:flex ep:flex-col ep:gap-2 ep:h-full">
-					{showHeader && (
-						<div class="ep:shrink-0">
-							{store.selectionMode === "selecting" ? (
-								<SelectionToolbar />
-							) : (
-								<NormalHeader
-									streamingNewCount={streamingNewCount}
-									onRefresh={() => onActions?.({ type: "refresh" })}
-								/>
-							)}
-						</div>
-					)}
+		<Panel disableScroll>
+			<div
+				ref={panel.panelRootRef}
+				class="tr-flashcard-panel ep:flex ep:h-full ep:min-w-0 ep:flex-col ep:overflow-hidden"
+			>
+				{panel.openCard && !panel.isSelecting ? (
+					<PanelCardDetail
+						card={panel.openCard}
+						fsrsCard={panel.fsrsMap.get(panel.openCard.id)}
+						sourcePath={panel.store.currentFile?.path ?? ""}
+						position={Math.max(0, panel.openPosition) + 1}
+						total={panel.visibleCards.length}
+						dayStartHour={panel.dayStartHour}
+						onBack={panel.closeCard}
+						onPrevious={() => panel.navigateCard(-1)}
+						onNext={() => panel.navigateCard(1)}
+						actions={panel.actions}
+					/>
+				) : (
+					<PanelList
+						panel={panel}
+						onRefresh={() => onActions?.({ type: "refresh" })}
+					/>
+				)}
+			</div>
+		</Panel>
+	);
+}
 
-					{plugin.settings.rMode.enabled &&
-						store.selectionMode !== "selecting" && (
-							<div class="ep:shrink-0">
-								<RModePanel />
-							</div>
-						)}
+function PanelList({
+	panel,
+	onRefresh,
+}: {
+	panel: ReturnType<typeof useFlashcardPanel>;
+	onRefresh: () => void;
+}) {
+	return (
+		<>
+			{panel.isSelecting ? (
+				<SelectionToolbar
+					visibleCardIds={panel.visibleCardIds}
+					allCardIds={panel.allCardIds}
+				/>
+			) : (
+				<NormalHeader
+					totalCount={panel.allFlashcards.length}
+					visibleCount={panel.visibleCardIds.length}
+					dueCount={panel.dueCount}
+					statusFilter={panel.statusFilter}
+					sort={panel.sort}
+					onStatusFilterChange={panel.setStatusFilter}
+					onSortChange={panel.setSort}
+					onEnterSelection={panel.enterSelection}
+					onSearchInput={panel.handleSearchInput}
+					onShowShortcuts={panel.showShortcuts}
+					onRefresh={onRefresh}
+				/>
+			)}
 
-					<PanelAiStrip />
+			{!panel.isSelecting ? <PanelAiStrip /> : null}
 
-					<div ref={contentRef} class="ep:flex-1 ep:overflow-y-auto ep:min-h-0">
-						<PanelContent />
-					</div>
-					{store.currentFile && (
-						<div
-							class="ep:text-ui-smaller ep:text-obs-faint ep:truncate ep:text-center ep:px-2 ep:shrink-0"
-							title={store.currentFile.basename}
-						>
-							{store.currentFile.basename}
-						</div>
-					)}
-				</div>
-			</Panel>
-		</PanelScrollProvider>
+			<div
+				ref={panel.contentRef}
+				class="ep:flex-1 ep:min-h-0 ep:overflow-y-auto ep:overscroll-contain"
+			>
+				<PanelContent
+					currentFile={panel.store.currentFile}
+					activeViewContext={panel.store.activeViewContext}
+					hasFlashcards={panel.allFlashcards.length > 0}
+					items={panel.visibleItems}
+					fsrsMap={panel.fsrsMap}
+					selectedCardIds={panel.store.selectedCardIds}
+					isSelectionMode={panel.isSelecting}
+					searchQuery={panel.debouncedSearch}
+					dayStartHour={panel.dayStartHour}
+					isStreamingForFile={panel.isStreamingForFile}
+					actions={panel.actions}
+					onResetList={panel.resetList}
+				/>
+			</div>
+
+			{panel.isSelecting ? <SelectionActionsBar /> : null}
+		</>
 	);
 }
 

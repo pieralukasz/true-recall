@@ -9,6 +9,8 @@ import { useNoteReviewContent } from "../hooks/useNoteReviewContent";
 import { LivePreviewField } from "./LivePreviewField";
 import { type PresetPickerOption, PresetPopover } from "./PresetPopover";
 
+const MARKDOWN_EXTENSION_PATTERN = /\.md$/i;
+
 interface NoteReviewRendererProps {
 	card: FSRSFlashcardItem;
 	presetName?: string;
@@ -33,6 +35,12 @@ export function NoteReviewRenderer({
 	);
 
 	const maxWidth = isMobile() ? "100%" : getReviewMaxWidth(reviewContentWidth);
+	const noteTitle =
+		card.sourceNoteName?.trim() ||
+		card.sourceNotePath
+			?.split("/")
+			.pop()
+			?.replace(MARKDOWN_EXTENSION_PATTERN, "");
 
 	return (
 		<div
@@ -43,6 +51,11 @@ export function NoteReviewRenderer({
 				<div class="ep:text-xs ep:text-obs-faint ep:mb-2 ep:uppercase ep:tracking-wider">
 					Note Review
 				</div>
+				{noteTitle ? (
+					<h1 class="ep:m-0 ep:mb-6 ep:text-2xl ep:font-semibold ep:leading-tight ep:text-obs-normal">
+						{noteTitle}
+					</h1>
+				) : null}
 
 				{content !== null ? (
 					<LivePreviewField

@@ -215,6 +215,33 @@ describe("Panel Slice", () => {
 			store.getState().panel.toggleCardSelection("card-1");
 			expect(store.getState().panel.selectedCardIds.has("card-1")).toBe(false);
 		});
+
+		it("should set a group selected without toggling already selected cards", () => {
+			store.getState().panel.enterSelectionMode("card-1");
+
+			store
+				.getState()
+				.panel.setCardsSelected(["card-1", "card-2", "card-3"], true);
+
+			expect([...store.getState().panel.selectedCardIds]).toEqual([
+				"card-1",
+				"card-2",
+				"card-3",
+			]);
+		});
+
+		it("should deselect only the requested group", () => {
+			store
+				.getState()
+				.panel.selectAll(["card-1", "card-2", "card-3", "card-4"]);
+
+			store.getState().panel.setCardsSelected(["card-2", "card-3"], false);
+
+			expect([...store.getState().panel.selectedCardIds]).toEqual([
+				"card-1",
+				"card-4",
+			]);
+		});
 	});
 
 	describe("Card Expansion", () => {

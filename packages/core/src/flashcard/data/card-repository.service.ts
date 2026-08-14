@@ -519,6 +519,16 @@ export class CardRepository {
 		return { removedIds, cardsData };
 	}
 
+	/**
+	 * Ids {@link deleteBatchWithCascade} would remove for this card, without
+	 * deleting anything. Callers that must keep other state (a review queue, a
+	 * selection) in sync need the exact set up front, and duplicating the
+	 * cascade rules on their side would let the two drift apart.
+	 */
+	getCascadeDeleteIds(cardId: string): string[] {
+		return this.collectCascadeDeleteIds(cardId);
+	}
+
 	private collectCascadeDeleteIds(cardId: string): string[] {
 		const card = this.store.get(cardId);
 		if (!card) return [];

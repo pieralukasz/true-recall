@@ -1073,6 +1073,49 @@ describe("Review Slice", () => {
 			expect(store.getState().review.getCurrentCard()?.id).toBe(actionable.id);
 		});
 
+		it("adds Top Up cards without discarding pending learning cards or results", () => {
+			const reviewed = createMockCardWithState(State.Review);
+			const pendingLearning = createMockCardWithState(State.Learning, 10);
+			store.getState().review.startSession([reviewed, pendingLearning]);
+			store.getState().review.recordAnswerAndNext(Rating.Good, reviewed);
+			expect(store.getState().review.getPhase().type).toBe("waiting");
+
+			const topUpCard = createMockCardWithState(State.New);
+			const added = store
+				.getState()
+				.review.addCardsToCurrentSession([topUpCard]);
+
+			const review = store.getState().review;
+			expect(added).toBe(1);
+			expect(review.getPhase().type).toBe("active");
+			expect(review.getCurrentCard()?.id).toBe(topUpCard.id);
+			expect(review.getPendingLearningCards().map((card) => card.id)).toEqual([
+				pendingLearning.id,
+			]);
+			expect(review.results).toHaveLength(1);
+		});
+
+		it("does not add duplicate Top Up cards", () => {
+			const pendingLearning = createMockCardWithState(State.Learning, 10);
+			const topUpCard = createMockCardWithState(State.Review);
+			store.getState().review.startSession([pendingLearning]);
+
+			const added = store
+				.getState()
+				.review.addCardsToCurrentSession([topUpCard, topUpCard]);
+			const addedAgain = store
+				.getState()
+				.review.addCardsToCurrentSession([topUpCard]);
+
+			expect(added).toBe(1);
+			expect(addedAgain).toBe(0);
+			expect(
+				store
+					.getState()
+					.review.queue.filter((card) => card.id === topUpCard.id),
+			).toHaveLength(1);
+		});
+
 		it("should land on an actionable card when replaceQueue cannot preserve the current card", () => {
 			const initial = createMockCardWithState(State.Review);
 			store.getState().review.startSession([initial]);

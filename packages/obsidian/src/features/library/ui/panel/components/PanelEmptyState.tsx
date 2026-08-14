@@ -1,24 +1,17 @@
 import { Menu } from "obsidian";
+import type { ComponentChildren } from "preact";
 import { useState } from "preact/hooks";
 
 import { hasAIKey } from "@true-recall/core/ai/config/ai-client-config";
 
-import { Clickable, LoadingSpinner } from "@true-recall/obsidian/components";
+import { LoadingSpinner } from "@true-recall/obsidian/components";
 import { usePanelActions } from "@true-recall/obsidian/features/library/ui/panel/hooks/usePanelActions";
 import { usePanelStore } from "@true-recall/obsidian/features/library/ui/panel/hooks/usePanelStore";
 import { isPluginEnabled } from "@true-recall/obsidian/plugin/plugin-utils";
 import { useIcon, usePlugin } from "@true-recall/obsidian/preact";
 
-const CALLOUT_CLS =
-	"ep:w-full ep:rounded-lg ep:bg-obs-bg-secondary ep:border ep:border-obs-modifier-border ep:px-3.5 ep:py-3 ep:text-left ep:flex ep:flex-col ep:gap-2";
-
 const BTN_BASE_CLS =
-	"ep:px-4 ep:py-1.5 ep:rounded-md ep:text-ui-small ep:font-medium ep:w-full ep:inline-flex ep:items-center ep:justify-center ep:gap-1.5";
-
-// Borderless on purpose: this picks a setting for the two buttons below it, so
-// it must not read as a third action.
-const PRESET_ROW_CLS =
-	"ep:w-full ep:flex ep:items-center ep:gap-2 ep:px-3 ep:py-1 ep:rounded-md ep:text-ui-smaller ep:text-obs-muted ep:hover:bg-obs-bg-secondary";
+	"tr-panel-empty-action ep:inline-flex ep:items-center ep:justify-center ep:gap-2 ep:cursor-pointer ep:touch-manipulation";
 
 export function PanelEmptyState() {
 	const plugin = usePlugin();
@@ -65,10 +58,10 @@ export function PanelEmptyState() {
 		"note" | "highlights" | null
 	>(null);
 	const [collecting, setCollecting] = useState(false);
-	const sparklesRef = useIcon("sparkles");
 	const highlighterRef = useIcon("highlighter");
 	const fileTextRef = useIcon("file-text");
 	const chevronRef = useIcon("chevron-down");
+	const collectRef = useIcon("download");
 
 	const runGenerate = async (
 		source: "note" | "highlights",
@@ -101,7 +94,7 @@ export function PanelEmptyState() {
 	if (collecting) {
 		return (
 			<div class="ep:flex ep:items-center ep:justify-center ep:h-full">
-				<LoadingSpinner message="Collecting flashcards..." />
+				<LoadingSpinner message="Collecting flashcards…" />
 			</div>
 		);
 	}
@@ -109,8 +102,8 @@ export function PanelEmptyState() {
 	if (generating) {
 		const message =
 			generatingSource === "highlights"
-				? "Generating from highlights..."
-				: "Generating flashcards...";
+				? "Generating from highlights…"
+				: "Generating flashcards…";
 		return (
 			<div class="ep:flex ep:items-center ep:justify-center ep:h-full">
 				<LoadingSpinner message={message} subMessage="This may take a moment" />
@@ -119,7 +112,6 @@ export function PanelEmptyState() {
 	}
 
 	const hasCollect = uncollectedCount > 0;
-	const generateBtnCls = `${BTN_BASE_CLS} ep:border ep:border-obs-modifier-border ep:text-obs-muted`;
 
 	if (!canGenerate) {
 		const heading = !aiGenerationEnabled
@@ -130,95 +122,103 @@ export function PanelEmptyState() {
 			: "Add a generation preset in Settings to create flashcards.";
 
 		return (
-			<div class="ep:flex ep:flex-col ep:items-center ep:justify-center ep:h-full ep:py-6 ep:px-5 ep:text-center ep:gap-4">
+			<EmptyStateShell heading={heading} body={body}>
 				{hasCollect && (
-					<Clickable
+					<button
+						type="button"
 						class={`mod-cta ${BTN_BASE_CLS}`}
 						onClick={() => void handleCollect()}
 					>
+						<span ref={collectRef} aria-hidden="true" />
 						Collect {uncollectedCount} flashcard
 						{uncollectedCount !== 1 ? "s" : ""}
-					</Clickable>
+					</button>
 				)}
-
-				<div class={CALLOUT_CLS}>
-					<div class="ep:flex ep:flex-col ep:items-center ep:gap-1">
-						<div class="ep:text-obs-muted ep:text-3xl">
-							<span ref={sparklesRef} />
-						</div>
-						<div class="ep:text-ui-small ep:text-obs-muted ep:font-medium">
-							{heading}
-						</div>
-					</div>
-					<div class="ep:text-ui-smaller ep:text-obs-faint ep:text-center">
-						{body}
-					</div>
-				</div>
-			</div>
+			</EmptyStateShell>
 		);
 	}
 
 	return (
-		<div class="ep:flex ep:flex-col ep:items-center ep:justify-center ep:h-full ep:py-6 ep:px-5 ep:text-center ep:gap-4">
+		<EmptyStateShell
+			heading="Create cards from this note"
+			body="Generate a focused first set from the current note."
+		>
 			{hasCollect && (
-				<Clickable
+				<button
+					type="button"
 					class={`mod-cta ${BTN_BASE_CLS}`}
 					onClick={() => void handleCollect()}
 				>
+					<span ref={collectRef} aria-hidden="true" />
 					Collect {uncollectedCount} flashcard
 					{uncollectedCount !== 1 ? "s" : ""}
-				</Clickable>
+				</button>
 			)}
 
-			<div class={CALLOUT_CLS}>
-				<div class="ep:flex ep:flex-col ep:items-center ep:gap-1">
-					<div class="ep:text-obs-muted ep:text-3xl">
-						<span ref={sparklesRef} />
-					</div>
-					<div class="ep:text-ui-small ep:text-obs-muted ep:font-medium">
-						Start learning this note
-					</div>
-				</div>
-				<div class="ep:text-ui-smaller ep:text-obs-faint ep:text-center">
-					Select text for focused cards, or generate from the whole note below.
-				</div>
-			</div>
-
-			{presets.length > 1 && (
-				<Clickable
-					class={PRESET_ROW_CLS}
+			{presets.length > 1 ? (
+				<button
+					type="button"
+					class="tr-panel-empty-preset"
 					onClick={openPresetMenu}
-					aria-label="Generation preset"
+					aria-label="Choose generation preset"
 				>
-					<span class="ep:text-obs-faint ep:shrink-0">Preset</span>
-					<span class="ep:truncate ep:ml-auto">
-						{activePreset?.name ?? "Pick one"}
+					<span class="tr-panel-empty-preset-label">Preset</span>
+					<span class="tr-panel-empty-preset-value">
+						{activePreset?.name ?? "Choose preset"}
 					</span>
-					<span
-						ref={chevronRef}
-						class="ep:shrink-0 ep:text-obs-faint ep:inline-flex"
-						style={{ "--icon-size": "14px" }}
-					/>
-				</Clickable>
-			)}
+					<span ref={chevronRef} aria-hidden="true" />
+				</button>
+			) : null}
 
-			<Clickable
-				class={generateBtnCls}
-				onClick={() => void handleGenerateFromHighlights()}
-				disabled={!hasApiKey || !hasHighlights}
-			>
-				<span ref={highlighterRef} class="ep:shrink-0" />
-				Generate from highlights
-			</Clickable>
-
-			<Clickable
-				class={generateBtnCls}
-				onClick={() => void handleGenerate()}
+			<button
+				type="button"
+				class={`${hasCollect ? "" : "mod-cta"} ${BTN_BASE_CLS} ${
+					hasCollect ? "tr-panel-empty-action-secondary" : ""
+				}`}
 				disabled={!hasApiKey}
+				onClick={() => void handleGenerate()}
 			>
-				<span ref={fileTextRef} class="ep:shrink-0" />
-				Generate from full note
-			</Clickable>
+				<span ref={fileTextRef} aria-hidden="true" />
+				Generate Cards
+			</button>
+
+			{hasHighlights ? (
+				<button
+					type="button"
+					class={`${BTN_BASE_CLS} tr-panel-empty-action-secondary`}
+					disabled={!hasApiKey}
+					onClick={() => void handleGenerateFromHighlights()}
+				>
+					<span ref={highlighterRef} aria-hidden="true" />
+					Use Highlights
+				</button>
+			) : null}
+
+			{!hasApiKey ? (
+				<div class="ep:text-ui-smaller ep:text-obs-muted">
+					Add an AI provider key in Settings to generate cards.
+				</div>
+			) : null}
+		</EmptyStateShell>
+	);
+}
+
+function EmptyStateShell({
+	heading,
+	body,
+	children,
+}: {
+	heading: string;
+	body: string;
+	children: ComponentChildren;
+}) {
+	return (
+		<div class="tr-panel-empty-viewport">
+			<div class="tr-panel-empty-module">
+				<h2 class="tr-panel-empty-heading">{heading}</h2>
+				<p class="tr-panel-empty-description">{body}</p>
+				<div class="tr-panel-empty-controls">{children}</div>
+			</div>
 		</div>
 	);
 }

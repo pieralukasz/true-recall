@@ -161,7 +161,9 @@ export function LoadBalanceSection({
 						min={1}
 						max={sliderMax(forecastData.decision, settings.loadBalanceTarget)}
 						step={1}
+						allowAboveMax
 						formatTooltip={(v) => `${v}/day`}
+						ariaLabel="Target daily reviews"
 					/>
 				</FormField>
 			) : null}

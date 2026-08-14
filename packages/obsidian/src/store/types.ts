@@ -80,6 +80,7 @@ export interface ReviewSliceActions {
 	removeCardById: (cardId: string) => void;
 	removeCardsByIds: (cardIds: string[]) => void;
 	addCardToQueue: (card: FSRSFlashcardItem) => void;
+	addCardsToCurrentSession: (cards: FSRSFlashcardItem[]) => number;
 	insertCardAtPosition: (card: FSRSFlashcardItem, position: number) => void;
 	replaceQueue: (
 		queue: FSRSFlashcardItem[],
@@ -162,6 +163,7 @@ export interface PanelSliceActions {
 	enterSelectionMode: (initialCardId?: string) => void;
 	exitSelectionMode: () => void;
 	toggleCardSelection: (cardId: string) => void;
+	setCardsSelected: (cardIds: string[], selected: boolean) => void;
 	selectAll: (cardIds: string[]) => void;
 	toggleCardExpanded: (cardId: string) => void;
 	isInSelectionMode: () => boolean;

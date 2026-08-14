@@ -13,6 +13,7 @@ import { BatchCreateCommand } from "@true-recall/obsidian/commands/commands/card
 import { UpdateNoteFieldsCommand } from "@true-recall/obsidian/commands/commands/card-update.cmd";
 import {
 	ReviewBuryCommand,
+	ReviewDeleteCommand,
 	ReviewForgetCommand,
 	ReviewSuspendCommand,
 } from "@true-recall/obsidian/commands/commands/review-actions.cmd";
@@ -61,6 +62,35 @@ export class CardActionsHandler {
 	canForgetCurrentCard(): boolean {
 		const card = this.deps.getReview().getCurrentCard();
 		return !!card && card.fsrs.state !== State.New;
+	}
+
+	/**
+	 * Storage deletes cloze siblings and a card's reverse along with it, so the
+	 * queue has to drop that whole set. Removing only the visible card would
+	 * leave the session showing cards whose rows are already gone.
+	 */
+	handleDelete(): void {
+		const card = this.deps.getReview().getCurrentCard();
+		if (!card) return;
+
+		const cascadeIds = this.deps.flashcardManager.getCascadeDeleteIds(card.id);
+		const deletedIds = cascadeIds.length > 0 ? cascadeIds : [card.id];
+		const currentIndex = this.deps.getReview().currentIndex;
+
+		const cmd = new ReviewDeleteCommand({
+			card: { ...card },
+			originalFsrs: { ...card.fsrs },
+			previousIndex: currentIndex,
+			siblingIds: deletedIds,
+			getReview: () => this.deps.getReview(),
+		});
+
+		void this.commandService?.execute(cmd);
+		this.removeFromTemporaryDeck(deletedIds);
+		this.refreshIfActive();
+		notify().cardsDeletedWithUndo(deletedIds.length, () => {
+			void this.commandService?.undo();
+		});
 	}
 
 	handleSuspend(): void {

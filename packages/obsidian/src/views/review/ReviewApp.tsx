@@ -109,6 +109,9 @@ export function ReviewApp(props: ReviewAppProps) {
 					review={review}
 					timeUntilDue={phase.timeUntilDue}
 					onEndSession={props.onEndSession}
+					rModeActive={props.rModeActive}
+					getTopUpAvailability={props.getTopUpAvailability}
+					onTopUp={props.onTopUp}
 				/>
 			);
 		case "active":

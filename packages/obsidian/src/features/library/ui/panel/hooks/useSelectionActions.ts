@@ -1,4 +1,5 @@
 import { useCallback } from "preact/hooks";
+import { State } from "ts-fsrs";
 
 import { DeleteCardCommand } from "@true-recall/obsidian/commands/commands/card-delete.cmd";
 import { ForgetCommand } from "@true-recall/obsidian/commands/commands/card-forget.cmd";
@@ -29,6 +30,15 @@ export function useSelectionActions() {
 		[panel, preserveScroll],
 	);
 
+	const handleSetCardsSelected = useCallback(
+		(cardIds: string[], selected: boolean) => {
+			preserveScroll(() => {
+				panel.setCardsSelected(cardIds, selected);
+			});
+		},
+		[panel, preserveScroll],
+	);
+
 	const handleEnterSelectionMode = useCallback(
 		(cardId: string) => {
 			panel.enterSelectionMode(cardId);
@@ -40,11 +50,17 @@ export function useSelectionActions() {
 		panel.exitSelectionMode();
 	}, [panel]);
 
+	const handleSelectCards = useCallback(
+		(cardIds: string[]) => {
+			panel.selectAll(cardIds);
+		},
+		[panel],
+	);
+
 	const handleSelectAll = useCallback(() => {
 		if (!flashcardInfo) return;
-		const cardIds = flashcardInfo.flashcards.map((c) => c.id);
-		panel.selectAll(cardIds);
-	}, [panel, flashcardInfo]);
+		handleSelectCards(flashcardInfo.flashcards.map((card) => card.id));
+	}, [flashcardInfo, handleSelectCards]);
 
 	const handleMoveSelected = useCallback(async () => {
 		if (!flashcardInfo || selectedCardIds.size === 0) return;
@@ -216,7 +232,13 @@ export function useSelectionActions() {
 			"@true-recall/obsidian/services/notification.service"
 		);
 
-		const cardIds = Array.from(selectedCardIds);
+		const cardIds = Array.from(selectedCardIds).filter(
+			(cardId) => plugin.cardStore.get(cardId)?.state !== State.New,
+		);
+		if (cardIds.length === 0) {
+			notify().warning("Forget is only available for non-New cards");
+			return;
+		}
 		const cmd = new ForgetCommand(cardIds);
 		await plugin.commandService?.execute(cmd);
 		panel.exitSelectionMode();
@@ -225,8 +247,10 @@ export function useSelectionActions() {
 
 	return {
 		handleToggleSelect,
+		handleSetCardsSelected,
 		handleEnterSelectionMode,
 		handleExitSelectionMode,
+		handleSelectCards,
 		handleSelectAll,
 		handleMoveSelected,
 		handleChangeNoteType,

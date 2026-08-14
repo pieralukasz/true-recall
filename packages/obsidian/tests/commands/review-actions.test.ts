@@ -6,6 +6,7 @@ import type { FSRSCardData } from "@true-recall/core/types";
 import type { CommandContext } from "@true-recall/obsidian/commands/command.types";
 import {
 	ReviewBuryCommand,
+	ReviewDeleteCommand,
 	ReviewForgetCommand,
 	ReviewSuspendCommand,
 } from "@true-recall/obsidian/commands/commands/review-actions.cmd";
@@ -374,5 +375,166 @@ describe("undo restores siblings that were NOT in the queue", () => {
 
 		const siblingRestore = undoCalls.find((c) => c[0] === offQueueSibling.id);
 		expect(siblingRestore?.[1]).toEqual(originalSiblingFsrs);
+	});
+});
+
+/**
+ * DB double for delete: rows live in a Map, and the cascade set the repository
+ * would derive is injected so the mock expands one id into many the same way.
+ */
+function makeDeleteCtx(options: {
+	rows: Map<string, FSRSCardData>;
+	cascadeIds: string[];
+	reviewedToday?: string[];
+}): {
+	ctx: CommandContext;
+	recordedReviews: Array<{ date: string; id: string }>;
+} {
+	const { rows, cascadeIds, reviewedToday = [] } = options;
+	const recordedReviews: Array<{ date: string; id: string }> = [];
+
+	const ctx = {
+		flashcardManager: {
+			updateCardFSRS: vi.fn(),
+			removeFlashcardsByIdsWithDetails: vi.fn(() => {
+				const deletedCardsData = cascadeIds
+					.map((id) => rows.get(id))
+					.filter((row): row is FSRSCardData => row != null);
+				for (const row of deletedCardsData) rows.delete(row.id);
+				return {
+					ok: deletedCardsData.length > 0,
+					affectedIds: deletedCardsData.map((row) => row.id),
+					affectedCount: deletedCardsData.length,
+					deletedCardsData,
+				};
+			}),
+		},
+		cardStore: {
+			get: vi.fn((id: string) => rows.get(id)),
+			set: vi.fn((id: string, data: FSRSCardData) => {
+				rows.set(id, data);
+			}),
+			stats: {
+				getReviewedCardIds: vi.fn(() => reviewedToday),
+				recordReviewedCard: vi.fn((date: string, id: string) => {
+					recordedReviews.push({ date, id });
+				}),
+			},
+		},
+		sessionPersistence: {
+			getTodayKey: vi.fn(() => "2026-05-02"),
+			removeReviewedCards: vi.fn(),
+		},
+	} as unknown as CommandContext;
+
+	return { ctx, recordedReviews };
+}
+
+function toCardData(card: { id: string; fsrs: FSRSCardData }): FSRSCardData {
+	return { ...card.fsrs, id: card.id };
+}
+
+describe("ReviewDeleteCommand", () => {
+	it("drops the whole cascade set from the queue and restores rows and slots on undo", async () => {
+		const store = createTestStore();
+		const primary = createMockCard({ id: "primary" });
+		const filler = createMockCard({ id: "filler" });
+		const clozeSibling = createMockCard({ id: "cloze-sibling" });
+		store.getState().review.startSession([primary, filler, clozeSibling]);
+
+		const beforeQueueLen = store.getState().review.queue.length;
+		const cascadeIds = [primary.id, clozeSibling.id];
+		const rows = new Map<string, FSRSCardData>([
+			[primary.id, toCardData(primary)],
+			[clozeSibling.id, toCardData(clozeSibling)],
+		]);
+		const { ctx } = makeDeleteCtx({ rows, cascadeIds });
+
+		const cmd = new ReviewDeleteCommand({
+			card: { ...primary },
+			originalFsrs: { ...primary.fsrs },
+			previousIndex: 0,
+			siblingIds: cascadeIds,
+			getReview: () => store.getState().review,
+		});
+
+		cmd.execute(ctx);
+		expect(store.getState().review.queue).toHaveLength(beforeQueueLen - 2);
+
+		await new Promise((r) => setTimeout(r, 5));
+		expect(rows.has(primary.id)).toBe(false);
+		expect(rows.has(clozeSibling.id)).toBe(false);
+
+		cmd.undo(ctx);
+
+		expect(rows.get(primary.id)).toEqual(toCardData(primary));
+		expect(rows.get(clozeSibling.id)).toEqual(toCardData(clozeSibling));
+		expect(store.getState().review.queue).toHaveLength(beforeQueueLen);
+		expect(store.getState().review.queue[0]?.id).toBe(primary.id);
+		expect(store.getState().review.queue[2]?.id).toBe(clozeSibling.id);
+	});
+
+	it("restores reviewed-today rows wiped by the delete", async () => {
+		const store = createTestStore();
+		const primary = createMockCard({ id: "primary" });
+		store.getState().review.startSession([primary, createMockCard()]);
+
+		const rows = new Map<string, FSRSCardData>([
+			[primary.id, toCardData(primary)],
+		]);
+		const { ctx, recordedReviews } = makeDeleteCtx({
+			rows,
+			cascadeIds: [primary.id],
+			reviewedToday: [primary.id],
+		});
+
+		const cmd = new ReviewDeleteCommand({
+			card: { ...primary },
+			originalFsrs: { ...primary.fsrs },
+			previousIndex: 0,
+			siblingIds: [primary.id],
+			getReview: () => store.getState().review,
+		});
+
+		cmd.execute(ctx);
+		await new Promise((r) => setTimeout(r, 5));
+		cmd.undo(ctx);
+
+		expect(recordedReviews).toEqual([{ date: "2026-05-02", id: primary.id }]);
+	});
+
+	it("deletes nothing when undone before the deferred write runs", async () => {
+		const store = createTestStore();
+		const primary = createMockCard({ id: "primary" });
+		store.getState().review.startSession([primary, createMockCard()]);
+
+		const beforeQueueLen = store.getState().review.queue.length;
+		const rows = new Map<string, FSRSCardData>([
+			[primary.id, toCardData(primary)],
+		]);
+		const { ctx, recordedReviews } = makeDeleteCtx({
+			rows,
+			cascadeIds: [primary.id],
+			reviewedToday: [primary.id],
+		});
+
+		const cmd = new ReviewDeleteCommand({
+			card: { ...primary },
+			originalFsrs: { ...primary.fsrs },
+			previousIndex: 0,
+			siblingIds: [primary.id],
+			getReview: () => store.getState().review,
+		});
+
+		cmd.execute(ctx);
+		cmd.undo(ctx);
+		await new Promise((r) => setTimeout(r, 5));
+
+		expect(
+			ctx.flashcardManager.removeFlashcardsByIdsWithDetails,
+		).not.toHaveBeenCalled();
+		expect(rows.get(primary.id)).toEqual(toCardData(primary));
+		expect(recordedReviews).toEqual([]);
+		expect(store.getState().review.queue).toHaveLength(beforeQueueLen);
 	});
 });

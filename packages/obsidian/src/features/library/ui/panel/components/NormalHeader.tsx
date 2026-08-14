@@ -1,232 +1,118 @@
-import { Menu } from "obsidian";
-import { useCallback, useMemo } from "preact/hooks";
-
-import { IconButton, SearchInput } from "@true-recall/obsidian/components";
-import { useCardActions } from "@true-recall/obsidian/features/library/ui/panel/hooks/useCardActions";
-import { usePanelActions } from "@true-recall/obsidian/features/library/ui/panel/hooks/usePanelActions";
-import { usePanelStore } from "@true-recall/obsidian/features/library/ui/panel/hooks/usePanelStore";
-import { countByState } from "@true-recall/obsidian/features/library/ui/panel/utils/card-status.utils";
-import { FSRS_COLORS } from "@true-recall/obsidian/helpers/fsrs-colors";
-import { usePlugin } from "@true-recall/obsidian/preact";
+import { SearchInput } from "@true-recall/obsidian/components";
+import { PanelIconButton } from "@true-recall/obsidian/features/library/ui/panel/components/PanelIconButton";
+import { usePanelHeader } from "@true-recall/obsidian/features/library/ui/panel/hooks/usePanelHeader";
+import type {
+	PanelSort,
+	PanelStatusFilter,
+} from "@true-recall/obsidian/features/library/ui/panel/utils/panel-list.utils";
 
 interface NormalHeaderProps {
-	streamingNewCount: number;
+	totalCount: number;
+	visibleCount: number;
+	dueCount: number;
+	statusFilter: PanelStatusFilter;
+	sort: PanelSort;
+	onStatusFilterChange: (filter: PanelStatusFilter) => void;
+	onSortChange: (sort: PanelSort) => void;
+	onEnterSelection: () => void;
+	onSearchInput: (input: HTMLInputElement | null) => void;
+	onShowShortcuts: () => void;
 	onRefresh: () => void;
 }
 
-export function NormalHeader({
-	streamingNewCount,
-	onRefresh,
-}: NormalHeaderProps) {
-	const plugin = usePlugin();
+export function NormalHeader(props: NormalHeaderProps) {
 	const {
-		flashcardInfo,
-		cardsWithFsrs,
-		searchQuery,
-		isFollowingReview,
-		uncollectedCount,
-		hasHighlights,
-	} = usePanelStore();
-
-	const panelActions = usePanelActions();
-	const cardActions = useCardActions();
-
-	const reviewedToday = plugin.sessionPersistence?.getReviewedToday();
-	const dayStartHour = plugin.settings.dayStartHour;
-	const rModeEnabled = plugin.settings.rMode.enabled;
-	const hasUncollectedFlashcards = uncollectedCount > 0;
-	const totalCount =
-		(flashcardInfo?.flashcards.length ?? 0) + streamingNewCount;
-
-	const hasNoteReview = useMemo(() => {
-		const sourceUid = flashcardInfo?.sourceUid;
-		if (!sourceUid) return false;
-		return plugin.flashcardManager.hasNoteReview(sourceUid);
-	}, [flashcardInfo?.sourceUid, plugin]);
-
-	const handleMoreMenu = useCallback(
-		(e: MouseEvent) => {
-			const menu = new Menu();
-			const hasFlashcards = (flashcardInfo?.cardCount ?? 0) > 0;
-
-			menu.addItem((item) =>
-				item.setTitle("Refresh").setIcon("refresh-cw").onClick(onRefresh),
-			);
-			menu.addItem((item) =>
-				item
-					.setTitle("Open source note")
-					.setIcon("file-text")
-					.onClick(panelActions.handleOpenSourceNote),
-			);
-
-			if (hasHighlights) {
-				menu.addItem((item) =>
-					item
-						.setTitle("Generate from highlights")
-						.setIcon("highlighter")
-						// Wrapped: the menu passes a MouseEvent, which would land in the
-						// optional preset-id parameter.
-						.onClick(() => void panelActions.handleGenerateFromHighlights()),
-				);
-			}
-
-			if (hasFlashcards) {
-				menu.addItem((item) =>
-					item
-						.setTitle("Browse in card browser")
-						.setIcon("table-2")
-						.onClick(panelActions.handleBrowseDeck),
-				);
-				menu.addSeparator();
-				menu.addItem((item) =>
-					item
-						.setTitle("Copy to clipboard")
-						.setIcon("clipboard-copy")
-						.onClick(panelActions.handleCopyAllToClipboard),
-				);
-				menu.addItem((item) =>
-					item
-						.setTitle("Export as CSV")
-						.setIcon("file-down")
-						.onClick(panelActions.handleExportCsv),
-				);
-				menu.addSeparator();
-				menu.addItem((item) =>
-					item
-						.setTitle("Forget all flashcards")
-						.setIcon("rotate-ccw")
-						.onClick(panelActions.handleForgetAll),
-				);
-				menu.addItem((item) =>
-					item
-						.setTitle("Delete all flashcards")
-						.setIcon("trash-2")
-						.onClick(panelActions.handleDeleteAll),
-				);
-				menu.addItem((item) =>
-					item
-						.setTitle("Delete note & all flashcards")
-						.setIcon("file-x-2")
-						.onClick(panelActions.handleDeleteNoteAndCards),
-				);
-			}
-
-			menu.showAtMouseEvent(e);
-		},
-		[flashcardInfo, onRefresh, hasHighlights, panelActions],
-	);
-
-	const baseCounts =
-		cardsWithFsrs.length > 0
-			? countByState(cardsWithFsrs, reviewedToday, dayStartHour)
-			: null;
-	const counts =
-		baseCounts || streamingNewCount > 0
-			? {
-					new: (baseCounts?.new ?? 0) + streamingNewCount,
-					learning: baseCounts?.learning ?? 0,
-					review: baseCounts?.review ?? 0,
-				}
-			: null;
-
-	const badgeCls =
-		"ep:flex ep:items-center ep:justify-center ep:min-w-5 ep:h-5 ep:px-1.5 ep:rounded-full ep:text-ui-smaller ep:font-semibold";
+		totalCount,
+		visibleCount,
+		dueCount,
+		statusFilter,
+		sort,
+		onEnterSelection,
+		onSearchInput,
+	} = props;
+	const header = usePanelHeader(props);
+	const activeFilterCount =
+		(statusFilter === "all" ? 0 : 1) + (sort === "source" ? 0 : 1);
+	const countLabel =
+		visibleCount === totalCount
+			? String(totalCount)
+			: `${visibleCount} of ${totalCount}`;
 
 	return (
-		<div class="ep:flex ep:flex-col ep:gap-2">
-			<div class="ep:flex ep:items-center ep:justify-between">
-				{/* Left side: section label + counts */}
-				<div class="ep:flex ep:items-center ep:gap-3">
-					<div class="ep:text-ui-small ep:font-semibold ep:text-obs-normal">
-						Cards
-					</div>
-
-					{counts && (
-						<div class="ep:flex ep:items-center ep:gap-1">
-							<div class={`${badgeCls} ${FSRS_COLORS.new.badgeCls}`}>
-								{counts.new}
-							</div>
-							<div class={`${badgeCls} ${FSRS_COLORS.learning.badgeCls}`}>
-								{counts.learning}
-							</div>
-							{/* The due count is the debt counter R-Mode exists to remove. */}
-							{!rModeEnabled && (
-								<div class={`${badgeCls} ${FSRS_COLORS.review.badgeCls}`}>
-									{counts.review}
-								</div>
-							)}
-						</div>
-					)}
-				</div>
-
-				{/* Right side: action buttons */}
-				<div class="ep:flex ep:items-center ep:gap-1">
-					{isFollowingReview && (
-						<IconButton
-							icon="file-text"
-							ariaLabel="Open source note"
-							onClick={panelActions.handleOpenSourceNote}
-							size="small"
-						/>
-					)}
-
-					{hasUncollectedFlashcards && (
-						<IconButton
-							icon="download"
-							ariaLabel={`Collect ${uncollectedCount} flashcards`}
-							onClick={() => void panelActions.handleCollect()}
-							size="small"
-							label={String(uncollectedCount)}
-							class="true-recall-pulse-collect"
-						/>
-					)}
-
-					{!isFollowingReview && (
-						<IconButton
-							icon={hasNoteReview ? "toggle-right" : "toggle-left"}
-							ariaLabel={
-								hasNoteReview ? "Disable note review" : "Enable note review"
-							}
-							onClick={() => void plugin.toggleNoteReview()}
-							size="small"
-							class={hasNoteReview ? "ep:text-obs-accent" : undefined}
-						/>
-					)}
-
-					{/* R-Mode owns the review entry point via its own panel. */}
-					{!isFollowingReview && !rModeEnabled && (
-						<IconButton
-							icon="brain"
-							ariaLabel="Start review"
-							onClick={() => void panelActions.handleReview()}
-							size="small"
-							disabled={(flashcardInfo?.cardCount ?? 0) === 0}
-						/>
-					)}
-
-					<IconButton
-						icon="plus"
-						ariaLabel="Add flashcard"
-						onClick={() => void cardActions.handleAddFlashcard()}
-						size="small"
+		<header class="ep:flex ep:shrink-0 ep:flex-col ep:gap-2 ep:px-2 ep:pt-2">
+			<div class="ep:flex ep:h-7 ep:items-center ep:gap-1">
+				<h2 class="ep:min-w-0 ep:flex-1 ep:truncate ep:text-ui-small ep:font-semibold ep:text-obs-normal">
+					Cards{" "}
+					<span class="ep:font-normal ep:text-obs-muted ep:tabular-nums">
+						{countLabel}
+					</span>
+					{dueCount > 0 && !header.rModeEnabled ? (
+						<span class="ep:font-normal ep:text-obs-orange">
+							{" "}
+							· {dueCount} due
+						</span>
+					) : null}
+				</h2>
+				<PanelIconButton
+					icon="play"
+					label="Study This Note"
+					disabled={!header.canStudy}
+					onClick={header.handleStudy}
+				/>
+				{header.isFollowingReview ? (
+					<PanelIconButton
+						icon="file-text"
+						label="Open Source Note"
+						onClick={header.handleOpenSourceNote}
 					/>
-
-					<IconButton
-						icon="more-vertical"
-						ariaLabel="More actions"
-						onClick={handleMoreMenu}
-						size="small"
+				) : null}
+				{header.uncollectedCount > 0 ? (
+					<PanelIconButton
+						icon="download"
+						label={`Collect ${header.uncollectedCount} Cards`}
+						class="true-recall-pulse-collect"
+						onClick={() => void header.handleCollect()}
 					/>
-				</div>
+				) : null}
+				<PanelIconButton
+					icon="check-square"
+					label="Select Cards (⌘A)"
+					disabled={visibleCount === 0}
+					onClick={onEnterSelection}
+				/>
+				<PanelIconButton
+					icon="plus"
+					label="Add Card (N)"
+					onClick={() => void header.handleAddFlashcard()}
+				/>
+				<PanelIconButton
+					icon="more-vertical"
+					label="More Actions"
+					onClick={header.openMoreMenu}
+				/>
 			</div>
 
-			<SearchInput
-				value={searchQuery}
-				placeholder="Search flashcards…"
-				ariaLabel="Search flashcards"
-				onChange={panelActions.handleSearchChange}
-				disabled={totalCount === 0}
-			/>
-		</div>
+			<div class="ep:flex ep:items-center ep:gap-1">
+				<SearchInput
+					value={header.searchQuery}
+					placeholder="Search question or answer…"
+					ariaLabel="Search Questions and Answers"
+					autoComplete="off"
+					onChange={header.handleSearchChange}
+					onInputElement={onSearchInput}
+					disabled={totalCount === 0}
+				/>
+				<PanelIconButton
+					icon="list-filter"
+					label={
+						activeFilterCount > 0
+							? `Filters, ${activeFilterCount} Active`
+							: "Filter & Sort"
+					}
+					pressed={activeFilterCount > 0}
+					onClick={header.openFilterMenu}
+				/>
+			</div>
+		</header>
 	);
 }
