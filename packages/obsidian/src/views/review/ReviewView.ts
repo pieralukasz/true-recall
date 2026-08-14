@@ -1253,36 +1253,52 @@ export class ReviewView extends ItemView {
 	private async handleTopUp(topUp: ReviewSessionTopUp): Promise<boolean> {
 		if (this.filters.schedulingMode !== "retrievability") return false;
 
-		const normalizedTopUp: ReviewSessionTopUp = {
-			...topUp,
-			count: Math.max(0, Math.floor(topUp.count)),
-		};
-		if (normalizedTopUp.count === 0) return false;
+		try {
+			const normalizedTopUp: ReviewSessionTopUp = {
+				...topUp,
+				count: Math.max(0, Math.floor(topUp.count)),
+			};
+			if (normalizedTopUp.count === 0) return false;
 
-		const { queue } = this.reviewController.buildTopUpSession(
-			this.filters,
-			normalizedTopUp,
-		);
-		if (queue.length === 0) {
-			notify().info(
-				`No ${normalizedTopUp.kind} cards are available for Top Up.`,
+			const { queue } = this.reviewController.buildTopUpSession(
+				this.filters,
+				normalizedTopUp,
 			);
+			if (queue.length === 0) {
+				notify().info(
+					`No ${normalizedTopUp.kind} cards are available for Top Up.`,
+				);
+				return false;
+			}
+
+			this.cachePresetsForQueue(queue);
+
+			if (this.review.getPhase().type === "waiting") {
+				const addedCount = this.review.addCardsToCurrentSession(queue);
+				if (addedCount === 0) {
+					notify().info("Those cards are already in the current session.");
+					return false;
+				}
+			} else {
+				this.filters = { ...this.filters, topUp: normalizedTopUp };
+				this.review.setSessionFilters(this.filters);
+				this.review.startSession(queue);
+			}
+
+			this.sessionCommandService.clearByType(
+				"review:answer",
+				"review:bury",
+				"review:suspend",
+				"review:forget",
+			);
+
+			this.resetTypeInState(this.review.getCurrentCard()?.id ?? null);
+			this.answerHandler.updateSchedulingPreview();
+			return true;
+		} catch (error) {
+			notify().operationFailed("start Top Up", error);
 			return false;
 		}
-
-		this.sessionCommandService.clearByType(
-			"review:answer",
-			"review:bury",
-			"review:suspend",
-			"review:forget",
-		);
-		this.filters = { ...this.filters, topUp: normalizedTopUp };
-		this.cachePresetsForQueue(queue);
-		this.review.setSessionFilters(this.filters);
-		this.review.startSession(queue);
-		this.resetTypeInState(this.review.getCurrentCard()?.id ?? null);
-		this.answerHandler.updateSchedulingPreview();
-		return true;
 	}
 
 	private handleNextSession(): void {
