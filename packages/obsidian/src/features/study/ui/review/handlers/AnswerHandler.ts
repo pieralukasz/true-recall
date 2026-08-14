@@ -4,7 +4,10 @@ import type { SemanticAnswerGradingService } from "@true-recall/core/ai/grading/
 import type { TypeInGradingPromptRelatedCard } from "@true-recall/core/ai/prompts/type-in-grading-prompt";
 import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
 import { assessTypedAnswer } from "@true-recall/core/helpers/answer-assessment";
-import { shouldTriggerLeech } from "@true-recall/core/helpers/leech-helpers";
+import {
+	DEFAULT_LEECH_THRESHOLD,
+	shouldTriggerLeech,
+} from "@true-recall/core/helpers/leech-helpers";
 import type { SessionPersistenceService } from "@true-recall/core/persistence/session/session-persistence.service";
 import type { FSRSService } from "@true-recall/core/services/fsrs/fsrs.service";
 import type { ReviewService } from "@true-recall/core/services/review/review.service";
@@ -168,7 +171,8 @@ export class AnswerHandler {
 			!isPreviewCustomStudy(this.deps.getFilters())
 		) {
 			const lapses = outcome.updatedCard.fsrs.lapses;
-			const threshold = outcome.preset.leechThreshold ?? 8;
+			const threshold =
+				outcome.preset.leechThreshold ?? DEFAULT_LEECH_THRESHOLD;
 			if (shouldTriggerLeech(lapses, threshold)) {
 				const preview = outcome.card.question.slice(0, 50);
 				if (outcome.leechSuspended) {

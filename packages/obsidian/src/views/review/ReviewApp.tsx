@@ -67,6 +67,7 @@ interface ReviewAppProps {
 	};
 	getPresetName?: (card: FSRSFlashcardItem) => string;
 	getPresetOptions?: () => PresetPickerOption[];
+	getLeechThreshold?: (card: FSRSFlashcardItem) => number;
 	onPresetChange?: (presetName: string) => void;
 	resolveAudioPath?: (card: FSRSFlashcardItem) => string | undefined;
 }
@@ -148,6 +149,7 @@ function ActiveReview({
 	getTypeInState,
 	getPresetName,
 	getPresetOptions,
+	getLeechThreshold,
 	onPresetChange,
 	resolveAudioPath,
 }: ActiveReviewProps) {
@@ -155,6 +157,7 @@ function ActiveReview({
 	const isAnswerRevealed = !hasAnswer || review.isAnswerRevealed;
 	const presetName = getPresetName?.(card);
 	const presetOptions = getPresetOptions?.();
+	const leechThreshold = getLeechThreshold?.(card);
 	const typeInState = getTypeInState(card, isAnswerRevealed);
 	const audioPath = resolveAudioPath?.(card);
 
@@ -181,6 +184,7 @@ function ActiveReview({
 				onOpenSourceNote={onOpenSourceNote}
 				presetName={presetName}
 				presetOptions={presetOptions}
+				leechThreshold={leechThreshold}
 				onPresetChange={onPresetChange}
 				audioPath={audioPath}
 				typeIn={{

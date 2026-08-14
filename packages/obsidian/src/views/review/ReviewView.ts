@@ -14,6 +14,7 @@ import type { AssistantContext } from "@true-recall/core/ai/assistant";
 import { SemanticAnswerGradingService } from "@true-recall/core/ai/grading/semantic-answer-grading.service";
 import { VIEW_TYPE_REVIEW } from "@true-recall/core/constants";
 import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
+import { DEFAULT_LEECH_THRESHOLD } from "@true-recall/core/helpers/leech-helpers";
 import type { SessionPersistenceService } from "@true-recall/core/persistence/session/session-persistence.service";
 import { FSRSService } from "@true-recall/core/services/fsrs/fsrs.service";
 import { ReviewService } from "@true-recall/core/services/review/review.service";
@@ -704,6 +705,9 @@ export class ReviewView extends ItemView {
 				getPresetName: (card: FSRSFlashcardItem) =>
 					this.answerHandler.resolvePreset(card).name,
 				getPresetOptions: () => this.getPresetOptions(),
+				getLeechThreshold: (card: FSRSFlashcardItem) =>
+					this.answerHandler.resolvePreset(card).leechThreshold ??
+					DEFAULT_LEECH_THRESHOLD,
 				onPresetChange: (name: string) => void this.handlePresetChange(name),
 				resolveAudioPath: (card: FSRSFlashcardItem) => {
 					if (!card.noteId) return undefined;

@@ -6,6 +6,7 @@ import { isMobile } from "@true-recall/obsidian/utils/platform";
 
 import { getReviewMaxWidth } from "../helpers/review-width";
 import { useNoteReviewContent } from "../hooks/useNoteReviewContent";
+import { CardCounters } from "./CardCounters";
 import { LivePreviewField } from "./LivePreviewField";
 import { type PresetPickerOption, PresetPopover } from "./PresetPopover";
 
@@ -15,6 +16,7 @@ interface NoteReviewRendererProps {
 	card: FSRSFlashcardItem;
 	presetName?: string;
 	presetOptions?: PresetPickerOption[];
+	leechThreshold?: number;
 	onPresetChange?: (presetName: string) => void;
 	onOpenSourceNote?: () => void;
 }
@@ -23,6 +25,7 @@ export function NoteReviewRenderer({
 	card,
 	presetName,
 	presetOptions,
+	leechThreshold,
 	onPresetChange,
 	onOpenSourceNote,
 }: NoteReviewRendererProps) {
@@ -77,6 +80,7 @@ export function NoteReviewRenderer({
 					card={card}
 					presetName={presetName}
 					presetOptions={presetOptions}
+					leechThreshold={leechThreshold}
 					onPresetChange={onPresetChange}
 					onOpenSourceNote={onOpenSourceNote}
 				/>
@@ -89,19 +93,20 @@ function NoteReviewFooter({
 	card,
 	presetName,
 	presetOptions,
+	leechThreshold,
 	onPresetChange,
 	onOpenSourceNote,
 }: {
 	card: FSRSFlashcardItem;
 	presetName?: string;
 	presetOptions?: PresetPickerOption[];
+	leechThreshold?: number;
 	onPresetChange?: (presetName: string) => void;
 	onOpenSourceNote?: () => void;
 }) {
-	if (!card.sourceNoteName && !presetName) return null;
-
 	return (
 		<div class="ep:flex ep:flex-col ep:items-center ep:gap-4 ep:pt-8">
+			<CardCounters card={card} leechThreshold={leechThreshold} />
 			{card.sourceNoteName && onOpenSourceNote && (
 				<Clickable
 					class="ep:text-obs-faint ep:text-ui-smaller tr-no-faux-underline ep:hover:text-obs-accent tr-hover-faux-underline ep:transition-colors ep:p-0"
