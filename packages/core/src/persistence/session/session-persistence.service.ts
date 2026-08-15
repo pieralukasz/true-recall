@@ -56,7 +56,9 @@ export class SessionPersistenceService {
 	}
 
 	/**
-	 * Record a card review with extended stats
+	 * Record a card review with extended stats.
+	 * Returns the review_log id (null when no rating was given), so callers
+	 * can tombstone the exact entry on undo.
 	 */
 	recordReview(
 		cardId: string,
@@ -67,7 +69,7 @@ export class SessionPersistenceService {
 		scheduledDays?: number,
 		elapsedDays?: number,
 		presetName?: string,
-	): void {
+	): string | null {
 		const today = this.getTodayKey();
 
 		// Record the reviewed card (for daily limit tracking)
@@ -94,7 +96,7 @@ export class SessionPersistenceService {
 
 		// Record to review_log for detailed history
 		if (rating !== undefined) {
-			this.store.stats.addReviewLog(
+			return this.store.stats.addReviewLog(
 				cardId,
 				rating,
 				scheduledDays ?? 0,
@@ -104,9 +106,14 @@ export class SessionPersistenceService {
 				presetName,
 			);
 		}
+		return null;
 	}
 
-	/** Record a filtered-deck preview answer without changing daily limits. */
+	/**
+	 * Record a filtered-deck preview answer without changing daily limits.
+	 * Stamped as review_kind = 'preview' so sync replay and FSRS optimization
+	 * skip it.
+	 */
 	recordPreviewReview(
 		cardId: string,
 		durationMs: number,
@@ -122,6 +129,7 @@ export class SessionPersistenceService {
 			previousState,
 			durationMs,
 			presetName,
+			"preview",
 		);
 	}
 

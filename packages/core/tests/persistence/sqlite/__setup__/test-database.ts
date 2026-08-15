@@ -17,6 +17,7 @@ import {
 	NoteTypeActions,
 } from "../../../../src/persistence/sqlite/modules/NoteTypeActions";
 import { StatsActions } from "../../../../src/persistence/sqlite/modules/StatsActions";
+import { CURRENT_SCHEMA_VERSION } from "../../../../src/persistence/sqlite/SqliteSchemaManager";
 import type { FSRSCardData } from "../../../../src/types";
 import type { Note, NoteType } from "../../../../src/types/note.types";
 import { BUILTIN_SLUGS } from "../../../../src/types/note.types";
@@ -141,6 +142,8 @@ export class TestSqliteDatabase {
 				updated_at INTEGER,
 				deleted_at INTEGER DEFAULT NULL,
 				preset_name TEXT,
+				device_id TEXT,
+				review_kind TEXT,
 				FOREIGN KEY (card_id) REFERENCES cards(id) ON DELETE CASCADE
 			);
 
@@ -208,7 +211,7 @@ export class TestSqliteDatabase {
 			CREATE INDEX IF NOT EXISTS idx_cards_deleted ON cards(deleted_at);
 			CREATE INDEX IF NOT EXISTS idx_revlog_preset_date ON review_log(deleted_at, preset_name, reviewed_at);
 
-			INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '1');
+			INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '${CURRENT_SCHEMA_VERSION}');
 		`);
 	}
 

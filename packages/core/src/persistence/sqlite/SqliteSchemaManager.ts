@@ -95,6 +95,8 @@ export class SqliteSchemaManager {
                 updated_at INTEGER,
                 deleted_at INTEGER DEFAULT NULL,
                 preset_name TEXT,
+                device_id TEXT,
+                review_kind TEXT,
                 FOREIGN KEY (card_id) REFERENCES cards(id) ON DELETE CASCADE
             );
 
@@ -179,6 +181,16 @@ export class SqliteSchemaManager {
 		}
 		try {
 			this.db.run(`ALTER TABLE notes ADD COLUMN user_comment TEXT`);
+		} catch {
+			// Column already exists — expected for new installs
+		}
+		try {
+			this.db.run(`ALTER TABLE review_log ADD COLUMN device_id TEXT`);
+		} catch {
+			// Column already exists — expected for new installs
+		}
+		try {
+			this.db.run(`ALTER TABLE review_log ADD COLUMN review_kind TEXT`);
 		} catch {
 			// Column already exists — expected for new installs
 		}

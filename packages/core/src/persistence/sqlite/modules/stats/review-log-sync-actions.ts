@@ -18,7 +18,9 @@ export class ReviewLogSyncActions {
                 time_spent_ms as timeSpentMs,
                 updated_at as updatedAt,
                 deleted_at as deletedAt,
-                preset_name as presetName
+                preset_name as presetName,
+                device_id as deviceId,
+                review_kind as reviewKind
             FROM review_log
             WHERE updated_at > ?
         `,
@@ -41,9 +43,11 @@ export class ReviewLogSyncActions {
             INSERT OR REPLACE INTO review_log (
                 id, card_id, reviewed_at, rating, scheduled_days,
                 elapsed_days, state, time_spent_ms, updated_at,
-                deleted_at, preset_name
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                deleted_at, preset_name, device_id, review_kind
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
+			// `?? null` binds: rows from an older remote schema can be missing
+			// columns entirely, and undefined cannot bind.
 			[
 				data.id,
 				data.cardId,
@@ -54,8 +58,10 @@ export class ReviewLogSyncActions {
 				data.state,
 				data.timeSpentMs,
 				data.updatedAt,
-				data.deletedAt,
+				data.deletedAt ?? null,
 				data.presetName ?? null,
+				data.deviceId ?? null,
+				data.reviewKind ?? null,
 			],
 		);
 		return true;
@@ -75,7 +81,9 @@ export class ReviewLogSyncActions {
                 time_spent_ms as timeSpentMs,
                 updated_at as updatedAt,
                 deleted_at as deletedAt,
-                preset_name as presetName
+                preset_name as presetName,
+                device_id as deviceId,
+                review_kind as reviewKind
             FROM review_log WHERE id = ?
         `,
 			[id],

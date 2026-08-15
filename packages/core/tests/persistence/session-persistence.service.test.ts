@@ -245,6 +245,7 @@ describe("SessionPersistenceService", () => {
 				State.Review,
 				2500,
 				"Default",
+				"preview",
 			);
 			expect(mockStats.recordReviewedCard).not.toHaveBeenCalled();
 			expect(mockStats.updateDailyStats).not.toHaveBeenCalled();

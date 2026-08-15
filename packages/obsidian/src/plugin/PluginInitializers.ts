@@ -4,6 +4,7 @@ import { DeletionHandlerService } from "@true-recall/core/flashcard/lifecycle/de
 import { UidGuardianService } from "@true-recall/core/flashcard/lifecycle/uid-guardian.service";
 import { DeviceDiscoveryService } from "@true-recall/core/integration/device/device-discovery.service";
 import { DeviceIdService } from "@true-recall/core/integration/device/device-id.service";
+import { setCurrentDeviceId } from "@true-recall/core/persistence/sqlite/device-context";
 import {
 	DB_FOLDER,
 	getDeviceDbFilename,
@@ -45,7 +46,9 @@ export async function initializeDeviceAndStore(
 			"Failed to initialize device context. Using default configuration.",
 		);
 		plugin.deviceIdService = new DeviceIdService(plugin.settings.deviceId);
-		await initializeCardStore(plugin, plugin.deviceIdService.getDeviceId());
+		const fallbackDeviceId = plugin.deviceIdService.getDeviceId();
+		setCurrentDeviceId(fallbackDeviceId);
+		await initializeCardStore(plugin, fallbackDeviceId);
 	}
 }
 
@@ -60,6 +63,7 @@ async function initializeDeviceContext(
 		},
 	);
 	const deviceId = plugin.deviceIdService.getDeviceId();
+	setCurrentDeviceId(deviceId);
 	plugin.deviceDiscovery = new DeviceDiscoveryService(
 		new ObsidianPersistence(plugin.app),
 		deviceId,
