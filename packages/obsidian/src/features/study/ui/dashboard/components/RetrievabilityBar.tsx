@@ -14,7 +14,6 @@ export function RetrievabilityBar({ spread }: RetrievabilityBarProps) {
 		<span
 			role="img"
 			aria-label={description.replaceAll("\n", ". ")}
-			title={description}
 			class="ep:flex ep:w-20 ep:h-1.5 ep:shrink-0 ep:overflow-hidden ep:rounded-full ep:bg-obs-secondary"
 		>
 			{total > 0 && spread && (

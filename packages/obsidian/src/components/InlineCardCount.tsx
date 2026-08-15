@@ -44,7 +44,9 @@ export function InlineCardCount({
 	const parsed = Number.parseInt(value, 10);
 	const exceedsPool =
 		available !== undefined && !Number.isNaN(parsed) && parsed > available;
-	const title = exceedsPool
+	// Obsidian renders its styled tooltip from aria-label; adding title too
+	// would show a second, native tooltip on hover.
+	const label = exceedsPool
 		? `${ariaLabel}. ${available} review cards are currently available.`
 		: ariaLabel;
 
@@ -57,8 +59,7 @@ export function InlineCardCount({
 			autoComplete="off"
 			name="review-card-count"
 			value={value}
-			aria-label={ariaLabel}
-			title={title}
+			aria-label={label}
 			draggable={false}
 			class={`ep:w-11 ep:shrink-0 ep:rounded-md ep:border ep:border-solid ep:bg-obs-primary ep:px-1 ep:py-0.5 ep:text-center ep:text-ui-smaller ep:font-medium ep:tabular-nums ${
 				exceedsPool ? "ep:border-obs-orange" : "ep:border-obs-border"
