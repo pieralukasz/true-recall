@@ -242,10 +242,10 @@ export class QuickNoteEditorView extends ItemView {
 
 	/**
 	 * Re-fits the window whenever something outside this view resizes it —
-	 * Obsidian restoring the size the popout was last left at, or a drag on a
-	 * platform where `setResizable(false)` does not take. `resizeWindowToContent`
-	 * is a no-op when the size already matches, so our own resizes settle
-	 * instead of ping-ponging.
+	 * Obsidian restoring the size the popout was last left at, or a height
+	 * drag/zoom (lockPopoutResize only pins the width, so the zoom traffic
+	 * light stays enabled). `resizeWindowToContent` is a no-op when the size
+	 * already matches, so our own resizes settle instead of ping-ponging.
 	 */
 	private installResizeGuard(win: Window): void {
 		this.uninstallResizeGuard();

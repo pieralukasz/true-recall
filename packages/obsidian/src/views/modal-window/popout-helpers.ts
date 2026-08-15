@@ -28,7 +28,8 @@ export interface PopoutBounds {
 interface PopoutBrowserWindow {
 	getBounds(): PopoutBounds;
 	setBounds(bounds: Partial<PopoutBounds>): void;
-	setResizable(resizable: boolean): void;
+	setMinimumSize(width: number, height: number): void;
+	setMaximumSize(width: number, height: number): void;
 }
 
 interface ElectronModule {
@@ -53,7 +54,8 @@ export function getPopoutBrowserWindow(
 		if (
 			typeof candidate.getBounds !== "function" ||
 			typeof candidate.setBounds !== "function" ||
-			typeof candidate.setResizable !== "function"
+			typeof candidate.setMinimumSize !== "function" ||
+			typeof candidate.setMaximumSize !== "function"
 		) {
 			return null;
 		}
@@ -69,9 +71,23 @@ export function getPopoutOuterHeight(win: Window): number {
 	return getPopoutBrowserWindow(win)?.getBounds().height ?? win.outerHeight;
 }
 
-/** Takes the window off the user's resize handles, where Electron allows it. */
+/**
+ * Takes the window off the user's resize handles, where Electron allows it.
+ *
+ * Deliberately NOT `setResizable(false)`: on macOS that disables the zoom
+ * traffic light, which then renders as an unfilled circle that reads as a
+ * black hole on the dark drag bar. Pinning the width via size constraints
+ * keeps all three buttons coloured; stray height changes (drags, zoom) are
+ * re-fitted by the caller's resize guard.
+ */
+const UNBOUNDED_HEIGHT = 100_000;
+
 export function lockPopoutResize(win: Window): void {
-	getPopoutBrowserWindow(win)?.setResizable(false);
+	const bw = getPopoutBrowserWindow(win);
+	if (!bw) return;
+	const { width } = bw.getBounds();
+	bw.setMinimumSize(width, 0);
+	bw.setMaximumSize(width, UNBOUNDED_HEIGHT);
 }
 
 /**

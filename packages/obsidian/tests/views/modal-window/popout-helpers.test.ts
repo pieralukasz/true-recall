@@ -11,7 +11,8 @@ interface Harness {
 	win: Window;
 	bounds: PopoutBounds;
 	setBounds: ReturnType<typeof vi.fn>;
-	setResizable: ReturnType<typeof vi.fn>;
+	setMinimumSize: ReturnType<typeof vi.fn>;
+	setMaximumSize: ReturnType<typeof vi.fn>;
 	resizeTo: ReturnType<typeof vi.fn>;
 	moveTo: ReturnType<typeof vi.fn>;
 }
@@ -23,14 +24,16 @@ function harness(options: { withBrowserWindow: boolean }): Harness {
 	const setBounds = vi.fn((next: Partial<PopoutBounds>) =>
 		Object.assign(bounds, next),
 	);
-	const setResizable = vi.fn();
+	const setMinimumSize = vi.fn();
+	const setMaximumSize = vi.fn();
 	const resizeTo = vi.fn();
 	const moveTo = vi.fn();
 
 	const browserWindow = {
 		getBounds: () => ({ ...bounds }),
 		setBounds,
-		setResizable,
+		setMinimumSize,
+		setMaximumSize,
 	};
 
 	const win = {
@@ -49,7 +52,15 @@ function harness(options: { withBrowserWindow: boolean }): Harness {
 			: undefined,
 	} as unknown as Window;
 
-	return { win, bounds, setBounds, setResizable, resizeTo, moveTo };
+	return {
+		win,
+		bounds,
+		setBounds,
+		setMinimumSize,
+		setMaximumSize,
+		resizeTo,
+		moveTo,
+	};
 }
 
 describe("popout-helpers", () => {
@@ -71,10 +82,13 @@ describe("popout-helpers", () => {
 	});
 
 	describe("lockPopoutResize", () => {
-		it("marks the window non-resizable", () => {
+		it("pins the width without disabling the macOS zoom button", () => {
+			// Regression: setResizable(false) greys out the zoom traffic light,
+			// which renders as a black hole on the dark drag bar.
 			const h = harness({ withBrowserWindow: true });
 			lockPopoutResize(h.win);
-			expect(h.setResizable).toHaveBeenCalledWith(false);
+			expect(h.setMinimumSize).toHaveBeenCalledWith(720, 0);
+			expect(h.setMaximumSize).toHaveBeenCalledWith(720, 100_000);
 		});
 
 		it("is a no-op without a BrowserWindow", () => {
