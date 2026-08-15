@@ -8,6 +8,7 @@ import { usePlugin } from "@true-recall/obsidian/preact";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 
 import { DailyLimitsSection } from "./DailyLimitsSection";
+import { getDescendantProjectPaths } from "./descendant-projects";
 import { LapsesSection } from "./LapsesSection";
 import { NewCardsSection } from "./NewCardsSection";
 import { ParametersSection } from "./ParametersSection";
@@ -71,34 +72,18 @@ export function PresetOptionsBody({
 
 	const refresh = useCallback(() => setVersion((v) => v + 1), []);
 
-	const hasChildren = useMemo(() => {
-		if (!context?.contextPath) return false;
-		return (
-			plugin.hierarchyService.getChildPaths(context.contextPath).length > 0
-		);
-	}, [plugin, context?.contextPath]);
-
-	const getDescendantProjectPaths = useCallback(
-		(rootPath: string): string[] => {
-			const result: string[] = [];
-			const visited = new Set<string>();
-			const collect = (path: string) => {
-				for (const child of plugin.hierarchyService.getChildPaths(path)) {
-					if (visited.has(child)) continue;
-					visited.add(child);
-					const isProject =
-						plugin.hierarchyService.getChildPaths(child).length > 0;
-					if (isProject) {
-						result.push(child);
-						collect(child);
-					}
-				}
-			};
-			collect(rootPath);
-			return result;
-		},
+	const descendantProjectPaths = useCallback(
+		(rootPath: string): string[] =>
+			getDescendantProjectPaths(plugin.hierarchyService, rootPath),
 		[plugin],
 	);
+
+	// Offer the cascade only when it would actually touch something — a parent
+	// whose children are all plain notes gets no checkbox.
+	const hasChildProjects = useMemo(() => {
+		if (!context?.contextPath) return false;
+		return descendantProjectPaths(context.contextPath).length > 0;
+	}, [context?.contextPath, descendantProjectPaths]);
 
 	const confirmDiscard = useCallback(async () => {
 		if (!isDirty || !savedPreset) return true;
@@ -177,9 +162,7 @@ export function PresetOptionsBody({
 				}
 
 				if (applyToChildren) {
-					const descendantPaths = getDescendantProjectPaths(
-						context.contextPath,
-					);
+					const descendantPaths = descendantProjectPaths(context.contextPath);
 					await Promise.all(
 						descendantPaths.map((path) => {
 							const f = plugin.app.vault.getFileByPath(path);
@@ -203,7 +186,7 @@ export function PresetOptionsBody({
 		isDirty,
 		context,
 		applyToChildren,
-		getDescendantProjectPaths,
+		descendantProjectPaths,
 		onClose,
 	]);
 
@@ -254,7 +237,7 @@ export function PresetOptionsBody({
 			</div>
 
 			<div class="ep-modal-footer ep:shrink-0 ep:flex ep:items-center ep:justify-between ep:gap-2 ep:pt-3 ep:mt-2 ep:border-t ep:border-obs-border ep:bg-obs-primary">
-				{hasChildren && context?.contextPath ? (
+				{hasChildProjects && context?.contextPath ? (
 					<label class="ep:flex ep:items-center ep:gap-2 ep:cursor-pointer ep:text-ui-small ep:text-obs-muted">
 						<input
 							type="checkbox"
