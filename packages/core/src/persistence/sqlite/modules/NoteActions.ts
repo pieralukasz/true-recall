@@ -103,18 +103,20 @@ export class NoteActions {
 				updated_at = excluded.updated_at,
 				deleted_at = excluded.deleted_at
 			 WHERE COALESCE(excluded.updated_at, 0) > COALESCE(notes.updated_at, 0)`,
+			// `?? null` everywhere: rows read via SELECT * from an older remote
+			// schema can be missing columns entirely, and undefined cannot bind.
 			[
 				row.id,
 				row.note_type_id,
 				row.fields_json,
-				row.tags,
-				row.source_uid,
-				row.source_text,
-				row.user_comment,
-				row.created_via,
-				row.created_at,
-				row.updated_at,
-				row.deleted_at,
+				row.tags ?? null,
+				row.source_uid ?? null,
+				row.source_text ?? null,
+				row.user_comment ?? null,
+				row.created_via ?? null,
+				row.created_at ?? null,
+				row.updated_at ?? null,
+				row.deleted_at ?? null,
 			],
 		);
 		return this.db.getRowsModified() > 0;

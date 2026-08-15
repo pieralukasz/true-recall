@@ -4,6 +4,7 @@ import { NoteActions } from "@true-recall/core/persistence/sqlite/modules/NoteAc
 import { NoteTypeActions } from "@true-recall/core/persistence/sqlite/modules/NoteTypeActions";
 import { StatsActions } from "@true-recall/core/persistence/sqlite/modules/StatsActions";
 import { SqliteDatabase } from "@true-recall/core/persistence/sqlite/SqliteDatabase";
+import { CURRENT_SCHEMA_VERSION } from "@true-recall/core/persistence/sqlite/SqliteSchemaManager";
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite/SqliteStoreService";
 
 import type { DeviceDiscoveryService } from "./device-discovery.service";
@@ -88,6 +89,16 @@ export class DeviceSyncService {
 		await remoteDb.init(new Uint8Array(data));
 
 		try {
+			const remoteVersionRow = remoteDb.get<{ value: string }>(
+				`SELECT value FROM meta WHERE key = 'schema_version'`,
+			);
+			const remoteVersion = Number(remoteVersionRow?.value ?? "1");
+			if (remoteVersion > CURRENT_SCHEMA_VERSION) {
+				throw new Error(
+					`remote schema v${remoteVersion} is newer than local v${CURRENT_SCHEMA_VERSION}; update the plugin on this device first`,
+				);
+			}
+
 			const remoteCards = new CardActions(remoteDb);
 			const remoteStats = new StatsActions(remoteDb);
 			const remoteNotes = new NoteActions(remoteDb);

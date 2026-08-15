@@ -321,6 +321,35 @@ describe("DeviceSyncService", () => {
 		expect(synced?.answer).toBe("Backfill A");
 	});
 
+	it("refuses to merge from a device with a newer schema version", async () => {
+		// Arrange — remote claims a schema this plugin version does not know
+		const remotePath = ".true-recall/true-recall-newer001.db";
+		const remoteBinary = await createRemoteDbBinary((ctx) => {
+			ctx.cards.set("future-card", createTestCard({ id: "future-card" }));
+			ctx.db.run(
+				`INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '999')`,
+			);
+		});
+		persistence.seedBinary(remotePath, remoteBinary);
+
+		vi.mocked(discoveryMock.discoverDeviceDatabases).mockResolvedValue([
+			makeDeviceInfo({
+				deviceId: "newer001",
+				path: remotePath,
+				isCurrentDevice: false,
+			}),
+		]);
+
+		// Act
+		const result = await service.syncOnStartup();
+
+		// Assert — nothing applied, error names the version mismatch
+		expect(result.cardsApplied).toBe(0);
+		expect(result.errors).toHaveLength(1);
+		expect(result.errors[0]).toContain("schema");
+		expect(localCtx.cards.has("future-card")).toBe(false);
+	});
+
 	it("syncOnStartup handles empty remote DB gracefully", async () => {
 		// Arrange — path exists but binary is empty
 		const remotePath = ".true-recall/true-recall-empty001.db";

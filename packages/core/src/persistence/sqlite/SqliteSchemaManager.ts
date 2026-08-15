@@ -2,6 +2,14 @@ import { BUILTIN_SLUGS } from "../../types/note.types";
 import { getBuiltinNoteTypes } from "./modules/NoteTypeActions";
 import type { DatabaseLike } from "./sqlite.types";
 
+/**
+ * Bump on any schema change a device-sync merge must know about.
+ * Merging refuses input from databases with a NEWER version (their rows may
+ * carry columns this build does not understand); older versions merge fine.
+ * v2: review_log gains device_id and review_kind.
+ */
+export const CURRENT_SCHEMA_VERSION = 2;
+
 export class SqliteSchemaManager {
 	constructor(private db: DatabaseLike) {}
 
@@ -154,7 +162,7 @@ export class SqliteSchemaManager {
                 value TEXT
             );
 
-            INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '1');
+            INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '${CURRENT_SCHEMA_VERSION}');
             INSERT OR REPLACE INTO meta (key, value) VALUES ('created_at', datetime('now'));
         `);
 
