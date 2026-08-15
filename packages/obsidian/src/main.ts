@@ -20,6 +20,7 @@ import type { DeviceDiscoveryService } from "@true-recall/core/integration/devic
 import type { DeviceIdService } from "@true-recall/core/integration/device/device-id.service";
 import { DeviceLockService } from "@true-recall/core/integration/device/device-lock.service";
 import { DeviceSyncService } from "@true-recall/core/integration/device/device-sync.service";
+import { DeviceSyncScheduler } from "@true-recall/core/integration/device/device-sync-scheduler";
 import { FSRSService } from "@true-recall/core/services/fsrs/fsrs.service";
 import { FsrsReplayService } from "@true-recall/core/services/fsrs/fsrs-replay.service";
 import { SessionService } from "@true-recall/core/services/review/session.service";
@@ -194,6 +195,7 @@ export default class TrueRecallPlugin extends Plugin {
 	deviceIdService: DeviceIdService | null = null;
 	deviceDiscovery: DeviceDiscoveryService | null = null;
 	private deviceLock: DeviceLockService | null = null;
+	private deviceSyncScheduler: DeviceSyncScheduler | null = null;
 	deletionHandler: DeletionHandlerService | null = null;
 	commandService: CommandService | null = null;
 	store: AppStore | null = null;
@@ -358,6 +360,32 @@ export default class TrueRecallPlugin extends Plugin {
 						`Synced ${syncResult.cardsApplied} cards and ${syncResult.reviewLogsApplied} reviews from other devices.`,
 					);
 				}
+
+				// Background merge: reviews done on another device show up without
+				// restarting the plugin. Cheap mtime polling; the merge itself is
+				// watermark-guarded, so no-change ticks cost nothing.
+				if (this.deviceIdService) {
+					this.deviceSyncScheduler = new DeviceSyncScheduler(
+						new ObsidianPersistence(this.app),
+						this.deviceIdService.getDeviceId(),
+						() => syncService.syncOnStartup(),
+						{
+							onChanges: () => {
+								this.dataLayer?.invalidateGroups([
+									G.CARDS,
+									G.BROWSER,
+									G.DASHBOARD,
+									G.PANEL,
+									G.REVIEW,
+									G.STATS,
+								]);
+							},
+						},
+					);
+					this.app.workspace.onLayoutReady(() => {
+						void this.deviceSyncScheduler?.start();
+					});
+				}
 			}
 		} catch (error) {
 			console.error("[True Recall] Device sync failed:", error);
@@ -482,6 +510,7 @@ export default class TrueRecallPlugin extends Plugin {
 		this._unloaded = true;
 		document.body.classList.remove(HIDE_TAB_BAR_CLASS);
 		this.pluginLoader?.deactivateAll();
+		this.deviceSyncScheduler?.stop();
 		this.deviceLock?.stopHeartbeat();
 		void this.deviceLock?.clearLock();
 		this.localApi?.stop();

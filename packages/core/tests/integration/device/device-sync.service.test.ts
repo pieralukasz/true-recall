@@ -604,9 +604,10 @@ describe("DeviceSyncService", () => {
 			sourceUid: "abcd1234",
 		});
 		localCtx.cards.set(localDup.id, localDup);
-		localCtx.db.run(`UPDATE cards SET created_at = ? WHERE id = 'dup-local'`, [
-			1_000_000,
-		]);
+		localCtx.db.run(
+			`UPDATE cards SET created_at = ? WHERE id = 'dup-local'`,
+			[1_000_000],
+		);
 
 		const remotePath = ".true-recall/true-recall-remote01.db";
 		const remoteBinary = await createRemoteDbBinary((ctx) => {
@@ -617,9 +618,10 @@ describe("DeviceSyncService", () => {
 				sourceUid: "abcd1234",
 			});
 			ctx.cards.set(remoteDup.id, remoteDup);
-			ctx.db.run(`UPDATE cards SET created_at = ? WHERE id = 'dup-remote'`, [
-				2_000_000,
-			]);
+			ctx.db.run(
+				`UPDATE cards SET created_at = ? WHERE id = 'dup-remote'`,
+				[2_000_000],
+			);
 			ctx.db.run(
 				`INSERT INTO review_log (
 					id, card_id, reviewed_at, rating, scheduled_days, elapsed_days,

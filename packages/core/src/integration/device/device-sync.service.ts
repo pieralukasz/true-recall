@@ -10,7 +10,7 @@ import type { FsrsReplayService } from "@true-recall/core/services/fsrs/fsrs-rep
 
 import type { DeviceDiscoveryService } from "./device-discovery.service";
 
-interface SyncResult {
+export interface SyncResult {
 	devicesFound: number;
 	cardsApplied: number;
 	reviewLogsApplied: number;
@@ -275,8 +275,7 @@ export class DeviceSyncService {
 				if (group.length < 2) continue;
 				const sorted = [...group].sort(
 					(a, b) =>
-						(a.createdAt ?? 0) - (b.createdAt ?? 0) ||
-						a.id.localeCompare(b.id),
+						(a.createdAt ?? 0) - (b.createdAt ?? 0) || a.id.localeCompare(b.id),
 				);
 				const survivor = sorted[0];
 				if (!survivor) continue;
