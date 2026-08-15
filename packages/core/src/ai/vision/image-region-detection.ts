@@ -10,7 +10,7 @@ import {
 import { resolveAIClientConfig } from "../config/ai-client-config";
 
 // Gemini is the only model family trained for spatial coordinate output
-const IO_DETECTION_FALLBACK_MODEL = "google/gemini-2.5-flash";
+const IO_DETECTION_FALLBACK_MODEL = "google/gemini-3.7-flash";
 
 function resolveVisionModel(userModel: string): string {
 	if (userModel === "auto") return "auto";

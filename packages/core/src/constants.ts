@@ -37,12 +37,19 @@ export const BYOK_MODELS: ByokModelConfig[] = [
 		defaultTemperature: 0.7,
 	},
 	{
+		id: "google/gemini-3.7-flash",
+		name: "Gemini 3.7 Flash",
+		provider: "Google",
+		description: "Fast + cheap thinking, newest flash",
+		defaultTemperature: 0.7,
+		recommended: true,
+	},
+	{
 		id: "google/gemini-2.5-flash",
 		name: "Gemini 2.5 Flash",
 		provider: "Google",
 		description: "Fast + cheap thinking",
 		defaultTemperature: 0.7,
-		recommended: true,
 	},
 	{
 		id: "deepseek/deepseek-r1",
@@ -69,7 +76,7 @@ export const BYOK_MODELS: ByokModelConfig[] = [
 
 export const CUSTOM_MODEL_ID = "__custom__";
 
-export const DEFAULT_BYOK_MODEL = "google/gemini-2.5-flash";
+export const DEFAULT_BYOK_MODEL = "google/gemini-3.7-flash";
 
 export const DEFAULT_FSRS_PRESET: FSRSPreset = {
 	id: "default",
