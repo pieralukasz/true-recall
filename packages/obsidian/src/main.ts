@@ -485,7 +485,9 @@ export default class TrueRecallPlugin extends Plugin {
 			sessionPersistence: this.sessionPersistence,
 		});
 
-		if (this.settings.enableLocalApi) {
+		// The local API binds a Node http server via Electron's require, which
+		// does not exist on mobile.
+		if (this.settings.enableLocalApi && !isMobile()) {
 			void import("./plugin/api/LocalApiServer")
 				.then(({ LocalApiServer: ApiServer }) => {
 					if (this._unloaded) return;
