@@ -213,4 +213,60 @@ describe("AssistantThreadActions", () => {
 			expect(tasks.getById("task-missing")).toBeNull();
 		});
 	});
+
+	describe("clearStaleActiveTasks", () => {
+		let tasks: AssistantTaskActions;
+
+		beforeEach(() => {
+			tasks = new AssistantTaskActions(ctx.db as never);
+		});
+
+		function insertThreadWithTask(threadId: string, taskId: string) {
+			threads.insert({
+				id: threadId,
+				title: threadId,
+				context: {},
+				state: "active",
+				message: {
+					id: `m-${threadId}`,
+					role: "user",
+					content: "go",
+					createdAt: 1,
+				},
+				activeTaskId: taskId,
+				createdAt: 1,
+			});
+			tasks.insert({
+				id: taskId,
+				threadId,
+				instruction: "generate",
+				context: {},
+				createdAt: 1,
+			});
+		}
+
+		it("clears pointers at deleted or terminal tasks, keeps live ones", () => {
+			insertThreadWithTask("t-live", "task-live");
+
+			insertThreadWithTask("t-done", "task-done");
+			tasks.claimNextPending();
+			tasks.claimNextPending();
+			tasks.complete("task-done", INITIAL, 2);
+
+			insertThreadWithTask("t-ghost", "task-ghost");
+			tasks.deleteById("task-ghost");
+
+			const cleared = threads.clearStaleActiveTasks(9);
+
+			expect(cleared).toBe(2);
+			expect(threads.getById("t-live")?.activeTaskId).toBe("task-live");
+			expect(threads.getById("t-done")?.activeTaskId).toBeUndefined();
+			expect(threads.getById("t-ghost")?.activeTaskId).toBeUndefined();
+		});
+
+		it("is a no-op on a clean database", () => {
+			insertThreadWithTask("t-live", "task-live");
+			expect(threads.clearStaleActiveTasks(9)).toBe(0);
+		});
+	});
 });

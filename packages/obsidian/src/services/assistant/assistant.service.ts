@@ -69,7 +69,8 @@ export class AssistantService {
 		this.started = true;
 		const reset = this.actions().resetRunningToPending();
 		const swept = this.threadActions().deleteOrphanedTasks();
-		if (reset > 0 || swept > 0) this.invalidate();
+		const unstuck = this.threadActions().clearStaleActiveTasks(Date.now());
+		if (reset > 0 || swept > 0 || unstuck > 0) this.invalidate();
 		this.pump();
 	}
 
@@ -202,6 +203,8 @@ export class AssistantService {
 
 	delete(taskId: string): void {
 		this.actions().deleteById(taskId);
+		// A thread still pointing at the deleted task would stay busy forever.
+		this.threadActions().clearStaleActiveTasks(Date.now());
 		this.invalidate();
 	}
 
