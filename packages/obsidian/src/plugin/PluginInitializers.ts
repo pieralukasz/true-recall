@@ -167,6 +167,28 @@ async function initializeCardStore(
 			void migrateArchiveCascade(plugin);
 		});
 
+		// Second startup race: layout-ready is not a metadata-cache-ready signal.
+		// On a cold start getFileCache() can still return null for most files at
+		// layout-ready, so the rebuild above snapshots an empty index and every
+		// card renders as orphaned until individual "changed" events trickle in.
+		// Re-run the rebuild once the cache reports the initial scan finished.
+		let initialResolveHandled = false;
+		plugin.registerEvent(
+			plugin.app.metadataCache.on("resolved", () => {
+				if (initialResolveHandled) return;
+				initialResolveHandled = true;
+				plugin.frontmatterIndex?.rebuildIndex();
+				plugin.hierarchyService.invalidateGraph();
+				dl.invalidateGroups([
+					G.CARDS,
+					G.BROWSER,
+					G.DASHBOARD,
+					G.PANEL,
+					G.REVIEW,
+				]);
+			}),
+		);
+
 		const sCards = performance.now();
 
 		if (plugin.settings.autoBackupOnLoad) {
