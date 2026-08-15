@@ -334,6 +334,16 @@ export class TrueRecallApp {
 		this.disposers.push(
 			ve.onFileRenamed((newPath, oldPath) => {
 				this.frontmatterIndex.handleFileRenamed(newPath, oldPath);
+
+				// The index now resolves the new path, but the cached hierarchy
+				// graph still holds the old one. Without invalidation the project
+				// can no longer resolve the note's flashcard_uid and its cards
+				// disappear from every project aggregate. Renaming a file emits no
+				// metadata change, so no field-change callback would cover this.
+				if (this.hierarchyService.isGraphNode(newPath)) {
+					this.hierarchyService.invalidateGraph();
+					this.events.emit("hierarchy:changed", {});
+				}
 			}),
 		);
 	}
