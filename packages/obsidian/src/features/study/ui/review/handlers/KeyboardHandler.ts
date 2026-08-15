@@ -53,7 +53,11 @@ export class KeyboardHandler {
 
 		if (this.isInputFocused(e.target)) return;
 
-		if ((e.metaKey || e.ctrlKey) && e.key === "z") {
+		if (
+			!e.shiftKey &&
+			(e.metaKey || e.ctrlKey) &&
+			e.key.toLowerCase() === "z"
+		) {
 			e.preventDefault();
 			void this.callbacks.onUndo();
 			return;
