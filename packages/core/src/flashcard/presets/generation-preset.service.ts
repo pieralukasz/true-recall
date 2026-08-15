@@ -94,6 +94,7 @@ export class GenerationPresetService {
 			"isDefault",
 			"includeSourceNote",
 			"includeRelatedCards",
+			"allowEmptyAnswer",
 			"languageOverride",
 		];
 

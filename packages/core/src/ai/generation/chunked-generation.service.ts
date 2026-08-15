@@ -238,7 +238,9 @@ export class ChunkedGenerationService {
 		);
 		const getNoteType = (slug: string) =>
 			this.flashcardManager.getNoteTypeBySlug?.(slug) ?? null;
-		const parser = new IncrementalFlashcardParser(getNoteType);
+		const parser = new IncrementalFlashcardParser(getNoteType, {
+			allowEmptyAnswer: preset.allowEmptyAnswer,
+		});
 
 		let createdCount = 0;
 		let duplicateCount = 0;

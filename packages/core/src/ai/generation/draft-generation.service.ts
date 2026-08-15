@@ -68,7 +68,9 @@ export class DraftGenerationService {
 		});
 
 		const raw = getTextContent(response.choices[0]?.message);
-		const blocks = parseBlockResponse(raw, this.getNoteTypeBySlug);
+		const blocks = parseBlockResponse(raw, this.getNoteTypeBySlug, {
+			allowEmptyAnswer: preset.allowEmptyAnswer,
+		});
 		fixBlockSourceTexts(blocks, text);
 		return blocks;
 	}
