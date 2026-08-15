@@ -19,9 +19,13 @@ import {
 	ReviewLogActions,
 	type ReviewLogForSync,
 } from "./stats/review-log-actions";
-import { ReviewLogSyncActions } from "./stats/review-log-sync-actions";
+import {
+	type ReviewLogReplayRow,
+	ReviewLogSyncActions,
+} from "./stats/review-log-sync-actions";
 
 export type { ReviewKind, ReviewLogForSync } from "./stats/review-log-actions";
+export type { ReviewLogReplayRow } from "./stats/review-log-sync-actions";
 
 export class StatsActions {
 	private reviewLog: ReviewLogActions;
@@ -117,6 +121,14 @@ export class StatsActions {
 
 	getReviewLogForSync(id: string): ReviewLogForSync | null {
 		return this.reviewLogSync.getReviewLogForSync(id);
+	}
+
+	getReplayLogsForCard(cardId: string): ReviewLogReplayRow[] {
+		return this.reviewLogSync.getReplayLogsForCard(cardId);
+	}
+
+	getReviewedCardIdsSince(timestamp: number): string[] {
+		return this.reviewLogSync.getReviewedCardIdsSince(timestamp);
 	}
 
 	deleteAllReviewLogForSync(): void {

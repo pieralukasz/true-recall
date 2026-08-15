@@ -233,6 +233,10 @@ export class CardActions {
 
 	// ── Sync ──────────────────────────────────────────────────
 
+	applyReplayedScheduling(cardId: string, data: FSRSCardData): void {
+		this.writes.applyReplayedScheduling(cardId, data);
+	}
+
 	getSyncMetadata(key: string): string | null {
 		return this.writes.getSyncMetadata(key);
 	}

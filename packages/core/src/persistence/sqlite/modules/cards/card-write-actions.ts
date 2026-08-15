@@ -311,6 +311,41 @@ export class CardWriteActions {
 
 	// ── Sync ──────────────────────────────────────────────────
 
+	/**
+	 * Write the scheduling state produced by an FSRS replay after a
+	 * device-sync conflict. Touches only replay-derived fields; suspension,
+	 * bury, deletion, and note linkage keep whatever the row-level merge chose.
+	 */
+	applyReplayedScheduling(cardId: string, data: FSRSCardData): void {
+		this.db.run(
+			`UPDATE cards SET
+                due = ?,
+                stability = ?,
+                difficulty = ?,
+                reps = ?,
+                lapses = ?,
+                state = ?,
+                last_review = ?,
+                scheduled_days = ?,
+                learning_step = ?,
+                updated_at = ?
+             WHERE id = ? AND deleted_at IS NULL`,
+			[
+				data.due,
+				data.stability,
+				data.difficulty,
+				data.reps,
+				data.lapses,
+				data.state,
+				data.lastReview ?? null,
+				data.scheduledDays,
+				data.learningStep,
+				Date.now(),
+				cardId,
+			],
+		);
+	}
+
 	getSyncMetadata(key: string): string | null {
 		const row = this.db.get<{ value: string }>(
 			`SELECT value FROM meta WHERE key = ?`,

@@ -20,6 +20,8 @@ import type { DeviceDiscoveryService } from "@true-recall/core/integration/devic
 import type { DeviceIdService } from "@true-recall/core/integration/device/device-id.service";
 import { DeviceLockService } from "@true-recall/core/integration/device/device-lock.service";
 import { DeviceSyncService } from "@true-recall/core/integration/device/device-sync.service";
+import { FSRSService } from "@true-recall/core/services/fsrs/fsrs.service";
+import { FsrsReplayService } from "@true-recall/core/services/fsrs/fsrs-replay.service";
 import { SessionService } from "@true-recall/core/services/review/session.service";
 import type {
 	CardSchedulingMeta,
@@ -28,6 +30,10 @@ import type {
 	TrueRecallSettings,
 } from "@true-recall/core/types";
 import type { SessionConfig } from "@true-recall/core/types/session-config.types";
+import {
+	extractFSRSSettings,
+	extractFSRSSettingsFromPreset,
+} from "@true-recall/core/types/settings.types";
 
 import { ObsidianNoteResolver } from "@true-recall/obsidian/adapters/ObsidianNoteResolver";
 import { ObsidianPersistence } from "@true-recall/obsidian/adapters/ObsidianPersistence";
@@ -310,11 +316,28 @@ export default class TrueRecallPlugin extends Plugin {
 				this.deviceDiscovery &&
 				this.cardStore
 			) {
+				// Replay resolves each log's FSRS settings by preset name; unknown
+				// or missing names fall back to the current default preset.
+				const resolvePresetSettings = (presetName: string | null) => {
+					const preset = presetName
+						? this.settings.fsrsPresets?.find((p) => p.name === presetName)
+						: undefined;
+					return preset
+						? extractFSRSSettingsFromPreset(preset)
+						: extractFSRSSettings(this.settings);
+				};
+				const replayService = new FsrsReplayService(
+					new FSRSService(extractFSRSSettings(this.settings)),
+					resolvePresetSettings,
+				);
 				const syncService = new DeviceSyncService(
 					this.cardStore,
 					this.deviceDiscovery,
 					new ObsidianPersistence(this.app),
-					{ getDayStartHour: () => this.settings.dayStartHour },
+					{
+						getDayStartHour: () => this.settings.dayStartHour,
+						replayService,
+					},
 				);
 				const syncResult = await syncService.syncOnStartup();
 				if (syncResult.errors.length > 0) {

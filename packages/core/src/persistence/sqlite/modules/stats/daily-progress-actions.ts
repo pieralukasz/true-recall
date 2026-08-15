@@ -214,7 +214,9 @@ export class DailyProgressActions {
 		for (const log of logs) {
 			const reviewedAt = new Date(log.reviewed_at);
 			if (Number.isNaN(reviewedAt.getTime())) continue;
-			const dayKey = formatLocalDate(getTodayBoundary(dayStartHour, reviewedAt));
+			const dayKey = formatLocalDate(
+				getTodayBoundary(dayStartHour, reviewedAt),
+			);
 
 			let agg = byDay.get(dayKey);
 			if (!agg) {

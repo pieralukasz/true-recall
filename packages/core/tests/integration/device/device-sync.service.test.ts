@@ -13,6 +13,12 @@ import type {
 } from "../../../src/integration/device/device-discovery.service";
 import { DeviceSyncService } from "../../../src/integration/device/device-sync.service";
 import type { IPersistence } from "../../../src/interfaces/persistence";
+import { FSRSService } from "../../../src/services/fsrs/fsrs.service";
+import {
+	FsrsReplayService,
+	type ReplayLogEntry,
+} from "../../../src/services/fsrs/fsrs-replay.service";
+import type { FSRSSettings } from "../../../src/types/settings.types";
 import {
 	createTestCard,
 	createTestContext,
@@ -430,6 +436,162 @@ describe("DeviceSyncService", () => {
 		expect(result.errors[0]).toContain("invalid1");
 
 		expect(localCtx.cards.has("valid-card")).toBe(true);
+	});
+
+	it("merges concurrent reviews of the same card by replaying FSRS from the union", async () => {
+		// Arrange — the same card was reviewed offline on both devices.
+		const settings: FSRSSettings = {
+			requestRetention: 0.9,
+			maximumInterval: 36500,
+			weights: null,
+			enableFuzz: true,
+			learningSteps: [1, 10],
+			relearningSteps: [10],
+			enableShortTerm: true,
+		};
+		const replayService = new FsrsReplayService(
+			new FSRSService(settings),
+			() => settings,
+		);
+		const localStore = buildLocalStore(localCtx);
+		const replayingSyncService = new DeviceSyncService(
+			localStore as never,
+			discoveryMock,
+			persistence,
+			{ replayService },
+		);
+
+		const insertLog = (
+			ctx: TestContext,
+			id: string,
+			deviceId: string,
+			reviewedAt: string,
+			rating: number,
+		) => {
+			ctx.db.run(
+				`INSERT INTO review_log (
+					id, card_id, reviewed_at, rating, scheduled_days, elapsed_days,
+					state, time_spent_ms, updated_at, deleted_at, preset_name,
+					device_id, review_kind
+				) VALUES (?, 'conflict-card', ?, ?, 1, 0, 0, 1000, ?, NULL, NULL, ?, 'review')`,
+				[id, reviewedAt, rating, new Date(reviewedAt).getTime(), deviceId],
+			);
+		};
+
+		const card = createTestCard({ id: "conflict-card" });
+		localCtx.cards.set(card.id, card);
+		insertLog(localCtx, "log-local", "local001", "2026-08-10T10:00:00.000Z", 3);
+
+		const remotePath = ".true-recall/true-recall-remote01.db";
+		const remoteBinary = await createRemoteDbBinary((ctx) => {
+			ctx.cards.set(card.id, createTestCard({ id: "conflict-card" }));
+			insertLog(ctx, "log-remote", "remote01", "2026-08-11T10:00:00.000Z", 1);
+			// Remote card row wins plain row-LWW; replay must still see both logs.
+			ctx.db.run(`UPDATE cards SET updated_at = ?`, [Date.now() + 60_000]);
+		});
+		persistence.seedBinary(remotePath, remoteBinary);
+
+		vi.mocked(discoveryMock.discoverDeviceDatabases).mockResolvedValue([
+			makeDeviceInfo({
+				deviceId: "remote01",
+				path: remotePath,
+				isCurrentDevice: false,
+			}),
+		]);
+
+		// Act
+		const result = await replayingSyncService.syncOnStartup();
+
+		// Assert — both reviews survive and the card state is the deterministic
+		// replay of their union, not either device's provisional state.
+		expect(result.errors).toHaveLength(0);
+		expect(result.conflictsReplayed).toBe(1);
+
+		const logs = localCtx.db.query<{ id: string }>(
+			`SELECT id FROM review_log WHERE card_id = 'conflict-card' ORDER BY id`,
+		);
+		expect(logs.map((l) => l.id)).toEqual(["log-local", "log-remote"]);
+
+		const reference: ReplayLogEntry[] = [
+			{
+				id: "log-local",
+				reviewedAt: "2026-08-10T10:00:00.000Z",
+				rating: 3,
+				presetName: null,
+				deviceId: "local001",
+				reviewKind: "review",
+				deletedAt: null,
+			},
+			{
+				id: "log-remote",
+				reviewedAt: "2026-08-11T10:00:00.000Z",
+				rating: 1,
+				presetName: null,
+				deviceId: "remote01",
+				reviewKind: "review",
+				deletedAt: null,
+			},
+		];
+		const expected = replayService.replayCard("conflict-card", reference);
+		const merged = localCtx.cards.get("conflict-card");
+		expect(merged?.due).toBe(expected?.due);
+		expect(merged?.stability).toBe(expected?.stability);
+		expect(merged?.reps).toBe(expected?.reps);
+		expect(merged?.state).toBe(expected?.state);
+	});
+
+	it("does not replay when only the remote device reviewed the card", async () => {
+		// Arrange — no local reviews since the watermark; plain LWW is correct
+		// and must remain untouched (manual due tweaks survive).
+		const settings: FSRSSettings = {
+			requestRetention: 0.9,
+			maximumInterval: 36500,
+			weights: null,
+			enableFuzz: true,
+			learningSteps: [1, 10],
+			relearningSteps: [10],
+			enableShortTerm: true,
+		};
+		const replayService = new FsrsReplayService(
+			new FSRSService(settings),
+			() => settings,
+		);
+		const localStore = buildLocalStore(localCtx);
+		const replayingSyncService = new DeviceSyncService(
+			localStore as never,
+			discoveryMock,
+			persistence,
+			{ replayService },
+		);
+
+		const remotePath = ".true-recall/true-recall-remote01.db";
+		const remoteBinary = await createRemoteDbBinary((ctx) => {
+			ctx.cards.set("solo-card", createTestCard({ id: "solo-card" }));
+			ctx.db.run(
+				`INSERT INTO review_log (
+					id, card_id, reviewed_at, rating, scheduled_days, elapsed_days,
+					state, time_spent_ms, updated_at, deleted_at, preset_name,
+					device_id, review_kind
+				) VALUES ('log-solo', 'solo-card', '2026-08-11T10:00:00.000Z', 3, 1, 0, 0, 1000, ?, NULL, NULL, 'remote01', 'review')`,
+				[Date.now()],
+			);
+		});
+		persistence.seedBinary(remotePath, remoteBinary);
+
+		vi.mocked(discoveryMock.discoverDeviceDatabases).mockResolvedValue([
+			makeDeviceInfo({
+				deviceId: "remote01",
+				path: remotePath,
+				isCurrentDevice: false,
+			}),
+		]);
+
+		// Act
+		const result = await replayingSyncService.syncOnStartup();
+
+		// Assert
+		expect(result.conflictsReplayed).toBe(0);
+		expect(result.reviewLogsApplied).toBe(1);
 	});
 
 	it("syncOnStartup reports discovery failure as error", async () => {

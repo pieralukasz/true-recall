@@ -1,8 +1,54 @@
 import type { SqliteDatabase } from "../../SqliteDatabase";
 import type { ReviewLogForSync } from "./review-log-actions";
 
+/** Structurally matches FsrsReplayService's ReplayLogEntry. */
+export interface ReviewLogReplayRow {
+	id: string;
+	reviewedAt: string;
+	rating: number;
+	presetName: string | null;
+	deviceId: string | null;
+	reviewKind: string | null;
+	deletedAt: number | null;
+}
+
 export class ReviewLogSyncActions {
 	constructor(private db: SqliteDatabase) {}
+
+	/** Full review history of one card, in replay shape (tombstones included). */
+	getReplayLogsForCard(cardId: string): ReviewLogReplayRow[] {
+		return this.db.query<ReviewLogReplayRow>(
+			`
+            SELECT
+                id,
+                reviewed_at as reviewedAt,
+                rating,
+                preset_name as presetName,
+                device_id as deviceId,
+                review_kind as reviewKind,
+                deleted_at as deletedAt
+            FROM review_log
+            WHERE card_id = ?
+        `,
+			[cardId],
+		);
+	}
+
+	/** Cards this device reviewed (non-preview) after the given watermark. */
+	getReviewedCardIdsSince(timestamp: number): string[] {
+		return this.db
+			.query<{ cardId: string }>(
+				`
+            SELECT DISTINCT card_id as cardId
+            FROM review_log
+            WHERE updated_at > ?
+              AND deleted_at IS NULL
+              AND (review_kind IS NULL OR review_kind != 'preview')
+        `,
+				[timestamp],
+			)
+			.map((row) => row.cardId);
+	}
 
 	getModifiedReviewLogSince(timestamp: number): ReviewLogForSync[] {
 		return this.db.query<ReviewLogForSync>(
