@@ -282,6 +282,45 @@ describe("DeviceSyncService", () => {
 		expect(watermark).toBe(remoteUpdatedAt);
 	});
 
+	it("backfills a note older than the watermark for a newly modified card", async () => {
+		// Arrange — the remote note predates the watermark (so it is absent from
+		// modifiedNotes), only the card row is fresh, and the note is unknown
+		// locally. The FK backfill must fetch it anyway.
+		const remotePath = ".true-recall/true-recall-remote01.db";
+		const oldTs = Date.now() - 100_000;
+		const newTs = Date.now() - 1_000;
+		const remoteCard = createTestCard({
+			id: "backfill-card",
+			question: "Backfill Q",
+			answer: "Backfill A",
+		});
+
+		const remoteBinary = await createRemoteDbBinary((ctx) => {
+			ctx.cards.set(remoteCard.id, remoteCard);
+			ctx.db.run(`UPDATE notes SET updated_at = ?`, [oldTs]);
+			ctx.db.run(`UPDATE cards SET updated_at = ?`, [newTs]);
+		});
+		persistence.seedBinary(remotePath, remoteBinary);
+		localCtx.cards.setSyncMetadata("sync:remote01", String(oldTs + 1));
+
+		vi.mocked(discoveryMock.discoverDeviceDatabases).mockResolvedValue([
+			makeDeviceInfo({
+				deviceId: "remote01",
+				path: remotePath,
+				isCurrentDevice: false,
+			}),
+		]);
+
+		// Act
+		const result = await service.syncOnStartup();
+
+		// Assert — card is hydrated through the JOIN with the backfilled note
+		expect(result.cardsApplied).toBe(1);
+		const synced = localCtx.cards.get("backfill-card");
+		expect(synced?.question).toBe("Backfill Q");
+		expect(synced?.answer).toBe("Backfill A");
+	});
+
 	it("syncOnStartup handles empty remote DB gracefully", async () => {
 		// Arrange — path exists but binary is empty
 		const remotePath = ".true-recall/true-recall-empty001.db";

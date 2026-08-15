@@ -200,6 +200,29 @@ describe("Sync Operations", () => {
 		});
 	});
 
+	describe("Row existence checks - hasRow", () => {
+		it("returns false for a missing note id and true for an existing one", () => {
+			const card = createTestCard({ id: "hasrow-card" });
+			ctx.cards.set(card.id, card);
+			const noteId = ctx.db.get<{ note_id: string }>(
+				`SELECT note_id FROM cards WHERE id = ?`,
+				["hasrow-card"],
+			)?.note_id;
+
+			expect(noteId).toBeDefined();
+			expect(ctx.notes.hasRow(noteId as string)).toBe(true);
+			expect(ctx.notes.hasRow("nonexistent-note")).toBe(false);
+		});
+
+		it("returns false for a missing note type id and true for a builtin", () => {
+			const builtin = ctx.noteTypes.getAll()[0];
+
+			expect(builtin).toBeDefined();
+			expect(ctx.noteTypes.hasRow(builtin?.id as string)).toBe(true);
+			expect(ctx.noteTypes.hasRow("nonexistent-type")).toBe(false);
+		});
+	});
+
 	describe("Card Sync - getAllIncludingDeleted", () => {
 		it("should include soft-deleted cards", async () => {
 			const card1 = createTestCard({ id: "active-card" });

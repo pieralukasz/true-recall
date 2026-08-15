@@ -78,7 +78,7 @@ export class NoteTypeActions {
 		return (
 			this.db.get<{ id: string }>(`SELECT id FROM note_types WHERE id = ?`, [
 				id,
-			]) !== undefined
+			]) !== null
 		);
 	}
 

@@ -83,7 +83,7 @@ export class NoteActions {
 	hasRow(id: string): boolean {
 		return (
 			this.db.get<{ id: string }>(`SELECT id FROM notes WHERE id = ?`, [id]) !==
-			undefined
+			null
 		);
 	}
 
