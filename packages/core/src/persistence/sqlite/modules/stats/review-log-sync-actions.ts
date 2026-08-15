@@ -34,6 +34,17 @@ export class ReviewLogSyncActions {
 		);
 	}
 
+	/**
+	 * Move all review history from one card id to another (duplicate merge).
+	 * Bumps updated_at so the reassignment propagates to other devices.
+	 */
+	reassignCardReviews(fromCardId: string, toCardId: string): void {
+		this.db.run(
+			`UPDATE review_log SET card_id = ?, updated_at = ? WHERE card_id = ?`,
+			[toCardId, Date.now(), fromCardId],
+		);
+	}
+
 	/** Cards this device reviewed (non-preview) after the given watermark. */
 	getReviewedCardIdsSince(timestamp: number): string[] {
 		return this.db

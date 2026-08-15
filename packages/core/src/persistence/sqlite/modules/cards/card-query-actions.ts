@@ -363,6 +363,38 @@ export class CardQueryActions {
 
 	// ── FSRS-only methods (no schema branching needed) ────────
 
+	/**
+	 * Active source-linked cards keyed for concurrent-create dedup.
+	 * (source_uid, template_ord, fields_json) identifies one logical card:
+	 * cloze siblings differ by template_ord (cloze index) or by their Text
+	 * field, IO children and reversed pairs differ by template_ord.
+	 */
+	getActiveDedupRows(): {
+		id: string;
+		createdAt: number | null;
+		templateOrd: number;
+		sourceUid: string;
+		fieldsJson: string;
+	}[] {
+		return this.db.query<{
+			id: string;
+			createdAt: number | null;
+			templateOrd: number;
+			sourceUid: string;
+			fieldsJson: string;
+		}>(
+			`SELECT
+                c.id,
+                c.created_at AS createdAt,
+                c.template_ord AS templateOrd,
+                c.source_uid AS sourceUid,
+                n.fields_json AS fieldsJson
+             FROM cards c
+             JOIN notes n ON c.note_id = n.id
+             WHERE c.deleted_at IS NULL AND c.source_uid IS NOT NULL`,
+		);
+	}
+
 	has(cardId: string): boolean {
 		return (
 			this.db.get<{ found: number }>(

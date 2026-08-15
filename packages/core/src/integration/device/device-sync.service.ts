@@ -15,6 +15,7 @@ interface SyncResult {
 	cardsApplied: number;
 	reviewLogsApplied: number;
 	conflictsReplayed: number;
+	duplicatesMerged: number;
 	errors: string[];
 }
 
@@ -43,6 +44,7 @@ export class DeviceSyncService {
 			cardsApplied: 0,
 			reviewLogsApplied: 0,
 			conflictsReplayed: 0,
+			duplicatesMerged: 0,
 			errors: [],
 		};
 
@@ -71,6 +73,16 @@ export class DeviceSyncService {
 				result.conflictsReplayed += merged.conflicts;
 			} catch (err) {
 				const msg = `Sync from ${remote.deviceId} failed: ${err instanceof Error ? err.message : String(err)}`;
+				console.error(`[True Recall] ${msg}`);
+				result.errors.push(msg);
+			}
+		}
+
+		if (result.cardsApplied > 0) {
+			try {
+				result.duplicatesMerged = this.dedupeConcurrentCreates();
+			} catch (err) {
+				const msg = `Failed to dedupe concurrent creates: ${err instanceof Error ? err.message : String(err)}`;
 				console.error(`[True Recall] ${msg}`);
 				result.errors.push(msg);
 			}
@@ -235,6 +247,60 @@ export class DeviceSyncService {
 		} finally {
 			remoteDb.close();
 		}
+	}
+
+	/**
+	 * Converge cards created concurrently from the same note block on two
+	 * devices. Identity key: (source_uid, template_ord, fields_json). The
+	 * earliest-created card (ties broken by id) survives on every device, so
+	 * all replicas pick the same winner; losers are tombstoned and their
+	 * review history is reattached to the survivor.
+	 */
+	private dedupeConcurrentCreates(): number {
+		const rows = this.localStore.cards.getActiveDedupRows();
+		const groups = new Map<string, typeof rows>();
+		for (const row of rows) {
+			const key = `${row.sourceUid}|${row.templateOrd}|${row.fieldsJson}`;
+			const group = groups.get(key);
+			if (group) {
+				group.push(row);
+			} else {
+				groups.set(key, [row]);
+			}
+		}
+
+		let merged = 0;
+		this.localStore.transaction(() => {
+			for (const group of groups.values()) {
+				if (group.length < 2) continue;
+				const sorted = [...group].sort(
+					(a, b) =>
+						(a.createdAt ?? 0) - (b.createdAt ?? 0) ||
+						a.id.localeCompare(b.id),
+				);
+				const survivor = sorted[0];
+				if (!survivor) continue;
+				for (const loser of sorted.slice(1)) {
+					this.localStore.stats.reassignCardReviews(loser.id, survivor.id);
+					this.localStore.cards.softDelete(loser.id);
+					merged++;
+				}
+
+				// The survivor may have gained review history; recompute its state
+				// from the merged log when replay is available.
+				const replayService = this.options.replayService;
+				if (replayService) {
+					const state = replayService.replayCard(
+						survivor.id,
+						this.localStore.stats.getReplayLogsForCard(survivor.id),
+					);
+					if (state) {
+						this.localStore.cards.applyReplayedScheduling(survivor.id, state);
+					}
+				}
+			}
+		});
+		return merged;
 	}
 
 	/**

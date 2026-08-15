@@ -237,6 +237,16 @@ export class CardActions {
 		this.writes.applyReplayedScheduling(cardId, data);
 	}
 
+	getActiveDedupRows(): {
+		id: string;
+		createdAt: number | null;
+		templateOrd: number;
+		sourceUid: string;
+		fieldsJson: string;
+	}[] {
+		return this.queries.getActiveDedupRows();
+	}
+
 	getSyncMetadata(key: string): string | null {
 		return this.writes.getSyncMetadata(key);
 	}

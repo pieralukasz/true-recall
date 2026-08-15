@@ -131,6 +131,10 @@ export class StatsActions {
 		return this.reviewLogSync.getReviewedCardIdsSince(timestamp);
 	}
 
+	reassignCardReviews(fromCardId: string, toCardId: string): void {
+		this.reviewLogSync.reassignCardReviews(fromCardId, toCardId);
+	}
+
 	deleteAllReviewLogForSync(): void {
 		this.reviewLogSync.deleteAllReviewLogForSync();
 	}

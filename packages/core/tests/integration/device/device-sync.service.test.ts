@@ -594,6 +594,66 @@ describe("DeviceSyncService", () => {
 		expect(result.reviewLogsApplied).toBe(1);
 	});
 
+	it("converges duplicate cards created concurrently from the same note block", async () => {
+		// Arrange — both devices collected the same block before syncing, so two
+		// card ids exist for one logical card (same source_uid + ord + fields).
+		const localDup = createTestCard({
+			id: "dup-local",
+			question: "Dup Q",
+			answer: "Dup A",
+			sourceUid: "abcd1234",
+		});
+		localCtx.cards.set(localDup.id, localDup);
+		localCtx.db.run(`UPDATE cards SET created_at = ? WHERE id = 'dup-local'`, [
+			1_000_000,
+		]);
+
+		const remotePath = ".true-recall/true-recall-remote01.db";
+		const remoteBinary = await createRemoteDbBinary((ctx) => {
+			const remoteDup = createTestCard({
+				id: "dup-remote",
+				question: "Dup Q",
+				answer: "Dup A",
+				sourceUid: "abcd1234",
+			});
+			ctx.cards.set(remoteDup.id, remoteDup);
+			ctx.db.run(`UPDATE cards SET created_at = ? WHERE id = 'dup-remote'`, [
+				2_000_000,
+			]);
+			ctx.db.run(
+				`INSERT INTO review_log (
+					id, card_id, reviewed_at, rating, scheduled_days, elapsed_days,
+					state, time_spent_ms, updated_at, deleted_at, preset_name,
+					device_id, review_kind
+				) VALUES ('log-dup', 'dup-remote', '2026-08-11T10:00:00.000Z', 3, 1, 0, 0, 1000, ?, NULL, NULL, 'remote01', 'review')`,
+				[Date.now()],
+			);
+		});
+		persistence.seedBinary(remotePath, remoteBinary);
+
+		vi.mocked(discoveryMock.discoverDeviceDatabases).mockResolvedValue([
+			makeDeviceInfo({
+				deviceId: "remote01",
+				path: remotePath,
+				isCurrentDevice: false,
+			}),
+		]);
+
+		// Act
+		const result = await service.syncOnStartup();
+
+		// Assert — the earlier-created card survives, the newcomer is tombstoned,
+		// and its review history is reattached to the survivor.
+		expect(result.duplicatesMerged).toBe(1);
+		expect(localCtx.cards.has("dup-local")).toBe(true);
+		expect(localCtx.cards.has("dup-remote")).toBe(false);
+
+		const logOwner = localCtx.db.get<{ card_id: string }>(
+			`SELECT card_id FROM review_log WHERE id = 'log-dup'`,
+		);
+		expect(logOwner?.card_id).toBe("dup-local");
+	});
+
 	it("syncOnStartup reports discovery failure as error", async () => {
 		// Arrange
 		vi.mocked(discoveryMock.discoverDeviceDatabases).mockRejectedValue(
