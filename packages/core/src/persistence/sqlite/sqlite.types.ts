@@ -12,6 +12,19 @@ export type {
 } from "./loader";
 
 export const DB_FOLDER = ".true-recall";
+// iCloud skips any path containing a ".nosync" component, so backup archives
+// stay local instead of competing with database sync for transfer bandwidth.
+// The legacy plain "backups" folder is still read so old archives restore.
+export const BACKUPS_FOLDER = "backups.nosync";
+export const LEGACY_BACKUPS_FOLDER = "backups";
+
+export function getBackupFolderPath(deviceId: string): string {
+	return `${DB_FOLDER}/${BACKUPS_FOLDER}/${deviceId}`;
+}
+
+export function getLegacyBackupFolderPath(deviceId: string): string {
+	return `${DB_FOLDER}/${LEGACY_BACKUPS_FOLDER}/${deviceId}`;
+}
 export const DB_FILE = "true-recall.db"; // legacy single-device database
 export const DB_FILE_PREFIX = "true-recall-";
 export const DB_FILE_SUFFIX = ".db";

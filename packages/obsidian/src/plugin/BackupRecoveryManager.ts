@@ -11,7 +11,9 @@ import {
 } from "@true-recall/core/persistence/sqlite/recovery.utils";
 import {
 	DB_FOLDER,
+	getBackupFolderPath,
 	getDeviceDbFilename,
+	getLegacyBackupFolderPath,
 } from "@true-recall/core/persistence/sqlite/sqlite.types";
 
 import { RestoreBackupModal } from "@true-recall/obsidian/modals/integration/RestoreBackupModal";
@@ -33,18 +35,28 @@ export class BackupRecoveryManager {
 	) {}
 
 	async tryAutoRecoverFromBackup(deviceId: string): Promise<boolean> {
-		const backupFolder = normalizePath(`${DB_FOLDER}/backups/${deviceId}`);
+		// New backups live in the .nosync folder; older archives may still sit
+		// in the legacy folder, so recovery scans both.
+		const backupFolders = [
+			normalizePath(getBackupFolderPath(deviceId)),
+			normalizePath(getLegacyBackupFolderPath(deviceId)),
+		];
 		const dbPath = normalizePath(
 			`${DB_FOLDER}/${getDeviceDbFilename(deviceId)}`,
 		);
 
 		try {
-			const folderExists = await this.app.vault.adapter.exists(backupFolder);
-			if (!folderExists) return false;
+			const candidateFiles: string[] = [];
+			for (const backupFolder of backupFolders) {
+				const folderExists = await this.app.vault.adapter.exists(backupFolder);
+				if (!folderExists) continue;
+				const listing = await this.app.vault.adapter.list(backupFolder);
+				candidateFiles.push(...listing.files);
+			}
+			if (candidateFiles.length === 0) return false;
 
-			const listing = await this.app.vault.adapter.list(backupFolder);
 			const backupFiles = sortBackupPathsNewest(
-				listing.files.filter((f) => isSupportedBackupPath(f)),
+				candidateFiles.filter((f) => isSupportedBackupPath(f)),
 			);
 
 			for (const backupPath of backupFiles) {

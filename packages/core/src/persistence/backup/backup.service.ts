@@ -10,7 +10,9 @@ import { notify } from "@true-recall/core/persistence/notification";
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite";
 import {
 	DB_FOLDER,
+	getBackupFolderPath,
 	getDeviceDbFilename,
+	getLegacyBackupFolderPath,
 	toExactArrayBuffer,
 } from "@true-recall/core/persistence/sqlite";
 import type { RetentionPolicy } from "@true-recall/core/types/settings.types";
@@ -65,11 +67,15 @@ export class BackupService {
 	}
 
 	/**
-	 * Get the device-specific backup folder path
+	 * Get the device-specific backup folder path (new writes only).
 	 */
 	private getBackupFolder(): string {
-		const deviceId = this.sqliteStore.getDeviceId();
-		return `${DB_FOLDER}/backups/${deviceId}`;
+		return getBackupFolderPath(this.sqliteStore.getDeviceId());
+	}
+
+	/** Pre-.nosync folder; still read so existing archives stay restorable. */
+	private getLegacyBackupFolder(): string {
+		return getLegacyBackupFolderPath(this.sqliteStore.getDeviceId());
 	}
 
 	/**
@@ -131,42 +137,11 @@ export class BackupService {
 		const backups: BackupInfo[] = [];
 
 		try {
-			const folderExists = await this.persistence.exists(
-				this.getBackupFolder(),
+			await this.collectBackupsFromFolder(this.getBackupFolder(), backups);
+			await this.collectBackupsFromFolder(
+				this.getLegacyBackupFolder(),
+				backups,
 			);
-			if (!folderExists) {
-				return [];
-			}
-
-			const files = await this.persistence.list(this.getBackupFolder());
-
-			for (const filePath of files.files) {
-				const filename = filePath.split("/").pop() || "";
-
-				// Only include backup files (.db or .db.gz)
-				if (
-					!filename.startsWith(BACKUP_PREFIX) ||
-					(!filename.endsWith(".db") && !filename.endsWith(".db.gz"))
-				) {
-					continue;
-				}
-
-				// Extract timestamp from filename
-				const timestamp = this.parseFilenameTimestamp(filename);
-				if (!timestamp) continue;
-
-				const stat = await this.persistence.stat(filePath);
-				if (!stat) continue;
-
-				backups.push({
-					path: filePath,
-					filename,
-					timestamp,
-					sizeBytes: stat.size,
-					formattedDate: this.formatDateDisplay(timestamp),
-					formattedSize: formatFileSize(stat.size),
-				});
-			}
 
 			// Sort by timestamp, newest first
 			backups.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
@@ -175,6 +150,44 @@ export class BackupService {
 		}
 
 		return backups;
+	}
+
+	private async collectBackupsFromFolder(
+		folderPath: string,
+		backups: BackupInfo[],
+	): Promise<void> {
+		const folderExists = await this.persistence.exists(folderPath);
+		if (!folderExists) return;
+
+		const files = await this.persistence.list(folderPath);
+
+		for (const filePath of files.files) {
+			const filename = filePath.split("/").pop() || "";
+
+			// Only include backup files (.db or .db.gz)
+			if (
+				!filename.startsWith(BACKUP_PREFIX) ||
+				(!filename.endsWith(".db") && !filename.endsWith(".db.gz"))
+			) {
+				continue;
+			}
+
+			// Extract timestamp from filename
+			const timestamp = this.parseFilenameTimestamp(filename);
+			if (!timestamp) continue;
+
+			const stat = await this.persistence.stat(filePath);
+			if (!stat) continue;
+
+			backups.push({
+				path: filePath,
+				filename,
+				timestamp,
+				sizeBytes: stat.size,
+				formattedDate: this.formatDateDisplay(timestamp),
+				formattedSize: formatFileSize(stat.size),
+			});
+		}
 	}
 
 	/**
