@@ -200,13 +200,16 @@ export class SessionPersistenceService {
 	}
 
 	/**
-	 * Remove the last review (for undo functionality)
+	 * Remove the last review (for undo functionality).
+	 * When the review_log id is known, the entry is tombstoned as well so
+	 * sync replay and FSRS optimization never see the undone review.
 	 */
 	removeLastReview(
 		cardId: string,
 		wasNewCard: boolean,
 		rating?: Grade,
 		previousState?: State,
+		reviewLogId?: string | null,
 	): void {
 		const today = this.getTodayKey();
 
@@ -232,6 +235,10 @@ export class SessionPersistenceService {
 		// countByState doesn't hide the card from panel header counts.
 		if (previousState === State.New) {
 			this.store.stats.removeReviewedCard(today, cardId);
+		}
+
+		if (reviewLogId) {
+			this.store.stats.markReviewLogDeleted(reviewLogId);
 		}
 	}
 
