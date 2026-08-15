@@ -50,6 +50,7 @@ interface EmbeddableEditorOptions {
 	onPaste?: (e: ClipboardEvent, editor: EmbeddableEditorInstance) => void;
 	onChange?: (update: ViewUpdate) => void;
 	onModEnter?: (editor: EmbeddableEditorInstance) => void;
+	onModUndo?: (editor: EmbeddableEditorInstance) => boolean;
 	onTab?: (editor: EmbeddableEditorInstance) => boolean | undefined;
 	onShiftTab?: (editor: EmbeddableEditorInstance) => boolean | undefined;
 	extraExtensions?: Extension[];
@@ -130,6 +131,7 @@ const defaultOptions: Required<EmbeddableEditorOptions> = {
 	onPaste: () => {},
 	onChange: () => {},
 	onModEnter: () => {},
+	onModUndo: () => false,
 	onTab: () => undefined,
 	onShiftTab: () => undefined,
 	extraExtensions: [],
@@ -181,6 +183,13 @@ export function createEmbeddableEditorClass(app: App) {
 			this.scope.register(["Mod"], "Enter", () => {
 				this.options.onModEnter(this);
 				return false;
+			});
+
+			// Obsidian's keymap runs on window capture before CodeMirror or DOM
+			// listeners. Consume Mod+Z only when the host handles a domain undo;
+			// otherwise let the event continue to CodeMirror's text history.
+			this.scope.register(["Mod"], "z", () => {
+				return !this.options.onModUndo(this);
 			});
 
 			// Escape lives on the keymap scope, NOT the CM keymap: Obsidian's

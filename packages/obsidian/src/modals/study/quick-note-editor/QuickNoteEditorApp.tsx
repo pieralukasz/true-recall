@@ -11,6 +11,7 @@ import {
 import type { AssistantContext } from "@true-recall/core/ai/assistant";
 import { hasAIKey } from "@true-recall/core/ai/config/ai-client-config";
 
+import { BatchCreateCommand } from "@true-recall/obsidian/commands/commands/card-create.cmd";
 import { Clickable } from "@true-recall/obsidian/components";
 import {
 	type FormattingTargetRef,
@@ -83,6 +84,12 @@ export function QuickNoteEditorApp({
 	userCommentRef.current = userComment;
 	const userCommentInputRef = useRef<HTMLTextAreaElement>(null);
 	const savingRef = useRef(false);
+	// Cmd+Z right after "Save & Add" undoes the creation and restores the
+	// typed fields into the modal. Any user edit invalidates the pending undo.
+	const pendingCreateUndoRef = useRef<{
+		command: BatchCreateCommand;
+		fields: Record<string, string>;
+	} | null>(null);
 	const assistantDraftSessionIdRef = useRef(`qne-${crypto.randomUUID()}`);
 	const closeAssistantWindowRef = useRef<(() => void) | null>(null);
 
@@ -91,6 +98,7 @@ export function QuickNoteEditorApp({
 			registerAssistantDraftTarget(assistantDraftSessionIdRef.current, {
 				getFields: () => fieldsRef.current,
 				applyFields: (next) => {
+					pendingCreateUndoRef.current = null;
 					setFields((current) => {
 						const merged = { ...current, ...next };
 						fieldsRef.current = merged;
@@ -214,27 +222,36 @@ export function QuickNoteEditorApp({
 
 	// ── Handlers ──
 
+	const invalidatePendingCreateUndo = useCallback(() => {
+		pendingCreateUndoRef.current = null;
+	}, []);
+
 	const handleFieldChange = useCallback((fieldName: string, value: string) => {
 		if (fieldsRef.current[fieldName] === value) return;
+		pendingCreateUndoRef.current = null;
 		const nextFields = { ...fieldsRef.current, [fieldName]: value };
 		fieldsRef.current = nextFields;
 		setFields(nextFields);
 	}, []);
 
 	const handleNoteTypeChange = useCallback((id: string) => {
+		pendingCreateUndoRef.current = null;
 		setNoteTypeId(id);
 	}, []);
 
 	const handleUserCommentChange = useCallback((value: string) => {
+		pendingCreateUndoRef.current = null;
 		userCommentRef.current = value;
 		setUserComment(value);
 	}, []);
 
 	const handleSourceSelect = useCallback((file: TFile | null) => {
+		pendingCreateUndoRef.current = null;
 		setSelectedSourceNote(file);
 	}, []);
 
 	const handleTypeInToggle = useCallback((enabled: boolean) => {
+		pendingCreateUndoRef.current = null;
 		setAlwaysTypeIn(enabled);
 	}, []);
 
@@ -366,6 +383,7 @@ export function QuickNoteEditorApp({
 				});
 			} else {
 				const sourceUid = await resolveSourceUid();
+				const savedFields = { ...currentFields };
 
 				const result = plugin.flashcardManager.createNote({
 					noteTypeId,
@@ -375,6 +393,18 @@ export function QuickNoteEditorApp({
 					sourceUid,
 					createdVia: "manual",
 				});
+
+				const commandService = plugin.commandService;
+				if (commandService && result.cards.length > 0) {
+					const command = new BatchCreateCommand(
+						result.cards.map((card) => card.id),
+					);
+					await commandService.execute(command);
+					pendingCreateUndoRef.current = {
+						command,
+						fields: savedFields,
+					};
+				}
 
 				const totalCards = result.cards.length;
 				notify().cardsCreated(totalCards, sourceNoteFile?.basename);
@@ -414,6 +444,28 @@ export function QuickNoteEditorApp({
 		sourceNoteFile,
 	]);
 
+	// Undo the most recent "Save & Add": only while it is still the top of the
+	// command stack and nothing was typed since. Restores the saved fields.
+	const handleUndoLastCreate = useCallback((): boolean => {
+		if (isEdit || savingRef.current) return false;
+
+		const pending = pendingCreateUndoRef.current;
+		const commandService = plugin.commandService;
+		if (!pending || !commandService?.isNextUndo(pending.command)) return false;
+
+		pendingCreateUndoRef.current = null;
+
+		void commandService.undo().then((undone) => {
+			if (!undone) return;
+			const restoredFields = { ...pending.fields };
+			fieldsRef.current = restoredFields;
+			setFields(restoredFields);
+		});
+		return true;
+	}, [isEdit, plugin.commandService]);
+	const handleUndoLastCreateRef = useRef(handleUndoLastCreate);
+	handleUndoLastCreateRef.current = handleUndoLastCreate;
+
 	// Cmd/Ctrl+Enter saves from anywhere in the modal (not just CM fields).
 	// CodeMirror and textarea fields commit their live value before saving, so
 	// the editor's debounced change callback cannot submit stale content.
@@ -429,6 +481,16 @@ export function QuickNoteEditorApp({
 		// element is in the DOM.
 		const doc = rootRef.current?.ownerDocument ?? activeDocument;
 		const onKeyDown = (e: KeyboardEvent) => {
+			if (
+				!e.shiftKey &&
+				(e.metaKey || e.ctrlKey) &&
+				e.key.toLowerCase() === "z" &&
+				handleUndoLastCreateRef.current()
+			) {
+				e.preventDefault();
+				e.stopPropagation();
+				return;
+			}
 			if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
 				e.preventDefault();
 				e.stopPropagation();
@@ -576,6 +638,8 @@ export function QuickNoteEditorApp({
 					handleFieldChange(fieldName, value);
 					void handleSaveRef.current();
 				}}
+				onModUndo={handleUndoLastCreate}
+				onUserEdit={invalidatePendingCreateUndo}
 				onEscape={onRequestClose}
 				pinnedFields={pinnedFields}
 				onTogglePin={togglePin}
