@@ -16,11 +16,17 @@ interface SyncResult {
 	errors: string[];
 }
 
+export interface DeviceSyncOptions {
+	/** Day boundary hour for rebuilding daily stats (defaults to 4, like Anki). */
+	getDayStartHour?: () => number;
+}
+
 export class DeviceSyncService {
 	constructor(
 		private localStore: SqliteStoreService,
 		private discovery: DeviceDiscoveryService,
 		private persistence: IPersistence,
+		private options: DeviceSyncOptions = {},
 	) {}
 
 	async syncOnStartup(): Promise<SyncResult> {
@@ -62,7 +68,9 @@ export class DeviceSyncService {
 
 		if (result.cardsApplied > 0 || result.reviewLogsApplied > 0) {
 			try {
-				this.localStore.stats.rebuildDailyStatsFromReviewLog();
+				this.localStore.stats.rebuildDailyStatsFromReviewLog(
+					this.options.getDayStartHour?.(),
+				);
 			} catch (err) {
 				const msg = `Failed to rebuild stats: ${err instanceof Error ? err.message : String(err)}`;
 				console.error(`[True Recall] ${msg}`);

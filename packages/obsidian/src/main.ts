@@ -314,6 +314,7 @@ export default class TrueRecallPlugin extends Plugin {
 					this.cardStore,
 					this.deviceDiscovery,
 					new ObsidianPersistence(this.app),
+					{ getDayStartHour: () => this.settings.dayStartHour },
 				);
 				const syncResult = await syncService.syncOnStartup();
 				if (syncResult.errors.length > 0) {

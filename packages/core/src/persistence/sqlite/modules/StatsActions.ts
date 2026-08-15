@@ -162,8 +162,8 @@ export class StatsActions {
 		this.dailyProgress.removeReviewedCard(date, cardId);
 	}
 
-	rebuildDailyStatsFromReviewLog(): void {
-		this.dailyProgress.rebuildDailyStatsFromReviewLog();
+	rebuildDailyStatsFromReviewLog(dayStartHour?: number): void {
+		this.dailyProgress.rebuildDailyStatsFromReviewLog(dayStartHour);
 	}
 
 	getAllDailyStats(): Record<string, ExtendedDailyStats> {
