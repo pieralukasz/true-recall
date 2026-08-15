@@ -118,6 +118,9 @@ export default class TrueRecallPlugin extends Plugin {
 	coreApp!: TrueRecallApp;
 
 	// Backward-compat getters — all existing code reads plugin.settings, plugin.cardStore, etc.
+	// Obsidian 1.13 declares `settings?: unknown` as a plain property on Plugin;
+	// we intentionally shadow it with an accessor that delegates to coreApp.
+	// @ts-expect-error TS2611 accessor-over-property override is deliberate
 	get settings(): TrueRecallSettings {
 		return this.coreApp.settings;
 	}
