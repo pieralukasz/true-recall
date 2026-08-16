@@ -26,11 +26,17 @@ import {
 	VACUUM_MIN_FREE_RATIO,
 } from "./sqlite.types";
 
+export interface SqliteStoreOptions {
+	/** Debounce between the last write and the disk flush (default 5000 ms). */
+	saveDebounceMs?: number;
+}
+
 export class SqliteStoreService {
 	private static readonly FOLLOW_UP_FLUSH_MS = 250;
 
 	private persistence: IPersistence;
 	private deviceId: string;
+	private saveDebounceMs: number;
 	private db: SqliteDatabase;
 	private isLoaded = false;
 	private isDirty = false;
@@ -52,9 +58,14 @@ export class SqliteStoreService {
 	public readonly assistantTasks: AssistantTaskActions;
 	public readonly assistantThreads: AssistantThreadActions;
 
-	constructor(persistence: IPersistence, deviceId: string) {
+	constructor(
+		persistence: IPersistence,
+		deviceId: string,
+		options: SqliteStoreOptions = {},
+	) {
 		this.persistence = persistence;
 		this.deviceId = deviceId;
+		this.saveDebounceMs = options.saveDebounceMs ?? SAVE_DEBOUNCE_MS;
 		this.db = new SqliteDatabase(() => this.markDirty());
 
 		this.cards = new CardActions(this.db);
@@ -341,7 +352,7 @@ export class SqliteStoreService {
 
 		this.saveTimer = window.setTimeout(() => {
 			void this.doFlush();
-		}, SAVE_DEBOUNCE_MS);
+		}, this.saveDebounceMs);
 	}
 
 	private scheduleFollowUpFlush(): void {

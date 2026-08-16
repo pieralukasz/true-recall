@@ -18,6 +18,7 @@ import { SearchCombobox } from "@true-recall/obsidian/components/SearchCombobox"
 import { Q, useQuery } from "@true-recall/obsidian/data";
 import { computeActionableSessionSnapshot } from "@true-recall/obsidian/features/study/services/actionable-session-snapshot.service";
 import { BottomActionBar } from "@true-recall/obsidian/features/study/ui/dashboard/components/BottomActionBar";
+import { SyncStatusChip } from "@true-recall/obsidian/features/study/ui/dashboard/components/SyncStatusChip";
 import { CustomStudyTab } from "@true-recall/obsidian/features/study/ui/dashboard/components/CustomStudyTab";
 import { DashboardTabs } from "@true-recall/obsidian/features/study/ui/dashboard/components/DashboardTabs";
 import { NoteList } from "@true-recall/obsidian/features/study/ui/dashboard/components/NoteList";
@@ -500,6 +501,10 @@ export function DashboardApp({ isViewVisible }: DashboardAppProps) {
 
 						<div class="ep:mt-3">
 							<HeatmapWidget source="months: 0" isViewVisible={isViewVisible} />
+						</div>
+
+						<div class="ep:mt-2">
+							<SyncStatusChip />
 						</div>
 					</div>
 				</div>

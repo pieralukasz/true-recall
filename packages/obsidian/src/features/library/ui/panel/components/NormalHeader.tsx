@@ -6,7 +6,7 @@ import type {
 	PanelStatusFilter,
 } from "@true-recall/obsidian/features/library/ui/panel/utils/panel-list.utils";
 
-interface NormalHeaderProps {
+export interface NormalHeaderProps {
 	totalCount: number;
 	visibleCount: number;
 	dueCount: number;

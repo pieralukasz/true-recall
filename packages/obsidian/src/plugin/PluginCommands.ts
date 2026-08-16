@@ -1,7 +1,9 @@
-import { isDesktop } from "@true-recall/obsidian/utils/platform";
+import { notify } from "@true-recall/obsidian/services/notification.service";
+import { capabilities, isDesktop } from "@true-recall/obsidian/utils/platform";
 import { ReviewView } from "@true-recall/obsidian/views/review/ReviewView";
 
 import type TrueRecallPlugin from "../main";
+import { countAppliedChanges } from "./CrossDeviceSyncCoordinator";
 import { isPluginEnabled } from "./plugin-utils";
 import {
 	editSelectionAsFlashcard,
@@ -15,12 +17,8 @@ import {
 export function registerCommands(plugin: TrueRecallPlugin): void {
 	plugin.addCommand({
 		id: "open-flashcard-panel",
-		name: "Open flashcard panel",
-		checkCallback: (checking) => {
-			if (!isDesktop()) return false;
-			if (!checking) void plugin.activateView();
-			return true;
-		},
+		name: "Show flashcards for current note",
+		callback: () => void plugin.activateView(),
 	});
 
 	plugin.addCommand({
@@ -70,7 +68,7 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 		id: "open-card-browser",
 		name: "Open card browser",
 		checkCallback: (checking) => {
-			if (!isDesktop()) return false;
+			if (!capabilities.canUseCardBrowser()) return false;
 			if (!checking) void plugin.openCardBrowser();
 			return true;
 		},
@@ -89,11 +87,7 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 	plugin.addCommand({
 		id: "open-stats",
 		name: "Open statistics",
-		checkCallback: (checking) => {
-			if (!isDesktop()) return false;
-			if (!checking) void plugin.openStats();
-			return true;
-		},
+		callback: () => void plugin.openStats(),
 	});
 
 	plugin.addCommand({
@@ -106,6 +100,12 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 		id: "add-flashcards",
 		name: "Import flashcards",
 		callback: () => plugin.openImportStudio(),
+	});
+
+	plugin.addCommand({
+		id: "add-flashcard",
+		name: "Add flashcard to current note",
+		callback: () => plugin.openQuickNoteEditor(),
 	});
 
 	plugin.addCommand({
@@ -122,6 +122,37 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 		id: "create-backup",
 		name: "Create database backup",
 		callback: () => void plugin.createManualBackup(),
+	});
+
+	plugin.addCommand({
+		id: "sync-devices-now",
+		name: "Sync devices now",
+		checkCallback: (checking) => {
+			if (!plugin.settings.enableDeviceSync || !plugin.syncCoordinator) {
+				return false;
+			}
+			if (!checking) {
+				void plugin.syncCoordinator.syncNow("manual").then((result) => {
+					if (!result) {
+						notify().warning("Device sync failed. See console for details.");
+						return;
+					}
+					if (result.errors.length > 0) {
+						notify().warning(
+							`Sync completed with ${result.errors.length} error(s).`,
+						);
+						return;
+					}
+					const applied = countAppliedChanges(result);
+					notify().info(
+						applied > 0
+							? `Synced ${result.cardsApplied} cards and ${result.reviewLogsApplied} reviews.`
+							: "Everything is up to date.",
+					);
+				});
+			}
+			return true;
+		},
 	});
 
 	plugin.addCommand({

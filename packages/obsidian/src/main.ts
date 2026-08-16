@@ -16,6 +16,7 @@ import {
 	VIEW_TYPE_STATS,
 } from "@true-recall/core/constants";
 import type { DeletionHandlerService } from "@true-recall/core/flashcard/lifecycle/deletion-handler.service";
+import { MOBILE_SAVE_DEBOUNCE_MS } from "@true-recall/core/persistence/sqlite/sqlite.types";
 import type { DeviceDiscoveryService } from "@true-recall/core/integration/device/device-discovery.service";
 import type { DeviceIdService } from "@true-recall/core/integration/device/device-id.service";
 import { DeviceLockService } from "@true-recall/core/integration/device/device-lock.service";
@@ -68,7 +69,7 @@ import { setLastMutation } from "@true-recall/obsidian/services/signals";
 import { TrueRecallSettingTab } from "@true-recall/obsidian/settings";
 import type { AppStore } from "@true-recall/obsidian/store";
 import {
-	isDesktop,
+	capabilities,
 	isMobile,
 	isViewAllowedOnCurrentPlatform,
 } from "@true-recall/obsidian/utils/platform";
@@ -93,6 +94,10 @@ import { StatsView } from "@true-recall/obsidian/views/stats/StatsView";
 import { createObsidianAdapters, type ObsidianAdapters } from "./context";
 import type { LocalApiServer } from "./plugin/api/LocalApiServer";
 import type { BackupRecoveryManager } from "./plugin/BackupRecoveryManager";
+import {
+	CrossDeviceSyncCoordinator,
+	emptySyncResult,
+} from "./plugin/CrossDeviceSyncCoordinator";
 import { registerCommands } from "./plugin/PluginCommands";
 import { registerEventHandlers } from "./plugin/PluginEventHandlers";
 import {
@@ -200,6 +205,7 @@ export default class TrueRecallPlugin extends Plugin {
 	deviceDiscovery: DeviceDiscoveryService | null = null;
 	private deviceLock: DeviceLockService | null = null;
 	private deviceSyncScheduler: DeviceSyncScheduler | null = null;
+	syncCoordinator: CrossDeviceSyncCoordinator | null = null;
 	deletionHandler: DeletionHandlerService | null = null;
 	commandService: CommandService | null = null;
 	store: AppStore | null = null;
@@ -258,6 +264,11 @@ export default class TrueRecallPlugin extends Plugin {
 				settingsPersistence: new ObsidianSettingsPersistence(this),
 				linkResolver: new ObsidianLinkResolver(this.app),
 				vaultEvents: new ObsidianVaultEventBridge(this.app, this),
+				// Mobile OSes can kill the app without unload events; keep the
+				// window between a review and its disk flush minimal there.
+				storeOptions: isMobile()
+					? { saveDebounceMs: MOBILE_SAVE_DEBOUNCE_MS }
+					: undefined,
 			});
 			await this.coreApp.initialize();
 		} catch (error) {
@@ -345,21 +356,40 @@ export default class TrueRecallPlugin extends Plugin {
 						replayService,
 					},
 				);
-				const syncResult = await syncService.syncOnStartup();
-				if (syncResult.errors.length > 0) {
+				this.syncCoordinator = new CrossDeviceSyncCoordinator({
+					runSync: () => syncService.syncOnStartup(),
+					flushLocal: async () => this.cardStore?.saveNow({ bestEffort: true }),
+					onChangesApplied: (result) => {
+						// Patch-first for open views (live review queues evict
+						// remotely deleted cards), then group invalidation.
+						if (result.cardIdsChanged.length > 0) {
+							setLastMutation({
+								type: "bulk",
+								action: "update",
+								cardIds: result.cardIdsChanged,
+							});
+						}
+						this.dataLayer?.invalidateGroups([
+							G.CARDS,
+							G.BROWSER,
+							G.DASHBOARD,
+							G.PANEL,
+							G.REVIEW,
+							G.STATS,
+						]);
+					},
+				});
+
+				const syncResult = await this.syncCoordinator.syncNow("startup");
+				if (syncResult && syncResult.errors.length > 0) {
 					notify().warning(
 						`Sync completed with ${syncResult.errors.length} error(s). Some changes may not have been applied.`,
 					);
 				}
-				if (syncResult.cardsApplied > 0 || syncResult.reviewLogsApplied > 0) {
-					this.dataLayer?.invalidateGroups([
-						G.CARDS,
-						G.BROWSER,
-						G.DASHBOARD,
-						G.PANEL,
-						G.REVIEW,
-						G.STATS,
-					]);
+				if (
+					syncResult &&
+					(syncResult.cardsApplied > 0 || syncResult.reviewLogsApplied > 0)
+				) {
 					notify().info(
 						`Synced ${syncResult.cardsApplied} cards and ${syncResult.reviewLogsApplied} reviews from other devices.`,
 					);
@@ -372,31 +402,22 @@ export default class TrueRecallPlugin extends Plugin {
 					this.deviceSyncScheduler = new DeviceSyncScheduler(
 						new ObsidianPersistence(this.app),
 						this.deviceIdService.getDeviceId(),
-						() => syncService.syncOnStartup(),
-						{
-							onChanges: (result) => {
-								if (result.cardIdsChanged.length > 0) {
-									setLastMutation({
-										type: "bulk",
-										action: "update",
-										cardIds: result.cardIdsChanged,
-									});
-								}
-								this.dataLayer?.invalidateGroups([
-									G.CARDS,
-									G.BROWSER,
-									G.DASHBOARD,
-									G.PANEL,
-									G.REVIEW,
-									G.STATS,
-								]);
-							},
-						},
+						async () =>
+							(await this.syncCoordinator?.syncNow("interval")) ??
+							emptySyncResult(),
 					);
 					this.app.workspace.onLayoutReady(() => {
 						void this.deviceSyncScheduler?.start();
 					});
 				}
+
+				// Mobile apps return from the background without reloading the
+				// plugin, so startup-only sync would show stale data all day.
+				this.registerDomEvent(activeDocument, "visibilitychange", () => {
+					if (activeDocument.visibilityState === "visible") {
+						void this.syncCoordinator?.syncNow("foreground");
+					}
+				});
 			}
 		} catch (error) {
 			console.error("[True Recall] Device sync failed:", error);
@@ -498,7 +519,7 @@ export default class TrueRecallPlugin extends Plugin {
 
 		// The local API binds a Node http server via Electron's require, which
 		// does not exist on mobile.
-		if (this.settings.enableLocalApi && !isMobile()) {
+		if (this.settings.enableLocalApi && capabilities.canRunLocalApi()) {
 			void import("./plugin/api/LocalApiServer")
 				.then(({ LocalApiServer: ApiServer }) => {
 					if (this._unloaded) return;
@@ -587,6 +608,7 @@ export default class TrueRecallPlugin extends Plugin {
 	}
 
 	async openSimulator(): Promise<void> {
+		if (!this.ensureViewAvailable(VIEW_TYPE_SIMULATOR)) return;
 		await activateView(this.app, VIEW_TYPE_SIMULATOR, { useMainArea: true });
 	}
 
@@ -914,10 +936,18 @@ export default class TrueRecallPlugin extends Plugin {
 		void this.saveSettings();
 	}
 
+	/** Guard for views that are not registered on this platform. */
+	private ensureViewAvailable(viewType: string): boolean {
+		if (isViewAllowedOnCurrentPlatform(viewType)) return true;
+		notify().warning("This view is available on desktop only.");
+		return false;
+	}
+
 	async openCardBrowser(opts?: {
 		sourceUid?: string;
 		orphaned?: boolean;
 	}): Promise<void> {
+		if (!this.ensureViewAvailable(VIEW_TYPE_CARD_BROWSER)) return;
 		const state = opts?.sourceUid
 			? { sourceUid: opts.sourceUid }
 			: opts?.orphaned
@@ -961,6 +991,7 @@ export default class TrueRecallPlugin extends Plugin {
 	}
 
 	async openAssistantInbox(focusThreadId?: string): Promise<void> {
+		if (!this.ensureViewAvailable(VIEW_TYPE_ASSISTANT_INBOX)) return;
 		const existingLeaf = getView(this.app, VIEW_TYPE_ASSISTANT_INBOX);
 		if (existingLeaf) {
 			void this.app.workspace.revealLeaf(existingLeaf);
@@ -984,6 +1015,7 @@ export default class TrueRecallPlugin extends Plugin {
 	/** Reveals the docked AI workspace, normally in the right sidebar so it can
 	 * sit next to a review. */
 	async openAssistantWorkspace(mode?: AIWorkspaceMode): Promise<void> {
+		if (!this.ensureViewAvailable(VIEW_TYPE_ASSISTANT_WORKSPACE)) return;
 		const existingLeaf = getView(this.app, VIEW_TYPE_ASSISTANT_WORKSPACE);
 		if (existingLeaf) {
 			if (mode)
@@ -1022,7 +1054,7 @@ export default class TrueRecallPlugin extends Plugin {
 	async openImageOcclusionEditor(
 		mode: IOEditorMode = { mode: "add" },
 	): Promise<IOEditorResult> {
-		if (!isDesktop()) {
+		if (!capabilities.canEditImageOcclusion()) {
 			notify().warning("Image occlusion editor is available on desktop only.");
 			return { cancelled: true };
 		}

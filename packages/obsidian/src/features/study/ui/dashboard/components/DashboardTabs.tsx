@@ -1,6 +1,9 @@
 import { Clickable } from "@true-recall/obsidian/components";
 import { cn } from "@true-recall/obsidian/utils/cn";
-import { isMobile } from "@true-recall/obsidian/utils/platform";
+import {
+	capabilities,
+	isMobile,
+} from "@true-recall/obsidian/utils/platform";
 
 import type { DashboardTab } from "../types";
 
@@ -39,8 +42,10 @@ export function DashboardTabs({
 	onCreateProject,
 	onCreateCustomSession,
 }: DashboardTabsProps) {
+	// The orphaned tab deep-links into the card browser, which does not
+	// exist on mobile; hiding the tab avoids a dead end.
 	const tabs =
-		orphanedCount > 0
+		orphanedCount > 0 && capabilities.canUseCardBrowser()
 			? [...BASE_TABS, { id: "orphaned" as DashboardTab, label: "Orphaned" }]
 			: BASE_TABS;
 

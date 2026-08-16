@@ -76,6 +76,10 @@ import {
 	createAppStore,
 	type ReviewApi,
 } from "@true-recall/obsidian/store";
+import {
+	capabilities,
+	isMobile,
+} from "@true-recall/obsidian/utils/platform";
 import { runWhenLayoutReady } from "@true-recall/obsidian/views/layout-ready";
 import {
 	ReviewApp,
@@ -1012,13 +1016,32 @@ export class ReviewView extends ItemView {
 
 	private showActionsMenu(event: MouseEvent): void {
 		const menu = new Menu();
+		this.populateActionsMenu(menu);
+		menu.showAtMouseEvent(event);
+	}
+
+	/** On mobile the card actions join the view's native pane menu, so the
+	 * header keeps a single overflow button instead of two identical ones. */
+	onPaneMenu(menu: Menu, source: string): void {
+		super.onPaneMenu(menu, source);
+		if (!isMobile() || !this.review.isActive) return;
+		menu.addSeparator();
+		this.populateActionsMenu(menu);
+	}
+
+	private populateActionsMenu(menu: Menu): void {
+		// Keyboard hints are noise on touch devices without a keyboard.
+		const withHint = (label: string, hint: string) =>
+			isMobile() ? label : `${label} (${hint})`;
 		const typeInMode = this.getTypeInMode();
-		const typeInMenuLabel =
+		const typeInMenuLabel = withHint(
 			typeInMode === "ai"
-				? "Type in: AI (t)"
+				? "Type in: AI"
 				: typeInMode === "diff"
-					? "Type in: Diff (t)"
-					: "Type in: Off (t)";
+					? "Type in: Diff"
+					: "Type in: Off",
+			"t",
+		);
 
 		menu.addItem((item) =>
 			item
@@ -1040,13 +1063,25 @@ export class ReviewView extends ItemView {
 						});
 					}),
 			);
+			// On mobile the polish button has no home in the grade bar, so it
+			// joins the actions menu here.
+			if (isMobile() && isPluginEnabled(this.plugin.settings, "card-polish")) {
+				menu.addItem((item) =>
+					item
+						.setTitle("Polish card (AI)")
+						.setIcon("wand")
+						.onClick((evt) => {
+							if (evt instanceof MouseEvent) this.openCardPolishMenu(evt);
+						}),
+				);
+			}
 			menu.addSeparator();
 		}
 
 		if (this.cardActionsHandler.canUndo()) {
 			menu.addItem((item) =>
 				item
-					.setTitle("Undo last answer (z)")
+					.setTitle(withHint("Undo last answer", "z"))
 					.setIcon("undo")
 					.onClick(() => this.cardActionsHandler.handleUndo()),
 			);
@@ -1055,38 +1090,38 @@ export class ReviewView extends ItemView {
 
 		menu.addItem((item) =>
 			item
-				.setTitle("Move card (m)")
+				.setTitle(withHint("Move card", "m"))
 				.setIcon("folder-input")
 				.onClick(() => this.cardActionsHandler.handleMoveCard()),
 		);
 		menu.addItem((item) =>
 			item
-				.setTitle("Delete card (shift+1)")
+				.setTitle(withHint("Delete card", "shift+1"))
 				.setIcon("trash-2")
 				.onClick(() => this.cardActionsHandler.handleDelete()),
 		);
 		menu.addItem((item) =>
 			item
-				.setTitle("Suspend card (shift+2)")
+				.setTitle(withHint("Suspend card", "shift+2"))
 				.setIcon("pause")
 				.onClick(() => this.cardActionsHandler.handleSuspend()),
 		);
 		menu.addItem((item) =>
 			item
-				.setTitle("Bury card (-)")
+				.setTitle(withHint("Bury card", "-"))
 				.setIcon("eye-off")
 				.onClick(() => this.cardActionsHandler.handleBuryCard()),
 		);
 		menu.addItem((item) =>
 			item
-				.setTitle("Bury note (=)")
+				.setTitle(withHint("Bury note", "="))
 				.setIcon("eye-off")
 				.onClick(() => this.cardActionsHandler.handleBuryNote()),
 		);
 		if (this.cardActionsHandler.canForgetCurrentCard()) {
 			menu.addItem((item) =>
 				item
-					.setTitle("Forget card (f)")
+					.setTitle(withHint("Forget card", "f"))
 					.setIcon("rotate-ccw")
 					.onClick(() => this.cardActionsHandler.handleForget()),
 			);
@@ -1097,14 +1132,14 @@ export class ReviewView extends ItemView {
 		if (isNoteReview) {
 			menu.addItem((item) =>
 				item
-					.setTitle("Open note (e)")
+					.setTitle(withHint("Open note", "e"))
 					.setIcon("external-link")
 					.onClick(() => this.handleOpenSourceNote()),
 			);
 		} else {
 			menu.addItem((item) =>
 				item
-					.setTitle("Edit card (e)")
+					.setTitle(withHint("Edit card", "e"))
 					.setIcon("pencil")
 					.onClick(() => void this.cardActionsHandler.handleEditCardModal()),
 			);
@@ -1116,18 +1151,20 @@ export class ReviewView extends ItemView {
 			);
 			menu.addItem((item) =>
 				item
-					.setTitle("Add flashcard (a)")
+					.setTitle(withHint("Add flashcard", "a"))
 					.setIcon("plus")
 					.onClick(() => void this.cardActionsHandler.handleAddNewFlashcard()),
 			);
-			menu.addItem((item) =>
-				item
-					.setTitle("Add image occlusion")
-					.setIcon("image")
-					.onClick(
-						() => void this.cardActionsHandler.handleAddImageOcclusion(),
-					),
-			);
+			if (capabilities.canEditImageOcclusion()) {
+				menu.addItem((item) =>
+					item
+						.setTitle("Add image occlusion")
+						.setIcon("image")
+						.onClick(
+							() => void this.cardActionsHandler.handleAddImageOcclusion(),
+						),
+				);
+			}
 			menu.addItem((item) =>
 				item
 					.setTitle("Open source note")
@@ -1135,8 +1172,6 @@ export class ReviewView extends ItemView {
 					.onClick(() => this.handleOpenSourceNote()),
 			);
 		}
-
-		menu.showAtMouseEvent(event);
 	}
 
 	private async resolveGradingContext(card: FSRSFlashcardItem): Promise<{

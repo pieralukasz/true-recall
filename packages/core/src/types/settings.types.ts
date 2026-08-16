@@ -193,7 +193,12 @@ export interface RModeSettings {
 }
 
 export interface TrueRecallSettings {
-	/** Device ID backup — survives reinstall via iCloud sync */
+	/**
+	 * @deprecated Never read anymore. The device ID lives exclusively in
+	 * device-local storage; restoring it from synced settings made a new
+	 * device inherit another device's database file. Kept only so old
+	 * data.json files still parse.
+	 */
 	deviceId?: string;
 
 	/** Enable cross-device sync on plugin startup */

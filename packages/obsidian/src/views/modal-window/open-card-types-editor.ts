@@ -2,7 +2,7 @@ import { VIEW_TYPE_CARD_TYPES_EDITOR } from "@true-recall/core/constants";
 
 import { CardTypesEditorModal } from "@true-recall/obsidian/modals/core/card-types-editor/CardTypesEditorModal";
 import { notify } from "@true-recall/obsidian/services/notification.service";
-import { isMobile } from "@true-recall/obsidian/utils/platform";
+import { capabilities } from "@true-recall/obsidian/utils/platform";
 
 import type TrueRecallPlugin from "../../main";
 import {
@@ -23,7 +23,7 @@ export function openCardTypesEditor(
 	noteTypeId: string,
 	options: OpenCardTypesEditorOptions = {},
 ): void {
-	if (isMobile()) {
+	if (!capabilities.canOpenPopout()) {
 		const modal = new CardTypesEditorModal(plugin.app, plugin, noteTypeId);
 		if (options.onClose) {
 			const origClose = modal.onClose.bind(modal);

@@ -30,6 +30,10 @@ export const DB_FILE_PREFIX = "true-recall-";
 export const DB_FILE_SUFFIX = ".db";
 export const LEGACY_DB_FILE = "true-recall.db";
 export const SAVE_DEBOUNCE_MS = 5000; // 5 seconds - better durability on app shutdown
+// Mobile OSes freeze timers the instant the app backgrounds and may kill the
+// process without any unload event, so writes must reach disk almost
+// immediately after the last mutation.
+export const MOBILE_SAVE_DEBOUNCE_MS = 400;
 export const SAFETY_FLUSH_INTERVAL_MS = 15000; // hard safety flush every 15 seconds
 
 // VACUUM on load only when both thresholds are exceeded — small databases
