@@ -6,6 +6,8 @@ import {
 	SelectionActionsBar,
 	SelectionToolbar,
 } from "@true-recall/obsidian/features/library/ui/panel/components";
+import { MobileNoteCardsHeader } from "@true-recall/obsidian/features/library/ui/panel/components/MobileNoteCardsHeader";
+import { isMobile } from "@true-recall/obsidian/utils/platform";
 import { PanelCardDetail } from "@true-recall/obsidian/features/library/ui/panel/components/PanelCardDetail";
 import { PanelScrollProvider } from "@true-recall/obsidian/features/library/ui/panel/hooks";
 import { useFlashcardPanel } from "@true-recall/obsidian/features/library/ui/panel/hooks/useFlashcardPanel";
@@ -72,6 +74,21 @@ function PanelList({
 				<SelectionToolbar
 					visibleCardIds={panel.visibleCardIds}
 					allCardIds={panel.allCardIds}
+				/>
+			) : isMobile() ? (
+				<MobileNoteCardsHeader
+					noteName={panel.store.currentFile?.basename ?? null}
+					totalCount={panel.allFlashcards.length}
+					visibleCount={panel.visibleCardIds.length}
+					dueCount={panel.dueCount}
+					statusFilter={panel.statusFilter}
+					sort={panel.sort}
+					onStatusFilterChange={panel.setStatusFilter}
+					onSortChange={panel.setSort}
+					onEnterSelection={panel.enterSelection}
+					onSearchInput={panel.handleSearchInput}
+					onShowShortcuts={panel.showShortcuts}
+					onRefresh={onRefresh}
 				/>
 			) : (
 				<NormalHeader

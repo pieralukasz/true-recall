@@ -17,12 +17,8 @@ import {
 export function registerCommands(plugin: TrueRecallPlugin): void {
 	plugin.addCommand({
 		id: "open-flashcard-panel",
-		name: "Open flashcard panel",
-		checkCallback: (checking) => {
-			if (!isDesktop()) return false;
-			if (!checking) void plugin.activateView();
-			return true;
-		},
+		name: "Show flashcards for current note",
+		callback: () => void plugin.activateView(),
 	});
 
 	plugin.addCommand({

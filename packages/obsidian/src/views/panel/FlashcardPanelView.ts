@@ -4,6 +4,7 @@ import {
 	type Menu,
 	Platform,
 	TFile,
+	type ViewStateResult,
 	type WorkspaceLeaf,
 } from "obsidian";
 import { h } from "preact";
@@ -11,13 +12,11 @@ import { h } from "preact";
 import { VIEW_TYPE_FLASHCARD_PANEL } from "@true-recall/core/constants";
 import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
 import { CollectService } from "@true-recall/core/flashcard/lifecycle/collect.service";
-import type { FSRSFlashcardItem } from "@true-recall/core/types/fsrs/card.types";
 
 import { DeleteCardCommand } from "@true-recall/obsidian/commands/commands/card-delete.cmd";
 import { getDataLayer, Q } from "@true-recall/obsidian/data";
 import { extractHighlights } from "@true-recall/obsidian/features/library/ui/panel/utils/highlight-extractor";
 import { cardsToBlockText } from "@true-recall/obsidian/features/library/ui/panel/utils/panel-helpers";
-import { countCardsByState } from "@true-recall/obsidian/helpers";
 import { mountPreact } from "@true-recall/obsidian/preact/mount";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 import { lastMutation } from "@true-recall/obsidian/services/signals";
@@ -59,14 +58,8 @@ export class FlashcardPanelView extends ItemView {
 	// Store subscription for header actions
 	private headerActionsUnsub: (() => void) | null = null;
 
-	// Mobile header FSRS status element
-	private mobileStatusEl: HTMLElement | null = null;
-
-	// Header stats update timer for debouncing
-	private headerStatsTimer: number | null = null;
-
-	// Cache for getCardsWithFsrs() on mobile
-	private cachedCardsWithFsrs: FSRSFlashcardItem[] | null = null;
+	// Note path restored from persisted view state (mobile keeps its pin)
+	private restoredFilePath: string | null = null;
 
 	constructor(leaf: WorkspaceLeaf, plugin: TrueRecallPlugin) {
 		super(leaf);
@@ -95,6 +88,30 @@ export class FlashcardPanelView extends ItemView {
 		return "layers";
 	}
 
+	getState(): Record<string, unknown> {
+		const state = super.getState();
+		const currentPath = this.plugin.store?.getState().panel.currentFile?.path;
+		return { ...state, file: currentPath ?? null };
+	}
+
+	async setState(
+		state: unknown,
+		result: ViewStateResult,
+	): Promise<void> {
+		await super.setState(state, result);
+		const filePath = (state as { file?: unknown } | null)?.file;
+		if (typeof filePath !== "string" || !filePath) return;
+		this.restoredFilePath = filePath;
+
+		// When the state arrives after onOpen already ran, apply it directly.
+		if (this.unmountPreact && this.plugin.store) {
+			const file = this.app.vault.getAbstractFileByPath(filePath);
+			if (file instanceof TFile) {
+				void this.handleFileChange(file);
+			}
+		}
+	}
+
 	onPaneMenu(menu: Menu, source: string): void {
 		super.onPaneMenu(menu, source);
 
@@ -114,18 +131,6 @@ export class FlashcardPanelView extends ItemView {
 
 		if (hasFlashcards) {
 			menu.addSeparator();
-
-			menu.addItem((item) => {
-				item
-					.setTitle("Browse in card browser")
-					.setIcon("table-2")
-					.onClick(() => {
-						const sourceUid = state.flashcardInfo?.sourceUid;
-						if (sourceUid) {
-							void this.plugin.openCardBrowser({ sourceUid });
-						}
-					});
-			});
 
 			menu.addItem((item) => {
 				item
@@ -188,10 +193,6 @@ export class FlashcardPanelView extends ItemView {
 		this.subscribeToDataChanges();
 		this.subscribeToReviewState();
 		this.registerEditorChangeTracking();
-
-		if (Platform.isMobile) {
-			this.setupMobileHeaderStatus();
-		}
 
 		// If a review session is already active, sync with it instead of loading the active file
 		const reviewState = this.plugin.store?.getState()?.review;
@@ -264,11 +265,6 @@ export class FlashcardPanelView extends ItemView {
 			this.flashcardInfoTimer = null;
 		}
 
-		if (this.headerStatsTimer) {
-			window.clearTimeout(this.headerStatsTimer);
-			this.headerStatsTimer = null;
-		}
-
 		if (this.reviewAction) {
 			this.reviewAction.remove();
 			this.reviewAction = null;
@@ -281,11 +277,6 @@ export class FlashcardPanelView extends ItemView {
 			this.deleteAllAction.remove();
 			this.deleteAllAction = null;
 		}
-
-		if (this.mobileStatusEl) {
-			this.mobileStatusEl.remove();
-			this.mobileStatusEl = null;
-		}
 		return Promise.resolve();
 	}
 
@@ -297,8 +288,6 @@ export class FlashcardPanelView extends ItemView {
 			void allMetaSig?.value;
 			void settingsSig?.value;
 			const m = lastMutation.value;
-			this.invalidateCardsCache();
-			this.scheduleHeaderStatsUpdate();
 			// Answering a card during review only changes FSRS scheduling data,
 			// so skip the full reload as an optimization. Other mutations (e.g.
 			// card polish) actually change question/answer content and need the
@@ -367,6 +356,14 @@ export class FlashcardPanelView extends ItemView {
 			return;
 		}
 
+		// On mobile the panel lives in the main area, so switching to any
+		// non-file tab (dashboard, review) makes getActiveFile() return null.
+		// Keep the pinned note instead of blanking the list; only an actual
+		// new markdown file replaces it.
+		if (Platform.isMobile && !file && state.currentFile) {
+			return;
+		}
+
 		this.panel.setCurrentFile(file);
 		await this.loadFlashcardInfo();
 	}
@@ -386,13 +383,39 @@ export class FlashcardPanelView extends ItemView {
 	}
 
 	private async loadCurrentFile(): Promise<void> {
-		const file = this.app.workspace.getActiveFile();
+		const file =
+			this.consumeRestoredFile() ??
+			this.app.workspace.getActiveFile() ??
+			this.getFallbackFile();
 		this.panel.setCurrentFile(file);
 		await this.loadFlashcardInfo();
 	}
 
+	private consumeRestoredFile(): TFile | null {
+		const path = this.restoredFilePath;
+		this.restoredFilePath = null;
+		if (!path) return null;
+		const file = this.app.vault.getAbstractFileByPath(path);
+		return file instanceof TFile ? file : null;
+	}
+
+	/**
+	 * On mobile the panel usually opens from a non-file context (dashboard,
+	 * command palette), where getActiveFile() is null. Fall back to the most
+	 * recently opened markdown file so the view is never pointlessly empty.
+	 */
+	private getFallbackFile(): TFile | null {
+		if (!Platform.isMobile) return null;
+		for (const path of this.app.workspace.getLastOpenFiles()) {
+			const file = this.app.vault.getAbstractFileByPath(path);
+			if (file instanceof TFile && file.extension === "md") {
+				return file;
+			}
+		}
+		return null;
+	}
+
 	private async loadFlashcardInfo(): Promise<void> {
-		this.invalidateCardsCache();
 		const state = this.panel;
 		const file = state.currentFile;
 
@@ -429,8 +452,6 @@ export class FlashcardPanelView extends ItemView {
 			const uncollectedCount = this.collectService.countFlashcardLines(content);
 			const hasHighlights = extractHighlights(content).length > 0;
 
-			this.invalidateCardsCache();
-
 			this.panel.setState({
 				flashcardInfo: info,
 				status: info?.exists ? "exists" : "none",
@@ -441,97 +462,6 @@ export class FlashcardPanelView extends ItemView {
 		} catch (error) {
 			console.error("Error loading flashcard info:", error);
 		}
-	}
-
-	// ── Mobile-only methods ─────────────────────────────────
-
-	private scheduleHeaderStatsUpdate(): void {
-		if (!Platform.isMobile) return;
-		if (this.headerStatsTimer) {
-			window.clearTimeout(this.headerStatsTimer);
-		}
-		this.headerStatsTimer = window.setTimeout(() => {
-			this.updateMobileHeaderStatus();
-			this.headerStatsTimer = null;
-		}, 100);
-	}
-
-	private getCardsWithFsrs(): FSRSFlashcardItem[] {
-		if (this.cachedCardsWithFsrs !== null) {
-			return this.cachedCardsWithFsrs;
-		}
-
-		const state = this.panel;
-		if (!state.flashcardInfo?.flashcards) return [];
-
-		if (!this.flashcardManager.hasStore()) {
-			return [];
-		}
-
-		const cardIds = state.flashcardInfo.flashcards.map((c) => c.id);
-		this.cachedCardsWithFsrs = this.flashcardManager.getCardsByIds(cardIds);
-		return this.cachedCardsWithFsrs;
-	}
-
-	private invalidateCardsCache(): void {
-		this.cachedCardsWithFsrs = null;
-	}
-
-	private setupMobileHeaderStatus(): void {
-		const titleContainer = this.containerEl.querySelector(
-			".view-header-title-container",
-		);
-		if (!titleContainer) return;
-
-		const titleEl = titleContainer.querySelector(
-			".view-header-title",
-		) as HTMLElement;
-		if (titleEl) {
-			titleEl.addClass("ep:hidden");
-		}
-
-		this.mobileStatusEl = createDiv();
-		this.mobileStatusEl.addClass(
-			"ep:flex",
-			"ep:gap-1",
-			"ep:items-center",
-			"ep:text-ui-smaller",
-		);
-		titleContainer.appendChild(this.mobileStatusEl);
-	}
-
-	private updateMobileHeaderStatus(
-		precomputedCards?: FSRSFlashcardItem[],
-	): void {
-		if (!this.mobileStatusEl) return;
-
-		const cards = precomputedCards ?? this.getCardsWithFsrs();
-		const counts = countCardsByState(cards);
-
-		this.mobileStatusEl.empty();
-
-		const newEl = this.mobileStatusEl.createSpan({ cls: "ep:text-obs-blue" });
-		newEl.textContent = String(counts.new);
-
-		this.mobileStatusEl.createSpan({
-			cls: "ep:text-obs-faint",
-			text: "\u00B7",
-		});
-
-		const learningEl = this.mobileStatusEl.createSpan({
-			cls: "ep:text-obs-orange",
-		});
-		learningEl.textContent = String(counts.learning);
-
-		this.mobileStatusEl.createSpan({
-			cls: "ep:text-obs-faint",
-			text: "\u00B7",
-		});
-
-		const reviewEl = this.mobileStatusEl.createSpan({
-			cls: "ep:text-obs-green",
-		});
-		reviewEl.textContent = String(counts.review);
 	}
 
 	// ── Mobile pane menu handlers ───────────────────────────

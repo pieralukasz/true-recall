@@ -16,6 +16,7 @@ import {
 } from "@true-recall/obsidian/features/library/ui/panel/utils/panel-list.utils";
 import { useLongPress } from "@true-recall/obsidian/preact/useLongPress";
 import { cn } from "@true-recall/obsidian/utils";
+import { isMobile } from "@true-recall/obsidian/utils/platform";
 
 interface PanelCardProps {
 	card: FlashcardItem;
@@ -138,7 +139,12 @@ export const PanelCard = memo(function PanelCard({
 					<PanelIconButton
 						icon="more-vertical"
 						label={`Actions for ${displayQuestion}`}
-						class="ep:self-center ep:mr-1 ep:opacity-0 ep:group-hover:opacity-100 ep:group-focus-within:opacity-100"
+						class={
+							// Touch devices have no hover; keep the menu reachable.
+							isMobile()
+								? "ep:self-center ep:mr-1 ep:min-h-10 ep:min-w-10"
+								: "ep:self-center ep:mr-1 ep:opacity-0 ep:group-hover:opacity-100 ep:group-focus-within:opacity-100"
+						}
 						onClick={(event) => openMenu(event)}
 					/>
 				</>
