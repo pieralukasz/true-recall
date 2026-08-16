@@ -38,9 +38,7 @@ class MapPersistence implements IPersistence {
 	}
 	async list(path: string): Promise<{ files: string[]; folders: string[] }> {
 		return {
-			files: [...this.files.keys()].filter((key) =>
-				key.startsWith(`${path}/`),
-			),
+			files: [...this.files.keys()].filter((key) => key.startsWith(`${path}/`)),
 			folders: [],
 		};
 	}
@@ -76,9 +74,7 @@ describe("BackupService folder layout", () => {
 	it("writes new backups into the .nosync folder", async () => {
 		const path = await service.createBackup();
 
-		expect(path.startsWith(".true-recall/backups.nosync/dev00001/")).toBe(
-			true,
-		);
+		expect(path.startsWith(".true-recall/backups.nosync/dev00001/")).toBe(true);
 	});
 
 	it("lists backups from both the .nosync and the legacy folder", async () => {

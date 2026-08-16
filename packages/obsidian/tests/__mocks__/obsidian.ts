@@ -69,4 +69,6 @@ export function debounce<T extends (...args: unknown[]) => unknown>(
 export const Platform = {
 	isMobile: false,
 	isDesktop: true,
+	isPhone: false,
+	isTablet: false,
 };

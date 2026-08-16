@@ -67,7 +67,7 @@ import { ProjectManagementService } from "@true-recall/obsidian/services/project
 import { TrueRecallSettingTab } from "@true-recall/obsidian/settings";
 import type { AppStore } from "@true-recall/obsidian/store";
 import {
-	isDesktop,
+	capabilities,
 	isMobile,
 	isViewAllowedOnCurrentPlatform,
 } from "@true-recall/obsidian/utils/platform";
@@ -490,7 +490,7 @@ export default class TrueRecallPlugin extends Plugin {
 
 		// The local API binds a Node http server via Electron's require, which
 		// does not exist on mobile.
-		if (this.settings.enableLocalApi && !isMobile()) {
+		if (this.settings.enableLocalApi && capabilities.canRunLocalApi()) {
 			void import("./plugin/api/LocalApiServer")
 				.then(({ LocalApiServer: ApiServer }) => {
 					if (this._unloaded) return;
@@ -1014,7 +1014,7 @@ export default class TrueRecallPlugin extends Plugin {
 	async openImageOcclusionEditor(
 		mode: IOEditorMode = { mode: "add" },
 	): Promise<IOEditorResult> {
-		if (!isDesktop()) {
+		if (!capabilities.canEditImageOcclusion()) {
 			notify().warning("Image occlusion editor is available on desktop only.");
 			return { cancelled: true };
 		}

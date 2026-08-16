@@ -1,4 +1,4 @@
-import { isDesktop } from "@true-recall/obsidian/utils/platform";
+import { capabilities, isDesktop } from "@true-recall/obsidian/utils/platform";
 import { ReviewView } from "@true-recall/obsidian/views/review/ReviewView";
 
 import type TrueRecallPlugin from "../main";
@@ -70,7 +70,7 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 		id: "open-card-browser",
 		name: "Open card browser",
 		checkCallback: (checking) => {
-			if (!isDesktop()) return false;
+			if (!capabilities.canUseCardBrowser()) return false;
 			if (!checking) void plugin.openCardBrowser();
 			return true;
 		},
@@ -90,7 +90,7 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 		id: "open-stats",
 		name: "Open statistics",
 		checkCallback: (checking) => {
-			if (!isDesktop()) return false;
+			if (!capabilities.canShowFullStats()) return false;
 			if (!checking) void plugin.openStats();
 			return true;
 		},

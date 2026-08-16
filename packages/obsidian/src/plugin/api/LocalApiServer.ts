@@ -1,4 +1,6 @@
-import { Notice, Platform } from "obsidian";
+import { Notice } from "obsidian";
+
+import { capabilities } from "@true-recall/obsidian/utils/platform";
 
 import type TrueRecallPlugin from "../../main";
 import type { ApiRequest, ApiResponseWriter } from "./api.types";
@@ -47,7 +49,7 @@ export class LocalApiServer {
 
 	/** Fresh start: resets retry state left over from a previous run. */
 	start(): void {
-		if (!Platform.isDesktop) return;
+		if (!capabilities.canRunLocalApi()) return;
 		if (this.server) return;
 		this.stopped = false;
 		this.portRetryCount = 0;

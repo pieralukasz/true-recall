@@ -2,7 +2,7 @@ import { VIEW_TYPE_NOTE_TYPE_MANAGER } from "@true-recall/core/constants";
 
 import { NoteTypeManagerModal } from "@true-recall/obsidian/modals/core/NoteTypeManagerModal";
 import { notify } from "@true-recall/obsidian/services/notification.service";
-import { isMobile } from "@true-recall/obsidian/utils/platform";
+import { capabilities } from "@true-recall/obsidian/utils/platform";
 
 import type TrueRecallPlugin from "../../main";
 import {
@@ -22,7 +22,7 @@ export function openNoteTypeManager(
 	plugin: TrueRecallPlugin,
 	options: OpenNoteTypeManagerOptions = {},
 ): void {
-	if (isMobile()) {
+	if (!capabilities.canOpenPopout()) {
 		const modal = new NoteTypeManagerModal(plugin.app, plugin);
 		if (options.onClose) {
 			const origClose = modal.onClose.bind(modal);
