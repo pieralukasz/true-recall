@@ -93,6 +93,10 @@ import { StatsView } from "@true-recall/obsidian/views/stats/StatsView";
 import { createObsidianAdapters, type ObsidianAdapters } from "./context";
 import type { LocalApiServer } from "./plugin/api/LocalApiServer";
 import type { BackupRecoveryManager } from "./plugin/BackupRecoveryManager";
+import {
+	CrossDeviceSyncCoordinator,
+	emptySyncResult,
+} from "./plugin/CrossDeviceSyncCoordinator";
 import { registerCommands } from "./plugin/PluginCommands";
 import { registerEventHandlers } from "./plugin/PluginEventHandlers";
 import {
@@ -200,6 +204,7 @@ export default class TrueRecallPlugin extends Plugin {
 	deviceDiscovery: DeviceDiscoveryService | null = null;
 	private deviceLock: DeviceLockService | null = null;
 	private deviceSyncScheduler: DeviceSyncScheduler | null = null;
+	syncCoordinator: CrossDeviceSyncCoordinator | null = null;
 	deletionHandler: DeletionHandlerService | null = null;
 	commandService: CommandService | null = null;
 	store: AppStore | null = null;
@@ -350,21 +355,31 @@ export default class TrueRecallPlugin extends Plugin {
 						replayService,
 					},
 				);
-				const syncResult = await syncService.syncOnStartup();
-				if (syncResult.errors.length > 0) {
+				this.syncCoordinator = new CrossDeviceSyncCoordinator({
+					runSync: () => syncService.syncOnStartup(),
+					flushLocal: async () => this.cardStore?.saveNow({ bestEffort: true }),
+					onChangesApplied: () => {
+						this.dataLayer?.invalidateGroups([
+							G.CARDS,
+							G.BROWSER,
+							G.DASHBOARD,
+							G.PANEL,
+							G.REVIEW,
+							G.STATS,
+						]);
+					},
+				});
+
+				const syncResult = await this.syncCoordinator.syncNow("startup");
+				if (syncResult && syncResult.errors.length > 0) {
 					notify().warning(
 						`Sync completed with ${syncResult.errors.length} error(s). Some changes may not have been applied.`,
 					);
 				}
-				if (syncResult.cardsApplied > 0 || syncResult.reviewLogsApplied > 0) {
-					this.dataLayer?.invalidateGroups([
-						G.CARDS,
-						G.BROWSER,
-						G.DASHBOARD,
-						G.PANEL,
-						G.REVIEW,
-						G.STATS,
-					]);
+				if (
+					syncResult &&
+					(syncResult.cardsApplied > 0 || syncResult.reviewLogsApplied > 0)
+				) {
 					notify().info(
 						`Synced ${syncResult.cardsApplied} cards and ${syncResult.reviewLogsApplied} reviews from other devices.`,
 					);
@@ -377,24 +392,22 @@ export default class TrueRecallPlugin extends Plugin {
 					this.deviceSyncScheduler = new DeviceSyncScheduler(
 						new ObsidianPersistence(this.app),
 						this.deviceIdService.getDeviceId(),
-						() => syncService.syncOnStartup(),
-						{
-							onChanges: () => {
-								this.dataLayer?.invalidateGroups([
-									G.CARDS,
-									G.BROWSER,
-									G.DASHBOARD,
-									G.PANEL,
-									G.REVIEW,
-									G.STATS,
-								]);
-							},
-						},
+						async () =>
+							(await this.syncCoordinator?.syncNow("interval")) ??
+							emptySyncResult(),
 					);
 					this.app.workspace.onLayoutReady(() => {
 						void this.deviceSyncScheduler?.start();
 					});
 				}
+
+				// Mobile apps return from the background without reloading the
+				// plugin, so startup-only sync would show stale data all day.
+				this.registerDomEvent(activeDocument, "visibilitychange", () => {
+					if (activeDocument.visibilityState === "visible") {
+						void this.syncCoordinator?.syncNow("foreground");
+					}
+				});
 			}
 		} catch (error) {
 			console.error("[True Recall] Device sync failed:", error);
