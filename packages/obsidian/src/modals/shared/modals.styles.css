@@ -211,12 +211,18 @@
 	font-size: 1.05rem;
 }
 
-/* ── FooterBar: wrap, safe area, touch targets ── */
+/* ── FooterBar: sticky above safe area and the soft keyboard ──
+   --tr-keyboard-inset is maintained by useKeyboardInset() from the
+   VisualViewport API, so Save never hides behind the keyboard. */
 .is-mobile .true-recall-quick-editor .ep-modal-footer {
 	flex-wrap: wrap;
 	gap: 0.375rem;
 	padding-top: 0.75rem;
-	padding-bottom: env(safe-area-inset-bottom, 0.75rem);
+	padding-bottom: max(env(safe-area-inset-bottom, 0px), 0.75rem);
+	position: sticky;
+	bottom: var(--tr-keyboard-inset, 0px);
+	z-index: 10;
+	background: var(--modal-background, var(--background-primary));
 }
 
 .is-mobile .true-recall-quick-editor .ep-modal-footer .ep-btn.ep-btn-ghost {

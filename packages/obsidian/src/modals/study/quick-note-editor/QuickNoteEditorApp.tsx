@@ -18,6 +18,8 @@ import {
 	FormattingToolbar,
 } from "@true-recall/obsidian/editor/shared/formatting";
 import { useIcon } from "@true-recall/obsidian/preact/hooks";
+import { useKeyboardInset } from "@true-recall/obsidian/preact/useKeyboardInset";
+import { isMobile } from "@true-recall/obsidian/utils/platform";
 import {
 	useApp,
 	usePlugin,
@@ -49,6 +51,7 @@ export function QuickNoteEditorApp({
 }: QuickNoteEditorAppProps) {
 	const app = useApp();
 	const plugin = usePlugin();
+	useKeyboardInset();
 
 	const isEdit = mode.mode === "edit";
 	const editMode = isEdit ? mode : null;
@@ -444,6 +447,18 @@ export function QuickNoteEditorApp({
 		sourceNoteFile,
 	]);
 
+	// Mobile add mode: save any typed draft, then close ("Done" button).
+	const handleSaveAndClose = useCallback(async () => {
+		const primaryField = noteType?.fields[0];
+		const hasDraft = primaryField
+			? (fieldsRef.current[primaryField] ?? "").trim().length > 0
+			: false;
+		if (hasDraft && !savingRef.current) {
+			await handleSave();
+		}
+		onDone({ cancelled: false });
+	}, [noteType, handleSave, onDone]);
+
 	// Undo the most recent "Save & Add": only while it is still the top of the
 	// command stack and nothing was typed since. Restores the saved fields.
 	const handleUndoLastCreate = useCallback((): boolean => {
@@ -661,6 +676,7 @@ export function QuickNoteEditorApp({
 				requiresSourceNote={showSourcePicker && !selectedSourceNote}
 				sourceNoteFile={sourceNoteFile}
 				onSave={() => void handleSave()}
+				onSaveAndClose={() => void handleSaveAndClose()}
 				onOpenFields={openFields}
 				onOpenCards={openCards}
 				onAI={openAI}
@@ -681,6 +697,7 @@ interface FooterBarProps {
 	requiresSourceNote: boolean;
 	sourceNoteFile: TFile | null;
 	onSave: () => void;
+	onSaveAndClose: () => void;
 	onOpenFields: () => void;
 	onOpenCards: () => void;
 	onAI: () => void;
@@ -699,6 +716,7 @@ function FooterBar({
 	requiresSourceNote,
 	sourceNoteFile,
 	onSave,
+	onSaveAndClose,
 	onOpenFields,
 	onOpenCards,
 	onAI,
@@ -751,8 +769,24 @@ function FooterBar({
 				title={requiresSourceNote ? "Select a source note to save" : undefined}
 				stopPropagation={false}
 			>
-				{saving ? "Saving..." : isEdit ? "Save Changes" : "Save"}
+				{saving
+					? "Saving..."
+					: isEdit
+						? "Save Changes"
+						: isMobile()
+							? "Save & add another"
+							: "Save"}
 			</Clickable>
+			{!isEdit && isMobile() ? (
+				<Clickable
+					class={ghostBtnCls}
+					onClick={onSaveAndClose}
+					disabled={saving}
+					stopPropagation={false}
+				>
+					Done
+				</Clickable>
+			) : null}
 		</div>
 	);
 }
