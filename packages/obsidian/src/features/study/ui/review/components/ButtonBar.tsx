@@ -176,12 +176,13 @@ export function ButtonBar({
 	}
 
 	if (mobile) {
+		// One clean full-width bar; Type-in and card actions live in the view
+		// header's overflow menu on mobile, not in a second floating row.
+		// Bottom padding comes from review.styles.css (safe area + floating
+		// navbar clearance), so no ep:pb-* utility here.
 		return (
-			<div class="true-recall-review-buttons ep:flex ep:flex-col ep:gap-2 ep:border-t ep:border-obs-border ep:shrink-0 ep:px-3 ep:pt-2 ep:pb-3">
-				<div class="ep:flex ep:justify-center ep:gap-2">{ratingButtons}</div>
-				{secondaryButtons && (
-					<div class="ep:flex ep:justify-center">{secondaryButtons}</div>
-				)}
+			<div class="true-recall-review-buttons ep:flex ep:w-full ep:gap-2 ep:border-t ep:border-obs-border ep:shrink-0 ep:px-3 ep:pt-2">
+				{ratingButtons}
 			</div>
 		);
 	}

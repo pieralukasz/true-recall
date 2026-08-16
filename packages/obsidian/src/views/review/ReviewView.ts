@@ -138,6 +138,7 @@ export class ReviewView extends ItemView {
 	private keyboardHandler!: KeyboardHandler;
 	private unmountPreact?: () => void;
 	private openNoteAction: HTMLElement | null = null;
+	private actionsMenuAction: HTMLElement | null = null;
 	private unsubscribe: (() => void) | null = null;
 	private sessionSignalDisposer: (() => void) | null = null;
 	private reviewSyncDisposer: (() => void) | null = null;
@@ -769,6 +770,10 @@ export class ReviewView extends ItemView {
 			this.openNoteAction.remove();
 			this.openNoteAction = null;
 		}
+		if (this.actionsMenuAction) {
+			this.actionsMenuAction.remove();
+			this.actionsMenuAction = null;
+		}
 
 		const sharedStoreStillOwnsSession =
 			this.plugin.store?.getState().review === sharedReviewAtClose;
@@ -793,8 +798,26 @@ export class ReviewView extends ItemView {
 			this.openNoteAction.remove();
 			this.openNoteAction = null;
 		}
+		if (this.actionsMenuAction) {
+			this.actionsMenuAction.remove();
+			this.actionsMenuAction = null;
+		}
 
-		if (!this.review.isActive || !this.plugin.settings.showReviewHeader) {
+		if (!this.review.isActive) {
+			return;
+		}
+
+		// On mobile the card actions menu lives here instead of a second
+		// floating row above the grade bar.
+		if (isMobile()) {
+			this.actionsMenuAction = this.addAction(
+				"more-vertical",
+				"Card actions",
+				(evt) => this.showActionsMenu(evt),
+			);
+		}
+
+		if (!this.plugin.settings.showReviewHeader) {
 			return;
 		}
 
@@ -1049,6 +1072,18 @@ export class ReviewView extends ItemView {
 						});
 					}),
 			);
+			// On mobile the polish button has no home in the grade bar, so it
+			// joins the actions menu here.
+			if (isMobile() && isPluginEnabled(this.plugin.settings, "card-polish")) {
+				menu.addItem((item) =>
+					item
+						.setTitle("Polish card (AI)")
+						.setIcon("wand")
+						.onClick((evt) => {
+							if (evt instanceof MouseEvent) this.openCardPolishMenu(evt);
+						}),
+				);
+			}
 			menu.addSeparator();
 		}
 

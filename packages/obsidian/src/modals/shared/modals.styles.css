@@ -143,6 +143,12 @@
 	padding-bottom: env(safe-area-inset-bottom, 0);
 }
 
+/* Keep scrollable bottoms clear of Obsidian's floating mobile navbar. */
+.is-mobile.is-floating-nav .ep-dashboard-container,
+.is-mobile.is-floating-nav .tr-flashcard-panel {
+	padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 4.75rem);
+}
+
 /* ================================================================
    MOBILE ADD FLASHCARD — responsive layout for QuickNoteEditor
    ================================================================ */
