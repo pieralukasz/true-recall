@@ -598,6 +598,7 @@ export default class TrueRecallPlugin extends Plugin {
 	}
 
 	async openSimulator(): Promise<void> {
+		if (!this.ensureViewAvailable(VIEW_TYPE_SIMULATOR)) return;
 		await activateView(this.app, VIEW_TYPE_SIMULATOR, { useMainArea: true });
 	}
 
@@ -925,10 +926,18 @@ export default class TrueRecallPlugin extends Plugin {
 		void this.saveSettings();
 	}
 
+	/** Guard for views that are not registered on this platform. */
+	private ensureViewAvailable(viewType: string): boolean {
+		if (isViewAllowedOnCurrentPlatform(viewType)) return true;
+		notify().warning("This view is available on desktop only.");
+		return false;
+	}
+
 	async openCardBrowser(opts?: {
 		sourceUid?: string;
 		orphaned?: boolean;
 	}): Promise<void> {
+		if (!this.ensureViewAvailable(VIEW_TYPE_CARD_BROWSER)) return;
 		const state = opts?.sourceUid
 			? { sourceUid: opts.sourceUid }
 			: opts?.orphaned
@@ -972,6 +981,7 @@ export default class TrueRecallPlugin extends Plugin {
 	}
 
 	async openAssistantInbox(focusThreadId?: string): Promise<void> {
+		if (!this.ensureViewAvailable(VIEW_TYPE_ASSISTANT_INBOX)) return;
 		const existingLeaf = getView(this.app, VIEW_TYPE_ASSISTANT_INBOX);
 		if (existingLeaf) {
 			void this.app.workspace.revealLeaf(existingLeaf);
@@ -995,6 +1005,7 @@ export default class TrueRecallPlugin extends Plugin {
 	/** Reveals the docked AI workspace, normally in the right sidebar so it can
 	 * sit next to a review. */
 	async openAssistantWorkspace(mode?: AIWorkspaceMode): Promise<void> {
+		if (!this.ensureViewAvailable(VIEW_TYPE_ASSISTANT_WORKSPACE)) return;
 		const existingLeaf = getView(this.app, VIEW_TYPE_ASSISTANT_WORKSPACE);
 		if (existingLeaf) {
 			if (mode)

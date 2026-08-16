@@ -107,6 +107,12 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 	});
 
 	plugin.addCommand({
+		id: "add-flashcard",
+		name: "Add flashcard to current note",
+		callback: () => plugin.openQuickNoteEditor(),
+	});
+
+	plugin.addCommand({
 		id: "create-image-occlusion-card",
 		name: "Create image occlusion card",
 		checkCallback: (checking) => {

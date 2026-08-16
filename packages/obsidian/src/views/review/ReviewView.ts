@@ -76,6 +76,10 @@ import {
 	createAppStore,
 	type ReviewApi,
 } from "@true-recall/obsidian/store";
+import {
+	capabilities,
+	isMobile,
+} from "@true-recall/obsidian/utils/platform";
 import { runWhenLayoutReady } from "@true-recall/obsidian/views/layout-ready";
 import {
 	ReviewApp,
@@ -1012,13 +1016,18 @@ export class ReviewView extends ItemView {
 
 	private showActionsMenu(event: MouseEvent): void {
 		const menu = new Menu();
+		// Keyboard hints are noise on touch devices without a keyboard.
+		const withHint = (label: string, hint: string) =>
+			isMobile() ? label : `${label} (${hint})`;
 		const typeInMode = this.getTypeInMode();
-		const typeInMenuLabel =
+		const typeInMenuLabel = withHint(
 			typeInMode === "ai"
-				? "Type in: AI (t)"
+				? "Type in: AI"
 				: typeInMode === "diff"
-					? "Type in: Diff (t)"
-					: "Type in: Off (t)";
+					? "Type in: Diff"
+					: "Type in: Off",
+			"t",
+		);
 
 		menu.addItem((item) =>
 			item
@@ -1046,7 +1055,7 @@ export class ReviewView extends ItemView {
 		if (this.cardActionsHandler.canUndo()) {
 			menu.addItem((item) =>
 				item
-					.setTitle("Undo last answer (z)")
+					.setTitle(withHint("Undo last answer", "z"))
 					.setIcon("undo")
 					.onClick(() => this.cardActionsHandler.handleUndo()),
 			);
@@ -1055,38 +1064,38 @@ export class ReviewView extends ItemView {
 
 		menu.addItem((item) =>
 			item
-				.setTitle("Move card (m)")
+				.setTitle(withHint("Move card", "m"))
 				.setIcon("folder-input")
 				.onClick(() => this.cardActionsHandler.handleMoveCard()),
 		);
 		menu.addItem((item) =>
 			item
-				.setTitle("Delete card (shift+1)")
+				.setTitle(withHint("Delete card", "shift+1"))
 				.setIcon("trash-2")
 				.onClick(() => this.cardActionsHandler.handleDelete()),
 		);
 		menu.addItem((item) =>
 			item
-				.setTitle("Suspend card (shift+2)")
+				.setTitle(withHint("Suspend card", "shift+2"))
 				.setIcon("pause")
 				.onClick(() => this.cardActionsHandler.handleSuspend()),
 		);
 		menu.addItem((item) =>
 			item
-				.setTitle("Bury card (-)")
+				.setTitle(withHint("Bury card", "-"))
 				.setIcon("eye-off")
 				.onClick(() => this.cardActionsHandler.handleBuryCard()),
 		);
 		menu.addItem((item) =>
 			item
-				.setTitle("Bury note (=)")
+				.setTitle(withHint("Bury note", "="))
 				.setIcon("eye-off")
 				.onClick(() => this.cardActionsHandler.handleBuryNote()),
 		);
 		if (this.cardActionsHandler.canForgetCurrentCard()) {
 			menu.addItem((item) =>
 				item
-					.setTitle("Forget card (f)")
+					.setTitle(withHint("Forget card", "f"))
 					.setIcon("rotate-ccw")
 					.onClick(() => this.cardActionsHandler.handleForget()),
 			);
@@ -1097,14 +1106,14 @@ export class ReviewView extends ItemView {
 		if (isNoteReview) {
 			menu.addItem((item) =>
 				item
-					.setTitle("Open note (e)")
+					.setTitle(withHint("Open note", "e"))
 					.setIcon("external-link")
 					.onClick(() => this.handleOpenSourceNote()),
 			);
 		} else {
 			menu.addItem((item) =>
 				item
-					.setTitle("Edit card (e)")
+					.setTitle(withHint("Edit card", "e"))
 					.setIcon("pencil")
 					.onClick(() => void this.cardActionsHandler.handleEditCardModal()),
 			);
@@ -1116,18 +1125,20 @@ export class ReviewView extends ItemView {
 			);
 			menu.addItem((item) =>
 				item
-					.setTitle("Add flashcard (a)")
+					.setTitle(withHint("Add flashcard", "a"))
 					.setIcon("plus")
 					.onClick(() => void this.cardActionsHandler.handleAddNewFlashcard()),
 			);
-			menu.addItem((item) =>
-				item
-					.setTitle("Add image occlusion")
-					.setIcon("image")
-					.onClick(
-						() => void this.cardActionsHandler.handleAddImageOcclusion(),
-					),
-			);
+			if (capabilities.canEditImageOcclusion()) {
+				menu.addItem((item) =>
+					item
+						.setTitle("Add image occlusion")
+						.setIcon("image")
+						.onClick(
+							() => void this.cardActionsHandler.handleAddImageOcclusion(),
+						),
+				);
+			}
 			menu.addItem((item) =>
 				item
 					.setTitle("Open source note")
