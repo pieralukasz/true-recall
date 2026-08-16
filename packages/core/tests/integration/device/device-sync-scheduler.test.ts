@@ -14,6 +14,7 @@ function emptyResult(): SyncResult {
 	return {
 		devicesFound: 0,
 		cardsApplied: 0,
+		cardIdsChanged: [],
 		reviewLogsApplied: 0,
 		conflictsReplayed: 0,
 		duplicatesMerged: 0,

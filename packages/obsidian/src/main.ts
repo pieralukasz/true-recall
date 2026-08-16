@@ -64,6 +64,7 @@ import {
 } from "@true-recall/obsidian/modals/study/CustomStudyModal";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 import { ProjectManagementService } from "@true-recall/obsidian/services/project-management.service";
+import { setLastMutation } from "@true-recall/obsidian/services/signals";
 import { TrueRecallSettingTab } from "@true-recall/obsidian/settings";
 import type { AppStore } from "@true-recall/obsidian/store";
 import {
@@ -373,7 +374,14 @@ export default class TrueRecallPlugin extends Plugin {
 						this.deviceIdService.getDeviceId(),
 						() => syncService.syncOnStartup(),
 						{
-							onChanges: () => {
+							onChanges: (result) => {
+								if (result.cardIdsChanged.length > 0) {
+									setLastMutation({
+										type: "bulk",
+										action: "update",
+										cardIds: result.cardIdsChanged,
+									});
+								}
 								this.dataLayer?.invalidateGroups([
 									G.CARDS,
 									G.BROWSER,

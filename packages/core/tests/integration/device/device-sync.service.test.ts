@@ -248,6 +248,7 @@ describe("DeviceSyncService", () => {
 		// Assert
 		expect(result.devicesFound).toBe(1);
 		expect(result.cardsApplied).toBe(1);
+		expect(result.cardIdsChanged).toEqual(["remote-card-1"]);
 		expect(result.errors).toHaveLength(0);
 
 		// The note row is merged along with the card, so the JOIN-based
@@ -259,6 +260,36 @@ describe("DeviceSyncService", () => {
 		expect(synced).toBeDefined();
 		expect(synced?.question).toBe("Remote Q");
 		expect(synced?.answer).toBe("Remote A");
+	});
+
+	it("reports a remotely deleted card so live review queues can evict it", async () => {
+		const card = createTestCard({ id: "remote-deleted-card" });
+		localCtx.cards.set(card.id, card);
+
+		const remotePath = ".true-recall/true-recall-remote01.db";
+		const remoteBinary = await createRemoteDbBinary((ctx) => {
+			ctx.cards.set(card.id, card);
+			const deletedAt = Date.now() + 60_000;
+			ctx.db.run(
+				`UPDATE cards SET deleted_at = ?, updated_at = ? WHERE id = ?`,
+				[deletedAt, deletedAt, card.id],
+			);
+		});
+		persistence.seedBinary(remotePath, remoteBinary);
+
+		vi.mocked(discoveryMock.discoverDeviceDatabases).mockResolvedValue([
+			makeDeviceInfo({
+				deviceId: "remote01",
+				path: remotePath,
+				isCurrentDevice: false,
+			}),
+		]);
+
+		const result = await service.syncOnStartup();
+
+		expect(result.cardsApplied).toBe(1);
+		expect(result.cardIdsChanged).toEqual([card.id]);
+		expect(localCtx.cards.has(card.id)).toBe(false);
 	});
 
 	it("advances the sync watermark to the max remote updated_at, not the local clock", async () => {

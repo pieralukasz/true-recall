@@ -13,6 +13,8 @@ import type { DeviceDiscoveryService } from "./device-discovery.service";
 export interface SyncResult {
 	devicesFound: number;
 	cardsApplied: number;
+	/** Card ids whose persisted row changed, including remote tombstones. */
+	cardIdsChanged: string[];
 	reviewLogsApplied: number;
 	conflictsReplayed: number;
 	duplicatesMerged: number;
@@ -42,6 +44,7 @@ export class DeviceSyncService {
 		const result: SyncResult = {
 			devicesFound: 0,
 			cardsApplied: 0,
+			cardIdsChanged: [],
 			reviewLogsApplied: 0,
 			conflictsReplayed: 0,
 			duplicatesMerged: 0,
@@ -69,6 +72,7 @@ export class DeviceSyncService {
 			try {
 				const merged = await this.mergeFromRemote(remote.deviceId, remote.path);
 				result.cardsApplied += merged.cards;
+				result.cardIdsChanged.push(...merged.cardIdsChanged);
 				result.reviewLogsApplied += merged.reviewLogs;
 				result.conflictsReplayed += merged.conflicts;
 			} catch (err) {
@@ -80,7 +84,9 @@ export class DeviceSyncService {
 
 		if (result.cardsApplied > 0) {
 			try {
-				result.duplicatesMerged = this.dedupeConcurrentCreates();
+				const deduped = this.dedupeConcurrentCreates();
+				result.duplicatesMerged = deduped.merged;
+				result.cardIdsChanged.push(...deduped.cardIdsChanged);
 			} catch (err) {
 				const msg = `Failed to dedupe concurrent creates: ${err instanceof Error ? err.message : String(err)}`;
 				console.error(`[True Recall] ${msg}`);
@@ -99,6 +105,7 @@ export class DeviceSyncService {
 				result.errors.push(msg);
 			}
 		}
+		result.cardIdsChanged = [...new Set(result.cardIdsChanged)];
 
 		return result;
 	}
@@ -106,13 +113,23 @@ export class DeviceSyncService {
 	private async mergeFromRemote(
 		remoteDeviceId: string,
 		remotePath: string,
-	): Promise<{ cards: number; reviewLogs: number; conflicts: number }> {
+	): Promise<{
+		cards: number;
+		cardIdsChanged: string[];
+		reviewLogs: number;
+		conflicts: number;
+	}> {
 		const data = await this.persistence.readBinary(remotePath);
 		if (!data || data.byteLength === 0) {
 			console.warn(
 				`[True Recall] Remote database at ${remotePath} is empty or unreadable, skipping sync`,
 			);
-			return { cards: 0, reviewLogs: 0, conflicts: 0 };
+			return {
+				cards: 0,
+				cardIdsChanged: [],
+				reviewLogs: 0,
+				conflicts: 0,
+			};
 		}
 
 		const remoteDb = new SqliteDatabase(() => {});
@@ -186,6 +203,7 @@ export class DeviceSyncService {
 			};
 
 			let cardsApplied = 0;
+			const cardIdsChanged: string[] = [];
 			let reviewLogsApplied = 0;
 			let conflictsReplayed = 0;
 
@@ -211,6 +229,7 @@ export class DeviceSyncService {
 				for (const card of modifiedCards) {
 					if (this.localStore.cards.upsertFromRemote(card)) {
 						cardsApplied++;
+						cardIdsChanged.push(card.id);
 					}
 					observe(card.updatedAt);
 				}
@@ -229,6 +248,9 @@ export class DeviceSyncService {
 				}
 
 				conflictsReplayed = this.replayConflictedCards(conflictedCardIds);
+				if (conflictsReplayed > 0) {
+					cardIdsChanged.push(...conflictedCardIds);
+				}
 
 				this.localStore.cards.setSyncMetadata(syncKey, String(maxObserved));
 			});
@@ -241,6 +263,7 @@ export class DeviceSyncService {
 
 			return {
 				cards: cardsApplied,
+				cardIdsChanged,
 				reviewLogs: reviewLogsApplied,
 				conflicts: conflictsReplayed,
 			};
@@ -256,7 +279,10 @@ export class DeviceSyncService {
 	 * all replicas pick the same winner; losers are tombstoned and their
 	 * review history is reattached to the survivor.
 	 */
-	private dedupeConcurrentCreates(): number {
+	private dedupeConcurrentCreates(): {
+		merged: number;
+		cardIdsChanged: string[];
+	} {
 		const rows = this.localStore.cards.getActiveDedupRows();
 		const groups = new Map<string, typeof rows>();
 		for (const row of rows) {
@@ -270,6 +296,7 @@ export class DeviceSyncService {
 		}
 
 		let merged = 0;
+		const cardIdsChanged = new Set<string>();
 		this.localStore.transaction(() => {
 			for (const group of groups.values()) {
 				if (group.length < 2) continue;
@@ -282,6 +309,7 @@ export class DeviceSyncService {
 				for (const loser of sorted.slice(1)) {
 					this.localStore.stats.reassignCardReviews(loser.id, survivor.id);
 					this.localStore.cards.softDelete(loser.id);
+					cardIdsChanged.add(loser.id);
 					merged++;
 				}
 
@@ -295,11 +323,12 @@ export class DeviceSyncService {
 					);
 					if (state) {
 						this.localStore.cards.applyReplayedScheduling(survivor.id, state);
+						cardIdsChanged.add(survivor.id);
 					}
 				}
 			}
 		});
-		return merged;
+		return { merged, cardIdsChanged: [...cardIdsChanged] };
 	}
 
 	/**
