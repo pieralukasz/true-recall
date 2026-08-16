@@ -11,6 +11,7 @@ import {
 	SAFETY_FLUSH_INTERVAL_MS,
 } from "@true-recall/core/persistence/sqlite/sqlite.types";
 
+import { ObsidianDeviceIdStorage } from "@true-recall/obsidian/adapters/ObsidianDeviceIdStorage";
 import { ObsidianPersistence } from "@true-recall/obsidian/adapters/ObsidianPersistence";
 import { ObsidianUidPrompt } from "@true-recall/obsidian/adapters/ObsidianUidPrompt";
 import {
@@ -45,7 +46,9 @@ export async function initializeDeviceAndStore(
 		notify().error(
 			"Failed to initialize device context. Using default configuration.",
 		);
-		plugin.deviceIdService = new DeviceIdService(plugin.settings.deviceId);
+		plugin.deviceIdService = new DeviceIdService(
+			new ObsidianDeviceIdStorage(plugin.app),
+		);
 		const fallbackDeviceId = plugin.deviceIdService.getDeviceId();
 		setCurrentDeviceId(fallbackDeviceId);
 		await initializeCardStore(plugin, fallbackDeviceId);
@@ -55,12 +58,11 @@ export async function initializeDeviceAndStore(
 async function initializeDeviceContext(
 	plugin: TrueRecallPlugin,
 ): Promise<string> {
+	// The device ID must never be adopted from synced settings (data.json):
+	// a fresh install inheriting another device's ID would write to the same
+	// database file and the two devices would overwrite each other's exports.
 	plugin.deviceIdService = new DeviceIdService(
-		plugin.settings.deviceId,
-		(newId) => {
-			plugin.settings.deviceId = newId;
-			void plugin.saveSettings();
-		},
+		new ObsidianDeviceIdStorage(plugin.app),
 	);
 	const deviceId = plugin.deviceIdService.getDeviceId();
 	setCurrentDeviceId(deviceId);
@@ -124,6 +126,16 @@ async function initializeCardStore(
 			} else {
 				throw loadError;
 			}
+		}
+
+		// Store a readable device name in the database itself so other devices
+		// can show "iPhone 15" instead of a bare device id when syncing.
+		const deviceLabel = plugin.deviceIdService?.getDeviceLabel();
+		if (deviceLabel && plugin.coreApp.cardStore) {
+			plugin.coreApp.cardStore.cards.setSyncMetadata(
+				"device:label",
+				deviceLabel,
+			);
 		}
 
 		const sDbLoad = performance.now();

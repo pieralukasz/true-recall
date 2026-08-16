@@ -98,7 +98,16 @@ export function DeviceDatabaseSection() {
 			>
 				<TextInput
 					value={deviceLabel || ""}
-					onChange={(v) => plugin.deviceIdService?.setDeviceLabel(v)}
+					onChange={(v) => {
+						plugin.deviceIdService?.setDeviceLabel(v);
+						const label = plugin.deviceIdService?.getDeviceLabel();
+						if (label) {
+							plugin.coreApp.cardStore?.cards.setSyncMetadata(
+								"device:label",
+								label,
+							);
+						}
+					}}
 					placeholder="e.g., work laptop, phone"
 				/>
 			</FormField>
