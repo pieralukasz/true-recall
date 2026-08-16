@@ -138,7 +138,6 @@ export class ReviewView extends ItemView {
 	private keyboardHandler!: KeyboardHandler;
 	private unmountPreact?: () => void;
 	private openNoteAction: HTMLElement | null = null;
-	private actionsMenuAction: HTMLElement | null = null;
 	private unsubscribe: (() => void) | null = null;
 	private sessionSignalDisposer: (() => void) | null = null;
 	private reviewSyncDisposer: (() => void) | null = null;
@@ -770,10 +769,6 @@ export class ReviewView extends ItemView {
 			this.openNoteAction.remove();
 			this.openNoteAction = null;
 		}
-		if (this.actionsMenuAction) {
-			this.actionsMenuAction.remove();
-			this.actionsMenuAction = null;
-		}
 
 		const sharedStoreStillOwnsSession =
 			this.plugin.store?.getState().review === sharedReviewAtClose;
@@ -798,26 +793,8 @@ export class ReviewView extends ItemView {
 			this.openNoteAction.remove();
 			this.openNoteAction = null;
 		}
-		if (this.actionsMenuAction) {
-			this.actionsMenuAction.remove();
-			this.actionsMenuAction = null;
-		}
 
-		if (!this.review.isActive) {
-			return;
-		}
-
-		// On mobile the card actions menu lives here instead of a second
-		// floating row above the grade bar.
-		if (isMobile()) {
-			this.actionsMenuAction = this.addAction(
-				"more-vertical",
-				"Card actions",
-				(evt) => this.showActionsMenu(evt),
-			);
-		}
-
-		if (!this.plugin.settings.showReviewHeader) {
+		if (!this.review.isActive || !this.plugin.settings.showReviewHeader) {
 			return;
 		}
 
@@ -1039,6 +1016,20 @@ export class ReviewView extends ItemView {
 
 	private showActionsMenu(event: MouseEvent): void {
 		const menu = new Menu();
+		this.populateActionsMenu(menu);
+		menu.showAtMouseEvent(event);
+	}
+
+	/** On mobile the card actions join the view's native pane menu, so the
+	 * header keeps a single overflow button instead of two identical ones. */
+	onPaneMenu(menu: Menu, source: string): void {
+		super.onPaneMenu(menu, source);
+		if (!isMobile() || !this.review.isActive) return;
+		menu.addSeparator();
+		this.populateActionsMenu(menu);
+	}
+
+	private populateActionsMenu(menu: Menu): void {
 		// Keyboard hints are noise on touch devices without a keyboard.
 		const withHint = (label: string, hint: string) =>
 			isMobile() ? label : `${label} (${hint})`;
@@ -1181,8 +1172,6 @@ export class ReviewView extends ItemView {
 					.onClick(() => this.handleOpenSourceNote()),
 			);
 		}
-
-		menu.showAtMouseEvent(event);
 	}
 
 	private async resolveGradingContext(card: FSRSFlashcardItem): Promise<{
