@@ -17,6 +17,7 @@ describe("SqliteStoreService persistence durability", () => {
 		exportData?: Uint8Array;
 		onWrite?: () => void;
 		writeBinary?: (_path: string, _data: ArrayBuffer) => Promise<void>;
+		saveDebounceMs?: number;
 	}) {
 		const persistence: IPersistence = {
 			exists: vi.fn(async () => true),
@@ -32,7 +33,13 @@ describe("SqliteStoreService persistence durability", () => {
 			stat: vi.fn(async () => null),
 		};
 
-		const store = new SqliteStoreService(persistence, "dev12345");
+		const store = new SqliteStoreService(
+			persistence,
+			"dev12345",
+			opts?.saveDebounceMs !== undefined
+				? { saveDebounceMs: opts.saveDebounceMs }
+				: {},
+		);
 		(store as unknown as { db: unknown }).db = {
 			isReady: () => true,
 			export: () => opts?.exportData ?? new Uint8Array([1, 2, 3, 4]),
@@ -48,6 +55,20 @@ describe("SqliteStoreService persistence durability", () => {
 		(store as unknown as { markDirty: () => void }).markDirty();
 
 		await vi.advanceTimersByTimeAsync(SAVE_DEBOUNCE_MS - 1);
+		expect(persistence.writeBinary).not.toHaveBeenCalled();
+
+		await vi.advanceTimersByTimeAsync(1);
+		expect(persistence.writeBinary).toHaveBeenCalledTimes(1);
+	});
+
+	it("honors a custom saveDebounceMs (mobile tuning)", async () => {
+		const { store, persistence } = createStoreWithMocks({
+			saveDebounceMs: 400,
+		});
+
+		(store as unknown as { markDirty: () => void }).markDirty();
+
+		await vi.advanceTimersByTimeAsync(399);
 		expect(persistence.writeBinary).not.toHaveBeenCalled();
 
 		await vi.advanceTimersByTimeAsync(1);

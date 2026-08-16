@@ -16,6 +16,7 @@ import {
 	VIEW_TYPE_STATS,
 } from "@true-recall/core/constants";
 import type { DeletionHandlerService } from "@true-recall/core/flashcard/lifecycle/deletion-handler.service";
+import { MOBILE_SAVE_DEBOUNCE_MS } from "@true-recall/core/persistence/sqlite/sqlite.types";
 import type { DeviceDiscoveryService } from "@true-recall/core/integration/device/device-discovery.service";
 import type { DeviceIdService } from "@true-recall/core/integration/device/device-id.service";
 import { DeviceLockService } from "@true-recall/core/integration/device/device-lock.service";
@@ -257,6 +258,11 @@ export default class TrueRecallPlugin extends Plugin {
 				settingsPersistence: new ObsidianSettingsPersistence(this),
 				linkResolver: new ObsidianLinkResolver(this.app),
 				vaultEvents: new ObsidianVaultEventBridge(this.app, this),
+				// Mobile OSes can kill the app without unload events; keep the
+				// window between a review and its disk flush minimal there.
+				storeOptions: isMobile()
+					? { saveDebounceMs: MOBILE_SAVE_DEBOUNCE_MS }
+					: undefined,
 			});
 			await this.coreApp.initialize();
 		} catch (error) {

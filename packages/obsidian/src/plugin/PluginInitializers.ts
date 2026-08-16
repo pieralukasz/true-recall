@@ -30,6 +30,7 @@ import type TrueRecallPlugin from "../main";
 import { AssistantService } from "../services/assistant/assistant.service";
 import { BackupRecoveryManager } from "./BackupRecoveryManager";
 import { DayRolloverWatcher } from "./DayRolloverWatcher";
+import { PersistenceLifecycleGuard } from "./PersistenceLifecycleGuard";
 import { PluginLoader } from "./plugin-loader";
 import { isPluginEnabled } from "./plugin-utils";
 
@@ -146,6 +147,10 @@ async function initializeCardStore(
 					void plugin.coreApp.cardStore.saveNow();
 				}
 			}, SAFETY_FLUSH_INTERVAL_MS),
+		);
+
+		new PersistenceLifecycleGuard(() => plugin.coreApp.cardStore).register(
+			plugin,
 		);
 
 		const dl = new DataLayer();

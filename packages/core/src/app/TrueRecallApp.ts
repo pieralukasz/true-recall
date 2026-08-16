@@ -16,7 +16,10 @@ import { FSRSHelperService } from "../metrics/fsrs-tools";
 import { BackgroundBackupManager } from "../persistence/backup/background-backup.service";
 import { BackupService } from "../persistence/backup/backup.service";
 import { SessionPersistenceService } from "../persistence/session/session-persistence.service";
-import { SqliteStoreService } from "../persistence/sqlite";
+import {
+	SqliteStoreService,
+	type SqliteStoreOptions,
+} from "../persistence/sqlite";
 import { FSRSService } from "../services/fsrs/fsrs.service";
 import { FrontmatterIndexService } from "../services/notes/frontmatter-index.service";
 import { HierarchyService } from "../services/notes/hierarchy.service";
@@ -38,6 +41,8 @@ export interface TrueRecallAppConfig {
 	linkResolver: ILinkResolver;
 	vaultEvents: IVaultEventBridge;
 	uidRemovalPrompt?: IUidRemovalPrompt;
+	/** Platform-specific persistence tuning (e.g. shorter debounce on mobile). */
+	storeOptions?: SqliteStoreOptions;
 }
 
 function cloneSettingsForSave(
@@ -146,7 +151,11 @@ export class TrueRecallApp {
 	}
 
 	async initializeStore(deviceId: string): Promise<void> {
-		this.cardStore = new SqliteStoreService(this.config.persistence, deviceId);
+		this.cardStore = new SqliteStoreService(
+			this.config.persistence,
+			deviceId,
+			this.config.storeOptions,
+		);
 		await this.cardStore.load();
 
 		this.flashcardManager.setStore(this.cardStore);
