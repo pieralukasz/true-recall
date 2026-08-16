@@ -2,6 +2,9 @@
  * Mock for Obsidian module
  * Used in tests that import from services that depend on Obsidian
  */
+import { vi } from "vitest";
+
+export const requestUrl = vi.fn();
 
 export class App {}
 export class Plugin {}
