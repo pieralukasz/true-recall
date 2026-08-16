@@ -39,6 +39,7 @@ import {
 } from "@true-recall/obsidian/features/metrics/ui/stats/components";
 import { useStatsData } from "@true-recall/obsidian/features/metrics/ui/stats/hooks/use-stats-data";
 import { useGatedComputed, usePlugin } from "@true-recall/obsidian/preact";
+import { capabilities } from "@true-recall/obsidian/utils/platform";
 
 import { HeatmapWidget } from "@true-recall/plugins/dashboard-codeblock/analytics/HeatmapWidget";
 
@@ -286,7 +287,7 @@ export function StatsApp({ isViewVisible }: StatsAppProps) {
 
 	// FSRS distributions — filtered by preset via card filtering
 	const distributions = useMemo(() => {
-		if (renderStage < 3) return null;
+		if (renderStage < 3 || !capabilities.canShowFullStats()) return null;
 		return getFilteredDistributions(filteredCards);
 	}, [renderStage, filteredCards]);
 
@@ -372,27 +373,37 @@ export function StatsApp({ isViewVisible }: StatsAppProps) {
 
 							{renderStage >= 3 && (
 								<>
-									<ReviewHistoryChart data={data.reviewHistory} />
+									{capabilities.canShowFullStats() && (
+										<ReviewHistoryChart data={data.reviewHistory} />
+									)}
 
 									<CardMaturitySection data={data.maturity} />
 
-									<RetentionChart
-										data={data.retention}
-										targetRetention={targetRetention}
-									/>
+									{capabilities.canShowFullStats() && (
+										<RetentionChart
+											data={data.retention}
+											targetRetention={targetRetention}
+										/>
+									)}
 
 									<RatingDistributionChart data={data.ratingDistribution} />
 
-									<CollectionHealthBar data={data.health} />
+									{/* Heavy analytics stay off phones; the simplified set
+									    above answers the quick daily questions. */}
+									{capabilities.canShowFullStats() && (
+										<>
+											<CollectionHealthBar data={data.health} />
 
-									<DistributionSection data={distributions} />
+											<DistributionSection data={distributions} />
 
-									<CreatedVsReviewedChart
-										created={data.cardsCreated}
-										reviewHistory={data.reviewHistory}
-									/>
+											<CreatedVsReviewedChart
+												created={data.cardsCreated}
+												reviewHistory={data.reviewHistory}
+											/>
 
-									<RangeSummary data={data.rangeSummary} />
+											<RangeSummary data={data.rangeSummary} />
+										</>
+									)}
 								</>
 							)}
 						</>

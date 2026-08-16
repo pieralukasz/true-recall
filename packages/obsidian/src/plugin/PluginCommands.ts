@@ -87,11 +87,7 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 	plugin.addCommand({
 		id: "open-stats",
 		name: "Open statistics",
-		checkCallback: (checking) => {
-			if (!capabilities.canShowFullStats()) return false;
-			if (!checking) void plugin.openStats();
-			return true;
-		},
+		callback: () => void plugin.openStats(),
 	});
 
 	plugin.addCommand({
