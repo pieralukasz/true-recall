@@ -339,3 +339,20 @@
 .true-recall-review-answer .cm-scroller {
 	padding: 0;
 }
+
+/* Obsidian mobile pads every CM scroller with
+   var(--view-top-spacing-markdown) via a high-specificity unlayered rule,
+   which pushed the answer text ~110px below the separator. Zeroing the
+   variable on our field wrappers wins by inheritance proximity, no
+   specificity war or !important (stripped by the CSS build) needed. */
+.true-recall-review-question,
+.true-recall-review-answer {
+	--view-top-spacing-markdown: 0px;
+	--view-top-spacing: 0px;
+}
+
+.is-mobile .true-recall-review-question .cm-scroller,
+.is-mobile .true-recall-review-answer .cm-scroller {
+	padding-top: 0;
+	padding-bottom: 0;
+}

@@ -159,9 +159,15 @@
 	padding-bottom: env(safe-area-inset-bottom, 12px);
 }
 
-/* Tighter vertical gap between sections */
+/* Tighter vertical gap between sections; fill the modal so the footer
+   can pin to the bottom instead of floating mid-screen on short forms. */
 .is-mobile .true-recall-quick-editor {
 	gap: 0.5rem;
+	min-height: 100%;
+}
+
+.is-mobile .true-recall-quick-editor .ep-modal-footer {
+	margin-top: auto;
 }
 
 /* ── ActionBar: stack vertically ── */
