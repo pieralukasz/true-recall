@@ -15,6 +15,13 @@ class MapPersistence implements IPersistence {
 	files = new Map<string, Uint8Array>();
 	folders = new Set<string>();
 
+	async rename(oldPath: string, newPath: string): Promise<void> {
+		const data = this.files.get(oldPath);
+		if (!data) throw new Error(`not found: ${oldPath}`);
+		this.files.set(newPath, data);
+		this.files.delete(oldPath);
+	}
+
 	async read(path: string): Promise<string> {
 		const data = this.files.get(path);
 		if (!data) throw new Error(`not found: ${path}`);

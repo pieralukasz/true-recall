@@ -8,6 +8,11 @@ import { IntegrityCheckService } from "../../services/maintenance/integrity-chec
 import type { CardSchedulingMeta, FSRSCardData } from "../../types";
 import { NOTIFICATION_DURATION, notify } from "../notification";
 import {
+	type DbLoadOutcome,
+	loadDbFileWithSalvage,
+	writeDbFileAtomically,
+} from "./atomic-db-file";
+import {
 	AssistantTaskActions,
 	AssistantThreadActions,
 	CardActions,
@@ -90,12 +95,20 @@ export class SqliteStoreService {
 
 		const dbPath = this.getDbPath();
 
-		// Load existing data - errors are now thrown instead of returning null
-		let existingData: Uint8Array | null = null;
+		// Try candidates newest-first (.tmp → main → .bak) so an interrupted
+		// flush never silently reverts the user to an old archived backup.
+		let outcome: DbLoadOutcome;
 		try {
-			existingData = await this.loadFromFile(dbPath);
+			outcome = await loadDbFileWithSalvage(
+				this.persistence,
+				dbPath,
+				async (bytes) => {
+					await this.db.init(bytes);
+					if (bytes) this.assertDbConsistent(bytes.byteLength);
+				},
+			);
 		} catch (error) {
-			// File exists but cannot be read - CRITICAL ERROR
+			// Every on-disk copy is unusable - CRITICAL ERROR
 			console.error("[True Recall] Database load failed:", error);
 			notify().error(
 				"True Recall: Cannot load database. Please restore from backup (Settings → Data & Backup → Restore).",
@@ -105,7 +118,14 @@ export class SqliteStoreService {
 			throw error; // Don't continue with empty database!
 		}
 
-		await this.db.init(existingData);
+		if (outcome.salvaged) {
+			notify().warning(
+				"True Recall: Main database file was damaged; recovered the newest intact copy and re-saving it now.",
+				NOTIFICATION_DURATION.LONG,
+			);
+			// Rewrite the main file from the salvaged data as soon as possible.
+			this.markDirty();
+		}
 
 		// Fix corrupted FKs before schema setup so createTables() indexes apply correctly
 		this.cleanupStaleReferences();
@@ -113,7 +133,7 @@ export class SqliteStoreService {
 		// Schema setup (CREATE TABLE IF NOT EXISTS — safe for existing DBs)
 		const schemaManager = new SqliteSchemaManager(this.db.raw);
 		schemaManager.createTables();
-		if (!existingData) {
+		if (outcome.source === "fresh") {
 			this.isDirty = true;
 		}
 
@@ -300,43 +320,27 @@ export class SqliteStoreService {
 		return `${DB_FOLDER}/${filename}`;
 	}
 
-	private async loadFromFile(path: string): Promise<Uint8Array | null> {
-		const fileExists = await this.persistence.exists(path);
-		if (!fileExists) {
-			return null;
-		}
-
-		// File exists - read errors are CRITICAL (don't treat as "new database")
+	/**
+	 * Reject files that deserialize but cannot hold their declared content,
+	 * the signature of a truncated (torn-write) database file. The header
+	 * page count is trusted by SQLite, so a mismatch with the actual byte
+	 * length surfaces here deterministically instead of as random
+	 * "database disk image is malformed" errors mid-session.
+	 */
+	private assertDbConsistent(actualByteLength: number): void {
 		try {
-			const data = await this.persistence.readBinary(path);
-			if (!data) {
-				return null;
-			}
-
-			// Validate SQLite header: "SQLite format 3\0"
-			if (data.byteLength < 100) {
+			this.db.query("SELECT count(*) FROM sqlite_master");
+			const declaredBytes =
+				this.pragmaNumber("page_count") * this.pragmaNumber("page_size");
+			if (declaredBytes > 0 && declaredBytes !== actualByteLength) {
 				throw new Error(
-					`Database file too small (${data.byteLength} bytes) - likely corrupted`,
+					`Database size mismatch: header declares ${declaredBytes} bytes ` +
+						`but file has ${actualByteLength} - truncated or corrupted file`,
 				);
 			}
-
-			const header = new TextDecoder().decode(
-				new Uint8Array(data).slice(0, 16),
-			);
-			if (!header.startsWith("SQLite format 3")) {
-				throw new Error("Invalid SQLite header - file corrupted");
-			}
-
-			return new Uint8Array(data);
 		} catch (error) {
-			// DO NOT return null - this would create an empty database!
-			console.error(
-				"[True Recall] CRITICAL: Failed to load existing database:",
-				error,
-			);
-			throw new Error(
-				`Cannot load database: ${error instanceof Error ? error.message : String(error)}`,
-			);
+			this.db.close();
+			throw error;
 		}
 	}
 
@@ -400,7 +404,13 @@ export class SqliteStoreService {
 						await this.persistence.mkdir(DB_FOLDER);
 					}
 
-					await this.persistence.writeBinary(dbPath, toExactArrayBuffer(data));
+					// Crash-safe swap: an interrupted write can never truncate the
+					// main file (the cause of a full-day data loss on 2026-08-18).
+					await writeDbFileAtomically(
+						this.persistence,
+						dbPath,
+						toExactArrayBuffer(data),
+					);
 
 					this.lastFlushSucceededAt = Date.now();
 					this.lastFlushError = null;

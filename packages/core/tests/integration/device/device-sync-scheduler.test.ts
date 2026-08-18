@@ -28,6 +28,9 @@ class StatMockPersistence implements IPersistence {
 	async read(): Promise<string> {
 		throw new Error("not used");
 	}
+	async rename(): Promise<void> {
+		throw new Error("not used");
+	}
 	async readBinary(): Promise<Uint8Array | null> {
 		return null;
 	}

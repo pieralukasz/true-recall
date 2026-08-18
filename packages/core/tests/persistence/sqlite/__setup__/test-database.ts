@@ -22,7 +22,7 @@ import type { FSRSCardData } from "../../../../src/types";
 import type { Note, NoteType } from "../../../../src/types/note.types";
 import { BUILTIN_SLUGS } from "../../../../src/types/note.types";
 
-class TestSqlJsWrapper implements DatabaseLike {
+export class TestSqlJsWrapper implements DatabaseLike {
 	constructor(private sqlDb: SqlJsDatabase) {}
 
 	exec(sql: string, params?: BindParams): QueryExecResult[] {

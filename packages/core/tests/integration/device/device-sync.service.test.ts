@@ -97,6 +97,13 @@ class MockPersistence implements IPersistence {
 		return this.files.get(path) ?? null;
 	}
 
+	async rename(oldPath: string, newPath: string): Promise<void> {
+		const data = this.files.get(oldPath);
+		if (!data) throw new Error(`Cannot rename missing file: ${oldPath}`);
+		this.files.set(newPath, data);
+		this.files.delete(oldPath);
+	}
+
 	async read(path: string): Promise<string> {
 		const data = this.files.get(path);
 		if (!data) throw new Error(`File not found: ${path}`);

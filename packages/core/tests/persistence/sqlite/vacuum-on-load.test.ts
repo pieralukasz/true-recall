@@ -16,6 +16,7 @@ function createStore(opts: {
 		exists: vi.fn(async () => true),
 		mkdir: vi.fn(async () => {}),
 		writeBinary: vi.fn(async () => {}),
+		rename: vi.fn(async () => {}),
 		readBinary: vi.fn(async () => null),
 		read: vi.fn(async () => ""),
 		list: vi.fn(async () => ({ files: [], folders: [] })),

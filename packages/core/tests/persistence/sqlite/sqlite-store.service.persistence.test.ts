@@ -19,18 +19,34 @@ describe("SqliteStoreService persistence durability", () => {
 		writeBinary?: (_path: string, _data: ArrayBuffer) => Promise<void>;
 		saveDebounceMs?: number;
 	}) {
+		// Track written byte sizes so the atomic write's post-write size
+		// verification and tmp→main rename see a consistent filesystem.
+		const written = new Map<string, number>();
 		const persistence: IPersistence = {
-			exists: vi.fn(async () => true),
+			exists: vi.fn(async (path: string) => written.has(path)),
 			mkdir: vi.fn(async () => {}),
-			writeBinary: vi.fn(
-				async (path: string, data: ArrayBuffer) =>
-					opts?.writeBinary?.(path, data) ?? opts?.onWrite?.(),
-			),
+			writeBinary: vi.fn(async (path: string, data: ArrayBuffer) => {
+				if (opts?.writeBinary) await opts.writeBinary(path, data);
+				else opts?.onWrite?.();
+				written.set(path, data.byteLength);
+			}),
+			rename: vi.fn(async (oldPath: string, newPath: string) => {
+				const size = written.get(oldPath);
+				if (size === undefined)
+					throw new Error(`Cannot rename missing file: ${oldPath}`);
+				written.set(newPath, size);
+				written.delete(oldPath);
+			}),
 			readBinary: vi.fn(async () => null),
 			read: vi.fn(async () => ""),
 			list: vi.fn(async () => ({ files: [], folders: [] })),
-			remove: vi.fn(async () => {}),
-			stat: vi.fn(async () => null),
+			remove: vi.fn(async (path: string) => {
+				written.delete(path);
+			}),
+			stat: vi.fn(async (path: string) => {
+				const size = written.get(path);
+				return size === undefined ? null : { size, mtime: 0 };
+			}),
 		};
 
 		const store = new SqliteStoreService(

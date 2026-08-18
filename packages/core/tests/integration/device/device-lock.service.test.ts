@@ -13,6 +13,20 @@ class MockPersistence implements IPersistence {
 	private textFiles = new Map<string, string>();
 	private binaryFiles = new Map<string, ArrayBuffer>();
 
+	async rename(oldPath: string, newPath: string): Promise<void> {
+		const text = this.textFiles.get(oldPath);
+		if (text !== undefined) {
+			this.textFiles.set(newPath, text);
+			this.textFiles.delete(oldPath);
+			return;
+		}
+		const binary = this.binaryFiles.get(oldPath);
+		if (binary === undefined)
+			throw new Error(`Cannot rename missing file: ${oldPath}`);
+		this.binaryFiles.set(newPath, binary);
+		this.binaryFiles.delete(oldPath);
+	}
+
 	async exists(path: string): Promise<boolean> {
 		if (this.textFiles.has(path) || this.binaryFiles.has(path)) return true;
 		const prefix = `${path}/`;
