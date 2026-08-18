@@ -15,6 +15,7 @@ import {
 	getLegacyBackupFolderPath,
 	toExactArrayBuffer,
 } from "@true-recall/core/persistence/sqlite";
+import { writeDbFileAtomically } from "@true-recall/core/persistence/sqlite/atomic-db-file";
 import type { RetentionPolicy } from "@true-recall/core/types/settings.types";
 import { formatFileSize } from "@true-recall/core/utils/format.utils";
 
@@ -228,10 +229,11 @@ export class BackupService {
 			// file we are about to write.
 			this.sqliteStore.haltPersistence();
 
-			// Write to main database file
+			// Write to main database file. Atomic swap: an interrupted restore
+			// must not leave a truncated live database behind.
 			const deviceId = this.sqliteStore.getDeviceId();
 			const dbPath = `${DB_FOLDER}/${getDeviceDbFilename(deviceId)}`;
-			await this.persistence.writeBinary(dbPath, dbData);
+			await writeDbFileAtomically(this.persistence, dbPath, dbData);
 			const backupName = backupPath.split("/").pop() || backupPath;
 
 			notify().success(

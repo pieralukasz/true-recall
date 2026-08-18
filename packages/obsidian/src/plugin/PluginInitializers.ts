@@ -4,6 +4,7 @@ import { DeletionHandlerService } from "@true-recall/core/flashcard/lifecycle/de
 import { UidGuardianService } from "@true-recall/core/flashcard/lifecycle/uid-guardian.service";
 import { DeviceDiscoveryService } from "@true-recall/core/integration/device/device-discovery.service";
 import { DeviceIdService } from "@true-recall/core/integration/device/device-id.service";
+import { writeDbFileAtomically } from "@true-recall/core/persistence/sqlite/atomic-db-file";
 import { setCurrentDeviceId } from "@true-recall/core/persistence/sqlite/device-context";
 import {
 	DB_FOLDER,
@@ -397,7 +398,13 @@ async function handleDeviceSelection(
 			const sourceData = await plugin.app.vault.adapter.readBinary(
 				result.sourcePath,
 			);
-			await plugin.app.vault.adapter.writeBinary(targetPath, sourceData);
+			// Atomic swap: an interrupted import must not leave a truncated
+			// live database behind.
+			await writeDbFileAtomically(
+				new ObsidianPersistence(plugin.app),
+				targetPath,
+				sourceData,
+			);
 			notify().success(`Imported data from device ${result.sourceDeviceId}`);
 		} catch (error) {
 			console.error("[True Recall] Database import failed:", error);

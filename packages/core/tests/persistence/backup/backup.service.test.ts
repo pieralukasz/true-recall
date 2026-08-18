@@ -66,6 +66,7 @@ function makeStoreMock(): SqliteStoreService {
 		getDeviceId: () => "dev00001",
 		saveNow: async () => true,
 		getDatabase: () => ({ export: () => sqliteHeader }),
+		haltPersistence: () => {},
 	} as unknown as SqliteStoreService;
 }
 
@@ -106,5 +107,31 @@ describe("BackupService folder layout", () => {
 		expect(backups[1]?.filename).toBe(
 			"true-recall-backup-2026-08-14-100000.db.gz",
 		);
+	});
+});
+
+describe("BackupService restore", () => {
+	it("replaces the live database atomically, keeping the previous file as .bak", async () => {
+		const persistence = new MapPersistence();
+		const service = new BackupService(persistence, makeStoreMock());
+		const dbPath = ".true-recall/true-recall-dev00001.db";
+		const backupPath =
+			".true-recall/backups.nosync/dev00001/true-recall-backup-2026-08-15-100000.db.gz";
+
+		const restoredBytes = new TextEncoder().encode(
+			"SQLite format 3\0RESTORED-CONTENT",
+		);
+		persistence.files.set(backupPath, await gzipCompress(restoredBytes));
+		const previousBytes = new TextEncoder().encode(
+			"SQLite format 3\0PREVIOUS-CONTENT",
+		);
+		persistence.files.set(dbPath, previousBytes);
+
+		const ok = await service.restoreFromBackup(backupPath);
+
+		expect(ok).toBe(true);
+		expect(persistence.files.get(dbPath)).toEqual(restoredBytes);
+		expect(persistence.files.get(`${dbPath}.bak`)).toEqual(previousBytes);
+		expect(persistence.files.has(`${dbPath}.tmp`)).toBe(false);
 	});
 });

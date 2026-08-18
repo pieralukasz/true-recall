@@ -3,6 +3,7 @@ import { type App, normalizePath } from "obsidian";
 import type { BackgroundBackupManager } from "@true-recall/core/persistence/backup/background-backup.service";
 import type { BackupService } from "@true-recall/core/persistence/backup/backup.service";
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite";
+import { writeDbFileAtomically } from "@true-recall/core/persistence/sqlite/atomic-db-file";
 import {
 	decodeBackupToSqliteBytes,
 	isSupportedBackupPath,
@@ -16,6 +17,7 @@ import {
 	getLegacyBackupFolderPath,
 } from "@true-recall/core/persistence/sqlite/sqlite.types";
 
+import { ObsidianPersistence } from "@true-recall/obsidian/adapters/ObsidianPersistence";
 import { RestoreBackupModal } from "@true-recall/obsidian/modals/integration/RestoreBackupModal";
 import {
 	NOTIFICATION_DURATION,
@@ -78,7 +80,10 @@ export class BackupRecoveryManager {
 					if (brokenExists) {
 						await this.app.vault.adapter.rename(dbPath, corruptedPath);
 					}
-					await this.app.vault.adapter.writeBinary(
+					// Atomic swap: an interrupted recovery write must not leave a
+					// truncated live database behind.
+					await writeDbFileAtomically(
+						new ObsidianPersistence(this.app),
 						dbPath,
 						toExactBackupBuffer(sqliteBytes),
 					);
