@@ -40,6 +40,9 @@ export default [
 			// Auxiliary interfaces compiled with their own tsconfigs.
 			"cli/**",
 			"scripts/**",
+			// The e2e harness drives a real Obsidian build over CDP; it is not
+			// part of the root tsconfig, so type-aware rules abort the whole run.
+			"e2e/**",
 			// Tests and root tooling configs are excluded from the root tsconfig.
 			"packages/*/tests/**",
 			"**/*.test.ts",
