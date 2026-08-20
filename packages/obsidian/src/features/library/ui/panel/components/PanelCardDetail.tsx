@@ -1,11 +1,15 @@
 import type { FlashcardItem } from "@true-recall/core/types";
 import type { FSRSFlashcardItem } from "@true-recall/core/types/fsrs/card.types";
 
+import { assistantContextFromCard } from "@true-recall/obsidian/features/assistant/ui/ai-context-source";
+import { openAiWorkspace } from "@true-recall/obsidian/features/assistant/ui/open-ai-workspace";
 import { PanelCardFields } from "@true-recall/obsidian/features/library/ui/panel/components/PanelCardDetailContent";
 import { PanelIconButton } from "@true-recall/obsidian/features/library/ui/panel/components/PanelIconButton";
 import { usePanelCardMenu } from "@true-recall/obsidian/features/library/ui/panel/hooks/usePanelCardMenu";
 import type { PanelCardActionHandlers } from "@true-recall/obsidian/features/library/ui/panel/panel.types";
+import { isCardPolishAvailable } from "@true-recall/obsidian/features/library/ui/panel/utils/card-polish.utils";
 import { getPanelCardStatus } from "@true-recall/obsidian/features/library/ui/panel/utils/panel-list.utils";
+import { usePlugin } from "@true-recall/obsidian/preact";
 
 interface PanelCardDetailProps {
 	card: FlashcardItem;
@@ -32,6 +36,7 @@ export function PanelCardDetail({
 	onNext,
 	actions,
 }: PanelCardDetailProps) {
+	const plugin = usePlugin();
 	const openMenu = usePanelCardMenu({
 		card,
 		fsrsCard,
@@ -39,6 +44,18 @@ export function PanelCardDetail({
 		variant: "detail",
 	});
 	const status = getPanelCardStatus(fsrsCard, dayStartHour);
+	const canPolish = fsrsCard && isCardPolishAvailable(plugin.settings);
+
+	const openPolishWorkspace = (event: MouseEvent) => {
+		if (!fsrsCard) return;
+		const anchor = event.currentTarget;
+		openAiWorkspace(plugin, {
+			intent: "preset",
+			anchor: anchor instanceof HTMLElement ? anchor : undefined,
+			mode: "card-polish",
+			context: assistantContextFromCard(fsrsCard),
+		});
+	};
 
 	return (
 		<div class="tr-panel-detail ep:flex ep:h-full ep:min-h-0 ep:flex-col ep:bg-obs-primary">
@@ -74,6 +91,13 @@ export function PanelCardDetail({
 					disabled={total <= 1}
 					onClick={onNext}
 				/>
+				{canPolish ? (
+					<PanelIconButton
+						icon="wand"
+						label="Polish Card (AI)"
+						onClick={openPolishWorkspace}
+					/>
+				) : null}
 				<PanelIconButton
 					icon="more-vertical"
 					label="Card Actions"

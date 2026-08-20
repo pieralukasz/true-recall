@@ -2,12 +2,14 @@ import { Menu } from "obsidian";
 import { useCallback } from "preact/hooks";
 
 import { usePanelStore } from "@true-recall/obsidian/features/library/ui/panel/hooks/usePanelStore";
+import { usePolishPresetMenu } from "@true-recall/obsidian/features/library/ui/panel/hooks/usePolishPresetMenu";
 import { useSelectionActions } from "@true-recall/obsidian/features/library/ui/panel/hooks/useSelectionActions";
 import { isSuspended } from "@true-recall/obsidian/features/library/ui/panel/utils/card-status.utils";
 
 export function SelectionActionsBar() {
 	const { selectedCardIds, cardsWithFsrs } = usePanelStore();
 	const actions = useSelectionActions();
+	const { hasPolishPresets, openPolishMenu } = usePolishPresetMenu();
 	const selectedCards = cardsWithFsrs.filter((card) =>
 		selectedCardIds.has(card.id),
 	);
@@ -33,6 +35,15 @@ export function SelectionActionsBar() {
 					.setDisabled(!hasSelection)
 					.onClick(() => void actions.handleForgetSelected()),
 			);
+			if (hasPolishPresets) {
+				menu.addItem((item) =>
+					item
+						.setTitle("Polish with AI")
+						.setIcon("wand")
+						.setDisabled(!hasSelection)
+						.onClick(() => openPolishMenu(event)),
+				);
+			}
 			menu.addSeparator();
 			menu.addItem((item) =>
 				item
@@ -43,7 +54,7 @@ export function SelectionActionsBar() {
 			);
 			menu.showAtMouseEvent(event);
 		},
-		[hasSelection, actions],
+		[hasSelection, actions, hasPolishPresets, openPolishMenu],
 	);
 
 	return (

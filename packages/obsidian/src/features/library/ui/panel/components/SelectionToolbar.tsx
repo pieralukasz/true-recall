@@ -3,6 +3,7 @@ import { useCallback } from "preact/hooks";
 
 import { PanelIconButton } from "@true-recall/obsidian/features/library/ui/panel/components/PanelIconButton";
 import { usePanelStore } from "@true-recall/obsidian/features/library/ui/panel/hooks/usePanelStore";
+import { usePolishPresetMenu } from "@true-recall/obsidian/features/library/ui/panel/hooks/usePolishPresetMenu";
 import { useSelectionActions } from "@true-recall/obsidian/features/library/ui/panel/hooks/useSelectionActions";
 
 interface SelectionProps {
@@ -16,6 +17,7 @@ export function SelectionToolbar({
 }: SelectionProps) {
 	const { selectedCardIds } = usePanelStore();
 	const { handleExitSelectionMode, handleSelectCards } = useSelectionActions();
+	const { hasPolishPresets, openPolishMenu } = usePolishPresetMenu();
 
 	const openSelectMenu = useCallback(
 		(event: MouseEvent) => {
@@ -51,6 +53,14 @@ export function SelectionToolbar({
 			<div class="ep:min-w-0 ep:flex-1 ep:text-ui-small ep:font-semibold ep:text-obs-normal">
 				<span class="ep:tabular-nums">{selectedCardIds.size}</span> Selected
 			</div>
+			{hasPolishPresets ? (
+				<PanelIconButton
+					icon="wand"
+					label="Polish with AI"
+					disabled={selectedCardIds.size === 0}
+					onClick={openPolishMenu}
+				/>
+			) : null}
 			<PanelIconButton
 				icon="list-checks"
 				label="Select Visible or All Cards"

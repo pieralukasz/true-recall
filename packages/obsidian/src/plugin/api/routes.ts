@@ -21,6 +21,12 @@ import {
 	handleUpdateCard,
 } from "./handlers/card-actions";
 import { handleGetCardContext } from "./handlers/card-context";
+import {
+	handleCreateCardPolishPreset,
+	handleDeleteCardPolishPreset,
+	handleListCardPolishPresets,
+	handleUpdateCardPolishPreset,
+} from "./handlers/card-polish-presets";
 import { handleGetCardRelations } from "./handlers/card-relations";
 import {
 	handleCreateCards,
@@ -151,6 +157,12 @@ const routes: Route[] = [
 	route("POST", "/generation-presets/:id", handleUpdateGenerationPreset),
 	route("DELETE", "/generation-presets/:id", handleDeleteGenerationPreset),
 	route("POST", "/generate-with-preset", handleGenerateWithPreset),
+
+	// Card Polish presets
+	route("GET", "/card-polish-presets", handleListCardPolishPresets),
+	route("POST", "/card-polish-presets", handleCreateCardPolishPreset),
+	route("POST", "/card-polish-presets/:id", handleUpdateCardPolishPreset),
+	route("DELETE", "/card-polish-presets/:id", handleDeleteCardPolishPreset),
 
 	// Review actions (in-session)
 	route("POST", "/review/reveal", handleRevealAnswer),

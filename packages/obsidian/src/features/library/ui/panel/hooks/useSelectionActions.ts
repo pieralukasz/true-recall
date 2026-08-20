@@ -1,6 +1,8 @@
 import { useCallback } from "preact/hooks";
 import { State } from "ts-fsrs";
 
+import type { AIWorkflow } from "@true-recall/core/ai/workflows/ai-workflow";
+
 import { DeleteCardCommand } from "@true-recall/obsidian/commands/commands/card-delete.cmd";
 import { ForgetCommand } from "@true-recall/obsidian/commands/commands/card-forget.cmd";
 import {
@@ -8,6 +10,7 @@ import {
 	UnsuspendCommand,
 } from "@true-recall/obsidian/commands/commands/card-suspend.cmd";
 import { ChangeNoteTypeCommand } from "@true-recall/obsidian/commands/commands/note-type.cmd";
+import { startCardPolish } from "@true-recall/obsidian/features/library/ui/panel/utils/card-polish.utils";
 import { getSourceNoteNameFromFile } from "@true-recall/obsidian/features/library/ui/panel/utils/panel-helpers";
 import { useApp, usePlugin } from "@true-recall/obsidian/preact";
 
@@ -18,7 +21,7 @@ export function useSelectionActions() {
 	const { preserveScroll } = usePanelScroll();
 	const plugin = usePlugin();
 	const app = useApp();
-	const { flashcardInfo, currentFile, selectedCardIds, panel } =
+	const { flashcardInfo, currentFile, selectedCardIds, cardsWithFsrs, panel } =
 		usePanelStore();
 
 	const handleToggleSelect = useCallback(
@@ -226,6 +229,29 @@ export function useSelectionActions() {
 		notify().success(`Unsuspended ${cardIds.length} card(s)`);
 	}, [flashcardInfo, selectedCardIds, plugin, panel]);
 
+	const handlePolishSelected = useCallback(
+		async (workflow: AIWorkflow) => {
+			if (selectedCardIds.size === 0) return;
+			const { notify } = await import(
+				"@true-recall/obsidian/services/notification.service"
+			);
+
+			const selectedCards = cardsWithFsrs.filter((card) =>
+				selectedCardIds.has(card.id),
+			);
+			if (selectedCards.length === 0) return;
+
+			for (const card of selectedCards) {
+				startCardPolish(plugin, workflow, card);
+			}
+			panel.exitSelectionMode();
+			notify().info(
+				`Polishing ${selectedCards.length} card(s) with ${workflow.name}…`,
+			);
+		},
+		[selectedCardIds, cardsWithFsrs, plugin, panel],
+	);
+
 	const handleForgetSelected = useCallback(async () => {
 		if (!flashcardInfo || selectedCardIds.size === 0) return;
 		const { notify } = await import(
@@ -258,5 +284,6 @@ export function useSelectionActions() {
 		handleUnsuspendSelected,
 		handleForgetSelected,
 		handleDeleteSelected,
+		handlePolishSelected,
 	};
 }
