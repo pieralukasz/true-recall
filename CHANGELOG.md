@@ -1,5 +1,66 @@
 # Changelog
 
+## 2.2.0 (2026-08-20)
+
+True Recall runs on phones now, and it stops assuming there is only one of you. The desktop-only guard is gone, review, the panel, the dashboard and the quick editor all have real phone layouts, and the database merges work from two devices by replaying the review log instead of letting whoever saved last overwrite the other. Persistence was hardened alongside it: writes land atomically and a truncated file is salvaged on load rather than costing you a session. The review queue also gained R-Mode, a continuous ranking by retrievability in which nothing is ever late.
+
+### Features
+
+**Mobile**
+
+- **Mobile platform unlocked.** The plugin loads on phones and tablets, with a central capability matrix deciding what each form factor gets instead of scattered platform checks
+- **Review on a phone.** A grade bar integrated with the view header, the answer sitting directly under the separator, inline today counts, and a single overflow menu in place of a crowded toolbar
+- **Current-note flashcards in the panel** are fully usable on a phone, with a dedicated mobile header
+- **Quick editor mobile save flow** with a sticky footer and an explicit Done button
+- **Simplified statistics on phones**, dropping the chart density a phone screen cannot show honestly
+- **Non-streaming fallback for AI requests on mobile**, so a request that cannot stream still completes
+- **Quick-access commands** for the common actions, with dead UI paths removed
+
+**Cross-device sync**
+
+- **Sync coordinator** with foreground sync and per-device locks, so two devices no longer race each other into the same database file
+- **Deterministic FSRS replay from the review log.** Concurrent reviews merge by replaying scheduling from the log instead of last-write-wins, so grading the same card on two devices converges on one correct state
+- **Duplicate cards created concurrently converge** instead of accumulating
+- **Background merge** when the remote database changes, plus reporting of changed card ids so open views refresh precisely rather than wholesale
+- **Review provenance columns and a preview review kind** in the schema, with a version gate and null-safe remote binds
+- **Device id lives only in device-local storage**, so it never travels with the synced database
+- **Save and sync status chip** on the dashboard
+
+**Review and cards**
+
+- **R-Mode.** An alternative queue that replaces due dates with a continuous ranking by retrievability: a card is either worth reviewing right now or it is not, with a comfort mix, a retrievability ceiling and generation policy controls
+- **Custom study top-ups, review comments and card moves** during a session, with top-up failures handled instead of ending the session
+- **Undo across every editing path.** Adding, editing, deleting, moving and switching note type are all undoable, undo of a delete revives the card, and Cmd+Z after Save and Add restores the fields
+- **Delete shortcut in review sessions**, and review and lapse counts shown on the answer side
+- **Card Polish in the panel**: a polish preset list on the card detail, a wand button that opens the AI workspace on the selected card, and a bulk polish action over a whole selection, backed by a preset API and CLI commands
+
+**AI and generation**
+
+- **gemini-3.7-flash is the default BYOK model**
+- **Image embeds survive chunking when the AI works on a selection**, so a question about the image still sees it
+- **allowEmptyAnswer preset flag** for one-sided cards
+- **Backups stay out of iCloud transfer** by living in a .nosync folder
+
+### Bug Fixes
+
+- **Crash-safe database writes.** The flush wrote in place, so an interruption mid-write truncated the file and took the session with it. Writes are atomic now, and load salvages a truncated file from its temp and backup copies instead of starting empty. The restore and device-import paths write the live database the same way
+- **Undo tombstones the review log entry**, so an undone review no longer feeds scheduling
+- **Statistics rebuild respects dayStartHour boundaries** and skips previews
+- **Frontmatter index rebuilds once the metadata cache finishes its initial scan**, instead of indexing a half-populated cache at startup
+- **The hierarchy graph is invalidated when a project or child note is renamed**
+- **Assistant threads unstick** when their active task is deleted or reaches a terminal state
+- **Undo and redo edits persist in live preview**, and Shift+Cmd+Z is ignored where it used to fire twice
+- **Quick editor popout keeps its size** via min and max bounds rather than setResizable
+- **Dashboard lag after reviews** is gone (#50)
+- **FK backfill actually runs**: hasRow always returned true, so the migration silently skipped
+- **Duplicate native tooltips removed**, and lapse counts are formatted in note stats
+
+### Improvements
+
+- **Descendant-project lookup extracted into a tested helper** in preset options
+- **The default problem-card limit is raised to 50**
+- **CodeMirror packages bumped** and the code adapted to Obsidian 1.13 types
+
 ## 2.0.0 (2026-07-26)
 
 The AI side of True Recall was a collection of separate surfaces — Card Polish had its own preset menu and preview modal, generation had another, the Knowledge Chat a third. 2.0 replaces all of them with one assistant that keeps its work in threads you can review later. Alongside that: Anki-style Custom Study, a daily target that follows your actual pace, and FSRS load balancing that spreads an overdue backlog instead of dumping it on one day.
