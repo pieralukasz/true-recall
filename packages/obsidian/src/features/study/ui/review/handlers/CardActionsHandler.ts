@@ -5,19 +5,27 @@ import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.ser
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite";
 import type { FSRSService } from "@true-recall/core/services/fsrs/fsrs.service";
 import type { ReviewService } from "@true-recall/core/services/review/review.service";
-import type { TrueRecallSettings } from "@true-recall/core/types";
-import { BUILTIN_IMAGE_OCCLUSION_ID } from "@true-recall/core/types/note.types";
+import type {
+	FSRSFlashcardItem,
+	TrueRecallSettings,
+} from "@true-recall/core/types";
+import {
+	BUILTIN_BASIC_ID,
+	BUILTIN_IMAGE_OCCLUSION_ID,
+} from "@true-recall/core/types/note.types";
 
 import type { CommandService } from "@true-recall/obsidian/commands";
 import { BatchCreateCommand } from "@true-recall/obsidian/commands/commands/card-create.cmd";
 import { UpdateNoteFieldsCommand } from "@true-recall/obsidian/commands/commands/card-update.cmd";
 import {
 	ReviewBuryCommand,
+	ReviewDeleteCommand,
 	ReviewForgetCommand,
 	ReviewSuspendCommand,
 } from "@true-recall/obsidian/commands/commands/review-actions.cmd";
 import type TrueRecallPlugin from "@true-recall/obsidian/main";
 import { MoveCardModal } from "@true-recall/obsidian/modals/shared";
+import type { AddMode } from "@true-recall/obsidian/modals/study/quick-note-editor/types";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 import type { ReviewApi } from "@true-recall/obsidian/store";
 import { openQuickNoteEditor } from "@true-recall/obsidian/views/modal-window/open-quick-note-editor";
@@ -34,6 +42,7 @@ interface CardActionsHandlerDeps {
 	cardStore: SqliteStoreService;
 	settings: TrueRecallSettings;
 	plugin: TrueRecallPlugin;
+	commandService?: CommandService | null;
 }
 
 interface CardActionsCallbacks {
@@ -50,16 +59,45 @@ export class CardActionsHandler {
 	}
 
 	private get commandService(): CommandService | null {
-		return this.deps.plugin.commandService ?? null;
+		return this.deps.commandService ?? this.deps.plugin.commandService ?? null;
 	}
 
 	canUndo(): boolean {
-		return this.deps.plugin.commandService?.canUndo() ?? false;
+		return this.commandService?.canUndo() ?? false;
 	}
 
 	canForgetCurrentCard(): boolean {
 		const card = this.deps.getReview().getCurrentCard();
 		return !!card && card.fsrs.state !== State.New;
+	}
+
+	/**
+	 * Storage deletes cloze siblings and a card's reverse along with it, so the
+	 * queue has to drop that whole set. Removing only the visible card would
+	 * leave the session showing cards whose rows are already gone.
+	 */
+	handleDelete(): void {
+		const card = this.deps.getReview().getCurrentCard();
+		if (!card) return;
+
+		const cascadeIds = this.deps.flashcardManager.getCascadeDeleteIds(card.id);
+		const deletedIds = cascadeIds.length > 0 ? cascadeIds : [card.id];
+		const currentIndex = this.deps.getReview().currentIndex;
+
+		const cmd = new ReviewDeleteCommand({
+			card: { ...card },
+			originalFsrs: { ...card.fsrs },
+			previousIndex: currentIndex,
+			siblingIds: deletedIds,
+			getReview: () => this.deps.getReview(),
+		});
+
+		void this.commandService?.execute(cmd);
+		this.removeFromTemporaryDeck(deletedIds);
+		this.refreshIfActive();
+		notify().cardsDeletedWithUndo(deletedIds.length, () => {
+			void this.commandService?.undo();
+		});
 	}
 
 	handleSuspend(): void {
@@ -225,7 +263,10 @@ export class CardActionsHandler {
 			);
 
 			if (success) {
-				this.deps.getReview().removeCurrentCard();
+				// Grading and moving both emit synchronous card mutations. Either one
+				// can evict the moved card before this await resumes, so removing by
+				// cursor here could remove the next card in the queue instead.
+				this.deps.getReview().removeCardById(card.id);
 				this.removeFromTemporaryDeck([card.id]);
 				this.refreshIfActive();
 				notify().cardGradedAndMoved();
@@ -239,15 +280,43 @@ export class CardActionsHandler {
 	async handleAddNewFlashcard(): Promise<void> {
 		const card = this.deps.getReview().getCurrentCard();
 		if (!card) return;
+		await this.openAddFlashcard(card);
+	}
 
+	async handleAddCopyOfCurrentFlashcard(): Promise<void> {
+		const card = this.deps.getReview().getCurrentCard();
+		if (!card) return;
+
+		const note = card.noteId
+			? this.deps.cardStore.notes.getById(card.noteId)
+			: null;
+		const noteTypeId = note?.noteTypeId ?? card.fsrs.noteTypeId;
+		const canCopyNoteFields = note && noteTypeId !== BUILTIN_IMAGE_OCCLUSION_ID;
+
+		await this.openAddFlashcard(card, {
+			sourceUid: note?.sourceUid ?? card.sourceUid,
+			defaultNoteTypeId: canCopyNoteFields ? noteTypeId : BUILTIN_BASIC_ID,
+			initialFields: canCopyNoteFields
+				? { ...note.fields }
+				: { Front: card.question, Back: card.answer ?? "" },
+		});
+	}
+
+	private async openAddFlashcard(
+		card: FSRSFlashcardItem,
+		overrides: Partial<
+			Pick<AddMode, "sourceUid" | "defaultNoteTypeId" | "initialFields">
+		> = {},
+	): Promise<void> {
 		const result = await openQuickNoteEditor(this.deps.plugin, {
 			mode: "add",
 			sourceUid: card.sourceUid,
 			excludeCardId: card.id,
 			defaultNoteTypeId:
 				card.fsrs.noteTypeId === BUILTIN_IMAGE_OCCLUSION_ID
-					? "builtin-basic"
-					: (card.fsrs.noteTypeId ?? "builtin-basic"),
+					? BUILTIN_BASIC_ID
+					: (card.fsrs.noteTypeId ?? BUILTIN_BASIC_ID),
+			...overrides,
 		});
 		if (!result.cancelled) {
 			this.pushBatchCreateUndo(card, result.createdCards);
@@ -332,7 +401,46 @@ export class CardActionsHandler {
 						updatedCard.question ?? card.question,
 						updatedCard.answer ?? card.answer ?? "",
 					);
+				this.deps.getReview().updateCurrentCardComment(updatedCard.userComment);
 			}
+		}
+	}
+
+	async handleEditComment(): Promise<void> {
+		const card = this.deps.getReview().getCurrentCard();
+		if (!card?.noteId) {
+			notify().error("Cannot add a note: this card has no backing note.");
+			return;
+		}
+
+		const { promptCardComment } = await import(
+			"@true-recall/obsidian/modals/study/CardCommentModal"
+		);
+		const value = await promptCardComment(
+			this.deps.app,
+			card.userComment ?? "",
+		);
+		if (value === null || value === (card.userComment ?? "")) return;
+
+		try {
+			this.deps.flashcardManager.updateNoteComment(card.noteId, value);
+			this.deps.getReview().updateCurrentCardComment(value || undefined);
+			notify().success(value ? "Note saved" : "Note removed");
+		} catch (error) {
+			notify().operationFailed("save note", error);
+		}
+	}
+
+	handleRemoveComment(): void {
+		const card = this.deps.getReview().getCurrentCard();
+		if (!card?.noteId || !card.userComment) return;
+
+		try {
+			this.deps.flashcardManager.updateNoteComment(card.noteId, "");
+			this.deps.getReview().updateCurrentCardComment(undefined);
+			notify().success("Note removed");
+		} catch (error) {
+			notify().operationFailed("remove note", error);
 		}
 	}
 
@@ -437,6 +545,7 @@ export class CardActionsHandler {
 					updated.question ?? card.question,
 					updated.answer ?? card.answer ?? "",
 				);
+			this.deps.getReview().updateCurrentCardComment(updated.userComment);
 		}
 		this.refreshIfActive();
 	}

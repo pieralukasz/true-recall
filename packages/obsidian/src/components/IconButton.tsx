@@ -20,11 +20,12 @@ interface IconButtonProps {
 }
 
 const iconButtonVariants = cva(
-	"clickable-icon ep:cursor-pointer ep:flex ep:items-center ep:justify-center ep:rounded-md ep:text-obs-muted ep:hover:bg-obs-modifier-hover ep:hover:text-obs-normal ep:transition-colors",
+	"clickable-icon ep:cursor-pointer ep:flex ep:shrink-0 ep:items-center ep:justify-center ep:leading-none ep:rounded-md ep:text-obs-muted ep:hover:bg-obs-modifier-hover ep:hover:text-obs-normal ep:transition-colors",
 	{
 		variants: {
 			size: {
-				small: "ep:w-6 ep:h-6 ep:[&_svg]:w-3.5 ep:[&_svg]:h-3.5",
+				small:
+					"ep:w-6 ep:h-6 ep:min-w-6 ep:min-h-6 ep:p-0 ep:[&_svg]:block ep:[&_svg]:w-3.5 ep:[&_svg]:h-3.5",
 				medium: "",
 			},
 			danger: {
@@ -70,9 +71,14 @@ export function IconButton({
 			onClick={(e) => onClick(e)}
 		>
 			{customIcon ? (
-				<span class="ep:inline-flex">{customIcon}</span>
+				<span class="ep:inline-flex ep:items-center ep:justify-center ep:leading-none">
+					{customIcon}
+				</span>
 			) : (
-				<span ref={iconRef} />
+				<span
+					ref={iconRef}
+					class="ep:inline-flex ep:items-center ep:justify-center ep:leading-none"
+				/>
 			)}
 			{label && <span class="ep:text-ui-small">{label}</span>}
 		</Clickable>

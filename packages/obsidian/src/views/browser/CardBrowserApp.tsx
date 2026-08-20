@@ -8,6 +8,7 @@ import type { FSRSFlashcardItem } from "@true-recall/core/types";
 
 import { DeleteCardCommand } from "@true-recall/obsidian/commands/commands/card-delete.cmd";
 import { MoveCardCommand } from "@true-recall/obsidian/commands/commands/card-move.cmd";
+import { UpdateCardCommand } from "@true-recall/obsidian/commands/commands/card-update.cmd";
 import { AppNavBar } from "@true-recall/obsidian/components";
 import { mutate, Q, useQuery } from "@true-recall/obsidian/data";
 import { BrowserSidebar } from "@true-recall/obsidian/features/library/ui/browser/components/BrowserSidebar";
@@ -31,6 +32,10 @@ import {
 	type StateFilterValue,
 } from "@true-recall/obsidian/features/library/ui/browser/types";
 import { notifyDuplicateError } from "@true-recall/obsidian/features/library/ui/panel/utils/panel-helpers";
+import {
+	openCardEditor,
+	resolveCardEditTarget,
+} from "@true-recall/obsidian/features/library/ui/shared/card-edit-routing";
 import { MoveCardModal } from "@true-recall/obsidian/modals/shared/MoveCardModal";
 import {
 	useApp,
@@ -38,6 +43,7 @@ import {
 	usePlugin,
 } from "@true-recall/obsidian/preact";
 import { notify } from "@true-recall/obsidian/services/notification.service";
+import { openQuickNoteEditor } from "@true-recall/obsidian/views/modal-window/open-quick-note-editor";
 
 const PAGE_SIZE = BROWSER_PAGE_SIZE;
 
@@ -252,6 +258,13 @@ export function CardBrowserApp({
 					newQuestion,
 					newAnswer,
 				);
+				const command = new UpdateCardCommand(
+					card.id,
+					card.question,
+					card.answer ?? "",
+					`Edit card ${field}`,
+				);
+				void plugin.commandService?.execute(command);
 				previewCard.value = {
 					...card,
 					question: newQuestion,
@@ -269,12 +282,14 @@ export function CardBrowserApp({
 	);
 
 	const handleSelectAll = useCallback(() => {
-		if (selectedIds.value.size === result.cards.length) {
+		if (selectedIds.value.size === result.totalCount) {
 			selectedIds.value = new Set();
 		} else {
-			selectedIds.value = new Set(result.cards.map((c) => c.id));
+			selectedIds.value = new Set(
+				queryService.getMatchingCardIds(combinedFilter),
+			);
 		}
-	}, [result.cards, selectedIds]);
+	}, [combinedFilter, queryService, result.totalCount, selectedIds]);
 
 	const handleClearSelection = useCallback(() => {
 		selectedIds.value = new Set();
@@ -368,6 +383,50 @@ export function CardBrowserApp({
 		await plugin.commandService?.execute(cmd);
 		notify().cardsMoved(1, result.targetNotePath);
 	}, [app, plugin, previewCard]);
+
+	const handleEditCard = useCallback(async () => {
+		const card = previewCard.value;
+		if (!card) return;
+
+		const target = resolveCardEditTarget(card.id, {
+			getNoteInfoForCardIds: (cardIds) =>
+				plugin.cardStore.cards.getNoteInfoForCardIds(cardIds),
+			getNoteById: (noteId) => plugin.cardStore.notes.getById(noteId),
+			getNoteTypeById: (noteTypeId) =>
+				plugin.cardStore.noteTypes.getById(noteTypeId),
+		});
+		if (!target.ok) {
+			notify().error(target.error);
+			return;
+		}
+
+		const { note, noteType } = target;
+		await openCardEditor({
+			note,
+			noteType,
+			openImageOcclusionEditor: (mode) => plugin.openImageOcclusionEditor(mode),
+			openQuickEditor: () =>
+				openQuickNoteEditor(plugin, {
+					mode: "edit",
+					cardId: card.id,
+					noteId: note.id,
+					note,
+					noteType,
+				}),
+			commandService: plugin.commandService,
+		});
+
+		// The preview holds a snapshot taken when the row was clicked; the editor
+		// writes straight to the store, so pull the saved content back in.
+		const saved = plugin.cardStore.get(card.id);
+		previewCard.value = saved
+			? {
+					...card,
+					question: saved.question ?? card.question,
+					answer: saved.answer ?? card.answer,
+				}
+			: null;
+	}, [plugin, previewCard]);
 
 	const handleBulkMove = useCallback(async () => {
 		const ids = Array.from(selectedIds.value);
@@ -471,6 +530,7 @@ export function CardBrowserApp({
 						}}
 						onContentChange={handleContentChange}
 						onMove={() => void handleMoveCard()}
+						onEdit={() => void handleEditCard()}
 					/>
 				)}
 			</div>

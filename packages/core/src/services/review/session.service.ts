@@ -15,6 +15,7 @@ export interface SessionValidation {
 export interface SessionServiceSettings {
 	ignoreDailyLimitsForNoteStudy: boolean;
 	dayStartHour?: number;
+	rModeEnabled?: boolean;
 }
 
 export type SessionValidationDeps = ReviewSessionEngineDeps;
@@ -26,10 +27,18 @@ export class SessionService {
 		config: SessionConfig,
 		settings: SessionServiceSettings,
 	): SessionFilters {
+		const supportsRMode =
+			config.mode === "all_due" ||
+			config.mode === "note" ||
+			(config.mode === "notes" && !config.dueOnly) ||
+			config.mode === "project";
 		const base: Partial<SessionFilters> = {
 			customReviewOrder: config.reviewOrder,
 			cardLimit: config.cardLimit,
 			dayStartHour: settings.dayStartHour,
+			rModeTargetCount: config.rModeTargetCount,
+			schedulingMode:
+				settings.rModeEnabled && supportsRMode ? "retrievability" : "due",
 		};
 
 		switch (config.mode) {
@@ -78,14 +87,15 @@ export class SessionService {
 				};
 
 			case "custom": {
-				// `mode`, `reviewOrder` and `cardLimit` are already consumed by
-				// `base`; everything else in the custom config is a filter flag.
+				// Session plumbing fields are already consumed by `base`; everything
+				// else in the custom config is a filter.
 				const filters: Partial<Extract<SessionConfig, { mode: "custom" }>> = {
 					...config,
 				};
 				delete filters.mode;
 				delete filters.reviewOrder;
 				delete filters.cardLimit;
+				delete filters.rModeTargetCount;
 				const resolved = { ...base, ...filters };
 				if (!config.customStudy) return resolved;
 

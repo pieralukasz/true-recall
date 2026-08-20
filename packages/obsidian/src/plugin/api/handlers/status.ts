@@ -35,6 +35,7 @@ export async function handleGetActiveNote(
 		due: string;
 		reps: number;
 		lapses: number;
+		userComment?: string;
 	}> = [];
 
 	if (ctx.plugin.isStoreReady()) {
@@ -54,6 +55,7 @@ export async function handleGetActiveNote(
 				due: c.due,
 				reps: c.reps,
 				lapses: c.lapses,
+				userComment: c.userComment,
 			}));
 		}
 	}

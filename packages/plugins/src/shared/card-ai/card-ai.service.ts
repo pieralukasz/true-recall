@@ -1,5 +1,6 @@
 import {
 	AIRequestError,
+	type ChatMessage,
 	getTextContent,
 	type OpenRouterClient,
 } from "@true-recall/core/ai/clients/openrouter-client";
@@ -11,55 +12,168 @@ import {
 	type CardAIRequest,
 	type CardAIResult,
 	type CardFields,
+	deepEqualFields,
 	makeCardAIArrayResponseSchema,
 } from "./card-ai.types";
 import { buildCardAIMessages } from "./card-ai-prompts";
 
-// Lucas-chosen value (matches "generation" capability default in proxy).
-// Located client-side so BYOK users (who bypass the proxy) get the same value.
-const CARD_POLISH_TEMPERATURE = 0.7;
+const DEFAULT_CARD_POLISH_TEMPERATURE = 0.2;
+const MAX_OUTPUT_TOKENS = 4096;
 
 export class CardAIService {
 	constructor(private readonly client: OpenRouterClient) {}
 
 	async transform(req: CardAIRequest): Promise<CardAIResult> {
 		if (req.signal?.aborted) throw new CardAIAbortedError();
-		const messages = buildCardAIMessages({
+		let messages = buildCardAIMessages({
 			fields: req.fields,
 			noteType: req.noteType,
 			prompt: req.prompt,
 			operation: req.operation,
+			mode: req.mode,
+			fieldScope: req.fieldScope,
 			context: req.context,
 		});
 
-		let response: Awaited<ReturnType<OpenRouterClient["chat"]>>;
-		try {
-			response = await this.client.chat({
-				messages,
-				temperature: CARD_POLISH_TEMPERATURE,
-			});
-		} catch (err) {
-			if (req.signal?.aborted) throw new CardAIAbortedError();
-			if (err instanceof AIRequestError) {
-				throw new CardAIProviderError(err.message, err);
+		let promptTokens = 0;
+		let completionTokens = 0;
+		for (let attempt = 0; attempt < 2; attempt++) {
+			let response: Awaited<ReturnType<OpenRouterClient["chat"]>>;
+			try {
+				response = await this.client.chat({
+					messages,
+					temperature: req.temperature ?? DEFAULT_CARD_POLISH_TEMPERATURE,
+					max_tokens: MAX_OUTPUT_TOKENS,
+				});
+			} catch (err) {
+				if (req.signal?.aborted) throw new CardAIAbortedError();
+				if (err instanceof AIRequestError) {
+					throw new CardAIProviderError(err.message, err);
+				}
+				throw new CardAIProviderError(
+					err instanceof Error ? err.message : "Provider request failed",
+					err,
+				);
 			}
-			throw new CardAIProviderError(
-				err instanceof Error ? err.message : "Provider request failed",
-				err,
-			);
+
+			promptTokens += response.usage?.prompt_tokens ?? 0;
+			completionTokens += response.usage?.completion_tokens ?? 0;
+			const raw = getTextContent(response.choices[0]?.message);
+			try {
+				const parsed = enforceResultContract(
+					parseFields(raw, Object.keys(req.fields)),
+					req,
+					raw,
+				);
+				return {
+					cards: parsed,
+					rawResponse: raw,
+					usage: { promptTokens, completionTokens },
+				};
+			} catch (error) {
+				if (!(error instanceof CardAIParseError)) throw error;
+				if (attempt === 0) {
+					messages = repairMessages(messages, raw, error, req);
+					continue;
+				}
+				if (isSafeNoOpFailure(error, req)) {
+					return {
+						cards: [{ ...req.fields }],
+						rawResponse: raw,
+						usage: { promptTokens, completionTokens },
+					};
+				}
+				throw error;
+			}
 		}
 
-		const raw = getTextContent(response.choices[0]?.message);
-		const parsed = parseFields(raw, Object.keys(req.fields));
-		return {
-			cards: parsed,
-			rawResponse: raw,
-			usage: {
-				promptTokens: response.usage?.prompt_tokens ?? 0,
-				completionTokens: response.usage?.completion_tokens ?? 0,
-			},
-		};
+		throw new CardAIParseError("", "Card Polish could not produce a result");
 	}
+}
+
+function repairMessages(
+	messages: ChatMessage[],
+	raw: string,
+	error: CardAIParseError,
+	req: Pick<CardAIRequest, "fields" | "mode">,
+): ChatMessage[] {
+	const noOpRule =
+		req.mode === "edit"
+			? ""
+			: ` If the requested ${req.mode} is not meaningful, return one element equal to the original card verbatim.`;
+	return [
+		...messages,
+		{ role: "assistant", content: raw },
+		{
+			role: "user",
+			content: `Your previous response violated the required Card Polish contract: ${error.message}. Correct it now. Return only the required JSON array.${noOpRule}\n\nOriginal card:\n${JSON.stringify(req.fields)}`,
+		},
+	];
+}
+
+function isSafeNoOpFailure(
+	error: CardAIParseError,
+	req: Pick<CardAIRequest, "mode">,
+): boolean {
+	return (
+		(req.mode === "split" || req.mode === "spawn") &&
+		error.message.includes("expected at least two cards")
+	);
+}
+
+function editableFieldNames(
+	req: Pick<CardAIRequest, "fields" | "fieldScope">,
+): Set<string> {
+	if (req.fieldScope === "all") return new Set(Object.keys(req.fields));
+	const names = Object.keys(req.fields);
+	const selected =
+		req.fieldScope === "question" ? names[0] : (names[1] ?? names[0]);
+	return new Set(selected ? [selected] : []);
+}
+
+export function enforceResultContract(
+	cards: CardFields[],
+	req: Pick<CardAIRequest, "fields" | "mode" | "fieldScope">,
+	rawResponse = JSON.stringify(cards),
+): CardFields[] {
+	if (req.mode === "edit" && cards.length !== 1) {
+		throw new CardAIParseError(
+			rawResponse,
+			`EDIT mode expected exactly one card, received ${cards.length}`,
+		);
+	}
+	if (
+		(req.mode === "spawn" || req.mode === "split") &&
+		cards.length === 1 &&
+		deepEqualFields(cards[0] ?? {}, req.fields)
+	) {
+		return cards;
+	}
+	if ((req.mode === "spawn" || req.mode === "split") && cards.length < 2) {
+		throw new CardAIParseError(
+			rawResponse,
+			`${req.mode.toUpperCase()} mode expected at least two cards`,
+		);
+	}
+	if (req.mode === "spawn" && !deepEqualFields(cards[0] ?? {}, req.fields)) {
+		throw new CardAIParseError(
+			rawResponse,
+			"SPAWN mode changed the source card",
+		);
+	}
+
+	if (req.mode !== "edit" || req.fieldScope === "all") return cards;
+	const editable = editableFieldNames(req);
+	const head = cards[0];
+	if (!head) return cards;
+	return [
+		Object.fromEntries(
+			Object.keys(req.fields).map((name) => [
+				name,
+				editable.has(name) ? (head[name] ?? "") : (req.fields[name] ?? ""),
+			]),
+		),
+	];
 }
 
 function parseFields(raw: string, fieldNames: string[]): CardFields[] {

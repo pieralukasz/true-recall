@@ -55,6 +55,70 @@ interface UpdateCardInput {
 	answer?: string;
 }
 
+interface MoveCardInput {
+	target_path: string;
+}
+
+export async function handleMoveCard(
+	req: ApiRequest,
+	res: ApiResponseWriter,
+	ctx: ApiContext,
+	params: Record<string, string>,
+): Promise<void> {
+	if (!ctx.plugin.isStoreReady()) {
+		sendError(res, 503, "Database not ready");
+		return;
+	}
+
+	const cardId = params.id;
+	if (!cardId) {
+		sendError(res, 400, "Missing card ID");
+		return;
+	}
+
+	const raw = await readBody(req);
+	const body = parseJsonBody<MoveCardInput>(raw);
+	const targetPath = body?.target_path?.trim();
+	if (!targetPath) {
+		sendError(res, 400, "Body must contain { target_path: string }");
+		return;
+	}
+
+	const card = ctx.plugin.cardStore.cards.get(cardId);
+	if (!card) {
+		sendError(res, 404, "Card not found");
+		return;
+	}
+
+	const targetFile = ctx.plugin.app.vault.getAbstractFileByPath(targetPath);
+	if (
+		!targetFile ||
+		!("extension" in targetFile) ||
+		targetFile.extension !== "md"
+	) {
+		sendError(res, 404, "Target Markdown note not found");
+		return;
+	}
+
+	const moved = await ctx.plugin.flashcardManager.moveCard(cardId, targetPath);
+	if (!moved) {
+		sendError(res, 404, "Card not found");
+		return;
+	}
+
+	const sourceUid = await ctx.plugin.flashcardManager
+		.getFrontmatterService()
+		.getSourceNoteUid(targetPath);
+
+	sendOk(res, {
+		moved: true,
+		cardId,
+		targetPath,
+		previousSourceUid: card.sourceUid,
+		sourceUid,
+	});
+}
+
 export async function handleUpdateCard(
 	req: ApiRequest,
 	res: ApiResponseWriter,
@@ -285,23 +349,18 @@ export async function handleBulkBury(
 		card_ids: string[];
 		until?: string;
 		days?: number;
-		unbury?: boolean;
 	}>(raw);
 	if (!body?.card_ids?.length) {
 		sendError(
 			res,
 			400,
-			"Body must contain { card_ids: string[], until?: string, days?: number, unbury?: boolean }",
+			"Body must contain { card_ids: string[], until?: string, days?: number }",
 		);
 		return;
 	}
 
 	let untilDate: string;
-	if (body.unbury) {
-		// An already-elapsed date reads as "not buried" everywhere, and keeps the
-		// operation undoable through the same command as burying.
-		untilDate = new Date().toISOString();
-	} else if (body.until) {
+	if (body.until) {
 		const until = new Date(body.until);
 		if (Number.isNaN(until.getTime())) {
 			sendError(res, 400, `Invalid 'until' date: ${body.until}`);
@@ -324,8 +383,7 @@ export async function handleBulkBury(
 	await ctx.plugin.commandService?.execute(cmd);
 
 	sendOk(res, {
-		buried: body.unbury ? 0 : body.card_ids.length,
-		unburied: body.unbury ? body.card_ids.length : 0,
+		buried: body.card_ids.length,
 		untilDate,
 		cardIds: body.card_ids,
 	});

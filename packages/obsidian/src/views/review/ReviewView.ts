@@ -14,6 +14,7 @@ import type { AssistantContext } from "@true-recall/core/ai/assistant";
 import { SemanticAnswerGradingService } from "@true-recall/core/ai/grading/semantic-answer-grading.service";
 import { VIEW_TYPE_REVIEW } from "@true-recall/core/constants";
 import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
+import { DEFAULT_LEECH_THRESHOLD } from "@true-recall/core/helpers/leech-helpers";
 import type { SessionPersistenceService } from "@true-recall/core/persistence/session/session-persistence.service";
 import { FSRSService } from "@true-recall/core/services/fsrs/fsrs.service";
 import { ReviewService } from "@true-recall/core/services/review/review.service";
@@ -23,15 +24,18 @@ import {
 	type FSRSFlashcardItem,
 	type FSRSPreset,
 	type LocalAnswerAssessment,
+	type ReviewSessionTopUp,
+	type ReviewSessionTopUpAvailability,
 	type SemanticGradingResult,
 } from "@true-recall/core/types";
+import { isPreviewCustomStudy } from "@true-recall/core/types/review-session.types";
 
 import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpClient";
-import { ReviewUndoHook } from "@true-recall/obsidian/commands";
+import { CommandService, ReviewUndoHook } from "@true-recall/obsidian/commands";
 import { G, getDataLayer, Q } from "@true-recall/obsidian/data";
 import { assistantContextFromCard } from "@true-recall/obsidian/features/assistant/ui/ai-context-source";
 import { openAiWorkspace } from "@true-recall/obsidian/features/assistant/ui/open-ai-workspace";
-import type { ReviewSessionController } from "@true-recall/obsidian/features/study/services/ReviewSessionController";
+import { ReviewSessionController } from "@true-recall/obsidian/features/study/services/ReviewSessionController";
 import type { PresetPickerOption } from "@true-recall/obsidian/features/study/ui/review/components";
 import {
 	AnswerHandler,
@@ -62,8 +66,17 @@ import {
 } from "@true-recall/obsidian/features/study/ui/review/review.types";
 import { mountPreact } from "@true-recall/obsidian/preact";
 import { notify } from "@true-recall/obsidian/services/notification.service";
-import { lastMutation } from "@true-recall/obsidian/services/signals";
-import type { ReviewApi } from "@true-recall/obsidian/store";
+import {
+	lastMutation,
+	notifyReviewSessionCardGraded,
+	reviewSessionCardGraded,
+} from "@true-recall/obsidian/services/signals";
+import {
+	type AppStore,
+	createAppStore,
+	type ReviewApi,
+} from "@true-recall/obsidian/store";
+import { capabilities, isMobile } from "@true-recall/obsidian/utils/platform";
 import { runWhenLayoutReady } from "@true-recall/obsidian/views/layout-ready";
 import {
 	ReviewApp,
@@ -102,11 +115,17 @@ export class ReviewView extends ItemView {
 	private fsrsService: FSRSService;
 	private reviewService: ReviewService;
 	private reviewController: ReviewSessionController;
+	private sessionStore: AppStore;
+	private sessionCommandService: CommandService;
+	private commandHistoryBaseline: number;
 	private flashcardManager: FlashcardManager;
 	private sessionPersistence: SessionPersistenceService;
 	private semanticGradingService: SemanticAnswerGradingService;
 
 	private filters: SessionFilters = {};
+	private sessionKey?: string;
+	private sessionLabel?: string;
+	private readonly sessionId = crypto.randomUUID();
 	private crammedCardIds = new Set<string>();
 	private isProcessingAnswer = false;
 	private presetCache = new Map<string, FSRSPreset>();
@@ -119,6 +138,7 @@ export class ReviewView extends ItemView {
 	private openNoteAction: HTMLElement | null = null;
 	private unsubscribe: (() => void) | null = null;
 	private sessionSignalDisposer: (() => void) | null = null;
+	private reviewSyncDisposer: (() => void) | null = null;
 	private disposeReviewHook: (() => void) | null = null;
 	private askBubble: ReviewSelectionBubble | null = null;
 	private typeInState: TypeInAssessmentState = createEmptyTypeInState();
@@ -126,14 +146,21 @@ export class ReviewView extends ItemView {
 	private aiEnabledForTypeIn = false;
 
 	private get review(): ReviewApi {
-		const store = this.plugin.store;
-		if (!store) throw new Error("Store not initialized");
-		return store.getState().review;
+		return this.sessionStore.getState().review;
 	}
 
 	constructor(leaf: WorkspaceLeaf, plugin: TrueRecallPlugin) {
 		super(leaf);
 		this.plugin = plugin;
+		this.sessionStore = createAppStore({
+			getSettings: () => this.plugin.settings,
+		});
+		this.sessionCommandService = new CommandService({
+			flashcardManager: plugin.flashcardManager,
+			cardStore: plugin.cardStore,
+			sessionPersistence: plugin.sessionPersistence,
+		});
+		this.commandHistoryBaseline = CommandService.currentOrder();
 
 		// Consume Escape while this view is active. Without this, Obsidian's
 		// app-scope Escape handler re-activates the last `navigation` leaf
@@ -143,7 +170,11 @@ export class ReviewView extends ItemView {
 		this.scope.register([], "Escape", () => false);
 		this.flashcardManager = plugin.flashcardManager;
 		this.reviewService = new ReviewService();
-		this.reviewController = plugin.reviewController;
+		this.reviewController = new ReviewSessionController(
+			plugin,
+			() => this.review,
+			this.sessionCommandService,
+		);
 		this.sessionPersistence = plugin.sessionPersistence;
 		this.semanticGradingService = new SemanticAnswerGradingService(
 			() => this.plugin.settings,
@@ -158,7 +189,7 @@ export class ReviewView extends ItemView {
 			app: this.app,
 			getReview: () => this.review,
 			flashcardManager: this.flashcardManager,
-			commandService: plugin.commandService ?? undefined,
+			commandService: this.sessionCommandService,
 		});
 
 		this.answerHandler = new AnswerHandler({
@@ -185,6 +216,7 @@ export class ReviewView extends ItemView {
 				cardStore: this.plugin.cardStore,
 				settings: this.plugin.settings,
 				plugin: this.plugin,
+				commandService: this.sessionCommandService,
 			},
 			{
 				onUpdateSchedulingPreview: () =>
@@ -198,15 +230,19 @@ export class ReviewView extends ItemView {
 				onShowAnswer: () => void this.handleReveal(),
 				onAnswer: (rating) => this.handleAnswer(rating as Grade),
 				onUndo: async () => {
-					await this.cardActionsHandler.handleUndo();
+					await this.undoSessionAction();
 				},
+				onDelete: () => this.cardActionsHandler.handleDelete(),
 				onSuspend: () => this.cardActionsHandler.handleSuspend(),
 				onForget: () => this.cardActionsHandler.handleForget(),
 				onBuryCard: () => this.cardActionsHandler.handleBuryCard(),
 				onBuryNote: () => this.cardActionsHandler.handleBuryNote(),
 				onMoveCard: () => this.cardActionsHandler.handleMoveCard(),
 				onAddCard: () => this.cardActionsHandler.handleAddNewFlashcard(),
+				onAddCardCopy: () =>
+					this.cardActionsHandler.handleAddCopyOfCurrentFlashcard(),
 				onEditCard: () => this.cardActionsHandler.handleEditCardModal(),
+				onEditComment: () => this.cardActionsHandler.handleEditComment(),
 				onCycleTypeInMode: () => this.cycleTypeInMode(),
 				canRateShortcuts: () => !this.isRatingLocked(),
 				isTypeInActive: () => this.isTypeInRequiredForCurrentCard(),
@@ -447,7 +483,14 @@ export class ReviewView extends ItemView {
 		if (!this.review.isAnswerRevealed) return;
 		this.isProcessingAnswer = true;
 		try {
-			this.answerHandler.handleAnswer(rating);
+			const outcome = this.answerHandler.handleAnswer(rating);
+			if (
+				outcome &&
+				!this.filters.crammingMode &&
+				!isPreviewCustomStudy(this.filters)
+			) {
+				this.notifyOtherSessionsCardReviewed(outcome.card.id);
+			}
 			const nextCardId = this.review.getCurrentCard()?.id ?? null;
 			this.resetTypeInState(nextCardId);
 		} finally {
@@ -458,10 +501,12 @@ export class ReviewView extends ItemView {
 	// ─── Obsidian lifecycle ──────────────────────────────────────────────
 
 	async setState(state: unknown, result: ViewStateResult): Promise<void> {
-		this.filters = filtersFromViewState(
+		const viewState =
 			(state as import("@true-recall/obsidian/features/study/ui/review/review.types").ReviewViewState) ??
-				null,
-		);
+			null;
+		this.sessionKey = viewState?.sessionKey;
+		this.sessionLabel = viewState?.sessionLabel;
+		this.filters = filtersFromViewState(viewState);
 		this.filters.dayStartHour = this.plugin.settings.dayStartHour;
 		this.crammedCardIds.clear();
 		this.isProcessingAnswer = false;
@@ -480,7 +525,11 @@ export class ReviewView extends ItemView {
 	}
 
 	getState() {
-		return filtersToViewState(this.filters);
+		return {
+			...filtersToViewState(this.filters),
+			sessionKey: this.sessionKey,
+			sessionLabel: this.sessionLabel,
+		};
 	}
 
 	getViewType(): string {
@@ -488,7 +537,9 @@ export class ReviewView extends ItemView {
 	}
 
 	getDisplayText(): string {
-		return "Review session";
+		return this.sessionLabel
+			? `Review · ${this.sessionLabel}`
+			: "Review session";
 	}
 
 	getIcon(): string {
@@ -499,33 +550,86 @@ export class ReviewView extends ItemView {
 		return this.review.getCurrentCard();
 	}
 
+	canUndoSessionAction(): boolean {
+		return this.getNewestUndoService() !== null;
+	}
+
+	async undoSessionAction(): Promise<boolean> {
+		const service = this.getNewestUndoService();
+		if (!service) {
+			notify().nothingToUndo();
+			return false;
+		}
+		return service.undo();
+	}
+
+	canRedoSessionAction(): boolean {
+		return this.getNewestRedoService() !== null;
+	}
+
+	async redoSessionAction(): Promise<boolean> {
+		const service = this.getNewestRedoService();
+		if (!service) {
+			notify().nothingToRedo();
+			return false;
+		}
+		return service.redo();
+	}
+
+	private getNewestUndoService(): CommandService | null {
+		return CommandService.newestUndoService(
+			[this.sessionCommandService, this.plugin.commandService],
+			this.commandHistoryBaseline,
+		);
+	}
+
+	private getNewestRedoService(): CommandService | null {
+		return CommandService.newestRedoService(
+			[this.sessionCommandService, this.plugin.commandService],
+			this.commandHistoryBaseline,
+		);
+	}
+
+	notifyOtherSessionsCardReviewed(cardId: string): void {
+		notifyReviewSessionCardGraded(cardId, this.sessionId);
+	}
+
 	onOpen(): Promise<void> {
 		const container = this.containerEl.children[1];
 		if (!(container instanceof HTMLElement)) return Promise.resolve();
 		container.empty();
 		this.applyDefaultTypeInMode();
 
-		if (!this.plugin.store) return Promise.resolve();
-		this.unsubscribe = this.plugin.store.subscribe(
+		this.unsubscribe = this.sessionStore.subscribe(
 			(state) => state.review,
 			() => {
 				this.updateHeaderActions();
+				this.syncSharedReviewState();
 			},
 		);
+		this.registerEvent(
+			this.app.workspace.on("active-leaf-change", () => {
+				this.syncSharedReviewState();
+			}),
+		);
+		this.syncSharedReviewState();
 
-		this.disposeReviewHook =
-			this.plugin.commandService?.registerHook(
-				new ReviewUndoHook(() => this.review, {
-					onUpdateSchedulingPreview: () =>
-						this.answerHandler.updateSchedulingPreview(),
-				}),
-			) ?? null;
+		this.disposeReviewHook = this.sessionCommandService.registerHook(
+			new ReviewUndoHook(() => this.review, {
+				onUpdateSchedulingPreview: () =>
+					this.answerHandler.updateSchedulingPreview(),
+			}),
+		);
 
-		this.registerDomEvent(activeDocument, "keydown", (e: KeyboardEvent) => {
+		const onReviewKeyDown = (e: KeyboardEvent): void => {
 			const activeView = this.app.workspace.getActiveViewOfType(ReviewView);
 			if (activeView !== this) return;
 			if (activeDocument.querySelector(".modal-container")) return;
 			this.keyboardHandler.handleKeyDown(e);
+		};
+		activeDocument.addEventListener("keydown", onReviewKeyDown, true);
+		this.register(() => {
+			activeDocument.removeEventListener("keydown", onReviewKeyDown, true);
 		});
 
 		this.askBubble = new ReviewSelectionBubble({
@@ -573,6 +677,7 @@ export class ReviewView extends ItemView {
 			container,
 			this.plugin,
 			h(ReviewApp, {
+				store: this.sessionStore,
 				onShowAnswer: () => void this.handleReveal(),
 				onTypedAnswerChange: (value: string) =>
 					this.handleTypedAnswerChange(value),
@@ -580,9 +685,13 @@ export class ReviewView extends ItemView {
 				onContentChange: (value: string, field: "question" | "answer") =>
 					void this.editHandler.saveContent(value, field),
 				onOpenSourceNote: () => this.handleOpenSourceNote(),
+				onEditComment: () => void this.cardActionsHandler.handleEditComment(),
+				onRemoveComment: () => this.cardActionsHandler.handleRemoveComment(),
 				onClose: () => this.handleClose(),
 				onNextSession: () => this.handleNextSession(),
 				onOpenDashboard: () => void this.handleOpenDashboard(),
+				getTopUpAvailability: () => this.getTopUpAvailability(),
+				onTopUp: (topUp: ReviewSessionTopUp) => this.handleTopUp(topUp),
 				onEndSession: () => this.handleNextSession(),
 				onActionsMenu: (e: MouseEvent) => this.showActionsMenu(e),
 				// Polish presets now run in the shared AI workspace, so the action
@@ -594,6 +703,7 @@ export class ReviewView extends ItemView {
 						: undefined,
 				isCustomSession: isCustomSession(this.filters),
 				crammingMode: this.filters.crammingMode ?? false,
+				rModeActive: this.filters.schedulingMode === "retrievability",
 				showHeader: this.plugin.settings.showReviewHeader,
 				showHeaderStats: this.plugin.settings.showReviewHeaderStats,
 				showNextReviewTime: this.plugin.settings.showNextReviewTime,
@@ -624,6 +734,9 @@ export class ReviewView extends ItemView {
 				getPresetName: (card: FSRSFlashcardItem) =>
 					this.answerHandler.resolvePreset(card).name,
 				getPresetOptions: () => this.getPresetOptions(),
+				getLeechThreshold: (card: FSRSFlashcardItem) =>
+					this.answerHandler.resolvePreset(card).leechThreshold ??
+					DEFAULT_LEECH_THRESHOLD,
 				onPresetChange: (name: string) => void this.handlePresetChange(name),
 				resolveAudioPath: (card: FSRSFlashcardItem) => {
 					if (!card.noteId) return undefined;
@@ -653,9 +766,10 @@ export class ReviewView extends ItemView {
 	}
 
 	async onClose(): Promise<void> {
+		const sharedReviewAtClose = this.review;
 		this.disposeReviewHook?.();
 		this.disposeReviewHook = null;
-		this.plugin.commandService?.clearByType(
+		this.sessionCommandService.clearByType(
 			"review:answer",
 			"review:bury",
 			"review:suspend",
@@ -681,9 +795,20 @@ export class ReviewView extends ItemView {
 			this.openNoteAction = null;
 		}
 
+		const sharedStoreStillOwnsSession =
+			this.plugin.store?.getState().review === sharedReviewAtClose;
 		this.review.reset();
+		if (sharedStoreStillOwnsSession) {
+			this.plugin.store?.setState({ review: this.review });
+		}
 		this.aiEnabledForTypeIn = false;
 		this.resetTypeInState();
+	}
+
+	private syncSharedReviewState(): void {
+		const activeView = this.app.workspace.getActiveViewOfType(ReviewView);
+		if (activeView !== this) return;
+		this.plugin.store?.setState({ review: this.review });
 	}
 
 	// ─── Header actions (Obsidian native) ────────────────────────────────
@@ -709,6 +834,20 @@ export class ReviewView extends ItemView {
 			label: p.name,
 			retention: p.requestRetention,
 		}));
+	}
+
+	private cachePresetsForQueue(queue: FSRSFlashcardItem[]): void {
+		this.presetCache.clear();
+		for (const card of queue) {
+			const uid = card.sourceUid ?? "";
+			if (this.presetCache.has(uid)) continue;
+			this.presetCache.set(
+				uid,
+				this.plugin.presetService.resolvePresetForCard(card, {
+					projectPath: this.filters.projectPath,
+				}),
+			);
+		}
 	}
 
 	private handlePresetChange(newPresetName: string): void {
@@ -806,23 +945,15 @@ export class ReviewView extends ItemView {
 			if (queue.length === 0) {
 				this.mountEmptyState(
 					container,
-					getEmptyQueueMessage(this.filters.stateFilter),
+					getEmptyQueueMessage(
+						this.filters.stateFilter,
+						this.filters.schedulingMode === "retrievability",
+					),
 				);
 				return;
 			}
 
-			this.presetCache.clear();
-			for (const card of queue) {
-				const uid = card.sourceUid ?? "";
-				if (!this.presetCache.has(uid)) {
-					this.presetCache.set(
-						uid,
-						this.plugin.presetService.resolvePresetForCard(card, {
-							projectPath: this.filters.projectPath,
-						}),
-					);
-				}
-			}
+			this.cachePresetsForQueue(queue);
 
 			this.review.setSessionFilters(this.filters);
 			this.review.startSession(queue);
@@ -857,9 +988,6 @@ export class ReviewView extends ItemView {
 				return;
 			}
 			if (!m) return;
-			// Skip "reviewed" — the queue is already updated synchronously
-			// by recordAnswerAndNext() before persistence runs.
-			if (m.type === "reviewed") return;
 			// Targeted mutation handling instead of full session rebuild.
 			// rebuildActiveSession() recomputes cachedBadgeCounts from scratch,
 			// which can drift from the incremental counts maintained by
@@ -879,11 +1007,24 @@ export class ReviewView extends ItemView {
 				resolvedProjectUids,
 			);
 		});
+
+		let isReviewSyncSubscribing = true;
+		this.reviewSyncDisposer = effect(() => {
+			const event = reviewSessionCardGraded.value;
+			if (isReviewSyncSubscribing) {
+				isReviewSyncSubscribing = false;
+				return;
+			}
+			if (!event || event.sourceSessionId === this.sessionId) return;
+			this.review.removeCardsByIds([event.cardId]);
+		});
 	}
 
 	private unsubscribeFromSessionEvents(): void {
 		this.sessionSignalDisposer?.();
 		this.sessionSignalDisposer = null;
+		this.reviewSyncDisposer?.();
+		this.reviewSyncDisposer = null;
 	}
 
 	// ─── Actions menu ────────────────────────────────────────────────────
@@ -900,13 +1041,32 @@ export class ReviewView extends ItemView {
 
 	private showActionsMenu(event: MouseEvent): void {
 		const menu = new Menu();
+		this.populateActionsMenu(menu);
+		menu.showAtMouseEvent(event);
+	}
+
+	/** On mobile the card actions join the view's native pane menu, so the
+	 * header keeps a single overflow button instead of two identical ones. */
+	onPaneMenu(menu: Menu, source: string): void {
+		super.onPaneMenu(menu, source);
+		if (!isMobile() || !this.review.isActive) return;
+		menu.addSeparator();
+		this.populateActionsMenu(menu);
+	}
+
+	private populateActionsMenu(menu: Menu): void {
+		// Keyboard hints are noise on touch devices without a keyboard.
+		const withHint = (label: string, hint: string) =>
+			isMobile() ? label : `${label} (${hint})`;
 		const typeInMode = this.getTypeInMode();
-		const typeInMenuLabel =
+		const typeInMenuLabel = withHint(
 			typeInMode === "ai"
-				? "Type in: AI (t)"
+				? "Type in: AI"
 				: typeInMode === "diff"
-					? "Type in: Diff (t)"
-					: "Type in: Off (t)";
+					? "Type in: Diff"
+					: "Type in: Off",
+			"t",
+		);
 
 		menu.addItem((item) =>
 			item
@@ -928,47 +1088,65 @@ export class ReviewView extends ItemView {
 						});
 					}),
 			);
+			// On mobile the polish button has no home in the grade bar, so it
+			// joins the actions menu here.
+			if (isMobile() && isPluginEnabled(this.plugin.settings, "card-polish")) {
+				menu.addItem((item) =>
+					item
+						.setTitle("Polish card (AI)")
+						.setIcon("wand")
+						.onClick((evt) => {
+							if (evt instanceof MouseEvent) this.openCardPolishMenu(evt);
+						}),
+				);
+			}
 			menu.addSeparator();
 		}
 
-		if (this.cardActionsHandler.canUndo()) {
+		if (this.canUndoSessionAction()) {
 			menu.addItem((item) =>
 				item
-					.setTitle("Undo last answer (z)")
+					.setTitle(withHint("Undo last action", "z"))
 					.setIcon("undo")
-					.onClick(() => this.cardActionsHandler.handleUndo()),
+					.onClick(() => void this.undoSessionAction()),
 			);
 			menu.addSeparator();
 		}
 
 		menu.addItem((item) =>
 			item
-				.setTitle("Move card (m)")
+				.setTitle(withHint("Move card", "m"))
 				.setIcon("folder-input")
 				.onClick(() => this.cardActionsHandler.handleMoveCard()),
 		);
 		menu.addItem((item) =>
 			item
-				.setTitle("Suspend card")
+				.setTitle(withHint("Delete card", "shift+1"))
+				.setIcon("trash-2")
+				.onClick(() => this.cardActionsHandler.handleDelete()),
+		);
+		menu.addItem((item) =>
+			item
+				.setTitle(withHint("Suspend card", "shift+2"))
 				.setIcon("pause")
 				.onClick(() => this.cardActionsHandler.handleSuspend()),
 		);
 		menu.addItem((item) =>
 			item
-				.setTitle("Bury card (-)")
+				.setTitle(withHint("Bury card", "-"))
 				.setIcon("eye-off")
 				.onClick(() => this.cardActionsHandler.handleBuryCard()),
 		);
 		menu.addItem((item) =>
 			item
-				.setTitle("Bury note (=)")
+				.setTitle(withHint("Bury note", "="))
 				.setIcon("eye-off")
 				.onClick(() => this.cardActionsHandler.handleBuryNote()),
 		);
 		if (this.cardActionsHandler.canForgetCurrentCard()) {
 			menu.addItem((item) =>
 				item
-					.setTitle("Forget card (f)")
+					.setTitle(withHint("Forget card", "f"))
 					.setIcon("rotate-ccw")
 					.onClick(() => this.cardActionsHandler.handleForget()),
 			);
@@ -979,14 +1157,14 @@ export class ReviewView extends ItemView {
 		if (isNoteReview) {
 			menu.addItem((item) =>
 				item
-					.setTitle("Open note (e)")
+					.setTitle(withHint("Open note", "e"))
 					.setIcon("external-link")
 					.onClick(() => this.handleOpenSourceNote()),
 			);
 		} else {
 			menu.addItem((item) =>
 				item
-					.setTitle("Edit card (e)")
+					.setTitle(withHint("Edit card", "e"))
 					.setIcon("pencil")
 					.onClick(() => void this.cardActionsHandler.handleEditCardModal()),
 			);
@@ -998,18 +1176,20 @@ export class ReviewView extends ItemView {
 			);
 			menu.addItem((item) =>
 				item
-					.setTitle("Add flashcard (a)")
+					.setTitle(withHint("Add flashcard", "a"))
 					.setIcon("plus")
 					.onClick(() => void this.cardActionsHandler.handleAddNewFlashcard()),
 			);
-			menu.addItem((item) =>
-				item
-					.setTitle("Add image occlusion")
-					.setIcon("image")
-					.onClick(
-						() => void this.cardActionsHandler.handleAddImageOcclusion(),
-					),
-			);
+			if (capabilities.canEditImageOcclusion()) {
+				menu.addItem((item) =>
+					item
+						.setTitle("Add image occlusion")
+						.setIcon("image")
+						.onClick(
+							() => void this.cardActionsHandler.handleAddImageOcclusion(),
+						),
+				);
+			}
 			menu.addItem((item) =>
 				item
 					.setTitle("Open source note")
@@ -1017,8 +1197,6 @@ export class ReviewView extends ItemView {
 					.onClick(() => this.handleOpenSourceNote()),
 			);
 		}
-
-		menu.showAtMouseEvent(event);
 	}
 
 	private async resolveGradingContext(card: FSRSFlashcardItem): Promise<{
@@ -1134,6 +1312,64 @@ export class ReviewView extends ItemView {
 
 	private handleClose(): void {
 		this.leaf.detach();
+	}
+
+	private getTopUpAvailability(): ReviewSessionTopUpAvailability {
+		if (this.filters.schedulingMode !== "retrievability") {
+			return { review: 0, new: 0 };
+		}
+		return this.reviewController.getTopUpAvailability(this.filters);
+	}
+
+	private async handleTopUp(topUp: ReviewSessionTopUp): Promise<boolean> {
+		if (this.filters.schedulingMode !== "retrievability") return false;
+
+		try {
+			const normalizedTopUp: ReviewSessionTopUp = {
+				...topUp,
+				count: Math.max(0, Math.floor(topUp.count)),
+			};
+			if (normalizedTopUp.count === 0) return false;
+
+			const { queue } = this.reviewController.buildTopUpSession(
+				this.filters,
+				normalizedTopUp,
+			);
+			if (queue.length === 0) {
+				notify().info(
+					`No ${normalizedTopUp.kind} cards are available for Top Up.`,
+				);
+				return false;
+			}
+
+			this.cachePresetsForQueue(queue);
+
+			if (this.review.getPhase().type === "waiting") {
+				const addedCount = this.review.addCardsToCurrentSession(queue);
+				if (addedCount === 0) {
+					notify().info("Those cards are already in the current session.");
+					return false;
+				}
+			} else {
+				this.filters = { ...this.filters, topUp: normalizedTopUp };
+				this.review.setSessionFilters(this.filters);
+				this.review.startSession(queue);
+			}
+
+			this.sessionCommandService.clearByType(
+				"review:answer",
+				"review:bury",
+				"review:suspend",
+				"review:forget",
+			);
+
+			this.resetTypeInState(this.review.getCurrentCard()?.id ?? null);
+			this.answerHandler.updateSchedulingPreview();
+			return true;
+		} catch (error) {
+			notify().operationFailed("start Top Up", error);
+			return false;
+		}
 	}
 
 	private handleNextSession(): void {

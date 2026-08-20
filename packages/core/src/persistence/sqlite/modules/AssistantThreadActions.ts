@@ -223,6 +223,25 @@ export class AssistantThreadActions {
 		return this.db.raw.getRowsModified();
 	}
 
+	/**
+	 * Startup sweep: a thread whose active_task_id points at a deleted or
+	 * terminal task can never finish its turn: the UI treats it as busy
+	 * forever (composer disabled, proposals inert, Undo AI hidden). Clear the
+	 * pointer so the thread becomes usable again. Idempotent.
+	 */
+	clearStaleActiveTasks(updatedAt: number): number {
+		this.db.run(
+			`UPDATE assistant_threads
+			 SET active_task_id = NULL, updated_at = ?
+			 WHERE active_task_id IS NOT NULL
+			   AND active_task_id NOT IN (
+			     SELECT id FROM assistant_tasks WHERE status IN ('pending','running')
+			   )`,
+			[updatedAt],
+		);
+		return this.db.raw.getRowsModified();
+	}
+
 	undoLastTurn(id: string, updatedAt: number): AssistantThread | null {
 		const thread = this.getById(id);
 		const previous = thread?.revisions.at(-1);

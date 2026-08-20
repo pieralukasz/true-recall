@@ -1,10 +1,13 @@
 import { type ReadonlySignal, useSignal } from "@preact/signals";
+import { effect } from "@preact/signals-core";
 import { useCallback, useEffect, useMemo, useRef } from "preact/hooks";
 
 import { aggregateDashboardData } from "@true-recall/core/helpers/note-aggregation";
 import { computePriority } from "@true-recall/core/helpers/note-priority";
 import { estimateStudyMinutes } from "@true-recall/core/helpers/time-estimate";
 import { StatsCalculatorService } from "@true-recall/core/metrics/stats/stats-calculator.service";
+import { scoreRModeCard } from "@true-recall/core/services/review/retrievability-queue";
+import { captureSessionProgress } from "@true-recall/core/services/review/session-helpers";
 import type {
 	CardSchedulingMeta,
 	TrueRecallSettings,
@@ -15,12 +18,13 @@ import { SearchCombobox } from "@true-recall/obsidian/components/SearchCombobox"
 import { Q, useQuery } from "@true-recall/obsidian/data";
 import { computeActionableSessionSnapshot } from "@true-recall/obsidian/features/study/services/actionable-session-snapshot.service";
 import { BottomActionBar } from "@true-recall/obsidian/features/study/ui/dashboard/components/BottomActionBar";
+import { CustomStudyTab } from "@true-recall/obsidian/features/study/ui/dashboard/components/CustomStudyTab";
 import { DashboardTabs } from "@true-recall/obsidian/features/study/ui/dashboard/components/DashboardTabs";
 import { NoteList } from "@true-recall/obsidian/features/study/ui/dashboard/components/NoteList";
 import { OrphanedTab } from "@true-recall/obsidian/features/study/ui/dashboard/components/OrphanedTab";
 import { ProjectsTab } from "@true-recall/obsidian/features/study/ui/dashboard/components/ProjectsTab";
 import { RecentlyStudiedBar } from "@true-recall/obsidian/features/study/ui/dashboard/components/RecentlyStudiedBar";
-import { TemporaryCustomStudyDeckCard } from "@true-recall/obsidian/features/study/ui/dashboard/components/TemporaryCustomStudyDeckCard";
+import { SyncStatusChip } from "@true-recall/obsidian/features/study/ui/dashboard/components/SyncStatusChip";
 import { TodayActionBar } from "@true-recall/obsidian/features/study/ui/dashboard/components/TodayActionBar";
 import { aggregateProjectData } from "@true-recall/obsidian/features/study/ui/dashboard/helpers/project-aggregation";
 import { projectMatchesSearch } from "@true-recall/obsidian/features/study/ui/dashboard/helpers/project-tree-flatten";
@@ -39,6 +43,7 @@ import { HeatmapWidget } from "@true-recall/plugins/dashboard-codeblock/analytic
 // While the dashboard is visible, Q.ALL_META changes (every review grade)
 // recompute the aggregation at most this often; while hidden, not at all.
 const RECOMPUTE_THROTTLE_MS = 2000;
+const MINUTE_MS = 60_000;
 
 interface DashboardAppProps {
 	isViewVisible: ReadonlySignal<boolean>;
@@ -53,6 +58,20 @@ export function DashboardApp({ isViewVisible }: DashboardAppProps) {
 	);
 	const activeTab = useSignal<DashboardTab>("projects");
 	const searchQuery = useSignal("");
+	const minuteBucket = useSignal(Math.floor(Date.now() / MINUTE_MS));
+
+	// Retrievability changes with time even when no card metadata changes. Keep
+	// the dashboard honest without waking a hidden view every minute.
+	useEffect(() => {
+		return effect(() => {
+			if (!isViewVisible.value) return;
+			minuteBucket.value = Math.floor(Date.now() / MINUTE_MS);
+			const timer = window.setInterval(() => {
+				minuteBucket.value = Math.floor(Date.now() / MINUTE_MS);
+			}, MINUTE_MS);
+			return () => window.clearInterval(timer);
+		});
+	}, [isViewVisible, minuteBucket]);
 
 	const statsCalculator = useMemo(() => {
 		const calc = new StatsCalculatorService(
@@ -73,12 +92,22 @@ export function DashboardApp({ isViewVisible }: DashboardAppProps) {
 	// the hot signals are not even subscribed, so grading in the review view
 	// no longer re-renders or recomputes the dashboard aggregation. Downstream
 	// useMemos stay stable because both references are frozen together.
-	const { allCards, archived } = useGatedComputed(
+	const { allCards, archived, now } = useGatedComputed(
 		() => ({
 			allCards: [...allMeta.value.values()],
 			archived: archivedSourceUidsSignal.value,
+			now: new Date(Math.floor(Date.now() / MINUTE_MS) * MINUTE_MS),
 		}),
-		() => [allMeta.value, archivedSourceUidsSignal.value],
+		() => {
+			// Subscribe to the timer without making its catch-up write on reveal a
+			// separate dependency from the current wall-clock minute.
+			void minuteBucket.value;
+			return [
+				allMeta.value,
+				archivedSourceUidsSignal.value,
+				Math.floor(Date.now() / MINUTE_MS),
+			];
+		},
 		{ isVisible: isViewVisible, throttleMs: RECOMPUTE_THROTTLE_MS },
 	);
 
@@ -118,6 +147,34 @@ export function DashboardApp({ isViewVisible }: DashboardAppProps) {
 			string,
 			ReturnType<typeof computeActionableSessionSnapshot>
 		>();
+		const sessionProgress = captureSessionProgress(plugin.sessionPersistence);
+
+		const rMode = plugin.settings.rMode;
+		const retention = plugin.settings.fsrsRequestRetention;
+		const presetCache = new Map<
+			string,
+			ReturnType<typeof plugin.presetService.getDefaultPreset>
+		>();
+		const rModeCardOptions = {
+			ceiling: Math.min(0.999, retention + rMode.ceilingOffset),
+			comfortFloor: retention,
+			resolveCardOptions: (card: CardSchedulingMeta) => {
+				const key = card.sourceUid ?? card.id;
+				let preset = presetCache.get(key);
+				if (!preset) {
+					preset = plugin.presetService.resolvePresetForCard(card);
+					presetCache.set(key, preset);
+				}
+				return {
+					comfortFloor: preset.requestRetention,
+					ceiling: Math.min(
+						0.999,
+						preset.requestRetention + rMode.ceilingOffset,
+					),
+					presetSettings: plugin.presetService.toFSRSSettings(preset),
+				};
+			},
+		};
 
 		const raw = aggregateDashboardData({
 			allCards,
@@ -126,12 +183,25 @@ export function DashboardApp({ isViewVisible }: DashboardAppProps) {
 			newCardsCap: plugin.settings.newCardsPerDay,
 			reviewsCap: plugin.settings.reviewsPerDay,
 			archivedSourceUids: showArchived.value ? undefined : archived,
+			retrievability: rMode.enabled
+				? {
+						getScore: (card) =>
+							scoreRModeCard(card, plugin.fsrsService, rModeCardOptions, now),
+						urgentBelow: rMode.urgentBelow,
+					}
+				: undefined,
+			now,
 		});
 
 		const globalSnapshot = computeActionableSessionSnapshot(
 			snapshotDeps,
-			{},
-			{ cache: snapshotCache, activeCards: cachedActiveCards },
+			{ schedulingMode: rMode.enabled ? "retrievability" : "due" },
+			{
+				cache: snapshotCache,
+				activeCards: cachedActiveCards,
+				sessionProgress,
+				now,
+			},
 		);
 
 		const actionableNotes = raw.notes.map((note) => {
@@ -146,8 +216,14 @@ export function DashboardApp({ isViewVisible }: DashboardAppProps) {
 				{
 					sourceNoteFilter: note.name,
 					ignoreDailyLimits: plugin.settings.ignoreDailyLimitsForNoteStudy,
+					schedulingMode: rMode.enabled ? "retrievability" : "due",
 				},
-				{ cache: snapshotCache, activeCards: scopedActiveCards },
+				{
+					cache: snapshotCache,
+					activeCards: scopedActiveCards,
+					sessionProgress,
+					now,
+				},
 			);
 			const due = noteSnapshot.counts.due;
 			const newCount = noteSnapshot.counts.new;
@@ -173,6 +249,7 @@ export function DashboardApp({ isViewVisible }: DashboardAppProps) {
 			totalDue: globalSnapshot.counts.due,
 			totalNew: globalSnapshot.counts.new,
 			totalLearning: globalSnapshot.counts.learning,
+			totalLearningPending: globalSnapshot.counts.learningPending,
 			estimatedTotalMinutes: estimateStudyMinutes(
 				globalSnapshot.counts.due,
 				globalSnapshot.counts.new,
@@ -186,6 +263,7 @@ export function DashboardApp({ isViewVisible }: DashboardAppProps) {
 		statsCalculator,
 		plugin,
 		showArchived.value,
+		now,
 	]);
 
 	const visibleNotes = useMemo(() => {
@@ -213,6 +291,7 @@ export function DashboardApp({ isViewVisible }: DashboardAppProps) {
 				activeCards: cachedActiveCards,
 				metadataCache: plugin.app.metadataCache,
 			},
+			now,
 		});
 	}, [
 		plugin,
@@ -221,6 +300,7 @@ export function DashboardApp({ isViewVisible }: DashboardAppProps) {
 		allCards,
 		archived,
 		cachedActiveCards,
+		now,
 	]);
 
 	const enrichedNotes = useMemo(() => {
@@ -268,11 +348,16 @@ export function DashboardApp({ isViewVisible }: DashboardAppProps) {
 		data.orphanedCards.total,
 	]);
 
-	const handleStudyNote = (noteName: string, projectPath?: string) => {
+	const handleStudyNote = (
+		noteName: string,
+		projectPath?: string,
+		rModeTargetCount?: number,
+	) => {
 		void plugin.startReview({
 			mode: "notes",
 			noteNames: [noteName],
 			projectPath,
+			rModeTargetCount,
 		});
 	};
 
@@ -343,6 +428,7 @@ export function DashboardApp({ isViewVisible }: DashboardAppProps) {
 						<>
 							<TodayActionBar
 								totalDue={data.totalDue}
+								totalPool={data.totalPool}
 								totalNew={data.totalNew}
 								totalLearning={data.totalLearning}
 								estimatedMinutes={data.estimatedTotalMinutes}
@@ -355,32 +441,30 @@ export function DashboardApp({ isViewVisible }: DashboardAppProps) {
 						</>
 					)}
 
-					{_settings.temporaryCustomStudyDeck && (
-						<TemporaryCustomStudyDeckCard
-							deck={_settings.temporaryCustomStudyDeck}
+					{(activeTab.value === "projects" || activeTab.value === "notes") && (
+						<SearchCombobox
+							value={searchQuery.value}
+							placeholder="Search notes or projects…"
+							ariaLabel="Search notes or projects"
+							onChange={(q) => {
+								searchQuery.value = q;
+							}}
 						/>
 					)}
-
-					<SearchCombobox
-						value={searchQuery.value}
-						placeholder="Search notes or projects..."
-						ariaLabel="Search notes or projects"
-						onChange={(q) => {
-							searchQuery.value = q;
-						}}
-					/>
 
 					<DashboardTabs
 						activeTab={activeTab.value}
 						onTabChange={handleTabChange}
 						projectCount={filteredCounts.projects}
 						notesCount={filteredCounts.notes}
+						customCount={_settings.temporaryCustomStudyDecks.length}
 						orphanedCount={filteredCounts.orphaned}
 						showArchived={showArchived.value}
 						onToggleArchived={() => {
 							showArchived.value = !showArchived.value;
 						}}
 						onCreateProject={() => void handleCreateProject()}
+						onCreateCustomSession={() => void plugin.openCustomStudyModal()}
 					/>
 
 					<div class="ep:flex ep:flex-col ep:flex-1">
@@ -406,6 +490,10 @@ export function DashboardApp({ isViewVisible }: DashboardAppProps) {
 								/>
 							)}
 
+							{activeTab.value === "custom" && (
+								<CustomStudyTab decks={_settings.temporaryCustomStudyDecks} />
+							)}
+
 							{activeTab.value === "orphaned" && (
 								<OrphanedTab stats={data.orphanedCards} />
 							)}
@@ -413,6 +501,10 @@ export function DashboardApp({ isViewVisible }: DashboardAppProps) {
 
 						<div class="ep:mt-3">
 							<HeatmapWidget source="months: 0" isViewVisible={isViewVisible} />
+						</div>
+
+						<div class="ep:mt-2">
+							<SyncStatusChip />
 						</div>
 					</div>
 				</div>

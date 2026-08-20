@@ -1,7 +1,11 @@
 import { BUILTIN_BASIC_PRO_PROMPT } from "./ai/prompts/builtin-basic-pro.prompt";
 import type { GenerationPreset } from "./types/generation-preset.types";
 import { BUILTIN_BASIC_ID } from "./types/note.types";
-import type { FSRSPreset, TrueRecallSettings } from "./types/settings.types";
+import type {
+	FSRSPreset,
+	RModeSettings,
+	TrueRecallSettings,
+} from "./types/settings.types";
 
 export const VIEW_TYPE_FLASHCARD_PANEL = "true-recall-flashcard-panel";
 export const VIEW_TYPE_REVIEW = "true-recall-review";
@@ -33,12 +37,19 @@ export const BYOK_MODELS: ByokModelConfig[] = [
 		defaultTemperature: 0.7,
 	},
 	{
+		id: "google/gemini-3.7-flash",
+		name: "Gemini 3.7 Flash",
+		provider: "Google",
+		description: "Fast + cheap thinking, newest flash",
+		defaultTemperature: 0.7,
+		recommended: true,
+	},
+	{
 		id: "google/gemini-2.5-flash",
 		name: "Gemini 2.5 Flash",
 		provider: "Google",
 		description: "Fast + cheap thinking",
 		defaultTemperature: 0.7,
-		recommended: true,
 	},
 	{
 		id: "deepseek/deepseek-r1",
@@ -65,7 +76,7 @@ export const BYOK_MODELS: ByokModelConfig[] = [
 
 export const CUSTOM_MODEL_ID = "__custom__";
 
-export const DEFAULT_BYOK_MODEL = "google/gemini-2.5-flash";
+export const DEFAULT_BYOK_MODEL = "google/gemini-3.7-flash";
 
 export const DEFAULT_FSRS_PRESET: FSRSPreset = {
 	id: "default",
@@ -118,6 +129,14 @@ export const BUILTIN_BASIC_PRO_PRESET: GenerationPreset = {
 	updatedAt: 0,
 };
 
+export const DEFAULT_R_MODE_SETTINGS: RModeSettings = {
+	enabled: false,
+	defaultSessionSize: 30,
+	comfortMix: 0.3,
+	ceilingOffset: 0.05,
+	urgentBelow: 0.5,
+};
+
 export const DEFAULT_SETTINGS: TrueRecallSettings = {
 	enableDeviceSync: false,
 	providerType: "openrouter",
@@ -146,6 +165,8 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 
 	fsrsWeights: null, // null = use ts-fsrs defaults
 	lastOptimization: null,
+
+	rMode: DEFAULT_R_MODE_SETTINGS,
 
 	reviewMode: "fullscreen",
 	reviewContentWidth: "default",
@@ -210,6 +231,7 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 	scheduledBreaks: [],
 
 	sessionPresets: [],
+	temporaryCustomStudyDecks: [],
 
 	fsrsPresets: [DEFAULT_FSRS_PRESET],
 	defaultPresetId: "default",

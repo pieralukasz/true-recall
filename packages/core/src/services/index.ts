@@ -58,6 +58,15 @@ export {
 } from "./review/actionable-session-snapshot.service";
 export { DayBoundaryService } from "./review/day-boundary.service";
 export {
+	buildRetrievabilityQueue,
+	countRModePool,
+	type RetrievabilitySummary,
+	type RModeQueueOptions,
+	type RModeQueueResult,
+	resolveRModeOptions,
+	summarizeRetrievability,
+} from "./review/retrievability-queue";
+export {
 	type QueueBuildOptions,
 	ReviewService,
 } from "./review/review.service";

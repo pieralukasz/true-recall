@@ -12,11 +12,28 @@ export type {
 } from "./loader";
 
 export const DB_FOLDER = ".true-recall";
+// iCloud skips any path containing a ".nosync" component, so backup archives
+// stay local instead of competing with database sync for transfer bandwidth.
+// The legacy plain "backups" folder is still read so old archives restore.
+export const BACKUPS_FOLDER = "backups.nosync";
+export const LEGACY_BACKUPS_FOLDER = "backups";
+
+export function getBackupFolderPath(deviceId: string): string {
+	return `${DB_FOLDER}/${BACKUPS_FOLDER}/${deviceId}`;
+}
+
+export function getLegacyBackupFolderPath(deviceId: string): string {
+	return `${DB_FOLDER}/${LEGACY_BACKUPS_FOLDER}/${deviceId}`;
+}
 export const DB_FILE = "true-recall.db"; // legacy single-device database
 export const DB_FILE_PREFIX = "true-recall-";
 export const DB_FILE_SUFFIX = ".db";
 export const LEGACY_DB_FILE = "true-recall.db";
 export const SAVE_DEBOUNCE_MS = 5000; // 5 seconds - better durability on app shutdown
+// Mobile OSes freeze timers the instant the app backgrounds and may kill the
+// process without any unload event, so writes must reach disk almost
+// immediately after the last mutation.
+export const MOBILE_SAVE_DEBOUNCE_MS = 400;
 export const SAFETY_FLUSH_INTERVAL_MS = 15000; // hard safety flush every 15 seconds
 
 // VACUUM on load only when both thresholds are exceeded — small databases

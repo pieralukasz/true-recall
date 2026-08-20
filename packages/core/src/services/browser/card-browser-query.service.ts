@@ -1,6 +1,9 @@
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite";
 import { sqlPlaceholders } from "@true-recall/core/persistence/sqlite/sql-utils";
-import { buildBrowserQuery } from "@true-recall/core/services/browser/browser-query-builder";
+import {
+	buildBrowserQuery,
+	type SqlQuery,
+} from "@true-recall/core/services/browser/browser-query-builder";
 import type { FrontmatterIndexService } from "@true-recall/core/services/notes/frontmatter-index.service";
 import type { HierarchyService } from "@true-recall/core/services/notes/hierarchy.service";
 import type { FSRSCardData } from "@true-recall/core/types";
@@ -25,51 +28,36 @@ export class CardBrowserQueryService {
 		limit: number,
 		offset: number,
 	): BrowserResult {
-		// Resolve note: filters from note names to source UIDs
-		const resolvedFilter = this.resolveNoteFilters(filter);
-
-		// Don't pass orphaned UIDs via sourceUids — we build the clause manually
-		const fts5Available = this.cardStore.notes.isFts5Available();
-		const sqlQuery = buildBrowserQuery(resolvedFilter, sort, limit, offset, {
-			fts5Available,
-		});
-
-		if (resolvedFilter.orphanedOnly) {
-			const orphanedUids = this.getOrphanedSourceUids();
-			const conditions: string[] = ["c.source_uid IS NULL"];
-			if (orphanedUids.length > 0) {
-				conditions.push(
-					`c.source_uid IN (${sqlPlaceholders(orphanedUids.length)})`,
-				);
-				sqlQuery.params.push(...orphanedUids);
-			}
-			sqlQuery.where += ` AND (${conditions.join(" OR ")})`;
-		}
-
-		const archivedUids = this.getArchivedSourceUids(
-			!!resolvedFilter.showArchived,
-		);
-		const sqlWithArchiveFilter = this.applyArchivedFilter(
-			sqlQuery.where,
-			sqlQuery.params,
-			archivedUids,
-		);
+		const sqlQuery = this.buildFilteredQuery(filter, sort, limit, offset);
 
 		const rawCards = this.cardStore.cards.browserQuery(
-			sqlWithArchiveFilter.where,
-			sqlWithArchiveFilter.params,
+			sqlQuery.where,
+			sqlQuery.params,
 			sqlQuery.orderBy,
 			sqlQuery.limit,
 			sqlQuery.offset,
 		);
 
 		const totalCount = this.cardStore.cards.browserCount(
-			sqlWithArchiveFilter.where,
-			sqlWithArchiveFilter.params,
+			sqlQuery.where,
+			sqlQuery.params,
 		);
 
 		const cards = rawCards.map((card) => this.toBrowserCard(card));
 		return { cards, totalCount };
+	}
+
+	getMatchingCardIds(filter: FilterState): string[] {
+		const sqlQuery = this.buildFilteredQuery(
+			filter,
+			{ column: "due", direction: "asc" },
+			1,
+			0,
+		);
+		return this.cardStore.cards.browserQueryIds(
+			sqlQuery.where,
+			sqlQuery.params,
+		);
 	}
 
 	/** Get sidebar facet counts (states, types, sources, etc.) */
@@ -189,6 +177,46 @@ export class CardBrowserQueryService {
 		return {
 			where: `(${where}) AND (c.source_uid IS NULL OR c.source_uid NOT IN (${sqlPlaceholders(ids.length)}))`,
 			params: [...params, ...ids],
+		};
+	}
+
+	private buildFilteredQuery(
+		filter: FilterState,
+		sort: SortConfig,
+		limit: number,
+		offset: number,
+	): SqlQuery {
+		const resolvedFilter = this.resolveNoteFilters(filter);
+		const fts5Available = this.cardStore.notes.isFts5Available();
+		const sqlQuery = buildBrowserQuery(resolvedFilter, sort, limit, offset, {
+			fts5Available,
+		});
+
+		if (resolvedFilter.orphanedOnly) {
+			const orphanedUids = this.getOrphanedSourceUids();
+			const conditions: string[] = ["c.source_uid IS NULL"];
+			if (orphanedUids.length > 0) {
+				conditions.push(
+					`c.source_uid IN (${sqlPlaceholders(orphanedUids.length)})`,
+				);
+				sqlQuery.params.push(...orphanedUids);
+			}
+			sqlQuery.where += ` AND (${conditions.join(" OR ")})`;
+		}
+
+		const archivedUids = this.getArchivedSourceUids(
+			!!resolvedFilter.showArchived,
+		);
+		const filtered = this.applyArchivedFilter(
+			sqlQuery.where,
+			sqlQuery.params,
+			archivedUids,
+		);
+
+		return {
+			...sqlQuery,
+			where: filtered.where,
+			params: filtered.params,
 		};
 	}
 

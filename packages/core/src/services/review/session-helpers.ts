@@ -12,6 +12,7 @@ import type {
 	PresetDailyProgress,
 	SessionPersistenceService,
 } from "@true-recall/core/persistence/session/session-persistence.service";
+import { resolveRModeOptions } from "@true-recall/core/services/review/retrievability-queue";
 import type { QueueBuildOptions } from "@true-recall/core/services/review/review.service";
 import type { CardSchedulingMeta } from "@true-recall/core/types";
 import type { SessionFilters } from "@true-recall/core/types/review-session.types";
@@ -46,6 +47,25 @@ export interface GlobalPresetQueueContext {
 }
 
 /**
+ * Persistence-backed values shared by every queue built in one UI
+ * aggregation. Dashboard note/project snapshots are computed synchronously;
+ * capturing these once prevents an identical SQL query per scope.
+ */
+export interface SessionProgressSnapshot {
+	reviewedToday: Set<string>;
+	presetProgressToday: Map<string, PresetDailyProgress>;
+}
+
+export function captureSessionProgress(
+	sessionPersistence: SessionPersistenceService,
+): SessionProgressSnapshot {
+	return {
+		reviewedToday: sessionPersistence.getReviewedToday(),
+		presetProgressToday: sessionPersistence.getTodayProgressByPreset(),
+	};
+}
+
+/**
  * Returns active (non-suspended, non-buried, non-archived) cards, or specifically
  * buried cards if stateFilter is "buried"
  */
@@ -70,10 +90,14 @@ export function filterActiveCards(
 	});
 }
 
-export function getEmptyQueueMessage(stateFilter?: string): string {
+export function getEmptyQueueMessage(
+	stateFilter?: string,
+	rModeActive = false,
+): string {
 	if (stateFilter === "buried") {
 		return "No buried cards found.";
 	}
+	if (rModeActive) return "Nothing worth reviewing right now.";
 
 	return "Congratulations! No cards due for review.";
 }
@@ -83,13 +107,17 @@ export function buildQueueOptions(
 	settings: TrueRecallSettings,
 	sessionPersistence: SessionPersistenceService,
 	preset?: FSRSPreset,
+	sessionProgress?: SessionProgressSnapshot,
 ): QueueBuildOptions {
 	// When scoped to a single preset (per-project/per-note snapshots), match
 	// today's progress to that preset so its remaining budget isn't drained
 	// by reviews from other presets. Global sessions don't pass a preset and
 	// use the aggregate counters instead.
 	const presetProgress = preset
-		? sessionPersistence.getTodayProgressByPreset().get(preset.name)
+		? (
+				sessionProgress?.presetProgressToday ??
+				sessionPersistence.getTodayProgressByPreset()
+			).get(preset.name)
 		: undefined;
 	const newCardsStudiedToday = preset
 		? (presetProgress?.newStudied ?? 0)
@@ -103,14 +131,17 @@ export function buildQueueOptions(
 		customStudy?.kind === "forgotten"
 			? sessionPersistence.getCardsRatedAgainWithinDays(customStudy.days)
 			: undefined;
-	const temporaryDeckCardIds = filters.temporaryDeckId
-		? undefined
-		: new Set(settings.temporaryCustomStudyDeck?.cardIds ?? []);
+	const temporaryDeckCardIds = new Set(
+		(settings.temporaryCustomStudyDecks ?? [])
+			.filter((deck) => deck.id !== filters.temporaryDeckId)
+			.flatMap((deck) => deck.cardIds),
+	);
 
 	return {
 		newCardsLimit: preset?.newCardsPerDay ?? settings.newCardsPerDay,
 		reviewsLimit: preset?.reviewsPerDay ?? settings.reviewsPerDay,
-		reviewedToday: sessionPersistence.getReviewedToday(),
+		reviewedToday:
+			sessionProgress?.reviewedToday ?? sessionPersistence.getReviewedToday(),
 		newCardsStudiedToday,
 		reviewsCompletedToday,
 		newCardOrder: preset?.newCardOrder ?? settings.newCardOrder,
@@ -142,6 +173,12 @@ export function buildQueueOptions(
 		forgottenCardIds,
 		materializedCardIds: filters.materializedCardIds,
 		temporaryDeckCardIds,
+		rMode: resolveRModeOptions(
+			filters.schedulingMode === "retrievability" ? settings.rMode : undefined,
+			preset?.requestRetention ?? settings.fsrsRequestRetention,
+			filters.rModeTargetCount,
+		),
+		topUp: filters.topUp,
 	};
 }
 
@@ -177,6 +214,7 @@ export function buildGlobalPresetQueueContext(
 	cards: CardSchedulingMeta[],
 	presetService: PresetServiceLike,
 	sessionPersistence: SessionPersistenceService,
+	sessionProgress?: SessionProgressSnapshot,
 ): GlobalPresetQueueContext {
 	const defaultPreset = presetService.getDefaultPreset();
 	const presetDailyLimits = new Map<
@@ -222,7 +260,8 @@ export function buildGlobalPresetQueueContext(
 	}
 
 	const presetProgressToday = new Map(
-		sessionPersistence.getTodayProgressByPreset(),
+		sessionProgress?.presetProgressToday ??
+			sessionPersistence.getTodayProgressByPreset(),
 	);
 	if (
 		defaultPreset.name !== "Default" &&

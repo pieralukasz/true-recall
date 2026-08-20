@@ -10,7 +10,6 @@ describe("resolveGateAction", () => {
 				depsChanged: false,
 				msSinceLastCompute: 5000,
 				throttleMs: 2000,
-				hasPendingReveal: false,
 			}),
 		).toEqual({ kind: "keep" });
 	});
@@ -22,7 +21,6 @@ describe("resolveGateAction", () => {
 				depsChanged: false,
 				msSinceLastCompute: 100,
 				throttleMs: 2000,
-				hasPendingReveal: false,
 			}),
 		).toEqual({ kind: "keep" });
 	});
@@ -34,7 +32,6 @@ describe("resolveGateAction", () => {
 				depsChanged: true,
 				msSinceLastCompute: 2000,
 				throttleMs: 2000,
-				hasPendingReveal: false,
 			}),
 		).toEqual({ kind: "recompute" });
 	});
@@ -46,31 +43,29 @@ describe("resolveGateAction", () => {
 				depsChanged: true,
 				msSinceLastCompute: 1500,
 				throttleMs: 2000,
-				hasPendingReveal: false,
 			}),
 		).toEqual({ kind: "trailing", delayMs: 500 });
 	});
 
-	it("defers a reveal with changed deps so the cached frame paints first", () => {
-		expect(
-			resolveGateAction({
-				becameVisible: true,
-				depsChanged: true,
-				msSinceLastCompute: 5000,
-				throttleMs: 2000,
-				hasPendingReveal: false,
-			}),
-		).toEqual({ kind: "defer-reveal" });
-	});
-
-	it("recomputes a pending reveal on the next tick, bypassing the throttle", () => {
+	it("recomputes render-driven deps immediately within the throttle window", () => {
 		expect(
 			resolveGateAction({
 				becameVisible: false,
 				depsChanged: true,
 				msSinceLastCompute: 100,
 				throttleMs: 2000,
-				hasPendingReveal: true,
+				trigger: "render",
+			}),
+		).toEqual({ kind: "recompute" });
+	});
+
+	it("recomputes a reveal with changed deps before the next render", () => {
+		expect(
+			resolveGateAction({
+				becameVisible: true,
+				depsChanged: true,
+				msSinceLastCompute: 5000,
+				throttleMs: 2000,
 			}),
 		).toEqual({ kind: "recompute" });
 	});
@@ -82,7 +77,6 @@ describe("resolveGateAction", () => {
 				depsChanged: true,
 				msSinceLastCompute: 0,
 				throttleMs: 0,
-				hasPendingReveal: false,
 			}),
 		).toEqual({ kind: "recompute" });
 	});

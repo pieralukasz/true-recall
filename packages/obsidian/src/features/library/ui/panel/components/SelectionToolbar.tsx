@@ -1,93 +1,71 @@
-import { IconButton } from "@true-recall/obsidian/components";
+import { Menu } from "obsidian";
+import { useCallback } from "preact/hooks";
+
+import { PanelIconButton } from "@true-recall/obsidian/features/library/ui/panel/components/PanelIconButton";
 import { usePanelStore } from "@true-recall/obsidian/features/library/ui/panel/hooks/usePanelStore";
+import { usePolishPresetMenu } from "@true-recall/obsidian/features/library/ui/panel/hooks/usePolishPresetMenu";
 import { useSelectionActions } from "@true-recall/obsidian/features/library/ui/panel/hooks/useSelectionActions";
 
-export function SelectionToolbar() {
-	const { selectedCardIds, flashcardInfo } = usePanelStore();
-	const {
-		handleExitSelectionMode,
-		handleSelectAll,
-		handleMoveSelected,
-		handleChangeNoteType,
-		handleSuspendSelected,
-		handleUnsuspendSelected,
-		handleForgetSelected,
-		handleDeleteSelected,
-	} = useSelectionActions();
+interface SelectionProps {
+	visibleCardIds: string[];
+	allCardIds: string[];
+}
 
-	const selectedCount = selectedCardIds.size;
-	const totalCount = flashcardInfo?.flashcards.length ?? 0;
-	const allSelected = selectedCount === totalCount && totalCount > 0;
-	const hasSelection = selectedCount > 0;
+export function SelectionToolbar({
+	visibleCardIds,
+	allCardIds,
+}: SelectionProps) {
+	const { selectedCardIds } = usePanelStore();
+	const { handleExitSelectionMode, handleSelectCards } = useSelectionActions();
+	const { hasPolishPresets, openPolishMenu } = usePolishPresetMenu();
+
+	const openSelectMenu = useCallback(
+		(event: MouseEvent) => {
+			const menu = new Menu();
+			menu.addItem((item) =>
+				item
+					.setTitle(`Select ${visibleCardIds.length} Visible`)
+					.setIcon("list-checks")
+					.setDisabled(visibleCardIds.length === 0)
+					.onClick(() => handleSelectCards(visibleCardIds)),
+			);
+			if (visibleCardIds.length !== allCardIds.length) {
+				menu.addItem((item) =>
+					item
+						.setTitle(`Select All ${allCardIds.length} Cards`)
+						.setIcon("check-check")
+						.setDisabled(allCardIds.length === 0)
+						.onClick(() => handleSelectCards(allCardIds)),
+				);
+			}
+			menu.showAtMouseEvent(event);
+		},
+		[visibleCardIds, allCardIds, handleSelectCards],
+	);
 
 	return (
-		<div class="ep:flex ep:flex-col ep:gap-2">
-			<div class="ep:flex ep:items-center ep:justify-between">
-				<div class="ep:flex ep:items-center ep:gap-2">
-					<IconButton
-						icon="x"
-						ariaLabel="Exit selection mode"
-						onClick={handleExitSelectionMode}
-						size="small"
-					/>
-					<span class="ep:text-ui-small ep:font-semibold ep:text-obs-normal">
-						{selectedCount} selected
-					</span>
-				</div>
-				<div class="ep:flex ep:items-center ep:gap-1">
-					{!allSelected && (
-						<IconButton
-							icon="check-square"
-							ariaLabel="Select all"
-							onClick={handleSelectAll}
-							size="small"
-						/>
-					)}
-					<IconButton
-						icon="folder-input"
-						ariaLabel="Move selected"
-						onClick={() => void handleMoveSelected()}
-						size="small"
-						disabled={!hasSelection}
-					/>
-					<IconButton
-						icon="replace"
-						ariaLabel="Change note type"
-						onClick={() => void handleChangeNoteType()}
-						size="small"
-						disabled={!hasSelection}
-					/>
-					<IconButton
-						icon="pause"
-						ariaLabel="Suspend selected"
-						onClick={() => void handleSuspendSelected()}
-						size="small"
-						disabled={!hasSelection}
-					/>
-					<IconButton
-						icon="play"
-						ariaLabel="Unsuspend selected"
-						onClick={() => void handleUnsuspendSelected()}
-						size="small"
-						disabled={!hasSelection}
-					/>
-					<IconButton
-						icon="rotate-ccw"
-						ariaLabel="Forget selected"
-						onClick={() => void handleForgetSelected()}
-						size="small"
-						disabled={!hasSelection}
-					/>
-					<IconButton
-						icon="trash-2"
-						ariaLabel="Delete selected"
-						onClick={() => void handleDeleteSelected()}
-						size="small"
-						danger
-						disabled={!hasSelection}
-					/>
-				</div>
+		<header class="ep:flex ep:h-10 ep:shrink-0 ep:items-center ep:gap-2 ep:border-b ep:border-obs-border ep:px-2">
+			<PanelIconButton
+				icon="x"
+				label="Exit Selection (Esc)"
+				onClick={handleExitSelectionMode}
+			/>
+			<div class="ep:min-w-0 ep:flex-1 ep:text-ui-small ep:font-semibold ep:text-obs-normal">
+				<span class="ep:tabular-nums">{selectedCardIds.size}</span> Selected
 			</div>
-		</div>
+			{hasPolishPresets ? (
+				<PanelIconButton
+					icon="wand"
+					label="Polish with AI"
+					disabled={selectedCardIds.size === 0}
+					onClick={openPolishMenu}
+				/>
+			) : null}
+			<PanelIconButton
+				icon="list-checks"
+				label="Select Visible or All Cards"
+				onClick={openSelectMenu}
+			/>
+		</header>
 	);
 }

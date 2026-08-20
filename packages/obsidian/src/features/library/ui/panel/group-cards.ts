@@ -1,7 +1,7 @@
 import type { FlashcardItem } from "@true-recall/core/types";
 import type { FSRSFlashcardItem } from "@true-recall/core/types/fsrs/card.types";
 
-type PanelItem =
+export type PanelItem =
 	| { type: "card"; card: FlashcardItem }
 	| {
 			type: "io-group";

@@ -27,6 +27,9 @@ export class DeleteCardCommand implements Command {
 	undo(ctx: CommandContext): void {
 		for (const cardData of this.deletedCardsData) {
 			ctx.cardStore.set(cardData.id, cardData);
+			// set() never clears deleted_at — without the explicit restore the
+			// card would stay invisible after undo.
+			ctx.cardStore.cards.restoreWithCascade(cardData.id);
 		}
 	}
 }

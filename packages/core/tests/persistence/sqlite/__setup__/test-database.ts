@@ -17,11 +17,12 @@ import {
 	NoteTypeActions,
 } from "../../../../src/persistence/sqlite/modules/NoteTypeActions";
 import { StatsActions } from "../../../../src/persistence/sqlite/modules/StatsActions";
+import { CURRENT_SCHEMA_VERSION } from "../../../../src/persistence/sqlite/SqliteSchemaManager";
 import type { FSRSCardData } from "../../../../src/types";
 import type { Note, NoteType } from "../../../../src/types/note.types";
 import { BUILTIN_SLUGS } from "../../../../src/types/note.types";
 
-class TestSqlJsWrapper implements DatabaseLike {
+export class TestSqlJsWrapper implements DatabaseLike {
 	constructor(private sqlDb: SqlJsDatabase) {}
 
 	exec(sql: string, params?: BindParams): QueryExecResult[] {
@@ -99,6 +100,7 @@ export class TestSqliteDatabase {
 				tags TEXT DEFAULT '',
 				source_uid TEXT,
 				source_text TEXT,
+				user_comment TEXT,
 				created_via TEXT DEFAULT 'manual',
 				created_at INTEGER,
 				updated_at INTEGER,
@@ -140,6 +142,8 @@ export class TestSqliteDatabase {
 				updated_at INTEGER,
 				deleted_at INTEGER DEFAULT NULL,
 				preset_name TEXT,
+				device_id TEXT,
+				review_kind TEXT,
 				FOREIGN KEY (card_id) REFERENCES cards(id) ON DELETE CASCADE
 			);
 
@@ -207,7 +211,7 @@ export class TestSqliteDatabase {
 			CREATE INDEX IF NOT EXISTS idx_cards_deleted ON cards(deleted_at);
 			CREATE INDEX IF NOT EXISTS idx_revlog_preset_date ON review_log(deleted_at, preset_name, reviewed_at);
 
-			INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '1');
+			INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '${CURRENT_SCHEMA_VERSION}');
 		`);
 	}
 
@@ -439,6 +443,7 @@ export function createTestNote(overrides: Partial<Note> = {}): Note {
 		tags: overrides.tags ?? [],
 		sourceUid: overrides.sourceUid,
 		sourceText: overrides.sourceText,
+		userComment: overrides.userComment,
 		createdVia: overrides.createdVia ?? "manual",
 		createdAt: overrides.createdAt ?? Date.now(),
 		updatedAt: overrides.updatedAt ?? Date.now(),
@@ -471,8 +476,8 @@ export function insertNoteTypeDirect(
 
 export function insertNoteDirect(db: TestSqliteDatabase, note: Note): void {
 	db.run(
-		`INSERT INTO notes (id, note_type_id, fields_json, tags, source_uid, source_text, created_via, created_at, updated_at)
-		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+		`INSERT INTO notes (id, note_type_id, fields_json, tags, source_uid, source_text, user_comment, created_via, created_at, updated_at)
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		[
 			note.id,
 			note.noteTypeId,
@@ -480,6 +485,7 @@ export function insertNoteDirect(db: TestSqliteDatabase, note: Note): void {
 			note.tags.join(" "),
 			note.sourceUid ?? null,
 			note.sourceText ?? null,
+			note.userComment ?? null,
 			note.createdVia ?? "manual",
 			note.createdAt ?? null,
 			note.updatedAt ?? null,

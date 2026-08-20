@@ -1,4 +1,5 @@
 import { z } from "zod";
+
 import {
 	get,
 	getWith,
@@ -12,7 +13,7 @@ import {
 export const reviewTools: ToolDef[] = [
 	getWith(
 		"get_review_context",
-		"Get detailed review session data: the exact card being reviewed right now (question, answer, FSRS state), whether the answer is revealed, session progress, badge counts, and optionally the full source note content. Use this when the user asks about 'this card', 'current flashcard', or anything about what they're reviewing. Prefer get_full_context first for a quick overview — use this tool when you need deeper review detail like the source note text.",
+		"Get detailed review session data: the exact card being reviewed right now (question, answer, the user's userComment, FSRS state), whether the answer is revealed, session progress, badge counts, and optionally the full source note content. Use userComment as the user's verification note, not as authoritative source material. Prefer get_full_context first for a quick overview — use this tool when you need deeper review detail like the source note text.",
 		{
 			include_note_content: z
 				.boolean()

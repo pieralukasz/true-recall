@@ -2,6 +2,7 @@ import type { ComponentType } from "preact";
 import { useCallback, useState } from "preact/hooks";
 
 import type { CardAIPreset, CardAIUserSettings } from "@true-recall/core";
+import { moveItem } from "@true-recall/core/utils";
 
 import {
 	ActionButton,
@@ -12,6 +13,7 @@ import {
 import type { PluginSettingsProps } from "../types";
 import { CardAIPresetEditor } from "./CardAIPresetEditor";
 import { LMStudioScopedModelField } from "./LMStudioScopedModelField";
+import { ReorderableList } from "./ReorderableList";
 import { usePersistentSettingsSlice } from "./usePersistentSettingsSlice";
 
 export interface CardAIPanelConfig {
@@ -114,6 +116,19 @@ export function createCardAISettingsPanel(
 			}
 		};
 
+		const reorderUserPresets = useCallback(
+			(from: number, to: number) => {
+				persistBucket(
+					(current) => ({
+						...current,
+						userPresets: moveItem(current.userPresets, from, to),
+					}),
+					{ flush: true },
+				);
+			},
+			[persistBucket],
+		);
+
 		const removeUserPreset = (p: CardAIPreset) => {
 			persistBucket(
 				(current) => ({
@@ -142,7 +157,11 @@ export function createCardAISettingsPanel(
 						name: "New preset",
 						prompt: "",
 						autoApply: false,
+						autoApplyNewCards: false,
 						builtin: false,
+						mode: "edit",
+						fieldScope: "all",
+						executor: "ai",
 					};
 					return { ...current, userPresets: [...current.userPresets, fresh] };
 				},
@@ -216,16 +235,21 @@ export function createCardAISettingsPanel(
 							No custom presets yet. Add one to craft your own instruction.
 						</span>
 					)}
-					{bucket.userPresets.map((p) => (
-						<CardAIPresetEditor
-							key={p.id}
-							preset={p}
-							onChange={updateUserPreset}
-							onDelete={() => removeUserPreset(p)}
-							expanded={expandedIds.has(p.id)}
-							onToggleExpanded={() => toggleExpanded(p.id)}
-						/>
-					))}
+					<ReorderableList
+						items={bucket.userPresets}
+						getKey={(p) => p.id}
+						onReorder={reorderUserPresets}
+						getMoveLabel={(p) => `Reorder ${p.name}`}
+						renderItem={(p) => (
+							<CardAIPresetEditor
+								preset={p}
+								onChange={updateUserPreset}
+								onDelete={() => removeUserPreset(p)}
+								expanded={expandedIds.has(p.id)}
+								onToggleExpanded={() => toggleExpanded(p.id)}
+							/>
+						)}
+					/>
 					<div>
 						<ActionButton
 							label="+ New preset"

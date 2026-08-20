@@ -12,6 +12,7 @@ import {
 	LoadBalanceSection,
 	ParametersSection,
 	PresetSection,
+	RModeSection,
 	ScheduledBreaksSection,
 	SchedulingSection,
 	SiblingDisperseSection,
@@ -104,6 +105,8 @@ export function FSRSTab({ selectedPresetId, onPresetChange }: FSRSTabProps) {
 				app={app}
 				onRefresh={refresh}
 			/>
+
+			<RModeSection settings={settings} save={save} />
 
 			<LoadBalanceSection settings={settings} save={save} plugin={plugin} />
 

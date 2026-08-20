@@ -17,6 +17,21 @@ interface TooltipProps {
 
 const SPARKLINE_CHARS = ["▁", "▂", "▃", "▄", "▅", "▆", "▇", "█"];
 
+function roundAverageLapses(avgLapses: number): number {
+	return Number(avgLapses.toFixed(1));
+}
+
+function formatLapses(lapses: number): string {
+	return `${lapses} ${lapses === 1 ? "lapse" : "lapses"}`;
+}
+
+export function formatReviewSummary(
+	reviewCount: number,
+	avgLapses: number,
+): string {
+	return `Review #${reviewCount} • ${formatLapses(roundAverageLapses(avgLapses))}`;
+}
+
 function sparkline(values: number[]): string {
 	const max = Math.max(1, ...values);
 	return values
@@ -33,15 +48,27 @@ function NoteStatsTooltipContent({ stats }: TooltipProps) {
 			? `${Math.round(stats.retentionRate * 100)}%`
 			: "—";
 	const difficulty = stats.avgDifficulty.toFixed(1);
-	const lapses = stats.avgLapses.toFixed(1);
 	const lastDate = stats.lastReviewed
 		? new Date(stats.lastReviewed).toLocaleDateString()
 		: "Never";
 	const spark = sparkline(stats.futureDue);
 	const hasUpcoming = stats.futureDue.some((v) => v > 0);
+	const roundedLapses = roundAverageLapses(stats.avgLapses);
+	const lapseColor =
+		roundedLapses === 0 ? FSRS_COLORS.new.cssVar : FSRS_COLORS.learning.cssVar;
 
 	return (
 		<div class="ep:flex ep:flex-col ep:gap-1.5 ep:text-xs ep:min-w-[180px]">
+			<div class="ep:font-medium ep:text-obs-muted">
+				<span>Review </span>
+				<strong style={{ color: `var(${FSRS_COLORS.review.cssVar})` }}>
+					#{stats.reviewCount}
+				</strong>
+				<span class="ep:text-obs-faint">{" • "}</span>
+				<strong style={{ color: `var(${lapseColor})` }}>
+					{formatLapses(roundedLapses)}
+				</strong>
+			</div>
 			<div class="ep:grid ep:grid-cols-2 ep:gap-x-4 ep:gap-y-0.5">
 				<span>
 					Retention:{" "}
@@ -49,10 +76,8 @@ function NoteStatsTooltipContent({ stats }: TooltipProps) {
 						{retention}
 					</strong>
 				</span>
-				<span>Reviews: {stats.reviewCount}</span>
-				<span>Last: {lastDate}</span>
-				<span>Lapses: {lapses}</span>
 				<span>Difficulty: {difficulty}</span>
+				<span class="ep:col-span-2">Last: {lastDate}</span>
 			</div>
 			{hasUpcoming && (
 				<div class="ep:pt-1 ep:border-t ep:border-obs-modifier-border">

@@ -4,15 +4,32 @@ import { NoteActions } from "@true-recall/core/persistence/sqlite/modules/NoteAc
 import { NoteTypeActions } from "@true-recall/core/persistence/sqlite/modules/NoteTypeActions";
 import { StatsActions } from "@true-recall/core/persistence/sqlite/modules/StatsActions";
 import { SqliteDatabase } from "@true-recall/core/persistence/sqlite/SqliteDatabase";
+import { CURRENT_SCHEMA_VERSION } from "@true-recall/core/persistence/sqlite/SqliteSchemaManager";
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite/SqliteStoreService";
+import type { FsrsReplayService } from "@true-recall/core/services/fsrs/fsrs-replay.service";
 
 import type { DeviceDiscoveryService } from "./device-discovery.service";
 
-interface SyncResult {
+export interface SyncResult {
 	devicesFound: number;
 	cardsApplied: number;
+	/** Card ids whose persisted row changed, including remote tombstones. */
+	cardIdsChanged: string[];
 	reviewLogsApplied: number;
+	conflictsReplayed: number;
+	duplicatesMerged: number;
 	errors: string[];
+}
+
+export interface DeviceSyncOptions {
+	/** Day boundary hour for rebuilding daily stats (defaults to 4, like Anki). */
+	getDayStartHour?: () => number;
+	/**
+	 * When present, cards reviewed on both devices in the divergence window
+	 * are resolved by replaying FSRS over the merged review log instead of
+	 * row-level last-write-wins, so neither device's review is lost.
+	 */
+	replayService?: FsrsReplayService;
 }
 
 export class DeviceSyncService {
@@ -20,13 +37,17 @@ export class DeviceSyncService {
 		private localStore: SqliteStoreService,
 		private discovery: DeviceDiscoveryService,
 		private persistence: IPersistence,
+		private options: DeviceSyncOptions = {},
 	) {}
 
 	async syncOnStartup(): Promise<SyncResult> {
 		const result: SyncResult = {
 			devicesFound: 0,
 			cardsApplied: 0,
+			cardIdsChanged: [],
 			reviewLogsApplied: 0,
+			conflictsReplayed: 0,
+			duplicatesMerged: 0,
 			errors: [],
 		};
 
@@ -51,7 +72,9 @@ export class DeviceSyncService {
 			try {
 				const merged = await this.mergeFromRemote(remote.deviceId, remote.path);
 				result.cardsApplied += merged.cards;
+				result.cardIdsChanged.push(...merged.cardIdsChanged);
 				result.reviewLogsApplied += merged.reviewLogs;
+				result.conflictsReplayed += merged.conflicts;
 			} catch (err) {
 				const msg = `Sync from ${remote.deviceId} failed: ${err instanceof Error ? err.message : String(err)}`;
 				console.error(`[True Recall] ${msg}`);
@@ -59,15 +82,30 @@ export class DeviceSyncService {
 			}
 		}
 
+		if (result.cardsApplied > 0) {
+			try {
+				const deduped = this.dedupeConcurrentCreates();
+				result.duplicatesMerged = deduped.merged;
+				result.cardIdsChanged.push(...deduped.cardIdsChanged);
+			} catch (err) {
+				const msg = `Failed to dedupe concurrent creates: ${err instanceof Error ? err.message : String(err)}`;
+				console.error(`[True Recall] ${msg}`);
+				result.errors.push(msg);
+			}
+		}
+
 		if (result.cardsApplied > 0 || result.reviewLogsApplied > 0) {
 			try {
-				this.localStore.stats.rebuildDailyStatsFromReviewLog();
+				this.localStore.stats.rebuildDailyStatsFromReviewLog(
+					this.options.getDayStartHour?.(),
+				);
 			} catch (err) {
 				const msg = `Failed to rebuild stats: ${err instanceof Error ? err.message : String(err)}`;
 				console.error(`[True Recall] ${msg}`);
 				result.errors.push(msg);
 			}
 		}
+		result.cardIdsChanged = [...new Set(result.cardIdsChanged)];
 
 		return result;
 	}
@@ -75,19 +113,39 @@ export class DeviceSyncService {
 	private async mergeFromRemote(
 		remoteDeviceId: string,
 		remotePath: string,
-	): Promise<{ cards: number; reviewLogs: number }> {
+	): Promise<{
+		cards: number;
+		cardIdsChanged: string[];
+		reviewLogs: number;
+		conflicts: number;
+	}> {
 		const data = await this.persistence.readBinary(remotePath);
 		if (!data || data.byteLength === 0) {
 			console.warn(
 				`[True Recall] Remote database at ${remotePath} is empty or unreadable, skipping sync`,
 			);
-			return { cards: 0, reviewLogs: 0 };
+			return {
+				cards: 0,
+				cardIdsChanged: [],
+				reviewLogs: 0,
+				conflicts: 0,
+			};
 		}
 
 		const remoteDb = new SqliteDatabase(() => {});
 		await remoteDb.init(new Uint8Array(data));
 
 		try {
+			const remoteVersionRow = remoteDb.get<{ value: string }>(
+				`SELECT value FROM meta WHERE key = 'schema_version'`,
+			);
+			const remoteVersion = Number(remoteVersionRow?.value ?? "1");
+			if (remoteVersion > CURRENT_SCHEMA_VERSION) {
+				throw new Error(
+					`remote schema v${remoteVersion} is newer than local v${CURRENT_SCHEMA_VERSION}; update the plugin on this device first`,
+				);
+			}
+
 			const remoteCards = new CardActions(remoteDb);
 			const remoteStats = new StatsActions(remoteDb);
 			const remoteNotes = new NoteActions(remoteDb);
@@ -145,7 +203,17 @@ export class DeviceSyncService {
 			};
 
 			let cardsApplied = 0;
+			const cardIdsChanged: string[] = [];
 			let reviewLogsApplied = 0;
+			let conflictsReplayed = 0;
+
+			// Cards this device reviewed in the divergence window: if the remote
+			// also contributed reviews for one of them, neither side's card row
+			// is authoritative and the state must be replayed from both logs.
+			const locallyReviewed = this.options.replayService
+				? new Set(this.localStore.stats.getReviewedCardIdsSince(lastSync))
+				: new Set<string>();
+			const conflictedCardIds = new Set<string>();
 
 			// One transaction: a failure mid-merge must not leave cards
 			// without their notes (FK) or advance the watermark.
@@ -161,14 +229,27 @@ export class DeviceSyncService {
 				for (const card of modifiedCards) {
 					if (this.localStore.cards.upsertFromRemote(card)) {
 						cardsApplied++;
+						cardIdsChanged.push(card.id);
 					}
 					observe(card.updatedAt);
 				}
 				for (const log of modifiedLogs) {
 					if (this.localStore.stats.upsertReviewLogFromRemote(log)) {
 						reviewLogsApplied++;
+						if (
+							log.deletedAt == null &&
+							log.reviewKind !== "preview" &&
+							locallyReviewed.has(log.cardId)
+						) {
+							conflictedCardIds.add(log.cardId);
+						}
 					}
 					observe(log.updatedAt);
+				}
+
+				conflictsReplayed = this.replayConflictedCards(conflictedCardIds);
+				if (conflictsReplayed > 0) {
+					cardIdsChanged.push(...conflictedCardIds);
 				}
 
 				this.localStore.cards.setSyncMetadata(syncKey, String(maxObserved));
@@ -176,13 +257,96 @@ export class DeviceSyncService {
 
 			if (cardsApplied > 0 || reviewLogsApplied > 0) {
 				console.debug(
-					`[True Recall] Synced from ${remoteDeviceId}: ${cardsApplied} cards, ${reviewLogsApplied} review logs`,
+					`[True Recall] Synced from ${remoteDeviceId}: ${cardsApplied} cards, ${reviewLogsApplied} review logs, ${conflictsReplayed} conflicts replayed`,
 				);
 			}
 
-			return { cards: cardsApplied, reviewLogs: reviewLogsApplied };
+			return {
+				cards: cardsApplied,
+				cardIdsChanged,
+				reviewLogs: reviewLogsApplied,
+				conflicts: conflictsReplayed,
+			};
 		} finally {
 			remoteDb.close();
 		}
+	}
+
+	/**
+	 * Converge cards created concurrently from the same note block on two
+	 * devices. Identity key: (source_uid, template_ord, fields_json). The
+	 * earliest-created card (ties broken by id) survives on every device, so
+	 * all replicas pick the same winner; losers are tombstoned and their
+	 * review history is reattached to the survivor.
+	 */
+	private dedupeConcurrentCreates(): {
+		merged: number;
+		cardIdsChanged: string[];
+	} {
+		const rows = this.localStore.cards.getActiveDedupRows();
+		const groups = new Map<string, typeof rows>();
+		for (const row of rows) {
+			const key = `${row.sourceUid}|${row.templateOrd}|${row.fieldsJson}`;
+			const group = groups.get(key);
+			if (group) {
+				group.push(row);
+			} else {
+				groups.set(key, [row]);
+			}
+		}
+
+		let merged = 0;
+		const cardIdsChanged = new Set<string>();
+		this.localStore.transaction(() => {
+			for (const group of groups.values()) {
+				if (group.length < 2) continue;
+				const sorted = [...group].sort(
+					(a, b) =>
+						(a.createdAt ?? 0) - (b.createdAt ?? 0) || a.id.localeCompare(b.id),
+				);
+				const survivor = sorted[0];
+				if (!survivor) continue;
+				for (const loser of sorted.slice(1)) {
+					this.localStore.stats.reassignCardReviews(loser.id, survivor.id);
+					this.localStore.cards.softDelete(loser.id);
+					cardIdsChanged.add(loser.id);
+					merged++;
+				}
+
+				// The survivor may have gained review history; recompute its state
+				// from the merged log when replay is available.
+				const replayService = this.options.replayService;
+				if (replayService) {
+					const state = replayService.replayCard(
+						survivor.id,
+						this.localStore.stats.getReplayLogsForCard(survivor.id),
+					);
+					if (state) {
+						this.localStore.cards.applyReplayedScheduling(survivor.id, state);
+						cardIdsChanged.add(survivor.id);
+					}
+				}
+			}
+		});
+		return { merged, cardIdsChanged: [...cardIdsChanged] };
+	}
+
+	/**
+	 * Recompute scheduling for cards reviewed on both devices by replaying
+	 * FSRS over the merged review history. Runs inside the merge transaction.
+	 */
+	private replayConflictedCards(cardIds: Set<string>): number {
+		const replayService = this.options.replayService;
+		if (!replayService || cardIds.size === 0) return 0;
+
+		let replayed = 0;
+		for (const cardId of cardIds) {
+			const logs = this.localStore.stats.getReplayLogsForCard(cardId);
+			const state = replayService.replayCard(cardId, logs);
+			if (!state) continue;
+			this.localStore.cards.applyReplayedScheduling(cardId, state);
+			replayed++;
+		}
+		return replayed;
 	}
 }

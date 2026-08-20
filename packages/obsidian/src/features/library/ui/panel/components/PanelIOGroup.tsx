@@ -1,169 +1,161 @@
 import { memo } from "preact/compat";
-import { useCallback, useMemo, useState } from "preact/hooks";
 
 import type { FlashcardItem } from "@true-recall/core/types";
 import type { FSRSFlashcardItem } from "@true-recall/core/types/fsrs/card.types";
-import { parseIODefinition } from "@true-recall/core/utils/io-definition";
+import { stripMarkdownSyntax } from "@true-recall/core/utils";
 
-import { Clickable } from "@true-recall/obsidian/components";
-import { useCardActions } from "@true-recall/obsidian/features/library/ui/panel/hooks/useCardActions";
-import { useSelectionActions } from "@true-recall/obsidian/features/library/ui/panel/hooks/useSelectionActions";
+import { PanelCardMedia } from "@true-recall/obsidian/features/library/ui/panel/components/PanelCardMedia";
+import { PanelIconButton } from "@true-recall/obsidian/features/library/ui/panel/components/PanelIconButton";
+import type { PanelCardActionHandlers } from "@true-recall/obsidian/features/library/ui/panel/panel.types";
 import {
 	type MenuItem,
 	useContextMenu,
 } from "@true-recall/obsidian/preact/useContextMenu";
-
-import { IOCardRenderer } from "@true-recall/plugins/image-occlusion";
+import { useLongPress } from "@true-recall/obsidian/preact/useLongPress";
+import { cn } from "@true-recall/obsidian/utils";
 
 interface PanelIOGroupProps {
 	cards: FlashcardItem[];
 	fsrsCards: FSRSFlashcardItem[];
-	filePath: string;
-	isExpanded: boolean;
-	isSelected: boolean;
+	selectedCount: number;
 	isSelectionMode: boolean;
+	actions: PanelCardActionHandlers;
+	sourcePath: string;
 }
 
 export const PanelIOGroup = memo(function PanelIOGroup({
 	cards,
 	fsrsCards,
-	filePath: _filePath,
-	isExpanded,
-	isSelected,
+	selectedCount,
 	isSelectionMode,
+	actions,
+	sourcePath,
 }: PanelIOGroupProps) {
-	const [revealedOrd, setRevealedOrd] = useState<number | null>(null);
-
-	const cardActions = useCardActions();
-	const selectionActions = useSelectionActions();
-
 	const firstCard = cards[0];
-	const groupKey = firstCard?.id ?? "";
-	const representative = fsrsCards[0];
-	const imagePath = representative?.ioImagePath;
-	const regionsJson = representative?.ioRegionsJson;
+	if (!firstCard) return null;
 
-	const regionLabels = useMemo(() => {
-		if (!regionsJson) return [];
-		const def = parseIODefinition(regionsJson);
-		if (!def) return [];
-		const labelMap = new Map<number, string>();
-		for (const [i, r] of def.regions.entries()) {
-			const ord = Number.parseInt(r.groupKey, 10);
-			const key = Number.isFinite(ord) && ord >= 0 ? ord : i;
-			if (!labelMap.has(key)) {
-				labelMap.set(key, r.label ?? `Region ${key + 1}`);
-			}
-		}
-		return [...labelMap.entries()].sort((a, b) => a[0] - b[0]);
-	}, [regionsJson]);
+	const cardIds = cards.map((card) => card.id);
+	const allSelected = selectedCount === cardIds.length;
+	const someSelected = selectedCount > 0;
+	const question =
+		stripMarkdownSyntax(firstCard.question).replace(/\s+/g, " ").trim() ||
+		"Image occlusion";
+	const countLabel = `${cards.length} ${cards.length === 1 ? "card" : "cards"}`;
 
-	const handleClick = useCallback(
-		(e: MouseEvent) => {
-			if ((e.target as HTMLElement).closest("button")) return;
-			if (isSelectionMode) {
-				for (const c of cards) selectionActions.handleToggleSelect(c.id);
-			} else {
-				cardActions.handleToggleExpand(groupKey);
-			}
+	const { handlers: longPressHandlers, wasLongPress } = useLongPress({
+		onLongPress: () => {
+			actions.onEnterSelection(firstCard.id);
+			actions.onSetSelected(cardIds, true);
 		},
-		[isSelectionMode, selectionActions, cardActions, cards, groupKey],
-	);
+	});
 
-	const handleRegionClick = useCallback((ord: number) => {
-		setRevealedOrd((prev) => (prev === ord ? null : ord));
-	}, []);
-
-	const handleCheckboxClick = useCallback(
-		(e: MouseEvent) => {
-			e.stopPropagation();
-			for (const c of cards) selectionActions.handleToggleSelect(c.id);
-		},
-		[selectionActions, cards],
-	);
-
-	const handleMenuClick = useContextMenu([
+	const menuItems: MenuItem[] = [
 		{
-			title: "Edit",
+			title: "Open Card",
+			icon: "panel-right-open",
+			onClick: () => actions.onOpen(firstCard),
+		},
+		{
+			title: "Edit Occlusion",
 			icon: "pencil",
-			onClick: () =>
-				void (firstCard && cardActions.handleEditButton(firstCard)),
+			onClick: () => actions.onEdit(firstCard),
 		},
 		{
 			title: "Move",
 			icon: "folder-input",
-			onClick: () => void (firstCard && cardActions.handleMoveCard(firstCard)),
+			onClick: () => actions.onMove(firstCard),
 		},
 		"separator",
 		{
-			title: "Delete all",
-			icon: "trash-2",
+			title: `Select ${countLabel}`,
+			icon: "check-square",
 			onClick: () => {
-				for (const c of cards) void cardActions.handleDeleteCard(c);
+				actions.onEnterSelection(firstCard.id);
+				actions.onSetSelected(cardIds, true);
 			},
 		},
-		...(!isSelectionMode
-			? ([
-					"separator",
-					{
-						title: "Select",
-						icon: "check-square",
-						onClick: () => selectionActions.handleEnterSelectionMode(groupKey),
-					},
-				] as MenuItem[])
-			: []),
-	]);
-
-	const selectedCls = isSelected ? "ep:border-obs-interactive" : "";
+	];
+	const openMenu = useContextMenu(menuItems);
 
 	return (
-		<Clickable
-			class={`ep:flex ep:flex-col ep:mb-2 ep:rounded-lg ep:bg-obs-secondary ep:border-[1px] ep:border-obs-border/20 ep:shadow-sm ep:hover:bg-obs-modifier-hover ep:transition-colors ep:duration-300 ${selectedCls}`}
-			onClick={handleClick}
-			onContextMenu={isSelectionMode ? undefined : handleMenuClick}
+		<div
+			role="group"
+			class={cn(
+				"tr-panel-card-row ep:group ep:flex ep:items-center ep:min-w-0 ep:border-b ep:border-obs-border/50 ep:hover:bg-obs-modifier-hover",
+				someSelected && "ep:bg-obs-interactive/10",
+			)}
+			onContextMenu={isSelectionMode ? undefined : openMenu}
+			{...longPressHandlers}
 		>
-			<div class="ep:flex ep:items-center ep:gap-2 ep:p-3 ep:text-left ep:w-full">
-				{isSelectionMode && (
+			{isSelectionMode ? (
+				<label class="ep:flex ep:flex-1 ep:min-w-0 ep:items-center ep:gap-2.5 ep:px-2.5 ep:py-1 ep:cursor-pointer ep:touch-manipulation">
 					<input
 						type="checkbox"
-						class="ep:w-4 ep:h-4 ep:cursor-pointer"
-						checked={isSelected}
-						onClick={handleCheckboxClick}
+						class="ep:w-4 ep:h-4 ep:shrink-0 ep:cursor-pointer"
+						checked={allSelected}
+						ref={(input) => {
+							if (input) input.indeterminate = someSelected && !allSelected;
+						}}
+						onChange={() => actions.onSetSelected(cardIds, !allSelected)}
 					/>
-				)}
-
-				<div class="ep:flex-1 ep:overflow-hidden ep:rounded">
-					<IOCardRenderer
-						imagePath={imagePath}
-						regionsJson={regionsJson}
-						templateOrd={revealedOrd ?? -1}
-						revealed={revealedOrd !== null}
-						maskModeOverride="all"
-						revealSingleOnly
-						onRegionClick={handleRegionClick}
+					<GroupContent question={question} countLabel={countLabel} />
+					<PanelCardMedia
+						card={firstCard}
+						fsrsCard={fsrsCards[0]}
+						sourcePath={sourcePath}
 					/>
-				</div>
-			</div>
-
-			{isExpanded && (
-				<div class="ep:px-3 ep:pb-3 ep:pt-2 ep:border-t ep:border-obs-border">
-					<div class="ep:flex ep:flex-wrap ep:gap-1.5">
-						{regionLabels.map(([ord, label]) => (
-							<Clickable
-								key={ord}
-								class={`ep:text-ui-smaller ep:px-2 ep:py-1 ep:rounded-md ep:border ep:transition-colors ${
-									revealedOrd === ord
-										? "ep:border-obs-green/50 ep:bg-obs-green/10 ep:text-obs-green"
-										: "ep:border-obs-border ep:text-obs-muted ep:hover:border-obs-accent/30"
-								}`}
-								onClick={() => handleRegionClick(ord)}
-							>
-								{label}
-							</Clickable>
-						))}
-					</div>
-				</div>
+				</label>
+			) : (
+				<>
+					<button
+						type="button"
+						class="tr-panel-card-main ep:flex ep:flex-1 ep:min-w-0 ep:items-center ep:gap-2.5 ep:text-left ep:bg-transparent ep:border-0 ep:cursor-pointer ep:touch-manipulation"
+						data-panel-card-id={firstCard.id}
+						title={question}
+						onClick={(event) => {
+							if (wasLongPress()) return;
+							if (event.metaKey || event.ctrlKey) {
+								actions.onEnterSelection(firstCard.id);
+								actions.onSetSelected(cardIds, true);
+								return;
+							}
+							actions.onOpen(firstCard);
+						}}
+					>
+						<GroupContent question={question} countLabel={countLabel} />
+						<PanelCardMedia
+							card={firstCard}
+							fsrsCard={fsrsCards[0]}
+							sourcePath={sourcePath}
+						/>
+					</button>
+					<PanelIconButton
+						icon="more-vertical"
+						label={`Actions for ${question}`}
+						class="ep:self-center ep:mr-1 ep:opacity-0 ep:group-hover:opacity-100 ep:group-focus-within:opacity-100"
+						onClick={(event) => openMenu(event)}
+					/>
+				</>
 			)}
-		</Clickable>
+		</div>
 	);
 });
+
+function GroupContent({
+	question,
+	countLabel,
+}: {
+	question: string;
+	countLabel: string;
+}) {
+	return (
+		<div class="ep:flex ep:flex-1 ep:min-w-0 ep:items-center ep:gap-2.5">
+			<div class="ep:flex-1 ep:min-w-0 ep:truncate ep:text-ui-small ep:font-medium ep:leading-snug ep:text-obs-normal">
+				{question}
+			</div>
+			<div class="ep:shrink-0 ep:text-ui-smaller ep:text-obs-muted">
+				{countLabel}
+			</div>
+		</div>
+	);
+}

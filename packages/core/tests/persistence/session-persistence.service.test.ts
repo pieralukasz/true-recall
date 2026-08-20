@@ -16,7 +16,10 @@ describe("SessionPersistenceService", () => {
 	let mockStats: {
 		recordReviewedCard: ReturnType<typeof vi.fn>;
 		updateDailyStats: ReturnType<typeof vi.fn>;
+		decrementDailyStats: ReturnType<typeof vi.fn>;
+		removeReviewedCard: ReturnType<typeof vi.fn>;
 		addReviewLog: ReturnType<typeof vi.fn>;
+		markReviewLogDeleted: ReturnType<typeof vi.fn>;
 		getDailyStats: ReturnType<typeof vi.fn>;
 		getReviewedCardIds: ReturnType<typeof vi.fn>;
 		getPresetProgressInRange: ReturnType<typeof vi.fn>;
@@ -36,7 +39,12 @@ describe("SessionPersistenceService", () => {
 		mockStats = {
 			recordReviewedCard: vi.fn(),
 			updateDailyStats: vi.fn(),
-			addReviewLog: vi.fn(),
+			decrementDailyStats: vi.fn(),
+			removeReviewedCard: vi.fn(),
+			addReviewLog: vi.fn().mockReturnValue("log-id-1") as ReturnType<
+				typeof vi.fn
+			>,
+			markReviewLogDeleted: vi.fn(),
 			getDailyStats: vi.fn().mockReturnValue(null) as ReturnType<typeof vi.fn>,
 			getReviewedCardIds: vi.fn().mockReturnValue([]) as ReturnType<
 				typeof vi.fn
@@ -227,6 +235,41 @@ describe("SessionPersistenceService", () => {
 		});
 	});
 
+	describe("review undo", () => {
+		it("recordReview returns the review log id", () => {
+			const logId = service.recordReview(
+				"card-1",
+				false,
+				2000,
+				Rating.Good,
+				State.Review,
+				10,
+				9,
+			);
+
+			expect(logId).toBe("log-id-1");
+		});
+
+		it("removeLastReview tombstones the review log entry when given its id", () => {
+			service.removeLastReview(
+				"card-1",
+				false,
+				Rating.Good,
+				State.Review,
+				"log-id-1",
+			);
+
+			expect(mockStats.markReviewLogDeleted).toHaveBeenCalledWith("log-id-1");
+			expect(mockStats.decrementDailyStats).toHaveBeenCalled();
+		});
+
+		it("removeLastReview without a log id leaves the review log untouched", () => {
+			service.removeLastReview("card-1", false, Rating.Good, State.Review);
+
+			expect(mockStats.markReviewLogDeleted).not.toHaveBeenCalled();
+		});
+	});
+
 	describe("custom-study review history", () => {
 		it("records preview answers without changing daily progress", () => {
 			service.recordPreviewReview(
@@ -245,6 +288,7 @@ describe("SessionPersistenceService", () => {
 				State.Review,
 				2500,
 				"Default",
+				"preview",
 			);
 			expect(mockStats.recordReviewedCard).not.toHaveBeenCalled();
 			expect(mockStats.updateDailyStats).not.toHaveBeenCalled();

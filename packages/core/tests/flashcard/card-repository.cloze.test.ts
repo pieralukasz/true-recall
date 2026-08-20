@@ -42,6 +42,28 @@ describe("CardRepository - cloze operations", () => {
 		vi.useRealTimers();
 	});
 
+	describe("updateContent()", () => {
+		it("can restore prior content despite a later duplicate and still emits an update", () => {
+			const card = repository.create("Original question", "Original answer");
+			repository.updateContent(card.id, "Edited question", "Edited answer");
+			repository.create("Original question", "Another answer");
+			mockBusEmit.mockClear();
+
+			repository.updateContent(
+				card.id,
+				"Original question",
+				"Original answer",
+				{ skipDuplicateCheck: true },
+			);
+
+			expect(ctx.cards.get(card.id)?.question).toBe("Original question");
+			expect(mockBusEmit).toHaveBeenCalledWith(
+				"card:updated",
+				expect.objectContaining({ cardId: card.id }),
+			);
+		});
+	});
+
 	describe("create() with cloze options", () => {
 		it("stores cardType, clozeTemplate, clozeIndex in database", () => {
 			const card = repository.create(
@@ -599,6 +621,35 @@ describe("CardRepository - cloze operations", () => {
 				"cards:bulk",
 				expect.objectContaining({
 					cardIds: expect.any(Array),
+				}),
+			);
+		});
+
+		it("restores the original sibling ids and emits a bulk refresh", () => {
+			const newTemplate =
+				"{{c1::France}} is specifically in {{c3::Western Europe}}";
+			repository.updateClozeTemplate(SOURCE_UID, OLD_TEMPLATE, newTemplate);
+			const editedSiblings = ctx.cards.getClozeSiblings(
+				SOURCE_UID,
+				newTemplate,
+			);
+			expect(editedSiblings.some((card) => card.id === "c2")).toBe(false);
+			const addedId = editedSiblings.find((card) => card.clozeIndex === 3)?.id;
+			expect(addedId).toBeDefined();
+			mockBusEmit.mockClear();
+
+			repository.restoreClozeTemplate(SOURCE_UID, newTemplate, OLD_TEMPLATE, [
+				"c1",
+				"c2",
+			]);
+
+			const restored = ctx.cards.getClozeSiblings(SOURCE_UID, OLD_TEMPLATE);
+			expect(restored.map((card) => card.id).sort()).toEqual(["c1", "c2"]);
+			expect(addedId ? ctx.cards.get(addedId) : undefined).toBeUndefined();
+			expect(mockBusEmit).toHaveBeenCalledWith(
+				"cards:bulk",
+				expect.objectContaining({
+					cardIds: expect.arrayContaining(["c1", "c2", addedId]),
 				}),
 			);
 		});

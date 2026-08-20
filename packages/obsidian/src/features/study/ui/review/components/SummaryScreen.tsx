@@ -1,7 +1,14 @@
 import { useEffect } from "preact/hooks";
 
+import type {
+	ReviewSessionTopUp,
+	ReviewSessionTopUpAvailability,
+} from "@true-recall/core/types";
+
 import { Clickable } from "@true-recall/obsidian/components";
 import type { ReviewApi } from "@true-recall/obsidian/store";
+
+import { SessionTopUpPanel } from "./SessionTopUpPanel";
 
 function StatItem({
 	label,
@@ -31,6 +38,9 @@ export function SummaryScreen({
 	onClose,
 	onNextSession,
 	onOpenDashboard,
+	rModeActive,
+	getTopUpAvailability,
+	onTopUp,
 }: {
 	review: ReviewApi;
 	isCustomSession: boolean;
@@ -38,20 +48,21 @@ export function SummaryScreen({
 	onClose: () => void;
 	onNextSession: () => void;
 	onOpenDashboard: () => void;
+	rModeActive: boolean;
+	getTopUpAvailability: () => ReviewSessionTopUpAvailability;
+	onTopUp: (topUp: ReviewSessionTopUp) => Promise<boolean>;
 }) {
 	const stats = review.getStats();
 	const durationMin = Math.floor(stats.duration / 60000);
 	const durationSec = Math.floor((stats.duration % 60000) / 1000);
 
-	// End session to capture final stats. `review`'s object reference changes on
-	// most store updates, but `endSession` is idempotent (guarded by `isActive`,
-	// which cannot flip back to true without this component fully remounting),
-	// so re-running this effect on those reference changes is a safe no-op.
+	// End the completed session before the deferred Top Up availability check so
+	// today's reviewed-card exclusions include its final answer.
 	useEffect(() => {
 		if (review.isActive) {
 			review.endSession();
 		}
-	}, [review]);
+	}, [review.isActive, review.endSession]);
 
 	return (
 		<div class="true-recall-review ep:flex ep:flex-col ep:h-full ep:p-0">
@@ -91,6 +102,15 @@ export function SummaryScreen({
 							value={`${durationMin}m ${durationSec}s`}
 						/>
 					</div>
+
+					{rModeActive ? (
+						<div class="ep:mb-4">
+							<SessionTopUpPanel
+								getAvailability={getTopUpAvailability}
+								onTopUp={onTopUp}
+							/>
+						</div>
+					) : null}
 
 					<div class="ep:flex ep:flex-wrap ep:gap-3 ep:py-4 ep:justify-center">
 						{isCustomSession && continuousCustomReviews ? (

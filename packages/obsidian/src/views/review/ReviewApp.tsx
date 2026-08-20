@@ -4,6 +4,8 @@ import type { Grade } from "ts-fsrs";
 import type {
 	FSRSFlashcardItem,
 	LocalAnswerAssessment,
+	ReviewSessionTopUp,
+	ReviewSessionTopUpAvailability,
 	SemanticGradingResult,
 } from "@true-recall/core/types";
 
@@ -12,12 +14,12 @@ import {
 	ButtonBar,
 	CardContainer,
 	ReviewHeader,
+	ReviewUserComment,
 	SummaryScreen,
 	WaitingScreen,
 } from "@true-recall/obsidian/features/study/ui/review/components";
 import type { TypeInMode } from "@true-recall/obsidian/features/study/ui/review/helpers/type-in-flow";
-import { usePlugin } from "@true-recall/obsidian/preact/ObsidianContext";
-import type { ReviewApi } from "@true-recall/obsidian/store";
+import type { AppStore, ReviewApi } from "@true-recall/obsidian/store";
 
 // Re-export for consumers that import from this file
 export { ReviewEmptyState } from "@true-recall/obsidian/features/study/ui/review/components";
@@ -25,19 +27,25 @@ export { ReviewEmptyState } from "@true-recall/obsidian/features/study/ui/review
 // ─── Props ───────────────────────────────────────────────────────────────────
 
 interface ReviewAppProps {
+	store: AppStore;
 	onShowAnswer: () => void;
 	onAnswer: (rating: Grade) => void;
 	onTypedAnswerChange: (value: string) => void;
 	onContentChange: (value: string, field: "question" | "answer") => void;
 	onOpenSourceNote: () => void;
+	onEditComment: () => void;
+	onRemoveComment: () => void;
 	onClose: () => void;
 	onNextSession: () => void;
 	onOpenDashboard: () => void;
+	getTopUpAvailability: () => ReviewSessionTopUpAvailability;
+	onTopUp: (topUp: ReviewSessionTopUp) => Promise<boolean>;
 	onEndSession: () => void;
 	onActionsMenu: (e: MouseEvent) => void;
 	onPolishMenu?: (e: MouseEvent) => void;
 	isCustomSession: boolean;
 	crammingMode: boolean;
+	rModeActive: boolean;
 	showHeader: boolean;
 	showHeaderStats: boolean;
 	showNextReviewTime: boolean;
@@ -59,6 +67,7 @@ interface ReviewAppProps {
 	};
 	getPresetName?: (card: FSRSFlashcardItem) => string;
 	getPresetOptions?: () => PresetPickerOption[];
+	getLeechThreshold?: (card: FSRSFlashcardItem) => number;
 	onPresetChange?: (presetName: string) => void;
 	resolveAudioPath?: (card: FSRSFlashcardItem) => string | undefined;
 }
@@ -66,19 +75,15 @@ interface ReviewAppProps {
 // ─── Main App ────────────────────────────────────────────────────────────────
 
 export function ReviewApp(props: ReviewAppProps) {
-	const plugin = usePlugin();
-	const review = plugin.store?.getState().review;
+	const review = props.store.getState().review;
 
 	const [, setTick] = useState(0);
 	useEffect(() => {
-		if (!plugin.store) return;
-		return plugin.store.subscribe(
+		return props.store.subscribe(
 			(state) => state.review,
 			() => setTick((t) => t + 1),
 		);
-	}, [plugin]);
-
-	if (!review) return null;
+	}, [props.store]);
 
 	const phase = review.getPhase();
 
@@ -94,6 +99,9 @@ export function ReviewApp(props: ReviewAppProps) {
 					onClose={props.onClose}
 					onNextSession={props.onNextSession}
 					onOpenDashboard={props.onOpenDashboard}
+					rModeActive={props.rModeActive}
+					getTopUpAvailability={props.getTopUpAvailability}
+					onTopUp={props.onTopUp}
 				/>
 			);
 		case "waiting":
@@ -102,6 +110,9 @@ export function ReviewApp(props: ReviewAppProps) {
 					review={review}
 					timeUntilDue={phase.timeUntilDue}
 					onEndSession={props.onEndSession}
+					rModeActive={props.rModeActive}
+					getTopUpAvailability={props.getTopUpAvailability}
+					onTopUp={props.onTopUp}
 				/>
 			);
 		case "active":
@@ -124,6 +135,8 @@ function ActiveReview({
 	onTypedAnswerChange,
 	onContentChange,
 	onOpenSourceNote,
+	onEditComment,
+	onRemoveComment,
 	onClose: _onClose,
 	onActionsMenu,
 	onPolishMenu,
@@ -131,10 +144,12 @@ function ActiveReview({
 	showHeader,
 	showHeaderStats,
 	showNextReviewTime,
+	rModeActive,
 	onCycleTypeInMode,
 	getTypeInState,
 	getPresetName,
 	getPresetOptions,
+	getLeechThreshold,
 	onPresetChange,
 	resolveAudioPath,
 }: ActiveReviewProps) {
@@ -142,6 +157,7 @@ function ActiveReview({
 	const isAnswerRevealed = !hasAnswer || review.isAnswerRevealed;
 	const presetName = getPresetName?.(card);
 	const presetOptions = getPresetOptions?.();
+	const leechThreshold = getLeechThreshold?.(card);
 	const typeInState = getTypeInState(card, isAnswerRevealed);
 	const audioPath = resolveAudioPath?.(card);
 
@@ -168,6 +184,7 @@ function ActiveReview({
 				onOpenSourceNote={onOpenSourceNote}
 				presetName={presetName}
 				presetOptions={presetOptions}
+				leechThreshold={leechThreshold}
 				onPresetChange={onPresetChange}
 				audioPath={audioPath}
 				typeIn={{
@@ -183,10 +200,17 @@ function ActiveReview({
 				}}
 			/>
 
+			<ReviewUserComment
+				comment={card.userComment}
+				onEdit={onEditComment}
+				onRemove={onRemoveComment}
+			/>
+
 			<ButtonBar
 				isAnswerRevealed={isAnswerRevealed}
 				preview={review.getSchedulingPreview()}
 				showNextReviewTime={showNextReviewTime}
+				rModeActive={rModeActive}
 				typeInMode={typeInState.typeInMode}
 				isRatingLocked={typeInState.isRatingLocked}
 				onShowAnswer={onShowAnswer}

@@ -4,6 +4,8 @@ import type { ReviewOrder } from "./settings.types";
 interface SessionConfigBase {
 	reviewOrder?: ReviewOrder;
 	cardLimit?: number;
+	/** Session size for an R-Mode session. Absent means the due-date queue. */
+	rModeTargetCount?: number;
 }
 
 export type SessionConfig =

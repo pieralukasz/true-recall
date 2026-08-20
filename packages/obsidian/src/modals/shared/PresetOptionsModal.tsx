@@ -25,6 +25,7 @@ export class PresetOptionsModal extends BaseModal {
 		super(app, {
 			title: "Preset Options",
 			width: "560px",
+			fillHeight: true,
 		});
 	}
 

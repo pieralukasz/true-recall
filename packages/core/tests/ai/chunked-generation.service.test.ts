@@ -145,6 +145,29 @@ describe("ChunkedGenerationService.generateFromNote", () => {
 		expect(result.preset).toEqual(basicPreset);
 	});
 
+	it("single-chunk selection keeps image Markdown in the generation request", async () => {
+		const selectedContent = `
+![[attachments/filtr-LC/FiltryLC_symulacja_zasilanie_2.png]]
+*Efekt dołączenia kondensatorów*`;
+		const { httpClient, capturedRequests } = makeCapturingHttpClient();
+		const svc = new ChunkedGenerationService(
+			() => makeByokSettings(),
+			flashcardManager,
+			httpClient,
+		);
+
+		await svc.generateFromNote(selectedContent, sourceFile, basicPreset.id, {
+			preserveImageEmbeds: true,
+		});
+
+		const request = capturedRequests[0] as {
+			messages: Array<{ role: string; content: string }>;
+		};
+		expect(request.messages[1]?.content).toContain(
+			"![[attachments/filtr-LC/FiltryLC_symulacja_zasilanie_2.png]]",
+		);
+	});
+
 	it("multi-chunk BYOK: each chunk uses buildPresetPrompt as system, no formatSpec prefix", async () => {
 		const largeContent = buildLargeContent(3500);
 		const { httpClient, capturedRequests } = makeCapturingHttpClient();

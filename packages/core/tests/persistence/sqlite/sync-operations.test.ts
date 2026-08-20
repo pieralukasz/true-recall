@@ -6,6 +6,7 @@
 import { State } from "ts-fsrs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { setCurrentDeviceId } from "../../../src/persistence/sqlite/device-context";
 import {
 	createTestCard,
 	createTestContext,
@@ -197,6 +198,82 @@ describe("Sync Operations", () => {
 			const all = ctx.cards.getAllIncludingDeleted();
 			const found = all.find((c) => c.id === "remote-deleted");
 			expect(found).toBeDefined();
+		});
+	});
+
+	describe("Review provenance", () => {
+		it("addReviewLog stamps the current device id and kind, and returns the log id", () => {
+			setCurrentDeviceId("testdev1");
+			const card = createTestCard({ id: "prov-card" });
+			ctx.cards.set(card.id, card);
+
+			const logId = ctx.stats.addReviewLog("prov-card", 3, 1, 0, 0, 1200);
+
+			expect(logId).toBeTruthy();
+			const row = ctx.db.get<{
+				device_id: string | null;
+				review_kind: string | null;
+			}>(`SELECT device_id, review_kind FROM review_log WHERE id = ?`, [logId]);
+			expect(row?.device_id).toBe("testdev1");
+			expect(row?.review_kind).toBe("review");
+		});
+
+		it("preview reviews are stamped with review_kind = preview", () => {
+			const card = createTestCard({ id: "prev-card" });
+			ctx.cards.set(card.id, card);
+
+			const logId = ctx.stats.addReviewLog(
+				"prev-card",
+				3,
+				0,
+				0,
+				0,
+				800,
+				undefined,
+				"preview",
+			);
+
+			const row = ctx.db.get<{ review_kind: string | null }>(
+				`SELECT review_kind FROM review_log WHERE id = ?`,
+				[logId],
+			);
+			expect(row?.review_kind).toBe("preview");
+		});
+
+		it("sync round-trips device_id and review_kind", () => {
+			setCurrentDeviceId("testdev1");
+			const card = createTestCard({ id: "rt-card" });
+			ctx.cards.set(card.id, card);
+			const logId = ctx.stats.addReviewLog("rt-card", 4, 2, 1, 2, 1500);
+
+			const exported = ctx.stats.getModifiedReviewLogSince(0);
+			const entry = exported.find((l) => l.id === logId);
+
+			expect(entry?.deviceId).toBe("testdev1");
+			expect(entry?.reviewKind).toBe("review");
+		});
+	});
+
+	describe("Row existence checks - hasRow", () => {
+		it("returns false for a missing note id and true for an existing one", () => {
+			const card = createTestCard({ id: "hasrow-card" });
+			ctx.cards.set(card.id, card);
+			const noteId = ctx.db.get<{ note_id: string }>(
+				`SELECT note_id FROM cards WHERE id = ?`,
+				["hasrow-card"],
+			)?.note_id;
+
+			expect(noteId).toBeDefined();
+			expect(ctx.notes.hasRow(noteId as string)).toBe(true);
+			expect(ctx.notes.hasRow("nonexistent-note")).toBe(false);
+		});
+
+		it("returns false for a missing note type id and true for a builtin", () => {
+			const builtin = ctx.noteTypes.getAll()[0];
+
+			expect(builtin).toBeDefined();
+			expect(ctx.noteTypes.hasRow(builtin?.id as string)).toBe(true);
+			expect(ctx.noteTypes.hasRow("nonexistent-type")).toBe(false);
 		});
 	});
 

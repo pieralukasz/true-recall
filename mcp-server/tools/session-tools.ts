@@ -1,4 +1,5 @@
 import { z } from "zod";
+
 import {
 	del,
 	postParams,
@@ -10,7 +11,7 @@ import {
 export const sessionTools: ToolDef[] = [
 	postParams(
 		"start_review_session",
-		"Open a review session in Obsidian. This activates the ReviewView in the Obsidian UI with the specified mode and filters. Modes: all_due (standard daily review), current_note (review active note's cards), weak_cards (low stability), created_today (new cards from today), overdue (past due), custom (advanced filters).",
+		"Open a review session in Obsidian. This activates the ReviewView in the Obsidian UI with the specified mode and filters. Modes: all_due (standard daily review), current_note (review active note's cards), weak_cards (low stability), created_today (new cards from today), overdue (past due), actual_learning (active Learning and Relearning cards), custom (advanced filters).",
 		"/sessions/start",
 		{
 			mode: z
@@ -20,6 +21,7 @@ export const sessionTools: ToolDef[] = [
 					"weak_cards",
 					"created_today",
 					"overdue",
+					"actual_learning",
 					"custom",
 				])
 				.optional()
@@ -75,6 +77,21 @@ export const sessionTools: ToolDef[] = [
 		},
 		(p) => `/cards/${requireStringParam(p, "card_id")}/update`,
 		({ question, answer }) => ({ question, answer }),
+	),
+
+	postTo(
+		"move_card",
+		"Move a flashcard to another Obsidian note. The target note receives a flashcard_uid in frontmatter automatically if it does not have one.",
+		{
+			card_id: z.string().describe("The card's UUID"),
+			target_path: z
+				.string()
+				.describe(
+					"Vault path to the target Markdown note (e.g. 'Folder/Note.md')",
+				),
+		},
+		(p) => `/cards/${requireStringParam(p, "card_id")}/move`,
+		({ target_path }) => ({ target_path }),
 	),
 
 	del(

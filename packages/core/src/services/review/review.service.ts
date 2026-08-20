@@ -13,7 +13,10 @@ import type {
 	ReviewResult,
 	ReviewSessionStats,
 } from "../../types";
-import type { CustomStudyRequest } from "../../types/review-session.types";
+import type {
+	CustomStudyRequest,
+	ReviewSessionTopUp,
+} from "../../types/review-session.types";
 import type {
 	FSRSSettings,
 	NewCardOrder,
@@ -27,9 +30,12 @@ import {
 } from "../../utils";
 import type { FSRSService } from "../fsrs/fsrs.service";
 import { buildQueue as buildQueueImpl } from "./queue-builder";
+import type { RModeQueueOptions } from "./retrievability-queue";
 import { spaceSiblings as spaceSiblingsImpl } from "./sibling-spacer";
 
 export interface QueueBuildOptions {
+	/** Shared calculation time for a batch of queue snapshots. */
+	now?: Date;
 	newCardsLimit: number;
 	reviewsLimit: number;
 	reviewedToday?: Set<string>;
@@ -99,6 +105,14 @@ export interface QueueBuildOptions {
 	defaultPresetName?: string;
 	/** When false, apply queue spacing instead of runtime sibling burying */
 	burySiblings?: boolean;
+	/**
+	 * Continuous-retrievability session. When present, review cards are selected
+	 * by current R instead of by due date, and daily review limits do not apply —
+	 * the user asks for a card count directly.
+	 */
+	rMode?: RModeQueueOptions;
+	/** One-off R-Mode continuation restricted to Review or New cards. */
+	topUp?: ReviewSessionTopUp;
 }
 
 export class ReviewService {

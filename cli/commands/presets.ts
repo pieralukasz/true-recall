@@ -76,6 +76,64 @@ export const presetCommands: CommandDef[] = [
 		(p) => `/generation-presets/${encodeURIComponent(String(p.preset_id))}`,
 	),
 
+	get(
+		"list_card_polish_presets",
+		"List all Card Polish presets (id, name, prompt, autoApply, autoApplyNewCards, mode).",
+		"Card Polish",
+		"/card-polish-presets",
+	),
+
+	postTo(
+		"create_card_polish_preset",
+		"Create a Card Polish preset. Body keys: name, prompt (required); autoApply, autoApplyNewCards, includeSourceNote, includeRelatedCards (booleans); mode (edit|split|spawn); fieldScope (all|question|answer|empty-answer).",
+		"Card Polish",
+		{
+			preset: {
+				type: "json",
+				description:
+					"Preset JSON: { name, prompt, autoApply?, autoApplyNewCards?, includeSourceNote?, includeRelatedCards?, mode?, fieldScope? }",
+				required: true,
+			},
+		},
+		() => "/card-polish-presets",
+		(p) => p.preset,
+	),
+
+	postTo(
+		"update_card_polish_preset",
+		"Update a Card Polish preset (PATCH merge). Builtin presets cannot be edited.",
+		"Card Polish",
+		{
+			preset_id: {
+				type: "string",
+				description: "The preset id to update",
+				required: true,
+			},
+			patch: {
+				type: "json",
+				description:
+					"Partial preset JSON. Valid keys: name, prompt, autoApply, autoApplyNewCards, includeSourceNote, includeRelatedCards, mode, fieldScope.",
+				required: true,
+			},
+		},
+		(p) => `/card-polish-presets/${encodeURIComponent(String(p.preset_id))}`,
+		(p) => p.patch,
+	),
+
+	del(
+		"delete_card_polish_preset",
+		"Delete a Card Polish preset. Builtin presets cannot be deleted.",
+		"Card Polish",
+		{
+			preset_id: {
+				type: "string",
+				description: "The preset id to delete",
+				required: true,
+			},
+		},
+		(p) => `/card-polish-presets/${encodeURIComponent(String(p.preset_id))}`,
+	),
+
 	postParams(
 		"generate_flashcards_with_preset",
 		"Generate flashcards from text using a specific preset id (instead of a raw note-type slug). Requires an active markdown note in Obsidian.",

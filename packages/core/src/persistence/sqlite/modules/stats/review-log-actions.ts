@@ -1,6 +1,9 @@
 import { formatLocalDate } from "../../../../utils";
+import { getCurrentDeviceId } from "../../device-context";
 import type { SqliteDatabase } from "../../SqliteDatabase";
 import { generateUUID } from "../../sqlite.types";
+
+export type ReviewKind = "review" | "preview";
 
 export interface ReviewLogForSync {
 	id: string;
@@ -14,6 +17,8 @@ export interface ReviewLogForSync {
 	updatedAt: number;
 	deletedAt: number | null;
 	presetName: string | null;
+	deviceId: string | null;
+	reviewKind: string | null;
 }
 
 interface PresetDailyProgressRow {
@@ -33,7 +38,8 @@ export class ReviewLogActions {
 		state: number,
 		timeSpentMs: number,
 		presetName?: string,
-	): void {
+		kind: ReviewKind = "review",
+	): string {
 		const id = generateUUID();
 		const reviewedAt = new Date().toISOString();
 		const updatedAt = Date.now();
@@ -42,8 +48,9 @@ export class ReviewLogActions {
 			`
             INSERT INTO review_log (
                 id, card_id, reviewed_at, rating, scheduled_days,
-                elapsed_days, state, time_spent_ms, updated_at, preset_name
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                elapsed_days, state, time_spent_ms, updated_at, preset_name,
+                device_id, review_kind
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
 			[
 				id,
@@ -56,7 +63,19 @@ export class ReviewLogActions {
 				timeSpentMs,
 				updatedAt,
 				presetName ?? null,
+				getCurrentDeviceId(),
+				kind,
 			],
+		);
+		return id;
+	}
+
+	/** Tombstone a review entry (review undo) so replay and sync ignore it. */
+	markReviewLogDeleted(id: string): void {
+		const now = Date.now();
+		this.db.run(
+			`UPDATE review_log SET deleted_at = ?, updated_at = ? WHERE id = ?`,
+			[now, now, id],
 		);
 	}
 

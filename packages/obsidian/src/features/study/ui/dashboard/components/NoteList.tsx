@@ -46,7 +46,11 @@ export function NoteList({
 		unassignedCount,
 		handleFilterChange,
 		handleProjectFilterChange,
-	} = useNoteFiltering({ notes, searchQuery });
+	} = useNoteFiltering({
+		notes,
+		searchQuery,
+		rModeEnabled: plugin.settings.rMode.enabled,
+	});
 
 	const {
 		selectedPaths,
@@ -86,8 +90,12 @@ export function NoteList({
 		void plugin.app.workspace.openLinkText(note.name, "");
 	};
 
-	const handleStudyNote = (noteName: string) => {
-		void plugin.startReview({ mode: "notes", noteNames: [noteName] });
+	const handleStudyNote = (noteName: string, rModeTargetCount?: number) => {
+		void plugin.startReview({
+			mode: "notes",
+			noteNames: [noteName],
+			rModeTargetCount,
+		});
 	};
 
 	const handleCustomStudy = (note: DashboardNoteEntry) => {
@@ -133,6 +141,7 @@ export function NoteList({
 					projectFilter={projectFilter.value}
 					unassignedCount={unassignedCount}
 					onProjectFilterChange={handleProjectFilterChange}
+					rModeEnabled={plugin.settings.rMode.enabled}
 				/>
 			</div>
 
@@ -175,7 +184,7 @@ export function NoteList({
 									item.path ? selectedPaths.value.has(item.path) : false
 								}
 								onNavigate={() => handleNavigateToNote(item)}
-								onStudy={() => handleStudyNote(item.name)}
+								onStudy={(cardCount) => handleStudyNote(item.name, cardCount)}
 								onCustomStudy={() => handleCustomStudy(item)}
 								onProjectClick={handleProjectClick}
 								onPresetClick={onPresetClick}
@@ -219,7 +228,7 @@ interface NoteListItemProps {
 	isSelecting: boolean;
 	isSelected: boolean;
 	onNavigate: () => void;
-	onStudy: () => void;
+	onStudy: (cardCount?: number) => void;
 	onCustomStudy: () => void;
 	onProjectClick: (projectName: string) => void;
 	onPresetClick?: (path: string | null) => void;

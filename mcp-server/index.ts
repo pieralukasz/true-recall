@@ -43,6 +43,7 @@ const server = new McpServer(
 			"",
 			"ANSWER PRIVACY: When isAnswerRevealed is false, the user has NOT seen the answer yet.",
 			"Do NOT reveal, paraphrase, or hint at the answer. Discuss only the question side.",
+			"A card's userComment is the user's own note. Use it as explicit context when verifying the card, but do not treat it as authoritative source material.",
 			"Ask the user what they think first. Only discuss the answer after the user asks to see it or you call reveal_answer.",
 			"",
 			"REVIEW FLOW: During an active review session, use these tools in order:",

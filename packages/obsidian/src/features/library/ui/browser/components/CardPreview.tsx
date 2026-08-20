@@ -23,6 +23,7 @@ interface CardPreviewProps {
 	onClose: () => void;
 	onContentChange?: (value: string, field: "question" | "answer") => void;
 	onMove?: () => void;
+	onEdit?: () => void;
 }
 
 export function CardPreview({
@@ -30,6 +31,7 @@ export function CardPreview({
 	onClose,
 	onContentChange,
 	onMove,
+	onEdit,
 }: CardPreviewProps) {
 	const app = useApp();
 	const isImageOcclusion =
@@ -69,6 +71,28 @@ export function CardPreview({
 					{stateLabel}
 				</span>
 				<div class="ep:flex ep:items-center ep:gap-1">
+					{onEdit && (
+						<Clickable
+							class="ep:p-1 ep:rounded ep:hover:bg-obs-modifier-hover ep:text-obs-muted"
+							onClick={onEdit}
+							aria-label="Edit card"
+						>
+							<svg
+								width="14"
+								height="14"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								aria-hidden="true"
+							>
+								<path d="M12 20h9" />
+								<path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
+							</svg>
+						</Clickable>
+					)}
 					{onMove && (
 						<Clickable
 							class="ep:p-1 ep:rounded ep:hover:bg-obs-modifier-hover ep:text-obs-muted"

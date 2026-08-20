@@ -26,6 +26,7 @@ export function RatingButton({
 	daysChanged,
 	loadBalanceNote,
 	showInterval,
+	rModeEnabled = false,
 	onAnswer,
 	disabled = false,
 }: {
@@ -36,6 +37,8 @@ export function RatingButton({
 	daysChanged?: number;
 	loadBalanceNote?: string;
 	showInterval: boolean;
+	/** Reframes the interval as "worth another look in", not as a deadline. */
+	rModeEnabled?: boolean;
 	onAnswer: (rating: Grade) => void;
 	disabled?: boolean;
 }) {
@@ -48,6 +51,7 @@ export function RatingButton({
 		originalInterval,
 		shiftLabel,
 		loadBalanceNote,
+		rModeEnabled,
 	});
 
 	return (
@@ -60,13 +64,15 @@ export function RatingButton({
 			<div class="ep:font-semibold">{label}</div>
 			{interval && showInterval && (
 				<div class="ep:text-ui-smaller ep:text-obs-muted">
-					{interval}
-					{shiftLabel && (
+					{rModeEnabled ? `~${interval}` : interval}
+					{!rModeEnabled && shiftLabel && (
 						<span class="ep:text-obs-orange"> ({shiftLabel})</span>
 					)}
 				</div>
 			)}
-			{showInterval && originalInterval && shiftLabel && (
+			{/* The load-balance shift is a due-date artefact; R-Mode has no slot to
+			    move a card into, so the comparison would describe nothing. */}
+			{!rModeEnabled && showInterval && originalInterval && shiftLabel && (
 				<div class="ep:text-[10px] ep:leading-none ep:text-obs-muted">
 					FSRS {originalInterval}
 				</div>
@@ -80,12 +86,19 @@ function buildTitle({
 	originalInterval,
 	shiftLabel,
 	loadBalanceNote,
+	rModeEnabled,
 }: {
 	interval?: string;
 	originalInterval?: string;
 	shiftLabel: string | null;
 	loadBalanceNote?: string;
+	rModeEnabled?: boolean;
 }): string | undefined {
+	if (rModeEnabled) {
+		return interval
+			? `Worth another look in about ${interval}\nNothing is late before then — or after.`
+			: undefined;
+	}
 	if (!interval && !loadBalanceNote) return undefined;
 	const lines = [`Due: ${interval ?? "unknown"}`];
 	if (originalInterval && shiftLabel) {

@@ -17,22 +17,45 @@ describe("SqliteStoreService persistence durability", () => {
 		exportData?: Uint8Array;
 		onWrite?: () => void;
 		writeBinary?: (_path: string, _data: ArrayBuffer) => Promise<void>;
+		saveDebounceMs?: number;
 	}) {
+		// Track written byte sizes so the atomic write's post-write size
+		// verification and tmp→main rename see a consistent filesystem.
+		const written = new Map<string, number>();
 		const persistence: IPersistence = {
-			exists: vi.fn(async () => true),
+			exists: vi.fn(async (path: string) => written.has(path)),
 			mkdir: vi.fn(async () => {}),
-			writeBinary: vi.fn(
-				async (path: string, data: ArrayBuffer) =>
-					opts?.writeBinary?.(path, data) ?? opts?.onWrite?.(),
-			),
+			writeBinary: vi.fn(async (path: string, data: ArrayBuffer) => {
+				if (opts?.writeBinary) await opts.writeBinary(path, data);
+				else opts?.onWrite?.();
+				written.set(path, data.byteLength);
+			}),
+			rename: vi.fn(async (oldPath: string, newPath: string) => {
+				const size = written.get(oldPath);
+				if (size === undefined)
+					throw new Error(`Cannot rename missing file: ${oldPath}`);
+				written.set(newPath, size);
+				written.delete(oldPath);
+			}),
 			readBinary: vi.fn(async () => null),
 			read: vi.fn(async () => ""),
 			list: vi.fn(async () => ({ files: [], folders: [] })),
-			remove: vi.fn(async () => {}),
-			stat: vi.fn(async () => null),
+			remove: vi.fn(async (path: string) => {
+				written.delete(path);
+			}),
+			stat: vi.fn(async (path: string) => {
+				const size = written.get(path);
+				return size === undefined ? null : { size, mtime: 0 };
+			}),
 		};
 
-		const store = new SqliteStoreService(persistence, "dev12345");
+		const store = new SqliteStoreService(
+			persistence,
+			"dev12345",
+			opts?.saveDebounceMs !== undefined
+				? { saveDebounceMs: opts.saveDebounceMs }
+				: {},
+		);
 		(store as unknown as { db: unknown }).db = {
 			isReady: () => true,
 			export: () => opts?.exportData ?? new Uint8Array([1, 2, 3, 4]),
@@ -48,6 +71,20 @@ describe("SqliteStoreService persistence durability", () => {
 		(store as unknown as { markDirty: () => void }).markDirty();
 
 		await vi.advanceTimersByTimeAsync(SAVE_DEBOUNCE_MS - 1);
+		expect(persistence.writeBinary).not.toHaveBeenCalled();
+
+		await vi.advanceTimersByTimeAsync(1);
+		expect(persistence.writeBinary).toHaveBeenCalledTimes(1);
+	});
+
+	it("honors a custom saveDebounceMs (mobile tuning)", async () => {
+		const { store, persistence } = createStoreWithMocks({
+			saveDebounceMs: 400,
+		});
+
+		(store as unknown as { markDirty: () => void }).markDirty();
+
+		await vi.advanceTimersByTimeAsync(399);
 		expect(persistence.writeBinary).not.toHaveBeenCalled();
 
 		await vi.advanceTimersByTimeAsync(1);

@@ -12,6 +12,8 @@ export interface AIWorkflow {
 	 * Surfaced so the user can see, before running, whether a preset previews or
 	 * applies. */
 	autoApply?: boolean;
+	/** New cards have a separate safety gate from edits to the current card. */
+	autoApplyNewCards?: boolean;
 }
 
 export interface AIWorkflowContext {
@@ -28,6 +30,7 @@ export interface AIWorkflowContext {
 const AGENT_PREFIX = "agent:";
 const GENERATION_PREFIX = "generation:";
 const CARD_POLISH_PREFIX = "card-polish:";
+export const CUSTOM_CARD_POLISH_PRESET_ID = "$custom";
 
 export function assistantWorkflowId(presetId: string): string {
 	return `${AGENT_PREFIX}${presetId}`;
@@ -39,6 +42,10 @@ export function generationWorkflowId(presetId: string): string {
 
 export function cardPolishWorkflowId(presetId: string): string {
 	return `${CARD_POLISH_PREFIX}${presetId}`;
+}
+
+export function customCardPolishWorkflowId(): string {
+	return cardPolishWorkflowId(CUSTOM_CARD_POLISH_PRESET_ID);
 }
 
 /**
@@ -87,6 +94,7 @@ export function listAIWorkflows(
 				instruction: preset.prompt,
 				sourcePresetId: preset.id,
 				autoApply: preset.autoApply,
+				autoApplyNewCards: preset.autoApplyNewCards,
 			});
 		}
 	}
@@ -100,6 +108,20 @@ export function resolveAIWorkflow(
 	context: AIWorkflowContext,
 ): AIWorkflow | null {
 	if (!workflowId) return null;
+	if (
+		workflowId === customCardPolishWorkflowId() &&
+		(context.hasCard || context.hasDraftCard)
+	) {
+		return {
+			id: workflowId,
+			name: "Custom Card Polish",
+			kind: "modify-card",
+			instruction: "",
+			sourcePresetId: CUSTOM_CARD_POLISH_PRESET_ID,
+			autoApply: settings.cardPolish?.customPromptAutoApply ?? false,
+			autoApplyNewCards: false,
+		};
+	}
 	const exact = listAIWorkflows(settings, context).find(
 		(workflow) => workflow.id === workflowId,
 	);

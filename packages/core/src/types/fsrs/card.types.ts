@@ -111,6 +111,8 @@ export interface FSRSCardData {
 
 	/** Original selected text that generated this card (for jump-to-source) */
 	sourceText?: string;
+	/** User-authored context shared by cards generated from the same note. */
+	userComment?: string;
 
 	// === Note-based architecture fields (schema v26) ===
 
@@ -194,4 +196,6 @@ export interface FSRSFlashcardItem extends CardSchedulingMeta {
 	ioParentId?: string;
 	/** Original selected text that generated this card (for jump-to-source) */
 	sourceText?: string;
+	/** User-authored context shared by cards generated from the same note. */
+	userComment?: string;
 }

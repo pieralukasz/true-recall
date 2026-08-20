@@ -35,7 +35,11 @@ interface ProjectsTabProps {
 	searchQuery: string;
 	scrollContainerRef: RefObject<HTMLDivElement>;
 	scrollTop: Signal<number>;
-	onStudyNote: (noteName: string, projectPath?: string) => void;
+	onStudyNote: (
+		noteName: string,
+		projectPath?: string,
+		cardCount?: number,
+	) => void;
 	onPresetClick?: (path: string | null) => void;
 }
 
@@ -151,6 +155,21 @@ export function ProjectsTab({
 
 	return (
 		<div>
+			{plugin.settings.rMode.enabled && !isSelecting && (
+				<div
+					aria-hidden="true"
+					class="ep:flex ep:items-center ep:gap-2 ep:px-3 ep:h-6 ep:text-[9px] ep:uppercase ep:tracking-wide ep:text-obs-faint"
+				>
+					<span class="ep:flex-1" />
+					<span class="ep:w-20 ep:text-center">Memory</span>
+					<span class="ep:flex ep:gap-2 ep:shrink-0">
+						<span class="ep:w-8 ep:text-right">New</span>
+						<span class="ep:w-6 ep:text-right">Learn</span>
+					</span>
+					<span class="ep:w-11 ep:text-center">Reviews</span>
+					<span class="ep:w-6" />
+				</div>
+			)}
 			{isSelecting && (
 				<SelectionBar
 					selectedCount={selectedCount}
@@ -355,7 +374,7 @@ function ProjectHeaderItem({
 	const isVirtual = item.project.path === UNASSIGNED_PATH;
 	const dragCls = getDragClass(dragState.value, item.project.path);
 
-	const handleStudyProject = () => {
+	const handleStudyProject = (rModeTargetCount?: number) => {
 		if (isVirtual) {
 			void plugin.openCustomStudyModal(
 				buildProjectCustomStudyScope(item.project),
@@ -364,6 +383,7 @@ function ProjectHeaderItem({
 			void plugin.startReview({
 				mode: "project",
 				projectPath: item.project.path,
+				rModeTargetCount,
 			});
 		}
 	};
@@ -483,7 +503,11 @@ interface NoteItemProps {
 	isSelecting: boolean;
 	isSelected: boolean;
 	plugin: ReturnType<typeof usePlugin>;
-	onStudyNote: (noteName: string, projectPath?: string) => void;
+	onStudyNote: (
+		noteName: string,
+		projectPath?: string,
+		cardCount?: number,
+	) => void;
 	onPresetClick?: (path: string | null) => void;
 	onArchive: (path: string, archived: boolean) => void;
 	onRename: (path: string) => Promise<void>;
@@ -524,7 +548,8 @@ function NoteItem({
 	const handleNavigate = () =>
 		void plugin.app.workspace.openLinkText(item.note.name, "");
 
-	const handleStudy = () => onStudyNote(item.note.name, item.projectPath);
+	const handleStudy = (cardCount?: number) =>
+		onStudyNote(item.note.name, item.projectPath, cardCount);
 
 	const handleCustomStudy = () => {
 		void plugin.openCustomStudyModal({

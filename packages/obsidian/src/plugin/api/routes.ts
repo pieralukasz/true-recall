@@ -15,14 +15,22 @@ import {
 	handleBulkDelete,
 	handleBulkSuspend,
 	handleDeleteCard,
+	handleMoveCard,
 	handleRemoveCardsFromNote,
 	handleSuspendCard,
 	handleUpdateCard,
 } from "./handlers/card-actions";
 import { handleGetCardContext } from "./handlers/card-context";
+import {
+	handleCreateCardPolishPreset,
+	handleDeleteCardPolishPreset,
+	handleListCardPolishPresets,
+	handleUpdateCardPolishPreset,
+} from "./handlers/card-polish-presets";
 import { handleGetCardRelations } from "./handlers/card-relations";
 import {
 	handleCreateCards,
+	handleGetActualLearningCards,
 	handleGetCard,
 	handleGetDueCards,
 	handleGetProblemCards,
@@ -41,12 +49,6 @@ import {
 	handleUpdateLoadBalanceSettings,
 	handleUpdatePreset,
 } from "./handlers/fsrs";
-import {
-	handleAddEasyDay,
-	handleApplyEasyDays,
-	handleGetEasyDays,
-	handleUpdateEasyDays,
-} from "./handlers/easy-days";
 import {
 	handleGetRetrievability,
 	handleGetSchedulingPreview,
@@ -125,6 +127,7 @@ const routes: Route[] = [
 
 	// Cards — reads
 	route("GET", "/cards/due", handleGetDueCards),
+	route("GET", "/cards/actual-learning", handleGetActualLearningCards),
 	route("GET", "/cards/problems", handleGetProblemCards),
 	route("GET", "/cards/:id/context", handleGetCardContext),
 	route("GET", "/cards/:id/relations", handleGetCardRelations),
@@ -135,6 +138,7 @@ const routes: Route[] = [
 	route("POST", "/cards/:id/review", handleGradeCard),
 	route("POST", "/cards/:id/suspend", handleSuspendCard),
 	route("POST", "/cards/:id/update", handleUpdateCard),
+	route("POST", "/cards/:id/move", handleMoveCard),
 	route("DELETE", "/cards/:id", handleDeleteCard),
 	route("POST", "/cards/bulk-delete", handleBulkDelete),
 	route("POST", "/cards/bulk-suspend", handleBulkSuspend),
@@ -153,6 +157,12 @@ const routes: Route[] = [
 	route("POST", "/generation-presets/:id", handleUpdateGenerationPreset),
 	route("DELETE", "/generation-presets/:id", handleDeleteGenerationPreset),
 	route("POST", "/generate-with-preset", handleGenerateWithPreset),
+
+	// Card Polish presets
+	route("GET", "/card-polish-presets", handleListCardPolishPresets),
+	route("POST", "/card-polish-presets", handleCreateCardPolishPreset),
+	route("POST", "/card-polish-presets/:id", handleUpdateCardPolishPreset),
+	route("DELETE", "/card-polish-presets/:id", handleDeleteCardPolishPreset),
 
 	// Review actions (in-session)
 	route("POST", "/review/reveal", handleRevealAnswer),
@@ -178,10 +188,6 @@ const routes: Route[] = [
 	route("POST", "/presets/:id", handleUpdatePreset),
 	route("POST", "/settings/load-balance", handleUpdateLoadBalanceSettings),
 	route("GET", "/fsrs/stats", handleGetFsrsStats),
-	route("GET", "/settings/easy-days", handleGetEasyDays),
-	route("POST", "/settings/easy-days", handleUpdateEasyDays),
-	route("POST", "/settings/easy-days/add", handleAddEasyDay),
-	route("POST", "/fsrs/easy-days/apply", handleApplyEasyDays),
 
 	// Navigation
 	route("POST", "/open-view", handleOpenView),

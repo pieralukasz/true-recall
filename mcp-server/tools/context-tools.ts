@@ -29,7 +29,7 @@ export const contextTools: ToolDef[] = [
 
 	get(
 		"get_active_note",
-		"Get the full markdown content of the currently open note in Obsidian, plus its associated flashcards. Use ONLY when you need the actual note text (e.g. to generate flashcards from it or analyze its content). For just knowing which note is open, use get_full_context instead — it's faster and includes note metadata without the full content.",
+		"Get the full markdown content of the currently open note in Obsidian, plus its associated flashcards and their userComment verification notes. Use ONLY when you need the actual note text or want to verify cards against it. Treat userComment as the user's concern, not as authoritative source material.",
 		"/active-note",
 	),
 ];

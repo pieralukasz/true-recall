@@ -31,7 +31,7 @@ function ProjectForecastBody({
 		<>
 			<div class="ep:text-ui-small ep:text-obs-muted ep:mb-2">
 				Only this project's cards; the daily reference line is the project's own
-				30-day average.
+				90-day average.
 			</div>
 			<WorkloadForecastSection
 				forecast={data.forecast}

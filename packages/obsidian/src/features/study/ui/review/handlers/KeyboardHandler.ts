@@ -4,17 +4,25 @@ import type { ReviewKeybindings } from "@true-recall/core/types";
 
 import type { ReviewApi } from "@true-recall/obsidian/store";
 
+/** `e.key` produced by Shift+1 on US and Polish layouts. */
+const DELETE_CARD_KEY = "!";
+/** `e.key` produced by Shift+2 on US and Polish layouts. */
+const SUSPEND_CARD_KEY = "@";
+
 interface KeyboardActionCallbacks {
 	onShowAnswer: () => void;
 	onAnswer: (rating: Rating) => void;
 	onUndo: () => Promise<void>;
+	onDelete: () => void;
 	onSuspend: () => void;
 	onForget: () => void;
 	onBuryCard: () => void;
 	onBuryNote: () => void;
 	onMoveCard: () => Promise<void>;
 	onAddCard: () => Promise<void>;
+	onAddCardCopy: () => Promise<void>;
 	onEditCard: () => Promise<void>;
+	onEditComment: () => Promise<void>;
 	onCycleTypeInMode: () => void;
 	canRateShortcuts?: () => boolean;
 	isTypeInActive?: () => boolean;
@@ -37,9 +45,27 @@ export class KeyboardHandler {
 	}
 
 	handleKeyDown = (e: KeyboardEvent): void => {
+		if (e.shiftKey && (e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "e") {
+			e.preventDefault();
+			e.stopPropagation();
+			void this.callbacks.onAddCardCopy();
+			return;
+		}
+
+		if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+			e.preventDefault();
+			e.stopPropagation();
+			void this.callbacks.onEditComment();
+			return;
+		}
+
 		if (this.isInputFocused(e.target)) return;
 
-		if ((e.metaKey || e.ctrlKey) && e.key === "z") {
+		if (
+			!e.shiftKey &&
+			(e.metaKey || e.ctrlKey) &&
+			e.key.toLowerCase() === "z"
+		) {
 			e.preventDefault();
 			void this.callbacks.onUndo();
 			return;
@@ -59,7 +85,13 @@ export class KeyboardHandler {
 	private handleGlobalShortcuts(e: KeyboardEvent): boolean {
 		const key = e.key;
 
-		if (e.shiftKey && key === "!") {
+		if (e.shiftKey && key === DELETE_CARD_KEY) {
+			e.preventDefault();
+			void this.callbacks.onDelete();
+			return true;
+		}
+
+		if (e.shiftKey && key === SUSPEND_CARD_KEY) {
 			e.preventDefault();
 			void this.callbacks.onSuspend();
 			return true;
@@ -171,12 +203,18 @@ export class KeyboardHandler {
 				description: "Rate: Again(1), Hard(2), Good(3), Easy(4)",
 			},
 			{ key: "Cmd/Ctrl+Z", description: "Undo last action" },
-			{ key: "!", description: "Suspend card" },
+			{ key: "Shift+1", description: "Delete card" },
+			{ key: "Shift+2", description: "Suspend card" },
 			{ key: "-", description: "Bury card until tomorrow" },
 			{ key: "=", description: "Bury note (all sibling cards)" },
 			{ key: "M", description: "Move card to another note" },
 			{ key: "A", description: "Add new flashcard" },
 			{ key: "E", description: "Edit card" },
+			{
+				key: "Cmd/Ctrl+Shift+E",
+				description: "Copy current card into Add flashcard",
+			},
+			{ key: "Cmd/Ctrl+K", description: "Add or edit my note" },
 			{ key: "T", description: "Cycle type-in mode" },
 		];
 	}

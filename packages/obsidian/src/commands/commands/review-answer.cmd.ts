@@ -38,6 +38,7 @@ export class ReviewAnswerCommand implements Command {
 	private writeExecuted = false;
 	private writePersisted = false;
 	private pendingTimeoutId: number | null = null;
+	private reviewLogId: string | null = null;
 
 	constructor(params: ReviewAnswerParams) {
 		this.description = `Review (${Rating[params.rating]})`;
@@ -61,7 +62,7 @@ export class ReviewAnswerCommand implements Command {
 			this.writePersisted = true;
 
 			try {
-				ctx.sessionPersistence.recordReview(
+				this.reviewLogId = ctx.sessionPersistence.recordReview(
 					p.card.id,
 					p.wasNewCard,
 					p.responseTime,
@@ -116,6 +117,7 @@ export class ReviewAnswerCommand implements Command {
 				p.wasNewCard,
 				p.rating,
 				p.previousState,
+				this.reviewLogId,
 			);
 			mutateReviewGrade(
 				p.card.id,

@@ -23,6 +23,13 @@ function describeWorkflow(workflow: AIWorkflow): string {
 	return `${description.slice(0, DESCRIPTION_LIMIT - 1).trimEnd()}…`;
 }
 
+function polishRunMode(workflow: AIWorkflow): string {
+	if (workflow.autoApply && workflow.autoApplyNewCards) return "Apply all";
+	if (workflow.autoApply) return "Apply edit";
+	if (workflow.autoApplyNewCards) return "Apply new";
+	return "Preview";
+}
+
 function RowIcon({ icon }: { icon: string }) {
 	const iconRef = useIcon(icon);
 	return <span ref={iconRef} class="tr-ai-preset-row__icon" />;
@@ -101,7 +108,7 @@ export function AiPresetList({
 						</span>
 						{workflow.kind === "modify-card" ? (
 							<span class="tr-ai-preset-row__mode">
-								{workflow.autoApply ? "Apply" : "Preview"}
+								{polishRunMode(workflow)}
 							</span>
 						) : null}
 					</Clickable>

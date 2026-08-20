@@ -20,6 +20,13 @@ export class ObsidianPersistence implements IPersistence {
 		await this.app.vault.adapter.writeBinary(normalizePath(path), data);
 	}
 
+	async rename(oldPath: string, newPath: string): Promise<void> {
+		await this.app.vault.adapter.rename(
+			normalizePath(oldPath),
+			normalizePath(newPath),
+		);
+	}
+
 	async exists(path: string): Promise<boolean> {
 		return this.app.vault.adapter.exists(normalizePath(path));
 	}

@@ -115,6 +115,7 @@ export async function handleGetFullContext(
 					stateLabel: STATE_LABELS[card.fsrs.state] ?? "Unknown",
 					sourceNoteName: card.sourceNoteName ?? "",
 					sourceUid: card.sourceUid ?? "",
+					userComment: card.userComment,
 				},
 				isAnswerRevealed: review.isAnswerShown(),
 				progress: review.getProgress(),

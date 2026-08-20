@@ -12,7 +12,11 @@ export {
 	isNewState,
 	isReviewState,
 } from "./card-state";
-export { shouldTriggerLeech } from "./leech-helpers";
+export {
+	DEFAULT_LEECH_THRESHOLD,
+	isLeech,
+	shouldTriggerLeech,
+} from "./leech-helpers";
 export { aggregateDashboardData } from "./note-aggregation";
 export {
 	computePriority,

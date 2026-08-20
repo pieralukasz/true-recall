@@ -260,3 +260,100 @@ describe("parseBlockResponse (non-streaming JSON)", () => {
 		expect(blocks[0]?.sourceText).toBe("Original sentence.");
 	});
 });
+
+describe("parseBlockResponse degenerate card rejection", () => {
+	it("rejects a standard card whose answer fields are all empty", () => {
+		const text = JSON.stringify([
+			{ type: "basic", Front: "A question with no answer", Back: "" },
+			{ type: "basic", Front: "Q", Back: "A" },
+		]);
+		const blocks = parseBlockResponse(text, lookup);
+		expect(blocks).toHaveLength(1);
+		expect(blocks[0]?.fields.Front).toBe("Q");
+	});
+
+	it("rejects a cloze card without {{cN::}} markers", () => {
+		const text = JSON.stringify([
+			{ type: "cloze", Text: "A sentence without any cloze.", Extra: "" },
+			{ type: "cloze", Text: "Based on {{c1::OpenAPI 3.1.0}}.", Extra: "" },
+		]);
+		const blocks = parseBlockResponse(text, lookup);
+		expect(blocks).toHaveLength(1);
+		expect(blocks[0]?.fields.Text).toContain("{{c1::");
+	});
+
+	it("unwraps a field fully wrapped in ==highlight== markers", () => {
+		const text = JSON.stringify([
+			{
+				type: "cloze",
+				Text: "==Based on {{c1::OpenAPI 3.1.0}} and more.==",
+				Extra: "",
+			},
+		]);
+		const blocks = parseBlockResponse(text, lookup);
+		expect(blocks).toHaveLength(1);
+		expect(blocks[0]?.fields.Text).toBe(
+			"Based on {{c1::OpenAPI 3.1.0}} and more.",
+		);
+	});
+
+	it("keeps partial inner highlights untouched", () => {
+		const text = JSON.stringify([
+			{ type: "basic", Front: "What is ==X==?", Back: "Y" },
+		]);
+		const blocks = parseBlockResponse(text, lookup);
+		expect(blocks[0]?.fields.Front).toBe("What is ==X==?");
+	});
+});
+
+describe("allowEmptyAnswer option (one-sided card presets)", () => {
+	it("keeps a standard card with an empty answer when allowed", () => {
+		const text = JSON.stringify([
+			{ type: "basic", Front: "Full reformatted note text", Back: "" },
+		]);
+		const blocks = parseBlockResponse(text, lookup, {
+			allowEmptyAnswer: true,
+		});
+		expect(blocks).toHaveLength(1);
+		expect(blocks[0]?.fields.Front).toBe("Full reformatted note text");
+		expect(blocks[0]?.fields.Back).toBe("");
+	});
+
+	it("still rejects a standard card with an empty answer by default", () => {
+		const text = JSON.stringify([
+			{ type: "basic", Front: "Question", Back: "" },
+		]);
+		expect(parseBlockResponse(text, lookup)).toHaveLength(0);
+	});
+
+	it("still rejects a cloze card without markers even when allowed", () => {
+		const text = JSON.stringify([
+			{ type: "cloze", Text: "No cloze markers here.", Extra: "" },
+		]);
+		const blocks = parseBlockResponse(text, lookup, {
+			allowEmptyAnswer: true,
+		});
+		expect(blocks).toHaveLength(0);
+	});
+
+	it("still rejects a card with all fields empty even when allowed", () => {
+		const text = JSON.stringify([{ type: "basic", Front: "", Back: "" }]);
+		const blocks = parseBlockResponse(text, lookup, {
+			allowEmptyAnswer: true,
+		});
+		expect(blocks).toHaveLength(0);
+	});
+
+	it("streams a complete empty-answer card when allowed", () => {
+		const parser = new IncrementalFlashcardParser(lookup, {
+			allowEmptyAnswer: true,
+		});
+		const text = JSON.stringify([
+			{ type: "basic", Front: "Streamed one-sided card", Back: "" },
+		]);
+		const events = [...parser.feed(text), ...parser.finish()];
+		const complete = events.filter((e) => e.type === "card_complete");
+		expect(complete).toHaveLength(1);
+		expect(complete[0]?.block?.fields.Front).toBe("Streamed one-sided card");
+	});
+});

@@ -3,5 +3,8 @@
  * SqliteStoreService is the public facade - internal repos are implementation details
  */
 
-export { SqliteStoreService } from "./SqliteStoreService";
+export {
+	type SqliteStoreOptions,
+	SqliteStoreService,
+} from "./SqliteStoreService";
 export * from "./sqlite.types";

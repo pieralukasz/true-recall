@@ -87,18 +87,6 @@ export function WorkloadForecastSection({
 						stack: "due",
 						order: 1,
 					},
-					{
-						// Estimated, not scheduled: faint fill with a solid outline so it
-						// reads as a projection next to the counted segments.
-						label: "Projected relearning",
-						data: forecast.map((d) => d.breakdown.projectedRelearning),
-						backgroundColor: withAlpha(CHART_COLORS.orange(), 0.22),
-						borderColor: withAlpha(CHART_COLORS.orange(), 0.7),
-						borderWidth: 1,
-						borderRadius: 2,
-						stack: "due",
-						order: 1,
-					},
 					// Mixed chart: line dataset on the secondary axis. Chart.js
 					// supports per-dataset `type` at runtime; cast past the bar typing.
 					cumulativeLine as unknown as ChartDataset<"bar">,

@@ -7,5 +7,8 @@ export {
 } from "./PresetPopover";
 export { ReviewEmptyState } from "./ReviewEmptyState";
 export { ReviewHeader } from "./ReviewHeader";
+export { ReviewUserComment } from "./ReviewUserComment";
+export { SessionTopUp } from "./SessionTopUp";
+export { SessionTopUpPanel } from "./SessionTopUpPanel";
 export { SummaryScreen } from "./SummaryScreen";
 export { WaitingScreen } from "./WaitingScreen";

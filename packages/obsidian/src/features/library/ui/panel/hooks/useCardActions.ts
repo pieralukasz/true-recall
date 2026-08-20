@@ -1,6 +1,7 @@
 import { useCallback } from "preact/hooks";
 import { State } from "ts-fsrs";
 
+import { DuplicateQuestionError } from "@true-recall/core/flashcard/data/card-repository.service";
 import {
 	BUILTIN_BASIC_ID,
 	BUILTIN_BASIC_REVERSED_ID,
@@ -15,16 +16,17 @@ import {
 	SuspendCommand,
 	UnsuspendCommand,
 } from "@true-recall/obsidian/commands/commands/card-suspend.cmd";
+import { UpdateCardCommand } from "@true-recall/obsidian/commands/commands/card-update.cmd";
 import {
 	ChangeNoteTypeCommand,
 	ToggleReversedCommand,
 } from "@true-recall/obsidian/commands/commands/note-type.cmd";
-import { openPanelCardEditor } from "@true-recall/obsidian/features/library/ui/panel/helpers/panel-edit-routing";
 import { openCardPreviewModal } from "@true-recall/obsidian/features/library/ui/panel/preview/CardPreviewModal";
 import {
 	cardToBlockText,
 	getSourceNoteNameFromFile,
 } from "@true-recall/obsidian/features/library/ui/panel/utils/panel-helpers";
+import { openCardEditor } from "@true-recall/obsidian/features/library/ui/shared/card-edit-routing";
 import { useApp, usePlugin } from "@true-recall/obsidian/preact";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 import { openQuickNoteEditor } from "@true-recall/obsidian/views/modal-window/open-quick-note-editor";
@@ -66,20 +68,20 @@ export function useCardActions() {
 				return;
 			}
 
-			await openPanelCardEditor({
+			await openCardEditor({
 				note,
 				noteType,
 				openImageOcclusionEditor: (mode) =>
 					plugin.openImageOcclusionEditor(mode),
-				openQuickEditor: async () => {
-					await openQuickNoteEditor(plugin, {
+				openQuickEditor: () =>
+					openQuickNoteEditor(plugin, {
 						mode: "edit",
 						cardId: card.id,
 						noteId: note.id,
 						note,
 						noteType,
-					});
-				},
+					}),
+				commandService: plugin.commandService,
 			});
 			restoreScroll();
 		},
@@ -118,6 +120,40 @@ export function useCardActions() {
 			}
 		},
 		[currentFile, plugin, captureScroll],
+	);
+
+	const handleUpdateContent = useCallback(
+		(card: FlashcardItem, value: string, field: "question" | "answer") => {
+			const latestCard = plugin.flashcardManager.getCardsByIds([card.id])[0];
+			const previousQuestion = latestCard?.question ?? card.question;
+			const previousAnswer = latestCard?.answer ?? card.answer ?? "";
+			const nextQuestion = field === "question" ? value : previousQuestion;
+			const nextAnswer = field === "answer" ? value : previousAnswer;
+			if (nextQuestion === previousQuestion && nextAnswer === previousAnswer)
+				return;
+
+			try {
+				plugin.flashcardManager.updateCardContent(
+					card.id,
+					nextQuestion,
+					nextAnswer,
+				);
+				const command = new UpdateCardCommand(
+					card.id,
+					previousQuestion,
+					previousAnswer,
+					`Edit card ${field}`,
+				);
+				void plugin.commandService?.execute(command);
+			} catch (error) {
+				if (error instanceof DuplicateQuestionError) {
+					notify().duplicateFound(nextQuestion);
+					return;
+				}
+				notify().operationFailed("save card", error);
+			}
+		},
+		[plugin],
 	);
 
 	const handleCopyCard = useCallback(
@@ -314,6 +350,7 @@ export function useCardActions() {
 		handleAddFlashcard,
 		handleEditButton,
 		handleDeleteCard,
+		handleUpdateContent,
 		handleCopyCard,
 		handleMoveCard,
 		handleChangeType,

@@ -58,6 +58,8 @@ export class ChangeNoteTypeCommand implements Command {
 		// Restore deleted cards
 		for (const cardData of this.deletedCardsData) {
 			ctx.cardStore.set(cardData.id, cardData);
+			// set() never clears deleted_at — restore explicitly.
+			ctx.cardStore.cards.restoreWithCascade(cardData.id);
 		}
 	}
 }
@@ -115,6 +117,8 @@ export class ToggleReversedCommand implements Command {
 
 		for (const cardData of this.deletedCardsData) {
 			ctx.cardStore.set(cardData.id, cardData);
+			// set() never clears deleted_at — restore explicitly.
+			ctx.cardStore.cards.restoreWithCascade(cardData.id);
 		}
 	}
 }

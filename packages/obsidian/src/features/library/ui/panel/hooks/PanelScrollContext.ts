@@ -1,6 +1,8 @@
-import type { RefObject } from "preact";
-import { createContext } from "preact";
-import { useContext } from "preact/hooks";
+import type { ComponentChildren, RefObject } from "preact";
+import { createContext, createElement } from "preact";
+import { useContext, useMemo } from "preact/hooks";
+
+import { useScrollPreservation } from "./useScrollPreservation";
 
 interface PanelScrollApi {
 	preserveScroll: (action: () => void) => void;
@@ -10,7 +12,19 @@ interface PanelScrollApi {
 
 const PanelScrollContext = createContext<PanelScrollApi | null>(null);
 
-export const PanelScrollProvider = PanelScrollContext.Provider;
+export function PanelScrollProvider({
+	children,
+}: {
+	children: ComponentChildren;
+}) {
+	const { contentRef, preserveScroll, captureScroll } = useScrollPreservation();
+	const value = useMemo(
+		() => ({ preserveScroll, captureScroll, scrollRef: contentRef }),
+		[preserveScroll, captureScroll, contentRef],
+	);
+
+	return createElement(PanelScrollContext.Provider, { value }, children);
+}
 
 export function usePanelScroll(): PanelScrollApi {
 	const ctx = useContext(PanelScrollContext);

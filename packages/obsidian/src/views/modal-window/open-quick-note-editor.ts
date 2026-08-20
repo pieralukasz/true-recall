@@ -6,7 +6,7 @@ import type {
 	QuickNoteEditorResult,
 } from "@true-recall/obsidian/modals/study/quick-note-editor/types";
 import { notify } from "@true-recall/obsidian/services/notification.service";
-import { isMobile } from "@true-recall/obsidian/utils/platform";
+import { capabilities } from "@true-recall/obsidian/utils/platform";
 
 import type TrueRecallPlugin from "../../main";
 import {
@@ -25,7 +25,7 @@ export function openQuickNoteEditor(
 	plugin: TrueRecallPlugin,
 	mode: QuickNoteEditorMode,
 ): Promise<QuickNoteEditorResult> {
-	if (isMobile()) {
+	if (!capabilities.canOpenPopout()) {
 		return new QuickNoteEditorModal(plugin.app, plugin, mode).openAndWait();
 	}
 

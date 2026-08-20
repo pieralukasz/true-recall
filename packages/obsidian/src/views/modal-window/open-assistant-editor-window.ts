@@ -4,7 +4,7 @@ import { VIEW_TYPE_ASSISTANT_EDITOR } from "@true-recall/core/constants";
 import { openAskAiModal } from "@true-recall/obsidian/features/assistant/ui/AskAiModal";
 import type { AIWorkspaceMode } from "@true-recall/obsidian/features/assistant/ui/ai-workspace-modes";
 import { notify } from "@true-recall/obsidian/services/notification.service";
-import { isMobile } from "@true-recall/obsidian/utils/platform";
+import { capabilities } from "@true-recall/obsidian/utils/platform";
 
 import type TrueRecallPlugin from "../../main";
 import {
@@ -41,7 +41,7 @@ export function openAssistantEditorWindow(
 	context: AssistantContext,
 	options: OpenAssistantEditorWindowOptions = {},
 ): (() => void) | null {
-	if (isMobile()) {
+	if (!capabilities.canOpenPopout()) {
 		return openAskAiModal(plugin, {
 			context,
 			initialMode: options.initialMode,

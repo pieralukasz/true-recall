@@ -3,6 +3,272 @@
    Highlight class suffixes (-green, -orange, -blue, -red) match FsrsColorName values. */
 @import "./preview/preview.styles.css";
 
+/* Obsidian themes style every button as a raised control. Panel rows are list
+   items, so reset the button chrome outside Tailwind layers to win the cascade. */
+.tr-flashcard-panel button.tr-panel-card-main {
+	appearance: none;
+	width: auto;
+	min-height: 44px;
+	margin: 0;
+	padding: 7px 10px;
+	border: 0;
+	border-radius: 0;
+	background: transparent;
+	box-shadow: none;
+	color: inherit;
+	font: inherit;
+	line-height: inherit;
+}
+
+.tr-flashcard-panel button.tr-panel-card-main:hover,
+.tr-flashcard-panel button.tr-panel-card-main:active {
+	border: 0;
+	background: transparent;
+	box-shadow: none;
+	transform: none;
+}
+
+.tr-flashcard-panel button.tr-panel-icon-button {
+	display: inline-flex;
+	box-sizing: border-box;
+	width: 28px;
+	min-width: 28px;
+	height: 28px;
+	min-height: 28px;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	border-radius: var(--radius-s);
+	background: transparent;
+	box-shadow: none;
+	color: var(--text-muted);
+}
+
+.tr-flashcard-panel button.tr-panel-icon-button:hover:not(:disabled) {
+	border: 0;
+	background: var(--background-modifier-hover);
+	box-shadow: none;
+	color: var(--text-normal);
+	transform: none;
+}
+
+.tr-flashcard-panel button.tr-panel-empty-action {
+	box-sizing: border-box;
+	width: 100%;
+	height: auto;
+	min-height: 40px;
+	margin: 0;
+	padding: 9px 14px;
+	border: 0;
+	border-radius: var(--radius-s);
+	box-shadow: none;
+	font: inherit;
+	font-size: var(--font-ui-small);
+	font-weight: var(--font-semibold);
+}
+
+.tr-flashcard-panel button.tr-panel-empty-action:hover:not(:disabled) {
+	box-shadow: none;
+	transform: none;
+}
+
+.tr-flashcard-panel button.tr-panel-empty-action-secondary {
+	border: 1px solid var(--background-modifier-border);
+	background: transparent;
+	color: var(--text-normal);
+}
+
+.tr-flashcard-panel
+	button.tr-panel-empty-action-secondary:hover:not(:disabled) {
+	border-color: var(--background-modifier-border-hover);
+	background: var(--background-modifier-hover);
+}
+
+.tr-panel-empty-viewport {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	box-sizing: border-box;
+	width: 100%;
+	min-height: 100%;
+	padding: 32px 24px;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+}
+
+.tr-panel-empty-module {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	box-sizing: border-box;
+	width: min(100%, 360px);
+	text-align: center;
+}
+
+.tr-panel-empty-heading {
+	margin: 0;
+	color: var(--text-normal);
+	font-size: var(--font-ui-medium);
+	font-weight: var(--font-semibold);
+	line-height: 1.3;
+	text-wrap: balance;
+}
+
+.tr-panel-empty-description {
+	max-width: 320px;
+	margin: 8px 0 22px;
+	color: var(--text-muted);
+	font-size: var(--font-ui-small);
+	line-height: 1.5;
+	text-wrap: pretty;
+}
+
+.tr-panel-empty-controls {
+	display: flex;
+	flex-direction: column;
+	align-items: stretch;
+	gap: 10px;
+	width: 100%;
+}
+
+.tr-flashcard-panel button.tr-panel-empty-preset {
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr) auto;
+	align-items: center;
+	box-sizing: border-box;
+	width: 100%;
+	min-height: 40px;
+	margin: 0;
+	padding: 8px 12px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-s);
+	background: var(--background-primary-alt);
+	box-shadow: none;
+	color: var(--text-normal);
+	font: inherit;
+	font-size: var(--font-ui-small);
+	text-align: left;
+}
+
+.tr-flashcard-panel button.tr-panel-empty-preset:hover {
+	border-color: var(--background-modifier-border-hover);
+	background: var(--background-modifier-hover);
+	box-shadow: none;
+	transform: none;
+}
+
+.tr-panel-empty-preset-label {
+	margin-right: 12px;
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+}
+
+.tr-panel-empty-preset-value {
+	overflow: hidden;
+	font-weight: var(--font-medium);
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.tr-panel-empty-preset > :last-child {
+	width: 14px;
+	height: 14px;
+	margin-left: 8px;
+	color: var(--text-muted);
+}
+
+.tr-flashcard-panel .tr-panel-card-row {
+	min-height: 44px;
+	border-bottom: 1px solid var(--background-modifier-border-hover);
+	background: transparent;
+	transition: background-color 120ms ease-out;
+}
+
+.tr-flashcard-panel .tr-panel-card-row:hover,
+.tr-flashcard-panel .tr-panel-card-row:focus-within {
+	background: var(--background-modifier-hover);
+}
+
+.tr-panel-card-thumbnail {
+	display: block;
+	flex: 0 0 36px;
+	width: 36px;
+	height: 36px;
+	border: 1px solid var(--background-modifier-border-hover);
+	border-radius: var(--radius-s);
+	background: var(--background-secondary);
+	object-fit: cover;
+}
+
+.tr-panel-detail-status-dot {
+	display: inline-block;
+	width: 6px;
+	height: 6px;
+	border-radius: 50%;
+	background: var(--text-muted);
+}
+
+.tr-panel-detail-status-dot[data-tone="danger"] {
+	background: var(--color-red);
+}
+
+.tr-panel-detail-status-dot[data-tone="warning"] {
+	background: var(--color-orange);
+}
+
+.tr-panel-card-editor {
+	min-height: 48px;
+	user-select: text;
+	-webkit-user-select: text;
+}
+
+.tr-panel-card-editor .cm-editor {
+	min-height: 40px;
+	font-size: var(--font-ui-small);
+	line-height: 1.55;
+	color: var(--text-normal);
+	background: transparent;
+}
+
+.tr-panel-card-editor .cm-scroller {
+	overflow-x: auto;
+	padding: 0;
+}
+
+.tr-panel-card-editor .cm-content {
+	min-height: 40px;
+	padding: 7px 8px;
+	border: 1px solid transparent;
+	border-radius: var(--radius-s);
+}
+
+.tr-panel-card-editor .cm-editor.cm-focused .cm-content {
+	border-color: var(--background-modifier-border-focus);
+	background: var(--background-primary-alt);
+}
+
+.tr-panel-card-editor .cm-editor.cm-focused {
+	outline: none;
+	box-shadow: none;
+}
+
+.tr-panel-card-editor .cm-gutters,
+.tr-panel-card-editor .cm-activeLineGutter {
+	display: none;
+}
+
+.tr-panel-card-editor .cm-activeLine {
+	background: transparent;
+}
+
+.tr-panel-card-editor img {
+	display: block;
+	max-width: min(100%, 32rem);
+	height: auto;
+	margin: 0.5rem auto;
+	border-radius: var(--radius-s);
+}
+
 @layer components {
 	@keyframes true-recall-pulse-collect {
 		0%,
@@ -22,6 +288,57 @@
 	}
 	.true-recall-pulse-collect:hover {
 		animation: none;
+	}
+
+	.tr-flashcard-panel button:focus-visible,
+	.tr-flashcard-panel summary:focus-visible,
+	.tr-panel-shortcuts-row:focus-visible {
+		outline: 2px solid var(--interactive-accent);
+		outline-offset: -2px;
+	}
+
+	.tr-panel-card-row .tr-panel-icon-button {
+		transition:
+			opacity 120ms ease-out,
+			background-color 120ms ease-out,
+			color 120ms ease-out;
+	}
+
+	.tr-panel-detail {
+		overscroll-behavior: contain;
+	}
+
+	.tr-panel-shortcuts-list {
+		display: flex;
+		flex-direction: column;
+		gap: 2px;
+	}
+
+	.tr-panel-shortcuts-row {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 24px;
+		padding: 7px 4px;
+		border-bottom: 1px solid var(--background-modifier-border-hover);
+	}
+
+	.tr-panel-shortcut-keys {
+		display: flex;
+		align-items: center;
+		gap: 4px;
+	}
+
+	.tr-panel-shortcut-keys kbd {
+		min-width: 24px;
+		padding: 2px 6px;
+		border: 1px solid var(--background-modifier-border);
+		border-radius: 4px;
+		background: var(--background-secondary);
+		box-shadow: 0 1px 0 var(--background-modifier-border);
+		color: var(--text-muted);
+		font-size: var(--font-ui-smaller);
+		text-align: center;
 	}
 
 	/* Source text highlight — temporary flash when jumping from card to source.
@@ -107,5 +424,17 @@
 	}
 	.true-recall-pulse-collect {
 		animation: none;
+	}
+	.tr-panel-card-row .tr-panel-icon-button {
+		transition: none;
+	}
+	.tr-flashcard-panel .tr-panel-card-row {
+		transition: none;
+	}
+}
+
+@media (hover: none) {
+	.tr-panel-card-row .tr-panel-icon-button {
+		opacity: 1;
 	}
 }

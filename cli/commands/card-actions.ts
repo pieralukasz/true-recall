@@ -41,6 +41,27 @@ export const cardActionCommands: CommandDef[] = [
 		({ question, answer }) => ({ question, answer }),
 	),
 
+	postTo(
+		"move_card",
+		"Move a flashcard to another Obsidian note",
+		C,
+		{
+			card_id: {
+				type: "string",
+				description: "The card's UUID",
+				required: true,
+			},
+			target_path: {
+				type: "string",
+				description:
+					"Vault path to the target Markdown note (e.g. 'Folder/Note.md')",
+				required: true,
+			},
+		},
+		(p) => `/cards/${p.card_id}/move`,
+		({ target_path }) => ({ target_path }),
+	),
+
 	del(
 		"delete_card",
 		"Permanently delete a flashcard",
@@ -108,7 +129,7 @@ export const cardActionCommands: CommandDef[] = [
 
 	postParams(
 		"bury_cards",
-		"Temporarily hide cards until a date or for N days, or lift the bury with --unbury",
+		"Temporarily hide cards until a specific date or for N days",
 		C,
 		"/cards/bulk-bury",
 		{
@@ -124,11 +145,6 @@ export const cardActionCommands: CommandDef[] = [
 			until: {
 				type: "string",
 				description: "Bury until this ISO date (e.g. '2026-04-01')",
-			},
-			unbury: {
-				type: "boolean",
-				description:
-					"Lift the bury immediately, returning the cards to their normal schedule",
 			},
 		},
 	),

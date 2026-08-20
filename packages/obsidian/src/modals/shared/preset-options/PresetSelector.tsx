@@ -28,14 +28,17 @@ export function PresetSelector({
 	onRename,
 }: PresetSelectorProps) {
 	return (
-		<FormCard>
+		<FormCard title="Preset">
 			<FormField
-				name="Preset"
+				name="Active preset"
 				description="Each preset has its own retention target, weights, steps, and daily limits"
+				layout="stacked"
 			>
 				<SelectInput
+					class="ep:flex-1 ep:min-w-0"
 					value={preset.id}
 					onChange={onPresetChange}
+					ariaLabel="Active preset"
 					options={presets.map((p) => ({
 						value: p.id,
 						label: p.name,
@@ -48,12 +51,12 @@ export function PresetSelector({
 			</FormField>
 
 			{!isDefault && (
-				<FormField name="Preset name">
+				<FormField name="Preset name" layout="stacked">
 					<TextInput
 						value={preset.name}
-						onChange={(v) => {
-							if (v.trim()) onRename(v.trim());
-						}}
+						onChange={onRename}
+						placeholder="Preset name"
+						ariaLabel="Preset name"
 					/>
 				</FormField>
 			)}

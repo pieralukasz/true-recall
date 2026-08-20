@@ -27,7 +27,7 @@ export function PanelAiStrip() {
 
 	return (
 		<Clickable
-			class="ep:flex ep:items-center ep:gap-2 ep:px-2 ep:py-1.5 ep:rounded-md ep:border ep:border-obs-border ep:bg-surface-raised ep:shrink-0"
+			class="ep:mx-2 ep:mt-2 ep:flex ep:items-center ep:gap-2 ep:px-2 ep:py-1.5 ep:rounded-md ep:border ep:border-obs-border ep:bg-surface-raised ep:shrink-0"
 			aria-label="Open AI drafts for this note"
 			onClick={() => void plugin.openAssistantInbox(firstThreadId ?? undefined)}
 		>

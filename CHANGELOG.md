@@ -1,28 +1,65 @@
 # Changelog
 
-## 2.1.0 (2026-08-01)
+## 2.2.0 (2026-08-20)
 
-The workload forecast was quietly lying. Cards that were already due — every learning card sitting on a sub-day step, and anything overdue — were filtered out before the chart was drawn, so the busiest part of the day was the part you could not see. That is fixed, and the forecast now also projects the relearning volume your retention target implies, instead of pretending lapses are free. Alongside that: easy days are reachable from outside the settings tab, and a question can be captured mid-study without an answer without costing you a review slot.
+True Recall runs on phones now, and it stops assuming there is only one of you. The desktop-only guard is gone, review, the panel, the dashboard and the quick editor all have real phone layouts, and the database merges work from two devices by replaying the review log instead of letting whoever saved last overwrite the other. Persistence was hardened alongside it: writes land atomically and a truncated file is salvaged on load rather than costing you a session. The review queue also gained R-Mode, a continuous ranking by retrievability in which nothing is ever late.
 
 ### Features
 
-- **Easy days from outside the settings tab** — mark recurring weekdays or a specific date as reduced-load from the API, the CLI (`get_easy_days`, `set_easy_days`, `add_easy_day`, `apply_easy_days`) or the new **Easy day: today** command. `add_easy_day` with no arguments is the "today disappeared" button: it records today and redistributes straight away. Easy days move reviews out of a day *before* it arrives, which is the difference between a lighter day and an overdue pile-up the morning after
-- **Capture a question without an answer** — `create_flashcard --suspended` creates a card outside the review queue. A question that occurs to you mid-study can be recorded and finished later without burning review slots on a card that has nothing to recall. Unsuspend once it has a real answer
-- **Card state in `list_cards`** — the response now carries `suspended` and `buriedUntil`. `get_card` always reported them, so the list endpoint was the odd one out, and asking "which of my cards are suspended" previously meant dropping down to SQL
-- **Lift a bury** — `bury_cards --unbury` returns cards to their normal schedule. Burying was previously one-way from outside the app
+**Mobile**
 
-### Improvements
+- **Mobile platform unlocked.** The plugin loads on phones and tablets, with a central capability matrix deciding what each form factor gets instead of scattered platform checks
+- **Review on a phone.** A grade bar integrated with the view header, the answer sitting directly under the separator, inline today counts, and a single overflow menu in place of a crowded toolbar
+- **Current-note flashcards in the panel** are fully usable on a phone, with a dedicated mobile header
+- **Quick editor mobile save flow** with a sticky footer and an explicit Done button
+- **Simplified statistics on phones**, dropping the chart density a phone screen cannot show honestly
+- **Non-streaming fallback for AI requests on mobile**, so a request that cannot stream still completes
+- **Quick-access commands** for the common actions, with dead UI paths removed
 
-- **ai:** the chunked, draft and streaming generation services each assembled their own system prompt, format spec and user content, which is why the same preset could produce different prompts depending on which path ran it. Prompt assembly now lives in one place, and a preset id resolves to a runnable preset through a single function that folds together the Pro tier swap, the note-type lookup and the entitlement check
-- **assistant:** generation could be started from the panel, the selection toolbar or a command, each with its own copy of the queueing logic. Every entry point now funnels through one queue, and a missing API key is reported up front rather than after the request fails
-- **assistant:** when the streaming engine persists cards as it parses them there is nothing left to apply, and an empty proposal list looked identical to "the model returned nothing". Completed runs now report what actually landed, counting duplicates separately, so a run that produced only duplicates says so instead of claiming cards were created
+**Cross-device sync**
+
+- **Sync coordinator** with foreground sync and per-device locks, so two devices no longer race each other into the same database file
+- **Deterministic FSRS replay from the review log.** Concurrent reviews merge by replaying scheduling from the log instead of last-write-wins, so grading the same card on two devices converges on one correct state
+- **Duplicate cards created concurrently converge** instead of accumulating
+- **Background merge** when the remote database changes, plus reporting of changed card ids so open views refresh precisely rather than wholesale
+- **Review provenance columns and a preview review kind** in the schema, with a version gate and null-safe remote binds
+- **Device id lives only in device-local storage**, so it never travels with the synced database
+- **Save and sync status chip** on the dashboard
+
+**Review and cards**
+
+- **R-Mode.** An alternative queue that replaces due dates with a continuous ranking by retrievability: a card is either worth reviewing right now or it is not, with a comfort mix, a retrievability ceiling and generation policy controls
+- **Custom study top-ups, review comments and card moves** during a session, with top-up failures handled instead of ending the session
+- **Undo across every editing path.** Adding, editing, deleting, moving and switching note type are all undoable, undo of a delete revives the card, and Cmd+Z after Save and Add restores the fields
+- **Delete shortcut in review sessions**, and review and lapse counts shown on the answer side
+- **Card Polish in the panel**: a polish preset list on the card detail, a wand button that opens the AI workspace on the selected card, and a bulk polish action over a whole selection, backed by a preset API and CLI commands
+
+**AI and generation**
+
+- **gemini-3.7-flash is the default BYOK model**
+- **Image embeds survive chunking when the AI works on a selection**, so a question about the image still sees it
+- **allowEmptyAnswer preset flag** for one-sided cards
+- **Backups stay out of iCloud transfer** by living in a .nosync folder
 
 ### Bug Fixes
 
-- **fsrs:** the workload forecast dropped every card that was already due. It filtered on the current timestamp rather than the start of the day, and learning cards use sub-day steps, so they are almost always slightly past due — they vanished from the chart entirely, along with any overdue reviews. Overdue work now buckets into today, where it belongs
-- **fsrs:** the per-preset filtered forecast carried a second copy of that logic and the same bug. Both paths now share one implementation, so they cannot drift apart again
-- **fsrs:** the forecast under-reported daily load by roughly the lapse rate, because the reviews your lapses will generate were not counted anywhere. Each day now includes a projected relearning estimate derived from the review cards due that day and the preset's retention target, and it feeds the average and the load-balance check
-- **cli:** `generate_flashcards_with_preset` ran straight into its own description in `--help`, with no space between them — the name is longer than the fixed column width. Column widths are now derived from the longest name, so the next long command will not break it either
+- **Crash-safe database writes.** The flush wrote in place, so an interruption mid-write truncated the file and took the session with it. Writes are atomic now, and load salvages a truncated file from its temp and backup copies instead of starting empty. The restore and device-import paths write the live database the same way
+- **Undo tombstones the review log entry**, so an undone review no longer feeds scheduling
+- **Statistics rebuild respects dayStartHour boundaries** and skips previews
+- **Frontmatter index rebuilds once the metadata cache finishes its initial scan**, instead of indexing a half-populated cache at startup
+- **The hierarchy graph is invalidated when a project or child note is renamed**
+- **Assistant threads unstick** when their active task is deleted or reaches a terminal state
+- **Undo and redo edits persist in live preview**, and Shift+Cmd+Z is ignored where it used to fire twice
+- **Quick editor popout keeps its size** via min and max bounds rather than setResizable
+- **Dashboard lag after reviews** is gone (#50)
+- **FK backfill actually runs**: hasRow always returned true, so the migration silently skipped
+- **Duplicate native tooltips removed**, and lapse counts are formatted in note stats
+
+### Improvements
+
+- **Descendant-project lookup extracted into a tested helper** in preset options
+- **The default problem-card limit is raised to 50**
+- **CodeMirror packages bumped** and the code adapted to Obsidian 1.13 types
 
 ## 2.0.0 (2026-07-26)
 

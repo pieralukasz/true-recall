@@ -1,3 +1,5 @@
+import { useCallback, useEffect, useState } from "preact/hooks";
+
 import type { FSRSPreset } from "@true-recall/core/types";
 
 import {
@@ -29,6 +31,23 @@ export function PresetSection({
 	onDelete,
 	onRename,
 }: PresetSectionProps) {
+	const [draftName, setDraftName] = useState(preset.name);
+
+	useEffect(() => {
+		setDraftName(preset.name);
+	}, [preset.name]);
+
+	// Renaming rewrites review-log rows and persists settings, so it is committed
+	// on Enter/blur rather than on every keystroke.
+	const commitName = useCallback(() => {
+		const next = draftName.trim();
+		if (!next || next === preset.name) {
+			setDraftName(preset.name);
+			return;
+		}
+		onRename(next);
+	}, [draftName, preset.name, onRename]);
+
 	return (
 		<FormCard title="FSRS presets">
 			<FormField
@@ -38,6 +57,7 @@ export function PresetSection({
 				<SelectInput
 					value={selectedPresetId}
 					onChange={onPresetChange}
+					ariaLabel="Active preset"
 					options={presets.map((p) => ({ value: p.id, label: p.name }))}
 				/>
 				<ActionButton label="New" variant="secondary" onClick={onCreate} />
@@ -47,12 +67,22 @@ export function PresetSection({
 			</FormField>
 
 			{!isDefault && (
-				<FormField name="Preset name">
+				<FormField
+					name="Preset name"
+					description="Press Enter or click away to apply"
+				>
 					<TextInput
-						value={preset.name}
-						onChange={(v) => {
-							if (v.trim()) onRename(v.trim());
+						value={draftName}
+						onChange={setDraftName}
+						onBlur={commitName}
+						onKeyDown={(event) => {
+							if (event.key === "Enter") {
+								event.preventDefault();
+								commitName();
+							}
 						}}
+						placeholder={preset.name}
+						ariaLabel="Preset name"
 					/>
 				</FormField>
 			)}

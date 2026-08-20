@@ -4,12 +4,15 @@ import { DeletionHandlerService } from "@true-recall/core/flashcard/lifecycle/de
 import { UidGuardianService } from "@true-recall/core/flashcard/lifecycle/uid-guardian.service";
 import { DeviceDiscoveryService } from "@true-recall/core/integration/device/device-discovery.service";
 import { DeviceIdService } from "@true-recall/core/integration/device/device-id.service";
+import { writeDbFileAtomically } from "@true-recall/core/persistence/sqlite/atomic-db-file";
+import { setCurrentDeviceId } from "@true-recall/core/persistence/sqlite/device-context";
 import {
 	DB_FOLDER,
 	getDeviceDbFilename,
 	SAFETY_FLUSH_INTERVAL_MS,
 } from "@true-recall/core/persistence/sqlite/sqlite.types";
 
+import { ObsidianDeviceIdStorage } from "@true-recall/obsidian/adapters/ObsidianDeviceIdStorage";
 import { ObsidianPersistence } from "@true-recall/obsidian/adapters/ObsidianPersistence";
 import { ObsidianUidPrompt } from "@true-recall/obsidian/adapters/ObsidianUidPrompt";
 import {
@@ -28,6 +31,7 @@ import type TrueRecallPlugin from "../main";
 import { AssistantService } from "../services/assistant/assistant.service";
 import { BackupRecoveryManager } from "./BackupRecoveryManager";
 import { DayRolloverWatcher } from "./DayRolloverWatcher";
+import { PersistenceLifecycleGuard } from "./PersistenceLifecycleGuard";
 import { PluginLoader } from "./plugin-loader";
 import { isPluginEnabled } from "./plugin-utils";
 
@@ -44,22 +48,26 @@ export async function initializeDeviceAndStore(
 		notify().error(
 			"Failed to initialize device context. Using default configuration.",
 		);
-		plugin.deviceIdService = new DeviceIdService(plugin.settings.deviceId);
-		await initializeCardStore(plugin, plugin.deviceIdService.getDeviceId());
+		plugin.deviceIdService = new DeviceIdService(
+			new ObsidianDeviceIdStorage(plugin.app),
+		);
+		const fallbackDeviceId = plugin.deviceIdService.getDeviceId();
+		setCurrentDeviceId(fallbackDeviceId);
+		await initializeCardStore(plugin, fallbackDeviceId);
 	}
 }
 
 async function initializeDeviceContext(
 	plugin: TrueRecallPlugin,
 ): Promise<string> {
+	// The device ID must never be adopted from synced settings (data.json):
+	// a fresh install inheriting another device's ID would write to the same
+	// database file and the two devices would overwrite each other's exports.
 	plugin.deviceIdService = new DeviceIdService(
-		plugin.settings.deviceId,
-		(newId) => {
-			plugin.settings.deviceId = newId;
-			void plugin.saveSettings();
-		},
+		new ObsidianDeviceIdStorage(plugin.app),
 	);
 	const deviceId = plugin.deviceIdService.getDeviceId();
+	setCurrentDeviceId(deviceId);
 	plugin.deviceDiscovery = new DeviceDiscoveryService(
 		new ObsidianPersistence(plugin.app),
 		deviceId,
@@ -122,6 +130,16 @@ async function initializeCardStore(
 			}
 		}
 
+		// Store a readable device name in the database itself so other devices
+		// can show "iPhone 15" instead of a bare device id when syncing.
+		const deviceLabel = plugin.deviceIdService?.getDeviceLabel();
+		if (deviceLabel && plugin.coreApp.cardStore) {
+			plugin.coreApp.cardStore.cards.setSyncMetadata(
+				"device:label",
+				deviceLabel,
+			);
+		}
+
 		const sDbLoad = performance.now();
 
 		plugin.registerInterval(
@@ -130,6 +148,10 @@ async function initializeCardStore(
 					void plugin.coreApp.cardStore.saveNow();
 				}
 			}, SAFETY_FLUSH_INTERVAL_MS),
+		);
+
+		new PersistenceLifecycleGuard(() => plugin.coreApp.cardStore).register(
+			plugin,
 		);
 
 		const dl = new DataLayer();
@@ -162,6 +184,28 @@ async function initializeCardStore(
 			dl.invalidateGroups([G.CARDS]);
 			void migrateArchiveCascade(plugin);
 		});
+
+		// Second startup race: layout-ready is not a metadata-cache-ready signal.
+		// On a cold start getFileCache() can still return null for most files at
+		// layout-ready, so the rebuild above snapshots an empty index and every
+		// card renders as orphaned until individual "changed" events trickle in.
+		// Re-run the rebuild once the cache reports the initial scan finished.
+		let initialResolveHandled = false;
+		plugin.registerEvent(
+			plugin.app.metadataCache.on("resolved", () => {
+				if (initialResolveHandled) return;
+				initialResolveHandled = true;
+				plugin.frontmatterIndex?.rebuildIndex();
+				plugin.hierarchyService.invalidateGraph();
+				dl.invalidateGroups([
+					G.CARDS,
+					G.BROWSER,
+					G.DASHBOARD,
+					G.PANEL,
+					G.REVIEW,
+				]);
+			}),
+		);
 
 		const sCards = performance.now();
 
@@ -354,7 +398,13 @@ async function handleDeviceSelection(
 			const sourceData = await plugin.app.vault.adapter.readBinary(
 				result.sourcePath,
 			);
-			await plugin.app.vault.adapter.writeBinary(targetPath, sourceData);
+			// Atomic swap: an interrupted import must not leave a truncated
+			// live database behind.
+			await writeDbFileAtomically(
+				new ObsidianPersistence(plugin.app),
+				targetPath,
+				sourceData,
+			);
 			notify().success(`Imported data from device ${result.sourceDeviceId}`);
 		} catch (error) {
 			console.error("[True Recall] Database import failed:", error);

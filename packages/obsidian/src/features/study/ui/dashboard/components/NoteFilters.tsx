@@ -10,6 +10,7 @@ interface NoteFiltersProps {
 	projectFilter: ProjectFilter;
 	unassignedCount: number;
 	onProjectFilterChange: (filter: ProjectFilter) => void;
+	rModeEnabled?: boolean;
 }
 
 const CHIP_BASE =
@@ -18,12 +19,21 @@ const CHIP_ACTIVE = "ep:bg-obs-interactive/15 ep:text-obs-interactive";
 const CHIP_INACTIVE =
 	"ep:bg-obs-modifier-hover ep:text-obs-muted ep:hover:text-obs-normal";
 
-const FILTERS: { mode: NoteFilterMode; label: string }[] = [
+const DUE_FILTERS: { mode: NoteFilterMode; label: string }[] = [
 	{ mode: "all", label: "All" },
 	{ mode: "due", label: "Due" },
 	{ mode: "new", label: "New" },
 	{ mode: "learning", label: "Learn" },
 	{ mode: "overdue", label: "Overdue" },
+];
+
+// R-Mode has no due date and no lateness, so "Due" and "Overdue" have no
+// referent; "Worth it" is the pool of cards a review would actually help.
+const R_MODE_FILTERS: { mode: NoteFilterMode; label: string }[] = [
+	{ mode: "all", label: "All" },
+	{ mode: "pool", label: "Worth it" },
+	{ mode: "new", label: "New" },
+	{ mode: "learning", label: "Learn" },
 ];
 
 export function NoteFilters({
@@ -33,11 +43,14 @@ export function NoteFilters({
 	projectFilter,
 	unassignedCount,
 	onProjectFilterChange,
+	rModeEnabled = false,
 }: NoteFiltersProps) {
+	const filters = rModeEnabled ? R_MODE_FILTERS : DUE_FILTERS;
+
 	return (
 		<div class="ep:flex ep:flex-wrap ep:items-center ep:gap-1.5" role="tablist">
 			{/* State filters */}
-			{FILTERS.map(({ mode, label }) => {
+			{filters.map(({ mode, label }) => {
 				const isActive = activeFilter === mode;
 				const count = counts[mode];
 				return (

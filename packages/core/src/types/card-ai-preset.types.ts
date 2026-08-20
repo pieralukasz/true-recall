@@ -5,6 +5,15 @@
 
 export type CardFields = Record<string, string>;
 
+export type CardAIPresetMode = "edit" | "split" | "spawn";
+
+export type CardAIFieldScope = "all" | "question" | "answer" | "empty-answer";
+
+export type CardAIExecutor =
+	| "ai"
+	| "remove-backlinks"
+	| "shorten-attachment-paths";
+
 export interface CardAIPreset {
 	id: string;
 	name: string;
@@ -15,6 +24,12 @@ export interface CardAIPreset {
 	includeSourceNote?: boolean;
 	includeRelatedCards?: boolean;
 	autoApplyNewCards?: boolean;
+	/** Explicit result cardinality. Older presets are resolved conservatively by name. */
+	mode?: CardAIPresetMode;
+	/** Fields the model may change on the current card. */
+	fieldScope?: CardAIFieldScope;
+	/** Mechanical transforms bypass the LLM entirely. */
+	executor?: CardAIExecutor;
 }
 
 export interface CardAIUserSettings {

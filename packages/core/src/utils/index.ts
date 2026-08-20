@@ -1,10 +1,10 @@
+export { moveItem, moveItemAmong } from "./array.utils";
 export {
 	formatLocalDate,
 	getTodayBoundary,
 	getTodayKey,
 	getTomorrowBoundary,
 	isTimestampToday,
-	startOfLocalDay,
 } from "./date.utils";
 export { getErrorMessage } from "./error.utils";
 export {

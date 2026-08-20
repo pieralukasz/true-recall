@@ -1,4 +1,5 @@
 import { z } from "zod";
+
 import {
 	custom,
 	getWith,
@@ -15,9 +16,11 @@ export const cardTools: ToolDef[] = [
 		{
 			query: z.string().optional().describe("Text search in question/answer"),
 			state: z
-				.enum(["new", "learning", "review", "relearning"])
+				.enum(["new", "learning", "review", "relearning", "actual-learning"])
 				.optional()
-				.describe("Filter by card state"),
+				.describe(
+					"Filter by card state; actual-learning combines Learning and Relearning",
+				),
 			source_uid: z
 				.string()
 				.optional()
@@ -44,8 +47,24 @@ export const cardTools: ToolDef[] = [
 	),
 
 	getWith(
+		"get_actual_learning_cards",
+		"Get active cards currently in Learning or Relearning, ordered by due date. Excludes suspended, buried, and archived cards.",
+		{
+			limit: z
+				.number()
+				.int()
+				.min(1)
+				.max(200)
+				.optional()
+				.default(50)
+				.describe("Max cards to return (1-200)"),
+		},
+		(p) => `/cards/actual-learning?limit=${String(p.limit)}`,
+	),
+
+	getWith(
 		"get_card",
-		"Get a single flashcard with full details and review history",
+		"Get a single flashcard with full details, the user's userComment, and review history",
 		{
 			card_id: z.string().describe("The card's UUID"),
 		},
@@ -54,7 +73,7 @@ export const cardTools: ToolDef[] = [
 
 	getWith(
 		"get_card_context",
-		"Get deep context for a flashcard: the card with full FSRS data, its complete review history, the full markdown content of the source note, and all sibling cards from the same note. Use this to understand a card's topic in depth — for explaining, tutoring, or diagnosing why a card is difficult.",
+		"Get deep context for a flashcard: the card including the user's userComment, full FSRS data, complete review history, source note, and sibling cards. Use userComment as the user's verification concern or thought, not as authoritative source material.",
 		{ card_id: z.string().describe("The card's UUID") },
 		(p) => `/cards/${requireStringParam(p, "card_id")}/context`,
 	),

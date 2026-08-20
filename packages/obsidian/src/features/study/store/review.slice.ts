@@ -314,6 +314,27 @@ export function createReviewSlice(
 			}));
 		},
 
+		addCardsToCurrentSession: (cards: FSRSFlashcardItem[]) => {
+			const state = get().review;
+			if (!state.isActive || cards.length === 0) return 0;
+
+			const queuedIds = new Set(state.queue.map((card) => card.id));
+			const addedIds = new Set<string>();
+			const uniqueCards = cards.filter((card) => {
+				if (queuedIds.has(card.id) || addedIds.has(card.id)) return false;
+				addedIds.add(card.id);
+				return true;
+			});
+			if (uniqueCards.length === 0) return 0;
+
+			const queue = [...state.queue];
+			queue.splice(state.currentIndex, 0, ...uniqueCards);
+			commitQueue(
+				promoteActionableCard({ queue, currentIndex: state.currentIndex }),
+			);
+			return uniqueCards.length;
+		},
+
 		insertCardAtPosition: (card: FSRSFlashcardItem, position: number) => {
 			const state = get().review;
 			if (!state.isActive) return;
@@ -423,6 +444,19 @@ export function createReviewSlice(
 				question,
 				answer,
 			};
+
+			set((s) => ({
+				review: { ...s.review, queue: newQueue },
+			}));
+		},
+
+		updateCurrentCardComment: (userComment: string | undefined) => {
+			const state = get().review;
+			const card = state.queue[state.currentIndex];
+			if (!card) return;
+
+			const newQueue = [...state.queue];
+			newQueue[state.currentIndex] = { ...card, userComment };
 
 			set((s) => ({
 				review: { ...s.review, queue: newQueue },

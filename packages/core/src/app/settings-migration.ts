@@ -83,6 +83,24 @@ export function migrateSettings(raw: Partial<TrueRecallSettings> | null): {
 	const settings: TrueRecallSettings = { ...DEFAULT_SETTINGS, ...migratedRaw };
 	let needsSave = false;
 
+	// Custom Study used to persist one filtered deck directly in settings.
+	// Preserve it as the first entry when upgrading to the multi-session model.
+	const legacyCustomStudyDeck = (
+		raw as {
+			temporaryCustomStudyDeck?: TrueRecallSettings["temporaryCustomStudyDeck"];
+		} | null
+	)?.temporaryCustomStudyDeck;
+	if (!Array.isArray(raw?.temporaryCustomStudyDecks)) {
+		settings.temporaryCustomStudyDecks = legacyCustomStudyDeck
+			? [legacyCustomStudyDeck]
+			: [];
+		if (legacyCustomStudyDeck) needsSave = true;
+	}
+	if (legacyCustomStudyDeck) {
+		delete settings.temporaryCustomStudyDeck;
+		needsSave = true;
+	}
+
 	// Derive providerType if not set or invalid
 	if (
 		settings.providerType !== "pro" &&

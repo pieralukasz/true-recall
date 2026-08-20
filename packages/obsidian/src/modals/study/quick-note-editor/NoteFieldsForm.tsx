@@ -13,11 +13,14 @@ interface NoteFieldsFormProps {
 	sourcePath: string;
 	onFieldChange: (fieldName: string, value: string) => void;
 	onFieldFocus?: (fieldName: string, editorView: EditorView) => void;
-	onModEnter?: () => void;
+	onModEnter?: (fieldName: string, value: string) => void;
+	onModUndo?: () => boolean;
+	onUserEdit?: () => void;
 	onEscape?: () => void;
 	autoFocusFirst?: boolean;
 	pinnedFields?: Set<string>;
 	onTogglePin?: (fieldName: string) => void;
+	focusFirstRequest?: number;
 }
 
 export function NoteFieldsForm({
@@ -27,10 +30,13 @@ export function NoteFieldsForm({
 	onFieldChange,
 	onFieldFocus,
 	onModEnter,
+	onModUndo,
+	onUserEdit,
 	onEscape,
 	autoFocusFirst = true,
 	pinnedFields,
 	onTogglePin,
+	focusFirstRequest = 0,
 }: NoteFieldsFormProps) {
 	const editorsRef = useRef(new Map<string, EmbeddableEditorInstance>());
 
@@ -63,12 +69,15 @@ export function NoteFieldsForm({
 					onFieldChange={onFieldChange}
 					onFieldFocus={onFieldFocus}
 					onModEnter={onModEnter}
+					onModUndo={onModUndo}
+					onUserEdit={onUserEdit}
 					onEscape={onEscape}
 					isPinned={pinnedFields?.has(fieldName) ?? false}
 					onTogglePin={onTogglePin}
 					registerEditor={registerEditor}
 					onTab={() => focusField(fieldName, 1)}
 					onShiftTab={() => focusField(fieldName, -1)}
+					focusRequest={index === 0 ? focusFirstRequest : 0}
 				/>
 			))}
 
