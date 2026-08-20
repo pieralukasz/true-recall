@@ -94,10 +94,7 @@ export class FlashcardPanelView extends ItemView {
 		return { ...state, file: currentPath ?? null };
 	}
 
-	async setState(
-		state: unknown,
-		result: ViewStateResult,
-	): Promise<void> {
+	async setState(state: unknown, result: ViewStateResult): Promise<void> {
 		await super.setState(state, result);
 		const filePath = (state as { file?: unknown } | null)?.file;
 		if (typeof filePath !== "string" || !filePath) return;

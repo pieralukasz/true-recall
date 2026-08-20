@@ -18,14 +18,14 @@ import {
 	FormattingToolbar,
 } from "@true-recall/obsidian/editor/shared/formatting";
 import { useIcon } from "@true-recall/obsidian/preact/hooks";
-import { useKeyboardInset } from "@true-recall/obsidian/preact/useKeyboardInset";
-import { isMobile } from "@true-recall/obsidian/utils/platform";
 import {
 	useApp,
 	usePlugin,
 } from "@true-recall/obsidian/preact/ObsidianContext";
+import { useKeyboardInset } from "@true-recall/obsidian/preact/useKeyboardInset";
 import { registerAssistantDraftTarget } from "@true-recall/obsidian/services/assistant/assistant-draft-target-registry";
 import { notify } from "@true-recall/obsidian/services/notification.service";
+import { isMobile } from "@true-recall/obsidian/utils/platform";
 import { openAssistantEditorWindow } from "@true-recall/obsidian/views/modal-window/open-assistant-editor-window";
 import { openCardTypesEditor } from "@true-recall/obsidian/views/modal-window/open-card-types-editor";
 import { openNoteTypeManager } from "@true-recall/obsidian/views/modal-window/open-note-type-manager";

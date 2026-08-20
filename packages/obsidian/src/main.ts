@@ -16,12 +16,12 @@ import {
 	VIEW_TYPE_STATS,
 } from "@true-recall/core/constants";
 import type { DeletionHandlerService } from "@true-recall/core/flashcard/lifecycle/deletion-handler.service";
-import { MOBILE_SAVE_DEBOUNCE_MS } from "@true-recall/core/persistence/sqlite/sqlite.types";
 import type { DeviceDiscoveryService } from "@true-recall/core/integration/device/device-discovery.service";
 import type { DeviceIdService } from "@true-recall/core/integration/device/device-id.service";
 import { DeviceLockService } from "@true-recall/core/integration/device/device-lock.service";
 import { DeviceSyncService } from "@true-recall/core/integration/device/device-sync.service";
 import { DeviceSyncScheduler } from "@true-recall/core/integration/device/device-sync-scheduler";
+import { MOBILE_SAVE_DEBOUNCE_MS } from "@true-recall/core/persistence/sqlite/sqlite.types";
 import { FSRSService } from "@true-recall/core/services/fsrs/fsrs.service";
 import { FsrsReplayService } from "@true-recall/core/services/fsrs/fsrs-replay.service";
 import { SessionService } from "@true-recall/core/services/review/session.service";

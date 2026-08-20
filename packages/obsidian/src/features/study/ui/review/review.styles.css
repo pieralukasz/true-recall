@@ -140,7 +140,10 @@
 	/* Obsidian's floating mobile navbar hovers over the bottom edge of the
 	   view; lift the grade bar above it so buttons are never covered. */
 	.is-mobile.is-floating-nav .true-recall-review-buttons {
-		padding-bottom: calc(max(env(safe-area-inset-bottom, 0px), 0.75rem) + 4.75rem);
+		padding-bottom: calc(
+			max(env(safe-area-inset-bottom, 0px), 0.75rem) +
+			4.75rem
+		);
 	}
 
 	/* Preview panel (320px) — prevent overflow from images, code, tables, LaTeX.

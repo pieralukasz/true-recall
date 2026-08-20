@@ -18,13 +18,13 @@ import { SearchCombobox } from "@true-recall/obsidian/components/SearchCombobox"
 import { Q, useQuery } from "@true-recall/obsidian/data";
 import { computeActionableSessionSnapshot } from "@true-recall/obsidian/features/study/services/actionable-session-snapshot.service";
 import { BottomActionBar } from "@true-recall/obsidian/features/study/ui/dashboard/components/BottomActionBar";
-import { SyncStatusChip } from "@true-recall/obsidian/features/study/ui/dashboard/components/SyncStatusChip";
 import { CustomStudyTab } from "@true-recall/obsidian/features/study/ui/dashboard/components/CustomStudyTab";
 import { DashboardTabs } from "@true-recall/obsidian/features/study/ui/dashboard/components/DashboardTabs";
 import { NoteList } from "@true-recall/obsidian/features/study/ui/dashboard/components/NoteList";
 import { OrphanedTab } from "@true-recall/obsidian/features/study/ui/dashboard/components/OrphanedTab";
 import { ProjectsTab } from "@true-recall/obsidian/features/study/ui/dashboard/components/ProjectsTab";
 import { RecentlyStudiedBar } from "@true-recall/obsidian/features/study/ui/dashboard/components/RecentlyStudiedBar";
+import { SyncStatusChip } from "@true-recall/obsidian/features/study/ui/dashboard/components/SyncStatusChip";
 import { TodayActionBar } from "@true-recall/obsidian/features/study/ui/dashboard/components/TodayActionBar";
 import { aggregateProjectData } from "@true-recall/obsidian/features/study/ui/dashboard/helpers/project-aggregation";
 import { projectMatchesSearch } from "@true-recall/obsidian/features/study/ui/dashboard/helpers/project-tree-flatten";

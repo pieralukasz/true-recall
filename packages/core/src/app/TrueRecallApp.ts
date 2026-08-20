@@ -17,8 +17,8 @@ import { BackgroundBackupManager } from "../persistence/backup/background-backup
 import { BackupService } from "../persistence/backup/backup.service";
 import { SessionPersistenceService } from "../persistence/session/session-persistence.service";
 import {
-	SqliteStoreService,
 	type SqliteStoreOptions,
+	SqliteStoreService,
 } from "../persistence/sqlite";
 import { FSRSService } from "../services/fsrs/fsrs.service";
 import { FrontmatterIndexService } from "../services/notes/frontmatter-index.service";

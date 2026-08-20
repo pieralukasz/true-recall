@@ -7,10 +7,10 @@ import {
 	SelectionToolbar,
 } from "@true-recall/obsidian/features/library/ui/panel/components";
 import { MobileNoteCardsHeader } from "@true-recall/obsidian/features/library/ui/panel/components/MobileNoteCardsHeader";
-import { isMobile } from "@true-recall/obsidian/utils/platform";
 import { PanelCardDetail } from "@true-recall/obsidian/features/library/ui/panel/components/PanelCardDetail";
 import { PanelScrollProvider } from "@true-recall/obsidian/features/library/ui/panel/hooks";
 import { useFlashcardPanel } from "@true-recall/obsidian/features/library/ui/panel/hooks/useFlashcardPanel";
+import { isMobile } from "@true-recall/obsidian/utils/platform";
 
 export function FlashcardPanelApp({
 	onActions,

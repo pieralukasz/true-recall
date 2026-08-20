@@ -2,7 +2,6 @@ import { Modal } from "obsidian";
 import { h } from "preact";
 
 import type { AssistantContext } from "@true-recall/core/ai/assistant";
-
 import { VIEW_TYPE_ASSISTANT_INBOX } from "@true-recall/core/constants";
 
 import type TrueRecallPlugin from "@true-recall/obsidian/main";

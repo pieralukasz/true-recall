@@ -4,7 +4,7 @@
  */
 
 export {
-	SqliteStoreService,
 	type SqliteStoreOptions,
+	SqliteStoreService,
 } from "./SqliteStoreService";
 export * from "./sqlite.types";

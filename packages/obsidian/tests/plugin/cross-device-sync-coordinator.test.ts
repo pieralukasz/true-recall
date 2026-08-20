@@ -3,8 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { SyncResult } from "@true-recall/core/integration/device/device-sync.service";
 
 import {
-	countAppliedChanges,
 	CrossDeviceSyncCoordinator,
+	countAppliedChanges,
 	emptySyncResult,
 } from "@true-recall/obsidian/plugin/CrossDeviceSyncCoordinator";
 
