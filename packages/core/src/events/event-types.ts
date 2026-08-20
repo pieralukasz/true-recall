@@ -5,6 +5,7 @@ export interface CardChanges {
 	suspended?: boolean;
 	buried?: boolean;
 	sourceUid?: boolean;
+	userComment?: boolean;
 }
 
 export interface DomainEventMap {

@@ -50,6 +50,15 @@ Text after`;
 		expect(result).not.toContain("example.com");
 	});
 
+	it("preserves image embeds explicitly included in a selection", () => {
+		const input = `![[attachments/diagram.png]]
+*Diagram caption*
+
+![remote](https://example.com/diagram.png)`;
+
+		expect(filterContent(input, { preserveImageEmbeds: true })).toBe(input);
+	});
+
 	it("keeps callout blocks", () => {
 		const input = `> [!info] Important
 > This is a key concept`;
@@ -77,6 +86,15 @@ describe("chunkMarkdown", () => {
 		expect(result.strategy).toBe("single");
 		expect(result.chunks).toHaveLength(1);
 		expect(result.chunks[0]?.content).toBe("Short note with a few words.");
+	});
+
+	it("keeps a selected image embed in the generated chunk", () => {
+		const input = `
+![[attachments/filtr-LC/FiltryLC_symulacja_zasilanie_2.png]]
+*Efekt dołączenia kondensatorów*`;
+		const result = chunkMarkdown(input, { preserveImageEmbeds: true });
+
+		expect(result.chunks[0]?.content).toBe(input.trim());
 	});
 
 	it("returns single strategy for content under 3000 words", () => {

@@ -6,6 +6,7 @@ export { FSRSVisualizationSection } from "./FSRSVisualizationSection";
 export { LoadBalanceSection } from "./LoadBalanceSection";
 export { ParametersSection } from "./ParametersSection";
 export { PresetSection } from "./PresetSection";
+export { RModeSection } from "./RModeSection";
 export { ScheduledBreaksSection } from "./ScheduledBreaksSection";
 export { SchedulingSection } from "./SchedulingSection";
 export { SiblingDisperseSection } from "./SiblingDisperseSection";

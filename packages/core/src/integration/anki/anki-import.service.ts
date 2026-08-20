@@ -346,6 +346,8 @@ export class AnkiImportService {
 					updatedAt: Date.now(),
 					deletedAt: null,
 					presetName: null,
+					deviceId: null,
+					reviewKind: "review",
 				});
 			}
 		}

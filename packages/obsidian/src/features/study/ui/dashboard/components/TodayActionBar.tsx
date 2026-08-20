@@ -10,6 +10,8 @@ import type { TodayProgress } from "../types";
 
 interface TodayActionBarProps {
 	totalDue: number;
+	/** Cards worth reviewing now. Set only in R-Mode. */
+	totalPool?: number;
 	totalNew: number;
 	totalLearning: number;
 	estimatedMinutes: number;
@@ -18,17 +20,28 @@ interface TodayActionBarProps {
 
 export function TodayActionBar({
 	totalDue,
+	totalPool,
 	totalNew,
 	totalLearning,
 	estimatedMinutes,
 	progress,
 }: TodayActionBarProps) {
 	const plugin = usePlugin();
+	const rModeEnabled = plugin.settings.rMode.enabled;
 
-	const totalActionable = totalDue + totalNew + totalLearning;
+	// In R-Mode `totalDue` is the selected review plan; `totalPool` is only the
+	// larger set the algorithm can draw from. Do not advertise the whole pool as
+	// the size of the session.
+	const reviewable = totalDue;
+	const totalActionable = reviewable + totalNew + totalLearning;
 
 	const handleStartReview = () => {
-		void plugin.startReview({ mode: "all_due" });
+		void plugin.startReview({
+			mode: "all_due",
+			rModeTargetCount: rModeEnabled
+				? plugin.settings.rMode.defaultSessionSize
+				: undefined,
+		});
 	};
 	const handleCustomStudy = () => {
 		void plugin.openCustomStudyModal();
@@ -45,12 +58,21 @@ export function TodayActionBar({
 			? `Review: ${totalActionable} (~${formatEstimatedTime(estimatedMinutes)})`
 			: "All caught up!";
 
-	const counts: { value: number; label: string; colorCls: string }[] = [];
-	if (totalDue > 0)
+	const counts: {
+		value: number;
+		label: string;
+		colorCls: string;
+		title?: string;
+	}[] = [];
+	if (reviewable > 0)
 		counts.push({
-			value: totalDue,
-			label: "due",
+			value: reviewable,
+			label: rModeEnabled ? "review" : "due",
 			colorCls: FSRS_COLORS.review.textCls,
+			title:
+				rModeEnabled && totalPool !== undefined
+					? `${reviewable} selected from ${totalPool} currently available review cards`
+					: undefined,
 		});
 	if (totalNew > 0)
 		counts.push({
@@ -69,47 +91,82 @@ export function TodayActionBar({
 
 	return (
 		<div class="ep:flex ep:flex-col ep:gap-3 ep:rounded-lg ep:border ep:border-obs-border/30 ep:bg-surface-raised ep:shadow-raised ep:p-4">
-			{/* Top row: count cards + button */}
-			<div
-				class={
-					mobile
-						? "ep:flex ep:flex-col ep:gap-3"
-						: "ep:flex ep:items-center ep:justify-between ep:gap-3"
-				}
-			>
-				<div class="ep:flex ep:flex-wrap ep:items-center ep:gap-2">
-					{counts.map((c) => (
-						<div
-							key={c.label}
-							class="ep:flex ep:flex-col ep:items-center ep:rounded-md ep:bg-obs-secondary/50 ep:px-3 ep:py-1.5"
-						>
-							<span class={`ep:text-lg ep:font-semibold ${c.colorCls}`}>
-								{c.value}
+			{/* Top row: counts + buttons. Mobile shows counts as one inline
+			    line (stacked stat cards look broken with a single entry) and
+			    stretches the buttons across the full width. */}
+			{mobile ? (
+				<div class="ep:flex ep:flex-col ep:gap-3">
+					<div class="ep:flex ep:flex-wrap ep:items-baseline ep:gap-x-4 ep:gap-y-1">
+						{counts.map((c) => (
+							<span key={c.label} title={c.title} class="ep:text-sm">
+								<span class={`ep:text-lg ep:font-semibold ${c.colorCls}`}>
+									{c.value}
+								</span>{" "}
+								<span class="ep:text-obs-muted">{c.label}</span>
 							</span>
-							<span class="ep:text-ui-smaller ep:text-obs-muted">
-								{c.label}
+						))}
+						{totalActionable === 0 && (
+							<span class="ep:text-sm ep:text-obs-muted">
+								Nothing to review
 							</span>
-						</div>
-					))}
-					{totalActionable === 0 && (
-						<span class="ep:text-sm ep:text-obs-muted">Nothing to review</span>
-					)}
-				</div>
+						)}
+					</div>
 
-				<div class="ep:flex ep:items-center ep:gap-2">
-					<ActionButton
-						label="Custom study"
-						variant="secondary"
-						onClick={handleCustomStudy}
-					/>
-					<ActionButton
-						label={reviewLabel}
-						variant="primary"
-						onClick={handleStartReview}
-						disabled={totalActionable === 0}
-					/>
+					<div class="ep:flex ep:gap-2">
+						<ActionButton
+							label="Custom study"
+							variant="secondary"
+							onClick={handleCustomStudy}
+							class="ep:flex-1 ep:min-h-11 ep:whitespace-nowrap"
+						/>
+						<ActionButton
+							label={reviewLabel}
+							variant="primary"
+							onClick={handleStartReview}
+							disabled={totalActionable === 0}
+							class="ep:flex-[2] ep:min-h-11"
+						/>
+					</div>
 				</div>
-			</div>
+			) : (
+				<div class="ep:flex ep:items-center ep:justify-between ep:gap-3">
+					<div class="ep:flex ep:flex-wrap ep:items-center ep:gap-2">
+						{counts.map((c) => (
+							<div
+								key={c.label}
+								title={c.title}
+								class="ep:flex ep:flex-col ep:items-center ep:rounded-md ep:bg-obs-secondary/50 ep:px-3 ep:py-1.5"
+							>
+								<span class={`ep:text-lg ep:font-semibold ${c.colorCls}`}>
+									{c.value}
+								</span>
+								<span class="ep:text-ui-smaller ep:text-obs-muted">
+									{c.label}
+								</span>
+							</div>
+						))}
+						{totalActionable === 0 && (
+							<span class="ep:text-sm ep:text-obs-muted">
+								Nothing to review
+							</span>
+						)}
+					</div>
+
+					<div class="ep:flex ep:items-center ep:gap-2">
+						<ActionButton
+							label="Custom study"
+							variant="secondary"
+							onClick={handleCustomStudy}
+						/>
+						<ActionButton
+							label={reviewLabel}
+							variant="primary"
+							onClick={handleStartReview}
+							disabled={totalActionable === 0}
+						/>
+					</div>
+				</div>
+			)}
 
 			{/* Progress bar */}
 			<div class="ep:flex ep:flex-col ep:gap-1.5">

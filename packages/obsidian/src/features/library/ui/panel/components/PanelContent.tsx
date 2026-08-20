@@ -1,7 +1,8 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { useEffect, useMemo, useRef, useState } from "preact/hooks";
+import type { TFile } from "obsidian";
+import { useCallback } from "preact/hooks";
 
-import { clearRecentCards } from "@true-recall/core/ai/state/streaming-state";
+import type { FSRSFlashcardItem } from "@true-recall/core/types/fsrs/card.types";
 
 import {
 	EmptyState,
@@ -10,121 +11,92 @@ import {
 import { PanelCard } from "@true-recall/obsidian/features/library/ui/panel/components/PanelCard";
 import { PanelEmptyState } from "@true-recall/obsidian/features/library/ui/panel/components/PanelEmptyState";
 import { PanelIOGroup } from "@true-recall/obsidian/features/library/ui/panel/components/PanelIOGroup";
-import {
-	StreamingSection,
-	useStreamingCardState,
-} from "@true-recall/obsidian/features/library/ui/panel/components/StreamingSection";
-import { groupCards } from "@true-recall/obsidian/features/library/ui/panel/group-cards";
+import { StreamingSection } from "@true-recall/obsidian/features/library/ui/panel/components/StreamingSection";
+import type { PanelItem } from "@true-recall/obsidian/features/library/ui/panel/group-cards";
 import { usePanelScroll } from "@true-recall/obsidian/features/library/ui/panel/hooks/PanelScrollContext";
-import { usePanelStore } from "@true-recall/obsidian/features/library/ui/panel/hooks/usePanelStore";
-import { matchesCardSearch } from "@true-recall/obsidian/features/library/ui/panel/utils/search-query.utils";
+import type { PanelCardActionHandlers } from "@true-recall/obsidian/features/library/ui/panel/panel.types";
+import { getPanelItemRepresentative } from "@true-recall/obsidian/features/library/ui/panel/utils/panel-list.utils";
 
-export function PanelContent() {
-	const {
-		flashcardInfo,
-		currentFile,
-		selectionMode,
-		selectedCardIds,
-		expandedCardIds,
-		cardsWithFsrs,
-		searchQuery,
-		activeViewContext,
-	} = usePanelStore();
+interface PanelContentProps {
+	currentFile: TFile | null;
+	activeViewContext: string | null;
+	hasFlashcards: boolean;
+	items: PanelItem[];
+	fsrsMap: Map<string, FSRSFlashcardItem>;
+	selectedCardIds: Set<string>;
+	isSelectionMode: boolean;
+	searchQuery: string;
+	dayStartHour: number;
+	isStreamingForFile: boolean;
+	actions: PanelCardActionHandlers;
+	onResetList: () => void;
+}
 
+export function PanelContent({
+	currentFile,
+	activeViewContext,
+	hasFlashcards,
+	items,
+	fsrsMap,
+	selectedCardIds,
+	isSelectionMode,
+	searchQuery,
+	dayStartHour,
+	isStreamingForFile,
+	actions,
+	onResetList,
+}: PanelContentProps) {
 	const { scrollRef } = usePanelScroll();
-
-	const fsrsMap = useMemo(
-		() => new Map(cardsWithFsrs.map((c) => [c.id, c])),
-		[cardsWithFsrs],
+	const getItemKey = useCallback(
+		(index: number) => getPanelItemRepresentative(items[index] as PanelItem).id,
+		[items],
 	);
-
-	const streaming = useStreamingCardState();
-	const isStreamingForFile =
-		streaming.isGenerating && streaming.notePath === currentFile?.path;
-	const { recentCardIds } = streaming;
-
-	const allFlashcards = useMemo(() => {
-		const flashcards = flashcardInfo?.exists ? flashcardInfo.flashcards : [];
-		if (!isStreamingForFile || streaming.completedCards.length === 0)
-			return flashcards;
-		const existingIds = new Set(flashcards.map((c) => c.id));
-		const newCards = streaming.completedCards.filter(
-			(c: { id: string }) => !existingIds.has(c.id),
-		);
-		if (newCards.length === 0) return flashcards;
-		return [...flashcards, ...newCards];
-	}, [flashcardInfo, isStreamingForFile, streaming.completedCards]);
-
-	const items = useMemo(
-		() => groupCards(allFlashcards, fsrsMap),
-		[allFlashcards, fsrsMap],
-	);
-
-	const [debouncedSearch, setDebouncedSearch] = useState(searchQuery);
-	const debounceRef = useRef<number>();
-	useEffect(() => {
-		debounceRef.current = window.setTimeout(
-			() => setDebouncedSearch(searchQuery),
-			150,
-		);
-		return () => window.clearTimeout(debounceRef.current);
-	}, [searchQuery]);
-
-	const filteredItems = useMemo(() => {
-		if (!debouncedSearch.trim()) return items;
-		return items.filter((item) => {
-			if (item.type === "io-group") {
-				return item.cards.some((c) =>
-					matchesCardSearch(c.question, c.answer, debouncedSearch),
-				);
-			}
-			return matchesCardSearch(
-				item.card.question,
-				item.card.answer,
-				debouncedSearch,
-			);
-		});
-	}, [items, debouncedSearch]);
-
-	useEffect(() => {
-		if (!streaming.isGenerating && recentCardIds.size > 0) {
-			const timer = window.setTimeout(() => clearRecentCards(), 1000);
-			return () => window.clearTimeout(timer);
-		}
-		return undefined;
-	}, [streaming.isGenerating, recentCardIds.size]);
-
 	const virtualizer = useVirtualizer({
-		count: filteredItems.length,
+		count: items.length,
 		getScrollElement: () => scrollRef.current,
-		estimateSize: () => 56,
-		overscan: 5,
+		getItemKey,
+		estimateSize: () => 44,
+		overscan: 6,
 	});
 
 	if (!currentFile) {
-		if (activeViewContext) {
-			return (
-				<EmptyState
-					message={`${activeViewContext} is active. Open a note to see its flashcards.`}
-				/>
-			);
-		}
-		return <EmptyState message={EmptyStateMessages.NO_FILE} />;
+		return activeViewContext ? (
+			<EmptyState
+				message={`${activeViewContext} is active. Open a note to see its flashcards.`}
+			/>
+		) : (
+			<EmptyState message={EmptyStateMessages.NO_FILE} />
+		);
 	}
 
 	if (currentFile.extension !== "md") {
 		return <EmptyState message={EmptyStateMessages.NOT_MARKDOWN} />;
 	}
 
-	if (!flashcardInfo?.exists && !isStreamingForFile) {
-		return <PanelEmptyState />;
+	if (!hasFlashcards && !isStreamingForFile) return <PanelEmptyState />;
+
+	if (items.length === 0 && !isStreamingForFile) {
+		return (
+			<div class="ep:flex ep:h-full ep:flex-col ep:items-center ep:justify-center ep:gap-3 ep:px-5 ep:text-center">
+				<div class="ep:text-ui-small ep:font-medium ep:text-obs-normal">
+					No Matching Cards
+				</div>
+				<div class="ep:text-ui-smaller ep:text-obs-muted">
+					Clear the search or filters to show this note’s cards.
+				</div>
+				<button
+					type="button"
+					class="ep:rounded-md ep:border ep:border-obs-border ep:bg-transparent ep:px-3 ep:py-1.5 ep:text-ui-small ep:text-obs-normal ep:cursor-pointer ep:touch-manipulation ep:hover:bg-obs-modifier-hover"
+					onClick={onResetList}
+				>
+					Clear Search & Filters
+				</button>
+			</div>
+		);
 	}
 
-	const filePath = currentFile.path;
-	const isSelecting = selectionMode === "selecting";
-
 	return (
-		<div class="ep:flex ep:flex-col">
+		<div class="ep:flex ep:flex-col" role="list" aria-label="Cards">
 			<div
 				style={{
 					height: `${virtualizer.getTotalSize()}px`,
@@ -133,7 +105,7 @@ export function PanelContent() {
 				}}
 			>
 				{virtualizer.getVirtualItems().map((virtualRow) => {
-					const item = filteredItems[virtualRow.index];
+					const item = items[virtualRow.index];
 					if (!item) return null;
 
 					return (
@@ -141,6 +113,7 @@ export function PanelContent() {
 							key={virtualRow.key}
 							ref={virtualizer.measureElement}
 							data-index={virtualRow.index}
+							role="listitem"
 							style={{
 								position: "absolute",
 								top: 0,
@@ -153,30 +126,34 @@ export function PanelContent() {
 								<PanelIOGroup
 									cards={item.cards}
 									fsrsCards={item.fsrsCards}
-									filePath={filePath}
-									isExpanded={expandedCardIds.has(item.cards[0]?.id ?? "")}
-									isSelected={item.cards.every((c) =>
-										selectedCardIds.has(c.id),
+									selectedCount={item.cards.reduce(
+										(count, card) =>
+											count + (selectedCardIds.has(card.id) ? 1 : 0),
+										0,
 									)}
-									isSelectionMode={isSelecting}
+									isSelectionMode={isSelectionMode}
+									actions={actions}
+									sourcePath={currentFile.path}
 								/>
 							) : (
 								<PanelCard
 									card={item.card}
 									fsrsCard={fsrsMap.get(item.card.id)}
-									filePath={filePath}
-									isExpanded={expandedCardIds.has(item.card.id)}
 									isSelected={selectedCardIds.has(item.card.id)}
-									isSelectionMode={isSelecting}
+									isSelectionMode={isSelectionMode}
+									searchQuery={searchQuery}
+									dayStartHour={dayStartHour}
+									sourcePath={currentFile.path}
+									actions={actions}
 								/>
 							)}
 						</div>
 					);
 				})}
 			</div>
-			{isStreamingForFile && (
-				<StreamingSection currentFilePath={currentFile?.path ?? null} />
-			)}
+			{isStreamingForFile ? (
+				<StreamingSection currentFilePath={currentFile.path} />
+			) : null}
 		</div>
 	);
 }

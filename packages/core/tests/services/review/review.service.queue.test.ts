@@ -588,6 +588,26 @@ describe("Anki-style custom study queues", () => {
 		expect(queue.map((card) => card.id)).toEqual(["forgotten"]);
 	});
 
+	it("reviews only actual Learning and Relearning cards in due order", () => {
+		const cards = [
+			createCardWithDue("review", State.Review, -60),
+			createCardWithDue("learning-later", State.Learning, 30),
+			createCardWithDue("relearning-now", State.Relearning, -5),
+			createCardWithDue("new", State.New, 0),
+		];
+
+		const queue = reviewService.buildQueue(cards, fsrsService, {
+			...baseOptions,
+			reviewedToday: new Set(["learning-later", "relearning-now"]),
+			customStudy: { kind: "actual-learning" },
+		});
+
+		expect(queue.map((card) => card.id)).toEqual([
+			"relearning-now",
+			"learning-later",
+		]);
+	});
+
 	it("includes only non-new cards inside the review-ahead window", () => {
 		const cards = [
 			createCardWithDue("tomorrow", State.Review, 24 * 60),

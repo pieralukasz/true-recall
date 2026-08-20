@@ -2,6 +2,14 @@ import { BUILTIN_SLUGS } from "../../types/note.types";
 import { getBuiltinNoteTypes } from "./modules/NoteTypeActions";
 import type { DatabaseLike } from "./sqlite.types";
 
+/**
+ * Bump on any schema change a device-sync merge must know about.
+ * Merging refuses input from databases with a NEWER version (their rows may
+ * carry columns this build does not understand); older versions merge fine.
+ * v2: review_log gains device_id and review_kind.
+ */
+export const CURRENT_SCHEMA_VERSION = 2;
+
 export class SqliteSchemaManager {
 	constructor(private db: DatabaseLike) {}
 
@@ -30,6 +38,7 @@ export class SqliteSchemaManager {
                 tags TEXT DEFAULT '',
                 source_uid TEXT,
                 source_text TEXT,
+				user_comment TEXT,
                 created_via TEXT DEFAULT 'manual',
                 created_at INTEGER,
                 updated_at INTEGER,
@@ -86,6 +95,8 @@ export class SqliteSchemaManager {
                 updated_at INTEGER,
                 deleted_at INTEGER DEFAULT NULL,
                 preset_name TEXT,
+                device_id TEXT,
+                review_kind TEXT,
                 FOREIGN KEY (card_id) REFERENCES cards(id) ON DELETE CASCADE
             );
 
@@ -153,7 +164,7 @@ export class SqliteSchemaManager {
                 value TEXT
             );
 
-            INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '1');
+            INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '${CURRENT_SCHEMA_VERSION}');
             INSERT OR REPLACE INTO meta (key, value) VALUES ('created_at', datetime('now'));
         `);
 
@@ -165,6 +176,21 @@ export class SqliteSchemaManager {
 		}
 		try {
 			this.db.run(`ALTER TABLE assistant_tasks ADD COLUMN thread_id TEXT`);
+		} catch {
+			// Column already exists — expected for new installs
+		}
+		try {
+			this.db.run(`ALTER TABLE notes ADD COLUMN user_comment TEXT`);
+		} catch {
+			// Column already exists — expected for new installs
+		}
+		try {
+			this.db.run(`ALTER TABLE review_log ADD COLUMN device_id TEXT`);
+		} catch {
+			// Column already exists — expected for new installs
+		}
+		try {
+			this.db.run(`ALTER TABLE review_log ADD COLUMN review_kind TEXT`);
 		} catch {
 			// Column already exists — expected for new installs
 		}

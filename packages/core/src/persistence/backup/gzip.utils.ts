@@ -9,9 +9,13 @@ import pako from "pako";
 
 async function pipeThrough(
 	data: Uint8Array,
-	transform: ReadableWritablePair<Uint8Array, Uint8Array>,
+	transform: CompressionStream | DecompressionStream,
 ): Promise<Uint8Array> {
-	const stream = new Blob([toBlobPart(data)]).stream().pipeThrough(transform);
+	// The DOM lib types the native streams' writable side as BufferSource, which
+	// does not line up with the Uint8Array chunks a Blob stream emits.
+	const stream = new Blob([toBlobPart(data)])
+		.stream()
+		.pipeThrough(transform as ReadableWritablePair<Uint8Array, Uint8Array>);
 	return new Uint8Array(await new Response(stream).arrayBuffer());
 }
 

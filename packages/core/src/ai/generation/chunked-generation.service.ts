@@ -10,7 +10,6 @@ import {
 	type ChunkingResult,
 	chunkMarkdown,
 } from "../parsing/markdown-chunker";
-import type { ExistingCardContext } from "../prompts/existing-cards-block";
 import {
 	buildGenerationPrompt,
 	type GenerationPromptMetadata,
@@ -27,6 +26,7 @@ import { resolveGenerationTarget } from "./preset-resolver";
 import { processCardEvents } from "./process-card-events";
 import {
 	type StreamingFlashcardManager,
+	type StreamingGenerationOptions,
 	type StreamingGenerationResult,
 	StreamingGenerationService,
 	type StreamingSourceFile,
@@ -39,6 +39,11 @@ export interface ChunkedGenerationResult extends StreamingGenerationResult {
 	failedChunks: number;
 	totalChunks: number;
 	errors: string[];
+}
+
+export interface ChunkedGenerationOptions extends StreamingGenerationOptions {
+	/** Keep image Markdown when the user explicitly included it in a selection. */
+	preserveImageEmbeds?: boolean;
 }
 
 /**
@@ -65,7 +70,7 @@ export class ChunkedGenerationService {
 		content: string,
 		sourceFile: StreamingSourceFile,
 		presetId: string,
-		options?: { existingCards?: ExistingCardContext[]; contextText?: string },
+		options?: ChunkedGenerationOptions,
 		confirmLargeNote?: ConfirmLargeNote,
 	): Promise<ChunkedGenerationResult> {
 		const settings = this.getSettings();
@@ -75,7 +80,9 @@ export class ChunkedGenerationService {
 			presetId,
 		);
 
-		const chunkingResult = chunkMarkdown(content);
+		const chunkingResult = chunkMarkdown(content, {
+			preserveImageEmbeds: options?.preserveImageEmbeds,
+		});
 
 		if (chunkingResult.strategy === "single") {
 			const firstChunk = chunkingResult.chunks[0];
@@ -117,10 +124,7 @@ export class ChunkedGenerationService {
 		sourceFile: StreamingSourceFile,
 		preset: GenerationPreset,
 		noteType: NoteType,
-		options?: {
-			existingCards?: ExistingCardContext[];
-			contextText?: string;
-		},
+		options?: ChunkedGenerationOptions,
 		confirmLargeNote?: ConfirmLargeNote,
 	): Promise<ChunkedGenerationResult> {
 		const { chunks, totalWords, estimatedTokens } = chunkingResult;
@@ -238,7 +242,9 @@ export class ChunkedGenerationService {
 		);
 		const getNoteType = (slug: string) =>
 			this.flashcardManager.getNoteTypeBySlug?.(slug) ?? null;
-		const parser = new IncrementalFlashcardParser(getNoteType);
+		const parser = new IncrementalFlashcardParser(getNoteType, {
+			allowEmptyAnswer: preset.allowEmptyAnswer,
+		});
 
 		let createdCount = 0;
 		let duplicateCount = 0;

@@ -78,7 +78,7 @@ export class NoteTypeActions {
 		return (
 			this.db.get<{ id: string }>(`SELECT id FROM note_types WHERE id = ?`, [
 				id,
-			]) !== undefined
+			]) !== null
 		);
 	}
 
@@ -97,18 +97,20 @@ export class NoteTypeActions {
 				updated_at = excluded.updated_at,
 				deleted_at = excluded.deleted_at
 			 WHERE COALESCE(excluded.updated_at, 0) > COALESCE(note_types.updated_at, 0)`,
+			// `?? null` everywhere: rows read via SELECT * from an older remote
+			// schema can be missing columns entirely, and undefined cannot bind.
 			[
 				row.id,
 				row.name,
 				row.type,
 				row.fields_json,
 				row.templates_json,
-				row.css,
+				row.css ?? null,
 				row.is_builtin,
-				row.slug,
-				row.created_at,
-				row.updated_at,
-				row.deleted_at,
+				row.slug ?? null,
+				row.created_at ?? null,
+				row.updated_at ?? null,
+				row.deleted_at ?? null,
 			],
 		);
 		return this.db.getRowsModified() > 0;

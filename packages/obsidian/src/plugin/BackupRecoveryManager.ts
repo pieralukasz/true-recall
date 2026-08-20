@@ -3,6 +3,7 @@ import { type App, normalizePath } from "obsidian";
 import type { BackgroundBackupManager } from "@true-recall/core/persistence/backup/background-backup.service";
 import type { BackupService } from "@true-recall/core/persistence/backup/backup.service";
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite";
+import { writeDbFileAtomically } from "@true-recall/core/persistence/sqlite/atomic-db-file";
 import {
 	decodeBackupToSqliteBytes,
 	isSupportedBackupPath,
@@ -11,9 +12,12 @@ import {
 } from "@true-recall/core/persistence/sqlite/recovery.utils";
 import {
 	DB_FOLDER,
+	getBackupFolderPath,
 	getDeviceDbFilename,
+	getLegacyBackupFolderPath,
 } from "@true-recall/core/persistence/sqlite/sqlite.types";
 
+import { ObsidianPersistence } from "@true-recall/obsidian/adapters/ObsidianPersistence";
 import { RestoreBackupModal } from "@true-recall/obsidian/modals/integration/RestoreBackupModal";
 import {
 	NOTIFICATION_DURATION,
@@ -33,18 +37,28 @@ export class BackupRecoveryManager {
 	) {}
 
 	async tryAutoRecoverFromBackup(deviceId: string): Promise<boolean> {
-		const backupFolder = normalizePath(`${DB_FOLDER}/backups/${deviceId}`);
+		// New backups live in the .nosync folder; older archives may still sit
+		// in the legacy folder, so recovery scans both.
+		const backupFolders = [
+			normalizePath(getBackupFolderPath(deviceId)),
+			normalizePath(getLegacyBackupFolderPath(deviceId)),
+		];
 		const dbPath = normalizePath(
 			`${DB_FOLDER}/${getDeviceDbFilename(deviceId)}`,
 		);
 
 		try {
-			const folderExists = await this.app.vault.adapter.exists(backupFolder);
-			if (!folderExists) return false;
+			const candidateFiles: string[] = [];
+			for (const backupFolder of backupFolders) {
+				const folderExists = await this.app.vault.adapter.exists(backupFolder);
+				if (!folderExists) continue;
+				const listing = await this.app.vault.adapter.list(backupFolder);
+				candidateFiles.push(...listing.files);
+			}
+			if (candidateFiles.length === 0) return false;
 
-			const listing = await this.app.vault.adapter.list(backupFolder);
 			const backupFiles = sortBackupPathsNewest(
-				listing.files.filter((f) => isSupportedBackupPath(f)),
+				candidateFiles.filter((f) => isSupportedBackupPath(f)),
 			);
 
 			for (const backupPath of backupFiles) {
@@ -66,7 +80,10 @@ export class BackupRecoveryManager {
 					if (brokenExists) {
 						await this.app.vault.adapter.rename(dbPath, corruptedPath);
 					}
-					await this.app.vault.adapter.writeBinary(
+					// Atomic swap: an interrupted recovery write must not leave a
+					// truncated live database behind.
+					await writeDbFileAtomically(
+						new ObsidianPersistence(this.app),
 						dbPath,
 						toExactBackupBuffer(sqliteBytes),
 					);

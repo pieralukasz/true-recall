@@ -18,6 +18,13 @@ import type {
 import { mountPreact } from "@true-recall/obsidian/preact";
 
 import type TrueRecallPlugin from "../../main";
+import { computeFitOuterHeight } from "./popout-fit";
+import {
+	applyPopoutHeight,
+	centerPopoutWindow,
+	getPopoutOuterHeight,
+	lockPopoutResize,
+} from "./popout-helpers";
 import {
 	consumeQuickNoteEditorRequest,
 	type QuickNoteEditorRequestId,
@@ -49,6 +56,8 @@ export class QuickNoteEditorView extends ItemView {
 	private unregisterWindowMigrated: (() => void) | null = null;
 	private beforeUnloadHandler: ((e: BeforeUnloadEvent) => void) | null = null;
 	private boundWindow: Window | null = null;
+	private resizeGuardHandler: (() => void) | null = null;
+	private resizeGuardWindow: Window | null = null;
 	private isConfirmingDiscard = false;
 
 	constructor(leaf: WorkspaceLeaf, plugin: TrueRecallPlugin) {
@@ -186,6 +195,7 @@ export class QuickNoteEditorView extends ItemView {
 		// Center immediately on mount, before any measurement, so the window
 		// never visibly flashes in its default (top-left) Electron position.
 		this.centerWindowOnScreen();
+		this.lockWindowSize();
 		this.startContentSizeTracking();
 		this.installBeforeUnloadGuard();
 	}
@@ -193,21 +203,18 @@ export class QuickNoteEditorView extends ItemView {
 	private centerWindowOnScreen(): void {
 		const win = this.getPopoutWindow();
 		if (!win) return;
-		const screen = win.screen;
-		if (!screen) return;
-		const extScreen = screen as Screen & {
-			availLeft?: number;
-			availTop?: number;
-		};
-		const availLeft = extScreen.availLeft ?? 0;
-		const availTop = extScreen.availTop ?? 0;
-		const availWidth = screen.availWidth ?? win.outerWidth;
-		const availHeight = screen.availHeight ?? win.outerHeight;
-		const w = win.outerWidth;
-		const h = win.outerHeight;
-		const left = availLeft + Math.max(0, Math.round((availWidth - w) / 2));
-		const top = availTop + Math.max(0, Math.round((availHeight - h) / 2));
-		win.moveTo(left, top);
+		centerPopoutWindow(win);
+	}
+
+	/**
+	 * Takes the window off the user's resize handles. The editor owns its own
+	 * height and re-fits whenever the fields change, so a hand-dragged size is
+	 * only ever dead space.
+	 */
+	private lockWindowSize(): void {
+		const win = this.getPopoutWindow();
+		if (!win) return;
+		lockPopoutResize(win);
 	}
 
 	private startContentSizeTracking(): void {
@@ -230,6 +237,33 @@ export class QuickNoteEditorView extends ItemView {
 		});
 		this.resizeObserver = observer;
 		this.observeContentSizeTargets();
+		this.installResizeGuard(win);
+	}
+
+	/**
+	 * Re-fits the window whenever something outside this view resizes it —
+	 * Obsidian restoring the size the popout was last left at, or a height
+	 * drag/zoom (lockPopoutResize only pins the width, so the zoom traffic
+	 * light stays enabled). `resizeWindowToContent` is a no-op when the size
+	 * already matches, so our own resizes settle instead of ping-ponging.
+	 */
+	private installResizeGuard(win: Window): void {
+		this.uninstallResizeGuard();
+		const handler = () => this.scheduleResizeToContent();
+		win.addEventListener("resize", handler);
+		this.resizeGuardHandler = handler;
+		this.resizeGuardWindow = win;
+	}
+
+	private uninstallResizeGuard(): void {
+		if (this.resizeGuardHandler && this.resizeGuardWindow) {
+			this.resizeGuardWindow.removeEventListener(
+				"resize",
+				this.resizeGuardHandler,
+			);
+		}
+		this.resizeGuardHandler = null;
+		this.resizeGuardWindow = null;
 	}
 
 	private observeContentSizeTargets(): void {
@@ -250,6 +284,7 @@ export class QuickNoteEditorView extends ItemView {
 	}
 
 	private stopContentSizeTracking(): void {
+		this.uninstallResizeGuard();
 		this.resizeObserver?.disconnect();
 		this.resizeObserver = null;
 		if (this.resizeRafId !== null) {
@@ -303,34 +338,31 @@ export class QuickNoteEditorView extends ItemView {
 			editor?.offsetHeight ?? 0,
 			editor?.scrollHeight ?? 0,
 		);
-		const natural = dragBar.offsetHeight + contentHeight + bodyPadding;
-		if (!Number.isFinite(natural)) return;
-
-		const chrome = Math.max(0, win.outerHeight - win.innerHeight);
-		const target = Math.round(natural + chrome);
-
-		const screen = win.screen;
-		const max = screen?.availHeight ?? 1200;
-		const clamped = Math.max(MIN_WINDOW_HEIGHT, Math.min(max, target));
-		if (!Number.isFinite(clamped)) return;
+		const target = computeFitOuterHeight({
+			dragBarHeight: dragBar.offsetHeight,
+			contentHeight,
+			bodyPadding,
+			viewportHeight: win.innerHeight,
+			viewContentHeight: this.contentEl.offsetHeight,
+			outerWidth: win.outerWidth,
+			innerWidth: win.innerWidth,
+			minOuterHeight: MIN_WINDOW_HEIGHT,
+			maxOuterHeight: win.screen?.availHeight ?? 1200,
+		});
+		if (target === null) return;
 
 		if (
-			Math.abs(clamped - win.outerHeight) < 4 &&
+			Math.abs(target - getPopoutOuterHeight(win)) < 4 &&
 			this.session.hasInitialFitted
 		) {
 			return;
 		}
 
-		const newW = win.outerWidth;
-		const newH = clamped;
-		win.resizeTo(newW, newH);
-
-		// Recenter only on first fit, so subsequent content growth doesn't
+		// Centre only on the first fit, so later content growth doesn't
 		// teleport the window around while the user is typing.
-		if (!this.session.hasInitialFitted) {
-			this.centerWindowOnScreen();
-			this.session.hasInitialFitted = true;
-		}
+		const center = !this.session.hasInitialFitted;
+		applyPopoutHeight(win, target, { center });
+		if (center) this.session.hasInitialFitted = true;
 	}
 
 	private installWindowMigrationGuard(): void {
@@ -340,6 +372,7 @@ export class QuickNoteEditorView extends ItemView {
 			// observers captured against the prior window's globals are stale.
 			this.uninstallBeforeUnloadGuard();
 			if (this.session) {
+				this.lockWindowSize();
 				this.startContentSizeTracking();
 				this.installBeforeUnloadGuard();
 			}

@@ -1,5 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { z } from "zod";
+
 import type { TrueRecallClient } from "../client.js";
 
 // ---------------------------------------------------------------------------
@@ -177,13 +178,22 @@ export function registerTools(
 	client: TrueRecallClient,
 	tools: ToolDef[],
 ): void {
+	// ToolDef deliberately erases each schema to a common runtime shape. Keep
+	// that erasure at the SDK boundary too, otherwise TypeScript recursively
+	// expands every Zod schema in the complete tool registry.
+	const registerTool = server.registerTool.bind(server) as unknown as (
+		name: string,
+		config: { description: string; inputSchema?: Schema },
+		handler: (params: Params) => Promise<ToolResult>,
+	) => void;
+
 	for (const { name, description, inputSchema, handle } of tools) {
 		if (inputSchema) {
-			server.registerTool(name, { description, inputSchema }, (params) =>
+			registerTool(name, { description, inputSchema }, (params) =>
 				handle(params as Params, client),
 			);
 		} else {
-			server.registerTool(name, { description }, () => handle({}, client));
+			registerTool(name, { description }, () => handle({}, client));
 		}
 	}
 }

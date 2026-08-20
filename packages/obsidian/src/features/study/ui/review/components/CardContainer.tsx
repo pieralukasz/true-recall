@@ -19,6 +19,7 @@ import { cn } from "@true-recall/obsidian/utils/cn";
 import { isMobile } from "@true-recall/obsidian/utils/platform";
 
 import { AudioPlayButton } from "./AudioPlayButton";
+import { CardCounters } from "./CardCounters";
 import { NoteReviewRenderer } from "./NoteReviewRenderer";
 import { IOCardRenderer } from "@true-recall/plugins/image-occlusion";
 
@@ -63,6 +64,7 @@ function CardFooter({
 	isAnswerRevealed,
 	presetName,
 	presetOptions,
+	leechThreshold,
 	onPresetChange,
 	onOpenSourceNote,
 }: {
@@ -70,13 +72,15 @@ function CardFooter({
 	isAnswerRevealed: boolean;
 	presetName?: string;
 	presetOptions?: PresetPickerOption[];
+	leechThreshold?: number;
 	onPresetChange?: (presetName: string) => void;
 	onOpenSourceNote?: () => void;
 }) {
-	if (!isAnswerRevealed || (!card.sourceNoteName && !presetName)) return null;
+	if (!isAnswerRevealed) return null;
 
 	return (
 		<div class="ep:flex ep:flex-col ep:items-center ep:gap-4 ep:pt-8">
+			<CardCounters card={card} leechThreshold={leechThreshold} />
 			{card.sourceNoteName && onOpenSourceNote && (
 				<Clickable
 					class="ep:text-obs-faint ep:text-ui-smaller tr-no-faux-underline ep:hover:text-obs-accent tr-hover-faux-underline ep:transition-colors ep:p-0"
@@ -119,6 +123,7 @@ interface CardContainerProps {
 	onOpenSourceNote?: () => void;
 	presetName?: string;
 	presetOptions?: PresetPickerOption[];
+	leechThreshold?: number;
 	onPresetChange?: (presetName: string) => void;
 	typeIn: TypeInState;
 	audioPath?: string;
@@ -172,6 +177,7 @@ export function CardContainer({
 	onOpenSourceNote,
 	presetName,
 	presetOptions,
+	leechThreshold,
 	onPresetChange,
 	typeIn,
 	audioPath,
@@ -222,6 +228,7 @@ export function CardContainer({
 				card={card}
 				presetName={presetName}
 				presetOptions={presetOptions}
+				leechThreshold={leechThreshold}
 				onPresetChange={onPresetChange}
 				onOpenSourceNote={onOpenSourceNote}
 			/>
@@ -250,6 +257,7 @@ export function CardContainer({
 						isAnswerRevealed={isAnswerRevealed}
 						presetName={presetName}
 						presetOptions={presetOptions}
+						leechThreshold={leechThreshold}
 						onPresetChange={onPresetChange}
 						onOpenSourceNote={onOpenSourceNote}
 					/>
@@ -427,6 +435,7 @@ export function CardContainer({
 					isAnswerRevealed={isAnswerRevealed}
 					presetName={presetName}
 					presetOptions={presetOptions}
+					leechThreshold={leechThreshold}
 					onPresetChange={onPresetChange}
 					onOpenSourceNote={onOpenSourceNote}
 				/>

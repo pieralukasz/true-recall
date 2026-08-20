@@ -73,6 +73,7 @@ export interface CreateNoteParams {
 	alwaysTypeIn?: boolean;
 	sourceUid?: string;
 	sourceText?: string;
+	userComment?: string;
 	createdVia?: string;
 	createdAt?: number;
 	/** Silently drop cards whose rendered question already exists (AI path). */
@@ -394,6 +395,12 @@ export class FlashcardManager {
 		return result.affectedCount;
 	}
 
+	/** Ids {@link removeFlashcardsByIdsWithDetails} would delete for this card. */
+	getCascadeDeleteIds(cardId: string): string[] {
+		if (!this.cardRepository) return [];
+		return this.cardRepository.getCascadeDeleteIds(cardId);
+	}
+
 	removeFlashcardsByIdsWithDetails(cardIds: string[]): DeleteFlashcardsResult {
 		if (!this.cardRepository) {
 			return {
@@ -455,11 +462,12 @@ export class FlashcardManager {
 		cardId: string,
 		newQuestion: string,
 		newAnswer: string,
+		options?: { skipDuplicateCheck?: boolean },
 	): void {
 		if (!this.cardRepository) {
 			throw new Error("Store not initialized");
 		}
-		this.cardRepository.updateContent(cardId, newQuestion, newAnswer);
+		this.cardRepository.updateContent(cardId, newQuestion, newAnswer, options);
 	}
 
 	updateClozeTemplate(
@@ -476,6 +484,23 @@ export class FlashcardManager {
 			oldTemplate,
 			newTemplate,
 			sourceNoteName,
+		);
+	}
+
+	restoreClozeTemplate(
+		sourceUid: string,
+		currentTemplate: string,
+		previousTemplate: string,
+		previousSiblingIds: readonly string[],
+	): void {
+		if (!this.cardRepository) {
+			throw new Error("Store not initialized");
+		}
+		this.cardRepository.restoreClozeTemplate(
+			sourceUid,
+			currentTemplate,
+			previousTemplate,
+			previousSiblingIds,
 		);
 	}
 
@@ -553,6 +578,7 @@ export class FlashcardManager {
 			tags: params.alwaysTypeIn ? [FLASHCARD_CONFIG.alwaysTypeInTag] : [],
 			sourceUid: params.sourceUid,
 			sourceText: params.sourceText,
+			userComment: params.userComment?.trim() || undefined,
 			createdVia: params.createdVia ?? "manual",
 		};
 
@@ -670,6 +696,7 @@ export class FlashcardManager {
 				tags: params.alwaysTypeIn ? [FLASHCARD_CONFIG.alwaysTypeInTag] : [],
 				sourceUid: params.sourceUid,
 				sourceText: params.sourceText,
+				userComment: params.userComment?.trim() || undefined,
 				createdVia: params.createdVia ?? "manual",
 			};
 
@@ -821,6 +848,32 @@ export class FlashcardManager {
 		}
 
 		return { updatedCardIds };
+	}
+
+	updateNoteComment(noteId: string, userComment: string): string[] {
+		if (!this.store) {
+			throw new Error("Store not initialized");
+		}
+
+		const note = this.store.notes.getById(noteId);
+		if (!note) {
+			throw new Error(`Note "${noteId}" not found`);
+		}
+
+		const normalizedComment = userComment.trim();
+		this.store.notes.update(noteId, { userComment: normalizedComment });
+		const cardIds = this.store.cards
+			.getCardsByNoteId(noteId)
+			.map((card) => card.id);
+
+		for (const cardId of cardIds) {
+			this.emitEvent("card:updated", {
+				cardId,
+				changes: { userComment: true },
+			});
+		}
+
+		return cardIds;
 	}
 
 	changeNoteType(

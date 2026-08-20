@@ -618,6 +618,34 @@ describe("HierarchyService", () => {
 		});
 	});
 
+	describe("isGraphNode", () => {
+		beforeEach(() => {
+			addMockFile("Project.md", { project: true });
+			addMockFile("Child.md", {
+				parents: ["[[Project]]"],
+				flashcard_uid: "uid-1",
+			});
+			addMockFile("Loose.md", { flashcard_uid: "uid-2" });
+			frontmatterIndex.rebuildIndex();
+		});
+
+		it("reports a note declaring parents as a graph node", () => {
+			expect(service.isGraphNode("Child.md")).toBe(true);
+		});
+
+		it("reports an explicit project as a graph node", () => {
+			expect(service.isGraphNode("Project.md")).toBe(true);
+		});
+
+		it("reports a note with no hierarchy frontmatter as unrelated", () => {
+			expect(service.isGraphNode("Loose.md")).toBe(false);
+		});
+
+		it("reports an unknown path as unrelated", () => {
+			expect(service.isGraphNode("Missing.md")).toBe(false);
+		});
+	});
+
 	describe("explicit project marker (project: true)", () => {
 		it("treats a note with project: true as a root project even without children", () => {
 			addMockFile("MyProject.md", {

@@ -1,9 +1,9 @@
 import { notify } from "@true-recall/obsidian/services/notification.service";
-import { isDesktop } from "@true-recall/obsidian/utils/platform";
-
-import { formatLocalDate } from "@true-recall/core/utils/date.utils";
+import { capabilities, isDesktop } from "@true-recall/obsidian/utils/platform";
+import { ReviewView } from "@true-recall/obsidian/views/review/ReviewView";
 
 import type TrueRecallPlugin from "../main";
+import { countAppliedChanges } from "./CrossDeviceSyncCoordinator";
 import { isPluginEnabled } from "./plugin-utils";
 import {
 	editSelectionAsFlashcard,
@@ -17,12 +17,8 @@ import {
 export function registerCommands(plugin: TrueRecallPlugin): void {
 	plugin.addCommand({
 		id: "open-flashcard-panel",
-		name: "Open flashcard panel",
-		checkCallback: (checking) => {
-			if (!isDesktop()) return false;
-			if (!checking) void plugin.activateView();
-			return true;
-		},
+		name: "Show flashcards for current note",
+		callback: () => void plugin.activateView(),
 	});
 
 	plugin.addCommand({
@@ -47,6 +43,12 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 	});
 
 	plugin.addCommand({
+		id: "toggle-r-mode",
+		name: "Toggle R-Mode (retrievability sessions)",
+		callback: () => void plugin.toggleRMode(),
+	});
+
+	plugin.addCommand({
 		id: "open-dashboard",
 		name: "Open dashboard",
 		callback: () => void plugin.openDashboard(),
@@ -66,7 +68,7 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 		id: "open-card-browser",
 		name: "Open card browser",
 		checkCallback: (checking) => {
-			if (!isDesktop()) return false;
+			if (!capabilities.canUseCardBrowser()) return false;
 			if (!checking) void plugin.openCardBrowser();
 			return true;
 		},
@@ -85,11 +87,7 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 	plugin.addCommand({
 		id: "open-stats",
 		name: "Open statistics",
-		checkCallback: (checking) => {
-			if (!isDesktop()) return false;
-			if (!checking) void plugin.openStats();
-			return true;
-		},
+		callback: () => void plugin.openStats(),
 	});
 
 	plugin.addCommand({
@@ -102,6 +100,12 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 		id: "add-flashcards",
 		name: "Import flashcards",
 		callback: () => plugin.openImportStudio(),
+	});
+
+	plugin.addCommand({
+		id: "add-flashcard",
+		name: "Add flashcard to current note",
+		callback: () => plugin.openQuickNoteEditor(),
 	});
 
 	plugin.addCommand({
@@ -118,6 +122,37 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 		id: "create-backup",
 		name: "Create database backup",
 		callback: () => void plugin.createManualBackup(),
+	});
+
+	plugin.addCommand({
+		id: "sync-devices-now",
+		name: "Sync devices now",
+		checkCallback: (checking) => {
+			if (!plugin.settings.enableDeviceSync || !plugin.syncCoordinator) {
+				return false;
+			}
+			if (!checking) {
+				void plugin.syncCoordinator.syncNow("manual").then((result) => {
+					if (!result) {
+						notify().warning("Device sync failed. See console for details.");
+						return;
+					}
+					if (result.errors.length > 0) {
+						notify().warning(
+							`Sync completed with ${result.errors.length} error(s).`,
+						);
+						return;
+					}
+					const applied = countAppliedChanges(result);
+					notify().info(
+						applied > 0
+							? `Synced ${result.cardsApplied} cards and ${result.reviewLogsApplied} reviews.`
+							: "Everything is up to date.",
+					);
+				});
+			}
+			return true;
+		},
 	});
 
 	plugin.addCommand({
@@ -154,6 +189,12 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 		id: "undo-flashcard-action",
 		name: "Undo last flashcard action",
 		checkCallback: (checking) => {
+			const reviewView = plugin.app.workspace.getActiveViewOfType(ReviewView);
+			if (reviewView) {
+				if (!reviewView.canUndoSessionAction()) return false;
+				if (!checking) void reviewView.undoSessionAction();
+				return true;
+			}
 			if (!plugin.commandService?.canUndo()) return false;
 			if (!checking) {
 				void plugin.commandService.undo();
@@ -166,6 +207,12 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 		id: "redo-flashcard-action",
 		name: "Redo last undone action",
 		checkCallback: (checking) => {
+			const reviewView = plugin.app.workspace.getActiveViewOfType(ReviewView);
+			if (reviewView) {
+				if (!reviewView.canRedoSessionAction()) return false;
+				if (!checking) void reviewView.redoSessionAction();
+				return true;
+			}
 			if (!plugin.commandService?.canRedo()) return false;
 			if (!checking) {
 				void plugin.commandService.redo();
@@ -336,43 +383,4 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 			return true;
 		},
 	});
-
-	plugin.addCommand({
-		id: "easy-day-today",
-		name: "Easy day: today",
-		callback: () => {
-			void markTodayAsEasyDay(plugin);
-		},
-	});
-}
-
-/**
- * Append today to the easy-days list and redistribute immediately, so an
- * unexpectedly busy day can be cleared without opening settings.
- */
-async function markTodayAsEasyDay(plugin: TrueRecallPlugin): Promise<void> {
-	const today = formatLocalDate(new Date());
-	const current = plugin.settings.easyDays ?? {
-		recurringDays: [],
-		specificDates: [],
-	};
-
-	if (current.specificDates.includes(today)) {
-		notify().info(`${today} is already an easy day`);
-		return;
-	}
-
-	plugin.settings.easyDays = {
-		recurringDays: current.recurringDays,
-		specificDates: [...current.specificDates, today].sort(),
-	};
-	await plugin.saveSettings();
-
-	const result = plugin.fsrsHelper?.applyEasyDays({ dryRun: false });
-	const moved = result?.affectedCount ?? 0;
-	if (moved > 0) {
-		notify().success(`Easy day set for ${today}: ${moved} cards moved`);
-	} else {
-		notify().info(`Easy day set for ${today}, no cards needed moving`);
-	}
 }

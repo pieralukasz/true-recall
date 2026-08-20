@@ -1,4 +1,7 @@
 import { useCallback } from "preact/hooks";
+import { State } from "ts-fsrs";
+
+import type { AIWorkflow } from "@true-recall/core/ai/workflows/ai-workflow";
 
 import { DeleteCardCommand } from "@true-recall/obsidian/commands/commands/card-delete.cmd";
 import { ForgetCommand } from "@true-recall/obsidian/commands/commands/card-forget.cmd";
@@ -7,6 +10,7 @@ import {
 	UnsuspendCommand,
 } from "@true-recall/obsidian/commands/commands/card-suspend.cmd";
 import { ChangeNoteTypeCommand } from "@true-recall/obsidian/commands/commands/note-type.cmd";
+import { startCardPolish } from "@true-recall/obsidian/features/library/ui/panel/utils/card-polish.utils";
 import { getSourceNoteNameFromFile } from "@true-recall/obsidian/features/library/ui/panel/utils/panel-helpers";
 import { useApp, usePlugin } from "@true-recall/obsidian/preact";
 
@@ -17,13 +21,22 @@ export function useSelectionActions() {
 	const { preserveScroll } = usePanelScroll();
 	const plugin = usePlugin();
 	const app = useApp();
-	const { flashcardInfo, currentFile, selectedCardIds, panel } =
+	const { flashcardInfo, currentFile, selectedCardIds, cardsWithFsrs, panel } =
 		usePanelStore();
 
 	const handleToggleSelect = useCallback(
 		(cardId: string) => {
 			preserveScroll(() => {
 				panel.toggleCardSelection(cardId);
+			});
+		},
+		[panel, preserveScroll],
+	);
+
+	const handleSetCardsSelected = useCallback(
+		(cardIds: string[], selected: boolean) => {
+			preserveScroll(() => {
+				panel.setCardsSelected(cardIds, selected);
 			});
 		},
 		[panel, preserveScroll],
@@ -40,11 +53,17 @@ export function useSelectionActions() {
 		panel.exitSelectionMode();
 	}, [panel]);
 
+	const handleSelectCards = useCallback(
+		(cardIds: string[]) => {
+			panel.selectAll(cardIds);
+		},
+		[panel],
+	);
+
 	const handleSelectAll = useCallback(() => {
 		if (!flashcardInfo) return;
-		const cardIds = flashcardInfo.flashcards.map((c) => c.id);
-		panel.selectAll(cardIds);
-	}, [panel, flashcardInfo]);
+		handleSelectCards(flashcardInfo.flashcards.map((card) => card.id));
+	}, [flashcardInfo, handleSelectCards]);
 
 	const handleMoveSelected = useCallback(async () => {
 		if (!flashcardInfo || selectedCardIds.size === 0) return;
@@ -210,13 +229,42 @@ export function useSelectionActions() {
 		notify().success(`Unsuspended ${cardIds.length} card(s)`);
 	}, [flashcardInfo, selectedCardIds, plugin, panel]);
 
+	const handlePolishSelected = useCallback(
+		async (workflow: AIWorkflow) => {
+			if (selectedCardIds.size === 0) return;
+			const { notify } = await import(
+				"@true-recall/obsidian/services/notification.service"
+			);
+
+			const selectedCards = cardsWithFsrs.filter((card) =>
+				selectedCardIds.has(card.id),
+			);
+			if (selectedCards.length === 0) return;
+
+			for (const card of selectedCards) {
+				startCardPolish(plugin, workflow, card);
+			}
+			panel.exitSelectionMode();
+			notify().info(
+				`Polishing ${selectedCards.length} card(s) with ${workflow.name}…`,
+			);
+		},
+		[selectedCardIds, cardsWithFsrs, plugin, panel],
+	);
+
 	const handleForgetSelected = useCallback(async () => {
 		if (!flashcardInfo || selectedCardIds.size === 0) return;
 		const { notify } = await import(
 			"@true-recall/obsidian/services/notification.service"
 		);
 
-		const cardIds = Array.from(selectedCardIds);
+		const cardIds = Array.from(selectedCardIds).filter(
+			(cardId) => plugin.cardStore.get(cardId)?.state !== State.New,
+		);
+		if (cardIds.length === 0) {
+			notify().warning("Forget is only available for non-New cards");
+			return;
+		}
 		const cmd = new ForgetCommand(cardIds);
 		await plugin.commandService?.execute(cmd);
 		panel.exitSelectionMode();
@@ -225,8 +273,10 @@ export function useSelectionActions() {
 
 	return {
 		handleToggleSelect,
+		handleSetCardsSelected,
 		handleEnterSelectionMode,
 		handleExitSelectionMode,
+		handleSelectCards,
 		handleSelectAll,
 		handleMoveSelected,
 		handleChangeNoteType,
@@ -234,5 +284,6 @@ export function useSelectionActions() {
 		handleUnsuspendSelected,
 		handleForgetSelected,
 		handleDeleteSelected,
+		handlePolishSelected,
 	};
 }

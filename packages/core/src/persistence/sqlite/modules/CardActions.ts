@@ -95,6 +95,10 @@ export class CardActions {
 		return this.queries.browserQuery(where, params, orderBy, limit, offset);
 	}
 
+	browserQueryIds(where: string, params: (string | number)[]): string[] {
+		return this.queries.browserQueryIds(where, params);
+	}
+
 	browserCount(where: string, params: (string | number)[]): number {
 		return this.queries.browserCount(where, params);
 	}
@@ -216,6 +220,10 @@ export class CardActions {
 		this.writes.softDeleteWithCascade(cardId);
 	}
 
+	restoreWithCascade(cardId: string): void {
+		this.writes.restoreWithCascade(cardId);
+	}
+
 	updateCardDue(cardId: string, newDue: string): void {
 		this.writes.updateCardDue(cardId, newDue);
 	}
@@ -228,6 +236,20 @@ export class CardActions {
 	}
 
 	// ── Sync ──────────────────────────────────────────────────
+
+	applyReplayedScheduling(cardId: string, data: FSRSCardData): void {
+		this.writes.applyReplayedScheduling(cardId, data);
+	}
+
+	getActiveDedupRows(): {
+		id: string;
+		createdAt: number | null;
+		templateOrd: number;
+		sourceUid: string;
+		fieldsJson: string;
+	}[] {
+		return this.queries.getActiveDedupRows();
+	}
 
 	getSyncMetadata(key: string): string | null {
 		return this.writes.getSyncMetadata(key);

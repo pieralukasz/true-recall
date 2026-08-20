@@ -13,10 +13,15 @@ import type {
 	Grade,
 	ReviewResult,
 } from "@true-recall/core/types";
-import type { SessionFilters } from "@true-recall/core/types/review-session.types";
+import type {
+	ReviewSessionTopUp,
+	ReviewSessionTopUpAvailability,
+	SessionFilters,
+} from "@true-recall/core/types/review-session.types";
 import { isPreviewCustomStudy } from "@true-recall/core/types/review-session.types";
 
 import { ObsidianNoteResolver } from "@true-recall/obsidian/adapters/ObsidianNoteResolver";
+import type { CommandService } from "@true-recall/obsidian/commands";
 import { ReviewAnswerCommand } from "@true-recall/obsidian/commands/commands/review-answer.cmd";
 import { G } from "@true-recall/obsidian/data";
 import { Q } from "@true-recall/obsidian/data/queries";
@@ -48,6 +53,7 @@ export class ReviewSessionController {
 	constructor(
 		private readonly plugin: TrueRecallPlugin,
 		private readonly getReview: () => ReviewApi,
+		private readonly commandService: CommandService | null = plugin.commandService,
 	) {
 		this.noteResolver = new ObsidianNoteResolver(plugin.app);
 	}
@@ -87,6 +93,26 @@ export class ReviewSessionController {
 		return {
 			queue,
 			resolvedProjectUids,
+		};
+	}
+
+	buildTopUpSession(
+		filters: SessionFilters,
+		topUp: ReviewSessionTopUp,
+	): BuiltReviewSession {
+		return this.buildSession({ ...filters, topUp });
+	}
+
+	getTopUpAvailability(
+		filters: SessionFilters,
+	): ReviewSessionTopUpAvailability {
+		const count = Number.MAX_SAFE_INTEGER;
+		return {
+			review: this.buildTopUpSession(filters, {
+				kind: "review",
+				count,
+			}).queue.length,
+			new: this.buildTopUpSession(filters, { kind: "new", count }).queue.length,
 		};
 	}
 
@@ -268,7 +294,7 @@ export class ReviewSessionController {
 			buriedSiblings: buriedSiblings.length > 0 ? buriedSiblings : undefined,
 		});
 
-		void this.plugin.commandService?.execute(cmd);
+		void this.commandService?.execute(cmd);
 
 		return {
 			card,

@@ -20,6 +20,10 @@ import type { DeviceDiscoveryService } from "@true-recall/core/integration/devic
 import type { DeviceIdService } from "@true-recall/core/integration/device/device-id.service";
 import { DeviceLockService } from "@true-recall/core/integration/device/device-lock.service";
 import { DeviceSyncService } from "@true-recall/core/integration/device/device-sync.service";
+import { DeviceSyncScheduler } from "@true-recall/core/integration/device/device-sync-scheduler";
+import { MOBILE_SAVE_DEBOUNCE_MS } from "@true-recall/core/persistence/sqlite/sqlite.types";
+import { FSRSService } from "@true-recall/core/services/fsrs/fsrs.service";
+import { FsrsReplayService } from "@true-recall/core/services/fsrs/fsrs-replay.service";
 import { SessionService } from "@true-recall/core/services/review/session.service";
 import type {
 	CardSchedulingMeta,
@@ -28,6 +32,10 @@ import type {
 	TrueRecallSettings,
 } from "@true-recall/core/types";
 import type { SessionConfig } from "@true-recall/core/types/session-config.types";
+import {
+	extractFSRSSettings,
+	extractFSRSSettingsFromPreset,
+} from "@true-recall/core/types/settings.types";
 
 import { ObsidianNoteResolver } from "@true-recall/obsidian/adapters/ObsidianNoteResolver";
 import { ObsidianPersistence } from "@true-recall/obsidian/adapters/ObsidianPersistence";
@@ -38,6 +46,10 @@ import { Q } from "@true-recall/obsidian/data/queries";
 import type { AIWorkspaceMode } from "@true-recall/obsidian/features/assistant/ui/ai-workspace-modes";
 import type { NoteStatusCache } from "@true-recall/obsidian/features/core/cache/note-status-cache.service";
 import { ReviewSessionController } from "@true-recall/obsidian/features/study/services/ReviewSessionController";
+import {
+	createReviewSessionKey,
+	createReviewSessionLabel,
+} from "@true-recall/obsidian/features/study/services/review-session-key";
 import {
 	filtersToViewState,
 	normalizeSessionFilters,
@@ -53,10 +65,11 @@ import {
 } from "@true-recall/obsidian/modals/study/CustomStudyModal";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 import { ProjectManagementService } from "@true-recall/obsidian/services/project-management.service";
+import { setLastMutation } from "@true-recall/obsidian/services/signals";
 import { TrueRecallSettingTab } from "@true-recall/obsidian/settings";
 import type { AppStore } from "@true-recall/obsidian/store";
 import {
-	isDesktop,
+	capabilities,
 	isMobile,
 	isViewAllowedOnCurrentPlatform,
 } from "@true-recall/obsidian/utils/platform";
@@ -81,6 +94,10 @@ import { StatsView } from "@true-recall/obsidian/views/stats/StatsView";
 import { createObsidianAdapters, type ObsidianAdapters } from "./context";
 import type { LocalApiServer } from "./plugin/api/LocalApiServer";
 import type { BackupRecoveryManager } from "./plugin/BackupRecoveryManager";
+import {
+	CrossDeviceSyncCoordinator,
+	emptySyncResult,
+} from "./plugin/CrossDeviceSyncCoordinator";
 import { registerCommands } from "./plugin/PluginCommands";
 import { registerEventHandlers } from "./plugin/PluginEventHandlers";
 import {
@@ -92,6 +109,7 @@ import {
 	activateReviewView,
 	activateView,
 	getView,
+	revealReviewView,
 } from "./plugin/ViewActivator";
 import { AnkiExportModal } from "@true-recall/plugins/anki-import-export/AnkiExportModal";
 import { AnkiImportModal } from "@true-recall/plugins/anki-import-export/AnkiImportModal";
@@ -106,6 +124,9 @@ export default class TrueRecallPlugin extends Plugin {
 	coreApp!: TrueRecallApp;
 
 	// Backward-compat getters — all existing code reads plugin.settings, plugin.cardStore, etc.
+	// Obsidian 1.13 declares `settings?: unknown` as a plain property on Plugin;
+	// we intentionally shadow it with an accessor that delegates to coreApp.
+	// @ts-expect-error TS2611 accessor-over-property override is deliberate
 	get settings(): TrueRecallSettings {
 		return this.coreApp.settings;
 	}
@@ -183,6 +204,8 @@ export default class TrueRecallPlugin extends Plugin {
 	deviceIdService: DeviceIdService | null = null;
 	deviceDiscovery: DeviceDiscoveryService | null = null;
 	private deviceLock: DeviceLockService | null = null;
+	private deviceSyncScheduler: DeviceSyncScheduler | null = null;
+	syncCoordinator: CrossDeviceSyncCoordinator | null = null;
 	deletionHandler: DeletionHandlerService | null = null;
 	commandService: CommandService | null = null;
 	store: AppStore | null = null;
@@ -241,6 +264,11 @@ export default class TrueRecallPlugin extends Plugin {
 				settingsPersistence: new ObsidianSettingsPersistence(this),
 				linkResolver: new ObsidianLinkResolver(this.app),
 				vaultEvents: new ObsidianVaultEventBridge(this.app, this),
+				// Mobile OSes can kill the app without unload events; keep the
+				// window between a review and its disk flush minimal there.
+				storeOptions: isMobile()
+					? { saveDebounceMs: MOBILE_SAVE_DEBOUNCE_MS }
+					: undefined,
 			});
 			await this.coreApp.initialize();
 		} catch (error) {
@@ -305,30 +333,91 @@ export default class TrueRecallPlugin extends Plugin {
 				this.deviceDiscovery &&
 				this.cardStore
 			) {
+				// Replay resolves each log's FSRS settings by preset name; unknown
+				// or missing names fall back to the current default preset.
+				const resolvePresetSettings = (presetName: string | null) => {
+					const preset = presetName
+						? this.settings.fsrsPresets?.find((p) => p.name === presetName)
+						: undefined;
+					return preset
+						? extractFSRSSettingsFromPreset(preset)
+						: extractFSRSSettings(this.settings);
+				};
+				const replayService = new FsrsReplayService(
+					new FSRSService(extractFSRSSettings(this.settings)),
+					resolvePresetSettings,
+				);
 				const syncService = new DeviceSyncService(
 					this.cardStore,
 					this.deviceDiscovery,
 					new ObsidianPersistence(this.app),
+					{
+						getDayStartHour: () => this.settings.dayStartHour,
+						replayService,
+					},
 				);
-				const syncResult = await syncService.syncOnStartup();
-				if (syncResult.errors.length > 0) {
+				this.syncCoordinator = new CrossDeviceSyncCoordinator({
+					runSync: () => syncService.syncOnStartup(),
+					flushLocal: async () => this.cardStore?.saveNow({ bestEffort: true }),
+					onChangesApplied: (result) => {
+						// Patch-first for open views (live review queues evict
+						// remotely deleted cards), then group invalidation.
+						if (result.cardIdsChanged.length > 0) {
+							setLastMutation({
+								type: "bulk",
+								action: "update",
+								cardIds: result.cardIdsChanged,
+							});
+						}
+						this.dataLayer?.invalidateGroups([
+							G.CARDS,
+							G.BROWSER,
+							G.DASHBOARD,
+							G.PANEL,
+							G.REVIEW,
+							G.STATS,
+						]);
+					},
+				});
+
+				const syncResult = await this.syncCoordinator.syncNow("startup");
+				if (syncResult && syncResult.errors.length > 0) {
 					notify().warning(
 						`Sync completed with ${syncResult.errors.length} error(s). Some changes may not have been applied.`,
 					);
 				}
-				if (syncResult.cardsApplied > 0 || syncResult.reviewLogsApplied > 0) {
-					this.dataLayer?.invalidateGroups([
-						G.CARDS,
-						G.BROWSER,
-						G.DASHBOARD,
-						G.PANEL,
-						G.REVIEW,
-						G.STATS,
-					]);
+				if (
+					syncResult &&
+					(syncResult.cardsApplied > 0 || syncResult.reviewLogsApplied > 0)
+				) {
 					notify().info(
 						`Synced ${syncResult.cardsApplied} cards and ${syncResult.reviewLogsApplied} reviews from other devices.`,
 					);
 				}
+
+				// Background merge: reviews done on another device show up without
+				// restarting the plugin. Cheap mtime polling; the merge itself is
+				// watermark-guarded, so no-change ticks cost nothing.
+				if (this.deviceIdService) {
+					this.deviceSyncScheduler = new DeviceSyncScheduler(
+						new ObsidianPersistence(this.app),
+						this.deviceIdService.getDeviceId(),
+						async () =>
+							(await this.syncCoordinator?.syncNow("interval")) ??
+							emptySyncResult(),
+					);
+					this.app.workspace.onLayoutReady(() => {
+						void this.deviceSyncScheduler?.start();
+					});
+				}
+
+				// Mobile apps return from the background without reloading the
+				// plugin, so startup-only sync would show stale data all day.
+				this.registerDomEvent(activeDocument, "visibilitychange", () => {
+					if (activeDocument.visibilityState === "visible") {
+						void this.syncCoordinator?.syncNow("foreground");
+					}
+				});
 			}
 		} catch (error) {
 			console.error("[True Recall] Device sync failed:", error);
@@ -428,7 +517,9 @@ export default class TrueRecallPlugin extends Plugin {
 			sessionPersistence: this.sessionPersistence,
 		});
 
-		if (this.settings.enableLocalApi) {
+		// The local API binds a Node http server via Electron's require, which
+		// does not exist on mobile.
+		if (this.settings.enableLocalApi && capabilities.canRunLocalApi()) {
 			void import("./plugin/api/LocalApiServer")
 				.then(({ LocalApiServer: ApiServer }) => {
 					if (this._unloaded) return;
@@ -453,6 +544,7 @@ export default class TrueRecallPlugin extends Plugin {
 		this._unloaded = true;
 		document.body.classList.remove(HIDE_TAB_BAR_CLASS);
 		this.pluginLoader?.deactivateAll();
+		this.deviceSyncScheduler?.stop();
 		this.deviceLock?.stopHeartbeat();
 		void this.deviceLock?.clearLock();
 		this.localApi?.stop();
@@ -486,6 +578,24 @@ export default class TrueRecallPlugin extends Plugin {
 		await this.saveSettings();
 	}
 
+	/**
+	 * Switch between the due-date queue and R-Mode. Card data is untouched
+	 * either way — both modes read the same scheduling state — so this is
+	 * reversible at any point.
+	 */
+	async toggleRMode(): Promise<void> {
+		this.settings.rMode = {
+			...this.settings.rMode,
+			enabled: !this.settings.rMode.enabled,
+		};
+		await this.saveSettings();
+		notify().info(
+			this.settings.rMode.enabled
+				? "R-Mode on — sessions are picked by retrievability"
+				: "R-Mode off — back to the due queue",
+		);
+	}
+
 	async saveSettings(): Promise<void> {
 		await this.coreApp.updateSettings(this.settings);
 		this.noteStatusCache?.bumpVersion();
@@ -498,6 +608,7 @@ export default class TrueRecallPlugin extends Plugin {
 	}
 
 	async openSimulator(): Promise<void> {
+		if (!this.ensureViewAvailable(VIEW_TYPE_SIMULATOR)) return;
 		await activateView(this.app, VIEW_TYPE_SIMULATOR, { useMainArea: true });
 	}
 
@@ -511,6 +622,31 @@ export default class TrueRecallPlugin extends Plugin {
 
 		const allCards = this.flashcardManager.getAllFSRSCards();
 		const archivedSourceUids = this.hierarchyService.getArchivedSourceUids();
+		const sessionKey = createReviewSessionKey(config, allCards);
+		const customDeckName =
+			config.mode === "custom" && config.temporaryDeckId
+				? this.settings.temporaryCustomStudyDecks.find(
+						(deck) => deck.id === config.temporaryDeckId,
+					)?.name
+				: undefined;
+		const sessionLabel = createReviewSessionLabel(config, allCards, {
+			customDeckName,
+		});
+		const sessionSettings = {
+			ignoreDailyLimitsForNoteStudy:
+				this.settings.ignoreDailyLimitsForNoteStudy,
+			dayStartHour: this.settings.dayStartHour,
+			rModeEnabled: this.settings.rMode.enabled,
+		};
+		const requestedFilters = normalizeSessionFilters(
+			this.sessionService.resolveFilters(config, sessionSettings),
+		);
+		const existingLeaf = revealReviewView(this.app, VIEW_TYPE_REVIEW, {
+			...filtersToViewState(requestedFilters),
+			sessionKey,
+			sessionLabel,
+		});
+		if (existingLeaf) return;
 
 		const result = this.sessionService.validate(
 			config,
@@ -524,11 +660,7 @@ export default class TrueRecallPlugin extends Plugin {
 				hierarchyService: this.hierarchyService,
 				fsrsService: this.fsrsService,
 			},
-			{
-				ignoreDailyLimitsForNoteStudy:
-					this.settings.ignoreDailyLimitsForNoteStudy,
-				dayStartHour: this.settings.dayStartHour,
-			},
+			sessionSettings,
 		);
 
 		if (!result.valid) {
@@ -536,11 +668,15 @@ export default class TrueRecallPlugin extends Plugin {
 			return;
 		}
 
-		await this.openReviewViewWithFilters(result.filters);
+		await this.openReviewViewWithFilters(result.filters, {
+			sessionKey,
+			sessionLabel,
+		});
 	}
 
 	private getCustomStudySessionConfig(
 		result: SessionResult,
+		temporaryDeckId?: string,
 	): Extract<SessionConfig, { mode: "custom" }> {
 		return {
 			mode: "custom",
@@ -562,8 +698,34 @@ export default class TrueRecallPlugin extends Plugin {
 			reviewOrder: result.reviewOrder,
 			crammingMode: result.crammingMode,
 			customStudy: result.customStudy,
-			temporaryDeckId: "custom-study-session",
+			temporaryDeckId,
 		};
+	}
+
+	private getCustomStudyDeckName(
+		deck: Pick<TemporaryCustomStudyDeck, "customStudy">,
+		scopeLabel?: string,
+	): string {
+		const requestName = (() => {
+			switch (deck.customStudy.kind) {
+				case "increase-new":
+					return "Extra new cards";
+				case "increase-review":
+					return "Extra review cards";
+				case "forgotten":
+					return "Forgotten cards";
+				case "actual-learning":
+					return "Actual Learning";
+				case "review-ahead":
+					return "Review ahead";
+				case "preview-new":
+					return "Preview new cards";
+				case "state-or-tag":
+					return "Cards by state or tag";
+			}
+		})();
+
+		return scopeLabel ? `${requestName} — ${scopeLabel}` : requestName;
 	}
 
 	private resolveLegacyCustomStudyProjectPath(
@@ -600,7 +762,12 @@ export default class TrueRecallPlugin extends Plugin {
 
 	private async materializeTemporaryCustomStudyDeck(
 		result: SessionResult,
-		options: { scopeLabel?: string; preserveCreatedAt?: number } = {},
+		options: {
+			scopeLabel?: string;
+			deckId?: string;
+			deckName?: string;
+			preserveCreatedAt?: number;
+		} = {},
 	): Promise<void> {
 		if (!result.customStudy) return;
 		if (!this.isStoreReady()) {
@@ -611,19 +778,25 @@ export default class TrueRecallPlugin extends Plugin {
 		}
 
 		const validation = this.sessionService.validate(
-			this.getCustomStudySessionConfig(result),
+			this.getCustomStudySessionConfig(result, options.deckId),
 			this.getSessionValidationDeps(),
 			{
 				ignoreDailyLimitsForNoteStudy:
 					this.settings.ignoreDailyLimitsForNoteStudy,
 				dayStartHour: this.settings.dayStartHour,
+				rModeEnabled: this.settings.rMode.enabled,
 			},
 		);
 		const now = Date.now();
 		const { queue } = this.reviewController.buildSession(validation.filters);
 		const deck: TemporaryCustomStudyDeck = {
-			id: "custom-study-session",
-			name: "Custom Study Session",
+			id: options.deckId ?? crypto.randomUUID(),
+			name:
+				options.deckName ??
+				this.getCustomStudyDeckName(
+					{ customStudy: result.customStudy },
+					options.scopeLabel,
+				),
 			customStudy: result.customStudy,
 			cardIds: queue.map((card) => card.id),
 			sourceNoteFilters: result.sourceNoteFilters,
@@ -633,24 +806,33 @@ export default class TrueRecallPlugin extends Plugin {
 			rebuiltAt: now,
 		};
 
+		const existingDecks = this.settings.temporaryCustomStudyDecks;
+		const nextDecks = options.deckId
+			? existingDecks.map((existing) =>
+					existing.id === options.deckId ? deck : existing,
+				)
+			: [...existingDecks, deck];
 		this.settings = {
 			...this.settings,
-			temporaryCustomStudyDeck: deck,
+			temporaryCustomStudyDecks: nextDecks,
 		};
 		await this.saveSettings();
 		await this.openDashboard();
 
+		const action = options.deckId ? "rebuilt" : "created";
 		if (deck.cardIds.length === 0) {
-			notify().info("Custom Study Session created, but no cards matched.");
+			notify().info(`Custom Study Session ${action}, but no cards matched.`);
 		} else {
 			notify().success(
-				`Custom Study Session created with ${deck.cardIds.length} card${deck.cardIds.length === 1 ? "" : "s"}.`,
+				`Custom Study Session ${action} with ${deck.cardIds.length} card${deck.cardIds.length === 1 ? "" : "s"}.`,
 			);
 		}
 	}
 
-	async startTemporaryCustomStudyDeck(): Promise<void> {
-		const deck = this.settings.temporaryCustomStudyDeck;
+	async startTemporaryCustomStudyDeck(deckId: string): Promise<void> {
+		const deck = this.settings.temporaryCustomStudyDecks.find(
+			(candidate) => candidate.id === deckId,
+		);
 		if (!deck) return;
 		if (deck.cardIds.length === 0) {
 			notify().info("This Custom Study Session is empty. Rebuild it first.");
@@ -667,8 +849,10 @@ export default class TrueRecallPlugin extends Plugin {
 		});
 	}
 
-	async rebuildTemporaryCustomStudyDeck(): Promise<void> {
-		const deck = this.settings.temporaryCustomStudyDeck;
+	async rebuildTemporaryCustomStudyDeck(deckId: string): Promise<void> {
+		const deck = this.settings.temporaryCustomStudyDecks.find(
+			(candidate) => candidate.id === deckId,
+		);
 		if (!deck) return;
 		const projectPath = this.resolveLegacyCustomStudyProjectPath(deck);
 
@@ -683,30 +867,44 @@ export default class TrueRecallPlugin extends Plugin {
 			},
 			{
 				scopeLabel: deck.scopeLabel,
+				deckId: deck.id,
+				deckName: deck.name,
 				preserveCreatedAt: deck.createdAt,
 			},
 		);
 	}
 
-	async emptyTemporaryCustomStudyDeck(): Promise<void> {
-		const deck = this.settings.temporaryCustomStudyDeck;
+	async emptyTemporaryCustomStudyDeck(deckId: string): Promise<void> {
+		const deck = this.settings.temporaryCustomStudyDecks.find(
+			(candidate) => candidate.id === deckId,
+		);
 		if (!deck || deck.cardIds.length === 0) return;
 
 		this.settings = {
 			...this.settings,
-			temporaryCustomStudyDeck: {
-				...deck,
-				cardIds: [],
-			},
+			temporaryCustomStudyDecks: this.settings.temporaryCustomStudyDecks.map(
+				(candidate) =>
+					candidate.id === deckId ? { ...candidate, cardIds: [] } : candidate,
+			),
 		};
 		await this.saveSettings();
 		notify().success("Custom Study Session emptied.");
 	}
 
-	async deleteTemporaryCustomStudyDeck(): Promise<void> {
-		if (!this.settings.temporaryCustomStudyDeck) return;
-		const { temporaryCustomStudyDeck: _, ...settings } = this.settings;
-		this.settings = settings;
+	async deleteTemporaryCustomStudyDeck(deckId: string): Promise<void> {
+		if (
+			!this.settings.temporaryCustomStudyDecks.some(
+				(candidate) => candidate.id === deckId,
+			)
+		) {
+			return;
+		}
+		this.settings = {
+			...this.settings,
+			temporaryCustomStudyDecks: this.settings.temporaryCustomStudyDecks.filter(
+				(candidate) => candidate.id !== deckId,
+			),
+		};
 		await this.saveSettings();
 		notify().success("Custom Study Session deleted.");
 	}
@@ -715,25 +913,41 @@ export default class TrueRecallPlugin extends Plugin {
 		deckId: string | undefined,
 		cardIds: readonly string[],
 	): void {
-		const deck = this.settings.temporaryCustomStudyDeck;
-		if (!deckId || !deck || deck.id !== deckId) return;
+		if (!deckId) return;
+		const deck = this.settings.temporaryCustomStudyDecks.find(
+			(candidate) => candidate.id === deckId,
+		);
+		if (!deck) return;
 		const removedIds = new Set(cardIds);
 		if (!deck.cardIds.some((id) => removedIds.has(id))) return;
 
 		this.settings = {
 			...this.settings,
-			temporaryCustomStudyDeck: {
-				...deck,
-				cardIds: deck.cardIds.filter((id) => !removedIds.has(id)),
-			},
+			temporaryCustomStudyDecks: this.settings.temporaryCustomStudyDecks.map(
+				(candidate) =>
+					candidate.id === deckId
+						? {
+								...candidate,
+								cardIds: candidate.cardIds.filter((id) => !removedIds.has(id)),
+							}
+						: candidate,
+			),
 		};
 		void this.saveSettings();
+	}
+
+	/** Guard for views that are not registered on this platform. */
+	private ensureViewAvailable(viewType: string): boolean {
+		if (isViewAllowedOnCurrentPlatform(viewType)) return true;
+		notify().warning("This view is available on desktop only.");
+		return false;
 	}
 
 	async openCardBrowser(opts?: {
 		sourceUid?: string;
 		orphaned?: boolean;
 	}): Promise<void> {
+		if (!this.ensureViewAvailable(VIEW_TYPE_CARD_BROWSER)) return;
 		const state = opts?.sourceUid
 			? { sourceUid: opts.sourceUid }
 			: opts?.orphaned
@@ -777,6 +991,7 @@ export default class TrueRecallPlugin extends Plugin {
 	}
 
 	async openAssistantInbox(focusThreadId?: string): Promise<void> {
+		if (!this.ensureViewAvailable(VIEW_TYPE_ASSISTANT_INBOX)) return;
 		const existingLeaf = getView(this.app, VIEW_TYPE_ASSISTANT_INBOX);
 		if (existingLeaf) {
 			void this.app.workspace.revealLeaf(existingLeaf);
@@ -800,6 +1015,7 @@ export default class TrueRecallPlugin extends Plugin {
 	/** Reveals the docked AI workspace, normally in the right sidebar so it can
 	 * sit next to a review. */
 	async openAssistantWorkspace(mode?: AIWorkspaceMode): Promise<void> {
+		if (!this.ensureViewAvailable(VIEW_TYPE_ASSISTANT_WORKSPACE)) return;
 		const existingLeaf = getView(this.app, VIEW_TYPE_ASSISTANT_WORKSPACE);
 		if (existingLeaf) {
 			if (mode)
@@ -838,7 +1054,7 @@ export default class TrueRecallPlugin extends Plugin {
 	async openImageOcclusionEditor(
 		mode: IOEditorMode = { mode: "add" },
 	): Promise<IOEditorResult> {
-		if (!isDesktop()) {
+		if (!capabilities.canEditImageOcclusion()) {
 			notify().warning("Image occlusion editor is available on desktop only.");
 			return { cancelled: true };
 		}
@@ -928,7 +1144,10 @@ export default class TrueRecallPlugin extends Plugin {
 		await this.reviewNoteFlashcards(file);
 	}
 
-	async reviewNoteFlashcards(file: TFile): Promise<void> {
+	async reviewNoteFlashcards(
+		file: TFile,
+		rModeTargetCount?: number,
+	): Promise<void> {
 		const sourceUid = await this.flashcardManager
 			.getFrontmatterService()
 			.getSourceNoteUid(file.path);
@@ -936,16 +1155,19 @@ export default class TrueRecallPlugin extends Plugin {
 			notify().info(`No flashcards found for "${file.basename}"`);
 			return;
 		}
-		await this.startReview({ mode: "note", sourceUid });
+		await this.startReview({ mode: "note", sourceUid, rModeTargetCount });
 	}
 
 	async reviewTodaysCards(): Promise<void> {
 		await this.startReview({ mode: "created_today" });
 	}
 
-	async openReviewViewWithFilters(rawFilters: SessionFilters): Promise<void> {
+	async openReviewViewWithFilters(
+		rawFilters: SessionFilters,
+		session: { sessionKey?: string; sessionLabel?: string } = {},
+	): Promise<void> {
 		const filters = normalizeSessionFilters(rawFilters);
-		const state = filtersToViewState(filters);
+		const state = { ...filtersToViewState(filters), ...session };
 
 		await activateReviewView(
 			this.app,

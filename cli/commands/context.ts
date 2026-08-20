@@ -28,7 +28,7 @@ export const contextCommands: CommandDef[] = [
 
 	get(
 		"get_active_note",
-		"Get the currently open note: path, content, source_uid, and all linked flashcards",
+		"Get the currently open note: path, content, source_uid, and all linked flashcards including userComment",
 		C,
 		"/active-note",
 	),

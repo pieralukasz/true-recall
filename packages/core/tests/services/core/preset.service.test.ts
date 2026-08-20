@@ -295,6 +295,17 @@ describe("PresetService — 3-tier resolution", () => {
 		});
 	});
 
+	describe("toFSRSSettings", () => {
+		it("reuses an immutable settings snapshot for the same preset", () => {
+			const first = presetService.toFSRSSettings(defaultPreset);
+			const second = presetService.toFSRSSettings(defaultPreset);
+
+			expect(second).toBe(first);
+			expect(Object.isFrozen(first)).toBe(true);
+			expect(Object.isFrozen(first.learningSteps)).toBe(true);
+		});
+	});
+
 	describe("resolvePresetForCard — parent ordering", () => {
 		it("first parent with preset wins (BFS order)", () => {
 			addMockFile("Projects/Anatomy.md", {

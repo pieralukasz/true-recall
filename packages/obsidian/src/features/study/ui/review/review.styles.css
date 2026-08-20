@@ -119,15 +119,31 @@
 		padding-right: 0.75rem;
 	}
 
-	/* Smaller rating buttons on mobile */
-	.is-mobile .true-recall-review-buttons button {
-		min-width: 4rem;
-		padding: 0.5rem 0.625rem;
+	/* Mobile grade bar: equal-width buttons with a proper touch height,
+	   filling the whole row (Show answer is a single stretched button). */
+	.is-mobile .true-recall-review-buttons > * {
+		flex: 1 1 0;
+		min-width: 0;
+		min-height: 3rem;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		padding: 0.5rem 0.375rem;
 	}
 
 	/* Safe area inset for notched phones */
 	.is-mobile .true-recall-review-buttons {
-		padding-bottom: env(safe-area-inset-bottom, 0.5rem);
+		padding-bottom: max(env(safe-area-inset-bottom, 0px), 0.75rem);
+	}
+
+	/* Obsidian's floating mobile navbar hovers over the bottom edge of the
+	   view; lift the grade bar above it so buttons are never covered. */
+	.is-mobile.is-floating-nav .true-recall-review-buttons {
+		padding-bottom: calc(
+			max(env(safe-area-inset-bottom, 0px), 0.75rem) +
+			4.75rem
+		);
 	}
 
 	/* Preview panel (320px) — prevent overflow from images, code, tables, LaTeX.
@@ -149,6 +165,90 @@
 		overflow-x: auto;
 		max-width: 100%;
 	}
+}
+
+/* Docked user note. Obsidian applies a fixed height to native buttons, so the
+   card and both controls own their complete box model. */
+.true-recall-review-user-comment-card {
+	display: flex;
+	align-items: flex-start;
+	gap: 0.5rem;
+	box-sizing: border-box;
+	width: min(100%, 42rem);
+	height: auto;
+	min-height: 0;
+	margin: 0 auto;
+	padding: 0.625rem 0.75rem;
+	background: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border);
+	border-left: 3px solid var(--color-yellow);
+	border-radius: var(--radius-m);
+	box-shadow: none;
+	transition:
+		background-color 150ms ease,
+		border-color 150ms ease;
+}
+
+.true-recall-review-user-comment-card:hover {
+	background: var(--background-modifier-hover);
+	border-color: var(--background-modifier-border-hover);
+	border-left-color: var(--color-yellow);
+}
+
+.true-recall-review-user-comment-card:focus-within {
+	outline: 2px solid var(--color-yellow);
+	outline-offset: 2px;
+}
+
+.true-recall-review-user-comment-edit {
+	display: block;
+	flex: 1;
+	min-width: 0;
+	height: auto;
+	min-height: 0;
+	margin: 0;
+	padding: 0;
+	text-align: left;
+	font: inherit;
+	color: var(--text-normal);
+	background: transparent;
+	border: 0;
+	box-shadow: none;
+	cursor: pointer;
+}
+
+.true-recall-review-user-comment-remove {
+	display: inline-flex;
+	flex: none;
+	align-items: center;
+	justify-content: center;
+	box-sizing: border-box;
+	width: 1.5rem;
+	min-width: 1.5rem;
+	height: 1.5rem;
+	min-height: 1.5rem;
+	margin: -0.125rem -0.125rem 0 0;
+	padding: 0;
+	font: inherit;
+	font-size: 1rem;
+	line-height: 1;
+	color: var(--text-faint);
+	background: transparent;
+	border: 0;
+	border-radius: 0;
+	box-shadow: none;
+	cursor: pointer;
+	transition: color 150ms ease;
+}
+
+.true-recall-review-user-comment-remove:hover {
+	color: var(--text-normal);
+	background: transparent;
+}
+
+.true-recall-review-user-comment-edit:focus-visible,
+.true-recall-review-user-comment-remove:focus-visible {
+	outline: none;
 }
 
 /* ── CM6 inside Card Browser preview panel (320px) ──────────────────
@@ -241,4 +341,21 @@
 .true-recall-review-question .cm-scroller,
 .true-recall-review-answer .cm-scroller {
 	padding: 0;
+}
+
+/* Obsidian mobile pads every CM scroller with
+   var(--view-top-spacing-markdown) via a high-specificity unlayered rule,
+   which pushed the answer text ~110px below the separator. Zeroing the
+   variable on our field wrappers wins by inheritance proximity, no
+   specificity war or !important (stripped by the CSS build) needed. */
+.true-recall-review-question,
+.true-recall-review-answer {
+	--view-top-spacing-markdown: 0px;
+	--view-top-spacing: 0px;
+}
+
+.is-mobile .true-recall-review-question .cm-scroller,
+.is-mobile .true-recall-review-answer .cm-scroller {
+	padding-top: 0;
+	padding-bottom: 0;
 }

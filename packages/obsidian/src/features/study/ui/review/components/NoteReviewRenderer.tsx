@@ -6,13 +6,17 @@ import { isMobile } from "@true-recall/obsidian/utils/platform";
 
 import { getReviewMaxWidth } from "../helpers/review-width";
 import { useNoteReviewContent } from "../hooks/useNoteReviewContent";
+import { CardCounters } from "./CardCounters";
 import { LivePreviewField } from "./LivePreviewField";
 import { type PresetPickerOption, PresetPopover } from "./PresetPopover";
+
+const MARKDOWN_EXTENSION_PATTERN = /\.md$/i;
 
 interface NoteReviewRendererProps {
 	card: FSRSFlashcardItem;
 	presetName?: string;
 	presetOptions?: PresetPickerOption[];
+	leechThreshold?: number;
 	onPresetChange?: (presetName: string) => void;
 	onOpenSourceNote?: () => void;
 }
@@ -21,6 +25,7 @@ export function NoteReviewRenderer({
 	card,
 	presetName,
 	presetOptions,
+	leechThreshold,
 	onPresetChange,
 	onOpenSourceNote,
 }: NoteReviewRendererProps) {
@@ -33,6 +38,12 @@ export function NoteReviewRenderer({
 	);
 
 	const maxWidth = isMobile() ? "100%" : getReviewMaxWidth(reviewContentWidth);
+	const noteTitle =
+		card.sourceNoteName?.trim() ||
+		card.sourceNotePath
+			?.split("/")
+			.pop()
+			?.replace(MARKDOWN_EXTENSION_PATTERN, "");
 
 	return (
 		<div
@@ -43,6 +54,11 @@ export function NoteReviewRenderer({
 				<div class="ep:text-xs ep:text-obs-faint ep:mb-2 ep:uppercase ep:tracking-wider">
 					Note Review
 				</div>
+				{noteTitle ? (
+					<h1 class="ep:m-0 ep:mb-6 ep:text-2xl ep:font-semibold ep:leading-tight ep:text-obs-normal">
+						{noteTitle}
+					</h1>
+				) : null}
 
 				{content !== null ? (
 					<LivePreviewField
@@ -64,6 +80,7 @@ export function NoteReviewRenderer({
 					card={card}
 					presetName={presetName}
 					presetOptions={presetOptions}
+					leechThreshold={leechThreshold}
 					onPresetChange={onPresetChange}
 					onOpenSourceNote={onOpenSourceNote}
 				/>
@@ -76,19 +93,20 @@ function NoteReviewFooter({
 	card,
 	presetName,
 	presetOptions,
+	leechThreshold,
 	onPresetChange,
 	onOpenSourceNote,
 }: {
 	card: FSRSFlashcardItem;
 	presetName?: string;
 	presetOptions?: PresetPickerOption[];
+	leechThreshold?: number;
 	onPresetChange?: (presetName: string) => void;
 	onOpenSourceNote?: () => void;
 }) {
-	if (!card.sourceNoteName && !presetName) return null;
-
 	return (
 		<div class="ep:flex ep:flex-col ep:items-center ep:gap-4 ep:pt-8">
+			<CardCounters card={card} leechThreshold={leechThreshold} />
 			{card.sourceNoteName && onOpenSourceNote && (
 				<Clickable
 					class="ep:text-obs-faint ep:text-ui-smaller tr-no-faux-underline ep:hover:text-obs-accent tr-hover-faux-underline ep:transition-colors ep:p-0"

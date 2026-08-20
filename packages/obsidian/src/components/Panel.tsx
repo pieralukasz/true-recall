@@ -11,7 +11,7 @@ interface PanelProps {
 
 export function Panel({ disableScroll, children, footer }: PanelProps) {
 	return (
-		<div class="ep:h-full ep:flex ep:flex-col ep:px-1 ep:overflow-hidden">
+		<div class="ep:h-full ep:flex ep:flex-col ep:overflow-hidden">
 			<div
 				class={cn(
 					"ep:flex-1 ep:min-h-0",

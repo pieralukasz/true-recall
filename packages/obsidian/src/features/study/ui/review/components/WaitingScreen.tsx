@@ -1,18 +1,30 @@
 import { useCallback, useEffect, useState } from "preact/hooks";
 
 import { UI_CONFIG } from "@true-recall/core";
+import type {
+	ReviewSessionTopUp,
+	ReviewSessionTopUpAvailability,
+} from "@true-recall/core/types";
 
 import { Clickable } from "@true-recall/obsidian/components";
 import type { ReviewApi } from "@true-recall/obsidian/store";
+
+import { SessionTopUpPanel } from "./SessionTopUpPanel";
 
 export function WaitingScreen({
 	review,
 	timeUntilDue,
 	onEndSession,
+	rModeActive,
+	getTopUpAvailability,
+	onTopUp,
 }: {
 	review: ReviewApi;
 	timeUntilDue: number;
 	onEndSession: () => void;
+	rModeActive: boolean;
+	getTopUpAvailability: () => ReviewSessionTopUpAvailability;
+	onTopUp: (topUp: ReviewSessionTopUp) => Promise<boolean>;
 }) {
 	const [remaining, setRemaining] = useState(timeUntilDue);
 	const pendingCards = review.getPendingLearningCards();
@@ -27,11 +39,14 @@ export function WaitingScreen({
 			const newRemaining = getTimeUntilNextDue();
 			if (newRemaining <= 0) {
 				window.clearInterval(id);
+				setRemaining(0);
+				review.notifyChange();
+				return;
 			}
 			setRemaining(newRemaining);
 		}, UI_CONFIG.timerInterval);
 		return () => window.clearInterval(id);
-	}, [getTimeUntilNextDue]);
+	}, [getTimeUntilNextDue, review]);
 
 	const formatCountdown = (ms: number): string => {
 		if (ms <= 0) return "0:00";
@@ -66,6 +81,15 @@ export function WaitingScreen({
 							{formatCountdown(remaining)}
 						</div>
 					</div>
+
+					{rModeActive ? (
+						<div class="ep:mb-4 ep:text-left">
+							<SessionTopUpPanel
+								getAvailability={getTopUpAvailability}
+								onTopUp={onTopUp}
+							/>
+						</div>
+					) : null}
 
 					<div class="ep:flex ep:gap-3 ep:justify-center">
 						<Clickable

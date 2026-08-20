@@ -39,7 +39,7 @@ export const statsTools: ToolDef[] = [
 			limit: z
 				.number()
 				.optional()
-				.default(20)
+				.default(50)
 				.describe("Max number of problem cards to return"),
 		},
 		(p) => `/cards/problems?limit=${String(p.limit)}`,

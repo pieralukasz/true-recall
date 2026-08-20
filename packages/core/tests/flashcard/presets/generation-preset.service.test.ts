@@ -216,6 +216,15 @@ describe("GenerationPresetService.update", () => {
 		);
 	});
 
+	it("patches allowEmptyAnswer", async () => {
+		const { service, getSettings } = makeMutableService([
+			{ ...BASE_PRESET, id: "p1", isDefault: true },
+		]);
+		const updated = await service.update("p1", { allowEmptyAnswer: true });
+		expect(updated.allowEmptyAnswer).toBe(true);
+		expect(getSettings().generationPresets[0]?.allowEmptyAnswer).toBe(true);
+	});
+
 	it("rejects unknown patch keys", async () => {
 		const { service } = makeMutableService([
 			{ ...BASE_PRESET, id: "p1", isDefault: true },

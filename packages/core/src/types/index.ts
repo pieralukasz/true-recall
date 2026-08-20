@@ -13,7 +13,10 @@ export type {
 	NoteTypeMapping,
 } from "./anki.types";
 export type {
+	CardAIExecutor,
+	CardAIFieldScope,
 	CardAIPreset,
+	CardAIPresetMode,
 	CardAIUserSettings,
 	CardFields,
 } from "./card-ai-preset.types";
@@ -115,6 +118,8 @@ export type { PluginInfo, PluginTier } from "./plugin.types";
 export type {
 	CustomStudyCardState,
 	CustomStudyRequest,
+	ReviewSessionTopUp,
+	ReviewSessionTopUpAvailability,
 	TemporaryCustomStudyDeck,
 } from "./review-session.types";
 export type { SessionConfig } from "./session-config.types";

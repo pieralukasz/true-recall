@@ -10,6 +10,7 @@ interface StartSessionInput {
 		| "weak_cards"
 		| "created_today"
 		| "overdue"
+		| "actual_learning"
 		| "custom";
 	source_uid?: string;
 	card_limit?: number;
@@ -63,6 +64,15 @@ export async function handleStartSession(
 
 		case "overdue":
 			config = { mode: "overdue" };
+			break;
+
+		case "actual_learning":
+			config = {
+				mode: "custom",
+				customStudy: { kind: "actual-learning" },
+				ignoreDailyLimits: true,
+				bypassScheduling: true,
+			};
 			break;
 
 		case "custom":

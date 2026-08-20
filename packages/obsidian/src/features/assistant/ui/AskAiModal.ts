@@ -2,9 +2,12 @@ import { Modal } from "obsidian";
 import { h } from "preact";
 
 import type { AssistantContext } from "@true-recall/core/ai/assistant";
+import { VIEW_TYPE_ASSISTANT_INBOX } from "@true-recall/core/constants";
 
 import type TrueRecallPlugin from "@true-recall/obsidian/main";
 import { mountPreact } from "@true-recall/obsidian/preact/mount";
+import { notify } from "@true-recall/obsidian/services/notification.service";
+import { isViewAllowedOnCurrentPlatform } from "@true-recall/obsidian/utils/platform";
 
 import { type AskAiEntry, AskAiPrompt } from "./AskAiPrompt";
 import { AssistantInlineTask } from "./AssistantInlineTask";
@@ -60,7 +63,14 @@ export function openAskAiModal(
 			onSubmitted: (threadId, mode) => {
 				if (mode === "inbox") {
 					modal.close();
-					void plugin.openAssistantInbox();
+					if (isViewAllowedOnCurrentPlatform(VIEW_TYPE_ASSISTANT_INBOX)) {
+						void plugin.openAssistantInbox();
+					} else {
+						// The inbox view is desktop-only; the task still runs.
+						notify().info(
+							"Task queued. Open the AI inbox on desktop to see the result.",
+						);
+					}
 					return;
 				}
 				if (mode === "background") {

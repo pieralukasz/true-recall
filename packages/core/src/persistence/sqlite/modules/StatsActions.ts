@@ -14,10 +14,18 @@ import { AnalyticsCardActions } from "./stats/analytics-card-actions";
 import { AnalyticsPerformanceActions } from "./stats/analytics-performance-actions";
 import { DailyProgressActions } from "./stats/daily-progress-actions";
 import { DailyProgressQueryActions } from "./stats/daily-progress-query-actions";
-import { ReviewLogActions } from "./stats/review-log-actions";
-import { ReviewLogSyncActions } from "./stats/review-log-sync-actions";
+import {
+	type ReviewKind,
+	ReviewLogActions,
+	type ReviewLogForSync,
+} from "./stats/review-log-actions";
+import {
+	type ReviewLogReplayRow,
+	ReviewLogSyncActions,
+} from "./stats/review-log-sync-actions";
 
-export type { ReviewLogForSync } from "./stats/review-log-actions";
+export type { ReviewKind, ReviewLogForSync } from "./stats/review-log-actions";
+export type { ReviewLogReplayRow } from "./stats/review-log-sync-actions";
 
 export class StatsActions {
 	private reviewLog: ReviewLogActions;
@@ -46,8 +54,9 @@ export class StatsActions {
 		state: number,
 		timeSpentMs: number,
 		presetName?: string,
-	): void {
-		this.reviewLog.addReviewLog(
+		kind?: ReviewKind,
+	): string {
+		return this.reviewLog.addReviewLog(
 			cardId,
 			rating,
 			scheduledDays,
@@ -55,7 +64,12 @@ export class StatsActions {
 			state,
 			timeSpentMs,
 			presetName,
+			kind,
 		);
+	}
+
+	markReviewLogDeleted(id: string): void {
+		this.reviewLog.markReviewLogDeleted(id);
 	}
 
 	getCardReviewHistory(cardId: string, limit = 20): CardReviewLogEntry[] {
@@ -97,52 +111,28 @@ export class StatsActions {
 		return this.reviewLog.getAnswerStreakInfo();
 	}
 
-	getModifiedReviewLogSince(timestamp: number): {
-		id: string;
-		cardId: string;
-		reviewedAt: string;
-		rating: number;
-		scheduledDays: number;
-		elapsedDays: number;
-		state: number;
-		timeSpentMs: number;
-		updatedAt: number;
-		deletedAt: number | null;
-		presetName: string | null;
-	}[] {
+	getModifiedReviewLogSince(timestamp: number): ReviewLogForSync[] {
 		return this.reviewLogSync.getModifiedReviewLogSince(timestamp);
 	}
 
-	upsertReviewLogFromRemote(data: {
-		id: string;
-		cardId: string;
-		reviewedAt: string;
-		rating: number;
-		scheduledDays: number;
-		elapsedDays: number;
-		state: number;
-		timeSpentMs: number;
-		updatedAt: number;
-		deletedAt: number | null;
-		presetName: string | null;
-	}): boolean {
+	upsertReviewLogFromRemote(data: ReviewLogForSync): boolean {
 		return this.reviewLogSync.upsertReviewLogFromRemote(data);
 	}
 
-	getReviewLogForSync(id: string): {
-		id: string;
-		cardId: string;
-		reviewedAt: string;
-		rating: number;
-		scheduledDays: number;
-		elapsedDays: number;
-		state: number;
-		timeSpentMs: number;
-		updatedAt: number;
-		deletedAt: number | null;
-		presetName: string | null;
-	} | null {
+	getReviewLogForSync(id: string): ReviewLogForSync | null {
 		return this.reviewLogSync.getReviewLogForSync(id);
+	}
+
+	getReplayLogsForCard(cardId: string): ReviewLogReplayRow[] {
+		return this.reviewLogSync.getReplayLogsForCard(cardId);
+	}
+
+	getReviewedCardIdsSince(timestamp: number): string[] {
+		return this.reviewLogSync.getReviewedCardIdsSince(timestamp);
+	}
+
+	reassignCardReviews(fromCardId: string, toCardId: string): void {
+		this.reviewLogSync.reassignCardReviews(fromCardId, toCardId);
 	}
 
 	deleteAllReviewLogForSync(): void {
@@ -188,8 +178,8 @@ export class StatsActions {
 		this.dailyProgress.removeReviewedCard(date, cardId);
 	}
 
-	rebuildDailyStatsFromReviewLog(): void {
-		this.dailyProgress.rebuildDailyStatsFromReviewLog();
+	rebuildDailyStatsFromReviewLog(dayStartHour?: number): void {
+		this.dailyProgress.rebuildDailyStatsFromReviewLog(dayStartHour);
 	}
 
 	getAllDailyStats(): Record<string, ExtendedDailyStats> {

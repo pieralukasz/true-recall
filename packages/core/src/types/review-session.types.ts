@@ -3,10 +3,21 @@ import type { ReviewOrder } from "@true-recall/core/types/settings.types";
 
 export type CustomStudyCardState = "new" | "due" | "review" | "all";
 
+export type ReviewSessionTopUp = {
+	kind: "review" | "new";
+	count: number;
+};
+
+export type ReviewSessionTopUpAvailability = Record<
+	ReviewSessionTopUp["kind"],
+	number
+>;
+
 export type CustomStudyRequest =
 	| { kind: "increase-new"; amount: number }
 	| { kind: "increase-review"; amount: number }
 	| { kind: "forgotten"; days: number }
+	| { kind: "actual-learning" }
 	| { kind: "review-ahead"; days: number }
 	| { kind: "preview-new"; days: number }
 	| {
@@ -36,6 +47,10 @@ export interface TemporaryCustomStudyDeck {
 }
 
 export interface ReviewViewState extends Record<string, unknown> {
+	/** Stable launcher identity used to focus an already-open session. */
+	sessionKey?: string;
+	/** Human-readable source shown in the workspace tab. */
+	sessionLabel?: string;
 	/** Project note path — scopes review to project members */
 	projectPath?: string;
 	/** Single source UID scope (note-level review) */
@@ -65,6 +80,12 @@ export interface ReviewViewState extends Record<string, unknown> {
 	materializedCardIds?: string[];
 	/** Identifies the persisted temporary deck owning this review session. */
 	temporaryDeckId?: string;
+	/** Requested Review-state card count when schedulingMode is retrievability. */
+	rModeTargetCount?: number;
+	/** Scheduling semantics captured when the session starts. */
+	schedulingMode?: "due" | "retrievability";
+	/** One-off R-Mode continuation containing only the selected card state. */
+	topUp?: ReviewSessionTopUp;
 }
 
 export interface SessionFilters {
@@ -92,6 +113,12 @@ export interface SessionFilters {
 	materializedCardIds?: string[];
 	temporaryDeckId?: string;
 	dayStartHour?: number;
+	/** Requested Review-state card count when schedulingMode is retrievability. */
+	rModeTargetCount?: number;
+	/** Scheduling semantics captured when the session starts. */
+	schedulingMode?: "due" | "retrievability";
+	/** One-off R-Mode continuation containing only the selected card state. */
+	topUp?: ReviewSessionTopUp;
 }
 
 export function filtersFromViewState(
@@ -122,6 +149,9 @@ export function filtersFromViewState(
 		customStudy: state.customStudy,
 		materializedCardIds: state.materializedCardIds,
 		temporaryDeckId: state.temporaryDeckId,
+		rModeTargetCount: state.rModeTargetCount,
+		schedulingMode: state.schedulingMode,
+		topUp: state.topUp,
 	};
 }
 
@@ -150,6 +180,9 @@ export function filtersToViewState(filters: SessionFilters): ReviewViewState {
 		customStudy: filters.customStudy,
 		materializedCardIds: filters.materializedCardIds,
 		temporaryDeckId: filters.temporaryDeckId,
+		rModeTargetCount: filters.rModeTargetCount,
+		schedulingMode: filters.schedulingMode,
+		topUp: filters.topUp,
 	};
 }
 

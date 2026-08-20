@@ -1,5 +1,36 @@
 import type { ExtendedDailyStats } from "../../../../types";
+import { formatLocalDate, getTodayBoundary } from "../../../../utils";
 import type { SqliteDatabase } from "../../SqliteDatabase";
+
+interface RebuildAggregate {
+	reviewsCompleted: number;
+	newCardsStudied: number;
+	totalTimeMs: number;
+	again: number;
+	hard: number;
+	good: number;
+	easy: number;
+	newCards: number;
+	learningCards: number;
+	reviewCards: number;
+	cardIds: Set<string>;
+}
+
+function createEmptyAggregate(): RebuildAggregate {
+	return {
+		reviewsCompleted: 0,
+		newCardsStudied: 0,
+		totalTimeMs: 0,
+		again: 0,
+		hard: 0,
+		good: 0,
+		easy: 0,
+		newCards: 0,
+		learningCards: 0,
+		reviewCards: 0,
+		cardIds: new Set<string>(),
+	};
+}
 
 export class DailyProgressActions {
 	constructor(private db: SqliteDatabase) {}
@@ -157,44 +188,89 @@ export class DailyProgressActions {
 		);
 	}
 
-	rebuildDailyStatsFromReviewLog(): void {
+	/**
+	 * Rebuild daily aggregates from the review log after a device-sync merge.
+	 * Day keys are computed in JS with the same local-time + dayStartHour
+	 * logic the live path uses (DayBoundaryService.getTodayKey); a plain SQL
+	 * date(reviewed_at) would group by UTC days and drift from live stats.
+	 * Preview answers never touch daily limits, so they are excluded here too.
+	 */
+	rebuildDailyStatsFromReviewLog(dayStartHour = 4): void {
+		const logs = this.db.query<{
+			card_id: string;
+			reviewed_at: string;
+			rating: number;
+			state: number;
+			time_spent_ms: number | null;
+		}>(`
+            SELECT card_id, reviewed_at, rating, state, time_spent_ms
+            FROM review_log
+            WHERE deleted_at IS NULL
+              AND reviewed_at IS NOT NULL
+              AND (review_kind IS NULL OR review_kind != 'preview')
+        `);
+
+		const byDay = new Map<string, RebuildAggregate>();
+		for (const log of logs) {
+			const reviewedAt = new Date(log.reviewed_at);
+			if (Number.isNaN(reviewedAt.getTime())) continue;
+			const dayKey = formatLocalDate(
+				getTodayBoundary(dayStartHour, reviewedAt),
+			);
+
+			let agg = byDay.get(dayKey);
+			if (!agg) {
+				agg = createEmptyAggregate();
+				byDay.set(dayKey, agg);
+			}
+
+			agg.reviewsCompleted++;
+			agg.totalTimeMs += log.time_spent_ms ?? 0;
+			if (log.rating === 1) agg.again++;
+			if (log.rating === 2) agg.hard++;
+			if (log.rating === 3) agg.good++;
+			if (log.rating === 4) agg.easy++;
+			if (log.state === 0) {
+				agg.newCards++;
+				agg.newCardsStudied++;
+			}
+			if (log.state === 1 || log.state === 3) agg.learningCards++;
+			if (log.state === 2) agg.reviewCards++;
+			agg.cardIds.add(log.card_id);
+		}
+
 		this.db.transaction(() => {
 			this.db.run(`DELETE FROM daily_stats`);
 			this.db.run(`DELETE FROM daily_reviewed_cards`);
 
-			this.db.run(`
-                INSERT INTO daily_stats (
-                    date, reviews_completed, new_cards_studied, total_time_ms,
-                    again_count, hard_count, good_count, easy_count,
-                    new_cards, learning_cards, review_cards
-                )
-                SELECT
-                    date(reviewed_at) as date,
-                    COUNT(*) as reviews_completed,
-                    SUM(CASE WHEN state = 0 THEN 1 ELSE 0 END) as new_cards_studied,
-                    COALESCE(SUM(time_spent_ms), 0) as total_time_ms,
-                    SUM(CASE WHEN rating = 1 THEN 1 ELSE 0 END) as again_count,
-                    SUM(CASE WHEN rating = 2 THEN 1 ELSE 0 END) as hard_count,
-                    SUM(CASE WHEN rating = 3 THEN 1 ELSE 0 END) as good_count,
-                    SUM(CASE WHEN rating = 4 THEN 1 ELSE 0 END) as easy_count,
-                    SUM(CASE WHEN state = 0 THEN 1 ELSE 0 END) as new_cards,
-                    SUM(CASE WHEN state IN (1, 3) THEN 1 ELSE 0 END) as learning_cards,
-                    SUM(CASE WHEN state = 2 THEN 1 ELSE 0 END) as review_cards
-                FROM review_log
-                WHERE deleted_at IS NULL
-                  AND reviewed_at IS NOT NULL
-                  AND date(reviewed_at) IS NOT NULL
-                GROUP BY date(reviewed_at)
-            `);
-
-			this.db.run(`
-                INSERT INTO daily_reviewed_cards (date, card_id)
-                SELECT DISTINCT date(reviewed_at), card_id
-                FROM review_log
-                WHERE deleted_at IS NULL
-                  AND reviewed_at IS NOT NULL
-                  AND date(reviewed_at) IS NOT NULL
-            `);
+			for (const [date, agg] of byDay) {
+				this.db.run(
+					`INSERT INTO daily_stats (
+                        date, reviews_completed, new_cards_studied, total_time_ms,
+                        again_count, hard_count, good_count, easy_count,
+                        new_cards, learning_cards, review_cards
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+					[
+						date,
+						agg.reviewsCompleted,
+						agg.newCardsStudied,
+						agg.totalTimeMs,
+						agg.again,
+						agg.hard,
+						agg.good,
+						agg.easy,
+						agg.newCards,
+						agg.learningCards,
+						agg.reviewCards,
+					],
+				);
+				for (const cardId of agg.cardIds) {
+					this.db.run(
+						`INSERT OR IGNORE INTO daily_reviewed_cards (date, card_id) VALUES (?, ?)`,
+						[date, cardId],
+					);
+				}
+			}
 		});
 	}
 }

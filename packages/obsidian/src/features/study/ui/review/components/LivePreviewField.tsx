@@ -101,11 +101,16 @@ export function LivePreviewField({
 			// Only autosave for user-initiated edits (typing, pasting, deleting).
 			// Obsidian's internal CM6 extensions can modify the document (e.g., replacing
 			// $$ math delimiters with widget markers), which would corrupt stored content.
+			// undo/redo count as user edits too: without them, Cmd+Z visually
+			// reverts the text but the revert is never saved, so the discarded
+			// content comes back on the next re-render.
 			const isUserEdit = update.transactions.some(
 				(tr) =>
 					tr.isUserEvent("input") ||
 					tr.isUserEvent("delete") ||
-					tr.isUserEvent("move"),
+					tr.isUserEvent("move") ||
+					tr.isUserEvent("undo") ||
+					tr.isUserEvent("redo"),
 			);
 			if (isUserEdit) {
 				hasUserEditRef.current = true;

@@ -4,7 +4,10 @@ import type { SemanticAnswerGradingService } from "@true-recall/core/ai/grading/
 import type { TypeInGradingPromptRelatedCard } from "@true-recall/core/ai/prompts/type-in-grading-prompt";
 import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
 import { assessTypedAnswer } from "@true-recall/core/helpers/answer-assessment";
-import { shouldTriggerLeech } from "@true-recall/core/helpers/leech-helpers";
+import {
+	DEFAULT_LEECH_THRESHOLD,
+	shouldTriggerLeech,
+} from "@true-recall/core/helpers/leech-helpers";
 import type { SessionPersistenceService } from "@true-recall/core/persistence/session/session-persistence.service";
 import type { FSRSService } from "@true-recall/core/services/fsrs/fsrs.service";
 import type { ReviewService } from "@true-recall/core/services/review/review.service";
@@ -16,7 +19,10 @@ import type {
 } from "@true-recall/core/types";
 import { isPreviewCustomStudy } from "@true-recall/core/types/review-session.types";
 
-import type { ReviewSessionController } from "@true-recall/obsidian/features/study/services/ReviewSessionController";
+import type {
+	ReviewGradeOutcome,
+	ReviewSessionController,
+} from "@true-recall/obsidian/features/study/services/ReviewSessionController";
 import type { SessionFilters } from "@true-recall/obsidian/features/study/ui/review/review.types";
 import type TrueRecallPlugin from "@true-recall/obsidian/main";
 import { notify } from "@true-recall/obsidian/services/notification.service";
@@ -145,12 +151,12 @@ export class AnswerHandler {
 		return result;
 	}
 
-	handleAnswer(rating: Grade): void {
+	handleAnswer(rating: Grade): ReviewGradeOutcome | null {
 		const outcome = this.deps.reviewController.gradeCurrentCard(
 			rating,
 			this.deps.getFilters(),
 		);
-		if (!outcome) return;
+		if (!outcome) return null;
 
 		if (this.deps.getFilters().crammingMode) {
 			this.deps.getCrammedCardIds().add(outcome.card.id);
@@ -165,7 +171,8 @@ export class AnswerHandler {
 			!isPreviewCustomStudy(this.deps.getFilters())
 		) {
 			const lapses = outcome.updatedCard.fsrs.lapses;
-			const threshold = outcome.preset.leechThreshold ?? 8;
+			const threshold =
+				outcome.preset.leechThreshold ?? DEFAULT_LEECH_THRESHOLD;
 			if (shouldTriggerLeech(lapses, threshold)) {
 				const preview = outcome.card.question.slice(0, 50);
 				if (outcome.leechSuspended) {
@@ -175,5 +182,7 @@ export class AnswerHandler {
 				}
 			}
 		}
+
+		return outcome;
 	}
 }

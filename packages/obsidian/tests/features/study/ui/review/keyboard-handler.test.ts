@@ -45,6 +45,7 @@ function createEvent(
 		shiftKey: false,
 		target: null,
 		preventDefault: vi.fn(),
+		stopPropagation: vi.fn(),
 		...overrides,
 	} as KeyboardEvent & { preventDefault: ReturnType<typeof vi.fn> };
 }
@@ -54,18 +55,57 @@ function defaultCallbacks(overrides = {}) {
 		onShowAnswer: vi.fn(),
 		onAnswer: vi.fn(async () => {}),
 		onUndo: vi.fn(async () => {}),
+		onDelete: vi.fn(),
 		onSuspend: vi.fn(async () => {}),
 		onBuryCard: vi.fn(async () => {}),
 		onBuryNote: vi.fn(async () => {}),
 		onMoveCard: vi.fn(async () => {}),
 		onAddCard: vi.fn(async () => {}),
+		onAddCardCopy: vi.fn(async () => {}),
 		onEditCard: vi.fn(async () => {}),
+		onEditComment: vi.fn(async () => {}),
 		onCycleTypeInMode: vi.fn(),
 		...overrides,
 	};
 }
 
 describe("KeyboardHandler", () => {
+	it("opens a prefilled Add flashcard editor on Cmd/Ctrl+Shift+E", () => {
+		const onAddCardCopy = vi.fn(async () => {});
+		const onEditCard = vi.fn(async () => {});
+		const handler = new KeyboardHandler(
+			() => createReviewState(),
+			defaultCallbacks({ onAddCardCopy, onEditCard }),
+			DEFAULT_KEYBINDINGS,
+		);
+
+		const event = createEvent({ key: "E", metaKey: true, shiftKey: true });
+		handler.handleKeyDown(event);
+
+		expect(event.preventDefault).toHaveBeenCalledOnce();
+		expect(event.stopPropagation).toHaveBeenCalledOnce();
+		expect(onAddCardCopy).toHaveBeenCalledOnce();
+		expect(onEditCard).not.toHaveBeenCalled();
+	});
+
+	it("opens the note editor on Cmd/Ctrl+K even from editable card content", () => {
+		const onEditComment = vi.fn(async () => {});
+		const target = new HTMLElement();
+		target.isContentEditable = true;
+		const handler = new KeyboardHandler(
+			() => createReviewState(),
+			defaultCallbacks({ onEditComment }),
+			DEFAULT_KEYBINDINGS,
+		);
+
+		const event = createEvent({ key: "k", metaKey: true, target });
+		handler.handleKeyDown(event);
+
+		expect(event.preventDefault).toHaveBeenCalledOnce();
+		expect(event.stopPropagation).toHaveBeenCalledOnce();
+		expect(onEditComment).toHaveBeenCalledOnce();
+	});
+
 	it("triggers plain reveal on Space before answer is revealed", () => {
 		const onShowAnswer = vi.fn();
 		const handler = new KeyboardHandler(
@@ -94,6 +134,71 @@ describe("KeyboardHandler", () => {
 
 		expect(event.preventDefault).toHaveBeenCalledOnce();
 		expect(onShowAnswer).toHaveBeenCalledOnce();
+	});
+
+	it("deletes the current card on Shift+1", () => {
+		const onDelete = vi.fn();
+		const onSuspend = vi.fn();
+		const handler = new KeyboardHandler(
+			() => createReviewState(),
+			defaultCallbacks({ onDelete, onSuspend }),
+			DEFAULT_KEYBINDINGS,
+		);
+
+		const event = createEvent({ key: "!", shiftKey: true });
+		handler.handleKeyDown(event);
+
+		expect(event.preventDefault).toHaveBeenCalledOnce();
+		expect(onDelete).toHaveBeenCalledOnce();
+		expect(onSuspend).not.toHaveBeenCalled();
+	});
+
+	it("suspends the current card on Shift+2", () => {
+		const onDelete = vi.fn();
+		const onSuspend = vi.fn();
+		const handler = new KeyboardHandler(
+			() => createReviewState(),
+			defaultCallbacks({ onDelete, onSuspend }),
+			DEFAULT_KEYBINDINGS,
+		);
+
+		const event = createEvent({ key: "@", shiftKey: true });
+		handler.handleKeyDown(event);
+
+		expect(event.preventDefault).toHaveBeenCalledOnce();
+		expect(onSuspend).toHaveBeenCalledOnce();
+		expect(onDelete).not.toHaveBeenCalled();
+	});
+
+	it("ignores the delete shortcut while an input is focused", () => {
+		const onDelete = vi.fn();
+		const target = new HTMLElement();
+		target.isContentEditable = true;
+		const handler = new KeyboardHandler(
+			() => createReviewState(),
+			defaultCallbacks({ onDelete }),
+			DEFAULT_KEYBINDINGS,
+		);
+
+		const event = createEvent({ key: "!", shiftKey: true, target });
+		handler.handleKeyDown(event);
+
+		expect(onDelete).not.toHaveBeenCalled();
+		expect(event.preventDefault).not.toHaveBeenCalled();
+	});
+
+	it("does not delete on a bare 1 keypress", () => {
+		const onDelete = vi.fn();
+		const handler = new KeyboardHandler(
+			() => createReviewState({ isAnswerRevealed: true }),
+			defaultCallbacks({ onDelete }),
+			DEFAULT_KEYBINDINGS,
+		);
+
+		const event = createEvent({ key: "1" });
+		handler.handleKeyDown(event);
+
+		expect(onDelete).not.toHaveBeenCalled();
 	});
 
 	it("cycles type-in mode with T", () => {

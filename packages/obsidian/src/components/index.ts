@@ -21,6 +21,7 @@ export { FormCard } from "./FormCard";
 export { FormField } from "./FormField";
 export { IconButton } from "./IconButton";
 export { InfoBlock } from "./InfoBlock";
+export { InlineCardCount } from "./InlineCardCount";
 export { PlayIcon } from "./icons/PlayIcon";
 export { LoadingSpinner } from "./LoadingSpinner";
 export { ModalFooter } from "./ModalFooter";
@@ -28,6 +29,7 @@ export { OptionCheckbox } from "./OptionCheckbox";
 // ── Layout ───────────────────────────────────────────────────
 export { Panel } from "./Panel";
 export { PasteDropZone } from "./PasteDropZone";
+export { RetentionDisplay } from "./RetentionDisplay";
 export { SelectInput } from "./SelectInput";
 export { SliderInput } from "./SliderInput";
 // ── Data Display ─────────────────────────────────────────────

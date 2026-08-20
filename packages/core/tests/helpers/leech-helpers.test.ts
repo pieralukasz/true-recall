@@ -1,6 +1,35 @@
 import { describe, expect, it } from "vitest";
 
-import { shouldTriggerLeech } from "../../src/helpers/leech-helpers";
+import { isLeech, shouldTriggerLeech } from "../../src/helpers/leech-helpers";
+
+describe("isLeech", () => {
+	it("returns false when threshold is 0 (disabled)", () => {
+		expect(isLeech(999, 0)).toBe(false);
+	});
+
+	it("returns false when threshold is negative", () => {
+		expect(isLeech(10, -1)).toBe(false);
+	});
+
+	it("returns false below the threshold", () => {
+		expect(isLeech(7, 8)).toBe(false);
+	});
+
+	it("returns true at the threshold", () => {
+		expect(isLeech(8, 8)).toBe(true);
+	});
+
+	it("stays true between trigger points, unlike shouldTriggerLeech", () => {
+		// shouldTriggerLeech fires at 8, 12, 16 — a display must not flicker off
+		// on the lapses in between.
+		expect(shouldTriggerLeech(9, 8)).toBe(false);
+		expect(isLeech(9, 8)).toBe(true);
+	});
+
+	it("returns false for a card that never lapsed", () => {
+		expect(isLeech(0, 8)).toBe(false);
+	});
+});
 
 describe("shouldTriggerLeech", () => {
 	describe("disabled / below threshold", () => {

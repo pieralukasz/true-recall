@@ -7,6 +7,8 @@ export interface IPersistence {
 	readBinary(path: string): Promise<Uint8Array | null>;
 	read(path: string): Promise<string>;
 	writeBinary(path: string, data: ArrayBuffer): Promise<void>;
+	/** Move a file. Callers must ensure the target does not exist. */
+	rename(oldPath: string, newPath: string): Promise<void>;
 	exists(path: string): Promise<boolean>;
 	mkdir(path: string): Promise<void>;
 	list(path: string): Promise<{ files: string[]; folders: string[] }>;

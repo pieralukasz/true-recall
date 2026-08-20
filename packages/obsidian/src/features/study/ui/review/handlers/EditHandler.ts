@@ -6,7 +6,10 @@ import type { FSRSFlashcardItem } from "@true-recall/core/types";
 import { BR_REGEX } from "@true-recall/core/utils";
 
 import type { CommandService } from "@true-recall/obsidian/commands";
-import { UpdateCardCommand } from "@true-recall/obsidian/commands/commands/card-update.cmd";
+import {
+	UpdateCardCommand,
+	UpdateClozeTemplateCommand,
+} from "@true-recall/obsidian/commands/commands/card-update.cmd";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 import type { ReviewApi } from "@true-recall/obsidian/store";
 
@@ -78,12 +81,22 @@ export class EditHandler {
 				"@true-recall/core/flashcard/parsing/cloze-parser.service"
 			);
 			if (hasClozeContent(newContent) && card.sourceUid && card.clozeTemplate) {
-				this.deps.flashcardManager.updateClozeTemplate(
+				const cmd = new UpdateClozeTemplateCommand(
 					card.sourceUid,
 					card.clozeTemplate,
 					newContent,
 					card.sourceNoteName,
 				);
+				if (this.deps.commandService) {
+					await this.deps.commandService.execute(cmd);
+				} else {
+					this.deps.flashcardManager.updateClozeTemplate(
+						card.sourceUid,
+						card.clozeTemplate,
+						newContent,
+						card.sourceNoteName,
+					);
+				}
 
 				const newCards = parseClozeTemplate(newContent);
 				const thisCard = newCards.find(

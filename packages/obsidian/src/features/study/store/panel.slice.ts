@@ -155,6 +155,22 @@ export function createPanelSlice(
 				enterSelectionMode: sel.enterSelectionMode,
 				exitSelectionMode: sel.exitSelectionMode,
 				toggleCardSelection: sel.toggleSelection,
+				setCardsSelected: (cardIds: string[], selected: boolean) => {
+					set((s) => {
+						const next = new Set(s.panel.selectedCardIds);
+						for (const cardId of cardIds) {
+							if (selected) next.add(cardId);
+							else next.delete(cardId);
+						}
+						return {
+							panel: {
+								...s.panel,
+								selectionMode: "selecting",
+								selectedCardIds: next,
+							},
+						};
+					});
+				},
 				isInSelectionMode: sel.isInSelectionMode,
 				selectAll: (cardIds: string[]) => {
 					set((s) => ({

@@ -10,6 +10,12 @@ export interface BaseModalOptions {
 	 * selector-invalidation performance in large DOM trees).
 	 */
 	modifierClass?: string | string[];
+	/**
+	 * Constrain the body to the modal's height so an inner region scrolls and a
+	 * footer stays pinned, instead of the whole `.modal-content` scrolling.
+	 * The body must lay itself out as a flex column with its own scroll area.
+	 */
+	fillHeight?: boolean;
 }
 
 export abstract class BaseModal extends Modal {
@@ -17,11 +23,13 @@ export abstract class BaseModal extends Modal {
 	protected modalWidth: string;
 	private bodyContainer: HTMLElement | null = null;
 	private modifierClasses: string[];
+	private fillHeight: boolean;
 
 	constructor(app: App, options: BaseModalOptions) {
 		super(app);
 		this.modalTitle = options.title;
 		this.modalWidth = options.width ?? "fit-content";
+		this.fillHeight = options.fillHeight ?? false;
 		this.modifierClasses = options.modifierClass
 			? Array.isArray(options.modifierClass)
 				? options.modifierClass
@@ -37,6 +45,9 @@ export abstract class BaseModal extends Modal {
 
 		modalEl.addClass("ep-modal-width");
 		modalEl.addClass("tr-modal-host");
+		if (this.fillHeight) {
+			modalEl.addClass("tr-modal-fill");
+		}
 		containerEl.addClass("tr-modal-container-host");
 		for (const cls of this.modifierClasses) {
 			modalEl.addClass(cls);
@@ -46,7 +57,7 @@ export abstract class BaseModal extends Modal {
 
 		titleEl.setText(this.modalTitle);
 
-		this.bodyContainer = contentEl.createDiv();
+		this.bodyContainer = contentEl.createDiv({ cls: "tr-modal-body" });
 		this.renderBody(this.bodyContainer);
 	}
 

@@ -6,9 +6,17 @@ import type { CardFields } from "@true-recall/core/types/card-ai-preset.types";
 // card-ai-related from this barrel without reaching into core's settings
 // types directly.
 export type {
+	CardAIExecutor,
+	CardAIFieldScope,
 	CardAIPreset,
+	CardAIPresetMode,
 	CardAIUserSettings,
 	CardFields,
+} from "@true-recall/core/types/card-ai-preset.types";
+
+import type {
+	CardAIFieldScope,
+	CardAIPresetMode,
 } from "@true-recall/core/types/card-ai-preset.types";
 
 /** Whether a transform rewrites an existing card or drafts a new one. */
@@ -25,8 +33,11 @@ export interface CardAIRequest {
 	noteType: { name: string; fields: readonly string[] };
 	prompt: string;
 	operation: CardAIOperation;
+	mode: CardAIPresetMode;
+	fieldScope: CardAIFieldScope;
 	context?: CardAIContext;
 	signal?: AbortSignal;
+	temperature?: number;
 }
 
 export interface CardAIResult {

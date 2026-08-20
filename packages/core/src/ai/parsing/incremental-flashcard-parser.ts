@@ -1,4 +1,5 @@
 import type { ParsedBlock } from "../../flashcard/parsing/block-parser.service";
+import { hasClozeContent } from "../../flashcard/parsing/cloze-parser.service";
 import type { NoteType } from "../../types/note.types";
 
 export interface IncrementalParseEvent {
@@ -10,6 +11,14 @@ export interface IncrementalParseEvent {
 
 export type NoteTypeLookup = (slug: string) => NoteType | null;
 
+export interface ParseCardOptions {
+	/**
+	 * The preset intentionally produces one-sided cards (question only), so an
+	 * empty answer field is valid output rather than a degenerate card.
+	 */
+	allowEmptyAnswer?: boolean;
+}
+
 /**
  * Non-streaming JSON parser: parse full AI response text into ParsedBlocks.
  * Handles markdown code fences and extracts the JSON array.
@@ -17,6 +26,7 @@ export type NoteTypeLookup = (slug: string) => NoteType | null;
 export function parseBlockResponse(
 	text: string,
 	getNoteType: NoteTypeLookup,
+	options?: ParseCardOptions,
 ): ParsedBlock[] {
 	let json = text.trim();
 	json = json.replace(/^```(?:json)?\s*/i, "").replace(/\s*```\s*$/, "");
@@ -35,13 +45,14 @@ export function parseBlockResponse(
 	if (!Array.isArray(parsed)) return [];
 
 	return parsed
-		.map((item) => parseCardObject(item, getNoteType))
+		.map((item) => parseCardObject(item, getNoteType, options))
 		.filter((b): b is ParsedBlock => b !== null);
 }
 
 function parseCardObject(
 	item: unknown,
 	getNoteType: NoteTypeLookup,
+	options?: ParseCardOptions,
 ): ParsedBlock | null {
 	if (typeof item !== "object" || item === null) return null;
 	const obj = item as Record<string, unknown>;
@@ -55,12 +66,14 @@ function parseCardObject(
 	const fields: Record<string, string> = {};
 	let hasContent = false;
 	for (const fieldName of noteType.fields) {
-		const value = typeof obj[fieldName] === "string" ? obj[fieldName] : "";
+		const raw = typeof obj[fieldName] === "string" ? obj[fieldName] : "";
+		const value = unwrapFullHighlight(raw);
 		fields[fieldName] = value;
 		if (value.trim()) hasContent = true;
 	}
 
 	if (!hasContent) return null;
+	if (isDegenerateCard(noteType, fields, options)) return null;
 
 	const sourceText =
 		typeof obj.source === "string" ? obj.source.trim() : undefined;
@@ -71,6 +84,39 @@ function parseCardObject(
 		fields,
 		sourceText: sourceText || undefined,
 	};
+}
+
+/**
+ * Models copying from a highlighted source sentence sometimes wrap an entire
+ * field in ==…==, which renders the whole card on a highlight background.
+ * Unwrap only the full-field wrap; inner highlights may be intentional.
+ */
+function unwrapFullHighlight(value: string): string {
+	const trimmed = value.trim();
+	const match = trimmed.match(/^==([\s\S]+)==$/);
+	if (!match?.[1] || match[1].includes("==")) return value;
+	return match[1].trim();
+}
+
+/**
+ * Rejects structurally broken cards the model occasionally emits:
+ * - a cloze note with no {{cN::…}} markers renders a question that hides
+ *   nothing and has no answer to reveal;
+ * - a standard note with only its first field filled is a question with an
+ *   empty answer — unless the preset opted into one-sided cards via
+ *   `allowEmptyAnswer` (e.g. a "reformat the whole note into Front" preset).
+ */
+function isDegenerateCard(
+	noteType: NoteType,
+	fields: Record<string, string>,
+	options?: ParseCardOptions,
+): boolean {
+	if (noteType.type === 1) {
+		return !noteType.fields.some((name) => hasClozeContent(fields[name] ?? ""));
+	}
+	if (options?.allowEmptyAnswer) return false;
+	if (noteType.fields.length < 2) return false;
+	return noteType.fields.slice(1).every((name) => !(fields[name] ?? "").trim());
 }
 
 /**
@@ -87,7 +133,10 @@ export class IncrementalFlashcardParser {
 	private inString = false;
 	private escaped = false;
 
-	constructor(private getNoteType: NoteTypeLookup) {}
+	constructor(
+		private getNoteType: NoteTypeLookup,
+		private options?: ParseCardOptions,
+	) {}
 
 	feed(chunk: string): IncrementalParseEvent[] {
 		const events: IncrementalParseEvent[] = [];
@@ -159,7 +208,7 @@ export class IncrementalFlashcardParser {
 	private tryParseObject(text: string): ParsedBlock | null {
 		try {
 			const obj: unknown = JSON.parse(text);
-			return parseCardObject(obj, this.getNoteType);
+			return parseCardObject(obj, this.getNoteType, this.options);
 		} catch {
 			return null;
 		}

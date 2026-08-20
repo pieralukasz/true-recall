@@ -1,11 +1,13 @@
 import { normalizePath } from "obsidian";
 import { useCallback } from "preact/hooks";
 
+import { writeDbFileAtomically } from "@true-recall/core/persistence/sqlite/atomic-db-file";
 import {
 	DB_FOLDER,
 	getDeviceDbFilename,
 } from "@true-recall/core/persistence/sqlite/sqlite.types";
 
+import { ObsidianPersistence } from "@true-recall/obsidian/adapters/ObsidianPersistence";
 import {
 	ActionButton,
 	FormCard,
@@ -70,7 +72,19 @@ export function DeviceDatabaseSection() {
 			const sourceData = await plugin.app.vault.adapter.readBinary(
 				result.sourcePath,
 			);
-			await plugin.app.vault.adapter.writeBinary(targetPath, sourceData);
+
+			// The in-memory store must never flush again: its debounced or
+			// safety-interval save would overwrite the imported file with the
+			// pre-import state before the user restarts.
+			plugin.cardStore?.haltPersistence();
+
+			// Atomic swap: an interrupted import must not leave a truncated
+			// live database behind.
+			await writeDbFileAtomically(
+				new ObsidianPersistence(plugin.app),
+				targetPath,
+				sourceData,
+			);
 
 			notify().success(
 				`Imported data from device ${result.sourceDeviceId}. Please restart Obsidian.`,
@@ -98,7 +112,16 @@ export function DeviceDatabaseSection() {
 			>
 				<TextInput
 					value={deviceLabel || ""}
-					onChange={(v) => plugin.deviceIdService?.setDeviceLabel(v)}
+					onChange={(v) => {
+						plugin.deviceIdService?.setDeviceLabel(v);
+						const label = plugin.deviceIdService?.getDeviceLabel();
+						if (label) {
+							plugin.coreApp.cardStore?.cards.setSyncMetadata(
+								"device:label",
+								label,
+							);
+						}
+					}}
 					placeholder="e.g., work laptop, phone"
 				/>
 			</FormField>

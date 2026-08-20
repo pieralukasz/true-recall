@@ -1,6 +1,7 @@
 import { signal } from "@preact/signals";
 import { TFile } from "obsidian";
 
+import type { CardAIPreset } from "@true-recall/core";
 import {
 	AssistantAgent,
 	type AssistantContext,
@@ -19,7 +20,11 @@ import { DraftGenerationService } from "@true-recall/core/ai/generation/draft-ge
 import { resolveGenerationTarget } from "@true-recall/core/ai/generation/preset-resolver";
 import type { StreamingFlashcardManager } from "@true-recall/core/ai/generation/streaming-generation.service";
 import type { ExistingCardContext } from "@true-recall/core/ai/prompts/existing-cards-block";
-import { resolveAIWorkflow } from "@true-recall/core/ai/workflows/ai-workflow";
+import {
+	type AIWorkflow,
+	CUSTOM_CARD_POLISH_PRESET_ID,
+	resolveAIWorkflow,
+} from "@true-recall/core/ai/workflows/ai-workflow";
 
 import { applyPendingProposals } from "@true-recall/obsidian/features/assistant/ui/apply-pending-proposals";
 import type TrueRecallPlugin from "@true-recall/obsidian/main";
@@ -37,6 +42,8 @@ import {
 	type CardAIContext,
 	CardAIService,
 	deepEqualFields,
+	resolveCardAIPolicy,
+	runLocalCardTransform,
 } from "@true-recall/plugins/shared/card-ai";
 
 export interface AssistantProgress {
@@ -62,7 +69,8 @@ export class AssistantService {
 		this.started = true;
 		const reset = this.actions().resetRunningToPending();
 		const swept = this.threadActions().deleteOrphanedTasks();
-		if (reset > 0 || swept > 0) this.invalidate();
+		const unstuck = this.threadActions().clearStaleActiveTasks(Date.now());
+		if (reset > 0 || swept > 0 || unstuck > 0) this.invalidate();
 		this.pump();
 	}
 
@@ -84,10 +92,19 @@ export class AssistantService {
 		const threadId = crypto.randomUUID();
 		const taskId = crypto.randomUUID();
 		const createdAt = Date.now();
+		const context: AssistantContext = {
+			...params.context,
+			...(params.presetId
+				? {
+						workflowId: params.presetId,
+						workflowInstruction: params.instruction,
+					}
+				: {}),
+		};
 		this.threadActions().insert({
 			id: threadId,
 			title: this.threadTitle(params.displayMessage ?? params.instruction),
-			context: params.context,
+			context,
 			state: params.state ?? "active",
 			message: {
 				id: crypto.randomUUID(),
@@ -103,7 +120,7 @@ export class AssistantService {
 			threadId,
 			instruction: params.instruction,
 			presetId: params.presetId,
-			context: params.context,
+			context,
 			createdAt,
 		});
 		this.invalidate();
@@ -134,6 +151,7 @@ export class AssistantService {
 			id: taskId,
 			threadId,
 			instruction: trimmed,
+			presetId: thread.context.workflowId,
 			context,
 			createdAt,
 		});
@@ -185,6 +203,8 @@ export class AssistantService {
 
 	delete(taskId: string): void {
 		this.actions().deleteById(taskId);
+		// A thread still pointing at the deleted task would stay busy forever.
+		this.threadActions().clearStaleActiveTasks(Date.now());
 		this.invalidate();
 	}
 
@@ -396,14 +416,16 @@ export class AssistantService {
 		// A preset marked auto-apply is a shortcut the user configured: run it and
 		// land the change, no confirmation step. The thread still records what
 		// happened, so the inbox remains the single history of AI edits.
-		if (
-			workflow?.kind === "modify-card" &&
-			workflow.autoApply === true &&
-			task.threadId &&
-			pending > 0
-		) {
-			await this.applyPolishImmediately(task, task.threadId);
-			return;
+		if (workflow?.kind === "modify-card" && task.threadId) {
+			if (pending === 0) {
+				this.threadActions().setState(task.threadId, "archived", Date.now());
+				notify().info("Card Polish made no changes");
+				return;
+			}
+			if (workflow.autoApply || workflow.autoApplyNewCards) {
+				await this.applyPolishImmediately(task, task.threadId, workflow);
+				return;
+			}
 		}
 
 		const n = manifest.proposals.length;
@@ -447,6 +469,7 @@ export class AssistantService {
 	private async applyPolishImmediately(
 		task: AssistantTask,
 		threadId: string,
+		workflow: AIWorkflow,
 	): Promise<void> {
 		const thread = this.threadActions().getById(threadId);
 		const manifest = thread?.manifest;
@@ -456,6 +479,12 @@ export class AssistantService {
 			task,
 			manifest,
 			new AssistantApplyService(this.plugin),
+			{
+				shouldApply: (proposal) =>
+					proposal.type === "create_card"
+						? workflow.autoApplyNewCards === true
+						: workflow.autoApply === true,
+			},
 		);
 
 		this.actions().updateManifest(task.id, manifest);
@@ -472,11 +501,18 @@ export class AssistantService {
 			return;
 		}
 
-		this.threadActions().setState(threadId, "archived", Date.now());
+		const stillPending = manifest.proposals.some(
+			(proposal) => proposal.status === "proposed",
+		);
+		if (!stillPending) {
+			this.threadActions().setState(threadId, "archived", Date.now());
+		}
 		notify().success(
-			result.appliedCount === 1
-				? "Card Polish applied"
-				: `Card Polish applied ${result.appliedCount} changes`,
+			stillPending
+				? `${result.appliedCount} Card Polish change${result.appliedCount === 1 ? "" : "s"} applied — review the rest`
+				: result.appliedCount === 1
+					? "Card Polish applied"
+					: `Card Polish applied ${result.appliedCount} changes`,
 		);
 	}
 
@@ -681,6 +717,7 @@ export class AssistantService {
 			return this.runStreamingGeneration(preset.id, sourceFile, text, {
 				existingCards,
 				contextText,
+				preserveImageEmbeds: !!task.context.selectedText?.trim(),
 			});
 		}
 
@@ -723,6 +760,7 @@ export class AssistantService {
 		options: {
 			existingCards: ExistingCardContext[];
 			contextText: string | undefined;
+			preserveImageEmbeds: boolean;
 		},
 	): Promise<AssistantManifest> {
 		const service = new ChunkedGenerationService(
@@ -779,9 +817,22 @@ export class AssistantService {
 		presetId: string,
 		onProgress: (event: AssistantProgressEvent) => void,
 	): Promise<AssistantManifest> {
-		const preset = this.plugin.settings.cardPolish?.userPresets.find(
-			(candidate) => candidate.id === presetId,
-		);
+		const preset: CardAIPreset | undefined =
+			presetId === CUSTOM_CARD_POLISH_PRESET_ID
+				? {
+						id: CUSTOM_CARD_POLISH_PRESET_ID,
+						name: "Custom Card Polish",
+						prompt: task.context.workflowInstruction ?? task.instruction,
+						autoApply:
+							this.plugin.settings.cardPolish?.customPromptAutoApply ?? false,
+						builtin: false,
+						mode: "edit",
+						fieldScope: "all",
+						executor: "ai",
+					}
+				: this.plugin.settings.cardPolish?.userPresets.find(
+						(candidate) => candidate.id === presetId,
+					);
 		if (!preset) throw new Error(`Card Polish preset "${presetId}" not found`);
 
 		const draft = task.context.draftCard;
@@ -801,26 +852,66 @@ export class AssistantService {
 		}
 
 		onProgress({ kind: "iteration", index: 0 });
-		const config = resolveAIClientConfig(this.plugin.settings, "card-polish");
-		const service = new CardAIService(
-			new OpenRouterClient(
-				config.apiKey,
-				config.model,
-				new ObsidianHttpClient(),
-				config.baseUrl,
-				undefined,
-				"card-polish",
-				{ providerType: config.providerType },
-			),
+		const policy = resolveCardAIPolicy(preset);
+		const previousEdit = task.context.draftWorkspace?.manifest.proposals.find(
+			(proposal) =>
+				proposal.status === "proposed" &&
+				((draft &&
+					proposal.type === "update_draft" &&
+					proposal.sessionId === draft.sessionId) ||
+					(task.context.card &&
+						proposal.type === "update_card" &&
+						proposal.cardId === task.context.card.cardId)),
 		);
-		const context = await this.collectPolishContext(task, preset);
-		const result = await service.transform({
-			fields: original,
-			noteType: { name: noteType.name, fields: noteType.fields },
-			prompt: preset.prompt,
-			operation: draft?.operation ?? "edit",
-			context,
-		});
+		// Follow-up instructions refine the currently visible edit instead of
+		// starting over from the stored card. Split/spawn workflows intentionally
+		// keep the original source as their stable input and regenerate the set.
+		const workingFields =
+			policy.mode === "edit" &&
+			previousEdit &&
+			(previousEdit.type === "update_card" ||
+				previousEdit.type === "update_draft")
+				? previousEdit.fields
+				: original;
+		const answerField = noteType.fields[1] ?? noteType.fields[0];
+		if (
+			policy.fieldScope === "empty-answer" &&
+			answerField &&
+			(workingFields[answerField] ?? "").trim() !== ""
+		) {
+			onProgress({ kind: "done" });
+			return { proposals: [], citations: [] };
+		}
+
+		const basePrompt = task.context.workflowInstruction ?? preset.prompt;
+		const prompt = task.context.draftWorkspace
+			? `${basePrompt}\n\nAdditional instruction: ${task.instruction.trim()}`
+			: basePrompt;
+		const result =
+			policy.executor === "ai"
+				? await this.runAICardPolish({
+						fields: workingFields,
+						noteType,
+						prompt,
+						operation: draft?.operation ?? "edit",
+						policy,
+						context: await this.collectPolishContext(
+							task,
+							preset,
+							workingFields,
+						),
+					})
+				: {
+						cards: [
+							runLocalCardTransform(
+								policy.executor,
+								workingFields,
+								policy.fieldScope,
+							),
+						],
+						rawResponse: "",
+						usage: { promptTokens: 0, completionTokens: 0 },
+					};
 
 		const proposals: AssistantProposal[] = [];
 		const [head, ...spawned] = result.cards;
@@ -885,6 +976,40 @@ export class AssistantService {
 		};
 	}
 
+	private async runAICardPolish(input: {
+		fields: Record<string, string>;
+		noteType: { name: string; fields: readonly string[] };
+		prompt: string;
+		operation: "edit" | "create";
+		policy: ReturnType<typeof resolveCardAIPolicy>;
+		context?: CardAIContext;
+	}) {
+		const config = resolveAIClientConfig(this.plugin.settings, "card-polish");
+		return new CardAIService(
+			new OpenRouterClient(
+				config.apiKey,
+				config.model,
+				new ObsidianHttpClient(),
+				config.baseUrl,
+				undefined,
+				"card-polish",
+				{ providerType: config.providerType },
+			),
+		).transform({
+			fields: input.fields,
+			noteType: input.noteType,
+			prompt: input.prompt,
+			operation: input.operation,
+			mode: input.policy.mode,
+			fieldScope: input.policy.fieldScope,
+			context: input.context,
+			temperature: Math.min(
+				config.temperature,
+				input.policy.mode === "edit" ? 0.2 : 0.4,
+			),
+		});
+	}
+
 	private resolveSourceFile(context: AssistantContext): TFile | null {
 		const path =
 			context.source?.path ??
@@ -899,6 +1024,7 @@ export class AssistantService {
 	private async collectPolishContext(
 		task: AssistantTask,
 		preset: { includeSourceNote?: boolean; includeRelatedCards?: boolean },
+		currentFields: Record<string, string>,
 	): Promise<CardAIContext | undefined> {
 		if (!preset.includeSourceNote && !preset.includeRelatedCards)
 			return undefined;
@@ -920,6 +1046,9 @@ export class AssistantService {
 			task.context.source?.uid;
 		if (preset.includeRelatedCards && sourceUid) {
 			context.relatedCards = this.host.getRelatedCards(sourceUid);
+			context.relatedCards = context.relatedCards
+				.filter((card) => !deepEqualFields(card.fields, currentFields))
+				.slice(0, 5);
 		}
 		return context;
 	}

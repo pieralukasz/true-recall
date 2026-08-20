@@ -249,13 +249,18 @@ export class CardRepository {
 	}
 
 	/** @throws Error if card not found, DuplicateQuestionError if question conflicts */
-	updateContent(cardId: string, newQuestion: string, newAnswer: string): void {
+	updateContent(
+		cardId: string,
+		newQuestion: string,
+		newAnswer: string,
+		options?: { skipDuplicateCheck?: boolean },
+	): void {
 		const existing = this.store.get(cardId);
 		if (!existing) {
 			throw new NotFoundError("Card", cardId);
 		}
 
-		if (newQuestion !== existing.question) {
+		if (!options?.skipDuplicateCheck && newQuestion !== existing.question) {
 			const duplicateInfo = this.store.cards.getCardInfoByQuestion(
 				newQuestion,
 				cardId,
@@ -453,6 +458,42 @@ export class CardRepository {
 		}
 	}
 
+	restoreClozeTemplate(
+		sourceUid: string,
+		currentTemplate: string,
+		previousTemplate: string,
+		previousSiblingIds: readonly string[],
+	): void {
+		const previousIds = new Set(previousSiblingIds);
+		const currentIds = this.store
+			.getClozeSiblings(sourceUid, currentTemplate)
+			.map((card) => card.id);
+
+		for (const id of currentIds) {
+			if (!previousIds.has(id)) this.store.cards.softDeleteWithCascade(id);
+		}
+		for (const id of previousSiblingIds) {
+			if (!currentIds.includes(id)) this.store.cards.restoreWithCascade(id);
+		}
+
+		const anchorId = previousSiblingIds[0];
+		if (anchorId) {
+			this.store.cards.updateClozeCardContent(
+				anchorId,
+				"",
+				"",
+				previousTemplate,
+			);
+		}
+
+		const affectedCardIds = [
+			...new Set([...currentIds, ...previousSiblingIds]),
+		];
+		if (affectedCardIds.length > 0) {
+			this.emit("cards:bulk", { cardIds: affectedCardIds });
+		}
+	}
+
 	delete(cardId: string): boolean {
 		return this.deleteWithCascade(cardId).removedIds.length > 0;
 	}
@@ -517,6 +558,16 @@ export class CardRepository {
 		this.emit("cards:bulk", { cardIds: removedIds, action: "removed" });
 
 		return { removedIds, cardsData };
+	}
+
+	/**
+	 * Ids {@link deleteBatchWithCascade} would remove for this card, without
+	 * deleting anything. Callers that must keep other state (a review queue, a
+	 * selection) in sync need the exact set up front, and duplicating the
+	 * cascade rules on their side would let the two drift apart.
+	 */
+	getCascadeDeleteIds(cardId: string): string[] {
+		return this.collectCascadeDeleteIds(cardId);
 	}
 
 	private collectCascadeDeleteIds(cardId: string): string[] {

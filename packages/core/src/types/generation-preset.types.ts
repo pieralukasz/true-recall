@@ -13,6 +13,8 @@ export interface GenerationPreset {
 	includeSourceNote?: boolean;
 	/** Include sibling flashcards from the same source note as context. */
 	includeRelatedCards?: boolean;
+	/** Preset intentionally produces one-sided cards, so an empty answer field is valid output. */
+	allowEmptyAnswer?: boolean;
 	/** Output language for generated cards. ISO code or "auto" / undefined = match source text. */
 	languageOverride?: string;
 	createdAt: number;
@@ -34,6 +36,7 @@ export type UpdateGenerationPresetPatch = Partial<
 		| "isDefault"
 		| "includeSourceNote"
 		| "includeRelatedCards"
+		| "allowEmptyAnswer"
 		| "languageOverride"
 	>
 >;

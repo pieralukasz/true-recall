@@ -1,6 +1,6 @@
 {
 	"name": "true-recall",
-	"version": "2.1.0",
+	"version": "2.2.0",
 	"private": true,
 	"description": "Spaced repetition with FSRS algorithm",
 	"main": "main.js",
@@ -22,6 +22,7 @@
 		"test": "bun vitest run",
 		"test:watch": "bun vitest",
 		"test:coverage": "bun vitest run --coverage",
+		"test:e2e:mobile": "bun e2e/mobile/run.ts",
 		"render:excalidraw": "bunx --bun excalirender",
 		"changelog": "bun scripts/generate-changelog.ts",
 		"changelog:preview": "bun scripts/generate-changelog.ts --preview",
@@ -56,8 +57,8 @@
 		"vitest": "^4.1.8"
 	},
 	"dependencies": {
-		"@codemirror/state": "6.5.0",
-		"@codemirror/view": "^6.35.0",
+		"@codemirror/state": "6.7.1",
+		"@codemirror/view": "^6.43.8",
 		"@floating-ui/dom": "^1.7.5",
 		"@preact/signals": "^2.8.1",
 		"@preact/signals-core": "^1.8.0",
@@ -70,7 +71,7 @@
 		"fzstd": "^0.1.1",
 		"monkey-around": "^3.0.0",
 		"motion": "12.35.0",
-		"obsidian": "latest",
+		"obsidian": "^1.13.1",
 		"pako": "^2.1.0",
 		"preact": "^10.28.4",
 		"ts-fsrs": "^5.2.3",

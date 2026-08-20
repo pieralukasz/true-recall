@@ -9,6 +9,7 @@ import {
 	type ActionableSessionSnapshotDeps,
 	computeActionableSessionSnapshot,
 } from "../../../src/services/review/actionable-session-snapshot.service";
+import type { RModeCardOptions } from "../../../src/services/review/retrievability-queue";
 import type {
 	FSRSPreset,
 	TrueRecallSettings,
@@ -61,6 +62,7 @@ function createDeps(
 		getDefaultPreset: () => defaultPreset,
 		resolvePresetForCard: () => defaultPreset,
 		resolvePresetChain: () => ({ effective: { preset: defaultPreset } }),
+		toFSRSSettings: () => ({}),
 	} as unknown as PresetService;
 	const sessionPersistence = {
 		getReviewedToday: () => new Set<string>(),
@@ -159,6 +161,44 @@ describe("computeActionableSessionSnapshot", () => {
 
 		expect(snapshot.counts.due).toBe(1);
 		expect(snapshot.queue.map((c) => c.id)).toEqual(["r1"]);
+	});
+
+	it("uses shared session progress without repeating persistence queries", () => {
+		const getReviewedToday = vi.fn(() => new Set<string>());
+		const getTodayProgressByPreset = vi.fn(() => new Map());
+		const sessionPersistence = {
+			getReviewedToday,
+			getNewCardsStudiedToday: () => 0,
+			getReviewCardsCompletedToday: () => 0,
+			getTodayProgressByPreset,
+		} as unknown as SessionPersistenceService;
+		const cards = [
+			createMockFlashcard({
+				id: "already-reviewed",
+				sourceUid: "uid-1",
+				fsrs: { state: State.Review, due: "2024-01-01T00:00:00.000Z" },
+			}),
+			createMockFlashcard({
+				id: "still-due",
+				sourceUid: "uid-2",
+				fsrs: { state: State.Review, due: "2024-01-01T00:00:00.000Z" },
+			}),
+		];
+
+		const snapshot = computeActionableSessionSnapshot(
+			createDeps({ allCards: cards, sessionPersistence }),
+			{},
+			{
+				sessionProgress: {
+					reviewedToday: new Set(["already-reviewed"]),
+					presetProgressToday: new Map(),
+				},
+			},
+		);
+
+		expect(snapshot.queue.map((card) => card.id)).toEqual(["still-due"]);
+		expect(getReviewedToday).not.toHaveBeenCalled();
+		expect(getTodayProgressByPreset).not.toHaveBeenCalled();
 	});
 
 	it("applies project scope via sourceUidFilter", () => {
@@ -305,5 +345,149 @@ describe("computeActionableSessionSnapshot", () => {
 		expect(reviewService.buildQueue).toHaveBeenCalled();
 		expect(updateSettings).not.toHaveBeenCalled();
 		expect(snapshot.queueLength).toBe(1);
+	});
+
+	it("passes a shared calculation time to the queue builder", () => {
+		const now = new Date("2026-08-10T10:00:00.000Z");
+		const buildQueue = vi.fn(() => []);
+		const reviewService = {
+			buildQueue,
+		} as unknown as import("../../../src/services/review/review.service").ReviewService;
+
+		computeActionableSessionSnapshot(
+			createDeps({ reviewService }),
+			{},
+			{ now },
+		);
+
+		expect(buildQueue).toHaveBeenCalledWith(
+			expect.any(Array),
+			expect.anything(),
+			expect.objectContaining({ now }),
+		);
+	});
+
+	it("keeps target count and scheduling mode in the snapshot cache key", () => {
+		const cache = new Map();
+		const buildQueue = vi.fn(() => []);
+		const reviewService = {
+			buildQueue,
+		} as unknown as import("../../../src/services/review/review.service").ReviewService;
+		const deps = createDeps({ reviewService });
+
+		computeActionableSessionSnapshot(
+			deps,
+			{ rModeTargetCount: 10, schedulingMode: "due" },
+			{ cache },
+		);
+		computeActionableSessionSnapshot(
+			deps,
+			{ rModeTargetCount: 20, schedulingMode: "due" },
+			{ cache },
+		);
+		computeActionableSessionSnapshot(
+			deps,
+			{ rModeTargetCount: 20, schedulingMode: "retrievability" },
+			{ cache },
+		);
+		computeActionableSessionSnapshot(
+			deps,
+			{
+				rModeTargetCount: 20,
+				schedulingMode: "retrievability",
+				topUp: { kind: "review", count: 5 },
+			},
+			{ cache },
+		);
+		computeActionableSessionSnapshot(
+			deps,
+			{
+				rModeTargetCount: 20,
+				schedulingMode: "retrievability",
+				topUp: { kind: "new", count: 5 },
+			},
+			{ cache },
+		);
+
+		expect(buildQueue).toHaveBeenCalledTimes(5);
+	});
+
+	it("counts only learning steps due now as actionable", () => {
+		const cards = [
+			createMockFlashcard({
+				id: "learning-now",
+				fsrs: {
+					state: State.Learning,
+					due: new Date(Date.now() - 60_000).toISOString(),
+				},
+			}),
+			createMockFlashcard({
+				id: "learning-later",
+				fsrs: {
+					state: State.Relearning,
+					due: new Date(Date.now() + 60_000).toISOString(),
+				},
+			}),
+		];
+		const reviewService = {
+			buildQueue: vi.fn(() => cards),
+		} as unknown as import("../../../src/services/review/review.service").ReviewService;
+
+		const snapshot = computeActionableSessionSnapshot(
+			createDeps({ allCards: cards, reviewService }),
+			{},
+		);
+
+		expect(snapshot.counts.learning).toBe(1);
+		expect(snapshot.counts.learningPending).toBe(1);
+	});
+
+	it("resolves R-Mode thresholds and FSRS settings per card preset", () => {
+		const defaultPreset = createPreset("Default", { requestRetention: 0.85 });
+		const strictPreset = createPreset("Strict", { requestRetention: 0.95 });
+		const settings = {
+			...createSettings([defaultPreset, strictPreset], defaultPreset.id),
+			rMode: { ...DEFAULT_SETTINGS.rMode, enabled: true, ceilingOffset: 0.03 },
+		};
+		const card = createMockFlashcard({
+			id: "strict-card",
+			sourceUid: "strict-source",
+			fsrs: { state: State.Review },
+		});
+		const strictSettings = { requestRetention: 0.95 };
+		const toFSRSSettings = vi.fn((preset: FSRSPreset) =>
+			preset === strictPreset ? strictSettings : {},
+		);
+		const presetService = {
+			getPresets: () => settings.fsrsPresets,
+			getDefaultPreset: () => defaultPreset,
+			resolvePresetForCard: () => strictPreset,
+			resolvePresetChain: () => ({ effective: { preset: defaultPreset } }),
+			toFSRSSettings,
+		} as unknown as PresetService;
+		let resolved: RModeCardOptions | undefined;
+		const reviewService = {
+			buildQueue: vi.fn((cards, _fsrs, options) => {
+				resolved = options.rMode?.resolveCardOptions?.(cards[0]);
+				return [];
+			}),
+		} as unknown as import("../../../src/services/review/review.service").ReviewService;
+
+		computeActionableSessionSnapshot(
+			createDeps({
+				allCards: [card],
+				settings,
+				presetService,
+				reviewService,
+			}),
+			{ schedulingMode: "retrievability" },
+		);
+
+		expect(resolved).toEqual({
+			comfortFloor: 0.95,
+			ceiling: 0.98,
+			presetSettings: strictSettings,
+		});
+		expect(toFSRSSettings).toHaveBeenCalledWith(strictPreset);
 	});
 });

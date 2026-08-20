@@ -139,6 +139,22 @@ describe("Note CRUD Integration", () => {
 	// ── Create basic flashcard e2e ─────────────────────────────
 
 	describe("create basic flashcard end-to-end", () => {
+		it("exposes the note user comment on its generated card", () => {
+			const note = createTestNote({
+				id: "commented-note",
+				noteTypeId: BUILTIN_BASIC_ID,
+				fields: { Front: "Question", Back: "Answer" },
+				userComment: "Verify this distinction against the source.",
+			});
+			insertNoteDirect(db, note);
+			insertV26Card(db, { id: "commented-card", noteId: note.id });
+
+			const card = cardActions.get("commented-card");
+			expect(card?.userComment).toBe(
+				"Verify this distinction against the source.",
+			);
+		});
+
 		it("create note → generate card → read back computed q/a", () => {
 			const noteType = createTestNoteType({
 				id: BUILTIN_BASIC_ID,

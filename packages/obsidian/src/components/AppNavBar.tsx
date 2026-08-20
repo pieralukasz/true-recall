@@ -26,7 +26,11 @@ interface AppNavBarProps {
 	collapsible?: boolean;
 }
 
-const MOBILE_ALLOWED_NAV: Set<NavItemId> = new Set(["dashboard", "add"]);
+const MOBILE_ALLOWED_NAV: Set<NavItemId> = new Set([
+	"dashboard",
+	"add",
+	"stats",
+]);
 
 export function AppNavBar({ activeItem, collapsible = false }: AppNavBarProps) {
 	const plugin = usePlugin();

@@ -30,6 +30,8 @@ export interface PresetChainEntry {
 }
 
 export class PresetService {
+	private readonly fsrsSettingsCache = new WeakMap<FSRSPreset, FSRSSettings>();
+
 	constructor(
 		private getSettings: () => TrueRecallSettings,
 		private persistSettings: () => Promise<void>,
@@ -254,6 +256,17 @@ export class PresetService {
 	}
 
 	toFSRSSettings(preset: FSRSPreset): FSRSSettings {
-		return extractFSRSSettingsFromPreset(preset);
+		const cached = this.fsrsSettingsCache.get(preset);
+		if (cached) return cached;
+
+		const extracted = extractFSRSSettingsFromPreset(preset);
+		const settings = Object.freeze({
+			...extracted,
+			weights: extracted.weights ? Object.freeze([...extracted.weights]) : null,
+			learningSteps: Object.freeze([...extracted.learningSteps]),
+			relearningSteps: Object.freeze([...extracted.relearningSteps]),
+		}) as FSRSSettings;
+		this.fsrsSettingsCache.set(preset, settings);
+		return settings;
 	}
 }

@@ -11,6 +11,7 @@ import {
 import type { AssistantContext } from "@true-recall/core/ai/assistant";
 import { hasAIKey } from "@true-recall/core/ai/config/ai-client-config";
 
+import { BatchCreateCommand } from "@true-recall/obsidian/commands/commands/card-create.cmd";
 import { Clickable } from "@true-recall/obsidian/components";
 import {
 	type FormattingTargetRef,
@@ -21,8 +22,10 @@ import {
 	useApp,
 	usePlugin,
 } from "@true-recall/obsidian/preact/ObsidianContext";
+import { useKeyboardInset } from "@true-recall/obsidian/preact/useKeyboardInset";
 import { registerAssistantDraftTarget } from "@true-recall/obsidian/services/assistant/assistant-draft-target-registry";
 import { notify } from "@true-recall/obsidian/services/notification.service";
+import { isMobile } from "@true-recall/obsidian/utils/platform";
 import { openAssistantEditorWindow } from "@true-recall/obsidian/views/modal-window/open-assistant-editor-window";
 import { openCardTypesEditor } from "@true-recall/obsidian/views/modal-window/open-card-types-editor";
 import { openNoteTypeManager } from "@true-recall/obsidian/views/modal-window/open-note-type-manager";
@@ -31,6 +34,7 @@ import { ActionBar } from "./ActionBar";
 import { deriveAIWandState } from "./ai-wand-state";
 import { NoteFieldsForm } from "./NoteFieldsForm";
 import type { QuickNoteEditorMode, QuickNoteEditorResult } from "./types";
+import { UserCommentField } from "./UserCommentField";
 
 interface QuickNoteEditorAppProps {
 	mode: QuickNoteEditorMode;
@@ -47,6 +51,7 @@ export function QuickNoteEditorApp({
 }: QuickNoteEditorAppProps) {
 	const app = useApp();
 	const plugin = usePlugin();
+	useKeyboardInset();
 
 	const isEdit = mode.mode === "edit";
 	const editMode = isEdit ? mode : null;
@@ -74,6 +79,20 @@ export function QuickNoteEditorApp({
 	});
 	const fieldsRef = useRef(fields);
 	fieldsRef.current = fields;
+	const initialUserCommentRef = useRef(editMode?.note.userComment ?? "");
+	const [userComment, setUserComment] = useState(
+		() => editMode?.note.userComment ?? "",
+	);
+	const userCommentRef = useRef(userComment);
+	userCommentRef.current = userComment;
+	const userCommentInputRef = useRef<HTMLTextAreaElement>(null);
+	const savingRef = useRef(false);
+	// Cmd+Z right after "Save & Add" undoes the creation and restores the
+	// typed fields into the modal. Any user edit invalidates the pending undo.
+	const pendingCreateUndoRef = useRef<{
+		command: BatchCreateCommand;
+		fields: Record<string, string>;
+	} | null>(null);
 	const assistantDraftSessionIdRef = useRef(`qne-${crypto.randomUUID()}`);
 	const closeAssistantWindowRef = useRef<(() => void) | null>(null);
 
@@ -81,8 +100,14 @@ export function QuickNoteEditorApp({
 		() =>
 			registerAssistantDraftTarget(assistantDraftSessionIdRef.current, {
 				getFields: () => fieldsRef.current,
-				applyFields: (next) =>
-					setFields((current) => ({ ...current, ...next })),
+				applyFields: (next) => {
+					pendingCreateUndoRef.current = null;
+					setFields((current) => {
+						const merged = { ...current, ...next };
+						fieldsRef.current = merged;
+						return merged;
+					});
+				},
 			}),
 		[],
 	);
@@ -100,6 +125,7 @@ export function QuickNoteEditorApp({
 	const [pinnedFields, setPinnedFields] = useState<Set<string>>(new Set());
 	const [refreshCounter, setRefreshCounter] = useState(0);
 	const [alwaysTypeIn, setAlwaysTypeIn] = useState(false);
+	const [focusFirstRequest, setFocusFirstRequest] = useState(0);
 
 	// Focus tracking for shared formatting toolbar
 	const focusedFieldRef = useRef<FormattingTargetRef | null>(null);
@@ -131,14 +157,18 @@ export function QuickNoteEditorApp({
 	}, [isEdit, editMode, plugin.cardStore, noteTypeId, refreshCounter]);
 
 	const isDirty = useMemo(() => {
+		const commentChanged = userComment !== initialUserCommentRef.current;
 		const initialFields = initialFieldsRef.current;
 		if (isEdit && initialFields) {
-			return Object.keys(initialFields).some(
-				(k) => fields[k] !== initialFields[k],
+			return (
+				commentChanged ||
+				Object.keys(initialFields).some((k) => fields[k] !== initialFields[k])
 			);
 		}
-		return Object.values(fields).some((v) => v.trim().length > 0);
-	}, [isEdit, fields]);
+		return (
+			commentChanged || Object.values(fields).some((v) => v.trim().length > 0)
+		);
+	}, [isEdit, fields, userComment]);
 
 	const canSave = useMemo(() => {
 		const firstField = noteType?.fields[0];
@@ -195,12 +225,37 @@ export function QuickNoteEditorApp({
 
 	// ── Handlers ──
 
+	const invalidatePendingCreateUndo = useCallback(() => {
+		pendingCreateUndoRef.current = null;
+	}, []);
+
 	const handleFieldChange = useCallback((fieldName: string, value: string) => {
-		setFields((prev) => ({ ...prev, [fieldName]: value }));
+		if (fieldsRef.current[fieldName] === value) return;
+		pendingCreateUndoRef.current = null;
+		const nextFields = { ...fieldsRef.current, [fieldName]: value };
+		fieldsRef.current = nextFields;
+		setFields(nextFields);
 	}, []);
 
 	const handleNoteTypeChange = useCallback((id: string) => {
+		pendingCreateUndoRef.current = null;
 		setNoteTypeId(id);
+	}, []);
+
+	const handleUserCommentChange = useCallback((value: string) => {
+		pendingCreateUndoRef.current = null;
+		userCommentRef.current = value;
+		setUserComment(value);
+	}, []);
+
+	const handleSourceSelect = useCallback((file: TFile | null) => {
+		pendingCreateUndoRef.current = null;
+		setSelectedSourceNote(file);
+	}, []);
+
+	const handleTypeInToggle = useCallback((enabled: boolean) => {
+		pendingCreateUndoRef.current = null;
+		setAlwaysTypeIn(enabled);
 	}, []);
 
 	const handleChangeType = useCallback(async () => {
@@ -274,44 +329,85 @@ export function QuickNoteEditorApp({
 	}, [isEdit, editMode, addMode, selectedSourceNote, plugin.flashcardManager]);
 
 	const handleSave = useCallback(async () => {
-		if (!noteType || !canSave || saving) return;
+		if (!noteType || savingRef.current) return;
+
+		const currentFields = fieldsRef.current;
+		const currentUserComment = userCommentRef.current;
+		const primaryField = noteType.fields[0];
+		if (!primaryField || !(currentFields[primaryField] ?? "").trim()) return;
+
 		if (!plugin.flashcardManager?.hasStore()) {
 			new Notice("Database not initialized");
 			return;
 		}
 
+		const fieldsChanged = editMode
+			? noteType.fields.some(
+					(fieldName) =>
+						currentFields[fieldName] !== editMode.note.fields[fieldName],
+				)
+			: true;
+		const commentChanged = editMode
+			? currentUserComment !== (editMode.note.userComment ?? "")
+			: true;
+
+		if (editMode && !fieldsChanged && !commentChanged) {
+			onDone({ cancelled: true });
+			return;
+		}
+
+		savingRef.current = true;
 		setSaving(true);
 
 		try {
-			if (isEdit) {
-				const unchanged = noteType.fields.every(
-					(f) => fields[f] === editMode?.note.fields[f],
-				);
-				if (unchanged) {
-					onDone({ cancelled: true });
-					return;
+			if (editMode) {
+				const updatedCardIds = new Set<string>();
+				if (fieldsChanged) {
+					const result = plugin.flashcardManager.updateNoteFields(
+						editMode.noteId,
+						currentFields,
+					);
+					for (const cardId of result.updatedCardIds) {
+						updatedCardIds.add(cardId);
+					}
 				}
-
-				if (!editMode) return;
-				const result = plugin.flashcardManager.updateNoteFields(
-					editMode.noteId,
-					fields,
-				);
+				if (commentChanged) {
+					for (const cardId of plugin.flashcardManager.updateNoteComment(
+						editMode.noteId,
+						currentUserComment,
+					)) {
+						updatedCardIds.add(cardId);
+					}
+				}
 
 				onDone({
 					cancelled: false,
-					updatedCardIds: result.updatedCardIds,
+					updatedCardIds: [...updatedCardIds],
 				});
 			} else {
 				const sourceUid = await resolveSourceUid();
+				const savedFields = { ...currentFields };
 
 				const result = plugin.flashcardManager.createNote({
 					noteTypeId,
-					fields,
+					fields: currentFields,
 					alwaysTypeIn,
+					userComment: currentUserComment,
 					sourceUid,
 					createdVia: "manual",
 				});
+
+				const commandService = plugin.commandService;
+				if (commandService && result.cards.length > 0) {
+					const command = new BatchCreateCommand(
+						result.cards.map((card) => card.id),
+					);
+					await commandService.execute(command);
+					pendingCreateUndoRef.current = {
+						command,
+						fields: savedFields,
+					};
+				}
 
 				const totalCards = result.cards.length;
 				notify().cardsCreated(totalCards, sourceNoteFile?.basename);
@@ -319,23 +415,29 @@ export function QuickNoteEditorApp({
 				// Clear unpinned fields, keep pinned — modal stays open
 				const next: Record<string, string> = {};
 				for (const field of noteType.fields) {
-					next[field] = pinnedFields.has(field) ? (fields[field] ?? "") : "";
+					next[field] = pinnedFields.has(field)
+						? (currentFields[field] ?? "")
+						: "";
 				}
+				fieldsRef.current = next;
 				setFields(next);
+				userCommentRef.current = "";
+				setUserComment("");
+				if (pinnedFields.size === 0) {
+					setFocusFirstRequest((request) => request + 1);
+				}
+				savingRef.current = false;
 				setSaving(false);
 			}
 		} catch (error) {
 			const msg = error instanceof Error ? error.message : String(error);
 			new Notice(`Error: ${msg}`);
+			savingRef.current = false;
 			setSaving(false);
 		}
 	}, [
 		noteType,
-		canSave,
-		saving,
-		isEdit,
 		editMode,
-		fields,
 		noteTypeId,
 		resolveSourceUid,
 		alwaysTypeIn,
@@ -345,8 +447,43 @@ export function QuickNoteEditorApp({
 		sourceNoteFile,
 	]);
 
+	// Mobile add mode: save any typed draft, then close ("Done" button).
+	const handleSaveAndClose = useCallback(async () => {
+		const primaryField = noteType?.fields[0];
+		const hasDraft = primaryField
+			? (fieldsRef.current[primaryField] ?? "").trim().length > 0
+			: false;
+		if (hasDraft && !savingRef.current) {
+			await handleSave();
+		}
+		onDone({ cancelled: false });
+	}, [noteType, handleSave, onDone]);
+
+	// Undo the most recent "Save & Add": only while it is still the top of the
+	// command stack and nothing was typed since. Restores the saved fields.
+	const handleUndoLastCreate = useCallback((): boolean => {
+		if (isEdit || savingRef.current) return false;
+
+		const pending = pendingCreateUndoRef.current;
+		const commandService = plugin.commandService;
+		if (!pending || !commandService?.isNextUndo(pending.command)) return false;
+
+		pendingCreateUndoRef.current = null;
+
+		void commandService.undo().then((undone) => {
+			if (!undone) return;
+			const restoredFields = { ...pending.fields };
+			fieldsRef.current = restoredFields;
+			setFields(restoredFields);
+		});
+		return true;
+	}, [isEdit, plugin.commandService]);
+	const handleUndoLastCreateRef = useRef(handleUndoLastCreate);
+	handleUndoLastCreateRef.current = handleUndoLastCreate;
+
 	// Cmd/Ctrl+Enter saves from anywhere in the modal (not just CM fields).
-	// CM fields also handle it via EmbeddableEditor's Scope — the `saving` guard prevents double-fire.
+	// CodeMirror and textarea fields commit their live value before saving, so
+	// the editor's debounced change callback cannot submit stale content.
 	const handleSaveRef = useRef(handleSave);
 	handleSaveRef.current = handleSave;
 
@@ -359,14 +496,40 @@ export function QuickNoteEditorApp({
 		// element is in the DOM.
 		const doc = rootRef.current?.ownerDocument ?? activeDocument;
 		const onKeyDown = (e: KeyboardEvent) => {
+			if (
+				!e.shiftKey &&
+				(e.metaKey || e.ctrlKey) &&
+				e.key.toLowerCase() === "z" &&
+				handleUndoLastCreateRef.current()
+			) {
+				e.preventDefault();
+				e.stopPropagation();
+				return;
+			}
+			if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+				e.preventDefault();
+				e.stopPropagation();
+				userCommentInputRef.current?.focus();
+				return;
+			}
 			if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+				const target = e.target as HTMLElement | null;
+				if (
+					target?.closest?.(
+						".true-recall-add-field, .true-recall-add-field-row textarea",
+					)
+				) {
+					return;
+				}
 				e.preventDefault();
 				e.stopPropagation();
 				void handleSaveRef.current();
 			}
 		};
 		doc.addEventListener("keydown", onKeyDown, true);
-		return () => doc.removeEventListener("keydown", onKeyDown, true);
+		return () => {
+			doc.removeEventListener("keydown", onKeyDown, true);
+		};
 	}, []);
 
 	// The editor registers itself as a temporary Assistant target. The task only
@@ -467,7 +630,7 @@ export function QuickNoteEditorApp({
 				onChangeType={isEdit ? () => void handleChangeType() : undefined}
 				showSourcePicker={showSourcePicker}
 				selectedSourceNote={selectedSourceNote}
-				onSourceSelect={setSelectedSourceNote}
+				onSourceSelect={handleSourceSelect}
 			/>
 
 			{/* Shared formatting toolbar */}
@@ -475,7 +638,7 @@ export function QuickNoteEditorApp({
 				app={app}
 				getEditorView={() => focusedFieldRef.current?.editorView ?? null}
 				typeInEnabled={alwaysTypeIn}
-				onTypeInToggle={!isEdit ? setAlwaysTypeIn : undefined}
+				onTypeInToggle={!isEdit ? handleTypeInToggle : undefined}
 				showCloze={noteType.type === 1}
 			/>
 
@@ -486,10 +649,22 @@ export function QuickNoteEditorApp({
 				sourcePath={sourceNoteFile?.path ?? ""}
 				onFieldChange={handleFieldChange}
 				onFieldFocus={handleFieldFocus}
-				onModEnter={() => void handleSave()}
+				onModEnter={(fieldName, value) => {
+					handleFieldChange(fieldName, value);
+					void handleSaveRef.current();
+				}}
+				onModUndo={handleUndoLastCreate}
+				onUserEdit={invalidatePendingCreateUndo}
 				onEscape={onRequestClose}
 				pinnedFields={pinnedFields}
 				onTogglePin={togglePin}
+				focusFirstRequest={focusFirstRequest}
+			/>
+
+			<UserCommentField
+				value={userComment}
+				onChange={handleUserCommentChange}
+				inputRef={userCommentInputRef}
 			/>
 
 			{/* Footer */}
@@ -501,6 +676,7 @@ export function QuickNoteEditorApp({
 				requiresSourceNote={showSourcePicker && !selectedSourceNote}
 				sourceNoteFile={sourceNoteFile}
 				onSave={() => void handleSave()}
+				onSaveAndClose={() => void handleSaveAndClose()}
 				onOpenFields={openFields}
 				onOpenCards={openCards}
 				onAI={openAI}
@@ -521,6 +697,7 @@ interface FooterBarProps {
 	requiresSourceNote: boolean;
 	sourceNoteFile: TFile | null;
 	onSave: () => void;
+	onSaveAndClose: () => void;
 	onOpenFields: () => void;
 	onOpenCards: () => void;
 	onAI: () => void;
@@ -539,6 +716,7 @@ function FooterBar({
 	requiresSourceNote,
 	sourceNoteFile,
 	onSave,
+	onSaveAndClose,
 	onOpenFields,
 	onOpenCards,
 	onAI,
@@ -585,14 +763,30 @@ function FooterBar({
 				Open note
 			</Clickable>
 			<Clickable
-				class="mod-cta ep-btn"
+				class="mod-cta ep-btn ep:text-ui-smaller ep:px-3 ep:py-1 ep:min-h-[28px] ep:max-h-[28px] ep:rounded-md"
 				onClick={onSave}
 				disabled={!canSave || saving || requiresSourceNote}
 				title={requiresSourceNote ? "Select a source note to save" : undefined}
 				stopPropagation={false}
 			>
-				{isEdit ? "Save Changes" : "Save"}
+				{saving
+					? "Saving..."
+					: isEdit
+						? "Save Changes"
+						: isMobile()
+							? "Save & add another"
+							: "Save"}
 			</Clickable>
+			{!isEdit && isMobile() ? (
+				<Clickable
+					class={ghostBtnCls}
+					onClick={onSaveAndClose}
+					disabled={saving}
+					stopPropagation={false}
+				>
+					Done
+				</Clickable>
+			) : null}
 		</div>
 	);
 }

@@ -39,6 +39,8 @@ export interface Note {
 	tags: string[];
 	sourceUid?: string;
 	sourceText?: string;
+	/** User-authored context for reviewing or verifying this flashcard note. */
+	userComment?: string;
 	createdVia?: string;
 	createdAt?: number;
 	updatedAt?: number;

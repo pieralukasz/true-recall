@@ -5,7 +5,6 @@ import type { FSRSPreset } from "@true-recall/core/types";
 
 import {
 	ActionButton,
-	Clickable,
 	FormCard,
 	FormField,
 	InfoBlock,
@@ -17,22 +16,26 @@ import type { FsrsPluginHost } from "../../../types/plugin-host.types";
 
 interface ParametersSectionProps {
 	preset: FSRSPreset;
+	/**
+	 * Name the preset is stored under. Review history is keyed by name, so
+	 * lookups must not follow an unsaved rename in the draft.
+	 */
+	reviewPresetName: string;
 	updatePreset: (c: Partial<FSRSPreset>) => Promise<void>;
 	plugin: FsrsPluginHost;
-	onRefresh: () => void;
 }
 
 export function ParametersSection({
 	preset,
+	reviewPresetName,
 	updatePreset,
 	plugin,
-	onRefresh,
 }: ParametersSectionProps) {
 	const [optimizing, setOptimizing] = useState(false);
 	const [showWeights, setShowWeights] = useState(false);
 
 	const presetReviews =
-		plugin.cardStore?.stats?.getReviewCountForPreset(preset.name) ?? 0;
+		plugin.cardStore?.stats?.getReviewCountForPreset(reviewPresetName) ?? 0;
 	const canOptimize = presetReviews >= FSRS_CONFIG.minReviewsForOptimization;
 	const lastOpt = preset.lastOptimization;
 	const lastOptCount = preset.lastOptimizationReviewCount;
@@ -43,7 +46,7 @@ export function ParametersSection({
 		try {
 			const result = await plugin.fsrsHelper?.optimizeParameters(
 				undefined,
-				preset.name,
+				reviewPresetName,
 				preset.weights,
 			);
 			if (result && result.metrics.convergenceStatus !== "insufficient_data") {
@@ -54,9 +57,8 @@ export function ParametersSection({
 					lastOptimizationMetrics: result.metrics,
 				});
 				notify().success(
-					`Optimization complete! RMSE: ${result.metrics.rmse.toFixed(4)}`,
+					`Optimization complete (RMSE: ${result.metrics.rmse.toFixed(4)}) — click Save to apply`,
 				);
-				onRefresh();
 			} else {
 				notify().error("Optimization failed: insufficient data");
 			}
@@ -65,7 +67,7 @@ export function ParametersSection({
 		} finally {
 			setOptimizing(false);
 		}
-	}, [plugin, preset, updatePreset, onRefresh]);
+	}, [plugin, preset.weights, reviewPresetName, updatePreset]);
 
 	const handleReset = useCallback(async () => {
 		await updatePreset({
@@ -74,9 +76,8 @@ export function ParametersSection({
 			lastOptimizationReviewCount: null,
 			lastOptimizationMetrics: null,
 		});
-		notify().success("Parameters reset to defaults");
-		onRefresh();
-	}, [updatePreset, onRefresh]);
+		notify().success("Parameters reset to defaults — click Save to apply");
+	}, [updatePreset]);
 
 	const handleWeightsChange = useCallback(
 		async (value: string) => {
@@ -103,33 +104,34 @@ export function ParametersSection({
 				weights: parts,
 				lastOptimization: new Date().toISOString(),
 			});
-			notify().success("FSRS weights saved!");
+			notify().success("FSRS weights updated — click Save to apply");
 		},
 		[updatePreset],
 	);
 
 	return (
 		<FormCard title="FSRS parameters">
-			<InfoBlock>
-				<p>
-					<strong>Reviews: </strong>
-					{presetReviews.toLocaleString()}{" "}
-					{canOptimize
-						? ""
-						: `(need ${FSRS_CONFIG.minReviewsForOptimization}+ to optimize)`}
-					{lastOpt && (
-						<>
-							{" \u00B7 "}
-							<strong>Optimized: </strong>
-							{new Date(lastOpt).toLocaleDateString()}
-							{lastOptCount != null &&
-								` (${lastOptCount.toLocaleString()} reviews)`}
-						</>
-					)}
-				</p>
+			<InfoBlock class="ep:flex ep:flex-wrap ep:gap-x-6 ep:gap-y-1">
+				<span>
+					<span class="ep:text-obs-normal ep:font-medium">Reviews</span>{" "}
+					{presetReviews.toLocaleString()}
+					{!canOptimize &&
+						` (need ${FSRS_CONFIG.minReviewsForOptimization}+ to optimize)`}
+				</span>
+				{lastOpt && (
+					<span>
+						<span class="ep:text-obs-normal ep:font-medium">Optimized</span>{" "}
+						{new Date(lastOpt).toLocaleDateString()}
+						{lastOptCount != null &&
+							` (${lastOptCount.toLocaleString()} reviews)`}
+					</span>
+				)}
 			</InfoBlock>
 
-			<FormField name="Optimize parameters">
+			<FormField
+				name="Optimize parameters"
+				description="Refit the weights to this preset's review history"
+			>
 				<ActionButton
 					label={optimizing ? "Optimizing..." : "Optimize"}
 					variant="primary"
@@ -143,25 +145,24 @@ export function ParametersSection({
 				/>
 			</FormField>
 
-			<div class="ep:pb-2">
-				<Clickable
-					class="ep:text-ui-smaller ep:text-obs-muted ep:hover:text-obs-normal ep:transition-colors"
+			<div class="ep:pt-3">
+				<ActionButton
+					label={`Weights ${preset.weights ? `(${preset.weights.length} values)` : "(defaults)"}`}
+					variant="ghost"
+					size="sm"
+					icon={showWeights ? "chevron-down" : "chevron-right"}
+					class="ep:-ml-2"
 					onClick={() => setShowWeights((s) => !s)}
-				>
-					{showWeights ? "\u25BC" : "\u25B6"} Weights{" "}
-					{preset.weights ? `(${preset.weights.length} values)` : "(defaults)"}
-				</Clickable>
+				/>
 
 				{showWeights && (
-					<div class="ep:mt-2">
-						<TextAreaInput
-							value={weightsString}
-							onChange={(value) => void handleWeightsChange(value)}
-							placeholder="0.40255, 1.18385, 3.173, 15.69105, ..."
-							rows={3}
-							class="ep:w-full ep:font-mono ep:text-ui-small"
-						/>
-					</div>
+					<TextAreaInput
+						value={weightsString}
+						onChange={(value) => void handleWeightsChange(value)}
+						placeholder="0.40255, 1.18385, 3.173, 15.69105, ..."
+						rows={3}
+						class="ep:w-full ep:mt-2 ep:font-mono ep:text-ui-small"
+					/>
 				)}
 			</div>
 		</FormCard>

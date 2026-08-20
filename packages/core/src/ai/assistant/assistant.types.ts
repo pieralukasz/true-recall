@@ -58,6 +58,10 @@ export interface AssistantContext {
 	activeNotePath?: string;
 	/** Apply generated cards directly when invoked from a source-note action. */
 	applyGeneratedCardsImmediately?: boolean;
+	/** Workflow identity is kept on the thread so follow-ups use the same engine. */
+	workflowId?: string;
+	/** Snapshot of the original instruction for deterministic workflow retries. */
+	workflowInstruction?: string;
 }
 
 export interface Citation {

@@ -25,6 +25,20 @@
 	flex-direction: column;
 }
 
+/* The editor brings its own drag bar and the window hosts nothing else, so
+   Obsidian's tab header is dead height here. Hidden unconditionally — whether
+   the user's theme or the Hider plugin shows tab bars is not this window's
+   business, and a header that appears on hover would leave the fitted window
+   height wrong. */
+.workspace-tabs:has(
+	> .workspace-tab-container
+		> .workspace-leaf
+		> .workspace-leaf-content[data-type="true-recall-quick-note-editor"]
+)
+> .workspace-tab-header-container {
+	display: none;
+}
+
 .tr-quick-editor-view {
 	flex: 1;
 	display: flex;

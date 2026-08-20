@@ -3,6 +3,7 @@ import { useState } from "preact/hooks";
 import type { AssistantContext } from "@true-recall/core/ai/assistant";
 import {
 	type AIWorkflow,
+	customCardPolishWorkflowId,
 	listAIWorkflows,
 } from "@true-recall/core/ai/workflows/ai-workflow";
 
@@ -167,8 +168,24 @@ export function AskAiPrompt({
 		<AiPromptComposer
 			value={text}
 			onChange={handleTextChange}
-			onRun={() => submit(text, undefined, "inline")}
-			onRunInInbox={() => submit(text, undefined, "inbox")}
+			onRun={() =>
+				submit(
+					text,
+					activeMode === "card-polish"
+						? customCardPolishWorkflowId()
+						: undefined,
+					"inline",
+				)
+			}
+			onRunInInbox={() =>
+				submit(
+					text,
+					activeMode === "card-polish"
+						? customCardPolishWorkflowId()
+						: undefined,
+					"inbox",
+				)
+			}
 			onDismiss={onDismiss}
 			placeholder={modeDefinition.placeholder}
 			autoFocus={shouldAutoFocus}

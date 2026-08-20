@@ -24,6 +24,12 @@ interface HierarchyGraph {
  */
 export type LinkResolver = (name: string) => string | null;
 
+/**
+ * Frontmatter fields that turn a note into a node of the hierarchy graph:
+ * `parents` makes it a child, `project` makes it an explicit project.
+ */
+const GRAPH_NODE_FIELDS = ["parents", "project"] as const;
+
 export class HierarchyService {
 	private graph: HierarchyGraph | null = null;
 
@@ -35,6 +41,20 @@ export class HierarchyService {
 
 	invalidateGraph(): void {
 		this.graph = null;
+	}
+
+	/**
+	 * Whether the note is a node of the hierarchy graph.
+	 *
+	 * The graph keys every edge by path, so a rename leaves the cached graph
+	 * pointing at a path the frontmatter index no longer knows. The project
+	 * then fails to resolve the note's `flashcard_uid` and its cards silently
+	 * drop out of every aggregate, which is why renames must invalidate.
+	 */
+	isGraphNode(notePath: string): boolean {
+		return GRAPH_NODE_FIELDS.some(
+			(field) => this.frontmatterIndex.getValues(field, notePath).length > 0,
+		);
 	}
 
 	buildHierarchy(): HierarchyTreeNode[] {

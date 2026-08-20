@@ -10,6 +10,7 @@ import {
 	buildQueueOptions,
 	filterActiveCards,
 	isGlobalReviewSession,
+	type SessionProgressSnapshot,
 } from "@true-recall/core/services/review/session-helpers";
 import {
 	type CardSchedulingMeta,
@@ -23,7 +24,10 @@ export interface ActionableSessionSnapshot {
 	queue: CardSchedulingMeta[];
 	counts: {
 		new: number;
+		/** Learning/relearning cards due now. */
 		learning: number;
+		/** Learning/relearning cards scheduled for later. */
+		learningPending: number;
 		due: number;
 	};
 	queueLength: number;
@@ -49,6 +53,10 @@ export interface ActionableSessionSnapshotDeps {
 export interface ActionableSessionSnapshotOptions {
 	cache?: Map<string, ActionableSessionSnapshot>;
 	activeCards?: CardSchedulingMeta[];
+	/** Shared persistence state for a synchronous batch of scoped snapshots. */
+	sessionProgress?: SessionProgressSnapshot;
+	/** Shared wall-clock time for consistent, cacheable FSRS calculations. */
+	now?: Date;
 }
 
 function buildScopeCacheKey(filters: SessionFilters): string {
@@ -76,6 +84,9 @@ function buildScopeCacheKey(filters: SessionFilters): string {
 		customStudy: filters.customStudy ?? null,
 		materializedCardIds: filters.materializedCardIds ?? null,
 		temporaryDeckId: filters.temporaryDeckId ?? null,
+		rModeTargetCount: filters.rModeTargetCount ?? null,
+		schedulingMode: filters.schedulingMode ?? null,
+		topUp: filters.topUp ?? null,
 	});
 }
 
@@ -101,10 +112,12 @@ function resolveSessionPresetForFilters(
 
 function countQueue(
 	queue: CardSchedulingMeta[],
+	now = new Date(),
 ): ActionableSessionSnapshot["counts"] {
 	let due = 0;
 	let newCount = 0;
 	let learning = 0;
+	let learningPending = 0;
 
 	for (const card of queue) {
 		switch (card.fsrs.state) {
@@ -116,12 +129,13 @@ function countQueue(
 				break;
 			case State.Learning:
 			case State.Relearning:
-				learning++;
+				if (new Date(card.fsrs.due) <= now) learning++;
+				else learningPending++;
 				break;
 		}
 	}
 
-	return { due, learning, new: newCount };
+	return { due, learning, learningPending, new: newCount };
 }
 
 export function computeActionableSessionSnapshot(
@@ -150,7 +164,28 @@ export function computeActionableSessionSnapshot(
 		deps.settings,
 		deps.sessionPersistence,
 		sessionPreset,
+		options.sessionProgress,
 	);
+	queueOptions.now = options.now;
+	if (queueOptions.rMode) {
+		const ceilingOffset = deps.settings.rMode.ceilingOffset;
+		const presetCache = new Map<string, FSRSPreset>();
+		queueOptions.rMode.resolveCardOptions = (card) => {
+			const cacheKey = `${filters.projectPath ?? ""}\u0000${card.sourceUid ?? card.id}`;
+			let cardPreset = presetCache.get(cacheKey);
+			if (!cardPreset) {
+				cardPreset = deps.presetService.resolvePresetForCard(card, {
+					projectPath: filters.projectPath,
+				});
+				presetCache.set(cacheKey, cardPreset);
+			}
+			return {
+				comfortFloor: cardPreset.requestRetention,
+				ceiling: Math.min(0.999, cardPreset.requestRetention + ceilingOffset),
+				presetSettings: deps.presetService.toFSRSSettings(cardPreset),
+			};
+		};
+	}
 
 	if (filters.sourceUidFilter) {
 		queueOptions.sourceUidFilter = new Set([filters.sourceUidFilter]);
@@ -161,6 +196,7 @@ export function computeActionableSessionSnapshot(
 			activeCards,
 			deps.presetService,
 			deps.sessionPersistence,
+			options.sessionProgress,
 		);
 		queueOptions.cardPresetById = presetContext.cardPresetById;
 		queueOptions.presetDailyLimits = presetContext.presetDailyLimits;
