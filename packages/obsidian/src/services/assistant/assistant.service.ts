@@ -717,6 +717,7 @@ export class AssistantService {
 			return this.runStreamingGeneration(preset.id, sourceFile, text, {
 				existingCards,
 				contextText,
+				preserveImageEmbeds: !!task.context.selectedText?.trim(),
 			});
 		}
 
@@ -759,6 +760,7 @@ export class AssistantService {
 		options: {
 			existingCards: ExistingCardContext[];
 			contextText: string | undefined;
+			preserveImageEmbeds: boolean;
 		},
 	): Promise<AssistantManifest> {
 		const service = new ChunkedGenerationService(

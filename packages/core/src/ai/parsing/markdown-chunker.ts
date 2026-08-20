@@ -12,11 +12,18 @@ export interface ChunkingResult {
 	estimatedTokens: number;
 }
 
+export interface MarkdownChunkingOptions {
+	preserveImageEmbeds?: boolean;
+}
+
 const SINGLE_THRESHOLD = 3000;
 const TARGET_CHUNK_WORDS = 3000;
 const HEADING_RE = /^(#{1,6})\s+(.+)$/;
 
-export function filterContent(raw: string): string {
+export function filterContent(
+	raw: string,
+	options: MarkdownChunkingOptions = {},
+): string {
 	let text = raw;
 
 	// Remove YAML frontmatter
@@ -31,9 +38,11 @@ export function filterContent(raw: string): string {
 	// Remove HTML comments
 	text = text.replace(/<!--[\s\S]*?-->/g, "");
 
-	// Remove image embeds: ![[...]] and ![...](...)
-	text = text.replace(/^!\[\[.*?\]\]\s*$/gm, "");
-	text = text.replace(/^!\[.*?\]\(.*?\)\s*$/gm, "");
+	if (!options.preserveImageEmbeds) {
+		// Whole-note generation does not need unresolved attachment references.
+		text = text.replace(/^!\[\[.*?\]\]\s*$/gm, "");
+		text = text.replace(/^!\[.*?\]\(.*?\)\s*$/gm, "");
+	}
 
 	// Collapse multiple blank lines to one
 	text = text.replace(/\n{3,}/g, "\n\n");
@@ -107,8 +116,11 @@ interface Section {
 	wordCount: number;
 }
 
-export function chunkMarkdown(rawContent: string): ChunkingResult {
-	const filtered = filterContent(rawContent);
+export function chunkMarkdown(
+	rawContent: string,
+	options: MarkdownChunkingOptions = {},
+): ChunkingResult {
+	const filtered = filterContent(rawContent, options);
 	const totalWords = countWords(filtered);
 	const estimatedTokens = Math.ceil(totalWords * 1.3);
 
