@@ -250,6 +250,9 @@ export class ReviewDeleteCommand extends BaseReviewActionCommand {
 		// doing it first cannot race the ReviewView rebuild the base guards for.
 		for (const cardData of this.deletedCardsData) {
 			ctx.cardStore.set(cardData.id, cardData);
+			// set() never clears deleted_at — restore explicitly or the row
+			// stays soft-deleted and every query keeps filtering it out.
+			ctx.cardStore.cards.restoreWithCascade(cardData.id);
 		}
 
 		super.undo(ctx);

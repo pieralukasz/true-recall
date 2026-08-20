@@ -73,15 +73,15 @@ export function useCardActions() {
 				noteType,
 				openImageOcclusionEditor: (mode) =>
 					plugin.openImageOcclusionEditor(mode),
-				openQuickEditor: async () => {
-					await openQuickNoteEditor(plugin, {
+				openQuickEditor: () =>
+					openQuickNoteEditor(plugin, {
 						mode: "edit",
 						cardId: card.id,
 						noteId: note.id,
 						note,
 						noteType,
-					});
-				},
+					}),
+				commandService: plugin.commandService,
 			});
 			restoreScroll();
 		},

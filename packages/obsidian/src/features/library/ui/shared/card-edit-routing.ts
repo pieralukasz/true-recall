@@ -4,13 +4,22 @@ import {
 	type NoteType,
 } from "@true-recall/core/types/note.types";
 
+import type { CommandService } from "@true-recall/obsidian/commands";
+import { UpdateNoteFieldsCommand } from "@true-recall/obsidian/commands/commands/card-update.cmd";
+
 import type { IOEditorMode } from "@true-recall/plugins/image-occlusion";
 
 interface CardEditRoutingParams {
 	note: Note;
 	noteType: NoteType;
-	openImageOcclusionEditor: (mode: IOEditorMode) => Promise<unknown>;
-	openQuickEditor: () => Promise<unknown>;
+	openImageOcclusionEditor: (
+		mode: IOEditorMode,
+	) => Promise<{ cancelled: boolean }>;
+	openQuickEditor: () => Promise<{ cancelled: boolean }>;
+	/** When provided, a saved edit registers an undo entry restoring the note's
+	 * pre-edit fields — the same command the review view pushes for its modal
+	 * edits (onto its session stack). */
+	commandService?: CommandService | null;
 }
 
 export async function openCardEditor({
@@ -18,17 +27,24 @@ export async function openCardEditor({
 	noteType,
 	openImageOcclusionEditor,
 	openQuickEditor,
+	commandService,
 }: CardEditRoutingParams): Promise<void> {
-	if (noteType.id === BUILTIN_IMAGE_OCCLUSION_ID) {
-		await openImageOcclusionEditor({
-			mode: "edit",
-			noteId: note.id,
-			note,
-		});
-		return;
-	}
+	const previousFields = { ...note.fields };
 
-	await openQuickEditor();
+	const result =
+		noteType.id === BUILTIN_IMAGE_OCCLUSION_ID
+			? await openImageOcclusionEditor({
+					mode: "edit",
+					noteId: note.id,
+					note,
+				})
+			: await openQuickEditor();
+
+	if (result?.cancelled === false) {
+		await commandService?.execute(
+			new UpdateNoteFieldsCommand(note.id, previousFields, "Edit card"),
+		);
+	}
 }
 
 /** Store reads needed to go from a card id to the note behind it. */

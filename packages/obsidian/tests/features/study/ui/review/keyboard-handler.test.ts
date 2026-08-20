@@ -61,6 +61,7 @@ function defaultCallbacks(overrides = {}) {
 		onBuryNote: vi.fn(async () => {}),
 		onMoveCard: vi.fn(async () => {}),
 		onAddCard: vi.fn(async () => {}),
+		onAddCardCopy: vi.fn(async () => {}),
 		onEditCard: vi.fn(async () => {}),
 		onEditComment: vi.fn(async () => {}),
 		onCycleTypeInMode: vi.fn(),
@@ -69,6 +70,24 @@ function defaultCallbacks(overrides = {}) {
 }
 
 describe("KeyboardHandler", () => {
+	it("opens a prefilled Add flashcard editor on Cmd/Ctrl+Shift+E", () => {
+		const onAddCardCopy = vi.fn(async () => {});
+		const onEditCard = vi.fn(async () => {});
+		const handler = new KeyboardHandler(
+			() => createReviewState(),
+			defaultCallbacks({ onAddCardCopy, onEditCard }),
+			DEFAULT_KEYBINDINGS,
+		);
+
+		const event = createEvent({ key: "E", metaKey: true, shiftKey: true });
+		handler.handleKeyDown(event);
+
+		expect(event.preventDefault).toHaveBeenCalledOnce();
+		expect(event.stopPropagation).toHaveBeenCalledOnce();
+		expect(onAddCardCopy).toHaveBeenCalledOnce();
+		expect(onEditCard).not.toHaveBeenCalled();
+	});
+
 	it("opens the note editor on Cmd/Ctrl+K even from editable card content", () => {
 		const onEditComment = vi.fn(async () => {});
 		const target = new HTMLElement();

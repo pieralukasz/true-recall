@@ -5,8 +5,14 @@ import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.ser
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite";
 import type { FSRSService } from "@true-recall/core/services/fsrs/fsrs.service";
 import type { ReviewService } from "@true-recall/core/services/review/review.service";
-import type { TrueRecallSettings } from "@true-recall/core/types";
-import { BUILTIN_IMAGE_OCCLUSION_ID } from "@true-recall/core/types/note.types";
+import type {
+	FSRSFlashcardItem,
+	TrueRecallSettings,
+} from "@true-recall/core/types";
+import {
+	BUILTIN_BASIC_ID,
+	BUILTIN_IMAGE_OCCLUSION_ID,
+} from "@true-recall/core/types/note.types";
 
 import type { CommandService } from "@true-recall/obsidian/commands";
 import { BatchCreateCommand } from "@true-recall/obsidian/commands/commands/card-create.cmd";
@@ -19,6 +25,7 @@ import {
 } from "@true-recall/obsidian/commands/commands/review-actions.cmd";
 import type TrueRecallPlugin from "@true-recall/obsidian/main";
 import { MoveCardModal } from "@true-recall/obsidian/modals/shared";
+import type { AddMode } from "@true-recall/obsidian/modals/study/quick-note-editor/types";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 import type { ReviewApi } from "@true-recall/obsidian/store";
 import { openQuickNoteEditor } from "@true-recall/obsidian/views/modal-window/open-quick-note-editor";
@@ -256,7 +263,10 @@ export class CardActionsHandler {
 			);
 
 			if (success) {
-				this.deps.getReview().removeCurrentCard();
+				// Grading and moving both emit synchronous card mutations. Either one
+				// can evict the moved card before this await resumes, so removing by
+				// cursor here could remove the next card in the queue instead.
+				this.deps.getReview().removeCardById(card.id);
 				this.removeFromTemporaryDeck([card.id]);
 				this.refreshIfActive();
 				notify().cardGradedAndMoved();
@@ -270,15 +280,43 @@ export class CardActionsHandler {
 	async handleAddNewFlashcard(): Promise<void> {
 		const card = this.deps.getReview().getCurrentCard();
 		if (!card) return;
+		await this.openAddFlashcard(card);
+	}
 
+	async handleAddCopyOfCurrentFlashcard(): Promise<void> {
+		const card = this.deps.getReview().getCurrentCard();
+		if (!card) return;
+
+		const note = card.noteId
+			? this.deps.cardStore.notes.getById(card.noteId)
+			: null;
+		const noteTypeId = note?.noteTypeId ?? card.fsrs.noteTypeId;
+		const canCopyNoteFields = note && noteTypeId !== BUILTIN_IMAGE_OCCLUSION_ID;
+
+		await this.openAddFlashcard(card, {
+			sourceUid: note?.sourceUid ?? card.sourceUid,
+			defaultNoteTypeId: canCopyNoteFields ? noteTypeId : BUILTIN_BASIC_ID,
+			initialFields: canCopyNoteFields
+				? { ...note.fields }
+				: { Front: card.question, Back: card.answer ?? "" },
+		});
+	}
+
+	private async openAddFlashcard(
+		card: FSRSFlashcardItem,
+		overrides: Partial<
+			Pick<AddMode, "sourceUid" | "defaultNoteTypeId" | "initialFields">
+		> = {},
+	): Promise<void> {
 		const result = await openQuickNoteEditor(this.deps.plugin, {
 			mode: "add",
 			sourceUid: card.sourceUid,
 			excludeCardId: card.id,
 			defaultNoteTypeId:
 				card.fsrs.noteTypeId === BUILTIN_IMAGE_OCCLUSION_ID
-					? "builtin-basic"
-					: (card.fsrs.noteTypeId ?? "builtin-basic"),
+					? BUILTIN_BASIC_ID
+					: (card.fsrs.noteTypeId ?? BUILTIN_BASIC_ID),
+			...overrides,
 		});
 		if (!result.cancelled) {
 			this.pushBatchCreateUndo(card, result.createdCards);

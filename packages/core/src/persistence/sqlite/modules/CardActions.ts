@@ -220,6 +220,10 @@ export class CardActions {
 		this.writes.softDeleteWithCascade(cardId);
 	}
 
+	restoreWithCascade(cardId: string): void {
+		this.writes.restoreWithCascade(cardId);
+	}
+
 	updateCardDue(cardId: string, newDue: string): void {
 		this.writes.updateCardDue(cardId, newDue);
 	}

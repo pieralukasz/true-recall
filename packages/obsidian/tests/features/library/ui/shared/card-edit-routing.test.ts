@@ -49,8 +49,8 @@ function makeLookup(overrides: Partial<CardEditLookup> = {}): CardEditLookup {
 
 describe("openCardEditor", () => {
 	it("routes image occlusion note types to image occlusion editor", async () => {
-		const openImageOcclusionEditor = vi.fn(async () => ({}));
-		const openQuickEditor = vi.fn(async () => ({}));
+		const openImageOcclusionEditor = vi.fn(async () => ({ cancelled: true }));
+		const openQuickEditor = vi.fn(async () => ({ cancelled: true }));
 
 		await openCardEditor({
 			note: {
@@ -69,8 +69,8 @@ describe("openCardEditor", () => {
 	});
 
 	it("routes non-image note types to quick editor", async () => {
-		const openImageOcclusionEditor = vi.fn(async () => ({}));
-		const openQuickEditor = vi.fn(async () => ({}));
+		const openImageOcclusionEditor = vi.fn(async () => ({ cancelled: true }));
+		const openQuickEditor = vi.fn(async () => ({ cancelled: true }));
 
 		await openCardEditor({
 			note: makeNote("note-2", BUILTIN_BASIC_ID),
@@ -81,6 +81,44 @@ describe("openCardEditor", () => {
 
 		expect(openQuickEditor).toHaveBeenCalledOnce();
 		expect(openImageOcclusionEditor).not.toHaveBeenCalled();
+	});
+
+	it("registers an undo entry restoring pre-edit fields after a saved edit", async () => {
+		const note = makeNote("note-2", BUILTIN_BASIC_ID);
+		const previousFields = { ...note.fields };
+		const execute = vi.fn();
+
+		await openCardEditor({
+			note,
+			noteType: makeNoteType(BUILTIN_BASIC_ID),
+			openImageOcclusionEditor: vi.fn(async () => ({ cancelled: true })),
+			openQuickEditor: vi.fn(async () => ({ cancelled: false })),
+			commandService: { execute } as never,
+		});
+
+		expect(execute).toHaveBeenCalledOnce();
+		const command = execute.mock.calls[0]?.[0] as {
+			type: string;
+			undo: (ctx: unknown) => void;
+		};
+		expect(command.type).toBe("card:update-note-fields");
+		const updateNoteFields = vi.fn();
+		command.undo({ flashcardManager: { updateNoteFields } });
+		expect(updateNoteFields).toHaveBeenCalledWith("note-2", previousFields);
+	});
+
+	it("registers no undo entry when the editor was cancelled", async () => {
+		const execute = vi.fn();
+
+		await openCardEditor({
+			note: makeNote("note-2", BUILTIN_BASIC_ID),
+			noteType: makeNoteType(BUILTIN_BASIC_ID),
+			openImageOcclusionEditor: vi.fn(async () => ({ cancelled: true })),
+			openQuickEditor: vi.fn(async () => ({ cancelled: true })),
+			commandService: { execute } as never,
+		});
+
+		expect(execute).not.toHaveBeenCalled();
 	});
 });
 

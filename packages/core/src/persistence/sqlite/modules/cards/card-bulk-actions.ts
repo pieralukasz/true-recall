@@ -58,8 +58,10 @@ export class CardBulkActions {
 		const now = Date.now();
 		const placeholders = sqlPlaceholders(cardIds.length);
 		this.db.transaction(() => {
+			// Only stamp live rows — see softDeleteWithCascade: preserved
+			// tombstones keep restoreWithCascade from reviving them.
 			this.db.run(
-				`UPDATE review_log SET deleted_at = ?, updated_at = ? WHERE card_id IN (${placeholders})`,
+				`UPDATE review_log SET deleted_at = ?, updated_at = ? WHERE card_id IN (${placeholders}) AND deleted_at IS NULL`,
 				[now, now, ...cardIds],
 			);
 			this.db.run(

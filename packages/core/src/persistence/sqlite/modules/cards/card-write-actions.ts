@@ -284,9 +284,35 @@ export class CardWriteActions {
 				`UPDATE cards SET deleted_at = ?, updated_at = ? WHERE id = ?`,
 				[now, now, cardId],
 			);
+			// Only stamp live rows: individually tombstoned review entries must
+			// keep their original deleted_at so restoreWithCascade cannot revive
+			// them alongside the cascade.
 			this.db.run(
-				`UPDATE review_log SET deleted_at = ?, updated_at = ? WHERE card_id = ?`,
+				`UPDATE review_log SET deleted_at = ?, updated_at = ? WHERE card_id = ? AND deleted_at IS NULL`,
 				[now, now, cardId],
+			);
+		});
+	}
+
+	/** Reverse of {@link softDeleteWithCascade} for undo support: revives the
+	 * card together with the review_log rows tombstoned by the same cascade
+	 * (matched via the shared deleted_at stamp). Individually tombstoned review
+	 * entries keep their tombstone — sync replay must keep ignoring them. */
+	restoreWithCascade(cardId: string): void {
+		const row = this.db.get<{ deleted_at: number | null }>(
+			`SELECT deleted_at FROM cards WHERE id = ?`,
+			[cardId],
+		);
+		if (!row?.deleted_at) return;
+		const now = Date.now();
+		this.db.transaction(() => {
+			this.db.run(
+				`UPDATE review_log SET deleted_at = NULL, updated_at = ? WHERE card_id = ? AND deleted_at = ?`,
+				[now, cardId, row.deleted_at],
+			);
+			this.db.run(
+				`UPDATE cards SET deleted_at = NULL, updated_at = ? WHERE id = ?`,
+				[now, cardId],
 			);
 		});
 	}

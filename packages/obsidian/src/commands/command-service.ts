@@ -3,9 +3,21 @@ import { notify } from "@true-recall/obsidian/services/notification.service";
 
 import type { Command, CommandContext, CommandHook } from "./command.types";
 
+interface CommandHistoryEntry {
+	command: Command;
+	order: number;
+}
+
+let latestCommandOrder = 0;
+
+function nextCommandOrder(): number {
+	latestCommandOrder += 1;
+	return latestCommandOrder;
+}
+
 export class CommandService {
-	private stack: Command[] = [];
-	private redoStack: Command[] = [];
+	private stack: CommandHistoryEntry[] = [];
+	private redoStack: CommandHistoryEntry[] = [];
 	private readonly maxStackSize = 50;
 	private hooks = new Set<CommandHook>();
 	private ctx: CommandContext;
@@ -25,7 +37,7 @@ export class CommandService {
 			hook.afterExecute?.(command);
 		}
 
-		this.stack.push(command);
+		this.stack.push({ command, order: nextCommandOrder() });
 		if (this.stack.length > this.maxStackSize) {
 			this.stack.shift();
 		}
@@ -35,11 +47,12 @@ export class CommandService {
 	}
 
 	async undo(): Promise<boolean> {
-		const command = this.stack.pop();
-		if (!command) {
+		const entry = this.stack.pop();
+		if (!entry) {
 			notify().nothingToUndo();
 			return false;
 		}
+		const { command } = entry;
 
 		try {
 			for (const hook of this.hooks) {
@@ -58,7 +71,7 @@ export class CommandService {
 
 			// Deferred commands can't be redone (ephemeral queue state)
 			if (!command.deferred) {
-				this.redoStack.push(command);
+				this.redoStack.push({ command, order: nextCommandOrder() });
 			}
 
 			notify().undoComplete(command.description);
@@ -71,11 +84,12 @@ export class CommandService {
 	}
 
 	async redo(): Promise<boolean> {
-		const command = this.redoStack.pop();
-		if (!command) {
+		const entry = this.redoStack.pop();
+		if (!entry) {
 			notify().nothingToRedo();
 			return false;
 		}
+		const { command } = entry;
 
 		try {
 			for (const hook of this.hooks) {
@@ -92,7 +106,7 @@ export class CommandService {
 				hook.afterRedo?.(command);
 			}
 
-			this.stack.push(command);
+			this.stack.push({ command, order: nextCommandOrder() });
 
 			notify().redoComplete(command.description);
 			return true;
@@ -115,7 +129,7 @@ export class CommandService {
 	}
 
 	isNextUndo(command: Command): boolean {
-		return this.stack[this.stack.length - 1] === command;
+		return this.stack[this.stack.length - 1]?.command === command;
 	}
 
 	canRedo(): boolean {
@@ -124,7 +138,59 @@ export class CommandService {
 
 	peekDescription(): string | null {
 		const entry = this.stack[this.stack.length - 1];
-		return entry?.description ?? null;
+		return entry?.command.description ?? null;
+	}
+
+	peekUndoOrder(): number | null {
+		return this.stack[this.stack.length - 1]?.order ?? null;
+	}
+
+	peekRedoOrder(): number | null {
+		return this.redoStack[this.redoStack.length - 1]?.order ?? null;
+	}
+
+	static currentOrder(): number {
+		return latestCommandOrder;
+	}
+
+	static newestUndoService(
+		services: ReadonlyArray<CommandService | null | undefined>,
+		afterOrder = 0,
+	): CommandService | null {
+		return CommandService.newestService(
+			services,
+			(service) => service.peekUndoOrder(),
+			afterOrder,
+		);
+	}
+
+	static newestRedoService(
+		services: ReadonlyArray<CommandService | null | undefined>,
+		afterOrder = 0,
+	): CommandService | null {
+		return CommandService.newestService(
+			services,
+			(service) => service.peekRedoOrder(),
+			afterOrder,
+		);
+	}
+
+	private static newestService(
+		services: ReadonlyArray<CommandService | null | undefined>,
+		getOrder: (service: CommandService) => number | null,
+		afterOrder: number,
+	): CommandService | null {
+		let newest: CommandService | null = null;
+		let newestOrder = afterOrder;
+		for (const service of services) {
+			if (!service) continue;
+			const order = getOrder(service);
+			if (order !== null && order > newestOrder) {
+				newest = service;
+				newestOrder = order;
+			}
+		}
+		return newest;
 	}
 
 	getStackSize(): number {
@@ -138,7 +204,9 @@ export class CommandService {
 
 	clearByType(...types: string[]): void {
 		const typeSet = new Set(types);
-		this.stack = this.stack.filter((cmd) => !typeSet.has(cmd.type));
-		this.redoStack = this.redoStack.filter((cmd) => !typeSet.has(cmd.type));
+		this.stack = this.stack.filter((entry) => !typeSet.has(entry.command.type));
+		this.redoStack = this.redoStack.filter(
+			(entry) => !typeSet.has(entry.command.type),
+		);
 	}
 }

@@ -414,6 +414,9 @@ function makeDeleteCtx(options: {
 			set: vi.fn((id: string, data: FSRSCardData) => {
 				rows.set(id, data);
 			}),
+			cards: {
+				restoreWithCascade: vi.fn(),
+			},
 			stats: {
 				getReviewedCardIds: vi.fn(() => reviewedToday),
 				recordReviewedCard: vi.fn((date: string, id: string) => {

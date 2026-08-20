@@ -8,6 +8,7 @@ import type { FSRSFlashcardItem } from "@true-recall/core/types";
 
 import { DeleteCardCommand } from "@true-recall/obsidian/commands/commands/card-delete.cmd";
 import { MoveCardCommand } from "@true-recall/obsidian/commands/commands/card-move.cmd";
+import { UpdateCardCommand } from "@true-recall/obsidian/commands/commands/card-update.cmd";
 import { AppNavBar } from "@true-recall/obsidian/components";
 import { mutate, Q, useQuery } from "@true-recall/obsidian/data";
 import { BrowserSidebar } from "@true-recall/obsidian/features/library/ui/browser/components/BrowserSidebar";
@@ -257,6 +258,13 @@ export function CardBrowserApp({
 					newQuestion,
 					newAnswer,
 				);
+				const command = new UpdateCardCommand(
+					card.id,
+					card.question,
+					card.answer ?? "",
+					`Edit card ${field}`,
+				);
+				void plugin.commandService?.execute(command);
 				previewCard.value = {
 					...card,
 					question: newQuestion,
@@ -405,6 +413,7 @@ export function CardBrowserApp({
 					note,
 					noteType,
 				}),
+			commandService: plugin.commandService,
 		});
 
 		// The preview holds a snapshot taken when the row was clicked; the editor

@@ -462,11 +462,12 @@ export class FlashcardManager {
 		cardId: string,
 		newQuestion: string,
 		newAnswer: string,
+		options?: { skipDuplicateCheck?: boolean },
 	): void {
 		if (!this.cardRepository) {
 			throw new Error("Store not initialized");
 		}
-		this.cardRepository.updateContent(cardId, newQuestion, newAnswer);
+		this.cardRepository.updateContent(cardId, newQuestion, newAnswer, options);
 	}
 
 	updateClozeTemplate(
@@ -483,6 +484,23 @@ export class FlashcardManager {
 			oldTemplate,
 			newTemplate,
 			sourceNoteName,
+		);
+	}
+
+	restoreClozeTemplate(
+		sourceUid: string,
+		currentTemplate: string,
+		previousTemplate: string,
+		previousSiblingIds: readonly string[],
+	): void {
+		if (!this.cardRepository) {
+			throw new Error("Store not initialized");
+		}
+		this.cardRepository.restoreClozeTemplate(
+			sourceUid,
+			currentTemplate,
+			previousTemplate,
+			previousSiblingIds,
 		);
 	}
 

@@ -20,6 +20,7 @@ interface KeyboardActionCallbacks {
 	onBuryNote: () => void;
 	onMoveCard: () => Promise<void>;
 	onAddCard: () => Promise<void>;
+	onAddCardCopy: () => Promise<void>;
 	onEditCard: () => Promise<void>;
 	onEditComment: () => Promise<void>;
 	onCycleTypeInMode: () => void;
@@ -44,6 +45,13 @@ export class KeyboardHandler {
 	}
 
 	handleKeyDown = (e: KeyboardEvent): void => {
+		if (e.shiftKey && (e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "e") {
+			e.preventDefault();
+			e.stopPropagation();
+			void this.callbacks.onAddCardCopy();
+			return;
+		}
+
 		if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
 			e.preventDefault();
 			e.stopPropagation();
@@ -202,6 +210,10 @@ export class KeyboardHandler {
 			{ key: "M", description: "Move card to another note" },
 			{ key: "A", description: "Add new flashcard" },
 			{ key: "E", description: "Edit card" },
+			{
+				key: "Cmd/Ctrl+Shift+E",
+				description: "Copy current card into Add flashcard",
+			},
 			{ key: "Cmd/Ctrl+K", description: "Add or edit my note" },
 			{ key: "T", description: "Cycle type-in mode" },
 		];

@@ -76,10 +76,7 @@ import {
 	createAppStore,
 	type ReviewApi,
 } from "@true-recall/obsidian/store";
-import {
-	capabilities,
-	isMobile,
-} from "@true-recall/obsidian/utils/platform";
+import { capabilities, isMobile } from "@true-recall/obsidian/utils/platform";
 import { runWhenLayoutReady } from "@true-recall/obsidian/views/layout-ready";
 import {
 	ReviewApp,
@@ -120,6 +117,7 @@ export class ReviewView extends ItemView {
 	private reviewController: ReviewSessionController;
 	private sessionStore: AppStore;
 	private sessionCommandService: CommandService;
+	private commandHistoryBaseline: number;
 	private flashcardManager: FlashcardManager;
 	private sessionPersistence: SessionPersistenceService;
 	private semanticGradingService: SemanticAnswerGradingService;
@@ -162,6 +160,7 @@ export class ReviewView extends ItemView {
 			cardStore: plugin.cardStore,
 			sessionPersistence: plugin.sessionPersistence,
 		});
+		this.commandHistoryBaseline = CommandService.currentOrder();
 
 		// Consume Escape while this view is active. Without this, Obsidian's
 		// app-scope Escape handler re-activates the last `navigation` leaf
@@ -231,7 +230,7 @@ export class ReviewView extends ItemView {
 				onShowAnswer: () => void this.handleReveal(),
 				onAnswer: (rating) => this.handleAnswer(rating as Grade),
 				onUndo: async () => {
-					await this.cardActionsHandler.handleUndo();
+					await this.undoSessionAction();
 				},
 				onDelete: () => this.cardActionsHandler.handleDelete(),
 				onSuspend: () => this.cardActionsHandler.handleSuspend(),
@@ -240,6 +239,8 @@ export class ReviewView extends ItemView {
 				onBuryNote: () => this.cardActionsHandler.handleBuryNote(),
 				onMoveCard: () => this.cardActionsHandler.handleMoveCard(),
 				onAddCard: () => this.cardActionsHandler.handleAddNewFlashcard(),
+				onAddCardCopy: () =>
+					this.cardActionsHandler.handleAddCopyOfCurrentFlashcard(),
 				onEditCard: () => this.cardActionsHandler.handleEditCardModal(),
 				onEditComment: () => this.cardActionsHandler.handleEditComment(),
 				onCycleTypeInMode: () => this.cycleTypeInMode(),
@@ -550,19 +551,43 @@ export class ReviewView extends ItemView {
 	}
 
 	canUndoSessionAction(): boolean {
-		return this.sessionCommandService.canUndo();
+		return this.getNewestUndoService() !== null;
 	}
 
-	undoSessionAction(): Promise<boolean> {
-		return this.sessionCommandService.undo();
+	async undoSessionAction(): Promise<boolean> {
+		const service = this.getNewestUndoService();
+		if (!service) {
+			notify().nothingToUndo();
+			return false;
+		}
+		return service.undo();
 	}
 
 	canRedoSessionAction(): boolean {
-		return this.sessionCommandService.canRedo();
+		return this.getNewestRedoService() !== null;
 	}
 
-	redoSessionAction(): Promise<boolean> {
-		return this.sessionCommandService.redo();
+	async redoSessionAction(): Promise<boolean> {
+		const service = this.getNewestRedoService();
+		if (!service) {
+			notify().nothingToRedo();
+			return false;
+		}
+		return service.redo();
+	}
+
+	private getNewestUndoService(): CommandService | null {
+		return CommandService.newestUndoService(
+			[this.sessionCommandService, this.plugin.commandService],
+			this.commandHistoryBaseline,
+		);
+	}
+
+	private getNewestRedoService(): CommandService | null {
+		return CommandService.newestRedoService(
+			[this.sessionCommandService, this.plugin.commandService],
+			this.commandHistoryBaseline,
+		);
 	}
 
 	notifyOtherSessionsCardReviewed(cardId: string): void {
@@ -1078,12 +1103,12 @@ export class ReviewView extends ItemView {
 			menu.addSeparator();
 		}
 
-		if (this.cardActionsHandler.canUndo()) {
+		if (this.canUndoSessionAction()) {
 			menu.addItem((item) =>
 				item
-					.setTitle(withHint("Undo last answer", "z"))
+					.setTitle(withHint("Undo last action", "z"))
 					.setIcon("undo")
-					.onClick(() => this.cardActionsHandler.handleUndo()),
+					.onClick(() => void this.undoSessionAction()),
 			);
 			menu.addSeparator();
 		}
