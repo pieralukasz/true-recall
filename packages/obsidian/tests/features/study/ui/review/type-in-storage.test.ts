@@ -22,11 +22,14 @@ describe("type-in mode storage", () => {
 		persistTypeInMode(storage, "ai");
 		expect(readPersistedTypeInMode(storage)).toBe("ai");
 
-		persistTypeInMode(storage, "diff");
-		expect(readPersistedTypeInMode(storage)).toBe("diff");
-
 		persistTypeInMode(storage, "off");
 		expect(readPersistedTypeInMode(storage)).toBe("off");
+	});
+
+	it("migrates a legacy diff mode to ai", () => {
+		const storage = createMemoryStorage();
+		storage.setItem("true-recall.review.type-in-mode", "diff");
+		expect(readPersistedTypeInMode(storage)).toBe("ai");
 	});
 
 	it("returns null when storage is unavailable", () => {

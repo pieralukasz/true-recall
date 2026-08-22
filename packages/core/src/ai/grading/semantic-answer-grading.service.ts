@@ -76,7 +76,10 @@ function isStringArray(value: unknown): value is string[] {
 }
 
 function clampList(items: string[], max: number): string[] {
-	return items.map((item) => item.trim()).filter(Boolean).slice(0, max);
+	return items
+		.map((item) => item.trim())
+		.filter(Boolean)
+		.slice(0, max);
 }
 
 export class SemanticAnswerGradingService {

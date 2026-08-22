@@ -14,6 +14,10 @@ import type { AssistantContext } from "@true-recall/core/ai/assistant";
 import { SemanticAnswerGradingService } from "@true-recall/core/ai/grading/semantic-answer-grading.service";
 import { VIEW_TYPE_REVIEW } from "@true-recall/core/constants";
 import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
+import {
+	extractKeywords,
+	selectRelevantSections,
+} from "@true-recall/core/helpers/context-excerpt";
 import { DEFAULT_LEECH_THRESHOLD } from "@true-recall/core/helpers/leech-helpers";
 import type { SessionPersistenceService } from "@true-recall/core/persistence/session/session-persistence.service";
 import { FSRSService } from "@true-recall/core/services/fsrs/fsrs.service";
@@ -55,6 +59,7 @@ import {
 	persistTypeInMode,
 	readPersistedTypeInMode,
 	shouldRunAIGradingOnReveal,
+	suggestedRatingToGrade,
 	type TypeInMode,
 } from "@true-recall/obsidian/features/study/ui/review/helpers";
 import { ReviewSelectionBubble } from "@true-recall/obsidian/features/study/ui/review/ReviewSelectionBubble";
@@ -108,8 +113,6 @@ function createEmptyTypeInState(
 	};
 }
 
-const SEMANTIC_PASS_THRESHOLD = 85;
-
 export class ReviewView extends ItemView {
 	private plugin: TrueRecallPlugin;
 	private fsrsService: FSRSService;
@@ -143,7 +146,6 @@ export class ReviewView extends ItemView {
 	private askBubble: ReviewSelectionBubble | null = null;
 	private typeInState: TypeInAssessmentState = createEmptyTypeInState();
 	private sessionTypeInModeEnabled = false;
-	private aiEnabledForTypeIn = false;
 
 	private get review(): ReviewApi {
 		return this.sessionStore.getState().review;
@@ -247,6 +249,7 @@ export class ReviewView extends ItemView {
 				canRateShortcuts: () => !this.isRatingLocked(),
 				isTypeInActive: () => this.isTypeInRequiredForCurrentCard(),
 				onFocusTypeIn: () => this.focusTypeInEditor(),
+				getSuggestedRating: () => this.getSuggestedRatingForCurrentCard(),
 			},
 			this.plugin.settings.reviewKeybindings,
 		);
@@ -279,20 +282,17 @@ export class ReviewView extends ItemView {
 	private applyDefaultTypeInMode(): void {
 		if (!isPluginEnabled(this.plugin.settings, "type-in-mode")) {
 			this.sessionTypeInModeEnabled = false;
-			this.aiEnabledForTypeIn = false;
 			return;
 		}
 		const persisted = readPersistedTypeInMode(getTypeInModeStorage());
+		// Settings persisted before the diff-mode removal may still hold "diff";
+		// anything that is not "off" now means AI grading.
 		const mode = persisted ?? this.plugin.settings.defaultTypeInMode;
 		this.sessionTypeInModeEnabled = mode !== "off";
-		this.aiEnabledForTypeIn = mode === "ai";
 	}
 
 	private getTypeInMode(): TypeInMode {
-		return deriveTypeInMode(
-			this.sessionTypeInModeEnabled,
-			this.aiEnabledForTypeIn,
-		);
+		return deriveTypeInMode(this.sessionTypeInModeEnabled);
 	}
 
 	private cycleTypeInMode(): void {
@@ -304,39 +304,23 @@ export class ReviewView extends ItemView {
 		const currentId = card?.id ?? null;
 
 		this.sessionTypeInModeEnabled = nextMode !== "off";
-		this.aiEnabledForTypeIn = nextMode === "ai";
 		persistTypeInMode(getTypeInModeStorage(), nextMode);
 
-		// When answer is already revealed, preserve grading results —
-		// the UI shows/hides assessment based on mode flags
+		// When answer is already revealed, preserve grading results;
+		// the UI shows/hides assessment based on mode flags.
 		if (this.review.isAnswerRevealed) {
 			this.review.notifyChange();
 			notify().info(this.getTypeInModeMessage(nextMode));
 			return;
 		}
 
-		if (nextMode === "off" || nextMode === "ai") {
-			this.resetTypeInState(currentId);
-			this.review.notifyChange();
-		} else if (currentId) {
-			// Keep typed input while switching AI -> Diff, clear grading state only.
-			this.setTypeInState(currentId, {
-				localAssessment: null,
-				semanticResult: null,
-				semanticMessage: null,
-				isChecking: false,
-			});
-		} else {
-			this.review.notifyChange();
-		}
-
+		this.resetTypeInState(currentId);
+		this.review.notifyChange();
 		notify().info(this.getTypeInModeMessage(nextMode));
 	}
 
 	private getTypeInModeMessage(mode: TypeInMode): string {
-		if (mode === "ai") return "Type in: AI";
-		if (mode === "diff") return "Type in: Diff";
-		return "Type in: Off";
+		return mode === "ai" ? "Type in: On" : "Type in: Off";
 	}
 
 	private isTypeInRequiredForCurrentCard(): boolean {
@@ -344,6 +328,13 @@ export class ReviewView extends ItemView {
 			this.review.getCurrentCard(),
 			this.sessionTypeInModeEnabled,
 		);
+	}
+
+	private getSuggestedRatingForCurrentCard(): Grade | null {
+		const card = this.review.getCurrentCard();
+		if (!card) return null;
+		const state = this.getCurrentTypeInState(card.id);
+		return suggestedRatingToGrade(state.semanticResult?.suggestedRating);
 	}
 
 	private focusTypeInEditor(): void {
@@ -396,36 +387,16 @@ export class ReviewView extends ItemView {
 
 		const state = this.getCurrentTypeInState(card.id);
 		const typedAnswer = state.typedAnswer.trim();
+		// A check is already in flight; ignore repeated reveal requests.
+		if (state.isChecking) return;
+
 		const shouldRunAI = shouldRunAIGradingOnReveal({
 			requiresTypeIn,
-			aiEnabled: this.aiEnabledForTypeIn,
 			typedAnswer: state.typedAnswer,
 			isChecking: state.isChecking,
 		});
 
-		// Type-in with AI disabled: local diff-only comparison.
-		if (!this.aiEnabledForTypeIn) {
-			// Skip diff assessment on empty input — just reveal the answer
-			if (!typedAnswer) {
-				this.answerHandler.handleShowAnswer();
-				return;
-			}
-
-			const prepared = this.answerHandler.prepareTypedAnswerAssessment(
-				state.typedAnswer,
-			);
-			if (!prepared) return;
-
-			this.setTypeInState(card.id, {
-				localAssessment: prepared.localAssessment,
-				semanticResult: null,
-				semanticMessage: null,
-				isChecking: false,
-			});
-			return;
-		}
-
-		// AI mode enabled with empty input: plain reveal, no grading.
+		// Empty input: plain reveal, no grading.
 		if (!shouldRunAI) {
 			this.answerHandler.handleShowAnswer();
 			this.setTypeInState(card.id, {
@@ -437,7 +408,9 @@ export class ReviewView extends ItemView {
 			return;
 		}
 
-		this.answerHandler.handleShowAnswer();
+		// Two-stage reveal: grade the user's answer first; the model answer
+		// stays hidden until the verdict (or failure) lands. The local diff
+		// is computed up front only as the AI-failure fallback display.
 		const localAssessment = assessTypedAnswer(card.answer ?? "", typedAnswer);
 		this.setTypeInState(card.id, {
 			isChecking: true,
@@ -453,9 +426,7 @@ export class ReviewView extends ItemView {
 			semanticResult = await this.answerHandler.gradeTypedAnswerSemantically(
 				card,
 				typedAnswer,
-				localAssessment.score,
-				SEMANTIC_PASS_THRESHOLD,
-				{ allowLocalFallback: false, ...gradingContext },
+				gradingContext,
 			);
 		} catch (error) {
 			semanticMessage =
@@ -467,6 +438,7 @@ export class ReviewView extends ItemView {
 		const activeCard = this.review.getCurrentCard();
 		if (!activeCard || activeCard.id !== card.id) return;
 
+		this.answerHandler.handleShowAnswer();
 		this.setTypeInState(card.id, {
 			isChecking: false,
 			semanticResult,
@@ -718,7 +690,6 @@ export class ReviewView extends ItemView {
 					return {
 						typeInMode: this.getTypeInMode(),
 						useTypeInMode: requiresTypeIn,
-						aiEnabled: this.aiEnabledForTypeIn,
 						typedAnswer: state.typedAnswer,
 						isCheckingAnswer: state.isChecking,
 						isRatingLocked: isRatingLockedForTypeIn({
@@ -729,6 +700,9 @@ export class ReviewView extends ItemView {
 						localAssessment: state.localAssessment,
 						semanticResult: state.semanticResult,
 						semanticMessage: state.semanticMessage,
+						suggestedRating: suggestedRatingToGrade(
+							state.semanticResult?.suggestedRating,
+						),
 					};
 				},
 				getPresetName: (card: FSRSFlashcardItem) =>
@@ -801,7 +775,6 @@ export class ReviewView extends ItemView {
 		if (sharedStoreStillOwnsSession) {
 			this.plugin.store?.setState({ review: this.review });
 		}
-		this.aiEnabledForTypeIn = false;
 		this.resetTypeInState();
 	}
 
@@ -1060,11 +1033,7 @@ export class ReviewView extends ItemView {
 			isMobile() ? label : `${label} (${hint})`;
 		const typeInMode = this.getTypeInMode();
 		const typeInMenuLabel = withHint(
-			typeInMode === "ai"
-				? "Type in: AI"
-				: typeInMode === "diff"
-					? "Type in: Diff"
-					: "Type in: Off",
+			typeInMode === "ai" ? "Type in: On" : "Type in: Off",
 			"t",
 		);
 
@@ -1207,11 +1176,14 @@ export class ReviewView extends ItemView {
 			noteType: string;
 		}>;
 	}> {
-		const MAX_CONTEXT_CHARS = 4000;
+		const MAX_CONTEXT_CHARS = 10000;
 		const MAX_RELATED_CARDS = 10;
 
+		// Prefer the sections of the note that actually talk about this card
+		// over a blind head slice.
+		const keywords = extractKeywords(`${card.question} ${card.answer ?? ""}`);
 		let sourceContext: string | undefined = card.sourceText
-			? card.sourceText.slice(0, MAX_CONTEXT_CHARS)
+			? selectRelevantSections(card.sourceText, keywords, MAX_CONTEXT_CHARS)
 			: undefined;
 		let sourceNotePath: string | undefined;
 
@@ -1221,9 +1193,13 @@ export class ReviewView extends ItemView {
 			if (!sourceContext) {
 				try {
 					const content = await this.app.vault.cachedRead(file);
-					sourceContext = content.slice(0, MAX_CONTEXT_CHARS);
+					sourceContext = selectRelevantSections(
+						content,
+						keywords,
+						MAX_CONTEXT_CHARS,
+					);
 				} catch {
-					// Source file unreadable — fall back to no context.
+					// Source file unreadable: fall back to no context.
 				}
 			}
 		}

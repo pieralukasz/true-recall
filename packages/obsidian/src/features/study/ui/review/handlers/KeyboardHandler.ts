@@ -27,6 +27,7 @@ interface KeyboardActionCallbacks {
 	canRateShortcuts?: () => boolean;
 	isTypeInActive?: () => boolean;
 	onFocusTypeIn?: () => void;
+	getSuggestedRating?: () => Rating | null;
 }
 
 export class KeyboardHandler {
@@ -156,6 +157,22 @@ export class KeyboardHandler {
 				return;
 			}
 
+			// Plain Enter accepts the AI-suggested rating (type-in verdict).
+			if (
+				e.key === "Enter" &&
+				!e.metaKey &&
+				!e.ctrlKey &&
+				!e.shiftKey &&
+				!e.altKey
+			) {
+				const suggested = this.callbacks.getSuggestedRating?.() ?? null;
+				if (suggested !== null) {
+					e.preventDefault();
+					void this.callbacks.onAnswer(suggested);
+					return;
+				}
+			}
+
 			const rating = this.buildRatingMap()[e.key];
 			if (rating !== undefined) {
 				e.preventDefault();
@@ -202,6 +219,7 @@ export class KeyboardHandler {
 				key: "1-4",
 				description: "Rate: Again(1), Hard(2), Good(3), Easy(4)",
 			},
+			{ key: "Enter", description: "Accept suggested rating (type-in)" },
 			{ key: "Cmd/Ctrl+Z", description: "Undo last action" },
 			{ key: "Shift+1", description: "Delete card" },
 			{ key: "Shift+2", description: "Suspend card" },
@@ -215,7 +233,7 @@ export class KeyboardHandler {
 				description: "Copy current card into Add flashcard",
 			},
 			{ key: "Cmd/Ctrl+K", description: "Add or edit my note" },
-			{ key: "T", description: "Cycle type-in mode" },
+			{ key: "T", description: "Toggle type-in mode" },
 		];
 	}
 }

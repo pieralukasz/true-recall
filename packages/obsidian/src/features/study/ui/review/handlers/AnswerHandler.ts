@@ -3,7 +3,6 @@ import { type Grade, Rating } from "ts-fsrs";
 import type { SemanticAnswerGradingService } from "@true-recall/core/ai/grading/semantic-answer-grading.service";
 import type { TypeInGradingPromptRelatedCard } from "@true-recall/core/ai/prompts/type-in-grading-prompt";
 import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
-import { assessTypedAnswer } from "@true-recall/core/helpers/answer-assessment";
 import {
 	DEFAULT_LEECH_THRESHOLD,
 	shouldTriggerLeech,
@@ -14,7 +13,6 @@ import type { ReviewService } from "@true-recall/core/services/review/review.ser
 import type {
 	FSRSFlashcardItem,
 	FSRSPreset,
-	LocalAnswerAssessment,
 	SemanticGradingResult,
 } from "@true-recall/core/types";
 import { isPreviewCustomStudy } from "@true-recall/core/types/review-session.types";
@@ -105,50 +103,23 @@ export class AnswerHandler {
 		}
 	}
 
-	prepareTypedAnswerAssessment(typedAnswer: string): {
-		card: FSRSFlashcardItem;
-		localAssessment: LocalAnswerAssessment;
-	} | null {
-		const card = this.deps.getReview().getCurrentCard();
-		if (!card) return null;
-
-		this.handleShowAnswer();
-
-		const localAssessment = assessTypedAnswer(card.answer ?? "", typedAnswer);
-		return { card, localAssessment };
-	}
-
 	async gradeTypedAnswerSemantically(
 		card: FSRSFlashcardItem,
 		typedAnswer: string,
-		localFallbackScore: number,
-		passThreshold: number,
 		options?: {
-			allowLocalFallback?: boolean;
 			sourceContext?: string;
 			sourceNotePath?: string;
 			relatedCards?: TypeInGradingPromptRelatedCard[];
 		},
-	): Promise<SemanticGradingResult | null> {
-		const result = await this.deps.semanticGradingService.gradeAnswer({
+	): Promise<SemanticGradingResult> {
+		return this.deps.semanticGradingService.gradeAnswer({
 			question: card.question,
 			correctAnswer: card.answer ?? "",
 			userAnswer: typedAnswer,
-			passThreshold,
-			localFallbackScore,
 			sourceContext: options?.sourceContext,
 			sourceNotePath: options?.sourceNotePath,
 			relatedCards: options?.relatedCards,
 		});
-
-		if (
-			options?.allowLocalFallback === false &&
-			result.source === "local-fallback"
-		) {
-			throw new Error("AI grading unavailable. Please rate manually.");
-		}
-
-		return result;
 	}
 
 	handleAnswer(rating: Grade): ReviewGradeOutcome | null {

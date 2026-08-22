@@ -130,10 +130,7 @@ describe("SemanticAnswerGradingService", () => {
 			"bad verdict enum",
 			{ ...JSON.parse(VALID_PAYLOAD), verdict: "excellent" },
 		],
-		[
-			"non-array covered",
-			{ ...JSON.parse(VALID_PAYLOAD), covered: "energy" },
-		],
+		["non-array covered", { ...JSON.parse(VALID_PAYLOAD), covered: "energy" }],
 		[
 			"bad suggestedRating",
 			{ ...JSON.parse(VALID_PAYLOAD), suggestedRating: "perfect" },
@@ -275,8 +272,6 @@ describe("SemanticAnswerGradingService", () => {
 		await service.gradeAnswer(BASE_INPUT);
 
 		expect(capturedUserMessage).not.toContain("<context>");
-		expect(capturedUserMessage.startsWith("Question: What is ATP?")).toBe(
-			true,
-		);
+		expect(capturedUserMessage.startsWith("Question: What is ATP?")).toBe(true);
 	});
 });

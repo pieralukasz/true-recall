@@ -41,11 +41,7 @@ describe("selectRelevantSections", () => {
 		const content = [intro, relevant1, filler, relevant2].join("\n");
 
 		const maxChars = relevant1.length + relevant2.length + 2;
-		const result = selectRelevantSections(
-			content,
-			["mitochondria"],
-			maxChars,
-		);
+		const result = selectRelevantSections(content, ["mitochondria"], maxChars);
 
 		expect(result).toContain("Mitochondria produce energy");
 		expect(result).toContain("matrix hosts ATP");

@@ -14,6 +14,7 @@ export {
 	isTypeInRequiredForCard,
 	nextTypeInMode,
 	shouldRunAIGradingOnReveal,
+	suggestedRatingToGrade,
 } from "@true-recall/obsidian/features/study/ui/review/helpers/type-in-flow";
 export {
 	getTypeInModeStorage,

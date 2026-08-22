@@ -1,3 +1,4 @@
+import { Rating } from "ts-fsrs";
 import { describe, expect, it } from "vitest";
 
 import type { FSRSFlashcardItem } from "@true-recall/core/types";
@@ -8,6 +9,7 @@ import {
 	isTypeInRequiredForCard,
 	nextTypeInMode,
 	shouldRunAIGradingOnReveal,
+	suggestedRatingToGrade,
 } from "../../../../../src/features/study/ui/review/helpers/type-in-flow";
 
 function createCard(
@@ -38,17 +40,19 @@ function createCard(
 }
 
 describe("type-in flow helpers", () => {
-	it("derives mode from enabled + AI flags", () => {
-		expect(deriveTypeInMode(false, false)).toBe("off");
-		expect(deriveTypeInMode(false, true)).toBe("off");
-		expect(deriveTypeInMode(true, true)).toBe("ai");
-		expect(deriveTypeInMode(true, false)).toBe("diff");
+	it("derives mode from the enabled flag", () => {
+		expect(deriveTypeInMode(false)).toBe("off");
+		expect(deriveTypeInMode(true)).toBe("ai");
 	});
 
-	it("cycles modes in fixed order", () => {
+	it("toggles between off and ai", () => {
 		expect(nextTypeInMode("off")).toBe("ai");
-		expect(nextTypeInMode("ai")).toBe("diff");
-		expect(nextTypeInMode("diff")).toBe("off");
+		expect(nextTypeInMode("ai")).toBe("off");
+	});
+
+	it("stays on ai when off is skipped (always-type-in cards)", () => {
+		expect(nextTypeInMode("ai", true)).toBe("ai");
+		expect(nextTypeInMode("off", true)).toBe("ai");
 	});
 
 	it("requires type-in only when mode is enabled and card has text answer", () => {
@@ -69,11 +73,10 @@ describe("type-in flow helpers", () => {
 		);
 	});
 
-	it("runs AI grading only when AI is enabled and typed answer is non-empty", () => {
+	it("runs AI grading only for a non-empty typed answer", () => {
 		expect(
 			shouldRunAIGradingOnReveal({
 				requiresTypeIn: true,
-				aiEnabled: true,
 				typedAnswer: "answer",
 				isChecking: false,
 			}),
@@ -82,7 +85,6 @@ describe("type-in flow helpers", () => {
 		expect(
 			shouldRunAIGradingOnReveal({
 				requiresTypeIn: true,
-				aiEnabled: true,
 				typedAnswer: "  ",
 				isChecking: false,
 			}),
@@ -90,8 +92,7 @@ describe("type-in flow helpers", () => {
 
 		expect(
 			shouldRunAIGradingOnReveal({
-				requiresTypeIn: true,
-				aiEnabled: false,
+				requiresTypeIn: false,
 				typedAnswer: "answer",
 				isChecking: false,
 			}),
@@ -100,21 +101,22 @@ describe("type-in flow helpers", () => {
 		expect(
 			shouldRunAIGradingOnReveal({
 				requiresTypeIn: true,
-				aiEnabled: true,
 				typedAnswer: "answer",
 				isChecking: true,
 			}),
 		).toBe(false);
 	});
 
-	it("locks ratings only while AI grading is in progress after reveal", () => {
+	it("locks ratings while grading is in progress, revealed or not", () => {
+		// Checking now happens BEFORE reveal (two-stage flow), so the lock
+		// must hold in both phases.
 		expect(
 			isRatingLockedForTypeIn({
 				requiresTypeIn: true,
 				isAnswerRevealed: false,
-				isChecking: false,
+				isChecking: true,
 			}),
-		).toBe(false);
+		).toBe(true);
 
 		expect(
 			isRatingLockedForTypeIn({
@@ -131,5 +133,27 @@ describe("type-in flow helpers", () => {
 				isChecking: false,
 			}),
 		).toBe(false);
+
+		expect(
+			isRatingLockedForTypeIn({
+				requiresTypeIn: false,
+				isAnswerRevealed: true,
+				isChecking: true,
+			}),
+		).toBe(false);
+	});
+
+	it.each([
+		["again", Rating.Again],
+		["hard", Rating.Hard],
+		["good", Rating.Good],
+		["easy", Rating.Easy],
+	] as const)("maps suggested rating %s to grade", (suggested, grade) => {
+		expect(suggestedRatingToGrade(suggested)).toBe(grade);
+	});
+
+	it("maps missing suggestion to null", () => {
+		expect(suggestedRatingToGrade(null)).toBeNull();
+		expect(suggestedRatingToGrade(undefined)).toBeNull();
 	});
 });
