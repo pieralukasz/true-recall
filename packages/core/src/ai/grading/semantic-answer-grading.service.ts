@@ -1,7 +1,11 @@
 import type { IHttpClient } from "../../interfaces/http-client";
-import type { SemanticGradingResult, TrueRecallSettings } from "../../types";
+import type {
+	SemanticGradingResult,
+	SuggestedRating,
+	TrueRecallSettings,
+	TypeInVerdict,
+} from "../../types";
 import {
-	AIRequestError,
 	type ChatCompletionResponse,
 	getTextContent,
 	OpenRouterClient,
@@ -15,20 +19,18 @@ import {
 	type TypeInGradingPromptRelatedCard,
 } from "../prompts/type-in-grading-prompt";
 
-const DEFAULT_TIMEOUT_MS = 8000;
-const MAX_FEEDBACK_LENGTH = 280;
+const DEFAULT_TIMEOUT_MS = 20000;
+const MAX_COMMENT_LENGTH = 400;
+const MAX_POINTS = 5;
+const MAX_ERRORS = 3;
 
-interface SemanticGradingPayload {
-	score: number;
-	feedback: string;
-}
+const VERDICTS: ReadonlySet<string> = new Set(["correct", "partial", "wrong"]);
+const RATINGS: ReadonlySet<string> = new Set(["again", "hard", "good", "easy"]);
 
 interface GradeAnswerInput {
 	question: string;
 	correctAnswer: string;
 	userAnswer: string;
-	passThreshold: number;
-	localFallbackScore: number;
 	timeoutMs?: number;
 	sourceContext?: string;
 	sourceNotePath?: string;
@@ -46,14 +48,10 @@ type ClientFactory = (config: AIClientConfig) => {
 	}) => Promise<ChatCompletionResponse>;
 };
 
-function clamp100(value: number): number {
-	return Math.max(0, Math.min(100, Math.round(value)));
-}
-
-function truncateFeedback(feedback: string): string {
-	const normalized = feedback.trim().replace(/\s+/g, " ");
-	if (normalized.length <= MAX_FEEDBACK_LENGTH) return normalized;
-	return `${normalized.slice(0, MAX_FEEDBACK_LENGTH - 1)}…`;
+function truncateComment(comment: string): string {
+	const normalized = comment.trim().replace(/\s+/g, " ");
+	if (normalized.length <= MAX_COMMENT_LENGTH) return normalized;
+	return `${normalized.slice(0, MAX_COMMENT_LENGTH - 1)}…`;
 }
 
 function extractJsonBlock(text: string): string | null {
@@ -69,6 +67,16 @@ function extractJsonBlock(text: string): string | null {
 	const end = trimmed.lastIndexOf("}");
 	if (start === -1 || end <= start) return null;
 	return trimmed.slice(start, end + 1);
+}
+
+function isStringArray(value: unknown): value is string[] {
+	return (
+		Array.isArray(value) && value.every((item) => typeof item === "string")
+	);
+}
+
+function clampList(items: string[], max: number): string[] {
+	return items.map((item) => item.trim()).filter(Boolean).slice(0, max);
 }
 
 export class SemanticAnswerGradingService {
@@ -90,27 +98,13 @@ export class SemanticAnswerGradingService {
 	async gradeAnswer(input: GradeAnswerInput): Promise<SemanticGradingResult> {
 		const settings = this.getSettings();
 
-		let primaryConfig: AIClientConfig;
+		let config: AIClientConfig;
 		try {
-			primaryConfig = resolveAIClientConfig(settings);
+			config = resolveAIClientConfig(settings, "grading");
 		} catch {
-			return this.buildLocalFallback(
-				input,
-				"AI key missing. Using local text comparison.",
-			);
+			throw new Error("AI key missing. Rate manually.");
 		}
 
-		try {
-			return await this.requestSemanticGrade(primaryConfig, input);
-		} catch (error) {
-			return this.buildLocalFallback(input, this.describeFailure(error));
-		}
-	}
-
-	private async requestSemanticGrade(
-		config: AIClientConfig,
-		input: GradeAnswerInput,
-	): Promise<SemanticGradingResult> {
 		const client = this.createClient(config);
 		const timeoutMs = input.timeoutMs ?? DEFAULT_TIMEOUT_MS;
 
@@ -125,12 +119,11 @@ export class SemanticAnswerGradingService {
 						question: input.question,
 						correctAnswer: input.correctAnswer,
 						userAnswer: input.userAnswer,
-						passThreshold: input.passThreshold,
 						sourceContext: input.sourceContext,
 						sourceNotePath: input.sourceNotePath,
 						relatedCards: input.relatedCards,
 					},
-					this.getSettings().aiTypeInGradingPrompt,
+					settings.aiTypeInGradingPrompt,
 				),
 				...(config.hasProTier ? {} : { temperature: 0 }),
 				metadata,
@@ -139,18 +132,10 @@ export class SemanticAnswerGradingService {
 		);
 
 		const content = getTextContent(response.choices[0]?.message);
-		const parsed = this.parsePayload(content);
-		const score = clamp100(parsed.score);
-
-		return {
-			score,
-			feedback: config.hasProTier ? truncateFeedback(parsed.feedback) : "",
-			passed: score >= clamp100(input.passThreshold),
-			source: "ai",
-		};
+		return this.parsePayload(content);
 	}
 
-	private parsePayload(content: string): SemanticGradingPayload {
+	private parsePayload(content: string): SemanticGradingResult {
 		const jsonText = extractJsonBlock(content);
 		if (!jsonText) {
 			throw new Error("Invalid AI response format");
@@ -163,16 +148,32 @@ export class SemanticAnswerGradingService {
 			throw new Error("Failed to parse AI JSON response");
 		}
 
+		if (!parsed || typeof parsed !== "object") {
+			throw new Error("AI response missing required fields");
+		}
+
+		const payload = parsed as Record<string, unknown>;
 		if (
-			!parsed ||
-			typeof parsed !== "object" ||
-			typeof (parsed as SemanticGradingPayload).score !== "number" ||
-			typeof (parsed as SemanticGradingPayload).feedback !== "string"
+			typeof payload.verdict !== "string" ||
+			!VERDICTS.has(payload.verdict) ||
+			typeof payload.teacherComment !== "string" ||
+			!isStringArray(payload.covered) ||
+			!isStringArray(payload.missing) ||
+			!isStringArray(payload.errors) ||
+			typeof payload.suggestedRating !== "string" ||
+			!RATINGS.has(payload.suggestedRating)
 		) {
 			throw new Error("AI response missing required fields");
 		}
 
-		return parsed as SemanticGradingPayload;
+		return {
+			verdict: payload.verdict as TypeInVerdict,
+			teacherComment: truncateComment(payload.teacherComment),
+			covered: clampList(payload.covered, MAX_POINTS),
+			missing: clampList(payload.missing, MAX_POINTS),
+			errors: clampList(payload.errors, MAX_ERRORS),
+			suggestedRating: payload.suggestedRating as SuggestedRating,
+		};
 	}
 
 	private withTimeout<T>(promise: Promise<T>, timeoutMs: number): Promise<T> {
@@ -191,28 +192,5 @@ export class SemanticAnswerGradingService {
 					reject(error instanceof Error ? error : new Error(String(error)));
 				});
 		});
-	}
-
-	private buildLocalFallback(
-		input: GradeAnswerInput,
-		reason: string,
-	): SemanticGradingResult {
-		const score = clamp100(input.localFallbackScore);
-		return {
-			score,
-			passed: score >= clamp100(input.passThreshold),
-			source: "local-fallback",
-			feedback: truncateFeedback(reason),
-		};
-	}
-
-	private describeFailure(error: unknown): string {
-		if (error instanceof AIRequestError) {
-			return `AI request failed (${error.statusCode}). Using local text comparison.`;
-		}
-		if (error instanceof Error) {
-			return `${error.message}. Using local text comparison.`;
-		}
-		return "AI grading unavailable. Using local text comparison.";
 	}
 }

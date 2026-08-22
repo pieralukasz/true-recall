@@ -150,6 +150,7 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 	lmStudioTemperature: undefined,
 	lmStudioGenerationModel: "",
 	lmStudioCardPolishModel: "",
+	lmStudioGradingModel: "",
 	openRouterApiKey: "",
 	aiModel: DEFAULT_BYOK_MODEL,
 	aiTier: "byok",
@@ -270,6 +271,7 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 	],
 
 	assistantModel: "",
+	gradingModel: "",
 	assistantWebSearch: true,
 	assistantInstructions: "",
 	assistantPresets: [

@@ -63,7 +63,9 @@ export type {
 	SemanticGradingResult,
 	StatsTimeRange,
 	StreakInfo,
+	SuggestedRating,
 	TodaySummary,
+	TypeInVerdict,
 } from "./fsrs";
 export {
 	createDefaultFSRSData,

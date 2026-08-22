@@ -114,7 +114,7 @@ export type NewReviewMix =
 	| "mix-with-reviews"
 	| "show-before-reviews";
 
-export type TypeInMode = "off" | "ai" | "diff";
+export type TypeInMode = "off" | "ai";
 
 /**
  * Named group of FSRS scheduling parameters (like Anki's "Deck Options").
@@ -239,6 +239,8 @@ export interface TrueRecallSettings {
 	lmStudioGenerationModel: string;
 	/** Optional LM Studio model override for Card Polish */
 	lmStudioCardPolishModel: string;
+	/** Optional LM Studio model override for type-in answer grading */
+	lmStudioGradingModel: string;
 
 	/** User-created Card Polish presets (built-ins live in the plugin, not here). */
 	cardPolish?: CardAIUserSettings;
@@ -410,6 +412,8 @@ export interface TrueRecallSettings {
 	generationNoteTypeId: string | null;
 	/** Custom system prompt for AI semantic grading in review type-in mode */
 	aiTypeInGradingPrompt?: string;
+	/** Type-in grading: OpenRouter model override ("" = inherit aiModel) */
+	gradingModel: string;
 	/** Custom user prompt for AI image occlusion region detection */
 	aiIODetectionPrompt?: string;
 
