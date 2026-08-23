@@ -425,5 +425,24 @@ export function migrateSettings(raw: Partial<TrueRecallSettings> | null): {
 		}
 	}
 
+	// Backfill the highlight-card toolbar button for users with saved button
+	// arrays. Editor-only, so the global toolbar array is left untouched.
+	const editorButtons = settings.editorToolbarButtons;
+	if (
+		Array.isArray(editorButtons) &&
+		!editorButtons.some((b) => b.id === "highlight-card")
+	) {
+		// Sits next to the plain highlight button when that one is present,
+		// otherwise lands at the end like any other backfilled button.
+		const highlightIdx = editorButtons.findIndex((b) => b.id === "highlight");
+		const insertIdx =
+			highlightIdx === -1 ? editorButtons.length : highlightIdx + 1;
+		editorButtons.splice(insertIdx, 0, {
+			id: "highlight-card",
+			enabled: true,
+		});
+		needsSave = true;
+	}
+
 	return { settings, needsSave };
 }

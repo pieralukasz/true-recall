@@ -53,6 +53,8 @@ export async function handleSuspendCard(
 interface UpdateCardInput {
 	question?: string;
 	answer?: string;
+	/** Which edit counter this write bumps; anything else falls back to manual. */
+	edit_source?: string;
 }
 
 interface MoveCardInput {
@@ -183,7 +185,12 @@ export async function handleUpdateCard(
 	}
 
 	const previousFields = { ...note.fields };
-	ctx.plugin.flashcardManager.updateNoteFields(noteId, updatedFields);
+	const editSource = body.edit_source === "ai" ? "ai" : "manual";
+	ctx.plugin.flashcardManager.updateNoteFields(
+		noteId,
+		updatedFields,
+		editSource,
+	);
 
 	const cmd = new UpdateNoteFieldsCommand(noteId, previousFields, "Edit card");
 	await ctx.plugin.commandService?.execute(cmd);

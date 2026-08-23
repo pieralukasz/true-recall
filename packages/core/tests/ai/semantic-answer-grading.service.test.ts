@@ -16,87 +16,92 @@ function createSettings(
 
 const dummyHttpClient = {} as never;
 
+const VALID_PAYLOAD = JSON.stringify({
+	verdict: "correct",
+	teacherComment: "Nicely explained in your own words.",
+	covered: ["energy currency", "used by cells"],
+	missing: [],
+	errors: [],
+	suggestedRating: "good",
+});
+
+function serviceReturning(
+	settings: TrueRecallSettings,
+	content: string,
+	capture?: {
+		onRequest?: (request: {
+			messages: Array<{ role: "system" | "user"; content: string }>;
+		}) => void;
+		onConfig?: (config: { model: string }) => void;
+	},
+): SemanticAnswerGradingService {
+	return new SemanticAnswerGradingService(
+		() => settings,
+		dummyHttpClient,
+		(config) => {
+			capture?.onConfig?.(config);
+			return {
+				chat: async (request) => {
+					capture?.onRequest?.(request);
+					return {
+						id: "resp",
+						choices: [
+							{
+								message: { role: "assistant", content },
+								finish_reason: "stop",
+							},
+						],
+					};
+				},
+			};
+		},
+	);
+}
+
+const BASE_INPUT = {
+	question: "What is ATP?",
+	correctAnswer: "Adenosine triphosphate, the energy currency of the cell",
+	userAnswer: "It's the molecule cells use as energy money",
+};
+
 describe("SemanticAnswerGradingService", () => {
-	it("returns pass/fail without feedback for BYOK users", async () => {
+	it("parses a valid teacher verdict payload", async () => {
 		const settings = createSettings({ openRouterApiKey: "byok-key" });
-		const service = new SemanticAnswerGradingService(
-			() => settings,
-			dummyHttpClient,
-			() => ({
-				chat: async () => ({
-					id: "resp-1",
-					choices: [
-						{
-							message: {
-								role: "assistant",
-								content:
-									'{"score": 92, "feedback": "Meaning is correct with minor wording differences."}',
-							},
-							finish_reason: "stop",
-						},
-					],
-				}),
-			}),
-		);
+		const service = serviceReturning(settings, VALID_PAYLOAD);
 
-		const result = await service.gradeAnswer({
-			question: "Main cause of WW2",
-			correctAnswer: "Germany invaded Poland",
-			userAnswer: "Hitler invaded Polish lands",
-			passThreshold: 85,
-			localFallbackScore: 70,
-		});
+		const result = await service.gradeAnswer(BASE_INPUT);
 
 		expect(result).toEqual({
-			score: 92,
-			passed: true,
-			source: "ai",
-			feedback: "",
+			verdict: "correct",
+			teacherComment: "Nicely explained in your own words.",
+			covered: ["energy currency", "used by cells"],
+			missing: [],
+			errors: [],
+			suggestedRating: "good",
 		});
 	});
 
-	it("returns full feedback for Pro users", async () => {
-		const settings = createSettings({
-			proKey: "sk-pro-key",
-			providerType: "pro",
+	it("clamps oversized lists and comment length", async () => {
+		const settings = createSettings({ openRouterApiKey: "byok-key" });
+		const payload = JSON.stringify({
+			verdict: "partial",
+			teacherComment: "x".repeat(600),
+			covered: Array.from({ length: 9 }, (_, i) => `covered ${i}`),
+			missing: Array.from({ length: 9 }, (_, i) => `missing ${i}`),
+			errors: Array.from({ length: 9 }, (_, i) => `error ${i}`),
+			suggestedRating: "hard",
 		});
-		const service = new SemanticAnswerGradingService(
-			() => settings,
-			dummyHttpClient,
-			() => ({
-				chat: async () => ({
-					id: "resp-pro",
-					choices: [
-						{
-							message: {
-								role: "assistant",
-								content:
-									'{"score": 92, "feedback": "Meaning is correct with minor wording differences."}',
-							},
-							finish_reason: "stop",
-						},
-					],
-				}),
-			}),
-		);
+		const service = serviceReturning(settings, payload);
 
-		const result = await service.gradeAnswer({
-			question: "Main cause of WW2",
-			correctAnswer: "Germany invaded Poland",
-			userAnswer: "Hitler invaded Polish lands",
-			passThreshold: 85,
-			localFallbackScore: 70,
-		});
+		const result = await service.gradeAnswer(BASE_INPUT);
 
-		expect(result).toEqual({
-			score: 92,
-			passed: true,
-			source: "ai",
-			feedback: "Meaning is correct with minor wording differences.",
-		});
+		expect(result.teacherComment.length).toBeLessThanOrEqual(400);
+		expect(result.covered).toHaveLength(5);
+		expect(result.missing).toHaveLength(5);
+		expect(result.errors).toHaveLength(3);
 	});
 
-	it("falls back to local score on timeout", async () => {
+	it("throws on timeout", async () => {
 		const settings = createSettings({ openRouterApiKey: "byok-key" });
 		const service = new SemanticAnswerGradingService(
 			() => settings,
@@ -106,59 +111,49 @@ describe("SemanticAnswerGradingService", () => {
 			}),
 		);
 
-		const result = await service.gradeAnswer({
-			question: "Q",
-			correctAnswer: "A",
-			userAnswer: "B",
-			passThreshold: 85,
-			localFallbackScore: 60,
-			timeoutMs: 1,
-		});
-
-		expect(result.score).toBe(60);
-		expect(result.source).toBe("local-fallback");
-		expect(result.passed).toBe(false);
+		await expect(
+			service.gradeAnswer({ ...BASE_INPUT, timeoutMs: 1 }),
+		).rejects.toThrow("AI grading timeout");
 	});
 
-	it("falls back to local score on invalid AI payload", async () => {
+	it("throws on non-JSON payload", async () => {
 		const settings = createSettings({ openRouterApiKey: "byok-key" });
-		const service = new SemanticAnswerGradingService(
-			() => settings,
-			dummyHttpClient,
-			() => ({
-				chat: async () => ({
-					id: "resp-2",
-					choices: [
-						{
-							message: {
-								role: "assistant",
-								content: "not json",
-							},
-							finish_reason: "stop",
-						},
-					],
-				}),
-			}),
+		const service = serviceReturning(settings, "not json");
+
+		await expect(service.gradeAnswer(BASE_INPUT)).rejects.toThrow(
+			"Invalid AI response format",
 		);
-
-		const result = await service.gradeAnswer({
-			question: "Q",
-			correctAnswer: "A",
-			userAnswer: "B",
-			passThreshold: 85,
-			localFallbackScore: 88,
-		});
-
-		expect(result.score).toBe(88);
-		expect(result.source).toBe("local-fallback");
-		expect(result.passed).toBe(true);
 	});
 
-	it("falls back to local score on 429 rate limit", async () => {
-		const settings = createSettings({
-			openRouterApiKey: "byok-key",
-		});
+	it.each([
+		[
+			"bad verdict enum",
+			{ ...JSON.parse(VALID_PAYLOAD), verdict: "excellent" },
+		],
+		["non-array covered", { ...JSON.parse(VALID_PAYLOAD), covered: "energy" }],
+		[
+			"bad suggestedRating",
+			{ ...JSON.parse(VALID_PAYLOAD), suggestedRating: "perfect" },
+		],
+		[
+			"missing teacherComment",
+			(() => {
+				const p = JSON.parse(VALID_PAYLOAD);
+				delete p.teacherComment;
+				return p;
+			})(),
+		],
+	])("throws on invalid payload: %s", async (_label, payload) => {
+		const settings = createSettings({ openRouterApiKey: "byok-key" });
+		const service = serviceReturning(settings, JSON.stringify(payload));
 
+		await expect(service.gradeAnswer(BASE_INPUT)).rejects.toThrow(
+			"AI response missing required fields",
+		);
+	});
+
+	it("throws on request error instead of falling back", async () => {
+		const settings = createSettings({ openRouterApiKey: "byok-key" });
 		const service = new SemanticAnswerGradingService(
 			() => settings,
 			dummyHttpClient,
@@ -169,17 +164,52 @@ describe("SemanticAnswerGradingService", () => {
 			}),
 		);
 
-		const result = await service.gradeAnswer({
-			question: "Q",
-			correctAnswer: "A",
-			userAnswer: "B",
-			passThreshold: 85,
-			localFallbackScore: 40,
+		await expect(service.gradeAnswer(BASE_INPUT)).rejects.toThrow();
+	});
+
+	it("throws when no AI key is configured", async () => {
+		const settings = createSettings({ openRouterApiKey: "" });
+		const service = serviceReturning(settings, VALID_PAYLOAD);
+
+		await expect(service.gradeAnswer(BASE_INPUT)).rejects.toThrow(
+			"AI key missing",
+		);
+	});
+
+	it("uses the grading model override when set", async () => {
+		const settings = createSettings({
+			openRouterApiKey: "byok-key",
+			aiModel: "google/gemini-3.7-flash",
+			gradingModel: "anthropic/claude-sonnet-4",
+		});
+		let capturedModel = "";
+		const service = serviceReturning(settings, VALID_PAYLOAD, {
+			onConfig: (config) => {
+				capturedModel = config.model;
+			},
 		});
 
-		expect(result.score).toBe(40);
-		expect(result.source).toBe("local-fallback");
-		expect(result.passed).toBe(false);
+		await service.gradeAnswer(BASE_INPUT);
+
+		expect(capturedModel).toBe("anthropic/claude-sonnet-4");
+	});
+
+	it("inherits the main model when grading override is empty", async () => {
+		const settings = createSettings({
+			openRouterApiKey: "byok-key",
+			aiModel: "google/gemini-3.7-flash",
+			gradingModel: "",
+		});
+		let capturedModel = "";
+		const service = serviceReturning(settings, VALID_PAYLOAD, {
+			onConfig: (config) => {
+				capturedModel = config.model;
+			},
+		});
+
+		await service.gradeAnswer(BASE_INPUT);
+
+		expect(capturedModel).toBe("google/gemini-3.7-flash");
 	});
 
 	it("uses custom type-in grading prompt from settings when provided", async () => {
@@ -188,114 +218,28 @@ describe("SemanticAnswerGradingService", () => {
 			aiTypeInGradingPrompt: "CUSTOM_GRADING_PROMPT",
 		});
 		let capturedSystem = "";
-
-		const service = new SemanticAnswerGradingService(
-			() => settings,
-			dummyHttpClient,
-			() => ({
-				chat: async (request) => {
-					capturedSystem = request.messages[0]?.content ?? "";
-					return {
-						id: "resp-custom",
-						choices: [
-							{
-								message: {
-									role: "assistant",
-									content: '{"score": 90, "feedback": "Correct."}',
-								},
-								finish_reason: "stop",
-							},
-						],
-					};
-				},
-			}),
-		);
-
-		await service.gradeAnswer({
-			question: "Q",
-			correctAnswer: "A",
-			userAnswer: "B",
-			passThreshold: 85,
-			localFallbackScore: 10,
+		const service = serviceReturning(settings, VALID_PAYLOAD, {
+			onRequest: (request) => {
+				capturedSystem = request.messages[0]?.content ?? "";
+			},
 		});
+
+		await service.gradeAnswer(BASE_INPUT);
 
 		expect(capturedSystem).toBe("CUSTOM_GRADING_PROMPT");
 	});
 
-	it("includes source context in user message when provided", async () => {
+	it("includes source context and related cards in the user message", async () => {
 		const settings = createSettings({ openRouterApiKey: "byok-key" });
 		let capturedUserMessage = "";
-
-		const service = new SemanticAnswerGradingService(
-			() => settings,
-			dummyHttpClient,
-			() => ({
-				chat: async (request) => {
-					capturedUserMessage = request.messages[1]?.content ?? "";
-					return {
-						id: "resp-ctx",
-						choices: [
-							{
-								message: {
-									role: "assistant",
-									content: '{"score": 95, "feedback": "Correct."}',
-								},
-								finish_reason: "stop",
-							},
-						],
-					};
-				},
-			}),
-		);
-
-		await service.gradeAnswer({
-			question: "What is ATP?",
-			correctAnswer: "Adenosine triphosphate",
-			userAnswer: "ATP is the energy currency",
-			passThreshold: 85,
-			localFallbackScore: 10,
-			sourceContext:
-				"ATP (adenosine triphosphate) is the primary energy carrier in cells.",
+		const service = serviceReturning(settings, VALID_PAYLOAD, {
+			onRequest: (request) => {
+				capturedUserMessage = request.messages[1]?.content ?? "";
+			},
 		});
 
-		expect(capturedUserMessage).toContain("<context>");
-		expect(capturedUserMessage).toContain("adenosine triphosphate");
-		expect(capturedUserMessage).toContain("</context>");
-		expect(capturedUserMessage).toContain("Question: What is ATP?");
-	});
-
-	it("includes source note path and related cards when provided", async () => {
-		const settings = createSettings({ openRouterApiKey: "byok-key" });
-		let capturedUserMessage = "";
-
-		const service = new SemanticAnswerGradingService(
-			() => settings,
-			dummyHttpClient,
-			() => ({
-				chat: async (request) => {
-					capturedUserMessage = request.messages[1]?.content ?? "";
-					return {
-						id: "resp-related",
-						choices: [
-							{
-								message: {
-									role: "assistant",
-									content: '{"score": 88, "feedback": "OK."}',
-								},
-								finish_reason: "stop",
-							},
-						],
-					};
-				},
-			}),
-		);
-
 		await service.gradeAnswer({
-			question: "What is ATP?",
-			correctAnswer: "Adenosine triphosphate",
-			userAnswer: "Energy currency",
-			passThreshold: 85,
-			localFallbackScore: 10,
+			...BASE_INPUT,
 			sourceContext: "ATP powers cellular work.",
 			sourceNotePath: "biology/atp.md",
 			relatedCards: [
@@ -306,49 +250,28 @@ describe("SemanticAnswerGradingService", () => {
 			],
 		});
 
+		expect(capturedUserMessage).toContain("<context>");
 		expect(capturedUserMessage).toContain("biology/atp.md");
 		expect(capturedUserMessage).toContain(
 			"Related flashcards from the same source",
 		);
 		expect(capturedUserMessage).toContain("Mitochondria");
-		expect(capturedUserMessage).toContain("Where is ATP made?");
+		expect(capturedUserMessage).toContain("Question: What is ATP?");
+		expect(capturedUserMessage).not.toContain("Pass threshold");
 	});
 
 	it("omits context block when sourceContext is not provided", async () => {
 		const settings = createSettings({ openRouterApiKey: "byok-key" });
 		let capturedUserMessage = "";
-
-		const service = new SemanticAnswerGradingService(
-			() => settings,
-			dummyHttpClient,
-			() => ({
-				chat: async (request) => {
-					capturedUserMessage = request.messages[1]?.content ?? "";
-					return {
-						id: "resp-no-ctx",
-						choices: [
-							{
-								message: {
-									role: "assistant",
-									content: '{"score": 80, "feedback": "Close."}',
-								},
-								finish_reason: "stop",
-							},
-						],
-					};
-				},
-			}),
-		);
-
-		await service.gradeAnswer({
-			question: "Q",
-			correctAnswer: "A",
-			userAnswer: "B",
-			passThreshold: 85,
-			localFallbackScore: 10,
+		const service = serviceReturning(settings, VALID_PAYLOAD, {
+			onRequest: (request) => {
+				capturedUserMessage = request.messages[1]?.content ?? "";
+			},
 		});
 
+		await service.gradeAnswer(BASE_INPUT);
+
 		expect(capturedUserMessage).not.toContain("<context>");
-		expect(capturedUserMessage.startsWith("Question: Q")).toBe(true);
+		expect(capturedUserMessage.startsWith("Question: What is ATP?")).toBe(true);
 	});
 });

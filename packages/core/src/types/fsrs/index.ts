@@ -38,6 +38,8 @@ export type {
 	ReviewSessionState,
 	ReviewSessionStats,
 	SemanticGradingResult,
+	SuggestedRating,
+	TypeInVerdict,
 } from "./session.types";
 // Statistics types
 export type {

@@ -104,7 +104,11 @@ describe("openCardEditor", () => {
 		expect(command.type).toBe("card:update-note-fields");
 		const updateNoteFields = vi.fn();
 		command.undo({ flashcardManager: { updateNoteFields } });
-		expect(updateNoteFields).toHaveBeenCalledWith("note-2", previousFields);
+		expect(updateNoteFields).toHaveBeenCalledWith(
+			"note-2",
+			previousFields,
+			"system",
+		);
 	});
 
 	it("registers no undo entry when the editor was cancelled", async () => {

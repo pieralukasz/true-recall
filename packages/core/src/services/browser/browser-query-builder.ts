@@ -31,13 +31,16 @@ const STATE_MAP: Record<StateFilterValue, number | "suspended" | "buried"> = {
 	buried: "buried",
 };
 
+/** Fully qualified: the edit counters live on the joined notes row. */
 const PROP_TO_COLUMN: Record<PropFilter["property"], string> = {
-	s: "stability",
-	d: "difficulty",
-	r: "stability",
-	ivl: "scheduled_days",
-	reps: "reps",
-	lapses: "lapses",
+	s: "c.stability",
+	d: "c.difficulty",
+	r: "c.stability",
+	ivl: "c.scheduled_days",
+	reps: "c.reps",
+	lapses: "c.lapses",
+	edits: "n.edit_count",
+	aiEdits: "n.ai_edit_count",
 };
 
 const SORT_COLUMN: Record<string, string> = {
@@ -55,6 +58,9 @@ const SORT_COLUMN: Record<string, string> = {
 	card_type: "nt.type",
 	source_uid: "c.source_uid",
 	created_via: "n.created_via",
+	edit_count: "n.edit_count",
+	ai_edit_count: "n.ai_edit_count",
+	content_edited_at: "n.content_edited_at",
 };
 
 export interface BuildQueryOptions {
@@ -195,7 +201,7 @@ export function buildBrowserQuery(
 	for (const pf of filter.propFilters) {
 		const column = PROP_TO_COLUMN[pf.property];
 		if (!column) continue;
-		conditions.push(`${col}${column} ${pf.operator} ?`);
+		conditions.push(`${column} ${pf.operator} ?`);
 		params.push(pf.value);
 	}
 

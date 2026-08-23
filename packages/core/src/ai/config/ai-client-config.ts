@@ -15,7 +15,8 @@ export type AIConfigScope =
 	| "default"
 	| "generation"
 	| "card-polish"
-	| "assistant";
+	| "assistant"
+	| "grading";
 
 export interface AIClientConfig {
 	apiKey: string;
@@ -45,6 +46,12 @@ function resolveLmStudioModel(
 	if (scope === "card-polish") {
 		return (
 			settings.lmStudioCardPolishModel.trim() || settings.lmStudioModel.trim()
+		);
+	}
+
+	if (scope === "grading") {
+		return (
+			settings.lmStudioGradingModel.trim() || settings.lmStudioModel.trim()
 		);
 	}
 
@@ -116,7 +123,9 @@ export function resolveAIClientConfig(
 			const model =
 				scope === "assistant" && settings.assistantModel.trim() !== ""
 					? settings.assistantModel.trim()
-					: defaultModel;
+					: scope === "grading" && settings.gradingModel.trim() !== ""
+						? settings.gradingModel.trim()
+						: defaultModel;
 			return {
 				apiKey: settings.openRouterApiKey,
 				model,

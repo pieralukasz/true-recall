@@ -12,6 +12,7 @@ import {
 	PresetPopover,
 } from "@true-recall/obsidian/features/study/ui/review/components";
 import { LivePreviewField } from "@true-recall/obsidian/features/study/ui/review/components/LivePreviewField";
+import { TypeInAssessmentPanel } from "@true-recall/obsidian/features/study/ui/review/components/TypeInAssessmentPanel";
 import { TypeInCMEditor } from "@true-recall/obsidian/features/study/ui/review/components/TypeInCMEditor";
 import { getReviewMaxWidth } from "@true-recall/obsidian/features/study/ui/review/helpers";
 import { usePlugin } from "@true-recall/obsidian/preact/ObsidianContext";
@@ -106,7 +107,6 @@ function CardFooter({
 
 interface TypeInState {
 	enabled: boolean;
-	aiEnabled: boolean;
 	typedAnswer: string;
 	onTypedAnswerChange: (value: string) => void;
 	onShowAnswer: () => void;
@@ -129,47 +129,6 @@ interface CardContainerProps {
 	audioPath?: string;
 }
 
-function TokenRow({
-	label,
-	tokens,
-	variant,
-}: {
-	label: string;
-	tokens: Array<{ text: string; type: "match" | "missing" | "extra" }>;
-	variant: "expected" | "user";
-}) {
-	return (
-		<div class="ep:flex ep:flex-col ep:gap-2">
-			<span class="ep:text-ui-smaller ep:text-obs-muted">{label}</span>
-			<div class="ep:flex ep:flex-wrap ep:gap-1.5">
-				{tokens.length === 0 && (
-					<span class="ep:text-ui-smaller ep:text-obs-faint">—</span>
-				)}
-				{tokens.map((token, index) => {
-					const isMatch = token.type === "match";
-					const isError =
-						variant === "expected"
-							? token.type === "missing"
-							: token.type === "extra";
-					return (
-						<span
-							key={`${token.type}-${token.text}-${index}`}
-							class={cn(
-								"ep:px-1.5 ep:py-0.5 ep:rounded-sm ep:text-ui-smaller",
-								isMatch && "ep:bg-obs-green/20 ep:text-obs-green",
-								isError && "ep:bg-obs-red/20 ep:text-obs-red",
-								!isMatch && !isError && "ep:text-obs-faint",
-							)}
-						>
-							{token.text}
-						</span>
-					);
-				})}
-			</div>
-		</div>
-	);
-}
-
 export function CardContainer({
 	card,
 	isAnswerRevealed,
@@ -184,7 +143,6 @@ export function CardContainer({
 }: CardContainerProps) {
 	const {
 		enabled: useTypeInMode,
-		aiEnabled,
 		typedAnswer,
 		onTypedAnswerChange,
 		onShowAnswer,
@@ -195,10 +153,7 @@ export function CardContainer({
 	} = typeIn;
 	const answerPhase = useAnswerWarmup(isAnswerRevealed, card.id);
 	const sourcePath = card.sourceNotePath || "";
-	const { reviewContentWidth, providerType } = usePlugin().settings;
-	// Detailed grading feedback is stripped for non-Pro tiers in
-	// SemanticAnswerGradingService — surface that instead of silently hiding it.
-	const isProTier = providerType === "pro";
+	const { reviewContentWidth } = usePlugin().settings;
 	const containsInkEmbed =
 		hasInkEmbed(card.question) || hasInkEmbed(card.answer);
 	const maxWidth =
@@ -216,11 +171,8 @@ export function CardContainer({
 		!!card.ioRegionsJson;
 	const isAlwaysTypeIn = card.alwaysTypeIn || card.fsrs.alwaysTypeIn;
 	const showTypeIn = useTypeInMode && hasTextAnswer;
-
-	const expectedTokens =
-		localAssessment?.diff.filter((token) => token.type !== "extra") ?? [];
-	const userTokens =
-		localAssessment?.diff.filter((token) => token.type !== "missing") ?? [];
+	const showAssessment =
+		showTypeIn && (isCheckingAnswer || !!semanticResult || !!semanticMessage);
 
 	if (card.cardType === "note-review") {
 		return (
@@ -313,9 +265,18 @@ export function CardContainer({
 							value={typedAnswer}
 							onChange={onTypedAnswerChange}
 							onSubmit={onShowAnswer}
-							placeholderText="Type your answer in your own words, then show answer."
+							placeholderText="Explain in your own words, then press Cmd+Enter."
 						/>
 					</div>
+				)}
+
+				{showAssessment && (
+					<TypeInAssessmentPanel
+						isChecking={isCheckingAnswer}
+						result={semanticResult}
+						message={semanticMessage}
+						fallback={localAssessment}
+					/>
 				)}
 
 				{hasTextAnswer && !isCloze && (
@@ -348,87 +309,6 @@ export function CardContainer({
 						</div>
 					</>
 				)}
-
-				{isAnswerRevealed && localAssessment && !aiEnabled && useTypeInMode && (
-					<div class="true-recall-answer-assessment ep:mt-8 ep:p-4 ep:rounded-lg ep:border ep:border-obs-border ep:bg-obs-secondary/20 ep:flex ep:flex-col ep:gap-3">
-						<div class="ep:flex ep:items-center ep:justify-between ep:gap-2">
-							<span class="ep:text-ui-small ep:font-medium">
-								Text comparison
-							</span>
-							<span class="ep:text-ui-smaller ep:text-obs-muted">
-								{localAssessment.score}% match
-							</span>
-						</div>
-						<TokenRow
-							label="Expected answer"
-							tokens={expectedTokens}
-							variant="expected"
-						/>
-						<TokenRow label="Your answer" tokens={userTokens} variant="user" />
-					</div>
-				)}
-
-				{isAnswerRevealed &&
-					aiEnabled &&
-					(isCheckingAnswer || !!semanticResult || !!semanticMessage) && (
-						<div class="true-recall-semantic-assessment ep:mt-4 ep:p-4 ep:rounded-lg ep:border ep:border-obs-border ep:bg-obs-secondary/20 ep:flex ep:flex-col ep:gap-2">
-							<div class="ep:flex ep:items-center ep:justify-between ep:gap-2">
-								<span class="ep:text-ui-small ep:font-medium">
-									Semantic grading
-								</span>
-								{isCheckingAnswer ? (
-									<span class="ep:text-ui-smaller ep:text-obs-muted">
-										Checking...
-									</span>
-								) : semanticResult ? (
-									<span
-										class={cn(
-											"ep:text-ui-smaller ep:font-medium",
-											semanticResult.passed
-												? "ep:text-obs-green"
-												: "ep:text-obs-red",
-										)}
-									>
-										{semanticResult.score}% ·{" "}
-										{semanticResult.passed ? "Passed" : "Not passed"}
-									</span>
-								) : semanticMessage ? (
-									<span class="ep:text-ui-smaller ep:text-obs-muted">
-										Unavailable
-									</span>
-								) : (
-									<span class="ep:text-ui-smaller ep:text-obs-faint">
-										Not graded yet
-									</span>
-								)}
-							</div>
-							{semanticResult?.feedback && (
-								<div class="ep:text-ui-smaller ep:text-obs-muted">
-									{semanticResult.feedback}
-								</div>
-							)}
-							{semanticResult?.source === "ai" &&
-								!semanticResult.feedback &&
-								!isProTier && (
-									<div class="ep:text-ui-smaller ep:text-obs-faint ep:flex ep:items-center ep:gap-1.5">
-										<span class="ep:text-[9px] ep:px-1 ep:rounded ep:font-semibold ep:bg-obs-accent/15 ep:text-obs-accent ep:leading-none">
-											PRO
-										</span>
-										<span>Detailed feedback is a True Recall Pro feature</span>
-									</div>
-								)}
-							{semanticMessage && (
-								<div class="ep:text-ui-smaller ep:text-obs-muted">
-									{semanticMessage}
-								</div>
-							)}
-							{semanticResult?.source === "local-fallback" && (
-								<div class="ep:text-ui-smaller ep:text-obs-faint">
-									Using local fallback
-								</div>
-							)}
-						</div>
-					)}
 
 				<CardFooter
 					card={card}

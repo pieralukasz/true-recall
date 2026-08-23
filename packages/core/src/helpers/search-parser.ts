@@ -25,6 +25,9 @@ const PROP_ALIASES: Record<string, PropFilter["property"]> = {
 	interval: "ivl",
 	reps: "reps",
 	lapses: "lapses",
+	edits: "edits",
+	edit: "edits",
+	aiedits: "aiEdits",
 };
 
 const VALID_OPERATORS = [">=", "<=", ">", "<"] as const;
@@ -36,7 +39,7 @@ const VALID_OPERATORS = [">=", "<=", ">", "<"] as const;
  * - is:new, is:learning, is:review, is:relearning, is:suspended, is:buried
  * - is:due, is:overdue (maps to state filters)
  * - -is:suspended (negation)
- * - prop:s>21, prop:d<0.5, prop:reps>=10
+ * - prop:s>21, prop:d<0.5, prop:reps>=10, prop:edits>3, prop:aiedits>0
  * - note:"Biology", project:"Med School", preset:"Hard Mode"
  * - type:cloze, type:basic, type:reversed, type:image-occlusion
  * - via:ai, via:manual, via:anki_import

@@ -236,10 +236,21 @@ export function useSelectionActions() {
 				"@true-recall/obsidian/services/notification.service"
 			);
 
+			const { confirm } = await import(
+				"@true-recall/obsidian/modals/shared/ConfirmModal"
+			);
+
 			const selectedCards = cardsWithFsrs.filter((card) =>
 				selectedCardIds.has(card.id),
 			);
 			if (selectedCards.length === 0) return;
+
+			// Each card is a separate paid AI request, so the batch is confirmed
+			// the same way a bulk delete is.
+			const confirmed = await confirm(app, {
+				message: `Run "${workflow.name}" on ${selectedCards.length} selected card(s)? Each card is a separate AI request.`,
+			});
+			if (!confirmed) return;
 
 			for (const card of selectedCards) {
 				startCardPolish(plugin, workflow, card);
@@ -249,7 +260,7 @@ export function useSelectionActions() {
 				`Polishing ${selectedCards.length} card(s) with ${workflow.name}…`,
 			);
 		},
-		[selectedCardIds, cardsWithFsrs, plugin, panel],
+		[app, selectedCardIds, cardsWithFsrs, plugin, panel],
 	);
 
 	const handleForgetSelected = useCallback(async () => {

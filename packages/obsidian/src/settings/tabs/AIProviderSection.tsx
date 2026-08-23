@@ -38,6 +38,14 @@ const MODEL_OPTIONS = [
 	{ value: CUSTOM_MODEL_ID, label: "Custom..." },
 ];
 
+const GRADING_MODEL_OPTIONS = [
+	{ value: "", label: "Same as main model" },
+	...BYOK_MODELS.map((m) => ({
+		value: m.id,
+		label: `${m.name} (${m.provider})`,
+	})),
+];
+
 function getModelDefault(modelId: string): number {
 	return BYOK_MODELS.find((m) => m.id === modelId)?.defaultTemperature ?? 0.7;
 }
@@ -234,6 +242,17 @@ export function AIProviderSection() {
 					)}
 
 					<FormField
+						name="Grading model"
+						description="Model used to grade typed answers during review. Pick a stronger model here without changing the generation model."
+					>
+						<SelectInput
+							value={settings.gradingModel}
+							onChange={(v) => void save({ gradingModel: v })}
+							options={GRADING_MODEL_OPTIONS}
+						/>
+					</FormField>
+
+					<FormField
 						name="Temperature"
 						description={
 							<span>
@@ -338,6 +357,29 @@ export function AIProviderSection() {
 									class="ep:w-[300px] ep:mt-2"
 								/>
 							</>
+						)}
+					</FormField>
+
+					<FormField
+						name="Grading model"
+						description="Optional LM Studio model override for grading typed answers during review"
+					>
+						{lmState.status === "ready" && lmState.models.length > 0 ? (
+							<SelectInput
+								value={settings.lmStudioGradingModel}
+								onChange={(v) => void save({ lmStudioGradingModel: v })}
+								options={[
+									{ value: "", label: "Same as default model" },
+									...lmState.models.map((id) => ({ value: id, label: id })),
+								]}
+							/>
+						) : (
+							<TextInput
+								value={settings.lmStudioGradingModel}
+								onChange={(v) => void save({ lmStudioGradingModel: v })}
+								placeholder="Leave empty to use the default model"
+								class="ep:w-[300px]"
+							/>
 						)}
 					</FormField>
 

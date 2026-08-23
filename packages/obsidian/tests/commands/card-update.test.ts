@@ -48,7 +48,9 @@ describe("UpdateCardCommand", () => {
 			"card-1",
 			"Old question",
 			"Old answer",
-			{ skipDuplicateCheck: true },
+			// "system": an undo restores content, it does not author an edit,
+			// so it must not bump the note's edit counter.
+			{ skipDuplicateCheck: true, editSource: "system" },
 		);
 	});
 });

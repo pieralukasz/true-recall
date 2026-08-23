@@ -31,6 +31,13 @@ export interface NoteType {
 	updatedAt?: number;
 }
 
+/**
+ * Who rewrote a note's content. Drives the per-note edit counters:
+ * `manual` and `ai` each bump their own counter, `system` bumps neither —
+ * undo and sync replay restore content rather than authoring it.
+ */
+export type NoteEditSource = "manual" | "ai" | "system";
+
 export interface Note {
 	id: string;
 	noteTypeId: string;
@@ -44,6 +51,12 @@ export interface Note {
 	createdVia?: string;
 	createdAt?: number;
 	updatedAt?: number;
+	/** How many times the user rewrote this note's fields after creation. */
+	editCount?: number;
+	/** How many times AI (card polish, assistant) rewrote this note's fields. */
+	aiEditCount?: number;
+	/** Last time the fields actually changed (Unix ms), null when never edited. */
+	contentEditedAt?: number;
 }
 
 // ── Built-in note type IDs (deterministic, not UUIDs) ──

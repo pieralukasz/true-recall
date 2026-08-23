@@ -1,5 +1,34 @@
 # Changelog
 
+## 2.3.0 (2026-08-23)
+
+Typed answers get a real assessment this release: grading was rebuilt around a teacher verdict, with its own model setting and its own panel in review. Notes also start keeping score of their own edits, separating what you rewrote by hand from what the AI rewrote. And the plugin no longer hangs on load on a device that has never opened the vault before, which is what made it unusable on a phone.
+
+### Features
+
+**Type-in review**
+
+- **Teacher-verdict grading.** Typed answers are assessed as a verdict instead of a bare similarity score, with a redesigned assessment panel and reworked rating buttons and keyboard flow
+- **A separate grading model**, configured on its own in AI provider settings rather than borrowed from generation
+- **Context excerpts feed the grader**, so the assessment sees the surrounding note instead of the field alone
+
+**Cards**
+
+- **Per-note edit counters**, split between what you rewrote by hand and what AI rewrote. They move only when the content actually changes, so saving an untouched field on blur does not read as an edit
+- **Edits and AI Edits columns** in the card browser, sortable and hidden by default, plus `prop:edits` and `prop:aiedits` in search
+- **Counters merge with MAX across devices** rather than last-writer-wins: they are tallies no single device owns, so LWW would drop the other device's edits
+- **Exposed through the local API and the CLI**, where `edit_source` lets an agent mark its own rewrites as AI
+
+**Editor**
+
+- **Mod+U and Mod+Shift+C work in the embedded editors.** The formatting toolbar advertised both, but Obsidian ships no underline command and the cloze wrap is a True Recall concept, so neither shortcut reached a handler
+- **A #card button in the selection toolbar** that highlights the selection and tags it, so highlights waiting to become cards stay findable in search
+
+### Bug Fixes
+
+- **The plugin no longer hangs on load on a device without its own database.** Startup ran the full device discovery and then awaited the database selection modal, both inside onload, and Obsidian withholds the rest of its startup until onload resolves. Discovery was equally costly on its own: it read every candidate database file in full and deserialized it into SQLite purely to report a card count. Card counts are now opt-in per call and skipped above 24 MB, and the modal waits for the workspace to be ready
+- **Bulk card polish asks before spending.** It queued one paid AI request per selected card with no prompt, while the bulk delete right next to it asks first
+
 ## 2.2.0 (2026-08-20)
 
 True Recall runs on phones now, and it stops assuming there is only one of you. The desktop-only guard is gone, review, the panel, the dashboard and the quick editor all have real phone layouts, and the database merges work from two devices by replaying the review log instead of letting whoever saved last overwrite the other. Persistence was hardened alongside it: writes land atomically and a truncated file is salvaged on load rather than costing you a session. The review queue also gained R-Mode, a continuous ranking by retrievability in which nothing is ever late.

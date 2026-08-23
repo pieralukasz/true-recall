@@ -27,7 +27,7 @@ export class UpdateCardCommand implements Command {
 			this.cardId,
 			this.previousQuestion,
 			this.previousAnswer,
-			{ skipDuplicateCheck: true },
+			{ skipDuplicateCheck: true, editSource: "system" },
 		);
 	}
 }
@@ -93,6 +93,10 @@ export class UpdateNoteFieldsCommand implements Command {
 	}
 
 	undo(ctx: CommandContext): void {
-		ctx.flashcardManager.updateNoteFields(this.noteId, this.previousFields);
+		ctx.flashcardManager.updateNoteFields(
+			this.noteId,
+			this.previousFields,
+			"system",
+		);
 	}
 }

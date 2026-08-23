@@ -208,6 +208,7 @@ export const selectionToolbarManifest: PluginManifest = {
 				onImageOcclusion: (imagePath) =>
 					handleImageOcclusion(plugin, imagePath),
 				onHighlight: () => {},
+				onHighlightCard: () => {},
 				onNewNote: (text) => createNoteFromSelection(plugin, text),
 				onAppend: (text) => appendToCurrentNote(plugin, text),
 				onAskAI: (text) => askAiAboutSelection(plugin, text),
@@ -282,6 +283,7 @@ export const selectionToolbarManifest: PluginManifest = {
 				onQuickAdd: (text, sourceFile) =>
 					quickAddFlashcardGlobal(plugin, text, sourceFile),
 				onHighlight: () => {},
+				onHighlightCard: () => {},
 				onNewNote: (text) => createNoteFromSelection(plugin, text),
 				onAppend: (text) => appendToCurrentNote(plugin, text),
 				onAskAI: (text, sourceFile) =>

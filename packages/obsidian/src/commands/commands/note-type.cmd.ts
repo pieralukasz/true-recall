@@ -50,10 +50,14 @@ export class ChangeNoteTypeCommand implements Command {
 		}
 
 		// Restore note to previous type and fields
-		ctx.cardStore.notes.update(this.noteId, {
-			noteTypeId: this.previousNoteTypeId,
-			fields: this.previousFields,
-		});
+		ctx.cardStore.notes.update(
+			this.noteId,
+			{
+				noteTypeId: this.previousNoteTypeId,
+				fields: this.previousFields,
+			},
+			"system",
+		);
 
 		// Restore deleted cards
 		for (const cardData of this.deletedCardsData) {

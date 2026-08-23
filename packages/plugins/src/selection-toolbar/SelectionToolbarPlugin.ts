@@ -1,4 +1,4 @@
-import type { Extension } from "@codemirror/state";
+import type { Extension, Text } from "@codemirror/state";
 import { type EditorView, ViewPlugin, type ViewUpdate } from "@codemirror/view";
 import { computePosition, flip, offset, shift } from "@floating-ui/dom";
 import { h, render } from "preact";
@@ -32,6 +32,27 @@ function extractFirstImagePath(text: string): string | null {
 }
 
 const MIN_SELECTION_LENGTH = 3;
+
+const CARD_TAG = "#card";
+
+/** Highlight markers around the selection, plus a trailing `#card` tag when the
+ * card variant is used. The tag is what makes highlights waiting to become
+ * cards findable in search. An existing tag right after the selection is left
+ * alone instead of being duplicated. */
+function buildHighlightChanges(
+	doc: Text,
+	from: number,
+	to: number,
+	withCardTag: boolean,
+): { from: number; insert: string }[] {
+	const restOfLine = doc.sliceString(to, doc.lineAt(to).to);
+	const hasCardTag = new RegExp(`^\\s*${CARD_TAG}\\b`).test(restOfLine);
+	const closing = withCardTag && !hasCardTag ? `== ${CARD_TAG}` : "==";
+	return [
+		{ from, insert: "==" },
+		{ from: to, insert: closing },
+	];
+}
 
 export function createSelectionToolbarExtension(
 	callbacks: SelectionToolbarCallbacks,
@@ -118,15 +139,17 @@ export function createSelectionToolbarExtension(
 				}
 
 				const detectedImagePath = extractFirstImagePath(text);
-				const highlightAction = () => {
+				const applyHighlight = (withCardTag: boolean) => {
 					const { state } = this.view;
 					const sel = state.selection.main;
 					if (sel.empty) return;
 					this.view.dispatch({
-						changes: [
-							{ from: sel.from, insert: "==" },
-							{ from: sel.to, insert: "==" },
-						],
+						changes: buildHighlightChanges(
+							state.doc,
+							sel.from,
+							sel.to,
+							withCardTag,
+						),
 					});
 				};
 
@@ -136,7 +159,8 @@ export function createSelectionToolbarExtension(
 						buttons: callbacks.getButtons(),
 						actions: {
 							...callbacks.actions,
-							onHighlight: highlightAction,
+							onHighlight: () => applyHighlight(false),
+							onHighlightCard: () => applyHighlight(true),
 							onDismiss: () => this.removeToolbar(),
 						},
 						tier: callbacks.tier(),

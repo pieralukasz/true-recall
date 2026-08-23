@@ -23,6 +23,7 @@ export interface ToolbarActions {
 	onEdit: (text: string) => void;
 	onQuickAdd: (text: string, sourceFile?: TFile | null) => Promise<void>;
 	onHighlight: () => void;
+	onHighlightCard: () => void;
 	onNewNote: (text: string) => Promise<void>;
 	onAppend: (text: string) => Promise<void>;
 	onAskAI?: (text: string, sourceFile?: TFile | null) => void;
@@ -201,6 +202,23 @@ function ToolbarButton({
 						title="Wrap selection with ==highlight=="
 					>
 						<span>Highlight</span>
+					</Clickable>
+				</>
+			);
+
+		case "highlight-card":
+			return (
+				<>
+					{showDivider && <span class="true-recall-st-divider" />}
+					<Clickable
+						class="true-recall-st-btn"
+						onClick={() => {
+							actions.onHighlightCard();
+							actions.onDismiss();
+						}}
+						title="Wrap selection with ==highlight== and tag it #card"
+					>
+						<span>#card</span>
 					</Clickable>
 				</>
 			);

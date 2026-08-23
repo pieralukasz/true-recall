@@ -13,6 +13,22 @@ import {
 import { formatFileSize } from "@true-recall/core/utils/format.utils";
 
 /**
+ * Card counts and review dates require deserializing the whole file into
+ * SQLite, so they are skipped above this size. A multi-hundred-megabyte heap
+ * spike is not worth a subtitle in a picker, and on mobile it is fatal.
+ */
+export const MAX_STATS_DB_BYTES = 24 * 1024 * 1024;
+
+export interface DiscoveryOptions {
+	/**
+	 * Read each candidate file to report card count and last review date.
+	 * Off by default: metadata callers (startup, sync) only need paths, and
+	 * reading every device database is proportional to total database size.
+	 */
+	withStats?: boolean;
+}
+
+/**
  * Information about a discovered device database.
  */
 export interface DeviceDatabaseInfo {
@@ -49,7 +65,9 @@ export class DeviceDiscoveryService {
 	 * Discover all device-specific databases in the .true-recall folder.
 	 * @returns Array of database info, sorted by last modified (newest first)
 	 */
-	async discoverDeviceDatabases(): Promise<DeviceDatabaseInfo[]> {
+	async discoverDeviceDatabases(
+		options: DiscoveryOptions = {},
+	): Promise<DeviceDatabaseInfo[]> {
 		const databases: DeviceDatabaseInfo[] = [];
 		const folderPath = DB_FOLDER;
 
@@ -66,7 +84,7 @@ export class DeviceDiscoveryService {
 			const deviceId = extractDeviceIdFromFilename(filename);
 
 			if (deviceId) {
-				const metadata = await this.getDatabaseMetadata(filePath);
+				const metadata = await this.getDatabaseMetadata(filePath, options);
 				if (metadata) {
 					databases.push(metadata);
 				}
@@ -86,7 +104,10 @@ export class DeviceDiscoveryService {
 	 * @param path - Full path to the database file
 	 * @returns Database info or null if file is invalid
 	 */
-	async getDatabaseMetadata(path: string): Promise<DeviceDatabaseInfo | null> {
+	async getDatabaseMetadata(
+		path: string,
+		options: DiscoveryOptions = {},
+	): Promise<DeviceDatabaseInfo | null> {
 		const filename = path.split("/").pop() || "";
 		const deviceId = extractDeviceIdFromFilename(filename);
 
@@ -100,22 +121,26 @@ export class DeviceDiscoveryService {
 				return null;
 			}
 
-			// Read database to get card count and last review date
+			// Card count and last review date need the whole file in memory, so
+			// they are opt-in and capped: callers that only need paths (startup,
+			// device sync) must not pay for reading every device database.
 			let cardCount: number | null = null;
 			let lastReviewDate: Date | null = null;
 
-			try {
-				const data = await this.persistence.readBinary(path);
-				if (data) {
-					const dbInfo = await this.readDatabaseInfo(new Uint8Array(data));
-					cardCount = dbInfo.cardCount;
-					lastReviewDate = dbInfo.lastReviewDate;
+			if (options.withStats && stat.size <= MAX_STATS_DB_BYTES) {
+				try {
+					const data = await this.persistence.readBinary(path);
+					if (data) {
+						const dbInfo = await this.readDatabaseInfo(new Uint8Array(data));
+						cardCount = dbInfo.cardCount;
+						lastReviewDate = dbInfo.lastReviewDate;
+					}
+				} catch (e) {
+					console.error(
+						`[True Recall] Could not read database info from ${filename}:`,
+						e,
+					);
 				}
-			} catch (e) {
-				console.error(
-					`[True Recall] Could not read database info from ${filename}:`,
-					e,
-				);
 			}
 
 			return {

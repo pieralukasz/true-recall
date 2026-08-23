@@ -159,6 +159,30 @@ describe("Card Lifecycle", () => {
 			expect(retrieved?.reps).toBe(10);
 		});
 
+		it("should count a content edit on the card's note", () => {
+			const card = createTestCard({
+				question: "Original Q",
+				answer: "Original A",
+			});
+			ctx.cards.set(card.id, card);
+
+			ctx.cards.updateCardContent(card.id, "Reworded Q", "Original A");
+
+			const edited = ctx.cards.get(card.id);
+			expect(edited?.editCount).toBe(1);
+			expect(edited?.aiEditCount).toBe(0);
+			expect(edited?.contentEditedAt).toBeGreaterThan(0);
+
+			// Undo-style restore writes content back without authoring an edit.
+			ctx.cards.updateCardContent(
+				card.id,
+				"Original Q",
+				"Original A",
+				"system",
+			);
+			expect(ctx.cards.get(card.id)?.editCount).toBe(1);
+		});
+
 		it("should update FSRS data without losing content", async () => {
 			const card = createTestCard({
 				question: "Original Q",

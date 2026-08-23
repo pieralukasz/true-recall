@@ -19,7 +19,7 @@ export function getTypeInModeStorage(): Storage | null {
 	}
 }
 
-const VALID_MODES: ReadonlySet<string> = new Set(["off", "ai", "diff"]);
+const VALID_MODES: ReadonlySet<string> = new Set(["off", "ai"]);
 
 export function readPersistedTypeInMode(
 	storage: StorageReader | null | undefined,
@@ -27,6 +27,8 @@ export function readPersistedTypeInMode(
 	if (!storage) return null;
 	try {
 		const value = storage.getItem(TYPE_IN_MODE_STORAGE_KEY);
+		// Legacy value from the removed diff mode.
+		if (value === "diff") return "ai";
 		if (value && VALID_MODES.has(value)) return value as TypeInMode;
 		return null;
 	} catch {

@@ -31,6 +31,12 @@ export const BUILTIN_BUTTONS: ToolbarButtonDef[] = [
 		editorOnly: true,
 	},
 	{
+		id: "highlight-card",
+		label: "#card",
+		title: "Wrap selection with ==highlight== and tag it #card",
+		editorOnly: true,
+	},
+	{
 		id: "copy",
 		label: "Copy",
 		title: "Copy selection",

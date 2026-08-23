@@ -1,4 +1,5 @@
 import type { CardSchedulingMeta, FSRSCardData } from "../../../types";
+import type { NoteEditSource } from "../../../types/note.types";
 import type { SqliteDatabase } from "../SqliteDatabase";
 import { CardBulkActions } from "./cards/card-bulk-actions";
 import { CardQueryActions } from "./cards/card-query-actions";
@@ -189,8 +190,13 @@ export class CardActions {
 		this.writes.set(cardId, data);
 	}
 
-	updateCardContent(cardId: string, question: string, answer: string): void {
-		this.writes.updateCardContent(cardId, question, answer);
+	updateCardContent(
+		cardId: string,
+		question: string,
+		answer: string,
+		editSource: NoteEditSource = "manual",
+	): void {
+		this.writes.updateCardContent(cardId, question, answer, editSource);
 	}
 
 	updateClozeCardContent(
@@ -198,8 +204,15 @@ export class CardActions {
 		question: string,
 		answer: string,
 		clozeTemplate: string,
+		editSource: NoteEditSource = "manual",
 	): void {
-		this.writes.updateClozeCardContent(cardId, question, answer, clozeTemplate);
+		this.writes.updateClozeCardContent(
+			cardId,
+			question,
+			answer,
+			clozeTemplate,
+			editSource,
+		);
 	}
 
 	upsertFromRemote(

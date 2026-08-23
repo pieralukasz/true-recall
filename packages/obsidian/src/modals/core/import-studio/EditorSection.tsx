@@ -4,6 +4,7 @@ import type { App } from "obsidian";
 import { useCallback, useEffect, useRef } from "preact/hooks";
 
 import type { EmbeddableEditorInstance } from "@true-recall/obsidian/editor/shared/embedded-editor";
+import { formattingKeymap } from "@true-recall/obsidian/editor/shared/formatting/formatting-keymap";
 import { usePlugin } from "@true-recall/obsidian/preact/ObsidianContext";
 
 import { buildPlaceholder } from "./placeholder";
@@ -64,7 +65,7 @@ export function EditorSection({
 				onChange: (update) =>
 					onTextChangeRef.current(update.state.doc.toString()),
 				onModEnter: () => onModEnterRef.current(),
-				extraExtensions: [placeholder(buildPlaceholder())],
+				extraExtensions: [placeholder(buildPlaceholder()), formattingKeymap()],
 			});
 		} catch (err) {
 			console.error("[ImportStudioApp] Failed to create editor:", err);
