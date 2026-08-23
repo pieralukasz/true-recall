@@ -555,3 +555,55 @@ describe("migrateSettings — ask-ai toolbar button backfill", () => {
 		).toBe(false);
 	});
 });
+
+describe("migrateSettings highlight-card toolbar button backfill", () => {
+	it("inserts highlight-card right after highlight in a saved editor array", () => {
+		const raw = {
+			editorToolbarButtons: [
+				{ id: "highlight", enabled: true },
+				{ id: "copy", enabled: true },
+			],
+		} as unknown as Parameters<typeof migrateSettings>[0];
+
+		const { settings, needsSave } = migrateSettings(raw);
+
+		const ids = settings.editorToolbarButtons.map((b) => b.id);
+		expect(ids.indexOf("highlight-card")).toBe(ids.indexOf("highlight") + 1);
+		expect(
+			settings.editorToolbarButtons.find((b) => b.id === "highlight-card")
+				?.enabled,
+		).toBe(true);
+		expect(needsSave).toBe(true);
+	});
+
+	it("leaves the global toolbar array without the editor-only button", () => {
+		const raw = {
+			globalToolbarButtons: [{ id: "copy", enabled: true }],
+		} as unknown as Parameters<typeof migrateSettings>[0];
+
+		const { settings } = migrateSettings(raw);
+
+		expect(
+			settings.globalToolbarButtons.some((b) => b.id === "highlight-card"),
+		).toBe(false);
+	});
+
+	it("is idempotent and preserves the user's enabled choice", () => {
+		const raw = {
+			editorToolbarButtons: [
+				{ id: "highlight", enabled: true },
+				{ id: "highlight-card", enabled: false },
+			],
+		} as unknown as Parameters<typeof migrateSettings>[0];
+
+		const { settings } = migrateSettings(raw);
+
+		expect(
+			settings.editorToolbarButtons.filter((b) => b.id === "highlight-card"),
+		).toHaveLength(1);
+		expect(
+			settings.editorToolbarButtons.find((b) => b.id === "highlight-card")
+				?.enabled,
+		).toBe(false);
+	});
+});

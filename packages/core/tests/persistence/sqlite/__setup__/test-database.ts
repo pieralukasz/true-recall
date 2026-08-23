@@ -105,6 +105,9 @@ export class TestSqliteDatabase {
 				created_at INTEGER,
 				updated_at INTEGER,
 				deleted_at INTEGER DEFAULT NULL,
+				edit_count INTEGER NOT NULL DEFAULT 0,
+				ai_edit_count INTEGER NOT NULL DEFAULT 0,
+				content_edited_at INTEGER,
 				FOREIGN KEY (note_type_id) REFERENCES note_types(id)
 			);
 

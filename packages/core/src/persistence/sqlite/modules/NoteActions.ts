@@ -3,8 +3,9 @@
  * CRUD operations for notes table
  */
 
-import type { Note } from "../../../types/note.types";
+import type { Note, NoteEditSource } from "../../../types/note.types";
 import type { SqliteDatabase } from "../SqliteDatabase";
+import { buildContentEditSet } from "./note-content-edit";
 
 interface NoteRow {
 	id: string;
@@ -18,6 +19,9 @@ interface NoteRow {
 	created_at: number | null;
 	updated_at: number | null;
 	deleted_at: number | null;
+	edit_count: number | null;
+	ai_edit_count: number | null;
+	content_edited_at: number | null;
 }
 
 function mapRowToNote(row: NoteRow): Note {
@@ -32,6 +36,9 @@ function mapRowToNote(row: NoteRow): Note {
 		createdVia: row.created_via ?? undefined,
 		createdAt: row.created_at ?? undefined,
 		updatedAt: row.updated_at ?? undefined,
+		editCount: row.edit_count ?? 0,
+		aiEditCount: row.ai_edit_count ?? 0,
+		contentEditedAt: row.content_edited_at ?? undefined,
 	};
 }
 
@@ -90,8 +97,8 @@ export class NoteActions {
 	/** Last-writer-wins upsert of a remote device's note row. */
 	upsertRowFromRemote(row: NoteRow): boolean {
 		this.db.run(
-			`INSERT INTO notes (id, note_type_id, fields_json, tags, source_uid, source_text, user_comment, created_via, created_at, updated_at, deleted_at)
-			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			`INSERT INTO notes (id, note_type_id, fields_json, tags, source_uid, source_text, user_comment, created_via, created_at, updated_at, deleted_at, edit_count, ai_edit_count, content_edited_at)
+			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 			 ON CONFLICT(id) DO UPDATE SET
 				note_type_id = excluded.note_type_id,
 				fields_json = excluded.fields_json,
@@ -101,7 +108,12 @@ export class NoteActions {
 				user_comment = excluded.user_comment,
 				created_via = excluded.created_via,
 				updated_at = excluded.updated_at,
-				deleted_at = excluded.deleted_at
+				deleted_at = excluded.deleted_at,
+				-- Edit counters are monotonic tallies, not values a single device
+				-- owns: last-writer-wins would drop the other device's edits.
+				edit_count = MAX(COALESCE(excluded.edit_count, 0), COALESCE(notes.edit_count, 0)),
+				ai_edit_count = MAX(COALESCE(excluded.ai_edit_count, 0), COALESCE(notes.ai_edit_count, 0)),
+				content_edited_at = NULLIF(MAX(COALESCE(excluded.content_edited_at, 0), COALESCE(notes.content_edited_at, 0)), 0)
 			 WHERE COALESCE(excluded.updated_at, 0) > COALESCE(notes.updated_at, 0)`,
 			// `?? null` everywhere: rows read via SELECT * from an older remote
 			// schema can be missing columns entirely, and undefined cannot bind.
@@ -117,6 +129,9 @@ export class NoteActions {
 				row.created_at ?? null,
 				row.updated_at ?? null,
 				row.deleted_at ?? null,
+				row.edit_count ?? 0,
+				row.ai_edit_count ?? 0,
+				row.content_edited_at ?? null,
 			],
 		);
 		return this.db.getRowsModified() > 0;
@@ -158,7 +173,16 @@ export class NoteActions {
 		);
 	}
 
-	update(id: string, updates: Partial<Note>): void {
+	/**
+	 * `editSource` decides which per-note edit counter a field rewrite bumps;
+	 * pass "system" for writes that restore content (undo, sync replay) rather
+	 * than author it. Updates that leave `fields` alone never touch a counter.
+	 */
+	update(
+		id: string,
+		updates: Partial<Note>,
+		editSource: NoteEditSource = "manual",
+	): void {
 		const now = Date.now();
 		const sets: string[] = [];
 		const params: (string | number | null)[] = [];
@@ -168,8 +192,13 @@ export class NoteActions {
 			params.push(updates.noteTypeId);
 		}
 		if (updates.fields !== undefined) {
-			sets.push("fields_json = ?");
-			params.push(JSON.stringify(updates.fields));
+			const contentEdit = buildContentEditSet(
+				JSON.stringify(updates.fields),
+				editSource,
+				now,
+			);
+			sets.push(contentEdit.clause);
+			params.push(...contentEdit.params);
 		}
 		if (updates.tags !== undefined) {
 			sets.push("tags = ?");

@@ -57,13 +57,13 @@ interface ReviewAppProps {
 	) => {
 		typeInMode: TypeInMode;
 		useTypeInMode: boolean;
-		aiEnabled: boolean;
 		typedAnswer: string;
 		isCheckingAnswer: boolean;
 		isRatingLocked: boolean;
 		localAssessment: LocalAnswerAssessment | null;
 		semanticResult: SemanticGradingResult | null;
 		semanticMessage: string | null;
+		suggestedRating: Grade | null;
 	};
 	getPresetName?: (card: FSRSFlashcardItem) => string;
 	getPresetOptions?: () => PresetPickerOption[];
@@ -189,7 +189,6 @@ function ActiveReview({
 				audioPath={audioPath}
 				typeIn={{
 					enabled: typeInState.useTypeInMode,
-					aiEnabled: typeInState.aiEnabled,
 					typedAnswer: typeInState.typedAnswer,
 					onTypedAnswerChange,
 					onShowAnswer,
@@ -213,6 +212,8 @@ function ActiveReview({
 				rModeActive={rModeActive}
 				typeInMode={typeInState.typeInMode}
 				isRatingLocked={typeInState.isRatingLocked}
+				isCheckingAnswer={typeInState.isCheckingAnswer}
+				suggestedRating={typeInState.suggestedRating}
 				onShowAnswer={onShowAnswer}
 				onAnswer={onAnswer}
 				onCycleTypeInMode={onCycleTypeInMode}

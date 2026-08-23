@@ -96,6 +96,26 @@ describe("buildBrowserQuery", () => {
 		expect(result.params).toContain(21);
 	});
 
+	it("filters on the note-level edit counters", () => {
+		const filter: FilterState = {
+			...EMPTY_FILTER,
+			propFilters: [{ property: "edits", operator: ">", value: 3 }],
+		};
+		const result = buildBrowserQuery(filter, DEFAULT_SORT, 50, 0);
+		expect(result.where).toContain("n.edit_count > ?");
+		expect(result.params).toContain(3);
+	});
+
+	it("sorts on the manual edit counter", () => {
+		const result = buildBrowserQuery(
+			EMPTY_FILTER,
+			{ column: "edit_count", direction: "desc" },
+			50,
+			0,
+		);
+		expect(result.orderBy).toBe("n.edit_count DESC");
+	});
+
 	it("adds added days ago filter", () => {
 		const filter: FilterState = {
 			...EMPTY_FILTER,

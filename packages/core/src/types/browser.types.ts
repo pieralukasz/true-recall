@@ -23,6 +23,9 @@ export interface BrowserCard {
 	sourceNotePath: string | null;
 	cardType: CardType;
 	createdVia: string | null;
+	editCount: number;
+	aiEditCount: number;
+	contentEditedAt: number | null;
 	presetName: string | null;
 	projects: string[];
 	ioImagePath?: string;
@@ -67,7 +70,7 @@ export interface FilterState {
 }
 
 export interface PropFilter {
-	property: "s" | "d" | "r" | "ivl" | "reps" | "lapses";
+	property: "s" | "d" | "r" | "ivl" | "reps" | "lapses" | "edits" | "aiEdits";
 	operator: ">" | "<" | ">=" | "<=";
 	value: number;
 }

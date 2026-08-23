@@ -112,6 +112,15 @@ describe("parseSearchQuery", () => {
 		expect(result.states).toEqual([]);
 	});
 
+	it("parses edit-count prop filters and their alias", () => {
+		expect(parseSearchQuery("prop:edits>3").propFilters).toEqual([
+			{ property: "edits", operator: ">", value: 3 },
+		]);
+		expect(parseSearchQuery("prop:aiedits>0").propFilters).toEqual([
+			{ property: "aiEdits", operator: ">", value: 0 },
+		]);
+	});
+
 	it("ignores invalid prop filters", () => {
 		const result = parseSearchQuery("prop:invalid>5");
 		expect(result.propFilters).toEqual([]);

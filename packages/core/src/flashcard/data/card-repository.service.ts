@@ -14,6 +14,7 @@ import type {
 	FSRSFlashcardItem,
 } from "@true-recall/core/types";
 import { createDefaultFSRSData } from "@true-recall/core/types";
+import type { NoteEditSource } from "@true-recall/core/types/note.types";
 
 export interface DuplicateInfo {
 	flashcard: { id: string; question: string; answer: string };
@@ -253,7 +254,7 @@ export class CardRepository {
 		cardId: string,
 		newQuestion: string,
 		newAnswer: string,
-		options?: { skipDuplicateCheck?: boolean },
+		options?: { skipDuplicateCheck?: boolean; editSource?: NoteEditSource },
 	): void {
 		const existing = this.store.get(cardId);
 		if (!existing) {
@@ -277,7 +278,12 @@ export class CardRepository {
 		// writes in note orientation based on template_ord — the paired card is
 		// updated by the same note write, so no extra sync is needed (a second
 		// swapped write used to flip the pair).
-		this.store.cards.updateCardContent(cardId, newQuestion, newAnswer);
+		this.store.cards.updateCardContent(
+			cardId,
+			newQuestion,
+			newAnswer,
+			options?.editSource ?? "manual",
+		);
 
 		this.emit("card:updated", {
 			cardId,
@@ -478,11 +484,13 @@ export class CardRepository {
 
 		const anchorId = previousSiblingIds[0];
 		if (anchorId) {
+			// Restoring the pre-edit template is an undo, not an authored edit.
 			this.store.cards.updateClozeCardContent(
 				anchorId,
 				"",
 				"",
 				previousTemplate,
+				"system",
 			);
 		}
 

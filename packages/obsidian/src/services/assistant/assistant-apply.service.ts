@@ -178,7 +178,11 @@ export class AssistantApplyService {
 			...currentFields,
 			...(overrides?.fields ?? proposal.fields),
 		};
-		this.plugin.flashcardManager.updateNoteFields(proposal.noteId, merged);
+		this.plugin.flashcardManager.updateNoteFields(
+			proposal.noteId,
+			merged,
+			"ai",
+		);
 		void this.plugin.commandService?.execute(
 			new UpdateNoteFieldsCommand(
 				proposal.noteId,
@@ -252,7 +256,7 @@ export class AssistantApplyService {
 			...currentFields,
 			[target.field]: `${currentFields[target.field] ?? ""}${block}`,
 		};
-		this.plugin.flashcardManager.updateNoteFields(target.noteId, merged);
+		this.plugin.flashcardManager.updateNoteFields(target.noteId, merged, "ai");
 		void this.plugin.commandService?.execute(
 			new UpdateNoteFieldsCommand(
 				target.noteId,

@@ -37,6 +37,7 @@ import {
 	BUILTIN_IMAGE_OCCLUSION_ID,
 	BUILTIN_NOTE_REVIEW_ID,
 	type Note,
+	type NoteEditSource,
 	type NoteType,
 } from "../types/note.types";
 import {
@@ -462,7 +463,7 @@ export class FlashcardManager {
 		cardId: string,
 		newQuestion: string,
 		newAnswer: string,
-		options?: { skipDuplicateCheck?: boolean },
+		options?: { skipDuplicateCheck?: boolean; editSource?: NoteEditSource },
 	): void {
 		if (!this.cardRepository) {
 			throw new Error("Store not initialized");
@@ -772,6 +773,7 @@ export class FlashcardManager {
 	updateNoteFields(
 		noteId: string,
 		fields: Record<string, string>,
+		editSource: NoteEditSource = "manual",
 	): UpdateNoteFieldsResult {
 		if (!this.store) {
 			throw new Error("Store not initialized");
@@ -787,7 +789,7 @@ export class FlashcardManager {
 			throw new Error(`Note type "${note.noteTypeId}" not found`);
 		}
 
-		this.store.notes.update(noteId, { fields });
+		this.store.notes.update(noteId, { fields }, editSource);
 
 		if (noteType.id === BUILTIN_IMAGE_OCCLUSION_ID) {
 			return this.reconcileImageOcclusionCards(note, noteType, fields);

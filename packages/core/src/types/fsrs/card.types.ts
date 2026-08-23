@@ -96,6 +96,15 @@ export interface FSRSCardData {
 	/** How the card was created: 'manual', 'ai', or 'anki_import' */
 	createdVia?: string;
 
+	// === Content edit tracking (schema v3) ===
+
+	/** How many times the user rewrote this card's note fields after creation */
+	editCount?: number;
+	/** How many times AI (card polish, assistant) rewrote them */
+	aiEditCount?: number;
+	/** Last time the content actually changed (Unix ms) */
+	contentEditedAt?: number;
+
 	// === Image occlusion fields (schema v23) ===
 
 	/** Vault-relative path to the source image */

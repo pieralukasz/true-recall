@@ -35,6 +35,9 @@ export const CARD_SELECT = `
     n.source_text AS sourceText,
 	n.user_comment AS userComment,
     n.created_via AS createdVia,
+    n.edit_count AS editCount,
+    n.ai_edit_count AS aiEditCount,
+    n.content_edited_at AS contentEditedAt,
     n.note_type_id AS noteTypeId,
     nt.type AS noteTypeType,
     nt.name AS noteTypeName,
@@ -59,6 +62,9 @@ export const CARD_SELECT_SYNC = `
     n.source_text AS sourceText,
 	n.user_comment AS userComment,
     n.created_via AS createdVia,
+    n.edit_count AS editCount,
+    n.ai_edit_count AS aiEditCount,
+    n.content_edited_at AS contentEditedAt,
     n.note_type_id AS noteTypeId,
     nt.type AS noteTypeType,
     nt.name AS noteTypeName,
@@ -139,6 +145,9 @@ export interface CardRow {
 	sourceText: string | null;
 	userComment: string | null;
 	createdVia: string | null;
+	editCount: number | null;
+	aiEditCount: number | null;
+	contentEditedAt: number | null;
 	noteTypeId: string;
 	noteTypeType: number;
 	noteTypeName: string;
@@ -289,6 +298,9 @@ export function mapRow(row: CardRow): FSRSCardData {
 		clozeTemplate: isCloze ? (fields[clozeFieldName] ?? undefined) : undefined,
 		clozeIndex: isCloze ? row.templateOrd : undefined,
 		createdVia: row.createdVia ?? undefined,
+		editCount: row.editCount ?? 0,
+		aiEditCount: row.aiEditCount ?? 0,
+		contentEditedAt: row.contentEditedAt ?? undefined,
 		sourceText: row.sourceText ?? undefined,
 		userComment: row.userComment ?? undefined,
 		noteId: row.noteId,

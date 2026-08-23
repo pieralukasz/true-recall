@@ -1,4 +1,4 @@
-const SOURCE_NOTE_CHAR_LIMIT = 4000;
+const SOURCE_NOTE_CHAR_LIMIT = 10000;
 
 export interface TypeInGradingPromptRelatedCard {
 	fields: Record<string, string>;
@@ -9,21 +9,23 @@ export interface TypeInGradingPromptInput {
 	question: string;
 	correctAnswer: string;
 	userAnswer: string;
-	passThreshold: number;
 	sourceContext?: string;
 	sourceNotePath?: string;
 	relatedCards?: TypeInGradingPromptRelatedCard[];
 }
 
 export const DEFAULT_TYPE_IN_GRADING_SYSTEM_PROMPT =
-	"You are grading typed answers for flashcards.\n" +
-	"Evaluate semantic correctness, not wording.\n" +
-	"Penalize missing critical facts and contradictions.\n" +
-	"Use the source note and related flashcards (when provided) only as background to judge domain-specific terminology, synonyms, and the expected scope — never as a substitute for the user's answer.\n" +
-	"Be concise and fair.\n" +
-	'Return JSON only with keys: {"score": number, "feedback": string}.\n' +
-	"score must be 0-100.\n" +
-	"feedback must be at most 2 short sentences.\n" +
+	"You are a teacher grading a learner's typed flashcard answer.\n" +
+	"The learner answers in their own words, like explaining to a child. Grade understanding, not wording.\n" +
+	'An answer that captures the mechanism or meaning is "correct" even without the source terminology.\n' +
+	'"partial" means the core idea is there but important facts are missing or fuzzy.\n' +
+	'"wrong" means the core idea is missing or contradicted.\n' +
+	"Use the source note and related flashcards (when provided) only as background for domain terminology, synonyms, and the expected scope: never as a substitute for the user's answer.\n" +
+	"Return JSON only:\n" +
+	'{"verdict": "correct"|"partial"|"wrong", "teacherComment": string, "covered": string[], "missing": string[], "errors": string[], "suggestedRating": "again"|"hard"|"good"|"easy"}\n' +
+	"teacherComment: 2-3 warm, specific sentences in the language of the user's answer.\n" +
+	"covered/missing: short key facts (max 5 each). errors: only real contradictions of the source (max 3), else [].\n" +
+	"suggestedRating: again = wrong or blank understanding, hard = partial with significant gaps, good = correct with minor gaps, easy = complete and effortless.\n" +
 	"Do not return markdown or code fences.";
 
 function buildSourceNoteSection(input: TypeInGradingPromptInput): string[] {
@@ -34,7 +36,7 @@ function buildSourceNoteSection(input: TypeInGradingPromptInput): string[] {
 	const truncated =
 		(input.sourceContext?.length ?? 0) > SOURCE_NOTE_CHAR_LIMIT ? "\n…" : "";
 	return [
-		`Source note${path} (background only — judge synonyms and domain terminology):`,
+		`Source note${path} (background only: judge synonyms and domain terminology):`,
 		"<context>",
 		`${body}${truncated}`,
 		"</context>",
@@ -54,7 +56,7 @@ function buildRelatedCardsSection(input: TypeInGradingPromptInput): string[] {
 		})
 		.join("\n\n");
 	return [
-		"Related flashcards from the same source (background only — show the expected scope and terminology; do not treat them as the user's answer):",
+		"Related flashcards from the same source (background only: show the expected scope and terminology; do not treat them as the user's answer):",
 		formatted,
 		"",
 	];
@@ -81,8 +83,7 @@ export function buildTypeInGradingMessages(
 				`Question: ${input.question}`,
 				`Correct answer: ${input.correctAnswer}`,
 				`User answer: ${input.userAnswer}`,
-				`Pass threshold: ${input.passThreshold}`,
-				'Output JSON only: {"score": number, "feedback": string}',
+				"Output JSON only with keys: verdict, teacherComment, covered, missing, errors, suggestedRating",
 			].join("\n"),
 		},
 	];

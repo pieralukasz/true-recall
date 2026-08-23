@@ -213,8 +213,9 @@ describe("buildStaticSuggestions", () => {
 	it("returns property suggestions for prop: prefix", () => {
 		const ctx = getTokenContext({ token: "prop:", start: 0, end: 5 });
 		const suggestions = buildStaticSuggestions(ctx);
-		expect(suggestions.length).toBe(6);
+		expect(suggestions.length).toBe(8);
 		expect(suggestions.map((s) => s.label)).toContain("prop:s>");
+		expect(suggestions.map((s) => s.label)).toContain("prop:edits>");
 	});
 
 	it("filters property suggestions by partial", () => {

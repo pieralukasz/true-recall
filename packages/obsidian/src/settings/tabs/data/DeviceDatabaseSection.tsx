@@ -32,7 +32,11 @@ export function DeviceDatabaseSection() {
 			return;
 		}
 
-		const databases = await plugin.deviceDiscovery.discoverDeviceDatabases();
+		// Explicit user action on a settings screen: worth reading the files to
+		// show card counts, so the picker is not just sizes and dates.
+		const databases = await plugin.deviceDiscovery.discoverDeviceDatabases({
+			withStats: true,
+		});
 		const otherDevices = databases.filter((db) => !db.isCurrentDevice);
 
 		if (otherDevices.length === 0) {

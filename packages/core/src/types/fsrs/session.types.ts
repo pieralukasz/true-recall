@@ -101,9 +101,19 @@ export interface LocalAnswerAssessment {
 	diff: AnswerDiffToken[];
 }
 
+export type TypeInVerdict = "correct" | "partial" | "wrong";
+
+export type SuggestedRating = "again" | "hard" | "good" | "easy";
+
 export interface SemanticGradingResult {
-	score: number;
-	feedback: string;
-	passed: boolean;
-	source: "ai" | "local-fallback";
+	verdict: TypeInVerdict;
+	/** 2-3 sentences in the language of the user's answer */
+	teacherComment: string;
+	/** Key facts the user covered */
+	covered: string[];
+	/** Key facts the user missed */
+	missing: string[];
+	/** Claims that contradict the source */
+	errors: string[];
+	suggestedRating: SuggestedRating;
 }

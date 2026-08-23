@@ -7,8 +7,9 @@ import type { DatabaseLike } from "./sqlite.types";
  * Merging refuses input from databases with a NEWER version (their rows may
  * carry columns this build does not understand); older versions merge fine.
  * v2: review_log gains device_id and review_kind.
+ * v3: notes gain edit_count, ai_edit_count and content_edited_at.
  */
-export const CURRENT_SCHEMA_VERSION = 2;
+export const CURRENT_SCHEMA_VERSION = 3;
 
 export class SqliteSchemaManager {
 	constructor(private db: DatabaseLike) {}
@@ -43,6 +44,9 @@ export class SqliteSchemaManager {
                 created_at INTEGER,
                 updated_at INTEGER,
                 deleted_at INTEGER DEFAULT NULL,
+                edit_count INTEGER NOT NULL DEFAULT 0,
+                ai_edit_count INTEGER NOT NULL DEFAULT 0,
+                content_edited_at INTEGER,
                 FOREIGN KEY (note_type_id) REFERENCES note_types(id)
             );
 
@@ -183,6 +187,17 @@ export class SqliteSchemaManager {
 			this.db.run(`ALTER TABLE notes ADD COLUMN user_comment TEXT`);
 		} catch {
 			// Column already exists — expected for new installs
+		}
+		for (const column of [
+			"edit_count INTEGER NOT NULL DEFAULT 0",
+			"ai_edit_count INTEGER NOT NULL DEFAULT 0",
+			"content_edited_at INTEGER",
+		]) {
+			try {
+				this.db.run(`ALTER TABLE notes ADD COLUMN ${column}`);
+			} catch {
+				// Column already exists — expected for new installs
+			}
 		}
 		try {
 			this.db.run(`ALTER TABLE review_log ADD COLUMN device_id TEXT`);

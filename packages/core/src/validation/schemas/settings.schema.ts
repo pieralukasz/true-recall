@@ -29,6 +29,8 @@ export const SettingsSchema = z.object({
 	lmStudioModel: z.string().default(""),
 	lmStudioGenerationModel: z.string().default(""),
 	lmStudioCardPolishModel: z.string().default(""),
+	lmStudioGradingModel: z.string().default(""),
+	gradingModel: z.string().default(""),
 	lmStudioApiKey: z.string().optional(),
 	lmStudioTemperature: z.number().min(0).max(2).optional(),
 	autoSyncToAnki: z.boolean().default(false),

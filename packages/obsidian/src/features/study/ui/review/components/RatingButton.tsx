@@ -3,6 +3,7 @@ import type { Grade } from "ts-fsrs";
 import { Rating } from "ts-fsrs";
 
 import { Clickable } from "@true-recall/obsidian/components";
+import { cn } from "@true-recall/obsidian/utils/cn";
 
 const ratingButtonVariants = cva(
 	"true-recall-rating-button ep:flex ep:flex-col ep:items-center ep:gap-1 ep:px-4 ep:h-auto ep:border ep:border-solid ep:rounded-lg ep:cursor-pointer ep:font-medium ep:text-ui-small ep:min-w-20 ep:whitespace-nowrap ep:transition-all ep:bg-transparent ep:hover:brightness-110 ep:active:scale-98 ep:text-obs-normal",
@@ -27,6 +28,7 @@ export function RatingButton({
 	loadBalanceNote,
 	showInterval,
 	rModeEnabled = false,
+	suggested = false,
 	onAnswer,
 	disabled = false,
 }: {
@@ -39,6 +41,8 @@ export function RatingButton({
 	showInterval: boolean;
 	/** Reframes the interval as "worth another look in", not as a deadline. */
 	rModeEnabled?: boolean;
+	/** AI-suggested rating: highlighted and accepted with Enter. */
+	suggested?: boolean;
 	onAnswer: (rating: Grade) => void;
 	disabled?: boolean;
 }) {
@@ -46,17 +50,24 @@ export function RatingButton({
 		typeof daysChanged === "number" && daysChanged !== 0
 			? `${daysChanged > 0 ? "+" : ""}${daysChanged}`
 			: null;
-	const title = buildTitle({
+	const baseTitle = buildTitle({
 		interval,
 		originalInterval,
 		shiftLabel,
 		loadBalanceNote,
 		rModeEnabled,
 	});
+	const title = suggested
+		? [baseTitle, "Suggested by AI (Enter)"].filter(Boolean).join("\n")
+		: baseTitle;
 
 	return (
 		<Clickable
-			class={ratingButtonVariants({ rating })}
+			class={cn(
+				ratingButtonVariants({ rating }),
+				suggested &&
+					"ep:ring-2 ep:ring-obs-interactive/55 ep:ring-offset-1 ep:ring-offset-obs-primary",
+			)}
 			onClick={() => onAnswer(rating)}
 			disabled={disabled}
 			title={title}

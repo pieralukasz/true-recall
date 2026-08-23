@@ -244,6 +244,99 @@ describe("NoteActions", () => {
 		});
 	});
 
+	// ── Edit counters ───────────────────────────────────────────
+
+	describe("edit counters", () => {
+		function seedNote(id: string) {
+			insertNoteDirect(
+				ctx.db,
+				createTestNote({
+					id,
+					fields: { Front: "Original Q", Back: "Original A" },
+				}),
+			);
+		}
+
+		it("bumps the manual counter and stamps the edit time", () => {
+			seedNote("count-manual");
+
+			ctx.notes.update(
+				"count-manual",
+				{ fields: { Front: "New Q", Back: "Original A" } },
+				"manual",
+			);
+
+			const note = ctx.notes.getById("count-manual");
+			expect(note?.editCount).toBe(1);
+			expect(note?.aiEditCount).toBe(0);
+			expect(note?.contentEditedAt).toBeGreaterThan(0);
+		});
+
+		it("counts nothing when the fields are written back unchanged", () => {
+			seedNote("count-noop");
+
+			ctx.notes.update(
+				"count-noop",
+				{ fields: { Front: "Original Q", Back: "Original A" } },
+				"manual",
+			);
+
+			const note = ctx.notes.getById("count-noop");
+			expect(note?.editCount).toBe(0);
+			expect(note?.contentEditedAt).toBeUndefined();
+		});
+
+		it("keeps AI edits on their own counter", () => {
+			seedNote("count-ai");
+
+			ctx.notes.update(
+				"count-ai",
+				{ fields: { Front: "Polished Q", Back: "Original A" } },
+				"ai",
+			);
+
+			const note = ctx.notes.getById("count-ai");
+			expect(note?.editCount).toBe(0);
+			expect(note?.aiEditCount).toBe(1);
+		});
+
+		it("counts neither for system writes but records the edit time", () => {
+			seedNote("count-system");
+
+			ctx.notes.update(
+				"count-system",
+				{ fields: { Front: "Restored Q", Back: "Original A" } },
+				"system",
+			);
+
+			const note = ctx.notes.getById("count-system");
+			expect(note?.editCount).toBe(0);
+			expect(note?.aiEditCount).toBe(0);
+			expect(note?.contentEditedAt).toBeGreaterThan(0);
+		});
+
+		it("accumulates across successive edits", () => {
+			seedNote("count-many");
+
+			ctx.notes.update("count-many", { fields: { Front: "Q1", Back: "A" } });
+			ctx.notes.update("count-many", { fields: { Front: "Q2", Back: "A" } });
+			ctx.notes.update("count-many", { fields: { Front: "Q3", Back: "A" } });
+
+			expect(ctx.notes.getById("count-many")?.editCount).toBe(3);
+		});
+
+		it("ignores updates that leave the fields alone", () => {
+			seedNote("count-meta-only");
+
+			ctx.notes.update("count-meta-only", { tags: ["new"] });
+			ctx.notes.update("count-meta-only", { userComment: "A thought" });
+
+			const note = ctx.notes.getById("count-meta-only");
+			expect(note?.editCount).toBe(0);
+			expect(note?.contentEditedAt).toBeUndefined();
+		});
+	});
+
 	// ── fields_json integrity ──────────────────────────────────
 
 	describe("fields_json integrity", () => {

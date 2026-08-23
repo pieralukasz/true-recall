@@ -1,18 +1,18 @@
-import type { FSRSFlashcardItem } from "@true-recall/core/types";
+import { type Grade, Rating } from "ts-fsrs";
 
-export type TypeInMode = "off" | "ai" | "diff";
+import type {
+	FSRSFlashcardItem,
+	SuggestedRating,
+} from "@true-recall/core/types";
 
-export function deriveTypeInMode(
-	typeInModeEnabled: boolean,
-	aiEnabled: boolean,
-): TypeInMode {
-	if (!typeInModeEnabled) return "off";
-	return aiEnabled ? "ai" : "diff";
+export type TypeInMode = "off" | "ai";
+
+export function deriveTypeInMode(typeInModeEnabled: boolean): TypeInMode {
+	return typeInModeEnabled ? "ai" : "off";
 }
 
 export function nextTypeInMode(mode: TypeInMode, skipOff = false): TypeInMode {
 	if (mode === "off") return "ai";
-	if (mode === "ai") return "diff";
 	return skipOff ? "ai" : "off";
 }
 
@@ -31,12 +31,10 @@ export function isTypeInRequiredForCard(
 
 export function shouldRunAIGradingOnReveal(options: {
 	requiresTypeIn: boolean;
-	aiEnabled: boolean;
 	typedAnswer: string;
 	isChecking: boolean;
 }): boolean {
 	if (!options.requiresTypeIn) return false;
-	if (!options.aiEnabled) return false;
 	if (options.isChecking) return false;
 	return options.typedAnswer.trim().length > 0;
 }
@@ -47,7 +45,21 @@ export function isRatingLockedForTypeIn(options: {
 	isChecking: boolean;
 }): boolean {
 	if (!options.requiresTypeIn) return false;
-	if (!options.isAnswerRevealed) return false;
-	if (options.isChecking) return true;
-	return false;
+	// Grading runs before the reveal in the two-stage flow, so the lock
+	// applies whenever a check is in flight, revealed or not.
+	return options.isChecking;
+}
+
+const SUGGESTED_RATING_TO_GRADE: Record<SuggestedRating, Grade> = {
+	again: Rating.Again,
+	hard: Rating.Hard,
+	good: Rating.Good,
+	easy: Rating.Easy,
+};
+
+export function suggestedRatingToGrade(
+	suggested: SuggestedRating | null | undefined,
+): Grade | null {
+	if (!suggested) return null;
+	return SUGGESTED_RATING_TO_GRADE[suggested] ?? null;
 }
