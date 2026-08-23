@@ -26,6 +26,7 @@ import { createNoteStatusCache } from "@true-recall/obsidian/features/core/cache
 import type { DeviceSelectionResult } from "@true-recall/obsidian/modals/integration/DeviceSelectionModal";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 import { createAppStore } from "@true-recall/obsidian/store";
+import { isMobile } from "@true-recall/obsidian/utils/platform";
 
 import type TrueRecallPlugin from "../main";
 import { AssistantService } from "../services/assistant/assistant.service";
@@ -85,20 +86,59 @@ async function initializeDeviceContext(
 	if (hasLegacy && databases.length === 0) {
 		await migrateLegacyDatabase(plugin, deviceId);
 	} else if (databases.length > 0) {
-		const { DeviceSelectionModal } = await import(
-			"@true-recall/obsidian/modals/integration/DeviceSelectionModal"
-		);
-		const modal = new DeviceSelectionModal(plugin.app, {
-			databases,
-			hasLegacy,
-		});
-		const result = await modal.openAndWait();
-		if (!result.cancelled) {
-			await handleDeviceSelection(plugin, result, deviceId);
-		}
+		// Obsidian withholds the rest of its own startup until onload()
+		// resolves, so prompting the user here parks the whole app behind
+		// "Plugin is taking long to load" until they answer, and the plugin
+		// stays dead for as long as they do not. Discovery itself was just as
+		// costly: it read every candidate database in full. Start with an
+		// empty database and offer the import once the workspace is
+		// interactive; importing requires a restart either way.
+		scheduleDeviceImportOffer(plugin, deviceId, hasLegacy);
 	}
 
 	return deviceId;
+}
+
+/**
+ * Ask, after layout-ready, whether this new device should be seeded from
+ * another device's database. Never awaited by onload (see above). Runs at
+ * most once per device: the empty store flushes its own database file during
+ * startup, so the next launch takes the `deviceDbExists` shortcut.
+ */
+function scheduleDeviceImportOffer(
+	plugin: TrueRecallPlugin,
+	deviceId: string,
+	hasLegacy: boolean,
+): void {
+	plugin.app.workspace.onLayoutReady(() => {
+		void (async () => {
+			try {
+				// Card counts are worth a file read only where the UI can afford
+				// it; on mobile the picker shows size and date alone.
+				const databases =
+					(await plugin.deviceDiscovery?.discoverDeviceDatabases({
+						withStats: !isMobile(),
+					})) ?? [];
+				if (databases.length === 0) return;
+
+				const { DeviceSelectionModal } = await import(
+					"@true-recall/obsidian/modals/integration/DeviceSelectionModal"
+				);
+				const result = await new DeviceSelectionModal(plugin.app, {
+					databases,
+					hasLegacy,
+				}).openAndWait();
+				if (result.cancelled || result.action !== "import") return;
+
+				// The empty store loaded during startup must never flush again:
+				// its debounced save would overwrite the file just imported.
+				plugin.coreApp.cardStore?.haltPersistence();
+				await handleDeviceSelection(plugin, result, deviceId);
+			} catch (error) {
+				console.error("[True Recall] Device import offer failed:", error);
+			}
+		})();
+	});
 }
 
 async function initializeCardStore(
@@ -405,7 +445,9 @@ async function handleDeviceSelection(
 				targetPath,
 				sourceData,
 			);
-			notify().success(`Imported data from device ${result.sourceDeviceId}`);
+			notify().success(
+				`Imported data from device ${result.sourceDeviceId}. Restart Obsidian to load it.`,
+			);
 		} catch (error) {
 			console.error("[True Recall] Database import failed:", error);
 			notify().error("Failed to import database.");
