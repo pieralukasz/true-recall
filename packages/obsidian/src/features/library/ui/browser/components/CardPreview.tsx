@@ -233,6 +233,16 @@ export function CardPreview({
 					)}
 					<MetaRow label="Type" value={card.cardType} />
 					<MetaRow label="Created" value={card.createdVia ?? "manual"} />
+					<MetaRow label="Edits" value={String(card.editCount)} />
+					{card.aiEditCount > 0 && (
+						<MetaRow label="AI edits" value={String(card.aiEditCount)} />
+					)}
+					{card.contentEditedAt !== null && (
+						<MetaRow
+							label="Last edited"
+							value={new Date(card.contentEditedAt).toLocaleDateString()}
+						/>
+					)}
 					{card.presetName && (
 						<MetaRow label="Preset" value={card.presetName} />
 					)}

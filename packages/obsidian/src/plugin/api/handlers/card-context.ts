@@ -55,6 +55,9 @@ export async function handleGetCardContext(
 			sourceNotePath: card.sourceNotePath ?? "",
 			noteTypeName: card.noteTypeName,
 			userComment: card.userComment,
+			editCount: card.editCount ?? 0,
+			aiEditCount: card.aiEditCount ?? 0,
+			contentEditedAt: card.contentEditedAt ?? null,
 			...(card.sourceText && { sourceText: card.sourceText }),
 			...(card.cardType === "cloze" && {
 				clozeTemplate: card.clozeTemplate,

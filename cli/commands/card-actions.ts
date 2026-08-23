@@ -36,9 +36,20 @@ export const cardActionCommands: CommandDef[] = [
 			},
 			question: { type: "string", description: "New question/front text" },
 			answer: { type: "string", description: "New answer/back text" },
+			edit_source: {
+				type: "string",
+				description:
+					"Which edit counter to bump — pass 'ai' when an agent authored the rewrite",
+				enum: ["manual", "ai"],
+				default: "manual",
+			},
 		},
 		(p) => `/cards/${p.card_id}/update`,
-		({ question, answer }) => ({ question, answer }),
+		({ question, answer, edit_source }) => ({
+			question,
+			answer,
+			edit_source,
+		}),
 	),
 
 	postTo(

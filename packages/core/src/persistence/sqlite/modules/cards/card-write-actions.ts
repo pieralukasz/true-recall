@@ -5,11 +5,13 @@ import {
 	ValidationError,
 } from "../../../../errors";
 import type { FSRSCardData } from "../../../../types";
+import type { NoteEditSource } from "../../../../types/note.types";
 import {
 	BUILTIN_BASIC_REVERSED_ID,
 	BUILTIN_IMAGE_OCCLUSION_ID,
 } from "../../../../types/note.types";
 import type { SqliteDatabase } from "../../SqliteDatabase";
+import { buildContentEditSet } from "../note-content-edit";
 import { resolveNoteMapping } from "./card-sql";
 
 export class CardWriteActions {
@@ -113,7 +115,12 @@ export class CardWriteActions {
 		);
 	}
 
-	updateCardContent(cardId: string, question: string, answer: string): void {
+	updateCardContent(
+		cardId: string,
+		question: string,
+		answer: string,
+		editSource: NoteEditSource = "manual",
+	): void {
 		const card = this.db.get<{
 			note_id: string;
 			note_type_id: string;
@@ -136,9 +143,10 @@ export class CardWriteActions {
 		// both cards of a reversed pair share this one note.
 		const [front, back] =
 			card.template_ord === 1 ? [answer, question] : [question, answer];
-		this.db.run(
-			`UPDATE notes SET fields_json = ?, updated_at = ? WHERE id = ?`,
-			[JSON.stringify({ Front: front, Back: back }), Date.now(), card.note_id],
+		this.writeNoteFields(
+			card.note_id,
+			JSON.stringify({ Front: front, Back: back }),
+			editSource,
 		);
 	}
 
@@ -147,6 +155,7 @@ export class CardWriteActions {
 		_question: string,
 		_answer: string,
 		clozeTemplate: string,
+		editSource: NoteEditSource = "manual",
 	): void {
 		const card = this.db.get<{ note_id: string }>(
 			`SELECT note_id FROM cards WHERE id = ?`,
@@ -169,9 +178,20 @@ export class CardWriteActions {
 			);
 		}
 		fields.Text = clozeTemplate;
+		this.writeNoteFields(card.note_id, JSON.stringify(fields), editSource);
+	}
+
+	/** Single note-content write path, so every edit hits the edit counters. */
+	private writeNoteFields(
+		noteId: string,
+		fieldsJson: string,
+		editSource: NoteEditSource,
+	): void {
+		const now = Date.now();
+		const contentEdit = buildContentEditSet(fieldsJson, editSource, now);
 		this.db.run(
-			`UPDATE notes SET fields_json = ?, updated_at = ? WHERE id = ?`,
-			[JSON.stringify(fields), Date.now(), card.note_id],
+			`UPDATE notes SET ${contentEdit.clause}, updated_at = ? WHERE id = ?`,
+			[...contentEdit.params, now, noteId],
 		);
 	}
 

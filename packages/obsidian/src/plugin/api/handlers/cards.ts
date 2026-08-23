@@ -88,6 +88,8 @@ export function handleListCards(
 		createdAt: c.createdAt,
 		noteTypeName: c.noteTypeName,
 		userComment: c.userComment,
+		editCount: c.editCount ?? 0,
+		aiEditCount: c.aiEditCount ?? 0,
 	}));
 
 	sendOk(res, { total: allCards.length, count: cards.length, cards });
@@ -188,6 +190,9 @@ export function handleGetCard(
 		createdAt: card.createdAt,
 		noteTypeName: card.noteTypeName,
 		userComment: card.userComment,
+		editCount: card.editCount ?? 0,
+		aiEditCount: card.aiEditCount ?? 0,
+		contentEditedAt: card.contentEditedAt ?? null,
 		reviewHistory: history,
 	});
 }

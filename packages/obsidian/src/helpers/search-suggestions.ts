@@ -49,6 +49,8 @@ const PROP_VALUES: { name: string; aliases: string[]; description: string }[] =
 		},
 		{ name: "reps", aliases: [], description: "Review count" },
 		{ name: "lapses", aliases: [], description: "Lapse count" },
+		{ name: "edits", aliases: ["edit"], description: "Manual content edits" },
+		{ name: "aiedits", aliases: [], description: "AI content edits" },
 	];
 
 const TYPE_VALUES = ["basic", "cloze", "reversed", "image-occlusion"] as const;
