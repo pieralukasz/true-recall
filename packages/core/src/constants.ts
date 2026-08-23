@@ -251,6 +251,7 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 		{ id: "edit", enabled: true },
 		{ id: "quick-add", enabled: true },
 		{ id: "highlight", enabled: true },
+		{ id: "highlight-card", enabled: true },
 		{ id: "copy", enabled: true },
 		{ id: "new-note", enabled: true },
 		{ id: "ask-ai", enabled: true },
