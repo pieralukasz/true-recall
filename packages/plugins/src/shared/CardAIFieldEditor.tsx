@@ -3,6 +3,7 @@ import { EditorView } from "@codemirror/view";
 import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 
 import type { EmbeddableEditorInstance } from "@true-recall/obsidian/editor/shared/embedded-editor";
+import { formattingKeymap } from "@true-recall/obsidian/editor/shared/formatting/formatting-keymap";
 import {
 	useApp,
 	usePlugin,
@@ -53,7 +54,7 @@ export function CardAIFieldEditor({
 
 		const extras = readOnly
 			? [EditorState.readOnly.of(true), EditorView.editable.of(false)]
-			: [];
+			: [formattingKeymap()];
 
 		let editor: EmbeddableEditorInstance;
 		try {

@@ -11,6 +11,7 @@ import {
 import { stripBrTags } from "@true-recall/core/utils";
 
 import type { EmbeddableEditorInstance } from "@true-recall/obsidian/editor/shared/embedded-editor";
+import { formattingKeymap } from "@true-recall/obsidian/editor/shared/formatting/formatting-keymap";
 import { getInkEmbeddableEditorExtensions } from "@true-recall/obsidian/editor/shared/ink-embeddable-editor";
 import { hasBlockMarkdown } from "@true-recall/obsidian/features/study/ui/review/helpers";
 import {
@@ -137,7 +138,10 @@ export function LivePreviewField({
 				onBlur: handleBlur,
 				onEscape: handleEscape,
 				onChange: handleChange,
-				extraExtensions: getInkEmbeddableEditorExtensions(app, sourcePath),
+				extraExtensions: [
+					...getInkEmbeddableEditorExtensions(app, sourcePath),
+					formattingKeymap(),
+				],
 			});
 			editorRef.current = editor;
 		} catch (error) {

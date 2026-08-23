@@ -1,5 +1,5 @@
-import { Prec, StateEffect, Transaction } from "@codemirror/state";
-import { EditorView, keymap } from "@codemirror/view";
+import { StateEffect, Transaction } from "@codemirror/state";
+import { EditorView } from "@codemirror/view";
 import {
 	useCallback,
 	useEffect,
@@ -10,7 +10,7 @@ import {
 
 import { Clickable } from "@true-recall/obsidian/components";
 import type { EmbeddableEditorInstance } from "@true-recall/obsidian/editor/shared/embedded-editor";
-import { wrapCloze } from "@true-recall/obsidian/editor/shared/formatting/cm6-formatting";
+import { formattingKeymap } from "@true-recall/obsidian/editor/shared/formatting/formatting-keymap";
 import { getInkEmbeddableEditorExtensions } from "@true-recall/obsidian/editor/shared/ink-embeddable-editor";
 import { useIcon } from "@true-recall/obsidian/preact/hooks";
 import {
@@ -149,17 +149,7 @@ export function NoteField({
 						}, 150);
 					}
 				}),
-				Prec.highest(
-					keymap.of([
-						{
-							key: "Mod-Shift-c",
-							run: (view) => {
-								wrapCloze(view);
-								return true;
-							},
-						},
-					]),
-				),
+				formattingKeymap(),
 			]),
 		});
 
