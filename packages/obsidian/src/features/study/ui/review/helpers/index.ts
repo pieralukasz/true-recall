@@ -7,6 +7,10 @@ export {
 	filterActiveCards,
 	getEmptyQueueMessage,
 } from "@true-recall/obsidian/features/study/ui/review/helpers/session-helpers";
+export {
+	buildReviewFollowUpContext,
+	type ReviewFollowUpAttempt,
+} from "@true-recall/obsidian/features/study/ui/review/helpers/review-follow-up";
 export type { TypeInMode } from "@true-recall/obsidian/features/study/ui/review/helpers/type-in-flow";
 export {
 	deriveTypeInMode,
