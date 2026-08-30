@@ -12,6 +12,11 @@ export type AITier = "pro" | "byok" | "custom" | "lmstudio";
 /** AI provider type — determines which endpoint and auth to use. */
 export type AIProviderType = "pro" | "openrouter" | "custom" | "lmstudio";
 
+/** Settings as they can appear on disk before load-time migrations run. */
+export type PersistedTrueRecallSettings = Partial<TrueRecallSettings> & {
+	temporaryCustomStudyDeck?: TemporaryCustomStudyDeck;
+};
+
 export interface ToolbarButtonConfig {
 	id: string;
 	enabled: boolean;
@@ -358,8 +363,6 @@ export interface TrueRecallSettings {
 	sessionPresets: SessionPreset[];
 	/** Anki-style filtered decks created by Custom Study. */
 	temporaryCustomStudyDecks: TemporaryCustomStudyDeck[];
-	/** @deprecated Migrated to temporaryCustomStudyDecks on load. */
-	temporaryCustomStudyDeck?: TemporaryCustomStudyDeck;
 
 	/** FSRS scheduling presets (always contains at least one "Default") */
 	fsrsPresets: FSRSPreset[];

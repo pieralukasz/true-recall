@@ -137,6 +137,7 @@ export type {
 	NewCardOrder,
 	NewReviewMix,
 	OptimizationMetrics,
+	PersistedTrueRecallSettings,
 	ReviewContentWidth,
 	ReviewKeybindings,
 	ReviewOrder,

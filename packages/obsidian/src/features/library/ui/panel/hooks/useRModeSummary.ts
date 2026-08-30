@@ -27,6 +27,7 @@ export function useRModeSummary(): {
 } {
 	const plugin = usePlugin();
 	const { cardsWithFsrs, currentFile } = usePanelStore();
+	const currentFilePath = currentFile?.path;
 
 	const { rMode } = plugin.settings;
 
@@ -40,8 +41,8 @@ export function useRModeSummary(): {
 	}, []);
 
 	return useMemo(() => {
-		const effectivePreset = currentFile
-			? plugin.presetService.resolvePresetChain(currentFile.path).effective
+		const effectivePreset = currentFilePath
+			? plugin.presetService.resolvePresetChain(currentFilePath).effective
 					.preset
 			: plugin.presetService.getDefaultPreset();
 		const bands: RModeBands = {
@@ -89,7 +90,7 @@ export function useRModeSummary(): {
 		cardsWithFsrs,
 		plugin.fsrsService,
 		plugin.presetService,
-		currentFile?.path,
+		currentFilePath,
 		rMode.ceilingOffset,
 		rMode.urgentBelow,
 		minute,

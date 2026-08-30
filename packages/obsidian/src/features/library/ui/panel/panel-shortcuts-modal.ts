@@ -14,7 +14,7 @@ const SHORTCUTS: { keys: string; label: string }[] = [
 
 class PanelShortcutsModal extends Modal {
 	onOpen(): void {
-		this.setTitle("Card Panel Shortcuts");
+		this.setTitle("Card panel shortcuts");
 		this.modalEl.addClass("tr-modal-panel-shortcuts");
 		const modifier = Platform.isMacOS ? "⌘" : "Ctrl";
 		const list = this.contentEl.createDiv({ cls: "tr-panel-shortcuts-list" });

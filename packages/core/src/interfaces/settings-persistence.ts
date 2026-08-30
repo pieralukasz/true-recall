@@ -1,4 +1,7 @@
-import type { TrueRecallSettings } from "../types/settings.types";
+import type {
+	PersistedTrueRecallSettings,
+	TrueRecallSettings,
+} from "../types/settings.types";
 
 /**
  * Platform adapter for loading/saving plugin settings.
@@ -6,6 +9,6 @@ import type { TrueRecallSettings } from "../types/settings.types";
  * Desktop: wraps JSON file I/O
  */
 export interface ISettingsPersistence {
-	load(): Promise<Partial<TrueRecallSettings> | null>;
+	load(): Promise<PersistedTrueRecallSettings | null>;
 	save(settings: TrueRecallSettings): Promise<void>;
 }

@@ -1,9 +1,9 @@
 import { resolve } from "node:path";
 import { defineConfig } from "vitest/config";
 
-const src = resolve(__dirname, "src");
-const obsidianSrc = resolve(__dirname, "../obsidian/src");
-const mocks = resolve(__dirname, "tests/__mocks__");
+const src = resolve(import.meta.dirname, "src");
+const obsidianSrc = resolve(import.meta.dirname, "../obsidian/src");
+const mocks = resolve(import.meta.dirname, "tests/__mocks__");
 
 export default defineConfig({
 	resolve: {
@@ -28,7 +28,7 @@ export default defineConfig({
 	},
 	test: {
 		name: "@true-recall/core",
-		root: resolve(__dirname),
+		root: resolve(import.meta.dirname),
 		globals: true,
 		environment: "node",
 		setupFiles: ["./tests/setup.ts"],

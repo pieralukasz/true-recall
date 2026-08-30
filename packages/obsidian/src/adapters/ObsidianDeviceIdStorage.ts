@@ -8,16 +8,14 @@ import type { DeviceIdStorage } from "@true-recall/core/integration/device/devic
  * the device only and are never carried by vault sync, Obsidian Sync, or
  * data.json, which makes them the safe home for the device ID.
  *
- * Migration: earlier versions kept the ID in raw window.localStorage. On
- * first read of a missing key, a valid legacy value is adopted into the
- * vault-scoped storage so existing installs keep their identity (and their
- * database file).
+ * Earlier versions wrote these keys to raw local storage. A missing scoped
+ * value is migrated once, then the legacy key is removed.
  */
 export class ObsidianDeviceIdStorage implements DeviceIdStorage {
 	constructor(private readonly app: App) {}
 
 	get(key: string): string | null {
-		const value = this.app.loadLocalStorage(key);
+		const value: unknown = this.app.loadLocalStorage(key);
 		if (typeof value === "string" && value.length > 0) {
 			return value;
 		}
@@ -25,6 +23,7 @@ export class ObsidianDeviceIdStorage implements DeviceIdStorage {
 		const legacy = this.readLegacy(key);
 		if (legacy) {
 			this.app.saveLocalStorage(key, legacy);
+			this.removeLegacy(key);
 		}
 		return legacy;
 	}
@@ -38,6 +37,14 @@ export class ObsidianDeviceIdStorage implements DeviceIdStorage {
 			return window.localStorage.getItem(key);
 		} catch {
 			return null;
+		}
+	}
+
+	private removeLegacy(key: string): void {
+		try {
+			window.localStorage.removeItem(key);
+		} catch {
+			// The scoped value is already saved; stale cleanup is best-effort.
 		}
 	}
 }

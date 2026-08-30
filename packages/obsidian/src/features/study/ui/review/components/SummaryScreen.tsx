@@ -62,7 +62,7 @@ export function SummaryScreen({
 		if (review.isActive) {
 			review.endSession();
 		}
-	}, [review.isActive, review.endSession]);
+	}, [review]);
 
 	return (
 		<div class="true-recall-review ep:flex ep:flex-col ep:h-full ep:p-0">

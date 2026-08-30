@@ -13,9 +13,7 @@ async function pipeThrough(
 ): Promise<Uint8Array> {
 	// The DOM lib types the native streams' writable side as BufferSource, which
 	// does not line up with the Uint8Array chunks a Blob stream emits.
-	const stream = new Blob([toBlobPart(data)])
-		.stream()
-		.pipeThrough(transform as ReadableWritablePair<Uint8Array, Uint8Array>);
+	const stream = new Blob([toBlobPart(data)]).stream().pipeThrough(transform);
 	return new Uint8Array(await new Response(stream).arrayBuffer());
 }
 
