@@ -16,6 +16,7 @@ import type {
 	StatsTimeRange,
 	TrueRecallSettings,
 } from "@true-recall/core/types";
+import { extractFSRSSettings } from "@true-recall/core/types";
 
 import { AppNavBar } from "@true-recall/obsidian/components";
 import { Q, useQuery } from "@true-recall/obsidian/data";
@@ -248,8 +249,10 @@ export function StatsApp({ isViewVisible }: StatsAppProps) {
 		};
 	}, [data, timeRange.value, filterContext.value]);
 
+	// Default preset, not the flat legacy field: the chart has to compare true
+	// retention against the retention the scheduler actually aims for.
 	const targetRetention = Math.round(
-		(settings.fsrsRequestRetention ?? 0.9) * 100,
+		extractFSRSSettings(settings).requestRetention * 100,
 	);
 
 	const trueRetention = data?.trueRetention ?? null;

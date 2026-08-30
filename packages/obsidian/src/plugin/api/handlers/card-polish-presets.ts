@@ -21,6 +21,7 @@ const FIELD_SCOPES: CardAIFieldScope[] = [
 const WRITABLE_KEYS = [
 	"name",
 	"prompt",
+	"disabled",
 	"autoApply",
 	"autoApplyNewCards",
 	"includeSourceNote",
@@ -33,6 +34,7 @@ type WritableKey = (typeof WRITABLE_KEYS)[number];
 type CardPolishPresetInput = Partial<Pick<CardAIPreset, WritableKey>>;
 
 const BOOLEAN_KEYS: WritableKey[] = [
+	"disabled",
 	"autoApply",
 	"autoApplyNewCards",
 	"includeSourceNote",
@@ -129,6 +131,7 @@ export async function handleCreateCardPolishPreset(
 		prompt: input.prompt ?? "",
 		autoApply: input.autoApply ?? false,
 		builtin: false,
+		...(input.disabled !== undefined && { disabled: input.disabled }),
 		...(input.autoApplyNewCards !== undefined && {
 			autoApplyNewCards: input.autoApplyNewCards,
 		}),

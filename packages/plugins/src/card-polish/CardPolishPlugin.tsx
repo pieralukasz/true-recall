@@ -44,7 +44,7 @@ export class CardPolishPlugin {
 					const preset = (this.ctx.settings.cardPolish?.userPresets ?? []).find(
 						(candidate) => candidate.id === presetId,
 					);
-					if (!preset) return false;
+					if (!preset || preset.disabled) return false;
 					if (!checking) this.runPreset(preset.prompt, preset.id);
 					return true;
 				},

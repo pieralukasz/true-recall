@@ -142,6 +142,19 @@ describe("card-polish-presets handlers", () => {
 		expect(settings.cardPolish.userPresets[0]?.autoApply).toBe(true);
 	});
 
+	it("POST update can disable a preset", async () => {
+		const res = mockRes();
+		const { plugin, settings } = mockPlugin();
+		await handleUpdateCardPolishPreset(
+			mockReq({ disabled: true }),
+			res as never,
+			{ plugin },
+			{ id: "preset-1" },
+		);
+		expect(res.calls[0]?.status).toBe(200);
+		expect(settings.cardPolish.userPresets[0]?.disabled).toBe(true);
+	});
+
 	it("POST update on unknown id returns 404", async () => {
 		const res = mockRes();
 		const { plugin } = mockPlugin();

@@ -60,6 +60,7 @@ export type {
 	ReviewViewMode,
 	SchedulingPreview,
 	SchedulingPreviewEntry,
+	SchedulingPreviewRating,
 	SemanticGradingResult,
 	StatsTimeRange,
 	StreakInfo,
@@ -70,6 +71,8 @@ export type {
 export {
 	createDefaultFSRSData,
 	formatInterval,
+	PREVIEW_RATING_ORDER,
+	previewRatingFromGrade,
 	Rating,
 	State,
 } from "./fsrs";

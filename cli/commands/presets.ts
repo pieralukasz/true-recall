@@ -78,20 +78,20 @@ export const presetCommands: CommandDef[] = [
 
 	get(
 		"list_card_polish_presets",
-		"List all Card Polish presets (id, name, prompt, autoApply, autoApplyNewCards, mode).",
+		"List all Card Polish presets (id, name, prompt, disabled, autoApply, autoApplyNewCards, mode).",
 		"Card Polish",
 		"/card-polish-presets",
 	),
 
 	postTo(
 		"create_card_polish_preset",
-		"Create a Card Polish preset. Body keys: name, prompt (required); autoApply, autoApplyNewCards, includeSourceNote, includeRelatedCards (booleans); mode (edit|split|spawn); fieldScope (all|question|answer|empty-answer).",
+		"Create a Card Polish preset. Body keys: name, prompt (required); disabled, autoApply, autoApplyNewCards, includeSourceNote, includeRelatedCards (booleans); mode (edit|split|spawn); fieldScope (all|question|answer|empty-answer).",
 		"Card Polish",
 		{
 			preset: {
 				type: "json",
 				description:
-					"Preset JSON: { name, prompt, autoApply?, autoApplyNewCards?, includeSourceNote?, includeRelatedCards?, mode?, fieldScope? }",
+					"Preset JSON: { name, prompt, disabled?, autoApply?, autoApplyNewCards?, includeSourceNote?, includeRelatedCards?, mode?, fieldScope? }",
 				required: true,
 			},
 		},
@@ -112,7 +112,7 @@ export const presetCommands: CommandDef[] = [
 			patch: {
 				type: "json",
 				description:
-					"Partial preset JSON. Valid keys: name, prompt, autoApply, autoApplyNewCards, includeSourceNote, includeRelatedCards, mode, fieldScope.",
+					"Partial preset JSON. Valid keys: name, prompt, disabled, autoApply, autoApplyNewCards, includeSourceNote, includeRelatedCards, mode, fieldScope.",
 				required: true,
 			},
 		},

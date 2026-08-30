@@ -20,6 +20,8 @@ export interface CardAIPreset {
 	prompt: string;
 	autoApply: boolean;
 	builtin: boolean;
+	/** Disabled presets stay editable in settings but are hidden from run surfaces. */
+	disabled?: boolean;
 	requiresPro?: boolean;
 	includeSourceNote?: boolean;
 	includeRelatedCards?: boolean;

@@ -37,8 +37,9 @@ const CARD_TAG = "#card";
 
 /** Highlight markers around the selection, plus a trailing `#card` tag when the
  * card variant is used. The tag is what makes highlights waiting to become
- * cards findable in search. An existing tag right after the selection is left
- * alone instead of being duplicated. */
+ * cards findable in search. It is padded with a space on both sides so it never
+ * glues to the text that follows, and an existing tag right after the selection
+ * is left alone instead of being duplicated. */
 function buildHighlightChanges(
 	doc: Text,
 	from: number,
@@ -47,7 +48,9 @@ function buildHighlightChanges(
 ): { from: number; insert: string }[] {
 	const restOfLine = doc.sliceString(to, doc.lineAt(to).to);
 	const hasCardTag = new RegExp(`^\\s*${CARD_TAG}\\b`).test(restOfLine);
-	const closing = withCardTag && !hasCardTag ? `== ${CARD_TAG}` : "==";
+	const needsTrailingSpace = restOfLine.length > 0 && !/^\s/.test(restOfLine);
+	const tag = `${CARD_TAG}${needsTrailingSpace ? " " : ""}`;
+	const closing = withCardTag && !hasCardTag ? `== ${tag}` : "==";
 	return [
 		{ from, insert: "==" },
 		{ from: to, insert: closing },
