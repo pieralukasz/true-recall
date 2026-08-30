@@ -14,6 +14,7 @@ import {
 import { LivePreviewField } from "@true-recall/obsidian/features/study/ui/review/components/LivePreviewField";
 import { TypeInAssessmentPanel } from "@true-recall/obsidian/features/study/ui/review/components/TypeInAssessmentPanel";
 import { TypeInCMEditor } from "@true-recall/obsidian/features/study/ui/review/components/TypeInCMEditor";
+import { TypeInFollowUp } from "@true-recall/obsidian/features/study/ui/review/components/TypeInFollowUp";
 import { getReviewMaxWidth } from "@true-recall/obsidian/features/study/ui/review/helpers";
 import { usePlugin } from "@true-recall/obsidian/preact/ObsidianContext";
 import { cn } from "@true-recall/obsidian/utils/cn";
@@ -114,6 +115,8 @@ interface TypeInState {
 	localAssessment: LocalAnswerAssessment | null;
 	semanticResult: SemanticGradingResult | null;
 	semanticMessage: string | null;
+	onAskFollowUp?: (question: string) => boolean;
+	queuedFollowUpCount: number;
 }
 
 interface CardContainerProps {
@@ -150,6 +153,8 @@ export function CardContainer({
 		localAssessment,
 		semanticResult,
 		semanticMessage,
+		onAskFollowUp,
+		queuedFollowUpCount,
 	} = typeIn;
 	const answerPhase = useAnswerWarmup(isAnswerRevealed, card.id);
 	const sourcePath = card.sourceNotePath || "";
@@ -308,6 +313,13 @@ export function CardContainer({
 							/>
 						</div>
 					</>
+				)}
+
+				{showTypeIn && isAnswerRevealed && onAskFollowUp && (
+					<TypeInFollowUp
+						onSubmit={onAskFollowUp}
+						queuedCount={queuedFollowUpCount}
+					/>
 				)}
 
 				<CardFooter

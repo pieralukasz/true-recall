@@ -41,6 +41,8 @@ export function SummaryScreen({
 	rModeActive,
 	getTopUpAvailability,
 	onTopUp,
+	queuedFollowUpCount = 0,
+	onOpenAssistantInbox,
 }: {
 	review: ReviewApi;
 	isCustomSession: boolean;
@@ -51,6 +53,8 @@ export function SummaryScreen({
 	rModeActive: boolean;
 	getTopUpAvailability: () => ReviewSessionTopUpAvailability;
 	onTopUp: (topUp: ReviewSessionTopUp) => Promise<boolean>;
+	queuedFollowUpCount?: number;
+	onOpenAssistantInbox?: () => void;
 }) {
 	const stats = review.getStats();
 	const durationMin = Math.floor(stats.duration / 60000);
@@ -102,6 +106,22 @@ export function SummaryScreen({
 							value={`${durationMin}m ${durationSec}s`}
 						/>
 					</div>
+
+					{queuedFollowUpCount > 0 && onOpenAssistantInbox ? (
+						<div class="ep:mb-4 ep:p-3 ep:bg-obs-secondary ep:rounded-lg ep:flex ep:items-center ep:justify-between ep:gap-2">
+							<span class="ep:text-ui-small ep:text-obs-normal ep:text-left">
+								{queuedFollowUpCount} follow-up question
+								{queuedFollowUpCount === 1 ? "" : "s"} queued
+							</span>
+							<Clickable
+								stopPropagation={false}
+								class="ep-btn"
+								onClick={onOpenAssistantInbox}
+							>
+								Open AI Inbox
+							</Clickable>
+						</div>
+					) : null}
 
 					{rModeActive ? (
 						<div class="ep:mb-4">
