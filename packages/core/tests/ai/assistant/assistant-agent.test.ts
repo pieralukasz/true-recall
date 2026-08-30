@@ -250,6 +250,47 @@ describe("AssistantAgent", () => {
 		expect(prompt).toContain("INSTRUCTION:\nMake it shorter");
 	});
 
+	it("renders the review attempt with tutor guidance for a follow-up question", async () => {
+		const { client, requests } = makeScriptedClient([textResponse("done")]);
+		await new AssistantAgent(client, { webSearch: false }).run(
+			"Why is my claim about UDP wrong?",
+			{
+				...CONTEXT,
+				reviewAttempt: {
+					typedAnswer: "TCP is connectionless",
+					verdict: "wrong",
+					teacherComment: "TCP is connection-oriented.",
+					covered: ["transport layer"],
+					missing: ["three-way handshake"],
+					errors: ["connectionless claim"],
+				},
+			},
+			HOST,
+		);
+
+		const prompt = String(requests[0]?.messages[1]?.content);
+		expect(prompt).toContain("REVIEW ATTEMPT");
+		expect(prompt).toContain("TCP is connectionless");
+		expect(prompt).toContain("GRADING VERDICT: wrong");
+		expect(prompt).toContain("MISSING: three-way handshake");
+		expect(prompt).toContain("update_card");
+		expect(prompt).toContain("INSTRUCTION:\nWhy is my claim about UDP wrong?");
+	});
+
+	it("omits grading lines when the review attempt has no verdict", async () => {
+		const { client, requests } = makeScriptedClient([textResponse("done")]);
+		await new AssistantAgent(client, { webSearch: false }).run(
+			"What does this answer actually mean?",
+			{ ...CONTEXT, reviewAttempt: { typedAnswer: "something vague" } },
+			HOST,
+		);
+
+		const prompt = String(requests[0]?.messages[1]?.content);
+		expect(prompt).toContain("REVIEW ATTEMPT");
+		expect(prompt).toContain("something vague");
+		expect(prompt).not.toContain("GRADING VERDICT");
+	});
+
 	it("proposes validated changes to an open draft without storing callbacks", async () => {
 		const draftContext: AssistantContext = {
 			draftCard: {
