@@ -87,6 +87,18 @@ export interface BalanceDueOptions {
 	maxShiftDays: number;
 	easyDays?: EasyDaysConfig;
 	easyDaysMultiplier?: number;
+	/**
+	 * Earliest day offset from today the balanced due may land on. Raises the
+	 * lower end of the candidate window so a balanced due can be kept at or
+	 * after an already-chosen one.
+	 */
+	minIntervalDays?: number;
+}
+
+export interface BalanceDueSequenceOptions
+	extends Omit<BalanceDueOptions, "originalDue" | "minIntervalDays"> {
+	/** Candidate dues for the same card, in the order they must stay in */
+	originalDues: string[];
 }
 
 export interface BalanceDueResult {

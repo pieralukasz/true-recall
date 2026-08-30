@@ -13,6 +13,7 @@ import type {
 	Grade,
 	ReviewResult,
 } from "@true-recall/core/types";
+import { previewRatingFromGrade } from "@true-recall/core/types";
 import type {
 	ReviewSessionTopUp,
 	ReviewSessionTopUpAvailability,
@@ -228,6 +229,13 @@ export class ReviewSessionController {
 				this.plugin.fsrsHelper?.balanceScheduledReview(
 					card.id,
 					transition.updatedCard.fsrs,
+					{
+						rating: previewRatingFromGrade(rating),
+						rawPreview: this.plugin.fsrsService.getSchedulingPreview(
+							card.fsrs,
+							presetSettings,
+						),
+					},
 				) ?? transition.updatedCard.fsrs,
 		};
 
