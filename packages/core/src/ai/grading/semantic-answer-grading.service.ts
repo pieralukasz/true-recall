@@ -27,6 +27,12 @@ const MAX_ERRORS = 3;
 const VERDICTS: ReadonlySet<string> = new Set(["correct", "partial", "wrong"]);
 const RATINGS: ReadonlySet<string> = new Set(["again", "hard", "good", "easy"]);
 
+const VERDICT_FALLBACK_RATING: Record<TypeInVerdict, SuggestedRating> = {
+	correct: "good",
+	partial: "hard",
+	wrong: "again",
+};
+
 interface GradeAnswerInput {
 	question: string;
 	correctAnswer: string;
@@ -69,10 +75,9 @@ function extractJsonBlock(text: string): string | null {
 	return trimmed.slice(start, end + 1);
 }
 
-function isStringArray(value: unknown): value is string[] {
-	return (
-		Array.isArray(value) && value.every((item) => typeof item === "string")
-	);
+function toStringArray(value: unknown): string[] {
+	if (!Array.isArray(value)) return [];
+	return value.filter((item): item is string => typeof item === "string");
 }
 
 function clampList(items: string[], max: number): string[] {
@@ -117,17 +122,14 @@ export class SemanticAnswerGradingService {
 
 		const response = await this.withTimeout(
 			client.chat({
-				messages: buildTypeInGradingMessages(
-					{
-						question: input.question,
-						correctAnswer: input.correctAnswer,
-						userAnswer: input.userAnswer,
-						sourceContext: input.sourceContext,
-						sourceNotePath: input.sourceNotePath,
-						relatedCards: input.relatedCards,
-					},
-					settings.aiTypeInGradingPrompt,
-				),
+				messages: buildTypeInGradingMessages({
+					question: input.question,
+					correctAnswer: input.correctAnswer,
+					userAnswer: input.userAnswer,
+					sourceContext: input.sourceContext,
+					sourceNotePath: input.sourceNotePath,
+					relatedCards: input.relatedCards,
+				}),
 				...(config.hasProTier ? {} : { temperature: 0 }),
 				metadata,
 			}),
@@ -155,27 +157,30 @@ export class SemanticAnswerGradingService {
 			throw new Error("AI response missing required fields");
 		}
 
+		// Only the verdict is load-bearing; every other field degrades gracefully
+		// so a sloppy model response still grades instead of falling back to diff.
 		const payload = parsed as Record<string, unknown>;
-		if (
-			typeof payload.verdict !== "string" ||
-			!VERDICTS.has(payload.verdict) ||
-			typeof payload.teacherComment !== "string" ||
-			!isStringArray(payload.covered) ||
-			!isStringArray(payload.missing) ||
-			!isStringArray(payload.errors) ||
-			typeof payload.suggestedRating !== "string" ||
-			!RATINGS.has(payload.suggestedRating)
-		) {
+		if (typeof payload.verdict !== "string" || !VERDICTS.has(payload.verdict)) {
 			throw new Error("AI response missing required fields");
 		}
+		const verdict = payload.verdict as TypeInVerdict;
+
+		const suggestedRating =
+			typeof payload.suggestedRating === "string" &&
+			RATINGS.has(payload.suggestedRating)
+				? (payload.suggestedRating as SuggestedRating)
+				: VERDICT_FALLBACK_RATING[verdict];
 
 		return {
-			verdict: payload.verdict as TypeInVerdict,
-			teacherComment: truncateComment(payload.teacherComment),
-			covered: clampList(payload.covered, MAX_POINTS),
-			missing: clampList(payload.missing, MAX_POINTS),
-			errors: clampList(payload.errors, MAX_ERRORS),
-			suggestedRating: payload.suggestedRating as SuggestedRating,
+			verdict,
+			teacherComment:
+				typeof payload.teacherComment === "string"
+					? truncateComment(payload.teacherComment)
+					: "",
+			covered: clampList(toStringArray(payload.covered), MAX_POINTS),
+			missing: clampList(toStringArray(payload.missing), MAX_POINTS),
+			errors: clampList(toStringArray(payload.errors), MAX_ERRORS),
+			suggestedRating,
 		};
 	}
 
