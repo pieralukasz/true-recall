@@ -1,4 +1,0 @@
-/**
- * FSRS Simulator Types
- */
-export {};

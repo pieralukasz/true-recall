@@ -21,12 +21,12 @@ export const DEFAULT_TYPE_IN_GRADING_SYSTEM_PROMPT =
 	'"partial" means the core idea is there but important facts are missing or fuzzy.\n' +
 	'"wrong" means the core idea is missing or contradicted.\n' +
 	"Use the source note and related flashcards (when provided) only as background for domain terminology, synonyms, and the expected scope: never as a substitute for the user's answer.\n" +
-	"Return JSON only:\n" +
+	"Your entire reply must be a single JSON object, starting with { and ending with }:\n" +
 	'{"verdict": "correct"|"partial"|"wrong", "teacherComment": string, "covered": string[], "missing": string[], "errors": string[], "suggestedRating": "again"|"hard"|"good"|"easy"}\n' +
 	"teacherComment: 2-3 warm, specific sentences in the language of the user's answer.\n" +
 	"covered/missing: short key facts (max 5 each). errors: only real contradictions of the source (max 3), else [].\n" +
 	"suggestedRating: again = wrong or blank understanding, hard = partial with significant gaps, good = correct with minor gaps, easy = complete and effortless.\n" +
-	"Do not return markdown or code fences.";
+	"No markdown, no code fences, no text outside the JSON object.";
 
 function buildSourceNoteSection(input: TypeInGradingPromptInput): string[] {
 	const text = input.sourceContext?.trim();
@@ -64,16 +64,11 @@ function buildRelatedCardsSection(input: TypeInGradingPromptInput): string[] {
 
 export function buildTypeInGradingMessages(
 	input: TypeInGradingPromptInput,
-	customSystemPrompt?: string,
 ): Array<{ role: "system" | "user"; content: string }> {
-	const systemPrompt = customSystemPrompt?.trim().length
-		? customSystemPrompt
-		: DEFAULT_TYPE_IN_GRADING_SYSTEM_PROMPT;
-
 	return [
 		{
 			role: "system",
-			content: systemPrompt,
+			content: DEFAULT_TYPE_IN_GRADING_SYSTEM_PROMPT,
 		},
 		{
 			role: "user",

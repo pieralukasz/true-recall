@@ -8,6 +8,7 @@ import type {
 	FSRSSettings,
 	SchedulingPreview,
 } from "@true-recall/core/types";
+import { previewRatingFromGrade } from "@true-recall/core/types";
 import type { FSRSFlashcardItem } from "@true-recall/core/types/fsrs/card.types";
 
 import { ReviewAnswerCommand } from "@true-recall/obsidian/commands/commands/review-answer.cmd";
@@ -120,6 +121,10 @@ export function useCardPreview({
 			if (!isGradable) return;
 			const preset = plugin.presetService.resolvePresetForCard(card, {});
 			const settings = plugin.presetService.toFSRSSettings(preset);
+			const rawPreview = plugin.fsrsService.getSchedulingPreview(
+				card.fsrs,
+				settings,
+			);
 			const cmd = buildStandaloneReviewCommand({
 				card,
 				rating,
@@ -127,7 +132,10 @@ export function useCardPreview({
 				preset,
 				settings,
 				balanceFsrs: (fsrs) =>
-					plugin.fsrsHelper?.balanceScheduledReview(card.id, fsrs) ?? fsrs,
+					plugin.fsrsHelper?.balanceScheduledReview(card.id, fsrs, {
+						rating: previewRatingFromGrade(rating),
+						rawPreview,
+					}) ?? fsrs,
 			});
 			void plugin.commandService?.execute(cmd);
 			notify().success(`Reviewed (${Rating[rating]})`);

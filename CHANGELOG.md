@@ -1,5 +1,20 @@
 # Changelog
 
+## 2.3.1 (2026-08-30)
+
+### Features
+
+- **fsrs:** keep load-balanced due previews monotonic across ratings
+- **presets:** disabled flag hides Card Polish presets from run surfaces
+
+### Improvements
+
+- **review:** minimal type-in field and boxless assessment panel
+
+### Bug Fixes
+
+- **grading:** enforce a single verdict-JSON contract for type-in grading
+
 ## 2.3.0 (2026-08-23)
 
 Typed answers get a real assessment this release: grading was rebuilt around a teacher verdict, with its own model setting and its own panel in review. Notes also start keeping score of their own edits, separating what you rewrote by hand from what the AI rewrote. And the plugin no longer hangs on load on a device that has never opened the vault before, which is what made it unusable on a phone.

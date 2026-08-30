@@ -27,6 +27,11 @@ export type {
 	OptimizationResult,
 	SchedulingPreview,
 	SchedulingPreviewEntry,
+	SchedulingPreviewRating,
+} from "./scheduling.types";
+export {
+	PREVIEW_RATING_ORDER,
+	previewRatingFromGrade,
 } from "./scheduling.types";
 // Session types
 export type {

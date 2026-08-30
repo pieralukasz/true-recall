@@ -10,6 +10,7 @@ import {
 	SelectInput,
 	TextAreaInput,
 	TextInput,
+	ToggleInput,
 } from "@true-recall/obsidian/components";
 import { useIcon } from "@true-recall/obsidian/preact/hooks";
 import { cn } from "@true-recall/obsidian/utils/cn";
@@ -74,6 +75,11 @@ function BadgeRow({ preset }: { preset: CardAIPreset }) {
 					Built-in
 				</span>
 			)}
+			{preset.disabled && (
+				<span class="ep:text-ui-smallest ep:font-semibold ep:px-1.5 ep:py-0.5 ep:rounded ep:bg-obs-border ep:text-obs-muted ep:uppercase">
+					Disabled
+				</span>
+			)}
 		</>
 	);
 }
@@ -129,6 +135,8 @@ export function CardAIPresetEditor({
 
 	const canCollapse = onToggleExpanded !== undefined;
 	const isExpanded = expanded ?? true;
+	const patch = (partial: Partial<CardAIPreset>) =>
+		onChange?.(preset.id, partial);
 
 	if (canCollapse && !isExpanded) {
 		const summary = presetSummary(preset);
@@ -152,8 +160,6 @@ export function CardAIPresetEditor({
 		);
 	}
 
-	const patch = (partial: Partial<CardAIPreset>) =>
-		onChange?.(preset.id, partial);
 	const policy = resolveCardAIPolicy(preset);
 
 	const autoApplyId = `card-ai-auto-${preset.id}`;
@@ -178,6 +184,12 @@ export function CardAIPresetEditor({
 					{preset.name}
 				</span>
 				<BadgeRow preset={preset} />
+				<span class="ep:text-ui-smaller ep:text-obs-muted">Enabled</span>
+				<ToggleInput
+					value={!preset.disabled}
+					onChange={(enabled) => patch({ disabled: !enabled })}
+					ariaLabel={`${preset.disabled ? "Enable" : "Disable"} ${preset.name}`}
+				/>
 			</div>
 
 			<div class="ep:flex ep:flex-col ep:gap-1">

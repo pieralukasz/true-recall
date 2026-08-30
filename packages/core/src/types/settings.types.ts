@@ -410,8 +410,6 @@ export interface TrueRecallSettings {
 	generationLanguage?: string;
 	/** Note type used for AI generation (null = Basic) */
 	generationNoteTypeId: string | null;
-	/** Custom system prompt for AI semantic grading in review type-in mode */
-	aiTypeInGradingPrompt?: string;
 	/** Type-in grading: OpenRouter model override ("" = inherit aiModel) */
 	gradingModel: string;
 	/** Custom user prompt for AI image occlusion region detection */

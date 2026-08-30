@@ -1,5 +1,6 @@
 import { Compartment } from "@codemirror/state";
 import { placeholder } from "@codemirror/view";
+import { Platform } from "obsidian";
 import { useEffect, useLayoutEffect, useRef } from "preact/hooks";
 
 import type { EmbeddableEditorInstance } from "@true-recall/obsidian/editor/shared/embedded-editor";
@@ -7,12 +8,29 @@ import {
 	useApp,
 	usePlugin,
 } from "@true-recall/obsidian/preact/ObsidianContext";
+import { cn } from "@true-recall/obsidian/utils/cn";
 
 interface TypeInCMEditorProps {
 	value: string;
 	onChange: (value: string) => void;
 	onSubmit: () => void;
 	placeholderText: string;
+}
+
+function ShortcutHint({ isVisible }: { isVisible: boolean }) {
+	if (Platform.isMobile) return null;
+	const modifier = Platform.isMacOS ? "⌘" : "Ctrl";
+	return (
+		<div
+			aria-hidden={!isVisible}
+			class={cn(
+				"ep:text-ui-smaller ep:text-obs-faint ep:transition-opacity",
+				isVisible ? "ep:opacity-100" : "ep:opacity-0",
+			)}
+		>
+			<kbd class="ep:text-[10px] ep:font-normal">{modifier} Enter</kbd> to check
+		</div>
+	);
 }
 
 export function TypeInCMEditor({
@@ -83,28 +101,35 @@ export function TypeInCMEditor({
 		textareaRef.current?.focus();
 	}, []);
 
-	if (!plugin.EmbeddableEditor) {
-		return (
-			<textarea
-				ref={textareaRef}
-				class="ep:w-full ep:min-h-[1.6em] ep:px-3 ep:py-2 ep:text-ui-small ep:bg-obs-primary ep:border ep:border-obs-border ep:rounded-md ep:resize-y"
-				value={value}
-				placeholder={placeholderText}
-				onInput={(e) => onChange((e.target as HTMLTextAreaElement).value)}
-				onKeyDown={(e) => {
-					if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
-						e.preventDefault();
-						onSubmit();
-					}
-				}}
-			/>
-		);
-	}
+	const hasContent = value.trim().length > 0;
 
-	return (
+	const editorField = plugin.EmbeddableEditor ? (
 		<div
 			ref={containerRef}
-			class="true-recall-add-field ep:w-full ep:min-h-[1.6em] ep:bg-obs-primary ep:overflow-hidden ep:px-3 ep:py-2 ep:border ep:border-obs-border ep:rounded-md"
+			class="true-recall-add-field ep:w-full ep:min-h-[1.6em] ep:bg-transparent ep:border-b ep:border-obs-border ep:focus-within:border-obs-interactive ep:transition-colors ep:[&_.cm-content]:px-0 ep:[&_.cm-content]:text-center"
 		/>
+	) : (
+		<textarea
+			ref={textareaRef}
+			class="ep:w-full ep:min-h-[1.6em] ep:px-0 ep:py-1 ep:text-ui-small ep:text-center ep:bg-transparent ep:border-0 ep:border-b ep:border-obs-border ep:rounded-none ep:resize-y ep:shadow-none ep:focus:border-obs-interactive ep:focus:shadow-none ep:transition-colors"
+			value={value}
+			placeholder={placeholderText}
+			onInput={(e) => onChange((e.target as HTMLTextAreaElement).value)}
+			onKeyDown={(e) => {
+				if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+					e.preventDefault();
+					onSubmit();
+				}
+			}}
+		/>
+	);
+
+	return (
+		<div class="ep:w-full ep:max-w-md ep:mx-auto ep:flex ep:flex-col ep:gap-1.5">
+			{editorField}
+			<div class="ep:flex ep:justify-center">
+				<ShortcutHint isVisible={hasContent} />
+			</div>
+		</div>
 	);
 }

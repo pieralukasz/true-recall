@@ -260,12 +260,12 @@ export function CardContainer({
 				)}
 
 				{showTypeIn && !isAnswerRevealed && (
-					<div class="ep:mb-6">
+					<div class="ep:mt-12 ep:mb-6">
 						<TypeInCMEditor
 							value={typedAnswer}
 							onChange={onTypedAnswerChange}
 							onSubmit={onShowAnswer}
-							placeholderText="Explain in your own words, then press Cmd+Enter."
+							placeholderText="Explain in your own words…"
 						/>
 					</div>
 				)}
