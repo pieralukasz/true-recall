@@ -8,7 +8,7 @@
     "skipLibCheck": true,
     "outDir": "./dist",
     "rootDir": ".",
-    "types": ["bun-types"]
+    "types": ["bun"]
   },
   "include": ["./**/*.ts"],
   "exclude": ["node_modules", "dist"]

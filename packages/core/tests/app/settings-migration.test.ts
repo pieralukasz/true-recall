@@ -23,7 +23,7 @@ describe("migrateSettings — custom study sessions", () => {
 		} as unknown as Parameters<typeof migrateSettings>[0]);
 
 		expect(settings.temporaryCustomStudyDecks).toEqual([legacyDeck]);
-		expect(settings.temporaryCustomStudyDeck).toBeUndefined();
+		expect(settings).not.toHaveProperty("temporaryCustomStudyDeck");
 		expect(needsSave).toBe(true);
 	});
 

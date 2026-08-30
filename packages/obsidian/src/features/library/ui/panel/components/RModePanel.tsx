@@ -27,6 +27,8 @@ export function RModePanel() {
 	const plugin = usePlugin();
 	const { currentFile, cardsWithFsrs } = usePanelStore();
 	const { summary, bands } = useRModeSummary();
+	const sessionPersistence = plugin.sessionPersistence;
+	const dayStartHour = plugin.settings.dayStartHour;
 
 	const [size, setSize] = useState(
 		String(plugin.settings.rMode.defaultSessionSize),
@@ -36,8 +38,8 @@ export function RModePanel() {
 		if (cardsWithFsrs.length === 0) return null;
 		const stateCounts = countByState(
 			cardsWithFsrs,
-			plugin.sessionPersistence?.getReviewedToday(),
-			plugin.settings.dayStartHour,
+			sessionPersistence?.getReviewedToday(),
+			dayStartHour,
 		);
 		const now = new Date();
 		stateCounts.learning = cardsWithFsrs.filter((card) => {
@@ -52,7 +54,7 @@ export function RModePanel() {
 			);
 		}).length;
 		return stateCounts;
-	}, [cardsWithFsrs, plugin, summary]);
+	}, [cardsWithFsrs, sessionPersistence, dayStartHour]);
 
 	const parsedSize = Number.parseInt(size, 10);
 	const requestedSize = Number.isFinite(parsedSize)

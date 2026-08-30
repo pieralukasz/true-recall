@@ -21,26 +21,6 @@ export interface DeviceIdStorage {
 	set(key: string, value: string | null): void;
 }
 
-/** Default storage backed by window.localStorage (CLI/tests/legacy). */
-export function createWindowLocalStorage(): DeviceIdStorage {
-	return {
-		get(key: string): string | null {
-			try {
-				return window.localStorage.getItem(key);
-			} catch {
-				return null;
-			}
-		},
-		set(key: string, value: string | null): void {
-			if (value === null) {
-				window.localStorage.removeItem(key);
-			} else {
-				window.localStorage.setItem(key, value);
-			}
-		},
-	};
-}
-
 /**
  * Service for managing device identification.
  *

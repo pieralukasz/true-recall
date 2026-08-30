@@ -190,7 +190,7 @@ export function registerTools(
 	for (const { name, description, inputSchema, handle } of tools) {
 		if (inputSchema) {
 			registerTool(name, { description, inputSchema }, (params) =>
-				handle(params as Params, client),
+				handle(params, client),
 			);
 		} else {
 			registerTool(name, { description }, () => handle({}, client));

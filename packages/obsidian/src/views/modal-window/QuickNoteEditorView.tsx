@@ -58,6 +58,7 @@ export class QuickNoteEditorView extends ItemView {
 	private boundWindow: Window | null = null;
 	private resizeGuardHandler: (() => void) | null = null;
 	private resizeGuardWindow: Window | null = null;
+	private workspaceTabsEl: HTMLElement | null = null;
 	private isConfirmingDiscard = false;
 
 	constructor(leaf: WorkspaceLeaf, plugin: TrueRecallPlugin) {
@@ -133,6 +134,7 @@ export class QuickNoteEditorView extends ItemView {
 		// `setState` may have already mounted before `onOpen` fires. Skip
 		// double-mount to avoid creating a second CodeMirror tree.
 		if (this.session && !this.unmountPreact) this.mountContent();
+		this.markWorkspaceTabs();
 		this.installWindowMigrationGuard();
 		return Promise.resolve();
 	}
@@ -142,6 +144,7 @@ export class QuickNoteEditorView extends ItemView {
 		this.uninstallBeforeUnloadGuard();
 		this.unregisterWindowMigrated?.();
 		this.unregisterWindowMigrated = null;
+		this.unmarkWorkspaceTabs();
 		this.unmountPreact?.();
 		this.unmountPreact = undefined;
 		this.resolveCancelledIfPending();
@@ -368,6 +371,7 @@ export class QuickNoteEditorView extends ItemView {
 	private installWindowMigrationGuard(): void {
 		this.unregisterWindowMigrated?.();
 		this.unregisterWindowMigrated = this.containerEl.onWindowMigrated(() => {
+			this.markWorkspaceTabs();
 			// Rebind ResizeObserver + beforeunload against the new window;
 			// observers captured against the prior window's globals are stale.
 			this.uninstallBeforeUnloadGuard();
@@ -377,6 +381,18 @@ export class QuickNoteEditorView extends ItemView {
 				this.installBeforeUnloadGuard();
 			}
 		});
+	}
+
+	private markWorkspaceTabs(): void {
+		this.unmarkWorkspaceTabs();
+		this.workspaceTabsEl =
+			this.containerEl.closest<HTMLElement>(".workspace-tabs");
+		this.workspaceTabsEl?.addClass("tr-quick-editor-workspace");
+	}
+
+	private unmarkWorkspaceTabs(): void {
+		this.workspaceTabsEl?.removeClass("tr-quick-editor-workspace");
+		this.workspaceTabsEl = null;
 	}
 
 	private installBeforeUnloadGuard(): void {

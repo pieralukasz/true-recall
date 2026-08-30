@@ -380,20 +380,31 @@ export default class TrueRecallPlugin extends Plugin {
 					},
 				});
 
-				const syncResult = await this.syncCoordinator.syncNow("startup");
-				if (syncResult && syncResult.errors.length > 0) {
-					notify().warning(
-						`Sync completed with ${syncResult.errors.length} error(s). Some changes may not have been applied.`,
-					);
-				}
-				if (
-					syncResult &&
-					(syncResult.cardsApplied > 0 || syncResult.reviewLogsApplied > 0)
-				) {
-					notify().info(
-						`Synced ${syncResult.cardsApplied} cards and ${syncResult.reviewLogsApplied} reviews from other devices.`,
-					);
-				}
+				// Never awaited by onload: the startup merge flushes the local
+				// database in full and reads every remote database in full (the
+				// desktop DB alone is ~60 MB). On mobile with an iCloud vault that
+				// read can stall on a network download, parking the whole app
+				// behind "Plugin is taking long to load" until it finishes. Same
+				// pattern as the device-import offer in PluginInitializers.
+				this.app.workspace.onLayoutReady(() => {
+					void (async () => {
+						const syncResult = await this.syncCoordinator?.syncNow("startup");
+						if (!syncResult) return;
+						if (syncResult.errors.length > 0) {
+							notify().warning(
+								`Sync completed with ${syncResult.errors.length} error(s). Some changes may not have been applied.`,
+							);
+						}
+						if (
+							syncResult.cardsApplied > 0 ||
+							syncResult.reviewLogsApplied > 0
+						) {
+							notify().info(
+								`Synced ${syncResult.cardsApplied} cards and ${syncResult.reviewLogsApplied} reviews from other devices.`,
+							);
+						}
+					})();
+				});
 
 				// Background merge: reviews done on another device show up without
 				// restarting the plugin. Cheap mtime polling; the merge itself is

@@ -442,6 +442,7 @@ export function QuickNoteEditorApp({
 		resolveSourceUid,
 		alwaysTypeIn,
 		plugin.flashcardManager,
+		plugin.commandService,
 		onDone,
 		pinnedFields,
 		sourceNoteFile,

@@ -284,7 +284,9 @@ export class ReviewView extends ItemView {
 			this.sessionTypeInModeEnabled = false;
 			return;
 		}
-		const persisted = readPersistedTypeInMode(getTypeInModeStorage());
+		const persisted = readPersistedTypeInMode(
+			getTypeInModeStorage(this.plugin.app),
+		);
 		// Settings persisted before the diff-mode removal may still hold "diff";
 		// anything that is not "off" now means AI grading.
 		const mode = persisted ?? this.plugin.settings.defaultTypeInMode;
@@ -304,7 +306,7 @@ export class ReviewView extends ItemView {
 		const currentId = card?.id ?? null;
 
 		this.sessionTypeInModeEnabled = nextMode !== "off";
-		persistTypeInMode(getTypeInModeStorage(), nextMode);
+		persistTypeInMode(getTypeInModeStorage(this.plugin.app), nextMode);
 
 		// When answer is already revealed, preserve grading results;
 		// the UI shows/hides assessment based on mode flags.

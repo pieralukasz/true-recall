@@ -1,22 +1,27 @@
+import type { App } from "obsidian";
+
 import type { TypeInMode } from "./type-in-flow";
 
 const TYPE_IN_MODE_STORAGE_KEY = "true-recall.review.type-in-mode";
 
 interface StorageReader {
-	getItem: (key: string) => string | null;
+	getItem: (key: string) => unknown;
 }
 
 interface StorageWriter {
 	setItem: (key: string, value: string) => void;
 }
 
-export function getTypeInModeStorage(): Storage | null {
-	if (typeof window === "undefined") return null;
-	try {
-		return window.localStorage;
-	} catch {
-		return null;
-	}
+export function getTypeInModeStorage(app: App): StorageReader & StorageWriter {
+	return {
+		getItem(key) {
+			const value: unknown = app.loadLocalStorage(key);
+			return value;
+		},
+		setItem(key, value) {
+			app.saveLocalStorage(key, value);
+		},
+	};
 }
 
 const VALID_MODES: ReadonlySet<string> = new Set(["off", "ai"]);
@@ -29,7 +34,9 @@ export function readPersistedTypeInMode(
 		const value = storage.getItem(TYPE_IN_MODE_STORAGE_KEY);
 		// Legacy value from the removed diff mode.
 		if (value === "diff") return "ai";
-		if (value && VALID_MODES.has(value)) return value as TypeInMode;
+		if (typeof value === "string" && VALID_MODES.has(value)) {
+			return value as TypeInMode;
+		}
 		return null;
 	} catch {
 		return null;

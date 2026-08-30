@@ -47,14 +47,18 @@ describe("ObsidianDeviceIdStorage", () => {
 		window.localStorage.setItem("true-recall-device-id", "legacyid");
 		const storage = new ObsidianDeviceIdStorage(app);
 		expect(storage.get("true-recall-device-id")).toBe("vaultid1");
+		expect(window.localStorage.getItem("true-recall-device-id")).toBe(
+			"legacyid",
+		);
 	});
 
-	it("adopts a legacy window.localStorage value and persists it", () => {
+	it("moves a legacy value into scoped storage and removes the old key", () => {
 		const { app, store } = createFakeApp();
 		window.localStorage.setItem("true-recall-device-id", "legacyid");
 		const storage = new ObsidianDeviceIdStorage(app);
 		expect(storage.get("true-recall-device-id")).toBe("legacyid");
 		expect(store.get("true-recall-device-id")).toBe("legacyid");
+		expect(window.localStorage.getItem("true-recall-device-id")).toBeNull();
 	});
 
 	it("returns null when neither storage has the key", () => {

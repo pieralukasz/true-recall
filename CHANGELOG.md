@@ -1,5 +1,20 @@
 # Changelog
 
+## 2.3.2 (2026-08-30)
+
+This maintenance release clears the actionable Obsidian plugin review findings, refreshes vulnerable dependencies, and keeps startup responsive while cross-device sync runs in the background.
+
+### Bug Fixes
+
+- **sync:** defer the startup merge until the workspace layout is ready, so large or cloud-hosted databases do not block Obsidian from loading
+- **storage:** use Obsidian's per-vault data APIs for device identity and typed-answer state, with one-time migration of existing local data
+
+### Improvements
+
+- **compatibility:** adopt searchable settings definitions, popout-safe timers, supported CSS directives, and current settings migrations
+- **dependencies:** update and constrain transitive packages to clear the dependency vulnerability scan
+- **review:** soften the typed-answer field styling
+
 ## 2.3.1 (2026-08-30)
 
 ### Features
@@ -439,4 +454,3 @@ The AI side of True Recall was a collection of separate surfaces — Card Polish
 - Improved review UI performance with incremental state patching instead of full reloads
 - Anki imports now create the full deck hierarchy with standardized leaf node naming
 - Fixed data layer invalidation race conditions for more reliable cache updates
-
