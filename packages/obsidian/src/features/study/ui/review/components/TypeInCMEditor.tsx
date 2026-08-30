@@ -106,12 +106,12 @@ export function TypeInCMEditor({
 	const editorField = plugin.EmbeddableEditor ? (
 		<div
 			ref={containerRef}
-			class="true-recall-add-field ep:w-full ep:min-h-[1.6em] ep:bg-transparent ep:border-b ep:border-obs-border ep:focus-within:border-obs-interactive ep:transition-colors ep:[&_.cm-content]:px-0 ep:[&_.cm-content]:text-center"
+			class="true-recall-add-field ep:w-full ep:min-h-[1.6em] ep:bg-transparent ep:border-b ep:border-obs-border ep:focus-within:border-obs-interactive ep:transition-colors ep:[&_.cm-content]:px-0 ep:[&_.cm-content]:text-center ep:[&_.cm-content]:text-obs-muted"
 		/>
 	) : (
 		<textarea
 			ref={textareaRef}
-			class="ep:w-full ep:min-h-[1.6em] ep:px-0 ep:py-1 ep:text-ui-small ep:text-center ep:bg-transparent ep:border-0 ep:border-b ep:border-obs-border ep:rounded-none ep:resize-y ep:shadow-none ep:focus:border-obs-interactive ep:focus:shadow-none ep:transition-colors"
+			class="ep:w-full ep:min-h-[1.6em] ep:px-0 ep:py-1 ep:text-ui-small ep:text-obs-muted ep:text-center ep:bg-transparent ep:border-0 ep:border-b ep:border-obs-border ep:rounded-none ep:resize-y ep:shadow-none ep:focus:border-obs-interactive ep:focus:shadow-none ep:transition-colors"
 			value={value}
 			placeholder={placeholderText}
 			onInput={(e) => onChange((e.target as HTMLTextAreaElement).value)}
