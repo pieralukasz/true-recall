@@ -23,7 +23,7 @@ export function SelectionActionsBar() {
 			const menu = new Menu();
 			menu.addItem((item) =>
 				item
-					.setTitle("Change Note Type")
+					.setTitle("Change note type")
 					.setIcon("replace")
 					.setDisabled(!hasSelection)
 					.onClick(() => void actions.handleChangeNoteType()),

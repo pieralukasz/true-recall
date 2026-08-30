@@ -13,8 +13,6 @@
  * merged log set.
  */
 
-import type { Grade } from "ts-fsrs";
-
 import type { FSRSCardData } from "../../types";
 import type { FSRSSettings } from "../../types/settings.types";
 import type { FSRSService } from "./fsrs.service";
@@ -72,7 +70,7 @@ export class FsrsReplayService {
 		for (const log of ordered) {
 			card = this.fsrsService.scheduleCard(
 				card,
-				log.rating as Grade,
+				log.rating,
 				new Date(log.reviewedAt),
 				this.resolveSettings(log.presetName),
 			);

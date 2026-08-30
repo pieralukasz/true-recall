@@ -1,10 +1,10 @@
 import { resolve } from "node:path";
 import { defineConfig } from "vitest/config";
 
-const src = resolve(__dirname, "src");
-const coreSrc = resolve(__dirname, "../core/src");
-const pluginsSrc = resolve(__dirname, "../plugins/src");
-const mocks = resolve(__dirname, "tests/__mocks__");
+const src = resolve(import.meta.dirname, "src");
+const coreSrc = resolve(import.meta.dirname, "../core/src");
+const pluginsSrc = resolve(import.meta.dirname, "../plugins/src");
+const mocks = resolve(import.meta.dirname, "tests/__mocks__");
 
 export default defineConfig({
 	resolve: {
@@ -26,7 +26,7 @@ export default defineConfig({
 	},
 	test: {
 		name: "@true-recall/obsidian",
-		root: resolve(__dirname),
+		root: resolve(import.meta.dirname),
 		globals: true,
 		environment: "node",
 		setupFiles: ["./tests/setup.ts"],

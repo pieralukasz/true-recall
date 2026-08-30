@@ -37,13 +37,10 @@ settings:
    plugin reviewer warnings for short hex (#fff/#000), browser-feature
    partial support checks, and duplicate ::file-selector-button selectors. */
 @import "tailwindcss/theme" prefix(ep);
-@import "tailwindcss/utilities" prefix(ep);
+@import "tailwindcss/utilities" source("../../../") prefix(ep);
 
-/* Explicit content sources — without these Tailwind v4 relies on cwd-based
-   auto-detection, which silently drops classes if the build runs from a
-   different directory or a source dir gets gitignored. */
-@source "./";
-@source "../../plugins/src/";
+/* Resolve content discovery from the repository root. Keeping the source base
+   on the import makes builds independent of the shell's working directory. */
 
 /* Domain-specific CSS (complex selectors, SVG, animations that can't be Tailwind utilities) */
 @import "./editor/study/editor.styles.css";
@@ -56,6 +53,12 @@ settings:
 @import "../../../packages/plugins/src/image-occlusion/styles/image-occlusion.styles.css";
 @import "../../../packages/plugins/src/shared/card-ai-preview.css";
 @import "./features/assistant/ui/assistant.styles.css";
+
+.true-recall-settings-root {
+	display: block;
+	padding: 0;
+	border: 0;
+}
 
 /*
  * Obsidian Theme Variables - Runtime Inheritance

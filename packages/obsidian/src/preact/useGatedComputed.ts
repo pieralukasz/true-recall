@@ -1,6 +1,6 @@
 import type { ReadonlySignal } from "@preact/signals";
 import { effect, untracked } from "@preact/signals-core";
-import { useEffect, useRef, useState } from "preact/hooks";
+import { useCallback, useEffect, useRef, useState } from "preact/hooks";
 
 interface GatedComputedOptions {
 	/** Visibility of the hosting view; observed without subscribing the component. */
@@ -90,40 +90,46 @@ export function useGatedComputed<T>(
 	getDepsRef.current = getDeps;
 	throttleMsRef.current = throttleMs;
 
-	const clearTrailingTimer = () => {
+	const clearTrailingTimer = useCallback(() => {
 		if (trailingTimerRef.current !== null) {
 			window.clearTimeout(trailingTimerRef.current);
 			trailingTimerRef.current = null;
 		}
-	};
+	}, []);
 
-	const recompute = (deps: readonly unknown[]): GatedComputedState<T> => {
-		clearTrailingTimer();
-		const next: GatedComputedState<T> = {
-			value: untracked(() => computeRef.current()),
-			deps,
-			computedAt: performance.now(),
-		};
-		stateRef.current = next;
-		return next;
-	};
+	const recompute = useCallback(
+		(deps: readonly unknown[]): GatedComputedState<T> => {
+			clearTrailingTimer();
+			const next: GatedComputedState<T> = {
+				value: untracked(() => computeRef.current()),
+				deps,
+				computedAt: performance.now(),
+			};
+			stateRef.current = next;
+			return next;
+		},
+		[clearTrailingTimer],
+	);
 
-	const refresh = () => {
+	const refresh = useCallback(() => {
 		const state = stateRef.current;
 		if (!state) return;
 		const deps = untracked(() => getDepsRef.current());
 		if (areDepsEqual(state.deps, deps)) return;
 		recompute(deps);
 		setTick((tick) => tick + 1);
-	};
+	}, [recompute]);
 
-	const scheduleTrailingRefresh = (delayMs: number) => {
-		if (trailingTimerRef.current !== null) return;
-		trailingTimerRef.current = window.setTimeout(() => {
-			trailingTimerRef.current = null;
-			refresh();
-		}, delayMs);
-	};
+	const scheduleTrailingRefresh = useCallback(
+		(delayMs: number) => {
+			if (trailingTimerRef.current !== null) return;
+			trailingTimerRef.current = window.setTimeout(() => {
+				trailingTimerRef.current = null;
+				refresh();
+			}, delayMs);
+		},
+		[refresh],
+	);
 
 	let state = stateRef.current;
 	if (state === null) {
@@ -175,7 +181,7 @@ export function useGatedComputed<T>(
 			dispose();
 			clearTrailingTimer();
 		};
-	}, [isVisible]);
+	}, [isVisible, clearTrailingTimer, recompute, scheduleTrailingRefresh]);
 
 	return state.value;
 }
