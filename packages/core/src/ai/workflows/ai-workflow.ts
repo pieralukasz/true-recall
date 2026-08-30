@@ -1,3 +1,4 @@
+import type { CardAIPreset } from "../../types/card-ai-preset.types";
 import type { TrueRecallSettings } from "../../types/settings.types";
 
 export type AIWorkflowKind = "agent" | "generate-cards" | "modify-card";
@@ -48,6 +49,18 @@ export function customCardPolishWorkflowId(): string {
 	return cardPolishWorkflowId(CUSTOM_CARD_POLISH_PRESET_ID);
 }
 
+function cardPolishWorkflow(preset: CardAIPreset): AIWorkflow {
+	return {
+		id: cardPolishWorkflowId(preset.id),
+		name: preset.name,
+		kind: "modify-card",
+		instruction: preset.prompt,
+		sourcePresetId: preset.id,
+		autoApply: preset.autoApply,
+		autoApplyNewCards: preset.autoApplyNewCards,
+	};
+}
+
 /**
  * Projects the three persisted legacy preset families into one runtime model.
  * No prompt is copied or migrated, so legacy settings remain lossless while all
@@ -87,15 +100,8 @@ export function listAIWorkflows(
 
 	if (isEnabled("modify-card") && (context.hasCard || context.hasDraftCard)) {
 		for (const preset of settings.cardPolish?.userPresets ?? []) {
-			workflows.push({
-				id: cardPolishWorkflowId(preset.id),
-				name: preset.name,
-				kind: "modify-card",
-				instruction: preset.prompt,
-				sourcePresetId: preset.id,
-				autoApply: preset.autoApply,
-				autoApplyNewCards: preset.autoApplyNewCards,
-			});
+			if (preset.disabled) continue;
+			workflows.push(cardPolishWorkflow(preset));
 		}
 	}
 
@@ -121,6 +127,16 @@ export function resolveAIWorkflow(
 			autoApply: settings.cardPolish?.customPromptAutoApply ?? false,
 			autoApplyNewCards: false,
 		};
+	}
+	if (
+		workflowId.startsWith(CARD_POLISH_PREFIX) &&
+		(context.hasCard || context.hasDraftCard)
+	) {
+		const presetId = workflowId.slice(CARD_POLISH_PREFIX.length);
+		const preset = settings.cardPolish?.userPresets.find(
+			(candidate) => candidate.id === presetId,
+		);
+		if (preset) return cardPolishWorkflow(preset);
 	}
 	const exact = listAIWorkflows(settings, context).find(
 		(workflow) => workflow.id === workflowId,

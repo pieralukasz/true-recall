@@ -85,6 +85,34 @@ describe("AI workflow facade", () => {
 		]);
 	});
 
+	it("hides disabled Card Polish presets from run surfaces", () => {
+		const settingsWithDisabledPreset = {
+			...settings,
+			cardPolish: {
+				...settings.cardPolish,
+				userPresets: [
+					{ ...settings.cardPolish.userPresets[0], disabled: true },
+				],
+			},
+		};
+		const workflows = listAIWorkflows(settingsWithDisabledPreset, {
+			hasSelection: false,
+			hasCard: true,
+			hasDraftCard: false,
+		});
+
+		expect(workflows.map((workflow) => workflow.id)).not.toContain(
+			cardPolishWorkflowId("shorten"),
+		);
+		expect(
+			resolveAIWorkflow(
+				settingsWithDisabledPreset,
+				cardPolishWorkflowId("shorten"),
+				{ hasSelection: false, hasCard: true, hasDraftCard: false },
+			),
+		).toMatchObject({ kind: "modify-card", sourcePresetId: "shorten" });
+	});
+
 	it("hides a preset family whose feature is switched off", () => {
 		const workflows = listAIWorkflows(settings, {
 			hasSelection: true,
