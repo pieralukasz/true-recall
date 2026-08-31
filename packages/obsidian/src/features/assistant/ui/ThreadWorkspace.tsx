@@ -6,7 +6,11 @@ import type {
 	AssistantThread,
 } from "@true-recall/core/ai/assistant";
 
-import { ActionButton, StatusPill } from "@true-recall/obsidian/components";
+import {
+	ActionButton,
+	MarkdownContent,
+	StatusPill,
+} from "@true-recall/obsidian/components";
 import { Q, useQuery } from "@true-recall/obsidian/data";
 import { usePlugin } from "@true-recall/obsidian/preact/ObsidianContext";
 import { AssistantApplyService } from "@true-recall/obsidian/services/assistant/assistant-apply.service";
@@ -262,9 +266,11 @@ export function TaskDetail({
 			)}
 
 			{manifest.finalText && (
-				<p class="ep:m-0 ep:italic ep:text-obs-muted ep:leading-normal">
-					{manifest.finalText}
-				</p>
+				<MarkdownContent
+					markdown={manifest.finalText}
+					filePath={task.context.activeNotePath}
+					class="tr-assistant-thread-markdown ep:text-obs-muted"
+				/>
 			)}
 
 			<div class="tr-card-ai-preview-new-list">
@@ -484,16 +490,19 @@ export function ThreadWorkspace({
 						<span class="ep:text-obs-muted ep:font-semibold">
 							{turn.role === "user" ? "You" : "AI"}
 						</span>
-						<p
-							class={cn(
-								"ep:m-0 ep:whitespace-pre-wrap",
-								turn.role === "user"
-									? "ep:text-obs-normal"
-									: "ep:text-obs-muted",
-							)}
-						>
-							{turn.content}
-						</p>
+						{turn.role === "user" ? (
+							// User turns stay verbatim so typed `*` or `$` are not
+							// reinterpreted as markup.
+							<p class="ep:m-0 ep:whitespace-pre-wrap ep:text-obs-normal">
+								{turn.content}
+							</p>
+						) : (
+							<MarkdownContent
+								markdown={turn.content}
+								filePath={thread.context.activeNotePath}
+								class="tr-assistant-thread-markdown ep:text-obs-muted"
+							/>
+						)}
 					</div>
 				))}
 			</div>
