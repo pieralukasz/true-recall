@@ -31,6 +31,10 @@ const ResponseSchema = z.object({
 	hasMore: z.boolean(),
 });
 
+const ErrorResponseSchema = z.object({
+	error: z.string(),
+});
+
 export class CloudSyncApiClient implements CloudSyncTransport {
 	constructor(private readonly auth: CloudAuthService) {}
 
@@ -52,8 +56,13 @@ export class CloudSyncApiClient implements CloudSyncTransport {
 			throw new Error("Cloud Sync session expired. Sign in again.");
 		}
 		if (response.status !== 200) {
+			const errorResponse = ErrorResponseSchema.safeParse(
+				response.json as unknown,
+			);
 			throw new Error(
-				response.json?.error ?? `Cloud Sync failed (${response.status})`,
+				errorResponse.success
+					? errorResponse.data.error
+					: `Cloud Sync failed (${response.status})`,
 			);
 		}
 		return ResponseSchema.parse(response.json);

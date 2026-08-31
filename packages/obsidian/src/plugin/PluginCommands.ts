@@ -160,7 +160,7 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 
 	plugin.addCommand({
 		id: "sync-cloud-now",
-		name: "Sync Cloud now",
+		name: "Sync cloud now",
 		checkCallback: (checking) => {
 			if (plugin.settings.syncMode !== "cloud" || !plugin.cloudSyncManager)
 				return false;

@@ -11,8 +11,12 @@ const STATE_TTL_MS = 10 * 60 * 1000;
 
 const SessionSchema = z.object({
 	deviceToken: z.string().min(32),
-	userId: z.string().uuid(),
-	email: z.string().email(),
+	userId: z.uuid(),
+	email: z.email(),
+});
+
+const ErrorResponseSchema = z.object({
+	error: z.string(),
 });
 
 const PendingSchema = z.object({
@@ -104,8 +108,13 @@ export class CloudAuthService {
 		});
 		this.app.saveLocalStorage(PENDING_KEY, null);
 		if (response.status !== 200) {
+			const errorResponse = ErrorResponseSchema.safeParse(
+				response.json as unknown,
+			);
 			throw new Error(
-				response.json?.error ?? `Sign-in failed (${response.status})`,
+				errorResponse.success
+					? errorResponse.data.error
+					: `Sign-in failed (${response.status})`,
 			);
 		}
 		const session = SessionSchema.parse(response.json);
@@ -114,7 +123,7 @@ export class CloudAuthService {
 	}
 
 	getSession(): CloudSession | null {
-		const raw =
+		const raw: unknown =
 			this.secretStorage()?.getSecret(SESSION_KEY) ??
 			this.app.loadLocalStorage(SESSION_KEY);
 		if (!raw) return null;
