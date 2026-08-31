@@ -20,10 +20,10 @@ const TABS: { id: SettingsTabId; label: string }[] = [
 	{ id: "plugins", label: "Plugins" },
 ];
 
-const TAB_BTN_BASE =
-	"ep:py-1.5 ep:px-3 ep:border-none ep:bg-transparent ep:text-obs-muted ep:cursor-pointer ep:rounded-md ep:text-ui-small ep:font-medium ep:transition-colors ep:duration-150 ep:shrink-0 ep:whitespace-nowrap ep:hover:text-obs-normal ep:hover:bg-obs-modifier-hover";
-const TAB_BTN_ACTIVE =
-	"ep:bg-obs-interactive/15 ep:text-obs-interactive ep:font-semibold ep:hover:bg-obs-interactive/15 ep:hover:text-obs-interactive";
+/* Styled in settings.styles.css rather than with utilities: the accent tint
+   this used to rely on (`ep:bg-obs-interactive/15`) is a `color-mix()` on an
+   Obsidian variable, and the CSS postprocess step collapses those to a flat
+   grey, so the active tab had no accent at all. */
 
 function TabBar({
 	activeTab,
@@ -33,14 +33,11 @@ function TabBar({
 	onTabChange: (id: SettingsTabId) => void;
 }) {
 	return (
-		<div
-			class="ep:flex ep:gap-1 ep:mb-4 ep:pb-3 ep:border-b ep:border-obs-border ep:overflow-x-auto"
-			role="tablist"
-		>
+		<div class="tr-settings-tabs" role="tablist">
 			{TABS.map((tab) => (
 				<Clickable
 					key={tab.id}
-					class={`${TAB_BTN_BASE} ${activeTab === tab.id ? TAB_BTN_ACTIVE : ""}`}
+					class={`tr-settings-tab${activeTab === tab.id ? " is-active" : ""}`}
 					role="tab"
 					aria-selected={activeTab === tab.id}
 					aria-controls={`true-recall-tabpanel-${tab.id}`}

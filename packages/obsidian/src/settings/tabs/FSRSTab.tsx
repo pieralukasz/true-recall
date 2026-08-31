@@ -71,7 +71,7 @@ export function FSRSTab({ selectedPresetId, onPresetChange }: FSRSTabProps) {
 	}, [plugin, preset.id, settings.defaultPresetId, onPresetChange, refresh]);
 
 	return (
-		<div class="ep:flex ep:flex-col ep:gap-3">
+		<div class="tr-settings-sections">
 			<FSRSVisualizationSection plugin={plugin} />
 
 			<PresetSection

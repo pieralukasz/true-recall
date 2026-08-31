@@ -53,6 +53,7 @@ settings:
 @import "../../../packages/plugins/src/image-occlusion/styles/image-occlusion.styles.css";
 @import "../../../packages/plugins/src/shared/card-ai-preview.css";
 @import "./features/assistant/ui/assistant.styles.css";
+@import "./settings/settings.styles.css";
 
 .true-recall-settings-root {
 	display: block;
