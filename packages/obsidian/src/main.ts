@@ -94,6 +94,7 @@ import { StatsView } from "@true-recall/obsidian/views/stats/StatsView";
 import { createObsidianAdapters, type ObsidianAdapters } from "./context";
 import type { LocalApiServer } from "./plugin/api/LocalApiServer";
 import type { BackupRecoveryManager } from "./plugin/BackupRecoveryManager";
+import { CloudSyncManager } from "./plugin/CloudSyncManager";
 import {
 	CrossDeviceSyncCoordinator,
 	emptySyncResult,
@@ -206,6 +207,7 @@ export default class TrueRecallPlugin extends Plugin {
 	private deviceLock: DeviceLockService | null = null;
 	private deviceSyncScheduler: DeviceSyncScheduler | null = null;
 	syncCoordinator: CrossDeviceSyncCoordinator | null = null;
+	cloudSyncManager: CloudSyncManager | null = null;
 	deletionHandler: DeletionHandlerService | null = null;
 	commandService: CommandService | null = null;
 	store: AppStore | null = null;
@@ -301,7 +303,7 @@ export default class TrueRecallPlugin extends Plugin {
 		}
 
 		// 3. Device lock (only when sync is enabled)
-		if (this.settings.enableDeviceSync && this.deviceIdService) {
+		if (this.settings.syncMode === "shared-vault" && this.deviceIdService) {
 			try {
 				const persistence = new ObsidianPersistence(this.app);
 				const deviceId = this.deviceIdService.getDeviceId();
@@ -329,7 +331,7 @@ export default class TrueRecallPlugin extends Plugin {
 		// 4. Cross-device sync
 		try {
 			if (
-				this.settings.enableDeviceSync &&
+				this.settings.syncMode === "shared-vault" &&
 				this.deviceDiscovery &&
 				this.cardStore
 			) {
@@ -436,6 +438,9 @@ export default class TrueRecallPlugin extends Plugin {
 				"Cross-device sync failed. Your cards may not be up to date.",
 			);
 		}
+
+		this.cloudSyncManager = new CloudSyncManager(this);
+		this.cloudSyncManager.initialize();
 
 		const tStore = performance.now();
 

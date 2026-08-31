@@ -24,8 +24,11 @@ export function SyncStatusChip() {
 	const [saveState, setSaveState] = useState<SaveState>("saved");
 	const [, setTick] = useState(0);
 
-	const coordinator = plugin.syncCoordinator;
-	const syncEnabled = plugin.settings.enableDeviceSync && !!coordinator;
+	const coordinator =
+		plugin.settings.syncMode === "cloud"
+			? plugin.cloudSyncManager?.coordinator
+			: plugin.syncCoordinator;
+	const syncEnabled = plugin.settings.syncMode !== "off" && !!coordinator;
 	const isSyncing = coordinator?.isSyncing.value ?? false;
 	const lastSyncedAt = coordinator?.lastSyncedAt.value ?? null;
 	const syncError = coordinator?.lastError.value ?? null;

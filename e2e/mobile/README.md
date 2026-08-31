@@ -65,13 +65,15 @@ Environment overrides:
 | `ADB`       | `adb` from PATH or homebrew path | adb binary                  |
 
 Requirements on the host: `bun`, `sqlite3`, `adb`. Exactly one device or
-emulator attached.
+emulator attached. The suite also verifies that the vault active in Obsidian
+matches the final path segment of `E2E_VAULT`, so it cannot silently exercise a
+different registered vault.
 
 ## What each scenario checks
 
 | Scenario | Assertion |
 | --- | --- |
-| S1 | Plugin loads, SQLite WASM store ready, `schema_version=2`, device id is local 8-char, only the 4 mobile-allowed views are registered |
+| S1 | Plugin loads, SQLite WASM store ready, `schema_version=3`, device id is local 8-char, only the 4 mobile-allowed views are registered |
 | S2 | "Add flashcard to current note" opens the full-screen editor; typing + "Save & add another" and "Done" create two cards in the DB |
 | S3 | Review of the current note opens, Show answer + Good writes a `review_log` row |
 | S4 | Grade, HOME, 1.2 s, `am force-stop`: the review log is already on disk; after relaunch the in-memory store matches the disk |

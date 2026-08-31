@@ -128,7 +128,10 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 		id: "sync-devices-now",
 		name: "Sync devices now",
 		checkCallback: (checking) => {
-			if (!plugin.settings.enableDeviceSync || !plugin.syncCoordinator) {
+			if (
+				plugin.settings.syncMode !== "shared-vault" ||
+				!plugin.syncCoordinator
+			) {
 				return false;
 			}
 			if (!checking) {
@@ -150,6 +153,34 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 							: "Everything is up to date.",
 					);
 				});
+			}
+			return true;
+		},
+	});
+
+	plugin.addCommand({
+		id: "sync-cloud-now",
+		name: "Sync Cloud now",
+		checkCallback: (checking) => {
+			if (plugin.settings.syncMode !== "cloud" || !plugin.cloudSyncManager)
+				return false;
+			if (!checking) {
+				void plugin.cloudSyncManager.coordinator
+					.syncNow("manual")
+					.then((result) => {
+						if (!result || result.errors.length) {
+							notify().warning(
+								result?.errors[0] ??
+									"Cloud Sync failed. See console for details.",
+							);
+							return;
+						}
+						notify().info(
+							result.pulled + result.pushed > 0
+								? `Cloud Sync: ${result.pulled} pulled, ${result.pushed} pushed.`
+								: "Everything is up to date.",
+						);
+					});
 			}
 			return true;
 		},

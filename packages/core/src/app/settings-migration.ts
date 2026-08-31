@@ -85,6 +85,12 @@ export function migrateSettings(raw: PersistedTrueRecallSettings | null): {
 	const settings: TrueRecallSettings = { ...DEFAULT_SETTINGS, ...currentRaw };
 	let needsSave = false;
 
+	if (!["off", "cloud", "shared-vault"].includes(String(raw?.syncMode))) {
+		settings.syncMode = raw?.enableDeviceSync ? "shared-vault" : "off";
+		needsSave = true;
+	}
+	settings.enableDeviceSync = settings.syncMode === "shared-vault";
+
 	// Custom Study used to persist one filtered deck directly in settings.
 	// Preserve it as the first entry when upgrading to the multi-session model.
 	if (!Array.isArray(raw?.temporaryCustomStudyDecks)) {
