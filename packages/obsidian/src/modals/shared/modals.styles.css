@@ -375,6 +375,9 @@
 		min-height: 36px;
 		max-height: 36px;
 		box-shadow: none;
+		/* The box is height-locked, so a wrapping label overflows it rather than
+		   growing the button. */
+		white-space: nowrap;
 		transition:
 			background 0.15s,
 			color 0.15s,
@@ -388,7 +391,8 @@
 	}
 
 	.ep-btn:focus-visible {
-		outline: 2px solid rgba(var(--interactive-accent-rgb), 0.5);
+		outline: 2px solid
+			hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.5);
 		outline-offset: 2px;
 	}
 
@@ -459,7 +463,8 @@
 	}
 
 	.ep-btn-icon-outline:focus-visible {
-		outline: 2px solid rgba(var(--interactive-accent-rgb), 0.5);
+		outline: 2px solid
+			hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.5);
 		outline-offset: 2px;
 	}
 

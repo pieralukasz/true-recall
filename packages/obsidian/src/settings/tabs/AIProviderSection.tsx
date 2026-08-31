@@ -115,9 +115,9 @@ export function AIProviderSection() {
 	}, [settings.proKey]);
 
 	return (
-		<FormCard>
+		<FormCard title="AI provider">
 			<FormField
-				name="AI Provider"
+				name="Provider"
 				description="Choose where AI requests are routed"
 			>
 				<SelectInput
@@ -129,15 +129,10 @@ export function AIProviderSection() {
 
 			{settings.providerType === "pro" && (
 				<>
-					<div class="ep:text-ui-smaller ep:text-obs-muted ep:leading-relaxed ep:pb-2 ep:mb-2 ep:border-b ep:border-obs-modifier-border">
-						<p class="ep:font-medium ep:text-obs-normal">
-							Zero setup, optimized results
-						</p>
-						<p class="ep:mt-1">
-							Optimized prompts and model selection managed server-side. AI
-							budget included with your subscription.
-						</p>
-					</div>
+					<InfoBlock title="Zero setup, optimized results">
+						Optimized prompts and model selection managed server-side. AI budget
+						included with your subscription.
+					</InfoBlock>
 
 					<FormField
 						name="Pro Key"
@@ -162,7 +157,7 @@ export function AIProviderSection() {
 							}
 							type="password"
 							placeholder="Paste key from dashboard"
-							class="ep:w-[300px]"
+							class="tr-control"
 						/>
 					</FormField>
 					{keyStatus === "checking" && <InfoBlock>Verifying key…</InfoBlock>}
@@ -192,26 +187,18 @@ export function AIProviderSection() {
 
 			{settings.providerType === "openrouter" && (
 				<>
-					<div class="ep:text-ui-smaller ep:text-obs-muted ep:leading-relaxed ep:pb-2 ep:mb-2 ep:border-b ep:border-obs-modifier-border">
-						<p class="ep:font-medium ep:text-obs-normal">
-							Bring your own API key
-						</p>
-						<p class="ep:mt-1">
-							You pay OpenRouter directly per token. Full control over model
-							selection.
-						</p>
-					</div>
+					<InfoBlock title="Bring your own API key">
+						You pay OpenRouter directly per token. Full control over model
+						selection.
+					</InfoBlock>
 
-					<FormField
-						name="OpenRouter API key"
-						description="Your own API key — you pay OpenRouter directly per token."
-					>
+					<FormField name="OpenRouter API key" description="Your own API key.">
 						<TextInput
 							value={settings.openRouterApiKey}
 							onChange={(v) => void save({ openRouterApiKey: v })}
 							type="password"
 							placeholder="Enter API key"
-							class="ep:w-[300px]"
+							class="tr-control"
 						/>
 					</FormField>
 
@@ -236,7 +223,7 @@ export function AIProviderSection() {
 								value={settings.customAiModel ?? ""}
 								onChange={(v) => void save({ customAiModel: v })}
 								placeholder="e.g. openai/gpt-4o-mini"
-								class="ep:w-[300px]"
+								class="tr-control"
 							/>
 						</FormField>
 					)}
@@ -286,24 +273,19 @@ export function AIProviderSection() {
 
 			{settings.providerType === "lmstudio" && (
 				<>
-					<div class="ep:text-ui-smaller ep:text-obs-muted ep:leading-relaxed ep:pb-2 ep:mb-2 ep:border-b ep:border-obs-modifier-border">
-						<p class="ep:font-medium ep:text-obs-normal">
-							Run models locally with LM Studio
-						</p>
-						<p class="ep:mt-1">
-							Models are auto-discovered from your running LM Studio server.{" "}
-							<a href="https://lmstudio.ai" class="ep:text-obs-accent">
-								Download LM Studio
-							</a>
-						</p>
-					</div>
+					<InfoBlock title="Run models locally with LM Studio">
+						Models are auto-discovered from your running LM Studio server.{" "}
+						<a href="https://lmstudio.ai" class="ep:text-obs-accent">
+							Download LM Studio
+						</a>
+					</InfoBlock>
 
 					<FormField name="Base URL" description="LM Studio server endpoint">
 						<TextInput
 							value={settings.lmStudioBaseUrl || DEFAULT_LMSTUDIO_BASE_URL}
 							onChange={(v) => void save({ lmStudioBaseUrl: v })}
 							placeholder="http://localhost:1234/v1"
-							class="ep:w-[300px]"
+							class="tr-control"
 						/>
 					</FormField>
 
@@ -323,7 +305,7 @@ export function AIProviderSection() {
 									value={settings.lmStudioModel}
 									onChange={(v) => void save({ lmStudioModel: v })}
 									placeholder="e.g. llama-3.2-3b-instruct"
-									class="ep:w-[300px] ep:mt-2"
+									class="tr-control ep:mt-2"
 								/>
 							</>
 						)}
@@ -354,7 +336,7 @@ export function AIProviderSection() {
 									value={settings.lmStudioModel}
 									onChange={(v) => void save({ lmStudioModel: v })}
 									placeholder="e.g. llama-3.2-3b-instruct"
-									class="ep:w-[300px] ep:mt-2"
+									class="tr-control ep:mt-2"
 								/>
 							</>
 						)}
@@ -378,7 +360,7 @@ export function AIProviderSection() {
 								value={settings.lmStudioGradingModel}
 								onChange={(v) => void save({ lmStudioGradingModel: v })}
 								placeholder="Leave empty to use the default model"
-								class="ep:w-[300px]"
+								class="tr-control"
 							/>
 						)}
 					</FormField>
@@ -396,7 +378,7 @@ export function AIProviderSection() {
 							}
 							type="password"
 							placeholder="Leave empty if not required"
-							class="ep:w-[300px]"
+							class="tr-control"
 						/>
 					</FormField>
 
@@ -415,15 +397,10 @@ export function AIProviderSection() {
 
 			{settings.providerType === "custom" && (
 				<>
-					<div class="ep:text-ui-smaller ep:text-obs-muted ep:leading-relaxed ep:pb-2 ep:mb-2 ep:border-b ep:border-obs-modifier-border">
-						<p class="ep:font-medium ep:text-obs-normal">
-							Self-hosted / local models
-						</p>
-						<p class="ep:mt-1">
-							Connect to Ollama, LM Studio, vLLM, or any OpenAI-compatible
-							endpoint.
-						</p>
-					</div>
+					<InfoBlock title="Self-hosted / local models">
+						Connect to Ollama, LM Studio, vLLM, or any OpenAI-compatible
+						endpoint.
+					</InfoBlock>
 
 					<FormField
 						name="Base URL"
@@ -433,7 +410,7 @@ export function AIProviderSection() {
 							value={settings.customBaseUrl || DEFAULT_CUSTOM_BASE_URL}
 							onChange={(v) => void save({ customBaseUrl: v })}
 							placeholder="http://localhost:11434/v1"
-							class="ep:w-[300px]"
+							class="tr-control"
 						/>
 					</FormField>
 
@@ -445,7 +422,7 @@ export function AIProviderSection() {
 							value={settings.customModel}
 							onChange={(v) => void save({ customModel: v })}
 							placeholder="e.g. llama3"
-							class="ep:w-[300px]"
+							class="tr-control"
 						/>
 					</FormField>
 
@@ -462,7 +439,7 @@ export function AIProviderSection() {
 							}
 							type="password"
 							placeholder="Leave empty if not required"
-							class="ep:w-[300px]"
+							class="tr-control"
 						/>
 					</FormField>
 
