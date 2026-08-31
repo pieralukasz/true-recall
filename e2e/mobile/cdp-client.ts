@@ -34,7 +34,11 @@ export async function connectCdp(
 	let nextId = 1;
 	const pending = new Map<
 		number,
-		{ resolve: (v: unknown) => void; reject: (e: Error) => void }
+		{
+			resolve: (v: unknown) => void;
+			reject: (e: Error) => void;
+			timer: ReturnType<typeof setTimeout>;
+		}
 	>();
 
 	ws.onmessage = (event) => {
@@ -42,13 +46,17 @@ export async function connectCdp(
 			id?: number;
 			result?: {
 				result?: { value?: unknown };
-				exceptionDetails?: { text?: string; exception?: { description?: string } };
+				exceptionDetails?: {
+					text?: string;
+					exception?: { description?: string };
+				};
 			};
 		};
 		if (msg.id === undefined) return;
 		const waiter = pending.get(msg.id);
 		if (!waiter) return;
 		pending.delete(msg.id);
+		clearTimeout(waiter.timer);
 		const details = msg.result?.exceptionDetails;
 		if (details) {
 			waiter.reject(
@@ -65,15 +73,16 @@ export async function connectCdp(
 		evaluate<T>(expression: string): Promise<T> {
 			const id = nextId++;
 			const promise = new Promise<T>((resolve, reject) => {
-				pending.set(id, {
-					resolve: resolve as (v: unknown) => void,
-					reject,
-				});
-				setTimeout(() => {
+				const timer = setTimeout(() => {
 					if (pending.delete(id)) {
 						reject(new Error("CDP evaluate timeout (60s)"));
 					}
 				}, 60_000);
+				pending.set(id, {
+					resolve: resolve as (v: unknown) => void,
+					reject,
+					timer,
+				});
 			});
 			ws.send(
 				JSON.stringify({

@@ -1,5 +1,30 @@
 # Changelog
 
+## 2.4.0 (2026-08-31)
+
+Cloud Sync gives every True Recall account a direct, incremental path between devices. Notes, note types, cards and review history move independently of the vault files, while deterministic review replay and duplicate merging keep concurrent study sessions convergent. Shared-vault sync remains available for people who prefer iCloud, Obsidian Sync or another file provider.
+
+### Features
+
+- **Account-backed Cloud Sync.** Sign in through the True Recall website, return directly to Obsidian on desktop or mobile, and enable sync from Settings → Integrations
+- **Incremental two-way exchange** for notes, note types, cards and review logs, including tombstones, paginated cursors and per-device provenance
+- **Deterministic conflict handling.** Concurrent reviews are replayed through FSRS and duplicate cards converge instead of multiplying
+- **Device-aware sessions** stored in Obsidian SecretStorage, with explicit sign-out and server-side revocation
+
+### Improvements
+
+- **Settings polish:** more consistent spacing, control widths, button placement and responsive layouts across the settings app
+- **Cloud status:** account, progress, last-sync result and actionable errors are visible without opening developer tools
+
+### Bug Fixes
+
+- **CSS compatibility:** flattened `color-mix()` fallbacks retain their original hue in Obsidian versions and themes that need the postprocessed color
+- **Mobile authorization:** production links use the canonical `www.truerecall.app` host so Android returns to Obsidian without losing the exchange request to a redirect
+
+### Compatibility
+
+- Minimum Obsidian version is now **1.11.4**, required for secure session storage through the official SecretStorage API
+
 ## 2.3.2 (2026-08-30)
 
 This maintenance release clears the actionable Obsidian plugin review findings, refreshes vulnerable dependencies, and keeps startup responsive while cross-device sync runs in the background.

@@ -7,6 +7,37 @@ import {
 } from "../../src/constants";
 import type { GenerationPreset } from "../../src/types/generation-preset.types";
 
+describe("migrateSettings — sync mode", () => {
+	it("preserves the legacy shared-vault toggle", () => {
+		const { settings, needsSave } = migrateSettings({
+			enableDeviceSync: true,
+		} as unknown as Parameters<typeof migrateSettings>[0]);
+
+		expect(settings.syncMode).toBe("shared-vault");
+		expect(settings.enableDeviceSync).toBe(true);
+		expect(needsSave).toBe(true);
+	});
+
+	it("keeps cloud and shared-vault modes mutually exclusive", () => {
+		const { settings } = migrateSettings({
+			syncMode: "cloud",
+			enableDeviceSync: true,
+		} as unknown as Parameters<typeof migrateSettings>[0]);
+
+		expect(settings.syncMode).toBe("cloud");
+		expect(settings.enableDeviceSync).toBe(false);
+	});
+
+	it("repairs an unknown persisted mode", () => {
+		const { settings, needsSave } = migrateSettings({
+			syncMode: "future-mode",
+		} as unknown as Parameters<typeof migrateSettings>[0]);
+
+		expect(settings.syncMode).toBe("off");
+		expect(needsSave).toBe(true);
+	});
+});
+
 describe("migrateSettings — custom study sessions", () => {
 	const legacyDeck = {
 		id: "legacy-custom-study",
