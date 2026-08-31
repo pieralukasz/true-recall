@@ -217,8 +217,9 @@ export class CardActions {
 
 	upsertFromRemote(
 		data: FSRSCardData & { updatedAt?: number; deletedAt?: number | null },
+		preferRemoteOnEqual = false,
 	): boolean {
-		return this.writes.upsertFromRemote(data);
+		return this.writes.upsertFromRemote(data, preferRemoteOnEqual);
 	}
 
 	softDelete(cardId: string): void {

@@ -55,6 +55,9 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 
 	private mountSettings(container: HTMLElement): () => void {
 		this.unmountPreact?.();
+		// Both mount paths (the settings tab and the search-definition renderer)
+		// need this class: it scopes every rule in settings.styles.css.
+		container.addClass("tr-settings");
 		container.addClass("ep:overflow-x-hidden");
 		const unmount = mountPreact(container, this.plugin, h(SettingsApp, null));
 		this.unmountPreact = unmount;

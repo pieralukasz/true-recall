@@ -1,0 +1,178 @@
+/* ================================================================
+   SETTINGS SURFACE
+
+   Every section in the settings tabs renders through the "native" form
+   variant, i.e. Obsidian's own `.setting-item` markup. Three things in
+   Obsidian's stylesheet work against the way those sections are composed
+   here, and all three are normalized in this file rather than patched per
+   tab:
+
+   1. Headings only get spacing from `.setting-item + .setting-item-heading`.
+      Each section wraps its own heading as that wrapper's first child, so the
+      adjacency never matches and every heading collapses against whatever
+      precedes it.
+   2. `.setting-item-heading` is padded `0 var(--size-4-4)` while rows and
+      standalone descriptions get no inline padding, leaving two different
+      left edges down the same column.
+   3. `.setting-item-description` carries no margin at all. Used inline it is
+      fine; used as a standalone note between a row and the next heading it
+      collapses into both.
+
+   Section rhythm is therefore owned here end to end: rows keep Obsidian's
+   internal padding, sections drop their outer padding, and the gap between
+   sections is the single knob.
+   ================================================================ */
+
+.tr-settings {
+	/* One width for every control, so selects stop self-sizing to their widest
+	   option and inputs stop disagreeing with the selects beside them. */
+	--tr-control-width: 260px;
+}
+
+/* ── Section rhythm ── */
+
+.tr-settings-sections {
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-4-6);
+}
+
+.tr-settings .setting-item-heading {
+	padding-inline: 0;
+	margin: 0 0 var(--size-4-2);
+}
+
+/* The heading already separates a section, so the first row below it should
+   not draw a second rule.
+
+   Row padding is deliberately left alone. Themes disagree about what a row is:
+   Obsidian's default and Things both draw it as a filled card, where zeroing
+   the padding crops the content against the card edge, while flatter themes
+   draw it as a bare row with a top border. Only the border is safe to touch,
+   because a card row has none to begin with. */
+.tr-settings .tr-setting-section > .setting-item:first-child {
+	border-top: none;
+}
+
+/* ── Standalone notes ── */
+
+.tr-settings .tr-setting-note {
+	margin: 0 0 var(--size-4-3);
+	line-height: var(--line-height-tight);
+	color: var(--text-muted);
+}
+
+.tr-settings .tr-setting-note:last-child {
+	margin-bottom: 0;
+}
+
+.tr-settings .tr-setting-note__title {
+	display: block;
+	margin-bottom: var(--size-4-1);
+	color: var(--text-normal);
+	font-weight: var(--font-medium);
+}
+
+/* ── Rows ── */
+
+.tr-settings .setting-item-info {
+	margin-inline-end: var(--size-4-4);
+}
+
+.tr-settings .setting-item-description {
+	line-height: var(--line-height-tight);
+}
+
+/* ── Controls ── */
+
+.tr-settings .setting-item-control select.dropdown,
+.tr-settings .setting-item-control input[type="text"],
+.tr-settings .setting-item-control input[type="password"],
+.tr-settings .setting-item-control input[type="number"] {
+	width: var(--tr-control-width);
+	max-width: 100%;
+}
+
+/* `TextInput` mounts Obsidian's TextComponent inside a wrapper div, so the
+   width has to be set on both or the visible box disagrees with its slot. */
+.tr-settings .tr-control {
+	width: var(--tr-control-width);
+	max-width: 100%;
+	flex-shrink: 0;
+}
+
+.tr-settings .tr-control input {
+	width: 100%;
+}
+
+/* A long description must never squeeze a two-word button onto two lines. */
+.tr-settings .setting-item-control .ep-btn {
+	flex-shrink: 0;
+}
+
+/* ── Tab bar ── */
+
+.tr-settings-tabs {
+	display: flex;
+	gap: var(--size-4-1);
+	margin-bottom: var(--size-4-5);
+	border-bottom: var(--border-width) solid var(--background-modifier-border);
+	overflow-x: auto;
+}
+
+.tr-settings-tab {
+	position: relative;
+	flex-shrink: 0;
+	padding: var(--size-4-2) var(--size-4-3);
+	border-radius: var(--radius-s) var(--radius-s) 0 0;
+	color: var(--text-muted);
+	font-size: var(--font-ui-small);
+	font-weight: var(--font-medium);
+	white-space: nowrap;
+	cursor: pointer;
+	transition:
+		color 0.15s,
+		background-color 0.15s;
+}
+
+.tr-settings-tab:hover {
+	background-color: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+/* Obsidian exposes the accent as HSL parts rather than an rgb triplet, and the
+   CSS postprocess step strips `color-mix()`. Composing from the parts is the
+   only form that survives both and still tracks the user's accent color. */
+.tr-settings-tab.is-active {
+	color: var(--text-accent);
+}
+
+.tr-settings-tab.is-active::after {
+	content: "";
+	position: absolute;
+	inset-inline: var(--size-4-2);
+	bottom: calc(-1 * var(--border-width));
+	height: 2px;
+	background-color: var(--interactive-accent);
+	border-radius: 2px 2px 0 0;
+}
+
+.tr-settings-tab:focus-visible {
+	outline: 2px solid
+		hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.5);
+	outline-offset: -2px;
+}
+
+/* ── Narrow panes ── */
+
+/* Obsidian stacks rows below ~600px and stretches every control to full width.
+   The fixed control width has to stand down there or it fights that rule. */
+@media screen and (max-width: 600px) {
+	.tr-settings .setting-item-control select.dropdown,
+	.tr-settings .setting-item-control input[type="text"],
+	.tr-settings .setting-item-control input[type="password"],
+	.tr-settings .setting-item-control input[type="number"],
+	.tr-settings .tr-control {
+		width: 100%;
+	}
+}

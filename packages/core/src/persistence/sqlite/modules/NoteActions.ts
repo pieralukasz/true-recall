@@ -7,7 +7,7 @@ import type { Note, NoteEditSource } from "../../../types/note.types";
 import type { SqliteDatabase } from "../SqliteDatabase";
 import { buildContentEditSet } from "./note-content-edit";
 
-interface NoteRow {
+export interface NoteRow {
 	id: string;
 	note_type_id: string;
 	fields_json: string;
@@ -95,7 +95,7 @@ export class NoteActions {
 	}
 
 	/** Last-writer-wins upsert of a remote device's note row. */
-	upsertRowFromRemote(row: NoteRow): boolean {
+	upsertRowFromRemote(row: NoteRow, preferRemoteOnEqual = false): boolean {
 		this.db.run(
 			`INSERT INTO notes (id, note_type_id, fields_json, tags, source_uid, source_text, user_comment, created_via, created_at, updated_at, deleted_at, edit_count, ai_edit_count, content_edited_at)
 			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -114,7 +114,8 @@ export class NoteActions {
 				edit_count = MAX(COALESCE(excluded.edit_count, 0), COALESCE(notes.edit_count, 0)),
 				ai_edit_count = MAX(COALESCE(excluded.ai_edit_count, 0), COALESCE(notes.ai_edit_count, 0)),
 				content_edited_at = NULLIF(MAX(COALESCE(excluded.content_edited_at, 0), COALESCE(notes.content_edited_at, 0)), 0)
-			 WHERE COALESCE(excluded.updated_at, 0) > COALESCE(notes.updated_at, 0)`,
+			 WHERE COALESCE(excluded.updated_at, 0) > COALESCE(notes.updated_at, 0)
+			    OR (? = 1 AND COALESCE(excluded.updated_at, 0) = COALESCE(notes.updated_at, 0))`,
 			// `?? null` everywhere: rows read via SELECT * from an older remote
 			// schema can be missing columns entirely, and undefined cannot bind.
 			[
@@ -132,6 +133,7 @@ export class NoteActions {
 				row.edit_count ?? 0,
 				row.ai_edit_count ?? 0,
 				row.content_edited_at ?? null,
+				preferRemoteOnEqual ? 1 : 0,
 			],
 		);
 		return this.db.getRowsModified() > 0;

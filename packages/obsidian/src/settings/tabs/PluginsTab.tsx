@@ -198,9 +198,9 @@ export function PluginsTab() {
 	};
 
 	return (
-		<div class="ep:flex ep:flex-col ep:gap-3">
+		<div class="tr-settings-sections">
 			<AIProviderSection />
-			<FormCard>
+			<FormCard title="Installed plugins">
 				<div class="ep:flex ep:flex-col ep:gap-1.5">
 					{[...PLUGIN_MANIFESTS]
 						.sort(

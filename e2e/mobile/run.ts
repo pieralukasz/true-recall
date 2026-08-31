@@ -12,10 +12,11 @@
  *        ADB       (default: adb from PATH or the homebrew platform-tools)
  */
 
-import { connectCdp, type CdpClient } from "./cdp-client";
+import { type CdpClient, connectCdp } from "./cdp-client";
 
 const VAULT = process.env.E2E_VAULT ?? "/sdcard/Documents/TestVault";
 const NOTE = process.env.E2E_NOTE ?? "Biology";
+const EXPECTED_VAULT_NAME = VAULT.split("/").filter(Boolean).at(-1) ?? VAULT;
 const CDP_PORT = 9223;
 const APP = "md.obsidian";
 const RUN_TAG = `e2e${Date.now().toString(36).slice(-6)}`;
@@ -69,7 +70,11 @@ async function reconnect(): Promise<void> {
 	const pid = adb("shell", "pidof", APP);
 	if (!pid) throw new Error("Obsidian is not running");
 	sh([ADB, "forward", "--remove-all"], true);
-	adb("forward", `tcp:${CDP_PORT}`, `localabstract:webview_devtools_remote_${pid}`);
+	adb(
+		"forward",
+		`tcp:${CDP_PORT}`,
+		`localabstract:webview_devtools_remote_${pid}`,
+	);
 	const raw = await (await fetch(`http://localhost:${CDP_PORT}/json`)).text();
 	const pageId = /"id": "([A-F0-9]+)"/.exec(raw)?.[1];
 	if (!pageId) throw new Error("no CDP page target found");
@@ -179,7 +184,7 @@ function pullDb(): void {
 
 const scenarios: Scenario[] = [
 	{
-		name: "S1 plugin boots: WASM store, schema v2, mobile view allowlist",
+		name: "S1 plugin boots: WASM store, schema v3, mobile view allowlist",
 		run: async () => {
 			await launchAppAndWait();
 			const state = await js<{
@@ -187,6 +192,7 @@ const scenarios: Scenario[] = [
 				deviceId: string;
 				views: string[];
 				dbPath: string;
+				vaultName: string;
 			}>(`(() => {
 				const p = app.plugins.plugins["true-recall"];
 				const db = p.coreApp.cardStore.getSqliteDb();
@@ -195,10 +201,18 @@ const scenarios: Scenario[] = [
 					deviceId: p.deviceIdService.getDeviceId(),
 					views: Object.keys(app.viewRegistry.viewByType).filter(k => k.startsWith("true-recall")).sort(),
 					dbPath: p.coreApp.cardStore.getPersistenceDebugInfo().dbPath,
+					vaultName: app.vault.getName(),
 				};
 			})()`);
-			assert(state.schema === "2", `schema_version is ${state.schema}, want 2`);
-			assert(/^[a-z0-9]{8}$/.test(state.deviceId), `device id ${state.deviceId}`);
+			assert(
+				state.vaultName === EXPECTED_VAULT_NAME,
+				`active vault is ${state.vaultName}, want ${EXPECTED_VAULT_NAME}`,
+			);
+			assert(state.schema === "3", `schema_version is ${state.schema}, want 3`);
+			assert(
+				/^[a-z0-9]{8}$/.test(state.deviceId),
+				`device id ${state.deviceId}`,
+			);
 			assert(
 				state.views.join(",") ===
 					"true-recall-dashboard-view,true-recall-flashcard-panel,true-recall-review,true-recall-stats",
@@ -237,6 +251,19 @@ const scenarios: Scenario[] = [
 				`app.plugins.plugins["true-recall"].coreApp.cardStore.getSqliteDb().query("SELECT count(*) n FROM cards WHERE deleted_at IS NULL")[0].n === ${before + 1}`,
 				15_000,
 			);
+			// createNote() writes before the asynchronous command finishes. Wait for
+			// the editor to clear and re-enable Done so the next click cannot race the
+			// first save's disabled state.
+			await waitFor(
+				"quick editor ready for second card",
+				`(() => {
+					const buttons = [...document.querySelectorAll(".modal [role=button], .modal button")];
+					const done = buttons.find((button) => button.textContent.trim() === "Done");
+					const fields = [...document.querySelectorAll(".modal .cm-editor .cm-content")];
+					return !!done && done.getAttribute("aria-disabled") !== "true" && fields.length >= 2 && fields.every((field) => !field.textContent.trim());
+				})()`,
+				15_000,
+			);
 			await typeIntoField(0, `Q2 ${RUN_TAG}`);
 			await typeIntoField(1, `A2 ${RUN_TAG}`);
 			await js(`document.activeElement?.blur()`);
@@ -269,7 +296,9 @@ const scenarios: Scenario[] = [
 				20_000,
 			);
 			assert(
-				await js<boolean>(clickByText(".true-recall-review-buttons", "Show answer")),
+				await js<boolean>(
+					clickByText(".true-recall-review-buttons", "Show answer"),
+				),
 				"Show answer not found",
 			);
 			await sleep(800);
@@ -294,8 +323,12 @@ const scenarios: Scenario[] = [
 			const deadline = Date.now() + 20_000;
 			for (;;) {
 				pullDb();
-				if (sqliteCount(pulledDb, "SELECT count(*) FROM review_log") === memBefore) break;
-				if (Date.now() > deadline) throw new Error("disk never caught up with memory");
+				if (
+					sqliteCount(pulledDb, "SELECT count(*) FROM review_log") === memBefore
+				)
+					break;
+				if (Date.now() > deadline)
+					throw new Error("disk never caught up with memory");
 				await sleep(1000);
 			}
 			// grade the second fresh card, still on screen after S3
@@ -305,7 +338,9 @@ const scenarios: Scenario[] = [
 				15_000,
 			);
 			assert(
-				await js<boolean>(clickByText(".true-recall-review-buttons", "Show answer")),
+				await js<boolean>(
+					clickByText(".true-recall-review-buttons", "Show answer"),
+				),
 				"Show answer not found for second card",
 			);
 			await sleep(800);
@@ -319,7 +354,10 @@ const scenarios: Scenario[] = [
 			await sleep(1200);
 			adb("shell", "am", "force-stop", APP);
 			pullDb();
-			const diskAfter = sqliteCount(pulledDb, "SELECT count(*) FROM review_log");
+			const diskAfter = sqliteCount(
+				pulledDb,
+				"SELECT count(*) FROM review_log",
+			);
 			assert(
 				diskAfter === memBefore + 1,
 				`on-disk review_log: ${memBefore} -> ${diskAfter}, want +1`,
@@ -338,7 +376,10 @@ const scenarios: Scenario[] = [
 	{
 		name: "S5 manual 'Sync devices now' reports a result",
 		run: async () => {
-			const outcome = await js<{ ran: boolean; notices: string[] }>(`(async () => {
+			const outcome = await js<{
+				ran: boolean;
+				notices: string[];
+			}>(`(async () => {
 				const ran = app.commands.executeCommandById("true-recall:sync-devices-now");
 				await new Promise(r => setTimeout(r, 3000));
 				return { ran, notices: [...activeDocument.querySelectorAll(".notice")].map(n => n.textContent) };
@@ -378,12 +419,19 @@ for (const scenario of scenarios) {
 		console.log(`PASS ${scenario.name} (${Date.now() - start}ms)`);
 	} catch (err) {
 		const error = err instanceof Error ? err.message : String(err);
-		results.push({ name: scenario.name, ok: false, error, ms: Date.now() - start });
+		results.push({
+			name: scenario.name,
+			ok: false,
+			error,
+			ms: Date.now() - start,
+		});
 		console.error(`FAIL ${scenario.name}: ${error}`);
 	}
 }
 
 cdp?.close();
 const failed = results.filter((r) => !r.ok);
-console.log(`\n${results.length - failed.length}/${results.length} scenarios passed`);
+console.log(
+	`\n${results.length - failed.length}/${results.length} scenarios passed`,
+);
 process.exit(failed.length === 0 ? 0 : 1);

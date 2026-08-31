@@ -197,6 +197,7 @@ export class CardWriteActions {
 
 	upsertFromRemote(
 		data: FSRSCardData & { updatedAt?: number; deletedAt?: number | null },
+		preferRemoteOnEqual = false,
 	): boolean {
 		const now = Date.now();
 
@@ -205,7 +206,11 @@ export class CardWriteActions {
 			`SELECT updated_at FROM cards WHERE id = ?`,
 			[data.id],
 		);
-		if (existing && existing.updated_at >= (data.updatedAt ?? 0)) {
+		if (
+			existing &&
+			(existing.updated_at > (data.updatedAt ?? 0) ||
+				(existing.updated_at === (data.updatedAt ?? 0) && !preferRemoteOnEqual))
+		) {
 			return false;
 		}
 

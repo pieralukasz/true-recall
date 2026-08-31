@@ -53,6 +53,53 @@ function unwrapAllSupports(css) {
 	return { css: root.toString(), unwrapped };
 }
 
+/**
+ * Alpha-capable equivalents for the Obsidian colors Tailwind can only express
+ * through `color-mix()`.
+ *
+ * Every `ep:bg-obs-green/15`-style utility compiles to
+ * `color-mix(in oklab, var(--ep-color-obs-green) 15%, transparent)`. Stripping
+ * color-mix to a flat grey (the old behaviour) kept the opacity but threw away
+ * the hue, so tier badges, status tints and the accent all rendered grey.
+ *
+ * Obsidian publishes rgb triplets for its named colors and the accent as
+ * separate h/s/l parts, so both can be rebuilt with plain `rgba()`/`hsla()`,
+ * which the plugin reviewer accepts. Colors with no triplet (the base greys:
+ * borders, surfaces, text) keep the grey fallback, which is what they already
+ * were.
+ */
+const ALPHA_COLOR_VARS = new Map([
+	["--ep-color-obs-red", (a) => `rgba(var(--color-red-rgb), ${a})`],
+	["--ep-color-obs-orange", (a) => `rgba(var(--color-orange-rgb), ${a})`],
+	["--ep-color-obs-yellow", (a) => `rgba(var(--color-yellow-rgb), ${a})`],
+	["--ep-color-obs-green", (a) => `rgba(var(--color-green-rgb), ${a})`],
+	["--ep-color-obs-cyan", (a) => `rgba(var(--color-cyan-rgb), ${a})`],
+	["--ep-color-obs-blue", (a) => `rgba(var(--color-blue-rgb), ${a})`],
+	["--ep-color-obs-purple", (a) => `rgba(var(--color-purple-rgb), ${a})`],
+	["--ep-color-obs-pink", (a) => `rgba(var(--color-pink-rgb), ${a})`],
+	// Semantic aliases: --text-error/warning/success resolve to
+	// --color-red/orange/green, so they reuse the same triplets.
+	["--ep-color-obs-error", (a) => `rgba(var(--color-red-rgb), ${a})`],
+	["--ep-color-obs-warning", (a) => `rgba(var(--color-orange-rgb), ${a})`],
+	["--ep-color-obs-success", (a) => `rgba(var(--color-green-rgb), ${a})`],
+	[
+		"--ep-color-obs-accent",
+		(a) => `hsla(var(--accent-h), var(--accent-s), var(--accent-l), ${a})`,
+	],
+	[
+		"--ep-color-obs-interactive",
+		(a) => `hsla(var(--accent-h), var(--accent-s), var(--accent-l), ${a})`,
+	],
+]);
+
+/** Returns a hued rgba()/hsla() for `var(--x)`, or null to fall back to grey. */
+function huedAlphaColor(color, alpha) {
+	const match = /^var\(\s*(--[a-z0-9-]+)\s*\)$/i.exec(color.trim());
+	if (!match) return null;
+	const build = ALPHA_COLOR_VARS.get(match[1]);
+	return build ? build(alpha) : null;
+}
+
 function simplifyGeneratedColors(css) {
 	const root = postcss.parse(css);
 	let colorMixReplaced = 0;
@@ -68,11 +115,15 @@ function simplifyGeneratedColors(css) {
 					colorMixReplaced++;
 					if (decl.prop === "background-color") {
 						const alpha = Math.max(Number(percent) / 100, 0.08).toFixed(2);
-						return `rgba(127, 127, 127, ${alpha})`;
+						return (
+							huedAlphaColor(color, alpha) ?? `rgba(127, 127, 127, ${alpha})`
+						);
 					}
 					if (decl.prop.includes("border")) {
 						const alpha = Math.max(Number(percent) / 100, 0.24).toFixed(2);
-						return `rgba(127, 127, 127, ${alpha})`;
+						return (
+							huedAlphaColor(color, alpha) ?? `rgba(127, 127, 127, ${alpha})`
+						);
 					}
 					if (decl.prop === "box-shadow") {
 						const alpha = Math.max(Number(percent) / 100, 0.18).toFixed(2);
