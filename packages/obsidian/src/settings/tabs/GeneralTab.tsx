@@ -33,7 +33,7 @@ export function GeneralTab() {
 	const { settings, save, plugin } = useSettings();
 
 	return (
-		<div class="ep:flex ep:flex-col ep:gap-3">
+		<div class="tr-settings-sections">
 			<NewsletterCard />
 
 			<FormCard title="Appearance">

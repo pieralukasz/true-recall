@@ -14,7 +14,7 @@ import {
 } from "../../../types/note.types";
 import type { SqliteDatabase } from "../SqliteDatabase";
 
-interface NoteTypeRow {
+export interface NoteTypeRow {
 	id: string;
 	name: string;
 	type: number;
@@ -83,7 +83,7 @@ export class NoteTypeActions {
 	}
 
 	/** Last-writer-wins upsert of a remote device's note type row. */
-	upsertRowFromRemote(row: NoteTypeRow): boolean {
+	upsertRowFromRemote(row: NoteTypeRow, preferRemoteOnEqual = false): boolean {
 		this.db.run(
 			`INSERT INTO note_types (id, name, type, fields_json, templates_json, css, is_builtin, slug, created_at, updated_at, deleted_at)
 			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -96,7 +96,8 @@ export class NoteTypeActions {
 				slug = excluded.slug,
 				updated_at = excluded.updated_at,
 				deleted_at = excluded.deleted_at
-			 WHERE COALESCE(excluded.updated_at, 0) > COALESCE(note_types.updated_at, 0)`,
+			 WHERE COALESCE(excluded.updated_at, 0) > COALESCE(note_types.updated_at, 0)
+			    OR (? = 1 AND COALESCE(excluded.updated_at, 0) = COALESCE(note_types.updated_at, 0))`,
 			// `?? null` everywhere: rows read via SELECT * from an older remote
 			// schema can be missing columns entirely, and undefined cannot bind.
 			[
@@ -111,6 +112,7 @@ export class NoteTypeActions {
 				row.created_at ?? null,
 				row.updated_at ?? null,
 				row.deleted_at ?? null,
+				preferRemoteOnEqual ? 1 : 0,
 			],
 		);
 		return this.db.getRowsModified() > 0;

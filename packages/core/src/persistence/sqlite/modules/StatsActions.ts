@@ -115,8 +115,14 @@ export class StatsActions {
 		return this.reviewLogSync.getModifiedReviewLogSince(timestamp);
 	}
 
-	upsertReviewLogFromRemote(data: ReviewLogForSync): boolean {
-		return this.reviewLogSync.upsertReviewLogFromRemote(data);
+	upsertReviewLogFromRemote(
+		data: ReviewLogForSync,
+		preferRemoteOnEqual = false,
+	): boolean {
+		return this.reviewLogSync.upsertReviewLogFromRemote(
+			data,
+			preferRemoteOnEqual,
+		);
 	}
 
 	getReviewLogForSync(id: string): ReviewLogForSync | null {

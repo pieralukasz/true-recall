@@ -208,6 +208,10 @@ export interface TrueRecallSettings {
 
 	/** Enable cross-device sync on plugin startup */
 	enableDeviceSync: boolean;
+	/** Active cross-device transport. Shared-vault keeps the legacy iCloud flow. */
+	syncMode: "off" | "cloud" | "shared-vault";
+	/** Display-only account identity; the device token is stored separately. */
+	cloudSyncEmail?: string;
 
 	/** Which AI provider to use */
 	providerType: AIProviderType;

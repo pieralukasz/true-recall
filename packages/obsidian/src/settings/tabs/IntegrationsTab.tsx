@@ -85,9 +85,22 @@ function LocalApiCard({ settings, save, plugin }: LocalApiCardProps) {
 
 export function IntegrationsTab() {
 	const { settings, save, plugin } = useSettings();
+	const authState = plugin.cloudSyncManager?.authState.value ?? "idle";
+	const authInProgress =
+		authState === "preparing" || authState === "exchanging";
+	const authLabel =
+		authState === "preparing"
+			? "Opening browser…"
+			: authState === "waiting"
+				? "Open browser again"
+				: authState === "exchanging"
+					? "Connecting…"
+					: authState === "error"
+						? "Try again"
+						: "Sign in";
 
 	return (
-		<div class="ep:flex ep:flex-col ep:gap-3">
+		<div class="tr-settings-sections">
 			<InkIntegrationSection />
 
 			{capabilities.canRunLocalApi() && (
@@ -113,22 +126,58 @@ export function IntegrationsTab() {
 				</FormField>
 			</FormCard>
 
-			<FormCard title="Device Sync">
+			<FormCard title="Sync">
 				<InfoBlock>
-					Sync flashcards and review history across devices via iCloud. Each
-					device keeps its own database; changes are merged automatically in the
-					background.
+					Cloud Sync is free and uses your True Recall account. Shared vault
+					keeps the existing iCloud-style file transport. Each device remains
+					fully usable offline. On mobile, sign-in opens your browser and
+					returns to this vault through an Obsidian link.
 				</InfoBlock>
 
 				<FormField
-					name="Enable device sync"
-					description="Merge changes from other devices when the plugin loads"
+					name="Cloud Sync"
+					description={
+						plugin.cloudSyncManager?.accountEmail.value ?? "Account required"
+					}
+				>
+					{plugin.cloudSyncManager?.accountEmail.value ? (
+						<div class="ep:flex ep:gap-2">
+							<ToggleInput
+								value={settings.syncMode === "cloud"}
+								onChange={(enabled) =>
+									void plugin.cloudSyncManager?.setEnabled(enabled)
+								}
+							/>
+							<Clickable
+								class="ep-btn ep-btn-outline"
+								onClick={() => void plugin.cloudSyncManager?.signOut()}
+							>
+								Sign out
+							</Clickable>
+						</div>
+					) : (
+						<Clickable
+							class="ep-btn ep-btn-outline"
+							disabled={authInProgress}
+							onClick={() => void plugin.cloudSyncManager?.beginSignIn()}
+						>
+							{authLabel}
+						</Clickable>
+					)}
+				</FormField>
+
+				<FormField
+					name="Shared vault"
+					description="Merge device databases synchronized by iCloud, Obsidian Sync, or another file service. Reload Obsidian after changing this mode."
 				>
 					<ToggleInput
-						value={settings.enableDeviceSync}
-						onChange={(v) => {
-							void save({ enableDeviceSync: v });
-						}}
+						value={settings.syncMode === "shared-vault"}
+						onChange={(enabled) =>
+							void save({
+								syncMode: enabled ? "shared-vault" : "off",
+								enableDeviceSync: enabled,
+							})
+						}
 					/>
 				</FormField>
 			</FormCard>

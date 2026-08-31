@@ -13,7 +13,7 @@ import {
 
 export function DataTab() {
 	return (
-		<div class="ep:flex ep:flex-col ep:gap-3">
+		<div class="tr-settings-sections">
 			<DeviceDatabaseSection />
 			<StorageLocationsSection />
 			<ManualBackupSection />

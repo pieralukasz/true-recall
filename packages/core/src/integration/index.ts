@@ -28,6 +28,14 @@ export {
 	readProtobufString,
 	readProtobufVarint,
 } from "./anki/apkg/apkg-parser.service";
+export { CloudSyncService } from "./cloud/cloud-sync.service";
+export type {
+	CloudSyncChange,
+	CloudSyncExchangeRequest,
+	CloudSyncExchangeResponse,
+	CloudSyncResult,
+	CloudSyncTransport,
+} from "./cloud/cloud-sync.types";
 export {
 	type CsvExportOptions,
 	CsvExportService,
