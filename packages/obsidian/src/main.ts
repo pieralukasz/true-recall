@@ -390,6 +390,7 @@ export default class TrueRecallPlugin extends Plugin {
 				// pattern as the device-import offer in PluginInitializers.
 				this.app.workspace.onLayoutReady(() => {
 					void (async () => {
+						if (this.settings.syncMode !== "shared-vault") return;
 						const syncResult = await this.syncCoordinator?.syncNow("startup");
 						if (!syncResult) return;
 						if (syncResult.errors.length > 0) {
@@ -416,8 +417,10 @@ export default class TrueRecallPlugin extends Plugin {
 						new ObsidianPersistence(this.app),
 						this.deviceIdService.getDeviceId(),
 						async () =>
-							(await this.syncCoordinator?.syncNow("interval")) ??
-							emptySyncResult(),
+							this.settings.syncMode === "shared-vault"
+								? ((await this.syncCoordinator?.syncNow("interval")) ??
+									emptySyncResult())
+								: emptySyncResult(),
 					);
 					this.app.workspace.onLayoutReady(() => {
 						void this.deviceSyncScheduler?.start();
@@ -426,8 +429,14 @@ export default class TrueRecallPlugin extends Plugin {
 
 				// Mobile apps return from the background without reloading the
 				// plugin, so startup-only sync would show stale data all day.
+				// Re-check syncMode on every trigger: the user can switch to
+				// Cloud Sync mid-session, and the two transports must never
+				// run concurrently.
 				this.registerDomEvent(activeDocument, "visibilitychange", () => {
-					if (activeDocument.visibilityState === "visible") {
+					if (
+						activeDocument.visibilityState === "visible" &&
+						this.settings.syncMode === "shared-vault"
+					) {
 						void this.syncCoordinator?.syncNow("foreground");
 					}
 				});
@@ -554,6 +563,20 @@ export default class TrueRecallPlugin extends Plugin {
 				` | views+commands: ${(tTotal - tStore).toFixed(1)}ms` +
 				` | total: ${(tTotal - t0).toFixed(1)}ms`,
 		);
+	}
+
+	/**
+	 * Stops the shared-vault transport wired at load time. Called when the
+	 * user switches to Cloud Sync mid-session so both transports never run
+	 * concurrently against the same rows.
+	 */
+	teardownSharedVaultSync(): void {
+		this.deviceSyncScheduler?.stop();
+		this.deviceSyncScheduler = null;
+		this.deviceLock?.stopHeartbeat();
+		void this.deviceLock?.clearLock();
+		this.deviceLock = null;
+		this.syncCoordinator = null;
 	}
 
 	onunload(): void {

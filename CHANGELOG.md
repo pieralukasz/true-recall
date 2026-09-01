@@ -1,5 +1,25 @@
 # Changelog
 
+## 2.4.1 (2026-09-01)
+
+Cloud Sync is now dependable. This release fixes every reliability gap found in a full review of the 2.4.0 sync path, from the server exchange down to on-device recovery. If you sync more than one device, update all of them.
+
+### Bug Fixes
+
+- **No more skipped changes between devices.** The server now serializes each account's sync exchanges, so two devices syncing at the same moment can no longer make each other's changes invisible
+- **Pulled data is no longer echoed back.** Rows applied from the cloud are excluded from the next push. This also protects the upload watermark from devices with a fast clock, which could previously stop uploads silently
+- **Every device converges after simultaneous edits.** The device tie-breaker now applies to conflicts pulled in any later sync, not only in the sync that pushed the losing edit
+- **Interrupted syncs recover fully.** Daily stats rebuild and FSRS replay owed to changes applied before a network failure are completed by the next successful sync
+- **Large collections always push.** Push batches are split by payload size, so an oversized request can no longer wedge sync permanently
+- **Switching sync modes is safe mid-session.** Enabling Cloud Sync stops the shared-vault transport immediately; the two transports never run concurrently
+- **Sign-out is verified.** If the server cannot revoke the device token, your session is kept and an error is shown instead of leaving a live credential behind
+- **Session expiry is visible.** When the server rejects the device token, Settings shows the sign-in prompt again instead of a connected account that silently stops syncing
+
+### Improvements
+
+- **Smoother grading while syncing.** The duplicate-card scan now runs only when a sync actually pulled changes, removing a whole-collection scan after nearly every review
+- **Newsletter, one click away.** The What's New dialog now has a Subscribe button for the learning newsletter
+
 ## 2.4.0 (2026-08-31)
 
 Cloud Sync gives every True Recall account a direct, incremental path between devices. Notes, note types, cards and review history move independently of the vault files, while deterministic review replay and duplicate merging keep concurrent study sessions convergent. Shared-vault sync remains available for people who prefer iCloud, Obsidian Sync or another file provider.
