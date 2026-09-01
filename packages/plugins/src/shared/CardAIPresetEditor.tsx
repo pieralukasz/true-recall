@@ -54,10 +54,7 @@ function ChevronIcon({ expanded }: { expanded: boolean }) {
 	return (
 		<span
 			ref={iconRef}
-			class={cn(
-				"ep:w-4 ep:h-4 ep:text-obs-muted ep:transition-transform ep:duration-200 ep:flex-shrink-0",
-				expanded && "ep:rotate-90",
-			)}
+			class={cn("tr-preset-row__chevron", expanded && "is-expanded")}
 		/>
 	);
 }
@@ -66,20 +63,10 @@ function BadgeRow({ preset }: { preset: CardAIPreset }) {
 	return (
 		<>
 			{preset.requiresPro && (
-				<span class="ep:text-ui-smallest ep:font-semibold ep:px-1.5 ep:py-0.5 ep:rounded ep:bg-obs-accent ep:text-obs-on-accent ep:uppercase">
-					Pro
-				</span>
+				<span class="tr-preset-badge tr-preset-badge--pro">Pro</span>
 			)}
-			{preset.builtin && (
-				<span class="ep:text-ui-smallest ep:font-semibold ep:px-1.5 ep:py-0.5 ep:rounded ep:bg-obs-border ep:text-obs-muted ep:uppercase">
-					Built-in
-				</span>
-			)}
-			{preset.disabled && (
-				<span class="ep:text-ui-smallest ep:font-semibold ep:px-1.5 ep:py-0.5 ep:rounded ep:bg-obs-border ep:text-obs-muted ep:uppercase">
-					Disabled
-				</span>
-			)}
+			{preset.builtin && <span class="tr-preset-badge">Built-in</span>}
+			{preset.disabled && <span class="tr-preset-badge">Disabled</span>}
 		</>
 	);
 }
@@ -92,11 +79,19 @@ function CompactPresetRow({
 	onFork?: () => void;
 }) {
 	return (
-		<div class="ep:flex ep:items-center ep:gap-2 ep:p-2 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary">
-			<span class="ep:text-ui-small ep:font-semibold ep:text-obs-normal ep:flex-1 ep:truncate">
-				{preset.name}
-			</span>
-			<BadgeRow preset={preset} />
+		<div class="tr-preset-builtin">
+			<div class="tr-preset-builtin__main">
+				<div class="tr-preset-builtin__title-row">
+					<span class="tr-preset-builtin__title">{preset.name}</span>
+					<span class="tr-preset-badges">
+						<BadgeRow preset={preset} />
+					</span>
+				</div>
+				<span class="tr-preset-builtin__description">
+					Ready-made workflow included with the plugin. Fork it to customize the
+					prompt and behavior.
+				</span>
+			</div>
 			{onFork && (
 				<ActionButton
 					label="Fork to edit"
@@ -141,21 +136,13 @@ export function CardAIPresetEditor({
 	if (canCollapse && !isExpanded) {
 		const summary = presetSummary(preset);
 		return (
-			<button
-				type="button"
-				onClick={onToggleExpanded}
-				class="ep:flex ep:items-center ep:gap-2 ep:p-2 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:w-full ep:text-left ep:cursor-pointer ep:hover:bg-obs-modifier-hover ep:transition-colors"
-			>
+			<button type="button" onClick={onToggleExpanded} class="tr-preset-row">
 				<ChevronIcon expanded={false} />
-				<span class="ep:text-ui-small ep:font-semibold ep:text-obs-normal ep:truncate">
-					{preset.name}
+				<span class="tr-preset-row__name">{preset.name}</span>
+				{summary && <span class="tr-preset-row__summary">{summary}</span>}
+				<span class="tr-preset-badges">
+					<BadgeRow preset={preset} />
 				</span>
-				{summary && (
-					<span class="ep:text-ui-smaller ep:text-obs-muted ep:truncate ep:flex-1">
-						{summary}
-					</span>
-				)}
-				<BadgeRow preset={preset} />
 			</button>
 		);
 	}
@@ -168,23 +155,23 @@ export function CardAIPresetEditor({
 	const relatedCardsId = `card-ai-rel-${preset.id}`;
 
 	return (
-		<div class="ep:flex ep:flex-col ep:gap-3 ep:p-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary">
-			<div class="ep:flex ep:items-center ep:gap-2">
+		<div class="tr-preset-editor">
+			<div class="tr-preset-editor__header">
 				{canCollapse && (
 					<button
 						type="button"
 						onClick={onToggleExpanded}
-						class="ep:flex ep:items-center ep:cursor-pointer ep:bg-transparent ep:border-0 ep:p-0"
+						class="tr-preset-editor__collapse"
 						aria-label="Collapse"
 					>
 						<ChevronIcon expanded={true} />
 					</button>
 				)}
-				<span class="ep:text-ui-small ep:font-semibold ep:text-obs-normal ep:flex-1 ep:truncate">
-					{preset.name}
+				<span class="tr-preset-editor__title">{preset.name}</span>
+				<span class="tr-preset-badges">
+					<BadgeRow preset={preset} />
 				</span>
-				<BadgeRow preset={preset} />
-				<span class="ep:text-ui-smaller ep:text-obs-muted">Enabled</span>
+				<span class="tr-preset-editor__enabled">Enabled</span>
 				<ToggleInput
 					value={!preset.disabled}
 					onChange={(enabled) => patch({ disabled: !enabled })}
@@ -192,30 +179,29 @@ export function CardAIPresetEditor({
 				/>
 			</div>
 
-			<div class="ep:flex ep:flex-col ep:gap-1">
-				<span class="ep:text-ui-smaller ep:text-obs-muted ep:font-medium">
-					Name
-				</span>
-				<TextInput value={preset.name} onChange={(v) => patch({ name: v })} />
+			<div class="tr-preset-field tr-preset-field--name">
+				<span class="tr-preset-field__label">Name</span>
+				<TextInput
+					value={preset.name}
+					onChange={(v) => patch({ name: v })}
+					ariaLabel="Preset name"
+				/>
 			</div>
 
-			<div class="ep:grid ep:grid-cols-1 ep:gap-2 ep:sm:grid-cols-3">
-				<div class="ep:flex ep:flex-col ep:gap-1">
-					<span class="ep:text-ui-smaller ep:text-obs-muted ep:font-medium">
-						Operation
-					</span>
+			<div class="tr-preset-editor__grid tr-preset-editor__grid--three">
+				<div class="tr-preset-field">
+					<span class="tr-preset-field__label">Operation</span>
 					<SelectInput
 						value={policy.mode}
 						onChange={(value) => patch({ mode: value as CardAIPresetMode })}
 						options={MODE_OPTIONS}
 						disabled={policy.executor !== "ai"}
 						ariaLabel="Card Polish operation"
+						class="tr-preset-select"
 					/>
 				</div>
-				<div class="ep:flex ep:flex-col ep:gap-1">
-					<span class="ep:text-ui-smaller ep:text-obs-muted ep:font-medium">
-						Editable fields
-					</span>
+				<div class="tr-preset-field">
+					<span class="tr-preset-field__label">Editable fields</span>
 					<SelectInput
 						value={policy.fieldScope}
 						onChange={(value) =>
@@ -223,12 +209,11 @@ export function CardAIPresetEditor({
 						}
 						options={FIELD_SCOPE_OPTIONS}
 						ariaLabel="Card Polish editable fields"
+						class="tr-preset-select"
 					/>
 				</div>
-				<div class="ep:flex ep:flex-col ep:gap-1">
-					<span class="ep:text-ui-smaller ep:text-obs-muted ep:font-medium">
-						Executor
-					</span>
+				<div class="tr-preset-field">
+					<span class="tr-preset-field__label">Executor</span>
 					<SelectInput
 						value={policy.executor}
 						onChange={(value) =>
@@ -239,19 +224,19 @@ export function CardAIPresetEditor({
 						}
 						options={EXECUTOR_OPTIONS}
 						ariaLabel="Card Polish executor"
+						class="tr-preset-select"
 					/>
 				</div>
 			</div>
 
-			<div class="ep:flex ep:flex-col ep:gap-1">
-				<span class="ep:text-ui-smaller ep:text-obs-muted ep:font-medium">
-					Prompt
-				</span>
+			<div class="tr-preset-field tr-preset-field--full">
+				<span class="tr-preset-field__label">Prompt</span>
 				<TextAreaInput
 					value={preset.prompt}
 					onChange={(v) => patch({ prompt: v })}
 					rows={4}
 					class="ep:font-mono ep:text-ui-smaller"
+					ariaLabel="Card Polish prompt"
 				/>
 			</div>
 

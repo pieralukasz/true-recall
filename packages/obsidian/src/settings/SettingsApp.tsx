@@ -69,7 +69,7 @@ export function SettingsApp() {
 				key={activeTab}
 				role="tabpanel"
 				id={`true-recall-tabpanel-${activeTab}`}
-				class="ep:mx-auto ep:max-w-3xl ep:pb-4 ep-section-enter"
+				class="tr-settings-panel ep-section-enter"
 			>
 				{activeTab === "general" && <GeneralTab />}
 				{activeTab === "fsrs" && (

@@ -201,12 +201,10 @@ export function createCardAISettingsPanel(
 				)}
 
 				{visibleBuiltins.length > 0 && (
-					<div class="ep:flex ep:flex-col ep:gap-3 ep:mt-4">
-						<div class="ep:flex ep:flex-col ep:gap-0.5">
-							<h3 class="ep:text-ui-small ep:font-semibold ep:text-obs-normal ep:m-0">
-								Built-in presets
-							</h3>
-							<span class="ep:text-ui-smaller ep:text-obs-muted">
+					<div class="tr-preset-section">
+						<div class="tr-preset-section__header">
+							<h3 class="tr-preset-section__title">Built-in presets</h3>
+							<span class="tr-preset-section__description">
 								Ship with the plugin — fork to customize
 							</span>
 						</div>
@@ -221,12 +219,10 @@ export function createCardAISettingsPanel(
 					</div>
 				)}
 
-				<div class="ep:flex ep:flex-col ep:gap-3 ep:mt-4">
-					<div class="ep:flex ep:flex-col ep:gap-0.5">
-						<h3 class="ep:text-ui-small ep:font-semibold ep:text-obs-normal ep:m-0">
-							Your presets
-						</h3>
-						<span class="ep:text-ui-smaller ep:text-obs-muted">
+				<div class="tr-preset-section">
+					<div class="tr-preset-section__header">
+						<h3 class="tr-preset-section__title">Your presets</h3>
+						<span class="tr-preset-section__description">
 							{config.description}
 						</span>
 					</div>
@@ -250,7 +246,7 @@ export function createCardAISettingsPanel(
 							/>
 						)}
 					/>
-					<div>
+					<div class="tr-preset-section__actions">
 						<ActionButton
 							label="+ New preset"
 							variant="outline"

@@ -20,18 +20,23 @@ export function FormCard({
 	const variant = useFormVariant();
 
 	if (variant === "native") {
-		// `tr-setting-section` is what settings.styles.css hangs the section
-		// rhythm off. Obsidian's own heading spacing relies on a sibling
-		// adjacency that never matches once a heading is wrapped like this.
 		return (
 			<div class={cn("tr-setting-section", cls)}>
-				{title && <div class="setting-item setting-item-heading">{title}</div>}
-				{description && (
-					<div class="setting-item-description tr-setting-note">
-						{description}
+				{(title || description) && (
+					<div class="tr-setting-section__header">
+						{title && (
+							<h3 class="setting-item-heading tr-setting-section__title">
+								{title}
+							</h3>
+						)}
+						{description && (
+							<div class="setting-item-description tr-setting-section__description">
+								{description}
+							</div>
+						)}
 					</div>
 				)}
-				{children}
+				<div class="tr-setting-section__body">{children}</div>
 			</div>
 		);
 	}

@@ -149,12 +149,13 @@ export function ParametersSection({
 			<FormField
 				name="Custom FSRS weights"
 				description="Enter 17, 19, or 21 comma-separated values (from FSRS optimizer). Leave empty to use defaults"
+				layout="stacked"
 			>
 				<TextAreaInput
 					value={weightsString}
 					onChange={(v) => void handleWeightsChange(v)}
 					placeholder="0.40255, 1.18385, 3.173, 15.69105, ..."
-					rows={3}
+					rows={4}
 					class="ep:w-full ep:font-mono ep:text-ui-small"
 				/>
 			</FormField>

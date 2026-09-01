@@ -280,13 +280,16 @@ function NewsletterCard() {
 	const mailRef = useIcon("mail");
 
 	return (
-		<FormCard title="Newsletter — Learn how to learn">
+		<FormCard
+			title="Newsletter — Learn how to learn"
+			class="tr-setting-section--accent"
+		>
 			<FormField
 				name="Personal newsletter about learning"
 				description="Spaced repetition, memory, and how we should actually study — plus every True Recall release"
 			>
 				<Clickable
-					class="ep-btn ep-btn-outline ep:inline-flex ep:items-center ep:gap-1.5"
+					class="ep-btn mod-cta tr-settings-action ep:inline-flex ep:items-center ep:gap-1.5"
 					onClick={() => window.open(TRUERECALL_NEWSLETTER_URL, "_blank")}
 				>
 					<div ref={mailRef} class="ep:w-4 ep:h-4" />
@@ -440,20 +443,20 @@ function SupportCard() {
 	const githubRef = useIcon("github");
 
 	return (
-		<FormCard title="Support">
+		<FormCard title="Support" class="tr-setting-section--support">
 			<InfoBlock>
 				If True Recall helps your learning, consider supporting its development.
 			</InfoBlock>
-			<div class="ep:flex ep:gap-2 ep:mt-1">
+			<div class="tr-settings-actions">
 				<Clickable
-					class="ep-btn ep-btn-outline ep:inline-flex ep:items-center ep:gap-1.5"
+					class="ep-btn mod-cta tr-settings-action ep:inline-flex ep:items-center ep:gap-1.5"
 					onClick={() => window.open(TRUERECALL_BMC_URL, "_blank")}
 				>
 					<div ref={heartRef} class="ep:w-4 ep:h-4" />
 					Buy Me a Coffee
 				</Clickable>
 				<Clickable
-					class="ep-btn ep-btn-outline ep:inline-flex ep:items-center ep:gap-1.5"
+					class="ep-btn ep-btn-outline tr-settings-action ep:inline-flex ep:items-center ep:gap-1.5"
 					onClick={() => window.open(TRUERECALL_GITHUB_URL, "_blank")}
 				>
 					<div ref={githubRef} class="ep:w-4 ep:h-4" />

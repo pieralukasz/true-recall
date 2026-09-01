@@ -45,6 +45,7 @@ export function AlgorithmSection({
 						void updatePreset({ maximumInterval: Math.max(1, num) });
 					}}
 					placeholder="36500"
+					class="tr-control--compact"
 				/>
 			</FormField>
 
