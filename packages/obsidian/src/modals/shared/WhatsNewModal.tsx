@@ -1,5 +1,7 @@
 import { render } from "preact";
 
+import { TRUERECALL_NEWSLETTER_URL } from "@true-recall/core/constants";
+
 import { Clickable, MarkdownContent } from "@true-recall/obsidian/components";
 import { BaseModal } from "@true-recall/obsidian/modals/shared/BaseModal";
 import { ObsidianProvider } from "@true-recall/obsidian/preact/ObsidianContext";
@@ -29,13 +31,22 @@ function WhatsNewBody({
 				<MarkdownContent markdown={release.body} />
 			</div>
 			<div class="ep:flex ep:justify-between ep:mt-4 ep:pt-3 ep:border-t ep:border-obs-border">
-				<Clickable
-					stopPropagation={false}
-					class="ep-btn ep-btn-outline"
-					onClick={() => window.open(release.htmlUrl)}
-				>
-					View on GitHub
-				</Clickable>
+				<div class="ep:flex ep:gap-2">
+					<Clickable
+						stopPropagation={false}
+						class="ep-btn ep-btn-outline"
+						onClick={() => window.open(release.htmlUrl)}
+					>
+						View on GitHub
+					</Clickable>
+					<Clickable
+						stopPropagation={false}
+						class="ep-btn ep-btn-outline"
+						onClick={() => window.open(TRUERECALL_NEWSLETTER_URL, "_blank")}
+					>
+						Subscribe to the newsletter
+					</Clickable>
+				</div>
 				<Clickable
 					stopPropagation={false}
 					class="mod-cta ep-btn"

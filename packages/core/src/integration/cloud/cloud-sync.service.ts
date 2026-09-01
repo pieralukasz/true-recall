@@ -9,16 +9,31 @@ import type {
 	CloudSyncResult,
 	CloudSyncTransport,
 } from "./cloud-sync.types";
+import { CloudSyncMetaStore } from "./cloud-sync-meta";
 import { dedupeConcurrentCards, replayMergedCards } from "./sync-merge";
 
 const PUSH_BATCH_SIZE = 400;
+// The edge function rejects bodies over 5 MB; leave headroom for the envelope.
+const MAX_PUSH_BATCH_BYTES = 4 * 1024 * 1024;
 const MAX_PULL_PAGES = 1000;
+
+const textEncoder = new TextEncoder();
 
 interface CloudSyncOptions {
 	accountId: string;
 	deviceId: string;
 	replayService?: FsrsReplayService;
 	getDayStartHour?: () => number;
+}
+
+/** Mutable bookkeeping shared between the sync loop and page application. */
+interface SyncState {
+	localVersions: Map<string, number>;
+	localReviewed: Set<string>;
+	replayCandidates: Set<string>;
+	appliedVersions: Map<string, number>;
+	/** True once any page applied rows that still owe post-processing. */
+	pulledSinceProcess: boolean;
 }
 
 function rowTimestamp(row: Record<string, unknown>): number {
@@ -31,11 +46,15 @@ function asPayload(value: object): Record<string, unknown> {
 }
 
 export class CloudSyncService {
+	private readonly meta: CloudSyncMetaStore;
+
 	constructor(
 		private readonly store: SqliteStoreService,
 		private readonly transport: CloudSyncTransport,
 		private readonly options: CloudSyncOptions,
-	) {}
+	) {
+		this.meta = new CloudSyncMetaStore(store, options.accountId);
+	}
 
 	async sync(): Promise<CloudSyncResult> {
 		const result: CloudSyncResult = {
@@ -47,19 +66,28 @@ export class CloudSyncService {
 			duplicatesMerged: 0,
 			errors: [],
 		};
-		const pushWatermark = this.readMeta("push");
-		let cursor = this.readMeta("cursor");
-		const localChanges = this.gatherLocalChanges(pushWatermark);
-		const localVersions = new Map(
+		const pushWatermark = this.meta.readNumber("push");
+		let cursor = this.meta.readNumber("cursor");
+		const pending = this.meta.readPending();
+		const state: SyncState = {
+			localVersions: new Map(),
+			localReviewed: new Set(
+				this.store.stats.getReviewedCardIdsSince(pushWatermark),
+			),
+			replayCandidates: new Set(pending.replay),
+			appliedVersions: this.meta.readAppliedVersions(pushWatermark),
+			pulledSinceProcess: pending.pulled,
+		};
+		const localChanges = this.gatherLocalChanges(
+			pushWatermark,
+			state.appliedVersions,
+		);
+		state.localVersions = new Map(
 			localChanges.map((change) => [this.entityKey(change), change.updatedAt]),
 		);
-		const localReviewed = new Set(
-			this.store.stats.getReviewedCardIdsSince(pushWatermark),
-		);
-		const replayCandidates = new Set<string>();
 
 		try {
-			const batches = this.chunk(localChanges, PUSH_BATCH_SIZE);
+			const batches = this.chunk(localChanges);
 			if (batches.length === 0) batches.push([]);
 
 			for (const batch of batches) {
@@ -72,9 +100,7 @@ export class CloudSyncService {
 					response.changes,
 					response.cursor,
 					result,
-					localVersions,
-					localReviewed,
-					replayCandidates,
+					state,
 				);
 				let hasMore = response.hasMore;
 				let pages = 0;
@@ -83,44 +109,20 @@ export class CloudSyncService {
 						throw new Error("Cloud sync exceeded the pull page safety limit");
 					}
 					const next = await this.transport.exchange({ cursor, changes: [] });
-					cursor = this.applyResponse(
-						next.changes,
-						next.cursor,
-						result,
-						localVersions,
-						localReviewed,
-						replayCandidates,
-					);
+					cursor = this.applyResponse(next.changes, next.cursor, result, state);
 					hasMore = next.hasMore;
 				}
 			}
 
-			this.store.transaction(() => {
-				result.conflictsReplayed = replayMergedCards(
-					this.store,
-					this.options.replayService,
-					replayCandidates,
-				);
-				const deduped = dedupeConcurrentCards(
-					this.store,
-					this.options.replayService,
-					true,
-				);
-				result.duplicatesMerged = deduped.merged;
-				result.cardIdsChanged.push(...deduped.cardIdsChanged);
-			});
+			this.postProcess(result, state);
 
-			if (result.pulled > 0 || result.conflictsReplayed > 0) {
-				this.store.stats.rebuildDailyStatsFromReviewLog(
-					this.options.getDayStartHour?.(),
-				);
-			}
 			const maxLocalTimestamp = localChanges.reduce(
 				(max, change) => Math.max(max, change.updatedAt),
 				pushWatermark,
 			);
-			this.writeMeta("push", maxLocalTimestamp);
-			this.writeMeta("cursor", cursor);
+			this.meta.writeNumber("push", maxLocalTimestamp);
+			this.meta.writeNumber("cursor", cursor);
+			this.meta.writePending(null);
 			result.cardIdsChanged = [...new Set(result.cardIdsChanged)];
 			return result;
 		} catch (error) {
@@ -130,7 +132,37 @@ export class CloudSyncService {
 		}
 	}
 
-	private gatherLocalChanges(since: number): CloudSyncChange[] {
+	/** Replay, dedupe, and stats rebuild for everything applied but not yet processed. */
+	private postProcess(result: CloudSyncResult, state: SyncState): void {
+		if (state.replayCandidates.size > 0 || state.pulledSinceProcess) {
+			this.store.transaction(() => {
+				result.conflictsReplayed = replayMergedCards(
+					this.store,
+					this.options.replayService,
+					state.replayCandidates,
+				);
+				if (state.pulledSinceProcess) {
+					const deduped = dedupeConcurrentCards(
+						this.store,
+						this.options.replayService,
+						true,
+					);
+					result.duplicatesMerged = deduped.merged;
+					result.cardIdsChanged.push(...deduped.cardIdsChanged);
+				}
+			});
+		}
+		if (state.pulledSinceProcess || result.conflictsReplayed > 0) {
+			this.store.stats.rebuildDailyStatsFromReviewLog(
+				this.options.getDayStartHour?.(),
+			);
+		}
+	}
+
+	private gatherLocalChanges(
+		since: number,
+		appliedVersions: Map<string, number>,
+	): CloudSyncChange[] {
 		const changes: CloudSyncChange[] = [];
 		const add = (
 			entityType: CloudSyncChange["entityType"],
@@ -156,7 +188,14 @@ export class CloudSyncService {
 			add("review_log", row.id, row);
 
 		return changes
-			.filter((change) => change.updatedAt > since)
+			.filter(
+				// Rows written by the cloud keep their remote timestamps; pushing
+				// them back would echo every pull and let a fast remote clock
+				// poison the push watermark.
+				(change) =>
+					change.updatedAt > since &&
+					appliedVersions.get(this.entityKey(change)) !== change.updatedAt,
+			)
 			.sort(
 				(a, b) =>
 					a.updatedAt - b.updatedAt ||
@@ -169,9 +208,7 @@ export class CloudSyncService {
 		changes: CloudSyncChange[],
 		cursor: number,
 		result: CloudSyncResult,
-		localVersions: Map<string, number>,
-		localReviewed: Set<string>,
-		replayCandidates: Set<string>,
+		state: SyncState,
 	): number {
 		const byType = new Map<CloudSyncChange["entityType"], CloudSyncChange[]>();
 		for (const change of changes) {
@@ -180,49 +217,46 @@ export class CloudSyncService {
 			byType.set(change.entityType, list);
 		}
 
+		const pulledBefore = result.pulled;
 		this.store.transaction(() => {
+			const record = (change: CloudSyncChange) => {
+				state.appliedVersions.set(this.entityKey(change), change.updatedAt);
+			};
 			for (const change of byType.get("note_type") ?? []) {
-				const preferRemoteOnEqual = this.preferRemoteOnEqual(
-					change,
-					localVersions,
-				);
 				if (
 					this.store.noteTypes.upsertRowFromRemote(
 						change.payload as unknown as NoteTypeRow,
-						preferRemoteOnEqual,
+						this.preferRemoteOnEqual(change, state.localVersions),
 					)
-				)
+				) {
 					result.pulled++;
+					record(change);
+				}
 			}
 			for (const change of byType.get("note") ?? []) {
-				const preferRemoteOnEqual = this.preferRemoteOnEqual(
-					change,
-					localVersions,
-				);
 				if (
 					this.store.notes.upsertRowFromRemote(
 						change.payload as unknown as NoteRow,
-						preferRemoteOnEqual,
+						this.preferRemoteOnEqual(change, state.localVersions),
 					)
-				)
+				) {
 					result.pulled++;
+					record(change);
+				}
 			}
 			for (const change of byType.get("card") ?? []) {
-				const preferRemoteOnEqual = this.preferRemoteOnEqual(
-					change,
-					localVersions,
-				);
 				if (
 					this.store.cards.upsertFromRemote(
 						change.payload as unknown as FSRSCardData & {
 							updatedAt?: number;
 							deletedAt?: number | null;
 						},
-						preferRemoteOnEqual,
+						this.preferRemoteOnEqual(change, state.localVersions),
 					)
 				) {
 					result.pulled++;
 					result.cardIdsChanged.push(change.entityId);
+					record(change);
 				}
 			}
 			for (const change of byType.get("review_log") ?? []) {
@@ -230,36 +264,33 @@ export class CloudSyncService {
 				if (
 					this.store.stats.upsertReviewLogFromRemote(
 						log,
-						this.preferRemoteOnEqual(change, localVersions),
+						this.preferRemoteOnEqual(change, state.localVersions),
 					)
 				) {
 					result.pulled++;
 					result.reviewLogsApplied++;
+					record(change);
 					if (
 						log.deletedAt == null &&
 						log.reviewKind !== "preview" &&
-						localReviewed.has(log.cardId)
+						state.localReviewed.has(log.cardId)
 					) {
-						replayCandidates.add(log.cardId);
+						state.replayCandidates.add(log.cardId);
 					}
 				}
 			}
+			if (result.pulled > pulledBefore) {
+				// Persisted with the page so a later failure (or crash) neither
+				// echoes these rows back nor skips their stats/replay work.
+				state.pulledSinceProcess = true;
+				this.meta.writeAppliedVersions(state.appliedVersions);
+				this.meta.writePending({
+					replay: [...state.replayCandidates],
+					pulled: true,
+				});
+			}
 		});
 		return cursor;
-	}
-
-	private readMeta(kind: "push" | "cursor"): number {
-		const value = this.store.cards.getSyncMetadata(this.metaKey(kind));
-		const parsed = Number(value ?? 0);
-		return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
-	}
-
-	private writeMeta(kind: "push" | "cursor", value: number): void {
-		this.store.cards.setSyncMetadata(this.metaKey(kind), String(value));
-	}
-
-	private metaKey(kind: "push" | "cursor"): string {
-		return `cloud:${this.options.accountId}:${kind}`;
 	}
 
 	private entityKey(change: CloudSyncChange): string {
@@ -270,18 +301,38 @@ export class CloudSyncService {
 		change: CloudSyncChange,
 		localVersions: Map<string, number>,
 	): boolean {
-		return (
-			localVersions.get(this.entityKey(change)) === change.updatedAt &&
-			typeof change.sourceDeviceId === "string" &&
-			change.sourceDeviceId > this.options.deviceId
-		);
+		const pendingLocal = localVersions.get(this.entityKey(change));
+		if (pendingLocal === change.updatedAt) {
+			// A not-yet-pushed local edit ties: mirror the server tie-breaker.
+			return (
+				typeof change.sourceDeviceId === "string" &&
+				change.sourceDeviceId > this.options.deviceId
+			);
+		}
+		// No pending local edit can still win on the server, so the server's
+		// stored version is the resolved winner; every device converges to it.
+		return true;
 	}
 
-	private chunk<T>(items: T[], size: number): T[][] {
-		const chunks: T[][] = [];
-		for (let index = 0; index < items.length; index += size) {
-			chunks.push(items.slice(index, index + size));
+	private chunk(items: CloudSyncChange[]): CloudSyncChange[][] {
+		const chunks: CloudSyncChange[][] = [];
+		let current: CloudSyncChange[] = [];
+		let currentBytes = 0;
+		for (const item of items) {
+			const bytes = textEncoder.encode(JSON.stringify(item)).byteLength;
+			if (
+				current.length > 0 &&
+				(current.length >= PUSH_BATCH_SIZE ||
+					currentBytes + bytes > MAX_PUSH_BATCH_BYTES)
+			) {
+				chunks.push(current);
+				current = [];
+				currentBytes = 0;
+			}
+			current.push(item);
+			currentBytes += bytes;
 		}
+		if (current.length > 0) chunks.push(current);
 		return chunks;
 	}
 }
