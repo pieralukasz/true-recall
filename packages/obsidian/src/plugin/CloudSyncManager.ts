@@ -32,6 +32,7 @@ export class CloudSyncManager {
 	readonly authState = signal<CloudAuthState>("idle");
 	readonly coordinator: CloudSyncCoordinator;
 	readonly auth: CloudAuthService;
+	private readonly apiClient: CloudSyncApiClient;
 	private changeTimer: number | null = null;
 
 	constructor(private readonly plugin: TrueRecallPlugin) {
@@ -39,6 +40,9 @@ export class CloudSyncManager {
 			id: plugin.deviceIdService?.getDeviceId() ?? "unknown-device",
 			name: plugin.deviceIdService?.getDisplayName() ?? "True Recall device",
 		}));
+		this.apiClient = new CloudSyncApiClient(this.auth, () =>
+			this.handleAuthExpired(),
+		);
 		this.accountEmail.value = this.auth.getSession()?.email ?? null;
 		this.coordinator = new CloudSyncCoordinator(() => this.runSync());
 	}
@@ -104,21 +108,27 @@ export class CloudSyncManager {
 	}
 
 	async signOut(): Promise<void> {
-		try {
-			await new CloudSyncApiClient(this.auth).revoke();
-		} finally {
-			this.auth.clearSession();
-			this.accountEmail.value = null;
-			this.authState.value = "idle";
-			this.plugin.settings.syncMode = "off";
-			this.plugin.settings.cloudSyncEmail = undefined;
-			await this.plugin.saveSettings();
+		// Never discard the local session while the token is still live on the
+		// server: it is the only handle that can ever revoke that device.
+		const revoked = await this.apiClient.revoke();
+		if (!revoked) {
+			notify().error(
+				"Could not sign out: the server did not revoke this device. Check your connection and try again.",
+			);
+			return;
 		}
+		this.auth.clearSession();
+		this.accountEmail.value = null;
+		this.authState.value = "idle";
+		this.plugin.settings.syncMode = "off";
+		this.plugin.settings.cloudSyncEmail = undefined;
+		await this.plugin.saveSettings();
 	}
 
 	async setEnabled(enabled: boolean): Promise<void> {
 		this.plugin.settings.syncMode = enabled ? "cloud" : "off";
 		this.plugin.settings.enableDeviceSync = false;
+		if (enabled) this.plugin.teardownSharedVaultSync();
 		await this.plugin.saveSettings();
 		if (enabled) void this.coordinator.syncNow("manual");
 	}
@@ -146,6 +156,7 @@ export class CloudSyncManager {
 			this.plugin.settings.cloudSyncEmail = session.email;
 			this.plugin.settings.syncMode = "cloud";
 			this.plugin.settings.enableDeviceSync = false;
+			this.plugin.teardownSharedVaultSync();
 			await this.plugin.saveSettings();
 			this.authState.value = "idle";
 			notify().success(`Cloud Sync connected as ${session.email}.`);
@@ -156,6 +167,22 @@ export class CloudSyncManager {
 				error instanceof Error ? error.message : "Cloud Sync sign-in failed.",
 			);
 		}
+	}
+
+	/**
+	 * The server rejected our device token. The session is already cleared;
+	 * bring the settings and UI in line so the user sees a sign-in prompt
+	 * instead of a connected account that silently never syncs.
+	 */
+	private handleAuthExpired(): void {
+		this.accountEmail.value = null;
+		this.authState.value = "idle";
+		this.plugin.settings.syncMode = "off";
+		this.plugin.settings.cloudSyncEmail = undefined;
+		void this.plugin.saveSettings();
+		notify().warning(
+			"Cloud Sync was signed out because the session expired. Sign in again in Settings → Integrations.",
+		);
 	}
 
 	private scheduleAfterChange(): void {
@@ -183,17 +210,12 @@ export class CloudSyncManager {
 					: extractFSRSSettings(this.plugin.settings);
 			},
 		);
-		const result = await new CloudSyncService(
-			store,
-			new CloudSyncApiClient(this.auth),
-			{
-				accountId: session.userId,
-				deviceId:
-					this.plugin.deviceIdService?.getDeviceId() ?? "unknown-device",
-				replayService: replay,
-				getDayStartHour: () => this.plugin.settings.dayStartHour,
-			},
-		).sync();
+		const result = await new CloudSyncService(store, this.apiClient, {
+			accountId: session.userId,
+			deviceId: this.plugin.deviceIdService?.getDeviceId() ?? "unknown-device",
+			replayService: replay,
+			getDayStartHour: () => this.plugin.settings.dayStartHour,
+		}).sync();
 		if (result.cardIdsChanged.length > 0) {
 			setLastMutation({
 				type: "bulk",

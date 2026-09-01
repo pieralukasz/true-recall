@@ -36,7 +36,10 @@ const ErrorResponseSchema = z.object({
 });
 
 export class CloudSyncApiClient implements CloudSyncTransport {
-	constructor(private readonly auth: CloudAuthService) {}
+	constructor(
+		private readonly auth: CloudAuthService,
+		private readonly onAuthExpired?: () => void,
+	) {}
 
 	async exchange(
 		request: CloudSyncExchangeRequest,
@@ -53,6 +56,7 @@ export class CloudSyncApiClient implements CloudSyncTransport {
 		});
 		if (response.status === 401) {
 			this.auth.clearSession();
+			this.onAuthExpired?.();
 			throw new Error("Cloud Sync session expired. Sign in again.");
 		}
 		if (response.status !== 200) {
@@ -68,14 +72,20 @@ export class CloudSyncApiClient implements CloudSyncTransport {
 		return ResponseSchema.parse(response.json);
 	}
 
-	async revoke(): Promise<void> {
+	/**
+	 * Revokes this device's token server-side. Returns whether the token is
+	 * dead (revoked now, or already invalid); on false the token is still a
+	 * live credential and the local session must not be discarded silently.
+	 */
+	async revoke(): Promise<boolean> {
 		const session = this.auth.getSession();
-		if (!session) return;
-		await requestUrl({
+		if (!session) return true;
+		const response = await requestUrl({
 			url: CLOUD_SYNC_URL,
 			method: "DELETE",
 			headers: { Authorization: `Bearer ${session.deviceToken}` },
 			throw: false,
 		});
+		return response.status === 200 || response.status === 401;
 	}
 }
