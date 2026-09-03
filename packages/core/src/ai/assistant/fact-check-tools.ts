@@ -168,3 +168,48 @@ export function allowsCorrection(
 ): boolean {
 	return verdict === "incorrect" || verdict === "outdated";
 }
+
+const VERDICT_LABELS: Record<FactCheckVerdict, string> = {
+	confirmed: "Confirmed",
+	incorrect: "Incorrect",
+	outdated: "Outdated",
+	unverifiable: "Unverifiable",
+};
+
+/** One-line human summary, shared by toasts, thread messages and the prompt. */
+export function describeFactCheckVerdict(result: FactCheckResult): string {
+	return `${VERDICT_LABELS[result.verdict]} (${result.confidence} confidence)`;
+}
+
+/**
+ * Appended to the summary when no evidence URL came from an actual web search
+ * result. The model may have answered from memory, so the verdict is downgraded
+ * rather than trusted.
+ */
+export const FACT_CHECK_UNCORROBORATED_NOTE =
+	"Sources were not found among the web search results; treat this verdict with caution.";
+
+function hostOf(url: string): string | null {
+	try {
+		return new URL(url).hostname.replace(/^www\./, "").toLowerCase();
+	} catch {
+		return null;
+	}
+}
+
+/** True when at least one evidence entry shares a host with a URL the web search actually returned. */
+export function isCorroborated(
+	evidence: FactCheckEvidence[],
+	searchedUrls: Iterable<string>,
+): boolean {
+	const hosts = new Set<string>();
+	for (const url of searchedUrls) {
+		const host = hostOf(url);
+		if (host) hosts.add(host);
+	}
+	if (hosts.size === 0) return false;
+	return evidence.some((item) => {
+		const host = hostOf(item.url);
+		return host !== null && hosts.has(host);
+	});
+}

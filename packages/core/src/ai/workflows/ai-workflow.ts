@@ -44,7 +44,7 @@ export const FACT_CHECK_WORKFLOW_ID = `${FACT_CHECK_PREFIX}card`;
  * stored in settings, so the user cannot edit or delete it. Entry points
  * reference this constant directly.
  */
-export const FACT_CHECK_WORKFLOW: AIWorkflow = {
+export const FACT_CHECK_WORKFLOW: AIWorkflow = Object.freeze({
 	id: FACT_CHECK_WORKFLOW_ID,
 	name: "Fact check",
 	kind: "fact-check",
@@ -52,7 +52,7 @@ export const FACT_CHECK_WORKFLOW: AIWorkflow = {
 	sourcePresetId: FACT_CHECK_WORKFLOW_ID,
 	autoApply: false,
 	autoApplyNewCards: false,
-};
+});
 
 export function assistantWorkflowId(presetId: string): string {
 	return `${AGENT_PREFIX}${presetId}`;

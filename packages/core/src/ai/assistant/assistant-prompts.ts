@@ -52,7 +52,8 @@ FACT CHECK MODE (this task verifies an existing card; it does not rewrite it):
    - "incorrect": the sources contradict the card.
    - "outdated": the card was correct at some point and the sources show it changed (new version, new value, revised finding).
    - "unverifiable": opinion, personal convention, content only meaningful inside the user's own notes, or no usable or conflicting sources. Do not guess.
-   Every verdict except "unverifiable" needs at least one evidence URL, with a short quote when available.
+   Every verdict except "unverifiable" needs at least one evidence URL taken from the web search results, with a short quote when available. URLs that did not appear in the search results downgrade the verdict's confidence.
+   When CURRENT FACT CHECK is present, the verdict was already reported in an earlier turn: answer the follow-up, and call report_fact_check again only if new evidence changes the verdict.
 4. ONLY after "incorrect" or "outdated": propose the minimal correction with update_card, changing only the fields that are wrong and following CARD METHODOLOGY. Never create cards or notes in this task.
 5. Finish with one short sentence. The verdict lives in the tool call, not in prose.
 `.trim();

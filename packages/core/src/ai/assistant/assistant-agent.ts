@@ -19,7 +19,10 @@ import { ASSISTANT_TOOLS, type AssistantToolHost } from "./assistant-tools";
 import {
 	allowsCorrection,
 	buildFactCheckTools,
+	describeFactCheckVerdict,
 	FACT_CHECK_CORRECTION_GATE_MESSAGE,
+	FACT_CHECK_UNCORROBORATED_NOTE,
+	isCorroborated,
 	parseFactCheckReport,
 } from "./fact-check-tools";
 import {
@@ -118,11 +121,21 @@ function renderContext(context: AssistantContext): string {
 		parts.push(
 			`CURRENT DRAFT WORKSPACE (revision ${context.draftWorkspace.revision}):\n${drafts || "(no pending drafts)"}`,
 		);
+		const factCheck = context.draftWorkspace.manifest.factCheck;
+		if (factCheck) {
+			const evidence = factCheck.evidence.map((item) => item.url).join(", ");
+			parts.push(
+				`CURRENT FACT CHECK (already reported in this thread): ${describeFactCheckVerdict(factCheck)}\nSummary: ${factCheck.summary}\nEvidence: ${evidence || "(none)"}`,
+			);
+		}
 	}
 	return parts.join("\n\n");
 }
 
 export class AssistantAgent {
+	/** Every URL the web search returned in this run, uncapped, to corroborate fact-check evidence. */
+	private searchedUrls = new Set<string>();
+
 	constructor(
 		private client: AssistantChatClient,
 		private options: AssistantAgentOptions = {},
@@ -143,6 +156,7 @@ export class AssistantAgent {
 			totalTokens: 0,
 		};
 		let sawUsage = false;
+		this.searchedUrls = new Set<string>();
 		const factCheck = this.options.factCheck === true;
 		const requestedSources = Math.max(
 			0,
@@ -242,11 +256,11 @@ export class AssistantAgent {
 		manifest: AssistantManifest,
 		maxSources: number,
 	): void {
-		if (maxSources <= 0) return;
 		for (const annotation of message.annotations ?? []) {
-			if (manifest.citations.length >= maxSources) return;
 			const url = annotation.url_citation?.url;
 			if (!url) continue;
+			this.searchedUrls.add(url);
+			if (maxSources <= 0 || manifest.citations.length >= maxSources) continue;
 			if (manifest.citations.some((c) => c.url === url)) continue;
 			const citation: Citation = { url };
 			if (annotation.url_citation?.title) {
@@ -329,7 +343,15 @@ export class AssistantAgent {
 				}
 				const parsed = parseFactCheckReport(args);
 				if (!parsed.ok) return parsed.error;
-				manifest.factCheck = parsed.result;
+				const result = parsed.result;
+				if (
+					result.verdict !== "unverifiable" &&
+					!isCorroborated(result.evidence, this.searchedUrls)
+				) {
+					result.confidence = "low";
+					result.summary = `${result.summary} ${FACT_CHECK_UNCORROBORATED_NOTE}`;
+				}
+				manifest.factCheck = result;
 				this.addEvidenceCitations(parsed.result.evidence, manifest, maxSources);
 				return `Recorded verdict ${parsed.result.verdict} (${parsed.result.confidence}).`;
 			}

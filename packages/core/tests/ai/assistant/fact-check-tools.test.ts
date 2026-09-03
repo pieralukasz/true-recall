@@ -3,7 +3,9 @@ import { describe, expect, it } from "vitest";
 import {
 	allowsCorrection,
 	buildFactCheckTools,
+	describeFactCheckVerdict,
 	FACT_CHECK_CORRECTION_GATE_MESSAGE,
+	isCorroborated,
 	parseFactCheckReport,
 	REPORT_FACT_CHECK_TOOL,
 } from "../../../src/ai/assistant/fact-check-tools";
@@ -177,5 +179,34 @@ describe("allowsCorrection", () => {
 
 	it("exposes the gate message the agent returns to the model", () => {
 		expect(FACT_CHECK_CORRECTION_GATE_MESSAGE).toContain("report_fact_check");
+	});
+});
+
+describe("describeFactCheckVerdict", () => {
+	it("renders a label with the confidence", () => {
+		expect(
+			describeFactCheckVerdict({
+				verdict: "outdated",
+				confidence: "medium",
+				summary: "s",
+				evidence: [],
+			}),
+		).toBe("Outdated (medium confidence)");
+	});
+});
+
+describe("isCorroborated", () => {
+	const evidence = [{ url: "https://docs.example/path/a" }];
+
+	it("matches on host, ignoring www and path", () => {
+		expect(isCorroborated(evidence, ["https://www.docs.example/other"])).toBe(
+			true,
+		);
+	});
+
+	it("is false without search results or with foreign hosts only", () => {
+		expect(isCorroborated(evidence, [])).toBe(false);
+		expect(isCorroborated(evidence, ["https://other.example/a"])).toBe(false);
+		expect(isCorroborated(evidence, ["not a url"])).toBe(false);
 	});
 });

@@ -12,6 +12,7 @@ import {
 	type AssistantThread,
 	type AssistantThreadState,
 	type DirectGenerationSummary,
+	describeFactCheckVerdict,
 } from "@true-recall/core/ai/assistant";
 import { OpenRouterClient } from "@true-recall/core/ai/clients/openrouter-client";
 import { resolveAIClientConfig } from "@true-recall/core/ai/config/ai-client-config";
@@ -23,6 +24,7 @@ import type { ExistingCardContext } from "@true-recall/core/ai/prompts/existing-
 import {
 	type AIWorkflow,
 	CUSTOM_CARD_POLISH_PRESET_ID,
+	FACT_CHECK_WORKFLOW_ID,
 	resolveAIWorkflow,
 } from "@true-recall/core/ai/workflows/ai-workflow";
 
@@ -189,10 +191,16 @@ export class AssistantService {
 			feedback.trim() === ""
 				? task.instruction
 				: `${task.instruction}\n\nUSER FEEDBACK ON THE PREVIOUS ATTEMPT:\n${feedback.trim()}`;
+		// Keep the curated thread title (e.g. "Fact check: ...") on the retry
+		// instead of exposing the instruction plus feedback blob.
+		const displayMessage = task.threadId
+			? this.threadActions().getById(task.threadId)?.title
+			: undefined;
 		return this.enqueue({
 			instruction,
 			presetId: task.presetId,
 			context: task.context,
+			displayMessage,
 		});
 	}
 
@@ -319,7 +327,9 @@ export class AssistantService {
 				if (task.threadId) {
 					const summary =
 						manifest.finalText?.trim() ||
-						`Updated ${manifest.proposals.filter((proposal) => proposal.status === "proposed").length} draft(s).`;
+						(manifest.factCheck
+							? describeFactCheckVerdict(manifest.factCheck)
+							: `Updated ${manifest.proposals.filter((proposal) => proposal.status === "proposed").length} draft(s).`);
 					this.threadActions().completeTurn({
 						id: task.threadId,
 						taskId: task.id,
@@ -435,6 +445,13 @@ export class AssistantService {
 				await this.applyPolishImmediately(task, task.threadId, workflow);
 				return;
 			}
+		}
+
+		if (manifest.factCheck) {
+			notify().success(
+				`Fact check: ${describeFactCheckVerdict(manifest.factCheck)}`,
+			);
+			return;
 		}
 
 		const n = manifest.proposals.length;
@@ -670,6 +687,11 @@ export class AssistantService {
 
 		if (workflow?.kind === "fact-check") {
 			return this.runFactCheckWorkflow(task, onProgress);
+		}
+		if (!workflow && task.presetId === FACT_CHECK_WORKFLOW_ID) {
+			// Never let a fact check degrade into a free-form agent run without
+			// web search, tools gate and verdict.
+			throw new Error("Fact check task lost its card context");
 		}
 
 		const config = resolveAIClientConfig(settings, "assistant");

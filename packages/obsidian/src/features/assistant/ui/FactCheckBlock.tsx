@@ -17,7 +17,7 @@ const VERDICT_CLASS: Record<FactCheckVerdict, string> = {
 	confirmed: "ep:bg-obs-green ep:text-obs-on-accent",
 	incorrect: "ep:bg-obs-red ep:text-obs-on-accent",
 	outdated: "ep:bg-obs-orange ep:text-obs-on-accent",
-	unverifiable: "ep:bg-obs-modifier-hover ep:text-obs-muted",
+	unverifiable: "ep:bg-obs-modifier-hover ep:text-obs-normal",
 };
 
 function hostname(url: string): string {
@@ -46,11 +46,11 @@ export function FactCheckBlock({ result }: { result: FactCheckResult }) {
 					{result.confidence} confidence
 				</span>
 			</div>
-			<p class="ep:m-0 ep:mt-2 ep:text-ui-small ep:text-obs-normal ep:leading-normal">
+			<p class="ep:m-0 ep:text-ui-small ep:text-obs-normal ep:leading-normal ep:break-words ep:whitespace-pre-wrap">
 				{result.summary}
 			</p>
 			{result.evidence.length > 0 ? (
-				<ul class="ep:m-0 ep:mt-2 ep:list-none ep:p-0 ep:flex ep:flex-col ep:gap-1.5">
+				<ul class="ep:m-0 ep:list-none ep:p-0 ep:flex ep:flex-col ep:gap-1.5">
 					{result.evidence.map((item) => (
 						<li
 							key={item.url}
