@@ -51,6 +51,13 @@ export interface AssistantProgress {
 	lines: string[];
 }
 
+/** Only the OpenRouter-backed providers forward the web search plugin. */
+function supportsWebSearch(
+	providerType: ReturnType<typeof resolveAIClientConfig>["providerType"],
+): boolean {
+	return providerType === "openrouter" || providerType === "pro";
+}
+
 export class AssistantService {
 	/** Live progress of the currently running task (inbox view subscribes). */
 	readonly progress = signal<AssistantProgress | null>(null);
@@ -78,6 +85,8 @@ export class AssistantService {
 		instruction: string;
 		presetId?: string;
 		context: AssistantContext;
+		/** Shown as the thread title instead of the raw instruction. */
+		displayMessage?: string;
 	}): string {
 		return this.startThread({ ...params, state: "inbox" }).taskId;
 	}
@@ -659,11 +668,53 @@ export class AssistantService {
 			);
 		}
 
+		if (workflow?.kind === "fact-check") {
+			return this.runFactCheckWorkflow(task, onProgress);
+		}
+
 		const config = resolveAIClientConfig(settings, "assistant");
 		const webSearch =
-			settings.assistantWebSearch &&
-			(config.providerType === "openrouter" || config.providerType === "pro");
-		const client = new OpenRouterClient(
+			settings.assistantWebSearch && supportsWebSearch(config.providerType);
+		const agent = new AssistantAgent(this.createAssistantClient(config), {
+			maxIterations: settings.assistantMaxIterations,
+			maxSources: settings.assistantMaxSources,
+			webSearch,
+			userInstructions: settings.assistantInstructions,
+			onProgress,
+		});
+		return agent.run(task.instruction, task.context, this.host);
+	}
+
+	/**
+	 * Fact check is meaningless without web search, so unlike the free-form
+	 * agent it fails loudly on providers that cannot search. The entry points
+	 * hide the action on such providers; this guards tasks queued earlier.
+	 */
+	private async runFactCheckWorkflow(
+		task: AssistantTask,
+		onProgress: (event: AssistantProgressEvent) => void,
+	): Promise<AssistantManifest> {
+		const settings = this.plugin.settings;
+		const config = resolveAIClientConfig(settings, "assistant");
+		if (!supportsWebSearch(config.providerType)) {
+			throw new Error(
+				"Fact check requires web search (OpenRouter or Pro provider)",
+			);
+		}
+		const agent = new AssistantAgent(this.createAssistantClient(config), {
+			factCheck: true,
+			maxIterations: settings.assistantMaxIterations,
+			maxSources: settings.assistantMaxSources,
+			userInstructions: settings.assistantInstructions,
+			onProgress,
+		});
+		return agent.run(task.instruction, task.context, this.host);
+	}
+
+	private createAssistantClient(
+		config: ReturnType<typeof resolveAIClientConfig>,
+	): OpenRouterClient {
+		return new OpenRouterClient(
 			config.apiKey,
 			config.model,
 			new ObsidianHttpClient(),
@@ -672,14 +723,6 @@ export class AssistantService {
 			"assistant",
 			{ providerType: config.providerType },
 		);
-		const agent = new AssistantAgent(client, {
-			maxIterations: settings.assistantMaxIterations,
-			maxSources: settings.assistantMaxSources,
-			webSearch,
-			userInstructions: settings.assistantInstructions,
-			onProgress,
-		});
-		return agent.run(task.instruction, task.context, this.host);
 	}
 
 	private async runGenerationWorkflow(
