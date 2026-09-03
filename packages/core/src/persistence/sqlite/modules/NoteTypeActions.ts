@@ -200,9 +200,15 @@ export class NoteTypeActions {
 		]);
 	}
 
+	/**
+	 * Insert builtin note types that are missing. Skips rows that exist:
+	 * `INSERT OR IGNORE` changes nothing for them but still dirties the store,
+	 * which on mobile means a full database rewrite right after startup.
+	 */
 	seedBuiltinTypes(): void {
 		const builtins = getBuiltinNoteTypes();
 		for (const nt of builtins) {
+			if (this.hasRow(nt.id)) continue;
 			const slug = BUILTIN_SLUGS[nt.id];
 			this.db.run(
 				`INSERT OR IGNORE INTO note_types (id, name, type, fields_json, templates_json, css, is_builtin, slug, created_at, updated_at)

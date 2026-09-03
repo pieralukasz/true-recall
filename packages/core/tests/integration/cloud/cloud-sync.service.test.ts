@@ -47,6 +47,11 @@ function createStore(initialCards?: MockCardRow[]) {
 				cards.filter((card) => card.updatedAt > since),
 			getSyncMetadata: (key: string) => meta.get(key) ?? null,
 			setSyncMetadata: (key: string, value: string) => meta.set(key, value),
+			setSyncMetadataIfChanged: (key: string, value: string) => {
+				if (meta.get(key) === value) return false;
+				meta.set(key, value);
+				return true;
+			},
 			upsertFromRemote: vi.fn(() => false),
 			getActiveDedupRows: vi.fn(() => []),
 			applyReplayedScheduling: vi.fn(),

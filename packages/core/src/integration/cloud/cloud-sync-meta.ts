@@ -7,7 +7,12 @@ export interface PendingPostProcess {
 }
 
 /**
- * Durable per-account sync bookkeeping stored in sync metadata:
+ * Durable per-account sync bookkeeping stored in sync metadata. Every write
+ * dirties the store and a dirty store rewrites the whole database file, so
+ * each writer compares first: a sync tick that changed nothing must not cost
+ * a 60 MB rewrite.
+ *
+ * Contents:
  * push/cursor watermarks, the versions applied from the cloud (so pulls are
  * never echoed back as pushes), and post-processing owed after a mid-sync
  * failure.
@@ -25,7 +30,7 @@ export class CloudSyncMetaStore {
 	}
 
 	writeNumber(kind: "push" | "cursor", value: number): void {
-		this.store.cards.setSyncMetadata(this.key(kind), String(value));
+		this.store.cards.setSyncMetadataIfChanged(this.key(kind), String(value));
 	}
 
 	/** Applied-from-cloud versions, pruned to entries the push watermark can still see. */
@@ -47,7 +52,7 @@ export class CloudSyncMetaStore {
 	}
 
 	writeAppliedVersions(versions: Map<string, number>): void {
-		this.store.cards.setSyncMetadata(
+		this.store.cards.setSyncMetadataIfChanged(
 			this.key("applied"),
 			JSON.stringify(Object.fromEntries(versions)),
 		);
@@ -70,7 +75,7 @@ export class CloudSyncMetaStore {
 	}
 
 	writePending(pending: PendingPostProcess | null): void {
-		this.store.cards.setSyncMetadata(
+		this.store.cards.setSyncMetadataIfChanged(
 			this.key("pending"),
 			pending ? JSON.stringify(pending) : "",
 		);

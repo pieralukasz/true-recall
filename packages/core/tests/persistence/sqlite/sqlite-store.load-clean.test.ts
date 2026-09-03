@@ -55,6 +55,18 @@ describe("SqliteStoreService load leaves a saved database clean", () => {
 		expect((store as unknown as { isDirty: boolean }).isDirty).toBe(false);
 	});
 
+	it("seeding builtins on a database that already has them runs no statements", async () => {
+		const fs = await createSavedDatabase();
+		const store = createStore(fs);
+		await store.load();
+		const run = vi.spyOn(store.getSqliteDb(), "run");
+
+		store.noteTypes.seedBuiltinTypes();
+
+		expect(run).not.toHaveBeenCalled();
+		expect(store.noteTypes.getById(BUILTIN_BASIC_ID)?.name).toBe("Basic");
+	});
+
 	it("still repairs a builtin note type that drifted from the code", async () => {
 		const fs = await createSavedDatabase();
 		const store = createStore(fs);
