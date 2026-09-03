@@ -38,6 +38,11 @@ import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpC
 import { CommandService, ReviewUndoHook } from "@true-recall/obsidian/commands";
 import { G, getDataLayer, Q } from "@true-recall/obsidian/data";
 import { assistantContextFromCard } from "@true-recall/obsidian/features/assistant/ui/ai-context-source";
+import {
+	FACT_CHECK_QUEUED_MESSAGE,
+	isFactCheckAvailable,
+	startFactCheck,
+} from "@true-recall/obsidian/features/assistant/ui/fact-check";
 import { openAiWorkspace } from "@true-recall/obsidian/features/assistant/ui/open-ai-workspace";
 import { ReviewSessionController } from "@true-recall/obsidian/features/study/services/ReviewSessionController";
 import type { PresetPickerOption } from "@true-recall/obsidian/features/study/ui/review/components";
@@ -1014,6 +1019,26 @@ export class ReviewView extends ItemView {
 		});
 	}
 
+	/** Whether the actions menu and the command may offer a fact check right now. */
+	canFactCheckCurrentCard(): boolean {
+		return (
+			this.review.getCurrentCard() !== null &&
+			isFactCheckAvailable(this.plugin.settings)
+		);
+	}
+
+	/**
+	 * Queues a background fact check of the visible card. Review continues;
+	 * the verdict lands in the AI inbox.
+	 */
+	factCheckCurrentCard(): void {
+		const card = this.review.getCurrentCard();
+		if (!card || !isFactCheckAvailable(this.plugin.settings)) return;
+		const taskId = startFactCheck(this.plugin, card);
+		if (taskId) notify().info(FACT_CHECK_QUEUED_MESSAGE);
+		else notify().error("AI assistant is not running");
+	}
+
 	private showActionsMenu(event: MouseEvent): void {
 		const menu = new Menu();
 		this.populateActionsMenu(menu);
@@ -1059,6 +1084,14 @@ export class ReviewView extends ItemView {
 						});
 					}),
 			);
+			if (this.canFactCheckCurrentCard()) {
+				menu.addItem((item) =>
+					item
+						.setTitle("Fact check this card (AI)")
+						.setIcon("search-check")
+						.onClick(() => this.factCheckCurrentCard()),
+				);
+			}
 			// On mobile the polish button has no home in the grade bar, so it
 			// joins the actions menu here.
 			if (isMobile() && isPluginEnabled(this.plugin.settings, "card-polish")) {

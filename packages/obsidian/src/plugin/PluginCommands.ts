@@ -235,6 +235,17 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 	});
 
 	plugin.addCommand({
+		id: "fact-check-current-card",
+		name: "Fact check current card",
+		checkCallback: (checking) => {
+			const reviewView = plugin.app.workspace.getActiveViewOfType(ReviewView);
+			if (!reviewView?.canFactCheckCurrentCard()) return false;
+			if (!checking) reviewView.factCheckCurrentCard();
+			return true;
+		},
+	});
+
+	plugin.addCommand({
 		id: "redo-flashcard-action",
 		name: "Redo last undone action",
 		checkCallback: (checking) => {
