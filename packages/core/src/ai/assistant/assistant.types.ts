@@ -69,6 +69,30 @@ export interface Citation {
 	title?: string;
 }
 
+export type FactCheckVerdict =
+	| "confirmed"
+	| "incorrect"
+	| "outdated"
+	| "unverifiable";
+
+export type FactCheckConfidence = "high" | "medium" | "low";
+
+export interface FactCheckEvidence {
+	url: string;
+	title?: string;
+	/** Short passage (at most 300 characters) supporting the verdict. */
+	quote?: string;
+}
+
+/** Structured outcome of a fact-check task, written by the report_fact_check tool. */
+export interface FactCheckResult {
+	verdict: FactCheckVerdict;
+	confidence: FactCheckConfidence;
+	/** 2 to 4 sentences: what was checked and why the verdict follows. */
+	summary: string;
+	evidence: FactCheckEvidence[];
+}
+
 export interface ImageCandidate {
 	url: string;
 	thumbnailUrl?: string;
@@ -156,6 +180,8 @@ export interface DirectGenerationSummary {
 export interface AssistantManifest {
 	proposals: AssistantProposal[];
 	citations: Citation[];
+	/** Present only for fact-check tasks. Always set when such a task finishes. */
+	factCheck?: FactCheckResult;
 	/** Set only when the generation engine persisted the cards itself. */
 	directGeneration?: DirectGenerationSummary;
 	/** The model's final plain-text answer (shown when no proposals were made). */
