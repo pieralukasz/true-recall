@@ -193,7 +193,15 @@ export class SqliteStoreService {
 
 	private cleanupStaleReferences(): void {
 		try {
-			this.db.run(`DROP TABLE IF EXISTS cards_old`);
+			// Every `run` dirties the store, and a dirty store rewrites the whole
+			// database file after startup. Only touch the schema when the stale
+			// table actually exists.
+			const staleTable = this.db.get<{ name: string }>(
+				`SELECT name FROM sqlite_master WHERE type='table' AND name='cards_old'`,
+			);
+			if (staleTable) {
+				this.db.run(`DROP TABLE IF EXISTS cards_old`);
+			}
 
 			const triggers = this.db.query<{ name: string }>(
 				`SELECT name FROM sqlite_master WHERE type='trigger' AND sql LIKE '%cards_old%'`,
