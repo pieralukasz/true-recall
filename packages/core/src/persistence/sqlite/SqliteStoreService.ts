@@ -12,6 +12,7 @@ import {
 	loadDbFileWithSalvage,
 	writeDbFileAtomically,
 } from "./atomic-db-file";
+import { ensureFolder, getDeviceDbPath } from "./db-location";
 import {
 	AssistantTaskActions,
 	AssistantThreadActions,
@@ -24,7 +25,6 @@ import { SqliteDatabase } from "./SqliteDatabase";
 import { SqliteSchemaManager } from "./SqliteSchemaManager";
 import {
 	DB_FOLDER,
-	getDeviceDbFilename,
 	SAVE_DEBOUNCE_MS,
 	toExactArrayBuffer,
 	VACUUM_MIN_FREE_BYTES,
@@ -34,6 +34,8 @@ import {
 export interface SqliteStoreOptions {
 	/** Debounce between the last write and the disk flush (default 5000 ms). */
 	saveDebounceMs?: number;
+	/** Folder holding the device database file (default `.true-recall`). */
+	dbFolder?: string;
 }
 
 export class SqliteStoreService {
@@ -41,6 +43,7 @@ export class SqliteStoreService {
 
 	private persistence: IPersistence;
 	private deviceId: string;
+	private dbFolder: string;
 	private saveDebounceMs: number;
 	private db: SqliteDatabase;
 	private isLoaded = false;
@@ -71,6 +74,7 @@ export class SqliteStoreService {
 		this.persistence = persistence;
 		this.deviceId = deviceId;
 		this.saveDebounceMs = options.saveDebounceMs ?? SAVE_DEBOUNCE_MS;
+		this.dbFolder = options.dbFolder ?? DB_FOLDER;
 		this.db = new SqliteDatabase(() => this.markDirty());
 
 		this.cards = new CardActions(this.db);
@@ -315,9 +319,8 @@ export class SqliteStoreService {
 		await this.saveNow();
 	}
 
-	private getDbPath(): string {
-		const filename = getDeviceDbFilename(this.deviceId);
-		return `${DB_FOLDER}/${filename}`;
+	getDbPath(): string {
+		return getDeviceDbPath(this.deviceId, this.dbFolder);
 	}
 
 	/**
@@ -399,10 +402,7 @@ export class SqliteStoreService {
 					const data = this.db.export();
 					const dbPath = this.getDbPath();
 
-					const folderExists = await this.persistence.exists(DB_FOLDER);
-					if (!folderExists) {
-						await this.persistence.mkdir(DB_FOLDER);
-					}
+					await ensureFolder(this.persistence, this.dbFolder);
 
 					// Crash-safe swap: an interrupted write can never truncate the
 					// main file (the cause of a full-day data loss on 2026-08-18).
