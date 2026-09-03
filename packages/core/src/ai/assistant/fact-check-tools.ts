@@ -6,6 +6,7 @@ import type {
 	FactCheckVerdict,
 } from "./assistant.types";
 import { ASSISTANT_TOOLS } from "./assistant-tools";
+import { readString } from "./tool-args";
 
 export const FACT_CHECK_VERDICTS: readonly FactCheckVerdict[] = [
 	"confirmed",
@@ -111,12 +112,12 @@ function readEvidence(raw: unknown): FactCheckEvidence[] {
 	for (const item of raw) {
 		if (!item || typeof item !== "object") continue;
 		const record = item as Record<string, unknown>;
-		const url = typeof record.url === "string" ? record.url.trim() : "";
+		const url = readString(record, "url").trim();
 		if (!/^https?:\/\//i.test(url)) continue;
 		const entry: FactCheckEvidence = { url };
-		const title = typeof record.title === "string" ? record.title.trim() : "";
+		const title = readString(record, "title").trim();
 		if (title) entry.title = title;
-		const quote = typeof record.quote === "string" ? record.quote.trim() : "";
+		const quote = readString(record, "quote").trim();
 		if (quote) entry.quote = quote.slice(0, MAX_QUOTE_LENGTH);
 		evidence.push(entry);
 	}
@@ -148,7 +149,7 @@ export function parseFactCheckReport(
 		return {
 			ok: false,
 			error:
-				"Provide at least one source URL in evidence, or report unverifiable.",
+				"Provide at least one source: an evidence entry with an http(s):// URL. Or report unverifiable.",
 		};
 	}
 	return {

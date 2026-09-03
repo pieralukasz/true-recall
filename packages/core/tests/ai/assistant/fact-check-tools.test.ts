@@ -153,6 +153,17 @@ describe("parseFactCheckReport", () => {
 			result: { evidence: [{ url: "https://ok.example/b" }] },
 		});
 	});
+
+	it("rejects evidence entries without an http(s) URL", () => {
+		const parsed = parseFactCheckReport({
+			verdict: "confirmed",
+			confidence: "high",
+			summary: "s",
+			evidence: [{ url: "example.com/article" }, { url: "" }],
+		});
+		expect(parsed.ok).toBe(false);
+		if (!parsed.ok) expect(parsed.error).toContain("http(s)://");
+	});
 });
 
 describe("allowsCorrection", () => {
