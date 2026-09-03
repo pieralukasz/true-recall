@@ -273,6 +273,18 @@ export class CardActions {
 		this.writes.setSyncMetadata(key, value);
 	}
 
+	/**
+	 * Write only when the stored value differs. Every `run` marks the store
+	 * dirty, and on mobile a dirty store means a full export and rewrite of
+	 * the database file 400 ms later. Startup must not pay that for a label
+	 * that has not changed.
+	 */
+	setSyncMetadataIfChanged(key: string, value: string): boolean {
+		if (this.writes.getSyncMetadata(key) === value) return false;
+		this.writes.setSyncMetadata(key, value);
+		return true;
+	}
+
 	deleteAllForSync(): void {
 		this.writes.deleteAllForSync();
 	}
