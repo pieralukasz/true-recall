@@ -5,7 +5,8 @@
 ### Bug Fixes
 
 - **Mobile no longer stalls on "plugin is taking long to load" because of iCloud.** In Cloud Sync and single-device modes the per-device database now lives in `.true-recall/local.nosync/`, which iCloud does not sync. The desktop stops uploading a 60 MB file on every flush, iCloud stops producing conflict copies, and iOS can no longer evict the file the plugin must read at startup. Shared Vault mode keeps the database in `.true-recall/` as before. The file is moved automatically on the next start; if the move fails the old location keeps working
-- **No full database rewrite on every startup.** The device label is written only when it changed, so mobile launches no longer export and rewrite the whole database one second after loading
+- **No full database rewrite on every startup or idle sync tick.** Loading a saved database, seeding builtin note types, refreshing their templates, writing the device label, empty sync transactions and unchanged sync watermarks no longer mark the database dirty. Before, the desktop rewrote a 60 MB file every minute while Cloud Sync idled, and Android froze with "Obsidian isn't responding" during the rewrite right after startup
+- **What's New footer fits on phones.** The buttons wrap instead of running off the screen
 
 ## 2.4.1 (2026-09-01)
 
