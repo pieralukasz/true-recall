@@ -5,10 +5,14 @@ import { UidGuardianService } from "@true-recall/core/flashcard/lifecycle/uid-gu
 import { DeviceDiscoveryService } from "@true-recall/core/integration/device/device-discovery.service";
 import { DeviceIdService } from "@true-recall/core/integration/device/device-id.service";
 import { writeDbFileAtomically } from "@true-recall/core/persistence/sqlite/atomic-db-file";
+import {
+	getDbFolder,
+	migrateDeviceDbLocation,
+	resolveDbLocation,
+} from "@true-recall/core/persistence/sqlite/db-location";
 import { setCurrentDeviceId } from "@true-recall/core/persistence/sqlite/device-context";
 import {
 	DB_FOLDER,
-	getDeviceDbFilename,
 	SAFETY_FLUSH_INTERVAL_MS,
 } from "@true-recall/core/persistence/sqlite/sqlite.types";
 
@@ -73,9 +77,21 @@ async function initializeDeviceContext(
 		new ObsidianPersistence(plugin.app),
 		deviceId,
 	);
-	const deviceDbPath = normalizePath(
-		`${DB_FOLDER}/${getDeviceDbFilename(deviceId)}`,
+	// Cloud and off modes keep the database out of the synced folder (iCloud
+	// skips `.nosync`); shared-vault needs it inside. Move the file if the
+	// mode changed since the last start; a failed move keeps the old folder.
+	const target = resolveDbLocation(plugin.settings.syncMode);
+	plugin.dbFolder = await migrateDeviceDbLocation(
+		new ObsidianPersistence(plugin.app),
+		deviceId,
+		target,
 	);
+	if (plugin.dbFolder !== getDbFolder(target)) {
+		notify().warning(
+			"True Recall could not move its database to the folder its sync mode uses. It keeps using the old location for now.",
+		);
+	}
+	const deviceDbPath = normalizePath(plugin.getDeviceDbPath(deviceId));
 	const deviceDbExists = await plugin.app.vault.adapter.exists(deviceDbPath);
 
 	if (deviceDbExists) return deviceId;
@@ -153,10 +169,12 @@ async function initializeCardStore(
 			() => plugin.coreApp.backupService,
 			() => plugin.coreApp.backgroundBackupManager,
 			() => plugin.coreApp.cardStore ?? undefined,
+			(id) => plugin.getDeviceDbPath(id),
 		);
 
+		const storeOptions = { dbFolder: plugin.dbFolder };
 		try {
-			await plugin.coreApp.initializeStore(deviceId);
+			await plugin.coreApp.initializeStore(deviceId, storeOptions);
 		} catch (loadError) {
 			console.warn(
 				"[True Recall] Database load failed, attempting auto-recovery from backup...",
@@ -164,17 +182,19 @@ async function initializeCardStore(
 			const recovered =
 				await plugin.backupRecovery.tryAutoRecoverFromBackup(deviceId);
 			if (recovered) {
-				await plugin.coreApp.initializeStore(deviceId);
+				await plugin.coreApp.initializeStore(deviceId, storeOptions);
 			} else {
 				throw loadError;
 			}
 		}
 
 		// Store a readable device name in the database itself so other devices
-		// can show "iPhone 15" instead of a bare device id when syncing.
+		// can show "iPhone 15" instead of a bare device id when syncing. Only
+		// write when it changed: a write here dirties the store and, on mobile,
+		// rewrites the whole database file 400 ms after startup.
 		const deviceLabel = plugin.deviceIdService?.getDeviceLabel();
 		if (deviceLabel && plugin.coreApp.cardStore) {
-			plugin.coreApp.cardStore.cards.setSyncMetadata(
+			plugin.coreApp.cardStore.cards.setSyncMetadataIfChanged(
 				"device:label",
 				deviceLabel,
 			);
@@ -407,9 +427,7 @@ async function migrateLegacyDatabase(
 	deviceId: string,
 ): Promise<void> {
 	const legacyPath = normalizePath(`${DB_FOLDER}/true-recall.db`);
-	const newPath = normalizePath(
-		`${DB_FOLDER}/${getDeviceDbFilename(deviceId)}`,
-	);
+	const newPath = normalizePath(plugin.getDeviceDbPath(deviceId));
 	const backupPath = normalizePath(`${DB_FOLDER}/true-recall.db.migrated`);
 
 	try {
@@ -430,9 +448,7 @@ async function handleDeviceSelection(
 	deviceId: string,
 ): Promise<void> {
 	if (result.action === "import" && result.sourcePath) {
-		const targetPath = normalizePath(
-			`${DB_FOLDER}/${getDeviceDbFilename(deviceId)}`,
-		);
+		const targetPath = normalizePath(plugin.getDeviceDbPath(deviceId));
 
 		try {
 			const sourceData = await plugin.app.vault.adapter.readBinary(

@@ -2,10 +2,6 @@ import { normalizePath } from "obsidian";
 import { useCallback } from "preact/hooks";
 
 import { writeDbFileAtomically } from "@true-recall/core/persistence/sqlite/atomic-db-file";
-import {
-	DB_FOLDER,
-	getDeviceDbFilename,
-} from "@true-recall/core/persistence/sqlite/sqlite.types";
 
 import { ObsidianPersistence } from "@true-recall/obsidian/adapters/ObsidianPersistence";
 import {
@@ -68,10 +64,9 @@ export function DeviceDatabaseSection() {
 			await plugin.backupService?.createBackup();
 
 			const currentDeviceId = plugin.deviceIdService?.getDeviceId();
+			if (!currentDeviceId) throw new Error("Device id is not initialized");
 
-			const targetPath = normalizePath(
-				`${DB_FOLDER}/${getDeviceDbFilename(currentDeviceId)}`,
-			);
+			const targetPath = normalizePath(plugin.getDeviceDbPath(currentDeviceId));
 
 			const sourceData = await plugin.app.vault.adapter.readBinary(
 				result.sourcePath,

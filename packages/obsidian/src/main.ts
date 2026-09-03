@@ -21,7 +21,11 @@ import type { DeviceIdService } from "@true-recall/core/integration/device/devic
 import { DeviceLockService } from "@true-recall/core/integration/device/device-lock.service";
 import { DeviceSyncService } from "@true-recall/core/integration/device/device-sync.service";
 import { DeviceSyncScheduler } from "@true-recall/core/integration/device/device-sync-scheduler";
-import { MOBILE_SAVE_DEBOUNCE_MS } from "@true-recall/core/persistence/sqlite/sqlite.types";
+import { getDeviceDbPath } from "@true-recall/core/persistence/sqlite/db-location";
+import {
+	DB_FOLDER,
+	MOBILE_SAVE_DEBOUNCE_MS,
+} from "@true-recall/core/persistence/sqlite/sqlite.types";
 import { FSRSService } from "@true-recall/core/services/fsrs/fsrs.service";
 import { FsrsReplayService } from "@true-recall/core/services/fsrs/fsrs-replay.service";
 import { SessionService } from "@true-recall/core/services/review/session.service";
@@ -204,6 +208,8 @@ export default class TrueRecallPlugin extends Plugin {
 
 	deviceIdService: DeviceIdService | null = null;
 	deviceDiscovery: DeviceDiscoveryService | null = null;
+	/** Folder holding this device's database; decided at startup by sync mode. */
+	dbFolder: string = DB_FOLDER;
 	private deviceLock: DeviceLockService | null = null;
 	private deviceSyncScheduler: DeviceSyncScheduler | null = null;
 	syncCoordinator: CrossDeviceSyncCoordinator | null = null;
@@ -243,6 +249,13 @@ export default class TrueRecallPlugin extends Plugin {
 
 	isStoreReady(): boolean {
 		return this.coreApp.isReady();
+	}
+
+	/** Single source of truth for the device database path. */
+	getDeviceDbPath(deviceId?: string): string {
+		const id = deviceId ?? this.deviceIdService?.getDeviceId();
+		if (!id) throw new Error("Device id is not initialized");
+		return getDeviceDbPath(id, this.dbFolder);
 	}
 
 	async onload(): Promise<void> {

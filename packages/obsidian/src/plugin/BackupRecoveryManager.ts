@@ -11,9 +11,7 @@ import {
 	toExactBackupBuffer,
 } from "@true-recall/core/persistence/sqlite/recovery.utils";
 import {
-	DB_FOLDER,
 	getBackupFolderPath,
-	getDeviceDbFilename,
 	getLegacyBackupFolderPath,
 } from "@true-recall/core/persistence/sqlite/sqlite.types";
 
@@ -34,6 +32,7 @@ export class BackupRecoveryManager {
 		private getBackupService: () => BackupService | null,
 		private getBackgroundBackupManager: () => BackgroundBackupManager | null,
 		private getCardStore: () => SqliteStoreService | undefined,
+		private getDeviceDbPath: (deviceId: string) => string,
 	) {}
 
 	async tryAutoRecoverFromBackup(deviceId: string): Promise<boolean> {
@@ -43,9 +42,7 @@ export class BackupRecoveryManager {
 			normalizePath(getBackupFolderPath(deviceId)),
 			normalizePath(getLegacyBackupFolderPath(deviceId)),
 		];
-		const dbPath = normalizePath(
-			`${DB_FOLDER}/${getDeviceDbFilename(deviceId)}`,
-		);
+		const dbPath = normalizePath(this.getDeviceDbPath(deviceId));
 
 		try {
 			const candidateFiles: string[] = [];
