@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Bug Fixes
+
+- **Mobile no longer stalls on "plugin is taking long to load" because of iCloud.** In Cloud Sync and single-device modes the per-device database now lives in `.true-recall/local.nosync/`, which iCloud does not sync. The desktop stops uploading a 60 MB file on every flush, iCloud stops producing conflict copies, and iOS can no longer evict the file the plugin must read at startup. Shared Vault mode keeps the database in `.true-recall/` as before. The file is moved automatically on the next start; if the move fails the old location keeps working
+- **No full database rewrite on every startup.** The device label is written only when it changed, so mobile launches no longer export and rewrite the whole database one second after loading
+
 ## 2.4.1 (2026-09-01)
 
 Cloud Sync is now dependable. This release fixes every reliability gap found in a full review of the 2.4.0 sync path, from the server exchange down to on-device recovery. If you sync more than one device, update all of them.
