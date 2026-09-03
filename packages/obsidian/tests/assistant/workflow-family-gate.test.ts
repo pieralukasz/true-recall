@@ -21,6 +21,7 @@ describe("isWorkflowFamilyEnabled", () => {
 		expect(isWorkflowFamilyEnabled(settings, "agent")).toBe(true);
 		expect(isWorkflowFamilyEnabled(settings, "generate-cards")).toBe(true);
 		expect(isWorkflowFamilyEnabled(settings, "modify-card")).toBe(true);
+		expect(isWorkflowFamilyEnabled(settings, "fact-check")).toBe(true);
 	});
 
 	it("maps each family to the feature that owns it", () => {
@@ -32,6 +33,18 @@ describe("isWorkflowFamilyEnabled", () => {
 		).toBe(false);
 		expect(
 			isWorkflowFamilyEnabled(withStates({ "card-polish": false }), "agent"),
+		).toBe(true);
+		expect(
+			isWorkflowFamilyEnabled(
+				withStates({ "ai-assistant": false }),
+				"fact-check",
+			),
+		).toBe(false);
+		expect(
+			isWorkflowFamilyEnabled(
+				withStates({ "card-polish": false }),
+				"fact-check",
+			),
 		).toBe(true);
 		expect(
 			isWorkflowFamilyEnabled(

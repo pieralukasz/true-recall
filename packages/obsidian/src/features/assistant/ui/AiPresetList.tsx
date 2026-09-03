@@ -14,6 +14,7 @@ const WORKFLOW_ICONS: Record<AIWorkflow["kind"], string> = {
 	agent: "sparkles",
 	"generate-cards": "layers",
 	"modify-card": "wand",
+	"fact-check": "search-check",
 };
 
 function describeWorkflow(workflow: AIWorkflow): string {
