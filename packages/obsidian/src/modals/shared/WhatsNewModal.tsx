@@ -30,8 +30,9 @@ function WhatsNewBody({
 			<div class="ep:max-h-[60vh] ep:overflow-y-auto ep:pr-2">
 				<MarkdownContent markdown={release.body} />
 			</div>
-			<div class="ep:flex ep:justify-between ep:mt-4 ep:pt-3 ep:border-t ep:border-obs-border">
-				<div class="ep:flex ep:gap-2">
+			{/* Wraps on narrow screens: three buttons do not fit one row on a phone. */}
+			<div class="ep:flex ep:flex-wrap ep:gap-2 ep:justify-between ep:mt-4 ep:pt-3 ep:border-t ep:border-obs-border">
+				<div class="ep:flex ep:flex-wrap ep:gap-2">
 					<Clickable
 						stopPropagation={false}
 						class="ep-btn ep-btn-outline"
