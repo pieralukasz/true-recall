@@ -48,11 +48,12 @@ export function SyncIntegrationSection({
 	return (
 		<FormCard title="Sync" class="tr-setting-section--sync">
 			<InfoBlock>
-				Cloud Sync is free and uses your True Recall account. Every device signs
-				in on its own: the account travels with you, the sign-in does not travel
-				with the vault. Shared vault keeps the existing iCloud-style file
-				transport. Each device remains fully usable offline. On mobile, sign-in
-				opens your browser and returns to this vault through an Obsidian link.
+				Cloud Sync is free and uses your True Recall account: 2 devices on a
+				free account, 5 with Pro. Every device signs in on its own: the account
+				travels with you, the sign-in does not travel with the vault, and
+				signing out on a device frees its slot. Each device remains fully usable
+				offline. On mobile, sign-in opens your browser and returns to this vault
+				through an Obsidian link.
 			</InfoBlock>
 
 			<FormField

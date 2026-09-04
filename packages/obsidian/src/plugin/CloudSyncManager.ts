@@ -17,7 +17,10 @@ import { setLastMutation } from "@true-recall/obsidian/services/signals";
 import type TrueRecallPlugin from "../main";
 import { CloudSyncCoordinator } from "./CloudSyncCoordinator";
 
-const SYNC_INTERVAL_MS = 60_000;
+// Sync also runs on every change (2.5 s debounce), at startup and on foreground, so
+// the timer only catches edits made elsewhere while this device sits idle. Five
+// minutes cuts the per-device request volume fivefold against a 60 s poll.
+const SYNC_INTERVAL_MS = 5 * 60_000;
 const CHANGE_DEBOUNCE_MS = 2_500;
 
 export type CloudAuthState =

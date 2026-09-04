@@ -16,6 +16,8 @@
 
 - **Pro is explained where you hit its limits.** The disabled Typed answers and Image Occlusion controls link to the docs page that lists exactly what Pro includes, and the toolbar's locked AI buttons mention the free Pro trial next to the bring-your-own-key option
 - **A device that inherited Cloud Sync from the vault is told to sign in.** Settings travel with the vault, the sign-in does not; the Dashboard now shows a bar with a Sign in button when Cloud Sync is on but this device holds no session, and Settings → Integrations says the same instead of "Account required"
+- **Cloud Sync polls every five minutes instead of every minute.** Syncs after each change, at startup and on foreground are unchanged; the timer only catches edits made on other devices, and the slower beat cuts request volume fivefold
+- **Device limits.** A free account syncs 2 devices, Pro 5. The limit is checked at sign-in and a device that signs out frees its slot; Settings → Integrations explains this next to the Sign in button
 - **Shared vault is marked legacy.** Its settings entry now says why Cloud Sync is the better choice: full-file uploads, conflict copies, slow downloads on phones, per-device setup
 - **Sync errors are readable.** Tapping "Sync error" under the Dashboard shows the message and retries; Settings → Integrations → Sync shows the last result with a Sync now button
 - **Start fresh on a device.** Settings → Data → Device database can delete this device's database so a connected device downloads the collection again on the next start
