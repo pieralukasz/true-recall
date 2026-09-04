@@ -1,6 +1,10 @@
 import { useState } from "preact/hooks";
 
 import { FormCard } from "@true-recall/obsidian/components";
+import {
+	buildFeatureTogglePatch,
+	isFeaturePreferenceEnabled,
+} from "@true-recall/obsidian/plugin/plugin-utils";
 
 import { useSettings } from "../hooks/useSettings";
 import { AIProviderSection } from "./AIProviderSection";
@@ -10,17 +14,14 @@ import {
 	PLUGIN_TIER_SORT_ORDER,
 	PluginAccordion,
 } from "./plugins/PluginAccordion";
-import { PLUGIN_MANIFESTS } from "@true-recall/plugins";
+import { FEATURE_MANIFESTS } from "@true-recall/plugins";
 
-export function PluginsTab() {
+export function FeaturesTab() {
 	const { settings, save } = useSettings();
-	const pluginStates = settings.pluginStates ?? {};
 	const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
 
-	const handleToggle = (pluginId: string, enabled: boolean) => {
-		void save({
-			pluginStates: { ...pluginStates, [pluginId]: enabled },
-		});
+	const handleToggle = (featureId: string, enabled: boolean) => {
+		void save(buildFeatureTogglePatch(settings, featureId, enabled));
 	};
 
 	const handleExpandToggle = (pluginId: string) => {
@@ -39,9 +40,12 @@ export function PluginsTab() {
 		<div class="tr-settings-sections">
 			<PluginAccessOverview settings={settings} />
 			<AIProviderSection />
-			<FormCard title="Installed plugins">
+			<FormCard
+				title="Features"
+				description="Optional True Recall surfaces. Review modes and data tools live in their relevant settings sections."
+			>
 				<div class="tr-plugin-list">
-					{[...PLUGIN_MANIFESTS]
+					{[...FEATURE_MANIFESTS]
 						.sort(
 							(a, b) =>
 								PLUGIN_TIER_SORT_ORDER[a.info.tier] -
@@ -52,7 +56,10 @@ export function PluginsTab() {
 								key={manifest.info.id}
 								manifest={manifest}
 								isActive={isPluginActive(manifest, settings)}
-								isEnabled={pluginStates[manifest.info.id] !== false}
+								isEnabled={isFeaturePreferenceEnabled(
+									settings,
+									manifest.info.id,
+								)}
 								isExpanded={expandedIds.has(manifest.info.id)}
 								onToggle={(enabled) => handleToggle(manifest.info.id, enabled)}
 								onExpandToggle={() => handleExpandToggle(manifest.info.id)}

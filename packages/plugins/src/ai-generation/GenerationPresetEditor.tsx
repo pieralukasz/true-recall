@@ -52,6 +52,7 @@ function ChevronIcon({ expanded }: { expanded: boolean }) {
 		<span
 			ref={iconRef}
 			class={cn("tr-preset-row__chevron", expanded && "is-expanded")}
+			aria-hidden="true"
 		/>
 	);
 }
@@ -70,6 +71,19 @@ function BadgeRow({ preset }: { preset: GenerationPreset }) {
 	);
 }
 
+function CompactBadgeRow({ preset }: { preset: GenerationPreset }) {
+	return (
+		<span class="tr-preset-badges">
+			{preset.requiresPro ? (
+				<span class="tr-preset-badge tr-preset-badge--pro">Pro</span>
+			) : null}
+			{preset.isDefault ? (
+				<span class="tr-preset-badge tr-preset-badge--default">Default</span>
+			) : null}
+		</span>
+	);
+}
+
 function CompactRow({
 	preset,
 	onLanguageChange,
@@ -84,9 +98,7 @@ function CompactRow({
 					<span class="tr-preset-builtin__title">
 						{preset.name.replace(/\s*\(Pro\)$/i, "")}
 					</span>
-					<span class="tr-preset-badges">
-						<BadgeRow preset={preset} />
-					</span>
+					<CompactBadgeRow preset={preset} />
 				</div>
 				<span class="tr-preset-builtin__description">
 					{preset.requiresPro
@@ -166,6 +178,7 @@ export function GenerationPresetEditor({
 
 	const sourceNoteId = `gen-source-note-${preset.id}`;
 	const relatedCardsId = `gen-related-cards-${preset.id}`;
+	const noteTypeId = `gen-note-type-${preset.id}`;
 
 	return (
 		<div class="tr-preset-editor">
@@ -197,8 +210,11 @@ export function GenerationPresetEditor({
 				</div>
 
 				<div class="tr-preset-field">
-					<span class="tr-preset-field__label">Note type</span>
+					<label class="tr-preset-field__label" for={noteTypeId}>
+						Note type
+					</label>
 					<select
+						id={noteTypeId}
 						class="dropdown tr-preset-select"
 						value={preset.noteTypeId}
 						onChange={(e) => {
@@ -294,7 +310,7 @@ export function GenerationPresetEditor({
 				</label>
 			</div>
 
-			<div class="ep:flex ep:items-center ep:justify-between ep:gap-3 ep:pt-1">
+			<div class="tr-preset-editor__footer">
 				<label class="ep:flex ep:items-center ep:gap-2 ep:text-ui-small">
 					<input
 						type="checkbox"
@@ -305,7 +321,7 @@ export function GenerationPresetEditor({
 					/>
 					<span>Make default</span>
 				</label>
-				<div class="ep:flex ep:gap-2">
+				<div class="tr-preset-editor__actions">
 					{onDelete && (
 						<ActionButton
 							label="Delete"

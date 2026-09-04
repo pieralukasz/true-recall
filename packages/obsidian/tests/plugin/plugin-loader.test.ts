@@ -30,6 +30,7 @@ function makePlugin(
 function makeManifest(id: string) {
 	const cleanup = vi.fn();
 	const activate = vi.fn(() => cleanup);
+	const sync = vi.fn();
 	const manifest = {
 		info: {
 			id,
@@ -40,8 +41,9 @@ function makeManifest(id: string) {
 			tier: "free",
 		},
 		activate,
+		sync,
 	} as unknown as PluginManifest;
-	return { manifest, activate, cleanup };
+	return { manifest, activate, cleanup, sync };
 }
 
 describe("PluginLoader", () => {
@@ -127,6 +129,20 @@ describe("PluginLoader", () => {
 			expect(pluginA.activate).toHaveBeenCalledTimes(1);
 			expect(pluginA.cleanup).not.toHaveBeenCalled();
 			expect(plugin.app.workspace.updateOptions).not.toHaveBeenCalled();
+		});
+
+		it("syncs runtime settings for active plugins", () => {
+			const plugin = makePlugin({ "plugin-b": false });
+			const loader = new PluginLoader(plugin, [
+				pluginA.manifest,
+				pluginB.manifest,
+			]);
+			loader.activateAll();
+
+			loader.sync();
+
+			expect(pluginA.sync).toHaveBeenCalledTimes(1);
+			expect(pluginB.sync).not.toHaveBeenCalled();
 		});
 
 		it("refreshes editor options only when a plugin was toggled", () => {

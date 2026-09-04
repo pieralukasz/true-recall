@@ -638,3 +638,38 @@ describe("migrateSettings highlight-card toolbar button backfill", () => {
 		).toBe(false);
 	});
 });
+
+describe("migrateSettings — feature catalog consolidation", () => {
+	it("moves duplicate link and status feature states into their dedicated settings", () => {
+		const { settings, needsSave } = migrateSettings({
+			showLinkStatusIndicators: true,
+			showStatusBarWidget: true,
+			pluginStates: {
+				"link-status-indicators": false,
+				"status-bar-widget": false,
+				"selection-toolbar": false,
+			},
+		} as unknown as Parameters<typeof migrateSettings>[0]);
+
+		expect(settings.showLinkStatusIndicators).toBe(false);
+		expect(settings.showStatusBarWidget).toBe(false);
+		expect(settings.pluginStates).toEqual({ "selection-toolbar": false });
+		expect(needsSave).toBe(true);
+	});
+
+	it("removes legacy AI family, Type-in, and Anki states", () => {
+		const { settings } = migrateSettings({
+			defaultTypeInMode: "ai",
+			pluginStates: {
+				"ai-assistant": true,
+				"ai-generation": false,
+				"card-polish": false,
+				"type-in-mode": false,
+				"anki-import-export": false,
+			},
+		} as unknown as Parameters<typeof migrateSettings>[0]);
+
+		expect(settings.defaultTypeInMode).toBe("off");
+		expect(settings.pluginStates).toEqual({ "ai-assistant": true });
+	});
+});

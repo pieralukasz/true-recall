@@ -1,6 +1,5 @@
 import { useCallback, useState } from "preact/hooks";
 
-import { Clickable } from "@true-recall/obsidian/components";
 import { FormVariantProvider } from "@true-recall/obsidian/components/FormVariantContext";
 import { usePlugin } from "@true-recall/obsidian/preact";
 
@@ -8,16 +7,16 @@ import { DataTab } from "./tabs/DataTab";
 import { FSRSTab } from "./tabs/FSRSTab";
 import { GeneralTab } from "./tabs/GeneralTab";
 import { IntegrationsTab } from "./tabs/IntegrationsTab";
-import { PluginsTab } from "./tabs/PluginsTab";
+import { FeaturesTab } from "./tabs/PluginsTab";
 
-type SettingsTabId = "general" | "fsrs" | "data" | "integrations" | "plugins";
+type SettingsTabId = "general" | "fsrs" | "data" | "integrations" | "features";
 
 const TABS: { id: SettingsTabId; label: string }[] = [
 	{ id: "general", label: "General" },
 	{ id: "fsrs", label: "FSRS" },
 	{ id: "data", label: "Data & Backup" },
 	{ id: "integrations", label: "Integrations" },
-	{ id: "plugins", label: "Plugins" },
+	{ id: "features", label: "Features" },
 ];
 
 /* Styled in settings.styles.css rather than with utilities: the accent tint
@@ -32,20 +31,44 @@ function TabBar({
 	activeTab: SettingsTabId;
 	onTabChange: (id: SettingsTabId) => void;
 }) {
+	const handleKeyDown = (event: KeyboardEvent, index: number) => {
+		if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) {
+			return;
+		}
+
+		event.preventDefault();
+		const nextIndex =
+			event.key === "Home"
+				? 0
+				: event.key === "End"
+					? TABS.length - 1
+					: (index + (event.key === "ArrowRight" ? 1 : -1) + TABS.length) %
+						TABS.length;
+		const nextTab = TABS[nextIndex];
+		if (!nextTab) return;
+		onTabChange(nextTab.id);
+		requestAnimationFrame(() => {
+			document.getElementById(`true-recall-tab-${nextTab.id}`)?.focus();
+		});
+	};
+
 	return (
 		<div class="tr-settings-tabs" role="tablist">
-			{TABS.map((tab) => (
-				<Clickable
+			{TABS.map((tab, index) => (
+				<button
 					key={tab.id}
+					type="button"
+					id={`true-recall-tab-${tab.id}`}
 					class={`tr-settings-tab${activeTab === tab.id ? " is-active" : ""}`}
 					role="tab"
 					aria-selected={activeTab === tab.id}
 					aria-controls={`true-recall-tabpanel-${tab.id}`}
-					stopPropagation={false}
+					tabIndex={activeTab === tab.id ? 0 : -1}
 					onClick={() => onTabChange(tab.id)}
+					onKeyDown={(event) => handleKeyDown(event, index)}
 				>
 					{tab.label}
-				</Clickable>
+				</button>
 			))}
 		</div>
 	);
@@ -69,6 +92,7 @@ export function SettingsApp() {
 				key={activeTab}
 				role="tabpanel"
 				id={`true-recall-tabpanel-${activeTab}`}
+				aria-labelledby={`true-recall-tab-${activeTab}`}
 				class="tr-settings-panel ep-section-enter"
 			>
 				{activeTab === "general" && <GeneralTab />}
@@ -80,7 +104,7 @@ export function SettingsApp() {
 				)}
 				{activeTab === "data" && <DataTab />}
 				{activeTab === "integrations" && <IntegrationsTab />}
-				{activeTab === "plugins" && <PluginsTab />}
+				{activeTab === "features" && <FeaturesTab />}
 			</div>
 		</FormVariantProvider>
 	);

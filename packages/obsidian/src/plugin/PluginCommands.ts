@@ -253,6 +253,18 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 	});
 
 	plugin.addCommand({
+		id: "import-anki",
+		name: "Import Anki deck (.apkg)",
+		callback: () => void plugin.importAnki(),
+	});
+
+	plugin.addCommand({
+		id: "export-anki",
+		name: "Export to Anki (.apkg)",
+		callback: () => plugin.exportAnki(),
+	});
+
+	plugin.addCommand({
 		id: "export-csv",
 		name: "Export as CSV/TSV",
 		callback: () => void plugin.exportCsv(),

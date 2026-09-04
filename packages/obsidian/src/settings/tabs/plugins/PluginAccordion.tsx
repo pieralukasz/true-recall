@@ -1,6 +1,6 @@
 import type { PluginTier } from "@true-recall/core/types";
 
-import { Clickable, ToggleInput } from "@true-recall/obsidian/components";
+import { ToggleInput } from "@true-recall/obsidian/components";
 import { useIcon } from "@true-recall/obsidian/preact/hooks";
 import { cn } from "@true-recall/obsidian/utils/cn";
 
@@ -26,7 +26,7 @@ export const PLUGIN_TIER_SORT_ORDER: Record<PluginTier, number> = {
 
 function PluginIcon({ icon }: { icon: string }) {
 	const iconRef = useIcon(icon);
-	return <span ref={iconRef} class="tr-plugin-row__icon" />;
+	return <span ref={iconRef} class="tr-plugin-row__icon" aria-hidden="true" />;
 }
 
 function ChevronIcon({ expanded }: { expanded: boolean }) {
@@ -35,6 +35,7 @@ function ChevronIcon({ expanded }: { expanded: boolean }) {
 		<span
 			ref={iconRef}
 			class={cn("tr-plugin-row__chevron", expanded && "is-expanded")}
+			aria-hidden="true"
 		/>
 	);
 }
@@ -63,6 +64,7 @@ export function PluginAccordion({
 	const { info } = manifest;
 	const isOn = isActive && isEnabled;
 	const SettingsPanel = manifest.settingsPanel;
+	const detailsId = `true-recall-feature-${info.id}-details`;
 
 	return (
 		<div
@@ -72,51 +74,52 @@ export function PluginAccordion({
 				isActive && !isOn && "is-disabled",
 			)}
 		>
-			<Clickable
-				class="tr-plugin-row"
-				onClick={onExpandToggle}
-				stopPropagation={false}
-			>
-				<PluginIcon icon={info.icon} />
-				<span class="tr-plugin-row__name">{info.name}</span>
-				<span class="tr-plugin-row__badges">
-					<span class={cn("tr-plugin-tier", TIER_BADGE_CLASS[info.tier])}>
-						{TIER_LABEL[info.tier]}
-					</span>
-					{info.deprecated ? (
-						<span class="tr-plugin-tier ep:bg-obs-orange/15 ep:text-obs-orange">
-							DEPRECATED
+			<div class="tr-plugin-row">
+				<button
+					type="button"
+					class="tr-plugin-row__summary"
+					onClick={onExpandToggle}
+					aria-expanded={isExpanded}
+					aria-controls={detailsId}
+				>
+					<PluginIcon icon={info.icon} />
+					<span class="tr-plugin-row__name">{info.name}</span>
+					<span class="tr-plugin-row__badges">
+						<span class={cn("tr-plugin-tier", TIER_BADGE_CLASS[info.tier])}>
+							{TIER_LABEL[info.tier]}
 						</span>
-					) : null}
-				</span>
-				<span class="tr-plugin-row__chevron-slot">
-					<ChevronIcon expanded={isExpanded} />
-				</span>
+						{info.deprecated ? (
+							<span class="tr-plugin-tier ep:bg-obs-orange/15 ep:text-obs-orange">
+								DEPRECATED
+							</span>
+						) : null}
+					</span>
+					<span class="tr-plugin-row__chevron-slot">
+						<ChevronIcon expanded={isExpanded} />
+					</span>
+				</button>
 				<span class="tr-plugin-row__control">
 					{isActive ? (
-						<Clickable
-							stopPropagation
-							preventDefault={false}
-							class="tr-plugin-row__toggle"
-							onClick={() => {}}
-						>
-							<ToggleInput value={isEnabled} onChange={onToggle} />
-						</Clickable>
+						<ToggleInput
+							value={isEnabled}
+							onChange={onToggle}
+							ariaLabel={`Enable ${info.name}`}
+						/>
 					) : (
-						<Clickable
+						<a
 							class="tr-plugin-upgrade"
-							onClick={() =>
-								window.open("https://truerecall.com/pricing", "_blank")
-							}
+							href="https://truerecall.com/pricing"
+							target="_blank"
+							rel="noreferrer"
 						>
 							Upgrade
-						</Clickable>
+						</a>
 					)}
 				</span>
-			</Clickable>
+			</div>
 
 			{isExpanded ? (
-				<div class="tr-plugin-details">
+				<div class="tr-plugin-details" id={detailsId}>
 					<div class="tr-plugin-details__description">
 						<p>{info.description}</p>
 						<ul class="tr-plugin-features">
@@ -132,17 +135,17 @@ export function PluginAccordion({
 								<span>
 									{info.tier === "pro"
 										? "Included with True Recall Pro."
-										: "Add an AI provider to enable this plugin."}
+										: "Add an AI provider to enable this feature."}
 								</span>
 								{info.tier === "pro" ? (
-									<Clickable
+									<a
 										class="tr-plugin-upgrade"
-										onClick={() =>
-											window.open("https://truerecall.com/pricing", "_blank")
-										}
+										href="https://truerecall.com/pricing"
+										target="_blank"
+										rel="noreferrer"
 									>
 										See Pro plans
-									</Clickable>
+									</a>
 								) : null}
 							</div>
 						) : null}

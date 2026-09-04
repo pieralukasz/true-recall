@@ -47,10 +47,6 @@ export function AssistantSettingsPanel({
 
 	return (
 		<>
-			<div class="ep:text-ui-smaller ep:text-obs-muted ep:p-3 ep:mb-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-secondary">
-				Assistant, Flashcard Generator, and Card Polish share one workspace and
-				one Inbox. Each tool keeps its own presets and model configuration.
-			</div>
 			<FormField
 				name="Assistant model"
 				description="Model used for research tasks. Leave empty to use your default AI model."

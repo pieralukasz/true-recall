@@ -80,7 +80,7 @@ export function SelectionToolbar({
 	const enabledButtons = buttons.filter((b) => {
 		if (!b.enabled) return false;
 		if (isPresetButton(b.id)) {
-			if (pluginStates["ai-generation"] === false) return false;
+			if (pluginStates["ai-assistant"] === false) return false;
 			return true;
 		}
 		const pluginInfo = BUTTON_PLUGIN_MAP.get(b.id);

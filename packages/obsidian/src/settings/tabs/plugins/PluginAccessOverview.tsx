@@ -1,14 +1,14 @@
 import { hasAIKey } from "@true-recall/core/ai/config/ai-client-config";
 import type { PluginTier, TrueRecallSettings } from "@true-recall/core/types";
 
-import { Clickable, FormCard } from "@true-recall/obsidian/components";
+import { FormCard } from "@true-recall/obsidian/components";
 import { cn } from "@true-recall/obsidian/utils/cn";
 
 interface AccessLevel {
 	tier: PluginTier;
 	name: string;
 	subtitle: string;
-	features: string[];
+	includes: string;
 }
 
 const ACCESS_LEVELS: AccessLevel[] = [
@@ -16,31 +16,21 @@ const ACCESS_LEVELS: AccessLevel[] = [
 		tier: "free",
 		name: "Free",
 		subtitle: "Local learning tools",
-		features: [
-			"Review, FSRS and dashboards",
-			"Selection toolbar and status widgets",
-			"No AI provider required",
-		],
+		includes: "Review, FSRS, dashboards and Quick Actions — no AI required.",
 	},
 	{
 		tier: "byok",
 		name: "BYOK / Local",
 		subtitle: "Use your own model",
-		features: [
-			"Everything in Free",
-			"Assistant, Flashcard Generator and Card Polish",
-			"OpenRouter, LM Studio or a custom provider",
-		],
+		includes:
+			"Everything in Free, plus AI Workspace with OpenRouter, LM Studio or a custom provider.",
 	},
 	{
 		tier: "pro",
 		name: "True Recall Pro",
-		subtitle: "Managed AI and Pro plugins",
-		features: [
-			"Everything in BYOK",
-			"Managed models, optimized prompts and included AI budget",
-			"Image Occlusion, Type-in Mode and AI Anki Import",
-		],
+		subtitle: "Managed AI and advanced review tools",
+		includes:
+			"Everything in BYOK, plus managed AI, included budget, Image Occlusion and typed-answer grading.",
 	},
 ];
 
@@ -59,8 +49,8 @@ export function PluginAccessOverview({
 
 	return (
 		<FormCard
-			title="What each access level includes"
-			description="Pro includes BYOK and Free. BYOK keeps model choice and billing with your provider."
+			title="Access levels"
+			description="Pro includes BYOK and Free. With BYOK, model choice and billing stay with your provider."
 		>
 			<div class="tr-access-levels">
 				{ACCESS_LEVELS.map((level) => {
@@ -74,29 +64,23 @@ export function PluginAccessOverview({
 								isCurrent && "is-current",
 							)}
 						>
-							<div class="tr-access-level__header">
-								<div>
-									<strong>{level.name}</strong>
-									<span>{level.subtitle}</span>
-								</div>
-								{isCurrent ? (
-									<span class="tr-access-level__current">Current</span>
-								) : null}
+							<div class="tr-access-level__identity">
+								<strong>{level.name}</strong>
+								<span>{level.subtitle}</span>
 							</div>
-							<ul>
-								{level.features.map((feature) => (
-									<li key={feature}>{feature}</li>
-								))}
-							</ul>
+							<p class="tr-access-level__includes">{level.includes}</p>
+							{isCurrent ? (
+								<span class="tr-access-level__current">Current</span>
+							) : null}
 							{level.tier === "pro" && activeTier !== "pro" ? (
-								<Clickable
+								<a
 									class="tr-access-level__upgrade"
-									onClick={() =>
-										window.open("https://truerecall.com/pricing", "_blank")
-									}
+									href="https://truerecall.com/pricing"
+									target="_blank"
+									rel="noreferrer"
 								>
-									See Pro plans
-								</Clickable>
+									View plans
+								</a>
 							) : null}
 						</div>
 					);

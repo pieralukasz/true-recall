@@ -9,6 +9,7 @@ import {
 	FormField,
 	ToggleInput,
 } from "@true-recall/obsidian/components";
+import { usePlugin } from "@true-recall/obsidian/preact";
 
 import type { PluginSettingsProps } from "../types";
 import { CardAIPresetEditor } from "./CardAIPresetEditor";
@@ -53,6 +54,7 @@ export function createCardAISettingsPanel(
 	config: CardAIPanelConfig,
 ): ComponentType<PluginSettingsProps> {
 	return function CardAISettingsPanel({ settings, save }: PluginSettingsProps) {
+		const plugin = usePlugin();
 		const [bucket, persistBucket] = usePersistentSettingsSlice(
 			settings[config.bucketKey] ?? EMPTY_BUCKET,
 			save,
@@ -129,7 +131,17 @@ export function createCardAISettingsPanel(
 			[persistBucket],
 		);
 
-		const removeUserPreset = (p: CardAIPreset) => {
+		const removeUserPreset = async (p: CardAIPreset) => {
+			const { confirm } = await import(
+				"@true-recall/obsidian/modals/shared/ConfirmModal"
+			);
+			const confirmed = await confirm(plugin.app, {
+				title: "Delete Card Editing Preset",
+				message: `Delete “${p.name}”? This action cannot be undone.`,
+				confirmLabel: "Delete Preset",
+			});
+			if (!confirmed) return;
+
 			persistBucket(
 				(current) => ({
 					...current,

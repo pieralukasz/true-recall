@@ -20,6 +20,7 @@
 	max-width: 980px;
 	margin-inline: auto;
 	padding-bottom: var(--size-4-5);
+	container-type: inline-size;
 }
 
 /* ── Tab bar ── */
@@ -41,12 +42,15 @@
 .tr-settings-tab {
 	flex-shrink: 0;
 	padding: 7px var(--size-4-4);
+	border: 0;
 	border-radius: calc(var(--radius-l) - 3px);
+	background: transparent;
 	color: var(--text-muted);
 	font-size: var(--font-ui-small);
 	font-weight: var(--font-medium);
 	line-height: var(--line-height-tight);
 	white-space: nowrap;
+	box-shadow: none;
 	cursor: pointer;
 	transition:
 		color 0.15s ease,
@@ -57,6 +61,7 @@
 .tr-settings-tab:hover {
 	background-color: var(--background-modifier-hover);
 	color: var(--text-normal);
+	box-shadow: none;
 }
 
 .tr-settings-tab.is-active {
@@ -247,55 +252,54 @@
 /* ── Plugin access levels ── */
 
 .tr-settings .tr-access-levels {
-	display: grid;
-	grid-template-columns: repeat(3, minmax(0, 1fr));
-	gap: var(--size-4-3);
+	display: flex;
+	flex-direction: column;
+	gap: 0;
 	padding-top: var(--size-4-3);
+	border-top: var(--border-width) solid var(--background-modifier-border);
 }
 
 .tr-settings .tr-access-level {
-	display: flex;
+	display: grid;
+	grid-template-columns: minmax(132px, 0.55fr) minmax(0, 1.8fr) max-content;
+	align-items: center;
+	gap: var(--size-4-4);
 	min-width: 0;
-	min-height: 176px;
-	flex-direction: column;
-	padding: var(--size-4-4);
-	border: var(--border-width) solid var(--background-modifier-border);
-	border-radius: var(--radius-m);
-	background: var(--background-primary);
+	min-height: 76px;
+	padding: var(--size-4-3) var(--size-4-4);
+	border-bottom: var(--border-width) solid var(--background-modifier-border);
 }
 
 .tr-settings .tr-access-level--pro {
-	border-color: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.28);
 	background: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.055);
 }
 
 .tr-settings .tr-access-level.is-current {
-	border-color: var(--interactive-accent);
-	box-shadow: 0 0 0 1px var(--interactive-accent);
+	box-shadow: inset 3px 0 0 var(--interactive-accent);
 }
 
-.tr-settings .tr-access-level__header {
-	display: flex;
-	align-items: flex-start;
-	justify-content: space-between;
-	gap: var(--size-4-2);
-}
-
-.tr-settings .tr-access-level__header > div {
+.tr-settings .tr-access-level__identity {
 	display: flex;
 	min-width: 0;
 	flex-direction: column;
 	gap: 2px;
 }
 
-.tr-settings .tr-access-level__header strong {
+.tr-settings .tr-access-level__identity strong {
 	font-size: var(--font-ui-small);
 	font-weight: var(--font-semibold);
 }
 
-.tr-settings .tr-access-level__header > div > span {
+.tr-settings .tr-access-level__identity > span,
+.tr-settings .tr-access-level__includes {
 	color: var(--text-muted);
 	font-size: var(--font-ui-smallest);
+}
+
+.tr-settings .tr-access-level__includes {
+	min-width: 0;
+	margin: 0;
+	line-height: 1.45;
 }
 
 .tr-settings .tr-access-level__current {
@@ -307,38 +311,11 @@
 	font-weight: var(--font-medium);
 }
 
-.tr-settings .tr-access-level ul {
-	display: flex;
-	flex: 1;
-	flex-direction: column;
-	gap: 5px;
-	margin: var(--size-4-3) 0 0;
-	padding: 0;
-	list-style: none;
-}
-
-.tr-settings .tr-access-level li {
-	position: relative;
-	padding-inline-start: 16px;
-	color: var(--text-muted);
-	font-size: var(--font-ui-smallest);
-	line-height: 1.4;
-}
-
-.tr-settings .tr-access-level li::before {
-	position: absolute;
-	left: 0;
-	content: "✓";
-	color: var(--text-accent);
-	font-weight: var(--font-semibold);
-}
-
 .tr-settings .tr-access-level__upgrade {
-	align-self: flex-start;
-	margin-top: var(--size-4-3);
 	color: var(--text-accent);
 	font-size: var(--font-ui-smallest);
 	font-weight: var(--font-medium);
+	white-space: nowrap;
 }
 
 /* ── Controls ── */
@@ -549,28 +526,53 @@
 	transition: opacity 0.15s ease;
 }
 
-.tr-settings .tr-plugin-item.is-unavailable > .tr-plugin-row {
-	opacity: 0.62;
-}
-
-.tr-settings .tr-plugin-item.is-disabled {
-	opacity: 0.68;
-}
-
 .tr-settings .tr-plugin-row {
 	display: grid;
-	grid-template-columns: 24px minmax(160px, 1fr) max-content 20px 76px;
+	grid-template-columns: minmax(0, 1fr) 76px;
 	align-items: center;
-	gap: var(--size-4-3);
+	gap: var(--size-4-2);
 	width: 100%;
 	min-height: 48px;
-	padding: var(--size-4-2) var(--size-4-3);
+	padding: var(--size-4-1) var(--size-4-3) var(--size-4-1) 0;
 	border-radius: var(--radius-m);
 	text-align: left;
 }
 
 .tr-settings .tr-plugin-row:hover {
 	background: var(--background-modifier-hover);
+}
+
+.tr-settings .tr-plugin-row__summary {
+	display: grid;
+	grid-template-columns: 24px minmax(160px, 1fr) max-content 20px;
+	align-items: center;
+	gap: var(--size-4-3);
+	width: 100%;
+	min-width: 0;
+	min-height: 44px;
+	padding: var(--size-4-2) 0 var(--size-4-2) var(--size-4-3);
+	border: 0;
+	background: transparent;
+	box-shadow: none;
+	text-align: left;
+	cursor: pointer;
+}
+
+.tr-settings .tr-plugin-row__summary:hover,
+.tr-settings .tr-plugin-row__summary:focus {
+	background: transparent;
+	box-shadow: none;
+}
+
+.tr-settings .tr-plugin-row__summary:focus-visible {
+	outline: 2px solid
+		hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.5);
+	outline-offset: -2px;
+}
+
+.tr-settings .tr-plugin-item.is-disabled .tr-plugin-row__name,
+.tr-settings .tr-plugin-item.is-unavailable .tr-plugin-row__name {
+	color: var(--text-muted);
 }
 
 .tr-settings .tr-plugin-row__icon {
@@ -706,11 +708,47 @@
 
 /* ── AI preset editors ── */
 
+.tr-settings .tr-ai-workspace-nav {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--size-4-1);
+	padding: 3px;
+	border: var(--border-width) solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	background: var(--background-secondary);
+}
+
+.tr-settings .tr-ai-workspace-nav button {
+	flex: 1 1 132px;
+	min-height: 34px;
+	padding: 5px var(--size-4-3);
+	border: 0;
+	border-radius: calc(var(--radius-m) - 2px);
+	background: transparent;
+	box-shadow: none;
+	color: var(--text-muted);
+	font-size: var(--font-ui-smallest);
+	font-weight: var(--font-medium);
+}
+
+.tr-settings .tr-ai-workspace-nav button:hover {
+	background: var(--background-modifier-hover);
+	box-shadow: none;
+	color: var(--text-normal);
+}
+
+.tr-settings .tr-ai-workspace-nav button.is-active {
+	background: var(--background-primary);
+	box-shadow: var(--input-shadow);
+	color: var(--text-accent);
+}
+
 .tr-settings .tr-preset-section {
 	display: flex;
 	flex-direction: column;
 	gap: var(--size-4-3);
 	margin-top: var(--size-4-5);
+	container-type: inline-size;
 }
 
 .tr-settings .tr-preset-section__header {
@@ -858,13 +896,14 @@
 }
 
 .tr-settings .tr-preset-badge--default {
-	background: var(--background-modifier-success);
+	border: var(--border-width) solid var(--text-success);
+	background: transparent;
 	color: var(--text-success);
 }
 
 .tr-settings .tr-preset-builtin {
 	display: grid;
-	grid-template-columns: minmax(0, 1fr) max-content;
+	grid-template-columns: minmax(0, 1fr) minmax(180px, 42%);
 	align-items: center;
 	gap: var(--size-4-4);
 	padding: var(--size-4-3) var(--size-4-4);
@@ -889,7 +928,12 @@
 .tr-settings .tr-preset-builtin__title-row {
 	display: flex;
 	align-items: center;
+	flex-wrap: wrap;
 	gap: var(--size-4-2);
+}
+
+.tr-settings .tr-preset-builtin__title {
+	flex: 1 1 180px;
 }
 
 .tr-settings .tr-preset-builtin__language {
@@ -898,8 +942,50 @@
 	font-size: var(--font-ui-smallest);
 }
 
+.tr-settings .tr-preset-builtin__language .tr-preset-select {
+	field-sizing: fixed;
+	width: 100%;
+	max-width: 280px;
+}
+
+@container (max-width: 620px) {
+	.tr-settings .tr-access-level {
+		grid-template-columns: minmax(0, 1fr) max-content;
+		gap: var(--size-4-2) var(--size-4-3);
+	}
+
+	.tr-settings .tr-access-level__includes {
+		grid-column: 1 / -1;
+		grid-row: 2;
+	}
+
+	.tr-settings .tr-access-level__current,
+	.tr-settings .tr-access-level__upgrade {
+		grid-column: 2;
+		grid-row: 1;
+	}
+}
+
+@container (max-width: 560px) {
+	.tr-settings .tr-preset-builtin {
+		grid-template-columns: 1fr;
+	}
+
+	.tr-settings .tr-preset-builtin__language {
+		align-items: flex-start;
+	}
+
+	.tr-settings .tr-preset-builtin__language .tr-preset-select {
+		max-width: 100%;
+	}
+}
+
 .tr-settings .tr-preset-editor {
 	display: flex;
+	width: 100%;
+	min-width: 0;
+	max-width: 100%;
+	box-sizing: border-box;
 	flex-direction: column;
 	gap: var(--size-4-4);
 	padding: var(--size-4-4);
@@ -969,7 +1055,7 @@
 }
 
 .tr-settings .tr-preset-field--name > div {
-	width: min(240px, 100%);
+	width: 100%;
 }
 
 .tr-settings .tr-preset-field--name input {
@@ -987,14 +1073,70 @@
 	box-shadow: var(--input-shadow);
 }
 
+.tr-settings .tr-preset-editor select.tr-preset-select {
+	field-sizing: fixed;
+	width: 100%;
+}
+
 .tr-settings select.tr-preset-select.is-compact {
 	min-width: 180px;
 }
 
 .tr-settings .tr-preset-field--full textarea {
+	width: 100%;
+	min-width: 0;
+	max-width: 100%;
+	box-sizing: border-box;
 	min-height: 108px;
 	border-radius: var(--radius-m);
 	box-shadow: none;
+}
+
+.tr-settings .tr-preset-editor__footer {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--size-4-3);
+	padding-top: var(--size-4-1);
+}
+
+.tr-settings .tr-preset-editor__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--size-4-2);
+}
+
+@container (max-width: 760px) {
+	.tr-settings .tr-preset-editor__grid,
+	.tr-settings .tr-preset-editor__grid--three {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+
+	.tr-settings .tr-preset-editor__grid > :last-child,
+	.tr-settings .tr-preset-editor__grid--three > :last-child {
+		grid-column: 1 / -1;
+	}
+}
+
+@container (max-width: 480px) {
+	.tr-settings .tr-preset-editor__grid,
+	.tr-settings .tr-preset-editor__grid--three {
+		grid-template-columns: 1fr;
+	}
+
+	.tr-settings .tr-preset-editor__grid > :last-child,
+	.tr-settings .tr-preset-editor__grid--three > :last-child {
+		grid-column: auto;
+	}
+
+	.tr-settings .tr-preset-editor__footer {
+		align-items: stretch;
+		flex-direction: column;
+	}
+
+	.tr-settings .tr-preset-editor__actions {
+		justify-content: flex-end;
+	}
 }
 
 .tr-settings .tr-preset-section__actions {
@@ -1140,7 +1282,12 @@
 	}
 
 	.tr-settings .tr-plugin-row {
-		grid-template-columns: 20px minmax(120px, 1fr) max-content 16px 52px;
+		grid-template-columns: minmax(0, 1fr) 52px;
+		gap: var(--size-4-2);
+	}
+
+	.tr-settings .tr-plugin-row__summary {
+		grid-template-columns: 20px minmax(120px, 1fr) max-content 16px;
 		gap: var(--size-4-2);
 	}
 

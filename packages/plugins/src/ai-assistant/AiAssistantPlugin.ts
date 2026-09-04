@@ -5,6 +5,7 @@ import { VIEW_TYPE_REVIEW } from "@true-recall/core/constants";
 
 import { openAssistantThreadModal } from "@true-recall/obsidian/features/assistant/ui/AskAiModal";
 import { readLiveAssistantContext } from "@true-recall/obsidian/features/assistant/ui/useLiveAssistantContext";
+import { isPluginEnabled } from "@true-recall/obsidian/plugin/plugin-utils";
 
 import type { PluginContext } from "../types";
 
@@ -13,7 +14,7 @@ export class AiAssistantPlugin {
 
 	activate(): void {
 		this.ctx.obsidianPlugin.assistantService?.start();
-		this.registerPresetCommands();
+		this.syncPresetCommands();
 	}
 
 	deactivate(): void {
@@ -23,21 +24,24 @@ export class AiAssistantPlugin {
 
 	/** One hotkey-bindable command per chip, active in the review view. The
 	 * command ids are part of the user's hotkey config — never rename them. */
-	private registerPresetCommands(): void {
-		for (const declared of this.ctx.settings.assistantPresets ?? []) {
+	syncPresetCommands(): void {
+		const plugin = this.ctx.obsidianPlugin;
+		for (const declared of plugin.settings.assistantPresets ?? []) {
 			const presetId = declared.id;
+			const commandId = `ai-assistant-${presetId}`;
+			if (this.hasCommand(commandId)) continue;
 			this.ctx.obsidianPlugin.addCommand({
-				id: `ai-assistant-${presetId}`,
+				id: commandId,
 				name: `Ask AI: ${declared.name}`,
 				checkCallback: (checking) => {
-					if (this.ctx.settings.pluginStates?.["ai-assistant"] === false) {
+					if (!isPluginEnabled(plugin.settings, "ai-assistant")) {
 						return false;
 					}
 					const activeView = this.ctx.workspace.getActiveViewOfType(ItemView);
 					if ((activeView?.getViewType() ?? "") !== VIEW_TYPE_REVIEW) {
 						return false;
 					}
-					const preset = (this.ctx.settings.assistantPresets ?? []).find(
+					const preset = (plugin.settings.assistantPresets ?? []).find(
 						(p) => p.id === presetId,
 					);
 					if (!preset) return false;
@@ -46,6 +50,14 @@ export class AiAssistantPlugin {
 				},
 			});
 		}
+	}
+
+	private hasCommand(id: string): boolean {
+		const app = this.ctx.app as unknown as {
+			commands?: { commands?: Record<string, unknown> };
+		};
+		const pluginId = this.ctx.obsidianPlugin.manifest.id;
+		return app.commands?.commands?.[`${pluginId}:${id}`] !== undefined;
 	}
 
 	/** Runs straight away — a named preset needs no surface to pick from — and

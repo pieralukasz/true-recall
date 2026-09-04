@@ -12,6 +12,7 @@ import type {
 	ReviewContentWidth,
 	ReviewKeybindings,
 	ReviewViewMode,
+	TypeInMode,
 } from "@true-recall/core/types";
 
 import {
@@ -21,9 +22,15 @@ import {
 	InfoBlock,
 	SelectInput,
 	SliderInput,
+	TextAreaInput,
 	ToggleInput,
 } from "@true-recall/obsidian/components";
 import { KeyboardHandler } from "@true-recall/obsidian/features/study/ui/review/handlers/KeyboardHandler";
+import {
+	buildFeatureTogglePatch,
+	isFeatureAvailable,
+	isPluginEnabled,
+} from "@true-recall/obsidian/plugin/plugin-utils";
 import { useIcon } from "@true-recall/obsidian/preact";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 
@@ -139,6 +146,27 @@ export function GeneralTab() {
 				</FormField>
 
 				<FormField
+					name="Typed answers"
+					description={
+						settings.proKey
+							? "Default mode for new review sessions. Press T to toggle it during review."
+							: "AI semantic grading for typed answers is included with True Recall Pro."
+					}
+				>
+					<SelectInput
+						value={settings.defaultTypeInMode}
+						disabled={!isFeatureAvailable(settings, "type-in-mode", "pro")}
+						onChange={(value) =>
+							void save({ defaultTypeInMode: value as TypeInMode })
+						}
+						options={[
+							{ value: "off", label: "Off" },
+							{ value: "ai", label: "AI grading" },
+						]}
+					/>
+				</FormField>
+
+				<FormField
 					name="Show frontmatter in note review"
 					description="Display YAML frontmatter when reviewing whole notes"
 				>
@@ -164,44 +192,45 @@ export function GeneralTab() {
 				/>
 			</FormCard>
 
-			<FormCard title="Editor integration">
+			<FormCard
+				title="Image occlusion"
+				description="Create visual flashcards by masking regions of diagrams, maps, and images."
+			>
 				<FormField
-					name="Show link status indicators"
-					description="Display inline flashcard counts (new/learning/review) next to [[links]] that point to notes with flashcards"
+					name="Creation tools"
+					description={
+						settings.proKey
+							? "Show Image Occlusion in commands and quick-action toolbars. Existing cards remain readable when disabled."
+							: "Image Occlusion creation tools are included with True Recall Pro."
+					}
 				>
 					<ToggleInput
-						value={settings.showLinkStatusIndicators}
-						onChange={(v) => void save({ showLinkStatusIndicators: v })}
+						value={isPluginEnabled(settings, "image-occlusion")}
+						disabled={!isFeatureAvailable(settings, "image-occlusion", "pro")}
+						onChange={(value) =>
+							void save(
+								buildFeatureTogglePatch(settings, "image-occlusion", value),
+							)
+						}
 					/>
 				</FormField>
 
 				<FormField
-					name="Show donuts in flashcard panel"
-					description="Display donut indicators next to links inside flashcard panel cards"
+					name="AI detection prompt"
+					description="Optional custom prompt for automatic region detection. Leave empty to use the built-in prompt."
+					layout="stacked"
 				>
-					<ToggleInput
-						value={settings.showDonutsInPanel}
-						onChange={(v) => void save({ showDonutsInPanel: v })}
-					/>
-				</FormField>
-
-				<FormField
-					name="Show donuts in review"
-					description="Display donut indicators next to links during review sessions"
-				>
-					<ToggleInput
-						value={settings.showDonutsInReview}
-						onChange={(v) => void save({ showDonutsInReview: v })}
-					/>
-				</FormField>
-
-				<FormField
-					name="Show status bar widget"
-					description="Display global due/new/learning card counts in the bottom status bar"
-				>
-					<ToggleInput
-						value={settings.showStatusBarWidget}
-						onChange={(v) => void save({ showStatusBarWidget: v })}
+					<TextAreaInput
+						value={settings.aiIODetectionPrompt ?? ""}
+						disabled={!isPluginEnabled(settings, "image-occlusion")}
+						onChange={(value) =>
+							void save({
+								aiIODetectionPrompt:
+									value.trim().length > 0 ? value : undefined,
+							})
+						}
+						rows={4}
+						class="ep:w-full ep:font-mono ep:text-ui-smaller"
 					/>
 				</FormField>
 			</FormCard>
