@@ -1,6 +1,21 @@
 import { hasAIKey } from "@true-recall/core/ai/config/ai-client-config";
 import type { PluginTier, TrueRecallSettings } from "@true-recall/core/types";
 
+/** Human-readable name of each access level, as shown in the Features tab. */
+export const ACCESS_TIER_LABEL: Record<PluginTier, string> = {
+	free: "Free",
+	byok: "BYOK",
+	pro: "True Recall Pro",
+};
+
+/** The access level the current settings put the user on. A Pro key wins,
+ * any other AI key means BYOK, nothing means Free. */
+export function resolveAccessTier(settings: TrueRecallSettings): PluginTier {
+	if (settings.proKey) return "pro";
+	if (hasAIKey(settings)) return "byok";
+	return "free";
+}
+
 export function isTierUnlocked(
 	tier: PluginTier,
 	settings: TrueRecallSettings,

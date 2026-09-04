@@ -3,15 +3,18 @@ import { useCallback, useRef, useState } from "preact/hooks";
 import {
 	DEFAULT_SETTINGS,
 	TRUERECALL_BMC_URL,
+	TRUERECALL_DASHBOARD_URL,
 	TRUERECALL_DISCORD_URL,
 	TRUERECALL_GITHUB_URL,
 	TRUERECALL_NEWSLETTER_URL,
+	TRUERECALL_PRICING_URL,
 	TRUERECALL_WEB_URL,
 } from "@true-recall/core/constants";
 import type {
 	ReviewContentWidth,
 	ReviewKeybindings,
 	ReviewViewMode,
+	TrueRecallSettings,
 	TypeInMode,
 } from "@true-recall/core/types";
 
@@ -27,9 +30,11 @@ import {
 } from "@true-recall/obsidian/components";
 import { KeyboardHandler } from "@true-recall/obsidian/features/study/ui/review/handlers/KeyboardHandler";
 import {
+	ACCESS_TIER_LABEL,
 	buildFeatureTogglePatch,
 	isFeatureAvailable,
 	isPluginEnabled,
+	resolveAccessTier,
 } from "@true-recall/obsidian/plugin/plugin-utils";
 import { useIcon } from "@true-recall/obsidian/preact";
 import { notify } from "@true-recall/obsidian/services/notification.service";
@@ -257,6 +262,7 @@ export function GeneralTab() {
 			</FormCard>
 
 			<FormCard title="About">
+				<PlanField settings={settings} />
 				<FormField
 					name="What's New"
 					description={`See release notes for version ${plugin.manifest.version}`}
@@ -348,6 +354,38 @@ const KEYBINDING_FIELDS: {
 	{ key: "hard", label: "Hard", description: "Rate Hard" },
 	{ key: "easy", label: "Easy", description: "Rate Easy" },
 ];
+
+function PlanField({ settings }: { settings: TrueRecallSettings }) {
+	const tier = resolveAccessTier(settings);
+	const isPro = tier === "pro";
+	return (
+		<FormField
+			name="Plan"
+			description={
+				isPro
+					? "Managed AI, Image Occlusion and Typed Answers are unlocked."
+					: tier === "byok"
+						? "You use your own AI provider. Pro adds managed AI, Image Occlusion and Typed Answers."
+						: "Review and scheduling are free. Add an AI key or try Pro free for AI flashcards."
+			}
+		>
+			<div class="ep:flex ep:items-center ep:gap-2">
+				<span class="ep:text-sm ep:font-medium">{ACCESS_TIER_LABEL[tier]}</span>
+				<Clickable
+					class="ep-btn ep-btn-outline"
+					onClick={() =>
+						window.open(
+							isPro ? TRUERECALL_DASHBOARD_URL : TRUERECALL_PRICING_URL,
+							"_blank",
+						)
+					}
+				>
+					{isPro ? "Manage subscription" : "View plans"}
+				</Clickable>
+			</div>
+		</FormField>
+	);
+}
 
 function ReviewKeybindingsSection({
 	keybindings,

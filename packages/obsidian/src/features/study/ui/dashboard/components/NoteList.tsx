@@ -3,6 +3,7 @@ import { TFile } from "obsidian";
 import type { RefObject } from "preact";
 import { useRef } from "preact/hooks";
 
+import { resolveAccessTier } from "@true-recall/obsidian/plugin/plugin-utils";
 import { usePlugin } from "@true-recall/obsidian/preact";
 
 import { getDragClass } from "../helpers/drag-drop";
@@ -159,9 +160,20 @@ export function NoteList({
 
 			{filteredNotes.length === 0 ? (
 				<div class="ep:text-sm ep:text-obs-muted ep:p-4 ep:text-center">
-					{notes.length === 0
-						? "No notes with flashcards yet."
-						: "No matching notes."}
+					{notes.length === 0 ? (
+						<>
+							<div>No notes with flashcards yet.</div>
+							<div class="ep:mt-1">
+								Select text in any note and use the Quick Actions Toolbar to
+								create cards.
+								{resolveAccessTier(plugin.settings) === "free"
+									? " AI generation needs your own API key or True Recall Pro, which you can try free."
+									: null}
+							</div>
+						</>
+					) : (
+						"No matching notes."
+					)}
 				</div>
 			) : (
 				<div

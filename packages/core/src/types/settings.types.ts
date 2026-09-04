@@ -431,6 +431,8 @@ export interface TrueRecallSettings {
 
 	/** Last version the user has seen release notes for */
 	lastSeenVersion?: string;
+	/** The dashboard's one-time Free / BYOK / Pro intro bar was dismissed */
+	isProIntroDismissed?: boolean;
 
 	/** Enable local HTTP API for CLI integration */
 	enableLocalApi: boolean;

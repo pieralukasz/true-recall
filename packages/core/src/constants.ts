@@ -401,6 +401,10 @@ export const TRUERECALL_WEB_URL =
 		: "https://www.truerecall.app";
 export const TRUERECALL_NEWSLETTER_URL = "https://truerecall.app/#newsletter";
 export const TRUERECALL_PRICING_URL = `${TRUERECALL_WEB_URL}/pricing/`;
+/** Sign-in page; new accounts get a free Pro trial key. */
+export const TRUERECALL_LOGIN_URL = `${TRUERECALL_WEB_URL}/login`;
+/** Account dashboard with the Pro key and subscription management. */
+export const TRUERECALL_DASHBOARD_URL = `${TRUERECALL_WEB_URL}/dashboard`;
 /** Docs page that lists exactly what a Pro key unlocks. */
 export const TRUERECALL_PRO_GUIDE_URL = `${TRUERECALL_WEB_URL}/getting-started/what-pro-includes/`;
 export const TRUERECALL_BMC_URL = "https://www.buymeacoffee.com/1Hzbip1K9Q";

@@ -1,8 +1,8 @@
-import { hasAIKey } from "@true-recall/core/ai/config/ai-client-config";
 import { TRUERECALL_PRICING_URL } from "@true-recall/core/constants";
 import type { PluginTier, TrueRecallSettings } from "@true-recall/core/types";
 
 import { FormCard } from "@true-recall/obsidian/components";
+import { resolveAccessTier } from "@true-recall/obsidian/plugin/plugin-utils";
 import { cn } from "@true-recall/obsidian/utils/cn";
 
 interface AccessLevel {
@@ -35,18 +35,12 @@ const ACCESS_LEVELS: AccessLevel[] = [
 	},
 ];
 
-function currentTier(settings: TrueRecallSettings): PluginTier {
-	if (settings.proKey) return "pro";
-	if (hasAIKey(settings)) return "byok";
-	return "free";
-}
-
 export function PluginAccessOverview({
 	settings,
 }: {
 	settings: TrueRecallSettings;
 }) {
-	const activeTier = currentTier(settings);
+	const activeTier = resolveAccessTier(settings);
 
 	return (
 		<FormCard

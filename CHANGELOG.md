@@ -12,6 +12,7 @@
 ### Improvements
 
 - **Pro is explained where you hit its limits.** The disabled Typed answers and Image Occlusion controls link to the docs page that lists exactly what Pro includes, and the toolbar's locked AI buttons mention the free Pro trial next to the bring-your-own-key option
+- **You can tell which plan you are on.** The Dashboard shows a one-time, dismissable bar for users without any AI key explaining what is free and where AI comes from; the empty Dashboard says the same; the What's New dialog states your current level (Free, BYOK or Pro) with a link to what Pro adds; and Settings → General → About gains a Plan row with View plans or Manage subscription
 
 ## 2.4.1 (2026-09-01)
 
