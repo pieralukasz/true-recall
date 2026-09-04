@@ -113,6 +113,24 @@ describe("migrateDeviceDbLocation", () => {
 		expect(fs.files.has(LOCAL)).toBe(false);
 	});
 
+	it("rolls a moved temporary file back when the main move fails", async () => {
+		const fs = new MapPersistence();
+		fs.files.set(SHARED, bytes("main"));
+		fs.files.set(`${SHARED}.tmp`, bytes("newest"));
+		const rename = fs.rename.bind(fs);
+		vi.spyOn(fs, "rename").mockImplementation(async (from, to) => {
+			if (from === SHARED) throw new Error("EPERM");
+			await rename(from, to);
+		});
+
+		expect(await migrateDeviceDbLocation(fs, DEVICE_ID, "local")).toBe(
+			DB_FOLDER,
+		);
+		expect(fs.files.get(SHARED)).toEqual(bytes("main"));
+		expect(fs.files.get(`${SHARED}.tmp`)).toEqual(bytes("newest"));
+		expect(fs.files.has(`${LOCAL}.tmp`)).toBe(false);
+	});
+
 	it("returns the target folder and writes nothing when no file exists", async () => {
 		const fs = new MapPersistence();
 		const rename = vi.spyOn(fs, "rename");

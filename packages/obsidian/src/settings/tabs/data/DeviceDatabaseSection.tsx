@@ -21,6 +21,9 @@ export function DeviceDatabaseSection() {
 
 	const deviceId = plugin.deviceIdService?.getDeviceId() || "unknown";
 	const deviceLabel = plugin.deviceIdService?.getDeviceLabel();
+	const databasePath = plugin.deviceIdService
+		? plugin.getDeviceDbPath(deviceId)
+		: "unknown";
 
 	const handleSwitchDatabase = useCallback(async () => {
 		if (!plugin.deviceDiscovery || !plugin.deviceIdService) {
@@ -101,7 +104,7 @@ export function DeviceDatabaseSection() {
 					Device ID: <code>{deviceId}</code>
 				</p>
 				<p>
-					Database: <code>{`.true-recall/true-recall-${deviceId}.db`}</code>
+					Database: <code>{databasePath}</code>
 				</p>
 			</InfoBlock>
 
@@ -113,13 +116,11 @@ export function DeviceDatabaseSection() {
 					value={deviceLabel || ""}
 					onChange={(v) => {
 						plugin.deviceIdService?.setDeviceLabel(v);
-						const label = plugin.deviceIdService?.getDeviceLabel();
-						if (label) {
-							plugin.coreApp.cardStore?.cards.setSyncMetadata(
-								"device:label",
-								label,
-							);
-						}
+						const label = plugin.deviceIdService?.getDeviceLabel() ?? "";
+						plugin.coreApp.cardStore?.cards.setSyncMetadataIfChanged(
+							"device:label",
+							label,
+						);
 					}}
 					placeholder="e.g., work laptop, phone"
 				/>

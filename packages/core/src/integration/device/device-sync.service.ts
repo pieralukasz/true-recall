@@ -252,7 +252,10 @@ export class DeviceSyncService {
 					cardIdsChanged.push(...conflictedCardIds);
 				}
 
-				this.localStore.cards.setSyncMetadata(syncKey, String(maxObserved));
+				this.localStore.cards.setSyncMetadataIfChanged(
+					syncKey,
+					String(maxObserved),
+				);
 			});
 
 			if (cardsApplied > 0 || reviewLogsApplied > 0) {

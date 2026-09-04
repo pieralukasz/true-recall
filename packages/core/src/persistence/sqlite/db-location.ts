@@ -66,19 +66,31 @@ export async function migrateDeviceDbLocation(
 	const otherFolder = getDbFolder(target === "shared" ? "local" : "shared");
 	const targetPath = getDeviceDbPath(deviceId, targetFolder);
 	const otherPath = getDeviceDbPath(deviceId, otherFolder);
+	const targetTmpPath = getDbTmpPath(targetPath);
+	const otherTmpPath = getDbTmpPath(otherPath);
 
 	if (await persistence.exists(targetPath)) return targetFolder;
 	if (!(await persistence.exists(otherPath))) return targetFolder;
 
+	let movedTmp = false;
 	try {
 		await ensureFolder(persistence, targetFolder);
-		await moveIfExists(
-			persistence,
-			getDbTmpPath(otherPath),
-			getDbTmpPath(targetPath),
-		);
+		if (await persistence.exists(otherTmpPath)) {
+			await persistence.rename(otherTmpPath, targetTmpPath);
+			movedTmp = true;
+		}
 		await persistence.rename(otherPath, targetPath);
 	} catch (error) {
+		if (movedTmp) {
+			try {
+				await persistence.rename(targetTmpPath, otherTmpPath);
+			} catch (rollbackError) {
+				console.error(
+					`[True Recall] Could not roll back temporary database move from ${targetFolder} to ${otherFolder}:`,
+					rollbackError,
+				);
+			}
+		}
 		console.error(
 			`[True Recall] Could not move database from ${otherFolder} to ${targetFolder}:`,
 			error,
