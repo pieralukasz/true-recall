@@ -380,6 +380,9 @@ export interface TrueRecallSettings {
 	/** Default type-in mode at the start of each review session */
 	defaultTypeInMode: TypeInMode;
 
+	/** Show the source file name in review cards (default: false) */
+	cardReviewShowSourceNote: boolean;
+
 	/** Show YAML frontmatter in note review cards (default: false) */
 	noteReviewShowFrontmatter: boolean;
 

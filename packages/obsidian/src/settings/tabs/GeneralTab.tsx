@@ -139,6 +139,16 @@ export function GeneralTab() {
 				</FormField>
 
 				<FormField
+					name="Show card source note name"
+					description="Display the name of the source note for each card during review"
+				>
+					<ToggleInput
+						value={settings.cardReviewShowSourceNote}
+						onChange={(v) => void save({ cardReviewShowSourceNote: v })}
+					/>
+				</FormField>
+
+				<FormField
 					name="Show frontmatter in note review"
 					description="Display YAML frontmatter when reviewing whole notes"
 				>

@@ -243,6 +243,7 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 
 	showStatusBarWidget: true,
 	defaultTypeInMode: "off",
+	cardReviewShowSourceNote: false,
 	noteReviewShowFrontmatter: false,
 
 	editorToolbarButtons: [

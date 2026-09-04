@@ -77,19 +77,24 @@ function CardFooter({
 	onPresetChange?: (presetName: string) => void;
 	onOpenSourceNote?: () => void;
 }) {
-	if (!isAnswerRevealed) return null;
+	const { cardReviewShowSourceNote } = usePlugin().settings;
+
+	const sourceNoteLink = card.sourceNoteName && onOpenSourceNote && (
+		<Clickable
+			class="ep:text-obs-faint ep:text-ui-smaller tr-no-faux-underline ep:hover:text-obs-accent tr-hover-faux-underline ep:transition-colors ep:p-0"
+			onClick={onOpenSourceNote}
+		>
+			Source: {card.sourceNoteName}
+		</Clickable>
+	);
+
+	if (!isAnswerRevealed && cardReviewShowSourceNote) return sourceNoteLink;
+	if (!isAnswerRevealed && !cardReviewShowSourceNote) return null;
 
 	return (
 		<div class="ep:flex ep:flex-col ep:items-center ep:gap-4 ep:pt-8">
 			<CardCounters card={card} leechThreshold={leechThreshold} />
-			{card.sourceNoteName && onOpenSourceNote && (
-				<Clickable
-					class="ep:text-obs-faint ep:text-ui-smaller tr-no-faux-underline ep:hover:text-obs-accent tr-hover-faux-underline ep:transition-colors ep:p-0"
-					onClick={onOpenSourceNote}
-				>
-					Source: {card.sourceNoteName}
-				</Clickable>
-			)}
+			{sourceNoteLink}
 			{presetName && presetOptions && onPresetChange ? (
 				<PresetPopover
 					value={presetName}
