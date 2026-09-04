@@ -33,6 +33,9 @@ interface ReviewAppProps {
 	onShowAnswer: () => void;
 	onAnswer: (rating: Grade) => void;
 	onTypedAnswerChange: (value: string) => void;
+	onAskFollowUp?: (question: string) => boolean;
+	getQueuedFollowUpCount: () => number;
+	onOpenAssistantInbox: () => void;
 	onContentChange: (value: string, field: "question" | "answer") => void;
 	onOpenSourceNote: () => void;
 	onEditComment: () => void;
@@ -104,6 +107,8 @@ export function ReviewApp(props: ReviewAppProps) {
 					rModeActive={props.rModeActive}
 					getTopUpAvailability={props.getTopUpAvailability}
 					onTopUp={props.onTopUp}
+					queuedFollowUpCount={props.getQueuedFollowUpCount()}
+					onOpenAssistantInbox={props.onOpenAssistantInbox}
 				/>
 			);
 		case "waiting":
@@ -135,6 +140,8 @@ function ActiveReview({
 	onShowAnswer,
 	onAnswer,
 	onTypedAnswerChange,
+	onAskFollowUp,
+	getQueuedFollowUpCount,
 	onContentChange,
 	onOpenSourceNote,
 	onEditComment,
@@ -204,6 +211,8 @@ function ActiveReview({
 					localAssessment: typeInState.localAssessment,
 					semanticResult: typeInState.semanticResult,
 					semanticMessage: typeInState.semanticMessage,
+					onAskFollowUp,
+					queuedFollowUpCount: getQueuedFollowUpCount(),
 				}}
 			/>
 

@@ -1,6 +1,10 @@
 export { assessTypedAnswer } from "@true-recall/core/helpers/answer-assessment";
 
 export { hasBlockMarkdown } from "@true-recall/obsidian/features/study/ui/review/helpers/markdown-shape";
+export {
+	buildReviewFollowUpContext,
+	type ReviewFollowUpAttempt,
+} from "@true-recall/obsidian/features/study/ui/review/helpers/review-follow-up";
 export { getReviewMaxWidth } from "@true-recall/obsidian/features/study/ui/review/helpers/review-width";
 export {
 	applyMutation,

@@ -104,6 +104,22 @@ function renderContext(context: AssistantContext): string {
 				.join("\n")}`,
 		);
 	}
+	if (context.reviewAttempt) {
+		const attempt = context.reviewAttempt;
+		const lines = [`USER'S TYPED ANSWER:\n${attempt.typedAnswer || "(empty)"}`];
+		if (attempt.verdict) lines.push(`GRADING VERDICT: ${attempt.verdict}`);
+		if (attempt.teacherComment)
+			lines.push(`TEACHER COMMENT: ${attempt.teacherComment}`);
+		if (attempt.covered?.length)
+			lines.push(`COVERED: ${attempt.covered.join("; ")}`);
+		if (attempt.missing?.length)
+			lines.push(`MISSING: ${attempt.missing.join("; ")}`);
+		if (attempt.errors?.length)
+			lines.push(`ERRORS: ${attempt.errors.join("; ")}`);
+		parts.push(
+			`REVIEW ATTEMPT (typed during flashcard review, graded against the card):\n${lines.join("\n")}\n\nAnswer the instruction as a tutor, grounded in the card and the grading above. If the exchange shows the card itself is flawed (ambiguous, wrong, or overloaded), also propose a fix with update_card. If it reveals a knowledge gap no existing card covers, also propose new cards with create_cards. Otherwise reply with text only.`,
+		);
+	}
 	if (context.draftWorkspace) {
 		const drafts = context.draftWorkspace.manifest.proposals
 			.filter((proposal) => proposal.status === "proposed")

@@ -55,6 +55,7 @@ import {
 import {
 	applyMutation,
 	assessTypedAnswer,
+	buildReviewFollowUpContext,
 	deriveTypeInMode,
 	getEmptyQueueMessage,
 	getTypeInModeStorage,
@@ -151,6 +152,7 @@ export class ReviewView extends ItemView {
 	private askBubble: ReviewSelectionBubble | null = null;
 	private typeInState: TypeInAssessmentState = createEmptyTypeInState();
 	private sessionTypeInModeEnabled = false;
+	private queuedFollowUpCount = 0;
 
 	private get review(): ReviewApi {
 		return this.sessionStore.getState().review;
@@ -381,6 +383,24 @@ export class ReviewView extends ItemView {
 			semanticMessage: null,
 			isChecking: false,
 		});
+	}
+
+	private handleAskFollowUp(question: string): boolean {
+		const card = this.review.getCurrentCard();
+		const service = this.plugin.assistantService;
+		const trimmed = question.trim();
+		if (!card || !service || trimmed === "") return false;
+		const state = this.getCurrentTypeInState(card.id);
+		service.enqueue({
+			instruction: trimmed,
+			context: buildReviewFollowUpContext(card, {
+				typedAnswer: state.typedAnswer,
+				semanticResult: state.semanticResult,
+			}),
+		});
+		this.queuedFollowUpCount += 1;
+		this.review.notifyChange();
+		return true;
 	}
 
 	private async handleReveal(): Promise<void> {
@@ -660,6 +680,11 @@ export class ReviewView extends ItemView {
 				onShowAnswer: () => void this.handleReveal(),
 				onTypedAnswerChange: (value: string) =>
 					this.handleTypedAnswerChange(value),
+				onAskFollowUp: isPluginEnabled(this.plugin.settings, "ai-assistant")
+					? (question: string) => this.handleAskFollowUp(question)
+					: undefined,
+				getQueuedFollowUpCount: () => this.queuedFollowUpCount,
+				onOpenAssistantInbox: () => void this.plugin.openAssistantInbox(),
 				onAnswer: (rating: Grade) => void this.handleAnswer(rating),
 				onContentChange: (value: string, field: "question" | "answer") =>
 					void this.editHandler.saveContent(value, field),
@@ -934,6 +959,7 @@ export class ReviewView extends ItemView {
 
 			this.review.setSessionFilters(this.filters);
 			this.review.startSession(queue);
+			this.queuedFollowUpCount = 0;
 			this.resetTypeInState(this.review.getCurrentCard()?.id ?? null);
 			this.subscribeToSessionEvents();
 			this.answerHandler.updateSchedulingPreview();
