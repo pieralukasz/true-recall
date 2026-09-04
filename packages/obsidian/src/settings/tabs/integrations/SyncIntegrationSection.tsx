@@ -107,8 +107,8 @@ export function SyncIntegrationSection({
 			)}
 
 			<FormField
-				name="Shared vault"
-				description="Merge device databases synchronized by iCloud, Obsidian Sync, or another file service. Reload Obsidian after changing this mode."
+				name="Shared vault (legacy)"
+				description="Not recommended. Merges device database files that iCloud, Obsidian Sync, or another file service copies between devices. Every flush uploads the whole database, file services create conflict copies, phones wait for downloads, and each device needs the same setup. Use Cloud Sync instead. Reload Obsidian after changing this mode."
 			>
 				<ToggleInput
 					value={settings.syncMode === "shared-vault"}

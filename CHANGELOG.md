@@ -16,6 +16,7 @@
 
 - **Pro is explained where you hit its limits.** The disabled Typed answers and Image Occlusion controls link to the docs page that lists exactly what Pro includes, and the toolbar's locked AI buttons mention the free Pro trial next to the bring-your-own-key option
 - **A device that inherited Cloud Sync from the vault is told to sign in.** Settings travel with the vault, the sign-in does not; the Dashboard now shows a bar with a Sign in button when Cloud Sync is on but this device holds no session, and Settings → Integrations says the same instead of "Account required"
+- **Shared vault is marked legacy.** Its settings entry now says why Cloud Sync is the better choice: full-file uploads, conflict copies, slow downloads on phones, per-device setup
 - **Sync errors are readable.** Tapping "Sync error" under the Dashboard shows the message and retries; Settings → Integrations → Sync shows the last result with a Sync now button
 - **Start fresh on a device.** Settings → Data → Device database can delete this device's database so a connected device downloads the collection again on the next start
 - **You can tell which plan you are on.** The Dashboard shows a one-time, dismissable bar for users without any AI key explaining what is free and where AI comes from; the empty Dashboard says the same; the What's New dialog states your current level (Free, BYOK or Pro) with a link to what Pro adds; and Settings → General → About gains a Plan row with View plans or Manage subscription
