@@ -1,9 +1,12 @@
 # Changelog
 
-## Unreleased
+## 2.4.2 (2026-09-04)
+
+This release makes True Recall usable on a phone that shares a vault through iCloud and finishes the Cloud Sync onboarding for a second device. The per-device database moves out of iCloud, a fresh device can download a collection it has never seen and resume if the connection drops, the software keyboard no longer hides the card you are typing about, and every Pro link finally points at the real pricing page.
 
 ### Bug Fixes
 
+- **The software keyboard no longer hides what you are typing.** On phones the review screen now tracks the keyboard height, keeps the card and the grade buttons above it and scrolls the focused field back into view once the keyboard animation settles, in the review, in editors and in modals. Before, the iOS WebView panned the whole view and the card ended up behind the keyboard
 - **"View plans" and "Upgrade" links open the real pricing page.** They pointed at `truerecall.com`, a domain True Recall does not use, so anyone curious about Pro landed nowhere. All Pro links now derive from the configured web URL
 - **Mobile no longer stalls on "plugin is taking long to load" because of iCloud.** In Cloud Sync and single-device modes the per-device database now lives in `.true-recall/local.nosync/`, which iCloud does not sync. The desktop stops uploading a 60 MB file on every flush, iCloud stops producing conflict copies, and iOS can no longer evict the file the plugin must read at startup. Shared Vault mode keeps the database in `.true-recall/` as before. The file is moved automatically on the next start; if the move fails the old location keeps working
 - **No full database rewrite on every startup or idle sync tick.** Loading a saved database, seeding builtin note types, refreshing their templates, writing the device label, empty sync transactions and unchanged sync watermarks no longer mark the database dirty. Before, the desktop rewrote a 60 MB file every minute while Cloud Sync idled, and Android froze with "Obsidian isn't responding" during the rewrite right after startup
