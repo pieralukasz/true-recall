@@ -1,5 +1,15 @@
 # Changelog
 
+## Unreleased
+
+### Features
+
+- **Ask a follow-up after a typed answer.** When Type In grades your answer, a field under the verdict lets you ask what you still do not get. The question goes to the AI inbox together with the card and the verdict, the assistant answers with that context and can propose an edit to the card, and the session summary links to the thread
+
+### Bug Fixes
+
+- **AI inbox threads render markdown.** Assistant turns and task summaries show headings, lists, code and LaTeX instead of raw markup
+
 ## 2.4.2 (2026-09-04)
 
 This release makes True Recall usable on a phone that shares a vault through iCloud and finishes the Cloud Sync onboarding for a second device. The per-device database moves out of iCloud, a fresh device can download a collection it has never seen and resume if the connection drops, the software keyboard no longer hides the card you are typing about, and every Pro link finally points at the real pricing page.
