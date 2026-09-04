@@ -21,6 +21,7 @@ import {
 	NoteTypeActions,
 	StatsActions,
 } from "./modules";
+import { CloudSyncDeferredActions } from "./modules/CloudSyncDeferredActions";
 import { SqliteDatabase } from "./SqliteDatabase";
 import { SqliteSchemaManager } from "./SqliteSchemaManager";
 import {
@@ -62,6 +63,7 @@ export class SqliteStoreService {
 	public readonly stats: StatsActions;
 	public readonly notes: NoteActions;
 	public readonly noteTypes: NoteTypeActions;
+	public readonly cloudSyncDeferred: CloudSyncDeferredActions;
 	public readonly integrity: IntegrityCheckService;
 	public readonly assistantTasks: AssistantTaskActions;
 	public readonly assistantThreads: AssistantThreadActions;
@@ -81,6 +83,7 @@ export class SqliteStoreService {
 		this.stats = new StatsActions(this.db);
 		this.notes = new NoteActions(this.db);
 		this.noteTypes = new NoteTypeActions(this.db);
+		this.cloudSyncDeferred = new CloudSyncDeferredActions(this.db);
 		this.integrity = new IntegrityCheckService(this.db);
 		this.assistantTasks = new AssistantTaskActions(this.db);
 		this.assistantThreads = new AssistantThreadActions(this.db);

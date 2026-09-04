@@ -48,6 +48,7 @@ async function createDevice(
 		notes: ctx.notes,
 		noteTypes: ctx.noteTypes,
 		stats: ctx.stats,
+		cloudSyncDeferred: ctx.cloudSyncDeferred,
 	} as unknown as SqliteStoreService;
 	const service = new CloudSyncService(store, server.transportFor(deviceId), {
 		accountId: "account-e2e",
@@ -315,5 +316,33 @@ describe("Cloud Sync multi-device E2E", () => {
 				.find((candidate) => candidate.id === id);
 			expect(card?.answer).toHaveLength(bigAnswer.length);
 		}
+	});
+
+	it("applies a review log that arrives pages before its card", async () => {
+		// Pages of one row reproduce the phone: a device pushes rows sorted by
+		// updatedAt, and a card's timestamp moves with every review while the
+		// first log's does not, so that log precedes its card on the server.
+		const server = new InMemoryCloudServer(1);
+		const deviceA = await createDevice(server, "device-a");
+
+		tick();
+		deviceA.ctx.cards.set("card-fk", createTestCard({ id: "card-fk" }));
+		tick();
+		deviceA.ctx.stats.addReviewLog("card-fk", 3, 1, 0, 1, 4_000);
+		tick();
+		deviceA.ctx.cards.set(
+			"card-fk",
+			createTestCard({ id: "card-fk", reps: 1, stability: 2 }),
+		);
+		deviceA.ctx.stats.addReviewLog("card-fk", 4, 3, 1, 2, 3_000);
+		await syncOk(deviceA);
+
+		const deviceB = await createDevice(server, "device-b");
+		const result = await syncOk(deviceB);
+
+		expect(result.deferred).toBe(0);
+		expect(deviceB.ctx.stats.getTotalReviewCount()).toBe(2);
+		expect(deviceB.ctx.cloudSyncDeferred.count()).toBe(0);
+		expect(cardStability(deviceB.ctx, "card-fk")).toBe(2);
 	});
 });

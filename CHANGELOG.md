@@ -9,6 +9,7 @@
 - **No full database rewrite on every startup or idle sync tick.** Loading a saved database, seeding builtin note types, refreshing their templates, writing the device label, empty sync transactions and unchanged sync watermarks no longer mark the database dirty. Before, the desktop rewrote a 60 MB file every minute while Cloud Sync idled, and Android froze with "Obsidian isn't responding" during the rewrite right after startup
 - **What's New footer fits on phones.** The buttons wrap instead of running off the screen
 - **A database moved out of iCloud keeps its contents on iOS.** The move to `.true-recall/local.nosync/` now copies the file and deletes the original only after the copy is verified. Renaming an evicted iCloud placeholder into a folder iCloud ignores left a file whose bytes could never be fetched; a file that cannot be read right now stays where it is
+- **A second device no longer fails its first Cloud Sync with "FOREIGN KEY constraint failed".** The server pages changes by revision and a device pushes rows sorted by their timestamps, so a review log routinely arrived pages before the card it belongs to, and a card before its note. Such rows are now parked in the database until their parent arrives and applied right after, so a phone can download a collection it has never seen
 - **The first Cloud Sync on a phone survives a dropped connection.** Progress is committed after every page pulled and every batch pushed, so a retry resumes where it stopped instead of sending and receiving the whole collection again
 
 ### Improvements

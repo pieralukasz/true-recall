@@ -56,6 +56,13 @@ function createStore(initialCards?: MockCardRow[]) {
 			getActiveDedupRows: vi.fn(() => []),
 			applyReplayedScheduling: vi.fn(),
 		},
+		cloudSyncDeferred: {
+			isParentPresent: () => true,
+			defer: vi.fn(),
+			takeReady: () => [],
+			remove: vi.fn(),
+			count: () => 0,
+		},
 		stats: {
 			getModifiedReviewLogSince: () => [],
 			getReviewedCardIdsSince: () => [] as string[],
@@ -419,5 +426,79 @@ describe("CloudSyncService", () => {
 		).sync();
 
 		expect(store.meta.get("cloud:account-1:push")).toBe("4");
+	});
+
+	it("parks a review log whose card is missing and applies it once the card arrives", async () => {
+		const store = createStore([]);
+		const knownCards = new Set<string>();
+		const parked: Array<Record<string, unknown> & { entityId: string }> = [];
+		store.cloudSyncDeferred = {
+			isParentPresent: (_type: string, id: string) => knownCards.has(id),
+			defer: vi.fn((row: { entityId: string }) => {
+				parked.push(row as never);
+			}),
+			takeReady: (type: string) =>
+				type === "review_log"
+					? parked.filter((row) => knownCards.has(row.parentId as string))
+					: [],
+			remove: (_type: string, id: string) => {
+				const index = parked.findIndex((row) => row.entityId === id);
+				if (index >= 0) parked.splice(index, 1);
+			},
+			count: () => parked.length,
+		} as unknown as typeof store.cloudSyncDeferred;
+		store.cards.upsertFromRemote = vi.fn((card: { id: string }) => {
+			knownCards.add(card.id);
+			return true;
+		}) as never;
+		const logUpsert = vi.fn(() => true);
+		store.stats.upsertReviewLogFromRemote = logUpsert as never;
+
+		const logChange = {
+			entityType: "review_log" as const,
+			entityId: "log-1",
+			updatedAt: 100,
+			payload: { id: "log-1", cardId: "card-9", updatedAt: 100 },
+			sourceDeviceId: "device-b",
+		};
+		const cardChange = {
+			entityType: "card" as const,
+			entityId: "card-9",
+			updatedAt: 200,
+			payload: { id: "card-9", updatedAt: 200 },
+			sourceDeviceId: "device-b",
+		};
+
+		const first = await new CloudSyncService(
+			store,
+			{
+				exchange: vi.fn(async () => ({
+					changes: [logChange],
+					cursor: 1,
+					hasMore: false,
+				})),
+			},
+			{ accountId: "account-1", deviceId: "device-a" },
+		).sync();
+		expect(first.errors).toEqual([]);
+		expect(logUpsert).not.toHaveBeenCalled();
+		expect(first.deferred).toBe(1);
+		expect(store.meta.get("cloud:account-1:cursor")).toBe("1");
+
+		const second = await new CloudSyncService(
+			store,
+			{
+				exchange: vi.fn(async () => ({
+					changes: [cardChange],
+					cursor: 2,
+					hasMore: false,
+				})),
+			},
+			{ accountId: "account-1", deviceId: "device-a" },
+		).sync();
+		expect(second.errors).toEqual([]);
+		expect(logUpsert).toHaveBeenCalledWith(logChange.payload, true);
+		expect(second.deferred).toBe(0);
+		expect(second.reviewLogsApplied).toBe(1);
 	});
 });

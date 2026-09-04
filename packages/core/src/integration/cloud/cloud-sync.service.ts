@@ -1,3 +1,4 @@
+import type { DeferrableEntityType } from "../../persistence/sqlite/modules/CloudSyncDeferredActions";
 import type { NoteRow } from "../../persistence/sqlite/modules/NoteActions";
 import type { NoteTypeRow } from "../../persistence/sqlite/modules/NoteTypeActions";
 import type { ReviewLogForSync } from "../../persistence/sqlite/modules/stats/review-log-actions";
@@ -16,6 +17,12 @@ const PUSH_BATCH_SIZE = 400;
 // The edge function rejects bodies over 5 MB; leave headroom for the envelope.
 const MAX_PUSH_BATCH_BYTES = 4 * 1024 * 1024;
 const MAX_PULL_PAGES = 1000;
+const TYPE_ORDER: Record<CloudSyncChange["entityType"], number> = {
+	note_type: 0,
+	note: 1,
+	card: 2,
+	review_log: 3,
+};
 
 const textEncoder = new TextEncoder();
 
@@ -34,6 +41,8 @@ interface SyncState {
 	appliedVersions: Map<string, number>;
 	/** True once any page applied rows that still owe post-processing. */
 	pulledSinceProcess: boolean;
+	/** Rows parked this run because their parent had not arrived yet. */
+	deferredThisRun: number;
 }
 
 function rowTimestamp(row: Record<string, unknown>): number {
@@ -64,6 +73,7 @@ export class CloudSyncService {
 			reviewLogsApplied: 0,
 			conflictsReplayed: 0,
 			duplicatesMerged: 0,
+			deferred: 0,
 			errors: [],
 		};
 		const pushWatermark = this.meta.readNumber("push");
@@ -77,6 +87,7 @@ export class CloudSyncService {
 			replayCandidates: new Set(pending.replay),
 			appliedVersions: this.meta.readAppliedVersions(pushWatermark),
 			pulledSinceProcess: pending.pulled,
+			deferredThisRun: 0,
 		};
 		const localChanges = this.gatherLocalChanges(
 			pushWatermark,
@@ -140,6 +151,18 @@ export class CloudSyncService {
 
 	/** Replay, dedupe, and stats rebuild for everything applied but not yet processed. */
 	private postProcess(result: CloudSyncResult, state: SyncState): void {
+		// Rows parked by an earlier, interrupted run may have their parents by now.
+		if (this.store.cloudSyncDeferred.count() > 0) {
+			this.store.transaction(() => {
+				const pulledBefore = result.pulled;
+				this.drainDeferred(result, state);
+				if (result.pulled > pulledBefore) {
+					state.pulledSinceProcess = true;
+					this.meta.writeAppliedVersions(state.appliedVersions);
+				}
+			});
+		}
+		result.deferred = this.store.cloudSyncDeferred.count();
 		if (state.replayCandidates.size > 0 || state.pulledSinceProcess) {
 			this.store.transaction(() => {
 				result.conflictsReplayed = replayMergedCards(
@@ -216,66 +239,87 @@ export class CloudSyncService {
 		result: CloudSyncResult,
 		state: SyncState,
 	): number {
-		const byType = new Map<CloudSyncChange["entityType"], CloudSyncChange[]>();
-		for (const change of changes) {
-			const list = byType.get(change.entityType) ?? [];
-			list.push(change);
-			byType.set(change.entityType, list);
+		// Parents before children within a page; anything whose parent is still
+		// missing after that is parked until the parent arrives.
+		const ordered = [...changes].sort(
+			(a, b) => TYPE_ORDER[a.entityType] - TYPE_ORDER[b.entityType],
+		);
+		const pulledBefore = result.pulled;
+		const deferredBefore = state.deferredThisRun;
+		this.store.transaction(() => {
+			for (const change of ordered) this.applyChange(change, result, state);
+			this.drainDeferred(result, state);
+			if (
+				result.pulled > pulledBefore ||
+				state.deferredThisRun > deferredBefore
+			) {
+				// Persisted with the page so a later failure (or crash) neither
+				// echoes these rows back nor skips their stats/replay work.
+				if (result.pulled > pulledBefore) state.pulledSinceProcess = true;
+				this.meta.writeAppliedVersions(state.appliedVersions);
+				this.meta.writePending({
+					replay: [...state.replayCandidates],
+					pulled: state.pulledSinceProcess,
+				});
+				this.meta.writeNumber("cursor", cursor);
+			}
+		});
+		return cursor;
+	}
+
+	/** Apply one pulled change, or park it when its parent row is missing. */
+	private applyChange(
+		change: CloudSyncChange,
+		result: CloudSyncResult,
+		state: SyncState,
+	): void {
+		const parent = this.parentOf(change);
+		if (
+			parent &&
+			!this.store.cloudSyncDeferred.isParentPresent(parent.type, parent.id)
+		) {
+			this.store.cloudSyncDeferred.defer({
+				entityType: parent.type,
+				entityId: change.entityId,
+				parentId: parent.id,
+				updatedAt: change.updatedAt,
+				sourceDeviceId: change.sourceDeviceId ?? null,
+				payload: change.payload,
+			});
+			state.deferredThisRun++;
+			return;
 		}
 
-		const pulledBefore = result.pulled;
-		this.store.transaction(() => {
-			const record = (change: CloudSyncChange) => {
-				state.appliedVersions.set(this.entityKey(change), change.updatedAt);
-			};
-			for (const change of byType.get("note_type") ?? []) {
-				if (
-					this.store.noteTypes.upsertRowFromRemote(
-						change.payload as unknown as NoteTypeRow,
-						this.preferRemoteOnEqual(change, state.localVersions),
-					)
-				) {
-					result.pulled++;
-					record(change);
-				}
-			}
-			for (const change of byType.get("note") ?? []) {
-				if (
-					this.store.notes.upsertRowFromRemote(
-						change.payload as unknown as NoteRow,
-						this.preferRemoteOnEqual(change, state.localVersions),
-					)
-				) {
-					result.pulled++;
-					record(change);
-				}
-			}
-			for (const change of byType.get("card") ?? []) {
-				if (
-					this.store.cards.upsertFromRemote(
-						change.payload as unknown as FSRSCardData & {
-							updatedAt?: number;
-							deletedAt?: number | null;
-						},
-						this.preferRemoteOnEqual(change, state.localVersions),
-					)
-				) {
-					result.pulled++;
-					result.cardIdsChanged.push(change.entityId);
-					record(change);
-				}
-			}
-			for (const change of byType.get("review_log") ?? []) {
+		const prefer = this.preferRemoteOnEqual(change, state.localVersions);
+		let applied = false;
+		switch (change.entityType) {
+			case "note_type":
+				applied = this.store.noteTypes.upsertRowFromRemote(
+					change.payload as unknown as NoteTypeRow,
+					prefer,
+				);
+				break;
+			case "note":
+				applied = this.store.notes.upsertRowFromRemote(
+					change.payload as unknown as NoteRow,
+					prefer,
+				);
+				break;
+			case "card":
+				applied = this.store.cards.upsertFromRemote(
+					change.payload as unknown as FSRSCardData & {
+						updatedAt?: number;
+						deletedAt?: number | null;
+					},
+					prefer,
+				);
+				if (applied) result.cardIdsChanged.push(change.entityId);
+				break;
+			case "review_log": {
 				const log = change.payload as unknown as ReviewLogForSync;
-				if (
-					this.store.stats.upsertReviewLogFromRemote(
-						log,
-						this.preferRemoteOnEqual(change, state.localVersions),
-					)
-				) {
-					result.pulled++;
+				applied = this.store.stats.upsertReviewLogFromRemote(log, prefer);
+				if (applied) {
 					result.reviewLogsApplied++;
-					record(change);
 					if (
 						log.deletedAt == null &&
 						log.reviewKind !== "preview" &&
@@ -284,20 +328,57 @@ export class CloudSyncService {
 						state.replayCandidates.add(log.cardId);
 					}
 				}
+				break;
 			}
-			if (result.pulled > pulledBefore) {
-				// Persisted with the page so a later failure (or crash) neither
-				// echoes these rows back nor skips their stats/replay work.
-				state.pulledSinceProcess = true;
-				this.meta.writeAppliedVersions(state.appliedVersions);
-				this.meta.writePending({
-					replay: [...state.replayCandidates],
-					pulled: true,
-				});
-				this.meta.writeNumber("cursor", cursor);
+		}
+		if (applied) {
+			result.pulled++;
+			state.appliedVersions.set(this.entityKey(change), change.updatedAt);
+		}
+	}
+
+	/** Foreign key a pulled row depends on, if its type has one. */
+	private parentOf(
+		change: CloudSyncChange,
+	): { type: DeferrableEntityType; id: string } | null {
+		const payload = change.payload;
+		switch (change.entityType) {
+			case "note":
+				return typeof payload.note_type_id === "string"
+					? { type: "note", id: payload.note_type_id }
+					: null;
+			case "card":
+				// A card without a note id gets a note created by the upsert itself.
+				return typeof payload.noteId === "string" && payload.noteId
+					? { type: "card", id: payload.noteId }
+					: null;
+			case "review_log":
+				return typeof payload.cardId === "string"
+					? { type: "review_log", id: payload.cardId }
+					: null;
+			default:
+				return null;
+		}
+	}
+
+	/** Apply parked rows whose parent exists now: notes unblock cards, cards unblock logs. */
+	private drainDeferred(result: CloudSyncResult, state: SyncState): void {
+		for (const type of ["note", "card", "review_log"] as const) {
+			for (const row of this.store.cloudSyncDeferred.takeReady(type)) {
+				this.store.cloudSyncDeferred.remove(type, row.entityId);
+				this.applyChange(
+					{
+						entityType: type,
+						entityId: row.entityId,
+						updatedAt: row.updatedAt,
+						payload: row.payload,
+						sourceDeviceId: row.sourceDeviceId ?? undefined,
+					},
+					result,
+					state,
+				);
 			}
-		});
-		return cursor;
+		}
 	}
 
 	/**
