@@ -85,13 +85,20 @@ export class ReviewLogSyncActions {
 		);
 	}
 
-	upsertReviewLogFromRemote(data: ReviewLogForSync): boolean {
+	upsertReviewLogFromRemote(
+		data: ReviewLogForSync,
+		preferRemoteOnEqual = false,
+	): boolean {
 		// LWW: skip if local version is newer or equal
 		const existing = this.db.get<{ updated_at: number }>(
 			`SELECT updated_at FROM review_log WHERE id = ?`,
 			[data.id],
 		);
-		if (existing && existing.updated_at >= (data.updatedAt ?? 0)) {
+		if (
+			existing &&
+			(existing.updated_at > (data.updatedAt ?? 0) ||
+				(existing.updated_at === (data.updatedAt ?? 0) && !preferRemoteOnEqual))
+		) {
 			return false;
 		}
 

@@ -38,6 +38,11 @@ import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpC
 import { CommandService, ReviewUndoHook } from "@true-recall/obsidian/commands";
 import { G, getDataLayer, Q } from "@true-recall/obsidian/data";
 import { assistantContextFromCard } from "@true-recall/obsidian/features/assistant/ui/ai-context-source";
+import {
+	FACT_CHECK_QUEUED_MESSAGE,
+	isFactCheckAvailable,
+	startFactCheck,
+} from "@true-recall/obsidian/features/assistant/ui/fact-check";
 import { openAiWorkspace } from "@true-recall/obsidian/features/assistant/ui/open-ai-workspace";
 import { ReviewSessionController } from "@true-recall/obsidian/features/study/services/ReviewSessionController";
 import type { PresetPickerOption } from "@true-recall/obsidian/features/study/ui/review/components";
@@ -50,6 +55,7 @@ import {
 import {
 	applyMutation,
 	assessTypedAnswer,
+	buildReviewFollowUpContext,
 	deriveTypeInMode,
 	getEmptyQueueMessage,
 	getTypeInModeStorage,
@@ -146,6 +152,7 @@ export class ReviewView extends ItemView {
 	private askBubble: ReviewSelectionBubble | null = null;
 	private typeInState: TypeInAssessmentState = createEmptyTypeInState();
 	private sessionTypeInModeEnabled = false;
+	private queuedFollowUpCount = 0;
 
 	private get review(): ReviewApi {
 		return this.sessionStore.getState().review;
@@ -284,7 +291,9 @@ export class ReviewView extends ItemView {
 			this.sessionTypeInModeEnabled = false;
 			return;
 		}
-		const persisted = readPersistedTypeInMode(getTypeInModeStorage());
+		const persisted = readPersistedTypeInMode(
+			getTypeInModeStorage(this.plugin.app),
+		);
 		// Settings persisted before the diff-mode removal may still hold "diff";
 		// anything that is not "off" now means AI grading.
 		const mode = persisted ?? this.plugin.settings.defaultTypeInMode;
@@ -304,7 +313,7 @@ export class ReviewView extends ItemView {
 		const currentId = card?.id ?? null;
 
 		this.sessionTypeInModeEnabled = nextMode !== "off";
-		persistTypeInMode(getTypeInModeStorage(), nextMode);
+		persistTypeInMode(getTypeInModeStorage(this.plugin.app), nextMode);
 
 		// When answer is already revealed, preserve grading results;
 		// the UI shows/hides assessment based on mode flags.
@@ -374,6 +383,24 @@ export class ReviewView extends ItemView {
 			semanticMessage: null,
 			isChecking: false,
 		});
+	}
+
+	private handleAskFollowUp(question: string): boolean {
+		const card = this.review.getCurrentCard();
+		const service = this.plugin.assistantService;
+		const trimmed = question.trim();
+		if (!card || !service || trimmed === "") return false;
+		const state = this.getCurrentTypeInState(card.id);
+		service.enqueue({
+			instruction: trimmed,
+			context: buildReviewFollowUpContext(card, {
+				typedAnswer: state.typedAnswer,
+				semanticResult: state.semanticResult,
+			}),
+		});
+		this.queuedFollowUpCount += 1;
+		this.review.notifyChange();
+		return true;
 	}
 
 	private async handleReveal(): Promise<void> {
@@ -653,6 +680,11 @@ export class ReviewView extends ItemView {
 				onShowAnswer: () => void this.handleReveal(),
 				onTypedAnswerChange: (value: string) =>
 					this.handleTypedAnswerChange(value),
+				onAskFollowUp: isPluginEnabled(this.plugin.settings, "ai-assistant")
+					? (question: string) => this.handleAskFollowUp(question)
+					: undefined,
+				getQueuedFollowUpCount: () => this.queuedFollowUpCount,
+				onOpenAssistantInbox: () => void this.plugin.openAssistantInbox(),
 				onAnswer: (rating: Grade) => void this.handleAnswer(rating),
 				onContentChange: (value: string, field: "question" | "answer") =>
 					void this.editHandler.saveContent(value, field),
@@ -666,13 +698,10 @@ export class ReviewView extends ItemView {
 				onTopUp: (topUp: ReviewSessionTopUp) => this.handleTopUp(topUp),
 				onEndSession: () => this.handleNextSession(),
 				onActionsMenu: (e: MouseEvent) => this.showActionsMenu(e),
-				// Polish presets now run in the shared AI workspace, so the action
-				// needs both the preset family and the surface to be enabled.
-				onPolishMenu:
-					isPluginEnabled(this.plugin.settings, "card-polish") &&
-					isPluginEnabled(this.plugin.settings, "ai-assistant")
-						? (e: MouseEvent) => this.openCardPolishMenu(e)
-						: undefined,
+				// Card editing runs inside the shared AI Workspace.
+				onPolishMenu: isPluginEnabled(this.plugin.settings, "card-polish")
+					? (e: MouseEvent) => this.openCardPolishMenu(e)
+					: undefined,
 				isCustomSession: isCustomSession(this.filters),
 				crammingMode: this.filters.crammingMode ?? false,
 				rModeActive: this.filters.schedulingMode === "retrievability",
@@ -930,6 +959,7 @@ export class ReviewView extends ItemView {
 
 			this.review.setSessionFilters(this.filters);
 			this.review.startSession(queue);
+			this.queuedFollowUpCount = 0;
 			this.resetTypeInState(this.review.getCurrentCard()?.id ?? null);
 			this.subscribeToSessionEvents();
 			this.answerHandler.updateSchedulingPreview();
@@ -1012,6 +1042,26 @@ export class ReviewView extends ItemView {
 		});
 	}
 
+	/** Whether the actions menu and the command may offer a fact check right now. */
+	canFactCheckCurrentCard(): boolean {
+		return (
+			this.review.getCurrentCard() !== null &&
+			isFactCheckAvailable(this.plugin.settings)
+		);
+	}
+
+	/**
+	 * Queues a background fact check of the visible card. Review continues;
+	 * the verdict lands in the AI inbox.
+	 */
+	factCheckCurrentCard(): void {
+		const card = this.review.getCurrentCard();
+		if (!card || !isFactCheckAvailable(this.plugin.settings)) return;
+		const taskId = startFactCheck(this.plugin, card);
+		if (taskId) notify().info(FACT_CHECK_QUEUED_MESSAGE);
+		else notify().error("AI assistant is not running");
+	}
+
 	private showActionsMenu(event: MouseEvent): void {
 		const menu = new Menu();
 		this.populateActionsMenu(menu);
@@ -1057,6 +1107,14 @@ export class ReviewView extends ItemView {
 						});
 					}),
 			);
+			if (this.canFactCheckCurrentCard()) {
+				menu.addItem((item) =>
+					item
+						.setTitle("Fact check this card (AI)")
+						.setIcon("search-check")
+						.onClick(() => this.factCheckCurrentCard()),
+				);
+			}
 			// On mobile the polish button has no home in the grade bar, so it
 			// joins the actions menu here.
 			if (isMobile() && isPluginEnabled(this.plugin.settings, "card-polish")) {

@@ -1,5 +1,116 @@
 # Changelog
 
+## Unreleased
+
+### Features
+
+- **Ask a follow-up after a typed answer.** When Type In grades your answer, a field under the verdict lets you ask what you still do not get. The question goes to the AI inbox together with the card and the verdict, the assistant answers with that context and can propose an edit to the card, and the session summary links to the thread
+
+### Bug Fixes
+
+- **AI inbox threads render markdown.** Assistant turns and task summaries show headings, lists, code and LaTeX instead of raw markup
+
+## 2.4.2 (2026-09-04)
+
+This release makes True Recall usable on a phone that shares a vault through iCloud and finishes the Cloud Sync onboarding for a second device. The per-device database moves out of iCloud, a fresh device can download a collection it has never seen and resume if the connection drops, the software keyboard no longer hides the card you are typing about, and every Pro link finally points at the real pricing page.
+
+### Bug Fixes
+
+- **The software keyboard no longer hides what you are typing.** On phones the review screen now tracks the keyboard height, keeps the card and the grade buttons above it and scrolls the focused field back into view once the keyboard animation settles, in the review, in editors and in modals. Before, the iOS WebView panned the whole view and the card ended up behind the keyboard
+- **"View plans" and "Upgrade" links open the real pricing page.** They pointed at `truerecall.com`, a domain True Recall does not use, so anyone curious about Pro landed nowhere. All Pro links now derive from the configured web URL
+- **Mobile no longer stalls on "plugin is taking long to load" because of iCloud.** In Cloud Sync and single-device modes the per-device database now lives in `.true-recall/local.nosync/`, which iCloud does not sync. The desktop stops uploading a 60 MB file on every flush, iCloud stops producing conflict copies, and iOS can no longer evict the file the plugin must read at startup. Shared Vault mode keeps the database in `.true-recall/` as before. The file is moved automatically on the next start; if the move fails the old location keeps working
+- **No full database rewrite on every startup or idle sync tick.** Loading a saved database, seeding builtin note types, refreshing their templates, writing the device label, empty sync transactions and unchanged sync watermarks no longer mark the database dirty. Before, the desktop rewrote a 60 MB file every minute while Cloud Sync idled, and Android froze with "Obsidian isn't responding" during the rewrite right after startup
+- **What's New footer fits on phones.** The buttons wrap instead of running off the screen
+- **A database moved out of iCloud keeps its contents on iOS.** The move to `.true-recall/local.nosync/` now copies the file and deletes the original only after the copy is verified. Renaming an evicted iCloud placeholder into a folder iCloud ignores left a file whose bytes could never be fetched; a file that cannot be read right now stays where it is
+- **A second device no longer fails its first Cloud Sync with "FOREIGN KEY constraint failed".** The server pages changes by revision and a device pushes rows sorted by their timestamps, so a review log routinely arrived pages before the card it belongs to, and a card before its note. Such rows are now parked in the database until their parent arrives and applied right after, so a phone can download a collection it has never seen
+- **The first Cloud Sync on a phone survives a dropped connection.** Progress is committed after every page pulled and every batch pushed, so a retry resumes where it stopped instead of sending and receiving the whole collection again
+
+### Improvements
+
+- **Pro is explained where you hit its limits.** The disabled Typed answers and Image Occlusion controls link to the docs page that lists exactly what Pro includes, and the toolbar's locked AI buttons mention the free Pro trial next to the bring-your-own-key option
+- **A device that inherited Cloud Sync from the vault is told to sign in.** Settings travel with the vault, the sign-in does not; the Dashboard now shows a bar with a Sign in button when Cloud Sync is on but this device holds no session, and Settings → Integrations says the same instead of "Account required"
+- **Cloud Sync polls every five minutes instead of every minute.** Syncs after each change, at startup and on foreground are unchanged; the timer only catches edits made on other devices, and the slower beat cuts request volume fivefold
+- **Device limits.** A free account syncs 2 devices, Pro 5. The limit is checked at sign-in and a device that signs out frees its slot; Settings → Integrations explains this next to the Sign in button
+- **Shared vault is marked legacy.** Its settings entry now says why Cloud Sync is the better choice: full-file uploads, conflict copies, slow downloads on phones, per-device setup
+- **Sync errors are readable.** Tapping "Sync error" under the Dashboard shows the message and retries; Settings → Integrations → Sync shows the last result with a Sync now button
+- **Start fresh on a device.** Settings → Data → Device database can delete this device's database so a connected device downloads the collection again on the next start
+- **You can tell which plan you are on.** The Dashboard shows a one-time, dismissable bar for users without any AI key explaining what is free and where AI comes from; the empty Dashboard says the same; the What's New dialog states your current level (Free, BYOK or Pro) with a link to what Pro adds; and Settings → General → About gains a Plan row with View plans or Manage subscription
+
+## 2.4.1 (2026-09-01)
+
+Cloud Sync is now dependable. This release fixes every reliability gap found in a full review of the 2.4.0 sync path, from the server exchange down to on-device recovery. If you sync more than one device, update all of them.
+
+### Bug Fixes
+
+- **No more skipped changes between devices.** The server now serializes each account's sync exchanges, so two devices syncing at the same moment can no longer make each other's changes invisible
+- **Pulled data is no longer echoed back.** Rows applied from the cloud are excluded from the next push. This also protects the upload watermark from devices with a fast clock, which could previously stop uploads silently
+- **Every device converges after simultaneous edits.** The device tie-breaker now applies to conflicts pulled in any later sync, not only in the sync that pushed the losing edit
+- **Interrupted syncs recover fully.** Daily stats rebuild and FSRS replay owed to changes applied before a network failure are completed by the next successful sync
+- **Large collections always push.** Push batches are split by payload size, so an oversized request can no longer wedge sync permanently
+- **Switching sync modes is safe mid-session.** Enabling Cloud Sync stops the shared-vault transport immediately; the two transports never run concurrently
+- **Sign-out is verified.** If the server cannot revoke the device token, your session is kept and an error is shown instead of leaving a live credential behind
+- **Session expiry is visible.** When the server rejects the device token, Settings shows the sign-in prompt again instead of a connected account that silently stops syncing
+
+### Improvements
+
+- **Smoother grading while syncing.** The duplicate-card scan now runs only when a sync actually pulled changes, removing a whole-collection scan after nearly every review
+- **Newsletter, one click away.** The What's New dialog now has a Subscribe button for the learning newsletter
+
+## 2.4.0 (2026-08-31)
+
+Cloud Sync gives every True Recall account a direct, incremental path between devices. Notes, note types, cards and review history move independently of the vault files, while deterministic review replay and duplicate merging keep concurrent study sessions convergent. Shared-vault sync remains available for people who prefer iCloud, Obsidian Sync or another file provider.
+
+### Features
+
+- **Account-backed Cloud Sync.** Sign in through the True Recall website, return directly to Obsidian on desktop or mobile, and enable sync from Settings → Integrations
+- **Incremental two-way exchange** for notes, note types, cards and review logs, including tombstones, paginated cursors and per-device provenance
+- **Deterministic conflict handling.** Concurrent reviews are replayed through FSRS and duplicate cards converge instead of multiplying
+- **Device-aware sessions** stored in Obsidian SecretStorage, with explicit sign-out and server-side revocation
+
+### Improvements
+
+- **Settings polish:** more consistent spacing, control widths, button placement and responsive layouts across the settings app
+- **Cloud status:** account, progress, last-sync result and actionable errors are visible without opening developer tools
+
+### Bug Fixes
+
+- **CSS compatibility:** flattened `color-mix()` fallbacks retain their original hue in Obsidian versions and themes that need the postprocessed color
+- **Mobile authorization:** production links use the canonical `www.truerecall.app` host so Android returns to Obsidian without losing the exchange request to a redirect
+
+### Compatibility
+
+- Minimum Obsidian version is now **1.11.4**, required for secure session storage through the official SecretStorage API
+
+## 2.3.2 (2026-08-30)
+
+This maintenance release clears the actionable Obsidian plugin review findings, refreshes vulnerable dependencies, and keeps startup responsive while cross-device sync runs in the background.
+
+### Bug Fixes
+
+- **sync:** defer the startup merge until the workspace layout is ready, so large or cloud-hosted databases do not block Obsidian from loading
+- **storage:** use Obsidian's per-vault data APIs for device identity and typed-answer state, with one-time migration of existing local data
+
+### Improvements
+
+- **compatibility:** adopt searchable settings definitions, popout-safe timers, supported CSS directives, and current settings migrations
+- **dependencies:** update and constrain transitive packages to clear the dependency vulnerability scan
+- **review:** soften the typed-answer field styling
+
+## 2.3.1 (2026-08-30)
+
+### Features
+
+- **fsrs:** keep load-balanced due previews monotonic across ratings
+- **presets:** disabled flag hides Card Polish presets from run surfaces
+
+### Improvements
+
+- **review:** minimal type-in field and boxless assessment panel
+
+### Bug Fixes
+
+- **grading:** enforce a single verdict-JSON contract for type-in grading
+
 ## 2.3.0 (2026-08-23)
 
 Typed answers get a real assessment this release: grading was rebuilt around a teacher verdict, with its own model setting and its own panel in review. Notes also start keeping score of their own edits, separating what you rewrote by hand from what the AI rewrote. And the plugin no longer hangs on load on a device that has never opened the vault before, which is what made it unusable on a phone.
@@ -424,4 +535,3 @@ The AI side of True Recall was a collection of separate surfaces — Card Polish
 - Improved review UI performance with incremental state patching instead of full reloads
 - Anki imports now create the full deck hierarchy with standardized leaf node naming
 - Fixed data layer invalidation race conditions for more reliable cache updates
-

@@ -17,28 +17,22 @@ interface TypeInAssessmentPanelProps {
 
 const VERDICT_CONFIG: Record<
 	TypeInVerdict,
-	{ label: string; icon: string; accent: string; text: string; badge: string }
+	{ label: string; icon: string; text: string }
 > = {
 	correct: {
 		label: "Correct",
 		icon: "check-circle-2",
-		accent: "ep:border-l-obs-green",
 		text: "ep:text-obs-green",
-		badge: "ep:bg-obs-green/12 ep:text-obs-green",
 	},
 	partial: {
 		label: "Partially correct",
 		icon: "circle-dot",
-		accent: "ep:border-l-obs-orange",
 		text: "ep:text-obs-orange",
-		badge: "ep:bg-obs-orange/12 ep:text-obs-orange",
 	},
 	wrong: {
 		label: "Not quite",
 		icon: "x-circle",
-		accent: "ep:border-l-obs-red",
 		text: "ep:text-obs-red",
-		badge: "ep:bg-obs-red/12 ep:text-obs-red",
 	},
 };
 
@@ -49,8 +43,7 @@ const RATING_LABELS: Record<SuggestedRating, string> = {
 	easy: "Easy",
 };
 
-const PANEL_BASE =
-	"true-recall-type-in-assessment ep:mt-6 ep:rounded-xl ep:border ep:border-obs-border ep:bg-obs-secondary/25 ep:overflow-hidden";
+const PANEL_BASE = "true-recall-type-in-assessment ep:mt-6";
 
 function ChecklistIcon({ icon, cls }: { icon: string; cls: string }) {
 	const iconRef = useIcon(icon);
@@ -94,7 +87,7 @@ function ChecklistSection({
 
 function CheckingState() {
 	return (
-		<div class={cn(PANEL_BASE, "ep:p-4 ep:flex ep:items-center ep:gap-3")}>
+		<div class={cn(PANEL_BASE, "ep:flex ep:items-center ep:gap-2.5")}>
 			<span class="ep:w-2 ep:h-2 ep:rounded-full ep:bg-obs-interactive ep:animate-pulse" />
 			<span class="ep:text-ui-small ep:text-obs-muted">
 				Checking your answer…
@@ -112,54 +105,50 @@ function VerdictHeader({ result }: { result: SemanticGradingResult }) {
 				<span ref={verdictIconRef} class="ep:[&>svg]:w-5 ep:[&>svg]:h-5" />
 				<span class="ep:text-ui-medium ep:font-semibold">{config.label}</span>
 			</div>
-			<span
-				class={cn(
-					"ep:text-ui-smaller ep:font-medium ep:px-2 ep:py-1 ep:rounded-md",
-					config.badge,
-				)}
-			>
-				Suggested: {RATING_LABELS[result.suggestedRating]} · Enter
+			<span class="ep:text-ui-smaller ep:text-obs-muted">
+				Suggested:{" "}
+				<span class={cn("ep:font-medium", config.text)}>
+					{RATING_LABELS[result.suggestedRating]}
+				</span>{" "}
+				· Enter
 			</span>
 		</div>
 	);
 }
 
 function VerdictState({ result }: { result: SemanticGradingResult }) {
-	const config = VERDICT_CONFIG[result.verdict];
 	return (
-		<div class={cn(PANEL_BASE, "ep:border-l-2", config.accent)}>
-			<div class="ep:p-4 ep:flex ep:flex-col ep:gap-3">
-				<VerdictHeader result={result} />
-				{result.teacherComment && (
-					<p class="ep:m-0 ep:text-ui-small ep:text-obs-normal ep:leading-relaxed">
-						{result.teacherComment}
-					</p>
-				)}
-				{(result.covered.length > 0 ||
-					result.missing.length > 0 ||
-					result.errors.length > 0) && (
-					<div class="ep:flex ep:flex-col ep:gap-3 ep:pt-1 ep:border-t ep:border-obs-border/60">
-						<ChecklistSection
-							title="You covered"
-							items={result.covered}
-							icon="check"
-							iconCls="ep:text-obs-green"
-						/>
-						<ChecklistSection
-							title="Missing"
-							items={result.missing}
-							icon="circle-dashed"
-							iconCls="ep:text-obs-orange"
-						/>
-						<ChecklistSection
-							title="Incorrect"
-							items={result.errors}
-							icon="x"
-							iconCls="ep:text-obs-red"
-						/>
-					</div>
-				)}
-			</div>
+		<div class={cn(PANEL_BASE, "ep:flex ep:flex-col ep:gap-3")}>
+			<VerdictHeader result={result} />
+			{result.teacherComment && (
+				<p class="ep:m-0 ep:text-ui-small ep:text-obs-normal ep:leading-relaxed">
+					{result.teacherComment}
+				</p>
+			)}
+			{(result.covered.length > 0 ||
+				result.missing.length > 0 ||
+				result.errors.length > 0) && (
+				<div class="ep:flex ep:flex-col ep:gap-3 ep:pt-3 ep:border-t ep:border-obs-border/60">
+					<ChecklistSection
+						title="You covered"
+						items={result.covered}
+						icon="check"
+						iconCls="ep:text-obs-green"
+					/>
+					<ChecklistSection
+						title="Missing"
+						items={result.missing}
+						icon="circle-dashed"
+						iconCls="ep:text-obs-orange"
+					/>
+					<ChecklistSection
+						title="Incorrect"
+						items={result.errors}
+						icon="x"
+						iconCls="ep:text-obs-red"
+					/>
+				</div>
+			)}
 		</div>
 	);
 }
@@ -217,7 +206,7 @@ function FallbackState({
 	const userTokens =
 		fallback?.diff.filter((token) => token.type !== "missing") ?? [];
 	return (
-		<div class={cn(PANEL_BASE, "ep:p-4 ep:flex ep:flex-col ep:gap-3")}>
+		<div class={cn(PANEL_BASE, "ep:flex ep:flex-col ep:gap-3")}>
 			<div class="ep:flex ep:items-center ep:justify-between ep:gap-2">
 				<span class="ep:text-ui-small ep:font-medium">
 					Text comparison (fallback)

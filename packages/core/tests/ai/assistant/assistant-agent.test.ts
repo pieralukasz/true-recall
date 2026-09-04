@@ -6,6 +6,10 @@ import type {
 } from "../../../src/ai/assistant/assistant.types";
 import { AssistantAgent } from "../../../src/ai/assistant/assistant-agent";
 import type { AssistantToolHost } from "../../../src/ai/assistant/assistant-tools";
+import {
+	FACT_CHECK_CORRECTION_GATE_MESSAGE,
+	FACT_CHECK_UNCORROBORATED_NOTE,
+} from "../../../src/ai/assistant/fact-check-tools";
 import type {
 	ChatCompletionRequest,
 	ChatCompletionResponse,
@@ -43,6 +47,7 @@ const CONTEXT: AssistantContext = {
 
 function toolCallResponse(
 	calls: Array<{ id: string; name: string; args: unknown }>,
+	searchedUrls: string[] = [],
 ): ChatCompletionResponse {
 	return {
 		id: "r",
@@ -51,6 +56,10 @@ function toolCallResponse(
 				message: {
 					role: "assistant",
 					content: null,
+					annotations: searchedUrls.map((url) => ({
+						type: "url_citation",
+						url_citation: { url },
+					})),
 					tool_calls: calls.map((c) => ({
 						id: c.id,
 						type: "function" as const,
@@ -250,6 +259,47 @@ describe("AssistantAgent", () => {
 		expect(prompt).toContain("INSTRUCTION:\nMake it shorter");
 	});
 
+	it("renders the review attempt with tutor guidance for a follow-up question", async () => {
+		const { client, requests } = makeScriptedClient([textResponse("done")]);
+		await new AssistantAgent(client, { webSearch: false }).run(
+			"Why is my claim about UDP wrong?",
+			{
+				...CONTEXT,
+				reviewAttempt: {
+					typedAnswer: "TCP is connectionless",
+					verdict: "wrong",
+					teacherComment: "TCP is connection-oriented.",
+					covered: ["transport layer"],
+					missing: ["three-way handshake"],
+					errors: ["connectionless claim"],
+				},
+			},
+			HOST,
+		);
+
+		const prompt = String(requests[0]?.messages[1]?.content);
+		expect(prompt).toContain("REVIEW ATTEMPT");
+		expect(prompt).toContain("TCP is connectionless");
+		expect(prompt).toContain("GRADING VERDICT: wrong");
+		expect(prompt).toContain("MISSING: three-way handshake");
+		expect(prompt).toContain("update_card");
+		expect(prompt).toContain("INSTRUCTION:\nWhy is my claim about UDP wrong?");
+	});
+
+	it("omits grading lines when the review attempt has no verdict", async () => {
+		const { client, requests } = makeScriptedClient([textResponse("done")]);
+		await new AssistantAgent(client, { webSearch: false }).run(
+			"What does this answer actually mean?",
+			{ ...CONTEXT, reviewAttempt: { typedAnswer: "something vague" } },
+			HOST,
+		);
+
+		const prompt = String(requests[0]?.messages[1]?.content);
+		expect(prompt).toContain("REVIEW ATTEMPT");
+		expect(prompt).toContain("something vague");
+		expect(prompt).not.toContain("GRADING VERDICT");
+	});
+
 	it("proposes validated changes to an open draft without storing callbacks", async () => {
 		const draftContext: AssistantContext = {
 			draftCard: {
@@ -415,5 +465,246 @@ describe("AssistantAgent", () => {
 		});
 		const manifest = await agent.run("x", CONTEXT, HOST);
 		expect(manifest.proposals.length).toBe(3);
+	});
+});
+
+describe("AssistantAgent fact-check mode", () => {
+	const EVIDENCE = [
+		{ url: "https://docs.example/a", title: "Docs", quote: "Default is 5." },
+	];
+	const report = (id: string, verdict: string, evidence = EVIDENCE) => ({
+		id,
+		name: "report_fact_check",
+		args: {
+			verdict,
+			confidence: "high",
+			summary: "Checked the default value against the docs.",
+			evidence,
+		},
+	});
+	const lastToolMessage = (request: {
+		messages: Array<{ role: string; content: unknown }>;
+	}) => {
+		const tool = [...request.messages]
+			.reverse()
+			.find((message) => message.role === "tool");
+		return tool?.content;
+	};
+
+	it("forces web search, offers the fact check tools and records a confirmed verdict", async () => {
+		const { client, requests } = makeScriptedClient([
+			toolCallResponse([report("t1", "confirmed")], ["https://docs.example/b"]),
+			textResponse("Confirmed."),
+		]);
+		const agent = new AssistantAgent(client, {
+			maxIterations: 5,
+			webSearch: false,
+			factCheck: true,
+		});
+		const manifest = await agent.run("Fact-check this card", CONTEXT, HOST);
+
+		expect(requests[0].plugins).toEqual([{ id: "web", max_results: 5 }]);
+		const toolNames = requests[0].tools?.map((tool) => tool.function.name);
+		expect(toolNames).toContain("report_fact_check");
+		expect(toolNames).not.toContain("create_cards");
+		expect(requests[0].messages[0].content).toContain("FACT CHECK MODE");
+
+		expect(manifest.factCheck).toEqual({
+			verdict: "confirmed",
+			confidence: "high",
+			summary: "Checked the default value against the docs.",
+			evidence: EVIDENCE,
+		});
+		expect(manifest.citations.map((c) => c.url)).toContain(
+			"https://docs.example/a",
+		);
+		expect(manifest.proposals).toHaveLength(0);
+		expect(manifest.finalText).toBe("Confirmed.");
+	});
+
+	it("raises maxSources to at least 3 in fact-check mode", async () => {
+		const { client, requests } = makeScriptedClient([
+			toolCallResponse([report("t1", "confirmed")]),
+			textResponse("ok"),
+		]);
+		const agent = new AssistantAgent(client, {
+			maxSources: 1,
+			factCheck: true,
+		});
+		await agent.run("check", CONTEXT, HOST);
+		expect(requests[0].plugins).toEqual([{ id: "web", max_results: 3 }]);
+	});
+
+	it("records a correction after an incorrect verdict", async () => {
+		const { client } = makeScriptedClient([
+			toolCallResponse(
+				[
+					report("t1", "incorrect"),
+					{
+						id: "t2",
+						name: "update_card",
+						args: { cardId: "card-1", fields: { Back: "6" } },
+					},
+				],
+				["https://www.docs.example/other"],
+			),
+			textResponse("Proposed a fix."),
+		]);
+		const agent = new AssistantAgent(client, { factCheck: true });
+		const manifest = await agent.run("check", CONTEXT, HOST);
+
+		expect(manifest.factCheck?.verdict).toBe("incorrect");
+		expect(manifest.proposals).toHaveLength(1);
+		expect(manifest.proposals[0]).toMatchObject({
+			type: "update_card",
+			cardId: "card-1",
+			fields: { Back: "6" },
+		});
+	});
+
+	it("refuses update_card before a negative verdict", async () => {
+		const { client, requests } = makeScriptedClient([
+			toolCallResponse([
+				{
+					id: "t1",
+					name: "update_card",
+					args: { cardId: "card-1", fields: { Back: "6" } },
+				},
+			]),
+			toolCallResponse([report("t2", "confirmed")]),
+			toolCallResponse([
+				{
+					id: "t3",
+					name: "update_card",
+					args: { cardId: "card-1", fields: { Back: "7" } },
+				},
+			]),
+			textResponse("done"),
+		]);
+		const agent = new AssistantAgent(client, { factCheck: true });
+		const manifest = await agent.run("check", CONTEXT, HOST);
+
+		expect(lastToolMessage(requests[1])).toBe(
+			FACT_CHECK_CORRECTION_GATE_MESSAGE,
+		);
+		expect(lastToolMessage(requests[3])).toBe(
+			FACT_CHECK_CORRECTION_GATE_MESSAGE,
+		);
+		expect(manifest.proposals).toHaveLength(0);
+	});
+
+	it("rejects a verdict without evidence and falls back to unverifiable when none is recorded", async () => {
+		const { client, requests } = makeScriptedClient([
+			toolCallResponse([report("t1", "confirmed", [])]),
+			textResponse("I could not find sources."),
+		]);
+		const agent = new AssistantAgent(client, { factCheck: true });
+		const manifest = await agent.run("check", CONTEXT, HOST);
+
+		expect(String(lastToolMessage(requests[1]))).toContain(
+			"at least one source",
+		);
+		expect(manifest.factCheck).toEqual({
+			verdict: "unverifiable",
+			confidence: "low",
+			summary: "I could not find sources.",
+			evidence: [],
+		});
+	});
+
+	it("fills a fallback verdict when the model never reports one", async () => {
+		const { client } = makeScriptedClient([textResponse("Looks fine.")]);
+		const agent = new AssistantAgent(client, { factCheck: true });
+		const manifest = await agent.run("check", CONTEXT, HOST);
+
+		expect(manifest.factCheck).toEqual({
+			verdict: "unverifiable",
+			confidence: "low",
+			summary: "Looks fine.",
+			evidence: [],
+		});
+	});
+
+	it("does not expose or accept report_fact_check outside fact-check mode", async () => {
+		const { client, requests } = makeScriptedClient([
+			toolCallResponse([report("t1", "confirmed")]),
+			textResponse("done"),
+		]);
+		const agent = new AssistantAgent(client, { webSearch: true });
+		const manifest = await agent.run("check", CONTEXT, HOST);
+
+		const toolNames = requests[0].tools?.map((tool) => tool.function.name);
+		expect(toolNames).not.toContain("report_fact_check");
+		expect(lastToolMessage(requests[1])).toBe(
+			"Unknown tool: report_fact_check",
+		);
+		expect(manifest.factCheck).toBeUndefined();
+	});
+
+	it("downgrades confidence when no evidence host appears in the search results", async () => {
+		const { client } = makeScriptedClient([
+			toolCallResponse(
+				[report("t1", "confirmed")],
+				["https://elsewhere.example/x"],
+			),
+			textResponse("Confirmed."),
+		]);
+		const agent = new AssistantAgent(client, { factCheck: true });
+		const manifest = await agent.run("check", CONTEXT, HOST);
+
+		expect(manifest.factCheck?.verdict).toBe("confirmed");
+		expect(manifest.factCheck?.confidence).toBe("low");
+		expect(manifest.factCheck?.summary).toContain(
+			FACT_CHECK_UNCORROBORATED_NOTE,
+		);
+	});
+
+	it("keeps an unverifiable verdict untouched by corroboration", async () => {
+		const { client } = makeScriptedClient([
+			toolCallResponse([report("t1", "unverifiable", [])]),
+			textResponse("Opinion."),
+		]);
+		const agent = new AssistantAgent(client, { factCheck: true });
+		const manifest = await agent.run("check", CONTEXT, HOST);
+
+		expect(manifest.factCheck).toMatchObject({
+			verdict: "unverifiable",
+			confidence: "high",
+		});
+		expect(manifest.factCheck?.summary).not.toContain(
+			FACT_CHECK_UNCORROBORATED_NOTE,
+		);
+	});
+
+	it("shows the earlier verdict to follow-up turns and does not overwrite it", async () => {
+		const { client, requests } = makeScriptedClient([
+			textResponse("Because the docs say so."),
+		]);
+		const agent = new AssistantAgent(client, { factCheck: true });
+		const previous = {
+			verdict: "confirmed" as const,
+			confidence: "high" as const,
+			summary: "Checked.",
+			evidence: EVIDENCE,
+		};
+		const manifest = await agent.run(
+			"why?",
+			{
+				...CONTEXT,
+				draftWorkspace: {
+					revision: 1,
+					manifest: { proposals: [], citations: [], factCheck: previous },
+				},
+			},
+			HOST,
+		);
+
+		expect(requests[0].messages[1].content).toContain("CURRENT FACT CHECK");
+		expect(requests[0].messages[1].content).toContain(
+			"Confirmed (high confidence)",
+		);
+		expect(requests[0].messages[1].content).toContain("https://docs.example/a");
+		expect(manifest.factCheck).toEqual(previous);
+		expect(manifest.finalText).toBe("Because the docs say so.");
 	});
 });

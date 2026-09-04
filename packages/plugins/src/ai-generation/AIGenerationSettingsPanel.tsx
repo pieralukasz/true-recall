@@ -129,7 +129,17 @@ export function AIGenerationSettingsPanel({
 		[persistPresets],
 	);
 
-	const removeUserPreset = (p: GenerationPreset) => {
+	const removeUserPreset = async (p: GenerationPreset) => {
+		const { confirm } = await import(
+			"@true-recall/obsidian/modals/shared/ConfirmModal"
+		);
+		const confirmed = await confirm(plugin.app, {
+			title: "Delete Generation Preset",
+			message: `Delete “${p.name}”? This action cannot be undone.`,
+			confirmLabel: "Delete Preset",
+		});
+		if (!confirmed) return;
+
 		persistPresets(
 			(current) =>
 				current.filter((existing) => existing.id !== p.id || existing.builtin),
@@ -184,20 +194,19 @@ export function AIGenerationSettingsPanel({
 			<div class="ep:flex ep:gap-2 ep:items-start ep:mt-2 ep:p-2.5 ep:border-l-2 ep:border-obs-accent ep:bg-obs-accent/8 ep:rounded-r-md">
 				<span class="ep:text-ui-smaller ep:text-obs-normal ep:leading-relaxed">
 					Presets don't show up in the UI automatically. To use a preset, open
-					the <b>Selection Toolbar</b> plugin settings and add it as a button
+					the <b>Quick Actions Toolbar</b> settings and add it as a button
 					(Editor toolbar or Global toolbar). Only then will it appear in the
 					action bar above selected text.
 				</span>
 			</div>
 
 			{builtins.length > 0 && (
-				<div class="ep:flex ep:flex-col ep:gap-3 ep:mt-4">
-					<div class="ep:flex ep:flex-col ep:gap-0.5">
-						<h3 class="ep:text-ui-small ep:font-semibold ep:text-obs-normal ep:m-0">
-							Built-in presets
-						</h3>
-						<span class="ep:text-ui-smaller ep:text-obs-muted">
-							Ship with the plugin — pick an output language to localize them.
+				<div class="tr-preset-section">
+					<div class="tr-preset-section__header">
+						<h3 class="tr-preset-section__title">Built-in presets</h3>
+						<span class="tr-preset-section__description">
+							Ready to use. Pro presets use True Recall's managed model and AI
+							budget; output language stays under your control.
 						</span>
 					</div>
 					{builtins.map((p) => (
@@ -212,12 +221,10 @@ export function AIGenerationSettingsPanel({
 				</div>
 			)}
 
-			<div class="ep:flex ep:flex-col ep:gap-3 ep:mt-4">
-				<div class="ep:flex ep:flex-col ep:gap-0.5">
-					<h3 class="ep:text-ui-small ep:font-semibold ep:text-obs-normal ep:m-0">
-						Your presets
-					</h3>
-					<span class="ep:text-ui-smaller ep:text-obs-muted">
+			<div class="tr-preset-section">
+				<div class="tr-preset-section__header">
+					<h3 class="tr-preset-section__title">Your presets</h3>
+					<span class="tr-preset-section__description">
 						Pick a note type, write one prompt — the pipeline fills the fields.
 						Enable audio/image widgets per preset.
 					</span>
@@ -243,7 +250,7 @@ export function AIGenerationSettingsPanel({
 						/>
 					)}
 				/>
-				<div>
+				<div class="tr-preset-section__actions">
 					<ActionButton
 						label="+ New preset"
 						variant="outline"

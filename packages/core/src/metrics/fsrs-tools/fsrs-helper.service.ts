@@ -6,9 +6,11 @@ import type {
 	FSRSSettings,
 	SchedulingPreview,
 	SchedulingPreviewEntry,
+	SchedulingPreviewRating,
 	TrueRecallSettings,
 } from "../../types";
 import { formatInterval } from "../../types/fsrs/fsrs.utils";
+import { PREVIEW_RATING_ORDER } from "../../types/fsrs/scheduling.types";
 import { formatLocalDate, getTodayBoundary } from "../../utils";
 import type {
 	OptimizationInput,
@@ -26,6 +28,7 @@ import { PostponeAdvanceService } from "./scheduler/postpone-advance.service";
 import { RescheduleService } from "./scheduler/reschedule.service";
 import { ScheduleBreakService } from "./scheduler/schedule-break.service";
 import type {
+	BalanceDueResult,
 	BreakScheduleOptions,
 	DisperseOptions,
 	FlattenFutureOptions,
@@ -80,6 +83,56 @@ export interface WorkloadDecision {
 	catchUp: CatchUpProjection;
 	/** Manual target when configured, otherwise suggestedTarget */
 	effectiveTarget: number;
+}
+
+/** Where an answered rating sits among the buttons the user was shown */
+export interface RatingOrderContext {
+	/** Rating that produced the answered card */
+	rating: SchedulingPreviewRating;
+	/** Raw FSRS preview of the pre-answer card, used only as order floors */
+	rawPreview: SchedulingPreview;
+}
+
+const MINUTES_PER_DAY = 60 * 24;
+
+const SKIPPED_NOTE =
+	"Skipped: load balancing only adjusts review intervals of at least 1 day.";
+const UNCHANGED_NOTE =
+	"No change: the FSRS day is already a good fit within the fuzz range.";
+const ADJUSTED_NOTE =
+	"Adjusted within the fuzz range to a less loaded day (Anki-style).";
+
+function minutesUntil(due: Date | string): number {
+	return (new Date(due).getTime() - Date.now()) / (1000 * 60);
+}
+
+/** Fold a balancer result back into the preview entry the UI renders */
+function describeBalancedEntry(
+	entry: SchedulingPreviewEntry,
+	result: BalanceDueResult | undefined,
+): SchedulingPreviewEntry {
+	const unchanged = {
+		...entry,
+		originalDue: entry.due,
+		originalInterval: entry.interval,
+		daysChanged: 0,
+	};
+	if (minutesUntil(entry.due) < MINUTES_PER_DAY) {
+		return { ...unchanged, loadBalanceNote: SKIPPED_NOTE };
+	}
+	if (!result?.balanced) {
+		return { ...unchanged, loadBalanceNote: UNCHANGED_NOTE };
+	}
+
+	const balancedDue = new Date(result.newDue);
+	return {
+		...unchanged,
+		due: balancedDue,
+		interval: formatInterval(minutesUntil(balancedDue)),
+		balancedDue,
+		daysChanged: result.daysChanged,
+		loadBalanceNote: ADJUSTED_NOTE,
+	};
 }
 
 export class FSRSHelperService {
@@ -234,22 +287,30 @@ export class FSRSHelperService {
 		return this.cardStore.stats.getDailyStats(todayKey)?.reviewsCompleted ?? 0;
 	}
 
-	balanceScheduledReview(cardId: string, fsrs: FSRSCardData): FSRSCardData {
+	/**
+	 * Load-balanced due for an answered card. Pass `order` so the shift is
+	 * picked through the same ordered chain the rating buttons were previewed
+	 * with; without it the rating is balanced in isolation and may end up
+	 * before a lower rating's day.
+	 */
+	balanceScheduledReview(
+		cardId: string,
+		fsrs: FSRSCardData,
+		order?: RatingOrderContext,
+	): FSRSCardData {
 		if (!this.settings.loadBalanceEnabled || fsrs.state !== State.Review) {
 			return fsrs;
 		}
 		if (fsrs.scheduledDays < 1) return fsrs;
-		if ((new Date(fsrs.due).getTime() - Date.now()) / (1000 * 60) < 60 * 24) {
-			return fsrs;
-		}
+		if (minutesUntil(fsrs.due) < MINUTES_PER_DAY) return fsrs;
 
-		const result = this.loadBalancer.balanceDue({
-			cardId,
-			originalDue: fsrs.due,
-			maxShiftDays: this.settings.loadBalanceMaxShiftDays,
-			easyDays: this.settings.easyDays,
-			easyDaysMultiplier: this.settings.easyDaysMultiplier,
-		});
+		const result = order
+			? this.balanceOrderedDue(cardId, fsrs.due, order)
+			: this.loadBalancer.balanceDue({
+					cardId,
+					originalDue: fsrs.due,
+					...this.loadBalanceTuning(),
+				});
 
 		if (!result.balanced) return fsrs;
 
@@ -260,18 +321,30 @@ export class FSRSHelperService {
 		};
 	}
 
+	/**
+	 * Balance every rating button of one card. Ratings are balanced in
+	 * ascending order so a higher rating never gets an earlier due date than a
+	 * lower one, which independent per-button balancing used to allow.
+	 */
 	balanceSchedulingPreview(
 		cardId: string,
 		preview: SchedulingPreview,
 	): SchedulingPreview {
 		if (!this.settings.loadBalanceEnabled) return preview;
 
-		return {
-			again: this.balancePreviewEntry(cardId, preview.again),
-			hard: this.balancePreviewEntry(cardId, preview.hard),
-			good: this.balancePreviewEntry(cardId, preview.good),
-			easy: this.balancePreviewEntry(cardId, preview.easy),
-		};
+		const results = this.loadBalancer.balanceDueSequence({
+			cardId,
+			originalDues: PREVIEW_RATING_ORDER.map((rating) =>
+				preview[rating].due.toISOString(),
+			),
+			...this.loadBalanceTuning(),
+		});
+
+		const balanced = { ...preview };
+		PREVIEW_RATING_ORDER.forEach((rating, index) => {
+			balanced[rating] = describeBalancedEntry(preview[rating], results[index]);
+		});
+		return balanced;
 	}
 
 	getWorkloadDistribution(days: number = 30): WorkloadDistribution[] {
@@ -358,7 +431,7 @@ export class FSRSHelperService {
 		presetNames?: string[],
 	): TrueRetentionSummary {
 		return this.trueRetention.getSummary(
-			this.settings.fsrsRequestRetention,
+			this.getTargetRetention(presetNames),
 			days,
 			presetNames,
 		);
@@ -369,7 +442,7 @@ export class FSRSHelperService {
 		presetNames?: string[],
 	): TrueRetentionSnapshot {
 		return this.trueRetention.getSummaryAndRolling(
-			this.settings.fsrsRequestRetention,
+			this.getTargetRetention(presetNames),
 			days,
 			7,
 			presetNames,
@@ -444,54 +517,69 @@ export class FSRSHelperService {
 		return this.distribution.getAllDistributions();
 	}
 
-	private balancePreviewEntry(
-		cardId: string,
-		entry: SchedulingPreviewEntry,
-	): SchedulingPreviewEntry {
-		const minutesUntilDue = (entry.due.getTime() - Date.now()) / (1000 * 60);
-		if (minutesUntilDue < 60 * 24) {
-			return {
-				...entry,
-				originalDue: entry.due,
-				originalInterval: entry.interval,
-				daysChanged: 0,
-				loadBalanceNote:
-					"Skipped: load balancing only adjusts review intervals of at least 1 day.",
-			};
-		}
-
-		const result = this.loadBalancer.balanceDue({
-			cardId,
-			originalDue: entry.due.toISOString(),
+	/** Balancer tuning shared by the preview and the grading paths */
+	private loadBalanceTuning(): {
+		maxShiftDays: number;
+		easyDays: TrueRecallSettings["easyDays"];
+		easyDaysMultiplier: number;
+	} {
+		return {
 			maxShiftDays: this.settings.loadBalanceMaxShiftDays,
 			easyDays: this.settings.easyDays,
 			easyDaysMultiplier: this.settings.easyDaysMultiplier,
+		};
+	}
+
+	/**
+	 * Balance the answered rating through the chain of lower ratings, so the
+	 * stored due matches the one its rating button showed. The lower ratings
+	 * come from the raw preview and are only used as order floors; the answered
+	 * rating uses its own authoritative due.
+	 */
+	private balanceOrderedDue(
+		cardId: string,
+		due: string,
+		order: RatingOrderContext,
+	): BalanceDueResult {
+		const index = PREVIEW_RATING_ORDER.indexOf(order.rating);
+		const originalDues = PREVIEW_RATING_ORDER.slice(0, index + 1).map(
+			(rating, position) =>
+				position === index ? due : order.rawPreview[rating].due.toISOString(),
+		);
+
+		const results = this.loadBalancer.balanceDueSequence({
+			cardId,
+			originalDues,
+			...this.loadBalanceTuning(),
 		});
 
-		if (!result.balanced) {
-			return {
-				...entry,
-				originalDue: entry.due,
-				originalInterval: entry.interval,
+		return (
+			results[index] ?? {
+				originalDue: due,
+				newDue: due,
 				daysChanged: 0,
-				loadBalanceNote:
-					"No change: the FSRS day is already a good fit within the fuzz range.",
-			};
-		}
+				balanced: false,
+			}
+		);
+	}
 
-		const balancedDue = new Date(result.newDue);
-		const balancedMinutes = (balancedDue.getTime() - Date.now()) / (1000 * 60);
-		return {
-			...entry,
-			due: balancedDue,
-			interval: formatInterval(balancedMinutes),
-			originalDue: entry.due,
-			balancedDue,
-			originalInterval: entry.interval,
-			daysChanged: result.daysChanged,
-			loadBalanceNote:
-				"Adjusted within the fuzz range to a less loaded day (Anki-style).",
-		};
+	/**
+	 * Retention the reported true retention should be judged against: the one
+	 * the scheduler actually aims for. When the stats are scoped to a single
+	 * preset that preset's target is used, otherwise the default preset's.
+	 * The flat fsrsRequestRetention field is a stale legacy mirror and only
+	 * serves as fallback for pre-preset settings files.
+	 */
+	private getTargetRetention(presetNames?: string[]): number {
+		const presets = this.settings.fsrsPresets ?? [];
+		const scoped =
+			presetNames?.length === 1
+				? presets.find((preset) => preset.name === presetNames[0])
+				: undefined;
+		const preset =
+			scoped ??
+			presets.find((entry) => entry.id === this.settings.defaultPresetId);
+		return preset?.requestRetention ?? this.settings.fsrsRequestRetention;
 	}
 
 	/**

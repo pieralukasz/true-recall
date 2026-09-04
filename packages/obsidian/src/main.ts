@@ -21,7 +21,11 @@ import type { DeviceIdService } from "@true-recall/core/integration/device/devic
 import { DeviceLockService } from "@true-recall/core/integration/device/device-lock.service";
 import { DeviceSyncService } from "@true-recall/core/integration/device/device-sync.service";
 import { DeviceSyncScheduler } from "@true-recall/core/integration/device/device-sync-scheduler";
-import { MOBILE_SAVE_DEBOUNCE_MS } from "@true-recall/core/persistence/sqlite/sqlite.types";
+import { getDeviceDbPath } from "@true-recall/core/persistence/sqlite/db-location";
+import {
+	DB_FOLDER,
+	MOBILE_SAVE_DEBOUNCE_MS,
+} from "@true-recall/core/persistence/sqlite/sqlite.types";
 import { FSRSService } from "@true-recall/core/services/fsrs/fsrs.service";
 import { FsrsReplayService } from "@true-recall/core/services/fsrs/fsrs-replay.service";
 import { SessionService } from "@true-recall/core/services/review/session.service";
@@ -94,6 +98,7 @@ import { StatsView } from "@true-recall/obsidian/views/stats/StatsView";
 import { createObsidianAdapters, type ObsidianAdapters } from "./context";
 import type { LocalApiServer } from "./plugin/api/LocalApiServer";
 import type { BackupRecoveryManager } from "./plugin/BackupRecoveryManager";
+import { CloudSyncManager } from "./plugin/CloudSyncManager";
 import {
 	CrossDeviceSyncCoordinator,
 	emptySyncResult,
@@ -203,9 +208,12 @@ export default class TrueRecallPlugin extends Plugin {
 
 	deviceIdService: DeviceIdService | null = null;
 	deviceDiscovery: DeviceDiscoveryService | null = null;
+	/** Folder holding this device's database; decided at startup by sync mode. */
+	dbFolder: string = DB_FOLDER;
 	private deviceLock: DeviceLockService | null = null;
 	private deviceSyncScheduler: DeviceSyncScheduler | null = null;
 	syncCoordinator: CrossDeviceSyncCoordinator | null = null;
+	cloudSyncManager: CloudSyncManager | null = null;
 	deletionHandler: DeletionHandlerService | null = null;
 	commandService: CommandService | null = null;
 	store: AppStore | null = null;
@@ -241,6 +249,13 @@ export default class TrueRecallPlugin extends Plugin {
 
 	isStoreReady(): boolean {
 		return this.coreApp.isReady();
+	}
+
+	/** Single source of truth for the device database path. */
+	getDeviceDbPath(deviceId?: string): string {
+		const id = deviceId ?? this.deviceIdService?.getDeviceId();
+		if (!id) throw new Error("Device id is not initialized");
+		return getDeviceDbPath(id, this.dbFolder);
 	}
 
 	async onload(): Promise<void> {
@@ -301,7 +316,7 @@ export default class TrueRecallPlugin extends Plugin {
 		}
 
 		// 3. Device lock (only when sync is enabled)
-		if (this.settings.enableDeviceSync && this.deviceIdService) {
+		if (this.settings.syncMode === "shared-vault" && this.deviceIdService) {
 			try {
 				const persistence = new ObsidianPersistence(this.app);
 				const deviceId = this.deviceIdService.getDeviceId();
@@ -329,7 +344,7 @@ export default class TrueRecallPlugin extends Plugin {
 		// 4. Cross-device sync
 		try {
 			if (
-				this.settings.enableDeviceSync &&
+				this.settings.syncMode === "shared-vault" &&
 				this.deviceDiscovery &&
 				this.cardStore
 			) {
@@ -380,20 +395,32 @@ export default class TrueRecallPlugin extends Plugin {
 					},
 				});
 
-				const syncResult = await this.syncCoordinator.syncNow("startup");
-				if (syncResult && syncResult.errors.length > 0) {
-					notify().warning(
-						`Sync completed with ${syncResult.errors.length} error(s). Some changes may not have been applied.`,
-					);
-				}
-				if (
-					syncResult &&
-					(syncResult.cardsApplied > 0 || syncResult.reviewLogsApplied > 0)
-				) {
-					notify().info(
-						`Synced ${syncResult.cardsApplied} cards and ${syncResult.reviewLogsApplied} reviews from other devices.`,
-					);
-				}
+				// Never awaited by onload: the startup merge flushes the local
+				// database in full and reads every remote database in full (the
+				// desktop DB alone is ~60 MB). On mobile with an iCloud vault that
+				// read can stall on a network download, parking the whole app
+				// behind "Plugin is taking long to load" until it finishes. Same
+				// pattern as the device-import offer in PluginInitializers.
+				this.app.workspace.onLayoutReady(() => {
+					void (async () => {
+						if (this.settings.syncMode !== "shared-vault") return;
+						const syncResult = await this.syncCoordinator?.syncNow("startup");
+						if (!syncResult) return;
+						if (syncResult.errors.length > 0) {
+							notify().warning(
+								`Sync completed with ${syncResult.errors.length} error(s). Some changes may not have been applied.`,
+							);
+						}
+						if (
+							syncResult.cardsApplied > 0 ||
+							syncResult.reviewLogsApplied > 0
+						) {
+							notify().info(
+								`Synced ${syncResult.cardsApplied} cards and ${syncResult.reviewLogsApplied} reviews from other devices.`,
+							);
+						}
+					})();
+				});
 
 				// Background merge: reviews done on another device show up without
 				// restarting the plugin. Cheap mtime polling; the merge itself is
@@ -403,8 +430,10 @@ export default class TrueRecallPlugin extends Plugin {
 						new ObsidianPersistence(this.app),
 						this.deviceIdService.getDeviceId(),
 						async () =>
-							(await this.syncCoordinator?.syncNow("interval")) ??
-							emptySyncResult(),
+							this.settings.syncMode === "shared-vault"
+								? ((await this.syncCoordinator?.syncNow("interval")) ??
+									emptySyncResult())
+								: emptySyncResult(),
 					);
 					this.app.workspace.onLayoutReady(() => {
 						void this.deviceSyncScheduler?.start();
@@ -413,8 +442,14 @@ export default class TrueRecallPlugin extends Plugin {
 
 				// Mobile apps return from the background without reloading the
 				// plugin, so startup-only sync would show stale data all day.
+				// Re-check syncMode on every trigger: the user can switch to
+				// Cloud Sync mid-session, and the two transports must never
+				// run concurrently.
 				this.registerDomEvent(activeDocument, "visibilitychange", () => {
-					if (activeDocument.visibilityState === "visible") {
+					if (
+						activeDocument.visibilityState === "visible" &&
+						this.settings.syncMode === "shared-vault"
+					) {
 						void this.syncCoordinator?.syncNow("foreground");
 					}
 				});
@@ -425,6 +460,9 @@ export default class TrueRecallPlugin extends Plugin {
 				"Cross-device sync failed. Your cards may not be up to date.",
 			);
 		}
+
+		this.cloudSyncManager = new CloudSyncManager(this);
+		this.cloudSyncManager.initialize();
 
 		const tStore = performance.now();
 
@@ -538,6 +576,20 @@ export default class TrueRecallPlugin extends Plugin {
 				` | views+commands: ${(tTotal - tStore).toFixed(1)}ms` +
 				` | total: ${(tTotal - t0).toFixed(1)}ms`,
 		);
+	}
+
+	/**
+	 * Stops the shared-vault transport wired at load time. Called when the
+	 * user switches to Cloud Sync mid-session so both transports never run
+	 * concurrently against the same rows.
+	 */
+	teardownSharedVaultSync(): void {
+		this.deviceSyncScheduler?.stop();
+		this.deviceSyncScheduler = null;
+		this.deviceLock?.stopHeartbeat();
+		void this.deviceLock?.clearLock();
+		this.deviceLock = null;
+		this.syncCoordinator = null;
 	}
 
 	onunload(): void {

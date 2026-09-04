@@ -7,6 +7,37 @@ import {
 } from "../../src/constants";
 import type { GenerationPreset } from "../../src/types/generation-preset.types";
 
+describe("migrateSettings — sync mode", () => {
+	it("preserves the legacy shared-vault toggle", () => {
+		const { settings, needsSave } = migrateSettings({
+			enableDeviceSync: true,
+		} as unknown as Parameters<typeof migrateSettings>[0]);
+
+		expect(settings.syncMode).toBe("shared-vault");
+		expect(settings.enableDeviceSync).toBe(true);
+		expect(needsSave).toBe(true);
+	});
+
+	it("keeps cloud and shared-vault modes mutually exclusive", () => {
+		const { settings } = migrateSettings({
+			syncMode: "cloud",
+			enableDeviceSync: true,
+		} as unknown as Parameters<typeof migrateSettings>[0]);
+
+		expect(settings.syncMode).toBe("cloud");
+		expect(settings.enableDeviceSync).toBe(false);
+	});
+
+	it("repairs an unknown persisted mode", () => {
+		const { settings, needsSave } = migrateSettings({
+			syncMode: "future-mode",
+		} as unknown as Parameters<typeof migrateSettings>[0]);
+
+		expect(settings.syncMode).toBe("off");
+		expect(needsSave).toBe(true);
+	});
+});
+
 describe("migrateSettings — custom study sessions", () => {
 	const legacyDeck = {
 		id: "legacy-custom-study",
@@ -23,7 +54,7 @@ describe("migrateSettings — custom study sessions", () => {
 		} as unknown as Parameters<typeof migrateSettings>[0]);
 
 		expect(settings.temporaryCustomStudyDecks).toEqual([legacyDeck]);
-		expect(settings.temporaryCustomStudyDeck).toBeUndefined();
+		expect(settings).not.toHaveProperty("temporaryCustomStudyDeck");
 		expect(needsSave).toBe(true);
 	});
 
@@ -605,5 +636,40 @@ describe("migrateSettings highlight-card toolbar button backfill", () => {
 			settings.editorToolbarButtons.find((b) => b.id === "highlight-card")
 				?.enabled,
 		).toBe(false);
+	});
+});
+
+describe("migrateSettings — feature catalog consolidation", () => {
+	it("moves duplicate link and status feature states into their dedicated settings", () => {
+		const { settings, needsSave } = migrateSettings({
+			showLinkStatusIndicators: true,
+			showStatusBarWidget: true,
+			pluginStates: {
+				"link-status-indicators": false,
+				"status-bar-widget": false,
+				"selection-toolbar": false,
+			},
+		} as unknown as Parameters<typeof migrateSettings>[0]);
+
+		expect(settings.showLinkStatusIndicators).toBe(false);
+		expect(settings.showStatusBarWidget).toBe(false);
+		expect(settings.pluginStates).toEqual({ "selection-toolbar": false });
+		expect(needsSave).toBe(true);
+	});
+
+	it("removes legacy AI family, Type-in, and Anki states", () => {
+		const { settings } = migrateSettings({
+			defaultTypeInMode: "ai",
+			pluginStates: {
+				"ai-assistant": true,
+				"ai-generation": false,
+				"card-polish": false,
+				"type-in-mode": false,
+				"anki-import-export": false,
+			},
+		} as unknown as Parameters<typeof migrateSettings>[0]);
+
+		expect(settings.defaultTypeInMode).toBe("off");
+		expect(settings.pluginStates).toEqual({ "ai-assistant": true });
 	});
 });

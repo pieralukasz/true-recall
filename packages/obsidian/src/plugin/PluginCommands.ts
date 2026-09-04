@@ -44,7 +44,7 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 
 	plugin.addCommand({
 		id: "toggle-r-mode",
-		name: "Toggle R-Mode (retrievability sessions)",
+		name: "Toggle r-mode (retrievability sessions)",
 		callback: () => void plugin.toggleRMode(),
 	});
 
@@ -128,7 +128,10 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 		id: "sync-devices-now",
 		name: "Sync devices now",
 		checkCallback: (checking) => {
-			if (!plugin.settings.enableDeviceSync || !plugin.syncCoordinator) {
+			if (
+				plugin.settings.syncMode !== "shared-vault" ||
+				!plugin.syncCoordinator
+			) {
 				return false;
 			}
 			if (!checking) {
@@ -150,6 +153,34 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 							: "Everything is up to date.",
 					);
 				});
+			}
+			return true;
+		},
+	});
+
+	plugin.addCommand({
+		id: "sync-cloud-now",
+		name: "Sync cloud now",
+		checkCallback: (checking) => {
+			if (plugin.settings.syncMode !== "cloud" || !plugin.cloudSyncManager)
+				return false;
+			if (!checking) {
+				void plugin.cloudSyncManager.coordinator
+					.syncNow("manual")
+					.then((result) => {
+						if (!result || result.errors.length) {
+							notify().warning(
+								result?.errors[0] ??
+									"Cloud Sync failed. See console for details.",
+							);
+							return;
+						}
+						notify().info(
+							result.pulled + result.pushed > 0
+								? `Cloud Sync: ${result.pulled} pulled, ${result.pushed} pushed.`
+								: "Everything is up to date.",
+						);
+					});
 			}
 			return true;
 		},
@@ -204,6 +235,17 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 	});
 
 	plugin.addCommand({
+		id: "fact-check-current-card",
+		name: "Fact check current card",
+		checkCallback: (checking) => {
+			const reviewView = plugin.app.workspace.getActiveViewOfType(ReviewView);
+			if (!reviewView?.canFactCheckCurrentCard()) return false;
+			if (!checking) reviewView.factCheckCurrentCard();
+			return true;
+		},
+	});
+
+	plugin.addCommand({
 		id: "redo-flashcard-action",
 		name: "Redo last undone action",
 		checkCallback: (checking) => {
@@ -219,6 +261,18 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 			}
 			return true;
 		},
+	});
+
+	plugin.addCommand({
+		id: "import-anki",
+		name: "Import Anki deck (.apkg)",
+		callback: () => void plugin.importAnki(),
+	});
+
+	plugin.addCommand({
+		id: "export-anki",
+		name: "Export to Anki (.apkg)",
+		callback: () => plugin.exportAnki(),
 	});
 
 	plugin.addCommand({

@@ -14,6 +14,7 @@ import { capabilities } from "@true-recall/obsidian/utils/platform";
 import type TrueRecallPlugin from "../../main";
 import { useSettings } from "../hooks/useSettings";
 import { InkIntegrationSection } from "./integrations/InkIntegrationSection";
+import { SyncIntegrationSection } from "./integrations/SyncIntegrationSection";
 
 interface LocalApiCardProps {
 	settings: TrueRecallSettings;
@@ -64,6 +65,7 @@ function LocalApiCard({ settings, save, plugin }: LocalApiCardProps) {
 				<TextInput
 					value={String(settings.apiPort)}
 					placeholder="27182"
+					class="tr-control--compact"
 					onChange={(v) => {
 						const port = Number.parseInt(v, 10);
 						if (!Number.isNaN(port) && port >= 1024 && port <= 65535) {
@@ -87,7 +89,9 @@ export function IntegrationsTab() {
 	const { settings, save, plugin } = useSettings();
 
 	return (
-		<div class="ep:flex ep:flex-col ep:gap-3">
+		<div class="tr-settings-sections">
+			<SyncIntegrationSection settings={settings} save={save} plugin={plugin} />
+
 			<InkIntegrationSection />
 
 			{capabilities.canRunLocalApi() && (
@@ -110,26 +114,6 @@ export function IntegrationsTab() {
 					>
 						Get skill
 					</Clickable>
-				</FormField>
-			</FormCard>
-
-			<FormCard title="Device Sync">
-				<InfoBlock>
-					Sync flashcards and review history across devices via iCloud. Each
-					device keeps its own database; changes are merged automatically in the
-					background.
-				</InfoBlock>
-
-				<FormField
-					name="Enable device sync"
-					description="Merge changes from other devices when the plugin loads"
-				>
-					<ToggleInput
-						value={settings.enableDeviceSync}
-						onChange={(v) => {
-							void save({ enableDeviceSync: v });
-						}}
-					/>
 				</FormField>
 			</FormCard>
 		</div>

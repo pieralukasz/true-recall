@@ -3,6 +3,7 @@ import { notify } from "@true-recall/obsidian/services/notification.service";
 import type { PluginManifest } from "../types";
 import { createLinkStatusPostProcessor } from "./LinkStatusPostProcessor";
 import { createLinkStatusViewPlugin } from "./LinkStatusViewPlugin";
+import { LinkStatusSettingsPanel } from "./settings-panel";
 
 export { createLinkStatusPostProcessor } from "./LinkStatusPostProcessor";
 export { createLinkStatusViewPlugin } from "./LinkStatusViewPlugin";
@@ -12,7 +13,7 @@ let extensionsRegistered = false;
 export const linkStatusIndicatorsManifest: PluginManifest = {
 	info: {
 		id: "link-status-indicators",
-		name: "Link Status Indicators",
+		name: "Link Progress Indicators",
 		description:
 			"Show inline status donuts next to [[wikilinks]] that reveal flashcard review state at a glance. In reading mode you also get text count indicators, and hovering a link opens a tooltip with full note stats.",
 		features: [
@@ -23,6 +24,7 @@ export const linkStatusIndicatorsManifest: PluginManifest = {
 		icon: "circle-dot",
 		tier: "free",
 	},
+	settingsPanel: LinkStatusSettingsPanel,
 	activate: (ctx) => {
 		const { obsidianPlugin: plugin } = ctx;
 		const noteStatusCache = plugin.noteStatusCache;
@@ -39,9 +41,7 @@ export const linkStatusIndicatorsManifest: PluginManifest = {
 		if (extensionsRegistered) return;
 		extensionsRegistered = true;
 
-		const isEnabled = () =>
-			plugin.settings.pluginStates?.["link-status-indicators"] !== false &&
-			plugin.settings.showLinkStatusIndicators;
+		const isEnabled = () => plugin.settings.showLinkStatusIndicators;
 
 		const onReviewNote = (file: import("obsidian").TFile) => {
 			plugin.reviewNoteFlashcards(file).catch((error: unknown) => {

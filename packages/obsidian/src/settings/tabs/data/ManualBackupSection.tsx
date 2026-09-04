@@ -28,7 +28,7 @@ export function ManualBackupSection() {
 			>
 				<ActionButton
 					label="Restore..."
-					variant="danger"
+					variant="secondary"
 					onClick={() => void plugin.openRestoreBackupModal()}
 				/>
 			</FormField>

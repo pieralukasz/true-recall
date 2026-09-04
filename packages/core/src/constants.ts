@@ -139,6 +139,7 @@ export const DEFAULT_R_MODE_SETTINGS: RModeSettings = {
 
 export const DEFAULT_SETTINGS: TrueRecallSettings = {
 	enableDeviceSync: false,
+	syncMode: "off",
 	providerType: "openrouter",
 	customBaseUrl: "http://localhost:11434/v1",
 	customModel: "",
@@ -393,8 +394,20 @@ export const DEFAULT_LMSTUDIO_BASE_URL = "http://localhost:1234/v1";
 export const VIEW_TYPE_ASSISTANT_INBOX = "true-recall-assistant-inbox";
 export const VIEW_TYPE_ASSISTANT_WORKSPACE = "true-recall-assistant-workspace";
 
-export const TRUERECALL_WEB_URL = "https://truerecall.app";
+declare const __TRUERECALL_WEB_URL__: string;
+
+export const TRUERECALL_WEB_URL =
+	typeof __TRUERECALL_WEB_URL__ === "string"
+		? __TRUERECALL_WEB_URL__
+		: "https://www.truerecall.app";
 export const TRUERECALL_NEWSLETTER_URL = "https://truerecall.app/#newsletter";
+export const TRUERECALL_PRICING_URL = `${TRUERECALL_WEB_URL}/pricing/`;
+/** Sign-in page; new accounts get a free Pro trial key. */
+export const TRUERECALL_LOGIN_URL = `${TRUERECALL_WEB_URL}/login`;
+/** Account dashboard with the Pro key and subscription management. */
+export const TRUERECALL_DASHBOARD_URL = `${TRUERECALL_WEB_URL}/dashboard`;
+/** Docs page that lists exactly what a Pro key unlocks. */
+export const TRUERECALL_PRO_GUIDE_URL = `${TRUERECALL_WEB_URL}/getting-started/what-pro-includes/`;
 export const TRUERECALL_BMC_URL = "https://www.buymeacoffee.com/1Hzbip1K9Q";
 export const TRUERECALL_GITHUB_URL =
 	"https://github.com/pieralukasz/true-recall";

@@ -1,8 +1,9 @@
 import { useEffect, useState } from "preact/hooks";
 
-import { FormCard } from "@true-recall/obsidian/components";
+import { FormCard, InfoBlock } from "@true-recall/obsidian/components";
 
 import { useSettings } from "../../hooks/useSettings";
+import { StatusList } from "./StatusList";
 
 export function BackupStatusSection() {
 	const { plugin } = useSettings();
@@ -30,15 +31,32 @@ export function BackupStatusSection() {
 		: null;
 
 	return (
-		<FormCard title="Backup status">
-			<p class="ep:text-ui-smaller ep:text-obs-muted">
+		<FormCard title="Backup status" class="tr-setting-section--status">
+			<InfoBlock>
 				Startup snapshot is a safety copy only. It does not restore or overwrite
 				your active database.
-			</p>
-			<p>Last backup: {lastBackup}</p>
-			<p>Next scheduled: {nextBackup}</p>
-			<p>Reviews since last backup: {status.reviewsSinceLastBackup}</p>
-			{sessionStartFilename && <p>Startup snapshot: {sessionStartFilename}</p>}
+			</InfoBlock>
+			<StatusList
+				items={[
+					{ label: "Last backup", value: lastBackup },
+					{ label: "Next scheduled", value: nextBackup },
+					{
+						label: "Reviews since last backup",
+						value: status.reviewsSinceLastBackup,
+						tone: status.reviewsSinceLastBackup === 0 ? "muted" : "default",
+					},
+					...(sessionStartFilename
+						? [
+								{
+									label: "Startup snapshot",
+									value: sessionStartFilename,
+									code: true,
+									wide: true,
+								} as const,
+							]
+						: []),
+				]}
+			/>
 		</FormCard>
 	);
 }

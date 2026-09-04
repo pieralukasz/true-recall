@@ -62,13 +62,13 @@ export function ReorderableList<T>({
 	if (items.length === 0) return null;
 
 	return (
-		<div class={cn("ep:flex ep:flex-col ep:gap-3", className)}>
+		<div class={cn("tr-preset-list", className)}>
 			{items.map((item, index) => (
 				// biome-ignore lint/a11y/noStaticElementInteractions: drop target for the row's grab handle
 				<div
 					key={getKey(item)}
 					class={cn(
-						"ep:flex ep:items-start ep:gap-2 ep:rounded-md ep:transition-colors",
+						"tr-preset-list__item",
 						dragIndex === index && "ep:opacity-40",
 						dragOverIndex === index &&
 							dragIndex !== index &&
@@ -86,7 +86,7 @@ export function ReorderableList<T>({
 						draggable
 						aria-label={getMoveLabel?.(item) ?? `Reorder item ${index + 1}`}
 						title="Drag to reorder, or use the arrow keys"
-						class="ep:cursor-grab ep:bg-transparent ep:border-0 ep:px-1 ep:py-2 ep:text-obs-faint ep:hover:text-obs-normal ep:select-none ep:shadow-none"
+						class="tr-preset-list__handle"
 						onDragStart={(event) => {
 							setDragIndex(index);
 							if (event.dataTransfer) {
@@ -97,9 +97,9 @@ export function ReorderableList<T>({
 						onDragEnd={endDrag}
 						onKeyDown={(event) => handleHandleKeyDown(event, index)}
 					>
-						&#x2261;
+						<span aria-hidden="true">&#x2261;</span>
 					</button>
-					<div class="ep:flex-1 ep:min-w-0">{renderItem(item, index)}</div>
+					<div class="tr-preset-list__content">{renderItem(item, index)}</div>
 				</div>
 			))}
 		</div>

@@ -26,7 +26,7 @@ export interface DeviceSyncSchedulerOptions {
 }
 
 export class DeviceSyncScheduler {
-	private timer: ReturnType<typeof setInterval> | null = null;
+	private timer: number | null = null;
 	private isTickRunning = false;
 	private lastSeenMtimes = new Map<string, number>();
 
@@ -45,14 +45,14 @@ export class DeviceSyncScheduler {
 		} catch (err) {
 			console.debug("[True Recall] Sync scheduler priming failed:", err);
 		}
-		this.timer = setInterval(() => {
+		this.timer = window.setInterval(() => {
 			void this.tick();
 		}, this.options.intervalMs ?? DEFAULT_INTERVAL_MS);
 	}
 
 	stop(): void {
 		if (this.timer) {
-			clearInterval(this.timer);
+			window.clearInterval(this.timer);
 			this.timer = null;
 		}
 	}

@@ -1,83 +1,31 @@
 import { describe, expect, it } from "vitest";
 
-import {
-	normalizedSelectedText,
-	selectedTextPreview,
-	sortByInboxAdditionOrder,
-	statusTone,
-} from "../../src/features/assistant/ui/thread-utils";
+import type { AssistantManifest } from "@true-recall/core/ai/assistant";
 
-describe("statusTone", () => {
-	it("maps active states to accent", () => {
-		expect(statusTone("pending")).toBe("accent");
-		expect(statusTone("running")).toBe("accent");
-		expect(statusTone("working")).toBe("accent");
+import { remainingCitations } from "../../src/features/assistant/ui/thread-utils";
+
+describe("remainingCitations", () => {
+	it("returns every citation when there is no fact check result", () => {
+		const manifest: AssistantManifest = {
+			proposals: [],
+			citations: [{ url: "https://a.example" }, { url: "https://b.example" }],
+		};
+		expect(remainingCitations(manifest)).toEqual(manifest.citations);
 	});
 
-	it("maps failed to danger", () => {
-		expect(statusTone("failed")).toBe("danger");
-	});
-
-	it("defaults to neutral", () => {
-		expect(statusTone("done")).toBe("neutral");
-		expect(statusTone("2 to review")).toBe("neutral");
-		expect(statusTone("draft")).toBe("neutral");
-	});
-});
-
-describe("normalizedSelectedText", () => {
-	it("collapses whitespace and trims", () => {
-		expect(normalizedSelectedText("  a\n\n b  ")).toBe("a b");
-	});
-
-	it("returns null for empty input", () => {
-		expect(normalizedSelectedText(undefined)).toBeNull();
-		expect(normalizedSelectedText("   ")).toBeNull();
-	});
-});
-
-describe("selectedTextPreview", () => {
-	it("passes short text through", () => {
-		expect(selectedTextPreview("short")).toBe("short");
-	});
-
-	it("truncates long text to 140 chars ending with ellipsis", () => {
-		const preview = selectedTextPreview("x".repeat(200));
-		expect(preview).toHaveLength(140);
-		expect(preview?.endsWith("...")).toBe(true);
-	});
-});
-
-describe("sortByInboxAdditionOrder", () => {
-	it("sorts oldest inbox additions first without mutating display order", () => {
-		const displayOrder = [
-			{ id: "newest", createdAt: 300, updatedAt: 3000 },
-			{ id: "middle", createdAt: 200, updatedAt: 2000 },
-			{ id: "oldest", createdAt: 100, updatedAt: 1000 },
-		];
-
-		const approvalOrder = sortByInboxAdditionOrder(displayOrder);
-
-		expect(approvalOrder.map((thread) => thread.id)).toEqual([
-			"oldest",
-			"middle",
-			"newest",
+	it("drops citations already shown as fact check evidence", () => {
+		const manifest: AssistantManifest = {
+			proposals: [],
+			citations: [{ url: "https://a.example" }, { url: "https://b.example" }],
+			factCheck: {
+				verdict: "confirmed",
+				confidence: "high",
+				summary: "s",
+				evidence: [{ url: "https://a.example", title: "A" }],
+			},
+		};
+		expect(remainingCitations(manifest)).toEqual([
+			{ url: "https://b.example" },
 		]);
-		expect(displayOrder.map((thread) => thread.id)).toEqual([
-			"newest",
-			"middle",
-			"oldest",
-		]);
-	});
-
-	it("uses creation order when inbox timestamps match", () => {
-		const threads = [
-			{ id: "second", createdAt: 200, updatedAt: 1000 },
-			{ id: "first", createdAt: 100, updatedAt: 1000 },
-		];
-
-		expect(
-			sortByInboxAdditionOrder(threads).map((thread) => thread.id),
-		).toEqual(["first", "second"]);
 	});
 });

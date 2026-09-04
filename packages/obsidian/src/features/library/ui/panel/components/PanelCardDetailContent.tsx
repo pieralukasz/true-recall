@@ -3,6 +3,7 @@ import type { FSRSFlashcardItem } from "@true-recall/core/types/fsrs/card.types"
 
 import { MarkdownContent } from "@true-recall/obsidian/components/MarkdownContent";
 import { PanelCardPolishSection } from "@true-recall/obsidian/features/library/ui/panel/components/PanelCardPolishSection";
+import { PanelFactCheckSection } from "@true-recall/obsidian/features/library/ui/panel/components/PanelFactCheckSection";
 import type { PanelCardActionHandlers } from "@true-recall/obsidian/features/library/ui/panel/panel.types";
 import { PreviewCardBody } from "@true-recall/obsidian/features/library/ui/panel/preview/PreviewCardBody";
 import { LivePreviewField } from "@true-recall/obsidian/features/study/ui/review/components/LivePreviewField";
@@ -38,6 +39,7 @@ export function PanelCardFields({
 			/>
 			{fsrsCard ? <SchedulingDetails card={fsrsCard} /> : null}
 			{fsrsCard ? <PanelCardPolishSection card={fsrsCard} /> : null}
+			{fsrsCard ? <PanelFactCheckSection card={fsrsCard} /> : null}
 		</>
 	);
 }

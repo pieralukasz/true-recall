@@ -3,6 +3,8 @@ import { loadDatabase } from "./loader";
 
 export class SqliteDatabase {
 	private db: DatabaseLike | null = null;
+	/** Writes issued through `run`; lets a transaction tell an idle tick from a real change. */
+	private writeCount = 0;
 
 	constructor(private onDirty: () => void) {}
 
@@ -57,12 +59,17 @@ export class SqliteDatabase {
 		if (!this.db) throw new Error("Database not initialized");
 
 		this.db.run(sql, params);
+		this.writeCount++;
 		this.onDirty();
 	}
 
 	/**
 	 * Execute a function within a database transaction
 	 * Provides atomicity - either all operations succeed or none do
+	 *
+	 * Only a transaction that issued a write marks the database dirty. A
+	 * dirty database is exported and rewritten in full, so an empty
+	 * transaction (an idle sync tick) must cost nothing.
 	 *
 	 * @example
 	 * db.transaction(() => {
@@ -73,11 +80,12 @@ export class SqliteDatabase {
 	transaction<T>(fn: () => T): T {
 		if (!this.db) throw new Error("Database not initialized");
 
+		const writesBefore = this.writeCount;
 		try {
 			this.db.run("BEGIN TRANSACTION");
 			const result = fn();
 			this.db.run("COMMIT");
-			this.onDirty();
+			if (this.writeCount !== writesBefore) this.onDirty();
 			return result;
 		} catch (e) {
 			this.db.run("ROLLBACK");

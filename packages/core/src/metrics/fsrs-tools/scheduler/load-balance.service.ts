@@ -17,6 +17,7 @@ import {
 import type {
 	BalanceDueOptions,
 	BalanceDueResult,
+	BalanceDueSequenceOptions,
 	CardDueInfo,
 	CardScheduleChange,
 	LoadBalanceOptions,
@@ -242,6 +243,7 @@ export class LoadBalanceService {
 			maxShiftDays,
 			easyDays = { recurringDays: [], specificDates: [] },
 			easyDaysMultiplier = 0.5,
+			minIntervalDays = 1,
 		} = options;
 
 		const unbalanced: BalanceDueResult = {
@@ -266,8 +268,15 @@ export class LoadBalanceService {
 			1,
 			interval + maxShiftDays,
 		);
-		const lower = Math.max(fuzzLower, interval - maxShiftDays, 1);
+		const lower = Math.max(
+			fuzzLower,
+			interval - maxShiftDays,
+			1,
+			minIntervalDays,
+		);
 		const upper = fuzzUpper;
+		// A floor above the fuzz range leaves no legal day: keep the raw FSRS
+		// due rather than inventing one outside the range Anki would consider.
 		if (upper <= lower) return unbalanced;
 
 		const countsByOffset = this.collectWindowCounts(
@@ -309,6 +318,35 @@ export class LoadBalanceService {
 			daysChanged: selected - interval,
 			balanced: true,
 		};
+	}
+
+	/**
+	 * Balance several candidate dues for one card while preserving their order.
+	 * Each entry may only land on or after the day picked for the previous one,
+	 * so balancing the rating buttons independently can no longer make a higher
+	 * rating come due earlier than a lower one. An order violation already
+	 * present in the raw FSRS dues is left alone: the entry simply keeps its
+	 * raw due instead of being dragged forward.
+	 */
+	balanceDueSequence(options: BalanceDueSequenceOptions): BalanceDueResult[] {
+		const { originalDues, ...shared } = options;
+		const todayStr = this.formatDate(new Date());
+
+		const results: BalanceDueResult[] = [];
+		let minIntervalDays = 1;
+		for (const originalDue of originalDues) {
+			const result = this.balanceDue({
+				...shared,
+				originalDue,
+				minIntervalDays,
+			});
+			results.push(result);
+			minIntervalDays = Math.max(
+				minIntervalDays,
+				this.daysDiff(todayStr, this.formatDate(new Date(result.newDue))),
+			);
+		}
+		return results;
 	}
 
 	/**

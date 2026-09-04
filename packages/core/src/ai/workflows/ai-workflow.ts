@@ -1,6 +1,11 @@
+import type { CardAIPreset } from "../../types/card-ai-preset.types";
 import type { TrueRecallSettings } from "../../types/settings.types";
 
-export type AIWorkflowKind = "agent" | "generate-cards" | "modify-card";
+export type AIWorkflowKind =
+	| "agent"
+	| "generate-cards"
+	| "modify-card"
+	| "fact-check";
 
 export interface AIWorkflow {
 	id: string;
@@ -31,6 +36,23 @@ const AGENT_PREFIX = "agent:";
 const GENERATION_PREFIX = "generation:";
 const CARD_POLISH_PREFIX = "card-polish:";
 export const CUSTOM_CARD_POLISH_PRESET_ID = "$custom";
+const FACT_CHECK_PREFIX = "fact-check:";
+export const FACT_CHECK_WORKFLOW_ID = `${FACT_CHECK_PREFIX}card`;
+
+/**
+ * Built-in, resolve-only workflow: never listed in preset pickers and not
+ * stored in settings, so the user cannot edit or delete it. Entry points
+ * reference this constant directly.
+ */
+export const FACT_CHECK_WORKFLOW: AIWorkflow = Object.freeze({
+	id: FACT_CHECK_WORKFLOW_ID,
+	name: "Fact check",
+	kind: "fact-check",
+	instruction: "Fact-check this card against the web and report a verdict.",
+	sourcePresetId: FACT_CHECK_WORKFLOW_ID,
+	autoApply: false,
+	autoApplyNewCards: false,
+});
 
 export function assistantWorkflowId(presetId: string): string {
 	return `${AGENT_PREFIX}${presetId}`;
@@ -46,6 +68,18 @@ export function cardPolishWorkflowId(presetId: string): string {
 
 export function customCardPolishWorkflowId(): string {
 	return cardPolishWorkflowId(CUSTOM_CARD_POLISH_PRESET_ID);
+}
+
+function cardPolishWorkflow(preset: CardAIPreset): AIWorkflow {
+	return {
+		id: cardPolishWorkflowId(preset.id),
+		name: preset.name,
+		kind: "modify-card",
+		instruction: preset.prompt,
+		sourcePresetId: preset.id,
+		autoApply: preset.autoApply,
+		autoApplyNewCards: preset.autoApplyNewCards,
+	};
 }
 
 /**
@@ -87,15 +121,8 @@ export function listAIWorkflows(
 
 	if (isEnabled("modify-card") && (context.hasCard || context.hasDraftCard)) {
 		for (const preset of settings.cardPolish?.userPresets ?? []) {
-			workflows.push({
-				id: cardPolishWorkflowId(preset.id),
-				name: preset.name,
-				kind: "modify-card",
-				instruction: preset.prompt,
-				sourcePresetId: preset.id,
-				autoApply: preset.autoApply,
-				autoApplyNewCards: preset.autoApplyNewCards,
-			});
+			if (preset.disabled) continue;
+			workflows.push(cardPolishWorkflow(preset));
 		}
 	}
 
@@ -108,6 +135,9 @@ export function resolveAIWorkflow(
 	context: AIWorkflowContext,
 ): AIWorkflow | null {
 	if (!workflowId) return null;
+	if (workflowId === FACT_CHECK_WORKFLOW_ID && context.hasCard) {
+		return FACT_CHECK_WORKFLOW;
+	}
 	if (
 		workflowId === customCardPolishWorkflowId() &&
 		(context.hasCard || context.hasDraftCard)
@@ -121,6 +151,16 @@ export function resolveAIWorkflow(
 			autoApply: settings.cardPolish?.customPromptAutoApply ?? false,
 			autoApplyNewCards: false,
 		};
+	}
+	if (
+		workflowId.startsWith(CARD_POLISH_PREFIX) &&
+		(context.hasCard || context.hasDraftCard)
+	) {
+		const presetId = workflowId.slice(CARD_POLISH_PREFIX.length);
+		const preset = settings.cardPolish?.userPresets.find(
+			(candidate) => candidate.id === presetId,
+		);
+		if (preset) return cardPolishWorkflow(preset);
 	}
 	const exact = listAIWorkflows(settings, context).find(
 		(workflow) => workflow.id === workflowId,

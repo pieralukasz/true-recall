@@ -128,7 +128,7 @@ export function usePanelHeader({
 			menu.addSeparator();
 			menu.addItem((item) =>
 				item
-					.setTitle("Keyboard Shortcuts")
+					.setTitle("Keyboard shortcuts")
 					.setIcon("keyboard")
 					.onClick(onShowShortcuts),
 			);
@@ -177,14 +177,14 @@ function addCommonActions(
 	);
 	menu.addItem((item) =>
 		item
-			.setTitle("Open Source Note")
+			.setTitle("Open source note")
 			.setIcon("file-text")
 			.onClick(actions.handleOpenSourceNote),
 	);
 	if (hasHighlights) {
 		menu.addItem((item) =>
 			item
-				.setTitle("Generate from Highlights")
+				.setTitle("Generate from highlights")
 				.setIcon("highlighter")
 				.onClick(() => void actions.handleGenerateFromHighlights()),
 		);
@@ -194,14 +194,14 @@ function addCommonActions(
 function addCardCollectionActions(menu: Menu, actions: PanelActions) {
 	menu.addItem((item) =>
 		item
-			.setTitle("Open Card Browser")
+			.setTitle("Open card browser")
 			.setIcon("table-2")
 			.onClick(actions.handleBrowseDeck),
 	);
 	menu.addSeparator();
 	menu.addItem((item) =>
 		item
-			.setTitle("Copy All")
+			.setTitle("Copy all")
 			.setIcon("clipboard-copy")
 			.onClick(actions.handleCopyAllToClipboard),
 	);
@@ -217,19 +217,19 @@ function addDestructiveActions(menu: Menu, actions: PanelActions) {
 	menu.addSeparator();
 	menu.addItem((item) =>
 		item
-			.setTitle("Forget All Cards")
+			.setTitle("Forget all cards")
 			.setIcon("rotate-ccw")
 			.onClick(actions.handleForgetAll),
 	);
 	menu.addItem((item) =>
 		item
-			.setTitle("Delete All Cards")
+			.setTitle("Delete all cards")
 			.setIcon("trash-2")
 			.onClick(actions.handleDeleteAll),
 	);
 	menu.addItem((item) =>
 		item
-			.setTitle("Delete Note & Cards")
+			.setTitle("Delete note & cards")
 			.setIcon("file-x-2")
 			.onClick(actions.handleDeleteNoteAndCards),
 	);

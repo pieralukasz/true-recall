@@ -64,6 +64,7 @@ function makeStoreMock(): SqliteStoreService {
 	);
 	return {
 		getDeviceId: () => "dev00001",
+		getDbPath: () => ".true-recall/true-recall-dev00001.db",
 		saveNow: async () => true,
 		getDatabase: () => ({ export: () => sqliteHeader }),
 		haltPersistence: () => {},

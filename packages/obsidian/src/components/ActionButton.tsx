@@ -27,19 +27,20 @@ interface ActionButtonProps {
 }
 
 const actionButtonVariants = cva(
-	"ep:inline-flex ep:items-center ep:justify-center ep:gap-1.5 ep:border-none ep:rounded-md ep:cursor-pointer ep:font-medium ep:text-ui-small ep:transition-colors",
+	"tr-action-button ep:inline-flex ep:items-center ep:justify-center ep:gap-1.5 ep:border-none ep:rounded-md ep:cursor-pointer ep:font-medium ep:text-ui-small ep:transition-colors",
 	{
 		variants: {
 			variant: {
-				primary: "mod-cta",
+				primary: "mod-cta tr-action-button--primary",
 				secondary:
-					"ep:bg-obs-border ep:text-obs-normal ep:hover:bg-obs-modifier-hover",
-				danger: "ep:bg-obs-red ep:text-obs-on-accent ep:hover:bg-obs-red",
+					"tr-action-button--secondary ep:bg-obs-border ep:text-obs-normal ep:hover:bg-obs-modifier-hover",
+				danger:
+					"tr-action-button--danger ep:bg-obs-red ep:text-obs-on-accent ep:hover:bg-obs-red",
 				ghost:
-					"ep:bg-transparent ep:text-obs-normal ep:hover:bg-obs-modifier-hover",
+					"tr-action-button--ghost ep:bg-transparent ep:text-obs-normal ep:hover:bg-obs-modifier-hover",
 				outline:
-					"ep:bg-obs-primary ep:text-obs-normal ep:border ep:border-solid ep:border-obs-border ep:hover:bg-obs-modifier-hover",
-				seed: "ep:bg-obs-border ep:text-obs-normal ep:font-semibold ep:hover:bg-obs-yellow ep:hover:text-obs-on-accent",
+					"tr-action-button--outline ep:bg-obs-primary ep:text-obs-normal ep:border ep:border-solid ep:border-obs-border ep:hover:bg-obs-modifier-hover",
+				seed: "tr-action-button--seed ep:bg-obs-border ep:text-obs-normal ep:font-semibold ep:hover:bg-obs-yellow ep:hover:text-obs-on-accent",
 			},
 			size: {
 				sm: "ep:py-1 ep:px-2 ep:text-ui-smaller",

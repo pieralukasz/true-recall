@@ -21,12 +21,22 @@ export function FormCard({
 
 	if (variant === "native") {
 		return (
-			<div class={cn(cls)}>
-				{title && <div class="setting-item setting-item-heading">{title}</div>}
-				{description && (
-					<div class="setting-item-description">{description}</div>
+			<div class={cn("tr-setting-section", cls)}>
+				{(title || description) && (
+					<div class="tr-setting-section__header">
+						{title && (
+							<h3 class="setting-item-heading tr-setting-section__title">
+								{title}
+							</h3>
+						)}
+						{description && (
+							<div class="setting-item-description tr-setting-section__description">
+								{description}
+							</div>
+						)}
+					</div>
 				)}
-				{children}
+				<div class="tr-setting-section__body">{children}</div>
 			</div>
 		);
 	}

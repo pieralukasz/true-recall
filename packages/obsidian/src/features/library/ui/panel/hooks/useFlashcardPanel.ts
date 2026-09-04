@@ -80,8 +80,7 @@ export function useFlashcardPanel() {
 		const cards = store.flashcardInfo?.exists
 			? store.flashcardInfo.flashcards
 			: [];
-		if (!isStreamingForFile || streaming.completedCards.length === 0)
-			return cards;
+		if (!isStreamingForFile || streamingNewCount === 0) return cards;
 		const existingIds = new Set(cards.map((card) => card.id));
 		const newCards = streaming.completedCards.filter(
 			(card: FlashcardItem) => !existingIds.has(card.id),

@@ -1,3 +1,5 @@
+import type { Grade } from "./card.types";
+
 export interface SchedulingPreviewEntry {
 	/** Final due date that will be applied if this rating is chosen. */
 	due: Date;
@@ -20,6 +22,31 @@ export interface SchedulingPreview {
 	hard: SchedulingPreviewEntry;
 	good: SchedulingPreviewEntry;
 	easy: SchedulingPreviewEntry;
+}
+
+/**
+ * Preview keys in ascending rating order. Anything that has to keep the
+ * rating buttons monotonic (load balancing in particular) walks this order.
+ */
+export const PREVIEW_RATING_ORDER = [
+	"again",
+	"hard",
+	"good",
+	"easy",
+] as const satisfies readonly (keyof SchedulingPreview)[];
+
+export type SchedulingPreviewRating = (typeof PREVIEW_RATING_ORDER)[number];
+
+const GRADE_TO_PREVIEW_RATING: Record<Grade, SchedulingPreviewRating> = {
+	1: "again",
+	2: "hard",
+	3: "good",
+	4: "easy",
+};
+
+/** Preview key an FSRS grade maps to (Again=1, Hard=2, Good=3, Easy=4). */
+export function previewRatingFromGrade(grade: Grade): SchedulingPreviewRating {
+	return GRADE_TO_PREVIEW_RATING[grade];
 }
 
 export interface HistoryValidationResult {

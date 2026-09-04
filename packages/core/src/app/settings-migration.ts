@@ -6,7 +6,11 @@ import {
 	DEFAULT_SETTINGS,
 } from "../constants";
 import type { GenerationPreset } from "../types/generation-preset.types";
-import type { AITier, TrueRecallSettings } from "../types/settings.types";
+import type {
+	AITier,
+	PersistedTrueRecallSettings,
+	TrueRecallSettings,
+} from "../types/settings.types";
 import { migrateCardPolishSettings } from "../types/settings-migration";
 
 interface LegacyGenerationPreset {
@@ -71,25 +75,60 @@ function migrateLegacyPreset(p: LegacyGenerationPreset): GenerationPreset {
  * Merge raw persisted data with defaults and run all migrations.
  * Pure function — no side effects.
  */
-export function migrateSettings(raw: Partial<TrueRecallSettings> | null): {
+export function migrateSettings(raw: PersistedTrueRecallSettings | null): {
 	settings: TrueRecallSettings;
 	needsSave: boolean;
 } {
-	const migratedRaw = raw
-		? (migrateCardPolishSettings(
-				raw as Record<string, unknown>,
-			) as Partial<TrueRecallSettings>)
-		: raw;
-	const settings: TrueRecallSettings = { ...DEFAULT_SETTINGS, ...migratedRaw };
+	const migratedRaw = raw ? migrateCardPolishSettings({ ...raw }) : raw;
+	const { temporaryCustomStudyDeck: legacyCustomStudyDeck, ...currentRaw } =
+		migratedRaw ?? {};
+	const settings: TrueRecallSettings = { ...DEFAULT_SETTINGS, ...currentRaw };
 	let needsSave = false;
+
+	// Feature catalog consolidation. Link/status already had dedicated settings,
+	// while Generator and Card Polish are now workflow families inside the
+	// single AI Workspace feature. Consume the old duplicate states once so the
+	// new UI has exactly one source of truth per control.
+	if (raw?.pluginStates) {
+		const nextStates = { ...raw.pluginStates };
+		let changed = false;
+		const consume = (id: string): boolean | undefined => {
+			if (!Object.hasOwn(nextStates, id)) {
+				return undefined;
+			}
+			const value = nextStates[id];
+			delete nextStates[id];
+			changed = true;
+			return value;
+		};
+
+		const legacyLinkState = consume("link-status-indicators");
+		if (legacyLinkState === false) settings.showLinkStatusIndicators = false;
+
+		const legacyStatusBarState = consume("status-bar-widget");
+		if (legacyStatusBarState === false) settings.showStatusBarWidget = false;
+
+		const legacyTypeInState = consume("type-in-mode");
+		if (legacyTypeInState === false) settings.defaultTypeInMode = "off";
+
+		consume("ai-generation");
+		consume("card-polish");
+		consume("anki-import-export");
+
+		if (changed) {
+			settings.pluginStates = nextStates;
+			needsSave = true;
+		}
+	}
+
+	if (!["off", "cloud", "shared-vault"].includes(String(raw?.syncMode))) {
+		settings.syncMode = raw?.enableDeviceSync ? "shared-vault" : "off";
+		needsSave = true;
+	}
+	settings.enableDeviceSync = settings.syncMode === "shared-vault";
 
 	// Custom Study used to persist one filtered deck directly in settings.
 	// Preserve it as the first entry when upgrading to the multi-session model.
-	const legacyCustomStudyDeck = (
-		raw as {
-			temporaryCustomStudyDeck?: TrueRecallSettings["temporaryCustomStudyDeck"];
-		} | null
-	)?.temporaryCustomStudyDeck;
 	if (!Array.isArray(raw?.temporaryCustomStudyDecks)) {
 		settings.temporaryCustomStudyDecks = legacyCustomStudyDeck
 			? [legacyCustomStudyDeck]
@@ -97,7 +136,6 @@ export function migrateSettings(raw: Partial<TrueRecallSettings> | null): {
 		if (legacyCustomStudyDeck) needsSave = true;
 	}
 	if (legacyCustomStudyDeck) {
-		delete settings.temporaryCustomStudyDeck;
 		needsSave = true;
 	}
 

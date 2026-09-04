@@ -1,7 +1,7 @@
 import { State } from "ts-fsrs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { DEFAULT_SETTINGS } from "../../../src/constants";
+import { DEFAULT_FSRS_PRESET, DEFAULT_SETTINGS } from "../../../src/constants";
 import { FSRSHelperService } from "../../../src/metrics/fsrs-tools/fsrs-helper.service";
 
 describe("FSRSHelperService", () => {
@@ -95,6 +95,128 @@ describe("FSRSHelperService", () => {
 			"2026-02-05T12:00:00.000Z",
 		);
 		expect(preview.good.daysChanged).not.toBe(0);
+	});
+
+	describe("rating button order", () => {
+		// Good at 10 days and Easy at 12 days have overlapping fuzz ranges, so
+		// balancing each button on its own used to be able to schedule Easy
+		// before Good. "card-2" is a card id where that inversion happened.
+		const CARD_ID = "card-2";
+		const RAW_PREVIEW = {
+			again: { due: new Date("2026-02-01T10:05:00.000Z"), interval: "5m" },
+			hard: { due: new Date("2026-02-01T10:20:00.000Z"), interval: "20m" },
+			good: { due: new Date("2026-02-11T10:00:00.000Z"), interval: "10d" },
+			easy: { due: new Date("2026-02-13T10:00:00.000Z"), interval: "12d" },
+		};
+
+		function createOrderHelper() {
+			const store = createStore({ allCards: [], balanceCards: [] });
+			return new FSRSHelperService(store as never, {
+				...DEFAULT_SETTINGS,
+				loadBalanceEnabled: true,
+				loadBalanceMaxShiftDays: 14,
+			});
+		}
+
+		it("keeps the previewed buttons in non-decreasing due order", () => {
+			const preview = createOrderHelper().balanceSchedulingPreview(
+				CARD_ID,
+				RAW_PREVIEW,
+			);
+
+			const dues = [
+				preview.again.due.getTime(),
+				preview.hard.due.getTime(),
+				preview.good.due.getTime(),
+				preview.easy.due.getTime(),
+			];
+			expect(dues).toStrictEqual([...dues].sort((a, b) => a - b));
+			// Without the ordering chain Easy landed on 2026-02-11, before Good.
+			expect(preview.easy.due.getTime()).toBeGreaterThanOrEqual(
+				preview.good.due.getTime(),
+			);
+		});
+
+		it("stores the due date the answered rating button showed", () => {
+			const helper = createOrderHelper();
+			const preview = helper.balanceSchedulingPreview(CARD_ID, RAW_PREVIEW);
+
+			const scheduled = helper.balanceScheduledReview(
+				CARD_ID,
+				{
+					id: CARD_ID,
+					due: RAW_PREVIEW.easy.due.toISOString(),
+					state: State.Review,
+					scheduledDays: 12,
+					stability: 20,
+					difficulty: 5,
+					reps: 3,
+					lapses: 0,
+					lastReview: "2026-02-01T10:00:00.000Z",
+					learningStep: 0,
+				},
+				{ rating: "easy", rawPreview: RAW_PREVIEW },
+			);
+
+			expect(scheduled.due).toBe(preview.easy.due.toISOString());
+		});
+	});
+
+	describe("getTrueRetentionSummary", () => {
+		it("reports the default preset's target, not the legacy flat field", () => {
+			const store = createStore({ allCards: [], balanceCards: [] });
+			const helper = new FSRSHelperService(store as never, {
+				...DEFAULT_SETTINGS,
+				fsrsRequestRetention: 0.9,
+				defaultPresetId: "default",
+				fsrsPresets: [
+					{
+						...DEFAULT_FSRS_PRESET,
+						id: "default",
+						name: "Default",
+						requestRetention: 0.88,
+					},
+				],
+			});
+
+			expect(helper.getTrueRetentionSummary().target).toBe(0.88);
+		});
+
+		it("reports a single scoped preset's own target", () => {
+			const store = createStore({ allCards: [], balanceCards: [] });
+			const helper = new FSRSHelperService(store as never, {
+				...DEFAULT_SETTINGS,
+				fsrsRequestRetention: 0.9,
+				defaultPresetId: "default",
+				fsrsPresets: [
+					{
+						...DEFAULT_FSRS_PRESET,
+						id: "default",
+						name: "Default",
+						requestRetention: 0.88,
+					},
+					{
+						...DEFAULT_FSRS_PRESET,
+						id: "language",
+						name: "Language",
+						requestRetention: 0.8,
+					},
+				],
+			});
+
+			expect(helper.getTrueRetentionSummary(30, ["Language"]).target).toBe(0.8);
+		});
+
+		it("falls back to the flat field for pre-preset settings files", () => {
+			const store = createStore({ allCards: [], balanceCards: [] });
+			const helper = new FSRSHelperService(store as never, {
+				...DEFAULT_SETTINGS,
+				fsrsRequestRetention: 0.87,
+				fsrsPresets: [],
+			});
+
+			expect(helper.getTrueRetentionSummary().target).toBe(0.87);
+		});
 	});
 
 	describe("getWorkloadDecision", () => {
@@ -241,6 +363,7 @@ function createStore({
 			},
 		),
 		updateCardDue: vi.fn(),
+		getReviewsForRetention: vi.fn(() => []),
 		stats: {
 			getDailyStats: vi.fn(() => null),
 			getDailyStatsFromReviewLog: vi.fn(() =>

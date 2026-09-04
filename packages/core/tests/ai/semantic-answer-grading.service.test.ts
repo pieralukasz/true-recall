@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { AIRequestError } from "../../src/ai/clients/openrouter-client";
 import { SemanticAnswerGradingService } from "../../src/ai/grading/semantic-answer-grading.service";
+import { DEFAULT_TYPE_IN_GRADING_SYSTEM_PROMPT } from "../../src/ai/prompts/type-in-grading-prompt";
 import { DEFAULT_SETTINGS } from "../../src/constants";
 import type { TrueRecallSettings } from "../../src/types";
 
@@ -130,16 +131,11 @@ describe("SemanticAnswerGradingService", () => {
 			"bad verdict enum",
 			{ ...JSON.parse(VALID_PAYLOAD), verdict: "excellent" },
 		],
-		["non-array covered", { ...JSON.parse(VALID_PAYLOAD), covered: "energy" }],
 		[
-			"bad suggestedRating",
-			{ ...JSON.parse(VALID_PAYLOAD), suggestedRating: "perfect" },
-		],
-		[
-			"missing teacherComment",
+			"missing verdict",
 			(() => {
 				const p = JSON.parse(VALID_PAYLOAD);
-				delete p.teacherComment;
+				delete p.verdict;
 				return p;
 			})(),
 		],
@@ -150,6 +146,40 @@ describe("SemanticAnswerGradingService", () => {
 		await expect(service.gradeAnswer(BASE_INPUT)).rejects.toThrow(
 			"AI response missing required fields",
 		);
+	});
+
+	it("degrades malformed optional fields instead of throwing", async () => {
+		const settings = createSettings({ openRouterApiKey: "byok-key" });
+		const payload = {
+			...JSON.parse(VALID_PAYLOAD),
+			covered: "energy",
+			missing: [1, "still a fact"],
+			suggestedRating: "perfect",
+		};
+		delete payload.teacherComment;
+		const service = serviceReturning(settings, JSON.stringify(payload));
+
+		const result = await service.gradeAnswer(BASE_INPUT);
+
+		expect(result.covered).toEqual([]);
+		expect(result.missing).toEqual(["still a fact"]);
+		expect(result.teacherComment).toBe("");
+		expect(result.suggestedRating).toBe("good");
+	});
+
+	it.each([
+		["correct", "good"],
+		["partial", "hard"],
+		["wrong", "again"],
+	] as const)("derives suggestedRating from verdict %s when missing", async (verdict, expectedRating) => {
+		const settings = createSettings({ openRouterApiKey: "byok-key" });
+		const payload = { ...JSON.parse(VALID_PAYLOAD), verdict };
+		delete payload.suggestedRating;
+		const service = serviceReturning(settings, JSON.stringify(payload));
+
+		const result = await service.gradeAnswer(BASE_INPUT);
+
+		expect(result.suggestedRating).toBe(expectedRating);
 	});
 
 	it("throws on request error instead of falling back", async () => {
@@ -212,11 +242,8 @@ describe("SemanticAnswerGradingService", () => {
 		expect(capturedModel).toBe("google/gemini-3.7-flash");
 	});
 
-	it("uses custom type-in grading prompt from settings when provided", async () => {
-		const settings = createSettings({
-			openRouterApiKey: "byok-key",
-			aiTypeInGradingPrompt: "CUSTOM_GRADING_PROMPT",
-		});
+	it("always sends the built-in grading system prompt", async () => {
+		const settings = createSettings({ openRouterApiKey: "byok-key" });
 		let capturedSystem = "";
 		const service = serviceReturning(settings, VALID_PAYLOAD, {
 			onRequest: (request) => {
@@ -226,7 +253,7 @@ describe("SemanticAnswerGradingService", () => {
 
 		await service.gradeAnswer(BASE_INPUT);
 
-		expect(capturedSystem).toBe("CUSTOM_GRADING_PROMPT");
+		expect(capturedSystem).toBe(DEFAULT_TYPE_IN_GRADING_SYSTEM_PROMPT);
 	});
 
 	it("includes source context and related cards in the user message", async () => {

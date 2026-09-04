@@ -30,12 +30,7 @@
    the user's theme or the Hider plugin shows tab bars is not this window's
    business, and a header that appears on hover would leave the fitted window
    height wrong. */
-.workspace-tabs:has(
-	> .workspace-tab-container
-		> .workspace-leaf
-		> .workspace-leaf-content[data-type="true-recall-quick-note-editor"]
-)
-> .workspace-tab-header-container {
+.workspace-tabs.tr-quick-editor-workspace > .workspace-tab-header-container {
 	display: none;
 }
 

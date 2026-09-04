@@ -12,6 +12,11 @@ export type AITier = "pro" | "byok" | "custom" | "lmstudio";
 /** AI provider type — determines which endpoint and auth to use. */
 export type AIProviderType = "pro" | "openrouter" | "custom" | "lmstudio";
 
+/** Settings as they can appear on disk before load-time migrations run. */
+export type PersistedTrueRecallSettings = Partial<TrueRecallSettings> & {
+	temporaryCustomStudyDeck?: TemporaryCustomStudyDeck;
+};
+
 export interface ToolbarButtonConfig {
 	id: string;
 	enabled: boolean;
@@ -203,6 +208,10 @@ export interface TrueRecallSettings {
 
 	/** Enable cross-device sync on plugin startup */
 	enableDeviceSync: boolean;
+	/** Active cross-device transport. Shared-vault keeps the legacy iCloud flow. */
+	syncMode: "off" | "cloud" | "shared-vault";
+	/** Display-only account identity; the device token is stored separately. */
+	cloudSyncEmail?: string;
 
 	/** Which AI provider to use */
 	providerType: AIProviderType;
@@ -358,8 +367,6 @@ export interface TrueRecallSettings {
 	sessionPresets: SessionPreset[];
 	/** Anki-style filtered decks created by Custom Study. */
 	temporaryCustomStudyDecks: TemporaryCustomStudyDeck[];
-	/** @deprecated Migrated to temporaryCustomStudyDecks on load. */
-	temporaryCustomStudyDeck?: TemporaryCustomStudyDeck;
 
 	/** FSRS scheduling presets (always contains at least one "Default") */
 	fsrsPresets: FSRSPreset[];
@@ -413,8 +420,6 @@ export interface TrueRecallSettings {
 	generationLanguage?: string;
 	/** Note type used for AI generation (null = Basic) */
 	generationNoteTypeId: string | null;
-	/** Custom system prompt for AI semantic grading in review type-in mode */
-	aiTypeInGradingPrompt?: string;
 	/** Type-in grading: OpenRouter model override ("" = inherit aiModel) */
 	gradingModel: string;
 	/** Custom user prompt for AI image occlusion region detection */
@@ -429,6 +434,8 @@ export interface TrueRecallSettings {
 
 	/** Last version the user has seen release notes for */
 	lastSeenVersion?: string;
+	/** The dashboard's one-time Free / BYOK / Pro intro bar was dismissed */
+	isProIntroDismissed?: boolean;
 
 	/** Enable local HTTP API for CLI integration */
 	enableLocalApi: boolean;

@@ -29,6 +29,7 @@ export function DailyLimitsSection({
 						void updatePreset({ newCardsPerDay: Math.max(0, num) });
 					}}
 					placeholder="20"
+					class="tr-control--compact"
 				/>
 			</FormField>
 
@@ -44,6 +45,7 @@ export function DailyLimitsSection({
 						void updatePreset({ reviewsPerDay: Math.max(0, num) });
 					}}
 					placeholder="200"
+					class="tr-control--compact"
 				/>
 			</FormField>
 		</FormCard>

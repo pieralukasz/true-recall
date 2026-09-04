@@ -587,6 +587,130 @@ describe("LoadBalanceService", () => {
 			expect(second.newDue).toBe(first.newDue);
 			expect(second.balanced).toBe(first.balanced);
 		});
+
+		it("respects a minIntervalDays floor inside the fuzz range", () => {
+			// interval 10 → fuzz range 8-12; the floor rules out days 8 and 9
+			mockStore.getDueCountsByDateRange.mockReturnValue([
+				{ day: "2026-02-11", count: 40 },
+			]);
+
+			const result = service.balanceDue({
+				cardId: "current-card",
+				originalDue: "2026-02-11T10:00:00.000Z",
+				maxShiftDays: 14,
+				minIntervalDays: 11,
+			});
+
+			expect(result.balanced).toBe(true);
+			expect(result.daysChanged).toBeGreaterThan(0);
+			expect(["2026-02-12", "2026-02-13"]).toContain(
+				result.newDue.split("T")[0],
+			);
+		});
+
+		it("keeps the raw due when the floor rules out the whole fuzz range", () => {
+			mockStore.getDueCountsByDateRange.mockReturnValue([
+				{ day: "2026-02-11", count: 40 },
+			]);
+
+			const result = service.balanceDue({
+				cardId: "current-card",
+				originalDue: "2026-02-11T10:00:00.000Z",
+				maxShiftDays: 14,
+				minIntervalDays: 99,
+			});
+
+			expect(result.balanced).toBe(false);
+			expect(result.newDue).toBe("2026-02-11T10:00:00.000Z");
+		});
+	});
+
+	describe("balanceDueSequence", () => {
+		// Good at 10 days (fuzz range 8-12) and Easy at 12 days (range 10-14).
+		// The ranges overlap, so balancing them independently can push Good past
+		// a pulled-back Easy — exactly the inverted rating buttons this guards.
+		const GOOD_DUE = "2026-02-11T10:00:00.000Z";
+		const EASY_DUE = "2026-02-13T10:00:00.000Z";
+		const INVERTING_CARD_ID = "card-2";
+
+		beforeEach(() => {
+			mockStore.getDueCountsByDateRange.mockReturnValue([]);
+		});
+
+		it("reproduces the inversion when each rating is balanced on its own", () => {
+			const good = service.balanceDue({
+				cardId: INVERTING_CARD_ID,
+				originalDue: GOOD_DUE,
+				maxShiftDays: 14,
+			});
+			const easy = service.balanceDue({
+				cardId: INVERTING_CARD_ID,
+				originalDue: EASY_DUE,
+				maxShiftDays: 14,
+			});
+
+			expect(new Date(easy.newDue).getTime()).toBeLessThan(
+				new Date(good.newDue).getTime(),
+			);
+		});
+
+		it("keeps a later rating from landing before an earlier one", () => {
+			const [good, easy] = service.balanceDueSequence({
+				cardId: INVERTING_CARD_ID,
+				originalDues: [GOOD_DUE, EASY_DUE],
+				maxShiftDays: 14,
+			});
+
+			expect(good).toBeDefined();
+			expect(easy).toBeDefined();
+			expect(new Date(easy?.newDue ?? 0).getTime()).toBeGreaterThanOrEqual(
+				new Date(good?.newDue ?? 0).getTime(),
+			);
+		});
+
+		it("never inverts for any card id", () => {
+			for (let index = 0; index < 200; index++) {
+				const results = service.balanceDueSequence({
+					cardId: `card-${index}`,
+					originalDues: [GOOD_DUE, EASY_DUE],
+					maxShiftDays: 14,
+				});
+
+				const dues = results.map((result) => new Date(result.newDue).getTime());
+				expect(dues).toStrictEqual([...dues].sort((a, b) => a - b));
+			}
+		});
+
+		it("leaves sub-fuzz entries untouched and does not let them raise the floor", () => {
+			const results = service.balanceDueSequence({
+				cardId: INVERTING_CARD_ID,
+				originalDues: [
+					"2026-02-01T10:05:00.000Z",
+					"2026-02-01T10:20:00.000Z",
+					GOOD_DUE,
+				],
+				maxShiftDays: 14,
+			});
+
+			expect(results[0]?.balanced).toBe(false);
+			expect(results[0]?.newDue).toBe("2026-02-01T10:05:00.000Z");
+			expect(results[1]?.balanced).toBe(false);
+			expect(results[1]?.newDue).toBe("2026-02-01T10:20:00.000Z");
+			expect(results[2]?.newDue.split("T")[0]).not.toBe("2026-02-01");
+		});
+
+		it("keeps a raw FSRS inversion instead of dragging the entry forward", () => {
+			// Raw Easy (8d) already comes before raw Good (10d): the balancer must
+			// not invent a day outside the fuzz range to paper over it.
+			const results = service.balanceDueSequence({
+				cardId: INVERTING_CARD_ID,
+				originalDues: [GOOD_DUE, "2026-02-09T10:00:00.000Z"],
+				maxShiftDays: 14,
+			});
+
+			expect(results[1]?.balanced).toBe(false);
+			expect(results[1]?.newDue).toBe("2026-02-09T10:00:00.000Z");
+		});
 	});
 
 	describe("getDistribution", () => {
