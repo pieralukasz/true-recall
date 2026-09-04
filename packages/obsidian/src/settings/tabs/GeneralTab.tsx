@@ -35,6 +35,7 @@ import { useIcon } from "@true-recall/obsidian/preact";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 
 import { useSettings } from "../hooks/useSettings";
+import { ProFeatureNotice } from "./ProFeatureNotice";
 
 export function GeneralTab() {
 	const { settings, save, plugin } = useSettings();
@@ -148,9 +149,11 @@ export function GeneralTab() {
 				<FormField
 					name="Typed answers"
 					description={
-						settings.proKey
-							? "Default mode for new review sessions. Press T to toggle it during review."
-							: "AI semantic grading for typed answers is included with True Recall Pro."
+						settings.proKey ? (
+							"Default mode for new review sessions. Press T to toggle it during review."
+						) : (
+							<ProFeatureNotice message="AI semantic grading for typed answers is included with True Recall Pro." />
+						)
 					}
 				>
 					<SelectInput
@@ -199,9 +202,11 @@ export function GeneralTab() {
 				<FormField
 					name="Creation tools"
 					description={
-						settings.proKey
-							? "Show Image Occlusion in commands and quick-action toolbars. Existing cards remain readable when disabled."
-							: "Image Occlusion creation tools are included with True Recall Pro."
+						settings.proKey ? (
+							"Show Image Occlusion in commands and quick-action toolbars. Existing cards remain readable when disabled."
+						) : (
+							<ProFeatureNotice message="Image Occlusion creation tools are included with True Recall Pro." />
+						)
 					}
 				>
 					<ToggleInput

@@ -4,9 +4,14 @@
 
 ### Bug Fixes
 
+- **"View plans" and "Upgrade" links open the real pricing page.** They pointed at `truerecall.com`, a domain True Recall does not use, so anyone curious about Pro landed nowhere. All Pro links now derive from the configured web URL
 - **Mobile no longer stalls on "plugin is taking long to load" because of iCloud.** In Cloud Sync and single-device modes the per-device database now lives in `.true-recall/local.nosync/`, which iCloud does not sync. The desktop stops uploading a 60 MB file on every flush, iCloud stops producing conflict copies, and iOS can no longer evict the file the plugin must read at startup. Shared Vault mode keeps the database in `.true-recall/` as before. The file is moved automatically on the next start; if the move fails the old location keeps working
 - **No full database rewrite on every startup or idle sync tick.** Loading a saved database, seeding builtin note types, refreshing their templates, writing the device label, empty sync transactions and unchanged sync watermarks no longer mark the database dirty. Before, the desktop rewrote a 60 MB file every minute while Cloud Sync idled, and Android froze with "Obsidian isn't responding" during the rewrite right after startup
 - **What's New footer fits on phones.** The buttons wrap instead of running off the screen
+
+### Improvements
+
+- **Pro is explained where you hit its limits.** The disabled Typed answers and Image Occlusion controls link to the docs page that lists exactly what Pro includes, and the toolbar's locked AI buttons mention the free Pro trial next to the bring-your-own-key option
 
 ## 2.4.1 (2026-09-01)
 

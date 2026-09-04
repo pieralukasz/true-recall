@@ -102,7 +102,7 @@ function CompactRow({
 				</div>
 				<span class="tr-preset-builtin__description">
 					{preset.requiresPro
-						? "Included with Pro — managed model, optimized prompt and AI budget included."
+						? "Included with Pro: managed model, optimized prompt and AI budget."
 						: "Available with your own AI provider or True Recall Pro."}
 				</span>
 			</div>

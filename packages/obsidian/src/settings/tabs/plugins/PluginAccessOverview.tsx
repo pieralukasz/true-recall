@@ -1,4 +1,5 @@
 import { hasAIKey } from "@true-recall/core/ai/config/ai-client-config";
+import { TRUERECALL_PRICING_URL } from "@true-recall/core/constants";
 import type { PluginTier, TrueRecallSettings } from "@true-recall/core/types";
 
 import { FormCard } from "@true-recall/obsidian/components";
@@ -75,7 +76,7 @@ export function PluginAccessOverview({
 							{level.tier === "pro" && activeTier !== "pro" ? (
 								<a
 									class="tr-access-level__upgrade"
-									href="https://truerecall.com/pricing"
+									href={TRUERECALL_PRICING_URL}
 									target="_blank"
 									rel="noreferrer"
 								>
