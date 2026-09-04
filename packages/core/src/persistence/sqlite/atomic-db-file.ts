@@ -16,7 +16,7 @@ const BAK_SUFFIX = ".bak";
 const CORRUPTED_SUFFIX = ".corrupted";
 
 const SQLITE_HEADER = "SQLite format 3";
-const MIN_DB_FILE_BYTES = 100; // SQLite header page prefix
+export const MIN_DB_FILE_BYTES = 100; // SQLite header page prefix
 
 export function getDbTmpPath(dbPath: string): string {
 	return `${dbPath}${TMP_SUFFIX}`;

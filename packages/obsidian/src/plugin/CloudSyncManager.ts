@@ -27,6 +27,25 @@ export type CloudAuthState =
 	| "exchanging"
 	| "error";
 
+/** Button text for a sign-in control given the auth state; `idle` names the resting label. */
+export function cloudAuthButtonLabel(
+	state: CloudAuthState,
+	idle: string,
+): { label: string; busy: boolean } {
+	switch (state) {
+		case "preparing":
+			return { label: "Opening browser…", busy: true };
+		case "waiting":
+			return { label: "Open browser again", busy: false };
+		case "exchanging":
+			return { label: "Connecting…", busy: true };
+		case "error":
+			return { label: "Try again", busy: false };
+		default:
+			return { label: idle, busy: false };
+	}
+}
+
 export class CloudSyncManager {
 	readonly accountEmail = signal<string | null>(null);
 	readonly authState = signal<CloudAuthState>("idle");

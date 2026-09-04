@@ -90,7 +90,7 @@ export class CloudSyncService {
 			const batches = this.chunk(localChanges);
 			if (batches.length === 0) batches.push([]);
 
-			for (const batch of batches) {
+			for (const [index, batch] of batches.entries()) {
 				const response = await this.transport.exchange({
 					cursor,
 					changes: batch,
@@ -112,6 +112,12 @@ export class CloudSyncService {
 					cursor = this.applyResponse(next.changes, next.cursor, result, state);
 					hasMore = next.hasMore;
 				}
+				// A first sync from a large collection is hundreds of requests. Commit
+				// progress after every batch so a dropped connection on a phone resumes
+				// from here instead of pushing and pulling everything again.
+				this.meta.writeNumber("cursor", cursor);
+				const boundary = this.pushBoundary(batches, index);
+				if (boundary > pushWatermark) this.meta.writeNumber("push", boundary);
 			}
 
 			this.postProcess(result, state);
@@ -288,9 +294,27 @@ export class CloudSyncService {
 					replay: [...state.replayCandidates],
 					pulled: true,
 				});
+				this.meta.writeNumber("cursor", cursor);
 			}
 		});
 		return cursor;
+	}
+
+	/**
+	 * Highest push watermark that is safe once batches `0..index` are on the
+	 * server. Batches are sorted by `updatedAt`, so everything at or below the
+	 * last pushed timestamp is done unless the next batch continues that same
+	 * timestamp; then the watermark stops just below it so a retry re-pushes
+	 * the stragglers instead of skipping them.
+	 */
+	private pushBoundary(batches: CloudSyncChange[][], index: number): number {
+		const batch = batches[index];
+		const last = batch?.[batch.length - 1];
+		if (!last) return 0;
+		const next = batches[index + 1]?.[0];
+		return next && next.updatedAt === last.updatedAt
+			? last.updatedAt - 1
+			: last.updatedAt;
 	}
 
 	private entityKey(change: CloudSyncChange): string {

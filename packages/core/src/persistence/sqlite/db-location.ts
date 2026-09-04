@@ -10,7 +10,11 @@
  * a `.nosync` component (the same mechanism keeps `backups.nosync` local).
  */
 import type { IPersistence } from "../../interfaces/persistence";
-import { getDbBakPath, getDbTmpPath } from "./atomic-db-file";
+import {
+	getDbBakPath,
+	getDbTmpPath,
+	MIN_DB_FILE_BYTES,
+} from "./atomic-db-file";
 import { DB_FOLDER, getDeviceDbFilename } from "./sqlite.types";
 
 export const LOCAL_DB_FOLDER = `${DB_FOLDER}/local.nosync`;
@@ -51,11 +55,18 @@ export async function ensureFolder(
  * the folder the store must use for this session.
  *
  * - Target already has the file: return the target, touch nothing.
- * - Only the other folder has it: move `.tmp` (newest interrupted flush),
- *   main, then `.bak`. Sibling moves are best-effort; a failed main move
- *   leaves everything in place and returns the other folder, so a stubborn
- *   filesystem degrades to today's behavior instead of an empty database.
+ * - Only the other folder has it: copy main, then `.tmp` (newest interrupted
+ *   flush) and `.bak` best-effort, and delete each original only after its
+ *   copy is verified. A failed main copy leaves everything in place and
+ *   returns the other folder, so a stubborn filesystem degrades to today's
+ *   behavior instead of an empty database.
  * - Neither has it: return the target; the store creates a fresh file there.
+ *
+ * The move is a copy, never a rename. On iOS a file iCloud has evicted is only
+ * a placeholder; renaming that placeholder into a `.nosync` folder strands it
+ * where iCloud can no longer fetch its bytes and the next load finds nothing
+ * usable. Reading the file forces the download first, and a placeholder that
+ * cannot be downloaded right now stays where it is.
  */
 export async function migrateDeviceDbLocation(
 	persistence: IPersistence,
@@ -66,31 +77,15 @@ export async function migrateDeviceDbLocation(
 	const otherFolder = getDbFolder(target === "shared" ? "local" : "shared");
 	const targetPath = getDeviceDbPath(deviceId, targetFolder);
 	const otherPath = getDeviceDbPath(deviceId, otherFolder);
-	const targetTmpPath = getDbTmpPath(targetPath);
-	const otherTmpPath = getDbTmpPath(otherPath);
 
 	if (await persistence.exists(targetPath)) return targetFolder;
 	if (!(await persistence.exists(otherPath))) return targetFolder;
 
-	let movedTmp = false;
 	try {
 		await ensureFolder(persistence, targetFolder);
-		if (await persistence.exists(otherTmpPath)) {
-			await persistence.rename(otherTmpPath, targetTmpPath);
-			movedTmp = true;
-		}
-		await persistence.rename(otherPath, targetPath);
+		await copyDbFile(persistence, otherPath, targetPath);
 	} catch (error) {
-		if (movedTmp) {
-			try {
-				await persistence.rename(targetTmpPath, otherTmpPath);
-			} catch (rollbackError) {
-				console.error(
-					`[True Recall] Could not roll back temporary database move from ${targetFolder} to ${otherFolder}:`,
-					rollbackError,
-				);
-			}
-		}
+		await removeIfExists(persistence, targetPath);
 		console.error(
 			`[True Recall] Could not move database from ${otherFolder} to ${targetFolder}:`,
 			error,
@@ -100,25 +95,69 @@ export async function migrateDeviceDbLocation(
 
 	await moveIfExists(
 		persistence,
+		getDbTmpPath(otherPath),
+		getDbTmpPath(targetPath),
+	);
+	await moveIfExists(
+		persistence,
 		getDbBakPath(otherPath),
 		getDbBakPath(targetPath),
 	);
+	await removeIfExists(persistence, otherPath);
 	console.info(
 		`[True Recall] Database moved from ${otherFolder} to ${targetFolder}`,
 	);
 	return targetFolder;
 }
 
+/** Read, write, and verify; throws before anything is deleted. */
+async function copyDbFile(
+	persistence: IPersistence,
+	from: string,
+	to: string,
+): Promise<void> {
+	const data = await persistence.readBinary(from);
+	if (!data || data.byteLength < MIN_DB_FILE_BYTES) {
+		throw new Error(
+			`Database file unreadable or truncated (${data?.byteLength ?? 0} bytes): ${from}`,
+		);
+	}
+	const buffer =
+		data.byteOffset === 0 && data.byteLength === data.buffer.byteLength
+			? (data.buffer as ArrayBuffer)
+			: (data.slice().buffer as ArrayBuffer);
+	await persistence.writeBinary(to, buffer);
+	const written = await persistence.stat(to);
+	if (!written || written.size !== data.byteLength) {
+		throw new Error(
+			`Copy of ${from} is incomplete: expected ${data.byteLength} bytes, found ${written?.size ?? "none"}`,
+		);
+	}
+}
+
+/** Best-effort sibling move: copy, verify, delete the original; on failure keep it. */
 async function moveIfExists(
 	persistence: IPersistence,
 	from: string,
 	to: string,
 ): Promise<void> {
 	try {
-		if (await persistence.exists(from)) {
-			await persistence.rename(from, to);
-		}
+		if (!(await persistence.exists(from))) return;
+		await copyDbFile(persistence, from, to);
+		await persistence.remove(from);
 	} catch (error) {
+		await removeIfExists(persistence, to);
 		console.warn(`[True Recall] Could not move ${from} to ${to}:`, error);
+	}
+}
+
+async function removeIfExists(
+	persistence: IPersistence,
+	path: string,
+): Promise<void> {
+	try {
+		if (await persistence.exists(path)) await persistence.remove(path);
+	} catch (error) {
+		console.warn(`[True Recall] Could not remove ${path}:`, error);
 	}
 }

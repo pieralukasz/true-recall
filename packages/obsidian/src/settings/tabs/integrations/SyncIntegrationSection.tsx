@@ -8,6 +8,7 @@ import {
 	ToggleInput,
 } from "@true-recall/obsidian/components";
 import type TrueRecallPlugin from "@true-recall/obsidian/main";
+import { cloudAuthButtonLabel } from "@true-recall/obsidian/plugin/CloudSyncManager";
 
 interface SyncIntegrationSectionProps {
 	settings: TrueRecallSettings;
@@ -15,52 +16,65 @@ interface SyncIntegrationSectionProps {
 	plugin: TrueRecallPlugin;
 }
 
+function describeSyncStatus(
+	isSyncing: boolean,
+	lastError: string | null,
+	lastSyncedAt: number | null,
+): string {
+	if (isSyncing) return "Syncing…";
+	if (lastError) return `Last sync failed: ${lastError}`;
+	if (lastSyncedAt)
+		return `Last synced ${new Date(lastSyncedAt).toLocaleString()}`;
+	return "Not synced yet in this session";
+}
+
 export function SyncIntegrationSection({
 	settings,
 	save,
 	plugin,
 }: SyncIntegrationSectionProps) {
-	const accountEmail = plugin.cloudSyncManager?.accountEmail.value;
-	const authState = plugin.cloudSyncManager?.authState.value ?? "idle";
-	const authInProgress =
-		authState === "preparing" || authState === "exchanging";
-	const authLabel =
-		authState === "preparing"
-			? "Opening browser…"
-			: authState === "waiting"
-				? "Open browser again"
-				: authState === "exchanging"
-					? "Connecting…"
-					: authState === "error"
-						? "Try again"
-						: "Sign in";
+	const manager = plugin.cloudSyncManager;
+	const accountEmail = manager?.accountEmail.value;
+	const { label: authLabel, busy: authInProgress } = cloudAuthButtonLabel(
+		manager?.authState.value ?? "idle",
+		"Sign in",
+	);
+	const coordinator = manager?.coordinator;
+	const isSyncing = coordinator?.isSyncing.value ?? false;
+	const lastError = coordinator?.lastError.value ?? null;
+	const lastSyncedAt = coordinator?.lastSyncedAt.value ?? null;
+	const cloudActive = settings.syncMode === "cloud";
 
 	return (
 		<FormCard title="Sync" class="tr-setting-section--sync">
 			<InfoBlock>
-				Cloud Sync is free and uses your True Recall account. Shared vault keeps
-				the existing iCloud-style file transport. Each device remains fully
-				usable offline. On mobile, sign-in opens your browser and returns to
-				this vault through an Obsidian link.
+				Cloud Sync is free and uses your True Recall account. Every device signs
+				in on its own: the account travels with you, the sign-in does not travel
+				with the vault. Shared vault keeps the existing iCloud-style file
+				transport. Each device remains fully usable offline. On mobile, sign-in
+				opens your browser and returns to this vault through an Obsidian link.
 			</InfoBlock>
 
 			<FormField
 				name="Cloud Sync"
-				description={accountEmail ?? "Account required"}
+				description={
+					accountEmail ??
+					(cloudActive
+						? "Turned on for this vault, but this device is not signed in"
+						: "Account required")
+				}
 				class={accountEmail ? "tr-setting-item--active" : undefined}
 			>
 				{accountEmail ? (
 					<div class="tr-sync-actions">
 						<ToggleInput
-							value={settings.syncMode === "cloud"}
-							onChange={(enabled) =>
-								void plugin.cloudSyncManager?.setEnabled(enabled)
-							}
+							value={cloudActive}
+							onChange={(enabled) => void manager?.setEnabled(enabled)}
 							ariaLabel="Enable Cloud Sync"
 						/>
 						<Clickable
 							class="ep-btn ep-btn-outline tr-sync-signout"
-							onClick={() => void plugin.cloudSyncManager?.signOut()}
+							onClick={() => void manager?.signOut()}
 						>
 							Sign out
 						</Clickable>
@@ -69,12 +83,28 @@ export function SyncIntegrationSection({
 					<Clickable
 						class="ep-btn mod-cta"
 						disabled={authInProgress}
-						onClick={() => void plugin.cloudSyncManager?.beginSignIn()}
+						onClick={() => void manager?.beginSignIn()}
 					>
 						{authLabel}
 					</Clickable>
 				)}
 			</FormField>
+
+			{accountEmail && cloudActive && coordinator && (
+				<FormField
+					name="Sync status"
+					description={describeSyncStatus(isSyncing, lastError, lastSyncedAt)}
+					class={lastError && !isSyncing ? "tr-setting-item--error" : undefined}
+				>
+					<Clickable
+						class="ep-btn ep-btn-outline"
+						disabled={isSyncing}
+						onClick={() => void coordinator.syncNow("manual")}
+					>
+						{isSyncing ? "Syncing…" : "Sync now"}
+					</Clickable>
+				</FormField>
+			)}
 
 			<FormField
 				name="Shared vault"

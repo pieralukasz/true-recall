@@ -320,4 +320,104 @@ describe("CloudSyncService", () => {
 		expect(store.cards.getActiveDedupRows).not.toHaveBeenCalled();
 		expect(store.stats.rebuildDailyStatsFromReviewLog).not.toHaveBeenCalled();
 	});
+
+	it("keeps the cursor of pages already applied when a later page fails", async () => {
+		const store = createStore([]);
+		store.cards.upsertFromRemote = vi.fn(() => true);
+		let calls = 0;
+		const exchange = vi.fn(async () => {
+			calls++;
+			if (calls === 1) {
+				return {
+					changes: [
+						{
+							entityType: "card" as const,
+							entityId: "remote-1",
+							updatedAt: 50,
+							payload: { id: "remote-1", updatedAt: 50 },
+							sourceDeviceId: "device-b",
+						},
+					],
+					cursor: 7,
+					hasMore: true,
+				};
+			}
+			throw new Error("connection dropped");
+		});
+
+		const result = await new CloudSyncService(
+			store,
+			{ exchange },
+			{ accountId: "account-1", deviceId: "device-a" },
+		).sync();
+
+		expect(result.errors).toEqual(["connection dropped"]);
+		expect(store.meta.get("cloud:account-1:cursor")).toBe("7");
+
+		await new CloudSyncService(
+			store,
+			{ exchange },
+			{ accountId: "account-1", deviceId: "device-a" },
+		).sync();
+		expect(exchange).toHaveBeenLastCalledWith({ cursor: 7, changes: [] });
+	});
+
+	it("advances the push watermark past batches the server accepted before a later batch fails", async () => {
+		const bigField = "x".repeat(2_500_000);
+		const store = createStore([
+			{ id: "c1", updatedAt: 1, big: bigField },
+			{ id: "c2", updatedAt: 2, big: bigField },
+			{ id: "c3", updatedAt: 3 },
+		]);
+		let calls = 0;
+		const exchange = vi.fn(async () => {
+			calls++;
+			if (calls === 1) return { changes: [], cursor: 4, hasMore: false };
+			throw new Error("offline");
+		});
+
+		const result = await new CloudSyncService(
+			store,
+			{ exchange },
+			{ accountId: "account-1", deviceId: "device-a" },
+		).sync();
+
+		expect(result.errors).toEqual(["offline"]);
+		expect(store.meta.get("cloud:account-1:push")).toBe("1");
+		expect(store.meta.get("cloud:account-1:cursor")).toBe("4");
+
+		exchange.mockResolvedValue({ changes: [], cursor: 4, hasMore: false });
+		await new CloudSyncService(
+			store,
+			{ exchange },
+			{ accountId: "account-1", deviceId: "device-a" },
+		).sync();
+		expect(exchange.mock.calls[2]?.[0].changes.map((c) => c.entityId)).toEqual([
+			"c2",
+			"c3",
+		]);
+		expect(store.meta.get("cloud:account-1:push")).toBe("3");
+	});
+
+	it("stops the push watermark below a timestamp that continues into the next batch", async () => {
+		const bigField = "x".repeat(2_500_000);
+		const store = createStore([
+			{ id: "c1", updatedAt: 5, big: bigField },
+			{ id: "c2", updatedAt: 5, big: bigField },
+		]);
+		let calls = 0;
+		const exchange = vi.fn(async () => {
+			calls++;
+			if (calls === 1) return { changes: [], cursor: 1, hasMore: false };
+			throw new Error("offline");
+		});
+
+		await new CloudSyncService(
+			store,
+			{ exchange },
+			{ accountId: "account-1", deviceId: "device-a" },
+		).sync();
+
+		expect(store.meta.get("cloud:account-1:push")).toBe("4");
+	});
 });

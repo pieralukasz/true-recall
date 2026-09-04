@@ -13,7 +13,9 @@ import { MapPersistence } from "../../mocks/map-persistence.mock";
 const DEVICE_ID = "dev12345";
 const SHARED = `.true-recall/true-recall-${DEVICE_ID}.db`;
 const LOCAL = `.true-recall/local.nosync/true-recall-${DEVICE_ID}.db`;
-const bytes = (marker: string) => new TextEncoder().encode(marker);
+/** A plausible database body: the migration refuses anything shorter than a SQLite header. */
+const bytes = (marker: string) =>
+	new TextEncoder().encode(marker.padEnd(256, "."));
 
 describe("db-location resolver", () => {
 	it("keeps shared-vault databases in the synced folder", () => {
@@ -77,6 +79,19 @@ describe("migrateDeviceDbLocation", () => {
 		expect(fs.files.has(`${SHARED}.bak`)).toBe(false);
 	});
 
+	it("copies the bytes instead of renaming the file", async () => {
+		const fs = new MapPersistence();
+		fs.files.set(SHARED, bytes("main"));
+		const rename = vi.spyOn(fs, "rename");
+		const readBinary = vi.spyOn(fs, "readBinary");
+
+		await migrateDeviceDbLocation(fs, DEVICE_ID, "local");
+
+		expect(rename).not.toHaveBeenCalled();
+		expect(readBinary).toHaveBeenCalledWith(SHARED);
+		expect(fs.files.get(LOCAL)).toEqual(bytes("main"));
+	});
+
 	it("moves a lone main file without failing on missing siblings", async () => {
 		const fs = new MapPersistence();
 		fs.files.set(SHARED, bytes("main"));
@@ -99,11 +114,11 @@ describe("migrateDeviceDbLocation", () => {
 		expect(fs.files.has(LOCAL)).toBe(false);
 	});
 
-	it("falls back to the old folder when the main move fails", async () => {
+	it("falls back to the old folder when the main copy cannot be written", async () => {
 		const fs = new MapPersistence();
 		fs.files.set(SHARED, bytes("main"));
 		fs.files.set(`${SHARED}.bak`, bytes("bak"));
-		vi.spyOn(fs, "rename").mockRejectedValue(new Error("EPERM"));
+		vi.spyOn(fs, "writeBinary").mockRejectedValue(new Error("EPERM"));
 
 		expect(await migrateDeviceDbLocation(fs, DEVICE_ID, "local")).toBe(
 			DB_FOLDER,
@@ -113,37 +128,76 @@ describe("migrateDeviceDbLocation", () => {
 		expect(fs.files.has(LOCAL)).toBe(false);
 	});
 
-	it("rolls a moved temporary file back when the main move fails", async () => {
+	it("leaves an unreadable database where it is", async () => {
+		// An iCloud placeholder whose bytes are not on the device right now.
 		const fs = new MapPersistence();
 		fs.files.set(SHARED, bytes("main"));
 		fs.files.set(`${SHARED}.tmp`, bytes("newest"));
-		const rename = fs.rename.bind(fs);
-		vi.spyOn(fs, "rename").mockImplementation(async (from, to) => {
-			if (from === SHARED) throw new Error("EPERM");
-			await rename(from, to);
-		});
+		vi.spyOn(fs, "readBinary").mockResolvedValue(null);
 
 		expect(await migrateDeviceDbLocation(fs, DEVICE_ID, "local")).toBe(
 			DB_FOLDER,
 		);
 		expect(fs.files.get(SHARED)).toEqual(bytes("main"));
 		expect(fs.files.get(`${SHARED}.tmp`)).toEqual(bytes("newest"));
+		expect(fs.files.has(LOCAL)).toBe(false);
 		expect(fs.files.has(`${LOCAL}.tmp`)).toBe(false);
+	});
+
+	it("refuses to migrate a file shorter than a SQLite header", async () => {
+		const fs = new MapPersistence();
+		fs.files.set(SHARED, new Uint8Array(0));
+
+		expect(await migrateDeviceDbLocation(fs, DEVICE_ID, "local")).toBe(
+			DB_FOLDER,
+		);
+		expect(fs.files.has(SHARED)).toBe(true);
+		expect(fs.files.has(LOCAL)).toBe(false);
+	});
+
+	it("keeps the original and discards a torn copy", async () => {
+		const fs = new MapPersistence();
+		fs.files.set(SHARED, bytes("main"));
+		fs.truncateWritesTo = 120;
+
+		expect(await migrateDeviceDbLocation(fs, DEVICE_ID, "local")).toBe(
+			DB_FOLDER,
+		);
+		expect(fs.files.get(SHARED)).toEqual(bytes("main"));
+		expect(fs.files.has(LOCAL)).toBe(false);
+	});
+
+	it("keeps a sibling whose copy fails and still finishes the main move", async () => {
+		const fs = new MapPersistence();
+		fs.files.set(SHARED, bytes("main"));
+		fs.files.set(`${SHARED}.bak`, bytes("bak"));
+		const readBinary = fs.readBinary.bind(fs);
+		vi.spyOn(fs, "readBinary").mockImplementation(async (path) =>
+			path === `${SHARED}.bak` ? null : readBinary(path),
+		);
+
+		expect(await migrateDeviceDbLocation(fs, DEVICE_ID, "local")).toBe(
+			LOCAL_DB_FOLDER,
+		);
+		expect(fs.files.get(LOCAL)).toEqual(bytes("main"));
+		expect(fs.files.has(SHARED)).toBe(false);
+		expect(fs.files.get(`${SHARED}.bak`)).toEqual(bytes("bak"));
+		expect(fs.files.has(`${LOCAL}.bak`)).toBe(false);
 	});
 
 	it("returns the target folder and writes nothing when no file exists", async () => {
 		const fs = new MapPersistence();
-		const rename = vi.spyOn(fs, "rename");
+		const writeBinary = vi.spyOn(fs, "writeBinary");
 		const mkdir = vi.spyOn(fs, "mkdir");
 
 		expect(await migrateDeviceDbLocation(fs, DEVICE_ID, "local")).toBe(
 			LOCAL_DB_FOLDER,
 		);
-		expect(rename).not.toHaveBeenCalled();
+		expect(writeBinary).not.toHaveBeenCalled();
 		expect(mkdir).not.toHaveBeenCalled();
 	});
 
-	it("creates every missing folder segment before moving", async () => {
+	it("creates every missing folder segment before copying", async () => {
 		const fs = new MapPersistence();
 		fs.files.set(SHARED, bytes("main"));
 		const mkdir = vi.spyOn(fs, "mkdir");
