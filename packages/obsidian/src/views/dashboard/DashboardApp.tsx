@@ -18,10 +18,12 @@ import { SearchCombobox } from "@true-recall/obsidian/components/SearchCombobox"
 import { Q, useQuery } from "@true-recall/obsidian/data";
 import { computeActionableSessionSnapshot } from "@true-recall/obsidian/features/study/services/actionable-session-snapshot.service";
 import { BottomActionBar } from "@true-recall/obsidian/features/study/ui/dashboard/components/BottomActionBar";
+import { CloudSyncConnectBanner } from "@true-recall/obsidian/features/study/ui/dashboard/components/CloudSyncConnectBanner";
 import { CustomStudyTab } from "@true-recall/obsidian/features/study/ui/dashboard/components/CustomStudyTab";
 import { DashboardTabs } from "@true-recall/obsidian/features/study/ui/dashboard/components/DashboardTabs";
 import { NoteList } from "@true-recall/obsidian/features/study/ui/dashboard/components/NoteList";
 import { OrphanedTab } from "@true-recall/obsidian/features/study/ui/dashboard/components/OrphanedTab";
+import { ProIntroBanner } from "@true-recall/obsidian/features/study/ui/dashboard/components/ProIntroBanner";
 import { ProjectsTab } from "@true-recall/obsidian/features/study/ui/dashboard/components/ProjectsTab";
 import { RecentlyStudiedBar } from "@true-recall/obsidian/features/study/ui/dashboard/components/RecentlyStudiedBar";
 import { SyncStatusChip } from "@true-recall/obsidian/features/study/ui/dashboard/components/SyncStatusChip";
@@ -424,6 +426,9 @@ export function DashboardApp({ isViewVisible }: DashboardAppProps) {
 				onScroll={onScroll}
 			>
 				<div class="ep:p-3 ep:mx-auto ep:max-w-5xl ep:flex ep:flex-col ep:gap-3 ep:min-h-full">
+					<ProIntroBanner settings={_settings} />
+					<CloudSyncConnectBanner />
+
 					{_settings.showDashboardHeader && (
 						<>
 							<TodayActionBar

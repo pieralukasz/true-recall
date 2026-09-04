@@ -10,7 +10,10 @@ export function ImportExportSection() {
 	const { plugin } = useSettings();
 
 	return (
-		<FormCard title="Anki import / export">
+		<FormCard
+			title="Anki import & export"
+			description="Move decks between Anki and True Recall. AI enhancement is not required."
+		>
 			<FormField
 				name="Import Anki deck"
 				description="Import flashcards from an Anki .apkg file with optional scheduling data"

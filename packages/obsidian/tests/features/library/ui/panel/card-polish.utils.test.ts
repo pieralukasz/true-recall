@@ -5,6 +5,7 @@ import {
 	type AIWorkflow,
 	cardPolishWorkflowId,
 } from "@true-recall/core/ai/workflows/ai-workflow";
+import { DEFAULT_SETTINGS } from "@true-recall/core/constants";
 import type { TrueRecallSettings } from "@true-recall/core/types";
 
 import type { AssistantContextCard } from "@true-recall/obsidian/features/assistant/ui/ai-context-source";
@@ -43,24 +44,33 @@ function createSettings(
 	overrides: Partial<TrueRecallSettings> = {},
 ): TrueRecallSettings {
 	return {
+		...DEFAULT_SETTINGS,
 		openRouterApiKey: "key",
-		lmStudioModel: "",
 		pluginStates: {},
 		cardPolish: { userPresets: [createPreset()], customPromptAutoApply: false },
 		...overrides,
-	} as TrueRecallSettings;
+	};
 }
 
 describe("isCardPolishAvailable", () => {
-	it("is available when both AI families are enabled and a key exists", () => {
+	it("is available when AI Workspace is enabled and a key exists", () => {
 		expect(isCardPolishAvailable(createSettings())).toBe(true);
 	});
 
-	it.each([
-		["card-polish family off", { "card-polish": false }],
-		["ai-assistant family off", { "ai-assistant": false }],
-	])("is unavailable with %s", (_description, pluginStates) => {
-		expect(isCardPolishAvailable(createSettings({ pluginStates }))).toBe(false);
+	it("is unavailable when AI Workspace is off", () => {
+		expect(
+			isCardPolishAvailable(
+				createSettings({ pluginStates: { "ai-assistant": false } }),
+			),
+		).toBe(false);
+	});
+
+	it("ignores the legacy Card Polish feature state", () => {
+		expect(
+			isCardPolishAvailable(
+				createSettings({ pluginStates: { "card-polish": false } }),
+			),
+		).toBe(true);
 	});
 
 	it("is unavailable without an AI key", () => {
@@ -108,10 +118,10 @@ describe("listCardPolishWorkflows", () => {
 		).toEqual([]);
 	});
 
-	it("returns an empty list when the card-polish family is off", () => {
+	it("returns an empty list when AI Workspace is off", () => {
 		expect(
 			listCardPolishWorkflows(
-				createSettings({ pluginStates: { "card-polish": false } }),
+				createSettings({ pluginStates: { "ai-assistant": false } }),
 			),
 		).toEqual([]);
 	});

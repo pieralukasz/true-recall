@@ -1,28 +1,34 @@
 import type { PluginManifest } from "../types";
+import { AIWorkspaceSettingsPanel } from "./AIWorkspaceSettingsPanel";
 import { AiAssistantPlugin } from "./AiAssistantPlugin";
-import { AssistantSettingsPanel } from "./AssistantSettingsPanel";
+
+let runtime: AiAssistantPlugin | undefined;
 
 export const aiAssistantManifest: PluginManifest = {
 	info: {
 		id: "ai-assistant",
-		name: "Assistant",
+		name: "AI Workspace",
 		description:
-			"The AI workspace itself: ask questions, research concepts, and run any saved preset. Generator and Card Polish presets appear inside it, so turning this off hides every AI surface.",
+			"One workspace for research, generating new flashcards, and improving existing cards. All workflows share the same task queue and recoverable Inbox.",
 		features: [
-			"Docked Ask AI panel that follows the card you are reviewing",
-			"Anchored preset list for one-click saved instructions",
-			"Context from the current note, selection, or flashcard",
-			"Async task queue — review is never blocked",
-			"Shared AI Inbox with Generator and Card Polish",
+			"Ask questions and research concepts with note or card context",
+			"Generate cards from notes and selections",
+			"Rewrite, complete, or split existing cards",
+			"Shared async task queue and AI Inbox",
 		],
 		icon: "sparkles",
 		tier: "byok",
 	},
-	settingsPanel: AssistantSettingsPanel,
+	settingsPanel: AIWorkspaceSettingsPanel,
 	toolbarButtonIds: ["ask-ai"],
 	activate: (ctx) => {
 		const plugin = new AiAssistantPlugin(ctx);
+		runtime = plugin;
 		plugin.activate();
-		return () => plugin.deactivate();
+		return () => {
+			plugin.deactivate();
+			if (runtime === plugin) runtime = undefined;
+		};
 	},
+	sync: () => runtime?.syncPresetCommands(),
 };

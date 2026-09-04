@@ -3,15 +3,19 @@ import { useCallback, useRef, useState } from "preact/hooks";
 import {
 	DEFAULT_SETTINGS,
 	TRUERECALL_BMC_URL,
+	TRUERECALL_DASHBOARD_URL,
 	TRUERECALL_DISCORD_URL,
 	TRUERECALL_GITHUB_URL,
 	TRUERECALL_NEWSLETTER_URL,
+	TRUERECALL_PRICING_URL,
 	TRUERECALL_WEB_URL,
 } from "@true-recall/core/constants";
 import type {
 	ReviewContentWidth,
 	ReviewKeybindings,
 	ReviewViewMode,
+	TrueRecallSettings,
+	TypeInMode,
 } from "@true-recall/core/types";
 
 import {
@@ -21,13 +25,22 @@ import {
 	InfoBlock,
 	SelectInput,
 	SliderInput,
+	TextAreaInput,
 	ToggleInput,
 } from "@true-recall/obsidian/components";
 import { KeyboardHandler } from "@true-recall/obsidian/features/study/ui/review/handlers/KeyboardHandler";
+import {
+	ACCESS_TIER_LABEL,
+	buildFeatureTogglePatch,
+	isFeatureAvailable,
+	isPluginEnabled,
+	resolveAccessTier,
+} from "@true-recall/obsidian/plugin/plugin-utils";
 import { useIcon } from "@true-recall/obsidian/preact";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 
 import { useSettings } from "../hooks/useSettings";
+import { ProFeatureNotice } from "./ProFeatureNotice";
 
 export function GeneralTab() {
 	const { settings, save, plugin } = useSettings();
@@ -139,6 +152,29 @@ export function GeneralTab() {
 				</FormField>
 
 				<FormField
+					name="Typed answers"
+					description={
+						settings.proKey ? (
+							"Default mode for new review sessions. Press T to toggle it during review."
+						) : (
+							<ProFeatureNotice message="AI semantic grading for typed answers is included with True Recall Pro." />
+						)
+					}
+				>
+					<SelectInput
+						value={settings.defaultTypeInMode}
+						disabled={!isFeatureAvailable(settings, "type-in-mode", "pro")}
+						onChange={(value) =>
+							void save({ defaultTypeInMode: value as TypeInMode })
+						}
+						options={[
+							{ value: "off", label: "Off" },
+							{ value: "ai", label: "AI grading" },
+						]}
+					/>
+				</FormField>
+
+				<FormField
 					name="Show frontmatter in note review"
 					description="Display YAML frontmatter when reviewing whole notes"
 				>
@@ -164,44 +200,47 @@ export function GeneralTab() {
 				/>
 			</FormCard>
 
-			<FormCard title="Editor integration">
+			<FormCard
+				title="Image occlusion"
+				description="Create visual flashcards by masking regions of diagrams, maps, and images."
+			>
 				<FormField
-					name="Show link status indicators"
-					description="Display inline flashcard counts (new/learning/review) next to [[links]] that point to notes with flashcards"
+					name="Creation tools"
+					description={
+						settings.proKey ? (
+							"Show Image Occlusion in commands and quick-action toolbars. Existing cards remain readable when disabled."
+						) : (
+							<ProFeatureNotice message="Image Occlusion creation tools are included with True Recall Pro." />
+						)
+					}
 				>
 					<ToggleInput
-						value={settings.showLinkStatusIndicators}
-						onChange={(v) => void save({ showLinkStatusIndicators: v })}
+						value={isPluginEnabled(settings, "image-occlusion")}
+						disabled={!isFeatureAvailable(settings, "image-occlusion", "pro")}
+						onChange={(value) =>
+							void save(
+								buildFeatureTogglePatch(settings, "image-occlusion", value),
+							)
+						}
 					/>
 				</FormField>
 
 				<FormField
-					name="Show donuts in flashcard panel"
-					description="Display donut indicators next to links inside flashcard panel cards"
+					name="AI detection prompt"
+					description="Optional custom prompt for automatic region detection. Leave empty to use the built-in prompt."
+					layout="stacked"
 				>
-					<ToggleInput
-						value={settings.showDonutsInPanel}
-						onChange={(v) => void save({ showDonutsInPanel: v })}
-					/>
-				</FormField>
-
-				<FormField
-					name="Show donuts in review"
-					description="Display donut indicators next to links during review sessions"
-				>
-					<ToggleInput
-						value={settings.showDonutsInReview}
-						onChange={(v) => void save({ showDonutsInReview: v })}
-					/>
-				</FormField>
-
-				<FormField
-					name="Show status bar widget"
-					description="Display global due/new/learning card counts in the bottom status bar"
-				>
-					<ToggleInput
-						value={settings.showStatusBarWidget}
-						onChange={(v) => void save({ showStatusBarWidget: v })}
+					<TextAreaInput
+						value={settings.aiIODetectionPrompt ?? ""}
+						disabled={!isPluginEnabled(settings, "image-occlusion")}
+						onChange={(value) =>
+							void save({
+								aiIODetectionPrompt:
+									value.trim().length > 0 ? value : undefined,
+							})
+						}
+						rows={4}
+						class="ep:w-full ep:font-mono ep:text-ui-smaller"
 					/>
 				</FormField>
 			</FormCard>
@@ -223,6 +262,7 @@ export function GeneralTab() {
 			</FormCard>
 
 			<FormCard title="About">
+				<PlanField settings={settings} />
 				<FormField
 					name="What's New"
 					description={`See release notes for version ${plugin.manifest.version}`}
@@ -280,13 +320,16 @@ function NewsletterCard() {
 	const mailRef = useIcon("mail");
 
 	return (
-		<FormCard title="Newsletter — Learn how to learn">
+		<FormCard
+			title="Newsletter — Learn how to learn"
+			class="tr-setting-section--accent"
+		>
 			<FormField
 				name="Personal newsletter about learning"
 				description="Spaced repetition, memory, and how we should actually study — plus every True Recall release"
 			>
 				<Clickable
-					class="ep-btn ep-btn-outline ep:inline-flex ep:items-center ep:gap-1.5"
+					class="ep-btn mod-cta tr-settings-action ep:inline-flex ep:items-center ep:gap-1.5"
 					onClick={() => window.open(TRUERECALL_NEWSLETTER_URL, "_blank")}
 				>
 					<div ref={mailRef} class="ep:w-4 ep:h-4" />
@@ -311,6 +354,38 @@ const KEYBINDING_FIELDS: {
 	{ key: "hard", label: "Hard", description: "Rate Hard" },
 	{ key: "easy", label: "Easy", description: "Rate Easy" },
 ];
+
+function PlanField({ settings }: { settings: TrueRecallSettings }) {
+	const tier = resolveAccessTier(settings);
+	const isPro = tier === "pro";
+	return (
+		<FormField
+			name="Plan"
+			description={
+				isPro
+					? "Managed AI, Image Occlusion and Typed Answers are unlocked."
+					: tier === "byok"
+						? "You use your own AI provider. Pro adds managed AI, Image Occlusion and Typed Answers."
+						: "Review and scheduling are free. Add an AI key or try Pro free for AI flashcards."
+			}
+		>
+			<div class="ep:flex ep:items-center ep:gap-2">
+				<span class="ep:text-sm ep:font-medium">{ACCESS_TIER_LABEL[tier]}</span>
+				<Clickable
+					class="ep-btn ep-btn-outline"
+					onClick={() =>
+						window.open(
+							isPro ? TRUERECALL_DASHBOARD_URL : TRUERECALL_PRICING_URL,
+							"_blank",
+						)
+					}
+				>
+					{isPro ? "Manage subscription" : "View plans"}
+				</Clickable>
+			</div>
+		</FormField>
+	);
+}
 
 function ReviewKeybindingsSection({
 	keybindings,
@@ -440,20 +515,20 @@ function SupportCard() {
 	const githubRef = useIcon("github");
 
 	return (
-		<FormCard title="Support">
+		<FormCard title="Support" class="tr-setting-section--support">
 			<InfoBlock>
 				If True Recall helps your learning, consider supporting its development.
 			</InfoBlock>
-			<div class="ep:flex ep:gap-2 ep:mt-1">
+			<div class="tr-settings-actions">
 				<Clickable
-					class="ep-btn ep-btn-outline ep:inline-flex ep:items-center ep:gap-1.5"
+					class="ep-btn mod-cta tr-settings-action ep:inline-flex ep:items-center ep:gap-1.5"
 					onClick={() => window.open(TRUERECALL_BMC_URL, "_blank")}
 				>
 					<div ref={heartRef} class="ep:w-4 ep:h-4" />
 					Buy Me a Coffee
 				</Clickable>
 				<Clickable
-					class="ep-btn ep-btn-outline ep:inline-flex ep:items-center ep:gap-1.5"
+					class="ep-btn ep-btn-outline tr-settings-action ep:inline-flex ep:items-center ep:gap-1.5"
 					onClick={() => window.open(TRUERECALL_GITHUB_URL, "_blank")}
 				>
 					<div ref={githubRef} class="ep:w-4 ep:h-4" />

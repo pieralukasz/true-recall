@@ -14,6 +14,7 @@ import { capabilities } from "@true-recall/obsidian/utils/platform";
 import type TrueRecallPlugin from "../../main";
 import { useSettings } from "../hooks/useSettings";
 import { InkIntegrationSection } from "./integrations/InkIntegrationSection";
+import { SyncIntegrationSection } from "./integrations/SyncIntegrationSection";
 
 interface LocalApiCardProps {
 	settings: TrueRecallSettings;
@@ -64,6 +65,7 @@ function LocalApiCard({ settings, save, plugin }: LocalApiCardProps) {
 				<TextInput
 					value={String(settings.apiPort)}
 					placeholder="27182"
+					class="tr-control--compact"
 					onChange={(v) => {
 						const port = Number.parseInt(v, 10);
 						if (!Number.isNaN(port) && port >= 1024 && port <= 65535) {
@@ -85,22 +87,11 @@ function LocalApiCard({ settings, save, plugin }: LocalApiCardProps) {
 
 export function IntegrationsTab() {
 	const { settings, save, plugin } = useSettings();
-	const authState = plugin.cloudSyncManager?.authState.value ?? "idle";
-	const authInProgress =
-		authState === "preparing" || authState === "exchanging";
-	const authLabel =
-		authState === "preparing"
-			? "Opening browser…"
-			: authState === "waiting"
-				? "Open browser again"
-				: authState === "exchanging"
-					? "Connecting…"
-					: authState === "error"
-						? "Try again"
-						: "Sign in";
 
 	return (
 		<div class="tr-settings-sections">
+			<SyncIntegrationSection settings={settings} save={save} plugin={plugin} />
+
 			<InkIntegrationSection />
 
 			{capabilities.canRunLocalApi() && (
@@ -123,62 +114,6 @@ export function IntegrationsTab() {
 					>
 						Get skill
 					</Clickable>
-				</FormField>
-			</FormCard>
-
-			<FormCard title="Sync">
-				<InfoBlock>
-					Cloud Sync is free and uses your True Recall account. Shared vault
-					keeps the existing iCloud-style file transport. Each device remains
-					fully usable offline. On mobile, sign-in opens your browser and
-					returns to this vault through an Obsidian link.
-				</InfoBlock>
-
-				<FormField
-					name="Cloud Sync"
-					description={
-						plugin.cloudSyncManager?.accountEmail.value ?? "Account required"
-					}
-				>
-					{plugin.cloudSyncManager?.accountEmail.value ? (
-						<div class="ep:flex ep:gap-2">
-							<ToggleInput
-								value={settings.syncMode === "cloud"}
-								onChange={(enabled) =>
-									void plugin.cloudSyncManager?.setEnabled(enabled)
-								}
-							/>
-							<Clickable
-								class="ep-btn ep-btn-outline"
-								onClick={() => void plugin.cloudSyncManager?.signOut()}
-							>
-								Sign out
-							</Clickable>
-						</div>
-					) : (
-						<Clickable
-							class="ep-btn ep-btn-outline"
-							disabled={authInProgress}
-							onClick={() => void plugin.cloudSyncManager?.beginSignIn()}
-						>
-							{authLabel}
-						</Clickable>
-					)}
-				</FormField>
-
-				<FormField
-					name="Shared vault"
-					description="Merge device databases synchronized by iCloud, Obsidian Sync, or another file service. Reload Obsidian after changing this mode."
-				>
-					<ToggleInput
-						value={settings.syncMode === "shared-vault"}
-						onChange={(enabled) =>
-							void save({
-								syncMode: enabled ? "shared-vault" : "off",
-								enableDeviceSync: enabled,
-							})
-						}
-					/>
 				</FormField>
 			</FormCard>
 		</div>

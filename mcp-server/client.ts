@@ -7,7 +7,7 @@ type ApiResponse<T = unknown> =
 
 const CONNECTION_ERROR_MSG =
 	"Cannot connect to True Recall plugin. Is Obsidian running with the Local API enabled? " +
-	"Enable it in Settings → General → Local API.";
+	"Enable it in Settings → True Recall → Integrations → Local API.";
 
 export class TrueRecallClient {
 	private baseUrl: string;

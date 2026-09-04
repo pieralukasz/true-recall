@@ -23,7 +23,7 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 		return [
 			{
 				name: "True Recall settings",
-				desc: "Configure review behavior, FSRS, data, integrations, and plugins.",
+				desc: "Configure review behavior, FSRS, data, integrations, and optional features.",
 				aliases: [
 					"General",
 					"AI provider",
@@ -33,6 +33,7 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 					"Backup",
 					"Integrations",
 					"Plugins",
+					"Features",
 				],
 				render: (setting) => {
 					setting.settingEl.empty();

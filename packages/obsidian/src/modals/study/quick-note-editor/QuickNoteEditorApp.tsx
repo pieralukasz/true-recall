@@ -9,7 +9,6 @@ import {
 } from "preact/hooks";
 
 import type { AssistantContext } from "@true-recall/core/ai/assistant";
-import { hasAIKey } from "@true-recall/core/ai/config/ai-client-config";
 
 import { BatchCreateCommand } from "@true-recall/obsidian/commands/commands/card-create.cmd";
 import { Clickable } from "@true-recall/obsidian/components";
@@ -17,6 +16,7 @@ import {
 	type FormattingTargetRef,
 	FormattingToolbar,
 } from "@true-recall/obsidian/editor/shared/formatting";
+import { isPluginEnabled } from "@true-recall/obsidian/plugin/plugin-utils";
 import { useIcon } from "@true-recall/obsidian/preact/hooks";
 import {
 	useApp,
@@ -536,15 +536,7 @@ export function QuickNoteEditorApp({
 	// The editor registers itself as a temporary Assistant target. The task only
 	// stores a serializable session id, while applying the accepted proposal
 	// updates this still-open draft through the registry above.
-	// We check both the plugin enable state AND hasAIKey directly. The full
-	// `isPluginEnabled` helper (in plugin-utils) pulls @true-recall/plugins
-	// registry, which transitively loads sqlite-wasm via other plugin manifests
-	// and breaks Vitest module loading for unrelated tests. Inline-checking
-	// hasAIKey reproduces the tier:"byok" gate without the registry import.
-	const assistantEnabled =
-		plugin.settings?.pluginStates?.["ai-assistant"] ?? true;
-	const assistantActive =
-		assistantEnabled && hasAIKey(plugin.settings, "assistant");
+	const assistantActive = isPluginEnabled(plugin.settings, "ai-assistant");
 	const { disabled: aiDisabled, title: aiTitle } = deriveAIWandState({
 		hasSourceNote: !!sourceNoteFile,
 		assistantActive,

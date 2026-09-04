@@ -79,6 +79,7 @@ export function BackgroundBackupSection() {
 						void save({ reviewsBeforeBackup: Math.max(10, num) });
 					}}
 					placeholder="50"
+					class="tr-control--compact"
 				/>
 			</FormField>
 		</FormCard>

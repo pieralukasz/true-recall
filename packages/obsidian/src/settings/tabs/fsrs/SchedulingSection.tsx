@@ -46,6 +46,7 @@ export function SchedulingSection({
 							});
 						}}
 						placeholder="1, 10"
+						class="tr-control--steps"
 					/>
 				</FormField>
 
@@ -65,6 +66,7 @@ export function SchedulingSection({
 							});
 						}}
 						placeholder="10"
+						class="tr-control--steps"
 					/>
 				</FormField>
 			</FormCard>
@@ -113,7 +115,7 @@ export function SchedulingSection({
 			<FormCard title="Siblings">
 				<FormField
 					name="Bury sibling cards"
-					description="After reviewing an image occlusion or cloze card, bury remaining cards from the same note until next day. When off, siblings are spaced apart in the queue instead."
+					description="After reviewing an image occlusion or cloze card, bury remaining cards from the same note until next day. This is not recommended; leaving it off keeps siblings spaced apart in the queue."
 				>
 					<ToggleInput
 						value={preset.burySiblings !== false}

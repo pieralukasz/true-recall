@@ -47,6 +47,10 @@ export class PluginLoader {
 			changed = true;
 		}
 
+		for (const manifest of this.manifests) {
+			if (this.active.has(manifest.info.id)) manifest.sync?.();
+		}
+
 		if (changed) this.refreshViews();
 	}
 

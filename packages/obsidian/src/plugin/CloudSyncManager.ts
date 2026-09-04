@@ -17,7 +17,10 @@ import { setLastMutation } from "@true-recall/obsidian/services/signals";
 import type TrueRecallPlugin from "../main";
 import { CloudSyncCoordinator } from "./CloudSyncCoordinator";
 
-const SYNC_INTERVAL_MS = 60_000;
+// Sync also runs on every change (2.5 s debounce), at startup and on foreground, so
+// the timer only catches edits made elsewhere while this device sits idle. Five
+// minutes cuts the per-device request volume fivefold against a 60 s poll.
+const SYNC_INTERVAL_MS = 5 * 60_000;
 const CHANGE_DEBOUNCE_MS = 2_500;
 
 export type CloudAuthState =
@@ -26,6 +29,25 @@ export type CloudAuthState =
 	| "waiting"
 	| "exchanging"
 	| "error";
+
+/** Button text for a sign-in control given the auth state; `idle` names the resting label. */
+export function cloudAuthButtonLabel(
+	state: CloudAuthState,
+	idle: string,
+): { label: string; busy: boolean } {
+	switch (state) {
+		case "preparing":
+			return { label: "Opening browser…", busy: true };
+		case "waiting":
+			return { label: "Open browser again", busy: false };
+		case "exchanging":
+			return { label: "Connecting…", busy: true };
+		case "error":
+			return { label: "Try again", busy: false };
+		default:
+			return { label: idle, busy: false };
+	}
+}
 
 export class CloudSyncManager {
 	readonly accountEmail = signal<string | null>(null);

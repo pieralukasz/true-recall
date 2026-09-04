@@ -49,7 +49,13 @@ export function FormField({
 
 	if (variant === "native") {
 		return (
-			<div class={cn("setting-item", cls)}>
+			<div
+				class={cn(
+					"setting-item",
+					layout === "stacked" && "tr-setting-item--stacked",
+					cls,
+				)}
+			>
 				<div class="setting-item-info">
 					<div class="setting-item-name">{name}</div>
 					{description && (

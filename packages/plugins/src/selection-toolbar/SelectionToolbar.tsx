@@ -49,7 +49,7 @@ interface SelectionToolbarProps {
 function gateMessage(providerType?: AIProviderType): string {
 	return providerType === "lmstudio" || providerType === "custom"
 		? "Select a model in settings"
-		: "Add API key in settings";
+		: "Add an AI key in settings, or try True Recall Pro free";
 }
 
 const PRO_BADGE = (
@@ -80,7 +80,7 @@ export function SelectionToolbar({
 	const enabledButtons = buttons.filter((b) => {
 		if (!b.enabled) return false;
 		if (isPresetButton(b.id)) {
-			if (pluginStates["ai-generation"] === false) return false;
+			if (pluginStates["ai-assistant"] === false) return false;
 			return true;
 		}
 		const pluginInfo = BUTTON_PLUGIN_MAP.get(b.id);

@@ -39,4 +39,25 @@ describe("buildAssistantSystemPrompt", () => {
 		expect(prompt).toContain("Always answer in Polish.");
 		expect(prompt).toContain("web search is NOT available");
 	});
+
+	it("adds the fact check protocol only when the flag is set", () => {
+		const plain = buildAssistantSystemPrompt({
+			userInstructions: "",
+			noteTypes: NOTE_TYPES,
+			webSearchEnabled: true,
+		});
+		expect(plain).not.toContain("FACT CHECK MODE");
+
+		const factCheck = buildAssistantSystemPrompt({
+			userInstructions: "",
+			noteTypes: NOTE_TYPES,
+			webSearchEnabled: true,
+			factCheck: true,
+		});
+		expect(factCheck).toContain("FACT CHECK MODE");
+		expect(factCheck).toContain("report_fact_check EXACTLY ONCE");
+		expect(factCheck).toContain('"unverifiable"');
+		expect(factCheck).toContain("Never create cards or notes in this task");
+		expect(factCheck).toContain("ONE piece of information");
+	});
 });

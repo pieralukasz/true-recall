@@ -174,7 +174,7 @@ let editorExtensionsRegistered = false;
 export const selectionToolbarManifest: PluginManifest = {
 	info: {
 		id: "selection-toolbar",
-		name: "Selection Toolbar",
+		name: "Quick Actions Toolbar",
 		description:
 			"A floating toolbar that appears above selected text or clicked images, with quick actions for flashcard creation, AI generation, and image occlusion. Works in editor, reading mode, and side panels; the button set is fully configurable.",
 		features: [

@@ -11,13 +11,9 @@ import {
 import { isWorkflowFamilyEnabled } from "@true-recall/obsidian/features/assistant/ui/workflow-family-gate";
 import type TrueRecallPlugin from "@true-recall/obsidian/main";
 
-/** Polish runs through the assistant task service, so both the Card Polish and
- * Assistant families have to be on — the same gate the review view uses. */
+/** Card editing is a workflow family inside the shared AI Workspace. */
 export function isCardPolishAvailable(settings: TrueRecallSettings): boolean {
-	return (
-		isWorkflowFamilyEnabled(settings, "modify-card") &&
-		isWorkflowFamilyEnabled(settings, "agent")
-	);
+	return isWorkflowFamilyEnabled(settings, "modify-card");
 }
 
 /** Projects the polish presets through the same workflow model the review

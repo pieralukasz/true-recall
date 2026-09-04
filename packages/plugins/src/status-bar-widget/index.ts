@@ -3,7 +3,7 @@ import type { PluginManifest } from "../types";
 export const statusBarWidgetManifest: PluginManifest = {
 	info: {
 		id: "status-bar-widget",
-		name: "Status Bar Widget",
+		name: "Status Bar Summary",
 		description:
 			"Show due, new, and learning card counts directly in Obsidian's status bar with color-coded indicators. Click the widget to jump straight into your dashboard without breaking flow.",
 		features: [

@@ -9,6 +9,10 @@ const aiGenerationManifest = {
 	info: { id: "ai-generation", tier: "byok" },
 } as PluginManifest;
 
+const cardPolishManifest = {
+	info: { id: "card-polish", tier: "byok" },
+} as PluginManifest;
+
 describe("isPluginActive", () => {
 	it("activates AI Generation when only the scoped LM Studio generation model is set", () => {
 		expect(
@@ -33,5 +37,16 @@ describe("isPluginActive", () => {
 				},
 			),
 		).toBe(false);
+	});
+
+	it("activates Card Polish when only its scoped LM Studio model is set", () => {
+		expect(
+			isPluginActive(cardPolishManifest, {
+				...DEFAULT_SETTINGS,
+				providerType: "lmstudio",
+				lmStudioModel: "",
+				lmStudioCardPolishModel: "polish-model",
+			}),
+		).toBe(true);
 	});
 });

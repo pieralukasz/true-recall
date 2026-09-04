@@ -9,9 +9,7 @@ import type { IPersistence } from "@true-recall/core/interfaces/persistence";
 import { notify } from "@true-recall/core/persistence/notification";
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite";
 import {
-	DB_FOLDER,
 	getBackupFolderPath,
-	getDeviceDbFilename,
 	getLegacyBackupFolderPath,
 	toExactArrayBuffer,
 } from "@true-recall/core/persistence/sqlite";
@@ -231,8 +229,7 @@ export class BackupService {
 
 			// Write to main database file. Atomic swap: an interrupted restore
 			// must not leave a truncated live database behind.
-			const deviceId = this.sqliteStore.getDeviceId();
-			const dbPath = `${DB_FOLDER}/${getDeviceDbFilename(deviceId)}`;
+			const dbPath = this.sqliteStore.getDbPath();
 			await writeDbFileAtomically(this.persistence, dbPath, dbData);
 			const backupName = backupPath.split("/").pop() || backupPath;
 

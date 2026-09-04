@@ -1,5 +1,31 @@
 # Changelog
 
+## 2.4.2 (2026-09-04)
+
+This release makes True Recall usable on a phone that shares a vault through iCloud and finishes the Cloud Sync onboarding for a second device. The per-device database moves out of iCloud, a fresh device can download a collection it has never seen and resume if the connection drops, the software keyboard no longer hides the card you are typing about, and every Pro link finally points at the real pricing page.
+
+### Bug Fixes
+
+- **The software keyboard no longer hides what you are typing.** On phones the review screen now tracks the keyboard height, keeps the card and the grade buttons above it and scrolls the focused field back into view once the keyboard animation settles, in the review, in editors and in modals. Before, the iOS WebView panned the whole view and the card ended up behind the keyboard
+- **"View plans" and "Upgrade" links open the real pricing page.** They pointed at `truerecall.com`, a domain True Recall does not use, so anyone curious about Pro landed nowhere. All Pro links now derive from the configured web URL
+- **Mobile no longer stalls on "plugin is taking long to load" because of iCloud.** In Cloud Sync and single-device modes the per-device database now lives in `.true-recall/local.nosync/`, which iCloud does not sync. The desktop stops uploading a 60 MB file on every flush, iCloud stops producing conflict copies, and iOS can no longer evict the file the plugin must read at startup. Shared Vault mode keeps the database in `.true-recall/` as before. The file is moved automatically on the next start; if the move fails the old location keeps working
+- **No full database rewrite on every startup or idle sync tick.** Loading a saved database, seeding builtin note types, refreshing their templates, writing the device label, empty sync transactions and unchanged sync watermarks no longer mark the database dirty. Before, the desktop rewrote a 60 MB file every minute while Cloud Sync idled, and Android froze with "Obsidian isn't responding" during the rewrite right after startup
+- **What's New footer fits on phones.** The buttons wrap instead of running off the screen
+- **A database moved out of iCloud keeps its contents on iOS.** The move to `.true-recall/local.nosync/` now copies the file and deletes the original only after the copy is verified. Renaming an evicted iCloud placeholder into a folder iCloud ignores left a file whose bytes could never be fetched; a file that cannot be read right now stays where it is
+- **A second device no longer fails its first Cloud Sync with "FOREIGN KEY constraint failed".** The server pages changes by revision and a device pushes rows sorted by their timestamps, so a review log routinely arrived pages before the card it belongs to, and a card before its note. Such rows are now parked in the database until their parent arrives and applied right after, so a phone can download a collection it has never seen
+- **The first Cloud Sync on a phone survives a dropped connection.** Progress is committed after every page pulled and every batch pushed, so a retry resumes where it stopped instead of sending and receiving the whole collection again
+
+### Improvements
+
+- **Pro is explained where you hit its limits.** The disabled Typed answers and Image Occlusion controls link to the docs page that lists exactly what Pro includes, and the toolbar's locked AI buttons mention the free Pro trial next to the bring-your-own-key option
+- **A device that inherited Cloud Sync from the vault is told to sign in.** Settings travel with the vault, the sign-in does not; the Dashboard now shows a bar with a Sign in button when Cloud Sync is on but this device holds no session, and Settings → Integrations says the same instead of "Account required"
+- **Cloud Sync polls every five minutes instead of every minute.** Syncs after each change, at startup and on foreground are unchanged; the timer only catches edits made on other devices, and the slower beat cuts request volume fivefold
+- **Device limits.** A free account syncs 2 devices, Pro 5. The limit is checked at sign-in and a device that signs out frees its slot; Settings → Integrations explains this next to the Sign in button
+- **Shared vault is marked legacy.** Its settings entry now says why Cloud Sync is the better choice: full-file uploads, conflict copies, slow downloads on phones, per-device setup
+- **Sync errors are readable.** Tapping "Sync error" under the Dashboard shows the message and retries; Settings → Integrations → Sync shows the last result with a Sync now button
+- **Start fresh on a device.** Settings → Data → Device database can delete this device's database so a connected device downloads the collection again on the next start
+- **You can tell which plan you are on.** The Dashboard shows a one-time, dismissable bar for users without any AI key explaining what is free and where AI comes from; the empty Dashboard says the same; the What's New dialog states your current level (Free, BYOK or Pro) with a link to what Pro adds; and Settings → General → About gains a Plan row with View plans or Manage subscription
+
 ## 2.4.1 (2026-09-01)
 
 Cloud Sync is now dependable. This release fixes every reliability gap found in a full review of the 2.4.0 sync path, from the server exchange down to on-device recovery. If you sync more than one device, update all of them.

@@ -40,5 +40,7 @@ export interface CloudSyncResult {
 	reviewLogsApplied: number;
 	conflictsReplayed: number;
 	duplicatesMerged: number;
+	/** Rows still parked because their parent has not arrived yet. */
+	deferred: number;
 	errors: string[];
 }
