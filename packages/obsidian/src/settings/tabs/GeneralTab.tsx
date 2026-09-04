@@ -150,11 +150,11 @@ export function GeneralTab() {
 						]}
 					/>
 				</FormField>
-
-				<FormField
+        
+        <FormField
 					name="Typed answers"
 					description={
-						settings.proKey ? (
+					  settings.proKey ? (
 							"Default mode for new review sessions. Press T to toggle it during review."
 						) : (
 							<ProFeatureNotice message="AI semantic grading for typed answers is included with True Recall Pro." />
@@ -171,6 +171,16 @@ export function GeneralTab() {
 							{ value: "off", label: "Off" },
 							{ value: "ai", label: "AI grading" },
 						]}
+					/>
+				</FormField>
+
+				<FormField
+					name="Show card source note name"
+					description="Display the name of the source note for each card during review"
+				>
+					<ToggleInput
+						value={settings.cardReviewShowSourceNote}
+						onChange={(v) => void save({ cardReviewShowSourceNote: v })}
 					/>
 				</FormField>
 
