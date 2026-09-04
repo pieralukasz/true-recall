@@ -7,6 +7,7 @@ const FAMILY_FEATURE_IDS: Record<AIWorkflowKind, string> = {
 	agent: "ai-assistant",
 	"generate-cards": "ai-generation",
 	"modify-card": "card-polish",
+	"fact-check": "ai-assistant",
 };
 
 /**

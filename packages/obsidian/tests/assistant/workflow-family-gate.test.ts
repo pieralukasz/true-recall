@@ -21,6 +21,7 @@ describe("isWorkflowFamilyEnabled", () => {
 		expect(isWorkflowFamilyEnabled(settings, "agent")).toBe(true);
 		expect(isWorkflowFamilyEnabled(settings, "generate-cards")).toBe(true);
 		expect(isWorkflowFamilyEnabled(settings, "modify-card")).toBe(true);
+		expect(isWorkflowFamilyEnabled(settings, "fact-check")).toBe(true);
 	});
 
 	it("uses AI Workspace as the single preference for every family", () => {
@@ -28,6 +29,7 @@ describe("isWorkflowFamilyEnabled", () => {
 		expect(isWorkflowFamilyEnabled(disabled, "agent")).toBe(false);
 		expect(isWorkflowFamilyEnabled(disabled, "generate-cards")).toBe(false);
 		expect(isWorkflowFamilyEnabled(disabled, "modify-card")).toBe(false);
+		expect(isWorkflowFamilyEnabled(disabled, "fact-check")).toBe(false);
 	});
 
 	it("ignores legacy family-specific preferences", () => {
@@ -37,6 +39,7 @@ describe("isWorkflowFamilyEnabled", () => {
 		});
 		expect(isWorkflowFamilyEnabled(settings, "generate-cards")).toBe(true);
 		expect(isWorkflowFamilyEnabled(settings, "modify-card")).toBe(true);
+		expect(isWorkflowFamilyEnabled(settings, "fact-check")).toBe(true);
 	});
 
 	it("disables every family when no key is configured", () => {

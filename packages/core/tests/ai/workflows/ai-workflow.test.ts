@@ -4,6 +4,8 @@ import {
 	assistantWorkflowId,
 	cardPolishWorkflowId,
 	customCardPolishWorkflowId,
+	FACT_CHECK_WORKFLOW,
+	FACT_CHECK_WORKFLOW_ID,
 	generationWorkflowId,
 	listAIWorkflows,
 	resolveAIWorkflow,
@@ -226,5 +228,38 @@ describe("AI workflow facade", () => {
 			kind: "agent",
 			sourcePresetId: "explain",
 		});
+	});
+
+	it("resolves the built-in fact check workflow only when a card is present", () => {
+		expect(
+			resolveAIWorkflow(settings, FACT_CHECK_WORKFLOW_ID, {
+				hasSelection: false,
+				hasCard: true,
+				hasDraftCard: false,
+			}),
+		).toEqual(FACT_CHECK_WORKFLOW);
+		expect(FACT_CHECK_WORKFLOW).toMatchObject({
+			id: "fact-check:card",
+			kind: "fact-check",
+			sourcePresetId: "fact-check:card",
+			autoApply: false,
+			autoApplyNewCards: false,
+		});
+		expect(
+			resolveAIWorkflow(settings, FACT_CHECK_WORKFLOW_ID, {
+				hasSelection: true,
+				hasCard: false,
+				hasDraftCard: true,
+			}),
+		).toBeNull();
+	});
+
+	it("never lists the fact check workflow in preset pickers", () => {
+		const ids = listAIWorkflows(settings, {
+			hasSelection: true,
+			hasCard: true,
+			hasDraftCard: true,
+		}).map((workflow) => workflow.id);
+		expect(ids).not.toContain(FACT_CHECK_WORKFLOW_ID);
 	});
 });

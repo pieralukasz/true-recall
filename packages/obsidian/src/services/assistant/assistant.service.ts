@@ -12,6 +12,7 @@ import {
 	type AssistantThread,
 	type AssistantThreadState,
 	type DirectGenerationSummary,
+	describeFactCheckVerdict,
 } from "@true-recall/core/ai/assistant";
 import { OpenRouterClient } from "@true-recall/core/ai/clients/openrouter-client";
 import { resolveAIClientConfig } from "@true-recall/core/ai/config/ai-client-config";
@@ -23,6 +24,7 @@ import type { ExistingCardContext } from "@true-recall/core/ai/prompts/existing-
 import {
 	type AIWorkflow,
 	CUSTOM_CARD_POLISH_PRESET_ID,
+	FACT_CHECK_WORKFLOW_ID,
 	resolveAIWorkflow,
 } from "@true-recall/core/ai/workflows/ai-workflow";
 
@@ -49,6 +51,13 @@ import {
 export interface AssistantProgress {
 	taskId: string;
 	lines: string[];
+}
+
+/** Only the OpenRouter-backed providers forward the web search plugin. */
+function supportsWebSearch(
+	providerType: ReturnType<typeof resolveAIClientConfig>["providerType"],
+): boolean {
+	return providerType === "openrouter" || providerType === "pro";
 }
 
 export class AssistantService {
@@ -78,6 +87,8 @@ export class AssistantService {
 		instruction: string;
 		presetId?: string;
 		context: AssistantContext;
+		/** Shown as the thread title instead of the raw instruction. */
+		displayMessage?: string;
 	}): string {
 		return this.startThread({ ...params, state: "inbox" }).taskId;
 	}
@@ -180,10 +191,16 @@ export class AssistantService {
 			feedback.trim() === ""
 				? task.instruction
 				: `${task.instruction}\n\nUSER FEEDBACK ON THE PREVIOUS ATTEMPT:\n${feedback.trim()}`;
+		// Keep the curated thread title (e.g. "Fact check: ...") on the retry
+		// instead of exposing the instruction plus feedback blob.
+		const displayMessage = task.threadId
+			? this.threadActions().getById(task.threadId)?.title
+			: undefined;
 		return this.enqueue({
 			instruction,
 			presetId: task.presetId,
 			context: task.context,
+			displayMessage,
 		});
 	}
 
@@ -310,7 +327,9 @@ export class AssistantService {
 				if (task.threadId) {
 					const summary =
 						manifest.finalText?.trim() ||
-						`Updated ${manifest.proposals.filter((proposal) => proposal.status === "proposed").length} draft(s).`;
+						(manifest.factCheck
+							? describeFactCheckVerdict(manifest.factCheck)
+							: `Updated ${manifest.proposals.filter((proposal) => proposal.status === "proposed").length} draft(s).`);
 					this.threadActions().completeTurn({
 						id: task.threadId,
 						taskId: task.id,
@@ -426,6 +445,13 @@ export class AssistantService {
 				await this.applyPolishImmediately(task, task.threadId, workflow);
 				return;
 			}
+		}
+
+		if (manifest.factCheck) {
+			notify().success(
+				`Fact check: ${describeFactCheckVerdict(manifest.factCheck)}`,
+			);
+			return;
 		}
 
 		const n = manifest.proposals.length;
@@ -659,11 +685,58 @@ export class AssistantService {
 			);
 		}
 
+		if (workflow?.kind === "fact-check") {
+			return this.runFactCheckWorkflow(task, onProgress);
+		}
+		if (!workflow && task.presetId === FACT_CHECK_WORKFLOW_ID) {
+			// Never let a fact check degrade into a free-form agent run without
+			// web search, tools gate and verdict.
+			throw new Error("Fact check task lost its card context");
+		}
+
 		const config = resolveAIClientConfig(settings, "assistant");
 		const webSearch =
-			settings.assistantWebSearch &&
-			(config.providerType === "openrouter" || config.providerType === "pro");
-		const client = new OpenRouterClient(
+			settings.assistantWebSearch && supportsWebSearch(config.providerType);
+		const agent = new AssistantAgent(this.createAssistantClient(config), {
+			maxIterations: settings.assistantMaxIterations,
+			maxSources: settings.assistantMaxSources,
+			webSearch,
+			userInstructions: settings.assistantInstructions,
+			onProgress,
+		});
+		return agent.run(task.instruction, task.context, this.host);
+	}
+
+	/**
+	 * Fact check is meaningless without web search, so unlike the free-form
+	 * agent it fails loudly on providers that cannot search. The entry points
+	 * hide the action on such providers; this guards tasks queued earlier.
+	 */
+	private async runFactCheckWorkflow(
+		task: AssistantTask,
+		onProgress: (event: AssistantProgressEvent) => void,
+	): Promise<AssistantManifest> {
+		const settings = this.plugin.settings;
+		const config = resolveAIClientConfig(settings, "assistant");
+		if (!supportsWebSearch(config.providerType)) {
+			throw new Error(
+				"Fact check requires web search (OpenRouter or Pro provider)",
+			);
+		}
+		const agent = new AssistantAgent(this.createAssistantClient(config), {
+			factCheck: true,
+			maxIterations: settings.assistantMaxIterations,
+			maxSources: settings.assistantMaxSources,
+			userInstructions: settings.assistantInstructions,
+			onProgress,
+		});
+		return agent.run(task.instruction, task.context, this.host);
+	}
+
+	private createAssistantClient(
+		config: ReturnType<typeof resolveAIClientConfig>,
+	): OpenRouterClient {
+		return new OpenRouterClient(
 			config.apiKey,
 			config.model,
 			new ObsidianHttpClient(),
@@ -672,14 +745,6 @@ export class AssistantService {
 			"assistant",
 			{ providerType: config.providerType },
 		);
-		const agent = new AssistantAgent(client, {
-			maxIterations: settings.assistantMaxIterations,
-			maxSources: settings.assistantMaxSources,
-			webSearch,
-			userInstructions: settings.assistantInstructions,
-			onProgress,
-		});
-		return agent.run(task.instruction, task.context, this.host);
 	}
 
 	private async runGenerationWorkflow(

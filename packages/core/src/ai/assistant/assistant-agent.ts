@@ -11,10 +11,20 @@ import type {
 	AssistantProgressEvent,
 	AssistantProposal,
 	Citation,
+	FactCheckEvidence,
 	TokenUsage,
 } from "./assistant.types";
 import { buildAssistantSystemPrompt } from "./assistant-prompts";
 import { ASSISTANT_TOOLS, type AssistantToolHost } from "./assistant-tools";
+import {
+	allowsCorrection,
+	buildFactCheckTools,
+	describeFactCheckVerdict,
+	FACT_CHECK_CORRECTION_GATE_MESSAGE,
+	FACT_CHECK_UNCORROBORATED_NOTE,
+	isCorroborated,
+	parseFactCheckReport,
+} from "./fact-check-tools";
 import {
 	readNumber,
 	readProposalTarget,
@@ -32,6 +42,8 @@ const DEFAULT_MAX_ITERATIONS = 5;
 const MAX_OUTPUT_TOKENS = 4096;
 /** How many image candidates to fetch when the model does not ask for a count. */
 const DEFAULT_IMAGE_CANDIDATES = 6;
+/** A fact check with fewer than three sources is a coin toss; the mode raises the floor. */
+const FACT_CHECK_MIN_SOURCES = 3;
 /**
  * Returned to the model rather than recording a proposal that points nowhere,
  * so it can retry with a target the tool schema actually describes.
@@ -47,6 +59,11 @@ export interface AssistantAgentOptions {
 	maxIterations?: number;
 	maxSources?: number;
 	webSearch?: boolean;
+	/**
+	 * Fact-check mode: web search forced on, reduced tool list with
+	 * report_fact_check, card edits gated behind a negative verdict.
+	 */
+	factCheck?: boolean;
 	userInstructions?: string;
 	onProgress?: (event: AssistantProgressEvent) => void;
 }
@@ -104,11 +121,21 @@ function renderContext(context: AssistantContext): string {
 		parts.push(
 			`CURRENT DRAFT WORKSPACE (revision ${context.draftWorkspace.revision}):\n${drafts || "(no pending drafts)"}`,
 		);
+		const factCheck = context.draftWorkspace.manifest.factCheck;
+		if (factCheck) {
+			const evidence = factCheck.evidence.map((item) => item.url).join(", ");
+			parts.push(
+				`CURRENT FACT CHECK (already reported in this thread): ${describeFactCheckVerdict(factCheck)}\nSummary: ${factCheck.summary}\nEvidence: ${evidence || "(none)"}`,
+			);
+		}
 	}
 	return parts.join("\n\n");
 }
 
 export class AssistantAgent {
+	/** Every URL the web search returned in this run, uncapped, to corroborate fact-check evidence. */
+	private searchedUrls = new Set<string>();
+
 	constructor(
 		private client: AssistantChatClient,
 		private options: AssistantAgentOptions = {},
@@ -129,8 +156,18 @@ export class AssistantAgent {
 			totalTokens: 0,
 		};
 		let sawUsage = false;
-		const maxSources = Math.max(0, Math.floor(this.options.maxSources ?? 5));
-		const webSearchEnabled = this.options.webSearch === true && maxSources > 0;
+		this.searchedUrls = new Set<string>();
+		const factCheck = this.options.factCheck === true;
+		const requestedSources = Math.max(
+			0,
+			Math.floor(this.options.maxSources ?? 5),
+		);
+		const maxSources = factCheck
+			? Math.max(requestedSources, FACT_CHECK_MIN_SOURCES)
+			: requestedSources;
+		const webSearchEnabled =
+			factCheck || (this.options.webSearch === true && maxSources > 0);
+		const tools = factCheck ? buildFactCheckTools() : ASSISTANT_TOOLS;
 
 		const messages: ChatMessage[] = [
 			{
@@ -139,6 +176,7 @@ export class AssistantAgent {
 					userInstructions: this.options.userInstructions ?? "",
 					noteTypes: host.listNoteTypes(),
 					webSearchEnabled,
+					factCheck,
 				}),
 			},
 			{
@@ -155,7 +193,7 @@ export class AssistantAgent {
 				messages,
 				max_tokens: MAX_OUTPUT_TOKENS,
 				cache_control: { type: "ephemeral" },
-				tools: ASSISTANT_TOOLS,
+				tools,
 				tool_choice: "auto",
 				...(webSearchEnabled
 					? { plugins: [{ id: "web", max_results: maxSources }] }
@@ -188,9 +226,24 @@ export class AssistantAgent {
 
 			for (const call of toolCalls) {
 				this.options.onProgress?.({ kind: "tool", name: call.function.name });
-				const result = await this.executeTool(call, context, host, manifest);
+				const result = await this.executeTool(
+					call,
+					context,
+					host,
+					manifest,
+					maxSources,
+				);
 				messages.push({ role: "tool", content: result, tool_call_id: call.id });
 			}
+		}
+
+		if (factCheck && !manifest.factCheck) {
+			manifest.factCheck = {
+				verdict: "unverifiable",
+				confidence: "low",
+				summary: manifest.finalText ?? "Model returned no verdict",
+				evidence: [],
+			};
 		}
 
 		if (sawUsage) manifest.usage = usage;
@@ -203,11 +256,11 @@ export class AssistantAgent {
 		manifest: AssistantManifest,
 		maxSources: number,
 	): void {
-		if (maxSources <= 0) return;
 		for (const annotation of message.annotations ?? []) {
-			if (manifest.citations.length >= maxSources) return;
 			const url = annotation.url_citation?.url;
 			if (!url) continue;
+			this.searchedUrls.add(url);
+			if (maxSources <= 0 || manifest.citations.length >= maxSources) continue;
 			if (manifest.citations.some((c) => c.url === url)) continue;
 			const citation: Citation = { url };
 			if (annotation.url_citation?.title) {
@@ -217,11 +270,26 @@ export class AssistantAgent {
 		}
 	}
 
+	private addEvidenceCitations(
+		evidence: FactCheckEvidence[],
+		manifest: AssistantManifest,
+		maxSources: number,
+	): void {
+		for (const item of evidence) {
+			if (manifest.citations.length >= maxSources) return;
+			if (manifest.citations.some((c) => c.url === item.url)) continue;
+			const citation: Citation = { url: item.url };
+			if (item.title) citation.title = item.title;
+			manifest.citations.push(citation);
+		}
+	}
+
 	private async executeTool(
 		call: ToolCall,
 		context: AssistantContext,
 		host: AssistantToolHost,
 		manifest: AssistantManifest,
+		maxSources: number,
 	): Promise<string> {
 		let args: Record<string, unknown>;
 		try {
@@ -269,7 +337,31 @@ export class AssistantAgent {
 				}
 				return `Recorded ${cards.length} card proposal(s).`;
 			}
+			case "report_fact_check": {
+				if (!this.options.factCheck) {
+					return `Unknown tool: ${call.function.name}`;
+				}
+				const parsed = parseFactCheckReport(args);
+				if (!parsed.ok) return parsed.error;
+				const result = parsed.result;
+				if (
+					result.verdict !== "unverifiable" &&
+					!isCorroborated(result.evidence, this.searchedUrls)
+				) {
+					result.confidence = "low";
+					result.summary = `${result.summary} ${FACT_CHECK_UNCORROBORATED_NOTE}`;
+				}
+				manifest.factCheck = result;
+				this.addEvidenceCitations(parsed.result.evidence, manifest, maxSources);
+				return `Recorded verdict ${parsed.result.verdict} (${parsed.result.confidence}).`;
+			}
 			case "update_card": {
+				if (
+					this.options.factCheck &&
+					!allowsCorrection(manifest.factCheck?.verdict)
+				) {
+					return FACT_CHECK_CORRECTION_GATE_MESSAGE;
+				}
 				const cardId = readString(args, "cardId");
 				const current = host.getCardFields(cardId);
 				if (!current) return `Card "${cardId}" not found.`;

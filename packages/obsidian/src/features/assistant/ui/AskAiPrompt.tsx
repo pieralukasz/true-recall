@@ -49,6 +49,7 @@ const WORKFLOW_ICONS: Record<AIWorkflow["kind"], string> = {
 	agent: "sparkles",
 	"generate-cards": "layers",
 	"modify-card": "wand",
+	"fact-check": "search-check",
 };
 
 const COMPOSE_WORKFLOW_LIMIT = 8;
