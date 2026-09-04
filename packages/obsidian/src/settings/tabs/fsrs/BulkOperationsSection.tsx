@@ -105,6 +105,7 @@ export function BulkOperationsSection({ plugin }: BulkOperationsSectionProps) {
 					value={postponeDays}
 					onChange={setPostponeDays}
 					placeholder="7"
+					class="tr-control--compact"
 				/>
 				<ActionButton
 					label={postponing ? "Postponing..." : "Postpone"}

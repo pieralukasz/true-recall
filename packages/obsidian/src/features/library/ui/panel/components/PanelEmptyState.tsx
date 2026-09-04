@@ -2,8 +2,6 @@ import { Menu } from "obsidian";
 import type { ComponentChildren } from "preact";
 import { useState } from "preact/hooks";
 
-import { hasAIKey } from "@true-recall/core/ai/config/ai-client-config";
-
 import { LoadingSpinner } from "@true-recall/obsidian/components";
 import { usePanelActions } from "@true-recall/obsidian/features/library/ui/panel/hooks/usePanelActions";
 import { usePanelStore } from "@true-recall/obsidian/features/library/ui/panel/hooks/usePanelStore";
@@ -18,7 +16,6 @@ export function PanelEmptyState() {
 	const { uncollectedCount, hasHighlights } = usePanelStore();
 	const panelActions = usePanelActions();
 
-	const hasApiKey = hasAIKey(plugin.settings);
 	const aiGenerationEnabled = isPluginEnabled(plugin.settings, "ai-generation");
 	const hasPresets = (plugin.settings.generationPresets?.length ?? 0) > 0;
 	const canGenerate = aiGenerationEnabled && hasPresets;
@@ -118,7 +115,7 @@ export function PanelEmptyState() {
 			? "Flashcard generation is disabled"
 			: "No generation presets";
 		const body = !aiGenerationEnabled
-			? "Enable the AI Generation plugin in Settings to create flashcards."
+			? "Enable AI Workspace and configure an AI provider in Settings to create flashcards."
 			: "Add a generation preset in Settings to create flashcards.";
 
 		return (
@@ -175,7 +172,6 @@ export function PanelEmptyState() {
 				class={`${hasCollect ? "" : "mod-cta"} ${BTN_BASE_CLS} ${
 					hasCollect ? "tr-panel-empty-action-secondary" : ""
 				}`}
-				disabled={!hasApiKey}
 				onClick={() => void handleGenerate()}
 			>
 				<span ref={fileTextRef} aria-hidden="true" />
@@ -186,18 +182,11 @@ export function PanelEmptyState() {
 				<button
 					type="button"
 					class={`${BTN_BASE_CLS} tr-panel-empty-action-secondary`}
-					disabled={!hasApiKey}
 					onClick={() => void handleGenerateFromHighlights()}
 				>
 					<span ref={highlighterRef} aria-hidden="true" />
 					Use Highlights
 				</button>
-			) : null}
-
-			{!hasApiKey ? (
-				<div class="ep:text-ui-smaller ep:text-obs-muted">
-					Add an AI provider key in Settings to generate cards.
-				</div>
 			) : null}
 		</EmptyStateShell>
 	);

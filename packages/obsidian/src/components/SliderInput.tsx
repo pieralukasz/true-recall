@@ -3,7 +3,7 @@ import { useCallback, useState } from "preact/hooks";
 import { decimalsOf, snapToStep } from "./slider-input.utils";
 
 const BOX_CLS =
-	"ep:w-16 ep:py-1 ep:px-2 ep:text-right ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-ui-smaller ep:focus:outline-none ep:focus:border-obs-interactive ep:transition-colors ep:disabled:opacity-50 ep:disabled:cursor-not-allowed";
+	"tr-slider-input__number ep:py-1 ep:px-2 ep:text-right ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:text-obs-normal ep:text-ui-smaller ep:focus:outline-none ep:focus:border-obs-interactive ep:transition-colors ep:disabled:opacity-50 ep:disabled:cursor-not-allowed";
 
 interface SliderInputProps {
 	value: number;
@@ -71,9 +71,10 @@ export function SliderInput({
 	const tooltip = formatTooltip?.(value);
 
 	return (
-		<div class="ep:flex ep:items-center ep:gap-2">
+		<div class="tr-slider-input">
 			<input
 				type="range"
+				class="tr-slider-input__range"
 				min={min}
 				max={Math.max(max, value)}
 				step={step}
@@ -81,6 +82,7 @@ export function SliderInput({
 				onInput={handleInput}
 				disabled={disabled}
 				aria-label={ariaLabel}
+				aria-valuetext={tooltip}
 			/>
 			<input
 				type="number"
@@ -91,15 +93,12 @@ export function SliderInput({
 				value={draft ?? display}
 				disabled={disabled}
 				aria-label={ariaLabel}
+				title={tooltip}
+				inputMode="decimal"
 				onInput={(e) => setDraft((e.target as HTMLInputElement).value)}
 				onBlur={commitDraft}
 				onKeyDown={handleKeyDown}
 			/>
-			{tooltip && tooltip !== display && (
-				<span class="ep:text-ui-smaller ep:text-obs-muted ep:min-w-[3em]">
-					{tooltip}
-				</span>
-			)}
 		</div>
 	);
 }

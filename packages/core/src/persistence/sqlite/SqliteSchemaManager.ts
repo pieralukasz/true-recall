@@ -111,6 +111,18 @@ export class SqliteSchemaManager {
             CREATE INDEX IF NOT EXISTS idx_revlog_preset ON review_log(preset_name);
             CREATE INDEX IF NOT EXISTS idx_revlog_preset_date ON review_log(deleted_at, preset_name, reviewed_at);
 
+            CREATE TABLE IF NOT EXISTS cloud_sync_deferred (
+                entity_type TEXT NOT NULL,
+                entity_id TEXT NOT NULL,
+                parent_id TEXT NOT NULL,
+                updated_at INTEGER NOT NULL,
+                source_device_id TEXT,
+                payload TEXT NOT NULL,
+                PRIMARY KEY (entity_type, entity_id)
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_cloud_sync_deferred_parent ON cloud_sync_deferred(entity_type, parent_id);
+
             CREATE TABLE IF NOT EXISTS daily_stats (
                 date TEXT PRIMARY KEY NOT NULL,
                 reviews_completed INTEGER DEFAULT 0,

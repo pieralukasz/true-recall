@@ -15,12 +15,14 @@ import { cn } from "@true-recall/obsidian/utils/cn";
 
 import { AiComposer } from "./AiComposer";
 import { applyPendingProposals } from "./apply-pending-proposals";
+import { FactCheckBlock } from "./FactCheckBlock";
 import {
 	contentField,
 	hasPendingProposals,
 	isReviewedTask,
 	normalizedSelectedText,
 	proposalTitle,
+	remainingCitations,
 	statusTone,
 	threadTask,
 } from "./thread-utils";
@@ -257,8 +259,10 @@ export function TaskDetail({
 		<div class="tr-card-ai-preview-root ep:flex ep:flex-col ep:gap-3 ep:p-3 ep:border-t ep:border-obs-border">
 			{selectedText && <SelectedTextBlock text={selectedText} />}
 
-			{manifest.citations.length > 0 && (
-				<CitationsBlock citations={manifest.citations} />
+			{manifest.factCheck && <FactCheckBlock result={manifest.factCheck} />}
+
+			{remainingCitations(manifest).length > 0 && (
+				<CitationsBlock citations={remainingCitations(manifest)} />
 			)}
 
 			{manifest.finalText && (
@@ -521,8 +525,11 @@ export function ThreadWorkspace({
 
 			{manifest ? (
 				<>
-					{manifest.citations.length > 0 ? (
-						<CitationsBlock citations={manifest.citations} />
+					{manifest.factCheck ? (
+						<FactCheckBlock result={manifest.factCheck} />
+					) : null}
+					{remainingCitations(manifest).length > 0 ? (
+						<CitationsBlock citations={remainingCitations(manifest)} />
 					) : null}
 					<div
 						class={cn(

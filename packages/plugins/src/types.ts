@@ -9,7 +9,7 @@ import type TrueRecallPlugin from "@true-recall/obsidian/main";
 
 /**
  * Props passed to a plugin's settings panel component.
- * The host (PluginsTab) provides these from its own hooks.
+ * The host Features tab provides these from its own hooks.
  */
 interface PluginSettingsProps {
 	settings: TrueRecallSettings;
@@ -39,6 +39,7 @@ interface PluginManifest {
 	toolbarButtonIds?: string[];
 	// biome-ignore lint/suspicious/noConfusingVoidType: plugins may omit a cleanup function (useEffect-style signature)
 	activate?: (ctx: PluginContext) => Cleanup | void;
+	sync?: () => void;
 	deactivate?: () => void;
 }
 

@@ -1,69 +1,238 @@
 /* ================================================================
    SETTINGS SURFACE
 
-   Every section in the settings tabs renders through the "native" form
-   variant, i.e. Obsidian's own `.setting-item` markup. Three things in
-   Obsidian's stylesheet work against the way those sections are composed
-   here, and all three are normalized in this file rather than patched per
-   tab:
-
-   1. Headings only get spacing from `.setting-item + .setting-item-heading`.
-      Each section wraps its own heading as that wrapper's first child, so the
-      adjacency never matches and every heading collapses against whatever
-      precedes it.
-   2. `.setting-item-heading` is padded `0 var(--size-4-4)` while rows and
-      standalone descriptions get no inline padding, leaving two different
-      left edges down the same column.
-   3. `.setting-item-description` carries no margin at all. Used inline it is
-      fine; used as a standalone note between a row and the next heading it
-      collapses into both.
-
-   Section rhythm is therefore owned here end to end: rows keep Obsidian's
-   internal padding, sections drop their outer padding, and the gap between
-   sections is the single knob.
+   True Recall keeps Obsidian's native setting markup and theme variables,
+   while grouping related rows into the same raised surfaces used by Obsidian's
+   first-party settings. All rules stay scoped to the plugin settings root.
    ================================================================ */
 
 .tr-settings {
-	/* One width for every control, so selects stop self-sizing to their widest
-	   option and inputs stop disagreeing with the selects beside them. */
-	--tr-control-width: 260px;
+	--tr-control-width: 220px;
+	--tr-control-wide: 320px;
+	--tr-control-compact: 80px;
+	--tr-control-steps: 140px;
+	--tr-section-padding: var(--size-4-5);
+	color: var(--text-normal);
 }
 
-/* ── Section rhythm ── */
+.tr-settings-panel {
+	width: 100%;
+	max-width: 980px;
+	margin-inline: auto;
+	padding-bottom: var(--size-4-5);
+	container-type: inline-size;
+}
+
+/* ── Tab bar ── */
+
+.tr-settings-tabs {
+	display: flex;
+	width: fit-content;
+	max-width: 100%;
+	gap: 2px;
+	margin: 0 auto var(--size-4-6);
+	padding: 4px;
+	border: var(--border-width) solid var(--background-modifier-border);
+	border-radius: var(--radius-l);
+	background: var(--background-secondary);
+	overflow-x: auto;
+	box-shadow: var(--input-shadow);
+}
+
+.tr-settings-tab {
+	flex-shrink: 0;
+	padding: 7px var(--size-4-4);
+	border: 0;
+	border-radius: calc(var(--radius-l) - 3px);
+	background: transparent;
+	color: var(--text-muted);
+	font-size: var(--font-ui-small);
+	font-weight: var(--font-medium);
+	line-height: var(--line-height-tight);
+	white-space: nowrap;
+	box-shadow: none;
+	cursor: pointer;
+	transition:
+		color 0.15s ease,
+		background-color 0.15s ease,
+		box-shadow 0.15s ease;
+}
+
+.tr-settings-tab:hover {
+	background-color: var(--background-modifier-hover);
+	color: var(--text-normal);
+	box-shadow: none;
+}
+
+.tr-settings-tab.is-active {
+	background-color: var(--background-primary);
+	color: var(--text-accent);
+	box-shadow: var(--input-shadow);
+}
+
+.tr-settings-tab:focus-visible {
+	outline: 2px solid
+		hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.5);
+	outline-offset: -2px;
+}
+
+/* ── Sections ── */
 
 .tr-settings-sections {
 	display: flex;
 	flex-direction: column;
-	gap: var(--size-4-6);
+	gap: var(--size-4-5);
 }
 
-.tr-settings .setting-item-heading {
-	padding-inline: 0;
-	margin: 0 0 var(--size-4-2);
+.tr-settings .tr-setting-section {
+	border: var(--border-width) solid var(--background-modifier-border);
+	border-radius: var(--radius-l);
+	background: var(--background-secondary);
+	box-shadow: var(--input-shadow);
+	overflow: hidden;
 }
 
-/* The heading already separates a section, so the first row below it should
-   not draw a second rule.
-
-   Row padding is deliberately left alone. Themes disagree about what a row is:
-   Obsidian's default and Things both draw it as a filled card, where zeroing
-   the padding crops the content against the card edge, while flatter themes
-   draw it as a bare row with a top border. Only the border is safe to touch,
-   because a card row has none to begin with. */
-.tr-settings .tr-setting-section > .setting-item:first-child {
-	border-top: none;
+.tr-settings .tr-setting-section__header {
+	padding: var(--size-4-4) var(--tr-section-padding) var(--size-4-3);
 }
 
-/* ── Standalone notes ── */
+.tr-settings .tr-setting-section__title.setting-item-heading {
+	min-height: 0;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	color: var(--text-normal);
+	font-size: var(--font-ui-medium);
+	font-weight: var(--font-semibold);
+	line-height: var(--line-height-tight);
+}
+
+.tr-settings .tr-setting-section__description {
+	margin-top: var(--size-4-1);
+	line-height: var(--line-height-tight);
+}
+
+.tr-settings .tr-setting-section__body {
+	padding: 0 var(--tr-section-padding) var(--size-4-4);
+}
+
+.tr-settings .tr-setting-section__header + .tr-setting-section__body {
+	border-top: var(--border-width) solid var(--background-modifier-border);
+}
+
+/* Newsletter gets a quiet accent wash so it reads as an optional callout,
+   without introducing a hard-coded color that breaks custom themes. */
+.tr-settings .tr-setting-section--accent {
+	border-color: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.28);
+	background: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.07);
+}
+
+.tr-settings .tr-setting-section--accent .tr-setting-section__body,
+.tr-settings .tr-setting-section--accent .setting-item {
+	border-color: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.2);
+}
+
+.tr-settings .tr-setting-section--support {
+	border-color: var(--background-modifier-border-hover);
+	box-shadow: var(--ep-elevation-1);
+}
+
+.tr-settings .tr-setting-section--sync {
+	border-color: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.24);
+	box-shadow: var(--ep-elevation-1);
+}
+
+/* ── Native rows ── */
+
+.tr-settings .tr-setting-section__body > .setting-item {
+	width: auto;
+	min-height: 62px;
+	margin-inline: calc(-1 * var(--tr-section-padding));
+	padding: var(--size-4-3) var(--tr-section-padding);
+	border-top: var(--border-width) solid var(--background-modifier-border);
+}
+
+.tr-settings .tr-setting-section__body > .setting-item:first-child {
+	border-top: 0;
+}
+
+.tr-settings .setting-item-info {
+	min-width: 0;
+	margin-inline-end: var(--size-4-6);
+}
+
+.tr-settings .setting-item-name {
+	font-size: var(--font-ui-small);
+	font-weight: var(--font-medium);
+	line-height: var(--line-height-tight);
+}
+
+.tr-settings .setting-item-description {
+	margin-top: 3px;
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	line-height: 1.45;
+}
+
+.tr-settings .setting-item-control {
+	min-width: min(var(--tr-control-width), 42%);
+	gap: var(--size-4-2);
+	justify-content: flex-end;
+}
+
+.tr-settings .tr-setting-item--stacked {
+	flex-direction: column;
+	align-items: stretch;
+}
+
+.tr-settings .tr-setting-item--stacked .setting-item-info {
+	width: 100%;
+	margin-inline-end: 0;
+}
+
+.tr-settings .tr-setting-item--stacked .setting-item-control {
+	width: 100%;
+	margin-top: var(--size-4-3);
+	justify-content: stretch;
+}
+
+.tr-settings .tr-setting-item--stacked textarea {
+	width: 100%;
+	min-height: 112px;
+}
+
+.tr-settings .tr-setting-item--active {
+	background: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.045);
+}
+
+/* ── Standalone notes and custom content ── */
 
 .tr-settings .tr-setting-note {
-	margin: 0 0 var(--size-4-3);
-	line-height: var(--line-height-tight);
+	margin: 0;
+	padding: var(--size-4-3) 0;
 	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	line-height: 1.5;
+}
+
+.tr-settings .tr-setting-note:first-child {
+	padding-top: var(--size-4-3);
 }
 
 .tr-settings .tr-setting-note:last-child {
+	padding-bottom: 0;
+}
+
+.tr-settings .tr-setting-note p {
+	margin: 0 0 var(--size-4-2);
+}
+
+.tr-settings .tr-setting-note p:last-child {
 	margin-bottom: 0;
+}
+
+.tr-settings .tr-setting-note strong {
+	color: var(--text-normal);
 }
 
 .tr-settings .tr-setting-note__title {
@@ -73,30 +242,106 @@
 	font-weight: var(--font-medium);
 }
 
-/* ── Rows ── */
-
-.tr-settings .setting-item-info {
-	margin-inline-end: var(--size-4-4);
+.tr-settings-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--size-4-2);
+	padding-top: var(--size-4-1);
 }
 
-.tr-settings .setting-item-description {
-	line-height: var(--line-height-tight);
+/* ── Plugin access levels ── */
+
+.tr-settings .tr-access-levels {
+	display: flex;
+	flex-direction: column;
+	gap: 0;
+	padding-top: var(--size-4-3);
+	border-top: var(--border-width) solid var(--background-modifier-border);
+}
+
+.tr-settings .tr-access-level {
+	display: grid;
+	grid-template-columns: minmax(132px, 0.55fr) minmax(0, 1.8fr) max-content;
+	align-items: center;
+	gap: var(--size-4-4);
+	min-width: 0;
+	min-height: 76px;
+	padding: var(--size-4-3) var(--size-4-4);
+	border-bottom: var(--border-width) solid var(--background-modifier-border);
+}
+
+.tr-settings .tr-access-level--pro {
+	background: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.055);
+}
+
+.tr-settings .tr-access-level.is-current {
+	box-shadow: inset 3px 0 0 var(--interactive-accent);
+}
+
+.tr-settings .tr-access-level__identity {
+	display: flex;
+	min-width: 0;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.tr-settings .tr-access-level__identity strong {
+	font-size: var(--font-ui-small);
+	font-weight: var(--font-semibold);
+}
+
+.tr-settings .tr-access-level__identity > span,
+.tr-settings .tr-access-level__includes {
+	color: var(--text-muted);
+	font-size: var(--font-ui-smallest);
+}
+
+.tr-settings .tr-access-level__includes {
+	min-width: 0;
+	margin: 0;
+	line-height: 1.45;
+}
+
+.tr-settings .tr-access-level__current {
+	padding: 2px 7px;
+	border-radius: 999px;
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+	font-size: var(--font-ui-smallest);
+	font-weight: var(--font-medium);
+}
+
+.tr-settings .tr-access-level__upgrade {
+	color: var(--text-accent);
+	font-size: var(--font-ui-smallest);
+	font-weight: var(--font-medium);
+	white-space: nowrap;
 }
 
 /* ── Controls ── */
 
-.tr-settings .setting-item-control select.dropdown,
-.tr-settings .setting-item-control input[type="text"],
-.tr-settings .setting-item-control input[type="password"],
-.tr-settings .setting-item-control input[type="number"] {
-	width: var(--tr-control-width);
-	max-width: 100%;
+.tr-settings .setting-item-control select.dropdown {
+	field-sizing: content;
+	flex: 0 0 auto;
+	width: auto;
+	min-width: 104px;
+	max-width: min(240px, 100%);
+	min-height: 32px;
+	border-radius: var(--radius-m);
+	box-shadow: var(--input-shadow);
 }
 
-/* `TextInput` mounts Obsidian's TextComponent inside a wrapper div, so the
-   width has to be set on both or the visible box disagrees with its slot. */
-.tr-settings .tr-control {
+.tr-settings .setting-item-control input[type="text"],
+.tr-settings .setting-item-control input[type="password"] {
 	width: var(--tr-control-width);
+	max-width: 100%;
+	min-height: 32px;
+	border-radius: var(--radius-m);
+	box-shadow: var(--input-shadow);
+}
+
+.tr-settings .tr-control {
+	width: var(--tr-control-wide);
 	max-width: 100%;
 	flex-shrink: 0;
 }
@@ -105,74 +350,996 @@
 	width: 100%;
 }
 
-/* A long description must never squeeze a two-word button onto two lines. */
-.tr-settings .setting-item-control .ep-btn {
-	flex-shrink: 0;
+.tr-settings .tr-control--compact,
+.tr-settings .tr-control--compact input {
+	width: var(--tr-control-compact);
+	max-width: var(--tr-control-compact);
 }
 
-/* ── Tab bar ── */
-
-.tr-settings-tabs {
-	display: flex;
-	gap: var(--size-4-1);
-	margin-bottom: var(--size-4-5);
-	border-bottom: var(--border-width) solid var(--background-modifier-border);
-	overflow-x: auto;
+.tr-settings .tr-control--steps,
+.tr-settings .tr-control--steps input {
+	width: var(--tr-control-steps);
+	max-width: var(--tr-control-steps);
 }
 
-.tr-settings-tab {
-	position: relative;
-	flex-shrink: 0;
-	padding: var(--size-4-2) var(--size-4-3);
-	border-radius: var(--radius-s) var(--radius-s) 0 0;
-	color: var(--text-muted);
-	font-size: var(--font-ui-small);
+.tr-settings .tr-slider-input {
+	display: grid;
+	grid-template-columns: minmax(108px, 140px) 68px;
+	align-items: center;
+	gap: 10px;
+}
+
+.tr-settings .tr-slider-input__range {
+	width: 100%;
+	min-width: 0;
+	margin: 0;
+	accent-color: var(--interactive-accent);
+	cursor: pointer;
+}
+
+.tr-settings .tr-slider-input__number {
+	width: 68px;
+	min-width: 68px;
+	max-width: 68px;
+	min-height: 32px;
+	border-radius: var(--radius-m);
+	box-shadow: var(--input-shadow);
+}
+
+.tr-settings .setting-item-control .ep-btn,
+.tr-settings .tr-settings-action {
+	min-height: 32px;
+	padding-inline: var(--size-4-3);
+	border-radius: var(--radius-m);
+	font-size: var(--font-ui-smaller);
 	font-weight: var(--font-medium);
 	white-space: nowrap;
-	cursor: pointer;
-	transition:
-		color 0.15s,
-		background-color 0.15s;
+	box-shadow: var(--input-shadow);
+	flex-shrink: 0;
 }
 
-.tr-settings-tab:hover {
-	background-color: var(--background-modifier-hover);
+.tr-settings .tr-action-button {
+	min-height: 32px;
+	padding: 0 var(--size-4-3);
+	border: var(--border-width) solid transparent;
+	border-radius: var(--radius-m);
+	box-shadow: var(--input-shadow);
+	font-size: var(--font-ui-smaller);
+	white-space: nowrap;
+	flex-shrink: 0;
+}
+
+.tr-settings .tr-action-button--secondary,
+.tr-settings .tr-action-button--outline {
+	border-color: var(--background-modifier-border-hover);
+	background: var(--background-primary);
 	color: var(--text-normal);
 }
 
-/* Obsidian exposes the accent as HSL parts rather than an rgb triplet, and the
-   CSS postprocess step strips `color-mix()`. Composing from the parts is the
-   only form that survives both and still tracks the user's accent color. */
-.tr-settings-tab.is-active {
-	color: var(--text-accent);
+.tr-settings .tr-action-button--secondary:hover,
+.tr-settings .tr-action-button--outline:hover {
+	border-color: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.45);
+	background: var(--background-modifier-hover);
 }
 
-.tr-settings-tab.is-active::after {
-	content: "";
-	position: absolute;
-	inset-inline: var(--size-4-2);
-	bottom: calc(-1 * var(--border-width));
-	height: 2px;
-	background-color: var(--interactive-accent);
-	border-radius: 2px 2px 0 0;
+.tr-settings .ep-btn-outline {
+	border-color: var(--background-modifier-border-hover);
+	background: var(--background-primary);
 }
 
-.tr-settings-tab:focus-visible {
+.tr-settings .ep-btn-outline:hover {
+	border-color: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.5);
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+.tr-settings .tr-toggle {
+	width: 36px;
+	height: 20px;
+	border: var(--border-width) solid var(--background-modifier-border-hover);
+	background: var(--background-modifier-border-hover);
+	box-shadow: none;
+}
+
+.tr-settings .tr-toggle__thumb {
+	top: 1px;
+	left: 1px;
+	width: 16px;
+	height: 16px;
+}
+
+.tr-settings .tr-toggle--on .tr-toggle__thumb {
+	transform: translateX(16px);
+}
+
+.tr-settings .tr-toggle--on {
+	border-color: var(--interactive-accent);
+	background: var(--interactive-accent);
+}
+
+.tr-settings .tr-toggle:hover:not(.tr-toggle--disabled) {
+	filter: brightness(0.97);
+}
+
+.tr-settings .tr-toggle:focus-within {
+	outline: 2px solid
+		hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.45);
+	outline-offset: 2px;
+}
+
+.tr-settings .tr-sync-actions {
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-3);
+	min-height: 32px;
+}
+
+.tr-settings .tr-sync-signout {
+	min-width: 80px;
+}
+
+/* ── Load-balance guidance ── */
+
+.tr-settings .tr-target-insights {
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+	padding: var(--size-4-2) 0 var(--size-4-1);
+	color: var(--text-muted);
+	font-size: var(--font-ui-smallest);
+	line-height: 1.4;
+}
+
+.tr-settings .tr-target-insights__references {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px 0;
+}
+
+.tr-settings .tr-target-insights__references span:not(:last-child)::after {
+	content: "•";
+	margin-inline: var(--size-4-2);
+	color: var(--text-faint);
+}
+
+.tr-settings .tr-target-insights__consequence {
+	color: var(--text-muted);
+}
+
+.tr-settings .tr-target-insights__warning {
+	color: var(--text-warning);
+}
+
+/* ── Plugin list ── */
+
+.tr-settings .tr-plugin-list {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	padding-top: var(--size-4-3);
+}
+
+.tr-settings .tr-plugin-item {
+	border: var(--border-width) solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	overflow: hidden;
+	transition: opacity 0.15s ease;
+}
+
+.tr-settings .tr-plugin-row {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 76px;
+	align-items: center;
+	gap: var(--size-4-2);
+	width: 100%;
+	min-height: 48px;
+	padding: var(--size-4-1) var(--size-4-3) var(--size-4-1) 0;
+	border-radius: var(--radius-m);
+	text-align: left;
+}
+
+.tr-settings .tr-plugin-row:hover {
+	background: var(--background-modifier-hover);
+}
+
+.tr-settings .tr-plugin-row__summary {
+	display: grid;
+	grid-template-columns: 24px minmax(160px, 1fr) max-content 20px;
+	align-items: center;
+	gap: var(--size-4-3);
+	width: 100%;
+	min-width: 0;
+	min-height: 44px;
+	padding: var(--size-4-2) 0 var(--size-4-2) var(--size-4-3);
+	border: 0;
+	background: transparent;
+	box-shadow: none;
+	text-align: left;
+	cursor: pointer;
+}
+
+.tr-settings .tr-plugin-row__summary:hover,
+.tr-settings .tr-plugin-row__summary:focus {
+	background: transparent;
+	box-shadow: none;
+}
+
+.tr-settings .tr-plugin-row__summary:focus-visible {
 	outline: 2px solid
 		hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.5);
 	outline-offset: -2px;
 }
 
+.tr-settings .tr-plugin-item.is-disabled .tr-plugin-row__name,
+.tr-settings .tr-plugin-item.is-unavailable .tr-plugin-row__name {
+	color: var(--text-muted);
+}
+
+.tr-settings .tr-plugin-row__icon {
+	display: flex;
+	width: 20px;
+	height: 20px;
+	color: var(--text-accent);
+}
+
+.tr-settings .tr-plugin-row__name {
+	min-width: 0;
+	color: var(--text-normal);
+	font-size: var(--font-ui-small);
+	font-weight: var(--font-semibold);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.tr-settings .tr-plugin-row__badges {
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-1);
+}
+
+.tr-settings .tr-plugin-tier {
+	padding: 2px 6px;
+	border-radius: var(--radius-s);
+	font-size: var(--font-ui-smallest);
+	font-weight: var(--font-medium);
+	line-height: 1.2;
+}
+
+.tr-settings .tr-plugin-row__chevron-slot {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 20px;
+}
+
+.tr-settings .tr-plugin-row__chevron {
+	display: flex;
+	width: 16px;
+	height: 16px;
+	color: var(--text-muted);
+	transition: transform 0.2s ease;
+}
+
+.tr-settings .tr-plugin-row__chevron.is-expanded {
+	transform: rotate(90deg);
+}
+
+.tr-settings .tr-plugin-row__control,
+.tr-settings .tr-plugin-row__toggle {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	width: 76px;
+}
+
+.tr-settings .tr-plugin-row__toggle {
+	cursor: default;
+}
+
+.tr-settings .tr-plugin-upgrade {
+	padding: 4px 8px;
+	border: var(--border-width) solid
+		hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.3);
+	border-radius: var(--radius-s);
+	background: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.08);
+	color: var(--text-accent);
+	font-size: var(--font-ui-smallest);
+	font-weight: var(--font-medium);
+}
+
+.tr-settings .tr-plugin-details {
+	border-top: var(--border-width) solid var(--background-modifier-border);
+}
+
+.tr-settings .tr-plugin-details__description {
+	padding: var(--size-4-3) var(--size-4-5);
+	color: var(--text-muted);
+	font-size: var(--font-ui-smallest);
+	line-height: 1.5;
+}
+
+.tr-settings .tr-plugin-details__description p {
+	margin: 0;
+}
+
+.tr-settings .tr-plugin-details__description p + p {
+	margin-top: var(--size-4-2);
+}
+
+.tr-settings .tr-plugin-features {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 5px var(--size-4-5);
+	margin: var(--size-4-3) 0 0;
+	padding: 0;
+	list-style: none;
+}
+
+.tr-settings .tr-plugin-features li {
+	position: relative;
+	padding-inline-start: 15px;
+}
+
+.tr-settings .tr-plugin-features li::before {
+	position: absolute;
+	left: 0;
+	content: "✓";
+	color: var(--text-accent);
+}
+
+.tr-settings .tr-plugin-details__locked {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--size-4-3);
+	margin-top: var(--size-4-3);
+	padding: var(--size-4-2) var(--size-4-3);
+	border: var(--border-width) solid
+		hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.22);
+	border-radius: var(--radius-m);
+	background: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.055);
+	color: var(--text-normal);
+}
+
+.tr-settings .tr-plugin-details__settings {
+	padding: 0 var(--size-4-4) var(--size-4-2);
+}
+
+/* ── AI preset editors ── */
+
+.tr-settings .tr-ai-workspace-nav {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--size-4-1);
+	padding: 3px;
+	border: var(--border-width) solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	background: var(--background-secondary);
+}
+
+.tr-settings .tr-ai-workspace-nav button {
+	flex: 1 1 132px;
+	min-height: 34px;
+	padding: 5px var(--size-4-3);
+	border: 0;
+	border-radius: calc(var(--radius-m) - 2px);
+	background: transparent;
+	box-shadow: none;
+	color: var(--text-muted);
+	font-size: var(--font-ui-smallest);
+	font-weight: var(--font-medium);
+}
+
+.tr-settings .tr-ai-workspace-nav button:hover {
+	background: var(--background-modifier-hover);
+	box-shadow: none;
+	color: var(--text-normal);
+}
+
+.tr-settings .tr-ai-workspace-nav button.is-active {
+	background: var(--background-primary);
+	box-shadow: var(--input-shadow);
+	color: var(--text-accent);
+}
+
+.tr-settings .tr-preset-section {
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-4-3);
+	margin-top: var(--size-4-5);
+	container-type: inline-size;
+}
+
+.tr-settings .tr-preset-section__header {
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+}
+
+.tr-settings .tr-preset-section__title {
+	margin: 0;
+	color: var(--text-normal);
+	font-size: var(--font-ui-small);
+	font-weight: var(--font-semibold);
+}
+
+.tr-settings .tr-preset-section__description,
+.tr-settings .tr-preset-builtin__description,
+.tr-settings .tr-preset-field__hint {
+	color: var(--text-muted);
+	font-size: var(--font-ui-smallest);
+	line-height: 1.4;
+}
+
+.tr-settings .tr-preset-list {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.tr-settings .tr-preset-list__item {
+	display: grid;
+	grid-template-columns: 28px minmax(0, 1fr);
+	align-items: start;
+	gap: 6px;
+	border-radius: var(--radius-m);
+	transition:
+		opacity 0.15s ease,
+		background-color 0.15s ease;
+}
+
+.tr-settings .tr-preset-list__handle {
+	display: flex;
+	width: 28px;
+	height: 40px;
+	align-items: center;
+	justify-content: center;
+	padding: 0;
+	border: 0;
+	border-radius: var(--radius-s);
+	background: transparent;
+	box-shadow: none;
+	color: var(--text-faint);
+	cursor: grab;
+	font-size: 16px;
+	line-height: 1;
+}
+
+.tr-settings .tr-preset-list__handle:hover,
+.tr-settings .tr-preset-list__handle:focus-visible {
+	background: var(--background-modifier-hover);
+	box-shadow: none;
+	color: var(--text-normal);
+}
+
+.tr-settings .tr-preset-list__content {
+	min-width: 0;
+}
+
+.tr-settings .tr-preset-row {
+	display: grid;
+	grid-template-columns: 16px minmax(100px, max-content) minmax(0, 1fr) max-content;
+	align-items: center;
+	gap: var(--size-4-2);
+	width: 100%;
+	min-height: 40px;
+	padding: 6px var(--size-4-3);
+	border: var(--border-width) solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	background: var(--background-primary);
+	box-shadow: none;
+	text-align: left;
+	cursor: pointer;
+}
+
+.tr-settings .tr-preset-row:hover {
+	border-color: var(--background-modifier-border-hover);
+	background: var(--background-modifier-hover);
+	box-shadow: none;
+}
+
+.tr-settings .tr-preset-row__chevron {
+	display: flex;
+	width: 16px;
+	height: 16px;
+	flex-shrink: 0;
+	color: var(--text-muted);
+	transition: transform 0.15s ease;
+}
+
+.tr-settings .tr-preset-row__chevron.is-expanded {
+	transform: rotate(90deg);
+}
+
+.tr-settings .tr-preset-row__name,
+.tr-settings .tr-preset-editor__title,
+.tr-settings .tr-preset-builtin__title {
+	min-width: 0;
+	color: var(--text-normal);
+	font-size: var(--font-ui-small);
+	font-weight: var(--font-semibold);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.tr-settings .tr-preset-row__summary {
+	min-width: 0;
+	color: var(--text-muted);
+	font-size: var(--font-ui-smallest);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.tr-settings .tr-preset-badges {
+	display: flex;
+	align-items: center;
+	gap: 5px;
+}
+
+.tr-settings .tr-preset-badge {
+	padding: 2px 6px;
+	border-radius: 999px;
+	background: var(--background-modifier-hover);
+	color: var(--text-muted);
+	font-size: var(--font-ui-smallest);
+	font-weight: var(--font-medium);
+	line-height: 1.2;
+	text-transform: uppercase;
+}
+
+.tr-settings .tr-preset-badge--pro {
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+}
+
+.tr-settings .tr-preset-badge--default {
+	border: var(--border-width) solid var(--text-success);
+	background: transparent;
+	color: var(--text-success);
+}
+
+.tr-settings .tr-preset-builtin {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) minmax(180px, 42%);
+	align-items: center;
+	gap: var(--size-4-4);
+	padding: var(--size-4-3) var(--size-4-4);
+	border: var(--border-width) solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	background: var(--background-primary);
+}
+
+.tr-settings .tr-preset-builtin:has(.tr-preset-badge--pro) {
+	border-color: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.3);
+	background: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.05);
+}
+
+.tr-settings .tr-preset-builtin__main,
+.tr-settings .tr-preset-builtin__language {
+	display: flex;
+	min-width: 0;
+	flex-direction: column;
+	gap: 5px;
+}
+
+.tr-settings .tr-preset-builtin__title-row {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: var(--size-4-2);
+}
+
+.tr-settings .tr-preset-builtin__title {
+	flex: 1 1 180px;
+}
+
+.tr-settings .tr-preset-builtin__language {
+	align-items: flex-end;
+	color: var(--text-muted);
+	font-size: var(--font-ui-smallest);
+}
+
+.tr-settings .tr-preset-builtin__language .tr-preset-select {
+	field-sizing: fixed;
+	width: 100%;
+	max-width: 280px;
+}
+
+@container (max-width: 620px) {
+	.tr-settings .tr-access-level {
+		grid-template-columns: minmax(0, 1fr) max-content;
+		gap: var(--size-4-2) var(--size-4-3);
+	}
+
+	.tr-settings .tr-access-level__includes {
+		grid-column: 1 / -1;
+		grid-row: 2;
+	}
+
+	.tr-settings .tr-access-level__current,
+	.tr-settings .tr-access-level__upgrade {
+		grid-column: 2;
+		grid-row: 1;
+	}
+}
+
+@container (max-width: 560px) {
+	.tr-settings .tr-preset-builtin {
+		grid-template-columns: 1fr;
+	}
+
+	.tr-settings .tr-preset-builtin__language {
+		align-items: flex-start;
+	}
+
+	.tr-settings .tr-preset-builtin__language .tr-preset-select {
+		max-width: 100%;
+	}
+}
+
+.tr-settings .tr-preset-editor {
+	display: flex;
+	width: 100%;
+	min-width: 0;
+	max-width: 100%;
+	box-sizing: border-box;
+	flex-direction: column;
+	gap: var(--size-4-4);
+	padding: var(--size-4-4);
+	border: var(--border-width) solid var(--background-modifier-border-hover);
+	border-radius: var(--radius-m);
+	background: var(--background-primary);
+	box-shadow: var(--input-shadow);
+}
+
+.tr-settings .tr-preset-editor__header {
+	display: flex;
+	min-height: 28px;
+	align-items: center;
+	gap: var(--size-4-2);
+	padding-bottom: var(--size-4-3);
+	border-bottom: var(--border-width) solid var(--background-modifier-border);
+}
+
+.tr-settings .tr-preset-editor__collapse {
+	display: flex;
+	width: 24px;
+	height: 24px;
+	align-items: center;
+	justify-content: center;
+	padding: 0;
+	border: 0;
+	background: transparent;
+	box-shadow: none;
+	cursor: pointer;
+}
+
+.tr-settings .tr-preset-editor__title {
+	flex: 1;
+}
+
+.tr-settings .tr-preset-editor__enabled {
+	color: var(--text-muted);
+	font-size: var(--font-ui-smallest);
+}
+
+.tr-settings .tr-preset-editor__grid {
+	display: grid;
+	grid-template-columns: minmax(150px, 0.75fr) minmax(160px, 0.8fr) minmax(
+			220px,
+			1.25fr
+		);
+	align-items: start;
+	gap: var(--size-4-4);
+}
+
+.tr-settings .tr-preset-editor__grid--three {
+	grid-template-columns: repeat(3, minmax(150px, 1fr));
+}
+
+.tr-settings .tr-preset-field {
+	display: flex;
+	min-width: 0;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 5px;
+}
+
+.tr-settings .tr-preset-field__label {
+	color: var(--text-normal);
+	font-size: var(--font-ui-smallest);
+	font-weight: var(--font-medium);
+}
+
+.tr-settings .tr-preset-field--name > div {
+	width: 100%;
+}
+
+.tr-settings .tr-preset-field--name input {
+	width: 100%;
+	min-height: 32px;
+}
+
+.tr-settings select.tr-preset-select {
+	field-sizing: content;
+	width: auto;
+	min-width: 132px;
+	max-width: 100%;
+	min-height: 32px;
+	border-radius: var(--radius-m);
+	box-shadow: var(--input-shadow);
+}
+
+.tr-settings .tr-preset-editor select.tr-preset-select {
+	field-sizing: fixed;
+	width: 100%;
+}
+
+.tr-settings select.tr-preset-select.is-compact {
+	min-width: 180px;
+}
+
+.tr-settings .tr-preset-field--full textarea {
+	width: 100%;
+	min-width: 0;
+	max-width: 100%;
+	box-sizing: border-box;
+	min-height: 108px;
+	border-radius: var(--radius-m);
+	box-shadow: none;
+}
+
+.tr-settings .tr-preset-editor__footer {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--size-4-3);
+	padding-top: var(--size-4-1);
+}
+
+.tr-settings .tr-preset-editor__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: var(--size-4-2);
+}
+
+@container (max-width: 760px) {
+	.tr-settings .tr-preset-editor__grid,
+	.tr-settings .tr-preset-editor__grid--three {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+
+	.tr-settings .tr-preset-editor__grid > :last-child,
+	.tr-settings .tr-preset-editor__grid--three > :last-child {
+		grid-column: 1 / -1;
+	}
+}
+
+@container (max-width: 480px) {
+	.tr-settings .tr-preset-editor__grid,
+	.tr-settings .tr-preset-editor__grid--three {
+		grid-template-columns: 1fr;
+	}
+
+	.tr-settings .tr-preset-editor__grid > :last-child,
+	.tr-settings .tr-preset-editor__grid--three > :last-child {
+		grid-column: auto;
+	}
+
+	.tr-settings .tr-preset-editor__footer {
+		align-items: stretch;
+		flex-direction: column;
+	}
+
+	.tr-settings .tr-preset-editor__actions {
+		justify-content: flex-end;
+	}
+}
+
+.tr-settings .tr-preset-section__actions {
+	display: flex;
+}
+
+/* ── Backup and diagnostics ── */
+
+.tr-status-list {
+	margin: 0 calc(-1 * var(--tr-section-padding)) calc(-1 * var(--size-4-4));
+	padding: 0;
+	border-top: var(--border-width) solid var(--background-modifier-border);
+}
+
+.tr-status-list__row {
+	display: grid;
+	grid-template-columns: minmax(180px, 1fr) minmax(0, 1.35fr);
+	align-items: center;
+	gap: var(--size-4-4);
+	min-height: 48px;
+	padding: var(--size-4-2) var(--tr-section-padding);
+	border-bottom: var(--border-width) solid var(--background-modifier-border);
+}
+
+.tr-status-list__row--wide {
+	grid-template-columns: minmax(180px, 0.75fr) minmax(0, 1.6fr);
+}
+
+.tr-status-list__row:last-child {
+	border-bottom: 0;
+}
+
+.tr-status-list__label,
+.tr-status-list__value {
+	margin: 0;
+	font-size: var(--font-ui-smaller);
+	line-height: 1.4;
+}
+
+.tr-status-list__label {
+	color: var(--text-muted);
+	font-weight: var(--font-medium);
+}
+
+.tr-status-list__value {
+	justify-self: end;
+	max-width: 100%;
+	color: var(--text-normal);
+	text-align: right;
+	overflow-wrap: anywhere;
+}
+
+.tr-status-list__value.is-positive {
+	padding: 2px 8px;
+	border-radius: 999px;
+	background: var(--background-modifier-success);
+	color: var(--text-success);
+	font-weight: var(--font-medium);
+}
+
+.tr-status-list__value.is-muted {
+	color: var(--text-muted);
+}
+
+.tr-status-list__value code {
+	display: inline-block;
+	max-width: 100%;
+	padding: 3px 7px;
+	border-radius: var(--radius-s);
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+	font-size: var(--font-ui-smallest);
+	white-space: normal;
+	overflow-wrap: anywhere;
+}
+
 /* ── Narrow panes ── */
 
-/* Obsidian stacks rows below ~600px and stretches every control to full width.
-   The fixed control width has to stand down there or it fights that rule. */
-@media screen and (max-width: 600px) {
+@media screen and (max-width: 700px) {
+	.tr-settings {
+		--tr-section-padding: var(--size-4-4);
+	}
+
+	.tr-settings-tabs {
+		width: 100%;
+		margin-bottom: var(--size-4-4);
+	}
+
+	.tr-settings .tr-access-levels {
+		grid-template-columns: 1fr;
+	}
+
+	.tr-settings .tr-access-level {
+		min-height: 0;
+	}
+
+	.tr-settings-tab {
+		flex: 1 0 auto;
+		text-align: center;
+	}
+
+	.tr-settings .tr-setting-section__body > .setting-item {
+		align-items: stretch;
+	}
+
+	.tr-settings .setting-item-info {
+		margin-inline-end: 0;
+	}
+
+	.tr-settings .setting-item-control {
+		width: 100%;
+		min-width: 0;
+		margin-top: var(--size-4-3);
+		justify-content: flex-start;
+	}
+
 	.tr-settings .setting-item-control select.dropdown,
 	.tr-settings .setting-item-control input[type="text"],
 	.tr-settings .setting-item-control input[type="password"],
-	.tr-settings .setting-item-control input[type="number"],
 	.tr-settings .tr-control {
+		width: 100%;
+	}
+
+	.tr-settings .setting-item-control select.dropdown {
+		max-width: 100%;
+	}
+
+	.tr-settings .tr-control--compact,
+	.tr-settings .tr-control--compact input {
+		width: var(--tr-control-compact);
+		max-width: var(--tr-control-compact);
+	}
+
+	.tr-settings .tr-control--steps,
+	.tr-settings .tr-control--steps input {
+		width: min(var(--tr-control-steps), 100%);
+		max-width: 100%;
+	}
+
+	.tr-settings .tr-slider-input {
+		grid-template-columns: minmax(108px, 1fr) 68px;
+		width: 100%;
+	}
+
+	.tr-settings .tr-plugin-row {
+		grid-template-columns: minmax(0, 1fr) 52px;
+		gap: var(--size-4-2);
+	}
+
+	.tr-settings .tr-plugin-row__summary {
+		grid-template-columns: 20px minmax(120px, 1fr) max-content 16px;
+		gap: var(--size-4-2);
+	}
+
+	.tr-settings .tr-plugin-row__control,
+	.tr-settings .tr-plugin-row__toggle {
+		width: 52px;
+	}
+
+	.tr-settings .tr-plugin-features,
+	.tr-settings .tr-preset-editor__grid,
+	.tr-settings .tr-preset-editor__grid--three {
+		grid-template-columns: 1fr;
+	}
+
+	.tr-settings .tr-preset-builtin {
+		grid-template-columns: 1fr;
+	}
+
+	.tr-settings .tr-preset-builtin__language {
+		align-items: flex-start;
+	}
+
+	.tr-settings .tr-preset-row {
+		grid-template-columns: 16px minmax(0, 1fr) max-content;
+	}
+
+	.tr-settings .tr-preset-row__summary {
+		display: none;
+	}
+
+	.tr-status-list__row {
+		grid-template-columns: 1fr;
+		gap: var(--size-4-1);
+		padding-block: var(--size-4-3);
+	}
+
+	.tr-status-list__row--wide {
+		grid-template-columns: 1fr;
+	}
+
+	.tr-status-list__value {
+		justify-self: start;
+		text-align: left;
+	}
+}
+
+@media screen and (max-width: 480px) {
+	.tr-settings-actions {
+		flex-direction: column;
+	}
+
+	.tr-settings-actions .ep-btn {
 		width: 100%;
 	}
 }

@@ -31,7 +31,7 @@ function LanguageDropdown({
 }) {
 	return (
 		<select
-			class={cn("dropdown", compact && "ep:text-ui-smaller ep:py-0.5")}
+			class={cn("dropdown tr-preset-select", compact && "is-compact")}
 			value={value}
 			onChange={(e) => onChange((e.target as HTMLSelectElement).value)}
 			onClick={(e) => e.stopPropagation()}
@@ -51,10 +51,8 @@ function ChevronIcon({ expanded }: { expanded: boolean }) {
 	return (
 		<span
 			ref={iconRef}
-			class={cn(
-				"ep:w-4 ep:h-4 ep:text-obs-muted ep:transition-transform ep:duration-200 ep:flex-shrink-0",
-				expanded && "ep:rotate-90",
-			)}
+			class={cn("tr-preset-row__chevron", expanded && "is-expanded")}
+			aria-hidden="true"
 		/>
 	);
 }
@@ -63,21 +61,26 @@ function BadgeRow({ preset }: { preset: GenerationPreset }) {
 	return (
 		<>
 			{preset.requiresPro && (
-				<span class="ep:text-ui-smallest ep:font-semibold ep:px-1.5 ep:py-0.5 ep:rounded ep:bg-obs-accent ep:text-obs-on-accent ep:uppercase">
-					Pro
-				</span>
+				<span class="tr-preset-badge tr-preset-badge--pro">Pro</span>
 			)}
-			{preset.builtin && (
-				<span class="ep:text-ui-smallest ep:font-semibold ep:px-1.5 ep:py-0.5 ep:rounded ep:bg-obs-border ep:text-obs-muted ep:uppercase">
-					Built-in
-				</span>
-			)}
+			{preset.builtin && <span class="tr-preset-badge">Built-in</span>}
 			{preset.isDefault && (
-				<span class="ep:text-ui-smallest ep:font-semibold ep:px-1.5 ep:py-0.5 ep:rounded ep:bg-obs-modifier-success ep:text-obs-on-accent ep:uppercase">
-					Default
-				</span>
+				<span class="tr-preset-badge tr-preset-badge--default">Default</span>
 			)}
 		</>
+	);
+}
+
+function CompactBadgeRow({ preset }: { preset: GenerationPreset }) {
+	return (
+		<span class="tr-preset-badges">
+			{preset.requiresPro ? (
+				<span class="tr-preset-badge tr-preset-badge--pro">Pro</span>
+			) : null}
+			{preset.isDefault ? (
+				<span class="tr-preset-badge tr-preset-badge--default">Default</span>
+			) : null}
+		</span>
 	);
 }
 
@@ -89,18 +92,23 @@ function CompactRow({
 	onLanguageChange?: (id: string, language: string) => void;
 }) {
 	return (
-		<div class="ep:flex ep:flex-col ep:gap-2 ep:p-2 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary">
-			<div class="ep:flex ep:items-center ep:gap-2">
-				<span class="ep:text-ui-small ep:font-semibold ep:text-obs-normal ep:flex-1 ep:truncate">
-					{preset.name}
+		<div class="tr-preset-builtin">
+			<div class="tr-preset-builtin__main">
+				<div class="tr-preset-builtin__title-row">
+					<span class="tr-preset-builtin__title">
+						{preset.name.replace(/\s*\(Pro\)$/i, "")}
+					</span>
+					<CompactBadgeRow preset={preset} />
+				</div>
+				<span class="tr-preset-builtin__description">
+					{preset.requiresPro
+						? "Included with Pro: managed model, optimized prompt and AI budget."
+						: "Available with your own AI provider or True Recall Pro."}
 				</span>
-				<BadgeRow preset={preset} />
 			</div>
 			{onLanguageChange && (
-				<div class="ep:flex ep:items-center ep:gap-2">
-					<span class="ep:text-ui-smaller ep:text-obs-muted">
-						Output language
-					</span>
+				<div class="tr-preset-builtin__language">
+					<span>Output language</span>
 					<LanguageDropdown
 						value={preset.languageOverride ?? "auto"}
 						onChange={(next) => onLanguageChange(preset.id, next)}
@@ -152,21 +160,13 @@ export function GenerationPresetEditor({
 	if (canCollapse && !isExpanded) {
 		const summary = presetSummary(preset, noteType);
 		return (
-			<button
-				type="button"
-				onClick={onToggleExpanded}
-				class="ep:flex ep:items-center ep:gap-2 ep:p-2 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary ep:w-full ep:text-left ep:cursor-pointer ep:hover:bg-obs-modifier-hover ep:transition-colors"
-			>
+			<button type="button" onClick={onToggleExpanded} class="tr-preset-row">
 				<ChevronIcon expanded={false} />
-				<span class="ep:text-ui-small ep:font-semibold ep:text-obs-normal ep:truncate">
-					{preset.name}
+				<span class="tr-preset-row__name">{preset.name}</span>
+				{summary && <span class="tr-preset-row__summary">{summary}</span>}
+				<span class="tr-preset-badges">
+					<BadgeRow preset={preset} />
 				</span>
-				{summary && (
-					<span class="ep:text-ui-smaller ep:text-obs-muted ep:truncate ep:flex-1">
-						{summary}
-					</span>
-				)}
-				<BadgeRow preset={preset} />
 			</button>
 		);
 	}
@@ -178,82 +178,85 @@ export function GenerationPresetEditor({
 
 	const sourceNoteId = `gen-source-note-${preset.id}`;
 	const relatedCardsId = `gen-related-cards-${preset.id}`;
+	const noteTypeId = `gen-note-type-${preset.id}`;
 
 	return (
-		<div class="ep:flex ep:flex-col ep:gap-3 ep:p-3 ep:border ep:border-obs-border ep:rounded-md ep:bg-obs-primary">
-			<div class="ep:flex ep:items-center ep:gap-2">
+		<div class="tr-preset-editor">
+			<div class="tr-preset-editor__header">
 				{canCollapse && (
 					<button
 						type="button"
 						onClick={onToggleExpanded}
-						class="ep:flex ep:items-center ep:cursor-pointer ep:bg-transparent ep:border-0 ep:p-0"
+						class="tr-preset-editor__collapse"
 						aria-label="Collapse"
 					>
 						<ChevronIcon expanded={true} />
 					</button>
 				)}
-				<span class="ep:text-ui-small ep:font-semibold ep:text-obs-normal ep:flex-1 ep:truncate">
-					{preset.name}
+				<span class="tr-preset-editor__title">{preset.name}</span>
+				<span class="tr-preset-badges">
+					<BadgeRow preset={preset} />
 				</span>
-				<BadgeRow preset={preset} />
 			</div>
 
-			<div class="ep:flex ep:flex-col ep:gap-1">
-				<span class="ep:text-ui-smaller ep:text-obs-muted ep:font-medium">
-					Name
-				</span>
-				<TextInput value={preset.name} onChange={(v) => patch({ name: v })} />
-			</div>
+			<div class="tr-preset-editor__grid">
+				<div class="tr-preset-field tr-preset-field--name">
+					<span class="tr-preset-field__label">Name</span>
+					<TextInput
+						value={preset.name}
+						onChange={(v) => patch({ name: v })}
+						ariaLabel="Preset name"
+					/>
+				</div>
 
-			<div class="ep:flex ep:flex-col ep:gap-1">
-				<span class="ep:text-ui-smaller ep:text-obs-muted ep:font-medium">
-					Note type
-				</span>
-				<select
-					class="dropdown"
-					value={preset.noteTypeId}
-					onChange={(e) => {
-						const nextId = (e.target as HTMLSelectElement).value;
-						patch({ noteTypeId: nextId });
-					}}
-				>
-					{noteTypes.map((nt) => (
-						<option key={nt.id} value={nt.id}>
-							{nt.name}
-						</option>
-					))}
-				</select>
-				{noteType && (
-					<span class="ep:text-ui-smaller ep:text-obs-muted">
-						Fields: {noteType.fields.join(", ")}
+				<div class="tr-preset-field">
+					<label class="tr-preset-field__label" for={noteTypeId}>
+						Note type
+					</label>
+					<select
+						id={noteTypeId}
+						class="dropdown tr-preset-select"
+						value={preset.noteTypeId}
+						onChange={(e) => {
+							const nextId = (e.target as HTMLSelectElement).value;
+							patch({ noteTypeId: nextId });
+						}}
+					>
+						{noteTypes.map((nt) => (
+							<option key={nt.id} value={nt.id}>
+								{nt.name}
+							</option>
+						))}
+					</select>
+					{noteType && (
+						<span class="tr-preset-field__hint">
+							Fields: {noteType.fields.join(", ")}
+						</span>
+					)}
+				</div>
+
+				<div class="tr-preset-field">
+					<span class="tr-preset-field__label">Output language</span>
+					<LanguageDropdown
+						value={preset.languageOverride ?? "auto"}
+						onChange={(next) => patch({ languageOverride: next })}
+					/>
+					<span class="tr-preset-field__hint">
+						Overrides language instructions in the prompt.
 					</span>
-				)}
+				</div>
 			</div>
 
-			<div class="ep:flex ep:flex-col ep:gap-1">
-				<span class="ep:text-ui-smaller ep:text-obs-muted ep:font-medium">
-					Output language
-				</span>
-				<LanguageDropdown
-					value={preset.languageOverride ?? "auto"}
-					onChange={(next) => patch({ languageOverride: next })}
-				/>
-				<span class="ep:text-ui-smaller ep:text-obs-muted">
-					Overrides any language instruction in the prompt.
-				</span>
-			</div>
-
-			<div class="ep:flex ep:flex-col ep:gap-1">
-				<span class="ep:text-ui-smaller ep:text-obs-muted ep:font-medium">
-					Prompt
-				</span>
+			<div class="tr-preset-field tr-preset-field--full">
+				<span class="tr-preset-field__label">Prompt</span>
 				<TextAreaInput
 					value={preset.prompt}
 					onChange={(v) => patch({ prompt: v })}
-					rows={6}
+					rows={5}
 					class="ep:font-mono ep:text-ui-smaller"
+					ariaLabel="Generation prompt"
 				/>
-				<span class="ep:text-ui-smaller ep:text-obs-muted">
+				<span class="tr-preset-field__hint">
 					Describe what cards to generate. The system appends "Fields to fill:{" "}
 					{fieldOptions.join(", ")}" and a JSON format spec.
 				</span>
@@ -307,7 +310,7 @@ export function GenerationPresetEditor({
 				</label>
 			</div>
 
-			<div class="ep:flex ep:items-center ep:justify-between ep:gap-3 ep:pt-1">
+			<div class="tr-preset-editor__footer">
 				<label class="ep:flex ep:items-center ep:gap-2 ep:text-ui-small">
 					<input
 						type="checkbox"
@@ -318,7 +321,7 @@ export function GenerationPresetEditor({
 					/>
 					<span>Make default</span>
 				</label>
-				<div class="ep:flex ep:gap-2">
+				<div class="tr-preset-editor__actions">
 					{onDelete && (
 						<ActionButton
 							label="Delete"

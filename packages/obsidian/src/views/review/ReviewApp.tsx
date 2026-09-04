@@ -19,7 +19,9 @@ import {
 	WaitingScreen,
 } from "@true-recall/obsidian/features/study/ui/review/components";
 import type { TypeInMode } from "@true-recall/obsidian/features/study/ui/review/helpers/type-in-flow";
+import { useKeyboardInset } from "@true-recall/obsidian/preact/useKeyboardInset";
 import type { AppStore, ReviewApi } from "@true-recall/obsidian/store";
+import { cn } from "@true-recall/obsidian/utils/cn";
 
 // Re-export for consumers that import from this file
 export { ReviewEmptyState } from "@true-recall/obsidian/features/study/ui/review/components";
@@ -160,6 +162,7 @@ function ActiveReview({
 	const leechThreshold = getLeechThreshold?.(card);
 	const typeInState = getTypeInState(card, isAnswerRevealed);
 	const audioPath = resolveAudioPath?.(card);
+	const isKeyboardOpen = useKeyboardInset();
 
 	useLayoutEffect(() => {
 		if (!hasAnswer && !review.isAnswerRevealed) {
@@ -168,7 +171,12 @@ function ActiveReview({
 	}, [card.id, hasAnswer, review.isAnswerRevealed, onShowAnswer]);
 
 	return (
-		<div class="true-recall-review ep:relative ep:flex ep:flex-col ep:h-full ep:p-0">
+		<div
+			class={cn(
+				"true-recall-review ep:relative ep:flex ep:flex-col ep:h-full ep:p-0",
+				isKeyboardOpen && "is-keyboard-open",
+			)}
+		>
 			{showHeader && (
 				<ReviewHeader
 					review={review}

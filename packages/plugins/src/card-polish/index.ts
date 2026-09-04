@@ -3,6 +3,20 @@ import type { PluginManifest } from "../types";
 import { CARD_POLISH_BUILTINS } from "./builtins";
 import { CardPolishPlugin } from "./CardPolishPlugin";
 
+let runtime: CardPolishPlugin | undefined;
+
+export const CardPolishSettingsPanel = createCardAISettingsPanel({
+	bucketKey: "cardPolish",
+	builtins: CARD_POLISH_BUILTINS,
+	description: "Polish presets work in review and in the Add Flashcard modal.",
+	lmStudioField: {
+		modelKey: "lmStudioCardPolishModel",
+		name: "LM Studio model",
+		description:
+			"Used only by card editing when LM Studio is the selected provider.",
+	},
+});
+
 export const cardPolishManifest: PluginManifest = {
 	info: {
 		id: "card-polish",
@@ -19,21 +33,15 @@ export const cardPolishManifest: PluginManifest = {
 		icon: "wand-2",
 		tier: "byok",
 	},
-	settingsPanel: createCardAISettingsPanel({
-		bucketKey: "cardPolish",
-		builtins: CARD_POLISH_BUILTINS,
-		description:
-			"Polish presets work in review and in the Add Flashcard modal.",
-		lmStudioField: {
-			modelKey: "lmStudioCardPolishModel",
-			name: "LM Studio model",
-			description:
-				"Used only by Card Polish when LM Studio is the selected provider.",
-		},
-	}),
+	settingsPanel: CardPolishSettingsPanel,
 	activate: (ctx) => {
 		const plugin = new CardPolishPlugin(ctx);
+		runtime = plugin;
 		plugin.activate();
-		return () => plugin.deactivate();
+		return () => {
+			plugin.deactivate();
+			if (runtime === plugin) runtime = undefined;
+		};
 	},
+	sync: () => runtime?.syncPresetCommands(),
 };

@@ -69,6 +69,7 @@ export function SiblingDisperseSection({
 						void save({ siblingMinInterval: Math.max(1, num) });
 					}}
 					placeholder="3"
+					class="tr-control--compact"
 				/>
 			</FormField>
 

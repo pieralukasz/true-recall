@@ -143,11 +143,14 @@ export function ToolbarConfigSection({
 						context === "global" &&
 						BUILTIN_BUTTONS.some((b) => b.id === btn.id && b.editorOnly);
 
-					const pluginInfo = BUTTON_PLUGIN_MAP.get(btn.id);
-					const isPluginDisabled =
-						pluginInfo !== undefined &&
-						pluginStates[pluginInfo.pluginId] === false;
 					const isPreset = isPresetButton(btn.id);
+					const pluginInfo = BUTTON_PLUGIN_MAP.get(btn.id);
+					const controllingFeatureId = isPreset
+						? "ai-assistant"
+						: pluginInfo?.pluginId;
+					const isPluginDisabled =
+						controllingFeatureId !== undefined &&
+						pluginStates[controllingFeatureId] === false;
 					const presetExists = isPreset
 						? (plugin.settings.generationPresets?.some(
 								(p) => p.id === extractPresetId(btn.id),
@@ -181,7 +184,7 @@ export function ToolbarConfigSection({
 								isOrphan
 									? "Preset deleted"
 									: isPluginDisabled
-										? "Plugin disabled"
+										? "Feature disabled"
 										: isEditorOnly
 											? "Only available in editor"
 											: isUnsupportedInImage
@@ -191,6 +194,14 @@ export function ToolbarConfigSection({
 							showProBadge={isProButton || isBasicPro}
 							onToggle={() => handleToggle(i)}
 							onRemove={() => handleRemove(i)}
+							onMoveUp={
+								i > 0 ? () => onChange(moveItem(buttons, i, i - 1)) : undefined
+							}
+							onMoveDown={
+								i < buttons.length - 1
+									? () => onChange(moveItem(buttons, i, i + 1))
+									: undefined
+							}
 							onDragStart={(e) => handleDragStart(e, i)}
 							onDragOver={(e) => handleDragOver(e, i)}
 							onDrop={(e) => handleDrop(e, i)}
@@ -229,6 +240,8 @@ interface ToolbarButtonRowProps {
 	showProBadge?: boolean;
 	onToggle: () => void;
 	onRemove: () => void;
+	onMoveUp?: () => void;
+	onMoveDown?: () => void;
 	onDragStart: (e: DragEvent) => void;
 	onDragOver: (e: DragEvent) => void;
 	onDrop: (e: DragEvent) => void;
@@ -246,6 +259,8 @@ function ToolbarButtonRow({
 	showProBadge,
 	onToggle,
 	onRemove,
+	onMoveUp,
+	onMoveDown,
 	onDragStart,
 	onDragOver,
 	onDrop,
@@ -266,9 +281,23 @@ function ToolbarButtonRow({
 			} ${isDragOver ? "ep:bg-obs-bg-hover" : ""}`}
 			title={disabledReason}
 		>
-			<span class="ep:cursor-grab ep:text-obs-text-faint ep:select-none">
+			<button
+				type="button"
+				class="ep:cursor-grab ep:text-obs-text-faint ep:select-none ep:bg-transparent ep:border-0 ep:shadow-none ep:p-0"
+				aria-label={`Reorder ${label}. Use the up and down arrow keys.`}
+				onKeyDown={(event) => {
+					if (event.key === "ArrowUp" && onMoveUp) {
+						event.preventDefault();
+						onMoveUp();
+					}
+					if (event.key === "ArrowDown" && onMoveDown) {
+						event.preventDefault();
+						onMoveDown();
+					}
+				}}
+			>
 				&#x2261;
-			</span>
+			</button>
 
 			<span
 				class={`ep:flex-1 ep:text-sm ep:flex ep:items-center ep:gap-1.5 ${disabled ? "ep:text-obs-text-faint" : ""}`}
@@ -286,16 +315,19 @@ function ToolbarButtonRow({
 					class="ep:text-obs-text-faint ep:hover:text-obs-text-normal ep:w-4 ep:h-4"
 					onClick={onRemove}
 					title="Remove"
+					aria-label={`Remove ${label}`}
 				>
-					<div ref={trashRef} class="ep:w-4 ep:h-4" />
+					<div ref={trashRef} class="ep:w-4 ep:h-4" aria-hidden="true" />
 				</Clickable>
 			)}
 
 			<div
 				class={`checkbox-container${enabled && !disabled ? " is-enabled" : ""} ${disabled ? "ep:opacity-30 ep:cursor-not-allowed" : ""}`}
 				role="switch"
-				tabIndex={0}
+				tabIndex={disabled ? -1 : 0}
 				aria-checked={enabled && !disabled}
+				aria-disabled={disabled || undefined}
+				aria-label={`Enable ${label}`}
 				onClick={() => {
 					if (!disabled) onToggle();
 				}}

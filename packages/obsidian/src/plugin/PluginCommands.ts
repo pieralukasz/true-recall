@@ -235,6 +235,17 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 	});
 
 	plugin.addCommand({
+		id: "fact-check-current-card",
+		name: "Fact check current card",
+		checkCallback: (checking) => {
+			const reviewView = plugin.app.workspace.getActiveViewOfType(ReviewView);
+			if (!reviewView?.canFactCheckCurrentCard()) return false;
+			if (!checking) reviewView.factCheckCurrentCard();
+			return true;
+		},
+	});
+
+	plugin.addCommand({
 		id: "redo-flashcard-action",
 		name: "Redo last undone action",
 		checkCallback: (checking) => {
@@ -250,6 +261,18 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 			}
 			return true;
 		},
+	});
+
+	plugin.addCommand({
+		id: "import-anki",
+		name: "Import Anki deck (.apkg)",
+		callback: () => void plugin.importAnki(),
+	});
+
+	plugin.addCommand({
+		id: "export-anki",
+		name: "Export to Anki (.apkg)",
+		callback: () => plugin.exportAnki(),
 	});
 
 	plugin.addCommand({

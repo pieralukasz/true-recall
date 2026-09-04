@@ -1,7 +1,9 @@
 import type {
+	AssistantManifest,
 	AssistantProposal,
 	AssistantTask,
 	AssistantThread,
+	Citation,
 } from "@true-recall/core/ai/assistant";
 
 import type { StatusPillTone } from "@true-recall/obsidian/components/StatusPill";
@@ -131,4 +133,12 @@ export function statusTone(status: string): StatusPillTone {
 		default:
 			return "neutral";
 	}
+}
+
+/** Sources block minus URLs the fact check block already lists as evidence. */
+export function remainingCitations(manifest: AssistantManifest): Citation[] {
+	const shown = new Set(
+		manifest.factCheck?.evidence.map((item) => item.url) ?? [],
+	);
+	return manifest.citations.filter((citation) => !shown.has(citation.url));
 }

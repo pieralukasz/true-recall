@@ -85,6 +85,42 @@ export function migrateSettings(raw: PersistedTrueRecallSettings | null): {
 	const settings: TrueRecallSettings = { ...DEFAULT_SETTINGS, ...currentRaw };
 	let needsSave = false;
 
+	// Feature catalog consolidation. Link/status already had dedicated settings,
+	// while Generator and Card Polish are now workflow families inside the
+	// single AI Workspace feature. Consume the old duplicate states once so the
+	// new UI has exactly one source of truth per control.
+	if (raw?.pluginStates) {
+		const nextStates = { ...raw.pluginStates };
+		let changed = false;
+		const consume = (id: string): boolean | undefined => {
+			if (!Object.hasOwn(nextStates, id)) {
+				return undefined;
+			}
+			const value = nextStates[id];
+			delete nextStates[id];
+			changed = true;
+			return value;
+		};
+
+		const legacyLinkState = consume("link-status-indicators");
+		if (legacyLinkState === false) settings.showLinkStatusIndicators = false;
+
+		const legacyStatusBarState = consume("status-bar-widget");
+		if (legacyStatusBarState === false) settings.showStatusBarWidget = false;
+
+		const legacyTypeInState = consume("type-in-mode");
+		if (legacyTypeInState === false) settings.defaultTypeInMode = "off";
+
+		consume("ai-generation");
+		consume("card-polish");
+		consume("anki-import-export");
+
+		if (changed) {
+			settings.pluginStates = nextStates;
+			needsSave = true;
+		}
+	}
+
 	if (!["off", "cloud", "shared-vault"].includes(String(raw?.syncMode))) {
 		settings.syncMode = raw?.enableDeviceSync ? "shared-vault" : "off";
 		needsSave = true;

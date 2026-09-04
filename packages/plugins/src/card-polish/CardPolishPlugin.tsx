@@ -4,6 +4,7 @@ import { cardPolishWorkflowId } from "@true-recall/core/ai/workflows/ai-workflow
 import { VIEW_TYPE_REVIEW } from "@true-recall/core/constants";
 
 import { readLiveAssistantContext } from "@true-recall/obsidian/features/assistant/ui/useLiveAssistantContext";
+import { isPluginEnabled } from "@true-recall/obsidian/plugin/plugin-utils";
 
 import type { PluginContext } from "../types";
 
@@ -17,31 +18,34 @@ export class CardPolishPlugin {
 	constructor(private readonly ctx: PluginContext) {}
 
 	activate(): void {
-		this.registerReviewCommands();
+		this.syncPresetCommands();
 	}
 
 	deactivate(): void {
 		// Commands gate on live settings; there is nothing else to unbind.
 	}
 
-	private registerReviewCommands(): void {
+	syncPresetCommands(): void {
 		// One command per preset so each can take a hotkey in Obsidian's native
 		// settings. The preset is looked up at invocation time so live edits apply,
 		// and the command ids are part of the user's hotkey config — never rename.
-		for (const declared of this.ctx.settings.cardPolish?.userPresets ?? []) {
+		const plugin = this.ctx.obsidianPlugin;
+		for (const declared of plugin.settings.cardPolish?.userPresets ?? []) {
 			const presetId = declared.id;
+			const commandId = `card-polish-${presetId}`;
+			if (this.hasCommand(commandId)) continue;
 			this.ctx.obsidianPlugin.addCommand({
-				id: `card-polish-${presetId}`,
+				id: commandId,
 				name: `Polish: ${declared.name}`,
 				checkCallback: (checking) => {
-					if (this.ctx.settings.pluginStates?.["card-polish"] === false) {
+					if (!isPluginEnabled(plugin.settings, "card-polish")) {
 						return false;
 					}
 					const activeView = this.ctx.workspace.getActiveViewOfType(ItemView);
 					if ((activeView?.getViewType() ?? "") !== VIEW_TYPE_REVIEW) {
 						return false;
 					}
-					const preset = (this.ctx.settings.cardPolish?.userPresets ?? []).find(
+					const preset = (plugin.settings.cardPolish?.userPresets ?? []).find(
 						(candidate) => candidate.id === presetId,
 					);
 					if (!preset || preset.disabled) return false;
@@ -50,6 +54,14 @@ export class CardPolishPlugin {
 				},
 			});
 		}
+	}
+
+	private hasCommand(id: string): boolean {
+		const app = this.ctx.app as unknown as {
+			commands?: { commands?: Record<string, unknown> };
+		};
+		const pluginId = this.ctx.obsidianPlugin.manifest.id;
+		return app.commands?.commands?.[`${pluginId}:${id}`] !== undefined;
 	}
 
 	private runPreset(prompt: string, presetId: string): void {

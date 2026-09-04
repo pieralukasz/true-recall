@@ -60,6 +60,7 @@ export function RModeSection({ settings, save }: RModeSectionProps) {
 						patch({ defaultSessionSize: parsePositiveInt(value, 30) })
 					}
 					placeholder="30"
+					class="tr-control--compact"
 					disabled={!rMode.enabled}
 				/>
 			</FormField>

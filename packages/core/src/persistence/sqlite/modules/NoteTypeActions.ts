@@ -200,9 +200,15 @@ export class NoteTypeActions {
 		]);
 	}
 
+	/**
+	 * Insert builtin note types that are missing. Skips rows that exist:
+	 * `INSERT OR IGNORE` changes nothing for them but still dirties the store,
+	 * which on mobile means a full database rewrite right after startup.
+	 */
 	seedBuiltinTypes(): void {
 		const builtins = getBuiltinNoteTypes();
 		for (const nt of builtins) {
+			if (this.hasRow(nt.id)) continue;
 			const slug = BUILTIN_SLUGS[nt.id];
 			this.db.run(
 				`INSERT OR IGNORE INTO note_types (id, name, type, fields_json, templates_json, css, is_builtin, slug, created_at, updated_at)
@@ -225,24 +231,41 @@ export class NoteTypeActions {
 
 	// Ensures builtin note type templates always match code definitions.
 	// Fixes databases migrated before template changes (e.g. old afmt with <hr>).
+	/**
+	 * Bring builtin note types in line with the code. Compares first and
+	 * writes only the rows that drifted: every write dirties the store, and a
+	 * dirty store rewrites the whole database file right after startup.
+	 */
 	refreshBuiltins(): void {
 		const builtins = getBuiltinNoteTypes();
 		const now = Date.now();
 		for (const nt of builtins) {
-			const slug = BUILTIN_SLUGS[nt.id];
+			const slug = BUILTIN_SLUGS[nt.id] ?? null;
+			const templatesJson = JSON.stringify(nt.templates);
+			const fieldsJson = JSON.stringify(nt.fields);
+			const current = this.db.get<
+				Pick<
+					NoteTypeRow,
+					"templates_json" | "fields_json" | "css" | "name" | "slug"
+				>
+			>(
+				`SELECT templates_json, fields_json, css, name, slug
+				 FROM note_types WHERE id = ? AND is_builtin = 1`,
+				[nt.id],
+			);
+			if (!current) continue;
+			const upToDate =
+				current.templates_json === templatesJson &&
+				current.fields_json === fieldsJson &&
+				(current.css ?? "") === nt.css &&
+				current.name === nt.name &&
+				current.slug === slug;
+			if (upToDate) continue;
 			this.db.run(
 				`UPDATE note_types
 				 SET templates_json = ?, fields_json = ?, css = ?, name = ?, slug = ?, updated_at = ?
 				 WHERE id = ? AND is_builtin = 1`,
-				[
-					JSON.stringify(nt.templates),
-					JSON.stringify(nt.fields),
-					nt.css,
-					nt.name,
-					slug ?? null,
-					now,
-					nt.id,
-				],
+				[templatesJson, fieldsJson, nt.css, nt.name, slug, now, nt.id],
 			);
 		}
 	}

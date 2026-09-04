@@ -150,12 +150,14 @@ export class TrueRecallApp {
 		});
 	}
 
-	async initializeStore(deviceId: string): Promise<void> {
-		this.cardStore = new SqliteStoreService(
-			this.config.persistence,
-			deviceId,
-			this.config.storeOptions,
-		);
+	async initializeStore(
+		deviceId: string,
+		options: { dbFolder?: string } = {},
+	): Promise<void> {
+		this.cardStore = new SqliteStoreService(this.config.persistence, deviceId, {
+			...this.config.storeOptions,
+			...options,
+		});
 		await this.cardStore.load();
 
 		this.flashcardManager.setStore(this.cardStore);

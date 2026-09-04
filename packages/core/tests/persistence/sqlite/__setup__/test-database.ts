@@ -11,6 +11,7 @@ import type {
 	QueryExecResult,
 } from "../../../../src/persistence/sqlite/loader";
 import { CardActions } from "../../../../src/persistence/sqlite/modules/CardActions";
+import { CloudSyncDeferredActions } from "../../../../src/persistence/sqlite/modules/CloudSyncDeferredActions";
 import { NoteActions } from "../../../../src/persistence/sqlite/modules/NoteActions";
 import {
 	getBuiltinNoteTypes,
@@ -214,6 +215,18 @@ export class TestSqliteDatabase {
 			CREATE INDEX IF NOT EXISTS idx_cards_deleted ON cards(deleted_at);
 			CREATE INDEX IF NOT EXISTS idx_revlog_preset_date ON review_log(deleted_at, preset_name, reviewed_at);
 
+			CREATE TABLE IF NOT EXISTS cloud_sync_deferred (
+			entity_type TEXT NOT NULL,
+			entity_id TEXT NOT NULL,
+			parent_id TEXT NOT NULL,
+			updated_at INTEGER NOT NULL,
+			source_device_id TEXT,
+			payload TEXT NOT NULL,
+			PRIMARY KEY (entity_type, entity_id)
+			);
+
+			CREATE INDEX IF NOT EXISTS idx_cloud_sync_deferred_parent ON cloud_sync_deferred(entity_type, parent_id);
+
 			INSERT OR REPLACE INTO meta (key, value) VALUES ('schema_version', '${CURRENT_SCHEMA_VERSION}');
 		`);
 	}
@@ -317,6 +330,7 @@ export interface TestContext {
 	stats: StatsActions;
 	noteTypes: NoteTypeActions;
 	notes: NoteActions;
+	cloudSyncDeferred: CloudSyncDeferredActions;
 	close: () => void;
 }
 
@@ -328,6 +342,7 @@ export async function createTestContext(): Promise<TestContext> {
 	const stats = new StatsActions(db as never);
 	const noteTypes = new NoteTypeActions(db as never);
 	const notes = new NoteActions(db as never);
+	const cloudSyncDeferred = new CloudSyncDeferredActions(db as never);
 
 	// Seed builtin note types (required for CardActions.set() which uses BUILTIN_BASIC_ID)
 	db.seedBuiltinNoteTypes();
@@ -338,6 +353,7 @@ export async function createTestContext(): Promise<TestContext> {
 		stats,
 		noteTypes,
 		notes,
+		cloudSyncDeferred,
 		close: () => db.close(),
 	};
 }
