@@ -8,6 +8,7 @@
 
 ### Bug Fixes
 
+- **The Unassigned deck counts like every other deck.** Its new-card count was the sum of its note rows, and note rows ignore daily limits when "Ignore daily limits for note study" is on, so Unassigned could show hundreds of new cards next to decks capped at 20. It now shows what a session started from that row would contain. Dashboard counts of one render also share a single snapshot cache and read today's progress once, and every R-Mode ceiling comes from one helper
 - **AI inbox threads render markdown.** Assistant turns and task summaries show headings, lists, code and LaTeX instead of raw markup
 
 ## 2.4.2 (2026-09-04)
