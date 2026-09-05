@@ -614,7 +614,7 @@ export class ReviewView extends ItemView {
 		this.syncSharedReviewState();
 
 		this.disposeReviewHook = this.sessionCommandService.registerHook(
-			new ReviewUndoHook(() => this.review, {
+			new ReviewUndoHook({
 				onUpdateSchedulingPreview: () =>
 					this.answerHandler.updateSchedulingPreview(),
 			}),
@@ -676,81 +676,93 @@ export class ReviewView extends ItemView {
 			container,
 			this.plugin,
 			h(ReviewApp, {
-				store: this.sessionStore,
-				onShowAnswer: () => void this.handleReveal(),
-				onTypedAnswerChange: (value: string) =>
-					this.handleTypedAnswerChange(value),
-				onAskFollowUp: isPluginEnabled(this.plugin.settings, "ai-assistant")
-					? (question: string) => this.handleAskFollowUp(question)
-					: undefined,
-				getQueuedFollowUpCount: () => this.queuedFollowUpCount,
-				onOpenAssistantInbox: () => void this.plugin.openAssistantInbox(),
-				onAnswer: (rating: Grade) => void this.handleAnswer(rating),
-				onContentChange: (value: string, field: "question" | "answer") =>
-					void this.editHandler.saveContent(value, field),
-				onOpenSourceNote: () => this.handleOpenSourceNote(),
-				onEditComment: () => void this.cardActionsHandler.handleEditComment(),
-				onRemoveComment: () => this.cardActionsHandler.handleRemoveComment(),
-				onClose: () => this.handleClose(),
-				onNextSession: () => this.handleNextSession(),
-				onOpenDashboard: () => void this.handleOpenDashboard(),
-				getTopUpAvailability: () => this.getTopUpAvailability(),
-				onTopUp: (topUp: ReviewSessionTopUp) => this.handleTopUp(topUp),
-				onEndSession: () => this.handleNextSession(),
-				onActionsMenu: (e: MouseEvent) => this.showActionsMenu(e),
-				// Card editing runs inside the shared AI Workspace.
-				onPolishMenu: isPluginEnabled(this.plugin.settings, "card-polish")
-					? (e: MouseEvent) => this.openCardPolishMenu(e)
-					: undefined,
-				isCustomSession: isCustomSession(this.filters),
-				crammingMode: this.filters.crammingMode ?? false,
-				rModeActive: this.filters.schedulingMode === "retrievability",
-				showHeader: this.plugin.settings.showReviewHeader,
-				showHeaderStats: this.plugin.settings.showReviewHeaderStats,
-				showNextReviewTime: this.plugin.settings.showNextReviewTime,
-				continuousCustomReviews: this.plugin.settings.continuousCustomReviews,
-				onCycleTypeInMode: () => this.cycleTypeInMode(),
-				getTypeInState: (card, isAnswerRevealed) => {
-					const requiresTypeIn = isTypeInRequiredForCard(
-						card,
-						this.sessionTypeInModeEnabled,
-					);
-					const state = this.getCurrentTypeInState(card.id);
-					return {
-						typeInMode: this.getTypeInMode(),
-						useTypeInMode: requiresTypeIn,
-						typedAnswer: state.typedAnswer,
-						isCheckingAnswer: state.isChecking,
-						isRatingLocked: isRatingLockedForTypeIn({
-							requiresTypeIn,
-							isAnswerRevealed,
-							isChecking: state.isChecking,
-						}),
-						localAssessment: state.localAssessment,
-						semanticResult: state.semanticResult,
-						semanticMessage: state.semanticMessage,
-						suggestedRating: suggestedRatingToGrade(
-							state.semanticResult?.suggestedRating,
-						),
-					};
-				},
-				getPresetName: (card: FSRSFlashcardItem) =>
-					this.answerHandler.resolvePreset(card).name,
-				getPresetOptions: () => this.getPresetOptions(),
-				getLeechThreshold: (card: FSRSFlashcardItem) =>
-					this.answerHandler.resolvePreset(card).leechThreshold ??
-					DEFAULT_LEECH_THRESHOLD,
-				onPresetChange: (name: string) => void this.handlePresetChange(name),
-				resolveAudioPath: (card: FSRSFlashcardItem) => {
-					if (!card.noteId) return undefined;
-					const note = this.plugin.cardStore?.notes.getById(card.noteId);
-					if (!note?.fields) return undefined;
-					for (const [key, value] of Object.entries(note.fields)) {
-						if (key.startsWith("_audio_") && value) {
-							return value;
-						}
-					}
-					return undefined;
+				model: {
+					store: this.sessionStore,
+					session: {
+						kind: isCustomSession(this.filters) ? "custom" : "standard",
+						continuous: this.plugin.settings.continuousCustomReviews,
+						cramming: this.filters.crammingMode ?? false,
+						retrievabilityMode:
+							this.filters.schedulingMode === "retrievability",
+						display: {
+							header: this.plugin.settings.showReviewHeader,
+							headerStats: this.plugin.settings.showReviewHeaderStats,
+							nextReviewTime: this.plugin.settings.showNextReviewTime,
+						},
+					},
+					actions: {
+						onShowAnswer: () => void this.handleReveal(),
+						onTypedAnswerChange: (value: string) =>
+							this.handleTypedAnswerChange(value),
+						onAskFollowUp: isPluginEnabled(this.plugin.settings, "ai-assistant")
+							? (question: string) => this.handleAskFollowUp(question)
+							: undefined,
+						onOpenAssistantInbox: () => void this.plugin.openAssistantInbox(),
+						onAnswer: (rating: Grade) => void this.handleAnswer(rating),
+						onContentChange: (value: string, field: "question" | "answer") =>
+							void this.editHandler.saveContent(value, field),
+						onOpenSourceNote: () => this.handleOpenSourceNote(),
+						onEditComment: () =>
+							void this.cardActionsHandler.handleEditComment(),
+						onRemoveComment: () =>
+							this.cardActionsHandler.handleRemoveComment(),
+						onClose: () => this.handleClose(),
+						onNextSession: () => this.handleNextSession(),
+						onOpenDashboard: () => void this.handleOpenDashboard(),
+						onTopUp: (topUp: ReviewSessionTopUp) => this.handleTopUp(topUp),
+						onEndSession: () => this.handleNextSession(),
+						onActionsMenu: (e: MouseEvent) => this.showActionsMenu(e),
+						// Card editing runs inside the shared AI Workspace.
+						onPolishMenu: isPluginEnabled(this.plugin.settings, "card-polish")
+							? (e: MouseEvent) => this.openCardPolishMenu(e)
+							: undefined,
+						onCycleTypeInMode: () => this.cycleTypeInMode(),
+						onPresetChange: (name: string) =>
+							void this.handlePresetChange(name),
+					},
+					card: {
+						getQueuedFollowUpCount: () => this.queuedFollowUpCount,
+						getTopUpAvailability: () => this.getTopUpAvailability(),
+						getTypeInState: (card, isAnswerRevealed) => {
+							const requiresTypeIn = isTypeInRequiredForCard(
+								card,
+								this.sessionTypeInModeEnabled,
+							);
+							const state = this.getCurrentTypeInState(card.id);
+							return {
+								typeInMode: this.getTypeInMode(),
+								useTypeInMode: requiresTypeIn,
+								typedAnswer: state.typedAnswer,
+								isCheckingAnswer: state.isChecking,
+								isRatingLocked: isRatingLockedForTypeIn({
+									requiresTypeIn,
+									isAnswerRevealed,
+									isChecking: state.isChecking,
+								}),
+								localAssessment: state.localAssessment,
+								semanticResult: state.semanticResult,
+								semanticMessage: state.semanticMessage,
+								suggestedRating: suggestedRatingToGrade(
+									state.semanticResult?.suggestedRating,
+								),
+							};
+						},
+						getPresetName: (card: FSRSFlashcardItem) =>
+							this.answerHandler.resolvePreset(card).name,
+						getPresetOptions: () => this.getPresetOptions(),
+						getLeechThreshold: (card: FSRSFlashcardItem) =>
+							this.answerHandler.resolvePreset(card).leechThreshold ??
+							DEFAULT_LEECH_THRESHOLD,
+						resolveAudioPath: (card: FSRSFlashcardItem) => {
+							if (!card.noteId) return undefined;
+							const note = this.plugin.cardStore?.notes.getById(card.noteId);
+							if (!note?.fields) return undefined;
+							for (const [key, value] of Object.entries(note.fields)) {
+								if (key.startsWith("_audio_") && value) return value;
+							}
+							return undefined;
+						},
+					},
 				},
 			}),
 		);
@@ -967,10 +979,7 @@ export class ReviewView extends ItemView {
 			// Mount the Preact app now that the session is active
 			this.mountApp(container);
 		} catch (error) {
-			console.error("Error starting review session:", error);
-			notify().error(
-				`Error: ${error instanceof Error ? error.message : String(error)}`,
-			);
+			notify().operationFailed("start review session", error);
 		}
 	}
 

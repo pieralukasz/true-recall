@@ -9,13 +9,13 @@ import {
 } from "@true-recall/core/types/settings.types";
 
 import { G } from "@true-recall/obsidian/data";
-import { CloudAuthService } from "@true-recall/obsidian/services/cloud/cloud-auth.service";
-import { CloudSyncApiClient } from "@true-recall/obsidian/services/cloud/cloud-sync-api.client";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 import { setLastMutation } from "@true-recall/obsidian/services/signals";
 
-import type TrueRecallPlugin from "../main";
-import { CloudSyncCoordinator } from "./CloudSyncCoordinator";
+import type TrueRecallPlugin from "../../../main";
+import { CloudAuthService } from "./cloud-auth.service";
+import { CloudSyncApiClient } from "./cloud-sync-api.client";
+import { CloudSyncCoordinator } from "./cloud-sync-coordinator";
 
 // Sync also runs on every change (2.5 s debounce), at startup and on foreground, so
 // the timer only catches edits made elsewhere while this device sits idle. Five
@@ -121,11 +121,7 @@ export class CloudSyncManager {
 			notify().info("Finish connecting Cloud Sync in your browser.");
 		} catch (error) {
 			this.authState.value = "error";
-			notify().error(
-				error instanceof Error
-					? error.message
-					: "Could not start Cloud Sync sign-in.",
-			);
+			notify().operationFailed("start Cloud Sync sign-in", error);
 		}
 	}
 
@@ -139,19 +135,21 @@ export class CloudSyncManager {
 			);
 			return;
 		}
+		await this.plugin.saveSettings({
+			syncMode: "off",
+			cloudSyncEmail: undefined,
+		});
 		this.auth.clearSession();
 		this.accountEmail.value = null;
 		this.authState.value = "idle";
-		this.plugin.settings.syncMode = "off";
-		this.plugin.settings.cloudSyncEmail = undefined;
-		await this.plugin.saveSettings();
 	}
 
 	async setEnabled(enabled: boolean): Promise<void> {
-		this.plugin.settings.syncMode = enabled ? "cloud" : "off";
-		this.plugin.settings.enableDeviceSync = false;
+		await this.plugin.saveSettings({
+			syncMode: enabled ? "cloud" : "off",
+			enableDeviceSync: false,
+		});
 		if (enabled) this.plugin.teardownSharedVaultSync();
-		await this.plugin.saveSettings();
 		if (enabled) void this.coordinator.syncNow("manual");
 	}
 
@@ -174,20 +172,19 @@ export class CloudSyncManager {
 		this.authState.value = "exchanging";
 		try {
 			const session = await this.auth.exchange(code, state);
+			await this.plugin.saveSettings({
+				cloudSyncEmail: session.email,
+				syncMode: "cloud",
+				enableDeviceSync: false,
+			});
 			this.accountEmail.value = session.email;
-			this.plugin.settings.cloudSyncEmail = session.email;
-			this.plugin.settings.syncMode = "cloud";
-			this.plugin.settings.enableDeviceSync = false;
 			this.plugin.teardownSharedVaultSync();
-			await this.plugin.saveSettings();
 			this.authState.value = "idle";
 			notify().success(`Cloud Sync connected as ${session.email}.`);
 			void this.coordinator.syncNow("manual");
 		} catch (error) {
 			this.authState.value = "error";
-			notify().error(
-				error instanceof Error ? error.message : "Cloud Sync sign-in failed.",
-			);
+			notify().operationFailed("complete Cloud Sync sign-in", error);
 		}
 	}
 
@@ -199,9 +196,11 @@ export class CloudSyncManager {
 	private handleAuthExpired(): void {
 		this.accountEmail.value = null;
 		this.authState.value = "idle";
-		this.plugin.settings.syncMode = "off";
-		this.plugin.settings.cloudSyncEmail = undefined;
-		void this.plugin.saveSettings();
+		void this.plugin
+			.saveSettings({ syncMode: "off", cloudSyncEmail: undefined })
+			.catch((error) =>
+				notify().operationFailed("save expired Cloud Sync state", error),
+			);
 		notify().warning(
 			"Cloud Sync was signed out because the session expired. Sign in again in Settings → Integrations.",
 		);

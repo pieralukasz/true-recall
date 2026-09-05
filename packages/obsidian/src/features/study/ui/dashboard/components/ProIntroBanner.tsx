@@ -7,6 +7,7 @@ import type { TrueRecallSettings } from "@true-recall/core/types";
 import { Clickable, IconButton } from "@true-recall/obsidian/components";
 import { resolveAccessTier } from "@true-recall/obsidian/plugin/plugin-utils";
 import { usePlugin } from "@true-recall/obsidian/preact";
+import { notify } from "@true-recall/obsidian/services/notification.service";
 
 interface ProIntroBannerProps {
 	settings: TrueRecallSettings;
@@ -21,8 +22,9 @@ export function ProIntroBanner({ settings }: ProIntroBannerProps) {
 	if (resolveAccessTier(settings) !== "free") return null;
 
 	const handleDismiss = () => {
-		plugin.settings.isProIntroDismissed = true;
-		void plugin.saveSettings();
+		void plugin
+			.saveSettings({ isProIntroDismissed: true })
+			.catch((error) => notify().operationFailed("dismiss Pro intro", error));
 	};
 
 	return (

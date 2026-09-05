@@ -430,8 +430,7 @@ export function QuickNoteEditorApp({
 				setSaving(false);
 			}
 		} catch (error) {
-			const msg = error instanceof Error ? error.message : String(error);
-			new Notice(`Error: ${msg}`);
+			notify().operationFailed("save the flashcard", error);
 			savingRef.current = false;
 			setSaving(false);
 		}

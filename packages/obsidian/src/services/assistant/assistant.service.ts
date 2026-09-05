@@ -27,6 +27,7 @@ import {
 	FACT_CHECK_WORKFLOW_ID,
 	resolveAIWorkflow,
 } from "@true-recall/core/ai/workflows/ai-workflow";
+import { describeErrorForUser } from "@true-recall/core/errors";
 
 import { applyPendingProposals } from "@true-recall/obsidian/features/assistant/ui/apply-pending-proposals";
 import type TrueRecallPlugin from "@true-recall/obsidian/main";
@@ -360,18 +361,13 @@ export class AssistantService {
 					}
 					continue;
 				}
-				this.actions().fail(
-					task.id,
-					error instanceof Error ? error.message : String(error),
-					Date.now(),
-				);
+				const userMessage = describeErrorForUser(error);
+				this.actions().fail(task.id, userMessage, Date.now());
 				if (task.threadId) {
-					const message =
-						error instanceof Error ? error.message : String(error);
 					this.threadActions().failTurn({
 						id: task.threadId,
 						taskId: task.id,
-						message: this.assistantMessage(`Error: ${message}`, Date.now()),
+						message: this.assistantMessage(`Error: ${userMessage}`, Date.now()),
 						updatedAt: Date.now(),
 					});
 					if (task.context.applyGeneratedCardsImmediately) {

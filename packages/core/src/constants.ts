@@ -307,6 +307,8 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 
 	enableLocalApi: false,
 	apiPort: 27182,
+	apiAllowedOrigins: [],
+	apiEnableSqlQuery: false,
 
 	languageNoteTypeId: null,
 	languageSource: "",

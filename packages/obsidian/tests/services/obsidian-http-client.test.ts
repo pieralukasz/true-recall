@@ -105,3 +105,24 @@ describe("ObsidianHttpClient.stream", () => {
 		);
 	});
 });
+
+describe("ObsidianHttpClient.post", () => {
+	it("normalizes a malformed successful JSON response", async () => {
+		requestUrlMock.mockReset();
+		requestUrlMock.mockResolvedValue({
+			status: 200,
+			get json() {
+				throw new SyntaxError("Unexpected token");
+			},
+			text: "not-json",
+		});
+
+		const client = new ObsidianHttpClient();
+		await expect(
+			client.post("https://example.com/api", {}),
+		).rejects.toMatchObject({
+			code: "invalid-response",
+			category: "data-integrity",
+		});
+	});
+});

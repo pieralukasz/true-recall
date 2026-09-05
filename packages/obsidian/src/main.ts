@@ -67,7 +67,11 @@ import {
 	CustomStudyModal,
 	type CustomStudyModalScope,
 } from "@true-recall/obsidian/modals/study/CustomStudyModal";
-import { notify } from "@true-recall/obsidian/services/notification.service";
+import { reportError } from "@true-recall/obsidian/services/errors";
+import {
+	NOTIFICATION_DURATION,
+	notify,
+} from "@true-recall/obsidian/services/notification.service";
 import { ProjectManagementService } from "@true-recall/obsidian/services/project-management.service";
 import { setLastMutation } from "@true-recall/obsidian/services/signals";
 import { TrueRecallSettingTab } from "@true-recall/obsidian/settings";
@@ -96,9 +100,10 @@ import { SimulatorView } from "@true-recall/obsidian/views/simulator/SimulatorVi
 import { StatsView } from "@true-recall/obsidian/views/stats/StatsView";
 
 import { createObsidianAdapters, type ObsidianAdapters } from "./context";
+import { CloudSyncManager } from "./features/integration/cloud/cloud-sync-manager";
 import type { LocalApiServer } from "./plugin/api/LocalApiServer";
+import { startLocalApi } from "./plugin/api/start-local-api";
 import type { BackupRecoveryManager } from "./plugin/BackupRecoveryManager";
-import { CloudSyncManager } from "./plugin/CloudSyncManager";
 import {
 	CrossDeviceSyncCoordinator,
 	emptySyncResult,
@@ -287,9 +292,9 @@ export default class TrueRecallPlugin extends Plugin {
 			});
 			await this.coreApp.initialize();
 		} catch (error) {
-			console.error("[True Recall] Core initialization failed:", error);
 			notify().error(
 				"True Recall failed to initialize. Try reinstalling the plugin.",
+				error,
 			);
 			return;
 		}
@@ -307,11 +312,11 @@ export default class TrueRecallPlugin extends Plugin {
 		try {
 			await initializeDeviceAndStore(this);
 		} catch (error) {
-			console.error(
-				"[True Recall] Critical: Device/store initialization failed:",
+			notify().error(
+				"True Recall could not load the database. Restore a backup in Settings → Data & Backup, then restart Obsidian.",
 				error,
+				NOTIFICATION_DURATION.PERSIST,
 			);
-			notify().error("Failed to initialize database. Please restart Obsidian.");
 			return;
 		}
 
@@ -337,7 +342,7 @@ export default class TrueRecallPlugin extends Plugin {
 				await this.deviceLock.writeLock();
 				this.deviceLock.startHeartbeat();
 			} catch (error) {
-				console.error("[True Recall] Device lock setup failed:", error);
+				reportError(error, { origin: "device-lock-setup" });
 			}
 		}
 
@@ -455,9 +460,9 @@ export default class TrueRecallPlugin extends Plugin {
 				});
 			}
 		} catch (error) {
-			console.error("[True Recall] Device sync failed:", error);
-			notify().warning(
+			notify().error(
 				"Cross-device sync failed. Your cards may not be up to date.",
+				error,
 			);
 		}
 
@@ -558,15 +563,13 @@ export default class TrueRecallPlugin extends Plugin {
 		// The local API binds a Node http server via Electron's require, which
 		// does not exist on mobile.
 		if (this.settings.enableLocalApi && capabilities.canRunLocalApi()) {
-			void import("./plugin/api/LocalApiServer")
-				.then(({ LocalApiServer: ApiServer }) => {
-					if (this._unloaded) return;
-					this.localApi = new ApiServer(this, this.settings.apiPort);
-					this.localApi.start();
-				})
-				.catch((e) => {
-					console.error("[True Recall] Failed to start Local API server:", e);
-				});
+			void startLocalApi(
+				this,
+				this.settings.apiPort,
+				() => this._unloaded,
+			).then((server) => {
+				if (server) this.localApi = server;
+			});
 		}
 
 		const tTotal = performance.now();
@@ -625,9 +628,8 @@ export default class TrueRecallPlugin extends Plugin {
 
 	/** Flip the tab-bar visibility, persist it, and apply immediately. */
 	async toggleTabBar(): Promise<void> {
-		this.settings.hideTabBar = !this.settings.hideTabBar;
+		await this.saveSettings({ hideTabBar: !this.settings.hideTabBar });
 		this.applyTabBarVisibility();
-		await this.saveSettings();
 	}
 
 	/**
@@ -636,20 +638,20 @@ export default class TrueRecallPlugin extends Plugin {
 	 * reversible at any point.
 	 */
 	async toggleRMode(): Promise<void> {
-		this.settings.rMode = {
+		const rMode = {
 			...this.settings.rMode,
 			enabled: !this.settings.rMode.enabled,
 		};
-		await this.saveSettings();
+		await this.saveSettings({ rMode });
 		notify().info(
-			this.settings.rMode.enabled
+			rMode.enabled
 				? "R-Mode on — sessions are picked by retrievability"
 				: "R-Mode off — back to the due queue",
 		);
 	}
 
-	async saveSettings(): Promise<void> {
-		await this.coreApp.updateSettings(this.settings);
+	async saveSettings(patch?: Partial<TrueRecallSettings>): Promise<void> {
+		await this.coreApp.updateSettings(patch ?? this.settings);
 		this.noteStatusCache?.bumpVersion();
 		// Apply plugin enable/disable toggles (and tier unlocks) without restart
 		this.pluginLoader?.sync();
@@ -864,11 +866,7 @@ export default class TrueRecallPlugin extends Plugin {
 					existing.id === options.deckId ? deck : existing,
 				)
 			: [...existingDecks, deck];
-		this.settings = {
-			...this.settings,
-			temporaryCustomStudyDecks: nextDecks,
-		};
-		await this.saveSettings();
+		await this.saveSettings({ temporaryCustomStudyDecks: nextDecks });
 		await this.openDashboard();
 
 		const action = options.deckId ? "rebuilt" : "created";
@@ -932,14 +930,12 @@ export default class TrueRecallPlugin extends Plugin {
 		);
 		if (!deck || deck.cardIds.length === 0) return;
 
-		this.settings = {
-			...this.settings,
+		await this.saveSettings({
 			temporaryCustomStudyDecks: this.settings.temporaryCustomStudyDecks.map(
 				(candidate) =>
 					candidate.id === deckId ? { ...candidate, cardIds: [] } : candidate,
 			),
-		};
-		await this.saveSettings();
+		});
 		notify().success("Custom Study Session emptied.");
 	}
 
@@ -951,13 +947,11 @@ export default class TrueRecallPlugin extends Plugin {
 		) {
 			return;
 		}
-		this.settings = {
-			...this.settings,
+		await this.saveSettings({
 			temporaryCustomStudyDecks: this.settings.temporaryCustomStudyDecks.filter(
 				(candidate) => candidate.id !== deckId,
 			),
-		};
-		await this.saveSettings();
+		});
 		notify().success("Custom Study Session deleted.");
 	}
 
@@ -973,19 +967,18 @@ export default class TrueRecallPlugin extends Plugin {
 		const removedIds = new Set(cardIds);
 		if (!deck.cardIds.some((id) => removedIds.has(id))) return;
 
-		this.settings = {
-			...this.settings,
-			temporaryCustomStudyDecks: this.settings.temporaryCustomStudyDecks.map(
-				(candidate) =>
-					candidate.id === deckId
-						? {
-								...candidate,
-								cardIds: candidate.cardIds.filter((id) => !removedIds.has(id)),
-							}
-						: candidate,
-			),
-		};
-		void this.saveSettings();
+		const temporaryCustomStudyDecks =
+			this.settings.temporaryCustomStudyDecks.map((candidate) =>
+				candidate.id === deckId
+					? {
+							...candidate,
+							cardIds: candidate.cardIds.filter((id) => !removedIds.has(id)),
+						}
+					: candidate,
+			);
+		void this.saveSettings({ temporaryCustomStudyDecks }).catch((error) => {
+			notify().operationFailed("update Custom Study Session", error);
+		});
 	}
 
 	/** Guard for views that are not registered on this platform. */

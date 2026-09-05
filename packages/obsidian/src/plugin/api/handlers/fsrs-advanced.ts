@@ -1,3 +1,4 @@
+import { HttpError } from "@true-recall/core/errors";
 import { FSRSSimulatorService } from "@true-recall/core/services/fsrs/fsrs-simulator.service";
 
 import type { ApiContext, ApiRequest, ApiResponseWriter } from "../api.types";
@@ -36,11 +37,11 @@ export async function handleOptimizeParameters(
 
 		sendOk(res, result);
 	} catch (error) {
-		sendError(
-			res,
-			400,
-			error instanceof Error ? error.message : "Optimization failed",
-		);
+		throw new HttpError(400, {
+			backendCode: "fsrs-optimization-invalid",
+			cause: error,
+			context: { operation: "fsrs-optimization" },
+		});
 	}
 }
 

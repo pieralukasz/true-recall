@@ -59,7 +59,7 @@ export function ParametersSection({
 				notify().error("Optimization failed: insufficient data");
 			}
 		} catch (err) {
-			notify().error(`Optimization failed: ${String(err)}`);
+			notify().operationFailed("optimize FSRS parameters", err);
 		} finally {
 			setOptimizing(false);
 		}

@@ -262,6 +262,8 @@ export function CardBrowserApp({
 					card.id,
 					card.question,
 					card.answer ?? "",
+					newQuestion,
+					newAnswer ?? "",
 					`Edit card ${field}`,
 				);
 				void plugin.commandService?.execute(command);

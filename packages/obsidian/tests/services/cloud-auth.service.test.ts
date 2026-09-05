@@ -2,7 +2,7 @@ import type { App } from "obsidian";
 import { requestUrl } from "obsidian";
 import { describe, expect, it, vi } from "vitest";
 
-import { CloudAuthService } from "@true-recall/obsidian/services/cloud/cloud-auth.service";
+import { CloudAuthService } from "@true-recall/obsidian/features/integration/cloud/cloud-auth.service";
 
 function createApp(vaultName = "Mobile Learning") {
 	const storage = new Map<string, unknown>();

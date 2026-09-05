@@ -16,6 +16,7 @@ import {
 	useApp,
 	usePlugin,
 } from "@true-recall/obsidian/preact/ObsidianContext";
+import { notify } from "@true-recall/obsidian/services/notification.service";
 import { cn } from "@true-recall/obsidian/utils/cn";
 import { isDesktop } from "@true-recall/obsidian/utils/platform";
 
@@ -278,9 +279,7 @@ export function IOEditorApp({ mode, onDone }: IOEditorAppProps) {
 					`AI detected ${newRegions.length} region${newRegions.length !== 1 ? "s" : ""}`,
 				);
 			} catch (error) {
-				new Notice(
-					error instanceof Error ? error.message : "AI detection failed",
-				);
+				notify().operationFailed("detect image regions", error);
 			} finally {
 				setAiLoading(false);
 			}

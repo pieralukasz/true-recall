@@ -1,7 +1,7 @@
-import { Notice } from "obsidian";
 import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
 
 import { usePlugin } from "@true-recall/obsidian/preact/ObsidianContext";
+import { notify } from "@true-recall/obsidian/services/notification.service";
 
 import { NoteTypeEditor } from "./NoteTypeEditor";
 import { NoteTypeList } from "./NoteTypeList";
@@ -66,8 +66,8 @@ export function NoteTypeManagerApp({
 			setDraft(null);
 			setSelectedId(created.id);
 			refresh();
-		} catch (e) {
-			new Notice((e as Error).message);
+		} catch (error) {
+			notify().operationFailed("create the note type", error);
 		}
 	}, [draft, noteTypeService, refresh]);
 
@@ -84,8 +84,8 @@ export function NoteTypeManagerApp({
 				noteTypeService.delete(id);
 				setSelectedId(null);
 				refresh();
-			} catch (e) {
-				new Notice((e as Error).message);
+			} catch (error) {
+				notify().operationFailed("delete the note type", error);
 			}
 		},
 		[noteTypeService, refresh],

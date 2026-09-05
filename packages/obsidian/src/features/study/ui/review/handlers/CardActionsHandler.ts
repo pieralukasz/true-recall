@@ -573,9 +573,13 @@ export class CardActionsHandler {
 		previousFields: Record<string, string>,
 		description: string,
 	): void {
+		const nextFields = {
+			...(this.deps.cardStore.notes.getById(noteId)?.fields ?? previousFields),
+		};
 		const cmd = new UpdateNoteFieldsCommand(
 			noteId,
 			previousFields,
+			nextFields,
 			description,
 		);
 		void this.commandService?.execute(cmd);

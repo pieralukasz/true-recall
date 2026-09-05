@@ -197,11 +197,14 @@ export async function handleUpdateLoadBalanceSettings(
 		return;
 	}
 
-	const settings: TrueRecallSettings = ctx.plugin.settings;
+	const settings: TrueRecallSettings = { ...ctx.plugin.settings };
+	const patch: Partial<TrueRecallSettings> = {};
 	const updated: string[] = [];
 
 	if (body.enabled !== undefined) {
-		settings.loadBalanceEnabled = Boolean(body.enabled);
+		patch.loadBalanceEnabled = settings.loadBalanceEnabled = Boolean(
+			body.enabled,
+		);
 		updated.push("enabled");
 	}
 	if (body.target_mode !== undefined) {
@@ -209,7 +212,8 @@ export async function handleUpdateLoadBalanceSettings(
 			sendError(res, 400, 'target_mode must be "auto" or "manual"');
 			return;
 		}
-		settings.loadBalanceTargetMode = body.target_mode;
+		patch.loadBalanceTargetMode = settings.loadBalanceTargetMode =
+			body.target_mode;
 		updated.push("target_mode");
 	}
 	if (body.target !== undefined) {
@@ -217,7 +221,9 @@ export async function handleUpdateLoadBalanceSettings(
 			sendError(res, 400, "target must be >= 1");
 			return;
 		}
-		settings.loadBalanceTarget = Math.round(body.target);
+		patch.loadBalanceTarget = settings.loadBalanceTarget = Math.round(
+			body.target,
+		);
 		updated.push("target");
 	}
 	if (body.max_deviation !== undefined) {
@@ -225,7 +231,8 @@ export async function handleUpdateLoadBalanceSettings(
 			sendError(res, 400, "max_deviation must be between 0 and 100");
 			return;
 		}
-		settings.loadBalanceMaxDeviation = Math.round(body.max_deviation);
+		patch.loadBalanceMaxDeviation = settings.loadBalanceMaxDeviation =
+			Math.round(body.max_deviation);
 		updated.push("max_deviation");
 	}
 	if (body.max_shift_days !== undefined) {
@@ -233,7 +240,8 @@ export async function handleUpdateLoadBalanceSettings(
 			sendError(res, 400, "max_shift_days must be >= 0");
 			return;
 		}
-		settings.loadBalanceMaxShiftDays = Math.round(body.max_shift_days);
+		patch.loadBalanceMaxShiftDays = settings.loadBalanceMaxShiftDays =
+			Math.round(body.max_shift_days);
 		updated.push("max_shift_days");
 	}
 	if (body.bulk_days !== undefined) {
@@ -241,7 +249,9 @@ export async function handleUpdateLoadBalanceSettings(
 			sendError(res, 400, "bulk_days must be >= 0");
 			return;
 		}
-		settings.loadBalanceBulkDays = Math.round(body.bulk_days);
+		patch.loadBalanceBulkDays = settings.loadBalanceBulkDays = Math.round(
+			body.bulk_days,
+		);
 		updated.push("bulk_days");
 	}
 
@@ -250,7 +260,7 @@ export async function handleUpdateLoadBalanceSettings(
 		return;
 	}
 
-	await ctx.plugin.saveSettings();
+	await ctx.plugin.saveSettings(patch);
 	sendOk(res, {
 		updated,
 		loadBalance: {

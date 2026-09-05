@@ -1,5 +1,4 @@
 import {
-	AIRequestError,
 	type ChatMessage,
 	getTextContent,
 	type OpenRouterClient,
@@ -47,13 +46,7 @@ export class CardAIService {
 				});
 			} catch (err) {
 				if (req.signal?.aborted) throw new CardAIAbortedError();
-				if (err instanceof AIRequestError) {
-					throw new CardAIProviderError(err.message, err);
-				}
-				throw new CardAIProviderError(
-					err instanceof Error ? err.message : "Provider request failed",
-					err,
-				);
+				throw new CardAIProviderError("Provider request failed", err);
 			}
 
 			promptTokens += response.usage?.prompt_tokens ?? 0;

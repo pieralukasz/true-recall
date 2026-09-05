@@ -1,8 +1,8 @@
 import { requestUrl } from "obsidian";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { CloudAuthService } from "@true-recall/obsidian/services/cloud/cloud-auth.service";
-import { CloudSyncApiClient } from "@true-recall/obsidian/services/cloud/cloud-sync-api.client";
+import type { CloudAuthService } from "@true-recall/obsidian/features/integration/cloud/cloud-auth.service";
+import { CloudSyncApiClient } from "@true-recall/obsidian/features/integration/cloud/cloud-sync-api.client";
 
 const requestUrlMock = vi.mocked(requestUrl);
 

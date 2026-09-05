@@ -1,8 +1,10 @@
 import type { App, SecretStorage } from "obsidian";
-import { requestUrl } from "obsidian";
 import { z } from "zod";
 
 import { TRUERECALL_WEB_URL } from "@true-recall/core/constants";
+import { InvalidResponseError } from "@true-recall/core/errors";
+
+import { requestJson } from "@true-recall/obsidian/adapters/request-json";
 
 const AUTH_EXCHANGE_URL = `${TRUERECALL_WEB_URL}/api/auth/exchange`;
 const PENDING_KEY = "true-recall-cloud-auth-pending";
@@ -13,10 +15,6 @@ const SessionSchema = z.object({
 	deviceToken: z.string().min(32),
 	userId: z.uuid(),
 	email: z.email(),
-});
-
-const ErrorResponseSchema = z.object({
-	error: z.string(),
 });
 
 const PendingSchema = z.object({
@@ -93,31 +91,30 @@ export class CloudAuthService {
 		}
 
 		const device = this.getDevice();
-		const response = await requestUrl({
+		const response = await requestJson({
 			url: AUTH_EXCHANGE_URL,
 			method: "POST",
-			contentType: "application/json",
-			body: JSON.stringify({
+			body: {
 				code,
 				state,
 				verifier: pending.data.verifier,
 				deviceId: device.id,
 				deviceName: device.name,
-			}),
-			throw: false,
+			},
+			provider: "true-recall-auth",
 		});
 		this.app.saveLocalStorage(PENDING_KEY, null);
-		if (response.status !== 200) {
-			const errorResponse = ErrorResponseSchema.safeParse(
-				response.json as unknown,
-			);
-			throw new Error(
-				errorResponse.success
-					? errorResponse.data.error
-					: `Sign-in failed (${response.status})`,
+		const parsed = SessionSchema.safeParse(response);
+		if (!parsed.success) {
+			throw new InvalidResponseError(
+				"Cloud auth response does not match its contract",
+				{
+					cause: parsed.error,
+					context: { provider: "true-recall-auth" },
+				},
 			);
 		}
-		const session = SessionSchema.parse(response.json);
+		const session = parsed.data;
 		this.saveSession(session);
 		return session;
 	}

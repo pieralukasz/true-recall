@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { CloudSyncCoordinator } from "@true-recall/obsidian/plugin/CloudSyncCoordinator";
+import { CloudSyncCoordinator } from "@true-recall/obsidian/features/integration/cloud/cloud-sync-coordinator";
 
 const emptyResult = () => ({
 	pulled: 0,
@@ -41,6 +41,8 @@ describe("CloudSyncCoordinator", () => {
 		await coordinator.syncNow("manual");
 
 		expect(coordinator.lastSyncedAt.value).toBeNull();
-		expect(coordinator.lastError.value).toBe("offline");
+		expect(coordinator.lastError.value).toBe(
+			"Something went wrong. Please try again.",
+		);
 	});
 });

@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 import { hasAIKey } from "@true-recall/core/ai/config/ai-client-config";
 import { FlashcardGenerationService } from "@true-recall/core/ai/generation/flashcard-generation.service";
 import { fixBlockSourceTexts } from "@true-recall/core/ai/utils/source-text-fixer";
@@ -5,11 +7,11 @@ import { fixBlockSourceTexts } from "@true-recall/core/ai/utils/source-text-fixe
 import type { ApiContext, ApiRequest, ApiResponseWriter } from "../api.types";
 import { parseJsonBody, readBody, sendError, sendOk } from "../api.types";
 
-interface GenerateInput {
-	text: string;
-	note_type_slug?: string;
-	source_uid?: string;
-}
+const GenerateInputSchema = z.object({
+	text: z.string().min(1),
+	note_type_slug: z.string().min(1).optional(),
+	source_uid: z.string().min(1).optional(),
+});
 
 export async function handleGenerate(
 	req: ApiRequest,
@@ -31,8 +33,8 @@ export async function handleGenerate(
 	}
 
 	const raw = await readBody(req);
-	const body = parseJsonBody<GenerateInput>(raw);
-	if (!body?.text) {
+	const body = parseJsonBody(raw, GenerateInputSchema);
+	if (!body) {
 		sendError(res, 400, "Body must contain { text: string }");
 		return;
 	}
@@ -50,14 +52,7 @@ export async function handleGenerate(
 		new ObsidianHttpClient(),
 	);
 
-	let result: Awaited<ReturnType<FlashcardGenerationService["generate"]>>;
-	try {
-		result = await service.generate(body.text, noteType);
-	} catch (e) {
-		const message = e instanceof Error ? e.message : String(e);
-		sendError(res, 502, `AI generation failed: ${message}`);
-		return;
-	}
+	const result = await service.generate(body.text, noteType);
 
 	if (result.blocks.length === 0) {
 		sendOk(res, {

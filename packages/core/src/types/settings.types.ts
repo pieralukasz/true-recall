@@ -438,6 +438,10 @@ export interface TrueRecallSettings {
 	enableLocalApi: boolean;
 	/** Port for local HTTP API (default 27182) */
 	apiPort: number;
+	/** Browser origins allowed to call the local API. CLI/MCP requests have no origin. */
+	apiAllowedOrigins: string[];
+	/** Allow the advanced read-only SQL endpoint. */
+	apiEnableSqlQuery: boolean;
 
 	/** Per-plugin enabled/disabled state (plugin ID → boolean). All enabled by default. */
 	pluginStates?: Record<string, boolean>;

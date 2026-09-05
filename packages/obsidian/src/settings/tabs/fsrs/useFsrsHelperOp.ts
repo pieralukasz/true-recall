@@ -41,7 +41,7 @@ export function useFsrsHelperOp(config: FsrsHelperOpConfig) {
 					notify().info(config.emptyMessage);
 				}
 			} catch (err) {
-				notify().error(`${config.errorPrefix}: ${String(err)}`);
+				notify().error(config.errorPrefix, err);
 			} finally {
 				setRunning(false);
 			}

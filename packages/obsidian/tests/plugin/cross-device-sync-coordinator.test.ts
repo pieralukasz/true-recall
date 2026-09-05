@@ -101,7 +101,9 @@ describe("CrossDeviceSyncCoordinator", () => {
 		const result = await failing.coordinator.syncNow("manual");
 		expect(result).toBeNull();
 		expect(failing.coordinator.lastSyncedAt.value).toBeNull();
-		expect(failing.coordinator.lastError.value).toBe("disk gone");
+		expect(failing.coordinator.lastError.value).toBe(
+			"Something went wrong. Please try again.",
+		);
 
 		const ok = createCoordinator({ result: emptySyncResult() });
 		await ok.coordinator.syncNow("manual");

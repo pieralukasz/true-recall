@@ -1,6 +1,9 @@
 import { signal } from "@preact/signals";
 
+import { describeErrorForUser } from "@true-recall/core/errors";
 import type { CloudSyncResult } from "@true-recall/core/integration/cloud/cloud-sync.types";
+
+import { reportError } from "@true-recall/obsidian/services/errors";
 
 export type CloudSyncTrigger =
 	| "startup"
@@ -36,16 +39,20 @@ export class CloudSyncCoordinator {
 		try {
 			const result = await this.runSync();
 			if (result.errors.length > 0) {
-				this.lastError.value = result.errors.join("; ");
+				const error = new Error(result.errors.join("; "));
+				this.lastError.value = describeErrorForUser(error);
+				reportError(error, {
+					origin: "cloud-sync",
+					context: { trigger, partial: true },
+				});
 			} else {
 				this.lastSyncedAt.value = Date.now();
 				this.lastError.value = null;
 			}
 			return result;
 		} catch (error) {
-			const message = error instanceof Error ? error.message : String(error);
-			this.lastError.value = message;
-			console.warn(`[True Recall] Cloud sync (${trigger}) failed:`, error);
+			this.lastError.value = describeErrorForUser(error);
+			reportError(error, { origin: "cloud-sync", context: { trigger } });
 			return null;
 		} finally {
 			this.isSyncing.value = false;

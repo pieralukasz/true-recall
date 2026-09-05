@@ -1,3 +1,12 @@
+import {
+	describeErrorForUser,
+	isHttpError,
+	isTransient,
+	toAppError,
+} from "@true-recall/core/errors";
+
+import { reportError } from "@true-recall/obsidian/services/errors";
+
 import type {
 	ApiContext,
 	ApiRequest,
@@ -233,13 +242,43 @@ export async function dispatch(
 	const method = req.method ?? "GET";
 	const urlObj = new URL(req.url ?? "/", "http://localhost");
 	const pathname = urlObj.pathname;
+	const requestId = crypto.randomUUID();
+	const origin = header(req, "origin");
+	const allowedOrigin = resolveAllowedOrigin(
+		origin,
+		ctx.plugin.settings.apiAllowedOrigins,
+	);
+	const response = withResponseMetadata(res, allowedOrigin, requestId);
 
 	if (method === "OPTIONS") {
-		res.writeHead(204, {
+		if (origin && !allowedOrigin) {
+			sendError(response, 403, "Browser origin is not allowed", {
+				code: "origin-not-allowed",
+				requestId,
+			});
+			return;
+		}
+		response.writeHead(204, {
 			...CORS_HEADERS,
 			"Access-Control-Max-Age": "86400",
 		});
-		res.end();
+		response.end();
+		return;
+	}
+
+	if (origin && !allowedOrigin) {
+		sendError(response, 403, "Browser origin is not allowed", {
+			code: "origin-not-allowed",
+			requestId,
+		});
+		return;
+	}
+
+	if (!tokenMatches(readToken(req), ctx.apiToken)) {
+		sendError(response, 401, "Local API authentication is required", {
+			code: "unauthorized",
+			requestId,
+		});
 		return;
 	}
 
@@ -254,17 +293,96 @@ export async function dispatch(
 		});
 
 		try {
-			await r.handler(req, res, ctx, params);
+			await r.handler(req, response, ctx, params);
 		} catch (error) {
-			console.error("[True Recall API]", error);
-			sendError(
-				res,
-				500,
-				error instanceof Error ? error.message : "Internal error",
-			);
+			reportError(error, {
+				origin: "local-api",
+				context: { method, route: routeTemplate(r), requestId },
+			});
+			const appError = toAppError(error);
+			sendError(response, statusFor(error), describeErrorForUser(error), {
+				code: appError.code,
+				retryable: isTransient(error),
+				requestId:
+					(isHttpError(error) ? error.requestId : undefined) ?? requestId,
+			});
 		}
 		return;
 	}
 
-	sendError(res, 404, `Not found: ${method} ${pathname}`);
+	sendError(response, 404, `Not found: ${method} ${pathname}`, {
+		code: "route-not-found",
+		requestId,
+	});
+}
+
+function statusFor(error: unknown): number {
+	if (isHttpError(error)) return error.statusCode;
+	const appError = toAppError(error);
+	if (appError.category === "validation") return 400;
+	if (appError.category === "not-found") return 404;
+	if (appError.category === "access-denied") return 403;
+	if (appError.category === "feature-unavailable") return 503;
+	return 500;
+}
+
+function header(req: ApiRequest, name: string): string | undefined {
+	const value = req.headers[name] ?? req.headers[name.toLowerCase()];
+	return Array.isArray(value) ? value[0] : value;
+}
+
+function readToken(req: ApiRequest): string | undefined {
+	const direct = header(req, "x-true-recall-token")?.trim();
+	if (direct) return direct;
+	const authorization = header(req, "authorization");
+	return authorization?.replace(/^Bearer\s+/i, "").trim();
+}
+
+function tokenMatches(
+	candidate: string | undefined,
+	expected: string,
+): boolean {
+	if (!candidate || candidate.length !== expected.length) return false;
+	let difference = 0;
+	for (let index = 0; index < expected.length; index++) {
+		difference |= candidate.charCodeAt(index) ^ expected.charCodeAt(index);
+	}
+	return difference === 0;
+}
+
+function resolveAllowedOrigin(
+	origin: string | undefined,
+	allowed: readonly string[],
+): string | undefined {
+	if (!origin) return undefined;
+	return allowed.includes(origin) ? origin : undefined;
+}
+
+function withResponseMetadata(
+	res: ApiResponseWriter,
+	allowedOrigin: string | undefined,
+	requestId: string,
+): ApiResponseWriter {
+	return {
+		get writableEnded() {
+			return res.writableEnded;
+		},
+		writeHead(statusCode, headers = {}) {
+			res.writeHead(statusCode, {
+				"Cache-Control": "no-store",
+				"x-request-id": requestId,
+				...headers,
+				...(allowedOrigin
+					? { "Access-Control-Allow-Origin": allowedOrigin, Vary: "Origin" }
+					: {}),
+			});
+		},
+		end(data) {
+			res.end(data);
+		},
+	};
+}
+
+function routeTemplate(route: Route): string {
+	return route.pattern.source;
 }

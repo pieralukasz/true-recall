@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 
-import { TrueRecallClient } from "./client.js";
+import { LocalApiError, TrueRecallClient } from "./client.js";
 import { backupCommands } from "./commands/backup.js";
 import { cardActionCommands } from "./commands/card-actions.js";
 import { cardCommands } from "./commands/cards.js";
@@ -79,9 +79,21 @@ async function main(): Promise<void> {
 		console.log(JSON.stringify(result, null, 2));
 	} catch (error) {
 		console.error(
-			JSON.stringify({
-				error: error instanceof Error ? error.message : String(error),
-			}),
+			JSON.stringify(
+				error instanceof LocalApiError
+					? {
+							error: error.message,
+							status: error.status,
+							code: error.code,
+							retryable: error.retryable,
+							requestId: error.requestId,
+						}
+					: {
+							error: error instanceof Error ? error.message : String(error),
+						},
+				null,
+				2,
+			),
 		);
 		process.exit(1);
 	}

@@ -1,5 +1,11 @@
+import { z } from "zod";
+
+import { HttpError } from "@true-recall/core/errors";
+
 import type { ApiContext, ApiRequest, ApiResponseWriter } from "../api.types";
 import { parseJsonBody, readBody, sendError, sendOk } from "../api.types";
+
+const QuerySchema = z.object({ sql: z.string().min(1) });
 
 export async function handleQuerySql(
 	req: ApiRequest,
@@ -10,10 +16,16 @@ export async function handleQuerySql(
 		sendError(res, 503, "Database not ready");
 		return;
 	}
+	if (!ctx.plugin.settings.apiEnableSqlQuery) {
+		sendError(res, 403, "SQL query endpoint is disabled", {
+			code: "sql-query-disabled",
+		});
+		return;
+	}
 
 	const raw = await readBody(req);
-	const body = parseJsonBody<{ sql: string }>(raw);
-	if (!body?.sql) {
+	const body = parseJsonBody(raw, QuerySchema);
+	if (!body) {
 		sendError(res, 400, "Body must contain { sql: string }");
 		return;
 	}
@@ -56,11 +68,11 @@ export async function handleQuerySql(
 
 		sendOk(res, { columns: first.columns, rows });
 	} catch (error) {
-		sendError(
-			res,
-			400,
-			error instanceof Error ? error.message : "Query failed",
-		);
+		throw new HttpError(400, {
+			backendCode: "invalid-sql-query",
+			cause: error,
+			context: { operation: "local-api-query" },
+		});
 	}
 }
 

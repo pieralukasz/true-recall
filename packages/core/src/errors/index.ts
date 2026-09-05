@@ -1,16 +1,44 @@
 export {
 	APIError,
+	HttpError,
+	type HttpErrorOptions,
 	InvalidResponseError,
+	isHttpError,
+	isNetworkError,
+	NETWORK_ERROR_CODES,
 	NetworkError,
+	type NetworkErrorCode,
 	TimeoutError,
+	type ValidationFieldIssues,
 } from "./api.error";
-export { AppError } from "./base.error";
+export {
+	AppError,
+	type AppErrorOptions,
+	ERROR_CATEGORIES,
+	type ErrorCategory,
+	type ErrorContext,
+	type ErrorSeverity,
+} from "./base.error";
 export {
 	DatabaseError,
+	DomainError,
+	type DomainErrorDefinition,
+	type DomainErrorRegistry,
 	DuplicateError,
 	NotFoundError,
 	NotInitializedError,
 } from "./domain.error";
+export {
+	claimErrorReport,
+	isTransient,
+	toAppError,
+	transportContext,
+} from "./error-policy";
+export {
+	fromHttpResponse,
+	type HttpFailureContext,
+} from "./from-http-response";
+export { describeErrorForUser } from "./user-facing";
 export {
 	ConfigurationError,
 	FileError,
@@ -24,9 +52,6 @@ export function isAppError(
 }
 
 export function getErrorMessage(error: unknown): string {
-	if (isAppError(error)) {
-		return error.toUserMessage();
-	}
 	if (error instanceof Error) {
 		return error.message;
 	}

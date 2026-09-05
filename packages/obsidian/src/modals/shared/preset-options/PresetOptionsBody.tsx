@@ -175,7 +175,7 @@ export function PresetOptionsBody({
 			}
 			onClose();
 		} catch (err) {
-			notify().error(`Could not save preset: ${String(err)}`);
+			notify().operationFailed("save preset", err);
 		} finally {
 			setIsSaving(false);
 		}

@@ -1,12 +1,14 @@
-import { requestUrl } from "obsidian";
 import { z } from "zod";
 
+import { HttpError, InvalidResponseError } from "@true-recall/core/errors";
 import {
 	CLOUD_ENTITY_TYPES,
 	type CloudSyncExchangeRequest,
 	type CloudSyncExchangeResponse,
 	type CloudSyncTransport,
 } from "@true-recall/core/integration/cloud/cloud-sync.types";
+
+import { requestJson } from "@true-recall/obsidian/adapters/request-json";
 
 import type { CloudAuthService } from "./cloud-auth.service";
 
@@ -31,10 +33,6 @@ const ResponseSchema = z.object({
 	hasMore: z.boolean(),
 });
 
-const ErrorResponseSchema = z.object({
-	error: z.string(),
-});
-
 export class CloudSyncApiClient implements CloudSyncTransport {
 	constructor(
 		private readonly auth: CloudAuthService,
@@ -45,31 +43,40 @@ export class CloudSyncApiClient implements CloudSyncTransport {
 		request: CloudSyncExchangeRequest,
 	): Promise<CloudSyncExchangeResponse> {
 		const session = this.auth.getSession();
-		if (!session) throw new Error("Sign in to use Cloud Sync");
-		const response = await requestUrl({
-			url: CLOUD_SYNC_URL,
-			method: "POST",
-			contentType: "application/json",
-			headers: { Authorization: `Bearer ${session.deviceToken}` },
-			body: JSON.stringify(request),
-			throw: false,
-		});
-		if (response.status === 401) {
-			this.auth.clearSession();
-			this.onAuthExpired?.();
-			throw new Error("Cloud Sync session expired. Sign in again.");
+		if (!session)
+			throw new HttpError(401, { backendCode: "cloud-session-missing" });
+		let body: unknown;
+		try {
+			body = await requestJson({
+				url: CLOUD_SYNC_URL,
+				method: "POST",
+				headers: { Authorization: `Bearer ${session.deviceToken}` },
+				body: request,
+				provider: "cloud-sync",
+			});
+		} catch (error) {
+			if (error instanceof HttpError && error.statusCode === 401) {
+				this.auth.clearSession();
+				this.onAuthExpired?.();
+				throw new HttpError(401, {
+					backendCode: "cloud-session-expired",
+					provider: "cloud-sync",
+					cause: error,
+				});
+			}
+			throw error;
 		}
-		if (response.status !== 200) {
-			const errorResponse = ErrorResponseSchema.safeParse(
-				response.json as unknown,
-			);
-			throw new Error(
-				errorResponse.success
-					? errorResponse.data.error
-					: `Cloud Sync failed (${response.status})`,
+		const parsed = ResponseSchema.safeParse(body);
+		if (!parsed.success) {
+			throw new InvalidResponseError(
+				"Cloud Sync response does not match its contract",
+				{
+					cause: parsed.error,
+					context: { provider: "cloud-sync" },
+				},
 			);
 		}
-		return ResponseSchema.parse(response.json);
+		return parsed.data;
 	}
 
 	/**
@@ -80,12 +87,16 @@ export class CloudSyncApiClient implements CloudSyncTransport {
 	async revoke(): Promise<boolean> {
 		const session = this.auth.getSession();
 		if (!session) return true;
-		const response = await requestUrl({
-			url: CLOUD_SYNC_URL,
-			method: "DELETE",
-			headers: { Authorization: `Bearer ${session.deviceToken}` },
-			throw: false,
-		});
-		return response.status === 200 || response.status === 401;
+		try {
+			await requestJson({
+				url: CLOUD_SYNC_URL,
+				method: "DELETE",
+				headers: { Authorization: `Bearer ${session.deviceToken}` },
+				provider: "cloud-sync",
+			});
+			return true;
+		} catch (error) {
+			return error instanceof HttpError && error.statusCode === 401;
+		}
 	}
 }

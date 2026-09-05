@@ -1,4 +1,5 @@
 import { mutate } from "@true-recall/obsidian/data";
+import { reportError } from "@true-recall/obsidian/services/errors";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 
 import type { Command, CommandContext, CommandHook } from "./command.types";
@@ -27,6 +28,7 @@ export class CommandService {
 	}
 
 	async execute(command: Command): Promise<void> {
+		command.onDeferredFailure?.(() => this.removeFromHistory(command));
 		if (command.deferred || command.skipExecuteMutation) {
 			await command.execute(this.ctx);
 		} else {
@@ -44,6 +46,13 @@ export class CommandService {
 
 		// New action invalidates redo history
 		this.redoStack = [];
+	}
+
+	private removeFromHistory(command: Command): void {
+		this.stack = this.stack.filter((entry) => entry.command !== command);
+		this.redoStack = this.redoStack.filter(
+			(entry) => entry.command !== command,
+		);
 	}
 
 	async undo(): Promise<boolean> {
@@ -77,7 +86,11 @@ export class CommandService {
 			notify().undoComplete(command.description);
 			return true;
 		} catch (error) {
-			console.error("[CommandService] Error executing undo:", error);
+			this.stack.push(entry);
+			reportError(error, {
+				origin: "command-undo",
+				context: { command: command.type },
+			});
 			notify().undoFailed(command.description);
 			return false;
 		}
@@ -111,7 +124,11 @@ export class CommandService {
 			notify().redoComplete(command.description);
 			return true;
 		} catch (error) {
-			console.error("[CommandService] Error executing redo:", error);
+			this.redoStack.push(entry);
+			reportError(error, {
+				origin: "command-redo",
+				context: { command: command.type },
+			});
 			notify().redoFailed(command.description);
 			return false;
 		}

@@ -1,13 +1,13 @@
-import { AIRequestError } from "../clients/openrouter-client";
+import { describeErrorForUser, isHttpError } from "../../errors";
 
 export function formatAIError(error: unknown): string {
-	if (error instanceof AIRequestError) {
-		if (error.isRateLimited) {
+	if (isHttpError(error)) {
+		if (error.statusCode === 429) {
 			return "OpenRouter rate limit exceeded. Try again shortly or check your API key balance.";
 		}
-		if (error.isUnauthorized) {
+		if (error.statusCode === 401) {
 			return "OpenRouter API key is invalid. Check your key in settings.";
 		}
 	}
-	return error instanceof Error ? error.message : "Unknown AI error";
+	return describeErrorForUser(error);
 }

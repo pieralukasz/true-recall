@@ -6,6 +6,7 @@ import {
 	hasAIKey,
 	resolveAIClientConfig,
 } from "@true-recall/core/ai/config/ai-client-config";
+import { describeErrorForUser } from "@true-recall/core/errors";
 import { normalizeDeckName } from "@true-recall/core/integration/anki/anki-converter.service";
 import { AnkiImportService } from "@true-recall/core/integration/anki/anki-import.service";
 import { AnkiNoteTypeMapper } from "@true-recall/core/integration/anki/anki-note-type-mapper";
@@ -26,6 +27,7 @@ import { ObsidianPersistence } from "@true-recall/obsidian/adapters/ObsidianPers
 import { ObsidianVaultFileReader } from "@true-recall/obsidian/adapters/ObsidianVaultFileReader";
 import { mutate } from "@true-recall/obsidian/data";
 import { BaseModal } from "@true-recall/obsidian/modals/shared/BaseModal";
+import { reportError } from "@true-recall/obsidian/services/errors";
 
 import {
 	ErrorPhase,
@@ -267,8 +269,12 @@ export class AnkiImportModal extends BaseModal {
 
 			return { type: "preview", preview };
 		} catch (err) {
-			const errMsg = err instanceof Error ? err.message : String(err);
-			return { type: "error", message: errMsg, canRetry: true };
+			reportError(err, { origin: "anki-import-preview" });
+			return {
+				type: "error",
+				message: describeErrorForUser(err),
+				canRetry: true,
+			};
 		}
 	}
 
@@ -337,8 +343,12 @@ export class AnkiImportModal extends BaseModal {
 
 			return { type: "result", result };
 		} catch (err) {
-			const errMsg = err instanceof Error ? err.message : String(err);
-			return { type: "error", message: errMsg, canRetry: false };
+			reportError(err, { origin: "anki-import" });
+			return {
+				type: "error",
+				message: describeErrorForUser(err),
+				canRetry: false,
+			};
 		}
 	}
 

@@ -12,14 +12,10 @@ export class ValidationError extends AppError {
 		public readonly field?: string,
 		public readonly details?: string[],
 	) {
-		super(message, "VALIDATION_ERROR", true);
-	}
-
-	toUserMessage(): string {
-		if (this.field) {
-			return `Invalid ${this.field}: ${this.message}`;
-		}
-		return `Validation error: ${this.message}`;
+		super(message, "validation-error", true, {
+			category: "validation",
+			severity: "info",
+		});
 	}
 }
 
@@ -31,14 +27,10 @@ export class ConfigurationError extends AppError {
 		message: string,
 		public readonly configKey?: string,
 	) {
-		super(message, "CONFIGURATION_ERROR", true);
-	}
-
-	toUserMessage(): string {
-		if (this.configKey) {
-			return `Missing configuration: ${this.configKey}. Please check your settings.`;
-		}
-		return `Configuration error: ${this.message}`;
+		super(message, "configuration-error", true, {
+			category: "feature-unavailable",
+			severity: "info",
+		});
 	}
 }
 
@@ -51,22 +43,9 @@ export class FileError extends AppError {
 		public readonly filePath?: string,
 		public readonly operation?: "read" | "write" | "delete" | "create",
 	) {
-		super(message, "FILE_ERROR", true);
-	}
-
-	toUserMessage(): string {
-		const opName = this.operation
-			? {
-					read: "reading",
-					write: "writing",
-					delete: "deleting",
-					create: "creating",
-				}[this.operation]
-			: "accessing";
-
-		if (this.filePath) {
-			return `Error ${opName} file: ${this.filePath}`;
-		}
-		return `File operation error: ${this.message}`;
+		super(message, "file-error", true, {
+			category: "operation-failed",
+			severity: "error",
+		});
 	}
 }

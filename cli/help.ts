@@ -30,6 +30,12 @@ export function printGlobalHelp(commands: CommandDef[]): void {
 		"  --port <number>               Override API port (default: 27182)",
 	);
 	lines.push("");
+	lines.push("Environment:");
+	lines.push(
+		"  TRUE_RECALL_TOKEN             Token from Settings → Integrations → Local API",
+	);
+	lines.push("  TRUE_RECALL_PORT              Default API port override");
+	lines.push("");
 	lines.push("Examples:");
 	lines.push("  true-recall get_status");
 	lines.push("  true-recall list_cards --state review --limit 10");
