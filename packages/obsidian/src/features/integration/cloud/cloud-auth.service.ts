@@ -53,12 +53,21 @@ export class CloudAuthService {
 		private readonly getDevice: () => { id: string; name: string },
 	) {}
 
-	async startAuth(): Promise<string> {
-		const pending: PendingAuth = {
-			state: randomToken(),
-			verifier: randomToken(48),
-			createdAt: Date.now(),
-		};
+	async startAuth(reusePending = false): Promise<string> {
+		const existing = PendingSchema.safeParse(
+			this.app.loadLocalStorage(PENDING_KEY),
+		);
+		const pending: PendingAuth =
+			reusePending &&
+			existing.success &&
+			Date.now() - existing.data.createdAt >= 0 &&
+			Date.now() - existing.data.createdAt < STATE_TTL_MS
+				? existing.data
+				: {
+						state: randomToken(),
+						verifier: randomToken(48),
+						createdAt: Date.now(),
+					};
 		this.app.saveLocalStorage(PENDING_KEY, pending);
 		const challenge = await challengeFor(pending.verifier);
 		const device = this.getDevice();
@@ -83,7 +92,7 @@ export class CloudAuthService {
 		if (pending.data.state !== state) {
 			throw new Error("This sign-in link belongs to an older request");
 		}
-		if (Date.now() - pending.data.createdAt > STATE_TTL_MS) {
+		if (Date.now() - pending.data.createdAt >= STATE_TTL_MS) {
 			this.app.saveLocalStorage(PENDING_KEY, null);
 			throw new Error(
 				"The sign-in request expired. Start again from True Recall settings.",
@@ -103,7 +112,14 @@ export class CloudAuthService {
 			},
 			provider: "true-recall-auth",
 		});
-		this.app.saveLocalStorage(PENDING_KEY, null);
+		// A request started while the exchange was in flight owns the pending
+		// state. A late response must not replace its session or erase its verifier.
+		const current = PendingSchema.safeParse(
+			this.app.loadLocalStorage(PENDING_KEY),
+		);
+		if (!current.success || current.data.state !== state) {
+			throw new Error("This sign-in link belongs to an older request");
+		}
 		const parsed = SessionSchema.safeParse(response);
 		if (!parsed.success) {
 			throw new InvalidResponseError(
@@ -116,12 +132,13 @@ export class CloudAuthService {
 		}
 		const session = parsed.data;
 		this.saveSession(session);
+		this.app.saveLocalStorage(PENDING_KEY, null);
 		return session;
 	}
 
 	getSession(): CloudSession | null {
 		const raw: unknown =
-			this.secretStorage()?.getSecret(SESSION_KEY) ??
+			this.secretStorage()?.getSecret(SESSION_KEY) ||
 			this.app.loadLocalStorage(SESSION_KEY);
 		if (!raw) return null;
 		try {
@@ -142,8 +159,10 @@ export class CloudAuthService {
 	private saveSession(session: CloudSession): void {
 		const serialized = JSON.stringify(session);
 		const storage = this.secretStorage();
-		if (storage) storage.setSecret(SESSION_KEY, serialized);
-		else this.app.saveLocalStorage(SESSION_KEY, serialized);
+		if (storage) {
+			storage.setSecret(SESSION_KEY, serialized);
+			this.app.saveLocalStorage(SESSION_KEY, null);
+		} else this.app.saveLocalStorage(SESSION_KEY, serialized);
 	}
 
 	private secretStorage(): SecretStorage | undefined {

@@ -56,6 +56,7 @@ export class CloudSyncManager {
 	readonly auth: CloudAuthService;
 	private readonly apiClient: CloudSyncApiClient;
 	private changeTimer: number | null = null;
+	private completedAuthState: string | null = null;
 
 	constructor(private readonly plugin: TrueRecallPlugin) {
 		this.auth = new CloudAuthService(plugin.app, () => ({
@@ -113,9 +114,10 @@ export class CloudSyncManager {
 			this.authState.value === "exchanging"
 		)
 			return;
+		const reusePending = this.authState.value === "waiting";
 		this.authState.value = "preparing";
 		try {
-			const authUrl = await this.auth.startAuth();
+			const authUrl = await this.auth.startAuth(reusePending);
 			window.open(authUrl, "_blank");
 			this.authState.value = "waiting";
 			notify().info("Finish connecting Cloud Sync in your browser.");
@@ -164,6 +166,13 @@ export class CloudSyncManager {
 		code?: string,
 		state?: string,
 	): Promise<void> {
+		// Automatic handoff and the browser's fallback button can deliver the
+		// same one-time code twice, including after the first exchange finishes.
+		if (
+			this.authState.value === "exchanging" ||
+			(state && state === this.completedAuthState && this.auth.getSession())
+		)
+			return;
 		if (!code || !state) {
 			this.authState.value = "error";
 			notify().error("Cloud Sync sign-in returned an invalid response.");
@@ -178,6 +187,7 @@ export class CloudSyncManager {
 				enableDeviceSync: false,
 			});
 			this.accountEmail.value = session.email;
+			this.completedAuthState = state;
 			this.plugin.teardownSharedVaultSync();
 			this.authState.value = "idle";
 			notify().success(`Cloud Sync connected as ${session.email}.`);

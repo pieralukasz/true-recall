@@ -55,7 +55,11 @@ export class CloudSyncApiClient implements CloudSyncTransport {
 				provider: "cloud-sync",
 			});
 		} catch (error) {
-			if (error instanceof HttpError && error.statusCode === 401) {
+			if (
+				error instanceof HttpError &&
+				error.statusCode === 401 &&
+				this.auth.getSession()?.deviceToken === session.deviceToken
+			) {
 				this.auth.clearSession();
 				this.onAuthExpired?.();
 				throw new HttpError(401, {
