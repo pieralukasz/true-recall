@@ -3,6 +3,7 @@ import {
 	TRUERECALL_PRO_GUIDE_URL,
 } from "@true-recall/core/constants";
 import type { TrueRecallSettings } from "@true-recall/core/types";
+import { withPluginUtm } from "@true-recall/core/utils";
 
 import { Clickable, IconButton } from "@true-recall/obsidian/components";
 import { resolveAccessTier } from "@true-recall/obsidian/plugin/plugin-utils";
@@ -39,13 +40,23 @@ export function ProIntroBanner({ settings }: ProIntroBannerProps) {
 			<div class="ep:flex ep:items-center ep:gap-2">
 				<Clickable
 					class="ep-btn ep-btn-outline"
-					onClick={() => window.open(TRUERECALL_PRO_GUIDE_URL, "_blank")}
+					onClick={() =>
+						window.open(
+							withPluginUtm(TRUERECALL_PRO_GUIDE_URL, "pro-intro-banner"),
+							"_blank",
+						)
+					}
 				>
 					What Pro includes
 				</Clickable>
 				<Clickable
 					class="mod-cta ep-btn"
-					onClick={() => window.open(TRUERECALL_LOGIN_URL, "_blank")}
+					onClick={() =>
+						window.open(
+							withPluginUtm(TRUERECALL_LOGIN_URL, "pro-intro-banner"),
+							"_blank",
+						)
+					}
 				>
 					Try Pro free
 				</Clickable>

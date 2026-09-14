@@ -295,16 +295,16 @@ export async function dispatch(
 		try {
 			await r.handler(req, response, ctx, params);
 		} catch (error) {
+			const appError = toAppError(error);
 			reportError(error, {
 				origin: "local-api",
 				context: { method, route: routeTemplate(r), requestId },
 			});
-			const appError = toAppError(error);
 			sendError(response, statusFor(error), describeErrorForUser(error), {
 				code: appError.code,
 				retryable: isTransient(error),
 				requestId:
-					(isHttpError(error) ? error.requestId : undefined) ?? requestId,
+					(isHttpError(appError) ? appError.requestId : undefined) ?? requestId,
 			});
 		}
 		return;
@@ -317,8 +317,8 @@ export async function dispatch(
 }
 
 function statusFor(error: unknown): number {
-	if (isHttpError(error)) return error.statusCode;
 	const appError = toAppError(error);
+	if (isHttpError(appError)) return appError.statusCode;
 	if (appError.category === "validation") return 400;
 	if (appError.category === "not-found") return 404;
 	if (appError.category === "access-denied") return 403;

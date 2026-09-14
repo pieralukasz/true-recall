@@ -1,122 +1,66 @@
-/**
- * Facade for flashcard operations - delegates to specialized services:
- * CardRepository (CRUD), CardQueryService (reads), FrontmatterService,
- * SourceNoteService
- *
- * Platform-agnostic version: uses IFileSystem, IFrontmatter, IMetadataIndex
- * instead of Obsidian's App.
- */
-
-import { FLASHCARD_CONFIG } from "../constants";
 import type { DomainEventBus } from "../events/event-bus";
 import type { IFileSystem } from "../interfaces/file-system";
 import type { IFrontmatter } from "../interfaces/frontmatter";
 import type { IMetadataIndex } from "../interfaces/metadata-index";
 import type { SqliteStoreService } from "../persistence/sqlite/SqliteStoreService";
-import {
-	type GeneratedCard,
-	generateCardsForNote,
-} from "../services/cards/card-generation.service";
-import {
-	deriveCardType,
-	renderTemplate,
-} from "../services/cards/template-engine";
 import { NoteReviewService } from "../services/note-review/note-review.service";
 import type { FrontmatterIndexService } from "../services/notes/frontmatter-index.service";
 import type {
 	CardReviewLogEntry,
 	CardType,
-	FlashcardItem,
 	FSRSCardData,
 	FSRSFlashcardItem,
 	TrueRecallSettings,
 } from "../types";
-import { createDefaultFSRSData } from "../types";
-import type { IODefinition } from "../types/image-occlusion.types";
 import {
-	BUILTIN_IMAGE_OCCLUSION_ID,
 	BUILTIN_NOTE_REVIEW_ID,
 	type Note,
 	type NoteEditSource,
 	type NoteType,
 } from "../types/note.types";
-import {
-	normalizeIOImagePath,
-	serializeIODefinition,
-} from "../utils/io-definition";
+import { CardAssignmentService } from "./card-assignment.service";
+import { CardLifecycleService } from "./card-lifecycle.service";
 import { CardQueryService } from "./data/card-query.service";
 import {
 	CardRepository,
 	type CreateBatchResult,
 } from "./data/card-repository.service";
+import type {
+	ChangeNoteTypeResult,
+	CreateImageOcclusionNoteParams,
+	CreateNoteParams,
+	CreateNoteResult,
+	DeleteFlashcardsResult,
+	FlashcardInfo,
+	ScanResult,
+	UpdateImageOcclusionNoteParams,
+	UpdateNoteFieldsResult,
+} from "./flashcard.types";
+import { ImageOcclusionReconciler } from "./image-occlusion-reconciler";
 import type { ISessionPersistence } from "./lifecycle/deletion-handler.service";
+import { NoteCreationService } from "./note-creation.service";
+import { NoteMutationService } from "./note-mutation.service";
 import { FrontmatterService } from "./source/frontmatter.service";
 import { SourceNoteService } from "./source/source-note.service";
 
-export interface ScanResult {
-	totalCards: number;
-	newCardsProcessed: number;
-	filesProcessed: number;
-}
-
-export interface FlashcardInfo {
-	exists: boolean;
-	cardCount: number;
-	questions: string[];
-	flashcards: FlashcardItem[];
-	lastModified: number | null;
-	sourceUid?: string;
-}
-
-export interface CreateNoteParams {
-	noteTypeId: string;
-	fields: Record<string, string>;
-	alwaysTypeIn?: boolean;
-	sourceUid?: string;
-	sourceText?: string;
-	userComment?: string;
-	createdVia?: string;
-	createdAt?: number;
-	/** Silently drop cards whose rendered question already exists (AI path). */
-	skipDuplicates?: boolean;
-}
-
-export interface CreateNoteResult {
-	note: Note;
-	cards: FSRSCardData[];
-}
-
-export interface UpdateNoteFieldsResult {
-	updatedCardIds: string[];
-}
-
-export interface ChangeNoteTypeResult {
-	keptCardIds: string[];
-	createdCardIds: string[];
-	deletedCardIds: string[];
-}
-
-export interface DeleteFlashcardsResult {
-	ok: boolean;
-	affectedIds: string[];
-	affectedCount: number;
-	deletedCardsData: FSRSCardData[];
-}
-
-export interface CreateImageOcclusionNoteParams {
-	imagePath: string;
-	definition: IODefinition;
-	sourceUid?: string;
-	sourceText?: string;
-	createdVia?: string;
-}
-
-export interface UpdateImageOcclusionNoteParams {
-	imagePath: string;
-	definition: IODefinition;
-}
+export type {
+	ChangeNoteTypeResult,
+	CreateImageOcclusionNoteParams,
+	CreateNoteParams,
+	CreateNoteResult,
+	DeleteFlashcardsResult,
+	FlashcardInfo,
+	ScanResult,
+	UpdateImageOcclusionNoteParams,
+	UpdateNoteFieldsResult,
+} from "./flashcard.types";
 
 export class FlashcardManager {
+	private cardLifecycle: CardLifecycleService;
+	private cardAssignment: CardAssignmentService;
+	private noteCreation: NoteCreationService;
+	private imageOcclusion: ImageOcclusionReconciler;
+	private noteMutation: NoteMutationService;
 	private store: SqliteStoreService | null = null;
 	private sessionPersistence: ISessionPersistence | null = null;
 	private frontmatterService: FrontmatterService;
@@ -143,6 +87,35 @@ export class FlashcardManager {
 			metadataIndex,
 		);
 		void frontmatterIndex;
+		const getStore = () => this.store;
+		const getRepository = () => this.cardRepository;
+		const removeReviewedCards = (ids: string[]) =>
+			this.sessionPersistence?.removeReviewedCards(ids);
+		const emit: DomainEventBus["emit"] = (event, payload) =>
+			this.emitEvent(event, payload);
+		this.cardLifecycle = new CardLifecycleService(
+			getRepository,
+			removeReviewedCards,
+		);
+		this.cardAssignment = new CardAssignmentService(
+			getRepository,
+			this.frontmatterService,
+		);
+		this.noteCreation = new NoteCreationService(getStore, emit);
+		this.imageOcclusion = new ImageOcclusionReconciler(
+			getStore,
+			this.noteCreation,
+			(id, fields) => this.noteMutation.updateNoteFields(id, fields),
+			removeReviewedCards,
+			emit,
+		);
+		this.noteMutation = new NoteMutationService(
+			getStore,
+			this.noteCreation,
+			this.imageOcclusion,
+			removeReviewedCards,
+			emit,
+		);
 	}
 
 	setEventBus(bus: DomainEventBus): void {
@@ -355,77 +328,31 @@ export class FlashcardManager {
 	}
 
 	removeFlashcard(cardId: string): boolean {
-		return this.removeFlashcardById(cardId);
+		return this.cardLifecycle.removeFlashcard(cardId);
 	}
 
 	removeFlashcardById(cardId: string): boolean {
-		const result = this.removeFlashcardByIdWithDetails(cardId);
-		return result.ok;
+		return this.cardLifecycle.removeFlashcardById(cardId);
 	}
 
 	removeFlashcardByIdWithDetails(cardId: string): DeleteFlashcardsResult {
-		if (!this.cardRepository) {
-			return {
-				ok: false,
-				affectedIds: [],
-				affectedCount: 0,
-				deletedCardsData: [],
-			};
-		}
-		const { removedIds, cardsData } =
-			this.cardRepository.deleteWithCascade(cardId);
-		if (removedIds.length > 0) {
-			this.sessionPersistence?.removeReviewedCards(removedIds);
-			return {
-				ok: true,
-				affectedIds: removedIds,
-				affectedCount: removedIds.length,
-				deletedCardsData: cardsData,
-			};
-		}
-		return {
-			ok: false,
-			affectedIds: [],
-			affectedCount: 0,
-			deletedCardsData: [],
-		};
+		return this.cardLifecycle.removeFlashcardByIdWithDetails(cardId);
 	}
 
 	removeFlashcardsByIds(cardIds: string[]): number {
-		const result = this.removeFlashcardsByIdsWithDetails(cardIds);
-		return result.affectedCount;
+		return this.cardLifecycle.removeFlashcardsByIds(cardIds);
 	}
 
-	/** Ids {@link removeFlashcardsByIdsWithDetails} would delete for this card. */
 	getCascadeDeleteIds(cardId: string): string[] {
-		if (!this.cardRepository) return [];
-		return this.cardRepository.getCascadeDeleteIds(cardId);
+		return this.cardLifecycle.getCascadeDeleteIds(cardId);
 	}
 
 	removeFlashcardsByIdsWithDetails(cardIds: string[]): DeleteFlashcardsResult {
-		if (!this.cardRepository) {
-			return {
-				ok: false,
-				affectedIds: [],
-				affectedCount: 0,
-				deletedCardsData: [],
-			};
-		}
-		const { removedIds, cardsData } =
-			this.cardRepository.deleteBatchWithCascade(cardIds);
-		if (removedIds.length > 0) {
-			this.sessionPersistence?.removeReviewedCards(removedIds);
-		}
-		return {
-			ok: removedIds.length > 0,
-			affectedIds: removedIds,
-			affectedCount: removedIds.length,
-			deletedCardsData: cardsData,
-		};
+		return this.cardLifecycle.removeFlashcardsByIdsWithDetails(cardIds);
 	}
 
 	removeFlashcardFromSql(cardId: string): void {
-		void this.removeFlashcardById(cardId);
+		this.cardLifecycle.removeFlashcardFromSql(cardId);
 	}
 
 	getAllFSRSCards(): FSRSFlashcardItem[] {
@@ -516,208 +443,42 @@ export class FlashcardManager {
 		cardId: string,
 		targetNotePath: string,
 	): Promise<boolean> {
-		if (!this.cardRepository) {
-			throw new Error("Store not initialized");
-		}
-
-		if (!this.cardRepository.has(cardId)) {
-			return false;
-		}
-
-		let targetSourceUid =
-			await this.frontmatterService.getSourceNoteUid(targetNotePath);
-		if (!targetSourceUid) {
-			targetSourceUid = this.frontmatterService.generateUid();
-			await this.frontmatterService.setSourceNoteUid(
-				targetNotePath,
-				targetSourceUid,
-			);
-		}
-
-		// Update card's source UID (CardRepository calls notifyCardChange)
-		return this.cardRepository.updateSourceUid(cardId, targetSourceUid);
+		return this.cardAssignment.assignCardToSourceNote(cardId, targetNotePath);
 	}
 
 	async assignCardsToSourceNote(
 		cardIds: string[],
 		targetNotePath: string,
 	): Promise<number> {
-		let successCount = 0;
-		for (const cardId of cardIds) {
-			const success = await this.assignCardToSourceNote(cardId, targetNotePath);
-			if (success) {
-				successCount++;
-			}
-		}
-		return successCount;
+		return this.cardAssignment.assignCardsToSourceNote(cardIds, targetNotePath);
 	}
 
 	async moveCard(cardId: string, targetNotePath: string): Promise<boolean> {
-		return this.assignCardToSourceNote(cardId, targetNotePath);
+		return this.cardAssignment.moveCard(cardId, targetNotePath);
 	}
 
-	// ---- Note-based creation (v26) ----
-
-	/**
-	 * Create a Note + generate its cards via the note type's templates.
-	 * This is the v26 replacement for legacy card creation methods.
-	 */
 	createNote(params: CreateNoteParams): CreateNoteResult {
-		if (!this.store) {
-			throw new Error("Store not initialized");
-		}
-
-		const noteType = this.store.noteTypes.getById(params.noteTypeId);
-		if (!noteType) {
-			throw new Error(`Note type "${params.noteTypeId}" not found`);
-		}
-
-		const note: Note = {
-			id: crypto.randomUUID(),
-			noteTypeId: params.noteTypeId,
-			fields: params.fields,
-			tags: params.alwaysTypeIn ? [FLASHCARD_CONFIG.alwaysTypeInTag] : [],
-			sourceUid: params.sourceUid,
-			sourceText: params.sourceText,
-			userComment: params.userComment?.trim() || undefined,
-			createdVia: params.createdVia ?? "manual",
-		};
-
-		let generated = generateCardsForNote(note, noteType);
-
-		// AI generation re-runs over the same source note routinely; with
-		// skipDuplicates the cards whose rendered question already exists are
-		// dropped instead of duplicated (manual paths keep erroring instead).
-		if (params.skipDuplicates) {
-			const renderQuestionFor = (ord: number): string => {
-				const template =
-					noteType.type === 1
-						? noteType.templates[0]
-						: noteType.templates.find((t) => t.ordinal === ord);
-				if (!template) return "";
-				return renderTemplate(template.qfmt, {
-					fields: params.fields,
-					clozeIndex: ord,
-				});
-			};
-			generated = generated.filter((gen) => {
-				const question = renderQuestionFor(gen.templateOrd);
-				return (
-					question.length === 0 ||
-					!this.store?.cards.getCardIdByQuestion(question)
-				);
-			});
-			if (generated.length === 0) {
-				return { note, cards: [] };
-			}
-		}
-
-		this.store.notes.create(note);
-
-		const cards: FSRSCardData[] = [];
-
-		for (const gen of generated) {
-			const fsrsData = this.createCardFromGenerated(
-				gen,
-				note,
-				noteType,
-				params.createdAt,
-			);
-			cards.push(fsrsData);
-		}
-
-		if (cards.length > 0) {
-			this.emitEvent("cards:bulk", {
-				cardIds: cards.map((c) => c.id),
-				action: "added",
-			});
-		}
-
-		return { note, cards };
+		return this.noteCreation.createNote(params);
 	}
 
 	createImageOcclusionNote(
 		params: CreateImageOcclusionNoteParams,
 	): CreateNoteResult {
-		const imagePath = normalizeIOImagePath(params.imagePath);
-		if (!imagePath) {
-			throw new Error("Image path is required");
-		}
-
-		return this.createNote({
-			noteTypeId: BUILTIN_IMAGE_OCCLUSION_ID,
-			fields: {
-				Image: imagePath,
-				Regions: serializeIODefinition(params.definition),
-			},
-			sourceUid: params.sourceUid,
-			sourceText: params.sourceText,
-			createdVia: params.createdVia ?? "manual",
-		});
+		return this.imageOcclusion.createImageOcclusionNote(params);
 	}
 
 	updateImageOcclusionNote(
 		noteId: string,
 		params: UpdateImageOcclusionNoteParams,
 	): UpdateNoteFieldsResult {
-		const imagePath = normalizeIOImagePath(params.imagePath);
-		if (!imagePath) {
-			throw new Error("Image path is required");
-		}
-
-		return this.updateNoteFields(noteId, {
-			Image: imagePath,
-			Regions: serializeIODefinition(params.definition),
-		});
+		return this.imageOcclusion.updateImageOcclusionNote(noteId, params);
 	}
 
-	/**
-	 * Create multiple Notes from parsed cards in bulk.
-	 * Returns all created cards for notification.
-	 */
 	createNoteBatch(parsedCards: CreateNoteParams[]): {
 		notes: Note[];
 		cards: FSRSCardData[];
 	} {
-		if (!this.store) {
-			throw new Error("Store not initialized");
-		}
-
-		const notes: Note[] = [];
-		const cards: FSRSCardData[] = [];
-
-		for (const params of parsedCards) {
-			const noteType = this.store.noteTypes.getById(params.noteTypeId);
-			if (!noteType) continue;
-
-			const note: Note = {
-				id: crypto.randomUUID(),
-				noteTypeId: params.noteTypeId,
-				fields: params.fields,
-				tags: params.alwaysTypeIn ? [FLASHCARD_CONFIG.alwaysTypeInTag] : [],
-				sourceUid: params.sourceUid,
-				sourceText: params.sourceText,
-				userComment: params.userComment?.trim() || undefined,
-				createdVia: params.createdVia ?? "manual",
-			};
-
-			this.store.notes.create(note);
-			notes.push(note);
-
-			const generated = generateCardsForNote(note, noteType);
-			for (const gen of generated) {
-				cards.push(this.createCardFromGenerated(gen, note, noteType));
-			}
-		}
-
-		if (cards.length > 0) {
-			this.emitEvent("cards:bulk", {
-				cardIds: cards.map((c) => c.id),
-				action: "added",
-			});
-		}
-
-		return { notes, cards };
+		return this.noteCreation.createNoteBatch(parsedCards);
 	}
 
 	// ---- Note-level review ----
@@ -766,116 +527,16 @@ export class FlashcardManager {
 		return this.noteReview.has(sourceUid);
 	}
 
-	/**
-	 * Update a Note's fields and recompute Q/A for all its cards.
-	 * Returns the IDs of cards that were updated.
-	 */
 	updateNoteFields(
 		noteId: string,
 		fields: Record<string, string>,
 		editSource: NoteEditSource = "manual",
 	): UpdateNoteFieldsResult {
-		if (!this.store) {
-			throw new Error("Store not initialized");
-		}
-
-		const note = this.store.notes.getById(noteId);
-		if (!note) {
-			throw new Error(`Note "${noteId}" not found`);
-		}
-
-		const noteType = this.store.noteTypes.getById(note.noteTypeId);
-		if (!noteType) {
-			throw new Error(`Note type "${note.noteTypeId}" not found`);
-		}
-
-		this.store.notes.update(noteId, { fields }, editSource);
-
-		if (noteType.id === BUILTIN_IMAGE_OCCLUSION_ID) {
-			return this.reconcileImageOcclusionCards(note, noteType, fields);
-		}
-
-		const updatedNote: Note = { ...note, fields };
-
-		const existingCards = this.store.cards.getCardsByNoteId(noteId);
-		const existingOrds = new Set(existingCards.map((c) => c.templateOrd ?? 0));
-
-		// Reconcile against the full desired card set so editing the fields can
-		// remove cards whose template ord no longer exists — e.g. a cloze index
-		// that was edited away, or the ord-0 placeholder card once real cloze
-		// markers are added. Without this, those orphans linger and render the
-		// whole field as a fully-revealed "c0" card.
-		const desiredGenerated = generateCardsForNote(updatedNote, noteType);
-		const desiredOrds = new Set(desiredGenerated.map((g) => g.templateOrd));
-
-		const deletedCardIds = existingCards
-			.filter((c) => !desiredOrds.has(c.templateOrd ?? 0))
-			.map((c) => c.id);
-
-		if (deletedCardIds.length > 0) {
-			this.store.cards.bulkSoftDelete(deletedCardIds);
-			this.sessionPersistence?.removeReviewedCards(deletedCardIds);
-			this.emitEvent("cards:bulk", {
-				cardIds: deletedCardIds,
-				action: "removed",
-			});
-		}
-
-		const updatedCardIds = existingCards
-			.filter((c) => desiredOrds.has(c.templateOrd ?? 0))
-			.map((c) => c.id);
-
-		let createdCount = 0;
-		for (const gen of desiredGenerated) {
-			if (existingOrds.has(gen.templateOrd)) continue;
-			const fsrsData = this.createCardFromGenerated(gen, updatedNote, noteType);
-			updatedCardIds.push(fsrsData.id);
-			createdCount++;
-		}
-
-		if (createdCount > 0) {
-			this.emitEvent("cards:bulk", {
-				cardIds: updatedCardIds,
-			});
-		} else {
-			// Pure field edit: only rendered Q/A changed, scheduling meta is
-			// untouched — per-card content-only events let consumers take the
-			// narrow invalidation path instead of a full bulk reload.
-			for (const cardId of updatedCardIds) {
-				this.emitEvent("card:updated", {
-					cardId,
-					changes: { question: true, answer: true },
-				});
-			}
-		}
-
-		return { updatedCardIds };
+		return this.noteMutation.updateNoteFields(noteId, fields, editSource);
 	}
 
 	updateNoteComment(noteId: string, userComment: string): string[] {
-		if (!this.store) {
-			throw new Error("Store not initialized");
-		}
-
-		const note = this.store.notes.getById(noteId);
-		if (!note) {
-			throw new Error(`Note "${noteId}" not found`);
-		}
-
-		const normalizedComment = userComment.trim();
-		this.store.notes.update(noteId, { userComment: normalizedComment });
-		const cardIds = this.store.cards
-			.getCardsByNoteId(noteId)
-			.map((card) => card.id);
-
-		for (const cardId of cardIds) {
-			this.emitEvent("card:updated", {
-				cardId,
-				changes: { userComment: true },
-			});
-		}
-
-		return cardIds;
+		return this.noteMutation.updateNoteComment(noteId, userComment);
 	}
 
 	changeNoteType(
@@ -883,170 +544,10 @@ export class FlashcardManager {
 		newNoteTypeId: string,
 		fieldMapping: Record<string, string>,
 	): ChangeNoteTypeResult {
-		if (!this.store) throw new Error("Store not initialized");
-
-		const note = this.store.notes.getById(noteId);
-		if (!note) throw new Error(`Note "${noteId}" not found`);
-
-		const newNoteType = this.store.noteTypes.getById(newNoteTypeId);
-		if (!newNoteType) throw new Error(`Note type "${newNoteTypeId}" not found`);
-
-		if (note.noteTypeId === newNoteTypeId) {
-			return { keptCardIds: [], createdCardIds: [], deletedCardIds: [] };
-		}
-
-		// Remap fields: fieldMapping is newFieldName -> oldFieldName
-		const newFields: Record<string, string> = {};
-		for (const field of newNoteType.fields) {
-			const oldFieldName = fieldMapping[field];
-			newFields[field] = oldFieldName ? (note.fields[oldFieldName] ?? "") : "";
-		}
-
-		this.store.notes.update(noteId, {
-			noteTypeId: newNoteTypeId,
-			fields: newFields,
-		});
-
-		// Reconcile cards
-		const updatedNote: Note = {
-			...note,
-			noteTypeId: newNoteTypeId,
-			fields: newFields,
-		};
-		const existingCards = this.store.cards.getCardsByNoteId(noteId);
-		const existingOrds = new Set(existingCards.map((c) => c.templateOrd ?? 0));
-
-		const desiredGenerated = generateCardsForNote(updatedNote, newNoteType);
-		const desiredOrds = new Set(desiredGenerated.map((g) => g.templateOrd));
-
-		// Keep cards whose templateOrd still exists
-		const keptCardIds = existingCards
-			.filter((c) => desiredOrds.has(c.templateOrd ?? 0))
-			.map((c) => c.id);
-
-		const deletedCardIds = existingCards
-			.filter((c) => !desiredOrds.has(c.templateOrd ?? 0))
-			.map((c) => c.id);
-
-		if (deletedCardIds.length > 0) {
-			this.store.cards.bulkSoftDelete(deletedCardIds);
-			this.sessionPersistence?.removeReviewedCards(deletedCardIds);
-		}
-
-		const createdCardIds: string[] = [];
-		for (const gen of desiredGenerated) {
-			if (existingOrds.has(gen.templateOrd)) continue;
-			const card = this.createCardFromGenerated(gen, updatedNote, newNoteType);
-			createdCardIds.push(card.id);
-		}
-
-		const allAffectedIds = [
-			...keptCardIds,
-			...createdCardIds,
-			...deletedCardIds,
-		];
-		if (allAffectedIds.length > 0) {
-			this.emitEvent("cards:bulk", { cardIds: allAffectedIds });
-		}
-
-		return { keptCardIds, createdCardIds, deletedCardIds };
-	}
-
-	private reconcileImageOcclusionCards(
-		note: Note,
-		noteType: NoteType,
-		fields: Record<string, string>,
-	): UpdateNoteFieldsResult {
-		const updatedNote: Note = { ...note, fields };
-		const existingCards = this.store?.cards.getCardsByNoteId(note.id) ?? [];
-		const existingOrds = new Set(
-			existingCards.map((card) => card.templateOrd ?? 0),
+		return this.noteMutation.changeNoteType(
+			noteId,
+			newNoteTypeId,
+			fieldMapping,
 		);
-
-		const desiredGenerated = generateCardsForNote(updatedNote, noteType);
-		const desiredOrds = new Set(
-			desiredGenerated.map((card) => card.templateOrd),
-		);
-
-		// Keep existing cards whose ord still exists in new definition.
-		const keptCards = existingCards.filter((card) =>
-			desiredOrds.has(card.templateOrd ?? 0),
-		);
-
-		const removedCardIds = existingCards
-			.filter((card) => !desiredOrds.has(card.templateOrd ?? 0))
-			.map((card) => card.id);
-
-		const createdCards: FSRSCardData[] = [];
-		for (const gen of desiredGenerated) {
-			if (existingOrds.has(gen.templateOrd)) continue;
-			createdCards.push(
-				this.createCardFromGenerated(gen, updatedNote, noteType),
-			);
-		}
-
-		if (removedCardIds.length > 0) {
-			this.store?.cards.bulkSoftDelete(removedCardIds);
-			this.sessionPersistence?.removeReviewedCards(removedCardIds);
-			this.emitEvent("cards:bulk", {
-				cardIds: removedCardIds,
-				action: "removed",
-			});
-		}
-
-		const updatedCardIds = [
-			...keptCards.map((card) => card.id),
-			...createdCards.map((card) => card.id),
-		];
-
-		if (updatedCardIds.length > 0) {
-			this.emitEvent("cards:bulk", {
-				cardIds: updatedCardIds,
-			});
-		}
-
-		return { updatedCardIds };
-	}
-
-	private createCardFromGenerated(
-		gen: GeneratedCard,
-		note: Note,
-		noteType: NoteType,
-		createdAt?: number,
-	): FSRSCardData {
-		const template =
-			noteType.templates.find((t) => t.ordinal === gen.templateOrd) ??
-			noteType.templates[0];
-		if (!template)
-			throw new Error(`Note type "${noteType.name}" has no templates`);
-
-		const question = renderTemplate(template.qfmt, {
-			fields: note.fields,
-			clozeIndex: gen.templateOrd,
-		});
-		const answer = renderTemplate(template.afmt, {
-			fields: note.fields,
-			frontSide: "",
-			clozeIndex: gen.templateOrd,
-		});
-
-		const defaultData = createDefaultFSRSData(gen.id);
-		const fsrsData: FSRSCardData = {
-			...defaultData,
-			question,
-			answer,
-			sourceUid: gen.sourceUid,
-			noteId: gen.noteId,
-			templateOrd: gen.templateOrd,
-			noteTypeId: note.noteTypeId,
-			cardType: deriveCardType(noteType, gen.templateOrd),
-			createdVia: note.createdVia,
-			sourceText: note.sourceText,
-			alwaysTypeIn: note.tags.includes(FLASHCARD_CONFIG.alwaysTypeInTag),
-			...(createdAt != null && { createdAt }),
-		};
-
-		this.store?.set(gen.id, fsrsData);
-		return fsrsData;
 	}
 }

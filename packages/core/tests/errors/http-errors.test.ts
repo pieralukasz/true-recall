@@ -54,4 +54,27 @@ describe("HTTP error normalization", () => {
 		expect(error.cause).toBe(cause);
 		expect(describeErrorForUser(error)).not.toContain("database path");
 	});
+
+	it("preserves a typed HTTP error wrapped by a provider service", () => {
+		const cause = fromHttpResponse(429, {
+			error: { code: "budget_exceeded", message: "internal budget detail" },
+		});
+		const wrapped = new Error("Provider request failed", { cause });
+
+		expect(toAppError(wrapped)).toBe(cause);
+		expect(describeErrorForUser(wrapped)).toBe(
+			"The provider rate limit or usage limit was reached. Try again later.",
+		);
+		expect(isTransient(wrapped)).toBe(true);
+	});
+
+	it("does not loop on a self-referencing error cause", () => {
+		const cause = new Error("cyclic failure");
+		Object.defineProperty(cause, "cause", { value: cause });
+
+		const error = toAppError(cause);
+
+		expect(error).toBeInstanceOf(AppError);
+		expect(error.cause).toBe(cause);
+	});
 });

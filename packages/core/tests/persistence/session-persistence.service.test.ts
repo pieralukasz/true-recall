@@ -3,7 +3,6 @@
  * Specifically tests recordReview() calling addReviewLog() correctly
  */
 
-import type { App } from "obsidian";
 import { Rating, State } from "ts-fsrs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -28,7 +27,7 @@ describe("SessionPersistenceService", () => {
 	let mockStore: {
 		stats: typeof mockStats;
 	};
-	let mockApp: Partial<App>;
+	let mockApp: Record<string, never>;
 	let mockDayBoundaryService: {
 		getTodayKey: ReturnType<typeof vi.fn>;
 		getTodayBoundary: ReturnType<typeof vi.fn>;
@@ -80,7 +79,7 @@ describe("SessionPersistenceService", () => {
 		};
 
 		service = new SessionPersistenceService(
-			mockApp as App,
+			mockApp,
 			mockStore as unknown as SqliteStoreService,
 			mockDayBoundaryService as unknown as DayBoundaryService,
 		);

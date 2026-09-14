@@ -8,11 +8,12 @@ import { h } from "preact";
 import { mountPreact } from "@true-recall/obsidian/preact";
 
 import type TrueRecallPlugin from "../main";
-import { SettingsApp } from "./SettingsApp";
+import { SettingsPageContent } from "./SettingsPageContent";
+import { SETTINGS_PAGES, type SettingsPageId } from "./settings-pages";
 
 export class TrueRecallSettingTab extends PluginSettingTab {
 	plugin: TrueRecallPlugin;
-	private unmountPreact?: () => void;
+	private readonly mountedPages = new Map<HTMLElement, () => void>();
 
 	constructor(app: App, plugin: TrueRecallPlugin) {
 		super(app, plugin);
@@ -20,53 +21,51 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 	}
 
 	getSettingDefinitions(): SettingDefinitionItem[] {
-		return [
-			{
-				name: "True Recall settings",
-				desc: "Configure review behavior, FSRS, data, integrations, and optional features.",
-				aliases: [
-					"General",
-					"AI provider",
-					"FSRS",
-					"Review",
-					"Data",
-					"Backup",
-					"Integrations",
-					"Plugins",
-					"Features",
-				],
-				render: (setting) => {
-					setting.settingEl.empty();
-					setting.settingEl.addClass("true-recall-settings-root");
-					return this.mountSettings(setting.settingEl);
+		return SETTINGS_PAGES.map((page) => ({
+			type: "page",
+			name: page.name,
+			desc: page.description,
+			items: [
+				{
+					name: `${page.name} options`,
+					desc: page.description,
+					aliases: [...page.searchAliases],
+					render: (setting) => {
+						setting.settingEl.empty();
+						return this.mountSettingsPage(setting.settingEl, page.id);
+					},
 				},
-			},
-		];
-	}
-
-	display(): void {
-		this.containerEl.empty();
-		this.mountSettings(this.containerEl);
+			],
+		}));
 	}
 
 	hide(): void {
-		this.unmountPreact?.();
-		this.unmountPreact = undefined;
+		for (const unmount of [...this.mountedPages.values()]) unmount();
 	}
 
-	private mountSettings(container: HTMLElement): () => void {
-		this.unmountPreact?.();
-		// Both mount paths (the settings tab and the search-definition renderer)
-		// need this class: it scopes every rule in settings.styles.css.
+	private mountSettingsPage(
+		container: HTMLElement,
+		pageId: SettingsPageId,
+	): () => void {
+		this.mountedPages.get(container)?.();
+		container.addClass("true-recall-settings-root");
 		container.addClass("tr-settings");
 		container.addClass("ep:overflow-x-hidden");
-		const unmount = mountPreact(container, this.plugin, h(SettingsApp, null));
-		this.unmountPreact = unmount;
-		return () => {
-			unmount();
-			if (this.unmountPreact === unmount) {
-				this.unmountPreact = undefined;
+		const unmountPreact = mountPreact(
+			container,
+			this.plugin,
+			h(SettingsPageContent, { pageId }),
+		);
+		let mounted = true;
+		const cleanup = () => {
+			if (!mounted) return;
+			mounted = false;
+			unmountPreact();
+			if (this.mountedPages.get(container) === cleanup) {
+				this.mountedPages.delete(container);
 			}
 		};
+		this.mountedPages.set(container, cleanup);
+		return cleanup;
 	}
 }

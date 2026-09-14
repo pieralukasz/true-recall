@@ -1,4 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+import { HttpError } from "@true-recall/core/errors";
 
 import type {
 	ApiContext,
@@ -49,6 +51,10 @@ function context(allowedOrigins: string[] = []): ApiContext {
 }
 
 describe("Local API security boundary", () => {
+	afterEach(() => {
+		vi.restoreAllMocks();
+	});
+
 	it("creates one persistent installation token and reuses it after restart", () => {
 		const localStorage = new Map<string, unknown>();
 		const saveLocalStorage = (key: string, value: unknown) => {
@@ -112,5 +118,37 @@ describe("Local API security boundary", () => {
 			"chrome-extension://trusted",
 		);
 		expect(res.headers?.Vary).toBe("Origin");
+	});
+
+	it("preserves status and retry metadata from a wrapped upstream error", async () => {
+		vi.spyOn(console, "warn").mockImplementation(() => undefined);
+		const res = response();
+		const upstream = new HttpError(429, {
+			backendCode: "budget_exceeded",
+			requestId: "upstream-request-id",
+		});
+		const ctx = context();
+		Object.assign(ctx.plugin, {
+			isStoreReady: () => {
+				throw new Error("Provider request failed", { cause: upstream });
+			},
+			app: { vault: { getName: () => "Test Vault" } },
+		});
+
+		await dispatch(
+			request("GET", "/status", { authorization: "Bearer secret-token" }),
+			res,
+			ctx,
+		);
+
+		expect(res.status).toBe(429);
+		expect(JSON.parse(res.body ?? "{}")).toMatchObject({
+			ok: false,
+			code: "budget_exceeded",
+			retryable: true,
+			requestId: "upstream-request-id",
+			error:
+				"The provider rate limit or usage limit was reached. Try again later.",
+		});
 	});
 });

@@ -13,18 +13,19 @@
 import { State } from "ts-fsrs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { countByState } from "@true-recall/obsidian/features/library/ui/panel/utils/card-status.utils";
-
-import { FSRSService } from "../../../src/services/fsrs/fsrs.service";
+import { FSRSService } from "@true-recall/core/services/fsrs/fsrs.service";
 import {
 	type QueueBuildOptions,
 	ReviewService,
-} from "../../../src/services/review/review.service";
-import type { FSRSFlashcardItem } from "../../../src/types";
+} from "@true-recall/core/services/review/review.service";
+import type { FSRSFlashcardItem } from "@true-recall/core/types";
+
+import { countByState } from "@true-recall/obsidian/features/library/ui/panel/utils/card-status.utils";
+
 import {
 	createDefaultFSRSSettings,
 	createMockFlashcard,
-} from "../../mocks/fsrs.mocks";
+} from "../../../core/tests/mocks/fsrs.mocks";
 
 /** Simulate what bulkForget does to a card's FSRS data */
 function forgetCard(card: FSRSFlashcardItem): FSRSFlashcardItem {

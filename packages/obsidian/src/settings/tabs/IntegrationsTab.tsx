@@ -1,5 +1,6 @@
 import { TRUERECALL_WEB_URL } from "@true-recall/core/constants";
 import type { TrueRecallSettings } from "@true-recall/core/types";
+import { withPluginUtm } from "@true-recall/core/utils";
 
 import {
 	Clickable,
@@ -161,7 +162,10 @@ export function IntegrationsTab() {
 						class="ep-btn ep-btn-outline"
 						onClick={() =>
 							window.open(
-								`${TRUERECALL_WEB_URL}/reference/claude-code-skill/`,
+								withPluginUtm(
+									`${TRUERECALL_WEB_URL}/reference/claude-code-skill/`,
+									"settings-integrations",
+								),
 								"_blank",
 							)
 						}

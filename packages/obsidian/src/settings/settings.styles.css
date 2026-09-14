@@ -15,65 +15,12 @@
 	color: var(--text-normal);
 }
 
-.tr-settings-panel {
+.tr-settings-page {
 	width: 100%;
 	max-width: 980px;
 	margin-inline: auto;
 	padding-bottom: var(--size-4-5);
 	container-type: inline-size;
-}
-
-/* ── Tab bar ── */
-
-.tr-settings-tabs {
-	display: flex;
-	width: fit-content;
-	max-width: 100%;
-	gap: 2px;
-	margin: 0 auto var(--size-4-6);
-	padding: 4px;
-	border: var(--border-width) solid var(--background-modifier-border);
-	border-radius: var(--radius-l);
-	background: var(--background-secondary);
-	overflow-x: auto;
-	box-shadow: var(--input-shadow);
-}
-
-.tr-settings-tab {
-	flex-shrink: 0;
-	padding: 7px var(--size-4-4);
-	border: 0;
-	border-radius: calc(var(--radius-l) - 3px);
-	background: transparent;
-	color: var(--text-muted);
-	font-size: var(--font-ui-small);
-	font-weight: var(--font-medium);
-	line-height: var(--line-height-tight);
-	white-space: nowrap;
-	box-shadow: none;
-	cursor: pointer;
-	transition:
-		color 0.15s ease,
-		background-color 0.15s ease,
-		box-shadow 0.15s ease;
-}
-
-.tr-settings-tab:hover {
-	background-color: var(--background-modifier-hover);
-	color: var(--text-normal);
-	box-shadow: none;
-}
-
-.tr-settings-tab.is-active {
-	background-color: var(--background-primary);
-	color: var(--text-accent);
-	box-shadow: var(--input-shadow);
-}
-
-.tr-settings-tab:focus-visible {
-	outline: 2px solid
-		hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.5);
-	outline-offset: -2px;
 }
 
 /* ── Sections ── */
@@ -1220,22 +1167,12 @@
 		--tr-section-padding: var(--size-4-4);
 	}
 
-	.tr-settings-tabs {
-		width: 100%;
-		margin-bottom: var(--size-4-4);
-	}
-
 	.tr-settings .tr-access-levels {
 		grid-template-columns: 1fr;
 	}
 
 	.tr-settings .tr-access-level {
 		min-height: 0;
-	}
-
-	.tr-settings-tab {
-		flex: 1 0 auto;
-		text-align: center;
 	}
 
 	.tr-settings .tr-setting-section__body > .setting-item {

@@ -401,7 +401,8 @@ export const TRUERECALL_WEB_URL =
 	typeof __TRUERECALL_WEB_URL__ === "string"
 		? __TRUERECALL_WEB_URL__
 		: "https://www.truerecall.app";
-export const TRUERECALL_NEWSLETTER_URL = "https://truerecall.app/#newsletter";
+/** Newsletter sign-up section on the landing page. */
+export const TRUERECALL_NEWSLETTER_URL = `${TRUERECALL_WEB_URL}/#newsletter`;
 export const TRUERECALL_PRICING_URL = `${TRUERECALL_WEB_URL}/pricing/`;
 /** Sign-in page; new accounts get a free Pro trial key. */
 export const TRUERECALL_LOGIN_URL = `${TRUERECALL_WEB_URL}/login`;

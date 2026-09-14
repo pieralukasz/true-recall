@@ -1,9 +1,7 @@
-import { effect } from "@preact/signals";
 import {
 	ItemView,
 	Menu,
 	Scope,
-	TFile,
 	type ViewStateResult,
 	type WorkspaceLeaf,
 } from "obsidian";
@@ -14,29 +12,20 @@ import type { AssistantContext } from "@true-recall/core/ai/assistant";
 import { SemanticAnswerGradingService } from "@true-recall/core/ai/grading/semantic-answer-grading.service";
 import { VIEW_TYPE_REVIEW } from "@true-recall/core/constants";
 import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
-import {
-	extractKeywords,
-	selectRelevantSections,
-} from "@true-recall/core/helpers/context-excerpt";
-import { DEFAULT_LEECH_THRESHOLD } from "@true-recall/core/helpers/leech-helpers";
 import type { SessionPersistenceService } from "@true-recall/core/persistence/session/session-persistence.service";
 import { FSRSService } from "@true-recall/core/services/fsrs/fsrs.service";
 import { ReviewService } from "@true-recall/core/services/review/review.service";
 import {
-	type CardSchedulingMeta,
 	extractFSRSSettings,
 	type FSRSFlashcardItem,
 	type FSRSPreset,
-	type LocalAnswerAssessment,
 	type ReviewSessionTopUp,
-	type ReviewSessionTopUpAvailability,
-	type SemanticGradingResult,
 } from "@true-recall/core/types";
 import { isPreviewCustomStudy } from "@true-recall/core/types/review-session.types";
 
 import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpClient";
 import { CommandService, ReviewUndoHook } from "@true-recall/obsidian/commands";
-import { G, getDataLayer, Q } from "@true-recall/obsidian/data";
+import { G, getDataLayer } from "@true-recall/obsidian/data";
 import { assistantContextFromCard } from "@true-recall/obsidian/features/assistant/ui/ai-context-source";
 import {
 	FACT_CHECK_QUEUED_MESSAGE,
@@ -45,7 +34,6 @@ import {
 } from "@true-recall/obsidian/features/assistant/ui/fact-check";
 import { openAiWorkspace } from "@true-recall/obsidian/features/assistant/ui/open-ai-workspace";
 import { ReviewSessionController } from "@true-recall/obsidian/features/study/services/ReviewSessionController";
-import type { PresetPickerOption } from "@true-recall/obsidian/features/study/ui/review/components";
 import {
 	AnswerHandler,
 	CardActionsHandler,
@@ -53,41 +41,24 @@ import {
 	KeyboardHandler,
 } from "@true-recall/obsidian/features/study/ui/review/handlers";
 import {
-	applyMutation,
-	assessTypedAnswer,
 	buildReviewFollowUpContext,
-	deriveTypeInMode,
-	getEmptyQueueMessage,
 	getTypeInModeStorage,
-	isRatingLockedForTypeIn,
-	isTypeInRequiredForCard,
-	nextTypeInMode,
-	persistTypeInMode,
-	readPersistedTypeInMode,
-	shouldRunAIGradingOnReveal,
-	suggestedRatingToGrade,
-	type TypeInMode,
 } from "@true-recall/obsidian/features/study/ui/review/helpers";
 import { ReviewSelectionBubble } from "@true-recall/obsidian/features/study/ui/review/ReviewSelectionBubble";
 import {
 	filtersFromViewState,
 	filtersToViewState,
-	isCustomSession,
 	type SessionFilters,
 } from "@true-recall/obsidian/features/study/ui/review/review.types";
 import { mountPreact } from "@true-recall/obsidian/preact";
 import { notify } from "@true-recall/obsidian/services/notification.service";
-import {
-	lastMutation,
-	notifyReviewSessionCardGraded,
-	reviewSessionCardGraded,
-} from "@true-recall/obsidian/services/signals";
+import { notifyReviewSessionCardGraded } from "@true-recall/obsidian/services/signals";
 import {
 	type AppStore,
 	createAppStore,
 	type ReviewApi,
 } from "@true-recall/obsidian/store";
-import { capabilities, isMobile } from "@true-recall/obsidian/utils/platform";
+import { isMobile } from "@true-recall/obsidian/utils/platform";
 import { runWhenLayoutReady } from "@true-recall/obsidian/views/layout-ready";
 import {
 	ReviewApp,
@@ -96,30 +67,22 @@ import {
 
 import type TrueRecallPlugin from "../../main";
 import { isPluginEnabled } from "../../plugin/plugin-utils";
-
-interface TypeInAssessmentState {
-	cardId: string | null;
-	typedAnswer: string;
-	localAssessment: LocalAnswerAssessment | null;
-	semanticResult: SemanticGradingResult | null;
-	semanticMessage: string | null;
-	isChecking: boolean;
-}
-
-function createEmptyTypeInState(
-	cardId: string | null = null,
-): TypeInAssessmentState {
-	return {
-		cardId,
-		typedAnswer: "",
-		localAssessment: null,
-		semanticResult: null,
-		semanticMessage: null,
-		isChecking: false,
-	};
-}
+import { populateReviewActionsMenu } from "./ReviewActionsMenu";
+import { createReviewModel } from "./ReviewPresenter";
+import { ReviewPresetController } from "./ReviewPresetController";
+import { ReviewSessionOrchestrator } from "./ReviewSessionOrchestrator";
+import { ReviewSessionSubscriptions } from "./ReviewSessionSubscriptions";
+import { ReviewSourceNavigator } from "./ReviewSourceNavigator";
+import { TypeInController } from "./TypeInController";
 
 export class ReviewView extends ItemView {
+	private orchestrator: ReviewSessionOrchestrator;
+	private subscriptions: ReviewSessionSubscriptions;
+	private presets: ReviewPresetController;
+
+	private typeIn: TypeInController;
+	private sourceNavigator: ReviewSourceNavigator;
+
 	private plugin: TrueRecallPlugin;
 	private fsrsService: FSRSService;
 	private reviewService: ReviewService;
@@ -146,12 +109,8 @@ export class ReviewView extends ItemView {
 	private unmountPreact?: () => void;
 	private openNoteAction: HTMLElement | null = null;
 	private unsubscribe: (() => void) | null = null;
-	private sessionSignalDisposer: (() => void) | null = null;
-	private reviewSyncDisposer: (() => void) | null = null;
 	private disposeReviewHook: (() => void) | null = null;
 	private askBubble: ReviewSelectionBubble | null = null;
-	private typeInState: TypeInAssessmentState = createEmptyTypeInState();
-	private sessionTypeInModeEnabled = false;
 	private queuedFollowUpCount = 0;
 
 	private get review(): ReviewApi {
@@ -161,6 +120,18 @@ export class ReviewView extends ItemView {
 	constructor(leaf: WorkspaceLeaf, plugin: TrueRecallPlugin) {
 		super(leaf);
 		this.plugin = plugin;
+		this.sourceNavigator = new ReviewSourceNavigator(plugin, () => this.review);
+		this.typeIn = new TypeInController({
+			getReview: () => this.review,
+			getSettings: () => this.plugin.settings,
+			getStorage: () => getTypeInModeStorage(this.plugin.app),
+			showAnswer: () => this.answerHandler.handleShowAnswer(),
+			grade: (card, answer, context) =>
+				this.answerHandler.gradeTypedAnswerSemantically(card, answer, context),
+			resolveGradingContext: (card) =>
+				this.sourceNavigator.resolveGradingContext(card),
+		});
+
 		this.sessionStore = createAppStore({
 			getSettings: () => this.plugin.settings,
 		});
@@ -189,7 +160,7 @@ export class ReviewView extends ItemView {
 			() => this.plugin.settings,
 			new ObsidianHttpClient(),
 		);
-		this.applyDefaultTypeInMode();
+		this.typeIn.applyDefaultTypeInMode();
 
 		const fsrsSettings = extractFSRSSettings(plugin.settings);
 		this.fsrsService = new FSRSService(fsrsSettings);
@@ -233,10 +204,44 @@ export class ReviewView extends ItemView {
 			},
 		);
 
+		this.subscriptions = new ReviewSessionSubscriptions(
+			plugin,
+			() => this.review,
+			() => this.filters,
+			this.sessionId,
+		);
+		this.presets = new ReviewPresetController(
+			plugin,
+			this.presetCache,
+			() => this.review,
+			() => this.filters,
+			this.sourceNavigator,
+			() => this.answerHandler.updateSchedulingPreview(),
+		);
+		this.orchestrator = new ReviewSessionOrchestrator({
+			plugin,
+			controller: this.reviewController,
+			fsrsService: this.fsrsService,
+			commandService: this.sessionCommandService,
+			getReview: () => this.review,
+			getFilters: () => this.filters,
+			setFilters: (filters) => {
+				this.filters = filters;
+			},
+			cachePresets: (queue) => this.presets.cachePresetsForQueue(queue),
+			onSessionStarted: () => {
+				this.queuedFollowUpCount = 0;
+				this.subscriptions.subscribeToSessionEvents();
+			},
+			onCardChanged: () => {
+				this.typeIn.resetTypeInState(this.review.getCurrentCard()?.id ?? null);
+				this.answerHandler.updateSchedulingPreview();
+			},
+		});
 		this.keyboardHandler = new KeyboardHandler(
 			() => this.review,
 			{
-				onShowAnswer: () => void this.handleReveal(),
+				onShowAnswer: () => void this.typeIn.handleReveal(),
 				onAnswer: (rating) => this.handleAnswer(rating as Grade),
 				onUndo: async () => {
 					await this.undoSessionAction();
@@ -252,98 +257,15 @@ export class ReviewView extends ItemView {
 					this.cardActionsHandler.handleAddCopyOfCurrentFlashcard(),
 				onEditCard: () => this.cardActionsHandler.handleEditCardModal(),
 				onEditComment: () => this.cardActionsHandler.handleEditComment(),
-				onCycleTypeInMode: () => this.cycleTypeInMode(),
-				canRateShortcuts: () => !this.isRatingLocked(),
-				isTypeInActive: () => this.isTypeInRequiredForCurrentCard(),
+				onCycleTypeInMode: () => this.typeIn.cycleTypeInMode(),
+				canRateShortcuts: () => !this.typeIn.isRatingLocked(),
+				isTypeInActive: () => this.typeIn.isTypeInRequiredForCurrentCard(),
 				onFocusTypeIn: () => this.focusTypeInEditor(),
-				getSuggestedRating: () => this.getSuggestedRatingForCurrentCard(),
+				getSuggestedRating: () =>
+					this.typeIn.getSuggestedRatingForCurrentCard(),
 			},
 			this.plugin.settings.reviewKeybindings,
 		);
-	}
-
-	private getCurrentTypeInState(cardId: string): TypeInAssessmentState {
-		if (this.typeInState.cardId !== cardId) {
-			return createEmptyTypeInState(cardId);
-		}
-		return this.typeInState;
-	}
-
-	private setTypeInState(
-		cardId: string,
-		patch: Partial<TypeInAssessmentState>,
-	): void {
-		const current = this.getCurrentTypeInState(cardId);
-		this.typeInState = {
-			...current,
-			...patch,
-			cardId,
-		};
-		this.review.notifyChange();
-	}
-
-	private resetTypeInState(cardId: string | null = null): void {
-		this.typeInState = createEmptyTypeInState(cardId);
-	}
-
-	private applyDefaultTypeInMode(): void {
-		if (!isPluginEnabled(this.plugin.settings, "type-in-mode")) {
-			this.sessionTypeInModeEnabled = false;
-			return;
-		}
-		const persisted = readPersistedTypeInMode(
-			getTypeInModeStorage(this.plugin.app),
-		);
-		// Settings persisted before the diff-mode removal may still hold "diff";
-		// anything that is not "off" now means AI grading.
-		const mode = persisted ?? this.plugin.settings.defaultTypeInMode;
-		this.sessionTypeInModeEnabled = mode !== "off";
-	}
-
-	private getTypeInMode(): TypeInMode {
-		return deriveTypeInMode(this.sessionTypeInModeEnabled);
-	}
-
-	private cycleTypeInMode(): void {
-		if (!isPluginEnabled(this.plugin.settings, "type-in-mode")) return;
-		const currentMode = this.getTypeInMode();
-		const card = this.review.getCurrentCard();
-		const alwaysTypeIn = !!(card?.alwaysTypeIn || card?.fsrs.alwaysTypeIn);
-		const nextMode = nextTypeInMode(currentMode, alwaysTypeIn);
-		const currentId = card?.id ?? null;
-
-		this.sessionTypeInModeEnabled = nextMode !== "off";
-		persistTypeInMode(getTypeInModeStorage(this.plugin.app), nextMode);
-
-		// When answer is already revealed, preserve grading results;
-		// the UI shows/hides assessment based on mode flags.
-		if (this.review.isAnswerRevealed) {
-			this.review.notifyChange();
-			notify().info(this.getTypeInModeMessage(nextMode));
-			return;
-		}
-
-		this.resetTypeInState(currentId);
-		this.review.notifyChange();
-		notify().info(this.getTypeInModeMessage(nextMode));
-	}
-
-	private getTypeInModeMessage(mode: TypeInMode): string {
-		return mode === "ai" ? "Type in: On" : "Type in: Off";
-	}
-
-	private isTypeInRequiredForCurrentCard(): boolean {
-		return isTypeInRequiredForCard(
-			this.review.getCurrentCard(),
-			this.sessionTypeInModeEnabled,
-		);
-	}
-
-	private getSuggestedRatingForCurrentCard(): Grade | null {
-		const card = this.review.getCurrentCard();
-		if (!card) return null;
-		const state = this.getCurrentTypeInState(card.id);
-		return suggestedRatingToGrade(state.semanticResult?.suggestedRating);
 	}
 
 	private focusTypeInEditor(): void {
@@ -361,36 +283,12 @@ export class ReviewView extends ItemView {
 		textarea?.focus();
 	}
 
-	private isRatingLocked(): boolean {
-		const card = this.review.getCurrentCard();
-		if (!card) return false;
-		const state = this.getCurrentTypeInState(card.id);
-		return isRatingLockedForTypeIn({
-			requiresTypeIn: this.isTypeInRequiredForCurrentCard(),
-			isAnswerRevealed: this.review.isAnswerRevealed,
-			isChecking: state.isChecking,
-		});
-	}
-
-	private handleTypedAnswerChange(value: string): void {
-		const card = this.review.getCurrentCard();
-		if (!card || !this.isTypeInRequiredForCurrentCard()) return;
-
-		this.setTypeInState(card.id, {
-			typedAnswer: value,
-			localAssessment: null,
-			semanticResult: null,
-			semanticMessage: null,
-			isChecking: false,
-		});
-	}
-
 	private handleAskFollowUp(question: string): boolean {
 		const card = this.review.getCurrentCard();
 		const service = this.plugin.assistantService;
 		const trimmed = question.trim();
 		if (!card || !service || trimmed === "") return false;
-		const state = this.getCurrentTypeInState(card.id);
+		const state = this.typeIn.getCurrentTypeInState(card.id);
 		service.enqueue({
 			instruction: trimmed,
 			context: buildReviewFollowUpContext(card, {
@@ -403,79 +301,9 @@ export class ReviewView extends ItemView {
 		return true;
 	}
 
-	private async handleReveal(): Promise<void> {
-		const card = this.review.getCurrentCard();
-		if (!card) return;
-		const requiresTypeIn = this.isTypeInRequiredForCurrentCard();
-		if (!requiresTypeIn) {
-			this.answerHandler.handleShowAnswer();
-			return;
-		}
-
-		const state = this.getCurrentTypeInState(card.id);
-		const typedAnswer = state.typedAnswer.trim();
-		// A check is already in flight; ignore repeated reveal requests.
-		if (state.isChecking) return;
-
-		const shouldRunAI = shouldRunAIGradingOnReveal({
-			requiresTypeIn,
-			typedAnswer: state.typedAnswer,
-			isChecking: state.isChecking,
-		});
-
-		// Empty input: plain reveal, no grading.
-		if (!shouldRunAI) {
-			this.answerHandler.handleShowAnswer();
-			this.setTypeInState(card.id, {
-				localAssessment: null,
-				semanticResult: null,
-				semanticMessage: null,
-				isChecking: false,
-			});
-			return;
-		}
-
-		// Two-stage reveal: grade the user's answer first; the model answer
-		// stays hidden until the verdict (or failure) lands. The local diff
-		// is computed up front only as the AI-failure fallback display.
-		const localAssessment = assessTypedAnswer(card.answer ?? "", typedAnswer);
-		this.setTypeInState(card.id, {
-			isChecking: true,
-			localAssessment,
-			semanticResult: null,
-			semanticMessage: null,
-		});
-
-		let semanticResult: SemanticGradingResult | null = null;
-		let semanticMessage: string | null = null;
-		try {
-			const gradingContext = await this.resolveGradingContext(card);
-			semanticResult = await this.answerHandler.gradeTypedAnswerSemantically(
-				card,
-				typedAnswer,
-				gradingContext,
-			);
-		} catch (error) {
-			semanticMessage =
-				error instanceof Error
-					? error.message
-					: "AI grading unavailable. Please rate manually.";
-		}
-
-		const activeCard = this.review.getCurrentCard();
-		if (!activeCard || activeCard.id !== card.id) return;
-
-		this.answerHandler.handleShowAnswer();
-		this.setTypeInState(card.id, {
-			isChecking: false,
-			semanticResult,
-			semanticMessage,
-		});
-	}
-
 	private handleAnswer(rating: Grade): void {
 		if (this.isProcessingAnswer) return;
-		if (this.isRatingLocked()) return;
+		if (this.typeIn.isRatingLocked()) return;
 		// Click path: the queue advances synchronously but the re-render that
 		// hides the rating bar is async, so a fast double-click would grade
 		// the next card sight-unseen (keyboard path already checks this).
@@ -491,7 +319,7 @@ export class ReviewView extends ItemView {
 				this.notifyOtherSessionsCardReviewed(outcome.card.id);
 			}
 			const nextCardId = this.review.getCurrentCard()?.id ?? null;
-			this.resetTypeInState(nextCardId);
+			this.typeIn.resetTypeInState(nextCardId);
 		} finally {
 			this.isProcessingAnswer = false;
 		}
@@ -509,8 +337,8 @@ export class ReviewView extends ItemView {
 		this.filters.dayStartHour = this.plugin.settings.dayStartHour;
 		this.crammedCardIds.clear();
 		this.isProcessingAnswer = false;
-		this.applyDefaultTypeInMode();
-		this.resetTypeInState();
+		this.typeIn.applyDefaultTypeInMode();
+		this.typeIn.resetTypeInState();
 
 		await super.setState(state, result);
 		// During startup restore, enrichment (frontmatter index, hierarchy
@@ -597,7 +425,7 @@ export class ReviewView extends ItemView {
 		const container = this.containerEl.children[1];
 		if (!(container instanceof HTMLElement)) return Promise.resolve();
 		container.empty();
-		this.applyDefaultTypeInMode();
+		this.typeIn.applyDefaultTypeInMode();
 
 		this.unsubscribe = this.sessionStore.subscribe(
 			(state) => state.review,
@@ -676,24 +504,19 @@ export class ReviewView extends ItemView {
 			container,
 			this.plugin,
 			h(ReviewApp, {
-				model: {
+				model: createReviewModel({
+					plugin: this.plugin,
 					store: this.sessionStore,
-					session: {
-						kind: isCustomSession(this.filters) ? "custom" : "standard",
-						continuous: this.plugin.settings.continuousCustomReviews,
-						cramming: this.filters.crammingMode ?? false,
-						retrievabilityMode:
-							this.filters.schedulingMode === "retrievability",
-						display: {
-							header: this.plugin.settings.showReviewHeader,
-							headerStats: this.plugin.settings.showReviewHeaderStats,
-							nextReviewTime: this.plugin.settings.showNextReviewTime,
-						},
-					},
+					filters: this.filters,
+					typeIn: this.typeIn,
+					answerHandler: this.answerHandler,
+					getQueuedFollowUpCount: () => this.queuedFollowUpCount,
+					getTopUpAvailability: () => this.orchestrator.getTopUpAvailability(),
+					getPresetOptions: () => this.presets.getPresetOptions(),
 					actions: {
-						onShowAnswer: () => void this.handleReveal(),
+						onShowAnswer: () => void this.typeIn.handleReveal(),
 						onTypedAnswerChange: (value: string) =>
-							this.handleTypedAnswerChange(value),
+							this.typeIn.handleTypedAnswerChange(value),
 						onAskFollowUp: isPluginEnabled(this.plugin.settings, "ai-assistant")
 							? (question: string) => this.handleAskFollowUp(question)
 							: undefined,
@@ -701,7 +524,7 @@ export class ReviewView extends ItemView {
 						onAnswer: (rating: Grade) => void this.handleAnswer(rating),
 						onContentChange: (value: string, field: "question" | "answer") =>
 							void this.editHandler.saveContent(value, field),
-						onOpenSourceNote: () => this.handleOpenSourceNote(),
+						onOpenSourceNote: () => this.sourceNavigator.handleOpenSourceNote(),
 						onEditComment: () =>
 							void this.cardActionsHandler.handleEditComment(),
 						onRemoveComment: () =>
@@ -709,61 +532,19 @@ export class ReviewView extends ItemView {
 						onClose: () => this.handleClose(),
 						onNextSession: () => this.handleNextSession(),
 						onOpenDashboard: () => void this.handleOpenDashboard(),
-						onTopUp: (topUp: ReviewSessionTopUp) => this.handleTopUp(topUp),
+						onTopUp: (topUp: ReviewSessionTopUp) =>
+							this.orchestrator.handleTopUp(topUp),
 						onEndSession: () => this.handleNextSession(),
 						onActionsMenu: (e: MouseEvent) => this.showActionsMenu(e),
 						// Card editing runs inside the shared AI Workspace.
 						onPolishMenu: isPluginEnabled(this.plugin.settings, "card-polish")
 							? (e: MouseEvent) => this.openCardPolishMenu(e)
 							: undefined,
-						onCycleTypeInMode: () => this.cycleTypeInMode(),
+						onCycleTypeInMode: () => this.typeIn.cycleTypeInMode(),
 						onPresetChange: (name: string) =>
-							void this.handlePresetChange(name),
+							void this.presets.handlePresetChange(name),
 					},
-					card: {
-						getQueuedFollowUpCount: () => this.queuedFollowUpCount,
-						getTopUpAvailability: () => this.getTopUpAvailability(),
-						getTypeInState: (card, isAnswerRevealed) => {
-							const requiresTypeIn = isTypeInRequiredForCard(
-								card,
-								this.sessionTypeInModeEnabled,
-							);
-							const state = this.getCurrentTypeInState(card.id);
-							return {
-								typeInMode: this.getTypeInMode(),
-								useTypeInMode: requiresTypeIn,
-								typedAnswer: state.typedAnswer,
-								isCheckingAnswer: state.isChecking,
-								isRatingLocked: isRatingLockedForTypeIn({
-									requiresTypeIn,
-									isAnswerRevealed,
-									isChecking: state.isChecking,
-								}),
-								localAssessment: state.localAssessment,
-								semanticResult: state.semanticResult,
-								semanticMessage: state.semanticMessage,
-								suggestedRating: suggestedRatingToGrade(
-									state.semanticResult?.suggestedRating,
-								),
-							};
-						},
-						getPresetName: (card: FSRSFlashcardItem) =>
-							this.answerHandler.resolvePreset(card).name,
-						getPresetOptions: () => this.getPresetOptions(),
-						getLeechThreshold: (card: FSRSFlashcardItem) =>
-							this.answerHandler.resolvePreset(card).leechThreshold ??
-							DEFAULT_LEECH_THRESHOLD,
-						resolveAudioPath: (card: FSRSFlashcardItem) => {
-							if (!card.noteId) return undefined;
-							const note = this.plugin.cardStore?.notes.getById(card.noteId);
-							if (!note?.fields) return undefined;
-							for (const [key, value] of Object.entries(note.fields)) {
-								if (key.startsWith("_audio_") && value) return value;
-							}
-							return undefined;
-						},
-					},
-				},
+				}),
 			}),
 		);
 	}
@@ -784,22 +565,13 @@ export class ReviewView extends ItemView {
 		const sharedReviewAtClose = this.review;
 		this.disposeReviewHook?.();
 		this.disposeReviewHook = null;
-		this.sessionCommandService.clearByType(
-			"review:answer",
-			"review:bury",
-			"review:suspend",
-			"review:forget",
-		);
-
-		if (this.plugin.cardStore) {
-			await this.plugin.cardStore.flush();
-		}
+		await this.orchestrator.finish();
 
 		this.askBubble?.unregister();
 		this.askBubble = null;
 
 		this.unsubscribe?.();
-		this.unsubscribeFromSessionEvents();
+		this.subscriptions.unsubscribeFromSessionEvents();
 		this.unmountPreact?.();
 
 		// Sync card data after review session ends
@@ -816,7 +588,7 @@ export class ReviewView extends ItemView {
 		if (sharedStoreStillOwnsSession) {
 			this.plugin.store?.setState({ review: this.review });
 		}
-		this.resetTypeInState();
+		this.typeIn.resetTypeInState();
 	}
 
 	private syncSharedReviewState(): void {
@@ -838,205 +610,28 @@ export class ReviewView extends ItemView {
 		}
 
 		this.openNoteAction = this.addAction("external-link", "Open note", () =>
-			this.handleOpenNote(),
+			this.sourceNavigator.handleOpenNote(),
 		);
 	}
-
-	private getPresetOptions(): PresetPickerOption[] {
-		return this.plugin.presetService.getPresets().map((p) => ({
-			value: p.name,
-			label: p.name,
-			retention: p.requestRetention,
-		}));
-	}
-
-	private cachePresetsForQueue(queue: FSRSFlashcardItem[]): void {
-		this.presetCache.clear();
-		for (const card of queue) {
-			const uid = card.sourceUid ?? "";
-			if (this.presetCache.has(uid)) continue;
-			this.presetCache.set(
-				uid,
-				this.plugin.presetService.resolvePresetForCard(card, {
-					projectPath: this.filters.projectPath,
-				}),
-			);
-		}
-	}
-
-	private handlePresetChange(newPresetName: string): void {
-		const card = this.review.getCurrentCard();
-		if (!card) return;
-
-		const newPreset = this.plugin.presetService.getPresetByName(newPresetName);
-		if (!newPreset) {
-			notify().error(`Preset "${newPresetName}" not found`);
-			return;
-		}
-
-		const sourceFile = this.resolveSourceFile(card);
-		if (!sourceFile) {
-			notify().warning("Cannot save preset: source note not found");
-			return;
-		}
-
-		// Persist to frontmatter (async, fire-and-forget for UI responsiveness)
-		void this.flashcardManager
-			.getFrontmatterService()
-			.setFsrsPreset(sourceFile.path, newPresetName);
-
-		const uid = card.sourceUid ?? "";
-		this.presetCache.set(uid, newPreset);
-
-		// Recalculate button intervals with new preset
-		this.answerHandler.updateSchedulingPreview();
-
-		// Force re-render so ButtonBar picks up new scheduling preview
-		this.review.notifyChange();
-	}
-
-	// ─── Session lifecycle ───────────────────────────────────────────────
-
 	async startSession(): Promise<void> {
 		const container = this.containerEl.children[1];
 		if (!(container instanceof HTMLElement)) return;
-
 		try {
-			this.applyDefaultTypeInMode();
-			const fsrsSettings = extractFSRSSettings(this.plugin.settings);
-			this.fsrsService.updateSettings(fsrsSettings);
-
-			const { queue } = this.reviewController.buildSession(this.filters);
-			const allMetaMap = this.plugin.dataLayer?.get<
-				Map<string, CardSchedulingMeta>
-			>(Q.ALL_META);
-			const allCards = allMetaMap
-				? [...allMetaMap.values()]
-				: this.plugin.cardStore.getAllSchedulingMeta();
-
-			if (queue.length === 0 && allCards.length === 0) {
-				this.mountEmptyState(
-					container,
-					"No flashcards found. Generate some flashcards first!",
-				);
-				return;
-			}
-
-			const now = new Date();
-			const hasAnyActive = allCards.some(
-				(card) =>
-					!(
-						card.fsrs.suspended ||
-						(card.fsrs.buriedUntil && new Date(card.fsrs.buriedUntil) > now)
-					),
+			this.typeIn.applyDefaultTypeInMode();
+			const prepared = this.orchestrator.prepare();
+			await new Promise<void>((resolve) =>
+				this.containerEl.win.requestAnimationFrame(() => resolve()),
 			);
-
-			if (!hasAnyActive && queue.length === 0) {
-				const msg =
-					this.filters.stateFilter === "buried"
-						? "No buried cards found."
-						: "All cards are suspended or buried. Unsuspend/unbury some cards to start reviewing.";
-				this.mountEmptyState(container, msg);
-				return;
-			}
-
-			if (!this.sessionPersistence) {
-				this.sessionPersistence = this.plugin.sessionPersistence;
-			}
-			if (!this.sessionPersistence) {
-				console.error("[ReviewView] sessionPersistence not initialized");
-				this.mountEmptyState(
-					container,
-					"Session persistence not ready. Please try again.",
-				);
-				return;
-			}
-
-			// Yield once before mounting Preact so the loading state can paint.
-			await new Promise((r) => window.requestAnimationFrame(r));
 			if (!this.containerEl.isConnected) return;
-
-			if (queue.length === 0) {
-				this.mountEmptyState(
-					container,
-					getEmptyQueueMessage(
-						this.filters.stateFilter,
-						this.filters.schedulingMode === "retrievability",
-					),
-				);
+			if (prepared.message) {
+				this.mountEmptyState(container, prepared.message);
 				return;
 			}
-
-			this.cachePresetsForQueue(queue);
-
-			this.review.setSessionFilters(this.filters);
-			this.review.startSession(queue);
-			this.queuedFollowUpCount = 0;
-			this.resetTypeInState(this.review.getCurrentCard()?.id ?? null);
-			this.subscribeToSessionEvents();
-			this.answerHandler.updateSchedulingPreview();
-
-			// Mount the Preact app now that the session is active
+			this.orchestrator.start(prepared.queue);
 			this.mountApp(container);
 		} catch (error) {
 			notify().operationFailed("start review session", error);
 		}
-	}
-
-	// ─── Signal-based mutation handling ──────────────────────────────────
-
-	private subscribeToSessionEvents(): void {
-		this.unsubscribeFromSessionEvents();
-
-		// preact-signals runs the effect callback immediately on creation, and
-		// lastMutation is never cleared — without this guard every new session
-		// would re-apply the last pre-session mutation to the fresh queue
-		// (e.g. force-adding a card past the daily new limit).
-		let isSubscribing = true;
-		this.sessionSignalDisposer = effect(() => {
-			const m = lastMutation.value;
-			if (isSubscribing) {
-				isSubscribing = false;
-				return;
-			}
-			if (!m) return;
-			// Targeted mutation handling instead of full session rebuild.
-			// rebuildActiveSession() recomputes cachedBadgeCounts from scratch,
-			// which can drift from the incremental counts maintained by
-			// recordAnswerAndNext() (e.g. New count appearing to increase
-			// when a Learning card is graded).
-			const resolvedProjectUids = this.filters.projectPath
-				? this.plugin.hierarchyService.getSourceUidsForProject(
-						this.filters.projectPath,
-					)
-				: undefined;
-			applyMutation(
-				m,
-				this.review,
-				this.flashcardManager,
-				this.plugin.cardStore,
-				this.filters,
-				resolvedProjectUids,
-			);
-		});
-
-		let isReviewSyncSubscribing = true;
-		this.reviewSyncDisposer = effect(() => {
-			const event = reviewSessionCardGraded.value;
-			if (isReviewSyncSubscribing) {
-				isReviewSyncSubscribing = false;
-				return;
-			}
-			if (!event || event.sourceSessionId === this.sessionId) return;
-			this.review.removeCardsByIds([event.cardId]);
-		});
-	}
-
-	private unsubscribeFromSessionEvents(): void {
-		this.sessionSignalDisposer?.();
-		this.sessionSignalDisposer = null;
-		this.reviewSyncDisposer?.();
-		this.reviewSyncDisposer = null;
 	}
 
 	// ─── Actions menu ────────────────────────────────────────────────────
@@ -1085,334 +680,25 @@ export class ReviewView extends ItemView {
 		menu.addSeparator();
 		this.populateActionsMenu(menu);
 	}
-
 	private populateActionsMenu(menu: Menu): void {
-		// Keyboard hints are noise on touch devices without a keyboard.
-		const withHint = (label: string, hint: string) =>
-			isMobile() ? label : `${label} (${hint})`;
-		const typeInMode = this.getTypeInMode();
-		const typeInMenuLabel = withHint(
-			typeInMode === "ai" ? "Type in: On" : "Type in: Off",
-			"t",
-		);
-
-		menu.addItem((item) =>
-			item
-				.setTitle(typeInMenuLabel)
-				.setIcon("text-cursor-input")
-				.onClick(() => this.cycleTypeInMode()),
-		);
-		menu.addSeparator();
-
-		if (isPluginEnabled(this.plugin.settings, "ai-assistant")) {
-			menu.addItem((item) =>
-				item
-					.setTitle("Ask AI about this card")
-					.setIcon("sparkles")
-					.onClick(() => {
-						openAiWorkspace(this.plugin, {
-							intent: "compose",
-							context: this.buildAssistantContext(),
-						});
-					}),
-			);
-			if (this.canFactCheckCurrentCard()) {
-				menu.addItem((item) =>
-					item
-						.setTitle("Fact check this card (AI)")
-						.setIcon("search-check")
-						.onClick(() => this.factCheckCurrentCard()),
-				);
-			}
-			// On mobile the polish button has no home in the grade bar, so it
-			// joins the actions menu here.
-			if (isMobile() && isPluginEnabled(this.plugin.settings, "card-polish")) {
-				menu.addItem((item) =>
-					item
-						.setTitle("Polish card (AI)")
-						.setIcon("wand")
-						.onClick((evt) => {
-							if (evt instanceof MouseEvent) this.openCardPolishMenu(evt);
-						}),
-				);
-			}
-			menu.addSeparator();
-		}
-
-		if (this.canUndoSessionAction()) {
-			menu.addItem((item) =>
-				item
-					.setTitle(withHint("Undo last action", "z"))
-					.setIcon("undo")
-					.onClick(() => void this.undoSessionAction()),
-			);
-			menu.addSeparator();
-		}
-
-		menu.addItem((item) =>
-			item
-				.setTitle(withHint("Move card", "m"))
-				.setIcon("folder-input")
-				.onClick(() => this.cardActionsHandler.handleMoveCard()),
-		);
-		menu.addItem((item) =>
-			item
-				.setTitle(withHint("Delete card", "shift+1"))
-				.setIcon("trash-2")
-				.onClick(() => this.cardActionsHandler.handleDelete()),
-		);
-		menu.addItem((item) =>
-			item
-				.setTitle(withHint("Suspend card", "shift+2"))
-				.setIcon("pause")
-				.onClick(() => this.cardActionsHandler.handleSuspend()),
-		);
-		menu.addItem((item) =>
-			item
-				.setTitle(withHint("Bury card", "-"))
-				.setIcon("eye-off")
-				.onClick(() => this.cardActionsHandler.handleBuryCard()),
-		);
-		menu.addItem((item) =>
-			item
-				.setTitle(withHint("Bury note", "="))
-				.setIcon("eye-off")
-				.onClick(() => this.cardActionsHandler.handleBuryNote()),
-		);
-		if (this.cardActionsHandler.canForgetCurrentCard()) {
-			menu.addItem((item) =>
-				item
-					.setTitle(withHint("Forget card", "f"))
-					.setIcon("rotate-ccw")
-					.onClick(() => this.cardActionsHandler.handleForget()),
-			);
-		}
-		const currentCard = this.review.getCurrentCard();
-		const isNoteReview = currentCard?.cardType === "note-review";
-
-		if (isNoteReview) {
-			menu.addItem((item) =>
-				item
-					.setTitle(withHint("Open note", "e"))
-					.setIcon("external-link")
-					.onClick(() => this.handleOpenSourceNote()),
-			);
-		} else {
-			menu.addItem((item) =>
-				item
-					.setTitle(withHint("Edit card", "e"))
-					.setIcon("pencil")
-					.onClick(() => void this.cardActionsHandler.handleEditCardModal()),
-			);
-			menu.addItem((item) =>
-				item
-					.setTitle("Change note type")
-					.setIcon("replace")
-					.onClick(() => void this.cardActionsHandler.handleChangeNoteType()),
-			);
-			menu.addItem((item) =>
-				item
-					.setTitle(withHint("Add flashcard", "a"))
-					.setIcon("plus")
-					.onClick(() => void this.cardActionsHandler.handleAddNewFlashcard()),
-			);
-			if (capabilities.canEditImageOcclusion()) {
-				menu.addItem((item) =>
-					item
-						.setTitle("Add image occlusion")
-						.setIcon("image")
-						.onClick(
-							() => void this.cardActionsHandler.handleAddImageOcclusion(),
-						),
-				);
-			}
-			menu.addItem((item) =>
-				item
-					.setTitle("Open source note")
-					.setIcon("external-link")
-					.onClick(() => this.handleOpenSourceNote()),
-			);
-		}
-	}
-
-	private async resolveGradingContext(card: FSRSFlashcardItem): Promise<{
-		sourceContext?: string;
-		sourceNotePath?: string;
-		relatedCards?: Array<{
-			fields: Record<string, string>;
-			noteType: string;
-		}>;
-	}> {
-		const MAX_CONTEXT_CHARS = 10000;
-		const MAX_RELATED_CARDS = 10;
-
-		// Prefer the sections of the note that actually talk about this card
-		// over a blind head slice.
-		const keywords = extractKeywords(`${card.question} ${card.answer ?? ""}`);
-		let sourceContext: string | undefined = card.sourceText
-			? selectRelevantSections(card.sourceText, keywords, MAX_CONTEXT_CHARS)
-			: undefined;
-		let sourceNotePath: string | undefined;
-
-		const file = this.resolveSourceFile(card);
-		if (file) {
-			sourceNotePath = file.path;
-			if (!sourceContext) {
-				try {
-					const content = await this.app.vault.cachedRead(file);
-					sourceContext = selectRelevantSections(
-						content,
-						keywords,
-						MAX_CONTEXT_CHARS,
-					);
-				} catch {
-					// Source file unreadable: fall back to no context.
-				}
-			}
-		}
-
-		const store = this.plugin.cardStore;
-		let relatedCards:
-			| Array<{ fields: Record<string, string>; noteType: string }>
-			| undefined;
-		if (store && card.sourceUid) {
-			const siblings = store.cards.getCardsBySourceUid(card.sourceUid) ?? [];
-			const collected: Array<{
-				fields: Record<string, string>;
-				noteType: string;
-			}> = [];
-			for (const sibling of siblings) {
-				if (sibling.id === card.id) continue;
-				if (!sibling.noteTypeId || !sibling.noteId) continue;
-				const noteType = store.noteTypes?.getById(sibling.noteTypeId);
-				if (!noteType) continue;
-				const note = store.notes.getById(sibling.noteId);
-				if (!note) continue;
-				const fields: Record<string, string> = {};
-				for (const fieldName of noteType.fields) {
-					fields[fieldName] = note.fields?.[fieldName] ?? "";
-				}
-				collected.push({ fields, noteType: noteType.name });
-				if (collected.length >= MAX_RELATED_CARDS) break;
-			}
-			if (collected.length > 0) relatedCards = collected;
-		}
-
-		return { sourceContext, sourceNotePath, relatedCards };
-	}
-
-	// ─── Navigation ──────────────────────────────────────────────────────
-
-	private resolveSourceFile(card: FSRSFlashcardItem): TFile | null {
-		if (card.sourceUid && this.plugin.frontmatterIndex) {
-			const filePath = this.plugin.frontmatterIndex.getFileByValue(
-				"flashcard_uid",
-				card.sourceUid,
-			);
-			if (filePath) {
-				const abstractFile = this.app.vault.getAbstractFileByPath(filePath);
-				if (abstractFile instanceof TFile) return abstractFile;
-			}
-		}
-
-		if (card.sourceNotePath) {
-			const abstractFile = this.app.vault.getAbstractFileByPath(
-				card.sourceNotePath,
-			);
-			if (abstractFile instanceof TFile) {
-				return abstractFile;
-			}
-		}
-
-		return null;
-	}
-
-	private handleOpenSourceNote(): void {
-		const card = this.review.getCurrentCard();
-		if (!card || !card.sourceNoteName) {
-			notify().warning("Source note not found");
-			return;
-		}
-
-		const sourceFile = this.resolveSourceFile(card);
-		if (sourceFile) {
-			void this.app.workspace.openLinkText(sourceFile.path, "", false);
-		} else {
-			notify().warning(`Source note "${card.sourceNoteName}" not found`);
-		}
-	}
-
-	private handleOpenNote(): void {
-		const card = this.review.getCurrentCard();
-		if (!card) return;
-
-		if (card.sourceNoteName) {
-			this.handleOpenSourceNote();
-		} else {
-			notify().info("This card has no associated source note");
-		}
+		populateReviewActionsMenu(menu, {
+			plugin: this.plugin,
+			getReview: () => this.review,
+			cardActionsHandler: this.cardActionsHandler,
+			getTypeInMode: () => this.typeIn.getTypeInMode(),
+			cycleTypeInMode: () => this.typeIn.cycleTypeInMode(),
+			buildAssistantContext: () => this.buildAssistantContext(),
+			canFactCheckCurrentCard: () => this.canFactCheckCurrentCard(),
+			factCheckCurrentCard: () => this.factCheckCurrentCard(),
+			openCardPolishMenu: (event) => this.openCardPolishMenu(event),
+			canUndoSessionAction: () => this.canUndoSessionAction(),
+			undoSessionAction: () => this.undoSessionAction(),
+			handleOpenSourceNote: () => this.sourceNavigator.handleOpenSourceNote(),
+		});
 	}
 
 	private handleClose(): void {
 		this.leaf.detach();
-	}
-
-	private getTopUpAvailability(): ReviewSessionTopUpAvailability {
-		if (this.filters.schedulingMode !== "retrievability") {
-			return { review: 0, new: 0 };
-		}
-		return this.reviewController.getTopUpAvailability(this.filters);
-	}
-
-	private async handleTopUp(topUp: ReviewSessionTopUp): Promise<boolean> {
-		if (this.filters.schedulingMode !== "retrievability") return false;
-
-		try {
-			const normalizedTopUp: ReviewSessionTopUp = {
-				...topUp,
-				count: Math.max(0, Math.floor(topUp.count)),
-			};
-			if (normalizedTopUp.count === 0) return false;
-
-			const { queue } = this.reviewController.buildTopUpSession(
-				this.filters,
-				normalizedTopUp,
-			);
-			if (queue.length === 0) {
-				notify().info(
-					`No ${normalizedTopUp.kind} cards are available for Top Up.`,
-				);
-				return false;
-			}
-
-			this.cachePresetsForQueue(queue);
-
-			if (this.review.getPhase().type === "waiting") {
-				const addedCount = this.review.addCardsToCurrentSession(queue);
-				if (addedCount === 0) {
-					notify().info("Those cards are already in the current session.");
-					return false;
-				}
-			} else {
-				this.filters = { ...this.filters, topUp: normalizedTopUp };
-				this.review.setSessionFilters(this.filters);
-				this.review.startSession(queue);
-			}
-
-			this.sessionCommandService.clearByType(
-				"review:answer",
-				"review:bury",
-				"review:suspend",
-				"review:forget",
-			);
-
-			this.resetTypeInState(this.review.getCurrentCard()?.id ?? null);
-			this.answerHandler.updateSchedulingPreview();
-			return true;
-		} catch (error) {
-			notify().operationFailed("start Top Up", error);
-			return false;
-		}
 	}
 
 	private handleNextSession(): void {

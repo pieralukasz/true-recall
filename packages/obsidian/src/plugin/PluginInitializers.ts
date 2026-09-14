@@ -33,12 +33,12 @@ import { createAppStore } from "@true-recall/obsidian/store";
 import { isMobile } from "@true-recall/obsidian/utils/platform";
 
 import type TrueRecallPlugin from "../main";
-import { AssistantService } from "../services/assistant/assistant.service";
 import { BackupRecoveryManager } from "./BackupRecoveryManager";
 import { DayRolloverWatcher } from "./DayRolloverWatcher";
 import { PersistenceLifecycleGuard } from "./PersistenceLifecycleGuard";
 import { PluginLoader } from "./plugin-loader";
 import { isPluginEnabled } from "./plugin-utils";
+import { createAssistantService } from "./runtime/createAssistantService";
 
 const AUTO_BACKUP_STARTUP_DELAY_MS = 10_000;
 
@@ -229,7 +229,7 @@ async function initializeCardStore(
 
 	plugin._disposeWireDataLayer = wireDataLayer(dl, plugin.coreApp.events);
 
-	plugin.assistantService = new AssistantService(plugin);
+	plugin.assistantService = createAssistantService(plugin);
 	if (isPluginEnabled(plugin.settings, "ai-assistant")) {
 		plugin.assistantService.start();
 	}

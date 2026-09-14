@@ -1,5 +1,6 @@
 import { TRUERECALL_PRICING_URL } from "@true-recall/core/constants";
 import type { PluginTier, TrueRecallSettings } from "@true-recall/core/types";
+import { withPluginUtm } from "@true-recall/core/utils";
 
 import { FormCard } from "@true-recall/obsidian/components";
 import { resolveAccessTier } from "@true-recall/obsidian/plugin/plugin-utils";
@@ -70,7 +71,10 @@ export function PluginAccessOverview({
 							{level.tier === "pro" && activeTier !== "pro" ? (
 								<a
 									class="tr-access-level__upgrade"
-									href={TRUERECALL_PRICING_URL}
+									href={withPluginUtm(
+										TRUERECALL_PRICING_URL,
+										"settings-plugins",
+									)}
 									target="_blank"
 									rel="noreferrer"
 								>

@@ -57,4 +57,56 @@ describe("SqliteDatabase.transaction dirty tracking", () => {
 			n: 0,
 		});
 	});
+
+	it("commits nested transactions", async () => {
+		const db = await createDb(vi.fn());
+
+		db.transaction(() => {
+			db.run("INSERT INTO t (v) VALUES (?)", ["outer"]);
+			db.transaction(() => db.run("INSERT INTO t (v) VALUES (?)", ["inner"]));
+		});
+
+		expect(db.query<{ v: string }>("SELECT v FROM t ORDER BY rowid")).toEqual([
+			{ v: "outer" },
+			{ v: "inner" },
+		]);
+	});
+
+	it("rolls back only the nested savepoint when its error is handled", async () => {
+		const db = await createDb(vi.fn());
+
+		db.transaction(() => {
+			db.run("INSERT INTO t (v) VALUES (?)", ["before"]);
+			try {
+				db.transaction(() => {
+					db.run("INSERT INTO t (v) VALUES (?)", ["nested"]);
+					throw new Error("nested failure");
+				});
+			} catch {
+				db.run("INSERT INTO t (v) VALUES (?)", ["after"]);
+			}
+		});
+
+		expect(db.query<{ v: string }>("SELECT v FROM t ORDER BY rowid")).toEqual([
+			{ v: "before" },
+			{ v: "after" },
+		]);
+	});
+
+	it("rolls back the outer transaction when a nested error escapes", async () => {
+		const db = await createDb(vi.fn());
+
+		expect(() =>
+			db.transaction(() => {
+				db.run("INSERT INTO t (v) VALUES (?)", ["outer"]);
+				db.transaction(() => {
+					db.run("INSERT INTO t (v) VALUES (?)", ["inner"]);
+					throw new Error("boom");
+				});
+			}),
+		).toThrow("boom");
+		expect(db.get<{ n: number }>("SELECT count(*) AS n FROM t")).toEqual({
+			n: 0,
+		});
+	});
 });

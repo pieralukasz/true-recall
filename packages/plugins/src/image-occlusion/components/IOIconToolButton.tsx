@@ -33,7 +33,7 @@ export function IconToolButton({
 			)}
 			aria-label={label}
 			title={tooltip}
-			onClick={() => onClick()}
+			onClick={onClick}
 			disabled={disabled}
 		>
 			<span ref={iconRef} />

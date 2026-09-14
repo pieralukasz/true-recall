@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import type { DashboardNoteEntry } from "@true-recall/obsidian/features/study/ui/dashboard/types";
+import type { DashboardNoteEntry } from "@true-recall/core/types/dashboard.types";
 
 import {
 	computePriority,

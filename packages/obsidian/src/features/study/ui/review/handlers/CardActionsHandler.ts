@@ -1,622 +1,87 @@
-import type { App } from "obsidian";
-import { Rating, State } from "ts-fsrs";
-
-import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
-import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite";
-import type { FSRSService } from "@true-recall/core/services/fsrs/fsrs.service";
-import type { ReviewService } from "@true-recall/core/services/review/review.service";
-import type {
-	FSRSFlashcardItem,
-	TrueRecallSettings,
-} from "@true-recall/core/types";
 import {
-	BUILTIN_BASIC_ID,
-	BUILTIN_IMAGE_OCCLUSION_ID,
-} from "@true-recall/core/types/note.types";
-
-import type { CommandService } from "@true-recall/obsidian/commands";
-import { BatchCreateCommand } from "@true-recall/obsidian/commands/commands/card-create.cmd";
-import { UpdateNoteFieldsCommand } from "@true-recall/obsidian/commands/commands/card-update.cmd";
-import {
-	ReviewBuryCommand,
-	ReviewDeleteCommand,
-	ReviewForgetCommand,
-	ReviewSuspendCommand,
-} from "@true-recall/obsidian/commands/commands/review-actions.cmd";
-import type TrueRecallPlugin from "@true-recall/obsidian/main";
-import { MoveCardModal } from "@true-recall/obsidian/modals/shared";
-import type { AddMode } from "@true-recall/obsidian/modals/study/quick-note-editor/types";
-import { notify } from "@true-recall/obsidian/services/notification.service";
-import type { ReviewApi } from "@true-recall/obsidian/store";
-import { openQuickNoteEditor } from "@true-recall/obsidian/views/modal-window/open-quick-note-editor";
-
-const FORGET_NON_NEW_WARNING =
-	"Forget is only available for cards that are not New.";
-
-interface CardActionsHandlerDeps {
-	app: App;
-	getReview: () => ReviewApi;
-	flashcardManager: FlashcardManager;
-	fsrsService: FSRSService;
-	reviewService: ReviewService;
-	cardStore: SqliteStoreService;
-	settings: TrueRecallSettings;
-	plugin: TrueRecallPlugin;
-	commandService?: CommandService | null;
-}
-
-interface CardActionsCallbacks {
-	onUpdateSchedulingPreview: () => void;
-}
-
+	CardActionContext,
+	type CardActionsCallbacks,
+	type CardActionsHandlerDeps,
+} from "./CardActionContext";
+import { CardCreationActions } from "./CardCreationActions";
+import { CardEditingActions } from "./CardEditingActions";
+import { CardLifecycleActions } from "./CardLifecycleActions";
 export class CardActionsHandler {
-	private deps: CardActionsHandlerDeps;
-	private callbacks: CardActionsCallbacks;
-
+	private lifecycle: CardLifecycleActions;
+	private editing: CardEditingActions;
+	private creation: CardCreationActions;
 	constructor(deps: CardActionsHandlerDeps, callbacks: CardActionsCallbacks) {
-		this.deps = deps;
-		this.callbacks = callbacks;
-	}
-
-	private get commandService(): CommandService | null {
-		return this.deps.commandService ?? this.deps.plugin.commandService ?? null;
+		const context = new CardActionContext(deps, callbacks);
+		this.lifecycle = new CardLifecycleActions(context);
+		this.editing = new CardEditingActions(context);
+		this.creation = new CardCreationActions(context);
 	}
 
 	canUndo(): boolean {
-		return this.commandService?.canUndo() ?? false;
+		return this.lifecycle.canUndo();
 	}
 
 	canForgetCurrentCard(): boolean {
-		const card = this.deps.getReview().getCurrentCard();
-		return !!card && card.fsrs.state !== State.New;
+		return this.lifecycle.canForgetCurrentCard();
 	}
 
-	/**
-	 * Storage deletes cloze siblings and a card's reverse along with it, so the
-	 * queue has to drop that whole set. Removing only the visible card would
-	 * leave the session showing cards whose rows are already gone.
-	 */
 	handleDelete(): void {
-		const card = this.deps.getReview().getCurrentCard();
-		if (!card) return;
-
-		const cascadeIds = this.deps.flashcardManager.getCascadeDeleteIds(card.id);
-		const deletedIds = cascadeIds.length > 0 ? cascadeIds : [card.id];
-		const currentIndex = this.deps.getReview().currentIndex;
-
-		const cmd = new ReviewDeleteCommand({
-			card: { ...card },
-			originalFsrs: { ...card.fsrs },
-			previousIndex: currentIndex,
-			siblingIds: deletedIds,
-			getReview: () => this.deps.getReview(),
-		});
-
-		void this.commandService?.execute(cmd);
-		this.removeFromTemporaryDeck(deletedIds);
-		this.refreshIfActive();
-		notify().cardsDeletedWithUndo(deletedIds.length, () => {
-			void this.commandService?.undo();
-		});
+		this.lifecycle.handleDelete();
 	}
 
 	handleSuspend(): void {
-		const card = this.deps.getReview().getCurrentCard();
-		if (!card) return;
-
-		const siblingIds = this.getGroupSiblingIds(card);
-		const currentIndex = this.deps.getReview().currentIndex;
-
-		const cmd = new ReviewSuspendCommand({
-			card: { ...card },
-			originalFsrs: { ...card.fsrs },
-			previousIndex: currentIndex,
-			siblingIds,
-			getReview: () => this.deps.getReview(),
-		});
-
-		void this.commandService?.execute(cmd);
-		this.removeFromTemporaryDeck(siblingIds);
-		this.refreshIfActive();
-		notify().cardSuspended();
+		this.lifecycle.handleSuspend();
 	}
 
 	handleBuryCard(): void {
-		const card = this.deps.getReview().getCurrentCard();
-		if (!card) return;
-
-		const buriedUntil = this.getTomorrowDate().toISOString();
-		const siblingIds = this.getGroupSiblingIds(card);
-		const currentIndex = this.deps.getReview().currentIndex;
-
-		const cmd = new ReviewBuryCommand(
-			{
-				card: { ...card },
-				originalFsrs: { ...card.fsrs },
-				previousIndex: currentIndex,
-				siblingIds,
-				getReview: () => this.deps.getReview(),
-			},
-			buriedUntil,
-		);
-
-		void this.commandService?.execute(cmd);
-		this.removeFromTemporaryDeck(siblingIds);
-		this.refreshIfActive();
-		notify().cardBuried();
+		this.lifecycle.handleBuryCard();
 	}
 
 	handleForget(): void {
-		const card = this.deps.getReview().getCurrentCard();
-		if (!card) return;
-		if (card.fsrs.state === State.New) {
-			notify().warning(FORGET_NON_NEW_WARNING);
-			return;
-		}
-
-		const siblingIds = this.getGroupSiblingIds(card);
-		const forgettableIds = siblingIds.filter((id) => {
-			if (id === card.id) return card.fsrs.state !== State.New;
-			const sibling = this.deps.cardStore.get(id);
-			return !!sibling && sibling.state !== State.New;
-		});
-		if (forgettableIds.length === 0) {
-			notify().warning(FORGET_NON_NEW_WARNING);
-			return;
-		}
-
-		const currentIndex = this.deps.getReview().currentIndex;
-
-		const cmd = new ReviewForgetCommand({
-			card: { ...card },
-			originalFsrs: { ...card.fsrs },
-			previousIndex: currentIndex,
-			siblingIds: forgettableIds,
-			getReview: () => this.deps.getReview(),
-		});
-
-		void this.commandService?.execute(cmd);
-		this.removeFromTemporaryDeck(forgettableIds);
-		this.refreshIfActive();
-
-		if (forgettableIds.length === 1) {
-			notify().cardForgotten();
-		} else {
-			notify().cardsForgotten(forgettableIds.length);
-		}
+		this.lifecycle.handleForget();
 	}
 
 	handleBuryNote(): void {
-		const card = this.deps.getReview().getCurrentCard();
-		if (!card) return;
-
-		const sourceNoteName = card.sourceNoteName;
-		if (!sourceNoteName) {
-			this.handleBuryCard();
-			return;
-		}
-
-		const queue = this.deps.getReview().queue;
-		const siblingCards = queue.filter(
-			(c) => c.sourceNoteName === sourceNoteName,
-		);
-
-		const firstSibling = siblingCards[0];
-		if (siblingCards.length === 0 || !firstSibling) {
-			this.handleBuryCard();
-			return;
-		}
-
-		const currentIndex = this.deps.getReview().currentIndex;
-		const buriedUntil = this.getTomorrowDate().toISOString();
-
-		const allIds = siblingCards.map((c) => c.id);
-
-		const cmd = new ReviewBuryCommand(
-			{
-				card: { ...firstSibling },
-				originalFsrs: { ...firstSibling.fsrs },
-				previousIndex: currentIndex,
-				siblingIds: allIds,
-				getReview: () => this.deps.getReview(),
-			},
-			buriedUntil,
-		);
-
-		void this.commandService?.execute(cmd);
-		this.removeFromTemporaryDeck(allIds);
-		this.refreshIfActive();
-		notify().cardsBuried(siblingCards.length);
+		this.lifecycle.handleBuryNote();
 	}
 
 	async handleMoveCard(): Promise<void> {
-		const card = this.deps.getReview().getCurrentCard();
-		if (!card) return;
-
-		const modal = new MoveCardModal(this.deps.app, {
-			cardCount: 1,
-			sourceNoteName: card.sourceNoteName,
-			cardQuestion: card.question,
-			cardAnswer: card.answer,
-		});
-
-		const result = await modal.openAndWait();
-		if (result.cancelled || !result.targetNotePath) return;
-
-		try {
-			const { persisted } = this.deps.reviewService.gradeCard(
-				card,
-				Rating.Good,
-				this.deps.fsrsService,
-				this.deps.flashcardManager,
-			);
-			if (!persisted) {
-				this.deps.getReview().removeCardById(card.id);
-				this.refreshIfActive();
-				notify().warning("Card was deleted before move could be saved.");
-				return;
-			}
-
-			const success = await this.deps.flashcardManager.moveCard(
-				card.id,
-				result.targetNotePath,
-			);
-
-			if (success) {
-				// Grading and moving both emit synchronous card mutations. Either one
-				// can evict the moved card before this await resumes, so removing by
-				// cursor here could remove the next card in the queue instead.
-				this.deps.getReview().removeCardById(card.id);
-				this.removeFromTemporaryDeck([card.id]);
-				this.refreshIfActive();
-				notify().cardGradedAndMoved();
-			}
-		} catch (error) {
-			console.error("[CardActionsHandler] Error moving card:", error);
-			notify().operationFailed("move card", error);
-		}
-	}
-
-	async handleAddNewFlashcard(): Promise<void> {
-		const card = this.deps.getReview().getCurrentCard();
-		if (!card) return;
-		await this.openAddFlashcard(card);
-	}
-
-	async handleAddCopyOfCurrentFlashcard(): Promise<void> {
-		const card = this.deps.getReview().getCurrentCard();
-		if (!card) return;
-
-		const note = card.noteId
-			? this.deps.cardStore.notes.getById(card.noteId)
-			: null;
-		const noteTypeId = note?.noteTypeId ?? card.fsrs.noteTypeId;
-		const canCopyNoteFields = note && noteTypeId !== BUILTIN_IMAGE_OCCLUSION_ID;
-
-		await this.openAddFlashcard(card, {
-			sourceUid: note?.sourceUid ?? card.sourceUid,
-			defaultNoteTypeId: canCopyNoteFields ? noteTypeId : BUILTIN_BASIC_ID,
-			initialFields: canCopyNoteFields
-				? { ...note.fields }
-				: { Front: card.question, Back: card.answer ?? "" },
-		});
-	}
-
-	private async openAddFlashcard(
-		card: FSRSFlashcardItem,
-		overrides: Partial<
-			Pick<AddMode, "sourceUid" | "defaultNoteTypeId" | "initialFields">
-		> = {},
-	): Promise<void> {
-		const result = await openQuickNoteEditor(this.deps.plugin, {
-			mode: "add",
-			sourceUid: card.sourceUid,
-			excludeCardId: card.id,
-			defaultNoteTypeId:
-				card.fsrs.noteTypeId === BUILTIN_IMAGE_OCCLUSION_ID
-					? BUILTIN_BASIC_ID
-					: (card.fsrs.noteTypeId ?? BUILTIN_BASIC_ID),
-			...overrides,
-		});
-		if (!result.cancelled) {
-			this.pushBatchCreateUndo(card, result.createdCards);
-		}
-	}
-
-	async handleAddImageOcclusion(): Promise<void> {
-		const card = this.deps.getReview().getCurrentCard();
-		if (!card) return;
-
-		const result = await this.deps.plugin.openImageOcclusionEditor({
-			mode: "add",
-			sourceUid: card.sourceUid,
-		});
-		if (!result.cancelled) {
-			this.pushBatchCreateUndo(card, result.createdCards, "image occlusion ");
-		}
-	}
-
-	async handleEditCardModal(): Promise<void> {
-		const card = this.deps.getReview().getCurrentCard();
-		if (!card) return;
-
-		if (card.cardType === "note-review" && card.sourceNotePath) {
-			void this.deps.plugin.app.workspace.openLinkText(
-				card.sourceNotePath,
-				"",
-				false,
-			);
-			return;
-		}
-
-		if (!card.noteId) {
-			notify().error(
-				"Cannot edit card: missing note link. Please restart Obsidian to complete database migration.",
-			);
-			return;
-		}
-
-		const note = this.deps.cardStore.notes.getById(card.noteId);
-		if (!note) {
-			notify().error("Note not found");
-			return;
-		}
-		const noteType = this.deps.cardStore.noteTypes.getById(note.noteTypeId);
-		if (!noteType) {
-			notify().error("Note type not found");
-			return;
-		}
-
-		const previousFields = { ...note.fields };
-
-		if (noteType.id === BUILTIN_IMAGE_OCCLUSION_ID) {
-			const result = await this.deps.plugin.openImageOcclusionEditor({
-				mode: "edit",
-				noteId: note.id,
-				note,
-			});
-			if (result.cancelled) return;
-
-			this.pushFieldEditUndo(note.id, previousFields, "Edit image occlusion");
-			return;
-		}
-
-		const result = await openQuickNoteEditor(this.deps.plugin, {
-			mode: "edit",
-			cardId: card.id,
-			noteId: note.id,
-			note,
-			noteType,
-		});
-		if (result.cancelled) return;
-
-		this.pushFieldEditUndo(note.id, previousFields, "Edit card");
-
-		if (result.updatedCardIds?.includes(card.id)) {
-			const [updatedCard] = this.deps.cardStore.cards.getByIds([card.id]);
-			if (updatedCard) {
-				this.deps
-					.getReview()
-					.updateCurrentCardContent(
-						updatedCard.question ?? card.question,
-						updatedCard.answer ?? card.answer ?? "",
-					);
-				this.deps.getReview().updateCurrentCardComment(updatedCard.userComment);
-			}
-		}
-	}
-
-	async handleEditComment(): Promise<void> {
-		const card = this.deps.getReview().getCurrentCard();
-		if (!card?.noteId) {
-			notify().error("Cannot add a note: this card has no backing note.");
-			return;
-		}
-
-		const { promptCardComment } = await import(
-			"@true-recall/obsidian/modals/study/CardCommentModal"
-		);
-		const value = await promptCardComment(
-			this.deps.app,
-			card.userComment ?? "",
-		);
-		if (value === null || value === (card.userComment ?? "")) return;
-
-		try {
-			this.deps.flashcardManager.updateNoteComment(card.noteId, value);
-			this.deps.getReview().updateCurrentCardComment(value || undefined);
-			notify().success(value ? "Note saved" : "Note removed");
-		} catch (error) {
-			notify().operationFailed("save note", error);
-		}
-	}
-
-	handleRemoveComment(): void {
-		const card = this.deps.getReview().getCurrentCard();
-		if (!card?.noteId || !card.userComment) return;
-
-		try {
-			this.deps.flashcardManager.updateNoteComment(card.noteId, "");
-			this.deps.getReview().updateCurrentCardComment(undefined);
-			notify().success("Note removed");
-		} catch (error) {
-			notify().operationFailed("remove note", error);
-		}
-	}
-
-	async handleChangeNoteType(): Promise<void> {
-		const card = this.deps.getReview().getCurrentCard();
-		if (!card?.noteId) return;
-
-		const note = this.deps.cardStore.notes.getById(card.noteId);
-		if (!note) {
-			notify().error("Note not found");
-			return;
-		}
-
-		const currentNoteType = this.deps.cardStore.noteTypes.getById(
-			note.noteTypeId,
-		);
-		if (!currentNoteType) {
-			notify().error("Note type not found");
-			return;
-		}
-
-		const { ChangeNoteTypeModal } = await import(
-			"@true-recall/obsidian/modals/library/ChangeNoteTypeModal"
-		);
-
-		const allNoteTypes = this.deps.cardStore.noteTypes.getAll();
-		const modal = new ChangeNoteTypeModal(this.deps.app, {
-			currentNoteType,
-			availableNoteTypes: allNoteTypes,
-			noteCount: 1,
-		});
-
-		const result = await modal.openAndWait();
-		if (result.cancelled || !result.targetNoteTypeId || !result.fieldMapping)
-			return;
-
-		const r = this.deps.flashcardManager.changeNoteType(
-			card.noteId,
-			result.targetNoteTypeId,
-			result.fieldMapping,
-		);
-
-		for (const id of r.deletedCardIds) {
-			this.deps.getReview().removeCardById(id);
-		}
-		if (!r.keptCardIds.includes(card.id)) {
-			this.deps.getReview().removeCardById(card.id);
-		}
-		this.removeFromTemporaryDeck([
-			...r.deletedCardIds,
-			...(r.keptCardIds.includes(card.id) ? [] : [card.id]),
-		]);
-
-		this.refreshIfActive();
-
-		const parts: string[] = ["Note type changed"];
-		if (r.createdCardIds.length > 0)
-			parts.push(`${r.createdCardIds.length} cards created`);
-		if (r.deletedCardIds.length > 0)
-			parts.push(`${r.deletedCardIds.length} cards removed`);
-		notify().success(parts.join(", "));
+		return this.lifecycle.handleMoveCard();
 	}
 
 	async handleUndo(): Promise<boolean> {
-		const cs = this.commandService;
-		if (!cs?.canUndo()) {
-			notify().nothingToUndo();
-			return false;
-		}
-		return cs.undo();
+		return this.lifecycle.handleUndo();
 	}
 
-	// ── Private helpers ─────────────────────────────────
-
-	private refreshIfActive(): void {
-		if (!this.deps.getReview().isComplete()) {
-			this.callbacks.onUpdateSchedulingPreview();
-		}
+	async handleEditCardModal(): Promise<void> {
+		return this.editing.handleEditCardModal();
 	}
 
-	private removeFromTemporaryDeck(cardIds: readonly string[]): void {
-		if (typeof this.deps.plugin.removeCardsFromTemporaryDeck !== "function") {
-			return;
-		}
-		const review = this.deps.getReview();
-		const deckId =
-			typeof review.getSessionFilters === "function"
-				? review.getSessionFilters().temporaryDeckId
-				: review.sessionFilters?.temporaryDeckId;
-		this.deps.plugin.removeCardsFromTemporaryDeck(deckId, cardIds);
+	async handleEditComment(): Promise<void> {
+		return this.editing.handleEditComment();
 	}
 
-	/** Reload the on-screen card content after an external mutation (AI assistant apply). */
+	handleRemoveComment(): void {
+		this.editing.handleRemoveComment();
+	}
+
+	async handleChangeNoteType(): Promise<void> {
+		return this.editing.handleChangeNoteType();
+	}
+
 	refreshCurrentCard(): void {
-		const card = this.deps.getReview().getCurrentCard();
-		if (!card) return;
-		const [updated] = this.deps.cardStore.cards.getByIds([card.id]);
-		if (updated) {
-			this.deps
-				.getReview()
-				.updateCurrentCardContent(
-					updated.question ?? card.question,
-					updated.answer ?? card.answer ?? "",
-				);
-			this.deps.getReview().updateCurrentCardComment(updated.userComment);
-		}
-		this.refreshIfActive();
+		this.editing.refreshCurrentCard();
 	}
 
-	private pushBatchCreateUndo(
-		card: { sourceNotePath?: string },
-		createdCards?: Array<{ id: string }>,
-		_prefix = "",
-	): void {
-		const count = createdCards?.length ?? 0;
-		if (count === 0) return;
-
-		const cmd = new BatchCreateCommand(createdCards?.map((c) => c.id) ?? []);
-		void this.commandService?.execute(cmd);
-
-		const noteName = card.sourceNotePath
-			?.split("/")
-			.pop()
-			?.replace(/\.md$/, "");
-		notify().cardsCreated(count, noteName);
+	async handleAddNewFlashcard(): Promise<void> {
+		return this.creation.handleAddNewFlashcard();
 	}
 
-	private pushFieldEditUndo(
-		noteId: string,
-		previousFields: Record<string, string>,
-		description: string,
-	): void {
-		const nextFields = {
-			...(this.deps.cardStore.notes.getById(noteId)?.fields ?? previousFields),
-		};
-		const cmd = new UpdateNoteFieldsCommand(
-			noteId,
-			previousFields,
-			nextFields,
-			description,
-		);
-		void this.commandService?.execute(cmd);
+	async handleAddCopyOfCurrentFlashcard(): Promise<void> {
+		return this.creation.handleAddCopyOfCurrentFlashcard();
 	}
 
-	private getGroupSiblingIds(card: {
-		id: string;
-		cardType?: string;
-		sourceUid?: string;
-		clozeTemplate?: string;
-		reverseOf?: string;
-	}): string[] {
-		if (card.cardType === "cloze" && card.sourceUid && card.clozeTemplate) {
-			const siblings = this.deps.cardStore.getClozeSiblings(
-				card.sourceUid,
-				card.clozeTemplate,
-			);
-			if (siblings.length > 0) return siblings.map((s) => s.id);
-		}
-
-		if (card.cardType === "reversed" && card.reverseOf) {
-			return [card.id, card.reverseOf];
-		}
-
-		const reverseCard = this.deps.cardStore.cards.getCardByReverseOf(card.id);
-		if (reverseCard) return [card.id, reverseCard.id];
-
-		return [card.id];
-	}
-
-	private getTomorrowDate(): Date {
-		const now = new Date();
-		const tomorrow = new Date(now);
-		if (now.getHours() >= this.deps.settings.dayStartHour) {
-			tomorrow.setDate(tomorrow.getDate() + 1);
-		}
-		tomorrow.setHours(this.deps.settings.dayStartHour, 0, 0, 0);
-		return tomorrow;
+	async handleAddImageOcclusion(): Promise<void> {
+		return this.creation.handleAddImageOcclusion();
 	}
 }

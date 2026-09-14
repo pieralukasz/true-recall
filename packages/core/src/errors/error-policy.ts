@@ -12,20 +12,33 @@ class UnexpectedError extends AppError {
 }
 
 export function toAppError(error: unknown): AppError {
-	return error instanceof AppError ? error : new UnexpectedError(error);
+	const appError = findAppError(error);
+	return appError ?? new UnexpectedError(error);
+}
+
+function findAppError(error: unknown): AppError | null {
+	const seen = new Set<unknown>();
+	let current = error;
+	while (current instanceof Error && !seen.has(current)) {
+		if (current instanceof AppError) return current;
+		seen.add(current);
+		current = current.cause;
+	}
+	return null;
 }
 
 export function isTransient(error: unknown): boolean {
-	if (isNetworkError(error)) return error.code !== "aborted";
-	if (isHttpError(error)) {
+	const appError = toAppError(error);
+	if (isHttpError(appError)) {
 		return (
-			error.retryable ??
-			(error.statusCode === 408 ||
-				error.statusCode === 425 ||
-				error.statusCode === 429 ||
-				error.statusCode >= 500)
+			appError.retryable ??
+			(appError.statusCode === 408 ||
+				appError.statusCode === 425 ||
+				appError.statusCode === 429 ||
+				appError.statusCode >= 500)
 		);
 	}
+	if (isNetworkError(appError)) return appError.code !== "aborted";
 	return false;
 }
 
