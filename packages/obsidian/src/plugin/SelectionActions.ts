@@ -65,8 +65,7 @@ export async function quickAddFlashcardFromSelection(
 		);
 		notify().cardsCreated(1, file.basename);
 	} catch (error) {
-		const msg = error instanceof Error ? error.message : String(error);
-		notify().error(`Quick add failed: ${msg}`);
+		notify().operationFailed("quick add the flashcard", error);
 	}
 }
 
@@ -99,8 +98,7 @@ export async function quickAddFlashcardGlobal(
 		);
 		notify().cardsCreated(1, file.basename);
 	} catch (error) {
-		const msg = error instanceof Error ? error.message : String(error);
-		notify().error(`Quick add failed: ${msg}`);
+		notify().operationFailed("quick add the flashcard", error);
 	}
 }
 
@@ -157,8 +155,7 @@ export async function createNoteFromSelection(
 		await plugin.app.workspace.openLinkText(file.path, "", false);
 		notify().info(`Created "${file.basename}"`);
 	} catch (error) {
-		const msg = error instanceof Error ? error.message : String(error);
-		notify().error(`Failed to create note: ${msg}`);
+		notify().operationFailed("create the note", error);
 	}
 }
 
@@ -180,8 +177,7 @@ export async function appendToCurrentNote(
 		});
 		notify().info(`Appended to "${file.basename}"`);
 	} catch (error) {
-		const msg = error instanceof Error ? error.message : String(error);
-		notify().error(`Failed to append: ${msg}`);
+		notify().operationFailed("append to the note", error);
 	}
 }
 

@@ -1,3 +1,4 @@
+import { InvalidResponseError } from "../../errors";
 import type { IHttpClient } from "../../interfaces/http-client";
 import {
 	buildAIHeaders,
@@ -60,6 +61,7 @@ export class StreamingOpenRouterClient {
 				...request,
 			},
 			headers,
+			signal,
 		);
 
 		// If signal is already aborted, throw immediately
@@ -67,13 +69,16 @@ export class StreamingOpenRouterClient {
 			throw new DOMException("The operation was aborted.", "AbortError");
 		}
 
+		let buffer = "";
 		for await (const sseData of stream) {
 			if (signal?.aborted) {
 				throw new DOMException("The operation was aborted.", "AbortError");
 			}
 
 			// Parse SSE lines from the chunk
-			const lines = sseData.split("\n");
+			buffer += sseData;
+			const lines = buffer.split("\n");
+			buffer = lines.pop() ?? "";
 
 			for (const line of lines) {
 				const trimmed = line.trim();
@@ -90,10 +95,23 @@ export class StreamingOpenRouterClient {
 							finishReason: choice?.finish_reason ?? null,
 						};
 					}
-				} catch {
-					// Skip malformed SSE chunks
+				} catch (error) {
+					throw new InvalidResponseError("AI stream contained invalid JSON", {
+						cause: error,
+						context: { provider: this.providerType },
+					});
 				}
 			}
+		}
+
+		const trailing = buffer.trim();
+		if (trailing && trailing !== "data: [DONE]") {
+			throw new InvalidResponseError(
+				"AI stream ended with an incomplete event",
+				{
+					context: { provider: this.providerType },
+				},
+			);
 		}
 	}
 }

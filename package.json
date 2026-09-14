@@ -1,6 +1,6 @@
 {
 	"name": "true-recall",
-	"version": "2.4.2",
+	"version": "2.5.0",
 	"private": true,
 	"description": "Spaced repetition with FSRS algorithm",
 	"main": "main.js",
@@ -25,6 +25,7 @@
 		"format": "biome format --write packages/",
 		"biome": "biome check --write packages/",
 		"test": "bun vitest run",
+		"test:e2e:local-api": "bun vitest run packages/obsidian/tests/e2e/local-api-client.e2e.test.ts",
 		"test:watch": "bun vitest",
 		"test:coverage": "bun vitest run --coverage",
 		"test:e2e:mobile": "bun e2e/mobile/run.ts",

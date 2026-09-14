@@ -42,7 +42,12 @@ export async function openCardEditor({
 
 	if (result?.cancelled === false) {
 		await commandService?.execute(
-			new UpdateNoteFieldsCommand(note.id, previousFields, "Edit card"),
+			new UpdateNoteFieldsCommand(
+				note.id,
+				previousFields,
+				{ ...note.fields },
+				"Edit card",
+			),
 		);
 	}
 }

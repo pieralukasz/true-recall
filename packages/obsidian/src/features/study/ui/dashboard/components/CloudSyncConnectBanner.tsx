@@ -1,10 +1,14 @@
 import { TRUERECALL_WEB_URL } from "@true-recall/core/constants";
+import { withPluginUtm } from "@true-recall/core/utils";
 
 import { Clickable } from "@true-recall/obsidian/components";
-import { cloudAuthButtonLabel } from "@true-recall/obsidian/plugin/CloudSyncManager";
+import { cloudAuthButtonLabel } from "@true-recall/obsidian/features/integration/cloud/cloud-sync-manager";
 import { usePlugin } from "@true-recall/obsidian/preact";
 
-const CLOUD_SYNC_DOCS_URL = `${TRUERECALL_WEB_URL}/data/cloud-sync/`;
+const CLOUD_SYNC_DOCS_URL = withPluginUtm(
+	`${TRUERECALL_WEB_URL}/data/cloud-sync/`,
+	"cloud-sync-banner",
+);
 
 /**
  * Shown when the vault's settings say Cloud Sync but this device holds no

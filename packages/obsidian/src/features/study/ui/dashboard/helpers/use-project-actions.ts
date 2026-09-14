@@ -12,6 +12,7 @@ import { confirm } from "@true-recall/obsidian/modals/shared/ConfirmModal";
 import { NamePromptModal } from "@true-recall/obsidian/modals/study/NamePromptModal";
 import { RenameModal } from "@true-recall/obsidian/modals/study/RenameModal";
 import { usePlugin } from "@true-recall/obsidian/preact";
+import { notify } from "@true-recall/obsidian/services/notification.service";
 
 import { flattenNodes, ProjectSuggestModal } from "./project-suggest-modal";
 
@@ -171,10 +172,7 @@ export function useProjectActions() {
 					`Deleted "${projectName}" — ${allPaths.length} notes, ${allCardIds.length} cards.`,
 				);
 			} catch (err) {
-				console.error("[True Recall] Delete project failed:", err);
-				new Notice(
-					`Delete failed: ${err instanceof Error ? err.message : String(err)}`,
-				);
+				notify().operationFailed("delete the project", err);
 			}
 		},
 		[plugin, service],
@@ -204,9 +202,7 @@ export function useProjectActions() {
 				downloadBlob(data, filename);
 				new Notice(`Exported to ${filename}`);
 			} catch (err) {
-				new Notice(
-					`Export failed: ${err instanceof Error ? err.message : String(err)}`,
-				);
+				notify().operationFailed("export the project to Anki", err);
 			}
 		},
 		[plugin],
@@ -233,9 +229,7 @@ export function useProjectActions() {
 				downloadBlob(content, filename, "text/csv;charset=utf-8");
 				new Notice(`Exported to ${filename}`);
 			} catch (err) {
-				new Notice(
-					`Export failed: ${err instanceof Error ? err.message : String(err)}`,
-				);
+				notify().operationFailed("export the project to CSV", err);
 			}
 		},
 		[plugin],

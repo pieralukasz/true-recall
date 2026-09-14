@@ -60,9 +60,12 @@ export { DayBoundaryService } from "./review/day-boundary.service";
 export {
 	buildRetrievabilityQueue,
 	countRModePool,
+	R_MODE_CEILING_MAX,
 	type RetrievabilitySummary,
+	type RModeCardOptions,
 	type RModeQueueOptions,
 	type RModeQueueResult,
+	resolveRModeCeiling,
 	resolveRModeOptions,
 	summarizeRetrievability,
 } from "./review/retrievability-queue";
@@ -78,6 +81,10 @@ export {
 	ReviewSessionEngine,
 	type ReviewSessionEngineDeps,
 } from "./review/review-session.engine";
+export {
+	createRModeCardOptionsResolver,
+	type RModeCardOptionsResolverDeps,
+} from "./review/rmode-card-options";
 export {
 	SessionService,
 	type SessionServiceSettings,

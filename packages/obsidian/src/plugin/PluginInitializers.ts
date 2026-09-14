@@ -33,33 +33,33 @@ import { createAppStore } from "@true-recall/obsidian/store";
 import { isMobile } from "@true-recall/obsidian/utils/platform";
 
 import type TrueRecallPlugin from "../main";
-import { AssistantService } from "../services/assistant/assistant.service";
 import { BackupRecoveryManager } from "./BackupRecoveryManager";
 import { DayRolloverWatcher } from "./DayRolloverWatcher";
 import { PersistenceLifecycleGuard } from "./PersistenceLifecycleGuard";
 import { PluginLoader } from "./plugin-loader";
 import { isPluginEnabled } from "./plugin-utils";
+import { createAssistantService } from "./runtime/createAssistantService";
 
 const AUTO_BACKUP_STARTUP_DELAY_MS = 10_000;
 
 export async function initializeDeviceAndStore(
 	plugin: TrueRecallPlugin,
 ): Promise<void> {
+	let deviceId: string;
 	try {
-		const deviceId = await initializeDeviceContext(plugin);
-		await initializeCardStore(plugin, deviceId);
+		deviceId = await initializeDeviceContext(plugin);
 	} catch (error) {
-		console.error("[True Recall] Failed to initialize device context:", error);
 		notify().error(
 			"Failed to initialize device context. Using default configuration.",
+			error,
 		);
 		plugin.deviceIdService = new DeviceIdService(
 			new ObsidianDeviceIdStorage(plugin.app),
 		);
-		const fallbackDeviceId = plugin.deviceIdService.getDeviceId();
-		setCurrentDeviceId(fallbackDeviceId);
-		await initializeCardStore(plugin, fallbackDeviceId);
+		deviceId = plugin.deviceIdService.getDeviceId();
+		setCurrentDeviceId(deviceId);
 	}
+	await initializeCardStore(plugin, deviceId);
 }
 
 async function initializeDeviceContext(
@@ -151,7 +151,7 @@ function scheduleDeviceImportOffer(
 				plugin.coreApp.cardStore?.haltPersistence();
 				await handleDeviceSelection(plugin, result, deviceId);
 			} catch (error) {
-				console.error("[True Recall] Device import offer failed:", error);
+				notify().operationFailed("import the device database", error);
 			}
 		})();
 	});
@@ -161,147 +161,136 @@ async function initializeCardStore(
 	plugin: TrueRecallPlugin,
 	deviceId: string,
 ): Promise<void> {
+	const s0 = performance.now();
+
+	plugin.backupRecovery = new BackupRecoveryManager(
+		plugin.app,
+		() => plugin.coreApp.backupService,
+		() => plugin.coreApp.backgroundBackupManager,
+		() => plugin.coreApp.cardStore ?? undefined,
+		(id) => plugin.getDeviceDbPath(id),
+	);
+
+	const storeOptions = { dbFolder: plugin.dbFolder };
 	try {
-		const s0 = performance.now();
-
-		plugin.backupRecovery = new BackupRecoveryManager(
-			plugin.app,
-			() => plugin.coreApp.backupService,
-			() => plugin.coreApp.backgroundBackupManager,
-			() => plugin.coreApp.cardStore ?? undefined,
-			(id) => plugin.getDeviceDbPath(id),
+		await plugin.coreApp.initializeStore(deviceId, storeOptions);
+	} catch (loadError) {
+		console.warn(
+			"[True Recall] Database load failed, attempting auto-recovery from backup...",
 		);
-
-		const storeOptions = { dbFolder: plugin.dbFolder };
-		try {
+		const recovered =
+			await plugin.backupRecovery.tryAutoRecoverFromBackup(deviceId);
+		if (recovered) {
 			await plugin.coreApp.initializeStore(deviceId, storeOptions);
-		} catch (loadError) {
-			console.warn(
-				"[True Recall] Database load failed, attempting auto-recovery from backup...",
-			);
-			const recovered =
-				await plugin.backupRecovery.tryAutoRecoverFromBackup(deviceId);
-			if (recovered) {
-				await plugin.coreApp.initializeStore(deviceId, storeOptions);
-			} else {
-				throw loadError;
-			}
+		} else {
+			throw loadError;
 		}
-
-		// Store a readable device name in the database itself so other devices
-		// can show "iPhone 15" instead of a bare device id when syncing. Only
-		// write when it changed: a write here dirties the store and, on mobile,
-		// rewrites the whole database file 400 ms after startup.
-		const deviceLabel = plugin.deviceIdService?.getDeviceLabel();
-		if (deviceLabel && plugin.coreApp.cardStore) {
-			plugin.coreApp.cardStore.cards.setSyncMetadataIfChanged(
-				"device:label",
-				deviceLabel,
-			);
-		}
-
-		const sDbLoad = performance.now();
-
-		plugin.registerInterval(
-			window.setInterval(() => {
-				if (plugin.coreApp.cardStore) {
-					void plugin.coreApp.cardStore.saveNow();
-				}
-			}, SAFETY_FLUSH_INTERVAL_MS),
-		);
-
-		new PersistenceLifecycleGuard(() => plugin.coreApp.cardStore).register(
-			plugin,
-		);
-
-		const dl = new DataLayer();
-		plugin.dataLayer = dl;
-		setDataLayer(dl);
-		registerDataLayerQueries(dl, {
-			cardQuery: plugin.flashcardManager.getCardQueryService(),
-			hierarchy: plugin.hierarchyService,
-			getSettings: () => plugin.settings,
-			getAssistantTasks: () => plugin.cardStore?.assistantTasks.list(100) ?? [],
-			getAssistantThreads: () =>
-				plugin.cardStore?.assistantThreads.list(undefined, 100) ?? [],
-			getAssistantInbox: () =>
-				plugin.cardStore?.assistantThreads.list("inbox", 100) ?? [],
-		});
-
-		plugin._disposeWireDataLayer = wireDataLayer(dl, plugin.coreApp.events);
-
-		plugin.assistantService = new AssistantService(plugin);
-		if (isPluginEnabled(plugin.settings, "ai-assistant")) {
-			plugin.assistantService.start();
-		}
-
-		new DayRolloverWatcher(plugin.dayBoundaryService, dl).register(plugin);
-
-		// Startup race fix: rebuildIndex() runs in an earlier onLayoutReady with
-		// silent=true, so no domain events fire and the DataLayer keeps stale
-		// enrichment data. Re-execute CARDS loaders once the index is populated.
-		plugin.app.workspace.onLayoutReady(() => {
-			dl.invalidateGroups([G.CARDS]);
-			void migrateArchiveCascade(plugin);
-		});
-
-		// Second startup race: layout-ready is not a metadata-cache-ready signal.
-		// On a cold start getFileCache() can still return null for most files at
-		// layout-ready, so the rebuild above snapshots an empty index and every
-		// card renders as orphaned until individual "changed" events trickle in.
-		// Re-run the rebuild once the cache reports the initial scan finished.
-		let initialResolveHandled = false;
-		plugin.registerEvent(
-			plugin.app.metadataCache.on("resolved", () => {
-				if (initialResolveHandled) return;
-				initialResolveHandled = true;
-				plugin.frontmatterIndex?.rebuildIndex();
-				plugin.hierarchyService.invalidateGraph();
-				dl.invalidateGroups([
-					G.CARDS,
-					G.BROWSER,
-					G.DASHBOARD,
-					G.PANEL,
-					G.REVIEW,
-				]);
-			}),
-		);
-
-		const sCards = performance.now();
-
-		if (plugin.settings.autoBackupOnLoad) {
-			// Defer past layout-ready: the snapshot exports + gzips the whole DB,
-			// which would otherwise compete with vault indexing and view restore.
-			plugin.app.workspace.onLayoutReady(() => {
-				plugin.registerInterval(
-					window.setTimeout(() => {
-						plugin.backupRecovery?.runAutoBackup().catch((e) => {
-							console.warn("[True Recall] Auto-backup failed:", e);
-						});
-					}, AUTO_BACKUP_STARTUP_DELAY_MS),
-				);
-			});
-		}
-
-		initializeDeletionHandler(plugin);
-		initializeAppStore(plugin);
-		initializeCoreWidgets(plugin);
-
-		plugin.pluginLoader = new PluginLoader(plugin);
-		plugin.pluginLoader.activateAll();
-
-		initializeSourceHighlight(plugin);
-
-		const sEnd = performance.now();
-		console.debug(
-			`[True Recall Startup]   db.load: ${(sDbLoad - s0).toFixed(1)}ms` +
-				` | dataLayer: ${(sCards - sDbLoad).toFixed(1)}ms` +
-				` | services: ${(sEnd - sCards).toFixed(1)}ms`,
-		);
-	} catch (error) {
-		console.error("[True Recall] Failed to initialize SQLite store:", error);
-		notify().error("Failed to load flashcard data. Please restart Obsidian.");
 	}
+
+	// Store a readable device name in the database itself so other devices
+	// can show "iPhone 15" instead of a bare device id when syncing. Only
+	// write when it changed: a write here dirties the store and, on mobile,
+	// rewrites the whole database file 400 ms after startup.
+	const deviceLabel = plugin.deviceIdService?.getDeviceLabel();
+	if (deviceLabel && plugin.coreApp.cardStore) {
+		plugin.coreApp.cardStore.cards.setSyncMetadataIfChanged(
+			"device:label",
+			deviceLabel,
+		);
+	}
+
+	const sDbLoad = performance.now();
+
+	plugin.registerInterval(
+		window.setInterval(() => {
+			if (plugin.coreApp.cardStore) {
+				void plugin.coreApp.cardStore.saveNow();
+			}
+		}, SAFETY_FLUSH_INTERVAL_MS),
+	);
+
+	new PersistenceLifecycleGuard(() => plugin.coreApp.cardStore).register(
+		plugin,
+	);
+
+	const dl = new DataLayer();
+	plugin.dataLayer = dl;
+	setDataLayer(dl);
+	registerDataLayerQueries(dl, {
+		cardQuery: plugin.flashcardManager.getCardQueryService(),
+		hierarchy: plugin.hierarchyService,
+		getSettings: () => plugin.settings,
+		getAssistantTasks: () => plugin.cardStore?.assistantTasks.list(100) ?? [],
+		getAssistantThreads: () =>
+			plugin.cardStore?.assistantThreads.list(undefined, 100) ?? [],
+		getAssistantInbox: () =>
+			plugin.cardStore?.assistantThreads.list("inbox", 100) ?? [],
+	});
+
+	plugin._disposeWireDataLayer = wireDataLayer(dl, plugin.coreApp.events);
+
+	plugin.assistantService = createAssistantService(plugin);
+	if (isPluginEnabled(plugin.settings, "ai-assistant")) {
+		plugin.assistantService.start();
+	}
+
+	new DayRolloverWatcher(plugin.dayBoundaryService, dl).register(plugin);
+
+	// Startup race fix: rebuildIndex() runs in an earlier onLayoutReady with
+	// silent=true, so no domain events fire and the DataLayer keeps stale
+	// enrichment data. Re-execute CARDS loaders once the index is populated.
+	plugin.app.workspace.onLayoutReady(() => {
+		dl.invalidateGroups([G.CARDS]);
+		void migrateArchiveCascade(plugin);
+	});
+
+	// Second startup race: layout-ready is not a metadata-cache-ready signal.
+	// On a cold start getFileCache() can still return null for most files at
+	// layout-ready, so the rebuild above snapshots an empty index and every
+	// card renders as orphaned until individual "changed" events trickle in.
+	// Re-run the rebuild once the cache reports the initial scan finished.
+	let initialResolveHandled = false;
+	plugin.registerEvent(
+		plugin.app.metadataCache.on("resolved", () => {
+			if (initialResolveHandled) return;
+			initialResolveHandled = true;
+			plugin.frontmatterIndex?.rebuildIndex();
+			plugin.hierarchyService.invalidateGraph();
+			dl.invalidateGroups([G.CARDS, G.BROWSER, G.DASHBOARD, G.PANEL, G.REVIEW]);
+		}),
+	);
+
+	const sCards = performance.now();
+
+	if (plugin.settings.autoBackupOnLoad) {
+		// Defer past layout-ready: the snapshot exports + gzips the whole DB,
+		// which would otherwise compete with vault indexing and view restore.
+		plugin.app.workspace.onLayoutReady(() => {
+			plugin.registerInterval(
+				window.setTimeout(() => {
+					plugin.backupRecovery?.runAutoBackup().catch((e) => {
+						console.warn("[True Recall] Auto-backup failed:", e);
+					});
+				}, AUTO_BACKUP_STARTUP_DELAY_MS),
+			);
+		});
+	}
+
+	initializeDeletionHandler(plugin);
+	initializeAppStore(plugin);
+	initializeCoreWidgets(plugin);
+
+	plugin.pluginLoader = new PluginLoader(plugin);
+	plugin.pluginLoader.activateAll();
+
+	initializeSourceHighlight(plugin);
+
+	const sEnd = performance.now();
+	console.debug(
+		`[True Recall Startup]   db.load: ${(sDbLoad - s0).toFixed(1)}ms` +
+			` | dataLayer: ${(sCards - sDbLoad).toFixed(1)}ms` +
+			` | services: ${(sEnd - sCards).toFixed(1)}ms`,
+	);
 }
 
 function initializeDeletionHandler(plugin: TrueRecallPlugin): void {
@@ -397,8 +386,7 @@ export async function checkForWhatsNew(
 	if (plugin.settings.lastSeenVersion === currentVersion) return;
 
 	if (plugin.settings.lastSeenVersion === undefined) {
-		plugin.settings.lastSeenVersion = currentVersion;
-		await plugin.saveSettings();
+		await plugin.saveSettings({ lastSeenVersion: currentVersion });
 		return;
 	}
 
@@ -409,8 +397,7 @@ export async function checkForWhatsNew(
 	if (!release) return;
 
 	if (release.version !== currentVersion) {
-		plugin.settings.lastSeenVersion = currentVersion;
-		await plugin.saveSettings();
+		await plugin.saveSettings({ lastSeenVersion: currentVersion });
 		return;
 	}
 
@@ -418,8 +405,7 @@ export async function checkForWhatsNew(
 		"@true-recall/obsidian/modals/shared/WhatsNewModal"
 	);
 	new WhatsNewModal(plugin, release).open();
-	plugin.settings.lastSeenVersion = currentVersion;
-	await plugin.saveSettings();
+	await plugin.saveSettings({ lastSeenVersion: currentVersion });
 }
 
 async function migrateLegacyDatabase(
@@ -430,16 +416,10 @@ async function migrateLegacyDatabase(
 	const newPath = normalizePath(plugin.getDeviceDbPath(deviceId));
 	const backupPath = normalizePath(`${DB_FOLDER}/true-recall.db.migrated`);
 
-	try {
-		const data = await plugin.app.vault.adapter.readBinary(legacyPath);
-		await plugin.app.vault.adapter.writeBinary(backupPath, data);
-		await plugin.app.vault.adapter.rename(legacyPath, newPath);
-		notify().success("Database migrated to per-device format.");
-	} catch (error) {
-		console.error("[True Recall] Legacy migration failed:", error);
-		notify().error("Failed to migrate legacy database.");
-		throw error;
-	}
+	const data = await plugin.app.vault.adapter.readBinary(legacyPath);
+	await plugin.app.vault.adapter.writeBinary(backupPath, data);
+	await plugin.app.vault.adapter.rename(legacyPath, newPath);
+	notify().success("Database migrated to per-device format.");
 }
 
 async function handleDeviceSelection(
@@ -450,25 +430,19 @@ async function handleDeviceSelection(
 	if (result.action === "import" && result.sourcePath) {
 		const targetPath = normalizePath(plugin.getDeviceDbPath(deviceId));
 
-		try {
-			const sourceData = await plugin.app.vault.adapter.readBinary(
-				result.sourcePath,
-			);
-			// Atomic swap: an interrupted import must not leave a truncated
-			// live database behind.
-			await writeDbFileAtomically(
-				new ObsidianPersistence(plugin.app),
-				targetPath,
-				sourceData,
-			);
-			notify().success(
-				`Imported data from device ${result.sourceDeviceId}. Restart Obsidian to load it.`,
-			);
-		} catch (error) {
-			console.error("[True Recall] Database import failed:", error);
-			notify().error("Failed to import database.");
-			throw error;
-		}
+		const sourceData = await plugin.app.vault.adapter.readBinary(
+			result.sourcePath,
+		);
+		// Atomic swap: an interrupted import must not leave a truncated
+		// live database behind.
+		await writeDbFileAtomically(
+			new ObsidianPersistence(plugin.app),
+			targetPath,
+			sourceData,
+		);
+		notify().success(
+			`Imported data from device ${result.sourceDeviceId}. Restart Obsidian to load it.`,
+		);
 	}
 }
 
@@ -513,6 +487,5 @@ async function migrateArchiveCascade(plugin: TrueRecallPlugin): Promise<void> {
 		]);
 	}
 
-	plugin.settings.archiveCascadeMigrated = true;
-	await plugin.saveSettings();
+	await plugin.saveSettings({ archiveCascadeMigrated: true });
 }

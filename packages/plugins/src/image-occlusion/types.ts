@@ -1,7 +1,15 @@
 import type { FSRSCardData, IODefinition } from "@true-recall/core/types";
 import type { Note } from "@true-recall/core/types/note.types";
 
-export type { IODefinition, IORegion, IOShape } from "@true-recall/core/types";
+export type {
+	IODefinition,
+	IOMaskMode,
+	IORegion,
+	IOShape,
+} from "@true-recall/core/types";
+
+export type IOEditorTool = "select" | "rect" | "ellipse";
+export type IODrawingTool = Exclude<IOEditorTool, "select">;
 
 export interface IOEditorAddMode {
 	mode: "add";

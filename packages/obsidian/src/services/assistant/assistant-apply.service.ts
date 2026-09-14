@@ -5,6 +5,7 @@ import type {
 	AssistantTask,
 	ProposalTarget,
 } from "@true-recall/core/ai/assistant";
+import { describeErrorForUser } from "@true-recall/core/errors";
 
 import type TrueRecallPlugin from "@true-recall/obsidian/main";
 
@@ -72,9 +73,8 @@ export class AssistantApplyService {
 					return this.applyAttachImages(proposal);
 			}
 		} catch (error) {
-			const message = error instanceof Error ? error.message : String(error);
 			notify().error("Apply failed", error);
-			return { ok: false, error: message };
+			return { ok: false, error: describeErrorForUser(error) };
 		}
 	}
 
@@ -187,6 +187,7 @@ export class AssistantApplyService {
 			new UpdateNoteFieldsCommand(
 				proposal.noteId,
 				currentFields,
+				merged,
 				"AI assistant edit",
 			),
 		);
@@ -261,6 +262,7 @@ export class AssistantApplyService {
 			new UpdateNoteFieldsCommand(
 				target.noteId,
 				currentFields,
+				merged,
 				"AI assistant attach",
 			),
 		);

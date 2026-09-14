@@ -7,8 +7,8 @@ import {
 	InfoBlock,
 	ToggleInput,
 } from "@true-recall/obsidian/components";
+import { cloudAuthButtonLabel } from "@true-recall/obsidian/features/integration/cloud/cloud-sync-manager";
 import type TrueRecallPlugin from "@true-recall/obsidian/main";
-import { cloudAuthButtonLabel } from "@true-recall/obsidian/plugin/CloudSyncManager";
 
 interface SyncIntegrationSectionProps {
 	settings: TrueRecallSettings;

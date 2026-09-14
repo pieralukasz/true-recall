@@ -2,6 +2,7 @@ import type { App } from "obsidian";
 import { render } from "preact";
 import { useCallback, useState } from "preact/hooks";
 
+import { describeErrorForUser } from "@true-recall/core/errors";
 import { AnkiExportService } from "@true-recall/core/integration/anki/anki-export.service";
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite/SqliteStoreService";
 import type { FSRSService } from "@true-recall/core/services/fsrs/fsrs.service";
@@ -15,6 +16,7 @@ import {
 	resolveNotes,
 } from "@true-recall/obsidian/features/integration/utils/export-helpers";
 import { BaseModal } from "@true-recall/obsidian/modals/shared/BaseModal";
+import { reportError } from "@true-recall/obsidian/services/errors";
 
 import {
 	ErrorPhase,
@@ -121,8 +123,8 @@ export class AnkiExportModal extends BaseModal {
 			downloadBlob(data, filename);
 			return { type: "success", filename };
 		} catch (err) {
-			const errMsg = err instanceof Error ? err.message : String(err);
-			return { type: "error", message: errMsg };
+			reportError(err, { origin: "anki-export" });
+			return { type: "error", message: describeErrorForUser(err) };
 		}
 	}
 }

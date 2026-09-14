@@ -6,18 +6,30 @@ export class UpdateCardCommand implements Command {
 	readonly skipExecuteMutation = true;
 	readonly skipUndoMutation = true;
 	readonly description: string;
+	private registered = false;
 
 	constructor(
 		private cardId: string,
 		private previousQuestion: string,
 		private previousAnswer: string,
+		private nextQuestion: string,
+		private nextAnswer: string,
 		description?: string,
 	) {
 		this.description = description ?? "Edit card";
 	}
 
-	execute(_ctx: CommandContext): void {
-		// Content already updated by caller before constructing this command.
+	execute(ctx: CommandContext): void {
+		if (!this.registered) {
+			this.registered = true;
+			return;
+		}
+		ctx.flashcardManager.updateCardContent(
+			this.cardId,
+			this.nextQuestion,
+			this.nextAnswer,
+			{ skipDuplicateCheck: true, editSource: "system" },
+		);
 	}
 
 	undo(ctx: CommandContext): void {
@@ -79,17 +91,27 @@ export class UpdateNoteFieldsCommand implements Command {
 	readonly skipExecuteMutation = true;
 	readonly skipUndoMutation = true;
 	readonly description: string;
+	private registered = false;
 
 	constructor(
 		private noteId: string,
 		private previousFields: Record<string, string>,
+		private nextFields: Record<string, string>,
 		description?: string,
 	) {
 		this.description = description ?? "Edit card";
 	}
 
-	execute(_ctx: CommandContext): void {
-		// Fields already updated by caller before constructing this command.
+	execute(ctx: CommandContext): void {
+		if (!this.registered) {
+			this.registered = true;
+			return;
+		}
+		ctx.flashcardManager.updateNoteFields(
+			this.noteId,
+			this.nextFields,
+			"system",
+		);
 	}
 
 	undo(ctx: CommandContext): void {

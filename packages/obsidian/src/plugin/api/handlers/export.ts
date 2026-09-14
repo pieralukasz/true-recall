@@ -1,3 +1,4 @@
+import { HttpError } from "@true-recall/core/errors";
 import { CsvExportService } from "@true-recall/core/integration/csv/csv-export.service";
 
 import type { ApiContext, ApiRequest, ApiResponseWriter } from "../api.types";
@@ -46,10 +47,10 @@ export async function handleExportCsv(
 
 		sendOk(res, result);
 	} catch (error) {
-		sendError(
-			res,
-			400,
-			error instanceof Error ? error.message : "Export failed",
-		);
+		throw new HttpError(400, {
+			backendCode: "csv-export-invalid",
+			cause: error,
+			context: { operation: "csv-export" },
+		});
 	}
 }

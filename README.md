@@ -90,7 +90,7 @@ True Recall is local-first. It does not send telemetry or analytics. Network acc
 **Network requests, only on explicit user action or one-time per release:**
 - Update check: when the plugin version differs from the last seen version, a single `requestUrl` call is made to the GitHub Releases API to fetch release notes. Runs once per version, not on a timer.
 - AI features (opt-in): flashcard generation, semantic grading, and image-occlusion detection require a configured AI provider. Depending on settings, requests can go to OpenRouter, `ai.truerecall.app` for True Recall Pro, a local LM Studio/Ollama endpoint, or a custom OpenAI-compatible endpoint you enter.
-- Local API server (desktop, opt-in): binds to `127.0.0.1` only, used by the optional companion CLI and MCP server. It is disabled by default and does not expose a public network listener.
+- Local API server (desktop, opt-in): binds to `127.0.0.1` only and requires the per-install bearer token shown in Settings → Integrations. Set it as `TRUE_RECALL_TOKEN` for the companion CLI/MCP server. Browser clients must also be listed explicitly under allowed origins. Arbitrary SQL is separately disabled by default.
 - External links: documentation, pricing, sponsorship, Discord, and Anki shared-deck links are opened only when you click UI links.
 
 - Cloud Sync (opt-in): when you sign in with a True Recall account and enable Cloud Sync, notes, note types, cards and review logs are exchanged incrementally with the True Recall sync service. The device session is stored in Obsidian SecretStorage and can be revoked from Settings.

@@ -147,6 +147,16 @@
 		line-height: 1.35;
 	}
 
+	.true-recall-io-spinner {
+		width: 14px;
+		height: 14px;
+		flex: 0 0 auto;
+		border: 2px solid var(--background-modifier-border);
+		border-top-color: var(--text-muted);
+		border-radius: 50%;
+		animation: true-recall-io-spin 1s linear infinite;
+	}
+
 	.true-recall-io-field {
 		display: flex;
 		align-items: center;
@@ -428,8 +438,9 @@
 	}
 
 	.true-recall-io-shape.is-revealed-active {
-		fill: var(--background-modifier-success);
-		animation: true-recall-io-pulse 820ms ease-out 1;
+		fill: transparent;
+		stroke: var(--color-green);
+		stroke-width: 0.003;
 	}
 
 	.true-recall-io-shape-clickable {
@@ -531,18 +542,9 @@
 		pointer-events: none;
 	}
 
-	@keyframes true-recall-io-pulse {
-		0% {
-			fill: var(--background-modifier-success);
-			filter: drop-shadow(0 0 0 rgba(0, 128, 0, 0.7));
-		}
-		55% {
-			fill: var(--background-modifier-success);
-			filter: drop-shadow(0 0 8px rgba(0, 128, 0, 0.7));
-		}
-		100% {
-			fill: var(--background-modifier-success);
-			filter: drop-shadow(0 0 0 transparent);
+	@keyframes true-recall-io-spin {
+		to {
+			transform: rotate(360deg);
 		}
 	}
 

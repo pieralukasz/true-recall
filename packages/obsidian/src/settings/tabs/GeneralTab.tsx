@@ -17,6 +17,7 @@ import type {
 	TrueRecallSettings,
 	TypeInMode,
 } from "@true-recall/core/types";
+import { withPluginUtm } from "@true-recall/core/utils";
 
 import {
 	Clickable,
@@ -175,6 +176,16 @@ export function GeneralTab() {
 				</FormField>
 
 				<FormField
+					name="Show card source note name"
+					description="Display the name of the source note for each card during review"
+				>
+					<ToggleInput
+						value={settings.cardReviewShowSourceNote}
+						onChange={(v) => void save({ cardReviewShowSourceNote: v })}
+					/>
+				</FormField>
+
+				<FormField
 					name="Show frontmatter in note review"
 					description="Display YAML frontmatter when reviewing whole notes"
 				>
@@ -295,7 +306,12 @@ export function GeneralTab() {
 				<FormField name="Website" description="Visit the True Recall website">
 					<Clickable
 						class="ep-btn ep-btn-outline"
-						onClick={() => window.open(TRUERECALL_WEB_URL, "_blank")}
+						onClick={() =>
+							window.open(
+								withPluginUtm(TRUERECALL_WEB_URL, "settings-about"),
+								"_blank",
+							)
+						}
 					>
 						truerecall.app
 					</Clickable>
@@ -330,7 +346,12 @@ function NewsletterCard() {
 			>
 				<Clickable
 					class="ep-btn mod-cta tr-settings-action ep:inline-flex ep:items-center ep:gap-1.5"
-					onClick={() => window.open(TRUERECALL_NEWSLETTER_URL, "_blank")}
+					onClick={() =>
+						window.open(
+							withPluginUtm(TRUERECALL_NEWSLETTER_URL, "settings-newsletter"),
+							"_blank",
+						)
+					}
 				>
 					<div ref={mailRef} class="ep:w-4 ep:h-4" />
 					Subscribe
@@ -375,7 +396,10 @@ function PlanField({ settings }: { settings: TrueRecallSettings }) {
 					class="ep-btn ep-btn-outline"
 					onClick={() =>
 						window.open(
-							isPro ? TRUERECALL_DASHBOARD_URL : TRUERECALL_PRICING_URL,
+							withPluginUtm(
+								isPro ? TRUERECALL_DASHBOARD_URL : TRUERECALL_PRICING_URL,
+								"settings-plan",
+							),
 							"_blank",
 						)
 					}

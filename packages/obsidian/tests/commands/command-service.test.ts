@@ -97,3 +97,48 @@ describe("CommandService cross-stack ordering", () => {
 		).toBe(globalService);
 	});
 });
+
+describe("CommandService failed history operations", () => {
+	it("removes a deferred command when its later persistence step fails", async () => {
+		const service = createService();
+		let fail = () => {};
+		const command: Command = {
+			...createNoopCommand("review:deferred-failure"),
+			deferred: true,
+			onDeferredFailure(handler) {
+				fail = handler;
+			},
+		};
+
+		await service.execute(command);
+		expect(service.canUndo()).toBe(true);
+
+		fail();
+		expect(service.canUndo()).toBe(false);
+	});
+
+	it("keeps a command on the undo stack when undo fails", async () => {
+		const service = createService();
+		const command = createNoopCommand("card:failing-undo");
+		command.undo = () => {
+			throw new Error("undo failed");
+		};
+		await service.execute(command);
+
+		await expect(service.undo()).resolves.toBe(false);
+		expect(service.canUndo()).toBe(true);
+	});
+
+	it("keeps a command on the redo stack when redo fails", async () => {
+		const service = createService();
+		const command = createNoopCommand("card:failing-redo");
+		await service.execute(command);
+		await service.undo();
+		command.execute = () => {
+			throw new Error("redo failed");
+		};
+
+		await expect(service.redo()).resolves.toBe(false);
+		expect(service.canRedo()).toBe(true);
+	});
+});

@@ -3,7 +3,26 @@ const DEFAULT_TIMEOUT_MS = 30_000;
 
 type ApiResponse<T = unknown> =
 	| { ok: true; data: T }
-	| { ok: false; error: string };
+	| {
+			ok: false;
+			error: string;
+			code?: string;
+			retryable?: boolean;
+			requestId?: string;
+	  };
+
+export class LocalApiError extends Error {
+	constructor(
+		message: string,
+		public readonly status: number,
+		public readonly code?: string,
+		public readonly retryable = false,
+		public readonly requestId?: string,
+	) {
+		super(message);
+		this.name = "LocalApiError";
+	}
+}
 
 const CONNECTION_ERROR_MSG =
 	"Cannot connect to True Recall plugin. Is Obsidian running with the Local API enabled? " +
@@ -11,10 +30,12 @@ const CONNECTION_ERROR_MSG =
 
 export class TrueRecallClient {
 	private baseUrl: string;
+	private token: string;
 
 	constructor(port?: number) {
 		const p = port ?? (Number(process.env.TRUE_RECALL_PORT) || DEFAULT_PORT);
 		this.baseUrl = `http://127.0.0.1:${p}`;
+		this.token = process.env.TRUE_RECALL_TOKEN ?? "";
 	}
 
 	private async request<T>(
@@ -24,10 +45,14 @@ export class TrueRecallClient {
 	): Promise<T> {
 		let res: Response;
 		try {
-			// This process runs under Bun (see package.json "start"), not inside
-			// Obsidian — requestUrl is unavailable and `window` does not exist.
-			res = await Bun.fetch(`${this.baseUrl}${path}`, {
+			// This process runs outside Obsidian, so requestUrl is unavailable.
+			// Standard fetch keeps the shared client portable across Bun and Node.
+			res = await fetch(`${this.baseUrl}${path}`, {
 				...init,
+				headers: {
+					...init?.headers,
+					...(this.token ? { Authorization: `Bearer ${this.token}` } : {}),
+				},
 				signal: AbortSignal.timeout(timeoutMs),
 			});
 		} catch (error) {
@@ -51,7 +76,13 @@ export class TrueRecallClient {
 		}
 
 		if (!body.ok) {
-			throw new Error(body.error ?? `Request failed: ${res.status}`);
+			throw new LocalApiError(
+				body.error ?? `Request failed: ${res.status}`,
+				res.status,
+				body.code,
+				body.retryable,
+				body.requestId ?? res.headers.get("x-request-id") ?? undefined,
+			);
 		}
 		return body.data;
 	}

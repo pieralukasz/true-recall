@@ -133,6 +133,7 @@ describe("CardActionsHandler.handleForget", () => {
 		} as unknown as ReviewApi;
 
 		const cardStore = {
+			transaction: vi.fn((operation: () => unknown) => operation()),
 			get: vi.fn((id: string) =>
 				id === "new-sibling" ? { state: State.New } : { state: State.Review },
 			),

@@ -1,10 +1,7 @@
 import { useSignal } from "@preact/signals";
-import { useMemo, useState } from "preact/hooks";
+import { useEffect, useMemo, useState } from "preact/hooks";
 
-import {
-	type ForecastRange,
-	forecastRangeToDays,
-} from "@true-recall/core/metrics/forecast-filter";
+import type { ForecastRange } from "@true-recall/core/metrics/forecast-filter";
 import type { TrueRecallSettings } from "@true-recall/core/types";
 
 import {
@@ -18,6 +15,8 @@ import {
 import { WorkloadForecastSection } from "@true-recall/obsidian/features/metrics/ui/stats/components/WorkloadForecastSection";
 
 import type { FsrsPluginHost } from "../../../types/plugin-host.types";
+import { deferSettingsWork } from "../../defer-settings-work";
+import { buildLoadBalanceForecast } from "./load-balance-forecast";
 import { TargetInsights } from "./TargetInsights";
 import { describeSuggestion, sliderMax } from "./target-copy";
 import { useFsrsHelperOp } from "./useFsrsHelperOp";
@@ -71,36 +70,34 @@ export function LoadBalanceSection({
 
 	const [forecastVersion, setForecastVersion] = useState(0);
 	const forecastRange = useSignal<ForecastRange>("3m");
-
-	const forecastData = useMemo(() => {
-		const helper = plugin.fsrsHelper;
-		if (!helper) return null;
-		const forecastDays = forecastRangeToDays(
-			forecastRange.value,
-			plugin.cardStore.getCards(),
-		);
-		// forecastVersion, loadBalanceTarget, and loadBalanceMaxDeviation are read
-		// here only to force recomputation — helper.getWorkloadForecast() etc.
-		// read live settings internally, so nothing here references them directly.
-		// Without this, the forecast would go stale after editing the target or
-		// deviation sliders below (they only call `save`, not setForecastVersion).
-		void forecastVersion;
-		void settings.loadBalanceTarget;
-		void settings.loadBalanceTargetMode;
-		void settings.loadBalanceMaxDeviation;
-		return {
-			forecast: helper.getWorkloadForecast(forecastDays),
-			summary: helper.getWorkloadForecastSummary(forecastDays),
-			dayOfWeek: helper.getWorkloadByDayOfWeek(forecastDays),
-			decision: helper.getWorkloadDecision(),
-		};
-	}, [
-		plugin.fsrsHelper,
-		plugin.cardStore,
+	const forecastKey = [
 		forecastVersion,
 		forecastRange.value,
 		settings.loadBalanceTarget,
 		settings.loadBalanceTargetMode,
+		settings.loadBalanceMaxDeviation,
+	].join(":");
+	const [readyForecastKey, setReadyForecastKey] = useState<string | null>(null);
+
+	// Let Preact commit the tab before starting collection-wide calculations.
+	// The key also prevents a settings/range change from doing that work during
+	// the interaction render; stale scheduled work is cancelled on cleanup.
+	useEffect(() => {
+		return deferSettingsWork(() => setReadyForecastKey(forecastKey));
+	}, [forecastKey]);
+
+	const forecastData = useMemo(() => {
+		if (readyForecastKey !== forecastKey) return null;
+		return buildLoadBalanceForecast(
+			plugin,
+			forecastRange.value,
+			settings.loadBalanceMaxDeviation,
+		);
+	}, [
+		plugin,
+		readyForecastKey,
+		forecastKey,
+		forecastRange.value,
 		settings.loadBalanceMaxDeviation,
 	]);
 
@@ -235,7 +232,7 @@ export function LoadBalanceSection({
 				</div>
 			</FormField>
 
-			{forecastData && (
+			{forecastData ? (
 				<div class="ep:mt-3">
 					<WorkloadForecastSection
 						forecast={forecastData.forecast}
@@ -244,6 +241,10 @@ export function LoadBalanceSection({
 						range={forecastRange}
 					/>
 				</div>
+			) : (
+				<p class="ep:mt-3 ep:text-xs ep:text-obs-muted ep:text-center ep:py-4">
+					Calculating workload forecast…
+				</p>
 			)}
 		</FormCard>
 	);

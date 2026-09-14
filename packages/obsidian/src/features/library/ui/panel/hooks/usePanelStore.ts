@@ -85,6 +85,24 @@ function buildPanelState(p: {
 	};
 }
 
+function panelStateEquals(left: PanelState, right: PanelState): boolean {
+	return (
+		left.currentFile === right.currentFile &&
+		left.flashcardInfo === right.flashcardInfo &&
+		left.status === right.status &&
+		left.viewMode === right.viewMode &&
+		left.uncollectedCount === right.uncollectedCount &&
+		left.isFollowingReview === right.isFollowingReview &&
+		left.isAddCardExpanded === right.isAddCardExpanded &&
+		left.selectionMode === right.selectionMode &&
+		left.selectedCardIds === right.selectedCardIds &&
+		left.expandedCardIds === right.expandedCardIds &&
+		left.searchQuery === right.searchQuery &&
+		left.hasHighlights === right.hasHighlights &&
+		left.activeViewContext === right.activeViewContext
+	);
+}
+
 export function usePanelStore(): PanelStoreResult {
 	const plugin = usePlugin();
 
@@ -104,7 +122,11 @@ export function usePanelStore(): PanelStoreResult {
 			(s) => s.panel,
 			() => {
 				const p = store.getState().panel;
-				if (p) setState(buildPanelState(p));
+				if (!p) return;
+				const next = buildPanelState(p);
+				setState((current) =>
+					panelStateEquals(current, next) ? current : next,
+				);
 			},
 		);
 		return unsub;

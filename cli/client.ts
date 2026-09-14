@@ -3,4 +3,4 @@
  * client. The implementation lives in mcp-server/client.ts (both processes
  * run under Bun); this re-export keeps the two from drifting apart again.
  */
-export { TrueRecallClient } from "../mcp-server/client.js";
+export { LocalApiError, TrueRecallClient } from "../mcp-server/client.js";

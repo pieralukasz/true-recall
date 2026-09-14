@@ -133,8 +133,7 @@ export class PluginLoader {
 			dataLayer,
 			settings: plugin.settings,
 			save: async (patch) => {
-				Object.assign(plugin.settings, patch);
-				await plugin.saveSettings();
+				await plugin.saveSettings(patch);
 			},
 		};
 	}

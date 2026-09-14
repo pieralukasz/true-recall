@@ -1,8 +1,11 @@
+import { HttpError } from "@true-recall/core/errors";
+
 import type TrueRecallPlugin from "../../main";
 
 export interface ApiRequest {
 	url?: string;
 	method?: string;
+	headers: Record<string, string | string[] | undefined>;
 	// Node emits Buffer chunks; Buffer is a Uint8Array subclass, so typing the
 	// contract structurally avoids depending on `@types/node`.
 	on(event: "data", listener: (chunk: Uint8Array) => void): void;
@@ -19,6 +22,7 @@ export interface ApiResponseWriter {
 
 export interface ApiContext {
 	plugin: TrueRecallPlugin;
+	apiToken: string;
 }
 
 export type RouteHandler = (
@@ -30,12 +34,18 @@ export type RouteHandler = (
 
 type ApiResponseBody<T = unknown> =
 	| { ok: true; data: T }
-	| { ok: false; error: string };
+	| {
+			ok: false;
+			error: string;
+			code?: string;
+			retryable?: boolean;
+			requestId?: string;
+	  };
 
 const CORS_HEADERS = {
-	"Access-Control-Allow-Origin": "*",
 	"Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
-	"Access-Control-Allow-Headers": "Content-Type",
+	"Access-Control-Allow-Headers":
+		"Authorization, Content-Type, X-True-Recall-Token",
 } as const;
 
 function sendJson(
@@ -58,8 +68,9 @@ export function sendError(
 	res: ApiResponseWriter,
 	status: number,
 	message: string,
+	metadata: { code?: string; retryable?: boolean; requestId?: string } = {},
 ): void {
-	sendJson(res, status, { ok: false, error: message });
+	sendJson(res, status, { ok: false, error: message, ...metadata });
 }
 
 export { CORS_HEADERS };
@@ -73,23 +84,51 @@ export async function readBody(req: ApiRequest): Promise<string> {
 		const decoder = new TextDecoder();
 		let body = "";
 		let size = 0;
+		let settled = false;
 		req.on("data", (chunk) => {
+			if (settled) return;
 			size += chunk.length;
 			if (size > MAX_BODY_SIZE) {
-				req.destroy();
-				reject(new Error("Request body too large"));
+				// Stop retaining bytes but keep the socket alive long enough for the
+				// router to return the structured 413 response to the client.
+				settled = true;
+				reject(
+					new HttpError(413, {
+						backendCode: "payload-too-large",
+					}),
+				);
 				return;
 			}
 			body += decoder.decode(chunk, { stream: true });
 		});
-		req.on("end", () => resolve(body + decoder.decode()));
-		req.on("error", reject);
+		req.on("end", () => {
+			if (settled) return;
+			settled = true;
+			resolve(body + decoder.decode());
+		});
+		req.on("error", (error) => {
+			if (settled) return;
+			settled = true;
+			reject(error);
+		});
 	});
 }
 
-export function parseJsonBody<T>(raw: string): T | null {
+interface SafeParser<T> {
+	safeParse(
+		value: unknown,
+	): { success: true; data: T } | { success: false; error: unknown };
+}
+
+export function parseJsonBody<T>(
+	raw: string,
+	schema?: SafeParser<T>,
+): T | null {
 	try {
-		return JSON.parse(raw) as T;
+		const parsed: unknown = JSON.parse(raw);
+		if (!schema) return parsed as T;
+		const result = schema.safeParse(parsed);
+		return result.success ? result.data : null;
 	} catch (e) {
 		console.warn(
 			"[True Recall API] JSON parse failed:",

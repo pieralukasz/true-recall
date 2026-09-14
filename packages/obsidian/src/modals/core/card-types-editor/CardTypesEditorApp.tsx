@@ -1,9 +1,9 @@
-import { Notice } from "obsidian";
 import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
 
 import type { CardTemplate } from "@true-recall/core/types/note.types";
 
 import { usePlugin } from "@true-recall/obsidian/preact/ObsidianContext";
+import { notify } from "@true-recall/obsidian/services/notification.service";
 
 import { FieldManager } from "../note-type-manager/FieldManager";
 import { BottomBar } from "./BottomBar";
@@ -78,8 +78,8 @@ export function CardTypesEditorApp({
 					noteTypeService.update(noteType.id, { templates });
 				}
 				refresh();
-			} catch (e) {
-				new Notice((e as Error).message);
+			} catch (error) {
+				notify().operationFailed("update the card template", error);
 			}
 		},
 		[
@@ -103,8 +103,8 @@ export function CardTypesEditorApp({
 			noteTypeService.update(noteType.id, { templates });
 			setSelectedTemplateIndex(ordinal);
 			refresh();
-		} catch (e) {
-			new Notice((e as Error).message);
+		} catch (error) {
+			notify().operationFailed("add the card template", error);
 		}
 	}, [noteType, readOnly, noteTypeService, refresh]);
 
@@ -117,8 +117,8 @@ export function CardTypesEditorApp({
 			noteTypeService.update(noteType.id, { templates });
 			setSelectedTemplateIndex(Math.max(0, selectedTemplateIndex - 1));
 			refresh();
-		} catch (e) {
-			new Notice((e as Error).message);
+		} catch (error) {
+			notify().operationFailed("remove the card template", error);
 		}
 	}, [noteType, readOnly, selectedTemplateIndex, noteTypeService, refresh]);
 
@@ -132,8 +132,8 @@ export function CardTypesEditorApp({
 			try {
 				noteTypeService.update(noteType.id, { templates });
 				refresh();
-			} catch (e) {
-				new Notice((e as Error).message);
+			} catch (error) {
+				notify().operationFailed("rename the card template", error);
 			}
 		},
 		[noteType, readOnly, selectedTemplateIndex, noteTypeService, refresh],
@@ -152,8 +152,8 @@ export function CardTypesEditorApp({
 		try {
 			noteTypeService.update(noteType.id, { templates });
 			refresh();
-		} catch (e) {
-			new Notice((e as Error).message);
+		} catch (error) {
+			notify().operationFailed("flip the card template", error);
 		}
 	}, [noteType, readOnly, selectedTemplateIndex, noteTypeService, refresh]);
 
@@ -163,8 +163,8 @@ export function CardTypesEditorApp({
 			try {
 				noteTypeService.update(noteType.id, { fields });
 				refresh();
-			} catch (e) {
-				new Notice((e as Error).message);
+			} catch (error) {
+				notify().operationFailed("update note fields", error);
 			}
 		},
 		[noteType, noteTypeService, refresh],
@@ -176,8 +176,8 @@ export function CardTypesEditorApp({
 			try {
 				noteTypeService.renameField(noteType.id, oldName, newName);
 				refresh();
-			} catch (e) {
-				new Notice((e as Error).message);
+			} catch (error) {
+				notify().operationFailed("rename the note field", error);
 			}
 		},
 		[noteType, noteTypeService, refresh],

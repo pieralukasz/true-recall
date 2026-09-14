@@ -1,3 +1,8 @@
+import {
+	fromHttpResponse,
+	HttpError,
+	InvalidResponseError,
+} from "../../errors";
 import type { IHttpClient } from "../../interfaces/http-client";
 
 export interface TextContentPart {
@@ -127,12 +132,10 @@ export function getTextContent(message: ChatMessage | undefined): string {
 	return "";
 }
 
-export class AIRequestError extends Error {
-	constructor(
-		public readonly statusCode: number,
-		responseText: string,
-	) {
-		super(`AI API error (${statusCode}): ${responseText}`);
+/** @deprecated Use HttpError/isHttpError. Kept temporarily for source compatibility. */
+export class AIRequestError extends HttpError {
+	constructor(statusCode: number, responseText: string) {
+		super(statusCode, { detail: responseText, provider: "ai" });
 		this.name = "AIRequestError";
 	}
 
@@ -185,9 +188,27 @@ export class OpenRouterClient {
 		const response = await this.httpClient.post(this.baseUrl, body, headers);
 
 		if (response.status !== 200) {
-			throw new AIRequestError(response.status, response.text);
+			throw fromHttpResponse(response.status, response.json, {
+				provider: this.providerType,
+				method: "POST",
+			});
 		}
-
-		return response.json as ChatCompletionResponse;
+		if (!isChatCompletionResponse(response.json)) {
+			throw new InvalidResponseError(
+				"AI response does not contain a completion",
+				{
+					context: { provider: this.providerType },
+				},
+			);
+		}
+		return response.json;
 	}
+}
+
+function isChatCompletionResponse(
+	value: unknown,
+): value is ChatCompletionResponse {
+	if (typeof value !== "object" || value === null) return false;
+	const candidate = value as Partial<ChatCompletionResponse>;
+	return typeof candidate.id === "string" && Array.isArray(candidate.choices);
 }

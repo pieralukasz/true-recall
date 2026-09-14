@@ -80,13 +80,12 @@ function validateInput(
 }
 
 function getBucket(ctx: ApiContext): CardAIUserSettings {
-	if (!ctx.plugin.settings.cardPolish) {
-		ctx.plugin.settings.cardPolish = {
+	return (
+		ctx.plugin.settings.cardPolish ?? {
 			userPresets: [],
 			customPromptAutoApply: false,
-		};
-	}
-	return ctx.plugin.settings.cardPolish;
+		}
+	);
 }
 
 function makeId(existing: readonly CardAIPreset[]): string {
@@ -144,8 +143,12 @@ export async function handleCreateCardPolishPreset(
 		...(input.mode !== undefined && { mode: input.mode }),
 		...(input.fieldScope !== undefined && { fieldScope: input.fieldScope }),
 	};
-	bucket.userPresets.push(created);
-	await ctx.plugin.saveSettings();
+	await ctx.plugin.saveSettings({
+		cardPolish: {
+			...bucket,
+			userPresets: [...bucket.userPresets, created],
+		},
+	});
 	sendOk(res, created);
 }
 
@@ -178,9 +181,16 @@ export async function handleUpdateCardPolishPreset(
 		return;
 	}
 
-	Object.assign(preset, patch as CardPolishPresetInput);
-	await ctx.plugin.saveSettings();
-	sendOk(res, preset);
+	const updatedPreset = { ...preset, ...(patch as CardPolishPresetInput) };
+	await ctx.plugin.saveSettings({
+		cardPolish: {
+			...bucket,
+			userPresets: bucket.userPresets.map((candidate) =>
+				candidate.id === preset.id ? updatedPreset : candidate,
+			),
+		},
+	});
+	sendOk(res, updatedPreset);
 }
 
 export async function handleDeleteCardPolishPreset(
@@ -200,7 +210,13 @@ export async function handleDeleteCardPolishPreset(
 		return;
 	}
 
-	bucket.userPresets.splice(index, 1);
-	await ctx.plugin.saveSettings();
+	await ctx.plugin.saveSettings({
+		cardPolish: {
+			...bucket,
+			userPresets: bucket.userPresets.filter(
+				(_, candidateIndex) => candidateIndex !== index,
+			),
+		},
+	});
 	sendOk(res, { id: params.id });
 }

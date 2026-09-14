@@ -1,11 +1,17 @@
 import { type ReadonlySignal, signal } from "@preact/signals";
 
+import { type AppError, toAppError } from "@true-recall/core/errors";
+
+import { reportError } from "@true-recall/obsidian/services/errors";
+
 export type QueryKey = string;
 type QueryGroup = string;
 
 interface QueryEntry<T = unknown> {
 	sig: { value: T };
 	readonly: ReadonlySignal<T>;
+	error: { value: AppError | null };
+	readonlyError: ReadonlySignal<AppError | null>;
 	loader: () => T;
 	groups: QueryGroup[];
 }
@@ -25,10 +31,13 @@ export class DataLayer {
 
 		const initial = loader();
 		const sig = signal<T>(initial);
+		const error = signal<AppError | null>(null);
 
 		this.queries.set(key, {
 			sig,
 			readonly: sig,
+			error,
+			readonlyError: error,
 			loader,
 			groups,
 		});
@@ -43,6 +52,10 @@ export class DataLayer {
 
 	signal<T>(key: QueryKey): ReadonlySignal<T> | undefined {
 		return this.queries.get(key)?.readonly as ReadonlySignal<T> | undefined;
+	}
+
+	errorSignal(key: QueryKey): ReadonlySignal<AppError | null> | undefined {
+		return this.queries.get(key)?.readonlyError;
 	}
 
 	batch<R>(fn: () => R): R {
@@ -77,6 +90,7 @@ export class DataLayer {
 			return;
 		}
 		entry.sig.value = patched;
+		entry.error.value = null;
 	}
 
 	invalidateGroups(groups: QueryGroup[]): void {
@@ -103,8 +117,11 @@ export class DataLayer {
 		if (!entry) return;
 		try {
 			entry.sig.value = entry.loader();
+			entry.error.value = null;
 		} catch (e) {
-			console.error(`[DataLayer] reload "${key}" failed:`, e);
+			const error = toAppError(e);
+			entry.error.value = error;
+			reportError(error, { origin: "data-layer", context: { queryKey: key } });
 		}
 	}
 

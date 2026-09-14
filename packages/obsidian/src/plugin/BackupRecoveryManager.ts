@@ -17,6 +17,7 @@ import {
 
 import { ObsidianPersistence } from "@true-recall/obsidian/adapters/ObsidianPersistence";
 import { RestoreBackupModal } from "@true-recall/obsidian/modals/integration/RestoreBackupModal";
+import { reportError } from "@true-recall/obsidian/services/errors";
 import {
 	NOTIFICATION_DURATION,
 	notify,
@@ -103,7 +104,7 @@ export class BackupRecoveryManager {
 				}
 			}
 		} catch (error) {
-			console.error("[True Recall] Auto-recovery failed:", error);
+			reportError(error, { origin: "backup-auto-recovery" });
 		}
 
 		return false;
@@ -123,7 +124,7 @@ export class BackupRecoveryManager {
 				);
 			}
 		} catch (error) {
-			console.error("[True Recall] Auto-backup failed:", error);
+			reportError(error, { origin: "backup-auto-create" });
 		}
 	}
 
@@ -142,8 +143,7 @@ export class BackupRecoveryManager {
 				notify().info("No changes to backup");
 			}
 		} catch (error) {
-			console.error("[True Recall] Manual backup failed:", error);
-			notify().error("Failed to create backup. Check console for details.");
+			notify().operationFailed("create the backup", error);
 		}
 	}
 

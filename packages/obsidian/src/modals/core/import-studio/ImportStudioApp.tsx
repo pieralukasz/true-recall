@@ -27,6 +27,7 @@ import {
 	useApp,
 	usePlugin,
 } from "@true-recall/obsidian/preact/ObsidianContext";
+import { notify } from "@true-recall/obsidian/services/notification.service";
 
 import { loadImportStudioPrefs, saveImportStudioPrefs } from "./types";
 
@@ -165,8 +166,7 @@ export function ImportStudioApp({
 			}
 			setParseResult({ cards: [], detectedFormat: "none", duplicateCount: 0 });
 		} catch (error) {
-			const msg = error instanceof Error ? error.message : String(error);
-			new Notice(`Error: ${msg}`);
+			notify().operationFailed("import the flashcards", error);
 		} finally {
 			setSaving(false);
 		}

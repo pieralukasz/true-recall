@@ -1,6 +1,10 @@
 import type { ComponentChildren } from "preact";
 import { useErrorBoundary } from "preact/hooks";
 
+import { describeErrorForUser } from "@true-recall/core/errors";
+
+import { reportError } from "@true-recall/obsidian/services/errors";
+
 import { Clickable } from "./Clickable";
 
 interface ErrorBoundaryProps {
@@ -13,7 +17,7 @@ export function ErrorBoundary({
 	fallbackMessage = "Something went wrong",
 }: ErrorBoundaryProps) {
 	const [error, resetError] = useErrorBoundary((err) =>
-		console.error("[True Recall] Render error:", err),
+		reportError(err, { origin: "render-boundary" }),
 	) as [unknown, () => void];
 
 	if (error) {
@@ -23,11 +27,7 @@ export function ErrorBoundary({
 					{fallbackMessage}
 				</div>
 				<div class="ep:text-ui-smaller ep:text-obs-muted ep:max-w-[300px]">
-					{error instanceof Error
-						? error.message
-						: typeof error === "string"
-							? error
-							: JSON.stringify(error)}
+					{describeErrorForUser(error)}
 				</div>
 				<Clickable
 					class="ep:py-2 ep:px-4 ep:rounded-md ep:bg-obs-interactive ep:text-obs-on-accent ep:border-none ep:text-ui-small ep:font-medium"

@@ -51,6 +51,17 @@ function cloneSettingsForSave(
 	return JSON.parse(JSON.stringify(settings)) as TrueRecallSettings;
 }
 
+function restoreSettings(
+	target: TrueRecallSettings,
+	snapshot: TrueRecallSettings,
+): void {
+	const mutable = target as unknown as Record<string, unknown>;
+	for (const key of Object.keys(mutable)) {
+		if (!(key in snapshot)) delete mutable[key];
+	}
+	Object.assign(target, snapshot);
+}
+
 export class TrueRecallApp {
 	readonly events = new DomainEventBus();
 
@@ -154,17 +165,23 @@ export class TrueRecallApp {
 		deviceId: string,
 		options: { dbFolder?: string } = {},
 	): Promise<void> {
-		this.cardStore = new SqliteStoreService(this.config.persistence, deviceId, {
+		const store = new SqliteStoreService(this.config.persistence, deviceId, {
 			...this.config.storeOptions,
 			...options,
 		});
-		await this.cardStore.load();
+		try {
+			await store.load();
+		} catch (error) {
+			store.getSqliteDb().close();
+			throw error;
+		}
+		this.cardStore = store;
 
-		this.flashcardManager.setStore(this.cardStore);
+		this.flashcardManager.setStore(store);
 
 		this.sessionPersistence = new SessionPersistenceService(
 			this.config.persistence,
-			this.cardStore,
+			store,
 			this.dayBoundary,
 		);
 		this.flashcardManager.setSessionPersistence(this.sessionPersistence);
@@ -173,10 +190,7 @@ export class TrueRecallApp {
 			console.error("[TrueRecallApp] Stats migration failed:", e);
 		});
 
-		this.backupService = new BackupService(
-			this.config.persistence,
-			this.cardStore,
-		);
+		this.backupService = new BackupService(this.config.persistence, store);
 
 		this.backgroundBackupManager = new BackgroundBackupManager(
 			this.backupService,
@@ -211,7 +225,6 @@ export class TrueRecallApp {
 			this.backgroundBackupManager.start();
 		}
 
-		const store = this.cardStore;
 		this.noteTypeService = new NoteTypeService({
 			noteTypeActions: store.noteTypes,
 			noteActions: {
@@ -221,35 +234,35 @@ export class TrueRecallApp {
 		});
 		this.noteTypeService.initialize();
 
-		this.fsrsHelper = new FSRSHelperService(this.cardStore, this.settings);
+		this.fsrsHelper = new FSRSHelperService(store, this.settings);
 
 		this.events.emit("store:ready", {});
 	}
 
 	async updateSettings(patch: Partial<TrueRecallSettings>): Promise<void> {
-		Object.assign(this.settings, patch);
-		const settingsSnapshot = cloneSettingsForSave(this.settings);
+		const updatePromise = this.settingsSaveQueue.then(async () => {
+			const previousSettings = cloneSettingsForSave(this.settings);
+			Object.assign(this.settings, patch);
+			const settingsSnapshot = cloneSettingsForSave(this.settings);
 
-		const savePromise = this.settingsSaveQueue.then(
-			() => this.config.settingsPersistence.save(settingsSnapshot),
-			() => this.config.settingsPersistence.save(settingsSnapshot),
-		);
-		this.settingsSaveQueue = savePromise.catch(() => {});
+			try {
+				await this.config.settingsPersistence.save(settingsSnapshot);
+			} catch (error) {
+				restoreSettings(this.settings, previousSettings);
+				throw error;
+			}
 
-		try {
-			await savePromise;
-		} catch (e) {
-			console.error("[TrueRecallApp] Failed to persist settings:", e);
-		}
+			this.flashcardManager.updateSettings(this.settings);
+			this.fsrsService.updateSettings(extractFSRSSettings(this.settings));
+			this.dayBoundary.updateDayStartHour(this.settings.dayStartHour);
+			this.fsrsHelper?.updateSettings(this.settings);
+			this.backgroundBackupManager?.updateConfig(this.settings);
+			this.hierarchyService.invalidateGraph();
+			this.events.emit("settings:changed", {});
+		});
 
-		this.flashcardManager.updateSettings(this.settings);
-		this.fsrsService.updateSettings(extractFSRSSettings(this.settings));
-		this.dayBoundary.updateDayStartHour(this.settings.dayStartHour);
-		this.fsrsHelper?.updateSettings(this.settings);
-		this.backgroundBackupManager?.updateConfig(this.settings);
-		this.hierarchyService.invalidateGraph();
-
-		this.events.emit("settings:changed", {});
+		this.settingsSaveQueue = updatePromise.catch(() => {});
+		await updatePromise;
 	}
 
 	async shutdown(): Promise<void> {

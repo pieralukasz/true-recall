@@ -2,6 +2,7 @@ import type { App } from "obsidian";
 import { render } from "preact";
 import { useCallback, useRef, useState } from "preact/hooks";
 
+import { describeErrorForUser } from "@true-recall/core/errors";
 import {
 	CsvExportService,
 	type CsvSeparator,
@@ -24,6 +25,7 @@ import {
 	resolveNotes,
 } from "@true-recall/obsidian/features/integration/utils/export-helpers";
 import { BaseModal } from "@true-recall/obsidian/modals/shared/BaseModal";
+import { reportError } from "@true-recall/obsidian/services/errors";
 
 type ExportPhase =
 	| { type: "form" }
@@ -208,8 +210,8 @@ export class CsvExportModal extends BaseModal {
 			downloadBlob(content, filename, "text/plain;charset=utf-8");
 			return { type: "success", filename };
 		} catch (err) {
-			const errMsg = err instanceof Error ? err.message : String(err);
-			return { type: "error", message: errMsg };
+			reportError(err, { origin: "csv-export" });
+			return { type: "error", message: describeErrorForUser(err) };
 		}
 	}
 }

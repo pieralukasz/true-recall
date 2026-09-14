@@ -34,7 +34,9 @@ function makeCtx(overrides?: Partial<CommandContext>): CommandContext {
 		flashcardManager: {
 			updateCardFSRS: vi.fn().mockReturnValue(true),
 		} as unknown as CommandContext["flashcardManager"],
-		cardStore: {} as CommandContext["cardStore"],
+		cardStore: {
+			transaction: vi.fn((operation: () => unknown) => operation()),
+		} as unknown as CommandContext["cardStore"],
 		sessionPersistence: {
 			recordReview: vi.fn(),
 			removeLastReview: vi.fn(),
@@ -101,5 +103,62 @@ describe("ReviewAnswerCommand — standalone (no queue)", () => {
 			{ skipNotification: true },
 		);
 		expect(ctx.sessionPersistence.removeLastReview).toHaveBeenCalled();
+	});
+});
+
+describe("ReviewAnswerCommand — persistence rollback", () => {
+	it("restores session state and skips post-commit effects when the transaction fails", async () => {
+		const card = makeCard();
+		const sibling = { ...makeCard(), id: "sibling" };
+		const insertCardAtPosition = vi.fn();
+		const undoLastAnswer = vi.fn();
+		const onPersisted = vi.fn();
+		const onFailure = vi.fn();
+		const errorSpy = vi
+			.spyOn(console, "error")
+			.mockImplementation(() => undefined);
+		const ctx = makeCtx({
+			sessionPersistence: {
+				recordReview: vi.fn(() => {
+					throw new Error("review log write failed");
+				}),
+				removeLastReview: vi.fn(),
+			} as unknown as CommandContext["sessionPersistence"],
+		});
+		const cmd = new ReviewAnswerCommand({
+			card,
+			originalFsrs: { ...card.fsrs },
+			updatedFsrs: { ...card.fsrs, reps: 1 },
+			previousIndex: 0,
+			wasNewCard: true,
+			rating: 3,
+			previousState: 0,
+			scheduledDays: 1,
+			elapsedDays: 0,
+			responseTime: 1000,
+			presetName: "default",
+			buriedSiblings: [sibling],
+			getReview: () =>
+				({
+					queue: [],
+					insertCardAtPosition,
+					undoLastAnswer,
+				}) as never,
+			onPersisted,
+		});
+		cmd.onDeferredFailure(onFailure);
+
+		cmd.execute(ctx);
+		await new Promise((resolve) => setTimeout(resolve, 5));
+
+		expect(insertCardAtPosition).toHaveBeenCalledWith(sibling, 0);
+		expect(undoLastAnswer).toHaveBeenCalledWith(
+			0,
+			expect.objectContaining({ id: card.id, fsrs: card.fsrs }),
+			undefined,
+		);
+		expect(onPersisted).not.toHaveBeenCalled();
+		expect(onFailure).toHaveBeenCalledOnce();
+		errorSpy.mockRestore();
 	});
 });

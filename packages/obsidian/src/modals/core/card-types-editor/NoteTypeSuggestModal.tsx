@@ -1,7 +1,8 @@
-import { type App, Notice, SuggestModal } from "obsidian";
+import { type App, SuggestModal } from "obsidian";
 
 import type { NoteType } from "@true-recall/core/types/note.types";
 
+import { notify } from "@true-recall/obsidian/services/notification.service";
 import { openCardTypesEditor } from "@true-recall/obsidian/views/modal-window/open-card-types-editor";
 
 import type TrueRecallPlugin from "../../../main";
@@ -77,8 +78,8 @@ export class NoteTypeSuggestModal extends SuggestModal<SuggestItem> {
 				css,
 			});
 			openCardTypesEditor(this.plugin, created.id);
-		} catch (e) {
-			new Notice((e as Error).message);
+		} catch (error) {
+			notify().operationFailed("create the note type", error);
 		}
 	}
 }

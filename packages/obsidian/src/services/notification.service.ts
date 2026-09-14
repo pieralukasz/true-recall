@@ -1,32 +1,15 @@
 import { Notice } from "obsidian";
 
-export const NOTIFICATION_DURATION = {
-	SHORT: 3000, // Quick confirmations
-	NORMAL: 5000, // Standard notifications (Obsidian default)
-	LONG: 8000, // Important messages
-	PERSIST: 0, // Stay until dismissed
-} as const;
+import { describeErrorForUser } from "@true-recall/core/errors";
 
-class NotificationService {
-	success(message: string, duration?: number): void {
-		new Notice(message, duration ?? NOTIFICATION_DURATION.SHORT);
-	}
+import {
+	NOTIFICATION_DURATION,
+	NoticeService,
+} from "./notifications/notice.service";
 
-	error(message: string, error?: unknown, duration?: number): void {
-		if (error) {
-			console.error(`[True Recall] ${message}:`, error);
-		}
-		new Notice(message, duration ?? NOTIFICATION_DURATION.LONG);
-	}
+export { NOTIFICATION_DURATION } from "./notifications/notice.service";
 
-	warning(message: string, duration?: number): void {
-		new Notice(message, duration ?? NOTIFICATION_DURATION.NORMAL);
-	}
-
-	info(message: string, duration?: number): void {
-		new Notice(message, duration ?? NOTIFICATION_DURATION.NORMAL);
-	}
-
+class NotificationService extends NoticeService {
 	cardsCreated(count: number, noteName?: string): void {
 		const msg =
 			count === 1
@@ -234,8 +217,10 @@ class NotificationService {
 	}
 
 	generationFailed(error: unknown): void {
-		const msg = error instanceof Error ? error.message : String(error);
-		this.error(`Flashcard generation failed: ${msg}`, error);
+		this.error(
+			`Flashcard generation failed. ${describeErrorForUser(error)}`,
+			error,
+		);
 	}
 
 	flashcardsGeneratedAndAdded(count: number): void {
@@ -264,9 +249,10 @@ class NotificationService {
 
 	operationFailed(operation: string, error?: unknown): void {
 		if (error) {
-			// eslint-disable-next-line @typescript-eslint/no-base-to-string -- fallback for non-Error objects is intentional: String() on an arbitrary thrown value is the safe, standard "best-effort" stringification for an error path
-			const msg = error instanceof Error ? error.message : String(error);
-			this.error(`Failed to ${operation}: ${msg}`);
+			this.error(
+				`Failed to ${operation}. ${describeErrorForUser(error)}`,
+				error,
+			);
 		} else {
 			this.error(`Failed to ${operation}`);
 		}

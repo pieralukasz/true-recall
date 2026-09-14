@@ -2,6 +2,8 @@ import type { FSRSCardData, FSRSFlashcardItem } from "@true-recall/core/types";
 
 import { mutate } from "@true-recall/obsidian/data";
 import type { MutationType } from "@true-recall/obsidian/data/queries";
+import { reportError } from "@true-recall/obsidian/services/errors";
+import { notify } from "@true-recall/obsidian/services/notification.service";
 import type { ReviewApi } from "@true-recall/obsidian/store";
 
 import type { Command, CommandContext } from "../command.types";
@@ -34,6 +36,8 @@ abstract class BaseReviewActionCommand implements Command {
 	/** Pre-write DB state of every sibling doWrite touches (also the ones
 	 * not currently in the queue — undo must restore those too). */
 	private dbSnapshots = new Map<string, FSRSCardData>();
+	private rolledBackAfterFailure = false;
+	private deferredFailureHandler?: () => void;
 
 	constructor(params: ReviewActionParams, description: string) {
 		this.params = params;
@@ -41,6 +45,10 @@ abstract class BaseReviewActionCommand implements Command {
 	}
 
 	protected abstract doWrite(ctx: CommandContext): void;
+
+	onDeferredFailure(handler: () => void): void {
+		this.deferredFailureHandler = handler;
+	}
 
 	execute(ctx: CommandContext): void {
 		const review = this.params.getReview();
@@ -83,7 +91,7 @@ abstract class BaseReviewActionCommand implements Command {
 			this.writeExecuted = true;
 			this.pendingTimeoutId = null;
 			try {
-				this.doWrite(ctx);
+				ctx.cardStore.transaction(() => this.doWrite(ctx));
 				// doWrite must use { skipNotification: true } on every FSRS
 				// write so the domain-event bus does not set lastMutation —
 				// otherwise ReviewView's signal effect would race the queue
@@ -93,7 +101,14 @@ abstract class BaseReviewActionCommand implements Command {
 				// query groups and does not flow through the event bus.
 				mutate(this.mutationType, () => {});
 			} catch (error) {
-				console.error(`[${this.type}] Error in deferred write:`, error);
+				this.restore(ctx, false);
+				this.rolledBackAfterFailure = true;
+				this.deferredFailureHandler?.();
+				reportError(error, {
+					origin: "review-persistence",
+					context: { command: this.type },
+				});
+				notify().operationFailed(this.description.toLowerCase(), error);
 			}
 		}, 0);
 	}
@@ -108,7 +123,12 @@ abstract class BaseReviewActionCommand implements Command {
 	}
 
 	undo(ctx: CommandContext): void {
+		if (this.rolledBackAfterFailure) return;
 		const cancelled = this.cancelPendingWrite();
+		this.restore(ctx, !cancelled);
+	}
+
+	private restore(ctx: CommandContext, restoreDatabase: boolean): void {
 		const p = this.params;
 
 		// Re-insert primary + captured siblings in ascending order of their
@@ -136,7 +156,7 @@ abstract class BaseReviewActionCommand implements Command {
 		}
 		review.replaceQueue(newQueue, p.card.id);
 
-		if (!cancelled) {
+		if (restoreDatabase) {
 			// skipNotification: true keeps lastMutation untouched so the
 			// ReviewView effect does not fire a redundant rebuildActiveSession
 			// over the queue we just restored above. We still need DataLayer

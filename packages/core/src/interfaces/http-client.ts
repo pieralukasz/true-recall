@@ -13,5 +13,6 @@ export interface IHttpClient {
 		url: string,
 		body: unknown,
 		headers?: Record<string, string>,
+		signal?: AbortSignal,
 	): AsyncIterable<string>;
 }

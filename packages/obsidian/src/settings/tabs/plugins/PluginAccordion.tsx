@@ -1,5 +1,6 @@
 import { TRUERECALL_PRICING_URL } from "@true-recall/core/constants";
 import type { PluginTier } from "@true-recall/core/types";
+import { withPluginUtm } from "@true-recall/core/utils";
 
 import { ToggleInput } from "@true-recall/obsidian/components";
 import { useIcon } from "@true-recall/obsidian/preact/hooks";
@@ -109,7 +110,7 @@ export function PluginAccordion({
 					) : (
 						<a
 							class="tr-plugin-upgrade"
-							href={TRUERECALL_PRICING_URL}
+							href={withPluginUtm(TRUERECALL_PRICING_URL, "settings-plugins")}
 							target="_blank"
 							rel="noreferrer"
 						>
@@ -141,7 +142,10 @@ export function PluginAccordion({
 								{info.tier === "pro" ? (
 									<a
 										class="tr-plugin-upgrade"
-										href={TRUERECALL_PRICING_URL}
+										href={withPluginUtm(
+											TRUERECALL_PRICING_URL,
+											"settings-plugins",
+										)}
 										target="_blank"
 										rel="noreferrer"
 									>

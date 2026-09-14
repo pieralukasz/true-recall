@@ -58,7 +58,7 @@ export class EditHandler {
 				newQuestion,
 				newAnswer,
 			);
-			this.pushEditUndo(card, field);
+			this.pushEditUndo(card, newQuestion, newAnswer ?? "", field);
 
 			const currentCard = review.getCurrentCard();
 			if (currentCard?.id === cardIdBeforeSave) {
@@ -111,7 +111,7 @@ export class EditHandler {
 					newContent,
 					card.answer,
 				);
-				this.pushEditUndo(card, "question");
+				this.pushEditUndo(card, newContent, card.answer ?? "", "question");
 				review.updateCurrentCardContent(newContent, card.answer);
 			}
 		} catch (error) {
@@ -135,12 +135,16 @@ export class EditHandler {
 
 	private pushEditUndo(
 		card: FSRSFlashcardItem,
+		nextQuestion: string,
+		nextAnswer: string,
 		field: "question" | "answer",
 	): void {
 		const cmd = new UpdateCardCommand(
 			card.id,
 			card.question,
 			card.answer ?? "",
+			nextQuestion,
+			nextAnswer,
 			`Edit card ${field}`,
 		);
 		void this.deps.commandService?.execute(cmd);

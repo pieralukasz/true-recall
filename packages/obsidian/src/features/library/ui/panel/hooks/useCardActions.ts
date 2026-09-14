@@ -142,6 +142,8 @@ export function useCardActions() {
 					card.id,
 					previousQuestion,
 					previousAnswer,
+					nextQuestion,
+					nextAnswer,
 					`Edit card ${field}`,
 				);
 				void plugin.commandService?.execute(command);

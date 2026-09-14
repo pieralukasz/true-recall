@@ -40,7 +40,13 @@ describe("UpdateCardCommand", () => {
 		const ctx = {
 			flashcardManager: { updateCardContent },
 		} as unknown as CommandContext;
-		const cmd = new UpdateCardCommand("card-1", "Old question", "Old answer");
+		const cmd = new UpdateCardCommand(
+			"card-1",
+			"Old question",
+			"Old answer",
+			"New question",
+			"New answer",
+		);
 
 		cmd.undo(ctx);
 
@@ -50,6 +56,31 @@ describe("UpdateCardCommand", () => {
 			"Old answer",
 			// "system": an undo restores content, it does not author an edit,
 			// so it must not bump the note's edit counter.
+			{ skipDuplicateCheck: true, editSource: "system" },
+		);
+	});
+
+	it("reapplies the edited content on redo", () => {
+		const updateCardContent = vi.fn();
+		const ctx = {
+			flashcardManager: { updateCardContent },
+		} as unknown as CommandContext;
+		const cmd = new UpdateCardCommand(
+			"card-1",
+			"Old question",
+			"Old answer",
+			"New question",
+			"New answer",
+		);
+
+		cmd.execute(ctx);
+		cmd.undo(ctx);
+		cmd.execute(ctx);
+
+		expect(updateCardContent).toHaveBeenLastCalledWith(
+			"card-1",
+			"New question",
+			"New answer",
 			{ skipDuplicateCheck: true, editSource: "system" },
 		);
 	});

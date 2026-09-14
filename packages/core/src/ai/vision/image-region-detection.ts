@@ -194,7 +194,7 @@ export async function detectRegionsFromImage(
 	);
 
 	const metadata = config.hasProTier
-		? { call_context: "generation" }
+		? { call_context: "image-region-detection" }
 		: undefined;
 
 	const response = await client.chat({

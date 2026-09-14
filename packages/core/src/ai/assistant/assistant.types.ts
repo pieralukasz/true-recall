@@ -47,6 +47,19 @@ export interface AssistantConversationTurn {
 	content: string;
 }
 
+/** The user's typed answer during flashcard review plus its grading, captured
+ * when a follow-up question is queued from the review screen. The verdict union
+ * mirrors `TypeInVerdict`; kept structural so assistant types stay decoupled
+ * from FSRS session types. */
+export interface AssistantReviewAttemptContext {
+	typedAnswer: string;
+	verdict?: "correct" | "partial" | "wrong";
+	teacherComment?: string;
+	covered?: string[];
+	missing?: string[];
+	errors?: string[];
+}
+
 /** Context snapshot captured when the task is enqueued. */
 export interface AssistantContext {
 	selectedText?: string;
@@ -54,6 +67,7 @@ export interface AssistantContext {
 	draftCard?: AssistantDraftCardContext;
 	draftWorkspace?: AssistantDraftWorkspaceContext;
 	conversation?: AssistantConversationTurn[];
+	reviewAttempt?: AssistantReviewAttemptContext;
 	source?: AssistantSourceContext;
 	activeNotePath?: string;
 	/** Apply generated cards directly when invoked from a source-note action. */

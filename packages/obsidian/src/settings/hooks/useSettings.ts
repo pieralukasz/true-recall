@@ -23,8 +23,7 @@ export function useSettings() {
 
 	const save = useCallback(
 		async (patch: Partial<TrueRecallSettings>) => {
-			Object.assign(plugin.settings, patch);
-			await plugin.saveSettings();
+			await plugin.saveSettings(patch);
 		},
 		[plugin],
 	);
