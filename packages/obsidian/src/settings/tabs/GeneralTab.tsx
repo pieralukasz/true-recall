@@ -151,11 +151,11 @@ export function GeneralTab() {
 						]}
 					/>
 				</FormField>
-        
-        <FormField
+
+				<FormField
 					name="Typed answers"
 					description={
-					  settings.proKey ? (
+						settings.proKey ? (
 							"Default mode for new review sessions. Press T to toggle it during review."
 						) : (
 							<ProFeatureNotice message="AI semantic grading for typed answers is included with True Recall Pro." />
