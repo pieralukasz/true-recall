@@ -104,7 +104,7 @@ export function useProjectScheduling() {
 					notify().info(`No cards to ${action}.`);
 				}
 			} catch (err) {
-				notify().error(`${verb} failed: ${String(err)}`);
+				notify().operationFailed(`${action} project cards`, err);
 			}
 		},
 		[plugin, getProjectCards, applyChanges],
@@ -164,7 +164,7 @@ export function useProjectScheduling() {
 					notify().info("No cards needed rescheduling.");
 				}
 			} catch (err) {
-				notify().error(`Reschedule failed: ${String(err)}`);
+				notify().operationFailed("reschedule project cards", err);
 			}
 		},
 		[plugin, applyChanges],
@@ -267,7 +267,7 @@ export function useProjectScheduling() {
 					notify().info("No cards needed redistribution.");
 				}
 			} catch (err) {
-				notify().error(`Schedule break failed: ${String(err)}`);
+				notify().operationFailed("schedule project break", err);
 			}
 		},
 		[plugin, getProjectCards, applyChanges],
@@ -316,7 +316,7 @@ export function useProjectScheduling() {
 					notify().info("No cards needed balancing.");
 				}
 			} catch (err) {
-				notify().error(`Balance failed: ${String(err)}`);
+				notify().operationFailed("balance project workload", err);
 			}
 		},
 		[plugin, getProjectCards, applyChanges],
@@ -444,7 +444,7 @@ export function useProjectScheduling() {
 					notify().info("No cards needed moving.");
 				}
 			} catch (err) {
-				notify().error(`Flatten failed: ${String(err)}`);
+				notify().operationFailed("flatten project workload", err);
 			}
 		},
 		[plugin, getProjectCards, applyChanges],

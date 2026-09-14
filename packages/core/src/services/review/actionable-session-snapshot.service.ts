@@ -5,6 +5,7 @@ import { FSRSService } from "@true-recall/core/services/fsrs/fsrs.service";
 import type { HierarchyService } from "@true-recall/core/services/notes/hierarchy.service";
 import type { PresetService } from "@true-recall/core/services/notes/preset.service";
 import { ReviewService } from "@true-recall/core/services/review/review.service";
+import { createRModeCardOptionsResolver } from "@true-recall/core/services/review/rmode-card-options";
 import {
 	buildGlobalPresetQueueContext,
 	buildQueueOptions,
@@ -168,23 +169,11 @@ export function computeActionableSessionSnapshot(
 	);
 	queueOptions.now = options.now;
 	if (queueOptions.rMode) {
-		const ceilingOffset = deps.settings.rMode.ceilingOffset;
-		const presetCache = new Map<string, FSRSPreset>();
-		queueOptions.rMode.resolveCardOptions = (card) => {
-			const cacheKey = `${filters.projectPath ?? ""}\u0000${card.sourceUid ?? card.id}`;
-			let cardPreset = presetCache.get(cacheKey);
-			if (!cardPreset) {
-				cardPreset = deps.presetService.resolvePresetForCard(card, {
-					projectPath: filters.projectPath,
-				});
-				presetCache.set(cacheKey, cardPreset);
-			}
-			return {
-				comfortFloor: cardPreset.requestRetention,
-				ceiling: Math.min(0.999, cardPreset.requestRetention + ceilingOffset),
-				presetSettings: deps.presetService.toFSRSSettings(cardPreset),
-			};
-		};
+		queueOptions.rMode.resolveCardOptions = createRModeCardOptionsResolver({
+			presetService: deps.presetService,
+			ceilingOffset: deps.settings.rMode.ceilingOffset,
+			projectPath: filters.projectPath,
+		});
 	}
 
 	if (filters.sourceUidFilter) {
@@ -232,7 +221,7 @@ export function computeActionableSessionSnapshot(
 
 	const snapshot: ActionableSessionSnapshot = {
 		queue,
-		counts: countQueue(queue),
+		counts: countQueue(queue, options.now),
 		queueLength: queue.length,
 	};
 

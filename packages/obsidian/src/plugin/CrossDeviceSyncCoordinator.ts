@@ -1,6 +1,9 @@
 import { signal } from "@preact/signals";
 
+import { describeErrorForUser } from "@true-recall/core/errors";
 import type { SyncResult } from "@true-recall/core/integration/device/device-sync.service";
+
+import { reportError } from "../services/errors";
 
 export type SyncTrigger = "startup" | "foreground" | "interval" | "manual";
 
@@ -76,15 +79,23 @@ export class CrossDeviceSyncCoordinator {
 			await this.deps.flushLocal();
 			const result = await this.deps.runSync();
 			this.lastSyncedAt.value = Date.now();
-			this.lastError.value =
-				result.errors.length > 0 ? result.errors.join("; ") : null;
+			if (result.errors.length > 0) {
+				const error = new Error(result.errors.join("; "));
+				this.lastError.value = describeErrorForUser(error);
+				reportError(error, {
+					origin: "device-sync",
+					context: { trigger, partial: true },
+				});
+			} else {
+				this.lastError.value = null;
+			}
 			if (countAppliedChanges(result) > 0) {
 				this.deps.onChangesApplied(result);
 			}
 			return result;
 		} catch (err) {
-			this.lastError.value = err instanceof Error ? err.message : String(err);
-			console.warn(`[True Recall] Device sync (${trigger}) failed:`, err);
+			this.lastError.value = describeErrorForUser(err);
+			reportError(err, { origin: "device-sync", context: { trigger } });
 			return null;
 		} finally {
 			this.isSyncing.value = false;

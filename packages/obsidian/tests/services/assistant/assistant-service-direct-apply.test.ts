@@ -32,7 +32,9 @@ vi.mock("../../../src/services/notification.service", () => ({
 	}),
 }));
 
-import { AssistantService } from "../../../src/services/assistant/assistant.service";
+import { AssistantCompletionPresenter } from "../../../src/features/assistant/ui/AssistantCompletionPresenter";
+import { AssistantRepository } from "../../../src/services/assistant/assistant-repository";
+import { AssistantResultApplier } from "../../../src/services/assistant/assistant-result-applier";
 
 function createManifest(): AssistantManifest {
 	return {
@@ -93,26 +95,24 @@ function createService(manifest: AssistantManifest) {
 		dataLayer: { invalidateGroups: vi.fn() },
 		app: { vault: { getAbstractFileByPath: vi.fn(() => null) } },
 	};
+	const repository = new AssistantRepository(plugin as never);
 	return {
-		service: new AssistantService(plugin as never),
+		service: new AssistantCompletionPresenter(
+			plugin as never,
+			repository,
+			new AssistantResultApplier(plugin as never, repository),
+		),
 		taskActions,
 		threadActions,
 	};
 }
 
 async function notifyCompleted(
-	service: AssistantService,
+	service: AssistantCompletionPresenter,
 	task: AssistantTask,
 	manifest: AssistantManifest,
 ): Promise<void> {
-	await (
-		service as unknown as {
-			notifyTaskCompleted: (
-				task: AssistantTask,
-				manifest: AssistantManifest,
-			) => Promise<void>;
-		}
-	).notifyTaskCompleted(task, manifest);
+	await service.notifyTaskCompleted(task, manifest);
 }
 
 describe("AssistantService direct generation apply", () => {

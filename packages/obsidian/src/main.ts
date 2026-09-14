@@ -1,131 +1,54 @@
 import { Plugin, type TFile } from "obsidian";
 
-import { TrueRecallApp } from "@true-recall/core/app";
-import {
-	VIEW_TYPE_ASSISTANT_EDITOR,
-	VIEW_TYPE_ASSISTANT_INBOX,
-	VIEW_TYPE_ASSISTANT_WORKSPACE,
-	VIEW_TYPE_CARD_BROWSER,
-	VIEW_TYPE_CARD_TYPES_EDITOR,
-	VIEW_TYPE_DASHBOARD,
-	VIEW_TYPE_FLASHCARD_PANEL,
-	VIEW_TYPE_NOTE_TYPE_MANAGER,
-	VIEW_TYPE_QUICK_NOTE_EDITOR,
-	VIEW_TYPE_REVIEW,
-	VIEW_TYPE_SIMULATOR,
-	VIEW_TYPE_STATS,
-} from "@true-recall/core/constants";
+import type { TrueRecallApp } from "@true-recall/core/app";
 import type { DeletionHandlerService } from "@true-recall/core/flashcard/lifecycle/deletion-handler.service";
 import type { DeviceDiscoveryService } from "@true-recall/core/integration/device/device-discovery.service";
 import type { DeviceIdService } from "@true-recall/core/integration/device/device-id.service";
-import { DeviceLockService } from "@true-recall/core/integration/device/device-lock.service";
-import { DeviceSyncService } from "@true-recall/core/integration/device/device-sync.service";
-import { DeviceSyncScheduler } from "@true-recall/core/integration/device/device-sync-scheduler";
 import { getDeviceDbPath } from "@true-recall/core/persistence/sqlite/db-location";
-import {
-	DB_FOLDER,
-	MOBILE_SAVE_DEBOUNCE_MS,
-} from "@true-recall/core/persistence/sqlite/sqlite.types";
-import { FSRSService } from "@true-recall/core/services/fsrs/fsrs.service";
-import { FsrsReplayService } from "@true-recall/core/services/fsrs/fsrs-replay.service";
-import { SessionService } from "@true-recall/core/services/review/session.service";
-import type {
-	CardSchedulingMeta,
-	SessionResult,
-	TemporaryCustomStudyDeck,
-	TrueRecallSettings,
-} from "@true-recall/core/types";
+import { DB_FOLDER } from "@true-recall/core/persistence/sqlite/sqlite.types";
+import type { TrueRecallSettings } from "@true-recall/core/types";
 import type { SessionConfig } from "@true-recall/core/types/session-config.types";
-import {
-	extractFSRSSettings,
-	extractFSRSSettingsFromPreset,
-} from "@true-recall/core/types/settings.types";
 
-import { ObsidianNoteResolver } from "@true-recall/obsidian/adapters/ObsidianNoteResolver";
-import { ObsidianPersistence } from "@true-recall/obsidian/adapters/ObsidianPersistence";
 import type { CommandService } from "@true-recall/obsidian/commands";
 import type { DataLayer } from "@true-recall/obsidian/data";
-import { G } from "@true-recall/obsidian/data";
-import { Q } from "@true-recall/obsidian/data/queries";
 import type { AIWorkspaceMode } from "@true-recall/obsidian/features/assistant/ui/ai-workspace-modes";
 import type { NoteStatusCache } from "@true-recall/obsidian/features/core/cache/note-status-cache.service";
 import { ReviewSessionController } from "@true-recall/obsidian/features/study/services/ReviewSessionController";
-import {
-	createReviewSessionKey,
-	createReviewSessionLabel,
-} from "@true-recall/obsidian/features/study/services/review-session-key";
-import {
-	filtersToViewState,
-	normalizeSessionFilters,
-	type SessionFilters,
-} from "@true-recall/obsidian/features/study/ui/review/review.types";
-import { NoteTypeSuggestModal } from "@true-recall/obsidian/modals/core/card-types-editor/NoteTypeSuggestModal";
-import { ImportStudioModal } from "@true-recall/obsidian/modals/core/import-studio/ImportStudioModal";
-import { CsvExportModal } from "@true-recall/obsidian/modals/integration/CsvExportModal";
-import { PresetInspectorModal } from "@true-recall/obsidian/modals/shared";
-import {
-	CustomStudyModal,
-	type CustomStudyModalScope,
-} from "@true-recall/obsidian/modals/study/CustomStudyModal";
+import type { SessionFilters } from "@true-recall/obsidian/features/study/ui/review/review.types";
+import type { CustomStudyModalScope } from "@true-recall/obsidian/modals/study/CustomStudyModal";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 import { ProjectManagementService } from "@true-recall/obsidian/services/project-management.service";
-import { setLastMutation } from "@true-recall/obsidian/services/signals";
-import { TrueRecallSettingTab } from "@true-recall/obsidian/settings";
 import type { AppStore } from "@true-recall/obsidian/store";
-import {
-	capabilities,
-	isMobile,
-	isViewAllowedOnCurrentPlatform,
-} from "@true-recall/obsidian/utils/platform";
-import { AssistantInboxView } from "@true-recall/obsidian/views/assistant/AssistantInboxView";
-import { AssistantWorkspaceView } from "@true-recall/obsidian/views/assistant/AssistantWorkspaceView";
-import { CardBrowserView } from "@true-recall/obsidian/views/browser/CardBrowserView";
-import { DashboardView } from "@true-recall/obsidian/views/dashboard/DashboardView";
-import { AssistantEditorView } from "@true-recall/obsidian/views/modal-window/AssistantEditorView";
 import { drainAssistantEditorRequests } from "@true-recall/obsidian/views/modal-window/assistant-editor-registry";
-import { CardTypesEditorView } from "@true-recall/obsidian/views/modal-window/CardTypesEditorView";
 import { drainCardTypesEditorRequests } from "@true-recall/obsidian/views/modal-window/card-types-editor-registry";
-import { NoteTypeManagerView } from "@true-recall/obsidian/views/modal-window/NoteTypeManagerView";
 import { drainNoteTypeManagerRequests } from "@true-recall/obsidian/views/modal-window/note-type-manager-registry";
-import { openCardTypesEditor as openCardTypesEditorPopout } from "@true-recall/obsidian/views/modal-window/open-card-types-editor";
-import { openQuickNoteEditor } from "@true-recall/obsidian/views/modal-window/open-quick-note-editor";
-import { QuickNoteEditorView } from "@true-recall/obsidian/views/modal-window/QuickNoteEditorView";
-import { FlashcardPanelView } from "@true-recall/obsidian/views/panel/FlashcardPanelView";
-import { ReviewView } from "@true-recall/obsidian/views/review/ReviewView";
-import { SimulatorView } from "@true-recall/obsidian/views/simulator/SimulatorView";
-import { StatsView } from "@true-recall/obsidian/views/stats/StatsView";
 
-import { createObsidianAdapters, type ObsidianAdapters } from "./context";
+import type { ObsidianAdapters } from "./context";
+import type { CloudSyncManager } from "./features/integration/cloud/cloud-sync-manager";
 import type { LocalApiServer } from "./plugin/api/LocalApiServer";
 import type { BackupRecoveryManager } from "./plugin/BackupRecoveryManager";
-import { CloudSyncManager } from "./plugin/CloudSyncManager";
-import {
-	CrossDeviceSyncCoordinator,
-	emptySyncResult,
-} from "./plugin/CrossDeviceSyncCoordinator";
-import { registerCommands } from "./plugin/PluginCommands";
-import { registerEventHandlers } from "./plugin/PluginEventHandlers";
-import {
-	checkForWhatsNew,
-	initializeDeviceAndStore,
-} from "./plugin/PluginInitializers";
+import type { CrossDeviceSyncCoordinator } from "./plugin/CrossDeviceSyncCoordinator";
+import { ImportExportCoordinator } from "./plugin/runtime/ImportExportCoordinator";
+import { NoteActions } from "./plugin/runtime/NoteActions";
+import { PluginRuntime } from "./plugin/runtime/PluginRuntime";
+import { StudySessionLauncher } from "./plugin/runtime/StudySessionLauncher";
+import { TemporaryStudyDeckService } from "./plugin/runtime/TemporaryStudyDeckService";
+import { ViewNavigator } from "./plugin/runtime/ViewNavigator";
 import { applyTabBarClass, HIDE_TAB_BAR_CLASS } from "./plugin/tab-bar";
-import {
-	activateReviewView,
-	activateView,
-	getView,
-	revealReviewView,
-} from "./plugin/ViewActivator";
-import { AnkiExportModal } from "@true-recall/plugins/anki-import-export/AnkiExportModal";
-import { AnkiImportModal } from "@true-recall/plugins/anki-import-export/AnkiImportModal";
-import {
-	IOEditorModal,
-	type IOEditorMode,
-	type IOEditorResult,
+import type {
+	IOEditorMode,
+	IOEditorResult,
 } from "@true-recall/plugins/image-occlusion";
 import type { StatusBarWidget } from "@true-recall/plugins/status-bar-widget/StatusBarWidget";
 
 export default class TrueRecallPlugin extends Plugin {
+	private runtime = new PluginRuntime(this, () => this._unloaded);
+	private studyLauncher = new StudySessionLauncher(this);
+	private temporaryStudy = new TemporaryStudyDeckService(this);
+	private navigator = new ViewNavigator(this);
+	private importExport = new ImportExportCoordinator(this);
+	private noteActions = new NoteActions(this);
+
 	coreApp!: TrueRecallApp;
 
 	// Backward-compat getters — all existing code reads plugin.settings, plugin.cardStore, etc.
@@ -210,8 +133,6 @@ export default class TrueRecallPlugin extends Plugin {
 	deviceDiscovery: DeviceDiscoveryService | null = null;
 	/** Folder holding this device's database; decided at startup by sync mode. */
 	dbFolder: string = DB_FOLDER;
-	private deviceLock: DeviceLockService | null = null;
-	private deviceSyncScheduler: DeviceSyncScheduler | null = null;
 	syncCoordinator: CrossDeviceSyncCoordinator | null = null;
 	cloudSyncManager: CloudSyncManager | null = null;
 	deletionHandler: DeletionHandlerService | null = null;
@@ -229,7 +150,6 @@ export default class TrueRecallPlugin extends Plugin {
 	_disposeWireDataLayer: (() => void) | null = null;
 	adapters!: ObsidianAdapters;
 	private _unloaded = false;
-	private sessionService = new SessionService();
 	private _reviewController: ReviewSessionController | null = null;
 
 	get reviewController(): ReviewSessionController {
@@ -259,346 +179,18 @@ export default class TrueRecallPlugin extends Plugin {
 	}
 
 	async onload(): Promise<void> {
-		const t0 = performance.now();
-
-		// 1. Create platform adapters + core app
-		try {
-			this.adapters = createObsidianAdapters(this.app);
-			const { ObsidianSettingsPersistence } = await import(
-				"@true-recall/obsidian/adapters/ObsidianSettingsPersistence"
-			);
-			const { ObsidianLinkResolver } = await import(
-				"@true-recall/obsidian/adapters/ObsidianLinkResolver"
-			);
-			const { ObsidianVaultEventBridge } = await import(
-				"@true-recall/obsidian/adapters/ObsidianVaultEventBridge"
-			);
-
-			this.coreApp = new TrueRecallApp({
-				...this.adapters,
-				settingsPersistence: new ObsidianSettingsPersistence(this),
-				linkResolver: new ObsidianLinkResolver(this.app),
-				vaultEvents: new ObsidianVaultEventBridge(this.app, this),
-				// Mobile OSes can kill the app without unload events; keep the
-				// window between a review and its disk flush minimal there.
-				storeOptions: isMobile()
-					? { saveDebounceMs: MOBILE_SAVE_DEBOUNCE_MS }
-					: undefined,
-			});
-			await this.coreApp.initialize();
-		} catch (error) {
-			console.error("[True Recall] Core initialization failed:", error);
-			notify().error(
-				"True Recall failed to initialize. Try reinstalling the plugin.",
-			);
-			return;
-		}
-
-		// What's New check after layout ready
-		this.app.workspace.onLayoutReady(() => {
-			checkForWhatsNew(this).catch((e) => {
-				console.debug("[True Recall] What's New check failed:", e);
-			});
-		});
-
-		const tSetup = performance.now();
-
-		// 2. Initialize device context + card store
-		try {
-			await initializeDeviceAndStore(this);
-		} catch (error) {
-			console.error(
-				"[True Recall] Critical: Device/store initialization failed:",
-				error,
-			);
-			notify().error("Failed to initialize database. Please restart Obsidian.");
-			return;
-		}
-
-		// 3. Device lock (only when sync is enabled)
-		if (this.settings.syncMode === "shared-vault" && this.deviceIdService) {
-			try {
-				const persistence = new ObsidianPersistence(this.app);
-				const deviceId = this.deviceIdService.getDeviceId();
-				const label = this.deviceIdService.getDisplayName();
-				this.deviceLock = new DeviceLockService(
-					persistence,
-					deviceId,
-					isMobile() ? "mobile" : "desktop",
-					label,
-				);
-
-				const conflicting = await this.deviceLock.isConflicting();
-				if (conflicting) {
-					notify().warning(
-						`True Recall is open on ${conflicting.label} (${conflicting.platform}). Close it first to avoid sync issues.`,
-					);
-				}
-				await this.deviceLock.writeLock();
-				this.deviceLock.startHeartbeat();
-			} catch (error) {
-				console.error("[True Recall] Device lock setup failed:", error);
-			}
-		}
-
-		// 4. Cross-device sync
-		try {
-			if (
-				this.settings.syncMode === "shared-vault" &&
-				this.deviceDiscovery &&
-				this.cardStore
-			) {
-				// Replay resolves each log's FSRS settings by preset name; unknown
-				// or missing names fall back to the current default preset.
-				const resolvePresetSettings = (presetName: string | null) => {
-					const preset = presetName
-						? this.settings.fsrsPresets?.find((p) => p.name === presetName)
-						: undefined;
-					return preset
-						? extractFSRSSettingsFromPreset(preset)
-						: extractFSRSSettings(this.settings);
-				};
-				const replayService = new FsrsReplayService(
-					new FSRSService(extractFSRSSettings(this.settings)),
-					resolvePresetSettings,
-				);
-				const syncService = new DeviceSyncService(
-					this.cardStore,
-					this.deviceDiscovery,
-					new ObsidianPersistence(this.app),
-					{
-						getDayStartHour: () => this.settings.dayStartHour,
-						replayService,
-					},
-				);
-				this.syncCoordinator = new CrossDeviceSyncCoordinator({
-					runSync: () => syncService.syncOnStartup(),
-					flushLocal: async () => this.cardStore?.saveNow({ bestEffort: true }),
-					onChangesApplied: (result) => {
-						// Patch-first for open views (live review queues evict
-						// remotely deleted cards), then group invalidation.
-						if (result.cardIdsChanged.length > 0) {
-							setLastMutation({
-								type: "bulk",
-								action: "update",
-								cardIds: result.cardIdsChanged,
-							});
-						}
-						this.dataLayer?.invalidateGroups([
-							G.CARDS,
-							G.BROWSER,
-							G.DASHBOARD,
-							G.PANEL,
-							G.REVIEW,
-							G.STATS,
-						]);
-					},
-				});
-
-				// Never awaited by onload: the startup merge flushes the local
-				// database in full and reads every remote database in full (the
-				// desktop DB alone is ~60 MB). On mobile with an iCloud vault that
-				// read can stall on a network download, parking the whole app
-				// behind "Plugin is taking long to load" until it finishes. Same
-				// pattern as the device-import offer in PluginInitializers.
-				this.app.workspace.onLayoutReady(() => {
-					void (async () => {
-						if (this.settings.syncMode !== "shared-vault") return;
-						const syncResult = await this.syncCoordinator?.syncNow("startup");
-						if (!syncResult) return;
-						if (syncResult.errors.length > 0) {
-							notify().warning(
-								`Sync completed with ${syncResult.errors.length} error(s). Some changes may not have been applied.`,
-							);
-						}
-						if (
-							syncResult.cardsApplied > 0 ||
-							syncResult.reviewLogsApplied > 0
-						) {
-							notify().info(
-								`Synced ${syncResult.cardsApplied} cards and ${syncResult.reviewLogsApplied} reviews from other devices.`,
-							);
-						}
-					})();
-				});
-
-				// Background merge: reviews done on another device show up without
-				// restarting the plugin. Cheap mtime polling; the merge itself is
-				// watermark-guarded, so no-change ticks cost nothing.
-				if (this.deviceIdService) {
-					this.deviceSyncScheduler = new DeviceSyncScheduler(
-						new ObsidianPersistence(this.app),
-						this.deviceIdService.getDeviceId(),
-						async () =>
-							this.settings.syncMode === "shared-vault"
-								? ((await this.syncCoordinator?.syncNow("interval")) ??
-									emptySyncResult())
-								: emptySyncResult(),
-					);
-					this.app.workspace.onLayoutReady(() => {
-						void this.deviceSyncScheduler?.start();
-					});
-				}
-
-				// Mobile apps return from the background without reloading the
-				// plugin, so startup-only sync would show stale data all day.
-				// Re-check syncMode on every trigger: the user can switch to
-				// Cloud Sync mid-session, and the two transports must never
-				// run concurrently.
-				this.registerDomEvent(activeDocument, "visibilitychange", () => {
-					if (
-						activeDocument.visibilityState === "visible" &&
-						this.settings.syncMode === "shared-vault"
-					) {
-						void this.syncCoordinator?.syncNow("foreground");
-					}
-				});
-			}
-		} catch (error) {
-			console.error("[True Recall] Device sync failed:", error);
-			notify().warning(
-				"Cross-device sync failed. Your cards may not be up to date.",
-			);
-		}
-
-		this.cloudSyncManager = new CloudSyncManager(this);
-		this.cloudSyncManager.initialize();
-
-		const tStore = performance.now();
-
-		const registerIfAllowed = (
-			viewType: string,
-			factory: (
-				leaf: import("obsidian").WorkspaceLeaf,
-			) => import("obsidian").View,
-		) => {
-			if (isViewAllowedOnCurrentPlatform(viewType)) {
-				this.registerView(viewType, factory);
-			}
-		};
-
-		registerIfAllowed(
-			VIEW_TYPE_FLASHCARD_PANEL,
-			(leaf) => new FlashcardPanelView(leaf, this),
-		);
-
-		registerIfAllowed(VIEW_TYPE_REVIEW, (leaf) => new ReviewView(leaf, this));
-
-		registerIfAllowed(
-			VIEW_TYPE_SIMULATOR,
-			(leaf) => new SimulatorView(leaf, this),
-		);
-
-		registerIfAllowed(
-			VIEW_TYPE_DASHBOARD,
-			(leaf) => new DashboardView(leaf, this),
-		);
-
-		this.addRibbonIcon(
-			"layout-dashboard",
-			"True Recall: Open dashboard",
-			() => {
-				this.openDashboard().catch((error) => {
-					notify().error("Failed to open dashboard", error);
-				});
-			},
-		);
-
-		registerIfAllowed(
-			VIEW_TYPE_CARD_BROWSER,
-			(leaf) => new CardBrowserView(leaf, this),
-		);
-
-		registerIfAllowed(VIEW_TYPE_STATS, (leaf) => new StatsView(leaf, this));
-
-		registerIfAllowed(
-			VIEW_TYPE_QUICK_NOTE_EDITOR,
-			(leaf) => new QuickNoteEditorView(leaf, this),
-		);
-
-		registerIfAllowed(
-			VIEW_TYPE_ASSISTANT_EDITOR,
-			(leaf) => new AssistantEditorView(leaf, this),
-		);
-
-		registerIfAllowed(
-			VIEW_TYPE_NOTE_TYPE_MANAGER,
-			(leaf) => new NoteTypeManagerView(leaf, this),
-		);
-
-		registerIfAllowed(
-			VIEW_TYPE_CARD_TYPES_EDITOR,
-			(leaf) => new CardTypesEditorView(leaf, this),
-		);
-
-		registerIfAllowed(
-			VIEW_TYPE_ASSISTANT_INBOX,
-			(leaf) => new AssistantInboxView(leaf, this),
-		);
-
-		registerIfAllowed(
-			VIEW_TYPE_ASSISTANT_WORKSPACE,
-			(leaf) => new AssistantWorkspaceView(leaf, this),
-		);
-
-		registerCommands(this);
-		this.addSettingTab(new TrueRecallSettingTab(this.app, this));
-		registerEventHandlers(this);
-		this.applyTabBarVisibility();
-
-		const { CommandService: CmdService } = await import(
-			"@true-recall/obsidian/commands"
-		);
-		this.commandService = new CmdService({
-			flashcardManager: this.flashcardManager,
-			cardStore: this.cardStore,
-			sessionPersistence: this.sessionPersistence,
-		});
-
-		// The local API binds a Node http server via Electron's require, which
-		// does not exist on mobile.
-		if (this.settings.enableLocalApi && capabilities.canRunLocalApi()) {
-			void import("./plugin/api/LocalApiServer")
-				.then(({ LocalApiServer: ApiServer }) => {
-					if (this._unloaded) return;
-					this.localApi = new ApiServer(this, this.settings.apiPort);
-					this.localApi.start();
-				})
-				.catch((e) => {
-					console.error("[True Recall] Failed to start Local API server:", e);
-				});
-		}
-
-		const tTotal = performance.now();
-		console.debug(
-			`[True Recall Startup] setup: ${(tSetup - t0).toFixed(1)}ms` +
-				` | store: ${(tStore - tSetup).toFixed(1)}ms` +
-				` | views+commands: ${(tTotal - tStore).toFixed(1)}ms` +
-				` | total: ${(tTotal - t0).toFixed(1)}ms`,
-		);
+		await this.runtime.load();
 	}
 
-	/**
-	 * Stops the shared-vault transport wired at load time. Called when the
-	 * user switches to Cloud Sync mid-session so both transports never run
-	 * concurrently against the same rows.
-	 */
 	teardownSharedVaultSync(): void {
-		this.deviceSyncScheduler?.stop();
-		this.deviceSyncScheduler = null;
-		this.deviceLock?.stopHeartbeat();
-		void this.deviceLock?.clearLock();
-		this.deviceLock = null;
-		this.syncCoordinator = null;
+		this.runtime.stopSharedVaultSync();
 	}
 
 	onunload(): void {
 		this._unloaded = true;
 		document.body.classList.remove(HIDE_TAB_BAR_CLASS);
 		this.pluginLoader?.deactivateAll();
-		this.deviceSyncScheduler?.stop();
-		this.deviceLock?.stopHeartbeat();
-		void this.deviceLock?.clearLock();
+		this.runtime.stopSharedVaultSync();
 		this.localApi?.stop();
 		this.commandService?.clear();
 		this.statusBarWidget?.dispose();
@@ -625,9 +217,8 @@ export default class TrueRecallPlugin extends Plugin {
 
 	/** Flip the tab-bar visibility, persist it, and apply immediately. */
 	async toggleTabBar(): Promise<void> {
-		this.settings.hideTabBar = !this.settings.hideTabBar;
+		await this.saveSettings({ hideTabBar: !this.settings.hideTabBar });
 		this.applyTabBarVisibility();
-		await this.saveSettings();
 	}
 
 	/**
@@ -636,683 +227,137 @@ export default class TrueRecallPlugin extends Plugin {
 	 * reversible at any point.
 	 */
 	async toggleRMode(): Promise<void> {
-		this.settings.rMode = {
+		const rMode = {
 			...this.settings.rMode,
 			enabled: !this.settings.rMode.enabled,
 		};
-		await this.saveSettings();
+		await this.saveSettings({ rMode });
 		notify().info(
-			this.settings.rMode.enabled
+			rMode.enabled
 				? "R-Mode on — sessions are picked by retrievability"
 				: "R-Mode off — back to the due queue",
 		);
 	}
 
-	async saveSettings(): Promise<void> {
-		await this.coreApp.updateSettings(this.settings);
+	async saveSettings(patch?: Partial<TrueRecallSettings>): Promise<void> {
+		await this.coreApp.updateSettings(patch ?? this.settings);
 		this.noteStatusCache?.bumpVersion();
 		// Apply plugin enable/disable toggles (and tier unlocks) without restart
 		this.pluginLoader?.sync();
 	}
 
 	async activateView(): Promise<void> {
-		await activateView(this.app, VIEW_TYPE_FLASHCARD_PANEL);
+		return this.navigator.activateView();
 	}
 
 	async openSimulator(): Promise<void> {
-		if (!this.ensureViewAvailable(VIEW_TYPE_SIMULATOR)) return;
-		await activateView(this.app, VIEW_TYPE_SIMULATOR, { useMainArea: true });
+		return this.navigator.openSimulator();
 	}
 
 	async startReview(config: SessionConfig): Promise<void> {
-		if (!this.isStoreReady()) {
-			notify().error(
-				"Database not ready. Please wait for plugin to fully load.",
-			);
-			return;
-		}
-
-		const allCards = this.flashcardManager.getAllFSRSCards();
-		const archivedSourceUids = this.hierarchyService.getArchivedSourceUids();
-		const sessionKey = createReviewSessionKey(config, allCards);
-		const customDeckName =
-			config.mode === "custom" && config.temporaryDeckId
-				? this.settings.temporaryCustomStudyDecks.find(
-						(deck) => deck.id === config.temporaryDeckId,
-					)?.name
-				: undefined;
-		const sessionLabel = createReviewSessionLabel(config, allCards, {
-			customDeckName,
-		});
-		const sessionSettings = {
-			ignoreDailyLimitsForNoteStudy:
-				this.settings.ignoreDailyLimitsForNoteStudy,
-			dayStartHour: this.settings.dayStartHour,
-			rModeEnabled: this.settings.rMode.enabled,
-		};
-		const requestedFilters = normalizeSessionFilters(
-			this.sessionService.resolveFilters(config, sessionSettings),
-		);
-		const existingLeaf = revealReviewView(this.app, VIEW_TYPE_REVIEW, {
-			...filtersToViewState(requestedFilters),
-			sessionKey,
-			sessionLabel,
-		});
-		if (existingLeaf) return;
-
-		const result = this.sessionService.validate(
-			config,
-			{
-				allCards,
-				archivedSourceUids,
-				settings: this.settings,
-				sessionPersistence: this.sessionPersistence,
-				presetService: this.presetService,
-				noteResolver: new ObsidianNoteResolver(this.app),
-				hierarchyService: this.hierarchyService,
-				fsrsService: this.fsrsService,
-			},
-			sessionSettings,
-		);
-
-		if (!result.valid) {
-			if (result.message) notify().info(result.message);
-			return;
-		}
-
-		await this.openReviewViewWithFilters(result.filters, {
-			sessionKey,
-			sessionLabel,
-		});
-	}
-
-	private getCustomStudySessionConfig(
-		result: SessionResult,
-		temporaryDeckId?: string,
-	): Extract<SessionConfig, { mode: "custom" }> {
-		return {
-			mode: "custom",
-			projectPath: result.projectPath,
-			sourceNoteFilter: result.sourceNoteFilter,
-			sourceNoteFilters: result.sourceNoteFilters,
-			filePathFilter: result.filePathFilter,
-			createdTodayOnly: result.createdTodayOnly,
-			stateFilter: result.stateFilter,
-			ignoreDailyLimits: result.ignoreDailyLimits,
-			bypassScheduling: result.bypassScheduling,
-			difficultyRange: result.difficultyRange,
-			lapsesRange: result.lapsesRange,
-			stabilityRange: result.stabilityRange,
-			overdueOnly: result.overdueOnly,
-			recentlyFailed: result.recentlyFailed,
-			cardLimit: result.cardLimit,
-			studyAheadDays: result.studyAheadDays,
-			reviewOrder: result.reviewOrder,
-			crammingMode: result.crammingMode,
-			customStudy: result.customStudy,
-			temporaryDeckId,
-		};
-	}
-
-	private getCustomStudyDeckName(
-		deck: Pick<TemporaryCustomStudyDeck, "customStudy">,
-		scopeLabel?: string,
-	): string {
-		const requestName = (() => {
-			switch (deck.customStudy.kind) {
-				case "increase-new":
-					return "Extra new cards";
-				case "increase-review":
-					return "Extra review cards";
-				case "forgotten":
-					return "Forgotten cards";
-				case "actual-learning":
-					return "Actual Learning";
-				case "review-ahead":
-					return "Review ahead";
-				case "preview-new":
-					return "Preview new cards";
-				case "state-or-tag":
-					return "Cards by state or tag";
-			}
-		})();
-
-		return scopeLabel ? `${requestName} — ${scopeLabel}` : requestName;
-	}
-
-	private resolveLegacyCustomStudyProjectPath(
-		deck: TemporaryCustomStudyDeck,
-	): string | undefined {
-		if (deck.projectPath) return deck.projectPath;
-		if (!deck.scopeLabel || (deck.sourceNoteFilters?.length ?? 0) <= 1) {
-			return undefined;
-		}
-
-		const file = this.app.metadataCache.getFirstLinkpathDest(
-			deck.scopeLabel,
-			"",
-		);
-		if (!file) return undefined;
-		const isProject =
-			this.hierarchyService.isExplicitProject(file.path) ||
-			this.hierarchyService.getDescendantPaths(file.path).length > 0;
-		return isProject ? file.path : undefined;
-	}
-
-	private getSessionValidationDeps() {
-		return {
-			allCards: this.flashcardManager.getAllFSRSCards(),
-			archivedSourceUids: this.hierarchyService.getArchivedSourceUids(),
-			settings: this.settings,
-			sessionPersistence: this.sessionPersistence,
-			presetService: this.presetService,
-			noteResolver: new ObsidianNoteResolver(this.app),
-			hierarchyService: this.hierarchyService,
-			fsrsService: this.fsrsService,
-		};
-	}
-
-	private async materializeTemporaryCustomStudyDeck(
-		result: SessionResult,
-		options: {
-			scopeLabel?: string;
-			deckId?: string;
-			deckName?: string;
-			preserveCreatedAt?: number;
-		} = {},
-	): Promise<void> {
-		if (!result.customStudy) return;
-		if (!this.isStoreReady()) {
-			notify().error(
-				"Database not ready. Please wait for plugin to fully load.",
-			);
-			return;
-		}
-
-		const validation = this.sessionService.validate(
-			this.getCustomStudySessionConfig(result, options.deckId),
-			this.getSessionValidationDeps(),
-			{
-				ignoreDailyLimitsForNoteStudy:
-					this.settings.ignoreDailyLimitsForNoteStudy,
-				dayStartHour: this.settings.dayStartHour,
-				rModeEnabled: this.settings.rMode.enabled,
-			},
-		);
-		const now = Date.now();
-		const { queue } = this.reviewController.buildSession(validation.filters);
-		const deck: TemporaryCustomStudyDeck = {
-			id: options.deckId ?? crypto.randomUUID(),
-			name:
-				options.deckName ??
-				this.getCustomStudyDeckName(
-					{ customStudy: result.customStudy },
-					options.scopeLabel,
-				),
-			customStudy: result.customStudy,
-			cardIds: queue.map((card) => card.id),
-			sourceNoteFilters: result.sourceNoteFilters,
-			projectPath: result.projectPath,
-			scopeLabel: options.scopeLabel,
-			createdAt: options.preserveCreatedAt ?? now,
-			rebuiltAt: now,
-		};
-
-		const existingDecks = this.settings.temporaryCustomStudyDecks;
-		const nextDecks = options.deckId
-			? existingDecks.map((existing) =>
-					existing.id === options.deckId ? deck : existing,
-				)
-			: [...existingDecks, deck];
-		this.settings = {
-			...this.settings,
-			temporaryCustomStudyDecks: nextDecks,
-		};
-		await this.saveSettings();
-		await this.openDashboard();
-
-		const action = options.deckId ? "rebuilt" : "created";
-		if (deck.cardIds.length === 0) {
-			notify().info(`Custom Study Session ${action}, but no cards matched.`);
-		} else {
-			notify().success(
-				`Custom Study Session ${action} with ${deck.cardIds.length} card${deck.cardIds.length === 1 ? "" : "s"}.`,
-			);
-		}
+		return this.studyLauncher.startReview(config);
 	}
 
 	async startTemporaryCustomStudyDeck(deckId: string): Promise<void> {
-		const deck = this.settings.temporaryCustomStudyDecks.find(
-			(candidate) => candidate.id === deckId,
-		);
-		if (!deck) return;
-		if (deck.cardIds.length === 0) {
-			notify().info("This Custom Study Session is empty. Rebuild it first.");
-			return;
-		}
-
-		await this.startReview({
-			mode: "custom",
-			projectPath: deck.projectPath,
-			sourceNoteFilters: deck.sourceNoteFilters,
-			customStudy: deck.customStudy,
-			materializedCardIds: [...deck.cardIds],
-			temporaryDeckId: deck.id,
-		});
+		return this.temporaryStudy.startTemporaryCustomStudyDeck(deckId);
 	}
 
 	async rebuildTemporaryCustomStudyDeck(deckId: string): Promise<void> {
-		const deck = this.settings.temporaryCustomStudyDecks.find(
-			(candidate) => candidate.id === deckId,
-		);
-		if (!deck) return;
-		const projectPath = this.resolveLegacyCustomStudyProjectPath(deck);
-
-		await this.materializeTemporaryCustomStudyDeck(
-			{
-				cancelled: false,
-				sessionType: "custom-study",
-				ignoreDailyLimits: true,
-				sourceNoteFilters: projectPath ? undefined : deck.sourceNoteFilters,
-				projectPath,
-				customStudy: deck.customStudy,
-			},
-			{
-				scopeLabel: deck.scopeLabel,
-				deckId: deck.id,
-				deckName: deck.name,
-				preserveCreatedAt: deck.createdAt,
-			},
-		);
+		return this.temporaryStudy.rebuildTemporaryCustomStudyDeck(deckId);
 	}
 
 	async emptyTemporaryCustomStudyDeck(deckId: string): Promise<void> {
-		const deck = this.settings.temporaryCustomStudyDecks.find(
-			(candidate) => candidate.id === deckId,
-		);
-		if (!deck || deck.cardIds.length === 0) return;
-
-		this.settings = {
-			...this.settings,
-			temporaryCustomStudyDecks: this.settings.temporaryCustomStudyDecks.map(
-				(candidate) =>
-					candidate.id === deckId ? { ...candidate, cardIds: [] } : candidate,
-			),
-		};
-		await this.saveSettings();
-		notify().success("Custom Study Session emptied.");
+		return this.temporaryStudy.emptyTemporaryCustomStudyDeck(deckId);
 	}
 
 	async deleteTemporaryCustomStudyDeck(deckId: string): Promise<void> {
-		if (
-			!this.settings.temporaryCustomStudyDecks.some(
-				(candidate) => candidate.id === deckId,
-			)
-		) {
-			return;
-		}
-		this.settings = {
-			...this.settings,
-			temporaryCustomStudyDecks: this.settings.temporaryCustomStudyDecks.filter(
-				(candidate) => candidate.id !== deckId,
-			),
-		};
-		await this.saveSettings();
-		notify().success("Custom Study Session deleted.");
+		return this.temporaryStudy.deleteTemporaryCustomStudyDeck(deckId);
 	}
 
 	removeCardsFromTemporaryDeck(
 		deckId: string | undefined,
 		cardIds: readonly string[],
 	): void {
-		if (!deckId) return;
-		const deck = this.settings.temporaryCustomStudyDecks.find(
-			(candidate) => candidate.id === deckId,
-		);
-		if (!deck) return;
-		const removedIds = new Set(cardIds);
-		if (!deck.cardIds.some((id) => removedIds.has(id))) return;
-
-		this.settings = {
-			...this.settings,
-			temporaryCustomStudyDecks: this.settings.temporaryCustomStudyDecks.map(
-				(candidate) =>
-					candidate.id === deckId
-						? {
-								...candidate,
-								cardIds: candidate.cardIds.filter((id) => !removedIds.has(id)),
-							}
-						: candidate,
-			),
-		};
-		void this.saveSettings();
-	}
-
-	/** Guard for views that are not registered on this platform. */
-	private ensureViewAvailable(viewType: string): boolean {
-		if (isViewAllowedOnCurrentPlatform(viewType)) return true;
-		notify().warning("This view is available on desktop only.");
-		return false;
+		this.temporaryStudy.removeCardsFromTemporaryDeck(deckId, cardIds);
 	}
 
 	async openCardBrowser(opts?: {
 		sourceUid?: string;
 		orphaned?: boolean;
 	}): Promise<void> {
-		if (!this.ensureViewAvailable(VIEW_TYPE_CARD_BROWSER)) return;
-		const state = opts?.sourceUid
-			? { sourceUid: opts.sourceUid }
-			: opts?.orphaned
-				? { orphaned: true }
-				: undefined;
-
-		const existingLeaf = getView(this.app, VIEW_TYPE_CARD_BROWSER);
-		if (existingLeaf) {
-			if (state) {
-				await existingLeaf.setViewState({
-					type: VIEW_TYPE_CARD_BROWSER,
-					active: true,
-					state,
-				});
-			}
-			void this.app.workspace.revealLeaf(existingLeaf);
-			return;
-		}
-		await activateView(this.app, VIEW_TYPE_CARD_BROWSER, {
-			useMainArea: true,
-			state,
-		});
+		return this.navigator.openCardBrowser(opts);
 	}
 
 	async openDashboard(): Promise<void> {
-		const existingLeaf = getView(this.app, VIEW_TYPE_DASHBOARD);
-		if (existingLeaf) {
-			void this.app.workspace.revealLeaf(existingLeaf);
-			return;
-		}
-		await activateView(this.app, VIEW_TYPE_DASHBOARD, { useMainArea: true });
+		return this.navigator.openDashboard();
 	}
 
 	async openStats(): Promise<void> {
-		const existingLeaf = getView(this.app, VIEW_TYPE_STATS);
-		if (existingLeaf) {
-			void this.app.workspace.revealLeaf(existingLeaf);
-			return;
-		}
-		await activateView(this.app, VIEW_TYPE_STATS, { useMainArea: true });
+		return this.navigator.openStats();
 	}
 
 	async openAssistantInbox(focusThreadId?: string): Promise<void> {
-		if (!this.ensureViewAvailable(VIEW_TYPE_ASSISTANT_INBOX)) return;
-		const existingLeaf = getView(this.app, VIEW_TYPE_ASSISTANT_INBOX);
-		if (existingLeaf) {
-			void this.app.workspace.revealLeaf(existingLeaf);
-		} else {
-			await activateView(this.app, VIEW_TYPE_ASSISTANT_INBOX, {
-				useMainArea: true,
-			});
-		}
-		if (focusThreadId) {
-			// Give a freshly-mounted inbox one tick to register its listener.
-			window.setTimeout(() => {
-				window.dispatchEvent(
-					new CustomEvent("true-recall:assistant-focus-thread", {
-						detail: { threadId: focusThreadId },
-					}),
-				);
-			}, 50);
-		}
+		return this.navigator.openAssistantInbox(focusThreadId);
 	}
 
-	/** Reveals the docked AI workspace, normally in the right sidebar so it can
-	 * sit next to a review. */
 	async openAssistantWorkspace(mode?: AIWorkspaceMode): Promise<void> {
-		if (!this.ensureViewAvailable(VIEW_TYPE_ASSISTANT_WORKSPACE)) return;
-		const existingLeaf = getView(this.app, VIEW_TYPE_ASSISTANT_WORKSPACE);
-		if (existingLeaf) {
-			if (mode)
-				await existingLeaf.setViewState({
-					type: VIEW_TYPE_ASSISTANT_WORKSPACE,
-					active: true,
-					state: { mode },
-				});
-			void this.app.workspace.revealLeaf(existingLeaf);
-			return;
-		}
-		await activateView(this.app, VIEW_TYPE_ASSISTANT_WORKSPACE, {
-			state: mode ? { mode } : undefined,
-		});
+		return this.navigator.openAssistantWorkspace(mode);
 	}
 
 	openCardTypesEditor(noteTypeId?: string): void {
-		if (noteTypeId) {
-			openCardTypesEditorPopout(this, noteTypeId);
-			return;
-		}
-		new NoteTypeSuggestModal(this.app, this).open();
+		this.navigator.openCardTypesEditor(noteTypeId);
 	}
 
 	openImportStudio(options?: { defaultNoteTypeId?: string }): void {
-		new ImportStudioModal(this.app, this, options).open();
+		this.navigator.openImportStudio(options);
 	}
 
 	openQuickNoteEditor(defaultNoteTypeId?: string): void {
-		void openQuickNoteEditor(this, {
-			mode: "add",
-			defaultNoteTypeId,
-		});
+		this.navigator.openQuickNoteEditor(defaultNoteTypeId);
 	}
 
 	async openImageOcclusionEditor(
 		mode: IOEditorMode = { mode: "add" },
 	): Promise<IOEditorResult> {
-		if (!capabilities.canEditImageOcclusion()) {
-			notify().warning("Image occlusion editor is available on desktop only.");
-			return { cancelled: true };
-		}
-
-		const modal = new IOEditorModal(this.app, this, mode);
-		return await modal.openAndWait();
+		return this.navigator.openImageOcclusionEditor(mode);
 	}
 
 	async openImageOcclusionEditorForActiveNote(): Promise<IOEditorResult> {
-		const activeFile = this.app.workspace.getActiveFile();
-		if (!activeFile || activeFile.extension !== "md") {
-			return await this.openImageOcclusionEditor({ mode: "add" });
-		}
-
-		try {
-			const frontmatterService = this.flashcardManager.getFrontmatterService();
-			let sourceUid = await frontmatterService.getSourceNoteUid(
-				activeFile.path,
-			);
-			if (!sourceUid) {
-				sourceUid = frontmatterService.generateUid();
-				await frontmatterService.setSourceNoteUid(activeFile.path, sourceUid);
-			}
-			return await this.openImageOcclusionEditor({
-				mode: "add",
-				sourceUid,
-			});
-		} catch (error) {
-			notify().operationFailed("prepare image occlusion source", error);
-			return await this.openImageOcclusionEditor({ mode: "add" });
-		}
+		return this.navigator.openImageOcclusionEditorForActiveNote();
 	}
 
 	async openCustomStudyModal(scope?: CustomStudyModalScope): Promise<void> {
-		const scopedNoteNames = scope?.sourceNoteFilters
-			? new Set(scope.sourceNoteFilters)
-			: null;
-		const scopedProjectSourceUids = scope?.projectPath
-			? this.hierarchyService.getSourceUidsForProject(scope.projectPath)
-			: null;
-		const allMeta = this.dataLayer?.get<Map<string, CardSchedulingMeta>>(
-			Q.ALL_META,
-		);
-		const availableTags = [
-			...new Set(
-				[...(allMeta?.values() ?? [])]
-					.filter(
-						(card) =>
-							(!scopedNoteNames ||
-								scopedNoteNames.has(card.sourceNoteName ?? "")) &&
-							(!scopedProjectSourceUids ||
-								scopedProjectSourceUids.has(card.sourceUid ?? "")),
-					)
-					.flatMap((card) => card.tags ?? []),
-			),
-		].sort((a, b) => a.localeCompare(b));
-		const modal = new CustomStudyModal(
-			this.app,
-			{
-				title: scope?.scopeLabel
-					? `Custom study — ${scope.scopeLabel}`
-					: "Custom study",
-				width: "480px",
-			},
-			{ ...scope, availableTags },
-		);
-		const result = await modal.openAndWait();
-		if (result.cancelled || !result.sessionResult) return;
-
-		await this.materializeTemporaryCustomStudyDeck(result.sessionResult, {
-			scopeLabel: scope?.scopeLabel,
-		});
+		return this.temporaryStudy.openCustomStudyModal(scope);
 	}
 
 	async reviewCurrentNote(): Promise<void> {
-		if (!this.isStoreReady()) {
-			notify().error(
-				"Database not ready. Please wait for plugin to fully load.",
-			);
-			return;
-		}
-		const file = this.app.workspace.getActiveFile();
-		if (!file) {
-			notify().noActiveFile();
-			return;
-		}
-		await this.reviewNoteFlashcards(file);
+		return this.studyLauncher.reviewCurrentNote();
 	}
 
 	async reviewNoteFlashcards(
 		file: TFile,
 		rModeTargetCount?: number,
 	): Promise<void> {
-		const sourceUid = await this.flashcardManager
-			.getFrontmatterService()
-			.getSourceNoteUid(file.path);
-		if (!sourceUid) {
-			notify().info(`No flashcards found for "${file.basename}"`);
-			return;
-		}
-		await this.startReview({ mode: "note", sourceUid, rModeTargetCount });
+		return this.studyLauncher.reviewNoteFlashcards(file, rModeTargetCount);
 	}
 
 	async reviewTodaysCards(): Promise<void> {
-		await this.startReview({ mode: "created_today" });
+		return this.studyLauncher.reviewTodaysCards();
 	}
 
 	async openReviewViewWithFilters(
 		rawFilters: SessionFilters,
 		session: { sessionKey?: string; sessionLabel?: string } = {},
 	): Promise<void> {
-		const filters = normalizeSessionFilters(rawFilters);
-		const state = { ...filtersToViewState(filters), ...session };
-
-		await activateReviewView(
-			this.app,
-			VIEW_TYPE_REVIEW,
-			this.settings.reviewMode,
-			state,
-		);
+		return this.studyLauncher.openReviewViewWithFilters(rawFilters, session);
 	}
 
-	// Init methods extracted to plugin/PluginInitializers.ts
-	// handleImageOcclusion extracted to plugin/PluginInitializers.ts
-
 	async createMasterDashboard(): Promise<void> {
-		const fileName = "True Recall Dashboard.md";
-		let file = this.app.vault.getAbstractFileByPath(fileName);
-
-		if (!file) {
-			const content = [
-				"---",
-				"cssclasses:",
-				"  - true-recall-dashboard-note",
-				"---",
-				"",
-				"# True Recall Dashboard",
-				"",
-				"## Today",
-				"",
-				"```true-recall-dashboard",
-				"```",
-				"",
-				"## Streak",
-				"",
-				"```true-recall-streak",
-				"showWeekDots: true",
-				"showTodayRate: true",
-				"```",
-				"",
-				"## Activity",
-				"",
-				"```true-recall-heatmap",
-				"months: 6",
-				"```",
-				"",
-				"## Projects",
-				"",
-				"```true-recall-project-hub",
-				"```",
-				"",
-				"## Workload",
-				"",
-				"```true-recall-workload",
-				"days: 14",
-				"showTime: true",
-				"```",
-				"",
-				"## Health",
-				"",
-				"```true-recall-health",
-				"target: 90",
-				"showBuckets: true",
-				"```",
-				"",
-			].join("\n");
-
-			file = await this.app.vault.create(fileName, content);
-		}
-
-		await this.app.workspace.openLinkText(fileName, "", false);
+		return this.noteActions.createMasterDashboard();
 	}
 
 	async setFsrsPresetForCurrentNote(): Promise<void> {
-		const file = this.app.workspace.getActiveFile();
-		if (!file || file.extension !== "md") {
-			notify().noActiveFile();
-			return;
-		}
-
-		const modal = new PresetInspectorModal(
-			this.app,
-			this.presetService,
-			file.path,
-		);
-		const result = await modal.openAndWait();
-		if (result.action === "cancel") return;
-
-		const frontmatterService = this.flashcardManager.getFrontmatterService();
-		if (result.action === "set" && result.presetName) {
-			await frontmatterService.setFsrsPreset(file.path, result.presetName);
-			notify().success(`FSRS preset set to: ${result.presetName}`);
-		} else {
-			await frontmatterService.setFsrsPreset(file.path, null);
-			notify().info("FSRS preset override removed");
-		}
+		return this.noteActions.setFsrsPresetForCurrentNote();
 	}
 
 	getStorageDiagnostics() {
@@ -1342,113 +387,22 @@ export default class TrueRecallPlugin extends Plugin {
 	}
 
 	async importAnki(): Promise<void> {
-		if (!this.isStoreReady()) {
-			notify().error(
-				"Database not ready. Please wait for plugin to fully load.",
-			);
-			return;
-		}
-
-		// Safety backup before import (like Anki does)
-		try {
-			await this.backupService?.createBackup();
-		} catch {
-			console.warn("[True Recall] Pre-import backup failed, proceeding anyway");
-		}
-
-		const modal = new AnkiImportModal(
-			this.app,
-			this.cardStore,
-			this.fsrsService,
-			() => this.settings,
-		);
-		modal.open();
+		return this.importExport.importAnki();
 	}
 
 	exportAnki(): void {
-		if (!this.isStoreReady()) {
-			notify().error(
-				"Database not ready. Please wait for plugin to fully load.",
-			);
-			return;
-		}
-
-		const modal = new AnkiExportModal(
-			this.app,
-			this.cardStore,
-			this.fsrsService,
-		);
-		modal.open();
+		this.importExport.exportAnki();
 	}
 
 	exportCsv(): void {
-		if (!this.isStoreReady()) {
-			notify().error(
-				"Database not ready. Please wait for plugin to fully load.",
-			);
-			return;
-		}
-
-		const modal = new CsvExportModal(this.app, this.cardStore);
-		modal.open();
+		this.importExport.exportCsv();
 	}
 
 	async toggleNoteReview(file?: TFile): Promise<void> {
-		if (!this.isStoreReady()) {
-			notify().error(
-				"Database not ready. Please wait for plugin to fully load.",
-			);
-			return;
-		}
-
-		const target = file ?? this.app.workspace.getActiveFile();
-		if (!target || target.extension !== "md") {
-			notify().noActiveFile();
-			return;
-		}
-
-		try {
-			const frontmatterService = this.flashcardManager.getFrontmatterService();
-			let sourceUid = await frontmatterService.getSourceNoteUid(target.path);
-
-			if (!sourceUid) {
-				sourceUid = frontmatterService.generateUid();
-				await frontmatterService.setSourceNoteUid(target.path, sourceUid);
-			}
-
-			const hasReview = this.flashcardManager.hasNoteReview(sourceUid);
-			if (hasReview) {
-				this.flashcardManager.disableNoteReview(sourceUid);
-				notify().success("Note review disabled");
-			} else {
-				this.flashcardManager.enableNoteReview(sourceUid);
-				notify().success("Note review enabled");
-			}
-
-			this.dataLayer?.invalidateGroups([G.CARDS, G.DASHBOARD, G.REVIEW]);
-		} catch (error) {
-			notify().operationFailed("toggle note review", error);
-		}
+		return this.noteActions.toggleNoteReview(file);
 	}
 
 	async addFlashcardUidToCurrentNote(): Promise<void> {
-		const file = this.app.workspace.getActiveFile();
-		if (!file || file.extension !== "md") {
-			notify().noActiveFile();
-			return;
-		}
-
-		const frontmatterService = this.flashcardManager.getFrontmatterService();
-
-		const existingUid = await frontmatterService.getSourceNoteUid(file.path);
-		if (existingUid) {
-			notify().info(`Note already has flashcard UID: ${existingUid}`);
-			return;
-		}
-
-		const newUid = frontmatterService.generateUid();
-		await frontmatterService.setSourceNoteUid(file.path, newUid);
-
-		notify().success(`Added flashcard UID: ${newUid}`);
+		return this.noteActions.addFlashcardUidToCurrentNote();
 	}
 }

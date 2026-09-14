@@ -5,6 +5,7 @@ import {
 	TRUERECALL_PRO_GUIDE_URL,
 } from "@true-recall/core/constants";
 import type { PluginTier } from "@true-recall/core/types";
+import { withPluginUtm } from "@true-recall/core/utils";
 
 import { Clickable, MarkdownContent } from "@true-recall/obsidian/components";
 import { BaseModal } from "@true-recall/obsidian/modals/shared/BaseModal";
@@ -25,7 +26,7 @@ function PlanLine({ tier }: { tier: PluginTier }) {
 				<>
 					{" · "}
 					<a
-						href={TRUERECALL_PRO_GUIDE_URL}
+						href={withPluginUtm(TRUERECALL_PRO_GUIDE_URL, "whats-new")}
 						class="ep:text-obs-accent"
 						target="_blank"
 						rel="noreferrer"
@@ -75,7 +76,12 @@ function WhatsNewBody({
 					<Clickable
 						stopPropagation={false}
 						class="ep-btn ep-btn-outline"
-						onClick={() => window.open(TRUERECALL_NEWSLETTER_URL, "_blank")}
+						onClick={() =>
+							window.open(
+								withPluginUtm(TRUERECALL_NEWSLETTER_URL, "whats-new"),
+								"_blank",
+							)
+						}
 					>
 						Subscribe to the newsletter
 					</Clickable>

@@ -22,6 +22,7 @@ function makeCtx(overrides?: Partial<CommandContext>): CommandContext & {
 	flashcardManager: { updateCardFSRS: ReturnType<typeof vi.fn> };
 	cardStore: {
 		get: ReturnType<typeof vi.fn>;
+		transaction: ReturnType<typeof vi.fn>;
 		cards: { bulkForget: ReturnType<typeof vi.fn> };
 		stats: {
 			getReviewedCardIds: ReturnType<typeof vi.fn>;
@@ -44,6 +45,7 @@ function makeCtx(overrides?: Partial<CommandContext>): CommandContext & {
 		} as unknown as CommandContext["flashcardManager"],
 		cardStore: {
 			get: vi.fn((id: string) => fsrsByCard.get(id)),
+			transaction: vi.fn((operation: () => unknown) => operation()),
 			cards: {
 				bulkForget: vi.fn(),
 			},
@@ -411,6 +413,7 @@ function makeDeleteCtx(options: {
 		},
 		cardStore: {
 			get: vi.fn((id: string) => rows.get(id)),
+			transaction: vi.fn((operation: () => unknown) => operation()),
 			set: vi.fn((id: string, data: FSRSCardData) => {
 				rows.set(id, data);
 			}),

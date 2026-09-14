@@ -192,7 +192,12 @@ export async function handleUpdateCard(
 		editSource,
 	);
 
-	const cmd = new UpdateNoteFieldsCommand(noteId, previousFields, "Edit card");
+	const cmd = new UpdateNoteFieldsCommand(
+		noteId,
+		previousFields,
+		updatedFields,
+		"Edit card",
+	);
 	await ctx.plugin.commandService?.execute(cmd);
 
 	sendOk(res, {

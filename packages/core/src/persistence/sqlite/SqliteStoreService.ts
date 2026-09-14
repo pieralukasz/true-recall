@@ -3,6 +3,7 @@
  * Uses domain modules: store.cards.*, store.stats.*
  */
 
+import { DatabaseError } from "../../errors";
 import type { IPersistence } from "../../interfaces/persistence";
 import { IntegrityCheckService } from "../../services/maintenance/integrity-check.service";
 import type { CardSchedulingMeta, FSRSCardData } from "../../types";
@@ -115,14 +116,9 @@ export class SqliteStoreService {
 				},
 			);
 		} catch (error) {
-			// Every on-disk copy is unusable - CRITICAL ERROR
-			console.error("[True Recall] Database load failed:", error);
-			notify().error(
-				"True Recall: Cannot load database. Please restore from backup (Settings → Data & Backup → Restore).",
-				undefined,
-				NOTIFICATION_DURATION.PERSIST, // Don't auto-hide
-			);
-			throw error; // Don't continue with empty database!
+			throw new DatabaseError("Database load failed", "load", {
+				cause: error,
+			});
 		}
 
 		if (outcome.salvaged) {

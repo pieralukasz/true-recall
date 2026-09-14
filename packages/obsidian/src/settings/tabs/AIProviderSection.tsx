@@ -6,9 +6,10 @@ import {
 	CUSTOM_MODEL_ID,
 	DEFAULT_CUSTOM_BASE_URL,
 	DEFAULT_LMSTUDIO_BASE_URL,
-	TRUERECALL_WEB_URL,
+	TRUERECALL_DASHBOARD_URL,
 } from "@true-recall/core/constants";
 import type { AIProviderType } from "@true-recall/core/types/settings.types";
+import { withPluginUtm } from "@true-recall/core/utils";
 
 import {
 	Clickable,
@@ -140,7 +141,10 @@ export function AIProviderSection() {
 							<span>
 								Get your key at{" "}
 								<a
-									href={`${TRUERECALL_WEB_URL}/dashboard`}
+									href={withPluginUtm(
+										TRUERECALL_DASHBOARD_URL,
+										"settings-ai-provider",
+									)}
 									class="ep:text-obs-accent"
 								>
 									truerecall.app/dashboard
@@ -168,7 +172,10 @@ export function AIProviderSection() {
 						<InfoBlock class="ep:text-obs-error">
 							Invalid key — check your key on the{" "}
 							<a
-								href={`${TRUERECALL_WEB_URL}/dashboard`}
+								href={withPluginUtm(
+									TRUERECALL_DASHBOARD_URL,
+									"settings-ai-provider",
+								)}
 								class="ep:text-obs-accent"
 							>
 								dashboard

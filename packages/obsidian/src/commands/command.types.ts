@@ -22,6 +22,7 @@ export interface Command {
 	readonly skipExecuteMutation?: boolean;
 	readonly skipUndoMutation?: boolean;
 	cancelPendingWrite?(): boolean;
+	onDeferredFailure?(handler: () => void): void;
 }
 
 export interface CommandHook {

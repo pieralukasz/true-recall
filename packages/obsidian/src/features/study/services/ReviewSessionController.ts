@@ -268,12 +268,6 @@ export class ReviewSessionController {
 		if (!transition.requeueData) {
 			returnedCardIds.push(card.id);
 		}
-		if (returnedCardIds.length > 0) {
-			this.plugin.removeCardsFromTemporaryDeck(
-				filters.temporaryDeckId,
-				returnedCardIds,
-			);
-		}
 
 		// Burying removes siblings from the queue, which shifts the requeued
 		// "Again" copy left of its captured position — undo would then splice
@@ -297,9 +291,16 @@ export class ReviewSessionController {
 			responseTime,
 			presetName: preset.name,
 			requeuedAtIndex,
-			buriedSiblingIds:
-				buriedSiblings.length > 0 ? buriedSiblings.map((s) => s.id) : undefined,
 			buriedSiblings: buriedSiblings.length > 0 ? buriedSiblings : undefined,
+			getReview: this.getReview,
+			onPersisted:
+				returnedCardIds.length > 0
+					? () =>
+							this.plugin.removeCardsFromTemporaryDeck(
+								filters.temporaryDeckId,
+								returnedCardIds,
+							)
+					: undefined,
 		});
 
 		void this.commandService?.execute(cmd);

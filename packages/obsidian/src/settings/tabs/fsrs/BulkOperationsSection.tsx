@@ -77,7 +77,7 @@ export function BulkOperationsSection({ plugin }: BulkOperationsSectionProps) {
 				notify().info("No cards to reschedule");
 			}
 		} catch (err) {
-			notify().error(`Reschedule failed: ${String(err)}`);
+			notify().operationFailed("reschedule cards", err);
 		} finally {
 			setRescheduling(false);
 		}

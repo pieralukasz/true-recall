@@ -236,6 +236,20 @@ export function countRModePool(
  * Returns undefined when R-Mode is off or no session size was requested, which
  * is what keeps the due-date queue as the default path.
  */
+/**
+ * R can approach 1 but never reach it, and a ceiling of exactly 1 would put
+ * every card in the pool. Clamping keeps "fresh" cards out of the queue.
+ */
+export const R_MODE_CEILING_MAX = 0.999;
+
+/** Cards above this retrievability are too fresh to be worth reviewing. */
+export function resolveRModeCeiling(
+	requestRetention: number,
+	ceilingOffset: number,
+): number {
+	return Math.min(R_MODE_CEILING_MAX, requestRetention + ceilingOffset);
+}
+
 export function resolveRModeOptions(
 	rMode: RModeSettings | undefined,
 	requestRetention: number,
@@ -255,7 +269,7 @@ export function resolveRModeOptions(
 				? Math.max(1, rMode.defaultSessionSize)
 				: Math.max(0, targetCount),
 		comfortMix: rMode.comfortMix,
-		ceiling: Math.min(0.999, requestRetention + rMode.ceilingOffset),
+		ceiling: resolveRModeCeiling(requestRetention, rMode.ceilingOffset),
 		comfortFloor: requestRetention,
 		urgentBelow: rMode.urgentBelow,
 	};

@@ -247,8 +247,7 @@ export const selectionToolbarManifest: PluginManifest = {
 					);
 					notify().cardsCreated(1, file.basename);
 				} catch (error) {
-					const msg = error instanceof Error ? error.message : String(error);
-					notify().error(`Quick add failed: ${msg}`);
+					notify().operationFailed("quick add the image", error);
 				}
 			},
 			onEdit: (imagePath) => {

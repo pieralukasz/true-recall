@@ -1,5 +1,35 @@
 # Changelog
 
+## Unreleased
+
+## 2.5.0 (2026-09-14)
+
+This release brings native Obsidian settings pages, follow-up questions after typed answers, and more reliable editing and Cloud Sync sign-in.
+
+### Features
+
+- **Native settings pages.** General, FSRS, Data & backup, Integrations, and Features now use Obsidian's settings navigation and search. Links inside True Recall open the relevant page directly.
+- **Ask a follow-up after a typed answer.** Send a question from the grading verdict to the AI inbox with the card and answer context. The assistant can explain the answer and propose a card edit; the session summary links back to the thread.
+- **Show the source note before revealing an answer.** Enable “Show card source note name” in General settings to keep the source link visible while answering.
+
+### Bug Fixes
+
+- **More reliable Cloud Sync sign-in.** Reopening sign-in preserves a pending email link, failed exchanges can be retried, and duplicate callbacks or older browser tabs no longer interfere with a newer request.
+- **Correct Unassigned deck counts.** Dashboard counts now respect session limits consistently, including when individual note sessions ignore daily limits.
+- **Readable AI inbox threads.** Assistant replies and task summaries render Markdown, code, and LaTeX instead of raw markup.
+- **Safer Quick Note saves.** A failed mobile save keeps the draft open, saving or undoing no longer overwrites newer typing, and creation undo restores the comment alongside the fields.
+- **Typed-answer results stay with their session.** A delayed AI grade is ignored after a session reset, even when the next session shows the same card.
+- **Image Occlusion AI detection.** Region detection sends the required request context when using True Recall Pro.
+
+### Improvements
+
+- **More responsive FSRS settings.** Workload charts share a single card snapshot and defer collection-wide calculations until the settings page has painted.
+- **Clearer errors and safer local integrations.** AI and API failures preserve useful error details; the local API applies stricter request validation and keeps SQL access disabled by default.
+
+### Compatibility
+
+- Requires **Obsidian 1.13.0 or later** for native settings pages. Earlier Obsidian versions can continue using True Recall 2.4.2.
+
 ## 2.4.2 (2026-09-04)
 
 This release makes True Recall usable on a phone that shares a vault through iCloud and finishes the Cloud Sync onboarding for a second device. The per-device database moves out of iCloud, a fresh device can download a collection it has never seen and resume if the connection drops, the software keyboard no longer hides the card you are typing about, and every Pro link finally points at the real pricing page.

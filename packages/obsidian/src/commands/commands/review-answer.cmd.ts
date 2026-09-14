@@ -7,6 +7,9 @@ import type {
 } from "@true-recall/core/types";
 
 import { mutateReviewGrade } from "@true-recall/obsidian/data";
+import { reportError } from "@true-recall/obsidian/services/errors";
+import { notify } from "@true-recall/obsidian/services/notification.service";
+import type { ReviewApi } from "@true-recall/obsidian/store";
 
 import type { Command, CommandContext } from "../command.types";
 
@@ -23,9 +26,10 @@ interface ReviewAnswerParams {
 	responseTime: number;
 	presetName: string;
 	requeuedAtIndex?: number;
-	buriedSiblingIds?: string[];
 	buriedSiblings?: FSRSFlashcardItem[];
 	skipNotification?: boolean;
+	getReview?: () => ReviewApi;
+	onPersisted?: () => void;
 }
 
 export class ReviewAnswerCommand implements Command {
@@ -39,10 +43,16 @@ export class ReviewAnswerCommand implements Command {
 	private writePersisted = false;
 	private pendingTimeoutId: number | null = null;
 	private reviewLogId: string | null = null;
+	private deferredFailureHandler?: () => void;
+	private sessionRestored = false;
 
 	constructor(params: ReviewAnswerParams) {
 		this.description = `Review (${Rating[params.rating]})`;
 		this.params = params;
+	}
+
+	onDeferredFailure(handler: () => void): void {
+		this.deferredFailureHandler = handler;
 	}
 
 	execute(ctx: CommandContext): void {
@@ -51,29 +61,45 @@ export class ReviewAnswerCommand implements Command {
 			this.pendingTimeoutId = null;
 
 			const p = this.params;
-			const persisted = ctx.flashcardManager.updateCardFSRS(
-				p.card.id,
-				p.updatedFsrs,
-				undefined,
-				{ skipNotification: true },
-			);
-
-			if (!persisted) return;
-			this.writePersisted = true;
-
 			try {
-				this.reviewLogId = ctx.sessionPersistence.recordReview(
-					p.card.id,
-					p.wasNewCard,
-					p.responseTime,
-					p.rating,
-					p.previousState,
-					p.scheduledDays,
-					p.elapsedDays,
-					p.presetName,
-				);
+				ctx.cardStore.transaction(() => {
+					const persisted = ctx.flashcardManager.updateCardFSRS(
+						p.card.id,
+						p.updatedFsrs,
+						undefined,
+						{ skipNotification: true },
+					);
+					if (!persisted) throw new Error("Reviewed card no longer exists");
+					this.reviewLogId = ctx.sessionPersistence.recordReview(
+						p.card.id,
+						p.wasNewCard,
+						p.responseTime,
+						p.rating,
+						p.previousState,
+						p.scheduledDays,
+						p.elapsedDays,
+						p.presetName,
+					);
+				});
+				this.writePersisted = true;
 			} catch (error) {
-				console.error("Error recording review to persistent storage:", error);
+				this.restoreSessionState();
+				this.deferredFailureHandler?.();
+				reportError(error, {
+					origin: "review-persistence",
+					context: { operation: "record-answer" },
+				});
+				notify().operationFailed("save review answer", error);
+				return;
+			}
+			try {
+				p.onPersisted?.();
+			} catch (error) {
+				reportError(error, {
+					origin: "review-post-commit",
+					context: { operation: "update-temporary-deck" },
+				});
+				notify().operationFailed("update Custom Study Session", error);
 			}
 
 			mutateReviewGrade(
@@ -82,6 +108,22 @@ export class ReviewAnswerCommand implements Command {
 				() => buildMetaFromCard(p.card, p.updatedFsrs),
 			);
 		}, 0);
+	}
+
+	restoreSessionState(): void {
+		const p = this.params;
+		if (this.sessionRestored || p.previousIndex === null || !p.getReview)
+			return;
+		this.sessionRestored = true;
+		const review = p.getReview();
+		for (const sibling of p.buriedSiblings ?? []) {
+			review.insertCardAtPosition(sibling, review.queue.length);
+		}
+		review.undoLastAnswer(
+			p.previousIndex,
+			{ ...p.card, fsrs: p.originalFsrs },
+			p.requeuedAtIndex,
+		);
 	}
 
 	cancelPendingWrite(): boolean {

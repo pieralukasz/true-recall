@@ -62,7 +62,9 @@ function mockPlugin(presets: CardAIPreset[] = [makePreset()]) {
 	const settings = {
 		cardPolish: { userPresets: presets, customPromptAutoApply: false },
 	};
-	const saveSettings = vi.fn(async () => {});
+	const saveSettings = vi.fn(async (patch: Record<string, unknown>) => {
+		Object.assign(settings, patch);
+	});
 	return {
 		plugin: { settings, saveSettings } as never,
 		settings,

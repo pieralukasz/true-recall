@@ -4,6 +4,7 @@ import {
 	AIRequestError,
 	type OpenRouterClient,
 } from "@true-recall/core/ai/clients/openrouter-client";
+import { describeErrorForUser } from "@true-recall/core/errors";
 
 import {
 	CardAIAbortedError,
@@ -200,6 +201,12 @@ describe("CardAIService", () => {
 			constructor: CardAIProviderError,
 			cause,
 		});
+		const error = await svc
+			.transform(request)
+			.catch((reason: unknown) => reason);
+		expect(describeErrorForUser(error)).toBe(
+			"The provider rate limit or usage limit was reached. Try again later.",
+		);
 	});
 
 	it("wraps a non-Error rejection in CardAIProviderError with fallback message", async () => {

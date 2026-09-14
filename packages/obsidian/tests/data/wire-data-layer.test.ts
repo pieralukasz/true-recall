@@ -75,6 +75,21 @@ function registerRemovalQueries(
 }
 
 describe("wireDataLayer", () => {
+	it("keeps the last value and exposes a typed reload error", () => {
+		const dl = new DataLayer();
+		let shouldFail = false;
+		dl.register("unstable-query", () => {
+			if (shouldFail) throw new Error("reload failed");
+			return 42;
+		}, ["unstable"]);
+		shouldFail = true;
+
+		dl.invalidateGroups(["unstable"]);
+
+		expect(dl.get("unstable-query")).toBe(42);
+		expect(dl.errorSignal("unstable-query")?.value?.code).toBe("unexpected");
+	});
+
 	it("patches removed bulk cards without a full group invalidation", () => {
 		const kept = makeMeta("kept", State.New);
 		const removed = makeMeta("removed", State.Learning);

@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState } from "preact/hooks";
 import { State } from "ts-fsrs";
 
 import {
+	createRModeCardOptionsResolver,
 	type RetrievabilitySummary,
+	resolveRModeCeiling,
 	summarizeRetrievability,
 } from "@true-recall/core/services";
 
@@ -46,9 +48,9 @@ export function useRModeSummary(): {
 					.preset
 			: plugin.presetService.getDefaultPreset();
 		const bands: RModeBands = {
-			ceiling: Math.min(
-				0.999,
-				effectivePreset.requestRetention + rMode.ceilingOffset,
+			ceiling: resolveRModeCeiling(
+				effectivePreset.requestRetention,
+				rMode.ceilingOffset,
 			),
 			comfortFloor: effectivePreset.requestRetention,
 			urgentBelow: rMode.urgentBelow,
@@ -58,29 +60,16 @@ export function useRModeSummary(): {
 			(card) => card.fsrs.state === State.Review,
 		);
 
-		const presetCache = new Map<string, typeof effectivePreset>();
 		return {
 			summary: summarizeRetrievability(
 				reviewCards,
 				plugin.fsrsService,
 				{
 					...bands,
-					resolveCardOptions: (card) => {
-						const key = card.sourceUid ?? card.id;
-						let preset = presetCache.get(key);
-						if (!preset) {
-							preset = plugin.presetService.resolvePresetForCard(card);
-							presetCache.set(key, preset);
-						}
-						return {
-							comfortFloor: preset.requestRetention,
-							ceiling: Math.min(
-								0.999,
-								preset.requestRetention + rMode.ceilingOffset,
-							),
-							presetSettings: plugin.presetService.toFSRSSettings(preset),
-						};
-					},
+					resolveCardOptions: createRModeCardOptionsResolver({
+						presetService: plugin.presetService,
+						ceilingOffset: rMode.ceilingOffset,
+					}),
 				},
 				new Date(minute * 60_000),
 			),

@@ -24,6 +24,7 @@ export {
 	parseIODefinition,
 	serializeIODefinition,
 } from "./io-definition";
+export { type PluginLinkSurface, withPluginUtm } from "./plugin-link.utils";
 export {
 	BR_REGEX,
 	fileBasename,

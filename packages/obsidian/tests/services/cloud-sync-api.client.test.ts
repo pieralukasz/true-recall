@@ -1,8 +1,8 @@
 import { requestUrl } from "obsidian";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { CloudAuthService } from "@true-recall/obsidian/services/cloud/cloud-auth.service";
-import { CloudSyncApiClient } from "@true-recall/obsidian/services/cloud/cloud-sync-api.client";
+import type { CloudAuthService } from "@true-recall/obsidian/features/integration/cloud/cloud-auth.service";
+import { CloudSyncApiClient } from "@true-recall/obsidian/features/integration/cloud/cloud-sync-api.client";
 
 const requestUrlMock = vi.mocked(requestUrl);
 
@@ -50,6 +50,49 @@ describe("CloudSyncApiClient", () => {
 		} as never);
 
 		await expect(new CloudSyncApiClient(auth).revoke()).resolves.toBe(false);
+	});
+
+	it("does not sign out a new session when an old sync request returns 401", async () => {
+		const auth = createAuth();
+		const onAuthExpired = vi.fn();
+		let release!: (response: never) => void;
+		requestUrlMock.mockImplementationOnce(
+			() =>
+				new Promise((resolve) => {
+					release = resolve;
+				}) as never,
+		);
+		const exchange = new CloudSyncApiClient(auth, onAuthExpired).exchange({
+			cursor: 0,
+			changes: [],
+		});
+		auth.getSession.mockReturnValue({
+			...auth.getSession(),
+			deviceToken: "new-token".repeat(8),
+		});
+		release({ status: 401, json: { error: "Unauthorized" } } as never);
+		await expect(exchange).rejects.toThrow();
+		expect(auth.clearSession).not.toHaveBeenCalled();
+		expect(onAuthExpired).not.toHaveBeenCalled();
+	});
+
+	it.each([
+		403, 429, 500, 503,
+	])("keeps the session after HTTP %i", async (status) => {
+		const auth = createAuth();
+		const onAuthExpired = vi.fn();
+		requestUrlMock.mockResolvedValueOnce({
+			status,
+			json: { error: "Unavailable" },
+		} as never);
+		await expect(
+			new CloudSyncApiClient(auth, onAuthExpired).exchange({
+				cursor: 0,
+				changes: [],
+			}),
+		).rejects.toThrow();
+		expect(auth.clearSession).not.toHaveBeenCalled();
+		expect(onAuthExpired).not.toHaveBeenCalled();
 	});
 
 	it("treats an already-invalid token as a successful revocation", async () => {

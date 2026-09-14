@@ -3,12 +3,21 @@ import { defineConfig } from "vitest/config";
 
 const src = resolve(import.meta.dirname, "src");
 const coreSrc = resolve(import.meta.dirname, "../core/src");
+const coreMocks = resolve(import.meta.dirname, "../core/tests/__mocks__");
 const pluginsSrc = resolve(import.meta.dirname, "../plugins/src");
 const mocks = resolve(import.meta.dirname, "tests/__mocks__");
 
 export default defineConfig({
 	resolve: {
 		alias: [
+			{
+				find: "@sqlite.org/sqlite-wasm/sqlite3.wasm",
+				replacement: `${coreMocks}/sqlite3.wasm.ts`,
+			},
+			{
+				find: "@sqlite.org/sqlite-wasm",
+				replacement: `${coreMocks}/sqlite-wasm.ts`,
+			},
 			{
 				find: /^@true-recall\/obsidian\/(.+)$/,
 				replacement: `${src}/$1`,

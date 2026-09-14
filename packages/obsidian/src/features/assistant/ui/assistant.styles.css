@@ -888,3 +888,46 @@
 	min-height: 40px;
 	padding: 6px 8px 6px 10px;
 }
+
+/* Rendered markdown for AI chat turns and task summaries. The thread column is
+   narrow (inbox workspace pads to 13px), so tame anything that can overflow —
+   same approach as .true-recall-card-preview-markdown in review.styles.css.
+   `mjx-container` is the MathJax custom element; matched via attribute selector
+   to avoid the "unknown type selector" lint warning. */
+.tr-assistant-thread-markdown > :first-child {
+	margin-top: 0;
+}
+
+.tr-assistant-thread-markdown > :last-child {
+	margin-bottom: 0;
+}
+
+.tr-assistant-thread-markdown p {
+	margin-block: 0.4em;
+}
+
+.tr-assistant-thread-markdown ul,
+.tr-assistant-thread-markdown ol {
+	margin-block: 0.4em;
+	padding-inline-start: 1.4em;
+}
+
+.tr-assistant-thread-markdown img {
+	max-width: 100%;
+	height: auto;
+}
+
+.tr-assistant-thread-markdown pre {
+	overflow-x: auto;
+	max-width: 100%;
+}
+
+.tr-assistant-thread-markdown table {
+	display: block;
+	overflow-x: auto;
+}
+
+.tr-assistant-thread-markdown [class*="mjx-container"] {
+	overflow-x: auto;
+	max-width: 100%;
+}

@@ -26,11 +26,7 @@ vi.mock("../../../src/persistence/sqlite/sqlite.types", () => ({
 	generateUUID: vi.fn(() => `uuid-${++uuidCounter}`),
 }));
 
-// Mock signals
 const mockNotifyCardChange = vi.fn();
-vi.mock("@true-recall/obsidian/services/signals", () => ({
-	notifyCardChange: (...args: unknown[]) => mockNotifyCardChange(...args),
-}));
 
 // Import after mocks are set up
 import { AnkiImportService } from "../../../src/integration/anki/anki-import.service";

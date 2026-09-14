@@ -1,5 +1,5 @@
-import { Notice } from "obsidian";
-
+import { reportError } from "@true-recall/obsidian/services/errors";
+import { notify } from "@true-recall/obsidian/services/notification.service";
 import { capabilities } from "@true-recall/obsidian/utils/platform";
 
 import type TrueRecallPlugin from "../../main";
@@ -8,6 +8,7 @@ import { dispatch } from "./routes";
 
 const DEFAULT_PORT = 27182;
 const MAX_PORT_RETRIES = 5;
+const API_TOKEN_KEY = "true-recall-local-api-token";
 
 /**
  * Minimal structural views of Node's `http` module, which is loaded lazily at
@@ -38,6 +39,7 @@ export class LocalApiServer {
 	private configuredPort: number;
 	private portRetryCount = 0;
 	private stopped = false;
+	private readonly apiToken: string;
 
 	constructor(
 		private plugin: TrueRecallPlugin,
@@ -45,6 +47,7 @@ export class LocalApiServer {
 	) {
 		this.port = port ?? DEFAULT_PORT;
 		this.configuredPort = this.port;
+		this.apiToken = loadOrCreateToken(plugin);
 	}
 
 	/** Fresh start: resets retry state left over from a previous run. */
@@ -66,11 +69,26 @@ export class LocalApiServer {
 		).require("http") as HttpModuleLike;
 
 		this.server = createServer((req, res) => {
-			dispatch(req, res, { plugin: this.plugin }).catch((error) => {
-				console.error("[True Recall API] Unhandled error:", error);
+			dispatch(req, res, {
+				plugin: this.plugin,
+				apiToken: this.apiToken,
+			}).catch((error) => {
+				reportError(error, { origin: "local-api-dispatch" });
 				if (!res.writableEnded) {
-					res.writeHead(500, { "Content-Type": "application/json" });
-					res.end(JSON.stringify({ ok: false, error: "Internal error" }));
+					const requestId = crypto.randomUUID();
+					res.writeHead(500, {
+						"Content-Type": "application/json",
+						"Cache-Control": "no-store",
+						"x-request-id": requestId,
+					});
+					res.end(
+						JSON.stringify({
+							ok: false,
+							error: "The request could not be completed.",
+							code: "INTERNAL_ERROR",
+							requestId,
+						}),
+					);
 				}
 			});
 		});
@@ -85,7 +103,7 @@ export class LocalApiServer {
 					console.error(
 						`[True Recall API] Failed to find open port after ${MAX_PORT_RETRIES} retries`,
 					);
-					new Notice(
+					notify().error(
 						`True Recall API: could not find an available port. Free port ${this.port} or change it in settings.`,
 					);
 					this.server?.close();
@@ -102,8 +120,8 @@ export class LocalApiServer {
 				this.server = null;
 				this.listen();
 			} else {
-				console.error("[True Recall API] Server error:", error);
-				new Notice(`True Recall API error: ${error.message}`);
+				reportError(error, { origin: "local-api-server" });
+				notify().error("True Recall API stopped because of a server error.");
 				this.server?.close();
 				this.server = null;
 			}
@@ -129,7 +147,22 @@ export class LocalApiServer {
 		return this.port;
 	}
 
+	getToken(): string {
+		return this.apiToken;
+	}
+
 	isRunning(): boolean {
 		return this.server?.listening ?? false;
 	}
+}
+
+function loadOrCreateToken(plugin: TrueRecallPlugin): string {
+	const stored = plugin.app.loadLocalStorage(API_TOKEN_KEY);
+	if (typeof stored === "string" && stored.length >= 32) return stored;
+	const token = `${crypto.randomUUID()}${crypto.randomUUID()}`.replace(
+		/-/g,
+		"",
+	);
+	plugin.app.saveLocalStorage(API_TOKEN_KEY, token);
+	return token;
 }

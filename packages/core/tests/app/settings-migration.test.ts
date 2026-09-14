@@ -38,6 +38,18 @@ describe("migrateSettings — sync mode", () => {
 	});
 });
 
+describe("migrateSettings — Local API security", () => {
+	it("keeps browser access and arbitrary SQL closed for older settings", () => {
+		const { settings } = migrateSettings({
+			enableLocalApi: true,
+			apiPort: 27182,
+		} as unknown as Parameters<typeof migrateSettings>[0]);
+
+		expect(settings.apiAllowedOrigins).toEqual([]);
+		expect(settings.apiEnableSqlQuery).toBe(false);
+	});
+});
+
 describe("migrateSettings — custom study sessions", () => {
 	const legacyDeck = {
 		id: "legacy-custom-study",

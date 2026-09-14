@@ -5,6 +5,7 @@ export class SqliteDatabase {
 	private db: DatabaseLike | null = null;
 	/** Writes issued through `run`; lets a transaction tell an idle tick from a real change. */
 	private writeCount = 0;
+	private transactionDepth = 0;
 
 	constructor(private onDirty: () => void) {}
 
@@ -81,15 +82,36 @@ export class SqliteDatabase {
 		if (!this.db) throw new Error("Database not initialized");
 
 		const writesBefore = this.writeCount;
+		const depth = this.transactionDepth;
+		const savepoint = `true_recall_nested_${depth}`;
+		let started = false;
 		try {
-			this.db.run("BEGIN TRANSACTION");
+			this.db.run(depth === 0 ? "BEGIN TRANSACTION" : `SAVEPOINT ${savepoint}`);
+			started = true;
+			this.transactionDepth = depth + 1;
 			const result = fn();
-			this.db.run("COMMIT");
+			this.db.run(depth === 0 ? "COMMIT" : `RELEASE SAVEPOINT ${savepoint}`);
 			if (this.writeCount !== writesBefore) this.onDirty();
 			return result;
 		} catch (e) {
-			this.db.run("ROLLBACK");
+			if (started) {
+				try {
+					if (depth === 0) {
+						this.db.run("ROLLBACK");
+					} else {
+						this.db.run(`ROLLBACK TO SAVEPOINT ${savepoint}`);
+						this.db.run(`RELEASE SAVEPOINT ${savepoint}`);
+					}
+				} catch (rollbackError) {
+					console.error(
+						"[True Recall] Transaction rollback failed:",
+						rollbackError,
+					);
+				}
+			}
 			throw e;
+		} finally {
+			this.transactionDepth = depth;
 		}
 	}
 
