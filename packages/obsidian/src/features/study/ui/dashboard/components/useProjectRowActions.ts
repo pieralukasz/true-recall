@@ -49,10 +49,10 @@ export function useProjectRowActions(
 			: () => void actions.handleRename(item.project.path),
 		onArchive: isVirtual
 			? undefined
-			: () => actions.handleArchive(item.project.path, true),
+			: () => void actions.handleArchive(item.project.path, true),
 		onUnarchive: isVirtual
 			? undefined
-			: () => actions.handleArchive(item.project.path, false),
+			: () => void actions.handleArchive(item.project.path, false),
 		onDissolve: isVirtual
 			? undefined
 			: () => void actions.handleDissolve(item.project.path),

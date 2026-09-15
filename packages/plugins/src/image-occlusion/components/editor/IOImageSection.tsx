@@ -52,9 +52,7 @@ export function IOImageSection({ image }: IOImageSectionProps) {
 						class="ep:w-full ep:px-2 ep:py-1.5 ep:text-ui-small ep:bg-obs-primary ep:border ep:border-obs-border ep:rounded"
 						value={image.selectedVaultPath}
 						onChange={(event) =>
-							image.onSelectedVaultPathChange(
-								(event.currentTarget as HTMLSelectElement).value,
-							)
+							image.onSelectedVaultPathChange(event.currentTarget.value)
 						}
 					>
 						<option value="">Select image from vault…</option>

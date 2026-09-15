@@ -25,7 +25,8 @@
 		"motion": "12.35.0",
 		"preact": "^10.28.4",
 		"ts-fsrs": "^5.2.3",
-		"zustand": "^5.0.11"
+		"zustand": "^5.0.11",
+		"zod": "^4.5.4"
 	},
 	"peerDependencies": {
 		"obsidian": "*"

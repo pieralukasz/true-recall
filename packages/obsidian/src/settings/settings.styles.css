@@ -859,7 +859,7 @@
 	background: var(--background-primary);
 }
 
-.tr-settings .tr-preset-builtin:has(.tr-preset-badge--pro) {
+.tr-settings .tr-preset-builtin--pro {
 	border-color: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.3);
 	background: hsla(var(--accent-h), var(--accent-s), var(--accent-l), 0.05);
 }

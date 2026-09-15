@@ -1,8 +1,4 @@
-import {
-	fromHttpResponse,
-	HttpError,
-	InvalidResponseError,
-} from "../../errors";
+import { fromHttpResponse, InvalidResponseError } from "../../errors";
 import type { IHttpClient } from "../../interfaces/http-client";
 
 export interface TextContentPart {
@@ -130,22 +126,6 @@ export function getTextContent(message: ChatMessage | undefined): string {
 			.join("");
 	}
 	return "";
-}
-
-/** @deprecated Use HttpError/isHttpError. Kept temporarily for source compatibility. */
-export class AIRequestError extends HttpError {
-	constructor(statusCode: number, responseText: string) {
-		super(statusCode, { detail: responseText, provider: "ai" });
-		this.name = "AIRequestError";
-	}
-
-	get isRateLimited(): boolean {
-		return this.statusCode === 429;
-	}
-
-	get isUnauthorized(): boolean {
-		return this.statusCode === 401;
-	}
 }
 
 export interface AIClientOptions {

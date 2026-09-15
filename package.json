@@ -1,6 +1,6 @@
 {
 	"name": "true-recall",
-	"version": "2.5.0",
+	"version": "2.5.1",
 	"private": true,
 	"description": "Spaced repetition with FSRS algorithm",
 	"main": "main.js",
@@ -14,7 +14,7 @@
 		"picomatch": "4.0.4",
 		"@hono/node-server": "1.19.15",
 		"hono": "4.13.5",
-		"fast-uri": "3.1.5",
+		"fast-uri": "3.1.7",
 		"ip-address": "10.7.0",
 		"typescript-eslint": "8.61.1"
 	},
