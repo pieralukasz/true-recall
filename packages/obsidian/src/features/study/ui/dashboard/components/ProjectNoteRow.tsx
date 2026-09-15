@@ -79,12 +79,12 @@ export function ProjectNoteRow({
 				onEnterSelection={onEnterSelection}
 				onArchive={() =>
 					item.note.path
-						? actions.handleArchive(item.note.path, true)
+						? void actions.handleArchive(item.note.path, true)
 						: undefined
 				}
 				onUnarchive={() =>
 					item.note.path
-						? actions.handleArchive(item.note.path, false)
+						? void actions.handleArchive(item.note.path, false)
 						: undefined
 				}
 				onRename={() =>

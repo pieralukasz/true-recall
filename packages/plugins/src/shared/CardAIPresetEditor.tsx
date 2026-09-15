@@ -79,7 +79,12 @@ function CompactPresetRow({
 	onFork?: () => void;
 }) {
 	return (
-		<div class="tr-preset-builtin">
+		<div
+			class={cn(
+				"tr-preset-builtin",
+				preset.requiresPro && "tr-preset-builtin--pro",
+			)}
+		>
 			<div class="tr-preset-builtin__main">
 				<div class="tr-preset-builtin__title-row">
 					<span class="tr-preset-builtin__title">{preset.name}</span>

@@ -18,7 +18,7 @@ export function reportError(
 	if (isCancellation(error) || !claimInput(error)) return;
 
 	const appError = toAppError(error);
-	if (!claimErrorReport(appError)) return;
+	if (appError.severity === "info" || !claimErrorReport(appError)) return;
 
 	const report = {
 		origin,
@@ -30,9 +30,7 @@ export function reportError(
 	};
 	const cause = appError.cause instanceof Error ? appError.cause : appError;
 
-	if (appError.severity === "info") {
-		console.info(`[True Recall] ${appError.message}`, report);
-	} else if (appError.severity === "warn") {
+	if (appError.severity === "warn") {
 		console.warn(`[True Recall] ${appError.message}`, cause, report);
 	} else {
 		console.error(`[True Recall] ${appError.message}`, cause, report);

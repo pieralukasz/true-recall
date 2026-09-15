@@ -114,6 +114,7 @@ export function useQuickNoteAI(editor: QuickNoteEditor) {
 		resolveSourceUid,
 		plugin,
 		app.vault,
+		rootRef,
 	]);
 
 	return { aiDisabled, aiTitle, openAI };

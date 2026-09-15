@@ -167,7 +167,7 @@ function ActiveReview({ card, review, model }: ActiveReviewProps) {
 		if (!hasAnswer && !review.isAnswerRevealed) {
 			actions.onShowAnswer();
 		}
-	}, [card.id, hasAnswer, review.isAnswerRevealed, actions.onShowAnswer]);
+	}, [card.id, hasAnswer, review.isAnswerRevealed, actions]);
 
 	return (
 		<div

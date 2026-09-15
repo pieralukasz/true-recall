@@ -55,10 +55,10 @@ export function useProjectNoteActions(
 		onSetPreset:
 			onPresetClick && notePath ? () => onPresetClick(notePath) : undefined,
 		onArchive: notePath
-			? () => actions.handleArchive(notePath, true)
+			? () => void actions.handleArchive(notePath, true)
 			: undefined,
 		onUnarchive: notePath
-			? () => actions.handleArchive(notePath, false)
+			? () => void actions.handleArchive(notePath, false)
 			: undefined,
 		onDetach: handleDetach,
 		onEnterSelection,

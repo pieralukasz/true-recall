@@ -1,10 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import {
-	AIRequestError,
-	type OpenRouterClient,
-} from "@true-recall/core/ai/clients/openrouter-client";
-import { describeErrorForUser } from "@true-recall/core/errors";
+import type { OpenRouterClient } from "@true-recall/core/ai/clients/openrouter-client";
+import { describeErrorForUser, HttpError } from "@true-recall/core/errors";
 
 import {
 	CardAIAbortedError,
@@ -191,8 +188,11 @@ describe("CardAIService", () => {
 		).rejects.toBeInstanceOf(CardAIAbortedError);
 	});
 
-	it("wraps AIRequestError in CardAIProviderError with the cause preserved", async () => {
-		const cause = new AIRequestError(429, "rate limited");
+	it("wraps HttpError in CardAIProviderError with the cause preserved", async () => {
+		const cause = new HttpError(429, {
+			detail: "rate limited",
+			provider: "ai",
+		});
 		const failingClient = {
 			chat: vi.fn().mockRejectedValue(cause),
 		} as unknown as OpenRouterClient;

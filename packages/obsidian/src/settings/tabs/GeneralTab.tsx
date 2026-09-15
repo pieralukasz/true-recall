@@ -276,26 +276,26 @@ export function GeneralTab() {
 				<PlanField settings={settings} />
 				<FormField
 					name="What's New"
-					description={`See release notes for version ${plugin.manifest.version}`}
+					description="Browse current and earlier release notes, including while offline"
 				>
 					<Clickable
 						class="ep-btn ep-btn-outline"
 						onClick={() =>
 							void (async () => {
-								const { fetchLatestRelease } = await import(
+								const { getReleaseNotes } = await import(
 									"@true-recall/obsidian/services/release-notes.service"
 								);
-								const release = await fetchLatestRelease();
-								if (!release) {
+								const releases = getReleaseNotes(plugin.manifest.version);
+								if (releases.length === 0) {
 									notify().error(
-										"Could not fetch release notes. Check your internet connection.",
+										"No release notes are available for this version.",
 									);
 									return;
 								}
 								const { WhatsNewModal } = await import(
 									"@true-recall/obsidian/modals/shared/WhatsNewModal"
 								);
-								new WhatsNewModal(plugin, release).open();
+								new WhatsNewModal(plugin, releases).open();
 							})()
 						}
 					>
