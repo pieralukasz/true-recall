@@ -59,5 +59,5 @@ export function useQuickNoteShortcuts(
 		return () => {
 			doc.removeEventListener("keydown", onKeyDown, true);
 		};
-	}, []);
+	}, [rootRef, userCommentInputRef]);
 }

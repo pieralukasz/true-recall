@@ -137,7 +137,7 @@ const context = await esbuild.context({
 		__TRUERECALL_WEB_URL__: JSON.stringify(WEB_URL),
 		__TRUERECALL_CLOUD_SYNC_URL__: JSON.stringify(CLOUD_SYNC_URL),
 	},
-	loader: { ".wasm": "binary" },
+	loader: { ".wasm": "binary", ".md": "text" },
 	external: [
 		"obsidian",
 		"electron",

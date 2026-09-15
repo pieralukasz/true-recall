@@ -9,7 +9,6 @@ export {
 // OpenRouter client (non-streaming)
 export {
 	type AIClientOptions,
-	AIRequestError,
 	buildAIHeaders,
 	type ChatCompletionResponse,
 	type ChatMessage,

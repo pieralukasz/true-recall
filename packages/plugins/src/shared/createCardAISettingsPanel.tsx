@@ -10,6 +10,7 @@ import {
 	ToggleInput,
 } from "@true-recall/obsidian/components";
 import { usePlugin } from "@true-recall/obsidian/preact";
+import { notify } from "@true-recall/obsidian/services/notification.service";
 
 import type { PluginSettingsProps } from "../types";
 import { CardAIPresetEditor } from "./CardAIPresetEditor";
@@ -252,7 +253,11 @@ export function createCardAISettingsPanel(
 							<CardAIPresetEditor
 								preset={p}
 								onChange={updateUserPreset}
-								onDelete={() => removeUserPreset(p)}
+								onDelete={() =>
+									void removeUserPreset(p).catch((error) =>
+										notify().operationFailed("delete preset", error),
+									)
+								}
 								expanded={expandedIds.has(p.id)}
 								onToggleExpanded={() => toggleExpanded(p.id)}
 							/>

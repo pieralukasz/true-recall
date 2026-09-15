@@ -26,7 +26,7 @@ function RegionNumberField({
 				value={region[field]}
 				onInput={(event) =>
 					onChange({
-						[field]: Number((event.currentTarget as HTMLInputElement).value),
+						[field]: Number(event.currentTarget.value),
 					})
 				}
 			/>

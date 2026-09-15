@@ -104,9 +104,6 @@ export async function migrateDeviceDbLocation(
 		getDbBakPath(targetPath),
 	);
 	await removeIfExists(persistence, otherPath);
-	console.info(
-		`[True Recall] Database moved from ${otherFolder} to ${targetFolder}`,
-	);
 	return targetFolder;
 }
 
@@ -125,7 +122,7 @@ async function copyDbFile(
 	const buffer =
 		data.byteOffset === 0 && data.byteLength === data.buffer.byteLength
 			? (data.buffer as ArrayBuffer)
-			: (data.slice().buffer as ArrayBuffer);
+			: data.slice().buffer;
 	await persistence.writeBinary(to, buffer);
 	const written = await persistence.stat(to);
 	if (!written || written.size !== data.byteLength) {

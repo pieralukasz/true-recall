@@ -69,12 +69,12 @@ export function ProjectRow({
 				onArchive={
 					isVirtual
 						? undefined
-						: () => actions.handleArchive(item.project.path, true)
+						: () => void actions.handleArchive(item.project.path, true)
 				}
 				onUnarchive={
 					isVirtual
 						? undefined
-						: () => actions.handleArchive(item.project.path, false)
+						: () => void actions.handleArchive(item.project.path, false)
 				}
 				onRename={
 					isVirtual
