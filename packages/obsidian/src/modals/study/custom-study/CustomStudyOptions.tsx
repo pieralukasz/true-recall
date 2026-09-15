@@ -20,8 +20,10 @@ export function CustomStudyOptions({
 	onChange,
 }: CustomStudyOptionsProps) {
 	return (
-		<fieldset class="ep:flex ep:flex-col ep:gap-2 ep:border-0 ep:p-0 ep:m-0">
-			<legend class="ep:sr-only">Custom study type</legend>
+		<fieldset
+			aria-label="Custom study type"
+			class="ep:flex ep:flex-col ep:gap-2 ep:border-0 ep:p-0 ep:m-0"
+		>
 			{OPTIONS.map((option) => (
 				<label
 					key={option.value}

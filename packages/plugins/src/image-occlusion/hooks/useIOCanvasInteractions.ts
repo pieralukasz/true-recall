@@ -75,18 +75,18 @@ export function useIOCanvasInteractions({
 	const [spacePressed, setSpacePressed] = useState(false);
 	const [draftRegion, setDraftRegion] = useState<IORegion | null>(null);
 
-	const latest = {
-		definition: useLatest(definition),
-		tool: useLatest(tool),
-		spacePressed: useLatest(spacePressed),
-		panX: useLatest(panX),
-		panY: useLatest(panY),
-		onDefinitionChange: useLatest(onDefinitionChange),
-		onPanChange: useLatest(onPanChange),
-		onSelectRegion: useLatest(onSelectRegion),
-		onToolChange: useLatest(onToolChange),
-		draftRegion: useLatest(draftRegion),
-	};
+	const latest = useLatest({
+		definition,
+		tool,
+		spacePressed,
+		panX,
+		panY,
+		onDefinitionChange,
+		onPanChange,
+		onSelectRegion,
+		onToolChange,
+		draftRegion,
+	});
 
 	const cancelInteraction = useCallback(() => {
 		dragRef.current = null;
@@ -115,142 +115,148 @@ export function useIOCanvasInteractions({
 		};
 	}, [cancelInteraction]);
 
-	const handlePointerDown = useCallback((event: PointerEvent) => {
-		if (event.button !== 0 && event.button !== 1) return;
+	const handlePointerDown = useCallback(
+		(event: PointerEvent) => {
+			if (event.button !== 0 && event.button !== 1) return;
 
-		const target = event.target as Element;
-		const regionId = target.getAttribute("data-io-region");
-		const resizeCorner = target.getAttribute(
-			"data-io-handle",
-		) as ResizeCorner | null;
-		const currentTool = latest.tool.current;
+			const target = event.target as Element;
+			const regionId = target.getAttribute("data-io-region");
+			const resizeCorner = target.getAttribute(
+				"data-io-handle",
+			) as ResizeCorner | null;
+			const currentTool = latest.current.tool;
 
-		if (latest.spacePressed.current || event.button === 1) {
-			dragRef.current = {
-				type: "pan",
-				startClientX: event.clientX,
-				startClientY: event.clientY,
-				originX: latest.panX.current,
-				originY: latest.panY.current,
-			};
-			(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
-			return;
-		}
-
-		if (regionId) {
-			latest.onSelectRegion.current(regionId);
-			if (currentTool !== "select") {
-				latest.onToolChange.current?.("select");
+			if (latest.current.spacePressed || event.button === 1) {
+				dragRef.current = {
+					type: "pan",
+					startClientX: event.clientX,
+					startClientY: event.clientY,
+					originX: latest.current.panX,
+					originY: latest.current.panY,
+				};
+				(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
 				return;
 			}
-		} else if (!resizeCorner && currentTool === "select") {
-			latest.onSelectRegion.current(null);
-		}
 
-		const point = getNormalizedPoint(event, mediaRef.current);
-		if (!point) return;
+			if (regionId) {
+				latest.current.onSelectRegion(regionId);
+				if (currentTool !== "select") {
+					latest.current.onToolChange?.("select");
+					return;
+				}
+			} else if (!resizeCorner && currentTool === "select") {
+				latest.current.onSelectRegion(null);
+			}
 
-		if (resizeCorner && regionId) {
-			dragRef.current = {
-				type: "resize",
-				regionId,
-				corner: resizeCorner,
-			};
-			(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
-			return;
-		}
+			const point = getNormalizedPoint(event, mediaRef.current);
+			if (!point) return;
 
-		if (regionId) {
-			const region = latest.definition.current.regions.find(
-				(item) => item.id === regionId,
-			);
-			if (!region) return;
-			dragRef.current = {
-				type: "move",
-				regionId,
-				offsetX: point.x - region.x,
-				offsetY: point.y - region.y,
-			};
-			(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
-			return;
-		}
+			if (resizeCorner && regionId) {
+				dragRef.current = {
+					type: "resize",
+					regionId,
+					corner: resizeCorner,
+				};
+				(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+				return;
+			}
 
-		if (currentTool === "rect" || currentTool === "ellipse") {
-			dragRef.current = {
-				type: "draw",
-				startX: point.x,
-				startY: point.y,
-				shape: currentTool,
-			};
-			(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
-		}
-	}, []);
+			if (regionId) {
+				const region = latest.current.definition.regions.find(
+					(item) => item.id === regionId,
+				);
+				if (!region) return;
+				dragRef.current = {
+					type: "move",
+					regionId,
+					offsetX: point.x - region.x,
+					offsetY: point.y - region.y,
+				};
+				(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+				return;
+			}
 
-	const handlePointerMove = useCallback((event: PointerEvent) => {
-		const drag = dragRef.current;
-		if (!drag) return;
+			if (currentTool === "rect" || currentTool === "ellipse") {
+				dragRef.current = {
+					type: "draw",
+					startX: point.x,
+					startY: point.y,
+					shape: currentTool,
+				};
+				(event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
+			}
+		},
+		[latest],
+	);
 
-		if (drag.type === "pan") {
-			latest.onPanChange.current(
-				drag.originX + event.clientX - drag.startClientX,
-				drag.originY + event.clientY - drag.startClientY,
-			);
-			return;
-		}
+	const handlePointerMove = useCallback(
+		(event: PointerEvent) => {
+			const drag = dragRef.current;
+			if (!drag) return;
 
-		const point = getNormalizedPoint(event, mediaRef.current);
-		if (!point) return;
-		if (drag.type === "draw") {
-			setDraftRegion(
-				buildDraftRegion(
-					drag.startX,
-					drag.startY,
-					point.x,
-					point.y,
-					drag.shape,
-				),
-			);
-			return;
-		}
+			if (drag.type === "pan") {
+				latest.current.onPanChange(
+					drag.originX + event.clientX - drag.startClientX,
+					drag.originY + event.clientY - drag.startClientY,
+				);
+				return;
+			}
 
-		const currentDefinition = latest.definition.current;
-		if (drag.type === "move") {
-			latest.onDefinitionChange.current(
+			const point = getNormalizedPoint(event, mediaRef.current);
+			if (!point) return;
+			if (drag.type === "draw") {
+				setDraftRegion(
+					buildDraftRegion(
+						drag.startX,
+						drag.startY,
+						point.x,
+						point.y,
+						drag.shape,
+					),
+				);
+				return;
+			}
+
+			const currentDefinition = latest.current.definition;
+			if (drag.type === "move") {
+				latest.current.onDefinitionChange(
+					updateRegion(currentDefinition, drag.regionId, (region) => ({
+						...region,
+						...buildMoveUpdate(region, point, {
+							x: drag.offsetX,
+							y: drag.offsetY,
+						}),
+					})),
+				);
+				return;
+			}
+
+			latest.current.onDefinitionChange(
 				updateRegion(currentDefinition, drag.regionId, (region) => ({
 					...region,
-					...buildMoveUpdate(region, point, {
-						x: drag.offsetX,
-						y: drag.offsetY,
-					}),
+					...buildResizeUpdate(region, drag.corner, point),
 				})),
 			);
-			return;
-		}
-
-		latest.onDefinitionChange.current(
-			updateRegion(currentDefinition, drag.regionId, (region) => ({
-				...region,
-				...buildResizeUpdate(region, drag.corner, point),
-			})),
-		);
-	}, []);
+		},
+		[latest],
+	);
 
 	const handlePointerUp = useCallback(() => {
 		const drag = dragRef.current;
 		if (!drag) return;
 
-		if (drag.type === "draw" && latest.draftRegion.current) {
+		if (drag.type === "draw" && latest.current.draftRegion) {
 			const result = commitDraftRegion(
-				latest.definition.current,
-				latest.draftRegion.current,
+				latest.current.definition,
+				latest.current.draftRegion,
 			);
 			if (result) {
-				latest.onDefinitionChange.current(result.definition);
-				latest.onSelectRegion.current(result.regionId);
+				latest.current.onDefinitionChange(result.definition);
+				latest.current.onSelectRegion(result.regionId);
 			}
 		}
 		cancelInteraction();
-	}, [cancelInteraction]);
+	}, [cancelInteraction, latest]);
 
 	const handleWheel = useCallback(
 		(event: WheelEvent) => {
