@@ -28,7 +28,14 @@ export function useProjectActions() {
 
 	const handleArchive = useCallback(
 		async (path: string, archived: boolean) => {
-			await service.cascadeArchive(path, archived);
+			try {
+				await service.cascadeArchive(path, archived);
+			} catch (error) {
+				notify().operationFailed(
+					archived ? "archive project" : "unarchive project",
+					error,
+				);
+			}
 		},
 		[service],
 	);

@@ -39,9 +39,7 @@ export function IOAIDetectionControls({
 				placeholder="Optional hint, e.g. 'label the bones'"
 				maxLength={50}
 				value={hint}
-				onInput={(event) =>
-					onHintChange((event.currentTarget as HTMLInputElement).value)
-				}
+				onInput={(event) => onHintChange(event.currentTarget.value)}
 				onKeyDown={(event) => {
 					if (event.key === "Enter") onDetect(hint);
 					else if (event.key === "Escape") onCancel();

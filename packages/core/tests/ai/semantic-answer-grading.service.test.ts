@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { AIRequestError } from "../../src/ai/clients/openrouter-client";
 import { SemanticAnswerGradingService } from "../../src/ai/grading/semantic-answer-grading.service";
 import { DEFAULT_TYPE_IN_GRADING_SYSTEM_PROMPT } from "../../src/ai/prompts/type-in-grading-prompt";
 import { DEFAULT_SETTINGS } from "../../src/constants";
+import { HttpError } from "../../src/errors";
 import type { TrueRecallSettings } from "../../src/types";
 
 function createSettings(
@@ -189,7 +189,7 @@ describe("SemanticAnswerGradingService", () => {
 			dummyHttpClient,
 			() => ({
 				chat: async () => {
-					throw new AIRequestError(429, "rate limited");
+					throw new HttpError(429, { detail: "rate limited", provider: "ai" });
 				},
 			}),
 		);

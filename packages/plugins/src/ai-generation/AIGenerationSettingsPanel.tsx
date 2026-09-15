@@ -11,6 +11,7 @@ import { moveItemAmong } from "@true-recall/core/utils";
 
 import { ActionButton } from "@true-recall/obsidian/components";
 import { usePlugin } from "@true-recall/obsidian/preact";
+import { notify } from "@true-recall/obsidian/services/notification.service";
 
 import { LMStudioScopedModelField } from "../shared/LMStudioScopedModelField";
 import { ReorderableList } from "../shared/ReorderableList";
@@ -244,7 +245,11 @@ export function AIGenerationSettingsPanel({
 							preset={p}
 							noteTypes={noteTypes}
 							onChange={updateUserPreset}
-							onDelete={() => removeUserPreset(p)}
+							onDelete={() =>
+								void removeUserPreset(p).catch((error) =>
+									notify().operationFailed("delete preset", error),
+								)
+							}
 							expanded={expandedIds.has(p.id)}
 							onToggleExpanded={() => toggleExpanded(p.id)}
 						/>

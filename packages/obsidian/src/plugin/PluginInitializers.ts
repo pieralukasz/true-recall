@@ -40,6 +40,8 @@ import { PluginLoader } from "./plugin-loader";
 import { isPluginEnabled } from "./plugin-utils";
 import { createAssistantService } from "./runtime/createAssistantService";
 
+export { checkForWhatsNew } from "./check-for-whats-new";
+
 const AUTO_BACKUP_STARTUP_DELAY_MS = 10_000;
 
 export async function initializeDeviceAndStore(
@@ -377,35 +379,6 @@ function initializeSourceHighlight(plugin: TrueRecallPlugin): void {
 			);
 		},
 	);
-}
-
-export async function checkForWhatsNew(
-	plugin: TrueRecallPlugin,
-): Promise<void> {
-	const currentVersion = plugin.manifest.version;
-	if (plugin.settings.lastSeenVersion === currentVersion) return;
-
-	if (plugin.settings.lastSeenVersion === undefined) {
-		await plugin.saveSettings({ lastSeenVersion: currentVersion });
-		return;
-	}
-
-	const { fetchLatestRelease } = await import(
-		"@true-recall/obsidian/services/release-notes.service"
-	);
-	const release = await fetchLatestRelease();
-	if (!release) return;
-
-	if (release.version !== currentVersion) {
-		await plugin.saveSettings({ lastSeenVersion: currentVersion });
-		return;
-	}
-
-	const { WhatsNewModal } = await import(
-		"@true-recall/obsidian/modals/shared/WhatsNewModal"
-	);
-	new WhatsNewModal(plugin, release).open();
-	await plugin.saveSettings({ lastSeenVersion: currentVersion });
 }
 
 async function migrateLegacyDatabase(
