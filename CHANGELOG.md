@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## 2.5.1 (2026-09-15)
+
+### Improvements
+
+- **Catch up on every release.** What's New now includes the complete bundled changelog. After an update, all releases since your last seen version are expanded, so updating from 2.4.2 to 2.5.1 also shows the changes in 2.5.0. Older releases can be expanded in the same window, and release notes work offline.
+- **Clearer action failures.** Archiving projects and deleting AI presets report failures instead of leaving rejected actions unhandled.
+- **Obsidian compatibility and maintenance.** Updated a vulnerable dependency, simplified preset styling, reduced unnecessary console output, and corrected type and callback issues reported by the plugin review.
+
 ## 2.5.0 (2026-09-14)
 
 This release brings native Obsidian settings pages, follow-up questions after typed answers, and more reliable editing and Cloud Sync sign-in.

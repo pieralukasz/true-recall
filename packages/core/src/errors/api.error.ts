@@ -83,7 +83,7 @@ export type NetworkErrorCode = (typeof NETWORK_ERROR_CODES)[number];
 
 export class NetworkError extends AppError {
 	constructor(
-		codeOrMessage: NetworkErrorCode | string = "connection-lost",
+		codeOrMessage: string = "connection-lost",
 		options: AppErrorOptions = {},
 	) {
 		const code = NETWORK_ERROR_CODES.includes(codeOrMessage as NetworkErrorCode)

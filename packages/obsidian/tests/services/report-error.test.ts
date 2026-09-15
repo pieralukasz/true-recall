@@ -52,6 +52,20 @@ describe("reportError", () => {
 		});
 	});
 
+	it("does not log expected validation or access errors", () => {
+		const logs = ["info", "warn", "error"].map((method) =>
+			vi
+				.spyOn(console, method as "info" | "warn" | "error")
+				.mockImplementation(() => undefined),
+		);
+
+		for (const status of [400, 401, 403, 422]) {
+			reportError(new HttpError(status), { origin: "generation" });
+		}
+
+		for (const log of logs) expect(log).not.toHaveBeenCalled();
+	});
+
 	it("does not report user cancellation", () => {
 		const consoleError = vi
 			.spyOn(console, "error")

@@ -30,7 +30,7 @@ export function useQuickNoteUndo(
 				revision,
 			};
 		},
-		[revisionRef],
+		[],
 	);
 	const handleUndoLastCreate = useCallback((): boolean => {
 		const pending = pendingRef.current;

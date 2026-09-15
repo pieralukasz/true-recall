@@ -157,7 +157,7 @@ export class LocalApiServer {
 }
 
 function loadOrCreateToken(plugin: TrueRecallPlugin): string {
-	const stored = plugin.app.loadLocalStorage(API_TOKEN_KEY);
+	const stored: unknown = plugin.app.loadLocalStorage(API_TOKEN_KEY);
 	if (typeof stored === "string" && stored.length >= 32) return stored;
 	const token = `${crypto.randomUUID()}${crypto.randomUUID()}`.replace(
 		/-/g,
