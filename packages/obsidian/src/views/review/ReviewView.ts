@@ -513,6 +513,7 @@ export class ReviewView extends ItemView {
 					getQueuedFollowUpCount: () => this.queuedFollowUpCount,
 					getTopUpAvailability: () => this.orchestrator.getTopUpAvailability(),
 					getPresetOptions: () => this.presets.getPresetOptions(),
+					canUndo: () => this.canUndoSessionAction(),
 					actions: {
 						onShowAnswer: () => void this.typeIn.handleReveal(),
 						onTypedAnswerChange: (value: string) =>
@@ -541,6 +542,7 @@ export class ReviewView extends ItemView {
 							? (e: MouseEvent) => this.openCardPolishMenu(e)
 							: undefined,
 						onCycleTypeInMode: () => this.typeIn.cycleTypeInMode(),
+						onUndo: () => void this.undoSessionAction(),
 						onPresetChange: (name: string) =>
 							void this.presets.handlePresetChange(name),
 					},
