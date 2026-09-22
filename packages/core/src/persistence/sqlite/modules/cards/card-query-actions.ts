@@ -75,6 +75,16 @@ export class CardQueryActions {
 		return rows.map(mapRow);
 	}
 
+	getWithSync(
+		cardId: string,
+	): (FSRSCardData & { deletedAt?: number | null }) | undefined {
+		const row = this.db.get<CardRow>(
+			`SELECT ${CARD_SELECT_SYNC} ${CARD_FROM} WHERE c.id = ?`,
+			[cardId],
+		);
+		return row ? mapRowWithSync(row) : undefined;
+	}
+
 	getByIds(cardIds: string[]): FSRSCardData[] {
 		if (cardIds.length === 0) return [];
 		const placeholders = sqlPlaceholders(cardIds.length);

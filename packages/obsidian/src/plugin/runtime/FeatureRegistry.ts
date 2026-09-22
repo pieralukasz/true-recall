@@ -13,6 +13,7 @@ import {
 	VIEW_TYPE_STATS,
 } from "@true-recall/core/constants";
 
+import { registerMarkdownFlashcards } from "@true-recall/obsidian/features/markdown-flashcards/register";
 import type TrueRecallPlugin from "@true-recall/obsidian/main";
 import { registerCommands } from "@true-recall/obsidian/plugin/PluginCommands";
 import { registerEventHandlers } from "@true-recall/obsidian/plugin/PluginEventHandlers";
@@ -112,6 +113,7 @@ export async function registerFeatures(
 	registerCommands(plugin);
 	plugin.addSettingTab(new TrueRecallSettingTab(plugin.app, plugin));
 	registerEventHandlers(plugin);
+	registerMarkdownFlashcards(plugin);
 	plugin.applyTabBarVisibility();
 
 	const { CommandService: CmdService } = await import(

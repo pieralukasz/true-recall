@@ -44,6 +44,12 @@ export class CardActions {
 		return this.queries.getAll();
 	}
 
+	getWithSync(
+		cardId: string,
+	): (FSRSCardData & { deletedAt?: number | null }) | undefined {
+		return this.queries.getWithSync(cardId);
+	}
+
 	getByIds(cardIds: string[]): FSRSCardData[] {
 		return this.queries.getByIds(cardIds);
 	}
