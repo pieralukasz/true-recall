@@ -4,6 +4,7 @@ import {
 	BUILTIN_BASIC_ID,
 	BUILTIN_BASIC_REVERSED_ID,
 } from "../../types/note.types";
+import { type ContentPlan, planContent } from "./content-sync";
 import { type CardMarker, type MarkdownCard, ScheduleSchema } from "./parser";
 
 type MarkdownStore = Pick<
@@ -32,6 +33,49 @@ export class MarkdownCardSyncService {
 				);
 			}
 		}
+	}
+
+	contentRevision(sourceUid: string): string {
+		return JSON.stringify(
+			this.store.notes
+				.getBySourceUid(sourceUid)
+				.filter((note) => note.createdVia === "markdown")
+				.map((note) => [
+					note.id,
+					note.noteTypeId,
+					note.fields.Front,
+					note.fields.Back,
+				])
+				.sort((a, b) => String(a[0]).localeCompare(String(b[0]))),
+		);
+	}
+
+	async planContent(
+		cards: MarkdownCard[],
+		sourceUid: string,
+		deviceId: string,
+	): Promise<{ plans: ContentPlan[]; revision: string }> {
+		const revision = this.contentRevision(sourceUid);
+		const notes = new Map(
+			this.store.notes
+				.getBySourceUid(sourceUid)
+				.filter((note) => note.createdVia === "markdown")
+				.map((note) => [note.id, note]),
+		);
+		const plans = await Promise.all(
+			cards.map((card) =>
+				planContent(
+					card,
+					card.marker ? notes.get(card.marker.id) : undefined,
+					deviceId,
+				),
+			),
+		);
+		return { plans, revision };
+	}
+
+	private cardForOrdinal(noteId: string, ordinal: number) {
+		return this.store.cards.getByNoteOrdinalWithSync(noteId, ordinal);
 	}
 
 	sync(
@@ -77,8 +121,8 @@ export class MarkdownCardSyncService {
 						changed.add(old.id);
 				}
 				for (let ordinal = 0; ordinal < (card.reversed ? 2 : 1); ordinal++) {
-					const id = markdownCardId(marker.id, ordinal);
-					const current = this.store.cards.getWithSync(id);
+					const current = this.cardForOrdinal(marker.id, ordinal);
+					const id = current?.id ?? markdownCardId(marker.id, ordinal);
 					const schedule = importScheduling
 						? marker.schedules?.[ordinal]
 						: undefined;
@@ -140,12 +184,9 @@ export class MarkdownCardSyncService {
 
 	snapshot(marker: CardMarker, reversed: boolean): CardMarker {
 		return {
-			v: 1,
-			id: marker.id,
+			...marker,
 			schedules: Array.from({ length: reversed ? 2 : 1 }, (_, ordinal) => {
-				const card = this.store.cards.getWithSync(
-					markdownCardId(marker.id, ordinal),
-				);
+				const card = this.cardForOrdinal(marker.id, ordinal);
 				return card && !card.deletedAt ? ScheduleSchema.parse(card) : null;
 			}),
 		};
