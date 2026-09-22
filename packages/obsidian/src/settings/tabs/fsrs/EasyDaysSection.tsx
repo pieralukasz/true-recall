@@ -10,6 +10,7 @@ import {
 	InfoBlock,
 } from "@true-recall/obsidian/components";
 import { EasyDaysModal } from "@true-recall/obsidian/features/metrics/modals/EasyDaysModal";
+import { t } from "@true-recall/obsidian/i18n";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 
 import type { FsrsPluginHost } from "../../../types/plugin-host.types";
@@ -104,26 +105,33 @@ export function EasyDaysSection({
 	}, [plugin, pushUndo]);
 
 	return (
-		<FormCard title="Easy days">
+		<FormCard title={t("Easy days")}>
 			<InfoBlock>
 				<p>
-					Reduce your review workload on specific days (recurring weekdays or
-					specific dates). Cards due on easy days will be moved to adjacent
-					days.
+					{t(
+						"Reduce your review workload on specific days (recurring weekdays or specific dates). Cards due on easy days will be moved to adjacent days.",
+					)}
 				</p>
 			</InfoBlock>
 
 			<FormField
-				name="Easy days"
-				description={`Recurring: ${recurringDaysText} | Specific dates: ${specificDatesCount} | Workload: ${Math.round(settings.easyDaysMultiplier * 100)}%`}
+				name={t("Easy days")}
+				description={t(
+					"Recurring: {0} | Specific dates: {1} | Workload: {2}%",
+					[
+						recurringDaysText,
+						specificDatesCount,
+						Math.round(settings.easyDaysMultiplier * 100),
+					],
+				)}
 			>
 				<ActionButton
-					label="Configure..."
+					label={t("Configure...")}
 					variant="secondary"
 					onClick={() => void handleConfigure()}
 				/>
 				<ActionButton
-					label="Apply now"
+					label={t("Apply now")}
 					variant="secondary"
 					onClick={() => void handleApplyNow()}
 				/>

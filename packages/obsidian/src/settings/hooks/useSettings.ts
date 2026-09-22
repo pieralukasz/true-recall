@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "preact/hooks";
 
 import type { FSRSPreset, TrueRecallSettings } from "@true-recall/core/types";
 
+import { setLanguagePreference } from "@true-recall/obsidian/i18n";
 import { usePlugin } from "@true-recall/obsidian/preact";
 
 function useSettingsVersion(): number {
@@ -24,6 +25,8 @@ export function useSettings() {
 	const save = useCallback(
 		async (patch: Partial<TrueRecallSettings>) => {
 			await plugin.saveSettings(patch);
+			if (patch.uiLanguage !== undefined)
+				setLanguagePreference(patch.uiLanguage);
 		},
 		[plugin],
 	);

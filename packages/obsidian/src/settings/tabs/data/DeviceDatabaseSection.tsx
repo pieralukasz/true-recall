@@ -15,6 +15,7 @@ import {
 	InfoBlock,
 	TextInput,
 } from "@true-recall/obsidian/components";
+import { t } from "@true-recall/obsidian/i18n";
 import { DeviceSelectionModal } from "@true-recall/obsidian/modals/integration/DeviceSelectionModal";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 
@@ -137,19 +138,21 @@ export function DeviceDatabaseSection() {
 	}, [plugin]);
 
 	return (
-		<FormCard title="Device database">
+		<FormCard title={t("Device database")}>
 			<InfoBlock>
 				<p>
-					Device ID: <code>{deviceId}</code>
+					{t("Device ID:")}
+					<code>{deviceId}</code>
 				</p>
 				<p>
-					Database: <code>{databasePath}</code>
+					{t("Database:")}
+					<code>{databasePath}</code>
 				</p>
 			</InfoBlock>
 
 			<FormField
-				name="Device name"
-				description="Optional name (stored locally)"
+				name={t("Device name")}
+				description={t("Optional name (stored locally)")}
 			>
 				<TextInput
 					value={deviceLabel || ""}
@@ -166,22 +169,24 @@ export function DeviceDatabaseSection() {
 			</FormField>
 
 			<FormField
-				name="Switch database"
-				description="Import data from another device"
+				name={t("Switch database")}
+				description={t("Import data from another device")}
 			>
 				<ActionButton
-					label="Switch..."
+					label={t("Switch...")}
 					variant="primary"
 					onClick={() => void handleSwitchDatabase()}
 				/>
 			</FormField>
 
 			<FormField
-				name="Start fresh"
-				description="Delete this device's database. With Cloud Sync connected, the collection is downloaded again on the next start."
+				name={t("Start fresh")}
+				description={t(
+					"Delete this device's database. With Cloud Sync connected, the collection is downloaded again on the next start.",
+				)}
 			>
 				<ActionButton
-					label="Delete database…"
+					label={t("Delete database…")}
 					variant="danger"
 					onClick={() => void handleStartFresh()}
 				/>

@@ -5,6 +5,7 @@ import type { ToolbarButtonConfig } from "@true-recall/core/types";
 import { moveItem } from "@true-recall/core/utils";
 
 import { Clickable, FormCard } from "@true-recall/obsidian/components";
+import { t } from "@true-recall/obsidian/i18n";
 import { useIcon, usePlugin } from "@true-recall/obsidian/preact";
 
 import { BUTTON_PLUGIN_MAP } from "../registry";
@@ -216,13 +217,13 @@ export function ToolbarConfigSection({
 					class="ep-btn ep-btn-outline ep:text-xs"
 					onClick={() => void handleAddCommand()}
 				>
-					+ Add command
+					{t("+ Add command")}
 				</Clickable>
 				<Clickable
 					class="ep-btn ep-btn-outline ep:text-xs"
 					onClick={() => void handleAddPreset()}
 				>
-					+ Add preset
+					{t("+ Add preset")}
 				</Clickable>
 			</div>
 		</FormCard>
@@ -284,7 +285,7 @@ function ToolbarButtonRow({
 			<button
 				type="button"
 				class="ep:cursor-grab ep:text-obs-text-faint ep:select-none ep:bg-transparent ep:border-0 ep:shadow-none ep:p-0"
-				aria-label={`Reorder ${label}. Use the up and down arrow keys.`}
+				aria-label={t("Reorder {0}. Use the up and down arrow keys.", [label])}
 				onKeyDown={(event) => {
 					if (event.key === "ArrowUp" && onMoveUp) {
 						event.preventDefault();
@@ -305,7 +306,7 @@ function ToolbarButtonRow({
 				{label}
 				{showProBadge && (
 					<span class="ep:text-[10px] ep:px-1 ep:py-0.5 ep:rounded ep:font-medium ep:bg-obs-accent/10 ep:text-obs-accent ep:leading-none">
-						PRO
+						{t("PRO")}
 					</span>
 				)}
 			</span>
@@ -314,8 +315,8 @@ function ToolbarButtonRow({
 				<Clickable
 					class="ep:text-obs-text-faint ep:hover:text-obs-text-normal ep:w-4 ep:h-4"
 					onClick={onRemove}
-					title="Remove"
-					aria-label={`Remove ${label}`}
+					title={t("Remove")}
+					aria-label={t("Remove {0}", [label])}
 				>
 					<div ref={trashRef} class="ep:w-4 ep:h-4" aria-hidden="true" />
 				</Clickable>
@@ -327,7 +328,7 @@ function ToolbarButtonRow({
 				tabIndex={disabled ? -1 : 0}
 				aria-checked={enabled && !disabled}
 				aria-disabled={disabled || undefined}
-				aria-label={`Enable ${label}`}
+				aria-label={t("Enable {0}", [label])}
 				onClick={() => {
 					if (!disabled) onToggle();
 				}}

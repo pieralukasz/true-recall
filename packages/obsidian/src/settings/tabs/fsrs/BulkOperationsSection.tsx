@@ -6,6 +6,7 @@ import {
 	FormField,
 	TextInput,
 } from "@true-recall/obsidian/components";
+import { t } from "@true-recall/obsidian/i18n";
 import { confirm } from "@true-recall/obsidian/modals/shared";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 
@@ -46,7 +47,9 @@ export function BulkOperationsSection({ plugin }: BulkOperationsSectionProps) {
 			});
 			if (previewResult && previewResult.affectedCount > 0) {
 				const confirmed = await confirm(plugin.app, {
-					title: "Reschedule cards",
+					get title() {
+						return t("Reschedule cards");
+					},
 					message: `This will reschedule ${previewResult.affectedCount} cards. Proceed?`,
 					confirmLabel: "Reschedule",
 				});
@@ -84,13 +87,15 @@ export function BulkOperationsSection({ plugin }: BulkOperationsSectionProps) {
 	}, [plugin]);
 
 	return (
-		<FormCard title="Bulk operations">
+		<FormCard title={t("Bulk operations")}>
 			<FormField
-				name="Reschedule all cards"
-				description="Recalculate all intervals with current FSRS weights (preview first)"
+				name={t("Reschedule all cards")}
+				description={t(
+					"Recalculate all intervals with current FSRS weights (preview first)",
+				)}
 			>
 				<ActionButton
-					label={rescheduling ? "Calculating..." : "Preview reschedule"}
+					label={rescheduling ? t("Calculating...") : t("Preview reschedule")}
 					variant="secondary"
 					disabled={rescheduling}
 					onClick={() => void handleReschedule()}
@@ -98,8 +103,8 @@ export function BulkOperationsSection({ plugin }: BulkOperationsSectionProps) {
 			</FormField>
 
 			<FormField
-				name="Postpone all due cards"
-				description="Push all due cards forward by N days"
+				name={t("Postpone all due cards")}
+				description={t("Push all due cards forward by N days")}
 			>
 				<TextInput
 					value={postponeDays}
@@ -108,7 +113,7 @@ export function BulkOperationsSection({ plugin }: BulkOperationsSectionProps) {
 					class="tr-control--compact"
 				/>
 				<ActionButton
-					label={postponing ? "Postponing..." : "Postpone"}
+					label={postponing ? t("Postponing...") : t("Postpone")}
 					variant="secondary"
 					disabled={postponing}
 					onClick={() => {

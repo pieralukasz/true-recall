@@ -10,6 +10,7 @@ import {
 import { moveItemAmong } from "@true-recall/core/utils";
 
 import { ActionButton } from "@true-recall/obsidian/components";
+import { t } from "@true-recall/obsidian/i18n";
 import { usePlugin } from "@true-recall/obsidian/preact";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 
@@ -135,7 +136,9 @@ export function AIGenerationSettingsPanel({
 			"@true-recall/obsidian/modals/shared/ConfirmModal"
 		);
 		const confirmed = await confirm(plugin.app, {
-			title: "Delete Generation Preset",
+			get title() {
+				return t("Delete Generation Preset");
+			},
 			message: `Delete “${p.name}”? This action cannot be undone.`,
 			confirmLabel: "Delete Preset",
 		});
@@ -163,7 +166,9 @@ export function AIGenerationSettingsPanel({
 				const now = Date.now();
 				const fresh: GenerationPreset = {
 					id,
-					name: "New preset",
+					get name() {
+						return t("New preset");
+					},
 					prompt: "",
 					noteTypeId: defaultNoteTypeId,
 					requiresPro: false,
@@ -188,26 +193,32 @@ export function AIGenerationSettingsPanel({
 				settings={settings}
 				save={save}
 				modelKey="lmStudioGenerationModel"
-				name="LM Studio model"
-				description="Used only by AI Flashcard Generation when LM Studio is the selected provider."
+				name={t("LM Studio model")}
+				description={t(
+					"Used only by AI Flashcard Generation when LM Studio is the selected provider.",
+				)}
 			/>
 
 			<div class="ep:flex ep:gap-2 ep:items-start ep:mt-2 ep:p-2.5 ep:border-l-2 ep:border-obs-accent ep:bg-obs-accent/8 ep:rounded-r-md">
 				<span class="ep:text-ui-smaller ep:text-obs-normal ep:leading-relaxed">
-					Presets don't show up in the UI automatically. To use a preset, open
-					the <b>Quick Actions Toolbar</b> settings and add it as a button
-					(Editor toolbar or Global toolbar). Only then will it appear in the
-					action bar above selected text.
+					{t(
+						"Presets don't show up in the UI automatically. To use a preset, open the",
+					)}
+					<b>{t("Quick Actions Toolbar")}</b>{" "}
+					{t(
+						"settings and add it as a button (Editor toolbar or Global toolbar). Only then will it appear in the action bar above selected text.",
+					)}
 				</span>
 			</div>
 
 			{builtins.length > 0 && (
 				<div class="tr-preset-section">
 					<div class="tr-preset-section__header">
-						<h3 class="tr-preset-section__title">Built-in presets</h3>
+						<h3 class="tr-preset-section__title">{t("Built-in presets")}</h3>
 						<span class="tr-preset-section__description">
-							Ready to use. Pro presets use True Recall's managed model and AI
-							budget; output language stays under your control.
+							{t(
+								"Ready to use. Pro presets use True Recall's managed model and AI budget; output language stays under your control.",
+							)}
 						</span>
 					</div>
 					{builtins.map((p) => (
@@ -224,15 +235,16 @@ export function AIGenerationSettingsPanel({
 
 			<div class="tr-preset-section">
 				<div class="tr-preset-section__header">
-					<h3 class="tr-preset-section__title">Your presets</h3>
+					<h3 class="tr-preset-section__title">{t("Your presets")}</h3>
 					<span class="tr-preset-section__description">
-						Pick a note type, write one prompt — the pipeline fills the fields.
-						Enable audio/image widgets per preset.
+						{t(
+							"Pick a note type, write one prompt — the pipeline fills the fields. Enable audio/image widgets per preset.",
+						)}
 					</span>
 				</div>
 				{userPresets.length === 0 && (
 					<span class="ep:text-ui-smaller ep:text-obs-muted ep:italic">
-						No custom presets yet. Add one to craft your own instruction.
+						{t("No custom presets yet. Add one to craft your own instruction.")}
 					</span>
 				)}
 				<ReorderableList
@@ -257,7 +269,7 @@ export function AIGenerationSettingsPanel({
 				/>
 				<div class="tr-preset-section__actions">
 					<ActionButton
-						label="+ New preset"
+						label={t("+ New preset")}
 						variant="outline"
 						size="sm"
 						onClick={addNew}
