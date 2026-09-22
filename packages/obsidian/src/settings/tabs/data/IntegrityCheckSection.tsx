@@ -5,6 +5,7 @@ import {
 	FormCard,
 	FormField,
 } from "@true-recall/obsidian/components";
+import { t } from "@true-recall/obsidian/i18n";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 
 import { useSettings } from "../../hooks/useSettings";
@@ -62,13 +63,15 @@ export function IntegrityCheckSection() {
 	}, [plugin]);
 
 	return (
-		<FormCard title="Database integrity">
+		<FormCard title={t("Database integrity")}>
 			<FormField
-				name="Check integrity"
-				description="Detect and repair orphaned cards, notes, and review logs"
+				name={t("Check integrity")}
+				description={t(
+					"Detect and repair orphaned cards, notes, and review logs",
+				)}
 			>
 				<ActionButton
-					label={running ? "Checking..." : "Check now"}
+					label={running ? t("Checking...") : t("Check now")}
 					variant="primary"
 					onClick={() => void handleCheck()}
 					disabled={running}

@@ -5,6 +5,7 @@ import {
 } from "obsidian";
 import { h } from "preact";
 
+import { setLanguagePreference, t } from "@true-recall/obsidian/i18n";
 import { mountPreact } from "@true-recall/obsidian/preact";
 
 import type TrueRecallPlugin from "../main";
@@ -18,18 +19,24 @@ export class TrueRecallSettingTab extends PluginSettingTab {
 	constructor(app: App, plugin: TrueRecallPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
+		setLanguagePreference(plugin.settings.uiLanguage);
 	}
 
 	getSettingDefinitions(): SettingDefinitionItem[] {
 		return SETTINGS_PAGES.map((page) => ({
 			type: "page",
-			name: page.name,
-			desc: page.description,
+			name: t(page.name),
+			desc: t(page.description),
 			items: [
 				{
-					name: `${page.name} options`,
-					desc: page.description,
-					aliases: [...page.searchAliases],
+					name: t("{0} options", [t(page.name)]),
+					desc: t(page.description),
+					aliases: [
+						...new Set([
+							...page.searchAliases,
+							...page.searchAliases.map((alias) => t(alias)),
+						]),
+					],
 					render: (setting) => {
 						setting.settingEl.empty();
 						return this.mountSettingsPage(setting.settingEl, page.id);

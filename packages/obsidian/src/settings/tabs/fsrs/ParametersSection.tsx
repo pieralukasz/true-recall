@@ -10,6 +10,7 @@ import {
 	InfoBlock,
 	TextAreaInput,
 } from "@true-recall/obsidian/components";
+import { t } from "@true-recall/obsidian/i18n";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 
 import type { FsrsPluginHost } from "../../../types/plugin-host.types";
@@ -107,48 +108,53 @@ export function ParametersSection({
 	);
 
 	return (
-		<FormCard title="FSRS parameters">
+		<FormCard title={t("FSRS parameters")}>
 			<InfoBlock>
 				<p>
-					FSRS parameters affect how cards are scheduled. You can optimize them
-					based on your review history.
+					{t(
+						"FSRS parameters affect how cards are scheduled. You can optimize them based on your review history.",
+					)}
 				</p>
 				<p>
-					<strong>Current reviews: </strong>
+					<strong>{t("Current reviews:")}</strong>
 					{presetReviews.toLocaleString()}{" "}
 					{canOptimize
-						? "(ready for optimization)"
+						? t("(ready for optimization)")
 						: `(need ${FSRS_CONFIG.minReviewsForOptimization}+ for optimization)`}
 				</p>
 				{lastOpt && (
 					<p>
-						<strong>Last optimized: </strong>
+						<strong>{t("Last optimized:")}</strong>
 						{new Date(lastOpt).toLocaleDateString()} (
-						{lastOptCount?.toLocaleString() ?? "unknown"} reviews used)
+						{lastOptCount?.toLocaleString() ?? "unknown"} {t("reviews used)")}
 					</p>
 				)}
 			</InfoBlock>
 
 			<FormField
-				name="Optimize parameters"
-				description="Analyze your review history to find optimal FSRS weights for this preset"
+				name={t("Optimize parameters")}
+				description={t(
+					"Analyze your review history to find optimal FSRS weights for this preset",
+				)}
 			>
 				<ActionButton
-					label={optimizing ? "Optimizing..." : "Optimize now"}
+					label={optimizing ? t("Optimizing...") : t("Optimize now")}
 					variant="primary"
 					disabled={!canOptimize || optimizing}
 					onClick={() => void handleOptimize()}
 				/>
 				<ActionButton
-					label="Reset to defaults"
+					label={t("Reset to defaults")}
 					variant="secondary"
 					onClick={() => void handleReset()}
 				/>
 			</FormField>
 
 			<FormField
-				name="Custom FSRS weights"
-				description="Enter 17, 19, or 21 comma-separated values (from FSRS optimizer). Leave empty to use defaults"
+				name={t("Custom FSRS weights")}
+				description={t(
+					"Enter 17, 19, or 21 comma-separated values (from FSRS optimizer). Leave empty to use defaults",
+				)}
 				layout="stacked"
 			>
 				<TextAreaInput

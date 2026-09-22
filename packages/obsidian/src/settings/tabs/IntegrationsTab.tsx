@@ -10,6 +10,7 @@ import {
 	TextInput,
 	ToggleInput,
 } from "@true-recall/obsidian/components";
+import { t } from "@true-recall/obsidian/i18n";
 import { startLocalApi } from "@true-recall/obsidian/plugin/api/start-local-api";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 import { capabilities } from "@true-recall/obsidian/utils/platform";
@@ -48,15 +49,18 @@ function LocalApiCard({ settings, save, plugin }: LocalApiCardProps) {
 	};
 
 	return (
-		<FormCard title="Local API">
+		<FormCard title={t("Local API")}>
 			<InfoBlock>
-				Expose a local HTTP API for the True Recall CLI. Binds to 127.0.0.1
-				only, never exposed to the network.
+				{t(
+					"Expose a local HTTP API for the True Recall CLI. Binds to 127.0.0.1 only, never exposed to the network.",
+				)}
 			</InfoBlock>
 
 			<FormField
-				name="Enable local API"
-				description="Start an HTTP server for CLI integration when the plugin loads"
+				name={t("Enable local API")}
+				description={t(
+					"Start an HTTP server for CLI integration when the plugin loads",
+				)}
 			>
 				<ToggleInput
 					value={settings.enableLocalApi}
@@ -65,8 +69,10 @@ function LocalApiCard({ settings, save, plugin }: LocalApiCardProps) {
 			</FormField>
 
 			<FormField
-				name="Port"
-				description="Local API port (default: 27182). Restart Obsidian after changing."
+				name={t("Port")}
+				description={t(
+					"Local API port (default: 27182). Restart Obsidian after changing.",
+				)}
 			>
 				<TextInput
 					value={String(settings.apiPort)}
@@ -84,12 +90,14 @@ function LocalApiCard({ settings, save, plugin }: LocalApiCardProps) {
 			{plugin.localApi?.isRunning() && (
 				<>
 					<InfoBlock>
-						API running on{" "}
+						{t("API running on")}{" "}
 						<code>http://127.0.0.1:{plugin.localApi.getPort()}</code>
 					</InfoBlock>
 					<FormField
-						name="Access token"
-						description="Set this as TRUE_RECALL_TOKEN for the CLI or MCP server"
+						name={t("Access token")}
+						description={t(
+							"Set this as TRUE_RECALL_TOKEN for the CLI or MCP server",
+						)}
 					>
 						<Clickable
 							class="ep-btn ep-btn-outline"
@@ -103,15 +111,17 @@ function LocalApiCard({ settings, save, plugin }: LocalApiCardProps) {
 									);
 							}}
 						>
-							Copy token
+							{t("Copy token")}
 						</Clickable>
 					</FormField>
 				</>
 			)}
 
 			<FormField
-				name="Allowed browser origins"
-				description="Comma-separated origins. Leave empty to deny browser pages."
+				name={t("Allowed browser origins")}
+				description={t(
+					"Comma-separated origins. Leave empty to deny browser pages.",
+				)}
 			>
 				<TextInput
 					value={settings.apiAllowedOrigins.join(", ")}
@@ -128,8 +138,10 @@ function LocalApiCard({ settings, save, plugin }: LocalApiCardProps) {
 			</FormField>
 
 			<FormField
-				name="Enable SQL query endpoint"
-				description="Advanced: lets authenticated clients run read-only SQL against the complete True Recall database. Keep disabled unless required."
+				name={t("Enable SQL query endpoint")}
+				description={t(
+					"Advanced: lets authenticated clients run read-only SQL against the complete True Recall database. Keep disabled unless required.",
+				)}
 			>
 				<ToggleInput
 					value={settings.apiEnableSqlQuery}
@@ -153,10 +165,12 @@ export function IntegrationsTab() {
 				<LocalApiCard settings={settings} save={save} plugin={plugin} />
 			)}
 
-			<FormCard title="Claude Code">
+			<FormCard title={t("Claude Code")}>
 				<FormField
-					name="Claude Code Skill"
-					description="Install the True Recall skill for Claude Code to control flashcards from the terminal"
+					name={t("Claude Code Skill")}
+					description={t(
+						"Install the True Recall skill for Claude Code to control flashcards from the terminal",
+					)}
 				>
 					<Clickable
 						class="ep-btn ep-btn-outline"
@@ -170,7 +184,7 @@ export function IntegrationsTab() {
 							)
 						}
 					>
-						Get skill
+						{t("Get skill")}
 					</Clickable>
 				</FormField>
 			</FormCard>
