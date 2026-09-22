@@ -7,6 +7,8 @@ export interface IMetadataIndex {
 	getPathByFieldValue(field: string, value: string): string | null;
 	getFieldValue(path: string, field: string): unknown;
 	getAllPathsWithField(field: string): Map<string, unknown>;
+	/** All Markdown paths, including notes without frontmatter. */
+	getAllFilePaths?(): string[];
 	onFieldChange(
 		field: string,
 		callback: (path: string, oldValue: unknown, newValue: unknown) => void,

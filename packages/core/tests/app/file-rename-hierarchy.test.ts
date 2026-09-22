@@ -103,3 +103,58 @@ describe("TrueRecallApp — file rename invalidates the hierarchy graph", () => 
 		expect(listener).not.toHaveBeenCalled();
 	});
 });
+
+describe("folder project updates", () => {
+	it("refreshes a cached project when a new card note is indexed", async () => {
+		const { app, fireMetadataChanged } = await createAppWithProject();
+		fireMetadataChanged("Study/Project.md", {
+			include: "folder",
+			project: true,
+		});
+		expect(app.hierarchyService.getChildPaths("Study/Project.md")).toEqual([]);
+		fireMetadataChanged("Study/Card.md", { flashcard_uid: "new-card" });
+		expect([
+			...app.hierarchyService.getSourceUidsForProject("Study/Project.md"),
+		]).toEqual(["new-card"]);
+		expect(app.hierarchyService.getUnassignedPaths()).not.toContain(
+			"Study/Card.md",
+		);
+	});
+	it("updates membership and emits invalidation when a card moves out and back", async () => {
+		const { app, fireMetadataChanged, fireFileRenamed } =
+			await createAppWithProject();
+		fireMetadataChanged("Study/Project.md", { include: "folder" });
+		fireMetadataChanged("Study/Card.md", { flashcard_uid: "card" });
+		expect(app.hierarchyService.getChildPaths("Study/Project.md")).toEqual([
+			"Study/Card.md",
+		]);
+		const listener = vi.fn();
+		app.events.on("hierarchy:changed", listener);
+		fireFileRenamed("Outside/Card.md", "Study/Card.md");
+		expect(app.hierarchyService.getChildPaths("Study/Project.md")).toEqual([]);
+		expect(app.hierarchyService.getUnassignedPaths()).toContain(
+			"Outside/Card.md",
+		);
+		fireFileRenamed("Study/Renamed.md", "Outside/Card.md");
+		expect(app.hierarchyService.getChildPaths("Study/Project.md")).toEqual([
+			"Study/Renamed.md",
+		]);
+		expect(listener).toHaveBeenCalledTimes(2);
+	});
+	it("drops derived membership when include is removed", async () => {
+		const { app, fireMetadataChanged } = await createAppWithProject();
+		fireMetadataChanged("Study/Project.md", {
+			include: "folder",
+			project: true,
+		});
+		fireMetadataChanged("Study/Card.md", { flashcard_uid: "card" });
+		expect(app.hierarchyService.getChildPaths("Study/Project.md")).toHaveLength(
+			1,
+		);
+		fireMetadataChanged("Study/Project.md", { project: true });
+		expect(app.hierarchyService.getChildPaths("Study/Project.md")).toEqual([]);
+		expect(app.hierarchyService.getUnassignedPaths()).toContain(
+			"Study/Card.md",
+		);
+	});
+});
