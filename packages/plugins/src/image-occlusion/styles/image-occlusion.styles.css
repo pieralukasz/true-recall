@@ -322,7 +322,7 @@
 	}
 
 	.true-recall-io-canvas-region.is-draft {
-		fill: var(--background-modifier-hover);
+		fill: var(--color-base-50, #777);
 		fill-opacity: 1;
 		stroke: var(--interactive-accent);
 		stroke-dasharray: 0.018 0.01;
@@ -405,7 +405,7 @@
 	}
 
 	.true-recall-io-shape.is-mask-passive {
-		fill: var(--background-modifier-hover);
+		fill: var(--color-base-50, #777);
 		fill-opacity: 1;
 	}
 
@@ -419,7 +419,7 @@
 	.true-recall-review-card-container
 		.true-recall-io-render:not(.is-revealed)
 		.true-recall-io-shape.is-mask-passive {
-		fill: var(--background-modifier-hover);
+		fill: var(--color-base-50, #777);
 		fill-opacity: 1;
 	}
 
