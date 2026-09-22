@@ -86,3 +86,22 @@ describe("getRegionVisualState", () => {
 		).toBe(expected);
 	});
 });
+
+describe("optional masking of other regions in Solo", () => {
+	it.each([
+		false,
+		true,
+	])("keeps the other region hidden when revealed=%s", (revealed) => {
+		expect(getRegionVisualState(0, 1, revealed, "solo", true, true)).toBe(
+			"is-mask-passive",
+		);
+	});
+	it("reveals the active group and allows a full editor preview", () => {
+		expect(getRegionVisualState(1, 1, true, "solo", true, true)).toBe(
+			"is-revealed-active",
+		);
+		expect(getRegionVisualState(0, 1, true, "solo", false, true)).toBe(
+			"is-revealed-passive",
+		);
+	});
+});

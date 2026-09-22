@@ -22,6 +22,10 @@ export function IOEditorSidebar({ editor }: IOEditorSidebarProps) {
 			<IOMaskModeSection
 				maskMode={editor.maskMode}
 				onChange={editor.onMaskModeChange}
+				hideOtherRegions={editor.hideOtherRegions}
+				onHideOtherRegionsChange={editor.onHideOtherRegionsChange}
+				groupCount={editor.groupCount}
+				onMergeRegions={editor.onMergeRegions}
 			/>
 			<IORegionList
 				regions={editor.regions}
