@@ -314,6 +314,8 @@ export interface TrueRecallSettings {
 	/** New day start hour (0-23, default 4 = 4:00 AM like Anki) */
 	dayStartHour: number;
 
+	markdownFlashcards?: import("../flashcard/markdown/settings").MarkdownFlashcardsSettings;
+
 	/** Automatic backup on plugin load */
 	autoBackupOnLoad: boolean;
 	/** Maximum number of backups to keep (0 = unlimited) - legacy, use retentionPolicy instead */
