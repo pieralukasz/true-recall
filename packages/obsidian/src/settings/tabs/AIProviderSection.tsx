@@ -21,6 +21,7 @@ import {
 	TextInput,
 } from "@true-recall/obsidian/components";
 
+import { beginAITrial } from "../../features/onboarding/ai-onboarding";
 import { useLMStudioModels } from "../hooks/useLMStudioModels";
 import { useSettings } from "../hooks/useSettings";
 
@@ -70,7 +71,7 @@ async function verifyProKey(key: string): Promise<KeyStatus> {
 }
 
 export function AIProviderSection() {
-	const { settings, save } = useSettings();
+	const { settings, save, plugin } = useSettings();
 
 	const initialStatus =
 		settings.proKey && settings.proKey === cachedKey ? cachedStatus : "idle";
@@ -130,6 +131,21 @@ export function AIProviderSection() {
 
 			{settings.providerType === "pro" && (
 				<>
+					<FormField
+						name={
+							settings.proKey
+								? "Your first learning session"
+								: "Try AI for free"
+						}
+						description="Connect your account and try generation, image cards and answer feedback. No payment card needed."
+					>
+						<Clickable
+							class="mod-cta"
+							onClick={() => void beginAITrial(plugin)}
+						>
+							{settings.proKey ? "Open learning guide" : "Try AI for free"}
+						</Clickable>
+					</FormField>
 					<InfoBlock title="Zero setup, optimized results">
 						Optimized prompts and model selection managed server-side. AI budget
 						included with your subscription.
