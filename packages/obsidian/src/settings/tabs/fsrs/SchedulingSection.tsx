@@ -17,6 +17,7 @@ import {
 	NEW_REVIEW_MIX_OPTIONS,
 	REVIEW_ORDER_OPTIONS,
 } from "@true-recall/obsidian/helpers";
+import { t } from "@true-recall/obsidian/i18n";
 
 interface SchedulingSectionProps {
 	preset: FSRSPreset;
@@ -29,10 +30,10 @@ export function SchedulingSection({
 }: SchedulingSectionProps) {
 	return (
 		<>
-			<FormCard title="Learning steps">
+			<FormCard title={t("Learning steps")}>
 				<FormField
-					name="Learning steps (minutes)"
-					description="Comma-separated steps for new cards. Default: 1, 10"
+					name={t("Learning steps (minutes)")}
+					description={t("Comma-separated steps for new cards. Default: 1, 10")}
 				>
 					<TextInput
 						value={preset.learningSteps.join(", ")}
@@ -51,8 +52,8 @@ export function SchedulingSection({
 				</FormField>
 
 				<FormField
-					name="Relearning steps (minutes)"
-					description="Comma-separated steps for lapsed cards. Default: 10"
+					name={t("Relearning steps (minutes)")}
+					description={t("Comma-separated steps for lapsed cards. Default: 10")}
 				>
 					<TextInput
 						value={preset.relearningSteps.join(", ")}
@@ -71,51 +72,62 @@ export function SchedulingSection({
 				</FormField>
 			</FormCard>
 
-			<FormCard title="Display order">
+			<FormCard title={t("Display order")}>
 				<FormField
-					name="New card order"
-					description="How to order new cards in the review queue"
+					name={t("New card order")}
+					description={t("How to order new cards in the review queue")}
 				>
 					<SelectInput
 						value={preset.newCardOrder ?? "random"}
 						onChange={(v) =>
 							void updatePreset({ newCardOrder: v as NewCardOrder })
 						}
-						options={NEW_CARD_ORDER_OPTIONS}
+						options={NEW_CARD_ORDER_OPTIONS.map((option) => ({
+							...option,
+							label: t(option.label),
+						}))}
 					/>
 				</FormField>
 
 				<FormField
-					name="Review order"
-					description="How to order cards due for review"
+					name={t("Review order")}
+					description={t("How to order cards due for review")}
 				>
 					<SelectInput
 						value={preset.reviewOrder ?? "due-date"}
 						onChange={(v) =>
 							void updatePreset({ reviewOrder: v as ReviewOrder })
 						}
-						options={REVIEW_ORDER_OPTIONS}
+						options={REVIEW_ORDER_OPTIONS.map((option) => ({
+							...option,
+							label: t(option.label),
+						}))}
 					/>
 				</FormField>
 
 				<FormField
-					name="New/review mix"
-					description="When to show new cards relative to reviews"
+					name={t("New/review mix")}
+					description={t("When to show new cards relative to reviews")}
 				>
 					<SelectInput
 						value={preset.newReviewMix ?? "mix-with-reviews"}
 						onChange={(v) =>
 							void updatePreset({ newReviewMix: v as NewReviewMix })
 						}
-						options={NEW_REVIEW_MIX_OPTIONS}
+						options={NEW_REVIEW_MIX_OPTIONS.map((option) => ({
+							...option,
+							label: t(option.label),
+						}))}
 					/>
 				</FormField>
 			</FormCard>
 
-			<FormCard title="Siblings">
+			<FormCard title={t("Siblings")}>
 				<FormField
-					name="Bury sibling cards"
-					description="After reviewing an image occlusion or cloze card, bury remaining cards from the same note until next day. This is not recommended; leaving it off keeps siblings spaced apart in the queue."
+					name={t("Bury sibling cards")}
+					description={t(
+						"After reviewing an image occlusion or cloze card, bury remaining cards from the same note until next day. This is not recommended; leaving it off keeps siblings spaced apart in the queue.",
+					)}
 				>
 					<ToggleInput
 						value={preset.burySiblings !== false}

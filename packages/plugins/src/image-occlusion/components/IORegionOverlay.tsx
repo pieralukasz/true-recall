@@ -11,6 +11,7 @@ interface IORegionOverlayProps {
 	revealed: boolean;
 	maskMode: IOMaskMode;
 	revealSingleOnly?: boolean;
+	hideOtherRegions?: boolean;
 	onRegionClick?: (ordinal: number) => void;
 }
 
@@ -75,6 +76,7 @@ export function IORegionOverlay({
 	revealed,
 	maskMode,
 	revealSingleOnly = false,
+	hideOtherRegions = false,
 	onRegionClick,
 }: IORegionOverlayProps) {
 	return (
@@ -97,6 +99,7 @@ export function IORegionOverlay({
 							revealed,
 							maskMode,
 							revealSingleOnly,
+							hideOtherRegions,
 						),
 						onRegionClick && "true-recall-io-shape-clickable",
 					)}

@@ -198,6 +198,7 @@ export interface RModeSettings {
 }
 
 export interface TrueRecallSettings {
+	uiLanguage?: "auto" | "en" | "zh-CN";
 	/**
 	 * @deprecated Never read anymore. The device ID lives exclusively in
 	 * device-local storage; restoring it from synced settings made a new

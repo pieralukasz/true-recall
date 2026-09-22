@@ -8,6 +8,7 @@ import {
 	TextInput,
 	ToggleInput,
 } from "@true-recall/obsidian/components";
+import { t } from "@true-recall/obsidian/i18n";
 
 import { useSettings } from "../../hooks/useSettings";
 
@@ -15,21 +16,24 @@ export function BackgroundBackupSection() {
 	const { settings, save } = useSettings();
 
 	return (
-		<FormCard title="Background backup">
+		<FormCard title={t("Background backup")}>
 			<InfoBlock>
 				<p>
-					Your active SQL database remains the source of truth during study and
-					editing.
+					{t(
+						"Your active SQL database remains the source of truth during study and editing.",
+					)}
 				</p>
-				<p>Periodic backups run in the background as protection only.</p>
+				<p>{t("Periodic backups run in the background as protection only.")}</p>
 				<p>
-					Smart retention keeps recent backups densely and older ones sparsely.
+					{t(
+						"Smart retention keeps recent backups densely and older ones sparsely.",
+					)}
 				</p>
 			</InfoBlock>
 
 			<FormField
-				name="Enable periodic backups"
-				description="Automatically backup database at regular intervals"
+				name={t("Enable periodic backups")}
+				description={t("Automatically backup database at regular intervals")}
 			>
 				<ToggleInput
 					value={settings.periodicBackupEnabled}
@@ -38,8 +42,10 @@ export function BackgroundBackupSection() {
 			</FormField>
 
 			<FormField
-				name="Backup interval"
-				description="How often to create automatic backups (only when changes exist)"
+				name={t("Backup interval")}
+				description={t(
+					"How often to create automatic backups (only when changes exist)",
+				)}
 			>
 				<SelectInput
 					value={String(settings.backupIntervalMinutes)}
@@ -49,18 +55,45 @@ export function BackgroundBackupSection() {
 						})
 					}
 					options={[
-						{ value: "15", label: "Every 15 minutes" },
-						{ value: "30", label: "Every 30 minutes" },
-						{ value: "60", label: "Every hour" },
-						{ value: "120", label: "Every 2 hours" },
-						{ value: "240", label: "Every 4 hours" },
+						{
+							value: "15",
+							get label() {
+								return t("Every 15 minutes");
+							},
+						},
+						{
+							value: "30",
+							get label() {
+								return t("Every 30 minutes");
+							},
+						},
+						{
+							value: "60",
+							get label() {
+								return t("Every hour");
+							},
+						},
+						{
+							value: "120",
+							get label() {
+								return t("Every 2 hours");
+							},
+						},
+						{
+							value: "240",
+							get label() {
+								return t("Every 4 hours");
+							},
+						},
 					]}
 				/>
 			</FormField>
 
 			<FormField
-				name="Activity-triggered backup"
-				description="Create backup after completing a certain number of reviews"
+				name={t("Activity-triggered backup")}
+				description={t(
+					"Create backup after completing a certain number of reviews",
+				)}
 			>
 				<ToggleInput
 					value={settings.activityTriggeredBackup}
@@ -69,8 +102,10 @@ export function BackgroundBackupSection() {
 			</FormField>
 
 			<FormField
-				name="Reviews before backup"
-				description="Number of reviews after which to trigger an automatic backup"
+				name={t("Reviews before backup")}
+				description={t(
+					"Number of reviews after which to trigger an automatic backup",
+				)}
 			>
 				<TextInput
 					value={String(settings.reviewsBeforeBackup)}

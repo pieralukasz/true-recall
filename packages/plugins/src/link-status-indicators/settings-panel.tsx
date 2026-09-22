@@ -1,4 +1,5 @@
 import { FormField, ToggleInput } from "@true-recall/obsidian/components";
+import { t } from "@true-recall/obsidian/i18n";
 
 import type { PluginSettingsProps } from "../types";
 
@@ -9,8 +10,10 @@ export function LinkStatusSettingsPanel({
 	return (
 		<>
 			<FormField
-				name="Show in flashcard panel"
-				description="Display progress indicators next to links inside flashcard panel cards."
+				name={t("Show in flashcard panel")}
+				description={t(
+					"Display progress indicators next to links inside flashcard panel cards.",
+				)}
 			>
 				<ToggleInput
 					value={settings.showDonutsInPanel}
@@ -18,8 +21,10 @@ export function LinkStatusSettingsPanel({
 				/>
 			</FormField>
 			<FormField
-				name="Show during review"
-				description="Display progress indicators next to links during review sessions."
+				name={t("Show during review")}
+				description={t(
+					"Display progress indicators next to links during review sessions.",
+				)}
 			>
 				<ToggleInput
 					value={settings.showDonutsInReview}

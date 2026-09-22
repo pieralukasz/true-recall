@@ -1,6 +1,7 @@
 import { useEffect, useState } from "preact/hooks";
 
 import { FormCard, InfoBlock } from "@true-recall/obsidian/components";
+import { t } from "@true-recall/obsidian/i18n";
 
 import { useSettings } from "../../hooks/useSettings";
 import { StatusList } from "./StatusList";
@@ -27,62 +28,90 @@ export function StorageDiagnosticsSection() {
 	}, [plugin]);
 
 	return (
-		<FormCard title="Storage diagnostics" class="tr-setting-section--status">
+		<FormCard
+			title={t("Storage diagnostics")}
+			class="tr-setting-section--status"
+		>
 			<InfoBlock>
-				Read-only diagnostics for save/restore behavior in this session.
+				{t("Read-only diagnostics for save/restore behavior in this session.")}
 			</InfoBlock>
 			<StatusList
 				items={[
 					{
-						label: "Active database path",
+						get label() {
+							return t("Active database path");
+						},
 						value: fmtPath(diag.activeDatabasePath),
 						code: true,
 						wide: true,
 					},
 					{
-						label: "Dirty state",
+						get label() {
+							return t("Dirty state");
+						},
 						value: diag.isDirty ? "Yes" : "No",
 						tone: diag.isDirty ? "default" : "positive",
 					},
 					{
-						label: "Save timer active",
+						get label() {
+							return t("Save timer active");
+						},
 						value: diag.saveTimerActive ? "Yes" : "No",
 						tone: diag.saveTimerActive ? "positive" : "muted",
 					},
 					{
-						label: "Flush in progress",
+						get label() {
+							return t("Flush in progress");
+						},
 						value: diag.flushInProgress ? "Yes" : "No",
 						tone: diag.flushInProgress ? "default" : "muted",
 					},
-					{ label: "Last flush started", value: fmt(diag.lastFlushStartedAt) },
 					{
-						label: "Last flush success",
+						get label() {
+							return t("Last flush started");
+						},
+						value: fmt(diag.lastFlushStartedAt),
+					},
+					{
+						get label() {
+							return t("Last flush success");
+						},
 						value: fmt(diag.lastFlushSucceededAt),
 					},
 					{
-						label: "Last flush failure",
+						get label() {
+							return t("Last flush failure");
+						},
 						value: fmt(diag.lastFlushFailedAt),
 						tone: diag.lastFlushFailedAt ? "default" : "muted",
 					},
 					{
-						label: "Last flush error",
+						get label() {
+							return t("Last flush error");
+						},
 						value: diag.lastFlushError ?? "N/A",
 						tone: diag.lastFlushError ? "default" : "muted",
 					},
 					{
-						label: "Startup snapshot path",
+						get label() {
+							return t("Startup snapshot path");
+						},
 						value: fmtPath(diag.startupSnapshotPath),
 						code: true,
 						wide: true,
 					},
 					{
-						label: "Last auto-recovery backup path",
+						get label() {
+							return t("Last auto-recovery backup path");
+						},
 						value: fmtPath(diag.lastAutoRecoveryPath),
 						code: true,
 						wide: true,
 					},
 					{
-						label: "Last auto-recovery at",
+						get label() {
+							return t("Last auto-recovery at");
+						},
 						value: fmt(diag.lastAutoRecoveryAt),
 					},
 				]}

@@ -20,16 +20,37 @@ import {
 	SliderInput,
 	TextInput,
 } from "@true-recall/obsidian/components";
+import { t } from "@true-recall/obsidian/i18n";
 
 import { beginAITrial } from "../../features/onboarding/ai-onboarding";
 import { useLMStudioModels } from "../hooks/useLMStudioModels";
 import { useSettings } from "../hooks/useSettings";
 
 const PROVIDER_OPTIONS: Array<{ value: string; label: string }> = [
-	{ value: "pro", label: "True Recall Pro (Recommended)" },
-	{ value: "openrouter", label: "OpenRouter (BYOK)" },
-	{ value: "lmstudio", label: "LM Studio (Local)" },
-	{ value: "custom", label: "Custom Provider (Self-hosted)" },
+	{
+		value: "pro",
+		get label() {
+			return t("True Recall Pro (Recommended)");
+		},
+	},
+	{
+		value: "openrouter",
+		get label() {
+			return t("OpenRouter (BYOK)");
+		},
+	},
+	{
+		value: "lmstudio",
+		get label() {
+			return t("LM Studio (Local)");
+		},
+	},
+	{
+		value: "custom",
+		get label() {
+			return t("Custom Provider (Self-hosted)");
+		},
+	},
 ];
 
 const MODEL_OPTIONS = [
@@ -37,11 +58,21 @@ const MODEL_OPTIONS = [
 		value: m.id,
 		label: `${m.name} (${m.provider})${m.recommended ? " — Recommended" : ""}`,
 	})),
-	{ value: CUSTOM_MODEL_ID, label: "Custom..." },
+	{
+		value: CUSTOM_MODEL_ID,
+		get label() {
+			return t("Custom...");
+		},
+	},
 ];
 
 const GRADING_MODEL_OPTIONS = [
-	{ value: "", label: "Same as main model" },
+	{
+		value: "",
+		get label() {
+			return t("Same as main model");
+		},
+	},
 	...BYOK_MODELS.map((m) => ({
 		value: m.id,
 		label: `${m.name} (${m.provider})`,
@@ -117,10 +148,10 @@ export function AIProviderSection() {
 	}, [settings.proKey]);
 
 	return (
-		<FormCard title="AI provider">
+		<FormCard title={t("AI provider")}>
 			<FormField
-				name="Provider"
-				description="Choose where AI requests are routed"
+				name={t("Provider")}
+				description={t("Choose where AI requests are routed")}
 			>
 				<SelectInput
 					value={settings.providerType}
@@ -134,28 +165,33 @@ export function AIProviderSection() {
 					<FormField
 						name={
 							settings.proKey
-								? "Your first learning session"
-								: "Try AI for free"
+								? t("Your first learning session")
+								: t("Try AI for free")
 						}
-						description="Connect your account and try generation, image cards and answer feedback. No payment card needed."
+						description={t(
+							"Connect your account and try generation, image cards and answer feedback. No payment card needed.",
+						)}
 					>
 						<Clickable
 							class="mod-cta"
 							onClick={() => void beginAITrial(plugin)}
 						>
-							{settings.proKey ? "Open learning guide" : "Try AI for free"}
+							{settings.proKey
+								? t("Open learning guide")
+								: t("Try AI for free")}
 						</Clickable>
 					</FormField>
-					<InfoBlock title="Zero setup, optimized results">
-						Optimized prompts and model selection managed server-side. AI budget
-						included with your subscription.
+					<InfoBlock title={t("Zero setup, optimized results")}>
+						{t(
+							"Optimized prompts and model selection managed server-side. AI budget included with your subscription.",
+						)}
 					</InfoBlock>
 
 					<FormField
-						name="Pro Key"
+						name={t("Pro Key")}
 						description={
 							<span>
-								Get your key at{" "}
+								{t("Get your key at")}{" "}
 								<a
 									href={withPluginUtm(
 										TRUERECALL_DASHBOARD_URL,
@@ -176,17 +212,21 @@ export function AIProviderSection() {
 								})
 							}
 							type="password"
-							placeholder="Paste key from dashboard"
+							placeholder={t("Paste key from dashboard")}
 							class="tr-control"
 						/>
 					</FormField>
-					{keyStatus === "checking" && <InfoBlock>Verifying key…</InfoBlock>}
+					{keyStatus === "checking" && (
+						<InfoBlock>{t("Verifying key…")}</InfoBlock>
+					)}
 					{keyStatus === "valid" && (
-						<InfoBlock>Active — AI routed via True Recall servers.</InfoBlock>
+						<InfoBlock>
+							{t("Active — AI routed via True Recall servers.")}
+						</InfoBlock>
 					)}
 					{keyStatus === "invalid" && (
 						<InfoBlock class="ep:text-obs-error">
-							Invalid key — check your key on the{" "}
+							{t("Invalid key — check your key on the")}{" "}
 							<a
 								href={withPluginUtm(
 									TRUERECALL_DASHBOARD_URL,
@@ -194,15 +234,16 @@ export function AIProviderSection() {
 								)}
 								class="ep:text-obs-accent"
 							>
-								dashboard
+								{t("dashboard")}
 							</a>
 							.
 						</InfoBlock>
 					)}
 					{keyStatus === "error" && (
 						<InfoBlock>
-							Could not verify key — check your internet connection and try
-							again.
+							{t(
+								"Could not verify key — check your internet connection and try again.",
+							)}
 						</InfoBlock>
 					)}
 				</>
@@ -210,24 +251,28 @@ export function AIProviderSection() {
 
 			{settings.providerType === "openrouter" && (
 				<>
-					<InfoBlock title="Bring your own API key">
-						You pay OpenRouter directly per token. Full control over model
-						selection.
+					<InfoBlock title={t("Bring your own API key")}>
+						{t(
+							"You pay OpenRouter directly per token. Full control over model selection.",
+						)}
 					</InfoBlock>
 
-					<FormField name="OpenRouter API key" description="Your own API key.">
+					<FormField
+						name={t("OpenRouter API key")}
+						description={t("Your own API key.")}
+					>
 						<TextInput
 							value={settings.openRouterApiKey}
 							onChange={(v) => void save({ openRouterApiKey: v })}
 							type="password"
-							placeholder="Enter API key"
+							placeholder={t("Enter API key")}
 							class="tr-control"
 						/>
 					</FormField>
 
 					<FormField
-						name="Model"
-						description="Reasoning model used for flashcard generation."
+						name={t("Model")}
+						description={t("Reasoning model used for flashcard generation.")}
 					>
 						<SelectInput
 							value={currentModel}
@@ -239,8 +284,8 @@ export function AIProviderSection() {
 					</FormField>
 					{currentModel === CUSTOM_MODEL_ID && (
 						<FormField
-							name="Custom Model ID"
-							description="Enter any OpenRouter-compatible model ID."
+							name={t("Custom Model ID")}
+							description={t("Enter any OpenRouter-compatible model ID.")}
 						>
 							<TextInput
 								value={settings.customAiModel ?? ""}
@@ -252,8 +297,10 @@ export function AIProviderSection() {
 					)}
 
 					<FormField
-						name="Grading model"
-						description="Model used to grade typed answers during review. Pick a stronger model here without changing the generation model."
+						name={t("Grading model")}
+						description={t(
+							"Model used to grade typed answers during review. Pick a stronger model here without changing the generation model.",
+						)}
 					>
 						<SelectInput
 							value={settings.gradingModel}
@@ -263,20 +310,22 @@ export function AIProviderSection() {
 					</FormField>
 
 					<FormField
-						name="Temperature"
+						name={t("Temperature")}
 						description={
 							<span>
-								Controls randomness.{" "}
+								{t("Controls randomness.")}{" "}
 								{settings.aiTemperature != null ? (
 									<Clickable
 										class="ep:text-obs-accent ep:text-ui-smaller"
 										onClick={() => void save({ aiTemperature: undefined })}
 									>
-										Reset to model default ({modelDefault})
+										{t("Reset to model default (")}
+										{modelDefault})
 									</Clickable>
 								) : (
 									<span class="ep:text-obs-muted">
-										Using model default ({modelDefault})
+										{t("Using model default (")}
+										{modelDefault})
 									</span>
 								)}
 							</span>
@@ -296,14 +345,19 @@ export function AIProviderSection() {
 
 			{settings.providerType === "lmstudio" && (
 				<>
-					<InfoBlock title="Run models locally with LM Studio">
-						Models are auto-discovered from your running LM Studio server.{" "}
+					<InfoBlock title={t("Run models locally with LM Studio")}>
+						{t(
+							"Models are auto-discovered from your running LM Studio server.",
+						)}{" "}
 						<a href="https://lmstudio.ai" class="ep:text-obs-accent">
-							Download LM Studio
+							{t("Download LM Studio")}
 						</a>
 					</InfoBlock>
 
-					<FormField name="Base URL" description="LM Studio server endpoint">
+					<FormField
+						name={t("Base URL")}
+						description={t("LM Studio server endpoint")}
+					>
 						<TextInput
 							value={settings.lmStudioBaseUrl || DEFAULT_LMSTUDIO_BASE_URL}
 							onChange={(v) => void save({ lmStudioBaseUrl: v })}
@@ -313,16 +367,18 @@ export function AIProviderSection() {
 					</FormField>
 
 					<FormField
-						name="Default Model"
-						description="Fallback model used when a plugin-specific LM Studio model is not set"
+						name={t("Default Model")}
+						description={t(
+							"Fallback model used when a plugin-specific LM Studio model is not set",
+						)}
 					>
 						{lmState.status === "loading" && (
-							<InfoBlock>Discovering models…</InfoBlock>
+							<InfoBlock>{t("Discovering models…")}</InfoBlock>
 						)}
 						{lmState.status === "error" && (
 							<>
 								<InfoBlock class="ep:text-obs-error">
-									Can't connect to LM Studio — is the server running?
+									{t("Can't connect to LM Studio — is the server running?")}
 								</InfoBlock>
 								<TextInput
 									value={settings.lmStudioModel}
@@ -346,14 +402,14 @@ export function AIProviderSection() {
 									class="ep:text-obs-accent ep:text-ui-smaller ep:mt-1"
 									onClick={lmState.refetch}
 								>
-									Refresh models
+									{t("Refresh models")}
 								</Clickable>
 							</>
 						)}
 						{lmState.status === "ready" && lmState.models.length === 0 && (
 							<>
 								<InfoBlock>
-									No models found — load a model in LM Studio first.
+									{t("No models found — load a model in LM Studio first.")}
 								</InfoBlock>
 								<TextInput
 									value={settings.lmStudioModel}
@@ -366,15 +422,22 @@ export function AIProviderSection() {
 					</FormField>
 
 					<FormField
-						name="Grading model"
-						description="Optional LM Studio model override for grading typed answers during review"
+						name={t("Grading model")}
+						description={t(
+							"Optional LM Studio model override for grading typed answers during review",
+						)}
 					>
 						{lmState.status === "ready" && lmState.models.length > 0 ? (
 							<SelectInput
 								value={settings.lmStudioGradingModel}
 								onChange={(v) => void save({ lmStudioGradingModel: v })}
 								options={[
-									{ value: "", label: "Same as default model" },
+									{
+										value: "",
+										get label() {
+											return t("Same as default model");
+										},
+									},
 									...lmState.models.map((id) => ({ value: id, label: id })),
 								]}
 							/>
@@ -382,15 +445,17 @@ export function AIProviderSection() {
 							<TextInput
 								value={settings.lmStudioGradingModel}
 								onChange={(v) => void save({ lmStudioGradingModel: v })}
-								placeholder="Leave empty to use the default model"
+								placeholder={t("Leave empty to use the default model")}
 								class="tr-control"
 							/>
 						)}
 					</FormField>
 
 					<FormField
-						name="API Key"
-						description="Optional — only needed if you enabled authentication in LM Studio"
+						name={t("API Key")}
+						description={t(
+							"Optional — only needed if you enabled authentication in LM Studio",
+						)}
 					>
 						<TextInput
 							value={settings.lmStudioApiKey ?? ""}
@@ -400,12 +465,15 @@ export function AIProviderSection() {
 								})
 							}
 							type="password"
-							placeholder="Leave empty if not required"
+							placeholder={t("Leave empty if not required")}
 							class="tr-control"
 						/>
 					</FormField>
 
-					<FormField name="Temperature" description="Controls randomness (0–2)">
+					<FormField
+						name={t("Temperature")}
+						description={t("Controls randomness (0–2)")}
+					>
 						<SliderInput
 							value={settings.lmStudioTemperature ?? 0.7}
 							onChange={(v) => void save({ lmStudioTemperature: v })}
@@ -420,14 +488,15 @@ export function AIProviderSection() {
 
 			{settings.providerType === "custom" && (
 				<>
-					<InfoBlock title="Self-hosted / local models">
-						Connect to Ollama, LM Studio, vLLM, or any OpenAI-compatible
-						endpoint.
+					<InfoBlock title={t("Self-hosted / local models")}>
+						{t(
+							"Connect to Ollama, LM Studio, vLLM, or any OpenAI-compatible endpoint.",
+						)}
 					</InfoBlock>
 
 					<FormField
-						name="Base URL"
-						description="OpenAI-compatible API endpoint"
+						name={t("Base URL")}
+						description={t("OpenAI-compatible API endpoint")}
 					>
 						<TextInput
 							value={settings.customBaseUrl || DEFAULT_CUSTOM_BASE_URL}
@@ -438,8 +507,8 @@ export function AIProviderSection() {
 					</FormField>
 
 					<FormField
-						name="Model Name"
-						description="The model identifier (e.g. llama3, mistral)"
+						name={t("Model Name")}
+						description={t("The model identifier (e.g. llama3, mistral)")}
 					>
 						<TextInput
 							value={settings.customModel}
@@ -450,8 +519,10 @@ export function AIProviderSection() {
 					</FormField>
 
 					<FormField
-						name="API Key"
-						description="Optional — many local setups don't need authentication"
+						name={t("API Key")}
+						description={t(
+							"Optional — many local setups don't need authentication",
+						)}
 					>
 						<TextInput
 							value={settings.customApiKey ?? ""}
@@ -461,12 +532,15 @@ export function AIProviderSection() {
 								})
 							}
 							type="password"
-							placeholder="Leave empty if not required"
+							placeholder={t("Leave empty if not required")}
 							class="tr-control"
 						/>
 					</FormField>
 
-					<FormField name="Temperature" description="Controls randomness (0–2)">
+					<FormField
+						name={t("Temperature")}
+						description={t("Controls randomness (0–2)")}
+					>
 						<SliderInput
 							value={settings.customTemperature ?? 0.7}
 							onChange={(v) => void save({ customTemperature: v })}

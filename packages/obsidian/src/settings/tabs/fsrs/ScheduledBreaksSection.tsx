@@ -9,6 +9,7 @@ import {
 	FormField,
 	InfoBlock,
 } from "@true-recall/obsidian/components";
+import { t } from "@true-recall/obsidian/i18n";
 import { useApp } from "@true-recall/obsidian/preact";
 
 interface ScheduledBreaksSectionProps {
@@ -40,15 +41,23 @@ export function ScheduledBreaksSection({
 			"@true-recall/obsidian/modals/shared/TextInputModal"
 		);
 		const startDate = await promptText(app, {
-			title: "Add scheduled break",
-			label: "Start date (YYYY-MM-DD)",
+			get title() {
+				return t("Add scheduled break");
+			},
+			get label() {
+				return t("Start date (YYYY-MM-DD)");
+			},
 			placeholder: "YYYY-MM-DD",
 		});
 		if (!startDate) return;
 
 		const endDate = await promptText(app, {
-			title: "Add scheduled break",
-			label: "End date (YYYY-MM-DD)",
+			get title() {
+				return t("Add scheduled break");
+			},
+			get label() {
+				return t("End date (YYYY-MM-DD)");
+			},
 			placeholder: "YYYY-MM-DD",
 		});
 		if (!endDate) return;
@@ -69,11 +78,12 @@ export function ScheduledBreaksSection({
 	}, [app, breaks, save, onRefresh]);
 
 	return (
-		<FormCard title="Scheduled breaks">
+		<FormCard title={t("Scheduled breaks")}>
 			<InfoBlock>
 				<p>
-					Schedule breaks (vacations) to redistribute reviews and prevent
-					backlog accumulation.
+					{t(
+						"Schedule breaks (vacations) to redistribute reviews and prevent backlog accumulation.",
+					)}
 				</p>
 			</InfoBlock>
 
@@ -85,14 +95,15 @@ export function ScheduledBreaksSection({
 							class="ep:flex ep:items-center ep:justify-between ep:p-2 ep:bg-obs-background-modifier-form ep:rounded-lg"
 						>
 							<span>
-								{brk.startDate} to {brk.endDate}
+								{brk.startDate} {t("to")}
+								{brk.endDate}
 							</span>
 							<Clickable
 								class="ep:text-ui-small"
 								stopPropagation={false}
 								onClick={() => void handleDeleteBreak(index)}
 							>
-								Delete
+								{t("Delete")}
 							</Clickable>
 						</div>
 					))}
@@ -100,11 +111,11 @@ export function ScheduledBreaksSection({
 			)}
 
 			<FormField
-				name="Add scheduled break"
-				description="Schedule a break period"
+				name={t("Add scheduled break")}
+				description={t("Schedule a break period")}
 			>
 				<ActionButton
-					label="Add break..."
+					label={t("Add break...")}
 					variant="secondary"
 					onClick={() => void handleAddBreak()}
 				/>

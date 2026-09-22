@@ -190,21 +190,20 @@ export class CardQueryActions {
 	// ── Sibling / relationship queries ────────────────────────
 
 	getCardByReverseOf(originalCardId: string): FSRSCardData | undefined {
-		const original = this.db.get<{
-			note_id: string;
-			template_ord: number;
-		}>(
-			`SELECT note_id, template_ord FROM cards WHERE id = ? AND deleted_at IS NULL`,
-			[originalCardId],
+		const original = this.get(originalCardId);
+		if (
+			!original?.noteId ||
+			(original.cardType !== "basic" && original.cardType !== "reversed")
+		)
+			return undefined;
+		// Other templates of a cloze or image note are independent cards, not reverses.
+		return this.getCardsByNoteId(original.noteId).find(
+			(candidate) =>
+				candidate.id !== original.id &&
+				(original.cardType === "basic"
+					? candidate.cardType === "reversed"
+					: candidate.cardType === "basic"),
 		);
-		if (!original) return undefined;
-		const row = this.db.get<CardRow>(
-			`SELECT ${CARD_SELECT} ${CARD_FROM}
-                 WHERE c.note_id = ? AND c.template_ord != ? AND c.deleted_at IS NULL LIMIT 1`,
-			[original.note_id, original.template_ord],
-		);
-		if (!row) return undefined;
-		return mapRow(row);
 	}
 
 	getCardsByNoteId(noteId: string): FSRSCardData[] {

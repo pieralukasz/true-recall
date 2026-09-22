@@ -1,6 +1,8 @@
 import { TRUERECALL_PRO_GUIDE_URL } from "@true-recall/core/constants";
 import { withPluginUtm } from "@true-recall/core/utils";
 
+import { t } from "@true-recall/obsidian/i18n";
+
 interface ProFeatureNoticeProps {
 	message: string;
 }
@@ -17,7 +19,7 @@ export function ProFeatureNotice({ message }: ProFeatureNoticeProps) {
 				target="_blank"
 				rel="noreferrer"
 			>
-				Learn what Pro includes
+				{t("Learn what Pro includes")}
 			</a>
 		</span>
 	);

@@ -5,6 +5,7 @@ import {
 	FormField,
 	TextInput,
 } from "@true-recall/obsidian/components";
+import { t } from "@true-recall/obsidian/i18n";
 
 interface DailyLimitsSectionProps {
 	preset: FSRSPreset;
@@ -16,10 +17,10 @@ export function DailyLimitsSection({
 	updatePreset,
 }: DailyLimitsSectionProps) {
 	return (
-		<FormCard title="Daily limits">
+		<FormCard title={t("Daily limits")}>
 			<FormField
-				name="New cards per day"
-				description="Maximum number of new cards introduced per day"
+				name={t("New cards per day")}
+				description={t("Maximum number of new cards introduced per day")}
 			>
 				<TextInput
 					value={String(preset.newCardsPerDay)}
@@ -34,8 +35,8 @@ export function DailyLimitsSection({
 			</FormField>
 
 			<FormField
-				name="Reviews per day"
-				description="Maximum number of reviews per day (0 = unlimited)"
+				name={t("Reviews per day")}
+				description={t("Maximum number of reviews per day (0 = unlimited)")}
 			>
 				<TextInput
 					value={String(preset.reviewsPerDay)}

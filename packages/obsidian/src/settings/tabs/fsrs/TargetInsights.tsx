@@ -1,5 +1,7 @@
 import type { WorkloadDecision } from "@true-recall/core/metrics/fsrs-tools";
 
+import { t } from "@true-recall/obsidian/i18n";
+
 import {
 	buildTargetReferences,
 	describeDrift,
@@ -18,7 +20,8 @@ export function TargetInsights({ decision, target }: TargetInsightsProps) {
 			<div class="tr-target-insights__references">
 				{buildTargetReferences(decision).map((ref) => (
 					<span key={ref.label} title={ref.hint}>
-						{ref.label}: {ref.value}/day
+						{ref.label}: {ref.value}
+						{t("/day")}
 					</span>
 				))}
 			</div>
