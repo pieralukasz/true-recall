@@ -432,6 +432,7 @@
 
 	.true-recall-io-shape.is-revealed-passive {
 		fill: transparent;
+		fill-opacity: 0;
 		stroke: var(--text-faint);
 		stroke-width: 0.002;
 		opacity: 0.7;
@@ -439,6 +440,7 @@
 
 	.true-recall-io-shape.is-revealed-active {
 		fill: transparent;
+		fill-opacity: 0;
 		stroke: var(--color-green);
 		stroke-width: 0.003;
 	}
