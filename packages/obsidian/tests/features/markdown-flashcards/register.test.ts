@@ -44,13 +44,19 @@ describe("Markdown vault integration", () => {
 	let content: string;
 	let file: TFile;
 	let failWrite: boolean;
+	let controller: ReturnType<typeof registerMarkdownFlashcards> | undefined;
+	let beforeWrite: (() => void) | undefined;
+	let afterWrite: (() => void) | undefined;
 	let process: ReturnType<typeof vi.fn>;
 	let events: DomainEventBus;
 	let cleanup: (() => void)[];
 	let changes: Map<string, (file: TFile) => void>;
 	let settings: { markdownFlashcards: typeof DEFAULT_MARKDOWN_FLASHCARDS };
 	const settle = async () => {
-		await vi.advanceTimersByTimeAsync(2000);
+		for (let i = 0; i < 3; i++) {
+			await vi.advanceTimersByTimeAsync(1000);
+			await controller?.whenIdle();
+		}
 	};
 	beforeEach(async () => {
 		vi.useFakeTimers();
@@ -62,6 +68,9 @@ describe("Markdown vault integration", () => {
 		file = Object.assign(new TFile(), { path: "Cards.md", extension: "md" });
 		content = "#flashcards\n\nQ1\n??\nA1\n\nQ2\n???\nA2\n";
 		failWrite = false;
+		controller = undefined;
+		beforeWrite = undefined;
+		afterWrite = undefined;
 		changes = new Map();
 		cleanup = [];
 		settings = {
@@ -73,12 +82,18 @@ describe("Markdown vault integration", () => {
 		};
 		process = vi.fn(async (_file: TFile, fn: (text: string) => string) => {
 			if (failWrite) throw new Error("Disk full");
+			const before = beforeWrite;
+			beforeWrite = undefined;
+			before?.();
 			const next = fn(content);
 			if (next !== content) {
 				content = next;
 				changes.get("modify")?.(file);
 			}
-			return content;
+			const after = afterWrite;
+			afterWrite = undefined;
+			after?.();
+			return next;
 		});
 	});
 	afterEach(() => {
@@ -87,7 +102,7 @@ describe("Markdown vault integration", () => {
 		vi.useRealTimers();
 	});
 	const start = () => {
-		registerMarkdownFlashcards({
+		controller = registerMarkdownFlashcards({
 			app: {
 				vault: {
 					getAbstractFileByPath: (path: string) =>
@@ -104,6 +119,7 @@ describe("Markdown vault integration", () => {
 			},
 			settings,
 			cardStore: {
+				getDeviceId: () => "test-device",
 				cards: ctx.cards,
 				notes: ctx.notes,
 				transaction: (fn: () => unknown) => ctx.db.transaction(fn),
@@ -193,6 +209,175 @@ describe("Markdown vault integration", () => {
 		await settle();
 		expect(ctx.cards.keys()).toEqual(ids);
 	});
+	const editPanel = (id: string, front: string, back: string) => {
+		ctx.cards.updateCardContent(id, front, back);
+		events.emit("card:updated", {
+			cardId: id,
+			changes: { question: true, answer: true },
+		});
+	};
+	const firstCard = () => {
+		const card = ctx.cards.getAll().find((card) => card.question === "Q1");
+		if (!card) throw new Error("Missing first card");
+		return card;
+	};
+	it.each([
+		false,
+		true,
+	])("syncs panel edits and undo with scheduling export %s, preserving IDs and progress", async (storeScheduling) => {
+		settings.markdownFlashcards.storeScheduling = storeScheduling;
+		start();
+		await settle();
+		const original = firstCard();
+		const ids = ctx.cards.keys();
+		ctx.cards.set(original.id, { ...original, reps: 12, stability: 34 });
+		editPanel(original.id, "Panel question", "Panel answer");
+		await settle();
+		expect(content).toContain("Panel question\n??\nPanel answer");
+		expect(ctx.cards.get(original.id)).toMatchObject({
+			reps: 12,
+			stability: 34,
+		});
+		expect(ctx.cards.keys()).toEqual(ids);
+		editPanel(original.id, "Q1", "A1");
+		await settle();
+		expect(content).toContain("Q1\n??\nA1");
+		expect(ctx.cards.get(original.id)?.reps).toBe(12);
+		expect(mocks.error).not.toHaveBeenCalled();
+	});
+	it("writes edits of the reversed sibling in source-note orientation", async () => {
+		start();
+		await settle();
+		const reversed = ctx.cards.getAll().find((card) => card.templateOrd === 1);
+		if (!reversed) throw new Error("Missing reversed card");
+		const ids = ctx.cards.keys();
+		editPanel(reversed.id, "New back", "New front");
+		await settle();
+		expect(content).toContain("New front\n???\nNew back");
+		expect(ctx.cards.get(reversed.id)).toMatchObject({
+			question: "New back",
+			answer: "New front",
+		});
+		expect(ctx.cards.keys()).toEqual(ids);
+	});
+	it("combines changes to different fields and preserves unrelated prose and other cards", async () => {
+		content = `# Heading\n\n${content}\nOther prose.\n`;
+		start();
+		await settle();
+		const original = firstCard();
+		const other = content.slice(content.indexOf("Q2"));
+		content = content.replace("\nA1\n", "\nFile answer\n");
+		changes.get("modify")?.(file);
+		editPanel(original.id, "Panel question", "A1");
+		await settle();
+		expect(content).toContain("Panel question\n??\nFile answer");
+		expect(content).toContain("# Heading");
+		expect(content.slice(content.indexOf("Q2"))).toBe(other);
+		expect(ctx.cards.get(original.id)).toMatchObject({
+			question: "Panel question",
+			answer: "File answer",
+		});
+		expect(mocks.error).not.toHaveBeenCalled();
+	});
+	it("keeps conflicting versions across restart and resumes after matching the field", async () => {
+		start();
+		await settle();
+		const original = firstCard();
+		content = content.replace("Q1", "File question");
+		changes.get("modify")?.(file);
+		editPanel(original.id, "Panel question", "A1");
+		await settle();
+		expect(content).toContain("File question");
+		expect(ctx.cards.get(original.id)?.question).toBe("Panel question");
+		expect(mocks.error).toHaveBeenCalledWith(
+			expect.stringContaining("Sync conflict in question"),
+		);
+		for (const fn of cleanup.reverse()) fn();
+		cleanup = [];
+		start();
+		await settle();
+		expect(content).toContain("File question");
+		expect(ctx.cards.get(original.id)?.question).toBe("Panel question");
+		editPanel(original.id, "File question", "A1");
+		await settle();
+		content = content.replace("File question", "Resolved question");
+		changes.get("modify")?.(file);
+		await settle();
+		expect(ctx.cards.get(original.id)?.question).toBe("Resolved question");
+	});
+	it("retains panel edits after a failed file write and retries safely on restart", async () => {
+		start();
+		await settle();
+		const original = firstCard();
+		const previous = content;
+		failWrite = true;
+		editPanel(original.id, "Panel question", "A1");
+		await settle();
+		expect(content).toBe(previous);
+		expect(ctx.cards.get(original.id)?.question).toBe("Panel question");
+		for (const fn of cleanup.reverse()) fn();
+		cleanup = [];
+		failWrite = false;
+		start();
+		await settle();
+		expect(content).toContain("Panel question\n??\nA1");
+		expect(ctx.cards.get(original.id)?.question).toBe("Panel question");
+	});
+	it("retries when the file changes between planning and its atomic write", async () => {
+		start();
+		await settle();
+		const original = firstCard();
+		beforeWrite = () => {
+			content = content.replace("\nA1\n", "\nExternal answer\n");
+		};
+		editPanel(original.id, "Panel question", "A1");
+		await settle();
+		expect(content).toContain("Panel question\n??\nExternal answer");
+		expect(ctx.cards.get(original.id)).toMatchObject({
+			question: "Panel question",
+			answer: "External answer",
+		});
+	});
+	it("does not import stale content over a panel edit made during the file write", async () => {
+		start();
+		await settle();
+		const original = firstCard();
+		afterWrite = () => editPanel(original.id, "Newer question", "A1");
+		editPanel(original.id, "First question", "A1");
+		await settle();
+		expect(ctx.cards.get(original.id)?.question).toBe("Newer question");
+		expect(content).toContain("First question");
+		expect(mocks.error).toHaveBeenCalledWith(
+			expect.stringContaining("Sync conflict"),
+		);
+	});
+	it("detects raw UI note changes that do not update card timestamps", async () => {
+		settings.markdownFlashcards.storeScheduling = false;
+		start();
+		await settle();
+		const original = firstCard();
+		vi.advanceTimersByTime(1000);
+		ctx.cards.updateCardContent(original.id, "Bulk edit", "A1");
+		mocks.changed?.();
+		await settle();
+		expect(content).toContain("Bulk edit\n??\nA1");
+	});
+	it("keeps unrepresentable panel content instead of damaging card boundaries", async () => {
+		start();
+		await settle();
+		const original = firstCard();
+		const previous = content;
+		editPanel(original.id, "Q1", "First paragraph\n\nSecond paragraph");
+		await settle();
+		expect(content).toBe(previous);
+		expect(ctx.cards.get(original.id)?.answer).toBe(
+			"First paragraph\n\nSecond paragraph",
+		);
+		expect(mocks.error).toHaveBeenCalledWith(
+			expect.stringContaining("panel edit"),
+		);
+	});
+
 	it("ignores code examples and tag prefixes and accepts frontmatter tags", () => {
 		expect(isMarkdownFlashcardNote("```\n#flashcards\n```", "flashcards")).toBe(
 			false,

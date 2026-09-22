@@ -1,5 +1,6 @@
 import { parseYaml, type TAbstractFile, TFile } from "obsidian";
 
+import { writeContent } from "@true-recall/core/flashcard/markdown/content-sync";
 import {
 	hasInlineTag,
 	parseMarkdownCards,
@@ -42,9 +43,12 @@ export function isMarkdownFlashcardNote(text: string, tag: string): boolean {
 }
 
 /** Serializes file writes and reads fresh content in Vault.process, including external-editor changes. */
-export function registerMarkdownFlashcards(plugin: TrueRecallPlugin): void {
+export function registerMarkdownFlashcards(plugin: TrueRecallPlugin): {
+	whenIdle: () => Promise<void>;
+} {
 	const { vault } = plugin.app;
 	const service = new MarkdownCardSyncService(plugin.cardStore);
+	const deviceId = plugin.cardStore.getDeviceId();
 	const sources = plugin.flashcardManager.getSourceNoteService();
 	const timers = new Map<TFile, ReturnType<typeof setTimeout>>();
 	const lastError = new Map<TFile, string>();
@@ -84,32 +88,41 @@ export function registerMarkdownFlashcards(plugin: TrueRecallPlugin): void {
 			);
 		if (!active()) return;
 		const latest = await vault.read(file);
-		const needsIds = parseMarkdownCards(latest, config).some(
-			(card) => !card.marker,
+
+		if (!isMarkdownFlashcardNote(latest, config.tag)) return;
+		const originalCards = parseMarkdownCards(latest, config);
+		service.validateOwnership(
+			originalCards.filter((card) => card.marker),
+			sourceUid,
 		);
-		const saved = needsIds
-			? await vault.process(file, (content) => {
-					if (!active() || !isMarkdownFlashcardNote(content, config.tag))
-						return content;
-					const cards = parseMarkdownCards(content, config);
-					const identified = cards.map((card) => ({
-						...card,
-						marker: card.marker ?? { v: 1 as const, id: crypto.randomUUID() },
-					}));
-					service.validateOwnership(identified, sourceUid);
-					return writeMarkers(content, cards, (card) => {
-						const marker = identified[cards.indexOf(card)]?.marker;
-						if (!marker) throw new Error("Missing Markdown card ID");
-						return marker;
-					});
-				})
-			: latest;
-		if (!active() || !isMarkdownFlashcardNote(saved, config.tag)) return;
-		// If an external edit raced the saved marker write, process the newer note on the next event.
-		if ((await vault.read(file)) !== saved) {
+		const { plans, revision } = await service.planContent(
+			originalCards,
+			sourceUid,
+			deviceId,
+		);
+		const prepared = writeContent(latest, plans, config);
+		const unchanged = () =>
+			active() && service.contentRevision(sourceUid) === revision;
+		if (!unchanged()) {
 			enqueue(file);
 			return;
 		}
+		let accepted = true;
+		const saved =
+			prepared === latest
+				? latest
+				: await vault.process(file, (content) => {
+						if (content !== latest || !unchanged()) {
+							accepted = false;
+							return content;
+						}
+						return prepared;
+					});
+		if (!accepted || (await vault.read(file)) !== saved || !unchanged()) {
+			enqueue(file);
+			return;
+		}
+
 		const cards = parseMarkdownCards(saved, config);
 		importing = true;
 		try {
@@ -122,16 +135,32 @@ export function registerMarkdownFlashcards(plugin: TrueRecallPlugin): void {
 		} finally {
 			importing = false;
 		}
-		if (config.storeScheduling && active()) {
+
+		// Advance the merge baseline only after BOTH the file and SQLite contain the merged fields.
+		if (active()) {
+			const baselines = new Map(
+				cards.map((card, index) => [card.marker?.id, plans[index]?.base]),
+			);
 			const snapshot = writeMarkers(saved, cards, (card) => {
 				if (!card.marker) throw new Error("Missing Markdown card ID");
-				return service.snapshot(card.marker, card.reversed);
+				const base = baselines.get(card.marker.id);
+				if (!base) throw new Error("Missing content baseline");
+				const marker = {
+					...card.marker,
+					bases: { ...card.marker.bases, [deviceId]: base },
+				};
+				return config.storeScheduling
+					? service.snapshot(marker, card.reversed)
+					: marker;
 			});
-			if (snapshot !== saved)
-				await vault.process(file, (content) =>
+			if (snapshot !== saved) {
+				const written = await vault.process(file, (content) =>
 					content === saved && active() ? snapshot : content,
 				);
+				if (written !== snapshot) enqueue(file);
+			}
 		}
+
 		lastError.delete(file);
 	};
 	const enqueue = (file: TFile) => {
@@ -169,7 +198,7 @@ export function registerMarkdownFlashcards(plugin: TrueRecallPlugin): void {
 		}),
 	);
 	const exportCards = (ids: string[]) => {
-		if (importing || !active() || !settings().storeScheduling) return;
+		if (importing || !active()) return;
 		const paths = new Set<string>();
 		for (const id of ids) {
 			const card = plugin.cardStore.cards.get(id);
@@ -183,9 +212,9 @@ export function registerMarkdownFlashcards(plugin: TrueRecallPlugin): void {
 		}
 	};
 	plugin.register(
-		plugin.coreApp.events.on("card:reviewed", ({ cardId }) =>
-			exportCards([cardId]),
-		),
+		plugin.coreApp.events.on("card:reviewed", ({ cardId }) => {
+			if (settings().storeScheduling) exportCards([cardId]);
+		}),
 	);
 	plugin.register(
 		plugin.coreApp.events.on("card:updated", ({ cardId }) =>
@@ -204,10 +233,18 @@ export function registerMarkdownFlashcards(plugin: TrueRecallPlugin): void {
 		?.subscribe(() => {
 			const since = observedAt - 1;
 			observedAt = Date.now();
-			if (!importing && active() && settings().storeScheduling) {
+			if (!importing && active()) {
 				exportCards(
 					plugin.cardStore.cards.getModifiedSince(since).map((card) => card.id),
 				);
+				for (const note of plugin.cardStore.notes.getRawRowsModifiedSince(
+					since,
+				)) {
+					if (note.created_via !== "markdown" || !note.source_uid) continue;
+					const path = sources.findSourceNoteByUid(note.source_uid);
+					const file = path ? vault.getAbstractFileByPath(path) : null;
+					if (file instanceof TFile) enqueue(file);
+				}
 			}
 		});
 	if (unsubscribe) plugin.register(unsubscribe);
@@ -223,4 +260,5 @@ export function registerMarkdownFlashcards(plugin: TrueRecallPlugin): void {
 		timers.clear();
 		lastError.clear();
 	});
+	return { whenIdle: () => queue };
 }

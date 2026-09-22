@@ -17,10 +17,17 @@ export const ScheduleSchema = z.object({
 	buriedUntil: z.iso.datetime({ offset: true }).optional(),
 	createdAt: z.number().nonnegative().optional(),
 });
+export const ContentBaseSchema = z.object({
+	front: z.string().regex(/^[a-f0-9]{64}$/),
+	back: z.string().regex(/^[a-f0-9]{64}$/),
+	reversed: z.boolean(),
+});
+export type ContentBase = z.infer<typeof ContentBaseSchema>;
 export const CardMarkerSchema = z.object({
 	v: z.literal(1),
 	id: z.uuid(),
 	schedules: z.array(ScheduleSchema.nullable()).max(2).optional(),
+	bases: z.record(z.string(), ContentBaseSchema).optional(),
 });
 export type CardMarker = z.infer<typeof CardMarkerSchema>;
 export interface MarkdownCard {
@@ -28,7 +35,13 @@ export interface MarkdownCard {
 	back: string;
 	reversed: boolean;
 	marker?: CardMarker;
-	/** Byte offsets in the original JS string, excluding the trailing line break. */
+	/** String offsets in the original JS string, excluding the trailing line break. */
+	frontStart: number;
+	frontEnd: number;
+	backStart: number;
+	backEnd: number;
+	separatorStart: number;
+	separatorEnd: number;
 	markerStart: number;
 	markerEnd: number;
 }
@@ -106,6 +119,12 @@ export function parseMarkdownCards(
 			back,
 			reversed: block[split]?.text.trim() === settings.reversedSeparator,
 			marker,
+			frontStart: block[0]?.start ?? 0,
+			frontEnd: block[split - 1]?.end ?? 0,
+			backStart: block[split + 1]?.start ?? 0,
+			backEnd: (marker ? block.at(-2) : last)?.end ?? 0,
+			separatorStart: block[split]?.start ?? 0,
+			separatorEnd: block[split]?.end ?? 0,
 			markerStart: marker ? last.start : last.end,
 			markerEnd: last.end,
 		});

@@ -39,7 +39,8 @@ export function MarkdownFlashcardsSection() {
 				<p>
 					Write cards in notes tagged #flashcards. Put ?? on its own line
 					between question and answer, or ??? for a reversed pair. Separate
-					cards with a blank line. Edit these cards in the source note.
+					cards with a blank line. Edit questions and answers here in Obsidian
+					or in the source note; changes sync both ways.
 				</p>
 				<p>
 					True Recall adds a hidden ID comment after each answer. Keep it with
@@ -47,6 +48,11 @@ export function MarkdownFlashcardsSection() {
 					when copying a card. Removing a card from the note removes it from
 					review; disabling this feature or removing the tag leaves existing
 					cards intact.
+				</p>
+				<p>
+					If the same field is changed differently in the note and panel, both
+					versions are kept and sync reports a conflict. Make that field match
+					in both places to resume syncing.
 				</p>
 			</InfoBlock>
 			<FormField name="Enable Markdown flashcards">

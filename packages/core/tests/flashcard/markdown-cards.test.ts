@@ -225,6 +225,30 @@ describe("Markdown cards with real SQLite persistence", () => {
 		expect(ctx.cards.get(id)?.reps).toBe(7);
 		expect(ctx.cards.size()).toBe(2);
 	});
+	it("reuses panel-generated reverse cards and retains their IDs when restored", () => {
+		sync.sync(parseMarkdownCards(source(), config), "source-a", false);
+		ctx.notes.update(noteId, { noteTypeId: "builtin-basic-reversed" });
+		const original = ctx.cards.get(markdownCardId(noteId, 0));
+		if (!original) throw new Error("Missing card");
+		ctx.cards.set("panel-generated-reverse", {
+			...original,
+			id: "panel-generated-reverse",
+			cardType: "reversed",
+			templateOrd: 1,
+			reps: 9,
+		});
+		const pair = parseMarkdownCards(source(noteId, "???"), config);
+		sync.sync(pair, "source-a", false);
+		expect(ctx.cards.size()).toBe(2);
+		expect(sync.snapshot({ v: 1, id: noteId }, true).schedules?.[1]?.reps).toBe(
+			9,
+		);
+		sync.sync(parseMarkdownCards(source(), config), "source-a", false);
+		sync.sync(pair, "source-a", false);
+		expect(ctx.cards.get("panel-generated-reverse")?.reps).toBe(9);
+		expect(ctx.cards.size()).toBe(2);
+	});
+
 	it("ignores portable scheduling completely when storage is external", () => {
 		const cards = parseMarkdownCards(source(), config);
 		sync.sync(cards, "source-a", false);
