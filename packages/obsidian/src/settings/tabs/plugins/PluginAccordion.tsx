@@ -3,6 +3,7 @@ import type { PluginTier } from "@true-recall/core/types";
 import { withPluginUtm } from "@true-recall/core/utils";
 
 import { ToggleInput } from "@true-recall/obsidian/components";
+import { t } from "@true-recall/obsidian/i18n";
 import { useIcon } from "@true-recall/obsidian/preact/hooks";
 import { cn } from "@true-recall/obsidian/utils/cn";
 
@@ -85,14 +86,14 @@ export function PluginAccordion({
 					aria-controls={detailsId}
 				>
 					<PluginIcon icon={info.icon} />
-					<span class="tr-plugin-row__name">{info.name}</span>
+					<span class="tr-plugin-row__name">{t(info.name)}</span>
 					<span class="tr-plugin-row__badges">
 						<span class={cn("tr-plugin-tier", TIER_BADGE_CLASS[info.tier])}>
-							{TIER_LABEL[info.tier]}
+							{t(TIER_LABEL[info.tier])}
 						</span>
 						{info.deprecated ? (
 							<span class="tr-plugin-tier ep:bg-obs-orange/15 ep:text-obs-orange">
-								DEPRECATED
+								{t("DEPRECATED")}
 							</span>
 						) : null}
 					</span>
@@ -105,7 +106,7 @@ export function PluginAccordion({
 						<ToggleInput
 							value={isEnabled}
 							onChange={onToggle}
-							ariaLabel={`Enable ${info.name}`}
+							ariaLabel={`Enable ${t(info.name)}`}
 						/>
 					) : (
 						<a
@@ -114,7 +115,7 @@ export function PluginAccordion({
 							target="_blank"
 							rel="noreferrer"
 						>
-							Upgrade
+							{t("Upgrade")}
 						</a>
 					)}
 				</span>
@@ -123,10 +124,10 @@ export function PluginAccordion({
 			{isExpanded ? (
 				<div class="tr-plugin-details" id={detailsId}>
 					<div class="tr-plugin-details__description">
-						<p>{info.description}</p>
+						<p>{t(info.description)}</p>
 						<ul class="tr-plugin-features">
 							{info.features.map((feature) => (
-								<li key={feature}>{feature}</li>
+								<li key={feature}>{t(feature)}</li>
 							))}
 						</ul>
 						{info.deprecated ? (
@@ -136,8 +137,8 @@ export function PluginAccordion({
 							<div class="tr-plugin-details__locked">
 								<span>
 									{info.tier === "pro"
-										? "Included with True Recall Pro."
-										: "Add an AI provider to enable this feature."}
+										? t("Included with True Recall Pro.")
+										: t("Add an AI provider to enable this feature.")}
 								</span>
 								{info.tier === "pro" ? (
 									<a
@@ -149,7 +150,7 @@ export function PluginAccordion({
 										target="_blank"
 										rel="noreferrer"
 									>
-										See Pro plans
+										{t("See Pro plans")}
 									</a>
 								) : null}
 							</div>

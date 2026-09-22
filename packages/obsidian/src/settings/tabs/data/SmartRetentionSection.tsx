@@ -6,6 +6,7 @@ import {
 	InfoBlock,
 	SliderInput,
 } from "@true-recall/obsidian/components";
+import { t } from "@true-recall/obsidian/i18n";
 
 import { useSettings } from "../../hooks/useSettings";
 
@@ -48,24 +49,30 @@ export function SmartRetentionSection() {
 		void save({ retentionPolicy });
 
 	return (
-		<FormCard title="Smart retention">
+		<FormCard title={t("Smart retention")}>
 			<InfoBlock>
 				<p>
-					Multi-tier retention keeps recent backups densely and older ones
-					sparsely.
+					{t(
+						"Multi-tier retention keeps recent backups densely and older ones sparsely.",
+					)}
 				</p>
 				<p>
-					Current policy:{" "}
+					{t("Current policy:")}{" "}
 					<strong>
-						{hourlyBackupsToKeep}h / {dailyBackupsToKeep}d /{" "}
-						{weeklyBackupsToKeep}w
+						{hourlyBackupsToKeep}
+						{t("h /")}
+						{dailyBackupsToKeep}
+						{t("d /")} {weeklyBackupsToKeep}
+						{t("w")}
 					</strong>
 				</p>
 			</InfoBlock>
 
 			<RetentionPolicySlider
-				name="Hourly backups"
-				description="Keep one backup per hour for the last N hours (0 = disabled)"
+				name={t("Hourly backups")}
+				description={t(
+					"Keep one backup per hour for the last N hours (0 = disabled)",
+				)}
 				field="hourlyBackupsToKeep"
 				policy={settings.retentionPolicy}
 				max={48}
@@ -73,8 +80,10 @@ export function SmartRetentionSection() {
 			/>
 
 			<RetentionPolicySlider
-				name="Daily backups"
-				description="Keep one backup per day for the last N days (0 = disabled)"
+				name={t("Daily backups")}
+				description={t(
+					"Keep one backup per day for the last N days (0 = disabled)",
+				)}
 				field="dailyBackupsToKeep"
 				policy={settings.retentionPolicy}
 				max={30}
@@ -82,8 +91,10 @@ export function SmartRetentionSection() {
 			/>
 
 			<RetentionPolicySlider
-				name="Weekly backups"
-				description="Keep one backup per week for the last N weeks (0 = disabled)"
+				name={t("Weekly backups")}
+				description={t(
+					"Keep one backup per week for the last N weeks (0 = disabled)",
+				)}
 				field="weeklyBackupsToKeep"
 				policy={settings.retentionPolicy}
 				max={12}

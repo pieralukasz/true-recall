@@ -7,6 +7,7 @@ import {
 	TextInput,
 	ToggleInput,
 } from "@true-recall/obsidian/components";
+import { t } from "@true-recall/obsidian/i18n";
 
 interface RModeSectionProps {
 	settings: TrueRecallSettings;
@@ -38,10 +39,12 @@ export function RModeSection({ settings, save }: RModeSectionProps) {
 		void save({ rMode: { ...rMode, ...changes } });
 
 	return (
-		<FormCard title="R-Mode (experimental)">
+		<FormCard title={t("R-Mode (experimental)")}>
 			<FormField
-				name="Enable R-Mode"
-				description="Build sessions from current retrievability instead of due dates. Nothing is ever overdue; you choose how many review cards to include. New and learning cards remain separate."
+				name={t("Enable R-Mode")}
+				description={t(
+					"Build sessions from current retrievability instead of due dates. Nothing is ever overdue; you choose how many review cards to include. New and learning cards remain separate.",
+				)}
 			>
 				<ToggleInput
 					value={rMode.enabled}
@@ -51,8 +54,10 @@ export function RModeSection({ settings, save }: RModeSectionProps) {
 			</FormField>
 
 			<FormField
-				name="Default review count"
-				description="Review cards pre-filled on the dashboard and in the panel. You can always type a different number."
+				name={t("Default review count")}
+				description={t(
+					"Review cards pre-filled on the dashboard and in the panel. You can always type a different number.",
+				)}
 			>
 				<TextInput
 					value={String(rMode.defaultSessionSize)}
@@ -66,7 +71,7 @@ export function RModeSection({ settings, save }: RModeSectionProps) {
 			</FormField>
 
 			<FormField
-				name="Session composition"
+				name={t("Session composition")}
 				description={describeMix(rMode.comfortMix, rMode.defaultSessionSize)}
 			>
 				<SliderInput
@@ -81,8 +86,10 @@ export function RModeSection({ settings, save }: RModeSectionProps) {
 			</FormField>
 
 			<FormField
-				name="Saturation margin"
-				description="Cards above their preset's retention target plus this margin are not offered. A smaller margin wastes less effort but empties the pool sooner."
+				name={t("Saturation margin")}
+				description={t(
+					"Cards above their preset's retention target plus this margin are not offered. A smaller margin wastes less effort but empties the pool sooner.",
+				)}
 			>
 				<SliderInput
 					value={rMode.ceilingOffset}
@@ -96,8 +103,11 @@ export function RModeSection({ settings, save }: RModeSectionProps) {
 			</FormField>
 
 			<FormField
-				name="Urgent threshold"
-				description={`Cards below ${Math.round(rMode.urgentBelow * 100)}% retrievability are never pushed out of a session by the composition slider.`}
+				name={t("Urgent threshold")}
+				description={t(
+					"Cards below {0}% retrievability are never pushed out of a session by the composition slider.",
+					[Math.round(rMode.urgentBelow * 100)],
+				)}
 			>
 				<SliderInput
 					value={rMode.urgentBelow}

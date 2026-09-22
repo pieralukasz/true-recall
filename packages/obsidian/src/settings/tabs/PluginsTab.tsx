@@ -1,6 +1,7 @@
 import { useState } from "preact/hooks";
 
 import { FormCard } from "@true-recall/obsidian/components";
+import { t } from "@true-recall/obsidian/i18n";
 import {
 	buildFeatureTogglePatch,
 	isFeaturePreferenceEnabled,
@@ -41,8 +42,10 @@ export function FeaturesTab() {
 			<PluginAccessOverview settings={settings} />
 			<AIProviderSection />
 			<FormCard
-				title="Features"
-				description="Optional True Recall surfaces. Review modes and data tools live in their relevant settings sections."
+				title={t("Features")}
+				description={t(
+					"Optional True Recall surfaces. Review modes and data tools live in their relevant settings sections.",
+				)}
 			>
 				<div class="tr-plugin-list">
 					{[...FEATURE_MANIFESTS]

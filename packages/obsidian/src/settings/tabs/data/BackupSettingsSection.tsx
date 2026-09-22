@@ -4,6 +4,7 @@ import {
 	InfoBlock,
 	ToggleInput,
 } from "@true-recall/obsidian/components";
+import { t } from "@true-recall/obsidian/i18n";
 
 import { useSettings } from "../../hooks/useSettings";
 
@@ -11,24 +12,27 @@ export function BackupSettingsSection() {
 	const { settings, save } = useSettings();
 
 	return (
-		<FormCard title="Database backup">
+		<FormCard title={t("Database backup")}>
 			<InfoBlock>
 				<p>
-					True Recall works directly on your active SQLite database during
-					normal use.
+					{t(
+						"True Recall works directly on your active SQLite database during normal use.",
+					)}
 				</p>
 				<p>
-					Backups are safety copies to recover from corruption or accidental
-					changes.
+					{t(
+						"Backups are safety copies to recover from corruption or accidental changes.",
+					)}
 				</p>
 				<p>
-					Stored in <code>.true-recall/backups/</code>
+					{t("Stored in")}
+					<code>.true-recall/backups/</code>
 				</p>
 			</InfoBlock>
 
 			<FormField
-				name="Automatic backup on load"
-				description="Create a backup automatically when the plugin loads"
+				name={t("Automatic backup on load")}
+				description={t("Create a backup automatically when the plugin loads")}
 			>
 				<ToggleInput
 					value={settings.autoBackupOnLoad}

@@ -256,7 +256,7 @@ export function mapRow(row: CardRow): FSRSCardData {
 	if (cardType === "image-occlusion") {
 		question =
 			ioImagePath && ioDefinition
-				? `Image occlusion ${row.templateOrd + 1}`
+				? `Image occlusion ${row.templateOrd + 1} · ${ioImagePath.split("/").pop()} · ${row.noteId.slice(-8)}`
 				: "Image occlusion";
 		answer = "Reveal image occlusion";
 	} else if (template) {
