@@ -574,5 +574,9 @@
 	"w": "周",
 	"{0} (copy)": "{0}（副本）",
 	"{0} (fork)": "{0}（自定义副本）",
-	"{0} options": "{0}选项"
+	"{0} options": "{0}选项",
+	"Your first learning session": "你的第一次学习",
+	"Try AI for free": "免费试用 AI",
+	"Open learning guide": "打开学习指南",
+	"Connect your account and try generation, image cards and answer feedback. No payment card needed.": "连接你的账户，体验卡片生成、图片卡片和答案反馈。无需绑定支付卡。"
 }

@@ -2,6 +2,7 @@ import { notify } from "@true-recall/obsidian/services/notification.service";
 import { capabilities, isDesktop } from "@true-recall/obsidian/utils/platform";
 import { ReviewView } from "@true-recall/obsidian/views/review/ReviewView";
 
+import { registerAIOnboarding } from "../features/onboarding/ai-onboarding";
 import type TrueRecallPlugin from "../main";
 import { countAppliedChanges } from "./CrossDeviceSyncCoordinator";
 import { isPluginEnabled } from "./plugin-utils";
@@ -15,6 +16,7 @@ import {
 } from "./SelectionActions";
 
 export function registerCommands(plugin: TrueRecallPlugin): void {
+	registerAIOnboarding(plugin);
 	plugin.addCommand({
 		id: "open-flashcard-panel",
 		name: "Show flashcards for current note",

@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 2.6.0 (2026-09-22)
+
+### Features
+
+- **Connect AI without copying a key.** Run “Try AI for free” or use the AI provider settings to sign in in your browser and return to Obsidian. The connection uses a one-time authorization code and preserves your existing provider keys. Cloud Sync remains a separate choice.
+- **A guided first learning session.** Create a practice note with a diagram, prepare a few cards, try feedback on a typed answer, and review an image card. A checklist saved on your device helps you return for the next session. Reopen it with “First learning session”.
+
 ## 2.5.1 (2026-09-15)
 
 ### Improvements
