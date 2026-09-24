@@ -4,7 +4,11 @@ import {
 	deriveCardType,
 	renderTemplate,
 } from "../../../../services/cards/template-engine";
-import type { CardSchedulingMeta, FSRSCardData } from "../../../../types";
+import {
+	type CardSchedulingMeta,
+	type FSRSCardData,
+	normalizeCardFlag,
+} from "../../../../types";
 import type { CardTemplate } from "../../../../types/note.types";
 import {
 	BUILTIN_BASIC_ID,
@@ -26,6 +30,7 @@ export const CARD_SELECT = `
     c.learning_step AS learningStep,
     c.suspended = 1 AS suspended,
     c.buried_until AS buriedUntil,
+    c.flag AS flag,
     c.created_at AS createdAt,
     c.source_uid AS sourceUid,
     c.note_id AS noteId,
@@ -51,6 +56,7 @@ export const CARD_SELECT_SYNC = `
     c.learning_step AS learningStep,
     c.suspended = 1 AS suspended,
     c.buried_until AS buriedUntil,
+    c.flag AS flag,
     c.created_at AS createdAt,
     c.updated_at AS updatedAt,
     c.deleted_at AS deletedAt,
@@ -86,6 +92,7 @@ export const META_SELECT = `
     c.learning_step AS learningStep,
     c.suspended = 1 AS suspended,
     c.buried_until AS buriedUntil,
+    c.flag AS flag,
     c.created_at AS createdAt,
     c.source_uid AS sourceUid,
     c.note_id AS noteId,
@@ -111,6 +118,7 @@ export interface MetaRow {
 	learningStep: number;
 	suspended: number;
 	buriedUntil: string | null;
+	flag: number;
 	createdAt: number | null;
 	sourceUid: string | null;
 	noteId: string;
@@ -134,6 +142,7 @@ export interface CardRow {
 	learningStep: number;
 	suspended: number;
 	buriedUntil: string | null;
+	flag: number;
 	createdAt: number | null;
 	updatedAt?: number | null;
 	deletedAt?: number | null;
@@ -181,6 +190,7 @@ export function mapMetaRow(row: MetaRow): CardSchedulingMeta {
 			learningStep: row.learningStep,
 			suspended: row.suspended === 1,
 			buriedUntil: row.buriedUntil ?? undefined,
+			flag: normalizeCardFlag(row.flag),
 			createdAt: row.createdAt ?? undefined,
 			sourceUid: row.sourceUid ?? undefined,
 			noteId: row.noteId,
@@ -290,6 +300,7 @@ export function mapRow(row: CardRow): FSRSCardData {
 		learningStep: row.learningStep,
 		suspended: row.suspended === 1,
 		buriedUntil: row.buriedUntil ?? undefined,
+		flag: normalizeCardFlag(row.flag),
 		createdAt: row.createdAt ?? undefined,
 		question,
 		answer,

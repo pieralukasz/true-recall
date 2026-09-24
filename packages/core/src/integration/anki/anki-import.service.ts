@@ -14,6 +14,7 @@ import type {
 	ConvertedCard,
 	FSRSCardData,
 } from "@true-recall/core/types";
+import { normalizeCardFlag } from "@true-recall/core/types";
 
 import { AnkiMediaService, type IVaultFileReader } from "./anki-media.service";
 import { ApkgParserService } from "./apkg/apkg-parser.service";
@@ -253,6 +254,7 @@ export class AnkiImportService {
 		cardData.question = question;
 		cardData.answer = answer;
 		cardData.cardType = converted.cardType;
+		cardData.flag = normalizeCardFlag(converted.flag);
 
 		// Apply media path updates to field values
 		let fieldValues: Record<string, string> = {};
@@ -457,6 +459,7 @@ export class AnkiImportService {
 			factor: 0,
 			reps: 0,
 			lapses: 0,
+			flags: 0,
 		};
 	}
 }

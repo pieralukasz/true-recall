@@ -22,6 +22,7 @@ import {
 import {
 	handleBulkBury,
 	handleBulkDelete,
+	handleBulkFlag,
 	handleBulkSuspend,
 	handleDeleteCard,
 	handleMoveCard,
@@ -151,6 +152,7 @@ const routes: Route[] = [
 	route("DELETE", "/cards/:id", handleDeleteCard),
 	route("POST", "/cards/bulk-delete", handleBulkDelete),
 	route("POST", "/cards/bulk-suspend", handleBulkSuspend),
+	route("POST", "/cards/bulk-flag", handleBulkFlag),
 	route("POST", "/cards/bulk-bury", handleBulkBury),
 	route("POST", "/cards/remove-from-note", handleRemoveCardsFromNote),
 	route("POST", "/cards", handleCreateCards),

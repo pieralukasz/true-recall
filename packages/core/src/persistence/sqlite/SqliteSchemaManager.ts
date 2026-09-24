@@ -8,8 +8,9 @@ import type { DatabaseLike } from "./sqlite.types";
  * carry columns this build does not understand); older versions merge fine.
  * v2: review_log gains device_id and review_kind.
  * v3: notes gain edit_count, ai_edit_count and content_edited_at.
+ * v4: cards gain flag (Anki-compatible card flag, 0 = none, 1-7 = colors).
  */
-export const CURRENT_SCHEMA_VERSION = 3;
+export const CURRENT_SCHEMA_VERSION = 4;
 
 export class SqliteSchemaManager {
 	constructor(private db: DatabaseLike) {}
@@ -70,6 +71,7 @@ export class SqliteSchemaManager {
                 learning_step INTEGER DEFAULT 0,
                 suspended INTEGER DEFAULT 0,
                 buried_until TEXT,
+                flag INTEGER NOT NULL DEFAULT 0,
                 created_at INTEGER,
                 updated_at INTEGER,
                 deleted_at INTEGER DEFAULT NULL,
@@ -77,6 +79,7 @@ export class SqliteSchemaManager {
                 FOREIGN KEY (note_id) REFERENCES notes(id)
             );
 
+            CREATE INDEX IF NOT EXISTS idx_cards_flag ON cards(flag);
             CREATE INDEX IF NOT EXISTS idx_cards_note_id ON cards(note_id);
             CREATE INDEX IF NOT EXISTS idx_cards_note_template ON cards(note_id, template_ord);
             CREATE INDEX IF NOT EXISTS idx_cards_due ON cards(due);
@@ -218,6 +221,13 @@ export class SqliteSchemaManager {
 		}
 		try {
 			this.db.run(`ALTER TABLE review_log ADD COLUMN review_kind TEXT`);
+		} catch {
+			// Column already exists — expected for new installs
+		}
+		try {
+			this.db.run(
+				`ALTER TABLE cards ADD COLUMN flag INTEGER NOT NULL DEFAULT 0`,
+			);
 		} catch {
 			// Column already exists — expected for new installs
 		}

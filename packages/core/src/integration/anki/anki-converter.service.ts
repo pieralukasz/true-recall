@@ -6,6 +6,7 @@ import type {
 	ApkgData,
 	ConvertedCard,
 } from "@true-recall/core/types";
+import { normalizeCardFlag } from "@true-recall/core/types";
 
 import { htmlToMarkdown } from "./anki-html-converter";
 import { stripHtmlFromTemplate } from "./anki-note-type-mapper";
@@ -136,6 +137,7 @@ export class AnkiConverterService {
 			mediaFiles: this.extractMediaFiles(allContent),
 			fieldValues,
 			templateOrd: card.ord,
+			flag: normalizeCardFlag(card.flags),
 		};
 	}
 
@@ -176,6 +178,7 @@ export class AnkiConverterService {
 			mediaFiles: this.extractMediaFiles(allContent),
 			fieldValues,
 			templateOrd: card.ord,
+			flag: normalizeCardFlag(card.flags),
 		};
 	}
 
@@ -203,6 +206,7 @@ export class AnkiConverterService {
 			mediaFiles: this.extractMediaFiles(allContent),
 			fieldValues,
 			templateOrd: card.ord,
+			flag: normalizeCardFlag(card.flags),
 		};
 	}
 

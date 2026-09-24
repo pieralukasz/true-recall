@@ -141,6 +141,16 @@ export const sessionTools: ToolDef[] = [
 	),
 
 	postParams(
+		"set_card_flag",
+		"Set an Anki-style flag on one or more cards. 0 removes the flag; 1 red, 2 orange, 3 green, 4 blue, 5 pink, 6 turquoise, 7 purple. Find flagged cards with search query 'flag:N' or 'flag:red'.",
+		"/cards/bulk-flag",
+		{
+			card_ids: z.array(z.string()).describe("Array of card UUIDs"),
+			flag: z.number().int().min(0).max(7).describe("Flag 0-7 (0 removes)"),
+		},
+	),
+
+	postParams(
 		"bury_cards",
 		"Temporarily hide cards until a specific date or for N days. Buried cards auto-unbury after the date passes. Default: 1 day (next day boundary at 4 AM).",
 		"/cards/bulk-bury",

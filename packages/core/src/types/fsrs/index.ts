@@ -5,6 +5,7 @@
 
 // Card types
 export type {
+	CardFlag,
 	CardReviewLogEntry,
 	CardSchedulingMeta,
 	CardType,
@@ -13,7 +14,13 @@ export type {
 	FSRSFlashcardItem,
 	Grade,
 } from "./card.types";
-export { Rating, State } from "./card.types";
+export {
+	CARD_FLAG_META,
+	CARD_FLAG_NONE,
+	normalizeCardFlag,
+	Rating,
+	State,
+} from "./card.types";
 // Utility functions and types
 export type { ReviewViewMode } from "./fsrs.utils";
 export {

@@ -83,6 +83,10 @@ class NotificationService extends NoticeService {
 		this.success("Card suspended");
 	}
 
+	cardFlagSet(label: string): void {
+		this.success(label === "No flag" ? "Flag removed" : `Flag: ${label}`);
+	}
+
 	cardBuried(): void {
 		this.success("Card buried until tomorrow");
 	}

@@ -18,6 +18,8 @@ export interface AnkiCard {
 	factor: number;
 	reps: number;
 	lapses: number;
+	/** Anki card flag (0 = none, 1-7 = colored flags) */
+	flags: number;
 }
 
 export interface AnkiRevlogEntry {
@@ -113,4 +115,6 @@ export interface ConvertedCard {
 	mediaFiles: string[];
 	fieldValues: Record<string, string>;
 	templateOrd: number;
+	/** Card flag carried from Anki (0 = none, 1-7 = colored flags) */
+	flag?: import("./fsrs/card.types").CardFlag;
 }

@@ -4,7 +4,11 @@ import {
 	NotFoundError,
 	ValidationError,
 } from "../../../../errors";
-import type { FSRSCardData } from "../../../../types";
+import {
+	type CardFlag,
+	type FSRSCardData,
+	normalizeCardFlag,
+} from "../../../../types";
 import type { NoteEditSource } from "../../../../types/note.types";
 import {
 	BUILTIN_BASIC_REVERSED_ID,
@@ -72,14 +76,14 @@ export class CardWriteActions {
 		// history on every scheduling update.
 		this.db.run(
 			`INSERT INTO cards (
-                    id, note_id, template_ord, due, stability, difficulty,
-                    reps, lapses, state, last_review, scheduled_days,
-                    learning_step, suspended, buried_until,
-                    created_at, updated_at, source_uid
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT(id) DO UPDATE SET
-                    note_id = excluded.note_id,
-                    template_ord = excluded.template_ord,
+		id, note_id, template_ord, due, stability, difficulty,
+		reps, lapses, state, last_review, scheduled_days,
+		learning_step, suspended, buried_until, flag,
+		created_at, updated_at, source_uid
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+		ON CONFLICT(id) DO UPDATE SET
+		note_id = excluded.note_id,
+		template_ord = excluded.template_ord,
                     due = excluded.due,
                     stability = excluded.stability,
                     difficulty = excluded.difficulty,
@@ -91,6 +95,7 @@ export class CardWriteActions {
                     learning_step = excluded.learning_step,
                     suspended = excluded.suspended,
                     buried_until = excluded.buried_until,
+                    flag = excluded.flag,
                     updated_at = excluded.updated_at,
                     source_uid = excluded.source_uid`,
 			[
@@ -108,6 +113,7 @@ export class CardWriteActions {
 				data.learningStep,
 				data.suspended ? 1 : 0,
 				data.buriedUntil ?? null,
+				normalizeCardFlag(data.flag),
 				createdAt,
 				now,
 				data.sourceUid ?? null,
@@ -243,9 +249,9 @@ export class CardWriteActions {
 			`INSERT INTO cards (
                     id, note_id, template_ord, due, stability, difficulty,
                     reps, lapses, state, last_review, scheduled_days,
-                    learning_step, suspended, buried_until,
+                    learning_step, suspended, buried_until, flag,
                     created_at, updated_at, deleted_at, source_uid
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ON CONFLICT(id) DO UPDATE SET
                     note_id = excluded.note_id,
                     template_ord = excluded.template_ord,
@@ -260,6 +266,7 @@ export class CardWriteActions {
                     learning_step = excluded.learning_step,
                     suspended = excluded.suspended,
                     buried_until = excluded.buried_until,
+                    flag = excluded.flag,
                     updated_at = excluded.updated_at,
                     deleted_at = excluded.deleted_at,
                     source_uid = excluded.source_uid`,
@@ -278,6 +285,7 @@ export class CardWriteActions {
 				data.learningStep,
 				data.suspended ? 1 : 0,
 				data.buriedUntil ?? null,
+				normalizeCardFlag(data.flag),
 				data.createdAt ?? now,
 				data.updatedAt ?? now,
 				data.deletedAt ?? null,
@@ -345,6 +353,15 @@ export class CardWriteActions {
 	updateCardDue(cardId: string, newDue: string): void {
 		this.db.run(`UPDATE cards SET due = ?, updated_at = ? WHERE id = ?`, [
 			newDue,
+			Date.now(),
+			cardId,
+		]);
+	}
+
+	/** Set the Anki-style card flag (0 = none, 1-7 = colors). */
+	setCardFlag(cardId: string, flag: CardFlag): void {
+		this.db.run(`UPDATE cards SET flag = ?, updated_at = ? WHERE id = ?`, [
+			normalizeCardFlag(flag),
 			Date.now(),
 			cardId,
 		]);

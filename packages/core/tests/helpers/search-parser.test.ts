@@ -145,4 +145,11 @@ describe("parseSearchQuery", () => {
 		expect(result.addedDaysAgo).toBe(30);
 		expect(result.textSearch).toBe("mitosis");
 	});
+
+	it("parses flag: filters by number and color name", () => {
+		expect(parseSearchQuery("flag:1").flags).toEqual([1]);
+		expect(parseSearchQuery("flag:purple").flags).toEqual([7]);
+		expect(parseSearchQuery("flag:none").flags).toEqual([0]);
+		expect(parseSearchQuery("flag:red mitosis").textSearch).toBe("mitosis");
+	});
 });

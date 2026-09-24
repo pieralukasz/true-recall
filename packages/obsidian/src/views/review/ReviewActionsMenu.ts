@@ -1,6 +1,7 @@
 import type { Menu } from "obsidian";
 
 import type { AssistantContext } from "@true-recall/core/ai/assistant";
+import { CARD_FLAG_META, type CardFlag } from "@true-recall/core/types";
 
 import { openAiWorkspace } from "@true-recall/obsidian/features/assistant/ui/open-ai-workspace";
 import type { CardActionsHandler } from "@true-recall/obsidian/features/study/ui/review/handlers";
@@ -109,6 +110,27 @@ export function populateReviewActionsMenu(
 			.setIcon("pause")
 			.onClick(() => deps.cardActionsHandler.handleSuspend()),
 	);
+
+	const currentFlag = deps.getReview().getCurrentCard()?.fsrs.flag ?? 0;
+	for (const flag of [1, 2, 3, 4, 5, 6, 7] as CardFlag[]) {
+		const meta = CARD_FLAG_META[flag];
+		menu.addItem((item) =>
+			item
+				.setTitle(
+					`${currentFlag === flag ? "✓ " : ""}${withHint(`Flag: ${meta.label}`, `ctrl+${flag}`)}`,
+				)
+				.setIcon("flag")
+				.onClick(() => deps.cardActionsHandler.handleSetFlag(flag)),
+		);
+	}
+	if (currentFlag !== 0) {
+		menu.addItem((item) =>
+			item
+				.setTitle(withHint("Remove flag", "ctrl+0"))
+				.setIcon("flag-off")
+				.onClick(() => deps.cardActionsHandler.handleSetFlag(0)),
+		);
+	}
 	menu.addItem((item) =>
 		item
 			.setTitle(withHint("Bury card", "-"))

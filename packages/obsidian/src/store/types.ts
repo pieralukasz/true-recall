@@ -3,6 +3,7 @@ import type { Grade } from "ts-fsrs";
 
 import type { AppError } from "@true-recall/core/errors";
 import type {
+	CardFlag,
 	FlashcardInfo,
 	FSRSFlashcardItem,
 	ReviewResult,
@@ -100,6 +101,7 @@ export interface ReviewSliceActions {
 	isEditing: () => boolean;
 	updateCurrentCardContent: (question: string, answer: string) => void;
 	updateCurrentCardComment: (userComment: string | undefined) => void;
+	updateCurrentCardFlag: (flag: CardFlag) => void;
 
 	// Scheduling preview (ephemeral)
 	getSchedulingPreview: () => SchedulingPreview | null;

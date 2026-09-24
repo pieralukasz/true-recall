@@ -43,6 +43,7 @@ const VALID_OPERATORS = [">=", "<=", ">", "<"] as const;
  * - note:"Biology", project:"Med School", preset:"Hard Mode"
  * - type:cloze, type:basic, type:reversed, type:image-occlusion
  * - via:ai, via:manual, via:anki_import
+ * - flag:1..7 or flag:red/orange/green/blue/pink/turquoise/purple, flag:0/none
  * - added:7, reviewed:30
  * - "exact phrase" or plain text
  */
@@ -57,6 +58,7 @@ export function parseSearchQuery(input: string): FilterState {
 		createdVia: [],
 		presetNames: [],
 		projects: [],
+		flags: [],
 	};
 	if (!input.trim()) return filter;
 
@@ -111,6 +113,10 @@ export function parseSearchQuery(input: string): FilterState {
 			if (["ai", "manual", "anki_import"].includes(val)) {
 				filter.createdVia.push(val);
 			}
+		} else if (raw.startsWith("flag:")) {
+			const val = raw.slice(5).toLowerCase();
+			const flag = parseFlagValue(val);
+			if (flag !== null) filter.flags.push(flag);
 		} else if (raw.startsWith("added:")) {
 			const days = parseInt(raw.slice(6), 10);
 			if (!Number.isNaN(days) && days > 0) filter.addedDaysAgo = days;
@@ -124,6 +130,23 @@ export function parseSearchQuery(input: string): FilterState {
 
 	filter.textSearch = textParts.join(" ").trim();
 	return filter;
+}
+
+const FLAG_NAME_TO_VALUE: Record<string, number> = {
+	none: 0,
+	red: 1,
+	orange: 2,
+	green: 3,
+	blue: 4,
+	pink: 5,
+	turquoise: 6,
+	purple: 7,
+};
+
+/** Accepts "0"-"7" or an Anki flag color name; null when unrecognized. */
+function parseFlagValue(val: string): number | null {
+	if (/^[0-7]$/.test(val)) return Number(val);
+	return FLAG_NAME_TO_VALUE[val] ?? null;
 }
 
 function parsePropFilter(raw: string): PropFilter | null {

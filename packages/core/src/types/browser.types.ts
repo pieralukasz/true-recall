@@ -18,6 +18,7 @@ export interface BrowserCard {
 	createdAt: number | null;
 	suspended: boolean;
 	buriedUntil: string | null;
+	flag: number;
 	sourceUid: string | null;
 	sourceNoteName: string | null;
 	sourceNotePath: string | null;
@@ -63,6 +64,8 @@ export interface FilterState {
 	reviewedDaysAgo: number | null;
 	/** Negated states (prefixed with -) */
 	negatedStates: StateFilterValue[];
+	/** Anki-style card flags (1-7 colors, 0 = no flag) */
+	flags: number[];
 	/** When true, show cards from archived notes/projects. Default false. */
 	showArchived?: boolean;
 	/** When true, show only orphaned cards (sourceUid exists but note is missing). */
@@ -92,4 +95,5 @@ export const EMPTY_FILTER: FilterState = {
 	addedDaysAgo: null,
 	reviewedDaysAgo: null,
 	negatedStates: [],
+	flags: [],
 };

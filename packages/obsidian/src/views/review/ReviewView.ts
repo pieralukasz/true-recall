@@ -248,6 +248,7 @@ export class ReviewView extends ItemView {
 				},
 				onDelete: () => this.cardActionsHandler.handleDelete(),
 				onSuspend: () => this.cardActionsHandler.handleSuspend(),
+				onSetFlag: (flag) => this.cardActionsHandler.handleSetFlag(flag),
 				onForget: () => this.cardActionsHandler.handleForget(),
 				onBuryCard: () => this.cardActionsHandler.handleBuryCard(),
 				onBuryNote: () => this.cardActionsHandler.handleBuryNote(),

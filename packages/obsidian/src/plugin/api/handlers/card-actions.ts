@@ -1,3 +1,5 @@
+import { normalizeCardFlag } from "@true-recall/core/types";
+
 import { BuryCommand } from "@true-recall/obsidian/commands/commands/card-bury.cmd";
 import { DeleteCardCommand } from "@true-recall/obsidian/commands/commands/card-delete.cmd";
 import {
@@ -5,6 +7,7 @@ import {
 	UnsuspendCommand,
 } from "@true-recall/obsidian/commands/commands/card-suspend.cmd";
 import { UpdateNoteFieldsCommand } from "@true-recall/obsidian/commands/commands/card-update.cmd";
+import { mutate } from "@true-recall/obsidian/data";
 
 import type { ApiContext, ApiRequest, ApiResponseWriter } from "../api.types";
 import { parseJsonBody, readBody, sendError, sendOk } from "../api.types";
@@ -344,6 +347,39 @@ export async function handleBulkSuspend(
 	await ctx.plugin.commandService?.execute(cmd);
 
 	sendOk(res, { affected: body.card_ids.length, suspended: body.suspended });
+}
+
+export async function handleBulkFlag(
+	req: ApiRequest,
+	res: ApiResponseWriter,
+	ctx: ApiContext,
+): Promise<void> {
+	if (!ctx.plugin.isStoreReady()) {
+		sendError(res, 503, "Database not ready");
+		return;
+	}
+
+	const raw = await readBody(req);
+	const body = parseJsonBody<{ card_ids: string[]; flag: number }>(raw);
+	if (
+		!body?.card_ids?.length ||
+		!Number.isInteger(body.flag) ||
+		body.flag < 0 ||
+		body.flag > 7
+	) {
+		sendError(
+			res,
+			400,
+			"Body must contain { card_ids: string[], flag: 0-7 } (0 removes the flag)",
+		);
+		return;
+	}
+
+	const flag = normalizeCardFlag(body.flag);
+	const affected = ctx.plugin.cardStore.cards.bulkSetFlag(body.card_ids, flag);
+	mutate("cards:bulk", () => {});
+
+	sendOk(res, { affected, flag });
 }
 
 export async function handleBulkBury(

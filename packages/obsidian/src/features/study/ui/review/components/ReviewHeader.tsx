@@ -1,5 +1,7 @@
 import { cva } from "class-variance-authority";
 
+import { CARD_FLAG_META } from "@true-recall/core/types";
+
 import type { ReviewApi } from "@true-recall/obsidian/store";
 
 const reviewStatVariants = cva("ep:font-bold", {
@@ -45,6 +47,8 @@ export function ReviewHeader({
 	if (!showStats) return null;
 
 	const counts = review.getBadgeCounts();
+	const flag = review.getCurrentCard()?.fsrs.flag ?? 0;
+	const flagMeta = CARD_FLAG_META[flag];
 
 	return (
 		<div class="ep:flex ep:justify-center ep:items-center ep:relative ep:shrink-0 ep:p-2 ep:pb-4">
@@ -54,6 +58,16 @@ export function ReviewHeader({
 				<ReviewStat label="Learning" type="learning" count={counts.learning} />
 				<Dot />
 				<ReviewStat label="Due" type="due" count={counts.due} />
+				{flag !== 0 && (
+					<>
+						<Dot />
+						<span
+							class="ep:inline-block ep:h-2.5 ep:w-2.5 ep:rounded-full"
+							style={{ backgroundColor: flagMeta.color }}
+							title={`Flag: ${flagMeta.label} (Cmd/Ctrl+0 to clear)`}
+						/>
+					</>
+				)}
 				{crammingMode && (
 					<>
 						<Dot />
