@@ -529,7 +529,7 @@ function DiscardOverlay({ onConfirm, onCancel }: DiscardOverlayProps) {
 				h(
 					Clickable,
 					{
-						class: "mod-warning ep-btn",
+						class: "mod-warning ep-btn tr-quick-editor-view__discard",
 						onClick: onConfirm,
 						stopPropagation: false,
 					},
