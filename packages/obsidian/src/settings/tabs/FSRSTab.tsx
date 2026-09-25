@@ -117,6 +117,7 @@ export function FSRSTab({ selectedPresetId, onPresetChange }: FSRSTabProps) {
 				settings={settings}
 				save={save}
 				onRefresh={refresh}
+				plugin={plugin}
 			/>
 
 			<BulkOperationsSection plugin={plugin} />

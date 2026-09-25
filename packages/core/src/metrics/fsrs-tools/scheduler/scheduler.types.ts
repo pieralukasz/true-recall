@@ -1,6 +1,6 @@
 import type { State } from "ts-fsrs";
 
-import type { EasyDaysConfig } from "../../../types";
+import type { EasyDaysConfig, ScheduledBreak } from "../../../types";
 
 export interface CardDueInfo {
 	id: string;
@@ -77,6 +77,8 @@ export interface LoadBalanceOptions {
 	cardIds?: string[];
 	/** Reviews already done today — subtracted from today's remaining capacity */
 	completedToday?: number;
+	/** Saved breaks: zero capacity, so nothing is moved onto those days */
+	scheduledBreaks?: readonly ScheduledBreak[];
 	dryRun?: boolean;
 }
 
@@ -93,6 +95,8 @@ export interface BalanceDueOptions {
 	 * after an already-chosen one.
 	 */
 	minIntervalDays?: number;
+	/** Saved breaks: days inside them are never picked as the balanced day */
+	scheduledBreaks?: readonly ScheduledBreak[];
 }
 
 export interface BalanceDueSequenceOptions
