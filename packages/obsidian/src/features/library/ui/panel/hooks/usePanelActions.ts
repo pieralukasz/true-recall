@@ -6,8 +6,13 @@ import type { FSRSFlashcardItem } from "@true-recall/core/types/fsrs/card.types"
 import { BatchCreateCommand } from "@true-recall/obsidian/commands/commands/card-create.cmd";
 import { DeleteCardCommand } from "@true-recall/obsidian/commands/commands/card-delete.cmd";
 import { ForgetCommand } from "@true-recall/obsidian/commands/commands/card-forget.cmd";
+import { downloadBlob } from "@true-recall/obsidian/features/integration/utils/export-helpers";
 import { getHighlightColor } from "@true-recall/obsidian/features/library/ui/panel/utils/card-status.utils";
 import { extractHighlights } from "@true-recall/obsidian/features/library/ui/panel/utils/highlight-extractor";
+import {
+	csvFilenameFor,
+	flashcardsToCsv,
+} from "@true-recall/obsidian/features/library/ui/panel/utils/panel-csv";
 import { cardsToBlockText } from "@true-recall/obsidian/features/library/ui/panel/utils/panel-helpers";
 import { generateWithPresetGlobal } from "@true-recall/obsidian/plugin/SelectionActions";
 import { useApp, usePlugin } from "@true-recall/obsidian/preact";
@@ -173,34 +178,11 @@ export function usePanelActions() {
 			return;
 		}
 
-		const escapeCSV = (str: string): string => {
-			if (str.includes(",") || str.includes("\n") || str.includes('"')) {
-				return `"${str.replace(/"/g, '""')}"`;
-			}
-			return str;
-		};
-
-		const header = "Question,Answer";
-		const rows = flashcardInfo.flashcards.map(
-			(card) => `${escapeCSV(card.question)},${escapeCSV(card.answer)}`,
+		downloadBlob(
+			flashcardsToCsv(flashcardInfo.flashcards),
+			csvFilenameFor(currentFile?.basename),
+			"text/csv;charset=utf-8;",
 		);
-		const csvContent = [header, ...rows].join("\n");
-
-		const filename = currentFile
-			? `${currentFile.basename}-flashcards.csv`
-			: "flashcards.csv";
-
-		const blob = new Blob([csvContent], {
-			type: "text/csv;charset=utf-8;",
-		});
-		const url = URL.createObjectURL(blob);
-		const link = createEl("a");
-		link.href = url;
-		link.download = filename;
-		activeDocument.body.appendChild(link);
-		link.click();
-		activeDocument.body.removeChild(link);
-		URL.revokeObjectURL(url);
 
 		notify().success(
 			`Exported ${flashcardInfo.flashcards.length} flashcard(s) to CSV`,

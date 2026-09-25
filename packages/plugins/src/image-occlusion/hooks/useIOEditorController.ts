@@ -2,6 +2,11 @@ import { Notice } from "obsidian";
 import { useCallback, useState } from "preact/hooks";
 
 import {
+	getIOGroupOrds,
+	mergeIORegions,
+} from "@true-recall/core/utils/io-definition";
+
+import {
 	useApp,
 	usePlugin,
 } from "@true-recall/obsidian/preact/ObsidianContext";
@@ -271,6 +276,11 @@ export function useIOEditorController({
 			onAiCustomHintChange: setAiCustomHint,
 			onAiDetect: detectImageRegions,
 		},
+		hideOtherRegions: definition.hideOtherRegions === true,
+		onHideOtherRegionsChange: (value: boolean) =>
+			setDefinition((current) => ({ ...current, hideOtherRegions: value })),
+		groupCount: getIOGroupOrds(definition).length,
+		onMergeRegions: () => setDefinition(mergeIORegions),
 		maskMode: definition.maskMode,
 		onMaskModeChange: setMaskMode,
 		regions: definition.regions,

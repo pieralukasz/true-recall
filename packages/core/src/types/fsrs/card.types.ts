@@ -18,6 +18,39 @@ export type CardType =
 	| "note-review";
 
 /**
+ * Card flag (Anki-compatible): 0 = no flag, 1-7 = colored flags.
+ * Anki colors: 1 red, 2 orange, 3 green, 4 blue, 5 pink, 6 turquoise, 7 purple.
+ */
+export type CardFlag = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7;
+
+export const CARD_FLAG_NONE: CardFlag = 0;
+
+/** Flag value → display color/label, matching Anki's flag palette. */
+export const CARD_FLAG_META: Record<
+	CardFlag,
+	{ label: string; color: string }
+> = {
+	0: { label: "No flag", color: "transparent" },
+	1: { label: "Red", color: "#ff5a5a" },
+	2: { label: "Orange", color: "#ff9f2e" },
+	3: { label: "Green", color: "#3ecf6f" },
+	4: { label: "Blue", color: "#4aa8ff" },
+	5: { label: "Pink", color: "#ff7ab8" },
+	6: { label: "Turquoise", color: "#2ed3c6" },
+	7: { label: "Purple", color: "#b07bff" },
+};
+
+/** Clamp any number to a valid CardFlag (out-of-range → 0). */
+export function normalizeCardFlag(value: unknown): CardFlag {
+	return typeof value === "number" &&
+		Number.isInteger(value) &&
+		value >= 1 &&
+		value <= 7
+		? (value as CardFlag)
+		: 0;
+}
+
+/**
  * Single review log entry stored per-card for FSRS optimization
  * Compact format: ~50 bytes per entry
  */
@@ -61,6 +94,8 @@ export interface FSRSCardData {
 	suspended?: boolean;
 	/** Date until card is buried (ISO string) - auto-unbury after this date */
 	buriedUntil?: string;
+	/** Card flag (Anki-compatible): 0 = none, 1-7 = colored flags */
+	flag?: CardFlag;
 	/** Review history for FSRS optimization (last 20 reviews, optional) */
 	history?: CardReviewLogEntry[];
 	/** Card creation timestamp (Unix ms, optional for backwards compatibility) */

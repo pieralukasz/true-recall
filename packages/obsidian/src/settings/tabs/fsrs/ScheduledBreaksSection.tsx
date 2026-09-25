@@ -1,7 +1,9 @@
 import { useCallback } from "preact/hooks";
 
+import type { SchedulingResult } from "@true-recall/core/metrics/fsrs-tools/scheduler/scheduler.types";
 import type { TrueRecallSettings } from "@true-recall/core/types";
 
+import { FSRSHelperCommand } from "@true-recall/obsidian/commands/commands/fsrs-helper.cmd";
 import {
 	ActionButton,
 	Clickable,
@@ -9,22 +11,49 @@ import {
 	FormField,
 	InfoBlock,
 } from "@true-recall/obsidian/components";
+import {
+	createScheduledBreak,
+	runScheduleBreak,
+	shouldSaveBreak,
+} from "@true-recall/obsidian/features/study/services/schedule-break-flow";
+import { t } from "@true-recall/obsidian/i18n";
 import { useApp } from "@true-recall/obsidian/preact";
+import { notify } from "@true-recall/obsidian/services/notification.service";
+
+import type { FsrsPluginHost } from "../../../types/plugin-host.types";
 
 interface ScheduledBreaksSectionProps {
 	settings: TrueRecallSettings;
 	save: (patch: Partial<TrueRecallSettings>) => Promise<void>;
 	onRefresh: () => void;
+	plugin: FsrsPluginHost;
 }
 
 export function ScheduledBreaksSection({
 	settings,
 	save,
 	onRefresh,
+	plugin,
 }: ScheduledBreaksSectionProps) {
 	const app = useApp();
 	const breaks = settings.scheduledBreaks;
 
+	const applyChanges = useCallback(
+		(result: SchedulingResult, description: string) => {
+			const cmd = new FSRSHelperCommand(
+				description,
+				result.changes.map((c) => ({
+					cardId: c.cardId,
+					originalDue: c.originalDue,
+					newDue: c.newDue,
+				})),
+			);
+			void plugin.commandService?.execute(cmd);
+		},
+		[plugin],
+	);
+
+	// Removing a break only forgets it: cards already moved stay where they are
 	const handleDeleteBreak = useCallback(
 		async (index: number) => {
 			await save({
@@ -40,40 +69,66 @@ export function ScheduledBreaksSection({
 			"@true-recall/obsidian/modals/shared/TextInputModal"
 		);
 		const startDate = await promptText(app, {
-			title: "Add scheduled break",
-			label: "Start date (YYYY-MM-DD)",
+			get title() {
+				return t("Add scheduled break");
+			},
+			get label() {
+				return t("Start date (YYYY-MM-DD)");
+			},
 			placeholder: "YYYY-MM-DD",
 		});
 		if (!startDate) return;
 
 		const endDate = await promptText(app, {
-			title: "Add scheduled break",
-			label: "End date (YYYY-MM-DD)",
+			get title() {
+				return t("Add scheduled break");
+			},
+			get label() {
+				return t("End date (YYYY-MM-DD)");
+			},
 			placeholder: "YYYY-MM-DD",
 		});
 		if (!endDate) return;
 
+		const start = startDate.trim();
+		const end = endDate.trim();
+		const outcome = await runScheduleBreak(
+			{
+				helper: plugin.fsrsHelper,
+				confirm: async (options) => {
+					const { confirm } = await import(
+						"@true-recall/obsidian/modals/shared/ConfirmModal"
+					);
+					return confirm(app, options);
+				},
+				applyChanges,
+				notify: notify(),
+			},
+			{
+				startDate: start,
+				endDate: end,
+				emptyMessage:
+					"No cards are due during this break, so it was not saved.",
+			},
+		);
+		if (!shouldSaveBreak(outcome.status)) return;
+
 		await save({
 			scheduledBreaks: [
 				...breaks,
-				{
-					id: crypto.randomUUID(),
-					startDate,
-					endDate,
-					redistributeBefore: true,
-					redistributeAfter: true,
-				},
+				createScheduledBreak(start, end, crypto.randomUUID()),
 			],
 		});
 		onRefresh();
-	}, [app, breaks, save, onRefresh]);
+	}, [app, plugin, applyChanges, breaks, save, onRefresh]);
 
 	return (
-		<FormCard title="Scheduled breaks">
+		<FormCard title={t("Scheduled breaks")}>
 			<InfoBlock>
 				<p>
-					Schedule breaks (vacations) to redistribute reviews and prevent
-					backlog accumulation.
+					{t(
+						"Schedule breaks (vacations) to redistribute reviews and prevent backlog accumulation.",
+					)}
 				</p>
 			</InfoBlock>
 
@@ -85,14 +140,14 @@ export function ScheduledBreaksSection({
 							class="ep:flex ep:items-center ep:justify-between ep:p-2 ep:bg-obs-background-modifier-form ep:rounded-lg"
 						>
 							<span>
-								{brk.startDate} to {brk.endDate}
+								{brk.startDate} {t("to")} {brk.endDate}
 							</span>
 							<Clickable
 								class="ep:text-ui-small"
 								stopPropagation={false}
 								onClick={() => void handleDeleteBreak(index)}
 							>
-								Delete
+								{t("Delete")}
 							</Clickable>
 						</div>
 					))}
@@ -100,11 +155,11 @@ export function ScheduledBreaksSection({
 			)}
 
 			<FormField
-				name="Add scheduled break"
-				description="Schedule a break period"
+				name={t("Add scheduled break")}
+				description={t("Schedule a break period")}
 			>
 				<ActionButton
-					label="Add break..."
+					label={t("Add break...")}
 					variant="secondary"
 					onClick={() => void handleAddBreak()}
 				/>

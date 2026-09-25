@@ -58,6 +58,14 @@ export function MobileNoteCardsHeader(props: MobileNoteCardsHeaderProps) {
 				>
 					+ Add
 				</Clickable>
+				<PanelIconButton
+					icon="zap"
+					label={props.quickAddOpen ? "Quick Add Open" : "Open Quick Add"}
+					pressed={props.quickAddOpen}
+					disabled={props.quickAddOpen}
+					class="ep:min-h-10 ep:min-w-10"
+					onClick={props.onOpenQuickAdd}
+				/>
 				{header.uncollectedCount > 0 ? (
 					<PanelIconButton
 						icon="download"

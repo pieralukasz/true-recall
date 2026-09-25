@@ -109,6 +109,14 @@ describe("Quick Note persistence and creation undo", () => {
 		expect(f.createNote).toHaveBeenCalledOnce();
 	});
 
+	it("keeps an unsavable dirty mobile draft open", async () => {
+		const f = createEditorFixture();
+		f.userEdit({ type: "field", name: "Front", value: "" });
+		await f.persistence.handleSaveAndClose();
+		expect(f.onDone).not.toHaveBeenCalled();
+		expect(f.stateRef.current.fields.Front).toBe("");
+	});
+
 	it("requires the source picker selection for keyboard saves too", async () => {
 		const f = createEditorFixture();
 		const persistence = useQuickNotePersistence(

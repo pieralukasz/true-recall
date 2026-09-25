@@ -5,8 +5,11 @@
  * workload accumulation.
  */
 
+import { State } from "ts-fsrs";
+
 import type {
 	BreakScheduleOptions,
+	CardDueInfo,
 	CardScheduleChange,
 	SchedulerCardStore,
 	SchedulingResult,
@@ -38,14 +41,7 @@ export class ScheduleBreakService {
 		const breakStart = new Date(startDate);
 		const breakEnd = new Date(endDate);
 
-		let cardsInBreak = this.cardStore.getDueCardsByDateRange(
-			startDate,
-			endDate,
-		);
-		if (cardIds) {
-			const allowed = new Set(cardIds);
-			cardsInBreak = cardsInBreak.filter((c) => allowed.has(c.id));
-		}
+		const cardsInBreak = this.getCardsInBreak(startDate, endDate, cardIds);
 
 		const changes: CardScheduleChange[] = [];
 		const beforeDistribution = new Map<string, number>();
@@ -76,10 +72,13 @@ export class ScheduleBreakService {
 		const redistributionDays: Date[] = [];
 
 		if (redistributeBefore) {
-			// Add days before the break
+			// Days before the break, never in the past: a card moved before
+			// today would just become overdue, the backlog a break should avoid
+			const todayStr = this.formatDate(new Date());
 			for (let i = 1; i <= Math.ceil(breakDays / 2); i++) {
 				const day = new Date(breakStart);
 				day.setDate(day.getDate() - i);
+				if (this.formatDate(day) < todayStr) break;
 				redistributionDays.push(day);
 			}
 		}
@@ -178,11 +177,7 @@ export class ScheduleBreakService {
 		endDate: string,
 		cardIds?: string[],
 	): { cardsAffected: number; breakDays: number } {
-		let cards = this.cardStore.getDueCardsByDateRange(startDate, endDate);
-		if (cardIds) {
-			const allowed = new Set(cardIds);
-			cards = cards.filter((c) => allowed.has(c.id));
-		}
+		const cards = this.getCardsInBreak(startDate, endDate, cardIds);
 		const breakDays =
 			this.daysBetween(new Date(startDate), new Date(endDate)) + 1;
 
@@ -190,6 +185,24 @@ export class ScheduleBreakService {
 			cardsAffected: cards.length,
 			breakDays,
 		};
+	}
+
+	/**
+	 * Cards due inside the break. New cards are skipped: they enter the
+	 * schedule through the daily new-card limit, not their due date.
+	 */
+	private getCardsInBreak(
+		startDate: string,
+		endDate: string,
+		cardIds?: string[],
+	): CardDueInfo[] {
+		const allowed = cardIds ? new Set(cardIds) : null;
+		return this.cardStore
+			.getDueCardsByDateRange(startDate, endDate)
+			.filter(
+				(card) =>
+					card.state !== State.New && (!allowed || allowed.has(card.id)),
+			);
 	}
 
 	/**

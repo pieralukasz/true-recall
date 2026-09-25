@@ -13,6 +13,7 @@ import {
 	ToggleInput,
 } from "@true-recall/obsidian/components";
 import { WorkloadForecastSection } from "@true-recall/obsidian/features/metrics/ui/stats/components/WorkloadForecastSection";
+import { t } from "@true-recall/obsidian/i18n";
 
 import type { FsrsPluginHost } from "../../../types/plugin-host.types";
 import { deferSettingsWork } from "../../defer-settings-work";
@@ -28,20 +29,70 @@ interface LoadBalanceSectionProps {
 }
 
 const TARGET_MODE_OPTIONS = [
-	{ value: "auto", label: "Automatic (suggested from your pace)" },
-	{ value: "manual", label: "Manual" },
+	{
+		value: "auto",
+		get label() {
+			return t("Automatic (suggested from your pace)");
+		},
+	},
+	{
+		value: "manual",
+		get label() {
+			return t("Manual");
+		},
+	},
 ];
 const BALANCE_RANGE_OPTIONS = [
-	{ value: "30", label: "Next 30 days" },
-	{ value: "60", label: "Next 60 days" },
-	{ value: "90", label: "Next 90 days" },
-	{ value: "0", label: "All future reviews" },
+	{
+		value: "30",
+		get label() {
+			return t("Next 30 days");
+		},
+	},
+	{
+		value: "60",
+		get label() {
+			return t("Next 60 days");
+		},
+	},
+	{
+		value: "90",
+		get label() {
+			return t("Next 90 days");
+		},
+	},
+	{
+		value: "0",
+		get label() {
+			return t("All future reviews");
+		},
+	},
 ];
 const MAX_SHIFT_OPTIONS = [
-	{ value: "1", label: "1 day" },
-	{ value: "3", label: "3 days" },
-	{ value: "7", label: "7 days" },
-	{ value: "14", label: "14 days" },
+	{
+		value: "1",
+		get label() {
+			return t("1 day");
+		},
+	},
+	{
+		value: "3",
+		get label() {
+			return t("3 days");
+		},
+	},
+	{
+		value: "7",
+		get label() {
+			return t("7 days");
+		},
+	},
+	{
+		value: "14",
+		get label() {
+			return t("14 days");
+		},
+	},
 ];
 
 export function LoadBalanceSection({
@@ -117,10 +168,12 @@ export function LoadBalanceSection({
 	};
 
 	return (
-		<FormCard title="Load balance">
+		<FormCard title={t("Load balance")}>
 			<FormField
-				name="Enable load balancing"
-				description="Use load balancing rules when scheduling future reviews"
+				name={t("Enable load balancing")}
+				description={t(
+					"Use load balancing rules when scheduling future reviews",
+				)}
 			>
 				<ToggleInput
 					value={settings.loadBalanceEnabled}
@@ -129,11 +182,11 @@ export function LoadBalanceSection({
 			</FormField>
 
 			<FormField
-				name="Daily target"
+				name={t("Daily target")}
 				description={
 					settings.loadBalanceTargetMode === "auto" && forecastData
 						? describeSuggestion(forecastData.decision)
-						: "How the daily review target is determined"
+						: t("How the daily review target is determined")
 				}
 			>
 				<SelectInput
@@ -149,8 +202,10 @@ export function LoadBalanceSection({
 
 			{settings.loadBalanceTargetMode === "manual" && forecastData ? (
 				<FormField
-					name="Target daily reviews"
-					description="Pick your number — the line below shows what it commits you to"
+					name={t("Target daily reviews")}
+					description={t(
+						"Pick your number — the line below shows what it commits you to",
+					)}
 				>
 					<SliderInput
 						value={settings.loadBalanceTarget}
@@ -173,8 +228,10 @@ export function LoadBalanceSection({
 			) : null}
 
 			<FormField
-				name="Maximum deviation (%)"
-				description="Allow this much deviation from target before rebalancing"
+				name={t("Maximum deviation (%)")}
+				description={t(
+					"Allow this much deviation from target before rebalancing",
+				)}
 			>
 				<SliderInput
 					value={settings.loadBalanceMaxDeviation}
@@ -187,8 +244,10 @@ export function LoadBalanceSection({
 			</FormField>
 
 			<FormField
-				name="Maximum schedule shift"
-				description="Largest day shift allowed when scheduling a newly reviewed card"
+				name={t("Maximum schedule shift")}
+				description={t(
+					"Largest day shift allowed when scheduling a newly reviewed card",
+				)}
 			>
 				<SelectInput
 					value={String(settings.loadBalanceMaxShiftDays)}
@@ -200,8 +259,8 @@ export function LoadBalanceSection({
 			</FormField>
 
 			<FormField
-				name="Balance now range"
-				description="Range used only by the manual Balance now action"
+				name={t("Balance now range")}
+				description={t("Range used only by the manual Balance now action")}
 			>
 				<SelectInput
 					value={String(settings.loadBalanceBulkDays)}
@@ -211,19 +270,21 @@ export function LoadBalanceSection({
 			</FormField>
 
 			<FormField
-				name="Balance workload now"
-				description="Apply load balancing immediately to scheduled reviews, spreading any overdue backlog from today forward"
+				name={t("Balance workload now")}
+				description={t(
+					"Apply load balancing immediately to scheduled reviews, spreading any overdue backlog from today forward",
+				)}
 			>
 				<div class="ep:flex ep:items-center ep:gap-2">
 					<ActionButton
-						label={balancing ? "Balancing..." : "Balance now"}
+						label={balancing ? t("Balancing...") : t("Balance now")}
 						variant="secondary"
 						disabled={balancing}
 						onClick={handleBalance}
 					/>
 					{lastAffectedCount > 0 && (
 						<ActionButton
-							label={`Undo (${lastAffectedCount})`}
+							label={t("Undo ({0})", [lastAffectedCount])}
 							variant="secondary"
 							disabled={balancing}
 							onClick={() => void handleUndo()}
@@ -243,7 +304,7 @@ export function LoadBalanceSection({
 				</div>
 			) : (
 				<p class="ep:mt-3 ep:text-xs ep:text-obs-muted ep:text-center ep:py-4">
-					Calculating workload forecast…
+					{t("Calculating workload forecast…")}
 				</p>
 			)}
 		</FormCard>

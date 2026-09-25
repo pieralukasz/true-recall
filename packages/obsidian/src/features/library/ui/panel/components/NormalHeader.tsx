@@ -18,6 +18,8 @@ export interface NormalHeaderProps {
 	onSearchInput: (input: HTMLInputElement | null) => void;
 	onShowShortcuts: () => void;
 	onRefresh: () => void;
+	quickAddOpen: boolean;
+	onOpenQuickAdd: () => void;
 }
 
 export function NormalHeader(props: NormalHeaderProps) {
@@ -84,6 +86,13 @@ export function NormalHeader(props: NormalHeaderProps) {
 					icon="plus"
 					label="Add Card (N)"
 					onClick={() => void header.handleAddFlashcard()}
+				/>
+				<PanelIconButton
+					icon="zap"
+					label={props.quickAddOpen ? "Quick Add Open" : "Open Quick Add"}
+					pressed={props.quickAddOpen}
+					disabled={props.quickAddOpen}
+					onClick={props.onOpenQuickAdd}
 				/>
 				<PanelIconButton
 					icon="more-vertical"

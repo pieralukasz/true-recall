@@ -1,0 +1,299 @@
+/* Keep chrome outside the only scroll region, including in short windows. */
+.modal.tr-modal-host.tr-modal-whats-new {
+	height: min(760px, 84vh);
+	max-height: calc(100vh - 32px);
+	max-width: min(680px, calc(100vw - 32px));
+}
+
+.modal.tr-modal-whats-new > .modal-title,
+.modal.tr-modal-whats-new .modal-header {
+	flex: 0 0 auto;
+	margin: 0;
+	padding: 24px 56px 0 24px;
+	text-align: left;
+	color: var(--text-normal);
+	font-size: var(--font-ui-large);
+	font-weight: 600;
+	line-height: 1.3;
+}
+
+.modal.tr-modal-whats-new .modal-header .modal-title {
+	margin: 0;
+	padding: 0;
+	font-size: inherit;
+}
+
+.modal.tr-modal-host.tr-modal-whats-new .modal-content {
+	min-height: 0;
+	padding: 0;
+	overflow: hidden;
+	scrollbar-gutter: auto;
+}
+
+.tr-whats-new {
+	display: flex;
+	flex: 1 1 auto;
+	flex-direction: column;
+	min-width: 0;
+	min-height: 0;
+	color: var(--text-normal);
+	font-size: var(--font-ui-small);
+}
+
+.tr-whats-new-intro {
+	flex: 0 0 auto;
+	padding: 8px 24px 20px;
+}
+
+.tr-whats-new-intro p {
+	margin: 0 0 12px;
+	color: var(--text-muted);
+	font-size: var(--font-ui-small);
+	line-height: 1.5;
+}
+
+.tr-whats-new-plan {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 8px 12px;
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+}
+
+.tr-whats-new-plan > span {
+	padding: 3px 8px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-s);
+	background: var(--background-secondary);
+}
+
+.tr-whats-new-history {
+	flex: 1 1 auto;
+	min-height: 0;
+	padding: 0 24px 12px;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	scrollbar-gutter: stable;
+}
+
+.tr-release {
+	margin: 0;
+	border-top: 1px solid var(--background-modifier-border);
+}
+
+.tr-release-heading {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	min-height: 52px;
+	padding: 12px 4px;
+	border-radius: var(--radius-s);
+	color: var(--text-normal);
+	font-size: var(--font-ui-small);
+	line-height: 1.5;
+	list-style: none;
+	cursor: pointer;
+	touch-action: manipulation;
+}
+
+.tr-release-heading::-webkit-details-marker {
+	display: none;
+}
+
+.tr-release-heading:hover {
+	background: var(--background-modifier-hover);
+}
+
+.tr-release-chevron {
+	flex: 0 0 auto;
+	width: 6px;
+	height: 6px;
+	margin: 0 4px;
+	border-right: 1.5px solid var(--text-muted);
+	border-bottom: 1.5px solid var(--text-muted);
+	transform: rotate(-45deg);
+}
+
+.tr-release[open] > .tr-release-heading .tr-release-chevron {
+	transform: rotate(45deg);
+}
+
+.tr-release-version {
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+}
+
+.tr-release-badge {
+	padding: 2px 6px;
+	border-radius: var(--radius-s);
+	background: var(--background-secondary);
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	font-weight: 400;
+}
+
+.tr-release-date {
+	margin-left: auto;
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	font-variant-numeric: tabular-nums;
+}
+
+/* Release notes use UI typography; note-theme heading and bold colors are noisy here. */
+.tr-whats-new .tr-release-content {
+	padding: 0 4px 20px 24px;
+	color: var(--text-normal);
+	font-family: var(--font-interface);
+	font-size: var(--font-ui-small);
+	line-height: 1.65;
+	overflow-wrap: anywhere;
+}
+
+.tr-whats-new .tr-release-content :is(h1, h2, h3, h4, h5, h6) {
+	margin: 20px 0 8px;
+	color: var(--text-normal);
+	font-family: inherit;
+	font-size: var(--font-ui-small);
+	font-weight: 600;
+	line-height: 1.5;
+	letter-spacing: normal;
+	text-transform: none;
+}
+
+.tr-whats-new .tr-release-content strong {
+	color: var(--text-normal);
+	font-weight: 600;
+}
+
+.tr-whats-new .tr-release-content p {
+	margin: 0 0 12px;
+	font-size: inherit;
+	line-height: inherit;
+}
+
+.tr-whats-new .tr-release-content :first-child {
+	margin-top: 0;
+}
+
+.tr-whats-new .tr-release-content :last-child {
+	margin-bottom: 0;
+}
+
+.tr-whats-new .tr-release-content :is(ul, ol) {
+	margin: 0 0 12px;
+	padding-left: 20px;
+}
+
+.tr-whats-new .tr-release-content li {
+	margin: 8px 0;
+}
+
+.tr-whats-new .tr-release-content li::marker {
+	color: var(--text-faint);
+}
+
+.tr-whats-new .tr-release-content :is(img, video) {
+	max-width: 100%;
+	height: auto;
+}
+
+.tr-whats-new .tr-release-content pre {
+	max-width: 100%;
+	overflow-x: auto;
+}
+
+.tr-whats-new-footer {
+	display: flex;
+	flex: 0 0 auto;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 16px 24px;
+	border-top: 1px solid var(--background-modifier-border);
+	background: var(--background-primary);
+}
+
+.tr-whats-new-footer nav {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px 16px;
+	min-width: 0;
+}
+
+.tr-whats-new-footer a,
+.tr-whats-new-plan a {
+	display: inline-flex;
+	align-items: center;
+	min-height: 32px;
+	color: var(--text-muted);
+	font-size: var(--font-ui-smaller);
+	text-decoration: none;
+}
+
+.tr-whats-new-footer a:hover,
+.tr-whats-new-plan a:hover {
+	color: var(--text-accent);
+	text-decoration: underline;
+}
+
+.tr-whats-new-footer button {
+	flex: 0 0 auto;
+	min-width: 88px;
+	min-height: 36px;
+	margin: 0;
+}
+
+.tr-whats-new :is(summary, a, button, [tabindex]):focus-visible {
+	outline: 2px solid var(--interactive-accent);
+	outline-offset: -2px;
+}
+
+.is-mobile .modal.tr-modal-host.tr-modal-whats-new {
+	height: 100%;
+	max-height: 100%;
+	max-width: 100%;
+}
+
+@media (max-width: 480px) {
+	.modal.tr-modal-whats-new > .modal-title,
+	.modal.tr-modal-whats-new .modal-header {
+		padding: 20px 48px 0 16px;
+	}
+
+	.tr-whats-new-intro {
+		padding: 8px 16px 16px;
+	}
+
+	.tr-whats-new-history {
+		padding-right: 16px;
+		padding-left: 16px;
+	}
+
+	.tr-release-heading {
+		flex-wrap: wrap;
+		gap: 6px 8px;
+	}
+
+	.tr-release-date {
+		white-space: nowrap;
+	}
+
+	.tr-whats-new .tr-release-content {
+		padding-left: 4px;
+	}
+
+	.tr-whats-new-footer {
+		padding: 12px 16px max(12px, env(safe-area-inset-bottom));
+	}
+
+	.tr-whats-new-footer nav {
+		gap: 0 12px;
+	}
+
+	.tr-whats-new-footer a,
+	.tr-whats-new-footer button,
+	.tr-whats-new-plan a {
+		min-height: 44px;
+	}
+}

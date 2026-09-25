@@ -449,6 +449,39 @@ describe("LoadBalanceService", () => {
 		});
 	});
 
+	describe("balance with saved breaks", () => {
+		it("does not move overflow onto days inside a saved break", () => {
+			const overloaded = createCardsOnDate("2026-02-02", 20).map((c) => ({
+				...c,
+				state: State.Review,
+			}));
+			mockStore = createMockCardStore(overloaded);
+			service = new LoadBalanceService(mockStore);
+
+			const result = service.balance({
+				targetPerDay: 5,
+				maxDeviation: 20,
+				days: 10,
+				scheduledBreaks: [
+					{
+						id: "brk",
+						startDate: "2026-02-03",
+						endDate: "2026-02-05",
+						redistributeBefore: true,
+						redistributeAfter: true,
+					},
+				],
+				dryRun: true,
+			});
+
+			expect(result.affectedCount).toBeGreaterThan(0);
+			for (const change of result.changes) {
+				const day = change.newDue.split("T")[0] ?? "";
+				expect(day < "2026-02-03" || day > "2026-02-05", day).toBe(true);
+			}
+		});
+	});
+
 	describe("balanceDue hot path", () => {
 		it("builds its distribution from aggregated counts, not full card rows", () => {
 			mockStore.getDueCountsByDateRange.mockReturnValue([
@@ -528,6 +561,33 @@ describe("LoadBalanceService", () => {
 			expect(["2026-02-04", "2026-02-06"]).toContain(
 				result.newDue.split("T")[0],
 			);
+		});
+
+		it("never picks a day inside a saved break", () => {
+			// Feb 5 is overloaded, Feb 4 and Feb 6 are empty but Feb 6 is a break
+			// day, so the only legal move is to Feb 4
+			mockStore.getDueCountsByDateRange.mockReturnValue([
+				{ day: "2026-02-05", count: 40 },
+			]);
+
+			for (const cardId of ["a", "b", "c", "d", "e", "f"]) {
+				const result = service.balanceDue({
+					cardId,
+					originalDue: "2026-02-05T10:00:00.000Z",
+					maxShiftDays: 3,
+					scheduledBreaks: [
+						{
+							id: "brk",
+							startDate: "2026-02-06",
+							endDate: "2026-02-09",
+							redistributeBefore: true,
+							redistributeAfter: true,
+						},
+					],
+				});
+
+				expect(result.newDue.split("T")[0], cardId).not.toBe("2026-02-06");
+			}
 		});
 
 		it("skips intervals under 2.5 days like Anki", () => {

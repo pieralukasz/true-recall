@@ -19,6 +19,7 @@ function createMockMetadataIndex(
 	fileData: Map<string, Record<string, unknown>>,
 ): IMetadataIndex {
 	return {
+		getAllFilePaths: () => [...fileData.keys()],
 		getPathByFieldValue: vi.fn((field: string, value: string) => {
 			for (const [path, fm] of fileData) {
 				if (getNestedValue(fm, field) === value) return path;
@@ -883,7 +884,58 @@ describe("HierarchyService", () => {
 		});
 	});
 
-	// NOTE: "include: folder" feature was removed during the core package reorganization.
-	// These tests are commented out pending re-implementation or deletion.
-	// describe("include: folder", () => { ... });
+	describe("include: folder", () => {
+		it("includes same-folder notes without frontmatter, but not itself, subfolders or prefix matches", () => {
+			addMockFile("Study/Project.md", { project: true, include: "folder" });
+			addMockFile("Study/Card.md", { flashcard_uid: "card" });
+			addMockFile("Study/Empty.md");
+			addMockFile("Study/Sub/Nested.md", { flashcard_uid: "nested" });
+			addMockFile("Study extra/Other.md", { flashcard_uid: "other" });
+			frontmatterIndex.rebuildIndex();
+			expect(service.getChildPaths("Study/Project.md").sort()).toEqual([
+				"Study/Card.md",
+				"Study/Empty.md",
+			]);
+			expect([...service.getSourceUidsForProject("Study/Project.md")]).toEqual([
+				"card",
+			]);
+			expect(service.getUnassignedPaths().sort()).toEqual([
+				"Study extra/Other.md",
+				"Study/Sub/Nested.md",
+			]);
+		});
+
+		it("supports root-folder include without a project marker and preserves explicit parents", () => {
+			addMockFile("Project.md", { include: "folder" });
+			addMockFile("Elsewhere/Other.md", { project: true });
+			addMockFile("Card.md", {
+				flashcard_uid: "card",
+				parents: ["[[Elsewhere/Other]]"],
+			});
+			frontmatterIndex.rebuildIndex();
+			expect(service.getParentsForNote("Card.md").sort()).toEqual([
+				"Elsewhere/Other.md",
+				"Project.md",
+			]);
+			expect(service.buildHierarchy().map((node) => node.path)).toEqual([
+				"Elsewhere/Other.md",
+				"Project.md",
+			]);
+		});
+
+		it("keeps peer folder projects as separate roots instead of creating a cycle", () => {
+			addMockFile("Study/A.md", { include: "folder" });
+			addMockFile("Study/B.md", { include: "folder" });
+			addMockFile("Study/Card.md", { flashcard_uid: "card" });
+			frontmatterIndex.rebuildIndex();
+			expect(service.buildHierarchy().map((node) => node.path)).toEqual([
+				"Study/A.md",
+				"Study/B.md",
+			]);
+			expect(service.getParentsForNote("Study/Card.md").sort()).toEqual([
+				"Study/A.md",
+				"Study/B.md",
+			]);
+		});
+	});
 });

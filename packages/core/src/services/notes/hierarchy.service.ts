@@ -28,7 +28,7 @@ export type LinkResolver = (name: string) => string | null;
  * Frontmatter fields that turn a note into a node of the hierarchy graph:
  * `parents` makes it a child, `project` makes it an explicit project.
  */
-const GRAPH_NODE_FIELDS = ["parents", "project"] as const;
+const GRAPH_NODE_FIELDS = ["parents", "project", "include"] as const;
 
 export class HierarchyService {
 	private graph: HierarchyGraph | null = null;
@@ -52,9 +52,23 @@ export class HierarchyService {
 	 * drop out of every aggregate, which is why renames must invalidate.
 	 */
 	isGraphNode(notePath: string): boolean {
-		return GRAPH_NODE_FIELDS.some(
-			(field) => this.frontmatterIndex.getValues(field, notePath).length > 0,
+		return (
+			this.isFolderMember(notePath) ||
+			GRAPH_NODE_FIELDS.some(
+				(field) => this.frontmatterIndex.getValues(field, notePath).length > 0,
+			)
 		);
+	}
+
+	isFolderMember(notePath: string): boolean {
+		const folder = notePath.slice(0, notePath.lastIndexOf("/") + 1);
+		return this.frontmatterIndex
+			.getFilesByValue("include", "folder")
+			.some(
+				(project) =>
+					project !== notePath &&
+					project.slice(0, project.lastIndexOf("/") + 1) === folder,
+			);
 	}
 
 	buildHierarchy(): HierarchyTreeNode[] {
@@ -258,6 +272,31 @@ export class HierarchyService {
 		for (const path of projectPaths) {
 			if (!childMap.has(path)) {
 				childMap.set(path, new Set());
+			}
+		}
+
+		// Folder membership is derived, so no frontmatter is rewritten.
+		const folderProjects = new Set(
+			this.frontmatterIndex.getFilesByValue("include", "folder"),
+		);
+		const filesByFolder = new Map<string, string[]>();
+		for (const path of this.frontmatterIndex.getAllFilePaths()) {
+			const folder = path.slice(0, path.lastIndexOf("/") + 1);
+			const files = filesByFolder.get(folder) ?? [];
+			files.push(path);
+			filesByFolder.set(folder, files);
+		}
+		for (const project of folderProjects) {
+			const folder = project.slice(0, project.lastIndexOf("/") + 1);
+			const children = childMap.get(project) ?? new Set<string>();
+			childMap.set(project, children);
+			for (const child of filesByFolder.get(folder) ?? []) {
+				// Peer folder projects must not implicitly make each other children.
+				if (folderProjects.has(child)) continue;
+				children.add(child);
+				const parents = parentMap.get(child) ?? new Set<string>();
+				parents.add(project);
+				parentMap.set(child, parents);
 			}
 		}
 

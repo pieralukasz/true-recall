@@ -16,6 +16,7 @@ import { TypeInAssessmentPanel } from "@true-recall/obsidian/features/study/ui/r
 import { TypeInCMEditor } from "@true-recall/obsidian/features/study/ui/review/components/TypeInCMEditor";
 import { TypeInFollowUp } from "@true-recall/obsidian/features/study/ui/review/components/TypeInFollowUp";
 import { getReviewMaxWidth } from "@true-recall/obsidian/features/study/ui/review/helpers";
+import { useNoteTypeCss } from "@true-recall/obsidian/features/study/ui/review/hooks/useNoteTypeCss";
 import { usePlugin } from "@true-recall/obsidian/preact/ObsidianContext";
 import { cn } from "@true-recall/obsidian/utils/cn";
 import { isMobile } from "@true-recall/obsidian/utils/platform";
@@ -183,6 +184,13 @@ export function CardContainer({
 	const showTypeIn = useTypeInMode && hasTextAnswer;
 	const showAssessment =
 		showTypeIn && (isCheckingAnswer || !!semanticResult || !!semanticMessage);
+	// Anki's `.card` maps to the question and answer fields only, so the
+	// review controls (type-in, footer) keep the plugin's styling
+	const noteTypeCss = useNoteTypeCss(
+		card.fsrs.noteTypeId,
+		card.templateOrd,
+		isCloze,
+	);
 
 	if (card.cardType === "note-review") {
 		return (
@@ -204,6 +212,7 @@ export function CardContainer({
 				style={maxWidthStyle}
 			>
 				<div class="ep:w-full">
+					{noteTypeCss && <style>{noteTypeCss.css}</style>}
 					<IOCardRenderer
 						key={card.id}
 						imagePath={card.ioImagePath}
@@ -212,6 +221,7 @@ export function CardContainer({
 						revealed={isAnswerRevealed}
 						revealSingleOnly
 						expandable
+						class={noteTypeCss?.className}
 					/>
 
 					<CardFooter
@@ -234,6 +244,7 @@ export function CardContainer({
 			style={maxWidthStyle}
 		>
 			<div class="ep:w-full ep:relative">
+				{noteTypeCss && <style>{noteTypeCss.css}</style>}
 				{card.cardType === "cloze" && card.clozeIndex !== undefined && (
 					<div class="ep:text-xs ep:text-obs-faint ep:mb-2 ep:uppercase ep:tracking-wider">
 						{`Cloze ${card.clozeIndex}`}
@@ -261,7 +272,10 @@ export function CardContainer({
 					}
 					field="question"
 					sourcePath={sourcePath}
-					cls="true-recall-review-question ep:leading-relaxed ep:text-obs-normal ep:mb-6"
+					cls={cn(
+						"true-recall-review-question ep:leading-relaxed ep:text-obs-normal ep:mb-6",
+						noteTypeCss?.className,
+					)}
 					onContentChange={isCloze ? undefined : onContentChange}
 				/>
 
@@ -313,7 +327,10 @@ export function CardContainer({
 								content={card.answer}
 								field="answer"
 								sourcePath={sourcePath}
-								cls="true-recall-review-answer ep:leading-relaxed ep:text-obs-muted"
+								cls={cn(
+									"true-recall-review-answer ep:leading-relaxed ep:text-obs-muted",
+									noteTypeCss?.className,
+								)}
 								onContentChange={onContentChange}
 							/>
 						</div>

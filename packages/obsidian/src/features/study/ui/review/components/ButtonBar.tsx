@@ -10,6 +10,7 @@ import { isMobile } from "@true-recall/obsidian/utils/platform";
 
 import type { TypeInMode } from "../helpers/type-in-flow";
 import { RatingButton } from "./RatingButton";
+import { UndoButton } from "./UndoButton";
 
 const typeInButtonVariants = cva(
 	"ep:flex ep:items-center ep:justify-center ep:h-10 ep:px-3 ep:rounded-md ep:border ep:bg-obs-primary ep:text-ui-smaller ep:font-medium ep:text-obs-muted ep:transition-colors ep:transition-transform ep:duration-150 ep:focus-visible:outline-none ep:focus-visible:ring-2 ep:focus-visible:ring-obs-interactive/45 ep:active:scale-95",
@@ -34,8 +35,10 @@ interface ButtonBarProps {
 	isCheckingAnswer?: boolean;
 	suggestedRating?: Grade | null;
 	compact?: boolean;
+	canUndo?: boolean;
 	onShowAnswer: () => void;
 	onAnswer: (rating: Grade) => void;
+	onUndo?: () => void;
 	onCycleTypeInMode?: () => void;
 	onActionsMenu?: (e: MouseEvent) => void;
 	onPolishMenu?: (e: MouseEvent) => void;
@@ -51,8 +54,10 @@ export function ButtonBar({
 	isCheckingAnswer = false,
 	suggestedRating = null,
 	compact = false,
+	canUndo = false,
 	onShowAnswer,
 	onAnswer,
+	onUndo,
 	onCycleTypeInMode,
 	onActionsMenu,
 	onPolishMenu,
@@ -180,11 +185,19 @@ export function ButtonBar({
 	if (mobile) {
 		// One clean full-width bar; Type-in and card actions live in the view
 		// header's overflow menu on mobile, not in a second floating row.
+		// Undo is the exception: it is needed right after a misgrade, when the
+		// next card already shows its question, so it stays at thumb reach next
+		// to "Show answer" instead of hiding in that menu (Cmd+Z has no mobile
+		// equivalent). Once the answer is revealed the four grade buttons need
+		// the full row, and rating the card again is the faster correction.
 		// Bottom padding comes from review.styles.css (safe area + floating
 		// navbar clearance), so no ep:pb-* utility here.
 		return (
 			<div class="true-recall-review-buttons ep:flex ep:w-full ep:gap-2 ep:border-t ep:border-obs-border ep:shrink-0 ep:px-3 ep:pt-2">
 				{ratingButtons}
+				{onUndo && !isAnswerRevealed && (
+					<UndoButton disabled={!canUndo} onUndo={onUndo} />
+				)}
 			</div>
 		);
 	}

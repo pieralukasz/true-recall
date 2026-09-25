@@ -230,7 +230,10 @@ export class TrueRecallApp {
 			noteActions: {
 				getByNoteTypeId: (id) => store.notes.getByNoteTypeId(id),
 				countByNoteType: (id) => store.notes.countByNoteType(id),
+				renameFieldKey: (id, oldName, newName) =>
+					store.notes.renameFieldKey(id, oldName, newName),
 			},
+			transaction: (fn) => store.transaction(fn),
 		});
 		this.noteTypeService.initialize();
 
@@ -339,6 +342,10 @@ export class TrueRecallApp {
 		this.disposers.push(
 			ve.onMetadataChanged((path, frontmatter) => {
 				this.frontmatterIndex.handleMetadataChanged(path, frontmatter);
+				if (this.hierarchyService.isFolderMember(path)) {
+					this.hierarchyService.invalidateGraph();
+					this.events.emit("hierarchy:changed", {});
+				}
 			}),
 		);
 
@@ -351,12 +358,18 @@ export class TrueRecallApp {
 						console.error("[TrueRecallApp] File deletion hook failed:", error);
 					}
 				}
+				const affectsHierarchy = this.hierarchyService.isGraphNode(path);
 				this.frontmatterIndex.handleFileDeleted(path);
+				if (affectsHierarchy) {
+					this.hierarchyService.invalidateGraph();
+					this.events.emit("hierarchy:changed", {});
+				}
 			}),
 		);
 
 		this.disposers.push(
 			ve.onFileRenamed((newPath, oldPath) => {
+				const wasGraphNode = this.hierarchyService.isGraphNode(oldPath);
 				this.frontmatterIndex.handleFileRenamed(newPath, oldPath);
 
 				// The index now resolves the new path, but the cached hierarchy
@@ -364,7 +377,7 @@ export class TrueRecallApp {
 				// can no longer resolve the note's flashcard_uid and its cards
 				// disappear from every project aggregate. Renaming a file emits no
 				// metadata change, so no field-change callback would cover this.
-				if (this.hierarchyService.isGraphNode(newPath)) {
+				if (wasGraphNode || this.hierarchyService.isGraphNode(newPath)) {
 					this.hierarchyService.invalidateGraph();
 					this.events.emit("hierarchy:changed", {});
 				}
@@ -393,6 +406,7 @@ export class TrueRecallApp {
 			this.events.emit("settings:changed", {});
 		});
 		this.frontmatterIndex.onFieldChange("flashcard_uid", () => {
+			this.hierarchyService.invalidateGraph();
 			this.events.emit("hierarchy:changed", {});
 		});
 	}

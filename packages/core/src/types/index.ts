@@ -28,6 +28,7 @@ export type {
 export type {
 	AnswerDiffToken,
 	AnswerDiffTokenType,
+	CardFlag,
 	CardMaturityBreakdown,
 	CardReviewLogEntry,
 	CardSchedulingMeta,
@@ -69,8 +70,11 @@ export type {
 	TypeInVerdict,
 } from "./fsrs";
 export {
+	CARD_FLAG_META,
+	CARD_FLAG_NONE,
 	createDefaultFSRSData,
 	formatInterval,
+	normalizeCardFlag,
 	PREVIEW_RATING_ORDER,
 	previewRatingFromGrade,
 	Rating,

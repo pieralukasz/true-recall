@@ -6,6 +6,10 @@ import type { IOEditorController } from "../../hooks/useIOEditorController";
 interface IOMaskModeSectionProps {
 	maskMode: IOEditorController["maskMode"];
 	onChange: IOEditorController["onMaskModeChange"];
+	hideOtherRegions: boolean;
+	onHideOtherRegionsChange: (value: boolean) => void;
+	groupCount: number;
+	onMergeRegions: () => void;
 }
 
 const BASE_BUTTON_CLASS =
@@ -17,6 +21,10 @@ const INACTIVE_BUTTON_CLASS = "ep:text-obs-muted ep:hover:bg-obs-hover";
 export function IOMaskModeSection({
 	maskMode,
 	onChange,
+	hideOtherRegions,
+	onHideOtherRegionsChange,
+	groupCount,
+	onMergeRegions,
 }: IOMaskModeSectionProps) {
 	return (
 		<section class="true-recall-io-side-section">
@@ -35,6 +43,30 @@ export function IOMaskModeSection({
 					</Clickable>
 				))}
 			</div>
+			<p class="ep:text-ui-small ep:text-obs-muted">
+				Mask mode controls visibility. Regions with the same group make one
+				card.
+			</p>
+			<label class="ep:flex ep:gap-2 ep:items-center">
+				<input
+					type="checkbox"
+					checked={hideOtherRegions}
+					onChange={(event) =>
+						onHideOtherRegionsChange(event.currentTarget.checked)
+					}
+				/>
+				Hide other regions while reviewing
+			</label>
+			<p class="ep:text-ui-small">
+				{groupCount} card{groupCount === 1 ? "" : "s"} on save
+			</p>
+			<button type="button" disabled={groupCount < 2} onClick={onMergeRegions}>
+				Merge all regions into one card
+			</button>
+			<p class="ep:text-ui-small ep:text-obs-muted">
+				Merging keeps the lowest group's card and review history. Other cards in
+				this note are removed when you save.
+			</p>
 		</section>
 	);
 }

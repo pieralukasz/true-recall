@@ -41,6 +41,18 @@ describe("TrueRecallSettingTab", () => {
 		expect(mountPreactMock).not.toHaveBeenCalled();
 	});
 
+	it("localizes native page labels and keeps English search aliases", () => {
+		const plugin = { app: {}, settings: { uiLanguage: "zh-CN" } };
+		const tab = new TrueRecallSettingTab(plugin.app as never, plugin as never);
+		const page = tab.getSettingDefinitions()[0];
+		expect(page?.name).toBe("常规");
+		if (!page || !("items" in page)) throw new Error("Missing page");
+		expect(page.items?.[0]?.name).toContain("常规");
+		expect(page.items?.[0]?.aliases).toEqual(
+			expect.arrayContaining([...(SETTINGS_PAGES[0]?.searchAliases ?? [])]),
+		);
+	});
+
 	it("mounts a page lazily from its declarative render callback", () => {
 		const unmount = vi.fn();
 		mountPreactMock.mockReturnValue(unmount);

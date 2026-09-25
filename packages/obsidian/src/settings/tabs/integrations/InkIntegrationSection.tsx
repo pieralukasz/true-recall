@@ -8,6 +8,7 @@ import {
 	getInkIntegrationStatus,
 	type InkIntegrationStatus,
 } from "@true-recall/obsidian/editor/shared/ink-embeddable-editor";
+import { t } from "@true-recall/obsidian/i18n";
 import { usePlugin } from "@true-recall/obsidian/preact";
 import { useIcon } from "@true-recall/obsidian/preact/hooks";
 
@@ -18,27 +19,47 @@ const STATUS_COPY: Record<
 	{ label: string; description: string; class: string }
 > = {
 	ready: {
-		label: "Ready",
-		description:
-			"Ink is enabled and supports drawings inside True Recall editors.",
+		get label() {
+			return t("Ready");
+		},
+		get description() {
+			return t(
+				"Ink is enabled and supports drawings inside True Recall editors.",
+			);
+		},
 		class: "ep:text-obs-accent",
 	},
 	incompatible: {
-		label: "Update required",
-		description:
-			"Ink is enabled, but this version does not expose the embedded-editor API required by True Recall. Install a True Recall-compatible Ink build, then reload Obsidian.",
+		get label() {
+			return t("Update required");
+		},
+		get description() {
+			return t(
+				"Ink is enabled, but this version does not expose the embedded-editor API required by True Recall. Install a True Recall-compatible Ink build, then reload Obsidian.",
+			);
+		},
 		class: "ep:text-obs-warning",
 	},
 	disabled: {
-		label: "Disabled",
-		description:
-			"Ink is installed but not loaded. Enable it under Community plugins, then reload Obsidian.",
+		get label() {
+			return t("Disabled");
+		},
+		get description() {
+			return t(
+				"Ink is installed but not loaded. Enable it under Community plugins, then reload Obsidian.",
+			);
+		},
 		class: "ep:text-obs-warning",
 	},
 	"not-installed": {
-		label: "Not installed",
-		description:
-			"Open Settings > Community plugins > Browse, search for Ink, install and enable it, then reload Obsidian.",
+		get label() {
+			return t("Not installed");
+		},
+		get description() {
+			return t(
+				"Open Settings > Community plugins > Browse, search for Ink, install and enable it, then reload Obsidian.",
+			);
+		},
 		class: "ep:text-obs-muted",
 	},
 };
@@ -50,29 +71,31 @@ export function InkIntegrationSection() {
 	const copy = STATUS_COPY[status];
 
 	return (
-		<FormCard title="Ink drawings">
+		<FormCard title={t("Ink drawings")}>
 			<InfoBlock>
-				Ink is a separate Obsidian community plugin and is not bundled with True
-				Recall. Install and enable a compatible Ink version to create and edit
-				drawings directly in review cards and the Add/Edit Flashcard dialog.
+				{t(
+					"Ink is a separate Obsidian community plugin and is not bundled with True Recall. Install and enable a compatible Ink version to create and edit drawings directly in review cards and the Add/Edit Flashcard dialog.",
+				)}
 			</InfoBlock>
 
-			<FormField name="Integration status" description={copy.description}>
+			<FormField name={t("Integration status")} description={copy.description}>
 				<span class={`ep:text-ui-small ep:font-medium ${copy.class}`}>
 					{copy.label}
 				</span>
 			</FormField>
 
 			<FormField
-				name="Ink plugin"
-				description="View installation instructions, releases, and source code"
+				name={t("Ink plugin")}
+				description={t(
+					"View installation instructions, releases, and source code",
+				)}
 			>
 				<Clickable
 					class="ep-btn ep-btn-outline ep:inline-flex ep:items-center ep:gap-1.5"
 					onClick={() => window.open(INK_GITHUB_URL, "_blank")}
 				>
 					<div ref={githubIconRef} class="ep:w-4 ep:h-4" />
-					Open Ink on GitHub
+					{t("Open Ink on GitHub")}
 				</Clickable>
 			</FormField>
 		</FormCard>

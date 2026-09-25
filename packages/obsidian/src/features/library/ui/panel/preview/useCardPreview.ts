@@ -65,8 +65,20 @@ export function buildStandaloneReviewCommand(args: {
 	preset: FSRSPreset;
 	settings: FSRSSettings;
 	balanceFsrs?: (fsrs: FSRSFlashcardItem["fsrs"]) => FSRSFlashcardItem["fsrs"];
+	/** Automatic sibling dispersal around the answered card's final due */
+	disperseSiblings?: (
+		fsrs: FSRSFlashcardItem["fsrs"],
+	) => { cardId: string; originalDue: string; newDue: string }[];
 }): ReviewAnswerCommand {
-	const { card, rating, fsrsService, preset, settings, balanceFsrs } = args;
+	const {
+		card,
+		rating,
+		fsrsService,
+		preset,
+		settings,
+		balanceFsrs,
+		disperseSiblings,
+	} = args;
 	const { updatedCard, result } = reviewService.processAnswer(
 		card,
 		rating,
@@ -74,10 +86,14 @@ export function buildStandaloneReviewCommand(args: {
 		0,
 		settings,
 	);
+	const updatedFsrs = balanceFsrs?.(updatedCard.fsrs) ?? updatedCard.fsrs;
 	return new ReviewAnswerCommand({
 		card: { ...card },
 		originalFsrs: { ...card.fsrs },
-		updatedFsrs: balanceFsrs?.(updatedCard.fsrs) ?? updatedCard.fsrs,
+		updatedFsrs,
+		disperseSiblings: disperseSiblings
+			? () => disperseSiblings(updatedFsrs)
+			: undefined,
 		previousIndex: null,
 		wasNewCard: card.fsrs.state === State.New,
 		rating,
@@ -136,6 +152,9 @@ export function useCardPreview({
 						rating: previewRatingFromGrade(rating),
 						rawPreview,
 					}) ?? fsrs,
+				disperseSiblings: (fsrs) =>
+					plugin.fsrsHelper?.disperseSiblingsAfterReview(card, fsrs).changes ??
+					[],
 			});
 			void plugin.commandService?.execute(cmd);
 			notify().success(`Reviewed (${Rating[rating]})`);

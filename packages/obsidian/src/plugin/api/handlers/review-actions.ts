@@ -126,6 +126,7 @@ export async function handleGradeSessionCard(
 			leech: leechTriggered
 				? {
 						suspended: outcome.leechSuspended,
+						tagged: outcome.leechTagged,
 						action: leechAction,
 						lapses: outcome.updatedCard.fsrs.lapses,
 						threshold: leechThreshold,

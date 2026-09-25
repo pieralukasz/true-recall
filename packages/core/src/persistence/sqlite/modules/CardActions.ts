@@ -1,4 +1,8 @@
-import type { CardSchedulingMeta, FSRSCardData } from "../../../types";
+import type {
+	CardFlag,
+	CardSchedulingMeta,
+	FSRSCardData,
+} from "../../../types";
 import type { NoteEditSource } from "../../../types/note.types";
 import type { SqliteDatabase } from "../SqliteDatabase";
 import { CardBulkActions } from "./cards/card-bulk-actions";
@@ -242,6 +246,10 @@ export class CardActions {
 		this.writes.updateCardDue(cardId, newDue);
 	}
 
+	setCardFlag(cardId: string, flag: CardFlag): void {
+		this.writes.setCardFlag(cardId, flag);
+	}
+
 	updateCardScheduling(
 		cardId: string,
 		data: { due: string; scheduledDays: number },
@@ -293,6 +301,10 @@ export class CardActions {
 
 	bulkSuspend(cardIds: string[]): number {
 		return this.bulk.bulkSuspend(cardIds);
+	}
+
+	bulkSetFlag(cardIds: string[], flag: CardFlag): number {
+		return this.bulk.bulkSetFlag(cardIds, flag);
 	}
 
 	bulkUnsuspend(cardIds: string[]): number {

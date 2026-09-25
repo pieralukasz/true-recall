@@ -6,7 +6,7 @@
 import { DatabaseError } from "../../errors";
 import type { IPersistence } from "../../interfaces/persistence";
 import { IntegrityCheckService } from "../../services/maintenance/integrity-check.service";
-import type { CardSchedulingMeta, FSRSCardData } from "../../types";
+import type { CardFlag, CardSchedulingMeta, FSRSCardData } from "../../types";
 import { NOTIFICATION_DURATION, notify } from "../notification";
 import {
 	type DbLoadOutcome,
@@ -570,6 +570,10 @@ export class SqliteStoreService {
 
 	updateCardDue(cardId: string, newDue: string): void {
 		this.cards.updateCardDue(cardId, newDue);
+	}
+
+	setCardFlag(cardId: string, flag: CardFlag): void {
+		this.cards.setCardFlag(cardId, flag);
 	}
 
 	updateCardScheduling(

@@ -1,4 +1,5 @@
 import { DEFAULT_FSRS_WEIGHTS } from "@true-recall/core/constants";
+import type { TrueRecallSettings } from "@true-recall/core/types";
 
 import type {
 	AppState,
@@ -14,12 +15,30 @@ const MAX_HISTORY_SIZE = 50;
 
 type SimulatorSlice = SimulatorSliceState & SimulatorSliceActions;
 
+/**
+ * Starting point of the simulator: the default preset's weights and desired
+ * retention, the same preset the scheduler falls back to (PresetService
+ * .getDefaultPreset). The flat fsrsWeights / fsrsRequestRetention settings are
+ * a stale legacy mirror and only serve pre-preset settings files.
+ */
+export function resolveSimulatorBaseline(settings: TrueRecallSettings): {
+	parameters: number[];
+	desiredRetention: number;
+} {
+	const presets = settings.fsrsPresets ?? [];
+	const preset =
+		presets.find((p) => p.id === settings.defaultPresetId) ?? presets[0];
+	const weights = preset ? preset.weights : (settings.fsrsWeights ?? null);
+	return {
+		parameters: weights ? [...weights] : [...DEFAULT_FSRS_WEIGHTS],
+		desiredRetention:
+			preset?.requestRetention ?? settings.fsrsRequestRetention ?? 0.9,
+	};
+}
+
 function createInitialState(deps: AppStoreDeps): SimulatorSliceState {
-	const settings = deps.getSettings();
-	const initialParams = settings.fsrsWeights
-		? [...settings.fsrsWeights]
-		: [...DEFAULT_FSRS_WEIGHTS];
-	const initialRetention = settings.fsrsRequestRetention ?? 0.9;
+	const { parameters: initialParams, desiredRetention: initialRetention } =
+		resolveSimulatorBaseline(deps.getSettings());
 
 	return {
 		sequences: [...DEFAULT_SEQUENCES],
@@ -147,11 +166,8 @@ export function createSimulatorSlice(
 		},
 
 		resetParameters: () => {
-			const settings = deps.getSettings();
-			const initialParams = settings.fsrsWeights
-				? [...settings.fsrsWeights]
-				: [...DEFAULT_FSRS_WEIGHTS];
-			const initialRetention = settings.fsrsRequestRetention ?? 0.9;
+			const { parameters: initialParams, desiredRetention: initialRetention } =
+				resolveSimulatorBaseline(deps.getSettings());
 			pushParameterHistory(initialParams);
 			set((s) => ({
 				simulator: {

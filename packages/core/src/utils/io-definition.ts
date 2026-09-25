@@ -115,6 +115,7 @@ export function parseIODefinition(
 	return {
 		regions,
 		maskMode: normalizeMaskMode(parsed.maskMode),
+		...(parsed.hideOtherRegions === true ? { hideOtherRegions: true } : {}),
 		version: 1,
 	};
 }
@@ -123,6 +124,7 @@ export function serializeIODefinition(definition: IODefinition): string {
 	return JSON.stringify({
 		version: 1,
 		maskMode: normalizeMaskMode(definition.maskMode),
+		...(definition.hideOtherRegions ? { hideOtherRegions: true } : {}),
 		regions: definition.regions.map((region, index) => ({
 			id: region.id || `io-${index}`,
 			x: normalizeCoord(region.x),
@@ -194,5 +196,18 @@ export function createEmptyIODefinition(
 		version: 1,
 		maskMode,
 		regions: [],
+	};
+}
+
+/** Explicit grouping keeps the lowest existing ordinal and its scheduling history. */
+export function mergeIORegions(definition: IODefinition): IODefinition {
+	const [first] = getIOGroupOrds(definition);
+	if (first === undefined) return definition;
+	return {
+		...definition,
+		regions: definition.regions.map((region) => ({
+			...region,
+			groupKey: String(first),
+		})),
 	};
 }

@@ -14,7 +14,8 @@ import {
 	StatusPill,
 } from "@true-recall/obsidian/components";
 import { Q, useQuery } from "@true-recall/obsidian/data";
-import { applyPendingProposals } from "@true-recall/obsidian/features/assistant/ui/apply-pending-proposals";
+import { ProposalReviewController } from "@true-recall/obsidian/features/assistant/ui/proposal/proposal-review-controller";
+import { threadReviewDeps } from "@true-recall/obsidian/features/assistant/ui/proposal/useProposalReview";
 import {
 	TaskDetail,
 	ThreadWorkspace,
@@ -29,7 +30,6 @@ import {
 	threadTask,
 } from "@true-recall/obsidian/features/assistant/ui/thread-utils";
 import { usePlugin } from "@true-recall/obsidian/preact/ObsidianContext";
-import { AssistantApplyService } from "@true-recall/obsidian/services/assistant/assistant-apply.service";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 import { cn } from "@true-recall/obsidian/utils/cn";
 
@@ -48,22 +48,21 @@ interface ThreadApprovalResult {
 	error?: string;
 }
 
+const silent = { success() {}, info() {}, error() {} };
+
+/** Applies one thread's pending drafts; the inbox reports the totals. */
 async function approveThreadProposals(
 	plugin: ReturnType<typeof usePlugin>,
 	thread: AssistantThread,
 ): Promise<ThreadApprovalResult | null> {
-	const manifest = thread.manifest;
-	if (!manifest || thread.activeTaskId) return null;
-	const result = await applyPendingProposals(
-		threadTask(thread),
-		manifest,
-		new AssistantApplyService(plugin),
+	const review = new ProposalReviewController(
+		threadReviewDeps(plugin, thread.id, thread.revision, silent),
 	);
-	plugin.assistantService?.updateThreadManifest(thread.id, manifest);
-	if (!manifest.proposals.some((proposal) => proposal.status === "proposed")) {
-		plugin.assistantService?.archiveThread(thread.id);
+	try {
+		return await review.applyAll();
+	} finally {
+		review.dispose();
 	}
-	return result;
 }
 
 function TaskRowShell({
