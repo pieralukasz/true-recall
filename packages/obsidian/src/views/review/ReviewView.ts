@@ -67,6 +67,7 @@ import {
 
 import type TrueRecallPlugin from "../../main";
 import { isPluginEnabled } from "../../plugin/plugin-utils";
+import { resolveNextSessionScope } from "./next-session-scope";
 import { populateReviewActionsMenu } from "./ReviewActionsMenu";
 import { createReviewModel } from "./ReviewPresenter";
 import { ReviewPresetController } from "./ReviewPresetController";
@@ -248,6 +249,7 @@ export class ReviewView extends ItemView {
 				},
 				onDelete: () => this.cardActionsHandler.handleDelete(),
 				onSuspend: () => this.cardActionsHandler.handleSuspend(),
+				onSetFlag: (flag) => this.cardActionsHandler.handleSetFlag(flag),
 				onForget: () => this.cardActionsHandler.handleForget(),
 				onBuryCard: () => this.cardActionsHandler.handleBuryCard(),
 				onBuryNote: () => this.cardActionsHandler.handleBuryNote(),
@@ -513,6 +515,7 @@ export class ReviewView extends ItemView {
 					getQueuedFollowUpCount: () => this.queuedFollowUpCount,
 					getTopUpAvailability: () => this.orchestrator.getTopUpAvailability(),
 					getPresetOptions: () => this.presets.getPresetOptions(),
+					canUndo: () => this.canUndoSessionAction(),
 					actions: {
 						onShowAnswer: () => void this.typeIn.handleReveal(),
 						onTypedAnswerChange: (value: string) =>
@@ -534,13 +537,14 @@ export class ReviewView extends ItemView {
 						onOpenDashboard: () => void this.handleOpenDashboard(),
 						onTopUp: (topUp: ReviewSessionTopUp) =>
 							this.orchestrator.handleTopUp(topUp),
-						onEndSession: () => this.handleNextSession(),
+						onEndSession: () => this.handleEndSession(),
 						onActionsMenu: (e: MouseEvent) => this.showActionsMenu(e),
 						// Card editing runs inside the shared AI Workspace.
 						onPolishMenu: isPluginEnabled(this.plugin.settings, "card-polish")
 							? (e: MouseEvent) => this.openCardPolishMenu(e)
 							: undefined,
 						onCycleTypeInMode: () => this.typeIn.cycleTypeInMode(),
+						onUndo: () => void this.undoSessionAction(),
 						onPresetChange: (name: string) =>
 							void this.presets.handlePresetChange(name),
 					},
@@ -702,9 +706,25 @@ export class ReviewView extends ItemView {
 	}
 
 	private handleNextSession(): void {
+		const scope = resolveNextSessionScope(
+			this.filters,
+			this.plugin.settings.temporaryCustomStudyDecks,
+			(sourceUid) =>
+				this.plugin.flashcardManager
+					.getAllFSRSCards()
+					.find((card) => card.sourceUid === sourceUid)?.sourceNoteName,
+		);
 		this.leaf.detach();
-		void this.plugin.activateView().catch((err) => {
-			notify().error("Could not open the next review session", err);
+		void this.plugin.openCustomStudyModal(scope).catch((err) => {
+			notify().error("Could not open custom study for the next session", err);
+		});
+	}
+
+	// Ending a session lands on the dashboard on every platform
+	private handleEndSession(): void {
+		this.leaf.detach();
+		void this.plugin.openDashboard().catch((err) => {
+			notify().error("Could not open the dashboard", err);
 		});
 	}
 

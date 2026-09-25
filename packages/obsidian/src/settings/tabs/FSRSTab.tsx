@@ -1,5 +1,6 @@
 import { useCallback, useState } from "preact/hooks";
 
+import { t } from "@true-recall/obsidian/i18n";
 import { useApp } from "@true-recall/obsidian/preact";
 
 import { usePreset, useSettings } from "../hooks/useSettings";
@@ -41,7 +42,7 @@ export function FSRSTab({ selectedPresetId, onPresetChange }: FSRSTabProps) {
 
 	const handleCreatePreset = useCallback(async () => {
 		const newPreset = await plugin.presetService.createPreset({
-			name: `${preset.name} (copy)`,
+			name: t("{0} (copy)", [preset.name]),
 			requestRetention: preset.requestRetention,
 			maximumInterval: preset.maximumInterval,
 			weights: preset.weights ? [...preset.weights] : null,
@@ -116,6 +117,7 @@ export function FSRSTab({ selectedPresetId, onPresetChange }: FSRSTabProps) {
 				settings={settings}
 				save={save}
 				onRefresh={refresh}
+				plugin={plugin}
 			/>
 
 			<BulkOperationsSection plugin={plugin} />

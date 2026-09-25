@@ -1,3 +1,5 @@
+import { useState } from "preact/hooks";
+
 import { Panel } from "@true-recall/obsidian/components";
 import {
 	NormalHeader,
@@ -8,6 +10,7 @@ import {
 } from "@true-recall/obsidian/features/library/ui/panel/components";
 import { MobileNoteCardsHeader } from "@true-recall/obsidian/features/library/ui/panel/components/MobileNoteCardsHeader";
 import { PanelCardDetail } from "@true-recall/obsidian/features/library/ui/panel/components/PanelCardDetail";
+import { QuickAddPanel } from "@true-recall/obsidian/features/library/ui/panel/components/QuickAddPanel";
 import { PanelScrollProvider } from "@true-recall/obsidian/features/library/ui/panel/hooks";
 import { useFlashcardPanel } from "@true-recall/obsidian/features/library/ui/panel/hooks/useFlashcardPanel";
 import { isMobile } from "@true-recall/obsidian/utils/platform";
@@ -30,6 +33,15 @@ function FlashcardPanelContent({
 	onActions?: (actions: PanelAppActions) => void;
 }) {
 	const panel = useFlashcardPanel();
+	const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
+	const [quickAddSourceUid, setQuickAddSourceUid] = useState<
+		string | undefined
+	>();
+	const openQuickAdd = () => {
+		if (isQuickAddOpen) return;
+		setQuickAddSourceUid(panel.store.flashcardInfo?.sourceUid);
+		setIsQuickAddOpen(true);
+	};
 
 	return (
 		<Panel disableScroll>
@@ -37,6 +49,12 @@ function FlashcardPanelContent({
 				ref={panel.panelRootRef}
 				class="tr-flashcard-panel ep:flex ep:h-full ep:min-w-0 ep:flex-col ep:overflow-hidden"
 			>
+				{isQuickAddOpen ? (
+					<QuickAddPanel
+						sourceUid={quickAddSourceUid}
+						onClose={() => setIsQuickAddOpen(false)}
+					/>
+				) : null}
 				{panel.openCard && !panel.isSelecting ? (
 					<PanelCardDetail
 						card={panel.openCard}
@@ -54,6 +72,8 @@ function FlashcardPanelContent({
 					<PanelList
 						panel={panel}
 						onRefresh={() => onActions?.({ type: "refresh" })}
+						quickAddOpen={isQuickAddOpen}
+						onOpenQuickAdd={openQuickAdd}
 					/>
 				)}
 			</div>
@@ -64,9 +84,13 @@ function FlashcardPanelContent({
 function PanelList({
 	panel,
 	onRefresh,
+	quickAddOpen,
+	onOpenQuickAdd,
 }: {
 	panel: ReturnType<typeof useFlashcardPanel>;
 	onRefresh: () => void;
+	quickAddOpen: boolean;
+	onOpenQuickAdd: () => void;
 }) {
 	return (
 		<>
@@ -89,6 +113,8 @@ function PanelList({
 					onSearchInput={panel.handleSearchInput}
 					onShowShortcuts={panel.showShortcuts}
 					onRefresh={onRefresh}
+					quickAddOpen={quickAddOpen}
+					onOpenQuickAdd={onOpenQuickAdd}
 				/>
 			) : (
 				<NormalHeader
@@ -103,6 +129,8 @@ function PanelList({
 					onSearchInput={panel.handleSearchInput}
 					onShowShortcuts={panel.showShortcuts}
 					onRefresh={onRefresh}
+					quickAddOpen={quickAddOpen}
+					onOpenQuickAdd={onOpenQuickAdd}
 				/>
 			)}
 

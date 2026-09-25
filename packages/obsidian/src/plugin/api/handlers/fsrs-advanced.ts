@@ -1,3 +1,4 @@
+import { DEFAULT_FSRS_WEIGHTS } from "@true-recall/core/constants";
 import { HttpError } from "@true-recall/core/errors";
 import { FSRSSimulatorService } from "@true-recall/core/services/fsrs/fsrs-simulator.service";
 
@@ -22,11 +23,14 @@ export async function handleOptimizeParameters(
 	const url = new URL(req.url ?? "/", "http://localhost");
 	const presetName = url.searchParams.get("preset_name") ?? undefined;
 
-	const preset = presetName
-		? ctx.plugin.presetService.getPresetByName(presetName)
-		: ctx.plugin.presetService.getDefaultPreset();
+	// An unknown preset name starts from the default preset, not from the
+	// stale legacy fsrsWeights mirror; null weights mean the FSRS defaults.
+	const preset =
+		(presetName
+			? ctx.plugin.presetService.getPresetByName(presetName)
+			: undefined) ?? ctx.plugin.presetService.getDefaultPreset();
 
-	const currentWeights = preset?.weights ?? ctx.plugin.settings.fsrsWeights;
+	const currentWeights = preset.weights;
 
 	try {
 		const result = await ctx.plugin.fsrsHelper.optimizeParameters(
@@ -68,8 +72,10 @@ export async function handleSimulateReviews(
 		return;
 	}
 
-	const weights = body.weights ?? ctx.plugin.settings.fsrsWeights ?? [];
-	const retention = body.retention ?? ctx.plugin.settings.fsrsRequestRetention;
+	const defaultPreset = ctx.plugin.presetService.getDefaultPreset();
+	const weights = body.weights ??
+		defaultPreset.weights ?? [...DEFAULT_FSRS_WEIGHTS];
+	const retention = body.retention ?? defaultPreset.requestRetention;
 
 	const simulator = new FSRSSimulatorService();
 	const results = simulator.simulate(body.sequences, weights, retention);

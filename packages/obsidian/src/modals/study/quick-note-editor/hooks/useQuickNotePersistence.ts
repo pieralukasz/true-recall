@@ -147,8 +147,17 @@ export function useQuickNotePersistence(
 	const handleSaveAndClose = useCallback(async () => {
 		if (savingRef.current) return;
 		const revision = revisionRef.current;
-		if (canSaveQuickNote(stateRef.current.fields, noteType?.fields ?? [])) {
+		const canSave = canSaveQuickNote(
+			stateRef.current.fields,
+			noteType?.fields ?? [],
+		);
+		if (canSave) {
 			if (!(await handleSave())) return;
+		} else {
+			const hasDraft =
+				Object.values(stateRef.current.fields).some((value) => value.trim()) ||
+				stateRef.current.userComment.trim();
+			if (hasDraft) return;
 		}
 		if (revision !== revisionRef.current) return;
 		onDone({ cancelled: false });

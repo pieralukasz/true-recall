@@ -24,6 +24,10 @@ export class ObsidianMetadataIndex implements IMetadataIndex {
 		return cache?.frontmatter?.[field];
 	}
 
+	getAllFilePaths(): string[] {
+		return this.app.vault.getMarkdownFiles().map((file) => file.path);
+	}
+
 	getAllPathsWithField(field: string): Map<string, unknown> {
 		const result = new Map<string, unknown>();
 		const files = this.app.vault.getMarkdownFiles();

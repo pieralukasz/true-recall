@@ -158,6 +158,12 @@
 	gap: 8px;
 }
 
+/* Community themes can override the warning-button foreground with a
+   low-contrast accent color. Keep the destructive action legible. */
+.tr-quick-editor-view__overlay-actions .tr-quick-editor-view__discard {
+	color: var(--text-on-accent);
+}
+
 /* ── Generic popout view container (Assistant, NoteTypeManager, CardTypesEditor) ───
    Shares drag-bar look with QuickNoteEditor but uses a fixed window size
    instead of dynamic resize-to-content. */

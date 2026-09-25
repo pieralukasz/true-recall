@@ -8,6 +8,7 @@ import {
 	TextInput,
 	ToggleInput,
 } from "@true-recall/obsidian/components";
+import { t } from "@true-recall/obsidian/i18n";
 
 interface AlgorithmSectionProps {
 	preset: FSRSPreset;
@@ -19,10 +20,13 @@ export function AlgorithmSection({
 	updatePreset,
 }: AlgorithmSectionProps) {
 	return (
-		<FormCard title="FSRS algorithm">
+		<FormCard title={t("FSRS algorithm")}>
 			<FormField
-				name="Desired retention"
-				description={`Target probability of recall (${FSRS_CONFIG.minRetention}-${FSRS_CONFIG.maxRetention}). Default: 0.9 (90%)`}
+				name={t("Desired retention")}
+				description={t(
+					"Target probability of recall ({0}-{1}). Default: 0.9 (90%)",
+					[FSRS_CONFIG.minRetention, FSRS_CONFIG.maxRetention],
+				)}
 			>
 				<SliderInput
 					value={preset.requestRetention}
@@ -35,8 +39,10 @@ export function AlgorithmSection({
 			</FormField>
 
 			<FormField
-				name="Maximum interval (days)"
-				description="Maximum days between reviews. Default: 36500 (100 years)"
+				name={t("Maximum interval (days)")}
+				description={t(
+					"Maximum days between reviews. Default: 36500 (100 years)",
+				)}
 			>
 				<TextInput
 					value={String(preset.maximumInterval)}
@@ -50,8 +56,10 @@ export function AlgorithmSection({
 			</FormField>
 
 			<FormField
-				name="Fuzz review intervals"
-				description="Randomize review intervals slightly to prevent cards from bunching on the same day"
+				name={t("Fuzz review intervals")}
+				description={t(
+					"Randomize review intervals slightly to prevent cards from bunching on the same day",
+				)}
 			>
 				<ToggleInput
 					value={preset.enableFuzz !== false}

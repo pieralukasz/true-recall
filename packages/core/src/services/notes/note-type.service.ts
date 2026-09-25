@@ -28,7 +28,15 @@ export interface NoteTypeServiceDeps {
 	noteActions: {
 		getByNoteTypeId(noteTypeId: string): { id: string }[];
 		countByNoteType(noteTypeId: string): number;
+		/** Move a field key on every note of the type; see NoteActions.renameFieldKey. */
+		renameFieldKey(
+			noteTypeId: string,
+			oldName: string,
+			newName: string,
+		): number;
 	};
+	/** Runs `fn` atomically; renameField uses it so schema and notes move together. */
+	transaction<T>(fn: () => T): T;
 }
 
 export class NoteTypeService {
@@ -181,22 +189,39 @@ export class NoteTypeService {
 			throw new ValidationError("Cannot modify built-in note types");
 		}
 
-		const fields = existing.fields.map((f) => (f === oldName ? newName : f));
+		const trimmed = newName.trim();
+		if (trimmed === oldName) return;
+		if (!existing.fields.includes(oldName)) {
+			throw new NotFoundError("Field", oldName);
+		}
+		if (!trimmed) {
+			throw new ValidationError("Field name cannot be empty", "fields");
+		}
+		// Merging into another field would overwrite that field's content on every note
+		if (existing.fields.includes(trimmed)) {
+			throw new DuplicateError(`Field "${trimmed}" already exists`);
+		}
 
-		// Also update templates that reference the old field name
+		const fields = existing.fields.map((f) => (f === oldName ? trimmed : f));
+
+		// Field references keep their section/modifier prefix:
+		// {{Name}}, {{#Name}}, {{^Name}}, {{/Name}}, {{cloze:Name}}, {{edit:Name}}, ...
+		const ref = new RegExp(
+			`\\{\\{(\\s*[#^/]?\\s*(?:[\\w-]+:\\s*)*)${escapeRegex(oldName)}\\s*\\}\\}`,
+			"g",
+		);
 		const templates = existing.templates.map((t) => ({
 			...t,
-			qfmt: t.qfmt.replace(
-				new RegExp(`\\{\\{\\s*${escapeRegex(oldName)}\\s*\\}\\}`, "g"),
-				`{{${newName}}}`,
-			),
-			afmt: t.afmt.replace(
-				new RegExp(`\\{\\{\\s*${escapeRegex(oldName)}\\s*\\}\\}`, "g"),
-				`{{${newName}}}`,
-			),
+			qfmt: t.qfmt.replace(ref, `{{$1${trimmed}}}`),
+			afmt: t.afmt.replace(ref, `{{$1${trimmed}}}`),
 		}));
 
-		this.deps.noteTypeActions.update(noteTypeId, { fields, templates });
+		// Note values are keyed by field name: without moving them the renamed
+		// field renders empty and the content stays orphaned under the old key
+		this.deps.transaction(() => {
+			this.deps.noteTypeActions.update(noteTypeId, { fields, templates });
+			this.deps.noteActions.renameFieldKey(noteTypeId, oldName, trimmed);
+		});
 	}
 }
 

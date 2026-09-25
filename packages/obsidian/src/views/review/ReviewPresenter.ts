@@ -35,6 +35,7 @@ export interface ReviewPresenterDeps {
 	getQueuedFollowUpCount: () => number;
 	getTopUpAvailability: () => ReviewSessionTopUpAvailability;
 	getPresetOptions: () => PresetPickerOption[];
+	canUndo: () => boolean;
 }
 export function createReviewModel(deps: ReviewPresenterDeps): ReviewModel {
 	return {
@@ -45,6 +46,7 @@ export function createReviewModel(deps: ReviewPresenterDeps): ReviewModel {
 			continuous: deps.plugin.settings.continuousCustomReviews,
 			cramming: deps.filters.crammingMode ?? false,
 			retrievabilityMode: deps.filters.schedulingMode === "retrievability",
+			canUndo: deps.canUndo,
 			display: {
 				header: deps.plugin.settings.showReviewHeader,
 				headerStats: deps.plugin.settings.showReviewHeaderStats,

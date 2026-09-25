@@ -8,6 +8,7 @@ import {
 	TextInput,
 	ToggleInput,
 } from "@true-recall/obsidian/components";
+import { t } from "@true-recall/obsidian/i18n";
 
 import type { PluginSettingsProps } from "../types";
 
@@ -38,7 +39,9 @@ export function AssistantSettingsPanel({
 				...presets,
 				{
 					id: `assistant-chip-${Date.now()}-${chipCounter}`,
-					name: "New action",
+					get name() {
+						return t("New action");
+					},
 					instruction: "",
 				},
 			],
@@ -48,8 +51,10 @@ export function AssistantSettingsPanel({
 	return (
 		<>
 			<FormField
-				name="Assistant model"
-				description="Model used for research tasks. Leave empty to use your default AI model."
+				name={t("Assistant model")}
+				description={t(
+					"Model used for research tasks. Leave empty to use your default AI model.",
+				)}
 			>
 				<TextInput
 					value={settings.assistantModel}
@@ -59,8 +64,10 @@ export function AssistantSettingsPanel({
 			</FormField>
 
 			<FormField
-				name="Web search"
-				description="Let the model search the web via OpenRouter (extra cost per search)."
+				name={t("Web search")}
+				description={t(
+					"Let the model search the web via OpenRouter (extra cost per search).",
+				)}
 			>
 				<ToggleInput
 					value={settings.assistantWebSearch}
@@ -69,8 +76,10 @@ export function AssistantSettingsPanel({
 			</FormField>
 
 			<FormField
-				name="Max sources"
-				description="Maximum web sources/citations the assistant may collect per task. Set to 0 to disable source fetching."
+				name={t("Max sources")}
+				description={t(
+					"Maximum web sources/citations the assistant may collect per task. Set to 0 to disable source fetching.",
+				)}
 			>
 				<SliderInput
 					value={settings.assistantMaxSources}
@@ -83,8 +92,10 @@ export function AssistantSettingsPanel({
 			</FormField>
 
 			<FormField
-				name="Global instructions"
-				description="Appended to every task's prompt — your style, language and tone."
+				name={t("Global instructions")}
+				description={t(
+					"Appended to every task's prompt — your style, language and tone.",
+				)}
 			>
 				<TextAreaInput
 					value={settings.assistantInstructions}
@@ -95,8 +106,8 @@ export function AssistantSettingsPanel({
 			</FormField>
 
 			<FormField
-				name="Max agent iterations"
-				description="Upper bound on tool-calling rounds per task."
+				name={t("Max agent iterations")}
+				description={t("Upper bound on tool-calling rounds per task.")}
 			>
 				<SliderInput
 					value={settings.assistantMaxIterations}
@@ -111,17 +122,18 @@ export function AssistantSettingsPanel({
 			<div class="ep:flex ep:flex-col ep:gap-3 ep:mt-6">
 				<div class="ep:flex ep:flex-col ep:gap-0.5">
 					<h3 class="ep:text-ui-small ep:font-semibold ep:text-obs-normal ep:m-0">
-						Quick actions
+						{t("Quick actions")}
 					</h3>
 					<span class="ep:text-ui-smaller ep:text-obs-muted">
-						One-tap actions shown in the Assistant workspace. Each also becomes
-						a hotkey-bindable command in review.
+						{t(
+							"One-tap actions shown in the Assistant workspace. Each also becomes a hotkey-bindable command in review.",
+						)}
 					</span>
 				</div>
 
 				{presets.length === 0 && (
 					<span class="ep:text-ui-smaller ep:text-obs-muted ep:italic">
-						No quick actions yet.
+						{t("No quick actions yet.")}
 					</span>
 				)}
 
@@ -135,11 +147,11 @@ export function AssistantSettingsPanel({
 								<TextInput
 									value={preset.name}
 									onChange={(v) => updatePreset(preset.id, { name: v })}
-									placeholder="Action name"
+									placeholder={t("Action name")}
 								/>
 							</div>
 							<ActionButton
-								label="Delete"
+								label={t("Delete")}
 								variant="danger"
 								onClick={() => removePreset(preset.id)}
 							/>
@@ -148,14 +160,16 @@ export function AssistantSettingsPanel({
 							value={preset.instruction}
 							onChange={(v) => updatePreset(preset.id, { instruction: v })}
 							rows={2}
-							placeholder="What should the Assistant do when this action is selected?"
+							placeholder={t(
+								"What should the Assistant do when this action is selected?",
+							)}
 						/>
 					</div>
 				))}
 
 				<div>
 					<ActionButton
-						label="Add quick action"
+						label={t("Add quick action")}
 						variant="secondary"
 						onClick={addPreset}
 					/>

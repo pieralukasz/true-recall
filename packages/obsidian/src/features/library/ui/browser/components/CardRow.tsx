@@ -1,5 +1,6 @@
 import { State } from "ts-fsrs";
 
+import { CARD_FLAG_META, type CardFlag } from "@true-recall/core/types";
 import { stripMarkdownSyntax } from "@true-recall/core/utils";
 
 import {
@@ -126,6 +127,15 @@ function CellRenderer({
 	if (column.key === "question" || column.key === "answer") {
 		return (
 			<div class="ep:px-1.5 ep:truncate ep:text-obs-normal" title={value}>
+				{column.key === "question" && card.flag !== 0 && (
+					<span
+						class="ep:inline-block ep:h-2 ep:w-2 ep:rounded-full ep:mr-1.5"
+						style={{
+							backgroundColor: CARD_FLAG_META[card.flag as CardFlag]?.color,
+						}}
+						title={`Flag: ${CARD_FLAG_META[card.flag as CardFlag]?.label}`}
+					/>
+				)}
 				{stripMarkdownSyntax(value)}
 			</div>
 		);

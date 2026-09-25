@@ -224,7 +224,7 @@ export class ApkgParserService {
 
 	private readCards(db: DatabaseLike): AnkiCard[] {
 		const results = db.exec(
-			"SELECT id, nid, did, ord, type, queue, due, ivl, factor, reps, lapses FROM cards",
+			"SELECT id, nid, did, ord, type, queue, due, ivl, factor, reps, lapses, flags FROM cards",
 		);
 		return this.mapRows(results, (row) => ({
 			id: row[0] as number,
@@ -238,6 +238,7 @@ export class ApkgParserService {
 			factor: row[8] as number,
 			reps: row[9] as number,
 			lapses: row[10] as number,
+			flags: (row[11] as number | null) ?? 0,
 		}));
 	}
 

@@ -230,6 +230,36 @@ export class NoteActions {
 		this.db.run(`UPDATE notes SET ${sets.join(", ")} WHERE id = ?`, params);
 	}
 
+	/**
+	 * Move every note of a type from field key `oldName` to `newName`, keeping
+	 * the field order. Bumps `updated_at` so device and cloud sync pick the
+	 * notes up, but not the edit counters or `content_edited_at`: the content
+	 * is unchanged, only the schema key moved. Returns the notes rewritten.
+	 */
+	renameFieldKey(noteTypeId: string, oldName: string, newName: string): number {
+		const rows = this.db.query<Pick<NoteRow, "id" | "fields_json">>(
+			`SELECT id, fields_json FROM notes WHERE note_type_id = ? AND deleted_at IS NULL`,
+			[noteTypeId],
+		);
+		const now = Date.now();
+		let changed = 0;
+		for (const row of rows) {
+			const fields = JSON.parse(row.fields_json) as Record<string, string>;
+			if (!Object.hasOwn(fields, oldName)) continue;
+			const renamed: Record<string, string> = {};
+			for (const [key, value] of Object.entries(fields)) {
+				if (key === newName) continue;
+				renamed[key === oldName ? newName : key] = value;
+			}
+			this.db.run(
+				`UPDATE notes SET fields_json = ?, updated_at = ? WHERE id = ?`,
+				[JSON.stringify(renamed), now, row.id],
+			);
+			changed++;
+		}
+		return changed;
+	}
+
 	delete(id: string): void {
 		this.db.run(`UPDATE notes SET deleted_at = ? WHERE id = ?`, [
 			Date.now(),

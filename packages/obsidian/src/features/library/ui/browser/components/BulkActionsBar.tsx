@@ -1,6 +1,8 @@
+import { Menu } from "obsidian";
 import { useCallback } from "preact/hooks";
 
 import { isCardBuried } from "@true-recall/core/helpers/card-state";
+import { CARD_FLAG_META, type CardFlag } from "@true-recall/core/types";
 
 import { UnburyCommand } from "@true-recall/obsidian/commands/commands/card-bury.cmd";
 import { DeleteCardCommand } from "@true-recall/obsidian/commands/commands/card-delete.cmd";
@@ -44,6 +46,37 @@ export function BulkActionsBar({
 		notify().success(`Unsuspended ${count} cards`);
 		onClearSelection();
 	}, [ids, plugin, onClearSelection]);
+
+	const handleFlagMenu = useCallback(
+		(event: MouseEvent | KeyboardEvent) => {
+			const menu = new Menu();
+			for (const flag of [0, 1, 2, 3, 4, 5, 6, 7] as CardFlag[]) {
+				const meta = CARD_FLAG_META[flag];
+				menu.addItem((item) =>
+					item
+						.setTitle(flag === 0 ? "Remove flag" : `Flag: ${meta.label}`)
+						.setIcon(flag === 0 ? "flag-off" : "flag")
+						.onClick(() => {
+							const count = plugin.cardStore.cards.bulkSetFlag(ids, flag);
+							mutate("cards:bulk", () => {});
+							notify().success(
+								flag === 0
+									? `Removed flag from ${count} cards`
+									: `Flagged ${count} cards: ${meta.label}`,
+							);
+							onClearSelection();
+						}),
+				);
+			}
+			if (event instanceof MouseEvent) menu.showAtMouseEvent(event);
+			else {
+				const el = event.target as HTMLElement;
+				const rect = el.getBoundingClientRect();
+				menu.showAtPosition({ x: rect.left, y: rect.bottom });
+			}
+		},
+		[ids, plugin, onClearSelection],
+	);
 
 	const handleUnbury = useCallback(async () => {
 		const buriedIds = ids.filter((id) =>
@@ -154,6 +187,7 @@ export function BulkActionsBar({
 				<ActionButton label="Suspend" onClick={handleSuspend} />
 				<ActionButton label="Unsuspend" onClick={handleUnsuspend} />
 				<ActionButton label="Unbury" onClick={() => void handleUnbury()} />
+				<ActionButton label="Flag" onClick={handleFlagMenu} />
 				<ActionButton label="Forget" onClick={handleForget} />
 				<ActionButton
 					label="Change type"
@@ -194,7 +228,7 @@ function ActionButton({
 	danger = false,
 }: {
 	label: string;
-	onClick: () => void;
+	onClick: (e: MouseEvent | KeyboardEvent) => void;
 	danger?: boolean;
 }) {
 	return (

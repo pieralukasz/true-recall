@@ -6,6 +6,7 @@
 
 import { State } from "ts-fsrs";
 
+import { isInScheduledBreak } from "./break-days";
 import { isEasyDay } from "./easy-days.service";
 import {
 	constrainedFuzzBounds,
@@ -90,6 +91,7 @@ export class LoadBalanceService {
 			includeOverdue = true,
 			cardIds,
 			completedToday = 0,
+			scheduledBreaks = [],
 			dryRun = true,
 		} = options;
 		const targetPerDay =
@@ -133,6 +135,7 @@ export class LoadBalanceService {
 			if (dateStr === todayStr) {
 				target = Math.max(0, target - completedToday);
 			}
+			if (isInScheduledBreak(dateStr, scheduledBreaks)) target = 0;
 			dailyTargets.set(dateStr, target);
 			currentDate.setDate(currentDate.getDate() + 1);
 		}
@@ -244,6 +247,7 @@ export class LoadBalanceService {
 			easyDays = { recurringDays: [], specificDates: [] },
 			easyDaysMultiplier = 0.5,
 			minIntervalDays = 1,
+			scheduledBreaks = [],
 		} = options;
 
 		const unbalanced: BalanceDueResult = {
@@ -296,16 +300,22 @@ export class LoadBalanceService {
 			easyDaysMultiplier,
 		);
 
-		const weightedDays: WeightedDay[] = offsets.map((offset, i) => {
-			const count = counts[i] ?? 0;
-			// Anki: an empty day gets full weight, bypassing all modifiers
-			if (count === 0) return { day: offset, weight: 1.0 };
+		const weightedDays: WeightedDay[] = offsets
+			.map((offset, i) => {
+				// A saved break is a hard exclusion, unlike the soft easy-day weight
+				if (isInScheduledBreak(this.dateFromToday(offset), scheduledBreaks)) {
+					return { day: offset, weight: 0 };
+				}
+				const count = counts[i] ?? 0;
+				// Anki: an empty day gets full weight, bypassing all modifiers
+				if (count === 0) return { day: offset, weight: 1.0 };
 
-			const countWeight = (1 / count) ** 2.15;
-			const intervalWeight = (1 / offset) ** 3;
-			const weight = countWeight * intervalWeight * (easyModifiers[i] ?? 1.0);
-			return { day: offset, weight };
-		});
+				const countWeight = (1 / count) ** 2.15;
+				const intervalWeight = (1 / offset) ** 3;
+				const weight = countWeight * intervalWeight * (easyModifiers[i] ?? 1.0);
+				return { day: offset, weight };
+			})
+			.filter((day) => day.weight > 0);
 
 		const random = mulberry32(hashString(`${cardId}:${originalDayStr}`));
 		const selected = selectWeightedDay(weightedDays, random);

@@ -301,6 +301,208 @@ describe("FSRSHelperService", () => {
 	});
 });
 
+describe("FSRSHelperService scheduled breaks", () => {
+	beforeEach(() => {
+		vi.useFakeTimers();
+		vi.setSystemTime(new Date("2026-02-01T10:00:00Z"));
+	});
+
+	afterEach(() => {
+		vi.useRealTimers();
+	});
+
+	const BREAK = {
+		id: "vacation",
+		startDate: "2026-02-10",
+		endDate: "2026-02-14",
+		redistributeBefore: true,
+		redistributeAfter: true,
+	};
+
+	function reviewFsrs(due: string, scheduledDays: number) {
+		return {
+			id: "current",
+			due,
+			state: State.Review,
+			scheduledDays,
+			stability: 10,
+			difficulty: 5,
+			reps: 3,
+			lapses: 0,
+			lastReview: "2026-02-01T10:00:00.000Z",
+			learningStep: 0,
+		};
+	}
+
+	function createBreakHelper(loadBalanceEnabled: boolean) {
+		const store = createStore({ allCards: [], balanceCards: [] });
+		return new FSRSHelperService(store as never, {
+			...DEFAULT_SETTINGS,
+			loadBalanceEnabled,
+			loadBalanceMaxShiftDays: 14,
+			scheduledBreaks: [BREAK],
+		});
+	}
+
+	it.each([
+		["with load balancing off", false],
+		["with load balancing on", true],
+	])("moves an answered review out of a saved break %s", (_label, enabled) => {
+		const scheduled = createBreakHelper(enabled).balanceScheduledReview(
+			"current",
+			reviewFsrs("2026-02-12T10:00:00.000Z", 11),
+		);
+
+		const day = scheduled.due.slice(0, 10);
+		expect(day < "2026-02-10" || day > "2026-02-14").toBe(true);
+	});
+
+	it("keeps preview and stored due identical and marks the shift", () => {
+		const helper = createBreakHelper(false);
+		const preview = helper.balanceSchedulingPreview("current", {
+			again: { due: new Date("2026-02-01T10:05:00.000Z"), interval: "5m" },
+			hard: { due: new Date("2026-02-08T10:00:00.000Z"), interval: "7d" },
+			good: { due: new Date("2026-02-12T10:00:00.000Z"), interval: "11d" },
+			easy: { due: new Date("2026-02-14T10:00:00.000Z"), interval: "13d" },
+		});
+		const scheduled = helper.balanceScheduledReview(
+			"current",
+			reviewFsrs("2026-02-12T10:00:00.000Z", 11),
+		);
+
+		expect(preview.good.due.toISOString()).toBe(scheduled.due);
+		expect(preview.good.originalDue?.toISOString()).toBe(
+			"2026-02-12T10:00:00.000Z",
+		);
+		expect(preview.good.loadBalanceNote).toBe(
+			"Moved out of a scheduled break.",
+		);
+		expect(preview.hard.due.toISOString()).toBe("2026-02-08T10:00:00.000Z");
+		expect(preview.easy.due.toISOString()).toBe("2026-02-15T10:00:00.000Z");
+		expect(preview.again.due.toISOString()).toBe("2026-02-01T10:05:00.000Z");
+	});
+
+	it("leaves same-day learning steps alone", () => {
+		const fsrs = {
+			...reviewFsrs("2026-02-01T10:10:00.000Z", 0),
+			state: State.Relearning,
+		};
+		expect(
+			createBreakHelper(false).balanceScheduledReview("current", fsrs),
+		).toBe(fsrs);
+	});
+
+	it("never lets the load balancer pick a day inside a saved break", () => {
+		// Days before the break are crowded, so without the exclusion the
+		// balancer would prefer the empty break days
+		const crowded = ["2026-02-07", "2026-02-08", "2026-02-09"].flatMap((day) =>
+			createCards(`busy-${day}`, 30, State.Review, {
+				due: `${day}T10:00:00.000Z`,
+			}),
+		);
+		for (const cardId of ["a", "b", "c", "d", "e", "f", "g", "h"]) {
+			const store = createStore({ allCards: crowded, balanceCards: crowded });
+			const helper = new FSRSHelperService(store as never, {
+				...DEFAULT_SETTINGS,
+				loadBalanceEnabled: true,
+				loadBalanceMaxShiftDays: 14,
+				scheduledBreaks: [BREAK],
+			});
+			const scheduled = helper.balanceScheduledReview(
+				cardId,
+				reviewFsrs("2026-02-08T10:00:00.000Z", 7),
+			);
+			const day = scheduled.due.slice(0, 10);
+			expect(
+				day < "2026-02-10" || day > "2026-02-14",
+				`${cardId}: ${day}`,
+			).toBe(true);
+		}
+	});
+});
+
+describe("FSRSHelperService.disperseSiblingsAfterReview", () => {
+	beforeEach(() => {
+		vi.useFakeTimers();
+		vi.setSystemTime(new Date("2026-02-01T10:00:00Z"));
+	});
+
+	afterEach(() => {
+		vi.useRealTimers();
+	});
+
+	const sibling = {
+		id: "sibling",
+		due: "2026-02-11T10:00:00.000Z",
+		state: State.Review,
+		suspended: false,
+		buriedUntil: undefined,
+		scheduledDays: 7,
+		sourceUid: "note-1",
+	};
+
+	function createDisperseHelper(siblingDisperseEnabled: boolean) {
+		const store = {
+			...createStore({ allCards: [], balanceCards: [] }),
+			getCardsBySourceUid: vi.fn(() => [sibling]),
+		};
+		const helper = new FSRSHelperService(store as never, {
+			...DEFAULT_SETTINGS,
+			siblingDisperseEnabled,
+			siblingMinInterval: 3,
+		});
+		return { helper, store };
+	}
+
+	const reviewed = { id: "reviewed", sourceUid: "note-1" };
+
+	it("does nothing while the toggle is off", () => {
+		const { helper, store } = createDisperseHelper(false);
+		const result = helper.disperseSiblingsAfterReview(reviewed, {
+			due: "2026-02-10T10:00:00.000Z",
+			state: State.Review,
+		});
+
+		expect(result.affectedCount).toBe(0);
+		expect(store.getCardsBySourceUid).not.toHaveBeenCalled();
+		expect(store.updateCardDue).not.toHaveBeenCalled();
+	});
+
+	it("moves the reviewed note's siblings when the toggle is on", () => {
+		const { helper, store } = createDisperseHelper(true);
+		const result = helper.disperseSiblingsAfterReview(reviewed, {
+			due: "2026-02-10T10:00:00.000Z",
+			state: State.Review,
+		});
+
+		expect(store.getCardsBySourceUid).toHaveBeenCalledWith("note-1");
+		expect(result.changes).toEqual([
+			expect.objectContaining({
+				cardId: "sibling",
+				newDue: "2026-02-13T10:00:00.000Z",
+			}),
+		]);
+		expect(store.updateCardDue).toHaveBeenCalledWith(
+			"sibling",
+			"2026-02-13T10:00:00.000Z",
+		);
+	});
+
+	it.each([
+		["a card without a source note", { id: "x" }, State.Review],
+		["a card back in relearning", reviewed, State.Relearning],
+	])("skips %s", (_label, card, state) => {
+		const { helper, store } = createDisperseHelper(true);
+		const result = helper.disperseSiblingsAfterReview(card, {
+			due: "2026-02-10T10:00:00.000Z",
+			state,
+		});
+
+		expect(result.affectedCount).toBe(0);
+		expect(store.updateCardDue).not.toHaveBeenCalled();
+	});
+});
+
 interface TestCard {
 	id: string;
 	due: string;

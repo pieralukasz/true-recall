@@ -52,6 +52,32 @@
 	transform: none;
 }
 
+.tr-flashcard-panel .tr-panel-quick-add {
+	box-shadow: none;
+}
+
+.tr-flashcard-panel button.tr-panel-quick-add__close {
+	width: 24px;
+	min-width: 24px;
+	height: 24px;
+	min-height: 24px;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	border-radius: var(--radius-s);
+	background: transparent;
+	box-shadow: none;
+	color: var(--text-muted);
+	font-size: 20px;
+	line-height: 1;
+}
+
+.tr-flashcard-panel button.tr-panel-quick-add__close:hover {
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+	transform: none;
+}
+
 .tr-flashcard-panel button.tr-panel-empty-action {
 	box-sizing: border-box;
 	width: 100%;

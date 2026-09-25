@@ -46,6 +46,7 @@ interface ReviewActions {
 	onActionsMenu: (e: MouseEvent) => void;
 	onPolishMenu?: (e: MouseEvent) => void;
 	onCycleTypeInMode: () => void;
+	onUndo: () => void;
 	onPresetChange?: (presetName: string) => void;
 }
 
@@ -54,6 +55,9 @@ interface ReviewSessionState {
 	continuous: boolean;
 	cramming: boolean;
 	retrievabilityMode: boolean;
+	/** Read during render, not a snapshot: the undo stack changes as the
+	 * session runs, and every change to the review store re-renders this tree. */
+	canUndo: () => boolean;
 	display: {
 		header: boolean;
 		headerStats: boolean;
@@ -223,8 +227,10 @@ function ActiveReview({ card, review, model }: ActiveReviewProps) {
 				isRatingLocked={typeInState.isRatingLocked}
 				isCheckingAnswer={typeInState.isCheckingAnswer}
 				suggestedRating={typeInState.suggestedRating}
+				canUndo={session.canUndo()}
 				onShowAnswer={actions.onShowAnswer}
 				onAnswer={actions.onAnswer}
+				onUndo={actions.onUndo}
 				onCycleTypeInMode={actions.onCycleTypeInMode}
 				onActionsMenu={actions.onActionsMenu}
 				onPolishMenu={actions.onPolishMenu}

@@ -4,9 +4,11 @@ import type { FSRSCardData, FSRSFlashcardItem } from "@true-recall/core/types";
 
 import type { CommandContext } from "@true-recall/obsidian/commands/command.types";
 import { ReviewAnswerCommand } from "@true-recall/obsidian/commands/commands/review-answer.cmd";
+import { patchNoteTags } from "@true-recall/obsidian/data";
 
 vi.mock("@true-recall/obsidian/data", () => ({
 	mutateReviewGrade: vi.fn(),
+	patchNoteTags: vi.fn(),
 }));
 
 function makeCard(): FSRSFlashcardItem {
@@ -160,5 +162,97 @@ describe("ReviewAnswerCommand — persistence rollback", () => {
 		expect(onPersisted).not.toHaveBeenCalled();
 		expect(onFailure).toHaveBeenCalledOnce();
 		errorSpy.mockRestore();
+	});
+});
+
+describe("ReviewAnswerCommand — leech tag", () => {
+	function makeNoteStore(initialTags: string[]) {
+		const note = { id: "note-1", tags: [...initialTags] };
+		return {
+			note,
+			notes: {
+				getById: vi.fn((id: string) =>
+					id === note.id ? { ...note, tags: [...note.tags] } : null,
+				),
+				update: vi.fn((_id: string, updates: { tags?: string[] }) => {
+					if (updates.tags) note.tags = [...updates.tags];
+				}),
+			},
+		};
+	}
+
+	function makeLeechCommand(addLeechTag: boolean) {
+		const card = { ...makeCard(), noteId: "note-1", tags: ["biology"] };
+		return new ReviewAnswerCommand({
+			card,
+			originalFsrs: { ...card.fsrs },
+			updatedFsrs: { ...card.fsrs, lapses: 8 },
+			previousIndex: null,
+			wasNewCard: false,
+			rating: 1,
+			previousState: 2,
+			scheduledDays: 0,
+			elapsedDays: 1,
+			responseTime: 1000,
+			presetName: "default",
+			addLeechTag,
+		});
+	}
+
+	function makeLeechCtx(store: ReturnType<typeof makeNoteStore>) {
+		return makeCtx({
+			cardStore: {
+				transaction: vi.fn((operation: () => unknown) => operation()),
+				notes: store.notes,
+			} as unknown as CommandContext["cardStore"],
+		});
+	}
+
+	it("adds the leech tag to the note, keeping existing tags, and patches the cache", async () => {
+		const store = makeNoteStore(["biology", "hard"]);
+		const cmd = makeLeechCommand(true);
+
+		cmd.execute(makeLeechCtx(store));
+		await new Promise((r) => setTimeout(r, 5));
+
+		expect(store.note.tags).toEqual(["biology", "hard", "leech"]);
+		expect(store.notes.update).toHaveBeenCalledWith(
+			"note-1",
+			{ tags: ["biology", "hard", "leech"] },
+			"system",
+		);
+		expect(patchNoteTags).toHaveBeenCalledWith("note-1", [
+			"biology",
+			"hard",
+			"leech",
+		]);
+	});
+
+	it("undo removes the leech tag it added", async () => {
+		const store = makeNoteStore(["biology"]);
+		const cmd = makeLeechCommand(true);
+		const ctx = makeLeechCtx(store);
+
+		cmd.execute(ctx);
+		await new Promise((r) => setTimeout(r, 5));
+		cmd.undo(ctx);
+
+		expect(store.note.tags).toEqual(["biology"]);
+	});
+
+	it.each([
+		["already tagged", ["leech"], true],
+		["not a leech answer", ["biology"], false],
+	])("does not write tags when %s", async (_label, tags, addLeechTag) => {
+		const store = makeNoteStore(tags);
+		const cmd = makeLeechCommand(addLeechTag);
+		const ctx = makeLeechCtx(store);
+
+		cmd.execute(ctx);
+		await new Promise((r) => setTimeout(r, 5));
+		cmd.undo(ctx);
+
+		expect(store.notes.update).not.toHaveBeenCalled();
+		expect(store.note.tags).toEqual(tags);
 	});
 });

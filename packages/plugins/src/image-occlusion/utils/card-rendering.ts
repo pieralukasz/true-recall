@@ -35,16 +35,21 @@ export function getRegionVisualState(
 	revealed: boolean,
 	maskMode: IOMaskMode,
 	revealSingleOnly = false,
+	hideOtherRegions = false,
 ): IORegionVisualState {
 	const isActive = ordinal === activeOrdinal;
 	if (revealed) {
 		if (isActive) return "is-revealed-active";
 		if (revealSingleOnly) {
-			return maskMode === "all" ? "is-mask-passive" : "is-outline-passive";
+			return maskMode === "all" || hideOtherRegions
+				? "is-mask-passive"
+				: "is-outline-passive";
 		}
 		return "is-revealed-passive";
 	}
 
 	if (isActive) return "is-mask-active";
-	return maskMode === "all" ? "is-mask-passive" : "is-outline-passive";
+	return maskMode === "all" || hideOtherRegions
+		? "is-mask-passive"
+		: "is-outline-passive";
 }

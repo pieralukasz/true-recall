@@ -1,3 +1,5 @@
+import type { CardFlag } from "@true-recall/core/types";
+
 import type { ReviewSliceActions } from "@true-recall/obsidian/store/types";
 
 import type { ReviewSliceContext } from "./review-slice-context";
@@ -13,6 +15,7 @@ export function createReviewEditActions({
 	| "isEditing"
 	| "updateCurrentCardContent"
 	| "updateCurrentCardComment"
+	| "updateCurrentCardFlag"
 	| "notifyChange"
 > {
 	return {
@@ -71,6 +74,22 @@ export function createReviewEditActions({
 
 			const newQueue = [...state.queue];
 			newQueue[state.currentIndex] = { ...card, userComment };
+
+			set((s) => ({
+				review: { ...s.review, queue: newQueue },
+			}));
+		},
+
+		updateCurrentCardFlag: (flag: CardFlag) => {
+			const state = get().review;
+			const card = state.queue[state.currentIndex];
+			if (!card) return;
+
+			const newQueue = [...state.queue];
+			newQueue[state.currentIndex] = {
+				...card,
+				fsrs: { ...card.fsrs, flag },
+			};
 
 			set((s) => ({
 				review: { ...s.review, queue: newQueue },

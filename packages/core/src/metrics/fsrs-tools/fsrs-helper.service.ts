@@ -18,6 +18,7 @@ import type {
 	OptimizerOptions,
 } from "./optimizer/optimizer.types";
 import { ParameterOptimizerService } from "./optimizer/parameter-optimizer.service";
+import { moveDueOutOfBreaks } from "./scheduler/break-days";
 import {
 	type EasyDaysOptions,
 	EasyDaysService,
@@ -101,6 +102,7 @@ const UNCHANGED_NOTE =
 	"No change: the FSRS day is already a good fit within the fuzz range.";
 const ADJUSTED_NOTE =
 	"Adjusted within the fuzz range to a less loaded day (Anki-style).";
+const BREAK_NOTE = "Moved out of a scheduled break.";
 
 function minutesUntil(due: Date | string): number {
 	return (new Date(due).getTime() - Date.now()) / (1000 * 60);
@@ -133,6 +135,36 @@ function describeBalancedEntry(
 		daysChanged: result.daysChanged,
 		loadBalanceNote: ADJUSTED_NOTE,
 	};
+}
+
+/** Fold a scheduled-break shift into an already (maybe) balanced preview entry */
+function describeBreakShiftedEntry(
+	entry: SchedulingPreviewEntry,
+	breaks: TrueRecallSettings["scheduledBreaks"],
+): SchedulingPreviewEntry {
+	if (minutesUntil(entry.due) < MINUTES_PER_DAY) return entry;
+	const shift = moveDueOutOfBreaks(
+		entry.due.toISOString(),
+		breaks,
+		utcDayKey(new Date()),
+	);
+	if (!shift) return entry;
+
+	const shiftedDue = new Date(shift.newDue);
+	return {
+		...entry,
+		due: shiftedDue,
+		interval: formatInterval(minutesUntil(shiftedDue)),
+		originalDue: entry.originalDue ?? entry.due,
+		originalInterval: entry.originalInterval ?? entry.interval,
+		balancedDue: shiftedDue,
+		daysChanged: (entry.daysChanged ?? 0) + shift.daysChanged,
+		loadBalanceNote: BREAK_NOTE,
+	};
+}
+
+function utcDayKey(date: Date): string {
+	return date.toISOString().slice(0, 10);
 }
 
 export class FSRSHelperService {
@@ -188,11 +220,23 @@ export class FSRSHelperService {
 
 		const input: OptimizationInput = {
 			reviews,
-			currentWeights: currentWeights ?? this.settings.fsrsWeights ?? undefined,
+			// null = the preset runs on FSRS defaults; only an omitted argument
+			// falls back to the default preset (legacy mirror for old settings)
+			currentWeights:
+				(currentWeights === undefined
+					? this.getDefaultPresetWeights()
+					: currentWeights) ?? undefined,
 			minReviews: 400,
 		};
 
 		return this.optimizer.optimize(input, options);
+	}
+
+	private getDefaultPresetWeights(): number[] | null {
+		const defaultPreset = this.settings.fsrsPresets?.find(
+			(preset) => preset.id === this.settings.defaultPresetId,
+		);
+		return defaultPreset ? defaultPreset.weights : this.settings.fsrsWeights;
 	}
 
 	validateWeights(weights: number[]): boolean {
@@ -275,6 +319,7 @@ export class FSRSHelperService {
 			includeOverdue: options?.includeOverdue,
 			cardIds: options?.cardIds,
 			completedToday: options?.completedToday ?? this.getCompletedTodayCount(),
+			scheduledBreaks: this.getScheduledBreaks(),
 			dryRun: options?.dryRun ?? true,
 		});
 	}
@@ -288,12 +333,23 @@ export class FSRSHelperService {
 	}
 
 	/**
-	 * Load-balanced due for an answered card. Pass `order` so the shift is
-	 * picked through the same ordered chain the rating buttons were previewed
-	 * with; without it the rating is balanced in isolation and may end up
-	 * before a lower rating's day.
+	 * Final due for an answered card: load-balanced, then moved out of any
+	 * saved scheduled break. Pass `order` so the shift is picked through the
+	 * same ordered chain the rating buttons were previewed with; without it
+	 * the rating is balanced in isolation and may end up before a lower
+	 * rating's day.
 	 */
 	balanceScheduledReview(
+		cardId: string,
+		fsrs: FSRSCardData,
+		order?: RatingOrderContext,
+	): FSRSCardData {
+		return this.avoidScheduledBreaks(
+			this.loadBalanceScheduledReview(cardId, fsrs, order),
+		);
+	}
+
+	private loadBalanceScheduledReview(
 		cardId: string,
 		fsrs: FSRSCardData,
 		order?: RatingOrderContext,
@@ -322,6 +378,30 @@ export class FSRSHelperService {
 	}
 
 	/**
+	 * Saved breaks keep working after the one-time redistribution: a review
+	 * that would come due inside one lands on the nearest day outside it.
+	 * Same-day learning steps are left alone.
+	 */
+	private avoidScheduledBreaks(fsrs: FSRSCardData): FSRSCardData {
+		if (minutesUntil(fsrs.due) < MINUTES_PER_DAY) return fsrs;
+		const shift = moveDueOutOfBreaks(
+			fsrs.due,
+			this.getScheduledBreaks(),
+			utcDayKey(new Date()),
+		);
+		if (!shift) return fsrs;
+		return {
+			...fsrs,
+			due: shift.newDue,
+			scheduledDays: Math.max(1, fsrs.scheduledDays + shift.daysChanged),
+		};
+	}
+
+	private getScheduledBreaks(): TrueRecallSettings["scheduledBreaks"] {
+		return this.settings.scheduledBreaks ?? [];
+	}
+
+	/**
 	 * Balance every rating button of one card. Ratings are balanced in
 	 * ascending order so a higher rating never gets an earlier due date than a
 	 * lower one, which independent per-button balancing used to allow.
@@ -330,19 +410,27 @@ export class FSRSHelperService {
 		cardId: string,
 		preview: SchedulingPreview,
 	): SchedulingPreview {
-		if (!this.settings.loadBalanceEnabled) return preview;
+		const breaks = this.getScheduledBreaks();
+		if (!this.settings.loadBalanceEnabled && breaks.length === 0) {
+			return preview;
+		}
 
-		const results = this.loadBalancer.balanceDueSequence({
-			cardId,
-			originalDues: PREVIEW_RATING_ORDER.map((rating) =>
-				preview[rating].due.toISOString(),
-			),
-			...this.loadBalanceTuning(),
-		});
+		const results = this.settings.loadBalanceEnabled
+			? this.loadBalancer.balanceDueSequence({
+					cardId,
+					originalDues: PREVIEW_RATING_ORDER.map((rating) =>
+						preview[rating].due.toISOString(),
+					),
+					...this.loadBalanceTuning(),
+				})
+			: null;
 
 		const balanced = { ...preview };
 		PREVIEW_RATING_ORDER.forEach((rating, index) => {
-			balanced[rating] = describeBalancedEntry(preview[rating], results[index]);
+			const entry = results
+				? describeBalancedEntry(preview[rating], results[index])
+				: preview[rating];
+			balanced[rating] = describeBreakShiftedEntry(entry, breaks);
 		});
 		return balanced;
 	}
@@ -397,6 +485,40 @@ export class FSRSHelperService {
 			minInterval: options?.minInterval ?? this.settings.siblingMinInterval,
 			sourceUid: options?.sourceUid,
 			dryRun: options?.dryRun ?? true,
+		});
+	}
+
+	/**
+	 * Automatic sibling dispersal after a review (settings toggle "Enable
+	 * sibling dispersal"). Only the reviewed note's siblings are read, so it
+	 * stays cheap on the grading path. Returns no changes when the toggle is
+	 * off or the card has no source note.
+	 */
+	disperseSiblingsAfterReview(
+		card: { id: string; sourceUid?: string },
+		updated: Pick<FSRSCardData, "due" | "state">,
+		options?: { dryRun?: boolean },
+	): SchedulingResult {
+		// Day-based spacing only makes sense around a day-based interval; a
+		// card back in (re)learning comes due again within minutes
+		if (
+			!this.settings.siblingDisperseEnabled ||
+			!card.sourceUid ||
+			updated.state !== State.Review
+		) {
+			return {
+				affectedCount: 0,
+				beforeDistribution: [],
+				afterDistribution: [],
+				changes: [],
+			};
+		}
+		return this.siblingDisperse.disperseAround({
+			cardId: card.id,
+			sourceUid: card.sourceUid,
+			anchorDue: updated.due,
+			minInterval: this.settings.siblingMinInterval,
+			dryRun: options?.dryRun ?? false,
 		});
 	}
 
@@ -522,11 +644,13 @@ export class FSRSHelperService {
 		maxShiftDays: number;
 		easyDays: TrueRecallSettings["easyDays"];
 		easyDaysMultiplier: number;
+		scheduledBreaks: TrueRecallSettings["scheduledBreaks"];
 	} {
 		return {
 			maxShiftDays: this.settings.loadBalanceMaxShiftDays,
 			easyDays: this.settings.easyDays,
 			easyDaysMultiplier: this.settings.easyDaysMultiplier,
+			scheduledBreaks: this.getScheduledBreaks(),
 		};
 	}
 
