@@ -38,6 +38,82 @@ The refactor also closes several timing gaps:
 - Creation undo restores the user comment as well as the fields.
 - Closing the editor prevents a pending AI context read from opening its window.
 
+### Quick Note popout window
+
+The desktop popout is hosted by
+`packages/obsidian/src/views/modal-window/QuickNoteEditorView.tsx`. It is the
+Obsidian adapter: it maps leaf lifecycle, Escape and window events onto three
+collaborators and mounts `QuickNoteEditorApp`. The form, saving and undo stay
+in the editor hooks above; the window layer only sees `onDone`,
+`onRequestClose` and `onDirtyChange`. Mobile and other contexts without popouts
+use `QuickNoteEditorModal` and never reach this view.
+
+| Module | Responsibility |
+| --- | --- |
+| `editor-request-session.ts` | Adopts the request named in view state, settles it exactly once, cancels a request it replaces |
+| `editor-close-guard.ts` | Dirty state, one discard confirmation at a time, the `beforeunload` prompt on the OS close button |
+| `editor-window-geometry.ts` | Centring, width lock, fit-to-content via ResizeObserver, `resize` guard and animation frames |
+| `QuickNoteEditorView.tsx` | Leaf lifecycle, Escape scope, workspace marker, window migration, discard overlay UI |
+
+Lifecycle: `openQuickNoteEditor` registers `{mode, resolve}` under a request id
+and opens a popout leaf with `{requestId}` as view state. `setState` adopts the
+request, mounts the editor and binds the geometry controller and close guard to
+the popout window. Done settles the request with the editor's result and
+detaches the leaf. A close request (the editor's close action or Escape outside
+text inputs) goes through the guard, then settles as cancelled. `onClose`
+releases every window resource and settles an unsettled request as cancelled.
+An unknown request id shows the fallback text and detaches the leaf.
+
+Close paths:
+
+| Path | Clean | Dirty | Discard already confirmed | Dialog open |
+| --- | --- | --- | --- | --- |
+| Close action, Escape | Close now | Ask once | Close now | Ignored; the open dialog decides |
+| OS close button | Close | Native unload prompt | Close | Native unload prompt |
+| Leaf closed by Obsidian | Close, request cancelled | Same | Same | Dialog dismissed, request cancelled |
+
+Window resources (resize listener, ResizeObserver, pending frame,
+`beforeunload`) are always removed from the window they were registered on. On
+window migration they are rebound to the new window without re-centring; after
+the session ended they are only released. A frame that fires after detaching
+does nothing. An embedded view sharing the main window is never resized.
+
+Behaviour changes, each covered by a test in the "fixed edge cases" group of
+`QuickNoteEditorView.test.ts` that fails against the previous implementation:
+
+- Re-applying the same view state no longer rebuilds the editor, which used to
+  discard typed content.
+- A new request adopted by a view that already served one settles the previous
+  request as cancelled instead of leaving its caller waiting, and starts with a
+  clean dirty state and a re-centring first fit.
+- Closing the leaf while the discard dialog is open now dismisses the dialog
+  and ends its pending confirmation. Previously the confirmation promise was
+  left pending with the "confirming" flag set. The request is settled as
+  cancelled once.
+
+Clean close requests are handled synchronously instead of one microtask later.
+Migrating the view after its session ended no longer installs listeners on the
+new window.
+
+Tests: `editor-request-session.test.ts`, `editor-close-guard.test.ts` and
+`editor-window-geometry.test.ts` test the collaborators against window doubles
+in `tests/views/modal-window/fake-popout.ts`. `QuickNoteEditorView.test.ts`
+characterizes the adapter; apart from the fixed edge cases it passed unchanged
+against the code before the split.
+
+Remaining risks:
+
+- Closing a dirty editor while a save is running settles the request as
+  cancelled. If the save still succeeds the note exists, but the caller only
+  sees the cancellation. The guard does not know about saving; fixing this
+  needs the editor to report its saving state.
+- The window doubles model only the properties the view reads. Real
+  Electron geometry (zoom, multiple monitors, stale `outerHeight`) is covered by
+  `popout-helpers.test.ts` and `popout-fit.test.ts` and needs a manual check.
+- Not yet exercised in a running Obsidian: popout open, fit and re-fit while
+  typing, Escape inside the note picker, discard dialog, OS close button with
+  unsaved text, dragging the popout into another window, and the embedded view.
+
 ## Review
 
 `packages/obsidian/src/views/review` now contains focused collaborators:

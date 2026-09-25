@@ -18,13 +18,13 @@ import type {
 import { mountPreact } from "@true-recall/obsidian/preact";
 
 import type TrueRecallPlugin from "../../main";
-import { computeFitOuterHeight } from "./popout-fit";
+import { EditorCloseGuard } from "./editor-close-guard";
+import { EditorRequestSession } from "./editor-request-session";
 import {
-	applyPopoutHeight,
-	centerPopoutWindow,
-	getPopoutOuterHeight,
-	lockPopoutResize,
-} from "./popout-helpers";
+	EditorWindowGeometryController,
+	type EditorWindowLayout,
+} from "./editor-window-geometry";
+import { getPopoutWindowFromContainer } from "./popout-helpers";
 import {
 	consumeQuickNoteEditorRequest,
 	type QuickNoteEditorRequestId,
@@ -34,32 +34,39 @@ interface QuickNoteEditorViewState extends Record<string, unknown> {
 	requestId?: QuickNoteEditorRequestId;
 }
 
-interface ActiveSession {
-	requestId: QuickNoteEditorRequestId;
-	mode: QuickNoteEditorMode;
-	resolve: (r: QuickNoteEditorResult) => void;
-	hasResolved: boolean;
-	isDirty: boolean;
-	closeConfirmed: boolean;
-	hasInitialFitted: boolean;
-}
-
 const MIN_WINDOW_HEIGHT = 280;
 const FALLBACK_AUTO_DETACH_MS = 50;
 
+/**
+ * Obsidian adapter for the Quick Note popout. It turns leaf lifecycle and
+ * window events into calls on three collaborators and mounts the editor:
+ *
+ * - `request` settles the caller's request exactly once,
+ * - `closeGuard` decides whether a close may proceed,
+ * - `geometry` keeps the popout fitted to its content.
+ *
+ * The form itself (draft, saving, undo) lives in QuickNoteEditorApp.
+ */
 export class QuickNoteEditorView extends ItemView {
 	private plugin: TrueRecallPlugin;
-	private session: ActiveSession | null = null;
+	private readonly request = new EditorRequestSession<
+		QuickNoteEditorRequestId,
+		QuickNoteEditorMode,
+		QuickNoteEditorResult
+	>({
+		consume: consumeQuickNoteEditorRequest,
+		cancelledResult: () => ({ cancelled: true }),
+	});
+	private readonly closeGuard = new EditorCloseGuard((signal) =>
+		this.confirmDiscardInPopout(signal),
+	);
+	private readonly geometry = new EditorWindowGeometryController({
+		readLayout: () => this.readLayout(),
+		minOuterHeight: MIN_WINDOW_HEIGHT,
+	});
 	private unmountPreact?: () => void;
-	private resizeObserver: ResizeObserver | null = null;
-	private resizeRafId: number | null = null;
 	private unregisterWindowMigrated: (() => void) | null = null;
-	private beforeUnloadHandler: ((e: BeforeUnloadEvent) => void) | null = null;
-	private boundWindow: Window | null = null;
-	private resizeGuardHandler: (() => void) | null = null;
-	private resizeGuardWindow: Window | null = null;
 	private workspaceTabsEl: HTMLElement | null = null;
-	private isConfirmingDiscard = false;
 
 	constructor(leaf: WorkspaceLeaf, plugin: TrueRecallPlugin) {
 		super(leaf);
@@ -79,7 +86,7 @@ export class QuickNoteEditorView extends ItemView {
 				active?.instanceOf(HTMLInputElement) ||
 				active?.instanceOf(HTMLTextAreaElement) ||
 				(active?.instanceOf(HTMLElement) && active.isContentEditable);
-			if (!isTextInput) void this.handleRequestClose();
+			if (!isTextInput) this.handleRequestClose();
 			return false;
 		});
 	}
@@ -89,84 +96,68 @@ export class QuickNoteEditorView extends ItemView {
 	}
 
 	getDisplayText(): string {
-		if (this.session?.mode.mode === "edit") return "Edit flashcard";
+		if (this.request.mode?.mode === "edit") return "Edit flashcard";
 		return "Add flashcard";
 	}
 
 	getIcon(): string {
-		return this.session?.mode.mode === "edit" ? "pencil" : "plus";
+		return this.request.mode?.mode === "edit" ? "pencil" : "plus";
 	}
 
 	async setState(state: unknown, result: ViewStateResult): Promise<void> {
 		const typedState =
 			(state as QuickNoteEditorViewState | null | undefined) ?? null;
-		const nextRequestId = typedState?.requestId ?? null;
-
-		if (nextRequestId && nextRequestId !== this.session?.requestId) {
-			const pending = consumeQuickNoteEditorRequest(nextRequestId);
-			if (pending) {
-				this.session = {
-					requestId: nextRequestId,
-					mode: pending.mode,
-					resolve: pending.resolve,
-					hasResolved: false,
-					isDirty: false,
-					closeConfirmed: false,
-					hasInitialFitted: false,
-				};
-			}
+		const adopted = this.request.adopt(typedState?.requestId);
+		if (adopted) {
+			this.closeGuard.reset();
+			this.geometry.resetFit();
 		}
 
 		await super.setState(state, result);
 
-		if (this.session) {
-			this.mountContent();
-		} else {
+		if (!this.request.isActive) {
 			this.mountFallback();
+			return;
 		}
+		// Re-applying the same state must not rebuild the editor: that would
+		// throw away whatever the user has typed.
+		if (adopted || !this.unmountPreact) this.mountContent();
 	}
 
 	getState(): QuickNoteEditorViewState {
-		return { requestId: this.session?.requestId };
+		return { requestId: this.request.requestId };
 	}
 
 	onOpen(): Promise<void> {
 		// `setState` may have already mounted before `onOpen` fires. Skip
 		// double-mount to avoid creating a second CodeMirror tree.
-		if (this.session && !this.unmountPreact) this.mountContent();
+		if (this.request.isActive && !this.unmountPreact) this.mountContent();
 		this.markWorkspaceTabs();
 		this.installWindowMigrationGuard();
 		return Promise.resolve();
 	}
 
 	async onClose(): Promise<void> {
-		this.stopContentSizeTracking();
-		this.uninstallBeforeUnloadGuard();
+		this.geometry.detach();
+		this.closeGuard.dispose();
 		this.unregisterWindowMigrated?.();
 		this.unregisterWindowMigrated = null;
 		this.unmarkWorkspaceTabs();
 		this.unmountPreact?.();
 		this.unmountPreact = undefined;
-		this.resolveCancelledIfPending();
-	}
-
-	private resolveCancelledIfPending(): void {
-		if (!this.session) return;
-		if (this.session.hasResolved) return;
-		this.session.hasResolved = true;
-		this.session.resolve({ cancelled: true });
+		this.request.cancel();
 	}
 
 	private mountContent(): void {
-		if (!this.session) return;
+		const mode = this.request.mode;
+		if (!mode) return;
 		const container = this.contentEl;
 
 		container.empty();
 		container.addClass("tr-quick-editor-view");
 		container.toggleClass("is-mac", Platform.isMacOS);
 
-		const title =
-			this.session.mode.mode === "edit" ? "Edit flashcard" : "Add flashcard";
+		const title = mode.mode === "edit" ? "Edit flashcard" : "Add flashcard";
 
 		this.unmountPreact?.();
 		this.unmountPreact = mountPreact(
@@ -184,140 +175,26 @@ export class QuickNoteEditorView extends ItemView {
 					"div",
 					{ class: "tr-quick-editor-view__body" },
 					h(QuickNoteEditorApp, {
-						mode: this.session.mode,
+						mode,
 						onDone: (result) => this.handleDone(result),
-						onRequestClose: () => void this.handleRequestClose(),
-						onDirtyChange: (dirty) => {
-							if (this.session) this.session.isDirty = dirty;
-						},
+						onRequestClose: () => this.handleRequestClose(),
+						onDirtyChange: (dirty) => this.closeGuard.setDirty(dirty),
 					}),
 				),
 			),
 		);
 
-		// Center immediately on mount, before any measurement, so the window
-		// never visibly flashes in its default (top-left) Electron position.
-		this.centerWindowOnScreen();
-		this.lockWindowSize();
-		this.startContentSizeTracking();
-		this.installBeforeUnloadGuard();
+		this.bindToWindow({ center: true });
 	}
 
-	private centerWindowOnScreen(): void {
-		const win = this.getPopoutWindow();
-		if (!win) return;
-		centerPopoutWindow(win);
+	/** Points the window-level collaborators at the window hosting the view. */
+	private bindToWindow(options: { center: boolean }): void {
+		const win = getPopoutWindowFromContainer(this.containerEl);
+		this.geometry.attach(win, options);
+		this.closeGuard.bindWindow(win);
 	}
 
-	/**
-	 * Takes the window off the user's resize handles. The editor owns its own
-	 * height and re-fits whenever the fields change, so a hand-dragged size is
-	 * only ever dead space.
-	 */
-	private lockWindowSize(): void {
-		const win = this.getPopoutWindow();
-		if (!win) return;
-		lockPopoutResize(win);
-	}
-
-	private startContentSizeTracking(): void {
-		this.stopContentSizeTracking();
-		const win = this.getPopoutWindow();
-		if (!win) return;
-		const body = this.contentEl.querySelector<HTMLElement>(
-			".tr-quick-editor-view__body",
-		);
-		if (!body) return;
-
-		this.scheduleResizeToContent();
-
-		const RO =
-			(win as Window & { ResizeObserver?: typeof ResizeObserver })
-				.ResizeObserver ?? ResizeObserver;
-		const observer = new RO(() => {
-			this.observeContentSizeTargets();
-			this.scheduleResizeToContent();
-		});
-		this.resizeObserver = observer;
-		this.observeContentSizeTargets();
-		this.installResizeGuard(win);
-	}
-
-	/**
-	 * Re-fits the window whenever something outside this view resizes it —
-	 * Obsidian restoring the size the popout was last left at, or a height
-	 * drag/zoom (lockPopoutResize only pins the width, so the zoom traffic
-	 * light stays enabled). `resizeWindowToContent` is a no-op when the size
-	 * already matches, so our own resizes settle instead of ping-ponging.
-	 */
-	private installResizeGuard(win: Window): void {
-		this.uninstallResizeGuard();
-		const handler = () => this.scheduleResizeToContent();
-		win.addEventListener("resize", handler);
-		this.resizeGuardHandler = handler;
-		this.resizeGuardWindow = win;
-	}
-
-	private uninstallResizeGuard(): void {
-		if (this.resizeGuardHandler && this.resizeGuardWindow) {
-			this.resizeGuardWindow.removeEventListener(
-				"resize",
-				this.resizeGuardHandler,
-			);
-		}
-		this.resizeGuardHandler = null;
-		this.resizeGuardWindow = null;
-	}
-
-	private observeContentSizeTargets(): void {
-		const observer = this.resizeObserver;
-		if (!observer) return;
-		const body = this.contentEl.querySelector<HTMLElement>(
-			".tr-quick-editor-view__body",
-		);
-		if (!body) return;
-
-		const targets = [
-			body.firstElementChild,
-			body.querySelector(".true-recall-quick-editor"),
-		];
-		for (const target of targets) {
-			if (target instanceof HTMLElement) observer.observe(target);
-		}
-	}
-
-	private stopContentSizeTracking(): void {
-		this.uninstallResizeGuard();
-		this.resizeObserver?.disconnect();
-		this.resizeObserver = null;
-		if (this.resizeRafId !== null) {
-			const win = this.boundWindow ?? this.getPopoutWindow();
-			win?.cancelAnimationFrame(this.resizeRafId);
-			this.resizeRafId = null;
-		}
-	}
-
-	private scheduleResizeToContent(): void {
-		const win = this.getPopoutWindow();
-		if (!win) return;
-		if (this.resizeRafId !== null) return;
-		this.resizeRafId = win.requestAnimationFrame(() => {
-			this.resizeRafId = null;
-			this.resizeWindowToContent();
-		});
-	}
-
-	private getPopoutWindow(): Window | null {
-		const win = this.containerEl.win;
-		// Modal/in-app contexts share the main window — skip resize there to
-		// avoid resizing the entire Obsidian app window.
-		if (!win || win === window) return null;
-		return win;
-	}
-
-	private resizeWindowToContent(): void {
-		const win = this.getPopoutWindow();
-		if (!win || !this.session) return;
+	private readLayout(): EditorWindowLayout | null {
 		const dragBar = this.contentEl.querySelector<HTMLElement>(
 			".tr-quick-editor-view__drag-bar",
 		);
@@ -325,60 +202,27 @@ export class QuickNoteEditorView extends ItemView {
 			".tr-quick-editor-view__body",
 		);
 		const content = body?.firstElementChild;
-		if (!dragBar || !body || !(content instanceof HTMLElement)) return;
-		this.observeContentSizeTargets();
-
-		const bodyStyle = win.getComputedStyle(body);
-		const paddingTop = parseFloat(bodyStyle.paddingTop) || 0;
-		const paddingBottom = parseFloat(bodyStyle.paddingBottom) || 0;
-		const bodyPadding = paddingTop + paddingBottom;
-		const editor = content.querySelector<HTMLElement>(
-			".true-recall-quick-editor",
-		);
-		const contentHeight = Math.max(
-			content.offsetHeight,
-			content.scrollHeight,
-			editor?.offsetHeight ?? 0,
-			editor?.scrollHeight ?? 0,
-		);
-		const target = computeFitOuterHeight({
-			dragBarHeight: dragBar.offsetHeight,
-			contentHeight,
-			bodyPadding,
-			viewportHeight: win.innerHeight,
-			viewContentHeight: this.contentEl.offsetHeight,
-			outerWidth: win.outerWidth,
-			innerWidth: win.innerWidth,
-			minOuterHeight: MIN_WINDOW_HEIGHT,
-			maxOuterHeight: win.screen?.availHeight ?? 1200,
-		});
-		if (target === null) return;
-
-		if (
-			Math.abs(target - getPopoutOuterHeight(win)) < 4 &&
-			this.session.hasInitialFitted
-		) {
-			return;
-		}
-
-		// Centre only on the first fit, so later content growth doesn't
-		// teleport the window around while the user is typing.
-		const center = !this.session.hasInitialFitted;
-		applyPopoutHeight(win, target, { center });
-		if (center) this.session.hasInitialFitted = true;
+		if (!dragBar || !body || !(content instanceof HTMLElement)) return null;
+		return {
+			viewContent: this.contentEl,
+			dragBar,
+			body,
+			content,
+			editor: content.querySelector<HTMLElement>(".true-recall-quick-editor"),
+		};
 	}
 
 	private installWindowMigrationGuard(): void {
 		this.unregisterWindowMigrated?.();
 		this.unregisterWindowMigrated = this.containerEl.onWindowMigrated(() => {
 			this.markWorkspaceTabs();
-			// Rebind ResizeObserver + beforeunload against the new window;
-			// observers captured against the prior window's globals are stale.
-			this.uninstallBeforeUnloadGuard();
-			if (this.session) {
-				this.lockWindowSize();
-				this.startContentSizeTracking();
-				this.installBeforeUnloadGuard();
+			// Observers and listeners built from the previous window's
+			// globals are stale; rebind them against the new window.
+			if (this.request.isActive) {
+				this.bindToWindow({ center: false });
+			} else {
+				this.geometry.detach();
+				this.closeGuard.bindWindow(null);
 			}
 		});
 	}
@@ -393,34 +237,6 @@ export class QuickNoteEditorView extends ItemView {
 	private unmarkWorkspaceTabs(): void {
 		this.workspaceTabsEl?.removeClass("tr-quick-editor-workspace");
 		this.workspaceTabsEl = null;
-	}
-
-	private installBeforeUnloadGuard(): void {
-		this.uninstallBeforeUnloadGuard();
-		const win = this.getPopoutWindow();
-		if (!win) return;
-		const handler = (e: BeforeUnloadEvent) => {
-			if (!this.session || !this.session.isDirty) return;
-			if (this.session.closeConfirmed) return;
-			// Triggers Electron's native confirm dialog when the user closes
-			// the popout window via the OS X-button with unsaved content.
-			// (returnValue is no longer needed — preventDefault() alone triggers it.)
-			e.preventDefault();
-		};
-		win.addEventListener("beforeunload", handler);
-		this.beforeUnloadHandler = handler;
-		this.boundWindow = win;
-	}
-
-	private uninstallBeforeUnloadGuard(): void {
-		if (this.beforeUnloadHandler && this.boundWindow) {
-			this.boundWindow.removeEventListener(
-				"beforeunload",
-				this.beforeUnloadHandler,
-			);
-		}
-		this.beforeUnloadHandler = null;
-		this.boundWindow = null;
 	}
 
 	private mountFallback(): void {
@@ -439,44 +255,37 @@ export class QuickNoteEditorView extends ItemView {
 	}
 
 	private handleDone(result: QuickNoteEditorResult): void {
-		if (!this.session) return;
-		if (this.session.hasResolved) {
+		if (!this.request.isActive) return;
+		if (!this.request.settle(result)) {
 			console.warn(
 				"[true-recall] QuickNoteEditorView.handleDone called after resolve; dropping result",
 			);
 			return;
 		}
-		this.session.hasResolved = true;
-		this.session.resolve(result);
 		this.leaf.detach();
 	}
 
-	private async handleRequestClose(): Promise<void> {
-		if (!this.session) return;
-		if (this.isConfirmingDiscard) return;
-		if (this.session.isDirty && !this.session.closeConfirmed) {
-			this.isConfirmingDiscard = true;
-			try {
-				const confirmed = await this.confirmDiscardInPopout();
-				if (!confirmed) return;
-				this.session.closeConfirmed = true;
-			} finally {
-				this.isConfirmingDiscard = false;
-			}
-		}
-		this.handleDone({ cancelled: true });
+	private handleRequestClose(): void {
+		if (!this.request.isActive) return;
+		this.closeGuard.requestClose(() => this.handleDone({ cancelled: true }));
 	}
 
-	private confirmDiscardInPopout(): Promise<boolean> {
+	private confirmDiscardInPopout(signal: AbortSignal): Promise<boolean> {
 		const host = this.contentEl.createDiv({
 			cls: "tr-quick-editor-view__overlay",
 		});
 		return new Promise<boolean>((resolve) => {
+			let finished = false;
 			const finish = (value: boolean) => {
+				if (finished) return;
+				finished = true;
+				signal.removeEventListener("abort", onAbort);
 				render(null, host);
 				host.remove();
 				resolve(value);
 			};
+			const onAbort = () => finish(false);
+			signal.addEventListener("abort", onAbort);
 			render(
 				h(DiscardOverlay, {
 					onConfirm: () => finish(true),
