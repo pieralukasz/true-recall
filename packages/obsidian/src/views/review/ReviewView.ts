@@ -67,6 +67,7 @@ import {
 
 import type TrueRecallPlugin from "../../main";
 import { isPluginEnabled } from "../../plugin/plugin-utils";
+import { resolveNextSessionScope } from "./next-session-scope";
 import { populateReviewActionsMenu } from "./ReviewActionsMenu";
 import { createReviewModel } from "./ReviewPresenter";
 import { ReviewPresetController } from "./ReviewPresetController";
@@ -705,23 +706,26 @@ export class ReviewView extends ItemView {
 	}
 
 	private handleNextSession(): void {
+		const scope = resolveNextSessionScope(
+			this.filters,
+			this.plugin.settings.temporaryCustomStudyDecks,
+			(sourceUid) =>
+				this.plugin.flashcardManager
+					.getAllFSRSCards()
+					.find((card) => card.sourceUid === sourceUid)?.sourceNoteName,
+		);
 		this.leaf.detach();
-		void this.plugin.activateView().catch((err) => {
-			notify().error("Could not open the next review session", err);
+		void this.plugin.openCustomStudyModal(scope).catch((err) => {
+			notify().error("Could not open custom study for the next session", err);
 		});
 	}
 
-	// On mobile the flashcard panel takes over the main area, which reads as a
-	// stray browser after ending a session — land on the dashboard instead.
+	// Ending a session lands on the dashboard on every platform
 	private handleEndSession(): void {
-		if (isMobile()) {
-			this.leaf.detach();
-			void this.plugin.openDashboard().catch((err) => {
-				notify().error("Could not open the dashboard", err);
-			});
-			return;
-		}
-		this.handleNextSession();
+		this.leaf.detach();
+		void this.plugin.openDashboard().catch((err) => {
+			notify().error("Could not open the dashboard", err);
+		});
 	}
 
 	private async handleOpenDashboard(): Promise<void> {
