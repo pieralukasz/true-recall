@@ -273,6 +273,89 @@ It converts file references to paths before calling the core frontmatter API,
 and normalizes optional question/answer values. This replaces the double type
 assertion that hid the mismatch.
 
+### Assistant review UI: proposals, approval and conflicts
+
+Flow and data owner at each step:
+
+| Step | Owner |
+| --- | --- |
+| AI proposal | Thread or task manifest in SQLite, written by the workflow runner |
+| Local draft | `ProposalReviewController.drafts` (signal), seeded from the proposal |
+| Draft save | Controller → `updateThreadManifest` / `updateManifest` with a copied manifest |
+| Apply, Apply all | Controller → `AssistantApplyService` / `applyPendingProposals` on a private copy |
+| Conflict | Controller `state.conflicts`; the proposal stays `proposed` and keeps its draft |
+| Success, rejection | Controller sets the status and saves; `settle` archives the thread or deletes the task when nothing is pending |
+
+Modules under `features/assistant/ui`:
+
+| Module | Responsibility |
+| --- | --- |
+| `proposal/proposal-draft.ts` | Draft shape per proposal type, pure non-mutating `withDraft` / `updateProposal` / `setProposalStatus` |
+| `proposal/proposal-review-controller.ts` | The only writer of proposal edits and statuses; busy guard, conflicts, closing the owner |
+| `proposal/useProposalReview.ts` | Thread and task deps (load, save, settle, lock, revision), `useProposalDraft` |
+| `proposal/ProposalCard.tsx` | `ProposalCard` and `ProposalActions` (Apply / Apply all) |
+| `proposal/ProposalViews.tsx` | Card fields, text content, image candidates, conflict notice |
+| `ThreadParts.tsx` | `ThreadMessages`, `ThreadProgress`, `ThreadComposer` |
+| `ThreadWorkspace.tsx` | Composes `ThreadWorkspace` and `TaskDetail`; both public exports unchanged |
+
+The controller's deps re-read the owner from the service at call time and are
+bound to one owner (and, for threads, one AI revision). Components render from
+signals and the query data; the `forceRender` counters and the `useState`
+copies of fields, text and image selection are gone, and no component writes to
+`proposal.*`. The inbox's global "Apply all" drives the same controller per
+thread with its notifications silenced, so it shares the save and archive rules.
+
+Apply and Apply all, compared: the main button (labelled "Apply" for one
+pending proposal, "Apply all (n)" otherwise) always runs the batch through
+`applyPendingProposals`, which stops at the first error, leaves conflicts
+pending and reports one summary. The only per-card apply is "Apply anyway"
+after a conflict: it calls `AssistantApplyService.apply` with `force` and
+reports "Applied". Both pass the edited fields as overrides and now share the
+controller's save, conflict and closing logic. The completion rules
+stay different on purpose: a thread is archived when no proposal is pending, a
+standalone task is deleted when it is reviewed. The two conflict messages
+("apply them individually" / "review the conflicts below") are kept as before.
+
+Behaviour changes (bug fixes), each covered by
+`tests/assistant/proposal-review-controller.test.ts`:
+
+- Apply all used the proposal's original text for notes and diagrams, and
+  ignored the image selection (so image proposals failed with "No images
+  selected"), because those edits lived only in component state. It now
+  applies the draft. Text and image edits are also saved like field edits.
+- A second click on Apply, Apply all, Apply anyway or Reject while an apply is
+  running is ignored instead of applying twice. The buttons are disabled.
+- A late result after the thread was deleted, undone or advanced to a new AI
+  revision no longer writes into it. The thread revision is checked before
+  saving; before, a matching proposal id in the new revision could be marked
+  applied.
+- Edits are not saved while an AI turn is running (the turn replaces the
+  manifest) or from a view of an older revision.
+- Sending a follow-up while an apply is running is refused, so the AI does not
+  snapshot drafts that are about to change.
+- Apply all keeps an earlier conflict for a proposal the batch did not reach
+  after an error.
+
+Tests: `apply-pending-proposals.test.ts` gained characterization cases (stop at
+first error, generic error, skip non-pending, override shape) that passed
+against the old code. The controller tests cover edits, switching proposals,
+Apply / Apply all, force, conflicts, partial failure, double clicks, late
+results and immutability. A mutation check (removing the busy guard) fails two
+of them.
+
+Remaining risks:
+
+- The Preact components are not rendered in tests (the package runs Vitest in
+  Node without a DOM); wiring is covered by TypeScript and by manual checks.
+- `applyPendingProposals` still mutates the manifest it receives. The
+  controller passes a copy, and `AssistantResultApplier` owns its manifest, so
+  the public contract is unchanged.
+- The status-bar badge and other readers see manifest updates only after the
+  data layer invalidates, as before.
+
+Not verified in a running Obsidian: streaming, editing each proposal type,
+Apply / Apply all, conflicts with Apply anyway, and resuming a conversation.
+
 ## FlashcardManager
 
 The existing manager delegates to services in `packages/core/src/flashcard`:
