@@ -230,7 +230,10 @@ export class TrueRecallApp {
 			noteActions: {
 				getByNoteTypeId: (id) => store.notes.getByNoteTypeId(id),
 				countByNoteType: (id) => store.notes.countByNoteType(id),
+				renameFieldKey: (id, oldName, newName) =>
+					store.notes.renameFieldKey(id, oldName, newName),
 			},
+			transaction: (fn) => store.transaction(fn),
 		});
 		this.noteTypeService.initialize();
 
