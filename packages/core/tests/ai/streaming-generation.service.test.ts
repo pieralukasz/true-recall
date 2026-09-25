@@ -278,7 +278,7 @@ describe("StreamingGenerationService.generate", () => {
 	it("Pro path with prompt lacking {{EXISTING_CARDS}} falls back to buildPresetPrompt wrapping", async () => {
 		const proPresetEmpty: GenerationPreset = {
 			...basicPreset,
-			prompt: "",
+			prompt: "Make short cards.",
 			requiresPro: true,
 		};
 		const settings = makeProSettings({

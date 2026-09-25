@@ -63,6 +63,12 @@ export function resolveGenerationTarget(
 		tierPreset.id,
 	);
 
+	if (!preset.builtin && preset.prompt.trim().length === 0) {
+		throw new Error(
+			`Preset "${preset.name}" has no prompt. Add one in Settings > AI Generation.`,
+		);
+	}
+
 	if (preset.requiresPro && !settings.proKey) {
 		throw new Error(
 			`Preset "${preset.name}" requires True Recall Pro. Upgrade or pick a different preset.`,

@@ -9,6 +9,8 @@ import {
 import { useIcon } from "@true-recall/obsidian/preact/hooks";
 import { cn } from "@true-recall/obsidian/utils/cn";
 
+import { isGenerationPromptMissing } from "./generation-preset-list";
+
 interface GenerationPresetEditorProps {
 	preset: GenerationPreset;
 	noteTypes: NoteType[];
@@ -261,6 +263,12 @@ export function GenerationPresetEditor({
 					class="ep:font-mono ep:text-ui-smaller"
 					ariaLabel="Generation prompt"
 				/>
+				{isGenerationPromptMissing(preset) && (
+					<span class="tr-preset-field__error" role="alert">
+						Write a prompt. Preset changes are not saved until every preset has
+						one.
+					</span>
+				)}
 				<span class="tr-preset-field__hint">
 					Describe what cards to generate. The system appends "Fields to fill:{" "}
 					{fieldOptions.join(", ")}" and a JSON format spec.

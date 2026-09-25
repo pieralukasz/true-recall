@@ -19,6 +19,11 @@ import { ReorderableList } from "../shared/ReorderableList";
 import { usePersistentSettingsSlice } from "../shared/usePersistentSettingsSlice";
 import type { PluginSettingsProps } from "../types";
 import { GenerationPresetEditor } from "./GenerationPresetEditor";
+import {
+	applyUserPresetPatch,
+	canSaveGenerationPresets,
+	normalizeGenerationPresets,
+} from "./generation-preset-list";
 
 function makeId(existing: readonly GenerationPreset[]): string {
 	const taken = new Set(existing.map((preset) => preset.id));
@@ -36,20 +41,6 @@ const AI_GEN_EXCLUDED_NOTE_TYPE_IDS = new Set<string>([
 	BUILTIN_CLOZE_ID,
 	BUILTIN_IMAGE_OCCLUSION_ID,
 ]);
-
-function normalizeGenerationPresets(
-	presets: readonly GenerationPreset[],
-): GenerationPreset[] {
-	const preferredDefault =
-		presets.find((preset) => preset.isDefault)?.id ?? presets[0]?.id ?? null;
-
-	return presets.map((preset) => ({
-		...preset,
-		isDefault: preferredDefault
-			? preset.id === preferredDefault
-			: !!preset.isDefault,
-	}));
-}
 
 function buildGenerationPresetPatch(
 	presets: GenerationPreset[],
@@ -75,6 +66,7 @@ export function AIGenerationSettingsPanel({
 		{
 			normalize: normalizeGenerationPresets,
 			buildPatch: buildGenerationPresetPatch,
+			canPersist: canSaveGenerationPresets,
 		},
 	);
 	const builtins = presets.filter((p) => p.builtin);
@@ -92,13 +84,7 @@ export function AIGenerationSettingsPanel({
 
 	const updateUserPreset = useCallback(
 		(id: string, patch: Partial<GenerationPreset>) => {
-			persistPresets((current) =>
-				current.map((existing) =>
-					existing.id === id && !existing.builtin
-						? { ...existing, ...patch, updatedAt: Date.now() }
-						: existing,
-				),
-			);
+			persistPresets((current) => applyUserPresetPatch(current, id, patch));
 		},
 		[persistPresets],
 	);

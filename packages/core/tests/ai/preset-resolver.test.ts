@@ -147,6 +147,17 @@ describe("resolveGenerationTarget", () => {
 		expect(result.preset.id).toBe(basicPreset.id);
 	});
 
+	it("rejects a custom preset with an empty prompt", () => {
+		const empty = { ...basicPreset, id: "empty", name: "Empty", prompt: "  " };
+		expect(() =>
+			resolveGenerationTarget(
+				makeSettings({ generationPresets: [empty] }),
+				managerWithBasic,
+				"empty",
+			),
+		).toThrow(/has no prompt/);
+	});
+
 	it("rejects a Pro-only preset when the user has no Pro key", () => {
 		const settings = makeSettings({ generationPresets: [builtinPro] });
 

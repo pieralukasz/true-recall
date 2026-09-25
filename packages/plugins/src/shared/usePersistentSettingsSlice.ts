@@ -10,6 +10,11 @@ interface PersistentSettingsSliceOptions<T> {
 	debounceMs?: number;
 	normalize?: (value: T) => T;
 	buildPatch: (value: T) => Partial<TrueRecallSettings>;
+	/**
+	 * When it returns false the value stays a local draft: nothing is saved
+	 * and settings changes do not overwrite it, until the value is valid.
+	 */
+	canPersist?: (value: T) => boolean;
 }
 
 interface PersistOptions {
@@ -25,6 +30,7 @@ export function usePersistentSettingsSlice<T>(
 ) {
 	const normalizeRef = useRef(options.normalize);
 	const buildPatchRef = useRef(options.buildPatch);
+	const canPersistRef = useRef(options.canPersist);
 	const saveRef = useRef(save);
 	const timerRef = useRef<number | null>(null);
 	const dirtyRef = useRef(false);
@@ -41,7 +47,8 @@ export function usePersistentSettingsSlice<T>(
 	useEffect(() => {
 		normalizeRef.current = options.normalize;
 		buildPatchRef.current = options.buildPatch;
-	}, [options.normalize, options.buildPatch]);
+		canPersistRef.current = options.canPersist;
+	}, [options.normalize, options.buildPatch, options.canPersist]);
 
 	useEffect(() => {
 		if (dirtyRef.current) return;
@@ -58,6 +65,9 @@ export function usePersistentSettingsSlice<T>(
 			timerRef.current = null;
 		}
 		if (!dirtyRef.current) return;
+		if (canPersistRef.current && !canPersistRef.current(valueRef.current)) {
+			return;
+		}
 		dirtyRef.current = false;
 		void saveRef.current(buildPatchRef.current(valueRef.current));
 	}, []);
