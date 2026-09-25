@@ -3,7 +3,7 @@ import { get, post, type ToolDef } from "./_register.js";
 export const backupTools: ToolDef[] = [
 	post(
 		"create_backup",
-		"Create a compressed backup of the True Recall database. Backups are stored in .true-recall/backups/.",
+		"Create a compressed backup of the True Recall database. Backups are stored per device in .true-recall/backups.nosync/<device-id>/.",
 		"/backups/create",
 	),
 
