@@ -1,6 +1,10 @@
 import { type Grade, Rating } from "ts-fsrs";
 
-import { shouldTriggerLeech } from "../../helpers/leech-helpers";
+import {
+	LEECH_TAG,
+	shouldTriggerLeech,
+	withLeechTag,
+} from "../../helpers/leech-helpers";
 import type { SessionPersistenceService } from "../../persistence/session/session-persistence.service";
 import type {
 	CardSchedulingMeta,
@@ -46,6 +50,8 @@ export interface ReviewAnswerTransition<T extends CardSchedulingMeta> {
 	result: ReviewResult;
 	requeueData?: { card: T; position: number };
 	leechSuspended: boolean;
+	/** The leech tag was added to `updatedCard.tags` by this answer. */
+	leechTagged: boolean;
 }
 
 export interface ReviewAnswerTransitionOptions {
@@ -54,7 +60,7 @@ export interface ReviewAnswerTransitionOptions {
 	reviewOrder?: ReviewOrder;
 	leechThreshold?: number;
 	leechAction?: LeechAction;
-	// Skip persistence-coupled side-effects (leech suspend) for transient sessions.
+	// Skip persistence-coupled side-effects (leech tag and suspend) for transient sessions.
 	skipLeechSuspend?: boolean;
 }
 
@@ -151,13 +157,18 @@ export class ReviewSessionEngine {
 			options.presetSettings,
 		);
 
-		let leechSuspended = false;
-		if (
+		// Like Anki, every leech gets the leech tag; "suspend" also suspends it.
+		const leechTriggered =
 			rating === Rating.Again &&
-			options.leechAction === "suspend" &&
 			!options.skipLeechSuspend &&
-			shouldTriggerLeech(updatedCard.fsrs.lapses, options.leechThreshold ?? 8)
-		) {
+			shouldTriggerLeech(updatedCard.fsrs.lapses, options.leechThreshold ?? 8);
+		const leechTagged =
+			leechTriggered && !(updatedCard.tags ?? []).includes(LEECH_TAG);
+		const leechSuspended = leechTriggered && options.leechAction === "suspend";
+		if (leechTagged) {
+			updatedCard = { ...updatedCard, tags: withLeechTag(updatedCard.tags) };
+		}
+		if (leechSuspended) {
 			updatedCard = {
 				...updatedCard,
 				fsrs: {
@@ -165,7 +176,6 @@ export class ReviewSessionEngine {
 					suspended: true,
 				},
 			};
-			leechSuspended = true;
 		}
 
 		let requeueData: { card: T; position: number } | undefined;
@@ -187,6 +197,7 @@ export class ReviewSessionEngine {
 			result,
 			requeueData,
 			leechSuspended,
+			leechTagged,
 		};
 	}
 }

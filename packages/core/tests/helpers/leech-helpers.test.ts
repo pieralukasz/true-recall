@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 
-import { isLeech, shouldTriggerLeech } from "../../src/helpers/leech-helpers";
+import {
+	isLeech,
+	LEECH_TAG,
+	shouldTriggerLeech,
+	withLeechTag,
+} from "../../src/helpers/leech-helpers";
 
 describe("isLeech", () => {
 	it("returns false when threshold is 0 (disabled)", () => {
@@ -164,5 +169,21 @@ describe("shouldTriggerLeech", () => {
 		it("fires at 7 (3+4)", () => {
 			expect(shouldTriggerLeech(7, T)).toBe(true);
 		});
+	});
+});
+
+describe("withLeechTag", () => {
+	it.each([
+		["no tags", undefined, [LEECH_TAG]],
+		["other tags", ["biology"], ["biology", LEECH_TAG]],
+		["already tagged", ["biology", LEECH_TAG], ["biology", LEECH_TAG]],
+	])("handles %s", (_label, tags, expected) => {
+		expect(withLeechTag(tags)).toEqual(expected);
+	});
+
+	it("does not mutate the input", () => {
+		const tags = ["biology"];
+		withLeechTag(tags);
+		expect(tags).toEqual(["biology"]);
 	});
 });

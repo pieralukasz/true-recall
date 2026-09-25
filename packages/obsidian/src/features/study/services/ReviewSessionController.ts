@@ -43,6 +43,8 @@ export interface ReviewGradeOutcome {
 	nextCard: FSRSFlashcardItem | null;
 	preset: FSRSPreset;
 	leechSuspended: boolean;
+	/** This answer added the leech tag to the card's note. */
+	leechTagged: boolean;
 	buriedSiblings: FSRSFlashcardItem[];
 }
 
@@ -203,6 +205,7 @@ export class ReviewSessionController {
 				nextCard: hasMore ? review.getCurrentCard() : null,
 				preset,
 				leechSuspended: false,
+				leechTagged: false,
 				buriedSiblings: [],
 			};
 		}
@@ -253,6 +256,7 @@ export class ReviewSessionController {
 				nextCard: hasMore ? review.getCurrentCard() : null,
 				preset,
 				leechSuspended: transition.leechSuspended,
+				leechTagged: false,
 				buriedSiblings: [],
 			};
 		}
@@ -292,6 +296,7 @@ export class ReviewSessionController {
 			presetName: preset.name,
 			requeuedAtIndex,
 			buriedSiblings: buriedSiblings.length > 0 ? buriedSiblings : undefined,
+			addLeechTag: transition.leechTagged,
 			disperseSiblings: () =>
 				this.plugin.fsrsHelper?.disperseSiblingsAfterReview(
 					card,
@@ -318,6 +323,7 @@ export class ReviewSessionController {
 			nextCard: hasMore ? review.getCurrentCard() : null,
 			preset,
 			leechSuspended: transition.leechSuspended,
+			leechTagged: transition.leechTagged,
 			buriedSiblings,
 		};
 	}

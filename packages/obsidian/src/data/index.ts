@@ -3,6 +3,7 @@ export {
 	mutate,
 	mutateReviewGrade,
 	patchCardDues,
+	patchNoteTags,
 } from "./mutate";
 export {
 	G,

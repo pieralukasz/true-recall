@@ -59,6 +59,23 @@ export function mutateReviewGrade(
 }
 
 /**
+ * Note tags are shared by every card of the note (cloze and reversed
+ * siblings), so a tag write patches all of their cached metas.
+ */
+export function patchNoteTags(noteId: string, tags: string[]): void {
+	const dl = getDataLayer();
+	dl.patch<Map<string, CardSchedulingMeta>>(Q.ALL_META, (map) => {
+		let next: Map<string, CardSchedulingMeta> | null = null;
+		for (const [id, meta] of map) {
+			if (meta.noteId !== noteId) continue;
+			next ??= new Map(map);
+			next.set(id, { ...meta, tags: [...tags] });
+		}
+		return next ?? map;
+	});
+}
+
+/**
  * Due-only changes written outside a review grade (automatic sibling
  * dispersal). Patches the cached metas so views show the new dues without
  * a full Q.ALL_META reload on the grading path.

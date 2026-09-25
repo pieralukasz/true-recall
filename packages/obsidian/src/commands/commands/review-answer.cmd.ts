@@ -1,12 +1,20 @@
 import { Rating } from "ts-fsrs";
 
+import {
+	LEECH_TAG,
+	withLeechTag,
+} from "@true-recall/core/helpers/leech-helpers";
 import type {
 	CardSchedulingMeta,
 	FSRSCardData,
 	FSRSFlashcardItem,
 } from "@true-recall/core/types";
 
-import { mutateReviewGrade, patchCardDues } from "@true-recall/obsidian/data";
+import {
+	mutateReviewGrade,
+	patchCardDues,
+	patchNoteTags,
+} from "@true-recall/obsidian/data";
 import { reportError } from "@true-recall/obsidian/services/errors";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 import type { ReviewApi } from "@true-recall/obsidian/store";
@@ -33,6 +41,8 @@ interface ReviewAnswerParams {
 	presetName: string;
 	requeuedAtIndex?: number;
 	buriedSiblings?: FSRSFlashcardItem[];
+	/** Add the leech tag to the card's note in the same write as the answer. */
+	addLeechTag?: boolean;
 	/**
 	 * Runs inside the answer's transaction, after the card is saved, and
 	 * returns the sibling due changes it wrote (automatic sibling dispersal).
@@ -57,6 +67,8 @@ export class ReviewAnswerCommand implements Command {
 	private reviewLogId: string | null = null;
 	private deferredFailureHandler?: () => void;
 	private sessionRestored = false;
+	/** Set when execute() actually added the leech tag, so undo only removes its own write. */
+	private leechTagWrite: { noteId: string; tags: string[] } | null = null;
 	private siblingDueChanges: SiblingDueChange[] = [];
 
 	constructor(params: ReviewAnswerParams) {
@@ -83,6 +95,9 @@ export class ReviewAnswerCommand implements Command {
 						{ skipNotification: true },
 					);
 					if (!persisted) throw new Error("Reviewed card no longer exists");
+					this.leechTagWrite = p.addLeechTag
+						? addLeechTagToNote(ctx, p.card.noteId)
+						: null;
 					this.siblingDueChanges = p.disperseSiblings?.() ?? [];
 					this.reviewLogId = ctx.sessionPersistence.recordReview(
 						p.card.id,
@@ -97,6 +112,7 @@ export class ReviewAnswerCommand implements Command {
 				});
 				this.writePersisted = true;
 			} catch (error) {
+				this.leechTagWrite = null;
 				this.siblingDueChanges = [];
 				this.restoreSessionState();
 				this.deferredFailureHandler?.();
@@ -120,8 +136,16 @@ export class ReviewAnswerCommand implements Command {
 			mutateReviewGrade(
 				p.card.id,
 				() => {},
-				() => buildMetaFromCard(p.card, p.updatedFsrs),
+				() =>
+					buildMetaFromCard(
+						p.card,
+						p.updatedFsrs,
+						this.leechTagWrite?.tags ?? p.card.tags,
+					),
 			);
+			if (this.leechTagWrite) {
+				patchNoteTags(this.leechTagWrite.noteId, this.leechTagWrite.tags);
+			}
 			if (this.siblingDueChanges.length > 0) {
 				patchCardDues(
 					this.siblingDueChanges.map((c) => ({
@@ -196,18 +220,55 @@ export class ReviewAnswerCommand implements Command {
 				);
 				this.siblingDueChanges = [];
 			}
+			const restoredTags = this.leechTagWrite
+				? removeLeechTagFromNote(ctx, this.leechTagWrite.noteId)
+				: null;
+			this.leechTagWrite = null;
 			mutateReviewGrade(
 				p.card.id,
 				() => {},
-				() => buildMetaFromCard(p.card, p.originalFsrs),
+				() =>
+					buildMetaFromCard(
+						p.card,
+						p.originalFsrs,
+						restoredTags ?? p.card.tags,
+					),
 			);
+			if (restoredTags && p.card.noteId) {
+				patchNoteTags(p.card.noteId, restoredTags);
+			}
 		}
 	}
+}
+
+/** Reads tags from the DB (not the in-memory card) so other note tags survive. */
+function addLeechTagToNote(
+	ctx: CommandContext,
+	noteId: string | undefined,
+): { noteId: string; tags: string[] } | null {
+	if (!noteId) return null;
+	const note = ctx.cardStore.notes.getById(noteId);
+	if (!note || note.tags.includes(LEECH_TAG)) return null;
+	const tags = withLeechTag(note.tags);
+	ctx.cardStore.notes.update(noteId, { tags }, "system");
+	return { noteId, tags };
+}
+
+function removeLeechTagFromNote(
+	ctx: CommandContext,
+	noteId: string,
+): string[] | null {
+	const note = ctx.cardStore.notes.getById(noteId);
+	if (!note) return null;
+	const tags = note.tags.filter((tag) => tag !== LEECH_TAG);
+	ctx.cardStore.notes.update(noteId, { tags }, "system");
+	return tags;
 }
 
 function buildMetaFromCard(
 	card: FSRSFlashcardItem,
 	fsrs: FSRSCardData,
+	tags: string[] | undefined = card.tags,
 ): CardSchedulingMeta {
 	return {
 		id: card.id,
@@ -220,5 +281,6 @@ function buildMetaFromCard(
 		templateOrd: card.templateOrd,
 		noteTypeName: card.noteTypeName,
 		alwaysTypeIn: card.alwaysTypeIn,
+		tags,
 	};
 }
