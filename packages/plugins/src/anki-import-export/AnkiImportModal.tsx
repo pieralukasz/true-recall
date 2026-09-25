@@ -334,6 +334,7 @@ export class AnkiImportModal extends BaseModal {
 					importFolder: opts.importFolder,
 					mediaFolder,
 					modelMappings: opts.modelMappings,
+					dayStartHour: this.getSettings().dayStartHour,
 				},
 			);
 
