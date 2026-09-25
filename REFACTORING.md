@@ -69,6 +69,83 @@ learning queue semantics are preserved. Type-in now rejects a late grading
 result after resetting the session, including when the new session shows the
 same card ID. Top-up rejects non-finite counts before building a queue.
 
+## Flashcard panel
+
+`packages/obsidian/src/views/panel` splits the sidebar adapter by concern:
+
+| Module | Responsibility |
+| --- | --- |
+| `FlashcardPanelView` | Obsidian lifecycle, header actions, mobile pane menu, Preact mount, public API for `PluginEventHandlers` |
+| `PanelSourceController` | Which note is shown: active note, review source, restored or pinned note |
+| `PanelDataLoader` | Card info, uncollected blocks, highlights; debounced reloads and editor rescans; stale-result guard |
+| `panel-refresh-policy` | Whether a data change needs a reload (FSRS ratings while following a review do not) |
+| `PanelActions` | Open note, delete all with undo, copy to clipboard, CSV export |
+| `features/library/ui/panel/utils/panel-csv` | CSV serializer, shared with `usePanelActions` |
+
+The public methods (`handleFileChange`, `isFollowingReview`,
+`clearReviewFollowState`, `syncWithReviewState`) and the persisted view state
+(`{ file }`) are unchanged. The panel store and its UI hooks are unchanged.
+
+Source states and transitions:
+
+| Event | Result |
+| --- | --- |
+| Open, review active | Source of the current review card |
+| Open, no review | Restored note, else active note, else (mobile) last opened markdown note |
+| Review starts or moves to a card from another note | That note, `isFollowingReview` on |
+| Review ends | Active note, following off |
+| Card without a source, or its note no longer exists | Active note, following off |
+| Workspace file change | That file; on mobile a non-file tab keeps the pinned note |
+| View state restored after open | That note, unless the panel follows a review |
+
+Subscriptions and timers: the review store subscription and the DataLayer
+effect are owned by the controller and loader and disposed in `onClose`; the
+`editor-change` listener is registered through the view, so Obsidian drops it
+when the view unloads. The reload (100 ms) and rescan (500 ms) timers are
+cleared on close.
+
+Loads are ordered by the panel's `renderVersion`. Every load bumps it, also
+those that end early for a non-markdown or deleted note, and closing the view
+invalidates loads still in flight. An editor rescan never bumps the version, so
+a full load started meanwhile wins, and a rescan whose note is no longer shown
+is dropped.
+
+Behaviour changes, each covered by a test in
+`tests/views/panel/flashcard-panel-view.test.ts` marked "Regression" that
+failed against the previous implementation:
+
+- A review card whose source note was deleted no longer leaves the panel in
+  follow mode showing an unrelated note (with "Open Source Note" and FSRS reload
+  suppression active).
+- A persisted view state applied after `onOpen` no longer replaces the review
+  source. Obsidian calls `setState` after opening a view, so this happened when
+  the panel was restored during a review.
+- Switching from a note to a non-markdown file, or closing the panel, while a
+  load was in flight no longer publishes the old note's cards.
+- A slow editor rescan no longer writes one note's uncollected count to another.
+- Header actions are rebuilt only when status or file change. The selector
+  returned a new object each time, so every store change (review, search) used
+  to remove and re-add them.
+
+Tests: `flashcard-panel-view.test.ts` characterizes the view against an in-memory
+app, store and DataLayer (`panel-test-harness.ts`), including desktop and mobile,
+start and end of review, rapid switching, close during load, reopening, and the
+refresh policy. `panel-actions.test.ts` and `panel-csv.test.ts` cover delete with
+undo, clipboard, and CSV escaping of commas, quotes, and line breaks.
+
+Remaining risks:
+
+- Undo after "Delete all" calls `commandService.undo()`, which undoes the most
+  recent command, not necessarily the deletion. Six places use this pattern;
+  it needs a command-scoped undo in `CommandService`.
+- `usePanelActions` keeps its own delete, copy, and export handlers for the
+  in-panel menu, which duplicate `PanelActions`. Merging them means passing
+  `PanelActions` into the Preact tree.
+- `PluginEventHandlers.updatePanelView` still decides when to leave or
+  re-enter follow mode on leaf changes; it only calls the public API.
+- Not yet exercised in a running Obsidian: desktop and mobile panel while
+  switching notes and during a review, restore after restart, header actions.
+
 ## Plugin bootstrap
 
 `main.ts` remains the Obsidian facade. The implementation lives in
