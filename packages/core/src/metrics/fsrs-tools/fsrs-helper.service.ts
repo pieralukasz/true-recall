@@ -220,11 +220,23 @@ export class FSRSHelperService {
 
 		const input: OptimizationInput = {
 			reviews,
-			currentWeights: currentWeights ?? this.settings.fsrsWeights ?? undefined,
+			// null = the preset runs on FSRS defaults; only an omitted argument
+			// falls back to the default preset (legacy mirror for old settings)
+			currentWeights:
+				(currentWeights === undefined
+					? this.getDefaultPresetWeights()
+					: currentWeights) ?? undefined,
 			minReviews: 400,
 		};
 
 		return this.optimizer.optimize(input, options);
+	}
+
+	private getDefaultPresetWeights(): number[] | null {
+		const defaultPreset = this.settings.fsrsPresets?.find(
+			(preset) => preset.id === this.settings.defaultPresetId,
+		);
+		return defaultPreset ? defaultPreset.weights : this.settings.fsrsWeights;
 	}
 
 	validateWeights(weights: number[]): boolean {
