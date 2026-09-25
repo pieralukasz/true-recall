@@ -8,6 +8,7 @@ import {
 	ToggleInput,
 } from "@true-recall/obsidian/components";
 import { cloudAuthButtonLabel } from "@true-recall/obsidian/features/integration/cloud/cloud-sync-manager";
+import { t } from "@true-recall/obsidian/i18n";
 import type TrueRecallPlugin from "@true-recall/obsidian/main";
 
 interface SyncIntegrationSectionProps {
@@ -46,18 +47,15 @@ export function SyncIntegrationSection({
 	const cloudActive = settings.syncMode === "cloud";
 
 	return (
-		<FormCard title="Sync" class="tr-setting-section--sync">
+		<FormCard title={t("Sync")} class="tr-setting-section--sync">
 			<InfoBlock>
-				Cloud Sync is free and uses your True Recall account: 2 devices on a
-				free account, 5 with Pro. Every device signs in on its own: the account
-				travels with you, the sign-in does not travel with the vault, and
-				signing out on a device frees its slot. Each device remains fully usable
-				offline. On mobile, sign-in opens your browser and returns to this vault
-				through an Obsidian link.
+				{t(
+					"Cloud Sync is free and uses your True Recall account: 2 devices on a free account, 5 with Pro. Every device signs in on its own: the account travels with you, the sign-in does not travel with the vault, and signing out on a device frees its slot. Each device remains fully usable offline. On mobile, sign-in opens your browser and returns to this vault through an Obsidian link.",
+				)}
 			</InfoBlock>
 
 			<FormField
-				name="Cloud Sync"
+				name={t("Cloud Sync")}
 				description={
 					accountEmail ??
 					(cloudActive
@@ -77,7 +75,7 @@ export function SyncIntegrationSection({
 							class="ep-btn ep-btn-outline tr-sync-signout"
 							onClick={() => void manager?.signOut()}
 						>
-							Sign out
+							{t("Sign out")}
 						</Clickable>
 					</div>
 				) : (
@@ -93,7 +91,7 @@ export function SyncIntegrationSection({
 
 			{accountEmail && cloudActive && coordinator && (
 				<FormField
-					name="Sync status"
+					name={t("Sync status")}
 					description={describeSyncStatus(isSyncing, lastError, lastSyncedAt)}
 					class={lastError && !isSyncing ? "tr-setting-item--error" : undefined}
 				>
@@ -102,14 +100,16 @@ export function SyncIntegrationSection({
 						disabled={isSyncing}
 						onClick={() => void coordinator.syncNow("manual")}
 					>
-						{isSyncing ? "Syncing…" : "Sync now"}
+						{isSyncing ? t("Syncing…") : t("Sync now")}
 					</Clickable>
 				</FormField>
 			)}
 
 			<FormField
-				name="Shared vault (legacy)"
-				description="Not recommended. Merges device database files that iCloud, Obsidian Sync, or another file service copies between devices. Every flush uploads the whole database, file services create conflict copies, phones wait for downloads, and each device needs the same setup. Use Cloud Sync instead. Reload Obsidian after changing this mode."
+				name={t("Shared vault (legacy)")}
+				description={t(
+					"Not recommended. Merges device database files that iCloud, Obsidian Sync, or another file service copies between devices. Every flush uploads the whole database, file services create conflict copies, phones wait for downloads, and each device needs the same setup. Use Cloud Sync instead. Reload Obsidian after changing this mode.",
+				)}
 			>
 				<ToggleInput
 					value={settings.syncMode === "shared-vault"}

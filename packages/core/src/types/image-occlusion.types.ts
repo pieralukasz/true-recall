@@ -24,5 +24,6 @@ export interface IORegion {
 export interface IODefinition {
 	regions: IORegion[];
 	maskMode: IOMaskMode;
+	hideOtherRegions?: boolean;
 	version: 1;
 }

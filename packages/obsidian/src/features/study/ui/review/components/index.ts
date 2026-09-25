@@ -11,4 +11,5 @@ export { ReviewUserComment } from "./ReviewUserComment";
 export { SessionTopUp } from "./SessionTopUp";
 export { SessionTopUpPanel } from "./SessionTopUpPanel";
 export { SummaryScreen } from "./SummaryScreen";
+export { UndoButton } from "./UndoButton";
 export { WaitingScreen } from "./WaitingScreen";

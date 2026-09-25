@@ -14,7 +14,7 @@ interface LapsesSectionProps {
 
 const LEECH_ACTION_OPTIONS = [
 	{ value: "tag-only", label: "Tag only" },
-	{ value: "suspend", label: "Suspend card" },
+	{ value: "suspend", label: "Tag and suspend" },
 ];
 
 export function LapsesSection({ preset, updatePreset }: LapsesSectionProps) {
@@ -62,7 +62,7 @@ export function LapsesSection({ preset, updatePreset }: LapsesSectionProps) {
 
 			<FormField
 				name="Leech action"
-				description="What happens when a card exceeds the leech threshold"
+				description="Leeches get a 'leech' note tag (usable in Custom Study by tag); 'Tag and suspend' also suspends them"
 			>
 				<SelectInput
 					value={preset.leechAction ?? "tag-only"}

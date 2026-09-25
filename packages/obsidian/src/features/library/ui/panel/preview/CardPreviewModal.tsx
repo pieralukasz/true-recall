@@ -6,6 +6,7 @@ import type { FSRSFlashcardItem } from "@true-recall/core/types/fsrs/card.types"
 
 import { ErrorBoundary } from "@true-recall/obsidian/components/ErrorBoundary";
 import { ButtonBar } from "@true-recall/obsidian/features/study/ui/review/components";
+import { useNoteTypeCss } from "@true-recall/obsidian/features/study/ui/review/hooks/useNoteTypeCss";
 import type TrueRecallPlugin from "@true-recall/obsidian/main";
 import { BaseModal } from "@true-recall/obsidian/modals/shared/BaseModal";
 import { usePlugin } from "@true-recall/obsidian/preact";
@@ -35,6 +36,12 @@ export function PreviewModalBody({
 	const plugin = usePlugin();
 	const { isAnswerRevealed, preview, isGradable, reveal, grade } =
 		useCardPreview({ card, onClose });
+	const noteTypeCss = useNoteTypeCss(
+		card.fsrs.noteTypeId,
+		card.templateOrd,
+		card.cardType === "cloze",
+	);
+	const noteTypeClass = noteTypeCss?.className;
 
 	useEffect(() => {
 		function onKey(e: KeyboardEvent) {
@@ -59,7 +66,13 @@ export function PreviewModalBody({
 			style={{ viewTransitionName: VIEW_TRANSITION_NAME }}
 		>
 			<div class="ep:w-full">
-				<PreviewCardBody card={card} side="question" sourcePath={sourcePath} />
+				{noteTypeCss && <style>{noteTypeCss.css}</style>}
+				<PreviewCardBody
+					card={card}
+					side="question"
+					sourcePath={sourcePath}
+					noteTypeClass={noteTypeClass}
+				/>
 
 				{isAnswerRevealed && (
 					<>
@@ -70,6 +83,7 @@ export function PreviewModalBody({
 							card={card}
 							side="answer"
 							sourcePath={sourcePath}
+							noteTypeClass={noteTypeClass}
 						/>
 					</>
 				)}

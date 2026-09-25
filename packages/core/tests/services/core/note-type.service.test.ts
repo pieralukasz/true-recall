@@ -29,6 +29,7 @@ describe("NoteTypeService", () => {
 		service = new NoteTypeService({
 			noteTypeActions: ctx.noteTypes,
 			noteActions: ctx.notes,
+			transaction: (fn) => ctx.db.transaction(fn),
 		});
 	});
 
@@ -338,6 +339,117 @@ describe("NoteTypeService", () => {
 			const nt = service.getById(customId);
 			expect(nt?.fields).toContain("Alpha");
 			expect(nt?.fields).not.toContain("A");
+		});
+
+		describe("renameField on a type with existing notes", () => {
+			function rawNote(id: string) {
+				return ctx.db.get<{
+					fields_json: string;
+					updated_at: number;
+					edit_count: number;
+					content_edited_at: number | null;
+				}>(
+					`SELECT fields_json, updated_at, edit_count, content_edited_at FROM notes WHERE id = ?`,
+					[id],
+				);
+			}
+
+			beforeEach(() => {
+				insertNoteDirect(
+					ctx.db,
+					createTestNote({
+						id: "n-a",
+						noteTypeId: customId,
+						fields: { A: "alpha value", B: "beta", C: "gamma" },
+						updatedAt: 1000,
+					}),
+				);
+				insertNoteDirect(
+					ctx.db,
+					createTestNote({
+						id: "n-other",
+						noteTypeId: BUILTIN_BASIC_ID,
+						fields: { A: "must stay", Front: "f", Back: "b" },
+						updatedAt: 1000,
+					}),
+				);
+			});
+
+			it("moves the note's value to the new key, keeping field order", () => {
+				service.renameField(customId, "A", "Alpha");
+
+				const raw = rawNote("n-a");
+				expect(raw?.fields_json).toBe(
+					JSON.stringify({ Alpha: "alpha value", B: "beta", C: "gamma" }),
+				);
+				expect(ctx.notes.getById("n-a")?.fields.A).toBeUndefined();
+			});
+
+			it("marks the note for sync without counting a content edit", () => {
+				service.renameField(customId, "A", "Alpha");
+
+				const raw = rawNote("n-a");
+				expect(raw?.updated_at).toBeGreaterThan(1000);
+				expect(raw?.edit_count).toBe(0);
+				expect(raw?.content_edited_at).toBeNull();
+				expect(
+					ctx.notes.getRawRowsModifiedSince(1000).map((r) => r.id),
+				).toEqual(["n-a"]);
+			});
+
+			it("leaves notes of other types untouched", () => {
+				service.renameField(customId, "A", "Alpha");
+
+				expect(ctx.notes.getById("n-other")?.fields.A).toBe("must stay");
+			});
+
+			it("rewrites section and cloze references in templates", () => {
+				ctx.noteTypes.update(customId, {
+					templates: [
+						{
+							name: "Card 1",
+							ordinal: 0,
+							qfmt: "{{#A}}{{A}}{{/A}} {{^ A }}none{{/ A}} {{cloze:A}} {{AB}}",
+							afmt: "{{edit:A}}",
+						},
+					],
+				});
+
+				service.renameField(customId, "A", "Alpha");
+
+				const [template] = service.getById(customId)?.templates ?? [];
+				expect(template?.qfmt).toBe(
+					"{{#Alpha}}{{Alpha}}{{/Alpha}} {{^ Alpha}}none{{/ Alpha}} {{cloze:Alpha}} {{AB}}",
+				);
+				expect(template?.afmt).toBe("{{edit:Alpha}}");
+			});
+
+			it("rejects renaming onto an existing field and changes nothing", () => {
+				expect(() => service.renameField(customId, "A", "B")).toThrow();
+
+				expect(service.getById(customId)?.fields).toEqual(["A", "B", "C"]);
+				expect(ctx.notes.getById("n-a")?.fields.A).toBe("alpha value");
+			});
+
+			it("rolls the type back when migrating the notes fails", () => {
+				const failing = new NoteTypeService({
+					noteTypeActions: ctx.noteTypes,
+					noteActions: {
+						...ctx.notes,
+						getByNoteTypeId: (id) => ctx.notes.getByNoteTypeId(id),
+						countByNoteType: (id) => ctx.notes.countByNoteType(id),
+						renameFieldKey: () => {
+							throw new Error("disk full");
+						},
+					},
+					transaction: (fn) => ctx.db.transaction(fn),
+				});
+
+				expect(() => failing.renameField(customId, "A", "Alpha")).toThrow(
+					"disk full",
+				);
+				expect(service.getById(customId)?.fields).toEqual(["A", "B", "C"]);
+			});
 		});
 	});
 });

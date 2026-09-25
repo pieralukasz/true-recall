@@ -2,11 +2,13 @@ import { State } from "ts-fsrs";
 
 import { Clickable } from "@true-recall/obsidian/components";
 import { LivePreviewField } from "@true-recall/obsidian/features/study/ui/review/components/LivePreviewField";
+import { useNoteTypeCss } from "@true-recall/obsidian/features/study/ui/review/hooks/useNoteTypeCss";
 import {
 	FSRS_COLORS,
 	MUTED_STATES,
 } from "@true-recall/obsidian/helpers/fsrs-colors";
 import { useApp } from "@true-recall/obsidian/preact/ObsidianContext";
+import { cn } from "@true-recall/obsidian/utils/cn";
 
 import type { BrowserCard } from "../types";
 import { IOCardRenderer } from "@true-recall/plugins/image-occlusion";
@@ -38,6 +40,15 @@ export function CardPreview({
 		card.cardType === "image-occlusion" &&
 		!!card.ioImagePath &&
 		!!card.ioRegionsJson;
+	const noteTypeCss = useNoteTypeCss(
+		card.noteTypeId,
+		card.templateOrd,
+		card.cardType === "cloze",
+	);
+	const fieldCls = cn(
+		"true-recall-card-preview-markdown",
+		noteTypeCss?.className,
+	);
 
 	const stateLabel = card.suspended
 		? "Suspended"
@@ -63,6 +74,7 @@ export function CardPreview({
 
 	return (
 		<div class="ep:w-[320px] ep:border-l ep:border-obs-border ep:flex ep:flex-col ep:shrink-0 ep:overflow-y-auto ep:bg-obs-primary">
+			{noteTypeCss && <style>{noteTypeCss.css}</style>}
 			{/* Header */}
 			<div class="ep:flex ep:items-center ep:justify-between ep:px-4 ep:py-3 ep:border-b ep:border-obs-border">
 				<span
@@ -147,13 +159,14 @@ export function CardPreview({
 						regionsJson={card.ioRegionsJson}
 						templateOrd={card.templateOrd}
 						revealed={false}
+						class={noteTypeCss?.className}
 					/>
 				) : card.question ? (
 					<LivePreviewField
 						content={card.question}
 						field="question"
 						sourcePath={card.sourceNotePath ?? ""}
-						cls="true-recall-card-preview-markdown"
+						cls={fieldCls}
 						onContentChange={onContentChange}
 					/>
 				) : (
@@ -178,7 +191,7 @@ export function CardPreview({
 						content={card.answer}
 						field="answer"
 						sourcePath={card.sourceNotePath ?? ""}
-						cls="true-recall-card-preview-markdown"
+						cls={fieldCls}
 						onContentChange={onContentChange}
 					/>
 				) : (

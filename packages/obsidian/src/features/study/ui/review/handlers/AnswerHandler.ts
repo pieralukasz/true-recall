@@ -148,6 +148,8 @@ export class AnswerHandler {
 				const preview = outcome.card.question.slice(0, 50);
 				if (outcome.leechSuspended) {
 					notify().warning(`Leech suspended (${lapses} lapses): ${preview}`);
+				} else if (outcome.leechTagged) {
+					notify().info(`Leech tagged (${lapses} lapses): ${preview}`);
 				} else {
 					notify().info(`Leech detected (${lapses} lapses): ${preview}`);
 				}

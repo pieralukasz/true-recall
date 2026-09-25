@@ -132,6 +132,15 @@
 		padding: 0.5rem 0.375rem;
 	}
 
+	/* Undo is an icon, not a grade: opt it out of the equal-width rule above so
+	   "Show answer" keeps the rest of the row. */
+	.is-mobile .true-recall-review-buttons > .true-recall-review-undo {
+		flex: 0 0 auto;
+		width: 3rem;
+		padding-left: 0;
+		padding-right: 0;
+	}
+
 	/* Safe area inset for notched phones */
 	.is-mobile .true-recall-review-buttons {
 		padding-bottom: max(env(safe-area-inset-bottom, 0px), 0.75rem);

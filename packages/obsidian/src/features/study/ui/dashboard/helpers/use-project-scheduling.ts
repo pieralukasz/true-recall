@@ -5,6 +5,7 @@ import type { SchedulingResult } from "@true-recall/core/metrics/fsrs-tools/sche
 import type { FSRSCardData } from "@true-recall/core/types";
 
 import { FSRSHelperCommand } from "@true-recall/obsidian/commands/commands/fsrs-helper.cmd";
+import { runScheduleBreak } from "@true-recall/obsidian/features/study/services/schedule-break-flow";
 import { confirm } from "@true-recall/obsidian/modals/shared/ConfirmModal";
 import { promptText } from "@true-recall/obsidian/modals/shared/TextInputModal";
 import { ProjectForecastModal } from "@true-recall/obsidian/modals/study/ProjectForecastModal";
@@ -221,54 +222,20 @@ export function useProjectScheduling() {
 			});
 			if (!endDate) return;
 
-			const datePattern = /^\d{4}-\d{2}-\d{2}$/;
-			if (
-				!datePattern.test(startDate) ||
-				!datePattern.test(endDate) ||
-				endDate < startDate
-			) {
-				notify().error("Enter valid YYYY-MM-DD dates (end not before start).");
-				return;
-			}
-
-			try {
-				const preview = plugin.fsrsHelper?.previewBreak(
-					startDate,
-					endDate,
+			await runScheduleBreak(
+				{
+					helper: plugin.fsrsHelper,
+					confirm: (options) => confirm(plugin.app, options),
+					applyChanges,
+					notify: notify(),
+				},
+				{
+					startDate: startDate.trim(),
+					endDate: endDate.trim(),
 					cardIds,
-				);
-				if (!preview || preview.cardsAffected === 0) {
-					notify().info("No cards due during this break.");
-					return;
-				}
-
-				const confirmed = await confirm(plugin.app, {
-					title: "Schedule a break",
-					message: `Redistribute ${preview.cardsAffected} cards in "${projectName}" due during ${startDate} – ${endDate} (${preview.breakDays} days)?`,
-					confirmLabel: "Schedule break",
-				});
-				if (!confirmed) return;
-
-				const result = plugin.fsrsHelper?.scheduleBreakPeriod({
-					startDate,
-					endDate,
-					cardIds,
-					dryRun: false,
-				});
-				if (result && result.affectedCount > 0) {
-					applyChanges(
-						result,
-						`Schedule break in "${projectName}" (${result.affectedCount} cards)`,
-					);
-					notify().success(
-						`Redistributed ${result.affectedCount} cards around the break (Ctrl+Z to undo)`,
-					);
-				} else {
-					notify().info("No cards needed redistribution.");
-				}
-			} catch (err) {
-				notify().operationFailed("schedule project break", err);
-			}
+					scopeLabel: `in "${projectName}"`,
+				},
+			);
 		},
 		[plugin, getProjectCards, applyChanges],
 	);

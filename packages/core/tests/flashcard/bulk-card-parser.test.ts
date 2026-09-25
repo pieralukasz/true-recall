@@ -6,7 +6,31 @@
 import { describe, expect, it } from "vitest";
 
 import { parseBulkText } from "../../src/flashcard/parsing/bulk-card-parser";
-import { BUILTIN_BASIC_ID, BUILTIN_CLOZE_ID } from "../../src/types/note.types";
+import { getBuiltinNoteTypes } from "../../src/persistence/sqlite/modules/NoteTypeActions";
+import { generateCardsForNote } from "../../src/services/cards/card-generation.service";
+import {
+	BUILTIN_BASIC_ID,
+	BUILTIN_CLOZE_ID,
+	type NoteType,
+} from "../../src/types/note.types";
+
+function builtinType(id: string): NoteType {
+	const noteType = getBuiltinNoteTypes().find((nt) => nt.id === id);
+	if (!noteType) throw new Error(`missing builtin ${id}`);
+	return noteType;
+}
+
+const threeFieldType: NoteType = {
+	id: "custom-three",
+	name: "Three",
+	type: 0,
+	fields: ["Word", "Meaning", "Example"],
+	templates: [
+		{ name: "Card 1", ordinal: 0, qfmt: "{{Word}}", afmt: "{{Meaning}}" },
+	],
+	css: "",
+	isBuiltin: false,
+};
 
 describe("BulkCardParser", () => {
 	// ── Double-colon format ───────────────────────────────────
@@ -179,6 +203,125 @@ describe("BulkCardParser", () => {
 			expect(parseBulkText("{{c1::Paris}} is the capital").detectedFormat).toBe(
 				"double-colon",
 			);
+		});
+	});
+
+	// ── Import Studio (NoteType passed) ───────────────────────
+
+	describe("with a Basic note type (Import Studio)", () => {
+		const options = { noteType: builtinType(BUILTIN_BASIC_ID) };
+
+		it("turns a line with two clozes into one Cloze note with two cards", () => {
+			const result = parseBulkText(
+				"{{c1::Paris}} is the capital of {{c2::France}}",
+				options,
+			);
+
+			expect(result.cards).toHaveLength(1);
+			const [card] = result.cards;
+			expect(card?.noteTypeId).toBe(BUILTIN_CLOZE_ID);
+			expect(card?.fields).toEqual({
+				Text: "{{c1::Paris}} is the capital of {{c2::France}}",
+				Extra: "",
+			});
+			const generated = generateCardsForNote(
+				{
+					id: "n1",
+					noteTypeId: BUILTIN_CLOZE_ID,
+					fields: card?.fields ?? {},
+					tags: [],
+				},
+				builtinType(BUILTIN_CLOZE_ID),
+			);
+			expect(generated.map((g) => g.templateOrd)).toEqual([1, 2]);
+		});
+
+		it("keeps a cloze line with an outer :: as Cloze with Extra, not raw Basic", () => {
+			const result = parseBulkText(
+				"{{c1::Paris}} is the capital :: of France",
+				options,
+			);
+
+			expect(result.cards).toHaveLength(1);
+			expect(result.cards[0]?.noteTypeId).toBe(BUILTIN_CLOZE_ID);
+			expect(result.cards[0]?.fields).toEqual({
+				Text: "{{c1::Paris}} is the capital",
+				Extra: "of France",
+			});
+		});
+
+		it("parses question::answer lines without cloze markers as Basic", () => {
+			const result = parseBulkText(
+				["Capital of France :: Paris", "{{c1::Tokyo}} is in Japan"].join("\n"),
+				options,
+			);
+
+			expect(result.detectedFormat).toBe("double-colon");
+			expect(result.cards.map((c) => c.noteTypeId)).toEqual([
+				BUILTIN_BASIC_ID,
+				BUILTIN_CLOZE_ID,
+			]);
+			expect(result.cards[0]?.fields).toEqual({
+				Front: "Capital of France",
+				Back: "Paris",
+			});
+		});
+
+		it("treats a cloze line in tab format as Cloze with the second column as Extra", () => {
+			const result = parseBulkText(
+				["Front one\tBack one", "{{c1::Paris}} is a city\tFrance"].join("\n"),
+				options,
+			);
+
+			expect(result.detectedFormat).toBe("tab");
+			expect(result.cards[0]?.fields).toEqual({
+				Front: "Front one",
+				Back: "Back one",
+			});
+			expect(result.cards[1]?.noteTypeId).toBe(BUILTIN_CLOZE_ID);
+			expect(result.cards[1]?.fields).toEqual({
+				Text: "{{c1::Paris}} is a city",
+				Extra: "France",
+			});
+		});
+	});
+
+	describe("with a 3-field note type", () => {
+		it("still detects cloze lines while tab lines map to the type's fields", () => {
+			const result = parseBulkText(
+				["dog\tpies\tThe dog barks", "{{c1::Kot}} to cat"].join("\n"),
+				{ noteType: threeFieldType },
+			);
+
+			expect(result.cards).toHaveLength(2);
+			expect(result.cards[0]?.fields).toEqual({
+				Word: "dog",
+				Meaning: "pies",
+				Example: "The dog barks",
+			});
+			expect(result.cards[1]?.noteTypeId).toBe(BUILTIN_CLOZE_ID);
+		});
+	});
+
+	describe("block format source comment", () => {
+		it("carries the <!-- source --> quote on the parsed card", () => {
+			const text = [
+				"#type/basic",
+				"Front: What is ATP?",
+				"Back: Energy currency",
+				"<!-- source: ATP stores energy -->",
+				"---",
+			].join("\n");
+			const byslug = (slug: string) =>
+				getBuiltinNoteTypes().find((nt) => nt.id === `builtin-${slug}`) ?? null;
+
+			const result = parseBulkText(text, {
+				noteType: builtinType(BUILTIN_BASIC_ID),
+				getNoteType: byslug,
+			});
+
+			expect(result.detectedFormat).toBe("block");
+			expect(result.cards[0]?.sourceText).toBe("ATP stores energy");
 		});
 	});
 });

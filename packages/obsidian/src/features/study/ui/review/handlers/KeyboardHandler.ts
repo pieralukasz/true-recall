@@ -1,6 +1,6 @@
 import { Rating } from "ts-fsrs";
 
-import type { ReviewKeybindings } from "@true-recall/core/types";
+import type { CardFlag, ReviewKeybindings } from "@true-recall/core/types";
 
 import type { ReviewApi } from "@true-recall/obsidian/store";
 
@@ -15,6 +15,7 @@ interface KeyboardActionCallbacks {
 	onUndo: () => Promise<void>;
 	onDelete: () => void;
 	onSuspend: () => void;
+	onSetFlag: (flag: CardFlag) => void;
 	onForget: () => void;
 	onBuryCard: () => void;
 	onBuryNote: () => void;
@@ -61,6 +62,19 @@ export class KeyboardHandler {
 		}
 
 		if (this.isInputFocused(e.target)) return;
+
+		// Anki-style flags: Ctrl/Cmd+1..7 set a colored flag, Ctrl/Cmd+0 clears.
+		if (
+			(e.metaKey || e.ctrlKey) &&
+			!e.shiftKey &&
+			!e.altKey &&
+			/^[0-7]$/.test(e.key)
+		) {
+			e.preventDefault();
+			e.stopPropagation();
+			this.callbacks.onSetFlag(Number(e.key) as CardFlag);
+			return;
+		}
 
 		if (
 			!e.shiftKey &&
@@ -223,6 +237,10 @@ export class KeyboardHandler {
 			{ key: "Cmd/Ctrl+Z", description: "Undo last action" },
 			{ key: "Shift+1", description: "Delete card" },
 			{ key: "Shift+2", description: "Suspend card" },
+			{
+				key: "Cmd/Ctrl+1-7",
+				description: "Set flag color (0 clears)",
+			},
 			{ key: "-", description: "Bury card until tomorrow" },
 			{ key: "=", description: "Bury note (all sibling cards)" },
 			{ key: "M", description: "Move card to another note" },

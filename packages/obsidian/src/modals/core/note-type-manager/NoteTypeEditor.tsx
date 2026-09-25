@@ -127,6 +127,7 @@ function CreateEditor({
 							onTemplateChange={(updated) => updateTemplate(i, updated)}
 							onDelete={() => removeTemplate(i)}
 							isOnlyTemplate={draft.templates.length <= 1}
+							css={draft.css}
 						/>
 					))}
 				</div>
@@ -299,6 +300,8 @@ function ViewEditEditor({
 							onTemplateChange={(updated) => handleTemplateChange(i, updated)}
 							onDelete={() => handleRemoveTemplate(i)}
 							isOnlyTemplate={noteType.templates.length <= 1}
+							css={noteType.css}
+							noteTypeId={noteType.id}
 						/>
 					))}
 				</div>

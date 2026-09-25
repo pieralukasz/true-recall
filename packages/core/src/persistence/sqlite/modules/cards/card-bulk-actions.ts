@@ -1,4 +1,8 @@
-import type { FSRSCardData } from "../../../../types";
+import {
+	type CardFlag,
+	type FSRSCardData,
+	normalizeCardFlag,
+} from "../../../../types";
 import type { SqliteDatabase } from "../../SqliteDatabase";
 import { sqlPlaceholders } from "../../sql-utils";
 
@@ -11,6 +15,21 @@ export class CardBulkActions {
 		const params = [Date.now(), ...cardIds] as [number, ...string[]];
 		this.db.run(
 			`UPDATE cards SET suspended = 1, updated_at = ? WHERE id IN (${placeholders})`,
+			params,
+		);
+		return this.db.getRowsModified();
+	}
+
+	bulkSetFlag(cardIds: string[], flag: CardFlag): number {
+		if (cardIds.length === 0) return 0;
+		const placeholders = sqlPlaceholders(cardIds.length);
+		const params = [normalizeCardFlag(flag), Date.now(), ...cardIds] as [
+			number,
+			number,
+			...string[],
+		];
+		this.db.run(
+			`UPDATE cards SET flag = ?, updated_at = ? WHERE id IN (${placeholders})`,
 			params,
 		);
 		return this.db.getRowsModified();

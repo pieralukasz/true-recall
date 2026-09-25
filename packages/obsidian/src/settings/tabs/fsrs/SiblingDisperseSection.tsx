@@ -10,6 +10,7 @@ import {
 	TextInput,
 	ToggleInput,
 } from "@true-recall/obsidian/components";
+import { t } from "@true-recall/obsidian/i18n";
 
 import type { FsrsPluginHost } from "../../../types/plugin-host.types";
 import { useFsrsHelperOp } from "./useFsrsHelperOp";
@@ -40,17 +41,18 @@ export function SiblingDisperseSection({
 	const { running: dispersing, execute } = useFsrsHelperOp(opConfig);
 
 	return (
-		<FormCard title="Sibling dispersal">
+		<FormCard title={t("Sibling dispersal")}>
 			<InfoBlock>
 				<p>
-					Cards from the same source note are "siblings". Spreading them apart
-					helps avoid interference during review.
+					{t(
+						'Cards from the same source note are "siblings". Spreading them apart helps avoid interference during review.',
+					)}
 				</p>
 			</InfoBlock>
 
 			<FormField
-				name="Enable sibling dispersal"
-				description="Automatically space out cards from the same note"
+				name={t("Enable sibling dispersal")}
+				description={t("Automatically space out cards from the same note")}
 			>
 				<ToggleInput
 					value={settings.siblingDisperseEnabled}
@@ -59,8 +61,8 @@ export function SiblingDisperseSection({
 			</FormField>
 
 			<FormField
-				name="Minimum sibling interval"
-				description="Minimum days between siblings from the same source"
+				name={t("Minimum sibling interval")}
+				description={t("Minimum days between siblings from the same source")}
 			>
 				<TextInput
 					value={String(settings.siblingMinInterval)}
@@ -74,11 +76,11 @@ export function SiblingDisperseSection({
 			</FormField>
 
 			<FormField
-				name="Disperse siblings now"
-				description="Spread out siblings that are currently too close"
+				name={t("Disperse siblings now")}
+				description={t("Spread out siblings that are currently too close")}
 			>
 				<ActionButton
-					label={dispersing ? "Dispersing..." : "Disperse now"}
+					label={dispersing ? t("Dispersing...") : t("Disperse now")}
 					variant="secondary"
 					disabled={dispersing}
 					onClick={() =>

@@ -1,6 +1,15 @@
 /** Lapses a card may accumulate before it counts as a leech. */
 export const DEFAULT_LEECH_THRESHOLD = 8;
 
+/** Note tag written when a card becomes a leech (same name Anki uses). */
+export const LEECH_TAG = "leech";
+
+/** Tags with the leech tag appended; returns the same list if it is already there. */
+export function withLeechTag(tags: readonly string[] | undefined): string[] {
+	const current = [...(tags ?? [])];
+	return current.includes(LEECH_TAG) ? current : [...current, LEECH_TAG];
+}
+
 /**
  * Whether a card currently sits at or past its leech threshold.
  *

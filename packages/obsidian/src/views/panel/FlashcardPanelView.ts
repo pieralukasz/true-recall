@@ -1,25 +1,20 @@
-import { effect } from "@preact/signals";
 import {
 	ItemView,
 	type Menu,
 	Platform,
-	TFile,
+	type TFile,
 	type ViewStateResult,
 	type WorkspaceLeaf,
 } from "obsidian";
 import { h } from "preact";
+import { shallow } from "zustand/shallow";
 
 import { VIEW_TYPE_FLASHCARD_PANEL } from "@true-recall/core/constants";
-import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
 import { CollectService } from "@true-recall/core/flashcard/lifecycle/collect.service";
 
-import { DeleteCardCommand } from "@true-recall/obsidian/commands/commands/card-delete.cmd";
-import { getDataLayer, Q } from "@true-recall/obsidian/data";
-import { extractHighlights } from "@true-recall/obsidian/features/library/ui/panel/utils/highlight-extractor";
+import { downloadBlob } from "@true-recall/obsidian/features/integration/utils/export-helpers";
 import { cardsToBlockText } from "@true-recall/obsidian/features/library/ui/panel/utils/panel-helpers";
 import { mountPreact } from "@true-recall/obsidian/preact/mount";
-import { notify } from "@true-recall/obsidian/services/notification.service";
-import { lastMutation } from "@true-recall/obsidian/services/signals";
 import type { PanelApi } from "@true-recall/obsidian/store";
 import {
 	FlashcardPanelApp,
@@ -27,47 +22,72 @@ import {
 } from "@true-recall/obsidian/views/panel/FlashcardPanelApp";
 
 import type TrueRecallPlugin from "../../main";
+import { PanelActions } from "./PanelActions";
+import { PanelDataLoader } from "./PanelDataLoader";
+import { PanelSourceController } from "./PanelSourceController";
 
+/**
+ * Obsidian shell for the flashcard sidebar: lifecycle, header actions, pane
+ * menu, and Preact mounting. Source selection, loading, and note actions live
+ * in PanelSourceController, PanelDataLoader, and PanelActions.
+ */
 export class FlashcardPanelView extends ItemView {
 	private plugin: TrueRecallPlugin;
-	private flashcardManager: FlashcardManager;
-	private collectService: CollectService;
+	private loader: PanelDataLoader;
+	private source: PanelSourceController;
+	private actions: PanelActions;
 
-	// Preact cleanup
 	private unmountPreact: (() => void) | null = null;
-
-	// Review state subscription (for tracking current review card)
-	private reviewUnsubscribe: (() => void) | null = null;
-	private lastReviewCardPath: string | null = null;
-	private lastReviewActive: boolean = false;
-
-	// Signal effect disposer for data change tracking
-	private signalDisposer: (() => void) | null = null;
-
-	// Editor change timer for real-time #flashcard tag detection
-	private editorChangeTimer: number | null = null;
-
-	// Flashcard info reload timer
-	private flashcardInfoTimer: number | null = null;
-
-	// Header actions (Obsidian native view actions)
-	private reviewAction: HTMLElement | null = null;
-	private openFileAction: HTMLElement | null = null;
-	private deleteAllAction: HTMLElement | null = null;
-
-	// Store subscription for header actions
 	private headerActionsUnsub: (() => void) | null = null;
-
-	// Note path restored from persisted view state (mobile keeps its pin)
-	private restoredFilePath: string | null = null;
+	private headerActionEls: HTMLElement[] = [];
 
 	constructor(leaf: WorkspaceLeaf, plugin: TrueRecallPlugin) {
 		super(leaf);
 		this.plugin = plugin;
-		this.flashcardManager = plugin.flashcardManager;
-		this.collectService = new CollectService((slug) =>
+		const getPanel = () => this.panel;
+		const collectService = new CollectService((slug) =>
 			plugin.noteTypeService.getBySlug(slug),
 		);
+
+		this.loader = new PanelDataLoader({
+			vault: {
+				getAbstractFileByPath: (path) =>
+					this.app.vault.getAbstractFileByPath(path),
+				read: (file) => this.app.vault.read(file),
+			},
+			flashcardManager: plugin.flashcardManager,
+			countUncollected: (content) =>
+				collectService.countFlashcardLines(content),
+			getPanel,
+		});
+		this.source = new PanelSourceController({
+			vault: {
+				getAbstractFileByPath: (path) =>
+					this.app.vault.getAbstractFileByPath(path),
+			},
+			workspace: {
+				getActiveFile: () => this.app.workspace.getActiveFile(),
+				getLastOpenFiles: () => this.app.workspace.getLastOpenFiles(),
+			},
+			getStore: () => plugin.store,
+			getPanel,
+			load: () => this.loader.load(),
+			isMobile: () => Platform.isMobile,
+		});
+		this.actions = new PanelActions({
+			openNote: (path) => this.app.workspace.openLinkText(path, ""),
+			getPanel,
+			getCommandService: () => plugin.commandService,
+			cardsToText: (cards) => cardsToBlockText(cards, plugin),
+			confirm: async (message) => {
+				const { confirm } = await import(
+					"@true-recall/obsidian/modals/shared/ConfirmModal"
+				);
+				return confirm(this.app, { message });
+			},
+			writeClipboard: (text) => navigator.clipboard.writeText(text),
+			downloadFile: downloadBlob,
+		});
 	}
 
 	private get panel(): PanelApi {
@@ -98,15 +118,7 @@ export class FlashcardPanelView extends ItemView {
 		await super.setState(state, result);
 		const filePath = (state as { file?: unknown } | null)?.file;
 		if (typeof filePath !== "string" || !filePath) return;
-		this.restoredFilePath = filePath;
-
-		// When the state arrives after onOpen already ran, apply it directly.
-		if (this.unmountPreact && this.plugin.store) {
-			const file = this.app.vault.getAbstractFileByPath(filePath);
-			if (file instanceof TFile) {
-				void this.handleFileChange(file);
-			}
-		}
+		this.source.restore(filePath);
 	}
 
 	onPaneMenu(menu: Menu, source: string): void {
@@ -121,44 +133,38 @@ export class FlashcardPanelView extends ItemView {
 			item
 				.setTitle("Refresh")
 				.setIcon("refresh-cw")
-				.onClick(() => void this.loadFlashcardInfo());
+				.onClick(() => void this.loader.load());
 		});
 
-		const hasFlashcards = state.status === "exists";
+		if (state.status !== "exists") return;
 
-		if (hasFlashcards) {
-			menu.addSeparator();
+		menu.addSeparator();
+		menu.addItem((item) => {
+			item
+				.setTitle("Copy to clipboard")
+				.setIcon("clipboard-copy")
+				.onClick(() => void this.actions.copyAllToClipboard());
+		});
+		menu.addItem((item) => {
+			item
+				.setTitle("Export as CSV")
+				.setIcon("file-down")
+				.onClick(() => this.actions.exportCsv());
+		});
 
-			menu.addItem((item) => {
-				item
-					.setTitle("Copy to clipboard")
-					.setIcon("clipboard-copy")
-					.onClick(() => void this.handleCopyAllToClipboard());
-			});
-
-			menu.addItem((item) => {
-				item
-					.setTitle("Export as CSV")
-					.setIcon("file-down")
-					.onClick(() => void this.handleExportCsv());
-			});
-
-			menu.addSeparator();
-
-			menu.addItem((item) => {
-				item
-					.setTitle("Open flashcard file")
-					.setIcon("file-text")
-					.onClick(() => void this.handleOpenFlashcardFile());
-			});
-
-			menu.addItem((item) => {
-				item
-					.setTitle("Delete all flashcards")
-					.setIcon("trash-2")
-					.onClick(() => void this.handleDeleteAllFlashcards());
-			});
-		}
+		menu.addSeparator();
+		menu.addItem((item) => {
+			item
+				.setTitle("Open flashcard file")
+				.setIcon("file-text")
+				.onClick(() => void this.actions.openFlashcardFile());
+		});
+		menu.addItem((item) => {
+			item
+				.setTitle("Delete all flashcards")
+				.setIcon("trash-2")
+				.onClick(() => void this.actions.deleteAllFlashcards());
+		});
 	}
 
 	async onOpen(): Promise<void> {
@@ -166,14 +172,13 @@ export class FlashcardPanelView extends ItemView {
 		if (!(container instanceof HTMLElement)) return;
 		container.empty();
 
-		// Mount Preact app
 		this.unmountPreact = mountPreact(
 			container,
 			this.plugin,
 			h(FlashcardPanelApp, {
 				onActions: (action: PanelAppActions) => {
 					if (action.type === "refresh") {
-						void this.loadFlashcardInfo();
+						void this.loader.load();
 					}
 				},
 			}),
@@ -184,409 +189,86 @@ export class FlashcardPanelView extends ItemView {
 			this.headerActionsUnsub = this.plugin.store.subscribe(
 				(s) => ({ status: s.panel.status, file: s.panel.currentFile }),
 				() => this.updateHeaderActions(),
+				{ equalityFn: shallow },
 			);
 		}
 
-		this.subscribeToDataChanges();
-		this.subscribeToReviewState();
-		this.registerEditorChangeTracking();
+		this.loader.watchDataChanges(() => this.source.isFollowingReview());
+		// Registered through the view so Obsidian drops it on unload.
+		this.registerEvent(
+			this.app.workspace.on("editor-change", () =>
+				this.loader.scheduleNoteScan(),
+			),
+		);
 
-		// If a review session is already active, sync with it instead of loading the active file
-		const reviewState = this.plugin.store?.getState()?.review;
-		if (reviewState?.isActive) {
-			const currentCard = reviewState.getCurrentCard();
-			const currentPath = currentCard?.sourceNotePath ?? null;
-			this.lastReviewCardPath = currentPath;
-			this.lastReviewActive = true;
-			void this.syncWithReviewCard(currentPath, true);
-		} else {
-			await this.loadCurrentFile();
-		}
-	}
-
-	private updateHeaderActions(): void {
-		const state = this.panel;
-
-		if (this.reviewAction) {
-			this.reviewAction.remove();
-			this.reviewAction = null;
-		}
-		if (this.openFileAction) {
-			this.openFileAction.remove();
-			this.openFileAction = null;
-		}
-		if (this.deleteAllAction) {
-			this.deleteAllAction.remove();
-			this.deleteAllAction = null;
-		}
-
-		const currentFile = state.currentFile;
-		if (state.status === "exists" && currentFile) {
-			if (!Platform.isMobile) {
-				this.deleteAllAction = this.addAction(
-					"trash-2",
-					"Delete all flashcards",
-					() => void this.handleDeleteAllFlashcards(),
-				);
-
-				this.openFileAction = this.addAction(
-					"file-text",
-					"Open flashcard file",
-					() => void this.handleOpenFlashcardFile(),
-				);
-			}
-
-			this.reviewAction = this.addAction(
-				"brain",
-				"Review flashcards",
-				() => void this.plugin.reviewNoteFlashcards(currentFile),
-			);
-		}
+		await this.source.start();
 	}
 
 	onClose(): Promise<void> {
 		this.unmountPreact?.();
 		this.unmountPreact = null;
 
-		this.reviewUnsubscribe?.();
-		this.signalDisposer?.();
+		this.source.dispose();
+		this.loader.dispose();
 		this.headerActionsUnsub?.();
-
-		if (this.editorChangeTimer) {
-			window.clearTimeout(this.editorChangeTimer);
-			this.editorChangeTimer = null;
-		}
-
-		if (this.flashcardInfoTimer) {
-			window.clearTimeout(this.flashcardInfoTimer);
-			this.flashcardInfoTimer = null;
-		}
-
-		if (this.reviewAction) {
-			this.reviewAction.remove();
-			this.reviewAction = null;
-		}
-		if (this.openFileAction) {
-			this.openFileAction.remove();
-			this.openFileAction = null;
-		}
-		if (this.deleteAllAction) {
-			this.deleteAllAction.remove();
-			this.deleteAllAction = null;
-		}
+		this.headerActionsUnsub = null;
+		this.clearHeaderActions();
 		return Promise.resolve();
 	}
 
-	private subscribeToDataChanges(): void {
-		const dl = getDataLayer();
-		const allMetaSig = dl.signal(Q.ALL_META);
-		const settingsSig = dl.signal(Q.SETTINGS);
-		this.signalDisposer = effect(() => {
-			void allMetaSig?.value;
-			void settingsSig?.value;
-			const m = lastMutation.value;
-			// Answering a card during review only changes FSRS scheduling data,
-			// so skip the full reload as an optimization. Other mutations (e.g.
-			// card polish) actually change question/answer content and need the
-			// reload even when the panel is following a review session.
-			const isReviewRating = m?.type === "reviewed";
-			if (!isReviewRating || !this.isFollowingReview()) {
-				this.scheduleFlashcardInfoReload();
-			}
-		});
-	}
+	// ── Public API used by PluginEventHandlers ─────────────
 
-	private scheduleFlashcardInfoReload(): void {
-		if (this.flashcardInfoTimer) window.clearTimeout(this.flashcardInfoTimer);
-		this.flashcardInfoTimer = window.setTimeout(() => {
-			this.flashcardInfoTimer = null;
-			void this.loadFlashcardInfo();
-		}, 100);
-	}
-
-	private subscribeToReviewState(): void {
-		const store = this.plugin.store;
-		if (!store) return;
-
-		this.reviewUnsubscribe = store.subscribe(
-			(state) => state.review,
-			() => {
-				const review = store.getState().review;
-				const currentCard = review.getCurrentCard();
-				const currentPath = currentCard?.sourceNotePath ?? null;
-				const isActive = review.isActive;
-
-				if (
-					currentPath !== this.lastReviewCardPath ||
-					isActive !== this.lastReviewActive
-				) {
-					this.lastReviewCardPath = currentPath;
-					this.lastReviewActive = isActive;
-					void this.syncWithReviewCard(currentPath, isActive);
-				}
-			},
-		);
-	}
-
-	private async syncWithReviewCard(
-		sourceNotePath: string | null,
-		isActive: boolean,
-	): Promise<void> {
-		this.panel.setReviewFollowState(sourceNotePath, isActive);
-
-		if (!isActive || !sourceNotePath) {
-			const activeFile = this.app.workspace.getActiveFile();
-			await this.handleFileChange(activeFile);
-			return;
-		}
-
-		const sourceFile = this.app.vault.getAbstractFileByPath(sourceNotePath);
-		if (sourceFile instanceof TFile) {
-			await this.handleFileChange(sourceFile);
-		}
-	}
-
-	async handleFileChange(file: TFile | null): Promise<void> {
-		const state = this.panel;
-
-		if (state.currentFile?.path === file?.path) {
-			return;
-		}
-
-		// On mobile the panel lives in the main area, so switching to any
-		// non-file tab (dashboard, review) makes getActiveFile() return null.
-		// Keep the pinned note instead of blanking the list; only an actual
-		// new markdown file replaces it.
-		if (Platform.isMobile && !file && state.currentFile) {
-			return;
-		}
-
-		this.panel.setCurrentFile(file);
-		await this.loadFlashcardInfo();
+	handleFileChange(file: TFile | null): Promise<void> {
+		return this.source.handleFileChange(file);
 	}
 
 	isFollowingReview(): boolean {
-		return this.panel.isFollowingReview;
+		return this.source.isFollowingReview();
 	}
 
 	clearReviewFollowState(): void {
-		this.panel.setReviewFollowState(null, false);
+		this.source.clearReviewFollowState();
 	}
 
 	syncWithReviewState(sourceNotePath: string | null, isActive: boolean): void {
-		this.lastReviewCardPath = sourceNotePath;
-		this.lastReviewActive = isActive;
-		void this.syncWithReviewCard(sourceNotePath, isActive);
+		this.source.syncWithReviewState(sourceNotePath, isActive);
 	}
 
-	private async loadCurrentFile(): Promise<void> {
-		const file =
-			this.consumeRestoredFile() ??
-			this.app.workspace.getActiveFile() ??
-			this.getFallbackFile();
-		this.panel.setCurrentFile(file);
-		await this.loadFlashcardInfo();
-	}
+	// ── Header actions ─────────────────────────────────────
 
-	private consumeRestoredFile(): TFile | null {
-		const path = this.restoredFilePath;
-		this.restoredFilePath = null;
-		if (!path) return null;
-		const file = this.app.vault.getAbstractFileByPath(path);
-		return file instanceof TFile ? file : null;
-	}
+	private updateHeaderActions(): void {
+		this.clearHeaderActions();
 
-	/**
-	 * On mobile the panel usually opens from a non-file context (dashboard,
-	 * command palette), where getActiveFile() is null. Fall back to the most
-	 * recently opened markdown file so the view is never pointlessly empty.
-	 */
-	private getFallbackFile(): TFile | null {
-		if (!Platform.isMobile) return null;
-		for (const path of this.app.workspace.getLastOpenFiles()) {
-			const file = this.app.vault.getAbstractFileByPath(path);
-			if (file instanceof TFile && file.extension === "md") {
-				return file;
-			}
-		}
-		return null;
-	}
-
-	private async loadFlashcardInfo(): Promise<void> {
 		const state = this.panel;
-		const file = state.currentFile;
+		const currentFile = state.currentFile;
+		if (state.status !== "exists" || !currentFile) return;
 
-		if (state.selectionMode === "selecting") {
-			this.panel.exitSelectionMode();
+		if (!Platform.isMobile) {
+			this.headerActionEls.push(
+				this.addAction(
+					"trash-2",
+					"Delete all flashcards",
+					() => void this.actions.deleteAllFlashcards(),
+				),
+				this.addAction(
+					"file-text",
+					"Open flashcard file",
+					() => void this.actions.openFlashcardFile(),
+				),
+			);
 		}
 
-		if (!this.flashcardManager.hasStore()) {
-			return;
-		}
-
-		if (!file || file.extension !== "md") {
-			this.panel.setFlashcardInfo(null);
-			this.panel.setUncollectedInfo(0);
-			return;
-		}
-
-		if (!this.app.vault.getAbstractFileByPath(file.path)) {
-			this.panel.setFlashcardInfo(null);
-			this.panel.setUncollectedInfo(0);
-			return;
-		}
-
-		const renderVersion = this.panel.incrementRenderVersion();
-
-		try {
-			const [info, content] = await Promise.all([
-				this.flashcardManager.getFlashcardInfo(file.path),
-				this.app.vault.read(file),
-			]);
-
-			if (!this.panel.isCurrentRender(renderVersion)) return;
-
-			const uncollectedCount = this.collectService.countFlashcardLines(content);
-			const hasHighlights = extractHighlights(content).length > 0;
-
-			this.panel.setState({
-				flashcardInfo: info,
-				status: info?.exists ? "exists" : "none",
-				sourceNoteName: null,
-				uncollectedCount,
-				hasHighlights,
-			});
-		} catch (error) {
-			console.error("Error loading flashcard info:", error);
-		}
-	}
-
-	// ── Mobile pane menu handlers ───────────────────────────
-
-	private async handleOpenFlashcardFile(): Promise<void> {
-		const state = this.panel;
-		if (state.currentFile) {
-			await this.app.workspace.openLinkText(state.currentFile.path, "");
-		}
-	}
-
-	private async handleDeleteAllFlashcards(): Promise<void> {
-		const state = this.panel;
-		if (!state.flashcardInfo || state.flashcardInfo.flashcards.length === 0)
-			return;
-
-		const count = state.flashcardInfo.flashcards.length;
-		const { confirm } = await import(
-			"@true-recall/obsidian/modals/shared/ConfirmModal"
-		);
-		const confirmed = await confirm(this.app, {
-			message: `Delete all ${count} flashcard(s) for this note?`,
-		});
-		if (!confirmed) return;
-
-		const cardIds = state.flashcardInfo.flashcards.map((card) => card.id);
-		const cmd = new DeleteCardCommand(cardIds);
-		await this.plugin.commandService?.execute(cmd);
-		notify().cardsDeletedWithUndo(cmd.deletedCount, () => {
-			void this.plugin.commandService?.undo();
-		});
-	}
-
-	private async handleCopyAllToClipboard(): Promise<void> {
-		const state = this.panel;
-		if (
-			!state.flashcardInfo?.flashcards ||
-			state.flashcardInfo.flashcards.length === 0
-		) {
-			notify().warning("No flashcards to copy");
-			return;
-		}
-
-		const text = cardsToBlockText(state.flashcardInfo.flashcards, this.plugin);
-
-		await navigator.clipboard.writeText(text);
-		notify().success(
-			`Copied ${state.flashcardInfo.flashcards.length} flashcard(s) to clipboard`,
+		this.headerActionEls.push(
+			this.addAction(
+				"brain",
+				"Review flashcards",
+				() => void this.plugin.reviewNoteFlashcards(currentFile),
+			),
 		);
 	}
 
-	private handleExportCsv(): void {
-		const state = this.panel;
-		if (
-			!state.flashcardInfo?.flashcards ||
-			state.flashcardInfo.flashcards.length === 0
-		) {
-			notify().warning("No flashcards to export");
-			return;
-		}
-
-		const escapeCSV = (str: string): string => {
-			if (str.includes(",") || str.includes("\n") || str.includes('"')) {
-				return `"${str.replace(/"/g, '""')}"`;
-			}
-			return str;
-		};
-
-		const header = "Question,Answer";
-		const rows = state.flashcardInfo.flashcards.map(
-			(card) => `${escapeCSV(card.question)},${escapeCSV(card.answer)}`,
-		);
-		const csvContent = [header, ...rows].join("\n");
-
-		const filename = state.currentFile
-			? `${state.currentFile.basename}-flashcards.csv`
-			: "flashcards.csv";
-
-		const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-		const url = URL.createObjectURL(blob);
-		const link = createEl("a");
-		link.href = url;
-		link.download = filename;
-		activeDocument.body.appendChild(link);
-		link.click();
-		activeDocument.body.removeChild(link);
-		URL.revokeObjectURL(url);
-
-		notify().success(
-			`Exported ${state.flashcardInfo.flashcards.length} flashcard(s) to CSV`,
-		);
-	}
-
-	private registerEditorChangeTracking(): void {
-		this.registerEvent(
-			this.app.workspace.on("editor-change", () => {
-				if (this.editorChangeTimer) {
-					window.clearTimeout(this.editorChangeTimer);
-				}
-
-				this.editorChangeTimer = window.setTimeout(() => {
-					void this.checkUncollectedFlashcards();
-				}, 500);
-			}),
-		);
-	}
-
-	private async checkUncollectedFlashcards(): Promise<void> {
-		const state = this.panel;
-		const file = state.currentFile;
-
-		if (!file || file.extension !== "md") {
-			return;
-		}
-
-		try {
-			const content = await this.app.vault.read(file);
-			const uncollectedCount = this.collectService.countFlashcardLines(content);
-			const hasHighlights = extractHighlights(content).length > 0;
-
-			if (state.uncollectedCount !== uncollectedCount) {
-				this.panel.setUncollectedInfo(uncollectedCount);
-			}
-			if (state.hasHighlights !== hasHighlights) {
-				this.panel.setHasHighlights(hasHighlights);
-			}
-		} catch {
-			// Ignore errors (file might be deleted/moved)
-		}
+	private clearHeaderActions(): void {
+		for (const el of this.headerActionEls) el.remove();
+		this.headerActionEls = [];
 	}
 }

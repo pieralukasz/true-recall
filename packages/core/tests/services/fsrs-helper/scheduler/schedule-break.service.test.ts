@@ -1,6 +1,7 @@
 /**
  * Schedule Break Service Tests
  */
+import { State } from "ts-fsrs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ScheduleBreakService } from "../../../../src/metrics/fsrs-tools/scheduler/schedule-break.service";
@@ -297,6 +298,48 @@ describe("ScheduleBreakService", () => {
 			expect(result.affectedCount).toBe(4);
 			for (const change of result.changes) {
 				expect(allowed).toContain(change.cardId);
+			}
+		});
+	});
+
+	describe("card eligibility", () => {
+		it("skips New cards: they are introduced by the daily limit", () => {
+			const cards = [
+				...createCardsOnDate("2026-02-12", 2),
+				...createCardsOnDate("2026-02-12", 3).map((c, i) => ({
+					...c,
+					id: `new-${i}`,
+					state: State.New,
+				})),
+			];
+			mockStore = createMockCardStore(cards);
+			service = new ScheduleBreakService(mockStore);
+
+			expect(
+				service.previewBreak("2026-02-10", "2026-02-14").cardsAffected,
+			).toBe(2);
+			expect(
+				service.scheduleBreak({
+					startDate: "2026-02-10",
+					endDate: "2026-02-14",
+				}).affectedCount,
+			).toBe(2);
+		});
+
+		it("never moves cards to a day before today", () => {
+			// Break starts today: every day before it is in the past
+			const cards = createCardsOnDate("2026-02-03", 6);
+			mockStore = createMockCardStore(cards);
+			service = new ScheduleBreakService(mockStore);
+
+			const result = service.scheduleBreak({
+				startDate: "2026-02-01",
+				endDate: "2026-02-04",
+			});
+
+			expect(result.affectedCount).toBe(6);
+			for (const change of result.changes) {
+				expect(change.newDue.slice(0, 10) > "2026-02-04").toBe(true);
 			}
 		});
 	});

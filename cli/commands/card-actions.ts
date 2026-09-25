@@ -139,6 +139,25 @@ export const cardActionCommands: CommandDef[] = [
 	),
 
 	postParams(
+		"set_card_flag",
+		"Set an Anki-style flag on cards (0 = remove, 1 red, 2 orange, 3 green, 4 blue, 5 pink, 6 turquoise, 7 purple)",
+		C,
+		"/cards/bulk-flag",
+		{
+			card_ids: {
+				type: "json",
+				description: "JSON array of card UUIDs",
+				required: true,
+			},
+			flag: {
+				type: "number",
+				description: "Flag 0-7 (0 removes the flag)",
+				required: true,
+			},
+		},
+	),
+
+	postParams(
 		"bury_cards",
 		"Temporarily hide cards until a specific date or for N days",
 		C,

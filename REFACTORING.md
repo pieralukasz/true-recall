@@ -38,6 +38,82 @@ The refactor also closes several timing gaps:
 - Creation undo restores the user comment as well as the fields.
 - Closing the editor prevents a pending AI context read from opening its window.
 
+### Quick Note popout window
+
+The desktop popout is hosted by
+`packages/obsidian/src/views/modal-window/QuickNoteEditorView.tsx`. It is the
+Obsidian adapter: it maps leaf lifecycle, Escape and window events onto three
+collaborators and mounts `QuickNoteEditorApp`. The form, saving and undo stay
+in the editor hooks above; the window layer only sees `onDone`,
+`onRequestClose` and `onDirtyChange`. Mobile and other contexts without popouts
+use `QuickNoteEditorModal` and never reach this view.
+
+| Module | Responsibility |
+| --- | --- |
+| `editor-request-session.ts` | Adopts the request named in view state, settles it exactly once, cancels a request it replaces |
+| `editor-close-guard.ts` | Dirty state, one discard confirmation at a time, the `beforeunload` prompt on the OS close button |
+| `editor-window-geometry.ts` | Centring, width lock, fit-to-content via ResizeObserver, `resize` guard and animation frames |
+| `QuickNoteEditorView.tsx` | Leaf lifecycle, Escape scope, workspace marker, window migration, discard overlay UI |
+
+Lifecycle: `openQuickNoteEditor` registers `{mode, resolve}` under a request id
+and opens a popout leaf with `{requestId}` as view state. `setState` adopts the
+request, mounts the editor and binds the geometry controller and close guard to
+the popout window. Done settles the request with the editor's result and
+detaches the leaf. A close request (the editor's close action or Escape outside
+text inputs) goes through the guard, then settles as cancelled. `onClose`
+releases every window resource and settles an unsettled request as cancelled.
+An unknown request id shows the fallback text and detaches the leaf.
+
+Close paths:
+
+| Path | Clean | Dirty | Discard already confirmed | Dialog open |
+| --- | --- | --- | --- | --- |
+| Close action, Escape | Close now | Ask once | Close now | Ignored; the open dialog decides |
+| OS close button | Close | Native unload prompt | Close | Native unload prompt |
+| Leaf closed by Obsidian | Close, request cancelled | Same | Same | Dialog dismissed, request cancelled |
+
+Window resources (resize listener, ResizeObserver, pending frame,
+`beforeunload`) are always removed from the window they were registered on. On
+window migration they are rebound to the new window without re-centring; after
+the session ended they are only released. A frame that fires after detaching
+does nothing. An embedded view sharing the main window is never resized.
+
+Behaviour changes, each covered by a test in the "fixed edge cases" group of
+`QuickNoteEditorView.test.ts` that fails against the previous implementation:
+
+- Re-applying the same view state no longer rebuilds the editor, which used to
+  discard typed content.
+- A new request adopted by a view that already served one settles the previous
+  request as cancelled instead of leaving its caller waiting, and starts with a
+  clean dirty state and a re-centring first fit.
+- Closing the leaf while the discard dialog is open now dismisses the dialog
+  and ends its pending confirmation. Previously the confirmation promise was
+  left pending with the "confirming" flag set. The request is settled as
+  cancelled once.
+
+Clean close requests are handled synchronously instead of one microtask later.
+Migrating the view after its session ended no longer installs listeners on the
+new window.
+
+Tests: `editor-request-session.test.ts`, `editor-close-guard.test.ts` and
+`editor-window-geometry.test.ts` test the collaborators against window doubles
+in `tests/views/modal-window/fake-popout.ts`. `QuickNoteEditorView.test.ts`
+characterizes the adapter; apart from the fixed edge cases it passed unchanged
+against the code before the split.
+
+Remaining risks:
+
+- Closing a dirty editor while a save is running settles the request as
+  cancelled. If the save still succeeds the note exists, but the caller only
+  sees the cancellation. The guard does not know about saving; fixing this
+  needs the editor to report its saving state.
+- The window doubles model only the properties the view reads. Real
+  Electron geometry (zoom, multiple monitors, stale `outerHeight`) is covered by
+  `popout-helpers.test.ts` and `popout-fit.test.ts` and needs a manual check.
+- Not yet exercised in a running Obsidian: popout open, fit and re-fit while
+  typing, Escape inside the note picker, discard dialog, OS close button with
+  unsaved text, dragging the popout into another window, and the embedded view.
+
 ## Review
 
 `packages/obsidian/src/views/review` now contains focused collaborators:
@@ -68,6 +144,83 @@ The patch-first mutation path, sibling handling, command undo, and pending
 learning queue semantics are preserved. Type-in now rejects a late grading
 result after resetting the session, including when the new session shows the
 same card ID. Top-up rejects non-finite counts before building a queue.
+
+## Flashcard panel
+
+`packages/obsidian/src/views/panel` splits the sidebar adapter by concern:
+
+| Module | Responsibility |
+| --- | --- |
+| `FlashcardPanelView` | Obsidian lifecycle, header actions, mobile pane menu, Preact mount, public API for `PluginEventHandlers` |
+| `PanelSourceController` | Which note is shown: active note, review source, restored or pinned note |
+| `PanelDataLoader` | Card info, uncollected blocks, highlights; debounced reloads and editor rescans; stale-result guard |
+| `panel-refresh-policy` | Whether a data change needs a reload (FSRS ratings while following a review do not) |
+| `PanelActions` | Open note, delete all with undo, copy to clipboard, CSV export |
+| `features/library/ui/panel/utils/panel-csv` | CSV serializer, shared with `usePanelActions` |
+
+The public methods (`handleFileChange`, `isFollowingReview`,
+`clearReviewFollowState`, `syncWithReviewState`) and the persisted view state
+(`{ file }`) are unchanged. The panel store and its UI hooks are unchanged.
+
+Source states and transitions:
+
+| Event | Result |
+| --- | --- |
+| Open, review active | Source of the current review card |
+| Open, no review | Restored note, else active note, else (mobile) last opened markdown note |
+| Review starts or moves to a card from another note | That note, `isFollowingReview` on |
+| Review ends | Active note, following off |
+| Card without a source, or its note no longer exists | Active note, following off |
+| Workspace file change | That file; on mobile a non-file tab keeps the pinned note |
+| View state restored after open | That note, unless the panel follows a review |
+
+Subscriptions and timers: the review store subscription and the DataLayer
+effect are owned by the controller and loader and disposed in `onClose`; the
+`editor-change` listener is registered through the view, so Obsidian drops it
+when the view unloads. The reload (100 ms) and rescan (500 ms) timers are
+cleared on close.
+
+Loads are ordered by the panel's `renderVersion`. Every load bumps it, also
+those that end early for a non-markdown or deleted note, and closing the view
+invalidates loads still in flight. An editor rescan never bumps the version, so
+a full load started meanwhile wins, and a rescan whose note is no longer shown
+is dropped.
+
+Behaviour changes, each covered by a test in
+`tests/views/panel/flashcard-panel-view.test.ts` marked "Regression" that
+failed against the previous implementation:
+
+- A review card whose source note was deleted no longer leaves the panel in
+  follow mode showing an unrelated note (with "Open Source Note" and FSRS reload
+  suppression active).
+- A persisted view state applied after `onOpen` no longer replaces the review
+  source. Obsidian calls `setState` after opening a view, so this happened when
+  the panel was restored during a review.
+- Switching from a note to a non-markdown file, or closing the panel, while a
+  load was in flight no longer publishes the old note's cards.
+- A slow editor rescan no longer writes one note's uncollected count to another.
+- Header actions are rebuilt only when status or file change. The selector
+  returned a new object each time, so every store change (review, search) used
+  to remove and re-add them.
+
+Tests: `flashcard-panel-view.test.ts` characterizes the view against an in-memory
+app, store and DataLayer (`panel-test-harness.ts`), including desktop and mobile,
+start and end of review, rapid switching, close during load, reopening, and the
+refresh policy. `panel-actions.test.ts` and `panel-csv.test.ts` cover delete with
+undo, clipboard, and CSV escaping of commas, quotes, and line breaks.
+
+Remaining risks:
+
+- Undo after "Delete all" calls `commandService.undo()`, which undoes the most
+  recent command, not necessarily the deletion. Six places use this pattern;
+  it needs a command-scoped undo in `CommandService`.
+- `usePanelActions` keeps its own delete, copy, and export handlers for the
+  in-panel menu, which duplicate `PanelActions`. Merging them means passing
+  `PanelActions` into the Preact tree.
+- `PluginEventHandlers.updatePanelView` still decides when to leave or
+  re-enter follow mode on leaf changes; it only calls the public API.
+- Not yet exercised in a running Obsidian: desktop and mobile panel while
+  switching notes and during a review, restore after restart, header actions.
 
 ## Plugin bootstrap
 
@@ -119,6 +272,89 @@ open dialogs directly.
 It converts file references to paths before calling the core frontmatter API,
 and normalizes optional question/answer values. This replaces the double type
 assertion that hid the mismatch.
+
+### Assistant review UI: proposals, approval and conflicts
+
+Flow and data owner at each step:
+
+| Step | Owner |
+| --- | --- |
+| AI proposal | Thread or task manifest in SQLite, written by the workflow runner |
+| Local draft | `ProposalReviewController.drafts` (signal), seeded from the proposal |
+| Draft save | Controller → `updateThreadManifest` / `updateManifest` with a copied manifest |
+| Apply, Apply all | Controller → `AssistantApplyService` / `applyPendingProposals` on a private copy |
+| Conflict | Controller `state.conflicts`; the proposal stays `proposed` and keeps its draft |
+| Success, rejection | Controller sets the status and saves; `settle` archives the thread or deletes the task when nothing is pending |
+
+Modules under `features/assistant/ui`:
+
+| Module | Responsibility |
+| --- | --- |
+| `proposal/proposal-draft.ts` | Draft shape per proposal type, pure non-mutating `withDraft` / `updateProposal` / `setProposalStatus` |
+| `proposal/proposal-review-controller.ts` | The only writer of proposal edits and statuses; busy guard, conflicts, closing the owner |
+| `proposal/useProposalReview.ts` | Thread and task deps (load, save, settle, lock, revision), `useProposalDraft` |
+| `proposal/ProposalCard.tsx` | `ProposalCard` and `ProposalActions` (Apply / Apply all) |
+| `proposal/ProposalViews.tsx` | Card fields, text content, image candidates, conflict notice |
+| `ThreadParts.tsx` | `ThreadMessages`, `ThreadProgress`, `ThreadComposer` |
+| `ThreadWorkspace.tsx` | Composes `ThreadWorkspace` and `TaskDetail`; both public exports unchanged |
+
+The controller's deps re-read the owner from the service at call time and are
+bound to one owner (and, for threads, one AI revision). Components render from
+signals and the query data; the `forceRender` counters and the `useState`
+copies of fields, text and image selection are gone, and no component writes to
+`proposal.*`. The inbox's global "Apply all" drives the same controller per
+thread with its notifications silenced, so it shares the save and archive rules.
+
+Apply and Apply all, compared: the main button (labelled "Apply" for one
+pending proposal, "Apply all (n)" otherwise) always runs the batch through
+`applyPendingProposals`, which stops at the first error, leaves conflicts
+pending and reports one summary. The only per-card apply is "Apply anyway"
+after a conflict: it calls `AssistantApplyService.apply` with `force` and
+reports "Applied". Both pass the edited fields as overrides and now share the
+controller's save, conflict and closing logic. The completion rules
+stay different on purpose: a thread is archived when no proposal is pending, a
+standalone task is deleted when it is reviewed. The two conflict messages
+("apply them individually" / "review the conflicts below") are kept as before.
+
+Behaviour changes (bug fixes), each covered by
+`tests/assistant/proposal-review-controller.test.ts`:
+
+- Apply all used the proposal's original text for notes and diagrams, and
+  ignored the image selection (so image proposals failed with "No images
+  selected"), because those edits lived only in component state. It now
+  applies the draft. Text and image edits are also saved like field edits.
+- A second click on Apply, Apply all, Apply anyway or Reject while an apply is
+  running is ignored instead of applying twice. The buttons are disabled.
+- A late result after the thread was deleted, undone or advanced to a new AI
+  revision no longer writes into it. The thread revision is checked before
+  saving; before, a matching proposal id in the new revision could be marked
+  applied.
+- Edits are not saved while an AI turn is running (the turn replaces the
+  manifest) or from a view of an older revision.
+- Sending a follow-up while an apply is running is refused, so the AI does not
+  snapshot drafts that are about to change.
+- Apply all keeps an earlier conflict for a proposal the batch did not reach
+  after an error.
+
+Tests: `apply-pending-proposals.test.ts` gained characterization cases (stop at
+first error, generic error, skip non-pending, override shape) that passed
+against the old code. The controller tests cover edits, switching proposals,
+Apply / Apply all, force, conflicts, partial failure, double clicks, late
+results and immutability. A mutation check (removing the busy guard) fails two
+of them.
+
+Remaining risks:
+
+- The Preact components are not rendered in tests (the package runs Vitest in
+  Node without a DOM); wiring is covered by TypeScript and by manual checks.
+- `applyPendingProposals` still mutates the manifest it receives. The
+  controller passes a copy, and `AssistantResultApplier` owns its manifest, so
+  the public contract is unchanged.
+- The status-bar badge and other readers see manifest updates only after the
+  data layer invalidates, as before.
+
+Not verified in a running Obsidian: streaming, editing each proposal type,
+Apply / Apply all, conflicts with Apply anyway, and resuming a conversation.
 
 ## FlashcardManager
 

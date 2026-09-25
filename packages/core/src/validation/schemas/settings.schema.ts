@@ -15,6 +15,7 @@ export const AIProviderTypeSchema = z
 	.default("openrouter");
 
 export const SettingsSchema = z.object({
+	uiLanguage: z.enum(["auto", "en", "zh-CN"]).default("auto"),
 	proKey: z.string().optional(),
 	openRouterApiKey: z.string(),
 	aiModel: AIModelSchema,

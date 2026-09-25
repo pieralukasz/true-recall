@@ -197,6 +197,12 @@ export function buildBrowserQuery(
 		params.push(...filter.createdVia);
 	}
 
+	// ── Flags (Anki-style) ─────────────────────────────────
+	if (filter.flags.length > 0) {
+		conditions.push(`${col}flag IN (${sqlPlaceholders(filter.flags.length)})`);
+		params.push(...filter.flags);
+	}
+
 	// ── Property filters ─────────────────────────────────────
 	for (const pf of filter.propFilters) {
 		const column = PROP_TO_COLUMN[pf.property];
