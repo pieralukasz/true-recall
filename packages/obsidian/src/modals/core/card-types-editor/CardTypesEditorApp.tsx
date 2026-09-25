@@ -6,10 +6,12 @@ import { usePlugin } from "@true-recall/obsidian/preact/ObsidianContext";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 
 import { FieldManager } from "../note-type-manager/FieldManager";
+import { TemplatePreview } from "../note-type-manager/TemplatePreview";
 import { BottomBar } from "./BottomBar";
 import { CardTypeDropdown } from "./CardTypeDropdown";
 import { type EditorTab, EditorTabs } from "./EditorTabs";
 import { FieldChips } from "./FieldChips";
+import { type LiveEdit, liveEditKey, resolveLivePreview } from "./live-preview";
 import { OptionsMenu } from "./OptionsMenu";
 import { TemplateCodeEditor } from "./TemplateCodeEditor";
 
@@ -31,6 +33,7 @@ export function CardTypesEditorApp({
 	const [selectedTemplateIndex, setSelectedTemplateIndex] = useState(0);
 	const [activeTab, setActiveTab] = useState<EditorTab>("front");
 	const [showFields, setShowFields] = useState(false);
+	const [liveEdit, setLiveEdit] = useState<LiveEdit | null>(null);
 
 	const noteType = useMemo(
 		() => noteTypeService.getById(noteTypeId),
@@ -48,6 +51,26 @@ export function CardTypesEditorApp({
 	}, [noteType, onTitleChange]);
 
 	const refresh = useCallback(() => setVersion((v) => v + 1), []);
+
+	const editKey = noteType
+		? liveEditKey(noteType.id, selectedTemplateIndex, activeTab)
+		: "";
+	const handleEditorInput = useCallback(
+		(value: string) => setLiveEdit({ key: editKey, value }),
+		[editKey],
+	);
+	const preview = useMemo(
+		() =>
+			noteType
+				? resolveLivePreview(
+						noteType,
+						selectedTemplateIndex,
+						activeTab,
+						liveEdit,
+					)
+				: null,
+		[noteType, selectedTemplateIndex, activeTab, liveEdit],
+	);
 
 	const editorValue = useMemo(() => {
 		if (!selectedTemplate) return "";
@@ -230,6 +253,7 @@ export function CardTypesEditorApp({
 						value={editorValue}
 						readOnly={readOnly}
 						onChange={handleEditorChange}
+						onInput={handleEditorInput}
 						tall
 					/>
 				</div>
@@ -237,6 +261,18 @@ export function CardTypesEditorApp({
 				{/* Field chips (only for front/back tabs) */}
 				{activeTab !== "styling" && (
 					<FieldChips fields={noteType.fields} noteTypeType={noteType.type} />
+				)}
+
+				{preview?.template && (
+					<div class="ep:max-h-[35%] ep:overflow-y-auto ep:shrink-0">
+						<TemplatePreview
+							template={preview.template}
+							fields={noteType.fields}
+							noteTypeType={noteType.type}
+							css={preview.css}
+							noteTypeId={noteType.id}
+						/>
+					</div>
 				)}
 			</div>
 

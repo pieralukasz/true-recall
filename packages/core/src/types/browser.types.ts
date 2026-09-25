@@ -32,6 +32,8 @@ export interface BrowserCard {
 	ioImagePath?: string;
 	ioRegionsJson?: string;
 	templateOrd?: number;
+	/** Note type of the backing note (scopes its Styling CSS in the preview). */
+	noteTypeId?: string;
 }
 
 export type SortDirection = "asc" | "desc";

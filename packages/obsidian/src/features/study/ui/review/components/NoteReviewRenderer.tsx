@@ -2,10 +2,12 @@ import type { FSRSFlashcardItem } from "@true-recall/core/types";
 
 import { Clickable } from "@true-recall/obsidian/components";
 import { usePlugin } from "@true-recall/obsidian/preact/ObsidianContext";
+import { cn } from "@true-recall/obsidian/utils/cn";
 import { isMobile } from "@true-recall/obsidian/utils/platform";
 
 import { getReviewMaxWidth } from "../helpers/review-width";
 import { useNoteReviewContent } from "../hooks/useNoteReviewContent";
+import { useNoteTypeCss } from "../hooks/useNoteTypeCss";
 import { CardCounters } from "./CardCounters";
 import { LivePreviewField } from "./LivePreviewField";
 import { type PresetPickerOption, PresetPopover } from "./PresetPopover";
@@ -36,6 +38,12 @@ export function NoteReviewRenderer({
 		card.id,
 		noteReviewShowFrontmatter,
 	);
+	// Scoped to the note content only, like the fields of other card types
+	const noteTypeCss = useNoteTypeCss(
+		card.fsrs.noteTypeId,
+		card.templateOrd,
+		false,
+	);
 
 	const maxWidth = isMobile() ? "100%" : getReviewMaxWidth(reviewContentWidth);
 	const noteTitle =
@@ -51,6 +59,7 @@ export function NoteReviewRenderer({
 			style={`--tr-review-max-width: ${maxWidth}; max-width: ${maxWidth};`}
 		>
 			<div class="ep:w-full">
+				{noteTypeCss && <style>{noteTypeCss.css}</style>}
 				<div class="ep:text-xs ep:text-obs-faint ep:mb-2 ep:uppercase ep:tracking-wider">
 					Note Review
 				</div>
@@ -65,7 +74,10 @@ export function NoteReviewRenderer({
 						content={content}
 						field="question"
 						sourcePath={card.sourceNotePath ?? ""}
-						cls="true-recall-review-note ep:leading-relaxed ep:text-obs-normal"
+						cls={cn(
+							"true-recall-review-note ep:leading-relaxed ep:text-obs-normal",
+							noteTypeCss?.className,
+						)}
 						onContentChange={(value) => save(value)}
 					/>
 				) : (

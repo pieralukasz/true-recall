@@ -7,6 +7,8 @@ import { PanelFactCheckSection } from "@true-recall/obsidian/features/library/ui
 import type { PanelCardActionHandlers } from "@true-recall/obsidian/features/library/ui/panel/panel.types";
 import { PreviewCardBody } from "@true-recall/obsidian/features/library/ui/panel/preview/PreviewCardBody";
 import { LivePreviewField } from "@true-recall/obsidian/features/study/ui/review/components/LivePreviewField";
+import { useNoteTypeCss } from "@true-recall/obsidian/features/study/ui/review/hooks/useNoteTypeCss";
+import { cn } from "@true-recall/obsidian/utils/cn";
 
 export function PanelCardFields({
 	card,
@@ -19,8 +21,14 @@ export function PanelCardFields({
 	sourcePath: string;
 	actions: PanelCardActionHandlers;
 }) {
+	const noteTypeCss = useNoteTypeCss(
+		fsrsCard?.fsrs.noteTypeId,
+		fsrsCard?.templateOrd,
+		fsrsCard?.cardType === "cloze",
+	);
 	return (
 		<>
+			{noteTypeCss && <style>{noteTypeCss.css}</style>}
 			<CardField
 				label="Question"
 				card={card}
@@ -28,6 +36,7 @@ export function PanelCardFields({
 				side="question"
 				sourcePath={sourcePath}
 				actions={actions}
+				noteTypeClass={noteTypeCss?.className}
 			/>
 			<CardField
 				label="Answer"
@@ -36,6 +45,7 @@ export function PanelCardFields({
 				side="answer"
 				sourcePath={sourcePath}
 				actions={actions}
+				noteTypeClass={noteTypeCss?.className}
 			/>
 			{fsrsCard ? <SchedulingDetails card={fsrsCard} /> : null}
 			{fsrsCard ? <PanelCardPolishSection card={fsrsCard} /> : null}
@@ -51,6 +61,7 @@ function CardField({
 	side,
 	sourcePath,
 	actions,
+	noteTypeClass,
 }: {
 	label: string;
 	card: FlashcardItem;
@@ -58,6 +69,7 @@ function CardField({
 	side: "question" | "answer";
 	sourcePath: string;
 	actions: PanelCardActionHandlers;
+	noteTypeClass?: string;
 }) {
 	const content = side === "question" ? card.question : card.answer;
 	const isInlineEditable =
@@ -77,7 +89,10 @@ function CardField({
 					content={content}
 					field={side}
 					sourcePath={sourcePath}
-					cls="tr-panel-card-editor ep:px-3 ep:pb-3 ep:pt-1.5 ep:text-obs-normal"
+					cls={cn(
+						"tr-panel-card-editor ep:px-3 ep:pb-3 ep:pt-1.5 ep:text-obs-normal",
+						noteTypeClass,
+					)}
 					onContentChange={(value, field) =>
 						actions.onUpdateContent(card, value, field)
 					}
@@ -88,6 +103,7 @@ function CardField({
 						card={fsrsCard}
 						side={side}
 						sourcePath={sourcePath}
+						noteTypeClass={noteTypeClass}
 					/>
 				</div>
 			) : (

@@ -10,6 +10,8 @@ interface TemplateCodeEditorProps {
 	value: string;
 	readOnly: boolean;
 	onChange: (value: string) => void;
+	/** Every keystroke, before the value is committed on blur (live preview) */
+	onInput?: (value: string) => void;
 	tall?: boolean;
 }
 
@@ -17,6 +19,7 @@ export function TemplateCodeEditor({
 	value,
 	readOnly,
 	onChange,
+	onInput,
 	tall,
 }: TemplateCodeEditorProps) {
 	const app = useApp();
@@ -25,6 +28,8 @@ export function TemplateCodeEditor({
 	const editorRef = useRef<EmbeddableEditorInstance | null>(null);
 	const onChangeRef = useRef(onChange);
 	onChangeRef.current = onChange;
+	const onInputRef = useRef(onInput);
+	onInputRef.current = onInput;
 
 	useEffect(() => {
 		const el = containerRef.current;
@@ -33,6 +38,7 @@ export function TemplateCodeEditor({
 		const editor = new plugin.EmbeddableEditor(app, el, {
 			value,
 			onBlur: (ed) => onChangeRef.current(ed.value),
+			onChange: (update) => onInputRef.current?.(update.state.doc.toString()),
 		});
 		editorRef.current = editor;
 		return () => {
@@ -55,6 +61,7 @@ export function TemplateCodeEditor({
 			class={`ep:w-full ep:px-2 ep:py-1.5 ep:text-ui-small ep:font-mono ep:bg-obs-primary ep:border ep:border-obs-border ep:rounded-md ep:resize-y ${heightCls}`}
 			value={value}
 			disabled={readOnly}
+			onInput={(e) => onInput?.((e.target as HTMLTextAreaElement).value)}
 			onBlur={(e) => onChange((e.target as HTMLTextAreaElement).value)}
 		/>
 	) : (

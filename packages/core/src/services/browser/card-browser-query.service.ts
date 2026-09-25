@@ -303,6 +303,7 @@ export class CardBrowserQueryService {
 			ioImagePath: card.ioImagePath,
 			ioRegionsJson: card.ioRegionsJson,
 			templateOrd: card.templateOrd,
+			noteTypeId: card.noteTypeId,
 		};
 	}
 }
