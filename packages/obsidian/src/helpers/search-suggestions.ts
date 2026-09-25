@@ -88,6 +88,11 @@ const TOP_LEVEL_PREFIXES: {
 		description: "Filter by FSRS preset",
 	},
 	{
+		prefix: "tag:",
+		category: "tag",
+		description: "Filter by note tag (e.g. tag:leech)",
+	},
+	{
 		prefix: "type:",
 		category: "type",
 		description: "Filter by card type",
@@ -214,6 +219,7 @@ export function getTokenContext(tokenInfo: TokenInfo): TokenContext {
 		note: "note",
 		project: "project",
 		preset: "preset",
+		tag: "tag",
 		type: "type",
 		via: "via",
 		added: "date",
@@ -261,7 +267,7 @@ export function buildStaticSuggestions(
 			return buildViaSuggestions(context.partial);
 		case "date":
 			return buildDateSuggestions(context);
-		// note, project, preset are dynamic — handled by the provider
+		// note, project, preset, tag are dynamic — handled by the provider
 		default:
 			return [];
 	}

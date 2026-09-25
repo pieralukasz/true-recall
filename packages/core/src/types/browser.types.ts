@@ -68,6 +68,10 @@ export interface FilterState {
 	negatedStates: StateFilterValue[];
 	/** Anki-style card flags (1-7 colors, 0 = no flag) */
 	flags: number[];
+	/** Note tags that must be present (tag:x). `*` is a wildcard; `tag:a` also matches `a::b`. */
+	tags: string[];
+	/** Note tags that must be absent (-tag:x). */
+	negatedTags: string[];
 	/** When true, show cards from archived notes/projects. Default false. */
 	showArchived?: boolean;
 	/** When true, show only orphaned cards (sourceUid exists but note is missing). */
@@ -98,4 +102,6 @@ export const EMPTY_FILTER: FilterState = {
 	reviewedDaysAgo: null,
 	negatedStates: [],
 	flags: [],
+	tags: [],
+	negatedTags: [],
 };

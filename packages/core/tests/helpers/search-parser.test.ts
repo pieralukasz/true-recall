@@ -152,4 +152,17 @@ describe("parseSearchQuery", () => {
 		expect(parseSearchQuery("flag:none").flags).toEqual([0]);
 		expect(parseSearchQuery("flag:red mitosis").textSearch).toBe("mitosis");
 	});
+
+	it("parses tag: and -tag: filters", () => {
+		const result = parseSearchQuery('tag:leech -tag:"exam prep" mitosis');
+		expect(result.tags).toEqual(["leech"]);
+		expect(result.negatedTags).toEqual(["exam prep"]);
+		expect(result.textSearch).toBe("mitosis");
+	});
+
+	it("does not share tag arrays between parses", () => {
+		parseSearchQuery("tag:leech");
+		expect(parseSearchQuery("mitosis").tags).toEqual([]);
+		expect(parseSearchQuery("mitosis").negatedTags).toEqual([]);
+	});
 });

@@ -178,8 +178,9 @@ export function CardBrowserApp({
 			sourceNotes: facetCounts.sourceNotes,
 			presetNames,
 			projectNames,
+			tags: facetCounts.tags,
 		});
-	}, [plugin, facetCounts.sourceNotes]);
+	}, [plugin, facetCounts.sourceNotes, facetCounts.tags]);
 
 	const handleSort = useCallback(
 		(column: string) => {

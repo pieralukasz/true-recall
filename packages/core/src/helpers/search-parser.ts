@@ -44,6 +44,7 @@ const VALID_OPERATORS = [">=", "<=", ">", "<"] as const;
  * - type:cloze, type:basic, type:reversed, type:image-occlusion
  * - via:ai, via:manual, via:anki_import
  * - flag:1..7 or flag:red/orange/green/blue/pink/turquoise/purple, flag:0/none
+ * - tag:leech, -tag:leech, tag:med::*, tag:"exam prep" (note tags, case-insensitive)
  * - added:7, reviewed:30
  * - "exact phrase" or plain text
  */
@@ -59,6 +60,8 @@ export function parseSearchQuery(input: string): FilterState {
 		presetNames: [],
 		projects: [],
 		flags: [],
+		tags: [],
+		negatedTags: [],
 	};
 	if (!input.trim()) return filter;
 
@@ -117,6 +120,9 @@ export function parseSearchQuery(input: string): FilterState {
 			const val = raw.slice(5).toLowerCase();
 			const flag = parseFlagValue(val);
 			if (flag !== null) filter.flags.push(flag);
+		} else if (raw.startsWith("tag:")) {
+			const val = unquote(raw.slice(4)).trim();
+			if (val) (negated ? filter.negatedTags : filter.tags).push(val);
 		} else if (raw.startsWith("added:")) {
 			const days = parseInt(raw.slice(6), 10);
 			if (!Number.isNaN(days) && days > 0) filter.addedDaysAgo = days;
