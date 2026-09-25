@@ -2,6 +2,8 @@ import { type Grade, Rating } from "ts-fsrs";
 
 import { ReviewService } from "@true-recall/core/services/review/review.service";
 
+import { G } from "@true-recall/obsidian/data";
+
 import type { ApiContext, ApiRequest, ApiResponseWriter } from "../api.types";
 import { parseJsonBody, readBody, sendError, sendOk } from "../api.types";
 
@@ -71,8 +73,21 @@ export async function handleGradeCard(
 		ctx.plugin.flashcardManager,
 	);
 
+	// Same automatic sibling dispersal as a review-session answer; the grade
+	// already emitted its event, so reload the cards whose due moved
+	const dispersed = persisted
+		? ctx.plugin.fsrsHelper?.disperseSiblingsAfterReview(
+				updatedCard,
+				updatedCard.fsrs,
+			)
+		: undefined;
+	if (dispersed && dispersed.affectedCount > 0) {
+		ctx.plugin.dataLayer?.invalidateGroups([G.CARDS, G.DASHBOARD, G.PANEL]);
+	}
+
 	sendOk(res, {
 		persisted,
+		siblingsDispersed: dispersed?.affectedCount ?? 0,
 		cardId: updatedCard.id,
 		newState: updatedCard.fsrs.state,
 		newDue: updatedCard.fsrs.due,

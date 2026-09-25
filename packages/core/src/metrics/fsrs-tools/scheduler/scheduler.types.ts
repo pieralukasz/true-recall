@@ -27,6 +27,8 @@ export interface DueDayCount {
 export interface SchedulerCardStore {
 	get(cardId: string): SchedulerCardData | undefined;
 	getCards(): SchedulerCardData[];
+	/** Cards of one source note; lets per-review work skip a full-table read */
+	getCardsBySourceUid?(sourceUid: string): SchedulerCardData[];
 	getDueCardsByDateRange(startDate: string, endDate: string): CardDueInfo[];
 	/**
 	 * Aggregate variant of getDueCardsByDateRange for workload histograms:
@@ -140,6 +142,16 @@ export interface FlattenFutureOptions {
 export interface DisperseOptions {
 	minInterval: number;
 	sourceUid?: string;
+	dryRun?: boolean;
+}
+
+export interface DisperseAroundOptions {
+	/** The reviewed card; it stays put and its siblings move around it */
+	cardId: string;
+	sourceUid: string;
+	/** The reviewed card's new due date (ISO) */
+	anchorDue: string;
+	minInterval: number;
 	dryRun?: boolean;
 }
 

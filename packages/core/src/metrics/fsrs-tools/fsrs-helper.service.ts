@@ -476,6 +476,40 @@ export class FSRSHelperService {
 		});
 	}
 
+	/**
+	 * Automatic sibling dispersal after a review (settings toggle "Enable
+	 * sibling dispersal"). Only the reviewed note's siblings are read, so it
+	 * stays cheap on the grading path. Returns no changes when the toggle is
+	 * off or the card has no source note.
+	 */
+	disperseSiblingsAfterReview(
+		card: { id: string; sourceUid?: string },
+		updated: Pick<FSRSCardData, "due" | "state">,
+		options?: { dryRun?: boolean },
+	): SchedulingResult {
+		// Day-based spacing only makes sense around a day-based interval; a
+		// card back in (re)learning comes due again within minutes
+		if (
+			!this.settings.siblingDisperseEnabled ||
+			!card.sourceUid ||
+			updated.state !== State.Review
+		) {
+			return {
+				affectedCount: 0,
+				beforeDistribution: [],
+				afterDistribution: [],
+				changes: [],
+			};
+		}
+		return this.siblingDisperse.disperseAround({
+			cardId: card.id,
+			sourceUid: card.sourceUid,
+			anchorDue: updated.due,
+			minInterval: this.settings.siblingMinInterval,
+			dryRun: options?.dryRun ?? false,
+		});
+	}
+
 	findSiblingViolations(): {
 		sourceUid: string;
 		cardCount: number;

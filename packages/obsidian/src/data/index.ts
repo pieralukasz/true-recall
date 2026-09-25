@@ -1,5 +1,9 @@
 export { DataLayer } from "./data-layer";
-export { mutate, mutateReviewGrade } from "./mutate";
+export {
+	mutate,
+	mutateReviewGrade,
+	patchCardDues,
+} from "./mutate";
 export {
 	G,
 	type GlobalCounts,

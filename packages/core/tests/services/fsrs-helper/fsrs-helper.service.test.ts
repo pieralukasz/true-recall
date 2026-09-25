@@ -421,6 +421,88 @@ describe("FSRSHelperService scheduled breaks", () => {
 	});
 });
 
+describe("FSRSHelperService.disperseSiblingsAfterReview", () => {
+	beforeEach(() => {
+		vi.useFakeTimers();
+		vi.setSystemTime(new Date("2026-02-01T10:00:00Z"));
+	});
+
+	afterEach(() => {
+		vi.useRealTimers();
+	});
+
+	const sibling = {
+		id: "sibling",
+		due: "2026-02-11T10:00:00.000Z",
+		state: State.Review,
+		suspended: false,
+		buriedUntil: undefined,
+		scheduledDays: 7,
+		sourceUid: "note-1",
+	};
+
+	function createDisperseHelper(siblingDisperseEnabled: boolean) {
+		const store = {
+			...createStore({ allCards: [], balanceCards: [] }),
+			getCardsBySourceUid: vi.fn(() => [sibling]),
+		};
+		const helper = new FSRSHelperService(store as never, {
+			...DEFAULT_SETTINGS,
+			siblingDisperseEnabled,
+			siblingMinInterval: 3,
+		});
+		return { helper, store };
+	}
+
+	const reviewed = { id: "reviewed", sourceUid: "note-1" };
+
+	it("does nothing while the toggle is off", () => {
+		const { helper, store } = createDisperseHelper(false);
+		const result = helper.disperseSiblingsAfterReview(reviewed, {
+			due: "2026-02-10T10:00:00.000Z",
+			state: State.Review,
+		});
+
+		expect(result.affectedCount).toBe(0);
+		expect(store.getCardsBySourceUid).not.toHaveBeenCalled();
+		expect(store.updateCardDue).not.toHaveBeenCalled();
+	});
+
+	it("moves the reviewed note's siblings when the toggle is on", () => {
+		const { helper, store } = createDisperseHelper(true);
+		const result = helper.disperseSiblingsAfterReview(reviewed, {
+			due: "2026-02-10T10:00:00.000Z",
+			state: State.Review,
+		});
+
+		expect(store.getCardsBySourceUid).toHaveBeenCalledWith("note-1");
+		expect(result.changes).toEqual([
+			expect.objectContaining({
+				cardId: "sibling",
+				newDue: "2026-02-13T10:00:00.000Z",
+			}),
+		]);
+		expect(store.updateCardDue).toHaveBeenCalledWith(
+			"sibling",
+			"2026-02-13T10:00:00.000Z",
+		);
+	});
+
+	it.each([
+		["a card without a source note", { id: "x" }, State.Review],
+		["a card back in relearning", reviewed, State.Relearning],
+	])("skips %s", (_label, card, state) => {
+		const { helper, store } = createDisperseHelper(true);
+		const result = helper.disperseSiblingsAfterReview(card, {
+			due: "2026-02-10T10:00:00.000Z",
+			state,
+		});
+
+		expect(result.affectedCount).toBe(0);
+		expect(store.updateCardDue).not.toHaveBeenCalled();
+	});
+});
+
 interface TestCard {
 	id: string;
 	due: string;

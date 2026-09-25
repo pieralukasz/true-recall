@@ -1,8 +1,10 @@
 /**
  * Sibling Disperse Service Tests
  */
+import { State } from "ts-fsrs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { SchedulerCardData } from "../../../../src/metrics/fsrs-tools/scheduler/scheduler.types";
 import { SiblingDisperseService } from "../../../../src/metrics/fsrs-tools/scheduler/sibling-disperse.service";
 import {
 	createMockCardStore,
@@ -299,6 +301,109 @@ describe("SiblingDisperseService", () => {
 			// Only note-1 has violations
 			expect(violations).toHaveLength(1);
 			expect(violations[0]?.sourceUid).toBe("note-1");
+		});
+	});
+
+	describe("disperseAround", () => {
+		function reviewCards(
+			sourceUid: string,
+			dates: string[],
+			overrides: Partial<SchedulerCardData> = {},
+		): SchedulerCardData[] {
+			return createSiblingCards(sourceUid, dates).map((c) => ({
+				...c,
+				state: State.Review,
+				stability: 10,
+				lastReview: null,
+				suspended: false,
+				...overrides,
+			}));
+		}
+
+		function serviceFor(cards: SchedulerCardData[]) {
+			mockStore = createMockCardStore(cards);
+			mockStore.getCards.mockReturnValue(cards);
+			return new SiblingDisperseService(mockStore);
+		}
+
+		it("pushes siblings away from the reviewed card's new due, never earlier", () => {
+			// Reviewed card lands on Feb 10; siblings on Feb 9 and Feb 11 are too close
+			const siblings = reviewCards("note-1", ["2026-02-09", "2026-02-11"]);
+			const result = serviceFor(siblings).disperseAround({
+				cardId: "reviewed",
+				sourceUid: "note-1",
+				anchorDue: "2026-02-10T10:00:00.000Z",
+				minInterval: 3,
+			});
+
+			const byId = new Map(result.changes.map((c) => [c.cardId, c]));
+			expect(byId.get("sibling-note-1-0")?.newDue).toBe(
+				"2026-02-13T10:00:00.000Z",
+			);
+			expect(byId.get("sibling-note-1-1")?.newDue).toBe(
+				"2026-02-16T10:00:00.000Z",
+			);
+			for (const change of result.changes) {
+				expect(change.daysChanged).toBeGreaterThan(0);
+			}
+		});
+
+		it("leaves siblings that are already far enough apart", () => {
+			const siblings = reviewCards("note-1", ["2026-02-20", "2026-02-25"]);
+			const result = serviceFor(siblings).disperseAround({
+				cardId: "reviewed",
+				sourceUid: "note-1",
+				anchorDue: "2026-02-10T10:00:00.000Z",
+				minInterval: 3,
+			});
+
+			expect(result.affectedCount).toBe(0);
+		});
+
+		it.each([
+			["due within a day", reviewCards("note-1", ["2026-02-02"])],
+			[
+				"learning",
+				reviewCards("note-1", ["2026-02-11"], { state: State.Learning }),
+			],
+			["new", reviewCards("note-1", ["2026-02-11"], { state: State.New })],
+			["suspended", reviewCards("note-1", ["2026-02-11"], { suspended: true })],
+			["another note", reviewCards("note-2", ["2026-02-11"])],
+		])("does not move a sibling that is %s", (_label, cards) => {
+			const result = serviceFor(cards).disperseAround({
+				cardId: "reviewed",
+				sourceUid: "note-1",
+				anchorDue: "2026-02-10T10:00:00.000Z",
+				minInterval: 3,
+			});
+
+			expect(result.affectedCount).toBe(0);
+		});
+
+		it("reads only the note's cards when the store supports it", () => {
+			const siblings = reviewCards("note-1", ["2026-02-11"]);
+			const store = createMockCardStore(siblings);
+			const getCardsBySourceUid = vi.fn(() => siblings);
+			const service = new SiblingDisperseService({
+				...store,
+				getCardsBySourceUid,
+			});
+
+			const result = service.disperseAround({
+				cardId: "reviewed",
+				sourceUid: "note-1",
+				anchorDue: "2026-02-10T10:00:00.000Z",
+				minInterval: 3,
+				dryRun: false,
+			});
+
+			expect(getCardsBySourceUid).toHaveBeenCalledWith("note-1");
+			expect(store.getCards).not.toHaveBeenCalled();
+			expect(result.affectedCount).toBe(1);
+			expect(store.updateCardDue).toHaveBeenCalledWith(
+				"sibling-note-1-0",
+				"2026-02-13T10:00:00.000Z",
+			);
 		});
 	});
 });

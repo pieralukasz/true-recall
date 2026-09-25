@@ -6,12 +6,18 @@ import type {
 	FSRSFlashcardItem,
 } from "@true-recall/core/types";
 
-import { mutateReviewGrade } from "@true-recall/obsidian/data";
+import { mutateReviewGrade, patchCardDues } from "@true-recall/obsidian/data";
 import { reportError } from "@true-recall/obsidian/services/errors";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 import type { ReviewApi } from "@true-recall/obsidian/store";
 
 import type { Command, CommandContext } from "../command.types";
+
+interface SiblingDueChange {
+	cardId: string;
+	originalDue: string;
+	newDue: string;
+}
 
 interface ReviewAnswerParams {
 	card: FSRSFlashcardItem;
@@ -27,6 +33,12 @@ interface ReviewAnswerParams {
 	presetName: string;
 	requeuedAtIndex?: number;
 	buriedSiblings?: FSRSFlashcardItem[];
+	/**
+	 * Runs inside the answer's transaction, after the card is saved, and
+	 * returns the sibling due changes it wrote (automatic sibling dispersal).
+	 * Undo puts those siblings back.
+	 */
+	disperseSiblings?: () => SiblingDueChange[];
 	skipNotification?: boolean;
 	getReview?: () => ReviewApi;
 	onPersisted?: () => void;
@@ -45,6 +57,7 @@ export class ReviewAnswerCommand implements Command {
 	private reviewLogId: string | null = null;
 	private deferredFailureHandler?: () => void;
 	private sessionRestored = false;
+	private siblingDueChanges: SiblingDueChange[] = [];
 
 	constructor(params: ReviewAnswerParams) {
 		this.description = `Review (${Rating[params.rating]})`;
@@ -70,6 +83,7 @@ export class ReviewAnswerCommand implements Command {
 						{ skipNotification: true },
 					);
 					if (!persisted) throw new Error("Reviewed card no longer exists");
+					this.siblingDueChanges = p.disperseSiblings?.() ?? [];
 					this.reviewLogId = ctx.sessionPersistence.recordReview(
 						p.card.id,
 						p.wasNewCard,
@@ -83,6 +97,7 @@ export class ReviewAnswerCommand implements Command {
 				});
 				this.writePersisted = true;
 			} catch (error) {
+				this.siblingDueChanges = [];
 				this.restoreSessionState();
 				this.deferredFailureHandler?.();
 				reportError(error, {
@@ -107,6 +122,14 @@ export class ReviewAnswerCommand implements Command {
 				() => {},
 				() => buildMetaFromCard(p.card, p.updatedFsrs),
 			);
+			if (this.siblingDueChanges.length > 0) {
+				patchCardDues(
+					this.siblingDueChanges.map((c) => ({
+						cardId: c.cardId,
+						due: c.newDue,
+					})),
+				);
+			}
 		}, 0);
 	}
 
@@ -161,6 +184,18 @@ export class ReviewAnswerCommand implements Command {
 				p.previousState,
 				this.reviewLogId,
 			);
+			if (this.siblingDueChanges.length > 0) {
+				for (const change of this.siblingDueChanges) {
+					ctx.cardStore.cards.updateCardDue(change.cardId, change.originalDue);
+				}
+				patchCardDues(
+					this.siblingDueChanges.map((c) => ({
+						cardId: c.cardId,
+						due: c.originalDue,
+					})),
+				);
+				this.siblingDueChanges = [];
+			}
 			mutateReviewGrade(
 				p.card.id,
 				() => {},

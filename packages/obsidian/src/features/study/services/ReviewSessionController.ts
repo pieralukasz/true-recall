@@ -292,6 +292,11 @@ export class ReviewSessionController {
 			presetName: preset.name,
 			requeuedAtIndex,
 			buriedSiblings: buriedSiblings.length > 0 ? buriedSiblings : undefined,
+			disperseSiblings: () =>
+				this.plugin.fsrsHelper?.disperseSiblingsAfterReview(
+					card,
+					transition.updatedCard.fsrs,
+				).changes ?? [],
 			getReview: this.getReview,
 			onPersisted:
 				returnedCardIds.length > 0

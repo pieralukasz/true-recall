@@ -9,11 +9,14 @@ import { State } from "ts-fsrs";
 
 import type {
 	CardScheduleChange,
+	DisperseAroundOptions,
 	DisperseOptions,
 	SchedulerCardStore,
 	SchedulingResult,
 	WorkloadDistribution,
 } from "./scheduler.types";
+
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 /**
  * Sibling group for dispersion
@@ -118,6 +121,96 @@ export class SiblingDisperseService {
 			afterDistribution: this.mapToDistribution(afterDistribution),
 			changes,
 		};
+	}
+
+	/**
+	 * Disperse the siblings of one just-reviewed card around its new due.
+	 * The reviewed card keeps the due its rating button showed; siblings only
+	 * move forward (never earlier) until they are at least minInterval days
+	 * from it and from each other. Only Review-state siblings due more than a
+	 * day from now are touched: learning steps are measured in minutes, not
+	 * days.
+	 */
+	disperseAround(options: DisperseAroundOptions): SchedulingResult {
+		const {
+			cardId,
+			sourceUid,
+			anchorDue,
+			minInterval,
+			dryRun = true,
+		} = options;
+		// The open review queue holds cards due up to the next day boundary,
+		// at most 24h away; siblings inside that window are never moved.
+		const notBefore = Date.now() + DAY_MS;
+
+		const noteCards =
+			this.cardStore.getCardsBySourceUid?.(sourceUid) ??
+			this.cardStore.getCards();
+		const siblings = noteCards
+			.filter(
+				(c) =>
+					c.sourceUid === sourceUid &&
+					c.id !== cardId &&
+					!c.suspended &&
+					c.state === State.Review &&
+					new Date(c.due).getTime() > notBefore &&
+					!(c.buriedUntil && new Date(c.buriedUntil) > new Date()),
+			)
+			.sort((a, b) => new Date(a.due).getTime() - new Date(b.due).getTime());
+
+		const anchor = new Date(anchorDue);
+		const changes: CardScheduleChange[] = [];
+		const beforeDistribution = new Map<string, number>();
+		const afterDistribution = new Map<string, number>();
+		let previousDue: Date | null = null;
+
+		for (const card of siblings) {
+			const originalDue = new Date(card.due);
+			this.increment(beforeDistribution, originalDue);
+
+			let newDue = originalDue;
+			if (previousDue && this.daysBetween(previousDue, newDue) < minInterval) {
+				newDue = this.addDays(previousDue, minInterval);
+			}
+			if (Math.abs(this.daysBetween(anchor, newDue)) < minInterval) {
+				newDue = this.addDays(anchor, minInterval);
+			}
+
+			if (newDue.getTime() !== originalDue.getTime()) {
+				changes.push({
+					cardId: card.id,
+					originalDue: card.due,
+					newDue: newDue.toISOString(),
+					daysChanged: this.daysBetween(originalDue, newDue),
+				});
+			}
+			this.increment(afterDistribution, newDue);
+			previousDue = newDue;
+		}
+
+		if (!dryRun) {
+			for (const change of changes) {
+				this.cardStore.updateCardDue(change.cardId, change.newDue);
+			}
+		}
+
+		return {
+			affectedCount: changes.length,
+			beforeDistribution: this.mapToDistribution(beforeDistribution),
+			afterDistribution: this.mapToDistribution(afterDistribution),
+			changes,
+		};
+	}
+
+	private addDays(from: Date, days: number): Date {
+		const date = new Date(from);
+		date.setDate(date.getDate() + days);
+		return date;
+	}
+
+	private increment(map: Map<string, number>, date: Date): void {
+		const key = this.formatDate(date);
+		map.set(key, (map.get(key) ?? 0) + 1);
 	}
 
 	/**
