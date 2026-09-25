@@ -2,6 +2,7 @@ import { parseYaml, type TAbstractFile, TFile } from "obsidian";
 
 import { writeContent } from "@true-recall/core/flashcard/markdown/content-sync";
 import {
+	findInlineSeparatorLines,
 	hasInlineTag,
 	parseMarkdownCards,
 	writeMarkers,
@@ -17,6 +18,8 @@ import { Q } from "@true-recall/obsidian/data/queries";
 import { getDataLayer } from "@true-recall/obsidian/data/use-data";
 import type TrueRecallPlugin from "@true-recall/obsidian/main";
 import { notify } from "@true-recall/obsidian/services/notification.service";
+
+import { createMarkerHidingExtension } from "./marker-hiding";
 
 export function isMarkdownFlashcardNote(text: string, tag: string): boolean {
 	const frontmatter = /^---\r?\n([\s\S]*?)\r?\n(?:---|\.\.\.)(?:\r?\n|$)/.exec(
@@ -52,6 +55,22 @@ export function registerMarkdownFlashcards(plugin: TrueRecallPlugin): {
 	const sources = plugin.flashcardManager.getSourceNoteService();
 	const timers = new Map<TFile, ReturnType<typeof setTimeout>>();
 	const lastError = new Map<TFile, string>();
+	const lastWarning = new Map<TFile, string>();
+	/** "Q ?? A" on one line is not a card; say so once per distinct set of lines. */
+	const warnInlineSeparators = (
+		file: TFile,
+		text: string,
+		config: MarkdownFlashcardsSettings,
+	) => {
+		const lines = findInlineSeparatorLines(text, config);
+		if (!lines.length) {
+			lastWarning.delete(file);
+			return;
+		}
+		const message = `Markdown flashcards (${file.path}): line ${lines.join(", ")} uses ${config.basicSeparator} or ${config.reversedSeparator} inside a sentence, so no card was created. Put the separator on its own line between the question and the answer.`;
+		if (lastWarning.get(file) !== message) notify().warning(message);
+		lastWarning.set(file, message);
+	};
 	let queue = Promise.resolve();
 	let stopped = false;
 	let importing = false;
@@ -75,7 +94,11 @@ export function registerMarkdownFlashcards(plugin: TrueRecallPlugin): {
 		const config = settings();
 		const original = await vault.read(file);
 		if (!isMarkdownFlashcardNote(original, config.tag)) return;
-		parseMarkdownCards(original, config);
+		warnInlineSeparators(file, original, config);
+		const parsed = parseMarkdownCards(original, config);
+		// A tagged note without cards gets no flashcard_uid until it has one,
+		// unless it already has an ID (its last card was just removed).
+		if (!parsed.length && !(await sources.getSourceUid(file.path))) return;
 		const sourceUid = await sources.getOrCreateSourceUid(file.path);
 		const ownerPath = sources.findSourceNoteByUid(sourceUid);
 		if (
@@ -248,6 +271,7 @@ export function registerMarkdownFlashcards(plugin: TrueRecallPlugin): {
 			}
 		});
 	if (unsubscribe) plugin.register(unsubscribe);
+	plugin.registerEditorExtension(createMarkerHidingExtension());
 	plugin.addCommand({
 		id: "sync-markdown-flashcards",
 		name: "Sync Markdown flashcards",
@@ -259,6 +283,7 @@ export function registerMarkdownFlashcards(plugin: TrueRecallPlugin): {
 		for (const timer of timers.values()) clearTimeout(timer);
 		timers.clear();
 		lastError.clear();
+		lastWarning.clear();
 	});
 	return { whenIdle: () => queue };
 }

@@ -16,6 +16,7 @@ import {
 
 const mocks = vi.hoisted(() => ({
 	error: vi.fn(),
+	warning: vi.fn(),
 	yaml: vi.fn(),
 	changed: undefined as undefined | (() => void),
 }));
@@ -24,7 +25,7 @@ vi.mock("obsidian", async (original) => ({
 	parseYaml: mocks.yaml,
 }));
 vi.mock("@true-recall/obsidian/services/notification.service", () => ({
-	notify: () => ({ error: mocks.error }),
+	notify: () => ({ error: mocks.error, warning: mocks.warning }),
 }));
 vi.mock("@true-recall/obsidian/data/use-data", () => ({
 	getDataLayer: () => ({
@@ -52,6 +53,7 @@ describe("Markdown vault integration", () => {
 	let cleanup: (() => void)[];
 	let changes: Map<string, (file: TFile) => void>;
 	let settings: { markdownFlashcards: typeof DEFAULT_MARKDOWN_FLASHCARDS };
+	let sourceUid: string | null;
 	const settle = async () => {
 		for (let i = 0; i < 3; i++) {
 			await vi.advanceTimersByTimeAsync(1000);
@@ -62,6 +64,8 @@ describe("Markdown vault integration", () => {
 		vi.useFakeTimers();
 		vi.setSystemTime(new Date("2026-09-22T08:00:00Z"));
 		mocks.error.mockClear();
+		mocks.warning.mockClear();
+		sourceUid = "source-a";
 		mocks.yaml.mockReset();
 		ctx = await createTestContext();
 		events = new DomainEventBus();
@@ -127,12 +131,14 @@ describe("Markdown vault integration", () => {
 			flashcardManager: {
 				getSourceNoteService: () => ({
 					getOrCreateSourceUid: async () => "source-a",
+					getSourceUid: async () => sourceUid,
 					findSourceNoteByUid: () => file.path,
 				}),
 			},
 			coreApp: { events },
 			register: (fn: () => void) => cleanup.push(fn),
 			registerEvent: vi.fn(),
+			registerEditorExtension: vi.fn(),
 			addCommand: vi.fn(),
 		} as never);
 	};
@@ -147,6 +153,24 @@ describe("Markdown vault integration", () => {
 		const writes = process.mock.calls.length;
 		await vi.advanceTimersByTimeAsync(10000);
 		expect(process).toHaveBeenCalledTimes(writes);
+		expect(mocks.error).not.toHaveBeenCalled();
+	});
+	it("warns about a separator inside a line and leaves a note without cards untouched", async () => {
+		content = "#flashcards\n\nCapital of France? ?? Paris\n\ncat ??? kot\n";
+		sourceUid = null;
+		const original = content;
+		start();
+		await settle();
+		expect(ctx.cards.size()).toBe(0);
+		expect(content).toBe(original);
+		expect(process).not.toHaveBeenCalled();
+		expect(mocks.warning).toHaveBeenCalledTimes(1);
+		expect(mocks.warning).toHaveBeenCalledWith(
+			expect.stringContaining("line 3, 5"),
+		);
+		changes.get("modify")?.(file);
+		await settle();
+		expect(mocks.warning).toHaveBeenCalledTimes(1);
 		expect(mocks.error).not.toHaveBeenCalled();
 	});
 	it("does not create cards when marker persistence fails", async () => {

@@ -16,13 +16,13 @@ bonjour
 hello
 ```
 
-`??` creates one card; `???` creates both directions with separate schedules. Both separators and the tag can be changed in settings. Separators must occupy an entire line. Fields support Markdown and multiple consecutive lines; a blank line separates cards. Fenced code examples are ignored. Empty answers, duplicate markers and ambiguous blocks stop that note's import instead of removing existing cards.
+`??` creates one card; `???` creates both directions with separate schedules. Both separators and the tag can be changed in settings. Separators must occupy an entire line: `What is the capital of France? ?? Paris` on one line creates no card, and True Recall shows a notice naming the line. A tagged note without any card is left unchanged (no `flashcard_uid` is added). Fields support Markdown and multiple consecutive lines; a blank line separates cards. Fenced code examples are ignored. Empty answers, duplicate markers and ambiguous blocks stop that note's import instead of removing existing cards.
 
 Cards are imported at startup and after file creation, edits and renames, with a short debounce. **True Recall: Sync Markdown flashcards** scans tagged notes manually. Notes can be authored in any editor; True Recall synchronizes them while Obsidian is running or when it next opens.
 
 ## Identity and editing
 
-True Recall adds the usual `flashcard_uid` to the source note and one hidden HTML comment directly after each answer. The comment contains a stable UUID. Keep it with the answer when editing or reordering cards within the note. Renaming or moving the whole file preserves identity and schedules.
+True Recall adds the usual `flashcard_uid` to the source note and one hidden HTML comment directly after each answer. Live Preview and Reading view hide these comments; Source mode shows them. The comment contains a stable UUID. Keep it with the answer when editing or reordering cards within the note. Renaming or moving the whole file preserves identity and schedules.
 
 Questions and answers synchronize in both directions: edit them in the Markdown note, Flashcards Panel or card browser. Panel edits update only the matching card block, preserving the surrounding note, other cards, stable IDs and review progress. Editing a reversed sibling updates Front/Back in source-note orientation. Undoing a panel edit also updates the note. Content sync works even when in-note scheduling is disabled.
 
@@ -36,7 +36,7 @@ If separators are changed, update the corresponding source text. A marker with a
 
 ## Portable scheduling
 
-**Store scheduling inside notes** includes each direction's FSRS state in the hidden comment: due date, stability, difficulty, review/lapse counts, state, learning step, last review, interval, suspension/burial, creation time and update time. Reviews and scheduling operations update these comments. They stay invisible in normal Markdown rendering and remain editable in source mode.
+**Store scheduling inside notes** includes each direction's FSRS state in the hidden comment: due date, stability, difficulty, review/lapse counts, state, learning step, last review, interval, suspension/burial, creation time and update time. Reviews and scheduling operations update these comments. They stay invisible in Reading view and Live Preview (a marker line appears while the cursor is on it) and remain visible and editable in Source mode.
 
 SQLite remains the working database in both modes. With in-note scheduling enabled, a fresh database can reconstruct cards and their current FSRS state from the notes. When importing into an existing database, newer scheduling wins; an equal timestamp keeps the local version. Review-log history, aggregate statistics and FSRS presets remain in the database and still require normal backups/sync. Keep device clocks accurate when syncing notes between devices.
 

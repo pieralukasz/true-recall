@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
+	findInlineSeparatorLines,
 	parseMarkdownCards,
 	serializeMarker,
 	writeMarkers,
@@ -74,6 +75,31 @@ describe("Markdown card parsing", () => {
 		`${serializeMarker({ v: 1, id: noteId })}`,
 	])("rejects incomplete or ambiguous input without deleting existing cards: %s", (input) => {
 		expect(() => parseMarkdownCards(input, config)).toThrow();
+	});
+	it("reports separators written inside a line, which never become cards", () => {
+		const text = [
+			"---",
+			"note: a ?? b",
+			"---",
+			"#flashcards",
+			"",
+			"Capital of France? ?? Paris",
+			"",
+			"cat ??? kot",
+			"",
+			"Real card",
+			"??",
+			"Answer",
+			"",
+			"Why?? Because",
+			"`x ?? y` in code, <!-- a ?? b -->",
+			"```",
+			"a ?? b",
+			"```",
+		].join("\n");
+		expect(parseMarkdownCards(text, config)).toHaveLength(1);
+		expect(findInlineSeparatorLines(text, config)).toEqual([6, 8]);
+		expect(findInlineSeparatorLines("Q\n??\nA", config)).toEqual([]);
 	});
 	it("rejects identical separators and multiline settings", () => {
 		expect(

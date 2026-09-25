@@ -188,6 +188,41 @@ export function writeMarkers(
 	return text;
 }
 
+/**
+ * 1-based numbers of lines that use a separator inside the text ("Q ?? A")
+ * instead of on its own line. Such lines never become cards, so callers warn.
+ */
+export function findInlineSeparatorLines(
+	text: string,
+	settings: MarkdownFlashcardsSettings,
+): number[] {
+	const separators = [settings.basicSeparator, settings.reversedSeparator];
+	const lines = text.split(/\r\n|\n|\r/);
+	const found: number[] = [];
+	let fence = "";
+	let frontmatter = lines[0]?.trim() === "---";
+	for (let i = 0; i < lines.length; i++) {
+		const line = lines[i] ?? "";
+		if (frontmatter) {
+			if (i > 0 && /^(---|\.\.\.)$/.test(line.trim())) frontmatter = false;
+			continue;
+		}
+		const match = /^\s{0,3}(`{3,}|~{3,})/.exec(line)?.[1];
+		if (match) {
+			if (!fence) fence = match;
+			else if (match[0] === fence[0] && match.length >= fence.length)
+				fence = "";
+			continue;
+		}
+		if (fence) continue;
+		const plain = line.replace(/`+[^`]*`+/g, "").replace(/<!--.*?-->/g, "");
+		if (separators.includes(plain.trim())) continue;
+		const tokens = plain.trim().split(/\s+/);
+		if (tokens.some((token) => separators.includes(token))) found.push(i + 1);
+	}
+	return found;
+}
+
 export function hasInlineTag(text: string, tag: string): boolean {
 	let fence = "";
 	for (const line of text.split(/\r?\n/)) {
