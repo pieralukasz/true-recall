@@ -578,5 +578,14 @@
 	"Your first learning session": "Your first learning session",
 	"Try AI for free": "Try AI for free",
 	"Open learning guide": "Open learning guide",
-	"Connect your account and try generation, image cards and answer feedback. No payment card needed.": "Connect your account and try generation, image cards and answer feedback. No payment card needed."
+	"Connect your account and try generation, image cards and answer feedback. No payment card needed.": "Connect your account and try generation, image cards and answer feedback. No payment card needed.",
+	"Mask mode": "Mask mode",
+	"Solo": "Solo",
+	"All": "All",
+	"Mask mode controls visibility. Each region you draw becomes its own card; merged regions share one card.": "Mask mode controls visibility. Each region you draw becomes its own card; merged regions share one card.",
+	"Hide other regions while reviewing": "Hide other regions while reviewing",
+	"1 card on save": "1 card on save",
+	"{0} cards on save": "{0} cards on save",
+	"Merge all regions into one card": "Merge all regions into one card",
+	"Merging keeps the lowest group's card and review history. Other cards in this note are removed when you save.": "Merging keeps the lowest group's card and review history. Other cards in this note are removed when you save."
 }

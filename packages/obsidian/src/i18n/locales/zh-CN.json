@@ -578,5 +578,14 @@
 	"Your first learning session": "你的第一次学习",
 	"Try AI for free": "免费试用 AI",
 	"Open learning guide": "打开学习指南",
-	"Connect your account and try generation, image cards and answer feedback. No payment card needed.": "连接你的账户，体验卡片生成、图片卡片和答案反馈。无需绑定支付卡。"
+	"Connect your account and try generation, image cards and answer feedback. No payment card needed.": "连接你的账户，体验卡片生成、图片卡片和答案反馈。无需绑定支付卡。",
+	"Mask mode": "遮挡模式",
+	"Solo": "单个",
+	"All": "全部",
+	"Mask mode controls visibility. Each region you draw becomes its own card; merged regions share one card.": "遮挡模式控制区域的显示方式。每个绘制的区域生成一张卡片；合并后的区域共用一张卡片。",
+	"Hide other regions while reviewing": "复习时隐藏其他区域",
+	"1 card on save": "保存后生成 1 张卡片",
+	"{0} cards on save": "保存后生成 {0} 张卡片",
+	"Merge all regions into one card": "将所有区域合并为一张卡片",
+	"Merging keeps the lowest group's card and review history. Other cards in this note are removed when you save.": "合并会保留编号最小的分组对应的卡片及其复习记录。保存时，此笔记中的其他卡片将被删除。"
 }
