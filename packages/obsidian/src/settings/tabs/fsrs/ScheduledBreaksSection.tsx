@@ -140,8 +140,7 @@ export function ScheduledBreaksSection({
 							class="ep:flex ep:items-center ep:justify-between ep:p-2 ep:bg-obs-background-modifier-form ep:rounded-lg"
 						>
 							<span>
-								{brk.startDate} {t("to")}
-								{brk.endDate}
+								{brk.startDate} {t("to")} {brk.endDate}
 							</span>
 							<Clickable
 								class="ep:text-ui-small"

@@ -60,8 +60,7 @@ export function SmartRetentionSection() {
 					{t("Current policy:")}{" "}
 					<strong>
 						{hourlyBackupsToKeep}
-						{t("h /")}
-						{dailyBackupsToKeep}
+						{t("h /")} {dailyBackupsToKeep}
 						{t("d /")} {weeklyBackupsToKeep}
 						{t("w")}
 					</strong>
