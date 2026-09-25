@@ -164,7 +164,7 @@
 	"Disperse siblings now": "Disperse siblings now",
 	"Dispersing...": "Dispersing...",
 	"Display YAML frontmatter when reviewing whole notes": "Display YAML frontmatter when reviewing whole notes",
-	"Display header with close button, stats and progress in review session": "Display header with close button, stats and progress in review session",
+	"Display the counters bar and the 'Open note' button in review session": "Display the counters bar and the 'Open note' button in review session",
 	"Display new/learning/due counters in review session header": "Display new/learning/due counters in review session header",
 	"Display order": "Display order",
 	"Display predicted interval on answer buttons": "Display predicted interval on answer buttons",

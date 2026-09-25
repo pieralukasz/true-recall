@@ -164,7 +164,7 @@
 	"Disperse siblings now": "立即分散同源卡片",
 	"Dispersing...": "正在分散…",
 	"Display YAML frontmatter when reviewing whole notes": "复习整篇笔记时显示 YAML 属性",
-	"Display header with close button, stats and progress in review session": "复习时显示含关闭按钮、统计和进度的顶部栏",
+	"Display the counters bar and the 'Open note' button in review session": "在复习时显示计数栏和“打开笔记”按钮",
 	"Display new/learning/due counters in review session header": "在复习顶部栏显示新卡片、学习中和到期卡片数量",
 	"Display order": "显示顺序",
 	"Display predicted interval on answer buttons": "在评分按钮上显示预计复习间隔",

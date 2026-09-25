@@ -132,7 +132,7 @@ export function GeneralTab() {
 				<FormField
 					name={t("Show review header")}
 					description={t(
-						"Display header with close button, stats and progress in review session",
+						"Display the counters bar and the 'Open note' button in review session",
 					)}
 				>
 					<ToggleInput
