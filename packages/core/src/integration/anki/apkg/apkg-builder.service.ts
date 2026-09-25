@@ -254,7 +254,19 @@ export class ApkgBuilderService {
 			db.run(
 				`INSERT INTO notes (id, guid, mid, mod, usn, tags, flds, sfld, csum, flags, data)
                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-				[noteId, guid, modelId, nowSecs, -1, "", flds, sfld, csum, 0, ""],
+				[
+					noteId,
+					guid,
+					modelId,
+					nowSecs,
+					-1,
+					formatAnkiTags(card.tags),
+					flds,
+					sfld,
+					csum,
+					0,
+					"",
+				],
 			);
 
 			const ord = isCloze ? (card.clozeIndex ?? 1) - 1 : 0;
@@ -747,6 +759,17 @@ function deterministicId(cardId: string, salt: string): number {
 	// Anki IDs are positive integers, typically in the millisecond-timestamp range.
 	// Use absolute value and ensure it's large enough to avoid collisions with small IDs.
 	return Math.abs(hash) + 1000000000;
+}
+
+/**
+ * Anki stores note tags space-separated with a leading and trailing space
+ * (" leech biology "), or "" when there are none.
+ */
+export function formatAnkiTags(tags: readonly string[] | undefined): string {
+	const clean = [...new Set((tags ?? []).map((tag) => tag.trim()))].filter(
+		Boolean,
+	);
+	return clean.length > 0 ? ` ${clean.join(" ")} ` : "";
 }
 
 function generateGuid(cardId: string): string {
