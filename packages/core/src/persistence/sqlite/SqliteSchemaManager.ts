@@ -79,7 +79,6 @@ export class SqliteSchemaManager {
                 FOREIGN KEY (note_id) REFERENCES notes(id)
             );
 
-            CREATE INDEX IF NOT EXISTS idx_cards_flag ON cards(flag);
             CREATE INDEX IF NOT EXISTS idx_cards_note_id ON cards(note_id);
             CREATE INDEX IF NOT EXISTS idx_cards_note_template ON cards(note_id, template_ord);
             CREATE INDEX IF NOT EXISTS idx_cards_due ON cards(due);
@@ -231,6 +230,9 @@ export class SqliteSchemaManager {
 		} catch {
 			// Column already exists — expected for new installs
 		}
+		// Indexes on added columns run after their ALTER TABLE: in the batch above
+		// they would fail on every database created before the column existed.
+		this.db.run(`CREATE INDEX IF NOT EXISTS idx_cards_flag ON cards(flag)`);
 		this.db.run(
 			`CREATE INDEX IF NOT EXISTS idx_assistant_tasks_thread ON assistant_tasks(thread_id)`,
 		);
