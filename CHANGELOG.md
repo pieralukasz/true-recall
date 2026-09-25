@@ -2,12 +2,34 @@
 
 ## Unreleased
 
-## 2.6.0 (2026-09-22)
+## 2.6.0 (2026-09-25)
+
+This release connects AI without an API key, adds card flags and Quick Add, and makes several settings that were saved but ignored actually work: scheduled breaks, sibling dispersal, leech tagging and note type Styling.
 
 ### Features
 
 - **Connect AI without copying a key.** Run “Try AI for free” or use the AI provider settings to sign in in your browser and return to Obsidian. The connection uses a one-time authorization code and preserves your existing provider keys. Cloud Sync remains a separate choice.
 - **A guided first learning session.** Create a practice note with a diagram, prepare a few cards, try feedback on a typed answer, and review an image card. A checklist saved on your device helps you return for the next session. Reopen it with “First learning session”.
+- **Card flags, like Anki.** Mark a card with one of seven colored flags using `Cmd/Ctrl + 1` to `7` or the review actions menu. The Card Browser shows flags, filters them in the sidebar, flags cards in bulk, and searches with `flag:red` or `flag:none`. Flags survive Anki import and export, and the CLI and MCP server can set them.
+- **Quick Add in the Flashcard Panel.** The zap button in the panel header opens a form that adds cards to the current note without leaving the panel.
+- **Note type Styling now applies.** The CSS in a note type's Styling tab styles its cards in review, the Card Browser preview and the Flashcard Panel. The Card Types Editor shows a live preview that updates as you type. The CSS only affects that note type's cards.
+- **Undo on mobile.** An undo button sits next to Show answer, so a misgrade can be fixed without a keyboard.
+- **Settings in Simplified Chinese.** Settings follow Obsidian's language, with an English / 简体中文 choice under General.
+- **More control over image occlusion.** Solo cards can hide the other regions while you review, and “Merge all regions into one card” keeps the existing card's history.
+
+### Bug Fixes
+
+- **Scheduled breaks move cards.** Adding a break in Settings → FSRS now previews how many cards fall inside it, moves them with undo, and keeps later reviews out of it. A break with no cards due is not saved.
+- **Sibling dispersal works.** With “Enable sibling dispersal” on, rating a card spaces out the other cards from the same note by at least the minimum sibling interval. Undo puts them back.
+- **Leeches are tagged.** A card that crosses the leech threshold adds a `leech` tag to its note, so you can find leeches later and study them in Custom Study by tag. “Suspend” is now “Tag and suspend”. Cards that became leeches earlier are not tagged retroactively.
+- **Next session and End session go to the right place.** Next session opens Custom Study for what you just reviewed; End session opens the Dashboard on every platform.
+- **The FSRS simulator and optimizer start from your default preset** instead of outdated weights and retention.
+- **Import Studio keeps card sources** and recognises cloze deletions in every input format.
+- **Renaming a note type field keeps its content** instead of leaving the renamed field empty on every card.
+- **Image occlusion regions are independent cards,** and revealed answers stay readable.
+- **`include: folder` works again** and project membership refreshes when notes move.
+- **Steadier Flashcard Panel, Quick Note and AI inbox.** The panel no longer shows another note's cards after a fast switch, Quick Note keeps typed text when its view refreshes, and Apply all in the AI inbox uses your edited text.
+- **Smaller fixes.** The “Show review header” description says what it hides, and the scheduled break and backup policy labels have their missing spaces back.
 
 ## 2.5.1 (2026-09-15)
 
