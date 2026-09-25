@@ -78,7 +78,9 @@ export const fsrsTools: ToolDef[] = [
 			leech_action: z
 				.enum(["tag-only", "suspend"])
 				.optional()
-				.describe("What to do with leeches"),
+				.describe(
+					"What to do with leeches: tag-only adds the 'leech' note tag, suspend also suspends the card",
+				),
 			weights: z
 				.array(z.number())
 				.nullable()

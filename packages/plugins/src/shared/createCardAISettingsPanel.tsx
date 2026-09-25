@@ -9,6 +9,7 @@ import {
 	FormField,
 	ToggleInput,
 } from "@true-recall/obsidian/components";
+import { t } from "@true-recall/obsidian/i18n";
 import { usePlugin } from "@true-recall/obsidian/preact";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 
@@ -105,7 +106,7 @@ export function createCardAISettingsPanel(
 					const forked: CardAIPreset = {
 						...p,
 						id,
-						name: `${p.name} (fork)`,
+						name: t("{0} (fork)", [p.name]),
 						builtin: false,
 						requiresPro: false,
 					};
@@ -137,7 +138,9 @@ export function createCardAISettingsPanel(
 				"@true-recall/obsidian/modals/shared/ConfirmModal"
 			);
 			const confirmed = await confirm(plugin.app, {
-				title: "Delete Card Editing Preset",
+				get title() {
+					return t("Delete Card Editing Preset");
+				},
 				message: `Delete “${p.name}”? This action cannot be undone.`,
 				confirmLabel: "Delete Preset",
 			});
@@ -167,7 +170,9 @@ export function createCardAISettingsPanel(
 					freshId = id;
 					const fresh: CardAIPreset = {
 						id,
-						name: "New preset",
+						get name() {
+							return t("New preset");
+						},
 						prompt: "",
 						autoApply: false,
 						autoApplyNewCards: false,
@@ -189,8 +194,10 @@ export function createCardAISettingsPanel(
 		return (
 			<>
 				<FormField
-					name="Auto-apply custom prompts"
-					description="Run freeform prompts instantly without a preview step"
+					name={t("Auto-apply custom prompts")}
+					description={t(
+						"Run freeform prompts instantly without a preview step",
+					)}
 				>
 					<ToggleInput
 						value={bucket.customPromptAutoApply}
@@ -208,17 +215,17 @@ export function createCardAISettingsPanel(
 						settings={settings}
 						save={save}
 						modelKey={config.lmStudioField.modelKey}
-						name={config.lmStudioField.name}
-						description={config.lmStudioField.description}
+						name={t(config.lmStudioField.name)}
+						description={t(config.lmStudioField.description)}
 					/>
 				)}
 
 				{visibleBuiltins.length > 0 && (
 					<div class="tr-preset-section">
 						<div class="tr-preset-section__header">
-							<h3 class="tr-preset-section__title">Built-in presets</h3>
+							<h3 class="tr-preset-section__title">{t("Built-in presets")}</h3>
 							<span class="tr-preset-section__description">
-								Ship with the plugin — fork to customize
+								{t("Ship with the plugin — fork to customize")}
 							</span>
 						</div>
 						{visibleBuiltins.map((p) => (
@@ -234,14 +241,16 @@ export function createCardAISettingsPanel(
 
 				<div class="tr-preset-section">
 					<div class="tr-preset-section__header">
-						<h3 class="tr-preset-section__title">Your presets</h3>
+						<h3 class="tr-preset-section__title">{t("Your presets")}</h3>
 						<span class="tr-preset-section__description">
-							{config.description}
+							{t(config.description)}
 						</span>
 					</div>
 					{bucket.userPresets.length === 0 && (
 						<span class="ep:text-ui-smaller ep:text-obs-muted ep:italic">
-							No custom presets yet. Add one to craft your own instruction.
+							{t(
+								"No custom presets yet. Add one to craft your own instruction.",
+							)}
 						</span>
 					)}
 					<ReorderableList
@@ -265,7 +274,7 @@ export function createCardAISettingsPanel(
 					/>
 					<div class="tr-preset-section__actions">
 						<ActionButton
-							label="+ New preset"
+							label={t("+ New preset")}
 							variant="outline"
 							size="sm"
 							onClick={addNew}

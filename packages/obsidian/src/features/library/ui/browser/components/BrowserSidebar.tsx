@@ -2,6 +2,8 @@ import { useSignal } from "@preact/signals";
 import type { ComponentChildren } from "preact";
 import { useMemo } from "preact/hooks";
 
+import { CARD_FLAG_META, type CardFlag } from "@true-recall/core/types";
+
 import { Clickable, SearchInput } from "@true-recall/obsidian/components";
 import { FSRS_COLORS } from "@true-recall/obsidian/helpers/fsrs-colors";
 
@@ -13,6 +15,7 @@ interface BrowserSidebarProps {
 		cardTypes: Record<string, number>;
 		createdVia: Record<string, number>;
 		sourceNotes: { uid: string; name: string; count: number }[];
+		flags: Record<string, number>;
 	};
 	activeFilter: FilterState;
 	onFilterChange: (partial: Partial<FilterState>) => void;
@@ -95,6 +98,29 @@ export function BrowserSidebar({
 				})}
 			</SidebarSection>
 
+			<SidebarSection title="Flags">
+				{([1, 2, 3, 4, 5, 6, 7] as CardFlag[]).map((flag) => {
+					const count = facetCounts.flags[String(flag)] ?? 0;
+					if (count === 0) return null;
+					const active = activeFilter.flags.includes(flag);
+					return (
+						<SidebarRow
+							key={flag}
+							label={CARD_FLAG_META[flag].label}
+							count={count}
+							active={active}
+							dotColor={CARD_FLAG_META[flag].color}
+							onClick={() => {
+								const flags = active
+									? activeFilter.flags.filter((f) => f !== flag)
+									: [...activeFilter.flags, flag];
+								onFilterChange({ flags });
+							}}
+						/>
+					);
+				})}
+			</SidebarSection>
+
 			<SourceNotesSection
 				sourceNotes={facetCounts.sourceNotes}
 				activeFilter={activeFilter}
@@ -159,6 +185,7 @@ export function BrowserSidebar({
 								sourceUids: [],
 								cardTypes: [],
 								createdVia: [],
+								flags: [],
 							})
 						}
 					>
@@ -175,7 +202,8 @@ function hasAnyFilter(f: FilterState): boolean {
 		f.states.length > 0 ||
 		f.sourceUids.length > 0 ||
 		f.cardTypes.length > 0 ||
-		f.createdVia.length > 0
+		f.createdVia.length > 0 ||
+		f.flags.length > 0
 	);
 }
 
@@ -341,12 +369,14 @@ function SidebarRow({
 	count,
 	active,
 	dotCls,
+	dotColor,
 	onClick,
 }: {
 	label: string;
 	count: number;
 	active: boolean;
 	dotCls?: string;
+	dotColor?: string;
 	onClick: () => void;
 }) {
 	return (
@@ -357,6 +387,12 @@ function SidebarRow({
 			onClick={onClick}
 		>
 			{dotCls && <span class={`ep:text-[8px] ${dotCls}`}>{"\u25CF"}</span>}
+			{dotColor && (
+				<span
+					class="ep:inline-block ep:h-2 ep:w-2 ep:rounded-full ep:shrink-0"
+					style={{ backgroundColor: dotColor }}
+				/>
+			)}
 			<span
 				class={`ep:flex-1 ep:truncate ep:text-[12px] ${active ? "ep:text-obs-normal ep:font-medium" : "ep:text-obs-muted"}`}
 			>

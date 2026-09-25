@@ -19,6 +19,9 @@ interface TemplateEditorProps {
 	onTemplateChange: (updated: CardTemplate) => void;
 	onDelete?: () => void;
 	isOnlyTemplate: boolean;
+	/** Note type Styling, applied to the preview */
+	css?: string;
+	noteTypeId?: string;
 }
 
 export function TemplateEditor({
@@ -29,6 +32,8 @@ export function TemplateEditor({
 	onTemplateChange,
 	onDelete,
 	isOnlyTemplate,
+	css,
+	noteTypeId,
 }: TemplateEditorProps) {
 	return (
 		<div class="ep:border ep:border-obs-border ep:rounded-md ep:p-3 ep:space-y-3">
@@ -98,6 +103,8 @@ export function TemplateEditor({
 				template={template}
 				fields={fields}
 				noteTypeType={noteTypeType}
+				css={css}
+				noteTypeId={noteTypeId}
 			/>
 		</div>
 	);

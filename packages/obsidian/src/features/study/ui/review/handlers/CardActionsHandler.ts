@@ -1,3 +1,5 @@
+import type { CardFlag } from "@true-recall/core/types";
+
 import {
 	CardActionContext,
 	type CardActionsCallbacks,
@@ -31,6 +33,10 @@ export class CardActionsHandler {
 
 	handleSuspend(): void {
 		this.lifecycle.handleSuspend();
+	}
+
+	handleSetFlag(flag: CardFlag): void {
+		this.lifecycle.handleSetFlag(flag);
 	}
 
 	handleBuryCard(): void {

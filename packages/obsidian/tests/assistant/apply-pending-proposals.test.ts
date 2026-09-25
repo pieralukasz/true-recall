@@ -106,4 +106,82 @@ describe("applyPendingProposals", () => {
 		]);
 		expect(apply).toHaveBeenCalledOnce();
 	});
+
+	describe("characterization", () => {
+		it("stops at the first error and leaves the rest pending", async () => {
+			const manifest = createManifest();
+			const apply = vi
+				.fn()
+				.mockResolvedValueOnce({
+					ok: false,
+					error: "Note type no longer exists",
+				})
+				.mockResolvedValueOnce({ ok: true });
+
+			const result = await applyPendingProposals(task, manifest, { apply });
+
+			expect(result).toEqual({
+				appliedCount: 0,
+				conflictedCount: 0,
+				conflicts: {},
+				error: "Note type no longer exists",
+			});
+			expect(apply).toHaveBeenCalledOnce();
+			expect(manifest.proposals.map((proposal) => proposal.status)).toEqual([
+				"proposed",
+				"proposed",
+			]);
+		});
+
+		it("falls back to a generic message when a failure has no error", async () => {
+			const manifest = createManifest();
+			const apply = vi.fn().mockResolvedValue({ ok: false });
+
+			const result = await applyPendingProposals(task, manifest, { apply });
+
+			expect(result.error).toBe("Could not apply all drafts");
+		});
+
+		it("skips proposals that are already applied or rejected", async () => {
+			const manifest = createManifest();
+			manifest.proposals[0].status = "applied";
+			manifest.proposals[1].status = "rejected";
+			const apply = vi.fn().mockResolvedValue({ ok: true });
+
+			const result = await applyPendingProposals(task, manifest, { apply });
+
+			expect(result.appliedCount).toBe(0);
+			expect(apply).not.toHaveBeenCalled();
+		});
+
+		it("passes card fields as overrides and none for other proposal kinds", async () => {
+			const manifest: AssistantManifest = {
+				proposals: [
+					{
+						id: "card",
+						status: "proposed",
+						type: "create_card",
+						noteTypeId: "basic",
+						fields: { Front: "Q", Back: "A" },
+					},
+					{
+						id: "note",
+						status: "proposed",
+						type: "append_to_note",
+						path: "Note.md",
+						markdown: "text",
+					},
+				],
+				citations: [],
+			};
+			const apply = vi.fn().mockResolvedValue({ ok: true });
+
+			await applyPendingProposals(task, manifest, { apply });
+
+			expect(apply.mock.calls[0][2]).toEqual({
+				fields: { Front: "Q", Back: "A" },
+			});
+			expect(apply.mock.calls[1][2]).toEqual({ fields: undefined });
+		});
+	});
 });

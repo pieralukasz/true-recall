@@ -2,6 +2,7 @@ import type { FSRSFlashcardItem } from "@true-recall/core/types/fsrs/card.types"
 
 import { MarkdownContent } from "@true-recall/obsidian/components/MarkdownContent";
 import { hasBlockMarkdown } from "@true-recall/obsidian/features/study/ui/review/helpers";
+import { cn } from "@true-recall/obsidian/utils/cn";
 
 import { IOCardRenderer } from "@true-recall/plugins/image-occlusion";
 
@@ -9,6 +10,8 @@ interface PreviewCardBodyProps {
 	card: FSRSFlashcardItem;
 	side: "question" | "answer";
 	sourcePath: string;
+	/** Note type Styling scope class (the caller renders the `<style>`) */
+	noteTypeClass?: string;
 }
 
 const BODY_CLASSES: Record<"question" | "answer", string> = {
@@ -20,6 +23,7 @@ export function PreviewCardBody({
 	card,
 	side,
 	sourcePath,
+	noteTypeClass,
 }: PreviewCardBodyProps) {
 	if (
 		card.cardType === "image-occlusion" &&
@@ -32,6 +36,7 @@ export function PreviewCardBody({
 				regionsJson={card.ioRegionsJson}
 				templateOrd={card.templateOrd}
 				revealed={side === "answer"}
+				class={noteTypeClass}
 			/>
 		);
 	}
@@ -57,9 +62,11 @@ export function PreviewCardBody({
 		);
 	}
 
-	const wrapperClass = hasBlockMarkdown(content)
-		? `${BODY_CLASSES[side]} is-block-content`
-		: BODY_CLASSES[side];
+	const wrapperClass = cn(
+		BODY_CLASSES[side],
+		hasBlockMarkdown(content) && "is-block-content",
+		noteTypeClass,
+	);
 
 	return (
 		<MarkdownContent

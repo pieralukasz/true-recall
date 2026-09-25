@@ -1,5 +1,7 @@
 import { Rating, State } from "ts-fsrs";
 
+import { CARD_FLAG_META, type CardFlag } from "@true-recall/core/types";
+
 import {
 	ReviewBuryCommand,
 	ReviewDeleteCommand,
@@ -75,6 +77,21 @@ export class CardLifecycleActions {
 		this.context.removeFromTemporaryDeck(siblingIds);
 		this.context.refreshIfActive();
 		notify().cardSuspended();
+	}
+
+	/**
+	 * Anki-style card flag. Deliberately outside the undoable Command
+	 * pipeline — Anki treats flags as lightweight marks that Ctrl+Z does
+	 * not revert, so a direct write + queue refresh matches that behavior.
+	 */
+	handleSetFlag(flag: CardFlag): void {
+		const card = this.context.deps.getReview().getCurrentCard();
+		if (!card) return;
+
+		this.context.deps.cardStore.setCardFlag(card.id, flag);
+		this.context.deps.getReview().updateCurrentCardFlag(flag);
+		this.context.refreshIfActive();
+		notify().cardFlagSet(CARD_FLAG_META[flag].label);
 	}
 
 	handleBuryCard(): void {

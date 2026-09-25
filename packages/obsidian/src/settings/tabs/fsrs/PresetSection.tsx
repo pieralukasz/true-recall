@@ -9,6 +9,7 @@ import {
 	SelectInput,
 	TextInput,
 } from "@true-recall/obsidian/components";
+import { t } from "@true-recall/obsidian/i18n";
 
 interface PresetSectionProps {
 	presets: FSRSPreset[];
@@ -49,10 +50,12 @@ export function PresetSection({
 	}, [draftName, preset.name, onRename]);
 
 	return (
-		<FormCard title="FSRS presets">
+		<FormCard title={t("FSRS presets")}>
 			<FormField
-				name="Active preset"
-				description="Each preset has its own retention target, weights, steps, and daily limits"
+				name={t("Active preset")}
+				description={t(
+					"Each preset has its own retention target, weights, steps, and daily limits",
+				)}
 			>
 				<SelectInput
 					value={selectedPresetId}
@@ -60,16 +63,20 @@ export function PresetSection({
 					ariaLabel="Active preset"
 					options={presets.map((p) => ({ value: p.id, label: p.name }))}
 				/>
-				<ActionButton label="New" variant="secondary" onClick={onCreate} />
+				<ActionButton label={t("New")} variant="secondary" onClick={onCreate} />
 				{!isDefault && (
-					<ActionButton label="Delete" variant="danger" onClick={onDelete} />
+					<ActionButton
+						label={t("Delete")}
+						variant="danger"
+						onClick={onDelete}
+					/>
 				)}
 			</FormField>
 
 			{!isDefault && (
 				<FormField
-					name="Preset name"
-					description="Press Enter or click away to apply"
+					name={t("Preset name")}
+					description={t("Press Enter or click away to apply")}
 				>
 					<TextInput
 						value={draftName}

@@ -303,6 +303,18 @@ export class FrontmatterIndexService {
 		return entry instanceof Set ? Array.from(entry) : [entry];
 	}
 
+	getAllFilePaths(): string[] {
+		return (
+			this.metadataIndex.getAllFilePaths?.() ?? [
+				...new Set(
+					[...this.fields.values()].flatMap((index) => [
+						...index.pathToValue.keys(),
+					]),
+				),
+			]
+		);
+	}
+
 	getAllValues(field: string): Set<string> {
 		const index = this.fields.get(field);
 		if (!index) return new Set();

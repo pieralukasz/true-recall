@@ -58,6 +58,59 @@ export function mutateReviewGrade(
 	}
 }
 
+/**
+ * Note tags are shared by every card of the note (cloze and reversed
+ * siblings), so a tag write patches all of their cached metas.
+ */
+export function patchNoteTags(noteId: string, tags: string[]): void {
+	const dl = getDataLayer();
+	dl.patch<Map<string, CardSchedulingMeta>>(Q.ALL_META, (map) => {
+		let next: Map<string, CardSchedulingMeta> | null = null;
+		for (const [id, meta] of map) {
+			if (meta.noteId !== noteId) continue;
+			next ??= new Map(map);
+			next.set(id, { ...meta, tags: [...tags] });
+		}
+		return next ?? map;
+	});
+}
+
+/**
+ * Due-only changes written outside a review grade (automatic sibling
+ * dispersal). Patches the cached metas so views show the new dues without
+ * a full Q.ALL_META reload on the grading path.
+ */
+export function patchCardDues(
+	changes: readonly { cardId: string; due: string }[],
+): void {
+	if (changes.length === 0) return;
+	const dues = new Map(changes.map((c) => [c.cardId, c.due]));
+	const withDue = (meta: CardSchedulingMeta): CardSchedulingMeta => {
+		const due = dues.get(meta.id);
+		return due === undefined ? meta : { ...meta, fsrs: { ...meta.fsrs, due } };
+	};
+	const dl = getDataLayer();
+	batch(() => {
+		dl.patch<Map<string, CardSchedulingMeta>>(Q.ALL_META, (map) => {
+			const next = new Map(map);
+			for (const id of dues.keys()) {
+				const meta = next.get(id);
+				if (meta) next.set(id, withDue(meta));
+			}
+			return next;
+		});
+		dl.patch<Map<string, CardSchedulingMeta[]>>(Q.CARDS_BY_SOURCE, (map) => {
+			const next = new Map(map);
+			for (const [uid, bucket] of map) {
+				if (bucket.some((meta) => dues.has(meta.id))) {
+					next.set(uid, bucket.map(withDue));
+				}
+			}
+			return next;
+		});
+	});
+}
+
 // ── Incremental patch helpers ──────────────────────────────
 
 type CardBucket = "new" | "learning" | "due" | "suspended" | "inactive";

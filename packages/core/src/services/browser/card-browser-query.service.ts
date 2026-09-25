@@ -66,6 +66,7 @@ export class CardBrowserQueryService {
 		cardTypes: Record<string, number>;
 		createdVia: Record<string, number>;
 		sourceNotes: { uid: string; name: string; count: number }[];
+		flags: Record<string, number>;
 	} {
 		const allCards = this.cardStore.cards.getAll();
 		const archivedUids = this.getArchivedSourceUids(showArchived);
@@ -73,6 +74,7 @@ export class CardBrowserQueryService {
 		const cardTypes: Record<string, number> = {};
 		const createdVia: Record<string, number> = {};
 		const sourceMap = new Map<string, number>();
+		const flags: Record<string, number> = {};
 
 		const now = new Date();
 		for (const card of allCards) {
@@ -98,6 +100,10 @@ export class CardBrowserQueryService {
 			const cv = card.createdVia ?? "manual";
 			createdVia[cv] = (createdVia[cv] ?? 0) + 1;
 
+			// Flag counts (0 = no flag is not a facet)
+			const fl = card.flag ?? 0;
+			if (fl !== 0) flags[fl] = (flags[fl] ?? 0) + 1;
+
 			// Source note counts
 			if (card.sourceUid) {
 				sourceMap.set(card.sourceUid, (sourceMap.get(card.sourceUid) ?? 0) + 1);
@@ -118,7 +124,7 @@ export class CardBrowserQueryService {
 			})
 			.sort((a, b) => a.name.localeCompare(b.name));
 
-		return { states, cardTypes, createdVia, sourceNotes };
+		return { states, cardTypes, createdVia, sourceNotes, flags };
 	}
 
 	/** Card IDs with no linked source note (null sourceUid or unresolved) */
@@ -283,6 +289,7 @@ export class CardBrowserQueryService {
 			createdAt: card.createdAt ?? null,
 			suspended: card.suspended ?? false,
 			buriedUntil: card.buriedUntil ?? null,
+			flag: card.flag ?? 0,
 			sourceUid: card.sourceUid ?? null,
 			sourceNoteName: file?.split("/").pop()?.replace(/\.md$/, "") ?? null,
 			sourceNotePath: file ?? null,
@@ -296,6 +303,7 @@ export class CardBrowserQueryService {
 			ioImagePath: card.ioImagePath,
 			ioRegionsJson: card.ioRegionsJson,
 			templateOrd: card.templateOrd,
+			noteTypeId: card.noteTypeId,
 		};
 	}
 }

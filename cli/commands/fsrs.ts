@@ -81,7 +81,8 @@ export const fsrsCommands: CommandDef[] = [
 			},
 			leech_action: {
 				type: "string",
-				description: "What to do with leeches",
+				description:
+					"What to do with leeches: tag-only adds the 'leech' note tag, suspend also suspends the card",
 				enum: ["tag-only", "suspend"],
 			},
 			weights: {

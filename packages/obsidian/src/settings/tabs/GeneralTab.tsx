@@ -30,6 +30,7 @@ import {
 	ToggleInput,
 } from "@true-recall/obsidian/components";
 import { KeyboardHandler } from "@true-recall/obsidian/features/study/ui/review/handlers/KeyboardHandler";
+import { t } from "@true-recall/obsidian/i18n";
 import {
 	ACCESS_TIER_LABEL,
 	buildFeatureTogglePatch,
@@ -48,12 +49,34 @@ export function GeneralTab() {
 
 	return (
 		<div class="tr-settings-sections">
+			<FormCard title={t("Language")}>
+				<FormField
+					name={t("Settings language")}
+					description={t(
+						"Follow Obsidian or choose a language. Restart Obsidian to refresh settings navigation and search labels.",
+					)}
+				>
+					<SelectInput
+						value={settings.uiLanguage ?? "auto"}
+						onChange={(value) =>
+							void save({ uiLanguage: value as "auto" | "en" | "zh-CN" })
+						}
+						options={[
+							{ value: "auto", label: t("Follow Obsidian") },
+							{ value: "en", label: "English" },
+							{ value: "zh-CN", label: "简体中文" },
+						]}
+					/>
+				</FormField>
+			</FormCard>
 			<NewsletterCard />
 
-			<FormCard title="Appearance">
+			<FormCard title={t("Appearance")}>
 				<FormField
-					name="Hide tab bar"
-					description="Hide the tab container at the top of the main window. Bind the 'Toggle tab bar' command to a hotkey to toggle it quickly."
+					name={t("Hide tab bar")}
+					description={t(
+						"Hide the tab container at the top of the main window. Bind the 'Toggle tab bar' command to a hotkey to toggle it quickly.",
+					)}
 				>
 					<ToggleInput
 						value={settings.hideTabBar}
@@ -67,10 +90,12 @@ export function GeneralTab() {
 				</FormField>
 			</FormCard>
 
-			<FormCard title="Dashboard">
+			<FormCard title={t("Dashboard")}>
 				<FormField
-					name="Show dashboard header"
-					description="Show today's review summary and recently studied notes at the top of the dashboard"
+					name={t("Show dashboard header")}
+					description={t(
+						"Show today's review summary and recently studied notes at the top of the dashboard",
+					)}
 				>
 					<ToggleInput
 						value={settings.showDashboardHeader}
@@ -79,24 +104,36 @@ export function GeneralTab() {
 				</FormField>
 			</FormCard>
 
-			<FormCard title="Review interface">
+			<FormCard title={t("Review interface")}>
 				<FormField
-					name="Review mode"
-					description="Where to open the review session"
+					name={t("Review mode")}
+					description={t("Where to open the review session")}
 				>
 					<SelectInput
 						value={settings.reviewMode}
 						onChange={(v) => void save({ reviewMode: v as ReviewViewMode })}
 						options={[
-							{ value: "fullscreen", label: "Fullscreen (main area)" },
-							{ value: "panel", label: "Side panel" },
+							{
+								value: "fullscreen",
+								get label() {
+									return t("Fullscreen (main area)");
+								},
+							},
+							{
+								value: "panel",
+								get label() {
+									return t("Side panel");
+								},
+							},
 						]}
 					/>
 				</FormField>
 
 				<FormField
-					name="Show review header"
-					description="Display header with close button, stats and progress in review session"
+					name={t("Show review header")}
+					description={t(
+						"Display the counters bar and the 'Open note' button in review session",
+					)}
 				>
 					<ToggleInput
 						value={settings.showReviewHeader}
@@ -105,8 +142,10 @@ export function GeneralTab() {
 				</FormField>
 
 				<FormField
-					name="Show header stats"
-					description="Display new/learning/due counters in review session header"
+					name={t("Show header stats")}
+					description={t(
+						"Display new/learning/due counters in review session header",
+					)}
 				>
 					<ToggleInput
 						value={settings.showReviewHeaderStats}
@@ -115,8 +154,8 @@ export function GeneralTab() {
 				</FormField>
 
 				<FormField
-					name="Show next review time"
-					description="Display predicted interval on answer buttons"
+					name={t("Show next review time")}
+					description={t("Display predicted interval on answer buttons")}
 				>
 					<ToggleInput
 						value={settings.showNextReviewTime}
@@ -125,8 +164,10 @@ export function GeneralTab() {
 				</FormField>
 
 				<FormField
-					name="Continuous custom reviews"
-					description="Show 'Next session' button after completing a custom review session"
+					name={t("Continuous custom reviews")}
+					description={t(
+						"Show 'Next session' button after completing a custom review session",
+					)}
 				>
 					<ToggleInput
 						value={settings.continuousCustomReviews}
@@ -135,8 +176,8 @@ export function GeneralTab() {
 				</FormField>
 
 				<FormField
-					name="Card content width"
-					description="Maximum width of card text in review (desktop only)"
+					name={t("Card content width")}
+					description={t("Maximum width of card text in review (desktop only)")}
 				>
 					<SelectInput
 						value={settings.reviewContentWidth}
@@ -144,16 +185,36 @@ export function GeneralTab() {
 							void save({ reviewContentWidth: v as ReviewContentWidth })
 						}
 						options={[
-							{ value: "narrow", label: "Narrow (40rem / ~640px)" },
-							{ value: "default", label: "Default (48rem / ~768px)" },
-							{ value: "wide", label: "Wide (64rem / ~1024px)" },
-							{ value: "full", label: "Full width" },
+							{
+								value: "narrow",
+								get label() {
+									return t("Narrow (40rem / ~640px)");
+								},
+							},
+							{
+								value: "default",
+								get label() {
+									return t("Default (48rem / ~768px)");
+								},
+							},
+							{
+								value: "wide",
+								get label() {
+									return t("Wide (64rem / ~1024px)");
+								},
+							},
+							{
+								value: "full",
+								get label() {
+									return t("Full width");
+								},
+							},
 						]}
 					/>
 				</FormField>
 
 				<FormField
-					name="Typed answers"
+					name={t("Typed answers")}
 					description={
 						settings.proKey ? (
 							"Default mode for new review sessions. Press T to toggle it during review."
@@ -169,15 +230,27 @@ export function GeneralTab() {
 							void save({ defaultTypeInMode: value as TypeInMode })
 						}
 						options={[
-							{ value: "off", label: "Off" },
-							{ value: "ai", label: "AI grading" },
+							{
+								value: "off",
+								get label() {
+									return t("Off");
+								},
+							},
+							{
+								value: "ai",
+								get label() {
+									return t("AI grading");
+								},
+							},
 						]}
 					/>
 				</FormField>
 
 				<FormField
-					name="Show card source note name"
-					description="Display the name of the source note for each card during review"
+					name={t("Show card source note name")}
+					description={t(
+						"Display the name of the source note for each card during review",
+					)}
 				>
 					<ToggleInput
 						value={settings.cardReviewShowSourceNote}
@@ -186,8 +259,8 @@ export function GeneralTab() {
 				</FormField>
 
 				<FormField
-					name="Show frontmatter in note review"
-					description="Display YAML frontmatter when reviewing whole notes"
+					name={t("Show frontmatter in note review")}
+					description={t("Display YAML frontmatter when reviewing whole notes")}
 				>
 					<ToggleInput
 						value={settings.noteReviewShowFrontmatter}
@@ -196,8 +269,10 @@ export function GeneralTab() {
 				</FormField>
 
 				<FormField
-					name="Ignore daily limits for note study"
-					description="When studying a specific note from the dashboard, show all its cards regardless of daily limits"
+					name={t("Ignore daily limits for note study")}
+					description={t(
+						"When studying a specific note from the dashboard, show all its cards regardless of daily limits",
+					)}
 				>
 					<ToggleInput
 						value={settings.ignoreDailyLimitsForNoteStudy}
@@ -212,11 +287,13 @@ export function GeneralTab() {
 			</FormCard>
 
 			<FormCard
-				title="Image occlusion"
-				description="Create visual flashcards by masking regions of diagrams, maps, and images."
+				title={t("Image occlusion")}
+				description={t(
+					"Create visual flashcards by masking regions of diagrams, maps, and images.",
+				)}
 			>
 				<FormField
-					name="Creation tools"
+					name={t("Creation tools")}
 					description={
 						settings.proKey ? (
 							"Show Image Occlusion in commands and quick-action toolbars. Existing cards remain readable when disabled."
@@ -237,8 +314,10 @@ export function GeneralTab() {
 				</FormField>
 
 				<FormField
-					name="AI detection prompt"
-					description="Optional custom prompt for automatic region detection. Leave empty to use the built-in prompt."
+					name={t("AI detection prompt")}
+					description={t(
+						"Optional custom prompt for automatic region detection. Leave empty to use the built-in prompt.",
+					)}
 					layout="stacked"
 				>
 					<TextAreaInput
@@ -256,10 +335,12 @@ export function GeneralTab() {
 				</FormField>
 			</FormCard>
 
-			<FormCard title="Day boundary">
+			<FormCard title={t("Day boundary")}>
 				<FormField
-					name="Next day starts at"
-					description="Hour when a new day begins (0-23). Default: 4 (4:00 am)"
+					name={t("Next day starts at")}
+					description={t(
+						"Hour when a new day begins (0-23). Default: 4 (4:00 am)",
+					)}
 				>
 					<SliderInput
 						value={settings.dayStartHour}
@@ -272,11 +353,13 @@ export function GeneralTab() {
 				</FormField>
 			</FormCard>
 
-			<FormCard title="About">
+			<FormCard title={t("About")}>
 				<PlanField settings={settings} />
 				<FormField
-					name="What's New"
-					description="Browse current and earlier release notes, including while offline"
+					name={t("What's New")}
+					description={t(
+						"Browse current and earlier release notes, including while offline",
+					)}
 				>
 					<Clickable
 						class="ep-btn ep-btn-outline"
@@ -299,11 +382,14 @@ export function GeneralTab() {
 							})()
 						}
 					>
-						View release notes
+						{t("View release notes")}
 					</Clickable>
 				</FormField>
 
-				<FormField name="Website" description="Visit the True Recall website">
+				<FormField
+					name={t("Website")}
+					description={t("Visit the True Recall website")}
+				>
 					<Clickable
 						class="ep-btn ep-btn-outline"
 						onClick={() =>
@@ -317,12 +403,15 @@ export function GeneralTab() {
 					</Clickable>
 				</FormField>
 
-				<FormField name="Discord" description="Join the True Recall community">
+				<FormField
+					name={t("Discord")}
+					description={t("Join the True Recall community")}
+				>
 					<Clickable
 						class="ep-btn ep-btn-outline"
 						onClick={() => window.open(TRUERECALL_DISCORD_URL, "_blank")}
 					>
-						Join Discord
+						{t("Join Discord")}
 					</Clickable>
 				</FormField>
 			</FormCard>
@@ -337,12 +426,14 @@ function NewsletterCard() {
 
 	return (
 		<FormCard
-			title="Newsletter — Learn how to learn"
+			title={t("Newsletter — Learn how to learn")}
 			class="tr-setting-section--accent"
 		>
 			<FormField
-				name="Personal newsletter about learning"
-				description="Spaced repetition, memory, and how we should actually study — plus every True Recall release"
+				name={t("Personal newsletter about learning")}
+				description={t(
+					"Spaced repetition, memory, and how we should actually study — plus every True Recall release",
+				)}
 			>
 				<Clickable
 					class="ep-btn mod-cta tr-settings-action ep:inline-flex ep:items-center ep:gap-1.5"
@@ -354,7 +445,7 @@ function NewsletterCard() {
 					}
 				>
 					<div ref={mailRef} class="ep:w-4 ep:h-4" />
-					Subscribe
+					{t("Subscribe")}
 				</Clickable>
 			</FormField>
 		</FormCard>
@@ -368,12 +459,40 @@ const KEYBINDING_FIELDS: {
 }[] = [
 	{
 		key: "revealAndGood",
-		label: "Reveal / Good",
-		description: "Reveal answer, then rate Good",
+		get label() {
+			return t("Reveal / Good");
+		},
+		get description() {
+			return t("Reveal answer, then rate Good");
+		},
 	},
-	{ key: "again", label: "Again", description: "Rate Again (fail)" },
-	{ key: "hard", label: "Hard", description: "Rate Hard" },
-	{ key: "easy", label: "Easy", description: "Rate Easy" },
+	{
+		key: "again",
+		get label() {
+			return t("Again");
+		},
+		get description() {
+			return t("Rate Again (fail)");
+		},
+	},
+	{
+		key: "hard",
+		get label() {
+			return t("Hard");
+		},
+		get description() {
+			return t("Rate Hard");
+		},
+	},
+	{
+		key: "easy",
+		get label() {
+			return t("Easy");
+		},
+		get description() {
+			return t("Rate Easy");
+		},
+	},
 ];
 
 function PlanField({ settings }: { settings: TrueRecallSettings }) {
@@ -381,10 +500,10 @@ function PlanField({ settings }: { settings: TrueRecallSettings }) {
 	const isPro = tier === "pro";
 	return (
 		<FormField
-			name="Plan"
+			name={t("Plan")}
 			description={
 				isPro
-					? "Managed AI, Image Occlusion and Typed Answers are unlocked."
+					? t("Managed AI, Image Occlusion and Typed Answers are unlocked.")
 					: tier === "byok"
 						? "You use your own AI provider. Pro adds managed AI, Image Occlusion and Typed Answers."
 						: "Review and scheduling are free. Add an AI key or try Pro free for AI flashcards."
@@ -404,7 +523,7 @@ function PlanField({ settings }: { settings: TrueRecallSettings }) {
 						)
 					}
 				>
-					{isPro ? "Manage subscription" : "View plans"}
+					{isPro ? t("Manage subscription") : t("View plans")}
 				</Clickable>
 			</div>
 		</FormField>
@@ -449,7 +568,7 @@ function ReviewKeybindingsSection({
 			<div class="ep:border-t ep:border-obs-border ep:mt-2 ep:pt-3">
 				<div class="ep:flex ep:items-center ep:justify-between ep:mb-2">
 					<span class="ep:text-ui-small ep:font-medium ep:text-obs-muted">
-						Review keybindings
+						{t("Review keybindings")}
 					</span>
 					{!isDefault && (
 						<Clickable
@@ -459,13 +578,14 @@ function ReviewKeybindingsSection({
 								onSave(DEFAULT_SETTINGS.reviewKeybindings);
 							}}
 						>
-							Reset to defaults
+							{t("Reset to defaults")}
 						</Clickable>
 					)}
 				</div>
 				<InfoBlock>
-					Number keys 1-4 always work as rating shortcuts regardless of custom
-					bindings.
+					{t(
+						"Number keys 1-4 always work as rating shortcuts regardless of custom bindings.",
+					)}
 				</InfoBlock>
 			</div>
 			{KEYBINDING_FIELDS.map(({ key, label, description }) => (
@@ -529,7 +649,7 @@ function KeyCapture({
 			onBlur={handleBlur}
 			onKeyDown={handleKeyDown}
 		>
-			{isCapturing ? "Press a key..." : KeyboardHandler.formatKeyName(value)}
+			{isCapturing ? t("Press a key...") : KeyboardHandler.formatKeyName(value)}
 		</button>
 	);
 }
@@ -539,9 +659,11 @@ function SupportCard() {
 	const githubRef = useIcon("github");
 
 	return (
-		<FormCard title="Support" class="tr-setting-section--support">
+		<FormCard title={t("Support")} class="tr-setting-section--support">
 			<InfoBlock>
-				If True Recall helps your learning, consider supporting its development.
+				{t(
+					"If True Recall helps your learning, consider supporting its development.",
+				)}
 			</InfoBlock>
 			<div class="tr-settings-actions">
 				<Clickable
@@ -549,14 +671,14 @@ function SupportCard() {
 					onClick={() => window.open(TRUERECALL_BMC_URL, "_blank")}
 				>
 					<div ref={heartRef} class="ep:w-4 ep:h-4" />
-					Buy Me a Coffee
+					{t("Buy Me a Coffee")}
 				</Clickable>
 				<Clickable
 					class="ep-btn ep-btn-outline tr-settings-action ep:inline-flex ep:items-center ep:gap-1.5"
 					onClick={() => window.open(TRUERECALL_GITHUB_URL, "_blank")}
 				>
 					<div ref={githubRef} class="ep:w-4 ep:h-4" />
-					GitHub
+					{t("GitHub")}
 				</Clickable>
 			</div>
 		</FormCard>

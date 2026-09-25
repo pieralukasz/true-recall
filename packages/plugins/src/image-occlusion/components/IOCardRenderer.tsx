@@ -117,6 +117,7 @@ export function IOCardRenderer({
 						revealed={revealed}
 						maskMode={maskModeOverride ?? definition.maskMode}
 						revealSingleOnly={revealSingleOnly}
+						hideOtherRegions={definition.hideOtherRegions}
 						onRegionClick={onRegionClick}
 					/>
 				</div>

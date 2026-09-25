@@ -7,6 +7,7 @@ import {
 } from "@true-recall/core/persistence/sqlite/loader";
 import type { ReviewLogForSync } from "@true-recall/core/persistence/sqlite/modules/StatsActions";
 import type { FSRSCardData } from "@true-recall/core/types";
+import { normalizeCardFlag } from "@true-recall/core/types";
 
 const FIELD_SEPARATOR = "\x1f";
 
@@ -285,7 +286,7 @@ export class ApkgBuilderService {
 						0,
 						0,
 						0,
-						0,
+						normalizeCardFlag(card.flag),
 						"",
 					],
 				);
@@ -310,7 +311,7 @@ export class ApkgBuilderService {
 						0,
 						0,
 						0,
-						0,
+						normalizeCardFlag(card.flag),
 						"",
 					],
 				);
@@ -351,7 +352,7 @@ export class ApkgBuilderService {
 							0,
 							0,
 							0,
-							0,
+							normalizeCardFlag(reversed.flag),
 							"",
 						],
 					);
@@ -376,7 +377,7 @@ export class ApkgBuilderService {
 							0,
 							0,
 							0,
-							0,
+							normalizeCardFlag(reversed.flag),
 							"",
 						],
 					);

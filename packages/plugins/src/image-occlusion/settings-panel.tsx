@@ -1,4 +1,5 @@
 import { FormField, TextAreaInput } from "@true-recall/obsidian/components";
+import { t } from "@true-recall/obsidian/i18n";
 
 import type { PluginSettingsProps } from "../types";
 
@@ -8,8 +9,10 @@ export function ImageOcclusionSettingsPanel({
 }: PluginSettingsProps) {
 	return (
 		<FormField
-			name="AI detection prompt"
-			description="Custom prompt for AI region detection in image occlusion. Leave empty to use built-in prompt."
+			name={t("AI detection prompt")}
+			description={t(
+				"Custom prompt for AI region detection in image occlusion. Leave empty to use built-in prompt.",
+			)}
 		>
 			<TextAreaInput
 				value={settings.aiIODetectionPrompt ?? ""}
