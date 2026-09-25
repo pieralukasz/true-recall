@@ -21,8 +21,6 @@ import {
 	type NoteType,
 } from "../../types/note.types";
 
-const NESTED_CLOZE_PATTERN = /\{\{c\d+::.*\{\{c/;
-
 export interface TemplateContext {
 	fields: Record<string, string>;
 	/** Set to any string (even "") to signal answer-side rendering (affects cloze display) */
@@ -71,11 +69,6 @@ export function renderTemplate(
 
 			const idx = context.clozeIndex ?? 0;
 			const isAnswer = context.frontSide !== undefined;
-
-			// Use nested-aware parser when field contains nested clozes
-			if (NESTED_CLOZE_PATTERN.test(fieldValue)) {
-				return renderClozeNested(fieldValue, idx, isAnswer);
-			}
 
 			if (isAnswer) {
 				return renderClozeAnswer(fieldValue, idx);
@@ -185,115 +178,6 @@ export function fieldIsEmpty(value: string): boolean {
 	// Strip whitespace
 	stripped = stripped.trim();
 	return stripped.length === 0;
-}
-
-/**
- * Brace-depth-aware cloze renderer for handling nested clozes like
- * {{c1::outer {{c2::inner}}}}. Falls back to simple regex for flat clozes.
- */
-function renderClozeNested(
-	text: string,
-	targetIndex: number,
-	isAnswer: boolean,
-): string {
-	let result = "";
-	let i = 0;
-
-	while (i < text.length) {
-		// Look for cloze start: {{cN::
-		if (text.startsWith("{{c", i)) {
-			const parsed = parseClozeAt(text, i);
-			if (parsed) {
-				if (parsed.index === targetIndex) {
-					if (isAnswer) {
-						const inner = renderClozeNested(
-							parsed.content,
-							targetIndex,
-							isAnswer,
-						);
-						result += `**${inner}**`;
-					} else {
-						result += parsed.hint ? `[${parsed.hint}]` : "[...]";
-					}
-				} else {
-					// Reveal this cloze, recursively process inner clozes
-					result += renderClozeNested(parsed.content, targetIndex, isAnswer);
-				}
-				i = parsed.endPos;
-				continue;
-			}
-		}
-		result += text[i];
-		i++;
-	}
-
-	return result;
-}
-
-interface ParsedCloze {
-	index: number;
-	content: string;
-	hint?: string;
-	endPos: number;
-}
-
-/**
- * Parse a cloze marker at position `start` in `text`, handling nested braces.
- * Returns null if not a valid cloze at this position.
- */
-function parseClozeAt(text: string, start: number): ParsedCloze | null {
-	// Must start with {{c
-	if (!text.startsWith("{{c", start)) return null;
-
-	let j = start + 3;
-	// Parse digits
-	const digitStart = j;
-	while (j < text.length) {
-		const char = text[j];
-		if (char === undefined || char < "0" || char > "9") break;
-		j++;
-	}
-	if (j === digitStart) return null;
-	const index = parseInt(text.slice(digitStart, j), 10);
-
-	// Must have ::
-	if (!text.startsWith("::", j)) return null;
-	j += 2;
-
-	// Find matching }} counting brace depth
-	const contentStart = j;
-	let depth = 1;
-	let firstHintSep = -1;
-
-	while (j < text.length && depth > 0) {
-		if (text.startsWith("{{", j)) {
-			depth++;
-			j += 2;
-		} else if (text.startsWith("}}", j)) {
-			depth--;
-			if (depth === 0) break;
-			j += 2;
-		} else if (text.startsWith("::", j) && depth === 1 && firstHintSep === -1) {
-			firstHintSep = j;
-			j += 2;
-		} else {
-			j++;
-		}
-	}
-
-	if (depth !== 0) return null;
-
-	let content: string;
-	let hint: string | undefined;
-
-	if (firstHintSep !== -1) {
-		content = text.slice(contentStart, firstHintSep);
-		hint = text.slice(firstHintSep + 2, j);
-	} else {
-		content = text.slice(contentStart, j);
-	}
-
-	return { index, content, hint, endPos: j + 2 }; // +2 for the closing }}
 }
 
 /**

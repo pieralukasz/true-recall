@@ -2,6 +2,8 @@
  * String manipulation utilities shared across the codebase
  */
 
+import { revealClozes } from "../flashcard/parsing/cloze-parser.service";
+
 /** Matches <br>, <br/>, <br /> tags (case-insensitive) */
 export const BR_REGEX = /<br\s*\/?>/gi;
 
@@ -33,8 +35,9 @@ export function fileBasename(path: string): string {
 }
 
 export function stripMarkdownSyntax(text: string): string {
+	// Cloze deletions: {{c1::text::hint}} → text (brace-aware, so {{c1::{x}}} works)
 	return (
-		text
+		revealClozes(text)
 			// Code fences (``` ... ```)
 			.replace(/```[\s\S]*?```/g, "")
 			// HTML tags
@@ -47,8 +50,6 @@ export function stripMarkdownSyntax(text: string): string {
 			.replace(/\[\[([^\]]*)\]\]/g, "$1")
 			// Markdown links: [text](url) → text
 			.replace(/\[([^\]]*)\]\([^)]*\)/g, "$1")
-			// Cloze deletions: {{c1::text::hint}} → text
-			.replace(/\{\{c\d+::([^:}]*?)(?:::[^}]*)?\}\}/g, "$1")
 			// Highlight ==text==
 			.replace(/==([^=]+)==/g, "$1")
 			// Bold + italic ***text*** / ___text___

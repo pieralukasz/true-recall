@@ -155,6 +155,12 @@ describe("stripMarkdownSyntax", () => {
 		).toBe("The capital of France is Paris");
 	});
 
+	it("strips cloze deletions whose answer contains braces", () => {
+		expect(stripMarkdownSyntax("Say {{c1::{name}}} now")).toBe(
+			"Say {name} now",
+		);
+	});
+
 	// ── LaTeX ──────────────────────────────────────────────────────────
 
 	it("strips inline LaTeX ($...$)", () => {

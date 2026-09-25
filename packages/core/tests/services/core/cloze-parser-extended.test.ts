@@ -34,6 +34,52 @@ describe("cloze parser — extended edge cases", () => {
 		});
 	});
 
+	// ── Braces inside a cloze ─────────────────────────────────
+
+	describe("braces inside a cloze", () => {
+		it("keeps a {placeholder} inside the cloze", () => {
+			const template = 'print(f"Hello, {{c2::{name}}}!")';
+			expect(extractClozeIndices(template)).toEqual([2]);
+			expect(renderClozeQuestion(template, 2)).toBe('print(f"Hello, [...]!")');
+			expect(renderClozeAnswer(template, 2)).toBe(
+				'print(f"Hello, **{name}**!")',
+			);
+		});
+
+		it("creates a card for LaTeX with braces", () => {
+			const cards = parseClozeTemplate("Ratio: {{c1::$\\frac{a}{b}$}}");
+			expect(cards).toHaveLength(1);
+			expect(cards[0]?.question).toBe("Ratio: [...]");
+			expect(cards[0]?.answer).toBe("Ratio: **$\\frac{a}{b}$**");
+		});
+
+		it("keeps a hint after a braced answer", () => {
+			expect(renderClozeQuestion("{{c1::$x^{2}$::power of two}} here", 1)).toBe(
+				"[power of two] here",
+			);
+		});
+
+		it("reveals braced content of non-target clozes", () => {
+			expect(renderClozeQuestion("{{c1::{a}}} and {{c2::b}}", 2)).toBe(
+				"{a} and [...]",
+			);
+		});
+
+		it("falls back to the first }} when braces do not balance", () => {
+			// A lone `\{` in LaTeX never closes; the cloze still ends at `}}`
+			const template = "{{c1::\\{ x }} rest";
+			expect(extractClozeIndices(template)).toEqual([1]);
+			expect(renderClozeQuestion(template, 1)).toBe("[...] rest");
+		});
+
+		it("renders nested clozes", () => {
+			const template = "{{c1::outer {{c2::inner}}}}";
+			expect(extractClozeIndices(template)).toEqual([1]);
+			expect(renderClozeQuestion(template, 1)).toBe("[...]");
+			expect(renderClozeAnswer(template, 1)).toBe("**outer inner**");
+		});
+	});
+
 	// ── Special characters in hints ────────────────────────────
 
 	describe("hints with special characters", () => {
