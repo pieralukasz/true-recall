@@ -150,6 +150,7 @@ export function ImportStudioApp({
 					fields: c.fields,
 					alwaysTypeIn: c.alwaysTypeIn,
 					sourceUid,
+					sourceText: c.sourceText,
 					createdVia: "manual",
 				})),
 			);
