@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 2.6.1 (2026-09-26)
+
+### Bug Fixes
+
+- **True Recall loads again after updating to 2.6.0.** 2.6.0 could not open a database created by 2.5.1 or earlier and stopped with “True Recall could not load the database”, on mobile and desktop alike. 2.6.1 upgrades those databases and keeps every card and review.
+- **If 2.6.0 restored a backup on your device,** reviews made after that backup may be missing. The database 2.6.0 set aside, if it is still there, sits next to the live one in `.true-recall` with the `.corrupted` suffix.
+
 ## 2.6.0 (2026-09-25)
 
 This release connects AI without an API key, adds card flags and Quick Add, and makes several settings that were saved but ignored actually work: scheduled breaks, sibling dispersal, leech tagging and note type Styling.
