@@ -587,5 +587,7 @@
 	"1 card on save": "1 card on save",
 	"{0} cards on save": "{0} cards on save",
 	"Merge all regions into one card": "Merge all regions into one card",
-	"Merging keeps the lowest group's card and review history. Other cards in this note are removed when you save.": "Merging keeps the lowest group's card and review history. Other cards in this note are removed when you save."
+	"Merging keeps the lowest group's card and review history. Other cards in this note are removed when you save.": "Merging keeps the lowest group's card and review history. Other cards in this note are removed when you save.",
+	"Study projects in tree order": "Study projects in tree order",
+	"When studying a project from the dashboard, go through its sub-projects and notes from top to bottom instead of mixing them": "When studying a project from the dashboard, go through its sub-projects and notes from top to bottom instead of mixing them"
 }

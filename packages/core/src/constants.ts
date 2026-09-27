@@ -178,6 +178,7 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 	showReviewHeaderStats: true,
 	continuousCustomReviews: true,
 	ignoreDailyLimitsForNoteStudy: true,
+	projectStudyTreeOrder: false,
 	showDashboardHeader: true,
 	hideTabBar: false,
 

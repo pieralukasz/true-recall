@@ -5,10 +5,28 @@ import type { CardSchedulingMeta } from "../../types";
 import { getTomorrowBoundary } from "../../utils";
 import type { FSRSService } from "../fsrs/fsrs.service";
 import { calculateBoundaries, filterCards } from "./queue-filter";
-import { mixQueues, sortNewCards, sortReviewCards } from "./queue-sorter";
+import {
+	mixQueues,
+	sortBySourceOrder,
+	sortNewCards,
+	sortReviewCards,
+} from "./queue-sorter";
 import { buildRetrievabilityQueue } from "./retrievability-queue";
 import type { QueueBuildOptions } from "./review.service";
 import { spaceSiblings } from "./sibling-spacer";
+
+/**
+ * Project sessions in tree order: group cards by their source note, top of
+ * the project tree first. Runs before daily limits, so limits keep the top.
+ */
+function orderBySource(
+	cards: CardSchedulingMeta[],
+	options: QueueBuildOptions,
+): CardSchedulingMeta[] {
+	return options.sourceOrder
+		? sortBySourceOrder(cards, options.sourceOrder)
+		: cards;
+}
 
 function usePerPresetLimits(options: QueueBuildOptions): boolean {
 	return Boolean(
@@ -190,7 +208,10 @@ function selectNewCards(
 	rawNewCards: CardSchedulingMeta[],
 	options: QueueBuildOptions,
 ): CardSchedulingMeta[] {
-	const sorted = sortNewCards(rawNewCards, options.newCardOrder ?? "random");
+	const sorted = orderBySource(
+		sortNewCards(rawNewCards, options.newCardOrder ?? "random"),
+		options,
+	);
 	if (options.ignoreDailyLimits) return sorted;
 	if (usePerPresetLimits(options)) {
 		return applyPerPresetLimit(sorted, options, "new");
@@ -260,7 +281,7 @@ function buildRModeQueue(
 
 	return [
 		...fsrsService.sortByDue(dueLearningCards),
-		...spacedQueue,
+		...orderBySource(spacedQueue, options),
 		...fsrsService.sortByDue(pendingLearningCards),
 	];
 }
@@ -280,16 +301,22 @@ function buildTopUpQueue(
 	let queue: CardSchedulingMeta[];
 	if (topUp.kind === "review") {
 		if (!options.rMode) return [];
-		queue = buildRetrievabilityQueue(
-			availableCards.filter((card) => card.fsrs.state === State.Review),
-			fsrsService,
-			{ ...options.rMode, targetCount: count },
-			now,
-		).cards;
+		queue = orderBySource(
+			buildRetrievabilityQueue(
+				availableCards.filter((card) => card.fsrs.state === State.Review),
+				fsrsService,
+				{ ...options.rMode, targetCount: count },
+				now,
+			).cards,
+			options,
+		);
 	} else {
-		queue = sortNewCards(
-			availableCards.filter((card) => card.fsrs.state === State.New),
-			options.newCardOrder ?? "random",
+		queue = orderBySource(
+			sortNewCards(
+				availableCards.filter((card) => card.fsrs.state === State.New),
+				options.newCardOrder ?? "random",
+			),
+			options,
 		).slice(0, count);
 	}
 
@@ -333,10 +360,13 @@ function buildStandardQueue(
 		}
 	}
 
-	const sortedReviewCards = sortReviewCards(
-		rawReviewCards,
-		options.reviewOrder ?? "due-date",
-		fsrsService,
+	const sortedReviewCards = orderBySource(
+		sortReviewCards(
+			rawReviewCards,
+			options.reviewOrder ?? "due-date",
+			fsrsService,
+		),
+		options,
 	);
 	const limitedReviewCards = options.ignoreDailyLimits
 		? sortedReviewCards
@@ -363,7 +393,7 @@ function buildStandardQueue(
 
 	return [
 		...fsrsService.sortByDue(dueLearningCards),
-		...spacedQueue,
+		...orderBySource(spacedQueue, options),
 		...fsrsService.sortByDue(pendingLearningCards),
 	];
 }

@@ -111,6 +111,24 @@ function resolveSessionPresetForFilters(
 	return presetService.getDefaultPreset();
 }
 
+/**
+ * Tree order applies to project sessions (and their R-Mode top-ups). Custom
+ * study and filtered decks keep the order their own mode defines.
+ */
+function usesProjectTreeOrder(
+	filters: SessionFilters,
+	settings: TrueRecallSettings,
+): boolean {
+	return Boolean(
+		settings.projectStudyTreeOrder &&
+			filters.projectPath &&
+			!filters.customStudy &&
+			!filters.bypassScheduling &&
+			!filters.materializedCardIds &&
+			!filters.temporaryDeckId,
+	);
+}
+
 function countQueue(
 	queue: CardSchedulingMeta[],
 	now = new Date(),
@@ -207,6 +225,10 @@ export function computeActionableSessionSnapshot(
 				}
 			}
 			queueOptions.sourceUidFilter = intersected;
+		}
+		if (usesProjectTreeOrder(filters, deps.settings)) {
+			queueOptions.sourceOrder =
+				deps.hierarchyService.getSourceUidOrderForProject(filters.projectPath);
 		}
 	}
 

@@ -292,6 +292,12 @@ export interface TrueRecallSettings {
 	continuousCustomReviews: boolean;
 	/** Bypass daily limits when studying a specific note from the dashboard */
 	ignoreDailyLimitsForNoteStudy: boolean;
+	/**
+	 * Project sessions go through the project tree from top to bottom (the
+	 * project note, its sub-projects, then its member notes) instead of mixing
+	 * cards from every sub-project.
+	 */
+	projectStudyTreeOrder: boolean;
 	/** Show today's summary and recently studied notes at the top of the dashboard */
 	showDashboardHeader: boolean;
 

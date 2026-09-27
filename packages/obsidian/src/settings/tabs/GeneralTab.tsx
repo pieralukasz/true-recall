@@ -280,6 +280,18 @@ export function GeneralTab() {
 					/>
 				</FormField>
 
+				<FormField
+					name={t("Study projects in tree order")}
+					description={t(
+						"When studying a project from the dashboard, go through its sub-projects and notes from top to bottom instead of mixing them",
+					)}
+				>
+					<ToggleInput
+						value={settings.projectStudyTreeOrder}
+						onChange={(v) => void save({ projectStudyTreeOrder: v })}
+					/>
+				</FormField>
+
 				<ReviewKeybindingsSection
 					keybindings={settings.reviewKeybindings}
 					onSave={(kb) => void save({ reviewKeybindings: kb })}
