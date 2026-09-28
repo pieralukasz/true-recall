@@ -1,16 +1,17 @@
 import { z } from "zod";
+
 import { get, getWith, postParams, postTo, type ToolDef } from "./_register.js";
 
 export const fsrsTools: ToolDef[] = [
 	get(
 		"get_fsrs_presets",
-		"List all FSRS scheduling presets. Each preset defines retention target, daily limits, learning steps, and leech detection settings. Notes/projects can be assigned to specific presets.",
+		"List the FSRS scheduling presets with their retention target, daily limits, learning steps, leech settings and weights. Notes are assigned to a preset with set_note_preset; the rest use the default preset.",
 		"/presets",
 	),
 
 	postParams(
 		"create_fsrs_preset",
-		"Create a new FSRS scheduling preset with custom retention target and daily limits. Useful for different study goals (e.g. 'Exam Prep' with higher retention and more daily cards).",
+		"Create an FSRS scheduling preset, for example 'Exam prep' with higher retention. Settings you leave out are copied from the default preset. Fails with 409 if the name is taken. Returns id and name; assign it to notes with set_note_preset.",
 		"/presets",
 		{
 			name: z.string().describe("Preset name (must be unique)"),
@@ -47,7 +48,7 @@ export const fsrsTools: ToolDef[] = [
 
 	postTo(
 		"update_fsrs_preset",
-		"Update an existing FSRS preset: retention target, daily limits, learning steps, leech handling. Identify the preset by id or name.",
+		"Change an FSRS preset's retention target, daily limits, learning steps, leech handling or weights; fields you leave out keep their value. It overwrites the old values and changes future scheduling for every note using the preset; this API cannot undo it, so confirm weight changes with the user. Returns the list of fields updated.",
 		{
 			preset: z.string().describe("Preset id or name (e.g. Default)"),
 			request_retention: z
@@ -86,7 +87,7 @@ export const fsrsTools: ToolDef[] = [
 				.nullable()
 				.optional()
 				.describe(
-					"FSRS weights as an array of 21 numbers, or null to reset to defaults",
+					"FSRS weights as 21 non-negative numbers (e.g. from optimize_parameters), or null for the FSRS defaults",
 				),
 		},
 		(p) => `/presets/${encodeURIComponent(String(p.preset))}`,
@@ -98,7 +99,7 @@ export const fsrsTools: ToolDef[] = [
 
 	postParams(
 		"set_load_balance",
-		"Update load balancing settings: enable/disable, target mode (auto = forecast average, manual = fixed number), deviation, and shift range.",
+		"Change load-balancing settings, which spread newly scheduled reviews to even out daily workload: on/off, target mode (auto = forecast average, manual = fixed number), allowed deviation and maximum shift. Fields you leave out keep their value. Returns the resulting settings.",
 		"/settings/load-balance",
 		{
 			enabled: z
@@ -132,7 +133,7 @@ export const fsrsTools: ToolDef[] = [
 
 	getWith(
 		"get_fsrs_analytics",
-		"Get FSRS analytics: true retention (actual vs target), workload forecast (predicted reviews per day), workload by day of week, and card distributions (interval, stability, difficulty histograms).",
+		"Get FSRS analytics for the last days days: true retention against the target, predicted reviews per day, workload by weekday, and histograms of interval, stability and difficulty.",
 		{
 			days: z
 				.number()

@@ -25,8 +25,8 @@ export class LocalApiError extends Error {
 }
 
 const CONNECTION_ERROR_MSG =
-	"Cannot connect to True Recall plugin. Is Obsidian running with the Local API enabled? " +
-	"Enable it in Settings → True Recall → Integrations → Local API.";
+	"Cannot connect to the True Recall plugin. Check that Obsidian is running and that " +
+	"Settings → True Recall → Integrations → Enable local API is on.";
 
 export class TrueRecallClient {
 	private baseUrl: string;
@@ -57,12 +57,19 @@ export class TrueRecallClient {
 			});
 		} catch (error) {
 			if (error instanceof DOMException && error.name === "TimeoutError") {
-				throw new Error(
+				throw new LocalApiError(
 					`Request to ${path} timed out after ${timeoutMs / 1000}s. The plugin may be busy.`,
+					0,
+					"timeout",
+					true,
 				);
 			}
-			throw new Error(
+			// status 0: no HTTP response at all (Obsidian closed or API off)
+			throw new LocalApiError(
 				`${CONNECTION_ERROR_MSG} (${error instanceof Error ? error.message : String(error)})`,
+				0,
+				"unreachable",
+				true,
 			);
 		}
 

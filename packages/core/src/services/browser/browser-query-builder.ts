@@ -63,6 +63,19 @@ const SORT_COLUMN: Record<string, string> = {
 	content_edited_at: "n.content_edited_at",
 };
 
+const PADDED_TAGS = "(' ' || COALESCE(n.tags, '') || ' ')";
+
+/** Matches the tag itself or any child tag (`tag::child`), like Anki. */
+function tagMatchSql(): string {
+	return `${PADDED_TAGS} LIKE ? ESCAPE '\\' OR ${PADDED_TAGS} LIKE ? ESCAPE '\\'`;
+}
+
+/** LIKE patterns for a tag query; `*` is a wildcard, `%`/`_` are literal. */
+function tagMatchParams(tag: string): [string, string] {
+	const pattern = tag.replace(/[\\%_]/g, (ch) => `\\${ch}`).replace(/\*/g, "%");
+	return [`% ${pattern} %`, `% ${pattern}::%`];
+}
+
 export interface BuildQueryOptions {
 	fts5Available?: boolean;
 }
@@ -201,6 +214,17 @@ export function buildBrowserQuery(
 	if (filter.flags.length > 0) {
 		conditions.push(`${col}flag IN (${sqlPlaceholders(filter.flags.length)})`);
 		params.push(...filter.flags);
+	}
+
+	// ── Note tags ────────────────────────────────────────────
+	// notes.tags is space-separated; pad it so each tag is " tag ".
+	for (const tag of filter.tags) {
+		conditions.push(`(${tagMatchSql()})`);
+		params.push(...tagMatchParams(tag));
+	}
+	for (const tag of filter.negatedTags) {
+		conditions.push(`NOT (${tagMatchSql()})`);
+		params.push(...tagMatchParams(tag));
 	}
 
 	// ── Property filters ─────────────────────────────────────

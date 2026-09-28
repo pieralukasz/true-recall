@@ -171,6 +171,31 @@ describe("AnkiSchedulingService", () => {
 			expect(buried.getMinutes()).toBe(0);
 		});
 
+		it("buried card unburies at the user's day boundary, not a fixed 4AM", () => {
+			vi.setSystemTime(new Date("2024-06-15T10:00:00"));
+			const custom = new AnkiSchedulingService(fsrsService, 7);
+			const ankiCard = createAnkiCard({ queue: -3 });
+
+			const result = custom.convert("card-1", ankiCard, []);
+
+			const buried = new Date(result.buriedUntil ?? "");
+			expect(buried.getDate()).toBe(16);
+			expect(buried.getHours()).toBe(7);
+			expect(buried.getMinutes()).toBe(0);
+		});
+
+		it("buried card before the day boundary unburies the same calendar day", () => {
+			// 02:00 with a 4AM boundary is still "yesterday": the next boundary is today 04:00
+			vi.setSystemTime(new Date("2024-06-15T02:00:00"));
+			const ankiCard = createAnkiCard({ queue: -2 });
+
+			const result = service.convert("card-1", ankiCard, []);
+
+			const buried = new Date(result.buriedUntil ?? "");
+			expect(buried.getDate()).toBe(15);
+			expect(buried.getHours()).toBe(4);
+		});
+
 		it("normal card (queue=0) has no suspended or buriedUntil", () => {
 			const ankiCard = createAnkiCard({ queue: 0 });
 			const revlogs = [createAnkiRevlog({ id: 1700000001000, ease: 3 })];

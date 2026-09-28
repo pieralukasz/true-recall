@@ -5,6 +5,7 @@
  * Each module groups related functionality for cleaner organization.
  */
 
+export type { AiChatRecord, AiChatSummary } from "./AiChatActions";
 export { AssistantTaskActions } from "./AssistantTaskActions";
 export { AssistantThreadActions } from "./AssistantThreadActions";
 export { CardActions } from "./CardActions";
