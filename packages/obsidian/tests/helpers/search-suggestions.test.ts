@@ -173,7 +173,8 @@ describe("buildStaticSuggestions", () => {
 	it("returns all top-level prefixes for empty prefix", () => {
 		const ctx = getTokenContext({ token: "", start: 0, end: 0 });
 		const suggestions = buildStaticSuggestions(ctx);
-		expect(suggestions.length).toBe(9);
+		expect(suggestions.length).toBe(10);
+		expect(suggestions.map((s) => s.label)).toContain("tag:");
 		expect(suggestions.map((s) => s.label)).toContain("is:");
 		expect(suggestions.map((s) => s.label)).toContain("prop:");
 		expect(suggestions.map((s) => s.label)).toContain("note:");

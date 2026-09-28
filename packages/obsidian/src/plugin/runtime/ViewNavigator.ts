@@ -8,6 +8,10 @@ import {
 	VIEW_TYPE_STATS,
 } from "@true-recall/core/constants";
 
+import {
+	isAiChatAvailable,
+	revealAiChat,
+} from "@true-recall/obsidian/features/ai-chat/open-ai-chat";
 import type { AIWorkspaceMode } from "@true-recall/obsidian/features/assistant/ui/ai-workspace-modes";
 import type TrueRecallPlugin from "@true-recall/obsidian/main";
 import { NoteTypeSuggestModal } from "@true-recall/obsidian/modals/core/card-types-editor/NoteTypeSuggestModal";
@@ -101,6 +105,13 @@ export class ViewNavigator {
 	}
 
 	async openAssistantInbox(focusThreadId?: string): Promise<void> {
+		// With the AI chat on, "Waiting for you" in its history replaces the inbox.
+		const chat = this.plugin.aiChat;
+		if (chat && isAiChatAvailable(this.plugin) && !focusThreadId) {
+			chat.toggleHistory(true);
+			await revealAiChat(this.plugin);
+			return;
+		}
 		if (!this.ensureViewAvailable(VIEW_TYPE_ASSISTANT_INBOX)) return;
 		const existingLeaf = getView(this.plugin.app, VIEW_TYPE_ASSISTANT_INBOX);
 		if (existingLeaf) {
@@ -125,6 +136,11 @@ export class ViewNavigator {
 	/** Reveals the docked AI workspace, normally in the right sidebar so it can
 	 * sit next to a review. */
 	async openAssistantWorkspace(mode?: AIWorkspaceMode): Promise<void> {
+		// With the AI chat on (Pro), the chat is the AI workspace.
+		if (this.plugin.aiChat && isAiChatAvailable(this.plugin)) {
+			await revealAiChat(this.plugin);
+			return;
+		}
 		if (!this.ensureViewAvailable(VIEW_TYPE_ASSISTANT_WORKSPACE)) return;
 		const existingLeaf = getView(
 			this.plugin.app,

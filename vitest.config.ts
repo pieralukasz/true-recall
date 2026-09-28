@@ -6,6 +6,7 @@ export default defineConfig({
 		projects: [
 			"packages/core/vitest.config.ts",
 			"packages/obsidian/vitest.config.ts",
+			"mcp-server/vitest.config.ts",
 		],
 	},
 });

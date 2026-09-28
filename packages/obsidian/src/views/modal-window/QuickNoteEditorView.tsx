@@ -67,6 +67,7 @@ export class QuickNoteEditorView extends ItemView {
 	private unmountPreact?: () => void;
 	private unregisterWindowMigrated: (() => void) | null = null;
 	private workspaceTabsEl: HTMLElement | null = null;
+	private modKHandler: (() => void) | null = null;
 
 	constructor(leaf: WorkspaceLeaf, plugin: TrueRecallPlugin) {
 		super(leaf);
@@ -87,6 +88,12 @@ export class QuickNoteEditorView extends ItemView {
 				active?.instanceOf(HTMLTextAreaElement) ||
 				(active?.instanceOf(HTMLElement) && active.isContentEditable);
 			if (!isTextInput) this.handleRequestClose();
+			return false;
+		});
+		// Mod+K would otherwise reach Obsidian's app hotkey (Insert link) when
+		// focus sits outside the editor fields, e.g. on a button.
+		this.scope.register(["Mod"], "k", () => {
+			this.modKHandler?.();
 			return false;
 		});
 	}
@@ -179,6 +186,7 @@ export class QuickNoteEditorView extends ItemView {
 						onDone: (result) => this.handleDone(result),
 						onRequestClose: () => this.handleRequestClose(),
 						onDirtyChange: (dirty) => this.closeGuard.setDirty(dirty),
+						bindModK: this.bindModK,
 					}),
 				),
 			),
@@ -186,6 +194,10 @@ export class QuickNoteEditorView extends ItemView {
 
 		this.bindToWindow({ center: true });
 	}
+
+	private readonly bindModK = (handler: (() => void) | null): void => {
+		this.modKHandler = handler;
+	};
 
 	/** Points the window-level collaborators at the window hosting the view. */
 	private bindToWindow(options: { center: boolean }): void {

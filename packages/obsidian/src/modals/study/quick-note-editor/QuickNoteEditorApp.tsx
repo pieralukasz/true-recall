@@ -1,3 +1,5 @@
+import { useEffect } from "preact/hooks";
+
 import { FormattingToolbar } from "@true-recall/obsidian/editor/shared/formatting";
 import { useKeyboardInset } from "@true-recall/obsidian/preact/useKeyboardInset";
 
@@ -7,6 +9,7 @@ import { useQuickNoteAI } from "./hooks/useQuickNoteAI";
 import { useQuickNoteEditor } from "./hooks/useQuickNoteEditor";
 import { useQuickNotePersistence } from "./hooks/useQuickNotePersistence";
 import { useQuickNoteShortcuts } from "./hooks/useQuickNoteShortcuts";
+import { useUserCommentVisibility } from "./hooks/useUserCommentVisibility";
 import { NoteFieldsForm } from "./NoteFieldsForm";
 import type { QuickNoteEditorMode, QuickNoteEditorResult } from "./types";
 import { UserCommentField } from "./UserCommentField";
@@ -16,6 +19,8 @@ interface QuickNoteEditorAppProps {
 	onDone: (result: QuickNoteEditorResult) => void;
 	onRequestClose?: () => void;
 	onDirtyChange?: (isDirty: boolean) => void;
+	/** Host keymap hook for Mod+K when focus is outside the fields. */
+	bindModK?: (handler: (() => void) | null) => void;
 }
 
 export function QuickNoteEditorApp({
@@ -23,6 +28,7 @@ export function QuickNoteEditorApp({
 	onDone,
 	onRequestClose,
 	onDirtyChange,
+	bindModK,
 }: QuickNoteEditorAppProps) {
 	useKeyboardInset();
 	const editor = useQuickNoteEditor(mode, onDone, onDirtyChange);
@@ -54,11 +60,26 @@ export function QuickNoteEditorApp({
 		openFields,
 		openCards,
 		rootRef,
+		plugin,
 	} = editor;
 	const { saving, handleSave, handleSaveAndClose, handleUndoLastCreate } =
 		useQuickNotePersistence(editor, onDone);
 	const { aiDisabled, aiTitle, openAI } = useQuickNoteAI(editor);
-	useQuickNoteShortcuts(editor, handleSave, handleUndoLastCreate);
+	const { showUserComment, focusUserComment } = useUserCommentVisibility(
+		plugin,
+		userComment,
+		userCommentInputRef,
+	);
+	useQuickNoteShortcuts(
+		editor,
+		handleSave,
+		handleUndoLastCreate,
+		focusUserComment,
+	);
+	useEffect(() => {
+		bindModK?.(focusUserComment);
+		return () => bindModK?.(null);
+	}, [bindModK, focusUserComment]);
 	if (!noteType) {
 		return (
 			<div class="ep:text-obs-muted ep:text-center ep:py-8">
@@ -105,6 +126,7 @@ export function QuickNoteEditorApp({
 					void handleSave();
 				}}
 				onModUndo={handleUndoLastCreate}
+				onModK={focusUserComment}
 				onUserEdit={invalidatePendingCreateUndo}
 				onEscape={onRequestClose}
 				pinnedFields={pinnedFields}
@@ -112,11 +134,13 @@ export function QuickNoteEditorApp({
 				focusFirstRequest={focusFirstRequest}
 			/>
 
-			<UserCommentField
-				value={userComment}
-				onChange={handleUserCommentChange}
-				inputRef={userCommentInputRef}
-			/>
+			{showUserComment && (
+				<UserCommentField
+					value={userComment}
+					onChange={handleUserCommentChange}
+					inputRef={userCommentInputRef}
+				/>
+			)}
 
 			{/* Footer */}
 			<QuickNoteFooter

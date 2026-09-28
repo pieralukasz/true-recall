@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useState } from "preact/hooks";
+import { useEffect, useLayoutEffect, useRef, useState } from "preact/hooks";
 import type { Grade } from "ts-fsrs";
 
 import type {
@@ -45,6 +45,8 @@ interface ReviewActions {
 	onEndSession: () => void;
 	onActionsMenu: (e: MouseEvent) => void;
 	onPolishMenu?: (e: MouseEvent) => void;
+	/** Mounts the AI result panel under the card (Card Polish, fact check, questions). */
+	mountCardAssist?: (el: HTMLElement, cardId: string) => () => void;
 	onCycleTypeInMode: () => void;
 	onUndo: () => void;
 	onPresetChange?: (presetName: string) => void;
@@ -212,6 +214,10 @@ function ActiveReview({ card, review, model }: ActiveReviewProps) {
 				}}
 			/>
 
+			{actions.mountCardAssist ? (
+				<CardAssistSlot cardId={card.id} mount={actions.mountCardAssist} />
+			) : null}
+
 			<ReviewUserComment
 				comment={card.userComment}
 				onEdit={actions.onEditComment}
@@ -237,4 +243,20 @@ function ActiveReview({ card, review, model }: ActiveReviewProps) {
 			/>
 		</div>
 	);
+}
+
+/** Host for the AI chat's under-card panel (a React island). Empty until a run starts. */
+function CardAssistSlot({
+	cardId,
+	mount,
+}: {
+	cardId: string;
+	mount: (el: HTMLElement, cardId: string) => () => void;
+}) {
+	const ref = useRef<HTMLDivElement>(null);
+	useEffect(() => {
+		if (!ref.current) return;
+		return mount(ref.current, cardId);
+	}, [cardId, mount]);
+	return <div ref={ref} class="tr-card-assist-slot" />;
 }

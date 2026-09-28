@@ -48,6 +48,19 @@ export class CardActions {
 		return this.queries.getAll();
 	}
 
+	getWithSync(
+		cardId: string,
+	): (FSRSCardData & { deletedAt?: number | null }) | undefined {
+		return this.queries.getWithSync(cardId);
+	}
+
+	getByNoteOrdinalWithSync(
+		noteId: string,
+		ordinal: number,
+	): (FSRSCardData & { deletedAt?: number | null }) | undefined {
+		return this.queries.getByNoteOrdinalWithSync(noteId, ordinal);
+	}
+
 	getByIds(cardIds: string[]): FSRSCardData[] {
 		return this.queries.getByIds(cardIds);
 	}

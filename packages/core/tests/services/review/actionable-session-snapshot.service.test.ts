@@ -259,6 +259,68 @@ describe("computeActionableSessionSnapshot", () => {
 		expect(snapshot.queueLength).toBe(0);
 	});
 
+	describe("projectStudyTreeOrder", () => {
+		const cards = [
+			createMockFlashcard({
+				id: "bottom",
+				sourceUid: "uid-bottom",
+				fsrs: { state: State.Review, due: "2024-01-01T00:00:00.000Z" },
+			}),
+			createMockFlashcard({
+				id: "top",
+				sourceUid: "uid-top",
+				fsrs: { state: State.Review, due: "2024-01-05T00:00:00.000Z" },
+			}),
+		];
+		const hierarchyService = {
+			getSourceUidsForProject: () => new Set(["uid-top", "uid-bottom"]),
+			getSourceUidOrderForProject: () =>
+				new Map([
+					["uid-top", 0],
+					["uid-bottom", 1],
+				]),
+		} as unknown as HierarchyService;
+		const settingsWith = (projectStudyTreeOrder: boolean) => ({
+			...createSettings([createPreset("Default")], "default"),
+			projectStudyTreeOrder,
+		});
+		const queueIds = (
+			projectStudyTreeOrder: boolean,
+			filters: Parameters<typeof computeActionableSessionSnapshot>[1],
+		) =>
+			computeActionableSessionSnapshot(
+				createDeps({
+					allCards: cards,
+					hierarchyService,
+					settings: settingsWith(projectStudyTreeOrder),
+				}),
+				filters,
+			).queue.map((card) => card.id);
+
+		it("orders a project session by the tree when the setting is on", () => {
+			expect(queueIds(true, { projectPath: "Projects/Test.md" })).toEqual([
+				"top",
+				"bottom",
+			]);
+		});
+
+		it("keeps the preset review order when the setting is off", () => {
+			expect(queueIds(false, { projectPath: "Projects/Test.md" })).toEqual([
+				"bottom",
+				"top",
+			]);
+		});
+
+		it("leaves custom study on a project alone", () => {
+			expect(
+				queueIds(true, {
+					projectPath: "Projects/Test.md",
+					customStudy: { kind: "review-ahead", days: 30 },
+				}),
+			).toEqual(["bottom", "top"]);
+		});
+	});
+
 	it("scoped snapshot uses per-preset progress, not the global counter", () => {
 		const codingPreset = createPreset("Coding", { newCardsPerDay: 20 });
 		const defaultPreset = createPreset("Default", { newCardsPerDay: 9999 });

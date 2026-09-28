@@ -27,6 +27,7 @@ interface NoteFieldProps {
 	onFieldFocus?: (fieldName: string, editorView: EditorView) => void;
 	onModEnter?: (fieldName: string, value: string) => void;
 	onModUndo?: () => boolean;
+	onModK?: () => void;
 	onUserEdit?: () => void;
 	onEscape?: () => void;
 	isPinned: boolean;
@@ -49,6 +50,7 @@ export function NoteField({
 	onFieldFocus,
 	onModEnter,
 	onModUndo,
+	onModK,
 	onUserEdit,
 	onEscape,
 	isPinned,
@@ -90,6 +92,8 @@ export function NoteField({
 	onFieldChangeRef.current = onFieldChange;
 	const onModUndoRef = useRef(onModUndo);
 	onModUndoRef.current = onModUndo;
+	const onModKRef = useRef(onModK);
+	onModKRef.current = onModK;
 	const onUserEditRef = useRef(onUserEdit);
 	onUserEditRef.current = onUserEdit;
 
@@ -107,6 +111,7 @@ export function NoteField({
 				onEscape: () => onEscape?.(),
 				onModEnter: handleModEnter,
 				onModUndo: () => onModUndoRef.current?.() ?? false,
+				onModK: () => onModKRef.current?.(),
 				onTab: onTab
 					? () => {
 							onTab();

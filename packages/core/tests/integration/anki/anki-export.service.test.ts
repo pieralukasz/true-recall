@@ -82,4 +82,24 @@ describe("AnkiExportService.exportApkg (roundtrip via our own parser)", () => {
 		expect(parsed.cards.length).toBe(1);
 		expect(parsed.notes.length).toBe(1);
 	});
+
+	it("writes note tags in Anki's format and reads them back", async () => {
+		const cards = [
+			{
+				...createMockCard({ id: "tagged" }),
+				tags: ["leech", "biology", "leech"],
+			},
+			createMockCard({ id: "plain" }),
+		];
+
+		const { data } = await makeService(cards).exportApkg({
+			includeScheduling: false,
+			includeMedia: false,
+			exportMode: "all",
+		});
+
+		const parsed = await new ApkgParserService().parseApkg(data);
+		const tags = parsed.notes.map((note: { tags: string }) => note.tags).sort();
+		expect(tags).toEqual(["", " leech biology "]);
+	});
 });

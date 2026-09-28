@@ -1,10 +1,11 @@
 import { z } from "zod";
+
 import { postParams, type ToolDef } from "./_register.js";
 
 export const navigationTools: ToolDef[] = [
 	postParams(
 		"open_view",
-		"Open a True Recall view in Obsidian. Available views: dashboard (main overview), stats (statistics charts), card-browser (searchable card list), card-browser-orphaned (cards without source note), flashcard-panel (side panel), simulator (FSRS simulator).",
+		"Show a True Recall view in Obsidian: dashboard, stats (charts), card-browser (searchable card list, filtered to one note when source_uid is given), card-browser-orphaned (cards without a source note), flashcard-panel (side panel) or simulator (FSRS simulator). Changes only what the user sees.",
 		"/open-view",
 		{
 			view: z
@@ -28,7 +29,7 @@ export const navigationTools: ToolDef[] = [
 
 	postParams(
 		"open_note",
-		"Open a specific note in Obsidian by its vault path (e.g. 'Folder/My Note.md'). The note becomes the active editor tab.",
+		"Open a note in Obsidian by vault path; it becomes the active tab, so later tools that default to the open note will use it. Fails with 404 when the file doesn't exist.",
 		"/open-note",
 		{
 			path: z

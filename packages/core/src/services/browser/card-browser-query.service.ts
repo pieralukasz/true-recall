@@ -67,6 +67,8 @@ export class CardBrowserQueryService {
 		createdVia: Record<string, number>;
 		sourceNotes: { uid: string; name: string; count: number }[];
 		flags: Record<string, number>;
+		/** Note tags with card counts, sorted by name. */
+		tags: { name: string; count: number }[];
 	} {
 		const allCards = this.cardStore.cards.getAll();
 		const archivedUids = this.getArchivedSourceUids(showArchived);
@@ -75,6 +77,7 @@ export class CardBrowserQueryService {
 		const createdVia: Record<string, number> = {};
 		const sourceMap = new Map<string, number>();
 		const flags: Record<string, number> = {};
+		const tagMap = new Map<string, number>();
 
 		const now = new Date();
 		for (const card of allCards) {
@@ -104,6 +107,10 @@ export class CardBrowserQueryService {
 			const fl = card.flag ?? 0;
 			if (fl !== 0) flags[fl] = (flags[fl] ?? 0) + 1;
 
+			for (const tag of card.tags ?? []) {
+				tagMap.set(tag, (tagMap.get(tag) ?? 0) + 1);
+			}
+
 			// Source note counts
 			if (card.sourceUid) {
 				sourceMap.set(card.sourceUid, (sourceMap.get(card.sourceUid) ?? 0) + 1);
@@ -124,7 +131,11 @@ export class CardBrowserQueryService {
 			})
 			.sort((a, b) => a.name.localeCompare(b.name));
 
-		return { states, cardTypes, createdVia, sourceNotes, flags };
+		const tags = Array.from(tagMap, ([name, count]) => ({ name, count })).sort(
+			(a, b) => a.name.localeCompare(b.name),
+		);
+
+		return { states, cardTypes, createdVia, sourceNotes, flags, tags };
 	}
 
 	/** Card IDs with no linked source note (null sourceUid or unresolved) */

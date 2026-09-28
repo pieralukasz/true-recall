@@ -51,6 +51,12 @@ interface EmbeddableEditorOptions {
 	onChange?: (update: ViewUpdate) => void;
 	onModEnter?: (editor: EmbeddableEditorInstance) => void;
 	onModUndo?: (editor: EmbeddableEditorInstance) => boolean;
+	/**
+	 * Host handler for Mod+K. Registered only when provided: a keymap scope
+	 * entry stops Obsidian's app hotkey for the same key (Insert link), so
+	 * other embedded editors keep that hotkey.
+	 */
+	onModK?: (editor: EmbeddableEditorInstance) => void;
 	onTab?: (editor: EmbeddableEditorInstance) => boolean | undefined;
 	onShiftTab?: (editor: EmbeddableEditorInstance) => boolean | undefined;
 	extraExtensions?: Extension[];
@@ -123,7 +129,10 @@ function resolveEditorPrototype(
 	return markdownEditorPrototype.constructor;
 }
 
-const defaultOptions: Required<EmbeddableEditorOptions> = {
+type ResolvedEditorOptions = Required<Omit<EmbeddableEditorOptions, "onModK">> &
+	Pick<EmbeddableEditorOptions, "onModK">;
+
+const defaultOptions: ResolvedEditorOptions = {
 	value: "",
 	cls: "",
 	onEscape: () => {},
@@ -154,7 +163,7 @@ export function createEmbeddableEditorClass(app: App) {
 	const Base = resolveEditorPrototype(app);
 
 	class EmbeddableMarkdownEditor extends Base {
-		options: Required<EmbeddableEditorOptions>;
+		options: ResolvedEditorOptions;
 		scope: Scope;
 		private _loaded = true;
 
@@ -191,6 +200,14 @@ export function createEmbeddableEditorClass(app: App) {
 			this.scope.register(["Mod"], "z", () => {
 				return !this.options.onModUndo(this);
 			});
+
+			const { onModK } = this.options;
+			if (onModK) {
+				this.scope.register(["Mod"], "k", () => {
+					onModK(this);
+					return false;
+				});
+			}
 
 			// Escape lives on the keymap scope, NOT the CM keymap: Obsidian's
 			// keymap listens on window in the capture phase, so its app-scope

@@ -2,6 +2,40 @@
 
 ## Unreleased
 
+## 2.7.0 (2026-09-28)
+
+This release adds an AI chat for Pro, Markdown flashcards written straight in your notes, and project study in tree order. It also fixes clozes with braces, lost tags in Anki export and several smaller issues.
+
+### Features
+
+- **AI chat (Pro).** One conversation in the sidebar for your notes and cards. Ask about a card, create cards from a note or a selection, propose edits, check facts with web sources and look at your stats. The chat only proposes: nothing is written until you click, and every change can be undone. Chats are saved, and "Waiting for you" in the chat history lists proposals you have not answered yet. Open it with "Open AI chat" or "New AI chat about this note". For Pro users, AI Workspace, Ask AI and the AI actions in the selection toolbar and Flashcard Panel now open the chat.
+- **AI help during review (Pro).** The AI menu in review runs your Card Polish presets, checks the facts on a card and answers your questions right under the card. Card edits keep the card's language and untouched wording and never add new links.
+- **Markdown flashcards.** Write cards straight in a note: tag it `#flashcards`, then write the question, a `??` line and the answer. `???` makes cards in both directions. Edits sync both ways between the note and the Flashcard Panel or Card Browser, and when the same field changes in both places, neither version is overwritten. "Store scheduling inside notes" can keep each card's FSRS state in a hidden comment, so your notes carry their progress. Off by default: turn it on in Settings → Data & backup → Markdown flashcards.
+- **Study a project in tree order.** With "Study projects in tree order" on (Settings → General, off by default), a project session goes through the project's own note, then each sub-project in full, top to bottom as the Dashboard shows it, instead of mixing all of them. Daily limits are filled from the top sub-projects first.
+- **Hide the My Note field.** Turn off "Show My Note field" (Settings → General → Flashcard editor) to hide My Note in Add and Edit Flashcard. `Cmd/Ctrl + K` opens it, and cards that already have a note always show it.
+- **Search cards by tag.** `tag:leech` in the Card Browser finds cards whose note has that tag, and `-tag:` excludes it. `tag:med` also finds `med::cardio`, and `*` works as a wildcard. Suggestions list your tags with their card counts.
+
+### Bug Fixes
+
+- **Braces inside a cloze work.** `{{c1::$\frac{a}{b}$}}` and `{{c2::{name}}}` now make correct cards. Before, they gave a broken blank or no card at all.
+- **Anki export keeps note tags,** such as `leech`.
+- **Anki import unburies cards at your own day boundary** instead of always at 4 AM.
+- **`Cmd/Ctrl + K` in the flashcard editor opens My Note** instead of inserting `[]()` into Front or Back.
+- **"Make default" on your own generation preset sticks,** and a custom preset now needs a prompt before it can be saved.
+- **The backup location is shown correctly** in Settings and in the MCP backup tools.
+- **Image occlusion Mask mode explains how regions become cards:** each region is its own card, and merged regions share one.
+
+### Improvements
+
+- **The CLI and MCP server accept the same commands.** The MCP server now also covers note review, Card Polish presets, advanced FSRS and CSV export, and `true-recall mcp` starts it from the CLI. Tool descriptions now match what the tools actually do.
+
+## 2.6.1 (2026-09-26)
+
+### Bug Fixes
+
+- **True Recall loads again after updating to 2.6.0.** 2.6.0 could not open a database created by 2.5.1 or earlier and stopped with “True Recall could not load the database”, on mobile and desktop alike. 2.6.1 upgrades those databases and keeps every card and review.
+- **If 2.6.0 restored a backup on your device,** reviews made after that backup may be missing. The database 2.6.0 set aside, if it is still there, sits next to the live one in `.true-recall` with the `.corrupted` suffix.
+
 ## 2.6.0 (2026-09-25)
 
 This release connects AI without an API key, adds card flags and Quick Add, and makes several settings that were saved but ignored actually work: scheduled breaks, sibling dispersal, leech tagging and note type Styling.
