@@ -14,6 +14,23 @@ import type {
 const MAX_NOTE_CHARS = 12_000;
 const MAX_SEARCH_RESULTS = 20;
 
+/** Snapshots are scoped to one request, and only populated by reads shown to the model. */
+export type CardSnapshots = Map<
+	string,
+	NonNullable<ReturnType<typeof readCardFields>>
+>;
+
+export function readCardSnapshot(
+	plugin: TrueRecallPlugin,
+	cardId: string,
+	snapshots: CardSnapshots,
+) {
+	const card = readCardFields(plugin, cardId);
+	if (card) snapshots.set(cardId, card);
+	else snapshots.delete(cardId);
+	return card;
+}
+
 /** A card's note fields in note-type order, or null when it cannot be edited. */
 export function readCardFields(
 	plugin: TrueRecallPlugin,
@@ -68,7 +85,10 @@ function cardSummary(card: {
  * propose_card_edit only show a proposal: the user's click writes to the
  * collection (see ui/proposals.tsx), never the model.
  */
-export function createChatTools(plugin: TrueRecallPlugin) {
+export function createChatTools(
+	plugin: TrueRecallPlugin,
+	snapshots: CardSnapshots = new Map(),
+) {
 	return {
 		search_cards: tool({
 			description:
@@ -102,7 +122,7 @@ export function createChatTools(plugin: TrueRecallPlugin) {
 			}),
 			execute: ({ cardId }) => {
 				const card = plugin.cardStore?.cards.get(cardId);
-				const fields = readCardFields(plugin, cardId);
+				const fields = readCardSnapshot(plugin, cardId, snapshots);
 				if (!card || !fields) return { error: "Card not found." };
 				return {
 					...cardSummary(card),
@@ -214,10 +234,10 @@ export function createChatTools(plugin: TrueRecallPlugin) {
 				required: ["cardId", "fields"],
 			}),
 			execute: ({ cardId }): ProposeCardEditOutput => {
-				const current = readCardFields(plugin, cardId);
-				return current
-					? { before: current.fields }
-					: { error: "Card not found." };
+				const snapshot = snapshots.get(cardId);
+				return snapshot
+					? { before: { ...snapshot.fields } }
+					: { error: "Read this card with get_card before proposing an edit." };
 			},
 		}),
 

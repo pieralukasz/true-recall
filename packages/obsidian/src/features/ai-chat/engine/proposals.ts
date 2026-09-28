@@ -62,6 +62,17 @@ export type ProposalDecision =
 
 export type ProposalDecisions = Record<string, ProposalDecision>;
 
+/** User work on a proposal, shared by the review panel and the chat. */
+export interface ProposalDraft {
+	picked?: boolean[];
+	cardEdits?: Record<number, ProposedCard>;
+	fieldEdits?: Record<string, string>;
+	cardEditor?: { index: number; value: ProposedCard };
+	editingFields?: boolean;
+}
+
+export type ProposalDrafts = Record<string, ProposalDraft>;
+
 interface ToolPartLike {
 	type: string;
 	toolCallId?: string;

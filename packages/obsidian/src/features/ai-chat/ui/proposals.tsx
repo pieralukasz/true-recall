@@ -12,6 +12,7 @@ import { shorten } from "../engine/chat-context";
 import {
 	changedFields,
 	normalizeCard,
+	type ProposalDraft,
 	type ProposeCardEditInput,
 	type ProposeCardEditOutput,
 	type ProposeCardsInput,
@@ -84,28 +85,29 @@ function AutoTextarea({
 
 function CardEditor({
 	card,
+	onChange,
 	onSave,
 	onCancel,
 }: {
 	card: ProposedCard;
+	onChange: (card: ProposedCard) => void;
 	onSave: (card: ProposedCard) => void;
 	onCancel: () => void;
 }) {
-	const [draft, setDraft] = useState(card);
 	return (
 		<div className="tr-ai-chat__card-editor">
 			<AutoTextarea
 				label="Question"
-				value={draft.question}
-				onChange={(question) => setDraft({ ...draft, question })}
+				value={card.question}
+				onChange={(question) => onChange({ ...card, question })}
 			/>
 			<AutoTextarea
 				label="Answer"
-				value={draft.answer}
-				onChange={(answer) => setDraft({ ...draft, answer })}
+				value={card.answer}
+				onChange={(answer) => onChange({ ...card, answer })}
 			/>
 			<div className="tr-ai-chat__row">
-				<button type="button" className="mod-cta" onClick={() => onSave(draft)}>
+				<button type="button" className="mod-cta" onClick={() => onSave(card)}>
 					Save
 				</button>
 				<button type="button" onClick={onCancel}>
@@ -127,9 +129,13 @@ export function ProposeCardsUI({
 	const session = useSession();
 	const decision = session.decisions[toolCallId];
 	const cards = args?.cards ?? [];
-	const [picked, setPicked] = useState<boolean[]>([]);
-	const [edits, setEdits] = useState<Record<number, ProposedCard>>({});
-	const [editing, setEditing] = useState<number | null>(null);
+	const draft = session.drafts[toolCallId] ?? {};
+	const picked = draft.picked ?? [];
+	const edits = draft.cardEdits ?? {};
+	const editor = draft.cardEditor;
+	const editing = editor?.index ?? null;
+	const updateDraft = (patch: Partial<ProposalDraft>) =>
+		controller.updateDraft(session.id, toolCallId, patch);
 	const [busy, setBusy] = useState(false);
 
 	const streaming = result === undefined;
@@ -141,12 +147,11 @@ export function ProposeCardsUI({
 		session.context.note?.path ??
 		session.context.selection?.notePath;
 
-	const toggle = (i: number) =>
-		setPicked((p) => {
-			const next = cards.map((_, j) => p[j] ?? true);
-			next[i] = !next[i];
-			return next;
-		});
+	const toggle = (i: number) => {
+		const next = cards.map((_, j) => picked[j] ?? true);
+		next[i] = !next[i];
+		updateDraft({ picked: next });
+	};
 
 	const add = async () => {
 		setBusy(true);
@@ -223,14 +228,19 @@ export function ProposeCardsUI({
 									onChange={() => toggle(i)}
 								/>
 							) : null}
-							{editing === i ? (
+							{editor?.index === i ? (
 								<CardEditor
-									card={card}
+									card={editor.value}
+									onChange={(value) =>
+										updateDraft({ cardEditor: { index: i, value } })
+									}
 									onSave={(next) => {
-										setEdits({ ...edits, [i]: next });
-										setEditing(null);
+										updateDraft({
+											cardEdits: { ...edits, [i]: next },
+											cardEditor: undefined,
+										});
 									}}
-									onCancel={() => setEditing(null)}
+									onCancel={() => updateDraft({ cardEditor: undefined })}
 								/>
 							) : (
 								<div className="tr-ai-chat__card-body">
@@ -248,7 +258,9 @@ export function ProposeCardsUI({
 								<IconButton
 									icon="pencil"
 									label="Edit card"
-									onClick={() => setEditing(i)}
+									onClick={() =>
+										updateDraft({ cardEditor: { index: i, value: card } })
+									}
 								/>
 							) : null}
 						</li>
@@ -327,22 +339,26 @@ export function ProposeCardEditUI({
 	const controller = useController();
 	const session = useSession();
 	const decision = session.decisions[toolCallId];
-	const [edits, setEdits] = useState<Record<string, string>>({});
-	const [editing, setEditing] = useState(false);
+	const draft = session.drafts[toolCallId] ?? {};
+	const edits = draft.fieldEdits ?? {};
+	const editing = !decision && (draft.editingFields ?? false);
+	const updateDraft = (patch: Partial<ProposalDraft>) =>
+		controller.updateDraft(session.id, toolCallId, patch);
 
 	const streaming = result === undefined;
 	if (result?.error) {
 		return (
 			<div className="tr-ai-chat__proposal" data-state="skipped">
-				<div className="tr-ai-chat__muted">This card no longer exists.</div>
+				<div className="tr-ai-chat__muted">{result.error}</div>
 			</div>
 		);
 	}
 	const before = result?.before ?? {};
 	const proposed = { ...(args?.fields ?? {}), ...edits };
-	const fields = streaming
-		? Object.keys(args?.fields ?? {})
-		: changedFields(before, proposed);
+	const fields =
+		streaming || editing
+			? Object.keys(args?.fields ?? {})
+			: changedFields(before, proposed);
 	const firstField = Object.values(before)[0] ?? "";
 
 	const apply = () => {
@@ -370,7 +386,21 @@ export function ProposeCardEditUI({
 
 	const undo = () => {
 		if (decision?.kind === "edit-applied") {
-			revertCardEdit(plugin, decision.cardId, decision.noteId, decision.before);
+			const outcome = revertCardEdit(
+				plugin,
+				decision.cardId,
+				decision.noteId,
+				decision.before,
+				decision.after,
+			);
+			if (!outcome.ok) {
+				new Notice(
+					outcome.error === "changed"
+						? "The card changed after this edit. Undo would overwrite those changes."
+						: "This card no longer exists.",
+				);
+				return;
+			}
 		}
 		controller.undecide(session.id, toolCallId);
 	};
@@ -413,7 +443,9 @@ export function ProposeCardEditUI({
 						<AutoTextarea
 							label={name}
 							value={proposed[name] ?? ""}
-							onChange={(value) => setEdits({ ...edits, [name]: value })}
+							onChange={(value) =>
+								updateDraft({ fieldEdits: { ...edits, [name]: value } })
+							}
 						/>
 					) : (
 						<ObsidianMarkdown
@@ -444,7 +476,7 @@ export function ProposeCardEditUI({
 							<IconButton
 								icon={editing ? "eye" : "pencil"}
 								label={editing ? "Preview" : "Edit before applying"}
-								onClick={() => setEditing(!editing)}
+								onClick={() => updateDraft({ editingFields: !editing })}
 							/>
 						</>
 					) : (

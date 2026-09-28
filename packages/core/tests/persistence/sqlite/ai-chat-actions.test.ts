@@ -65,4 +65,31 @@ describe("AiChatActions", () => {
 		chats.delete("c1");
 		expect(chats.get("c1")).toBeNull();
 	});
+
+	it("keeps old pending and completed conversations reachable after 100 newer chats", () => {
+		chats.save(chat({ id: "waiting", pendingCount: 1, updatedAt: 1 }));
+		chats.save(chat({ id: "old-completed", updatedAt: 2 }));
+		for (let i = 0; i < 100; i++) {
+			chats.save(chat({ id: `recent-${i}`, updatedAt: 100 + i }));
+		}
+		expect(chats.list()).toHaveLength(102);
+		expect(
+			chats
+				.list()
+				.filter((c) => c.pendingCount > 0)
+				.map((c) => c.id),
+		).toEqual(["waiting"]);
+		expect(chats.pendingTotal()).toBe(1);
+		expect(chats.list(10)).toHaveLength(10);
+	});
+
+	it("persists draft work separately from the model's messages and user decisions", () => {
+		const drafts = {
+			call1: { picked: [false, true], fieldEdits: { Back: "Correction" } },
+		};
+		chats.save(chat({ drafts }));
+		expect(chats.get("c1")?.drafts).toEqual(drafts);
+		expect(chats.get("c1")?.messages).toEqual(chat().messages);
+		expect(chats.list()[0]).not.toHaveProperty("drafts");
+	});
 });

@@ -191,6 +191,7 @@ export class TestSqliteDatabase {
 				context_json TEXT NOT NULL DEFAULT '{}',
 				messages_json TEXT NOT NULL DEFAULT '[]',
 				decisions_json TEXT NOT NULL DEFAULT '{}',
+				drafts_json TEXT NOT NULL DEFAULT '{}',
 				pending_count INTEGER NOT NULL DEFAULT 0,
 				created_at INTEGER NOT NULL,
 				updated_at INTEGER NOT NULL

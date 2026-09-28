@@ -12,6 +12,8 @@ import {
 	countPending,
 	type ProposalDecision,
 	type ProposalDecisions,
+	type ProposalDraft,
+	type ProposalDrafts,
 } from "./engine/proposals";
 
 export interface ChatSession {
@@ -19,6 +21,7 @@ export interface ChatSession {
 	title: string;
 	context: ChatContext;
 	decisions: ProposalDecisions;
+	drafts: ProposalDrafts;
 	/** Forces web search (fact checks). */
 	factCheck: boolean;
 	createdAt: number;
@@ -101,6 +104,7 @@ export class AiChatController {
 			title: saved.title,
 			context: saved.context as ChatContext,
 			decisions: saved.decisions as ProposalDecisions,
+			drafts: saved.drafts as ProposalDrafts | undefined,
 			factCheck: (saved.context as { factCheck?: boolean }).factCheck === true,
 			createdAt: saved.createdAt,
 			messages: saved.messages as UIMessage[],
@@ -112,6 +116,7 @@ export class AiChatController {
 		title?: string;
 		context: ChatContext;
 		decisions?: ProposalDecisions;
+		drafts?: ProposalDrafts;
 		factCheck?: boolean;
 		createdAt?: number;
 		messages?: UIMessage[];
@@ -122,6 +127,7 @@ export class AiChatController {
 			title: init.title ?? "",
 			context: init.context,
 			decisions: init.decisions ?? {},
+			drafts: init.drafts ?? {},
 			factCheck: init.factCheck ?? false,
 			createdAt: init.createdAt ?? Date.now(),
 			chat: new Chat<UIMessage>({
@@ -224,9 +230,14 @@ export class AiChatController {
 		await this.revealView();
 	}
 
-	async send(id: string, text: string): Promise<void> {
+	async send(
+		id: string,
+		text: string,
+		options?: { factCheck?: boolean },
+	): Promise<void> {
 		const session = this.get(id);
 		if (!session) return;
+		if (options?.factCheck) session.factCheck = true;
 		if (!session.title) session.title = chatTitle(text, session.context);
 		this.changed();
 		await session.chat.sendMessage({ text });
@@ -255,6 +266,17 @@ export class AiChatController {
 		const session = this.get(id);
 		if (!session) return;
 		session.decisions = { ...session.decisions, [callId]: decision };
+		this.save(id);
+		this.changed();
+	}
+
+	updateDraft(id: string, callId: string, patch: Partial<ProposalDraft>): void {
+		const session = this.get(id);
+		if (!session) return;
+		session.drafts = {
+			...session.drafts,
+			[callId]: { ...session.drafts[callId], ...patch },
+		};
 		this.save(id);
 		this.changed();
 	}
@@ -290,6 +312,7 @@ export class AiChatController {
 			},
 			messages,
 			decisions: session.decisions,
+			drafts: session.drafts,
 			pendingCount: countPending(messages, session.decisions),
 			createdAt: session.createdAt,
 			updatedAt: Date.now(),

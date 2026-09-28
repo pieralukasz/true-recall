@@ -47,15 +47,16 @@ export async function addProposedCards(
 	if (cards.length === 0) return [];
 	const noteType = plugin.cardStore?.noteTypes.getById(BUILTIN_BASIC_ID);
 	const sourceUid = await sourceUidFor(plugin, options.notePath);
-	const { cards: created } = plugin.flashcardManager.createNoteBatch(
-		cards.map((card) => ({
-			noteTypeId: BUILTIN_BASIC_ID,
-			fields: toNoteFields(card, noteType),
-			sourceUid,
-			sourceText: options.sourceText,
-			createdVia: "ai",
-			skipDuplicates: true,
-		})),
+	const created = cards.flatMap(
+		(card) =>
+			plugin.flashcardManager.createNote({
+				noteTypeId: BUILTIN_BASIC_ID,
+				fields: toNoteFields(card, noteType),
+				sourceUid,
+				sourceText: options.sourceText,
+				createdVia: "ai",
+				skipDuplicates: true,
+			}).cards,
 	);
 	const ids = created.map((c) => c.id);
 	if (ids.length > 0) {
@@ -114,10 +115,20 @@ export function revertCardEdit(
 	cardId: string,
 	noteId: string,
 	before: Readonly<Record<string, string>>,
-): boolean {
+	expectedAfter: Readonly<Record<string, string>>,
+): { ok: true } | { ok: false; error: "missing" | "changed" } {
 	const note = plugin.cardStore?.notes.getById(noteId);
-	if (!note) return false;
+	if (!note) return { ok: false, error: "missing" };
 	const current = { ...(note.fields ?? {}) };
+	const names = new Set([
+		...Object.keys(current),
+		...Object.keys(expectedAfter),
+	]);
+	for (const name of names) {
+		if (current[name] !== expectedAfter[name]) {
+			return { ok: false, error: "changed" };
+		}
+	}
 	plugin.flashcardManager.updateNoteFields(noteId, { ...before }, "ai");
 	void plugin.commandService?.execute(
 		new UpdateNoteFieldsCommand(
@@ -128,5 +139,5 @@ export function revertCardEdit(
 		),
 	);
 	emitCardUpdated(cardId);
-	return true;
+	return { ok: true };
 }

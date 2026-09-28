@@ -22,7 +22,12 @@ import {
 	supportsWebSearch,
 } from "./chat-model";
 import { buildChatInstructions } from "./chat-prompt";
-import { createChatTools, readCardFields, readNoteText } from "./chat-tools";
+import {
+	type CardSnapshots,
+	createChatTools,
+	readCardSnapshot,
+	readNoteText,
+} from "./chat-tools";
 import { describeDecisions, type ProposalDecisions } from "./proposals";
 
 const NOTE_EXCERPT_CHARS = 6_000;
@@ -74,9 +79,12 @@ async function buildInstructions(
 	plugin: TrueRecallPlugin,
 	session: ChatSessionState,
 	webSearch: boolean,
+	snapshots: CardSnapshots,
 ): Promise<string> {
 	const { context } = session;
-	const card = context.card ? readCardFields(plugin, context.card.id) : null;
+	const card = context.card
+		? readCardSnapshot(plugin, context.card.id, snapshots)
+		: null;
 	const noteExcerpt = context.note
 		? ((await readNoteText(plugin, context.note.path, NOTE_EXCERPT_CHARS)) ??
 			undefined)
@@ -130,7 +138,8 @@ export class TrueRecallChatTransport implements ChatTransport<UIMessage> {
 	> {
 		const plugin = this.plugin;
 		const session = this.getSession();
-		const tools = createChatTools(plugin);
+		const snapshots: CardSnapshots = new Map();
+		const tools = createChatTools(plugin, snapshots);
 		const { model, config } = createChatModel(
 			plugin.settings,
 			createChatFetch({ streaming: isDesktop() }),
@@ -138,6 +147,11 @@ export class TrueRecallChatTransport implements ChatTransport<UIMessage> {
 		const webSearch =
 			supportsWebSearch(config.providerType) &&
 			(session.factCheck || plugin.settings.assistantWebSearch);
+		if (session.factCheck && !webSearch) {
+			throw new Error(
+				"Fact checking needs web search. Choose OpenRouter or Pro in Settings → AI.",
+			);
+		}
 		const maxSources = session.factCheck
 			? Math.max(
 					plugin.settings.assistantMaxSources ?? 5,
@@ -155,7 +169,12 @@ export class TrueRecallChatTransport implements ChatTransport<UIMessage> {
 				firstTools && stepNumber === 0
 					? { toolChoice: "required", activeTools: firstTools }
 					: undefined,
-			instructions: await buildInstructions(plugin, session, webSearch),
+			instructions: await buildInstructions(
+				plugin,
+				session,
+				webSearch,
+				snapshots,
+			),
 			temperature: config.temperature,
 			maxOutputTokens: MAX_OUTPUT_TOKENS,
 			// A proposal ends the turn: the user decides before the model goes on.
