@@ -182,30 +182,48 @@ function ContextChips() {
 	);
 }
 
-function suggestionsFor(
-	context: ChatContext,
-): { label: string; prompt: string }[] {
+interface Suggestion {
+	icon: string;
+	label: string;
+	detail: string;
+	prompt: string;
+}
+
+function suggestionsFor(context: ChatContext): Suggestion[] {
 	if (context.card) {
 		return [
 			{
+				icon: "lightbulb",
 				label: "Explain this card",
+				detail: "In simple words, with an example",
 				prompt: "Explain this card to me in simple words.",
 			},
 			{
+				icon: "wand-sparkles",
 				label: "Make it clearer",
+				detail: "A better version for you to approve",
 				prompt: "Improve this card so it is easier to remember.",
 			},
-			{ label: "Check the facts", prompt: "Check the facts on this card." },
+			{
+				icon: "shield-check",
+				label: "Check the facts",
+				detail: "Compared with sources on the web",
+				prompt: "Check the facts on this card.",
+			},
 		];
 	}
 	if (context.selection) {
 		return [
 			{
+				icon: "layers",
 				label: "Cards from the selection",
+				detail: "You pick which ones to add",
 				prompt: "Make flashcards from the selected text.",
 			},
 			{
+				icon: "lightbulb",
 				label: "Explain the selection",
+				detail: "In simple words, with an example",
 				prompt: "Explain the selected text to me.",
 			},
 		];
@@ -213,15 +231,21 @@ function suggestionsFor(
 	if (context.note) {
 		return [
 			{
+				icon: "layers",
 				label: "Cards from this note",
+				detail: "You pick which ones to add",
 				prompt: "Make flashcards from this note.",
 			},
 			{
+				icon: "search",
 				label: "What's missing?",
+				detail: "Key ideas in this note with no card yet",
 				prompt: "Which important ideas in this note have no card yet?",
 			},
 			{
+				icon: "wand-sparkles",
 				label: "Improve my cards",
+				detail: "Fixes for the weakest cards from this note",
 				prompt:
 					"Review the cards from this note and suggest fixes for the weakest ones.",
 			},
@@ -229,11 +253,15 @@ function suggestionsFor(
 	}
 	return [
 		{
+			icon: "trending-up",
 			label: "How am I doing?",
+			detail: "Reviews, retention and what is due",
 			prompt: "How is my studying going? Look at my stats.",
 		},
 		{
+			icon: "flame",
 			label: "My hardest cards",
+			detail: "The ones you forget most, and how to fix them",
 			prompt: "Which cards do I forget most, and how could they be better?",
 		},
 	];
@@ -241,12 +269,16 @@ function suggestionsFor(
 
 function EmptyState() {
 	const session = useSession();
+	const hasContext = contextKinds(session.context).length > 0;
 	return (
 		<div className="tr-ai-chat__empty">
+			<div className="tr-ai-chat__empty-mark">
+				<Icon name="sparkles" />
+			</div>
 			<div className="tr-ai-chat__empty-title">How can I help?</div>
 			<div className="tr-ai-chat__empty-hint">
-				I can make cards, fix them, check facts and look at your stats. Nothing
-				changes until you approve it.
+				Cards, fixes, fact checks and stats. Nothing is saved until you approve
+				it.
 			</div>
 			<div className="tr-ai-chat__suggestions">
 				{suggestionsFor(session.context).map((s) => (
@@ -257,11 +289,29 @@ function EmptyState() {
 						asChild
 					>
 						<button type="button" className="tr-ai-chat__suggestion">
-							{s.label}
+							<span className="tr-ai-chat__suggestion-icon">
+								<Icon name={s.icon} />
+							</span>
+							<span className="tr-ai-chat__suggestion-text">
+								<span className="tr-ai-chat__suggestion-label">{s.label}</span>
+								<span className="tr-ai-chat__suggestion-detail">
+									{s.detail}
+								</span>
+							</span>
+							<Icon
+								name="arrow-up-right"
+								className="tr-ai-chat__suggestion-go"
+							/>
 						</button>
 					</ThreadPrimitive.Suggestion>
 				))}
 			</div>
+			{hasContext ? null : (
+				<div className="tr-ai-chat__empty-tip">
+					<Icon name="file-text" />
+					Open a note to make cards from it.
+				</div>
+			)}
 		</div>
 	);
 }
