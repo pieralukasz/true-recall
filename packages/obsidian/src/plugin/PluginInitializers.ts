@@ -32,6 +32,8 @@ import { notify } from "@true-recall/obsidian/services/notification.service";
 import { createAppStore } from "@true-recall/obsidian/store";
 import { isMobile } from "@true-recall/obsidian/utils/platform";
 
+import { AiChatController } from "../features/ai-chat/chat-controller";
+import { revealAiChat } from "../features/ai-chat/open-ai-chat";
 import type TrueRecallPlugin from "../main";
 import { BackupRecoveryManager } from "./BackupRecoveryManager";
 import { DayRolloverWatcher } from "./DayRolloverWatcher";
@@ -235,6 +237,7 @@ async function initializeCardStore(
 	if (isPluginEnabled(plugin.settings, "ai-assistant")) {
 		plugin.assistantService.start();
 	}
+	plugin.aiChat = new AiChatController(plugin, () => revealAiChat(plugin));
 
 	new DayRolloverWatcher(plugin.dayBoundaryService, dl).register(plugin);
 

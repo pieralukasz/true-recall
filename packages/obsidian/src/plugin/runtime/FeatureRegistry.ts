@@ -1,4 +1,5 @@
 import {
+	VIEW_TYPE_AI_CHAT,
 	VIEW_TYPE_ASSISTANT_EDITOR,
 	VIEW_TYPE_ASSISTANT_INBOX,
 	VIEW_TYPE_ASSISTANT_WORKSPACE,
@@ -13,6 +14,8 @@ import {
 	VIEW_TYPE_STATS,
 } from "@true-recall/core/constants";
 
+import { AiChatView } from "@true-recall/obsidian/features/ai-chat/AiChatView";
+import { openAiChat } from "@true-recall/obsidian/features/ai-chat/open-ai-chat";
 import { registerMarkdownFlashcards } from "@true-recall/obsidian/features/markdown-flashcards/register";
 import type TrueRecallPlugin from "@true-recall/obsidian/main";
 import { registerCommands } from "@true-recall/obsidian/plugin/PluginCommands";
@@ -62,6 +65,22 @@ export async function registerFeatures(
 		VIEW_TYPE_DASHBOARD,
 		(leaf) => new DashboardView(leaf, plugin),
 	);
+
+	// AI chat (React island): one conversation for cards, edits, stats and fact checks.
+	registerIfAllowed(VIEW_TYPE_AI_CHAT, (leaf) => new AiChatView(leaf, plugin));
+	plugin.addCommand({
+		id: "open-ai-chat",
+		name: "Open AI chat",
+		callback: () => void openAiChat(plugin),
+	});
+	plugin.addCommand({
+		id: "new-ai-chat",
+		name: "New AI chat about this note",
+		callback: () => {
+			plugin.aiChat?.newChat();
+			void openAiChat(plugin);
+		},
+	});
 
 	plugin.addRibbonIcon(
 		"layout-dashboard",
