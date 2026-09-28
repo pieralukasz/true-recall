@@ -1,5 +1,10 @@
 import type { AssistantContext } from "@true-recall/core/ai/assistant";
 
+import { fromAssistantContext } from "@true-recall/obsidian/features/ai-chat/engine/chat-context";
+import {
+	isAiChatAvailable,
+	openAiChat,
+} from "@true-recall/obsidian/features/ai-chat/open-ai-chat";
 import type TrueRecallPlugin from "@true-recall/obsidian/main";
 import { isMobile } from "@true-recall/obsidian/utils/platform";
 import { openAssistantEditorWindow } from "@true-recall/obsidian/views/modal-window/open-assistant-editor-window";
@@ -52,6 +57,17 @@ export function openAiWorkspace(
 		prefer: options.prefer,
 	});
 	const context = options.context ?? readLiveAssistantContext(plugin);
+
+	// With the AI chat on (Pro), every old entry point (AI Workspace, Ask AI,
+	// quick editor, review) opens the chat with the same context instead.
+	if (plugin.aiChat && isAiChatAvailable(plugin)) {
+		void openAiChat(plugin, {
+			context: fromAssistantContext(context, (path) =>
+				plugin.app.vault.getFileByPath(path),
+			),
+		});
+		return null;
+	}
 
 	if (surface === "docked") {
 		void plugin.openAssistantWorkspace(options.mode);

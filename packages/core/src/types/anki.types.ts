@@ -65,6 +65,8 @@ export interface AnkiImportOptions {
 	importFolder: string;
 	/** User-chosen note type mappings: ankiModelId → mapping config */
 	modelMappings?: Map<number, ModelMapping>;
+	/** User's "Next day starts at" hour; buried cards unbury at that boundary (default 4) */
+	dayStartHour?: number;
 }
 
 export interface ModelMapping {

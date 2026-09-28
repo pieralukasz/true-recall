@@ -1,4 +1,9 @@
 import {
+	BACKUPS_FOLDER,
+	DB_FOLDER,
+} from "@true-recall/core/persistence/sqlite/sqlite.types";
+
+import {
 	FormCard,
 	FormField,
 	InfoBlock,
@@ -25,8 +30,8 @@ export function BackupSettingsSection() {
 					)}
 				</p>
 				<p>
-					{t("Stored in")}
-					<code>.true-recall/backups/</code>
+					{t("Stored in")}{" "}
+					<code>{`${DB_FOLDER}/${BACKUPS_FOLDER}/<device-id>/`}</code>
 				</p>
 			</InfoBlock>
 

@@ -10,6 +10,7 @@ const SEARCH_CATEGORY_LABELS: Record<SuggestionCategory, string> = {
 	note: "Notes",
 	project: "Projects",
 	preset: "Presets",
+	tag: "Tags",
 	type: "Card Types",
 	via: "Created Via",
 	date: "Date Filters",

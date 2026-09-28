@@ -70,6 +70,16 @@ describe("BulkCardParser", () => {
 			);
 		});
 
+		it("recognises a cloze whose answer contains braces", () => {
+			const result = parseBulkText("Ratio: {{c1::$\\frac{a}{b}$}}");
+
+			expect(result.cards).toHaveLength(1);
+			expect(result.cards[0]?.noteTypeId).toBe(BUILTIN_CLOZE_ID);
+			expect(result.cards[0]?.fields.Text).toBe(
+				"Ratio: {{c1::$\\frac{a}{b}$}}",
+			);
+		});
+
 		it("trims whitespace around separator", () => {
 			const result = parseBulkText("  Question  ::  Answer  ");
 

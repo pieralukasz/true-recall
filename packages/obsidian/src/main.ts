@@ -146,6 +146,9 @@ export default class TrueRecallPlugin extends Plugin {
 	assistantService:
 		| import("./services/assistant/assistant.service").AssistantService
 		| null = null;
+	/** The AI chat's conversations (features/ai-chat); null until layout ready. */
+	aiChat: import("./features/ai-chat/chat-controller").AiChatController | null =
+		null;
 	pluginLoader: import("./plugin/plugin-loader").PluginLoader | null = null;
 	_disposeWireDataLayer: (() => void) | null = null;
 	adapters!: ObsidianAdapters;
@@ -190,6 +193,9 @@ export default class TrueRecallPlugin extends Plugin {
 		this._unloaded = true;
 		document.body.classList.remove(HIDE_TAB_BAR_CLASS);
 		this.pluginLoader?.deactivateAll();
+		// Saves open chats before the database shuts down.
+		this.aiChat?.dispose();
+		this.aiChat = null;
 		this.runtime.stopSharedVaultSync();
 		this.localApi?.stop();
 		this.commandService?.clear();

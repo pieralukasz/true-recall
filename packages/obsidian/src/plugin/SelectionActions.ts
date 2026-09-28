@@ -6,6 +6,11 @@ import { resolveGenerationPresetForTier } from "@true-recall/core/flashcard/pres
 import type { GenerationPreset } from "@true-recall/core/types/generation-preset.types";
 
 import { mutate } from "@true-recall/obsidian/data";
+import { noteContext } from "@true-recall/obsidian/features/ai-chat/engine/chat-context";
+import {
+	isAiChatAvailable,
+	openAiChat,
+} from "@true-recall/obsidian/features/ai-chat/open-ai-chat";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 import { ensureFolderExists } from "@true-recall/obsidian/utils/ensure-folder";
 import { openQuickNoteEditor } from "@true-recall/obsidian/views/modal-window/open-quick-note-editor";
@@ -251,6 +256,25 @@ function enqueueGeneration(
 ): void {
 	if (!hasApiKey(plugin)) {
 		notify().aiNotConfigured();
+		return;
+	}
+	// With the AI chat on (Pro): open it with the text pinned and the preset
+	// applied. Cards show as a proposal; nothing is saved before "Add".
+	if (plugin.aiChat && isAiChatAvailable(plugin)) {
+		const note = noteContext(file);
+		const selection = text.trim();
+		void openAiChat(plugin, {
+			context: {
+				...(note ? { note } : {}),
+				...(selection
+					? { selection: { text: selection, notePath: file.path } }
+					: {}),
+				preset: { name: preset.name, instruction: preset.prompt },
+			},
+			message: selection
+				? "Make flashcards from the selected text."
+				: "Make flashcards from this note.",
+		});
 		return;
 	}
 	if (!plugin.assistantService) {

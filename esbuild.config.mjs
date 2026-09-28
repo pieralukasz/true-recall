@@ -9,7 +9,7 @@ import {
 	watch,
 	writeFileSync,
 } from "node:fs";
-import { builtinModules } from "node:module";
+import { builtinModules, createRequire } from "node:module";
 import { join, resolve } from "node:path";
 import esbuild from "esbuild";
 
@@ -134,6 +134,8 @@ const context = await esbuild.context({
 		"react-dom": "preact/compat",
 	},
 	define: {
+		// React (AI chat island) picks its build from this; mobile has no `process`.
+		"process.env.NODE_ENV": JSON.stringify(prod ? "production" : "development"),
 		__TRUERECALL_WEB_URL__: JSON.stringify(WEB_URL),
 		__TRUERECALL_CLOUD_SYNC_URL__: JSON.stringify(CLOUD_SYNC_URL),
 	},
@@ -164,6 +166,34 @@ const context = await esbuild.context({
 	outfile: projectOutfile,
 	minify: prod,
 	plugins: [
+		{
+			// The AI chat (features/ai-chat) is a React 19 island: assistant-ui needs
+			// real React. Everything else keeps react -> preact/compat via `alias`.
+			name: "react-island",
+			setup(build) {
+				// Preact-side importers of "react": plugin sources outside the island
+				// and @tanstack/react-virtual (the only React-hook package the Preact UI
+				// uses; the plugin takes only zustand/vanilla and the plain `shallow`).
+				// Every other importer is part of the assistant-ui tree and gets real React.
+				const island = /[\\/]features[\\/]ai-chat[\\/]/;
+				const preactPackages =
+					/node_modules[\\/](\.bun[\\/][^\\/]+[\\/]node_modules[\\/])?(@tanstack[\\/]react-virtual|preact)[\\/]/;
+				const realReact = createRequire(
+					resolve("packages/obsidian/package.json"),
+				);
+				build.onResolve({ filter: /^(react|react-dom)(\/.*)?$/ }, (args) => {
+					const inNodeModules = /[\\/]node_modules[\\/]/.test(args.importer);
+					if (
+						inNodeModules
+							? preactPackages.test(args.importer)
+							: !island.test(args.importer)
+					) {
+						return undefined;
+					}
+					return { path: realReact.resolve(args.path) };
+				});
+			},
+		},
 		{
 			name: "build-hooks",
 			setup(build) {

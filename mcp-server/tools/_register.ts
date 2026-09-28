@@ -2,6 +2,8 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { z } from "zod";
 
 import type { TrueRecallClient } from "../client.js";
+import { formatError } from "../errors.js";
+import { hintsFor, type ToolHints } from "./_hints.js";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -29,8 +31,9 @@ export type ToolDef = {
 // Response helpers
 // ---------------------------------------------------------------------------
 
+/** Compact JSON: indentation costs the model tokens and adds no information. */
 export const jsonResult = (data: unknown): ToolResult => ({
-	content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }],
+	content: [{ type: "text" as const, text: JSON.stringify(data) }],
 });
 
 /**
@@ -45,6 +48,20 @@ export function requireStringParam(params: Params, key: string): string {
 		throw new Error(`Expected param "${key}" to be a string`);
 	}
 	return value;
+}
+
+/** `path?k=v&...` from the params that are set; undefined, null and false are left out. */
+export function withQuery(
+	path: string,
+	query: Record<string, unknown>,
+): string {
+	const sp = new URLSearchParams();
+	for (const [key, value] of Object.entries(query)) {
+		if (value === undefined || value === null || value === false) continue;
+		sp.set(key, String(value));
+	}
+	const qs = sp.toString();
+	return qs ? `${path}?${qs}` : path;
 }
 
 export const errorResult = (message: string): ToolResult => ({
@@ -183,17 +200,40 @@ export function registerTools(
 	// expands every Zod schema in the complete tool registry.
 	const registerTool = server.registerTool.bind(server) as unknown as (
 		name: string,
-		config: { description: string; inputSchema?: Schema },
+		config: {
+			title: string;
+			description: string;
+			inputSchema?: Schema;
+			annotations: ToolHints & { title: string };
+		},
 		handler: (params: Params) => Promise<ToolResult>,
 	) => void;
 
+	const seen = new Set<string>();
 	for (const { name, description, inputSchema, handle } of tools) {
-		if (inputSchema) {
-			registerTool(name, { description, inputSchema }, (params) =>
-				handle(params, client),
-			);
-		} else {
-			registerTool(name, { description }, () => handle({}, client));
-		}
+		if (seen.has(name)) throw new Error(`Duplicate MCP tool: ${name}`);
+		seen.add(name);
+		const title = toolTitle(name);
+		const config = {
+			title,
+			description,
+			annotations: { title, ...hintsFor(name) },
+			...(inputSchema ? { inputSchema } : {}),
+		};
+		// API failures come back as a tool error with the status, code and a
+		// hint, instead of a bare protocol error the model can't act on.
+		registerTool(name, config, async (params) => {
+			try {
+				return await handle(inputSchema ? params : {}, client);
+			} catch (error) {
+				return errorResult(formatError(error));
+			}
+		});
 	}
+}
+
+/** "get_due_cards" -> "Get due cards" */
+export function toolTitle(name: string): string {
+	const words = name.split("_").join(" ");
+	return words.charAt(0).toUpperCase() + words.slice(1);
 }

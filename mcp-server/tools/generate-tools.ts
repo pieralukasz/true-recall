@@ -1,10 +1,11 @@
 import { z } from "zod";
+
 import { get, postParams, type ToolDef } from "./_register.js";
 
 export const generateTools: ToolDef[] = [
 	postParams(
 		"generate_flashcards",
-		"Generate flashcards from text using AI (Pro key or OpenRouter BYOK). Sends text to the configured AI model, parses the response into flashcards, and saves them to the database. If no source_uid is provided, links cards to the currently active note in Obsidian.",
+		"Generate flashcards from text with the AI provider configured in the plugin and save them at once. The text is sent to that provider. Cards are linked to source_uid; without it they go to the note open in Obsidian, whose frontmatter gets a flashcard_uid if it has none. It does not skip duplicates. Fails with 400 when AI generation isn't configured. Returns created and the new cards. Write the cards yourself with create_flashcards_batch when you already know what they should say.",
 		"/generate",
 		{
 			text: z
@@ -16,7 +17,7 @@ export const generateTools: ToolDef[] = [
 				.string()
 				.optional()
 				.describe(
-					"Note type slug (e.g. 'basic', 'cloze'). Use get_note_types to see available types. Defaults to basic.",
+					"Note type slug from get_note_types (e.g. 'basic', 'cloze'); defaults to basic, and an unknown slug also falls back to basic",
 				),
 			source_uid: z
 				.string()
@@ -29,7 +30,7 @@ export const generateTools: ToolDef[] = [
 
 	get(
 		"get_note_types",
-		"List all available note types (card templates). Each note type defines the fields a flashcard has (e.g. Basic has Front/Back, Cloze has Text/Extra). Use this before generate_flashcards to pick the right type.",
+		"List the note types (card templates) with their id, slug and fields, e.g. Basic has Front/Back and Cloze has Text/Extra. generate_flashcards takes the slug; generation presets take the id.",
 		"/note-types",
 	),
 ];

@@ -22,6 +22,7 @@ import {
 	NoteTypeActions,
 	StatsActions,
 } from "./modules";
+import { AiChatActions } from "./modules/AiChatActions";
 import { CloudSyncDeferredActions } from "./modules/CloudSyncDeferredActions";
 import { SqliteDatabase } from "./SqliteDatabase";
 import { SqliteSchemaManager } from "./SqliteSchemaManager";
@@ -68,6 +69,7 @@ export class SqliteStoreService {
 	public readonly integrity: IntegrityCheckService;
 	public readonly assistantTasks: AssistantTaskActions;
 	public readonly assistantThreads: AssistantThreadActions;
+	public readonly aiChats: AiChatActions;
 
 	constructor(
 		persistence: IPersistence,
@@ -88,6 +90,7 @@ export class SqliteStoreService {
 		this.integrity = new IntegrityCheckService(this.db);
 		this.assistantTasks = new AssistantTaskActions(this.db);
 		this.assistantThreads = new AssistantThreadActions(this.db);
+		this.aiChats = new AiChatActions(this.db);
 	}
 
 	getSqliteDb(): SqliteDatabase {

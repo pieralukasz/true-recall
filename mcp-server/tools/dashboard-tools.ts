@@ -1,16 +1,17 @@
 import { z } from "zod";
+
 import { get, getWith, type ToolDef } from "./_register.js";
 
 export const dashboardTools: ToolDef[] = [
 	get(
 		"get_dashboard",
-		"Get a full dashboard overview: total cards, due/new/learning/overdue counts, today's progress (studied, time, new vs review caps), streak, estimated study time, per-note breakdown with priority, and orphaned card stats.",
+		"Get the dashboard numbers: total cards, due/new/learning/overdue counts, today's progress against the daily limits, streak, estimated study time, a per-note breakdown with priority, and cards without a source note.",
 		"/dashboard",
 	),
 
 	getWith(
 		"get_projects",
-		"Get the project/deck hierarchy tree with aggregate stats (total cards, due, new, learning, overdue counts per project). Excludes archived projects by default. Returns summary without per-note member details. Use get_project for a detailed breakdown of a specific project.",
+		"Get the project (deck) tree with card counts per project: total, due, new, learning, overdue. Archived projects are left out unless archived is true. Use get_project with a project's path for its per-note breakdown.",
 		{
 			archived: z
 				.boolean()
@@ -22,7 +23,7 @@ export const dashboardTools: ToolDef[] = [
 
 	getWith(
 		"get_project",
-		"Get detailed stats for a single project including per-note member breakdown (name, path, due, new, learning, total cards, overdue days). Use get_projects first to discover project paths.",
+		"Get one project's stats with a per-note breakdown (name, path, due, new, learning, total, overdue days). Fails with 404 for an unknown path; get_projects lists the paths.",
 		{
 			path: z
 				.string()

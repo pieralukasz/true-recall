@@ -104,6 +104,20 @@ export function GeneralTab() {
 				</FormField>
 			</FormCard>
 
+			<FormCard title={t("Flashcard editor")}>
+				<FormField
+					name={t("Show My Note field")}
+					description={t(
+						"Show the My Note field in Add and Edit Flashcard. When off, press Cmd/Ctrl+K to open it. Cards that already have a note always show it.",
+					)}
+				>
+					<ToggleInput
+						value={settings.showEditorUserNote}
+						onChange={(v) => void save({ showEditorUserNote: v })}
+					/>
+				</FormField>
+			</FormCard>
+
 			<FormCard title={t("Review interface")}>
 				<FormField
 					name={t("Review mode")}
@@ -277,6 +291,18 @@ export function GeneralTab() {
 					<ToggleInput
 						value={settings.ignoreDailyLimitsForNoteStudy}
 						onChange={(v) => void save({ ignoreDailyLimitsForNoteStudy: v })}
+					/>
+				</FormField>
+
+				<FormField
+					name={t("Study projects in tree order")}
+					description={t(
+						"When studying a project from the dashboard, go through its sub-projects and notes from top to bottom instead of mixing them",
+					)}
+				>
+					<ToggleInput
+						value={settings.projectStudyTreeOrder}
+						onChange={(v) => void save({ projectStudyTreeOrder: v })}
 					/>
 				</FormField>
 

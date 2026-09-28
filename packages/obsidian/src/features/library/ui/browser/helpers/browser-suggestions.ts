@@ -12,6 +12,7 @@ interface BrowserSuggestionData {
 	sourceNotes: { uid: string; name: string; count: number }[];
 	presetNames: string[];
 	projectNames: string[];
+	tags?: { name: string; count: number }[];
 }
 
 export function createBrowserSuggestionProvider(
@@ -56,6 +57,23 @@ export function createBrowserSuggestionProvider(
 					insertText: `preset:"${p}"`,
 					category: "preset" as const,
 				}));
+		}
+
+		if (context.type === "tag") {
+			const neg = context.negated ? "-" : "";
+			return (
+				(data.tags ?? [])
+					.filter((tag) => tag.name.toLowerCase().includes(context.partial))
+					.slice(0, 10)
+					// notes.tags is space-separated, so a tag never needs quoting
+					.map((tag) => ({
+						id: `tag-${neg}${tag.name}`,
+						label: `${neg}tag:${tag.name}`,
+						insertText: `${neg}tag:${tag.name}`,
+						category: "tag" as const,
+						description: `${tag.count} cards`,
+					}))
+			);
 		}
 
 		return buildStaticSuggestions(context);
