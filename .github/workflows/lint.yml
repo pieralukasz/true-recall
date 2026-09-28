@@ -19,6 +19,8 @@ jobs:
               uses: oven-sh/setup-bun@v2
             - run: bun install --frozen-lockfile
             - run: bun run build
+            # MCP server and CLI are outside the root tsconfig.
+            - run: bun run agent-tools:check
             # Unit tests, including schema-upgrade.test.ts: every released
             # database must still open. This job is the required "build"
             # check on main, pre-release and release, so a failure blocks

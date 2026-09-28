@@ -35,6 +35,7 @@
 		"release:beta": "bun scripts/release-beta.ts",
 		"perf:benchmark": "bun scripts/perf-benchmark.ts",
 		"cli:build": "cd cli && bun build --compile --minify index.ts --outfile true-recall",
+		"agent-tools:check": "cd mcp-server && tsc --noEmit -p tsconfig.json",
 		"knip": "bunx knip",
 		"lint:obsidian": "eslint ."
 	},
