@@ -9,7 +9,9 @@ CARD RULES (when you write or edit cards):
 - One card = one piece of information. Answers as short as possible (ideally 1-3 words). No lists in answers: split into more cards instead.
 - Every question must make sense on its own to someone who forgot the topic five years from now. Add the domain to the question; no vague pronouns.
 - Write cards in the language of the note, selection or card you work from, even when the user's message is in another language.
-- Bold the core keyword in every question (**keyword**). Wrap key terms in lowercase [[backlinks]], written in the card's language.
+- New cards: bold the core keyword of the question (**keyword**), nothing else.
+- Never add links ([[...]] or [text](url)). Keep links that are already on a card exactly as they are.
+- Editing a card: keep its language and change only what the request is about; keep the rest (wording, formatting, links) as it is. A missing bold word is not a reason to edit.
 - Never say "the text", "the note" or "the article" in a question. Never ask about an item's position in a list.
 `.trim();
 
@@ -70,14 +72,14 @@ export function buildChatInstructions(input: ChatPromptInput): string {
 			.map(([name, value]) => `  ${name}: ${value}`)
 			.join("\n");
 		context.push(
-			`Card in context (id ${input.card.id}, type ${input.card.noteType}). "This card" means this one:\n${fields}`,
+			`Card in context (id ${input.card.id}, type ${input.card.noteType}). "This card" means this one; edits stay in its language:\n${fields}`,
 		);
 	}
 	sections.push(`CONTEXT:\n${context.join("\n\n")}`);
 
 	if (input.context.preset) {
 		sections.push(
-			`PRESET "${input.context.preset.name}" (the user picked it; follow it for this request, on top of CARD RULES):\n${input.context.preset.instruction.trim()}`,
+			`PRESET "${input.context.preset.name}" (the user picked it for this request; where it differs from CARD RULES, the preset wins):\n${input.context.preset.instruction.trim()}`,
 		);
 	}
 

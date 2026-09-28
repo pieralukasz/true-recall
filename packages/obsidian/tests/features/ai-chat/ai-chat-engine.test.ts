@@ -188,4 +188,14 @@ describe("AI chat instructions", () => {
 			"Web search results may be added",
 		);
 	});
+
+	it("never asks for new links and lets the preset win", () => {
+		const text = buildChatInstructions({
+			...base,
+			context: { preset: { name: "Rewrite", instruction: "Rewrite it." } },
+		});
+		expect(text).not.toMatch(/wrap[^\n]*\[\[/i);
+		expect(text).toContain("Never add links");
+		expect(text).toContain("the preset wins");
+	});
 });
