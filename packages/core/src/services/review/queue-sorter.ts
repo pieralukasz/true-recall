@@ -143,6 +143,24 @@ export function sortReviewCards(
 	}
 }
 
+/**
+ * Stable sort by source position, so each source's cards stay together and
+ * keep the order they already had. Cards from an unknown source go last.
+ */
+export function sortBySourceOrder(
+	cards: CardSchedulingMeta[],
+	sourceOrder: ReadonlyMap<string, number>,
+): CardSchedulingMeta[] {
+	const rank = (card: CardSchedulingMeta) =>
+		(card.sourceUid !== undefined
+			? sourceOrder.get(card.sourceUid)
+			: undefined) ?? Number.MAX_SAFE_INTEGER;
+	return cards
+		.map((card, index) => ({ card, index, rank: rank(card) }))
+		.sort((a, b) => a.rank - b.rank || a.index - b.index)
+		.map(({ card }) => card);
+}
+
 export function mixQueues(
 	reviews: CardSchedulingMeta[],
 	newCards: CardSchedulingMeta[],

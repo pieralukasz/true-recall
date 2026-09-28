@@ -1,6 +1,7 @@
 import { Platform } from "obsidian";
 
 import {
+	VIEW_TYPE_AI_CHAT,
 	VIEW_TYPE_DASHBOARD,
 	VIEW_TYPE_FLASHCARD_PANEL,
 	VIEW_TYPE_REVIEW,
@@ -12,6 +13,7 @@ const MOBILE_ALLOWED_VIEWS = new Set([
 	VIEW_TYPE_DASHBOARD,
 	VIEW_TYPE_FLASHCARD_PANEL,
 	VIEW_TYPE_STATS,
+	VIEW_TYPE_AI_CHAT,
 ]);
 
 export function isMobile(): boolean {

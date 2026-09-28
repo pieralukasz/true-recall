@@ -44,6 +44,11 @@ export interface QueueBuildOptions {
 	reviewsCompletedToday?: number;
 	/** Filter to only cards with these source UIDs */
 	sourceUidFilter?: Set<string>;
+	/**
+	 * Tree position of each source UID (lower = higher on the dashboard). When
+	 * set, cards are gathered and shown grouped by source in this order.
+	 */
+	sourceOrder?: ReadonlyMap<string, number>;
 	newCardOrder?: NewCardOrder;
 	reviewOrder?: ReviewOrder;
 	newReviewMix?: NewReviewMix;

@@ -120,6 +120,39 @@ export class HierarchyService {
 		return uids;
 	}
 
+	/**
+	 * Source UIDs of a project in the order its tree reads from top to bottom:
+	 * the project note itself, then each sub-project (depth first, in the path
+	 * order `buildHierarchy` uses), then the project's member notes by name. A
+	 * note reachable through several parents keeps its first position.
+	 */
+	getSourceUidOrderForProject(nodePath: string): Map<string, number> {
+		const graph = this.ensureGraph();
+		const order = new Map<string, number>();
+		const addNote = (path: string) => {
+			for (const uid of this.frontmatterIndex.getValues(
+				"flashcard_uid",
+				path,
+			)) {
+				if (!order.has(uid)) order.set(uid, order.size);
+			}
+		};
+		const noteName = (path: string) =>
+			path.split("/").pop()?.replace(/\.md$/, "") ?? path;
+		const walk = (node: HierarchyTreeNode) => {
+			addNote(node.path);
+			for (const child of node.children) walk(child);
+			const members = [...node.memberPaths].sort((a, b) =>
+				noteName(a).localeCompare(noteName(b)),
+			);
+			for (const memberPath of members) addNote(memberPath);
+		};
+
+		const root = this.buildTreeNode(nodePath, nodePath, graph, new Set());
+		if (root) walk(root);
+		return order;
+	}
+
 	getUnassignedPaths(): string[] {
 		const graph = this.ensureGraph();
 

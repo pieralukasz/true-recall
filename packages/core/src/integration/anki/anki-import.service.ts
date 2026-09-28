@@ -113,7 +113,10 @@ export class AnkiImportService {
 			ankiCardMap.set(card.id, card);
 		}
 
-		const schedulingService = new AnkiSchedulingService(this.fsrsService);
+		const schedulingService = new AnkiSchedulingService(
+			this.fsrsService,
+			options.dayStartHour,
+		);
 		const noteTypeMapper = new AnkiNoteTypeMapper(this.store.noteTypes);
 
 		const importedCardIds: string[] = [];

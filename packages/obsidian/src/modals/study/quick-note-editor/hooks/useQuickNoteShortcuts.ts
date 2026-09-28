@@ -2,15 +2,15 @@ import { useEffect, useRef } from "preact/hooks";
 
 import type { QuickNoteEditor } from "./useQuickNoteEditor";
 export function useQuickNoteShortcuts(
-	{
-		rootRef,
-		userCommentInputRef,
-	}: Pick<QuickNoteEditor, "rootRef" | "userCommentInputRef">,
+	{ rootRef }: Pick<QuickNoteEditor, "rootRef">,
 	handleSave: () => Promise<boolean>,
 	handleUndoLastCreate: () => boolean,
+	focusUserComment: () => void,
 ) {
 	const handleUndoLastCreateRef = useRef(handleUndoLastCreate);
 	handleUndoLastCreateRef.current = handleUndoLastCreate;
+	const focusUserCommentRef = useRef(focusUserComment);
+	focusUserCommentRef.current = focusUserComment;
 
 	// Cmd/Ctrl+Enter saves from anywhere in the modal (not just CM fields).
 	// CodeMirror and textarea fields commit their live value before saving, so
@@ -38,7 +38,8 @@ export function useQuickNoteShortcuts(
 			if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
 				e.preventDefault();
 				e.stopPropagation();
-				userCommentInputRef.current?.focus();
+				// Also reveals the field when the "My Note" setting hides it.
+				focusUserCommentRef.current();
 				return;
 			}
 			if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
@@ -59,5 +60,5 @@ export function useQuickNoteShortcuts(
 		return () => {
 			doc.removeEventListener("keydown", onKeyDown, true);
 		};
-	}, [rootRef, userCommentInputRef]);
+	}, [rootRef]);
 }

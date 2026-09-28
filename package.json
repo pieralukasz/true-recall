@@ -1,6 +1,6 @@
 {
 	"name": "true-recall",
-	"version": "2.6.1",
+	"version": "2.7.0",
 	"private": true,
 	"description": "Spaced repetition with FSRS algorithm",
 	"main": "main.js",
@@ -35,6 +35,7 @@
 		"release:beta": "bun scripts/release-beta.ts",
 		"perf:benchmark": "bun scripts/perf-benchmark.ts",
 		"cli:build": "cd cli && bun build --compile --minify index.ts --outfile true-recall",
+		"agent-tools:check": "cd mcp-server && tsc --noEmit -p tsconfig.json",
 		"knip": "bunx knip",
 		"lint:obsidian": "eslint ."
 	},

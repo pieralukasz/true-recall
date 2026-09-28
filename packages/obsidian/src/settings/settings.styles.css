@@ -719,6 +719,12 @@
 	line-height: 1.4;
 }
 
+.tr-settings .tr-preset-field__error {
+	color: var(--text-error);
+	font-size: var(--font-ui-smallest);
+	line-height: 1.4;
+}
+
 .tr-settings .tr-preset-list {
 	display: flex;
 	flex-direction: column;

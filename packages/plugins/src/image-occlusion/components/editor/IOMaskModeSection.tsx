@@ -1,4 +1,5 @@
 import { Clickable } from "@true-recall/obsidian/components";
+import { t } from "@true-recall/obsidian/i18n";
 import { cn } from "@true-recall/obsidian/utils/cn";
 
 import type { IOEditorController } from "../../hooks/useIOEditorController";
@@ -28,7 +29,7 @@ export function IOMaskModeSection({
 }: IOMaskModeSectionProps) {
 	return (
 		<section class="true-recall-io-side-section">
-			<h3 class="ep:text-ui-small ep:font-medium ep:mb-1">Mask mode</h3>
+			<h3 class="ep:text-ui-small ep:font-medium ep:mb-1">{t("Mask mode")}</h3>
 			<div class="ep:flex ep:gap-2">
 				{(["solo", "all"] as const).map((mode) => (
 					<Clickable
@@ -39,13 +40,14 @@ export function IOMaskModeSection({
 						)}
 						onClick={() => onChange(mode)}
 					>
-						{mode === "solo" ? "Solo" : "All"}
+						{mode === "solo" ? t("Solo") : t("All")}
 					</Clickable>
 				))}
 			</div>
 			<p class="ep:text-ui-small ep:text-obs-muted">
-				Mask mode controls visibility. Regions with the same group make one
-				card.
+				{t(
+					"Mask mode controls visibility. Each region you draw becomes its own card; merged regions share one card.",
+				)}
 			</p>
 			<label class="ep:flex ep:gap-2 ep:items-center">
 				<input
@@ -55,17 +57,20 @@ export function IOMaskModeSection({
 						onHideOtherRegionsChange(event.currentTarget.checked)
 					}
 				/>
-				Hide other regions while reviewing
+				{t("Hide other regions while reviewing")}
 			</label>
 			<p class="ep:text-ui-small">
-				{groupCount} card{groupCount === 1 ? "" : "s"} on save
+				{groupCount === 1
+					? t("1 card on save")
+					: t("{0} cards on save", [groupCount])}
 			</p>
 			<button type="button" disabled={groupCount < 2} onClick={onMergeRegions}>
-				Merge all regions into one card
+				{t("Merge all regions into one card")}
 			</button>
 			<p class="ep:text-ui-small ep:text-obs-muted">
-				Merging keeps the lowest group's card and review history. Other cards in
-				this note are removed when you save.
+				{t(
+					"Merging keeps the lowest group's card and review history. Other cards in this note are removed when you save.",
+				)}
 			</p>
 		</section>
 	);

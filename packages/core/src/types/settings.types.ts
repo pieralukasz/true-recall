@@ -292,8 +292,19 @@ export interface TrueRecallSettings {
 	continuousCustomReviews: boolean;
 	/** Bypass daily limits when studying a specific note from the dashboard */
 	ignoreDailyLimitsForNoteStudy: boolean;
+	/**
+	 * Project sessions go through the project tree from top to bottom (the
+	 * project note, its sub-projects, then its member notes) instead of mixing
+	 * cards from every sub-project.
+	 */
+	projectStudyTreeOrder: boolean;
 	/** Show today's summary and recently studied notes at the top of the dashboard */
 	showDashboardHeader: boolean;
+	/**
+	 * Show the "My Note" field in the Add/Edit flashcard editor. When off the
+	 * field stays hidden until Cmd/Ctrl+K, unless the note already has one.
+	 */
+	showEditorUserNote: boolean;
 
 	/** Hide the main-window tab bar (toggled by the `toggle-tab-bar` command) */
 	hideTabBar: boolean;
@@ -313,6 +324,8 @@ export interface TrueRecallSettings {
 
 	/** New day start hour (0-23, default 4 = 4:00 AM like Anki) */
 	dayStartHour: number;
+
+	markdownFlashcards?: import("../flashcard/markdown/settings").MarkdownFlashcardsSettings;
 
 	/** Automatic backup on plugin load */
 	autoBackupOnLoad: boolean;

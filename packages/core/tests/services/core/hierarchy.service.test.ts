@@ -339,6 +339,85 @@ describe("HierarchyService", () => {
 		});
 	});
 
+	describe("getSourceUidOrderForProject", () => {
+		it("reads the tree top to bottom: project, sub-projects depth first, then members", () => {
+			addMockFile("Root.md", { flashcard_uid: "uid-root" });
+			addMockFile("B-Sub.md", { parents: ["[[Root]]"] });
+			addMockFile("A-Sub.md", { parents: ["[[Root]]"] });
+			addMockFile("Deep.md", { parents: ["[[A-Sub]]"] });
+			addMockFile("Deep-note.md", {
+				parents: ["[[Deep]]"],
+				flashcard_uid: "uid-deep",
+			});
+			addMockFile("A-note.md", {
+				parents: ["[[A-Sub]]"],
+				flashcard_uid: "uid-a",
+			});
+			addMockFile("B-note.md", {
+				parents: ["[[B-Sub]]"],
+				flashcard_uid: "uid-b",
+			});
+			addMockFile("Zeta.md", {
+				parents: ["[[Root]]"],
+				flashcard_uid: "uid-zeta",
+			});
+			addMockFile("Alpha.md", {
+				parents: ["[[Root]]"],
+				flashcard_uid: "uid-alpha",
+			});
+			frontmatterIndex.rebuildIndex();
+
+			const order = service.getSourceUidOrderForProject("Root.md");
+
+			expect([...order.keys()]).toEqual([
+				"uid-root",
+				"uid-deep",
+				"uid-a",
+				"uid-b",
+				"uid-alpha",
+				"uid-zeta",
+			]);
+			expect([...order.values()]).toEqual([0, 1, 2, 3, 4, 5]);
+		});
+
+		it("keeps the first position of a note shared by two sub-projects", () => {
+			addMockFile("Root.md", {});
+			addMockFile("A.md", { parents: ["[[Root]]"] });
+			addMockFile("B.md", { parents: ["[[Root]]"] });
+			addMockFile("Shared.md", {
+				parents: ["[[A]]", "[[B]]"],
+				flashcard_uid: "uid-shared",
+			});
+			addMockFile("Only-b.md", {
+				parents: ["[[B]]"],
+				flashcard_uid: "uid-b",
+			});
+			frontmatterIndex.rebuildIndex();
+
+			const order = service.getSourceUidOrderForProject("Root.md");
+
+			expect([...order.keys()]).toEqual(["uid-shared", "uid-b"]);
+		});
+
+		it("covers the same notes as getSourceUidsForProject", () => {
+			addMockFile("ML.md", {});
+			addMockFile("Python.md", { parents: ["[[ML]]"] });
+			addMockFile("Basics.md", {
+				parents: ["[[Python]]"],
+				flashcard_uid: "uid-1",
+			});
+			addMockFile("Direct.md", {
+				parents: ["[[ML]]"],
+				flashcard_uid: "uid-2",
+			});
+			frontmatterIndex.rebuildIndex();
+
+			expect(
+				new Set(service.getSourceUidOrderForProject("ML.md").keys()),
+			).toEqual(service.getSourceUidsForProject("ML.md"));
+		});
+	});
+
 	describe("getUnassignedPaths", () => {
 		it("returns flashcard notes with no parents and not a project root", () => {
 			addMockFile("Project.md", {});

@@ -8,6 +8,7 @@ import type {
 	FSRSCardData,
 	Grade,
 } from "@true-recall/core/types";
+import { getTomorrowBoundary } from "@true-recall/core/utils/date.utils";
 
 const VALID_EASE_MIN = 1;
 const VALID_EASE_MAX = 4;
@@ -26,7 +27,14 @@ const DIFFICULTY_MAX = 10;
 const DIFFICULTY_INVERSION_CONSTANT = 11;
 
 export class AnkiSchedulingService {
-	constructor(private fsrsService: FSRSService) {}
+	/**
+	 * @param dayStartHour - the user's "Next day starts at" hour; buried
+	 *   cards from Anki come back at the next day boundary it defines.
+	 */
+	constructor(
+		private fsrsService: FSRSService,
+		private dayStartHour = 4,
+	) {}
 
 	replayScheduling(
 		cardId: string,
@@ -123,11 +131,11 @@ export class AnkiSchedulingService {
 			ankiCard.queue === ANKI_QUEUE_BURIED_USER ||
 			ankiCard.queue === ANKI_QUEUE_BURIED_SCHED
 		) {
-			// Unbury at next day boundary (4 AM like Anki default)
-			const tomorrow = new Date();
-			tomorrow.setDate(tomorrow.getDate() + 1);
-			tomorrow.setHours(4, 0, 0, 0);
-			card.buriedUntil = tomorrow.toISOString();
+			// Unbury at the user's next day boundary ("Next day starts at")
+			card.buriedUntil = getTomorrowBoundary(
+				this.dayStartHour,
+				new Date(),
+			).toISOString();
 		}
 
 		return card;

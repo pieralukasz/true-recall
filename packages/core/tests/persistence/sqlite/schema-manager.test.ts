@@ -64,3 +64,29 @@ describe("SqliteSchemaManager upgrade from v3", () => {
 		db.close();
 	});
 });
+
+describe("SqliteSchemaManager AI chat draft upgrade", () => {
+	it("adds draft storage to existing chats without changing their history", async () => {
+		const SQL = await initSqlJs();
+		const db = new TestSqlJsWrapper(new SQL.Database());
+		try {
+			db.run(`CREATE TABLE ai_chats (
+				id TEXT PRIMARY KEY NOT NULL, title TEXT NOT NULL,
+				context_json TEXT NOT NULL DEFAULT '{}', messages_json TEXT NOT NULL DEFAULT '[]',
+				decisions_json TEXT NOT NULL DEFAULT '{}', pending_count INTEGER NOT NULL DEFAULT 0,
+				created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL
+			);
+			INSERT INTO ai_chats (id, title, pending_count, created_at, updated_at)
+			VALUES ('old-chat', 'Saved conversation', 2, 1, 2);`);
+			const schema = new SqliteSchemaManager(db);
+			schema.createTables();
+			schema.createTables();
+			expect(
+				db.exec("SELECT id, title, pending_count, drafts_json FROM ai_chats")[0]
+					?.values,
+			).toEqual([["old-chat", "Saved conversation", 2, "{}"]]);
+		} finally {
+			db.close();
+		}
+	});
+});

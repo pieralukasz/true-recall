@@ -15,6 +15,7 @@ interface NoteFieldsFormProps {
 	onFieldFocus?: (fieldName: string, editorView: EditorView) => void;
 	onModEnter?: (fieldName: string, value: string) => void;
 	onModUndo?: () => boolean;
+	onModK?: () => void;
 	onUserEdit?: () => void;
 	onEscape?: () => void;
 	autoFocusFirst?: boolean;
@@ -31,6 +32,7 @@ export function NoteFieldsForm({
 	onFieldFocus,
 	onModEnter,
 	onModUndo,
+	onModK,
 	onUserEdit,
 	onEscape,
 	autoFocusFirst = true,
@@ -70,6 +72,7 @@ export function NoteFieldsForm({
 					onFieldFocus={onFieldFocus}
 					onModEnter={onModEnter}
 					onModUndo={onModUndo}
+					onModK={onModK}
 					onUserEdit={onUserEdit}
 					onEscape={onEscape}
 					isPinned={pinnedFields?.has(fieldName) ?? false}

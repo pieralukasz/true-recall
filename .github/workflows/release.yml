@@ -73,6 +73,11 @@ jobs:
           bun install --frozen-lockfile
           bun run build
 
+      # A tag pushed without a PR must not publish a build that fails the
+      # tests (2.6.0 shipped a database upgrade that no test covered).
+      - name: Run tests
+        run: bun run test
+
       - name: Extract release notes
         run: |
           tag="${{ steps.channel.outputs.tag }}"

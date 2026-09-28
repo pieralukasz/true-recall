@@ -6,10 +6,10 @@
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "outDir": "./dist",
-    "rootDir": ".",
+    "noEmit": true,
+    "rootDir": "..",
     "types": ["bun"]
   },
-  "include": ["./**/*.ts"],
+  "include": ["./**/*.ts", "../cli/**/*.ts"],
   "exclude": ["node_modules", "dist"]
 }
