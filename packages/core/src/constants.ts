@@ -180,6 +180,7 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 	ignoreDailyLimitsForNoteStudy: true,
 	projectStudyTreeOrder: false,
 	showDashboardHeader: true,
+	showEditorUserNote: true,
 	hideTabBar: false,
 
 	reviewKeybindings: {

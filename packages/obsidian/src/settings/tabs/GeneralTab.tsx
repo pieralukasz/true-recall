@@ -104,6 +104,20 @@ export function GeneralTab() {
 				</FormField>
 			</FormCard>
 
+			<FormCard title={t("Flashcard editor")}>
+				<FormField
+					name={t("Show My Note field")}
+					description={t(
+						"Show the My Note field in Add and Edit Flashcard. When off, press Cmd/Ctrl+K to open it. Cards that already have a note always show it.",
+					)}
+				>
+					<ToggleInput
+						value={settings.showEditorUserNote}
+						onChange={(v) => void save({ showEditorUserNote: v })}
+					/>
+				</FormField>
+			</FormCard>
+
 			<FormCard title={t("Review interface")}>
 				<FormField
 					name={t("Review mode")}

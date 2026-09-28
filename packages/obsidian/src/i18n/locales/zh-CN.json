@@ -589,5 +589,8 @@
 	"Merge all regions into one card": "将所有区域合并为一张卡片",
 	"Merging keeps the lowest group's card and review history. Other cards in this note are removed when you save.": "合并会保留编号最小的分组对应的卡片及其复习记录。保存时，此笔记中的其他卡片将被删除。",
 	"Study projects in tree order": "按项目树顺序复习",
-	"When studying a project from the dashboard, go through its sub-projects and notes from top to bottom instead of mixing them": "从仪表盘复习项目时，按从上到下的顺序依次复习其子项目和笔记，而不是混在一起"
+	"When studying a project from the dashboard, go through its sub-projects and notes from top to bottom instead of mixing them": "从仪表盘复习项目时，按从上到下的顺序依次复习其子项目和笔记，而不是混在一起",
+	"Flashcard editor": "卡片编辑器",
+	"Show My Note field": "显示 My Note 字段",
+	"Show the My Note field in Add and Edit Flashcard. When off, press Cmd/Ctrl+K to open it. Cards that already have a note always show it.": "在添加和编辑卡片时显示 My Note 字段。关闭后可按 Cmd/Ctrl+K 打开。已有笔记的卡片始终显示该字段。"
 }

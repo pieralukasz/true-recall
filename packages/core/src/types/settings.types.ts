@@ -300,6 +300,11 @@ export interface TrueRecallSettings {
 	projectStudyTreeOrder: boolean;
 	/** Show today's summary and recently studied notes at the top of the dashboard */
 	showDashboardHeader: boolean;
+	/**
+	 * Show the "My Note" field in the Add/Edit flashcard editor. When off the
+	 * field stays hidden until Cmd/Ctrl+K, unless the note already has one.
+	 */
+	showEditorUserNote: boolean;
 
 	/** Hide the main-window tab bar (toggled by the `toggle-tab-bar` command) */
 	hideTabBar: boolean;

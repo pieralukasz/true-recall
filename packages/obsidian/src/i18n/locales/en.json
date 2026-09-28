@@ -589,5 +589,8 @@
 	"Merge all regions into one card": "Merge all regions into one card",
 	"Merging keeps the lowest group's card and review history. Other cards in this note are removed when you save.": "Merging keeps the lowest group's card and review history. Other cards in this note are removed when you save.",
 	"Study projects in tree order": "Study projects in tree order",
-	"When studying a project from the dashboard, go through its sub-projects and notes from top to bottom instead of mixing them": "When studying a project from the dashboard, go through its sub-projects and notes from top to bottom instead of mixing them"
+	"When studying a project from the dashboard, go through its sub-projects and notes from top to bottom instead of mixing them": "When studying a project from the dashboard, go through its sub-projects and notes from top to bottom instead of mixing them",
+	"Flashcard editor": "Flashcard editor",
+	"Show My Note field": "Show My Note field",
+	"Show the My Note field in Add and Edit Flashcard. When off, press Cmd/Ctrl+K to open it. Cards that already have a note always show it.": "Show the My Note field in Add and Edit Flashcard. When off, press Cmd/Ctrl+K to open it. Cards that already have a note always show it."
 }
