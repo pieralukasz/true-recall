@@ -10,7 +10,9 @@
 		"test:coverage": "vitest run --coverage"
 	},
 	"dependencies": {
+		"@ai-sdk/openai-compatible": "^3.0.57",
 		"@ai-sdk/provider": "4.0.18",
+		"@ai-sdk/react": "4.0.121",
 		"@assistant-ui/react": "^0.15.22",
 		"@assistant-ui/react-ai-sdk": "^1.4.13",
 		"@codemirror/state": "6.7.1",

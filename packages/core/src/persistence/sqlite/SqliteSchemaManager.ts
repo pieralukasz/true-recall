@@ -160,6 +160,19 @@ export class SqliteSchemaManager {
 
             CREATE INDEX IF NOT EXISTS idx_assistant_tasks_status ON assistant_tasks(status);
 
+			CREATE TABLE IF NOT EXISTS ai_chats (
+				id TEXT PRIMARY KEY NOT NULL,
+				title TEXT NOT NULL,
+				context_json TEXT NOT NULL DEFAULT '{}',
+				messages_json TEXT NOT NULL DEFAULT '[]',
+				decisions_json TEXT NOT NULL DEFAULT '{}',
+				pending_count INTEGER NOT NULL DEFAULT 0,
+				created_at INTEGER NOT NULL,
+				updated_at INTEGER NOT NULL
+			);
+
+			CREATE INDEX IF NOT EXISTS idx_ai_chats_updated ON ai_chats(updated_at DESC);
+
 			CREATE TABLE IF NOT EXISTS assistant_threads (
 				id TEXT PRIMARY KEY NOT NULL,
 				title TEXT NOT NULL,

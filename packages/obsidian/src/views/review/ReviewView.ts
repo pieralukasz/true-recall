@@ -26,6 +26,13 @@ import { isPreviewCustomStudy } from "@true-recall/core/types/review-session.typ
 import { ObsidianHttpClient } from "@true-recall/obsidian/adapters/ObsidianHttpClient";
 import { CommandService, ReviewUndoHook } from "@true-recall/obsidian/commands";
 import { G, getDataLayer } from "@true-recall/obsidian/data";
+import {
+	askAboutCard,
+	factCheckCard,
+	showCardAiMenu,
+} from "@true-recall/obsidian/features/ai-chat/card-actions";
+import { isAiChatAvailable } from "@true-recall/obsidian/features/ai-chat/open-ai-chat";
+import { mountCardAssist } from "@true-recall/obsidian/features/ai-chat/ui/CardAssist";
 import { assistantContextFromCard } from "@true-recall/obsidian/features/assistant/ui/ai-context-source";
 import {
 	FACT_CHECK_QUEUED_MESSAGE,
@@ -285,11 +292,22 @@ export class ReviewView extends ItemView {
 		textarea?.focus();
 	}
 
+	/** The new AI chat handles review AI (Pro); otherwise the old assistant does. */
+	private get usesAiChat(): boolean {
+		return this.plugin.aiChat !== null && isAiChatAvailable(this.plugin);
+	}
+
 	private handleAskFollowUp(question: string): boolean {
 		const card = this.review.getCurrentCard();
-		const service = this.plugin.assistantService;
 		const trimmed = question.trim();
-		if (!card || !service || trimmed === "") return false;
+		if (!card || trimmed === "") return false;
+		if (this.usesAiChat) {
+			// Answered under the card, not queued.
+			askAboutCard(this.plugin, card, trimmed);
+			return true;
+		}
+		const service = this.plugin.assistantService;
+		if (!service) return false;
 		const state = this.typeIn.getCurrentTypeInState(card.id);
 		service.enqueue({
 			instruction: trimmed,
@@ -520,9 +538,11 @@ export class ReviewView extends ItemView {
 						onShowAnswer: () => void this.typeIn.handleReveal(),
 						onTypedAnswerChange: (value: string) =>
 							this.typeIn.handleTypedAnswerChange(value),
-						onAskFollowUp: isPluginEnabled(this.plugin.settings, "ai-assistant")
-							? (question: string) => this.handleAskFollowUp(question)
-							: undefined,
+						onAskFollowUp:
+							this.usesAiChat ||
+							isPluginEnabled(this.plugin.settings, "ai-assistant")
+								? (question: string) => this.handleAskFollowUp(question)
+								: undefined,
 						onOpenAssistantInbox: () => void this.plugin.openAssistantInbox(),
 						onAnswer: (rating: Grade) => void this.handleAnswer(rating),
 						onContentChange: (value: string, field: "question" | "answer") =>
@@ -539,9 +559,16 @@ export class ReviewView extends ItemView {
 							this.orchestrator.handleTopUp(topUp),
 						onEndSession: () => this.handleEndSession(),
 						onActionsMenu: (e: MouseEvent) => this.showActionsMenu(e),
-						// Card editing runs inside the shared AI Workspace.
-						onPolishMenu: isPluginEnabled(this.plugin.settings, "card-polish")
-							? (e: MouseEvent) => this.openCardPolishMenu(e)
+						// Card Polish, fact check and questions: the AI chat (Pro, result
+						// under the card) or the old AI Workspace.
+						onPolishMenu:
+							this.usesAiChat ||
+							isPluginEnabled(this.plugin.settings, "card-polish")
+								? (e: MouseEvent) => this.openCardPolishMenu(e)
+								: undefined,
+						mountCardAssist: this.usesAiChat
+							? (el: HTMLElement, cardId: string) =>
+									this.mountCardAssist(el, cardId)
 							: undefined,
 						onCycleTypeInMode: () => this.typeIn.cycleTypeInMode(),
 						onUndo: () => void this.undoSessionAction(),
@@ -551,6 +578,13 @@ export class ReviewView extends ItemView {
 				}),
 			}),
 		);
+	}
+
+	/** The under-card AI panel (a React island next to the Preact review). */
+	private mountCardAssist(el: HTMLElement, cardId: string): () => void {
+		const controller = this.plugin.aiChat;
+		if (!controller) return () => {};
+		return mountCardAssist(el, this.plugin, controller, cardId);
 	}
 
 	private mountEmptyState(container: HTMLElement, message: string): void {
@@ -641,6 +675,11 @@ export class ReviewView extends ItemView {
 	// ─── Actions menu ────────────────────────────────────────────────────
 
 	private openCardPolishMenu(e: MouseEvent): void {
+		const card = this.review.getCurrentCard();
+		if (card && this.usesAiChat) {
+			showCardAiMenu(this.plugin, card, e);
+			return;
+		}
 		const anchor = e.currentTarget;
 		openAiWorkspace(this.plugin, {
 			intent: "preset",
@@ -665,6 +704,10 @@ export class ReviewView extends ItemView {
 	factCheckCurrentCard(): void {
 		const card = this.review.getCurrentCard();
 		if (!card || !isFactCheckAvailable(this.plugin.settings)) return;
+		if (this.usesAiChat) {
+			factCheckCard(this.plugin, card);
+			return;
+		}
 		const taskId = startFactCheck(this.plugin, card);
 		if (taskId) notify().info(FACT_CHECK_QUEUED_MESSAGE);
 		else notify().error("AI assistant is not running");

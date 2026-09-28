@@ -23,7 +23,7 @@ export class AiChatView extends ItemView {
 	}
 
 	getDisplayText(): string {
-		return "Asystent";
+		return "AI chat";
 	}
 
 	getIcon(): string {
@@ -32,12 +32,26 @@ export class AiChatView extends ItemView {
 
 	onOpen(): Promise<void> {
 		const container = this.containerEl.children[1];
+		const controller = this.plugin.aiChat;
 		if (container instanceof HTMLElement) {
 			container.empty();
 			container.addClass("tr-ai-chat-host");
+			if (!controller) {
+				container.createDiv({
+					cls: "tr-ai-chat__muted",
+					text: "True Recall is still loading.",
+				});
+				return Promise.resolve();
+			}
 			this.root = createRoot(container);
-			this.root.render(<ChatApp plugin={this.plugin} />);
+			this.root.render(
+				<ChatApp plugin={this.plugin} controller={controller} />,
+			);
 		}
+		// An empty chat follows the note the user opens.
+		this.registerEvent(
+			this.app.workspace.on("file-open", () => controller?.followActiveNote()),
+		);
 		return Promise.resolve();
 	}
 

@@ -15,6 +15,7 @@ import {
 } from "@true-recall/core/constants";
 
 import { AiChatView } from "@true-recall/obsidian/features/ai-chat/AiChatView";
+import { openAiChat } from "@true-recall/obsidian/features/ai-chat/open-ai-chat";
 import { registerMarkdownFlashcards } from "@true-recall/obsidian/features/markdown-flashcards/register";
 import type TrueRecallPlugin from "@true-recall/obsidian/main";
 import { registerCommands } from "@true-recall/obsidian/plugin/PluginCommands";
@@ -65,19 +66,19 @@ export async function registerFeatures(
 		(leaf) => new DashboardView(leaf, plugin),
 	);
 
-	// PROTOTYPE: AI chat (React island). Command "Open AI chat (prototype)".
+	// AI chat (React island): one conversation for cards, edits, stats and fact checks.
 	registerIfAllowed(VIEW_TYPE_AI_CHAT, (leaf) => new AiChatView(leaf, plugin));
 	plugin.addCommand({
-		id: "open-ai-chat-prototype",
-		name: "Open AI chat (prototype)",
+		id: "open-ai-chat",
+		name: "Open AI chat",
+		callback: () => void openAiChat(plugin),
+	});
+	plugin.addCommand({
+		id: "new-ai-chat",
+		name: "New AI chat about this note",
 		callback: () => {
-			const existing =
-				plugin.app.workspace.getLeavesOfType(VIEW_TYPE_AI_CHAT)[0];
-			const leaf = existing ?? plugin.app.workspace.getRightLeaf(false);
-			if (!leaf) return;
-			void leaf
-				.setViewState({ type: VIEW_TYPE_AI_CHAT, active: true })
-				.then(() => plugin.app.workspace.revealLeaf(leaf));
+			plugin.aiChat?.newChat();
+			void openAiChat(plugin);
 		},
 	});
 

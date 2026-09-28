@@ -3,6 +3,11 @@ import type { Menu } from "obsidian";
 import type { AssistantContext } from "@true-recall/core/ai/assistant";
 import { CARD_FLAG_META, type CardFlag } from "@true-recall/core/types";
 
+import { cardChatContext } from "@true-recall/obsidian/features/ai-chat/card-actions";
+import {
+	isAiChatAvailable,
+	openAiChat,
+} from "@true-recall/obsidian/features/ai-chat/open-ai-chat";
 import { openAiWorkspace } from "@true-recall/obsidian/features/assistant/ui/open-ai-workspace";
 import type { CardActionsHandler } from "@true-recall/obsidian/features/study/ui/review/handlers";
 import type { TypeInMode } from "@true-recall/obsidian/features/study/ui/review/helpers";
@@ -47,7 +52,38 @@ export function populateReviewActionsMenu(
 	);
 	menu.addSeparator();
 
-	if (isPluginEnabled(deps.plugin.settings, "ai-assistant")) {
+	const useChat = deps.plugin.aiChat !== null && isAiChatAvailable(deps.plugin);
+	if (useChat) {
+		const card = deps.getReview().getCurrentCard();
+		menu.addItem((item) =>
+			item
+				.setTitle("Ask AI about this card")
+				.setIcon("sparkles")
+				.onClick(() => {
+					if (!card) return;
+					void openAiChat(deps.plugin, {
+						context: cardChatContext(deps.plugin, card),
+					});
+				}),
+		);
+		if (deps.canFactCheckCurrentCard()) {
+			menu.addItem((item) =>
+				item
+					.setTitle("Check the facts (AI)")
+					.setIcon("search-check")
+					.onClick(() => deps.factCheckCurrentCard()),
+			);
+		}
+		menu.addItem((item) =>
+			item
+				.setTitle("Polish card (AI)")
+				.setIcon("wand")
+				.onClick((evt) => {
+					if (evt instanceof MouseEvent) deps.openCardPolishMenu(evt);
+				}),
+		);
+		menu.addSeparator();
+	} else if (isPluginEnabled(deps.plugin.settings, "ai-assistant")) {
 		menu.addItem((item) =>
 			item
 				.setTitle("Ask AI about this card")
