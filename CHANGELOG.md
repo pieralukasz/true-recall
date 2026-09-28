@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 2.7.1 (2026-09-28)
+
+### Bug Fixes
+
+- **Selecting text in review no longer opens AI.** Selecting a few words on a review card opened AI right away: the AI chat in the sidebar with Pro, the Ask AI prompt otherwise. Now a small "Ask AI" button appears above the selection, and AI opens only when you click it. A click elsewhere or `Escape` hides the button.
+
 ## 2.7.0 (2026-09-28)
 
 This release adds an AI chat for Pro, Markdown flashcards written straight in your notes, and project study in tree order. It also fixes clozes with braces, lost tags in Anki export and several smaller issues.

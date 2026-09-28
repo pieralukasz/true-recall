@@ -374,3 +374,42 @@
 	padding-top: 0;
 	padding-bottom: 0;
 }
+
+/* "Ask AI" button over text selected in the review card. Selecting only shows
+   this button; the AI opens on click (ReviewSelectionBubble). */
+.tr-review-ask-bubble {
+	position: fixed;
+	top: 0;
+	left: 0;
+	z-index: var(--layer-menu);
+}
+
+/* Two classes: Obsidian's `button:not(.clickable-icon)` would win otherwise. */
+.tr-review-ask-bubble .tr-review-ask-bubble__button {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	height: auto;
+	padding: 4px 10px;
+	font-size: var(--font-ui-small);
+	color: var(--text-normal);
+	background: var(--background-primary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-m);
+	box-shadow: var(--shadow-s);
+	cursor: pointer;
+}
+
+.tr-review-ask-bubble .tr-review-ask-bubble__button:hover {
+	background: var(--background-modifier-hover);
+}
+
+.tr-review-ask-bubble__icon {
+	display: inline-flex;
+	color: var(--text-accent);
+}
+
+.tr-review-ask-bubble__icon svg {
+	width: 14px;
+	height: 14px;
+}
