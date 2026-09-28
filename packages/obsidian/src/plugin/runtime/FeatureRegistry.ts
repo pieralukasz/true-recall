@@ -1,4 +1,5 @@
 import {
+	VIEW_TYPE_AI_CHAT,
 	VIEW_TYPE_ASSISTANT_EDITOR,
 	VIEW_TYPE_ASSISTANT_INBOX,
 	VIEW_TYPE_ASSISTANT_WORKSPACE,
@@ -13,6 +14,7 @@ import {
 	VIEW_TYPE_STATS,
 } from "@true-recall/core/constants";
 
+import { AiChatView } from "@true-recall/obsidian/features/ai-chat/AiChatView";
 import { registerMarkdownFlashcards } from "@true-recall/obsidian/features/markdown-flashcards/register";
 import type TrueRecallPlugin from "@true-recall/obsidian/main";
 import { registerCommands } from "@true-recall/obsidian/plugin/PluginCommands";
@@ -62,6 +64,22 @@ export async function registerFeatures(
 		VIEW_TYPE_DASHBOARD,
 		(leaf) => new DashboardView(leaf, plugin),
 	);
+
+	// PROTOTYPE: AI chat (React island). Command "Open AI chat (prototype)".
+	registerIfAllowed(VIEW_TYPE_AI_CHAT, (leaf) => new AiChatView(leaf, plugin));
+	plugin.addCommand({
+		id: "open-ai-chat-prototype",
+		name: "Open AI chat (prototype)",
+		callback: () => {
+			const existing =
+				plugin.app.workspace.getLeavesOfType(VIEW_TYPE_AI_CHAT)[0];
+			const leaf = existing ?? plugin.app.workspace.getRightLeaf(false);
+			if (!leaf) return;
+			void leaf
+				.setViewState({ type: VIEW_TYPE_AI_CHAT, active: true })
+				.then(() => plugin.app.workspace.revealLeaf(leaf));
+		},
+	});
 
 	plugin.addRibbonIcon(
 		"layout-dashboard",
