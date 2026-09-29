@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 2.7.2 (2026-09-29)
+
+### Bug Fixes
+
+- **Card Polish proposes edits again.** With some models, Gemini among them, Card Polish under a review card always said "No change to this card." even when the model had rewritten the card. The proposed change now shows up, and Apply closes the panel once the edit is saved.
+
 ## 2.7.1 (2026-09-28)
 
 ### Bug Fixes
