@@ -3,15 +3,15 @@ import { z } from "zod";
 import type { MarkdownFlashcardsSettings } from "./settings";
 
 export const ScheduleSchema = z.object({
-	updatedAt: z.number().nonnegative().finite(),
+	updatedAt: z.number().nonnegative(),
 	due: z.iso.datetime({ offset: true }),
-	stability: z.number().nonnegative().finite(),
+	stability: z.number().nonnegative(),
 	difficulty: z.number().min(0).max(10),
 	reps: z.number().int().nonnegative(),
 	lapses: z.number().int().nonnegative(),
 	state: z.union([z.literal(0), z.literal(1), z.literal(2), z.literal(3)]),
 	lastReview: z.iso.datetime({ offset: true }).nullable(),
-	scheduledDays: z.number().nonnegative().finite(),
+	scheduledDays: z.number().nonnegative(),
 	learningStep: z.number().int().nonnegative(),
 	suspended: z.boolean().optional(),
 	buriedUntil: z.iso.datetime({ offset: true }).optional(),
