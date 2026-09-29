@@ -13,6 +13,7 @@ import {
 	changedFields,
 	countPending,
 	describeDecisions,
+	editFields,
 	mergeFields,
 	normalizeCard,
 	pickCards,
@@ -112,6 +113,23 @@ describe("AI chat proposals", () => {
 			Back: "Same",
 		});
 		expect(changedFields(before, changes)).toEqual(["Front"]);
+	});
+
+	it("reads edit fields from the list shape and from older saved maps", () => {
+		expect(
+			editFields([
+				{ field: "Front", value: "Q" },
+				{ field: "Back", value: "A" },
+			]),
+		).toEqual({ Front: "Q", Back: "A" });
+		expect(editFields({ Back: "A" })).toEqual({ Back: "A" });
+		// Half-streamed or malformed entries are ignored.
+		expect(
+			editFields([{ field: "Front" }, {}, null] as unknown as Parameters<
+				typeof editFields
+			>[0]),
+		).toEqual({});
+		expect(editFields(undefined)).toEqual({});
 	});
 });
 
