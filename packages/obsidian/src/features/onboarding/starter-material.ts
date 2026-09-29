@@ -7,7 +7,7 @@ export async function openStarterMaterial(
 	plugin: TrueRecallPlugin,
 ): Promise<void> {
 	const { app } = plugin;
-	const previous = app.loadLocalStorage(POINTER);
+	const previous: unknown = app.loadLocalStorage(POINTER);
 	const existing =
 		typeof previous === "string"
 			? app.vault.getAbstractFileByPath(previous)
@@ -18,7 +18,7 @@ export async function openStarterMaterial(
 	}
 	const suffix = crypto.randomUUID().slice(0, 8);
 	const name = `True Recall practice ${suffix}`;
-	const canvas = document.createElement("canvas");
+	const canvas = createEl("canvas");
 	canvas.width = 900;
 	canvas.height = 280;
 	const context = canvas.getContext("2d");

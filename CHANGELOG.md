@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## 2.7.3 (2026-09-29)
+
+### Bug Fixes
+
+- **True Recall passes Obsidian's plugin review again.** The review flagged 2.7.2 because the AI chat's React build contained code that can load scripts at runtime, even though True Recall never ran it. The chat now uses a React version without that code and works as before.
+- **Proposed card edits mark the old text with a red line** at its side, matching the green line on the new text, instead of striking it through.
+
 ## 2.7.2 (2026-09-29)
 
 ### Bug Fixes

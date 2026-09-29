@@ -211,6 +211,18 @@ if (prod) {
 	if (result.metafile) {
 		writeFileSync("meta.json", JSON.stringify(result.metafile));
 	}
+	// Obsidian's release scan fails any main.js that creates <script> elements,
+	// even in dead library code (React 19's hoistable scripts did this; the AI
+	// chat island stays on React 18 for that reason).
+	const scriptSites = readFileSync(projectOutfile, "utf8").match(
+		/createElement\(\s*["'`]script["'`]\s*\)/g,
+	);
+	if (scriptSites) {
+		console.error(
+			`✗ ${projectOutfile} creates <script> elements (${scriptSites.length}x); Obsidian's review fails this release.`,
+		);
+		process.exit(1);
+	}
 	process.exit(0);
 } else {
 	const cssInput = createTailwindInput();
