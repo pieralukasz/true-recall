@@ -225,9 +225,24 @@ export function createChatTools(
 				properties: {
 					cardId: { type: "string" },
 					fields: {
-						type: "object",
-						additionalProperties: { type: "string" },
-						description: 'Changed fields, e.g. { "Back": "new answer" }',
+						type: "array",
+						minItems: 1,
+						description:
+							'One entry per changed field, e.g. [{ "field": "Back", "value": "new answer" }].',
+						items: {
+							type: "object",
+							properties: {
+								field: {
+									type: "string",
+									description: "Note field name, e.g. Front or Back.",
+								},
+								value: {
+									type: "string",
+									description: "The field's full new text.",
+								},
+							},
+							required: ["field", "value"],
+						},
 					},
 					reason: { type: "string", description: "One short sentence." },
 				},
