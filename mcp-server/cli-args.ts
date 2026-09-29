@@ -47,14 +47,14 @@ function unwrap(schema: ZodTypeAny): {
 	let description = schema.description;
 	for (;;) {
 		description ??= s.description;
-		if (s instanceof z.ZodOptional) s = s.unwrap();
+		if (s instanceof z.ZodOptional) s = s.unwrap() as ZodTypeAny;
 		else if (s instanceof z.ZodNullable) {
 			nullable = true;
-			s = s.unwrap();
+			s = s.unwrap() as ZodTypeAny;
 		} else if (s instanceof z.ZodDefault) {
 			defaultValue = s._def.defaultValue();
-			s = s.removeDefault();
-		} else if (s instanceof z.ZodEffects) s = s.innerType();
+			s = s.removeDefault() as ZodTypeAny;
+		} else if (s instanceof z.ZodEffects) s = s.innerType() as ZodTypeAny;
 		else break;
 	}
 	return {
@@ -87,9 +87,10 @@ export function describeParams(schema: Schema | undefined): ParamInfo[] {
 			nullable,
 		};
 		if (defaultValue !== undefined) info.defaultValue = defaultValue;
-		if (base instanceof z.ZodEnum) info.choices = [...base.options];
+		if (base instanceof z.ZodEnum)
+			info.choices = [...(base.options as string[])];
 		if (base instanceof z.ZodArray)
-			info.itemKind = kindOf(unwrap(base.element).base);
+			info.itemKind = kindOf(unwrap(base.element as ZodTypeAny).base);
 		return info;
 	});
 }
@@ -145,7 +146,7 @@ export function parseArgv(
 	let jsonParams: Record<string, unknown> = {};
 
 	for (let i = 0; i < argv.length; i++) {
-		const arg = argv[i] as string;
+		const arg = argv[i];
 		if (!arg.startsWith("--")) {
 			throw new UsageError(
 				`Unexpected argument '${arg}'. Pass parameters as --name value.`,

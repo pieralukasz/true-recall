@@ -579,9 +579,12 @@
 	color: var(--text-faint);
 }
 
+/* Old value: red rule mirrors the green one on the new value. No line-through:
+   Obsidian's CSS scan flags text-decoration as partially supported. */
 .tr-ai-chat__old {
+	padding-left: var(--size-4-2);
+	border-left: 2px solid var(--color-red);
 	color: var(--text-muted);
-	text-decoration-line: line-through;
 }
 
 .tr-ai-chat__new {

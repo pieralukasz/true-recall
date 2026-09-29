@@ -176,7 +176,7 @@ export function normalizeCard(raw: unknown): ProposedCard {
 	const card = (raw ?? {}) as Record<string, unknown>;
 	const pick = (...keys: string[]) => {
 		for (const key of keys) {
-			if (typeof card[key] === "string") return card[key] as string;
+			if (typeof card[key] === "string") return card[key];
 		}
 		return "";
 	};
