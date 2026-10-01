@@ -142,7 +142,7 @@ describe("AI chat writes", () => {
 				});
 				return createMockChatResponse({
 					name: "propose_card_edit",
-					args: { cardId: id, fields: { Back: "AI" } },
+					args: { cardId: id, fields: [{ field: "Back", value: "AI" }] },
 				});
 			}),
 		});

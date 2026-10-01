@@ -2,6 +2,33 @@
 
 ## Unreleased
 
+## 2.7.4 (2026-10-01)
+
+### Features
+
+- **Cap the first interval of new cards.** With optimized weights, answering Good on a new card can schedule it 50 days or more ahead, which tempts you to press Again on cards you know just to see them sooner. Set "First interval cap (days)" in Settings → FSRS → FSRS algorithm (also in a preset's options) to limit how far ahead a new card is first scheduled, for example 14. Cards graduating on the same day are spread over a few days at or below the cap. FSRS still keeps what it learned about the card, so your next Good answer jumps straight to a long interval. Off by default (empty field).
+- **Apply new FSRS weights to all cards at once.** New weights used to take effect card by card, at each card's next review, so your workload stayed high for weeks after an optimization. The new `reschedule_from_history` command in the Local API, the MCP server and the `true-recall` CLI recomputes every review card from its review history with your current weights and moves its next review. It shows a preview first: cards due today and per day over the next 30 days, before and after. By default it only moves cards later, never earlier. It backs up your database first and can be reverted with "Undo last flashcard action". Cards without a full history keep their memory state and only get a new interval.
+- **AI agents can tune FSRS for you.** The MCP server now tells agents how to check whether your true retention sits far above its target and how to fix it: optimize, compare old and new intervals, update the preset and reschedule, asking you before each change.
+
+## 2.7.3 (2026-09-29)
+
+### Bug Fixes
+
+- **True Recall passes Obsidian's plugin review again.** The review flagged 2.7.2 because the AI chat's React build contained code that can load scripts at runtime, even though True Recall never ran it. The chat now uses a React version without that code and works as before.
+- **Proposed card edits mark the old text with a red line** at its side, matching the green line on the new text, instead of striking it through.
+
+## 2.7.2 (2026-09-29)
+
+### Bug Fixes
+
+- **Card Polish proposes edits again.** With some models, Gemini among them, Card Polish under a review card always said "No change to this card." even when the model had rewritten the card. The proposed change now shows up, and Apply closes the panel once the edit is saved.
+
+## 2.7.1 (2026-09-28)
+
+### Bug Fixes
+
+- **Selecting text in review no longer opens AI.** Selecting a few words on a review card opened AI right away: the AI chat in the sidebar with Pro, the Ask AI prompt otherwise. Now a small "Ask AI" button appears above the selection, and AI opens only when you click it. A click elsewhere or `Escape` hides the button.
+
 ## 2.7.0 (2026-09-28)
 
 This release adds an AI chat for Pro, Markdown flashcards written straight in your notes, and project study in tree order. It also fixes clozes with braces, lost tags in Anki export and several smaller issues.

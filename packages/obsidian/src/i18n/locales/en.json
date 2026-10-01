@@ -592,5 +592,7 @@
 	"When studying a project from the dashboard, go through its sub-projects and notes from top to bottom instead of mixing them": "When studying a project from the dashboard, go through its sub-projects and notes from top to bottom instead of mixing them",
 	"Flashcard editor": "Flashcard editor",
 	"Show My Note field": "Show My Note field",
-	"Show the My Note field in Add and Edit Flashcard. When off, press Cmd/Ctrl+K to open it. Cards that already have a note always show it.": "Show the My Note field in Add and Edit Flashcard. When off, press Cmd/Ctrl+K to open it. Cards that already have a note always show it."
+	"Show the My Note field in Add and Edit Flashcard. When off, press Cmd/Ctrl+K to open it. Cards that already have a note always show it.": "Show the My Note field in Add and Edit Flashcard. When off, press Cmd/Ctrl+K to open it. Cards that already have a note always show it.",
+	"First interval cap (days)": "First interval cap (days)",
+	"Longest first interval after a new card graduates. Leave empty for no cap. FSRS still remembers the full stability.": "Longest first interval after a new card graduates. Leave empty for no cap. FSRS still remembers the full stability."
 }

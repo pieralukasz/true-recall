@@ -35,6 +35,36 @@ export class ReviewLogSyncActions {
 	}
 
 	/**
+	 * Every live review row with the fields history replay needs, oldest
+	 * first. One query instead of one per card: a full-collection replay
+	 * would otherwise issue tens of thousands of statements.
+	 */
+	getAllReplayLogs(): (ReviewLogReplayRow & {
+		cardId: string;
+		state: number;
+	})[] {
+		return this.db.query<
+			ReviewLogReplayRow & { cardId: string; state: number }
+		>(
+			`
+            SELECT
+                id,
+                card_id as cardId,
+                reviewed_at as reviewedAt,
+                rating,
+                state,
+                preset_name as presetName,
+                device_id as deviceId,
+                review_kind as reviewKind,
+                deleted_at as deletedAt
+            FROM review_log
+            WHERE deleted_at IS NULL
+            ORDER BY reviewed_at ASC
+        `,
+		);
+	}
+
+	/**
 	 * Move all review history from one card id to another (duplicate merge).
 	 * Bumps updated_at so the reassignment propagates to other devices.
 	 */

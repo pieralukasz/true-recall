@@ -53,7 +53,7 @@ export function registerMarkdownFlashcards(plugin: TrueRecallPlugin): {
 	const service = new MarkdownCardSyncService(plugin.cardStore);
 	const deviceId = plugin.cardStore.getDeviceId();
 	const sources = plugin.flashcardManager.getSourceNoteService();
-	const timers = new Map<TFile, ReturnType<typeof setTimeout>>();
+	const timers = new Map<TFile, number>();
 	const lastError = new Map<TFile, string>();
 	const lastWarning = new Map<TFile, string>();
 	/** "Q ?? A" on one line is not a card; say so once per distinct set of lines. */
@@ -189,10 +189,10 @@ export function registerMarkdownFlashcards(plugin: TrueRecallPlugin): {
 	const enqueue = (file: TFile) => {
 		if (stopped || file.extension !== "md") return;
 		const timer = timers.get(file);
-		if (timer) clearTimeout(timer);
+		if (timer) window.clearTimeout(timer);
 		timers.set(
 			file,
-			setTimeout(() => {
+			window.setTimeout(() => {
 				timers.delete(file);
 				queue = queue
 					.then(() => processFile(file))
@@ -280,7 +280,7 @@ export function registerMarkdownFlashcards(plugin: TrueRecallPlugin): {
 	plugin.app.workspace.onLayoutReady(scan);
 	plugin.register(() => {
 		stopped = true;
-		for (const timer of timers.values()) clearTimeout(timer);
+		for (const timer of timers.values()) window.clearTimeout(timer);
 		timers.clear();
 		lastError.clear();
 		lastWarning.clear();

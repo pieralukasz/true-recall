@@ -98,12 +98,16 @@ export class TrueRecallClient {
 		return this.request<T>(path, undefined, timeoutMs);
 	}
 
-	async post<T>(path: string, data?: unknown): Promise<T> {
-		return this.request<T>(path, {
-			method: "POST",
-			headers: { "Content-Type": "application/json" },
-			body: data !== undefined ? JSON.stringify(data) : undefined,
-		});
+	async post<T>(path: string, data?: unknown, timeoutMs?: number): Promise<T> {
+		return this.request<T>(
+			path,
+			{
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: data !== undefined ? JSON.stringify(data) : undefined,
+			},
+			timeoutMs,
+		);
 	}
 
 	async delete<T>(path: string): Promise<T> {

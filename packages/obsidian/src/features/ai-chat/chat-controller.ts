@@ -102,7 +102,7 @@ export class AiChatController {
 		return this.createSession({
 			id: saved.id,
 			title: saved.title,
-			context: saved.context as ChatContext,
+			context: saved.context,
 			decisions: saved.decisions as ProposalDecisions,
 			drafts: saved.drafts as ProposalDrafts | undefined,
 			factCheck: (saved.context as { factCheck?: boolean }).factCheck === true,
@@ -342,7 +342,7 @@ export class AiChatController {
 	}
 
 	delete(id: string): void {
-		this.sessions.get(id)?.chat.stop();
+		void this.sessions.get(id)?.chat.stop();
 		this.sessions.delete(id);
 		this.plugin.cardStore?.aiChats.delete(id);
 		if (this.currentId === id) {
@@ -355,7 +355,7 @@ export class AiChatController {
 
 	dispose(): void {
 		for (const session of this.sessions.values()) {
-			session.chat.stop();
+			void session.chat.stop();
 			this.save(session.id);
 		}
 		this.listeners.clear();

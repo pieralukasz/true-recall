@@ -136,6 +136,12 @@ export interface FSRSPreset {
 	name: string;
 	requestRetention: number;
 	maximumInterval: number;
+	/**
+	 * Cap in days for the first Review interval, when a card graduates from
+	 * New/Learning. null/0 = no cap. Only the due date is capped; the FSRS
+	 * memory state keeps the full stability.
+	 */
+	firstIntervalMax?: number | null;
 	weights: number[] | null;
 	enableFuzz?: boolean;
 	learningSteps: number[];
@@ -516,6 +522,8 @@ export interface FSRSSettings {
 	learningSteps: number[];
 	relearningSteps: number[];
 	enableShortTerm: boolean;
+	/** See FSRSPreset.firstIntervalMax */
+	firstIntervalMax?: number | null;
 }
 
 /**
@@ -553,5 +561,6 @@ export function extractFSRSSettingsFromPreset(
 		learningSteps: preset.learningSteps,
 		relearningSteps: preset.relearningSteps,
 		enableShortTerm: true,
+		firstIntervalMax: preset.firstIntervalMax ?? null,
 	};
 }

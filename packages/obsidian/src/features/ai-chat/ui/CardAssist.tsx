@@ -40,7 +40,13 @@ function toolProps<A, R>(part: ToolPart): ToolPartProps<A, R> {
 }
 
 /** The latest answer, reduced to what belongs under a card. */
-function LastAnswer({ messages }: { messages: UIMessage[] }) {
+function LastAnswer({
+	messages,
+	onApplied,
+}: {
+	messages: UIMessage[];
+	onApplied: () => void;
+}) {
 	const last = [...messages].reverse().find((m) => m.role === "assistant");
 	if (!last) return null;
 	return (
@@ -57,6 +63,7 @@ function LastAnswer({ messages }: { messages: UIMessage[] }) {
 						<ProposeCardEditUI
 							key={key}
 							compact
+							onApplied={onApplied}
 							{...toolProps(part as unknown as ToolPart)}
 						/>
 					);
@@ -120,7 +127,10 @@ function RunPanel({
 					</button>
 				</div>
 				<div className="tr-card-assist__body">
-					<LastAnswer messages={chat.messages} />
+					<LastAnswer
+						messages={chat.messages}
+						onApplied={() => controller.dismissCardRun(cardId)}
+					/>
 					{busy ? (
 						<div
 							className="tr-ai-chat__thinking"
