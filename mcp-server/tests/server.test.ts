@@ -73,6 +73,7 @@ describe("tool list", () => {
 				"grade_card",
 				"grade_review_card",
 				"remove_cards_from_note",
+				"reschedule_from_history",
 				"toggle_note_review",
 				"update_card",
 				"update_card_polish_preset",

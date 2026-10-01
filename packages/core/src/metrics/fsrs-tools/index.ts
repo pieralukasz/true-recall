@@ -26,6 +26,12 @@ export {
 	EasyDaysService,
 } from "./scheduler/easy-days.service";
 export { FlattenService } from "./scheduler/flatten.service";
+export {
+	type HistoryRescheduleMode,
+	type HistoryRescheduleResult,
+	HistoryRescheduleService,
+	type HistoryRescheduleSummary,
+} from "./scheduler/history-reschedule.service";
 // Scheduler services
 export { LoadBalanceService } from "./scheduler/load-balance.service";
 export { PostponeAdvanceService } from "./scheduler/postpone-advance.service";
