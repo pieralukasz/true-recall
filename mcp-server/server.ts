@@ -35,6 +35,8 @@ export const SERVER_INSTRUCTIONS = [
 	"",
 	"CHANGING DATA: Tools marked destructive overwrite or delete data with no restore call in this API (deletes, card text edits, grades, FSRS preset changes). Call them only for what the user asked; for anything broader than one card, say what will change and get a yes first. Create cards in small batches the user can check.",
 	"",
+	"FSRS TUNING (too many reviews, easy cards keep coming back): 1) get_fsrs_analytics: if trueRetention.current is well above target, the weights are stale. 2) optimize_parameters; show the user simulate_reviews for '3333' and '13333' with old vs new weights. 3) After a yes, update_fsrs_preset with the weights (and a retention the user picks). 4) reschedule_from_history with no dry_run, show summary.dueToday and avgNext30Days before/after; after a second yes run it with dry_run false (it backs up first). Without step 4 the new weights only take effect card by card at each next review. Never pick the retention for the user: lower retention means fewer reviews and more forgetting.",
+	"",
 	"SIZE: get_due_cards returns 50 cards unless you pass limit; for counts, get_full_context or get_dashboard is cheaper. list_cards caps at 200 and doesn't filter by due date.",
 ].join("\n");
 

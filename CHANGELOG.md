@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## 2.7.4 (2026-10-01)
+
+### Features
+
+- **Cap the first interval of new cards.** With optimized weights, answering Good on a new card can schedule it 50 days or more ahead, which tempts you to press Again on cards you know just to see them sooner. Set "First interval cap (days)" in Settings → FSRS → FSRS algorithm (also in a preset's options) to limit how far ahead a new card is first scheduled, for example 14. Cards graduating on the same day are spread over a few days at or below the cap. FSRS still keeps what it learned about the card, so your next Good answer jumps straight to a long interval. Off by default (empty field).
+- **Apply new FSRS weights to all cards at once.** New weights used to take effect card by card, at each card's next review, so your workload stayed high for weeks after an optimization. The new `reschedule_from_history` command in the Local API, the MCP server and the `true-recall` CLI recomputes every review card from its review history with your current weights and moves its next review. It shows a preview first: cards due today and per day over the next 30 days, before and after. By default it only moves cards later, never earlier. It backs up your database first and can be reverted with "Undo last flashcard action". Cards without a full history keep their memory state and only get a new interval.
+- **AI agents can tune FSRS for you.** The MCP server now tells agents how to check whether your true retention sits far above its target and how to fix it: optimize, compare old and new intervals, update the preset and reschedule, asking you before each change.
+
 ## 2.7.3 (2026-09-29)
 
 ### Bug Fixes

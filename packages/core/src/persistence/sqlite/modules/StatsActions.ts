@@ -133,6 +133,10 @@ export class StatsActions {
 		return this.reviewLogSync.getReplayLogsForCard(cardId);
 	}
 
+	getAllReplayLogs() {
+		return this.reviewLogSync.getAllReplayLogs();
+	}
+
 	getReviewedCardIdsSince(timestamp: number): string[] {
 		return this.reviewLogSync.getReviewedCardIdsSince(timestamp);
 	}

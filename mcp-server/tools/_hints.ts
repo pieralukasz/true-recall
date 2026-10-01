@@ -96,6 +96,7 @@ export const TOOL_HINTS: Record<string, ToolHints> = {
 	get_fsrs_analytics: READ,
 	optimize_parameters: READ,
 	simulate_reviews: READ,
+	reschedule_from_history: DESTRUCTIVE,
 	get_workload_forecast: READ,
 	get_retrievability: READ,
 	get_scheduling_preview: READ,
