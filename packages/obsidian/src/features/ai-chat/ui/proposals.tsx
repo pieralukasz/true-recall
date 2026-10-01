@@ -11,6 +11,7 @@ import {
 import { shorten } from "../engine/chat-context";
 import {
 	changedFields,
+	editFields,
 	normalizeCard,
 	type ProposalDraft,
 	type ProposeCardEditInput,
@@ -331,9 +332,12 @@ export function ProposeCardEditUI({
 	args,
 	result,
 	compact,
+	onApplied,
 }: ToolPartProps<ProposeCardEditInput, ProposeCardEditOutput> & {
 	/** Under a review card: no card title (the card is right above). */
 	compact?: boolean;
+	/** Called after Apply wrote the edit; the review panel closes itself. */
+	onApplied?: () => void;
 }) {
 	const plugin = usePlugin();
 	const controller = useController();
@@ -354,10 +358,11 @@ export function ProposeCardEditUI({
 		);
 	}
 	const before = result?.before ?? {};
-	const proposed = { ...(args?.fields ?? {}), ...edits };
+	const suggested = editFields(args?.fields);
+	const proposed = { ...suggested, ...edits };
 	const fields =
 		streaming || editing
-			? Object.keys(args?.fields ?? {})
+			? Object.keys(suggested)
 			: changedFields(before, proposed);
 	const firstField = Object.values(before)[0] ?? "";
 
@@ -382,6 +387,7 @@ export function ProposeCardEditUI({
 			after: outcome.after,
 			at: Date.now(),
 		});
+		onApplied?.();
 	};
 
 	const undo = () => {

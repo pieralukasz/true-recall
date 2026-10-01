@@ -56,6 +56,25 @@ export function AlgorithmSection({
 			</FormField>
 
 			<FormField
+				name={t("First interval cap (days)")}
+				description={t(
+					"Longest first interval after a new card graduates. Leave empty for no cap. FSRS still remembers the full stability.",
+				)}
+			>
+				<TextInput
+					value={preset.firstIntervalMax ? String(preset.firstIntervalMax) : ""}
+					onChange={(v) => {
+						const num = parseInt(v, 10);
+						void updatePreset({
+							firstIntervalMax: Number.isFinite(num) && num > 0 ? num : null,
+						});
+					}}
+					placeholder="—"
+					class="tr-control--compact"
+				/>
+			</FormField>
+
+			<FormField
 				name={t("Fuzz review intervals")}
 				description={t(
 					"Randomize review intervals slightly to prevent cards from bunching on the same day",

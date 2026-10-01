@@ -73,7 +73,7 @@ const Thinking: EmptyMessagePartComponent = ({ status }) =>
 		</div>
 	) : null;
 
-const ToolFallback: ToolCallMessagePartComponent = ({
+const ToolFallback: ToolCallMessagePartComponent<unknown, unknown> = ({
 	toolName,
 	args,
 	result,
@@ -93,6 +93,13 @@ const partComponents = {
 		Fallback: ToolFallback,
 	},
 };
+
+/** System messages stay hidden, as with the old `components` prop. */
+function renderMessage({ message }: { message: { role: string } }) {
+	if (message.role === "user") return <UserMessage />;
+	if (message.role === "assistant") return <AssistantMessage />;
+	return null;
+}
 
 function UserMessage() {
 	return (
@@ -281,9 +288,7 @@ function Thread({
 				<AuiIf condition={(s) => s.thread.isEmpty}>
 					<EmptyState />
 				</AuiIf>
-				<ThreadPrimitive.Messages
-					components={{ UserMessage, AssistantMessage }}
-				/>
+				<ThreadPrimitive.Messages>{renderMessage}</ThreadPrimitive.Messages>
 				<ThreadPrimitive.ViewportFooter className="tr-ai-chat__viewport-footer">
 					<ThreadPrimitive.ScrollToBottom
 						className="tr-ai-chat__to-bottom"

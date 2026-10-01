@@ -15,11 +15,44 @@ export interface ProposeCardsInput {
 	cards: ProposedCard[];
 }
 
+export interface FieldChange {
+	field: string;
+	value: string;
+}
+
 export interface ProposeCardEditInput {
 	cardId: string;
-	/** Only the note fields that change, by field name. */
-	fields: Record<string, string>;
+	/**
+	 * Only the note fields that change. A list, because models (Gemini) send
+	 * an empty object for a free-form `additionalProperties` map. Chats saved
+	 * before the list shape hold a `{ name: value }` map.
+	 */
+	fields: FieldChange[] | Record<string, string>;
 	reason?: string;
+}
+
+/** The proposed changes as `{ field: value }`; tolerates half-streamed input. */
+export function editFields(
+	fields: ProposeCardEditInput["fields"] | undefined,
+): Record<string, string> {
+	if (!fields || typeof fields !== "object") return {};
+	if (!Array.isArray(fields)) {
+		return Object.fromEntries(
+			Object.entries(fields).filter(([, v]) => typeof v === "string"),
+		);
+	}
+	const out: Record<string, string> = {};
+	for (const change of fields) {
+		if (
+			change &&
+			typeof change.field === "string" &&
+			change.field &&
+			typeof change.value === "string"
+		) {
+			out[change.field] = change.value;
+		}
+	}
+	return out;
 }
 
 /** What the edit tool returns: the fields as they were when proposed. */
@@ -143,7 +176,7 @@ export function normalizeCard(raw: unknown): ProposedCard {
 	const card = (raw ?? {}) as Record<string, unknown>;
 	const pick = (...keys: string[]) => {
 		for (const key of keys) {
-			if (typeof card[key] === "string") return card[key] as string;
+			if (typeof card[key] === "string") return card[key];
 		}
 		return "";
 	};
