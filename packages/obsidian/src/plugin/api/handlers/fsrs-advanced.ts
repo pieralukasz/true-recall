@@ -297,7 +297,7 @@ export async function handleRescheduleFromHistory(
 
 	if (!dryRun && result.changes.length > 0) {
 		await store.saveNow();
-		// Ctrl+Z in Obsidian restores the previous memory state and due dates
+		// "Undo last flashcard action" restores the previous memory state and due dates
 		void ctx.plugin.commandService?.execute(
 			new HistoryRescheduleCommand(
 				`Reschedule ${result.changes.length} cards from review history`,
