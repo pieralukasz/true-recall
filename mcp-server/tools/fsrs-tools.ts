@@ -48,7 +48,7 @@ export const fsrsTools: ToolDef[] = [
 
 	postTo(
 		"update_fsrs_preset",
-		"Change an FSRS preset's retention target, daily limits, learning steps, leech handling or weights; fields you leave out keep their value. It overwrites the old values and changes future scheduling for every note using the preset; this API cannot undo it, so confirm weight changes with the user. Returns the list of fields updated.",
+		"Change an FSRS preset's retention target, daily limits, learning steps, first-interval cap, leech handling or weights; fields you leave out keep their value. It overwrites the old values and changes future scheduling for every note using the preset; this API cannot undo it, so confirm weight changes with the user. Returns the list of fields updated.",
 		{
 			preset: z.string().describe("Preset id or name (e.g. Default)"),
 			request_retention: z
@@ -88,6 +88,14 @@ export const fsrsTools: ToolDef[] = [
 				.optional()
 				.describe(
 					"FSRS weights as 21 non-negative numbers (e.g. from optimize_parameters), or null for the FSRS defaults",
+				),
+			first_interval_max: z
+				.number()
+				.min(0)
+				.nullable()
+				.optional()
+				.describe(
+					"Cap in days for the first interval after a new card graduates (e.g. 14); null or 0 removes the cap. Only the due date is capped, the FSRS memory state is unchanged.",
 				),
 		},
 		(p) => `/presets/${encodeURIComponent(String(p.preset))}`,

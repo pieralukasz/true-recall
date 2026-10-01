@@ -19,6 +19,7 @@ export function handleGetPresets(
 			isDefault: p.id === defaultId,
 			requestRetention: p.requestRetention,
 			maximumInterval: p.maximumInterval,
+			firstIntervalMax: p.firstIntervalMax ?? null,
 			learningSteps: p.learningSteps,
 			relearningSteps: p.relearningSteps,
 			newCardsPerDay: p.newCardsPerDay,
@@ -86,6 +87,7 @@ interface UpdatePresetInput {
 	leech_threshold?: number;
 	leech_action?: string;
 	weights?: number[] | null;
+	first_interval_max?: number | null;
 }
 
 export async function handleUpdatePreset(
@@ -161,6 +163,15 @@ export async function handleUpdatePreset(
 			return;
 		}
 		changes.weights = body.weights;
+	}
+
+	if (body.first_interval_max !== undefined) {
+		const cap = body.first_interval_max;
+		if (cap !== null && (!Number.isFinite(cap) || cap < 0)) {
+			sendError(res, 400, "first_interval_max must be null or a number >= 0");
+			return;
+		}
+		changes.firstIntervalMax = cap ? Math.round(cap) : null;
 	}
 
 	if (Object.keys(changes).length === 0) {

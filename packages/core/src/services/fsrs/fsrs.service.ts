@@ -12,6 +12,11 @@ import {
 
 import { DEFAULT_FSRS_WEIGHTS } from "../../constants";
 import { isLearningState } from "../../helpers/card-state";
+import {
+	fuzzDelta,
+	hashString,
+	mulberry32,
+} from "../../metrics/fsrs-tools/scheduler/fuzz";
 import type {
 	CardSchedulingMeta,
 	FSRSCardData,
@@ -36,6 +41,46 @@ interface RetrievabilityCacheEntry {
 	value: number;
 }
 
+const MS_PER_DAY_LOCAL = 24 * 60 * 60 * 1000;
+
+/**
+ * Cap the first Review interval (graduation from New/Learning) at `maxDays`.
+ * Only due and scheduled_days change: stability and difficulty stay what FSRS
+ * computed, so the next review at the capped date simply finds a high
+ * retrievability and grows stability as usual.
+ *
+ * Replacing the interval also drops ts-fsrs's fuzz, so with `fuzzSeed` the
+ * capped interval is spread over [cap - fuzzDelta(cap), cap] (never above the
+ * cap), deterministically per seed. Without it every card graduated on one
+ * day would come due on exactly the same day.
+ */
+export function capFirstInterval(
+	previousState: State,
+	next: Card,
+	now: Date,
+	maxDays: number | null | undefined,
+	fuzzSeed?: string,
+): Card {
+	if (!maxDays || maxDays <= 0) return next;
+	if (previousState !== State.New && previousState !== State.Learning) {
+		return next;
+	}
+	if (next.state !== State.Review || next.scheduled_days <= maxDays) {
+		return next;
+	}
+	let days = maxDays;
+	if (fuzzSeed !== undefined) {
+		const lower = Math.max(1, Math.round(maxDays - fuzzDelta(maxDays)));
+		const random = mulberry32(hashString(`${fuzzSeed}:first-interval`));
+		days = lower + Math.floor(random() * (maxDays - lower + 1));
+	}
+	return {
+		...next,
+		scheduled_days: days,
+		due: new Date(now.getTime() + days * MS_PER_DAY_LOCAL),
+	};
+}
+
 export class FSRSService {
 	private fsrs: FSRS;
 	private readonly fsrsCache = new Map<string, FSRS>();
@@ -45,10 +90,12 @@ export class FSRSService {
 		RetrievabilityCacheEntry[]
 	>();
 	private defaultSettingsKey: string;
+	private defaultSettings: FSRSSettings;
 	private static readonly MAX_CACHE_SIZE = 64;
 	private static readonly MAX_RETRIEVABILITY_POLICIES_PER_CARD = 8;
 
 	constructor(settings: FSRSSettings) {
+		this.defaultSettings = settings;
 		this.defaultSettingsKey = this.getSettingsKey(settings);
 		this.fsrs = this.getOrCreateFSRS(settings);
 	}
@@ -80,6 +127,8 @@ export class FSRSService {
 		if (cached) return cached;
 
 		const weights = settings.weights ? settings.weights.join(",") : "default";
+		// firstIntervalMax is applied after ts-fsrs, so it is not part of the
+		// FSRS instance key.
 		const learning = settings.learningSteps.join(",");
 		const relearning = settings.relearningSteps.join(",");
 		const key = [
@@ -179,6 +228,7 @@ export class FSRSService {
 
 	updateSettings(settings: FSRSSettings): void {
 		const key = this.getSettingsKey(settings);
+		this.defaultSettings = settings;
 		if (key === this.defaultSettingsKey) return;
 		this.defaultSettingsKey = key;
 		this.fsrs = this.getOrCreateFSRS(settings);
@@ -242,7 +292,15 @@ export class FSRSService {
 		const fsrs = this.resolveFSRS(presetSettings);
 
 		const result = fsrs.next(card, now, rating);
-		return this.fromCard(result.card, cardData.id);
+		const effective = presetSettings ?? this.defaultSettings;
+		const capped = capFirstInterval(
+			cardData.state,
+			result.card,
+			now,
+			effective.firstIntervalMax,
+			effective.enableFuzz ? cardData.id : undefined,
+		);
+		return this.fromCard(capped, cardData.id);
 	}
 
 	getSchedulingPreview(
@@ -253,7 +311,25 @@ export class FSRSService {
 		const now = new Date();
 		const fsrs = this.resolveFSRS(presetSettings);
 
-		const result = fsrs.repeat(card, now);
+		const repeated = fsrs.repeat(card, now);
+		const effective = presetSettings ?? this.defaultSettings;
+		const fuzzSeed = effective.enableFuzz ? cardData.id : undefined;
+		const capItem = (item: RecordLogItem): RecordLogItem => ({
+			...item,
+			card: capFirstInterval(
+				cardData.state,
+				item.card,
+				now,
+				effective.firstIntervalMax,
+				fuzzSeed,
+			),
+		});
+		const result = {
+			[Rating.Again]: capItem(repeated[Rating.Again]),
+			[Rating.Hard]: capItem(repeated[Rating.Hard]),
+			[Rating.Good]: capItem(repeated[Rating.Good]),
+			[Rating.Easy]: capItem(repeated[Rating.Easy]),
+		};
 
 		return {
 			again: {

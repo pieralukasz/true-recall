@@ -64,6 +64,7 @@ import {
 	handleGetSchedulingPreview,
 	handleGetWorkloadForecast,
 	handleOptimizeParameters,
+	handleRescheduleFromHistory,
 	handleSimulateReviews,
 } from "./handlers/fsrs-advanced";
 import { handleGetFullContext } from "./handlers/full-context";
@@ -232,6 +233,7 @@ const routes: Route[] = [
 	route("GET", "/fsrs/optimize", handleOptimizeParameters),
 	route("POST", "/fsrs/simulate", handleSimulateReviews),
 	route("GET", "/fsrs/forecast", handleGetWorkloadForecast),
+	route("POST", "/fsrs/reschedule-from-history", handleRescheduleFromHistory),
 	route("GET", "/cards/:id/retrievability", handleGetRetrievability),
 	route("GET", "/cards/:id/preview", handleGetSchedulingPreview),
 ];
