@@ -53,6 +53,24 @@ export function SchedulingSection({
 			</FormField>
 
 			<FormField
+				name={"First interval cap (days)"}
+				description={
+					"Longest first interval after a new card graduates. Leave empty for no cap. FSRS still remembers the full stability."
+				}
+			>
+				<TextInput
+					value={preset.firstIntervalMax ? String(preset.firstIntervalMax) : ""}
+					onChange={(v) => {
+						const num = parseInt(v, 10);
+						void updatePreset({
+							firstIntervalMax: Number.isFinite(num) && num > 0 ? num : null,
+						});
+					}}
+					placeholder="—"
+				/>
+			</FormField>
+
+			<FormField
 				name="Fuzz review intervals"
 				description="Randomize review intervals slightly to prevent cards from bunching on the same day"
 			>
