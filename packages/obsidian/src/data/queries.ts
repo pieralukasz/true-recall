@@ -38,6 +38,12 @@ export const Q = {
 	ASSISTANT_TASKS: "assistantTasks",
 	ASSISTANT_THREADS: "assistantThreads",
 	ASSISTANT_INBOX: "assistantInbox",
+	/**
+	 * Monotonic counter bumped by every BROWSER-group invalidation. Views that
+	 * render card text read it to requery after content-only edits, which
+	 * deliberately skip the expensive ALL_META reload.
+	 */
+	BROWSER_REVISION: "browserRevision",
 } as const;
 
 // ── Mutation → groups mapping ───────────────────────────────
@@ -98,6 +104,12 @@ interface RegisterQueryDeps {
 
 export function registerQueries(dl: DataLayer, deps: RegisterQueryDeps): void {
 	const { cardQuery, hierarchy } = deps;
+
+	let browserRevision = 0;
+	dl.register<number>(Q.BROWSER_REVISION, () => {
+		browserRevision += 1;
+		return browserRevision;
+	}, [G.BROWSER]);
 
 	dl.register<ReadonlySet<string>>(
 		Q.ARCHIVED_UIDS,

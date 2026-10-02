@@ -384,6 +384,59 @@ bulk operations, drag-and-drop, and the shared `ProjectActions` object.
 actions. `ProjectDropZones` renders the root drop target. Note row keys now use
 the project and note paths to distinguish identical note names.
 
+## Card Browser
+
+`CardBrowserApp` only composes the toolbar, bulk actions bar, sidebar, table
+and preview. State and behaviour live in
+`packages/obsidian/src/features/library/ui/browser`:
+
+| Module | Responsibility |
+| --- | --- |
+| `hooks/useCardBrowserQuery` | Search text, state chips, sidebar facets, archive toggle, sort, paging, gated query results, facet counts, suggestions |
+| `hooks/useBrowserSelection` | Selected ids, click/shift/ctrl selection, Select all, reconciliation with the current query |
+| `hooks/useBrowserActions` | Preview card, inline save, full edit, move, bulk move, orphan cleanup |
+| `helpers/browser-filters` | Pure filter merge, sort toggling, list toggling |
+| `helpers/browser-selection` | Pure selection transitions |
+| `helpers/browser-actions` | Action workflows behind a narrow `BrowserActionDeps` interface |
+
+`useGatedComputed` still gates every query on view visibility and throttles
+recomputation to 2 s while visible; direct user input recomputes immediately.
+
+Behaviour decisions and fixes:
+
+- **Select all** selects every card matching the query, including pages that
+  are not loaded. The selection is reconciled after each query or data change,
+  so ids that stop matching (filter change, deletion, move) are dropped and
+  bulk actions never touch hidden cards.
+- **Sidebar Flags** were ignored: the merged filter did not carry
+  `flags`. Search and sidebar flags are now combined.
+- **Content-only edits** invalidated the `BROWSER` query group, which had no
+  registered query, so the table kept stale text. `Q.BROWSER_REVISION` is
+  bumped by every `BROWSER` invalidation and is a dependency of the browser
+  query. `DataLayer` now publishes one invalidation's reloads in a single
+  signal batch.
+- **Inline save** builds the undo entry and the untouched field from the
+  stored card rather than the preview snapshot, awaits the command, and
+  reports duplicate/write errors without marking the edit as saved.
+- **Bulk move** was a loop of single moves without undo. `MoveCardsCommand`
+  moves the selection as one undo step and reports how many cards moved.
+  Single and bulk moves no longer report success for cancelled or failed
+  moves.
+- **Preview** follows the store after undo, bulk actions and external edits,
+  and closes when its card is deleted. Async results only update the preview
+  when the same card is still open.
+- **Keyboard shortcuts** only act while the browser's workspace leaf is
+  active (`mod-active`), listen on the view's own document (popouts), and
+  `/` focuses the search box again (its ref was never attached).
+- `CardBrowserQueryService.getBrowserCard` returns one row as rendered by the
+  table.
+
+Tests: `packages/obsidian/tests/features/library/browser/` (filters,
+selection, actions, keyboard helpers), `tests/commands/card-move.test.ts`,
+`tests/data/browser-revision.test.ts`, and the query service test. Hooks and
+components have no DOM test environment; they are covered by TypeScript and
+manual checks.
+
 ## Package boundaries and verification
 
 The note-priority tests import the existing core dashboard types. The forget
