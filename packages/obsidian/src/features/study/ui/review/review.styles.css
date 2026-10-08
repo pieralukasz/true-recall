@@ -146,10 +146,30 @@
 		padding-bottom: max(env(safe-area-inset-bottom, 0px), 0.75rem);
 	}
 
+	/* Obsidian's floating navbar is position: fixed over the bottom of the
+	   view, lifted by --navbar-bottom-offset (the system inset, at least 12px).
+	   On Android with 3-button navigation env(safe-area-inset-bottom) is 0 in
+	   the WebView while Obsidian's own inset is 48px, so the safe-area padding
+	   above leaves the grades under the navbar. Clear the navbar using
+	   Obsidian's variables, minus the bottom padding the view already has. */
+	.is-phone.is-floating-nav .true-recall-review-buttons {
+		padding-bottom: max(
+			0.75rem,
+			calc(
+				var(
+					--navbar-bottom-offset,
+					max(env(safe-area-inset-bottom, 0px), 12px)
+				) +
+				var(--navbar-height, 3rem) +
+				0.5rem -
+				var(--tr-view-bottom-padding, 0px)
+			)
+		);
+	}
+
 	/* The floating navbar is not present while the software keyboard is open.
 	   Use a compact inset so the card keeps as much of the reduced viewport as
-	   possible. Obsidian already sizes the view above its floating navbar when
-	   the keyboard is closed, so no extra navbar clearance is needed here. */
+	   possible. */
 	.is-mobile .true-recall-review.is-keyboard-open .true-recall-review-buttons {
 		padding-bottom: 0.5rem;
 		transform: translateY(3rem);
