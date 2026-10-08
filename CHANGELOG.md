@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 2.7.5 (2026-10-08)
+
+### Bug Fixes
+
+- **Grade buttons are visible again on Android.** With Obsidian 1.14 and Android's 3-button navigation, Obsidian's floating bottom bar covered Again, Hard, Good and Easy during review. The buttons now sit above it.
+
 ## 2.7.4 (2026-10-01)
 
 ### Features
