@@ -97,7 +97,7 @@ describe("resolveGenerationTarget", () => {
 	const builtinPro: GenerationPreset = {
 		...basicPreset,
 		id: BUILTIN_BASIC_PRO_PRESET_ID,
-		name: "Basic Flashcards (Pro)",
+		name: "Flash",
 		builtin: true,
 		requiresPro: true,
 		isDefault: false,

@@ -1,6 +1,7 @@
 import type { TFile } from "obsidian";
 import { useCallback, useState } from "preact/hooks";
 
+import { resolveGenerationPresetForTier } from "@true-recall/core/flashcard/presets/resolve-preset-for-tier";
 import type { ToolbarButtonConfig } from "@true-recall/core/types";
 import type { GenerationPreset } from "@true-recall/core/types/generation-preset.types";
 import type { AIProviderType } from "@true-recall/core/types/settings.types";
@@ -292,7 +293,15 @@ function ToolbarButton({
 		default: {
 			if (isPresetButton(config.id)) {
 				const presetId = extractPresetId(config.id);
-				const preset = presets?.find((p) => p.id === presetId);
+				// The basic built-in button runs the Pro preset for Pro users: show that name.
+				const preset =
+					(presets &&
+						resolveGenerationPresetForTier(
+							presets,
+							presetId,
+							tier === "pro",
+						)) ??
+					null;
 				if (!preset) return null;
 				const label =
 					preset.name.length > 12
