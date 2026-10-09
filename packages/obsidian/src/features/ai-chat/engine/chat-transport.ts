@@ -59,6 +59,15 @@ export function firstTurnTools(
 	return null;
 }
 
+/** What this chat is for, sent to the Pro proxy as `metadata.chat_task`. */
+export function chatTask(
+	session: Pick<ChatSessionState, "context" | "factCheck">,
+): "card-polish" | "fact-check" | "chat" {
+	if (session.context.card && session.factCheck) return "fact-check";
+	if (session.context.card && session.context.preset) return "card-polish";
+	return "chat";
+}
+
 /** Turns a provider error into one sentence the user can act on. */
 export function describeChatError(error: unknown): string {
 	const text = error instanceof Error ? error.message : String(error);
@@ -184,14 +193,19 @@ export class TrueRecallChatTransport implements ChatTransport<UIMessage> {
 				hasToolCall("generate_cards"),
 				hasToolCall("propose_card_edit"),
 			],
-			providerOptions:
-				webSearch && maxSources > 0
-					? {
-							[CHAT_PROVIDER_NAME]: {
-								plugins: [{ id: "web", max_results: maxSources }],
-							},
-						}
-					: undefined,
+			providerOptions: {
+				[CHAT_PROVIDER_NAME]: {
+					// Lets the Pro proxy pick a model per task (Card Polish runs on a
+					// cheaper model than open chat). Only Pro: OpenAI-style APIs may
+					// reject an unknown metadata field.
+					...(config.providerType === "pro"
+						? { metadata: { chat_task: chatTask(session) } }
+						: {}),
+					...(webSearch && maxSources > 0
+						? { plugins: [{ id: "web", max_results: maxSources }] }
+						: {}),
+				},
+			},
 		});
 
 		const validated = await validateUIMessages({ messages, tools });
