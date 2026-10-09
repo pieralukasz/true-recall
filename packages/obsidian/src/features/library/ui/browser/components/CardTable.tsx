@@ -16,7 +16,7 @@ interface CardTableProps {
 	cards: BrowserCard[];
 	sort: SortConfig;
 	onSort: (column: string) => void;
-	selectedIds: Set<string>;
+	selectedIds: ReadonlySet<string>;
 	onSelect: (
 		cardId: string,
 		event?: { shiftKey?: boolean; ctrlKey?: boolean; metaKey?: boolean },

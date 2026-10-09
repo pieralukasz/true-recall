@@ -421,6 +421,14 @@ export function migrateSettings(raw: PersistedTrueRecallSettings | null): {
 			// Builtin prompts are not user-editable, so persisted copies are safe
 			// to refresh — otherwise installs keep whatever text they were first
 			// seeded with and never receive prompt improvements.
+			// The Pro preset was renamed to "Flash"; built-in names are not user-editable.
+			if (
+				preset.id === BUILTIN_BASIC_PRO_PRESET_ID &&
+				preset.name !== BUILTIN_BASIC_PRO_PRESET.name
+			) {
+				preset.name = BUILTIN_BASIC_PRO_PRESET.name;
+				needsSave = true;
+			}
 			const currentPrompt = builtinPrompts[preset.id];
 			if (currentPrompt !== undefined && preset.prompt !== currentPrompt) {
 				preset.prompt = currentPrompt;

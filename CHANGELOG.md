@@ -2,6 +2,25 @@
 
 ## Unreleased
 
+## 2.8.0 (2026-10-09)
+
+Pro generation now runs your preset in the AI chat, shows its progress, and the Pro preset is called Flash.
+
+### Features
+
+- **Cards from the AI chat use your generation preset (Pro).** With a Pro key, "Generate Cards" and the toolbar's preset buttons open the AI chat. The chat used to write the cards itself and skip your preset's prompt; it now runs the preset exactly like the generator and shows the cards for you to add.
+- **See generation progress in the chat (Pro).** While cards are made, the chat shows each step: reading the note, writing the cards and, for Flash, reviewing each card, with a timer. The finished cards slide in one by one, then "Add all" adds them.
+- **Flash writes better cards (Pro).** Flash writes the cards in one pass and checks each card in a second one: it fixes or drops weak cards and adds the missing "why" and "what for" cards.
+
+### Improvements
+
+- **"Basic Flashcards (Pro)" is now called Flash.** The toolbar button shows "Flash" for Pro users.
+- **Cards added from the chat keep their source sentence**, so they highlight in the note like generated cards.
+
+### Bug Fixes
+
+- **The Pro toolbar button no longer disappears** in vaults whose saved settings lost the free Basic Flashcards preset.
+
 ## 2.7.5 (2026-10-08)
 
 ### Bug Fixes

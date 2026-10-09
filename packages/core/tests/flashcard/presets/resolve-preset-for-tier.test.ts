@@ -67,6 +67,23 @@ describe("resolveGenerationPresetForTier", () => {
 		).toBe(BUILTIN_BASIC_PRO_PRESET_ID);
 	});
 
+	it("runs the Pro preset for the basic button even when the basic built-in is missing", () => {
+		expect(
+			resolveGenerationPresetForTier(
+				[BUILTIN_BASIC_PRO_PRESET, customPreset],
+				BUILTIN_BASIC_PRESET.id,
+				true,
+			)?.id,
+		).toBe(BUILTIN_BASIC_PRO_PRESET_ID);
+		expect(
+			resolveGenerationPresetForTier(
+				[BUILTIN_BASIC_PRO_PRESET, customPreset],
+				BUILTIN_BASIC_PRESET.id,
+				false,
+			),
+		).toBe(null);
+	});
+
 	it("returns null for an unknown preset id", () => {
 		expect(resolveGenerationPresetForTier(allPresets, "missing", true)).toBe(
 			null,

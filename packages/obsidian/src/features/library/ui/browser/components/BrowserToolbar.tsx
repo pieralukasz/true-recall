@@ -110,7 +110,7 @@ export function BrowserToolbar({
 					ariaLabel="Search cards"
 					onChange={onSearchChange}
 					getSuggestions={getSuggestions}
-					class="ep:flex-1"
+					class="ep-card-browser-search ep:flex-1"
 				/>
 
 				<div class="ep:relative" ref={columnBtnRef}>
