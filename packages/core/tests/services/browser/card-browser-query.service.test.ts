@@ -85,6 +85,7 @@ function createService({
 	};
 
 	const cardStore = {
+		get: vi.fn((id: string) => allCards.find((card) => card.id === id)),
 		cards: cardsMock,
 		notes: {
 			isFts5Available: vi.fn(() => false),
@@ -302,5 +303,25 @@ describe("CardBrowserQueryService.getFacetCounts archived filtering", () => {
 			"uid-archived",
 			"uid-live",
 		]);
+	});
+});
+
+describe("CardBrowserQueryService.getBrowserCard", () => {
+	it("maps a stored card to the row shape with its source note", () => {
+		const { service } = createService({
+			allCards: [makeCard("card-1", "uid-1", { question: "Edited" })],
+			existingUids: new Set(["uid-1"]),
+		});
+
+		const card = service.getBrowserCard("card-1");
+
+		expect(card?.question).toBe("Edited");
+		expect(card?.sourceNoteName).toBe("uid-1");
+		expect(card?.sourceNotePath).toBe("Notes/uid-1.md");
+	});
+
+	it("returns null for a deleted or unknown card", () => {
+		const { service } = createService({ allCards: [] });
+		expect(service.getBrowserCard("missing")).toBeNull();
 	});
 });

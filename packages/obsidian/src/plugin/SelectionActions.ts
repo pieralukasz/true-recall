@@ -269,7 +269,11 @@ function enqueueGeneration(
 				...(selection
 					? { selection: { text: selection, notePath: file.path } }
 					: {}),
-				preset: { name: preset.name, instruction: preset.prompt },
+				preset: {
+					id: preset.id,
+					name: preset.name,
+					instruction: preset.prompt,
+				},
 			},
 			message: selection
 				? "Make flashcards from the selected text."

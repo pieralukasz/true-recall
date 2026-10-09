@@ -38,6 +38,7 @@ import {
 } from "./obsidian";
 import {
 	FactCheckUI,
+	GenerateCardsUI,
 	ProposeCardEditUI,
 	ProposeCardsUI,
 	ToolLine,
@@ -87,6 +88,7 @@ const partComponents = {
 	tools: {
 		by_name: {
 			propose_cards: ProposeCardsUI as ToolCallMessagePartComponent,
+			generate_cards: GenerateCardsUI as ToolCallMessagePartComponent,
 			propose_card_edit: ProposeCardEditUI as ToolCallMessagePartComponent,
 			report_fact_check: FactCheckUI as ToolCallMessagePartComponent,
 		},

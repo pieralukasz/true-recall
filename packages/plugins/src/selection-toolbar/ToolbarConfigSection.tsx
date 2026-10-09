@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from "preact/hooks";
 
 import { BUILTIN_BASIC_PRO_PRESET_ID } from "@true-recall/core/constants";
+import { resolveGenerationPresetForTier } from "@true-recall/core/flashcard/presets/resolve-preset-for-tier";
 import type { ToolbarButtonConfig } from "@true-recall/core/types";
 import { moveItem } from "@true-recall/core/utils";
 
@@ -120,9 +121,10 @@ export function ToolbarConfigSection({
 		(id: string) => {
 			if (isBuiltinButton(id)) return getButtonLabel(id);
 			if (isPresetButton(id)) {
-				const presetId = extractPresetId(id);
-				const preset = plugin.settings.generationPresets?.find(
-					(p) => p.id === presetId,
+				const preset = resolveGenerationPresetForTier(
+					plugin.settings.generationPresets ?? [],
+					extractPresetId(id),
+					!!plugin.settings.proKey,
 				);
 				return preset?.name ?? "Deleted preset";
 			}
@@ -133,7 +135,7 @@ export function ToolbarConfigSection({
 			).commands.commands;
 			return commands[id]?.name ?? id;
 		},
-		[plugin.app, plugin.settings.generationPresets],
+		[plugin.app, plugin.settings.generationPresets, plugin.settings.proKey],
 	);
 
 	return (
@@ -153,9 +155,11 @@ export function ToolbarConfigSection({
 						controllingFeatureId !== undefined &&
 						pluginStates[controllingFeatureId] === false;
 					const presetExists = isPreset
-						? (plugin.settings.generationPresets?.some(
-								(p) => p.id === extractPresetId(btn.id),
-							) ?? false)
+						? resolveGenerationPresetForTier(
+								plugin.settings.generationPresets ?? [],
+								extractPresetId(btn.id),
+								!!plugin.settings.proKey,
+							) !== null
 						: true;
 					const isOrphan = isPreset && !presetExists;
 					const isProButton = pluginInfo?.tier === "pro";

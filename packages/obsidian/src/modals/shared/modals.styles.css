@@ -113,10 +113,11 @@
 
 /* Mobile viewport bottom padding for True Recall views */
 .is-mobile [data-type^="true-recall-"] .view-content {
-	padding-bottom: 60px;
+	--tr-view-bottom-padding: 60px;
+	padding-bottom: var(--tr-view-bottom-padding);
 }
 .is-mobile [data-type="true-recall-flashcard-panel"] .view-content {
-	padding-bottom: 0;
+	--tr-view-bottom-padding: 0px;
 }
 
 /* ================================================================

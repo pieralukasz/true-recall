@@ -119,7 +119,7 @@ export const BUILTIN_BASIC_PRO_PRESET_ID = "builtin-basic-pro-flashcards";
 
 export const BUILTIN_BASIC_PRO_PRESET: GenerationPreset = {
 	id: BUILTIN_BASIC_PRO_PRESET_ID,
-	name: "Basic Flashcards (Pro)",
+	name: "Flash",
 	prompt: BUILTIN_BASIC_PRO_PROMPT,
 	noteTypeId: BUILTIN_BASIC_ID,
 	requiresPro: true,
