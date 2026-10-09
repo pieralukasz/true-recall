@@ -47,6 +47,12 @@ export class CardBrowserQueryService {
 		return { cards, totalCount };
 	}
 
+	/** A single row as the table renders it; null once the card is gone. */
+	getBrowserCard(cardId: string): BrowserCard | null {
+		const card = this.cardStore.get(cardId);
+		return card ? this.toBrowserCard(card) : null;
+	}
+
 	getMatchingCardIds(filter: FilterState): string[] {
 		const sqlQuery = this.buildFilteredQuery(
 			filter,

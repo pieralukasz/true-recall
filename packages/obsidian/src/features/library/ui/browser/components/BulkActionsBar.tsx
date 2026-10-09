@@ -14,7 +14,7 @@ import { notify } from "@true-recall/obsidian/services/notification.service";
 
 interface BulkActionsBarProps {
 	selectedCount: number;
-	selectedIds: Set<string>;
+	selectedIds: ReadonlySet<string>;
 	onClearSelection: () => void;
 	onSelectAll: () => void;
 	totalCount: number;

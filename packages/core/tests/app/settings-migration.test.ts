@@ -316,6 +316,31 @@ describe("migrateSettings — generation preset migration", () => {
 		);
 	});
 
+	it('renames a saved "Basic Flashcards (Pro)" preset to "Flash"', () => {
+		const { settings, needsSave } = migrateSettings({
+			generationPresets: [
+				{
+					id: BUILTIN_BASIC_PRO_PRESET_ID,
+					name: "Basic Flashcards (Pro)",
+					prompt: "old",
+					noteTypeId: "builtin-basic",
+					requiresPro: true,
+					builtin: true,
+					isDefault: true,
+					createdAt: 1,
+					updatedAt: 1,
+				},
+			],
+			defaultGenerationPresetId: BUILTIN_BASIC_PRO_PRESET_ID,
+		} as unknown as Parameters<typeof migrateSettings>[0]);
+		expect(needsSave).toBe(true);
+		expect(
+			settings.generationPresets.find(
+				(p) => p.id === BUILTIN_BASIC_PRO_PRESET_ID,
+			)?.name,
+		).toBe("Flash");
+	});
+
 	it("self-heals stale defaultGenerationPresetId pointing to a missing preset", () => {
 		const proPreset = {
 			id: BUILTIN_BASIC_PRO_PRESET_ID,

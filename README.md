@@ -4,6 +4,8 @@
 
 Create flashcards inside your notes, review them with FSRS v6 scheduling, and track progress with comprehensive analytics, all without leaving Obsidian. Works on desktop and mobile.
 
+Free for personal and other noncommercial use. Source-available under the [PolyForm Strict License 1.0.0](LICENSE), not open source: see [License](#license).
+
 [Documentation](https://www.truerecall.app/) · [Pricing](https://www.truerecall.app/pricing/) · [Sponsor on GitHub](https://github.com/sponsors/pieralukasz)
 
 ---

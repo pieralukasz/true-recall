@@ -1,6 +1,6 @@
 /** @jsxImportSource react */
 import { Notice } from "obsidian";
-import { useState } from "react";
+import { type CSSProperties, type ReactNode, useEffect, useState } from "react";
 
 import {
 	addProposedCards,
@@ -9,6 +9,11 @@ import {
 	revertCardEdit,
 } from "../engine/chat-apply";
 import { shorten } from "../engine/chat-context";
+import type {
+	GenerateCardsInput,
+	GenerateCardsOutput,
+	GenerateCardsStage,
+} from "../engine/generate-cards";
 import {
 	changedFields,
 	editFields,
@@ -125,11 +130,147 @@ export function ProposeCardsUI({
 	args,
 	result,
 }: ToolPartProps<ProposeCardsInput, { shown: number }>) {
+	return (
+		<CardsProposal
+			toolCallId={toolCallId}
+			cards={args?.cards ?? []}
+			notePath={args?.notePath ?? undefined}
+			streaming={result === undefined}
+		/>
+	);
+}
+
+const STAGES: {
+	id: GenerateCardsStage;
+	label: string;
+	reviewedOnly?: boolean;
+}[] = [
+	{ id: "reading", label: "Reading the note" },
+	{ id: "writing", label: "Writing cards" },
+	{ id: "reviewing", label: "Reviewing each card", reviewedOnly: true },
+];
+
+/** Seconds since `startedAt`, ticking while `running`. */
+function useElapsed(startedAt: number | undefined, running: boolean): number {
+	const [now, setNow] = useState(() => Date.now());
+	useEffect(() => {
+		if (!running) return;
+		const id = window.setInterval(() => setNow(Date.now()), 1000);
+		return () => window.clearInterval(id);
+	}, [running]);
+	return startedAt ? Math.max(0, Math.round((now - startedAt) / 1000)) : 0;
+}
+
+/** Live progress of generate_cards: the steps, a timer and placeholder rows. */
+function GenerationProgress({
+	output,
+}: {
+	output: GenerateCardsOutput | undefined;
+}) {
+	const stage = output?.stage ?? "reading";
+	const elapsed = useElapsed(output?.startedAt, true);
+	const steps = STAGES.filter((s) => !s.reviewedOnly || output?.reviewed);
+	const current = steps.findIndex((s) => s.id === stage);
+	const count = output?.cards.length ?? 0;
+	return (
+		<div className="tr-ai-chat__gen" aria-live="polite">
+			<ol className="tr-ai-chat__gen-steps">
+				{steps.map((step, i) => {
+					const state =
+						i < current ? "done" : i === current ? "active" : "todo";
+					return (
+						<li
+							key={step.id}
+							className="tr-ai-chat__gen-step"
+							data-state={state}
+						>
+							<span className="tr-ai-chat__gen-dot">
+								{state === "done" ? <Icon name="check" /> : null}
+							</span>
+							<span>
+								{step.label}
+								{step.id === "writing" && count > 0 ? ` · ${count}` : ""}
+							</span>
+						</li>
+					);
+				})}
+			</ol>
+			<div className="tr-ai-chat__gen-rows" aria-hidden="true">
+				<span className="tr-ai-chat__gen-row" />
+				<span className="tr-ai-chat__gen-row" />
+				<span className="tr-ai-chat__gen-row" />
+			</div>
+			<div className="tr-ai-chat__gen-time">{elapsed} s</div>
+		</div>
+	);
+}
+
+/**
+ * Cards from the user's generation preset (generate_cards). While it runs, the
+ * steps and any cards written so far; when done, the usual pick/add list with
+ * the cards sliding in one after another.
+ */
+export function GenerateCardsUI({
+	toolCallId,
+	result,
+	isPreliminary,
+}: ToolPartProps<GenerateCardsInput, GenerateCardsOutput> & {
+	isPreliminary?: boolean;
+}) {
+	const running = result === undefined || isPreliminary === true;
+	if (!running && result?.error) {
+		return (
+			<div className="tr-ai-chat__proposal" data-state="skipped">
+				<div className="tr-ai-chat__muted">{result.error}</div>
+			</div>
+		);
+	}
+	if (!running && result && result.cards.length === 0) {
+		return (
+			<div className="tr-ai-chat__proposal" data-state="skipped">
+				<div className="tr-ai-chat__muted">
+					No new cards: everything worth learning here already has a card.
+				</div>
+			</div>
+		);
+	}
+	// Animate only a fresh result, not chats reopened later.
+	const fresh =
+		!!result?.startedAt && Date.now() - result.startedAt < 10 * 60_000;
+	return (
+		<CardsProposal
+			toolCallId={toolCallId}
+			cards={result?.cards ?? []}
+			notePath={result?.notePath}
+			streaming={running}
+			progress={running ? <GenerationProgress output={result} /> : null}
+			subtitle={result?.presetName}
+			animate={fresh}
+		/>
+	);
+}
+
+function CardsProposal({
+	toolCallId,
+	cards,
+	notePath: givenNotePath,
+	streaming,
+	progress,
+	subtitle,
+	animate,
+}: {
+	toolCallId: string;
+	cards: ProposedCard[];
+	notePath?: string;
+	streaming: boolean;
+	progress?: ReactNode;
+	subtitle?: string;
+	animate?: boolean;
+}) {
 	const plugin = usePlugin();
 	const controller = useController();
 	const session = useSession();
 	const decision = session.decisions[toolCallId];
-	const cards = args?.cards ?? [];
 	const draft = session.drafts[toolCallId] ?? {};
 	const picked = draft.picked ?? [];
 	const edits = draft.cardEdits ?? {};
@@ -139,12 +280,11 @@ export function ProposeCardsUI({
 		controller.updateDraft(session.id, toolCallId, patch);
 	const [busy, setBusy] = useState(false);
 
-	const streaming = result === undefined;
 	const open = !decision;
 	const chosen = pickCards(cards, picked, edits);
 	const isPicked = (i: number) => picked[i] ?? true;
 	const notePath =
-		args?.notePath ??
+		givenNotePath ??
 		session.context.note?.path ??
 		session.context.selection?.notePath;
 
@@ -199,10 +339,15 @@ export function ProposeCardsUI({
 				<Icon name="layers" />
 				<span className="tr-ai-chat__proposal-title">
 					{streaming
-						? "Writing cards…"
+						? progress
+							? "Making cards…"
+							: "Writing cards…"
 						: cards.length === 1
 							? "1 new card"
 							: `${cards.length} new cards`}
+					{subtitle && !streaming ? (
+						<span className="tr-ai-chat__proposal-sub"> · {subtitle}</span>
+					) : null}
 				</span>
 				{notePath ? (
 					<span className="tr-ai-chat__chip">
@@ -210,7 +355,10 @@ export function ProposeCardsUI({
 					</span>
 				) : null}
 			</div>
-			<ul className="tr-ai-chat__cards">
+			{progress}
+			<ul
+				className={`tr-ai-chat__cards${animate && !streaming ? " is-entering" : ""}`}
+			>
 				{cards.map((raw, i) => {
 					const card = edits[i] ?? normalizeCard(raw);
 					const off = !isPicked(i) || decision?.kind === "skipped";
@@ -220,6 +368,7 @@ export function ProposeCardsUI({
 							// biome-ignore lint/suspicious/noArrayIndexKey: stable order
 							key={i}
 							className={`tr-ai-chat__card ${off ? "is-off" : ""}`}
+							style={{ "--tr-i": Math.min(i, 24) } as CSSProperties}
 						>
 							{open && !streaming ? (
 								<input

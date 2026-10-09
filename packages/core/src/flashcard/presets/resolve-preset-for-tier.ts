@@ -17,7 +17,8 @@ export function resolveGenerationPresetForTier(
 	hasPro: boolean,
 ): GenerationPreset | null {
 	const requested = presets.find((p) => p.id === presetId) ?? null;
-	if (!requested) return null;
-	if (requested.id !== BUILTIN_BASIC_PRESET_ID || !hasPro) return requested;
+	if (presetId !== BUILTIN_BASIC_PRESET_ID || !hasPro) return requested;
+	// Pro runs the Pro preset behind the basic button, even in vaults whose
+	// saved settings lost the basic built-in.
 	return presets.find((p) => p.id === BUILTIN_BASIC_PRO_PRESET_ID) ?? requested;
 }
