@@ -1,0 +1,38 @@
+# Dependabot: weekly dependency updates plus security PRs.
+# Alerts and security updates are switched on in the repo settings as well.
+version: 2
+
+updates:
+  # Root bun.lock covers every workspace (packages/*, mcp-server).
+  - package-ecosystem: "bun"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Warsaw"
+    cooldown:
+      default-days: 3
+      semver-major-days: 14
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    groups:
+      minor-patch:
+        update-types: ["minor", "patch"]
+      security:
+        applies-to: "security-updates"
+        patterns: ["*"]
+  # Workflow actions (versions and SHA pins).
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+      timezone: "Europe/Warsaw"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    groups:
+      github-actions:
+        patterns: ["*"]
