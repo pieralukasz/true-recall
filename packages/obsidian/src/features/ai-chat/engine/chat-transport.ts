@@ -139,7 +139,7 @@ export class TrueRecallChatTransport implements ChatTransport<UIMessage> {
 		const plugin = this.plugin;
 		const session = this.getSession();
 		const snapshots: CardSnapshots = new Map();
-		const tools = createChatTools(plugin, snapshots);
+		const tools = createChatTools(plugin, snapshots, () => session.context);
 		const { model, config } = createChatModel(
 			plugin.settings,
 			createChatFetch({ streaming: isDesktop() }),
@@ -181,6 +181,7 @@ export class TrueRecallChatTransport implements ChatTransport<UIMessage> {
 			stopWhen: [
 				isStepCount(MAX_STEPS),
 				hasToolCall("propose_cards"),
+				hasToolCall("generate_cards"),
 				hasToolCall("propose_card_edit"),
 			],
 			providerOptions:

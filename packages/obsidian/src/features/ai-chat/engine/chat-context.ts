@@ -11,8 +11,11 @@ export interface ChatContext {
 	selection?: { text: string; notePath?: string };
 	/** `label` is the question, shortened, for the chip. */
 	card?: { id: string; label?: string };
-	/** A Generator or Card Polish preset the request follows. */
-	preset?: { name: string; instruction: string };
+	/**
+	 * A Generator or Card Polish preset the request follows. Generator presets
+	 * carry their id: generate_cards runs them as the panel's generator would.
+	 */
+	preset?: { id?: string; name: string; instruction: string };
 }
 
 export type ChatContextKind = "note" | "selection" | "card" | "preset";

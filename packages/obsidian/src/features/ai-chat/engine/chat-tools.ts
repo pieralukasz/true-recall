@@ -4,6 +4,8 @@ import { TFile } from "obsidian";
 import { formatLocalDate } from "@true-recall/core/utils";
 
 import type TrueRecallPlugin from "../../../main";
+import type { ChatContext } from "./chat-context";
+import { type GenerateCardsInput, runGenerateCards } from "./generate-cards";
 import type {
 	ProposeCardEditInput,
 	ProposeCardEditOutput,
@@ -88,6 +90,7 @@ function cardSummary(card: {
 export function createChatTools(
 	plugin: TrueRecallPlugin,
 	snapshots: CardSnapshots = new Map(),
+	getContext: () => ChatContext = () => ({}),
 ) {
 	return {
 		search_cards: tool({
@@ -215,6 +218,40 @@ export function createChatTools(
 				required: ["cards"],
 			}),
 			execute: ({ cards }) => ({ shown: cards.length }),
+		}),
+
+		generate_cards: tool({
+			description:
+				"Make flashcards from the note (or the selected text) with the user's generation preset, the same generator as the cards panel. Use it whenever the user asks for cards from a note or selection; use propose_cards only for a few cards you write yourself from the conversation. The cards are shown to the user, who adds or skips them; the next message tells you what they added.",
+			inputSchema: jsonSchema<GenerateCardsInput>({
+				type: "object",
+				properties: {
+					notePath: {
+						type: "string",
+						description:
+							"Note to make cards from. Omit to use the chat's note.",
+					},
+					wholeNote: {
+						type: "boolean",
+						description:
+							"Use the whole note even though the user selected text. Omit otherwise.",
+					},
+				},
+			}),
+			execute: (input, { abortSignal }) =>
+				runGenerateCards(plugin, getContext(), input, abortSignal),
+			// The model only needs the outcome, not every card again.
+			toModelOutput: ({ output }) => {
+				const o = output;
+				return {
+					type: "text",
+					value: o.error
+						? `Error: ${o.error}`
+						: `Showed ${o.cards.length} generated cards to the user:\n${o.cards
+								.map((c, i) => `${i + 1}. ${c.question} | ${c.answer}`)
+								.join("\n")}`,
+				};
+			},
 		}),
 
 		propose_card_edit: tool({
