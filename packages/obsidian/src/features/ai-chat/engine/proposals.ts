@@ -1,12 +1,18 @@
 import type { UIMessage } from "ai";
 
 /** Tools whose result waits for the user's decision in the chat. */
-export const PROPOSAL_TOOLS = ["propose_cards", "propose_card_edit"] as const;
+export const PROPOSAL_TOOLS = [
+	"propose_cards",
+	"generate_cards",
+	"propose_card_edit",
+] as const;
 export type ProposalToolName = (typeof PROPOSAL_TOOLS)[number];
 
 export interface ProposedCard {
 	question: string;
 	answer: string;
+	/** Exact sentence of the note the card comes from (generated cards). */
+	source?: string;
 }
 
 export interface ProposeCardsInput {
@@ -111,15 +117,20 @@ interface ToolPartLike {
 	toolCallId?: string;
 	state?: string;
 	output?: unknown;
+	preliminary?: boolean;
 }
 
 function isOpenProposal(part: ToolPartLike): boolean {
 	const name = part.type.startsWith("tool-") ? part.type.slice(5) : "";
 	if (!(PROPOSAL_TOOLS as readonly string[]).includes(name)) return false;
 	if (part.state !== "output-available" || !part.toolCallId) return false;
+	// generate_cards reports progress as preliminary results: not decidable yet.
+	if (part.preliminary === true) return false;
 	// An edit of a card that no longer exists has nothing to decide.
 	const output = part.output as { error?: string } | undefined;
-	return !output?.error;
+	if (output?.error) return false;
+	const cards = (output as { cards?: unknown[] } | undefined)?.cards;
+	return name !== "generate_cards" || (cards?.length ?? 0) > 0;
 }
 
 /** Tool call ids of the proposals that finished streaming, oldest first. */
@@ -180,9 +191,11 @@ export function normalizeCard(raw: unknown): ProposedCard {
 		}
 		return "";
 	};
+	const source = pick("source");
 	return {
 		question: pick("question", "Front", "front", "Question", "Text", "text"),
 		answer: pick("answer", "Back", "back", "Answer", "Back Extra"),
+		...(source ? { source } : {}),
 	};
 }
 

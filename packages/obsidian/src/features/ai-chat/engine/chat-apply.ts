@@ -53,7 +53,7 @@ export async function addProposedCards(
 				noteTypeId: BUILTIN_BASIC_ID,
 				fields: toNoteFields(card, noteType),
 				sourceUid,
-				sourceText: options.sourceText,
+				sourceText: card.source ?? options.sourceText,
 				createdVia: "ai",
 				skipDuplicates: true,
 			}).cards,

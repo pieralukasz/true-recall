@@ -1,4 +1,8 @@
-import { type ReadonlySignal, signal } from "@preact/signals";
+import {
+	batch as batchSignals,
+	type ReadonlySignal,
+	signal,
+} from "@preact/signals";
 
 import { type AppError, toAppError } from "@true-recall/core/errors";
 
@@ -102,14 +106,19 @@ export class DataLayer {
 	}
 
 	private reloadByGroups(groups: QueryGroup[]): void {
-		for (const [key, entry] of this.queries) {
-			for (const g of groups) {
-				if (entry.groups.includes(g)) {
-					this.reload(key);
-					break;
+		// One invalidation publishes all of its reloaded queries together, so a
+		// subscriber reading several of them reacts once instead of per query.
+		// Loaders still see fresh values: batch only defers effects.
+		batchSignals(() => {
+			for (const [key, entry] of this.queries) {
+				for (const g of groups) {
+					if (entry.groups.includes(g)) {
+						this.reload(key);
+						break;
+					}
 				}
 			}
-		}
+		});
 	}
 
 	private reload(key: QueryKey): void {

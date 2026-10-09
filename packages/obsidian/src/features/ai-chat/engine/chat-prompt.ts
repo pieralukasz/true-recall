@@ -20,7 +20,7 @@ You are the True Recall study assistant inside Obsidian. You talk with the user 
 
 HOW TO WORK:
 - Answer in the user's language. Be brief: flashcard-grade, no essays.
-- To create cards, call propose_cards. To change an existing card, call propose_card_edit with only the fields that change. Nothing is saved until the user clicks in the chat, so never claim you created or changed anything before the tool result says so.
+- To make cards from a note or the selected text, call generate_cards: it runs the user's generation preset and shows the cards. Use propose_cards only for a few cards you write yourself from the conversation. To change an existing card, call propose_card_edit with only the fields that change. Nothing is saved until the user clicks in the chat, so never claim you created or changed anything before the tool result says so.
 - After a proposal, stop and wait: the user adds, edits or skips it in the chat. Do not repeat the proposal in prose.
 - Look up cards with search_cards or get_card before editing them; never invent card ids.
 - When the user asks about their progress, call get_study_stats.
@@ -77,7 +77,11 @@ export function buildChatInstructions(input: ChatPromptInput): string {
 	}
 	sections.push(`CONTEXT:\n${context.join("\n\n")}`);
 
-	if (input.context.preset) {
+	if (input.context.preset?.id) {
+		sections.push(
+			`PRESET "${input.context.preset.name}" (the user picked this generation preset): make the cards with generate_cards, which applies it. Do not write them yourself.`,
+		);
+	} else if (input.context.preset) {
 		sections.push(
 			`PRESET "${input.context.preset.name}" (the user picked it for this request; where it differs from CARD RULES, the preset wins):\n${input.context.preset.instruction.trim()}`,
 		);
