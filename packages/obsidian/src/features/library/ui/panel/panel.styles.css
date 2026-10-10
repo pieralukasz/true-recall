@@ -20,6 +20,13 @@
 	line-height: inherit;
 }
 
+/* Same box as the row button, so rows keep their height when selection mode turns on. */
+.tr-flashcard-panel label.tr-panel-card-select {
+	min-height: 44px;
+	margin: 0;
+	padding: 7px 10px;
+}
+
 .tr-flashcard-panel button.tr-panel-card-main:hover,
 .tr-flashcard-panel button.tr-panel-card-main:active {
 	border: 0;
@@ -463,4 +470,12 @@
 	.tr-panel-card-row .tr-panel-icon-button {
 		opacity: 1;
 	}
+}
+
+/* Drag to select: no text selection or native drag while sweeping over rows. */
+.tr-panel-card-list.tr-panel-drag-selecting,
+.tr-panel-card-list.tr-panel-drag-selecting * {
+	user-select: none;
+	-webkit-user-select: none;
+	cursor: default;
 }

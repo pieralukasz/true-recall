@@ -1,7 +1,10 @@
 import { jsonSchema, tool } from "ai";
 import { TFile } from "obsidian";
 
+import { StatsCalculatorService } from "@true-recall/core/metrics/stats/stats-calculator.service";
 import { formatLocalDate } from "@true-recall/core/utils";
+
+import { computeActionableSessionSnapshot } from "@true-recall/obsidian/features/study/services/actionable-session-snapshot.service";
 
 import type TrueRecallPlugin from "../../../main";
 import type { ChatContext } from "./chat-context";
@@ -12,9 +15,13 @@ import type {
 	ProposeCardsInput,
 	ReportFactCheckInput,
 } from "./proposals";
+import { loadSearchableNotes, resolveNoteFile } from "./vault-index";
+import { searchNotes, snippetsFor } from "./vault-search";
 
 const MAX_NOTE_CHARS = 12_000;
 const MAX_SEARCH_RESULTS = 20;
+const MAX_NOTE_RESULTS = 10;
+const MAX_LISTED_NOTES = 200;
 
 /** Snapshots are scoped to one request, and only populated by reads shown to the model. */
 export type CardSnapshots = Map<
@@ -58,7 +65,7 @@ export async function readNoteText(
 	path: string,
 	maxChars = MAX_NOTE_CHARS,
 ): Promise<string | null> {
-	const file = plugin.app.vault.getAbstractFileByPath(path);
+	const file = resolveNoteFile(plugin.app, path);
 	if (!(file instanceof TFile)) return null;
 	const text = await plugin.app.vault.cachedRead(file);
 	return text.length > maxChars
@@ -158,38 +165,95 @@ export function createChatTools(
 			},
 		}),
 
+		search_notes: tool({
+			description:
+				"Search the user's Obsidian vault: note titles, aliases, tags, headings and text. Returns the best matching notes with paths and short excerpts. Use it whenever the user asks what they have written or noted about something, or before reading a note whose path you do not know. Words match without diacritics; use the vault's language.",
+			inputSchema: jsonSchema<{ query: string; folder?: string }>({
+				type: "object",
+				properties: {
+					query: { type: "string", minLength: 2 },
+					folder: {
+						type: "string",
+						description: "Only notes inside this folder path (optional).",
+					},
+				},
+				required: ["query"],
+			}),
+			execute: async ({ query, folder }) => {
+				const notes = await loadSearchableNotes(plugin.app, folder);
+				const { total, terms, hits } = searchNotes(
+					notes,
+					query,
+					MAX_NOTE_RESULTS,
+				);
+				return {
+					total,
+					notes: await Promise.all(
+						hits.map(async ({ path, title, tags }) => {
+							const file = plugin.app.vault.getAbstractFileByPath(path);
+							const text =
+								file instanceof TFile
+									? await plugin.app.vault.cachedRead(file)
+									: "";
+							return {
+								path,
+								title,
+								tags,
+								excerpts: snippetsFor(text, terms),
+							};
+						}),
+					),
+				};
+			},
+		}),
+
+		list_notes: tool({
+			description:
+				"List notes in a vault folder (or the most recently edited notes when no folder is given), newest first, with their paths.",
+			inputSchema: jsonSchema<{ folder?: string }>({
+				type: "object",
+				properties: {
+					folder: { type: "string", description: "Folder path, optional." },
+				},
+			}),
+			execute: ({ folder }) => {
+				const prefix = folder ? `${folder.replace(/\/+$/, "")}/` : "";
+				const files = plugin.app.vault
+					.getMarkdownFiles()
+					.filter((file) => !prefix || file.path.startsWith(prefix))
+					.sort((a, b) => b.stat.mtime - a.stat.mtime);
+				return {
+					total: files.length,
+					notes: files.slice(0, MAX_LISTED_NOTES).map((file) => ({
+						path: file.path,
+						edited: formatLocalDate(new Date(file.stat.mtime)),
+					})),
+				};
+			},
+		}),
+
 		read_note: tool({
-			description: "Read a note from the vault by its path.",
+			description:
+				"Read a note from the vault by its path or its name (as in a [[wikilink]]).",
 			inputSchema: jsonSchema<{ path: string }>({
 				type: "object",
 				properties: { path: { type: "string" } },
 				required: ["path"],
 			}),
 			execute: async ({ path }) =>
-				(await readNoteText(plugin, path)) ?? { error: "Note not found." },
+				(await readNoteText(plugin, path)) ?? {
+					error: "Note not found. Find its path with search_notes.",
+				},
 		}),
 
 		get_study_stats: tool({
 			description:
-				"The user's study numbers: cards due today, today's reviews, streak, card maturity, and the cards they forget most.",
+				"The user's study numbers. `queueToday` is what the review queue holds right now after daily limits (the same numbers as the status bar: new, learning, due). `overdueTotal` counts every review card past its due date, without limits. Also today's reviews, the day streak, card maturity and the cards they forget most.",
 			inputSchema: jsonSchema<Record<string, never>>({
 				type: "object",
 				properties: {},
 			}),
-			execute: () => {
-				const store = plugin.cardStore;
-				if (!store) return { error: "Database not ready." };
-				const cards = plugin.flashcardManager.getAllFSRSCards();
-				return {
-					date: formatLocalDate(new Date()),
-					totalCards: cards.length,
-					dueToday: plugin.dayBoundaryService.getDueCards(cards).length,
-					today: store.stats.getDailyStats(formatLocalDate(new Date())),
-					streak: store.stats.getAnswerStreakInfo(),
-					maturity: store.stats.getCardMaturityBreakdown(),
-					mostForgotten: store.stats.getProblemCards(10),
-				};
-			},
+			execute: () => readStudyStats(plugin),
 		}),
 
 		propose_cards: tool({
@@ -327,3 +391,52 @@ export function createChatTools(
 }
 
 export type ChatTools = ReturnType<typeof createChatTools>;
+
+/** Study numbers that match what the user sees in the status bar and the stats view. */
+export function readStudyStats(plugin: TrueRecallPlugin) {
+	const store = plugin.cardStore;
+	if (!store) return { error: "Database not ready." };
+	const settings = plugin.settings;
+	const cards = plugin.flashcardManager.getAllFSRSCards();
+	const archived = plugin.hierarchyService.getArchivedSourceUids();
+	const queue = computeActionableSessionSnapshot(
+		{
+			allCards: cards,
+			archivedSourceUids: archived,
+			settings,
+			sessionPersistence: plugin.sessionPersistence,
+			presetService: plugin.presetService,
+		},
+		{},
+	).counts;
+	const statsCalc = new StatsCalculatorService(
+		plugin.fsrsService,
+		plugin.flashcardManager,
+		plugin.sessionPersistence,
+		settings.dayStartHour,
+	);
+	statsCalc.setSqliteStore(store);
+	const today = statsCalc.getTodaySummary();
+	const streak = statsCalc.getStreakInfo();
+	return {
+		date: formatLocalDate(new Date()),
+		queueToday: {
+			new: queue.new,
+			learning: queue.learning,
+			due: queue.due,
+			learningLaterToday: queue.learningPending,
+		},
+		overdueTotal: plugin.dayBoundaryService.getDueCards(cards).length,
+		studiedToday: {
+			cards: today.studied,
+			minutes: today.minutes,
+			newCards: today.newCards,
+			again: today.again,
+			correctRate: today.correctRate,
+		},
+		dayStreak: { current: streak.current, longest: streak.longest },
+		totalCards: cards.length,
+		maturity: store.stats.getCardMaturityBreakdown(),
+		mostForgotten: store.stats.getProblemCards(10),
+	};
+}

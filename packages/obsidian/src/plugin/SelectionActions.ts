@@ -1,4 +1,4 @@
-import { TFile } from "obsidian";
+import { Notice, TFile } from "obsidian";
 
 import { hasAIKey } from "@true-recall/core/ai/config/ai-client-config";
 import { generationWorkflowId } from "@true-recall/core/ai/workflows/ai-workflow";
@@ -6,7 +6,12 @@ import { resolveGenerationPresetForTier } from "@true-recall/core/flashcard/pres
 import type { GenerationPreset } from "@true-recall/core/types/generation-preset.types";
 
 import { mutate } from "@true-recall/obsidian/data";
+import {
+	addProposedCards,
+	removeAddedCards,
+} from "@true-recall/obsidian/features/ai-chat/engine/chat-apply";
 import { noteContext } from "@true-recall/obsidian/features/ai-chat/engine/chat-context";
+import { runGenerateCards } from "@true-recall/obsidian/features/ai-chat/engine/generate-cards";
 import {
 	isAiChatAvailable,
 	openAiChat,
@@ -243,6 +248,75 @@ export async function generateWithPresetGlobal(
 	enqueueGeneration(plugin, preset, text, file);
 }
 
+async function generateDirect(
+	plugin: TrueRecallPlugin,
+	preset: GenerationPreset,
+	selection: string,
+	file: TFile,
+	note: ReturnType<typeof noteContext>,
+): Promise<void> {
+	const progress = new Notice(`Making cards with ${preset.name}…`, 0);
+	try {
+		let error: string | undefined;
+		let proposed: Parameters<typeof addProposedCards>[1] = [];
+		for await (const step of runGenerateCards(
+			plugin,
+			{
+				...(note ? { note } : {}),
+				...(selection
+					? { selection: { text: selection, notePath: file.path } }
+					: {}),
+				preset: {
+					id: preset.id,
+					name: preset.name,
+					instruction: preset.prompt,
+				},
+			},
+			{ notePath: file.path },
+		)) {
+			if (step.stage === "done") {
+				proposed = step.cards;
+				error = step.error;
+			}
+		}
+		progress.hide();
+		if (error) {
+			notify().error(error);
+			return;
+		}
+		const ids = await addProposedCards(plugin, proposed, {
+			notePath: file.path,
+			sourceText: selection || undefined,
+		});
+		if (ids.length === 0) {
+			notify().info(
+				proposed.length > 0
+					? "No new cards: they all exist already"
+					: "No cards were made from this text",
+			);
+			return;
+		}
+		const fragment = new DocumentFragment();
+		fragment.appendText(
+			`${ids.length === 1 ? "1 card" : `${ids.length} cards`} added to "${file.basename}". `,
+		);
+		const link = fragment.createEl("a", { text: "Undo" });
+		link.setCssStyles({ cursor: "pointer", textDecoration: "underline" });
+		const done = new Notice(fragment, 8000);
+		link.addEventListener("click", (e) => {
+			e.preventDefault();
+			done.hide();
+			const removed = removeAddedCards(plugin, ids);
+			notify().info(
+				removed === 1 ? "1 card removed" : `${removed} cards removed`,
+			);
+		});
+	} catch (err) {
+		progress.hide();
+		notify().error("Card generation failed", err);
+	}
+}
+
 /**
  * The single funnel for "generate flashcards from this text". The panel, the
  * selection toolbar, and the commands all land here so one queue, one preset
@@ -258,11 +332,17 @@ function enqueueGeneration(
 		notify().aiNotConfigured();
 		return;
 	}
+	const note = noteContext(file);
+	const selection = text.trim();
+	// "Add without the chat" (Pro): run the preset directly and save the
+	// cards, with Undo in the notice. No chat model turn, no proposal.
+	if (plugin.settings.generateWithoutChat && isAiChatAvailable(plugin)) {
+		void generateDirect(plugin, preset, selection, file, note);
+		return;
+	}
 	// With the AI chat on (Pro): open it with the text pinned and the preset
 	// applied. Cards show as a proposal; nothing is saved before "Add".
 	if (plugin.aiChat && isAiChatAvailable(plugin)) {
-		const note = noteContext(file);
-		const selection = text.trim();
 		void openAiChat(plugin, {
 			context: {
 				...(note ? { note } : {}),

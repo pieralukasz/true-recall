@@ -9,7 +9,11 @@ import {
 } from "@true-recall/core";
 import { moveItemAmong } from "@true-recall/core/utils";
 
-import { ActionButton } from "@true-recall/obsidian/components";
+import {
+	ActionButton,
+	FormField,
+	ToggleInput,
+} from "@true-recall/obsidian/components";
 import { t } from "@true-recall/obsidian/i18n";
 import { usePlugin } from "@true-recall/obsidian/preact";
 import { notify } from "@true-recall/obsidian/services/notification.service";
@@ -184,6 +188,18 @@ export function AIGenerationSettingsPanel({
 					"Used only by AI Flashcard Generation when LM Studio is the selected provider.",
 				)}
 			/>
+
+			<FormField
+				name={t("Add cards without the chat")}
+				description={t(
+					"Pro: toolbar buttons and commands save the generated cards straight to the note, with Undo in the notice. Off: the cards open in the AI chat for review first.",
+				)}
+			>
+				<ToggleInput
+					value={settings.generateWithoutChat ?? true}
+					onChange={(value) => void save({ generateWithoutChat: value })}
+				/>
+			</FormField>
 
 			<div class="ep:flex ep:gap-2 ep:items-start ep:mt-2 ep:p-2.5 ep:border-l-2 ep:border-obs-accent ep:bg-obs-accent/8 ep:rounded-r-md">
 				<span class="ep:text-ui-smaller ep:text-obs-normal ep:leading-relaxed">

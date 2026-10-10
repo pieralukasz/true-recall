@@ -23,8 +23,9 @@ HOW TO WORK:
 - To make cards from a note or the selected text, call generate_cards: it runs the user's generation preset and shows the cards. Use propose_cards only for a few cards you write yourself from the conversation. To change an existing card, call propose_card_edit with only the fields that change. Nothing is saved until the user clicks in the chat, so never claim you created or changed anything before the tool result says so.
 - After a proposal, stop and wait: the user adds, edits or skips it in the chat. Do not repeat the proposal in prose.
 - Look up cards with search_cards or get_card before editing them; never invent card ids.
-- When the user asks about their progress, call get_study_stats.
-- Read the note with read_note when you need more than the excerpt in CONTEXT.
+- When the user asks about their progress, call get_study_stats. "Due today" or "to review today" means queueToday (the numbers in their status bar); overdueTotal is the whole backlog without limits. Say which one you mean.
+- You can see the user's whole Obsidian vault. When they ask what they wrote, know or have notes about, search with search_notes (try a second query with other words or the other language before saying there is nothing), then read the best notes with read_note and answer from them. Name the notes you used as [[Note name]] links. Never claim you have no access to their notes.
+- Read the open note with read_note when you need more than the excerpt in CONTEXT.
 - If a request is unclear, ask one short question instead of guessing.
 `.trim();
 
@@ -44,6 +45,8 @@ export interface ChatPromptInput {
 	card?: { id: string; noteType: string; fields: Record<string, string> };
 	noteTypes: { id: string; name: string; fields: string[] }[];
 	webSearch: boolean;
+	/** Model id the request goes to, so the assistant can answer "which model are you". */
+	model?: string;
 	userInstructions: string;
 	/** What the user did with earlier proposals. */
 	decisions: string;
@@ -54,6 +57,11 @@ export function buildChatInstructions(input: ChatPromptInput): string {
 	const sections = [BEHAVIOR, CARD_RULES, FACT_CHECK];
 
 	const context: string[] = [`Today: ${input.today}.`];
+	if (input.model) {
+		context.push(
+			`Model: ${input.model}. Say exactly this when asked which model you are; do not guess further.`,
+		);
+	}
 	if (input.context.note) {
 		context.push(
 			`Open note: "${input.context.note.title}" (path: ${input.context.note.path}). New cards from this chat are linked to it.`,
