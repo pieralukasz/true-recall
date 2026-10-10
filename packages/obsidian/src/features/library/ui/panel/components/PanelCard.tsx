@@ -98,7 +98,7 @@ export const PanelCard = memo(function PanelCard({
 			{...longPressHandlers}
 		>
 			{isSelectionMode ? (
-				<label class="ep:flex ep:flex-1 ep:min-w-0 ep:items-center ep:gap-2.5 ep:px-2.5 ep:py-1 ep:cursor-pointer ep:touch-manipulation">
+				<label class="tr-panel-card-select ep:flex ep:flex-1 ep:min-w-0 ep:items-center ep:gap-2.5 ep:cursor-pointer ep:touch-manipulation">
 					<input
 						type="checkbox"
 						class="ep:w-4 ep:h-4 ep:shrink-0 ep:cursor-pointer"

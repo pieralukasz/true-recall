@@ -47,17 +47,23 @@ export async function addProposedCards(
 	if (cards.length === 0) return [];
 	const noteType = plugin.cardStore?.noteTypes.getById(BUILTIN_BASIC_ID);
 	const sourceUid = await sourceUidFor(plugin, options.notePath);
-	const created = cards.flatMap(
-		(card) =>
-			plugin.flashcardManager.createNote({
-				noteTypeId: BUILTIN_BASIC_ID,
-				fields: toNoteFields(card, noteType),
-				sourceUid,
-				sourceText: card.source ?? options.sourceText,
-				createdVia: "ai",
-				skipDuplicates: true,
-			}).cards,
-	);
+	const createAll = () =>
+		cards.flatMap(
+			(card) =>
+				plugin.flashcardManager.createNote({
+					noteTypeId: BUILTIN_BASIC_ID,
+					fields: toNoteFields(card, noteType),
+					sourceUid,
+					sourceText: card.source ?? options.sourceText,
+					createdVia: "ai",
+					skipDuplicates: true,
+				}).cards,
+		);
+	// Every createNote emits a card event that reloads the whole card cache
+	// (~300 ms on a 20k-card vault). One batch reloads it once for all cards.
+	const created = plugin.dataLayer
+		? plugin.dataLayer.batch(createAll)
+		: createAll();
 	const ids = created.map((c) => c.id);
 	if (ids.length > 0) {
 		void plugin.commandService?.execute(new BatchCreateCommand(ids));

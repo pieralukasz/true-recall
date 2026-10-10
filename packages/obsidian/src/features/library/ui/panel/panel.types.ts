@@ -19,6 +19,8 @@ export interface PanelCardActionHandlers {
 	) => void;
 	onEnterSelection: (cardId: string) => void;
 	onSetSelected: (cardIds: string[], selected: boolean) => void;
+	/** Replaces the whole selection (drag to select) and enters selection mode. */
+	onReplaceSelection: (cardIds: string[]) => void;
 	onHoverSource: (card: FlashcardItem) => void;
 	onLeaveSource: () => void;
 }

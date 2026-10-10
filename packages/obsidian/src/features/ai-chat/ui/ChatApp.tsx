@@ -139,6 +139,15 @@ function AssistantMessage() {
 
 // ─── context and suggestions ───────────────────────────────────────────
 
+/** Full text for the tooltip, since the chip label is cut short. */
+function chipTitle(context: ChatContext, kind: keyof typeof CHIP_ICON): string {
+	if (kind === "selection")
+		return `Selection: ${context.selection?.text ?? ""}`;
+	if (kind === "note") return `Note: ${context.note?.path ?? ""}`;
+	if (kind === "card") return `Card: ${context.card?.label ?? ""}`;
+	return context.preset?.name ?? "";
+}
+
 const CHIP_ICON = {
 	note: "file-text",
 	selection: "text-select",
@@ -151,7 +160,7 @@ function chipLabel(context: ChatContext, kind: keyof typeof CHIP_ICON): string {
 		case "note":
 			return context.note?.title ?? "";
 		case "selection":
-			return `“${shorten(context.selection?.text ?? "", 40)}”`;
+			return shorten(context.selection?.text ?? "", 32);
 		case "card":
 			return context.card?.label
 				? shorten(context.card.label, 40)
@@ -161,16 +170,22 @@ function chipLabel(context: ChatContext, kind: keyof typeof CHIP_ICON): string {
 	}
 }
 
-/** What the chat is about, as chips the user can remove. */
+/** What the chat is about (note, selection, card), as small removable attachments. */
 function ContextChips() {
 	const controller = useController();
 	const session = useSession();
-	const kinds = contextKinds(session.context);
+	const kinds = contextKinds(session.context).filter(
+		(kind) => kind !== "preset",
+	);
 	if (kinds.length === 0) return null;
 	return (
 		<div className="tr-ai-chat__chips">
 			{kinds.map((kind) => (
-				<span key={kind} className="tr-ai-chat__chip tr-ai-chat__context">
+				<span
+					key={kind}
+					className={`tr-ai-chat__chip tr-ai-chat__chip--${kind}`}
+					title={chipTitle(session.context, kind)}
+				>
 					<Icon name={CHIP_ICON[kind]} />
 					<span className="tr-ai-chat__chip-text">
 						{chipLabel(session.context, kind)}
@@ -194,6 +209,33 @@ function ContextChips() {
 	);
 }
 
+/** The preset the request follows, shown as a pill next to Send. */
+function PresetPill() {
+	const controller = useController();
+	const session = useSession();
+	const preset = session.context.preset;
+	if (!preset) return null;
+	return (
+		<span className="tr-ai-chat__pill" title={`Preset: ${preset.name}`}>
+			<Icon name={CHIP_ICON.preset} />
+			<span className="tr-ai-chat__chip-text">{preset.name}</span>
+			<button
+				type="button"
+				className="tr-ai-chat__chip-x"
+				aria-label="Stop using this preset"
+				onClick={() =>
+					controller.setContext(
+						session.id,
+						withoutKind(session.context, "preset"),
+					)
+				}
+			>
+				<Icon name="x" />
+			</button>
+		</span>
+	);
+}
+
 function EmptyState() {
 	const session = useSession();
 	const controller = useController();
@@ -201,13 +243,12 @@ function EmptyState() {
 	const hasContext = contextKinds(session.context).length > 0;
 	return (
 		<div className="tr-ai-chat__empty">
-			<div className="tr-ai-chat__empty-mark">
-				<Icon name="sparkles" />
+			<div className="tr-ai-chat__empty-title">
+				Ask about your notes and cards
 			</div>
-			<div className="tr-ai-chat__empty-title">How can I help?</div>
 			<div className="tr-ai-chat__empty-hint">
-				Cards, fixes, fact checks and stats. Nothing is saved until you approve
-				it.
+				It can search your vault, make and fix cards, and read your stats.
+				Nothing is saved until you approve it.
 			</div>
 			<div className="tr-ai-chat__suggestions">
 				{suggestionsFor(
@@ -231,7 +272,6 @@ function EmptyState() {
 							<span className="tr-ai-chat__suggestion-label">{s.label}</span>
 							<span className="tr-ai-chat__suggestion-detail">{s.detail}</span>
 						</span>
-						<Icon name="arrow-up-right" className="tr-ai-chat__suggestion-go" />
 					</button>
 				))}
 			</div>
@@ -308,29 +348,33 @@ function Thread({
 				/>
 			) : null}
 			<ComposerPrimitive.Root className="tr-ai-chat__composer">
-				<ContextChips />
-				<div className="tr-ai-chat__input-row">
+				<div className="tr-ai-chat__box">
+					<ContextChips />
 					<ComposerPrimitive.Input
 						className="tr-ai-chat__input"
-						placeholder="Ask, or ask for cards…"
+						placeholder="Ask anything"
 						rows={1}
 					/>
-					<AuiIf condition={(s) => !s.thread.isRunning}>
-						<ComposerPrimitive.Send
-							className="tr-ai-chat__send mod-cta"
-							aria-label="Send"
-						>
-							<Icon name="arrow-up" />
-						</ComposerPrimitive.Send>
-					</AuiIf>
-					<AuiIf condition={(s) => s.thread.isRunning}>
-						<ComposerPrimitive.Cancel
-							className="tr-ai-chat__send tr-ai-chat__stop"
-							aria-label="Stop"
-						>
-							<Icon name="square" />
-						</ComposerPrimitive.Cancel>
-					</AuiIf>
+					<div className="tr-ai-chat__bar">
+						<PresetPill />
+						<span className="tr-ai-chat__grow" />
+						<AuiIf condition={(s) => !s.thread.isRunning}>
+							<ComposerPrimitive.Send
+								className="tr-ai-chat__send"
+								aria-label="Send"
+							>
+								<Icon name="arrow-up" />
+							</ComposerPrimitive.Send>
+						</AuiIf>
+						<AuiIf condition={(s) => s.thread.isRunning}>
+							<ComposerPrimitive.Cancel
+								className="tr-ai-chat__send tr-ai-chat__stop"
+								aria-label="Stop"
+							>
+								<Icon name="square" />
+							</ComposerPrimitive.Cancel>
+						</AuiIf>
+					</div>
 				</div>
 			</ComposerPrimitive.Root>
 		</ThreadPrimitive.Root>
