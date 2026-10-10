@@ -42,6 +42,41 @@ describe("AI chat writes", () => {
 		).toBe(1);
 	});
 
+	it("writes all picked cards inside one data-layer batch", async () => {
+		let depth = 0;
+		const depthAtCreate: number[] = [];
+		const create = plugin.flashcardManager.createNote.bind(
+			plugin.flashcardManager,
+		);
+		(plugin.flashcardManager as { createNote: unknown }).createNote = (
+			params: Parameters<typeof create>[0],
+		) => {
+			depthAtCreate.push(depth);
+			return create(params);
+		};
+		(plugin as { dataLayer: unknown }).dataLayer = {
+			batch: <R>(fn: () => R): R => {
+				depth++;
+				try {
+					return fn();
+				} finally {
+					depth--;
+				}
+			},
+		};
+		const ids = await addProposedCards(
+			plugin,
+			[
+				{ question: "Q1", answer: "A1" },
+				{ question: "Q2", answer: "A2" },
+				{ question: "Q3", answer: "A3" },
+			],
+			{},
+		);
+		expect(ids).toHaveLength(3);
+		expect(depthAtCreate).toEqual([1, 1, 1]);
+	});
+
 	it("undoes an unchanged applied edit", async () => {
 		const [id] = await addProposedCards(
 			plugin,
