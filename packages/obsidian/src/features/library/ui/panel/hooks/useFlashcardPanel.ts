@@ -245,7 +245,11 @@ function usePanelCardActions({
 		handleHoverSource,
 		handleLeaveSource,
 	} = panelActions;
-	const { handleEnterSelectionMode, handleSetCardsSelected } = selectionActions;
+	const {
+		handleEnterSelectionMode,
+		handleSetCardsSelected,
+		handleSelectCards,
+	} = selectionActions;
 	return useMemo(
 		() => ({
 			onOpen: (card) => setOpenCardId(card.id),
@@ -265,6 +269,7 @@ function usePanelCardActions({
 			onUpdateContent: handleUpdateContent,
 			onEnterSelection: handleEnterSelectionMode,
 			onSetSelected: handleSetCardsSelected,
+			onReplaceSelection: handleSelectCards,
 			onHoverSource: handleHoverSource,
 			onLeaveSource: handleLeaveSource,
 		}),
@@ -284,6 +289,7 @@ function usePanelCardActions({
 			handleUpdateContent,
 			handleEnterSelectionMode,
 			handleSetCardsSelected,
+			handleSelectCards,
 			handleHoverSource,
 			handleLeaveSource,
 		],

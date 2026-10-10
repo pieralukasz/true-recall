@@ -102,13 +102,6 @@
 	display: none;
 }
 
-.tr-ai-chat__actions {
-	display: flex;
-	gap: var(--size-2-1);
-	margin-top: calc(var(--size-4-2) * -1);
-	color: var(--text-faint);
-}
-
 .tr-ai-chat__thinking {
 	display: flex;
 	gap: 4px;
@@ -286,15 +279,6 @@
 	opacity: 1;
 }
 
-.tr-ai-chat__viewport {
-	flex: 1;
-	overflow-y: auto;
-	padding: var(--size-4-4);
-	display: flex;
-	flex-direction: column;
-	gap: var(--size-4-4);
-}
-
 .tr-ai-chat__empty {
 	/* Centred in the free space; in a wide pane the column stays readable. */
 	margin: auto;
@@ -303,37 +287,6 @@
 	display: flex;
 	flex-direction: column;
 	align-items: flex-start;
-}
-
-.tr-ai-chat__empty-mark {
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	width: 36px;
-	height: 36px;
-	margin-bottom: var(--size-4-3);
-	border-radius: var(--radius-m);
-	background: hsla(var(--interactive-accent-hsl), 0.12);
-	color: var(--text-accent);
-}
-
-.tr-ai-chat__empty-mark svg {
-	width: var(--icon-m);
-	height: var(--icon-m);
-}
-
-.tr-ai-chat__empty-title {
-	font-size: var(--font-ui-large);
-	font-weight: var(--font-semibold);
-	line-height: var(--line-height-tight);
-}
-
-.tr-ai-chat__empty-hint {
-	margin-top: var(--size-4-1);
-	font-size: var(--font-ui-small);
-	line-height: var(--line-height-normal);
-	color: var(--text-muted);
-	text-wrap: balance;
 }
 
 .tr-ai-chat__suggestions {
@@ -409,21 +362,6 @@
 	color: var(--text-muted);
 }
 
-.tr-ai-chat__suggestion-go {
-	color: var(--text-faint);
-	opacity: 0;
-	transition: opacity 120ms ease;
-}
-
-.tr-ai-chat__suggestion:hover .tr-ai-chat__suggestion-go,
-.tr-ai-chat__suggestion:focus-visible .tr-ai-chat__suggestion-go {
-	opacity: 1;
-}
-
-.is-mobile .tr-ai-chat__suggestion-go {
-	display: none;
-}
-
 .tr-ai-chat__empty-tip {
 	display: flex;
 	align-items: center;
@@ -431,27 +369,6 @@
 	margin-top: var(--size-4-4);
 	font-size: var(--font-ui-smaller);
 	color: var(--text-faint);
-}
-
-.tr-ai-chat__msg {
-	max-width: 100%;
-	line-height: var(--line-height-normal);
-	overflow-wrap: anywhere;
-}
-
-.tr-ai-chat__msg--user {
-	align-self: flex-end;
-	max-width: 85%;
-	padding: var(--size-4-2) var(--size-4-3);
-	border-radius: var(--radius-l);
-	background: var(--background-modifier-hover);
-	white-space: pre-wrap;
-}
-
-.tr-ai-chat__msg--assistant {
-	display: flex;
-	flex-direction: column;
-	gap: var(--size-4-3);
 }
 
 .tr-ai-chat__md > p:first-child,
@@ -597,48 +514,7 @@
 	color: var(--text-muted);
 }
 
-.tr-ai-chat__composer {
-	display: flex;
-	flex-direction: column;
-	gap: var(--size-4-2);
-	padding: var(--size-4-2) var(--size-4-3) var(--size-4-3);
-	border-top: 1px solid var(--background-modifier-border);
-}
-
 /* Obsidian's floating status bar covers the bottom of the right sidebar on desktop. */
-body:not(.is-mobile) .tr-ai-chat__composer {
-	padding-bottom: calc(var(--size-4-3) + 28px);
-}
-
-.tr-ai-chat__context {
-	align-self: flex-start;
-	max-width: 100%;
-}
-
-.tr-ai-chat__input-row {
-	display: flex;
-	align-items: flex-end;
-	gap: var(--size-4-2);
-}
-
-.tr-ai-chat__input {
-	flex: 1;
-	min-height: 38px;
-	max-height: 160px;
-	resize: none;
-	padding: var(--size-4-2) var(--size-4-3);
-	border-radius: var(--radius-m);
-	font-size: var(--font-ui-medium);
-}
-
-.tr-ai-chat__composer button.tr-ai-chat__send {
-	flex: none;
-	width: 38px;
-	height: 38px;
-	padding: 0;
-	border-radius: 50%;
-	font-size: 18px;
-}
 
 /* ─── proposals: editing, reason, done ───────────────────────────── */
 
@@ -771,55 +647,7 @@ body:not(.is-mobile) .tr-ai-chat__composer {
 
 /* ─── context chips ──────────────────────────────────────────────── */
 
-.tr-ai-chat__chips {
-	display: flex;
-	flex-wrap: wrap;
-	gap: var(--size-4-1);
-}
-
-.tr-ai-chat__chip.tr-ai-chat__context {
-	display: inline-flex;
-	align-items: center;
-	gap: var(--size-4-1);
-	max-width: 100%;
-	padding: 2px 4px 2px 8px;
-}
-
-.tr-ai-chat__chip-text {
-	overflow: hidden;
-	text-overflow: ellipsis;
-	white-space: nowrap;
-}
-
-.tr-ai-chat__composer .tr-ai-chat__chip-x {
-	width: 18px;
-	height: 18px;
-	padding: 0;
-	border-radius: 50%;
-	background: none;
-	box-shadow: none;
-	color: var(--text-faint);
-}
-
-.tr-ai-chat__composer .tr-ai-chat__chip-x:hover {
-	color: var(--text-normal);
-	background: var(--background-modifier-hover);
-}
-
-.tr-ai-chat__composer .tr-ai-chat__chip-x svg {
-	width: 12px;
-	height: 12px;
-}
-
-.tr-ai-chat__composer button.tr-ai-chat__stop {
-	background: var(--interactive-normal);
-	color: var(--text-normal);
-}
-
 /* Phones: the chat fills the screen, the keyboard pushes the composer up. */
-.is-mobile .tr-ai-chat__composer {
-	padding-bottom: calc(var(--size-4-3) + env(safe-area-inset-bottom, 0px));
-}
 
 /* ─── under the card in review (Card Polish, fact check, questions) ─── */
 
@@ -1050,4 +878,263 @@ body:not(.is-mobile) .tr-ai-chat__composer {
 	.tr-ai-chat__cards.is-entering .tr-ai-chat__card {
 		animation: none;
 	}
+}
+
+/* ─── thread spacing ─────────────────────────────────────────────── */
+
+/* One rhythm: 8px inside a turn, 20px between turns, 4px between a reply
+   and its actions. Text reads at the note's size in a narrow sidebar. */
+.tr-ai-chat__viewport {
+	flex: 1;
+	overflow-y: auto;
+	padding: var(--size-4-4) var(--size-4-4) var(--size-4-2);
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-4-5);
+}
+
+.tr-ai-chat__msg {
+	max-width: 100%;
+	font-size: var(--font-ui-medium);
+	line-height: 1.55;
+	overflow-wrap: anywhere;
+}
+
+.tr-ai-chat__msg--user {
+	align-self: flex-end;
+	max-width: 85%;
+	padding: 6px var(--size-4-3);
+	border-radius: var(--radius-l);
+	background: var(--background-modifier-hover);
+	white-space: pre-wrap;
+}
+
+.tr-ai-chat__msg--assistant {
+	display: flex;
+	flex-direction: column;
+	gap: var(--size-4-2);
+}
+
+.tr-ai-chat__msg .tr-ai-chat__md p,
+.tr-ai-chat__msg .tr-ai-chat__md ul,
+.tr-ai-chat__msg .tr-ai-chat__md ol {
+	margin-top: 0;
+	margin-bottom: var(--size-4-2);
+}
+
+/* Headings in a sidebar answer: section labels at text size, not page titles. */
+.tr-ai-chat__msg .tr-ai-chat__md :is(h1, h2, h3, h4, h5, h6) {
+	margin: var(--size-4-3) 0 var(--size-4-1);
+	font-size: var(--font-ui-medium);
+	font-weight: var(--font-semibold);
+	line-height: 1.4;
+}
+
+.tr-ai-chat__msg .tr-ai-chat__md > :first-child {
+	margin-top: 0;
+}
+
+.tr-ai-chat__msg .tr-ai-chat__md li {
+	margin: 2px 0;
+}
+
+.tr-ai-chat__msg .tr-ai-chat__md ul,
+.tr-ai-chat__msg .tr-ai-chat__md ol {
+	padding-left: var(--size-4-5);
+}
+
+.tr-ai-chat__msg .tr-ai-chat__md > :last-child {
+	margin-bottom: 0;
+}
+
+.tr-ai-chat__actions {
+	display: flex;
+	gap: 2px;
+	margin-top: calc(var(--size-4-1) * -1);
+	margin-left: -6px;
+	color: var(--text-faint);
+}
+
+.tr-ai-chat__actions .tr-ai-chat__icon-btn {
+	width: 26px;
+	height: 24px;
+	padding: 0;
+}
+
+/* ─── empty state ────────────────────────────────────────────────── */
+
+.tr-ai-chat__empty-title {
+	font-size: var(--font-ui-medium);
+	font-weight: var(--font-semibold);
+	line-height: var(--line-height-tight);
+}
+
+.tr-ai-chat__empty-hint {
+	margin-top: var(--size-4-1);
+	font-size: var(--font-ui-small);
+	line-height: var(--line-height-normal);
+	color: var(--text-muted);
+}
+
+/* ─── composer: one box, attachments inside, actions in a bar ────── */
+
+.tr-ai-chat__composer {
+	padding: var(--size-4-2) var(--size-4-3) var(--size-4-3);
+}
+
+/* Obsidian's floating status bar covers the bottom of the right sidebar on desktop. */
+body:not(.is-mobile) .tr-ai-chat__composer {
+	padding-bottom: calc(var(--size-4-3) + 26px);
+}
+
+.is-mobile .tr-ai-chat__composer {
+	padding-bottom: calc(var(--size-4-3) + env(safe-area-inset-bottom, 0px));
+}
+
+.tr-ai-chat__box {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	padding: 6px 6px 6px;
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-l);
+	background: var(--background-primary);
+	transition: border-color 120ms ease;
+}
+
+.tr-ai-chat__box:focus-within {
+	border-color: var(--background-modifier-border-focus);
+}
+
+/* Beats Obsidian's textarea styling (border, background, focus ring). */
+.tr-ai-chat__box textarea.tr-ai-chat__input,
+.tr-ai-chat__box textarea.tr-ai-chat__input:focus,
+.tr-ai-chat__box textarea.tr-ai-chat__input:hover {
+	width: 100%;
+	min-height: 40px;
+	max-height: 160px;
+	resize: none;
+	margin: 0;
+	padding: 6px var(--size-4-2) 4px;
+	border: 0;
+	border-radius: 0;
+	background: transparent;
+	box-shadow: none;
+	font-size: var(--font-ui-medium);
+	line-height: 1.45;
+}
+
+.tr-ai-chat__bar {
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-1);
+	min-height: 28px;
+}
+
+.tr-ai-chat__grow {
+	flex: 1;
+}
+
+.tr-ai-chat__box button.tr-ai-chat__send {
+	flex: none;
+	width: 28px;
+	height: 28px;
+	padding: 0;
+	border: 0;
+	border-radius: 50%;
+	background: var(--interactive-accent);
+	color: var(--text-on-accent);
+	box-shadow: none;
+	cursor: pointer;
+}
+
+.tr-ai-chat__box button.tr-ai-chat__send:disabled {
+	background: var(--background-modifier-hover);
+	color: var(--text-faint);
+	cursor: default;
+}
+
+.tr-ai-chat__box button.tr-ai-chat__stop {
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+.tr-ai-chat__send svg {
+	width: 16px;
+	height: 16px;
+}
+
+/* Note, selection, card: quiet attachments above the text. */
+.tr-ai-chat__chips {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px;
+	padding: 2px 0 0 2px;
+}
+
+.tr-ai-chat__box .tr-ai-chat__chip,
+.tr-ai-chat__pill {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	min-width: 0;
+	max-width: 100%;
+	height: 24px;
+	padding: 0 2px 0 6px;
+	border-radius: var(--radius-s);
+	background: var(--background-modifier-hover);
+	font-size: var(--font-ui-smaller);
+	font-weight: var(--font-normal);
+	color: var(--text-muted);
+	white-space: nowrap;
+}
+
+.tr-ai-chat__box .tr-ai-chat__chip .tr-ai-chat__icon svg,
+.tr-ai-chat__pill .tr-ai-chat__icon svg {
+	width: 13px;
+	height: 13px;
+}
+
+.tr-ai-chat__chip--selection .tr-ai-chat__chip-text {
+	font-family: var(--font-text);
+	font-style: italic;
+}
+
+.tr-ai-chat__chip-text {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+/* The preset sits in the bar next to Send, without a background. */
+.tr-ai-chat__pill {
+	background: none;
+	padding-left: 8px;
+}
+
+.tr-ai-chat__box button.tr-ai-chat__chip-x {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	flex: none;
+	width: 18px;
+	height: 18px;
+	padding: 0;
+	border: 0;
+	border-radius: var(--radius-s);
+	background: none;
+	box-shadow: none;
+	color: var(--text-faint);
+	cursor: pointer;
+}
+
+.tr-ai-chat__box button.tr-ai-chat__chip-x:hover {
+	color: var(--text-normal);
+	background: var(--background-modifier-hover);
+}
+
+.tr-ai-chat__chip-x svg {
+	width: 12px;
+	height: 12px;
 }

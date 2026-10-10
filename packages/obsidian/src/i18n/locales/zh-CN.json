@@ -482,6 +482,8 @@
 	"Show during review": "复习时显示",
 	"Show frontmatter in note review": "复习笔记时显示属性",
 	"Show header stats": "显示顶部统计",
+	"Add cards without the chat": "不经聊天直接添加卡片",
+	"Pro: toolbar buttons and commands save the generated cards straight to the note, with Undo in the notice. Off: the cards open in the AI chat for review first.": "Pro：工具栏按钮和命令会把生成的卡片直接保存到笔记，通知中可撤销。关闭时：卡片先在 AI 聊天中供审阅。",
 	"Show in flashcard panel": "在卡片面板中显示",
 	"Show inline status donuts next to [[wikilinks]] that reveal flashcard review state at a glance. In reading mode you also get text count indicators, and hovering a link opens a tooltip with full note stats.": "在双链旁显示环形进度图，快速查看卡片复习状态。阅读模式还会显示文字数量，悬停链接可查看完整笔记统计。",
 	"Show next review time": "显示下次复习时间",

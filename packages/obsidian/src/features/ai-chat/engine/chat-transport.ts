@@ -68,6 +68,16 @@ export function chatTask(
 	return "chat";
 }
 
+/** What to tell the user about the model behind the chat. */
+export function describeModel(config: {
+	providerType: string;
+	model: string;
+}): string {
+	return config.providerType === "pro"
+		? "True Recall Pro (the Pro server picks the model; the plugin does not know which one)"
+		: `${config.model} via ${config.providerType}`;
+}
+
 /** Turns a provider error into one sentence the user can act on. */
 export function describeChatError(error: unknown): string {
 	const text = error instanceof Error ? error.message : String(error);
@@ -89,6 +99,7 @@ async function buildInstructions(
 	session: ChatSessionState,
 	webSearch: boolean,
 	snapshots: CardSnapshots,
+	model?: string,
 ): Promise<string> {
 	const { context } = session;
 	const card = context.card
@@ -111,6 +122,7 @@ async function buildInstructions(
 			fields: [...nt.fields],
 		})),
 		webSearch,
+		model,
 		userInstructions: plugin.settings.assistantInstructions ?? "",
 		decisions: describeDecisions(session.decisions),
 		today: formatLocalDate(new Date()),
@@ -183,6 +195,7 @@ export class TrueRecallChatTransport implements ChatTransport<UIMessage> {
 				session,
 				webSearch,
 				snapshots,
+				describeModel(config),
 			),
 			temperature: config.temperature,
 			maxOutputTokens: MAX_OUTPUT_TOKENS,
