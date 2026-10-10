@@ -7,7 +7,10 @@ export class SqliteDatabase {
 	private writeCount = 0;
 	private transactionDepth = 0;
 
-	constructor(private onDirty: () => void) {}
+	constructor(
+		private onDirty: () => void,
+		readonly deviceId: string | null = null,
+	) {}
 
 	async init(existingData: Uint8Array | null): Promise<void> {
 		const result: DatabaseLoadResult = await loadDatabase(existingData);

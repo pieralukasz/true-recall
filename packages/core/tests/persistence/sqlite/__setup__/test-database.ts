@@ -2,6 +2,7 @@
  * Test Database Setup
  * In-memory SQLite database for fast, isolated tests
  */
+
 import initSqlJs, { type Database as SqlJsDatabase } from "sql.js";
 import { State } from "ts-fsrs";
 
@@ -12,6 +13,7 @@ import type {
 } from "../../../../src/persistence/sqlite/loader";
 import { CardActions } from "../../../../src/persistence/sqlite/modules/CardActions";
 import { CloudSyncDeferredActions } from "../../../../src/persistence/sqlite/modules/CloudSyncDeferredActions";
+import { createCardEditHistorySchema } from "../../../../src/persistence/sqlite/modules/card-edit-history";
 import { NoteActions } from "../../../../src/persistence/sqlite/modules/NoteActions";
 import {
 	getBuiltinNoteTypes,
@@ -74,6 +76,7 @@ export class TestSqliteDatabase {
 		const SQL = await initSqlJs();
 		this.db = new TestSqlJsWrapper(new SQL.Database());
 		this.createSchema();
+		createCardEditHistorySchema(this.db);
 	}
 
 	private createSchema(): void {
@@ -303,17 +306,28 @@ export class TestSqliteDatabase {
 		this.dirtyCallback();
 	}
 
+	private transactionDepth = 0;
+
 	transaction<T>(fn: () => T): T {
 		if (!this.db) throw new Error("Database not initialized");
+		const depth = this.transactionDepth;
+		const savepoint = `test_nested_${depth}`;
+		this.db.run(depth === 0 ? "BEGIN TRANSACTION" : `SAVEPOINT ${savepoint}`);
+		this.transactionDepth++;
 		try {
-			this.db.run("BEGIN TRANSACTION");
 			const result = fn();
-			this.db.run("COMMIT");
+			this.db.run(depth === 0 ? "COMMIT" : `RELEASE SAVEPOINT ${savepoint}`);
 			this.dirtyCallback();
 			return result;
 		} catch (e) {
-			this.db.run("ROLLBACK");
+			if (depth === 0) this.db.run("ROLLBACK");
+			else {
+				this.db.run(`ROLLBACK TO SAVEPOINT ${savepoint}`);
+				this.db.run(`RELEASE SAVEPOINT ${savepoint}`);
+			}
 			throw e;
+		} finally {
+			this.transactionDepth = depth;
 		}
 	}
 

@@ -5,7 +5,8 @@
 
 import type { Note, NoteEditSource } from "../../../types/note.types";
 import type { SqliteDatabase } from "../SqliteDatabase";
-import { buildContentEditSet } from "./note-content-edit";
+import { recordContentEdit } from "./card-edit-history";
+import { buildContentEditSet, fieldsJsonForEdit } from "./note-content-edit";
 
 export interface NoteRow {
 	id: string;
@@ -195,7 +196,7 @@ export class NoteActions {
 		}
 		if (updates.fields !== undefined) {
 			const contentEdit = buildContentEditSet(
-				JSON.stringify(updates.fields),
+				fieldsJsonForEdit(this.db, id, JSON.stringify(updates.fields)),
 				editSource,
 				now,
 			);
@@ -227,7 +228,11 @@ export class NoteActions {
 		params.push(now);
 		params.push(id);
 
-		this.db.run(`UPDATE notes SET ${sets.join(", ")} WHERE id = ?`, params);
+		const write = () =>
+			this.db.run(`UPDATE notes SET ${sets.join(", ")} WHERE id = ?`, params);
+		if (updates.fields !== undefined)
+			recordContentEdit(this.db, id, editSource, now, write);
+		else write();
 	}
 
 	/**

@@ -1,4 +1,5 @@
 import { BUILTIN_SLUGS } from "../../types/note.types";
+import { createCardEditHistorySchema } from "./modules/card-edit-history";
 import { getBuiltinNoteTypes } from "./modules/NoteTypeActions";
 import type { DatabaseLike } from "./sqlite.types";
 
@@ -281,6 +282,7 @@ export class SqliteSchemaManager {
 			);
 		}
 
+		createCardEditHistorySchema(this.db);
 		this.createFts5();
 	}
 

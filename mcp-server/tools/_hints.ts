@@ -45,6 +45,9 @@ export const TOOL_HINTS: Record<string, ToolHints> = {
 	get_active_note: READ,
 	// Cards: read
 	list_cards: READ,
+	list_edited_cards: READ,
+	list_card_edits: READ,
+	get_card_edit_history: READ,
 	get_actual_learning_cards: READ,
 	get_card: READ,
 	get_card_context: READ,

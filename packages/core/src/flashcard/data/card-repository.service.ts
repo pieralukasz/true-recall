@@ -391,6 +391,7 @@ export class CardRepository {
 		oldTemplate: string,
 		newTemplate: string,
 		_sourceNoteName?: string,
+		editSource: NoteEditSource = "manual",
 	): void {
 		const siblings = this.store.getClozeSiblings(sourceUid, oldTemplate);
 		const siblingsByIndex = new Map(
@@ -408,16 +409,23 @@ export class CardRepository {
 		// omitting noteId made store.set() create a separate note per added
 		// cloze index, fragmenting the note and losing its Extra field.
 		const sharedNoteId = siblings.find((s) => s.noteId)?.noteId;
+		// Write each content owner once, even if no old cloze index survives.
+		const editedOwners = new Set<string>();
+		for (const sibling of siblings) {
+			if (!sibling.noteId || editedOwners.has(sibling.noteId)) continue;
+			this.store.cards.updateClozeCardContent(
+				sibling.id,
+				"",
+				"",
+				newTemplate,
+				editSource,
+			);
+			editedOwners.add(sibling.noteId);
+		}
 
 		for (const cloze of newClozeCards) {
 			const existing = siblingsByIndex.get(cloze.clozeIndex);
 			if (existing) {
-				this.store.cards.updateClozeCardContent(
-					existing.id,
-					cloze.question,
-					cloze.answer,
-					newTemplate,
-				);
 				affectedCardIds.push(existing.id);
 				updatedCardIds.push(existing.id);
 			} else {
@@ -482,16 +490,18 @@ export class CardRepository {
 			if (!currentIds.includes(id)) this.store.cards.restoreWithCascade(id);
 		}
 
-		const anchorId = previousSiblingIds[0];
-		if (anchorId) {
-			// Restoring the pre-edit template is an undo, not an authored edit.
+		const restoredOwners = new Set<string>();
+		for (const id of previousSiblingIds) {
+			const noteId = this.store.get(id)?.noteId;
+			if (!noteId || restoredOwners.has(noteId)) continue;
 			this.store.cards.updateClozeCardContent(
-				anchorId,
+				id,
 				"",
 				"",
 				previousTemplate,
 				"system",
 			);
+			restoredOwners.add(noteId);
 		}
 
 		const affectedCardIds = [

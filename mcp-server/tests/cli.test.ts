@@ -4,6 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 import { SERVER_VERSION } from "../server.js";
 import { FakeLocalApi } from "./fake-local-api.js";
+import { createMockEditedCard } from "./mocks/edited-cards.js";
 
 const CLI = resolve(import.meta.dirname, "../../cli/index.ts");
 const api = new FakeLocalApi();
@@ -35,6 +36,135 @@ function run(...args: string[]): Promise<Run> {
 }
 
 describe("true-recall CLI", () => {
+	it("reads persistent edit events through the dedicated read-only command", async () => {
+		api.reply("GET /card-edits", {
+			body: {
+				ok: true,
+				data: {
+					total: 1,
+					count: 1,
+					events: [
+						{
+							source: "ai",
+							fieldsBefore: { Front: "Old" },
+							fieldsAfter: { Front: "New" },
+						},
+					],
+				},
+			},
+		});
+		const r = await run(
+			"list_card_edits",
+			"--edit-source",
+			"ai",
+			"--since",
+			"2026-10-10",
+			"--limit",
+			"1",
+		);
+		expect(r.code).toBe(0);
+		expect(JSON.parse(r.stdout)).toMatchObject({
+			total: 1,
+			events: [{ source: "ai" }],
+		});
+		const help = await run("get_card_edit_history", "--help");
+		expect(help.code).toBe(0);
+		expect(help.stdout).toContain("read-only");
+		expect(help.stdout).toContain("--card-id");
+	});
+	it("prints edited-card current text, counters and pagination from the shared tool", async () => {
+		const card = createMockEditedCard();
+		api.reply("POST /query", {
+			body: {
+				ok: true,
+				data: { columns: ["total", "id"], rows: [{ total: 3, id: card.id }] },
+			},
+		});
+		api.reply(`GET /cards/${card.id}`, { body: { ok: true, data: card } });
+		const r = await run(
+			"list_edited_cards",
+			"--since",
+			"2026-10-10",
+			"--until",
+			"2026-10-17",
+			"--manual-only",
+			"--limit",
+			"1",
+			"--offset",
+			"1",
+		);
+		expect(r.code).toBe(0);
+		const result = JSON.parse(r.stdout);
+		expect(result).toMatchObject({
+			total: 3,
+			count: 1,
+			offset: 1,
+			hasMore: true,
+		});
+		expect(result.cards).toEqual([
+			{
+				...card,
+				edited: true,
+				manuallyEdited: true,
+				aiEdited: card.aiEditCount > 0,
+			},
+		]);
+	});
+
+	it("shows edited-card read-only help, defaults and limitations", async () => {
+		const r = await run("list_edited_cards", "--help");
+		expect(r.code).toBe(0);
+		for (const text of [
+			"[read-only]",
+			"--since <string>",
+			"--until <string>",
+			"--manual-only <boolean> (default false)",
+			"--ai-only <boolean> (default false)",
+			"not the last AI edit",
+			"--limit <number> (default 50)",
+			"--offset <number> (default 0)",
+			"lifetime",
+			"shared",
+			"archived",
+			"Enable SQL query endpoint",
+			"not the last manual edit",
+		]) {
+			expect(r.stdout).toContain(text);
+		}
+	});
+
+	it.each([
+		["calendar overflow", ["--since", "2026-02-30"]],
+		["missing timezone", ["--since", "2026-10-10T10:00:00"]],
+		["equal bounds", ["--since", "2026-10-10", "--until", "2026-10-10"]],
+		["negative offset", ["--offset", "-1"]],
+	])("exits 2 for %s without HTTP requests", async (_description, args) => {
+		const before = api.requests.length;
+		const r = await run("list_edited_cards", ...args);
+		expect(r.code, args.join(" ")).toBe(2);
+		expect(JSON.parse(r.stderr).hint).toContain("list_edited_cards --help");
+		expect(api.requests.length).toBe(before);
+	});
+
+	it("reports disabled SQL without auto-enabling it", async () => {
+		api.reply("POST /query", {
+			status: 403,
+			body: {
+				ok: false,
+				error: "SQL query endpoint is disabled",
+				code: "sql-query-disabled",
+			},
+		});
+		const before = api.requests.length;
+		const r = await run("list_edited_cards");
+		expect(r.code).toBe(1);
+		expect(JSON.parse(r.stderr)).toMatchObject({
+			status: 403,
+			code: "sql-query-disabled",
+		});
+		expect(r.stderr).toContain("Enable SQL query endpoint");
+		expect(api.requests.slice(before).map((r) => r.path)).toEqual(["/query"]);
+	});
 	it("prints the version", async () => {
 		expect(await run("--version")).toMatchObject({
 			code: 0,

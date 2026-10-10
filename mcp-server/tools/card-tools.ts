@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { editDateTimestamp } from "../../packages/core/src/helpers/edit-date.js";
+import { UsageError } from "../cli-args.js";
 import {
 	custom,
 	getWith,
@@ -9,7 +11,198 @@ import {
 	type ToolDef,
 } from "./_register.js";
 
+const editDate = z
+	.string()
+	.refine(
+		(value) => editDateTimestamp(value) !== undefined,
+		"Expected a valid YYYY-MM-DD date (local midnight) or ISO datetime with explicit timezone",
+	)
+	.optional();
+
+const editedCardsInput = {
+	manual_only: z
+		.boolean()
+		.default(false)
+		.describe(
+			"Require lifetime editCount > 0; date bounds still use the last ANY (manual or AI) content edit, not the last manual edit",
+		),
+	ai_only: z
+		.boolean()
+		.default(false)
+		.describe(
+			"Require lifetime aiEditCount > 0; includes cards also edited manually. Date bounds use the last ANY content edit, not the last AI edit. Combine with manual_only to require both counters",
+		),
+	source_uid: z.string().optional().describe("Filter by source note UID"),
+	since: editDate.describe(
+		"Inclusive last-content-edit bound: YYYY-MM-DD (local midnight) or ISO datetime with timezone",
+	),
+	until: editDate.describe(
+		"Exclusive last-content-edit bound; must be later than since",
+	),
+	limit: z
+		.number()
+		.int()
+		.min(1)
+		.max(200)
+		.default(50)
+		.describe("Max cards to return (1-200)"),
+	offset: z
+		.number()
+		.int()
+		.min(0)
+		.max(Number.MAX_SAFE_INTEGER)
+		.default(0)
+		.describe("Number of matches to skip for pagination"),
+};
+
+const historyInput = {
+	since: editedCardsInput.since.describe(
+		"Inclusive actual event timestamp bound: date (local midnight) or timezone ISO timestamp",
+	),
+	until: editedCardsInput.until.describe(
+		"Exclusive actual event timestamp bound; must be later than since",
+	),
+	limit: editedCardsInput.limit,
+	offset: editedCardsInput.offset,
+	source_uid: editedCardsInput.source_uid,
+	edit_source: z
+		.enum(["manual", "ai", "system"])
+		.optional()
+		.describe("Actual source of each event, not lifetime counters"),
+};
+
+function historyTool(perCard: boolean): ToolDef {
+	const input = perCard
+		? {
+				...historyInput,
+				card_id: z
+					.string()
+					.min(1)
+					.refine((value) => value.trim().length > 0, "Missing card ID")
+					.describe("Card ID; sibling cards share the owning note history"),
+			}
+		: historyInput;
+	return custom(
+		perCard ? "get_card_edit_history" : "list_card_edits",
+		perCard
+			? "Read persistent local card edit history with actual before/after, source and timestamp. Siblings share note history. Includes current text separately; retention is 50 per note, 10,000 globally, 90 days. No history before installation. Does not require SQL query endpoint."
+			: "List actual persistent local edit events with before/after fields, source and timestamp, newest first. Retention: 50 per note, 10,000 globally, 90 days; no preinstallation history. Does not require SQL query endpoint.",
+		input,
+		async (params, client) => {
+			const parsed = z.object(input).parse(params);
+			const since =
+				parsed.since === undefined
+					? undefined
+					: editDateTimestamp(parsed.since);
+			const until =
+				parsed.until === undefined
+					? undefined
+					: editDateTimestamp(parsed.until);
+			if (since !== undefined && until !== undefined && until <= since)
+				throw new UsageError("until must be later than since");
+			const sp = new URLSearchParams();
+			for (const [key, value] of Object.entries(parsed))
+				if (
+					key !== "card_id" &&
+					(typeof value === "string" || typeof value === "number")
+				)
+					sp.set(key, String(value));
+			const path = perCard
+				? `/cards/${encodeURIComponent(requireStringParam(parsed, "card_id"))}/edit-history`
+				: "/card-edits";
+			return jsonResult(await client.get(`${path}?${sp}`));
+		},
+	);
+}
+
 export const cardTools: ToolDef[] = [
+	historyTool(false),
+	historyTool(true),
+	custom(
+		"list_edited_cards",
+		"List edited flashcards with current rendered question and answer, newest content edit first (then card ID). Includes suspended cards and archived source notes; deleted cards and notes are excluded. Requires Enable SQL query endpoint. Counters are lifetime, note-level totals shared by sibling cards; contentEditedAt is the shared last manual OR AI content edit timestamp, not edit history.",
+		editedCardsInput,
+		async (params, client) => {
+			const { limit, offset, since, until, manual_only, ai_only, source_uid } =
+				z.object(editedCardsInput).parse(params);
+			const sinceMs =
+				since === undefined ? undefined : editDateTimestamp(since);
+			const untilMs =
+				until === undefined ? undefined : editDateTimestamp(until);
+			if (
+				sinceMs !== undefined &&
+				untilMs !== undefined &&
+				untilMs <= sinceMs
+			) {
+				throw new UsageError("until must be later than since");
+			}
+			const filters = [
+				"c.deleted_at IS NULL",
+				"n.deleted_at IS NULL",
+				"n.content_edited_at IS NOT NULL",
+			];
+			if (sinceMs !== undefined)
+				filters.push(`n.content_edited_at >= ${sinceMs}`);
+			if (untilMs !== undefined)
+				filters.push(`n.content_edited_at < ${untilMs}`);
+			if (manual_only) filters.push("n.edit_count > 0");
+			if (ai_only) filters.push("n.ai_edit_count > 0");
+			if (source_uid !== undefined) {
+				// A UTF-8 hex literal also avoids the endpoint's semicolon guard on text UIDs.
+				filters.push(
+					`n.source_uid = CAST(X'${Buffer.from(source_uid, "utf8").toString("hex")}' AS TEXT)`,
+				);
+			}
+			const where = filters.join(" AND ");
+			const from = "FROM cards c JOIN notes n ON n.id = c.note_id";
+			const page = await client.post<{
+				rows: Array<{ total: number; id: string | null }>;
+			}>("/query", {
+				sql: `SELECT totals.total, page.id FROM
+					(SELECT COUNT(*) AS total ${from} WHERE ${where}) totals
+					LEFT JOIN (SELECT c.id, n.content_edited_at ${from} WHERE ${where}
+					ORDER BY n.content_edited_at DESC, c.id ASC LIMIT ${limit} OFFSET ${offset}) page ON 1 = 1
+					ORDER BY page.content_edited_at DESC, page.id ASC`,
+			});
+			const total = page.rows[0].total;
+			const cards = [];
+			for (const row of page.rows) {
+				if (row.id === null) continue;
+				const card = await client.get<{
+					id: string;
+					question: string;
+					answer: string;
+					cardType: string;
+					sourceUid?: string | null;
+					editCount: number;
+					aiEditCount: number;
+					contentEditedAt: number | null;
+				}>(`/cards/${encodeURIComponent(row.id)}`);
+				cards.push({
+					id: card.id,
+					question: card.question,
+					answer: card.answer,
+					cardType: card.cardType,
+					sourceUid: card.sourceUid ?? null,
+					editCount: card.editCount,
+					aiEditCount: card.aiEditCount,
+					contentEditedAt: card.contentEditedAt,
+					edited: true,
+					manuallyEdited: card.editCount > 0,
+					aiEdited: card.aiEditCount > 0,
+				});
+			}
+			return jsonResult({
+				total,
+				count: cards.length,
+				offset,
+				hasMore: offset + cards.length < total,
+				cards,
+				limitation:
+					"Counters are lifetime note-level totals shared by sibling cards. contentEditedAt is the shared last manual OR AI content edit, not a history, a manual-edit-in-window guarantee, or an AI-edit-in-window guarantee. Current card text is fetched after selection and may change during the request.",
+			});
+		},
+	),
 	custom(
 		"list_cards",
 		"List flashcards, optionally filtered by a case-insensitive substring of the question or answer, by card state, or by source note. Returns total (all matches) and up to limit cards, in no particular order. Suspended cards and cards from archived notes are left out unless suspended / archived is true. It does not filter by due date (use get_due_cards) and does not understand Card Browser syntax such as 'flag:2'.",

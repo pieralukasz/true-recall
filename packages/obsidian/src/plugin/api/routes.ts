@@ -32,6 +32,10 @@ import {
 } from "./handlers/card-actions";
 import { handleGetCardContext } from "./handlers/card-context";
 import {
+	handleGetCardEditHistory,
+	handleListCardEdits,
+} from "./handlers/card-edit-history";
+import {
 	handleCreateCardPolishPreset,
 	handleDeleteCardPolishPreset,
 	handleListCardPolishPresets,
@@ -137,6 +141,8 @@ const routes: Route[] = [
 	route("GET", "/context", handleGetFullContext),
 
 	// Cards — reads
+	route("GET", "/card-edits", handleListCardEdits),
+	route("GET", "/cards/:id/edit-history", handleGetCardEditHistory),
 	route("GET", "/cards/due", handleGetDueCards),
 	route("GET", "/cards/actual-learning", handleGetActualLearningCards),
 	route("GET", "/cards/problems", handleGetProblemCards),

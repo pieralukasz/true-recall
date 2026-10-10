@@ -135,7 +135,7 @@ export function revertCardEdit(
 			return { ok: false, error: "changed" };
 		}
 	}
-	plugin.flashcardManager.updateNoteFields(noteId, { ...before }, "ai");
+	plugin.flashcardManager.updateNoteFields(noteId, { ...before }, "system");
 	void plugin.commandService?.execute(
 		new UpdateNoteFieldsCommand(
 			noteId,
