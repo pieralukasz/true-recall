@@ -83,6 +83,7 @@ describe("AI workflow facade", () => {
 
 		expect(workflows.map((workflow) => workflow.id)).toEqual([
 			assistantWorkflowId("explain"),
+			cardPolishWorkflowId("builtin-polish-clean"),
 			cardPolishWorkflowId("shorten"),
 		]);
 	});
@@ -165,7 +166,8 @@ describe("AI workflow facade", () => {
 		);
 
 		expect(
-			workflows.find((workflow) => workflow.kind === "modify-card")?.autoApply,
+			workflows.find((workflow) => workflow.sourcePresetId === "shorten")
+				?.autoApply,
 		).toBe(true);
 	});
 
@@ -188,7 +190,7 @@ describe("AI workflow facade", () => {
 		);
 
 		expect(
-			workflows.find((workflow) => workflow.kind === "modify-card"),
+			workflows.find((workflow) => workflow.sourcePresetId === "shorten"),
 		).toMatchObject({
 			autoApply: true,
 			autoApplyNewCards: false,
