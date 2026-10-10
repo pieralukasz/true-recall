@@ -5,6 +5,7 @@ import { createRoot } from "react-dom/client";
 
 import type TrueRecallPlugin from "../../../main";
 import type { AiChatController, ChatSession } from "../chat-controller";
+import { countPending } from "../engine/proposals";
 import {
 	ControllerContext,
 	Icon,
@@ -129,7 +130,14 @@ function RunPanel({
 				<div className="tr-card-assist__body">
 					<LastAnswer
 						messages={chat.messages}
-						onApplied={() => controller.dismissCardRun(cardId)}
+						onApplied={() => {
+							// Close only when nothing else waits for a decision: Split
+							// List proposes the edit and the new cards together.
+							const decisions = controller.get(session.id)?.decisions ?? {};
+							if (countPending(chat.messages, decisions) === 0) {
+								controller.dismissCardRun(cardId);
+							}
+						}}
 					/>
 					{busy ? (
 						<div
