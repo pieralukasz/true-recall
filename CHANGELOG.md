@@ -2,7 +2,15 @@
 
 ## Unreleased
 
-## 2.9.0 (2026-10-10)
+## 2.9.1 (2026-10-10)
+
+Fixes for the new Card Polish presets in review.
+
+### Fixes
+
+- **Clean runs on your device from review's AI menu.** It went through the AI chat, which also changed line breaks. Now it edits the card right away, like its command.
+- **Split List keeps the new cards on screen.** Applying the edit to the current card closed the panel before you could add the other new cards. It now stays open until every proposal is applied or skipped.
+- **Card Polish says when a card needs no change** instead of showing an error, and Split List and Format results are more reliable (Pro server update, no plugin update needed).
 
 Card Polish now ships ready-made presets: four for Pro users and a free one for everyone.
 

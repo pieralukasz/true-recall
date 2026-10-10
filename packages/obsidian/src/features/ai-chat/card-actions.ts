@@ -1,9 +1,13 @@
 import { Menu } from "obsidian";
 
+import { findCardPolishPreset } from "@true-recall/core/ai/workflows/card-polish-builtins";
 import type { FSRSFlashcardItem } from "@true-recall/core/types";
 
 import { isFactCheckAvailable } from "@true-recall/obsidian/features/assistant/ui/fact-check";
-import { listCardPolishWorkflows } from "@true-recall/obsidian/features/library/ui/panel/utils/card-polish.utils";
+import {
+	listCardPolishWorkflows,
+	startCardPolish,
+} from "@true-recall/obsidian/features/library/ui/panel/utils/card-polish.utils";
 
 import type TrueRecallPlugin from "../../main";
 import { type ChatContext, noteContext, shorten } from "./engine/chat-context";
@@ -83,12 +87,20 @@ export function showCardAiMenu(
 			item
 				.setTitle(workflow.name)
 				.setIcon("wand")
-				.onClick(() =>
+				.onClick(() => {
+					// Local presets (Clean) run without AI, like their command does.
+					const executor =
+						findCardPolishPreset(plugin.settings, workflow.sourcePresetId)
+							?.executor ?? "ai";
+					if (executor !== "ai") {
+						startCardPolish(plugin, workflow, card);
+						return;
+					}
 					polishCard(plugin, card, {
 						name: workflow.name,
 						instruction: workflow.instruction,
-					}),
-				),
+					});
+				}),
 		);
 	}
 	menu.addSeparator();
