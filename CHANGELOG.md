@@ -2,6 +2,25 @@
 
 ## Unreleased
 
+## 2.8.1 (2026-10-10)
+
+The AI chat can now search your vault, generated cards can skip the chat, and you can select cards in the panel by dragging.
+
+### Features
+
+- **The AI chat searches your vault (Pro).** Ask what you have in your notes about a topic: the assistant searches note titles, aliases, tags, headings and text, reads the best matches and answers from them with links to the notes. It also opens a note by its name. The search runs on your device, also on phones.
+- **Add generated cards without the chat (Pro).** Toolbar preset buttons and generation commands now save the cards straight to the note, with Undo in the notice, and you can send several selections one after another. Turn off Settings → Features → AI Workspace → Generate cards → "Add cards without the chat" to review the cards in the AI chat first.
+- **Select cards in the panel by dragging.** Press on a card and move over the others with the mouse button held to select the whole range; drag back over selected cards to unselect them. A plain click still opens the card.
+
+### Improvements
+
+- **A calmer AI chat.** The note and the selected text show as small attachments inside the message box, the preset sits next to Send, and answers use even spacing with headings at text size.
+
+### Bug Fixes
+
+- **The assistant gives the right study numbers.** "Due today" now matches the status bar (new, learning and due after your daily limits) instead of every overdue card, and the streak counts days instead of correct answers in a row.
+- **"Add all" in the AI chat no longer freezes Obsidian** on large collections: the cards are added in one batch.
+
 ## 2.8.0 (2026-10-09)
 
 Pro generation now runs your preset in the AI chat, shows its progress, and the Pro preset is called Flash.

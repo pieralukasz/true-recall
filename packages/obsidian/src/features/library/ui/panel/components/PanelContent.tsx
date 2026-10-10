@@ -1,6 +1,6 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
 import type { TFile } from "obsidian";
-import { useCallback } from "preact/hooks";
+import { useCallback, useRef } from "preact/hooks";
 
 import type { FSRSFlashcardItem } from "@true-recall/core/types/fsrs/card.types";
 
@@ -14,6 +14,7 @@ import { PanelIOGroup } from "@true-recall/obsidian/features/library/ui/panel/co
 import { StreamingSection } from "@true-recall/obsidian/features/library/ui/panel/components/StreamingSection";
 import type { PanelItem } from "@true-recall/obsidian/features/library/ui/panel/group-cards";
 import { usePanelScroll } from "@true-recall/obsidian/features/library/ui/panel/hooks/PanelScrollContext";
+import { usePanelDragSelect } from "@true-recall/obsidian/features/library/ui/panel/hooks/usePanelDragSelect";
 import type { PanelCardActionHandlers } from "@true-recall/obsidian/features/library/ui/panel/panel.types";
 import { getPanelItemRepresentative } from "@true-recall/obsidian/features/library/ui/panel/utils/panel-list.utils";
 
@@ -58,6 +59,15 @@ export function PanelContent({
 		estimateSize: () => 44,
 		overscan: 6,
 	});
+	const listRef = useRef<HTMLDivElement>(null);
+	const startDragSelect = usePanelDragSelect({
+		listRef,
+		scrollRef,
+		items,
+		selectedCardIds,
+		isSelectionMode,
+		onReplaceSelection: actions.onReplaceSelection,
+	});
 
 	if (!currentFile) {
 		return activeViewContext ? (
@@ -96,7 +106,14 @@ export function PanelContent({
 	}
 
 	return (
-		<div class="ep:flex ep:flex-col" role="list" aria-label="Cards">
+		<div
+			ref={listRef}
+			class="tr-panel-card-list ep:flex ep:flex-col ep:outline-none"
+			tabIndex={-1}
+			role="list"
+			aria-label="Cards"
+			onPointerDown={startDragSelect}
+		>
 			<div
 				style={{
 					height: `${virtualizer.getTotalSize()}px`,
@@ -113,6 +130,7 @@ export function PanelContent({
 							key={virtualRow.key}
 							ref={virtualizer.measureElement}
 							data-index={virtualRow.index}
+							data-panel-row-index={virtualRow.index}
 							role="listitem"
 							style={{
 								position: "absolute",
