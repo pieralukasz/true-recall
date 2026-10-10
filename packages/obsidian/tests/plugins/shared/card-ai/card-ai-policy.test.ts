@@ -83,4 +83,16 @@ describe("Card Polish policy", () => {
 			Back: "![[chart.png|300]] https://example.com/a/b.png",
 		});
 	});
+
+	it("cleans links and attachment paths in one pass", () => {
+		expect(
+			runLocalCardTransform("clean", {
+				Front: "What does [[folder/Working memory|working memory]] hold?",
+				Back: "![[attachments/course/chart.png|300]] and [[RCD]]",
+			}),
+		).toEqual({
+			Front: "What does working memory hold?",
+			Back: "![[chart.png|300]] and RCD",
+		});
+	});
 });

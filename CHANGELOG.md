@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+## 2.9.0 (2026-10-10)
+
+Card Polish now ships ready-made presets: four for Pro users and a free one for everyone.
+
+### Features
+
+- **Card Polish presets for Pro.** Sharpen gives a card exactly one correct answer and a short answer, Split List turns a list answer into one card per item, Reverse adds the same fact asked the other way round, and Format fixes Markdown without changing a word. They appear in review's AI menu, in the cards panel and in the command palette. Their prompts run on the Pro server, so they improve without a plugin update.
+- **Clean, free for everyone.** Removes [[links]] (keeping their words) and shortens attachment paths to file names in one click. It runs on your device, without AI.
+
 ## 2.8.1 (2026-10-10)
 
 The AI chat can now search your vault, generated cards can skip the chat, and you can select cards in the panel by dragging.

@@ -1,5 +1,9 @@
 import type { CardAIPreset } from "../../types/card-ai-preset.types";
 import type { TrueRecallSettings } from "../../types/settings.types";
+import {
+	findCardPolishPreset,
+	listCardPolishPresets,
+} from "./card-polish-builtins";
 
 export type AIWorkflowKind =
 	| "agent"
@@ -120,7 +124,7 @@ export function listAIWorkflows(
 	}
 
 	if (isEnabled("modify-card") && (context.hasCard || context.hasDraftCard)) {
-		for (const preset of settings.cardPolish?.userPresets ?? []) {
+		for (const preset of listCardPolishPresets(settings)) {
 			if (preset.disabled) continue;
 			workflows.push(cardPolishWorkflow(preset));
 		}
@@ -157,9 +161,7 @@ export function resolveAIWorkflow(
 		(context.hasCard || context.hasDraftCard)
 	) {
 		const presetId = workflowId.slice(CARD_POLISH_PREFIX.length);
-		const preset = settings.cardPolish?.userPresets.find(
-			(candidate) => candidate.id === presetId,
-		);
+		const preset = findCardPolishPreset(settings, presetId);
 		if (preset) return cardPolishWorkflow(preset);
 	}
 	const exact = listAIWorkflows(settings, context).find(
