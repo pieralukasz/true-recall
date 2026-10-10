@@ -2,6 +2,7 @@ import type { ComponentType } from "preact";
 import { useCallback, useState } from "preact/hooks";
 
 import type { CardAIPreset, CardAIUserSettings } from "@true-recall/core";
+import { hasProServer } from "@true-recall/core/ai/workflows/card-polish-builtins";
 import { moveItem } from "@true-recall/core/utils";
 
 import {
@@ -23,6 +24,8 @@ export interface CardAIPanelConfig {
 	bucketKey: "cardPolish";
 	/** Never persisted — live in plugin code, not in settings. */
 	builtins: CardAIPreset[];
+	/** Built-ins whose prompts live on the Pro server cannot be forked. */
+	allowFork?: boolean;
 	description: string;
 	lmStudioField?: {
 		modelKey: "lmStudioCardPolishModel";
@@ -66,7 +69,7 @@ export function createCardAISettingsPanel(
 			},
 		);
 
-		const isPro = !!settings.proKey;
+		const isPro = hasProServer(settings);
 		const visibleBuiltins = config.builtins.filter(
 			(b) => !b.requiresPro || isPro,
 		);
@@ -225,7 +228,9 @@ export function createCardAISettingsPanel(
 						<div class="tr-preset-section__header">
 							<h3 class="tr-preset-section__title">{t("Built-in presets")}</h3>
 							<span class="tr-preset-section__description">
-								{t("Ship with the plugin — fork to customize")}
+								{config.allowFork
+									? t("Ship with the plugin — fork to customize")
+									: t("Ship with the plugin")}
 							</span>
 						</div>
 						{visibleBuiltins.map((p) => (
@@ -233,7 +238,7 @@ export function createCardAISettingsPanel(
 								key={p.id}
 								preset={p}
 								readOnly
-								onFork={() => forkBuiltin(p)}
+								onFork={config.allowFork ? () => forkBuiltin(p) : undefined}
 							/>
 						))}
 					</div>

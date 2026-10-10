@@ -1,4 +1,7 @@
 import type { CardAIPreset } from "@true-recall/core";
+import { BUILTIN_CARD_POLISH_PRESETS } from "@true-recall/core/ai/workflows/card-polish-builtins";
 
-/** Card Polish ships no built-ins — users craft their own polish/fill presets. */
-export const CARD_POLISH_BUILTINS: CardAIPreset[] = [];
+/** Sharpen, Split List, Reverse and Format (Pro, prompts on the Pro server) and Clean (local, free). */
+export const CARD_POLISH_BUILTINS: CardAIPreset[] = [
+	...BUILTIN_CARD_POLISH_PRESETS,
+];

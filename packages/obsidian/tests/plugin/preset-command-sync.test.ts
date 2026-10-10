@@ -57,8 +57,11 @@ describe("preset command synchronization", () => {
 		const { context, addCommand } = createContext();
 
 		new CardPolishPlugin(context).syncPresetCommands();
+		const registered = addCommand.mock.calls.length;
 		new CardPolishPlugin(context).syncPresetCommands();
 
-		expect(addCommand).toHaveBeenCalledTimes(1);
+		// One command per user preset plus the free built-in "Clean".
+		expect(registered).toBe(2);
+		expect(addCommand).toHaveBeenCalledTimes(2);
 	});
 });

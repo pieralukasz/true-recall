@@ -1,6 +1,10 @@
 import { ItemView } from "obsidian";
 
 import { cardPolishWorkflowId } from "@true-recall/core/ai/workflows/ai-workflow";
+import {
+	findCardPolishPreset,
+	listCardPolishPresets,
+} from "@true-recall/core/ai/workflows/card-polish-builtins";
 import { VIEW_TYPE_REVIEW } from "@true-recall/core/constants";
 
 import { readLiveAssistantContext } from "@true-recall/obsidian/features/assistant/ui/useLiveAssistantContext";
@@ -30,7 +34,7 @@ export class CardPolishPlugin {
 		// settings. The preset is looked up at invocation time so live edits apply,
 		// and the command ids are part of the user's hotkey config — never rename.
 		const plugin = this.ctx.obsidianPlugin;
-		for (const declared of plugin.settings.cardPolish?.userPresets ?? []) {
+		for (const declared of listCardPolishPresets(plugin.settings)) {
 			const presetId = declared.id;
 			const commandId = `card-polish-${presetId}`;
 			if (this.hasCommand(commandId)) continue;
@@ -45,9 +49,7 @@ export class CardPolishPlugin {
 					if ((activeView?.getViewType() ?? "") !== VIEW_TYPE_REVIEW) {
 						return false;
 					}
-					const preset = (plugin.settings.cardPolish?.userPresets ?? []).find(
-						(candidate) => candidate.id === presetId,
-					);
+					const preset = findCardPolishPreset(plugin.settings, presetId);
 					if (!preset || preset.disabled) return false;
 					if (!checking) this.runPreset(preset.prompt, preset.id);
 					return true;
