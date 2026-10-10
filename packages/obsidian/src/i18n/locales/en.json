@@ -482,6 +482,8 @@
 	"Show during review": "Show during review",
 	"Show frontmatter in note review": "Show frontmatter in note review",
 	"Show header stats": "Show header stats",
+	"Add cards without the chat": "Add cards without the chat",
+	"Pro: toolbar buttons and commands save the generated cards straight to the note, with Undo in the notice. Off: the cards open in the AI chat for review first.": "Pro: toolbar buttons and commands save the generated cards straight to the note, with Undo in the notice. Off: the cards open in the AI chat for review first.",
 	"Show in flashcard panel": "Show in flashcard panel",
 	"Show inline status donuts next to [[wikilinks]] that reveal flashcard review state at a glance. In reading mode you also get text count indicators, and hovering a link opens a tooltip with full note stats.": "Show inline status donuts next to [[wikilinks]] that reveal flashcard review state at a glance. In reading mode you also get text count indicators, and hovering a link opens a tooltip with full note stats.",
 	"Show next review time": "Show next review time",

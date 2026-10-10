@@ -476,6 +476,12 @@ export interface TrueRecallSettings {
 	generationPresets: GenerationPreset[];
 	/** ID of the default generation preset */
 	defaultGenerationPresetId: string;
+	/**
+	 * Toolbar/command generation adds the cards straight to the note (with
+	 * Undo) instead of opening the AI chat with a proposal. Pro only; without
+	 * Pro generation always runs in the background.
+	 */
+	generateWithoutChat?: boolean;
 
 	/**
 	 * Overrides where True Recall writes binary attachments: pasted images,
