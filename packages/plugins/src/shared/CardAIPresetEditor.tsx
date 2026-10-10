@@ -37,6 +37,7 @@ const EXECUTOR_OPTIONS = [
 		value: "shorten-attachment-paths",
 		label: "Shorten attachment paths locally",
 	},
+	{ value: "clean", label: "Remove links and shorten paths locally" },
 ];
 
 interface CardAIPresetEditorProps {
@@ -93,8 +94,11 @@ function CompactPresetRow({
 					</span>
 				</div>
 				<span class="tr-preset-builtin__description">
-					Ready-made workflow included with the plugin. Fork it to customize the
-					prompt and behavior.
+					{onFork
+						? "Ready-made workflow included with the plugin. Fork it to customize the prompt and behavior."
+						: preset.requiresPro
+							? "Included with True Recall Pro. The prompt runs on the Pro server."
+							: "Included with the plugin. Runs locally, without AI."}
 				</span>
 			</div>
 			{onFork && (

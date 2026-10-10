@@ -8,6 +8,7 @@ import type {
 import { OpenRouterClient } from "@true-recall/core/ai/clients/openrouter-client";
 import { resolveAIClientConfig } from "@true-recall/core/ai/config/ai-client-config";
 import { CUSTOM_CARD_POLISH_PRESET_ID } from "@true-recall/core/ai/workflows/ai-workflow";
+import { findCardPolishPreset } from "@true-recall/core/ai/workflows/card-polish-builtins";
 
 import type TrueRecallPlugin from "@true-recall/obsidian/main";
 
@@ -45,9 +46,7 @@ export class CardPolishWorkflow {
 						fieldScope: "all",
 						executor: "ai",
 					}
-				: this.plugin.settings.cardPolish?.userPresets.find(
-						(candidate) => candidate.id === presetId,
-					);
+				: findCardPolishPreset(this.plugin.settings, presetId);
 		if (!preset) throw new Error(`Card Polish preset "${presetId}" not found`);
 
 		const draft = task.context.draftCard;

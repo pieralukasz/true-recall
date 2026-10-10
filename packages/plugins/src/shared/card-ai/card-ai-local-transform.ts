@@ -36,7 +36,11 @@ export function runLocalCardTransform(
 	fieldScope: CardAIFieldScope = "all",
 ): CardFields {
 	const transform =
-		executor === "remove-backlinks" ? removeBacklinks : shortenAttachmentPaths;
+		executor === "remove-backlinks"
+			? removeBacklinks
+			: executor === "clean"
+				? (value: string) => removeBacklinks(shortenAttachmentPaths(value))
+				: shortenAttachmentPaths;
 	const names = Object.keys(fields);
 	const editable =
 		fieldScope === "all"

@@ -87,7 +87,11 @@ describe("listCardPolishWorkflows", () => {
 			cardPolish: { userPresets: [preset], customPromptAutoApply: false },
 		});
 
-		expect(listCardPolishWorkflows(settings)).toEqual([
+		expect(
+			listCardPolishWorkflows(settings).filter(
+				(workflow) => workflow.sourcePresetId === preset.id,
+			),
+		).toEqual([
 			{
 				id: cardPolishWorkflowId(preset.id),
 				name: preset.name,
@@ -108,14 +112,36 @@ describe("listCardPolishWorkflows", () => {
 		} as Partial<TrueRecallSettings>);
 
 		const workflows = listCardPolishWorkflows(settings);
-		expect(workflows).toHaveLength(1);
-		expect(workflows[0]?.kind).toBe("modify-card");
+		expect(workflows.map((workflow) => workflow.sourcePresetId)).toEqual([
+			"builtin-polish-clean",
+			"preset-1",
+		]);
+		expect(workflows.every((workflow) => workflow.kind === "modify-card")).toBe(
+			true,
+		);
 	});
 
-	it("returns an empty list when the bucket is missing", () => {
+	it("lists only the built-ins when the bucket is missing", () => {
 		expect(
-			listCardPolishWorkflows(createSettings({ cardPolish: undefined })),
-		).toEqual([]);
+			listCardPolishWorkflows(createSettings({ cardPolish: undefined })).map(
+				(workflow) => workflow.name,
+			),
+		).toEqual(["Clean"]);
+	});
+
+	it("adds the four Pro presets for the Pro provider", () => {
+		expect(
+			listCardPolishWorkflows(
+				createSettings({ providerType: "pro", proKey: "sk-pro" }),
+			).map((workflow) => workflow.name),
+		).toEqual([
+			"Sharpen",
+			"Split List",
+			"Reverse",
+			"Format",
+			"Clean",
+			"Fix formatting",
+		]);
 	});
 
 	it("returns an empty list when AI Workspace is off", () => {

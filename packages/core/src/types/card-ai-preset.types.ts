@@ -12,7 +12,9 @@ export type CardAIFieldScope = "all" | "question" | "answer" | "empty-answer";
 export type CardAIExecutor =
 	| "ai"
 	| "remove-backlinks"
-	| "shorten-attachment-paths";
+	| "shorten-attachment-paths"
+	/** Both of the above in one pass. */
+	| "clean";
 
 export interface CardAIPreset {
 	id: string;

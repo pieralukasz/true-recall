@@ -135,3 +135,11 @@ export {
 	listAIWorkflows,
 	resolveAIWorkflow,
 } from "./workflows/ai-workflow";
+export {
+	availableBuiltinCardPolishPresets,
+	BUILTIN_CARD_POLISH_PRESETS,
+	CARD_POLISH_PROMPT_MARKER,
+	findCardPolishPreset,
+	hasProServer,
+	listCardPolishPresets,
+} from "./workflows/card-polish-builtins";
