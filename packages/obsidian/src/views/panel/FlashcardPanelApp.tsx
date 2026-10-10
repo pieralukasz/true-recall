@@ -1,4 +1,4 @@
-import { useState } from "preact/hooks";
+import { useEffect, useRef, useState } from "preact/hooks";
 
 import { Panel } from "@true-recall/obsidian/components";
 import {
@@ -92,49 +92,61 @@ function PanelList({
 	quickAddOpen: boolean;
 	onOpenQuickAdd: () => void;
 }) {
+	const headerRef = useRef<HTMLDivElement>(null);
+	const lockedHeight = useHeaderHeightLock(headerRef, panel.isSelecting);
 	return (
 		<>
-			{panel.isSelecting ? (
-				<SelectionToolbar
-					visibleCardIds={panel.visibleCardIds}
-					allCardIds={panel.allCardIds}
-				/>
-			) : isMobile() ? (
-				<MobileNoteCardsHeader
-					noteName={panel.store.currentFile?.basename ?? null}
-					totalCount={panel.allFlashcards.length}
-					visibleCount={panel.visibleCardIds.length}
-					dueCount={panel.dueCount}
-					statusFilter={panel.statusFilter}
-					sort={panel.sort}
-					onStatusFilterChange={panel.setStatusFilter}
-					onSortChange={panel.setSort}
-					onEnterSelection={panel.enterSelection}
-					onSearchInput={panel.handleSearchInput}
-					onShowShortcuts={panel.showShortcuts}
-					onRefresh={onRefresh}
-					quickAddOpen={quickAddOpen}
-					onOpenQuickAdd={onOpenQuickAdd}
-				/>
-			) : (
-				<NormalHeader
-					totalCount={panel.allFlashcards.length}
-					visibleCount={panel.visibleCardIds.length}
-					dueCount={panel.dueCount}
-					statusFilter={panel.statusFilter}
-					sort={panel.sort}
-					onStatusFilterChange={panel.setStatusFilter}
-					onSortChange={panel.setSort}
-					onEnterSelection={panel.enterSelection}
-					onSearchInput={panel.handleSearchInput}
-					onShowShortcuts={panel.showShortcuts}
-					onRefresh={onRefresh}
-					quickAddOpen={quickAddOpen}
-					onOpenQuickAdd={onOpenQuickAdd}
-				/>
-			)}
+			<div
+				ref={headerRef}
+				class="tr-panel-list-header ep:flex ep:shrink-0 ep:flex-col"
+				style={
+					panel.isSelecting && lockedHeight
+						? { minHeight: `${lockedHeight}px` }
+						: undefined
+				}
+			>
+				{panel.isSelecting ? (
+					<SelectionToolbar
+						visibleCardIds={panel.visibleCardIds}
+						allCardIds={panel.allCardIds}
+					/>
+				) : isMobile() ? (
+					<MobileNoteCardsHeader
+						noteName={panel.store.currentFile?.basename ?? null}
+						totalCount={panel.allFlashcards.length}
+						visibleCount={panel.visibleCardIds.length}
+						dueCount={panel.dueCount}
+						statusFilter={panel.statusFilter}
+						sort={panel.sort}
+						onStatusFilterChange={panel.setStatusFilter}
+						onSortChange={panel.setSort}
+						onEnterSelection={panel.enterSelection}
+						onSearchInput={panel.handleSearchInput}
+						onShowShortcuts={panel.showShortcuts}
+						onRefresh={onRefresh}
+						quickAddOpen={quickAddOpen}
+						onOpenQuickAdd={onOpenQuickAdd}
+					/>
+				) : (
+					<NormalHeader
+						totalCount={panel.allFlashcards.length}
+						visibleCount={panel.visibleCardIds.length}
+						dueCount={panel.dueCount}
+						statusFilter={panel.statusFilter}
+						sort={panel.sort}
+						onStatusFilterChange={panel.setStatusFilter}
+						onSortChange={panel.setSort}
+						onEnterSelection={panel.enterSelection}
+						onSearchInput={panel.handleSearchInput}
+						onShowShortcuts={panel.showShortcuts}
+						onRefresh={onRefresh}
+						quickAddOpen={quickAddOpen}
+						onOpenQuickAdd={onOpenQuickAdd}
+					/>
+				)}
 
-			{!panel.isSelecting ? <PanelAiStrip /> : null}
+				{!panel.isSelecting ? <PanelAiStrip /> : null}
+			</div>
 
 			<div
 				ref={panel.contentRef}
@@ -162,3 +174,24 @@ function PanelList({
 }
 
 export type PanelAppActions = { type: "refresh" };
+
+/**
+ * The list header is taller than the selection toolbar. Keep its last height while
+ * selecting, so the cards do not jump under the pointer when a drag turns selection on.
+ */
+function useHeaderHeightLock(
+	ref: { current: HTMLDivElement | null },
+	isSelecting: boolean,
+): number | null {
+	const [height, setHeight] = useState<number | null>(null);
+	useEffect(() => {
+		const el = ref.current;
+		if (!el || isSelecting) return;
+		const measure = () => setHeight(el.getBoundingClientRect().height);
+		measure();
+		const observer = new ResizeObserver(measure);
+		observer.observe(el);
+		return () => observer.disconnect();
+	}, [ref, isSelecting]);
+	return height;
+}

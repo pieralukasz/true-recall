@@ -44,7 +44,7 @@ export function SelectionToolbar({
 	);
 
 	return (
-		<header class="ep:flex ep:h-10 ep:shrink-0 ep:items-center ep:gap-2 ep:border-b ep:border-obs-border ep:px-2">
+		<header class="ep:flex ep:min-h-10 ep:flex-1 ep:shrink-0 ep:items-center ep:gap-2 ep:border-b ep:border-obs-border ep:px-2">
 			<PanelIconButton
 				icon="x"
 				label="Exit Selection (Esc)"
