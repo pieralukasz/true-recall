@@ -77,7 +77,7 @@
 		"fflate": "^0.8.3",
 		"fzstd": "^0.1.1",
 		"monkey-around": "^3.0.0",
-		"motion": "12.35.0",
+		"motion": "13.4.4",
 		"obsidian": "^1.13.1",
 		"pako": "^2.2.0",
 		"preact": "^10.29.8",
