@@ -1,14 +1,13 @@
 {
 	"extends": "../../tsconfig.base.json",
 	"compilerOptions": {
-		"baseUrl": "../..",
 		"paths": {
-			"@true-recall/core": ["packages/core/src"],
-			"@true-recall/core/*": ["packages/core/src/*"],
-			"@true-recall/obsidian": ["packages/obsidian/src"],
-			"@true-recall/obsidian/*": ["packages/obsidian/src/*"],
-			"@true-recall/plugins": ["packages/plugins/src"],
-			"@true-recall/plugins/*": ["packages/plugins/src/*"]
+			"@true-recall/core": ["../../packages/core/src"],
+			"@true-recall/core/*": ["../../packages/core/src/*"],
+			"@true-recall/obsidian": ["../../packages/obsidian/src"],
+			"@true-recall/obsidian/*": ["../../packages/obsidian/src/*"],
+			"@true-recall/plugins": ["../../packages/plugins/src"],
+			"@true-recall/plugins/*": ["../../packages/plugins/src/*"]
 		},
 		"outDir": "dist",
 		"jsx": "react-jsx",

@@ -1,4 +1,4 @@
-import { type ZodTypeAny, z } from "zod";
+import { z } from "zod";
 
 /**
  * Command-line arguments for a tool, derived from its MCP input schema so the
@@ -6,7 +6,7 @@ import { type ZodTypeAny, z } from "zod";
  * the tools because it must use the same zod copy as the schemas.
  */
 
-type Schema = Record<string, ZodTypeAny>;
+type Schema = Record<string, z.ZodType>;
 
 export type ParamKind =
 	| "string"
@@ -35,8 +35,8 @@ export class UsageError extends Error {
 }
 
 /** Peel optional/default/nullable/effects wrappers off a schema. */
-function unwrap(schema: ZodTypeAny): {
-	base: ZodTypeAny;
+function unwrap(schema: z.ZodType): {
+	base: z.ZodType;
 	nullable: boolean;
 	defaultValue?: unknown;
 	description?: string;
@@ -47,14 +47,15 @@ function unwrap(schema: ZodTypeAny): {
 	let description = schema.description;
 	for (;;) {
 		description ??= s.description;
-		if (s instanceof z.ZodOptional) s = s.unwrap() as ZodTypeAny;
+		if (s instanceof z.ZodOptional) s = s.unwrap() as z.ZodType;
 		else if (s instanceof z.ZodNullable) {
 			nullable = true;
-			s = s.unwrap() as ZodTypeAny;
+			s = s.unwrap() as z.ZodType;
 		} else if (s instanceof z.ZodDefault) {
-			defaultValue = s._def.defaultValue();
-			s = s.removeDefault() as ZodTypeAny;
-		} else if (s instanceof z.ZodEffects) s = s.innerType() as ZodTypeAny;
+			// Zod 4 stores the resolved default value (a getter), not a factory.
+			defaultValue = s.def.defaultValue;
+			s = s.unwrap() as z.ZodType;
+		} else if (s instanceof z.ZodPipe) s = s.in as z.ZodType;
 		else break;
 	}
 	return {
@@ -65,7 +66,7 @@ function unwrap(schema: ZodTypeAny): {
 	};
 }
 
-function kindOf(base: ZodTypeAny): ParamKind {
+function kindOf(base: z.ZodType): ParamKind {
 	if (base instanceof z.ZodString) return "string";
 	if (base instanceof z.ZodNumber) return "number";
 	if (base instanceof z.ZodBoolean) return "boolean";
@@ -83,14 +84,15 @@ export function describeParams(schema: Schema | undefined): ParamInfo[] {
 			name,
 			kind,
 			description,
-			required: !s.isOptional(),
+			// Zod 4: a schema is optional when it accepts `undefined`.
+			required: !s.safeParse(undefined).success,
 			nullable,
 		};
 		if (defaultValue !== undefined) info.defaultValue = defaultValue;
 		if (base instanceof z.ZodEnum)
 			info.choices = [...(base.options as string[])];
 		if (base instanceof z.ZodArray)
-			info.itemKind = kindOf(unwrap(base.element as ZodTypeAny).base);
+			info.itemKind = kindOf(unwrap(base.element as z.ZodType).base);
 		return info;
 	});
 }

@@ -226,7 +226,7 @@ export function NoteField({
 							? "ep:text-obs-accent"
 							: "ep:text-obs-faint ep:opacity-50 ep:hover:opacity-100"
 					}`}
-					onClick={(event: MouseEvent) => {
+					onClick={(event: MouseEvent | KeyboardEvent) => {
 						event.stopPropagation();
 						onTogglePin(fieldName);
 					}}

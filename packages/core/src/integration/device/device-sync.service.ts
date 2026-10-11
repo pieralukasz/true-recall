@@ -4,7 +4,10 @@ import { NoteActions } from "@true-recall/core/persistence/sqlite/modules/NoteAc
 import { NoteTypeActions } from "@true-recall/core/persistence/sqlite/modules/NoteTypeActions";
 import { StatsActions } from "@true-recall/core/persistence/sqlite/modules/StatsActions";
 import { SqliteDatabase } from "@true-recall/core/persistence/sqlite/SqliteDatabase";
-import { CURRENT_SCHEMA_VERSION } from "@true-recall/core/persistence/sqlite/SqliteSchemaManager";
+import {
+	CURRENT_SCHEMA_VERSION,
+	SqliteSchemaManager,
+} from "@true-recall/core/persistence/sqlite/SqliteSchemaManager";
 import type { SqliteStoreService } from "@true-recall/core/persistence/sqlite/SqliteStoreService";
 import type { FsrsReplayService } from "@true-recall/core/services/fsrs/fsrs-replay.service";
 
@@ -144,6 +147,16 @@ export class DeviceSyncService {
 				throw new Error(
 					`remote schema v${remoteVersion} is newer than local v${CURRENT_SCHEMA_VERSION}; update the plugin on this device first`,
 				);
+			}
+			// A device that has not opened the vault since a schema bump still
+			// has the old tables, and the merge queries below select the current
+			// columns (e.g. cards.flag from v4). Upgrade this in-memory copy the
+			// same way that device will upgrade itself on its next start. The
+			// copy is never written back, so the remote file stays untouched.
+			if (remoteVersion < CURRENT_SCHEMA_VERSION) {
+				new SqliteSchemaManager(remoteDb.raw).createTables({
+					fullTextSearch: false,
+				});
 			}
 
 			const remoteCards = new CardActions(remoteDb);

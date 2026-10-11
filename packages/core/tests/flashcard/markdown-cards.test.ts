@@ -73,9 +73,12 @@ describe("Markdown card parsing", () => {
 		"```\nunfinished",
 		"---\ntags: flashcards",
 		`${serializeMarker({ v: 1, id: noteId })}`,
-	])("rejects incomplete or ambiguous input without deleting existing cards: %s", (input) => {
-		expect(() => parseMarkdownCards(input, config)).toThrow();
-	});
+	])(
+		"rejects incomplete or ambiguous input without deleting existing cards: %s",
+		(input) => {
+			expect(() => parseMarkdownCards(input, config)).toThrow();
+		},
+	);
 	it("reports separators written inside a line, which never become cards", () => {
 		const text = [
 			"---",

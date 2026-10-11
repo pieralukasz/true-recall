@@ -194,7 +194,7 @@ export function migrateSettings(raw: PersistedTrueRecallSettings | null): {
 	// settings.generationPresets. Drop the bucket so stale data does not
 	// persist across saves.
 	if (
-		// eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion -- load-bearing: raw's static type (Partial<TrueRecallSettings>) no longer has this property at all, since it's only ever present in stale on-disk data written by old versions
+		// Load-bearing cast: raw's static type (Partial<TrueRecallSettings>) no longer has this property; it only exists in stale on-disk data written by old versions.
 		(raw as Record<string, unknown> | null)?.flashcardGeneration !== undefined
 	) {
 		delete (settings as { flashcardGeneration?: unknown }).flashcardGeneration;

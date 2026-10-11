@@ -87,18 +87,16 @@ describe("ReviewSessionOrchestrator", () => {
 		expect(f.clearByType).toHaveBeenCalledOnce();
 		expect(f.onCardChanged).toHaveBeenCalledOnce();
 	});
-	it.each([
-		0,
-		-1,
-		Number.NaN,
-		Number.POSITIVE_INFINITY,
-	])("does not build a top-up for invalid count %s", async (count) => {
-		const f = createOrchestrator();
-		await expect(
-			f.orchestrator.handleTopUp({ kind: "new", count }),
-		).resolves.toBe(false);
-		expect(f.buildTopUpSession).not.toHaveBeenCalled();
-	});
+	it.each([0, -1, Number.NaN, Number.POSITIVE_INFINITY])(
+		"does not build a top-up for invalid count %s",
+		async (count) => {
+			const f = createOrchestrator();
+			await expect(
+				f.orchestrator.handleTopUp({ kind: "new", count }),
+			).resolves.toBe(false);
+			expect(f.buildTopUpSession).not.toHaveBeenCalled();
+		},
+	);
 	it("flushes the card store and clears session commands on finish", async () => {
 		const f = createOrchestrator();
 		await f.orchestrator.finish();

@@ -19,6 +19,13 @@
 		padding-bottom: 0.5rem;
 	}
 
+	/* Revealed cloze answer (cloze-answer-decoration.ts). Bold by default; a
+	   layered rule, so CSS snippets and note type Styling (`.cloze { … }`,
+	   also from Anki decks) override it without !important. */
+	.tr-cloze {
+		font-weight: var(--bold-weight, 700);
+	}
+
 	/* Enable text selection + max-width for readability.
 	   max-width reads --tr-review-max-width set on the outer container
 	   (driven by the `reviewContentWidth` setting), so the inner field

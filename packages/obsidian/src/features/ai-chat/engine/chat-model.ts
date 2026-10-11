@@ -49,8 +49,7 @@ export function createChatModel(
 		baseURL: toBaseURL(config.baseUrl),
 		apiKey: config.apiKey,
 		headers,
-		// Bun's fetch type adds `preconnect`; the SDK only calls it.
-		fetch: fetch as typeof window.fetch,
+		fetch,
 		includeUsage: true,
 	});
 	return { model: provider.chatModel(config.model), config };

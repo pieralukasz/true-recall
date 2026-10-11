@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "preact/hooks";
+import { useEffect, useMemo, useRef, useState } from "preact/hooks";
 
 import type {
 	FSRSFlashcardItem,
@@ -16,6 +16,7 @@ import { TypeInAssessmentPanel } from "@true-recall/obsidian/features/study/ui/r
 import { TypeInCMEditor } from "@true-recall/obsidian/features/study/ui/review/components/TypeInCMEditor";
 import { TypeInFollowUp } from "@true-recall/obsidian/features/study/ui/review/components/TypeInFollowUp";
 import { getReviewMaxWidth } from "@true-recall/obsidian/features/study/ui/review/helpers";
+import { locateClozeAnswer } from "@true-recall/obsidian/features/study/ui/review/helpers/cloze-answer-ranges";
 import { useNoteTypeCss } from "@true-recall/obsidian/features/study/ui/review/hooks/useNoteTypeCss";
 import { usePlugin } from "@true-recall/obsidian/preact/ObsidianContext";
 import { cn } from "@true-recall/obsidian/utils/cn";
@@ -191,6 +192,16 @@ export function CardContainer({
 		card.templateOrd,
 		isCloze,
 	);
+	// Revealed cloze: shown without the stored `**…**` and marked with a
+	// styleable class instead, so it is not mistaken for the user's own bold.
+	const clozeAnswer = useMemo(
+		() =>
+			isCloze && card.answer
+				? locateClozeAnswer(card.answer, card.clozeTemplate, card.clozeIndex)
+				: null,
+		[isCloze, card.answer, card.clozeTemplate, card.clozeIndex],
+	);
+	const showClozeAnswer = isCloze && isAnswerRevealed;
 
 	if (card.cardType === "note-review") {
 		return (
@@ -266,10 +277,11 @@ export function CardContainer({
 						// Anki-style cloze reveal: the answer replaces the sentence in
 						// place (gap filled + Extra below) instead of rendering as a
 						// separate basic-card answer block.
-						isCloze && isAnswerRevealed
-							? (card.answer ?? questionContent)
+						showClozeAnswer
+							? (clozeAnswer?.text ?? card.answer ?? questionContent)
 							: questionContent
 					}
+					clozeRanges={showClozeAnswer ? clozeAnswer?.ranges : undefined}
 					field="question"
 					sourcePath={sourcePath}
 					cls={cn(

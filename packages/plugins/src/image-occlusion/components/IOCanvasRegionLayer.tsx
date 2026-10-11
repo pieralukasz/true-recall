@@ -11,14 +11,20 @@ const RESIZE_CORNERS: ResizeCorner[] = ["nw", "ne", "sw", "se"];
 interface CanvasRegionProps {
 	region: IORegion;
 	selected: boolean;
+	inMultiSelection?: boolean;
 }
 
-function CanvasRegion({ region, selected }: CanvasRegionProps) {
+function CanvasRegion({
+	region,
+	selected,
+	inMultiSelection = false,
+}: CanvasRegionProps) {
 	const commonProps = {
 		"data-io-region": region.id,
 		class: cn(
 			"true-recall-io-canvas-region",
 			selected && "is-selected",
+			inMultiSelection && "is-multi-selected",
 			region.id === "draft" && "is-draft",
 		),
 	};
@@ -53,6 +59,7 @@ interface IOCanvasRegionLayerProps {
 	draftRegion: IORegion | null;
 	selectedRegion: IORegion | null;
 	selectedRegionId: string | null;
+	selectedRegionIds?: readonly string[];
 }
 
 export function IOCanvasRegionLayer({
@@ -60,6 +67,7 @@ export function IOCanvasRegionLayer({
 	draftRegion,
 	selectedRegion,
 	selectedRegionId,
+	selectedRegionIds,
 }: IOCanvasRegionLayerProps) {
 	return (
 		<svg
@@ -73,7 +81,14 @@ export function IOCanvasRegionLayer({
 				<CanvasRegion
 					key={region.id}
 					region={region}
-					selected={selectedRegionId === region.id}
+					selected={
+						selectedRegionId === region.id ||
+						(selectedRegionIds?.includes(region.id) ?? false)
+					}
+					inMultiSelection={
+						(selectedRegionIds?.length ?? 0) > 1 &&
+						(selectedRegionIds?.includes(region.id) ?? false)
+					}
 				/>
 			))}
 			{draftRegion ? (

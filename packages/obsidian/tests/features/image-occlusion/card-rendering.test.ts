@@ -24,9 +24,12 @@ describe("getRegionOrdinal", () => {
 		["valid group key", "3", 8, 3],
 		["invalid group key", "label", 8, 8],
 		["negative group key", "-2", 8, 8],
-	])("uses the expected ordinal for a %s", (_name, groupKey, fallback, expected) => {
-		expect(getRegionOrdinal(makeRegion(groupKey), fallback)).toBe(expected);
-	});
+	])(
+		"uses the expected ordinal for a %s",
+		(_name, groupKey, fallback, expected) => {
+			expect(getRegionOrdinal(makeRegion(groupKey), fallback)).toBe(expected);
+		},
+	);
 });
 
 describe("buildRenderableRegions", () => {
@@ -80,22 +83,25 @@ describe("getRegionVisualState", () => {
 			false,
 			"is-revealed-passive",
 		],
-	] as const)("returns the correct state for the %s", (_name, ordinal, active, revealed, mode, singleOnly, expected) => {
-		expect(
-			getRegionVisualState(ordinal, active, revealed, mode, singleOnly),
-		).toBe(expected);
-	});
+	] as const)(
+		"returns the correct state for the %s",
+		(_name, ordinal, active, revealed, mode, singleOnly, expected) => {
+			expect(
+				getRegionVisualState(ordinal, active, revealed, mode, singleOnly),
+			).toBe(expected);
+		},
+	);
 });
 
 describe("optional masking of other regions in Solo", () => {
-	it.each([
-		false,
-		true,
-	])("keeps the other region hidden when revealed=%s", (revealed) => {
-		expect(getRegionVisualState(0, 1, revealed, "solo", true, true)).toBe(
-			"is-mask-passive",
-		);
-	});
+	it.each([false, true])(
+		"keeps the other region hidden when revealed=%s",
+		(revealed) => {
+			expect(getRegionVisualState(0, 1, revealed, "solo", true, true)).toBe(
+				"is-mask-passive",
+			);
+		},
+	);
 	it("reveals the active group and allows a full editor preview", () => {
 		expect(getRegionVisualState(1, 1, true, "solo", true, true)).toBe(
 			"is-revealed-active",
