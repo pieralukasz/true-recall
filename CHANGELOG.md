@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+## 2.10.0 (2026-10-11)
+
+### Features
+
+- **Merge selected image occlusion regions (Pro).** Shift- or Cmd/Ctrl-click regions to select several, then "Merge selected into one card". The merged card keeps its review history.
+- **Card edit history for AI agents.** The new `list_card_edits` and `get_card_edit_history` tools (Local API, MCP, CLI) show what changed on a card and who changed it. Kept on your device for up to 90 days.
+
+### Improvements
+
+- **Style the revealed cloze with CSS** using the `cloze` class. It stays bold by default.
+
+### Bug Fixes
+
+- **Shared vault sync** works again with devices on an older version.
+- **Card menus opened with the keyboard** now appear next to their button, not in the corner of the window.
+
 ## 2.9.1 (2026-10-10)
 
 Fixes for the new Card Polish presets in review.

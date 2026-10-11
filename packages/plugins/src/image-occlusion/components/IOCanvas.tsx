@@ -11,11 +11,12 @@ interface IOCanvasProps {
 	tool: IOEditorTool;
 	onToolChange?: (tool: IOEditorTool) => void;
 	selectedRegionId: string | null;
+	selectedRegionIds?: readonly string[];
 	zoom: number;
 	panX: number;
 	panY: number;
 	onDefinitionChange: (definition: IODefinition) => void;
-	onSelectRegion: (regionId: string | null) => void;
+	onSelectRegion: (regionId: string | null, additive?: boolean) => void;
 	onZoomChange: (zoom: number) => void;
 	onPanChange: (x: number, y: number) => void;
 }
@@ -26,6 +27,7 @@ export function IOCanvas({
 	tool,
 	onToolChange,
 	selectedRegionId,
+	selectedRegionIds,
 	zoom,
 	panX,
 	panY,
@@ -100,6 +102,7 @@ export function IOCanvas({
 							draftRegion={interactions.draftRegion}
 							selectedRegion={selectedRegion}
 							selectedRegionId={selectedRegionId}
+							selectedRegionIds={selectedRegionIds}
 						/>
 					</div>
 				</div>

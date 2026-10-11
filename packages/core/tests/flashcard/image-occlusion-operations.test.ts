@@ -8,6 +8,7 @@ import type { SqliteStoreService } from "../../src/persistence/sqlite/SqliteStor
 import type { IODefinition } from "../../src/types/image-occlusion.types";
 import {
 	mergeIORegions,
+	mergeSelectedIORegions,
 	parseIODefinition,
 	serializeIODefinition,
 } from "../../src/utils/io-definition";
@@ -107,6 +108,46 @@ describe("image occlusion independent cards", () => {
 			due: "2026-10-20T10:00:00Z",
 		});
 		expect(definition.regions.map((r) => r.groupKey)).toEqual(["4", "7", "9"]);
+	});
+	it("merging selected regions keeps the lowest selected card and leaves the rest untouched", () => {
+		const definition = createDefinition();
+		const { note, cards } = io.createImageOcclusionNote({
+			imagePath: "Images/brain.png",
+			definition,
+		});
+		const byOrd = new Map(cards.map((card) => [card.templateOrd, card]));
+		const survivor = byOrd.get(7);
+		const untouched = byOrd.get(4);
+		if (!survivor || !untouched) throw new Error("missing cards");
+		ctx.cards.set(survivor.id, { ...survivor, reps: 5, stability: 11 });
+		ctx.cards.set(untouched.id, { ...untouched, reps: 3, stability: 6 });
+
+		const merged = mergeSelectedIORegions(definition, ["r9", "r7"]);
+		expect(merged.regions.map((r) => r.groupKey)).toEqual(["4", "7", "7"]);
+		io.updateImageOcclusionNote(note.id, {
+			imagePath: "Images/brain.png",
+			definition: merged,
+		});
+
+		const kept = ctx.cards.getCardsByNoteId(note.id);
+		expect(kept.map((card) => card.templateOrd).sort()).toEqual([4, 7]);
+		expect(ctx.cards.get(survivor.id)).toMatchObject({
+			templateOrd: 7,
+			reps: 5,
+			stability: 11,
+		});
+		expect(ctx.cards.get(untouched.id)).toMatchObject({
+			templateOrd: 4,
+			reps: 3,
+			stability: 6,
+		});
+	});
+	it("merging selected regions ignores a selection inside one card", () => {
+		const definition = createDefinition();
+		expect(mergeSelectedIORegions(definition, ["r4"])).toBe(definition);
+		const grouped = mergeSelectedIORegions(definition, ["r4", "r7"]);
+		expect(mergeSelectedIORegions(grouped, ["r4", "r7"])).toBe(grouped);
+		expect(mergeSelectedIORegions(definition, ["missing"])).toBe(definition);
 	});
 	it("distinguishes separate notes on the same image without changing group ordinals", () => {
 		const first = io.createImageOcclusionNote({

@@ -35,20 +35,20 @@ describe("preparePreviewAnswer", () => {
 		);
 	});
 
-	it.each([
-		Rating.Good,
-		Rating.Easy,
-	])("finishes rating %s without rescheduling the card", (rating) => {
-		const card = createMockFlashcard({
-			previewDue: "2024-01-15T09:00:00.000Z",
-		});
+	it.each([Rating.Good, Rating.Easy])(
+		"finishes rating %s without rescheduling the card",
+		(rating) => {
+			const card = createMockFlashcard({
+				previewDue: "2024-01-15T09:00:00.000Z",
+			});
 
-		const transition = preparePreviewAnswer(card, rating, 1, NOW);
+			const transition = preparePreviewAnswer(card, rating, 1, NOW);
 
-		expect(transition.answeredCard.previewDue).toBeUndefined();
-		expect(transition.answeredCard.fsrs).toEqual(card.fsrs);
-		expect(transition.requeueData).toBeUndefined();
-	});
+			expect(transition.answeredCard.previewDue).toBeUndefined();
+			expect(transition.answeredCard.fsrs).toEqual(card.fsrs);
+			expect(transition.requeueData).toBeUndefined();
+		},
+	);
 });
 
 describe("ReviewSessionEngine.prepareAnswer leech handling", () => {

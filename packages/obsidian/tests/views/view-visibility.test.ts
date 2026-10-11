@@ -42,18 +42,18 @@ describe("createViewVisibility", () => {
 		expect(createViewVisibility(createFakeView(false).view).value).toBe(false);
 	});
 
-	it.each([
-		"layout-change",
-		"active-leaf-change",
-	])("updates the signal on %s", (eventName) => {
-		const fake = createFakeView(false);
-		const isVisible = createViewVisibility(fake.view);
+	it.each(["layout-change", "active-leaf-change"])(
+		"updates the signal on %s",
+		(eventName) => {
+			const fake = createFakeView(false);
+			const isVisible = createViewVisibility(fake.view);
 
-		fake.setShown(true);
-		fake.fire(eventName);
+			fake.setShown(true);
+			fake.fire(eventName);
 
-		expect(isVisible.value).toBe(true);
-	});
+			expect(isVisible.value).toBe(true);
+		},
+	);
 
 	it("re-checks visibility once the workspace layout becomes ready", () => {
 		// Startup race: the signal seeds false during workspace restore and no

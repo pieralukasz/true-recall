@@ -59,25 +59,23 @@ describe("SessionService.resolveFilters — R-Mode size", () => {
 		expect("mode" in filters).toBe(false);
 	});
 
-	it.each([
-		"all_due",
-		"note",
-		"notes",
-		"project",
-	] as const)("marks a normal %s session as retrievability-driven", (mode) => {
-		const configs: Record<typeof mode, SessionConfig> = {
-			all_due: { mode: "all_due" },
-			note: { mode: "note", sourceUid: "uid-1" },
-			notes: { mode: "notes", noteNames: ["A"] },
-			project: { mode: "project", projectPath: "P" },
-		};
-		const filters = service.resolveFilters(configs[mode], {
-			...SETTINGS,
-			rModeEnabled: true,
-		});
+	it.each(["all_due", "note", "notes", "project"] as const)(
+		"marks a normal %s session as retrievability-driven",
+		(mode) => {
+			const configs: Record<typeof mode, SessionConfig> = {
+				all_due: { mode: "all_due" },
+				note: { mode: "note", sourceUid: "uid-1" },
+				notes: { mode: "notes", noteNames: ["A"] },
+				project: { mode: "project", projectPath: "P" },
+			};
+			const filters = service.resolveFilters(configs[mode], {
+				...SETTINGS,
+				rModeEnabled: true,
+			});
 
-		expect(filters.schedulingMode).toBe("retrievability");
-	});
+			expect(filters.schedulingMode).toBe("retrievability");
+		},
+	);
 
 	it("keeps specialized sessions due-driven even when R-Mode is enabled", () => {
 		const filters = service.resolveFilters(

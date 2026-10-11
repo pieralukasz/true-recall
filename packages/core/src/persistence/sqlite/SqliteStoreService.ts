@@ -80,7 +80,7 @@ export class SqliteStoreService {
 		this.deviceId = deviceId;
 		this.saveDebounceMs = options.saveDebounceMs ?? SAVE_DEBOUNCE_MS;
 		this.dbFolder = options.dbFolder ?? DB_FOLDER;
-		this.db = new SqliteDatabase(() => this.markDirty());
+		this.db = new SqliteDatabase(() => this.markDirty(), this.deviceId);
 
 		this.cards = new CardActions(this.db);
 		this.stats = new StatsActions(this.db);
@@ -136,10 +136,26 @@ export class SqliteStoreService {
 		// Fix corrupted FKs before schema setup so createTables() indexes apply correctly
 		this.cleanupStaleReferences();
 
+		const hadHistory =
+			this.db.get(
+				"SELECT name FROM sqlite_master WHERE type='table' AND name='card_edit_history'",
+			) !== null;
+		const historyCountBefore = hadHistory
+			? this.db.get<{ count: number }>(
+					"SELECT COUNT(*) count FROM card_edit_history",
+				)!.count
+			: 0;
 		// Schema setup (CREATE TABLE IF NOT EXISTS — safe for existing DBs)
 		const schemaManager = new SqliteSchemaManager(this.db.raw);
 		schemaManager.createTables();
-		if (outcome.source === "fresh") {
+		if (
+			outcome.source === "fresh" ||
+			!hadHistory ||
+			historyCountBefore !==
+				this.db.get<{ count: number }>(
+					"SELECT COUNT(*) count FROM card_edit_history",
+				)!.count
+		) {
 			this.isDirty = true;
 		}
 

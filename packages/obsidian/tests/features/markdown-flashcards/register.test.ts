@@ -245,30 +245,30 @@ describe("Markdown vault integration", () => {
 		if (!card) throw new Error("Missing first card");
 		return card;
 	};
-	it.each([
-		false,
-		true,
-	])("syncs panel edits and undo with scheduling export %s, preserving IDs and progress", async (storeScheduling) => {
-		settings.markdownFlashcards.storeScheduling = storeScheduling;
-		start();
-		await settle();
-		const original = firstCard();
-		const ids = ctx.cards.keys();
-		ctx.cards.set(original.id, { ...original, reps: 12, stability: 34 });
-		editPanel(original.id, "Panel question", "Panel answer");
-		await settle();
-		expect(content).toContain("Panel question\n??\nPanel answer");
-		expect(ctx.cards.get(original.id)).toMatchObject({
-			reps: 12,
-			stability: 34,
-		});
-		expect(ctx.cards.keys()).toEqual(ids);
-		editPanel(original.id, "Q1", "A1");
-		await settle();
-		expect(content).toContain("Q1\n??\nA1");
-		expect(ctx.cards.get(original.id)?.reps).toBe(12);
-		expect(mocks.error).not.toHaveBeenCalled();
-	});
+	it.each([false, true])(
+		"syncs panel edits and undo with scheduling export %s, preserving IDs and progress",
+		async (storeScheduling) => {
+			settings.markdownFlashcards.storeScheduling = storeScheduling;
+			start();
+			await settle();
+			const original = firstCard();
+			const ids = ctx.cards.keys();
+			ctx.cards.set(original.id, { ...original, reps: 12, stability: 34 });
+			editPanel(original.id, "Panel question", "Panel answer");
+			await settle();
+			expect(content).toContain("Panel question\n??\nPanel answer");
+			expect(ctx.cards.get(original.id)).toMatchObject({
+				reps: 12,
+				stability: 34,
+			});
+			expect(ctx.cards.keys()).toEqual(ids);
+			editPanel(original.id, "Q1", "A1");
+			await settle();
+			expect(content).toContain("Q1\n??\nA1");
+			expect(ctx.cards.get(original.id)?.reps).toBe(12);
+			expect(mocks.error).not.toHaveBeenCalled();
+		},
+	);
 	it("writes edits of the reversed sibling in source-note orientation", async () => {
 		start();
 		await settle();

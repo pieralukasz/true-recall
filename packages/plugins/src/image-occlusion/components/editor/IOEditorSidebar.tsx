@@ -26,10 +26,13 @@ export function IOEditorSidebar({ editor }: IOEditorSidebarProps) {
 				onHideOtherRegionsChange={editor.onHideOtherRegionsChange}
 				groupCount={editor.groupCount}
 				onMergeRegions={editor.onMergeRegions}
+				selectedGroupCount={editor.selectedGroupCount}
+				onMergeSelectedRegions={editor.onMergeSelectedRegions}
 			/>
 			<IORegionList
 				regions={editor.regions}
 				selectedRegionId={editor.tools.selectedRegionId}
+				selectedRegionIds={editor.selectedRegionIds}
 				onSelectRegion={editor.onSelectRegion}
 				onDeleteSelected={editor.onDeleteSelectedRegion}
 			/>

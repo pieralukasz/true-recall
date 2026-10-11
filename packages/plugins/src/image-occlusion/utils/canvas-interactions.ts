@@ -36,6 +36,17 @@ export function updateRegion(
 	};
 }
 
+export function deleteRegions(
+	definition: IODefinition,
+	regionIds: readonly string[],
+): IODefinition {
+	const ids = new Set(regionIds);
+	return {
+		...definition,
+		regions: definition.regions.filter((region) => !ids.has(region.id)),
+	};
+}
+
 export function deleteRegion(
 	definition: IODefinition,
 	regionId: string,

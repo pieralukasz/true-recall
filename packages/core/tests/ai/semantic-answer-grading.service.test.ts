@@ -171,16 +171,19 @@ describe("SemanticAnswerGradingService", () => {
 		["correct", "good"],
 		["partial", "hard"],
 		["wrong", "again"],
-	] as const)("derives suggestedRating from verdict %s when missing", async (verdict, expectedRating) => {
-		const settings = createSettings({ openRouterApiKey: "byok-key" });
-		const payload = { ...JSON.parse(VALID_PAYLOAD), verdict };
-		delete payload.suggestedRating;
-		const service = serviceReturning(settings, JSON.stringify(payload));
+	] as const)(
+		"derives suggestedRating from verdict %s when missing",
+		async (verdict, expectedRating) => {
+			const settings = createSettings({ openRouterApiKey: "byok-key" });
+			const payload = { ...JSON.parse(VALID_PAYLOAD), verdict };
+			delete payload.suggestedRating;
+			const service = serviceReturning(settings, JSON.stringify(payload));
 
-		const result = await service.gradeAnswer(BASE_INPUT);
+			const result = await service.gradeAnswer(BASE_INPUT);
 
-		expect(result.suggestedRating).toBe(expectedRating);
-	});
+			expect(result.suggestedRating).toBe(expectedRating);
+		},
+	);
 
 	it("throws on request error instead of falling back", async () => {
 		const settings = createSettings({ openRouterApiKey: "byok-key" });

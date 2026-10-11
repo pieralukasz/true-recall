@@ -15,9 +15,12 @@ describe("settings translations", () => {
 		["auto", "pl", "en"],
 		["en", "zh-CN", "en"],
 		["zh-CN", "en", "zh-CN"],
-	])("resolves preference %s with Obsidian language %s", (preference, language, expected) => {
-		expect(resolveLocale(preference, language)).toBe(expected);
-	});
+	])(
+		"resolves preference %s with Obsidian language %s",
+		(preference, language, expected) => {
+			expect(resolveLocale(preference, language)).toBe(expected);
+		},
+	);
 	it("keeps both catalogues complete and preserves interpolation parameters", () => {
 		expect(Object.keys(zhCN).sort()).toEqual(Object.keys(en).sort());
 		for (const [key, value] of Object.entries(zhCN)) {
