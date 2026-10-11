@@ -410,7 +410,8 @@
 	}
 
 	/* Review-only override for unrevealed IO cards in ALL mode: active stays accent, others are gray. */
-	.true-recall-review-card-container .true-recall-io-render:not(.is-revealed)
+	.true-recall-review-card-container
+		.true-recall-io-render:not(.is-revealed)
 		.true-recall-io-shape.is-mask-active {
 		fill: var(--interactive-accent);
 		fill-opacity: 1;

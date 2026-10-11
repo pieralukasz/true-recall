@@ -31,11 +31,10 @@ describe("getFirstPanelImageRef", () => {
 });
 
 describe("isExternalPanelImageRef", () => {
-	it.each([
-		"https://example.com/a.png",
-		"data:image/png;base64,a",
-		"app://a",
-	])("accepts %s", (ref) => expect(isExternalPanelImageRef(ref)).toBe(true));
+	it.each(["https://example.com/a.png", "data:image/png;base64,a", "app://a"])(
+		"accepts %s",
+		(ref) => expect(isExternalPanelImageRef(ref)).toBe(true),
+	);
 
 	it("rejects vault paths", () => {
 		expect(isExternalPanelImageRef("assets/a.png")).toBe(false);
