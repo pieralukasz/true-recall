@@ -52,9 +52,10 @@ function unwrap(schema: ZodTypeAny): {
 			nullable = true;
 			s = s.unwrap() as ZodTypeAny;
 		} else if (s instanceof z.ZodDefault) {
-			defaultValue = s._def.defaultValue();
-			s = s.removeDefault() as ZodTypeAny;
-		} else if (s instanceof z.ZodEffects) s = s.innerType() as ZodTypeAny;
+			// Zod 4 stores the resolved default value (a getter), not a factory.
+			defaultValue = s._def.defaultValue;
+			s = s.unwrap() as ZodTypeAny;
+		} else if (s instanceof z.ZodPipe) s = s.in as ZodTypeAny;
 		else break;
 	}
 	return {
