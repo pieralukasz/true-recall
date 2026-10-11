@@ -213,7 +213,8 @@
 
 /* ── Field headers: adequate touch targets ──
    Scoped to the add-field row inside QuickNoteEditor. */
-.is-mobile .true-recall-quick-editor
+.is-mobile
+	.true-recall-quick-editor
 	.true-recall-add-field-row
 	> [role="button"]:first-child {
 	padding-top: 0.625rem;

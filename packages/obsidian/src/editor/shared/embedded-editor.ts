@@ -234,12 +234,13 @@ export function createEmbeddableEditorClass(app: App) {
 			// Prevent workspace from stealing focus when the editor is active
 			this.register(
 				around(editorApp.workspace, {
-					setActiveLeaf:
-						(oldMethod: (...args: unknown[]) => void) =>
-						(...args: unknown[]) => {
+					// setActiveLeaf is overloaded; the wrapper only forwards its
+					// arguments, so it is typed as the method itself.
+					setActiveLeaf: (oldMethod) =>
+						((...args: Parameters<typeof oldMethod>) => {
 							if (!this.activeCM?.hasFocus)
 								oldMethod.apply(editorApp.workspace, args);
-						},
+						}) as typeof oldMethod,
 				}),
 			);
 

@@ -5,10 +5,9 @@
 
 import { type Card, type Grade, Rating, State } from "ts-fsrs";
 
+export type { Card as FSRSCard, Grade };
 // Re-export ts-fsrs types for convenience
-export { State, Rating };
-export type { Grade };
-export type { Card as FSRSCard };
+export { Rating, State };
 
 export type CardType =
 	| "basic"

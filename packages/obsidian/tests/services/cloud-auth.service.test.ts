@@ -140,20 +140,26 @@ describe("CloudAuthService", () => {
 		{},
 		{ deviceToken: "short" },
 		{ ...createSession(), email: "invalid" },
-	])("preserves pending authorization when a response is malformed: %j", async (json) => {
-		const { app, storage } = createApp();
-		const auth = new CloudAuthService(app, () => ({
-			id: "phone-1",
-			name: "Phone",
-		}));
-		const url = new URL(await auth.startAuth());
-		vi.mocked(requestUrl).mockResolvedValueOnce({ status: 200, json } as never);
-		await expect(
-			auth.exchange("code", url.searchParams.get("state") ?? ""),
-		).rejects.toThrow("contract");
-		expect(auth.getSession()).toBeNull();
-		expect(storage.has("true-recall-cloud-auth-pending")).toBe(true);
-	});
+	])(
+		"preserves pending authorization when a response is malformed: %j",
+		async (json) => {
+			const { app, storage } = createApp();
+			const auth = new CloudAuthService(app, () => ({
+				id: "phone-1",
+				name: "Phone",
+			}));
+			const url = new URL(await auth.startAuth());
+			vi.mocked(requestUrl).mockResolvedValueOnce({
+				status: 200,
+				json,
+			} as never);
+			await expect(
+				auth.exchange("code", url.searchParams.get("state") ?? ""),
+			).rejects.toThrow("contract");
+			expect(auth.getSession()).toBeNull();
+			expect(storage.has("true-recall-cloud-auth-pending")).toBe(true);
+		},
+	);
 
 	it("allows retry after a network failure", async () => {
 		const { app } = createApp();

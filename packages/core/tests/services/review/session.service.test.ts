@@ -147,16 +147,19 @@ describe("SessionService", () => {
 				tagsToExclude: [],
 			} as const,
 		],
-	])("marks %s custom study as a non-rescheduling preview", (_, customStudy) => {
-		const filters = service.resolveFilters(
-			{ mode: "custom", customStudy },
-			{ ignoreDailyLimitsForNoteStudy: false, dayStartHour: 4 },
-		);
+	])(
+		"marks %s custom study as a non-rescheduling preview",
+		(_, customStudy) => {
+			const filters = service.resolveFilters(
+				{ mode: "custom", customStudy },
+				{ ignoreDailyLimitsForNoteStudy: false, dayStartHour: 4 },
+			);
 
-		expect(filters.ignoreDailyLimits).toBe(true);
-		expect(filters.bypassScheduling).toBe(true);
-		expect(filters.crammingMode).toBe(true);
-	});
+			expect(filters.ignoreDailyLimits).toBe(true);
+			expect(filters.bypassScheduling).toBe(true);
+			expect(filters.crammingMode).toBe(true);
+		},
+	);
 
 	it.each([
 		["review-ahead", { kind: "review-ahead", days: 3 } as const],

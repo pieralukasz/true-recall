@@ -52,6 +52,7 @@ export class UpdateClozeTemplateCommand implements Command {
 	readonly description: string;
 
 	private previousSiblingIds: string[] = [];
+	private executed = false;
 
 	constructor(
 		private sourceUid: string,
@@ -72,7 +73,9 @@ export class UpdateClozeTemplateCommand implements Command {
 			this.previousTemplate,
 			this.newTemplate,
 			this.sourceNoteName,
+			...(this.executed ? ["system" as const] : []),
 		);
+		this.executed = true;
 	}
 
 	undo(ctx: CommandContext): void {

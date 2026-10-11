@@ -74,12 +74,15 @@ describe("checkForWhatsNew", () => {
 		["2.5.1", "2.5.1"],
 		["2.5.1", "2.5.0"],
 		["2.5.0", "99.0.0"],
-	])("does not advance the marker for %s → %s without a new documented release", async (previous, current) => {
-		const { plugin, saveSettings } = createPlugin(previous, current);
-		await checkForWhatsNew(plugin);
-		expect(mocks.open).not.toHaveBeenCalled();
-		expect(saveSettings).not.toHaveBeenCalled();
-	});
+	])(
+		"does not advance the marker for %s → %s without a new documented release",
+		async (previous, current) => {
+			const { plugin, saveSettings } = createPlugin(previous, current);
+			await checkForWhatsNew(plugin);
+			expect(mocks.open).not.toHaveBeenCalled();
+			expect(saveSettings).not.toHaveBeenCalled();
+		},
+	);
 
 	it("keeps notes unseen if the modal cannot be opened", async () => {
 		const { plugin, saveSettings } = createPlugin("2.4.2");

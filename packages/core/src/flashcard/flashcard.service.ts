@@ -403,6 +403,7 @@ export class FlashcardManager {
 		oldTemplate: string,
 		newTemplate: string,
 		sourceNoteName?: string,
+		editSource: NoteEditSource = "manual",
 	): void {
 		if (!this.cardRepository) {
 			throw new Error("Store not initialized");
@@ -412,6 +413,7 @@ export class FlashcardManager {
 			oldTemplate,
 			newTemplate,
 			sourceNoteName,
+			editSource,
 		);
 	}
 

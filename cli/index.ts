@@ -200,6 +200,13 @@ async function main(): Promise<void> {
 		if (result.isError) fail({ error: text }, EXIT_API_ERROR, pretty);
 		print(resultData(text), pretty);
 	} catch (error) {
+		if (error instanceof UsageError) {
+			fail(
+				{ error: error.message, hint: `Run true-recall ${tool.name} --help` },
+				EXIT_USAGE,
+				pretty,
+			);
+		}
 		fail({ ...explainError(error) }, EXIT_API_ERROR, pretty);
 	}
 }

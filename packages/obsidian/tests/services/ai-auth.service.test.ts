@@ -35,21 +35,21 @@ describe("AI account connection", () => {
 		expect(await auth.start()).toBe(url.href);
 		expect(storage.has("true-recall-cloud-auth-pending")).toBe(false);
 	});
-	it.each([
-		"wrong-state",
-		"expired",
-	])("rejects %s before sending credentials", async (mode) => {
-		const { auth } = createAuth();
-		const url = new URL(await auth.start());
-		if (mode === "expired") vi.advanceTimersByTime(10 * 60_000);
-		await expect(
-			auth.exchange(
-				"code",
-				mode === "expired" ? (url.searchParams.get("state") ?? "") : "wrong",
-			),
-		).rejects.toThrow();
-		expect(requestUrl).not.toHaveBeenCalled();
-	});
+	it.each(["wrong-state", "expired"])(
+		"rejects %s before sending credentials",
+		async (mode) => {
+			const { auth } = createAuth();
+			const url = new URL(await auth.start());
+			if (mode === "expired") vi.advanceTimersByTime(10 * 60_000);
+			await expect(
+				auth.exchange(
+					"code",
+					mode === "expired" ? (url.searchParams.get("state") ?? "") : "wrong",
+				),
+			).rejects.toThrow();
+			expect(requestUrl).not.toHaveBeenCalled();
+		},
+	);
 	it("binds the exchange to the original PKCE challenge and never enables sync", async () => {
 		const { auth, storage } = createAuth();
 		const url = new URL(await auth.start());

@@ -43,8 +43,8 @@ interface ReviewActions {
 	onOpenDashboard: () => void;
 	onTopUp: (topUp: ReviewSessionTopUp) => Promise<boolean>;
 	onEndSession: () => void;
-	onActionsMenu: (e: MouseEvent) => void;
-	onPolishMenu?: (e: MouseEvent) => void;
+	onActionsMenu: (e: MouseEvent | KeyboardEvent) => void;
+	onPolishMenu?: (e: MouseEvent | KeyboardEvent) => void;
 	/** Mounts the AI result panel under the card (Card Polish, fact check, questions). */
 	mountCardAssist?: (el: HTMLElement, cardId: string) => () => void;
 	onCycleTypeInMode: () => void;

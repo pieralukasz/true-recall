@@ -6,6 +6,7 @@ import { TrueRecallClient } from "../client.js";
 import { ALL_TOOLS, createServer, SERVER_INSTRUCTIONS } from "../server.js";
 import { TOOL_HINTS } from "../tools/_hints.js";
 import { FakeLocalApi } from "./fake-local-api.js";
+import { createMockEditedCard } from "./mocks/edited-cards.js";
 
 type TextResult = {
 	content: Array<{ type: string; text: string }>;
@@ -121,6 +122,51 @@ describe("tool list", () => {
 });
 
 describe("HTTP calls", () => {
+	it("exposes edited-card audit as a read-only MCP tool with rendered text", async () => {
+		const { tools } = await client.listTools();
+		const tool = tools.find((t) => t.name === "list_edited_cards");
+		expect(tool?.annotations).toMatchObject({
+			readOnlyHint: true,
+			openWorldHint: false,
+		});
+		expect(tool?.description).toMatch(/archived/);
+		const card = createMockEditedCard();
+		api.reply("POST /query", {
+			body: {
+				ok: true,
+				data: { columns: ["total", "id"], rows: [{ total: 1, id: card.id }] },
+			},
+		});
+		api.reply(`GET /cards/${card.id}`, { body: { ok: true, data: card } });
+		const result = await call("list_edited_cards", {
+			since: "2026-10-10",
+			manual_only: true,
+		});
+		expect(result.isError).not.toBe(true);
+		expect(JSON.parse(result.content[0].text).cards).toEqual([
+			{
+				...card,
+				edited: true,
+				manuallyEdited: true,
+				aiEdited: card.aiEditCount > 0,
+			},
+		]);
+		expect(api.requests.map((r) => [r.method, r.path])).toEqual([
+			["POST", "/query"],
+			["GET", `/cards/${card.id}`],
+		]);
+	});
+
+	it("rejects invalid edited-card bounds without HTTP requests", async () => {
+		for (const args of [
+			{ since: "2026-02-30" },
+			{ since: "2026-10-10", until: "2026-10-10" },
+			{ offset: -1 },
+		]) {
+			expect((await call("list_edited_cards", args)).isError).toBe(true);
+		}
+		expect(api.requests).toHaveLength(0);
+	});
 	it("sends a flat body to create_generation_preset", async () => {
 		const preset = {
 			name: "Exam",

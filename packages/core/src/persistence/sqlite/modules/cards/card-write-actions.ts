@@ -15,7 +15,8 @@ import {
 	BUILTIN_IMAGE_OCCLUSION_ID,
 } from "../../../../types/note.types";
 import type { SqliteDatabase } from "../../SqliteDatabase";
-import { buildContentEditSet } from "../note-content-edit";
+import { recordContentEdit } from "../card-edit-history";
+import { buildContentEditSet, fieldsJsonForEdit } from "../note-content-edit";
 import { resolveNoteMapping } from "./card-sql";
 
 export class CardWriteActions {
@@ -194,11 +195,17 @@ export class CardWriteActions {
 		editSource: NoteEditSource,
 	): void {
 		const now = Date.now();
-		const contentEdit = buildContentEditSet(fieldsJson, editSource, now);
-		this.db.run(
-			`UPDATE notes SET ${contentEdit.clause}, updated_at = ? WHERE id = ?`,
-			[...contentEdit.params, now, noteId],
+		const contentEdit = buildContentEditSet(
+			fieldsJsonForEdit(this.db, noteId, fieldsJson),
+			editSource,
+			now,
 		);
+		recordContentEdit(this.db, noteId, editSource, now, () => {
+			this.db.run(
+				`UPDATE notes SET ${contentEdit.clause}, updated_at = ? WHERE id = ?`,
+				[...contentEdit.params, now, noteId],
+			);
+		});
 	}
 
 	upsertFromRemote(

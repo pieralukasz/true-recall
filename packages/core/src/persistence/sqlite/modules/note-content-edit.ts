@@ -1,4 +1,26 @@
 import type { NoteEditSource } from "../../../types/note.types";
+import type { SqliteDatabase } from "../SqliteDatabase";
+
+/** Preserve stored serialization for a semantic no-op (field order is not content). */
+export function fieldsJsonForEdit(
+	db: SqliteDatabase,
+	noteId: string,
+	fieldsJson: string,
+): string {
+	const old = db.get<{ fields_json: string }>(
+		"SELECT fields_json FROM notes WHERE id=?",
+		[noteId],
+	);
+	if (!old) return fieldsJson;
+	const before = JSON.parse(old.fields_json) as Record<string, string>;
+	const after = JSON.parse(fieldsJson) as Record<string, string>;
+	return Object.keys(before).length === Object.keys(after).length &&
+		Object.keys(before).every(
+			(key) => Object.hasOwn(after, key) && before[key] === after[key],
+		)
+		? old.fields_json
+		: fieldsJson;
+}
 
 const COUNTER_COLUMN: Record<NoteEditSource, string | null> = {
 	manual: "edit_count",

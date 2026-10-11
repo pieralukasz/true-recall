@@ -10,6 +10,7 @@ import {
 	buildResizeUpdate,
 	commitDraftRegion,
 	deleteRegion,
+	deleteRegions,
 	getRegionCorner,
 	updateRegion,
 } from "@true-recall/plugins/image-occlusion/utils/canvas-interactions";
@@ -85,6 +86,18 @@ describe("updateRegion", () => {
 });
 
 // ─── deleteRegion ──────────────────────────────
+
+describe("deleteRegions", () => {
+	it("removes every selected region and keeps the others", () => {
+		const def = makeDef([
+			makeRegion({ id: "r1" }),
+			makeRegion({ id: "r2" }),
+			makeRegion({ id: "r3" }),
+		]);
+		const result = deleteRegions(def, ["r1", "r3"]);
+		expect(result.regions.map((r) => r.id)).toEqual(["r2"]);
+	});
+});
 
 describe("deleteRegion", () => {
 	it("removes the region with matching id", () => {

@@ -8,6 +8,7 @@ import {
 	listCardPolishWorkflows,
 	startCardPolish,
 } from "@true-recall/obsidian/features/library/ui/panel/utils/card-polish.utils";
+import { showMenuForEvent } from "@true-recall/obsidian/utils/menu-position";
 
 import type TrueRecallPlugin from "../../main";
 import { type ChatContext, noteContext, shorten } from "./engine/chat-context";
@@ -75,7 +76,7 @@ export function askAboutCard(
 export function showCardAiMenu(
 	plugin: TrueRecallPlugin,
 	card: FSRSFlashcardItem,
-	event: MouseEvent,
+	event: MouseEvent | KeyboardEvent,
 ): void {
 	if (!isAiChatAvailable(plugin)) {
 		void openAiChat(plugin);
@@ -122,5 +123,5 @@ export function showCardAiMenu(
 					void openAiChat(plugin, { context: cardChatContext(plugin, card) }),
 			),
 	);
-	menu.showAtMouseEvent(event);
+	showMenuForEvent(menu, event);
 }

@@ -163,17 +163,22 @@ export function renderClozeQuestion(
 	});
 }
 
+const boldCloze = (inner: string) => `**${inner}**`;
+
 /**
  * Render the answer side of a cloze card.
  * Target index clozes are shown bold, other clozes are revealed normally.
+ * `wrap` replaces the bold markers, e.g. so review can mark the answer with
+ * its own styleable class instead.
  */
 export function renderClozeAnswer(
 	template: string,
 	targetIndex: number,
+	wrap: (inner: string) => string = boldCloze,
 ): string {
 	return replaceClozes(template, (match) => {
-		const inner = renderClozeAnswer(match.content, targetIndex);
-		return match.index === targetIndex ? `**${inner}**` : inner;
+		const inner = renderClozeAnswer(match.content, targetIndex, wrap);
+		return match.index === targetIndex ? wrap(inner) : inner;
 	});
 }
 
