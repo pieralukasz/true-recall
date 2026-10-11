@@ -77,27 +77,27 @@ describe("TypeInController", () => {
 		expect(state.isChecking).toBe(false);
 		expect(f.showAnswer).toHaveBeenCalledOnce();
 	});
-	it.each([
-		"another card",
-		"same card in a restarted session",
-	])("discards late grading after switching to %s", async (mode) => {
-		const f = createController();
-		const pending = Promise.withResolvers<SemanticGradingResult>();
-		f.grade.mockReturnValue(pending.promise);
-		f.controller.handleTypedAnswerChange("Answer");
-		const revealing = f.controller.handleReveal();
-		await Promise.resolve();
-		if (mode === "another card") f.store.getState().review.nextCard();
-		f.controller.resetTypeInState(
-			f.store.getState().review.getCurrentCard()?.id,
-		);
-		pending.resolve(verdict);
-		await revealing;
-		expect(f.showAnswer).not.toHaveBeenCalled();
-		expect(
-			f.controller.getCurrentTypeInState(
-				f.store.getState().review.getCurrentCard()?.id ?? "",
-			).semanticResult,
-		).toBeNull();
-	});
+	it.each(["another card", "same card in a restarted session"])(
+		"discards late grading after switching to %s",
+		async (mode) => {
+			const f = createController();
+			const pending = Promise.withResolvers<SemanticGradingResult>();
+			f.grade.mockReturnValue(pending.promise);
+			f.controller.handleTypedAnswerChange("Answer");
+			const revealing = f.controller.handleReveal();
+			await Promise.resolve();
+			if (mode === "another card") f.store.getState().review.nextCard();
+			f.controller.resetTypeInState(
+				f.store.getState().review.getCurrentCard()?.id,
+			);
+			pending.resolve(verdict);
+			await revealing;
+			expect(f.showAnswer).not.toHaveBeenCalled();
+			expect(
+				f.controller.getCurrentTypeInState(
+					f.store.getState().review.getCurrentCard()?.id ?? "",
+				).semanticResult,
+			).toBeNull();
+		},
+	);
 });

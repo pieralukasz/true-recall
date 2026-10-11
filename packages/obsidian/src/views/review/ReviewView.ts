@@ -65,6 +65,7 @@ import {
 	createAppStore,
 	type ReviewApi,
 } from "@true-recall/obsidian/store";
+import { showMenuForEvent } from "@true-recall/obsidian/utils/menu-position";
 import { isMobile } from "@true-recall/obsidian/utils/platform";
 import { runWhenLayoutReady } from "@true-recall/obsidian/views/layout-ready";
 import {
@@ -558,13 +559,14 @@ export class ReviewView extends ItemView {
 						onTopUp: (topUp: ReviewSessionTopUp) =>
 							this.orchestrator.handleTopUp(topUp),
 						onEndSession: () => this.handleEndSession(),
-						onActionsMenu: (e: MouseEvent) => this.showActionsMenu(e),
+						onActionsMenu: (e: MouseEvent | KeyboardEvent) =>
+							this.showActionsMenu(e),
 						// Card Polish, fact check and questions: the AI chat (Pro, result
 						// under the card) or the old AI Workspace.
 						onPolishMenu:
 							this.usesAiChat ||
 							isPluginEnabled(this.plugin.settings, "card-polish")
-								? (e: MouseEvent) => this.openCardPolishMenu(e)
+								? (e: MouseEvent | KeyboardEvent) => this.openCardPolishMenu(e)
 								: undefined,
 						mountCardAssist: this.usesAiChat
 							? (el: HTMLElement, cardId: string) =>
@@ -674,7 +676,7 @@ export class ReviewView extends ItemView {
 
 	// ─── Actions menu ────────────────────────────────────────────────────
 
-	private openCardPolishMenu(e: MouseEvent): void {
+	private openCardPolishMenu(e: MouseEvent | KeyboardEvent): void {
 		const card = this.review.getCurrentCard();
 		if (card && this.usesAiChat) {
 			showCardAiMenu(this.plugin, card, e);
@@ -713,10 +715,10 @@ export class ReviewView extends ItemView {
 		else notify().error("AI assistant is not running");
 	}
 
-	private showActionsMenu(event: MouseEvent): void {
+	private showActionsMenu(event: MouseEvent | KeyboardEvent): void {
 		const menu = new Menu();
 		this.populateActionsMenu(menu);
-		menu.showAtMouseEvent(event);
+		showMenuForEvent(menu, event);
 	}
 
 	/** On mobile the card actions join the view's native pane menu, so the

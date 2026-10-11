@@ -199,6 +199,42 @@ export function createEmptyIODefinition(
 	};
 }
 
+/**
+ * Merge only the given regions into one card. They take the lowest group
+ * ordinal among them, so that card keeps its scheduling history. Other
+ * regions keep their group keys (no renumbering), so their cards are untouched.
+ */
+export function mergeSelectedIORegions(
+	definition: IODefinition,
+	regionIds: readonly string[],
+): IODefinition {
+	const ids = new Set(regionIds);
+	const ords = definition.regions.flatMap((region, index) =>
+		ids.has(region.id) ? [parseGroupOrd(region, index)] : [],
+	);
+	if (new Set(ords).size < 2) return definition;
+	const target = String(Math.min(...ords));
+	return {
+		...definition,
+		regions: definition.regions.map((region) =>
+			ids.has(region.id) ? { ...region, groupKey: target } : region,
+		),
+	};
+}
+
+/** Number of distinct cards (groups) the given regions belong to. */
+export function countIOGroupsForRegions(
+	definition: IODefinition,
+	regionIds: readonly string[],
+): number {
+	const ids = new Set(regionIds);
+	return new Set(
+		definition.regions.flatMap((region, index) =>
+			ids.has(region.id) ? [parseGroupOrd(region, index)] : [],
+		),
+	).size;
+}
+
 /** Explicit grouping keeps the lowest existing ordinal and its scheduling history. */
 export function mergeIORegions(definition: IODefinition): IODefinition {
 	const [first] = getIOGroupOrds(definition);

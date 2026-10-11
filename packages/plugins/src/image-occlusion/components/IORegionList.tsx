@@ -6,13 +6,15 @@ import { IconToolButton } from "./IOIconToolButton";
 interface RegionListItemProps {
 	region: IORegion;
 	selected: boolean;
-	onSelect: () => void;
+	showDelete: boolean;
+	onSelect: (additive: boolean) => void;
 	onDelete: () => void;
 }
 
 function RegionListItem({
 	region,
 	selected,
+	showDelete,
 	onSelect,
 	onDelete,
 }: RegionListItemProps) {
@@ -20,13 +22,15 @@ function RegionListItem({
 		<div class={`true-recall-io-region-item ${selected ? "is-selected" : ""}`}>
 			<Clickable
 				class="true-recall-io-region-main"
-				onClick={() => onSelect()}
-				title={`Select region #${region.groupKey}`}
+				onClick={(event: MouseEvent | KeyboardEvent) =>
+					onSelect(event.shiftKey || event.metaKey || event.ctrlKey)
+				}
+				title={`Select region #${region.groupKey} (Shift or Cmd/Ctrl-click to select several)`}
 			>
 				<span>#{region.groupKey}</span>
 				<span>{region.shape}</span>
 			</Clickable>
-			{selected && (
+			{showDelete && (
 				<IconToolButton
 					icon="trash-2"
 					label={`Delete region #${region.groupKey}`}
@@ -42,13 +46,15 @@ function RegionListItem({
 interface IORegionListProps {
 	regions: IORegion[];
 	selectedRegionId: string | null;
-	onSelectRegion: (id: string) => void;
+	selectedRegionIds?: readonly string[];
+	onSelectRegion: (id: string, additive?: boolean) => void;
 	onDeleteSelected: () => void;
 }
 
 export function IORegionList({
 	regions,
 	selectedRegionId,
+	selectedRegionIds,
 	onSelectRegion,
 	onDeleteSelected,
 }: IORegionListProps) {
@@ -65,8 +71,12 @@ export function IORegionList({
 					<RegionListItem
 						key={region.id}
 						region={region}
-						selected={selectedRegionId === region.id}
-						onSelect={() => onSelectRegion(region.id)}
+						selected={
+							selectedRegionId === region.id ||
+							(selectedRegionIds?.includes(region.id) ?? false)
+						}
+						showDelete={selectedRegionId === region.id}
+						onSelect={(additive) => onSelectRegion(region.id, additive)}
 						onDelete={onDeleteSelected}
 					/>
 				))}

@@ -143,18 +143,18 @@ describe("Quick Note persistence and creation undo", () => {
 		expect(f.stateRef.current.userComment).toBe("My comment");
 	});
 
-	it.each([
-		"edited",
-		"stack changed",
-	])("does not intercept ordinary undo after %s", async (reason) => {
-		const f = createEditorFixture();
-		await f.persistence.handleSave();
-		if (reason === "edited")
-			f.userEdit({ type: "field", name: "Front", value: "Another draft" });
-		else f.commandService.isNextUndo.mockReturnValue(false);
-		expect(f.persistence.handleUndoLastCreate()).toBe(false);
-		expect(f.commandService.undo).not.toHaveBeenCalled();
-	});
+	it.each(["edited", "stack changed"])(
+		"does not intercept ordinary undo after %s",
+		async (reason) => {
+			const f = createEditorFixture();
+			await f.persistence.handleSave();
+			if (reason === "edited")
+				f.userEdit({ type: "field", name: "Front", value: "Another draft" });
+			else f.commandService.isNextUndo.mockReturnValue(false);
+			expect(f.persistence.handleUndoLastCreate()).toBe(false);
+			expect(f.commandService.undo).not.toHaveBeenCalled();
+		},
+	);
 
 	it("retains a newer draft and stays open when a pending mobile save completes", async () => {
 		const f = createEditorFixture();

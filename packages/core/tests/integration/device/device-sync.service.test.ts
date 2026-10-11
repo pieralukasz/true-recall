@@ -5,6 +5,9 @@
  * Uses sql.js-backed test databases for both local and remote stores.
  */
 
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import initSqlJs from "sql.js";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type {
@@ -692,6 +695,40 @@ describe("DeviceSyncService", () => {
 			`SELECT card_id FROM review_log WHERE id = 'log-dup'`,
 		);
 		expect(logOwner?.card_id).toBe("dup-local");
+	});
+
+	it("merges a remote database still on an older schema (v3, no cards.flag)", async () => {
+		// The database 2.5.1 created on a device that has not opened the vault
+		// since: schema_version 3, cards without the flag column.
+		const sql = readFileSync(
+			join(import.meta.dirname, "../../fixtures/schema-history/2.5.1.sql"),
+			"utf8",
+		);
+		const SQL = await initSqlJs();
+		const v3 = new SQL.Database();
+		v3.exec(sql);
+		v3.exec(
+			`UPDATE cards SET updated_at = 1900000000000 WHERE id = 'fixture-card';
+			 UPDATE review_log SET updated_at = 1900000000000 WHERE id = 'fixture-review';`,
+		);
+		const remoteBinary = v3.export();
+		v3.close();
+		const remotePath = ".true-recall/true-recall-oldschema.db";
+		persistence.seedBinary(remotePath, remoteBinary);
+		vi.mocked(discoveryMock.discoverDeviceDatabases).mockResolvedValue([
+			makeDeviceInfo({ deviceId: "oldschema", path: remotePath }),
+		]);
+
+		const result = await service.syncOnStartup();
+
+		expect(result.errors).toEqual([]);
+		expect(result.cardsApplied).toBe(1);
+		expect(result.reviewLogsApplied).toBe(1);
+		const merged = localCtx.cards.get("fixture-card");
+		expect(merged?.question).toBe("Fixture question");
+		expect(merged?.flag).toBe(0);
+		// The remote file is only read: its bytes must stay as they were.
+		expect(await persistence.readBinary(remotePath)).toEqual(remoteBinary);
 	});
 
 	it("syncOnStartup reports discovery failure as error", async () => {

@@ -2,8 +2,10 @@ import { Notice } from "obsidian";
 import { useCallback, useState } from "preact/hooks";
 
 import {
+	countIOGroupsForRegions,
 	getIOGroupOrds,
 	mergeIORegions,
+	mergeSelectedIORegions,
 } from "@true-recall/core/utils/io-definition";
 
 import {
@@ -19,7 +21,7 @@ import type {
 	IOEditorResult,
 	IOEditorTool,
 } from "../types";
-import { deleteRegion } from "../utils/canvas-interactions";
+import { deleteRegions } from "../utils/canvas-interactions";
 import {
 	appendDetectedRegions,
 	createIOEditorInitialState,
@@ -46,7 +48,7 @@ export function useIOEditorController({
 	const [definition, setDefinition] = useState(initialState.definition);
 	const [tool, setTool] = useState<IOEditorTool>(initialState.tool);
 	const [lastDrawingTool, setLastDrawingTool] = useState<IODrawingTool>("rect");
-	const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
+	const [selectedRegionIds, setSelectedRegionIds] = useState<string[]>([]);
 	const [saving, setSaving] = useState(false);
 	const [zoom, setZoom] = useState(1);
 	const [panX, setPanX] = useState(0);
@@ -64,8 +66,31 @@ export function useIOEditorController({
 	const resolveSourceUid = source.resolveUid;
 	const activeTool = tool === "select" && !hasRegions ? lastDrawingTool : tool;
 
+	// The last clicked region is the primary one: it gets resize handles and
+	// the details section. All selected regions can be merged or deleted.
+	const liveSelectedIds = selectedRegionIds.filter((id) =>
+		definition.regions.some((region) => region.id === id),
+	);
+	const selectedRegionId = liveSelectedIds.at(-1) ?? null;
 	const selectedRegion =
 		definition.regions.find((region) => region.id === selectedRegionId) ?? null;
+	const selectedGroupCount = countIOGroupsForRegions(
+		definition,
+		liveSelectedIds,
+	);
+
+	const selectRegion = useCallback(
+		(regionId: string | null, additive = false) => {
+			setSelectedRegionIds((current) => {
+				if (!regionId) return additive ? current : [];
+				if (!additive) return [regionId];
+				return current.includes(regionId)
+					? current.filter((id) => id !== regionId)
+					: [...current, regionId];
+			});
+		},
+		[],
+	);
 
 	const updateSelectedRegion = useCallback(
 		(patch: Parameters<typeof patchRegion>[2]) => {
@@ -76,12 +101,18 @@ export function useIOEditorController({
 	);
 
 	const deleteSelectedRegion = useCallback(() => {
-		setSelectedRegionId((currentId) => {
-			if (!currentId) return null;
-			setDefinition((current) => deleteRegion(current, currentId));
-			return null;
+		setSelectedRegionIds((currentIds) => {
+			if (currentIds.length === 0) return currentIds;
+			setDefinition((current) => deleteRegions(current, currentIds));
+			return [];
 		});
 	}, []);
+
+	const mergeSelectedRegions = useCallback(() => {
+		setDefinition((current) =>
+			mergeSelectedIORegions(current, liveSelectedIds),
+		);
+	}, [liveSelectedIds]);
 
 	useIOEditorShortcuts({
 		hasRegions,
@@ -229,12 +260,13 @@ export function useIOEditorController({
 			definition,
 			tool: activeTool,
 			selectedRegionId,
+			selectedRegionIds: liveSelectedIds,
 			zoom,
 			panX,
 			panY,
 			onDefinitionChange: setDefinition,
 			onToolChange: setTool,
-			onSelectRegion: setSelectedRegionId,
+			onSelectRegion: selectRegion,
 			onZoomChange: setZoom,
 			onPanChange: setPan,
 		},
@@ -281,11 +313,14 @@ export function useIOEditorController({
 			setDefinition((current) => ({ ...current, hideOtherRegions: value })),
 		groupCount: getIOGroupOrds(definition).length,
 		onMergeRegions: () => setDefinition(mergeIORegions),
+		selectedGroupCount,
+		onMergeSelectedRegions: mergeSelectedRegions,
 		maskMode: definition.maskMode,
 		onMaskModeChange: setMaskMode,
 		regions: definition.regions,
 		selectedRegion,
-		onSelectRegion: setSelectedRegionId,
+		selectedRegionIds: liveSelectedIds,
+		onSelectRegion: selectRegion,
 		onDeleteSelectedRegion: deleteSelectedRegion,
 		onUpdateSelectedRegion: updateSelectedRegion,
 		isEdit: mode.mode === "edit",

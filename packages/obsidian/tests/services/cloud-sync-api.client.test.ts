@@ -76,24 +76,25 @@ describe("CloudSyncApiClient", () => {
 		expect(onAuthExpired).not.toHaveBeenCalled();
 	});
 
-	it.each([
-		403, 429, 500, 503,
-	])("keeps the session after HTTP %i", async (status) => {
-		const auth = createAuth();
-		const onAuthExpired = vi.fn();
-		requestUrlMock.mockResolvedValueOnce({
-			status,
-			json: { error: "Unavailable" },
-		} as never);
-		await expect(
-			new CloudSyncApiClient(auth, onAuthExpired).exchange({
-				cursor: 0,
-				changes: [],
-			}),
-		).rejects.toThrow();
-		expect(auth.clearSession).not.toHaveBeenCalled();
-		expect(onAuthExpired).not.toHaveBeenCalled();
-	});
+	it.each([403, 429, 500, 503])(
+		"keeps the session after HTTP %i",
+		async (status) => {
+			const auth = createAuth();
+			const onAuthExpired = vi.fn();
+			requestUrlMock.mockResolvedValueOnce({
+				status,
+				json: { error: "Unavailable" },
+			} as never);
+			await expect(
+				new CloudSyncApiClient(auth, onAuthExpired).exchange({
+					cursor: 0,
+					changes: [],
+				}),
+			).rejects.toThrow();
+			expect(auth.clearSession).not.toHaveBeenCalled();
+			expect(onAuthExpired).not.toHaveBeenCalled();
+		},
+	);
 
 	it("treats an already-invalid token as a successful revocation", async () => {
 		const auth = createAuth();

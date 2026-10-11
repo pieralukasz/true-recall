@@ -14,10 +14,13 @@ export class DomainEventBus {
 			set = new Set();
 			this.handlers.set(event, set);
 		}
-		set.add(handler);
+		// The map is keyed by event name, so each set only ever holds handlers
+		// for that event's payload; the cast erases the per-event type.
+		const stored = handler as EventHandler<unknown>;
+		set.add(stored);
 		const captured = set;
 		return () => {
-			captured.delete(handler);
+			captured.delete(stored);
 		};
 	}
 

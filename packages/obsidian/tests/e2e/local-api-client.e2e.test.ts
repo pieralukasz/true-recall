@@ -264,19 +264,22 @@ describe("Local API → shared CLI/MCP client", () => {
 	it.each([
 		[TRUSTED_ORIGIN, 200, TRUSTED_ORIGIN],
 		["chrome-extension://untrusted", 403, null],
-	] as const)("applies the browser origin allowlist for %s", async (origin, expectedStatus, expectedAllowOrigin) => {
-		const response = await fetch(`http://127.0.0.1:${port}/status`, {
-			headers: {
-				Authorization: `Bearer ${API_TOKEN}`,
-				Origin: origin,
-			},
-		});
+	] as const)(
+		"applies the browser origin allowlist for %s",
+		async (origin, expectedStatus, expectedAllowOrigin) => {
+			const response = await fetch(`http://127.0.0.1:${port}/status`, {
+				headers: {
+					Authorization: `Bearer ${API_TOKEN}`,
+					Origin: origin,
+				},
+			});
 
-		expect(response.status).toBe(expectedStatus);
-		expect(response.headers.get("access-control-allow-origin")).toBe(
-			expectedAllowOrigin,
-		);
-		expect(response.headers.get("cache-control")).toBe("no-store");
-		expect(response.headers.get("x-request-id")).toMatch(/^[0-9a-f-]{36}$/);
-	});
+			expect(response.status).toBe(expectedStatus);
+			expect(response.headers.get("access-control-allow-origin")).toBe(
+				expectedAllowOrigin,
+			);
+			expect(response.headers.get("cache-control")).toBe("no-store");
+			expect(response.headers.get("x-request-id")).toMatch(/^[0-9a-f-]{36}$/);
+		},
+	);
 });

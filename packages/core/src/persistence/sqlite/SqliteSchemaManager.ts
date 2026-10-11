@@ -1,11 +1,14 @@
 import { BUILTIN_SLUGS } from "../../types/note.types";
+import { createCardEditHistorySchema } from "./modules/card-edit-history";
 import { getBuiltinNoteTypes } from "./modules/NoteTypeActions";
 import type { DatabaseLike } from "./sqlite.types";
 
 /**
  * Bump on any schema change a device-sync merge must know about.
  * Merging refuses input from databases with a NEWER version (their rows may
- * carry columns this build does not understand); older versions merge fine.
+ * carry columns this build does not understand). An older remote is upgraded
+ * in memory with createTables() before it is read, so the merge queries can
+ * use the current column list.
  * v2: review_log gains device_id and review_kind.
  * v3: notes gain edit_count, ai_edit_count and content_edited_at.
  * v4: cards gain flag (Anki-compatible card flag, 0 = none, 1-7 = colors).
@@ -15,7 +18,12 @@ export const CURRENT_SCHEMA_VERSION = 4;
 export class SqliteSchemaManager {
 	constructor(private db: DatabaseLike) {}
 
-	createTables(): void {
+	/**
+	 * Create missing tables and bring an existing database up to the current
+	 * schema. `fullTextSearch: false` skips the FTS5 index, which a read-only
+	 * copy (a remote device database opened for a merge) does not need.
+	 */
+	createTables(options: { fullTextSearch?: boolean } = {}): void {
 		this.db.run(`
             PRAGMA foreign_keys = ON;
 
@@ -281,7 +289,8 @@ export class SqliteSchemaManager {
 			);
 		}
 
-		this.createFts5();
+		createCardEditHistorySchema(this.db);
+		if (options.fullTextSearch !== false) this.createFts5();
 	}
 
 	/**

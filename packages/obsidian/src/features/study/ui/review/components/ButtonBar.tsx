@@ -40,8 +40,8 @@ interface ButtonBarProps {
 	onAnswer: (rating: Grade) => void;
 	onUndo?: () => void;
 	onCycleTypeInMode?: () => void;
-	onActionsMenu?: (e: MouseEvent) => void;
-	onPolishMenu?: (e: MouseEvent) => void;
+	onActionsMenu?: (e: MouseEvent | KeyboardEvent) => void;
+	onPolishMenu?: (e: MouseEvent | KeyboardEvent) => void;
 }
 
 export function ButtonBar({

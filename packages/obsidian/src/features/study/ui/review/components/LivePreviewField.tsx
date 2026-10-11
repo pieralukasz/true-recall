@@ -15,6 +15,10 @@ import { formattingKeymap } from "@true-recall/obsidian/editor/shared/formatting
 import { getInkEmbeddableEditorExtensions } from "@true-recall/obsidian/editor/shared/ink-embeddable-editor";
 import { hasBlockMarkdown } from "@true-recall/obsidian/features/study/ui/review/helpers";
 import {
+	clozeAnswerField,
+	setClozeAnswerRanges,
+} from "@true-recall/obsidian/features/study/ui/review/helpers/cloze-answer-decoration";
+import {
 	useApp,
 	usePlugin,
 } from "@true-recall/obsidian/preact/ObsidianContext";
@@ -27,7 +31,11 @@ interface LivePreviewFieldProps {
 	sourcePath: string;
 	cls: string;
 	onContentChange?: (value: string, field: "question" | "answer") => void;
+	/** Offsets in `content` (after `<br>` → newline) styled as a revealed cloze. */
+	clozeRanges?: readonly [number, number][];
 }
+
+const NO_RANGES: readonly [number, number][] = [];
 
 export function LivePreviewField({
 	content,
@@ -35,12 +43,15 @@ export function LivePreviewField({
 	sourcePath,
 	cls,
 	onContentChange,
+	clozeRanges = NO_RANGES,
 }: LivePreviewFieldProps) {
 	const app = useApp();
 	const plugin = usePlugin();
 	const containerRef = useRef<HTMLDivElement>(null);
 	const editorRef = useRef<EmbeddableEditorInstance | null>(null);
 	const contentRef = useRef(content);
+	const clozeRangesRef = useRef(clozeRanges);
+	clozeRangesRef.current = clozeRanges;
 
 	// Refs so stale closures (editor callbacks captured at construction) always access latest values
 	const saveTimerRef = useRef<number | null>(null);
@@ -141,9 +152,16 @@ export function LivePreviewField({
 				extraExtensions: [
 					...getInkEmbeddableEditorExtensions(app, sourcePath),
 					formattingKeymap(),
+					clozeAnswerField,
 				],
 			});
 			editorRef.current = editor;
+			if (clozeRangesRef.current.length > 0) {
+				editor.cm.dispatch({
+					effects: setClozeAnswerRanges.of(clozeRangesRef.current),
+					annotations: Transaction.addToHistory.of(false),
+				});
+			}
 		} catch (error) {
 			console.error("[LivePreviewField] Failed to create editor:", error);
 			return;
@@ -188,18 +206,26 @@ export function LivePreviewField({
 		if (!editor) return;
 
 		const normalizedContent = stripBrTags(content);
-		if (editor.value === normalizedContent) return;
+		const cm = editor.cm;
+		const effects = setClozeAnswerRanges.of(clozeRanges);
+		if (editor.value === normalizedContent) {
+			cm.dispatch({
+				effects,
+				annotations: Transaction.addToHistory.of(false),
+			});
+			return;
+		}
 
 		// The old card's doc is replaced below; a pending user-edit flag must
 		// not survive into the new card, or the next blur would save the new
 		// card's untouched content as an "edit".
 		hasUserEditRef.current = false;
-		const cm = editor.cm;
 		cm.dispatch({
 			changes: { from: 0, to: cm.state.doc.length, insert: normalizedContent },
+			effects,
 			annotations: Transaction.addToHistory.of(false),
 		});
-	}, [content]);
+	}, [content, clozeRanges]);
 
 	const wrapperClass = useMemo(
 		() => (hasBlockMarkdown(content) ? `${cls} is-block-content` : cls),

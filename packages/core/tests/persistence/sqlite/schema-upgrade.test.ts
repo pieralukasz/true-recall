@@ -116,7 +116,117 @@ describe("databases from released versions", () => {
 		vi.spyOn(console, "warn").mockImplementation(() => {});
 		vi.spyOn(console, "error").mockImplementation(() => {});
 	});
-	afterEach(() => vi.restoreAllMocks());
+	afterEach(() => {
+		vi.restoreAllMocks();
+		vi.useRealTimers();
+	});
+
+	it("rolls back a nested content edit when the enclosing transaction fails", async () => {
+		const store = await openStore(fixtures[0]!.sql),
+			db = store.getSqliteDb();
+		expect(() =>
+			db.transaction(() => {
+				store.notes.update(
+					"fixture-note",
+					{ fields: { Front: "Rolled back", Back: "Fixture answer" } },
+					"ai",
+				);
+				throw new Error("outer failed");
+			}),
+		).toThrow("outer failed");
+		expect(store.notes.getById("fixture-note")).toMatchObject({
+			fields: { Front: "Fixture question" },
+			aiEditCount: 0,
+		});
+		expect(db.query("SELECT id FROM card_edit_history")).toEqual([]);
+	});
+
+	it("prunes aged history on startup and saves that pruning", async () => {
+		vi.useFakeTimers();
+		vi.setSystemTime(new Date("2026-10-10T10:00:00Z"));
+		const fs = new MapPersistence(),
+			first = createStore(fs);
+		fs.files.set(first.getDbPath(), await databaseBytes(fixtures[0]!.sql));
+		await first.load();
+		first.notes.update("fixture-note", {
+			fields: { Front: "Edited", Back: "Fixture answer" },
+		});
+		await first.saveNow();
+		vi.setSystemTime(new Date("2027-01-10T10:00:00Z"));
+		const second = createStore(fs);
+		await second.load();
+		await second.saveNow();
+		expect(
+			second.getSqliteDb().query("SELECT id FROM card_edit_history"),
+		).toEqual([]);
+		const third = createStore(fs);
+		await third.load();
+		expect(
+			third.getSqliteDb().query("SELECT id FROM card_edit_history"),
+		).toEqual([]);
+		expect(third.cards.get("fixture-card")?.reps).toBe(3);
+	});
+
+	it("persists history activation on upgrade even without a content edit", async () => {
+		vi.useFakeTimers();
+		vi.setSystemTime(new Date("2026-10-10T10:00:00Z"));
+		const fs = new MapPersistence(),
+			first = createStore(fs);
+		fs.files.set(first.getDbPath(), await databaseBytes(fixtures.at(-1)!.sql));
+		await first.load();
+		// A v2.9.1-like database with already refreshed builtins and no history table.
+		first.getSqliteDb().run("DROP TABLE card_edit_history");
+		first
+			.getSqliteDb()
+			.run("DELETE FROM meta WHERE key='card_edit_history_started_at'");
+		fs.files.set(first.getDbPath(), first.getSqliteDb().export());
+		const upgraded = createStore(fs);
+		await upgraded.load();
+		await upgraded.saveNow();
+		const started = upgraded
+			.getSqliteDb()
+			.get("SELECT value FROM meta WHERE key='card_edit_history_started_at'");
+		vi.setSystemTime(new Date("2026-10-11T10:00:00Z"));
+		const second = createStore(fs);
+		await second.load();
+		expect(
+			second
+				.getSqliteDb()
+				.get("SELECT value FROM meta WHERE key='card_edit_history_started_at'"),
+		).toEqual(started);
+	});
+
+	it("exports and reopens actual history with the local writing device", async () => {
+		vi.useFakeTimers();
+		vi.setSystemTime(new Date("2026-10-10T10:00:00Z"));
+		const fs = new MapPersistence();
+		const first = createStore(fs);
+		fs.files.set(first.getDbPath(), await databaseBytes(fixtures[0]!.sql));
+		await first.load();
+		first.notes.update(
+			"fixture-note",
+			{ fields: { Front: "Edited", Back: "Fixture answer" } },
+			"ai",
+		);
+		await first.saveNow();
+		const second = createStore(fs);
+		await second.load();
+		expect(
+			second
+				.getSqliteDb()
+				.query(
+					"SELECT source,device_id,before_fields_json,after_fields_json FROM card_edit_history",
+				),
+		).toEqual([
+			{
+				source: "ai",
+				device_id: "fixture1",
+				before_fields_json:
+					'{"Front":"Fixture question","Back":"Fixture answer"}',
+				after_fields_json: '{"Front":"Edited","Back":"Fixture answer"}',
+			},
+		]);
+	});
 
 	it("has a fixture for every schema version before the current one", () => {
 		const covered = new Set(fixtures.map((f) => f.schemaVersion));

@@ -23,15 +23,14 @@ describe("resolveAiSurface", () => {
 		).toBe("docked");
 	});
 
-	it.each<AiSurfaceIntent>([
-		"preset",
-		"selection",
-		"compose",
-	])("collapses %s to a modal on mobile", (intent) => {
-		expect(resolveAiSurface({ intent, hasAnchor: true, isMobile: true })).toBe(
-			"modal",
-		);
-	});
+	it.each<AiSurfaceIntent>(["preset", "selection", "compose"])(
+		"collapses %s to a modal on mobile",
+		(intent) => {
+			expect(
+				resolveAiSurface({ intent, hasAnchor: true, isMobile: true }),
+			).toBe("modal");
+		},
+	);
 
 	it("honors an explicit preference on desktop", () => {
 		expect(

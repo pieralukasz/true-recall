@@ -71,16 +71,16 @@ describe("PluginRuntime startup", () => {
 		);
 		expect(mocks.api).not.toHaveBeenCalled();
 	});
-	it.each([
-		"core",
-		"store",
-	] as const)("stops startup when %s initialization fails", async (stage) => {
-		mocks[stage].mockRejectedValueOnce(new Error("Storage failed"));
-		await createRuntime().runtime.load();
-		expect(mocks.sync).not.toHaveBeenCalled();
-		expect(mocks.features).not.toHaveBeenCalled();
-		expect(mocks.notify).toHaveBeenCalledOnce();
-	});
+	it.each(["core", "store"] as const)(
+		"stops startup when %s initialization fails",
+		async (stage) => {
+			mocks[stage].mockRejectedValueOnce(new Error("Storage failed"));
+			await createRuntime().runtime.load();
+			expect(mocks.sync).not.toHaveBeenCalled();
+			expect(mocks.features).not.toHaveBeenCalled();
+			expect(mocks.notify).toHaveBeenCalledOnce();
+		},
+	);
 	it("honors the platform guard before starting the local HTTP API", async () => {
 		mocks.canRunApi.mockReturnValue(false);
 		await createRuntime(true).runtime.load();
