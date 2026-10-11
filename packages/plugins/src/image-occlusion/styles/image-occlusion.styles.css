@@ -336,6 +336,16 @@
 		filter: drop-shadow(0 0 5px rgba(0, 0, 0, 0.35));
 	}
 
+	/* Several regions picked for "Merge selected": a contrasting dashed outline
+	   marks every member of the selection, not only the one with handles. */
+	.true-recall-io-canvas-region.is-multi-selected {
+		/* Fixed dark stroke: it sits on the accent fill, so it contrasts in both
+		   themes; a theme text colour vanished on light images in dark mode. */
+		stroke: rgb(0 0 0 / 0.85);
+		stroke-width: 0.006;
+		stroke-dasharray: 0.014 0.008;
+	}
+
 	.true-recall-io-canvas-handle {
 		fill: var(--background-primary);
 		stroke: var(--interactive-accent);

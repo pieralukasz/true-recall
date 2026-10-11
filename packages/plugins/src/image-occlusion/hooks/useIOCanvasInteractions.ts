@@ -35,7 +35,7 @@ interface UseIOCanvasInteractionsOptions {
 	panY: number;
 	zoom: number;
 	onDefinitionChange: (definition: IODefinition) => void;
-	onSelectRegion: (regionId: string | null) => void;
+	onSelectRegion: (regionId: string | null, additive?: boolean) => void;
 	onZoomChange: (zoom: number) => void;
 	onPanChange: (x: number, y: number) => void;
 }
@@ -138,6 +138,15 @@ export function useIOCanvasInteractions({
 				return;
 			}
 
+			const additive = event.shiftKey || event.metaKey || event.ctrlKey;
+			if (regionId && additive && !resizeCorner) {
+				// Shift/Cmd/Ctrl-click adds or removes a region from the selection
+				// without starting a drag, so several regions can be merged.
+				latest.current.onSelectRegion(regionId, true);
+				if (currentTool !== "select") latest.current.onToolChange?.("select");
+				return;
+			}
+
 			if (regionId) {
 				latest.current.onSelectRegion(regionId);
 				if (currentTool !== "select") {
@@ -145,7 +154,7 @@ export function useIOCanvasInteractions({
 					return;
 				}
 			} else if (!resizeCorner && currentTool === "select") {
-				latest.current.onSelectRegion(null);
+				latest.current.onSelectRegion(null, additive);
 			}
 
 			const point = getNormalizedPoint(event, mediaRef.current);

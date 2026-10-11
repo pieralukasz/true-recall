@@ -11,6 +11,8 @@ interface IOMaskModeSectionProps {
 	onHideOtherRegionsChange: (value: boolean) => void;
 	groupCount: number;
 	onMergeRegions: () => void;
+	selectedGroupCount: number;
+	onMergeSelectedRegions: () => void;
 }
 
 const BASE_BUTTON_CLASS =
@@ -26,6 +28,8 @@ export function IOMaskModeSection({
 	onHideOtherRegionsChange,
 	groupCount,
 	onMergeRegions,
+	selectedGroupCount,
+	onMergeSelectedRegions,
 }: IOMaskModeSectionProps) {
 	return (
 		<section class="true-recall-io-side-section">
@@ -64,9 +68,27 @@ export function IOMaskModeSection({
 					? t("1 card on save")
 					: t("{0} cards on save", [groupCount])}
 			</p>
-			<button type="button" disabled={groupCount < 2} onClick={onMergeRegions}>
-				{t("Merge all regions into one card")}
-			</button>
+			<div class="ep:flex ep:gap-2 ep:flex-wrap">
+				<button
+					type="button"
+					disabled={selectedGroupCount < 2}
+					onClick={onMergeSelectedRegions}
+				>
+					{t("Merge selected into one card")}
+				</button>
+				<button
+					type="button"
+					disabled={groupCount < 2}
+					onClick={onMergeRegions}
+				>
+					{t("Merge all regions into one card")}
+				</button>
+			</div>
+			<p class="ep:text-ui-small ep:text-obs-muted">
+				{t(
+					"Shift or Cmd/Ctrl-click regions to select several, then merge them into one card.",
+				)}
+			</p>
 			<p class="ep:text-ui-small ep:text-obs-muted">
 				{t(
 					"Merging keeps the lowest group's card and review history. Other cards in this note are removed when you save.",
