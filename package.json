@@ -49,7 +49,7 @@
 		"@types/node": "^26.6.3",
 		"@types/pako": "^2.0.4",
 		"@typescript-eslint/parser": "8.71.1",
-		"@vitest/coverage-v8": "^4.1.11",
+		"@vitest/coverage-v8": "^5.0.2",
 		"esbuild": "^0.28.2",
 		"eslint": "^10.11.0",
 		"eslint-plugin-obsidianmd": "0.4.2",
