@@ -174,6 +174,47 @@ describe("Quick Note persistence and creation undo", () => {
 		expect(f.persistence.handleUndoLastCreate()).toBe(false);
 	});
 
+	it("saves a type-in toggle on an edited card without touching its fields", async () => {
+		const f = createEditorFixture();
+		const editMode = {
+			mode: "edit",
+			cardId: "card-1",
+			noteId: "note-1",
+			note: {
+				id: "note-1",
+				noteTypeId: "builtin-basic",
+				fields: { Front: "Question", Back: "Answer" },
+				tags: [],
+			},
+			noteType: { id: "builtin-basic", fields: ["Front", "Back"] },
+		};
+		const setNoteAlwaysTypeIn = vi.fn(() => ["card-1"]);
+		const updateNoteFields = vi.fn();
+		const persistence = useQuickNotePersistence(
+			{
+				...f.editor,
+				isEdit: true,
+				editMode,
+				plugin: {
+					flashcardManager: {
+						hasStore: () => true,
+						setNoteAlwaysTypeIn,
+						updateNoteFields,
+					},
+				},
+			} as unknown as QuickNoteEditor,
+			f.onDone,
+		);
+		f.userEdit({ type: "typeIn", enabled: true });
+		await expect(persistence.handleSave()).resolves.toBe(true);
+		expect(setNoteAlwaysTypeIn).toHaveBeenCalledWith("note-1", true);
+		expect(updateNoteFields).not.toHaveBeenCalled();
+		expect(f.onDone).toHaveBeenCalledWith({
+			cancelled: false,
+			updatedCardIds: ["card-1"],
+		});
+	});
+
 	it("does not overwrite typing that happens while creation undo is pending", async () => {
 		const f = createEditorFixture();
 		await f.persistence.handleSave();
