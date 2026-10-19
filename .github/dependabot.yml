@@ -15,6 +15,17 @@ updates:
       default-days: 3
       semver-major-days: 14
     open-pull-requests-limit: 5
+    # React 19 creates <script> elements rejected by Obsidian's release scan.
+    # Keep React runtime and types on the supported major until reviewed manually.
+    ignore:
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/react-dom"
+        update-types: ["version-update:semver-major"]
     commit-message:
       prefix: "chore"
       include: "scope"
