@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import { SemanticAnswerGradingService } from "../../src/ai/grading/semantic-answer-grading.service";
-import { DEFAULT_TYPE_IN_GRADING_SYSTEM_PROMPT } from "../../src/ai/prompts/type-in-grading-prompt";
+import {
+	DEFAULT_TYPE_IN_GRADING_SYSTEM_PROMPT,
+	TYPE_IN_GRADING_LANGUAGE_LINE,
+} from "../../src/ai/prompts/type-in-grading-prompt";
 import { DEFAULT_SETTINGS } from "../../src/constants";
 import { HttpError } from "../../src/errors";
 import type { TrueRecallSettings } from "../../src/types";
@@ -303,5 +306,24 @@ describe("SemanticAnswerGradingService", () => {
 
 		expect(capturedUserMessage).not.toContain("<context>");
 		expect(capturedUserMessage.startsWith("Question: What is ATP?")).toBe(true);
+	});
+
+	it("asks for feedback in the language of the question, last", async () => {
+		const settings = createSettings({ openRouterApiKey: "sk-or-test" });
+		let capturedUserMessage = "";
+		const service = serviceReturning(settings, VALID_PAYLOAD, {
+			onRequest: (request) => {
+				capturedUserMessage = request.messages[1]?.content ?? "";
+			},
+		});
+
+		await service.gradeAnswer({ ...BASE_INPUT, userAnswer: "tre protoner" });
+
+		expect(capturedUserMessage.endsWith(TYPE_IN_GRADING_LANGUAGE_LINE)).toBe(
+			true,
+		);
+		expect(DEFAULT_TYPE_IN_GRADING_SYSTEM_PROMPT).not.toContain(
+			"in the language of the user's answer",
+		);
 	});
 });

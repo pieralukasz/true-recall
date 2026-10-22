@@ -51,7 +51,7 @@
 	/* Switch to left-align when content has block elements. The
 	   `is-block-content` class is set by LivePreviewField / PreviewCardBody
 	   when hasBlockMarkdown() detects fenced code, lists, tables, blockquote,
-	   display math, or headings. */
+	   display math, headings, or an Ink handwriting embed. */
 	.true-recall-review-question.is-block-content,
 	.true-recall-review-answer.is-block-content {
 		text-align: left;
