@@ -2,7 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import { renderTemplate } from "@true-recall/core/services/cards/template-engine";
 
-import { locateClozeAnswer } from "@true-recall/obsidian/features/study/ui/review/helpers/cloze-answer-ranges";
+import {
+	clozeAnswerMarkup,
+	locateClozeAnswer,
+} from "@true-recall/obsidian/features/study/ui/review/helpers/cloze-answer-ranges";
 
 /** The builtin Cloze answer template: cloze field, then Extra. */
 const AFMT = "{{cloze:Text}}<br>{{Extra}}";
@@ -81,5 +84,27 @@ describe("locateClozeAnswer", () => {
 			locateClozeAnswer(answer, "A {{c1::b}} c", undefined).ranges,
 		).toEqual([]);
 		expect(locateClozeAnswer(answer, "A {{c1::b}} c", 3).ranges).toEqual([]);
+	});
+});
+
+describe("clozeAnswerMarkup", () => {
+	it("wraps the revealed cloze in the tr-cloze span instead of bold", () => {
+		const text =
+			"Mine **own bold** then {{c1::the answer}} end. {{c2::other}}.";
+		expect(clozeAnswerMarkup(answerFor(text, 1), text, 1)).toBe(
+			'Mine **own bold** then <span class="cloze tr-cloze">the answer</span> end. other.\n',
+		);
+	});
+
+	it("keeps markdown inside the span", () => {
+		const text = "{{c1::*it* and $x^2$::hint}}";
+		expect(clozeAnswerMarkup(answerFor(text, 1), text, 1)).toBe(
+			'<span class="cloze tr-cloze">*it* and $x^2$</span>\n',
+		);
+	});
+
+	it("falls back to the stored bold when the cloze cannot be located", () => {
+		const custom = "<div>A **b** c</div>";
+		expect(clozeAnswerMarkup(custom, "X {{c1::y}}", 1)).toBe(custom);
 	});
 });

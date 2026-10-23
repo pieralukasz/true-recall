@@ -14,12 +14,12 @@ export interface ClozeAnswerText {
 /**
  * The stored cloze answer wraps the revealed cloze in `**…**`, which looks
  * the same as bold the user wrote and cannot be restyled. Review shows the
- * answer without those markers and styles the returned ranges instead
- * (class `cloze tr-cloze`, bold by default).
+ * answer without those markers and marks the returned ranges instead
+ * (class `cloze tr-cloze`, tinted in review.styles.css).
  *
  * Returns the answer unchanged with no ranges when the cloze field cannot
  * be found verbatim in it (custom templates that transform the field), so
- * such cards keep the old bold look.
+ * such cards keep the stored bold markers.
  */
 export function locateClozeAnswer(
 	answer: string,
@@ -61,4 +61,34 @@ export function locateClozeAnswer(
 	plain += text.slice(at + bold.length);
 	ranges.sort((a, b) => a[0] - b[0] || b[1] - a[1]);
 	return { text: plain, ranges };
+}
+
+const SPAN_OPEN = '<span class="cloze tr-cloze">';
+const SPAN_CLOSE = "</span>";
+
+/**
+ * The stored answer as markdown for a read-only preview: the revealed cloze is
+ * wrapped in the `cloze tr-cloze` span instead of the stored `**…**`, so the
+ * card browser marks it the same way review does. Markdown inside the cloze
+ * still renders, because an inline `<span>` does not stop parsing.
+ *
+ * Returns the answer unchanged when the cloze cannot be located, which leaves
+ * the stored bold markers as the fallback.
+ */
+export function clozeAnswerMarkup(
+	answer: string,
+	clozeTemplate: string | undefined,
+	clozeIndex: number | undefined,
+): string {
+	const { text, ranges } = locateClozeAnswer(answer, clozeTemplate, clozeIndex);
+	if (ranges.length === 0) return answer;
+	let out = "";
+	let last = 0;
+	for (const [from, to] of ranges) {
+		// Nested clozes can overlap; keep the outermost one only.
+		if (from < last) continue;
+		out += `${text.slice(last, from)}${SPAN_OPEN}${text.slice(from, to)}${SPAN_CLOSE}`;
+		last = to;
+	}
+	return out + text.slice(last);
 }

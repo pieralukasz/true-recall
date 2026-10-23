@@ -10,7 +10,8 @@ const clozeAnswerMark = Decoration.mark({ class: "cloze tr-cloze" });
 /**
  * Marks the revealed cloze in the review editor. Anki's `cloze` class lets
  * CSS snippets and note type Styling (including CSS imported from Anki
- * decks) restyle it; `tr-cloze` carries the default bold look.
+ * decks) restyle it; `tr-cloze` carries the default background tint applied
+ * in review.styles.css.
  */
 export const clozeAnswerField = StateField.define<DecorationSet>({
 	create: () => Decoration.none,

@@ -127,6 +127,12 @@ export function registerCommands(plugin: TrueRecallPlugin): void {
 	});
 
 	plugin.addCommand({
+		id: "cleanup-orphan-notes",
+		name: "Clean up orphan notes and rebuild statistics",
+		callback: () => void plugin.cleanupOrphanNotes(),
+	});
+
+	plugin.addCommand({
 		id: "sync-devices-now",
 		name: "Sync devices now",
 		checkCallback: (checking) => {
