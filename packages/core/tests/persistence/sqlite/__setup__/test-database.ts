@@ -138,6 +138,14 @@ export class TestSqliteDatabase {
 				FOREIGN KEY (note_id) REFERENCES notes(id)
 			);
 
+			CREATE TABLE IF NOT EXISTS card_children (
+				child_card_id TEXT PRIMARY KEY NOT NULL,
+				parent_card_id TEXT NOT NULL,
+				created_at INTEGER NOT NULL,
+				graduated_at INTEGER,
+				deleted_at INTEGER
+			);
+
 			CREATE TABLE IF NOT EXISTS review_log (
 				id TEXT PRIMARY KEY NOT NULL,
 				card_id TEXT NOT NULL,
