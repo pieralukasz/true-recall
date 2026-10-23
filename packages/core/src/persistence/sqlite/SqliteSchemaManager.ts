@@ -199,6 +199,20 @@ export class SqliteSchemaManager {
 			CREATE INDEX IF NOT EXISTS idx_assistant_threads_state_updated
 			ON assistant_threads(state, updated_at DESC);
 
+			-- Child cards: a suspended card can be studied through one or more
+			-- easier stand-ins. The relation lives here rather than in card text
+			-- because image occlusion notes have no text field to carry it.
+			CREATE TABLE IF NOT EXISTS card_children (
+				child_card_id TEXT PRIMARY KEY NOT NULL,
+				parent_card_id TEXT NOT NULL,
+				created_at INTEGER NOT NULL,
+				graduated_at INTEGER,
+				deleted_at INTEGER
+			);
+
+			CREATE INDEX IF NOT EXISTS idx_card_children_parent
+			ON card_children(parent_card_id);
+
             CREATE TABLE IF NOT EXISTS meta (
                 key TEXT PRIMARY KEY NOT NULL,
                 value TEXT
