@@ -11,9 +11,11 @@ import {
 	BUILTIN_CLOZE_ID,
 } from "../../../src/types/note.types";
 import {
+	createTestCard,
 	createTestContext,
 	createTestNote,
 	getRawNote,
+	insertCardDirect,
 	insertNoteDirect,
 	type TestContext,
 } from "./__setup__/test-database";
@@ -510,6 +512,32 @@ describe("NoteActions", () => {
 
 			const byFront = ctx.notes.search("Question");
 			expect(byFront).toHaveLength(1);
+		});
+	});
+
+	describe("findOrphanIds", () => {
+		it("returns a note once its only card is deleted", () => {
+			ctx.notes.create(createTestNote({ id: "lonely" }));
+			insertCardDirect(ctx.cards, {
+				...createTestCard({ id: "card-1" }),
+				noteId: "lonely",
+			});
+			expect(ctx.notes.findOrphanIds()).toEqual([]);
+
+			ctx.cards.softDelete("card-1");
+			expect(ctx.notes.findOrphanIds()).toEqual(["lonely"]);
+		});
+
+		it("keeps notes with a suspended card and skips deleted notes", () => {
+			ctx.notes.create(createTestNote({ id: "suspended" }));
+			insertCardDirect(ctx.cards, {
+				...createTestCard({ id: "card-2", suspended: true }),
+				noteId: "suspended",
+			});
+			ctx.notes.create(createTestNote({ id: "gone" }));
+			ctx.notes.delete("gone");
+
+			expect(ctx.notes.findOrphanIds()).toEqual([]);
 		});
 	});
 });
