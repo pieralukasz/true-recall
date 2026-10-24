@@ -635,5 +635,7 @@
 	"History weight": "History weight",
 	"Maximum bonus from the card's rating history, in percent. 0 ignores history entirely.": "Maximum bonus from the card's rating history, in percent. 0 ignores history entirely.",
 	"Seconds per 40 characters": "Seconds per 40 characters",
-	"Extra time for every 40 characters of answer. The base time covers a short answer; 0 ignores length entirely.": "Extra time for every 40 characters of answer. The base time covers a short answer; 0 ignores length entirely."
+	"Extra time for every 40 characters of answer. The base time covers a short answer; 0 ignores length entirely.": "Extra time for every 40 characters of answer. The base time covers a short answer; 0 ignores length entirely.",
+	"Estimated answering time added for every 40 characters of answer, not thinking time. The base covers a short answer; 0 ignores length entirely.": "Estimated answering time added for every 40 characters of answer, not thinking time. The base covers a short answer; 0 ignores length entirely.",
+	"Positive gives cards you keep failing more time (slow recall). Negative nudges them earlier (counters overthinking). 0 ignores rating history.": "Positive gives cards you keep failing more time (slow recall). Negative nudges them earlier (counters overthinking). 0 ignores rating history."
 }

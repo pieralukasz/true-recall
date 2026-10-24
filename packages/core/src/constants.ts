@@ -180,7 +180,7 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 	answerTimeHintEnabled: false,
 	answerTimeHintBaseSeconds: 20,
 	answerTimeSecondsPerChunk: 3,
-	answerTimeHistoryWeight: 50,
+	answerTimeHistoryWeight: 0,
 	autoAdvance: false,
 	showReviewHeader: true,
 	showReviewHeaderStats: true,

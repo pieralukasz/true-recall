@@ -635,5 +635,7 @@
 	"History weight": "历史权重",
 	"Maximum bonus from the card's rating history, in percent. 0 ignores history entirely.": "按这张卡的历史评分最多能加多少百分比。设为 0 表示完全不看历史。",
 	"Seconds per 40 characters": "每 40 字增加秒数",
-	"Extra time for every 40 characters of answer. The base time covers a short answer; 0 ignores length entirely.": "答案每满 40 字额外增加的秒数。基准时间只覆盖短答案；设为 0 表示完全不看长度。"
+	"Extra time for every 40 characters of answer. The base time covers a short answer; 0 ignores length entirely.": "答案每满 40 字额外增加的秒数。基准时间只覆盖短答案；设为 0 表示完全不看长度。",
+	"Estimated answering time added for every 40 characters of answer, not thinking time. The base covers a short answer; 0 ignores length entirely.": "答案每满 40 字，为「把答案完整答出来」预留的秒数（不是思考时间）。基准时间覆盖短答案；设为 0 表示完全不看长度。",
+	"Positive gives cards you keep failing more time (slow recall). Negative nudges them earlier (counters overthinking). 0 ignores rating history.": "正值：越难的卡给越多时间（体谅回忆慢）；负值：越难的卡越早提醒（对抗纠结）；0 表示完全不看历史。"
 }

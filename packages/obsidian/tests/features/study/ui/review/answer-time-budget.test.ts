@@ -13,7 +13,7 @@ function card(
 	return { answer, fsrs };
 }
 
-/** Default weights: 3s per 40 characters, up to +50% from difficulty. */
+/** Defaults: 3s per 40 characters, difficulty ignored (weight 0). */
 describe("suggestedAnswerSeconds", () => {
 	it("returns the base time for an empty answer without history", () => {
 		expect(suggestedAnswerSeconds(card(""), DEFAULT_ANSWER_SECONDS)).toBe(20);
@@ -25,25 +25,67 @@ describe("suggestedAnswerSeconds", () => {
 		expect(suggestedAnswerSeconds(card("x".repeat(4000)), 20)).toBe(320);
 	});
 
-	it("gives cards with a bad rating history more time and known cards less", () => {
-		expect(suggestedAnswerSeconds(card("", { reps: 6, difficulty: 10 }), 20)).toBe(
-			30,
-		);
-		expect(suggestedAnswerSeconds(card("", { reps: 6, difficulty: 1 }), 20)).toBe(
-			16,
-		);
+	it("ignores difficulty unless the weight says otherwise", () => {
+		expect(
+			suggestedAnswerSeconds(card("", { reps: 6, difficulty: 10 }), 20),
+		).toBe(20);
 	});
 
-	it("applies the difficulty factor on top of the length bonus", () => {
-		// 400 characters = 30s of reading, then +50% for difficulty 10.
+	it("buys time for slow recall when the weight is positive", () => {
 		expect(
-			suggestedAnswerSeconds(card("x".repeat(400), { reps: 9, difficulty: 10 }), 20),
-		).toBe(75);
+			suggestedAnswerSeconds(card("", { reps: 6, difficulty: 10 }), 20, {
+				historyWeight: 50,
+			}),
+		).toBe(25);
+		expect(
+			suggestedAnswerSeconds(card("", { reps: 6, difficulty: 1 }), 20, {
+				historyWeight: 50,
+			}),
+		).toBe(15);
+	});
+
+	it("nudges hard cards earlier when the weight is negative", () => {
+		expect(
+			suggestedAnswerSeconds(card("", { reps: 6, difficulty: 10 }), 20, {
+				historyWeight: -50,
+			}),
+		).toBe(15);
+		expect(
+			suggestedAnswerSeconds(card("", { reps: 6, difficulty: 1 }), 20, {
+				historyWeight: -50,
+			}),
+		).toBe(25);
+	});
+
+	it("applies the difficulty factor on top of the length time", () => {
+		// 400 characters = 30s, then +25% for difficulty 10 at weight 50.
+		expect(
+			suggestedAnswerSeconds(
+				card("x".repeat(400), { reps: 9, difficulty: 10 }),
+				20,
+				{ historyWeight: 50 },
+			),
+		).toBe(63);
+	});
+
+	it("moves the budget by at most half the weight at the difficulty extremes", () => {
+		expect(
+			suggestedAnswerSeconds(card("", { reps: 9, difficulty: 10 }), 100, {
+				historyWeight: -60,
+			}),
+		).toBe(70);
+		expect(
+			suggestedAnswerSeconds(card("", { reps: 9, difficulty: 1 }), 100, {
+				historyWeight: -60,
+			}),
+		).toBe(130);
 	});
 
 	it("ignores difficulty before the first review", () => {
 		expect(
-			suggestedAnswerSeconds(card("", { reps: 0, difficulty: 10 }), 20),
+			suggestedAnswerSeconds(card("", { reps: 0, difficulty: 10 }), 20, {
+				historyWeight: 50,
+			}),
 		).toBe(20);
 	});
 

@@ -277,7 +277,7 @@ export function GeneralTab() {
 						<FormField
 							name={t("Seconds per 40 characters")}
 							description={t(
-								"Extra time for every 40 characters of answer. The base time covers a short answer; 0 ignores length entirely.",
+								"Estimated answering time added for every 40 characters of answer, not thinking time. The base covers a short answer; 0 ignores length entirely.",
 							)}
 						>
 							<SliderInput
@@ -286,8 +286,8 @@ export function GeneralTab() {
 									void save({ answerTimeSecondsPerChunk: v })
 								}
 								min={0}
-								max={10}
-								step={1}
+								max={120}
+								step={5}
 								formatTooltip={(v) => `+${v}s`}
 							/>
 						</FormField>
@@ -295,16 +295,18 @@ export function GeneralTab() {
 						<FormField
 							name={t("History weight")}
 							description={t(
-								"Maximum bonus from the card's rating history, in percent. 0 ignores history entirely.",
+								"Positive gives cards you keep failing more time (slow recall). Negative nudges them earlier (counters overthinking). 0 ignores rating history.",
 							)}
 						>
 							<SliderInput
 								value={settings.answerTimeHistoryWeight}
 								onChange={(v) => void save({ answerTimeHistoryWeight: v })}
-								min={0}
+								min={-60}
 								max={100}
 								step={5}
-								formatTooltip={(v) => `+${v}%`}
+								formatTooltip={(v) =>
+									`${v > 0 ? "+" : ""}${v}%`
+								}
 							/>
 						</FormField>
 					</>
