@@ -28,6 +28,9 @@ import type { CloudSyncManager } from "./features/integration/cloud/cloud-sync-m
 import type { LocalApiServer } from "./plugin/api/LocalApiServer";
 import type { BackupRecoveryManager } from "./plugin/BackupRecoveryManager";
 import type { CrossDeviceSyncCoordinator } from "./plugin/CrossDeviceSyncCoordinator";
+import { ChildCardGrader } from "./features/child-cards/ChildCardGrader";
+import { ChildCardService } from "./features/child-cards/ChildCardService";
+import { MaintenanceService } from "./plugin/MaintenanceService";
 import { ImportExportCoordinator } from "./plugin/runtime/ImportExportCoordinator";
 import { NoteActions } from "./plugin/runtime/NoteActions";
 import { PluginRuntime } from "./plugin/runtime/PluginRuntime";
@@ -48,6 +51,9 @@ export default class TrueRecallPlugin extends Plugin {
 	private navigator = new ViewNavigator(this);
 	private importExport = new ImportExportCoordinator(this);
 	private noteActions = new NoteActions(this);
+	private maintenance = new MaintenanceService(this);
+	readonly childCardService = new ChildCardService(this);
+	readonly childCardGrader = new ChildCardGrader(this);
 
 	coreApp!: TrueRecallApp;
 
@@ -328,8 +334,14 @@ export default class TrueRecallPlugin extends Plugin {
 		return this.navigator.openImageOcclusionEditor(mode);
 	}
 
-	async openImageOcclusionEditorForActiveNote(): Promise<IOEditorResult> {
-		return this.navigator.openImageOcclusionEditorForActiveNote();
+	async openImageOcclusionEditorForActiveNote(
+		imagePath?: string,
+	): Promise<IOEditorResult> {
+		return this.navigator.openImageOcclusionEditorForActiveNote(imagePath);
+	}
+
+	async cleanupOrphanNotes(): Promise<void> {
+		return this.maintenance.cleanupOrphanNotes();
 	}
 
 	async openCustomStudyModal(scope?: CustomStudyModalScope): Promise<void> {

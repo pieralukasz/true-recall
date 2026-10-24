@@ -1,4 +1,4 @@
-import type { CardFlag } from "@true-recall/core/types";
+import type { CardFlag, FSRSFlashcardItem } from "@true-recall/core/types";
 
 import type { ReviewSliceActions } from "@true-recall/obsidian/store/types";
 
@@ -50,7 +50,11 @@ export function createReviewEditActions({
 
 		isEditing: () => get().review.editMode.active,
 
-		updateCurrentCardContent: (question: string, answer: string) => {
+		updateCurrentCardContent: (
+			question: string,
+			answer: string,
+			patch?: Partial<FSRSFlashcardItem>,
+		) => {
 			const state = get().review;
 			const card = state.queue[state.currentIndex];
 			if (!card) return;
@@ -58,6 +62,7 @@ export function createReviewEditActions({
 			const newQueue = [...state.queue];
 			newQueue[state.currentIndex] = {
 				...card,
+				...patch,
 				question,
 				answer,
 			};
