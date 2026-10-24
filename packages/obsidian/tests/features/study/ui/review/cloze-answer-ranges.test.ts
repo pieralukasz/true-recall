@@ -69,6 +69,17 @@ describe("locateClozeAnswer", () => {
 		expect(marked(result)).toBe("line one\n[two]\n");
 	});
 
+	it("still finds the bolded span when the answer drifted from the template", () => {
+		// What the review shows right after an inline edit: the stored answer no
+		// longer matches a fresh render, but the cloze is still bolded.
+		const result = locateClozeAnswer(
+			"edited prefix **the answer** tail",
+			"Q {{c1::the answer}} tail",
+			1,
+		);
+		expect(marked(result)).toBe("edited prefix [the answer] tail");
+	});
+
 	it("leaves the answer unchanged when the field is not in it verbatim", () => {
 		const custom = "<div>A **b** c</div>";
 		expect(locateClozeAnswer(custom, "X {{c1::y}}", 1)).toEqual({

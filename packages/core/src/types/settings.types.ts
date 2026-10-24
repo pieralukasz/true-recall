@@ -300,6 +300,10 @@ export interface TrueRecallSettings {
 	answerTimeHintEnabled: boolean;
 	/** Base seconds for an average card; answer length and difficulty scale it */
 	answerTimeHintBaseSeconds: number;
+	/** Extra seconds per 40 characters of answer (0 ignores length) */
+	answerTimeSecondsPerChunk: number;
+	/** Maximum bonus from rating history, in percent (0 ignores history) */
+	answerTimeHistoryWeight: number;
 	/** Auto-advance to next card after answer */
 	autoAdvance: boolean;
 	/** Show header in Review session */

@@ -629,5 +629,11 @@
 	"How many failed ratings before the card is flagged as badly written.": "How many failed ratings before the card is flagged as badly written.",
 	"Again score": "Again score",
 	"Points an Again rating adds. Hard always adds 1 and Good or Easy ends the run; 0 keeps Again in the run without adding points.": "Points an Again rating adds. Hard always adds 1 and Good or Easy ends the run; 0 keeps Again in the run without adding points.",
-	"How many consecutive Good or Easy ratings a child card needs before it graduates.": "How many consecutive Good or Easy ratings a child card needs before it graduates."
+	"How many consecutive Good or Easy ratings a child card needs before it graduates.": "How many consecutive Good or Easy ratings a child card needs before it graduates.",
+	"Length weight": "Length weight",
+	"Maximum bonus from the answer length, in percent. 0 ignores length entirely.": "Maximum bonus from the answer length, in percent. 0 ignores length entirely.",
+	"History weight": "History weight",
+	"Maximum bonus from the card's rating history, in percent. 0 ignores history entirely.": "Maximum bonus from the card's rating history, in percent. 0 ignores history entirely.",
+	"Seconds per 40 characters": "Seconds per 40 characters",
+	"Extra time for every 40 characters of answer. The base time covers a short answer; 0 ignores length entirely.": "Extra time for every 40 characters of answer. The base time covers a short answer; 0 ignores length entirely."
 }

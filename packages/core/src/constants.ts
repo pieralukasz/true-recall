@@ -179,6 +179,8 @@ export const DEFAULT_SETTINGS: TrueRecallSettings = {
 	childAgainScore: 2,
 	answerTimeHintEnabled: false,
 	answerTimeHintBaseSeconds: 20,
+	answerTimeSecondsPerChunk: 3,
+	answerTimeHistoryWeight: 50,
 	autoAdvance: false,
 	showReviewHeader: true,
 	showReviewHeaderStats: true,

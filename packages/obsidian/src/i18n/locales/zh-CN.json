@@ -629,5 +629,11 @@
 	"How many failed ratings before the card is flagged as badly written.": "连续失败到什么程度提示改写。",
 	"Again score": "Again 分数",
 	"Points an Again rating adds. Hard always adds 1 and Good or Easy ends the run; 0 keeps Again in the run without adding points.": "按一次 Again 增加的分数。Hard 固定加 1 分，Good/Easy 会中断累加；设为 0 表示 Again 仍算连续，但不加分。",
-	"How many consecutive Good or Easy ratings a child card needs before it graduates.": "子卡需要连续多少次 Good 或 Easy 才算毕业。"
+	"How many consecutive Good or Easy ratings a child card needs before it graduates.": "子卡需要连续多少次 Good 或 Easy 才算毕业。",
+	"Length weight": "长度权重",
+	"Maximum bonus from the answer length, in percent. 0 ignores length entirely.": "答案长度最多能加多少百分比。设为 0 表示完全不看长度。",
+	"History weight": "历史权重",
+	"Maximum bonus from the card's rating history, in percent. 0 ignores history entirely.": "按这张卡的历史评分最多能加多少百分比。设为 0 表示完全不看历史。",
+	"Seconds per 40 characters": "每 40 字增加秒数",
+	"Extra time for every 40 characters of answer. The base time covers a short answer; 0 ignores length entirely.": "答案每满 40 字额外增加的秒数。基准时间只覆盖短答案；设为 0 表示完全不看长度。"
 }

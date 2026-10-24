@@ -17,16 +17,27 @@ export interface AnswerTimeCard {
 	fsrs: { reps?: number; difficulty?: number };
 }
 
-/** Answer length that already earns the full length bonus. */
-const LENGTH_BONUS_CHARS = 400;
-const LENGTH_BONUS_MAX = 0.75;
+/** Answer length that counts as one "chunk" of extra reading time. */
+const CHARS_PER_CHUNK = 40;
 
 /** FSRS difficulty is 1..10; 5.5 is the neutral middle. */
 const HISTORY_DIFFICULTY_SPAN = 9;
-const HISTORY_FLOOR = -0.2;
-const HISTORY_CEILING = 0.5;
+/** Easy cards shorten the budget, but never below this. */
+const HISTORY_PENALTY = 0.2;
 
-const MAX_FACTOR = 2.5;
+const DEFAULT_SECONDS_PER_CHUNK = 3;
+const DEFAULT_HISTORY_WEIGHT = 50;
+
+/** Safety net: no card should ever suggest more than this. */
+const MAX_ANSWER_SECONDS = 600;
+
+export interface AnswerTimeWeights {
+	/** Extra seconds per 40 characters of answer. 0 ignores length. */
+	secondsPerChunk?: number;
+	/** Maximum difficulty bonus, in percent. 0 ignores rating history. */
+	historyWeight?: number;
+}
+
 
 export const MIN_ANSWER_SECONDS = 5;
 export const DEFAULT_ANSWER_SECONDS = 20;
@@ -43,27 +54,37 @@ export function visibleAnswerLength(answer: string): number {
 export function suggestedAnswerSeconds(
 	card: AnswerTimeCard,
 	baseSeconds: number,
+	weights: AnswerTimeWeights = {},
 ): number {
 	const base = Math.max(MIN_ANSWER_SECONDS, Math.round(baseSeconds));
-	const lengthFactor =
-		1 +
-		Math.min(
-			visibleAnswerLength(card.answer ?? "") / LENGTH_BONUS_CHARS,
-			LENGTH_BONUS_MAX,
-		);
+	const secondsPerChunk = Math.max(
+		0,
+		weights.secondsPerChunk ?? DEFAULT_SECONDS_PER_CHUNK,
+	);
+	const historyWeight =
+		Math.max(0, weights.historyWeight ?? DEFAULT_HISTORY_WEIGHT) / 100;
+
+	// The base time covers a short answer; every 40 characters of answer adds
+	// its own reading time on top, so the budget grows linearly with length.
+	const lengthSeconds =
+		(visibleAnswerLength(card.answer ?? "") / CHARS_PER_CHUNK) *
+		secondsPerChunk;
 
 	const reps = card.fsrs?.reps ?? 0;
 	const difficulty = card.fsrs?.difficulty ?? 0;
 	const historyFactor =
-		reps > 0
+		reps > 0 && historyWeight > 0
 			? 1 +
 				clamp(
 					(difficulty - 5.5) / HISTORY_DIFFICULTY_SPAN,
-					HISTORY_FLOOR,
-					HISTORY_CEILING,
+					-HISTORY_PENALTY,
+					historyWeight,
 				)
 			: 1;
 
-	const factor = Math.min(lengthFactor * historyFactor, MAX_FACTOR);
-	return Math.max(MIN_ANSWER_SECONDS, Math.round(base * factor));
+	const total = (base + lengthSeconds) * historyFactor;
+	return Math.max(
+		MIN_ANSWER_SECONDS,
+		Math.round(Math.min(total, MAX_ANSWER_SECONDS)),
+	);
 }

@@ -32,13 +32,20 @@ export function AnswerTimeHint({
 	card,
 	isAnswerRevealed,
 }: AnswerTimeHintProps) {
-	const { answerTimeHintEnabled, answerTimeHintBaseSeconds } =
-		usePlugin().settings;
+	const plugin = usePlugin();
+	const { answerTimeHintEnabled, answerTimeHintBaseSeconds } = plugin.settings;
 	const baseSeconds = answerTimeHintBaseSeconds ?? DEFAULT_ANSWER_SECONDS;
 
+	const secondsPerChunk = plugin.settings.answerTimeSecondsPerChunk;
+	const historyWeight = plugin.settings.answerTimeHistoryWeight;
+
 	const budget = useMemo(
-		() => suggestedAnswerSeconds(card, baseSeconds),
-		[card, baseSeconds],
+		() =>
+			suggestedAnswerSeconds(card, baseSeconds, {
+				secondsPerChunk,
+				historyWeight,
+			}),
+		[card, baseSeconds, secondsPerChunk, historyWeight],
 	);
 
 	// Wall clock since the card appeared, minus any time the window was hidden

@@ -272,6 +272,44 @@ export function GeneralTab() {
 					</FormField>
 				)}
 
+				{settings.answerTimeHintEnabled && (
+					<>
+						<FormField
+							name={t("Seconds per 40 characters")}
+							description={t(
+								"Extra time for every 40 characters of answer. The base time covers a short answer; 0 ignores length entirely.",
+							)}
+						>
+							<SliderInput
+								value={settings.answerTimeSecondsPerChunk}
+								onChange={(v) =>
+									void save({ answerTimeSecondsPerChunk: v })
+								}
+								min={0}
+								max={10}
+								step={1}
+								formatTooltip={(v) => `+${v}s`}
+							/>
+						</FormField>
+
+						<FormField
+							name={t("History weight")}
+							description={t(
+								"Maximum bonus from the card's rating history, in percent. 0 ignores history entirely.",
+							)}
+						>
+							<SliderInput
+								value={settings.answerTimeHistoryWeight}
+								onChange={(v) => void save({ answerTimeHistoryWeight: v })}
+								min={0}
+								max={100}
+								step={5}
+								formatTooltip={(v) => `+${v}%`}
+							/>
+						</FormField>
+					</>
+				)}
+
 				<FormField
 					name={t("Continuous custom reviews")}
 					description={t(

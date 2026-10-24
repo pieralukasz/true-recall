@@ -13,16 +13,16 @@ function card(
 	return { answer, fsrs };
 }
 
+/** Default weights: 3s per 40 characters, up to +50% from difficulty. */
 describe("suggestedAnswerSeconds", () => {
 	it("returns the base time for an empty answer without history", () => {
 		expect(suggestedAnswerSeconds(card(""), DEFAULT_ANSWER_SECONDS)).toBe(20);
 	});
 
-	it("adds time as the answer gets longer, up to the length cap", () => {
-		expect(suggestedAnswerSeconds(card("x".repeat(40)), 20)).toBe(22);
-		expect(suggestedAnswerSeconds(card("x".repeat(400)), 20)).toBe(35);
-		// 4000 characters hit the +75% length ceiling, not 10x.
-		expect(suggestedAnswerSeconds(card("x".repeat(4000)), 20)).toBe(35);
+	it("adds 3s for every 40 characters of answer", () => {
+		expect(suggestedAnswerSeconds(card("x".repeat(40)), 20)).toBe(23);
+		expect(suggestedAnswerSeconds(card("x".repeat(400)), 20)).toBe(50);
+		expect(suggestedAnswerSeconds(card("x".repeat(4000)), 20)).toBe(320);
 	});
 
 	it("gives cards with a bad rating history more time and known cards less", () => {
@@ -34,20 +34,45 @@ describe("suggestedAnswerSeconds", () => {
 		);
 	});
 
+	it("applies the difficulty factor on top of the length bonus", () => {
+		// 400 characters = 30s of reading, then +50% for difficulty 10.
+		expect(
+			suggestedAnswerSeconds(card("x".repeat(400), { reps: 9, difficulty: 10 }), 20),
+		).toBe(75);
+	});
+
 	it("ignores difficulty before the first review", () => {
 		expect(
 			suggestedAnswerSeconds(card("", { reps: 0, difficulty: 10 }), 20),
 		).toBe(20);
 	});
 
-	it("caps the combined factor and never drops below the minimum", () => {
+	it("ignores a dimension whose weight is 0", () => {
 		expect(
 			suggestedAnswerSeconds(
 				card("x".repeat(4000), { reps: 9, difficulty: 10 }),
 				20,
+				{ secondsPerChunk: 0, historyWeight: 0 },
 			),
-		).toBe(50);
+		).toBe(20);
+	});
+
+	it("uses the configured seconds per chunk", () => {
+		expect(
+			suggestedAnswerSeconds(card("x".repeat(400)), 20, {
+				secondsPerChunk: 1,
+				historyWeight: 0,
+			}),
+		).toBe(30);
+	});
+
+	it("never drops below the minimum and never exceeds the safety cap", () => {
 		expect(suggestedAnswerSeconds(card(""), 1)).toBe(MIN_ANSWER_SECONDS);
+		expect(
+			suggestedAnswerSeconds(card("x".repeat(20000)), 20, {
+				secondsPerChunk: 10,
+			}),
+		).toBe(600);
 	});
 
 	it("ignores html tags when measuring the answer", () => {

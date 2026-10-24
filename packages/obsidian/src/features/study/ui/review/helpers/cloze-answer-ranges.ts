@@ -44,7 +44,7 @@ export function locateClozeAnswer(
 	if (!marked.includes(OPEN)) return { text, ranges: [] };
 	const bold = renderClozeAnswer(template, clozeIndex);
 	const at = text.indexOf(bold);
-	if (at < 0) return { text, ranges: [] };
+	if (at < 0) return locateBoldSpan(text, marked);
 	let plain = text.slice(0, at);
 	const ranges: [number, number][] = [];
 	const open: number[] = [];
@@ -61,6 +61,34 @@ export function locateClozeAnswer(
 	plain += text.slice(at + bold.length);
 	ranges.sort((a, b) => a[0] - b[0] || b[1] - a[1]);
 	return { text: plain, ranges };
+}
+
+/**
+ * Fallback for an answer that no longer matches a fresh render of the template
+ * — which is what happens right after the card was edited in review, because
+ * the stored answer and the template refresh on different ticks.
+ *
+ * The revealed cloze is still wrapped in `**…**` somewhere in that answer, so
+ * find that span instead of giving up (giving up means the stored bold comes
+ * back and the tint disappears).
+ */
+function locateBoldSpan(
+	text: string,
+	marked: string,
+): ClozeAnswerText {
+	const open = marked.indexOf(OPEN);
+	const close = marked.lastIndexOf(CLOSE);
+	if (open < 0 || close <= open) return { text, ranges: [] };
+
+	const inner = marked.slice(open + 1, close);
+	const wrapped = `**${inner}**`;
+	const at = text.indexOf(wrapped);
+	if (at < 0) return { text, ranges: [] };
+
+	return {
+		text: text.slice(0, at) + inner + text.slice(at + wrapped.length),
+		ranges: [[at, at + inner.length]],
+	};
 }
 
 const SPAN_OPEN = '<span class="cloze tr-cloze">';
