@@ -118,6 +118,17 @@ export function GeneralTab() {
 				</FormField>
 
 
+				<FormField
+					name={t("Image context menu")}
+					description={t(
+						'Show "Create image occlusion card" when right-clicking an image in a note.',
+					)}
+				>
+					<ToggleInput
+						value={settings.imageOcclusionContextMenu}
+						onChange={(v) => void save({ imageOcclusionContextMenu: v })}
+					/>
+				</FormField>
 			</FormCard>
 
 			<FormCard title={t("Child cards")}>
