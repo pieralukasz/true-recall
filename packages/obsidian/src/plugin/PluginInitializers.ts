@@ -34,6 +34,7 @@ import { isMobile } from "@true-recall/obsidian/utils/platform";
 
 import { AiChatController } from "../features/ai-chat/chat-controller";
 import { revealAiChat } from "../features/ai-chat/open-ai-chat";
+import { registerImageOcclusionContextMenu } from "../features/image-occlusion/context-menu";
 
 import type TrueRecallPlugin from "../main";
 import { BackupRecoveryManager } from "./BackupRecoveryManager";
@@ -290,6 +291,7 @@ async function initializeCardStore(
 	plugin.pluginLoader.activateAll();
 
 	initializeSourceHighlight(plugin);
+	registerImageOcclusionContextMenu(plugin);
 	plugin.childCardGrader.attach();
 
 	const sEnd = performance.now();
