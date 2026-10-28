@@ -30,6 +30,9 @@ export interface BrowserCard {
 	presetName: string | null;
 	projects: string[];
 	ioImagePath?: string;
+	/** Cloze source text and index, so previews can mark the revealed gap. */
+	clozeTemplate?: string;
+	clozeIndex?: number;
 	ioRegionsJson?: string;
 	templateOrd?: number;
 	/** Note type of the backing note (scopes its Styling CSS in the preview). */

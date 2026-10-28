@@ -192,10 +192,12 @@ export class ViewNavigator {
 		return await modal.openAndWait();
 	}
 
-	async openImageOcclusionEditorForActiveNote(): Promise<IOEditorResult> {
+	async openImageOcclusionEditorForActiveNote(
+		imagePath?: string,
+	): Promise<IOEditorResult> {
 		const activeFile = this.plugin.app.workspace.getActiveFile();
 		if (!activeFile || activeFile.extension !== "md") {
-			return await this.openImageOcclusionEditor({ mode: "add" });
+			return await this.openImageOcclusionEditor({ mode: "add", imagePath });
 		}
 
 		try {
@@ -211,10 +213,11 @@ export class ViewNavigator {
 			return await this.openImageOcclusionEditor({
 				mode: "add",
 				sourceUid,
+				imagePath,
 			});
 		} catch (error) {
 			notify().operationFailed("prepare image occlusion source", error);
-			return await this.openImageOcclusionEditor({ mode: "add" });
+			return await this.openImageOcclusionEditor({ mode: "add", imagePath });
 		}
 	}
 }

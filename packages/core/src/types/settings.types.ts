@@ -288,6 +288,22 @@ export interface TrueRecallSettings {
 	reviewContentWidth: ReviewContentWidth;
 	/** Show predicted time on answer buttons */
 	showNextReviewTime: boolean;
+	/** Suspend a card and study it through easier child cards instead */
+	childCardsEnabled: boolean;
+	/** Consecutive Good/Easy ratings before a child card graduates */
+	childGoodStreak: number;
+	/** Consecutive Hard ratings before a card is flagged as badly written */
+	childHardStreak: number;
+	/** Points an Again rating adds to that score; 0 keeps it in the run */
+	childAgainScore: number;
+	/** Warn when a card takes longer than its suggested answer time */
+	answerTimeHintEnabled: boolean;
+	/** Base seconds for an average card; answer length and difficulty scale it */
+	answerTimeHintBaseSeconds: number;
+	/** Extra seconds per 40 characters of answer (0 ignores length) */
+	answerTimeSecondsPerChunk: number;
+	/** Maximum bonus from rating history, in percent (0 ignores history) */
+	answerTimeHistoryWeight: number;
 	/** Auto-advance to next card after answer */
 	autoAdvance: boolean;
 	/** Show header in Review session */
@@ -444,6 +460,8 @@ export interface TrueRecallSettings {
 	gradingModel: string;
 	/** Custom user prompt for AI image occlusion region detection */
 	aiIODetectionPrompt?: string;
+	/** Add "Create image occlusion card" to the context menu of an image */
+	imageOcclusionContextMenu: boolean;
 
 	/** Language learning: note type for vocab generation (null = use generationNoteTypeId) */
 	languageNoteTypeId: string | null;
