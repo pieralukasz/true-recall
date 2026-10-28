@@ -26,7 +26,11 @@ export function mapQuickNoteFields(
 		names.map((name) => [name, previous[name] ?? ""]),
 	);
 	const primary = names[0];
-	if (primary && !fields[primary]) {
+	// Only carry text over when the note type changed to an unrelated field set
+	// (Front/Back → Text/Extra). When a name is shared, an empty primary field
+	// is an explicit choice and must stay empty.
+	const sharesNames = names.some((name) => name in previous);
+	if (primary && !fields[primary] && !sharesNames) {
 		const carried = Object.values(previous).find(
 			(value) => value.trim().length > 0,
 		);

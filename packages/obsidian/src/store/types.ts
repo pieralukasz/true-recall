@@ -99,7 +99,17 @@ export interface ReviewSliceActions {
 	startEdit: (field: "question" | "answer") => void;
 	cancelEdit: () => void;
 	isEditing: () => boolean;
-	updateCurrentCardContent: (question: string, answer: string) => void;
+	/**
+	 * Patch the queued card in place. `patch` carries the fields that are not
+	 * part of the text but change with it — a cloze card's `clozeTemplate` and
+	 * `clozeIndex` are used to locate the highlight, so a stale template makes
+	 * the answer fall back to its stored bold markers.
+	 */
+	updateCurrentCardContent: (
+		question: string,
+		answer: string,
+		patch?: Partial<FSRSFlashcardItem>,
+	) => void;
 	updateCurrentCardComment: (userComment: string | undefined) => void;
 	updateCurrentCardFlag: (flag: CardFlag) => void;
 
