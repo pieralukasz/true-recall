@@ -1,17 +1,23 @@
 import { State } from "ts-fsrs";
 
 import { Clickable } from "@true-recall/obsidian/components";
+import { t } from "@true-recall/obsidian/i18n";
 import { LivePreviewField } from "@true-recall/obsidian/features/study/ui/review/components/LivePreviewField";
 import { useNoteTypeCss } from "@true-recall/obsidian/features/study/ui/review/hooks/useNoteTypeCss";
 import {
 	FSRS_COLORS,
 	MUTED_STATES,
 } from "@true-recall/obsidian/helpers/fsrs-colors";
-import { useApp } from "@true-recall/obsidian/preact/ObsidianContext";
+import {
+	useApp,
+	usePlugin,
+} from "@true-recall/obsidian/preact/ObsidianContext";
 import { cn } from "@true-recall/obsidian/utils/cn";
 
 import type { BrowserCard } from "../types";
 import { IOCardRenderer } from "@true-recall/plugins/image-occlusion";
+
+import { openCardPreviewModal } from "./CardPreviewModal";
 
 const STATE_LABELS: Record<number, string> = {
 	[State.New]: "New",
@@ -36,6 +42,7 @@ export function CardPreview({
 	onEdit,
 }: CardPreviewProps) {
 	const app = useApp();
+	const plugin = usePlugin();
 	const isImageOcclusion =
 		card.cardType === "image-occlusion" &&
 		!!card.ioImagePath &&
@@ -83,6 +90,26 @@ export function CardPreview({
 					{stateLabel}
 				</span>
 				<div class="ep:flex ep:items-center ep:gap-1">
+					<Clickable
+						class="ep:p-1 ep:rounded ep:hover:bg-obs-modifier-hover ep:text-obs-muted"
+						onClick={() => openCardPreviewModal(app, plugin, card)}
+						aria-label={t("Preview")}
+					>
+						<svg
+							width="14"
+							height="14"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+							aria-hidden="true"
+						>
+							<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+							<circle cx="12" cy="12" r="3" />
+						</svg>
+					</Clickable>
 					{onEdit && (
 						<Clickable
 							class="ep:p-1 ep:rounded ep:hover:bg-obs-modifier-hover ep:text-obs-muted"

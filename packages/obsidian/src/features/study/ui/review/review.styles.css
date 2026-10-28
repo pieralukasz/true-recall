@@ -19,13 +19,6 @@
 		padding-bottom: 0.5rem;
 	}
 
-	/* Revealed cloze answer (cloze-answer-decoration.ts). Bold by default; a
-	   layered rule, so CSS snippets and note type Styling (`.cloze { … }`,
-	   also from Anki decks) override it without !important. */
-	.tr-cloze {
-		font-weight: var(--bold-weight, 700);
-	}
-
 	/* Enable text selection + max-width for readability.
 	   max-width reads --tr-review-max-width set on the outer container
 	   (driven by the `reviewContentWidth` setting), so the inner field
@@ -342,6 +335,13 @@
 	background: transparent;
 }
 
+/* Snippets and themes often paint .cm-scroller; the field is only text, so
+   the card background must show through. */
+.true-recall-review-question .cm-scroller,
+.true-recall-review-answer .cm-scroller {
+	background: transparent;
+}
+
 .true-recall-review-question .cm-editor .cm-content,
 .true-recall-review-answer .cm-editor .cm-content {
 	text-align: center;
@@ -501,4 +501,126 @@
 	.true-recall-gap-cards__label {
 		display: none;
 	}
+}
+
+/* ── Cloze highlight ─────────────────────────────────────────────────
+   Question face: renderClozeQuestion() renders the gap as `[...]` or
+   `[hint]`, which CM6 parses as link syntax and tags `cm-link`. Real links
+   carry `cm-link` too, but they add `cm-hmd-internal-link` or `cm-url`, so
+   excluding those two leaves the gap alone.
+   Answer face: the revealed cloze carries `tr-cloze`
+   (cloze-answer-decoration.ts), so it never matches the user's own bold.
+   Both colors are variables declared on `.true-recall-review-question` and
+   `.true-recall-review-answer` (the card browser preview uses the same two
+   classes), so a snippet retints them on those classes, or sets them to
+   `transparent` to turn the highlight off — no selector to rewrite.
+   Unlayered on purpose — the values have to beat Obsidian's own `.cm-link`
+   / `span` styling, and user snippets (also unlayered, loaded later) still
+   win on equal specificity.
+   ──────────────────────────────────────────────────────────────────── */
+
+/* Declared on the field wrappers rather than the review container: the card
+   browser's read-only preview renders the same two classes without any
+   review container around them. */
+.true-recall-review-question,
+.true-recall-review-answer {
+	--tr-cloze-gap-bg: hsla(
+		var(--accent-h),
+		var(--accent-s),
+		var(--accent-l),
+		0.26
+	);
+	--tr-cloze-answer-bg: rgba(var(--color-green-rgb), 0.28);
+}
+
+/* Answer face: the revealed cloze, wherever it lands. */
+.true-recall-review-question span.tr-cloze,
+.true-recall-review-answer span.tr-cloze {
+	background-color: var(--tr-cloze-answer-bg);
+	box-decoration-break: clone;
+	-webkit-box-decoration-break: clone;
+}
+
+/* Question face before reveal: the same `tr-cloze` class, but those ranges are
+   the `[…]` placeholders, so they take the gap colour instead. */
+.true-recall-review-card-container.is-cloze:not(.is-answer-revealed)
+	.true-recall-review-question
+	span.tr-cloze {
+	background-color: var(--tr-cloze-gap-bg);
+}
+
+/* The read-only preview renders into its own container, which does not sit
+   inside the review wrapper, so the variables have to be declared here too. */
+.true-recall-card-preview-markdown {
+	--tr-cloze-gap-bg: hsla(
+		var(--accent-h),
+		var(--accent-s),
+		var(--accent-l),
+		0.26
+	);
+	--tr-cloze-answer-bg: rgba(var(--color-green-rgb), 0.28);
+}
+
+/* Answer face of the preview: the revealed cloze. */
+.is-answer .true-recall-card-preview-markdown span.tr-cloze {
+	background-color: var(--tr-cloze-answer-bg);
+	box-decoration-break: clone;
+	-webkit-box-decoration-break: clone;
+}
+
+/* Question face: the `[…]` placeholders are marked by offset in the modal, so
+   this does not depend on `cm-link` (which real links share). */
+.is-question .true-recall-card-preview-markdown span.tr-cloze {
+	background-color: var(--tr-cloze-gap-bg);
+	box-decoration-break: clone;
+	-webkit-box-decoration-break: clone;
+}
+
+/* The question face of a cloze card: the gap renders as `[…]` / `[hint]`,
+   which CM6 parses as a link. Real links add their own class, so excluding
+   them leaves the placeholder alone — same rule review uses, minus the card
+   state classes the preview has no notion of. */
+
+
+/* ── Suggested answer time ───────────────────────────────────────────
+   Mounted only after the card passes its budget, so it must not reserve
+   space: it sits in the card's top-right corner and ignores the pointer.
+   ──────────────────────────────────────────────────────────────────── */
+
+/* The only entry point for building a child card: the card keeps coming back
+   as Hard. Sits above the rating bar on the question face, because a hint after
+   the rating arrives too late. */
+.tr-child-hard-hint {
+	align-self: center;
+	margin-top: var(--size-4-2);
+	padding: 0 var(--size-4-2);
+	border: none;
+	background: none;
+	box-shadow: none;
+	font-size: var(--font-ui-smaller);
+	color: var(--text-warning, var(--color-orange));
+	cursor: pointer;
+}
+
+.tr-child-hard-hint:hover {
+	text-decoration: underline;
+}
+
+.tr-answer-time-hint {
+	position: absolute;
+	/* Sits in the scroll container's top padding, above the card column: the
+	   card's own CM6 editor is `position: relative`, so at top: 0 it would
+	   paint over a basic card's first line. The negative offset also keeps the
+	   pill from covering any text. */
+	top: -1.75rem;
+	right: 0;
+	z-index: 1;
+	padding: 2px var(--size-4-2);
+	font-size: var(--font-ui-smaller);
+	font-variant-numeric: tabular-nums;
+	color: var(--text-warning, var(--color-orange));
+	background-color: var(--background-secondary);
+	border: 1px solid var(--background-modifier-border);
+	border-radius: var(--radius-s);
+	pointer-events: none;
 }

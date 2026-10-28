@@ -20,11 +20,15 @@ import {
 	hasGradingGaps,
 } from "@true-recall/obsidian/features/study/ui/review/helpers";
 import { locateClozeAnswer } from "@true-recall/obsidian/features/study/ui/review/helpers/cloze-answer-ranges";
+import { placeholderRanges } from "@true-recall/obsidian/features/study/ui/review/helpers/cloze-gap-ranges";
 import { useNoteTypeCss } from "@true-recall/obsidian/features/study/ui/review/hooks/useNoteTypeCss";
 import { usePlugin } from "@true-recall/obsidian/preact/ObsidianContext";
 import { cn } from "@true-recall/obsidian/utils/cn";
 import { isMobile } from "@true-recall/obsidian/utils/platform";
 
+import { ChildHardHint } from "@true-recall/obsidian/features/child-cards/ChildHardHint";
+
+import { AnswerTimeHint } from "./AnswerTimeHint";
 import { AudioPlayButton } from "./AudioPlayButton";
 import { CardCounters } from "./CardCounters";
 import { NoteReviewRenderer } from "./NoteReviewRenderer";
@@ -248,11 +252,22 @@ export function CardContainer({
 
 	return (
 		<div
-			class="true-recall-review-card-container ep:flex-1 ep:min-h-0 ep:flex ep:items-start ep:justify-center ep:pt-8 ep:px-6 ep:pb-2 ep:overflow-y-auto ep:w-full ep:mx-auto"
+			class={cn(
+				"true-recall-review-card-container ep:flex-1 ep:min-h-0 ep:flex ep:items-start ep:justify-center ep:pt-8 ep:px-6 ep:pb-2 ep:overflow-y-auto ep:w-full ep:mx-auto",
+				// States the cloze highlight keys off (review.styles.css): the gap
+				// is tinted only while the answer is still hidden.
+				isCloze && "is-cloze",
+				isAnswerRevealed && "is-answer-revealed",
+			)}
 			style={maxWidthStyle}
 		>
 			<div class="ep:w-full ep:relative">
 				{noteTypeCss && <style>{noteTypeCss.css}</style>}
+				<AnswerTimeHint
+					key={card.id}
+					card={card}
+					isAnswerRevealed={isAnswerRevealed}
+				/>
 				{card.cardType === "cloze" && card.clozeIndex !== undefined && (
 					<div class="ep:text-xs ep:text-obs-faint ep:mb-2 ep:uppercase ep:tracking-wider">
 						{`Cloze ${card.clozeIndex}`}
@@ -278,7 +293,13 @@ export function CardContainer({
 							? (clozeAnswer?.text ?? card.answer ?? questionContent)
 							: questionContent
 					}
-					clozeRanges={showClozeAnswer ? clozeAnswer?.ranges : undefined}
+					clozeRanges={
+						showClozeAnswer
+							? clozeAnswer?.ranges
+							: card.cardType === "cloze"
+								? placeholderRanges(questionContent)
+								: undefined
+					}
 					field="question"
 					sourcePath={sourcePath}
 					cls={cn(
@@ -357,6 +378,7 @@ export function CardContainer({
 					/>
 				)}
 
+				<ChildHardHint card={card} />
 				<CardFooter
 					card={card}
 					isAnswerRevealed={isAnswerRevealed}
