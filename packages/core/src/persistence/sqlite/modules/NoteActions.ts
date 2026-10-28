@@ -272,6 +272,23 @@ export class NoteActions {
 		]);
 	}
 
+	/**
+	 * Notes with no live card left. Deleting a card only soft deletes the card,
+	 * so its note stays behind as an empty shell; these can be deleted safely.
+	 */
+	findOrphanIds(): string[] {
+		return this.db
+			.query<{ id: string }>(
+				`SELECT n.id AS id FROM notes n
+				 WHERE n.deleted_at IS NULL
+				   AND NOT EXISTS (
+				     SELECT 1 FROM cards c
+				     WHERE c.note_id = n.id AND c.deleted_at IS NULL
+				   )`,
+			)
+			.map((row) => row.id);
+	}
+
 	count(): number {
 		const row = this.db.get<{ cnt: number }>(
 			`SELECT COUNT(*) as cnt FROM notes WHERE deleted_at IS NULL`,

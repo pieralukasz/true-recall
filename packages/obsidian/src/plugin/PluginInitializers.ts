@@ -34,6 +34,7 @@ import { isMobile } from "@true-recall/obsidian/utils/platform";
 
 import { AiChatController } from "../features/ai-chat/chat-controller";
 import { revealAiChat } from "../features/ai-chat/open-ai-chat";
+
 import type TrueRecallPlugin from "../main";
 import { BackupRecoveryManager } from "./BackupRecoveryManager";
 import { DayRolloverWatcher } from "./DayRolloverWatcher";
@@ -289,6 +290,7 @@ async function initializeCardStore(
 	plugin.pluginLoader.activateAll();
 
 	initializeSourceHighlight(plugin);
+	plugin.childCardGrader.attach();
 
 	const sEnd = performance.now();
 	console.debug(
