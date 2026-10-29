@@ -1,6 +1,6 @@
 {
 	"name": "true-recall",
-	"version": "2.10.0",
+	"version": "2.11.0",
 	"private": true,
 	"description": "Spaced repetition with FSRS algorithm",
 	"main": "main.js",
