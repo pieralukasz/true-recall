@@ -168,6 +168,8 @@
 	"Display new/learning/due counters in review session header": "在复习顶部栏显示新卡片、学习中和到期卡片数量",
 	"Display order": "显示顺序",
 	"Display predicted interval on answer buttons": "在评分按钮上显示预计复习间隔",
+	"Show next review time on mobile": "在移动端显示下次复习时间",
+	"On phones and tablets, show the intervals in a row above the answer buttons": "在手机和平板上，于评分按钮上方单独一行显示复习间隔",
 	"Display progress indicators next to links during review sessions.": "复习时在链接旁显示进度标记。",
 	"Display progress indicators next to links inside flashcard panel cards.": "在卡片面板的卡片链接旁显示进度标记。",
 	"Display the name of the source note for each card during review": "复习时显示每张卡片的来源笔记名称",

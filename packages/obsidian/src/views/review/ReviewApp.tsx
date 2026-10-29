@@ -74,6 +74,7 @@ interface ReviewSessionState {
 		header: boolean;
 		headerStats: boolean;
 		nextReviewTime: boolean;
+		nextReviewTimeMobile: boolean;
 	};
 }
 
@@ -245,6 +246,7 @@ function ActiveReview({ card, review, model }: ActiveReviewProps) {
 				isAnswerRevealed={isAnswerRevealed}
 				preview={review.getSchedulingPreview()}
 				showNextReviewTime={session.display.nextReviewTime}
+				showNextReviewTimeMobile={session.display.nextReviewTimeMobile}
 				rModeActive={session.retrievabilityMode}
 				typeInMode={typeInState.typeInMode}
 				isRatingLocked={typeInState.isRatingLocked}

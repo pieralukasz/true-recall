@@ -177,6 +177,20 @@ export function GeneralTab() {
 					/>
 				</FormField>
 
+				{settings.showNextReviewTime && (
+					<FormField
+						name={t("Show next review time on mobile")}
+						description={t(
+							"On phones and tablets, show the intervals in a row above the answer buttons",
+						)}
+					>
+						<ToggleInput
+							value={settings.showNextReviewTimeMobile}
+							onChange={(v) => void save({ showNextReviewTimeMobile: v })}
+						/>
+					</FormField>
+				)}
+
 				<FormField
 					name={t("Continuous custom reviews")}
 					description={t(
