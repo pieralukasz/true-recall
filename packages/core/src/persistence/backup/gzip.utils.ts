@@ -1,4 +1,4 @@
-import pako from "pako";
+import * as pako from "pako";
 
 /**
  * Gzip helpers that prefer the native Streams API over pako. pako runs the

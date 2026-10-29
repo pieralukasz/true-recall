@@ -447,6 +447,13 @@
 	opacity: 0.45;
 }
 
+/* A proposed card whose question already exists: unchecked, labelled. */
+.tr-ai-chat__card-dup {
+	font-size: var(--font-ui-smaller);
+	color: var(--text-faint);
+	padding-top: var(--size-4-2);
+}
+
 .tr-ai-chat__card-body {
 	display: flex;
 	flex-direction: column;
@@ -655,6 +662,9 @@
 	display: none;
 }
 
+/* Takes the bottom of the review, under the scrolling card. Width and side
+   padding match the card's content column (max-width comes inline from the
+   review width setting), so the panel's edges line up with the text above. */
 .tr-card-assist-slot {
 	flex: 0 1 auto;
 	min-height: 0;
@@ -662,12 +672,12 @@
 	max-height: 50%;
 	overflow-y: auto;
 	width: 100%;
-	max-width: var(--file-line-width, 700px);
-	margin: 0 auto var(--size-4-3);
-	padding: 0 var(--size-4-4);
+	margin: var(--size-4-2) auto var(--size-4-3);
+	padding: 0 1.5rem;
 	box-sizing: border-box;
 }
 
+/* One flat container: no inner boxes, header bands or tinted footers. */
 .tr-ai-chat.tr-card-assist {
 	height: auto;
 	border: 1px solid var(--background-modifier-border);
@@ -680,8 +690,7 @@
 	display: flex;
 	align-items: center;
 	gap: var(--size-4-2);
-	padding: var(--size-4-1) var(--size-4-1) var(--size-4-1) var(--size-4-3);
-	border-bottom: 1px solid var(--background-modifier-border);
+	padding: var(--size-4-1) var(--size-4-1) 0 var(--size-4-3);
 	color: var(--text-muted);
 }
 
@@ -691,14 +700,31 @@
 	overflow: hidden;
 	text-overflow: ellipsis;
 	white-space: nowrap;
-	font-weight: var(--font-semibold);
+	font-size: var(--font-ui-smaller);
+	font-weight: var(--font-medium);
 }
 
 .tr-card-assist__body {
 	display: flex;
 	flex-direction: column;
-	gap: var(--size-4-2);
-	padding: var(--size-4-2) var(--size-4-3);
+	gap: var(--size-4-3);
+	padding: var(--size-4-1) var(--size-4-3);
+}
+
+/* The model's note above the proposal is secondary: the cards are the focus. */
+.tr-card-assist__body > .tr-ai-chat__md {
+	font-size: var(--font-ui-smaller);
+	line-height: var(--line-height-normal);
+	color: var(--text-muted);
+}
+
+.tr-card-assist__body > .tr-ai-chat__md :is(ul, ol) {
+	margin: var(--size-4-1) 0;
+	padding-inline-start: var(--size-4-4);
+}
+
+.tr-card-assist__body > .tr-ai-chat__md li {
+	margin: 0;
 }
 
 .tr-card-assist__body > .markdown-rendered p:first-child {
@@ -712,7 +738,70 @@
 .tr-card-assist__foot {
 	display: flex;
 	justify-content: flex-end;
-	padding: 0 var(--size-4-2) var(--size-4-2);
+	padding: 0 var(--size-4-1) var(--size-4-1);
+}
+
+/* Links (Continue in chat, Undo) are quiet text buttons inside the panel. */
+.tr-card-assist .tr-ai-chat__link-btn {
+	height: auto;
+	padding: var(--size-4-1) var(--size-4-2);
+	background: none;
+	box-shadow: none;
+	color: var(--text-muted);
+	cursor: pointer;
+}
+
+.tr-card-assist .tr-ai-chat__link-btn:hover {
+	background: var(--background-modifier-hover);
+	color: var(--text-normal);
+}
+
+/* Proposals inside the panel: no box of their own. A long proposal scrolls
+   inside the panel: its Add / Apply / Skip row stays pinned to the panel's
+   bottom edge. overflow: clip (not hidden) so the proposal is no scroll
+   container and the sticky row follows the panel's scroll. */
+.tr-card-assist .tr-ai-chat__proposal {
+	overflow: clip;
+	border: none;
+	border-radius: 0;
+}
+
+.tr-card-assist .tr-ai-chat__proposal-head {
+	padding: 0 0 var(--size-4-1);
+	background: none;
+	border-bottom: none;
+	font-size: var(--font-ui-smaller);
+}
+
+.tr-card-assist .tr-ai-chat__card {
+	padding: var(--size-4-2) 0;
+	gap: var(--size-4-2);
+	border-bottom: none;
+	border-top: 1px solid var(--background-modifier-border);
+}
+
+/* Same pencil weight on every row, hovered or not. */
+.tr-card-assist .tr-ai-chat__card .tr-ai-chat__icon-btn {
+	opacity: 1;
+}
+
+.tr-card-assist .tr-ai-chat__diff {
+	padding: var(--size-4-2) 0;
+}
+
+.tr-card-assist .tr-ai-chat__reason,
+.tr-card-assist .tr-ai-chat__muted {
+	padding: 0;
+}
+
+/* Opaque in both themes, so text scrolling under the row never shows through. */
+.tr-card-assist .tr-ai-chat__proposal-foot {
+	position: sticky;
+	bottom: 0;
+	z-index: 1;
+	padding: var(--size-4-2) 0;
+	background: var(--background-secondary);
+	border-top: 1px solid var(--background-modifier-border);
 }
 
 /* ─── generate_cards: progress, then cards sliding in ─────────────── */

@@ -1,6 +1,9 @@
 import type { TFile } from "obsidian";
 
-import type { AssistantContext } from "@true-recall/core/ai/assistant";
+import type {
+	AssistantContext,
+	AssistantReviewAttemptContext,
+} from "@true-recall/core/ai/assistant";
 
 /**
  * What a conversation is about. Stored with the chat, so a conversation keeps
@@ -16,6 +19,11 @@ export interface ChatContext {
 	 * carry their id: generate_cards runs them as the panel's generator would.
 	 */
 	preset?: { id?: string; name: string; instruction: string };
+	/**
+	 * The answer the user typed for `card` in review, with its grading. Goes
+	 * with the card: no chip of its own, removed together with the card chip.
+	 */
+	reviewAttempt?: AssistantReviewAttemptContext;
 }
 
 export type ChatContextKind = "note" | "selection" | "card" | "preset";
@@ -35,6 +43,7 @@ export function withoutKind(
 ): ChatContext {
 	const next = { ...context };
 	delete next[kind];
+	if (kind === "card") delete next.reviewAttempt;
 	return next;
 }
 
@@ -85,6 +94,9 @@ export function fromAssistantContext(
 						label: shorten(context.card.question, 60),
 					},
 				}
+			: {}),
+		...(context.card && context.reviewAttempt
+			? { reviewAttempt: context.reviewAttempt }
 			: {}),
 	};
 }

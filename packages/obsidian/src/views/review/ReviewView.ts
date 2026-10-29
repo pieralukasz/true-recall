@@ -8,7 +8,10 @@ import {
 import { h } from "preact";
 import type { Grade } from "ts-fsrs";
 
-import type { AssistantContext } from "@true-recall/core/ai/assistant";
+import type {
+	AssistantContext,
+	AssistantReviewAttemptContext,
+} from "@true-recall/core/ai/assistant";
 import { SemanticAnswerGradingService } from "@true-recall/core/ai/grading/semantic-answer-grading.service";
 import { VIEW_TYPE_REVIEW } from "@true-recall/core/constants";
 import type { FlashcardManager } from "@true-recall/core/flashcard/flashcard.service";
@@ -28,6 +31,7 @@ import { CommandService, ReviewUndoHook } from "@true-recall/obsidian/commands";
 import { G, getDataLayer } from "@true-recall/obsidian/data";
 import {
 	askAboutCard,
+	cardsFromGaps,
 	factCheckCard,
 	showCardAiMenu,
 } from "@true-recall/obsidian/features/ai-chat/card-actions";
@@ -50,6 +54,8 @@ import {
 import {
 	buildReviewFollowUpContext,
 	getTypeInModeStorage,
+	hasGradingGaps,
+	revealedReviewAttempt,
 } from "@true-recall/obsidian/features/study/ui/review/helpers";
 import { ReviewSelectionBubble } from "@true-recall/obsidian/features/study/ui/review/ReviewSelectionBubble";
 import {
@@ -304,7 +310,12 @@ export class ReviewView extends ItemView {
 		if (!card || trimmed === "") return false;
 		if (this.usesAiChat) {
 			// Answered under the card, not queued.
-			askAboutCard(this.plugin, card, trimmed);
+			askAboutCard(
+				this.plugin,
+				card,
+				trimmed,
+				this.currentReviewAttempt(card.id),
+			);
 			return true;
 		}
 		const service = this.plugin.assistantService;
@@ -320,6 +331,15 @@ export class ReviewView extends ItemView {
 		this.queuedFollowUpCount += 1;
 		this.review.notifyChange();
 		return true;
+	}
+
+	/** "Cards from gaps": cards for what the typed answer missed, under the card. */
+	private handleCardsFromGaps(): void {
+		const card = this.review.getCurrentCard();
+		if (!card || !this.usesAiChat) return;
+		const attempt = this.currentReviewAttempt(card.id);
+		if (!attempt || !hasGradingGaps(attempt)) return;
+		cardsFromGaps(this.plugin, card, attempt);
 	}
 
 	private handleAnswer(rating: Grade): void {
@@ -482,7 +502,8 @@ export class ReviewView extends ItemView {
 
 		this.askBubble = new ReviewSelectionBubble({
 			isEnabled: () => isPluginEnabled(this.plugin.settings, "ai-assistant"),
-			getContext: (text) => this.buildAssistantContext(text),
+			getContext: (text) =>
+				this.buildAssistantContext(text, { withAttempt: true }),
 			onAsk: (rect, context) =>
 				openAiWorkspace(this.plugin, {
 					intent: "selection",
@@ -506,10 +527,34 @@ export class ReviewView extends ItemView {
 		return Promise.resolve();
 	}
 
-	private buildAssistantContext(selectedText?: string): AssistantContext {
+	/**
+	 * `withAttempt`: also the typed answer and its grading (Ask AI on a
+	 * selection), once the answer is revealed. Card Polish and the actions
+	 * menu keep the card alone.
+	 */
+	private buildAssistantContext(
+		selectedText?: string,
+		options?: { withAttempt?: boolean },
+	): AssistantContext {
 		const card = this.review.getCurrentCard();
-		if (card) return assistantContextFromCard(card, selectedText);
-		return selectedText ? { selectedText } : {};
+		if (!card) return selectedText ? { selectedText } : {};
+		const context = assistantContextFromCard(card, selectedText);
+		const attempt = options?.withAttempt
+			? this.currentReviewAttempt(card.id)
+			: undefined;
+		if (attempt) context.reviewAttempt = attempt;
+		return context;
+	}
+
+	/** The visible card's typed answer and grading, after the reveal. */
+	private currentReviewAttempt(
+		cardId: string,
+	): AssistantReviewAttemptContext | undefined {
+		const state = this.typeIn.getCurrentTypeInState(cardId);
+		return revealedReviewAttempt(
+			{ typedAnswer: state.typedAnswer, semanticResult: state.semanticResult },
+			this.review.isAnswerRevealed,
+		);
 	}
 
 	private onAssistantCardUpdated = (e: Event): void => {
@@ -544,6 +589,11 @@ export class ReviewView extends ItemView {
 							isPluginEnabled(this.plugin.settings, "ai-assistant")
 								? (question: string) => this.handleAskFollowUp(question)
 								: undefined,
+						followUpAnsweredUnderCard: this.usesAiChat,
+						// Pro chat only: the old assistant has no under-card run.
+						onCardsFromGaps: this.usesAiChat
+							? () => this.handleCardsFromGaps()
+							: undefined,
 						onOpenAssistantInbox: () => void this.plugin.openAssistantInbox(),
 						onAnswer: (rating: Grade) => void this.handleAnswer(rating),
 						onContentChange: (value: string, field: "question" | "answer") =>

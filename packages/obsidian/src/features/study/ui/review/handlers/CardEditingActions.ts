@@ -80,6 +80,9 @@ export class CardEditingActions {
 				this.context.deps
 					.getReview()
 					.updateCurrentCardComment(updatedCard.userComment);
+				this.context.deps
+					.getReview()
+					.updateNoteAlwaysTypeIn(note.id, !!updatedCard.alwaysTypeIn);
 			}
 		}
 	}

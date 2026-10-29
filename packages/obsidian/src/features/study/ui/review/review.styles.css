@@ -41,6 +41,13 @@
 		text-align: center;
 	}
 
+	/* The type-in grading (verdict, comment, covered/missing) is selectable
+	   too, so a selection there gets the review's "Ask AI" button. */
+	.true-recall-type-in-assessment {
+		user-select: text;
+		-webkit-user-select: text;
+	}
+
 	/* Switch to left-align when content has block elements. The
 	   `is-block-content` class is set by LivePreviewField / PreviewCardBody
 	   when hasBlockMarkdown() detects fenced code, lists, tables, blockquote,
@@ -439,4 +446,59 @@
 .tr-review-ask-bubble__icon svg {
 	width: 14px;
 	height: 14px;
+}
+
+/* Type-in follow-up: the question input takes the column width, "Cards from
+   gaps" is a secondary button of the same height beside it. Obsidian's own
+   input and button look; two classes beat `button:not(.clickable-icon)`. */
+.true-recall-follow-up {
+	container-type: inline-size;
+}
+
+.true-recall-follow-up__row {
+	display: flex;
+	align-items: center;
+	gap: var(--size-4-2);
+}
+
+.true-recall-follow-up__row .true-recall-follow-up__input {
+	flex: 1;
+	min-width: 0;
+	width: auto;
+	height: var(--input-height);
+}
+
+.true-recall-follow-up__row .true-recall-gap-cards {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: var(--size-4-2);
+	flex: none;
+	height: var(--input-height);
+	padding: 0 var(--size-4-3);
+	font-size: var(--font-ui-small);
+	white-space: nowrap;
+	cursor: pointer;
+}
+
+.true-recall-gap-cards__icon {
+	display: inline-flex;
+	color: var(--icon-color);
+}
+
+.true-recall-gap-cards__icon svg {
+	width: var(--icon-s);
+	height: var(--icon-s);
+}
+
+/* Narrow column: icon only, the tooltip names it. */
+@container (max-width: 26rem) {
+	.true-recall-follow-up__row .true-recall-gap-cards {
+		width: var(--input-height);
+		padding: 0;
+	}
+
+	.true-recall-gap-cards__label {
+		display: none;
+	}
 }

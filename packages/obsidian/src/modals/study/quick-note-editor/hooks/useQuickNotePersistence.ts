@@ -4,7 +4,10 @@ import { useCallback, useRef, useState } from "preact/hooks";
 import { BatchCreateCommand } from "@true-recall/obsidian/commands/commands/card-create.cmd";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 
-import { canSaveQuickNote } from "../domain/quick-note-validation";
+import {
+	canSaveQuickNote,
+	initialAlwaysTypeIn,
+} from "../domain/quick-note-validation";
 import type { QuickNoteEditorResult } from "../types";
 import type { QuickNoteEditor } from "./useQuickNoteEditor";
 import { useQuickNoteUndo } from "./useQuickNoteUndo";
@@ -58,7 +61,11 @@ export function useQuickNotePersistence(
 			? currentUserComment !== (editMode.note.userComment ?? "")
 			: true;
 
-		if (editMode && !fieldsChanged && !commentChanged) {
+		const typeInChanged = editMode
+			? draft.alwaysTypeIn !== initialAlwaysTypeIn(editMode)
+			: false;
+
+		if (editMode && !fieldsChanged && !commentChanged && !typeInChanged) {
 			onDone({ cancelled: true });
 			return true;
 		}
@@ -82,6 +89,14 @@ export function useQuickNotePersistence(
 					for (const cardId of plugin.flashcardManager.updateNoteComment(
 						editMode.noteId,
 						currentUserComment,
+					)) {
+						updatedCardIds.add(cardId);
+					}
+				}
+				if (typeInChanged) {
+					for (const cardId of plugin.flashcardManager.setNoteAlwaysTypeIn(
+						editMode.noteId,
+						draft.alwaysTypeIn,
 					)) {
 						updatedCardIds.add(cardId);
 					}

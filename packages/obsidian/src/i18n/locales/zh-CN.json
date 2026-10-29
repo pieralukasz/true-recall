@@ -168,6 +168,8 @@
 	"Display new/learning/due counters in review session header": "在复习顶部栏显示新卡片、学习中和到期卡片数量",
 	"Display order": "显示顺序",
 	"Display predicted interval on answer buttons": "在评分按钮上显示预计复习间隔",
+	"Show next review time on mobile": "在移动端显示下次复习时间",
+	"On phones and tablets, show the intervals in a row above the answer buttons": "在手机和平板上，于评分按钮上方单独一行显示复习间隔",
 	"Display progress indicators next to links during review sessions.": "复习时在链接旁显示进度标记。",
 	"Display progress indicators next to links inside flashcard panel cards.": "在卡片面板的卡片链接旁显示进度标记。",
 	"Display the name of the source note for each card during review": "复习时显示每张卡片的来源笔记名称",
@@ -598,5 +600,10 @@
 	"Show My Note field": "显示 My Note 字段",
 	"Show the My Note field in Add and Edit Flashcard. When off, press Cmd/Ctrl+K to open it. Cards that already have a note always show it.": "在添加和编辑卡片时显示 My Note 字段。关闭后可按 Cmd/Ctrl+K 打开。已有笔记的卡片始终显示该字段。",
 	"First interval cap (days)": "首次间隔上限（天）",
-	"Longest first interval after a new card graduates. Leave empty for no cap. FSRS still remembers the full stability.": "新卡片毕业后的最长首次间隔。留空表示不限制。FSRS 仍会保留完整的记忆稳定性。"
+	"Longest first interval after a new card graduates. Leave empty for no cap. FSRS still remembers the full stability.": "新卡片毕业后的最长首次间隔。留空表示不限制。FSRS 仍会保留完整的记忆稳定性。",
+	"Cards from gaps": "按漏答点生成卡片",
+	"New cards for what your answer missed, skipping points you already have cards for": "为你回答中遗漏的内容生成新卡片，已有卡片的要点会跳过",
+	"Already a card": "已有此卡片",
+	"Ask AI about your answer…": "向 AI 询问你的回答…",
+	"Ask AI a follow-up… (answered after the session)": "向 AI 追问…（复习结束后回答）"
 }

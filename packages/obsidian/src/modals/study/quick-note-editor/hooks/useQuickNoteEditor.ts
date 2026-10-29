@@ -85,7 +85,12 @@ export function useQuickNoteEditor(
 		: sourceFile instanceof TFile
 			? sourceFile
 			: null;
-	const isDirty = isQuickNoteDirty(mode, state.fields, state.userComment);
+	const isDirty = isQuickNoteDirty(
+		mode,
+		state.fields,
+		state.userComment,
+		state.alwaysTypeIn,
+	);
 	const canSave = canSaveQuickNote(state.fields, noteType?.fields ?? []);
 	useEffect(() => {
 		onDirtyChange?.(isDirty);

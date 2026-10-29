@@ -1,3 +1,4 @@
+import { FLASHCARD_CONFIG } from "../constants";
 import type { DomainEventBus } from "../events/event-bus";
 import type { SqliteStoreService } from "../persistence/sqlite/SqliteStoreService";
 import { generateCardsForNote } from "../services/cards/card-generation.service";
@@ -142,6 +143,42 @@ export class NoteMutationService {
 			});
 		}
 
+		return cardIds;
+	}
+
+	/**
+	 * Turn "always type-in" on or off for every card of a Note. The flag
+	 * lives as the `true-recall/type-in` note tag, which the card mappers
+	 * read into `alwaysTypeIn`. Returns the IDs of the Note's cards.
+	 */
+	setNoteAlwaysTypeIn(noteId: string, enabled: boolean): string[] {
+		if (!this.store) {
+			throw new Error("Store not initialized");
+		}
+
+		const note = this.store.notes.getById(noteId);
+		if (!note) {
+			throw new Error(`Note "${noteId}" not found`);
+		}
+
+		const tag = FLASHCARD_CONFIG.alwaysTypeInTag;
+		const hasTag = note.tags.includes(tag);
+		if (hasTag === enabled) return [];
+
+		const tags = enabled
+			? [...note.tags, tag]
+			: note.tags.filter((existing) => existing !== tag);
+		this.store.notes.update(noteId, { tags });
+
+		const cardIds = this.store.cards
+			.getCardsByNoteId(noteId)
+			.map((card) => card.id);
+		for (const cardId of cardIds) {
+			this.emitEvent("card:updated", {
+				cardId,
+				changes: { alwaysTypeIn: true },
+			});
+		}
 		return cardIds;
 	}
 
