@@ -398,7 +398,7 @@ export function FormattingToolbar({
 					<div
 						role="button"
 						tabIndex={0}
-						title="Always type-in for created card"
+						title="Always type the answer for this card"
 						class={`${btnCls} ${typeInEnabled ? "ep:text-obs-accent ep:bg-obs-accent/10" : ""}`}
 						onMouseDown={(e: MouseEvent) => {
 							prevent(e);

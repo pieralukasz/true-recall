@@ -110,7 +110,7 @@ export function QuickNoteEditorApp({
 				app={app}
 				getEditorView={() => focusedFieldRef.current?.editorView ?? null}
 				typeInEnabled={alwaysTypeIn}
-				onTypeInToggle={!isEdit ? handleTypeInToggle : undefined}
+				onTypeInToggle={handleTypeInToggle}
 				showCloze={noteType.type === 1}
 			/>
 

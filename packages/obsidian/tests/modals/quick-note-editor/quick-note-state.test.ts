@@ -68,4 +68,22 @@ describe("Quick Note draft", () => {
 		expect(isQuickNoteDirty({ mode: "add" }, { Front: "  " }, "")).toBe(false);
 		expect(isQuickNoteDirty({ mode: "add" }, {}, "comment")).toBe(true);
 	});
+	it("starts an edit with the card's type-in flag and treats toggling it as a change", () => {
+		const mode = {
+			mode: "edit" as const,
+			cardId: "c1",
+			noteId: "n1",
+			note: {
+				id: "n1",
+				noteTypeId: "builtin-basic",
+				fields: { Front: "Q", Back: "A" },
+				tags: ["true-recall/type-in"],
+			},
+			noteType: { id: "builtin-basic", fields: ["Front", "Back"] },
+		} as unknown as Parameters<typeof createQuickNoteState>[0];
+		const state = createQuickNoteState(mode, ["Front", "Back"]);
+		expect(state.alwaysTypeIn).toBe(true);
+		expect(isQuickNoteDirty(mode, state.fields, "", true)).toBe(false);
+		expect(isQuickNoteDirty(mode, state.fields, "", false)).toBe(true);
+	});
 });

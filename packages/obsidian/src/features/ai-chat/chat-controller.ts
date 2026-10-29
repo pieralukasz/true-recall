@@ -35,6 +35,8 @@ export interface StartChatOptions {
 	factCheck?: boolean;
 	/** Reveal the chat view (default true). Under-card runs pass false. */
 	reveal?: boolean;
+	/** Title for the history list and the under-card head; else the message. */
+	title?: string;
 }
 
 function newId(): string {
@@ -187,6 +189,7 @@ export class AiChatController {
 		const session = this.createSession({
 			context: options.context,
 			factCheck: options.factCheck,
+			title: options.title,
 		});
 		if (options.reveal !== false) {
 			this.currentId = session.id;

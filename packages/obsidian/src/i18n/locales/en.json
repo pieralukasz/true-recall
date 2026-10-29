@@ -168,6 +168,8 @@
 	"Display new/learning/due counters in review session header": "Display new/learning/due counters in review session header",
 	"Display order": "Display order",
 	"Display predicted interval on answer buttons": "Display predicted interval on answer buttons",
+	"Show next review time on mobile": "Show next review time on mobile",
+	"On phones and tablets, show the intervals in a row above the answer buttons": "On phones and tablets, show the intervals in a row above the answer buttons",
 	"Display progress indicators next to links during review sessions.": "Display progress indicators next to links during review sessions.",
 	"Display progress indicators next to links inside flashcard panel cards.": "Display progress indicators next to links inside flashcard panel cards.",
 	"Display the name of the source note for each card during review": "Display the name of the source note for each card during review",
@@ -598,5 +600,10 @@
 	"Show My Note field": "Show My Note field",
 	"Show the My Note field in Add and Edit Flashcard. When off, press Cmd/Ctrl+K to open it. Cards that already have a note always show it.": "Show the My Note field in Add and Edit Flashcard. When off, press Cmd/Ctrl+K to open it. Cards that already have a note always show it.",
 	"First interval cap (days)": "First interval cap (days)",
-	"Longest first interval after a new card graduates. Leave empty for no cap. FSRS still remembers the full stability.": "Longest first interval after a new card graduates. Leave empty for no cap. FSRS still remembers the full stability."
+	"Longest first interval after a new card graduates. Leave empty for no cap. FSRS still remembers the full stability.": "Longest first interval after a new card graduates. Leave empty for no cap. FSRS still remembers the full stability.",
+	"Cards from gaps": "Cards from gaps",
+	"New cards for what your answer missed, skipping points you already have cards for": "New cards for what your answer missed, skipping points you already have cards for",
+	"Already a card": "Already a card",
+	"Ask AI about your answer…": "Ask AI about your answer…",
+	"Ask AI a follow-up… (answered after the session)": "Ask AI a follow-up… (answered after the session)"
 }

@@ -1,3 +1,5 @@
+import type { AssistantReviewAttemptContext } from "@true-recall/core/ai/assistant";
+
 import type { ChatContext } from "./chat-context";
 
 /**
@@ -53,6 +55,27 @@ export interface ChatPromptInput {
 	today: string;
 }
 
+/**
+ * The answer typed in review and its grading. Labels match the old
+ * assistant's REVIEW ATTEMPT block (core assistant-agent.ts), with the
+ * chat's tool names.
+ */
+function renderReviewAttempt(attempt: AssistantReviewAttemptContext): string {
+	const lines = [
+		`USER'S TYPED ANSWER:\n"""\n${attempt.typedAnswer || "(empty)"}\n"""`,
+	];
+	if (attempt.verdict) lines.push(`GRADING VERDICT: ${attempt.verdict}`);
+	if (attempt.teacherComment)
+		lines.push(`TEACHER COMMENT: ${attempt.teacherComment}`);
+	if (attempt.covered?.length)
+		lines.push(`COVERED: ${attempt.covered.join("; ")}`);
+	if (attempt.missing?.length)
+		lines.push(`MISSING: ${attempt.missing.join("; ")}`);
+	if (attempt.errors?.length)
+		lines.push(`ERRORS: ${attempt.errors.join("; ")}`);
+	return `REVIEW ATTEMPT (the user typed this answer to the card in context during review; it was graded against the card's answer):\n${lines.join("\n")}\nAnswer as a tutor, grounded in the card and this grading: when the user asks what they got wrong or missed, explain it relative to the card's answer. If the exchange shows the card itself is flawed (ambiguous, wrong, or overloaded), also propose a fix with propose_card_edit. If it reveals a knowledge gap no existing card covers, also propose new cards with propose_cards. Otherwise reply with text only.`;
+}
+
 export function buildChatInstructions(input: ChatPromptInput): string {
 	const sections = [BEHAVIOR, CARD_RULES, FACT_CHECK];
 
@@ -82,6 +105,9 @@ export function buildChatInstructions(input: ChatPromptInput): string {
 		context.push(
 			`Card in context (id ${input.card.id}, type ${input.card.noteType}). "This card" means this one; edits stay in its language:\n${fields}`,
 		);
+	}
+	if (input.context.reviewAttempt) {
+		context.push(renderReviewAttempt(input.context.reviewAttempt));
 	}
 	sections.push(`CONTEXT:\n${context.join("\n\n")}`);
 
