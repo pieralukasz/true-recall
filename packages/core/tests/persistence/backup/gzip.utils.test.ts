@@ -1,4 +1,4 @@
-import pako from "pako";
+import * as pako from "pako";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {

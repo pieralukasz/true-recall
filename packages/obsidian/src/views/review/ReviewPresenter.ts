@@ -51,6 +51,7 @@ export function createReviewModel(deps: ReviewPresenterDeps): ReviewModel {
 				header: deps.plugin.settings.showReviewHeader,
 				headerStats: deps.plugin.settings.showReviewHeaderStats,
 				nextReviewTime: deps.plugin.settings.showNextReviewTime,
+				nextReviewTimeMobile: deps.plugin.settings.showNextReviewTimeMobile,
 			},
 		},
 		card: {

@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+## 2.11.0 (2026-10-29)
+
+### Features
+
+- **Next review time on mobile.** Turn on `Settings → General → "Show next review time on mobile"` to see each button's interval in a row above the grade buttons. Off by default.
+- **Cards from gaps (Pro).** When the grading of a typed answer lists what you missed, "Cards from gaps" next to the follow-up box asks the AI for cards for exactly those points. Points that already have a card are skipped.
+- **Type in on existing cards.** Edit flashcard now has the Type in toggle, so you can switch a card to typed answers after creating it.
+
+### Improvements
+
+- **Follow-up questions know your typed answer (Pro).** A question about the card after a typed answer includes what you wrote and how it was graded, so the AI can explain the gap or propose a fix.
+- **Tidier panel under the card.** The follow-up box, Cards from gaps and the proposals line up with the card text, and the Add / Skip row stays visible at the bottom.
+
+### Bug Fixes
+
+- **Typed-answer grading** no longer marks a short, correct answer as partial just because the reference answer is long.
+- **The follow-up box** says "Ask AI about your answer…" when the answer appears right under the card.
+
 ## 2.10.0 (2026-10-11)
 
 ### Features

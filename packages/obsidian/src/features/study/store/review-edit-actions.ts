@@ -16,6 +16,7 @@ export function createReviewEditActions({
 	| "updateCurrentCardContent"
 	| "updateCurrentCardComment"
 	| "updateCurrentCardFlag"
+	| "updateNoteAlwaysTypeIn"
 	| "notifyChange"
 > {
 	return {
@@ -74,6 +75,30 @@ export function createReviewEditActions({
 
 			const newQueue = [...state.queue];
 			newQueue[state.currentIndex] = { ...card, userComment };
+
+			set((s) => ({
+				review: { ...s.review, queue: newQueue },
+			}));
+		},
+
+		updateNoteAlwaysTypeIn: (noteId: string, enabled: boolean) => {
+			const state = get().review;
+			if (
+				!state.queue.some(
+					(card) => card.noteId === noteId && !!card.alwaysTypeIn !== enabled,
+				)
+			)
+				return;
+
+			const newQueue = state.queue.map((card) =>
+				card.noteId === noteId
+					? {
+							...card,
+							alwaysTypeIn: enabled,
+							fsrs: { ...card.fsrs, alwaysTypeIn: enabled },
+						}
+					: card,
+			);
 
 			set((s) => ({
 				review: { ...s.review, queue: newQueue },

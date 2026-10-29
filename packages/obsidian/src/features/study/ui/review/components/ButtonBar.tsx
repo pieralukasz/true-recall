@@ -9,7 +9,7 @@ import { useIcon } from "@true-recall/obsidian/preact/hooks";
 import { isMobile } from "@true-recall/obsidian/utils/platform";
 
 import type { TypeInMode } from "../helpers/type-in-flow";
-import { RatingButton } from "./RatingButton";
+import { formatShiftLabel, RatingButton } from "./RatingButton";
 import { UndoButton } from "./UndoButton";
 
 const typeInButtonVariants = cva(
@@ -29,6 +29,8 @@ interface ButtonBarProps {
 	isAnswerRevealed: boolean;
 	preview: SchedulingPreview | null;
 	showNextReviewTime: boolean;
+	/** Mobile only: show the intervals in a row above the grade buttons. */
+	showNextReviewTimeMobile?: boolean;
 	rModeActive?: boolean;
 	typeInMode?: TypeInMode;
 	isRatingLocked?: boolean;
@@ -48,6 +50,7 @@ export function ButtonBar({
 	isAnswerRevealed,
 	preview,
 	showNextReviewTime,
+	showNextReviewTimeMobile = false,
 	rModeActive = false,
 	typeInMode = "off",
 	isRatingLocked = false,
@@ -192,13 +195,54 @@ export function ButtonBar({
 		// the full row, and rating the card again is the faster correction.
 		// Bottom padding comes from review.styles.css (safe area + floating
 		// navbar clearance), so no ep:pb-* utility here.
+		// Intervals inside the grade buttons make them taller and cover the
+		// bottom of a phone screen, so the opt-in mobile setting shows them in
+		// their own row above the bar instead.
+		const intervalRow =
+			isAnswerRevealed &&
+			showNextReviewTime &&
+			showNextReviewTimeMobile &&
+			preview
+				? ([
+						["again", preview.again],
+						["hard", preview.hard],
+						["good", preview.good],
+						["easy", preview.easy],
+					] as const)
+				: null;
 		return (
-			<div class="true-recall-review-buttons ep:flex ep:w-full ep:gap-2 ep:border-t ep:border-obs-border ep:shrink-0 ep:px-3 ep:pt-2">
-				{ratingButtons}
-				{onUndo && !isAnswerRevealed && (
-					<UndoButton disabled={!canUndo} onUndo={onUndo} />
+			<>
+				{intervalRow && (
+					<div class="true-recall-review-intervals ep:flex ep:w-full ep:gap-2 ep:border-t ep:border-obs-border ep:shrink-0 ep:px-3 ep:pt-2">
+						{intervalRow.map(([key, p]) => {
+							const shift = rModeActive
+								? null
+								: formatShiftLabel(p.daysChanged);
+							return (
+								<div
+									key={key}
+									class="ep:flex-1 ep:min-w-0 ep:text-center ep:text-ui-smaller ep:text-obs-muted ep:truncate"
+								>
+									{rModeActive ? `~${p.interval}` : p.interval}
+									{shift && <span class="ep:text-obs-orange"> ({shift})</span>}
+								</div>
+							);
+						})}
+					</div>
 				)}
-			</div>
+				<div
+					class={
+						intervalRow
+							? "true-recall-review-buttons ep:flex ep:w-full ep:gap-2 ep:shrink-0 ep:px-3 ep:pt-1"
+							: "true-recall-review-buttons ep:flex ep:w-full ep:gap-2 ep:border-t ep:border-obs-border ep:shrink-0 ep:px-3 ep:pt-2"
+					}
+				>
+					{ratingButtons}
+					{onUndo && !isAnswerRevealed && (
+						<UndoButton disabled={!canUndo} onUndo={onUndo} />
+					)}
+				</div>
+			</>
 		);
 	}
 

@@ -288,6 +288,9 @@ export interface TrueRecallSettings {
 	reviewContentWidth: ReviewContentWidth;
 	/** Show predicted time on answer buttons */
 	showNextReviewTime: boolean;
+	/** On phones and tablets, show the predicted intervals in a row above the
+	 * answer buttons (off by default: the extra row takes space at the bottom) */
+	showNextReviewTimeMobile: boolean;
 	/** Auto-advance to next card after answer */
 	autoAdvance: boolean;
 	/** Show header in Review session */
