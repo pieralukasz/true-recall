@@ -1,6 +1,7 @@
 import type { UIMessage } from "ai";
 import { describe, expect, it } from "vitest";
 
+import { buildCardChatContext } from "@true-recall/obsidian/features/ai-chat/card-actions";
 import {
 	chatTitle,
 	contextKinds,
@@ -164,6 +165,46 @@ describe("AI chat context", () => {
 		expect(withoutKind(ctx, "selection").selection).toBeUndefined();
 	});
 
+	it("keeps the review attempt with the card, and drops it with the card", () => {
+		const reviewAttempt = {
+			typedAnswer: "U = R",
+			verdict: "partial" as const,
+			missing: ["the current I"],
+		};
+		const ctx = fromAssistantContext(
+			{
+				card: { cardId: "c1", question: "Ohm's law?", answer: "U = RI" },
+				reviewAttempt,
+			},
+			file,
+		);
+		expect(ctx.reviewAttempt).toEqual(reviewAttempt);
+		expect(contextKinds(ctx)).toEqual(["card"]);
+		expect(withoutKind(ctx, "card").reviewAttempt).toBeUndefined();
+		expect(
+			fromAssistantContext({ reviewAttempt }, file).reviewAttempt,
+		).toBeUndefined();
+	});
+
+	it("builds the review card context with the attempt", () => {
+		const reviewAttempt = { typedAnswer: "U = R", verdict: "wrong" as const };
+		expect(
+			buildCardChatContext(
+				{ id: "c1", question: "What is **Ohm's law**?" },
+				{ path: "P.md", title: "P" },
+				undefined,
+				reviewAttempt,
+			),
+		).toEqual({
+			card: { id: "c1", label: "What is Ohm's law?" },
+			note: { path: "P.md", title: "P" },
+			reviewAttempt,
+		});
+		expect(
+			buildCardChatContext({ id: "c1", question: "Q" }, undefined),
+		).toEqual({ card: { id: "c1", label: "Q" } });
+	});
+
 	it("ignores notes that do not resolve", () => {
 		expect(
 			fromAssistantContext({ activeNotePath: "Gone.md" }, () => null),
@@ -199,6 +240,50 @@ describe("AI chat instructions", () => {
 		expect(text).toContain("USER DECISIONS ON EARLIER PROPOSALS");
 		expect(text).toContain("USER'S INSTRUCTIONS:\nWrite in Polish.");
 		expect(text).toContain("Web search is not available");
+	});
+
+	it("adds the typed answer and its grading to CONTEXT", () => {
+		const text = buildChatInstructions({
+			...base,
+			context: {
+				card: { id: "c1", label: "Ohm" },
+				reviewAttempt: {
+					typedAnswer: "U = R",
+					verdict: "partial",
+					teacherComment: "The current is missing.",
+					covered: ["voltage"],
+					missing: ["current I"],
+					errors: ["U = R is not Ohm's law"],
+				},
+			},
+			card: {
+				id: "c1",
+				noteType: "Basic",
+				fields: { Front: "Q", Back: "U = RI" },
+			},
+		});
+		const context = text.slice(text.indexOf("CONTEXT:"));
+		expect(context).toContain("REVIEW ATTEMPT");
+		expect(context).toContain('USER\'S TYPED ANSWER:\n"""\nU = R\n"""');
+		expect(context).toContain("GRADING VERDICT: partial");
+		expect(context).toContain("TEACHER COMMENT: The current is missing.");
+		expect(context).toContain("COVERED: voltage");
+		expect(context).toContain("MISSING: current I");
+		expect(context).toContain("ERRORS: U = R is not Ohm's law");
+		expect(context).toContain("relative to the card's answer");
+		expect(text.indexOf("REVIEW ATTEMPT")).toBeLessThan(
+			text.indexOf("NOTE TYPES"),
+		);
+	});
+
+	it("has no attempt block without a typed answer", () => {
+		const text = buildChatInstructions({
+			...base,
+			context: { card: { id: "c1", label: "Ohm" } },
+			card: { id: "c1", noteType: "Basic", fields: { Front: "Q", Back: "A" } },
+		});
+		expect(text).not.toContain("REVIEW ATTEMPT");
+		expect(text).not.toContain("USER'S TYPED ANSWER");
 	});
 
 	it("mentions web search only when it is on", () => {

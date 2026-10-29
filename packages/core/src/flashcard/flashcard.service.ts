@@ -541,6 +541,10 @@ export class FlashcardManager {
 		return this.noteMutation.updateNoteComment(noteId, userComment);
 	}
 
+	setNoteAlwaysTypeIn(noteId: string, enabled: boolean): string[] {
+		return this.noteMutation.setNoteAlwaysTypeIn(noteId, enabled);
+	}
+
 	changeNoteType(
 		noteId: string,
 		newNoteTypeId: string,

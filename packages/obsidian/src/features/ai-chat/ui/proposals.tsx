@@ -1,7 +1,14 @@
 /** @jsxImportSource react */
 import { Notice } from "obsidian";
-import { type CSSProperties, type ReactNode, useEffect, useState } from "react";
+import {
+	type CSSProperties,
+	type ReactNode,
+	useEffect,
+	useMemo,
+	useState,
+} from "react";
 
+import { t } from "../../../i18n";
 import {
 	addProposedCards,
 	applyCardEdit,
@@ -9,6 +16,7 @@ import {
 	revertCardEdit,
 } from "../engine/chat-apply";
 import { shorten } from "../engine/chat-context";
+import { findDuplicateProposals } from "../engine/duplicate-cards";
 import type {
 	GenerateCardsInput,
 	GenerateCardsOutput,
@@ -281,15 +289,31 @@ function CardsProposal({
 	const [busy, setBusy] = useState(false);
 
 	const open = !decision;
-	const chosen = pickCards(cards, picked, edits);
-	const isPicked = (i: number) => picked[i] ?? true;
+	// Cards that repeat an existing question start unchecked and say so. Only
+	// while open: once added, the new cards would match themselves.
+	const duplicateKey = streaming || !open ? "" : JSON.stringify(cards);
+	// biome-ignore lint/correctness/useExhaustiveDependencies: keyed by the cards' text
+	const duplicates = useMemo(
+		() =>
+			duplicateKey
+				? findDuplicateProposals(plugin, session.context, cards)
+				: [],
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- keyed by the cards' text (duplicateKey), not the array identity
+		[duplicateKey, plugin, session.context],
+	);
+	const isPicked = (i: number) => picked[i] ?? !duplicates[i];
+	const chosen = pickCards(
+		cards,
+		cards.map((_, i) => isPicked(i)),
+		edits,
+	);
 	const notePath =
 		givenNotePath ??
 		session.context.note?.path ??
 		session.context.selection?.notePath;
 
 	const toggle = (i: number) => {
-		const next = cards.map((_, j) => picked[j] ?? true);
+		const next = cards.map((_, j) => isPicked(j));
 		next[i] = !next[i];
 		updateDraft({ picked: next });
 	};
@@ -394,6 +418,11 @@ function CardsProposal({
 								/>
 							) : (
 								<div className="tr-ai-chat__card-body">
+									{open && duplicates[i] ? (
+										<div className="tr-ai-chat__card-dup">
+											{t("Already a card")}
+										</div>
+									) : null}
 									<ObsidianMarkdown
 										markdown={card.question}
 										className="tr-ai-chat__q"

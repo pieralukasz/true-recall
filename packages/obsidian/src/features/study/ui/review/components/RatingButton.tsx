@@ -46,10 +46,7 @@ export function RatingButton({
 	onAnswer: (rating: Grade) => void;
 	disabled?: boolean;
 }) {
-	const shiftLabel =
-		typeof daysChanged === "number" && daysChanged !== 0
-			? `${daysChanged > 0 ? "+" : ""}${daysChanged}`
-			: null;
+	const shiftLabel = formatShiftLabel(daysChanged);
 	const baseTitle = buildTitle({
 		interval,
 		originalInterval,
@@ -90,6 +87,13 @@ export function RatingButton({
 			)}
 		</Clickable>
 	);
+}
+
+/** Load-balance shift as shown next to an interval ("+1", "-2"), or null. */
+export function formatShiftLabel(daysChanged?: number): string | null {
+	return typeof daysChanged === "number" && daysChanged !== 0
+		? `${daysChanged > 0 ? "+" : ""}${daysChanged}`
+		: null;
 }
 
 function buildTitle({

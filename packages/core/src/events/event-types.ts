@@ -6,6 +6,7 @@ export interface CardChanges {
 	buried?: boolean;
 	sourceUid?: boolean;
 	userComment?: boolean;
+	alwaysTypeIn?: boolean;
 }
 
 export interface DomainEventMap {
