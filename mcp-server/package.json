@@ -8,8 +8,8 @@
     "start": "bun run index.ts"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.32.1",
-    "@types/bun": "1.4.3",
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "@types/bun": "1.4.4",
     "zod": "^4.6.7"
   }
 }
