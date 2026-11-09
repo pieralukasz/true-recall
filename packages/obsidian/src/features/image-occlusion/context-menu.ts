@@ -2,7 +2,7 @@ import { TFile } from "obsidian";
 
 import { t } from "@true-recall/obsidian/i18n";
 import type TrueRecallPlugin from "@true-recall/obsidian/main";
-import { isFeaturePreferenceEnabled } from "@true-recall/obsidian/plugin/plugin-utils";
+import { isPluginEnabled } from "@true-recall/obsidian/plugin/plugin-utils";
 import { isDesktop } from "@true-recall/obsidian/utils/platform";
 
 /** Formats Obsidian renders inline and the occlusion editor can mask. */
@@ -33,10 +33,8 @@ export function registerImageOcclusionContextMenu(
 		plugin.app.workspace.on("file-menu", (menu, file) => {
 			if (!plugin.settings.imageOcclusionContextMenu) return;
 			if (!isDesktop()) return;
-			// The module's own on/off switch still applies to users who have it,
-			// but this entry point does not depend on the module being available.
-			if (!isFeaturePreferenceEnabled(plugin.settings, "image-occlusion"))
-				return;
+			// Same gate as the command: Pro, and the module's own switch on.
+			if (!isPluginEnabled(plugin.settings, "image-occlusion")) return;
 			if (!(file instanceof TFile)) return;
 			if (!IMAGE_EXTENSIONS.has(file.extension.toLowerCase())) return;
 
