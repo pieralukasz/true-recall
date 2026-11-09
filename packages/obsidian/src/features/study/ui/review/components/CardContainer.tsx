@@ -297,7 +297,11 @@ export function CardContainer({
 						showClozeAnswer
 							? clozeAnswer?.ranges
 							: card.cardType === "cloze"
-								? placeholderRanges(questionContent)
+								? placeholderRanges(
+										questionContent,
+										card.clozeTemplate,
+										card.clozeIndex,
+									)
 								: undefined
 					}
 					field="question"
