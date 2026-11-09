@@ -116,19 +116,6 @@ export function GeneralTab() {
 						onChange={(v) => void save({ showEditorUserNote: v })}
 					/>
 				</FormField>
-
-
-				<FormField
-					name={t("Image context menu")}
-					description={t(
-						'Show "Create image occlusion card" when right-clicking an image in a note.',
-					)}
-				>
-					<ToggleInput
-						value={settings.imageOcclusionContextMenu}
-						onChange={(v) => void save({ imageOcclusionContextMenu: v })}
-					/>
-				</FormField>
 			</FormCard>
 
 			<FormCard title={t("Child cards")}>
@@ -496,6 +483,18 @@ export function GeneralTab() {
 								buildFeatureTogglePatch(settings, "image-occlusion", value),
 							)
 						}
+					/>
+				</FormField>
+				<FormField
+					name={t("Image context menu")}
+					description={t(
+						'Show "Create image occlusion card" when right-clicking an image in a note.',
+					)}
+				>
+					<ToggleInput
+						value={settings.imageOcclusionContextMenu}
+						disabled={!isFeatureAvailable(settings, "image-occlusion", "pro")}
+						onChange={(v) => void save({ imageOcclusionContextMenu: v })}
 					/>
 				</FormField>
 
