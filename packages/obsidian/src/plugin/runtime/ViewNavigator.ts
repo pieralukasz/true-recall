@@ -20,6 +20,8 @@ import {
 	activateView,
 	getView,
 } from "@true-recall/obsidian/plugin/ViewActivator";
+import { t } from "@true-recall/obsidian/i18n";
+import { isPluginEnabled } from "@true-recall/obsidian/plugin/plugin-utils";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 import {
 	capabilities,
@@ -185,6 +187,16 @@ export class ViewNavigator {
 	): Promise<IOEditorResult> {
 		if (!capabilities.canEditImageOcclusion()) {
 			notify().warning("Image occlusion editor is available on desktop only.");
+			return { cancelled: true };
+		}
+		// Creating occlusion cards is Pro; editing existing ones stays open.
+		if (
+			mode.mode === "add" &&
+			!isPluginEnabled(this.plugin.settings, "image-occlusion")
+		) {
+			notify().warning(
+				t("Image Occlusion creation tools are included with True Recall Pro."),
+			);
 			return { cancelled: true };
 		}
 
