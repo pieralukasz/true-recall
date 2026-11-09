@@ -12,9 +12,9 @@
 	},
 	"dependencies": {
 		"ts-fsrs": "^5.4.2",
-		"sql.js": "^1.15.0",
+		"sql.js": "^1.15.2",
 		"@sqlite.org/sqlite-wasm": "^3.51.2-build6",
-		"pako": "^3.0.2",
+		"pako": "^3.0.3",
 		"zod": "^4.6.7",
 		"fzstd": "^0.1.1",
 		"fflate": "^0.8.2"
