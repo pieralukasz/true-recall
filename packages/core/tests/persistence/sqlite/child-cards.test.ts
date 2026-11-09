@@ -46,6 +46,20 @@ describe("ChildCardActions", () => {
 		ctx.cards.softDelete("child-a");
 
 		expect(children.getLiveChildren("parent")).toEqual([]);
+		// The parent is still listed, so the grader can restore it.
+		expect(children.getParentIds()).toEqual(["parent"]);
+	});
+
+	it("forgets a deleted parent and every link of a dissolved group", () => {
+		seed();
+		children.link("child-a", "parent");
+		children.link("child-b", "parent");
+		children.unlinkParent("parent");
+		expect(children.getParentIds()).toEqual([]);
+		expect(children.getParentId("child-b")).toBeNull();
+
+		children.link("child-a", "parent");
+		ctx.cards.softDelete("parent");
 		expect(children.getParentIds()).toEqual([]);
 	});
 
