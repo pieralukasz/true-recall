@@ -9,6 +9,7 @@ import { Menu } from "obsidian";
 import { G } from "@true-recall/obsidian/data/queries";
 import { t } from "@true-recall/obsidian/i18n";
 import type TrueRecallPlugin from "@true-recall/obsidian/main";
+import { isPluginEnabled } from "@true-recall/obsidian/plugin/plugin-utils";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 import { openQuickNoteEditor } from "@true-recall/obsidian/views/modal-window/open-quick-note-editor";
 
@@ -35,12 +36,14 @@ export class ChildCardService {
 				.setIcon("text-cursor-input")
 				.onClick(() => void this.createClozeChild(parent)),
 		);
-		menu.addItem((item) =>
-			item
-				.setTitle(t("Image occlusion child card"))
-				.setIcon("image")
-				.onClick(() => void this.createImageChild(parent)),
-		);
+		if (isPluginEnabled(this.plugin.settings, "image-occlusion")) {
+			menu.addItem((item) =>
+				item
+					.setTitle(t("Image occlusion child card"))
+					.setIcon("image")
+					.onClick(() => void this.createImageChild(parent)),
+			);
+		}
 		menu.showAtMouseEvent(event);
 	}
 
