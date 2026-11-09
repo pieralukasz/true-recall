@@ -9,7 +9,7 @@ import { useProjectsTabModel } from "./useProjectsTabModel";
 interface ProjectsTabProps {
 	projects: DashboardProject[];
 	searchQuery: string;
-	scrollContainerRef: RefObject<HTMLDivElement>;
+	scrollContainerRef: RefObject<HTMLDivElement | null>;
 	scrollTop: Signal<number>;
 	onStudyNote: (
 		noteName: string,

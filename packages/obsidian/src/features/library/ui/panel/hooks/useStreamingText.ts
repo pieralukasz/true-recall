@@ -21,7 +21,7 @@ export function useStreamingText(fullText: string): {
 } {
 	const [, triggerRender] = useState(0);
 	const visibleRef = useRef(0);
-	const frameRef = useRef<number>();
+	const frameRef = useRef<number | undefined>(undefined);
 	const wordsRef = useRef<string[]>([]);
 	const newTimestampsRef = useRef<Map<number, number>>(new Map());
 

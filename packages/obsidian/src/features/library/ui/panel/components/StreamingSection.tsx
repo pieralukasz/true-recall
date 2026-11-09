@@ -37,7 +37,7 @@ export function StreamingSection({
 	const sentinelRef = useRef<HTMLDivElement>(null);
 	const scrollerRef = useRef<HTMLElement | null>(null);
 	const lastScrollRef = useRef(0);
-	const scrollTimerRef = useRef<number>();
+	const scrollTimerRef = useRef<number | undefined>(undefined);
 	const wasNearBottomRef = useRef(true);
 
 	useEffect(() => {

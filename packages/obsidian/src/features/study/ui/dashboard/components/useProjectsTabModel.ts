@@ -28,7 +28,7 @@ export function useProjectsTabModel({
 }: {
 	projects: DashboardProject[];
 	searchQuery: string;
-	scrollContainerRef: RefObject<HTMLDivElement>;
+	scrollContainerRef: RefObject<HTMLDivElement | null>;
 	scrollTop: Signal<number>;
 }) {
 	const plugin = usePlugin();
