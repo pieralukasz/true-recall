@@ -57,9 +57,8 @@ export class ChildCardActions {
 	 * the user deleted, drops out of the group so it cannot block completion.
 	 */
 	getLiveChildren(parentCardId: string): ChildCardLink[] {
-		return this.db
-			.query<ChildCardLink>(
-				`SELECT cc.child_card_id AS childCardId,
+		return this.db.query<ChildCardLink>(
+			`SELECT cc.child_card_id AS childCardId,
 				        cc.parent_card_id AS parentCardId,
 				        cc.created_at AS createdAt,
 				        cc.graduated_at AS graduatedAt
@@ -68,8 +67,8 @@ export class ChildCardActions {
 				 WHERE cc.parent_card_id = ? AND cc.deleted_at IS NULL
 				   AND c.deleted_at IS NULL
 				 ORDER BY cc.created_at ASC, cc.child_card_id ASC`,
-				[parentCardId],
-			);
+			[parentCardId],
+		);
 	}
 
 	/**

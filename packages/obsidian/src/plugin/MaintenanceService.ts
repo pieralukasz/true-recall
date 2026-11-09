@@ -50,7 +50,9 @@ export class MaintenanceService {
 
 		notify().success(
 			orphanIds.length > 0
-				? t("Orphan notes removed: {0}. Statistics rebuilt.", [orphanIds.length])
+				? t("Orphan notes removed: {0}. Statistics rebuilt.", [
+						orphanIds.length,
+					])
 				: t("No orphan notes. Statistics rebuilt."),
 		);
 	}

@@ -1,10 +1,11 @@
+import type { Menu as MenuType } from "obsidian";
+import { Menu } from "obsidian";
+
 import type { FSRSFlashcardItem } from "@true-recall/core/types";
 import {
 	BUILTIN_BASIC_ID,
 	BUILTIN_CLOZE_ID,
 } from "@true-recall/core/types/note.types";
-import type { Menu as MenuType } from "obsidian";
-import { Menu } from "obsidian";
 
 import { G } from "@true-recall/obsidian/data/queries";
 import { t } from "@true-recall/obsidian/i18n";
@@ -184,10 +185,7 @@ export class ChildCardService {
 	}
 
 	/** Record the relation, then suspend the parent it stands in for. */
-	private attach(
-		children: readonly string[],
-		parent: FSRSFlashcardItem,
-	): void {
+	private attach(children: readonly string[], parent: FSRSFlashcardItem): void {
 		const store = this.plugin.cardStore;
 		const now = Date.now();
 		for (const childId of children) {
@@ -245,7 +243,10 @@ function appendToField(
 }
 
 /** The parent note's Extra value, when its note type has such a field. */
-function extraOf(source: Record<string, string>, names: readonly string[]): string {
+function extraOf(
+	source: Record<string, string>,
+	names: readonly string[],
+): string {
 	const name = names.find((field) => field.toLowerCase() === "extra");
 	return name ? (source[name] ?? "") : "";
 }

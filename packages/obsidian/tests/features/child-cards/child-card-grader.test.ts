@@ -40,7 +40,8 @@ function setup(enabled = true) {
 				if (l) l.linked = false;
 			},
 			unlinkParent: (parent: string) => {
-				for (const l of links.values()) if (l.parent === parent) l.linked = false;
+				for (const l of links.values())
+					if (l.parent === parent) l.linked = false;
 			},
 			markGraduated: (id: string) => {
 				const l = links.get(id);

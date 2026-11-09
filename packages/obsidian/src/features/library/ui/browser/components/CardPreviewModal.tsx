@@ -3,18 +3,18 @@ import { render } from "preact";
 import { useEffect, useState } from "preact/hooks";
 
 import { Clickable } from "@true-recall/obsidian/components";
+import { LivePreviewField } from "@true-recall/obsidian/features/study/ui/review/components/LivePreviewField";
 import { locateClozeAnswer } from "@true-recall/obsidian/features/study/ui/review/helpers/cloze-answer-ranges";
 import { placeholderRanges } from "@true-recall/obsidian/features/study/ui/review/helpers/cloze-gap-ranges";
-import { LivePreviewField } from "@true-recall/obsidian/features/study/ui/review/components/LivePreviewField";
 import { useNoteTypeCss } from "@true-recall/obsidian/features/study/ui/review/hooks/useNoteTypeCss";
 import { t } from "@true-recall/obsidian/i18n";
-import { IOCardRenderer } from "@true-recall/plugins/image-occlusion";
-import { cn } from "@true-recall/obsidian/utils/cn";
-
-import type { BrowserCard } from "../types";
 import type TrueRecallPlugin from "@true-recall/obsidian/main";
 import { BasePromiseModal } from "@true-recall/obsidian/modals/shared/BasePromiseModal";
 import { ObsidianProvider } from "@true-recall/obsidian/preact/ObsidianContext";
+import { cn } from "@true-recall/obsidian/utils/cn";
+
+import type { BrowserCard } from "../types";
+import { IOCardRenderer } from "@true-recall/plugins/image-occlusion";
 
 /**
  * Read-only preview of a card, laid out like the review screen: the question
@@ -42,7 +42,14 @@ function CardPreviewBody({ card }: { card: BrowserCard }) {
 	// CM6 tags both the `[…]` gap and the text of a real markdown link with
 	// `cm-link`, so CSS cannot tell them apart. Mark the placeholders by offset
 	// instead: `[text]` that is neither followed by `(` nor preceded by `[`.
-	const gapRanges = card.cardType === "cloze" ? placeholderRanges(card.question ?? "", card.clozeTemplate, card.clozeIndex) : [];
+	const gapRanges =
+		card.cardType === "cloze"
+			? placeholderRanges(
+					card.question ?? "",
+					card.clozeTemplate,
+					card.clozeIndex,
+				)
+			: [];
 
 	useEffect(() => {
 		const onKey = (event: KeyboardEvent) => {
