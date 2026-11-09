@@ -41,7 +41,7 @@
 		"lint:obsidian": "eslint ."
 	},
 	"keywords": [],
-	"license": "PolyForm-Strict-1.0.0",
+	"license": "MIT",
 	"devDependencies": {
 		"@biomejs/biome": "2.6.5",
 		"@tailwindcss/cli": "^4.3.4",
