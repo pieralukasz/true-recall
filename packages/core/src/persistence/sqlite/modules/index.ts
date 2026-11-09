@@ -9,7 +9,7 @@ export type { AiChatRecord, AiChatSummary } from "./AiChatActions";
 export { AssistantTaskActions } from "./AssistantTaskActions";
 export { AssistantThreadActions } from "./AssistantThreadActions";
 export { CardActions } from "./CardActions";
-export type { ChildCardLink } from "./ChildCardActions";
+export type { ChildCardLink, ChildCardRow } from "./ChildCardActions";
 export { ChildCardActions } from "./ChildCardActions";
 export { NoteActions } from "./NoteActions";
 export { NoteTypeActions } from "./NoteTypeActions";

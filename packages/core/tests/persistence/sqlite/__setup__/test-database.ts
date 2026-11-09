@@ -12,6 +12,7 @@ import type {
 	QueryExecResult,
 } from "../../../../src/persistence/sqlite/loader";
 import { CardActions } from "../../../../src/persistence/sqlite/modules/CardActions";
+import { ChildCardActions } from "../../../../src/persistence/sqlite/modules/ChildCardActions";
 import { CloudSyncDeferredActions } from "../../../../src/persistence/sqlite/modules/CloudSyncDeferredActions";
 import { createCardEditHistorySchema } from "../../../../src/persistence/sqlite/modules/card-edit-history";
 import { NoteActions } from "../../../../src/persistence/sqlite/modules/NoteActions";
@@ -143,7 +144,8 @@ export class TestSqliteDatabase {
 				parent_card_id TEXT NOT NULL,
 				created_at INTEGER NOT NULL,
 				graduated_at INTEGER,
-				deleted_at INTEGER
+				deleted_at INTEGER,
+				updated_at INTEGER
 			);
 
 			CREATE TABLE IF NOT EXISTS review_log (
@@ -368,6 +370,7 @@ export interface TestContext {
 	noteTypes: NoteTypeActions;
 	notes: NoteActions;
 	cloudSyncDeferred: CloudSyncDeferredActions;
+	childCards: ChildCardActions;
 	close: () => void;
 }
 
@@ -380,6 +383,7 @@ export async function createTestContext(): Promise<TestContext> {
 	const noteTypes = new NoteTypeActions(db as never);
 	const notes = new NoteActions(db as never);
 	const cloudSyncDeferred = new CloudSyncDeferredActions(db as never);
+	const childCards = new ChildCardActions(db as never);
 
 	// Seed builtin note types (required for CardActions.set() which uses BUILTIN_BASIC_ID)
 	db.seedBuiltinNoteTypes();
@@ -391,6 +395,7 @@ export async function createTestContext(): Promise<TestContext> {
 		noteTypes,
 		notes,
 		cloudSyncDeferred,
+		childCards,
 		close: () => db.close(),
 	};
 }

@@ -3,6 +3,8 @@ import { z } from "zod";
 import { HttpError, InvalidResponseError } from "@true-recall/core/errors";
 import {
 	CLOUD_ENTITY_TYPES,
+	type CloudEntityType,
+	type CloudSyncChange,
 	type CloudSyncExchangeRequest,
 	type CloudSyncExchangeResponse,
 	type CloudSyncTransport,
@@ -19,8 +21,10 @@ const CLOUD_SYNC_URL =
 		? __TRUERECALL_CLOUD_SYNC_URL__
 		: "https://webogcxwvgbwdcjibbno.supabase.co/functions/v1/cloud-sync";
 
+// Any string: a newer server may store types this build cannot apply yet.
+// Those are dropped below; failing the whole response would stop sync.
 const ChangeSchema = z.object({
-	entityType: z.enum(CLOUD_ENTITY_TYPES),
+	entityType: z.string().min(1),
 	entityId: z.string().min(1),
 	updatedAt: z.number().nonnegative(),
 	payload: z.record(z.string(), z.unknown()),
@@ -31,7 +35,16 @@ const ResponseSchema = z.object({
 	changes: z.array(ChangeSchema),
 	cursor: z.number().int().nonnegative(),
 	hasMore: z.boolean(),
+	entityTypes: z.array(z.string()).optional(),
 });
+
+const KNOWN_ENTITY_TYPES: ReadonlySet<string> = new Set(CLOUD_ENTITY_TYPES);
+
+function isKnownChange(change: {
+	entityType: string;
+}): change is CloudSyncChange & { entityType: CloudEntityType } {
+	return KNOWN_ENTITY_TYPES.has(change.entityType);
+}
 
 export class CloudSyncApiClient implements CloudSyncTransport {
 	constructor(
@@ -80,7 +93,10 @@ export class CloudSyncApiClient implements CloudSyncTransport {
 				},
 			);
 		}
-		return parsed.data;
+		return {
+			...parsed.data,
+			changes: parsed.data.changes.filter(isKnownChange),
+		};
 	}
 
 	/**

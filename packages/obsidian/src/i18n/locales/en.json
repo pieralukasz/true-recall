@@ -625,7 +625,7 @@
 	"Child card created, parent suspended": "Child card created, parent suspended",
 	"Child cards created, parent suspended": "Child cards created, parent suspended",
 	"Child cards graduated, parent restored": "Child cards graduated, parent restored",
-	"A card you keep failing can be studied through easier child cards built from it. The parent stays suspended until every child graduates. Groups are kept on this device only, and turning this off brings their parents back.": "A card you keep failing can be studied through easier child cards built from it. The parent stays suspended until every child graduates. Groups are kept on this device only, and turning this off brings their parents back.",
+	"A card you keep failing can be studied through easier child cards built from it. The parent stays suspended until every child graduates. Groups sync to your other devices along with the cards, and turning this off brings their parents back.": "A card you keep failing can be studied through easier child cards built from it. The parent stays suspended until every child graduates. Groups sync to your other devices along with the cards, and turning this off brings their parents back.",
 	"Card keeps failing, build a child card": "Card keeps failing, build a child card",
 	"Failure score at which a card offers to build a child card.": "Failure score at which a card offers to build a child card.",
 	"Again score": "Again score",

@@ -625,7 +625,7 @@
 	"Child card created, parent suspended": "子卡已建好，父卡已挂起",
 	"Child cards created, parent suspended": "子卡已建好，父卡已挂起",
 	"Child cards graduated, parent restored": "子卡已毕业，父卡已恢复",
-	"A card you keep failing can be studied through easier child cards built from it. The parent stays suspended until every child graduates. Groups are kept on this device only, and turning this off brings their parents back.": "总是记不住的卡片，可以拆出更简单的子卡来学。父卡会一直挂起，直到所有子卡都达标。子卡分组只保存在本设备上；关闭此功能会恢复所有父卡。",
+	"A card you keep failing can be studied through easier child cards built from it. The parent stays suspended until every child graduates. Groups sync to your other devices along with the cards, and turning this off brings their parents back.": "总是记不住的卡片，可以拆出更简单的子卡来学。父卡会一直挂起，直到所有子卡都达标。子卡分组会随卡片一起同步到你的其他设备；关闭此功能会恢复所有父卡。",
 	"Card keeps failing, build a child card": "这张卡总是答错，建张子卡",
 	"Failure score at which a card offers to build a child card.": "失败分数达到多少时，提示为这张卡建子卡。",
 	"Again score": "Again 分数",

@@ -115,4 +115,35 @@ describe("CloudSyncApiClient", () => {
 
 		await expect(new CloudSyncApiClient(auth).revoke()).resolves.toBe(true);
 	});
+
+	it("skips entity types it does not know instead of failing the sync", async () => {
+		// A newer server may store types this build cannot apply; rejecting
+		// the whole response would stop sync for everything else.
+		const change = {
+			entityId: "c1",
+			updatedAt: 1,
+			payload: { id: "c1" },
+		};
+		requestUrlMock.mockResolvedValueOnce({
+			status: 200,
+			json: {
+				changes: [
+					{ ...change, entityType: "card" },
+					{ ...change, entityType: "some_future_type" },
+				],
+				cursor: 2,
+				hasMore: false,
+				entityTypes: ["card", "some_future_type"],
+			},
+		} as never);
+
+		const response = await new CloudSyncApiClient(createAuth()).exchange({
+			cursor: 0,
+			changes: [],
+		});
+
+		expect(response.changes.map((c) => c.entityType)).toEqual(["card"]);
+		expect(response.cursor).toBe(2);
+		expect(response.entityTypes).toEqual(["card", "some_future_type"]);
+	});
 });

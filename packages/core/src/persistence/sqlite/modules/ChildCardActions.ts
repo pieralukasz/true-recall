@@ -8,6 +8,16 @@ export interface ChildCardLink {
 	graduatedAt: number | null;
 }
 
+/** A `card_children` row as stored, the shape device and Cloud Sync carry. */
+export interface ChildCardRow {
+	child_card_id: string;
+	parent_card_id: string;
+	created_at: number;
+	graduated_at: number | null;
+	deleted_at: number | null;
+	updated_at: number | null;
+}
+
 /**
  * Parent → child relations for "child cards": a suspended card studied through
  * one or more easier stand-ins.
@@ -16,7 +26,8 @@ export interface ChildCardLink {
  * child of that parent has graduated; the graduated children stay suspended
  * with their review history. Rows are
  * kept after deletion (`deleted_at`) so the history of a group is not lost when
- * a child is removed by hand.
+ * a child is removed by hand. Every write stamps `updated_at`, so device and
+ * Cloud Sync carry the groups like cards (last write wins).
  */
 export class ChildCardActions {
 	constructor(private db: SqliteDatabase) {}
@@ -24,22 +35,24 @@ export class ChildCardActions {
 	/** Attach `childCardId` to `parentCardId`, replacing any previous parent. */
 	link(childCardId: string, parentCardId: string, now = Date.now()): void {
 		this.db.run(
-			`INSERT INTO card_children (child_card_id, parent_card_id, created_at)
-			 VALUES (?, ?, ?)
+			`INSERT INTO card_children (child_card_id, parent_card_id, created_at, updated_at)
+			 VALUES (?, ?, ?, ?)
 			 ON CONFLICT(child_card_id) DO UPDATE SET
 			   parent_card_id = excluded.parent_card_id,
 			   created_at = excluded.created_at,
 			   graduated_at = NULL,
-			   deleted_at = NULL`,
-			[childCardId, parentCardId, now],
+			   deleted_at = NULL,
+			   updated_at = excluded.updated_at`,
+			[childCardId, parentCardId, now, now],
 		);
 	}
 
 	/** Stop treating the child as part of a group. */
 	unlink(childCardId: string, now = Date.now()): void {
 		this.db.run(
-			`UPDATE card_children SET deleted_at = ? WHERE child_card_id = ? AND deleted_at IS NULL`,
-			[now, childCardId],
+			`UPDATE card_children SET deleted_at = ?, updated_at = ?
+			 WHERE child_card_id = ? AND deleted_at IS NULL`,
+			[now, now, childCardId],
 		);
 	}
 
@@ -89,16 +102,54 @@ export class ChildCardActions {
 	/** Close the whole group of `parentCardId`. */
 	unlinkParent(parentCardId: string, now = Date.now()): void {
 		this.db.run(
-			`UPDATE card_children SET deleted_at = ? WHERE parent_card_id = ? AND deleted_at IS NULL`,
-			[now, parentCardId],
+			`UPDATE card_children SET deleted_at = ?, updated_at = ?
+			 WHERE parent_card_id = ? AND deleted_at IS NULL`,
+			[now, now, parentCardId],
 		);
 	}
 
 	markGraduated(childCardId: string, now = Date.now()): void {
 		this.db.run(
-			`UPDATE card_children SET graduated_at = ?
+			`UPDATE card_children SET graduated_at = ?, updated_at = ?
 			 WHERE child_card_id = ? AND deleted_at IS NULL AND graduated_at IS NULL`,
-			[now, childCardId],
+			[now, now, childCardId],
 		);
+	}
+
+	getRawRowsModifiedSince(timestamp: number): ChildCardRow[] {
+		return this.db.query<ChildCardRow>(
+			`SELECT child_card_id, parent_card_id, created_at, graduated_at, deleted_at, updated_at
+			 FROM card_children WHERE updated_at > ?`,
+			[timestamp],
+		);
+	}
+
+	/**
+	 * Apply a row from another device when it is newer than the local one
+	 * (or equal, with `preferRemoteOnEqual`). Returns whether a row changed.
+	 */
+	upsertRowFromRemote(row: ChildCardRow, preferRemoteOnEqual = false): boolean {
+		this.db.run(
+			`INSERT INTO card_children (child_card_id, parent_card_id, created_at, graduated_at, deleted_at, updated_at)
+			 VALUES (?, ?, ?, ?, ?, ?)
+			 ON CONFLICT(child_card_id) DO UPDATE SET
+			   parent_card_id = excluded.parent_card_id,
+			   created_at = excluded.created_at,
+			   graduated_at = excluded.graduated_at,
+			   deleted_at = excluded.deleted_at,
+			   updated_at = excluded.updated_at
+			 WHERE COALESCE(excluded.updated_at, 0) > COALESCE(card_children.updated_at, 0)
+			    OR (? = 1 AND COALESCE(excluded.updated_at, 0) = COALESCE(card_children.updated_at, 0))`,
+			[
+				row.child_card_id,
+				row.parent_card_id,
+				row.created_at,
+				row.graduated_at ?? null,
+				row.deleted_at ?? null,
+				row.updated_at ?? null,
+				preferRemoteOnEqual ? 1 : 0,
+			],
+		);
+		return this.db.getRowsModified() > 0;
 	}
 }

@@ -168,6 +168,7 @@ function buildLocalStore(ctx: TestContext) {
 		stats: ctx.stats,
 		notes: ctx.notes,
 		noteTypes: ctx.noteTypes,
+		childCards: ctx.childCards,
 		transaction: <T>(fn: () => T): T => ctx.db.transaction(fn),
 	};
 }
@@ -695,6 +696,33 @@ describe("DeviceSyncService", () => {
 			`SELECT card_id FROM review_log WHERE id = 'log-dup'`,
 		);
 		expect(logOwner?.card_id).toBe("dup-local");
+	});
+
+	it("brings a child card group from the remote device", async () => {
+		// Device A made a child card: the parent is suspended there and the
+		// group lives in card_children. Device B must get the group too, or it
+		// shows a suspended parent nothing will ever bring back.
+		const remotePath = ".true-recall/true-recall-remote01.db";
+		const remoteBinary = await createRemoteDbBinary((ctx) => {
+			ctx.cards.set(
+				"parent",
+				createTestCard({ id: "parent", suspended: true }),
+			);
+			ctx.cards.set("child", createTestCard({ id: "child" }));
+			ctx.childCards.link("child", "parent", Date.now());
+		});
+		persistence.seedBinary(remotePath, remoteBinary);
+		vi.mocked(discoveryMock.discoverDeviceDatabases).mockResolvedValue([
+			makeDeviceInfo({ deviceId: "remote01", path: remotePath }),
+		]);
+
+		const result = await service.syncOnStartup();
+
+		expect(result.errors).toEqual([]);
+		expect(localCtx.childCards.getParentId("child")).toBe("parent");
+		expect(
+			localCtx.childCards.getLiveChildren("parent").map((c) => c.childCardId),
+		).toEqual(["child"]);
 	});
 
 	it("merges a remote database still on an older schema (v3, no cards.flag)", async () => {
