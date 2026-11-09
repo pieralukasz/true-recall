@@ -3,7 +3,7 @@ import type { RefObject } from "preact";
 interface UserCommentFieldProps {
 	value: string;
 	onChange: (value: string) => void;
-	inputRef: RefObject<HTMLTextAreaElement>;
+	inputRef: RefObject<HTMLTextAreaElement | null>;
 }
 
 export function UserCommentField({

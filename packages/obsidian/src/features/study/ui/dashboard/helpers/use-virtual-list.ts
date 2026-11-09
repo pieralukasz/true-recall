@@ -18,9 +18,9 @@ interface VirtualItem<T> {
 
 interface ExternalVirtualListOptions<T> {
 	items: T[];
-	scrollContainerRef: RefObject<HTMLDivElement>;
+	scrollContainerRef: RefObject<HTMLDivElement | null>;
 	scrollTop: Signal<number>;
-	contentOffsetRef: RefObject<HTMLDivElement>;
+	contentOffsetRef: RefObject<HTMLDivElement | null>;
 	rowHeight?: number;
 }
 
