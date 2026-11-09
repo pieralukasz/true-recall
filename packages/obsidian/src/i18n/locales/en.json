@@ -646,5 +646,6 @@
 	"Remove and rebuild": "Remove and rebuild",
 	"Rebuild": "Rebuild",
 	"Orphan notes removed: {0}. Statistics rebuilt.": "Orphan notes removed: {0}. Statistics rebuilt.",
-	"No orphan notes. Statistics rebuilt.": "No orphan notes. Statistics rebuilt."
+	"No orphan notes. Statistics rebuilt.": "No orphan notes. Statistics rebuilt.",
+	"Child cards graduated, the parent stays suspended": "Child cards graduated, the parent stays suspended"
 }
