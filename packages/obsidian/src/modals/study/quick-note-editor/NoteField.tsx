@@ -83,7 +83,7 @@ export function NoteField({
 		[fieldName, onModEnter],
 	);
 
-	const debounceRef = useRef<number>();
+	const debounceRef = useRef<number | undefined>(undefined);
 	// True while a typed change is waiting for its debounced commit. Guards
 	// the push-back effect below: syncing the parent's (stale) content into
 	// the editor during that window would erase what was just typed.

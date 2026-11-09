@@ -8,7 +8,7 @@ import { shouldShowUserCommentField } from "../domain/user-comment-visibility";
 export function useUserCommentVisibility(
 	plugin: TrueRecallPlugin,
 	userComment: string,
-	inputRef: RefObject<HTMLTextAreaElement>,
+	inputRef: RefObject<HTMLTextAreaElement | null>,
 ) {
 	const [settingEnabled, setSettingEnabled] = useState(
 		() => plugin.settings.showEditorUserNote,

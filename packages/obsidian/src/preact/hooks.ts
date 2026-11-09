@@ -2,7 +2,7 @@ import { setIcon } from "obsidian";
 import type { RefObject } from "preact";
 import { useEffect, useRef } from "preact/hooks";
 
-export function useIcon(iconId: string): RefObject<HTMLDivElement> {
+export function useIcon(iconId: string): RefObject<HTMLDivElement | null> {
 	const ref = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {

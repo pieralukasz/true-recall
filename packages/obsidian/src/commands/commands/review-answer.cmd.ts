@@ -111,6 +111,10 @@ export class ReviewAnswerCommand implements Command {
 					);
 				});
 				this.writePersisted = true;
+				ctx.flashcardManager.getEventBus?.()?.emit("review:recorded", {
+					cardId: p.card.id,
+					rating: p.rating,
+				});
 			} catch (error) {
 				this.leechTagWrite = null;
 				this.siblingDueChanges = [];

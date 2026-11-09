@@ -319,6 +319,8 @@ export class CardBrowserQueryService {
 			projects,
 			ioImagePath: card.ioImagePath,
 			ioRegionsJson: card.ioRegionsJson,
+			clozeTemplate: card.clozeTemplate,
+			clozeIndex: card.clozeIndex,
 			templateOrd: card.templateOrd,
 			noteTypeId: card.noteTypeId,
 		};

@@ -14,6 +14,13 @@ export interface DomainEventMap {
 	"card:updated": { cardId: string; changes: CardChanges };
 	"card:removed": { cardId: string; cardIds: string[] };
 	"card:reviewed": { cardId: string; rating: number; newState: number };
+	/**
+	 * A review answered in the review view was saved. That path writes with
+	 * `skipNotification` and never emits `card:reviewed`, which would rebuild
+	 * the running session; listeners that only need to know a review landed
+	 * (child cards) use this one.
+	 */
+	"review:recorded": { cardId: string; rating: number };
 	"cards:bulk": { cardIds: string[]; action?: string };
 
 	"note:changed": { sourceUid: string };

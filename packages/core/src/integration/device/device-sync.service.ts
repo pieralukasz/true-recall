@@ -1,5 +1,6 @@
 import type { IPersistence } from "@true-recall/core/interfaces/persistence";
 import { CardActions } from "@true-recall/core/persistence/sqlite/modules/CardActions";
+import { ChildCardActions } from "@true-recall/core/persistence/sqlite/modules/ChildCardActions";
 import { NoteActions } from "@true-recall/core/persistence/sqlite/modules/NoteActions";
 import { NoteTypeActions } from "@true-recall/core/persistence/sqlite/modules/NoteTypeActions";
 import { StatsActions } from "@true-recall/core/persistence/sqlite/modules/StatsActions";
@@ -163,6 +164,7 @@ export class DeviceSyncService {
 			const remoteStats = new StatsActions(remoteDb);
 			const remoteNotes = new NoteActions(remoteDb);
 			const remoteNoteTypes = new NoteTypeActions(remoteDb);
+			const remoteChildCards = new ChildCardActions(remoteDb);
 
 			const syncKey = `sync:${remoteDeviceId}`;
 			const lastSyncStr = this.localStore.cards.getSyncMetadata(syncKey);
@@ -173,6 +175,8 @@ export class DeviceSyncService {
 			const modifiedNotes = remoteNotes.getRawRowsModifiedSince(lastSync);
 			const modifiedCards = remoteCards.getModifiedSince(lastSync);
 			const modifiedLogs = remoteStats.getModifiedReviewLogSince(lastSync);
+			const modifiedChildLinks =
+				remoteChildCards.getRawRowsModifiedSince(lastSync);
 
 			// Cards FK-reference notes and notes FK-reference note types; a
 			// referenced row can predate the watermark on the remote while
@@ -258,6 +262,13 @@ export class DeviceSyncService {
 						}
 					}
 					observe(log.updatedAt);
+				}
+
+				// Child card groups: without them this device would show a
+				// suspended parent that nothing brings back.
+				for (const row of modifiedChildLinks) {
+					this.localStore.childCards.upsertRowFromRemote(row);
+					observe(row.updated_at);
 				}
 
 				conflictsReplayed = this.replayConflictedCards(conflictedCardIds);

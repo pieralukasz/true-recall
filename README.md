@@ -4,7 +4,7 @@
 
 Create flashcards inside your notes, review them with FSRS v6 scheduling, and track progress with comprehensive analytics, all without leaving Obsidian. Works on desktop and mobile.
 
-Free for personal and other noncommercial use. Source-available under the [PolyForm Strict License 1.0.0](LICENSE), not open source: see [License](#license).
+Open source under the [MIT License](LICENSE).
 
 [Documentation](https://www.truerecall.app/) · [Pricing](https://www.truerecall.app/pricing/) · [Sponsor on GitHub](https://github.com/sponsors/pieralukasz)
 
@@ -112,17 +112,4 @@ True Recall is local-first. It does not send telemetry or analytics. Network acc
 
 ## License
 
-Source-available under the [PolyForm Strict License 1.0.0](LICENSE)
-(SPDX: `PolyForm-Strict-1.0.0`).
-
-Permitted: noncommercial use, including personal study, research, hobby
-projects, and use by charitable / educational / public-research / government
-organizations. Fair-use rights are preserved.
-
-Not permitted under this license: redistribution, modification and derivative
-works, commercial use, hosting as a service, or building a competing product.
-
-**Commercial licensing.** A separate commercial license is required for any
-use beyond what PolyForm Strict allows, including production deployments
-inside a business, paid services built on True Recall, or distributing
-derivative works. Contact `pieralukasz@gmail.com` to discuss terms.
+[MIT](LICENSE). Contributions are welcome under the same license.
