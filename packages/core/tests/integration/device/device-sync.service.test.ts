@@ -725,6 +725,40 @@ describe("DeviceSyncService", () => {
 		).toEqual(["child"]);
 	});
 
+	it("deletes a note on this device that the remote device deleted", async () => {
+		const remotePath = ".true-recall/true-recall-remote01.db";
+		const remoteCtx = await createTestContext();
+		try {
+			remoteCtx.cards.set("card-n", createTestCard({ id: "card-n" }));
+			const noteId = remoteCtx.db.get<{ note_id: string }>(
+				"SELECT note_id FROM cards WHERE id = 'card-n'",
+			)?.note_id;
+			if (!noteId) throw new Error("card has no note");
+			persistence.seedBinary(remotePath, remoteCtx.db.raw.export());
+			vi.mocked(discoveryMock.discoverDeviceDatabases).mockResolvedValue([
+				makeDeviceInfo({ deviceId: "remote01", path: remotePath }),
+			]);
+			await service.syncOnStartup();
+			expect(localCtx.notes.getById(noteId)).not.toBeNull();
+
+			// Later, the note is deleted on the remote device.
+			vi.spyOn(Date, "now").mockReturnValue(Date.now() + 60_000);
+			remoteCtx.notes.delete(noteId);
+			vi.mocked(Date.now).mockRestore();
+			persistence.seedBinary(remotePath, remoteCtx.db.raw.export());
+			await service.syncOnStartup();
+
+			expect(
+				localCtx.db.get<{ deleted_at: number | null }>(
+					"SELECT deleted_at FROM notes WHERE id = ?",
+					[noteId],
+				)?.deleted_at,
+			).toEqual(expect.any(Number));
+		} finally {
+			remoteCtx.close();
+		}
+	});
+
 	it("merges a remote database still on an older schema (v3, no cards.flag)", async () => {
 		// The database 2.5.1 created on a device that has not opened the vault
 		// since: schema_version 3, cards without the flag column.
