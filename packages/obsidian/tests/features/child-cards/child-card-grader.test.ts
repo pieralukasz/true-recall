@@ -132,7 +132,7 @@ describe("ChildCardGrader", () => {
 		t.child("a");
 		t.grader.attach();
 		t.ratings.set("a", [4, 3]);
-		t.emit("card:reviewed", { cardId: "a" });
+		t.emit("review:recorded", { cardId: "a" });
 		expect(t.suspended.has("parent")).toBe(false);
 		expect(t.suspended.has("a")).toBe(true);
 		expect(t.deleted.has("a")).toBe(false);

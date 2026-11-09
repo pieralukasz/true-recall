@@ -23,6 +23,14 @@ export class ChildCardGrader {
 			},
 		);
 		if (typeof off === "function") this.plugin.register(off);
+		// The review view saves answers without `card:reviewed`.
+		const offRecorded = this.plugin.coreApp.events.on(
+			"review:recorded",
+			(payload: { cardId: string }) => {
+				void this.onReviewed(payload.cardId);
+			},
+		);
+		if (typeof offRecorded === "function") this.plugin.register(offRecorded);
 
 		// Undo (Ctrl+Z) and manual deletes remove the child card, not the link.
 		// Without this the parent would stay suspended with no children left.
@@ -90,9 +98,13 @@ export class ChildCardGrader {
 	private settle(parentId: string, ownsSuspension?: boolean): void {
 		const children = this.plugin.cardStore.childCards.getLiveChildren(parentId);
 		if (children.some((child) => child.graduatedAt === null)) return;
-		this.restoreParent(parentId, ownsSuspension);
+		const restored = this.restoreParent(parentId, ownsSuspension);
 		if (children.length > 0) {
-			notify().success(t("Child cards graduated, parent restored"));
+			notify().success(
+				restored
+					? t("Child cards graduated, parent restored")
+					: t("Child cards graduated, the parent stays suspended"),
+			);
 		}
 	}
 
@@ -100,14 +112,11 @@ export class ChildCardGrader {
 	 * Close the group and unsuspend the parent, but only when the child cards
 	 * suspended it: a parent the user had suspended before stays suspended.
 	 */
-	private restoreParent(parentId: string, ownsSuspension?: boolean): void {
+	private restoreParent(parentId: string, ownsSuspension?: boolean): boolean {
 		const store = this.plugin.cardStore;
-		if (
-			ownsSuspension ??
-			store.childCards.isParentSuspendedByChildren(parentId)
-		) {
-			store.cards.bulkUnsuspend([parentId]);
-		}
+		const restore =
+			ownsSuspension ?? store.childCards.isParentSuspendedByChildren(parentId);
+		if (restore) store.cards.bulkUnsuspend([parentId]);
 		store.childCards.unlinkParent(parentId);
 		this.plugin.dataLayer?.invalidateGroups([
 			G.CARDS,
@@ -116,5 +125,6 @@ export class ChildCardGrader {
 			G.REVIEW,
 			G.PANEL,
 		]);
+		return restore;
 	}
 }

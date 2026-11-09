@@ -646,5 +646,6 @@
 	"Remove and rebuild": "删除并重建",
 	"Rebuild": "重建",
 	"Orphan notes removed: {0}. Statistics rebuilt.": "已删除孤立笔记：{0} 条。统计已重建。",
-	"No orphan notes. Statistics rebuilt.": "没有孤立笔记。统计已重建。"
+	"No orphan notes. Statistics rebuilt.": "没有孤立笔记。统计已重建。",
+	"Child cards graduated, the parent stays suspended": "子卡已毕业，父卡仍保持挂起"
 }
