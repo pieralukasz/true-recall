@@ -8,19 +8,13 @@ export interface ChildCardLink {
 	graduatedAt: number | null;
 }
 
-interface ChildCardRow {
-	childCardId: string;
-	parentCardId: string;
-	createdAt: number;
-	graduatedAt: number | null;
-}
-
 /**
  * Parent → child relations for "child cards": a suspended card studied through
  * one or more easier stand-ins.
  *
  * A child graduates on its own, but the parent only comes back once every live
- * child of that parent has graduated; then the children are deleted. Rows are
+ * child of that parent has graduated; the graduated children stay suspended
+ * with their review history. Rows are
  * kept after deletion (`deleted_at`) so the history of a group is not lost when
  * a child is removed by hand.
  */
@@ -64,7 +58,7 @@ export class ChildCardActions {
 	 */
 	getLiveChildren(parentCardId: string): ChildCardLink[] {
 		return this.db
-			.query<ChildCardRow>(
+			.query<ChildCardLink>(
 				`SELECT cc.child_card_id AS childCardId,
 				        cc.parent_card_id AS parentCardId,
 				        cc.created_at AS createdAt,
@@ -75,20 +69,30 @@ export class ChildCardActions {
 				   AND c.deleted_at IS NULL
 				 ORDER BY cc.created_at ASC, cc.child_card_id ASC`,
 				[parentCardId],
-			)
-			.map((row) => ({ ...row }));
+			);
 	}
 
-	/** Parents that still have at least one live child. */
+	/**
+	 * Parents with an open group, whether or not a child is still alive: a
+	 * parent whose children were all deleted must be found to be restored.
+	 */
 	getParentIds(): string[] {
 		return this.db
 			.query<{ parentCardId: string }>(
 				`SELECT DISTINCT cc.parent_card_id AS parentCardId
 				 FROM card_children cc
-				 JOIN cards c ON c.id = cc.child_card_id
-				 WHERE cc.deleted_at IS NULL AND c.deleted_at IS NULL`,
+				 JOIN cards p ON p.id = cc.parent_card_id
+				 WHERE cc.deleted_at IS NULL AND p.deleted_at IS NULL`,
 			)
 			.map((row) => row.parentCardId);
+	}
+
+	/** Close the whole group of `parentCardId`. */
+	unlinkParent(parentCardId: string, now = Date.now()): void {
+		this.db.run(
+			`UPDATE card_children SET deleted_at = ? WHERE parent_card_id = ? AND deleted_at IS NULL`,
+			[now, parentCardId],
+		);
 	}
 
 	markGraduated(childCardId: string, now = Date.now()): void {

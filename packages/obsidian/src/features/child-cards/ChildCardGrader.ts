@@ -10,7 +10,7 @@ import { isGraduatable } from "./child-graduation";
  *
  * A child that reaches the configured Good streak is suspended, so it stops
  * asking. Once every live child of a parent has graduated, the parent comes
- * back and the children are deleted — that is the whole point of the pair.
+ * back; the graduated children stay suspended with their history.
  */
 export class ChildCardGrader {
 	constructor(private readonly plugin: TrueRecallPlugin) {}
@@ -41,29 +41,24 @@ export class ChildCardGrader {
 
 	/**
 	 * Undoing the creation (Ctrl+Z) deletes the child card but leaves the link
-	 * and the suspended parent. Nothing listens to that removal, so repair on
-	 * load: a parent with no live child left is un-suspended again.
+	 * and the suspended parent, so settle every open group on load. With the
+	 * feature switched off, open groups are dissolved and parents come back.
 	 */
 	private repairStrandedParents(): void {
-		if (!this.plugin.settings.childCardsEnabled) return;
 		const store = this.plugin.cardStore;
 		for (const parentId of store.childCards.getParentIds()) {
-			if (store.childCards.getLiveChildren(parentId).length > 0) continue;
-			const parent = store.cards.getByIds([parentId])[0];
-			if (parent?.suspended) store.cards.bulkUnsuspend([parentId]);
+			if (this.plugin.settings.childCardsEnabled) this.settle(parentId);
+			else this.restoreParent(parentId);
 		}
 	}
 
 	private onRemoved(cardId: string): void {
-		if (!this.plugin.settings.childCardsEnabled) return;
 		const store = this.plugin.cardStore;
 		const parentId = store.childCards.getParentId(cardId);
 		if (!parentId) return;
 
 		store.childCards.unlink(cardId);
-		if (store.childCards.getLiveChildren(parentId).length === 0) {
-			store.cards.bulkUnsuspend([parentId]);
-		}
+		this.settle(parentId);
 	}
 
 	private async onReviewed(cardId: string): Promise<void> {
@@ -81,20 +76,27 @@ export class ChildCardGrader {
 
 		store.childCards.markGraduated(cardId);
 		store.cards.bulkSuspend([cardId]);
-		this.finishGroup(parentId);
+		this.settle(parentId);
 	}
 
-	/** Restore the parent and delete the children once the whole group is done. */
-	private finishGroup(parentId: string): void {
-		const store = this.plugin.cardStore;
-		const children = store.childCards.getLiveChildren(parentId);
-		if (children.length === 0) return;
+	/**
+	 * Restore the parent once no child is left open: every live child graduated,
+	 * or none is alive any more. Graduated children stay suspended, so their
+	 * review history keeps counting in the statistics.
+	 */
+	private settle(parentId: string): void {
+		const children = this.plugin.cardStore.childCards.getLiveChildren(parentId);
 		if (children.some((child) => child.graduatedAt === null)) return;
-
-		store.cards.bulkUnsuspend([parentId]);
-		for (const child of children) {
-			store.cards.softDeleteWithCascade(child.childCardId);
+		this.restoreParent(parentId);
+		if (children.length > 0) {
+			notify().success(t("Child cards graduated, parent restored"));
 		}
+	}
+
+	private restoreParent(parentId: string): void {
+		const store = this.plugin.cardStore;
+		store.cards.bulkUnsuspend([parentId]);
+		store.childCards.unlinkParent(parentId);
 		this.plugin.dataLayer?.invalidateGroups([
 			G.CARDS,
 			G.BROWSER,
@@ -102,6 +104,5 @@ export class ChildCardGrader {
 			G.REVIEW,
 			G.PANEL,
 		]);
-		notify().success(t("Child cards graduated, parent restored"));
 	}
 }
