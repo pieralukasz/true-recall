@@ -57,8 +57,11 @@ export class ChildCardGrader {
 		const parentId = store.childCards.getParentId(cardId);
 		if (!parentId) return;
 
+		// Read before unlinking: the removed child may be the group's last link.
+		const ownsSuspension =
+			store.childCards.isParentSuspendedByChildren(parentId);
 		store.childCards.unlink(cardId);
-		this.settle(parentId);
+		this.settle(parentId, ownsSuspension);
 	}
 
 	private async onReviewed(cardId: string): Promise<void> {
@@ -84,18 +87,27 @@ export class ChildCardGrader {
 	 * or none is alive any more. Graduated children stay suspended, so their
 	 * review history keeps counting in the statistics.
 	 */
-	private settle(parentId: string): void {
+	private settle(parentId: string, ownsSuspension?: boolean): void {
 		const children = this.plugin.cardStore.childCards.getLiveChildren(parentId);
 		if (children.some((child) => child.graduatedAt === null)) return;
-		this.restoreParent(parentId);
+		this.restoreParent(parentId, ownsSuspension);
 		if (children.length > 0) {
 			notify().success(t("Child cards graduated, parent restored"));
 		}
 	}
 
-	private restoreParent(parentId: string): void {
+	/**
+	 * Close the group and unsuspend the parent, but only when the child cards
+	 * suspended it: a parent the user had suspended before stays suspended.
+	 */
+	private restoreParent(parentId: string, ownsSuspension?: boolean): void {
 		const store = this.plugin.cardStore;
-		store.cards.bulkUnsuspend([parentId]);
+		if (
+			ownsSuspension ??
+			store.childCards.isParentSuspendedByChildren(parentId)
+		) {
+			store.cards.bulkUnsuspend([parentId]);
+		}
 		store.childCards.unlinkParent(parentId);
 		this.plugin.dataLayer?.invalidateGroups([
 			G.CARDS,

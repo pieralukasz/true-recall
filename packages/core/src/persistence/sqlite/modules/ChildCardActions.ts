@@ -16,6 +16,8 @@ export interface ChildCardRow {
 	graduated_at: number | null;
 	deleted_at: number | null;
 	updated_at: number | null;
+	/** 1 when linking suspended a parent that was active (see `link`). */
+	parent_suspended_by_child: number;
 }
 
 /**
@@ -32,18 +34,44 @@ export interface ChildCardRow {
 export class ChildCardActions {
 	constructor(private db: SqliteDatabase) {}
 
-	/** Attach `childCardId` to `parentCardId`, replacing any previous parent. */
-	link(childCardId: string, parentCardId: string, now = Date.now()): void {
+	/**
+	 * Attach `childCardId` to `parentCardId`, replacing any previous parent.
+	 * `suspendsParent` says the parent was active and the group suspends it;
+	 * a child added to an open group inherits that from its live siblings, so
+	 * the parent comes back only if the child cards suspended it.
+	 */
+	link(
+		childCardId: string,
+		parentCardId: string,
+		now = Date.now(),
+		suspendsParent = true,
+	): void {
+		const inherited = this.isParentSuspendedByChildren(parentCardId);
+		const flag = suspendsParent || inherited ? 1 : 0;
 		this.db.run(
-			`INSERT INTO card_children (child_card_id, parent_card_id, created_at, updated_at)
-			 VALUES (?, ?, ?, ?)
+			`INSERT INTO card_children (child_card_id, parent_card_id, created_at, updated_at, parent_suspended_by_child)
+			 VALUES (?, ?, ?, ?, ?)
 			 ON CONFLICT(child_card_id) DO UPDATE SET
 			   parent_card_id = excluded.parent_card_id,
 			   created_at = excluded.created_at,
 			   graduated_at = NULL,
 			   deleted_at = NULL,
-			   updated_at = excluded.updated_at`,
-			[childCardId, parentCardId, now, now],
+			   updated_at = excluded.updated_at,
+			   parent_suspended_by_child = excluded.parent_suspended_by_child`,
+			[childCardId, parentCardId, now, now, flag],
+		);
+	}
+
+	/** Whether the open group of `parentCardId` suspended the parent itself. */
+	isParentSuspendedByChildren(parentCardId: string): boolean {
+		return (
+			this.db.get<{ found: number }>(
+				`SELECT 1 AS found FROM card_children
+				 WHERE parent_card_id = ? AND deleted_at IS NULL
+				   AND parent_suspended_by_child = 1
+				 LIMIT 1`,
+				[parentCardId],
+			) !== null
 		);
 	}
 
@@ -118,7 +146,8 @@ export class ChildCardActions {
 
 	getRawRowsModifiedSince(timestamp: number): ChildCardRow[] {
 		return this.db.query<ChildCardRow>(
-			`SELECT child_card_id, parent_card_id, created_at, graduated_at, deleted_at, updated_at
+			`SELECT child_card_id, parent_card_id, created_at, graduated_at, deleted_at, updated_at,
+			        parent_suspended_by_child
 			 FROM card_children WHERE updated_at > ?`,
 			[timestamp],
 		);
@@ -130,14 +159,15 @@ export class ChildCardActions {
 	 */
 	upsertRowFromRemote(row: ChildCardRow, preferRemoteOnEqual = false): boolean {
 		this.db.run(
-			`INSERT INTO card_children (child_card_id, parent_card_id, created_at, graduated_at, deleted_at, updated_at)
-			 VALUES (?, ?, ?, ?, ?, ?)
+			`INSERT INTO card_children (child_card_id, parent_card_id, created_at, graduated_at, deleted_at, updated_at, parent_suspended_by_child)
+			 VALUES (?, ?, ?, ?, ?, ?, ?)
 			 ON CONFLICT(child_card_id) DO UPDATE SET
 			   parent_card_id = excluded.parent_card_id,
 			   created_at = excluded.created_at,
 			   graduated_at = excluded.graduated_at,
 			   deleted_at = excluded.deleted_at,
-			   updated_at = excluded.updated_at
+			   updated_at = excluded.updated_at,
+			   parent_suspended_by_child = excluded.parent_suspended_by_child
 			 WHERE COALESCE(excluded.updated_at, 0) > COALESCE(card_children.updated_at, 0)
 			    OR (? = 1 AND COALESCE(excluded.updated_at, 0) = COALESCE(card_children.updated_at, 0))`,
 			[
@@ -147,6 +177,7 @@ export class ChildCardActions {
 				row.graduated_at ?? null,
 				row.deleted_at ?? null,
 				row.updated_at ?? null,
+				row.parent_suspended_by_child ?? 1,
 				preferRemoteOnEqual ? 1 : 0,
 			],
 		);

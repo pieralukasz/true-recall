@@ -248,8 +248,10 @@ describe("databases from released versions", () => {
 		);
 
 		expect(
-			store.getSqliteDb().get("SELECT updated_at FROM card_children"),
-		).toEqual({ updated_at: 2000 });
+			store
+				.getSqliteDb()
+				.get("SELECT updated_at, parent_suspended_by_child FROM card_children"),
+		).toEqual({ updated_at: 2000, parent_suspended_by_child: 1 });
 		expect(store.childCards.getRawRowsModifiedSince(0)).toHaveLength(1);
 	});
 

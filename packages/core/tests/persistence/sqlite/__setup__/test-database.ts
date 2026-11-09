@@ -145,7 +145,8 @@ export class TestSqliteDatabase {
 				created_at INTEGER NOT NULL,
 				graduated_at INTEGER,
 				deleted_at INTEGER,
-				updated_at INTEGER
+				updated_at INTEGER,
+				parent_suspended_by_child INTEGER NOT NULL DEFAULT 1
 			);
 
 			CREATE TABLE IF NOT EXISTS review_log (

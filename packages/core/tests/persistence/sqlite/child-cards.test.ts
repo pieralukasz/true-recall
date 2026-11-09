@@ -94,4 +94,18 @@ describe("ChildCardActions", () => {
 		expect(children.getParentId("child-a")).toBeNull();
 		expect(children.getLiveChildren("parent")).toEqual([]);
 	});
+
+	it("remembers whether the group suspended the parent, also for later children", () => {
+		seed();
+		children.link("child-a", "parent", 1, false);
+		expect(children.isParentSuspendedByChildren("parent")).toBe(false);
+		children.unlinkParent("parent");
+
+		children.link("child-a", "parent", 2, true);
+		// The parent is suspended now, but by this group: a child added later
+		// must not make the group forget that.
+		children.link("child-b", "parent", 3, false);
+		children.unlink("child-a", 4);
+		expect(children.isParentSuspendedByChildren("parent")).toBe(true);
+	});
 });
