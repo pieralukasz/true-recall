@@ -33,10 +33,9 @@ describe("ChildCardActions", () => {
 		children.link("child-b", "parent", 2);
 
 		expect(children.getParentId("child-a")).toBe("parent");
-		expect(children.getLiveChildren("parent").map((c) => c.childCardId)).toEqual([
-			"child-a",
-			"child-b",
-		]);
+		expect(
+			children.getLiveChildren("parent").map((c) => c.childCardId),
+		).toEqual(["child-a", "child-b"]);
 		expect(children.getParentIds()).toEqual(["parent"]);
 	});
 

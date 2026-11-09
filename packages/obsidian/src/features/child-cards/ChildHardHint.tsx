@@ -23,6 +23,7 @@ export function ChildHardHint({ card }: { card: FSRSFlashcardItem }) {
 
 	return (
 		<button
+			type="button"
 			class="tr-child-hard-hint"
 			onClick={(event) => plugin.childCardService.openChooser(card, event)}
 		>

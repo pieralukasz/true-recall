@@ -42,8 +42,8 @@ export function registerImageOcclusionContextMenu(
 				item
 					.setTitle(t("Create image occlusion card"))
 					.setIcon("image")
-					.onClick(() =>
-						void plugin.openImageOcclusionEditorForActiveNote(file.path),
+					.onClick(
+						() => void plugin.openImageOcclusionEditorForActiveNote(file.path),
 					),
 			);
 		}),

@@ -43,7 +43,6 @@ export interface AnswerTimeWeights {
 	historyWeight?: number;
 }
 
-
 export const MIN_ANSWER_SECONDS = 5;
 export const DEFAULT_ANSWER_SECONDS = 20;
 
@@ -53,7 +52,10 @@ function clamp(value: number, min: number, max: number): number {
 
 /** Characters the reader actually sees: tags and line-break noise dropped. */
 export function visibleAnswerLength(answer: string): number {
-	return answer.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().length;
+	return answer
+		.replace(/<[^>]*>/g, " ")
+		.replace(/\s+/g, " ")
+		.trim().length;
 }
 
 export function suggestedAnswerSeconds(
@@ -67,8 +69,7 @@ export function suggestedAnswerSeconds(
 		weights.secondsPerChunk ?? DEFAULT_SECONDS_PER_CHUNK,
 	);
 	// Negative on purpose: a hard card can also mean "nudge me sooner".
-	const historyWeight =
-		(weights.historyWeight ?? DEFAULT_HISTORY_WEIGHT) / 100;
+	const historyWeight = (weights.historyWeight ?? DEFAULT_HISTORY_WEIGHT) / 100;
 
 	// The base time covers a short answer; every 40 characters of answer adds
 	// its own reading time on top, so the budget grows linearly with length.
@@ -81,11 +82,7 @@ export function suggestedAnswerSeconds(
 	// Difficulty is normalised to -1..+1 around the neutral middle, then scaled
 	// by the weight: positive weight buys time for slow recall, negative weight
 	// pulls the nudge in earlier for cards that keep getting stuck.
-	const spread = clamp(
-		(difficulty - 5.5) / HISTORY_DIFFICULTY_SPAN,
-		-1,
-		1,
-	);
+	const spread = clamp((difficulty - 5.5) / HISTORY_DIFFICULTY_SPAN, -1, 1);
 	const historyFactor =
 		reps > 0 && historyWeight !== 0
 			? Math.max(MIN_HISTORY_FACTOR, 1 + spread * historyWeight)
