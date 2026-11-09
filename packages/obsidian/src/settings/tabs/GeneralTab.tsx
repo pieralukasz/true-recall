@@ -122,7 +122,7 @@ export function GeneralTab() {
 				<FormField
 					name={t("Enable child cards")}
 					description={t(
-						"A card you keep failing can be studied through easier child cards built from it. The parent is suspended until every child graduates.",
+						"A card you keep failing can be studied through easier child cards built from it. The parent stays suspended until every child graduates. Groups are kept on this device only, and turning this off brings their parents back.",
 					)}
 				>
 					<ToggleInput
@@ -151,7 +151,7 @@ export function GeneralTab() {
 						<FormField
 							name={t("Hard streak")}
 							description={t(
-								"How many failed ratings before the card is flagged as badly written.",
+								"Failure score at which a card offers to build a child card.",
 							)}
 						>
 							<SliderInput

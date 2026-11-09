@@ -1,5 +1,6 @@
 import type { App } from "obsidian";
 
+import { t } from "@true-recall/obsidian/i18n";
 import { confirm } from "@true-recall/obsidian/modals/shared/ConfirmModal";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 
@@ -26,22 +27,32 @@ export class MaintenanceService {
 		const orphanIds = notes.findOrphanIds();
 
 		const confirmed = await confirm(this.app, {
-			title: "Clean up orphan notes",
+			title: t("Clean up orphan notes"),
 			message:
 				orphanIds.length > 0
-					? `${orphanIds.length} note${orphanIds.length === 1 ? "" : "s"} no longer have any card and will be removed. The statistics are then rebuilt from the review history. Only note rows are soft deleted; the cards and their review history are already gone.`
-					: "No orphan notes found. Rebuild the statistics from the review history instead?",
-			confirmLabel: orphanIds.length > 0 ? "Remove and rebuild" : "Rebuild",
+					? t(
+							"Notes without any card: {0}. They will be removed and the statistics rebuilt from the review history. A backup is made first.",
+							[orphanIds.length],
+						)
+					: t(
+							"No orphan notes found. Rebuild the statistics from the review history instead?",
+						),
+			confirmLabel:
+				orphanIds.length > 0 ? t("Remove and rebuild") : t("Rebuild"),
 		});
 		if (!confirmed) return;
 
-		for (const id of orphanIds) notes.delete(id);
+		if (orphanIds.length > 0) {
+			await this.plugin.createManualBackup();
+			for (const id of orphanIds) notes.delete(id);
+		}
 		this.rebuildStatistics();
 
-		const removed = orphanIds.length
-			? `Removed ${orphanIds.length} orphan note${orphanIds.length === 1 ? "" : "s"}`
-			: "No orphan notes";
-		notify().success(`${removed} · statistics rebuilt`);
+		notify().success(
+			orphanIds.length > 0
+				? t("Orphan notes removed: {0}. Statistics rebuilt.", [orphanIds.length])
+				: t("No orphan notes. Statistics rebuilt."),
+		);
 	}
 
 	/**
