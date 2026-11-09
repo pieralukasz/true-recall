@@ -42,7 +42,7 @@ function CardPreviewBody({ card }: { card: BrowserCard }) {
 	// CM6 tags both the `[…]` gap and the text of a real markdown link with
 	// `cm-link`, so CSS cannot tell them apart. Mark the placeholders by offset
 	// instead: `[text]` that is neither followed by `(` nor preceded by `[`.
-	const gapRanges = card.cardType === "cloze" ? placeholderRanges(card.question ?? "") : [];
+	const gapRanges = card.cardType === "cloze" ? placeholderRanges(card.question ?? "", card.clozeTemplate, card.clozeIndex) : [];
 
 	useEffect(() => {
 		const onKey = (event: KeyboardEvent) => {
