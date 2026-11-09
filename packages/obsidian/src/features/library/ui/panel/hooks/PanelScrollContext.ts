@@ -7,7 +7,7 @@ import { useScrollPreservation } from "./useScrollPreservation";
 interface PanelScrollApi {
 	preserveScroll: (action: () => void) => void;
 	captureScroll: () => () => void;
-	scrollRef: RefObject<HTMLDivElement>;
+	scrollRef: RefObject<HTMLDivElement | null>;
 }
 
 const PanelScrollContext = createContext<PanelScrollApi | null>(null);

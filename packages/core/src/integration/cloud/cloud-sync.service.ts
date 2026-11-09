@@ -1,3 +1,4 @@
+import type { ChildCardRow } from "../../persistence/sqlite/modules/ChildCardActions";
 import type { DeferrableEntityType } from "../../persistence/sqlite/modules/CloudSyncDeferredActions";
 import type { NoteRow } from "../../persistence/sqlite/modules/NoteActions";
 import type { NoteTypeRow } from "../../persistence/sqlite/modules/NoteTypeActions";
@@ -5,10 +6,11 @@ import type { ReviewLogForSync } from "../../persistence/sqlite/modules/stats/re
 import type { SqliteStoreService } from "../../persistence/sqlite/SqliteStoreService";
 import type { FsrsReplayService } from "../../services/fsrs/fsrs-replay.service";
 import type { FSRSCardData } from "../../types";
-import type {
-	CloudSyncChange,
-	CloudSyncResult,
-	CloudSyncTransport,
+import {
+	CLOUD_ENTITY_TYPES,
+	type CloudSyncChange,
+	type CloudSyncResult,
+	type CloudSyncTransport,
 } from "./cloud-sync.types";
 import { CloudSyncMetaStore } from "./cloud-sync-meta";
 import { dedupeConcurrentCards, replayMergedCards } from "./sync-merge";
@@ -22,6 +24,7 @@ const TYPE_ORDER: Record<CloudSyncChange["entityType"], number> = {
 	note: 1,
 	card: 2,
 	review_log: 3,
+	card_child: 4,
 };
 
 const textEncoder = new TextEncoder();
@@ -79,6 +82,13 @@ export class CloudSyncService {
 		const pushWatermark = this.meta.readNumber("push");
 		let cursor = this.meta.readNumber("cursor");
 		const pending = this.meta.readPending();
+		// Servers that predate child card sync reject a batch holding a type
+		// they do not know, so links go up only once the server lists it.
+		const pushesChildLinks =
+			this.meta.readServerEntityTypes()?.includes("card_child") ?? false;
+		const childLinkWatermark = pushesChildLinks
+			? this.meta.readNumber("pushCardChild")
+			: null;
 		const state: SyncState = {
 			localVersions: new Map(),
 			localReviewed: new Set(
@@ -91,6 +101,7 @@ export class CloudSyncService {
 		};
 		const localChanges = this.gatherLocalChanges(
 			pushWatermark,
+			childLinkWatermark,
 			state.appliedVersions,
 		);
 		state.localVersions = new Map(
@@ -105,7 +116,9 @@ export class CloudSyncService {
 				const response = await this.transport.exchange({
 					cursor,
 					changes: batch,
+					entityTypes: CLOUD_ENTITY_TYPES,
 				});
+				this.meta.writeServerEntityTypes(response.entityTypes ?? null);
 				result.pushed += batch.length;
 				cursor = this.applyResponse(
 					response.changes,
@@ -119,7 +132,11 @@ export class CloudSyncService {
 					if (++pages > MAX_PULL_PAGES) {
 						throw new Error("Cloud sync exceeded the pull page safety limit");
 					}
-					const next = await this.transport.exchange({ cursor, changes: [] });
+					const next = await this.transport.exchange({
+						cursor,
+						changes: [],
+						entityTypes: CLOUD_ENTITY_TYPES,
+					});
 					cursor = this.applyResponse(next.changes, next.cursor, result, state);
 					hasMore = next.hasMore;
 				}
@@ -138,6 +155,9 @@ export class CloudSyncService {
 				pushWatermark,
 			);
 			this.meta.writeNumber("push", maxLocalTimestamp);
+			if (pushesChildLinks) {
+				this.meta.writeNumber("pushCardChild", maxLocalTimestamp);
+			}
 			this.meta.writeNumber("cursor", cursor);
 			this.meta.writePending(null);
 			result.cardIdsChanged = [...new Set(result.cardIdsChanged)];
@@ -188,8 +208,13 @@ export class CloudSyncService {
 		}
 	}
 
+	/**
+	 * Local rows to push. Child card links use their own watermark
+	 * (`childLinkSince`), null while the server does not accept them.
+	 */
 	private gatherLocalChanges(
 		since: number,
+		childLinkSince: number | null,
 		appliedVersions: Map<string, number>,
 	): CloudSyncChange[] {
 		const changes: CloudSyncChange[] = [];
@@ -215,6 +240,12 @@ export class CloudSyncService {
 			add("card", row.id, row);
 		for (const row of this.store.stats.getModifiedReviewLogSince(since))
 			add("review_log", row.id, row);
+		if (childLinkSince !== null) {
+			for (const row of this.store.childCards.getRawRowsModifiedSince(
+				childLinkSince,
+			))
+				add("card_child", row.child_card_id, row);
+		}
 
 		return changes
 			.filter(
@@ -222,7 +253,10 @@ export class CloudSyncService {
 				// them back would echo every pull and let a fast remote clock
 				// poison the push watermark.
 				(change) =>
-					change.updatedAt > since &&
+					change.updatedAt >
+						(change.entityType === "card_child"
+							? (childLinkSince ?? since)
+							: since) &&
 					appliedVersions.get(this.entityKey(change)) !== change.updatedAt,
 			)
 			.sort(
@@ -330,6 +364,12 @@ export class CloudSyncService {
 				}
 				break;
 			}
+			case "card_child":
+				applied = this.store.childCards.upsertRowFromRemote(
+					change.payload as unknown as ChildCardRow,
+					prefer,
+				);
+				break;
 		}
 		if (applied) {
 			result.pulled++;
@@ -356,14 +396,18 @@ export class CloudSyncService {
 				return typeof payload.cardId === "string"
 					? { type: "review_log", id: payload.cardId }
 					: null;
+			case "card_child":
+				return typeof payload.child_card_id === "string"
+					? { type: "card_child", id: payload.child_card_id }
+					: null;
 			default:
 				return null;
 		}
 	}
 
-	/** Apply parked rows whose parent exists now: notes unblock cards, cards unblock logs. */
+	/** Apply parked rows whose parent exists now: notes unblock cards, cards unblock logs and links. */
 	private drainDeferred(result: CloudSyncResult, state: SyncState): void {
-		for (const type of ["note", "card", "review_log"] as const) {
+		for (const type of ["note", "card", "review_log", "card_child"] as const) {
 			for (const row of this.store.cloudSyncDeferred.takeReady(type)) {
 				this.store.cloudSyncDeferred.remove(type, row.entityId);
 				this.applyChange(

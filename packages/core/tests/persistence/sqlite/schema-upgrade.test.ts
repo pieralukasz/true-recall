@@ -228,6 +228,33 @@ describe("databases from released versions", () => {
 		]);
 	});
 
+	it("upgrades a v4 child card table that has no updated_at", async () => {
+		// Builds made before child cards synced wrote card_children on v4
+		// without updated_at. Upgrading must add it and date existing links,
+		// or device and Cloud Sync never see those groups.
+		const v4 = fixtures.find((f) => f.schemaVersion === 4);
+		if (!v4) throw new Error("no schema v4 fixture");
+		const store = await openStore(
+			`${v4.sql}
+			CREATE TABLE card_children (
+				child_card_id TEXT PRIMARY KEY NOT NULL,
+				parent_card_id TEXT NOT NULL,
+				created_at INTEGER NOT NULL,
+				graduated_at INTEGER,
+				deleted_at INTEGER
+			);
+			INSERT INTO card_children (child_card_id, parent_card_id, created_at, graduated_at)
+			VALUES ('child', 'fixture-card', 1000, 2000);`,
+		);
+
+		expect(
+			store
+				.getSqliteDb()
+				.get("SELECT updated_at, parent_suspended_by_child FROM card_children"),
+		).toEqual({ updated_at: 2000, parent_suspended_by_child: 1 });
+		expect(store.childCards.getRawRowsModifiedSince(0)).toHaveLength(1);
+	});
+
 	it("has a fixture for every schema version before the current one", () => {
 		const covered = new Set(fixtures.map((f) => f.schemaVersion));
 		const missing: number[] = [];

@@ -67,23 +67,12 @@ export class CardEditingActions {
 		this.pushFieldEditUndo(note.id, previousFields, "Edit card");
 
 		if (result.updatedCardIds?.includes(card.id)) {
-			const [updatedCard] = this.context.deps.cardStore.cards.getByIds([
-				card.id,
-			]);
-			if (updatedCard) {
-				this.context.deps
-					.getReview()
-					.updateCurrentCardContent(
-						updatedCard.question ?? card.question,
-						updatedCard.answer ?? card.answer ?? "",
-					);
-				this.context.deps
-					.getReview()
-					.updateCurrentCardComment(updatedCard.userComment);
-				this.context.deps
-					.getReview()
-					.updateNoteAlwaysTypeIn(note.id, !!updatedCard.alwaysTypeIn);
-			}
+			// Reload from the store instead of patching question/answer in place:
+			// a cloze card also carries `clozeTemplate` and `clozeIndex`, and the
+			// highlight is located by rendering that template. Patching only the
+			// text leaves the old template behind, so the locate step fails and
+			// the answer falls back to the stored bold markers.
+			this.refreshCurrentCard();
 		}
 	}
 
@@ -198,10 +187,19 @@ export class CardEditingActions {
 				.updateCurrentCardContent(
 					updated.question ?? card.question,
 					updated.answer ?? card.answer ?? "",
+					{
+						clozeTemplate: updated.clozeTemplate,
+						clozeIndex: updated.clozeIndex,
+					},
 				);
 			this.context.deps
 				.getReview()
 				.updateCurrentCardComment(updated.userComment);
+			if (updated.noteId) {
+				this.context.deps
+					.getReview()
+					.updateNoteAlwaysTypeIn(updated.noteId, !!updated.alwaysTypeIn);
+			}
 		}
 		this.context.refreshIfActive();
 	}

@@ -1,7 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { CloudSyncService } from "../../../src/integration/cloud/cloud-sync.service";
-import type { CloudSyncTransport } from "../../../src/integration/cloud/cloud-sync.types";
+import {
+	CLOUD_ENTITY_TYPES,
+	type CloudSyncTransport,
+} from "../../../src/integration/cloud/cloud-sync.types";
 import type { SqliteStoreService } from "../../../src/persistence/sqlite/SqliteStoreService";
 import type { FsrsReplayService } from "../../../src/services/fsrs/fsrs-replay.service";
 
@@ -230,7 +233,11 @@ describe("CloudSyncService", () => {
 		expect(first.errors).toEqual([]);
 		expect(second.errors).toEqual([]);
 		expect(second.pushed).toBe(0);
-		expect(exchange).toHaveBeenLastCalledWith({ cursor: 3, changes: [] });
+		expect(exchange).toHaveBeenLastCalledWith({
+			cursor: 3,
+			changes: [],
+			entityTypes: CLOUD_ENTITY_TYPES,
+		});
 		expect(store.meta.get("cloud:account-1:push")).toBe("100");
 	});
 
@@ -366,7 +373,11 @@ describe("CloudSyncService", () => {
 			{ exchange },
 			{ accountId: "account-1", deviceId: "device-a" },
 		).sync();
-		expect(exchange).toHaveBeenLastCalledWith({ cursor: 7, changes: [] });
+		expect(exchange).toHaveBeenLastCalledWith({
+			cursor: 7,
+			changes: [],
+			entityTypes: CLOUD_ENTITY_TYPES,
+		});
 	});
 
 	it("advances the push watermark past batches the server accepted before a later batch fails", async () => {

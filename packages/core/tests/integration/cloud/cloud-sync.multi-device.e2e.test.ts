@@ -49,6 +49,7 @@ async function createDevice(
 		noteTypes: ctx.noteTypes,
 		stats: ctx.stats,
 		cloudSyncDeferred: ctx.cloudSyncDeferred,
+		childCards: ctx.childCards,
 	} as unknown as SqliteStoreService;
 	const service = new CloudSyncService(store, server.transportFor(deviceId), {
 		accountId: "account-e2e",
@@ -67,6 +68,13 @@ async function syncOk(device: Device): Promise<CloudSyncResult> {
 	const result = await device.sync();
 	expect(result.errors).toEqual([]);
 	return result;
+}
+
+function makeChildGroup(device: Device): void {
+	device.ctx.cards.set("parent", createTestCard({ id: "parent" }));
+	device.ctx.cards.set("child", createTestCard({ id: "child" }));
+	device.ctx.childCards.link("child", "parent", Date.now());
+	device.ctx.cards.bulkSuspend(["parent"]);
 }
 
 function activeCardIds(ctx: TestContext, sourceUid: string): string[] {
@@ -229,6 +237,48 @@ describe("Cloud Sync multi-device E2E", () => {
 			`SELECT COALESCE(SUM(reviews_completed), 0) AS total FROM daily_stats`,
 		);
 		expect(stats?.total).toBe(1);
+	});
+
+	it("brings a child card group to the other device", async () => {
+		const server = new InMemoryCloudServer(1);
+		const deviceA = await createDevice(server, "device-a");
+		const deviceB = await createDevice(server, "device-b");
+		await syncOk(deviceA);
+
+		tick();
+		makeChildGroup(deviceA);
+		await syncOk(deviceA);
+		await syncOk(deviceB);
+
+		expect(deviceB.ctx.childCards.getParentId("child")).toBe("parent");
+		expect(
+			deviceB.ctx.childCards
+				.getLiveChildren("parent")
+				.map((c) => c.childCardId),
+		).toEqual(["child"]);
+		expect(deviceB.ctx.cards.get("parent")?.suspended).toBe(true);
+	});
+
+	it("keeps syncing with a server that predates child card sync, then catches up", async () => {
+		const server = new InMemoryCloudServer(500, "original");
+		const deviceA = await createDevice(server, "device-a");
+		const deviceB = await createDevice(server, "device-b");
+
+		tick();
+		makeChildGroup(deviceA);
+		await syncOk(deviceA);
+		await syncOk(deviceB);
+		expect(server.entity("card_child", "child")).toBeUndefined();
+		expect(deviceB.ctx.cards.get("child")).toBeDefined();
+
+		// The server learns the new type: links made before are pushed once.
+		server.acceptedTypes = "current";
+		tick();
+		await syncOk(deviceA);
+		await syncOk(deviceA);
+		await syncOk(deviceB);
+		expect(server.entity("card_child", "child")).toBeDefined();
+		expect(deviceB.ctx.childCards.getParentId("child")).toBe("parent");
 	});
 
 	it("propagates deletions as tombstones", async () => {

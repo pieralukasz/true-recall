@@ -20,6 +20,8 @@ import {
 	activateView,
 	getView,
 } from "@true-recall/obsidian/plugin/ViewActivator";
+import { t } from "@true-recall/obsidian/i18n";
+import { isPluginEnabled } from "@true-recall/obsidian/plugin/plugin-utils";
 import { notify } from "@true-recall/obsidian/services/notification.service";
 import {
 	capabilities,
@@ -187,15 +189,27 @@ export class ViewNavigator {
 			notify().warning("Image occlusion editor is available on desktop only.");
 			return { cancelled: true };
 		}
+		// Creating occlusion cards is Pro; editing existing ones stays open.
+		if (
+			mode.mode === "add" &&
+			!isPluginEnabled(this.plugin.settings, "image-occlusion")
+		) {
+			notify().warning(
+				t("Image Occlusion creation tools are included with True Recall Pro."),
+			);
+			return { cancelled: true };
+		}
 
 		const modal = new IOEditorModal(this.plugin.app, this.plugin, mode);
 		return await modal.openAndWait();
 	}
 
-	async openImageOcclusionEditorForActiveNote(): Promise<IOEditorResult> {
+	async openImageOcclusionEditorForActiveNote(
+		imagePath?: string,
+	): Promise<IOEditorResult> {
 		const activeFile = this.plugin.app.workspace.getActiveFile();
 		if (!activeFile || activeFile.extension !== "md") {
-			return await this.openImageOcclusionEditor({ mode: "add" });
+			return await this.openImageOcclusionEditor({ mode: "add", imagePath });
 		}
 
 		try {
@@ -211,10 +225,11 @@ export class ViewNavigator {
 			return await this.openImageOcclusionEditor({
 				mode: "add",
 				sourceUid,
+				imagePath,
 			});
 		} catch (error) {
 			notify().operationFailed("prepare image occlusion source", error);
-			return await this.openImageOcclusionEditor({ mode: "add" });
+			return await this.openImageOcclusionEditor({ mode: "add", imagePath });
 		}
 	}
 }

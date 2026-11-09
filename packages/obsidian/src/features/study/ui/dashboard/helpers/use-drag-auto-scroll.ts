@@ -6,7 +6,7 @@ const MIN_SPEED = 2;
 const MAX_SPEED = 10;
 
 export function useDragAutoScroll(
-	scrollContainerRef: RefObject<HTMLDivElement>,
+	scrollContainerRef: RefObject<HTMLDivElement | null>,
 ): void {
 	const rafId = useRef(0);
 	const scrollDir = useRef<-1 | 0 | 1>(0);

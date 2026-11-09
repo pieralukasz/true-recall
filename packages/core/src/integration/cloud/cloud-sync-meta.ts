@@ -1,5 +1,12 @@
 import type { SqliteStoreService } from "../../persistence/sqlite/SqliteStoreService";
 
+/**
+ * `pushCardChild` is the push watermark of child card links. It starts at 0
+ * and moves only while the server accepts them, so links made before the
+ * server supported them are pushed once it does.
+ */
+type NumberKind = "push" | "cursor" | "pushCardChild";
+
 /** Post-processing owed to rows already committed by an earlier, failed sync. */
 export interface PendingPostProcess {
 	replay: string[];
@@ -14,8 +21,8 @@ export interface PendingPostProcess {
  *
  * Contents:
  * push/cursor watermarks, the versions applied from the cloud (so pulls are
- * never echoed back as pushes), and post-processing owed after a mid-sync
- * failure.
+ * never echoed back as pushes), post-processing owed after a mid-sync
+ * failure, and the entity types the server last said it accepts.
  */
 export class CloudSyncMetaStore {
 	constructor(
@@ -23,13 +30,13 @@ export class CloudSyncMetaStore {
 		private readonly accountId: string,
 	) {}
 
-	readNumber(kind: "push" | "cursor"): number {
+	readNumber(kind: NumberKind): number {
 		const value = this.store.cards.getSyncMetadata(this.key(kind));
 		const parsed = Number(value ?? 0);
 		return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
 	}
 
-	writeNumber(kind: "push" | "cursor", value: number): void {
+	writeNumber(kind: NumberKind, value: number): void {
 		this.store.cards.setSyncMetadataIfChanged(this.key(kind), String(value));
 	}
 
@@ -81,7 +88,28 @@ export class CloudSyncMetaStore {
 		);
 	}
 
-	private key(kind: "push" | "cursor" | "applied" | "pending"): string {
+	/** Types the server accepts, or null for a server that does not say. */
+	readServerEntityTypes(): string[] | null {
+		const raw = this.store.cards.getSyncMetadata(this.key("types"));
+		if (!raw) return null;
+		try {
+			const parsed: unknown = JSON.parse(raw);
+			return Array.isArray(parsed)
+				? parsed.filter((type): type is string => typeof type === "string")
+				: null;
+		} catch {
+			return null;
+		}
+	}
+
+	writeServerEntityTypes(types: readonly string[] | null): void {
+		this.store.cards.setSyncMetadataIfChanged(
+			this.key("types"),
+			types ? JSON.stringify(types) : "",
+		);
+	}
+
+	private key(kind: NumberKind | "applied" | "pending" | "types"): string {
 		return `cloud:${this.accountId}:${kind}`;
 	}
 }
