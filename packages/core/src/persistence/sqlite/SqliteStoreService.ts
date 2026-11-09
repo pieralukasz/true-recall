@@ -23,6 +23,7 @@ import {
 	StatsActions,
 } from "./modules";
 import { AiChatActions } from "./modules/AiChatActions";
+import { ChildCardActions } from "./modules/ChildCardActions";
 import { CloudSyncDeferredActions } from "./modules/CloudSyncDeferredActions";
 import { SqliteDatabase } from "./SqliteDatabase";
 import { SqliteSchemaManager } from "./SqliteSchemaManager";
@@ -62,6 +63,7 @@ export class SqliteStoreService {
 
 	// Domain modules - public for direct access
 	public readonly cards: CardActions;
+	public readonly childCards: ChildCardActions;
 	public readonly stats: StatsActions;
 	public readonly notes: NoteActions;
 	public readonly noteTypes: NoteTypeActions;
@@ -83,6 +85,7 @@ export class SqliteStoreService {
 		this.db = new SqliteDatabase(() => this.markDirty(), this.deviceId);
 
 		this.cards = new CardActions(this.db);
+		this.childCards = new ChildCardActions(this.db);
 		this.stats = new StatsActions(this.db);
 		this.notes = new NoteActions(this.db);
 		this.noteTypes = new NoteTypeActions(this.db);

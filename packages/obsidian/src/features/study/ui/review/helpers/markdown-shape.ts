@@ -15,6 +15,7 @@ const BLOCK_MARKDOWN_PATTERNS: readonly RegExp[] = [
 	/\$\$/, // display math
 	/^\s*\|.*\|\s*$/m, // markdown table row
 	/^\s*#{1,6}\s/m, // ATX heading
+	/[?&]type=inkWriting\b/, // Ink handwriting embed: its widget needs the full line width
 ];
 
 export function hasBlockMarkdown(content: string): boolean {

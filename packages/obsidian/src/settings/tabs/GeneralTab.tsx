@@ -118,6 +118,69 @@ export function GeneralTab() {
 				</FormField>
 			</FormCard>
 
+			<FormCard title={t("Child cards")}>
+				<FormField
+					name={t("Enable child cards")}
+					description={t(
+						"A card you keep failing can be studied through easier child cards built from it. The parent stays suspended until every child graduates. Groups sync to your other devices along with the cards, and turning this off brings their parents back.",
+					)}
+				>
+					<ToggleInput
+						value={settings.childCardsEnabled}
+						onChange={(v) => void save({ childCardsEnabled: v })}
+					/>
+				</FormField>
+
+				{settings.childCardsEnabled && (
+					<>
+						<FormField
+							name={t("Child graduation streak")}
+							description={t(
+								"How many consecutive Good or Easy ratings a child card needs before it graduates.",
+							)}
+						>
+							<SliderInput
+								value={settings.childGoodStreak}
+								onChange={(v) => void save({ childGoodStreak: v })}
+								min={1}
+								max={6}
+								step={1}
+							/>
+						</FormField>
+
+						<FormField
+							name={t("Hard streak")}
+							description={t(
+								"Failure score at which a card offers to build a child card.",
+							)}
+						>
+							<SliderInput
+								value={settings.childHardStreak}
+								onChange={(v) => void save({ childHardStreak: v })}
+								min={2}
+								max={10}
+								step={1}
+							/>
+						</FormField>
+
+						<FormField
+							name={t("Again score")}
+							description={t(
+								"Points an Again rating adds. Hard always adds 1 and Good or Easy ends the run; 0 keeps Again in the run without adding points.",
+							)}
+						>
+							<SliderInput
+								value={settings.childAgainScore}
+								onChange={(v) => void save({ childAgainScore: v })}
+								min={0}
+								max={3}
+								step={1}
+							/>
+						</FormField>
+					</>
+				)}
+			</FormCard>
+
 			<FormCard title={t("Review interface")}>
 				<FormField
 					name={t("Review mode")}
@@ -189,6 +252,76 @@ export function GeneralTab() {
 							onChange={(v) => void save({ showNextReviewTimeMobile: v })}
 						/>
 					</FormField>
+				)}
+
+				<FormField
+					name={t("Suggest an answer time")}
+					description={t(
+						"Show how long a card is taking once it passes the suggested time. Longer answers and cards you rate badly get more time.",
+					)}
+				>
+					<ToggleInput
+						value={settings.answerTimeHintEnabled}
+						onChange={(v) => void save({ answerTimeHintEnabled: v })}
+					/>
+				</FormField>
+
+				{settings.answerTimeHintEnabled && (
+					<FormField
+						name={t("Base answer time")}
+						description={t(
+							"Seconds for an average card. Answer length and rating history scale it.",
+						)}
+					>
+						<SliderInput
+							value={settings.answerTimeHintBaseSeconds}
+							onChange={(v) => void save({ answerTimeHintBaseSeconds: v })}
+							min={5}
+							max={120}
+							step={5}
+							formatTooltip={(v) => `${v}s`}
+						/>
+					</FormField>
+				)}
+
+				{settings.answerTimeHintEnabled && (
+					<>
+						<FormField
+							name={t("Seconds per 40 characters")}
+							description={t(
+								"Estimated answering time added for every 40 characters of answer, not thinking time. The base covers a short answer; 0 ignores length entirely.",
+							)}
+						>
+							<SliderInput
+								value={settings.answerTimeSecondsPerChunk}
+								onChange={(v) =>
+									void save({ answerTimeSecondsPerChunk: v })
+								}
+								min={0}
+								max={120}
+								step={5}
+								formatTooltip={(v) => `+${v}s`}
+							/>
+						</FormField>
+
+						<FormField
+							name={t("History weight")}
+							description={t(
+								"Positive gives cards you keep failing more time (slow recall). Negative nudges them earlier (counters overthinking). 0 ignores rating history.",
+							)}
+						>
+							<SliderInput
+								value={settings.answerTimeHistoryWeight}
+								onChange={(v) => void save({ answerTimeHistoryWeight: v })}
+								min={-60}
+								max={100}
+								step={5}
+								formatTooltip={(v) =>
+									`${v > 0 ? "+" : ""}${v}%`
+								}
+							/>
+						</FormField>
+					</>
 				)}
 
 				<FormField
@@ -350,6 +483,18 @@ export function GeneralTab() {
 								buildFeatureTogglePatch(settings, "image-occlusion", value),
 							)
 						}
+					/>
+				</FormField>
+				<FormField
+					name={t("Image context menu")}
+					description={t(
+						'Show "Create image occlusion card" when right-clicking an image in a note.',
+					)}
+				>
+					<ToggleInput
+						value={settings.imageOcclusionContextMenu}
+						disabled={!isFeatureAvailable(settings, "image-occlusion", "pro")}
+						onChange={(v) => void save({ imageOcclusionContextMenu: v })}
 					/>
 				</FormField>
 

@@ -193,11 +193,13 @@ export class NoteTypeActions {
 		);
 	}
 
+	/** Soft delete; stamps `updated_at` so sync carries the delete to other devices. */
 	delete(id: string): void {
-		this.db.run(`UPDATE note_types SET deleted_at = ? WHERE id = ?`, [
-			Date.now(),
-			id,
-		]);
+		const now = Date.now();
+		this.db.run(
+			`UPDATE note_types SET deleted_at = ?, updated_at = ? WHERE id = ?`,
+			[now, now, id],
+		);
 	}
 
 	/**

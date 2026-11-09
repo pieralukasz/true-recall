@@ -12,8 +12,11 @@ import type { DatabaseLike } from "./sqlite.types";
  * v2: review_log gains device_id and review_kind.
  * v3: notes gain edit_count, ai_edit_count and content_edited_at.
  * v4: cards gain flag (Anki-compatible card flag, 0 = none, 1-7 = colors).
+ * v5: card_children gains updated_at, so child card groups sync like cards,
+ *     and parent_suspended_by_child, so a group only unsuspends a parent it
+ *     suspended itself.
  */
-export const CURRENT_SCHEMA_VERSION = 4;
+export const CURRENT_SCHEMA_VERSION = 5;
 
 export class SqliteSchemaManager {
 	constructor(private db: DatabaseLike) {}
@@ -199,6 +202,22 @@ export class SqliteSchemaManager {
 			CREATE INDEX IF NOT EXISTS idx_assistant_threads_state_updated
 			ON assistant_threads(state, updated_at DESC);
 
+			-- Child cards: a suspended card can be studied through one or more
+			-- easier stand-ins. The relation lives here rather than in card text
+			-- because image occlusion notes have no text field to carry it.
+			CREATE TABLE IF NOT EXISTS card_children (
+				child_card_id TEXT PRIMARY KEY NOT NULL,
+				parent_card_id TEXT NOT NULL,
+				created_at INTEGER NOT NULL,
+				graduated_at INTEGER,
+				deleted_at INTEGER,
+				updated_at INTEGER,
+				parent_suspended_by_child INTEGER NOT NULL DEFAULT 1
+			);
+
+			CREATE INDEX IF NOT EXISTS idx_card_children_parent
+			ON card_children(parent_card_id);
+
             CREATE TABLE IF NOT EXISTS meta (
                 key TEXT PRIMARY KEY NOT NULL,
                 value TEXT
@@ -256,6 +275,26 @@ export class SqliteSchemaManager {
 		try {
 			this.db.run(
 				`ALTER TABLE cards ADD COLUMN flag INTEGER NOT NULL DEFAULT 0`,
+			);
+		} catch {
+			// Column already exists — expected for new installs
+		}
+		try {
+			this.db.run(`ALTER TABLE card_children ADD COLUMN updated_at INTEGER`);
+			// Runs once, right after the column appears: rows linked before v5
+			// get the time of their last change, so sync can pick them up.
+			this.db.run(
+				`UPDATE card_children
+				 SET updated_at = MAX(created_at, COALESCE(graduated_at, 0), COALESCE(deleted_at, 0))
+				 WHERE updated_at IS NULL`,
+			);
+		} catch {
+			// Column already exists — expected for new installs
+		}
+		try {
+			// Default 1: groups linked before v5 always unsuspended their parent.
+			this.db.run(
+				`ALTER TABLE card_children ADD COLUMN parent_suspended_by_child INTEGER NOT NULL DEFAULT 1`,
 			);
 		} catch {
 			// Column already exists — expected for new installs

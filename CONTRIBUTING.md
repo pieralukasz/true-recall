@@ -1,6 +1,6 @@
 # Contributing to True Recall
 
-Thanks for your interest in contributing! This project is source-available under a custom license — please read the [LICENSE](LICENSE) before contributing.
+Thanks for your interest in contributing! This project is open source under the [MIT License](LICENSE).
 
 ## Reporting Bugs
 
@@ -42,4 +42,4 @@ Use the **Feature Request** template. Describe the problem you're trying to solv
 
 ## License
 
-By submitting a contribution, you agree that your work falls under the same [source-available license](LICENSE) as the rest of the project. The maintainer may incorporate contributions under any license, including proprietary ones.
+By submitting a contribution, you agree that it is licensed under the same [MIT License](LICENSE) as the rest of the project.

@@ -12,7 +12,7 @@ import type { StreamingWord } from "./useStreamingText";
  * New words must start with inline `opacity: 0; filter: blur(4px); transform: translateY(4px)`.
  */
 export function useWordReveal(
-	containerRef: RefObject<HTMLElement>,
+	containerRef: RefObject<HTMLElement | null>,
 	words: StreamingWord[],
 ): void {
 	const animatedSet = useRef(new Set<number>());

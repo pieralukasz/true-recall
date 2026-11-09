@@ -24,7 +24,7 @@ import { SelectionBar } from "./SelectionBar";
 interface NoteListProps {
 	notes: DashboardNoteEntry[];
 	searchQuery: string;
-	scrollContainerRef: RefObject<HTMLDivElement>;
+	scrollContainerRef: RefObject<HTMLDivElement | null>;
 	scrollTop: Signal<number>;
 	onPresetClick?: (path: string | null) => void;
 }
