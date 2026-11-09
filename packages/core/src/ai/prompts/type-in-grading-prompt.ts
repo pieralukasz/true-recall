@@ -14,6 +14,15 @@ export interface TypeInGradingPromptInput {
 	relatedCards?: TypeInGradingPromptRelatedCard[];
 }
 
+/**
+ * Last line of the grading request. Without it a short or foreign-language answer
+ * to an English card got feedback in Swedish or Polish. The Pro proxy appends the
+ * same line when it is missing, so keep the text identical to
+ * GRADING_LANGUAGE_LINE in true-recall-proxy/custom_callbacks.py.
+ */
+export const TYPE_IN_GRADING_LANGUAGE_LINE =
+	"Write teacherComment, covered, missing and errors in the language of the Question above, even if the User answer is in another language.";
+
 export const DEFAULT_TYPE_IN_GRADING_SYSTEM_PROMPT =
 	"You are a teacher grading a learner's typed flashcard answer.\n" +
 	"The learner answers in their own words, briefly, like explaining to a child. Grade whether they understood the answer to THE QUESTION, not wording and not completeness against the correct answer.\n" +
@@ -24,7 +33,7 @@ export const DEFAULT_TYPE_IN_GRADING_SYSTEM_PROMPT =
 	"Use the source note and related flashcards (when provided) only as background for domain terminology, synonyms, and the expected scope: never as a substitute for the user's answer.\n" +
 	"Your entire reply must be a single JSON object, starting with { and ending with }:\n" +
 	'{"verdict": "correct"|"partial"|"wrong", "teacherComment": string, "covered": string[], "missing": string[], "errors": string[], "suggestedRating": "again"|"hard"|"good"|"easy"}\n' +
-	"teacherComment: 2-3 warm, specific sentences in the language of the user's answer. When the answer is correct but brief, you may name one piece of background worth adding, as an option, not a fault.\n" +
+	"teacherComment: 2-3 warm, specific sentences in the language of the question. When the answer is correct but brief, you may name one piece of background worth adding, as an option, not a fault.\n" +
 	"covered: key points the learner gave (max 5). missing: only parts of the core that the learner did not give (max 5); never list background, examples or names as missing; [] when the verdict is correct. errors: only real contradictions of the source (max 3), else [].\n" +
 	"suggestedRating: again = wrong or blank understanding, hard = partial, good = correct (also when brief), easy = correct, complete and precise.\n" +
 	"No markdown, no code fences, no text outside the JSON object.";
@@ -80,6 +89,7 @@ export function buildTypeInGradingMessages(
 				`Correct answer: ${input.correctAnswer}`,
 				`User answer: ${input.userAnswer}`,
 				"Output JSON only with keys: verdict, teacherComment, covered, missing, errors, suggestedRating",
+				TYPE_IN_GRADING_LANGUAGE_LINE,
 			].join("\n"),
 		},
 	];
