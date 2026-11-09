@@ -6,7 +6,13 @@ vi.mock("@true-recall/obsidian/services/notification.service", () => ({
 	notify: () => ({ success: vi.fn() }),
 }));
 
-type Link = { parent: string; graduatedAt: number | null; linked: boolean };
+type Link = {
+	parent: string;
+	graduatedAt: number | null;
+	linked: boolean;
+	/** The child cards suspended the parent (it was active before). */
+	suspendedParent: boolean;
+};
 
 /** In-memory stand-in for the card store pieces the grader touches. */
 function setup(enabled = true) {
@@ -28,6 +34,10 @@ function setup(enabled = true) {
 				return l?.linked ? l.parent : null;
 			},
 			getLiveChildren: live,
+			isParentSuspendedByChildren: (parent: string) =>
+				[...links.values()].some(
+					(l) => l.linked && l.parent === parent && l.suspendedParent,
+				),
 			getParentIds: () => [
 				...new Set(
 					[...links.values()]
@@ -75,8 +85,13 @@ function setup(enabled = true) {
 		},
 	};
 	const grader = new ChildCardGrader(plugin as never);
-	const child = (id: string) =>
-		links.set(id, { parent: "parent", graduatedAt: null, linked: true });
+	const child = (id: string, suspendedParent = true) =>
+		links.set(id, {
+			parent: "parent",
+			graduatedAt: null,
+			linked: true,
+			suspendedParent,
+		});
 	const emit = (name: string, payload: object) =>
 		handlers.get(name)?.(payload as never);
 	return { grader, suspended, deleted, links, ratings, child, emit };
@@ -121,5 +136,16 @@ describe("ChildCardGrader", () => {
 		expect(t.suspended.has("parent")).toBe(false);
 		expect(t.suspended.has("a")).toBe(true);
 		expect(t.deleted.has("a")).toBe(false);
+	});
+
+	it("keeps a parent suspended that the user had suspended before the group", () => {
+		const t = setup();
+		t.child("a", false);
+		t.grader.attach();
+		t.ratings.set("a", [3, 3]);
+		t.emit("card:reviewed", { cardId: "a" });
+
+		expect(t.links.get("a")?.linked).toBe(false);
+		expect(t.suspended.has("parent")).toBe(true);
 	});
 });

@@ -1,8 +1,9 @@
-import type {
-	CloudSyncChange,
-	CloudSyncExchangeRequest,
-	CloudSyncExchangeResponse,
-	CloudSyncTransport,
+import {
+	CLOUD_ENTITY_TYPES,
+	type CloudSyncChange,
+	type CloudSyncExchangeRequest,
+	type CloudSyncExchangeResponse,
+	type CloudSyncTransport,
 } from "../../../../src/integration/cloud/cloud-sync.types";
 
 interface StoredChange extends CloudSyncChange {
@@ -13,6 +14,8 @@ interface StoredChange extends CloudSyncChange {
 // Mirrors the limits the production edge function enforces.
 const MAX_REQUEST_BYTES = 5 * 1024 * 1024;
 const MAX_CHANGES_PER_REQUEST = 400;
+/** What every server accepts; older ones reject anything else. */
+const ORIGINAL_ENTITY_TYPES = ["note_type", "note", "card", "review_log"];
 
 const textEncoder = new TextEncoder();
 
@@ -30,7 +33,14 @@ export class InMemoryCloudServer {
 	private callsSincePlan = 0;
 	private failAtCall: number | null = null;
 
-	constructor(private readonly pageLimit = 500) {}
+	/**
+	 * `acceptedTypes: "original"` behaves like a server deployed before child
+	 * card sync: it does not list its types and rejects any newer one.
+	 */
+	constructor(
+		private readonly pageLimit = 500,
+		public acceptedTypes: "original" | "current" = "current",
+	) {}
 
 	get revisionCount(): number {
 		return this.revision;
@@ -72,6 +82,17 @@ export class InMemoryCloudServer {
 			throw new Error("invalid changes batch");
 		}
 
+		const accepted =
+			this.acceptedTypes === "original"
+				? ORIGINAL_ENTITY_TYPES
+				: [...CLOUD_ENTITY_TYPES];
+		if (request.changes.some((c) => !accepted.includes(c.entityType))) {
+			throw new Error("The sync request does not match the expected contract.");
+		}
+		// Older clients send no list and know only the original types.
+		const wanted: readonly string[] =
+			request.entityTypes ?? ORIGINAL_ENTITY_TYPES;
+
 		for (const change of request.changes) {
 			const key = `${change.entityType}:${change.entityId}`;
 			const stored = this.entities.get(key);
@@ -91,7 +112,10 @@ export class InMemoryCloudServer {
 
 		const cursor = Math.max(request.cursor, 0);
 		const page = [...this.entities.values()]
-			.filter((entity) => entity.serverRevision > cursor)
+			.filter(
+				(entity) =>
+					entity.serverRevision > cursor && wanted.includes(entity.entityType),
+			)
 			.sort((a, b) => a.serverRevision - b.serverRevision)
 			.slice(0, this.pageLimit);
 		const nextCursor = page.at(-1)?.serverRevision ?? cursor;
@@ -99,8 +123,11 @@ export class InMemoryCloudServer {
 			changes: page.map(({ serverRevision: _revision, ...change }) => change),
 			cursor: nextCursor,
 			hasMore: [...this.entities.values()].some(
-				(entity) => entity.serverRevision > nextCursor,
+				(entity) =>
+					entity.serverRevision > nextCursor &&
+					wanted.includes(entity.entityType),
 			),
+			...(this.acceptedTypes === "current" ? { entityTypes: accepted } : {}),
 		};
 	}
 }

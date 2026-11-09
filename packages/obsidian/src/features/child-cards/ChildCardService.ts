@@ -188,8 +188,10 @@ export class ChildCardService {
 	private attach(children: readonly string[], parent: FSRSFlashcardItem): void {
 		const store = this.plugin.cardStore;
 		const now = Date.now();
+		// Only a parent the group suspends itself comes back when it ends.
+		const suspendsParent = !store.cards.getByIds([parent.id])[0]?.suspended;
 		for (const childId of children) {
-			store.childCards.link(childId, parent.id, now);
+			store.childCards.link(childId, parent.id, now, suspendsParent);
 		}
 		if (children.length > 0) {
 			store.cards.bulkSuspend([parent.id]);

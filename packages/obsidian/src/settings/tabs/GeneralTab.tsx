@@ -122,7 +122,7 @@ export function GeneralTab() {
 				<FormField
 					name={t("Enable child cards")}
 					description={t(
-						"A card you keep failing can be studied through easier child cards built from it. The parent stays suspended until every child graduates. Groups are kept on this device only, and turning this off brings their parents back.",
+						"A card you keep failing can be studied through easier child cards built from it. The parent stays suspended until every child graduates. Groups sync to your other devices along with the cards, and turning this off brings their parents back.",
 					)}
 				>
 					<ToggleInput
