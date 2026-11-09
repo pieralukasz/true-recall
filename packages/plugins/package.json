@@ -7,11 +7,11 @@
 	"dependencies": {
 		"@true-recall/core": "workspace:*",
 		"@codemirror/state": "6.7.6",
-		"@codemirror/view": "^6.43.14",
+		"@codemirror/view": "^6.43.15",
 		"@floating-ui/dom": "^1.7.5",
-		"@preact/signals": "^2.11.3",
+		"@preact/signals": "^2.11.4",
 		"class-variance-authority": "^0.7.1",
-		"preact": "^10.28.4",
+		"preact": "^11.0.1",
 		"ts-fsrs": "^5.4.2",
 		"zod": "^4.6.7"
 	},

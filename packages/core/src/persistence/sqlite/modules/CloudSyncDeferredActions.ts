@@ -1,7 +1,11 @@
 import type { SqliteDatabase } from "../SqliteDatabase";
 
 /** Entity types that carry a foreign key to a parent row. */
-export type DeferrableEntityType = "note" | "card" | "review_log";
+export type DeferrableEntityType =
+	| "note"
+	| "card"
+	| "review_log"
+	| "card_child";
 
 export interface DeferredChange {
 	entityType: DeferrableEntityType;
@@ -24,6 +28,9 @@ const PARENT_TABLE: Record<DeferrableEntityType, string> = {
 	note: "note_types",
 	card: "notes",
 	review_log: "cards",
+	// A group link waits for its child card: a link without its child would
+	// look like a finished group, and the parent would come back too early.
+	card_child: "cards",
 };
 
 /**

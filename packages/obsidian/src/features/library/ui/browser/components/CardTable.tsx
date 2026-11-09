@@ -24,7 +24,7 @@ interface CardTableProps {
 	onPreview: (card: BrowserCard) => void;
 	previewCardId: string | null;
 	visibleColumns: string[];
-	scrollContainerRef: RefObject<HTMLDivElement>;
+	scrollContainerRef: RefObject<HTMLDivElement | null>;
 	hasMore: boolean;
 	onReachEnd: () => void;
 }

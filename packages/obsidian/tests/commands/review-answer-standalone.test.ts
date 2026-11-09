@@ -108,6 +108,40 @@ describe("ReviewAnswerCommand — standalone (no queue)", () => {
 	});
 });
 
+describe("ReviewAnswerCommand — review event", () => {
+	it("announces the recorded review once the write lands", async () => {
+		const emit = vi.fn();
+		const ctx = makeCtx({
+			flashcardManager: {
+				updateCardFSRS: vi.fn().mockReturnValue(true),
+				getEventBus: () => ({ emit }),
+			} as unknown as CommandContext["flashcardManager"],
+		});
+		const card = makeCard();
+		const cmd = new ReviewAnswerCommand({
+			card,
+			originalFsrs: { ...card.fsrs },
+			updatedFsrs: { ...card.fsrs, reps: 1, state: 1 },
+			previousIndex: null,
+			wasNewCard: true,
+			rating: 3,
+			previousState: 0,
+			scheduledDays: 1,
+			elapsedDays: 0,
+			responseTime: 1000,
+			presetName: "default",
+		});
+
+		cmd.execute(ctx);
+		await new Promise((r) => setTimeout(r, 5));
+
+		expect(emit).toHaveBeenCalledWith("review:recorded", {
+			cardId: "card-1",
+			rating: 3,
+		});
+	});
+});
+
 describe("ReviewAnswerCommand — persistence rollback", () => {
 	it("restores session state and skips post-commit effects when the transaction fails", async () => {
 		const card = makeCard();

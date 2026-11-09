@@ -15,8 +15,8 @@ const SCROLL_STEP_PX = 8;
 const SCROLL_INTERVAL_MS = 30;
 
 interface DragSelectArgs {
-	listRef: RefObject<HTMLElement>;
-	scrollRef: RefObject<HTMLElement>;
+	listRef: RefObject<HTMLElement | null>;
+	scrollRef: RefObject<HTMLElement | null>;
 	items: PanelItem[];
 	selectedCardIds: Set<string>;
 	isSelectionMode: boolean;

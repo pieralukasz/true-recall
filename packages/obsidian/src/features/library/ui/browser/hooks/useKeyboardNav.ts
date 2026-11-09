@@ -6,7 +6,7 @@ import type { BrowserCard } from "../types";
 
 interface KeyboardNavOptions {
 	/** Root element of the browser; scopes shortcuts to its workspace leaf. */
-	rootRef: RefObject<HTMLElement>;
+	rootRef: RefObject<HTMLElement | null>;
 	cards: BrowserCard[];
 	selectedCount: number;
 	previewCardId: string | null;

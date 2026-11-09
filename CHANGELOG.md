@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+## 2.12.0 (2026-11-09)
+
+### Features
+
+- **Child cards.** A card you keep failing can be studied through easier child cards built from its own text; the parent waits, suspended, until every child graduates. Turn it on in `Settings → General → "Enable child cards"`. Off by default.
+- **Suggested answer time.** `Settings → General → "Suggest an answer time"` shows a hint when a card takes longer than its length and difficulty suggest. Off by default.
+- **Image occlusion from the image menu (Pro).** Right-click an image in a note and pick "Create image occlusion card". Turn it on in `Settings → General → "Image context menu"`.
+- **Clean up orphan notes.** The command "Clean up orphan notes and rebuild statistics" removes notes left without cards and recomputes your statistics, after a backup.
+- **Card preview in the Card Browser.** Select a card and click Preview in its side panel to see it the way review shows it.
+
+### Improvements
+
+- **Cloze gaps are tinted** instead of bold, so the revealed answer no longer looks like bold you wrote.
+- **True Recall is open source.** The plugin is now released under the MIT License.
+
+### Bug Fixes
+
+- **Deleted notes** now disappear on your other devices too after a sync.
+- **Typed-answer feedback** with your own AI key now comes in the language of the question, not of your answer.
+- **Ink handwriting** in review answers no longer collapses to zero width.
+
 ## 2.11.0 (2026-10-29)
 
 ### Features

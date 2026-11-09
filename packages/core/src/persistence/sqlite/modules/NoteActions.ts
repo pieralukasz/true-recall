@@ -265,11 +265,30 @@ export class NoteActions {
 		return changed;
 	}
 
+	/** Soft delete; stamps `updated_at` so sync carries the delete to other devices. */
 	delete(id: string): void {
-		this.db.run(`UPDATE notes SET deleted_at = ? WHERE id = ?`, [
-			Date.now(),
-			id,
-		]);
+		const now = Date.now();
+		this.db.run(
+			`UPDATE notes SET deleted_at = ?, updated_at = ? WHERE id = ?`,
+			[now, now, id],
+		);
+	}
+
+	/**
+	 * Notes with no live card left. Deleting a card only soft deletes the card,
+	 * so its note stays behind as an empty shell; these can be deleted safely.
+	 */
+	findOrphanIds(): string[] {
+		return this.db
+			.query<{ id: string }>(
+				`SELECT n.id AS id FROM notes n
+				 WHERE n.deleted_at IS NULL
+				   AND NOT EXISTS (
+				     SELECT 1 FROM cards c
+				     WHERE c.note_id = n.id AND c.deleted_at IS NULL
+				   )`,
+			)
+			.map((row) => row.id);
 	}
 
 	count(): number {
