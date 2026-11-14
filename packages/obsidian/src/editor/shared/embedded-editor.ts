@@ -40,6 +40,8 @@ interface InternalEditorBase {
 	onunload(): void;
 }
 
+type EmbedFile = Pick<TFile, "path" | "name" | "basename" | "extension">;
+
 // ─── Public API ──────────────────────────────────────────────────────────────
 
 interface EmbeddableEditorOptions {
@@ -92,7 +94,7 @@ function resolveEditorPrototype(
 				embedByExtension: {
 					md: (
 						ctx: { app: App; containerEl: HTMLElement },
-						file: TFile | null,
+						file: EmbedFile | null,
 						subpath: string,
 					) => WidgetEditorView;
 				};
@@ -105,14 +107,26 @@ function resolveEditorPrototype(
 		);
 	}
 
-	// Intentionally passing null — we only need the editor prototype, not an actual file
-	const nullFile: TFile | null = null;
+	const createWidget = (file: EmbedFile | null) =>
+		embedRegistry.embedByExtension.md(
+			{ app, containerEl: createDiv() },
+			file,
+			"",
+		);
 
-	const widgetEditorView = embedRegistry.embedByExtension.md(
-		{ app, containerEl: createDiv() },
-		nullFile,
-		"",
-	);
+	// Null is enough for Obsidian's own creator; plugins that wrap it (FineNotes, #142)
+	// may read `file.extension` first, so retry with a stub that is no real note.
+	let widgetEditorView: WidgetEditorView;
+	try {
+		widgetEditorView = createWidget(null);
+	} catch {
+		widgetEditorView = createWidget({
+			path: "",
+			name: "",
+			basename: "",
+			extension: "md",
+		});
+	}
 
 	widgetEditorView.editable = true;
 	widgetEditorView.showEditor();
