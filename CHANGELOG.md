@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 2.12.1 (2026-11-14)
+
+### Bug Fixes
+
+- **Blank cards with FineNotes.** Question and answer no longer show up empty in Review, Browse and Card preview when the FineNotes plugin is enabled.
+
 ## 2.12.0 (2026-11-09)
 
 ### Features
