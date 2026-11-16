@@ -11,7 +11,7 @@
 		"test:coverage": "vitest run --coverage"
 	},
 	"dependencies": {
-		"ts-fsrs": "^5.4.2",
+		"ts-fsrs": "^6.0.0",
 		"sql.js": "^1.15.2",
 		"@sqlite.org/sqlite-wasm": "^3.51.2-build6",
 		"pako": "^3.0.3",
